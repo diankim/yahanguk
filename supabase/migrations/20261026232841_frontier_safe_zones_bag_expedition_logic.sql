@@ -1,4 +1,3 @@
--- 아직 운영 DB에 적용하지 않은 초안입니다. 롤백 시험 실행으로 검증한 뒤 migrations/로 옮겨 적용합니다.
 -- 야행국 2차 라이브 테스트 반영 (서버 로직): 앞선 frontier 스키마 마이그레이션의 테이블·열을 사용한다.
 -- ── B. 전용 최소 권한 역할 ─────────────────────────────────
 DO $$ BEGIN
@@ -359,7 +358,7 @@ BEGIN
   IF c.major_faction_id = 'mandate_court' THEN prog_mul := prog_mul * 1.2; END IF;
   heal_at := CASE e.stance WHEN 'cautious' THEN 60 WHEN 'bold' THEN 30 ELSE 45 END;
 
-  pool := coalesce(r.gather_nodes, '{}') || coalesce((SELECT array_agg(DISTINCT x) FROM public.world_region_sites s, unnest(s.loot_table) x WHERE s.region_id = r.region_id), '{}');
+  pool := coalesce(r.gather_nodes, '{}') || coalesce((SELECT array_agg(DISTINCT x) FROM public.world_region_sites s, jsonb_array_elements_text(coalesce(s.loot_table, '[]'::jsonb)) x WHERE s.region_id = r.region_id), '{}');
   rare_pool := coalesce((SELECT array_agg(DISTINCT x) FROM public.world_region_sites s, jsonb_array_elements_text(coalesce(s.rare_bonus -> 'items', '[]'::jsonb)) x WHERE s.region_id = r.region_id), '{}');
   pool := ARRAY(SELECT x FROM unnest(pool) x WHERE EXISTS (SELECT 1 FROM public.world_item_catalog ic WHERE ic.item_id = x));
   rare_pool := ARRAY(SELECT x FROM unnest(rare_pool) x WHERE EXISTS (SELECT 1 FROM public.world_item_catalog ic WHERE ic.item_id = x));
@@ -421,7 +420,7 @@ BEGIN
     ELSIF roll < p_fight + 0.35 + 0.22 + c.perception * 0.002 THEN
       finds := finds + 1; xp := xp + 6; ixp := ixp + 10;
       prog_gain := prog_gain + round((4 + c.perception / 4.0 + coalesce(c.investigation_rank, 1)) * prog_mul);
-      IF cardinality(rare_pool) > 0 AND random() < 0.04 + g.depth * 0.03 + CASE WHEN c.job_key = 'analyst' THEN 0.05 ELSE 0 END THEN
+      IF cardinality(rare_pool) > 0 AND random() < 0.04 + g.depth * 0.03 + (CASE WHEN c.job_key = 'analyst' THEN 0.05 ELSE 0 END) THEN
         item := rare_pool[1 + floor(random() * cardinality(rare_pool))::int];
         loot := jsonb_set(loot, ARRAY[item], to_jsonb(coalesce((loot ->> item)::int, 0) + 1));
         log := log || jsonb_build_array('숨겨진 곳에서 ' || (SELECT item_name FROM public.world_item_catalog WHERE item_id = item) || '을(를) 찾았습니다.');
@@ -566,8 +565,7 @@ END
 $f$;
 
 REVOKE ALL ON FUNCTION public.world_region_at(text), public.world_bag_limit(uuid), public.world_bag_count(jsonb),
-  public.world_enforce_bag_capacity(), public.world_guard_action_context(), public.world_guard_idle_during_expedition(),
-  public.world_reward_case_resolution(), public.world_current_shop(uuid) FROM PUBLIC;
+  public.world_current_shop(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.world_set_profile(text, text, text), public.world_expedition_board(), public.world_expedition_launch(text, integer, text, jsonb),
   public.world_expedition_finish(boolean), public.world_exploration_overview() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.world_set_profile(text, text, text), public.world_expedition_board(), public.world_expedition_launch(text, integer, text, jsonb),
@@ -592,7 +590,8 @@ BEGIN
       'away', EXISTS (SELECT 1 FROM public.world_expeditions e WHERE e.owner_id = c.owner_id AND e.status = 'active'),
       'in_combat', EXISTS (SELECT 1 FROM public.world_active_encounters a WHERE a.owner_id = c.owner_id AND NOT a.defeated AND NOT coalesce(a.fled, false)))
       ORDER BY c.updated_at DESC), '[]'::jsonb)
-    FROM (SELECT * FROM public.world_characters x WHERE x.location = loc AND x.owner_id <> uid ORDER BY x.updated_at DESC LIMIT 50) c);
+    FROM (SELECT x.owner_id, x.character_name, x.level, x.job_key, x.faction_key, x.major_faction_id, x.health, x.downed_at, x.is_dead, x.profile, x.updated_at
+          FROM public.world_characters x WHERE x.location = loc AND x.owner_id <> uid ORDER BY x.updated_at DESC LIMIT 50) c);
 END
 $f$;
 
@@ -629,26 +628,27 @@ REVOKE ALL ON FUNCTION public.world_region_roster(), public.world_party_overview
 GRANT EXECUTE ON FUNCTION public.world_region_roster(), public.world_party_overview() TO authenticated;
 RESET ROLE;
 
+
+-- ── D. 트리거 연결 ──────────────────────────────────────
+CREATE TRIGGER trg_world_enforce_bag_capacity BEFORE UPDATE OF inventory ON public.world_characters
+  FOR EACH ROW WHEN (new.inventory IS DISTINCT FROM old.inventory) EXECUTE FUNCTION public.world_enforce_bag_capacity();
+CREATE TRIGGER trg_world_guard_action_context BEFORE INSERT ON public.world_events
+  FOR EACH ROW EXECUTE FUNCTION public.world_guard_action_context();
+CREATE TRIGGER trg_world_guard_idle_during_expedition BEFORE INSERT OR UPDATE OF status ON public.world_idle_activities
+  FOR EACH ROW EXECUTE FUNCTION public.world_guard_idle_during_expedition();
+CREATE TRIGGER trg_world_reward_regional_claim AFTER INSERT ON public.world_regional_case_claims
+  FOR EACH ROW EXECUTE FUNCTION public.world_reward_case_resolution();
+CREATE TRIGGER trg_world_reward_case_resolution AFTER UPDATE OF combined ON public.world_case_progress
+  FOR EACH ROW EXECUTE FUNCTION public.world_reward_case_resolution();
+
+-- 트리거를 연결한 뒤 트리거 함수의 직접 실행 권한을 소유 역할이 회수한다.
+SET ROLE fn_owner_expedition;
+REVOKE ALL ON FUNCTION public.world_enforce_bag_capacity(), public.world_guard_action_context(), public.world_guard_idle_during_expedition(),
+  public.world_reward_case_resolution() FROM PUBLIC;
+RESET ROLE;
 REVOKE CREATE ON SCHEMA public FROM fn_owner_expedition, fn_owner_social;
 GRANT fn_owner_expedition TO postgres WITH SET FALSE, INHERIT FALSE;
 GRANT fn_owner_social TO postgres WITH SET FALSE, INHERIT FALSE;
-
--- ── D. 트리거 연결 ──────────────────────────────────────
-DROP TRIGGER IF EXISTS trg_world_enforce_bag_capacity ON public.world_characters;
-CREATE TRIGGER trg_world_enforce_bag_capacity BEFORE UPDATE OF inventory ON public.world_characters
-  FOR EACH ROW WHEN (new.inventory IS DISTINCT FROM old.inventory) EXECUTE FUNCTION public.world_enforce_bag_capacity();
-DROP TRIGGER IF EXISTS trg_world_guard_action_context ON public.world_events;
-CREATE TRIGGER trg_world_guard_action_context BEFORE INSERT ON public.world_events
-  FOR EACH ROW EXECUTE FUNCTION public.world_guard_action_context();
-DROP TRIGGER IF EXISTS trg_world_guard_idle_during_expedition ON public.world_idle_activities;
-CREATE TRIGGER trg_world_guard_idle_during_expedition BEFORE INSERT OR UPDATE OF status ON public.world_idle_activities
-  FOR EACH ROW EXECUTE FUNCTION public.world_guard_idle_during_expedition();
-DROP TRIGGER IF EXISTS trg_world_reward_regional_claim ON public.world_regional_case_claims;
-CREATE TRIGGER trg_world_reward_regional_claim AFTER INSERT ON public.world_regional_case_claims
-  FOR EACH ROW EXECUTE FUNCTION public.world_reward_case_resolution();
-DROP TRIGGER IF EXISTS trg_world_reward_case_resolution ON public.world_case_progress;
-CREATE TRIGGER trg_world_reward_case_resolution AFTER UPDATE OF combined ON public.world_case_progress
-  FOR EACH ROW EXECUTE FUNCTION public.world_reward_case_resolution();
 
 -- ── E. 상점: 안전지대의 상점만 열고, 조회와 구매가 같은 상점을 쓰도록 통일 (소유 역할 유지) ──
 GRANT fn_owner_18876 TO postgres WITH SET TRUE;
@@ -732,3 +732,46 @@ CREATE OR REPLACE FUNCTION public.world_mount_snapshot()
  LANGUAGE plpgsql
  SET search_path TO 'pg_catalog', 'public'
 AS $function$ declare uid uuid:=public.fn_owner_auth_uid(); c public.world_characters%rowtype; result jsonb; here text; begin if uid is null then raise exception '로그인이 필요합니다.'; end if; select * into c from public.world_characters where owner_id=uid; select r.region_id into here from public.world_map_regions r where r.region_name=c.location or (r.region_id='hq_yard' and c.location in ('본부 로비','야행국 본부 · 정청')) limit 1; select coalesce(jsonb_agg(jsonb_build_object('mount_id',m.mount_id,'mount_name',m.mount_name,'speed_multiplier',m.speed_multiplier,'price',m.price,'description',m.description,'unlock_level',m.unlock_level,'unlock_reputation',m.unlock_reputation,'unlock_faction',m.unlock_faction,'unlock_region',m.unlock_region,'unlock_region_name',(select r.region_name from public.world_map_regions r where r.region_id=m.unlock_region),'unlock_item',m.unlock_item,'tier',m.tier,'passenger_capacity',m.passenger_capacity,'fare_tokens',m.fare_tokens,'fare_free',m.fare_free,'acquire_method',m.acquire_method,'at_stable',m.acquire_method='stable' and m.unlock_region is not null and m.unlock_region=here,'owned',exists(select 1 from public.world_owned_mounts o where o.owner_id=uid and o.mount_id=m.mount_id),'equipped',c.mount_id=m.mount_id) order by case m.tier when '초보자' then 0 when '일반' then 1 when '고급' then 2 when '희귀' then 3 when '영물' then 4 else 5 end,m.price),'[]'::jsonb) into result from public.world_mount_catalog m; return jsonb_build_object('gil',c.gil,'mount_tokens',c.mount_tokens,'mount_id',c.mount_id,'mounts',result,'location',c.location,'region_id',here,'travel_destination',c.travel_destination,'travel_arrives_at',c.travel_arrives_at); end $function$;
+
+-- ── G. 탈것 획득: 마구간(안전지대)에서만, 사건 탈것은 구매 불가.
+--    기존 함수는 보유 기록보다 장착을 먼저 해 보유 검사 트리거에 막혀 구매가 불가능했다. 보유 기록을 먼저 넣는다.
+GRANT fn_owner_18883 TO postgres WITH SET TRUE;
+GRANT CREATE ON SCHEMA public TO fn_owner_18883;
+SET ROLE fn_owner_18883;
+CREATE OR REPLACE FUNCTION public.world_mount_acquire(p_mount_id text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+DECLARE uid uuid:=public.fn_owner_auth_uid(); c public.world_characters%rowtype; m public.world_mount_catalog%rowtype; r public.world_map_regions%rowtype; inv jsonb; stable_name text;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION '로그인이 필요합니다.'; END IF;
+  SELECT * INTO c FROM public.world_characters WHERE owner_id=uid FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION '캐릭터를 먼저 등록하세요.'; END IF;
+  IF c.is_dead OR c.health<=0 OR c.downed_at IS NOT NULL THEN RAISE EXCEPTION '현재 상태에서는 탈것을 구할 수 없습니다.'; END IF;
+  SELECT * INTO m FROM public.world_mount_catalog WHERE mount_id=p_mount_id;
+  IF NOT FOUND THEN RAISE EXCEPTION '존재하지 않는 탈것입니다.'; END IF;
+  IF m.acquire_method='event' THEN RAISE EXCEPTION '이 탈것은 특별한 사건으로만 얻을 수 있습니다.'; END IF;
+  IF EXISTS(SELECT 1 FROM public.world_owned_mounts WHERE owner_id=uid AND mount_id=p_mount_id) THEN RAISE EXCEPTION '이미 보유한 탈것입니다.'; END IF;
+  SELECT * INTO r FROM public.world_map_regions x WHERE x.region_name=c.location OR (x.region_id='hq_yard' AND c.location IN ('본부 로비','야행국 본부 · 정청')) LIMIT 1;
+  SELECT region_name INTO stable_name FROM public.world_map_regions WHERE region_id=m.unlock_region;
+  IF NOT coalesce(r.has_stable,false) OR (m.unlock_region IS NOT NULL AND r.region_id IS DISTINCT FROM m.unlock_region) THEN
+    RAISE EXCEPTION '%', coalesce(stable_name||' 마구간에서 구할 수 있습니다.','안전지대의 마구간에서만 구할 수 있습니다.');
+  END IF;
+  IF c.level<m.unlock_level THEN RAISE EXCEPTION '레벨 %부터 구할 수 있습니다.', m.unlock_level; END IF;
+  IF m.unlock_faction IS NOT NULL AND c.major_faction_id IS DISTINCT FROM m.unlock_faction THEN RAISE EXCEPTION '이 탈것은 특정 대세력 소속만 구할 수 있습니다.'; END IF;
+  IF c.faction_reputation<m.unlock_reputation THEN RAISE EXCEPTION '세력 평판 %이 필요합니다.', m.unlock_reputation; END IF;
+  inv:=coalesce(c.inventory,'{}'::jsonb);
+  IF m.unlock_item IS NOT NULL AND coalesce((inv->>m.unlock_item)::int,0)<1 THEN RAISE EXCEPTION '공물이 필요합니다.'; END IF;
+  IF c.gil<m.price THEN RAISE EXCEPTION '재화가 부족합니다. (필요 %전)', m.price; END IF;
+  IF m.unlock_item IS NOT NULL THEN inv:=jsonb_set(inv,ARRAY[m.unlock_item],to_jsonb(coalesce((inv->>m.unlock_item)::int,0)-1),true); END IF;
+  INSERT INTO public.world_owned_mounts(owner_id,mount_id) VALUES(uid,p_mount_id);
+  UPDATE public.world_characters SET gil=gil-m.price,inventory=inv,mount_id=p_mount_id,updated_at=now() WHERE owner_id=uid;
+  INSERT INTO public.world_economy_ledger(owner_id,action,currency_delta,sink,details) VALUES(uid,'mount_purchase',-m.price,true,jsonb_build_object('mount_id',p_mount_id));
+  INSERT INTO public.world_events(actor_id,actor_name,event_type,content,payload) VALUES(uid,c.character_name,'mount','탈것 획득: '||m.mount_name,jsonb_build_object('mount_id',p_mount_id,'price',m.price));
+  RETURN jsonb_build_object('content','탈것 획득: '||m.mount_name||' (사용 중으로 바꿨습니다)','mount_id',p_mount_id,'gil',c.gil-m.price);
+END $function$;
+RESET ROLE;
+REVOKE CREATE ON SCHEMA public FROM fn_owner_18883;
+GRANT fn_owner_18883 TO postgres WITH SET FALSE, INHERIT FALSE;
