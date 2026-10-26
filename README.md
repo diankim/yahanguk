@@ -6,8 +6,23 @@
 
 - 현재 확보된 HTML 소스를 `index.html`로 복사했습니다.
 - Supabase 연결 설정은 HTML 내부에 포함되어 있습니다. 브라우저용 publishable key만 사용해야 하며, `service_role` 키나 DB 비밀번호는 절대로 클라이언트에 넣지 마세요.
-- 이 저장소는 아직 UX/UI 개편 전의 원본 작업본입니다. 업로드했다고 해서 UX/UI 개편이나 배포 전 테스트가 완료된 것은 아닙니다.
+- 1차 UX/UI·안정성 개선이 반영되었습니다(아래 "변경 기록" 참고). 실제 계정 기반의 기능 테스트는 아직 수행되지 않았습니다.
 - 기존 게임 기능을 분석한 뒤 수정은 별도 브랜치에서 진행하는 것을 권장합니다.
+
+## 변경 기록 (2026-10-26)
+
+### 프런트엔드 (`index.html`)
+- 화폐 표기 치환 MutationObserver가 값이 같아도 텍스트를 재할당해 무한 루프로 페이지가 멈추던 문제 수정
+- 지도 화면의 이동 시간·탐사 지점 옵저버가 DOM 변경마다 RPC를 반복 호출하던 문제 수정(디바운스·캐시·지도 영역 변경만 반응)
+- 모듈별로 따로 만들던 Supabase 클라이언트(23개)를 하나로 공유 — GoTrue 다중 인스턴스 경고와 토큰 갱신 경합 제거
+- 동승 요청을 `world_travel_party_invite_v2`로 호출(수락은 이미 v2 사용)
+- 정의되지 않은 `notify` 호출, 제거된 로그인 탭 `click()` 오류 수정
+- 중국어로 작성돼 있던 상태이상·칭호 패널을 한국어로 번역, 비로그인 시 원문 인증 오류 노출 제거
+- UX 레이어(`#yahang-ux-layer`): 모바일 하단 고정 탭, 설정 메뉴 한 줄 가로 스크롤, 로그인 화면 브랜드·입력란 정리, 한국어 단어 단위 줄바꿈, 활성 탭 `aria-current`
+
+### 백엔드 (Supabase, `supabase/migrations/`)
+- `fix_idle_claim_activity_type_reference`: `world_claim_idle_activity`의 미선언 변수 `v_activity_type` 참조 수정(휴식 외 자율 활동 수령 실패)
+- `transfer_party_travel_v2_step4_owner_and_narrow`: 동승 v2 함수 소유권을 전용 역할로 이전하고 권한을 필요한 컬럼 단위로 축소
 
 ## 로컬 미리보기
 
