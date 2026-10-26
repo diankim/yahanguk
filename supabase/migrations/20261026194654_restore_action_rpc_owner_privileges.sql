@@ -1,4 +1,4 @@
--- [미적용 제안] 승인 후 apply_migration 으로 적용한다. 운영 DB에는 아직 적용되지 않았다.
+-- 2026-10-26 운영 DB 적용 (버전 20261026194654). 적용 전후 함수 소유자·ACL·search_path·RLS 정책·클라이언트 권한 변화 없음 확인.
 --
 -- 증상(2026-10-26 롤백 테스트로 재현): 아래 클라이언트 RPC가 42501 permission denied 로 실패한다.
 --   world_region_site_explore  -> world_character_statuses / world_status_catalog (INVOKER 헬퍼 world_status_effect_total)

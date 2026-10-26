@@ -30,8 +30,11 @@
 - 모바일 설정 메뉴: 가로 스크롤 제거, 한 줄 4칸 (CLAUDE.md §15)
 - 동승 패널 안내문에 운임 규칙 명시, 화폐 단위 '전' 직접 표기
 
+### 3차 (2026-10-26)
+- `20261026194654_restore_action_rpc_owner_privileges` 운영 적용: 지점 탐사·탐색·지역 조우·단독 이동·자율 활동 시작 RPC의 42501 권한 오류 복구(정의자 함수 소유 역할에만 최소 권한 추가, 클라이언트 권한·RLS·함수 소유권 변경 없음)
+
 ### 미적용 제안 (승인 필요)
-- `supabase/proposals/restore_action_rpc_owner_privileges.sql`: 지점 탐사·단독 이동·탐색·지역 조우·자율 활동 시작 RPC가 소유 역할 권한 누락으로 실패하는 문제의 수정안. 롤백 테스트로만 검증했으며 운영 DB에는 적용하지 않았습니다.
+- `supabase/proposals/restore_exploration_enter_intel_update.sql`: 세부 지역 진입 `world_exploration_enter`가 `world_region_intel` UPDATE 권한 누락으로 실패하는 문제의 수정안. 롤백 테스트로만 검증했으며 운영 DB에는 적용하지 않았습니다.
 
 ## 실계정 테스트 절차 (아직 수행되지 않음)
 1. 정적 호스팅(또는 로컬 서버)으로 `index.html`을 열고, Supabase Auth 허용 URL에 해당 주소를 추가합니다.
