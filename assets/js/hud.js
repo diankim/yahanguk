@@ -1,0 +1,138 @@
+// 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
+// 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
+import { store, on, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, h, guard, toast } from './core.js';
+
+const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
+let root, tick, poll, refreshTimer, state = { idle: null, enc: null, exp: null };
+
+export function mountHud(el) {
+  root = el;
+  root.innerHTML = `<button class="hud-strip" id="hud-strip" aria-expanded="false"></button><div class="hud-body" id="hud-body"></div>`;
+  $('#hud-strip', root).onclick = () => {
+    const open = root.classList.toggle('open');
+    $('#hud-strip', root).setAttribute('aria-expanded', open);
+  };
+  on('character', render);
+  on('changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 350); });
+  refresh();
+  clearInterval(tick); tick = setInterval(onTick, 1000);
+  clearInterval(poll); poll = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+}
+
+export async function refresh() {
+  try {
+    const [idle, enc, inv] = await Promise.all([
+      rpc('world_idle_activity_snapshot').catch(() => null),
+      rpc('world_region_encounter_snapshot').catch(() => null),
+      rpc('world_inventory_snapshot').catch(() => null),
+      loadCharacter(),
+    ]);
+    state = { idle, enc, exp: inv?.expedition_state || null };
+    if (inv) { store.snaps.world_inventory_snapshot = inv; }
+    render();
+  } catch (e) { console.warn('HUD 갱신 실패', e); }
+}
+
+function idleReadyAt(idle) {
+  if (!idle?.active) return null;
+  if (idle.ready_at) return new Date(idle.ready_at).getTime();
+  if (idle.started_at && idle.duration_minutes) return new Date(idle.started_at).getTime() + idle.duration_minutes * 60000;
+  return null;
+}
+
+function statusItems(c) {
+  const items = [];
+  if (c.is_dead) items.push({ kind: 'danger', icon: 'flame', title: '영구 사망', text: c.death_reason || '이 캐릭터는 더 이상 행동할 수 없습니다.' });
+  else if (c.downed_at || c.health <= 0) items.push({ kind: 'danger', icon: 'heart', title: '전투불능', text: '회복 부적을 쓰거나 다른 조사원의 구조를 기다리세요.', action: ['상태 보기', () => window.yahangGo('char', 'status')] });
+  if (c.travel_arrives_at) {
+    const left = new Date(c.travel_arrives_at).getTime() - Date.now();
+    items.push({ kind: 'travel', icon: 'route', title: `이동 중 → ${nameOf(c.travel_destination) || '목적지'}`, timer: c.travel_arrives_at, text: left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…', action: left > 0 ? ['이동 취소', cancelTravel] : null });
+  }
+  const e = state.enc;
+  if (e?.active) items.push({ kind: 'combat', icon: 'sword', title: `전투 중 · ${e.monster_name}`, text: `적 체력 ${e.current_hp}/${e.max_hp}`, meter: [e.current_hp, e.max_hp], action: ['전투로', () => window.yahangGo('home', 'combat')] });
+  const ready = idleReadyAt(state.idle);
+  if (ready) {
+    const left = ready - Date.now();
+    items.push({ kind: 'idle', icon: 'hourglass', title: IDLE_LABEL[state.idle.activity_type] || '자율 활동', timer: ready, text: left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능', action: left > 0 ? null : ['보상 수령', claimIdle], ready: left <= 0 });
+  }
+  if (state.exp?.in_progress) {
+    const n = Object.values(state.exp.supplies || {}).reduce((a, b) => a + Number(b || 0), 0);
+    items.push({ kind: 'exp', icon: 'bag', title: '원정 중', text: `보급 꾸러미 ${n}개 휴대`, action: ['원정 관리', () => window.yahangGo('map', 'travel')] });
+  }
+  if (!items.length) items.push({ kind: 'calm', icon: 'moon', title: '대기 중', text: '지도에서 이동하거나 현재 지역을 탐사하세요.' });
+  return items;
+}
+
+function render() {
+  const c = store.character; if (!root || !c) return;
+  const items = statusItems(c);
+  const need = Math.max(100, (c.level || 1) * 100);
+  const first = items[0];
+  $('#hud-strip', root).innerHTML = `
+    <span class="hs-name"><b>${esc(c.character_name)}</b><small>Lv.${c.level}</small></span>
+    <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="sp"></i></span>
+    <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
+    <span class="hs-caret">${icon('chevron', 14)}</span>`;
+  const body = $('#hud-body', root);
+  body.innerHTML = `
+    <section class="hud-card">
+      <div class="hud-id"><div class="avatar">${esc((c.character_name || '?').slice(0, 1))}</div>
+        <div><h2>${esc(c.character_name)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
+        <span class="lv">Lv.${c.level}</span></div>
+      <div class="xp"><span>경험치</span><span>${fmt.num(c.experience)} / ${fmt.num(need)}</span></div>${bar(c.experience, need, 'xp')}
+    </section>
+    <section class="hud-card vitals">
+      ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital('영력', c.spiritual_power, 'sp')}${vital('침식', c.erosion || 0, 'er')}
+    </section>
+    <section class="hud-card money">
+      <div>${icon('coin', 16)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
+      <div>${icon('token', 16)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
+      <div>${icon('pin', 16)}<span>위치</span><b>${esc(c.location)}</b></div>
+    </section>
+    <section class="hud-card now"><h3>진행 중</h3>
+      ${items.map((it, i) => `<div class="now-item st-${it.kind}">
+        <div class="now-ico">${icon(it.icon, 18)}</div>
+        <div class="now-text"><b>${esc(it.title)}</b><span data-timer="${it.timer ? new Date(it.timer).getTime() : ''}" data-kind="${it.kind}">${esc(it.text)}</span>
+          ${it.meter ? bar(it.meter[0], it.meter[1], 'enemy') : ''}</div>
+        ${it.action ? `<button class="btn small ${it.ready ? 'primary' : 'ghost'}" data-act="${i}">${esc(it.action[0])}</button>` : ''}
+      </div>`).join('')}
+    </section>`;
+  body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
+}
+function vital(label, v, kind) {
+  return `<div class="vital"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
+}
+
+let arriving = false;
+function onTick() {
+  if (!root) return;
+  const now = Date.now();
+  root.querySelectorAll('[data-timer]').forEach(el => {
+    const t = Number(el.dataset.timer); if (!t) return;
+    const left = t - now, kind = el.dataset.kind;
+    if (el.tagName === 'EM') return;
+    if (kind === 'travel') el.textContent = left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…';
+    if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
+  });
+  const c = store.character;
+  if (c?.travel_arrives_at && new Date(c.travel_arrives_at).getTime() <= now && !arriving) {
+    arriving = true;
+    rpc('world_travel_status').then(s => { if (!s?.in_transit) toast(`${s.location}에 도착했습니다.`, 'ok'); return refresh(); })
+      .catch(() => {}).finally(() => { arriving = false; window.dispatchEvent(new CustomEvent('yahang:arrived')); });
+  }
+  const ready = idleReadyAt(state.idle);
+  if (ready && ready <= now && !root.dataset.idleReady) { root.dataset.idleReady = '1'; render(); }
+  if (!ready) delete root.dataset.idleReady;
+}
+
+async function cancelTravel(btn) {
+  if (!confirm('이동을 취소할까요? 위약금 5전이 소모됩니다.')) return;
+  await guard(btn, () => act('world_travel_cancel'));
+}
+async function claimIdle(btn) {
+  await guard(btn, async () => {
+    const r = await act('world_claim_idle_activity');
+    return { content: `${r.message || '보상 수령'} · 경험치 +${r.experience || 0}` };
+  });
+}
