@@ -6,24 +6,24 @@
 <title>야행국 夜行局 · 실시간 협동 RPG</title>
 <style>
 :root {
-  --site-primary: #762b2d;
-  --site-on-primary: #fff7e8;
-  --site-secondary: #c6a66b;
-  --site-on-secondary: #2b1b18;
-  --site-background: #f0e6d3;
-  --site-on-background: #30231f;
+  --site-primary: #9e2b25;
+  --site-on-primary: #f8ecd6;
+  --site-secondary: #c9a45c;
+  --site-on-secondary: #1a1210;
+  --site-background: #0e0c0e;
+  --site-on-background: #ece2d2;
   --site-font-body: "Noto Serif KR", "Songti SC", Georgia, serif;
   --site-font-heading: "Noto Serif KR", "Songti SC", Georgia, serif;
   --site-heading-scale: 1;
   --site-spacing-scale: 1;
   --site-radius-scale: 1;
   --site-decoration-opacity: 1;
-  --surface: light-dark(#fffaf0, #28201e);
-  --surface-soft: light-dark(#f4ead8, #342724);
-  --text-muted: light-dark(#806b5d, #c4b1a1);
-  --line: light-dark(#dfcdb0, #59433a);
-  --accent: #a23e35;
-  color-scheme: light dark;
+  --surface: #17141a;
+  --surface-soft: #201b23;
+  --text-muted: #a99c8c;
+  --line: #3a3037;
+  --accent: #d4553f;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: var(--site-font-body); background: var(--site-background); color: var(--site-on-background); }
@@ -885,16 +885,16 @@ import { createClient as __yahangCreateClient } from 'https://esm.sh/@supabase/s
  const db=createClient('https://bqywnmeryddwccrbomfe.supabase.co','sb_publishable_G2l1gY8W6ZYtSsFSx4LH6Q_YGdvnwe6',{auth:{persistSession:true,autoRefreshToken:true}});
  const $=id=>document.getElementById(id);
  const presets=[
-  ['야행국 기본','#762b2d','#fff7e8','#c6a66b','#2b1b18','#f0e6d3','#30231f','#fffaf0','#f4ead8','#dfcdb0','#a23e35'],
-  ['먹빛 서고','#292b32','#f3f0e8','#a9a9b8','#20212a','#e6e5e2','#27272d','#f7f6f2','#eae9e5','#cfced0','#6f7185'],
-  ['청록 야간','#174b4b','#f1f8f4','#91c8b6','#123a39','#dcebe5','#203b36','#f5fbf7','#e6f2ec','#c4ddd1','#287e72'],
-  ['남색 심야','#24365d','#f3f5ff','#a9b9e8','#1d2b49','#e2e8f6','#26334c','#f8f9ff','#e9edfa','#cbd4ed','#526eb1'],
-  ['자색 봉인','#55375f','#fff4ff','#d3a9d7','#36223c','#eee2ef','#382a3b','#fff8ff','#f3e8f4','#ddc9df','#8c5797'],
-  ['적동 황혼','#7b3c2e','#fff3e6','#d9a16f','#3c2119','#f3dfcb','#402920','#fff8f0','#f7e7d5','#e2c6a9','#b45d3b'],
-  ['이끼 정원','#40543a','#f6f8eb','#bdc78c','#293321','#e8ecd8','#303a2b','#fbfcef','#eff2df','#d2d9b7','#73894d'],
-  ['빙하 기록','#356071','#f1fbff','#a9d6e4','#203b47','#e2f0f5','#233b45','#f7fdff','#e9f5f8','#c8e0e8','#4c91a8'],
-  ['장미 안개','#814a60','#fff4f6','#e4b7c8','#442b35','#f2e2e7','#3c2b32','#fff9fb','#f8e9ee','#e5cbd5','#b36383'],
-  ['사막 문서','#78603b','#fff9e9','#d8bd79','#40331d','#f0e6cb','#3b3121','#fffdf4','#f5edd8','#dfd0ac','#a58242']
+  ['야행국 기본','#9e2b25','#f8ecd6','#c9a45c','#1a1210','#0e0c0e','#ece2d2','#17141a','#201b23','#3a3037','#d4553f'],
+  ['먹빛 서고','#4a4d5c','#eeedf3','#a9abc0','#15161b','#0d0e11','#e4e4ea','#16171c','#1e1f26','#34363f','#8f93b4'],
+  ['청록 야간','#1f6b63','#e8f6f1','#7cc0ad','#0d1a18','#0a1110','#dcebe5','#111a19','#182322','#2a3b38','#45a892'],
+  ['남색 심야','#2f4a85','#eef1ff','#9db1ea','#10162a','#0a0d16','#dfe5f6','#111624','#181f2e','#2c3550','#6688d6'],
+  ['자색 봉인','#6c3f7a','#f8ecfb','#c9a0d3','#1b1220','#100b13','#ecdff0','#18111c','#211926','#3b2d42','#a86fb8'],
+  ['적동 황혼','#8f442f','#fbeee3','#d49b67','#1d120d','#110c0a','#efe0d2','#1a1310','#231a16','#3e2e26','#cc6d43'],
+  ['이끼 정원','#4c6540','#eef4e4','#b3bf82','#141a10','#0c100a','#e2e9d4','#141a11','#1c2318','#323d2b','#86a158'],
+  ['빙하 기록','#2f6478','#eaf7fc','#9ccfe0','#0e1a1f','#091013','#dcecf2','#10181c','#172125','#2a3a41','#52a8c4'],
+  ['장미 안개','#8a4560','#fdeef3','#e0aec2','#1f1117','#110b0e','#f0dfe5','#1a1216','#23191e','#3f2c35','#cc6f92'],
+  ['사막 문서','#7d6234','#fbf3e2','#d6b874','#1d170c','#100f0a','#eee5cf','#191711','#221f18','#3d372a','#bc9744']
  ];
  const style=document.createElement('style');style.textContent=`.settings-nav{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 16px}.settings-nav button,.setting-card button,.preset{border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:var(--surface);color:var(--site-on-background)}.setting-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin:12px 0}.setting-card h3{margin:0 0 10px}.setting-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.setting-field{display:grid;gap:7px;font-size:12px;margin:10px 0}.setting-field input,.setting-field select{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface-soft);color:var(--site-on-background)}.preset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px}.preset{display:flex;align-items:center;gap:9px;text-align:left}.swatches{display:flex;gap:3px}.swatches i{display:block;width:13px;height:26px;border-radius:4px}.help-list{display:grid;gap:10px}.help-item{border-bottom:1px solid var(--line);padding:10px 0}.help-item h4{margin:0 0 5px}.help-item p{margin:0;color:var(--text-muted);font-size:13px;line-height:1.7}.settings-page{display:none}.settings-page.active{display:block}.settings-nav button.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.page-tabs .page-tab{font-size:11px}`;document.head.append(style);
  const clean=s=>s.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,'').replace(/\s{2,}/g,' ');
@@ -1248,7 +1248,7 @@ body { min-height:100%; height:auto; overflow-x:clip; overflow-y:visible; touch-
 <style id="yahang-ux-layer">
 /* UX 레이어: 여러 차례 덧붙은 패치 위에서 내비게이션·로그인·모바일 배치를 한 곳에서 정리한다. */
 .yh-login-brand{display:flex;align-items:center;gap:12px;margin:0 0 16px;color:var(--site-on-background)}
-.yh-login-brand .sig{color:var(--site-primary);border-color:var(--site-secondary);flex-shrink:0}
+.yh-login-brand .sig{flex-shrink:0}
 .yh-login-brand h1{margin:0;font-size:20px;letter-spacing:.06em}
 .yh-login-brand p{margin:3px 0 0;font-size:12px;color:var(--text-muted)}
 #auth-panel .inline-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
@@ -1274,6 +1274,69 @@ body.yh-state-preview #profile-btn{display:none}
  body.yh-has-bottom-nav #yaehanguk-scroll-top{bottom:calc(78px + env(safe-area-inset-bottom))}
 }
 @media(max-width:360px){#page-tabs .page-tab{font-size:11px!important}}
+
+/* ── 야행 다크 테마: 모든 색은 프리셋 토큰(--site-*, --surface*, --line, --accent)에서 파생 ── */
+:root{color-scheme:dark;--text-muted:#a99c8c;--yh-gold:var(--site-secondary);--yh-glow:color-mix(in srgb,var(--site-primary) 22%,transparent);
+ --yh-raise:color-mix(in srgb,var(--surface) 94%,#fff);--yh-inset:color-mix(in srgb,var(--site-background) 65%,var(--surface));
+ --yh-shadow:0 1px 0 rgba(255,255,255,.035) inset,0 14px 34px rgba(0,0,0,.38);--yh-gold-line:color-mix(in srgb,var(--site-secondary) 42%,var(--line))}
+body{background:var(--site-background);color:var(--site-on-background);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#app{background:radial-gradient(1100px 520px at 50% -200px,var(--yh-glow),transparent 70%),radial-gradient(700px 480px at 100% 0,color-mix(in srgb,var(--site-secondary) 7%,transparent),transparent 65%),var(--site-background)}
+h1,h2,h3,h4,.hero h2,.panel-head h3,.scene-art h3{font-family:"Noto Serif KR","Songti SC","Nanum Myeongjo",Georgia,serif}
+::selection{background:color-mix(in srgb,var(--site-primary) 55%,transparent);color:var(--site-on-primary)}
+*{scrollbar-color:var(--line) transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--yh-gold)!important;outline-offset:2px}
+/* 상단 바·브랜드 */
+.topbar{background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 70%,#000),color-mix(in srgb,var(--site-background) 90%,transparent));color:var(--site-on-background);border-bottom:1px solid var(--yh-gold-line);box-shadow:0 1px 0 color-mix(in srgb,var(--site-secondary) 12%,transparent),0 8px 24px rgba(0,0,0,.35)}
+.sig{color:var(--yh-gold);border-color:var(--yh-gold-line);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--site-primary) 55%,transparent),color-mix(in srgb,var(--site-primary) 18%,transparent));box-shadow:0 0 0 3px color-mix(in srgb,var(--site-secondary) 10%,transparent)}
+.brand h1{color:var(--site-on-background);letter-spacing:.08em}.brand p{color:var(--text-muted)}
+.status{border-color:var(--line);color:var(--text-muted);background:var(--yh-inset)}
+.eyebrow{color:var(--yh-gold);letter-spacing:.22em}
+.hero p,.notice{color:var(--text-muted)}
+.clock{background:var(--yh-inset);border-color:var(--line)}.clock strong{color:var(--yh-gold)}
+/* 패널·카드 */
+.panel,.workspace-bar,.setting-card{background:linear-gradient(180deg,var(--yh-raise),var(--surface));border:1px solid var(--line);box-shadow:var(--yh-shadow)}
+.panel-head{border-bottom-color:var(--line);background:color-mix(in srgb,var(--surface-soft) 45%,transparent)}
+.panel-head h3::before{content:"";display:inline-block;width:3px;height:.9em;margin-right:9px;vertical-align:-1px;border-radius:2px;background:var(--yh-gold)}
+.panel-head span{color:var(--text-muted)}
+.deep-card,.deep-stat,.progression-card,.identity-feature,.region-card,.faction-card,.site-explore,.party-panel,.skill-unlock,.st-card,.map-visual,.rescue-alert,.resource-warning{background:var(--surface-soft);border-color:var(--line);color:var(--site-on-background)}
+.map-visual{background:linear-gradient(145deg,var(--surface-soft),var(--surface))}.map-visual p,.deep-card p,.deep-stat small,.progression-card small,.identity-feature p,.region-card p,.faction-card p{color:var(--text-muted)}
+.region-card.current{border-color:color-mix(in srgb,var(--yh-gold) 70%,var(--line));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--yh-gold) 35%,transparent)}
+.scene-art{border-color:var(--yh-gold-line);box-shadow:inset 0 0 80px rgba(0,0,0,.45)}
+.scene-art:after{content:"夜";font-family:"Noto Serif KR","Songti SC",serif;font-size:26px;line-height:1;color:var(--yh-gold);opacity:.6;border:1px solid var(--yh-gold-line);border-radius:6px;padding:6px 7px}
+.avatar{background:linear-gradient(145deg,color-mix(in srgb,var(--site-primary) 75%,#000),var(--surface-soft));color:var(--yh-gold);border-color:var(--yh-gold-line)}
+.divider{background:var(--line)}
+/* 알약·태그·진행 막대 */
+.pill,.deep-tag,.connection-pill{background:var(--yh-inset);border-color:var(--line);color:var(--site-on-background)}
+.event-tag{background:color-mix(in srgb,var(--accent) 16%,transparent);color:color-mix(in srgb,var(--accent) 55%,var(--site-on-background));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.bar,.xp-track,.enemy-bar{background:color-mix(in srgb,var(--line) 70%,#000)}
+.xp-track span{background:var(--yh-gold)}
+/* 버튼 — 보조 / 주요 */
+.small-btn,.choice,.event button,.loc,.territory-chip,.page-tab,.settings-nav button,.setting-card button,.preset,.auth-tab,#world-chat-dock .wc-tab,.settings-nav button{background:var(--surface-soft);border:1px solid var(--line);color:var(--site-on-background)}
+@media(hover:hover){.small-btn:hover,.choice:hover,.event button:hover,.loc:hover,.territory-chip:hover,.page-tab:hover,.settings-nav button:hover,.setting-card button:hover,.preset:hover,#world-chat-dock .wc-tab:hover{border-color:var(--yh-gold-line);background:color-mix(in srgb,var(--surface-soft) 85%,var(--site-secondary))}}
+.primary,.small-btn.primary-small,.page-tab.active,.auth-tab.active,#world-chat-dock .wc-tab.active,.settings-nav button.active,.preset.active,#wc-send{background:linear-gradient(180deg,color-mix(in srgb,var(--site-primary) 85%,#fff),var(--site-primary));border-color:color-mix(in srgb,var(--site-primary) 60%,var(--site-secondary));color:var(--site-on-primary);box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 4px 14px color-mix(in srgb,var(--site-primary) 30%,transparent)}
+.loc.active,.territory-chip.active{border-color:var(--yh-gold);box-shadow:inset 0 0 0 1px var(--yh-gold);background:color-mix(in srgb,var(--surface-soft) 88%,var(--site-secondary))}
+.loc small,.territory-chip small{color:var(--text-muted)}
+button:disabled{opacity:.45}
+/* 입력 */
+input,textarea,select,.field input,.inline-form input,.composer textarea,#wc-entry,#wc-recipient,.identity-field select,.party-row select,.setting-field input,.setting-field select{background:var(--yh-inset)!important;border:1px solid var(--line)!important;color:var(--site-on-background)!important}
+input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--text-muted) 80%,transparent)}
+/* 내비게이션 */
+.page-tabs,#page-tabs{background:color-mix(in srgb,var(--site-background) 82%,transparent)!important;border-color:var(--line)!important;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+#page-tabs .page-tab[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--yh-gold),0 4px 14px color-mix(in srgb,var(--site-primary) 30%,transparent)}
+/* 대화·기록 */
+.msg{background:var(--surface-soft);border-color:var(--line)}.msg .who{color:var(--yh-gold)}
+.msg.mine,#cr-messages .msg.mine{background:color-mix(in srgb,var(--site-primary) 16%,var(--surface-soft));border-color:color-mix(in srgb,var(--site-primary) 40%,var(--line))}
+#wc-messages{background:var(--yh-inset)}#wc-messages .wc-msg{background:var(--surface-soft)}
+.log time{color:var(--yh-gold)}
+/* 로그인 */
+#page-login #auth-panel,.auth-card{border-color:var(--yh-gold-line);box-shadow:0 0 0 1px color-mix(in srgb,var(--site-secondary) 8%,transparent),0 24px 60px rgba(0,0,0,.5)}
+#page-login #auth-panel{border-top:2px solid var(--yh-gold)}
+.yh-login-brand h1{color:var(--site-on-background);letter-spacing:.08em}
+.auth-banner{background:linear-gradient(125deg,color-mix(in srgb,var(--site-primary) 70%,#000),var(--surface));border-bottom-color:var(--yh-gold-line)}
+.auth-error{color:color-mix(in srgb,var(--accent) 80%,#fff)}
+.preset-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important}.preset{word-break:keep-all}
+/* 알림 */
+.toast{background:var(--surface);color:var(--site-on-background);border:1px solid var(--yh-gold-line);box-shadow:0 14px 40px rgba(0,0,0,.5)}
 </style>
 <script type="module">
 /* UX 레이어 동작: 로그인 상태 표시, 하단 내비 탭 수, 활성 탭 접근성 */
