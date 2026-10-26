@@ -2,12 +2,16 @@
 import { db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
-import { applySavedTheme, openHelp, openAccount, openTheme, openSound, initSound, mountNotifications } from './settings.js';
+import { applySavedTheme, openProfile, openTheme, openSound, initSound, mountNotifications } from './settings.js';
+import { mountTravelBanner } from './banner.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
 import * as character from './views/character.js';
 import * as bag from './views/bag.js';
-import * as quests from './views/quests.js';
+import * as journal from './views/journal.js';
+import * as party from './views/party.js';
+import * as guide from './views/guide.js';
+import * as account from './views/account.js';
 import { preloadNames } from './views/common.js';
 
 applySavedTheme();
@@ -19,8 +23,10 @@ const VIEWS = {
   map: { mod: map, label: '지도', icon: 'map' },
   char: { mod: character, label: '캐릭터', icon: 'user' },
   bag: { mod: bag, label: '가방', icon: 'bag' },
-  quest: { mod: quests, label: '의뢰', icon: 'scroll' },
+  log: { mod: journal, label: '일지', icon: 'scroll' },
 };
+// 탭에는 없지만 헤더에서 여는 화면
+const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' } };
 
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null;
@@ -167,12 +173,14 @@ function renderGame() {
       <nav class="topnav" aria-label="주요 메뉴">${tabs}</nav>
       <div class="top-actions">
         <button class="icon-btn" id="btn-bell" aria-label="알림">${icon('bell')}<i class="dot" hidden></i></button>
-        <button class="icon-btn" id="btn-help" aria-label="도움말" title="도움말">${icon('help')}</button>
-        <button class="icon-btn" id="btn-account" aria-label="프로필 설정" title="프로필 설정">${icon('idcard')}</button>
+        <a class="icon-btn" href="#/party" data-page="party" aria-label="동료" title="동료">${icon('users')}</a>
+        <a class="icon-btn" href="#/guide" data-page="guide" aria-label="도움말" title="도움말">${icon('help')}</a>
+        <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
         <button class="icon-btn" id="btn-theme" aria-label="테마" title="테마">${icon('palette')}</button>
         <button class="icon-btn" id="btn-sound" aria-label="게임 설정" title="게임 설정">${icon('gear')}</button>
       </div>
     </header>
+    <div class="travel-banner" id="travel-banner" hidden></div>
     <div class="layout">
       <aside class="hud" id="hud" aria-label="캐릭터 상태"></aside>
       <main class="main" id="main"><div id="view"></div></main>
@@ -181,8 +189,8 @@ function renderGame() {
     <nav class="tabbar" aria-label="주요 메뉴">${tabs}</nav>
     <button class="chat-fab" id="chat-fab" aria-label="채팅 열기">${icon('chat', 22)}</button>
   </div>`));
-  $('#btn-help').onclick = openHelp;
-  $('#btn-account').onclick = openAccount;
+  $('#btn-profile').onclick = openProfile;
+  mountTravelBanner($('#travel-banner'));
   $('#btn-theme').onclick = openTheme;
   $('#btn-sound').onclick = openSound;
   mountNotifications($('#btn-bell'));
@@ -195,19 +203,21 @@ function renderGame() {
 
 function parseHash() {
   const [, view = 'home', sub = ''] = location.hash.match(/^#\/([a-z]+)\/?([a-z-]*)/) || [];
-  return { view: VIEWS[view] ? view : 'home', sub };
+  return { view: VIEWS[view] || PAGES[view] ? view : 'home', sub };
 }
 async function onHash() {
   if (!$('.shell')) return;
   const { view, sub } = parseHash();
   $$('[data-view]').forEach(a => a.classList.toggle('on', a.dataset.view === view));
+  $$('[data-page]').forEach(a => a.classList.toggle('on', a.dataset.page === view));
+  const entry = VIEWS[view] || PAGES[view];
   const el = $('#view');
   if (current?.mod?.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
-  current = { name: view, mod: VIEWS[view].mod };
+  current = { name: view, mod: entry.mod };
   el.replaceChildren();
   el.dataset.view = view;
   $('#main').scrollTop = 0; window.scrollTo(0, 0);
-  try { await VIEWS[view].mod.render(el, sub); }
+  try { await entry.mod.render(el, sub); }
   catch (e) { console.error(e); el.replaceChildren(h(`<div class="card"><h2>화면을 불러오지 못했습니다</h2><p class="muted">${esc(friendlyError(e))}</p></div>`)); }
 }
 window.addEventListener('hashchange', onHash);

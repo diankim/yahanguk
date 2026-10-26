@@ -1,9 +1,9 @@
 // 캐릭터: 상태(생존·침식·상태이상) · 성장(능력치·생활 전문화·숙련) · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
 import { store, on, act, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented } from '../core.js';
-import { load, panel, chip, loading, errorBox } from './common.js';
+import { load, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText } from './common.js';
 
-const SUBS = [['status', '상태'], ['growth', '성장'], ['skills', '기술'], ['idle', '자율 활동'], ['titles', '칭호']];
+const SUBS = [['status', '상태'], ['growth', '성장'], ['faction', '세력'], ['skills', '기술'], ['idle', '자율'], ['titles', '칭호']];
 const STATS = [['strength', '근력', '근접 피해·운반'], ['agility', '민첩', '회피·선공'], ['vitality', '체질', '최대 체력·회복'], ['perception', '감각', '치명타·발견'], ['willpower', '의지', '정신 저항'], ['spirit_affinity', '영성', '부적·봉인 위력']];
 const GATHER = ['fieldwork', 'mining', 'botany', 'spirit_harvest', 'fishing'];
 const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice'];
@@ -32,7 +32,7 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#char-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
-  try { await ({ status, growth, skills, idle, titles })[sub](body); }
+  try { await ({ status, growth, faction, skills, idle, titles })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
@@ -138,3 +138,41 @@ async function titles(body) {
       ${t.equipped ? chip('장착 중', 'accent') : t.earned ? `<button class="btn small" data-title="${esc(t.key)}">장착</button>` : chip('미획득')}</li>`).join('')}</ul>` : empty('칭호가 없습니다.'), { ico: 'spark' });
   $$('[data-title]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_equip', { p_title_key: b.dataset.title })));
 }
+
+/* ── 세력: 소속 임무·일일 보급·대세력 ─────────────────────── */
+async function faction(body) {
+  const [missions, base] = await Promise.all([load('world_faction_mission_snapshot'), load('world_faction_base_snapshot').catch(() => null)]);
+  const c = store.character;
+  const mine = (missions || []).filter(m => m.faction_key === c.faction_key || m.eligible);
+  const major = c.major_faction_id;
+  body.innerHTML = `
+    <div class="grid-2">
+      ${panel(`${nameOf(c.faction_key)} 임무`, mine.length ? `<ul class="mission-list">${mine.map(m => {
+        const done = m.progress >= m.target_count;
+        return `<li><div><b>${esc(m.title)}</b><small>${esc(m.description || '')}</small>
+          <div class="mini-bar"><span style="width:${Math.min(100, m.progress / m.target_count * 100)}%"></span></div>
+          <small class="muted">${Math.min(m.progress, m.target_count)}/${m.target_count} · 보상 경험치 ${m.reward_xp}${m.reward_items ? ' · ' + esc(itemsText(m.reward_items)) : ''}</small></div>
+          ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.'), { ico: 'scroll' })}
+      ${panel('일일 보급', `<p class="desc">소속 부서에서 하루 한 번 보급품을 받을 수 있습니다.</p><button class="btn primary" id="supply">${icon('bag', 16)}<span>오늘 보급 받기</span></button>`, { ico: 'bag' })}
+    </div>
+    ${major ? panel(`${nameOf(major)} 거점`, `
+        <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
+        <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
+        ${(base?.contents || []).length ? `<ul class="mission-list">${base.contents.map(x => `<li><div><b>${esc(x.title)}</b><small>${esc(x.description || '')}</small><small class="muted">Lv.${x.min_level}+${x.reward ? ' · ' + esc(itemsText(x.reward.items || x.reward)) : ''}</small></div>
+          ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
+          ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}`, { ico: 'shield' })
+      : panel('대세력', `<p class="desc">대세력은 세계의 큰 흐름을 이끄는 조직입니다. 가입하면 전용 거점·임무·보상과 세력 채팅을 이용할 수 있습니다. 적대 세력 지역에서는 견제를 받을 수 있습니다.</p>
+        <div class="faction-grid">${Object.entries(MAJOR_FACTIONS).map(([k, f]) => `<article class="faction">
+          <header><b>${esc(f.name)}</b>${chip(f.type)}</header><p>${esc(f.desc)}</p><small class="accent">${esc(PERKS[k] || '')}</small><small class="muted">가입 조건: ${esc(f.entry)} · 거점 ${esc(nameOf(f.base))}</small>
+          <button class="btn small" data-join="${k}">가입 신청</button></article>`).join('')}</div>`, { ico: 'shield' })}`;
+  $$('[data-mission]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_mission_action', { p_mission_id: b.dataset.mission })));
+  const sup = $('#supply', body); sup.onclick = () => guard(sup, () => act('world_claim_faction_supply'));
+  $$('[data-base]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_base_action', { p_content_id: b.dataset.base })));
+  $$('[data-join]', body).forEach(b => b.onclick = () => { if (confirm(`${MAJOR_FACTIONS[b.dataset.join].name}에 가입할까요? 가입 조건은 서버에서 확인합니다.`)) guard(b, () => act('world_join_major_faction', { p_faction_id: b.dataset.join })); });
+}
+
+const PERKS = {
+  night_office: '원정·임무 보급이 안정적입니다(보급 보너스).', red_moon_cult: '강행 태세 원정의 전리품 +15%. 위험한 지역에 강합니다.',
+  black_lotus: '정보·암시장에 밝습니다.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +20칸. 교역과 운송에 강합니다.',
+  southern_remnant: '원정 채집량 +15%.', mandate_court: '원정 답사도 상승 +20%.',
+};

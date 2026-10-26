@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { store, on, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, h, guard, toast } from './core.js';
+import { store, on, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, h, guard, toast, emblem, bagLimit, bagUsed } from './core.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, enc: null, exp: null };
@@ -25,11 +25,11 @@ export async function refresh() {
     const [idle, enc, inv] = await Promise.all([
       rpc('world_idle_activity_snapshot').catch(() => null),
       rpc('world_region_encounter_snapshot').catch(() => null),
-      rpc('world_inventory_snapshot').catch(() => null),
+      rpc('world_expedition_board').catch(() => null),
       loadCharacter(),
     ]);
-    state = { idle, enc, exp: inv?.expedition_state || null };
-    if (inv) { store.snaps.world_inventory_snapshot = inv; }
+    state = { idle, enc, exp: inv?.active || null };
+    store.expedition = inv?.active || null;
     render();
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
@@ -56,9 +56,9 @@ function statusItems(c) {
     const left = ready - Date.now();
     items.push({ kind: 'idle', icon: 'hourglass', title: IDLE_LABEL[state.idle.activity_type] || '자율 활동', timer: ready, text: left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능', action: left > 0 ? null : ['보상 수령', claimIdle], ready: left <= 0 });
   }
-  if (state.exp?.in_progress) {
-    const n = Object.values(state.exp.supplies || {}).reduce((a, b) => a + Number(b || 0), 0);
-    items.push({ kind: 'exp', icon: 'bag', title: '원정 중', text: `보급 꾸러미 ${n}개 휴대`, action: ['원정 관리', () => window.yahangGo('map', 'travel')] });
+  if (state.exp) {
+    const left = new Date(state.exp.ends_at).getTime() - Date.now();
+    items.push({ kind: 'exp', icon: 'flame', title: `원정 · ${state.exp.ground_name}`, timer: state.exp.ends_at, text: left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능', action: ['원정 보기', () => window.yahangGo('home', 'expedition')], ready: left <= 0 });
   }
   if (!items.length) items.push({ kind: 'calm', icon: 'moon', title: '대기 중', text: '지도에서 이동하거나 현재 지역을 탐사하세요.' });
   return items;
@@ -77,7 +77,7 @@ function render() {
   const body = $('#hud-body', root);
   body.innerHTML = `
     <section class="hud-card">
-      <div class="hud-id"><div class="avatar">${esc((c.character_name || '?').slice(0, 1))}</div>
+      <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
         <div><h2>${esc(c.character_name)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
         <span class="lv">Lv.${c.level}</span></div>
       <div class="xp"><span>경험치</span><span>${fmt.num(c.experience)} / ${fmt.num(need)}</span></div>${bar(c.experience, need, 'xp')}
@@ -88,6 +88,7 @@ function render() {
     <section class="hud-card money">
       <div>${icon('coin', 16)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
       <div>${icon('token', 16)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
+      <div>${icon('bag', 16)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
       <div>${icon('pin', 16)}<span>위치</span><b>${esc(c.location)}</b></div>
     </section>
     <section class="hud-card now"><h3>진행 중</h3>
@@ -104,7 +105,7 @@ function vital(label, v, kind) {
   return `<div class="vital"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
 }
 
-let arriving = false;
+let arriving = false, lastArriveTry = 0; // 도착 확인은 5초에 한 번까지만
 function onTick() {
   if (!root) return;
   const now = Date.now();
@@ -114,12 +115,14 @@ function onTick() {
     if (el.tagName === 'EM') return;
     if (kind === 'travel') el.textContent = left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…';
     if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
+    if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
   });
   const c = store.character;
-  if (c?.travel_arrives_at && new Date(c.travel_arrives_at).getTime() <= now && !arriving) {
-    arriving = true;
-    rpc('world_travel_status').then(s => { if (!s?.in_transit) toast(`${s.location}에 도착했습니다.`, 'ok'); return refresh(); })
-      .catch(() => {}).finally(() => { arriving = false; window.dispatchEvent(new CustomEvent('yahang:arrived')); });
+  if (c?.travel_arrives_at && new Date(c.travel_arrives_at).getTime() <= now && !arriving && now - lastArriveTry > 5000) {
+    arriving = true; lastArriveTry = now;
+    let where = null;
+    rpc('world_travel_status').then(s => { if (!s?.in_transit) where = s.location; return refresh(); })
+      .catch(() => {}).finally(() => { arriving = false; window.dispatchEvent(new CustomEvent('yahang:arrived', { detail: { location: where } })); });
   }
   const ready = idleReadyAt(state.idle);
   if (ready && ready <= now && !root.dataset.idleReady) { root.dataset.idleReady = '1'; render(); }

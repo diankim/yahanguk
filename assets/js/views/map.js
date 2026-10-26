@@ -1,9 +1,9 @@
 // 지도: 세계 지도(확대·축소·이동, 겹침 없는 이름표) · 세부 탐사 · 이동과 원정.
 import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast } from '../core.js';
-import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate } from './common.js';
+import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones } from './common.js';
 
-const SUBS = [['world', '세계 지도'], ['explore', '세부 탐사'], ['travel', '이동·원정']];
-let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null;
+const SUBS = [['world', '세계 지도'], ['travel', '이동·탈것']];
+let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null, zones = new Map();
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -24,17 +24,17 @@ async function draw(soft = false) {
   if (!soft) body.innerHTML = loading();
   try {
     if (sub === 'world') await drawWorld(body, soft);
-    else if (sub === 'explore') await drawExplore(body);
     else await drawTravel(body);
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
 /* ── 세계 지도 ───────────────────────────────────────────── */
 async function drawWorld(body, soft) {
-  [mapData, mountData, partyData] = await Promise.all([
+  [mapData, mountData, partyData, zones] = await Promise.all([
     load('world_map_snapshot', undefined, { maxAge: 30000 }),
     load('world_mount_snapshot', undefined, { maxAge: 60000 }).catch(() => null),
-    load('world_party_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
+    load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null),
+    safeZones().catch(() => new Map()),
   ]);
   const here = currentRegion(mapData);
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
@@ -49,7 +49,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="here" aria-label="현재 위치로">${icon('target')}</button>
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg near"></i>이동 가능</span><span><i class="lg far"></i>경유 필요</span><span><i class="lg lock"></i>레벨 부족</span></div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg near"></i>이동 가능</span><span><i class="lg far"></i>경유 필요</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg safe"></i>안전지대</span></div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -168,9 +168,10 @@ function paint() {
   for (const r of regions) {
     const [x, y] = P(r); if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
     const cls = r.region_id === here?.region_id ? 'here' : r.level_locked ? 'lock' : r.reachable ? 'near' : 'far';
-    const sel = r.region_id === selected ? ' sel' : '', dz = Number(r.danger_level) >= 7 ? ' hot' : '';
-    nodes += `<g class="node ${cls}${sel}${dz}" data-region="${esc(r.region_id)}" tabindex="0" role="button" aria-label="${esc(r.region_name)}">
+    const sel = r.region_id === selected ? ' sel' : '', dz = Number(r.danger_level) >= 7 ? ' hot' : '', sz = zones.get(r.region_id)?.is_safe_zone ? ' safe' : '';
+    nodes += `<g class="node ${cls}${sel}${dz}${sz}" data-region="${esc(r.region_id)}" tabindex="0" role="button" aria-label="${esc(r.region_name)}">
       <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="16" class="hitbox" data-region="${esc(r.region_id)}"/>
+      ${sz ? `<rect x="${(x - 10).toFixed(1)}" y="${(y - 10).toFixed(1)}" width="20" height="20" rx="5" class="safe-ring"/>` : ''}
       ${r.region_id === dest ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" class="dest-ring"/>` : ''}
       <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 8 : 6}" class="dot" data-region="${esc(r.region_id)}"/><title>${esc(r.region_name)}</title></g>`;
     const l = labels.get(r.region_id);
@@ -219,7 +220,8 @@ function drawDetail() {
     <article class="panel region-detail">
       <header class="panel-head"><h2>${esc(r.region_name)}</h2>${isHere ? chip('현재 위치', 'accent') : ''}</header>
       <div class="panel-body">
-        <div class="chips">${danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}${r.territory_name ? chip(r.territory_name) : ''}</div>
+        <div class="chips">${zones.get(r.region_id)?.is_safe_zone ? chip('안전지대', 'ok') : danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}${r.territory_name ? chip(r.territory_name) : ''}</div>
+        ${zones.get(r.region_id)?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zones.get(r.region_id).shop_name || '상점')} · 거래소${zones.get(r.region_id).has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>
         <dl class="kv">
           <div><dt>채집</dt><dd>${(r.gather_nodes || []).length ? esc(r.gather_nodes.map(nameOf).join(', ')) : '없음'}</dd></div>
@@ -256,62 +258,15 @@ function drawList(filter, q) {
   ul.onclick = e => { const b = e.target.closest('[data-pick]'); if (!b) return; select(b.dataset.pick, true); $$('button', ul).forEach(x => x.classList.toggle('on', x === b)); $('#map-frame', el)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
 }
 
-/* ── 세부 탐사 (큰 지역 → … → 세부 지역, 파밍 지점) ───────────────── */
-async function drawExplore(body) {
-  const [x, map] = await Promise.all([load('world_exploration_snapshot'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
-  const region = currentRegion(map);
-  const intel = region ? await load('world_region_intel_snapshot', { p_region_id: region.region_id }).catch(() => null) : null;
-  const node = x?.current_node;
-  const LV = ['', '큰 지역', '조금 큰 지역', '중간 지역', '소지역', '세부 지역'];
-  const children = x?.children || [], spots = x?.spots || [];
-  body.innerHTML = `
-    <div class="grid-2">
-      ${panel('현재 탐사 위치', node ? `
-        <p class="eyebrow">${esc(LV[node.hierarchy_level] || `${node.hierarchy_level}단계`)} · ${esc(x.location)}</p>
-        <h3 class="node-name">${esc(node.node_name)}</h3>
-        <p class="desc">${esc(node.description || '')}</p>
-        <div class="steps">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= node.hierarchy_level ? 'on' : ''}">${LV[i]}</span>`).join('')}</div>
-        <div class="btn-row">
-          <button class="btn" id="ex-back" ${node.hierarchy_level <= 1 ? 'disabled' : ''}>${icon('back', 16)}<span>상위 구역으로</span></button>
-          <button class="btn primary" id="ex-search">${icon('search', 16)}<span>파밍 지점 수색</span></button>
-        </div>` : empty('이 장소에는 세부 탐사 구역이 없습니다.', 'map'), { ico: 'pin' })}
-      ${panel('지역 답사 기록', intel ? `
-        <div class="chips">${chip(intel.stage_name || '미답사', 'accent')}${chip(`답사 ${fmt.num(intel.visits)}회`)}${chip(`단서 ${fmt.num(intel.clues_found)}개`)}</div>
-        <dl class="kv">
-          <div><dt>지형</dt><dd>${esc(intel.biome || '-')}</dd></div>
-          <div><dt>위험 요소</dt><dd>${esc(intel.survival_hazard || '-')}</dd></div>
-          <div><dt>고유 사건</dt><dd>${esc(intel.signature_event || '-')}</dd></div>
-          <div><dt>채집 보너스</dt><dd>${Math.round((intel.gather_bonus || 0) * 100)}% · 희귀 ${Math.round((intel.rare_bonus || 0) * 100)}%</dd></div>
-        </dl>
-        <p class="muted small">같은 지역을 여러 번 답사할수록 단계가 오르고 채집·희귀 보너스가 커집니다.</p>` : empty('답사 기록이 없습니다.'), { ico: 'eye' })}
-    </div>
-    ${panel('하위 구역', children.length ? `<div class="cards">${children.map(n => `<article class="site">
-        <header><b>${esc(n.node_name.replace(/^.*·\s*/, ''))}</b>${n.discovered ? chip('발견함', 'ok') : chip('미발견')}</header>
-        <p>${esc(n.description || '')}</p><p class="muted small">권장 Lv.${n.min_level}+</p>
-        <button class="btn small" data-enter="${esc(n.node_id)}">${icon('chevron', 14)}<span>진입</span></button></article>`).join('')}</div>`
-      : empty(node?.hierarchy_level >= 5 ? '가장 깊은 세부 지역입니다. 파밍 지점을 수색하세요.' : '진입할 수 있는 하위 구역이 없습니다. 레벨이 오르면 더 열립니다.', 'map'), { ico: 'map' })}
-    ${panel('파밍 지점', spots.length ? `<ul class="spot-list">${spots.map(s => `<li>
-        <div><b>${esc(s.spot_name)}</b><small>${esc(nameOf(s.category))} · 채집 ${fmt.num(s.gather_count)}회${s.discovered ? '' : ' · 미발견'}</small></div>
-        <button class="btn small ${s.discovered ? 'primary' : ''}" data-spot="${esc(s.spot_id)}" ${s.discovered ? '' : 'disabled'}>${icon('leaf', 14)}<span>채집</span></button></li>`).join('')}</ul>
-        <p class="muted small">파밍 지점은 수색으로 발견하며, 같은 지점은 재사용 대기시간이 지나야 다시 채집할 수 있습니다.</p>`
-      : empty('이 구역에서 발견한 파밍 지점이 없습니다. 수색해 보세요.', 'leaf'), { ico: 'leaf' })}`;
-  const back = $('#ex-back', body); if (back) back.onclick = () => guard(back, () => act('world_exploration_back'));
-  const search = $('#ex-search', body); if (search) search.onclick = () => guard(search, () => act('world_exploration_search_spot'));
-  $$('[data-enter]', body).forEach(b => b.onclick = () => guard(b, () => act('world_exploration_enter', { p_node_id: b.dataset.enter })));
-  $$('[data-spot]', body).forEach(b => b.onclick = () => guard(b, () => act('world_exploration_gather', { p_spot_id: b.dataset.spot })));
-}
-
-/* ── 이동 · 탈것 · 동승 · 원정 ───────────────────────────── */
-const SUPPLIES = ['herb', 'ward_talisman', 'tonic', 'seal_paper', 'herbal_extract', 'revival_charm'];
+/* ── 이동 · 탈것 · 동승 ───────────────────────────────── */
 async function drawTravel(body) {
-  const [status, mounts, ride, inv] = await Promise.all([
-    load('world_travel_status'), load('world_mount_snapshot'), load('world_travel_party_snapshot').catch(() => null), load('world_inventory_snapshot'),
+  const [status, mounts, ride] = await Promise.all([
+    load('world_travel_status'), load('world_mount_snapshot'), load('world_travel_party_snapshot').catch(() => null),
   ]);
   const c = store.character, me = c.owner_id;
-  const exp = inv?.expedition_state || {};
-  const have = inv?.inventory || {};
   const incoming = (ride?.requests || []).filter(r => r.passenger_id === me && r.status === 'pending');
   const outgoing = (ride?.requests || []).filter(r => r.leader_id === me && r.status === 'pending');
+  const owned = (mounts?.mounts || []).filter(m => m.owned), others = (mounts?.mounts || []).filter(m => !m.owned);
   const arrives = status?.travel_arrives_at ? new Date(status.travel_arrives_at).getTime() : 0;
   body.innerHTML = `
     <div class="grid-2">
@@ -322,61 +277,33 @@ async function drawTravel(body) {
         : `<p class="desc">현재 <b>${esc(status?.location || c.location)}</b>에 있습니다. 세계 지도에서 선으로 이어진 지역을 골라 이동하세요.</p>
            <button class="btn primary" id="tr-map">${icon('map', 16)}<span>세계 지도 열기</span></button>`, { ico: 'route' })}
       ${panel('동승 요청', `
-        ${incoming.length ? `<ul class="spot-list">${incoming.map(r => `<li><div><b>${esc(nameOf(r.to_region))}</b><small>파티장의 동승 제안 · 운임은 파티장이 부담</small></div>
+        ${incoming.length ? `<ul class="spot-list">${incoming.map(r => `<li><div><b>${esc(nameOf(r.to_region))}</b><small>파티장의 동승 제안 · 운임은 파티장이 냅니다</small></div>
           <div class="btn-row"><button class="btn small primary" data-ride="${esc(r.request_id)}" data-accept="1">수락</button><button class="btn small" data-ride="${esc(r.request_id)}" data-accept="0">거절</button></div></li>`).join('')}</ul>` : ''}
         ${outgoing.length ? `<p class="muted small">보낸 요청 ${outgoing.length}건이 응답을 기다리는 중입니다.</p>` : ''}
         ${!incoming.length && !outgoing.length ? empty('대기 중인 동승 요청이 없습니다.', 'users') : ''}
-        <p class="muted small">동승은 같은 파티원끼리만 가능합니다. 파티장이 지도에서 목적지를 고르고 동승을 요청하면, 수락하는 순간 함께 출발합니다. 전투 중에는 출발할 수 없습니다.</p>`, { ico: 'users' })}
+        <p class="muted small">동승은 같은 파티원끼리만 됩니다. 파티장이 지도에서 목적지를 고르고 요청하면, 수락하는 순간 함께 출발합니다. 전투·원정 중에는 출발할 수 없습니다.</p>`, { ico: 'users' })}
     </div>
-    ${panel('탈것', `<div class="mount-grid">${(mounts?.mounts || []).map(m => `
+    ${panel('내 탈것', `<div class="mount-grid">${owned.map(m => `
       <article class="mount ${m.equipped ? 'on' : ''}">
         <header><b>${esc(m.mount_name)}</b>${chip(m.tier)}</header>
         <p>${esc(m.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free ? '없음' : `노정패 ${m.fare_tokens}`}</dd></div></dl>
-        ${m.equipped ? `<span class="chip accent">사용 중</span>` : m.owned ? `<button class="btn small" data-equip="${esc(m.mount_id)}">사용하기</button>`
-          : `<button class="btn small" data-buy="${esc(m.mount_id)}">${fmt.jeon(m.price)}에 획득</button><small class="muted">${esc(unlockText(m))}</small>`}
+        ${m.equipped ? chip('사용 중', 'accent') : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
       </article>`).join('')}</div>
-      <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 보유 · 운임이 있는 탈것은 출발할 때 노정패를 사용합니다.</p>`, { ico: 'route' })}
-    ${panel('원정', `
-      <ol class="how"><li><b>준비</b> 위험 지역으로 떠나기 전에 가져갈 회복품을 고릅니다. 고른 물품은 가방에서 원정 꾸러미로 옮겨집니다.</li>
-        <li><b>원정 중</b> 회복품을 사용하면 원정 꾸러미가 함께 쓰입니다. 진행 상태는 화면 상단(PC는 왼쪽) 상태판에 표시됩니다.</li>
-        <li><b>철수</b> 원정을 마치면 철수해 남은 꾸러미를 가방으로 돌려받습니다.</li></ol>
-      ${exp.in_progress ? `<div class="notice">${icon('bag', 18)}<div><b>원정 중</b><span>꾸러미: ${esc(Object.entries(exp.supplies || {}).filter(([, n]) => n > 0).map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ') || '비어 있음')}</span></div></div>
-        <button class="btn" id="exp-retreat">${icon('back', 16)}<span>철수하고 꾸러미 회수</span></button>`
-      : `<div class="supply-grid">${SUPPLIES.map(k => `<div class="stepper" data-k="${k}"><span>${esc(nameOf(k))}<small>보유 ${fmt.num(have[k])}</small></span>
-          <div><button class="icon-btn" data-d="-1" aria-label="줄이기">${icon('minus', 14)}</button><b>0</b><button class="icon-btn" data-d="1" aria-label="늘리기">${icon('plus', 14)}</button></div></div>`).join('')}</div>
-        <button class="btn primary" id="exp-go">${icon('bag', 16)}<span>원정 준비 완료</span></button>`}`, { ico: 'bag' })}`;
+      <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 · 운임이 있는 탈것은 출발할 때 노정패를 씁니다. 노정패는 이동과 토벌로 얻습니다.</p>`, { ico: 'route' })}
+    ${panel('얻을 수 있는 탈것', others.length ? `<ul class="spot-list">${others.map(m => `<li><div><b>${esc(m.mount_name)}</b>
+        <small>${m.acquire_method === 'event' ? '특별한 사건으로만 얻을 수 있습니다' : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
+        ${m.acquire_method === 'stable' && m.unlock_region ? `<button class="btn small ghost" data-goto="${esc(m.unlock_region)}">지도에서 보기</button>` : ''}</li>`).join('')}</ul>` : empty('모든 탈것을 가지고 있습니다.'), { ico: 'shop' })}`;
 
-  $('#tr-map', body)?.addEventListener('click', () => { sub = 'world'; history.replaceState(null, '', '#/map/world'); render(el, 'world'); });
+  $('#tr-map', body)?.addEventListener('click', () => switchTo('world'));
   const cancel = $('#tr-cancel', body);
   if (cancel) cancel.onclick = () => { if (confirm('이동을 취소할까요? 위약금 5전이 소모됩니다.')) guard(cancel, () => act('world_travel_cancel')); };
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
-  $$('[data-buy]', body).forEach(b => b.onclick = () => { if (confirm('이 탈것을 획득할까요?')) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
-  const pick = {};
-  $$('.stepper', body).forEach(s => s.onclick = e => {
-    const d = Number(e.target.closest('[data-d]')?.dataset.d || 0); if (!d) return;
-    const k = s.dataset.k, max = Math.min(9, Number(have[k] || 0));
-    pick[k] = Math.max(0, Math.min(max, (pick[k] || 0) + d));
-    $('b', s).textContent = pick[k];
-    if (d > 0 && pick[k] === max) toast(`${nameOf(k)}은(는) ${max}개까지 챙길 수 있습니다.`);
-  });
-  const go = $('#exp-go', body);
-  if (go) go.onclick = () => {
-    const supplies = Object.fromEntries(Object.entries(pick).filter(([, n]) => n > 0));
-    if (!Object.keys(supplies).length && !confirm('보급품 없이 원정을 시작할까요?')) return;
-    guard(go, () => act('world_expedition_prepare', { p_supplies: supplies }));
-  };
-  const rt = $('#exp-retreat', body); if (rt) rt.onclick = () => guard(rt, () => act('world_expedition_retreat', { p_reason: 'voluntary' }));
+  $$('[data-goto]', body).forEach(b => b.onclick = () => { selected = b.dataset.goto; view = null; switchTo('world'); });
   const span = $('[data-arrive]', body);
   if (span) { const t = setInterval(() => { if (!span.isConnected) return clearInterval(t); span.textContent = `${fmt.remain(Number(span.dataset.arrive) - Date.now())} 후 도착`; }, 1000); }
 }
-function unlockText(m) {
-  const p = [];
-  if (m.unlock_level > 1) p.push(`Lv.${m.unlock_level}`);
-  if (m.unlock_region) p.push(`${nameOf(m.unlock_region)} 방문`);
-  if (m.unlock_faction) p.push(`${nameOf(m.unlock_faction)} 소속`);
-  if (m.unlock_reputation) p.push(`평판 ${m.unlock_reputation}`);
-  if (m.unlock_item) p.push(`${nameOf(m.unlock_item)} 필요`);
-  return p.length ? '조건: ' + p.join(' · ') : '';
-}
+function switchTo(k) { sub = k; history.replaceState(null, '', `#/map/${k}`); render(el, k); }
+// 다른 화면(사건 바로가기 등)에서 특정 지역을 골라 지도를 열 때 쓴다.
+export function focusRegion(id) { selected = id; view = null; }

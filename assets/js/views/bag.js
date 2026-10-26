@@ -1,10 +1,10 @@
 // 가방: 소지품 · 장비 · 제작. 제작은 어디서나 가능하고, 레시피의 지정 장소에서 하면 품질 보너스를 받는다.
-import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented } from '../core.js';
+import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed } from '../core.js';
 import { load, panel, chip, loading, errorBox } from './common.js';
 
 const SUBS = [['items', '소지품'], ['equip', '장비'], ['craft', '제작']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
-const GEAR = new Set(['tool', 'weapon', 'armor', 'accessory']);
+const GEAR = new Set(['tool', 'weapon', 'armor', 'accessory', 'equipment']);
 const SLOT = { tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구' };
 const USABLE = { tonic: '체력 35 회복', herbal_extract: '체력 회복', ward_talisman: '침식 억제', revival_charm: '전투불능 회복' };
 const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
@@ -43,16 +43,18 @@ function items(body, inv) {
     .map(([id, n]) => ({ id, n, it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
     .sort((a, b) => (a.it?.tier || 0) - (b.it?.tier || 0) || nameOf(a.id).localeCompare(nameOf(b.id), 'ko'));
-  const total = Object.values(inv.inventory || {}).reduce((a, b) => a + Math.max(0, Number(b) || 0), 0);
-  body.innerHTML = `${segmented('bag-cat', CATS, cat)}
+  const c = store.character, used = bagUsed(c), cap = bagLimit(c);
+  body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
+      <small>가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
+    ${segmented('bag-cat', CATS, cat)}
     ${rows.length ? `<ul class="item-list">${rows.map(({ id, n, it }) => `<li class="r-${esc(it?.rarity || 'common')}">
       <div class="item-main"><b>${esc(nameOf(id))}</b><span class="qty">×${fmt.num(n)}</span>
-        <div class="chips">${chip(nameOf(it?.rarity || 'common'), 'rar')}${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`T${it.tier}`) : ''}${equipped.has(id) ? chip('장착 중', 'accent') : ''}</div>
+        <div class="chips">${chip(nameOf(it?.rarity || 'common'), 'rar')}${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${equipped.has(id) ? chip('장착 중', 'accent') : ''}</div>
         ${it?.description ? `<small>${esc(it.description)}</small>` : ''}</div>
       <div class="item-act">${USABLE[id] ? `<button class="btn small" data-use="${esc(id)}" title="${esc(USABLE[id])}">사용</button>` : ''}
         ${it && GEAR.has(it.category) && !equipped.has(id) ? `<button class="btn small" data-equip="${esc(id)}">장착</button>` : ''}</div></li>`).join('')}</ul>`
       : empty(cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
-    <p class="muted small">물품 ${fmt.num(total)}개 · 판매와 거래는 의뢰 › 상점·거래소에서 할 수 있습니다.</p>`;
+    <p class="muted small">판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
   bindActions(body);
 }
@@ -64,13 +66,13 @@ function equip(body, inv) {
     const cur = eq[slot], it = cmap.get(cur);
     const options = (inv.catalog || []).filter(i => i.category === slot && Number(have[i.id]) > 0 && i.id !== cur);
     return panel(SLOT[slot], `
-      ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}</b>${it?.tier ? chip(`T${it.tier}`) : ''}${traits(it)}</div>` : `<p class="muted">비어 있음</p>`}
+      ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it)}</div>` : `<p class="muted">비어 있음</p>`}
       ${options.length ? `<ul class="spot-list">${options.map(o => {
         const blocked = (o.required_job && o.required_job !== c.job_key) ? `${nameOf(o.required_job)} 전용` : (o.minimum_level > c.level) ? `Lv.${o.minimum_level} 필요` : '';
-        return `<li><div><b>${esc(o.name)}</b><small>T${o.tier} · ${esc(o.description || '')}</small>${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
+        return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
           <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: slot === 'tool' ? 'hammer' : slot === 'weapon' ? 'sword' : slot === 'armor' ? 'shield' : 'spark', cls: 'compact' });
   }).join('');
-  body.innerHTML = `<div class="grid-2">${slots}</div><p class="muted small">채집에는 T1 이상 도구가 필요합니다. 장비는 전투·채집·제작 효율에 반영됩니다.</p>`;
+  body.innerHTML = `<div class="grid-2">${slots}</div><p class="muted small">채집에는 1단계 이상 도구가 필요합니다. 장비는 전투·채집·제작 효율에 반영됩니다.</p>`;
   bindActions(body);
 }
 function traits(it) {

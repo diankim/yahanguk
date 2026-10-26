@@ -1,5 +1,5 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
-import { rpc, store, on, registerNames, nameOf, esc, icon, fmt } from '../core.js';
+import { db, rpc, store, on, registerNames, nameOf, esc, icon, fmt } from '../core.js';
 
 // 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
 const inflight = new Map();
@@ -16,7 +16,7 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
 // 위치·소속이 바뀌는 행동 뒤에는 지도 캐시를 버린다.
 const MAP_CHANGERS = /travel|mount|join_major_faction|exploration|site_explore|region_encounter|region_combat|region_tactic/;
-on('changed', ({ name }) => { invalidate('world_public_roster'); if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); });
+on('changed', ({ name }) => { invalidate('world_region_roster'); invalidate('world_party_overview'); if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
 // 응답에 들어 있는 이름을 사전에 등록해 내부 코드(hq_archive 등)가 화면에 노출되지 않게 한다.
@@ -72,3 +72,14 @@ export function currentRegion(mapSnap) {
 }
 export function inventoryOf() { return store.character?.inventory || {}; }
 export { fmt };
+
+// 안전지대·상점·마구간 정보(지역 테이블은 공개 읽기). 한 번 받아 두고 재사용한다.
+let zones = null;
+export async function safeZones() {
+  if (zones) return zones;
+  const { data, error } = await db.from('world_map_regions').select('region_id,region_name,is_safe_zone,shop_name,has_stable');
+  if (error) throw new Error(error.message);
+  zones = new Map((data || []).map(r => [r.region_id, r]));
+  return zones;
+}
+export function zoneOf(map, regionId) { return map?.get(regionId) || null; }

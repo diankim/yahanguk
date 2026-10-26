@@ -78,7 +78,7 @@ const FIXED = {
   // 기술 계열
   melee: '근접', ranged: '원거리', analysis: '분석', first_aid: '응급 처치', guarding: '방어', herbalism: '약초', spirit_gathering: '영기 채집', wardcraft: '결계 각인', tracking: '추적', foraging: '채취',
   // 분류
-  tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것',
+  tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비',
   common: '일반', uncommon: '고급', rare: '희귀', epic: '영웅', legendary: '전설',
   // 지역 유형
   abyss: '심연', archive: '서고', blood_forest: '혈림', bridge: '다리', burial_ground: '묘역', canyon: '협곡', celestial_tower: '천문탑', coast: '해안', desert: '사막',
@@ -86,6 +86,11 @@ const FIXED = {
   lost_city: '잊힌 도시', market: '시장', mine: '광산', monastery: '사원', mountain_pass: '고갯길', mountain_peak: '산정', observatory: '관측소', pavilion: '정자',
   rift: '균열', river_port: '나루', ruined_temple: '폐사원', ruins: '폐허', safe_zone: '안전 지대', sealed_shrine: '봉인 사당', swamp: '늪', training: '수련장',
   underground: '지하', underwater_ruins: '수중 유적', underworld_market: '귀시', village: '마을', wilderness: '황야',
+  // 요괴 습성
+  ambush: '매복', toxic: '독성', venom: '맹독', spectral: '영체', warded: '결계', seal_breaker: '봉인 파괴', tide: '수계', swarm: '떼',
+  armored: '장갑', reflect: '반사', aerial: '비행', boss: '우두머리',
+  // 원정 태세
+  cautious: '신중', balanced: '균형', bold: '강행',
   // 지점 유형
   supply: '보급', relic: '유적', medical: '의료', combat: '전투', hidden: '은신처',
   // 능력치
@@ -159,6 +164,7 @@ export function h(html) { const t = document.createElement('template'); t.innerH
 export function toast(message, kind = 'info') {
   const box = $('#toasts'); if (!box) return;
   const el = h(`<div class="toast toast-${kind}" role="status">${esc(message)}</div>`);
+  if (kind === 'error') window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'error' }));
   box.append(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, kind === 'error' ? 4200 : 2800);
 }
@@ -225,3 +231,35 @@ export function bindSegmented(root, id, onChange) {
     onChange(b.dataset.key);
   });
 }
+
+/* ── 프로필 문장 (선택하지 않으면 캐릭터마다 고정된 무작위 문장) ─────────── */
+export const EMBLEMS = {
+  moon: ['달', 'M17 4a8 8 0 1 0 3 13 7 7 0 0 1-3-13z'],
+  lantern: ['등롱', 'M9 3h6M10 3v2M14 3v2M7 7h10l-1 10H8L7 7zM9 17v3h6v-3M12 10v4'],
+  seal: ['인장', 'M5 5h14v14H5zM9 9h6M9 12h6M9 15h3'],
+  bell: ['방울', 'M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0'],
+  lotus: ['연꽃', 'M12 20c-4 0-8-3-8-7 3 0 5 1 8 4 3-3 5-4 8-4 0 4-4 7-8 7zM12 17c-2-3-2-8 0-12 2 4 2 9 0 12z'],
+  blade: ['검', 'M14 3l7 0 0 7-10 10-4-4zM5 15l4 4M3 21l3-3'],
+  crane: ['학', 'M4 18c4-1 7-4 8-9 1 3 4 5 8 5-3 2-7 3-10 2M12 9l2-5 2 3'],
+  flame: ['불꽃', 'M12 21c4 0 7-3 7-7 0-5-5-7-5-11-3 2-5 5-5 8-1-1-2-2-2-4-2 2-2 5-2 7 0 4 3 7 7 7z'],
+  wave: ['물결', 'M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0'],
+  mountain: ['산', 'M3 19l6-10 4 6 3-4 5 8z'],
+  star: ['별', 'M12 3l2.6 6 6.4.6-4.8 4.2 1.4 6.2L12 17l-5.6 3 1.4-6.2L3 9.6 9.4 9z'],
+  eye: ['눈', 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
+};
+export const EMBLEM_COLORS = {
+  vermilion: ['주홍', '#d2553a'], gold: ['금빛', '#d1a65a'], jade: ['비취', '#3fae8a'], indigo: ['쪽빛', '#5a74d6'], violet: ['자주', '#9b5cd6'],
+  ash: ['잿빛', '#8d8f96'], crimson: ['진홍', '#c8344c'], teal: ['청록', '#2fa3a3'], amber: ['호박', '#e0902c'], ivory: ['상아', '#d9cfb8'],
+};
+// 서버에 저장한 문장이 없으면 owner_id로 정해지는 고정 문장을 쓴다(누가 봐도 같은 모양).
+export function profileOf(ownerId, profile) {
+  const e = Object.keys(EMBLEMS), c = Object.keys(EMBLEM_COLORS);
+  const h = [...String(ownerId || '')].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  return { emblem: EMBLEMS[profile?.emblem] ? profile.emblem : e[h % e.length], color: EMBLEM_COLORS[profile?.color] ? profile.color : c[(h * 7) % c.length], bio: profile?.bio || '' };
+}
+export function emblem(ownerId, profile, size = 40) {
+  const p = profileOf(ownerId, profile), col = EMBLEM_COLORS[p.color][1];
+  return `<span class="emblem" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" width="${Math.round(size * 0.58)}" height="${Math.round(size * 0.58)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${EMBLEMS[p.emblem][1]}"/></svg></span>`;
+}
+export function bagLimit(c) { return (c?.bag_capacity || 60) + (c?.major_faction_id === 'river_alliance' ? 20 : 0); }
+export function bagUsed(c) { return Object.values(c?.inventory || {}).reduce((a, n) => a + Math.max(0, Number(n) || 0), 0); }
