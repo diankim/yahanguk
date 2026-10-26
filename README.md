@@ -33,8 +33,10 @@
 ### 3차 (2026-10-26)
 - `20261026194654_restore_action_rpc_owner_privileges` 운영 적용: 지점 탐사·탐색·지역 조우·단독 이동·자율 활동 시작 RPC의 42501 권한 오류 복구(정의자 함수 소유 역할에만 최소 권한 추가, 클라이언트 권한·RLS·함수 소유권 변경 없음)
 
-### 미적용 제안 (승인 필요)
-- `supabase/proposals/restore_exploration_enter_intel_update.sql`: 세부 지역 진입 `world_exploration_enter`가 `world_region_intel` UPDATE 권한 누락으로 실패하는 문제의 수정안. 롤백 테스트로만 검증했으며 운영 DB에는 적용하지 않았습니다.
+### 4차 (2026-10-26)
+- `20261026200328_restore_exploration_enter_intel_update`: 세부 지역 진입 RPC의 `world_region_intel` 컬럼 UPDATE 권한 복구
+- `20261026200537_restore_row_lock_privileges_equip_title_case`: 장비 장착·칭호 장착·지역 사건 조합 RPC의 행 잠금 권한 복구
+- 클라이언트 RPC 86개 전수 롤백 점검에서 권한·코드 오류 0건
 
 ## 실계정 테스트 절차 (아직 수행되지 않음)
 1. 정적 호스팅(또는 로컬 서버)으로 `index.html`을 열고, Supabase Auth 허용 URL에 해당 주소를 추가합니다.
