@@ -16,6 +16,7 @@ export const THEMES = [
   { id: 'snownight', name: '설야', desc: '눈 내린 북령의 밤', c: ['#0a0d12', '#131820', '#1a212c', '#2a3443', '#e9f0f7', '#94a2b4', '#7fb6ff', '#06101e', '#dbe6f2', '#5b93e0'] },
   { id: 'ink', name: '흑', desc: '먹 한 가지로 칠한 흑백', c: ['#000000', '#0d0d0d', '#171717', '#2a2a2a', '#f2f2f2', '#9a9a9a', '#ffffff', '#000000', '#cfcfcf', '#555555'] },
   { id: 'paper', name: '백', desc: '한지 위의 먹 글씨', light: true, c: ['#f4f0e8', '#fbf8f2', '#efe9df', '#d8cfc1', '#1f1b16', '#6e655a', '#b23a26', '#ffffff', '#8a6420', '#d9a38f'] },
+  { id: 'baekja', name: '백자', desc: '흰 바탕에 먹빛만 남긴 백자', light: true, c: ['#f7f7f5', '#ffffff', '#efefec', '#d9d9d5', '#191919', '#6d6d6a', '#2a2a2a', '#ffffff', '#7d7d7a', '#bdbdb8'] },
 ];
 const VARS = ['--bg', '--surface', '--surface-2', '--line', '--text', '--muted', '--accent', '--accent-ink', '--gold', '--glow'];
 
@@ -73,19 +74,20 @@ export function openTheme() {
 /* ── 음향: 배경음과 상황별 효과음, 개별 음량 ───────────────────────── */
 const sound = { bgm: 0.35, sfx: 0.6, bgmOn: false, sfxOn: true };
 let ctx, bgmGain, sfxGain, bgmNodes = [], bellTimer;
-// 행동 RPC → 효과음 종류
+// 행동 RPC → 효과음 종류. 탐색·전투는 화면이 결과에 맞는 소리를 직접 낸다.
 const SFX_OF = [
-  [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'], [/region_tactic|region_combat|region_encounter/, 'hit'],
-  [/travel_region|travel_party/, 'travel'], [/expedition_launch/, 'drum'], [/expedition_finish|claim|case_combine|mission_action|faction_supply/, 'reward'],
-  [/gather|site_explore|exploration/, 'leaf'], [/equip|title_equip|allocate/, 'equip'], [/rest|survival|recovery|status_treat/, 'heal'],
+  [/field_search|battle_action|field_gather/, null], [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'],
+  [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
+  [/equip|title_equip|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
 export function initSound() {
   try { Object.assign(sound, JSON.parse(localStorage.getItem('yh-sound') || '{}')); } catch {}
-  on('changed', ({ name }) => playSfx((SFX_OF.find(([re]) => re.test(name)) || [, 'chime'])[1]));
+  on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
   window.addEventListener('yh-sfx', e => playSfx(e.detail));
   document.addEventListener('click', e => {
-    const b = e.target.closest('.btn, .segmented button, .tabbar a, .topnav a, .icon-btn'); if (!b || b.disabled) return;
-    playSfx(b.closest('.tabbar, .topnav') ? 'nav' : b.closest('.segmented') ? 'tab' : b.classList.contains('primary') ? 'confirm' : 'tap');
+    const b = e.target.closest('.btn, .segmented button, .tabbar a, .topnav a, .icon-btn, .facility, .path, .act'); if (!b || b.disabled) return;
+    if (b.closest('.battle') || b.id === 'search') return;
+    playSfx(b.closest('.tabbar, .topnav') ? 'nav' : 'tap');
   }, { capture: true });
 }
 function saveSound() { try { localStorage.setItem('yh-sound', JSON.stringify(sound)); } catch {} }
@@ -100,45 +102,50 @@ function ensureCtx() {
 function startBgm() {
   if (!ensureCtx() || bgmNodes.length) return;
   ctx.resume?.();
-  [[55, 'sine'], [82.4, 'triangle']].forEach(([f, type]) => {
+  [[55, 'sine'], [82.4, 'sine']].forEach(([f, type]) => {
     const o = ctx.createOscillator(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-    o.type = type; o.frequency.value = f; g.gain.value = 0.5;
-    lfo.frequency.value = 0.07; lg.gain.value = 0.25; lfo.connect(lg); lg.connect(g.gain);
+    o.type = type; o.frequency.value = f; g.gain.value = 0.4;
+    lfo.frequency.value = 0.06; lg.gain.value = 0.2; lfo.connect(lg); lg.connect(g.gain);
     o.connect(g); g.connect(bgmGain); o.start(); lfo.start(); bgmNodes.push(o, lfo);
   });
-  const bell = () => { if (!bgmNodes.length) return; tone([523.3, 659.3, 784, 880][Math.floor(Math.random() * 4)], 2.8, bgmGain, 0.18); bellTimer = setTimeout(bell, 5000 + Math.random() * 9000); };
+  const bell = () => { if (!bgmNodes.length) return; tone([523.3, 587.3, 659.3, 784][Math.floor(Math.random() * 4)], 2.4, bgmGain, 0.12); bellTimer = setTimeout(bell, 6000 + Math.random() * 9000); };
   bellTimer = setTimeout(bell, 2500);
 }
 function stopBgm() { bgmNodes.forEach(n => { try { n.stop(); } catch {} }); bgmNodes = []; clearTimeout(bellTimer); }
-function tone(freq, dur, out, vol = 0.3, type = 'sine', at = 0, glide) {
+// 짧고 부드러운 사인·삼각파만 쓴다. 날카로운 사각파와 잡음은 쓰지 않는다.
+function tone(freq, dur, out, vol = 0.1, type = 'sine', at = 0, glide) {
   const t0 = ctx.currentTime + at, o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t0);
   if (glide) o.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
-  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dur + 0.05);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.012, dur / 4));
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dur + 0.03);
 }
-function noise(dur, out, vol = 0.2, at = 0, freq = 1200) {
-  const t0 = ctx.currentTime + at, buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate), d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-  const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-  s.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; g.gain.value = vol; s.connect(f); f.connect(g); g.connect(out); s.start(t0);
-}
+const seq = (notes, step, dur, vol, type = 'sine') => notes.forEach((f, i) => tone(f, dur, sfxGain, vol, type, i * step));
 const SFX = {
-  tap: () => tone(880, 0.06, sfxGain, 0.08, 'triangle'),
-  nav: () => tone(520, 0.09, sfxGain, 0.1, 'sine', 0, 640),
-  tab: () => tone(700, 0.05, sfxGain, 0.07, 'square'),
-  confirm: () => { tone(660, 0.1, sfxGain, 0.14); tone(990, 0.14, sfxGain, 0.1, 'sine', 0.06); },
-  coin: () => { tone(1320, 0.12, sfxGain, 0.12, 'triangle'); tone(1760, 0.2, sfxGain, 0.1, 'triangle', 0.07); },
-  craft: () => { noise(0.08, sfxGain, 0.35, 0, 3200); tone(420, 0.25, sfxGain, 0.12, 'square', 0.02, 300); noise(0.06, sfxGain, 0.25, 0.16, 2600); },
-  hit: () => { noise(0.12, sfxGain, 0.4, 0, 600); tone(160, 0.18, sfxGain, 0.2, 'sawtooth', 0, 70); },
-  travel: () => { tone(220, 0.5, sfxGain, 0.15, 'triangle', 0, 330); tone(330, 0.5, sfxGain, 0.1, 'sine', 0.2, 440); },
-  arrive: () => [523, 659, 784].forEach((f, i) => tone(f, 0.9, sfxGain, 0.12, 'sine', i * 0.08)),
-  drum: () => { tone(90, 0.35, sfxGain, 0.3, 'sine', 0, 50); tone(90, 0.35, sfxGain, 0.25, 'sine', 0.22, 50); },
-  reward: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.25, sfxGain, 0.1, 'triangle', i * 0.07)),
-  leaf: () => noise(0.18, sfxGain, 0.2, 0, 4200),
-  equip: () => { noise(0.05, sfxGain, 0.3, 0, 5000); tone(1200, 0.08, sfxGain, 0.08, 'square', 0.03); },
-  heal: () => tone(440, 0.6, sfxGain, 0.12, 'sine', 0, 660),
-  chime: () => tone(660, 0.4, sfxGain, 0.15),
-  error: () => { tone(200, 0.2, sfxGain, 0.15, 'square'); tone(150, 0.25, sfxGain, 0.12, 'square', 0.12); },
+  tap: () => tone(1050, 0.03, sfxGain, 0.035),
+  tick: () => tone(980, 0.03, sfxGain, 0.04),
+  nav: () => tone(620, 0.06, sfxGain, 0.05, 'sine', 0, 700),
+  step: () => tone(420, 0.06, sfxGain, 0.06, 'sine', 0, 360),
+  confirm: () => seq([660, 880], 0.06, 0.08, 0.06),
+  coin: () => seq([1250, 1660], 0.06, 0.09, 0.05, 'triangle'),
+  craft: () => { tone(330, 0.12, sfxGain, 0.09, 'sine', 0, 220); tone(990, 0.05, sfxGain, 0.04, 'sine', 0.1); },
+  travel: () => tone(440, 0.18, sfxGain, 0.07, 'sine', 0, 560),
+  depart: () => seq([392, 523], 0.09, 0.14, 0.07),
+  arrive: () => seq([523, 659, 784], 0.07, 0.18, 0.06),
+  reward: () => seq([659, 784, 988, 1319], 0.06, 0.12, 0.05, 'triangle'),
+  equip: () => seq([1000, 1300], 0.04, 0.05, 0.05),
+  heal: () => tone(520, 0.24, sfxGain, 0.06, 'sine', 0, 780),
+  search: () => seq([880, 1040], 0.035, 0.03, 0.035),
+  find: () => seq([880, 1320], 0.07, 0.12, 0.06),
+  gather: () => tone(700, 0.08, sfxGain, 0.06, 'sine', 0, 920),
+  encounter: () => { tone(220, 0.16, sfxGain, 0.08); tone(233, 0.16, sfxGain, 0.06, 'sine', 0.02); },
+  hit: () => tone(200, 0.09, sfxGain, 0.1, 'sine', 0, 110),
+  crit: () => { tone(200, 0.09, sfxGain, 0.1, 'sine', 0, 110); tone(1400, 0.07, sfxGain, 0.05, 'sine', 0.05); },
+  hurt: () => tone(260, 0.14, sfxGain, 0.08, 'sine', 0, 170),
+  guard: () => tone(500, 0.1, sfxGain, 0.06, 'triangle'),
+  victory: () => seq([523, 659, 784, 1046], 0.08, 0.18, 0.06, 'triangle'),
+  defeat: () => seq([392, 330, 262], 0.12, 0.22, 0.06),
+  chime: () => tone(660, 0.2, sfxGain, 0.05),
+  error: () => seq([240, 200], 0.1, 0.1, 0.06),
 };
 export function playSfx(kind) {
   if (!sound.sfxOn || !ensureCtx()) return;
@@ -150,7 +157,7 @@ export function openSound() {
     <label class="range-row"><span>배경음 음량</span><input type="range" id="s-bgm" min="0" max="1" step="0.05" value="${sound.bgm}"></label>
     <label class="toggle-row"><span><b>효과음</b><small>이동·전투·거래·제작마다 다른 소리</small></span><input type="checkbox" id="s-sfx-on" ${sound.sfxOn ? 'checked' : ''}></label>
     <label class="range-row"><span>효과음 음량</span><input type="range" id="s-sfx" min="0" max="1" step="0.05" value="${sound.sfx}"></label>
-    <div class="sfx-preview">${['confirm', 'coin', 'craft', 'hit', 'travel', 'reward'].map(k => `<button class="btn small" data-try="${k}">${({ confirm: '확인', coin: '거래', craft: '제작', hit: '전투', travel: '출발', reward: '보상' })[k]}</button>`).join('')}</div>
+    <div class="sfx-preview">${['confirm', 'find', 'hit', 'coin', 'craft', 'travel', 'reward', 'error'].map(k => `<button class="btn small" data-try="${k}">${({ confirm: '확인', find: '발견', hit: '전투', coin: '거래', craft: '제작', travel: '출발', reward: '보상', error: '오류' })[k]}</button>`).join('')}</div>
     <a class="btn block" href="#/account">${icon('idcard', 16)}<span>계정 관리 (이메일·비밀번호)</span></a>
     <p class="muted small">음향 설정은 이 기기에 저장됩니다.</p></div>`);
   body.addEventListener('input', e => {
@@ -173,6 +180,16 @@ export function openProfile() {
   const body = h(`<div class="profile-edit">
     <div class="profile-card"><div class="pc-emblem">${emblem(c.owner_id, pick, 72)}</div>
       <div><h3>${esc(c.character_name || '')}</h3><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}${c.major_faction_id ? ' · ' + esc(nameOf(c.major_faction_id)) : ''}</p><p class="muted small">Lv.${c.level || 1} · ${esc(JOBS[c.job_key]?.trait || '')}</p></div></div>
+    <h3 class="sub-h">사진</h3>
+    <div class="avatar-edit">
+      <div class="crop" id="crop"><canvas width="240" height="240" id="crop-cv"></canvas><p class="muted small" id="crop-hint">사진을 고르면 끌어서 위치를, 막대로 크기를 맞출 수 있습니다.</p></div>
+      <div class="crop-tools">
+        <label class="btn small"><input type="file" accept="image/*" id="av-file" hidden>${icon('plus', 14)}<span>사진 고르기</span></label>
+        <label class="range-row"><span>확대</span><input type="range" id="av-zoom" min="1" max="4" step="0.01" value="1" disabled></label>
+        <div class="btn-row"><button class="btn small primary" id="av-save" disabled>사진 저장</button>${c.profile?.avatar ? '<button class="btn small" id="av-clear">사진 지우기</button>' : ''}</div>
+        <p class="muted small">사진을 정하면 문장 대신 사진이 보입니다. 128×128 크기로 줄여 저장합니다.</p>
+      </div>
+    </div>
     <h3 class="sub-h">문장</h3><div class="emblem-grid">${Object.entries(EMBLEMS).map(([k, [n]]) => `<button class="em-pick" data-em="${k}" aria-label="${n}">${emblem('x', { emblem: k, color: pick.color }, 40)}<small>${n}</small></button>`).join('')}</div>
     <h3 class="sub-h">색</h3><div class="color-grid">${Object.entries(EMBLEM_COLORS).map(([k, [n, col]]) => `<button class="col-pick" data-col="${k}" style="--c:${col}" aria-label="${n}"><i></i><small>${n}</small></button>`).join('')}</div>
     <label class="field"><span>한 줄 소개 (60자)</span><input name="bio" maxlength="60" value="${esc(cur.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
@@ -193,6 +210,44 @@ export function openProfile() {
   });
   draw();
   openModal({ title: '프로필', body });
+  bindCrop(body);
+}
+
+// 사진 자르기: 정사각형 안에서 끌어 옮기고 확대해 128px WebP로 저장한다.
+function bindCrop(body) {
+  const cv = $('#crop-cv', body), g = cv.getContext('2d'), zoom = $('#av-zoom', body), save = $('#av-save', body);
+  let img = null, k = 1, ox = 0, oy = 0, drag = null;
+  const S = cv.width;
+  const paint = () => {
+    g.fillStyle = '#111'; g.fillRect(0, 0, S, S);
+    if (!img) return;
+    const base = S / Math.min(img.width, img.height), w = img.width * base * k, hgt = img.height * base * k;
+    ox = Math.min(0, Math.max(S - w, ox)); oy = Math.min(0, Math.max(S - hgt, oy));
+    g.drawImage(img, ox, oy, w, hgt);
+  };
+  $('#av-file', body).onchange = e => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if (f.size > 15 * 1024 * 1024) return toast('15MB 이하의 사진을 고르세요.', 'error');
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => { img = im; k = 1; zoom.value = 1; zoom.disabled = false; save.disabled = false;
+      const base = S / Math.min(im.width, im.height); ox = (S - im.width * base) / 2; oy = (S - im.height * base) / 2; paint(); URL.revokeObjectURL(url); };
+    im.onerror = () => toast('사진을 읽지 못했습니다.', 'error');
+    im.src = url;
+  };
+  zoom.oninput = () => { const c0 = (S / 2 - ox) / k, c1 = (S / 2 - oy) / k; k = Number(zoom.value); ox = S / 2 - c0 * k; oy = S / 2 - c1 * k; paint(); };
+  cv.onpointerdown = e => { if (!img) return; cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY }; };
+  cv.onpointermove = e => { if (!drag) return; const r = S / cv.getBoundingClientRect().width; ox += (e.clientX - drag.x) * r; oy += (e.clientY - drag.y) * r; drag = { x: e.clientX, y: e.clientY }; paint(); };
+  cv.onpointerup = cv.onpointercancel = () => { drag = null; };
+  save.onclick = () => guard(save, async () => {
+    const out = document.createElement('canvas'); out.width = out.height = 128;
+    out.getContext('2d').drawImage(cv, 0, 0, 128, 128);
+    let data = out.toDataURL('image/webp', 0.82);
+    if (!data.startsWith('data:image/webp')) data = out.toDataURL('image/jpeg', 0.82);
+    const r = await act('world_set_avatar', { p_image: data });
+    await loadCharacter(); closeModal(); return r;
+  });
+  $('#av-clear', body)?.addEventListener('click', e => guard(e.currentTarget, async () => { const r = await act('world_set_avatar', { p_image: null }); await loadCharacter(); closeModal(); return r; }));
+  paint();
 }
 
 /* ── 알림 ────────────────────────────────────────────────── */

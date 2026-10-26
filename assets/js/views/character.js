@@ -2,6 +2,7 @@
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
 import { store, on, act, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented } from '../core.js';
 import { load, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText } from './common.js';
+import { openStatus } from '../hud.js';
 
 const SUBS = [['status', '상태'], ['growth', '성장'], ['faction', '세력'], ['skills', '기술'], ['idle', '자율'], ['titles', '칭호']];
 const STATS = [['strength', '근력', '근접 피해·운반'], ['agility', '민첩', '회피·선공'], ['vitality', '체질', '최대 체력·회복'], ['perception', '감각', '치명타·발견'], ['willpower', '의지', '정신 저항'], ['spirit_affinity', '영성', '부적·봉인 위력']];
@@ -12,8 +13,6 @@ const IDLE = [
   ['maintenance', '장비 정비', '제작 경험치와 장비 손질', 'hammer'], ['rest', '휴식', '체력·정신 회복, 침식 완화', 'moon'],
 ];
 const DURATIONS = [[30, '30분'], [60, '1시간'], [240, '4시간'], [480, '8시간']];
-const RECOVERY = [['tonic', '체력 35 회복'], ['herbal_extract', '체력 회복'], ['ward_talisman', '침식 억제'], ['revival_charm', '전투불능 회복']];
-const TREAT = ['tonic', 'herb', 'herbal_extract', 'ward_talisman', 'medicine_base'];
 const EROSION = ['안정', '경미', '주의', '위험', '붕괴 직전', '붕괴'];
 let el, sub = 'status', off = [];
 
@@ -36,32 +35,51 @@ async function draw(soft) {
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
+const USE = [['tonic', '체력 35 · 마음 진정'], ['herbal_extract', '체력 22 · 출혈·화상·근맥 치료'], ['herb', '체력 12 · 중독·소화 불량 치료'],
+  ['medicine_base', '정신 12 · 기력 저하·한기·탈진 치료'], ['ward_talisman', '정신 8 · 침식 완화 · 사념·동요·중독 치료'], ['travel_ration', '탐색력 +5']];
 async function status(body) {
-  const [sv, st] = await Promise.all([load('world_survival_snapshot'), load('world_status_snapshot')]);
+  const [sv, hud] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot').catch(() => null)]);
   const c = store.character, inv = c.inventory || {};
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
-  const statuses = st?.statuses || [];
+  const statuses = (hud?.statuses || []).filter(x => new Date(x.expires_at) > new Date());
+  const downed = c.downed_at || c.health <= 0;
+  const deathAt = c.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
   body.innerHTML = `
+    ${downed ? panel('전투불능', `
+      <p class="desc">쓰러져 움직일 수 없습니다. 같은 지역의 조사원이 구조할 수 있고, 아래 방법으로 스스로 일어날 수도 있습니다.</p>
+      <p class="bad"><b id="death-left">${deathAt ? `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}` : ''}</b></p>
+      <div class="action-grid">
+        <button class="btn primary" data-use="revival_charm" ${inv.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(inv.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
+        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금의 30%(최소 50전) · 가장 가까운 안전지대로 옮겨집니다</small></button>
+      </div>
+      <p class="muted small">시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.</p>`, { ico: 'heart', cls: 'danger' }) : ''}
     <div class="grid-2">
       ${panel('생존 상태', `
         ${['health:체력:hp', 'mental:정신:mp', 'spiritual_power:영력:sp'].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
-        <p class="muted small">침식이 오를수록 정신이 흔들리고 행동에 불이익이 생깁니다. 정화나 휴식으로 관리하세요.</p>
+        <p class="muted small">침식이 30을 넘으면 공격이 약해지고, 높아질수록 불이익이 커집니다. 정화 부적이나 휴식으로 관리하세요.</p>
         <div class="action-grid three">
-          <button class="btn" data-surv="cleanse"><span>부적 정화</span><small>정화 부적 사용 · 침식 완화</small></button>
-          <button class="btn" data-surv="ground"><span>마음 다잡기</span><small>정신 회복</small></button>
-          <button class="btn" data-surv="rest"><span>본부 휴식</span><small>본부·객사에서만</small></button>
+          <button class="btn" data-surv="cleanse" ${downed ? 'disabled' : ''}><span>부적 정화</span><small>정화 부적 사용 · 침식 완화</small></button>
+          <button class="btn" data-surv="ground" ${downed ? 'disabled' : ''}><span>마음 다잡기</span><small>정신 회복</small></button>
         </div>`, { ico: 'heart' })}
-      ${panel(`상태이상 ${st?.active_count || 0}/${st?.max_active || 5}`, statuses.length ? `<ul class="status-list">${statuses.map(s => `<li class="${s.polarity === 'buff' || s.polarity === 'positive' ? 'good' : 'bad'}">
-          <div><b>${esc(s.name)}${s.stacks > 1 ? ` ×${s.stacks}` : ''}</b><small>${esc(s.description || '')}</small></div><span class="muted small">${fmt.remain((s.remaining_seconds || 0) * 1000)}</span></li>`).join('')}</ul>
-        <p class="muted small">치료 물품</p><div class="btn-row">${TREAT.map(k => `<button class="btn small" data-treat="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} <small>${fmt.num(inv[k])}</small></button>`).join('')}</div>`
-        : empty('걸린 상태이상이 없습니다.', 'shield'), { ico: 'shield' })}
+      ${panel(`상태 ${statuses.length}/10`, statuses.length ? `<ul class="status-list">${statuses.map((x, i) => `<li class="${x.polarity === 'positive' ? 'good' : 'bad'}">
+          <button class="st-open" data-st="${i}"><b>${esc(x.name)}${x.stacks > 1 ? ` ×${x.stacks}` : ''}</b><small>${esc(x.description || '')}</small></button>
+          <span class="muted small" data-left="${new Date(x.expires_at).getTime()}">${fmt.remain(new Date(x.expires_at) - Date.now())}</span></li>`).join('')}</ul>
+          <p class="muted small">상태를 누르면 자세한 효과와 치료 방법을 볼 수 있습니다.</p>`
+        : empty('걸린 상태가 없습니다.', 'shield'), { ico: 'shield' })}
     </div>
-    ${panel('회복 물품', `<div class="action-grid">${RECOVERY.map(([k, d]) => `<button class="btn" data-use="${k}" ${inv[k] > 0 ? '' : 'disabled'}><span>${esc(nameOf(k))} <small>×${fmt.num(inv[k])}</small></span><small>${d}</small></button>`).join('')}</div>
-      <p class="muted small">원정 중이면 원정 꾸러미의 회복품도 함께 사용됩니다.</p>`, { ico: 'plus' })}`;
+    ${panel('회복·치료 물품', `<div class="action-grid">${USE.map(([k, d]) => `<button class="btn" data-use="${k}" ${inv[k] > 0 && !downed ? '' : 'disabled'}><span>${esc(nameOf(k))} <small>×${fmt.num(inv[k])}</small></span><small>${d}</small></button>`).join('')}</div>
+      <p class="muted small">전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`, { ico: 'plus' })}`;
   $$('[data-surv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_survival_action', { p_action: b.dataset.surv })));
-  $$('[data-treat]', body).forEach(b => b.onclick = () => guard(b, () => act('world_status_treat', { p_item_id: b.dataset.treat })));
-  $$('[data-use]', body).forEach(b => b.onclick = () => guard(b, () => act('world_use_recovery_item', { p_item_id: b.dataset.use })));
+  $$('[data-use]', body).forEach(b => b.onclick = () => guard(b, () => act('world_use_item', { p_item_id: b.dataset.use })));
+  $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
+  const cr = $('#call-rescue', body);
+  if (cr) cr.onclick = () => { if (confirm('본부 구조대를 부를까요? 소지금의 30%(최소 50전)를 내고 가장 가까운 안전지대로 옮겨집니다.')) guard(cr, () => act('world_call_rescue')); };
+  const t = setInterval(() => {
+    if (!body.isConnected) return clearInterval(t);
+    $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
+    const d = $('#death-left', body); if (d && deathAt) d.textContent = `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}`;
+  }, 1000);
 }
 
 async function growth(body) {
@@ -76,18 +94,20 @@ async function growth(body) {
       ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, xp]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${fmt.num(xp)} 경험</small></li>`).join('')}</ul>
         <p class="muted small">숙련은 해당 행동을 할 때만 오릅니다. 관계없는 능력은 함께 오르지 않습니다.</p>`, { ico: 'target' })}
     </div>
-    ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 선택한 분야의 채집량·제작 품질에 보정이 붙습니다.</p>
+    ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고, 맞는 제작법은 품질이 오릅니다.</p>
+      <p class="${profWait(c) > 0 ? 'hint' : 'muted small'}">${profWait(c) > 0 ? `${icon('hourglass', 14)} 다음 변경까지 ${fmt.remain(profWait(c))}` : '한 번 바꾸면 3일 동안 다시 바꿀 수 없습니다.'}</p>
       <div class="form-grid">
         <label class="field"><span>채집 분야</span><select id="g-prof">${GATHER.map(k => `<option value="${k}" ${inv?.gathering_profession === k ? 'selected' : ''}>${esc(nameOf(k))}</option>`).join('')}</select></label>
         <label class="field"><span>제작 분야</span><select id="c-prof">${CRAFT.map(k => `<option value="${k}" ${inv?.crafting_profession === k ? 'selected' : ''}>${esc(nameOf(k))}</option>`).join('')}</select></label>
-      </div><button class="btn" id="prof-save">${icon('check', 16)}<span>전문화 저장</span></button>`, { ico: 'leaf' })}
+      </div><button class="btn" id="prof-save" ${profWait(c) > 0 ? 'disabled' : ''}>${icon('check', 16)}<span>전문화 정하기</span></button>`, { ico: 'leaf' })}
     ${panel('신원', `<dl class="kv"><div><dt>이름</dt><dd>${esc(c.character_name)}</dd></div><div><dt>직업</dt><dd>${esc(nameOf(c.job_key))} · ${esc(JOBS[c.job_key]?.trait || '')}</dd></div>
       <div><dt>소속</dt><dd>${esc(nameOf(c.faction_key))}</dd></div><div><dt>대세력</dt><dd>${c.major_faction_id ? `${esc(nameOf(c.major_faction_id))} · 평판 ${fmt.num(c.faction_reputation)}` : '미가입'}</dd></div></dl>
       <p class="muted small">이름·직업·소속은 캐릭터 생성 시 정해지며 바꿀 수 없습니다.</p>`, { ico: 'idcard' })}`;
   $$('[data-stat]', body).forEach(b => b.onclick = () => guard(b, () => act('world_allocate_stat', { p_stat: b.dataset.stat })));
   const save = $('#prof-save', body);
-  save.onclick = () => guard(save, () => act('world_set_life_profession', { p_gathering: $('#g-prof', body).value, p_crafting: $('#c-prof', body).value }));
+  save.onclick = () => { if (confirm('전문화를 이대로 정할까요? 3일 동안 다시 바꿀 수 없습니다.')) guard(save, () => act('world_set_life_profession_v2', { p_gathering: $('#g-prof', body).value, p_crafting: $('#c-prof', body).value })); };
 }
+function profWait(c) { return c.life_changed_at ? new Date(c.life_changed_at).getTime() + 72 * 3600e3 - Date.now() : 0; }
 
 async function skills(body) {
   const list = await load('world_skill_snapshot', undefined, { maxAge: 10000 });
@@ -153,7 +173,9 @@ async function faction(body) {
           <div class="mini-bar"><span style="width:${Math.min(100, m.progress / m.target_count * 100)}%"></span></div>
           <small class="muted">${Math.min(m.progress, m.target_count)}/${m.target_count} · 보상 경험치 ${m.reward_xp}${m.reward_items ? ' · ' + esc(itemsText(m.reward_items)) : ''}</small></div>
           ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.'), { ico: 'scroll' })}
-      ${panel('일일 보급', `<p class="desc">소속 부서에서 하루 한 번 보급품을 받을 수 있습니다.</p><button class="btn primary" id="supply">${icon('bag', 16)}<span>오늘 보급 받기</span></button>`, { ico: 'bag' })}
+      ${panel('일일 보급', store.hud?.supply?.claimed_today
+          ? `<p class="desc">${icon('check', 14)} 오늘 보급은 이미 받았습니다.</p><p class="muted small">다음 보급: ${store.hud.supply.next_at ? new Date(store.hud.supply.next_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '내일'}</p><button class="btn" disabled>${icon('check', 16)}<span>수령 완료</span></button>`
+          : `<p class="desc">소속 부서에서 하루 한 번 보급품을 받을 수 있습니다.</p><button class="btn primary" id="supply">${icon('bag', 16)}<span>오늘 보급 받기</span></button>`, { ico: 'bag' })}
     </div>
     ${major ? panel(`${nameOf(major)} 거점`, `
         <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
@@ -166,7 +188,7 @@ async function faction(body) {
           <header><b>${esc(f.name)}</b>${chip(f.type)}</header><p>${esc(f.desc)}</p><small class="accent">${esc(PERKS[k] || '')}</small><small class="muted">가입 조건: ${esc(f.entry)} · 거점 ${esc(nameOf(f.base))}</small>
           <button class="btn small" data-join="${k}">가입 신청</button></article>`).join('')}</div>`, { ico: 'shield' })}`;
   $$('[data-mission]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_mission_action', { p_mission_id: b.dataset.mission })));
-  const sup = $('#supply', body); sup.onclick = () => guard(sup, () => act('world_claim_faction_supply'));
+  const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; return r; });
   $$('[data-base]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_base_action', { p_content_id: b.dataset.base })));
   $$('[data-join]', body).forEach(b => b.onclick = () => { if (confirm(`${MAJOR_FACTIONS[b.dataset.join].name}에 가입할까요? 가입 조건은 서버에서 확인합니다.`)) guard(b, () => act('world_join_major_faction', { p_faction_id: b.dataset.join })); });
 }

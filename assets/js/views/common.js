@@ -15,7 +15,7 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 }
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
 // 위치·소속이 바뀌는 행동 뒤에는 지도 캐시를 버린다.
-const MAP_CHANGERS = /travel|mount|join_major_faction|exploration|site_explore|region_encounter|region_combat|region_tactic/;
+const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/;
 on('changed', ({ name }) => { invalidate('world_region_roster'); invalidate('world_party_overview'); if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
@@ -77,7 +77,7 @@ export { fmt };
 let zones = null;
 export async function safeZones() {
   if (zones) return zones;
-  const { data, error } = await db.from('world_map_regions').select('region_id,region_name,is_safe_zone,shop_name,has_stable');
+  const { data, error } = await db.from('world_map_regions').select('region_id,region_name,is_safe_zone,shop_name,has_stable,control_faction_id,territory_name');
   if (error) throw new Error(error.message);
   zones = new Map((data || []).map(r => [r.region_id, r]));
   return zones;

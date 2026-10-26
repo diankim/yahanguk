@@ -1,5 +1,5 @@
-// 원정: 지역의 원정지(외곽·심부·핵심)를 골라 시간·태세·보급품을 정해 보낸다.
-// 전투·채집·발견·위험 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
+// 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
+// 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
 import { store, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed } from '../core.js';
 import { chip, danger } from './common.js';
 
@@ -7,56 +7,46 @@ const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시
 const STANCES = [
   ['cautious', '신중', '조우를 피하고 일찍 치료합니다. 안전하지만 얻는 것이 적습니다.'],
   ['balanced', '균형', '싸울 때는 싸우고 물러날 때는 물러납니다.'],
-  ['bold', '강행', '요괴를 찾아다니며 깊이 들어갑니다. 전리품과 답사도가 크게 오르지만 다치기 쉽습니다.'],
+  ['bold', '강행', '요괴를 찾아다니며 깊이 들어갑니다. 전리품과 발견이 늘지만 다치기 쉽습니다.'],
 ];
-const SUPPLIES = [['tonic', '체력 35 회복'], ['herbal_extract', '체력 22 회복'], ['herb', '체력 12 회복'], ['ward_talisman', '침식이 50을 넘으면 15 정화'],
-  ['seal_paper', '영체·결계 요괴 전투 승률 상승'], ['revival_charm', '쓰러지기 직전 한 번 일으켜 세움'], ['travel_ration', '1시간마다 1개 · 없으면 정신 소모·수확 감소']];
-const DEPTH = ['', '외곽', '심부', '핵심'];
-let pick = { ground: null, minutes: 60, stance: 'balanced', supplies: {} };
+const SUPPLY_USE = { tonic: '체력이 떨어지면', herbal_extract: '체력이 떨어지면', herb: '체력이 떨어지면', ward_talisman: '침식이 50을 넘으면',
+  seal_paper: '영체·결계 요괴를 만나면', revival_charm: '쓰러지기 직전', travel_ration: '한 시간마다' };
+const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
+let pick = { node: null, minutes: 60, stance: 'balanced' };
 
-export function renderExpedition(box, board) {
+export function renderExpedition(box, ov) {
   const c = store.character;
-  if (board?.active) return renderActive(box, board.active);
-  const grounds = board?.grounds || [];
-  if (!grounds.length) { box.innerHTML = empty('이 지역에는 원정지가 없습니다.', 'map'); return; }
-  if (!grounds.some(g => g.ground_id === pick.ground && g.unlocked)) pick.ground = grounds.find(g => g.unlocked)?.ground_id || null;
-  const have = c.inventory || {};
-  const mechs = [...new Set((board.monsters || []).map(m => m.mechanic).filter(Boolean))];
+  if (ov?.active) return renderActive(box, ov.active);
+  const opts = ov?.options || [];
+  if (!opts.length) { box.innerHTML = empty('원정을 보낼 곳이 없습니다. 바깥 지역에서 탐색으로 장소를 먼저 찾으세요.', 'map'); return; }
+  if (!opts.some(o => o.node_id === pick.node && !o.locked)) pick.node = opts.find(o => !o.locked)?.node_id || null;
+  const sup = Object.entries(ov.supplies || {}).filter(([, n]) => n > 0);
+  const rations = Number(ov.supplies?.travel_ration || 0);
   box.innerHTML = `
-    <div class="exp-progress"><span>지역 답사도</span><b>${board.progress}%</b>${bar(board.progress, 100, 'xp')}<small>30%에서 심부, 70%에서 핵심 원정지가 열리고, 100%면 가방이 넓어집니다.</small></div>
-    <div class="ground-list">${grounds.map(g => `<button class="ground ${g.ground_id === pick.ground ? 'on' : ''}" data-ground="${esc(g.ground_id)}" ${g.unlocked ? '' : 'disabled'}>
-        <header><b>${esc(g.ground_name)}</b>${chip(DEPTH[g.depth], g.depth === 3 ? 'bad' : g.depth === 2 ? 'warn' : '')}</header>
-        <p>${esc(g.description)}</p>
-        <small>${g.unlocked ? `${danger(g.danger)} 권장 Lv.${g.min_level}+` : `잠김 · 답사도 ${g.unlock_progress}% · Lv.${g.min_level}`}</small></button>`).join('')}</div>
-    ${mechs.length ? `<p class="muted small">이 지역 요괴의 습성: ${esc(mechs.map(nameOf).join(', '))}. 영체·결계 요괴에게는 봉인 부적이 효과적입니다.</p>` : ''}
+    <div class="exp-progress"><span>${esc(ov.region_name || '')} 답사</span><b>${ov.survey?.pct ?? 0}%</b>${bar(ov.survey?.pct ?? 0, 100, 'xp')}<small>원정에서 길과 채집터를 새로 찾으면 답사가 오릅니다. 깊은 곳일수록 위험하고 얻는 것이 많습니다.</small></div>
+    <h3 class="sub-h">보낼 곳</h3>
+    <div class="ground-list">${opts.map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
+        <header><b>${esc(o.name)}</b>${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
+        <small>${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+`}</small></button>`).join('')}</div>
     <h3 class="sub-h">기간</h3><div class="chip-pick" data-pick="minutes">${DURATIONS.map(([m, l]) => `<button data-v="${m}" class="${m === pick.minutes ? 'on' : ''}">${l}</button>`).join('')}</div>
     <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
-    <h3 class="sub-h">보급품 <small class="muted">— 가방에서 꺼내 가며, 쓰지 않은 것은 돌아오면 돌려받습니다</small></h3>
-    <div class="supply-grid">${SUPPLIES.map(([k, d]) => `<div class="stepper" data-k="${k}"><span>${esc(nameOf(k))}<small>${d} · 보유 ${fmt.num(have[k])}</small></span>
-      <div><button class="icon-btn" data-d="-1" aria-label="줄이기">${icon('minus', 14)}</button><b>${pick.supplies[k] || 0}</b><button class="icon-btn" data-d="1" aria-label="늘리기">${icon('plus', 14)}</button></div></div>`).join('')}</div>
+    <h3 class="sub-h">챙겨 갈 보급품 <small class="muted">— 가방에서 자동으로 챙깁니다</small></h3>
+    ${sup.length ? `<ul class="supply-auto">${sup.map(([k, n]) => `<li><b>${esc(nameOf(k))} ×${n}</b><small>${esc(SUPPLY_USE[k] || '')} 씁니다</small></li>`).join('')}</ul>`
+      : `<p class="hint">가방에 원정용 보급품이 없습니다. 청심환·약초·정화 부적·노정 건량을 챙기면 더 오래 버팁니다.</p>`}
     <p class="hint" id="exp-hint"></p>
-    <button class="btn primary block" id="exp-go" ${pick.ground ? '' : 'disabled'}>${icon('flame', 16)}<span>원정 출발</span></button>
-    <p class="muted small">원정을 떠나면 끝날 때까지 이동·전투·채집·거래를 할 수 없습니다. 언제든 일찍 귀환할 수 있지만 지난 시간만큼만 성과를 얻습니다.</p>
-    ${recent(board.recent)}`;
+    <button class="btn primary block" id="exp-go" ${pick.node ? '' : 'disabled'}>${icon('flame', 16)}<span>원정 출발</span></button>
+    <p class="muted small">원정 중에는 이동·전투·채집·거래를 할 수 없습니다. 언제든 일찍 돌아올 수 있지만 지난 시간만큼만 성과를 얻습니다.</p>
+    ${recent(ov.recent)}`;
   const hint = () => {
-    const need = Math.floor(pick.minutes / 60), r = pick.supplies.travel_ration || 0;
-    $('#exp-hint', box).textContent = need > r ? `노정 건량이 ${need - r}개 모자랍니다. 허기 때문에 정신이 깎이고 수확이 줄어듭니다.` : `가방 ${bagUsed(c)}/${bagLimit(c)}칸 · 전리품이 가방을 넘치면 남는 것은 두고 옵니다.`;
+    const need = Math.floor(pick.minutes / 60);
+    $('#exp-hint', box).textContent = need > rations ? `노정 건량이 ${need - rations}개 모자랍니다. 허기 때문에 정신이 깎이고 수확이 줄어듭니다.` : `가방 ${bagUsed(c)}/${bagLimit(c)}칸 · 전리품이 가방을 넘치면 남는 것은 두고 옵니다.`;
   };
-  $$('[data-ground]', box).forEach(b => b.onclick = () => { pick.ground = b.dataset.ground; $$('[data-ground]', box).forEach(x => x.classList.toggle('on', x === b)); $('#exp-go', box).disabled = false; });
+  $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); $('#exp-go', box).disabled = false; });
   $$('[data-pick=minutes] button', box).forEach(b => b.onclick = () => { pick.minutes = Number(b.dataset.v); $$('[data-pick=minutes] button', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-stance]', box).forEach(b => b.onclick = () => { pick.stance = b.dataset.stance; $$('[data-stance]', box).forEach(x => x.classList.toggle('on', x === b)); });
-  $$('.stepper', box).forEach(s => s.onclick = e => {
-    const d = Number(e.target.closest('[data-d]')?.dataset.d || 0); if (!d) return;
-    const k = s.dataset.k, max = Math.min(20, Number(have[k] || 0));
-    pick.supplies[k] = Math.max(0, Math.min(max, (pick.supplies[k] || 0) + d));
-    $('b', s).textContent = pick.supplies[k]; hint();
-  });
   hint();
-  bindRecent(box, board.recent);
-  $('#exp-go', box).onclick = e => {
-    const supplies = Object.fromEntries(Object.entries(pick.supplies).filter(([, n]) => n > 0));
-    guard(e.currentTarget, async () => { const r = await act('world_expedition_launch', { p_ground_id: pick.ground, p_minutes: pick.minutes, p_stance: pick.stance, p_supplies: supplies }); pick.supplies = {}; return r; });
-  };
+  bindRecent(box, ov.recent);
+  $('#exp-go', box).onclick = e => guard(e.currentTarget, () => act('world_expedition_start', { p_node_id: pick.node, p_minutes: pick.minutes, p_stance: pick.stance }));
 }
 
 function renderActive(box, a) {
@@ -64,8 +54,8 @@ function renderActive(box, a) {
   box.innerHTML = `
     <div class="exp-active">
       <div class="idle-ring">${icon('flame', 24)}</div>
-      <div><b>${esc(a.ground_name)} 원정 중</b><span id="exp-left"></span>${bar(0, 100, 'xp')}
-        <small class="muted">${a.minutes}분 · ${nameOf(a.stance)} · 보급 ${Object.entries(a.supplies || {}).map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ') || '없음'}</small></div>
+      <div><b>${esc(a.place_name || a.ground_name)} 원정 중</b><span id="exp-left"></span>${bar(0, 100, 'xp')}
+        <small class="muted">${esc(a.region_name || '')} · ${a.minutes}분 · ${nameOf(a.stance)} · 보급 ${Object.entries(a.supplies || {}).map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ') || '없음'}</small></div>
     </div>
     <div class="btn-row"><button class="btn primary" id="exp-claim">${icon('check', 16)}<span>결과 확인</span></button><button class="btn" id="exp-recall">${icon('back', 16)}<span>일찍 귀환</span></button></div>
     <p class="muted small">원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
@@ -76,8 +66,8 @@ function renderActive(box, a) {
     $('#exp-claim', box).disabled = left > 0; $('#exp-recall', box).hidden = left <= 0;
   };
   const t = setInterval(tick, 1000); tick();
-  $('#exp-claim', box).onclick = e => guard(e.currentTarget, async () => { const r = await act('world_expedition_finish', { p_recall: false }); showResult(r); return null; });
-  $('#exp-recall', box).onclick = e => { if (confirm('지금 귀환할까요? 지난 시간만큼의 성과만 얻습니다.')) guard(e.currentTarget, async () => { const r = await act('world_expedition_finish', { p_recall: true }); showResult(r); return null; }); };
+  $('#exp-claim', box).onclick = e => guard(e.currentTarget, async () => { const r = await act('world_expedition_complete', { p_recall: false }); showResult(r); return null; });
+  $('#exp-recall', box).onclick = e => { if (confirm('지금 귀환할까요? 지난 시간만큼의 성과만 얻습니다.')) guard(e.currentTarget, async () => { const r = await act('world_expedition_complete', { p_recall: true }); showResult(r); return null; }); };
 }
 
 const ENDED = { complete: '무사히 돌아왔습니다', recalled: '일찍 귀환했습니다', downed: '쓰러졌습니다 — 구조가 필요합니다', exhausted: '지쳐서 서둘러 돌아왔습니다' };
@@ -85,12 +75,12 @@ export function showResult(r) {
   const x = r?.result || r; if (!x) return;
   const items = Object.entries(x.loot || {}).filter(([, n]) => n > 0);
   const lost = Object.entries(x.lost || {}).filter(([, n]) => n > 0);
-  openModal({ title: `${r?.ground_name || '원정'} 결과`, wide: true, body: `
+  openModal({ title: `${r?.place_name || r?.ground_name || '원정'} 결과`, wide: true, body: `
     <div class="exp-result ended-${esc(x.ended)}">
       <p class="lead">${esc(ENDED[x.ended] || '원정을 마쳤습니다')}</p>
       <div class="stat-tiles">
         <div><span>전투</span><b>${x.wins}승 ${x.losses}패</b></div><div><span>채집</span><b>${x.gathers}회</b></div>
-        <div><span>발견</span><b>${x.finds}회</b></div><div><span>답사도</span><b>${x.progress_before}% → ${x.progress_after}%</b></div>
+        <div><span>발견</span><b>${x.finds}회</b></div><div><span>답사</span><b>${x.progress_before}% → ${x.progress_after}%</b></div>
         <div><span>경험치</span><b>+${x.experience}${x.levels ? ` · Lv +${x.levels}` : ''}</b></div><div><span>전</span><b>+${fmt.num(x.gil)}</b></div>
       </div>
       <h3 class="sub-h">챙겨 온 것</h3>
@@ -104,9 +94,9 @@ export function showResult(r) {
 
 function recent(list) {
   if (!list?.length) return '';
-  return `<h3 class="sub-h">최근 원정</h3><ul class="spot-list">${list.map((r, i) => `<li><div><b>${esc(r.ground_name)}</b><small>${r.minutes}분 · ${nameOf(r.stance)} · ${esc(ENDED[r.result?.ended] || '')} · 답사도 ${r.result?.progress_after ?? '-'}%</small></div>
+  return `<h3 class="sub-h">최근 원정</h3><ul class="spot-list">${list.map((r, i) => `<li><div><b>${esc(r.place_name || r.ground_name)}</b><small>${r.minutes}분 · ${nameOf(r.stance)} · ${esc(ENDED[r.result?.ended] || '')} · 답사 ${r.result?.progress_after ?? '-'}%</small></div>
     <button class="btn small ghost" data-recent="${i}">기록</button></li>`).join('')}</ul>`;
 }
 export function bindRecent(box, list) {
-  $$('[data-recent]', box).forEach(b => b.onclick = () => { const r = list[Number(b.dataset.recent)]; showResult({ ground_name: r.ground_name, result: r.result }); });
+  $$('[data-recent]', box).forEach(b => b.onclick = () => { const r = list[Number(b.dataset.recent)]; showResult({ place_name: r.place_name || r.ground_name, result: r.result }); });
 }

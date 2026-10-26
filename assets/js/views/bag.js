@@ -6,7 +6,8 @@ const SUBS = [['items', '소지품'], ['equip', '장비'], ['craft', '제작']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
 const GEAR = new Set(['tool', 'weapon', 'armor', 'accessory', 'equipment']);
 const SLOT = { tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구' };
-const USABLE = { tonic: '체력 35 회복', herbal_extract: '체력 회복', ward_talisman: '침식 억제', revival_charm: '전투불능 회복' };
+const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
+  ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기' };
 const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
@@ -69,17 +70,18 @@ function equip(body, inv) {
       ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it)}</div>` : `<p class="muted">비어 있음</p>`}
       ${options.length ? `<ul class="spot-list">${options.map(o => {
         const blocked = (o.required_job && o.required_job !== c.job_key) ? `${nameOf(o.required_job)} 전용` : (o.minimum_level > c.level) ? `Lv.${o.minimum_level} 필요` : '';
-        return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
+        return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
           <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: slot === 'tool' ? 'hammer' : slot === 'weapon' ? 'sword' : slot === 'armor' ? 'shield' : 'spark', cls: 'compact' });
   }).join('');
-  body.innerHTML = `<div class="grid-2">${slots}</div><p class="muted small">채집에는 1단계 이상 도구가 필요합니다. 장비는 전투·채집·제작 효율에 반영됩니다.</p>`;
+  body.innerHTML = `<div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다.</p>`;
   bindActions(body);
 }
 function traits(it) {
   const t = it?.equipment_traits; if (!t) return '';
-  const label = { gathering_bonus_pct: '채집', combat_damage_pct: '피해', defense_pct: '방어', craft_quality: '제작 품질', erosion_resist: '침식 저항' };
-  const parts = Object.entries(t).filter(([k]) => k !== 'trait').map(([k, v]) => `${label[k] || nameOf(k)} +${v}${/pct/.test(k) ? '%' : ''}`);
-  return `<small class="muted">${esc([t.trait, ...parts].filter(Boolean).join(' · '))}</small>`;
+  const label = { gathering_bonus_pct: '채집', combat_damage_pct: '피해', defense_pct: '방어', craft_quality: '제작 품질', erosion_resist: '침식 저항', power: '위력', defense: '방어', damage_reduction_pct: '피해 감소' };
+  const STY = { melee: '근접 공격', ranged: '원거리 공격', magic: '술법 공격' };
+  const parts = Object.entries(t).filter(([k]) => k !== 'trait' && k !== 'weapon_type').map(([k, v]) => `${label[k] || nameOf(k)} +${v}${/pct/.test(k) ? '%' : ''}`);
+  return `<small class="muted">${esc([STY[t.weapon_type] || t.trait, ...parts].filter(Boolean).join(' · '))}</small>`;
 }
 
 function craft(body, inv) {
@@ -112,6 +114,6 @@ function craft(body, inv) {
 }
 
 function bindActions(body) {
-  $$('[data-use]', body).forEach(b => b.onclick = () => guard(b, () => act('world_use_recovery_item', { p_item_id: b.dataset.use })));
+  $$('[data-use]', body).forEach(b => b.onclick = () => guard(b, () => act('world_use_item', { p_item_id: b.dataset.use })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_equip_item', { p_item_id: b.dataset.equip })));
 }

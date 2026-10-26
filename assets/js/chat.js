@@ -34,7 +34,7 @@ export function mountChat(colEl, fabEl) {
   form.onsubmit = send;
   switchTab(tab);
   subscribe();
-  on('changed', ({ name }) => { if (name === 'world_travel_region' || name === 'world_join_major_faction') load(); });
+  on('changed', ({ name }) => { if (/travel|join_major_faction/.test(name)) load(); });
   window.addEventListener('yahang:arrived', load);
 }
 

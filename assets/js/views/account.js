@@ -1,5 +1,5 @@
 // 계정: 게임 캐릭터와 별개인 로그인 계정 정보. 이메일·비밀번호 변경, 로그아웃.
-import { db, store, esc, icon, $, toast, friendlyError } from '../core.js';
+import { db, store, rpc, esc, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
 import { panel } from './common.js';
 
 export async function render(el) {
@@ -19,7 +19,16 @@ export async function render(el) {
         <label class="field"><span>새 이메일</span><input name="mail" type="email" autocomplete="email" required></label>
         <button class="btn" type="submit">${icon('check', 16)}<span>인증 메일 보내기</span></button>
         <p class="muted small">새 주소로 온 인증 메일을 확인해야 바뀝니다.</p></form>`, { ico: 'bell' })}
-    </div>`;
+    </div>
+    <details class="panel fold danger-zone"><summary class="panel-head"><h2>${icon('flame', 16)}캐릭터 정리</h2></summary><div class="panel-body">
+      <p class="desc">지금 캐릭터를 정리하고 처음부터 새 조사원을 키웁니다. 계정은 그대로 남습니다.</p>
+      <ul class="muted small"><li>레벨·소지품·장비·탈것·진행도가 모두 사라지며 되돌릴 수 없습니다.</li>
+        <li>전투불능이나 사망 상태라면 그 자리에 시신이 남고, 다른 조사원이 유품을 수습할 수 있습니다.</li>
+        <li>거래소에 올린 물품은 함께 사라집니다.</li></ul>
+      <form class="stack-form" id="del-form" novalidate>
+        <label class="field"><span>확인을 위해 캐릭터 이름 <b>${esc(store.character?.character_name || '')}</b>을(를) 그대로 적으세요</span><input name="confirm" autocomplete="off"></label>
+        <button class="btn danger" type="submit">${icon('flame', 16)}<span>캐릭터 정리하고 새로 시작</span></button></form>
+    </div></details>`;
   $('#acc-logout', el).onclick = () => db.auth.signOut();
   const submit = (form, fn) => form.onsubmit = async e => {
     e.preventDefault(); const btn = form.querySelector('button'); if (btn.disabled) return; btn.disabled = true;
@@ -31,6 +40,15 @@ export async function render(el) {
     if (pw.pw.value !== pw.pw2.value) throw new Error('비밀번호 확인이 일치하지 않습니다.');
     const { error } = await db.auth.updateUser({ password: pw.pw.value }); if (error) throw error;
     pw.reset(); toast('비밀번호를 바꿨습니다.', 'ok');
+  });
+  const del = $('#del-form', el);
+  submit(del, async () => {
+    const v = del.confirm.value.trim();
+    if (v !== store.character?.character_name) throw new Error('캐릭터 이름이 일치하지 않습니다.');
+    if (!confirm('정말 정리할까요? 되돌릴 수 없습니다.')) return;
+    await rpc('world_character_delete', { p_confirm: v });
+    toast('캐릭터를 정리했습니다. 새 조사원을 만드세요.', 'ok');
+    await loadCharacter();
   });
   const mail = $('#mail-form', el);
   submit(mail, async () => {

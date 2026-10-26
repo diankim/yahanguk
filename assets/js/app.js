@@ -39,6 +39,7 @@ async function route(session) {
     const c = await loadCharacter();
     routedFor = uid;
     if (!c) return renderCreate();
+    if (c.is_dead) return renderDeath(c);
     renderGame();
   } catch (e) {
     renderError(friendlyError(e));
@@ -161,6 +162,19 @@ function renderCreate() {
   };
 }
 
+/* ── 사망 ────────────────────────────────────────────────── */
+function renderDeath(c) {
+  document.title = '야행국 · 영면';
+  app.replaceChildren(h(`<div class="center-screen"><div class="card narrow death-card">
+    <div class="seal seal-lg">夜</div><h1>${esc(c.character_name)}, 영면하다</h1>
+    <p class="muted">${esc(c.death_reason || '구조를 받지 못하고 숨을 거두었습니다.')} · ${c.died_at ? new Date(c.died_at).toLocaleString('ko-KR') : ''}</p>
+    <p>마지막으로 머문 ${esc(c.location)}에 시신이 남았습니다. 다른 조사원이 명복을 빌고 유품을 수습할 수 있습니다.</p>
+    <button class="btn primary block" id="reborn">${icon('plus', 16)}<span>새 조사원으로 다시 시작</span></button>
+    <button class="btn ghost block" id="death-logout">${icon('logout', 16)}<span>로그아웃</span></button></div></div>`));
+  $('#death-logout').onclick = () => db.auth.signOut();
+  $('#reborn').onclick = e => guard(e.currentTarget, async () => { await rpc('world_character_delete', { p_confirm: c.character_name }); await loadCharacter(); return { content: '새 조사원을 만드세요.' }; });
+}
+
 /* ── 게임 화면 ──────────────────────────────────────────── */
 let current = null;
 function renderGame() {
@@ -225,5 +239,5 @@ export function go(view, sub = '') { const target = `#/${view}${sub ? '/' + sub 
 window.yahangGo = go;
 
 // 다른 계정으로 바뀌거나 캐릭터가 사라지면 처음 흐름으로 돌아간다.
-on('character', c => { if (!c && store.user && $('.shell')) renderCreate(); });
+on('character', c => { if (!store.user) return; if (!c && ($('.shell') || $('.death-card'))) renderCreate(); else if (c?.is_dead && $('.shell')) renderDeath(c); });
 emit('boot');
