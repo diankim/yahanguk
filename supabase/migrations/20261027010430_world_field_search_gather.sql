@@ -1,5 +1,4 @@
--- 탐색·채집과 실행 권한 정리 (fn_owner_field 소유)
-SET ROLE fn_owner_field;
+-- 탐색·채집 (postgres로 만든 뒤 fn_owner_field 소유로 넘긴다)
 
 -- ── 탐색 ──────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.world_field_search()
@@ -159,6 +158,11 @@ BEGIN
   INSERT INTO public.world_events(actor_id, actor_name, event_type, content, payload)
   VALUES (uid, c.character_name, 'explore', txt, payload || jsonb_build_object('kind', 'field_search', 'outcome', outcome, 'region_id', r.region_id,
     'node_id', n.node_id, 'danger', r.danger_level, 'location', c.location));
+  -- 기존 탐사 트리거는 탐사마다 침식 2를 더한다. 탐색은 횟수가 많으므로 그만큼 되돌리고, 위험한 곳에서만 가끔 1 쌓이게 한다.
+  UPDATE public.world_characters SET
+    erosion = greatest(0, least(100, erosion - 2 + CASE WHEN r.danger_level >= 5 AND random() < 0.4 THEN 1 ELSE 0 END)),
+    erosion_stage = CASE WHEN greatest(0, erosion - 2) >= 80 THEN 4 WHEN greatest(0, erosion - 2) >= 55 THEN 3 WHEN greatest(0, erosion - 2) >= 30 THEN 2 WHEN greatest(0, erosion - 2) >= 10 THEN 1 ELSE 0 END
+  WHERE owner_id = uid;
 
   RETURN jsonb_build_object('ok', true, 'outcome', outcome, 'content', txt, 'payload', payload, 'stamina', left_st,
     'battle', CASE WHEN outcome = 'encounter' THEN public.world_field_battle_view(uid) END);
@@ -208,12 +212,10 @@ BEGIN
     'item_id', it, 'qty', qty, 'stamina', left_st, 'ready_at', now() + interval '5 minutes');
 END $f$;
 
-REVOKE ALL ON FUNCTION public.world_field_region(text), public.world_stamina_max(integer), public.world_stamina_now(integer, timestamptz, integer),
-  public.world_stamina_change(uuid, integer), public.world_field_survey(uuid, text), public.world_field_status(uuid, text, text),
-  public.world_inv_add(jsonb, text, integer), public.world_story_current(uuid), public.world_field_battle_view(uuid),
-  public.world_battle_intent(text, numeric, text), public.world_battle_open(uuid, text, uuid, integer, integer) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.world_field_snapshot(), public.world_field_move(uuid), public.world_battle_action(text, text),
-  public.world_field_search(), public.world_field_gather(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.world_field_snapshot(), public.world_field_move(uuid), public.world_battle_action(text, text),
-  public.world_field_search(), public.world_field_gather(uuid) TO authenticated;
-RESET ROLE;
+-- 실행 권한과 소유권: 함수 전용 역할로 넘긴다
+REVOKE ALL ON FUNCTION public.world_field_search() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.world_field_search() TO authenticated;
+ALTER FUNCTION public.world_field_search() OWNER TO fn_owner_field;
+REVOKE ALL ON FUNCTION public.world_field_gather(p_spot_id uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.world_field_gather(p_spot_id uuid) TO authenticated;
+ALTER FUNCTION public.world_field_gather(p_spot_id uuid) OWNER TO fn_owner_field;

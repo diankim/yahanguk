@@ -1,5 +1,4 @@
--- 현장 상황 조회·세부 지역 이동·전투 엔진 (fn_owner_field 소유)
-SET ROLE fn_owner_field;
+-- 현장 상황 조회·세부 지역 이동·전투 엔진 (postgres로 만든 뒤 fn_owner_field 소유로 넘긴다)
 
 -- ── 현장 상황 ─────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.world_field_battle_view(p_owner uuid)
@@ -22,6 +21,7 @@ DECLARE uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtyp
   n public.world_exploration_nodes%rowtype; st int; mx int; theme text; weapon jsonb; chap text;
 BEGIN
   IF uid IS NULL THEN RAISE EXCEPTION '로그인이 필요합니다.'; END IF;
+  PERFORM public.world_death_sweep();
   SELECT * INTO c FROM public.world_characters WHERE owner_id = uid;
   IF NOT FOUND THEN RAISE EXCEPTION '캐릭터를 먼저 만드세요.'; END IF;
   r := public.world_field_region(c.location);
@@ -75,6 +75,10 @@ BEGIN
       WHERE k.chapter_id = chap AND k.region_id = r.region_id AND c.level >= ch.min_level
         AND NOT EXISTS (SELECT 1 FROM public.world_case_progress p WHERE p.owner_id = uid AND p.case_id = k.chapter_id
                         AND p.clues @> jsonb_build_array(jsonb_build_object('id', k.clue_id)))),
+    'corpses', (SELECT coalesce(jsonb_agg(jsonb_build_object('corpse_id', k.corpse_id, 'character_name', k.character_name, 'died_at', k.died_at,
+        'death_reason', k.death_reason, 'items_left', (SELECT coalesce(sum(v::text::int), 0) FROM jsonb_each(k.items) e(kk, v)) + CASE WHEN k.gil > 0 THEN 1 ELSE 0 END,
+        'can_respect', k.owner_id <> uid AND NOT (uid = ANY (k.respects))) ORDER BY k.died_at DESC), '[]'::jsonb)
+      FROM public.world_corpses k WHERE k.location = c.location AND k.died_at > now() - interval '7 days'),
     'monsters', (SELECT coalesce(jsonb_agg(jsonb_build_object('name', m.monster_name, 'type', m.monster_type, 'mechanic', m.mechanic_key, 'role', m.role,
         'min_level', m.min_level, 'max_level', m.max_level) ORDER BY m.role DESC, m.min_level), '[]'::jsonb)
       FROM public.world_region_monsters m WHERE m.region_id = r.region_id),
@@ -440,4 +444,19 @@ BEGIN
     'crit', crit, 'health', hp, 'battle', public.world_field_battle_view(uid), 'next_action_at', now() + interval '2 seconds');
 END $f$;
 
-RESET ROLE;
+-- 실행 권한과 소유권: 함수 전용 역할로 넘긴다
+REVOKE ALL ON FUNCTION public.world_field_battle_view(p_owner uuid) FROM PUBLIC;
+ALTER FUNCTION public.world_field_battle_view(p_owner uuid) OWNER TO fn_owner_field;
+REVOKE ALL ON FUNCTION public.world_field_snapshot() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.world_field_snapshot() TO authenticated;
+ALTER FUNCTION public.world_field_snapshot() OWNER TO fn_owner_field;
+REVOKE ALL ON FUNCTION public.world_field_move(p_node_id uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.world_field_move(p_node_id uuid) TO authenticated;
+ALTER FUNCTION public.world_field_move(p_node_id uuid) OWNER TO fn_owner_field;
+REVOKE ALL ON FUNCTION public.world_battle_intent(p_mech text, p_hp_ratio numeric, p_rank text) FROM PUBLIC;
+ALTER FUNCTION public.world_battle_intent(p_mech text, p_hp_ratio numeric, p_rank text) OWNER TO fn_owner_field;
+REVOKE ALL ON FUNCTION public.world_battle_open(p_owner uuid, p_region text, p_node uuid, p_depth integer, p_level integer) FROM PUBLIC;
+ALTER FUNCTION public.world_battle_open(p_owner uuid, p_region text, p_node uuid, p_depth integer, p_level integer) OWNER TO fn_owner_field;
+REVOKE ALL ON FUNCTION public.world_battle_action(p_action text, p_item text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.world_battle_action(p_action text, p_item text) TO authenticated;
+ALTER FUNCTION public.world_battle_action(p_action text, p_item text) OWNER TO fn_owner_field;
