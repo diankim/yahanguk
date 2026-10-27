@@ -18,7 +18,7 @@ const draftKey = 'yh-bug-draft';
 const loadDraft = () => { try { return JSON.parse(sessionStorage.getItem(draftKey) || '{}') || {}; } catch { return {}; } };
 const saveDraft = d => { try { sessionStorage.setItem(draftKey, JSON.stringify(d)); } catch {} };
 
-export function mountBug(btn) { btn.onclick = () => openBug(); }
+export function mountBug(btn) { if (btn) btn.onclick = () => openBug(); }
 window.addEventListener('yh-open-bug', e => openBug(e.detail?.tab));
 
 export async function openBug(tab) {

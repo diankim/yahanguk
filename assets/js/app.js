@@ -221,11 +221,7 @@ function renderGame() {
         <button class="icon-btn" id="btn-whisper" aria-label="귓속말" title="귓속말">${icon('letter')}</button>
         <a class="icon-btn" href="#/party" data-page="party" aria-label="동료" title="동료">${icon('users')}</a>
         <a class="icon-btn" href="#/guide" data-page="guide" aria-label="도움말" title="도움말">${icon('help')}</a>
-        <button class="icon-btn" id="btn-bug" aria-label="버그·문의 제보" title="버그·문의 제보">${icon('flag')}</button>
-        <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
-        <a class="icon-btn" href="#/settings/theme" data-page="settings" data-page-sub="theme" aria-label="테마" title="테마">${icon('palette')}</a>
-        <a class="icon-btn" href="#/settings" data-page="settings" data-page-sub="!theme" aria-label="게임 설정" title="게임 설정">${icon('gear')}</a>
-        <button class="icon-btn" id="btn-logout" aria-label="로그아웃" title="로그아웃">${icon('logout')}</button>
+        <a class="icon-btn" href="#/settings" data-page="settings" aria-label="설정 (프로필·테마·소리·계정·로그아웃)" title="설정 · 프로필 · 테마 · 로그아웃">${icon('gear')}</a>
       </div>
     </header>
     <div class="travel-banner" id="travel-banner" hidden></div>
@@ -237,8 +233,6 @@ function renderGame() {
     <nav class="tabbar" aria-label="주요 메뉴">${tabs}</nav>
     <button class="chat-fab" id="chat-fab" aria-label="채팅 열기">${icon('chat', 22)}</button>
   </div>`));
-  $('#btn-profile').onclick = openProfile;
-  $('#btn-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
   mountTravelBanner($('#travel-banner'));
   mountNotifications($('#btn-bell'));
   mountHud($('#hud'));
@@ -246,7 +240,7 @@ function renderGame() {
   mountChat($('#chat-col'), $('#chat-fab'));
   mountWhisper($('#btn-whisper'));
   mountVersionCheck(); // 배포·SQL 적용 뒤 새로고침 안내
-  mountBug($('#btn-bug'));
+  mountBug(); // 제보 창은 도움말·설정 페이지의 단추와 알림에서 연다
   mountTitleDot();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.

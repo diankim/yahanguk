@@ -1,6 +1,6 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
 import { ask, db, store, act, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
-import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop } from '../settings.js';
+import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile } from '../settings.js';
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
@@ -23,6 +23,7 @@ export async function render(root, sub) {
   const earned = (titles?.titles || []).filter(t => t.earned);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('gear', 14)} 이 기기와 캐릭터의 설정</p><h1>게임 설정</h1></div>
       <div class="head-actions"><button class="btn primary" id="set-save" disabled>${icon('check', 16)}<span>변경 사항 저장</span></button></div></div>
+    <div class="set-links"><button class="btn small" id="set-view-profile">${icon('idcard', 14)}<span>프로필 보기</span></button><button class="btn small" id="set-bug">${icon('flag', 14)}<span>버그·문의 제보</span></button><button class="btn small ghost" id="set-logout-top">${icon('logout', 14)}<span>로그아웃</span></button></div>
     ${segmented('set-sub', SUBS, SUBS.some(x => x[0] === sub) ? sub : 'profile')}
     <section id="sec-profile" class="set-sec">
       ${panel('프로필', `<div class="profile-edit">
@@ -75,7 +76,9 @@ export async function render(root, sub) {
           <button class="btn ghost" id="set-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>`, { ico: 'shield' })}
     </section>`;
 
-  $('#set-logout', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
+  $('#set-logout', el).onclick = $('#set-logout-top', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
+  $('#set-view-profile', el).onclick = () => openProfile();
+  $('#set-bug', el).onclick = () => window.dispatchEvent(new CustomEvent('yh-open-bug'));
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
   if (resumed) { save.disabled = false; toast('저장하지 않은 설정을 이어서 고칩니다.', 'info'); }
