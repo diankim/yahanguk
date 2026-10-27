@@ -79,7 +79,7 @@ function renderAuth(mode = 'login', notice = '') {
       ${mode === 'signup' ? `<label class="field"><span>비밀번호 확인</span><input name="password2" type="password" autocomplete="new-password" required minlength="6"></label>` : ''}
       <p class="form-msg ${notice ? 'show' : ''}" id="auth-msg">${esc(notice)}</p>
       <button class="btn primary block" type="submit">${mode === 'login' ? '로그인' : '계정 만들기'}</button>
-      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 한 곳(같은 인터넷 연결)에서 한 계정만 만들 수 있습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
+      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
     </form>
   </div>`));
   $$('[data-mode]').forEach(b => b.onclick = () => renderAuth(b.dataset.mode));
