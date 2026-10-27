@@ -141,7 +141,11 @@ async function status(body) {
     ${panel('회복·치료 물품', `<div class="action-grid">${USE.map(([k, d]) => `<button class="btn" data-use="${k}" ${invItems[k] > 0 && !downed ? '' : 'disabled'}><span>${esc(nameOf(k))} <small>×${fmt.num(invItems[k])}</small></span><small>${d}</small></button>`).join('')}</div>
       <p class="muted small">전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`, { ico: 'plus' })}`;
   $$('[data-surv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_survival_action', { p_action: b.dataset.surv })));
-  $$('[data-use]', body).forEach(b => b.onclick = () => guard(b, () => act('world_use_item', { p_item_id: b.dataset.use })));
+  $$('[data-use]', body).forEach(b => b.onclick = async () => {
+    const k = b.dataset.use, d = USE.find(([x]) => x === k)?.[1] || '';
+    if (!(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
+    guard(b, () => act('world_use_item', { p_item_id: k }));
+  });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   bindRepair(body);
   const cr = $('#call-rescue', body);
