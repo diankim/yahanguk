@@ -19,6 +19,10 @@ grant fn_owner_18878 to postgres with inherit true;
 grant select, insert, update on public.world_shop_stock to fn_owner_field;
 grant select on public.world_shop_catalog to fn_owner_field;
 grant select on public.world_economy_ledger to fn_owner_field;
+-- 대장간·판매 한도 함수(fn_owner_field 소유)가 지금 있는 곳의 상점을 찾는다(2026-10-27 운영 DB에 바로 넣음)
+grant fn_owner_expedition to postgres with inherit true;
+grant execute on function public.world_current_shop(uuid) to fn_owner_field;
+grant fn_owner_expedition to postgres with inherit false;
 
 -- 지금 회차의 시작 시각(07·15·23시)
 create or replace function public.world_shop_slot()
