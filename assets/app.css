@@ -787,8 +787,27 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .commission-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .commission { display: grid; gap: 6px; padding: 12px; border-radius: var(--r); background: var(--surface-2); border: var(--bw) solid var(--line); }
 .commission header { display: flex; gap: 8px; align-items: center; } .commission.ready { border-color: var(--gold); } .commission.done { opacity: .6; } .commission .btn { justify-self: start; }
-.supply-auto { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; } .supply-auto li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); }
-.supply-auto small { color: var(--muted); }
+.supply-auto { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.supply-auto li { display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); }
+.supply-auto b { font-size: 14px; }
+.supply-auto small { color: var(--muted); font-size: 12px; line-height: 1.45; }
+/* 원정 계획: PC 두 칸, 모바일 한 칸 */
+.exp-plan { display: grid; gap: 4px 20px; }
+.exp-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.exp-col .sub-h { margin: 10px 0 0; }
+.exp-side .sub-h small { font-weight: 400; font-size: 12px; margin-left: 4px; }
+@media (min-width: 900px) {
+  .exp-plan { grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr); }
+  .exp-side { position: sticky; top: 0; }
+}
+.ground-list { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.exp-notes { list-style: none; margin: 6px 0 4px; padding: 10px 12px; display: grid; gap: 10px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); }
+.exp-notes li { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: start; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.exp-notes li .ico { margin-top: 3px; }
+.exp-notes li b { display: block; color: var(--gold); font-weight: 600; margin-bottom: 2px; }
+.exp-notes li.skill .ico { color: var(--gold); }
+.exp-notes li.warn { color: var(--warn); }
+.exp-foot { line-height: 1.6; margin-top: 2px; }
 
 /* ── 프로필 사진·계정 ───────────────────── */
 .avatar-edit { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }

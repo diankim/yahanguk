@@ -9,6 +9,7 @@ import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';
 import { mountTitleDot } from './titledot.js';
+import { claimSession, expectLogin, loginFailed, mountSessionGuard, stopSessionGuard, takeKickNote } from './session.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
 import * as character from './views/character.js';
@@ -43,6 +44,7 @@ async function route(session) {
   if (uid && routedFor === uid && $('.shell')) return; // 이미 게임 화면
   store.user = session?.user || null;
   if (!store.user) { routedFor = null; return renderAuth(); }
+  mountSessionGuard();
   try {
     const c = await loadCharacter();
     routedFor = uid;
@@ -54,7 +56,7 @@ async function route(session) {
   }
 }
 db.auth.onAuthStateChange((evt, session) => {
-  if (evt === 'SIGNED_OUT') { routedFor = null; store.user = null; store.character = null; return renderAuth(); }
+  if (evt === 'SIGNED_OUT') { stopSessionGuard(); routedFor = null; store.user = null; store.character = null; return renderAuth('login', takeKickNote()); }
   if (evt === 'SIGNED_IN' || evt === 'INITIAL_SESSION') route(session);
 });
 
@@ -98,17 +100,20 @@ function renderAuth(mode = 'login', notice = '') {
     if (mode === 'signup' && !ID_RULE.test(raw)) return say('아이디는 영문 소문자와 숫자 4~16자로 정하세요.');
     if (mode === 'signup' && pw !== String(f.get('password2') || '')) return say('비밀번호 확인이 일치하지 않습니다.');
     btn.disabled = true;
+    expectLogin();
     try {
       if (mode === 'login') {
         const { error } = await db.auth.signInWithPassword({ email, password: pw });
         if (error) throw error;
+        await claimSession(); // 이 브라우저가 현재 접속이 되고, 다른 곳의 접속은 로그아웃된다
       } else {
         const { data, error } = await db.auth.signUp({ email, password: pw });
         if (error) throw error;
+        if (data.session) await claimSession();
         if (!data.session) return renderAuth('login', '가입은 되었지만 바로 로그인되지 않았습니다. 관리자에게 Supabase의 "Confirm email" 설정을 꺼 달라고 알려 주세요.');
       }
-    } catch (err) { say(friendlyError(err)); }
-    finally { btn.disabled = false; }
+    } catch (err) { loginFailed(); say(friendlyError(err)); }
+    finally { btn.disabled = false; loginFailed(); }
   };
 }
 
