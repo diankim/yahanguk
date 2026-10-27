@@ -39,7 +39,7 @@ async function draw() {
           <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
       ${(fr.friends || []).length ? `<ul class="people">${fr.friends.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small></div>
-          <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}">귓속말</button>
+          <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
             ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
         : empty('아직 친구가 없습니다. 채팅이나 같은 곳에 있는 조사원의 이름을 눌러 친구 신청을 보내 보세요.', 'users')}
@@ -80,7 +80,7 @@ async function draw() {
     $$('[data-fr-acc],[data-fr-dec]', body).forEach(b => b.onclick = () => guard(b, () => act('world_friend_respond', { p_from: b.dataset.frAcc || b.dataset.frDec, p_accept: !!b.dataset.frAcc })));
     $$('[data-fr-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_friend_remove', { p_target: b.dataset.frCancel })));
     $$('[data-unblock]', body).forEach(b => b.onclick = () => guard(b, () => act('world_block_set', { p_target: b.dataset.unblock, p_blocked: false })));
-    $$('[data-whisper]', body).forEach(b => b.onclick = () => openWhisper(b.dataset.whisper));
+    $$('[data-whisper]', body).forEach(b => b.onclick = () => openWhisper(b.dataset.whisper, b.dataset.whisperId));
     $$('[data-fr-inv]', body).forEach(b => b.onclick = () => guard(b, async () => {
       if (!pt) await act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) });
       return act('world_party_invite', { p_invitee_id: b.dataset.frInv });

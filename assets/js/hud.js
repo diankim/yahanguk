@@ -82,12 +82,17 @@ function statusItems(c) {
   }
   if (state.exp) {
     const left = new Date(state.exp.ends_at).getTime() - Date.now();
-    items.push({ kind: 'exp', icon: 'flame', title: `원정 · ${state.exp.place_name || ''}`, timer: state.exp.ends_at, text: left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능', action: ['원정 보기', () => window.yahangGo('home')], ready: left <= 0 });
+    items.push({ kind: 'exp', icon: 'flame', title: `원정 · ${state.exp.place_name || ''}`, timer: state.exp.ends_at, text: left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능', action: ['원정 보기', openExpeditionView], ready: left <= 0 });
   }
   if (!items.length) items.push({ kind: 'calm', icon: 'moon', title: '대기 중', text: '지도에서 이동하거나 현재 지역을 탐사하세요.' });
   return items;
 }
 
+// 원정 창(현장 화면의 원정 팝업)을 연다. 다른 화면이면 현장으로 옮긴 뒤 연다. 모바일 상태 띠는 접는다.
+function openExpeditionView() {
+  root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false');
+  window.dispatchEvent(new CustomEvent('yh-open-expedition'));
+}
 function render() {
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);

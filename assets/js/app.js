@@ -3,6 +3,7 @@ import { ID_RULE, idToEmail } from './config.js';
 import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
+import { mountWhisper } from './whisper.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { maybeStartTutorial, markPending } from './tutorial.js';
@@ -120,7 +121,12 @@ function renderAuth(mode = 'login', notice = '') {
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
 function renderCreate() {
   document.title = '야행국 · 캐릭터 생성';
-  const pick = { job: '', faction: '' };
+  // 쓰던 이름·고른 직업·소속을 이 기기에 잠시 남겨, 다른 앱에 다녀오거나 화면이 다시 그려져도 되살린다(입국하면 지운다).
+  const draftKey = `yh-create-draft:${store.user?.id || ''}`;
+  let draft = {};
+  try { draft = JSON.parse(localStorage.getItem(draftKey) || '{}') || {}; } catch {}
+  const pick = { job: JOBS[draft.job] ? draft.job : '', faction: FACTIONS[draft.faction] ? draft.faction : '' };
+  const saveDraft = () => { try { localStorage.setItem(draftKey, JSON.stringify({ name: form.name.value, job: pick.job, faction: pick.faction })); } catch {} };
   const cards = (obj, kind) => Object.entries(obj).map(([k, v]) => `
     <button type="button" class="choice-card" data-${kind}="${k}" aria-pressed="false">
       <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(v.desc)}</small>
@@ -151,13 +157,16 @@ function renderCreate() {
     $('#sum-job').textContent = pick.job ? JOBS[pick.job].name : '—';
     $('#sum-faction').textContent = pick.faction ? FACTIONS[pick.faction].name : '—';
   };
-  form.addEventListener('input', sync);
+  if (typeof draft.name === 'string') form.name.value = draft.name.slice(0, 12);
+  for (const kind of ['job', 'faction']) if (pick[kind]) $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x.dataset[kind] === pick[kind]));
+  sync();
+  form.addEventListener('input', () => { sync(); saveDraft(); });
   form.addEventListener('click', e => {
     const b = e.target.closest('.choice-card'); if (!b) return;
     const kind = b.dataset.job ? 'job' : 'faction';
     pick[kind] = b.dataset[kind];
     $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x === b));
-    sync();
+    sync(); saveDraft();
   });
   $('#create-logout').onclick = () => logout();
   form.onsubmit = async e => {
@@ -174,6 +183,7 @@ function renderCreate() {
       const made = await loadCharacter();
       if (!made) throw new Error('캐릭터 정보를 불러오지 못했습니다. 새로고침해 주세요.');
       markPending(made.owner_id);
+      try { localStorage.removeItem(draftKey); } catch {}
       toast(`${name} 조사원으로 입국했습니다.`, 'ok');
       renderGame();
     } catch (err) { say(friendlyError(err)); btn.disabled = false; }
@@ -205,6 +215,7 @@ function renderGame() {
       <nav class="topnav" aria-label="주요 메뉴">${tabs}</nav>
       <div class="top-actions">
         <button class="icon-btn" id="btn-bell" aria-label="알림">${icon('bell')}<i class="dot" hidden></i></button>
+        <button class="icon-btn" id="btn-whisper" aria-label="귓속말" title="귓속말">${icon('letter')}</button>
         <a class="icon-btn" href="#/party" data-page="party" aria-label="동료" title="동료">${icon('users')}</a>
         <a class="icon-btn" href="#/guide" data-page="guide" aria-label="도움말" title="도움말">${icon('help')}</a>
         <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
@@ -229,6 +240,7 @@ function renderGame() {
   mountHud($('#hud'));
   mountEnv();
   mountChat($('#chat-col'), $('#chat-fab'));
+  mountWhisper($('#btn-whisper'));
   mountTitleDot();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.

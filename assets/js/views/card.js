@@ -66,7 +66,7 @@ async function run(b, c, box) {
     if (c.relation === 'friends' && !(await ask(`${c.character_name}님과 친구를 끊을까요?`, { title: '친구 끊기', ok: '끊기', danger: true }))) return;
     return guard(b, async () => { const r = await act('world_friend_remove', { p_target: id }); again(); return r; });
   }
-  if (k === 'whisper') { close(); const { openWhisper } = await import('../chat.js'); return openWhisper(c.character_name); }
+  if (k === 'whisper') { close(); const { openWhisper } = await import('../chat.js'); return openWhisper(c.character_name, c.owner_id); }
   if (k === 'invite') return guard(b, async () => {
     if (!c.my_party_role) await act('world_party_create', { p_party_name: `${store.character?.character_name || '조사원'}의 동료`.slice(0, 20) });
     const r = await act('world_party_invite', { p_invitee_id: id }); again(); return r;

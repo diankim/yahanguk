@@ -24,7 +24,8 @@ const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false, wantExp = false;
 // 알림의 "결과 보기": 현장 화면이 그려진 뒤 원정 창을 연다.
-window.addEventListener('yh-open-expedition', () => { if (el?.isConnected && !busy) openExpedition(); else wantExp = true; });
+// 상태판·알림의 「원정 보기」: 현장 화면이면 바로 열고, 다른 화면이면 현장으로 옮긴 뒤 연다.
+window.addEventListener('yh-open-expedition', () => { if (el?.isConnected && !busy) openExpedition(); else { wantExp = true; if (!el?.isConnected) window.yahangGo?.('home'); } });
 
 export async function render(root) {
   if (!store.character) return;

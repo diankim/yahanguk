@@ -1,13 +1,13 @@
-// 인게임 채팅: 전체·지역·세력·귓속말·파티. PC는 우측 열, 모바일은 하단 시트.
+// 인게임 채팅: 전체·지역·세력·파티. PC는 우측 열, 모바일은 하단 시트. 귓속말은 따로 상대별 창(whisper.js)으로 연다.
 import { cardName } from './views/card.js';
 import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError } from './core.js';
+import { onWhisper, openWhisperWindow } from './whisper.js';
 
-const TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['whisper', '귓속말'], ['party', '파티']];
+const TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const HINT = {
   global: '모든 조사원에게 보입니다 · 하루 20회',
   region: '같은 지역에 있는 조사원에게만 보입니다',
   faction: '같은 대세력 소속에게만 보입니다',
-  whisper: '받는 사람 이름을 입력하세요',
   party: '파티원에게만 보입니다',
 };
 let panel, col, fab, tab = 'global', msgs = [], partyMsgs = [], channel, partyPoll, unread = 0;
@@ -22,7 +22,6 @@ export function mountChat(colEl, fabEl) {
     <p class="chat-hint" id="chat-hint"></p>
     <ol class="chat-list" id="chat-list" aria-live="polite"></ol>
     <form class="chat-form" id="chat-form">
-      <input name="to" class="chat-to" placeholder="받는 사람" maxlength="24" hidden>
       <div class="chat-row"><textarea name="text" rows="1" maxlength="500" placeholder="메시지 입력" aria-label="메시지"></textarea>
       <button class="btn primary" type="submit" aria-label="전송">${icon('chevron', 18)}</button></div>
     </form>
@@ -36,9 +35,8 @@ export function mountChat(colEl, fabEl) {
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
   // 쓰던 메시지는 새로고침하거나 시트를 닫았다 열어도 남는다(이 탭에만 저장).
-  try { form.text.value = sessionStorage.getItem('yh-chat-draft') || ''; form.to.value = sessionStorage.getItem('yh-chat-to') || ''; } catch {}
+  try { form.text.value = sessionStorage.getItem('yh-chat-draft') || ''; } catch {}
   form.text.addEventListener('input', () => { try { sessionStorage.setItem('yh-chat-draft', form.text.value); } catch {} });
-  form.to.addEventListener('input', () => { try { sessionStorage.setItem('yh-chat-to', form.to.value); } catch {} });
   switchTab(tab);
   subscribe();
   loadBlocks();
@@ -52,15 +50,8 @@ export function mountChat(colEl, fabEl) {
   }, 10000);
 }
 
-// 조사원 카드·친구 목록의 [귓속말]: 귓속말 칸을 열고 받는 사람을 채운다
-export function openWhisper(name) {
-  if (!panel) return;
-  switchTab('whisper');
-  const form = $('#chat-form', panel);
-  form.to.value = name || ''; try { sessionStorage.setItem('yh-chat-to', form.to.value); } catch {}
-  if (!matchMedia('(min-width: 1280px)').matches) toggleSheet(true);
-  setTimeout(() => form.text.focus({ preventScroll: true }), 60);
-}
+// 조사원 카드·친구 목록의 [귓속말]: 그 상대와의 귓속말 창을 연다
+export function openWhisper(name, id) { openWhisperWindow({ name, id }); }
 
 function placePanel() {
   const wide = matchMedia('(min-width: 1280px)').matches;
@@ -78,7 +69,6 @@ function switchTab(t) {
   tab = t;
   $$('.chat-tabs button', panel).forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   $('#chat-hint', panel).textContent = HINT[t];
-  $('.chat-to', panel).hidden = t !== 'whisper';
   clearInterval(partyPoll);
   if (t === 'party') { loadParty(); partyPoll = setInterval(() => { if (!document.hidden) loadParty(); }, 20000); }
   else load();
@@ -110,6 +100,8 @@ async function loadBlocks() {
 function addMsg(m) {
   if (!m || msgs.some(x => x.id === m.id)) return;
   msgs.push(m); if (msgs.length > 120) msgs.shift();
+  // 귓속말은 채팅 목록에 섞지 않고 귓속말 창으로 넘긴다
+  if (m.channel_type === 'whisper') { if (!blocked.has(m.sender_id)) onWhisper(m); return; }
   if (m.channel_type === tab) draw();
   const sheetClosed = !matchMedia('(min-width: 1280px)').matches && !document.body.classList.contains('chat-open');
   if (sheetClosed && m.sender_id !== store.user?.id && !blocked.has(m.sender_id)) { unread++; badge(); }
@@ -145,9 +137,7 @@ async function send(e) {
   try {
     if (tab === 'party') { await act('world_party_chat_send', { p_content: text }); await loadParty(); }
     else {
-      const to = form.to.value.trim();
-      if (tab === 'whisper' && !to) throw new Error('받는 사람 이름을 입력하세요.');
-      await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: tab === 'whisper' ? to : null });
+      await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: null });
       await load();
     }
     form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {}
