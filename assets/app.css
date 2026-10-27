@@ -483,7 +483,9 @@ body.chat-open .chat-fab { display: none; }
 .note-item { display: flex; gap: 10px; justify-content: space-between; padding: 12px; border-radius: var(--r); background: var(--surface-2); }
 .note-item p { font-size: 13px; color: var(--muted); }
 .note-item time { font-size: 11px; color: var(--muted); }
-.note-actions { display: grid; gap: 6px; align-content: start; }
+.note-item > div:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.note-actions { display: grid; gap: 6px; align-content: start; flex-shrink: 0; }
+.note-actions .btn { white-space: nowrap; }
 
 /* ── 반응형 ───────────────────────────── */
 @media (max-width: 420px) {
