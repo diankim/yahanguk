@@ -14,7 +14,14 @@ grant fn_owner_18538, fn_owner_18878, fn_owner_18879, fn_owner_19111 to postgres
 
 -- 공용 이름 함수(앞 마이그레이션에서 만듦)에 실행 권한 추가
 grant execute on function public.world_faction_name(text) to fn_owner_18538;
-grant execute on function public.world_bag_count(jsonb), public.world_bag_limit(uuid) to fn_owner_field;
+-- 가방 칸 수 세기: 기존 world_bag_count는 다른 역할 소유라 실행 권한을 넘길 수 없어 같은 계산을 따로 둔다
+create or replace function public.world_inv_count(p_inv jsonb) returns int
+language sql immutable set search_path = '' as $$
+  select coalesce(sum(greatest(0, case when jsonb_typeof(v) = 'number' then v::text::numeric else 0 end)), 0)::int
+  from jsonb_each(coalesce(p_inv, '{}'::jsonb)) as t(k, v)
+$$;
+revoke all on function public.world_inv_count(jsonb) from public, anon, authenticated;
+grant execute on function public.world_inv_count(jsonb) to fn_owner_field;
 
 /* ── 1) 전투 행동 간격 1초 ───────────────────────────────── */
 do $$ declare f text; def text; nd text; n int; begin
@@ -318,8 +325,11 @@ begin
   if b.gil < t.want_gil then raise exception '전이 부족합니다.'; end if;
   ainv := public.world_inv_apply(public.world_inv_apply(a.inventory, t.give_items, -1), t.want_items, 1);
   binv := public.world_inv_apply(public.world_inv_apply(b.inventory, t.want_items, -1), t.give_items, 1);
-  if public.world_bag_count(ainv) > greatest(public.world_bag_limit(a.owner_id), public.world_bag_count(a.inventory)) then raise exception '제안한 사람의 가방이 가득 차 거래할 수 없습니다.'; end if;
-  if public.world_bag_count(binv) > greatest(public.world_bag_limit(b.owner_id), public.world_bag_count(b.inventory)) then raise exception '가방이 가득 차 거래할 수 없습니다. 물품을 정리한 뒤 다시 시도하세요.'; end if;
+  -- 가방 한도(world_bag_limit와 같은 계산: 기본 칸 + 수향연맹 20)
+  if public.world_inv_count(ainv) > greatest(a.bag_capacity + case when a.major_faction_id = 'river_alliance' then 20 else 0 end, public.world_inv_count(a.inventory)) then
+    raise exception '제안한 사람의 가방이 가득 차 거래할 수 없습니다.'; end if;
+  if public.world_inv_count(binv) > greatest(b.bag_capacity + case when b.major_faction_id = 'river_alliance' then 20 else 0 end, public.world_inv_count(b.inventory)) then
+    raise exception '가방이 가득 차 거래할 수 없습니다. 물품을 정리한 뒤 다시 시도하세요.'; end if;
   -- 전을 건네면 거래소와 같은 5% 거래세를 받는 쪽에서 뗀다
   tax_a := case when t.want_gil > 0 then greatest(1, round(t.want_gil * 0.05)::bigint) else 0 end;
   tax_b := case when t.give_gil > 0 then greatest(1, round(t.give_gil * 0.05)::bigint) else 0 end;
