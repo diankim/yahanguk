@@ -3,6 +3,7 @@
 -- - 각 화면은 world_session_check로 자기가 현재 접속인지 확인하고, 아니면 스스로 로그아웃한다.
 --   기록이 바뀌면 실시간으로 알 수 있도록 world_active_sessions를 실시간 발행 목록에 넣는다.
 -- - 로그인할 때 다른 세션의 갱신 토큰도 끊는다(화면 쪽 signOut scope 'others').
+-- (함수 주인은 auth 스키마를 쓸 수 없으므로 auth.jwt() 대신 request.jwt.claims 설정에서 session_id를 읽는다.)
 -- SQL Editor에서 이 파일 전체를 한 번 실행한다. 다시 실행해도 안전하다.
 
 create table if not exists public.world_active_sessions (
@@ -20,7 +21,7 @@ grant select, insert, update on public.world_active_sessions to fn_owner_field;
 -- 방금 로그인한 브라우저를 현재 접속으로 정한다
 create or replace function public.world_session_claim()
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
-declare uid uuid := public.fn_owner_auth_uid(); sid text := nullif(auth.jwt() ->> 'session_id', '');
+declare uid uuid := public.fn_owner_auth_uid(); sid text := nullif((nullif(current_setting('request.jwt.claims', true), '')::jsonb) ->> 'session_id', '');
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   if sid is null then return jsonb_build_object('ok', false); end if;
@@ -32,7 +33,7 @@ end $$;
 -- 이 브라우저가 현재 접속인지 확인한다. 아직 기록이 없으면 이 브라우저를 현재 접속으로 정한다.
 create or replace function public.world_session_check()
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
-declare uid uuid := public.fn_owner_auth_uid(); sid text := nullif(auth.jwt() ->> 'session_id', ''); cur text;
+declare uid uuid := public.fn_owner_auth_uid(); sid text := nullif((nullif(current_setting('request.jwt.claims', true), '')::jsonb) ->> 'session_id', ''); cur text;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   if sid is null then return jsonb_build_object('active', true); end if;

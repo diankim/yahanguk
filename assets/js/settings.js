@@ -16,8 +16,10 @@ export function openProfile() {
         <p class="muted small">Lv.${c.level || 1} · ${esc(JOBS[c.job_key]?.trait || '')} · ${esc(c.location || '')}</p></div></div>
     <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
     <div class="btn-row"><a class="btn primary" href="#/settings/profile" data-close>${icon('gear', 16)}<span>프로필 수정</span></a>
-      <a class="btn" href="#/char/titles" data-close>${icon('spark', 16)}<span>칭호 보기</span></a></div>
+      <a class="btn" href="#/char/titles" data-close>${icon('spark', 16)}<span>칭호 보기</span></a>
+      <button class="btn ghost" id="pf-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>
     <p class="muted small">이름·직업·소속은 캐릭터를 만들 때 정해지며 바꿀 수 없습니다.</p></div>` });
+  document.getElementById('pf-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) { closeModal(); db.auth.signOut(); } };
 }
 
 // 사진 자르기: 정사각형 안에서 끌어 옮기고 확대해 128px WebP로 만든다. 저장은 부르는 쪽이 한다.

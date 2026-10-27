@@ -1,5 +1,5 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
-import { store, act, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
+import { ask, db, store, act, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
 import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop } from '../settings.js';
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
 import { load, panel } from './common.js';
@@ -70,9 +70,11 @@ export async function render(root, sub) {
     </section>
     <section id="sec-account" class="set-sec">
       ${panel('계정', `<p class="desc">아이디 확인·비밀번호 변경, 로그아웃, 캐릭터 정리는 계정 화면에서 합니다.</p>
-        <a class="btn" href="#/account">${icon('idcard', 16)}<span>계정 관리 열기</span></a>`, { ico: 'shield' })}
+        <div class="btn-row"><a class="btn" href="#/account">${icon('idcard', 16)}<span>계정 관리 열기</span></a>
+          <button class="btn ghost" id="set-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>`, { ico: 'shield' })}
     </section>`;
 
+  $('#set-logout', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) db.auth.signOut(); };
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
   if (resumed) { save.disabled = false; toast('저장하지 않은 설정을 이어서 고칩니다.', 'info'); }

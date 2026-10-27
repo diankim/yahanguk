@@ -21,7 +21,8 @@ export const JOB_SKILL = {
   analyst: ['약점 간파', '싸움에서 밀리면 다음 싸움의 승률이 15% 오릅니다.'],
   artificer: ['현장 가공', '채집할 때 25% 확률로 재료를 하나 더 손질해 챙깁니다.'],
 };
-const KIND_ICON = { start: 'flame', round: 'route', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check' };
+const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check' };
+let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
 
 export function renderExpedition(box, ov) {
@@ -72,6 +73,7 @@ export function renderExpedition(box, ov) {
 }
 
 function renderActive(box, a) {
+  seenLines = 0;
   const end = new Date(a.ends_at).getTime(), start = new Date(a.started_at).getTime();
   box.innerHTML = `
     <div class="exp-active">
@@ -80,10 +82,11 @@ function renderActive(box, a) {
         <small class="muted">${esc(a.region_name || '')} · ${a.minutes}분 · ${nameOf(a.stance)} · 보급 ${Object.entries(a.supplies || {}).map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ') || '없음'}</small></div>
     </div>
     <div class="btn-row"><button class="btn primary" id="exp-claim">${icon('check', 16)}<span>결과 확인</span></button><button class="btn" id="exp-recall">${icon('back', 16)}<span>일찍 귀환</span></button></div>
-    <h3 class="sub-h">진행 기록 <small class="muted" id="exp-rounds"></small></h3>
-    <ol class="exp-feed" id="exp-feed"><li class="muted">기록을 불러오는 중…</li></ol>
+    <h3 class="sub-h">원정 일지 <small class="muted" id="exp-rounds"></small></h3>
+    <p class="exp-now" id="exp-now">${icon('pin', 14)}<span>기록을 불러오는 중…</span></p>
+    <ol class="exp-feed" id="exp-feed"></ol>
     <div id="exp-party"></div>
-    <p class="muted small">진행 기록에는 수색 회차·건량·날씨 변화·주변의 기척이 시간에 맞춰 올라옵니다. 싸움의 승패와 전리품은 돌아왔을 때 한꺼번에 밝혀집니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
+    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척과 수색 회차·건량·날씨 변화가 시간에 맞춰 쌓입니다. 싸움의 승패와 전리품은 돌아왔을 때 한꺼번에 밝혀집니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
   const tick = () => {
     const left = end - Date.now(), span = $('#exp-left', box); if (!span) return clearInterval(t);
     span.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '돌아왔습니다. 결과를 확인하세요.';
@@ -102,8 +105,15 @@ async function feed(box) {
   let p = null;
   try { p = await load('world_expedition_progress'); } catch (e) { list.innerHTML = `<li class="muted">${esc(e.message)}</li>`; }
   if (p?.active) {
-    $('#exp-rounds', box).textContent = `수색 ${p.rounds_done}/${p.total_rounds}${p.job_skill ? ` · 기술 ${p.job_skill}` : ''}`;
-    list.innerHTML = [...(p.lines || [])].reverse().map(l => `<li class="k-${esc(l.kind)}">${icon(KIND_ICON[l.kind] || 'route', 14)}<span>${esc(l.text)}</span><time>${fmt.time(l.at)}</time></li>`).join('');
+    $('#exp-rounds', box).textContent = `수색 ${p.rounds_done}/${p.total_rounds} · 기록 ${(p.lines || []).length}줄${p.job_skill ? ` · 기술 ${p.job_skill}` : ''}`;
+    // 일지처럼 위에서 아래로 쌓고, 가장 새 줄이 보이게 아래로 내린다(직접 위로 올려 읽는 중이면 그대로 둔다)
+    const ls = p.lines || [], atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 40 || !list.children.length;
+    const fresh = seenLines && ls.length > seenLines ? ls.length - seenLines : 0;
+    list.innerHTML = ls.map((l, i) => `<li class="k-${esc(l.kind)} ${i >= ls.length - fresh ? 'fresh' : ''}">${icon(KIND_ICON[l.kind] || 'route', 14)}<span>${esc(l.text)}</span><time>${fmt.time(l.at)}</time></li>`).join('');
+    seenLines = ls.length;
+    if (atEnd) list.scrollTop = list.scrollHeight;
+    const last = ls[ls.length - 1], nextIn = p.next_at ? Math.max(0, new Date(p.next_at) - Date.now()) : 0;
+    $('#exp-now', box).innerHTML = `${icon('pin', 14)}<span><b>지금</b> ${esc(last?.text || '')}${nextIn ? ` <small class="muted">· 다음 기록 약 ${Math.max(1, Math.round(nextIn / 60000))}분 뒤</small>` : ''}</span>`;
     const party = p.party || [];
     $('#exp-party', box).innerHTML = party.length ? `<h3 class="sub-h">원정 중인 동료</h3><ul class="spot-list">${party.map(m => `<li><div><b>${esc(m.name)}</b>
         <small>${esc(m.region || '')} · ${esc(m.place || '')}${m.same_region ? ' · 같은 지역' : ''} · 수색 ${m.rounds_done}/${m.total_rounds}</small></div>${bar(m.rounds_done, m.total_rounds, 'xp')}</li>`).join('')}</ul>` : '';
