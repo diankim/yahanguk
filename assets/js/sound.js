@@ -5,6 +5,9 @@ import { on } from './core.js';
 export const sound = { bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
 let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
 const scene = { territory: 'capital', safe: false, battle: false };
+// 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
+const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
+let away = false;
 let env = { weather: 'clear', phase: 'noon' };
 
 export function loadSound() { try { Object.assign(sound, JSON.parse(localStorage.getItem('yh-sound') || '{}')); } catch {} }
@@ -112,7 +115,7 @@ function profile() {
   return p;
 }
 function phrase() {
-  if (!playing || !ctx) return;
+  if (!playing || !ctx || away) return;
   const p = profile(), beat = 60 / p.bpm;
   let t = now() + 0.08;
   const len = 6 + Math.floor(Math.random() * 5);
@@ -195,6 +198,7 @@ let critterTimer = null;
 // 짧게 끊어지는 소리들: 새·풀벌레·물방울·부엉이
 function critters() {
   clearTimeout(critterTimer);
+  if (away) return;
   if (!ctx || !sound.ambOn) { critterTimer = setTimeout(critters, 4000); return; }
   const under = scene.territory === 'underworld' || scene.territory === 'abyss';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
@@ -250,7 +254,7 @@ const SFX = {
   chime: () => tone(660, 0.2, 0.05), error: () => seq([240, 200], 0.1, 0.1, 0.06), repair: () => { tone(900, 0.04, 0.05); tone(700, 0.05, 0.05, 'sine', 0.07); },
 };
 export function playSfx(kind) {
-  if (!sound.sfxOn || !ensureCtx()) return;
+  if (!sound.sfxOn || away || !ensureCtx()) return;
   try { (SFX[kind] || SFX.tap)(); } catch {}
 }
 export const SFX_SAMPLES = [['confirm', '확인'], ['find', '발견'], ['hit', '전투'], ['coin', '거래'], ['craft', '제작'], ['travel', '출발'], ['reward', '보상'], ['error', '오류']];
@@ -291,4 +295,22 @@ export function initSound() {
   const unlock = () => { if (!ensureCtx()) return; ctx.resume?.(); applyVolumes(); if (sound.bgmOn) startMusic(); updateAmbience(); critters(); };
   document.addEventListener('pointerdown', unlock, { once: true });
   document.addEventListener('keydown', unlock, { once: true });
+  if (MOBILE) {
+    const leave = () => {
+      if (away) return; away = true;
+      clearTimeout(phraseTimer); clearTimeout(critterTimer);
+      if (ctx) { master.gain.setValueAtTime(0, ctx.currentTime); ctx.suspend?.().catch(() => {}); }
+    };
+    const back = () => {
+      if (!away || document.hidden) return; away = false;
+      if (!ctx) return;
+      const wake = () => { master.gain.setTargetAtTime(0.9, ctx.currentTime, 0.2); if (playing) { clearTimeout(phraseTimer); phraseTimer = setTimeout(phrase, 400); } critters(); };
+      Promise.resolve(ctx.resume?.()).then(wake, wake);
+    };
+    document.addEventListener('visibilitychange', () => (document.hidden ? leave() : back()));
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('pageshow', back);
+    // iOS는 돌아온 뒤 한 번 눌러야 다시 소리를 허락하기도 한다
+    document.addEventListener('pointerdown', () => { if (ctx && !away && ctx.state !== 'running') ctx.resume?.(); });
+  }
 }
