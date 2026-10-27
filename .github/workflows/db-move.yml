@@ -99,10 +99,11 @@ jobs:
         if: inputs.confirm == 'MOVE'
         # CLI 역할 덤프는 supabase_admin이 준 멤버십(GRANTED BY supabase_admin)을 새 DB에서 다시 줄 수 없어, 역할만 직접 만든다.
         # postgres가 만들면 관리 멤버십은 저절로 생긴다. 복원 중에만 소유자 지정을 위해 SET·INHERIT를 켜고, 끝나면 끈다.
+        # 함수 주인을 바꾸려면 새 주인에게 public 스키마 CREATE가 있어야 하는데 덤프의 스키마 권한 줄은 맨 끝에 있다. 복원 중에만 주고, 옛 DB에서 CREATE가 없던 역할은 끝나면 거둔다.
         run: |
           ./psql.sh "$SRC" -tA -c "select format('do \$r\$ begin if not exists (select 1 from pg_roles where rolname = %L) then create role %I nologin noinherit bypassrls; end if; end \$r\$;', rolname, rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles.sql
-          ./psql.sh "$SRC" -tA -c "select format('grant %I to postgres with inherit true, set true;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_on.sql
-          ./psql.sh "$SRC" -tA -c "select format('grant %I to postgres with inherit false, set false;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_off.sql
+          ./psql.sh "$SRC" -tA -c "select format('grant %I to postgres with inherit true, set true; grant usage, create on schema public to %I;', rolname, rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_on.sql
+          ./psql.sh "$SRC" -tA -c "select format('grant %I to postgres with inherit false, set false;', rolname) || case when has_schema_privilege(oid, 'public', 'CREATE') then '' else format(' revoke create on schema public from %I;', rolname) end from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_off.sql
           echo "roles: $(grep -c 'create role' roles.sql)"
           ./psql.sh "$DST" -q -v ON_ERROR_STOP=1 -f roles.sql -f roles_on.sql
 
