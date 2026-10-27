@@ -17,6 +17,8 @@ const HINT = {
 let panel, col, fab, tab = 'global', msgs = [], partyMsgs = [], channel, partyPoll, unread = 0;
 // live: 실시간 연결이 살아 있는지. 끊겨 있으면 새 메시지만 짧게 다시 읽어 온다(다른 지역의 전체 채팅도 놓치지 않게).
 let live = false, lastFull = 0, blocked = new Set();
+// 목록을 위로 올려 읽는 중이면(stick=false) 새 메시지·자동 갱신이 와도 맨 아래로 끌어내리지 않는다.
+let stick = true, forceEnd = true;
 // 모임: 고른 모임, 모임별 최근 말, 안 읽은 수
 let circleId = null, circleMsgs = {}, circleUnread = {}, circleChannel = null, circleLive = false, readTimer = null;
 try { circleId = sessionStorage.getItem('yh-chat-circle') || null; } catch {}
@@ -24,11 +26,13 @@ try { circleId = sessionStorage.getItem('yh-chat-circle') || null; } catch {}
 export function mountChat(colEl, fabEl) {
   col = colEl; fab = fabEl;
   panel = h(`<section class="chat" aria-label="채팅">
+    <div class="chat-grip" role="separator" aria-orientation="horizontal" aria-label="채팅창 크기 조절 (위아래로 끌기)" tabindex="0"><i></i></div>
     <header class="chat-head"><h2>${icon('chat', 16)} 통신망</h2><button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
     <div class="segmented chat-tabs"></div>
     <div class="chat-circles" id="chat-circles" hidden></div>
     <p class="chat-hint" id="chat-hint"></p>
-    <ol class="chat-list" id="chat-list" aria-live="polite"></ol>
+    <div class="chat-list-wrap"><ol class="chat-list" id="chat-list" aria-live="polite"></ol>
+      <button class="chat-jump" id="chat-jump" type="button" hidden>${icon('chevron', 14)}<span>새 메시지 · 맨 아래로</span></button></div>
     <form class="chat-form" id="chat-form">
       <div class="chat-row"><textarea name="text" rows="1" maxlength="500" placeholder="메시지 입력" aria-label="메시지"></textarea>
       <button class="btn primary" type="submit" aria-label="전송">${icon('chevron', 18)}</button></div>
@@ -41,6 +45,10 @@ export function mountChat(colEl, fabEl) {
   panel.querySelector('.chat-tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) switchTab(b.dataset.tab); };
   $('#chat-circles', panel).onclick = e => { const b = e.target.closest('[data-circle]'); if (b) pickCircle(b.dataset.circle); };
   renderTabs();
+  const list = $('#chat-list', panel);
+  list.addEventListener('scroll', () => { stick = list.scrollHeight - list.scrollTop - list.clientHeight < 40; if (stick) $('#chat-jump', panel).hidden = true; }, { passive: true });
+  $('#chat-jump', panel).onclick = () => { forceEnd = true; scrollEnd(); };
+  bindGrip();
   window.addEventListener('yh-circles', () => { syncCircles(); });
   loadCircles().then(syncCircles);
   const form = $('#chat-form', panel);
@@ -75,7 +83,7 @@ function placePanel() {
 function toggleSheet(open) {
   document.body.classList.toggle('chat-open', open);
   // 모바일에서는 시트를 열 때 키패드를 띄우지 않는다(입력칸을 눌렀을 때만). 마우스를 쓰는 화면에서만 바로 입력칸으로 간다.
-  if (open) { unread = 0; badge(); loadNew(); if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#chat-form textarea', panel)?.focus({ preventScroll: true }), 50); scrollEnd(); }
+  if (open) { unread = 0; badge(); forceEnd = true; applyHeight(); loadNew(); if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#chat-form textarea', panel)?.focus({ preventScroll: true }), 50); scrollEnd(); }
 }
 function badge() { fab.dataset.count = unread ? String(Math.min(unread, 99)) : ''; }
 function renderTabs() {
@@ -87,7 +95,7 @@ function renderTabs() {
 }
 
 function switchTab(t) {
-  tab = t;
+  tab = t; forceEnd = true;
   $$('.chat-tabs button', panel).forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   $('#chat-hint', panel).textContent = HINT[t];
   $('#chat-circles', panel).hidden = t !== 'circle';
@@ -118,6 +126,7 @@ function paintCircleDots() {
   $('.chat-tabs [data-tab="circle"]', panel)?.classList.toggle('has-dot', any);
 }
 function pickCircle(id) {
+  forceEnd = true;
   circleId = id; try { sessionStorage.setItem('yh-chat-circle', id); } catch {}
   drawCircleChips(); loadCircleMsgs();
 }
@@ -223,14 +232,46 @@ function draw() {
   scrollEnd();
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
-function scrollEnd() { const list = $('#chat-list', panel); if (list) list.scrollTop = list.scrollHeight; }
+function scrollEnd() {
+  const list = $('#chat-list', panel); if (!list) return;
+  const grew = list.scrollHeight > (Number(list.dataset.h) || 0); list.dataset.h = String(list.scrollHeight);
+  if (forceEnd || stick) { list.scrollTop = list.scrollHeight; stick = true; forceEnd = false; $('#chat-jump', panel).hidden = true; }
+  else if (grew) $('#chat-jump', panel).hidden = false; // 위를 읽는 중: 자리는 그대로 두고 새 메시지가 왔음만 알린다
+}
+
+/* ── 시트 높이(좁은 화면): 위쪽 손잡이를 위아래로 끌어 넓히거나 줄인다. 높이는 이 기기에 남긴다. ── */
+const H_KEY = 'yh-chat-h';
+function sheetBounds() { const vh = window.visualViewport?.height || innerHeight, gap = Math.max(0, innerHeight - col.getBoundingClientRect().bottom); return [Math.round(vh * 0.35), Math.round(vh - gap - 56)]; }
+function applyHeight(px) {
+  let h = px; if (h == null) { try { h = Number(localStorage.getItem(H_KEY)) || 0; } catch { h = 0; } }
+  if (!h) { col.style.removeProperty('--chat-h'); return; }
+  const [lo, hi] = sheetBounds(); col.style.setProperty('--chat-h', `${Math.max(lo, Math.min(hi, h))}px`);
+}
+function bindGrip() {
+  const grip = $('.chat-grip', panel); let y0 = 0, h0 = 0, moved = false;
+  const move = e => { const h = h0 + (y0 - e.clientY); moved = true; applyHeight(h); };
+  const up = () => {
+    grip.releasePointerCapture?.(grip._pid); grip.removeEventListener('pointermove', move); grip.classList.remove('drag');
+    if (moved) { const h = col.getBoundingClientRect().height; try { localStorage.setItem(H_KEY, String(Math.round(h))); } catch {} if (stick) { forceEnd = true; scrollEnd(); } }
+  };
+  grip.addEventListener('pointerdown', e => {
+    if (!document.body.classList.contains('chat-open')) return;
+    e.preventDefault(); y0 = e.clientY; h0 = col.getBoundingClientRect().height; moved = false; grip._pid = e.pointerId;
+    grip.setPointerCapture?.(e.pointerId); grip.classList.add('drag');
+    grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up, { once: true }); grip.addEventListener('pointercancel', up, { once: true });
+  });
+  // 손잡이를 두 번 누르면 가장 넓게 ↔ 처음 크기
+  grip.addEventListener('dblclick', () => { const [, hi] = sheetBounds(); const big = col.getBoundingClientRect().height >= hi - 4; try { big ? localStorage.removeItem(H_KEY) : localStorage.setItem(H_KEY, String(hi)); } catch {} applyHeight(big ? 0 : hi); });
+  grip.addEventListener('keydown', e => { if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault(); const h = col.getBoundingClientRect().height + (e.key === 'ArrowUp' ? 40 : -40); applyHeight(h); try { localStorage.setItem(H_KEY, String(Math.round(h))); } catch {} });
+  window.visualViewport?.addEventListener('resize', () => { if (document.body.classList.contains('chat-open')) applyHeight(); });
+}
 
 async function send(e) {
   e.preventDefault();
   const form = e.target, text = form.text.value.trim();
   if (!text) return;
   const btn = form.querySelector('button[type=submit]'); if (btn.disabled) return;
-  btn.disabled = true;
+  btn.disabled = true; forceEnd = true;
   try {
     if (tab === 'party') { await act('world_party_chat_send', { p_content: text }); await loadParty(); }
     else if (tab === 'circle') { if (!circleId) throw new Error('모임을 골라 주세요.'); await rpc('world_circle_send', { p_circle: circleId, p_content: text }); await loadCircleMsgs(); }

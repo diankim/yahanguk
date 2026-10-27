@@ -311,7 +311,7 @@ textarea { resize: none; }
   .wh.thread-open .wh-side { display: none; } .wh:not(.thread-open) .wh-main { display: none; }
   .wh-back { display: inline-grid; }
 }
-body.chat-open .chat-col { display: block; position: fixed; z-index: 70; left: 0; right: 0; bottom: 0; height: min(78dvh, 640px); border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; animation: rise .2s ease-out; }
+body.chat-open .chat-col { display: block; position: fixed; z-index: 70; left: 0; right: 0; bottom: 0; height: var(--chat-h, min(78dvh, 640px)); border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; animation: rise .2s ease-out; }
 body.chat-open::after { content: ''; position: fixed; inset: 0; z-index: 65; background: rgb(0 0 0 / .5); }
 body.chat-open .chat-fab { display: none; }
 
@@ -1318,3 +1318,14 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .craft-cats .check.mine span { color: var(--ok); font-weight: 600; }
 .skill-meter { display: grid; gap: 4px; margin: 2px 0 8px; }
 .skill-meter small { font-size: 12px; color: var(--muted); }
+/* 채팅: 위쪽 손잡이로 시트 높이 조절(좁은 화면), 위를 읽는 중 새 메시지 알림 단추 */
+.chat-grip { display: none; }
+body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
+.chat-grip i { width: 44px; height: 5px; border-radius: 3px; background: var(--line); }
+.chat-grip:hover i, .chat-grip.drag i, .chat-grip:focus-visible i { background: var(--gold); }
+@media (min-width: 1280px) { body .chat-grip { display: none; } }
+.chat-list-wrap { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.chat-list-wrap .chat-list { flex: 1; }
+.chat-jump { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+.chat-jump .ico { transform: rotate(90deg); }
+.chat-jump[hidden] { display: none; }
