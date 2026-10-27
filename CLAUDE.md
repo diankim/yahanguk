@@ -473,7 +473,7 @@
 
 현재 Supabase를 백엔드로 사용하고, 프런트엔드는 정적 호스팅을 우선 고려한다. Cloudflare Pages와 Supabase 무료 플랜 조합을 우선 검토한다.
 
-- 서버: 2026-10-28 Supabase Pro로 올리고 서울(ap-northeast-2) 프로젝트 wphhqfkxrqjxxmfyozff(ranway_seoul)로 옮겼다(옛 뭄바이 프로젝트 bqywnmeryddwccrbomfe는 정리 대상). 프런트는 Cloudflare Pages(작업 브랜치에 올려도 배포될 수 있으니 서버 주소 전환은 끝난 뒤에 올린다).
+- 서버: 2026-10-28 Supabase Pro로 올리고 서울(ap-northeast-2) 프로젝트 wphhqfkxrqjxxmfyozff(이름 Ranway)로 옮겼다(옛 뭄바이 프로젝트 bqywnmeryddwccrbomfe는 삭제, 비밀값 OLD_DB_URL도 지움 — 다시 이사할 때 새로 등록). 프런트는 Cloudflare Pages(작업 브랜치에 올려도 배포될 수 있으니 서버 주소 전환은 끝난 뒤에 올린다).
 - 이사 도구: .github/workflows/db-move.yml(수동 실행, 비밀값 OLD_DB_URL·NEW_DB_URL). CHECK 접속 시험 · MOVE 덤프·복원(점검 모드·fn_owner 역할·실시간·auth 트리거·행 수 비교) · ACL 권한 맞추기(supabase/maintenance/acl_sync.sql). 새 프로젝트의 기본 권한 때문에 복원한 객체에 anon·authenticated 권한이 붙으므로 MOVE 뒤 반드시 ACL을 돌린다. 이사 뒤 Auth 설정(이메일 확인 끄기·Site URL·Before User Created 훅 world_hook_before_user_created)은 대시보드에서 맞춘다.
 
 ### 기술 원칙
