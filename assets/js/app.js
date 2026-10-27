@@ -7,6 +7,7 @@ import { applySavedTheme, openProfile, initSound, mountNotifications } from './s
 import { mountEnv } from './env.js';
 import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
+import { mountCards } from './views/card.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
 import * as character from './views/character.js';
@@ -17,6 +18,8 @@ import * as guide from './views/guide.js';
 import * as account from './views/account.js';
 import * as settingsPage from './views/settings.js';
 import { preloadNames } from './views/common.js';
+
+mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
 
 applySavedTheme();
 initSound();

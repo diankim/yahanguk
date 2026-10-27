@@ -298,12 +298,33 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
   return el;
 }
 function escClose(e) { if (e.key === 'Escape') closeModal(); }
+
+// 겹쳐 뜨는 창: 상점 같은 창 위에 물품 정보·조사원 카드를 띄우고, 닫으면 아래 창은 그대로 남는다.
+export function openLayer({ title, body, wide = false } = {}) {
+  const el = h(`<div class="modal-backdrop layer"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="닫기">${icon('close')}</button></header>
+    <div class="modal-body"></div></div></div>`);
+  $('.modal-body', el).append(typeof body === 'string' ? h(`<div>${body}</div>`) : body);
+  const key = e => { if (e.key === 'Escape' && $$('.modal-backdrop.layer').pop() === el) { e.stopImmediatePropagation(); close(); } };
+  const close = () => {
+    document.removeEventListener('keydown', key, true); el.remove();
+    if (!$('#modal') && !$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
+  };
+  el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) close(); });
+  document.addEventListener('keydown', key, true);
+  el.close = close;
+  document.body.append(el);
+  document.body.classList.add('has-modal');
+  setTimeout(() => $('.modal-head button', el)?.focus(), 30);
+  return el;
+}
+export const closeLayers = () => $$('.modal-backdrop.layer').forEach(l => l.close?.());
 export function closeModal() {
   const el = $('#modal'); if (!el) return;
   document.removeEventListener('keydown', escClose);
   el._onClose?.();
   el.remove();
-  document.body.classList.remove('has-modal');
+  if (!$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
 }
 
 /* ── 공통 조각 ───────────────────────────────────────────── */

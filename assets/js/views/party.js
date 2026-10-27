@@ -1,4 +1,5 @@
 // 동료: 파티 관리·전리품 분배·초대, 같은 지역의 조사원과 구조.
+import { cardName } from './card.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
 import { load, panel, chip, loading, errorBox } from './common.js';
 
@@ -24,7 +25,7 @@ async function draw() {
     const [p, loot, roster] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => [])]);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
-    const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
+    const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
         <small>Lv.${m.level} · ${esc(nameOf(m.job_key))} · ${esc(m.location)} · 체력 ${m.health}${m.away ? ' · 원정 중' : ''}${m.in_combat ? ' · 전투 중' : ''}</small></div>
         ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
     body.innerHTML = `
@@ -46,7 +47,7 @@ async function draw() {
       </div>` : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
         <button class="btn primary" id="party-make">${icon('plus', 16)}<span>동료 모임 만들기</span></button>
         <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
-      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)}${gmBadge(m.owner_id)}</b>
+      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${gmBadge(m.owner_id)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
           ${m.downed && !m.is_dead ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
     // 이름은 쓰지 않는다. 서버가 요구하는 이름 자리에는 만든 사람 이름을 넣는다.

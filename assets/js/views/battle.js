@@ -46,7 +46,8 @@ export const SKILL = {
 };
 const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
-const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화']];
+const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'],
+  ['spirit_tea', '영력 10'], ['clear_spirit_pill', '영력 20'], ['spirit_qi_pill', '영력 35'], ['moonlight_essence', '영력 55'], ['heavenly_dew', '영력 80']];
 
 export function effectiveness(style, mech) {
   const m = WEAK[mech]?.[style] ?? 1;
@@ -98,10 +99,10 @@ function draw(fresh = []) {
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
         <button class="act" data-a="skill" ${skillWait ? 'data-wait="' + skillWait + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${skillWait ? `${skillWait}턴 뒤` : '영력 12'}</small><i class="cd"></i></button>
         <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · 영력 +4</small><i class="cd"></i></button>
-        <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화</small><i class="cd"></i></button>
+        <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력</small><i class="cd"></i></button>
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>
       </div>
-      <div class="item-tray" id="item-tray" hidden>${ITEMS.map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
+      <div class="item-tray" id="item-tray" hidden>${ITEMS.filter(([k], i) => i < 4 || inv[k] > 0).map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
       <ol class="battle-log">${log.map((l, i) => `<li class="${i >= log.length - fresh.length ? 'new' : ''}">${esc(l)}</li>`).join('')}</ol>
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;

@@ -1019,3 +1019,11 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .inv-item .inv-row { background: transparent; border: 0; border-radius: var(--r-sm); }
 .inv-item .inv-row:hover { border: 0; }
 .inv-item .inv-quick { width: auto; min-width: 52px; padding-inline: 12px; }
+
+/* 조사원 카드: 이름 단추와 겹쳐 뜨는 창 */
+.name-link { all: unset; cursor: pointer; font: inherit; color: inherit; font-weight: inherit; border-bottom: 1px dotted color-mix(in srgb, currentColor 45%, transparent); }
+.name-link:hover { color: var(--gold); }
+.name-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
+.modal-backdrop.layer { z-index: 82; }
+.char-card .profile-card { margin-bottom: 10px; }
+.char-card .chips { display: flex; flex-wrap: wrap; gap: 6px; }

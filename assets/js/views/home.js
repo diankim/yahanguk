@@ -1,6 +1,7 @@
 // 현장: 지금 있는 곳에서 할 수 있는 일.
 // 안전지대 — 시설(상점·거래소·마구간·여관·게시판)을 눌러 창으로 연다.
 // 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
+import { cardName } from './card.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox } from './common.js';
 import { renderShop, renderMarket, renderStable } from './services.js';
@@ -214,7 +215,7 @@ function people(roster, corpses) {
   const list = Array.isArray(roster) ? roster : [];
   const dead = corpses || [];
   return `<section class="panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
-    ${list.length ? `<ul class="people">${list.map(p => `<li>${emblem(p.owner_id, p.profile, 34)}<div><b>${esc(p.character_name)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
+    ${list.length ? `<ul class="people">${list.map(p => `<li>${emblem(p.owner_id, p.profile, 34)}<div><b>${cardName(p.owner_id, p.character_name)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
       ${p.downed && !p.is_dead ? `<button class="btn small primary" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
     ${dead.length ? `<h3 class="sub-h">쓰러진 이의 자리</h3><ul class="people">${dead.map(d => `<li><span class="emblem corpse">${icon('flame', 18)}</span><div><b>${esc(d.character_name)}의 시신</b><small>${new Date(d.died_at).toLocaleDateString('ko-KR')} · ${esc(d.death_reason || '')}${d.items_left ? ` · 유품 ${d.items_left}점` : ''}</small></div>
       <div class="btn-row">${d.can_respect ? `<button class="btn small" data-respect="${esc(d.corpse_id)}">명복 빌기</button>` : ''}${d.items_left ? `<button class="btn small" data-loot="${esc(d.corpse_id)}">유품 수습</button>` : ''}</div></li>`).join('')}</ul>` : ''}

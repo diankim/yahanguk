@@ -1,11 +1,13 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, effectText, toast } from '../core.js';
+import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast } from '../core.js';
 import { load, chip } from './common.js';
 
 export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
   ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기',
+  // 영력 회복약(낮은 단계부터)
+  spirit_tea: '영력 10', clear_spirit_pill: '영력 20', spirit_qi_pill: '영력 35', moonlight_essence: '영력 55 · 심신 동요 치료', heavenly_dew: '영력 80 · 심신 동요·사념 침식 치료',
   // 요리(서버 world_use_item과 같은 값)
   grilled_fish: '체력 25 · 든든함(채집량·회복량)', spicy_stew: '체력 30 · 정신 10 · 속이 따뜻함(침식·받는 피해 감소)', fish_porridge: '정신 15 · 탐색력 +4',
   eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천' };
@@ -35,7 +37,9 @@ export function traitText(it) {
 
 // mode: 'bag'(행동 단추 포함) | 'view'(정보만)
 export async function openItemInfo(id, { mode = 'view' } = {}) {
-  const m = openModal({ title: nameOf(id), wide: true, body: '<div class="item-info"><div class="loading"><span class="spinner"></span>불러오는 중…</div></div>' });
+  // 상점·거래소 같은 창이 열려 있으면 그 위에 겹쳐 띄워, 닫아도 아래 창이 남는다
+  const opts = { title: nameOf(id), wide: true, body: '<div class="item-info"><div class="loading"><span class="spinner"></span>불러오는 중…</div></div>' };
+  const m = document.getElementById('modal') ? openLayer(opts) : openModal(opts);
   const box = $('.item-info', m);
   try {
     const [inv, prices] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 10000 }), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks()]);
@@ -87,7 +91,7 @@ function draw(box, id, inv, prices, mode) {
   box.onclick = async e => {
     const r = e.target.closest('[data-recipe]'), mat = e.target.closest('[data-mat]'), d = e.target.closest('[data-do]');
     if (r || mat) {
-      closeModal();
+      closeLayers(); closeModal();
       window.dispatchEvent(new CustomEvent('yh-craft-focus', { detail: r ? { recipe: r.dataset.recipe } : { material: mat.dataset.mat } }));
       window.yahangGo?.('bag', 'craft');
       return;
