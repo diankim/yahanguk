@@ -37,6 +37,19 @@ jobs:
       - name: 접속 확인과 새 DB가 비었는지 검사
         run: |
           test -n "$OLD_DB_URL" && test -n "$NEW_DB_URL" || { echo '비밀값 OLD_DB_URL·NEW_DB_URL이 없습니다'; exit 1; }
+          # 값은 드러내지 않고 모양만 검사한다
+          bad=0
+          for name in OLD_DB_URL NEW_DB_URL; do
+            v="${!name}"
+            echo "$name: 길이 ${#v}"
+            case "$v" in postgresql://*|postgres://*) ;; *) echo "  - postgresql:// 로 시작하지 않습니다(앞의 공백·따옴표나 일부만 복사했는지 확인)"; bad=1;; esac
+            case "$v" in *[[:space:]]*) echo "  - 공백이나 줄바꿈이 들어 있습니다"; bad=1;; esac
+            case "$v" in *'['*|*']'*) echo "  - [ ] 가 남아 있습니다([YOUR-PASSWORD]는 대괄호까지 지우고 비밀번호만)"; bad=1;; esac
+            case "$v" in *pooler.supabase.com:5432/*) ;; *) echo "  - Session pooler 주소(pooler.supabase.com:5432)가 아닙니다"; bad=1;; esac
+            at=$(printf '%s' "$v" | tr -cd '@' | wc -c)
+            test "$at" = "1" || { echo "  - @ 가 ${at}개입니다(비밀번호에 @ 가 있으면 %40 으로 바꾸거나 비밀번호를 영문·숫자로 다시 정하기)"; bad=1; }
+          done
+          test "$bad" = "0" || exit 1
           ./psql.sh "$OLD_DB_URL" -tAc "select 'old public tables: ' || count(*) from pg_tables where schemaname = 'public'"
           n=$(./psql.sh "$NEW_DB_URL" -tAc "select count(*) from pg_tables where schemaname = 'public'")
           echo "new public tables: $n"
