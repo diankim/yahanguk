@@ -54,6 +54,7 @@ export async function act(name, args) {
 }
 export async function loadCharacter() {
   if (!store.user) return null;
+  if (!stacks) await loadStacks();
   const { data, error } = await db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
   if (error) throw new Error(friendlyError(error));
   store.character = data;
@@ -392,4 +393,11 @@ function emblemBase(ownerId, profile, size) {
   return `<span class="emblem" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" width="${Math.round(size * 0.58)}" height="${Math.round(size * 0.58)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${EMBLEMS[p.emblem][1]}"/></svg></span>`;
 }
 export function bagLimit(c) { return (c?.bag_capacity || 60) + (c?.major_faction_id === 'river_alliance' ? 20 : 0); }
-export function bagUsed(c) { return Object.values(c?.inventory || {}).reduce((a, n) => a + Math.max(0, Number(n) || 0), 0); }
+// 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
+let stacks = null;
+async function loadStacks() {
+  try { const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size'); stacks = error ? new Map() : new Map((data || []).map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)])); }
+  catch { stacks = new Map(); }
+}
+export const stackOf = id => stacks?.get(id) || 1;
+export function bagUsed(c) { return Object.entries(c?.inventory || {}).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0); }

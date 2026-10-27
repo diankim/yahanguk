@@ -1,7 +1,7 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast } from '../core.js';
+import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf } from '../core.js';
 import { load, chip } from './common.js';
 
 export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
@@ -85,7 +85,8 @@ function draw(box, id, inv, prices, mode) {
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     <dl class="kv info">
-      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개</dd></div>
+      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''}</dd></div>
+      <div><dt>한 칸에</dt><dd>${fmt.num(stackOf(id))}개까지</dd></div>
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}

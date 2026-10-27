@@ -303,15 +303,23 @@ function openFacility(k, s) {
   const offc = on('changed', () => { if (box.isConnected) fill(); else offc(); });
 }
 
+// 예상 회복량(서버 world_field_rest와 같은 식). 바깥 야영은 절반이고, 가득 찬 수치는 그만큼 덜 오른다.
+function restGain(r, full) {
+  const half = v => r.safe ? v : Math.floor(v / 2);
+  const q = r.rest_quality ?? 1;
+  return { hp: half((full ? 65 : 25) + q * 5), mn: half(full ? 50 : 20), sp: half(full ? 35 : 12), er: half(full ? 18 : 6) };
+}
+const gainText = g => `체력 +${g.hp} · 정신 +${g.mn} · 영력 +${g.sp} · 침식 -${g.er}`;
+
 function openRest(r) {
   const safe = r.safe;
   const m = openModal({ title: safe ? (r.rest_spot_name || '숙소') : '야영', body: `
     <p class="desc">${safe ? '안전한 곳에서 쉬면 체력·정신·영력이 회복되고 나쁜 상태가 풀립니다. 푹 쉬면 탐색력이 가득 찹니다.' : '바깥에서 야영합니다. 회복은 적고, 쉬는 동안 습격받을 수 있습니다.'}</p>
     <div class="action-grid two">
-      <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3 · 10분마다</small><small class="rest-cd" data-rest-cd></small></button>
-      <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'} · 30분마다</small><small class="rest-cd" data-rest-cd></small></button>
+      <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${gainText(restGain(r, false))}</small><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3 · 10분마다</small><small class="rest-cd" data-rest-cd></small></button>
+      <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${gainText(restGain(r, true))}</small><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'} · 30분마다</small><small class="rest-cd" data-rest-cd></small></button>
     </div>
-    <p class="muted small">같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.</p>` });
+    <p class="muted small">이미 가득 찬 수치는 그만큼 덜 오릅니다. 쉬고 나면 실제로 오른 만큼을 알려 드립니다. 같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.</p>` });
   tick();
   $$('[data-rest]', m).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_field_rest', { p_style: b.dataset.rest }); closeModal(); return out; }));
 }
