@@ -30,7 +30,10 @@ export async function serverState() {
     if (f.ok) { info = await f.json().catch(() => null); if (info?.active) return { state: 'maintenance', info }; }
   } catch {}
   try {
-    const r = await probe;
+    // 서버가 바쁠 때 이 확인이 몇 초씩 걸려 「접속 중」 화면이 길어진다. 1.5초 안에 답이 없으면 열려 있다고 보고 게임을 띄운다
+    // (실제 점검 중이면 게임 화면의 첫 요청이 실패해 오류 안내가 뜬다).
+    const r = await Promise.race([probe, new Promise(res => setTimeout(() => res(null), 1500))]);
+    if (!r) return { state: 'open', info };
     if (r.ok) return { state: 'open', info };
     const body = await r.text();
     return isMaintenanceError(body) ? { state: 'maintenance', info } : { state: 'open', info };
