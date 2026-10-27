@@ -99,7 +99,7 @@ Cloudflare Pages에는 빌드 없이 저장소 루트를 그대로 배포하면 
 ## 실계정 테스트 절차 (아직 수행되지 않음)
 준비
 - 접속 주소: 정적 호스팅(GitHub Pages·Cloudflare Pages) 또는 로컬 서버(`npx serve .` 등). `file://`로 열면 인증 리디렉션이 동작하지 않을 수 있다.
-- Supabase 대시보드 → Authentication → URL Configuration: Site URL과 Redirect URLs에 위 주소를 추가한다. (프로젝트: `https://bqywnmeryddwccrbomfe.supabase.co`)
+- Supabase 대시보드 → Authentication → URL Configuration: Site URL과 Redirect URLs에 위 주소를 추가한다. (프로젝트: `https://wphhqfkxrqjxxmfyozff.supabase.co`)
 - 계정 2개(A=파티장, B=동승자)를 서로 다른 브라우저 또는 시크릿 창에서 사용한다. 개발자 도구 Console·Network 탭을 열어 둔다.
 
 순서와 기대 결과
