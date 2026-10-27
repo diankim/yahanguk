@@ -8,7 +8,7 @@ select set_config('yh.acl', :'acl', false) is not null as loaded;
 
 do $r$ declare r text; begin
   for r in select rolname from pg_roles where rolname like 'fn\_owner%' loop
-    execute format('grant %I to postgres with inherit true', r);
+    execute format('grant %I to postgres with inherit true, set true', r);
   end loop;
 end $r$;
 
@@ -25,11 +25,16 @@ begin
     end if;
     if obj is null then raise notice '새 DB에 없음: %', k; continue; end if;
     for e in select * from aclexplode(coalesce(newacl, '{}')) x where not exists (select 1 from aclexplode(coalesce(oldacl, '{}')) y where y.grantee = x.grantee and y.privilege_type = x.privilege_type) loop
-      execute format('revoke %s on %s from %s granted by %I', e.privilege_type, obj, case when e.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(e.grantee)) end, pg_get_userbyid(e.grantor));
+      -- 준 사람만 거둘 수 있어 그 역할로 잠깐 바꿔 실행한다
+      execute format('set role %I', pg_get_userbyid(e.grantor));
+      execute format('revoke %s on %s from %s', e.privilege_type, obj, case when e.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(e.grantee)) end);
+      execute 'reset role';
       nrev := nrev + 1;
     end loop;
     for e in select * from aclexplode(coalesce(oldacl, '{}')) y where not exists (select 1 from aclexplode(coalesce(newacl, '{}')) x where y.grantee = x.grantee and y.privilege_type = x.privilege_type) loop
-      execute format('grant %s on %s to %s granted by %I', e.privilege_type, obj, case when e.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(e.grantee)) end, pg_get_userbyid(e.grantor));
+      execute format('set role %I', pg_get_userbyid(e.grantor));
+      execute format('grant %s on %s to %s', e.privilege_type, obj, case when e.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(e.grantee)) end);
+      execute 'reset role';
       ngr := ngr + 1;
     end loop;
   end loop;
