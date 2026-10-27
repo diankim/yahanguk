@@ -4,6 +4,9 @@ import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, open
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
+import { hue as autoHue } from '../chat.js';
+// 채팅 이름 색: 색상환 각도. 밝기는 테마(어두움·밝음)에 맞춰 화면이 정한다.
+const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
 
 const SUBS = [['profile', '프로필'], ['theme', '테마'], ['sound', '소리'], ['account', '계정']];
@@ -14,7 +17,7 @@ export async function render(root, sub) {
   el = root;
   const c = store.character, cur = profileOf(c.owner_id, c.profile);
   const custom = readCustom() || { bg: '#101014', accent: '#c8432d', gold: '#d1a65a', r: 10, font: 'sans' };
-  draft = { emblem: cur.emblem, color: cur.color, bio: cur.bio, avatar: undefined, theme: savedThemeId(), custom: { ...custom }, title: c.profile?.title || '', frame: c.profile?.frame || '', pattern: c.profile?.pattern || '', seal: c.profile?.seal || '' };
+  draft = { emblem: cur.emblem, color: cur.color, bio: cur.bio, avatar: undefined, theme: savedThemeId(), custom: { ...custom }, title: c.profile?.title || '', frame: c.profile?.frame || '', pattern: c.profile?.pattern || '', seal: c.profile?.seal || '', chatHue: Number.isInteger(c.profile?.chat_hue) ? c.profile.chat_hue : null };
   dirty = false;
   const resumed = kept && kept.owner === c.owner_id;
   if (resumed) { Object.assign(draft, kept.draft); dirty = true; if (draft.theme !== savedThemeId()) applyTheme(draft.theme, false, draft.theme === 'custom' ? draft.custom : undefined); }
@@ -41,6 +44,9 @@ export async function render(root, sub) {
         </div>
         <h3 class="sub-h">문장</h3><div class="emblem-grid">${Object.entries(EMBLEMS).map(([k, [n]]) => `<button class="em-pick" data-em="${k}" aria-label="${n}">${emblem('x', { emblem: k, color: draft.color }, 40)}<small>${n}</small></button>`).join('')}</div>
         <h3 class="sub-h">색</h3><div class="color-grid">${Object.entries(EMBLEM_COLORS).map(([k, [n, col]]) => `<button class="col-pick" data-col="${k}" style="--c:${col}" aria-label="${n}"><i></i><small>${n}</small></button>`).join('')}</div>
+        <h3 class="sub-h">채팅 이름 색</h3>
+        <div class="hue-grid">${`<button class="hue-pick auto" data-hue="" aria-label="자동">자동</button>`}${CHAT_HUES.map(h => `<button class="hue-pick" data-hue="${h}" style="--hu:${h}" aria-label="색 ${h}">가</button>`).join('')}</div>
+        <p class="hue-preview muted" id="hue-preview"></p>
         <label class="field"><span>한 줄 소개 (60자)</span><input id="pf-bio" maxlength="60" value="${esc(draft.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
         <label class="field"><span>대표 칭호 (채팅과 프로필에 보입니다)</span><select id="pf-title"><option value="">걸지 않음</option>${earned.map(t => `<option value="${esc(t.key)}" ${t.key === draft.title ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
         ${cosmeticsHtml(cos)}
@@ -100,11 +106,15 @@ export async function render(root, sub) {
     $$('[data-cos-kind]', el).forEach(b => b.classList.toggle('on', (draft[b.dataset.cosKind] || '') === b.dataset.cosKey));
     $$('.em-pick', el).forEach(b => { b.classList.toggle('on', b.dataset.em === draft.emblem); b.querySelector('.emblem').style.setProperty('--em', EMBLEM_COLORS[draft.color][1]); });
     $$('.col-pick', el).forEach(b => b.classList.toggle('on', b.dataset.col === draft.color));
+    $$('.hue-pick', el).forEach(b => b.classList.toggle('on', b.dataset.hue === (draft.chatHue == null ? '' : String(draft.chatHue))));
+    const pv = $('#hue-preview', el); pv.style.setProperty('--hu', draft.chatHue ?? autoHue(c.owner_id));
+    pv.innerHTML = `<b>${esc(c.character_name)}</b> 채팅에 이렇게 보입니다.${draft.chatHue == null ? ' (자동: 이름마다 정해진 색)' : ''} 저장한 뒤 보내는 말부터 바뀝니다.`;
   };
   el.addEventListener('click', e => {
     const em = e.target.closest('[data-em]'), col = e.target.closest('[data-col]'), th = e.target.closest('[data-theme-id]'), tr = e.target.closest('[data-try]'), cs = e.target.closest('[data-cos-kind]');
     if (cs && !cs.disabled) { draft[cs.dataset.cosKind] = cs.dataset.cosKey; touch(); drawProfile(); cosInfo(cs); }
     const lk = e.target.closest('[data-cos-lock]'); if (lk) cosInfo(lk);
+    const hp = e.target.closest('[data-hue]'); if (hp) { draft.chatHue = hp.dataset.hue === '' ? null : Number(hp.dataset.hue); touch(); drawProfile(); }
     if (em) { draft.emblem = em.dataset.em; touch(); drawProfile(); }
     if (col) { draft.color = col.dataset.col; touch(); drawProfile(); }
     if (th) { draft.theme = th.dataset.themeId; applyTheme(draft.theme, false); markTheme(); touch(); }
@@ -134,6 +144,7 @@ export async function render(root, sub) {
     if (draft.emblem !== p.emblem || draft.color !== p.color || draft.bio !== p.bio) tasks.push(act('world_set_profile_v2', { p_emblem: draft.emblem, p_color: draft.color, p_bio: draft.bio }));
     if (crop.has() && draft.avatar === 'pending') tasks.push(act('world_set_avatar', { p_image: crop.dataUrl() }));
     else if ($('#av-clear', el)?.checked) tasks.push(act('world_set_avatar', { p_image: null }));
+    if (draft.chatHue !== (Number.isInteger(c.profile?.chat_hue) ? c.profile.chat_hue : null)) tasks.push(act('world_set_chat_hue', { p_hue: draft.chatHue }));
     if (draft.title !== (c.profile?.title || '')) tasks.push(act('world_title_set_display', { p_title_key: draft.title || null }));
     for (const k of ['frame', 'pattern', 'seal']) if ((draft[k] || '') !== (c.profile?.[k] || '')) tasks.push(act('world_cosmetic_equip', { p_kind: k, p_key: draft[k] || null }));
     for (const t of tasks) await t;

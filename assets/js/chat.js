@@ -136,7 +136,7 @@ function pickCircle(id) {
 async function loadCircleMsgs() {
   const id = circleId; if (!id) return draw();
   try {
-    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
+    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
     circleMsgs[id] = (data || []).reverse();
     if (tab === 'circle' && circleId === id) { draw(); markCircleRead(id); }
@@ -172,7 +172,7 @@ function subscribeCircles() {
   } catch { circleLive = false; }
 }
 
-const COLS = 'id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at';
+const COLS = 'id,channel_type,sender_id,sender_name,sender_title,sender_color,recipient_id,content,created_at';
 async function load() {
   try {
     const { data, error } = await db.from('world_chat_messages').select(COLS).order('created_at', { ascending: false }).limit(80);
@@ -220,28 +220,29 @@ function draw() {
     list.style.setProperty('--cc', c.color);
     const ms = (circleMsgs[c.circle_id] || []).filter(m => !blocked.has(m.sender_id));
     list.innerHTML = ms.length ? ms.map((m, i) => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
-      : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
+      : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
       : `<li class="chat-empty">「${esc(c.name)}」에 아직 말이 없습니다.</li>`;
     scrollEnd(); return;
   }
   if (tab === 'party') {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
-    rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name || m.character_name, text: m.content, at: m.created_at, mine: m.sender_id === me }));
+    rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name || m.character_name, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
   list.innerHTML = rows.length ? rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
   scrollEnd();
 }
+// 이름 색: 조사원이 고른 색(sender_color, 색상환 각도)이 있으면 그것, 없으면 이름에 따라 정해지는 색
 // 한 줄: 이름 첫 글자 인장 + 이름·칭호·시각, 같은 사람이 5분 안에 이어 말하면 머리글 없이 붙인다.
-function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
+export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
 function msgRow(r, prev) {
   const cont = prev && prev.sid === r.sid && r.at && prev.at && new Date(r.at) - new Date(prev.at) < 300000;
   const cls = ['msg', r.mine ? 'mine' : '', r.gm ? 'gm' : '', cont ? 'cont' : ''].filter(Boolean).join(' ');
   if (cont) return `<li class="${cls}"><p>${esc(r.text)}</p></li>`;
   const initial = esc([...String(r.who || '?')][0] || '?');
-  return `<li class="${cls}" style="--hu:${hue(r.sid)}"><i class="av" aria-hidden="true">${initial}</i><div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
+  return `<li class="${cls}" style="--hu:${Number.isInteger(r.color) ? r.color : hue(r.sid)}"><i class="av" aria-hidden="true">${initial}</i><div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {

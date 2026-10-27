@@ -1201,7 +1201,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .chat-circles button .cc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-circles button.on { color: var(--text); border-color: var(--cc); background: color-mix(in srgb, var(--cc) 18%, var(--surface-2)); }
 .cc-count { font-style: normal; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--bad); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
-.circle-feed li .meta b, .circle-feed li .meta b .name-link { color: var(--cc); }
+.circle-feed li:not(.msg) .meta b, .circle-feed li:not(.msg) .meta b .name-link { color: var(--cc); }
 .circle-feed li p { border-left: 3px solid var(--cc); }
 .circle-feed li.mine p { border-left: 0; border-right: 3px solid var(--cc); background: color-mix(in srgb, var(--cc) 20%, var(--surface-2)); }
 .chat-list .chat-notice { max-width: none; justify-self: center; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
@@ -1371,12 +1371,10 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list li.msg p { grid-column: 2; background: none; padding: 1px 0 0; border-radius: 0; font-size: 13.5px; line-height: 1.5; border: 0; }
 .chat-list li.msg.mine { justify-self: stretch; }
 .chat-list li.msg.mine .meta { justify-content: flex-start; }
-.chat-list li.msg.mine .meta b { color: var(--gold); }
 .chat-list li.msg.mine p { background: none; }
 .chat-list li.msg.mine:not(.cont) { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--gold) 55%, transparent); }
 .chat-list li.msg.mine.cont { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--gold) 55%, transparent); }
 .chat-list li.msg.gm { border-left: 0; padding-left: 8px; background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.circle-feed li.msg .meta b, .circle-feed li.msg .meta b .name-link { color: var(--cc); }
 .circle-feed li.msg p, .circle-feed li.msg.mine p { border: 0; background: none; }
 .circle-feed li.msg:not(.cont) .av { color: var(--cc); border-color: color-mix(in srgb, var(--cc) 45%, var(--line)); background: color-mix(in srgb, var(--cc) 14%, var(--surface)); }
 .chat-list .chat-notice { margin: 8px 0 2px; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); }
@@ -1396,3 +1394,10 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .note-item.past { padding: 9px 12px; background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
 .note-item.past b { font-weight: 600; color: color-mix(in srgb, var(--text) 85%, var(--muted)); }
 .note-keep { text-align: center; padding-top: 4px; }
+/* 채팅 이름 색 고르기(설정 › 프로필) */
+.hue-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.hue-pick { display: grid; place-items: center; min-width: 40px; height: 32px; padding: 0 8px; border-radius: var(--r-sm); border: var(--bw) solid var(--line); background: var(--surface-2); color: hsl(var(--hu) 50% 72%); font-weight: 700; font-size: 12px; cursor: pointer; }
+[data-tone=light] .hue-pick { color: hsl(var(--hu) 45% 34%); }
+.hue-pick.auto { color: var(--muted); font-weight: 600; }
+.hue-pick.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.hue-preview { font-size: 13px; } .hue-preview b { color: hsl(var(--hu) 50% 72%); } [data-tone=light] .hue-preview b { color: hsl(var(--hu) 45% 34%); }
