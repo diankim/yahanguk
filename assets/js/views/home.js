@@ -5,7 +5,7 @@ import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox } from './common.js';
-import { renderShop, renderMarket, renderStable } from './services.js';
+import { renderShop, renderMarket, renderStable, renderSmithy } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
@@ -106,6 +106,7 @@ function town(s, roster) {
   const r = s.region;
   const tiles = [
     ['shop', 'shop', r.shop_name || '상점', '물자 사고팔기'],
+    ['smithy', 'hammer', '대장간', '재료 사기 · 강화 · 수리 · 분해'],
     ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
@@ -295,10 +296,10 @@ function openFacility(k, s) {
   if (k === 'depart') return window.yahangGo('map');
   if (k === 'board') return window.yahangGo('log', 'story');
   if (k === 'inn') return openRest(s.region);
-  const title = { shop: s.region.shop_name || '상점', market: '거래소', stable: '마구간' }[k];
+  const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간' }[k];
   const m = openModal({ title, wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
-  const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : renderShop)(box);
+  const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : renderShop)(box);
   fill();
   const offc = on('changed', () => { if (box.isConnected) fill(); else offc(); });
 }

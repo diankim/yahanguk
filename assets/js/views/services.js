@@ -1,5 +1,5 @@
-// 안전지대 시설: 상점 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed } from '../core.js';
+// 안전지대 시설: 상점 · 대장간 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
+import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, bar, registerNames } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
@@ -9,89 +9,204 @@ const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e
 
 /* ── 상점 ─────────────────────────────────────────────── */
 // 사기·팔기 칸마다 항목별 수량을 고르고, 아래 단추 하나로 한꺼번에 사고판다(확인 팝업 뒤 서버가 항목마다 검사).
+// 품목과 값은 하루 세 번(07·15·23시) 바뀌고, 나온 품목은 수량 제한 없이 산다(한 번에 99개).
 // 창이 다시 그려져도 고른 칸과 수량은 기억한다.
 let shopMode = 'buy';
-const cart = { buy: {}, sell: {} };
+const carts = { shop: { buy: {}, sell: {} }, smithy: { buy: {}, sell: {} } };
 export async function renderShop(box) {
   box.innerHTML = loading();
   try {
-    const [s, prices] = await Promise.all([load('world_shop_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks()]);
+    const [s, prices, inv] = await Promise.all([load('world_shop_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
+      load('world_inventory_snapshot').catch(() => null), loadLocks()]);
     if (!s?.available) { box.innerHTML = empty('이곳에는 상점이 없습니다. 안전지대에서 이용하세요.', 'shop'); return; }
-    const c = store.character, have = c?.inventory || {};
-    const ref = new Map((prices || []).map(p => [p.item_id, p]));
-    const sellable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.npc_sell_price > 0 && !['tool', 'weapon', 'armor', 'equipment', 'quest'].includes(ref.get(k)?.category) && !isLocked(k));
-    const stock = new Map((s.stock || []).map(i => [i.item_id, i]));
-    const sellPrice = k => Math.max(1, Math.round(Number(ref.get(k)?.npc_sell_price) || 1));
-    // 이제 없는 항목은 장바구니에서 뺀다
-    for (const k of Object.keys(cart.buy)) if (!stock.get(k)?.stock) delete cart.buy[k];
-    for (const k of Object.keys(cart.sell)) if (!have[k]) delete cart.sell[k];
-    const space = bagLimit(c) - bagUsed(c);
-    const stepper = (mode, id, max) => `<div class="stepper" data-step="${mode}:${esc(id)}">
-        <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
-        <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[mode][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
-        <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button></div>`;
-    box.innerHTML = `
-      <div class="shop-head"><div><b>${esc(s.shop_name)}</b><small>재고는 하루 세 번(07·15·23시) 새로 들어옵니다 · 다음 입고 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
-        <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(s.gil)}</span></div>
-      <div class="seg-mini" role="tablist"><button class="${shopMode === 'buy' ? 'on' : ''}" data-mode="buy">사기</button><button class="${shopMode === 'sell' ? 'on' : ''}" data-mode="sell">팔기</button></div>
-      <section data-list="buy" ${shopMode === 'buy' ? '' : 'hidden'}>
-        <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 가방이 가득 차면 살 수 없습니다.</p>
-        <ul class="item-list shop-list">${(s.stock || []).map(i => `<li class="${i.stock ? '' : 'off'}">
-          <div class="item-main"><b>${infoName(i.item_id, i.item_name)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
-            <small>${esc(nameOf(i.category))} · ${i.tier}단계 · 재고 ${i.stock}${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small></div>
-          ${stepper('buy', i.item_id, i.stock)}</li>`).join('') || `<li>${empty('지금은 판매 중인 물품이 없습니다.')}</li>`}</ul>
-      </section>
-      <section data-list="sell" ${shopMode === 'sell' ? '' : 'hidden'}>
-        <p class="muted small">상점 판매 수익은 하루 1,000전까지이고 세금 5%가 붙습니다. 잠근 물품은 나오지 않습니다.</p>
-        <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li>
-          <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입</small></div>
-          ${stepper('sell', k, n)}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
-      </section>
-      <div class="shop-foot"><span id="shop-sum"></span><button class="btn primary" id="shop-go"></button></div>`;
-    const total = mode => Object.entries(cart[mode]).reduce((t, [k, n]) => t + n * (mode === 'buy' ? Number(stock.get(k)?.unit_price || 0) : sellPrice(k)), 0);
-    const foot = () => {
-      const n = Object.values(cart[shopMode]).filter(x => x > 0).length, sum = total(shopMode);
-      $('#shop-sum', box).innerHTML = n ? `${n}가지 · ${shopMode === 'buy' ? '합계' : '받을 돈 약'} <b>${fmt.jeon(shopMode === 'sell' ? Math.round(sum * 0.95) : sum)}</b>` : '<span class="muted">수량을 고르세요</span>';
-      const go = $('#shop-go', box); go.textContent = shopMode === 'buy' ? '구매하기' : '판매하기'; go.disabled = !n || (shopMode === 'buy' && sum > s.gil);
-      if (shopMode === 'buy' && sum > s.gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
-    };
-    $$('.seg-mini button', box).forEach(b => b.onclick = () => {
-      shopMode = b.dataset.mode;
-      $$('.seg-mini button', box).forEach(x => x.classList.toggle('on', x === b));
-      $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== b.dataset.mode);
-      foot();
-    });
-    $$('[data-step]', box).forEach(st => {
-      const [mode, id] = st.dataset.step.split(':'), inp = st.querySelector('input'), max = Number(inp.max) || 0;
-      const set = v => { v = Math.max(0, Math.min(max, Math.floor(Number(v) || 0))); inp.value = v; if (v) cart[mode][id] = v; else delete cart[mode][id]; st.closest('li').classList.toggle('picked', v > 0); foot(); };
-      st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
-      inp.oninput = () => set(inp.value);
-      if (cart[mode][id]) st.closest('li').classList.add('picked');
-    });
-    $('#shop-go', box).onclick = async e => {
-      const btn = e.currentTarget, mode = shopMode, list = Object.entries(cart[mode]).filter(([, n]) => n > 0);
-      if (!list.length || btn.dataset.busy === '1') return;
-      const label = mode === 'buy' ? '구매' : '판매', sum = total(mode);
-      const ok = await ask(`${list.map(([k, n]) => `${mode === 'buy' ? stock.get(k)?.item_name || nameOf(k) : nameOf(k)} ×${n}`).join('\n')}\n${mode === 'buy' ? `합계 ${fmt.jeon(sum)}` : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
-        { title: `${label}할까요?`, ok: `${label}하기` });
-      if (!ok) return;
-      btn.dataset.busy = '1'; btn.disabled = true;
-      const fail = [];
-      for (const [k, n] of list) {
-        try { await rpc(mode === 'buy' ? 'world_shop_buy' : 'world_shop_sell', { p_item_id: k, p_qty: n }); delete cart[mode][k]; }
-        catch (err) { fail.push(`${nameOf(k)}: ${friendlyError(err)}`); }
-      }
-      const done = list.length - fail.length;
-      if (done) toast(`${label} 완료 ${done}가지${fail.length ? ` · 실패 ${fail.length}가지` : ''}`, fail.length ? 'warn' : 'ok');
-      if (fail.length) toast(fail.join(' / '), 'error');
-      window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'trade' }));
-      btn.dataset.busy = '';
-      await loadCharacter().catch(() => {});
-      emit('changed', { name: mode === 'buy' ? 'world_shop_buy' : 'world_shop_sell' });
-    };
-    foot();
-    bindInfo(box);
+    tradePane(box, s, { kind: 'shop', sell: true, prices, equipment: inv?.equipment || {} });
   } catch (e) { box.innerHTML = errorBox(e.message); }
+}
+
+function tradePane(box, s, { kind, sell, prices = [], equipment = {} }) {
+  const cart = carts[kind], c = store.character, have = c?.inventory || {};
+  const mode = sell ? shopMode : 'buy';
+  const ref = new Map((prices || []).map(p => [p.item_id, p]));
+  const equipped = new Set(Object.values(equipment || {}));
+  // 장착 중인 장비는 마지막 하나를 남긴다(서버도 막는다)
+  const sellMax = k => Math.max(0, (Number(have[k]) || 0) - (equipped.has(k) ? 1 : 0));
+  const sellable = sell ? Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.npc_sell_price > 0 && ref.get(k)?.category !== 'quest' && !isLocked(k) && sellMax(k) > 0) : [];
+  const list = (s.stock || []).filter(i => i.stock !== 0);
+  const stock = new Map(list.map(i => [i.item_id, i]));
+  const sellPrice = k => Math.max(1, Math.round(Number(ref.get(k)?.npc_sell_price) || 1));
+  for (const k of Object.keys(cart.buy)) if (!stock.has(k)) delete cart.buy[k];
+  for (const k of Object.keys(cart.sell)) if (!sellMax(k)) delete cart.sell[k];
+  const space = bagLimit(c) - bagUsed(c);
+  const sold = s.sell; // { sold, cap, left, resets_at }
+  const stepper = (m, id, max) => `<div class="stepper" data-step="${m}:${esc(id)}">
+      <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
+      <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[m][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
+      <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button></div>`;
+  box.innerHTML = `
+    <div class="shop-head"><div><b>${esc(s.shop_name)}</b><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
+      <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(c?.gil ?? s.gil)}</span></div>
+    ${sell ? `<div class="seg-mini" role="tablist"><button class="${mode === 'buy' ? 'on' : ''}" data-mode="buy">사기</button><button class="${mode === 'sell' ? 'on' : ''}" data-mode="sell">팔기</button></div>` : ''}
+    <section data-list="buy" ${mode === 'buy' ? '' : 'hidden'}>
+      <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
+      <ul class="item-list shop-list">${list.map(i => `<li>
+        <div class="item-main"><b>${infoName(i.item_id, i.item_name)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
+          <small>${esc(nameOf(i.category))} · ${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small></div>
+        ${stepper('buy', i.item_id, 99)}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
+    </section>
+    ${sell ? `<section data-list="sell" ${mode === 'sell' ? '' : 'hidden'}>
+      ${sold ? `<div class="sell-cap ${sold.left <= 0 ? 'full' : ''}"><span>오늘 판매 수익 <b>${fmt.jeon(sold.sold)}</b> / ${fmt.jeon(sold.cap)}</span>${bar(sold.sold, sold.cap, sold.left <= 0 ? 'enemy' : 'xp')}
+        <small>${sold.left > 0 ? `앞으로 ${fmt.jeon(sold.left)}까지 더 받을 수 있습니다` : '오늘 한도를 다 채웠습니다'}${sold.resets_at ? ` · ${fmt.time(sold.resets_at)}부터 차례로 풀립니다` : ''} · 한도는 24시간 기준(레벨×150전, 적어도 1,000전)</small></div>`
+        : '<p class="muted small">상점 판매 수익은 하루 한도가 있고 세금 5%가 붙습니다.</p>'}
+      <p class="muted small">장비도 팔 수 있습니다. 잠근 물품·임무 물품·장착 중인 마지막 하나는 나오지 않습니다.</p>
+      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li>
+        <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입${equipped.has(k) ? ' · 장착 중 하나는 남김' : ''}</small></div>
+        ${stepper('sell', k, sellMax(k))}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
+    </section>` : ''}
+    <div class="shop-foot"><span id="shop-sum"></span><button class="btn primary" id="shop-go"></button></div>`;
+  const cur = () => sell ? shopMode : 'buy';
+  const total = m => Object.entries(cart[m]).reduce((t, [k, n]) => t + n * (m === 'buy' ? Number(stock.get(k)?.unit_price || 0) : sellPrice(k)), 0);
+  const foot = () => {
+    const m = cur(), n = Object.values(cart[m]).filter(x => x > 0).length, sum = total(m), gil = c?.gil ?? s.gil;
+    const net = Math.round(sum * 0.95);
+    $('#shop-sum', box).innerHTML = n ? `${n}가지 · ${m === 'buy' ? '합계' : '받을 돈 약'} <b>${fmt.jeon(m === 'sell' ? net : sum)}</b>` : '<span class="muted">수량을 고르세요</span>';
+    const go = $('#shop-go', box); go.textContent = m === 'buy' ? '구매하기' : '판매하기';
+    go.disabled = !n || (m === 'buy' && sum > gil) || (m === 'sell' && sold && net > sold.left);
+    if (m === 'buy' && sum > gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
+    if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}를 넘습니다</span>`;
+  };
+  $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
+    shopMode = b.dataset.mode;
+    $$('.seg-mini button[data-mode]', box).forEach(x => x.classList.toggle('on', x === b));
+    $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== b.dataset.mode);
+    foot();
+  });
+  $$('[data-step]', box).forEach(st => {
+    const [m, id] = st.dataset.step.split(':'), inp = st.querySelector('input'), max = Number(inp.max) || 0;
+    const set = v => { v = Math.max(0, Math.min(max, Math.floor(Number(v) || 0))); inp.value = v; if (v) cart[m][id] = v; else delete cart[m][id]; st.closest('li').classList.toggle('picked', v > 0); foot(); };
+    st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
+    inp.oninput = () => set(inp.value);
+    if (cart[m][id]) st.closest('li').classList.add('picked');
+  });
+  $('#shop-go', box).onclick = async e => {
+    const btn = e.currentTarget, m = cur(), items = Object.entries(cart[m]).filter(([, n]) => n > 0);
+    if (!items.length || btn.dataset.busy === '1') return;
+    const label = m === 'buy' ? '구매' : '판매', sum = total(m);
+    const ok = await ask(`${items.map(([k, n]) => `${m === 'buy' ? stock.get(k)?.item_name || nameOf(k) : nameOf(k)} ×${n}`).join('\n')}\n${m === 'buy' ? `합계 ${fmt.jeon(sum)}` : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
+      { title: `${label}할까요?`, ok: `${label}하기` });
+    if (!ok) return;
+    btn.dataset.busy = '1'; btn.disabled = true;
+    const fail = [];
+    let last = null;
+    for (const [k, n] of items) {
+      try { last = await rpc(m === 'buy' ? 'world_shop_buy' : 'world_shop_sell', { p_item_id: k, p_qty: n }); delete cart[m][k]; }
+      catch (err) { fail.push(`${nameOf(k)}: ${friendlyError(err)}`); }
+    }
+    const done = items.length - fail.length;
+    if (done) toast(`${label} 완료 ${done}가지${fail.length ? ` · 실패 ${fail.length}가지` : ''}${m === 'sell' && last?.cap ? ` · 오늘 판매 ${fmt.jeon(last.sold)} / ${fmt.jeon(last.cap)}` : ''}`, fail.length ? 'warn' : 'ok');
+    if (fail.length) toast(fail.join(' / '), 'error');
+    window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'trade' }));
+    btn.dataset.busy = '';
+    await loadCharacter().catch(() => {});
+    emit('changed', { name: m === 'buy' ? 'world_shop_buy' : 'world_shop_sell' });
+  };
+  foot();
+  bindInfo(box);
+}
+
+/* ── 대장간 ───────────────────────────────────────────── */
+// 재료 사기(장비 제작·강화 재료와 수리 도구) · 무기 강화 · 일괄 수리 · 분해
+let smithyTab = 'buy';
+const SMITHY_TABS = [['buy', '재료 사기'], ['enhance', '무기 강화'], ['repair', '일괄 수리'], ['dismantle', '분해']];
+const GEAR_CATS = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
+const DISMANTLE_NEED = t => ({ 1: 1, 2: 4, 3: 8, 4: 12 })[t] || 16; // 서버 world_dismantle_need와 같다
+export async function renderSmithy(box) {
+  box.innerHTML = `<div class="seg-mini smithy-tabs" role="tablist">${SMITHY_TABS.map(([k, n]) => `<button class="${smithyTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div><div class="sm-body">${loading()}</div>`;
+  $$('[data-st]', box).forEach(b => b.onclick = () => { smithyTab = b.dataset.st; renderSmithy(box); });
+  const body = $('.sm-body', box);
+  try {
+    if (smithyTab === 'buy') {
+      const s = await load('world_smithy_snapshot');
+      if (!s?.available) { body.innerHTML = empty(s?.content || '대장간은 안전지대에만 있습니다.', 'shop'); return; }
+      return tradePane(body, s, { kind: 'smithy', sell: false });
+    }
+    if (smithyTab === 'enhance') return enhancePane(body);
+    if (smithyTab === 'repair') return repairPane(body);
+    return dismantlePane(body);
+  } catch (e) { body.innerHTML = errorBox(e.message); }
+}
+
+async function enhancePane(body) {
+  const q = await rpc('world_enhance_quote');
+  if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword'); return; }
+  registerNames(Object.entries(q.names || {}));
+  const have = q.have || {}, items = Object.entries(q.items || {});
+  const short = items.filter(([k, n]) => (have[k] || 0) < n);
+  const maxed = q.level >= q.max;
+  body.innerHTML = `
+    <div class="enh-card">
+      <div class="enh-head"><b>${infoName(q.weapon, q.name)}</b><span class="enh-lv">+${q.level}</span></div>
+      <dl class="kv tight">
+        <div><dt>위력</dt><dd>${q.power}${maxed ? '' : ` → <b>${q.next_power}</b>`}</dd></div>
+        ${maxed ? '' : `<div><dt>성공 확률</dt><dd>${q.chance}%</dd></div><div><dt>비용</dt><dd>${fmt.jeon(q.gil)}${q.have_gil < q.gil ? ' <span class="bad">(모자람)</span>' : ''}</dd></div>`}
+      </dl>
+      ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}</span></li>`).join('')}</ul>
+      <div class="btn-row"><button class="btn primary" id="enh-go" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
+      ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
+    </div>
+    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(법구 제작사는 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+  bindInfo(body);
+  const go = $('#enh-go', body);
+  if (go) go.onclick = async () => {
+    if (!await ask(`${q.name} +${q.level + 1} 강화\n성공 확률 ${q.chance}% · ${fmt.jeon(q.gil)}\n${items.map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ')}`, { title: '강화할까요?', ok: '강화하기' })) return;
+    await guard(go, async () => {
+      const r = await rpc('world_weapon_enhance');
+      window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.success ? 'craft' : 'error' }));
+      toast(r.content, r.success ? 'ok' : 'warn');
+      await loadCharacter().catch(() => {});
+      emit('changed', { name: 'world_weapon_enhance' });
+    });
+    enhancePane(body);
+  };
+}
+
+async function repairPane(body) {
+  const q = await rpc('world_repair_quote');
+  const items = q?.items || [];
+  body.innerHTML = items.length ? `
+    <ul class="item-list">${items.map(i => `<li><div class="item-main"><b>${infoName(i.item_id, i.name)}</b><span class="qty">${fmt.jeon(i.cost)}</span>
+      <small>내구도 ${fmt.num(i.durability)} / ${fmt.num(i.max)}${i.equipped ? ' · 장착 중' : ''}</small></div></li>`).join('')}</ul>
+    <div class="shop-foot"><span>${items.length}개 · 합계 <b>${fmt.jeon(q.total)}</b>${store.character?.gil < q.total ? ' <span class="bad">· 전이 모자랍니다</span>' : ''}</span>
+      <button class="btn primary" id="rep-all" ${store.character?.gil < q.total ? 'disabled' : ''}>모두 고치기</button></div>
+    <p class="muted small">닳은 장비를 한 번에 새것처럼 고칩니다. 값은 하나씩 고칠 때와 같습니다.</p>`
+    : empty('고칠 장비가 없습니다. 모두 멀쩡합니다.', 'shield');
+  bindInfo(body);
+  const go = $('#rep-all', body);
+  if (go) go.onclick = async () => {
+    if (!await ask(`장비 ${items.length}개를 ${fmt.jeon(q.total)}에 모두 고칠까요?`, { title: '일괄 수리', ok: '모두 고치기' })) return;
+    await guard(go, () => act('world_equipment_repair_all'));
+    repairPane(body);
+  };
+}
+
+async function dismantlePane(body) {
+  const inv = await load('world_inventory_snapshot');
+  const c = store.character, rank = inv.crafting_rank || c?.crafting_rank || 1;
+  const cat = new Map((inv.catalog || []).map(i => [i.id, i])), equipped = new Set(Object.values(inv.equipment || {}));
+  const rows = Object.entries(inv.inventory || {}).filter(([k, n]) => n > 0 && GEAR_CATS.has(cat.get(k)?.category))
+    .map(([k, n]) => ({ k, n, it: cat.get(k), free: n - (equipped.has(k) ? 1 : 0) }))
+    .sort((a, b) => (a.it.tier || 0) - (b.it.tier || 0) || nameOf(a.k).localeCompare(nameOf(b.k), 'ko'));
+  body.innerHTML = rows.length ? `<ul class="item-list">${rows.map(({ k, n, it, free }) => {
+      const need = DISMANTLE_NEED(it.tier || 1), why = rank < need ? `제작 숙련 ${need}단계 필요(지금 ${rank})` : free < 1 ? '장착 중인 마지막 하나' : isLocked(k) ? '잠금' : '';
+      return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small></div>
+        <div class="item-act"><button class="btn small" data-dis="${esc(k)}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
+    : empty('분해할 장비가 없습니다.', 'bag');
+  body.innerHTML += `<p class="muted small">장비를 부수어 제작 재료 일부(제작법 재료의 절반)를 돌려받고 제작 경험을 얻습니다. 단계마다 필요한 제작 숙련: 1단계 1 · 2단계 4 · 3단계 8 · 4단계 12 · 5단계 16. 강화한 무기를 분해하면 강화도 사라집니다.</p>`;
+  bindInfo(body);
+  $$('[data-dis]', body).forEach(b => b.onclick = async () => {
+    if (!await ask(`${nameOf(b.dataset.dis)} 하나를 분해할까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' })) return;
+    await guard(b, () => act('world_dismantle_item', { p_item_id: b.dataset.dis }));
+    dismantlePane(body);
+  });
 }
 
 /* ── 거래소 ───────────────────────────────────────────── */

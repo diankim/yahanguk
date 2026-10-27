@@ -12,6 +12,9 @@ export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '�
   grilled_fish: '체력 25 · 든든함(채집량·회복량)', spicy_stew: '체력 30 · 정신 10 · 속이 따뜻함(침식·받는 피해 감소)', fish_porridge: '정신 15 · 탐색력 +4',
   eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천' };
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
+// 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
+const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
+const dismantleNeed = t => ({ 1: 1, 2: 4, 3: 8, 4: 12 })[t || 1] || 16;
 // 장착 칸(서버 world_equip_item·world_unequip_item과 같은 이름): [이름, 아이콘, 닳는 때]
 export const SLOTS = { weapon: ['무기', 'sword', '공격할 때'], armor: ['방어구', 'shield', '맞을 때'], hat: ['관모', 'hat', '맞을 때'], shoes: ['신', 'shoe', '이동할 때'],
   norigae: ['노리개', 'knot', ''], amulet: ['호신부', 'talisman', ''], mask: ['탈', 'mask', ''], tool: ['도구', 'hammer', '채집할 때'] };
@@ -102,6 +105,9 @@ function draw(box, id, inv, prices, mode) {
         ${USABLE[id] ? `<button class="btn small primary" data-do="use">${icon('heart', 14)}<span>사용</span></button>` : ''}
         ${it && GEAR.has(it.category) && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
+        ${it && DISMANTLABLE.has(it.category) ? (() => { const need = dismantleNeed(it.tier), rank = c?.crafting_rank || 1;
+          return rank < need ? `<span class="muted small">분해: 제작 숙련 ${need}단계부터(지금 ${rank})</span>`
+            : `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>`; })() : ''}
       </div>
       <div class="discard-row ${locked ? 'off' : ''}">
         <label class="field"><span>버릴 수량</span><input type="number" min="1" max="${have}" value="1" id="dc-qty" ${locked ? 'disabled' : ''}></label>
@@ -122,6 +128,10 @@ function draw(box, id, inv, prices, mode) {
     if (k === 'use') await guard(d, () => act('world_use_item', { p_item_id: id }));
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
     if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
+    if (k === 'dismantle') {
+      if (!(await ask(`${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' }))) return;
+      await guard(d, () => act('world_dismantle_item', { p_item_id: id }));
+    }
     if (k === 'discard') {
       const q = Math.floor(Number($('#dc-qty', box)?.value) || 0);
       if (!(q >= 1 && q <= have)) return toast(`1~${have}개 사이로 정하세요.`, 'error');

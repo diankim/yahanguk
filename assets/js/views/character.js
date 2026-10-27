@@ -75,7 +75,8 @@ export function equipRows(inv, prof, here) {
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx;
     const cost = Math.max(5, Math.ceil((mx - d) * ((it?.tier || 1) + 1) / 2));
-    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}</b><small>${esc(effectText(it?.equipment_traits || {}).join(' · ') || it?.description || '')}</small>${mx ? durBar(d, mx) : ''}</div>
+    const enh = slot === 'weapon' && prof?.weapon?.enhance ? ` <span class="enh-lv">+${prof.weapon.enhance}</span>` : '';
+    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh}</b><small>${esc(effectText(it?.equipment_traits || {}).join(' · ') || it?.description || '')}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
