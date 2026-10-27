@@ -1,6 +1,6 @@
 // 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
 // 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
-import { ask, store, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed } from '../core.js';
+import { ask, store, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { chip, danger, load } from './common.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
@@ -21,7 +21,8 @@ export const JOB_SKILL = {
   analyst: ['약점 간파', '싸움에서 밀리면 다음 싸움의 승률이 15% 오릅니다.'],
   artificer: ['현장 가공', '채집할 때 25% 확률로 재료를 하나 더 손질해 챙깁니다.'],
 };
-const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check' };
+const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check',
+  fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
 
@@ -73,7 +74,7 @@ export function renderExpedition(box, ov) {
 }
 
 function renderActive(box, a) {
-  seenLines = 0;
+  seenLines = 0; delete box.dataset.stopped;
   const end = new Date(a.ends_at).getTime(), start = new Date(a.started_at).getTime();
   box.innerHTML = `
     <div class="exp-active">
@@ -86,12 +87,13 @@ function renderActive(box, a) {
     <p class="exp-now" id="exp-now">${icon('pin', 14)}<span>기록을 불러오는 중…</span></p>
     <ol class="exp-feed" id="exp-feed"></ol>
     <div id="exp-party"></div>
-    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척과 수색 회차·건량·날씨 변화가 시간에 맞춰 쌓입니다. 싸움의 승패와 전리품은 돌아왔을 때 한꺼번에 밝혀집니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
+    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척, 수색 회차, 전투(공격·반격·회복·승패)가 시간에 맞춰 쌓이고 같은 파티원의 일지도 함께 보입니다. 전투로 바뀐 체력·정신·침식은 곧바로 상태에 반영되고, 전리품은 돌아왔을 때 정리됩니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
   const tick = () => {
     const left = end - Date.now(), span = $('#exp-left', box); if (!span) return clearInterval(t);
     span.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '돌아왔습니다. 결과를 확인하세요.';
     box.querySelector('.bar span').style.width = `${Math.min(100, (Date.now() - start) / (end - start) * 100)}%`;
-    $('#exp-claim', box).disabled = left > 0; $('#exp-recall', box).hidden = left <= 0;
+    const stopped = !!box.dataset.stopped;
+    $('#exp-claim', box).disabled = left > 0 && !stopped; $('#exp-recall', box).hidden = left <= 0 || stopped;
   };
   const t = setInterval(tick, 1000); tick();
   feed(box);
@@ -107,13 +109,21 @@ async function feed(box) {
   if (p?.active) {
     $('#exp-rounds', box).textContent = `수색 ${p.rounds_done}/${p.total_rounds} · 기록 ${(p.lines || []).length}줄${p.job_skill ? ` · 기술 ${p.job_skill}` : ''}`;
     // 일지처럼 위에서 아래로 쌓고, 가장 새 줄이 보이게 아래로 내린다(직접 위로 올려 읽는 중이면 그대로 둔다)
-    const ls = p.lines || [], atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 40 || !list.children.length;
+    const ls = p.lines || [], first = !seenLines, atEnd = first || list.scrollHeight - list.scrollTop - list.clientHeight < 40;
     const fresh = seenLines && ls.length > seenLines ? ls.length - seenLines : 0;
-    list.innerHTML = ls.map((l, i) => `<li class="k-${esc(l.kind)} ${i >= ls.length - fresh ? 'fresh' : ''}">${icon(KIND_ICON[l.kind] || 'route', 14)}<span>${esc(l.text)}</span><time>${fmt.time(l.at)}</time></li>`).join('');
-    seenLines = ls.length;
-    if (atEnd) list.scrollTop = list.scrollHeight;
+    const me = store.character?.owner_id;
+    list.innerHTML = ls.map((l, i) => `<li class="k-${esc(l.kind)} ${l.owner && l.owner !== me ? 'other' : 'mine'} ${i >= ls.length - fresh ? 'fresh' : ''}">${icon(KIND_ICON[l.kind] || 'route', 14)}<span><b class="who">${esc(l.who || p.me || '')}</b>${esc(l.text)}</span><time>${fmt.time(l.at)}</time></li>`).join('');
+    seenLines = ls.length || 1;
+    // 처음 열면 가장 아래(가장 새 줄)를 보여 준다. 그 뒤로는 아래를 보고 있을 때만 따라 내려간다.
+    if (atEnd) { list.scrollTop = list.scrollHeight; requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; }); }
+    // 회차 정산으로 바뀐 체력·정신·침식을 상태판에도 곧바로 반영한다
+    const c0 = store.character;
+    if (c0 && (c0.health !== p.health || c0.mental !== p.mental || c0.erosion !== p.erosion)) loadCharacter().catch(() => {});
     const last = ls[ls.length - 1], nextIn = p.next_at ? Math.max(0, new Date(p.next_at) - Date.now()) : 0;
-    $('#exp-now', box).innerHTML = `${icon('pin', 14)}<span><b>지금</b> ${esc(last?.text || '')}${nextIn ? ` <small class="muted">· 다음 기록 약 ${Math.max(1, Math.round(nextIn / 60000))}분 뒤</small>` : ''}</span>`;
+    if (p.stopped) box.dataset.stopped = '1';
+    $('#exp-now', box).innerHTML = p.stopped
+      ? `${icon('heart', 14)}<span><b>멈춤</b> 더 나아갈 수 없어 원정이 멈췄습니다. 지금 결과를 받고 돌아올 수 있습니다.</span>`
+      : `${icon('pin', 14)}<span><b>지금</b> ${esc(last?.who ? last.who + ' · ' : '')}${esc(last?.text || '')}${nextIn ? ` <small class="muted">· 다음 기록 약 ${Math.max(1, Math.round(nextIn / 60000))}분 뒤</small>` : ''}</span>`;
     const party = p.party || [];
     $('#exp-party', box).innerHTML = party.length ? `<h3 class="sub-h">원정 중인 동료</h3><ul class="spot-list">${party.map(m => `<li><div><b>${esc(m.name)}</b>
         <small>${esc(m.region || '')} · ${esc(m.place || '')}${m.same_region ? ' · 같은 지역' : ''} · 수색 ${m.rounds_done}/${m.total_rounds}</small></div>${bar(m.rounds_done, m.total_rounds, 'xp')}</li>`).join('')}</ul>` : '';

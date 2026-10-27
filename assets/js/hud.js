@@ -24,6 +24,8 @@ export function mountHud(el) {
 
 export async function refresh() {
   try {
+    // 원정 중이면 지난 수색 회차를 먼저 정산해 체력·정신·침식이 바로 맞게 한다
+    if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
     const [idle, hud] = await Promise.all([
       rpc('world_idle_activity_snapshot').catch(() => null),
       rpc('world_hud_snapshot').catch(() => null),
