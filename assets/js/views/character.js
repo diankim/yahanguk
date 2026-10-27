@@ -22,9 +22,11 @@ const IDLE = [
 ];
 // 자율 활동 보상(서버 world_claim_idle_activity와 같은 식): 시간 h에 대해 숙련·회복 floor(h×12×0.35), 경험치 floor(h×비율×0.35)(최소 1, 최고 레벨이면 0)
 const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
-function idleReward(k, min, level) {
-  const h = min / 60, gain = Math.max(1, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(1, Math.floor(h * IDLE_RATE[k] * 0.35));
+// early: 끝나기 전에 그만두면 지난 시간만큼만, 최소 1 보정 없이
+function idleReward(k, min, level, early = false) {
+  const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, Math.floor(h * IDLE_RATE[k] * 0.35));
   const out = xp ? [`경험치 +${xp}`] : [];
+  if (early && !gain && !xp) return ['받을 보상 없음'];
   if (k === 'training') out.push(`전투 숙련 +${gain}`, `근접 기술 +${gain}`);
   else if (k === 'research') out.push(`조사 숙련 +${gain}`, `추적 기술 +${gain}`);
   else if (k === 'maintenance') out.push(`제작 숙련 +${gain}`, `결계 각인 기술 +${gain}`);
@@ -262,14 +264,22 @@ async function idle(body) {
       <div class="idle-now"><div class="idle-ring ${ready ? 'done' : ''}">${icon(ready ? 'check' : 'hourglass', 24)}</div>
         <div><b>${esc(name)} · ${snap.duration_minutes}분</b><span id="idle-left">${ready ? '완료되었습니다. 보상을 받으세요.' : `${fmt.remain(new Date(snap.ready_at) - Date.now())} 남음`}</span>
         ${bar(Math.min(snap.elapsed_seconds || 0, snap.duration_minutes * 60), snap.duration_minutes * 60, 'xp')}</div></div>
-      <button class="btn ${ready ? 'primary' : ''}" id="idle-claim" ${ready ? '' : 'disabled'}>${icon('check', 16)}<span>보상 수령</span></button>
-      <p class="muted small">완료 시각은 서버가 기록합니다. 접속하지 않아도 진행되며, 한 번에 하나만 할 수 있습니다.</p>`, { ico: 'hourglass' }) : ''}
+      <div class="btn-row">${ready ? `<button class="btn primary" id="idle-claim">${icon('check', 16)}<span>보상 수령</span></button>`
+        : `<button class="btn" id="idle-stop">${icon('close', 16)}<span>그만두기</span></button>`}</div>
+      <p class="muted small">완료 시각은 서버가 기록합니다. 접속하지 않아도 진행되며, 한 번에 하나만 할 수 있습니다. 도중에 그만두면 지난 시간만큼만 받습니다.</p>`, { ico: 'hourglass' }) : ''}
     <div class="idle-grid">${IDLE.map(([k, n, d, ic]) => `<article class="idle-card">
       <header>${icon(ic, 18)}<b>${n}</b></header><p>${d}</p>
       <div class="dur">${DURATIONS.map(([m, l]) => `<button class="btn small" data-idle="${k}" data-min="${m}" ${active ? 'disabled' : ''}><b>${l}</b><small>${esc(idleReward(k, m, store.character?.level || 1).join(' · '))}</small></button>`).join('')}</div></article>`).join('')}</div>
     <p class="muted small">자율 활동은 접속하지 않는 동안의 보조 성장입니다. 직접 탐사·전투·제작이 더 큰 보상을 줍니다.</p>`;
   const claim = $('#idle-claim', body);
   if (claim) claim.onclick = () => guard(claim, async () => { const r = await act('world_claim_idle_activity'); return { content: `${r?.message || '보상을 받았습니다.'}${r?.experience ? ` · 경험치 +${r.experience}` : ''}` }; });
+  const stop = $('#idle-stop', body);
+  if (stop) stop.onclick = async () => {
+    const mins = Math.max(0, Math.floor((Date.now() - new Date(snap.started_at).getTime()) / 60000));
+    const got = idleReward(snap.activity_type, mins, store.character?.level || 1, true).join(' · ');
+    if (!(await ask(`${name}을(를) 지금 그만둘까요?\n지난 시간 ${fmt.num(mins)}분만큼만 받습니다: ${got}\n그만두면 바로 다른 행동을 할 수 있습니다.`, { title: '자율 활동 그만두기', ok: '그만두기', cancel: '계속하기', danger: true }))) return;
+    guard(stop, async () => { const r = await act('world_claim_idle_activity'); return { content: r?.message || '자율 활동을 그만두었습니다.' }; });
+  };
   $$('[data-idle]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.idle, m = Number(b.dataset.min), n = IDLE.find(x => x[0] === k)?.[1] || '자율 활동', l = DURATIONS.find(x => x[0] === m)?.[1] || `${m}분`;
     const ok = await ask(`${n}을(를) ${l} 동안 할까요?\n받을 것: ${idleReward(k, m, store.character?.level || 1).join(' · ')}\n끝날 때까지 다른 자율 활동은 할 수 없고, 다 끝난 뒤에 보상을 받습니다.`, { title: '자율 활동 시작', ok: '시작', cancel: '그만두기' });
