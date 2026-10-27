@@ -1,6 +1,6 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
 // 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
-import { store, act, rpc, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal, ask } from '../core.js';
+import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal, ask } from '../core.js';
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
@@ -59,7 +59,8 @@ let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 // box: 그릴 곳, snap: world_field_snapshot, done: 전투가 끝나면 부를 함수
 export function renderBattle(box, snap, done) {
   host = box; data = snap; onEnd = done;
-  nextAt = new Date(snap.battle?.next_action_at || 0).getTime();
+  // 서버 시각을 그대로 쓰면 기기 시계가 늦을 때 대기가 길어지므로, 남은 시간은 최대 1초로 자른다
+  nextAt = Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
   draw();
 }
 export function stopBattle() { clearInterval(cdTimer); host = null; }
@@ -114,7 +115,7 @@ function draw(fresh = []) {
     send(a);
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
-  clearInterval(cdTimer); cdTimer = setInterval(tickCooldown, 100); tickCooldown();
+  clearInterval(cdTimer); cdTimer = setInterval(tickCooldown, 50); tickCooldown();
 }
 
 // 행동 간격(1초, 서버 world_battle_action과 같은 값)을 버튼 위에 옅게 보여 준다.
@@ -136,8 +137,10 @@ async function send(action, item) {
   if (busy || Date.now() < nextAt) return;
   busy = true; tickCooldown();
   try {
-    const r = await act('world_battle_action', item ? { p_action: action, p_item: item } : { p_action: action });
-    nextAt = new Date(r.next_action_at || Date.now() + GAP).getTime();
+    // 공용 act는 캐릭터를 다시 읽을 때까지 기다리므로, 전투는 응답을 바로 쓰고 캐릭터·알림은 뒤에서 맞춘다
+    const r = await rpc('world_battle_action', item ? { p_action: action, p_item: item } : { p_action: action });
+    // 응답을 받은 때부터 이 기기 시계로 1초(서버 검사는 서버 시각으로 1초라 요청 왕복만큼 늘 여유가 있다)
+    nextAt = Date.now() + GAP;
     const c = store.character;
     if (c) c.health = r.health ?? c.health;
     sfx(r);
@@ -145,19 +148,28 @@ async function send(action, item) {
     const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;
+      refreshCharacter().then(() => emit('changed', { name: 'world_battle_action', data: r }));
       setTimeout(() => { showEnd(r, foe); onEnd?.(r); }, 650);
     } else {
       if (action === 'flee') setTimeout(() => showFleeFail(r, foe), 400);
       data.battle = r.battle;
-      // 체력·영력·물품은 서버 값을 다시 받아 그린다
-      await refreshCharacter();
       draw(r.lines || []);
       if (r.damage) shake('#foe'); if (r.taken) shake('#me');
+      // 체력·정신·영력·물품은 단추를 잠그지 않고 뒤에서 다시 받아 생존 막대와 물품 칸만 고친다
+      refreshCharacter().then(() => { emit('changed', { name: 'world_battle_action', data: r }); if (data.battle && host?.isConnected) refreshVitals(); });
     }
   } catch (e) {
     toast(friendlyError(e), 'error');
     if (/전투가 없습니다/.test(String(e.message))) onEnd?.(null);
   } finally { busy = false; tickCooldown(); }
+}
+function refreshVitals() {
+  const c = store.character, box = $('.me-bars', host); if (!c || !box) return;
+  box.innerHTML = `<div class="vital"><span>체력</span><b>${c.health}</b>${bar(c.health, 100, 'hp')}</div>
+    <div class="vital"><span>정신</span><b>${c.mental}</b>${bar(c.mental, 100, 'mp')}</div>
+    <div class="vital"><span>영력</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, 'sp')}</div>`;
+  const inv = c.inventory || {};
+  $$('[data-item]', host).forEach(b => { const k = b.dataset.item, n = Number(inv[k] || 0); b.disabled = n <= 0; const t = b.firstChild; if (t?.nodeType === 3) t.textContent = `${nameOf(k)} ×${fmt.num(n)}`; });
 }
 async function refreshCharacter() {
   const { loadCharacter } = await import('../core.js');
