@@ -17,7 +17,7 @@ function draw() {
     clearTimeout(arrivedTimer);
     el.hidden = false; el.className = 'travel-banner moving';
     el.dataset.until = t;
-    el.innerHTML = `${icon('route', 18)}<div><b>${esc(nameOf(c.travel_destination) || '목적지')}(으)로 이동 중</b><span id="tb-left">${fmt.remain(t - Date.now())} 후 도착</span></div>
+    el.innerHTML = `${icon('route', 18)}<div><b>${esc((nameOf(c.travel_destination) || '목적지') + '(으)로')} 이동 중</b><span id="tb-left">${fmt.remain(t - Date.now())} 후 도착</span></div>
       <div class="tb-bar"><i style="width:0%"></i></div><a class="btn small ghost" href="#/map/travel">자세히</a>`;
     el.dataset.start = el.dataset.start && Number(el.dataset.until) === t ? el.dataset.start : Date.now();
     document.body.classList.add('has-banner');

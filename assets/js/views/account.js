@@ -1,5 +1,5 @@
 // 계정: 게임 캐릭터와 별개인 로그인 계정 정보. 아이디 확인·비밀번호 변경, 로그아웃.
-import { db, store, rpc, esc, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
+import { db, store, rpc, esc, particle, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
 import { panel } from './common.js';
 import { emailToId } from '../config.js';
 
@@ -23,7 +23,7 @@ export async function render(el) {
         <li>전투불능이나 사망 상태라면 그 자리에 시신이 남고, 다른 조사원이 유품을 수습할 수 있습니다.</li>
         <li>거래소에 올린 물품은 함께 사라집니다.</li></ul>
       <form class="stack-form" id="del-form" novalidate>
-        <label class="field"><span>확인을 위해 캐릭터 이름 <b>${esc(store.character?.character_name || '')}</b>을(를) 그대로 적으세요</span><input name="confirm" autocomplete="off"></label>
+        <label class="field"><span>확인을 위해 캐릭터 이름 <b>${esc(store.character?.character_name || '')}</b>${particle(store.character?.character_name, '을(를)')} 그대로 적으세요</span><input name="confirm" autocomplete="off"></label>
         <button class="btn danger" type="submit">${icon('flame', 16)}<span>캐릭터 정리하고 새로 시작</span></button></form>
     </div></details>`;
   $('#acc-logout', el).onclick = () => db.auth.signOut();

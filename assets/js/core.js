@@ -197,7 +197,36 @@ export function icon(name, size = 18) {
 /* ── DOM 도우미 ──────────────────────────────────────────── */
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-export function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+// 받침에 맞는 조사: "생선구이을(를)" → "생선구이를", "백지교(으)로" → "백지교로". 서버 문구도 화면에 나갈 때 여기서 고른다.
+// 앞 글자가 한글이면 받침으로, 숫자면 읽는 소리로, 영문이면 끝소리로 정하고, 알 수 없으면 원래 표기를 둔다.
+const JOSA = { '을(를)': ['을', '를'], '를(을)': ['을', '를'], '이(가)': ['이', '가'], '가(이)': ['이', '가'], '은(는)': ['은', '는'], '는(은)': ['은', '는'],
+  '과(와)': ['과', '와'], '와(과)': ['과', '와'], '(으)로': ['으로', '로'], '(이)': ['이', ''] };
+const JOSA_RE = /을\(를\)|를\(을\)|이\(가\)|가\(이\)|은\(는\)|는\(은\)|과\(와\)|와\(과\)|\(으\)로|\(이\)/g;
+const SKIP = new Set([')', ']', '」', '』', '"', "'", '’', '”', '》', '〉']);
+function finalSound(str, end) {
+  let i = end - 1;
+  while (i >= 0 && SKIP.has(str[i])) i--;
+  if (i < 0) return null;
+  const ch = str[i], code = ch.charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) { const jong = (code - 0xac00) % 28; return { has: jong > 0, rieul: jong === 8 }; }
+  if (/[0-9]/.test(ch)) return { has: '0136781'.includes(ch), rieul: '178'.includes(ch) };
+  if (/cm$/i.test(str.slice(0, i + 1))) return { has: false, rieul: false }; // 센티미터
+  if (/[a-z]/i.test(ch)) { const l = ch.toLowerCase(); return { has: 'lmn'.includes(l), rieul: l === 'l' }; }
+  return null;
+}
+export function josa(s) {
+  const t = String(s ?? '');
+  if (!t.includes('(')) return t;
+  return t.replace(JOSA_RE, (m, at, all) => {
+    const f = finalSound(all, at); if (!f) return m;
+    const [withB, without] = JOSA[m];
+    if (m === '(으)로') return f.has && !f.rieul ? withB : without;
+    return f.has ? withB : without;
+  });
+}
+// 낱말 뒤에 붙일 조사만: particle('백지교', '(으)로') → '로'
+export const particle = (word, form) => josa(String(word ?? '') + form).slice(String(word ?? '').length);
+export function esc(s) { return josa(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 export function h(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 
 /* ── 토스트 ──────────────────────────────────────────────── */

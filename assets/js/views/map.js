@@ -382,7 +382,7 @@ async function drawTravel(body) {
   body.innerHTML = `
     <div class="grid-2">
       ${panel('이동 상태', status?.in_transit ? `
-        <div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(status.travel_destination))}(으)로 이동 중</b><span data-arrive="${arrives}">${fmt.remain(arrives - Date.now())} 후 도착</span></div></div>
+        <div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(status.travel_destination) + '(으)로')} 이동 중</b><span data-arrive="${arrives}">${fmt.remain(arrives - Date.now())} 후 도착</span></div></div>
         <button class="btn" id="tr-cancel">${icon('close', 16)}<span>이동 취소 (위약금 5전)</span></button>
         <p class="muted small">동승 중이라도 내 이동은 따로 취소할 수 있습니다.</p>`
         : `<p class="desc">현재 <b>${esc(status?.location || c.location)}</b>에 있습니다. 세계 지도에서 아무 지역이나 고르면 길을 따라 한 번에 이동합니다.</p>

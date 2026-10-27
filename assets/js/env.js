@@ -41,7 +41,7 @@ export function openEnv(e = store.env) {
   const left = t => fmt.remain(new Date(t) - Date.now());
   openModal({ title: '날씨와 시간대', body: `<div class="env-detail">
     <section><h3>${icon(ENV_ICON[e.phase.key], 16)} ${esc(e.phase.name)} <small>${left(e.phase.ends_at)} 뒤 바뀜</small></h3><p>${esc(e.phase.description)}</p>${fxList(e.phase.effects)}</section>
-    <section><h3>${icon(ENV_ICON[e.weather.key], 16)} ${esc(e.weather.name)} <small>${left(e.weather.ends_at)} 뒤 ${esc(e.next_weather?.name || '')}(으)로</small></h3><p>${esc(e.weather.description)}</p>${fxList(e.weather.effects)}</section>
+    <section><h3>${icon(ENV_ICON[e.weather.key], 16)} ${esc(e.weather.name)} <small>${left(e.weather.ends_at)} 뒤 ${esc((e.next_weather?.name || '') + '(으)로')}</small></h3><p>${esc(e.weather.description)}</p>${fxList(e.weather.effects)}</section>
     <p class="muted small">시간대는 한국 시각으로 6시간마다(해돋이 6시·한낮 12시·땅거미 18시·삼경 0시), 날씨는 12시간마다(0시·12시) 바뀝니다. 날씨는 영역마다 다르며, 효과는 탐색·채집·제작·이동·회복·전투에 모두 적용됩니다.</p>
   </div>` });
 }
