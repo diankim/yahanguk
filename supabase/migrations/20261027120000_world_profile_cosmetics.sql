@@ -3,7 +3,8 @@
 -- - 소유는 world_character_cosmetics에 남고, 칭호 판정(world_title_award_check)이 돌 때 함께 판정한다. 같은 꾸미기는 두 번 얻지 않는다.
 -- - 장착은 world_cosmetic_equip이 소유를 확인한 뒤 world_characters.profile의 frame/pattern/seal 키에 쓴다(클라이언트는 profile을 직접 고칠 수 없다).
 -- - 숨김 꾸미기는 얻기 전까지 이름·조건을 서버가 감춘다. 움직임 효과는 아직 없다(정지된 그림).
--- SQL Editor에서 한 번 실행한다. 다시 실행해도 안전하다.
+-- (적용 완료: 장착 함수와 외래 키는 20261027120100에서 붙인다.)
+
 
 create table if not exists public.world_cosmetic_catalog (
   cosmetic_key text primary key,
@@ -21,14 +22,17 @@ alter table public.world_cosmetic_catalog enable row level security;
 revoke all on public.world_cosmetic_catalog from anon, authenticated;  -- 목록은 RPC로만 본다(숨김 조건 보호)
 
 create table if not exists public.world_character_cosmetics (
-  owner_id uuid not null references public.world_characters(owner_id) on delete cascade,
-  cosmetic_key text not null references public.world_cosmetic_catalog(cosmetic_key) on delete cascade,
+  owner_id uuid not null,
+  cosmetic_key text not null,
   unlocked_at timestamptz not null default now(),
   primary key (owner_id, cosmetic_key)
 );
 alter table public.world_character_cosmetics enable row level security;
-drop policy if exists world_character_cosmetics_read_own on public.world_character_cosmetics;
-create policy world_character_cosmetics_read_own on public.world_character_cosmetics for select to authenticated using (owner_id = (select auth.uid()));
+do $$ begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'world_character_cosmetics' and policyname = 'world_character_cosmetics_read_own') then
+    create policy world_character_cosmetics_read_own on public.world_character_cosmetics for select to authenticated using (owner_id = (select auth.uid()));
+  end if;
+end $$;
 revoke all on public.world_character_cosmetics from anon, authenticated;
 grant select on public.world_character_cosmetics to authenticated;
 
@@ -158,34 +162,13 @@ begin
       where cc.active));
 end $$;
 
-/* ── 장착·해제 ───────────────────────────────────────── */
-create or replace function public.world_cosmetic_equip(p_kind text, p_key text)
-returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
-declare uid uuid := public.fn_owner_auth_uid(); nm text;
-begin
-  if uid is null then raise exception '로그인이 필요합니다.'; end if;
-  if p_kind is null or p_kind not in ('frame', 'pattern', 'seal') then raise exception '꾸미기 종류가 올바르지 않습니다.'; end if;
-  perform 1 from public.world_characters where owner_id = uid for update;
-  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
-  if p_key is null or p_key = '' then
-    update public.world_characters set profile = coalesce(profile, '{}'::jsonb) - p_kind, updated_at = now() where owner_id = uid;
-    return jsonb_build_object('ok', true, 'content', '꾸미기를 내렸습니다.');
-  end if;
-  select cc.cosmetic_name into nm from public.world_character_cosmetics o join public.world_cosmetic_catalog cc using (cosmetic_key)
-   where o.owner_id = uid and o.cosmetic_key = p_key and cc.kind = p_kind and cc.active;
-  if nm is null then raise exception '얻은 꾸미기만 고를 수 있습니다.'; end if;
-  update public.world_characters set profile = coalesce(profile, '{}'::jsonb) || jsonb_build_object(p_kind, p_key), updated_at = now() where owner_id = uid;
-  return jsonb_build_object('ok', true, 'content', '「' || nm || '」을 달았습니다.');
-end $$;
-
 do $$ declare f text;
 begin
-  foreach f in array array['world_cosmetic_rule_ok(uuid, jsonb)', 'world_cosmetic_award_check(uuid, text)', 'world_cosmetic_snapshot()', 'world_cosmetic_equip(text, text)'] loop
+  foreach f in array array['world_cosmetic_rule_ok(uuid, jsonb)', 'world_cosmetic_award_check(uuid, text)', 'world_cosmetic_snapshot()'] loop
     execute format('alter function public.%s owner to fn_owner_field', f);
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
   execute 'grant execute on function public.world_cosmetic_snapshot() to authenticated';
-  execute 'grant execute on function public.world_cosmetic_equip(text, text) to authenticated';
 end $$;
 
 /* ── 칭호 판정이 돌 때 꾸미기도 함께 판정한다(꾸미기 판정이 실패해도 원래 행동은 막지 않는다) ── */
