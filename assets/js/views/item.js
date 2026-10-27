@@ -30,8 +30,26 @@ export async function loadLocks(force) {
 }
 export const isLocked = id => !!locks?.has(id);
 
-// 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업
-export const gearBlock = (o, c) => (o?.minimum_level > (c?.level || 1)) ? `Lv.${o.minimum_level} 필요` : (o?.required_job && o.required_job !== c?.job_key) ? `${nameOf(o.required_job)} 전용` : '';
+// 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업 → 소속 → 능력치
+export const gearBlock = (o, c) => {
+  if (!o) return '';
+  if (o.minimum_level > (c?.level || 1)) return `Lv.${o.minimum_level} 필요`;
+  if (o.required_job && o.required_job !== c?.job_key) return `${nameOf(o.required_job)} 전용`;
+  if (o.required_faction && o.required_faction !== c?.faction_key) return `${nameOf(o.required_faction)} 전용`;
+  for (const [k, v] of Object.entries(o.required_stats || {})) if (Number(c?.[k] || 0) < Number(v)) return `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`;
+  return '';
+};
+// 장착 조건 목록: [글, 채웠는지]. 레벨 1·조건 없음은 뺀다
+export function gearReqs(o, c) {
+  if (!o) return [];
+  const out = [];
+  if (o.minimum_level > 1) out.push([`Lv.${o.minimum_level} 이상`, (c?.level || 1) >= o.minimum_level]);
+  if (o.required_job) out.push([`${nameOf(o.required_job)} 전용`, o.required_job === c?.job_key]);
+  if (o.required_faction) out.push([`${nameOf(o.required_faction)} 전용`, o.required_faction === c?.faction_key]);
+  for (const [k, v] of Object.entries(o.required_stats || {})) out.push([`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v)]);
+  return out;
+}
+export const gearReqHtml = (o, c) => gearReqs(o, c).map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('');
 
 export function traitText(it) {
   const t = it?.equipment_traits; if (!t) return '';
@@ -72,8 +90,7 @@ function draw(box, id, inv, prices, mode) {
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
-      ${it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : ''}
-      ${it?.required_job ? `<div><dt>직업</dt><dd>${esc(nameOf(it.required_job))} 전용</dd></div>` : ''}
+      ${it && GEAR.has(it.category) ? `<div><dt>장착 조건</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
     </dl>
     ${uses.length ? `<h3 class="sub-h">이 물품이 들어가는 제작법 ${uses.length}</h3><ul class="spot-list">${uses.map(recipeRow).join('')}</ul>
       <button class="btn small ghost" data-mat="${esc(id)}">${icon('hammer', 14)}<span>이 재료로 만들 수 있는 것 모두 보기</span></button>` : ''}
