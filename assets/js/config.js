@@ -1,6 +1,6 @@
 // 공용 설정: 다른 모듈에 기대지 않는다(점검 확인·점검 페이지에서도 쓴다).
-export const SUPABASE_URL = 'https://bqywnmeryddwccrbomfe.supabase.co';
-export const SUPABASE_KEY = 'sb_publishable_G2l1gY8W6ZYtSsFSx4LH6Q_YGdvnwe6';
+export const SUPABASE_URL = 'https://wphhqfkxrqjxxmfyozff.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_2lhPYPuKIbf4sUzN4rfn5w_4ZhL34ls';
 
 // 아이디 가입: 아이디를 내부 주소로 바꿔 Supabase Auth에 넘긴다(메일은 보내지 않는다).
 // 서버 훅(world_hook_before_user_created)이 같은 형식만 받아 준다. 바꾸면 훅의 도메인도 함께 바꾼다.
