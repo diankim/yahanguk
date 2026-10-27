@@ -1,5 +1,5 @@
 // 헤더 기능: 테마(프리셋·흑백·직접 설정) · 프로필 보기 · 알림. 고치는 화면은 설정 페이지(views/settings.js)에 있다.
-import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on } from './core.js';
+import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, midBattle, throttle } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 export { initSound, playSfx } from './sound.js';
@@ -76,11 +76,11 @@ export function mountNotifications(btn) {
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     }).subscribe();
   } catch {}
-  // 실시간 연결이 놓쳐도 늦지 않게: 행동할 때마다(칭호·보상은 행동과 함께 생긴다) 곧바로 다시 읽고, 화면을 보는 동안 30초마다 읽는다.
-  let soon = 0;
-  on('changed', () => { clearTimeout(soon); soon = setTimeout(() => loadNotes(), 600); });
+  // 실시간 연결이 놓쳐도 늦지 않게: 행동 뒤(전투 턴 중은 빼고, 15초에 한 번까지)·화면 복귀·화면을 보는 동안 1분마다 다시 읽는다.
+  const soon = throttle(() => loadNotes(), 15000);
+  on('changed', ev => { if (!midBattle(ev)) setTimeout(soon, 600); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNotes(); });
-  setInterval(() => { if (!document.hidden) loadNotes(); }, 30000);
+  setInterval(() => { if (!document.hidden) loadNotes(); }, 60000);
   // 서버 알림이 아닌 화면 안 알림(원정 귀환 등)
   window.addEventListener('yh-local-note', e => { if (e.detail) notePop(e.detail); });
 }

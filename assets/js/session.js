@@ -35,7 +35,7 @@ export function mountSessionGuard() {
   try {
     channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check()).subscribe();
   } catch {}
-  timer = setInterval(check, 10000);
+  timer = setInterval(check, 60000); // 실시간 신호가 바로 알려 주므로 확인은 1분마다면 된다
   check();
 }
 export function stopSessionGuard() {

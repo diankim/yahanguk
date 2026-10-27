@@ -45,6 +45,13 @@ export async function snap(name, args) {
   store.snaps[name] = data;
   return data;
 }
+// 전투 도중 한 턴(끝나지 않은 공격·방어)은 캐릭터만 다시 읽고, 상태판·알림 같은 다른 화면은 다시 읽지 않는다(서버 부담).
+export const midBattle = ({ name, data }) => name === 'world_battle_action' && !data?.ended;
+// 같은 일을 짧은 간격으로 여러 번 부르면 한 번만: 처음 부른 뒤 gap 안의 요청은 gap이 끝날 때 한 번으로 묶는다.
+export function throttle(fn, gap) {
+  let last = 0, t = null;
+  return () => { const wait = last + gap - Date.now(); if (wait <= 0) { last = Date.now(); fn(); } else if (!t) t = setTimeout(() => { t = null; last = Date.now(); fn(); }, wait); };
+}
 // 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);

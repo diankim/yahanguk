@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
 import { envChip } from './env.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
@@ -15,22 +15,27 @@ export function mountHud(el) {
   };
   on('character', render);
   on('env', render);
-  on('changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 350); });
+  // 행동 직후에는 캐릭터를 이미 다시 읽었으니(act) 상태판 요약만 읽는다. 전투 턴 중에는 그리기만 한다. 자율 활동 상태는 자율 행동 뒤에만.
+  on('changed', ev => {
+    if (midBattle(ev)) return render();
+    const idle = /idle/.test(ev.name || '');
+    clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle }), 350);
+  });
   refresh();
   clearInterval(tick); tick = setInterval(onTick, 1000);
   clearInterval(poll); poll = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 }
 
-export async function refresh() {
+export async function refresh({ char = true, idle: readIdle = true } = {}) {
   try {
     // 원정 중이면 지난 수색 회차를 먼저 정산해 체력·정신·침식이 바로 맞게 한다
     if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
     const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
     const [idle, hud] = await Promise.all([
-      rpc('world_idle_activity_snapshot').catch(() => null),
+      readIdle || first ? rpc('world_idle_activity_snapshot').catch(() => null) : state.idle,
       rpc('world_hud_snapshot').catch(() => null),
-      first && store.character ? null : loadCharacter(),
+      (first || !char) && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;
     state = { idle, hud, exp: hud?.expedition || null };

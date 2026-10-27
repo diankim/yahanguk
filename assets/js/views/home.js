@@ -4,7 +4,7 @@
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
-import { load, panel, chip, danger, loading, errorBox } from './common.js';
+import { load, panel, chip, danger, loading, errorBox, invalidate } from './common.js';
 import { renderShop, renderMarket, renderStable, renderSmithy } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
@@ -31,7 +31,13 @@ export async function render(root) {
   el = root;
   el.innerHTML = loading();
   off.forEach(f => f());
-  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
+  off = [on('changed', ({ name }) => {
+    if (/battle_action/.test(name)) return;
+    if (/fish|travel|field_move|craft|shop|item|equip/.test(name)) invalidate('world_fish_spot');
+    if (/rest|survival|travel|idle/.test(name)) invalidate('world_rest_status');
+    if (/idle/.test(name)) invalidate('world_idle_activity_snapshot');
+    draw();
+  }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
   await draw();
 }
@@ -51,7 +57,8 @@ async function draw() {
   busy = true; again = false;
   try {
     const [s, roster, fish, rest, idle] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => []),
-      load('world_fish_spot').catch(() => null), load('world_rest_status').catch(() => null), load('world_idle_activity_snapshot').catch(() => null)]);
+      // 낚시터·휴식·자율 상태는 잘 바뀌지 않아 1분 동안 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(아래 changed)
+      load('world_fish_spot', undefined, { maxAge: 60000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 60000 }).catch(() => null)]);
     snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
