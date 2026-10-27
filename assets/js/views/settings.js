@@ -83,6 +83,12 @@ export async function render(root, sub) {
   bindSegmented(el, 'set-sub', k => { history.replaceState(null, '', `#/settings/${k}`); window.dispatchEvent(new Event('yh-subpage')); showSub(k); });
   showSub(SUBS.some(x => x[0] === sub) ? sub : 'profile');
 
+  // 꾸미기를 누르면(모바일은 마우스를 올릴 수 없으므로) 그 아래 줄에 얻은 경로·얻는 방법을 보여 준다
+  const cosInfo = b => {
+    const kind = b.dataset.cosKind || b.dataset.cosLock, box = $(`[data-cos-info="${kind}"]`, el); if (!box) return;
+    if (!b.dataset.cosName) { box.innerHTML = ''; return; }
+    box.innerHTML = `<b>${esc(b.dataset.cosName)}</b> · ${b.dataset.cosLock ? '얻는 방법' : '얻은 경로'}: ${esc(b.dataset.cosHint || '-')}`;
+  };
   // 프로필
   const drawProfile = () => {
     $('#pf-preview', el).innerHTML = emblem(c.owner_id, { ...c.profile, emblem: draft.emblem, color: draft.color, frame: draft.frame || null, avatar: $('#av-clear', el)?.checked ? null : c.profile?.avatar }, 72);
@@ -94,7 +100,8 @@ export async function render(root, sub) {
   };
   el.addEventListener('click', e => {
     const em = e.target.closest('[data-em]'), col = e.target.closest('[data-col]'), th = e.target.closest('[data-theme-id]'), tr = e.target.closest('[data-try]'), cs = e.target.closest('[data-cos-kind]');
-    if (cs && !cs.disabled) { draft[cs.dataset.cosKind] = cs.dataset.cosKey; touch(); drawProfile(); }
+    if (cs && !cs.disabled) { draft[cs.dataset.cosKind] = cs.dataset.cosKey; touch(); drawProfile(); cosInfo(cs); }
+    const lk = e.target.closest('[data-cos-lock]'); if (lk) cosInfo(lk);
     if (em) { draft.emblem = em.dataset.em; touch(); drawProfile(); }
     if (col) { draft.color = col.dataset.col; touch(); drawProfile(); }
     if (th) { draft.theme = th.dataset.themeId; applyTheme(draft.theme, false); markTheme(); touch(); }
@@ -105,6 +112,7 @@ export async function render(root, sub) {
   $('#av-clear', el)?.addEventListener('change', () => { touch(); drawProfile(); });
   const crop = bindCrop(el, () => { draft.avatar = 'pending'; touch(); });
   drawProfile();
+  $$('[data-cos-kind].on', el).forEach(cosInfo); // 지금 고른 것의 얻은 경로부터 보여 준다
 
   // 테마
   const markTheme = () => { $$('.theme-card', el).forEach(x => x.classList.toggle('on', x.dataset.themeId === draft.theme)); $('.custom-theme', el).classList.toggle('on', draft.theme === 'custom'); };
@@ -144,8 +152,9 @@ function cosmeticsHtml(cos) {
       const list = (cos.items || []).filter(i => i.kind === kind), got = list.filter(i => i.owned).length;
       return `<h4 class="cos-h">${label} <small class="muted">${got}/${list.length}</small></h4><div class="cos-grid">
         <button type="button" class="cos-pick" data-cos-kind="${kind}" data-cos-key="">${sample(kind, '')}<b>없음</b></button>
-        ${list.map(i => i.owned ? `<button type="button" class="cos-pick t-${i.tier}" data-cos-kind="${kind}" data-cos-key="${esc(i.key)}" title="${esc(i.hint)}">${sample(kind, i.key)}<b>${esc(i.name)}</b>${TIER[i.tier] ? `<small>${TIER[i.tier]}</small>` : ''}</button>`
-          : `<button type="button" class="cos-pick locked" disabled title="${esc(i.hint)}">${i.key ? sample(kind, i.key) : '<span class="cos-q">?</span>'}<b>${esc(i.name)}</b><small>${esc(i.hint)}</small></button>`).join('')}</div>`;
+        ${list.map(i => i.owned ? `<button type="button" class="cos-pick t-${i.tier}" data-cos-kind="${kind}" data-cos-key="${esc(i.key)}" data-cos-name="${esc(i.name)}" data-cos-hint="${esc(i.hint)}" title="${esc(i.hint)}">${sample(kind, i.key)}<b>${esc(i.name)}</b>${TIER[i.tier] ? `<small>${TIER[i.tier]}</small>` : ''}</button>`
+          : `<button type="button" class="cos-pick locked" aria-disabled="true" data-cos-lock="${kind}" data-cos-name="${esc(i.name)}" data-cos-hint="${esc(i.hint)}" title="${esc(i.hint)}">${i.key ? sample(kind, i.key) : '<span class="cos-q">?</span>'}<b>${esc(i.name)}</b><small>${esc(i.hint)}</small></button>`).join('')}</div>
+        <p class="cos-info" data-cos-info="${kind}" aria-live="polite"></p>`;
     }).join('')}`;
 }
 // 저장하지 않고 나가면 테마 미리보기는 되돌리되, 고치던 내용은 기억해 두었다가 다시 들어오면 이어서 고친다.

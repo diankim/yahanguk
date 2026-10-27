@@ -1293,3 +1293,5 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .enh-mats li { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .enh-mats li.bad span { color: var(--bad); }
 .enh-mats li.ok span { color: var(--ok, var(--muted)); }
+.cos-info { margin: 6px 2px 0; min-height: 1.4em; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.cos-info b { color: var(--text); font-weight: 600; }
