@@ -6,6 +6,7 @@ import { openStatus } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS } from './item.js';
+import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
 
 const SUBS = [['status', '상태'], ['growth', '성장'], ['faction', '세력'], ['skills', '기술'], ['idle', '자율'], ['titles', '칭호']];
 const STATS = [
@@ -78,12 +79,13 @@ export function equipRows(inv, prof, here) {
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
-  }).join('')}</ul>
+  }).join('')}${tokenRowHtml()}</ul>
   <p class="muted small">공격할 때마다 무기, 맞을 때마다 방어구·관모, 채집할 때마다 도구, 이동할 때마다 신이 1씩 닳습니다(노리개·호신부·탈은 닳지 않습니다). 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.</p>`;
 }
 export function bindRepair(root) {
   $$('[data-repair]', root).forEach(b => b.onclick = () => guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repair, p_method: b.dataset.how })));
   $$('[data-unequip]', root).forEach(b => b.onclick = () => guard(b, () => act('world_unequip_item', { p_slot: b.dataset.unequip })));
+  bindTokenRow(root);
 }
 // 빈 칸에 무엇을 끼우면 좋은지
 const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
@@ -95,7 +97,7 @@ async function hereZone() {
 async function status(body) {
   const [sv, hud, prof, inv, here, rs] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot').catch(() => null),
     load('world_combat_profile').catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
-    rpc('world_rest_status').catch(() => null)]);
+    rpc('world_rest_status').catch(() => null), loadBond(true)]);
   const c = store.character, invItems = c.inventory || {};
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
   const statuses = (hud?.statuses || []).filter(x => new Date(x.expires_at) > new Date());

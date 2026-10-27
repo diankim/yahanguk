@@ -3,6 +3,7 @@
 // 친구·귓속말·파티 초대·거래 제안·구조·차단은 모두 서버가 다시 검사한다(단추는 길잡이일 뿐).
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
+import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
 import { chip } from './common.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
 
@@ -19,7 +20,10 @@ const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); ret
 
 async function draw(box, id) {
   try {
-    const c = await rpc('world_character_card', { p_owner: id });
+    const [c, pub] = await Promise.all([rpc('world_character_card', { p_owner: id }), rpc('world_bond_public', { p_owner: id }).catch(() => null), loadBond()]);
+    const mine = bond(), isPartner = mine?.partner_id === id;
+    // 연리 맺기: 친구이고, 나에게 정인·보낸 마음이 없고, 상대에게도 보이는 정인이 없을 때(나머지 조건은 서버가 검사)
+    const canBond = !c.mine && !c.is_dead && c.relation === 'friends' && !mine && !bondSnap()?.outgoing && !pub;
     const p = profileOf(c.owner_id, c.profile);
     const state = c.is_dead ? chip('숨을 거둠', 'bad') : c.downed ? chip('전투불능', 'bad') : c.in_combat ? chip('전투 중', 'warn')
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
@@ -35,6 +39,7 @@ async function draw(box, id) {
       ${canInvite ? `<button class="btn small" data-do="invite">${icon('users', 14)}<span>파티 초대</span></button>` : ''}
       ${!c.is_dead && circles().some(x => (x.role === 'leader' || x.role === 'manager') && !x.members.some(mm => mm.owner_id === c.owner_id)) ? `<button class="btn small" data-do="circle">${icon('chat', 14)}<span>모임에 초대</span></button>` : ''}
       ${c.same_party ? chip('같은 파티', 'accent') : ''}
+      ${isPartner ? chip('정인', 'accent') : canBond ? `<button class="btn small" data-do="bond">${tokenSvg('heart', 14)}<span>연리 맺기</span></button>` : ''}
       ${c.same_place && safe && !c.is_dead ? `<button class="btn small" data-do="trade">${icon('coin', 14)}<span>거래 제안</span></button>` : ''}
       ${c.same_place && c.downed && !c.is_dead ? `<button class="btn small primary" data-do="rescue">${icon('heart', 14)}<span>구조</span></button>` : ''}`;
     box.innerHTML = `
@@ -50,6 +55,7 @@ async function draw(box, id) {
         ${c.last_active && !c.mine ? `<div><dt>최근 활동</dt><dd>${ago(c.last_active)}</dd></div>` : ''}
         <div><dt>숙련</dt><dd>${RANKS.map(([k, n]) => `${n} ${c.ranks?.[k] || 1}`).join(' · ')}</dd></div>
         <div><dt>얻은 칭호</dt><dd>${fmt.num(c.title_count || 0)}개</dd></div>
+        ${pub ? `<div><dt>정인</dt><dd class="bond-pub">${pub.wear ? tokenSvg(pub.token_key, 16) : ''}${esc(pub.partner_name || '')} <span class="muted small">· ${esc(pub.token_name)} · ${esc(pub.stage_name)}</span></dd></div>` : ''}
       </dl>
       ${(c.titles || []).length ? `<h3 class="sub-h">장착한 칭호</h3><div class="chips card-titles">${c.titles.map(t => `<span class="chip ${t.hidden ? '' : 'accent'}" title="${esc(t.description || '')}">${esc(t.name)}</span>`).join('')}</div>` : ''}
       ${acts.trim() ? `<div class="card-acts">${acts}</div>` : ''}
@@ -74,6 +80,7 @@ async function run(b, c, box) {
     const r = await act('world_party_invite', { p_invitee_id: id }); again(); return r;
   });
   if (k === 'circle') return inviteToCircle(id, c.character_name);
+  if (k === 'bond') return openPropose(id, c.character_name);
   if (k === 'trade') { close(); const { openDirectTrade } = await import('./services.js'); return openDirectTrade(id); }
   if (k === 'rescue') return guard(b, async () => { const r = await act('world_rescue_character', { p_target: id }); again(); return r; });
   if (k === 'block') {

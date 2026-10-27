@@ -26,6 +26,7 @@ const M = {
   moon: 'M3-7a7 7 0 100 14 5.5 5.5 0 010-14z',
   lamp: 'M-4-7h8M-5-5h10v9h-10zM0 4v3M-9 0h-2M9 0h2M-8-7l-1-1M8-7l1-1',
   drop: 'M0-7c3 4 5 6 5 8a5 5 0 01-10 0c0-2 2-4 5-8z',
+  branch: 'M-6 8C-6 1 0-1 0-8M6 8C6 1 0-1 0-8M-3 3h6M-5-2l-2-2M5-2l2-2',
 };
 export const FRAMES = {
   fr_lantern: ['common', 'lantern'], fr_path: ['common', 'path'], fr_compass: ['legend', 'compass'],
@@ -34,6 +35,7 @@ export const FRAMES = {
   fr_hammer: ['common', 'hammer'], fr_workshop: ['rare', 'anvil'], fr_leaf: ['common', 'leaf'], fr_earth: ['legend', 'mountain'],
   fr_wave: ['common', 'wave'], fr_dragon_scale: ['legend', 'scale'], fr_knot: ['common', 'knot'], fr_twin_tree: ['rare', 'tree'],
   fr_coin: ['common', 'coin'], fr_moon: ['rare', 'moon'], fr_night_lamp: ['legend', 'lamp'], fr_bloodmist: ['rare', 'drop'],
+  fr_yeonri: ['legend', 'branch'],
 };
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
 const MIDS = [[50, 4, 0], [96, 50, 90], [50, 96, 180], [4, 50, 270]];
@@ -72,6 +74,7 @@ const P = {
   pt_lattice: '<path d="M10 1L19 10 10 19 1 10z"/><path d="M10 6l4 4-4 4-4-4z"/>',
   pt_stars: '<circle cx="4" cy="5" r=".9"/><circle cx="15" cy="9" r=".7"/><circle cx="8" cy="16" r=".8"/><path d="M4 5l11 4-7 7"/>',
   pt_bamboo: '<path d="M5 0v20M15 0v20M3 7h4M13 14h4M5 7c3-2 5-2 7-4"/>',
+  pt_yeonri: '<path d="M3 19C3 12 10 11 10 3M17 19C17 12 10 11 10 3"/><circle cx="10" cy="3" r=".9"/>',
 };
 export const PATTERNS = Object.keys(P);
 let pid = 0;
@@ -84,6 +87,6 @@ export function patternLayer(key) {
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
 // 낙관: 이름 옆 작은 도장
-export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜' };
-const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend' };
+export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣' };
+const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend' };
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true">${SEALS[key]}</span>` : '';

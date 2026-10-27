@@ -97,7 +97,7 @@ async function items(body, inv) {
 async function equip(body, inv) {
   const cmap = catalogMap(inv), eq = inv.equipment || {}, have = inv.inventory || {};
   const c = store.character;
-  const [prof, zones] = await Promise.all([load('world_combat_profile').catch(() => null), safeZones().catch(() => null)]);
+  const [prof, zones] = await Promise.all([load('world_combat_profile').catch(() => null), safeZones().catch(() => null), import('../bond.js').then(m => m.loadBond(true))]);
   const here = zones ? [...zones.values()].find(r => r.region_name === c.location) : null;
   const slots = Object.keys(SLOTS).map(slot => {
     const cur = eq[slot], it = cmap.get(cur);

@@ -1258,3 +1258,23 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .req { font-size: 12px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
 .req.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .req.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); }
+
+/* ── 연리 ── */
+.token-ico { color: var(--accent); flex: none; }
+.bond-card { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--accent); }
+.bond-card.broken { border-left-color: var(--muted); opacity: .9; } .bond-card.broken .token-ico { color: var(--muted); }
+.bond-card > .btn { flex: none; align-self: center; }
+.bond-token { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px dashed var(--line); flex: none; }
+.bond-token.on { border: 2px solid var(--accent); }
+.bond-main { flex: 1; min-width: 0; display: grid; gap: 4px; } .bond-main small { color: var(--muted); font-size: 12px; }
+.bond-main p.ok { color: var(--ok); margin: 0; } .bond-main p.muted { margin: 0; }
+.bond-stage { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.bond-acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.bond-req { display: flex; gap: 10px; align-items: center; min-width: 0; } .bond-req > div { display: grid; gap: 2px; min-width: 0; }
+.token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 10px 0; }
+.token-pick { display: grid; justify-items: center; gap: 4px; padding: 12px 8px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); text-align: center; }
+.token-pick.on { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+.token-pick small { font-size: 11px; color: var(--muted); }
+.bond-gift { display: grid; gap: 10px; }
+.bond-pub { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.token-row .token-ico, .empty-slot .token-ico { width: 18px; height: 18px; }
