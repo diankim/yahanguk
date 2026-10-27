@@ -1,5 +1,5 @@
 // 안전지대 시설: 상점 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed } from '../core.js';
+import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
@@ -214,6 +214,15 @@ async function renderDirect(body) {
     $$('[data-dt-dec]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtDec, p_accept: false })));
     $$('[data-dt-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_cancel', { p_trade_id: b.dataset.dtCancel })));
   } catch (e) { body.innerHTML = errorBox(e.message); }
+}
+
+// 조사원 카드의 [거래 제안]: 거래소 창을 직접 거래 칸으로 열고 상대를 미리 고른다
+export function openDirectTrade(to) {
+  marketMode = 'direct'; dt = { to, give: {}, giveGil: 0, want: {}, wantGil: 0 };
+  const m = openModal({ title: '거래소', wide: true, body: '<div class="fac-body"></div>' });
+  const box = $('.fac-body', m);
+  renderMarket(box);
+  const offc = on('changed', () => { if (box.isConnected) renderMarket(box); else offc(); });
 }
 
 /* ── 마구간 ───────────────────────────────────────────── */

@@ -1,5 +1,8 @@
 // 동료: 파티 관리·전리품 분배·초대, 같은 지역의 조사원과 구조.
 import { cardName } from './card.js';
+import { openWhisper } from '../chat.js';
+
+const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
 import { load, panel, chip, loading, errorBox } from './common.js';
 
@@ -22,13 +25,28 @@ export function destroy() { off.forEach(f => f()); off = []; clearInterval(poll)
 async function draw() {
   const body = $('#party-body', el); if (!body) return;
   try {
-    const [p, loot, roster] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => [])]);
+    const [p, loot, roster, fr] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => []), load('world_friend_overview').catch(() => null)]);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
     const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
         <small>Lv.${m.level} · ${esc(nameOf(m.job_key))} · ${esc(m.location)} · 체력 ${m.health}${m.away ? ' · 원정 중' : ''}${m.in_combat ? ' · 전투 중' : ''}</small></div>
         ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
+    const canInvite = !pt || isLeader, memberIds = new Set((p?.members || []).map(m => m.owner_id));
+    const fState = f => f.is_dead ? '숨을 거둠' : f.downed ? '전투불능' : f.in_combat ? '전투 중' : f.away ? '원정 중' : f.traveling ? '이동 중' : '';
+    const friendsPanel = fr ? panel(`친구 · ${(fr.friends || []).length}명`, `
+      ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people">${fr.incoming.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
+          <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
+      ${(fr.friends || []).length ? `<ul class="people">${fr.friends.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${gmBadge(f.owner_id)}</b>
+          <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small></div>
+          <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}">귓속말</button>
+            ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
+            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
+        : empty('아직 친구가 없습니다. 채팅이나 같은 곳에 있는 조사원의 이름을 눌러 친구 신청을 보내 보세요.', 'users')}
+      ${(fr.outgoing || []).length ? `<p class="muted small">응답을 기다리는 신청: ${fr.outgoing.map(f => `${esc(f.character_name)} <button class="linkish" data-fr-cancel="${esc(f.owner_id)}">취소</button>`).join(' · ')}</p>` : ''}
+      ${(fr.blocked || []).length ? `<details class="fold"><summary>차단한 조사원 ${fr.blocked.length}</summary><ul class="spot-list">${fr.blocked.map(f => `<li><div><b>${esc(f.character_name)}</b></div><button class="btn small" data-unblock="${esc(f.owner_id)}">차단 풀기</button></li>`).join('')}</ul></details>` : ''}
+      <p class="muted small">친구는 어디에 있든 위치와 상황을 볼 수 있고, 귓속말과 파티 초대를 바로 보낼 수 있습니다.</p>`, { ico: 'heart' }) : '';
     body.innerHTML = `
+      ${friendsPanel}
       ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.inviter_name || '조사원')}의 동료 초대</b><small>수락하면 함께 이동하고 전리품을 나눕니다</small></div>
         <div class="btn-row"><button class="btn small primary" data-inv="${esc(i.invite_id)}" data-acc="1">수락</button><button class="btn small" data-inv="${esc(i.invite_id)}" data-acc="0">거절</button></div></li>`).join('')}</ul>`, { ico: 'bell' }) : ''}
       ${pt ? `<div class="grid-2">
@@ -58,6 +76,14 @@ async function draw() {
     $$('[data-method]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_set_loot_distribution', { p_method: b.dataset.method, p_priority: b.dataset.method === 'designated' ? (p.members || []).map(m => m.owner_id) : [] })));
     $$('[data-dist]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_loot_distribute', { p_loot_id: b.dataset.dist })));
     $$('[data-rescue]', body).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
+    $$('[data-fr-acc],[data-fr-dec]', body).forEach(b => b.onclick = () => guard(b, () => act('world_friend_respond', { p_from: b.dataset.frAcc || b.dataset.frDec, p_accept: !!b.dataset.frAcc })));
+    $$('[data-fr-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_friend_remove', { p_target: b.dataset.frCancel })));
+    $$('[data-unblock]', body).forEach(b => b.onclick = () => guard(b, () => act('world_block_set', { p_target: b.dataset.unblock, p_blocked: false })));
+    $$('[data-whisper]', body).forEach(b => b.onclick = () => openWhisper(b.dataset.whisper));
+    $$('[data-fr-inv]', body).forEach(b => b.onclick = () => guard(b, async () => {
+      if (!pt) await act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) });
+      return act('world_party_invite', { p_invitee_id: b.dataset.frInv });
+    }));
     const lv = $('#party-leave', body);
     if (lv) lv.onclick = async () => {
       const alone = (p.members || []).length <= 1;

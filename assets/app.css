@@ -1025,5 +1025,13 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .name-link:hover { color: var(--gold); }
 .name-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
 .modal-backdrop.layer { z-index: 82; }
-.char-card .profile-card { margin-bottom: 10px; }
-.char-card .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.char-card .profile-card { margin-bottom: 12px; }
+.char-card .bio { margin: 0 0 12px; }
+.char-card .kv { margin-bottom: 14px; gap: 8px; }
+.char-card .sub-h { margin: 4px 0 8px; }
+.char-card .card-titles { display: flex; flex-wrap: wrap; gap: 8px 6px; margin-bottom: 16px; }
+.char-card .card-titles .chip { line-height: 1.5; }
+.card-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 14px; border-top: var(--bw) solid var(--line); }
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.card-foot .btn { margin-left: auto; }
+.danger-text { color: var(--bad, #d66); }
