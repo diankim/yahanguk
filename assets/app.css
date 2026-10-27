@@ -690,7 +690,7 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .scene.safe { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .scene-top { position: relative; z-index: 1; display: grid; gap: 6px; }
 .scene h1 { font-size: 26px; }
-.scene-desc { margin: 0 0 14px; }
+.scene-desc { position: relative; margin: 10px 0 0; max-width: 40em; font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--text) 88%, transparent); }
 .crumbs { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 10px; font-size: 13px; color: var(--muted); }
 .crumbs button { background: none; border: 0; padding: 4px 2px; color: var(--muted); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 .crumbs b { color: var(--text); }

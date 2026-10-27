@@ -90,6 +90,7 @@ function scene(s, traveling, downed) {
         <h1>${esc(r.region_name)}</h1>
         <div class="env-slot">${envChip()}</div>
         <div class="chips">${r.safe ? chip('안전지대', 'ok') : danger(r.danger)}${chip(THEME_SCENE[r.theme] || '야외')}${!r.safe ? chip(`답사 ${s.survey?.pct ?? 0}%`, 'accent') : ''}</div>
+        ${r.safe ? `<p class="scene-desc">${esc(r.description || '요괴가 들어오지 못하는 곳입니다. 물자를 정리하고 다음 길을 준비하세요.')}</p>` : ''}
       </div>
       ${!r.safe ? `<nav class="crumbs" aria-label="지금 있는 곳">${(s.path || []).map((p, i, a) => i === a.length - 1
           ? `<b>${esc(p.name)}</b>` : `<button data-move="${esc(p.node_id)}">${esc(p.name)}</button>${icon('chevron', 12)}`).join('')}</nav>` : ''}
@@ -115,7 +116,6 @@ function town(s, roster) {
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
   return `
-    <p class="desc scene-desc">${esc(r.description || '요괴가 들어오지 못하는 곳입니다. 물자를 정리하고 다음 길을 준비하세요.')}</p>
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
