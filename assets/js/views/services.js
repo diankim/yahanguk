@@ -347,12 +347,20 @@ export async function renderStable(box) {
     const m = await load('world_mount_snapshot');
     const here = (m.mounts || []).filter(x => x.at_stable);
     const c = store.character;
-    box.innerHTML = here.length ? `<div class="mount-grid">${here.map(x => `<article class="mount ${x.owned ? 'on' : ''}">
+    // 단련: 가진 탈것을 노정패로 1~5단계까지 단련한다(단계마다 이동 속도 +4%, 값 20×다음 단계)
+    const mine = (m.mounts || []).filter(x => x.owned);
+    const tokens = Number(m.mount_tokens || 0);
+    const train = mine.length ? `<h3 class="sub-h">탈것 단련 <small class="muted">가진 노정패 ${tokens}개 · 단계마다 이동 속도 +4% (최고 5단계)</small></h3>
+      <ul class="spot-list train-list">${mine.map(x => { const lv = Number(x.training || 0), cost = 20 * (lv + 1);
+        return `<li><div><b>${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
+          ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; }).join('')}</ul>` : '';
+    box.innerHTML = train + (here.length ? `<h3 class="sub-h">들일 수 있는 탈것</h3>` : '') + (here.length ? `<div class="mount-grid">${here.map(x => `<article class="mount ${x.owned ? 'on' : ''}">
         <header><b>${esc(x.mount_name)}</b>${chip(x.tier)}</header><p>${esc(x.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${x.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${x.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${x.fare_free ? '없음' : `구간당 노정패 ${x.fare_tokens}`}</dd></div></dl>
         <small class="muted">${esc(conditions(x, c))}</small>
         ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
-      : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route');
+      : (mine.length ? '' : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route')));
+    $$('[data-train]', box).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_mount_train', { p_mount_id: b.dataset.train }); renderStable(box); return out; }));
     $$('[data-buy]', box).forEach(b => b.onclick = async () => { if (await ask('이 탈것을 들일까요?', { title: '탈것 들이기', ok: '들이기' })) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
   } catch (e) { box.innerHTML = errorBox(e.message); }
 }

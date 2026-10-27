@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0c0a0e"/>
+  <!-- 달 -->
+  <circle cx="138" cy="128" r="58" fill="#d1a65a"/>
+  <circle cx="162" cy="110" r="50" fill="#0c0a0e"/>
+  <!-- 등롱 줄 -->
+  <rect x="250" y="96" width="12" height="70" fill="#d1a65a"/>
+  <!-- 등롱 머리·꼬리 -->
+  <rect x="206" y="160" width="100" height="26" rx="6" fill="#d1a65a"/>
+  <rect x="206" y="372" width="100" height="26" rx="6" fill="#d1a65a"/>
+  <!-- 등롱 몸 -->
+  <rect x="166" y="180" width="180" height="198" rx="88" fill="#c8432d"/>
+  <rect x="242" y="180" width="28" height="198" fill="#a83524"/>
+  <rect x="186" y="236" width="140" height="10" rx="5" fill="#a83524"/>
+  <rect x="186" y="312" width="140" height="10" rx="5" fill="#a83524"/>
+  <!-- 술 -->
+  <rect x="250" y="398" width="12" height="44" fill="#d1a65a"/>
+</svg>

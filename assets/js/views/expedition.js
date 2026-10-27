@@ -25,6 +25,17 @@ const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', s
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
+// 같은 설정으로 다시 보내기: 마지막으로 보낸 곳·기간·태세를 기기에 남긴다
+const LAST_KEY = 'yh-exp-last';
+const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch { return null; } };
+const saveLast = p => { try { localStorage.setItem(LAST_KEY, JSON.stringify(p)); } catch {} };
+const STANCE_NAME = { cautious: '신중', balanced: '균형', bold: '강행' };
+const DUR_NAME = Object.fromEntries(DURATIONS);
+async function launch(p) {
+  const out = await act('world_expedition_start', { p_node_id: p.node, p_minutes: p.minutes, p_stance: p.stance });
+  saveLast({ node: p.node, minutes: p.minutes, stance: p.stance });
+  return out;
+}
 
 // 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
 export async function openExpeditionWindow() {
@@ -43,16 +54,21 @@ export function renderExpedition(box, ov) {
   if (!opts.length) { box.innerHTML = empty('원정을 보낼 곳이 없습니다. 바깥 지역에서 탐색으로 장소를 먼저 찾으세요.', 'map'); return; }
   if (!opts.some(o => o.node_id === pick.node && !o.locked)) pick.node = opts.find(o => !o.locked)?.node_id || null;
   const sup = Object.entries(ov.supplies || {}).filter(([, n]) => n > 0);
+  const tokens = Number(ov.tokens ?? c.mount_tokens ?? 0);
+  const fareOf = id => Number(opts.find(o => o.node_id === id)?.fare || 1);
+  const last = lastPick(), lastOpt = last && opts.find(o => o.node_id === last.node && !o.locked);
   const rations = Number(ov.supplies?.travel_ration || 0);
   // PC: 왼쪽에 보낼 곳·기간·태세, 오른쪽에 보급품·안내·출발. 모바일: 한 줄로 쌓는다.
   box.innerHTML = `
     <div class="exp-progress"><span>${esc(ov.region_name || '')} 답사</span><b>${ov.survey?.pct ?? 0}%</b>${bar(ov.survey?.pct ?? 0, 100, 'xp')}<small>원정에서 길과 채집터를 새로 찾으면 답사가 오릅니다. 깊은 곳일수록 위험하고 얻는 것이 많습니다.</small></div>
+    ${lastOpt ? `<div class="exp-again"><span>${icon('route', 14)} 지난 설정 · <b>${esc(lastOpt.name)}</b> · ${esc(DUR_NAME[last.minutes] || '')} · ${esc(STANCE_NAME[last.stance] || '')} · 노정패 ${lastOpt.fare || 1}</span>
+      <button class="btn small primary" id="exp-again" ${tokens < (lastOpt.fare || 1) ? 'disabled' : ''}>같은 설정으로 다시 보내기</button></div>` : ''}
     <div class="exp-plan">
       <div class="exp-col">
         <h3 class="sub-h">보낼 곳</h3>
         <div class="ground-list">${opts.map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
             <header><b>${esc(o.name)}</b>${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
-            <small>${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+`}</small></button>`).join('')}</div>
+            <small>${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+ · 운임 노정패 ${o.fare || 1}`}</small></button>`).join('')}</div>
         <h3 class="sub-h">기간</h3><div class="chip-pick" data-pick="minutes">${DURATIONS.map(([m, l]) => `<button data-v="${m}" class="${m === pick.minutes ? 'on' : ''}">${l}</button>`).join('')}</div>
         <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
       </div>
@@ -61,6 +77,9 @@ export function renderExpedition(box, ov) {
         ${sup.length ? `<ul class="supply-auto">${sup.map(([k, n]) => `<li><b>${esc(nameOf(k))} <span class="muted">×${n}</span></b><small>${esc(SUPPLY_USE[k] || '필요할 때')} 씁니다</small></li>`).join('')}</ul>`
           : `<p class="muted small">가방에 원정용 보급품이 없습니다. 청심환·약초·정화 부적·노정 건량을 챙기면 더 오래 버팁니다.</p>`}
         <ul class="exp-notes">
+          <li id="exp-fare-row">${icon('route', 14)}<span id="exp-fare"></span></li>
+          ${c.level <= 10 ? `<li>${icon('spark', 14)}<span><b>신입 원정 지원</b>Lv.10까지는 원정 경험치가 30% 더 붙습니다.</span></li>` : ''}
+          <li>${icon('bag', 14)}<span><b>원정에서만 얻는 것</b>길잡이 등불·비경 지도·비약·봉인된 보따리·강화 재료·원정 장비. 2시간 넘게 끝까지 다녀오면 그 지역의 비경을 찾기도 합니다.</span></li>
           ${JOB_SKILL[c.job_key] ? `<li class="skill">${icon('spark', 14)}<span><b>${esc(nameOf(c.job_key))} 원정 기술 · ${esc(JOB_SKILL[c.job_key][0])}</b>${esc(JOB_SKILL[c.job_key][1])}</span></li>` : ''}
           <li id="exp-hint-row">${icon('bag', 14)}<span id="exp-hint"></span></li>
         </ul>
@@ -74,13 +93,19 @@ export function renderExpedition(box, ov) {
     const short = need > rations;
     $('#exp-hint', box).textContent = short ? `노정 건량이 ${need - rations}개 모자랍니다. 허기 때문에 정신이 깎이고 수확이 줄어듭니다.` : `가방 ${bagUsed(c)}/${bagLimit(c)}칸 · 전리품이 가방을 넘치면 남는 것은 두고 옵니다.`;
     $('#exp-hint-row', box).classList.toggle('warn', short);
+    const fare = fareOf(pick.node), poor = !!pick.node && tokens < fare;
+    $('#exp-fare', box).textContent = pick.node ? `운임 노정패 ${fare}개 · 가진 노정패 ${tokens}개${poor ? ' — 모자랍니다' : ''}` : `가진 노정패 ${tokens}개`;
+    $('#exp-fare-row', box).classList.toggle('warn', poor);
+    $('#exp-go', box).disabled = !pick.node || poor;
   };
-  $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); $('#exp-go', box).disabled = false; });
+  $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-pick=minutes] button', box).forEach(b => b.onclick = () => { pick.minutes = Number(b.dataset.v); $$('[data-pick=minutes] button', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-stance]', box).forEach(b => b.onclick = () => { pick.stance = b.dataset.stance; $$('[data-stance]', box).forEach(x => x.classList.toggle('on', x === b)); });
   hint();
   bindRecent(box, ov.recent);
-  $('#exp-go', box).onclick = e => guard(e.currentTarget, () => act('world_expedition_start', { p_node_id: pick.node, p_minutes: pick.minutes, p_stance: pick.stance }));
+  $('#exp-go', box).onclick = e => guard(e.currentTarget, () => launch(pick));
+  const again = $('#exp-again', box);
+  if (again) again.onclick = e => guard(e.currentTarget, () => { pick = { ...last }; return launch(last); });
 }
 
 function renderActive(box, a) {
@@ -158,6 +183,7 @@ export function showResult(r) {
       <h3 class="sub-h">챙겨 온 것</h3>
       <p>${items.length ? items.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ') : '없음'}</p>
       ${lost.length ? `<p class="bad small">가방이 가득 차 두고 온 것: ${lost.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ')}</p>` : ''}
+      ${x.trail ? `<p class="hint good">${icon('spark', 14)} 비경을 찾았습니다. 3시간 동안 이 지역을 탐색하면 채집량 +50%·희귀품·단서 +10%입니다.</p>` : ''}
       ${x.job_skill?.name ? `<p class="hint">${icon('spark', 14)} 직업 기술 「${esc(x.job_skill.name)}」 ${x.job_skill.count ? `${x.job_skill.count}번 발동` : '발동하지 않음'}</p>` : ''}
       <h3 class="sub-h">원정 기록</h3>
       <ol class="exp-log">${(x.log || []).map(l => `<li>${esc(l)}</li>`).join('') || '<li>조용한 원정이었습니다.</li>'}</ol>

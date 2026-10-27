@@ -868,7 +868,7 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .hs-env { font-size: 11px; color: var(--muted); white-space: nowrap; flex: none; }
 .terr-weather { fill: var(--muted); font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--bg) 80%, transparent); stroke-width: 4px; pointer-events: none; }
 .terr-weather.w-bloodmist { fill: var(--bad); }
-.map-peek { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--gold); }
+.map-peek { position: absolute; left: 10px; right: 68px; top: 10px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--gold); }
 .map-peek .peek-txt { min-width: 0; display: grid; gap: 1px; } .map-peek .peek-txt b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-peek .peek-txt small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-peek .peek-act { display: flex; gap: 6px; flex: none; } .map-peek .peek-act .btn { min-height: 40px; }
@@ -973,7 +973,6 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .chip-x:hover { color: var(--bad); }
 .linkish.item-name { color: var(--text); text-decoration: underline dotted color-mix(in srgb, var(--muted) 70%, transparent); text-underline-offset: 3px; font-weight: inherit; text-align: left; }
 /* 모바일 지도: 고른 지역 띠가 떠 있는 동안 범례를 숨긴다 */
-.map-frame:has(.map-peek:not([hidden])) .map-legend { display: none; }
 @media (max-width: 799px) { .map-frame { height: min(64vh, 560px); min-height: 360px; } }
 /* 본문 영역의 블록 간격을 한 규칙으로 맞춘다(검색창·분류 탭·설명·버튼 묶음·패널 사이) */
 #bag-body, #char-body, #log-body, #map-body, #party-body, .mk-body, .fac-body { display: grid; gap: 14px; align-content: start; }
@@ -1339,3 +1338,12 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .set-links .btn { flex: 1 1 auto; justify-content: center; }
 .bad-text { color: var(--bad); font-weight: 600; }
 .boot-note { display: grid; gap: 10px; justify-items: center; max-width: 30em; text-align: center; font-size: 14px; }
+/* 원정 개편(20261028200000): 같은 설정 다시 보내기·운임·비경·탐색력 0 안내·탈것 단련 */
+.exp-again { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 10px; margin-bottom: 10px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); font-size: 13px; }
+.exp-again > span { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 200px; }
+#exp-fare-row.warn { color: var(--bad); }
+.st-empty { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.st-empty > span { flex: 1 1 180px; min-width: 0; }
+.trail-line b { color: var(--gold); }
+.train-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.train-list li .btn { flex: none; }

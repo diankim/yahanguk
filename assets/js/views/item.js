@@ -19,6 +19,8 @@ export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '�
   ray_steam: '체력 70 · 정신 30 · 침식 -15 · 속이 따뜻함 · 기운 충천', koi_broth: '체력 100 · 정신 40 · 영력 40 · 기운 충천 · 바다의 복 · 속이 따뜻함',
   dragon_feast: '체력 100 · 정신 50 · 영력 50 · 침식 -25 · 기운 충천 · 바다의 복 · 속이 따뜻함 · 든든함',
   wraith_soul_pill: '정신 40 · 침식 -15 · 심신 동요·사념 침식 치료', fish_oil_lamp: '등잔빛 40분(요괴 조우 -15% · 침식 -5% · 정신 손실 -10%)',
+  guide_lantern: '탐색력 +10', trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', exp_elixir_iron: '철벽 30분(받는 피해 -15%)',
+  exp_elixir_tiger: '맹호 30분(주는 피해 +12%)', exp_elixir_clear: '청명 30분(침식 -30% · 정신 손실 -15%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나',
   // 연금
   rejuv_pill: '체력 60 · 출혈·화상·삠·중독 치료(전투 중에도)', grand_pill: '체력 100 · 정신 20 · 동요·탈진 치료(전투 중에도)',
   purify_water: '침식 -20 · 정신 5 · 사념 침식 치료', calm_brew: '정신 30 · 동요·피로 치료' };

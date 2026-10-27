@@ -155,6 +155,8 @@ function field(s, roster, blocked) {
           <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득 찼습니다' : ''}</small>
         </div>
         <button class="btn primary big-act" id="search" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색하기</span><small>탐색력 1 · 길·채집터·요괴·보급·단서</small></button>
+        ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
+        ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
         ${s.story_here?.length ? `<p class="hint accent">${icon('scroll', 14)} 이 지역 어딘가에 「${esc(s.story_here[0].chapter)}」의 단서가 있습니다. 탐색을 이어가세요.</p>` : ''}
         <div class="sub-acts">
           <button class="btn" id="exp-open2" ${blocked ? 'disabled' : ''}>${icon('flame', 16)}<span>원정 보내기</span></button>
@@ -246,7 +248,7 @@ function bind(s) {
   $$('[data-respect]', el).forEach(b => b.onclick = () => guard(b, () => act('world_corpse_respect', { p_corpse_id: b.dataset.respect })));
   $$('[data-loot]', el).forEach(b => b.onclick = async () => { if (await ask('유품을 수습할까요? 다른 조사원이 남긴 물건을 가져갑니다.', { title: '유품 수습', ok: '수습하기' })) guard(b, () => act('world_corpse_loot', { p_corpse_id: b.dataset.loot })); });
   const openExp = () => openExpedition();
-  $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp);
+  $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp); $('#exp-open3', el)?.addEventListener('click', openExp);
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
   $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
