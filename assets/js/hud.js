@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText } from './core.js';
 import { envChip } from './env.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
@@ -92,7 +92,7 @@ function render() {
   const need = Math.max(100, (c.level || 1) * 100);
   const first = items[0];
   $('#hud-strip', root).innerHTML = `
-    <span class="hs-name"><b>${esc(c.character_name)}</b><small>Lv.${c.level}</small></span>
+    <span class="hs-name"><b>${esc(c.character_name)}${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="sp"></i></span>
     ${(state.hud?.statuses || []).length ? `<span class="hs-debuff">${icon('flame', 12)}${(state.hud.statuses || []).filter(x => x.polarity !== 'positive').length}</span>` : ''}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
@@ -102,7 +102,7 @@ function render() {
   body.innerHTML = `
     <section class="hud-card">
       <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
-        <div><h2>${esc(c.character_name)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
+        <div><h2>${esc(c.character_name)}${gmBadge(c.owner_id)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
         <span class="lv">Lv.${c.level}</span></div>
       ${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
       ${envChip()}
@@ -183,7 +183,7 @@ function onTick() {
 }
 
 async function cancelTravel(btn) {
-  if (!confirm('이동을 취소할까요? 위약금 5전이 소모됩니다.')) return;
+  if (!(await ask('이동을 취소할까요? 위약금 5전이 소모됩니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true }))) return;
   await guard(btn, () => act('world_travel_cancel'));
 }
 async function claimIdle(btn) {

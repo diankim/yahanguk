@@ -1,5 +1,5 @@
 // 인게임 채팅: 전체·지역·세력·귓속말·파티. PC는 우측 열, 모바일은 하단 시트.
-import { db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError } from './core.js';
+import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError } from './core.js';
 
 const TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['whisper', '귓속말'], ['party', '파티']];
 const HINT = {
@@ -85,11 +85,11 @@ function draw() {
   let rows;
   if (tab === 'party') {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
-    rows = partyMsgs.map(m => ({ who: m.sender_name || m.character_name, text: m.content, at: m.created_at, mine: m.sender_id === me }));
+    rows = partyMsgs.map(m => ({ gm: isGM(m.sender_id), who: m.sender_name || m.character_name, text: m.content, at: m.created_at, mine: m.sender_id === me }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab).map(m => ({ who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab).map(m => ({ gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.mine ? 'mine' : ''}"><div class="meta">${r.title ? `<em class="c-title">「${esc(r.title)}」</em>` : ''}<b>${esc(r.who || '조사원')}</b><time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`).join('')
+  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.mine ? 'mine' : ''} ${r.gm ? 'gm' : ''}"><div class="meta">${r.title ? `<em class="c-title">「${esc(r.title)}」</em>` : ''}<b>${esc(r.who || '조사원')}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
   scrollEnd();
 }

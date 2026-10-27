@@ -1,6 +1,6 @@
 import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
-import { db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
+import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
@@ -220,7 +220,7 @@ function renderGame() {
   mountChat($('#chat-col'), $('#chat-fab'));
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
-  preloadNames().finally(() => { onHash(); maybeStartTutorial(); });
+  Promise.allSettled([preloadNames(), loadStaff()]).finally(() => { onHash(); maybeStartTutorial(); });
 }
 
 function parseHash() {

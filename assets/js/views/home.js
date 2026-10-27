@@ -1,13 +1,14 @@
 // 현장: 지금 있는 곳에서 할 수 있는 일.
 // 안전지대 — 시설(상점·거래소·마구간·여관·게시판)을 눌러 창으로 연다.
 // 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
-import { store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
+import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox } from './common.js';
 import { renderShop, renderMarket, renderStable } from './services.js';
 import { renderExpedition } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
+import { sceneArt } from '../scenery.js';
 import { checklistHtml, noteRegion } from '../tutorial.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
@@ -75,7 +76,8 @@ function drawBattle() {
 // 날씨·시간대·장소에 맞춘 움직이는 배경(글자 뒤에 옅게 깔린다). 실제 효과 수치는 서버가 정한다.
 function sceneFx(r) {
   const e = store.env;
-  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(e?.weather?.key || '')}" data-p="${esc(e?.phase?.key || '')}" data-t="${esc(r?.theme || '')}"><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
+  const w = e?.weather?.key || '', p = e?.phase?.key || '';
+  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
 function scene(s, traveling, downed) {
   const r = s.region, c = store.character;
@@ -212,7 +214,7 @@ function people(roster, corpses) {
   const list = Array.isArray(roster) ? roster : [];
   const dead = corpses || [];
   return `<section class="panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
-    ${list.length ? `<ul class="people">${list.map(p => `<li>${emblem(p.owner_id, p.profile, 34)}<div><b>${esc(p.character_name)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
+    ${list.length ? `<ul class="people">${list.map(p => `<li>${emblem(p.owner_id, p.profile, 34)}<div><b>${esc(p.character_name)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
       ${p.downed && !p.is_dead ? `<button class="btn small primary" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
     ${dead.length ? `<h3 class="sub-h">쓰러진 이의 자리</h3><ul class="people">${dead.map(d => `<li><span class="emblem corpse">${icon('flame', 18)}</span><div><b>${esc(d.character_name)}의 시신</b><small>${new Date(d.died_at).toLocaleDateString('ko-KR')} · ${esc(d.death_reason || '')}${d.items_left ? ` · 유품 ${d.items_left}점` : ''}</small></div>
       <div class="btn-row">${d.can_respect ? `<button class="btn small" data-respect="${esc(d.corpse_id)}">명복 빌기</button>` : ''}${d.items_left ? `<button class="btn small" data-loot="${esc(d.corpse_id)}">유품 수습</button>` : ''}</div></li>`).join('')}</ul>` : ''}
@@ -226,7 +228,7 @@ function bind(s) {
   $$('[data-gather]', el).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }));
   $$('[data-rescue]', el).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
   $$('[data-respect]', el).forEach(b => b.onclick = () => guard(b, () => act('world_corpse_respect', { p_corpse_id: b.dataset.respect })));
-  $$('[data-loot]', el).forEach(b => b.onclick = () => { if (confirm('유품을 수습할까요? 다른 조사원이 남긴 물건을 가져갑니다.')) guard(b, () => act('world_corpse_loot', { p_corpse_id: b.dataset.loot })); });
+  $$('[data-loot]', el).forEach(b => b.onclick = async () => { if (await ask('유품을 수습할까요? 다른 조사원이 남긴 물건을 가져갑니다.', { title: '유품 수습', ok: '수습하기' })) guard(b, () => act('world_corpse_loot', { p_corpse_id: b.dataset.loot })); });
   const openExp = () => openExpedition();
   $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp);
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));

@@ -1,6 +1,6 @@
 // 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
 // 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
-import { store, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed } from '../core.js';
+import { ask, store, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed } from '../core.js';
 import { chip, danger, load } from './common.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
@@ -82,7 +82,7 @@ function renderActive(box, a) {
   const t = setInterval(tick, 1000); tick();
   feed(box);
   $('#exp-claim', box).onclick = e => guard(e.currentTarget, async () => { const r = await act('world_expedition_complete', { p_recall: false }); showResult(r); return null; });
-  $('#exp-recall', box).onclick = e => { if (confirm('지금 귀환할까요? 지난 시간만큼의 성과만 얻습니다.')) guard(e.currentTarget, async () => { const r = await act('world_expedition_complete', { p_recall: true }); showResult(r); return null; }); };
+  $('#exp-recall', box).onclick = async e => { const b = e.currentTarget; if (await ask('지금 귀환할까요? 지난 시간만큼의 성과만 얻습니다.', { title: '일찍 귀환', ok: '귀환하기' })) guard(b, async () => { const r = await act('world_expedition_complete', { p_recall: true }); showResult(r); return null; }); };
 }
 
 // 진행 기록: 다음 수색 시각에 맞춰(없으면 1분마다) 다시 읽는다. 창이 닫히면 멈춘다.

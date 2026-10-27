@@ -1,6 +1,6 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
 // 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
-import { store, act, rpc, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal } from '../core.js';
+import { store, act, rpc, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal, ask } from '../core.js';
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
@@ -106,10 +106,10 @@ function draw(fresh = []) {
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;
   $('#mech-info', host)?.addEventListener('click', () => openModal({ title: `습성 · ${mech[0]}`, body: `<p>${esc(mech[1])}</p><p class="muted small">지금 무기(${STYLE[w.type] || '근접'})의 상성: ${eff}</p>` }));
-  $$('[data-a]', host).forEach(btn => btn.onclick = () => {
+  $$('[data-a]', host).forEach(btn => btn.onclick = async () => {
     const a = btn.dataset.a;
     if (a === 'item') { $('#item-tray', host).hidden = !$('#item-tray', host).hidden; return; }
-    if (a === 'flee' && !confirm('도망칠까요? 실패하면 요괴의 공격을 받습니다.')) return;
+    if (a === 'flee' && !(await ask(`${data.battle?.name || '요괴'}에게서 도망칠까요? 실패하면 요괴의 공격을 받습니다.`, { title: '도주', ok: '도망치기', cancel: '계속 싸우기' }))) return;
     send(a);
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
@@ -141,10 +141,12 @@ async function send(action, item) {
     if (c) c.health = r.health ?? c.health;
     sfx(r);
     floats(r);
+    const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;
-      setTimeout(() => { showEnd(r); onEnd?.(r); }, 650);
+      setTimeout(() => { showEnd(r, foe); onEnd?.(r); }, 650);
     } else {
+      if (action === 'flee') setTimeout(() => showFleeFail(r, foe), 400);
       data.battle = r.battle;
       // 체력·영력·물품은 서버 값을 다시 받아 그린다
       await refreshCharacter();
@@ -173,7 +175,22 @@ function sfx(r) {
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: k }));
 }
 
-function showEnd(r) {
+// 도주 결과: 성공·실패 모두 게임 안 팝업으로 한눈에
+function fleeCard(ok, r, foe) {
+  const c = store.character || {};
+  const hp = Math.max(0, Math.round(r.health ?? c.health ?? 0));
+  const lines = (r.lines || []).slice(-3);
+  openModal({ title: ok ? '도주 성공' : '도주 실패', body: `<div class="end-card ${ok ? 'fled' : 'lose'}">
+    <p class="lead">${ok ? esc(`${foe}에게서 무사히 달아났습니다.`) : esc(`${foe}에게서 달아나지 못했습니다.`)}</p>
+    <div class="stat-tiles"><div><span>받은 피해</span><b>${r.taken ? `-${fmt.num(r.taken)}` : '없음'}</b></div><div><span>남은 체력</span><b>${hp} / 100</b></div></div>
+    ${bar(hp, 100, 'hp')}
+    ${lines.length ? `<ul class="end-lines">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}
+    <p class="muted small">${ok ? '전리품은 없습니다. 이 지역에서 계속 탐색할 수 있습니다.' : '요괴가 다음 행동을 이어 갑니다. 다시 도망치거나 맞서 싸우세요.'}</p>
+    <button class="btn primary block" data-close>${ok ? '계속 탐색' : '전투로 돌아가기'}</button></div>` });
+}
+function showFleeFail(r, foe) { fleeCard(false, r, foe); }
+
+function showEnd(r, foe) {
   const x = r.result || {};
   if (r.ended === 'victory') {
     const loot = Object.entries(x.loot || {});
@@ -188,6 +205,6 @@ function showEnd(r) {
       <p>전투불능 상태입니다. 같은 지역의 조사원이 구조하거나, 회생 부적을 쓰거나, 본부 구조대를 부를 수 있습니다. 4시간 안에 일어나지 못하면 목숨을 잃습니다.</p>
       <button class="btn primary block" data-close>확인</button></div>` });
   } else if (r.ended === 'fled') {
-    toast('무사히 달아났습니다.', 'ok');
+    fleeCard(true, r, x.monster || foe || '요괴');
   }
 }

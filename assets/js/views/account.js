@@ -1,5 +1,5 @@
 // 계정: 게임 캐릭터와 별개인 로그인 계정 정보. 아이디 확인·비밀번호 변경, 로그아웃.
-import { db, store, rpc, esc, particle, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
+import { ask, db, store, rpc, esc, particle, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
 import { panel } from './common.js';
 import { emailToId } from '../config.js';
 
@@ -42,7 +42,7 @@ export async function render(el) {
   submit(del, async () => {
     const v = del.confirm.value.trim();
     if (v !== store.character?.character_name) throw new Error('캐릭터 이름이 일치하지 않습니다.');
-    if (!confirm('정말 정리할까요? 되돌릴 수 없습니다.')) return;
+    if (!(await ask('정말 정리할까요? 되돌릴 수 없습니다.', { title: '캐릭터 정리', ok: '정리하기', danger: true }))) return;
     await rpc('world_character_delete', { p_confirm: v });
     toast('캐릭터를 정리했습니다. 새 조사원을 만드세요.', 'ok');
     await loadCharacter();

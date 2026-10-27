@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -26,7 +26,7 @@ export async function render(root, s) {
   if (!store.character) return;
   el = root; sub = SUBS.some(x => x[0] === s) ? s : 'status';
   const c = store.character;
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('user', 14)} ${esc(JOBS[c.job_key]?.name || nameOf(c.job_key))} · ${esc(FACTIONS[c.faction_key]?.name || nameOf(c.faction_key))}</p><h1>${esc(c.character_name)} <small>Lv.${c.level}</small></h1></div></div>
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('user', 14)} ${esc(JOBS[c.job_key]?.name || nameOf(c.job_key))} · ${esc(FACTIONS[c.faction_key]?.name || nameOf(c.faction_key))}</p><h1>${esc(c.character_name)}${gmBadge(c.owner_id)} <small>Lv.${c.level}</small></h1></div></div>
     ${segmented('char-sub', SUBS, sub)}<div id="char-body"></div>`;
   bindSegmented(el, 'char-sub', k => { sub = k; window.history.replaceState(null, '', `#/char/${k}`); draw(); });
   off.forEach(f => f()); off = [on('changed', () => { invalidate('world_combat_profile'); draw(true); })];
@@ -124,7 +124,7 @@ async function status(body) {
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   bindRepair(body);
   const cr = $('#call-rescue', body);
-  if (cr) cr.onclick = () => { if (confirm('본부 구조대를 부를까요? 소지금의 30%(최소 50전)를 내고 가장 가까운 안전지대로 옮겨집니다.')) guard(cr, () => act('world_call_rescue')); };
+  if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 30%(최소 50전)를 내고 가장 가까운 안전지대로 옮겨집니다.', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
   const t = setInterval(() => {
     if (!body.isConnected) return clearInterval(t);
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
@@ -169,7 +169,7 @@ async function growth(body) {
     return { content: `${STATS.find(x => x[0] === b.dataset.stat)?.[1] || '능력치'} +1 · 남은 포인트 ${r?.stat_points ?? ''}` };
   }));
   const save = $('#prof-save', body);
-  save.onclick = () => { if (confirm('전문화를 이대로 정할까요? 3일 동안 다시 바꿀 수 없습니다.')) guard(save, () => act('world_set_life_profession_v2', { p_gathering: $('#g-prof', body).value, p_crafting: $('#c-prof', body).value })); };
+  save.onclick = async () => { if (await ask('전문화를 이대로 정할까요? 3일 동안 다시 바꿀 수 없습니다.', { title: '생활 전문화', ok: '정하기' })) guard(save, () => act('world_set_life_profession_v2', { p_gathering: $('#g-prof', body).value, p_crafting: $('#c-prof', body).value })); };
 }
 function profWait(c) { return c.life_changed_at ? new Date(c.life_changed_at).getTime() + 72 * 3600e3 - Date.now() : 0; }
 
@@ -344,6 +344,6 @@ async function faction(body) {
       row.insertAdjacentHTML('beforeend', `<p class="join-msg hint">${icon('pin', 14)} ${esc(nameOf(BASE[k]))}에 가야 가입할 수 있습니다.</p>`);
       return;
     }
-    if (confirm(`${MAJOR_FACTIONS[k].name}에 가입할까요? 대세력은 하나만 들 수 있습니다.`)) guard(b, () => act('world_join_major_faction', { p_faction_id: k }));
+    if (await ask(`${MAJOR_FACTIONS[k].name}에 가입할까요? 대세력은 하나만 들 수 있습니다.`, { title: '대세력 가입', ok: '가입하기' })) guard(b, () => act('world_join_major_faction', { p_faction_id: k }));
   });
 }

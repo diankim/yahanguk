@@ -1,5 +1,5 @@
 // 헤더 기능: 테마(프리셋·흑백·직접 설정) · 프로필 보기 · 알림. 고치는 화면은 설정 페이지(views/settings.js)에 있다.
-import { db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS } from './core.js';
+import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS } from './core.js';
 export { initSound, playSfx } from './sound.js';
 
 // 테마는 의존성 없는 theme.js에 있다(점검 페이지도 같은 테마를 쓴다).
@@ -10,7 +10,7 @@ export function openProfile() {
   const c = store.character || {}, p = profileOf(c.owner_id, c.profile);
   openModal({ title: '프로필', body: `<div class="profile-view">
     <div class="profile-card"><div class="pc-emblem">${emblem(c.owner_id, c.profile, 80)}</div>
-      <div><h3>${esc(c.character_name || '')}</h3>${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
+      <div><h3>${esc(c.character_name || '')}${gmBadge(c.owner_id)}</h3>${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
         <p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}${c.major_faction_id ? ' · ' + esc(nameOf(c.major_faction_id)) : ''}</p>
         <p class="muted small">Lv.${c.level || 1} · ${esc(JOBS[c.job_key]?.trait || '')} · ${esc(c.location || '')}</p></div></div>
     <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
@@ -107,7 +107,7 @@ async function runAct(btn) {
     return true;
   }
   if (btn.dataset.trade) {
-    if (btn.dataset.acc === '1' && !confirm('이 거래를 받아들일까요? 바로 맞바꿉니다.')) return false;
+    if (btn.dataset.acc === '1' && !(await ask('이 거래를 받아들일까요? 바로 맞바꿉니다.', { title: '거래 수락', ok: '받아들이기' }))) return false;
     await guard(btn, async () => { try { return await act('world_trade_direct_respond', { p_trade_id: n.payload.trade_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } });
     return true;
   }

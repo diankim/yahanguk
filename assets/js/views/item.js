@@ -1,7 +1,7 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, effectText, toast } from '../core.js';
+import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, effectText, toast } from '../core.js';
 import { load, chip } from './common.js';
 
 export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
@@ -100,7 +100,7 @@ function draw(box, id, inv, prices, mode) {
     if (k === 'discard') {
       const q = Math.floor(Number($('#dc-qty', box)?.value) || 0);
       if (!(q >= 1 && q <= have)) return toast(`1~${have}개 사이로 정하세요.`, 'error');
-      if (!confirm(josa(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`))) return;
+      if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
       await guard(d, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
     }
     // 바뀐 가방으로 창을 다시 그린다(다 써서 0개가 되면 정보만 남는다)

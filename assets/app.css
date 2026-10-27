@@ -407,10 +407,10 @@ body.chat-open .chat-fab { display: none; }
 .item-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--line); }
 .item-list li.r-uncommon { border-left-color: var(--ok); } .item-list li.r-rare { border-left-color: var(--mp); }
 .item-list li.r-epic { border-left-color: var(--sp); } .item-list li.r-legendary { border-left-color: var(--gold); }
-.item-main { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; }
+.item-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .item-main b { font-size: 14px; }
 .item-main .qty { font-weight: 700; color: var(--gold); white-space: nowrap; }
-.item-main .chips, .item-main small { grid-column: 1 / -1; }
+.item-main .chips, .item-main small { flex-basis: 100%; }
 .item-main small { font-size: 12px; color: var(--muted); }
 .item-act { display: flex; gap: 6px; flex: none; }
 .qty-act input { width: 64px !important; min-height: 36px !important; padding: 4px 8px !important; }
@@ -889,7 +889,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 /* ── 가방 목록(촘촘한 한 줄) · 물품 정보 ─────────────────── */
 .inv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 .inv-list li { display: flex; align-items: stretch; gap: 4px; }
-.inv-row { flex: 1; min-width: 0; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; min-height: 46px; padding: 6px 10px 6px 6px;
+.inv-row { flex: 1; min-width: 0; display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 10px; min-height: 46px; padding: 6px 10px 6px 6px;
   text-align: left; cursor: pointer; color: var(--text); background: var(--surface-2); border: var(--bw) solid transparent; border-left: 3px solid var(--line); border-radius: var(--r-sm); }
 .inv-row:hover { border-color: var(--line); } .inv-row:focus-visible { border-color: var(--gold); }
 .inv-row.r-uncommon { border-left-color: var(--ok); } .inv-row.r-rare { border-left-color: var(--mp); } .inv-row.r-epic { border-left-color: var(--sp); } .inv-row.r-legendary { border-left-color: var(--gold); }
@@ -900,7 +900,8 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .inv-name small { display: flex; flex-wrap: wrap; gap: 4px; font-size: 11px; color: var(--muted); }
 .inv-name small i { font-style: normal; } .inv-name small i + i::before { content: '·'; margin-right: 4px; color: var(--line); }
 .inv-name small i.eq { color: var(--gold); } .inv-name small i.lk { color: var(--warn); } .inv-name small i.bad { color: var(--bad); }
-.inv-qty { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); }
+.inv-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.inv-qty { flex: none; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); }
 .inv-qty::before { content: '×'; margin-right: 1px; font-weight: 500; color: var(--muted); }
 .inv-quick { flex: none; width: 56px; justify-content: center; padding-inline: 0; }
 .focus-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 10px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 13px; }
@@ -931,45 +932,42 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .sub-h { margin-top: 6px; }
 .inv-quick.pad { visibility: hidden; }
 
-/* ── 날씨·시간대·장소 효과(현장 머리) ─────────────────────
-   SVG 모양을 마스크로 씌워 테마 색으로 칠한다(평면 색, 그라데이션·그림자·흐림 없음). 글자보다 뒤, 옅게. */
+/* ── 현장 머리 배경: 장소 전경(scenery.js) + 시간대 해·달 + 날씨 덧그림 ─────────
+   평면 도형만 쓰고(그라데이션·그림자·흐림 없음) 장소 색(--sc)을 바탕에 옅게 섞는다. 글자보다 뒤에 깔린다. */
 .scene-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .scene > :not(.scene-fx) { position: relative; z-index: 1; }
-.scene-fx i, .scene-fx::before, .scene-fx::after { position: absolute; inset: -220px; display: block; opacity: 0; -webkit-mask-repeat: repeat; mask-repeat: repeat; }
-/* 비: 끊어진 빗방울이 떨어진다 */
-.scene-fx[data-w=rain] .fx-a { opacity: .45; background: var(--mp); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='96' viewBox='0 0 64 96'><g stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M12 4 l-3 12'/><path d='M44 34 l-3 12'/><path d='M28 64 l-3 12'/><path d='M54 78 l-2 8'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='96' viewBox='0 0 64 96'><g stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M12 4 l-3 12'/><path d='M44 34 l-3 12'/><path d='M28 64 l-3 12'/><path d='M54 78 l-2 8'/></g></svg>"); -webkit-mask-size: 64px 96px; mask-size: 64px 96px; animation: fx-fall-96 .55s linear infinite; }
-.scene-fx[data-w=rain] .fx-b { opacity: .3; background: var(--text); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='150' viewBox='0 0 120 150'><g stroke='black' stroke-width='1.2' stroke-linecap='round'><path d='M20 10 l-2 9'/><path d='M70 60 l-2 9'/><path d='M100 120 l-2 9'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='150' viewBox='0 0 120 150'><g stroke='black' stroke-width='1.2' stroke-linecap='round'><path d='M20 10 l-2 9'/><path d='M70 60 l-2 9'/><path d='M100 120 l-2 9'/></g></svg>"); -webkit-mask-size: 120px 150px; mask-size: 120px 150px; animation: fx-fall-150 .9s linear infinite; }
-@keyframes fx-fall-96 { to { transform: translateY(96px); } }
-@keyframes fx-fall-150 { to { transform: translateY(150px); } }
-/* 눈: 크기가 다른 눈송이가 천천히 내린다 */
-.scene-fx[data-w=snow] .fx-a { opacity: .6; background: var(--text); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='80' viewBox='0 0 96 80'><g fill='black'><circle cx='10' cy='12' r='1.8'/><circle cx='46' cy='30' r='1.2'/><circle cx='72' cy='8' r='1.5'/><circle cx='28' cy='58' r='2.1'/><circle cx='62' cy='66' r='1.3'/><circle cx='88' cy='44' r='1.7'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='80' viewBox='0 0 96 80'><g fill='black'><circle cx='10' cy='12' r='1.8'/><circle cx='46' cy='30' r='1.2'/><circle cx='72' cy='8' r='1.5'/><circle cx='28' cy='58' r='2.1'/><circle cx='62' cy='66' r='1.3'/><circle cx='88' cy='44' r='1.7'/></g></svg>"); -webkit-mask-size: 96px 80px; mask-size: 96px 80px; animation: fx-fall-80 7s linear infinite; }
-.scene-fx[data-w=snow] .fx-b { opacity: .35; background: var(--text); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='110' viewBox='0 0 160 110'><g fill='black'><circle cx='20' cy='20' r='2.6'/><circle cx='90' cy='70' r='2.2'/><circle cx='140' cy='30' r='2.8'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='110' viewBox='0 0 160 110'><g fill='black'><circle cx='20' cy='20' r='2.6'/><circle cx='90' cy='70' r='2.2'/><circle cx='140' cy='30' r='2.8'/></g></svg>"); -webkit-mask-size: 160px 110px; mask-size: 160px 110px; animation: fx-fall-110 11s linear infinite; }
-@keyframes fx-fall-80 { to { transform: translateY(80px); } }
-@keyframes fx-fall-110 { to { transform: translateY(110px); } }
-/* 안개·혈무·흐림: 뭉게구름이 옆으로 흐른다 */
-.scene-fx:is([data-w=fog], [data-w=bloodmist], [data-w=cloudy]) .fx-a,
-.scene-fx:is([data-w=fog], [data-w=bloodmist]) .fx-b { background: var(--fx-mist, var(--muted)); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='72' viewBox='0 0 340 72'><g fill='black'><ellipse cx='70' cy='44' rx='70' ry='16'/><ellipse cx='110' cy='32' rx='44' ry='20'/><ellipse cx='58' cy='34' rx='30' ry='14'/><ellipse cx='250' cy='52' rx='54' ry='12'/><ellipse cx='278' cy='44' rx='30' ry='14'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='72' viewBox='0 0 340 72'><g fill='black'><ellipse cx='70' cy='44' rx='70' ry='16'/><ellipse cx='110' cy='32' rx='44' ry='20'/><ellipse cx='58' cy='34' rx='30' ry='14'/><ellipse cx='250' cy='52' rx='54' ry='12'/><ellipse cx='278' cy='44' rx='30' ry='14'/></g></svg>"); -webkit-mask-size: 340px 72px; mask-size: 340px 72px; -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; inset: auto -340px; height: 72px; }
-.scene-fx:is([data-w=fog], [data-w=bloodmist]) .fx-a { opacity: .16; top: 22%; animation: fx-drift-340 38s linear infinite; }
-.scene-fx:is([data-w=fog], [data-w=bloodmist]) .fx-b { opacity: .12; top: 58%; animation: fx-drift-340 52s linear infinite reverse; }
-.scene-fx[data-w=cloudy] .fx-a { opacity: .1; top: 4%; animation: fx-drift-340 70s linear infinite; }
-.scene-fx[data-w=bloodmist] { --fx-mist: var(--bad); background: color-mix(in srgb, var(--bad) 6%, transparent); }
-@keyframes fx-drift-340 { to { transform: translateX(340px); } }
-/* 바람: 휘어진 바람결이 지나간다 */
-.scene-fx[data-w=wind] .fx-a { opacity: .3; background: var(--muted); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='64' viewBox='0 0 170 64'><g fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'><path d='M4 18 q26 -10 52 0 t40 -2'/><path d='M70 46 q20 -8 40 0'/><path d='M120 30 q14 -6 28 0'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='64' viewBox='0 0 170 64'><g fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'><path d='M4 18 q26 -10 52 0 t40 -2'/><path d='M70 46 q20 -8 40 0'/><path d='M120 30 q14 -6 28 0'/></g></svg>"); -webkit-mask-size: 170px 64px; mask-size: 170px 64px; animation: fx-blow-170 1.8s linear infinite; }
-@keyframes fx-blow-170 { to { transform: translateX(-170px); } }
-/* 시간대: 삼경에는 별이 반짝이고, 땅거미·해돋이에는 옅은 빛이 돈다 */
-.scene-fx[data-p=night] .fx-c { inset: 0; opacity: .5; background: var(--gold); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='124' height='70' viewBox='0 0 124 70'><g fill='black'><path d='M14 10 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z'/><circle cx='52' cy='30' r='1'/><circle cx='88' cy='12' r='1.3'/><path d='M104 44 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z'/><circle cx='30' cy='52' r='.9'/><circle cx='70' cy='60' r='1.1'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='124' height='70' viewBox='0 0 124 70'><g fill='black'><path d='M14 10 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z'/><circle cx='52' cy='30' r='1'/><circle cx='88' cy='12' r='1.3'/><path d='M104 44 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z'/><circle cx='30' cy='52' r='.9'/><circle cx='70' cy='60' r='1.1'/></g></svg>"); -webkit-mask-size: 124px 70px; mask-size: 124px 70px; animation: fx-twinkle 3.6s ease-in-out infinite alternate; }
+.scene-art { position: absolute; right: 0; bottom: 0; width: min(100%, 720px); height: 100%; }
+.scene-art .ln-far { fill: color-mix(in srgb, var(--sc, var(--accent)) 22%, var(--surface)); }
+.scene-art .ln-near, .scene-art .ln-near path { fill: color-mix(in srgb, var(--sc, var(--accent)) 38%, var(--surface)); }
+.scene-art .ln-accent { fill: color-mix(in srgb, var(--gold) 55%, var(--surface)); }
+.scene-art .ln-snow { fill: color-mix(in srgb, var(--text) 30%, var(--surface)); }
+.scene-art .ln-water { fill: none; stroke: color-mix(in srgb, var(--surface) 55%, var(--text)); stroke-width: 1.4; stroke-linecap: round; opacity: .5; }
+.scene-art .sk-sun { fill: color-mix(in srgb, var(--gold) 50%, var(--surface)); } .scene-art .sk-sun.low { fill: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+.scene-art .sk-moon circle { fill: color-mix(in srgb, var(--gold) 55%, var(--surface)); } .scene-art .sk-moon .sk-cut { fill: color-mix(in srgb, var(--sc, var(--accent)) 12%, var(--surface)); }
+.scene-art .sk-moon.dim { opacity: .45; }
+.scene-fx i { position: absolute; inset: -220px; display: block; opacity: 0; -webkit-mask-repeat: repeat; mask-repeat: repeat; }
+/* 흐림: 화면을 살짝 가라앉힌다 · 안개: 전경 아래쪽을 옅은 막으로 덮는다 · 혈무: 붉은 막 */
+.scene-fx .fx-veil { inset: 0; }
+.scene-fx[data-w=cloudy] .fx-veil { opacity: .12; background: var(--muted); }
+.scene-fx[data-w=fog] .fx-veil { inset: 0; opacity: .16; background: var(--muted); }
+.scene-fx[data-w=bloodmist] .fx-veil { inset: 0; opacity: .12; background: var(--bad); }
+.scene-fx[data-w=bloodmist] { background: color-mix(in srgb, var(--bad) 6%, transparent); }
 .scene-fx[data-p=dusk] { background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .scene-fx[data-p=dawn] { background: color-mix(in srgb, var(--gold) 5%, transparent); }
+.scene-fx[data-w=rain] .fx-a { opacity: .45; background: var(--mp); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='96' viewBox='0 0 64 96'><g stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M12 4 l-3 12'/><path d='M44 34 l-3 12'/><path d='M28 64 l-3 12'/><path d='M54 78 l-2 8'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='96' viewBox='0 0 64 96'><g stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M12 4 l-3 12'/><path d='M44 34 l-3 12'/><path d='M28 64 l-3 12'/><path d='M54 78 l-2 8'/></g></svg>"); -webkit-mask-size: 64px 96px; mask-size: 64px 96px; animation: fx-fall-96 .55s linear infinite; }
+.scene-fx[data-w=rain] .fx-b { opacity: .3; background: var(--text); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='150' viewBox='0 0 120 150'><g stroke='black' stroke-width='1.2' stroke-linecap='round'><path d='M20 10 l-2 9'/><path d='M70 60 l-2 9'/><path d='M100 120 l-2 9'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='150' viewBox='0 0 120 150'><g stroke='black' stroke-width='1.2' stroke-linecap='round'><path d='M20 10 l-2 9'/><path d='M70 60 l-2 9'/><path d='M100 120 l-2 9'/></g></svg>"); -webkit-mask-size: 120px 150px; mask-size: 120px 150px; animation: fx-fall-150 .9s linear infinite; }
+.scene-fx[data-w=snow] .fx-a { opacity: .6; background: var(--text); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='80' viewBox='0 0 96 80'><g fill='black'><circle cx='10' cy='12' r='1.8'/><circle cx='46' cy='30' r='1.2'/><circle cx='72' cy='8' r='1.5'/><circle cx='28' cy='58' r='2.1'/><circle cx='62' cy='66' r='1.3'/><circle cx='88' cy='44' r='1.7'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='80' viewBox='0 0 96 80'><g fill='black'><circle cx='10' cy='12' r='1.8'/><circle cx='46' cy='30' r='1.2'/><circle cx='72' cy='8' r='1.5'/><circle cx='28' cy='58' r='2.1'/><circle cx='62' cy='66' r='1.3'/><circle cx='88' cy='44' r='1.7'/></g></svg>"); -webkit-mask-size: 96px 80px; mask-size: 96px 80px; animation: fx-fall-80 7s linear infinite; }
+.scene-fx[data-w=snow] .fx-b { opacity: .35; background: var(--text); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='110' viewBox='0 0 160 110'><g fill='black'><circle cx='20' cy='20' r='2.6'/><circle cx='90' cy='70' r='2.2'/><circle cx='140' cy='30' r='2.8'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='110' viewBox='0 0 160 110'><g fill='black'><circle cx='20' cy='20' r='2.6'/><circle cx='90' cy='70' r='2.2'/><circle cx='140' cy='30' r='2.8'/></g></svg>"); -webkit-mask-size: 160px 110px; mask-size: 160px 110px; animation: fx-fall-110 11s linear infinite; }
+.scene-fx[data-w=wind] .fx-a { opacity: .22; background: var(--muted); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='64' viewBox='0 0 170 64'><g fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'><path d='M4 18 q26 -10 52 0 t40 -2'/><path d='M70 46 q20 -8 40 0'/><path d='M120 30 q14 -6 28 0'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='64' viewBox='0 0 170 64'><g fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'><path d='M4 18 q26 -10 52 0 t40 -2'/><path d='M70 46 q20 -8 40 0'/><path d='M120 30 q14 -6 28 0'/></g></svg>"); -webkit-mask-size: 170px 64px; mask-size: 170px 64px; animation: fx-blow-170 1.8s linear infinite; }
+.scene-fx[data-p=night] .fx-c { inset: 0; opacity: .5; background: var(--gold); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='124' height='70' viewBox='0 0 124 70'><g fill='black'><path d='M14 10 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z'/><circle cx='52' cy='30' r='1'/><circle cx='88' cy='12' r='1.3'/><path d='M104 44 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z'/><circle cx='30' cy='52' r='.9'/><circle cx='70' cy='60' r='1.1'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='124' height='70' viewBox='0 0 124 70'><g fill='black'><path d='M14 10 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z'/><circle cx='52' cy='30' r='1'/><circle cx='88' cy='12' r='1.3'/><path d='M104 44 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z'/><circle cx='30' cy='52' r='.9'/><circle cx='70' cy='60' r='1.1'/></g></svg>"); -webkit-mask-size: 124px 70px; mask-size: 124px 70px; animation: fx-twinkle 3.6s ease-in-out infinite alternate; }
+@keyframes fx-fall-96 { to { transform: translateY(96px); } }
+@keyframes fx-fall-150 { to { transform: translateY(150px); } }
+@keyframes fx-fall-80 { to { transform: translateY(80px); } }
+@keyframes fx-fall-110 { to { transform: translateY(110px); } }
+@keyframes fx-blow-170 { to { transform: translateX(-170px); } }
 @keyframes fx-twinkle { from { opacity: .22; } to { opacity: .55; } }
-/* 장소: 물가는 아래쪽 물결, 사당은 피어오르는 불씨, 천문 지역은 별빛 */
-.scene-fx[data-t=water]::after { content: ''; inset: auto -120px 4px -120px; height: 26px; opacity: .35; background: var(--mp);
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='26' viewBox='0 0 120 26'><g fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M0 8 q15 -6 30 0 t30 0 t30 0 t30 0'/><path d='M-15 20 q15 -5 30 0 t30 0 t30 0 t30 0 t30 0'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='26' viewBox='0 0 120 26'><g fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'><path d='M0 8 q15 -6 30 0 t30 0 t30 0 t30 0'/><path d='M-15 20 q15 -5 30 0 t30 0 t30 0 t30 0 t30 0'/></g></svg>"); -webkit-mask-size: 120px 26px; mask-size: 120px 26px; -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; animation: fx-wave-120 7s linear infinite; }
-@keyframes fx-wave-120 { to { transform: translateX(120px); } }
-.scene-fx[data-t=shrine]::after { content: ''; opacity: .45; background: var(--accent); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='124' viewBox='0 0 96 124'><g fill='black'><circle cx='14' cy='20' r='1.6'/><circle cx='60' cy='70' r='1.2'/><circle cx='36' cy='108' r='2'/><circle cx='82' cy='36' r='1.1'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='124' viewBox='0 0 96 124'><g fill='black'><circle cx='14' cy='20' r='1.6'/><circle cx='60' cy='70' r='1.2'/><circle cx='36' cy='108' r='2'/><circle cx='82' cy='36' r='1.1'/></g></svg>"); -webkit-mask-size: 96px 124px; mask-size: 96px 124px; animation: fx-rise-124 9s linear infinite; }
-@keyframes fx-rise-124 { to { transform: translateY(-124px); } }
-.scene-fx[data-t=sky]:not([data-p=night]) .fx-c { inset: 0; opacity: .3; background: var(--gold); -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='124' height='70' viewBox='0 0 124 70'><g fill='black'><path d='M14 10 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z'/><circle cx='52' cy='30' r='1'/><circle cx='88' cy='12' r='1.3'/><path d='M104 44 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z'/><circle cx='30' cy='52' r='.9'/><circle cx='70' cy='60' r='1.1'/></g></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='124' height='70' viewBox='0 0 124 70'><g fill='black'><path d='M14 10 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z'/><circle cx='52' cy='30' r='1'/><circle cx='88' cy='12' r='1.3'/><path d='M104 44 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z'/><circle cx='30' cy='52' r='.9'/><circle cx='70' cy='60' r='1.1'/></g></svg>"); -webkit-mask-size: 124px 70px; mask-size: 124px 70px; }
-@media (prefers-reduced-motion: reduce) { .scene-fx i, .scene-fx::before, .scene-fx::after { animation: none !important; } }
+.scene-fx[data-p=night] .fx-c { inset: 0 0 45% 0; }
+@media (prefers-reduced-motion: reduce) { .scene-fx i { animation: none !important; } }
 /* 원정 진행 기록 */
 .exp-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 300px; overflow: auto; }
 .exp-feed li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; font-size: 14px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
@@ -991,3 +989,26 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 #camp { flex-wrap: wrap; } #camp .rest-cd { flex-basis: 100%; text-align: center; }
 .facility [data-rest-line] { font-variant-numeric: tabular-nums; }
 details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
+/* 게임 안 확인 팝업(열린 창 위에 겹친다) */
+.ask-layer { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; background: rgb(0 0 0 / .55); }
+.ask-card { width: min(380px, 100%); display: grid; gap: 12px; padding: 18px; border-radius: var(--r-lg); background: var(--surface); border: var(--bw) solid var(--gold); animation: rise .18s ease-out; }
+.ask-card h3 { font-size: 17px; } .ask-body { display: grid; gap: 4px; color: color-mix(in srgb, var(--text) 88%, var(--muted)); font-size: 14px; }
+.ask-act { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .ask-act .btn { min-height: 44px; justify-content: center; }
+/* 전투 결과 카드 */
+.end-card.fled .lead { color: var(--ok); } .end-card.lose .lead { color: var(--bad); }
+.end-lines { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+
+/* 상점: 항목마다 수량, 아래 단추로 한꺼번에 */
+.shop-list li { gap: 8px; } .shop-list li.off { opacity: .55; } .shop-list li.picked { border-left-color: var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--surface-2)); }
+.stepper { flex: none; display: flex; align-items: center; gap: 2px; }
+.stepper input { width: 52px !important; min-height: 36px !important; padding: 4px 6px !important; text-align: center; font-variant-numeric: tabular-nums; }
+.stepper .icon-btn { width: 36px; height: 36px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); }
+.shop-foot { position: sticky; bottom: -1px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px -4px 0; padding: 10px 4px;
+  background: var(--surface); border-top: var(--bw) solid var(--line); font-size: 14px; }
+.shop-foot .btn { min-width: 120px; justify-content: center; }
+@media (max-width: 480px) { .shop-list li { flex-wrap: nowrap; } .shop-list .item-act { width: auto; } }
+
+/* GM 표식 */
+.gm-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: .06em; line-height: 16px; vertical-align: middle;
+  color: var(--accent-ink); background: var(--accent); font-family: var(--font-sans); }
+.chat-list li.gm { border-left: 2px solid var(--accent); padding-left: 6px; }

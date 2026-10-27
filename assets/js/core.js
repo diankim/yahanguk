@@ -256,6 +256,32 @@ export async function guard(btn, fn, { success } = {}) {
 }
 
 /* ── 모달·시트 ───────────────────────────────────────────── */
+// 운영진(GM) 표식: 서버 명단(world_staff)에 있는 캐릭터만. 이름에 GM을 넣어도 붙지 않는다.
+store.staff = new Set();
+export async function loadStaff() {
+  try { const { data, error } = await db.from('world_staff').select('owner_id'); if (!error) store.staff = new Set((data || []).map(r => r.owner_id)); } catch {}
+  return store.staff;
+}
+export const isGM = id => !!id && store.staff.has(id);
+export const gmBadge = id => isGM(id) ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : '';
+
+// 게임 안 확인 팝업(브라우저 confirm 대신). 열린 창 위에 겹쳐 뜨고, 고르면 true/false로 끝난다.
+// ask('도망칠까요?', { title: '도주', ok: '도망치기', danger: true })
+export function ask(message, { title = '확인', ok = '확인', cancel = '그만두기', danger = false } = {}) {
+  return new Promise(resolve => {
+    const lines = String(message ?? '').split('\n').map(l => `<p>${esc(l)}</p>`).join('');
+    const el = h(`<div class="ask-layer" role="alertdialog" aria-modal="true" aria-label="${esc(title)}"><div class="ask-card">
+      <h3>${esc(title)}</h3><div class="ask-body">${lines}</div>
+      <div class="ask-act"><button class="btn" data-ask="0">${esc(cancel)}</button><button class="btn ${danger ? 'danger' : 'primary'}" data-ask="1">${esc(ok)}</button></div></div></div>`);
+    const done = v => { el.remove(); document.removeEventListener('keydown', key, true); resolve(v); };
+    const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } if (e.key === 'Enter') { e.preventDefault(); done(true); } };
+    el.addEventListener('click', e => { const b = e.target.closest('[data-ask]'); if (b) done(b.dataset.ask === '1'); else if (e.target === el) done(false); });
+    document.addEventListener('keydown', key, true);
+    document.body.append(el);
+    setTimeout(() => el.querySelector('[data-ask="1"]')?.focus(), 20);
+  });
+}
+
 export function openModal({ title, body, wide = false, onClose } = {}) {
   closeModal();
   const el = h(`<div class="modal-backdrop" id="modal"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">

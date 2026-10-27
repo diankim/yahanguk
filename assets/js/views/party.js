@@ -1,5 +1,5 @@
 // 동료: 파티 관리·전리품 분배·초대, 같은 지역의 조사원과 구조.
-import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
+import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
 import { load, panel, chip, loading, errorBox } from './common.js';
 
 const LOOT = [['contribution', '기여도순'], ['designated', '지정순'], ['equal', '균등 분배']];
@@ -24,7 +24,7 @@ async function draw() {
     const [p, loot, roster] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => [])]);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
-    const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
+    const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
         <small>Lv.${m.level} · ${esc(nameOf(m.job_key))} · ${esc(m.location)} · 체력 ${m.health}${m.away ? ' · 원정 중' : ''}${m.in_combat ? ' · 전투 중' : ''}</small></div>
         ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
     body.innerHTML = `
@@ -46,7 +46,7 @@ async function draw() {
       </div>` : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
         <button class="btn primary" id="party-make">${icon('plus', 16)}<span>동료 모임 만들기</span></button>
         <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
-      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)}</b>
+      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)}${gmBadge(m.owner_id)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
           ${m.downed && !m.is_dead ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
     // 이름은 쓰지 않는다. 서버가 요구하는 이름 자리에는 만든 사람 이름을 넣는다.
@@ -58,9 +58,9 @@ async function draw() {
     $$('[data-dist]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_loot_distribute', { p_loot_id: b.dataset.dist })));
     $$('[data-rescue]', body).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
     const lv = $('#party-leave', body);
-    if (lv) lv.onclick = () => {
+    if (lv) lv.onclick = async () => {
       const alone = (p.members || []).length <= 1;
-      if (confirm(alone ? '파티를 해체할까요? 보낸 초대도 함께 취소됩니다.' : isLeader ? '파티를 나갈까요? 가장 먼저 들어온 파티원이 파티장이 됩니다.' : '파티를 나갈까요?')) guard(lv, () => act('world_party_leave'));
+      if (await ask(alone ? '파티를 해체할까요? 보낸 초대도 함께 취소됩니다.' : isLeader ? '파티를 나갈까요? 가장 먼저 들어온 파티원이 파티장이 됩니다.' : '파티를 나갈까요?', { title: alone ? '파티 해체' : '파티 나가기', ok: alone ? '해체하기' : '나가기', danger: true })) guard(lv, () => act('world_party_leave'));
     };
     const cl = $('#loot-claim', body); if (cl) cl.onclick = () => guard(cl, () => act('world_party_loot_claim'));
   } catch (e) { body.innerHTML = errorBox(e.message); }

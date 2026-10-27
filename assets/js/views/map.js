@@ -1,5 +1,5 @@
 // 지도: 세계 지도(확대·축소·이동, 겹침 없는 이름표) · 세부 탐사 · 이동과 원정.
-import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast } from '../core.js';
+import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones } from './common.js';
 import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
 
@@ -408,7 +408,7 @@ async function drawTravel(body) {
 
   $('#tr-map', body)?.addEventListener('click', () => switchTo('world'));
   const cancel = $('#tr-cancel', body);
-  if (cancel) cancel.onclick = () => { if (confirm('이동을 취소할까요? 위약금 5전이 소모됩니다.')) guard(cancel, () => act('world_travel_cancel')); };
+  if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 위약금 5전이 소모됩니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   $$('[data-goto]', body).forEach(b => b.onclick = () => { selected = b.dataset.goto; view = null; switchTo('world'); });

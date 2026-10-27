@@ -1,5 +1,5 @@
 // 안전지대 시설: 상점 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed } from '../core.js';
+import { ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
@@ -8,40 +8,88 @@ const infoName = (id, label) => `<button class="linkish item-name" data-info="${
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
 
 /* ── 상점 ─────────────────────────────────────────────── */
-// 사고팔 때마다 창을 다시 그리므로, 고른 칸(사기·팔기)을 기억해 둔다.
+// 사기·팔기 칸마다 항목별 수량을 고르고, 아래 단추 하나로 한꺼번에 사고판다(확인 팝업 뒤 서버가 항목마다 검사).
+// 창이 다시 그려져도 고른 칸과 수량은 기억한다.
 let shopMode = 'buy';
+const cart = { buy: {}, sell: {} };
 export async function renderShop(box) {
   box.innerHTML = loading();
   try {
-    const [s, prices] = await Promise.all([load('world_shop_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => [])]);
+    const [s, prices] = await Promise.all([load('world_shop_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks()]);
     if (!s?.available) { box.innerHTML = empty('이곳에는 상점이 없습니다. 안전지대에서 이용하세요.', 'shop'); return; }
     const c = store.character, have = c?.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
-    await loadLocks();
     const sellable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.npc_sell_price > 0 && !['tool', 'weapon', 'armor', 'equipment', 'quest'].includes(ref.get(k)?.category) && !isLocked(k));
+    const stock = new Map((s.stock || []).map(i => [i.item_id, i]));
+    const sellPrice = k => Math.max(1, Math.round(Number(ref.get(k)?.npc_sell_price) || 1));
+    // 이제 없는 항목은 장바구니에서 뺀다
+    for (const k of Object.keys(cart.buy)) if (!stock.get(k)?.stock) delete cart.buy[k];
+    for (const k of Object.keys(cart.sell)) if (!have[k]) delete cart.sell[k];
     const space = bagLimit(c) - bagUsed(c);
+    const stepper = (mode, id, max) => `<div class="stepper" data-step="${mode}:${esc(id)}">
+        <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
+        <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[mode][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
+        <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button></div>`;
     box.innerHTML = `
       <div class="shop-head"><div><b>${esc(s.shop_name)}</b><small>재고는 하루 세 번(07·15·23시) 새로 들어옵니다 · 다음 입고 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
         <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(s.gil)}</span></div>
-      <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 가방이 가득 차면 구매할 수 없습니다.</p>
       <div class="seg-mini" role="tablist"><button class="${shopMode === 'buy' ? 'on' : ''}" data-mode="buy">사기</button><button class="${shopMode === 'sell' ? 'on' : ''}" data-mode="sell">팔기</button></div>
-      <ul class="item-list" data-list="buy" ${shopMode === 'buy' ? '' : 'hidden'}>${(s.stock || []).map(i => `<li>
-        <div class="item-main"><b>${infoName(i.item_id, i.item_name)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
-          <div class="chips">${chip(nameOf(i.category))}${chip(`${i.tier}단계`)}${chip(`재고 ${i.stock}`, i.stock ? '' : 'bad')}</div><small>${esc(i.description || '')}</small></div>
-        <div class="item-act qty-act"><input type="number" min="1" max="${i.stock}" value="1" aria-label="수량" ${i.stock ? '' : 'disabled'}>
-          <button class="btn small primary" data-buy="${esc(i.item_id)}" ${i.stock ? '' : 'disabled'}>사기</button></div></li>`).join('') || `<li>${empty('지금은 판매 중인 물품이 없습니다.')}</li>`}</ul>
-      <ul class="item-list" data-list="sell" ${shopMode === 'sell' ? '' : 'hidden'}>${sellable.map(([k, n]) => `<li>
-        <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(Math.max(1, Math.round((ref.get(k).npc_sell_price))))}에 매입 · 세금 5%</small></div>
-        <div class="item-act qty-act"><input type="number" min="1" max="${n}" value="1" aria-label="수량"><button class="btn small" data-sell="${esc(k)}">팔기</button></div></li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
-      <p class="muted small">상점 판매 수익은 하루 1,000전까지입니다. 더 비싸게 팔려면 거래소를 이용하세요. 잠근 물품은 팔기 목록에 나오지 않습니다.</p>`;
+      <section data-list="buy" ${shopMode === 'buy' ? '' : 'hidden'}>
+        <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 가방이 가득 차면 살 수 없습니다.</p>
+        <ul class="item-list shop-list">${(s.stock || []).map(i => `<li class="${i.stock ? '' : 'off'}">
+          <div class="item-main"><b>${infoName(i.item_id, i.item_name)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
+            <small>${esc(nameOf(i.category))} · ${i.tier}단계 · 재고 ${i.stock}${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small></div>
+          ${stepper('buy', i.item_id, i.stock)}</li>`).join('') || `<li>${empty('지금은 판매 중인 물품이 없습니다.')}</li>`}</ul>
+      </section>
+      <section data-list="sell" ${shopMode === 'sell' ? '' : 'hidden'}>
+        <p class="muted small">상점 판매 수익은 하루 1,000전까지이고 세금 5%가 붙습니다. 잠근 물품은 나오지 않습니다.</p>
+        <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li>
+          <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입</small></div>
+          ${stepper('sell', k, n)}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
+      </section>
+      <div class="shop-foot"><span id="shop-sum"></span><button class="btn primary" id="shop-go"></button></div>`;
+    const total = mode => Object.entries(cart[mode]).reduce((t, [k, n]) => t + n * (mode === 'buy' ? Number(stock.get(k)?.unit_price || 0) : sellPrice(k)), 0);
+    const foot = () => {
+      const n = Object.values(cart[shopMode]).filter(x => x > 0).length, sum = total(shopMode);
+      $('#shop-sum', box).innerHTML = n ? `${n}가지 · ${shopMode === 'buy' ? '합계' : '받을 돈 약'} <b>${fmt.jeon(shopMode === 'sell' ? Math.round(sum * 0.95) : sum)}</b>` : '<span class="muted">수량을 고르세요</span>';
+      const go = $('#shop-go', box); go.textContent = shopMode === 'buy' ? '구매하기' : '판매하기'; go.disabled = !n || (shopMode === 'buy' && sum > s.gil);
+      if (shopMode === 'buy' && sum > s.gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
+    };
     $$('.seg-mini button', box).forEach(b => b.onclick = () => {
       shopMode = b.dataset.mode;
       $$('.seg-mini button', box).forEach(x => x.classList.toggle('on', x === b));
       $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== b.dataset.mode);
+      foot();
     });
-    const qty = b => Math.max(1, Math.floor(Number(b.closest('li').querySelector('input').value) || 1));
-    $$('[data-buy]', box).forEach(b => b.onclick = () => guard(b, () => act('world_shop_buy', { p_item_id: b.dataset.buy, p_qty: qty(b) })));
-    $$('[data-sell]', box).forEach(b => b.onclick = () => guard(b, () => act('world_shop_sell', { p_item_id: b.dataset.sell, p_qty: qty(b) })));
+    $$('[data-step]', box).forEach(st => {
+      const [mode, id] = st.dataset.step.split(':'), inp = st.querySelector('input'), max = Number(inp.max) || 0;
+      const set = v => { v = Math.max(0, Math.min(max, Math.floor(Number(v) || 0))); inp.value = v; if (v) cart[mode][id] = v; else delete cart[mode][id]; st.closest('li').classList.toggle('picked', v > 0); foot(); };
+      st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
+      inp.oninput = () => set(inp.value);
+      if (cart[mode][id]) st.closest('li').classList.add('picked');
+    });
+    $('#shop-go', box).onclick = async e => {
+      const btn = e.currentTarget, mode = shopMode, list = Object.entries(cart[mode]).filter(([, n]) => n > 0);
+      if (!list.length || btn.dataset.busy === '1') return;
+      const label = mode === 'buy' ? '구매' : '판매', sum = total(mode);
+      const ok = await ask(`${list.map(([k, n]) => `${mode === 'buy' ? stock.get(k)?.item_name || nameOf(k) : nameOf(k)} ×${n}`).join('\n')}\n${mode === 'buy' ? `합계 ${fmt.jeon(sum)}` : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
+        { title: `${label}할까요?`, ok: `${label}하기` });
+      if (!ok) return;
+      btn.dataset.busy = '1'; btn.disabled = true;
+      const fail = [];
+      for (const [k, n] of list) {
+        try { await rpc(mode === 'buy' ? 'world_shop_buy' : 'world_shop_sell', { p_item_id: k, p_qty: n }); delete cart[mode][k]; }
+        catch (err) { fail.push(`${nameOf(k)}: ${friendlyError(err)}`); }
+      }
+      const done = list.length - fail.length;
+      if (done) toast(`${label} 완료 ${done}가지${fail.length ? ` · 실패 ${fail.length}가지` : ''}`, fail.length ? 'warn' : 'ok');
+      if (fail.length) toast(fail.join(' / '), 'error');
+      window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'trade' }));
+      btn.dataset.busy = '';
+      await loadCharacter().catch(() => {});
+      emit('changed', { name: mode === 'buy' ? 'world_shop_buy' : 'world_shop_sell' });
+    };
+    foot();
     bindInfo(box);
   } catch (e) { box.innerHTML = errorBox(e.message); }
 }
@@ -92,7 +140,7 @@ export async function renderMarket(box) {
         guard(form.querySelector('button'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
       };
     }
-    $$('[data-take]', body).forEach(b => b.onclick = () => { if (confirm('이 물품을 살까요?')) guard(b, () => act('world_trade_offer_buy', { p_offer_id: b.dataset.take })); });
+    $$('[data-take]', body).forEach(b => b.onclick = async () => { if (await ask('이 물품을 살까요?', { title: '거래소 구매', ok: '사기' })) guard(b, () => act('world_trade_offer_buy', { p_offer_id: b.dataset.take })); });
     $$('[data-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_offer_cancel', { p_offer_id: b.dataset.cancel })));
     bindInfo(body);
   } catch (e) { body.innerHTML = errorBox(e.message); }
@@ -145,15 +193,15 @@ async function renderDirect(body) {
         if (side === 'give' && next > Number(have[id] || 0)) return toast(`${nameOf(id)}은(는) ${have[id] || 0}개까지 줄 수 있습니다.`, 'error');
         box[id] = Math.min(999, next); renderDirect(body);
       });
-      f.onsubmit = e => {
+      f.onsubmit = async e => {
         e.preventDefault();
         if (!dt.to) return toast('거래할 조사원을 고르세요.', 'error');
         if (!Object.keys(dt.give).length && !dt.giveGil && !Object.keys(dt.want).length && !dt.wantGil) return toast('주거나 받을 것을 하나 이상 담으세요.', 'error');
         if (dt.giveGil > c.gil) return toast('가진 전보다 많이 줄 수 없습니다.', 'error');
         const who = people.find(p => p.owner_id === dt.to)?.character_name || '상대';
-        if (!confirm(`${who}님에게 제안할까요?
+        if (!(await ask(`${who}님에게 제안할까요?
 줄 것: ${bundle(dt.give, dt.giveGil)}
-받을 것: ${bundle(dt.want, dt.wantGil)}`)) return;
+받을 것: ${bundle(dt.want, dt.wantGil)}`, { title: '직접 거래 제안', ok: '제안하기' }))) return;
         guard(f.querySelector('[type=submit]'), async () => {
           const r = await act('world_trade_direct_offer', { p_to: dt.to, p_give: dt.give, p_give_gil: dt.giveGil, p_want: dt.want, p_want_gil: dt.wantGil });
           dt = { to: dt.to, give: {}, giveGil: 0, want: {}, wantGil: 0 };
@@ -162,7 +210,7 @@ async function renderDirect(body) {
       };
     }
     $$('[data-rm]', body).forEach(b => b.onclick = e => { e.preventDefault(); const [side, id] = b.dataset.rm.split(':'); delete dt[side][id]; renderDirect(body); });
-    $$('[data-dt-acc]', body).forEach(b => b.onclick = () => { if (confirm('이 거래를 받아들일까요? 바로 맞바꿉니다.')) guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtAcc, p_accept: true })); });
+    $$('[data-dt-acc]', body).forEach(b => b.onclick = async () => { if (await ask('이 거래를 받아들일까요? 바로 맞바꿉니다.', { title: '거래 수락', ok: '받아들이기' })) guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtAcc, p_accept: true })); });
     $$('[data-dt-dec]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtDec, p_accept: false })));
     $$('[data-dt-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_cancel', { p_trade_id: b.dataset.dtCancel })));
   } catch (e) { body.innerHTML = errorBox(e.message); }
@@ -181,7 +229,7 @@ export async function renderStable(box) {
         <small class="muted">${esc(conditions(x, c))}</small>
         ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
       : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route');
-    $$('[data-buy]', box).forEach(b => b.onclick = () => { if (confirm('이 탈것을 들일까요?')) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
+    $$('[data-buy]', box).forEach(b => b.onclick = async () => { if (await ask('이 탈것을 들일까요?', { title: '탈것 들이기', ok: '들이기' })) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
   } catch (e) { box.innerHTML = errorBox(e.message); }
 }
 export function conditions(m, c) {
