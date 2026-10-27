@@ -226,7 +226,7 @@ BEGIN
     inv := public.world_inv_add(inv, it, -1);
     IF it = 'ward_talisman' THEN
       mn := least(100, mn + 8);
-      DELETE FROM public.world_character_statuses WHERE owner_id = uid AND status_key IN ('erosion_whisper', 'shaken', 'poisoned');
+      UPDATE public.world_character_statuses SET expires_at = now() WHERE owner_id = uid AND expires_at > now() AND status_key IN ('erosion_whisper', 'shaken', 'poisoned');
       IF (v_fx ->> 'barrier') IS NOT NULL THEN v_fx := v_fx - 'barrier'; END IF;
       lines := lines || jsonb_build_array('정화 부적을 태워 사기를 걷어냈다. 정신 +8');
     ELSE
@@ -238,8 +238,8 @@ BEGIN
     END IF;
   ELSIF act = 'skill' AND c.job_key = 'medic' THEN
     heal := least(60, 25 + c.vitality + c.willpower / 2); hp := least(100, hp + heal);
-    DELETE FROM public.world_character_statuses WHERE status_id = (SELECT cs.status_id FROM public.world_character_statuses cs JOIN public.world_status_catalog sc USING (status_key)
-      WHERE cs.owner_id = uid AND sc.polarity = 'negative' ORDER BY cs.expires_at LIMIT 1);
+    UPDATE public.world_character_statuses SET expires_at = now() WHERE status_id = (SELECT cs.status_id FROM public.world_character_statuses cs JOIN public.world_status_catalog sc USING (status_key)
+      WHERE cs.owner_id = uid AND cs.expires_at > now() AND sc.polarity = 'negative' ORDER BY cs.expires_at LIMIT 1);
     lines := lines || jsonb_build_array('응급 처방: 체력 ' || heal || ' 회복, 나쁜 상태 하나를 걷어냈다.');
   ELSIF act = 'skill' AND c.job_key = 'analyst' THEN
     v_pfx := v_pfx || jsonb_build_object('focus', 3);

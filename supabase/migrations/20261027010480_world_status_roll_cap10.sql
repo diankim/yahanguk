@@ -9,8 +9,7 @@ begin
  -- 현장 탐색은 함정·징조 결과로 직접 상태를 건다(탐색마다 무작위로 걸지 않는다)
  if p_activity='explore' and coalesce(p_context->>'kind','')='field_search' then return jsonb_build_object('ok',true,'activity',p_activity,'applied',applied,'max_active',status_cap); end if;
  if not exists(select 1 from public.world_characters where owner_id=uid) then raise exception '캐릭터를 먼저 생성하세요.'; end if;
- delete from public.world_character_statuses where owner_id=uid and expires_at<=now();
- select count(*) into current_count from public.world_character_statuses where owner_id=uid;
+ select count(*) into current_count from public.world_character_statuses where owner_id=uid and expires_at>now();
  roll:=random();
  if p_activity in ('explore','combat','travel') and roll<0.08 then
    pick:=case when random()<0.35 then 'bleeding' when random()<0.55 then 'sprain' when random()<0.75 then 'shaken' when random()<0.90 then 'burned' else 'adrenaline' end;
