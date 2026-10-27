@@ -220,7 +220,7 @@ begin
      * (case when s.phase is null then 1 when s.phase = ph then 3 else 0.3 end)
      * (case when s.weather is null then 1 when s.weather = wk then 3 else 0.3 end)) limit 1;
   if sp.fish_id is null then raise exception '물고기가 보이지 않습니다.'; end if;
-  size := round(least(sp.size_max * 1.1, (sp.size_min + (sp.size_max - sp.size_min) * power(random(), 1.6)) * (1 + public.world_title_bonus('fish_size_pct') / 100.0)), 1);
+  size := round(least(sp.size_max * 1.1, (sp.size_min + (sp.size_max - sp.size_min) * power(random(), 1.6)::numeric) * (1 + public.world_title_bonus('fish_size_pct') / 100.0)), 1);
   first := not exists (select 1 from public.world_fish_log where owner_id = uid and fish_id = sp.fish_id);
   insert into public.world_fish_log(owner_id, fish_id, caught, best_size) values (uid, sp.fish_id, 1, size)
   on conflict (owner_id, fish_id) do update set caught = public.world_fish_log.caught + 1, best_size = greatest(public.world_fish_log.best_size, excluded.best_size), last_at = now();
