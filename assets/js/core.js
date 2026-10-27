@@ -1,8 +1,8 @@
 // 야행국 공통 계층: Supabase 연결, RPC 호출, 상태 저장소, 이름 사전, UI 도우미.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
-export const SUPABASE_URL = 'https://bqywnmeryddwccrbomfe.supabase.co';
-export const SUPABASE_KEY = 'sb_publishable_G2l1gY8W6ZYtSsFSx4LH6Q_YGdvnwe6';
+import { SUPABASE_URL, SUPABASE_KEY, isMaintenanceError, goMaintenance } from './config.js';
+export { SUPABASE_URL, SUPABASE_KEY };
 export const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });
@@ -18,6 +18,8 @@ export const store = { user: null, character: null, snaps: {} };
 /* ── 오류 문구 ───────────────────────────────────────────── */
 export function friendlyError(e) {
   const msg = String(e?.message || e || '알 수 없는 오류');
+  // 점검 중에는 서버가 데이터 영역을 닫는다. 그 응답을 받으면 점검 페이지로 옮긴다.
+  if (isMaintenanceError(msg)) { goMaintenance(); return '서버 점검 중입니다.'; }
   if (/Auth session missing|JWT|not authenticated/i.test(msg)) return '로그인이 필요합니다.';
   if (/permission denied/i.test(msg)) return '이 작업을 할 권한이 없습니다.';
   if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return '서버에 연결할 수 없습니다. 네트워크를 확인하세요.';

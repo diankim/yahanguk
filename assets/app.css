@@ -868,3 +868,4 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .fs-box { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 6px; border: var(--bw) solid var(--line); color: var(--ok); }
 .fs-list li.done { opacity: .6; } .fs-list li.done .fs-box { border-color: var(--ok); } .fs-list li.done b { text-decoration: line-through; }
 .linkish { background: none; border: 0; padding: 0; color: var(--gold); text-decoration: underline; cursor: pointer; font: inherit; }
+.maint-card { text-align: center; justify-items: center; } .maint-card h1 { font-size: 22px; }
