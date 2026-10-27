@@ -255,7 +255,9 @@ async function idle(body) {
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
 const TCAT_ORDER = ['탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '교류', '성장', '비밀', '기타'];
-let tq = '', tf = 'all', tcat = '';
+let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
+// 칭호 등급(서버 world_title_catalog.grade)
+const TGRADE = { 1: '일반', 2: '고급', 3: '희귀', 4: '영웅', 5: '전설' };
 async function titles(body) {
   const snap = await load('world_title_snapshot');
   const list = snap?.titles || [];
@@ -267,21 +269,25 @@ async function titles(body) {
       <div class="chips">${chip(`얻은 칭호 ${snap?.earned_count || 0}/${snap?.total || list.length}`, 'accent')}${chip(`숨겨진 칭호 ${snap?.hidden_earned || 0}/${snap?.hidden_total || 0}`)}${chip(`장착 ${snap?.equipped_count || 0}/3`)}</div>
       <p class="muted small">칭호는 최대 3개까지 장착해 효과를 받습니다. 그와 별개로 <b>대표 칭호</b> 하나를 정하면 채팅과 프로필에 이름과 함께 보입니다.</p>
       <label class="search"><span>${icon('search', 16)}</span><input id="t-q" type="search" placeholder="칭호 이름·조건·효과로 찾기" value="${esc(tq)}"></label>
-      ${segmented('t-f', [['all', '전체'], ['earned', '얻음'], ['equipped', '장착'], ['locked', '못 얻음']], tf)}
+      <div class="t-checks"><label class="check"><input type="checkbox" id="t-owned" ${tOwned ? 'checked' : ''}><span>얻은 칭호만 보기</span></label>
+        <label class="check"><input type="checkbox" id="t-eq" ${tEquipped ? 'checked' : ''}><span>장착 중만 보기</span></label></div>
+      <p class="muted small t-grades">등급: ${Object.entries(TGRADE).map(([g, n]) => `<span class="t-grade g${g}">${n}</span>`).join(' ')} — 얻기 어려울수록 높고, 효과가 크고 여러 갈래입니다.</p>
       <div class="cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)} <small>${countIn(c)}</small></button>`).join('')}</div>
     </div>
     <div id="t-list"></div>`;
   const card = t => `<li class="t-card ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
-      <div class="t-top">${icon(t.icon || 'spark', 18)}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
+      <div class="t-top">${icon(t.icon || 'spark', 18)}${t.grade && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
         ${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
       ${t.description ? `<p class="t-desc">${esc(t.description)}</p>` : ''}
       <p class="t-cond">조건 · ${esc(t.condition || '-')}</p>
       ${t.bonus ? `<p class="t-bonus">${esc(effectText(t.bonus).join(' · '))}</p>` : ''}
+      ${!t.earned && t.progress ? (() => { const cur = Number(t.progress.cur) || 0, need = Math.max(1, Number(t.progress.need) || 1);
+        return `<div class="t-prog">${bar(cur, need, 'xp')}<small>${t.progress.pct ? `${Math.round(cur / need * 100)}%` : `${fmt.num(cur)} / ${fmt.num(need)}`}</small></div>`; })() : ''}
       ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
         <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button></div>` : ''}</li>`;
   const paint = () => {
     const q = tq.trim().toLowerCase();
-    const rows = list.filter(t => (tf === 'all' || (tf === 'earned' && t.earned) || (tf === 'equipped' && t.equipped) || (tf === 'locked' && !t.earned))
+    const rows = list.filter(t => (!tOwned || t.earned) && (!tEquipped || t.equipped)
       && (!tcat || t.category === tcat)
       && (!q || [t.name, t.description, t.condition, effectText(t.bonus || {}).join(' ')].join(' ').toLowerCase().includes(q)));
     const groups = cats.map(c => [c, rows.filter(t => t.category === c)]).filter(([, l]) => l.length);
@@ -295,7 +301,8 @@ async function titles(body) {
     $$('[data-disp]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_set_display', { p_title_key: b.dataset.disp || null })));
   };
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
-  bindSegmented(body, 't-f', k => { tf = k; paint(); });
+  $('#t-owned', body).onchange = e => { tOwned = e.target.checked; paint(); };
+  $('#t-eq', body).onchange = e => { tEquipped = e.target.checked; paint(); };
   $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
   paint();
   // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)

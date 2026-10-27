@@ -1297,3 +1297,18 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .enh-mats li.ok span { color: var(--ok, var(--muted)); }
 .cos-info { margin: 6px 2px 0; min-height: 1.4em; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .cos-info b { color: var(--text); font-weight: 600; }
+
+/* 칭호 등급·진행 게이지·보기 거르기 */
+.t-checks { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.t-checks .check, .craft-cats .check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; min-height: 32px; }
+.t-checks .check input, .craft-cats .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.t-grade { display: inline-block; flex: none; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 18px; border: var(--bw) solid currentColor; }
+.t-grade.g1 { color: var(--muted); }
+.t-grade.g2 { color: var(--ok); }
+.t-grade.g3 { color: #5b9bd5; }
+.t-grade.g4 { color: #a77bd8; }
+.t-grade.g5 { color: var(--gold); }
+.t-grades .t-grade { margin-right: 2px; }
+.t-card:not(.earned) .t-prog { opacity: 1; }
+.t-prog { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: 2px; }
+.t-prog small { font-size: 12px; color: var(--muted); white-space: nowrap; }
