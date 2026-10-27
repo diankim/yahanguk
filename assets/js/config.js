@@ -13,15 +13,17 @@ export function goMaintenance() {
 // 서버가 열려 있는지 확인한다: 'open' | 'maintenance' | 'offline'.
 // 1) 배포에 함께 올리는 maintenance.json의 active가 true면 점검(계획 점검 안내용)
 // 2) 공개 읽기 표를 하나 읽어 '스키마 권한 거부'가 오면 점검(서버 쪽 실제 차단)
+// maintenance.json의 안내(message·until·notes)는 서버 차단으로 점검에 들어간 경우에도 점검 페이지에 보여 준다.
 export async function serverState() {
+  let info = null;
   try {
     const f = await fetch('maintenance.json', { cache: 'no-store' });
-    if (f.ok) { const j = await f.json().catch(() => null); if (j?.active) return { state: 'maintenance', info: j }; }
+    if (f.ok) { info = await f.json().catch(() => null); if (info?.active) return { state: 'maintenance', info }; }
   } catch {}
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/world_map_regions?select=region_id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' });
-    if (r.ok) return { state: 'open' };
+    if (r.ok) return { state: 'open', info };
     const body = await r.text();
-    return isMaintenanceError(body) ? { state: 'maintenance' } : { state: 'open' };
-  } catch { return { state: 'offline' }; }
+    return isMaintenanceError(body) ? { state: 'maintenance', info } : { state: 'open', info };
+  } catch { return { state: 'offline', info }; }
 }
