@@ -64,7 +64,6 @@ export async function renderMarket(box) {
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k));
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
-    const minPrice = k => { const r = ref.get(k)?.reference_price; return r ? Math.ceil(r * 0.3) : 1; };
     const row = (o, own) => `<li><div class="item-main"><b>${infoName(o.item_id)}</b><span class="qty">×${o.quantity}</span>
         <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small></div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
@@ -75,21 +74,21 @@ export async function renderMarket(box) {
           <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}"></label>
           <button class="btn primary" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록</span></button></form>
           <p class="muted small" id="trade-hint"></p>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
-      <p class="muted small">한 사람이 동시에 10건까지 등록할 수 있고(지금 ${mine.length}건), 기준 시세의 30%보다 싸게는 등록할 수 없습니다. 0전 등록은 불가하며, 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p>
+      <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다(지금 ${mine.length}/10건). 0전 등록은 불가하며, 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p>
       <h3 class="sub-h">판매 중 ${others.length}</h3>
       ${others.length ? `<ul class="item-list">${others.map(o => row(o, false)).join('')}</ul>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
       <h3 class="sub-h">내 등록 ${mine.length}</h3>
       ${mine.length ? `<ul class="item-list">${mine.map(o => row(o, true)).join('')}</ul>` : `<p class="muted small">등록한 물품이 없습니다.</p>`}`;
     const form = $('#trade-form', body);
     if (form) {
-      const hint = () => { const r = ref.get(form.item.value); $('#trade-hint', body).textContent = r?.reference_price ? `기준 시세 ${fmt.jeon(r.reference_price)} · 등록 가능 ${fmt.jeon(minPrice(form.item.value))} ~ ${fmt.jeon(r.reference_price * 10)}` : ''; };
+      const hint = () => { const r = ref.get(form.item.value); $('#trade-hint', body).textContent = r?.reference_price ? `기준 시세 ${fmt.jeon(r.reference_price)} · 최대 ${fmt.jeon(r.reference_price * 10)}` : ''; };
       form.item.onchange = () => { const p = ref.get(form.item.value)?.reference_price; if (p) form.price.value = p; hint(); };
       hint();
       form.onsubmit = e => {
         e.preventDefault();
         const qty = Math.floor(Number(form.qty.value)), price = Math.floor(Number(form.price.value));
         if (!(qty >= 1) || !(price >= 1)) return toast('수량과 가격은 1 이상이어야 합니다.', 'error');
-        if (price < minPrice(form.item.value)) return toast(`기준 시세의 30%(${fmt.jeon(minPrice(form.item.value))})보다 싸게 등록할 수 없습니다.`, 'error');
+        if (mine.length >= 10) return toast('거래소에는 동시에 10건까지 올려 둘 수 있습니다. 팔리거나 취소된 뒤 다시 등록하세요.', 'error');
         guard(form.querySelector('button'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
       };
     }
