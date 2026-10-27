@@ -11,6 +11,7 @@ const state = q('[data-maint-state]'), stateText = q('[data-maint-state-text]'),
 const DEFAULT_MSG = msg?.textContent || '';
 const clock = d => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 let nextAt = 0, busy = false;
+const LOADED = Date.now();
 
 function show(s) {
   const info = s.info || {};
@@ -43,6 +44,8 @@ async function check() {
       setTimeout(() => location.replace('index.html' + back), 600);
       return;
     }
+    // 점검 중 배포가 바뀌면(서버 주소 변경 등) 이 화면이 읽어 둔 옛 설정으로만 확인하게 되므로, 5분마다 페이지를 새로 읽는다
+    if (Date.now() - LOADED > 5 * 60000) { location.reload(); return; }
   } finally {
     busy = false; nextAt = Date.now() + EVERY;
     if (retry) { retry.disabled = false; retry.textContent = '지금 다시 확인'; }
