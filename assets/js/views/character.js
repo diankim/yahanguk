@@ -206,19 +206,32 @@ const CAT_DESC = {
   first_aid: '회복약을 쓰거나 동료를 구조할 때 오릅니다.',
   tracking: '탐색과 원정으로 낯선 곳을 살필 때 오릅니다.',
   foraging: '일반 채집터에서 채집할 때 오릅니다.', herbalism: '약초 채집터에서 채집할 때 오릅니다.', mining: '광맥에서 채집할 때 오릅니다.',
-  spirit_gathering: '영기가 서린 곳에서 채집할 때 오릅니다.', smithing: '무기·도구를 만들 때 오릅니다.', alchemy: '약제를 만들 때 오릅니다.', wardcraft: '부적·봉인 도구를 만들 때 오릅니다.',
+  spirit_gathering: '영기가 서린 곳에서 채집할 때 오릅니다.', smithing: '단조·목공·법구 공예·직조·가죽 공예 제작법으로 만들 때 오릅니다.', alchemy: '연금 제작법으로 약제를 만들 때 오릅니다.', wardcraft: '봉인 공예 제작법으로 부적·봉인 도구를 만들 때 오릅니다.',
 };
+// 행동 한 번에 오르는 기술 경험(서버 world_track_specialized_skill과 같은 값). 100마다 한 단계, 최고 50단계.
+const SKILL_GAIN = {
+  melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
+  mining: '채집 +8', herbalism: '채집 +8', spirit_gathering: '채집 +8', foraging: '채집 +8',
+  smithing: '제작 +12', alchemy: '제작 +12', wardcraft: '제작 +12', tracking: '탐색 +8 · 이야기 +10 · 이동 +3',
+};
+const SKILL_STEP = 100, SKILL_CAP = 50;
+const SKILL_NAME = { sealing: '봉인술' }; // 제작 분야 「봉인 공예」와 이름이 겹치는 전투 계열
 async function skills(body) {
   const list = await load('world_skill_snapshot', undefined, { maxAge: 10000 });
   const groups = {};
   (list || []).forEach(s => (groups[s.category] ||= []).push(s));
   const cats = Object.keys(groups);
   body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>기술이란</b><span>기술은 행동을 되풀이할수록 오르는 세부 숙련입니다. 계열마다 단계가 있고, 정해진 단계에 이르면 그 계열의 기술을 익혀 상시 효과가 붙습니다. 레벨·능력치와 따로 오르며, 관계없는 행동으로는 오르지 않습니다.</span></div></div>
-    ${cats.length ? `<div class="skill-groups">${cats.map(cat => panel(nameOf(cat), `<p class="muted small">${esc(CAT_DESC[cat] || '관련 행동을 할 때 오릅니다.')}</p>
+    ${cats.length ? `<div class="skill-groups">${cats.map(cat => { const sk = groups[cat][0], rank = Number(sk.rank || 1), xp = Number(sk.xp || 0);
+      const top = rank >= SKILL_CAP, into = top ? SKILL_STEP : xp - (rank - 1) * SKILL_STEP, next = groups[cat].find(x => !x.unlocked);
+      return panel(`${SKILL_NAME[cat] || nameOf(cat)} · ${fmt.num(rank)}단계`, `<p class="muted small">${esc(CAT_DESC[cat] || '관련 행동을 할 때 오릅니다.')}</p>
+      <div class="skill-meter"><div class="bar"><span style="width:${Math.max(0, Math.min(100, into / SKILL_STEP * 100))}%"></span></div>
+        <small>${top ? `최고 단계 · 누적 ${fmt.num(xp)} 경험` : `${fmt.num(into)} / ${SKILL_STEP} 경험 · 다음 단계까지 ${fmt.num(SKILL_STEP - into)}`}</small>
+        <small>${esc(SKILL_GAIN[cat] ? `얻는 경험: ${SKILL_GAIN[cat]}` : '')}${next ? ` · 다음 기술은 ${next.unlock_rank}단계(${fmt.num(Math.max(0, (next.unlock_rank - 1) * SKILL_STEP - xp))} 경험 남음)` : ''}</small></div>
       <ul class="skill-list">${groups[cat].map(s => `<li class="${s.unlocked ? 'on' : ''}">
       <div><b>${esc(s.skill_name)}</b><small>${esc(s.description || '')}</small></div>
       <span class="chip ${s.unlocked ? 'ok' : ''}">${s.unlocked ? '익힘' : `${s.unlock_rank}단계에 익힘`}</span>
-      <div class="skill-xp"><span>계열 ${fmt.num(s.rank)}단계 · ${fmt.num(s.xp)} 경험</span></div></li>`).join('')}</ul>`, { cls: 'compact' })).join('')}</div>`
+      </li>`).join('')}</ul>`, { cls: 'compact' }); }).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
     <p class="muted small">전투 계열(근접·원거리·봉인·분석)의 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다. 상태 탭의 전투 능력에서 적용 중인 기술을 확인할 수 있습니다.</p>`;
 }

@@ -127,7 +127,7 @@ async function expHistory(body) {
 }
 
 /* ── 어종 도감 ─────────────────────────────────────────── */
-const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물' };
+const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연' };
 const PHASE = { dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경' };
 const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
 const RAR = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };

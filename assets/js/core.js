@@ -111,7 +111,7 @@ const FIXED = {
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
   presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   // 서식지
-  river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', fishing: '낚시', cooking: '요리',
+  river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
   // 날씨·시간대
   dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
