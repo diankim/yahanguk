@@ -6,6 +6,7 @@ import { mountChat } from './chat.js';
 import { mountWhisper } from './whisper.js';
 import { mountGrowth } from './growth.js';
 import { mountVersionCheck } from './version.js';
+import { mountBug } from './bug.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { maybeStartTutorial, markPending } from './tutorial.js';
@@ -220,6 +221,7 @@ function renderGame() {
         <button class="icon-btn" id="btn-whisper" aria-label="귓속말" title="귓속말">${icon('letter')}</button>
         <a class="icon-btn" href="#/party" data-page="party" aria-label="동료" title="동료">${icon('users')}</a>
         <a class="icon-btn" href="#/guide" data-page="guide" aria-label="도움말" title="도움말">${icon('help')}</a>
+        <button class="icon-btn" id="btn-bug" aria-label="버그·문의 제보" title="버그·문의 제보">${icon('flag')}</button>
         <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
         <a class="icon-btn" href="#/settings/theme" data-page="settings" data-page-sub="theme" aria-label="테마" title="테마">${icon('palette')}</a>
         <a class="icon-btn" href="#/settings" data-page="settings" data-page-sub="!theme" aria-label="게임 설정" title="게임 설정">${icon('gear')}</a>
@@ -244,6 +246,7 @@ function renderGame() {
   mountChat($('#chat-col'), $('#chat-fab'));
   mountWhisper($('#btn-whisper'));
   mountVersionCheck(); // 배포·SQL 적용 뒤 새로고침 안내
+  mountBug($('#btn-bug'));
   mountTitleDot();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.

@@ -1238,3 +1238,17 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 /* 못 가는 길의 까닭 */
 .path .path-why { color: var(--warn, var(--gold)); font-size: 12px; margin-top: 2px; }
 .path.locked:disabled { opacity: 1; } .path.locked:disabled b { color: var(--muted); }
+/* 버그·문의 제보 */
+.bug-tabs { margin-bottom: 10px; }
+.bug-form { display: grid; gap: 10px; margin-bottom: 8px; }
+.bug-form textarea { resize: vertical; min-height: 110px; }
+.bug-form .check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; } .bug-form .check input { margin-top: 3px; }
+.bug-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bug-list > li { padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); display: grid; gap: 6px; }
+.bug-top { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; } .bug-top b { flex: 1; min-width: 120px; } .bug-top time { font-size: 11px; color: var(--muted); }
+.bug-text { white-space: pre-wrap; font-size: 14px; margin: 0; }
+.bug-reply { margin: 0; padding: 8px 10px; border-left: 3px solid var(--accent); background: var(--surface); font-size: 14px; white-space: pre-wrap; }
+.bug-reply b { color: var(--accent); margin-right: 6px; }
+.bug-ctx { max-height: 220px; overflow: auto; font-size: 11px; white-space: pre-wrap; word-break: break-all; background: var(--surface); padding: 8px; border-radius: 6px; }
+.bug-answer { display: grid; gap: 6px; } .bug-answer .btn-row { justify-content: flex-end; }
+.bug-filter { margin-bottom: 10px; }

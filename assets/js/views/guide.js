@@ -188,12 +188,13 @@ const S = [
 
 export function render(el) {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('help', 14)} 조사원 수첩</p><h1>도움말</h1></div>
-      <div class="head-actions"><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록 다시 보기</span></button></div></div>
+      <div class="head-actions"><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록 다시 보기</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
     <div class="guide">
       <nav class="guide-toc" aria-label="목차">${S.map(([id, t]) => `<a href="#g-${id}" data-g="${id}">${esc(t)}</a>`).join('')}</nav>
       <div class="guide-body">${S.map(([id, t, body]) => `<section class="panel guide-sec" id="g-${id}"><header class="panel-head"><h2>${esc(t)}</h2></header><div class="panel-body">${body}</div></section>`).join('')}</div>
     </div>`;
   $('#tut-again', el).onclick = () => startTutorial(0);
+  $('#bug-open', el).onclick = () => window.dispatchEvent(new CustomEvent('yh-open-bug'));
   $('#fs-again', el).onclick = () => { reopenChecklist(); toast('현장 화면에 첫 걸음 목록을 다시 띄웠습니다.', 'ok'); window.yahangGo?.('home'); };
   // 해시 라우터와 겹치지 않게 목차는 스크롤만 한다.
   $$('[data-g]', el).forEach(a => a.onclick = e => { e.preventDefault(); $(`#g-${a.dataset.g}`, el)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });

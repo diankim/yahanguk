@@ -192,7 +192,7 @@ const ICONS = {
   hat: 'M3 16h18M8 16V9a4 4 0 018 0v7M6 19h12', shoe: 'M4 7v9h16v-2c0-2-2-3-5-3l-3-4H4zM4 19h16',
   knot: 'M12 3a3 3 0 100 6 3 3 0 000-6zM12 9v3M9 12h6M10 12l-2 9M12 12v9M14 12l2 9', talisman: 'M7 3h10v18H7zM10 7h4M10 11h4M10 15h4',
   mask: 'M5 5c4-1 10-1 14 0 0 8-3 14-7 14S5 13 5 5zM8 10h3M13 10h3M10 15h4',
-  letter: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  letter: 'M3 6h18v12H3zM3 7l9 6 9-6', flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
   wrench: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
 };
 export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
