@@ -1,5 +1,5 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
-import { db, rpc, store, on, registerNames, nameOf, esc, icon, fmt } from '../core.js';
+import { db, rpc, store, on, registerNames, namesDump, nameOf, esc, icon, fmt } from '../core.js';
 
 // 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
 const inflight = new Map();
@@ -36,8 +36,14 @@ function register(name, d) {
 }
 
 // 지도·아이템 이름은 어느 화면에서든 필요하므로 게임 진입 시 미리 불러 둔다.
+// 이름 사전(지역·물품·제작법 코드 → 이름)은 기기에 남겨 두고, 다음 접속 때 서버 응답을 기다리지 않고 바로 화면을 그린다.
+const NAME_KEY = 'yh-names-v1';
+let nameCache = false;
+try { const c = JSON.parse(localStorage.getItem(NAME_KEY) || 'null'); if (Array.isArray(c) && c.length) { registerNames(c); nameCache = true; } } catch {}
+export const hasNameCache = () => nameCache;
 export function preloadNames() {
-  return Promise.allSettled([load('world_map_snapshot', undefined, { maxAge: 60000 }), load('world_inventory_snapshot', undefined, { maxAge: 15000 })]);
+  return Promise.allSettled([load('world_map_snapshot', undefined, { maxAge: 60000 }), load('world_inventory_snapshot', undefined, { maxAge: 15000 })])
+    .then(r => { try { localStorage.setItem(NAME_KEY, JSON.stringify(namesDump())); } catch {} return r; });
 }
 
 export const MAJOR_FACTIONS = {

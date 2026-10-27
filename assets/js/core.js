@@ -54,8 +54,7 @@ export async function act(name, args) {
 }
 export async function loadCharacter() {
   if (!store.user) return null;
-  if (!stacks) await loadStacks();
-  const { data, error } = await db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
+  const [, { data, error }] = await Promise.all([stacks ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle()]);
   if (error) throw new Error(friendlyError(error));
   store.character = data;
   emit('character', data);
@@ -130,6 +129,7 @@ const LOWER_BETTER = new Set(['incoming_damage_pct', 'travel_time_pct', 'erosion
 export function effectGood(k, v) { return LOWER_BETTER.has(k) ? Number(v) < 0 : Number(v) > 0; }
 const names = new Map(Object.entries(FIXED));
 export function registerNames(entries) { for (const [k, v] of entries) if (k && v) names.set(k, v); }
+export function namesDump() { return [...names]; }
 export function nameOf(code) {
   if (code == null) return '';
   if (JOBS[code]) return JOBS[code].name;
@@ -397,8 +397,9 @@ export const LEVEL_CAP = 30;
 export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 1) ** 2;
 export function bagLimit(c) { return (c?.bag_capacity || 24) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
 // 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
-let stacks = null;
-async function loadStacks() {
+let stacks = null, stacksP = null;
+function loadStacks() { return stacksP ||= readStacks(); } // 동시에 불려도 한 번만 읽는다
+async function readStacks() {
   try { const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size'); stacks = error ? new Map() : new Map((data || []).map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)])); }
   catch { stacks = new Map(); }
 }

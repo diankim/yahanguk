@@ -23,7 +23,7 @@ import * as party from './views/party.js';
 import * as guide from './views/guide.js';
 import * as account from './views/account.js';
 import * as settingsPage from './views/settings.js';
-import { preloadNames } from './views/common.js';
+import { preloadNames, hasNameCache } from './views/common.js';
 
 mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
 
@@ -42,8 +42,16 @@ const VIEWS = {
 const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' } };
 
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
-let routedFor = null;
-async function route(session) {
+let routedFor = null, routing = null;
+// 로그인 이벤트가 연달아 두 번(INITIAL_SESSION·SIGNED_IN) 와도 같은 사람이면 한 번만 화면을 꾸린다
+function route(session) {
+  const uid = session?.user?.id || null;
+  if (uid && routing?.uid === uid) return routing.p;
+  const p = routeOnce(session).finally(() => { if (routing?.p === p) routing = null; });
+  routing = uid ? { uid, p } : null;
+  return p;
+}
+async function routeOnce(session) {
   const uid = session?.user?.id || null;
   if (uid && routedFor === uid && $('.shell')) return; // 이미 게임 화면
   store.user = session?.user || null;
@@ -244,7 +252,9 @@ function renderGame() {
   mountTitleDot();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
-  Promise.allSettled([preloadNames(), loadStaff()]).finally(() => { onHash(); maybeStartTutorial(); });
+  const names = Promise.allSettled([preloadNames(), loadStaff()]);
+  if (hasNameCache()) { onHash(); names.finally(maybeStartTutorial); }
+  else names.finally(() => { onHash(); maybeStartTutorial(); });
 }
 
 function parseHash() {

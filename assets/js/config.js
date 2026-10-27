@@ -22,12 +22,15 @@ export function goMaintenance() {
 // maintenance.json의 안내(message·until·notes)는 서버 차단으로 점검에 들어간 경우에도 점검 페이지에 보여 준다.
 export async function serverState() {
   let info = null;
+  // 두 확인을 동시에 보낸다(차례로 기다리면 접속이 한 번 왕복만큼 늦어진다)
+  const probe = fetch(`${SUPABASE_URL}/rest/v1/world_map_regions?select=region_id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' });
+  probe.catch(() => {});
   try {
     const f = await fetch('maintenance.json', { cache: 'no-store' });
     if (f.ok) { info = await f.json().catch(() => null); if (info?.active) return { state: 'maintenance', info }; }
   } catch {}
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/world_map_regions?select=region_id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' });
+    const r = await probe;
     if (r.ok) return { state: 'open', info };
     const body = await r.text();
     return isMaintenanceError(body) ? { state: 'maintenance', info } : { state: 'open', info };

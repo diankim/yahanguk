@@ -26,10 +26,11 @@ export async function refresh() {
   try {
     // 원정 중이면 지난 수색 회차를 먼저 정산해 체력·정신·침식이 바로 맞게 한다
     if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
+    const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
     const [idle, hud] = await Promise.all([
       rpc('world_idle_activity_snapshot').catch(() => null),
       rpc('world_hud_snapshot').catch(() => null),
-      loadCharacter(),
+      first && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;
     state = { idle, hud, exp: hud?.expedition || null };
@@ -37,7 +38,7 @@ export async function refresh() {
     store.hud = hud;
     render();
     // 원정을 보내거나 돌아오면 현장 화면이 곧바로 행동을 막거나 풀도록 알린다(새로고침 없이).
-    if (was !== !!state.exp) emit('expedition', state.exp);
+    if (!first && was !== !!state.exp) emit('expedition', state.exp); // 첫 읽기는 화면이 이미 그 상태로 그린다
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
 
