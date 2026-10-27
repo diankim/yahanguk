@@ -166,9 +166,8 @@ begin
   if position(a in d) = 0 or position(b in d) = 0 then raise exception '기술 경험 함수에서 고칠 줄을 찾지 못했습니다'; end if;
   d := replace(d, a, $q$select coalesce(required_skill, case craft_field when 'sealing' then 'wardcraft' when 'alchemy' then 'alchemy' when 'cooking' then '-' else 'smithing' end) into v_recipe_skill from public.world_crafting_recipes where recipe_id=coalesce(new.payload->>'recipe','');$q$);
   d := replace(d, b, $q$v_key:=nullif(coalesce(v_recipe_skill,$q$);
-  d := replace(d, $q$else 'smithing' end);
- end if;$q$, $q$else 'smithing' end), '-');
- end if;$q$);
+  -- 줄바꿈(\n·\r\n)과 들여쓰기에 상관없이 찾는다
+  d := regexp_replace(d, $q$else 'smithing' end\);(\s*)end if;$q$, $q$else 'smithing' end), '-');\1end if;$q$);
   if position($q$'smithing' end), '-');$q$ in d) = 0 then raise exception '기술 경험 함수의 끝줄을 찾지 못했습니다'; end if;
   execute d;
 end $$;
