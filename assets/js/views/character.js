@@ -35,6 +35,14 @@ function idleReward(k, min, level, early = false) {
 }
 const DURATIONS = [[30, '30분'], [60, '1시간'], [240, '4시간'], [480, '8시간']];
 const EROSION = ['안정', '경미', '주의', '위험', '붕괴 직전', '붕괴'];
+// 침식 단계 효과(서버 world_erosion_effect·world_combat_stats·world_apply_activity_status와 같은 값)
+function erosionNote(e) {
+  const [bad, good] = e >= 80 ? [['회복량 −35%', '받는 피해 +20%', '주는 피해 −10%', '요괴 조우 +20%', '술법 −30%', '행동마다 정신 −1'], '희귀품·단서 +15%']
+    : e >= 55 ? [['회복량 −25%', '받는 피해 +10%', '술법 −20%', '행동마다 정신 −1'], '희귀품·단서 +10%']
+    : e >= 30 ? [['회복량 −15%', '술법 −10%'], '희귀품·단서 +5%'] : [[], ''];
+  const next = e >= 80 ? '100에 닿으면 정신이 0이 됩니다.' : e >= 55 ? '80부터 붕괴 직전입니다.' : e >= 30 ? '55부터 위험 단계입니다.' : '30부터 불이익이 생깁니다.';
+  return `<p class="muted small">${bad.length ? `<b class="bad-text">지금 침식 효과: ${esc(bad.join(' · '))}</b> · 대신 ${esc(good)}. ` : ''}${esc(next)} 위험한 곳·삼경·어두운 곳을 탐색하거나 싸움에서 지면 오릅니다. 정화 부적·휴식으로 낮추세요.</p>`;
+}
 let el, sub = 'status', off = [];
 
 export async function render(root, s) {
@@ -136,7 +144,7 @@ async function status(body) {
       ${panel('생존 상태', `
         ${['health:체력:hp', 'mental:정신:mp', 'spiritual_power:영력:sp'].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
-        <p class="muted small">정신이 40 아래면 공격이 약해지고, 침식이 30을 넘으면 공격이 약해지며 높아질수록 불이익이 커집니다. 정화 부적이나 휴식으로 관리하세요.</p>
+        ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0))}
         <div class="action-grid three">
           <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || '정화 부적 1개 · 침식 -25 · 정신 +8')}</small></button>
           <button class="btn" data-surv="ground" ${groundWhy ? 'disabled' : ''}><span>마음 다잡기</span><small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '본부에서 · 정신 +18 · 침식 -10 · 15분마다')}</small></button>
