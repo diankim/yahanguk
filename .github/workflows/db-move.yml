@@ -1,5 +1,5 @@
 # 서버 이사(뭄바이 → 서울): 옛 DB를 덤프해 비어 있는 새 DB에 복원한다.
-# 수동 실행만 된다(Actions → db-move → Run workflow, 확인 칸에 MOVE).
+# 수동 실행만 된다(Actions → db-move → Run workflow, 확인 칸에 MOVE). CHECK는 두 DB 접속과 새 DB가 비었는지만 본다.
 # 비밀값: OLD_DB_URL·NEW_DB_URL (두 프로젝트의 Session pooler 주소, 비밀번호 포함).
 # 옛 DB는 읽기만 한다. 새 DB에 public 표가 하나라도 있으면 아무것도 하지 않고 멈춘다.
 # 덤프 파일(계정 정보 포함)은 실행기 안에서만 쓰고 올리지 않는다. 로그에는 표 이름과 행 수만 남긴다.
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: '옮기려면 MOVE 를 입력'
+        description: '접속만 시험하려면 CHECK, 옮기려면 MOVE 를 입력'
         required: true
 
 permissions:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   move:
-    if: inputs.confirm == 'MOVE'
+    if: inputs.confirm == 'MOVE' || inputs.confirm == 'CHECK'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -43,12 +43,14 @@ jobs:
           test "$n" = "0" || { echo '새 DB가 비어 있지 않아 멈춥니다'; exit 1; }
 
       - name: 덤프(구조·데이터)
+        if: inputs.confirm == 'MOVE'
         run: |
           supabase db dump --db-url "$OLD_DB_URL" -f schema.sql
           supabase db dump --db-url "$OLD_DB_URL" -f data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
           wc -c schema.sql data.sql
 
       - name: 함수 전용 역할(fn_owner_*) 만들기
+        if: inputs.confirm == 'MOVE'
         # CLI 역할 덤프는 supabase_admin이 준 멤버십(GRANTED BY supabase_admin)을 새 DB에서 다시 줄 수 없어, 역할만 직접 만든다.
         # postgres가 만들면 관리 멤버십은 저절로 생긴다. 복원 중에만 소유자 지정을 위해 SET·INHERIT를 켜고, 끝나면 끈다.
         run: |
@@ -59,6 +61,7 @@ jobs:
           ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f roles.sql -f roles_on.sql
 
       - name: 복원(한 트랜잭션)
+        if: inputs.confirm == 'MOVE'
         run: |
           ./psql.sh "$NEW_DB_URL" -q --single-transaction -v ON_ERROR_STOP=1 \
             -f schema.sql \
@@ -67,7 +70,7 @@ jobs:
           echo '복원 완료'
 
       - name: 실시간 감시 표 다시 등록·역할 권한 되돌리기
-        if: always()
+        if: always() && inputs.confirm == 'MOVE'
         run: |
           test -f roles_off.sql && ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f roles_off.sql || true
           ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -c "
@@ -81,6 +84,7 @@ jobs:
             end \$p\$;"
 
       - name: auth·storage 표에 건 트리거 옮기기
+        if: inputs.confirm == 'MOVE'
         # CLI 구조 덤프는 auth 스키마를 빼서, auth.users의 가입 트리거(on_auth_user_created_profile) 같은 것이 빠질 수 있다. 없을 때만 옛 정의대로 만든다.
         run: |
           # search_path를 비워 함수 이름에 스키마가 붙게 한다(public.handle_new_user)
@@ -90,6 +94,7 @@ jobs:
           ./psql.sh "$NEW_DB_URL" -tAc "select 'auth trigger ' || tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal"
 
       - name: 행 수 비교
+        if: inputs.confirm == 'MOVE'
         run: |
           q="select table_schema || '.' || table_name || ' ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema in ('public', 'auth') and table_type = 'BASE TABLE' order by 1"
           ./psql.sh "$OLD_DB_URL" -tAc "$q" > old_counts.txt
@@ -102,5 +107,5 @@ jobs:
           ./psql.sh "$NEW_DB_URL" -tAc "select 'realtime ' || string_agg(tablename, ', ') from pg_publication_tables where pubname = 'supabase_realtime'"
 
       - name: 덤프 지우기
-        if: always()
+        if: always() && inputs.confirm == 'MOVE'
         run: rm -f schema.sql data.sql restore.log roles*.sql triggers.sql
