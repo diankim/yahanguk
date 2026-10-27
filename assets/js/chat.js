@@ -28,7 +28,7 @@ export function mountChat(colEl, fabEl) {
   col = colEl; fab = fabEl;
   panel = h(`<section class="chat" aria-label="채팅">
     <div class="chat-grip" role="separator" aria-orientation="horizontal" aria-label="채팅창 크기 조절 (위아래로 끌기)" tabindex="0"><i></i></div>
-    <header class="chat-head"><h2>${icon('chat', 16)} 통신망</h2><button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
+    <header class="chat-head"><h2>${icon('chat', 15)} 통신망</h2><button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
     <div class="segmented chat-tabs"></div>
     <div class="chat-circles" id="chat-circles" hidden></div>
     <p class="chat-hint" id="chat-hint"></p>
@@ -36,7 +36,7 @@ export function mountChat(colEl, fabEl) {
       <button class="chat-jump" id="chat-jump" type="button" hidden>${icon('chevron', 14)}<span>새 메시지 · 맨 아래로</span></button></div>
     <form class="chat-form" id="chat-form">
       <div class="chat-row"><textarea name="text" rows="1" maxlength="500" placeholder="메시지 입력" aria-label="메시지"></textarea>
-      <button class="btn primary" type="submit" aria-label="전송">${icon('chevron', 18)}</button></div>
+      <button class="chat-send" type="submit" aria-label="전송">${icon('chevron', 16)}</button></div>
     </form>
   </section>`);
   placePanel();
@@ -219,8 +219,8 @@ function draw() {
     if (!c) { list.innerHTML = `<li class="chat-empty">모임을 골라 주세요.</li>`; return; }
     list.style.setProperty('--cc', c.color);
     const ms = (circleMsgs[c.circle_id] || []).filter(m => !blocked.has(m.sender_id));
-    list.innerHTML = ms.length ? ms.map(m => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
-      : `<li class="${m.sender_id === me ? 'mine' : ''} ${isGM(m.sender_id) ? 'gm' : ''}"><div class="meta">${m.sender_title ? `<em class="c-title">「${esc(m.sender_title)}」</em>` : ''}<b>${cardName(m.sender_id, m.sender_name)}</b>${isGM(m.sender_id) ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}<time>${fmt.time(m.created_at)}</time></div><p>${esc(m.content)}</p></li>`).join('')
+    list.innerHTML = ms.length ? ms.map((m, i) => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
+      : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
       : `<li class="chat-empty">「${esc(c.name)}」에 아직 말이 없습니다.</li>`;
     scrollEnd(); return;
   }
@@ -230,9 +230,18 @@ function draw() {
   } else {
     rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.mine ? 'mine' : ''} ${r.gm ? 'gm' : ''}"><div class="meta">${r.title ? `<em class="c-title">「${esc(r.title)}」</em>` : ''}<b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`).join('')
+  list.innerHTML = rows.length ? rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
   scrollEnd();
+}
+// 한 줄: 이름 첫 글자 인장 + 이름·칭호·시각, 같은 사람이 5분 안에 이어 말하면 머리글 없이 붙인다.
+function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
+function msgRow(r, prev) {
+  const cont = prev && prev.sid === r.sid && r.at && prev.at && new Date(r.at) - new Date(prev.at) < 300000;
+  const cls = ['msg', r.mine ? 'mine' : '', r.gm ? 'gm' : '', cont ? 'cont' : ''].filter(Boolean).join(' ');
+  if (cont) return `<li class="${cls}"><p>${esc(r.text)}</p></li>`;
+  const initial = esc([...String(r.who || '?')][0] || '?');
+  return `<li class="${cls}" style="--hu:${hue(r.sid)}"><i class="av" aria-hidden="true">${initial}</i><div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {

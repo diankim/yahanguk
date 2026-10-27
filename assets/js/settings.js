@@ -162,7 +162,18 @@ function notePop(n) {
   stack.append(card);
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'reward' }));
 }
+// 지난 알림: 확인한 알림 중 아직 지워지지 않은 것(14일 보관)을 열 때만 읽는다.
+async function drawPastNotes(box) {
+  box.innerHTML = '<p class="muted small">불러오는 중…</p>';
+  try {
+    const { data, error } = await db.from('world_notifications').select('id,title,content,created_at,read_at').not('read_at', 'is', null).order('created_at', { ascending: false }).limit(60);
+    if (error) throw error;
+    box.innerHTML = (data || []).length ? data.map(n => `<article class="note-item past"><div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${fmt.time(n.created_at)}</time></div></article>`).join('')
+      + '<p class="muted small note-keep">확인한 알림은 14일 동안 남습니다.</p>' : '<p class="muted">지난 알림이 없습니다.</p>';
+  } catch { box.innerHTML = '<p class="muted">지난 알림을 불러오지 못했습니다.</p>'; }
+}
 function openNotifications() {
+  const wrap = h(`<div class="notes-wrap"><div class="seg-mini" role="tablist"><button class="on" data-nt="new">새 알림${notes.length ? ` ${notes.length}` : ''}</button><button data-nt="past">지난 알림</button></div><div class="notes-past notes" hidden></div></div>`);
   const body = h(`<div class="notes">${notes.length ? notes.map(n => `<article class="note-item" data-note="${esc(n.id)}">
       <div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${fmt.time(n.created_at)}</time></div>
       <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-read="${esc(n.id)}">확인</button></div></article>`).join('') : '<p class="muted">새 알림이 없습니다.</p>'}
@@ -170,9 +181,23 @@ function openNotifications() {
   body.addEventListener('click', async e => {
     const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-bug],[data-rescue],[data-go-exp]'), all = e.target.closest('[data-read-all]');
     if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.invite || a.dataset.trade || a.dataset.friend || a.dataset.circle || a.dataset.bondn)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
-    if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); if (!notes.length) closeModal(); }
-    if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); closeModal(); }, { success: '알림을 모두 확인했습니다.' }); }
+    if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); emptyNew(); }
+    if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>'; emptyNew(); }, { success: '알림을 모두 확인했습니다.' }); }
   });
-  openModal({ title: '알림', body });
+  wrap.insertBefore(body, wrap.querySelector('.notes-past'));
+  // 확인한 알림은 지난 알림으로 옮겨 가므로 다음에 열 때 다시 읽는다
+  function emptyNew() {
+    const t = wrap.querySelector('[data-nt="new"]'); if (t) t.textContent = `새 알림${notes.length ? ` ${notes.length}` : ''}`;
+    delete past.dataset.loaded;
+    if (!notes.length && !body.querySelector('.note-item')) body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>';
+  }
+  const past = wrap.querySelector('.notes-past');
+  wrap.querySelector('.seg-mini').addEventListener('click', e => {
+    const t = e.target.closest('[data-nt]'); if (!t) return;
+    wrap.querySelectorAll('[data-nt]').forEach(x => x.classList.toggle('on', x === t));
+    const isPast = t.dataset.nt === 'past'; body.hidden = isPast; past.hidden = !isPast;
+    if (isPast && !past.dataset.loaded) { past.dataset.loaded = '1'; drawPastNotes(past); }
+  });
+  openModal({ title: '알림', body: wrap });
 }
 export { loadCharacter };

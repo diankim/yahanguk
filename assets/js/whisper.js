@@ -112,7 +112,7 @@ function drawThread(loading) {
       <b>${cur.id ? cardName(cur.id, cur.name) : esc(cur.name)}</b>${cur.id && isGM(cur.id) ? '<span class="gm-badge">GM</span>' : ''}<small class="muted">둘만 보는 대화</small></header>
     <ol class="chat-list wh-list" id="wh-list">${loading ? '<li class="chat-empty">불러오는 중…</li>' : ''}</ol>
     <form class="chat-form" id="wh-form"><div class="chat-row"><textarea name="text" rows="1" maxlength="500" placeholder="${esc(cur.name)}님에게 귓속말" aria-label="귓속말"></textarea>
-      <button class="btn primary" type="submit" aria-label="보내기">${icon('chevron', 18)}</button></div></form>`;
+      <button class="chat-send" type="submit" aria-label="보내기">${icon('chevron', 16)}</button></div></form>`;
   if (!loading) drawMsgs();
   const form = $('#wh-form', main);
   form.text.value = draft;
