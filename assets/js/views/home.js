@@ -79,7 +79,9 @@ function scene(s, traveling, downed) {
     </div>
     ${downed ? `<div class="notice danger">${icon('heart', 18)}<div><b>전투불능</b><span>구조를 기다리거나 회생 부적·본부 구조대를 쓰세요. <em data-death></em></span></div><a class="btn small" href="#/char/status">대처하기</a></div>` : ''}
     ${traveling ? `<div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(c.travel_destination))}(으)로 이동 중</b><span>도착하면 그 지역에서 행동할 수 있습니다.</span></div></div>` : ''}
-    ${store.expedition ? `<div class="notice">${icon('flame', 18)}<div><b>원정 중</b><span>원정이 끝날 때까지 현장 행동을 할 수 없습니다.</span></div><button class="btn small" id="exp-open">원정 보기</button></div>` : ''}`;
+    ${store.expedition ? (new Date(store.expedition.ends_at) <= new Date()
+      ? `<div class="notice ok">${icon('check', 18)}<div><b>원정 완료 · ${esc(store.expedition.place_name || '원정지')}</b><span>원정대가 돌아왔습니다. 결과를 받으면 다시 현장에서 행동할 수 있습니다.</span></div><button class="btn small primary" id="exp-open">결과 받기</button></div>`
+      : `<div class="notice">${icon('flame', 18)}<div><b>원정 중</b><span>원정이 끝날 때까지 현장 행동을 할 수 없습니다.</span></div><button class="btn small" id="exp-open">원정 보기</button></div>`) : ''}`;
 }
 
 /* ── 안전지대 ───────────────────────────────────────────── */

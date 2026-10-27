@@ -169,6 +169,16 @@ function onTick() {
   }
   const ready = idleReadyAt(state.idle);
   if (ready && ready <= now && !root.dataset.idleReady) { root.dataset.idleReady = '1'; render(); }
+  // 원정 귀환 시각이 되면 화면 위에 알리고(원정마다 한 번), 현장에 완료를 표시한다.
+  const expEnd = state.exp?.ends_at ? new Date(state.exp.ends_at).getTime() : 0;
+  if (expEnd && expEnd <= now && root.dataset.expDone !== String(expEnd)) {
+    root.dataset.expDone = String(expEnd);
+    render(); emit('expedition', state.exp);
+    const seen = `yh-exp-done-${c?.owner_id}-${expEnd}`;
+    let shown = false; try { shown = !!localStorage.getItem(seen); localStorage.setItem(seen, '1'); } catch {}
+    if (!shown) window.dispatchEvent(new CustomEvent('yh-local-note', { detail: { id: `exp-${expEnd}`, kind: 'expedition_done', title: '원정 귀환',
+      content: `${state.exp.place_name || '원정지'}에서 돌아왔습니다. 결과를 받아 보세요.` } }));
+  }
   if (!ready) delete root.dataset.idleReady;
 }
 

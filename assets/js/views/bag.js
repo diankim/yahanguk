@@ -2,18 +2,18 @@
 import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText } from '../core.js';
 import { load, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRows, bindRepair } from './character.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, USABLE, GEAR } from './item.js';
 
 const SUBS = [['items', '소지품'], ['equip', '장비'], ['craft', '제작']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
-const GEAR = new Set(['tool', 'weapon', 'armor', 'accessory', 'equipment']);
 const SLOT = { tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구' };
-const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
-  ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기' };
 const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
 const atPlace = (loc, here) => !!loc && (loc === here || (LOC_ALIAS[loc] || []).includes(here));
 let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '';
+let matFocus = null, recipeFocus = null; // 물품 정보에서 넘어온 제작 거르기
+window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material || null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) craftFilter = 'all'; });
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -36,15 +36,15 @@ async function draw(soft) {
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
-// 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업
-const gearBlock = (o, c) => (o.minimum_level > c.level) ? `Lv.${o.minimum_level} 필요` : (o.required_job && o.required_job !== c.job_key) ? `${nameOf(o.required_job)} 전용` : '';
 function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i])); }
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
-function items(body, inv) {
+const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
+async function items(body, inv) {
+  await loadLocks();
   const cmap = catalogMap(inv), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
-    .map(([id, n]) => ({ id, n, it: cmap.get(id) }))
+    .map(([id, n]) => ({ id, n: Number(n), it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
     .filter(r => !q.trim() || [nameOf(r.id), r.it?.description, nameOf(r.it?.category)].join(' ').toLowerCase().includes(q.trim().toLowerCase()))
     .sort((a, b) => (a.it?.tier || 0) - (b.it?.tier || 0) || nameOf(a.id).localeCompare(nameOf(b.id), 'ko'));
@@ -53,17 +53,19 @@ function items(body, inv) {
       <small>가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
-    ${rows.length ? `<ul class="item-list">${rows.map(({ id, n, it }) => `<li class="r-${esc(it?.rarity || 'common')}">
-      <div class="item-main"><b>${esc(nameOf(id))}</b><span class="qty">×${fmt.num(n)}</span>
-        <div class="chips">${chip(nameOf(it?.rarity || 'common'), 'rar')}${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${equipped.has(id) ? chip('장착 중', 'accent') : ''}</div>
-        ${it?.description ? `<small>${esc(it.description)}</small>` : ''}</div>
-      <div class="item-act">${USABLE[id] ? `<button class="btn small" data-use="${esc(id)}" title="${esc(USABLE[id])}">사용</button>` : ''}
-        ${it && GEAR.has(it.category) && !equipped.has(id) ? (gearBlock(it, c) ? `<small class="bad">${esc(gearBlock(it, c))}</small>` : `<button class="btn small" data-equip="${esc(id)}">장착</button>`) : ''}</div></li>`).join('')}</ul>`
+    ${rows.length ? `<ul class="inv-list">${rows.map(({ id, n, it }) => {
+      const tags = [it?.tier ? `${it.tier}단계` : '', equipped.has(id) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
+      return `<li><button class="inv-row r-${esc(it?.rarity || 'common')}" data-info="${esc(id)}">
+        <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
+        <span class="inv-name"><b>${esc(nameOf(id))}</b>${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-qty">${fmt.num(n)}</span></button>
+        ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
-    <p class="muted small">판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
+    <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
   const qi = $('#bag-q', body);
-  qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv); const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); };
+  qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv).then(() => { const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); }); };
+  $$('[data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
   bindActions(body);
 }
 
@@ -95,7 +97,7 @@ function traits(it) {
 function craft(body, inv) {
   const have = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   const c = store.character;
-  const rows = (inv.recipes || []).map(r => {
+  const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || Number(have[r.tool] || 0) > 0 || eq.has(r.tool);
     const jobOk = !r.required_job || r.required_job === c.job_key;
@@ -107,17 +109,20 @@ function craft(body, inv) {
   body.innerHTML = `
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession))} · ${fmt.num(inv.crafting_rank)}단계</span></div></div>
     ${segmented('craft-filter', [['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
+    ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `「${esc(nameOf(matFocus))}」이(가) 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, jobOk, lvOk, can, atLoc }) => `
       <article class="recipe ${can ? 'can' : ''}">
         <header><b>${esc(r.name)}</b>${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         <p class="muted small">${esc(r.description || '')}</p>
         <p class="out">${icon('chevron', 14)} ${esc(r.output_name || nameOf(r.output))} ×${r.qty || 1}</p>
-        <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0); return `<li class="${h >= n ? 'ok' : 'bad'}"><span>${esc(nameOf(k))}</span><b>${fmt.num(h)}/${n}</b></li>`; }).join('')}</ul>
+        <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0); return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b></li>`; }).join('')}</ul>
         <p class="muted small">${r.tool ? `도구: ${esc(r.tool_name || nameOf(r.tool))}${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}${!jobOk ? ` · ${esc(nameOf(r.required_job))} 전용` : ''}${!lvOk ? ` · Lv.${r.minimum_level} 필요` : ''}</p>
         <button class="btn small ${can ? 'primary' : ''}" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? '제작' : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
       </article>`).join('')}</div>`
       : empty(craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`;
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv); });
+  $('#craft-unfocus', body)?.addEventListener('click', () => { matFocus = recipeFocus = null; craft(body, inv); });
+  $$('.recipe .ingr [data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
   $$('[data-craft]', body).forEach(b => b.onclick = () => guard(b, () => act('world_craft_item', { p_recipe_id: b.dataset.craft })));
 }
 

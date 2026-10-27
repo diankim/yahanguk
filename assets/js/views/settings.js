@@ -5,7 +5,7 @@ import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js'
 import { load, panel } from './common.js';
 
 const SUBS = [['profile', '프로필'], ['theme', '테마'], ['sound', '소리'], ['account', '계정']];
-let el, dirty = false, draft = null;
+let el, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
 export async function render(root, sub) {
   if (!store.character) return;
@@ -14,6 +14,9 @@ export async function render(root, sub) {
   const custom = readCustom() || { bg: '#101014', accent: '#c8432d', gold: '#d1a65a', r: 10, font: 'sans' };
   draft = { emblem: cur.emblem, color: cur.color, bio: cur.bio, avatar: undefined, theme: savedThemeId(), custom: { ...custom }, title: c.profile?.title || '' };
   dirty = false;
+  const resumed = kept && kept.owner === c.owner_id;
+  if (resumed) { Object.assign(draft, kept.draft); dirty = true; if (draft.theme !== savedThemeId()) applyTheme(draft.theme, false, draft.theme === 'custom' ? draft.custom : undefined); }
+  kept = null;
   const titles = await load('world_title_snapshot').catch(() => null);
   const earned = (titles?.titles || []).filter(t => t.earned);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('gear', 14)} 이 기기와 캐릭터의 설정</p><h1>게임 설정</h1></div>
@@ -35,7 +38,7 @@ export async function render(root, sub) {
         </div>
         <h3 class="sub-h">문장</h3><div class="emblem-grid">${Object.entries(EMBLEMS).map(([k, [n]]) => `<button class="em-pick" data-em="${k}" aria-label="${n}">${emblem('x', { emblem: k, color: draft.color }, 40)}<small>${n}</small></button>`).join('')}</div>
         <h3 class="sub-h">색</h3><div class="color-grid">${Object.entries(EMBLEM_COLORS).map(([k, [n, col]]) => `<button class="col-pick" data-col="${k}" style="--c:${col}" aria-label="${n}"><i></i><small>${n}</small></button>`).join('')}</div>
-        <label class="field"><span>한 줄 소개 (60자)</span><input id="pf-bio" maxlength="60" value="${esc(cur.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
+        <label class="field"><span>한 줄 소개 (60자)</span><input id="pf-bio" maxlength="60" value="${esc(draft.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
         <label class="field"><span>대표 칭호 (채팅과 프로필에 보입니다)</span><select id="pf-title"><option value="">걸지 않음</option>${earned.map(t => `<option value="${esc(t.key)}" ${t.key === draft.title ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
       </div>`, { ico: 'idcard' })}
     </section>
@@ -70,6 +73,7 @@ export async function render(root, sub) {
 
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
+  if (resumed) { save.disabled = false; toast('저장하지 않은 설정을 이어서 고칩니다.', 'info'); }
   const showSub = k => { $$('.set-sec', el).forEach(s => s.classList.toggle('on', s.id === `sec-${k}`)); };
   bindSegmented(el, 'set-sub', k => { history.replaceState(null, '', `#/settings/${k}`); window.dispatchEvent(new Event('yh-subpage')); showSub(k); });
   showSub(SUBS.some(x => x[0] === sub) ? sub : 'profile');
@@ -118,5 +122,12 @@ export async function render(root, sub) {
     return { content: '설정을 저장했습니다.' };
   });
 }
-// 저장하지 않고 나가면 테마 미리보기를 되돌린다.
-export function destroy() { if (dirty) { applyTheme(savedThemeId(), false); toast('저장하지 않은 설정은 반영되지 않았습니다.', 'info'); } dirty = false; }
+// 저장하지 않고 나가면 테마 미리보기는 되돌리되, 고치던 내용은 기억해 두었다가 다시 들어오면 이어서 고친다.
+export function destroy() {
+  if (dirty && draft) {
+    kept = { owner: store.character?.owner_id, draft: { emblem: draft.emblem, color: draft.color, bio: draft.bio, title: draft.title, theme: draft.theme, custom: { ...draft.custom } } };
+    applyTheme(savedThemeId(), false);
+    toast('아직 저장하지 않았습니다. 설정으로 돌아오면 이어서 고칠 수 있습니다.', 'info');
+  }
+  dirty = false;
+}

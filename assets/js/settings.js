@@ -59,7 +59,7 @@ export function bindCrop(root, onReady) {
 /* ── 알림 ────────────────────────────────────────────────── */
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell;
-const POP_KINDS = new Set(['party_invite', 'expedition_done']);
+const POP_KINDS = new Set(['party_invite', 'expedition_done', 'trade_offer']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -72,6 +72,8 @@ export function mountNotifications(btn) {
     }).subscribe();
   } catch {}
   setInterval(() => { if (!document.hidden) loadNotes(); }, 120000);
+  // 서버 알림이 아닌 화면 안 알림(원정 귀환 등)
+  window.addEventListener('yh-local-note', e => { if (e.detail) notePop(e.detail); });
 }
 async function loadNotes(first) {
   try {
@@ -92,14 +94,21 @@ async function markRead(n) {
 function noteActs(n) {
   if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-rescue="${esc(n.id)}">구조</button>`;
   if (n.kind === 'party_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-invite="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-invite="${esc(n.id)}" data-acc="0">거절</button>`;
+  if (n.kind === 'trade_offer' && n.payload?.trade_id) return `<button class="btn primary small" data-trade="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-trade="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
   return '';
 }
 async function runAct(btn) {
-  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.goExp); if (!n) return false;
+  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.goExp);
+  if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.invite) {
     await guard(btn, async () => { try { return await act('world_party_respond', { p_invite_id: n.payload.invite_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } });
+    return true;
+  }
+  if (btn.dataset.trade) {
+    if (btn.dataset.acc === '1' && !confirm('이 거래를 받아들일까요? 바로 맞바꿉니다.')) return false;
+    await guard(btn, async () => { try { return await act('world_trade_direct_respond', { p_trade_id: n.payload.trade_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } });
     return true;
   }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
@@ -111,11 +120,11 @@ function notePop(n) {
   let stack = document.querySelector('.note-pops');
   if (!stack) { stack = document.createElement('div'); stack.className = 'note-pops'; stack.setAttribute('aria-live', 'polite'); document.body.append(stack); }
   const card = h(`<div class="note-pop" data-id="${esc(n.id)}" role="alertdialog" aria-label="${esc(n.title || '알림')}">
-    ${icon(n.kind === 'party_invite' ? 'users' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
+    ${icon(n.kind === 'party_invite' ? 'users' : n.kind === 'trade_offer' ? 'coin' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
     <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-pop-close aria-label="나중에">나중에</button></div></div>`);
   card.addEventListener('click', async e => {
-    const b = e.target.closest('[data-invite],[data-rescue],[data-go-exp]');
-    if (b) { await runAct(b); card.remove(); return; }
+    const b = e.target.closest('[data-invite],[data-trade],[data-rescue],[data-go-exp]');
+    if (b) { if (await runAct(b)) card.remove(); return; }
     if (e.target.closest('[data-pop-close]')) card.remove();
   });
   stack.append(card);
@@ -127,8 +136,8 @@ function openNotifications() {
       <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-read="${esc(n.id)}">확인</button></div></article>`).join('') : '<p class="muted">새 알림이 없습니다.</p>'}
       ${notes.length > 1 ? '<button class="btn block" data-read-all>모두 확인</button>' : ''}</div>`);
   body.addEventListener('click', async e => {
-    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-rescue],[data-go-exp]'), all = e.target.closest('[data-read-all]');
-    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && a.dataset.invite) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
+    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-trade],[data-rescue],[data-go-exp]'), all = e.target.closest('[data-read-all]');
+    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.invite || a.dataset.trade)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
     if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); if (!notes.length) closeModal(); }
     if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); closeModal(); }, { success: '알림을 모두 확인했습니다.' }); }
   });

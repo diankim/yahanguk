@@ -32,6 +32,10 @@ export function mountChat(colEl, fabEl) {
   const form = $('#chat-form', panel);
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
+  // 쓰던 메시지는 새로고침하거나 시트를 닫았다 열어도 남는다(이 탭에만 저장).
+  try { form.text.value = sessionStorage.getItem('yh-chat-draft') || ''; form.to.value = sessionStorage.getItem('yh-chat-to') || ''; } catch {}
+  form.text.addEventListener('input', () => { try { sessionStorage.setItem('yh-chat-draft', form.text.value); } catch {} });
+  form.to.addEventListener('input', () => { try { sessionStorage.setItem('yh-chat-to', form.to.value); } catch {} });
   switchTab(tab);
   subscribe();
   on('changed', ({ name }) => { if (/travel|join_major_faction/.test(name)) load(); });
@@ -45,7 +49,8 @@ function placePanel() {
 }
 function toggleSheet(open) {
   document.body.classList.toggle('chat-open', open);
-  if (open) { unread = 0; badge(); setTimeout(() => $('#chat-form textarea', panel)?.focus(), 50); scrollEnd(); }
+  // 모바일에서는 시트를 열 때 키패드를 띄우지 않는다(입력칸을 눌렀을 때만). 마우스를 쓰는 화면에서만 바로 입력칸으로 간다.
+  if (open) { unread = 0; badge(); if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#chat-form textarea', panel)?.focus({ preventScroll: true }), 50); scrollEnd(); }
 }
 function badge() { fab.dataset.count = unread ? String(Math.min(unread, 99)) : ''; }
 
@@ -105,7 +110,7 @@ async function send(e) {
       await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: tab === 'whisper' ? to : null });
       await load();
     }
-    form.text.value = '';
+    form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {}
   } catch (err) { toast(friendlyError(err), 'error'); }
   finally { btn.disabled = false; }
 }

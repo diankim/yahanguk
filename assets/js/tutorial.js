@@ -1,6 +1,6 @@
 // 처음 입국한 조사원을 위한 길잡이: 화면 요소를 하나씩 짚어 주는 단계별 안내와, 현장에 붙는 "첫 걸음" 체크리스트.
 // 진행 기록은 이 기기에 캐릭터별로 저장한다(서버 데이터가 아니므로 다른 기기에서는 다시 볼 수 있다).
-import { store, on, esc, icon, $, h } from './core.js';
+import { store, on, esc, icon, $, h, toast } from './core.js';
 
 const key = k => `yh-tut-${k}-${store.character?.owner_id || 'x'}`;
 const get = (k, d = null) => { try { const v = localStorage.getItem(key(k)); return v == null ? d : JSON.parse(v); } catch { return d; } };
@@ -33,6 +33,7 @@ export function startTutorial(from = 0) {
     <div class="tut-card"><p class="tut-step"></p><h3></h3><p class="tut-body"></p>
       <div class="tut-act"><button class="btn small ghost" data-tut="skip">건너뛰기</button><span></span><button class="btn small" data-tut="prev">이전</button><button class="btn small primary" data-tut="next">다음</button></div></div></div>`);
   document.body.append(layer);
+  lockScroll(true);
   layer.addEventListener('click', e => {
     const b = e.target.closest('[data-tut]'); if (!b) return;
     if (b.dataset.tut === 'skip') return closeTutorial(true);
@@ -44,9 +45,21 @@ export function startTutorial(from = 0) {
   window.addEventListener('resize', place);
   show(idx);
 }
+// 안내 중에는 화면이 손가락·휠로 움직이지 않게 한다(짚는 위치가 어긋나지 않도록). 안내가 짚을 곳으로 옮기는 것만 허용한다.
+const stopScroll = e => { if (!e.target.closest?.('.tut-card')) e.preventDefault(); };
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
+const stopKeys = e => { if (SCROLL_KEYS.has(e.key) && !e.target.closest?.('input,textarea,select')) e.preventDefault(); };
+function lockScroll(on) {
+  document.documentElement.classList.toggle('tut-lock', on);
+  const m = on ? 'addEventListener' : 'removeEventListener';
+  document[m]('wheel', stopScroll, { passive: false });
+  document[m]('touchmove', stopScroll, { passive: false });
+  document[m]('keydown', stopKeys);
+}
 function onKey(e) { if (e.key === 'Escape') closeTutorial(true); if (e.key === 'ArrowRight' && !STEPS[idx].last) show(idx + 1); if (e.key === 'ArrowLeft') show(Math.max(0, idx - 1)); }
 export function closeTutorial(done) {
   if (layer) { layer.remove(); layer = null; }
+  lockScroll(false);
   document.removeEventListener('keydown', onKey); window.removeEventListener('resize', place);
   if (done) { set('done', true); try { localStorage.removeItem('yh-tut-pending'); } catch {} drawChecklist(); }
 }
@@ -91,32 +104,44 @@ function progress() { return get('prog', {}); }
 function mark(k, n = 1) {
   const p = progress(); const before = done(p, k);
   p[k] = (p[k] || 0) + n; set('prog', p);
-  if (!before && done(p, k)) drawChecklist(true);
+  if (!before && done(p, k)) {
+    const t = TASKS.find(x => x[0] === k);
+    const left = TASKS.filter(([x]) => !done(p, x)).length;
+    if (t) toast(`첫 걸음 완료: ${t[1]}${left ? ` · 남은 일 ${left}개` : ' · 모두 마쳤습니다!'}`, 'ok');
+    set('closed', false); // 완료한 걸 확인할 수 있게 닫아 둔 목록도 다시 보인다(접힌 상태는 그대로)
+    drawChecklist(true);
+  }
 }
 const need = { search: 3 };
 const done = (p, k) => (p[k] || 0) >= (need[k] || 1);
 
+// 상태: 접기(fold) — 한 줄로 줄어들 뿐 사라지지 않는다. 닫기(closed) — 모두 마친 뒤에만 닫을 수 있고, 도움말에서 다시 연다.
 export function checklistHtml() {
-  const c = store.character; if (!c || get('hide') || (c.level || 1) >= 6) return '';
+  const c = store.character; if (!c || get('closed')) return '';
   const p = progress(); if (store.hud?.supply?.claimed_today) p.supply = Math.max(1, p.supply || 0);
-  const n = TASKS.filter(([k]) => done(p, k)).length;
-  if (n === TASKS.length) return '';
-  return `<section class="panel firststeps" id="firststeps"><header class="panel-head"><h2>${icon('spark', 16)}첫 걸음 <small>${n}/${TASKS.length}</small></h2>
-      <button class="btn small ghost" data-fs="hide">접기</button></header>
-    <div class="panel-body"><ol class="fs-list">${TASKS.map(([k, t, d, v]) => `<li class="${done(p, k) ? 'done' : ''}">
-      <span class="fs-box">${done(p, k) ? icon('check', 14) : ''}</span><a href="#/${v}"><b>${esc(t)}</b><small>${esc(d)}${k === 'search' && !done(p, k) ? ` · ${p.search || 0}/3` : ''}</small></a></li>`).join('')}</ol>
-      <p class="muted small">처음 할 일입니다. 다 하면 이 목록은 사라집니다. <button class="linkish" data-fs="tour">안내 다시 보기</button></p></div></section>`;
+  const n = TASKS.filter(([k]) => done(p, k)).length, all = n === TASKS.length;
+  if (!all && (c.level || 1) >= 6 && !get('reopened')) return '';
+  const fold = !!get('fold');
+  return `<section class="panel firststeps ${fold ? 'folded' : ''} ${all ? 'complete' : ''}" id="firststeps"><header class="panel-head"><h2>${icon(all ? 'check' : 'spark', 16)}첫 걸음 <small>${n}/${TASKS.length}${all ? ' · 모두 마침' : ''}</small></h2>
+      <div class="btn-row">${all ? '<button class="btn small" data-fs="close">닫기</button>' : ''}<button class="btn small ghost" data-fs="fold" aria-expanded="${!fold}">${fold ? '펼치기' : '접기'}</button></div></header>
+    ${fold ? '' : `<div class="panel-body"><ol class="fs-list">${TASKS.map(([k, t, d, v]) => `<li class="${done(p, k) ? 'done' : ''}">
+      <span class="fs-box">${done(p, k) ? icon('check', 14) : ''}</span><a href="#/${v}"><b>${esc(t)}</b><small>${done(p, k) ? '마침' : esc(d)}${k === 'search' && !done(p, k) ? ` · ${p.search || 0}/3` : ''}</small></a></li>`).join('')}</ol>
+      <p class="muted small">${all ? '기본을 모두 익혔습니다. 닫아도 도움말에서 다시 볼 수 있습니다.' : '처음 할 일입니다. 접어 두어도 진행은 계속 기록됩니다.'} <button class="linkish" data-fs="tour">안내 다시 보기</button></p></div>`}</section>`;
 }
 function drawChecklist(celebrate) {
-  const box = document.getElementById('firststeps'); if (!box) return;
+  const box = document.getElementById('firststeps');
   const html = checklistHtml();
+  if (!box) { if (html) { const slot = document.querySelector('#view[data-view="home"] .scene'); if (slot) slot.insertAdjacentHTML('afterend', html); } return; }
   if (!html) { box.remove(); return; }
   box.outerHTML = html;
   if (celebrate) window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' }));
 }
+// 도움말의 "첫 걸음 다시 보기"
+export function reopenChecklist() { set('closed', false); set('fold', false); set('reopened', true); }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-fs]'); if (!b) return;
-  if (b.dataset.fs === 'hide') { set('hide', true); document.getElementById('firststeps')?.remove(); }
+  if (b.dataset.fs === 'fold') { set('fold', !get('fold')); drawChecklist(); }
+  if (b.dataset.fs === 'close') { set('closed', true); drawChecklist(); toast('첫 걸음 목록을 닫았습니다. 도움말에서 다시 볼 수 있습니다.', 'info'); }
   if (b.dataset.fs === 'tour') startTutorial(0);
 });
 

@@ -1,5 +1,5 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
-// 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 2초 간격이 있다.
+// 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
 import { store, act, rpc, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal } from '../core.js';
 import { chip } from './common.js';
 
@@ -116,7 +116,8 @@ function draw(fresh = []) {
   clearInterval(cdTimer); cdTimer = setInterval(tickCooldown, 100); tickCooldown();
 }
 
-// 행동 간격(2초)을 버튼 위에 숫자로 보여 준다.
+// 행동 간격(1초, 서버 world_battle_action과 같은 값)을 버튼 위에 옅게 보여 준다.
+const GAP = 1000;
 function tickCooldown() {
   if (!host?.isConnected) return clearInterval(cdTimer);
   const left = nextAt - Date.now();
@@ -124,7 +125,8 @@ function tickCooldown() {
     const cd = $('.cd', btn), wait = Number(btn.dataset.wait || 0);
     const blocked = left > 0 || busy || wait > 0;
     btn.disabled = blocked;
-    if (cd) { cd.textContent = left > 0 ? (left / 1000).toFixed(1) : ''; cd.style.setProperty('--p', left > 0 ? Math.min(1, left / 2000) : 0); }
+    btn.classList.toggle('cooling', left > 0 && !busy && !(wait > 0));
+    if (cd) { cd.textContent = left > 0 ? (left / 1000).toFixed(1) : ''; cd.style.setProperty('--p', left > 0 ? Math.min(1, left / GAP) : 0); }
   });
 }
 
@@ -134,7 +136,7 @@ async function send(action, item) {
   busy = true; tickCooldown();
   try {
     const r = await act('world_battle_action', item ? { p_action: action, p_item: item } : { p_action: action });
-    nextAt = new Date(r.next_action_at || Date.now() + 2000).getTime();
+    nextAt = new Date(r.next_action_at || Date.now() + GAP).getTime();
     const c = store.character;
     if (c) c.health = r.health ?? c.health;
     sfx(r);
