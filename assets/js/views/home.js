@@ -37,7 +37,7 @@ export async function render(root) {
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); stopBattle(); }
 
-let again = false, fishSpot = null, restSt = null;
+let again = false, fishSpot = null, restSt = null, idleSt = null;
 const restAt = k => { const t = restSt?.[k + '_ready_at']; return t ? new Date(t).getTime() : 0; };
 // 다음 휴식까지 남은 시간(잠깐·푹). 둘 다 가능하면 빈 문자열
 function restLine(now = Date.now(), short = false) {
@@ -50,9 +50,9 @@ async function draw() {
   if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
   busy = true; again = false;
   try {
-    const [s, roster, fish, rest] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => []),
-      load('world_fish_spot').catch(() => null), load('world_rest_status').catch(() => null)]);
-    snap = s; fishSpot = fish; restSt = rest;
+    const [s, roster, fish, rest, idle] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => []),
+      load('world_fish_spot').catch(() => null), load('world_rest_status').catch(() => null), load('world_idle_activity_snapshot').catch(() => null)]);
+    snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
@@ -60,7 +60,7 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     noteRegion(s.region);
-    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition)}`;
+    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt)}`;
     bind(s);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
@@ -98,7 +98,8 @@ function scene(s, traveling, downed) {
     ${traveling ? `<div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(c.travel_destination) + '(으)로')} 이동 중</b><span>도착하면 그 지역에서 행동할 수 있습니다.</span></div></div>` : ''}
     ${store.expedition ? (new Date(store.expedition.ends_at) <= new Date()
       ? `<div class="notice ok">${icon('check', 18)}<div><b>원정 완료 · ${esc(store.expedition.place_name || '원정지')}</b><span>원정대가 돌아왔습니다. 결과를 받으면 다시 현장에서 행동할 수 있습니다.</span></div><button class="btn small primary" id="exp-open">결과 받기</button></div>`
-      : `<div class="notice">${icon('flame', 18)}<div><b>원정 중</b><span>원정이 끝날 때까지 현장 행동을 할 수 없습니다.</span></div><button class="btn small" id="exp-open">원정 보기</button></div>`) : ''}`;
+      : `<div class="notice">${icon('flame', 18)}<div><b>원정 중</b><span>원정이 끝날 때까지 현장 행동을 할 수 없습니다.</span></div><button class="btn small" id="exp-open">원정 보기</button></div>`) : ''}
+    ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래를 할 수 없습니다. 물품 사용과 장비 바꾸기는 됩니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
 /* ── 안전지대 ───────────────────────────────────────────── */
@@ -116,7 +117,7 @@ function town(s, roster) {
   return `
     <p class="desc scene-desc">${esc(r.description || '요괴가 들어오지 못하는 곳입니다. 물자를 정리하고 다음 길을 준비하세요.')}</p>
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
-    ${fishPanel(false)}
+    ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
 }
 
