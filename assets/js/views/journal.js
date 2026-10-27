@@ -13,7 +13,7 @@ export async function render(root, s) {
   el = root; sub = SUBS.some(x => x[0] === s) ? s : 'story';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('scroll', 14)} 조사원 일지</p><h1>일지</h1></div></div>
     ${segmented('log-sub', SUBS, sub)}<div id="log-body"></div>`;
-  bindSegmented(el, 'log-sub', k => { sub = k; history.replaceState(null, '', `#/log/${k}`); draw(); });
+  bindSegmented(el, 'log-sub', k => { sub = k; window.history.replaceState(null, '', `#/log/${k}`); draw(); });
   off.forEach(f => f()); off = [on('changed', () => draw(true))];
   await draw();
 }
@@ -22,7 +22,7 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#log-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
-  try { await ({ story, commission, survey, history })[sub](body); }
+  try { await ({ story, commission, survey, history: expHistory })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
@@ -106,7 +106,7 @@ async function survey(body) {
   (o.regions || []).forEach(r => (groups[r.territory_name || '기타'] ||= []).push(r));
   const done = (o.regions || []).filter(r => r.progress >= 100).length;
   body.innerHTML = `
-    <p class="desc">지역마다 숨은 장소와 채집터를 찾아낸 만큼 답사가 오릅니다. 탐색과 원정으로 찾을 수 있습니다. 한 지역을 100% 답사하면 가방이 넓어지고, 다섯 지역을 완전히 답사하면 특별한 동행이 나타난다고 합니다.</p>
+    <p class="desc">지역마다 숨은 장소와 채집터를 찾아낸 만큼 답사가 오릅니다. 탐색과 원정으로 찾을 수 있습니다. 한 지역을 100% 답사하면 가방이 1칸 넓어지고, 다섯 지역을 완전히 답사하면 특별한 동행이 나타난다고 합니다.</p>
     <div class="chips">${chip(`완전 답사 ${done}곳`, 'accent')}</div>
     ${Object.entries(groups).map(([t, list]) => panel(t, `<ul class="survey-list">${list.map(r => `<li class="${r.safe_zone ? 'safe' : ''}">
         <div><b>${esc(r.region_name)}</b><small>${r.safe_zone ? '안전지대' : `위험 ${r.danger} · Lv.${r.min_level}+ · 장소 ${r.nodes_found}/${r.nodes_total} · 채집터 ${r.spots_found}/${r.spots_total}`}</small></div>
@@ -117,7 +117,7 @@ async function survey(body) {
 
 /* ── 원정 기록 ─────────────────────────────────────────── */
 const ENDED = { complete: '무사 귀환', recalled: '조기 귀환', downed: '쓰러짐', exhausted: '탈진' };
-async function history(body) {
+async function expHistory(body) {
   const o = await load('world_expedition_overview');
   const list = o.recent || [];
   body.innerHTML = list.length ? `<ul class="spot-list">${list.map((h, i) => `<li><div><b>${esc(h.place_name || h.ground_name)}</b>

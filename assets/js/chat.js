@@ -62,7 +62,7 @@ function switchTab(t) {
 async function load() {
   try {
     const { data, error } = await db.from('world_chat_messages')
-      .select('id,channel_type,sender_id,sender_name,recipient_id,content,created_at')
+      .select('id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at')
       .order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
     msgs = (data || []).reverse();
@@ -82,9 +82,9 @@ function draw() {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
     rows = partyMsgs.map(m => ({ who: m.sender_name || m.character_name, text: m.content, at: m.created_at, mine: m.sender_id === me }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab).map(m => ({ who: m.sender_name, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab).map(m => ({ who: m.sender_name, title: m.sender_title, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
-  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.mine ? 'mine' : ''}"><div class="meta"><b>${esc(r.who || '조사원')}</b><time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`).join('')
+  list.innerHTML = rows.length ? rows.map(r => `<li class="${r.mine ? 'mine' : ''}"><div class="meta">${r.title ? `<em class="c-title">「${esc(r.title)}」</em>` : ''}<b>${esc(r.who || '조사원')}</b><time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
   scrollEnd();
 }

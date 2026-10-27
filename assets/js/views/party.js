@@ -24,10 +24,10 @@ async function draw() {
         <small>Lv.${m.level} · ${esc(nameOf(m.job_key))} · ${esc(m.location)} · 체력 ${m.health}${m.away ? ' · 원정 중' : ''}${m.in_combat ? ' · 전투 중' : ''}</small></div>
         ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
     body.innerHTML = `
-      ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.party_name)}</b><small>${esc(i.inviter_name || '')}의 초대</small></div>
+      ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.inviter_name || '조사원')}의 동료 초대</b><small>수락하면 함께 이동하고 전리품을 나눕니다</small></div>
         <div class="btn-row"><button class="btn small primary" data-inv="${esc(i.invite_id)}" data-acc="1">수락</button><button class="btn small" data-inv="${esc(i.invite_id)}" data-acc="0">거절</button></div></li>`).join('')}</ul>`, { ico: 'bell' }) : ''}
       ${pt ? `<div class="grid-2">
-        ${panel(pt.party_name, `<ul class="people">${(p.members || []).map(member).join('')}</ul>
+        ${panel(`우리 동료 · ${(p.members || []).length}명`, `<ul class="people">${(p.members || []).map(member).join('')}</ul>
           ${isLeader && (p.candidates || []).length ? `<form class="form-grid" id="invite-form"><label class="field"><span>초대할 조사원</span><select name="who">${p.candidates.map(x => `<option value="${esc(x.owner_id)}">${esc(x.character_name)} (Lv.${x.level} · ${esc(x.location)})</option>`).join('')}</select></label><button class="btn" type="submit">초대</button></form>` : ''}
           ${outgoing.length ? `<p class="muted small">응답을 기다리는 초대: ${outgoing.map(i => esc(i.invitee_name)).join(', ')}</p>` : ''}
           <p class="muted small">파티장이 지도에서 목적지를 고르면 같은 지역의 파티원에게 동승을 요청할 수 있습니다. 운임은 파티장만 냅니다.</p>`, { ico: 'users' })}
@@ -38,13 +38,15 @@ async function draw() {
             ${isLeader && l.status === 'available' ? `<button class="btn small" data-dist="${esc(l.loot_id)}">분배</button>` : ''}</li>`).join('')}</ul>` : empty('공동 전리품이 없습니다.', 'bag')}
           ${loot?.claimable_count ? `<button class="btn primary" id="loot-claim">${icon('check', 16)}<span>내 몫 받기</span></button>` : ''}
           <p class="muted small">지정순은 파티원 목록 순서(파티장 먼저)대로 우선권을 줍니다.</p>`, { ico: 'bag' })}
-      </div>` : panel('파티 만들기', `<p class="desc">파티를 맺으면 함께 이동(동승)하고, 파티 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
-        <form class="form-grid" id="party-form"><label class="field"><span>파티 이름</span><input name="name" maxlength="20" placeholder="예: 야간 순찰조" required></label><button class="btn primary" type="submit">${icon('plus', 16)}<span>만들기</span></button></form>`, { ico: 'users' })}
+      </div>` : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
+        <button class="btn primary" id="party-make">${icon('plus', 16)}<span>동료 모임 만들기</span></button>
+        <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
       ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${esc(m.character_name)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
           ${m.downed && !m.is_dead ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
-    const f = $('#party-form', body);
-    if (f) f.onsubmit = e => { e.preventDefault(); const n = f.name.value.trim(); if (n) guard(f.querySelector('button'), () => act('world_party_create', { p_party_name: n })); };
+    // 이름은 쓰지 않는다. 서버가 요구하는 이름 자리에는 만든 사람 이름을 넣는다.
+    const mk = $('#party-make', body);
+    if (mk) mk.onclick = () => guard(mk, () => act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) }));
     $('#invite-form', body)?.addEventListener('submit', e => { e.preventDefault(); guard(e.target.querySelector('button'), () => act('world_party_invite', { p_invitee_id: e.target.who.value })); });
     $$('[data-inv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_respond', { p_invite_id: b.dataset.inv, p_accept: b.dataset.acc === '1' })));
     $$('[data-method]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_set_loot_distribution', { p_method: b.dataset.method, p_priority: b.dataset.method === 'designated' ? (p.members || []).map(m => m.owner_id) : [] })));

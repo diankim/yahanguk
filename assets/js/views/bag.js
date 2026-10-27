@@ -1,6 +1,7 @@
 // 가방: 소지품 · 장비 · 제작. 제작은 어디서나 가능하고, 레시피의 지정 장소에서 하면 품질 보너스를 받는다.
-import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed } from '../core.js';
-import { load, panel, chip, loading, errorBox } from './common.js';
+import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText } from '../core.js';
+import { load, panel, chip, loading, errorBox, safeZones } from './common.js';
+import { equipRows, bindRepair } from './character.js';
 
 const SUBS = [['items', '소지품'], ['equip', '장비'], ['craft', '제작']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -12,14 +13,14 @@ const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
 const atPlace = (loc, here) => !!loc && (loc === here || (LOC_ALIAS[loc] || []).includes(here));
-let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [];
+let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '';
 
 export async function render(root, s) {
   if (!store.character) return;
   el = root; sub = SUBS.some(x => x[0] === s) ? s : 'items';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('bag', 14)} 소지금 ${fmt.jeon(store.character.gil)}</p><h1>가방</h1></div></div>
     ${segmented('bag-sub', SUBS, sub)}<div id="bag-body"></div>`;
-  bindSegmented(el, 'bag-sub', k => { sub = k; history.replaceState(null, '', `#/bag/${k}`); draw(); });
+  bindSegmented(el, 'bag-sub', k => { sub = k; window.history.replaceState(null, '', `#/bag/${k}`); draw(); });
   off.forEach(f => f()); off = [on('changed', () => draw(true))];
   await draw();
 }
@@ -31,7 +32,7 @@ async function draw(soft) {
   try {
     const inv = await load('world_inventory_snapshot');
     const head = $('.view-head .eyebrow', el); if (head) head.innerHTML = `${icon('bag', 14)} 소지금 ${fmt.jeon(store.character.gil)}`;
-    ({ items, equip, craft })[sub](body, inv);
+    await ({ items, equip, craft })[sub](body, inv);
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
@@ -43,10 +44,12 @@ function items(body, inv) {
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
     .map(([id, n]) => ({ id, n, it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
+    .filter(r => !q.trim() || [nameOf(r.id), r.it?.description, nameOf(r.it?.category)].join(' ').toLowerCase().includes(q.trim().toLowerCase()))
     .sort((a, b) => (a.it?.tier || 0) - (b.it?.tier || 0) || nameOf(a.id).localeCompare(nameOf(b.id), 'ko'));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
   body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
       <small>가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
+    <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
     ${rows.length ? `<ul class="item-list">${rows.map(({ id, n, it }) => `<li class="r-${esc(it?.rarity || 'common')}">
       <div class="item-main"><b>${esc(nameOf(id))}</b><span class="qty">×${fmt.num(n)}</span>
@@ -54,15 +57,19 @@ function items(body, inv) {
         ${it?.description ? `<small>${esc(it.description)}</small>` : ''}</div>
       <div class="item-act">${USABLE[id] ? `<button class="btn small" data-use="${esc(id)}" title="${esc(USABLE[id])}">사용</button>` : ''}
         ${it && GEAR.has(it.category) && !equipped.has(id) ? `<button class="btn small" data-equip="${esc(id)}">장착</button>` : ''}</div></li>`).join('')}</ul>`
-      : empty(cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
+      : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
+  const qi = $('#bag-q', body);
+  qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv); const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); };
   bindActions(body);
 }
 
-function equip(body, inv) {
+async function equip(body, inv) {
   const cmap = catalogMap(inv), eq = inv.equipment || {}, have = inv.inventory || {};
   const c = store.character;
+  const [prof, zones] = await Promise.all([load('world_combat_profile').catch(() => null), safeZones().catch(() => null)]);
+  const here = zones ? [...zones.values()].find(r => r.region_name === c.location) : null;
   const slots = Object.keys(SLOT).map(slot => {
     const cur = eq[slot], it = cmap.get(cur);
     const options = (inv.catalog || []).filter(i => i.category === slot && Number(have[i.id]) > 0 && i.id !== cur);
@@ -73,14 +80,13 @@ function equip(body, inv) {
         return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
           <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: slot === 'tool' ? 'hammer' : slot === 'weapon' ? 'sword' : slot === 'armor' ? 'shield' : 'spark', cls: 'compact' });
   }).join('');
-  body.innerHTML = `<div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다.</p>`;
-  bindActions(body);
+  body.innerHTML = `${panel('장착 중인 장비', equipRows(inv, prof, here), { ico: 'shield' })}<h3 class="sub-h">바꿔 낄 장비</h3><div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다.</p>`;
+  bindActions(body); bindRepair(body);
 }
 function traits(it) {
   const t = it?.equipment_traits; if (!t) return '';
-  const label = { gathering_bonus_pct: '채집', combat_damage_pct: '피해', defense_pct: '방어', craft_quality: '제작 품질', erosion_resist: '침식 저항', power: '위력', defense: '방어', damage_reduction_pct: '피해 감소' };
   const STY = { melee: '근접 공격', ranged: '원거리 공격', magic: '술법 공격' };
-  const parts = Object.entries(t).filter(([k]) => k !== 'trait' && k !== 'weapon_type').map(([k, v]) => `${label[k] || nameOf(k)} +${v}${/pct/.test(k) ? '%' : ''}`);
+  const parts = effectText(t);
   return `<small class="muted">${esc([STY[t.weapon_type] || t.trait, ...parts].filter(Boolean).join(' · '))}</small>`;
 }
 

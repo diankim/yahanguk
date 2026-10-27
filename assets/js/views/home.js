@@ -6,6 +6,8 @@ import { load, panel, chip, danger, loading, errorBox } from './common.js';
 import { renderShop, renderMarket, renderStable } from './services.js';
 import { renderExpedition } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
+import { setScene } from '../sound.js';
+import { envChip } from '../env.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -23,7 +25,7 @@ export async function render(root) {
   el = root;
   el.innerHTML = loading();
   off.forEach(f => f());
-  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); })];
+  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); })];
   window.addEventListener('yahang:arrived', draw);
   await draw();
 }
@@ -38,6 +40,7 @@ async function draw() {
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
+    setScene({ safe: !!s.region.safe, battle: !!(s.battle && !downed) });
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     el.innerHTML = `${scene(s, traveling, downed)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition)}`;
@@ -60,6 +63,7 @@ function scene(s, traveling, downed) {
       <div class="scene-top">
         <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · ${esc(r.faction_name || '무주 금역')}</p>
         <h1>${esc(r.region_name)}</h1>
+        <div class="env-slot">${envChip()}</div>
         <div class="chips">${r.safe ? chip('안전지대', 'ok') : danger(r.danger)}${chip(THEME_SCENE[r.theme] || '야외')}${!r.safe ? chip(`답사 ${s.survey?.pct ?? 0}%`, 'accent') : ''}</div>
       </div>
       ${!r.safe ? `<nav class="crumbs" aria-label="지금 있는 곳">${(s.path || []).map((p, i, a) => i === a.length - 1

@@ -13,7 +13,7 @@ export async function render(root, s) {
     ${segmented('map-sub', SUBS, sub)}<div id="map-body"></div>`;
   bindSegmented(el, 'map-sub', k => { sub = k; history.replaceState(null, '', `#/map/${k}`); draw(); });
   off.forEach(f => f());
-  off = [on('changed', () => draw(true))];
+  off = [on('changed', () => draw(true)), on('env', () => draw(true))];
   window.addEventListener('yahang:arrived', onArrive);
   await draw();
 }
@@ -50,6 +50,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="here" aria-label="현재 위치로">${icon('target')}</button>
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
+        <div class="map-peek" id="map-peek" hidden></div>
         <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span></div>
       </div>
       <div class="map-side" id="map-detail"></div>
@@ -103,8 +104,8 @@ function setupMap(here) {
   frame.addEventListener('wheel', e => { e.preventDefault(); const r = frame.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
 
   // 드래그 이동과 두 손가락 확대
-  const pts = new Map(); let pinch = null, moved = 0;
-  svg.addEventListener('pointerdown', e => { svg.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; if (pts.size === 2) pinch = dist(); });
+  const pts = new Map(); let pinch = null, moved = 0, gesture = false;
+  svg.addEventListener('pointerdown', e => { svg.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 1) { moved = 0; gesture = false; } if (pts.size >= 2) { pinch = dist(); gesture = true; } });
   svg.addEventListener('pointermove', e => {
     const p = pts.get(e.pointerId); if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
@@ -118,7 +119,8 @@ function setupMap(here) {
   });
   const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; };
   svg.addEventListener('pointerup', e => {
-    const wasTap = moved < 6 && pts.size === 1; up(e);
+    // 두 손가락 확대가 끝날 때 마지막 손가락을 떼는 것은 누르기로 치지 않는다.
+    const wasTap = moved < 6 && pts.size === 1 && !gesture; up(e);
     if (!wasTap) return;
     const node = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.dataset?.region);
     if (node) select(node.dataset.region, false);
@@ -209,9 +211,13 @@ function paint() {
   }
   const tOpacity = zoom < 1.5 ? 0.95 : zoom < 2.4 ? 0.45 : 0.18;
   let tnames = '';
-  for (const t of terr.values()) {
+  const wx = store.env?.territories || {};
+  for (const [tid, t] of terr) {
     if (!t.name) continue;
-    tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${Y(t.y / t.n).toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${Math.max(13, Math.min(22, 15 * Math.sqrt(zoom)))}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
+    const fs = Math.max(13, Math.min(22, 15 * Math.sqrt(zoom)));
+    tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${Y(t.y / t.n).toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${fs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
+    // 영역마다 지금 날씨
+    if (wx[tid]) tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${(Y(t.y / t.n) + fs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${Math.max(11, fs * 0.6)}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
   }
   // ⑥ 지역 표식과 이름표(겹치지 않게; 멀리서는 중요한 곳만)
   const fs = W < 520 ? 12 : 13;
@@ -265,7 +271,13 @@ function select(id, center) {
   selected = id;
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
-  if (matchMedia('(max-width: 1099px)').matches) $('#map-detail', el)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  // 좁은 화면에서는 저절로 스크롤하지 않고, 지도 위 안내에서 사용자가 직접 내려가게 한다.
+  const peek = $('#map-peek', el), r = mapData.regions.find(x => x.region_id === id);
+  if (peek && r && matchMedia('(max-width: 1099px)').matches) {
+    peek.hidden = false;
+    peek.innerHTML = `<b>${esc(r.region_name)}</b><button class="btn small" type="button">자세히 ${icon('chevron', 14)}</button>`;
+    peek.querySelector('button').onclick = () => $('#map-detail', el)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
 }
 
 function hopSeconds(from, to, speed) {
