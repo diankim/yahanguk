@@ -976,3 +976,16 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 @keyframes fx-ember { to { transform: translateY(-60%); } }
 .scene-fx[data-t=sky]:not([data-p=night]) .fx-c { inset: 0; opacity: .3; background-image: radial-gradient(circle, var(--gold) 0 1px, transparent 1.4px); background-size: 71px 43px; }
 @media (prefers-reduced-motion: reduce) { .scene-fx i, .scene-fx::after { animation: none !important; } }
+/* 원정 진행 기록 */
+.exp-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 300px; overflow: auto; }
+.exp-feed li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; font-size: 14px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.exp-feed li:last-child { border-bottom: 0; } .exp-feed time { color: var(--muted); font-size: 11px; } .exp-feed .ico { margin-top: 3px; color: var(--muted); }
+.exp-feed .k-env .ico { color: var(--mp); } .exp-feed .k-supply .ico { color: var(--ok); } .exp-feed .k-warn { color: var(--warn); } .exp-feed .k-end { color: var(--ok); font-weight: 600; }
+/* 어종 도감 */
+.codex-head { display: grid; gap: 8px; }
+.fish-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+.fish-card { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--line); }
+.fish-card.r-uncommon { border-left-color: var(--ok); } .fish-card.r-rare { border-left-color: var(--mp); } .fish-card.r-epic { border-left-color: var(--sp); } .fish-card.r-legendary { border-left-color: var(--gold); }
+.fish-card.unknown { opacity: .7; } .fish-card.unknown b { color: var(--muted); letter-spacing: .2em; }
+.fish-card small { font-size: 12px; color: var(--muted); } .fish-card .best { color: var(--gold); }
+.fish-panel .fish-act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

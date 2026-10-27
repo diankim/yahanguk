@@ -98,6 +98,7 @@ function traits(it) {
 function craft(body, inv) {
   const have = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   const c = store.character;
+  const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id)); // 요리·손질 결과물
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || Number(have[r.tool] || 0) > 0 || eq.has(r.tool);
@@ -105,11 +106,11 @@ function craft(body, inv) {
     const lvOk = !r.minimum_level || c.level >= r.minimum_level;
     const can = !lacks.length && toolOk && jobOk && lvOk;
     return { r, lacks, toolOk, jobOk, lvOk, can, atLoc: atPlace(r.location, c.location) };
-  }).filter(x => craftFilter === 'all' || (craftFilter === 'can' ? x.can : x.atLoc))
+  }).filter(x => craftFilter === 'all' || (craftFilter === 'can' ? x.can : craftFilter === 'cook' ? cookOut.has(x.r.output) : x.atLoc))
     .sort((a, b) => b.can - a.can || b.atLoc - a.atLoc || (a.r.difficulty || 0) - (b.r.difficulty || 0));
   body.innerHTML = `
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession))} · ${fmt.num(inv.crafting_rank)}단계</span></div></div>
-    ${segmented('craft-filter', [['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
+    ${segmented('craft-filter', [['can', '지금 가능'], ['cook', '요리'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `「${esc(nameOf(matFocus))}」이(가) 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, jobOk, lvOk, can, atLoc }) => `
       <article class="recipe ${can ? 'can' : ''}">

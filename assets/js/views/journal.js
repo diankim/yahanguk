@@ -5,7 +5,7 @@ import { load, panel, chip, loading, errorBox, currentRegion } from './common.js
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 
-const SUBS = [['story', '이야기'], ['commission', '의뢰'], ['survey', '답사'], ['history', '원정 기록']];
+const SUBS = [['story', '이야기'], ['commission', '의뢰'], ['survey', '답사'], ['history', '원정'], ['codex', '도감']];
 let el, sub = 'story', off = [];
 
 export async function render(root, s) {
@@ -22,7 +22,7 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#log-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
-  try { await ({ story, commission, survey, history: expHistory })[sub](body); }
+  try { await ({ story, commission, survey, history: expHistory, codex })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
@@ -124,4 +124,33 @@ async function expHistory(body) {
       <small>${new Date(h.finished_at || h.started_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${h.minutes}분 · ${nameOf(h.stance)} · ${ENDED[h.result?.ended] || ''} · 전투 ${h.result?.wins ?? 0}승 · 답사 ${h.result?.progress_after ?? '-'}%</small></div>
       <button class="btn small ghost" data-h="${i}">자세히</button></li>`).join('')}</ul>` : empty('아직 다녀온 원정이 없습니다. 바깥 지역의 현장에서 원정을 보내 보세요.', 'flame');
   $$('[data-h]', body).forEach(b => b.onclick = () => { const h = list[Number(b.dataset.h)]; showResult({ place_name: h.place_name || h.ground_name, result: h.result }); });
+}
+
+/* ── 어종 도감 ─────────────────────────────────────────── */
+const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물' };
+const PHASE = { dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경' };
+const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
+const RAR = { common: '일반', uncommon: '고급', rare: '희귀', epic: '영웅', legendary: '전설' };
+async function codex(body) {
+  const [o, map] = await Promise.all([load('world_fish_codex'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
+  const sp = o.species || [], got = sp.filter(x => x.caught).length;
+  const grounds = o.grounds || [];
+  const when = x => [x.phase ? PHASE[x.phase] : '', x.weather ? WEATHER[x.weather] : ''].filter(Boolean).join('·');
+  body.innerHTML = `
+    <div class="codex-head"><p class="desc">강·늪·바다·호수·깊은 물에서 낚은 물고기가 여기에 기록됩니다. 아직 낚지 못한 어종은 이름이 가려져 있고, 사는 곳과 잘 무는 때만 알려 줍니다. 낚싯대를 가방에 넣고 물가 지역의 현장에서 낚으세요.</p>
+      <div class="chips">${chip(`도감 ${got}/${sp.length}`, 'accent')}${chip(`낚은 물고기 ${fmt.num(o.total_caught)}마리`)}</div>
+      ${bar(got, sp.length || 1, 'xp')}</div>
+    ${Object.entries(HABITAT).map(([h, hn]) => {
+      const list = sp.filter(x => x.habitat === h); if (!list.length) return '';
+      const gs = grounds.filter(g => g.habitat === h);
+      return panel(`${hn} · ${list.filter(x => x.caught).length}/${list.length}`, `
+        <p class="muted small">낚시터: ${gs.map(g => `${esc(g.region_name)}(${esc(g.ground_name)}${g.safe ? ' · 안전지대' : ''} · Lv.${g.min_level}+)`).join(', ') || '없음'}</p>
+        <div class="btn-row">${gs.map(g => goButton(g.region_id, map)).join('')}</div>
+        <ul class="fish-grid">${list.map(x => `<li class="fish-card r-${esc(x.rarity)} ${x.caught ? '' : 'unknown'}">
+          <b>${esc(x.name)}</b><small>${esc(RAR[x.rarity] || '')}${when(x) ? ` · ${esc(when(x))}에 잘 뭄` : ''}${x.min_level > 1 ? ` · Lv.${x.min_level}+` : ''}</small>
+          ${x.caught ? `<small>${esc(x.description || '')}</small><small class="best">${fmt.num(x.count)}마리 · 가장 큰 것 ${x.best_size}cm</small>` : '<small>아직 낚지 못했습니다</small>'}</li>`).join('')}</ul>`, { ico: 'leaf', cls: 'compact' });
+    }).join('')}
+    ${panel('낚시 칭호', `<ul class="spot-list">${(o.titles || []).map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>
+      <p class="muted small">칭호는 캐릭터 › 칭호에서 장착하면 낚시 효과(입질·희귀 어종·크기)가 붙습니다.</p>`, { ico: 'spark' })}`;
+  bindGo(body);
 }

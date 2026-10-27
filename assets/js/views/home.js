@@ -34,14 +34,15 @@ export async function render(root) {
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); stopBattle(); }
 
-let again = false;
+let again = false, fishSpot = null;
 async function draw() {
   if (!el?.isConnected) return;
   if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
   busy = true; again = false;
   try {
-    const [s, roster] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => [])]);
-    snap = s;
+    const [s, roster, fish] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => []),
+      load('world_fish_spot').catch(() => null)]);
+    snap = s; fishSpot = fish;
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
@@ -104,6 +105,7 @@ function town(s, roster) {
   return `
     <p class="desc scene-desc">${esc(r.description || '요괴가 들어오지 못하는 곳입니다. 물자를 정리하고 다음 길을 준비하세요.')}</p>
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small>${esc(d)}</small></button>`).join('')}</div>
+    ${fishPanel(false)}
     ${people(roster, s.corpses)}`;
 }
 
@@ -165,11 +167,27 @@ function field(s, roster, blocked) {
         <div class="panel-body"><ol class="field-log">${(s.recent || []).map(e => { const o = OUTCOME[e.kind] || OUTCOME.quiet; return `<li class="k-${esc(e.kind)}">${icon(o[0], 14)}<span>${esc(e.content)}</span><time>${fmt.time(e.at)}</time></li>`; }).join('') || `<li class="muted">아직 기록이 없습니다. 탐색을 시작하세요.</li>`}</ol></div>
       </section>
     </div>
+    ${fishPanel(blocked)}
     <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
       <div class="panel-body">${tree(s)}<p class="muted small">찾은 장소 ${s.survey?.nodes_found ?? 0}/${s.survey?.nodes_total ?? 0} · 채집터 ${s.survey?.spots_found ?? 0}/${s.survey?.spots_total ?? 0}. 모두 찾으면 가방이 넓어집니다.</p></div></details>
     <details class="panel fold"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
       <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => `<li><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.type || '')} · ${esc(MECH[m.mechanic]?.[0] || '')} · Lv.${m.min_level}–${m.max_level}</small>${MECH[m.mechanic] ? `<small class="muted">${esc(MECH[m.mechanic][1])}</small>` : ''}</li>`).join('')}</ul></div></details>
     ${people(roster, s.corpses)}`;
+}
+
+// 물가 지역의 낚시터: 낚싯대가 가방에 있으면 탐색력 1로 낚는다(20초 간격). 결과와 도감은 서버가 기록한다.
+function fishPanel(blocked) {
+  const f = fishSpot; if (!f) return '';
+  const recent = (f.recent || []).slice(0, 3);
+  return `<section class="panel fish-panel"><header class="panel-head"><h2>${icon('leaf', 16)}낚시터 · ${esc(f.ground_name)}</h2><a class="btn small ghost" href="#/log/codex">도감 ${f.species_caught}/${f.species_total}</a></header>
+    <div class="panel-body">
+      <p class="desc">${esc(f.description || '')}</p>
+      <div class="fish-act">
+        <button class="btn primary" id="fish-go" data-ready="${f.ready_at ? new Date(f.ready_at).getTime() : ''}" ${blocked || !f.rod ? 'disabled' : ''}>${icon('leaf', 16)}<span>낚시하기</span></button>
+        <small class="muted">${f.rod ? `${esc(f.rod_name)} · 탐색력 1 · 20초마다` : '낚싯대가 없습니다. 상점에서 사거나 가방 › 제작에서 만들 수 있습니다.'}</small>
+      </div>
+      ${recent.length ? `<ol class="field-log">${recent.map(r => `<li>${icon('leaf', 14)}<span>${esc(r.text)}</span><time>${fmt.time(r.at)}</time></li>`).join('')}</ol>` : '<p class="muted small">시간대와 날씨에 따라 잘 무는 물고기가 다릅니다. 도감에서 힌트를 확인하세요.</p>'}
+    </div></section>`;
 }
 
 function tree(s) {
@@ -202,6 +220,7 @@ function bind(s) {
   $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp);
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
+  $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
 }
 
 async function doSearch(btn) {
@@ -217,6 +236,17 @@ async function doSearch(btn) {
   } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
   finally { btn.dataset.busy = ''; btn.classList.remove('searching'); }
 }
+async function doFish(btn) {
+  if (btn.dataset.busy === '1' || Number(btn.dataset.ready) > Date.now()) return;
+  btn.dataset.busy = '1'; btn.disabled = true;
+  window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' }));
+  try {
+    const r = await act('world_fish');
+    if (r.caught) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: ['rare', 'epic', 'legendary'].includes(r.rarity) || r.first ? 'find' : 'tick' })); showFind(['leaf', r.first ? '새 어종' : '낚시'], { outcome: r.first ? 'spot' : 'gather', content: r.content }); }
+    else toast(r.content, 'info');
+  } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
+  finally { btn.dataset.busy = ''; }
+}
 // 발견은 화면 가운데 잠깐 떠오르는 쪽지로 보여 준다.
 function showFind([ic, label], r) {
   const n = document.createElement('div');
@@ -230,6 +260,7 @@ function tick() {
   if (!el?.isConnected) return clearInterval(timer);
   const now = Date.now();
   $$('[data-st-next]', el).forEach(s => { const t = Number(s.dataset.stNext); if (t) s.textContent = t > now ? `${fmt.remain(t - now)} 뒤 1 회복` : '곧 회복'; if (t && t <= now) { s.dataset.stNext = ''; draw(); } });
+  $$('#fish-go', el).forEach(b => { const t = Number(b.dataset.ready); if (!t || b.dataset.busy === '1') return; if (t > now) { b.disabled = true; b.querySelector('span').textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.querySelector('span').textContent = '낚시하기'; } });
   $$('[data-gather]', el).forEach(b => { const t = Number(b.dataset.ready); if (!t) return; if (t > now) { b.disabled = true; b.textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.textContent = '채집'; } });
   const c = store.character;
   $$('[data-death]', el).forEach(s => { const t = c?.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0; s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });

@@ -104,6 +104,9 @@ const FIXED = {
   travel_time_pct: '이동 시간', clue_bonus_pct: '단서 발견', healing_pct: '회복량', erosion_pct: '침식 위험', melee_pct: '근접 피해', ranged_pct: '원거리 피해',
   magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '수련 경험치',
   action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
+  fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
+  // 서식지
+  river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', fishing: '낚시', cooking: '요리',
   // 날씨·시간대
   dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
