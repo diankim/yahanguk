@@ -1,6 +1,6 @@
 # 서버 이사(뭄바이 → 서울): 옛 DB를 덤프해 비어 있는 새 DB에 복원한다.
 # 수동 실행만 된다(Actions → db-move → Run workflow, 확인 칸에 MOVE). CHECK는 두 DB 접속과 새 DB가 비었는지만 본다.
-# 비밀값: OLD_DB_URL·NEW_DB_URL (두 프로젝트의 Session pooler 주소, 비밀번호 포함).
+# 비밀값: OLD_DB_URL·NEW_DB_URL (두 프로젝트의 Session pooler 주소, 비밀번호 포함. 직접 주소를 넣으면 같은 비밀번호로 Session pooler 주소를 만들어 쓴다).
 # 옛 DB는 읽기만 한다. 새 DB에 public 표가 하나라도 있으면 아무것도 하지 않고 멈춘다.
 # 덤프 파일(계정 정보 포함)은 실행기 안에서만 쓰고 올리지 않는다. 로그에는 표 이름과 행 수만 남긴다.
 name: db-move
@@ -45,21 +45,44 @@ jobs:
             case "$v" in postgresql://*|postgres://*) ;; *) echo "  - postgresql:// 로 시작하지 않습니다(앞의 공백·따옴표나 일부만 복사했는지 확인)"; bad=1;; esac
             case "$v" in *[[:space:]]*) echo "  - 공백이나 줄바꿈이 들어 있습니다"; bad=1;; esac
             case "$v" in *'['*|*']'*) echo "  - [ ] 가 남아 있습니다([YOUR-PASSWORD]는 대괄호까지 지우고 비밀번호만)"; bad=1;; esac
-            case "$v" in *pooler.supabase.com:5432/*) ;; *) echo "  - Session pooler 주소(pooler.supabase.com:5432)가 아닙니다"; bad=1;; esac
             at=$(printf '%s' "$v" | tr -cd '@' | wc -c)
             test "$at" = "1" || { echo "  - @ 가 ${at}개입니다(비밀번호에 @ 가 있으면 %40 으로 바꾸거나 비밀번호를 영문·숫자로 다시 정하기)"; bad=1; }
           done
           test "$bad" = "0" || exit 1
-          ./psql.sh "$OLD_DB_URL" -tAc "select 'old public tables: ' || count(*) from pg_tables where schemaname = 'public'"
-          n=$(./psql.sh "$NEW_DB_URL" -tAc "select count(*) from pg_tables where schemaname = 'public'")
+          # 직접 주소(db.<ref>.supabase.co)는 IPv6 전용이라 실행기에서 닿지 않는다. 그런 주소가 들어오면 같은 비밀번호로 Session pooler 주소를 만들어 쓴다.
+          # 뒤 단계는 SRC(옛 DB)·DST(새 DB)를 쓴다. 만든 주소와 비밀번호는 로그에서 가린다.
+          pick() { # $1 비밀값 이름, $2 리전, $3 내보낼 이름
+            local v="${!1}" h u pw ref
+            if [[ "$v" == *pooler.supabase.com:5432/* ]]; then echo "$3=$v" >> "$GITHUB_ENV"; printf -v "$3" '%s' "$v"; echo "$1: Session pooler 주소"; return 0; fi
+            if [[ "$v" =~ ^postgres(ql)?://postgres:([^@]+)@db\.([a-z0-9]+)\.supabase\.co:5432/postgres$ ]]; then
+              pw="${BASH_REMATCH[2]}"; ref="${BASH_REMATCH[3]}"
+              echo "::add-mask::$pw"
+              for h in aws-0 aws-1; do
+                u="postgresql://postgres.$ref:$pw@$h-$2.pooler.supabase.com:5432/postgres"
+                echo "::add-mask::$u"
+                if ./psql.sh "$u" -tAc 'select 1' > /dev/null 2> err.txt; then
+                  echo "$3=$u" >> "$GITHUB_ENV"; printf -v "$3" '%s' "$u"
+                  echo "$1: 직접 주소라서 Session pooler 주소($h-$2)로 바꿔 씁니다"; return 0
+                fi
+                if grep -qi 'password authentication failed' err.txt; then echo "$1: 비밀번호가 틀렸습니다(Supabase에서 정한 DB 비밀번호와 같은지 확인)"; return 1; fi
+              done
+              echo "$1: Session pooler에 접속하지 못했습니다"; sed -E 's#//[^@]*@#//***@#g' err.txt | head -3; return 1
+            fi
+            echo "$1: Session pooler 주소도 직접 주소도 아닙니다(Connect → Direct → Session pooler 주소를 넣어 주세요)"; return 1
+          }
+          pick OLD_DB_URL ap-south-1 SRC
+          pick NEW_DB_URL ap-northeast-2 DST
+          rm -f err.txt
+          ./psql.sh "$SRC" -tAc "select 'old public tables: ' || count(*) from pg_tables where schemaname = 'public'"
+          n=$(./psql.sh "$DST" -tAc "select count(*) from pg_tables where schemaname = 'public'")
           echo "new public tables: $n"
           test "$n" = "0" || { echo '새 DB가 비어 있지 않아 멈춥니다'; exit 1; }
 
       - name: 덤프(구조·데이터)
         if: inputs.confirm == 'MOVE'
         run: |
-          supabase db dump --db-url "$OLD_DB_URL" -f schema.sql
-          supabase db dump --db-url "$OLD_DB_URL" -f data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          supabase db dump --db-url "$SRC" -f schema.sql
+          supabase db dump --db-url "$SRC" -f data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
           wc -c schema.sql data.sql
 
       - name: 함수 전용 역할(fn_owner_*) 만들기
@@ -67,16 +90,16 @@ jobs:
         # CLI 역할 덤프는 supabase_admin이 준 멤버십(GRANTED BY supabase_admin)을 새 DB에서 다시 줄 수 없어, 역할만 직접 만든다.
         # postgres가 만들면 관리 멤버십은 저절로 생긴다. 복원 중에만 소유자 지정을 위해 SET·INHERIT를 켜고, 끝나면 끈다.
         run: |
-          ./psql.sh "$OLD_DB_URL" -tA -c "select format('do \$r\$ begin if not exists (select 1 from pg_roles where rolname = %L) then create role %I nologin noinherit bypassrls; end if; end \$r\$;', rolname, rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles.sql
-          ./psql.sh "$OLD_DB_URL" -tA -c "select format('grant %I to postgres with inherit true, set true;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_on.sql
-          ./psql.sh "$OLD_DB_URL" -tA -c "select format('grant %I to postgres with inherit false, set false;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_off.sql
+          ./psql.sh "$SRC" -tA -c "select format('do \$r\$ begin if not exists (select 1 from pg_roles where rolname = %L) then create role %I nologin noinherit bypassrls; end if; end \$r\$;', rolname, rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles.sql
+          ./psql.sh "$SRC" -tA -c "select format('grant %I to postgres with inherit true, set true;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_on.sql
+          ./psql.sh "$SRC" -tA -c "select format('grant %I to postgres with inherit false, set false;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_off.sql
           echo "roles: $(grep -c 'create role' roles.sql)"
-          ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f roles.sql -f roles_on.sql
+          ./psql.sh "$DST" -q -v ON_ERROR_STOP=1 -f roles.sql -f roles_on.sql
 
       - name: 복원(한 트랜잭션)
         if: inputs.confirm == 'MOVE'
         run: |
-          ./psql.sh "$NEW_DB_URL" -q --single-transaction -v ON_ERROR_STOP=1 \
+          ./psql.sh "$DST" -q --single-transaction -v ON_ERROR_STOP=1 \
             -f schema.sql \
             -c 'SET session_replication_role = replica' \
             -f data.sql > restore.log 2>&1 || { grep -E 'ERROR|FATAL|LINE' restore.log | head -20; exit 1; }
@@ -85,8 +108,8 @@ jobs:
       - name: 실시간 감시 표 다시 등록·역할 권한 되돌리기
         if: always() && inputs.confirm == 'MOVE'
         run: |
-          test -f roles_off.sql && ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f roles_off.sql || true
-          ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -c "
+          test -f roles_off.sql && ./psql.sh "$DST" -q -v ON_ERROR_STOP=1 -f roles_off.sql || true
+          ./psql.sh "$DST" -q -v ON_ERROR_STOP=1 -c "
             do \$p\$ declare t text; begin
               if not exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'world_notifications') then return; end if;
               foreach t in array array['world_active_sessions', 'world_chat_messages', 'world_circle_messages', 'world_notifications'] loop
@@ -101,23 +124,23 @@ jobs:
         # CLI 구조 덤프는 auth 스키마를 빼서, auth.users의 가입 트리거(on_auth_user_created_profile) 같은 것이 빠질 수 있다. 없을 때만 옛 정의대로 만든다.
         run: |
           # search_path를 비워 함수 이름에 스키마가 붙게 한다(public.handle_new_user)
-          ./psql.sh "$OLD_DB_URL" -tA -q -c "set search_path to pg_catalog" -c "select format('do \$t\$ begin if not exists (select 1 from pg_trigger where tgrelid = %L::regclass and tgname = %L) then execute %L; end if; end \$t\$;', t.tgrelid::regclass::text, t.tgname, pg_get_triggerdef(t.oid)) from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid where not t.tgisinternal and c.relnamespace::regnamespace::text in ('auth', 'storage') and p.pronamespace::regnamespace::text not in ('auth', 'storage')" > triggers.sql
+          ./psql.sh "$SRC" -tA -q -c "set search_path to pg_catalog" -c "select format('do \$t\$ begin if not exists (select 1 from pg_trigger where tgrelid = %L::regclass and tgname = %L) then execute %L; end if; end \$t\$;', t.tgrelid::regclass::text, t.tgname, pg_get_triggerdef(t.oid)) from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid where not t.tgisinternal and c.relnamespace::regnamespace::text in ('auth', 'storage') and p.pronamespace::regnamespace::text not in ('auth', 'storage')" > triggers.sql
           echo "triggers: $(grep -c . triggers.sql || true)"
-          ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f triggers.sql
-          ./psql.sh "$NEW_DB_URL" -tAc "select 'auth trigger ' || tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal"
+          ./psql.sh "$DST" -q -v ON_ERROR_STOP=1 -f triggers.sql
+          ./psql.sh "$DST" -tAc "select 'auth trigger ' || tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal"
 
       - name: 행 수 비교
         if: inputs.confirm == 'MOVE'
         run: |
           q="select table_schema || '.' || table_name || ' ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema in ('public', 'auth') and table_type = 'BASE TABLE' order by 1"
-          ./psql.sh "$OLD_DB_URL" -tAc "$q" > old_counts.txt
-          ./psql.sh "$NEW_DB_URL" -tAc "$q" > new_counts.txt
+          ./psql.sh "$SRC" -tAc "$q" > old_counts.txt
+          ./psql.sh "$DST" -tAc "$q" > new_counts.txt
           echo "tables: $(wc -l < old_counts.txt) old / $(wc -l < new_counts.txt) new"
           # auth 표(로그인 기록 등)는 점검 중에도 늘 수 있어 알리기만 하고, public 표가 다르면 실패로 둔다
           if diff old_counts.txt new_counts.txt; then echo '행 수가 모두 같습니다'; else echo '행 수가 다른 표가 있습니다(위 목록)'; fi
           diff <(grep '^public\.' old_counts.txt) <(grep '^public\.' new_counts.txt) > /dev/null || { echo 'public 표의 행 수가 다릅니다'; exit 1; }
-          ./psql.sh "$NEW_DB_URL" -tAc "select 'db_version ' || value from public.world_app_meta where key = 'db_version'"
-          ./psql.sh "$NEW_DB_URL" -tAc "select 'realtime ' || string_agg(tablename, ', ') from pg_publication_tables where pubname = 'supabase_realtime'"
+          ./psql.sh "$DST" -tAc "select 'db_version ' || value from public.world_app_meta where key = 'db_version'"
+          ./psql.sh "$DST" -tAc "select 'realtime ' || string_agg(tablename, ', ') from pg_publication_tables where pubname = 'supabase_realtime'"
 
       - name: 덤프 지우기
         if: always() && inputs.confirm == 'MOVE'
