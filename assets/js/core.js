@@ -1,4 +1,5 @@
 // 야행국 공통 계층: Supabase 연결, RPC 호출, 상태 저장소, 이름 사전, UI 도우미.
+import { framed, framedInner } from './cosmetics.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
 import { SUPABASE_URL, SUPABASE_KEY, isMaintenanceError, goMaintenance } from './config.js';
@@ -373,7 +374,12 @@ export function profileOf(ownerId, profile) {
   const h = [...String(ownerId || '')].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   return { emblem: EMBLEMS[profile?.emblem] ? profile.emblem : e[h % e.length], color: EMBLEM_COLORS[profile?.color] ? profile.color : c[(h * 7) % c.length], bio: profile?.bio || '' };
 }
+// 문장: 사진 또는 고른 문양. 테두리(profile.frame)를 달았으면 둘레에 두른다.
 export function emblem(ownerId, profile, size = 40) {
+  const fr = profile?.frame;
+  return fr ? framed(emblemBase(ownerId, profile, framedInner(fr, size)), fr, size) : emblemBase(ownerId, profile, size);
+}
+function emblemBase(ownerId, profile, size) {
   const p = profileOf(ownerId, profile), col = EMBLEM_COLORS[p.color][1];
   if (typeof profile?.avatar === 'string' && /^data:image\/(webp|jpeg|png);base64,/.test(profile.avatar))
     return `<span class="emblem photo" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><img src="${profile.avatar}" alt="" width="${size}" height="${size}"></span>`;
