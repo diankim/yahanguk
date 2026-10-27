@@ -418,8 +418,9 @@ body.chat-open .chat-fab { display: none; }
 .idle-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-bottom: 10px; }
 .idle-card header { justify-content: flex-start; gap: 8px; }
 .idle-card header .ico { color: var(--gold); }
-.dur { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-.dur .btn { padding: 4px; }
+.dur { display: grid; grid-template-columns: 1fr; gap: 4px; }
+.dur .btn { display: grid; grid-template-columns: 52px 1fr; align-items: center; justify-items: start; gap: 8px; padding: 6px 10px; text-align: left; height: auto; }
+.dur .btn small { font-size: 12px; color: var(--muted); white-space: normal; line-height: 1.35; }
 .idle-now { display: flex; gap: 14px; align-items: center; }
 .idle-now > div:last-child { flex: 1; display: grid; gap: 6px; }
 .idle-now span { font-size: 13px; color: var(--muted); }

@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -17,9 +17,20 @@ const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 const GATHER = ['fieldwork', 'mining', 'botany', 'spirit_harvest', 'fishing'];
 const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice', 'cooking'];
 const IDLE = [
-  ['training', '자율 수련', '전투 경험치와 능력 단련', 'sword'], ['research', '자료 조사', '조사 경험치와 단서 기록', 'search'],
-  ['maintenance', '장비 정비', '제작 경험치와 장비 손질', 'hammer'], ['rest', '휴식', '체력·정신 회복, 침식 완화', 'moon'],
+  ['training', '자율 수련', '경험치와 전투 숙련, 근접 기술을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 추적 기술을 올립니다.', 'search'],
+  ['maintenance', '장비 정비', '경험치와 제작 숙련, 결계 각인 기술을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
 ];
+// 자율 활동 보상(서버 world_claim_idle_activity와 같은 식): 시간 h에 대해 숙련·회복 floor(h×12×0.35), 경험치 floor(h×비율×0.35)(최소 1, 최고 레벨이면 0)
+const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
+function idleReward(k, min, level) {
+  const h = min / 60, gain = Math.max(1, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(1, Math.floor(h * IDLE_RATE[k] * 0.35));
+  const out = xp ? [`경험치 +${xp}`] : [];
+  if (k === 'training') out.push(`전투 숙련 +${gain}`, `근접 기술 +${gain}`);
+  else if (k === 'research') out.push(`조사 숙련 +${gain}`, `추적 기술 +${gain}`);
+  else if (k === 'maintenance') out.push(`제작 숙련 +${gain}`, `결계 각인 기술 +${gain}`);
+  else out.push(`체력·정신·영력 각 +${gain}`);
+  return out;
+}
 const DURATIONS = [[30, '30분'], [60, '1시간'], [240, '4시간'], [480, '8시간']];
 const EROSION = ['안정', '경미', '주의', '위험', '붕괴 직전', '붕괴'];
 let el, sub = 'status', off = [];
@@ -255,11 +266,15 @@ async function idle(body) {
       <p class="muted small">완료 시각은 서버가 기록합니다. 접속하지 않아도 진행되며, 한 번에 하나만 할 수 있습니다.</p>`, { ico: 'hourglass' }) : ''}
     <div class="idle-grid">${IDLE.map(([k, n, d, ic]) => `<article class="idle-card">
       <header>${icon(ic, 18)}<b>${n}</b></header><p>${d}</p>
-      <div class="dur">${DURATIONS.map(([m, l]) => `<button class="btn small" data-idle="${k}" data-min="${m}" ${active ? 'disabled' : ''}>${l}</button>`).join('')}</div></article>`).join('')}</div>
+      <div class="dur">${DURATIONS.map(([m, l]) => `<button class="btn small" data-idle="${k}" data-min="${m}" ${active ? 'disabled' : ''}><b>${l}</b><small>${esc(idleReward(k, m, store.character?.level || 1).join(' · '))}</small></button>`).join('')}</div></article>`).join('')}</div>
     <p class="muted small">자율 활동은 접속하지 않는 동안의 보조 성장입니다. 직접 탐사·전투·제작이 더 큰 보상을 줍니다.</p>`;
   const claim = $('#idle-claim', body);
   if (claim) claim.onclick = () => guard(claim, async () => { const r = await act('world_claim_idle_activity'); return { content: `${r?.message || '보상을 받았습니다.'}${r?.experience ? ` · 경험치 +${r.experience}` : ''}` }; });
-  $$('[data-idle]', body).forEach(b => b.onclick = () => guard(b, () => act('world_start_idle_activity', { p_activity: b.dataset.idle, p_duration_minutes: Number(b.dataset.min) })));
+  $$('[data-idle]', body).forEach(b => b.onclick = async () => {
+    const k = b.dataset.idle, m = Number(b.dataset.min), n = IDLE.find(x => x[0] === k)?.[1] || '자율 활동', l = DURATIONS.find(x => x[0] === m)?.[1] || `${m}분`;
+    const ok = await ask(`${n}을(를) ${l} 동안 할까요?\n받을 것: ${idleReward(k, m, store.character?.level || 1).join(' · ')}\n끝날 때까지 다른 자율 활동은 할 수 없고, 다 끝난 뒤에 보상을 받습니다.`, { title: '자율 활동 시작', ok: '시작', cancel: '그만두기' });
+    if (ok) guard(b, () => act('world_start_idle_activity', { p_activity: k, p_duration_minutes: m }));
+  });
   if (active && !ready) {
     const t = setInterval(() => {
       const left = $('#idle-left', body); if (!left) return clearInterval(t);
