@@ -16,7 +16,7 @@ const FIELDS = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leat
 const craftFields = new Set();
 // 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
 const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
-  name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '희귀한 것 먼저', '흔한 것 먼저'] };
+  name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '신품 먼저', '범품 먼저'] };
 const RARITY = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
 let sortKey = 'tier', sortRev = false;
 try { const v = JSON.parse(localStorage.getItem('yh-bag-sort') || 'null'); if (v && SORTS[v.k]) { sortKey = v.k; sortRev = !!v.r; } } catch {}
