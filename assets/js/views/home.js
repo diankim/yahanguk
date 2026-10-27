@@ -34,15 +34,22 @@ export async function render(root) {
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); stopBattle(); }
 
-let again = false, fishSpot = null;
+let again = false, fishSpot = null, restSt = null;
+const restAt = k => { const t = restSt?.[k + '_ready_at']; return t ? new Date(t).getTime() : 0; };
+// 다음 휴식까지 남은 시간(잠깐·푹). 둘 다 가능하면 빈 문자열
+function restLine(now = Date.now(), short = false) {
+  const a = restAt('short') - now, b = restAt('full') - now;
+  const p = [a > 0 ? `잠깐 ${fmt.remain(a)}` : '', b > 0 ? `푹 ${fmt.remain(b)}` : ''].filter(Boolean);
+  return p.length ? (short ? p.join(' · ') : `다시 쉬기까지 ${p.join(' · ')}`) : '';
+}
 async function draw() {
   if (!el?.isConnected) return;
   if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
   busy = true; again = false;
   try {
-    const [s, roster, fish] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => []),
-      load('world_fish_spot').catch(() => null)]);
-    snap = s; fishSpot = fish;
+    const [s, roster, fish, rest] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => []),
+      load('world_fish_spot').catch(() => null), load('world_rest_status').catch(() => null)]);
+    snap = s; fishSpot = fish; restSt = rest;
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
@@ -98,13 +105,13 @@ function town(s, roster) {
     ['shop', 'shop', r.shop_name || '상점', '물자 사고팔기'],
     ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
-    ['inn', 'moon', r.rest_spot_name || '숙소', '쉬며 회복하고 탐색력 채우기'],
+    ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['board', 'scroll', '의뢰 게시판', '사건과 상시 의뢰'],
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
   return `
     <p class="desc scene-desc">${esc(r.description || '요괴가 들어오지 못하는 곳입니다. 물자를 정리하고 다음 길을 준비하세요.')}</p>
-    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small>${esc(d)}</small></button>`).join('')}</div>
+    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
     ${fishPanel(false)}
     ${people(roster, s.corpses)}`;
 }
@@ -133,7 +140,7 @@ function field(s, roster, blocked) {
         ${s.story_here?.length ? `<p class="hint accent">${icon('scroll', 14)} 이 지역 어딘가에 「${esc(s.story_here[0].chapter)}」의 단서가 있습니다. 탐색을 이어가세요.</p>` : ''}
         <div class="sub-acts">
           <button class="btn" id="exp-open2" ${blocked ? 'disabled' : ''}>${icon('flame', 16)}<span>원정 보내기</span></button>
-          <button class="btn" id="camp" ${blocked ? 'disabled' : ''}>${icon('moon', 16)}<span>야영</span></button>
+          <button class="btn" id="camp" ${blocked ? 'disabled' : ''}>${icon('moon', 16)}<span>야영</span><small class="rest-cd" data-rest-line="short">${esc(restLine(Date.now(), true))}</small></button>
           <a class="btn ghost" href="#/map">${icon('map', 16)}<span>지도</span></a>
         </div>
         <p class="weapon-line small">${icon('sword', 14)} ${esc(w.name || '맨손')} · ${STYLE[w.type] || '근접'}${mechs.length ? ` · 이 지역 요괴: ${mechs.map(m => { const [e, k] = effectiveness(w.type, m); return `<span class="eff ${k}">${esc(MECH[m]?.[0] || m)} ${esc(e)}</span>`; }).join(' ')}` : ''}</p>
@@ -162,10 +169,10 @@ function field(s, roster, blocked) {
         </div>
       </section>
 
-      <section class="panel log-card">
-        <header class="panel-head"><h2>${icon('scroll', 16)}탐사 기록</h2></header>
+      <details class="panel fold log-card" data-fold="field-log" ${foldOpen('field-log') ? 'open' : ''}>
+        <summary class="panel-head"><h2>${icon('scroll', 16)}탐사 기록 <small class="muted">${(s.recent || []).length}</small></h2></summary>
         <div class="panel-body"><ol class="field-log">${(s.recent || []).map(e => { const o = OUTCOME[e.kind] || OUTCOME.quiet; return `<li class="k-${esc(e.kind)}">${icon(o[0], 14)}<span>${esc(e.content)}</span><time>${fmt.time(e.at)}</time></li>`; }).join('') || `<li class="muted">아직 기록이 없습니다. 탐색을 시작하세요.</li>`}</ol></div>
-      </section>
+      </details>
     </div>
     ${fishPanel(blocked)}
     <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
@@ -189,6 +196,10 @@ function fishPanel(blocked) {
       ${recent.length ? `<ol class="field-log">${recent.map(r => `<li>${icon('leaf', 14)}<span>${esc(r.text)}</span><time>${fmt.time(r.at)}</time></li>`).join('')}</ol>` : '<p class="muted small">시간대와 날씨에 따라 잘 무는 물고기가 다릅니다. 도감에서 힌트를 확인하세요.</p>'}
     </div></section>`;
 }
+
+// 접기 상태 기억(이 기기). 기본은 펼침.
+function foldOpen(k) { try { return localStorage.getItem('yh-fold-' + k) !== '0'; } catch { return true; } }
+document.addEventListener('toggle', e => { const d = e.target; if (d?.dataset?.fold) try { localStorage.setItem('yh-fold-' + d.dataset.fold, d.open ? '1' : '0'); } catch {} }, true);
 
 function tree(s) {
   const nodes = s.nodes || [], byParent = new Map();
@@ -262,6 +273,10 @@ function tick() {
   $$('[data-st-next]', el).forEach(s => { const t = Number(s.dataset.stNext); if (t) s.textContent = t > now ? `${fmt.remain(t - now)} 뒤 1 회복` : '곧 회복'; if (t && t <= now) { s.dataset.stNext = ''; draw(); } });
   $$('#fish-go', el).forEach(b => { const t = Number(b.dataset.ready); if (!t || b.dataset.busy === '1') return; if (t > now) { b.disabled = true; b.querySelector('span').textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.querySelector('span').textContent = '낚시하기'; } });
   $$('[data-gather]', el).forEach(b => { const t = Number(b.dataset.ready); if (!t) return; if (t > now) { b.disabled = true; b.textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.textContent = '채집'; } });
+  const line = restLine(now);
+  $$('[data-rest-line]', el).forEach(x => { const fac = x.closest('.facility'); x.textContent = x.dataset.restLine === 'short' ? restLine(now, true) : (line || (fac ? '쉬며 회복하고 탐색력 채우기' : '')); });
+  $$('.modal [data-rest]').forEach(b => { const t = restAt(b.dataset.rest), sm = b.querySelector('[data-rest-cd]'); if (!sm) return;
+    if (t > now) { b.disabled = true; sm.textContent = `${fmt.remain(t - now)} 뒤 다시`; } else if (sm.textContent) { b.disabled = false; sm.textContent = ''; } });
   const c = store.character;
   $$('[data-death]', el).forEach(s => { const t = c?.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0; s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });
 }
@@ -284,9 +299,11 @@ function openRest(r) {
   const m = openModal({ title: safe ? (r.rest_spot_name || '숙소') : '야영', body: `
     <p class="desc">${safe ? '안전한 곳에서 쉬면 체력·정신·영력이 회복되고 나쁜 상태가 풀립니다. 푹 쉬면 탐색력이 가득 찹니다.' : '바깥에서 야영합니다. 회복은 적고, 쉬는 동안 습격받을 수 있습니다.'}</p>
     <div class="action-grid two">
-      <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3</small></button>
-      <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'}</small></button>
-    </div>` });
+      <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3 · 10분마다</small><small class="rest-cd" data-rest-cd></small></button>
+      <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'} · 30분마다</small><small class="rest-cd" data-rest-cd></small></button>
+    </div>
+    <p class="muted small">같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.</p>` });
+  tick();
   $$('[data-rest]', m).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_field_rest', { p_style: b.dataset.rest }); closeModal(); return out; }));
 }
 
