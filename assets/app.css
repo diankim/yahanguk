@@ -955,14 +955,28 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .scene-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .scene > :not(.scene-fx) { position: relative; z-index: 1; }
 .scene-art { position: absolute; right: 0; bottom: 0; width: min(100%, 720px); height: 100%; }
-.scene-art .ln-far { fill: color-mix(in srgb, var(--sc, var(--accent)) 22%, var(--surface)); }
-.scene-art .ln-near, .scene-art .ln-near path { fill: color-mix(in srgb, var(--sc, var(--accent)) 38%, var(--surface)); }
-.scene-art .ln-accent { fill: color-mix(in srgb, var(--gold) 55%, var(--surface)); }
-.scene-art .ln-snow { fill: color-mix(in srgb, var(--text) 30%, var(--surface)); }
-.scene-art .ln-water { fill: none; stroke: color-mix(in srgb, var(--surface) 55%, var(--text)); stroke-width: 1.4; stroke-linecap: round; opacity: .5; }
-.scene-art .sk-sun { fill: color-mix(in srgb, var(--gold) 50%, var(--surface)); } .scene-art .sk-sun.low { fill: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
-.scene-art .sk-moon circle { fill: color-mix(in srgb, var(--gold) 55%, var(--surface)); } .scene-art .sk-moon .sk-cut { fill: color-mix(in srgb, var(--sc, var(--accent)) 12%, var(--surface)); }
+/* 겹마다 장소 색을 다른 농도로: 먼 산(옅게) → 상징물 → 앞쪽 땅(가장 짙게). 가장 짙은 겹에는 글자색을 조금 섞어 또렷하게 한다. */
+.scene-art { --s1: color-mix(in srgb, var(--sc, var(--accent)) 20%, var(--surface)); --s15: color-mix(in srgb, var(--sc, var(--accent)) 26%, var(--surface)); --s2: color-mix(in srgb, var(--sc, var(--accent)) 34%, var(--surface));
+  --s3: color-mix(in srgb, color-mix(in srgb, var(--sc, var(--accent)) 44%, var(--surface)) 90%, var(--text)); }
+.scene-art .ln-far { fill: var(--s1); }
+.scene-art .ln-far2 { fill: var(--s15); }
+.scene-art .ln-mid { fill: var(--s2); }
+.scene-art .ln-near { fill: var(--s3); }
+.scene-art .ln-snow { fill: color-mix(in srgb, var(--surface) 70%, var(--text)); opacity: .55; }
+.scene-art .ln-gold { fill: color-mix(in srgb, var(--gold) 75%, var(--surface)); }
+.scene-art .ln-line path { fill: none; stroke: var(--s3); stroke-width: 1.6; stroke-linecap: round; }
+.scene-art .ln-line .soft { stroke: var(--s2); stroke-width: 1.2; }
+.scene-art .ln-line .ring { stroke: color-mix(in srgb, var(--gold) 60%, var(--surface)); stroke-width: 1.4; }
+.scene-art .ln-line .fall { stroke: color-mix(in srgb, var(--surface) 60%, var(--text)); stroke-width: 2; opacity: .35; stroke-dasharray: 4 3; }
+.scene-art .sk-sun circle { fill: color-mix(in srgb, var(--gold) 55%, var(--surface)); }
+.scene-art .sk-sun.low circle { fill: color-mix(in srgb, var(--accent) 50%, var(--surface)); }
+.scene-art .sk-sun .halo, .scene-art .sk-moon .halo { opacity: .18; } .scene-art .sk-sun .halo2, .scene-art .sk-moon .halo2 { opacity: .3; }
+.scene-art .sk-moon circle { fill: color-mix(in srgb, var(--gold) 60%, var(--surface)); }
+.scene-art .sk-moon .sk-cut { fill: color-mix(in srgb, var(--sc, var(--accent)) 12%, var(--surface)); opacity: 1; }
 .scene-art .sk-moon.dim { opacity: .45; }
+.scene-art .sk-stars circle { fill: color-mix(in srgb, var(--gold) 50%, var(--text)); opacity: .55; }
+.scene-art .sk-cloud rect { fill: color-mix(in srgb, var(--surface) 82%, var(--text)); opacity: .22; }
+@media (max-width: 640px) { .scene-art { width: 100%; opacity: .72; } }
 .scene-fx i { position: absolute; inset: -220px; display: block; opacity: 0; -webkit-mask-repeat: repeat; mask-repeat: repeat; }
 /* 흐림: 화면을 살짝 가라앉힌다 · 안개: 전경 아래쪽을 옅은 막으로 덮는다 · 혈무: 붉은 막 */
 .scene-fx .fx-veil { inset: 0; }
