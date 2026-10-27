@@ -10,7 +10,11 @@ export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '�
   spirit_tea: '영력 10', clear_spirit_pill: '영력 20', spirit_qi_pill: '영력 35', moonlight_essence: '영력 55 · 심신 동요 치료', heavenly_dew: '영력 80 · 심신 동요·사념 침식 치료',
   // 요리(서버 world_use_item과 같은 값)
   grilled_fish: '체력 25 · 든든함(채집량·회복량)', spicy_stew: '체력 30 · 정신 10 · 속이 따뜻함(침식·받는 피해 감소)', fish_porridge: '정신 15 · 탐색력 +4',
-  eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천' };
+  eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천',
+  herb_fish_steam: '체력 40 · 중독 치료 · 기운 충천', spirit_gukbap: '체력 30 · 정신 15 · 영력 15 · 탐색력 +3 · 속이 따뜻함',
+  // 연금
+  rejuv_pill: '체력 60 · 출혈·화상·삠·중독 치료(전투 중에도)', grand_pill: '체력 100 · 정신 20 · 동요·탈진 치료(전투 중에도)',
+  purify_water: '침식 -20 · 정신 5 · 사념 침식 치료', calm_brew: '정신 30 · 동요·피로 치료' };
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
 // 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
 const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);

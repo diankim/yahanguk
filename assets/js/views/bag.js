@@ -11,6 +11,9 @@ const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
 const atPlace = (loc, here) => !!loc && (loc === here || (LOC_ALIAS[loc] || []).includes(here));
 let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '', cq = '';
+// 제작 분야(서버 world_crafting_recipes.craft_field). 아무것도 고르지 않으면 모든 분야를 보인다.
+const FIELDS = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
+const craftFields = new Set();
 // 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
 const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
   name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '희귀한 것 먼저', '흔한 것 먼저'] };
@@ -134,17 +137,22 @@ function craft(body, inv) {
   // 검색: 제작법 이름·만드는 물품·재료·도구·설명으로 찾는다. 검색하는 동안에는 위 거르기와 상관없이 모든 제작법에서 찾는다.
   }).filter(x => { const t = cq.trim().toLowerCase(); if (!t) return true;
     return [x.r.name, x.r.output_name || nameOf(x.r.output), x.r.description, x.r.tool_name || (x.r.tool ? nameOf(x.r.tool) : ''), ...Object.keys(x.r.ingredients || {}).map(nameOf)].join(' ').toLowerCase().includes(t); })
-    .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'can' ? x.can : craftFilter === 'cook' ? cookOut.has(x.r.output) : x.atLoc))
+    .filter(x => !craftFields.size || craftFields.has(x.r.field || (cookOut.has(x.r.output) ? 'cooking' : '')))
+    .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'can' ? x.can : x.atLoc))
     .sort((a, b) => b.can - a.can || b.atLoc - a.atLoc || (a.r.difficulty || 0) - (b.r.difficulty || 0));
   body.innerHTML = `
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession))} · ${fmt.num(inv.crafting_rank)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="제작법 찾기 (이름·완성품·재료·도구)" value="${esc(cq)}"></label>
-    ${segmented('craft-filter', [['can', '지금 가능'], ['cook', '요리'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
+    ${segmented('craft-filter', [['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
+    <div class="craft-cats" role="group" aria-label="제작 분야 거르기">${FIELDS.map(f => { const n = (inv.recipes || []).filter(r => (r.field || '') === f).length;
+      return `<label class="check ${inv.crafting_profession === f ? 'mine' : ''}"><input type="checkbox" data-field="${f}" ${craftFields.has(f) ? 'checked' : ''}><span>${esc(nameOf(f))} <small>${n}</small></span></label>`; }).join('')}
+      ${craftFields.size ? '<button class="btn small ghost" id="craft-fields-clear">모든 분야</button>' : ''}</div>
+    <p class="muted small">내 제작 분야(${esc(nameOf(inv.crafting_profession || 'general'))})의 제작법은 품질 +12, 종합 제작은 모든 분야 +4입니다. 분야는 캐릭터 › 성장 › 생활 전문화에서 정합니다.</p>
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, jobOk, lvOk, can, atLoc }) => `
       <article class="recipe ${can ? 'can' : ''}">
-        <header><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
+        <header><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         <p class="muted small">${esc(r.description || '')}</p>
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0); return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b></li>`; }).join('')}</ul>
@@ -153,6 +161,8 @@ function craft(body, inv) {
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`;
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv); });
+  $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); craft(body, inv); });
+  $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); craft(body, inv); });
   const ci = $('#craft-q', body);
   // 한글을 조합하는 동안에는 다시 그리지 않는다(조합이 끊긴다). 조합이 끝나면 그린다.
   const redo = () => { cq = ci.value; const pos = ci.selectionStart; craft(body, inv); const n = $('#craft-q', body); n.focus(); n.setSelectionRange(pos, pos); };

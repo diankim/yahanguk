@@ -15,7 +15,7 @@ const STATS = [
 ];
 const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 const GATHER = ['fieldwork', 'mining', 'botany', 'spirit_harvest', 'fishing'];
-const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice'];
+const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice', 'cooking'];
 const IDLE = [
   ['training', '자율 수련', '전투 경험치와 능력 단련', 'sword'], ['research', '자료 조사', '조사 경험치와 단서 기록', 'search'],
   ['maintenance', '장비 정비', '제작 경험치와 장비 손질', 'hammer'], ['rest', '휴식', '체력·정신 회복, 침식 완화', 'moon'],
@@ -165,7 +165,7 @@ function previewText(cur, next) {
 async function growth(body) {
   const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile').catch(() => null)]);
   const c = store.character, pts = Number(c.stat_points || 0), cur = prof?.current;
-  const ranks = [['전투', c.combat_rank, c.combat_xp], ['조사', c.investigation_rank, c.investigation_xp], ['채집', c.gathering_rank, c.gathering_xp], ['제작', c.crafting_rank, c.crafting_xp]];
+  const ranks = [['전투', c.combat_rank, c.combat_xp], ['조사', c.investigation_rank, c.investigation_xp], ['채집', c.gathering_rank, c.gathering_xp], ['제작', c.crafting_rank, c.crafting_xp], ['요리', c.cooking_rank, c.cooking_xp]];
   body.innerHTML = `
     <div class="grid-2">
       ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다.</p>
@@ -177,7 +177,7 @@ async function growth(body) {
     <div class="grid-2">
       ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, xp]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${fmt.num(xp)} 경험</small></li>`).join('')}</ul>
         <p class="muted small">숙련은 해당 행동을 할 때만 오릅니다. 전투 숙련은 공격력을 단계마다 1.5% 올립니다.</p>`, { ico: 'target' })}
-      ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고, 맞는 제작법은 품질이 오릅니다.</p>
+      ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고, 내 제작 분야의 제작법은 품질 +12(종합 제작은 모든 분야 +4)입니다. 요리를 고르면 요리 제작법이 품질 +12입니다.</p>
         <p class="${profWait(c) > 0 ? 'hint' : 'muted small'}">${profWait(c) > 0 ? `${icon('hourglass', 14)} 다음 변경까지 ${fmt.remain(profWait(c))}` : '한 번 바꾸면 3일 동안 다시 바꿀 수 없습니다.'}</p>
         <div class="form-grid">
           <label class="field"><span>채집 분야</span><select id="g-prof">${GATHER.map(k => `<option value="${k}" ${inv?.gathering_profession === k ? 'selected' : ''}>${esc(nameOf(k))}</option>`).join('')}</select></label>
