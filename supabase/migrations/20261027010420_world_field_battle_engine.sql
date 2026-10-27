@@ -421,7 +421,7 @@ BEGIN
 
   UPDATE public.world_active_encounters SET current_hp = a.current_hp, turn_count = turn, fx = v_fx, pfx = v_pfx,
     intent = CASE WHEN ended IS NULL THEN next_intent ELSE v_intent END,
-    defeated = ended = 'victory', fled = ended IN ('fled', 'defeat'), result = v_result,
+    defeated = coalesce(ended = 'victory', false), fled = coalesce(ended IN ('fled', 'defeat'), false), result = v_result,
     log = (SELECT coalesce(jsonb_agg(x ORDER BY o), '[]'::jsonb) FROM (SELECT x, o FROM jsonb_array_elements(a.log || lines) WITH ORDINALITY t(x, o) ORDER BY o DESC LIMIT 14) s),
     last_action_at = now(), updated_at = now()
   WHERE owner_id = uid;
