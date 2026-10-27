@@ -17,19 +17,23 @@ const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 const GATHER = ['fieldwork', 'mining', 'botany', 'spirit_harvest', 'fishing'];
 const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice', 'cooking'];
 const IDLE = [
-  ['training', '자율 수련', '경험치와 전투 숙련, 근접 기술을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 추적 기술을 올립니다.', 'search'],
-  ['maintenance', '장비 정비', '경험치와 제작 숙련, 결계 각인 기술을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
+  ['training', '자율 수련', '경험치와 전투 숙련, 든 무기에 맞는 전투 기술(근접·원거리·봉인술)을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 추적 기술을 올립니다.', 'search'],
+  ['maintenance', '장비 정비', '경험치와 제작 숙련, 제작 분야에 맞는 기술(단조·연금·결계 각인)을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
 ];
 // 자율 활동 보상(서버 world_claim_idle_activity와 같은 식): 시간 h에 대해 숙련·회복 floor(h×12×0.35), 경험치 floor(h×비율×0.35)(최소 1, 최고 레벨이면 0)
 const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
+// 오르는 기술(서버 world_idle_skill_for와 같은 규칙): 수련은 든 무기 종류, 정비는 제작 분야
+let idleWeapon = 'melee';
+const trainSkill = () => ({ ranged: '원거리', magic: '봉인술' })[idleWeapon] || '근접';
+const maintSkill = () => ({ sealing: '결계 각인', alchemy: '연금' })[store.character?.crafting_profession] || '단조';
 // early: 끝나기 전에 그만두면 지난 시간만큼만, 최소 1 보정 없이
 function idleReward(k, min, level, early = false) {
   const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, Math.floor(h * IDLE_RATE[k] * 0.35));
   const out = xp ? [`경험치 +${xp}`] : [];
   if (early && !gain && !xp) return ['받을 보상 없음'];
-  if (k === 'training') out.push(`전투 숙련 +${gain}`, `근접 기술 +${gain}`);
+  if (k === 'training') out.push(`전투 숙련 +${gain}`, `${trainSkill()} 기술 +${gain}`);
   else if (k === 'research') out.push(`조사 숙련 +${gain}`, `추적 기술 +${gain}`);
-  else if (k === 'maintenance') out.push(`제작 숙련 +${gain}`, `결계 각인 기술 +${gain}`);
+  else if (k === 'maintenance') out.push(`제작 숙련 +${gain}`, `${maintSkill()} 기술 +${gain}`);
   else out.push(`체력·정신·영력 각 +${gain}`);
   return out;
 }
@@ -263,7 +267,8 @@ async function skills(body) {
 
 /* ── 자율 활동 ───────────────────────────────────────── */
 async function idle(body) {
-  const snap = await load('world_idle_activity_snapshot');
+  const [snap, prof] = await Promise.all([load('world_idle_activity_snapshot'), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
+  idleWeapon = prof?.current?.weapon?.type || 'melee';
   const active = snap?.active;
   const ready = active && (snap.ready || new Date(snap.ready_at) <= new Date());
   const name = IDLE.find(x => x[0] === snap?.activity_type)?.[1] || '자율 활동';
