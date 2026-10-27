@@ -133,5 +133,6 @@ Cloudflare Pages에는 빌드 없이 저장소 루트를 그대로 배포하면 
 1. **시작**: Supabase SQL Editor에서 `supabase/maintenance/start.sql`을 실행합니다. 게임 데이터·RPC(public 스키마)가 anon·authenticated·PUBLIC에게 닫혀, 게임 화면은 물론 공개 키로 API를 직접 불러도 `permission denied for schema public`으로 거절됩니다. 데이터는 건드리지 않습니다.
 2. 화면은 진입할 때(`assets/js/boot.js`)와 게임 중 요청이 거절될 때 `maintenance.html`로 옮겨 갑니다. 앱 내부 경로(`#/map` 등)로 들어와도 같습니다.
 3. **종료**: `supabase/maintenance/end.sql`을 실행하면 권한이 점검 전과 똑같이 돌아옵니다. 점검 페이지는 30초마다 서버를 확인하다가 열리면 원래 보던 화면으로 돌아갑니다.
-4. 배포 없이 켜고 끌 수 있습니다. 계획 점검을 미리 알리고 싶으면 `maintenance.json`의 `active`를 `true`로(문구는 `message`) 배포해도 됩니다.
-5. 점검 페이지를 다른 디자인으로 바꿀 때는 `assets/app.css`와 `assets/js/maintenance.js`를 불러오고 `data-maint-message`·`data-maint-checked`·`data-maint-retry` 표식을 두면 저장된 테마와 자동 복귀가 그대로 동작합니다.
+4. 배포 없이 켜고 끌 수 있습니다. 계획 점검을 미리 알리고 싶으면 `maintenance.json`의 `active`를 `true`로 배포해도 됩니다.
+5. 점검 페이지 안내는 `maintenance.json`에서 읽습니다(서버 차단으로 점검에 들어간 경우에도 보입니다): `message`(안내 문구), `until`(예상 종료, ISO 시각 예: `2026-10-28T03:00:00+09:00`), `notes`(이번 점검에서 하는 일 목록).
+6. 점검 페이지를 다른 디자인으로 바꿀 때는 `assets/app.css`와 `assets/js/maintenance.js`를 불러오고 `data-maint-message`·`data-maint-checked`·`data-maint-next`·`data-maint-until`·`data-maint-notes`·`data-maint-state`·`data-maint-retry` 표식을 두면 저장된 테마와 자동 복귀가 그대로 동작합니다.
