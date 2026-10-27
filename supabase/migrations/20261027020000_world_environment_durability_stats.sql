@@ -307,7 +307,7 @@ END $f$;
 -- ── 수리 도구 제작법·판매처 ──────────────────────────────
 INSERT INTO public.world_crafting_recipes(recipe_id, recipe_name, output_item, output_qty, ingredients, required_tool, required_tool_tier, required_location,
   description, minimum_level, required_job, recipe_difficulty, quality_bonus, required_skill, required_skill_rank)
-VALUES ('repair_kit_recipe', '장비 수리 도구 제작', 'repair_kit', 2, '{"iron_ingot":1,"lumber":1,"talisman_thread":1}', NULL, 0, '연무장·팔괘진',
+VALUES ('repair_kit_recipe', '장비 수리 도구 제작', 'repair_kit', 2, '{"iron_ingot":1,"lumber":1,"talisman_thread":1}', NULL, 1, '연무장·팔괘진',
   '월철 주괴와 가공 부적목을 실로 묶어 수리 도구 두 벌을 만든다. 무기·방어구·도구의 내구도를 최대치의 절반만큼 되살린다.', 3, NULL, 2, 0, NULL, 1)
 ON CONFLICT (recipe_id) DO NOTHING;
 INSERT INTO public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max)
