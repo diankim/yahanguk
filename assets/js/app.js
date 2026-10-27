@@ -5,6 +5,7 @@ import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { mountWhisper } from './whisper.js';
 import { mountGrowth } from './growth.js';
+import { mountVersionCheck } from './version.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { maybeStartTutorial, markPending } from './tutorial.js';
@@ -242,6 +243,7 @@ function renderGame() {
   mountEnv();
   mountChat($('#chat-col'), $('#chat-fab'));
   mountWhisper($('#btn-whisper'));
+  mountVersionCheck(); // 배포·SQL 적용 뒤 새로고침 안내
   mountTitleDot();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
