@@ -232,44 +232,50 @@ async function idle(body) {
 }
 
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
-let tq = '', tf = 'all', tcat = '', tshow = 20;
+// 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
+const TCAT_ORDER = ['탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '교류', '성장', '비밀', '기타'];
+let tq = '', tf = 'all', tcat = '';
 async function titles(body) {
   const snap = await load('world_title_snapshot');
   const list = snap?.titles || [];
-  const cats = [...new Set(list.map(t => t.category))];
+  const order = c => { const i = TCAT_ORDER.indexOf(c); return i < 0 ? 99 : i; };
+  const cats = [...new Set(list.map(t => t.category))].sort((a, b) => order(a) - order(b));
+  const countIn = c => { const l = list.filter(t => t.category === c); return `${l.filter(t => t.earned).length}/${l.length}`; };
   body.innerHTML = `
     <div class="title-head">
       <div class="chips">${chip(`얻은 칭호 ${snap?.earned_count || 0}/${snap?.total || list.length}`, 'accent')}${chip(`숨겨진 칭호 ${snap?.hidden_earned || 0}/${snap?.hidden_total || 0}`)}${chip(`장착 ${snap?.equipped_count || 0}/3`)}</div>
       <p class="muted small">칭호는 최대 3개까지 장착해 효과를 받습니다. 그와 별개로 <b>대표 칭호</b> 하나를 정하면 채팅과 프로필에 이름과 함께 보입니다.</p>
       <label class="search"><span>${icon('search', 16)}</span><input id="t-q" type="search" placeholder="칭호 이름·조건·효과로 찾기" value="${esc(tq)}"></label>
       ${segmented('t-f', [['all', '전체'], ['earned', '얻음'], ['equipped', '장착'], ['locked', '못 얻음']], tf)}
-      <div class="chips cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+      <div class="cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)} <small>${countIn(c)}</small></button>`).join('')}</div>
     </div>
-    <ul class="title-list" id="t-list"></ul>`;
+    <div id="t-list"></div>`;
+  const card = t => `<li class="t-card ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
+      <div class="t-top">${icon(t.icon || 'spark', 18)}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
+        ${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
+      ${t.description ? `<p class="t-desc">${esc(t.description)}</p>` : ''}
+      <p class="t-cond">조건 · ${esc(t.condition || '-')}</p>
+      ${t.bonus ? `<p class="t-bonus">${esc(effectText(t.bonus).join(' · '))}</p>` : ''}
+      ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
+        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button></div>` : ''}</li>`;
   const paint = () => {
     const q = tq.trim().toLowerCase();
     const rows = list.filter(t => (tf === 'all' || (tf === 'earned' && t.earned) || (tf === 'equipped' && t.equipped) || (tf === 'locked' && !t.earned))
       && (!tcat || t.category === tcat)
       && (!q || [t.name, t.description, t.condition, effectText(t.bonus || {}).join(' ')].join(' ').toLowerCase().includes(q)));
-    const more = rows.length - tshow;
-    $('#t-list', body).innerHTML = rows.length ? rows.slice(0, tshow).map(t => `<li class="${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
-      ${icon(t.icon || 'spark', 18)}
-      <div><b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}${t.display ? ' <span class="chip accent">대표</span>' : ''}</b><small>${esc(t.description || '')}</small>
-        <small class="muted">조건: ${esc(t.condition || '-')} · ${esc(t.category)}</small>${t.bonus ? `<small class="accent">${esc(effectText(t.bonus).join(' · '))}</small>` : ''}</div>
-      <div class="btn-col">${t.earned ? `<button class="btn small ${t.equipped ? 'primary' : ''}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
-        <button class="btn small ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button>` : chip(t.hidden ? '숨김' : '미획득')}</div></li>`).join('')
-      + (more > 0 ? `<li class="empty-row"><button class="btn block" id="t-more">더 보기 (${more}개 남음)</button></li>` : '')
-      : `<li class="empty-row">${empty('조건에 맞는 칭호가 없습니다.', 'search')}</li>`;
-    $('#t-more', body)?.addEventListener('click', () => { tshow += 20; paint(); });
+    const groups = cats.map(c => [c, rows.filter(t => t.category === c)]).filter(([, l]) => l.length);
+    $('#t-list', body).innerHTML = groups.length ? groups.map(([c, l]) => `<section class="t-group"><h3 class="sub-h">${esc(c)} <small class="muted">${l.length}개 · 얻음 ${countIn(c)}</small></h3>
+        <ul class="t-grid">${l.map(card).join('')}</ul></section>`).join('')
+      : empty('조건에 맞는 칭호가 없습니다.', 'search');
     $$('[data-title]', body).forEach(b => b.onclick = () => guard(b, async () => {
       const r = await act('world_title_equip', { p_title_key: b.dataset.title });
       return { content: r?.equipped ? '칭호를 장착했습니다. (3개를 넘으면 가장 오래된 칭호가 내려갑니다)' : '칭호를 내렸습니다.' };
     }));
     $$('[data-disp]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_set_display', { p_title_key: b.dataset.disp || null })));
   };
-  $('#t-q', body).oninput = e => { tq = e.target.value; tshow = 20; paint(); };
-  bindSegmented(body, 't-f', k => { tf = k; tshow = 20; paint(); });
-  $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; tshow = 20; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
+  $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
+  bindSegmented(body, 't-f', k => { tf = k; paint(); });
+  $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
   paint();
   // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)
   if (list.some(t => t.new)) markTitlesSeen();
