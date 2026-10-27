@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP } from './core.js';
 import { envChip } from './env.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
@@ -99,7 +99,7 @@ window.addEventListener('hashchange', () => render());
 function render() {
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);
-  const need = Math.max(100, (c.level || 1) * 100);
+  const need = xpNeed(c.level);
   const first = items[0];
   $('#hud-strip', root).innerHTML = `
     <span class="hs-name"><b>${esc(c.character_name)}${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
@@ -116,7 +116,7 @@ function render() {
         <span class="lv">Lv.${c.level}</span></div>
       ${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
       ${envChip()}
-      <div class="xp"><span>경험치</span><span>${fmt.num(c.experience)} / ${fmt.num(need)}</span></div>${bar(c.experience, need, 'xp')}
+      <div class="xp"><span>경험치</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
     </section>
     <section class="hud-card vitals">
       ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital('영력', c.spiritual_power, 'sp')}${vital('침식', c.erosion || 0, 'er')}

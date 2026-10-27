@@ -1,7 +1,7 @@
 // 성장 알림: 레벨·기능 숙련 단계·가방 칸처럼 캐릭터가 자랄 때마다 화면 위에 잠깐 떴다 사라지는 알림을 띄운다.
 // 서버에서 다시 읽은 캐릭터(world_characters)를 지난 값과 비교한다. 지난 값은 이 기기에 캐릭터별로 남겨,
 // 접속하지 않은 사이(원정·자율 활동 보상 등) 자란 것도 다음 접속 때 알린다.
-import { on, store, esc, icon, fmt } from './core.js';
+import { on, store, esc, icon, fmt, xpNeed, LEVEL_CAP } from './core.js';
 
 const RANKS = [['combat_rank', '전투 숙련'], ['investigation_rank', '조사 숙련'], ['gathering_rank', '채집 숙련'], ['crafting_rank', '제작 숙련']];
 const keyOf = id => `yh-growth:${id}`;
@@ -21,7 +21,7 @@ export function mountGrowth() {
     const now = pick(c), was = last;
     if (now.level > was.level) {
       const pts = Math.max(0, now.stat_points - was.stat_points);
-      notify('level', `레벨 업! Lv.${now.level}`, [pts ? `능력치 포인트 +${pts}` : '', `다음 레벨까지 ${fmt.num(Math.max(0, now.level * 100 - (c.experience || 0)))} 경험`].filter(Boolean).join(' · '), '#/char/growth');
+      notify('level', `레벨 업! Lv.${now.level}`, [pts ? `능력치 포인트 +${pts}` : '', (now.level >= LEVEL_CAP ? '최고 레벨에 이르렀습니다' : `다음 레벨까지 ${fmt.num(Math.max(0, xpNeed(now.level) - (c.experience || 0)))} 경험`)].filter(Boolean).join(' · '), '#/char/growth');
     }
     for (const [k, label] of RANKS) if (now[k] > was[k]) notify('rank', `${label} ${now[k]}단계`, '해당 활동의 효율이 좋아졌습니다.', '#/char/growth');
     if (now.bag > was.bag && was.bag) notify('bag', `가방이 넓어졌습니다`, `${fmt.num(was.bag)}칸 → ${fmt.num(now.bag)}칸`, '#/bag/items');
