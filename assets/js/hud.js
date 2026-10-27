@@ -82,17 +82,20 @@ function statusItems(c) {
   }
   if (state.exp) {
     const left = new Date(state.exp.ends_at).getTime() - Date.now();
-    items.push({ kind: 'exp', icon: 'flame', title: `원정 · ${state.exp.place_name || ''}`, timer: state.exp.ends_at, text: left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능', action: ['원정 보기', openExpeditionView], ready: left <= 0 });
+    items.push({ kind: 'exp', icon: 'flame', title: `원정 · ${state.exp.place_name || ''}`, timer: state.exp.ends_at, text: left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능', action: ['원정 보기', openExpeditionView], ready: left <= 0,
+      // 현장 화면을 보고 있지 않을 때만 현장으로 가는 단추를 함께 둔다
+      action2: onField() ? null : ['현장 보기', () => window.yahangGo('home')] });
   }
   if (!items.length) items.push({ kind: 'calm', icon: 'moon', title: '대기 중', text: '지도에서 이동하거나 현재 지역을 탐사하세요.' });
   return items;
 }
 
-// 원정 창(현장 화면의 원정 팝업)을 연다. 다른 화면이면 현장으로 옮긴 뒤 연다. 모바일 상태 띠는 접는다.
-function openExpeditionView() {
-  root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false');
-  window.dispatchEvent(new CustomEvent('yh-open-expedition'));
-}
+// 원정 창(팝업)을 그 자리에서 연다. 모바일 상태 띠는 접는다.
+function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEvent('yh-open-expedition')); }
+function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
+const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
+// 화면을 옮기면 「현장 보기」 단추가 생기거나 사라지도록 다시 그린다
+window.addEventListener('hashchange', () => render());
 function render() {
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);
@@ -131,10 +134,11 @@ function render() {
         <div class="now-ico">${icon(it.icon, 18)}</div>
         <div class="now-text"><b>${esc(it.title)}</b><span data-timer="${it.timer ? new Date(it.timer).getTime() : ''}" data-kind="${it.kind}">${esc(it.text)}</span>
           ${it.meter ? bar(it.meter[0], it.meter[1], 'enemy') : ''}</div>
-        ${it.action ? `<button class="btn small ${it.ready ? 'primary' : 'ghost'}" data-act="${i}">${esc(it.action[0])}</button>` : ''}
+        ${it.action || it.action2 ? `<div class="now-acts">${it.action ? `<button class="btn small ${it.ready ? 'primary' : 'ghost'}" data-act="${i}">${esc(it.action[0])}</button>` : ''}${it.action2 ? `<button class="btn small ghost" data-act2="${i}">${esc(it.action2[0])}</button>` : ''}</div>` : ''}
       </div>`).join('')}
     </section>`;
   body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
+  body.querySelectorAll('[data-act2]').forEach(b => b.onclick = () => { closeStrip(); items[Number(b.dataset.act2)].action2[1](b); });
   const sts = (state.hud?.statuses || []).filter(s => new Date(s.expires_at) > new Date());
   body.querySelectorAll('[data-st]').forEach(b => b.onclick = () => openStatus(sts[Number(b.dataset.st)]));
 }

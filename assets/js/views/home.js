@@ -6,7 +6,7 @@ import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox } from './common.js';
 import { renderShop, renderMarket, renderStable } from './services.js';
-import { renderExpedition } from './expedition.js';
+import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
@@ -22,10 +22,9 @@ const OUTCOME = {
 const CAT = { herbs: '약초', ore: '광석', wood: '목재', water: '수변', spirit: '영물', relics: '유물', supplies: '보급' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
-let el, off = [], snap = null, timer = null, busy = false, wantExp = false;
+let el, off = [], snap = null, timer = null, busy = false;
 // 알림의 "결과 보기": 현장 화면이 그려진 뒤 원정 창을 연다.
 // 상태판·알림의 「원정 보기」: 현장 화면이면 바로 열고, 다른 화면이면 현장으로 옮긴 뒤 연다.
-window.addEventListener('yh-open-expedition', () => { if (el?.isConnected && !busy) openExpedition(); else { wantExp = true; if (!el?.isConnected) window.yahangGo?.('home'); } });
 
 export async function render(root) {
   if (!store.character) return;
@@ -67,7 +66,6 @@ async function draw() {
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
   if (again) return draw();
-  if (wantExp && el?.isConnected) { wantExp = false; openExpedition(); }
 }
 
 function drawBattle() {
@@ -312,10 +310,4 @@ function openRest(r) {
   $$('[data-rest]', m).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_field_rest', { p_style: b.dataset.rest }); closeModal(); return out; }));
 }
 
-async function openExpedition() {
-  const m = openModal({ title: '원정', wide: true, body: `<div class="exp-body">${loading()}</div>` });
-  const box = $('.exp-body', m);
-  const fill = async () => { try { renderExpedition(box, await load('world_expedition_overview')); } catch (e) { box.innerHTML = errorBox(e.message); } };
-  await fill();
-  const offc = on('changed', ({ name }) => { if (!box.isConnected) return offc(); if (/expedition/.test(name)) fill(); });
-}
+const openExpedition = () => openExpeditionWindow();

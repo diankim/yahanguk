@@ -1186,3 +1186,5 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .exp-feed .k-gather .ico, .exp-feed .k-find .ico { color: var(--gold); }
 .exp-feed .k-atk, .exp-feed .k-hurt, .exp-feed .k-heal, .exp-feed .k-skill { padding-left: 14px; }
 .exp-feed .k-atk .who, .exp-feed .k-hurt .who, .exp-feed .k-heal .who, .exp-feed .k-skill .who { font-weight: 500; }
+
+.now-item .now-acts { display: grid; gap: 4px; flex: none; justify-items: stretch; }

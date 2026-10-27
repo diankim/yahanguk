@@ -1,7 +1,7 @@
 // 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
 // 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
-import { ask, store, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
-import { chip, danger, load } from './common.js';
+import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
+import { chip, danger, load, loading, errorBox } from './common.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
 const STANCES = [
@@ -25,6 +25,16 @@ const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', s
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
+
+// 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
+export async function openExpeditionWindow() {
+  const m = openModal({ title: '원정', wide: true, body: `<div class="exp-body">${loading()}</div>` });
+  const box = $('.exp-body', m);
+  const fill = async () => { try { renderExpedition(box, await load('world_expedition_overview')); } catch (e) { box.innerHTML = errorBox(e.message); } };
+  await fill();
+  const offc = on('changed', ({ name }) => { if (!box.isConnected) return offc(); if (/expedition/.test(name)) fill(); });
+}
+window.addEventListener('yh-open-expedition', () => openExpeditionWindow());
 
 export function renderExpedition(box, ov) {
   const c = store.character;

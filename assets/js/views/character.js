@@ -93,13 +93,20 @@ async function hereZone() {
   return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
 }
 async function status(body) {
-  const [sv, hud, prof, inv, here] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot').catch(() => null),
-    load('world_combat_profile').catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone()]);
+  const [sv, hud, prof, inv, here, rs] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot').catch(() => null),
+    load('world_combat_profile').catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
+    rpc('world_rest_status').catch(() => null)]);
   const c = store.character, invItems = c.inventory || {};
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
   const statuses = (hud?.statuses || []).filter(x => new Date(x.expires_at) > new Date());
   const downed = c.downed_at || c.health <= 0;
   const deathAt = c.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
+  // 부적 정화: 정화 부적이 있고 침식이 있어야 한다. 마음 다잡기: 본부에서 15분마다, 정신이 가득하고 침식이 없으면 쓸 수 없다(서버가 다시 검사).
+  const wards = Number(invItems.ward_talisman || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
+  const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
+  const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location); // 서버 world_survival_action과 같은 곳
+  const cleanseWhy = downed ? '전투불능' : !wards ? '정화 부적이 없습니다' : er0 <= 0 ? '정화할 침식이 없습니다' : '';
+  const groundWhy = downed ? '전투불능' : !atHq ? '본부(정청·객사·연무장)에서만' : (mn0 >= 100 && er0 <= 0) ? '정신이 이미 맑습니다' : groundReady > Date.now() ? `${fmt.remain(groundReady - Date.now())} 뒤 다시` : '';
   body.innerHTML = `
     ${downed ? panel('전투불능', `
       <p class="desc">쓰러져 움직일 수 없습니다. 같은 지역의 조사원이 구조할 수 있고, 아래 방법으로 스스로 일어날 수도 있습니다.</p>
@@ -115,8 +122,8 @@ async function status(body) {
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
         <p class="muted small">정신이 40 아래면 공격이 약해지고, 침식이 30을 넘으면 공격이 약해지며 높아질수록 불이익이 커집니다. 정화 부적이나 휴식으로 관리하세요.</p>
         <div class="action-grid three">
-          <button class="btn" data-surv="cleanse" ${downed ? 'disabled' : ''}><span>부적 정화</span><small>정화 부적 사용 · 침식 완화</small></button>
-          <button class="btn" data-surv="ground" ${downed ? 'disabled' : ''}><span>마음 다잡기</span><small>정신 회복</small></button>
+          <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || '정화 부적 1개 · 침식 -25 · 정신 +8')}</small></button>
+          <button class="btn" data-surv="ground" ${groundWhy ? 'disabled' : ''}><span>마음 다잡기</span><small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '본부에서 · 정신 +18 · 침식 -10 · 15분마다')}</small></button>
         </div>`, { ico: 'heart' })}
       ${panel('전투 능력', prof?.current ? combatRows(prof.current) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword', extra: `<a class="btn small ghost" href="#/char/growth">능력치</a>` })}
     </div>
@@ -140,6 +147,8 @@ async function status(body) {
     if (!body.isConnected) return clearInterval(t);
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
     const d = $('#death-left', body); if (d && deathAt) d.textContent = `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}`;
+    const g = $('#ground-note', body), gr = Number(g?.dataset.ready || 0);
+    if (g && gr) { if (gr > Date.now()) g.textContent = `${fmt.remain(gr - Date.now())} 뒤 다시`; else { g.dataset.ready = ''; g.textContent = '본부에서 · 정신 +18 · 침식 -10 · 15분마다'; if (atHq && !(mn0 >= 100 && er0 <= 0) && !downed) g.closest('button').disabled = false; } }
   }, 1000);
 }
 

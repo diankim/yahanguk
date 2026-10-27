@@ -92,59 +92,129 @@ function bell(f, t, vol) {
 }
 
 /* ── 곡조 ─────────────────────────────────────────────── */
+// 지역마다 정해진 주제 선율을 A·A′·B·A 형식으로 되풀이한다(같은 지역에서는 같은 곡이 들려 기억에 남는다).
+// 선율은 대금·해금처럼 음과 음을 미끄러지듯 이어 부르고, 아래에 가야금 분산화음과 은은한 화음을 깔아 빈틈 없이 흐르게 한다.
 const PYEONG = [0, 2, 5, 7, 9], GYEMYEON = [0, 3, 5, 7, 10], DARK = [0, 1, 5, 7, 8];
 const PROFILES = {
-  capital:    { scale: PYEONG, root: 293.66, bpm: 64, lead: 'pluck', flute: 0.35, drum: 0.5, bell: 0.05, drone: 0.25 },
-  north:      { scale: GYEMYEON, root: 220.0, bpm: 54, lead: 'flute', flute: 0.7, drum: 0.35, bell: 0, drone: 0.4 },
-  east:       { scale: PYEONG, root: 329.63, bpm: 72, lead: 'pluck', flute: 0.25, drum: 0.3, bell: 0.08, drone: 0.2 },
-  south:      { scale: GYEMYEON, root: 196.0, bpm: 58, lead: 'pluck', flute: 0.45, drum: 0.3, bell: 0, drone: 0.3 },
-  frontier:   { scale: GYEMYEON, root: 261.63, bpm: 80, lead: 'pluck', flute: 0.2, drum: 0.75, bell: 0, drone: 0.45 },
-  underworld: { scale: GYEMYEON, root: 174.61, bpm: 50, lead: 'pluck', flute: 0.3, drum: 0.2, bell: 0.12, drone: 0.55 },
-  heavenward: { scale: PYEONG, root: 440.0, bpm: 58, lead: 'bell', flute: 0.4, drum: 0.1, bell: 0.4, drone: 0.25 },
-  abyss:      { scale: DARK, root: 146.83, bpm: 46, lead: 'pluck', flute: 0.25, drum: 0.25, bell: 0.15, drone: 0.7 },
+  capital:    { scale: PYEONG, root: 293.66, bpm: 76, lead: 'daegeum', drum: 0.45, bell: 0.05, drone: 0.2 },
+  north:      { scale: GYEMYEON, root: 220.0, bpm: 66, lead: 'haegeum', drum: 0.3, bell: 0, drone: 0.3 },
+  east:       { scale: PYEONG, root: 329.63, bpm: 84, lead: 'daegeum', drum: 0.3, bell: 0.08, drone: 0.15 },
+  south:      { scale: GYEMYEON, root: 196.0, bpm: 72, lead: 'haegeum', drum: 0.3, bell: 0, drone: 0.25 },
+  frontier:   { scale: GYEMYEON, root: 261.63, bpm: 92, lead: 'haegeum', drum: 0.7, bell: 0, drone: 0.35 },
+  underworld: { scale: GYEMYEON, root: 174.61, bpm: 62, lead: 'daegeum', drum: 0.2, bell: 0.12, drone: 0.45 },
+  heavenward: { scale: PYEONG, root: 440.0, bpm: 70, lead: 'daegeum', drum: 0.1, bell: 0.35, drone: 0.2 },
+  abyss:      { scale: DARK, root: 146.83, bpm: 58, lead: 'haegeum', drum: 0.25, bell: 0.15, drone: 0.55 },
 };
 const noteOf = (p, deg) => { const s = p.scale, oct = Math.floor(deg / s.length), i = ((deg % s.length) + s.length) % s.length; return p.root * Math.pow(2, oct + s[i] / 12); };
-let playing = false, phraseTimer = null, deg = 2, droneNodes = null, droneKey = '';
+let playing = false, phraseTimer = null, droneNodes = null, droneKey = '';
+let song = null, songKey = '', barNo = 0, nextAt = 0;
 
 function profile() {
   const base = PROFILES[scene.territory] || PROFILES.capital;
   const p = { ...base };
-  if (scene.safe) { p.bpm *= 0.88; p.drum *= 0.15; p.flute *= 1.2; }
-  if (scene.battle) { p.bpm *= 1.4; p.drum = Math.min(1, p.drum + 0.5); p.flute *= 0.4; }
-  if (env.phase === 'night') { p.bpm *= 0.92; p.bell += 0.05; }
+  if (scene.safe) { p.bpm *= 0.9; p.drum *= 0.2; }
+  if (scene.battle) { p.bpm *= 1.3; p.drum = Math.min(1, p.drum + 0.45); }
+  if (env.phase === 'night') { p.bpm *= 0.94; p.bell += 0.05; }
   return p;
+}
+
+// 정해진 씨앗으로 늘 같은 곡을 만든다
+function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909); h >>>= 0; return h / 4294967296; }; }
+const RHYTHMS = [[2, 1, 1], [1, 1, 2], [1, 1, 1, 1], [1.5, 0.5, 2], [3, 1], [1, 0.5, 0.5, 2], [2, 2], [0.5, 0.5, 1, 2], [1, 2, 1]];
+const BATTLE_RHYTHMS = [[1, 1, 1, 1], [0.5, 0.5, 1, 1, 1], [1, 0.5, 0.5, 1, 1], [0.5, 0.5, 0.5, 0.5, 2]];
+// 화음 뿌리(음계 안 위치): A는 으뜸에서 떠나 돌아오고, B는 위쪽으로 넘어갔다 내려온다
+const PROG_A = [[0, 3, 1, 0], [0, 1, 3, 0], [0, 3, 4, 0]], PROG_B = [[3, 1, 4, 3], [1, 3, 2, 4], [3, 4, 1, 3]];
+function makeSong(key, battle) {
+  const r = seeded(key), pick = a => a[Math.floor(r() * a.length)];
+  const section = (prog, startDeg, endDeg) => {
+    let d = startDeg;
+    return prog.map((chord, bi) => {
+      const rh = battle ? pick(BATTLE_RHYTHMS) : pick(RHYTHMS);
+      const notes = rh.map((len, ni) => {
+        // 첫 박은 화음 음(뿌리·3도·5도)에 붙이고, 나머지는 한두 칸씩 걸어간다
+        if (ni === 0) { const tones = [chord, chord + 2, chord + 3, chord + 5, chord + 7]; d = tones.reduce((a, b) => Math.abs(b - d) < Math.abs(a - d) ? b : a); }
+        else d += pick([-1, -1, 1, 1, -2, 2, 0, 1, -1]);
+        d = Math.max(1, Math.min(9, d));
+        // 단락 끝 음은 길게, 정해진 음으로 맺는다
+        if (bi === prog.length - 1 && ni === rh.length - 1) d = endDeg;
+        return [d, len];
+      });
+      return { chord, notes };
+    });
+  };
+  const A = section(pick(PROG_A), 3 + Math.floor(r() * 3), 5), B = section(pick(PROG_B), 6 + Math.floor(r() * 2), 6);
+  // A′: 마지막 두 마디만 살짝 바꿔 맺음을 다르게 한다
+  const A2 = A.map((b, i) => i < 2 ? b : { chord: b.chord, notes: b.notes.map(([d, l], j) => [j === b.notes.length - 1 && i === 3 ? 3 : d + (j % 2 ? 1 : 0), l]) });
+  return [...A, ...A2, ...B, ...A];
+}
+
+// 이어 부르는 선율: 마디 하나를 한 소리로 불며 음마다 미끄러지듯 옮겨 간다(대금은 맑게, 해금은 콧소리처럼)
+function legato(p, notes, t, beat, vol) {
+  const o = ctx.createOscillator(), o2 = ctx.createOscillator(), mix = ctx.createGain(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+  const lfo = ctx.createOscillator(), lg = ctx.createGain();
+  const hae = p.lead === 'haegeum';
+  o.type = hae ? 'sawtooth' : 'sine'; o2.type = 'triangle'; mix.gain.value = hae ? 0.35 : 0.18;
+  lp.type = 'lowpass'; lp.frequency.value = hae ? 1500 : 2600; lp.Q.value = hae ? 3 : 0.7;
+  lfo.frequency.value = hae ? 5.6 : 4.8; lg.gain.value = 0;
+  lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+  o.connect(lp); o2.connect(mix); mix.connect(lp); lp.connect(g); toBgm(g, 0.55);
+  const v = hae ? vol * 0.55 : vol;
+  let at = t; g.gain.setValueAtTime(0.0001, t);
+  notes.forEach(([d, len], i) => {
+    const f = noteOf(p, d), dur = len * beat;
+    if (i === 0) { o.frequency.setValueAtTime(f * 0.985, at); o2.frequency.setValueAtTime(f, at); }
+    o.frequency.setTargetAtTime(f, at, 0.035); o2.frequency.setTargetAtTime(f, at, 0.035);
+    // 음이 바뀔 때 숨을 살짝 고르듯 소리를 낮췄다 올린다
+    g.gain.setTargetAtTime(v * (i === 0 ? 1 : 0.75), at, 0.02); g.gain.setTargetAtTime(v, at + 0.06, 0.08);
+    // 긴 음에는 늦게 떨림(농음)을 건다
+    lg.gain.setTargetAtTime(0, at, 0.05); if (dur > beat * 1.2) lg.gain.setTargetAtTime(f * (hae ? 0.012 : 0.007), at + dur * 0.4, 0.15);
+    at += dur;
+  });
+  g.gain.setTargetAtTime(0.0001, at - 0.05, 0.12);
+  // 대금의 숨소리
+  if (!hae) {
+    const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
+    n.buffer = noiseBuf; bp.type = 'bandpass'; bp.frequency.value = noteOf(p, notes[0][0]) * 2.2; bp.Q.value = 1.2;
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.setTargetAtTime(vol * 0.08, t, 0.1); ng.gain.setTargetAtTime(0.0001, at - 0.05, 0.12);
+    n.connect(bp); bp.connect(ng); toBgm(ng, 0.3); n.start(t); n.stop(at + 0.6);
+  }
+  [o, o2, lfo].forEach(x => { x.start(t); x.stop(at + 0.7); });
+}
+// 은은한 화음: 마디 내내 뿌리·5도를 길게 깐다
+function pad(p, chord, t, dur, vol) {
+  [chord - 5, chord - 2].forEach((d, i) => {
+    const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = 'triangle'; o.frequency.value = noteOf(p, d); o.detune.value = i ? 4 : -4;
+    lp.type = 'lowpass'; lp.frequency.value = 900;
+    g.gain.setValueAtTime(0.0001, t); g.gain.setTargetAtTime(vol, t, 0.35); g.gain.setTargetAtTime(0.0001, t + dur - 0.1, 0.4);
+    o.connect(lp); lp.connect(g); toBgm(g, 0.6); o.start(t); o.stop(t + dur + 1.6);
+  });
 }
 function phrase() {
   if (!playing || !ctx || away) return;
-  const p = profile(), beat = 60 / p.bpm;
-  let t = now() + 0.08;
-  const len = 6 + Math.floor(Math.random() * 5);
-  const rhythm = scene.battle ? [0.5, 0.5, 1, 0.5, 1] : [1, 1, 2, 1.5, 0.5, 1, 3];
-  for (let i = 0; i < len; i++) {
-    const r = rhythm[Math.floor(Math.random() * rhythm.length)];
-    if (Math.random() < 0.15 && i > 0) { t += r * beat; continue; } // 쉼
-    deg += [-2, -1, -1, 0, 1, 1, 2][Math.floor(Math.random() * 7)];
-    deg = Math.max(-2, Math.min(9, deg));
-    const f = noteOf(p, deg), dur = r * beat;
-    if (p.lead === 'flute' || (Math.random() < p.flute * 0.25 && r >= 1.5)) flute(f, t, dur * 1.1, 0.07);
-    else if (p.lead === 'bell' && Math.random() < 0.6) bell(f, t, 0.05);
-    else pluck(f, t, dur, 0.11, Math.random() < 0.3);
-    if (Math.random() < p.bell * 0.3) bell(noteOf(p, deg + 5), t + dur / 2, 0.03);
-    t += dur;
+  const p = profile(), beat = 60 / p.bpm, key = `${scene.territory || 'capital'}:${scene.battle ? 'b' : 'n'}`;
+  if (key !== songKey || !song) { song = makeSong(key, scene.battle); songKey = key; barNo = 0; }
+  if (nextAt < now() + 0.05) nextAt = now() + 0.12;
+  const t = nextAt, bar = song[barNo % song.length], barDur = 4 * beat;
+  // 되풀이할 때마다 조금씩 다르게: 한 음을 한 칸 옮기거나 끝음을 한 옥타브 위에서 부른다
+  const notes = bar.notes.map(([d, l]) => [d, l]);
+  if (barNo >= song.length && Math.random() < 0.3) { const k = Math.floor(Math.random() * notes.length); notes[k][0] += Math.random() < 0.5 ? 1 : -1; }
+  legato(p, notes, t, beat, 0.07);
+  pad(p, bar.chord, t, barDur, 0.022);
+  // 가야금 분산화음: 박마다(전투에서는 반 박마다) 화음 음을 아래에서 짚는다
+  const arp = [bar.chord - 5, bar.chord - 3, bar.chord, bar.chord - 3], step = scene.battle ? 0.5 : 1;
+  for (let b = 0, i = 0; b < 4; b += step, i++) pluck(noteOf(p, arp[i % arp.length]), t + b * beat, beat * step, i % 4 === 0 ? 0.06 : 0.04, false);
+  if (Math.random() < p.bell) bell(noteOf(p, bar.chord + 5), t + 2 * beat, 0.025);
+  // 장단: 첫 박 북, 셋째 박 덕, 사이사이 작은 소리
+  if (p.drum > 0.05) for (let b = 0; b < 4; b++) {
+    const bt = t + b * beat;
+    if (b === 0) drum(bt, 'buk', 0.2 * p.drum);
+    else if (b === 2) drum(bt, 'deok', 0.07 * p.drum);
+    else if (Math.random() < p.drum * 0.6) drum(bt + (scene.battle ? beat / 2 : 0), 'tick', 0.05 * p.drum);
   }
-  // 장단: 큰 북은 첫 박, 작은 소리는 사이사이
-  if (p.drum > 0.05) {
-    const beats = Math.round((t - now()) / beat);
-    for (let b = 0; b < beats; b++) {
-      const bt = now() + 0.08 + b * beat;
-      if (b % 4 === 0) drum(bt, 'buk', 0.22 * p.drum);
-      else if (Math.random() < p.drum * 0.55) drum(bt, b % 2 ? 'deok' : 'tick', 0.06 * p.drum);
-    }
-  }
-  // 이따금 긴 대금 한 줄
-  if (Math.random() < p.flute * 0.35) flute(noteOf(p, 4 + Math.floor(Math.random() * 3)), now() + 0.5, beat * 4, 0.05);
-  const rest = (scene.battle ? 0.2 : 1 + Math.random() * 2.5) * beat;
-  phraseTimer = setTimeout(phrase, (t - now() + rest) * 1000);
+  barNo++; nextAt = t + barDur;
+  // 다음 마디를 미리(0.3초 앞서) 예약해 마디 사이가 끊기지 않게 한다
+  phraseTimer = setTimeout(phrase, Math.max(50, (nextAt - now() - 0.3) * 1000));
 }
 function updateDrone() {
   if (!ctx) return;
@@ -160,7 +230,7 @@ function updateDrone() {
   lp.connect(g); toBgm(g, 0.5);
   droneNodes = { g, os };
 }
-function startMusic() { if (playing || !ensureCtx()) return; playing = true; ctx.resume?.(); updateDrone(); phraseTimer = setTimeout(phrase, 600); }
+function startMusic() { if (playing || !ensureCtx()) return; playing = true; ctx.resume?.(); updateDrone(); nextAt = 0; phraseTimer = setTimeout(phrase, 600); }
 function stopMusic() { playing = false; clearTimeout(phraseTimer); updateDrone(); droneKey = ''; }
 
 /* ── 환경음 ───────────────────────────────────────────── */
