@@ -234,7 +234,7 @@ export async function renderStable(box) {
     const c = store.character;
     box.innerHTML = here.length ? `<div class="mount-grid">${here.map(x => `<article class="mount ${x.owned ? 'on' : ''}">
         <header><b>${esc(x.mount_name)}</b>${chip(x.tier)}</header><p>${esc(x.description || '')}</p>
-        <dl class="kv tight"><div><dt>속도</dt><dd>×${x.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${x.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${x.fare_free ? '없음' : `노정패 ${x.fare_tokens}`}</dd></div></dl>
+        <dl class="kv tight"><div><dt>속도</dt><dd>×${x.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${x.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${x.fare_free ? '없음' : `구간당 노정패 ${x.fare_tokens}`}</dd></div></dl>
         <small class="muted">${esc(conditions(x, c))}</small>
         ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
       : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route');

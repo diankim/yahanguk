@@ -60,7 +60,8 @@ let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 export function renderBattle(box, snap, done) {
   host = box; data = snap; onEnd = done;
   // 서버 시각을 그대로 쓰면 기기 시계가 늦을 때 대기가 길어지므로, 남은 시간은 최대 1초로 자른다
-  nextAt = Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
+  // 첫 수(아직 한 번도 행동하지 않은 전투)는 기다리지 않는다(서버도 전투를 열 때 바로 행동할 수 있게 둔다)
+  nextAt = Number(snap.battle?.turn || 0) === 0 ? 0 : Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
   draw();
 }
 export function stopBattle() { clearInterval(cdTimer); host = null; }

@@ -305,6 +305,12 @@ function routeEstimate(route) {
   if (route.length > 2) secs = Math.round(secs * 0.9);
   return { secs, mount: m, hops: route.length - 1 };
 }
+// 노정패: 구간마다 탈것 운임. 모자라면 서버가 탈것에서 내려 걸어가게 한다.
+function fareLine(est) {
+  const m = est.mount; if (!m || m.fare_free) return '';
+  const need = (Number(m.fare_tokens) || 0) * est.hops, have = Number(mountData?.mount_tokens ?? store.character?.mount_tokens) || 0;
+  return need > have ? ` · 노정패 ${need}개가 필요하지만 ${have}개뿐이라 걸어갑니다` : ` · 노정패 ${need}개`;
+}
 
 function factionLegend() {
   const seen = new Map();
@@ -340,7 +346,7 @@ function drawDetail() {
         ${!zone?.is_safe_zone ? `<dl class="kv"><div><dt>요괴</dt><dd>${monsters.length ? monsters.map(m => esc(m.monster_name)).join(', ') : '미확인'}</dd></div></dl>` : ''}
         ${route && route.length > 1 ? `<div class="route-box"><b>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}</b>
           <ol class="route-steps">${route.map((x, i) => `<li class="${i === 0 ? 'from' : i === route.length - 1 ? 'to' : ''}">${esc(x.region_name)}</li>`).join('')}</ol>
-          <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${est.mount && !est.mount.fare_free ? ` · 노정패 ${est.mount.fare_tokens}개` : ''}</p></div>` : ''}
+          <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${fareLine(est)}</p></div>` : ''}
         ${reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
         <div class="btn-row">
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
@@ -398,10 +404,10 @@ async function drawTravel(body) {
       <article class="mount ${m.equipped ? 'on' : ''}">
         <header><b>${esc(m.mount_name)}</b>${chip(m.tier)}</header>
         <p>${esc(m.description || '')}</p>
-        <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free ? '없음' : `노정패 ${m.fare_tokens}`}</dd></div></dl>
+        <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free ? '없음' : `구간당 노정패 ${m.fare_tokens}`}</dd></div></dl>
         ${m.equipped ? chip('사용 중', 'accent') : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
       </article>`).join('')}</div>
-      <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 · 운임이 있는 탈것은 출발할 때 노정패를 씁니다. 노정패는 이동과 토벌로 얻습니다.</p>`, { ico: 'route' })}
+      <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.</p>`, { ico: 'route' })}
     ${panel('얻을 수 있는 탈것', others.length ? `<ul class="spot-list">${others.map(m => `<li><div><b>${esc(m.mount_name)}</b>
         <small>${m.acquire_method === 'event' ? '특별한 사건으로만 얻을 수 있습니다' : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
         ${m.acquire_method === 'stable' && m.unlock_region ? `<button class="btn small ghost" data-goto="${esc(m.unlock_region)}">지도에서 보기</button>` : ''}</li>`).join('')}</ul>` : empty('모든 탈것을 가지고 있습니다.'), { ico: 'shop' })}`;
