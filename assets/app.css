@@ -849,3 +849,22 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 /* 설정 페이지 */
 .set-sec { display: none; } .set-sec.on { display: block; }
 .profile-view { display: grid; gap: 12px; } .profile-view .bio { padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); }
+
+/* ── 처음 안내·첫 걸음 ─────────────────── */
+.tut { position: fixed; inset: 0; z-index: 95; }
+.tut-ring { position: fixed; border-radius: var(--r); border: 2px solid var(--gold); box-shadow: 0 0 0 9999px rgb(0 0 0 / .58); pointer-events: none; transition: all .2s; }
+.tut:has(.tut-ring[hidden]) { background: rgb(0 0 0 / .58); }
+.tut-card { position: fixed; z-index: 1; display: grid; gap: 8px; padding: 16px; border-radius: var(--r-lg); background: var(--surface); border: var(--bw) solid var(--gold); color: var(--text); }
+.tut-card.center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(400px, calc(100vw - 32px)); }
+.tut-card.top, .tut-card.bottom { left: 12px; right: 12px; }
+.tut-card.top { top: calc(var(--top-h) + 10px); } .tut-card.bottom { bottom: calc(var(--tab-h) + 12px + env(safe-area-inset-bottom)); }
+.tut-card h3 { font-size: 17px; } .tut-step { font-size: 12px; color: var(--gold); font-weight: 600; }
+.tut-body { font-size: 14px; line-height: 1.6; color: color-mix(in srgb, var(--text) 88%, var(--muted)); } .tut-body b { color: var(--gold); }
+.tut-act { display: flex; gap: 6px; align-items: center; margin-top: 4px; } .tut-act span { flex: 1; }
+.firststeps .panel-head h2 small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+.fs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.fs-list li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); }
+.fs-list a { display: grid; color: var(--text); text-decoration: none; min-width: 0; } .fs-list small { font-size: 12px; color: var(--muted); }
+.fs-box { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 6px; border: var(--bw) solid var(--line); color: var(--ok); }
+.fs-list li.done { opacity: .6; } .fs-list li.done .fs-box { border-color: var(--ok); } .fs-list li.done b { text-decoration: line-through; }
+.linkish { background: none; border: 0; padding: 0; color: var(--gold); text-decoration: underline; cursor: pointer; font: inherit; }

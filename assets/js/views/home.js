@@ -8,6 +8,7 @@ import { renderExpedition } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
+import { checklistHtml, noteRegion } from '../tutorial.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -43,7 +44,8 @@ async function draw() {
     setScene({ safe: !!s.region.safe, battle: !!(s.battle && !downed) });
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
-    el.innerHTML = `${scene(s, traveling, downed)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition)}`;
+    noteRegion(s.region);
+    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition)}`;
     bind(s);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }

@@ -4,6 +4,7 @@ import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
+import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
@@ -157,7 +158,9 @@ function renderCreate() {
     const btn = $('#create-btn'); btn.disabled = true;
     try {
       await rpc('world_create_character_v2', { p_name: name, p_job: pick.job, p_faction: pick.faction });
-      if (!await loadCharacter()) throw new Error('캐릭터 정보를 불러오지 못했습니다. 새로고침해 주세요.');
+      const made = await loadCharacter();
+      if (!made) throw new Error('캐릭터 정보를 불러오지 못했습니다. 새로고침해 주세요.');
+      markPending(made.owner_id);
       toast(`${name} 조사원으로 입국했습니다.`, 'ok');
       renderGame();
     } catch (err) { say(friendlyError(err)); btn.disabled = false; }
@@ -213,7 +216,7 @@ function renderGame() {
   mountChat($('#chat-col'), $('#chat-fab'));
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
-  preloadNames().finally(onHash);
+  preloadNames().finally(() => { onHash(); maybeStartTutorial(); });
 }
 
 function parseHash() {
