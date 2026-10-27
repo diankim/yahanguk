@@ -1,6 +1,7 @@
 // 헤더 기능: 테마(프리셋·흑백·직접 설정) · 프로필 보기 · 알림. 고치는 화면은 설정 페이지(views/settings.js)에 있다.
 import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
+import { logout } from './session.js';
 export { initSound, playSfx } from './sound.js';
 
 // 테마는 의존성 없는 theme.js에 있다(점검 페이지도 같은 테마를 쓴다).
@@ -19,7 +20,7 @@ export function openProfile() {
       <a class="btn" href="#/char/titles" data-close>${icon('spark', 16)}<span>칭호 보기</span></a>
       <button class="btn ghost" id="pf-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>
     <p class="muted small">이름·직업·소속은 캐릭터를 만들 때 정해지며 바꿀 수 없습니다.</p></div>` });
-  document.getElementById('pf-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) { closeModal(); db.auth.signOut(); } };
+  document.getElementById('pf-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) { closeModal(); logout(); } };
 }
 
 // 사진 자르기: 정사각형 안에서 끌어 옮기고 확대해 128px WebP로 만든다. 저장은 부르는 쪽이 한다.

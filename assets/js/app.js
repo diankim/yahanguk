@@ -1,6 +1,6 @@
 import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
-import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
+import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
@@ -9,7 +9,7 @@ import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';
 import { mountTitleDot } from './titledot.js';
-import { claimSession, expectLogin, loginFailed, mountSessionGuard, stopSessionGuard, takeKickNote } from './session.js';
+import { claimSession, expectLogin, loginFailed, mountSessionGuard, stopSessionGuard, takeKickNote, logout } from './session.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
 import * as character from './views/character.js';
@@ -43,7 +43,7 @@ async function route(session) {
   const uid = session?.user?.id || null;
   if (uid && routedFor === uid && $('.shell')) return; // 이미 게임 화면
   store.user = session?.user || null;
-  if (!store.user) { routedFor = null; return renderAuth(); }
+  if (!store.user) { routedFor = null; return renderAuth('login', takeKickNote()); }
   mountSessionGuard();
   try {
     const c = await loadCharacter();
@@ -159,7 +159,7 @@ function renderCreate() {
     $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x === b));
     sync();
   });
-  $('#create-logout').onclick = () => db.auth.signOut();
+  $('#create-logout').onclick = () => logout();
   form.onsubmit = async e => {
     e.preventDefault();
     const name = form.name.value.trim(), msg = $('#create-msg');
@@ -189,7 +189,7 @@ function renderDeath(c) {
     <p>마지막으로 머문 ${esc(c.location)}에 시신이 남았습니다. 다른 조사원이 명복을 빌고 유품을 수습할 수 있습니다.</p>
     <button class="btn primary block" id="reborn">${icon('plus', 16)}<span>새 조사원으로 다시 시작</span></button>
     <button class="btn ghost block" id="death-logout">${icon('logout', 16)}<span>로그아웃</span></button></div></div>`));
-  $('#death-logout').onclick = () => db.auth.signOut();
+  $('#death-logout').onclick = () => logout();
   $('#reborn').onclick = e => guard(e.currentTarget, async () => { await rpc('world_character_delete', { p_confirm: c.character_name }); await loadCharacter(); return { content: '새 조사원을 만드세요.' }; });
 }
 
@@ -210,6 +210,7 @@ function renderGame() {
         <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
         <a class="icon-btn" href="#/settings/theme" data-page="settings" data-page-sub="theme" aria-label="테마" title="테마">${icon('palette')}</a>
         <a class="icon-btn" href="#/settings" data-page="settings" data-page-sub="!theme" aria-label="게임 설정" title="게임 설정">${icon('gear')}</a>
+        <button class="icon-btn" id="btn-logout" aria-label="로그아웃" title="로그아웃">${icon('logout')}</button>
       </div>
     </header>
     <div class="travel-banner" id="travel-banner" hidden></div>
@@ -222,6 +223,7 @@ function renderGame() {
     <button class="chat-fab" id="chat-fab" aria-label="채팅 열기">${icon('chat', 22)}</button>
   </div>`));
   $('#btn-profile').onclick = openProfile;
+  $('#btn-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
   mountTravelBanner($('#travel-banner'));
   mountNotifications($('#btn-bell'));
   mountHud($('#hud'));

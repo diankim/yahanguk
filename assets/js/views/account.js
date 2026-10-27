@@ -1,5 +1,6 @@
 // 계정: 게임 캐릭터와 별개인 로그인 계정 정보. 아이디 확인·비밀번호 변경, 로그아웃.
 import { ask, db, store, rpc, esc, particle, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
+import { logout } from '../session.js';
 import { panel } from './common.js';
 import { emailToId } from '../config.js';
 
@@ -26,7 +27,7 @@ export async function render(el) {
         <label class="field"><span>확인을 위해 캐릭터 이름 <b>${esc(store.character?.character_name || '')}</b>${particle(store.character?.character_name, '을(를)')} 그대로 적으세요</span><input name="confirm" autocomplete="off"></label>
         <button class="btn danger" type="submit">${icon('flame', 16)}<span>캐릭터 정리하고 새로 시작</span></button></form>
     </div></details>`;
-  $('#acc-logout', el).onclick = () => db.auth.signOut();
+  $('#acc-logout', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
   const submit = (form, fn) => form.onsubmit = async e => {
     e.preventDefault(); const btn = form.querySelector('button'); if (btn.disabled) return; btn.disabled = true;
     try { await fn(); } catch (err) { toast(friendlyError(err), 'error'); } finally { btn.disabled = false; }

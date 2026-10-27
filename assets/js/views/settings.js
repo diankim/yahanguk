@@ -4,6 +4,7 @@ import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop } fro
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
+import { logout } from '../session.js';
 
 const SUBS = [['profile', '프로필'], ['theme', '테마'], ['sound', '소리'], ['account', '계정']];
 let el, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
@@ -74,7 +75,7 @@ export async function render(root, sub) {
           <button class="btn ghost" id="set-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>`, { ico: 'shield' })}
     </section>`;
 
-  $('#set-logout', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) db.auth.signOut(); };
+  $('#set-logout', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
   if (resumed) { save.disabled = false; toast('저장하지 않은 설정을 이어서 고칩니다.', 'info'); }
