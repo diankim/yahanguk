@@ -126,6 +126,12 @@ function field(s, roster, blocked) {
   const parent = (s.nodes || []).find(x => x.node_id === n.parent_id);
   const w = s.weapon || {};
   const mechs = [...new Set((s.monsters || []).map(m => m.mechanic).filter(Boolean))];
+  // 길을 못 가는 까닭(서버 world_field_move와 같은 순서): 전투불능 → 이동 중 → 원정 중 → 레벨
+  const c = store.character;
+  const stateWhy = !blocked ? '' : (c.downed_at || c.health <= 0) ? '전투불능 상태에서는 움직일 수 없습니다'
+    : (c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date()) ? '다른 지역으로 이동 중에는 움직일 수 없습니다'
+    : store.expedition ? '원정 중에는 움직일 수 없습니다' : '지금은 움직일 수 없습니다';
+  const whyNot = k => stateWhy || (c.level < k.min_level ? `Lv.${k.min_level}부터 들어갈 수 있습니다 · 지금 Lv.${c.level} (${k.min_level - c.level}레벨 더 필요)` : '');
   return `
     <div class="field-grid">
       <section class="panel explore-card">
@@ -153,8 +159,8 @@ function field(s, roster, blocked) {
         <header class="panel-head"><h2>${icon('route', 16)}이어진 길</h2><span class="muted small">${s.hidden_paths ? `찾지 못한 길 ${s.hidden_paths}` : '모두 찾음'}</span></header>
         <div class="panel-body">
           <ul class="paths">
-            ${parent ? `<li><button class="path back" data-move="${esc(parent.node_id)}" ${blocked ? 'disabled' : ''}>${icon('back', 16)}<span><b>${esc(parent.name)}</b><small>되돌아가기</small></span></button></li>` : ''}
-            ${kids.map(k => `<li><button class="path" data-move="${esc(k.node_id)}" ${blocked || store.character.level < k.min_level ? 'disabled' : ''}>${icon('chevron', 16)}<span><b>${esc(k.name)}</b><small>${esc(DEPTH[k.level - 1] || '')} · Lv.${k.min_level}+ · 채집터 ${k.spots_found}/${k.spots_total}</small></span></button></li>`).join('')}
+            ${parent ? `<li><button class="path back" data-move="${esc(parent.node_id)}" ${blocked ? 'disabled' : ''}>${icon('back', 16)}<span><b>${esc(parent.name)}</b><small>되돌아가기</small>${stateWhy ? `<small class="path-why">${esc(stateWhy)}</small>` : ''}</span></button></li>` : ''}
+            ${kids.map(k => { const why = whyNot(k); return `<li><button class="path ${why ? 'locked' : ''}" data-move="${esc(k.node_id)}" ${why ? 'disabled' : ''}>${icon('chevron', 16)}<span><b>${esc(k.name)}</b><small>${esc(DEPTH[k.level - 1] || '')} · Lv.${k.min_level}+ · 채집터 ${k.spots_found}/${k.spots_total}</small>${why ? `<small class="path-why">${esc(why)}</small>` : ''}</span></button></li>`; }).join('')}
             ${Array.from({ length: s.hidden_paths || 0 }, () => `<li><div class="path unknown">${icon('help', 16)}<span><b>아직 찾지 못한 길</b><small>탐색하면 드러납니다</small></span></div></li>`).join('')}
           </ul>
           ${!kids.length && !s.hidden_paths && !parent ? empty('더 이어진 길이 없습니다.', 'route') : ''}
