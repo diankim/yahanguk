@@ -2,7 +2,8 @@
 import { db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
-import { applySavedTheme, openProfile, openTheme, openSound, initSound, mountNotifications } from './settings.js';
+import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
+import { mountEnv } from './env.js';
 import { mountTravelBanner } from './banner.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
@@ -12,6 +13,7 @@ import * as journal from './views/journal.js';
 import * as party from './views/party.js';
 import * as guide from './views/guide.js';
 import * as account from './views/account.js';
+import * as settingsPage from './views/settings.js';
 import { preloadNames } from './views/common.js';
 
 applySavedTheme();
@@ -26,7 +28,7 @@ const VIEWS = {
   log: { mod: journal, label: '일지', icon: 'scroll' },
 };
 // 탭에는 없지만 헤더에서 여는 화면
-const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' } };
+const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' } };
 
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null;
@@ -190,8 +192,8 @@ function renderGame() {
         <a class="icon-btn" href="#/party" data-page="party" aria-label="동료" title="동료">${icon('users')}</a>
         <a class="icon-btn" href="#/guide" data-page="guide" aria-label="도움말" title="도움말">${icon('help')}</a>
         <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
-        <button class="icon-btn" id="btn-theme" aria-label="테마" title="테마">${icon('palette')}</button>
-        <button class="icon-btn" id="btn-sound" aria-label="게임 설정" title="게임 설정">${icon('gear')}</button>
+        <a class="icon-btn" href="#/settings/theme" data-page="settings" aria-label="테마" title="테마">${icon('palette')}</a>
+        <a class="icon-btn" href="#/settings" data-page="settings" aria-label="게임 설정" title="게임 설정">${icon('gear')}</a>
       </div>
     </header>
     <div class="travel-banner" id="travel-banner" hidden></div>
@@ -205,10 +207,9 @@ function renderGame() {
   </div>`));
   $('#btn-profile').onclick = openProfile;
   mountTravelBanner($('#travel-banner'));
-  $('#btn-theme').onclick = openTheme;
-  $('#btn-sound').onclick = openSound;
   mountNotifications($('#btn-bell'));
   mountHud($('#hud'));
+  mountEnv();
   mountChat($('#chat-col'), $('#chat-fab'));
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.

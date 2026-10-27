@@ -1,6 +1,7 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { store, on, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal } from './core.js';
+import { store, on, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText } from './core.js';
+import { envChip } from './env.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -13,6 +14,7 @@ export function mountHud(el) {
     $('#hud-strip', root).setAttribute('aria-expanded', open);
   };
   on('character', render);
+  on('env', render);
   on('changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 350); });
   refresh();
   clearInterval(tick); tick = setInterval(onTick, 1000);
@@ -34,20 +36,7 @@ export async function refresh() {
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
 
-// 상태이상 효과 설명
-const EFFECT = {
-  health_per_action: ['행동할 때마다 체력', -1], mental_per_action: ['행동할 때마다 정신', -1], incoming_damage_pct: ['받는 피해', 1, '%'],
-  combat_damage_pct: ['주는 피해', 1, '%'], gather_qty_pct: ['채집량', 1, '%'], training_xp_pct: ['수련 경험치', 1, '%'],
-  action_quality_pct: ['행동 효율', 1, '%'], agility_pct: ['민첩', 1, '%'], healing_pct: ['회복량', 1, '%'], travel_time_pct: ['이동 시간', 1, '%'],
-  clue_bonus_pct: ['단서 발견', 1, '%'], rare_loot_pct: ['희귀품 발견', 1, '%'], craft_quality: ['제작 품질', 1, ''], erosion_pct: ['침식 증가', 1, '%'],
-};
-function effectText(effects, potency = 1) {
-  return Object.entries(effects || {}).map(([k, v]) => {
-    const e = EFFECT[k]; if (!e) return null;
-    const n = Number(v) * (potency || 1) * e[1];
-    return `${e[0]} ${n > 0 ? '+' : ''}${n}${e[2] ?? ''}`;
-  }).filter(Boolean);
-}
+function effectText(effects, potency = 1) { return fxText(effects, potency); }
 export function openStatus(st) {
   const good = st.polarity === 'positive';
   const left = new Date(st.expires_at).getTime() - Date.now();
@@ -103,6 +92,7 @@ function render() {
     <span class="hs-name"><b>${esc(c.character_name)}</b><small>Lv.${c.level}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="sp"></i></span>
     ${(state.hud?.statuses || []).length ? `<span class="hs-debuff">${icon('flame', 12)}${(state.hud.statuses || []).filter(x => x.polarity !== 'positive').length}</span>` : ''}
+    ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
     <span class="hs-caret">${icon('chevron', 14)}</span>`;
   const body = $('#hud-body', root);
@@ -111,6 +101,8 @@ function render() {
       <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
         <div><h2>${esc(c.character_name)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
         <span class="lv">Lv.${c.level}</span></div>
+      ${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
+      ${envChip()}
       <div class="xp"><span>경험치</span><span>${fmt.num(c.experience)} / ${fmt.num(need)}</span></div>${bar(c.experience, need, 'xp')}
     </section>
     <section class="hud-card vitals">

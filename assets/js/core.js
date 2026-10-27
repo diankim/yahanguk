@@ -40,8 +40,10 @@ export async function snap(name, args) {
   store.snaps[name] = data;
   return data;
 }
+// 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);
+  try { await loadCharacter(); } catch {}
   emit('changed', { name, data });
   return data;
 }
@@ -95,14 +97,35 @@ const FIXED = {
   supply: '보급', relic: '유적', medical: '의료', combat: '전투', hidden: '은신처',
   // 능력치
   strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성',
+  // 효과
+  gather_qty_pct: '채집량', rare_loot_pct: '희귀품 발견', craft_quality: '제작 품질', combat_damage_pct: '주는 피해', incoming_damage_pct: '받는 피해',
+  travel_time_pct: '이동 시간', clue_bonus_pct: '단서 발견', healing_pct: '회복량', erosion_pct: '침식 위험', melee_pct: '근접 피해', ranged_pct: '원거리 피해',
+  magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '수련 경험치',
+  action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
+  // 날씨·시간대
+  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
+// 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
+const FLAT = new Set(['craft_quality', 'defense', 'power', 'mental_per_action', 'health_per_action']);
+const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
+export function effectText(effects, potency = 1) {
+  return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && Number(v)).map(([k, v]) => {
+    const n = Math.round(Number(v) * (potency || 1) * 10) / 10;
+    if (PER_ACTION.has(k)) return `${FIXED[k]} -${Math.abs(n)}`;
+    return `${FIXED[k] || '기타 효과'} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) ? '' : '%'}`;
+  });
+}
+// 효과가 이로운지(받는 피해·이동 시간·침식은 줄어야 좋다)
+const LOWER_BETTER = new Set(['incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_per_action', 'health_per_action']);
+export function effectGood(k, v) { return LOWER_BETTER.has(k) ? Number(v) < 0 : Number(v) > 0; }
 const names = new Map(Object.entries(FIXED));
 export function registerNames(entries) { for (const [k, v] of entries) if (k && v) names.set(k, v); }
 export function nameOf(code) {
   if (code == null) return '';
   if (JOBS[code]) return JOBS[code].name;
   if (FACTIONS[code]) return FACTIONS[code].name;
-  return names.get(code) || String(code).replace(/_/g, ' ');
+  // 사전에 없는 영문 코드는 화면에 그대로 내보이지 않는다.
+  return names.get(code) || (/^[a-z0-9_]+$/i.test(String(code)) ? '이름 미상' : String(code));
 }
 
 /* ── 포맷 ────────────────────────────────────────────────── */
@@ -148,7 +171,17 @@ const ICONS = {
   spark: 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6',
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', volume: 'M4 9h4l5-4v14l-5-4H4zM17 8a5 5 0 010 8',
   refresh: 'M20 12a8 8 0 11-2.3-5.7M20 4v5h-5',
+  sun: 'M12 16a4 4 0 100-8 4 4 0 000 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  cloud: 'M7 18h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 18z',
+  rain: 'M7 14h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3',
+  fog: 'M4 9h16M3 13h18M5 17h14M7 5h10',
+  wind: 'M3 8h11a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h8',
+  snow: 'M12 2v20M4 7l16 10M20 7L4 17M9 4l3 2 3-2M9 20l3-2 3 2',
+  mist: 'M12 3c3 4 6 7 6 11a6 6 0 01-12 0c0-4 3-7 6-11zM9 15h6',
+  dawn: 'M4 18h16M7 18a5 5 0 0110 0M12 7v3M5.6 11.6l1.4 1.4M18.4 11.6L17 13M2 22h20',
+  wrench: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
 };
+export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
 export function icon(name, size = 18) {
   const p = ICONS[name] || ICONS.spark;
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg>`;
