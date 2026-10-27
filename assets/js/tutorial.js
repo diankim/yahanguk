@@ -1,10 +1,55 @@
 // 처음 입국한 조사원을 위한 길잡이: 화면 요소를 하나씩 짚어 주는 단계별 안내와, 현장에 붙는 "첫 걸음" 체크리스트.
-// 진행 기록은 이 기기에 캐릭터별로 저장한다(서버 데이터가 아니므로 다른 기기에서는 다시 볼 수 있다).
-import { store, on, esc, icon, $, h, toast } from './core.js';
+// 진행은 서버의 행동 기록에서 세고, 표시 상태(안내 마침·접기·닫기·다시 열기)는 서버(world_tutorial_state)에 캐릭터별로 둔다.
+// 그래서 모바일에서 마치면 PC에서도 마친 상태다. 서버를 못 읽을 때만 이 기기의 기록으로 대신한다.
+import { store, on, esc, icon, $, h, toast, rpc } from './core.js';
 
 const key = k => `yh-tut-${k}-${store.character?.owner_id || 'x'}`;
-const get = (k, d = null) => { try { const v = localStorage.getItem(key(k)); return v == null ? d : JSON.parse(v); } catch { return d; } };
-const set = (k, v) => { try { localStorage.setItem(key(k), JSON.stringify(v)); } catch {} };
+const localGet = (k, d = null) => { try { const v = localStorage.getItem(key(k)); return v == null ? d : JSON.parse(v); } catch { return d; } };
+const localSet = (k, v) => { try { localStorage.setItem(key(k), JSON.stringify(v)); } catch {} };
+const FLAGS = ['done', 'fold', 'closed', 'reopened'];
+// st.owner: 서버에서 읽어 온 캐릭터. 읽기 전에는 기기 기록을 쓴다.
+const st = { owner: null, flags: {}, prog: {}, failed: false };
+const ready = () => st.owner && st.owner === store.character?.owner_id;
+const get = (k, d = null) => {
+  if (k === 'prog') return ready() ? { ...st.prog } : localGet('prog', d);
+  if (ready()) return st.flags[k] ?? d;
+  return localGet(k, d);
+};
+const set = (k, v) => {
+  if (k === 'prog') { st.prog = { ...v }; localSet('prog', v); return; }
+  localSet(k, v);
+  if (ready()) { st.flags[k] = v; rpc('world_tutorial_set', { p_flags: { [k]: !!v } }).catch(() => {}); }
+};
+// 서버에서 진행·표시 상태를 읽는다. 서버에 아직 표시 상태가 없으면 이 기기에 남아 있던 것을 한 번 올린다.
+let loading = null;
+export function loadTutorial() {
+  const c = store.character; if (!c) return Promise.resolve();
+  if (ready()) return Promise.resolve();
+  if (loading?.owner === c.owner_id) return loading.p;
+  loading = { owner: c.owner_id, p: readTutorial(c) };
+  return loading.p;
+}
+async function readTutorial(c) {
+  try {
+    const r = await rpc('world_tutorial_snapshot');
+    const flags = { ...(r?.flags || {}) };
+    if (!r?.saved) {
+      const up = {}; FLAGS.forEach(k => { const v = localGet(k); if (v != null) up[k] = !!v; });
+      if (Object.keys(up).length) { Object.assign(flags, up); rpc('world_tutorial_set', { p_flags: up }).catch(() => {}); }
+    }
+    st.owner = c.owner_id; st.flags = flags; st.prog = { ...(r?.progress || {}) };
+    drawChecklist();
+  } catch { st.failed = true; drawChecklist(); }
+  finally { loading = null; }
+}
+// 행동 뒤에 서버 기록으로 진행을 다시 맞춘다(여러 번 눌러도 한 번만 읽는다)
+let syncTimer = null;
+function syncSoon() { clearTimeout(syncTimer); syncTimer = setTimeout(async () => {
+  if (!ready()) return;
+  try { const r = await rpc('world_tutorial_snapshot'); const before = { ...st.prog }; st.prog = { ...(r?.progress || {}) };
+    TASKS.forEach(([k]) => { if ((before[k] || 0) > (st.prog[k] || 0)) st.prog[k] = before[k]; });
+    drawChecklist(); } catch {}
+}, 1500); }
 
 /* ── 단계별 안내 ─────────────────────────────────────── */
 // sel: 짚어 줄 요소(보이는 첫 번째). view: 그 단계에서 열 화면.
@@ -103,7 +148,7 @@ const TASKS = [
 function progress() { return get('prog', {}); }
 function mark(k, n = 1) {
   const p = progress(); const before = done(p, k);
-  p[k] = (p[k] || 0) + n; set('prog', p);
+  p[k] = (p[k] || 0) + n; set('prog', p); syncSoon();
   if (!before && done(p, k)) {
     const t = TASKS.find(x => x[0] === k);
     const left = TASKS.filter(([x]) => !done(p, x)).length;
@@ -117,7 +162,9 @@ const done = (p, k) => (p[k] || 0) >= (need[k] || 1);
 
 // 상태: 접기(fold) — 한 줄로 줄어들 뿐 사라지지 않는다. 닫기(closed) — 모두 마친 뒤에만 닫을 수 있고, 도움말에서 다시 연다.
 export function checklistHtml() {
-  const c = store.character; if (!c || get('closed')) return '';
+  const c = store.character; if (!c) return '';
+  if (!ready() && !st.failed) return ''; // 서버 기록을 읽기 전에는 그리지 않는다(다른 기기에서 마친 목록이 잠깐 보이지 않게)
+  if (get('closed')) return '';
   const p = progress(); if (store.hud?.supply?.claimed_today) p.supply = Math.max(1, p.supply || 0);
   const n = TASKS.filter(([k]) => done(p, k)).length, all = n === TASKS.length;
   if (!all && (c.level || 1) >= 6 && !get('reopened')) return '';
@@ -157,7 +204,8 @@ window.addEventListener('yahang:arrived', () => setTimeout(() => { if (store.sna
 export function noteRegion(region) { if (region && !region.safe && !done(progress(), 'outside')) mark('outside'); }
 
 // 처음 만든 캐릭터(또는 아직 안내를 보지 않은 낮은 레벨 캐릭터)에게 한 번 띄운다.
-export function maybeStartTutorial() {
+export async function maybeStartTutorial() {
+  await loadTutorial();
   const c = store.character; if (!c || get('done')) return;
   let pending = false; try { pending = localStorage.getItem('yh-tut-pending') === c.owner_id; } catch {}
   if (pending || (c.level || 1) <= 2) setTimeout(() => startTutorial(0), 900);
