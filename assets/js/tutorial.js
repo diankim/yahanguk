@@ -43,13 +43,15 @@ async function readTutorial(c) {
   finally { loading = null; }
 }
 // 행동 뒤에 서버 기록으로 진행을 다시 맞춘다(여러 번 눌러도 한 번만 읽는다)
-let syncTimer = null;
+// 서버 부담을 줄이려 15초에 한 번까지만 읽는다(그 사이 행동은 마지막에 한 번 반영)
+let syncTimer = null, lastSync = 0;
 function syncSoon() { clearTimeout(syncTimer); syncTimer = setTimeout(async () => {
   if (!ready()) return;
+  lastSync = Date.now();
   try { const r = await rpc('world_tutorial_snapshot'); const before = { ...st.prog }; st.prog = { ...(r?.progress || {}) };
     TASKS.forEach(([k]) => { if ((before[k] || 0) > (st.prog[k] || 0)) st.prog[k] = before[k]; });
     drawChecklist(); } catch {}
-}, 1500); }
+}, Math.max(1500, 15000 - (Date.now() - lastSync))); }
 
 /* ── 단계별 안내 ─────────────────────────────────────── */
 // sel: 짚어 줄 요소(보이는 첫 번째). view: 그 단계에서 열 화면.

@@ -16,7 +16,9 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
 // 위치·소속이 바뀌는 행동 뒤에는 지도 캐시를 버린다.
 const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/;
-on('changed', ({ name }) => { invalidate('world_region_roster'); invalidate('world_party_overview'); if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); });
+// 여기 있는 이들·동료 목록은 자리나 파티가 바뀌는 행동 뒤에만 새로 읽는다(행동마다 읽으면 서버 부담, 2026-10-28)
+const ROSTER_CHANGERS = /travel|field_move|rescue|party|expedition|downed|idle/;
+on('changed', ({ name }) => { if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
 // 응답에 들어 있는 이름을 사전에 등록해 내부 코드(hq_archive 등)가 화면에 노출되지 않게 한다.
