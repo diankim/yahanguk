@@ -28,7 +28,7 @@ export async function render(root) {
   el = root;
   el.innerHTML = loading();
   off.forEach(f => f());
-  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); }), on('expedition', () => draw())];
+  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
   await draw();
 }
@@ -59,15 +59,21 @@ async function draw() {
 }
 
 function drawBattle() {
-  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}"><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div><div id="battle-box"></div>`;
+  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div><div id="battle-box"></div>`;
   renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); });
 }
 
 /* ── 장면 머리 ───────────────────────────────────────────── */
+// 날씨·시간대·장소에 맞춘 움직이는 배경(글자 뒤에 옅게 깔린다). 실제 효과 수치는 서버가 정한다.
+function sceneFx(r) {
+  const e = store.env;
+  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(e?.weather?.key || '')}" data-p="${esc(e?.phase?.key || '')}" data-t="${esc(r?.theme || '')}"><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
+}
 function scene(s, traveling, downed) {
   const r = s.region, c = store.character;
   return `
     <div class="scene theme-${esc(r.theme || 'wild')} ${r.safe ? 'safe' : ''}">
+      ${sceneFx(r)}
       <div class="scene-top">
         <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · ${esc(r.faction_name || '무주 금역')}</p>
         <h1>${esc(r.region_name)}</h1>

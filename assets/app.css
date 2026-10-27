@@ -822,7 +822,10 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .hs-env { font-size: 11px; color: var(--muted); white-space: nowrap; flex: none; }
 .terr-weather { fill: var(--muted); font-weight: 600; paint-order: stroke; stroke: color-mix(in srgb, var(--bg) 80%, transparent); stroke-width: 4px; pointer-events: none; }
 .terr-weather.w-bloodmist { fill: var(--bad); }
-.map-peek { position: absolute; left: 10px; right: 64px; bottom: 34px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--line); }
+.map-peek { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--gold); }
+.map-peek .peek-txt { min-width: 0; display: grid; gap: 1px; } .map-peek .peek-txt b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-peek .peek-txt small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-peek .peek-act { display: flex; gap: 6px; flex: none; } .map-peek .peek-act .btn { min-height: 40px; }
 .map-peek[hidden] { display: none; }
 @media (min-width: 1100px) { .map-peek { display: none !important; } }
 
@@ -899,7 +902,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .inv-name small i.eq { color: var(--gold); } .inv-name small i.lk { color: var(--warn); } .inv-name small i.bad { color: var(--bad); }
 .inv-qty { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); }
 .inv-qty::before { content: '×'; margin-right: 1px; font-weight: 500; color: var(--muted); }
-.inv-quick { flex: none; min-width: 52px; }
+.inv-quick { flex: none; width: 56px; justify-content: center; padding-inline: 0; }
 .focus-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 10px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 13px; }
 .focus-bar span { flex: 1; min-width: 0; }
 .item-info { display: grid; gap: 12px; }
@@ -916,3 +919,60 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .chip-x { display: inline-grid; place-items: center; margin-left: 4px; padding: 0; width: 18px; height: 18px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
 .chip-x:hover { color: var(--bad); }
 .linkish.item-name { color: var(--text); text-decoration: underline dotted color-mix(in srgb, var(--muted) 70%, transparent); text-underline-offset: 3px; font-weight: inherit; text-align: left; }
+/* 모바일 지도: 고른 지역 띠가 떠 있는 동안 범례를 숨긴다 */
+.map-frame:has(.map-peek:not([hidden])) .map-legend { display: none; }
+@media (max-width: 799px) { .map-frame { height: min(64vh, 560px); min-height: 360px; } }
+/* 본문 영역의 블록 간격을 한 규칙으로 맞춘다(검색창·분류 탭·설명·버튼 묶음·패널 사이) */
+#bag-body, #char-body, #log-body, #map-body, #party-body, .mk-body, .fac-body { display: grid; gap: 14px; align-content: start; }
+:is(#bag-body, #char-body, #log-body, #map-body, #party-body, .mk-body, .fac-body) > * { min-width: 0; margin-top: 0; margin-bottom: 0; }
+:is(#bag-body, #char-body, #log-body, #map-body, #party-body) > .chips { margin-top: -6px; }
+:is(#bag-body, #char-body, #log-body, #map-body, #party-body) > p + .chips { margin-top: -4px; }
+.panel-body > .btn-row + .btn-row, .panel-body > .chips + .btn-row { margin-top: 2px; }
+.sub-h { margin-top: 6px; }
+.inv-quick.pad { visibility: hidden; }
+
+/* ── 날씨·시간대·장소 효과(현장 머리) ─────────────────────
+   평면 색과 또렷한 경계만 쓴다(번지는 그라데이션·그림자·흐림 없음). 글자보다 뒤, 옅게. */
+.scene-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.scene > :not(.scene-fx) { position: relative; z-index: 1; }
+.scene-fx i { position: absolute; inset: -40% -20%; display: block; opacity: 0; }
+/* 비: 기울어진 가는 줄이 내려온다 */
+.scene-fx[data-w=rain] .fx-a { opacity: .22; background-image: repeating-linear-gradient(105deg, transparent 0 11px, var(--mp) 11px 12px, transparent 12px 23px);
+  background-size: 46px 80px; animation: fx-rain .55s linear infinite; }
+.scene-fx[data-w=rain] .fx-b { opacity: .12; background-image: repeating-linear-gradient(105deg, transparent 0 17px, var(--text) 17px 18px, transparent 18px 35px);
+  background-size: 70px 120px; animation: fx-rain .8s linear infinite; }
+@keyframes fx-rain { to { background-position: -22px 80px; } }
+/* 눈: 작은 점이 천천히 흩날린다 */
+.scene-fx[data-w=snow] .fx-a, .scene-fx[data-w=snow] .fx-b { background-image: radial-gradient(circle, var(--text) 0 1.6px, transparent 2px); }
+.scene-fx[data-w=snow] .fx-a { opacity: .45; background-size: 38px 38px; animation: fx-snow 7s linear infinite; }
+.scene-fx[data-w=snow] .fx-b { opacity: .25; background-size: 61px 61px; background-position: 17px 9px; animation: fx-snow 11s linear infinite; }
+@keyframes fx-snow { to { transform: translate(-30px, 120px); } }
+/* 안개·혈무: 옅은 띠가 옆으로 흐른다 */
+.scene-fx:is([data-w=fog], [data-w=bloodmist], [data-w=cloudy]) .fx-a,
+.scene-fx:is([data-w=fog], [data-w=bloodmist], [data-w=cloudy]) .fx-b { inset: auto -60%; height: 34%; border-radius: 999px; background: var(--fx-mist, var(--muted)); }
+.scene-fx:is([data-w=fog], [data-w=bloodmist]) .fx-a { opacity: .16; top: 18%; animation: fx-drift 26s linear infinite; }
+.scene-fx:is([data-w=fog], [data-w=bloodmist]) .fx-b { opacity: .12; top: 56%; animation: fx-drift 34s linear infinite reverse; }
+.scene-fx[data-w=cloudy] .fx-a { opacity: .08; top: 6%; height: 26%; animation: fx-drift 48s linear infinite; }
+.scene-fx[data-w=bloodmist] { --fx-mist: var(--bad); background: color-mix(in srgb, var(--bad) 7%, transparent); }
+@keyframes fx-drift { from { transform: translateX(-18%); } to { transform: translateX(18%); } }
+/* 바람: 짧은 가로줄이 빠르게 지나간다 */
+.scene-fx[data-w=wind] .fx-a { opacity: .2; background-image: repeating-linear-gradient(0deg, transparent 0 22px, var(--muted) 22px 23px, transparent 23px 47px);
+  background-size: 140px 47px; -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 40px, transparent 40px 140px); mask-image: repeating-linear-gradient(90deg, #000 0 40px, transparent 40px 140px);
+  animation: fx-wind 1.4s linear infinite; }
+@keyframes fx-wind { to { transform: translateX(-140px); } }
+/* 시간대: 삼경에는 별, 땅거미에는 노을빛, 해돋이에는 옅은 아침빛 */
+.scene-fx[data-p=night] .fx-c { inset: 0; opacity: .5; background-image: radial-gradient(circle, var(--gold) 0 1px, transparent 1.4px), radial-gradient(circle, var(--text) 0 .8px, transparent 1.2px);
+  background-size: 97px 53px, 61px 41px; background-position: 11px 7px, 37px 23px; animation: fx-twinkle 4s ease-in-out infinite alternate; }
+.scene-fx[data-p=dusk] { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.scene-fx[data-p=dawn] { background: color-mix(in srgb, var(--gold) 5%, transparent); }
+@keyframes fx-twinkle { from { opacity: .25; } to { opacity: .55; } }
+/* 장소: 물가는 아래쪽 물결, 사당은 피어오르는 불티, 천문 지역은 별빛 */
+.scene-fx[data-t=water]::after { content: ''; position: absolute; left: -10%; right: -10%; bottom: 0; height: 26px; opacity: .22;
+  background-image: repeating-linear-gradient(90deg, var(--mp) 0 26px, transparent 26px 40px); -webkit-mask-image: repeating-linear-gradient(0deg, #000 0 2px, transparent 2px 8px); mask-image: repeating-linear-gradient(0deg, #000 0 2px, transparent 2px 8px);
+  animation: fx-ripple 6s linear infinite; }
+@keyframes fx-ripple { to { transform: translateX(40px); } }
+.scene-fx[data-t=shrine]::after { content: ''; position: absolute; inset: 30% 0 -40% 0; opacity: .35; background-image: radial-gradient(circle, var(--accent) 0 1.5px, transparent 2px);
+  background-size: 53px 47px; animation: fx-ember 9s linear infinite; }
+@keyframes fx-ember { to { transform: translateY(-60%); } }
+.scene-fx[data-t=sky]:not([data-p=night]) .fx-c { inset: 0; opacity: .3; background-image: radial-gradient(circle, var(--gold) 0 1px, transparent 1.4px); background-size: 71px 43px; }
+@media (prefers-reduced-motion: reduce) { .scene-fx i, .scene-fx::after { animation: none !important; } }

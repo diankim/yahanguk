@@ -271,12 +271,22 @@ function select(id, center) {
   selected = id;
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
-  // 좁은 화면에서는 저절로 스크롤하지 않고, 지도 위 안내에서 사용자가 직접 내려가게 한다.
+  // 좁은 화면에서는 저절로 스크롤하지 않는다. 대신 지도 위 띠에 예상 시간과 출발 단추를 바로 보여 준다.
   const peek = $('#map-peek', el), r = mapData.regions.find(x => x.region_id === id);
   if (peek && r && matchMedia('(max-width: 1099px)').matches) {
+    const go = $('#travel-go', el), field = $('#go-field', el);
+    const line = $('#map-detail .route-box b', el)?.textContent?.trim() || $('#map-detail .hint:not(.ok)', el)?.textContent?.trim() || '';
     peek.hidden = false;
-    peek.innerHTML = `<b>${esc(r.region_name)}</b><button class="btn small" type="button">자세히 ${icon('chevron', 14)}</button>`;
-    peek.querySelector('button').onclick = () => $('#map-detail', el)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    peek.innerHTML = `<div class="peek-txt"><b>${esc(r.region_name)}</b>${line ? `<small>${esc(line)}</small>` : ''}</div>
+      <div class="peek-act"><button class="btn small ghost" type="button" data-peek="more">자세히</button>
+        ${field ? `<button class="btn small primary" type="button" data-peek="field">${icon('home', 14)}<span>현장</span></button>`
+          : go ? `<button class="btn small primary" type="button" data-peek="go" ${go.disabled ? 'disabled' : ''}>${icon('route', 14)}<span>출발</span></button>` : ''}</div>`;
+    peek.onclick = e => {
+      const b = e.target.closest('[data-peek]'); if (!b) return;
+      if (b.dataset.peek === 'more') $('#map-detail', el)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (b.dataset.peek === 'go') $('#travel-go', el)?.click();
+      if (b.dataset.peek === 'field') $('#go-field', el)?.click();
+    };
   }
 }
 
