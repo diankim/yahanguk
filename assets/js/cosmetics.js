@@ -38,26 +38,31 @@ export const FRAMES = {
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
 const MIDS = [[50, 4, 0], [96, 50, 90], [50, 96, 180], [4, 50, 270]];
 
-function frameSvg(key, small) {
+// 테두리 선은 CSS 테두리로 그려(안쪽 문장과 같은 픽셀 격자에 맞아 화면 배율이 달라도 가운데가 어긋나지 않는다),
+// 모서리 문양만 SVG로 얹는다. 작은 크기(목록·상태판)에서는 문양 없이 선만 그린다.
+function glyphSvg(key) {
   const [tier, motif] = FRAMES[key] || ['common', 'lantern'];
   const d = M[motif];
   const glyph = (x, y, r, s = 1) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})"><circle r="8.5" class="fr-bg"/><path d="${d}"/></g>`;
-  let body = `<rect x="4" y="4" width="92" height="92" rx="20" class="fr-line"/>`;
-  if (tier !== 'common') body += `<rect x="9.5" y="9.5" width="81" height="81" rx="15" class="fr-line thin"/>`;
-  if (!small) {
-    const spots = tier === 'common' ? [CORNERS[0], CORNERS[2]] : CORNERS;
-    body += spots.map(([x, y, r]) => glyph(x, y, r, tier === 'legend' ? 0.9 : 0.8)).join('');
-    if (tier === 'legend') body += MIDS.map(([x, y, r]) => glyph(x, y, r, 0.55)).join('');
-  }
+  const spots = tier === 'common' ? [CORNERS[0], CORNERS[2]] : CORNERS;
+  let body = spots.map(([x, y, r]) => glyph(x, y, r, tier === 'legend' ? 0.9 : 0.8)).join('');
+  if (tier === 'legend') body += MIDS.map(([x, y, r]) => glyph(x, y, r, 0.55)).join('');
   return `<svg class="fr-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${body}</svg>`;
 }
 export const frameTier = key => FRAMES[key]?.[0] || 'common';
-// 문장(emblem) 둘레에 테두리를 두른다. 작은 크기(목록)에서는 문양 없이 선만 그린다.
+// 테두리 두께(px)와 안쪽 여백: 정수로 잡아 위아래·좌우 간격이 똑같게 한다.
+const frameBox = (key, size) => {
+  const small = size < 56, tier = frameTier(key);
+  const bw = tier === 'common' ? (small ? 2 : 3) : (small ? 3 : 5), gap = small ? 2 : 4;
+  return { small, bw, gap, inner: size - 2 * (bw + gap) };
+};
+// 문장(emblem) 둘레에 테두리를 두른다.
 export function framed(inner, key, size) {
   if (!FRAMES[key]) return inner;
-  return `<span class="fr-wrap t-${frameTier(key)}" style="width:${size}px;height:${size}px">${inner}${frameSvg(key, size < 56)}</span>`;
+  const f = frameBox(key, size);
+  return `<span class="fr-wrap t-${frameTier(key)} ${f.small ? 'small' : ''}" style="width:${size}px;height:${size}px;--fbw:${f.bw}px">${inner}${f.small ? '' : glyphSvg(key)}</span>`;
 }
-export const framedInner = (key, size) => FRAMES[key] ? Math.round(size * (size < 56 ? 0.78 : 0.7)) : size;
+export const framedInner = (key, size) => FRAMES[key] ? frameBox(key, size).inner : size;
 
 // 바탕 무늬: 프로필 카드 뒤에 아주 옅게 깐다(20×20 반복)
 const P = {

@@ -1066,10 +1066,11 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .danger-text { color: var(--bad, #d66); }
 
 /* 프로필 꾸미기: 테두리 · 바탕 무늬 · 낙관 (평면 선 그림, 테마 색을 따른다) */
-.fr-wrap { position: relative; display: inline-grid; place-items: center; flex: none; --fr: var(--muted); --fr-glyph: var(--muted); }
+.fr-wrap { position: relative; display: inline-grid; place-items: center; flex: none; box-sizing: border-box; border: var(--fbw, 2px) solid var(--fr); border-radius: 30%; --fr: var(--muted); --fr-glyph: var(--muted); }
+.fr-wrap.t-rare, .fr-wrap.t-legend { border-style: double; }
 .fr-wrap.t-rare { --fr: var(--gold); --fr-glyph: var(--gold); }
 .fr-wrap.t-legend { --fr: var(--accent); --fr-glyph: var(--gold); }
-.fr-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.fr-svg { position: absolute; inset: calc(var(--fbw, 2px) * -1); width: calc(100% + var(--fbw, 2px) * 2); height: calc(100% + var(--fbw, 2px) * 2); pointer-events: none; overflow: visible; }
 .fr-svg .fr-line { fill: none; stroke: var(--fr); stroke-width: 3; }
 .fr-svg .fr-line.thin { stroke-width: 1.4; opacity: .8; }
 .fr-svg g { fill: none; stroke: var(--fr-glyph); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
