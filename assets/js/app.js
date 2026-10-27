@@ -8,6 +8,7 @@ import { mountEnv } from './env.js';
 import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';
+import { mountTitleDot } from './titledot.js';
 import * as home from './views/home.js';
 import * as map from './views/map.js';
 import * as character from './views/character.js';
@@ -221,6 +222,7 @@ function renderGame() {
   mountHud($('#hud'));
   mountEnv();
   mountChat($('#chat-col'), $('#chat-fab'));
+  mountTitleDot();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
   Promise.allSettled([preloadNames(), loadStaff()]).finally(() => { onHash(); maybeStartTutorial(); });

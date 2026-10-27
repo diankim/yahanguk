@@ -4,6 +4,7 @@ import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, b
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus } from '../hud.js';
 import { focusRegion } from './map.js';
+import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 
 const SUBS = [['status', '상태'], ['growth', '성장'], ['faction', '세력'], ['skills', '기술'], ['idle', '자율'], ['titles', '칭호']];
 const STATS = [
@@ -28,6 +29,7 @@ export async function render(root, s) {
   const c = store.character;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('user', 14)} ${esc(JOBS[c.job_key]?.name || nameOf(c.job_key))} · ${esc(FACTIONS[c.faction_key]?.name || nameOf(c.faction_key))}</p><h1>${esc(c.character_name)}${gmBadge(c.owner_id)} <small>Lv.${c.level}</small></h1></div></div>
     ${segmented('char-sub', SUBS, sub)}<div id="char-body"></div>`;
+  paintTitleDot();
   bindSegmented(el, 'char-sub', k => { sub = k; window.history.replaceState(null, '', `#/char/${k}`); draw(); });
   off.forEach(f => f()); off = [on('changed', () => { invalidate('world_combat_profile'); draw(true); })];
   await draw();
@@ -252,7 +254,7 @@ async function titles(body) {
     const more = rows.length - tshow;
     $('#t-list', body).innerHTML = rows.length ? rows.slice(0, tshow).map(t => `<li class="${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
       ${icon(t.icon || 'spark', 18)}
-      <div><b>${esc(t.name)}${t.display ? ' <span class="chip accent">대표</span>' : ''}</b><small>${esc(t.description || '')}</small>
+      <div><b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}${t.display ? ' <span class="chip accent">대표</span>' : ''}</b><small>${esc(t.description || '')}</small>
         <small class="muted">조건: ${esc(t.condition || '-')} · ${esc(t.category)}</small>${t.bonus ? `<small class="accent">${esc(effectText(t.bonus).join(' · '))}</small>` : ''}</div>
       <div class="btn-col">${t.earned ? `<button class="btn small ${t.equipped ? 'primary' : ''}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
         <button class="btn small ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button>` : chip(t.hidden ? '숨김' : '미획득')}</div></li>`).join('')
@@ -269,6 +271,8 @@ async function titles(body) {
   bindSegmented(body, 't-f', k => { tf = k; tshow = 20; paint(); });
   $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; tshow = 20; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
   paint();
+  // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)
+  if (list.some(t => t.new)) markTitlesSeen();
 }
 
 /* ── 세력: 소속 임무·일일 보급·대세력 ─────────────────────── */

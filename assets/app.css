@@ -1066,3 +1066,13 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .cos-pick.locked { cursor: default; opacity: .55; }
 .cos-pick .seal-mark { margin: 0; font-size: 26px; }
 .cos-q { display: grid; place-items: center; width: 60px; height: 60px; border-radius: var(--r); border: 1px dashed var(--line); color: var(--muted); font-size: 20px; }
+
+/* 새 칭호 빨간 점 */
+.has-dot { position: relative; }
+.has-dot::after { content: ''; position: absolute; top: 4px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); border: 1.5px solid var(--surface); }
+.tabbar a.has-dot::after { top: 6px; right: calc(50% - 16px); }
+.new-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); vertical-align: .2em; margin-left: 4px; }
+.bag-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+.bag-sort label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.bag-sort select { min-height: 36px; padding: 0 10px; border-radius: var(--r-sm); border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; }
+#bag-dir .ico { transform: rotate(90deg); }

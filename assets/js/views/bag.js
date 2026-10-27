@@ -1,5 +1,5 @@
 // 가방: 소지품 · 장비 · 제작. 제작은 어디서나 가능하고, 레시피의 지정 장소에서 하면 품질 보너스를 받는다.
-import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText } from '../core.js';
+import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText } from '../core.js';
 import { load, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRows, bindRepair } from './character.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, USABLE, GEAR } from './item.js';
@@ -12,6 +12,28 @@ const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
 const atPlace = (loc, here) => !!loc && (loc === here || (LOC_ALIAS[loc] || []).includes(here));
 let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '';
+// 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
+const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
+  name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '희귀한 것 먼저', '흔한 것 먼저'] };
+const RARITY = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
+let sortKey = 'tier', sortRev = false;
+try { const v = JSON.parse(localStorage.getItem('yh-bag-sort') || 'null'); if (v && SORTS[v.k]) { sortKey = v.k; sortRev = !!v.r; } } catch {}
+const saveSort = () => { try { localStorage.setItem('yh-bag-sort', JSON.stringify({ k: sortKey, r: sortRev })); } catch {} };
+// 물품별 마지막으로 얻은 시각(서버 world_item_acquired). 기록이 없는 물품은 오래전에 얻은 것으로 본다.
+async function acquiredMap() {
+  try { const { data, error } = await db.from('world_item_acquired').select('item_id,acquired_at'); if (error) return new Map(); return new Map((data || []).map(r => [r.item_id, Date.parse(r.acquired_at) || 0])); }
+  catch { return new Map(); }
+}
+function sorter(acq) {
+  const byName = (a, b) => nameOf(a.id).localeCompare(nameOf(b.id), 'ko');
+  const base = {
+    tier: (a, b) => (a.it?.tier || 0) - (b.it?.tier || 0) || byName(a, b),
+    acquired: (a, b) => (acq.get(b.id) || 0) - (acq.get(a.id) || 0) || byName(a, b),
+    name: byName,
+    rarity: (a, b) => (RARITY[b.it?.rarity] ?? 0) - (RARITY[a.it?.rarity] ?? 0) || (b.it?.tier || 0) - (a.it?.tier || 0) || byName(a, b),
+  }[sortKey];
+  return sortRev ? (a, b) => base(b, a) : base;
+}
 let matFocus = null, recipeFocus = null; // 물품 정보에서 넘어온 제작 거르기
 window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material || null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) craftFilter = 'all'; });
 
@@ -41,18 +63,20 @@ const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === '
 
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 async function items(body, inv) {
-  await loadLocks();
+  const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap() : Promise.resolve(new Map())]);
   const cmap = catalogMap(inv), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
     .map(([id, n]) => ({ id, n: Number(n), it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
     .filter(r => !q.trim() || [nameOf(r.id), r.it?.description, nameOf(r.it?.category)].join(' ').toLowerCase().includes(q.trim().toLowerCase()))
-    .sort((a, b) => (a.it?.tier || 0) - (b.it?.tier || 0) || nameOf(a.id).localeCompare(nameOf(b.id), 'ko'));
+    .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
   body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
       <small>가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
+    <div class="bag-sort"><label><span>정렬</span><select id="bag-sort">${Object.entries(SORTS).map(([k, [n]]) => `<option value="${k}" ${k === sortKey ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      <button class="btn small" id="bag-dir" aria-label="정렬 방향 바꾸기">${icon('back', 14)}<span>${SORTS[sortKey][sortRev ? 2 : 1]}</span></button></div>
     ${rows.length ? `<ul class="inv-list">${rows.map(({ id, n, it }) => {
       const tags = [it?.tier ? `${it.tier}단계` : '', equipped.has(id) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
@@ -63,6 +87,8 @@ async function items(body, inv) {
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
+  $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
+  $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };
   const qi = $('#bag-q', body);
   qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv).then(() => { const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); }); };
   $$('[data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
