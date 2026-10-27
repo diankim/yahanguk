@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { store, on, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText } from './core.js';
+import { store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText } from './core.js';
 import { envChip } from './env.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
@@ -29,10 +29,13 @@ export async function refresh() {
       rpc('world_hud_snapshot').catch(() => null),
       loadCharacter(),
     ]);
+    const was = !!store.expedition;
     state = { idle, hud, exp: hud?.expedition || null };
     store.expedition = state.exp;
     store.hud = hud;
     render();
+    // 원정을 보내거나 돌아오면 현장 화면이 곧바로 행동을 막거나 풀도록 알린다(새로고침 없이).
+    if (was !== !!state.exp) emit('expedition', state.exp);
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
 

@@ -28,15 +28,17 @@ export async function render(root) {
   el = root;
   el.innerHTML = loading();
   off.forEach(f => f());
-  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); })];
+  off = [on('changed', ({ name }) => { if (!/battle_action/.test(name)) draw(); }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); stopBattle(); }
 
+let again = false;
 async function draw() {
-  if (!el?.isConnected || busy) return;
-  busy = true;
+  if (!el?.isConnected) return;
+  if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
+  busy = true; again = false;
   try {
     const [s, roster] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 15000 }).catch(() => [])]);
     snap = s;
@@ -52,6 +54,7 @@ async function draw() {
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
+  if (again) return draw();
   if (wantExp && el?.isConnected) { wantExp = false; openExpedition(); }
 }
 
