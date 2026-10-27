@@ -1,6 +1,6 @@
 {
-  "active": false,
-  "message": "",
+  "active": true,
+  "message": "서버를 서울로 옮기는 중입니다. 끝나면 한 번 다시 로그인해 주세요(아이디·비밀번호·캐릭터는 그대로입니다).",
   "until": "",
   "notes": []
 }
