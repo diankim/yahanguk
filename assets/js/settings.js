@@ -57,37 +57,80 @@ export function bindCrop(root, onReady) {
 }
 
 /* ── 알림 ────────────────────────────────────────────────── */
+// 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell;
+const POP_KINDS = new Set(['party_invite', 'expedition_done']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
-  loadNotes();
+  loadNotes(true);
   try {
     db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications' }, p => {
-      if (p.new?.user_id !== store.user?.id) return;
-      notes.unshift(p.new); drawDot(); toast(p.new.title || '새 알림', 'info');
+      const n = p.new; if (!n?.id || n.user_id !== store.user?.id || notes.some(x => x.id === n.id)) return;
+      notes.unshift(n); drawDot();
+      if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     }).subscribe();
   } catch {}
   setInterval(() => { if (!document.hidden) loadNotes(); }, 120000);
 }
-async function loadNotes() {
+async function loadNotes(first) {
   try {
     const { data, error } = await db.from('world_notifications').select('*').is('read_at', null).order('created_at', { ascending: false }).limit(30);
-    if (error) throw error; notes = data || []; drawDot();
+    if (error) throw error; notes = (data || []).filter(n => n?.id != null); drawDot();
+    // 접속하지 않은 사이 온 초대·원정 완료도 들어오면 바로 띄운다.
+    if (first) notes.filter(n => POP_KINDS.has(n.kind)).slice(0, 2).forEach(notePop);
   } catch {}
 }
 function drawDot() { const d = bell?.querySelector('.dot'); if (d) { d.hidden = !notes.length; d.textContent = notes.length > 9 ? '9+' : String(notes.length || ''); } }
+const byId = id => notes.find(n => String(n.id) === String(id));
+async function markRead(n) {
+  if (!n) return;
+  try { await rpc('world_mark_notification_read', { p_id: n.id }); } catch {}
+  notes = notes.filter(x => x.id !== n.id); drawDot();
+}
+// 알림 하나에 붙는 행동 단추
+function noteActs(n) {
+  if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-rescue="${esc(n.id)}">구조</button>`;
+  if (n.kind === 'party_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-invite="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-invite="${esc(n.id)}" data-acc="0">거절</button>`;
+  if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
+  return '';
+}
+async function runAct(btn) {
+  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.goExp); if (!n) return false;
+  if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
+  if (btn.dataset.invite) {
+    await guard(btn, async () => { try { return await act('world_party_respond', { p_invite_id: n.payload.invite_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } });
+    return true;
+  }
+  if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
+  return false;
+}
+// 초대·원정 완료처럼 바로 답해야 하는 알림은 화면 위에 띄운다(다른 창을 덮지 않는다).
+function notePop(n) {
+  if (document.querySelector(`.note-pop[data-id="${n.id}"]`)) return;
+  let stack = document.querySelector('.note-pops');
+  if (!stack) { stack = document.createElement('div'); stack.className = 'note-pops'; stack.setAttribute('aria-live', 'polite'); document.body.append(stack); }
+  const card = h(`<div class="note-pop" data-id="${esc(n.id)}" role="alertdialog" aria-label="${esc(n.title || '알림')}">
+    ${icon(n.kind === 'party_invite' ? 'users' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
+    <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-pop-close aria-label="나중에">나중에</button></div></div>`);
+  card.addEventListener('click', async e => {
+    const b = e.target.closest('[data-invite],[data-rescue],[data-go-exp]');
+    if (b) { await runAct(b); card.remove(); return; }
+    if (e.target.closest('[data-pop-close]')) card.remove();
+  });
+  stack.append(card);
+  window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'reward' }));
+}
 function openNotifications() {
-  const body = h(`<div class="notes">${notes.length ? notes.map((n, i) => `<article class="note-item">
+  const body = h(`<div class="notes">${notes.length ? notes.map(n => `<article class="note-item" data-note="${esc(n.id)}">
       <div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${fmt.time(n.created_at)}</time></div>
-      <div class="note-actions">${n.kind === 'rescue_request' && n.payload?.target_id ? `<button class="btn primary small" data-rescue="${i}">구조</button>` : ''}
-        <button class="btn ghost small" data-read="${i}">확인</button></div></article>`).join('') : '<p class="muted">새 알림이 없습니다.</p>'}
+      <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-read="${esc(n.id)}">확인</button></div></article>`).join('') : '<p class="muted">새 알림이 없습니다.</p>'}
       ${notes.length > 1 ? '<button class="btn block" data-read-all>모두 확인</button>' : ''}</div>`);
   body.addEventListener('click', async e => {
-    const r = e.target.closest('[data-read]'), s = e.target.closest('[data-rescue]'), all = e.target.closest('[data-read-all]');
-    if (r) { const n = notes[Number(r.dataset.read)]; await guard(r, () => rpc('world_mark_notification_read', { p_id: n.id }), { success: '' }); notes = notes.filter(x => x !== n); drawDot(); r.closest('.note-item').remove(); }
-    if (s) { const n = notes[Number(s.dataset.rescue)]; await guard(s, () => act('world_rescue_character', { p_target: n.payload.target_id })); }
-    if (all) { await guard(all, async () => { for (const n of [...notes]) await rpc('world_mark_notification_read', { p_id: n.id }); notes = []; drawDot(); closeModal(); }, { success: '알림을 모두 확인했습니다.' }); }
+    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-rescue],[data-go-exp]'), all = e.target.closest('[data-read-all]');
+    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && a.dataset.invite) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
+    if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); if (!notes.length) closeModal(); }
+    if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); closeModal(); }, { success: '알림을 모두 확인했습니다.' }); }
   });
   openModal({ title: '알림', body });
 }

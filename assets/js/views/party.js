@@ -3,16 +3,20 @@ import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } f
 import { load, panel, chip, loading, errorBox } from './common.js';
 
 const LOOT = [['contribution', '기여도순'], ['designated', '지정순'], ['equal', '균등 분배']];
-let el, off = [];
+let el, off = [], poll = null;
 
 export async function render(root) {
   if (!store.character) return;
   el = root;
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('users', 14)} 함께 걷는 이들</p><h1>동료</h1></div></div><div id="party-body">${loading()}</div>`;
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('users', 14)} 함께 걷는 이들</p><h1>동료</h1></div>
+    <button class="btn small ghost" id="party-refresh">${icon('back', 14)}<span>새로 보기</span></button></div><div id="party-body">${loading()}</div>`;
   off.forEach(f => f()); off = [on('changed', draw)];
+  $('#party-refresh', el).onclick = e => guard(e.currentTarget, () => draw(), { success: '' });
+  // 다른 조사원이 오가는 것은 내 행동으로 알 수 없으므로, 화면을 보고 있는 동안만 20초마다 다시 읽는다.
+  clearInterval(poll); poll = setInterval(() => { if (!document.hidden && el?.isConnected && !el.contains(document.activeElement?.closest('select,input'))) draw(); }, 20000);
   await draw();
 }
-export function destroy() { off.forEach(f => f()); off = []; }
+export function destroy() { off.forEach(f => f()); off = []; clearInterval(poll); poll = null; }
 
 async function draw() {
   const body = $('#party-body', el); if (!body) return;
@@ -30,7 +34,8 @@ async function draw() {
         ${panel(`우리 동료 · ${(p.members || []).length}명`, `<ul class="people">${(p.members || []).map(member).join('')}</ul>
           ${isLeader && (p.candidates || []).length ? `<form class="form-grid" id="invite-form"><label class="field"><span>초대할 조사원</span><select name="who">${p.candidates.map(x => `<option value="${esc(x.owner_id)}">${esc(x.character_name)} (Lv.${x.level} · ${esc(x.location)})</option>`).join('')}</select></label><button class="btn" type="submit">초대</button></form>` : ''}
           ${outgoing.length ? `<p class="muted small">응답을 기다리는 초대: ${outgoing.map(i => esc(i.invitee_name)).join(', ')}</p>` : ''}
-          <p class="muted small">파티장이 지도에서 목적지를 고르면 같은 지역의 파티원에게 동승을 요청할 수 있습니다. 운임은 파티장만 냅니다.</p>`, { ico: 'users' })}
+          <p class="muted small">파티장이 지도에서 목적지를 고르면 같은 지역의 파티원에게 동승을 요청할 수 있습니다. 운임은 파티장만 냅니다.</p>
+          <button class="btn small ghost" id="party-leave">${icon('back', 14)}<span>${(p.members || []).length <= 1 ? '파티 해체' : isLeader ? '파티 나가기(파티장 넘김)' : '파티 나가기'}</span></button>`, { ico: 'users' })}
         ${panel('전리품 분배', `
           <p class="muted small">현재 방식: <b>${esc(LOOT.find(x => x[0] === (loot?.method || pt.loot_distribution_method))?.[1] || '균등 분배')}</b> · 받을 몫 ${fmt.num(loot?.claimable_count)}건</p>
           ${isLeader ? `<div class="btn-row">${LOOT.map(([k, n]) => `<button class="btn small ${k === (loot?.method || pt.loot_distribution_method) ? 'primary' : ''}" data-method="${k}">${n}</button>`).join('')}</div>` : ''}
@@ -52,6 +57,11 @@ async function draw() {
     $$('[data-method]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_set_loot_distribution', { p_method: b.dataset.method, p_priority: b.dataset.method === 'designated' ? (p.members || []).map(m => m.owner_id) : [] })));
     $$('[data-dist]', body).forEach(b => b.onclick = () => guard(b, () => act('world_party_loot_distribute', { p_loot_id: b.dataset.dist })));
     $$('[data-rescue]', body).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
+    const lv = $('#party-leave', body);
+    if (lv) lv.onclick = () => {
+      const alone = (p.members || []).length <= 1;
+      if (confirm(alone ? '파티를 해체할까요? 보낸 초대도 함께 취소됩니다.' : isLeader ? '파티를 나갈까요? 가장 먼저 들어온 파티원이 파티장이 됩니다.' : '파티를 나갈까요?')) guard(lv, () => act('world_party_leave'));
+    };
     const cl = $('#loot-claim', body); if (cl) cl.onclick = () => guard(cl, () => act('world_party_loot_claim'));
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }

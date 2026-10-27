@@ -36,6 +36,8 @@ async function draw(soft) {
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
+// 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업
+const gearBlock = (o, c) => (o.minimum_level > c.level) ? `Lv.${o.minimum_level} 필요` : (o.required_job && o.required_job !== c.job_key) ? `${nameOf(o.required_job)} 전용` : '';
 function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i])); }
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
@@ -56,7 +58,7 @@ function items(body, inv) {
         <div class="chips">${chip(nameOf(it?.rarity || 'common'), 'rar')}${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${equipped.has(id) ? chip('장착 중', 'accent') : ''}</div>
         ${it?.description ? `<small>${esc(it.description)}</small>` : ''}</div>
       <div class="item-act">${USABLE[id] ? `<button class="btn small" data-use="${esc(id)}" title="${esc(USABLE[id])}">사용</button>` : ''}
-        ${it && GEAR.has(it.category) && !equipped.has(id) ? `<button class="btn small" data-equip="${esc(id)}">장착</button>` : ''}</div></li>`).join('')}</ul>`
+        ${it && GEAR.has(it.category) && !equipped.has(id) ? (gearBlock(it, c) ? `<small class="bad">${esc(gearBlock(it, c))}</small>` : `<button class="btn small" data-equip="${esc(id)}">장착</button>`) : ''}</div></li>`).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
@@ -76,7 +78,7 @@ async function equip(body, inv) {
     return panel(SLOT[slot], `
       ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it)}</div>` : `<p class="muted">비어 있음</p>`}
       ${options.length ? `<ul class="spot-list">${options.map(o => {
-        const blocked = (o.required_job && o.required_job !== c.job_key) ? `${nameOf(o.required_job)} 전용` : (o.minimum_level > c.level) ? `Lv.${o.minimum_level} 필요` : '';
+        const blocked = gearBlock(o, c);
         return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
           <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: slot === 'tool' ? 'hammer' : slot === 'weapon' ? 'sword' : slot === 'armor' ? 'shield' : 'spark', cls: 'compact' });
   }).join('');

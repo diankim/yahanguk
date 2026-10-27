@@ -3,6 +3,8 @@ import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, toast,
 import { load, chip, loading, errorBox } from './common.js';
 
 /* ── 상점 ─────────────────────────────────────────────── */
+// 사고팔 때마다 창을 다시 그리므로, 고른 칸(사기·팔기)을 기억해 둔다.
+let shopMode = 'buy';
 export async function renderShop(box) {
   box.innerHTML = loading();
   try {
@@ -16,17 +18,18 @@ export async function renderShop(box) {
       <div class="shop-head"><div><b>${esc(s.shop_name)}</b><small>재고는 하루 세 번(07·15·23시) 새로 들어옵니다 · 다음 입고 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
         <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(s.gil)}</span></div>
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 가방이 가득 차면 구매할 수 없습니다.</p>
-      <div class="seg-mini" role="tablist"><button class="on" data-mode="buy">사기</button><button data-mode="sell">팔기</button></div>
-      <ul class="item-list" data-list="buy">${(s.stock || []).map(i => `<li>
+      <div class="seg-mini" role="tablist"><button class="${shopMode === 'buy' ? 'on' : ''}" data-mode="buy">사기</button><button class="${shopMode === 'sell' ? 'on' : ''}" data-mode="sell">팔기</button></div>
+      <ul class="item-list" data-list="buy" ${shopMode === 'buy' ? '' : 'hidden'}>${(s.stock || []).map(i => `<li>
         <div class="item-main"><b>${esc(i.item_name)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
           <div class="chips">${chip(nameOf(i.category))}${chip(`${i.tier}단계`)}${chip(`재고 ${i.stock}`, i.stock ? '' : 'bad')}</div><small>${esc(i.description || '')}</small></div>
         <div class="item-act qty-act"><input type="number" min="1" max="${i.stock}" value="1" aria-label="수량" ${i.stock ? '' : 'disabled'}>
           <button class="btn small primary" data-buy="${esc(i.item_id)}" ${i.stock ? '' : 'disabled'}>사기</button></div></li>`).join('') || `<li>${empty('지금은 판매 중인 물품이 없습니다.')}</li>`}</ul>
-      <ul class="item-list" data-list="sell" hidden>${sellable.map(([k, n]) => `<li>
+      <ul class="item-list" data-list="sell" ${shopMode === 'sell' ? '' : 'hidden'}>${sellable.map(([k, n]) => `<li>
         <div class="item-main"><b>${esc(nameOf(k))}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(Math.max(1, Math.round((ref.get(k).npc_sell_price))))}에 매입 · 세금 5%</small></div>
         <div class="item-act qty-act"><input type="number" min="1" max="${n}" value="1" aria-label="수량"><button class="btn small" data-sell="${esc(k)}">팔기</button></div></li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
       <p class="muted small">상점 판매 수익은 하루 1,000전까지입니다. 더 비싸게 팔려면 거래소를 이용하세요.</p>`;
     $$('.seg-mini button', box).forEach(b => b.onclick = () => {
+      shopMode = b.dataset.mode;
       $$('.seg-mini button', box).forEach(x => x.classList.toggle('on', x === b));
       $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== b.dataset.mode);
     });

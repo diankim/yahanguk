@@ -715,6 +715,13 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .find-pop div { display: grid; gap: 2px; } .find-pop span { font-size: 14px; } .find-pop .ico { color: var(--gold); }
 .find-pop.k-hazard { border-color: var(--bad); } .find-pop.k-hazard .ico { color: var(--bad); } .find-pop.k-quiet, .find-pop.k-omen { border-color: var(--line); }
 .find-pop.out { opacity: 0; transform: translate(-50%, -12px); transition: .4s; }
+/* 바로 답해야 하는 알림(동료 초대·원정 완료): 화면 위쪽에 쌓아 띄운다 */
+.note-pops { position: fixed; z-index: 95; top: calc(var(--header-h, 56px) + 8px); right: 16px; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); }
+.note-pop { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: start; padding: 12px 14px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--gold); animation: pop .25s ease-out; }
+.note-pop > .ico { color: var(--gold); margin-top: 2px; }
+.note-pop > div:not(.note-actions) { display: grid; gap: 2px; } .note-pop span { font-size: 13px; color: var(--muted); }
+.note-pop .note-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 799px) { .note-pops { right: 16px; left: 16px; width: auto; } }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, 10px) scale(.96); } }
 
 /* ── 전투 ─────────────────────────────── */

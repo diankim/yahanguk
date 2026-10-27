@@ -71,7 +71,7 @@ export async function render(root, sub) {
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
   const showSub = k => { $$('.set-sec', el).forEach(s => s.classList.toggle('on', s.id === `sec-${k}`)); };
-  bindSegmented(el, 'set-sub', k => { history.replaceState(null, '', `#/settings/${k}`); showSub(k); });
+  bindSegmented(el, 'set-sub', k => { history.replaceState(null, '', `#/settings/${k}`); window.dispatchEvent(new Event('yh-subpage')); showSub(k); });
   showSub(SUBS.some(x => x[0] === sub) ? sub : 'profile');
 
   // 프로필

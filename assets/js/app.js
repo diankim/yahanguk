@@ -195,8 +195,8 @@ function renderGame() {
         <a class="icon-btn" href="#/party" data-page="party" aria-label="동료" title="동료">${icon('users')}</a>
         <a class="icon-btn" href="#/guide" data-page="guide" aria-label="도움말" title="도움말">${icon('help')}</a>
         <button class="icon-btn" id="btn-profile" aria-label="프로필" title="프로필">${icon('idcard')}</button>
-        <a class="icon-btn" href="#/settings/theme" data-page="settings" aria-label="테마" title="테마">${icon('palette')}</a>
-        <a class="icon-btn" href="#/settings" data-page="settings" aria-label="게임 설정" title="게임 설정">${icon('gear')}</a>
+        <a class="icon-btn" href="#/settings/theme" data-page="settings" data-page-sub="theme" aria-label="테마" title="테마">${icon('palette')}</a>
+        <a class="icon-btn" href="#/settings" data-page="settings" data-page-sub="!theme" aria-label="게임 설정" title="게임 설정">${icon('gear')}</a>
       </div>
     </header>
     <div class="travel-banner" id="travel-banner" hidden></div>
@@ -227,7 +227,7 @@ async function onHash() {
   if (!$('.shell')) return;
   const { view, sub } = parseHash();
   $$('[data-view]').forEach(a => a.classList.toggle('on', a.dataset.view === view));
-  $$('[data-page]').forEach(a => a.classList.toggle('on', a.dataset.page === view));
+  markHeader(view, sub);
   const entry = VIEWS[view] || PAGES[view];
   const el = $('#view');
   if (current?.mod?.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
@@ -238,6 +238,15 @@ async function onHash() {
   try { await entry.mod.render(el, sub); }
   catch (e) { console.error(e); el.replaceChildren(h(`<div class="card"><h2>화면을 불러오지 못했습니다</h2><p class="muted">${esc(friendlyError(e))}</p></div>`)); }
 }
+// 헤더 단추 강조: 테마(설정의 테마 칸)와 게임 설정(나머지 칸)이 함께 켜지지 않게 한다.
+function markHeader(view, sub) {
+  $$('[data-page]').forEach(a => {
+    const want = a.dataset.pageSub;
+    const subOk = !want || (want.startsWith('!') ? sub !== want.slice(1) : sub === want);
+    a.classList.toggle('on', a.dataset.page === view && subOk);
+  });
+}
+window.addEventListener('yh-subpage', () => { const { view, sub } = parseHash(); markHeader(view, sub); });
 window.addEventListener('hashchange', onHash);
 export function go(view, sub = '') { const target = `#/${view}${sub ? '/' + sub : ''}`; if (location.hash === target) onHash(); else location.hash = target; }
 window.yahangGo = go;

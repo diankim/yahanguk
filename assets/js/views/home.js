@@ -19,7 +19,9 @@ const OUTCOME = {
 const CAT = { herbs: '약초', ore: '광석', wood: '목재', water: '수변', spirit: '영물', relics: '유물', supplies: '보급' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
-let el, off = [], snap = null, timer = null, busy = false;
+let el, off = [], snap = null, timer = null, busy = false, wantExp = false;
+// 알림의 "결과 보기": 현장 화면이 그려진 뒤 원정 창을 연다.
+window.addEventListener('yh-open-expedition', () => { if (el?.isConnected && !busy) openExpedition(); else wantExp = true; });
 
 export async function render(root) {
   if (!store.character) return;
@@ -50,6 +52,7 @@ async function draw() {
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
+  if (wantExp && el?.isConnected) { wantExp = false; openExpedition(); }
 }
 
 function drawBattle() {
