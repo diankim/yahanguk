@@ -11,8 +11,9 @@
 -- SQL Editor에서 이 파일 전체를 한 번 실행한다. 다시 실행해도 안전하다.
 
 /* ── 1) 회차·갱신 도움 함수 ───────────────────────────── */
-grant fn_owner_18876 to postgres with inherit true;
-grant fn_owner_18877 to postgres with inherit true;
+-- 새 함수의 주인을 바꾸려면 그 역할로 SET ROLE 할 수 있어야 한다(18876·18877은 평소 꺼져 있어 이 파일 끝에서 다시 끈다)
+grant fn_owner_18876 to postgres with inherit true, set true;
+grant fn_owner_18877 to postgres with inherit true, set true;
 grant fn_owner_18878 to postgres with inherit true;
 
 -- 지금 회차의 시작 시각(07·15·23시)
@@ -189,8 +190,8 @@ begin
     order by i.category, i.tier, i.item_name) from public.world_item_catalog i), '[]'::jsonb);
 end $function$;
 
-grant fn_owner_18876 to postgres with inherit false;
-grant fn_owner_18877 to postgres with inherit false;
+grant fn_owner_18876 to postgres with inherit false, set false;
+grant fn_owner_18877 to postgres with inherit false, set false;
 grant fn_owner_18878 to postgres with inherit false;
 
 /* ── 3) 대장간 품목: 장비 제작 재료(흔한·고급)와 수리 도구 ── */
@@ -329,6 +330,7 @@ end $$;
 grant execute on function public.world_shop_slot() to public;
 -- 다른 함수 주인이 부르는 함수(사기 → 품목 갱신, 수리·분해 → 내구도·숙련 계산)
 grant execute on function public.world_shop_refresh(text) to fn_owner_18877;
+grant select on public.world_item_catalog to fn_owner_18877; -- 구매 문구에 물품 이름(누구나 읽는 목록)
 grant execute on function public.world_item_max_durability(text) to fn_owner_field;
 grant execute on function public.world_skill_rank(integer, text) to fn_owner_field;
 
