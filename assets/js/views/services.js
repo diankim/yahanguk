@@ -55,7 +55,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {} }) {
     </section>
     ${sell ? `<section data-list="sell" ${mode === 'sell' ? '' : 'hidden'}>
       ${sold ? `<div class="sell-cap ${sold.left <= 0 ? 'full' : ''}"><span>오늘 판매 수익 <b>${fmt.jeon(sold.sold)}</b> / ${fmt.jeon(sold.cap)}</span>${bar(sold.sold, sold.cap, sold.left <= 0 ? 'enemy' : 'xp')}
-        <small>${sold.left > 0 ? `앞으로 ${fmt.jeon(sold.left)}까지 더 받을 수 있습니다` : '오늘 한도를 다 채웠습니다'}${sold.resets_at ? ` · ${fmt.time(sold.resets_at)}부터 차례로 풀립니다` : ''} · 한도는 24시간 기준(레벨×150전, 적어도 1,000전)</small></div>`
+        <small>${sold.left > 0 ? `앞으로 ${fmt.jeon(sold.left)}까지 더 받을 수 있습니다` : '오늘 한도를 다 채웠습니다'}${sold.resets_at ? ` · ${fmt.time(sold.resets_at)}부터 차례로 풀립니다` : ''} · 한도는 24시간에 2,000전</small></div>`
         : '<p class="muted small">상점 판매 수익은 하루 한도가 있고 세금 5%가 붙습니다.</p>'}
       <p class="muted small">장비도 팔 수 있습니다. 잠근 물품·임무 물품·장착 중인 마지막 하나는 나오지 않습니다.</p>
       <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li>
