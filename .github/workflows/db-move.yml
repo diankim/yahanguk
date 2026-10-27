@@ -1,5 +1,6 @@
 # 서버 이사(뭄바이 → 서울): 옛 DB를 덤프해 비어 있는 새 DB에 복원한다.
 # 수동 실행만 된다(Actions → db-move → Run workflow, 확인 칸에 MOVE). CHECK는 두 DB 접속과 새 DB가 비었는지만 본다.
+# ACL은 복원 뒤 옛 DB의 public 권한을 새 DB에 똑같이 맞춘다(supabase/maintenance/acl_sync.sql).
 # 비밀값: OLD_DB_URL·NEW_DB_URL (두 프로젝트의 Session pooler 주소, 비밀번호 포함. 직접 주소를 넣으면 같은 비밀번호로 Session pooler 주소를 만들어 쓴다).
 # 옛 DB는 읽기만 한다. 새 DB에 public 표가 하나라도 있으면 아무것도 하지 않고 멈춘다.
 # 덤프 파일(계정 정보 포함)은 실행기 안에서만 쓰고 올리지 않는다. 로그에는 표 이름과 행 수만 남긴다.
@@ -9,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: '접속만 시험하려면 CHECK, 옮기려면 MOVE 를 입력'
+        description: '접속만 시험하려면 CHECK, 옮기려면 MOVE, 권한 맞추기는 ACL 을 입력'
         required: true
 
 permissions:
@@ -17,13 +18,16 @@ permissions:
 
 jobs:
   move:
-    if: inputs.confirm == 'MOVE' || inputs.confirm == 'CHECK'
+    if: inputs.confirm == 'MOVE' || inputs.confirm == 'CHECK' || inputs.confirm == 'ACL'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       OLD_DB_URL: ${{ secrets.OLD_DB_URL }}
       NEW_DB_URL: ${{ secrets.NEW_DB_URL }}
     steps:
+      - uses: actions/checkout@v4
+        if: inputs.confirm == 'ACL'
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -76,7 +80,23 @@ jobs:
           ./psql.sh "$SRC" -tAc "select 'old public tables: ' || count(*) from pg_tables where schemaname = 'public'"
           n=$(./psql.sh "$DST" -tAc "select count(*) from pg_tables where schemaname = 'public'")
           echo "new public tables: $n"
-          test "$n" = "0" || { echo '새 DB가 비어 있지 않아 멈춥니다'; exit 1; }
+          test "$n" = "0" || test "${{ inputs.confirm }}" = "ACL" || { echo '새 DB가 비어 있지 않아 멈춥니다'; exit 1; }
+
+      - name: 권한 맞추기(옛 DB → 새 DB)
+        if: inputs.confirm == 'ACL'
+        run: |
+          gen="set search_path to public, pg_catalog; select jsonb_object_agg(k, v) from (select 'f:' || p.oid::regprocedure::text k, coalesce(p.proacl::text, '') v from pg_proc p where p.pronamespace = 'public'::regnamespace union all select 'r:' || c.relname, coalesce(c.relacl::text, '') from pg_class c where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'v', 'm', 'S', 'p', 'f')) z"
+          ./psql.sh "$SRC" -tA -q -c "$gen" > acl.json
+          echo "objects: $(grep -o '"[fr]:' acl.json | wc -l)"
+          fp="select md5(string_agg(s, ',' order by s)) from (select o || ':' || case when (a).grantee = 0 then 'PUBLIC' else (a).grantee::regrole::text end || ':' || (a).privilege_type s from (select 'f' || p.oid::regprocedure::text o, aclexplode(p.proacl) a from pg_proc p where p.pronamespace = 'public'::regnamespace union all select 'r' || c.relname, aclexplode(c.relacl) from pg_class c where c.relnamespace = 'public'::regnamespace) z) w"
+          echo "before: old $(./psql.sh "$SRC" -tAc "$fp") / new $(./psql.sh "$DST" -tAc "$fp")"
+          cp supabase/maintenance/acl_sync.sql acl_sync.sql
+          ./psql.sh "$DST" -q -v acl="$(cat acl.json)" -f acl_sync.sql 2>&1 | grep -v '^$' | tail -5
+          old=$(./psql.sh "$SRC" -tAc "$fp"); new=$(./psql.sh "$DST" -tAc "$fp")
+          echo "after:  old $old / new $new"
+          rm -f acl.json acl_sync.sql
+          test "$old" = "$new" || { echo '권한이 아직 다릅니다'; exit 1; }
+          echo '권한이 옛 DB와 같습니다'
 
       - name: 옛 서버 점검 모드(게임 접근 막기)
         if: inputs.confirm == 'MOVE'
