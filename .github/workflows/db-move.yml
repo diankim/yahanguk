@@ -31,7 +31,7 @@ jobs:
       - name: psql 준비
         run: |
           docker pull -q postgres:17
-          echo 'docker run --rm -i -e PGCONNECT_TIMEOUT=20 -v "$PWD":/w -w /w postgres:17 psql "$@"' > psql.sh
+          echo 'docker run --rm -i -e PGCONNECT_TIMEOUT=60 -v "$PWD":/w -w /w postgres:17 psql "$@"' > psql.sh
           chmod +x psql.sh
 
       - name: 접속 확인과 새 DB가 비었는지 검사
@@ -77,6 +77,16 @@ jobs:
           n=$(./psql.sh "$DST" -tAc "select count(*) from pg_tables where schemaname = 'public'")
           echo "new public tables: $n"
           test "$n" = "0" || { echo '새 DB가 비어 있지 않아 멈춥니다'; exit 1; }
+
+      - name: 옛 서버 점검 모드(게임 접근 막기)
+        if: inputs.confirm == 'MOVE'
+        # supabase/maintenance/start.sql과 같다. 덤프 중에 기록이 생기지 않게 한다. 되돌리기는 end.sql.
+        run: |
+          for i in 1 2 3; do
+            if ./psql.sh "$SRC" -v ON_ERROR_STOP=1 -tA -c "REVOKE USAGE ON SCHEMA public FROM PUBLIC, anon, authenticated" -c "select 'anon usage ' || has_schema_privilege('anon', 'public', 'USAGE') || ', authenticated usage ' || has_schema_privilege('authenticated', 'public', 'USAGE')"; then exit 0; fi
+            echo "다시 시도 $i"; sleep 10
+          done
+          exit 1
 
       - name: 덤프(구조·데이터)
         if: inputs.confirm == 'MOVE'
