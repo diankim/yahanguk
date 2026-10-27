@@ -2,6 +2,7 @@
 // 화면 어디서든 data-card="owner_id"가 붙은 요소를 누르면 열린다. 다른 창 위에 겹쳐 떠서 닫아도 아래 창은 남는다.
 // 친구·귓속말·파티 초대·거래 제안·구조·차단은 모두 서버가 다시 검사한다(단추는 길잡이일 뿐).
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
+import { circles, inviteToCircle } from '../circles.js';
 import { chip } from './common.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
 
@@ -32,6 +33,7 @@ async function draw(box, id) {
         : `<button class="btn small primary" data-do="friend">${icon('plus', 14)}<span>친구 신청</span></button>`}
       ${c.is_dead ? '' : `<button class="btn small" data-do="whisper">${icon('chat', 14)}<span>귓속말</span></button>`}
       ${canInvite ? `<button class="btn small" data-do="invite">${icon('users', 14)}<span>파티 초대</span></button>` : ''}
+      ${!c.is_dead && circles().some(x => (x.role === 'leader' || x.role === 'manager') && !x.members.some(mm => mm.owner_id === c.owner_id)) ? `<button class="btn small" data-do="circle">${icon('chat', 14)}<span>모임에 초대</span></button>` : ''}
       ${c.same_party ? chip('같은 파티', 'accent') : ''}
       ${c.same_place && safe && !c.is_dead ? `<button class="btn small" data-do="trade">${icon('coin', 14)}<span>거래 제안</span></button>` : ''}
       ${c.same_place && c.downed && !c.is_dead ? `<button class="btn small primary" data-do="rescue">${icon('heart', 14)}<span>구조</span></button>` : ''}`;
@@ -71,6 +73,7 @@ async function run(b, c, box) {
     if (!c.my_party_role) await act('world_party_create', { p_party_name: `${store.character?.character_name || '조사원'}의 동료`.slice(0, 20) });
     const r = await act('world_party_invite', { p_invitee_id: id }); again(); return r;
   });
+  if (k === 'circle') return inviteToCircle(id, c.character_name);
   if (k === 'trade') { close(); const { openDirectTrade } = await import('./services.js'); return openDirectTrade(id); }
   if (k === 'rescue') return guard(b, async () => { const r = await act('world_rescue_character', { p_target: id }); again(); return r; });
   if (k === 'block') {

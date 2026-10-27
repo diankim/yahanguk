@@ -2,6 +2,7 @@
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { openWhisper } from '../chat.js';
+import { loadCircles, circlesPanelHtml, bindCirclesPanel } from '../circles.js';
 
 const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
@@ -26,7 +27,7 @@ export function destroy() { off.forEach(f => f()); off = []; clearInterval(poll)
 async function draw() {
   const body = $('#party-body', el); if (!body) return;
   try {
-    const [p, loot, roster, fr] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => []), load('world_friend_overview').catch(() => null)]);
+    const [p, loot, roster, fr, cs] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => []), load('world_friend_overview').catch(() => null), loadCircles(true)]);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
     const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
@@ -46,8 +47,10 @@ async function draw() {
       ${(fr.outgoing || []).length ? `<p class="muted small">응답을 기다리는 신청: ${fr.outgoing.map(f => `${esc(f.character_name)} <button class="linkish" data-fr-cancel="${esc(f.owner_id)}">취소</button>`).join(' · ')}</p>` : ''}
       ${(fr.blocked || []).length ? `<details class="fold"><summary>차단한 조사원 ${fr.blocked.length}</summary><ul class="spot-list">${fr.blocked.map(f => `<li><div><b>${esc(f.character_name)}</b></div><button class="btn small" data-unblock="${esc(f.owner_id)}">차단 풀기</button></li>`).join('')}</ul></details>` : ''}
       <p class="muted small">친구는 어디에 있든 위치와 상황을 볼 수 있고, 귓속말과 파티 초대를 바로 보낼 수 있습니다.</p>`, { ico: 'heart' }) : '';
+    const circlePanel = panel(`모임 · ${(cs?.circles || []).length}개`, circlesPanelHtml(cs), { ico: 'chat' });
     body.innerHTML = `
       ${friendsPanel}
+      ${circlePanel}
       ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.inviter_name || '조사원')}의 동료 초대</b><small>수락하면 함께 이동하고 전리품을 나눕니다</small></div>
         <div class="btn-row"><button class="btn small primary" data-inv="${esc(i.invite_id)}" data-acc="1">수락</button><button class="btn small" data-inv="${esc(i.invite_id)}" data-acc="0">거절</button></div></li>`).join('')}</ul>`, { ico: 'bell' }) : ''}
       ${pt ? `<div class="grid-2">
@@ -91,5 +94,6 @@ async function draw() {
       if (await ask(alone ? '파티를 해체할까요? 보낸 초대도 함께 취소됩니다.' : isLeader ? '파티를 나갈까요? 가장 먼저 들어온 파티원이 파티장이 됩니다.' : '파티를 나갈까요?', { title: alone ? '파티 해체' : '파티 나가기', ok: alone ? '해체하기' : '나가기', danger: true })) guard(lv, () => act('world_party_leave'));
     };
     const cl = $('#loot-claim', body); if (cl) cl.onclick = () => guard(cl, () => act('world_party_loot_claim'));
+    bindCirclesPanel(body);
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }

@@ -4,6 +4,7 @@ import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { mountWhisper } from './whisper.js';
+import { mountGrowth } from './growth.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { maybeStartTutorial, markPending } from './tutorial.js';
@@ -278,6 +279,7 @@ window.addEventListener('yh-subpage', () => { const { view, sub } = parseHash();
 window.addEventListener('hashchange', onHash);
 export function go(view, sub = '') { const target = `#/${view}${sub ? '/' + sub : ''}`; if (location.hash === target) onHash(); else location.hash = target; }
 window.yahangGo = go;
+mountGrowth(); // 레벨·숙련이 오르면 화면 위에 잠깐 알린다
 
 // 다른 계정으로 바뀌거나 캐릭터가 사라지면 처음 흐름으로 돌아간다.
 on('character', c => { if (!store.user) return; if (!c && ($('.shell') || $('.death-card'))) renderCreate(); else if (c?.is_dead && $('.shell')) renderDeath(c); });
