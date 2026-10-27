@@ -135,7 +135,7 @@ DECLARE m public.world_region_monsters%rowtype; rk text := 'normal'; lv int; hpm
   node_min int; v_intent text;
 BEGIN
   SELECT min_level INTO node_min FROM public.world_exploration_nodes WHERE node_id = p_node;
-  IF p_depth >= 3 AND random() < CASE WHEN p_depth >= 4 THEN 0.16 ELSE 0.09 END THEN
+  IF p_depth >= 3 AND random() < (CASE WHEN p_depth >= 4 THEN 0.16 ELSE 0.09 END) THEN
     SELECT * INTO m FROM public.world_region_monsters WHERE region_id = p_region AND role = 'guardian' ORDER BY random() LIMIT 1;
   END IF;
   IF m.monster_id IS NULL THEN
@@ -401,7 +401,7 @@ BEGIN
         WHERE p.region_id = a.region_id AND ic.tier <= 2 AND x NOT IN ('courier_token', 'spirit_compass') ORDER BY random() LIMIT 1;
       IF sig IS NOT NULL THEN loot := public.world_inv_add(loot, sig, 1); END IF;
     END IF;
-    IF a.rank <> 'normal' AND random() < CASE a.rank WHEN 'guardian' THEN 1 ELSE 0.3 END THEN loot := public.world_inv_add(loot, 'monster_core', 1); END IF;
+    IF a.rank <> 'normal' AND random() < (CASE a.rank WHEN 'guardian' THEN 1 ELSE 0.3 END) THEN loot := public.world_inv_add(loot, 'monster_core', 1); END IF;
     IF loot = '{}'::jsonb THEN loot := public.world_inv_add(loot, CASE WHEN random() < 0.5 THEN 'spirit_dust' ELSE 'beast_bone' END, 1); END IF;
     FOR k, v IN SELECT key, value::text::int FROM jsonb_each(loot) LOOP inv := public.world_inv_add(inv, k, v); END LOOP;
     lines := lines || jsonb_build_array(m.monster_name || '을(를) 쓰러뜨렸다.');
@@ -445,18 +445,18 @@ BEGIN
 END $f$;
 
 -- 실행 권한과 소유권: 함수 전용 역할로 넘긴다
-REVOKE ALL ON FUNCTION public.world_field_battle_view(p_owner uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_field_battle_view(p_owner uuid) FROM PUBLIC, anon, authenticated;
 ALTER FUNCTION public.world_field_battle_view(p_owner uuid) OWNER TO fn_owner_field;
-REVOKE ALL ON FUNCTION public.world_field_snapshot() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_field_snapshot() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.world_field_snapshot() TO authenticated;
 ALTER FUNCTION public.world_field_snapshot() OWNER TO fn_owner_field;
-REVOKE ALL ON FUNCTION public.world_field_move(p_node_id uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_field_move(p_node_id uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.world_field_move(p_node_id uuid) TO authenticated;
 ALTER FUNCTION public.world_field_move(p_node_id uuid) OWNER TO fn_owner_field;
-REVOKE ALL ON FUNCTION public.world_battle_intent(p_mech text, p_hp_ratio numeric, p_rank text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_battle_intent(p_mech text, p_hp_ratio numeric, p_rank text) FROM PUBLIC, anon, authenticated;
 ALTER FUNCTION public.world_battle_intent(p_mech text, p_hp_ratio numeric, p_rank text) OWNER TO fn_owner_field;
-REVOKE ALL ON FUNCTION public.world_battle_open(p_owner uuid, p_region text, p_node uuid, p_depth integer, p_level integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_battle_open(p_owner uuid, p_region text, p_node uuid, p_depth integer, p_level integer) FROM PUBLIC, anon, authenticated;
 ALTER FUNCTION public.world_battle_open(p_owner uuid, p_region text, p_node uuid, p_depth integer, p_level integer) OWNER TO fn_owner_field;
-REVOKE ALL ON FUNCTION public.world_battle_action(p_action text, p_item text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_battle_action(p_action text, p_item text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.world_battle_action(p_action text, p_item text) TO authenticated;
 ALTER FUNCTION public.world_battle_action(p_action text, p_item text) OWNER TO fn_owner_field;

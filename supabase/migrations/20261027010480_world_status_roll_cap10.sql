@@ -1,10 +1,4 @@
--- 의뢰 진행·옛 방식 차단 트리거, 상태이상 굴림(동시 10개, 탐색은 함정 결과로만 상태를 건다)
-CREATE TRIGGER trg_world_guard_legacy_actions BEFORE INSERT ON public.world_events FOR EACH ROW EXECUTE FUNCTION public.world_guard_legacy_actions();
-CREATE TRIGGER trg_world_track_commissions AFTER INSERT ON public.world_events FOR EACH ROW EXECUTE FUNCTION public.world_track_commissions();
-REVOKE ALL ON FUNCTION public.world_guard_legacy_actions(), public.world_track_commissions() FROM PUBLIC;
-ALTER FUNCTION public.world_guard_legacy_actions() OWNER TO fn_owner_field;
-ALTER FUNCTION public.world_track_commissions() OWNER TO fn_owner_field;
-
+-- 상태이상 굴림: 동시 10개까지, 현장 탐색은 함정·징조 결과로만 상태를 건다(탐색마다 무작위로 걸지 않는다).
 CREATE OR REPLACE FUNCTION public.world_status_roll(p_activity text, p_context jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb LANGUAGE plpgsql SET search_path TO 'pg_catalog', 'public'
 AS $function$

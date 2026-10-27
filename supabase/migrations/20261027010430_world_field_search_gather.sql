@@ -213,9 +213,9 @@ BEGIN
 END $f$;
 
 -- 실행 권한과 소유권: 함수 전용 역할로 넘긴다
-REVOKE ALL ON FUNCTION public.world_field_search() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_field_search() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.world_field_search() TO authenticated;
 ALTER FUNCTION public.world_field_search() OWNER TO fn_owner_field;
-REVOKE ALL ON FUNCTION public.world_field_gather(p_spot_id uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.world_field_gather(p_spot_id uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.world_field_gather(p_spot_id uuid) TO authenticated;
 ALTER FUNCTION public.world_field_gather(p_spot_id uuid) OWNER TO fn_owner_field;

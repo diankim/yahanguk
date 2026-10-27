@@ -1,0 +1,70 @@
+-- 주 이야기 6장. 1장은 기존 「붉은 인장의 실종」을 그대로 잇는다(단서·가설 id 유지).
+-- 단서는 적힌 지역을 탐색하면 찾을 수 있고, 짝이 맞는 단서로 가설을 세우면 장이 끝난다.
+INSERT INTO public.world_story_chapters(chapter_id, seq, title, summary, intro, outro, min_level, rewards) VALUES
+('red_seal', 1, '붉은 인장의 실종', '장부에서 사라진 부적 기록을 쫓는다.',
+ '지난 초하루 회수된 부적의 기록이 장부에서 사라졌습니다. 장서각 지하서고와 폐쇄 사당 어딘가에 흔적이 남아 있습니다. 두 곳을 탐색해 단서를 모으고 짝을 맞춰 보세요.',
+ '지워진 이름은 봉인의 매개체였고, 역행하는 방울은 누군가 봉인식을 거꾸로 돌렸다는 뜻이었습니다. 그런데 장부의 먹물에는 물비린내가 배어 있었습니다.',
+ 1, '{"text":"경험치·요기 결정, 가방 +20칸, 특별 탈것 홍인 해태"}'),
+('drowned_ledger', 2, '물 밑의 장부', '먹물에 밴 물비린내를 따라 물길로 내려간다.',
+ '장부를 적신 물은 구룡 폐수로에서 흘러왔습니다. 잠긴 장터와 염등촌 사람들 사이에 젖은 장부를 사고판다는 소문이 돕니다. 서문 폐성벽 해자에도 같은 먹물 자국이 떠올랐다고 합니다.',
+ '젖은 장부는 수향 뱃길로 서쪽 변경까지 실려 갔습니다. 장부를 산 이는 붉은 달 문양의 인장을 찍었습니다.',
+ 5, '{"xp":300,"gil":400,"items":{"herbal_extract":3,"revival_charm":1},"bag":10,"text":"경험치 300 · 400전 · 농축 약초액 3 · 회생 부적 · 가방 +10칸"}'),
+('red_moon_oath', 3, '적월의 서약', '붉은 달 인장의 주인을 찾아 변경으로 간다.',
+ '장부에 찍힌 붉은 달 인장은 적월교의 서약 인장입니다. 적사 황무지의 모래와 유리협곡의 절벽, 회산 관문의 잿빛 등성이에서 서약을 맺은 자들의 흔적이 발견되었습니다.',
+ '적월교는 지워진 이름들을 모아 북쪽 얼음 아래 무언가를 깨우려 합니다. 서약서 끝에는 「빙인을 녹여라」라는 글이 남아 있었습니다.',
+ 8, '{"xp":600,"gil":700,"items":{"spirit_core":1,"ward_talisman":3},"bag":10,"text":"경험치 600 · 700전 · 응축 영핵 · 정화 부적 3 · 가방 +10칸"}'),
+('frost_seal', 4, '북령의 얼음 인장', '빙혼곡 깊은 곳의 얼음 인장이 녹고 있다.',
+ '북령맹이 지켜 온 얼음 인장이 금이 가기 시작했습니다. 빙혼곡과 옥문 협로, 천경호에서 녹아내린 봉인의 조각을 찾아야 합니다.',
+ '얼음 인장 아래 잠든 것은 이름 없는 종이었습니다. 종이 울리면 남쪽 망국의 망자들이 깨어난다고 전해집니다.',
+ 12, '{"xp":1000,"gil":1200,"items":{"thunder_ore":2,"monster_core":2},"bag":10,"text":"경험치 1,000 · 1,200전 · 뇌철 광석 2 · 요핵 2 · 가방 +10칸"}'),
+('nameless_bell', 5, '이름 없는 종', '망국의 종소리가 남쪽에서 들려온다.',
+ '만인장의 비석이 밤마다 울고, 무명 고도의 폐궁에서 종소리가 들립니다. 혈엽림의 핏빛 단풍 아래에도 종을 매달았던 쇠사슬이 묻혀 있다고 합니다.',
+ '종은 구중 봉연의 첫 번째 문을 여는 열쇠였습니다. 적월교와 흑련회가 각자 종을 노리는 사이, 문은 이미 반쯤 열려 있습니다.',
+ 15, '{"xp":1600,"gil":2000,"items":{"star_sand":2,"revival_charm":2},"bag":10,"text":"경험치 1,600 · 2,000전 · 성진사 2 · 회생 부적 2 · 가방 +10칸"}'),
+('nine_gates', 6, '구중 봉연', '아홉 겹 봉인의 마지막 문 앞에 선다.',
+ '지맥의 뿌리, 흑조 균열, 백옥 천문탑, 그리고 구중 봉연. 아홉 겹 봉인을 지키던 문들의 흔적을 모아 마지막 문을 닫는 방법을 알아내야 합니다.',
+ '마지막 문은 닫혔습니다. 붉은 인장은 다시 장부로 돌아왔고, 지워졌던 이름들도 제자리를 찾았습니다. 야행국의 밤은 한동안 조용할 것입니다. — 이야기는 다음 장에서 이어집니다.',
+ 30, '{"xp":3000,"gil":5000,"items":{"spirit_core":3,"star_sand":3},"bag":20,"text":"경험치 3,000 · 5,000전 · 응축 영핵 3 · 성진사 3 · 가방 +20칸"}')
+ON CONFLICT (chapter_id) DO NOTHING;
+
+INSERT INTO public.world_story_clues(clue_id, chapter_id, name, tag, region_id, description, sort) VALUES
+('redseal_footprints', 'red_seal', '젖은 발자국', '흔적', 'hq_archive', '뒤꿈치가 깊다. 누군가 뒤로 걸어간 흔적이다.', 1),
+('redseal_ink', 'red_seal', '먹물 속 이름', '기록', 'hq_archive', '장부의 먹물은 오래된 피와 섞였다. 지워진 이름은 봉인의 매개체다.', 2),
+('redseal_bell', 'red_seal', '역행하는 방울', '소리', 'shrine_ruins', '방울 소리가 사당 벽 너머에서 울린다. 봉인식의 방향을 가리킨다.', 3),
+('redseal_ash', 'red_seal', '인장 재의 결', '재료', 'shrine_ruins', '인장 재와 부적 가루는 같은 봉인식에서 비롯되었다.', 4),
+('ledger_sluice', 'drowned_ledger', '수문에 걸린 장부 조각', '기록', 'old_canal', '물에 불어 터진 장부 한 장. 같은 필체로 이름이 지워져 있다.', 1),
+('ledger_broker', 'drowned_ledger', '잠긴 장터의 흥정꾼', '증언', 'sunken_district', '젖은 장부를 사들이는 이가 있다. 값은 늘 붉은 실로 묶은 은전이었다.', 2),
+('ledger_salt', 'drowned_ledger', '소금에 절인 봉투', '물증', 'salt_village', '소금밭에 묻힌 봉투에 뱃길 표가 들어 있다. 행선지는 서쪽 변경.', 3),
+('ledger_moat', 'drowned_ledger', '해자의 먹물 자국', '흔적', 'west_gate', '성벽 해자에 번진 먹물은 붉은 달 모양으로 굳어 있었다.', 4),
+('oath_sand', 'red_moon_oath', '모래에 묻힌 서약서', '기록', 'red_plain', '서약자의 이름 대신 지워진 이름들이 빼곡히 적혀 있다.', 1),
+('oath_brand', 'red_moon_oath', '붉은 낙인', '물증', 'red_plain', '서약자의 손목에 찍는 낙인 틀. 달이 반쯤 먹혀 있다.', 2),
+('oath_mirror', 'red_moon_oath', '유리 절벽의 그림자', '목격', 'glass_canyon', '유리에 비친 행렬이 북쪽을 향해 걷는다. 그림자만 있고 사람은 없다.', 3),
+('oath_ash', 'red_moon_oath', '잿빛 의식 터', '흔적', 'ash_mountain', '회산 등성이에 얼음을 녹이는 불의 진이 그려져 있다.', 4),
+('frost_crack', 'frost_seal', '금 간 얼음 인장 조각', '물증', 'frost_valley', '손바닥만 한 얼음 조각에 봉인 문자가 새겨져 있다. 안에서 무언가 두드린다.', 1),
+('frost_breath', 'frost_seal', '얼어붙은 숨결', '흔적', 'frost_valley', '동굴 깊은 곳에 사람의 숨이 그대로 얼어 있다. 아직 따뜻하다.', 2),
+('frost_bridge', 'frost_seal', '잔도의 쇠말뚝', '기록', 'jade_pass', '봉인을 지키던 맹약자들의 이름이 말뚝에 새겨져 있다. 하나가 뽑혀 있다.', 3),
+('frost_lake', 'frost_seal', '호수 아래의 종소리', '소리', 'sky_lake', '얼음 밑에서 낮은 종소리가 울린다. 남쪽에서 울리는 소리와 박자가 같다.', 4),
+('bell_stone', 'nameless_bell', '우는 비석', '소리', 'burial_steps', '비석이 밤마다 운다. 울음은 종이 울리기 직전에만 그친다.', 1),
+('bell_chain', 'nameless_bell', '단풍 밑의 쇠사슬', '물증', 'red_forest', '종을 매달았던 쇠사슬. 고리마다 다른 이름이 새겨져 있다.', 2),
+('bell_palace', 'nameless_bell', '폐궁의 종루', '목격', 'forgotten_city', '종루는 비어 있다. 바닥에 끌려간 자국이 남쪽 아래로 이어진다.', 3),
+('bell_record', 'nameless_bell', '망국의 마지막 기록', '기록', 'forgotten_city', '종을 울린 자는 이름을 잃는다. 이름을 잃은 자만이 문을 지날 수 있다.', 4),
+('gate_root', 'nine_gates', '뿌리에 감긴 첫째 문', '흔적', 'under_root', '지맥의 뿌리가 문고리를 감싸고 있다. 뿌리마다 봉인 문자가 비친다.', 1),
+('gate_tide', 'nine_gates', '균열 너머의 물결', '목격', 'black_tide_rift', '검은 물결이 거꾸로 흐른다. 문이 열릴 때마다 물이 빨려 든다.', 2),
+('gate_star', 'nine_gates', '천문탑의 별 지도', '기록', 'white_tower', '아홉 개의 별이 이어진 성좌. 마지막 별 자리가 비어 있다.', 3),
+('gate_heart', 'nine_gates', '봉연의 심장', '물증', 'sealed_abyss', '사슬 한가운데 붉은 인장이 박혀 있다. 처음 사라졌던 바로 그 인장이다.', 4)
+ON CONFLICT (clue_id) DO NOTHING;
+
+INSERT INTO public.world_story_combos(combo_id, chapter_id, name, needs, description, conclusion, sort) VALUES
+('redseal_true_identity', 'red_seal', '기록에서 지워진 이름', ARRAY['redseal_footprints', 'redseal_ink'], '발자국과 장부를 대조해 존재의 정체를 추론한다.', '뒤로 걷는 자는 장부에서 이름을 지워 봉인의 매개체를 훔쳐 갔다.', 1),
+('redseal_reseal', 'red_seal', '역행 봉인식', ARRAY['redseal_bell', 'redseal_ash'], '방울과 인장 재의 결을 맞춰 안전한 재봉인을 복원한다.', '봉인식은 거꾸로 돌려졌다. 같은 재로 바르게 돌리면 다시 닫을 수 있다.', 2),
+('ledger_route', 'drowned_ledger', '장부가 흘러간 길', ARRAY['ledger_sluice', 'ledger_salt'], '수문의 조각과 소금 봉투의 뱃길 표를 맞춘다.', '장부는 수문을 지나 염등촌에서 배에 실려 서쪽으로 갔다.', 1),
+('ledger_buyer', 'drowned_ledger', '장부를 산 자', ARRAY['ledger_broker', 'ledger_moat'], '흥정꾼의 증언과 해자의 먹물 자국을 대조한다.', '장부를 사들인 자는 붉은 달 문양을 쓰는 서쪽의 결사다.', 2),
+('oath_purpose', 'red_moon_oath', '서약의 목적', ARRAY['oath_sand', 'oath_brand'], '서약서와 낙인을 맞춰 서약자들이 무엇을 바쳤는지 밝힌다.', '그들은 자기 이름 대신 훔친 이름들을 제물로 바쳤다.', 1),
+('oath_march', 'red_moon_oath', '북쪽으로 가는 행렬', ARRAY['oath_mirror', 'oath_ash'], '그림자 행렬과 의식 터를 이어 그들이 향하는 곳을 짚는다.', '행렬은 북령의 얼음 인장을 녹이러 간다.', 2),
+('frost_awake', 'frost_seal', '깨어나는 것', ARRAY['frost_crack', 'frost_breath'], '인장 조각과 얼어붙은 숨결로 봉인 아래의 존재를 짐작한다.', '얼음 아래 잠든 것은 숨을 쉬는 종이다.', 1),
+('frost_link', 'frost_seal', '남쪽과 같은 박자', ARRAY['frost_bridge', 'frost_lake'], '뽑힌 말뚝과 호수 밑 종소리를 이어 무엇이 연결되었는지 밝힌다.', '북쪽의 종과 남쪽 망국의 종은 한 쌍이며, 하나가 울리면 다른 하나가 깨어난다.', 2),
+('bell_price', 'nameless_bell', '종소리의 값', ARRAY['bell_stone', 'bell_record'], '우는 비석과 망국의 기록으로 종을 울리는 대가를 알아낸다.', '종을 울린 자는 이름을 잃는다. 장부에서 지워진 이름들은 이 대가로 쓰였다.', 1),
+('bell_way', 'nameless_bell', '끌려간 종', ARRAY['bell_chain', 'bell_palace'], '쇠사슬과 빈 종루로 종이 옮겨진 곳을 찾는다.', '종은 지하로 끌려가 구중 봉연의 첫 문 앞에 놓였다.', 2),
+('gate_path', 'nine_gates', '아홉 문의 길', ARRAY['gate_root', 'gate_tide', 'gate_star'], '뿌리·물결·별 지도를 겹쳐 아홉 문의 순서를 맞춘다.', '아홉 문은 지맥과 물길과 별자리를 따라 이어진다. 마지막 별은 봉연의 심장이다.', 1),
+('gate_close', 'nine_gates', '마지막 문 닫기', ARRAY['gate_heart', 'gate_star'], '봉연의 심장에 박힌 인장과 별 지도의 빈자리를 맞춘다.', '붉은 인장을 제자리에 돌려놓으면 아홉 문이 모두 닫힌다.', 2)
+ON CONFLICT (combo_id) DO NOTHING;
