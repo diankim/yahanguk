@@ -85,7 +85,7 @@ const FIXED = {
   // 기술 계열
   melee: '근접', ranged: '원거리', analysis: '분석', first_aid: '응급 처치', guarding: '방어', herbalism: '약초', spirit_gathering: '영기 채집', wardcraft: '결계 각인', tracking: '추적', foraging: '채취',
   // 분류
-  tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비',
+  tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비',
   common: '일반', uncommon: '고급', rare: '희귀', epic: '영웅', legendary: '전설',
   // 지역 유형
   abyss: '심연', archive: '서고', blood_forest: '혈림', bridge: '다리', burial_ground: '묘역', canyon: '협곡', celestial_tower: '천문탑', coast: '해안', desert: '사막',
@@ -108,13 +108,14 @@ const FIXED = {
   magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '수련 경험치',
   action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
+  presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   // 서식지
   river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', fishing: '낚시', cooking: '요리',
   // 날씨·시간대
   dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
 // 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
-const FLAT = new Set(['craft_quality', 'defense', 'power', 'mental_per_action', 'health_per_action']);
+const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
 const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
 export function effectText(effects, potency = 1) {
   return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && Number(v)).map(([k, v]) => {
@@ -124,7 +125,7 @@ export function effectText(effects, potency = 1) {
   });
 }
 // 효과가 이로운지(받는 피해·이동 시간·침식은 줄어야 좋다)
-const LOWER_BETTER = new Set(['incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_per_action', 'health_per_action']);
+const LOWER_BETTER = new Set(['incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_loss_pct', 'mental_per_action', 'health_per_action']);
 export function effectGood(k, v) { return LOWER_BETTER.has(k) ? Number(v) < 0 : Number(v) > 0; }
 const names = new Map(Object.entries(FIXED));
 export function registerNames(entries) { for (const [k, v] of entries) if (k && v) names.set(k, v); }
@@ -187,6 +188,10 @@ const ICONS = {
   snow: 'M12 2v20M4 7l16 10M20 7L4 17M9 4l3 2 3-2M9 20l3-2 3 2',
   mist: 'M12 3c3 4 6 7 6 11a6 6 0 01-12 0c0-4 3-7 6-11zM9 15h6',
   dawn: 'M4 18h16M7 18a5 5 0 0110 0M12 7v3M5.6 11.6l1.4 1.4M18.4 11.6L17 13M2 22h20',
+  // 장착 칸: 관모(갓)·신·노리개·호신부(부적)·탈
+  hat: 'M3 16h18M8 16V9a4 4 0 018 0v7M6 19h12', shoe: 'M4 7v9h16v-2c0-2-2-3-5-3l-3-4H4zM4 19h16',
+  knot: 'M12 3a3 3 0 100 6 3 3 0 000-6zM12 9v3M9 12h6M10 12l-2 9M12 12v9M14 12l2 9', talisman: 'M7 3h10v18H7zM10 7h4M10 11h4M10 15h4',
+  mask: 'M5 5c4-1 10-1 14 0 0 8-3 14-7 14S5 13 5 5zM8 10h3M13 10h3M10 15h4',
   wrench: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
 };
 export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };

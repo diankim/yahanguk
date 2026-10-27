@@ -2,11 +2,10 @@
 import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText } from '../core.js';
 import { load, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRows, bindRepair } from './character.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, USABLE, GEAR } from './item.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, USABLE, GEAR, SLOTS } from './item.js';
 
 const SUBS = [['items', '소지품'], ['equip', '장비'], ['craft', '제작']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
-const SLOT = { tool: '도구', weapon: '무기', armor: '방어구', accessory: '장신구' };
 const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
@@ -61,7 +60,7 @@ async function draw(soft) {
 function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i])); }
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
-const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
+const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 async function items(body, inv) {
   const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap() : Promise.resolve(new Map())]);
   const cmap = catalogMap(inv), equipped = new Set(Object.values(inv.equipment || {}));
@@ -100,17 +99,17 @@ async function equip(body, inv) {
   const c = store.character;
   const [prof, zones] = await Promise.all([load('world_combat_profile').catch(() => null), safeZones().catch(() => null)]);
   const here = zones ? [...zones.values()].find(r => r.region_name === c.location) : null;
-  const slots = Object.keys(SLOT).map(slot => {
+  const slots = Object.keys(SLOTS).map(slot => {
     const cur = eq[slot], it = cmap.get(cur);
     const options = (inv.catalog || []).filter(i => i.category === slot && Number(have[i.id]) > 0 && i.id !== cur);
-    return panel(SLOT[slot], `
+    return panel(SLOTS[slot][0], `
       ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it)}</div>` : `<p class="muted">비어 있음</p>`}
       ${options.length ? `<ul class="spot-list">${options.map(o => {
         const blocked = gearBlock(o, c);
         return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${blocked ? `<small class="bad">${esc(blocked)}</small>` : ''}</div>
-          <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: slot === 'tool' ? 'hammer' : slot === 'weapon' ? 'sword' : slot === 'armor' ? 'shield' : 'spark', cls: 'compact' });
+          <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: SLOTS[slot][1], cls: 'compact' });
   }).join('');
-  body.innerHTML = `${panel('장착 중인 장비', equipRows(inv, prof, here), { ico: 'shield' })}<h3 class="sub-h">바꿔 낄 장비</h3><div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다.</p>`;
+  body.innerHTML = `${panel('장착 중인 장비', equipRows(inv, prof, here), { ico: 'shield' })}<h3 class="sub-h">바꿔 낄 장비</h3><div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다. 같은 단계라도 장비마다 갈래가 달라(위력·치명타·회피·방어·이목 등) 무엇을 끼느냐에 따라 캐릭터가 다르게 자랍니다. <b>이목</b>이 높으면 함께 싸울 때 요괴가 먼저 노립니다 — 앞을 막는 이는 높이고, 뒤에서 치는 이는 낮추세요.</p>`;
   bindActions(body); bindRepair(body);
 }
 function traits(it) {

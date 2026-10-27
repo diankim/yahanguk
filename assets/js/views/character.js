@@ -5,14 +5,14 @@ import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, items
 import { openStatus } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen } from '../titledot.js';
+import { SLOTS } from './item.js';
 
 const SUBS = [['status', '상태'], ['growth', '성장'], ['faction', '세력'], ['skills', '기술'], ['idle', '자율'], ['titles', '칭호']];
 const STATS = [
-  ['strength', '근력', '근접 무기의 위력'], ['agility', '민첩', '회피·달아나기·원거리 위력'], ['vitality', '체질', '방어력·응급 회복'],
+  ['strength', '근력', '근접 무기의 위력'], ['agility', '민첩', '회피·달아나기·원거리 위력 · 이목 낮춤'], ['vitality', '체질', '방어력·응급 회복 · 이목 높임'],
   ['perception', '감각', '치명타·원거리 위력·단서 발견'], ['willpower', '의지', '술법 위력·응급 회복'], ['spirit_affinity', '영성', '술법 무기의 위력'],
 ];
 const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-const SLOT = { weapon: ['무기', 'sword'], armor: ['방어구', 'shield'], tool: ['도구', 'hammer'] };
 const GATHER = ['fieldwork', 'mining', 'botany', 'spirit_harvest', 'fishing'];
 const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice'];
 const IDLE = [
@@ -54,31 +54,40 @@ export function combatRows(cur) {
     ['회피율', `${cur.evasion_pct}%`], ['치명타율', `${cur.crit_pct}% <small>(피해 ×${(cur.crit_mult / 100).toFixed(1)})</small>`],
     ['달아날 확률', `${cur.flee_pct}%`], ['주는 피해 보정', `${cur.damage_pct > 0 ? '+' : ''}${cur.damage_pct}%`],
     ['받는 피해 보정', `${cur.incoming_pct > 0 ? '+' : ''}${cur.incoming_pct}%`],
+    ['이목', `${fmt.num(cur.presence ?? 30)} <small>(${presenceWord(cur.presence ?? 30)})</small>`],
   ];
   if (cur.spell_cost) rows.push(['술법 영력 소모', `공격마다 ${cur.spell_cost}`]);
   if (cur.mind_mul < 1) rows.push(['정신·침식 불이익', `공격력 ×${cur.mind_mul}`]);
   return `<dl class="stat-sheet">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
     ${(cur.skills || []).length ? `<p class="muted small">적용 중인 전투 기술: ${cur.skills.map(esc).join(', ')}</p>` : ''}`;
 }
+// 이목: 함께 싸울 때 요괴가 먼저 노리는 정도(체질·무거운 갑옷이 높이고 민첩이 낮춘다)
+const presenceWord = p => p >= 90 ? '요괴가 가장 먼저 노림' : p >= 55 ? '눈에 잘 띔' : p >= 25 ? '보통' : '잘 눈에 띄지 않음';
 function durBar(d, max) { return `<div class="durab ${d <= 0 ? 'broken' : d * 4 < max ? 'worn' : ''}"><span>내구도 ${d}/${max}</span>${bar(d, max, d <= 0 ? 'enemy' : d * 4 < max ? 'er' : 'xp')}</div>`; }
-const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : it.category === 'tool' ? 40 + (it.tier || 1) * 20 : 0) : 0;
+// 서버 world_item_max_durability와 같은 값(노리개·호신부·탈은 닳지 않는다)
+const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : ['tool', 'hat', 'shoes'].includes(it.category) ? 40 + (it.tier || 1) * 20 : 0) : 0;
 export function equipRows(inv, prof, here) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
   const kits = Number(have.repair_kit || 0);
-  return `<ul class="equip-list">${Object.entries(SLOT).map(([slot, [label, ic]]) => {
+  return `<ul class="equip-list">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
     const id = eq[slot], it = cmap.get(id);
-    if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · 가방에서 장착할 수 있습니다</small></div></li>`;
+    if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx;
     const cost = Math.max(5, Math.ceil((mx - d) * ((it?.tier || 1) + 1) / 2));
     return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}</b><small>${esc(effectText(it?.equipment_traits || {}).join(' · ') || it?.description || '')}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
-        <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}</li>`;
+        <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
+      <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
   }).join('')}</ul>
-  <p class="muted small">공격할 때마다 무기, 맞을 때마다 방어구, 채집할 때마다 도구가 1씩 닳습니다. 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.</p>`;
+  <p class="muted small">공격할 때마다 무기, 맞을 때마다 방어구·관모, 채집할 때마다 도구, 이동할 때마다 신이 1씩 닳습니다(노리개·호신부·탈은 닳지 않습니다). 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.</p>`;
 }
 export function bindRepair(root) {
   $$('[data-repair]', root).forEach(b => b.onclick = () => guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repair, p_method: b.dataset.how })));
+  $$('[data-unequip]', root).forEach(b => b.onclick = () => guard(b, () => act('world_unequip_item', { p_slot: b.dataset.unequip })));
 }
+// 빈 칸에 무엇을 끼우면 좋은지
+const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
+  norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집에 필요합니다' };
 async function hereZone() {
   const z = await safeZones().catch(() => null), c = store.character;
   return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
@@ -135,7 +144,7 @@ async function status(body) {
 }
 
 /* ── 성장: 능력치를 올리면 바뀌는 수치를 미리 보여 준다 ───────── */
-const PREVIEW = [['attack', '공격력', ''], ['defense', '방어력', ''], ['reduction_pct', '받는 피해 감소', '%'], ['evasion_pct', '회피율', '%'], ['crit_pct', '치명타율', '%'], ['flee_pct', '달아날 확률', '%']];
+const PREVIEW = [['attack', '공격력', ''], ['defense', '방어력', ''], ['reduction_pct', '받는 피해 감소', '%'], ['evasion_pct', '회피율', '%'], ['crit_pct', '치명타율', '%'], ['flee_pct', '달아날 확률', '%'], ['presence', '이목', '']];
 function previewText(cur, next) {
   if (!cur || !next) return '';
   const parts = PREVIEW.filter(([k]) => Number(next[k]) !== Number(cur[k])).map(([k, n, u]) => `${n} ${cur[k]}${u} → <b>${next[k]}${u}</b>`);

@@ -11,7 +11,10 @@ export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '�
   // 요리(서버 world_use_item과 같은 값)
   grilled_fish: '체력 25 · 든든함(채집량·회복량)', spicy_stew: '체력 30 · 정신 10 · 속이 따뜻함(침식·받는 피해 감소)', fish_porridge: '정신 15 · 탐색력 +4',
   eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천' };
-export const GEAR = new Set(['tool', 'weapon', 'armor', 'accessory', 'equipment']);
+export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
+// 장착 칸(서버 world_equip_item·world_unequip_item과 같은 이름): [이름, 아이콘, 닳는 때]
+export const SLOTS = { weapon: ['무기', 'sword', '공격할 때'], armor: ['방어구', 'shield', '맞을 때'], hat: ['관모', 'hat', '맞을 때'], shoes: ['신', 'shoe', '이동할 때'],
+  norigae: ['노리개', 'knot', ''], amulet: ['호신부', 'talisman', ''], mask: ['탈', 'mask', ''], tool: ['도구', 'hammer', '채집할 때'] };
 const STY = { melee: '근접 공격', ranged: '원거리 공격', magic: '술법 공격' };
 
 // 잠근 물품 목록(서버 world_item_locks, 내 것만 보인다)
