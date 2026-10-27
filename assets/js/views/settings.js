@@ -67,7 +67,7 @@ export async function render(root, sub) {
         <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
     </section>
     <section id="sec-account" class="set-sec">
-      ${panel('계정', `<p class="desc">로그인 이메일·비밀번호 변경, 로그아웃, 캐릭터 정리는 계정 화면에서 합니다.</p>
+      ${panel('계정', `<p class="desc">아이디 확인·비밀번호 변경, 로그아웃, 캐릭터 정리는 계정 화면에서 합니다.</p>
         <a class="btn" href="#/account">${icon('idcard', 16)}<span>계정 관리 열기</span></a>`, { ico: 'shield' })}
     </section>`;
 

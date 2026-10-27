@@ -2,6 +2,12 @@
 export const SUPABASE_URL = 'https://bqywnmeryddwccrbomfe.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_G2l1gY8W6ZYtSsFSx4LH6Q_YGdvnwe6';
 
+// 아이디 가입: 아이디를 내부 주소로 바꿔 Supabase Auth에 넘긴다(메일은 보내지 않는다).
+// 서버 훅(world_hook_before_user_created)이 같은 형식만 받아 준다. 바꾸면 훅의 도메인도 함께 바꾼다.
+export const ID_DOMAIN = 'yahanguk.invalid';
+export const ID_RULE = /^[a-z0-9]{4,16}$/;
+export const idToEmail = id => `${String(id || '').trim().toLowerCase()}@${ID_DOMAIN}`;
+export const emailToId = email => { const [l, d] = String(email || '').split('@'); return d === ID_DOMAIN ? l : String(email || ''); };
 // 점검 중에는 서버가 anon·authenticated의 public 스키마 사용 권한을 거둔다(supabase/maintenance/start.sql).
 export const isMaintenanceError = msg => /permission denied for schema public/i.test(String(msg || ''));
 export function goMaintenance() {

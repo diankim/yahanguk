@@ -1,3 +1,4 @@
+import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
 import { db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { mountHud } from './hud.js';
@@ -73,21 +74,24 @@ function renderAuth(mode = 'login', notice = '') {
         <button type="button" data-mode="login" class="${mode === 'login' ? 'on' : ''}">로그인</button>
         <button type="button" data-mode="signup" class="${mode === 'signup' ? 'on' : ''}">회원가입</button>
       </div>
-      <label class="field"><span>이메일</span><input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label class="field"><span>아이디</span><input name="uid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="latin" required maxlength="40" placeholder="영문 소문자·숫자 4~16자"></label>
       <label class="field"><span>비밀번호</span><input name="password" type="password" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}" required minlength="6" placeholder="6자 이상"></label>
       ${mode === 'signup' ? `<label class="field"><span>비밀번호 확인</span><input name="password2" type="password" autocomplete="new-password" required minlength="6"></label>` : ''}
       <p class="form-msg ${notice ? 'show' : ''}" id="auth-msg">${esc(notice)}</p>
       <button class="btn primary block" type="submit">${mode === 'login' ? '로그인' : '계정 만들기'}</button>
-      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '가입 후 캐릭터 이름·직업·소속을 정합니다. 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
+      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 한 곳(같은 인터넷 연결)에서 한 계정만 만들 수 있습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
     </form>
   </div>`));
   $$('[data-mode]').forEach(b => b.onclick = () => renderAuth(b.dataset.mode));
   $('#auth-form').onsubmit = async e => {
     e.preventDefault();
-    const f = new FormData(e.target), email = String(f.get('email') || '').trim(), pw = String(f.get('password') || '');
+    const f = new FormData(e.target), raw = String(f.get('uid') || '').trim().toLowerCase(), pw = String(f.get('password') || '');
+    // 예전 이메일 계정도 로그인할 수 있게 @가 있으면 그대로 쓴다(가입은 아이디만)
+    const email = raw.includes('@') ? raw : idToEmail(raw);
     const msg = $('#auth-msg'), btn = e.submitter || $('button[type=submit]', e.target);
     const say = (t, ok = false) => { msg.textContent = t; msg.className = 'form-msg show' + (ok ? ' ok' : ''); };
-    if (!email || pw.length < 6) return say('이메일과 6자 이상의 비밀번호를 입력하세요.');
+    if (!raw || pw.length < 6) return say('아이디와 6자 이상의 비밀번호를 입력하세요.');
+    if (mode === 'signup' && !ID_RULE.test(raw)) return say('아이디는 영문 소문자와 숫자 4~16자로 정하세요.');
     if (mode === 'signup' && pw !== String(f.get('password2') || '')) return say('비밀번호 확인이 일치하지 않습니다.');
     btn.disabled = true;
     try {
@@ -97,7 +101,7 @@ function renderAuth(mode = 'login', notice = '') {
       } else {
         const { data, error } = await db.auth.signUp({ email, password: pw });
         if (error) throw error;
-        if (!data.session) return renderAuth('login', '인증 메일을 보냈습니다. 메일의 링크로 인증한 뒤 로그인하세요.');
+        if (!data.session) return renderAuth('login', '가입은 되었지만 바로 로그인되지 않았습니다. 관리자에게 Supabase의 "Confirm email" 설정을 꺼 달라고 알려 주세요.');
       }
     } catch (err) { say(friendlyError(err)); }
     finally { btn.disabled = false; }

@@ -23,9 +23,11 @@ export function friendlyError(e) {
   if (/Auth session missing|JWT|not authenticated/i.test(msg)) return '로그인이 필요합니다.';
   if (/permission denied/i.test(msg)) return '이 작업을 할 권한이 없습니다.';
   if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return '서버에 연결할 수 없습니다. 네트워크를 확인하세요.';
-  if (/Invalid login credentials/i.test(msg)) return '이메일 또는 비밀번호가 올바르지 않습니다.';
+  if (/Invalid login credentials/i.test(msg)) return '아이디 또는 비밀번호가 올바르지 않습니다.';
   if (/Email not confirmed/i.test(msg)) return '이메일 인증을 완료한 뒤 로그인하세요.';
-  if (/User already registered/i.test(msg)) return '이미 가입된 이메일입니다.';
+  if (/User already registered|already been registered/i.test(msg)) return '이미 쓰이는 아이디입니다. 다른 아이디를 정하세요.';
+  if (/Email signups are disabled|Signups not allowed/i.test(msg)) return '지금은 가입을 받지 않습니다. 관리자에게 Supabase의 Email 로그인 설정을 확인해 달라고 알려 주세요.';
+  if (/Email address .* is invalid|invalid format/i.test(msg)) return '아이디는 영문 소문자와 숫자 4~16자로 정하세요.';
   if (/Password should be at least/i.test(msg)) return '비밀번호는 6자 이상이어야 합니다.';
   return msg;
 }
