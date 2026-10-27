@@ -283,9 +283,9 @@ textarea { resize: none; }
 .chat-list li.mine p { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); border-radius: var(--r) 4px 12px 12px; }
 .chat-list .chat-empty { max-width: none; text-align: center; color: var(--muted); font-size: 13px; padding: 20px 0; }
 .chat-form { padding: 10px; display: grid; gap: 6px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-.chat-row { display: flex; gap: 6px; }
-.chat-row textarea { min-height: 44px; max-height: 120px; }
-.chat-row .btn { width: 46px; padding: 0; }
+.chat-row { display: flex; gap: 6px; align-items: flex-end; }
+.chat-row textarea { min-height: 44px; max-height: 45dvh; overflow-y: auto; }
+.chat-row .btn { width: 46px; height: 44px; padding: 0; flex: none; }
 .chat-to[hidden] { display: none; }
 /* 귓속말 창: 왼쪽 상대 목록, 오른쪽 대화. 좁은 화면에서는 목록 → 대화 한 칸씩 */
 .wh { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 12px; height: min(68vh, 640px); }
@@ -1329,3 +1329,6 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-jump { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
 .chat-jump .ico { transform: rotate(90deg); }
 .chat-jump[hidden] { display: none; }
+.input-grip { display: grid; place-items: center; height: 14px; margin: -6px 0 -2px; cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
+.input-grip i { width: 36px; height: 4px; border-radius: 2px; background: var(--line); }
+.input-grip:hover i, .input-grip.drag i, .input-grip:focus-visible i { background: var(--gold); }

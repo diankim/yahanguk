@@ -3,6 +3,7 @@
 // 메시지는 world_chat_messages(channel_type = 'whisper')를 그대로 쓰고, 새 귓속말은 채팅의 실시간 연결(chat.js)이 넘겨준다.
 import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal, isGM } from './core.js';
 import { cardName } from './views/card.js';
+import { growInput } from './grow.js';
 
 const COLS = 'id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at';
 let btn = null, threads = [], unreadTotal = 0, box = null, cur = null, msgs = [], refreshTimer = null;
@@ -115,6 +116,7 @@ function drawThread(loading) {
   if (!loading) drawMsgs();
   const form = $('#wh-form', main);
   form.text.value = draft;
+  form._fit = growInput(form);
   form.text.addEventListener('input', () => { try { sessionStorage.setItem(draftKey(cur), form.text.value); } catch {} });
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
@@ -138,7 +140,7 @@ async function send(e) {
   b.disabled = true;
   try {
     await rpc('world_chat_send', { p_channel: 'whisper', p_content: text, p_recipient_name: t.name });
-    form.text.value = ''; try { sessionStorage.removeItem(draftKey(t)); } catch {}
+    form.text.value = ''; try { sessionStorage.removeItem(draftKey(t)); } catch {} form._fit?.();
     await refresh();
     if (!t.id) { const found = threads.find(x => x.name === t.name); if (found) t.id = found.partner_id; }
     if (cur === t) reloadMsgs(t);

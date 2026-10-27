@@ -4,6 +4,7 @@ import { cardName } from './views/card.js';
 import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError } from './core.js';
 import { onWhisper, openWhisperWindow } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
+import { growInput } from './grow.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -52,10 +53,12 @@ export function mountChat(colEl, fabEl) {
   window.addEventListener('yh-circles', () => { syncCircles(); });
   loadCircles().then(syncCircles);
   const form = $('#chat-form', panel);
+  form._fit = growInput(form);
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
   // 쓰던 메시지는 새로고침하거나 시트를 닫았다 열어도 남는다(이 탭에만 저장).
   try { form.text.value = sessionStorage.getItem('yh-chat-draft') || ''; } catch {}
+  form._fit?.();
   form.text.addEventListener('input', () => { try { sessionStorage.setItem('yh-chat-draft', form.text.value); } catch {} });
   switchTab(tab);
   subscribe();
@@ -83,7 +86,7 @@ function placePanel() {
 function toggleSheet(open) {
   document.body.classList.toggle('chat-open', open);
   // 모바일에서는 시트를 열 때 키패드를 띄우지 않는다(입력칸을 눌렀을 때만). 마우스를 쓰는 화면에서만 바로 입력칸으로 간다.
-  if (open) { unread = 0; badge(); forceEnd = true; applyHeight(); loadNew(); if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#chat-form textarea', panel)?.focus({ preventScroll: true }), 50); scrollEnd(); }
+  if (open) { unread = 0; badge(); forceEnd = true; applyHeight(); requestAnimationFrame(() => $('#chat-form', panel)?._fit?.()); loadNew(); if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#chat-form textarea', panel)?.focus({ preventScroll: true }), 50); scrollEnd(); }
 }
 function badge() { fab.dataset.count = unread ? String(Math.min(unread, 99)) : ''; }
 function renderTabs() {
@@ -279,7 +282,7 @@ async function send(e) {
       await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: null });
       await load();
     }
-    form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {}
+    form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {} form._fit?.();
   } catch (err) { toast(friendlyError(err), 'error'); }
   finally { btn.disabled = false; }
 }
