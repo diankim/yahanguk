@@ -1094,7 +1094,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .inv-item .inv-quick { width: auto; min-width: 52px; padding-inline: 12px; }
 
 /* 조사원 카드: 이름 단추와 겹쳐 뜨는 창 */
-.name-link { all: unset; cursor: pointer; font: inherit; color: inherit; font-weight: inherit; border-bottom: 1px dotted color-mix(in srgb, currentColor 45%, transparent); }
+.name-link { all: unset; cursor: pointer; font: inherit; color: inherit; font-weight: inherit; }
 .name-link:hover { color: var(--gold); }
 .name-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
 .modal-backdrop.layer { z-index: 82; }
@@ -1303,11 +1303,12 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .t-checks .check, .craft-cats .check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; min-height: 32px; }
 .t-checks .check input, .craft-cats .check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .t-grade { display: inline-block; flex: none; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 18px; border: var(--bw) solid currentColor; }
-.t-grade.g1 { color: var(--muted); }
-.t-grade.g2 { color: var(--ok); }
-.t-grade.g3 { color: #5b9bd5; }
-.t-grade.g4 { color: #a77bd8; }
-.t-grade.g5 { color: var(--gold); }
+/* 테마와 상관없이 구분되게 고정 색. 명품·신품은 바탕을 칠한다. */
+.t-grade.g1 { color: #8a8a8a; }
+.t-grade.g2 { color: #3f9b6b; }
+.t-grade.g3 { color: #3f7fc4; }
+.t-grade.g4 { color: #fff; background: #7b52b9; border-color: #7b52b9; }
+.t-grade.g5 { color: #fff; background: #c8412f; border-color: #c8412f; }
 .t-grades .t-grade { margin-right: 2px; }
 .t-card:not(.earned) .t-prog { opacity: 1; }
 .t-prog { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: 2px; }

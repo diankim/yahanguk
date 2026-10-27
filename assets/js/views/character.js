@@ -257,7 +257,7 @@ async function idle(body) {
 const TCAT_ORDER = ['탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '교류', '성장', '비밀', '기타'];
 let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 등급(서버 world_title_catalog.grade)
-const TGRADE = { 1: '일반', 2: '고급', 3: '희귀', 4: '영웅', 5: '전설' };
+const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品
 async function titles(body) {
   const snap = await load('world_title_snapshot');
   const list = snap?.titles || [];
@@ -271,7 +271,7 @@ async function titles(body) {
       <label class="search"><span>${icon('search', 16)}</span><input id="t-q" type="search" placeholder="칭호 이름·조건·효과로 찾기" value="${esc(tq)}"></label>
       <div class="t-checks"><label class="check"><input type="checkbox" id="t-owned" ${tOwned ? 'checked' : ''}><span>얻은 칭호만 보기</span></label>
         <label class="check"><input type="checkbox" id="t-eq" ${tEquipped ? 'checked' : ''}><span>장착 중만 보기</span></label></div>
-      <p class="muted small t-grades">등급: ${Object.entries(TGRADE).map(([g, n]) => `<span class="t-grade g${g}">${n}</span>`).join(' ')} — 얻기 어려울수록 높고, 효과가 크고 여러 갈래입니다.</p>
+      <p class="muted small t-grades">등급: ${Object.entries(TGRADE).map(([g, n]) => `<span class="t-grade g${g}">${n}</span>`).join(' ')} — 범품(凡品)에서 신품(神品)으로 갈수록 얻기 어렵고, 효과가 크고 여러 갈래입니다.</p>
       <div class="cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)} <small>${countIn(c)}</small></button>`).join('')}</div>
     </div>
     <div id="t-list"></div>`;

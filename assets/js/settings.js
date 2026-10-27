@@ -1,5 +1,5 @@
 // 헤더 기능: 테마(프리셋·흑백·직접 설정) · 프로필 보기 · 알림. 고치는 화면은 설정 페이지(views/settings.js)에 있다.
-import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS } from './core.js';
+import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 export { initSound, playSfx } from './sound.js';
@@ -63,6 +63,7 @@ export function bindCrop(root, onReady) {
 /* ── 알림 ────────────────────────────────────────────────── */
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell;
+const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
 const POP_KINDS = new Set(['party_invite', 'expedition_done', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted']);
 export function mountNotifications(btn) {
   bell = btn;
@@ -71,18 +72,28 @@ export function mountNotifications(btn) {
   try {
     db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications' }, p => {
       const n = p.new; if (!n?.id || n.user_id !== store.user?.id || notes.some(x => x.id === n.id)) return;
-      notes.unshift(n); drawDot();
+      shown.add(n.id); notes.unshift(n); drawDot();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     }).subscribe();
   } catch {}
-  setInterval(() => { if (!document.hidden) loadNotes(); }, 120000);
+  // 실시간 연결이 놓쳐도 늦지 않게: 행동할 때마다(칭호·보상은 행동과 함께 생긴다) 곧바로 다시 읽고, 화면을 보는 동안 30초마다 읽는다.
+  let soon = 0;
+  on('changed', () => { clearTimeout(soon); soon = setTimeout(() => loadNotes(), 600); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNotes(); });
+  setInterval(() => { if (!document.hidden) loadNotes(); }, 30000);
   // 서버 알림이 아닌 화면 안 알림(원정 귀환 등)
   window.addEventListener('yh-local-note', e => { if (e.detail) notePop(e.detail); });
 }
 async function loadNotes(first) {
   try {
     const { data, error } = await db.from('world_notifications').select('*').is('read_at', null).order('created_at', { ascending: false }).limit(30);
-    if (error) throw error; notes = (data || []).filter(n => n?.id != null); drawDot();
+    if (error) throw error;
+    const seen = new Set(notes.map(n => n.id));
+    const fresh = (data || []).filter(n => n?.id != null);
+    // 실시간으로 받지 못한 새 알림은 지금 알린다(처음 읽을 때는 아래에서 따로)
+    if (!first) fresh.filter(n => !seen.has(n.id) && !shown.has(n.id)).slice(0, 3).forEach(n => { shown.add(n.id); if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info'); });
+    fresh.forEach(n => shown.add(n.id));
+    notes = fresh; drawDot();
     // 접속하지 않은 사이 온 초대·원정 완료도 들어오면 바로 띄운다.
     if (first) notes.filter(n => POP_KINDS.has(n.kind)).slice(0, 2).forEach(notePop);
   } catch {}
