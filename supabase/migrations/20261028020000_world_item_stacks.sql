@@ -51,6 +51,8 @@ as $function$
   where jsonb_typeof(t.v) = 'number'
 $function$;
 alter function public.world_bag_count(jsonb) owner to fn_owner_expedition;
+-- world_bag_room(누구나 실행)은 이 함수를 부르므로 원정 귀환·연리 선물(fn_owner_field 소유)이 실행할 수 있어야 한다(2026-10-27 운영 DB에 바로 넣음)
+grant execute on function public.world_bag_count(jsonb) to fn_owner_field;
 
 create or replace function public.world_inv_count(p_inv jsonb)
  returns integer language sql stable set search_path to ''
@@ -77,7 +79,7 @@ create or replace function public.world_enforce_bag_capacity()
  returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public'
 as $function$
 DECLARE
-  cap int := new.bag_capacity + CASE WHEN new.major_faction_id = 'river_alliance' THEN 20 ELSE 0 END;
+  cap int := new.bag_capacity + CASE WHEN new.major_faction_id = 'river_alliance' THEN 6 ELSE 0 END;
   old_total int := public.world_bag_count(old.inventory);
   new_total int := public.world_bag_count(new.inventory);
   allowed int; need int; k text; cur int; was int; s int; sc int; sm int; r int; nq int;

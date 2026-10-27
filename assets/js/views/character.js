@@ -305,7 +305,7 @@ async function titles(body) {
 /* ── 세력: 소속 임무·일일 보급·대세력 ─────────────────────── */
 const PERKS = {
   night_office: '원정·임무 보급이 안정적입니다(보급 보너스).', red_moon_cult: '강행 태세 원정의 전리품 +15%. 위험한 지역에 강합니다.',
-  black_lotus: '정보·암시장에 밝습니다.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +20칸. 교역과 운송에 강합니다.',
+  black_lotus: '정보·암시장에 밝습니다.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +6칸. 교역과 운송에 강합니다.',
   southern_remnant: '원정 채집량 +15%.', mandate_court: '원정 답사도 상승 +20%.',
 };
 const HOSTILE = { night_office: ['red_moon_cult', 'black_lotus'], red_moon_cult: ['night_office', 'north_league'], black_lotus: ['night_office', 'mandate_court'],

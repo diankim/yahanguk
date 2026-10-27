@@ -11,10 +11,14 @@
 -- SQL Editor에서 이 파일 전체를 한 번 실행한다. 다시 실행해도 안전하다.
 
 /* ── 1) 회차·갱신 도움 함수 ───────────────────────────── */
--- 새 함수의 주인을 바꾸려면 그 역할로 SET ROLE 할 수 있어야 한다(18876·18877은 평소 꺼져 있어 이 파일 끝에서 다시 끈다)
-grant fn_owner_18876 to postgres with inherit true, set true;
-grant fn_owner_18877 to postgres with inherit true, set true;
+-- 이미 있는 상점 함수(18876·18877·18878 소유)를 바꾸려고 잠시 상속을 켠다(끝에서 끈다).
+-- 새로 만드는 함수는 public 스키마에 만들 권한이 있는 fn_owner_field가 갖는다(상점 역할들은 그 권한이 없다).
+grant fn_owner_18876 to postgres with inherit true;
+grant fn_owner_18877 to postgres with inherit true;
 grant fn_owner_18878 to postgres with inherit true;
+grant select, insert, update on public.world_shop_stock to fn_owner_field;
+grant select on public.world_shop_catalog to fn_owner_field;
+grant select on public.world_economy_ledger to fn_owner_field;
 
 -- 지금 회차의 시작 시각(07·15·23시)
 create or replace function public.world_shop_slot()
@@ -45,8 +49,9 @@ begin
      select item_id from public.world_shop_stock where shop_id = p_shop and stock = 0 order by random()
       limit greatest(0, 6 - (select count(*) from public.world_shop_stock where shop_id = p_shop and stock > 0)::int));
 end $$;
-alter function public.world_shop_refresh(text) owner to fn_owner_18876;
+alter function public.world_shop_refresh(text) owner to fn_owner_field;
 revoke all on function public.world_shop_refresh(text) from public, anon, authenticated;
+grant execute on function public.world_shop_refresh(text) to fn_owner_18876, fn_owner_18877;
 
 -- 판매 수익 한도: 1,000전 또는 레벨×150전 가운데 큰 값(24시간)
 create or replace function public.world_shop_sell_status()
@@ -60,7 +65,7 @@ begin
   return jsonb_build_object('sold', sold, 'cap', cap, 'left', greatest(0, cap - sold),
     'resets_at', (select min(created_at) + interval '24 hours' from public.world_economy_ledger where owner_id = uid and action = 'shop_sell' and created_at > now() - interval '24 hours'));
 end $$;
-alter function public.world_shop_sell_status() owner to fn_owner_18878;
+alter function public.world_shop_sell_status() owner to fn_owner_field;
 revoke all on function public.world_shop_sell_status() from public, anon;
 grant execute on function public.world_shop_sell_status() to authenticated, fn_owner_18876;
 
@@ -71,7 +76,7 @@ returns bigint language sql stable security definer set search_path to 'pg_catal
                                     i.reference_price, 10 * coalesce(i.tier, 1)) * 0.45))::bigint
     from public.world_item_catalog i where i.item_id = p_item
 $$;
-alter function public.world_shop_sell_unit(text) owner to fn_owner_18878;
+alter function public.world_shop_sell_unit(text) owner to fn_owner_field;
 grant execute on function public.world_shop_sell_unit(text) to public;
 revoke execute on function public.world_shop_sell_unit(text) from anon;
 
@@ -114,7 +119,7 @@ begin
   return jsonb_build_object('available', true, 'shop_id', 'smithy', 'shop_name', '대장간', 'gil', c.gil, 'location', c.location, 'stock', payload,
     'next_refresh', slot + interval '8 hours');
 end $function$;
-alter function public.world_smithy_snapshot() owner to fn_owner_18876;
+alter function public.world_smithy_snapshot() owner to fn_owner_field;
 revoke all on function public.world_smithy_snapshot() from public, anon;
 grant execute on function public.world_smithy_snapshot() to authenticated;
 
@@ -190,8 +195,8 @@ begin
     order by i.category, i.tier, i.item_name) from public.world_item_catalog i), '[]'::jsonb);
 end $function$;
 
-grant fn_owner_18876 to postgres with inherit false, set false;
-grant fn_owner_18877 to postgres with inherit false, set false;
+grant fn_owner_18876 to postgres with inherit false;
+grant fn_owner_18877 to postgres with inherit false;
 grant fn_owner_18878 to postgres with inherit false;
 
 /* ── 3) 대장간 품목: 장비 제작 재료(흔한·고급)와 수리 도구 ── */

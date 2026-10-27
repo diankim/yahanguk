@@ -392,7 +392,7 @@ function emblemBase(ownerId, profile, size) {
     return `<span class="emblem photo" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><img src="${profile.avatar}" alt="" width="${size}" height="${size}"></span>`;
   return `<span class="emblem" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" width="${Math.round(size * 0.58)}" height="${Math.round(size * 0.58)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${EMBLEMS[p.emblem][1]}"/></svg></span>`;
 }
-export function bagLimit(c) { return (c?.bag_capacity || 60) + (c?.major_faction_id === 'river_alliance' ? 20 : 0); }
+export function bagLimit(c) { return (c?.bag_capacity || 24) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
 // 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
 let stacks = null;
 async function loadStacks() {
