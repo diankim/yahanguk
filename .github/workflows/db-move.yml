@@ -1,0 +1,106 @@
+# 서버 이사(뭄바이 → 서울): 옛 DB를 덤프해 비어 있는 새 DB에 복원한다.
+# 수동 실행만 된다(Actions → db-move → Run workflow, 확인 칸에 MOVE).
+# 비밀값: OLD_DB_URL·NEW_DB_URL (두 프로젝트의 Session pooler 주소, 비밀번호 포함).
+# 옛 DB는 읽기만 한다. 새 DB에 public 표가 하나라도 있으면 아무것도 하지 않고 멈춘다.
+# 덤프 파일(계정 정보 포함)은 실행기 안에서만 쓰고 올리지 않는다. 로그에는 표 이름과 행 수만 남긴다.
+name: db-move
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: '옮기려면 MOVE 를 입력'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  move:
+    if: inputs.confirm == 'MOVE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OLD_DB_URL: ${{ secrets.OLD_DB_URL }}
+      NEW_DB_URL: ${{ secrets.NEW_DB_URL }}
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: psql 준비
+        run: |
+          docker pull -q postgres:17
+          echo 'docker run --rm -i -e PGCONNECT_TIMEOUT=20 -v "$PWD":/w -w /w postgres:17 psql "$@"' > psql.sh
+          chmod +x psql.sh
+
+      - name: 접속 확인과 새 DB가 비었는지 검사
+        run: |
+          test -n "$OLD_DB_URL" && test -n "$NEW_DB_URL" || { echo '비밀값 OLD_DB_URL·NEW_DB_URL이 없습니다'; exit 1; }
+          ./psql.sh "$OLD_DB_URL" -tAc "select 'old public tables: ' || count(*) from pg_tables where schemaname = 'public'"
+          n=$(./psql.sh "$NEW_DB_URL" -tAc "select count(*) from pg_tables where schemaname = 'public'")
+          echo "new public tables: $n"
+          test "$n" = "0" || { echo '새 DB가 비어 있지 않아 멈춥니다'; exit 1; }
+
+      - name: 덤프(구조·데이터)
+        run: |
+          supabase db dump --db-url "$OLD_DB_URL" -f schema.sql
+          supabase db dump --db-url "$OLD_DB_URL" -f data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          wc -c schema.sql data.sql
+
+      - name: 함수 전용 역할(fn_owner_*) 만들기
+        # CLI 역할 덤프는 supabase_admin이 준 멤버십(GRANTED BY supabase_admin)을 새 DB에서 다시 줄 수 없어, 역할만 직접 만든다.
+        # postgres가 만들면 관리 멤버십은 저절로 생긴다. 복원 중에만 소유자 지정을 위해 SET·INHERIT를 켜고, 끝나면 끈다.
+        run: |
+          ./psql.sh "$OLD_DB_URL" -tA -c "select format('do \$r\$ begin if not exists (select 1 from pg_roles where rolname = %L) then create role %I nologin noinherit bypassrls; end if; end \$r\$;', rolname, rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles.sql
+          ./psql.sh "$OLD_DB_URL" -tA -c "select format('grant %I to postgres with inherit true, set true;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_on.sql
+          ./psql.sh "$OLD_DB_URL" -tA -c "select format('grant %I to postgres with inherit false, set false;', rolname) from pg_roles where rolname like 'fn\_owner%' order by rolname" > roles_off.sql
+          echo "roles: $(grep -c 'create role' roles.sql)"
+          ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f roles.sql -f roles_on.sql
+
+      - name: 복원(한 트랜잭션)
+        run: |
+          ./psql.sh "$NEW_DB_URL" -q --single-transaction -v ON_ERROR_STOP=1 \
+            -f schema.sql \
+            -c 'SET session_replication_role = replica' \
+            -f data.sql > restore.log 2>&1 || { grep -E 'ERROR|FATAL|LINE' restore.log | head -20; exit 1; }
+          echo '복원 완료'
+
+      - name: 실시간 감시 표 다시 등록·역할 권한 되돌리기
+        if: always()
+        run: |
+          test -f roles_off.sql && ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f roles_off.sql || true
+          ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -c "
+            do \$p\$ declare t text; begin
+              if not exists (select 1 from pg_tables where schemaname = 'public' and tablename = 'world_notifications') then return; end if;
+              foreach t in array array['world_active_sessions', 'world_chat_messages', 'world_circle_messages', 'world_notifications'] loop
+                if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+                  execute format('alter publication supabase_realtime add table public.%I', t);
+                end if;
+              end loop;
+            end \$p\$;"
+
+      - name: auth·storage 표에 건 트리거 옮기기
+        # CLI 구조 덤프는 auth 스키마를 빼서, auth.users의 가입 트리거(on_auth_user_created_profile) 같은 것이 빠질 수 있다. 없을 때만 옛 정의대로 만든다.
+        run: |
+          # search_path를 비워 함수 이름에 스키마가 붙게 한다(public.handle_new_user)
+          ./psql.sh "$OLD_DB_URL" -tA -q -c "set search_path to pg_catalog" -c "select format('do \$t\$ begin if not exists (select 1 from pg_trigger where tgrelid = %L::regclass and tgname = %L) then execute %L; end if; end \$t\$;', t.tgrelid::regclass::text, t.tgname, pg_get_triggerdef(t.oid)) from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid where not t.tgisinternal and c.relnamespace::regnamespace::text in ('auth', 'storage') and p.pronamespace::regnamespace::text not in ('auth', 'storage')" > triggers.sql
+          echo "triggers: $(grep -c . triggers.sql || true)"
+          ./psql.sh "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 -f triggers.sql
+          ./psql.sh "$NEW_DB_URL" -tAc "select 'auth trigger ' || tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal"
+
+      - name: 행 수 비교
+        run: |
+          q="select table_schema || '.' || table_name || ' ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema in ('public', 'auth') and table_type = 'BASE TABLE' order by 1"
+          ./psql.sh "$OLD_DB_URL" -tAc "$q" > old_counts.txt
+          ./psql.sh "$NEW_DB_URL" -tAc "$q" > new_counts.txt
+          echo "tables: $(wc -l < old_counts.txt) old / $(wc -l < new_counts.txt) new"
+          # auth 표(로그인 기록 등)는 점검 중에도 늘 수 있어 알리기만 하고, public 표가 다르면 실패로 둔다
+          if diff old_counts.txt new_counts.txt; then echo '행 수가 모두 같습니다'; else echo '행 수가 다른 표가 있습니다(위 목록)'; fi
+          diff <(grep '^public\.' old_counts.txt) <(grep '^public\.' new_counts.txt) > /dev/null || { echo 'public 표의 행 수가 다릅니다'; exit 1; }
+          ./psql.sh "$NEW_DB_URL" -tAc "select 'db_version ' || value from public.world_app_meta where key = 'db_version'"
+          ./psql.sh "$NEW_DB_URL" -tAc "select 'realtime ' || string_agg(tablename, ', ') from pg_publication_tables where pubname = 'supabase_realtime'"
+
+      - name: 덤프 지우기
+        if: always()
+        run: rm -f schema.sql data.sql restore.log roles*.sql triggers.sql
