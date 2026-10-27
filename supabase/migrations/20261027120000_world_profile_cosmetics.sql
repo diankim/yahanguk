@@ -193,10 +193,9 @@ do $$ declare def text; nd text;
 begin
   def := pg_get_functiondef('public.world_title_award_check(uuid, text)'::regprocedure);
   if position('world_cosmetic_award_check' in def) = 0 then
-    nd := replace(def, '  RETURN got;
-END', '  BEGIN PERFORM public.world_cosmetic_award_check(p_owner_id, p_event_type); EXCEPTION WHEN others THEN NULL; END;
-  RETURN got;
-END');
+    -- 줄바꿈 모양(붙여 넣을 때 바뀔 수 있음)에 기대지 않도록 한 줄짜리 'RETURN got;'만 찾는다(함수에 한 번만 있다)
+    if (length(def) - length(replace(def, 'RETURN got;', ''))) / length('RETURN got;') <> 1 then raise exception 'world_title_award_check 모양이 예상과 다릅니다.'; end if;
+    nd := replace(def, 'RETURN got;', 'BEGIN PERFORM public.world_cosmetic_award_check(p_owner_id, p_event_type); EXCEPTION WHEN others THEN NULL; END; RETURN got;');
     if position('world_cosmetic_award_check' in nd) = 0 then raise exception 'world_title_award_check 고칠 곳을 찾지 못했습니다.'; end if;
     execute nd;
   end if;
