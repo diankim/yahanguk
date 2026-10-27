@@ -49,18 +49,17 @@ async function items(body, inv) {
     .filter(r => !q.trim() || [nameOf(r.id), r.it?.description, nameOf(r.it?.category)].join(' ').toLowerCase().includes(q.trim().toLowerCase()))
     .sort((a, b) => (a.it?.tier || 0) - (b.it?.tier || 0) || nameOf(a.id).localeCompare(nameOf(b.id), 'ko'));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
-  const anyUse = rows.some(r => USABLE[r.id]); // 수량 칸을 한 줄로 맞추려고 사용 단추 자리를 비워 둔다
   body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
       <small>가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
     ${rows.length ? `<ul class="inv-list">${rows.map(({ id, n, it }) => {
       const tags = [it?.tier ? `${it.tier}단계` : '', equipped.has(id) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
-      return `<li><button class="inv-row r-${esc(it?.rarity || 'common')}" data-info="${esc(id)}">
+      return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(n)}</span></span>${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
-        ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : anyUse ? '<span class="inv-quick pad" aria-hidden="true"></span>' : ''}</li>`; }).join('')}</ul>`
+        ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });

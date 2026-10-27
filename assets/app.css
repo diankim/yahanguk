@@ -930,7 +930,6 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 :is(#bag-body, #char-body, #log-body, #map-body, #party-body) > p + .chips { margin-top: -4px; }
 .panel-body > .btn-row + .btn-row, .panel-body > .chips + .btn-row { margin-top: 2px; }
 .sub-h { margin-top: 6px; }
-.inv-quick.pad { visibility: hidden; }
 
 /* ── 현장 머리 배경: 장소 전경(scenery.js) + 시간대 해·달 + 날씨 덧그림 ─────────
    평면 도형만 쓰고(그라데이션·그림자·흐림 없음) 장소 색(--sc)을 바탕에 옅게 섞는다. 글자보다 뒤에 깔린다. */
@@ -1012,3 +1011,11 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .gm-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: .06em; line-height: 16px; vertical-align: middle;
   color: var(--accent-ink); background: var(--accent); font-family: var(--font-sans); }
 .chat-list li.gm { border-left: 2px solid var(--accent); padding-left: 6px; }
+
+/* 가방 줄: 카드 하나가 폭을 꽉 채우고, 사용 단추는 카드 안 오른쪽 끝에 둔다(단추 없는 줄에 빈자리 없음) */
+.inv-list li.inv-item { align-items: center; gap: 0; padding-right: 6px; background: var(--surface-2); border: var(--bw) solid transparent; border-left: 3px solid var(--line); border-radius: var(--r-sm); }
+.inv-list li.inv-item:hover { border-color: var(--line); }
+.inv-list li.r-uncommon { border-left-color: var(--ok); } .inv-list li.r-rare { border-left-color: var(--mp); } .inv-list li.r-epic { border-left-color: var(--sp); } .inv-list li.r-legendary { border-left-color: var(--gold); }
+.inv-item .inv-row { background: transparent; border: 0; border-radius: var(--r-sm); }
+.inv-item .inv-row:hover { border: 0; }
+.inv-item .inv-quick { width: auto; min-width: 52px; padding-inline: 12px; }
