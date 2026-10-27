@@ -79,6 +79,7 @@ function renderError(msg) {
 
 /* ── 로그인 / 회원가입 ──────────────────────────────────── */
 function renderAuth(mode = 'login', notice = '') {
+  window.dispatchEvent(new Event('yh-booted'));
   document.title = '야행국 · 입국';
   app.replaceChildren(h(`
   <div class="auth-screen">
@@ -217,6 +218,7 @@ function renderDeath(c) {
 /* ── 게임 화면 ──────────────────────────────────────────── */
 let current = null;
 function renderGame() {
+  window.dispatchEvent(new Event('yh-booted'));
   document.title = '야행국';
   const tabs = Object.entries(VIEWS).map(([k, v]) => `<a href="#/${k}" data-view="${k}">${icon(v.icon, 20)}<span>${v.label}</span></a>`).join('');
   app.replaceChildren(h(`
