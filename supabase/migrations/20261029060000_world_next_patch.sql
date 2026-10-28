@@ -1722,7 +1722,10 @@ end $$;
 create or replace function public.world_faction_task_count(p_uid uuid, p_task jsonb, p_since timestamptz)
 returns int language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
   with ev as (
-    select e.payload, coalesce(e.payload ->> 'region_id', (select n.region_id from public.world_exploration_nodes n where n.node_id::text = e.payload ->> 'node_id')) region
+    -- 지역은 지역으로 거르거나 세는 할 일(r·safe·distinct)에서만 찾고, 답사 지점은 기본 키(uuid)로 찾는다(text로 바꿔 비교하면 행마다 표 전체를 훑는다)
+    select e.payload, case when p_task ? 'r' or p_task ? 'safe' or coalesce((p_task ->> 'distinct')::boolean, false) then coalesce(e.payload ->> 'region_id',
+      (select n.region_id from public.world_exploration_nodes n
+        where n.node_id = case when e.payload ->> 'node_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then (e.payload ->> 'node_id')::uuid end)) end region
       from public.world_events e
      where e.actor_id = p_uid and e.created_at >= p_since
        and e.event_type = case p_task ->> 't' when 'search' then 'explore' when 'clue' then 'explore' when 'win' then 'combat' when 'gather' then 'gather'
@@ -1807,16 +1810,22 @@ declare c public.world_characters%rowtype; p public.world_faction_progress%rowty
 begin
   select * into c from public.world_characters where owner_id = p_uid;
   if c.major_faction_id is null then return null; end if;
-  jt := coalesce((select max(e.created_at) from public.world_events e where e.actor_id = p_uid and e.event_type = 'faction'
-                   and e.payload ->> 'faction_id' = c.major_faction_id and coalesce(e.payload ->> 'left', 'false') <> 'true'), now());
-  insert into public.world_faction_progress(owner_id, faction_id, joined_at, step_started_at) values (p_uid, c.major_faction_id, jt, now())
-  on conflict (owner_id, faction_id) do nothing;
-  select * into p from public.world_faction_progress where owner_id = p_uid and faction_id = c.major_faction_id for update;
-  if p.joined_at is null or p.joined_at < jt then
+  -- 가입 기록이 없으면(옛 가입) 다시 가입한 것으로 보지 않는다(없을 때 지금 시각으로 잡으면 열 때마다 등급이 1로 돌아간다)
+  jt := (select max(e.created_at) from public.world_events e where e.actor_id = p_uid and e.event_type = 'faction'
+                   and e.payload ->> 'faction_id' = c.major_faction_id and coalesce(e.payload ->> 'left', 'false') <> 'true');
+  -- 세력 화면을 열 때마다 불리므로, 바뀔 것이 없으면 잠그거나 쓰지 않는다(행 잠금도 디스크 쓰기를 남긴다)
+  select * into p from public.world_faction_progress where owner_id = p_uid and faction_id = c.major_faction_id;
+  if p.owner_id is null then
+    insert into public.world_faction_progress(owner_id, faction_id, joined_at, step_started_at) values (p_uid, c.major_faction_id, coalesce(jt, now()), now())
+    on conflict (owner_id, faction_id) do nothing;
+    select * into p from public.world_faction_progress where owner_id = p_uid and faction_id = c.major_faction_id;
+  end if;
+  if jt is not null and (p.joined_at is null or p.joined_at < jt) then
     update public.world_faction_progress
-       set joined_at = jt, rejoin_pending = (p.join_done_at is not null), rank = case when p.join_done_at is not null then 1 else p.rank end,
+       set joined_at = jt, rejoin_pending = (join_done_at is not null), rank = case when join_done_at is not null then 1 else rank end,
            open_step = null, step_started_at = now(), updated_at = now()
-     where owner_id = p_uid and faction_id = c.major_faction_id returning * into p;
+     where owner_id = p_uid and faction_id = c.major_faction_id and (joined_at is null or joined_at < jt) returning * into p;
+    if not found then select * into p from public.world_faction_progress where owner_id = p_uid and faction_id = c.major_faction_id; end if;
   end if;
   return p;
 end $$;

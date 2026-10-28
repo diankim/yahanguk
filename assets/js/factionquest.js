@@ -112,7 +112,8 @@ export function factionPanels(s, c) {
 }
 
 export function bindFaction(body, s, redraw) {
-  const done = () => { invalidate('world_faction_snapshot'); redraw?.(); };
+  // 행동(act)이 끝나면 화면 전체가 'changed'로 다시 그려지므로 여기서는 지난 값만 버린다(두 번 읽지 않게)
+  const done = () => { invalidate('world_faction_snapshot'); };
   $$('[data-fq-report]', body).forEach(b => b.onclick = () => guard(b, async () => {
     const r = await act('world_faction_report');
     playDialogue(r, s.faction_id); done(); return null;
