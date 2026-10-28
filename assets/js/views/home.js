@@ -87,12 +87,21 @@ function sceneFx(r) {
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
   return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
+// 침식 원형 게이지: 현장 머리 오른쪽 위. 단계(주의 30·위험 55·붕괴 직전 80)마다 색이 짙어지고, 누르면 캐릭터 › 상태로 간다.
+function erosionRing(c) {
+  const v = Math.max(0, Math.min(100, Math.round(Number(c?.erosion || 0))));
+  const st = v >= 80 ? ['s3', '붕괴 직전'] : v >= 55 ? ['s2', '위험'] : v >= 30 ? ['s1', '주의'] : ['s0', '안정'];
+  return `<a class="er-ring ${st[0]}" href="#/char/status" title="침식 ${v} · ${st[1]} (누르면 상태와 단계 효과)" aria-label="침식 ${v}, ${st[1]}">
+    <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="t" cx="18" cy="18" r="15.9"/><circle class="v" cx="18" cy="18" r="15.9" stroke-dasharray="${v} 100" pathLength="100"/></svg>
+    <b>${v}</b><small>침식</small></a>`;
+}
 function scene(s, traveling, downed) {
   const r = s.region, c = store.character;
   return `
     <div class="scene theme-${esc(r.theme || 'wild')} ${r.safe ? 'safe' : ''}">
       ${sceneFx(r)}
       <span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      ${erosionRing(c)}
       <div class="scene-top">
         <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · ${esc(r.faction_name || '무주 금역')}</p>
         <h1>${esc(r.region_name)}</h1>

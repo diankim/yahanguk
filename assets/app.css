@@ -1482,3 +1482,14 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list li.msg .av.face { background: none; border: 0; overflow: hidden; }
 .chat-list li.msg .av.face .emblem { width: 26px !important; height: 26px !important; border-radius: 8px; }
 .chat-list li.msg .av.face .emblem img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+/* 침식 원형 게이지(현장 머리 오른쪽 위) */
+.scene > .er-ring { position: absolute; z-index: 3; top: 12px; right: 12px; width: 52px; height: 52px; display: grid; place-items: center; align-content: center; text-decoration: none; color: var(--text); border-radius: 50%; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.er-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.er-ring circle { fill: none; stroke-width: 3.2; }
+.er-ring .t { stroke: color-mix(in srgb, var(--line) 90%, transparent); }
+.er-ring .v { stroke: var(--er); stroke-linecap: round; transition: stroke-dasharray .4s; }
+.er-ring b { position: relative; font-size: 15px; line-height: 1; font-variant-numeric: tabular-nums; }
+.er-ring small { position: relative; font-size: 9.5px; color: var(--muted); line-height: 1.1; }
+.er-ring.s1 .v { stroke: var(--warn); } .er-ring.s2 .v { stroke: color-mix(in srgb, var(--bad) 70%, var(--warn)); } .er-ring.s3 .v { stroke: var(--bad); }
+.er-ring.s3 b { color: var(--bad); }
+.scene:has(> .er-ring) .scene-top { padding-right: 58px; }
