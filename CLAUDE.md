@@ -422,7 +422,7 @@
 채팅 유형:
 - 전체 채팅: 하루 50회 제한(world_chat_send)
 - 지역 채팅: 무제한 사용 가능하되 도배 방지
-- 쓰러짐·세력 소식: 누가 쓰러지면 world_notify_downed가 전체 채팅에 sender_name '구조 알림'으로, 지배 세력이 바뀌면 world_influence_tick이 '세력 소식'으로 한 줄을 남기고 채팅은 이것을 시스템 줄(chat-notice sys)로 그린다(기존 세력·친구 알림은 그대로).
+- 쓰러짐·세력 소식: 누가 쓰러지면 world_notify_downed가 전체 채팅에 sender_name '구조 알림'으로(다시 일어나면 — downed_at이 비워지는 모든 길 — 같은 트리거가 「다시 일어났습니다」 한 줄을 더 남기고 화면은 초록 시스템 줄 chat-notice sys up으로 그린다, 5.0.0 묶음 20261029060000), 지배 세력이 바뀌면 world_influence_tick이 '세력 소식'으로 한 줄을 남기고 채팅은 이것을 시스템 줄(chat-notice sys)로 그린다(기존 세력·친구 알림은 그대로).
 - 귓속말: 채팅 탭이 아니라 헤더의 귓속말 단추로 여는 별도 창에서 상대별로 나눠 주고받는다(world_whisper_threads·world_whisper_mark_read). 안 읽은 귓속말이 있으면 단추에 빨간 점을 찍고, 읽음은 서버(world_whisper_reads)에 남아 기기가 달라도 같다.
 - 세력 채팅
 - 파티 채팅

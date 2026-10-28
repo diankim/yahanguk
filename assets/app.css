@@ -1581,6 +1581,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list .chat-notice.sys svg { color: var(--bad); flex: none; }
 .chat-list .chat-notice.sys { justify-self: stretch; border-radius: var(--r-sm); padding: 6px 10px; }
 .chat-list .chat-notice.sys > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.chat-list .chat-notice.sys.up { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); background: color-mix(in srgb, var(--ok) 8%, var(--surface-2)); }
+.chat-list .chat-notice.sys.up svg { color: var(--ok); }
 .patch-link { display: inline-flex; align-items: center; gap: 3px; padding: 0 6px; border-radius: 999px; border: var(--bw) solid var(--line); color: var(--accent); text-decoration: none; font-size: 12px; }
 /* 패치노트 */
 .patch-list { display: grid; gap: 10px; }
