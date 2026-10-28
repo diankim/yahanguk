@@ -8,8 +8,8 @@ import { logRow } from './spar.js';
 
 // 등급 효과(서버 world_faction_rank_effect와 같은 값, 2~5등급)
 const RANK_PERK = {
-  night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}%`,
-  north_league: r => `받는 피해 −${r - 1}%`, river_alliance: r => `이동 시간 −${(r - 1) * 2}%`, southern_remnant: r => `채집량 +${(r - 1) * 2}%`,
+  night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}% · 그림자 장부(상점 하루 판매 한도 +${(r - 1) * 300}전)`,
+  north_league: r => `받는 피해 −${r - 1}%`, river_alliance: r => `이동 시간 −${(r - 1) * 2}% · 세금 −${(r - 1) * 25}%`, southern_remnant: r => `채집량 +${(r - 1) * 2}%`,
   mandate_court: r => `예언 · 요괴 조우 −${(r - 1) * 2}% · 날씨·시간대 불이익 −${(r - 1) * 10}%`,
 };
 

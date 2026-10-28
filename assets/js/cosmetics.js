@@ -65,7 +65,7 @@ function legacySvg(small) {
   return `<svg class="fr-svg lg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
     <path class="lg-out" d="${oct(0)}" pathLength="100" stroke-dasharray="92 8" stroke-dashoffset="77"/>
     ${small ? '' : `<path class="lg-in" d="${oct(6)}" pathLength="100" stroke-dasharray="90 10" stroke-dashoffset="76"/>`}
-    ${mids}<g class="lg-star" transform="translate(84 16) scale(${small ? 1 : .95})"><circle r="9" class="fr-bg"/><path d="${HEX_STAR}"/></g></svg>`;
+    ${mids}<g class="lg-star" transform="translate(84 16) scale(${small ? 1.7 : 1.75})"><circle r="5.5" class="fr-bg"/><path d="${HEX_STAR}"/></g></svg>`;
 }
 export const frameTier = key => FRAMES[key]?.[0] || 'common';
 // 테두리 두께(px)와 안쪽 여백: 정수로 잡아 위아래·좌우 간격이 똑같게 한다.

@@ -316,19 +316,14 @@ let dt = { to: '', give: {}, giveGil: 0, want: {}, wantGil: 0 };
 const bundle = (items, gil) => [...Object.entries(items || {}).map(([k, n]) => `${nameOf(k)} ×${n}`), gil > 0 ? fmt.jeon(gil) : ''].filter(Boolean).join(', ') || '없음';
 async function renderDirect(body) {
   try {
-    const [roster, prices, pending, , inv, fr, pt] = await Promise.all([load('world_region_roster', undefined, { maxAge: 10000 }).catch(() => []),
+    const [roster, prices, pending, , inv] = await Promise.all([load('world_region_roster', undefined, { maxAge: 10000 }).catch(() => []),
       load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), load('world_trade_direct_snapshot').catch(() => []), loadLocks(),
-      load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
-      load('world_friend_overview', undefined, { maxAge: 30000 }).catch(() => null), load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null)]);
+      load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
-    // 직접 거래는 어디서나(5.0.0): 같은 곳에 있는 이·친구·파티원, 그리고 조사원 카드에서 고른 사람
-    const seen = new Map(), me = store.character?.owner_id;
-    const addP = (p, tag) => { if (!p?.owner_id || p.owner_id === me || p.is_dead || seen.has(p.owner_id)) return; seen.set(p.owner_id, { owner_id: p.owner_id, character_name: p.character_name, level: p.level, tag }); };
-    (roster || []).forEach(p => addP(p, '같은 곳')); (fr?.friends || []).forEach(p => addP(p, '친구')); (pt?.members || []).forEach(p => addP(p, '파티'));
-    if (dt.to && !seen.has(dt.to)) { const cc = await load('world_character_card', { p_owner: dt.to }, { maxAge: 30000 }).catch(() => null); if (cc) addP({ ...cc, owner_id: dt.to }, '카드'); }
-    const people = [...seen.values()];
+    // 직접 거래는 같은 곳에 있는 조사원과(5.0.0부터 안전지대 밖에서도)
+    const people = (roster || []).filter(p => !p.is_dead);
     const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k));
     const anyTradeable = (prices || []).filter(p => p.tradeable !== false).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
     const hiddenNote = untradeNote(have, ref);
@@ -342,7 +337,7 @@ async function renderDirect(body) {
           <small>받을 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>줄 것: ${esc(bundle(t.want_items, t.want_gil))}</small><small class="muted">${fmt.remain(new Date(t.expires_at) - Date.now())} 뒤 사라짐</small></div>
         <div class="btn-row"><button class="btn small primary" data-dt-acc="${esc(t.trade_id)}">수락</button><button class="btn small" data-dt-dec="${esc(t.trade_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
       ${people.length ? `<form class="dt-form" id="dt-form">
-        <label class="field"><span>거래할 조사원 (같은 곳·친구·파티원, 또는 조사원 카드의 「거래 제안」)</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)}${p.level ? ` · Lv.${p.level}` : ''} · ${esc(p.tag)}</option>`).join('')}</select></label>
+        <label class="field"><span>거래할 조사원 (같은 곳에 있는 사람)</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)} · Lv.${p.level}</option>`).join('')}</select></label>
         <fieldset class="dt-side"><legend>내가 줄 것</legend>
           <div class="chips">${chipList(dt.give, 'give')}</div>
           ${pickerHtml('giveItem', giveOpts)}<div class="dt-add"><input name="giveQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="give" ${mineTradeable.length ? '' : 'disabled'}>담기</button></div>
@@ -352,10 +347,10 @@ async function renderDirect(body) {
           ${pickerHtml('wantItem', wantOpts)}<div class="dt-add"><input name="wantQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="want">담기</button></div>
           <label class="field"><span>받을 전</span><input name="wantGil" type="number" min="0" value="${dt.wantGil}"></label></fieldset>
         <button class="btn primary block" type="submit">${icon('coin', 16)}<span>거래 제안 보내기</span></button>
-      </form>` : empty('거래할 조사원이 없습니다. 친구·파티원이나, 채팅·여기 있는 이들에서 이름을 눌러 조사원 카드의 「거래 제안」으로 고르세요.', 'users')}
+      </form>` : empty('같은 곳에 거래할 조사원이 없습니다. 상대와 같은 곳에 있어야 합니다(안전지대가 아니어도 됩니다).', 'users')}
       ${out.length ? `<h3 class="sub-h">보낸 제안 ${out.length}</h3><ul class="spot-list">${out.map(t => `<li><div><b>${esc(t.other_name)}님에게</b><small>줄 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>받을 것: ${esc(bundle(t.want_items, t.want_gil))}</small></div>
         <button class="btn small" data-dt-cancel="${esc(t.trade_id)}">거두기</button></li>`).join('')}</ul>` : ''}
-      <p class="muted small">어디서든 거래할 수 있습니다. 상대가 수락하면 서버가 양쪽 가방과 전을 한 번에 맞바꿉니다. 전을 받는 쪽은 거래세 5%를 냅니다(수향연맹·흑련회는 등급에 따라 덜 냄). 제안은 30분 동안 유효하고, 응답 대기는 3건까지입니다. 잠근 물품·장착 중인 마지막 한 개·거래 불가 물품은 줄 수 없습니다.</p>`;
+      <p class="muted small">상대와 같은 곳에만 있으면 안전지대 밖에서도 거래할 수 있습니다. 상대가 수락하면 서버가 양쪽 가방과 전을 한 번에 맞바꿉니다. 전을 받는 쪽은 거래세 5%를 냅니다(수향연맹은 등급에 따라 덜 냄). 제안은 30분 동안 유효하고, 응답 대기는 3건까지입니다. 잠근 물품·장착 중인 마지막 한 개·거래 불가 물품은 줄 수 없습니다.</p>`;
     const f = $('#dt-form', body);
     if (f) {
       f.to.onchange = () => { dt.to = f.to.value; };

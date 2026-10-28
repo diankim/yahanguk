@@ -12,7 +12,7 @@
 --   ⑪ 근접 계열 13·24·30·43단계를 모두 택일로(A 딜러 · B 탱커·이목)
 --   ⑫ 세력 가입 퀘스트(대화)·등급 5단계·등급 퀘스트·의뢰판·비고(공훈 상점)·수련장, 평판 상한 5000, 조사원 카드 세력 등급, 세력 인물 프로필
 --   ⑭ 기존 대세력 가입자는 세력에서 나와 가입 퀘스트부터(재가입 제한 없음) · 천명원 효과(날씨 불이익 감소·예언) · 수련장 시련 전투 기록
---   ⑬ 1:1 직접 거래는 어디서나 · 수향연맹(등급마다 세금 −25%, 5등급 면세)·흑련회(−12.5%, 5등급 절반) 세금 감면
+--   ⑬ 1:1 직접 거래는 같은 곳이면 안전지대 밖에서도 · 수향연맹 세금 감면(등급마다 −25%, 5등급 면세) · 흑련회 그림자 장부(상점 판매 한도 +300전씩)
 --   (원정) 체력이 넉넉하면 밀린 싸움을 버틴다([버팀]) — ⑦의 원정 정산 고칠 자리 6~8
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
@@ -2152,13 +2152,11 @@ update public.world_faction_npcs n set quote = v.quote, detail = v.detail from (
   ('mandate_court:mun', '기록은 정확하다. 결론은 쓰지 마라.', '황실 기록을 맡은 기밀 사관. 웃지 않는다는 것으로 유명해, 관측생들 사이에서는 그가 웃는 것을 보면 좋은 일이 생긴다는 미신까지 돈다. 영대 서고를 관리하며, 기록은 거래하지 않는다는 원칙에 따라 서고의 문서는 한 장도 밖으로 내보내지 않는다. 떠났다 돌아온 이에게 무엇을 보았는지 묻지 않는 것이 그 나름의 배려다. 붓 대신 쇠못으로 목판에 기록을 새기는 오래된 버릇이 있다.')
 ) v(k, quote, detail) where n.npc_key = v.k;
 
--- 1:1 직접 거래는 어디서나(같은 곳·안전지대 조건을 뺀다). 원정 중·전투불능·차단은 그대로 막는다
+-- 1:1 직접 거래는 같은 곳에만 있으면 된다(안전지대 조건만 뺀다). 원정 중·전투불능·차단은 그대로 막는다
 do $$ declare p record; d text; n int;
 begin
   for p in select * from (values
-    ('public.world_trade_direct_offer(uuid,jsonb,bigint,jsonb,bigint)', $a$if a.location is distinct from b.location then raise exception '같은 곳에 있는 조사원과만 거래할 수 있습니다.'; end if;$a$),
     ('public.world_trade_direct_offer(uuid,jsonb,bigint,jsonb,bigint)', $a$if not coalesce(r.is_safe_zone, false) then raise exception '거래는 안전지대에서만 할 수 있습니다.'; end if;$a$),
-    ('public.world_trade_direct_respond(uuid,boolean)', $a$if a.location is distinct from b.location or a.location is distinct from t.location then raise exception '두 사람이 제안한 곳에 함께 있어야 거래할 수 있습니다.'; end if;$a$),
     ('public.world_trade_direct_respond(uuid,boolean)', $a$if not coalesce(r.is_safe_zone, false) then raise exception '거래는 안전지대에서만 할 수 있습니다.'; end if;$a$)
   ) v(fn, old) loop
     d := pg_get_functiondef(p.fn::regprocedure);
@@ -2168,10 +2166,10 @@ begin
   end loop;
 end $$;
 
--- 경제 세력 등급 세금 감면: 수향연맹 등급마다 25%(5등급 면세), 흑련회 등급마다 12.5%(5등급 절반). 상점 팔기·거래소 판매·직접 거래에
+-- 수향연맹 등급 세금 감면: 등급마다 25%(5등급 면세). 상점 팔기·거래소 판매·직접 거래에
 create or replace function public.world_trade_tax_mult(p_owner uuid)
 returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
-  select coalesce((select greatest(0, 1 - (p.rank - 1) * case c.major_faction_id when 'river_alliance' then 0.25 when 'black_lotus' then 0.125 else 0 end)
+  select coalesce((select greatest(0, 1 - (p.rank - 1) * case c.major_faction_id when 'river_alliance' then 0.25 else 0 end)
     from public.world_characters c join public.world_faction_progress p on p.owner_id = c.owner_id and p.faction_id = c.major_faction_id
    where c.owner_id = p_owner and p.join_done_at is not null), 1)::numeric
 $$;
@@ -2196,6 +2194,14 @@ begin
     execute replace(d, p.old, p.new);
   end loop;
 end $$;
+-- 흑련회 등급 효과 「그림자 장부」: 장부 밖으로 물건을 넘길 연줄 — 상점 하루 판매 한도 +300전씩(5등급 +1,200전)
+create or replace function public.world_affil_cap()
+returns integer language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select (case when c.faction_key = 'headquarters' then 500 else 0 end
+        + coalesce((select (p.rank - 1) * 300 from public.world_faction_progress p
+                     where p.owner_id = c.owner_id and p.faction_id = 'black_lotus' and c.major_faction_id = 'black_lotus' and p.join_done_at is not null), 0))::int
+    from public.world_characters c where c.owner_id = public.fn_owner_auth_uid()
+$$;
 grant fn_owner_18669 to postgres with inherit false, set false;
 grant fn_owner_18881 to postgres with inherit false, set false;
 
@@ -2243,7 +2249,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 5. **비고(秘庫)**: 세력 안전지대에서 공훈으로 회복약·부적·강화 재료를 삽니다(사들이지는 않음). 등급이 오를수록 품목이 늘어납니다.
 6. **수련장**: 세력 안전지대에서 하루 한 번 등급 시련. 내 전투 능력치로 시련 상대와 합을 주고받고, 한 줄씩 펼쳐지는 전투를 지켜봅니다(건너뛰기 가능). 3·5등급 시련을 처음 넘으면 세력 칭호(14개), 5등급은 세력 낙관(錄·血·蓮·盟·舟·燼·星)도 받습니다.
 7. **세력 인물**: 퀘스트에서 만난 인물의 기록(소개 대사·인물 서술)을 캐릭터 › 세력에서 펼쳐 봅니다.
-8. 수향연맹은 등급마다 세금이 25%씩 줄어 5등급이면 내지 않고, 흑련회는 12.5%씩 줄어 5등급이면 절반만 냅니다(상점 판매세·거래소·직접 거래).
+8. 수향연맹은 등급마다 세금이 25%씩 줄어 5등급이면 내지 않습니다(상점 판매세·거래소·직접 거래). 흑련회는 「그림자 장부」로 등급마다 상점 하루 판매 한도가 300전씩 늘어납니다(5등급 +1,200전).
 
 ### 기술
 9. 4.0.0의 이름 있는 기술 105개(추가·택일·숙달·조합)가 수치 보정 대신 **행동이 바뀌는 고유 효과**를 냅니다(토벌·채집·제작·탐색·이동·휴식·강화·수리·구조). 캐릭터 › 기술의 설명을 확인하세요.
@@ -2262,7 +2268,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 18. 지역마다 요괴 2종이 더 나옵니다(66종).
 
 ### 거래·편의
-19. **1:1 직접 거래는 어디서나** 할 수 있습니다(같은 곳·친구·파티원, 또는 조사원 카드의 「거래 제안」).
+19. **1:1 직접 거래**는 상대와 같은 곳에만 있으면 안전지대 밖에서도 할 수 있습니다.
 20. 거래소 등록·직접 거래의 물품 고르기에 분류·이름 검색·가나다순을 넣었습니다.
 21. 현장의 **답사 지도**: 길·채집터 수를 말로 적고, 다 찾은 곳 표시, 찾지 못한 곳은 빈칸으로, 위에 답사도 단계 막대.
 22. 물품 정보의 「얻는 곳」에 대장간·상점·세력 비고를 나눠 적습니다.
