@@ -209,7 +209,13 @@ textarea { resize: none; }
 #view { max-width: 1080px; margin: 0 auto; }
 .view-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 4px 0 14px; flex-wrap: wrap; }
 .eyebrow { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: .02em; margin-bottom: 4px; }
-.head-actions { display: flex; gap: 8px; }
+.head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.head-actions .btn { white-space: nowrap; }
+@media (max-width: 640px) {
+  .head-actions { width: 100%; }
+  .head-actions.grid4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .head-actions.grid4 .btn { justify-content: center; }
+}
 .tabbar { position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, 1fr); background: var(--bg); border-top: var(--bw) solid var(--line); }
 .tabbar a { flex-direction: column; justify-content: center; gap: 3px; font-size: 12px; min-width: 0; }
 .tabbar a.on { color: var(--text); }

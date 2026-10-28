@@ -288,7 +288,7 @@ export function render(el) {
   const rest = S.filter(x => !grouped.has(x[0])).map(x => x[0]);
   const groups = rest.length ? [...GROUPS, ['etc', '그 밖', 'help', rest]] : GROUPS;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('help', 14)} 조사원 수첩</p><h1>도움말</h1></div>
-      <div class="head-actions"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
+      <div class="head-actions grid4"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
     <div class="guide2">
       <label class="search guide-search"><span>${icon('search', 16)}</span><input id="g-q" type="search" placeholder="궁금한 것을 찾아보세요 (예: 원정, 침식, 칭호 묶음)" value="${esc(gq)}"></label>
       <nav class="guide-cats" aria-label="도움말 묶음">${groups.map(([k, n, ic, ids]) => `<button class="guide-cat" data-gk="${k}">${icon(ic, 20)}<b>${esc(n)}</b><small>${ids.map(id => esc(byId[id]?.[1] || '')).join(' · ')}</small></button>`).join('')}</nav>
