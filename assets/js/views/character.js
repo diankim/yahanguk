@@ -285,7 +285,7 @@ async function skills(body) {
   };
   const c = store.character || {};
   const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
-  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(봉인술은 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
+  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(근접·봉인술은 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
     ${Object.keys(groups).length ? `<div class="skill-groups">${BRANCHES.map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
       `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}

@@ -9,6 +9,7 @@
 --   ⑧ 기력: 근접 무기를 들면 영력을 「기력」으로 쓴다(공격마다 2). 전투·원정 중 장비 바꿔 끼기를 막는다
 --   ⑨ 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나간다(남은 것은 새것)
 --   ⑩ 봉인술 계열 13·24·30·43단계를 모두 택일로(A 폭딜 · B 버프/디버프)
+--   ⑪ 근접 계열 13·24·30·43단계를 모두 택일로(A 딜러 · B 탱커·이목)
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
 --   (화면) 동료 화면 친구·모임: 단추가 이름에서 멀리 떨어져 늘어나던 것을 사람·모임마다 카드로 나누고 단추를 이름 곁에
@@ -849,6 +850,8 @@ BEGIN
         IF guarding AND 'guarding_x13' = ANY (sk) THEN mdmg := round(mdmg * 0.8); END IF;
         IF g.gimmick_key IS NOT NULL AND 'analysis_x13' = ANY (sk) THEN mdmg := round(mdmg * 0.8); END IF;
         IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * 0.8); END IF;
+        IF 'melee_c13b' = ANY (sk) AND NOT coalesce((v_pfx ->> 'cowed')::boolean, false) THEN mdmg := round(mdmg * 0.7); v_pfx := v_pfx || jsonb_build_object('cowed', true); lines := lines || jsonb_build_array('「호령」 기세에 눌린 첫 공격이 무뎌졌다.'); END IF;
+        IF coalesce((v_pfx ->> 'roar')::int, 0) > 0 THEN mdmg := round(mdmg * 0.85); END IF;
         mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0) * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - a.mlevel))));
         IF c.health < 30 THEN mdmg := ceil(mdmg * 1.15); END IF;
         eva_now := eva + CASE WHEN 'analysis_m50' = ANY (sk) AND coalesce((v_pfx ->> 'focus')::int, 0) > 0 THEN 15 ELSE 0 END;
@@ -856,10 +859,10 @@ BEGIN
           mdmg := 0; v_pfx := v_pfx || jsonb_build_object('wall_cd', turn + 3); lines := lines || jsonb_build_array('「철벽」 공격을 완전히 막아 냈다.');
         ELSIF NOT guarding AND random() * 100 < eva_now * (CASE WHEN v_intent IN ('heavy', 'pounce', 'unleash') OR gburst THEN 0.6 ELSE 1 END) THEN
           mdmg := 0; lines := lines || jsonb_build_array('몸을 틀어 공격을 피했다.');
-          IF 'melee_c43b' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
+          IF 'melee_c30a' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
         END IF;
         mdmg := greatest(0, mdmg);
-        IF guarding AND 'melee_c43b' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
+        IF guarding AND 'melee_c30a' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
         IF guarding AND 'guarding_c43b' = ANY (sk) AND raw_m > mdmg THEN v_pfx := v_pfx || jsonb_build_object('surge', least(40, raw_m - mdmg)); END IF;
         -- 강기 보호막이 먼저 받는다
         IF mdmg > 0 AND coalesce((v_pfx ->> 'pshield')::int, 0) > 0 THEN
@@ -926,6 +929,13 @@ BEGIN
       next_intent := coalesce(next_intent, public.world_battle_intent_k(m.kind, a.mlevel, m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank));
     END IF;
     -- 도발: 방어한 턴에 적이 다음에 쓰려던 기믹을 버리고 나에게 달려든다
+    IF ended IS NULL AND guarding AND 'melee_c43b' = ANY (sk) THEN
+      v_pfx := v_pfx || jsonb_build_object('roar', 2); lines := lines || jsonb_build_array('「사자후」 포효가 울려 ' || m.monster_name || '의 시선이 내게 묶였다.');
+    END IF;
+    IF ended IS NULL AND coalesce((v_pfx ->> 'roar')::int, 0) > 0 AND next_intent LIKE 'g%:%' THEN next_intent := 'strike'; END IF;
+    IF ended IS NULL AND NOT guarding AND coalesce((v_pfx ->> 'roar')::int, 0) > 0 THEN
+      v_pfx := v_pfx || jsonb_build_object('roar', (v_pfx ->> 'roar')::int - 1); IF (v_pfx ->> 'roar')::int <= 0 THEN v_pfx := v_pfx - 'roar'; END IF;
+    END IF;
     IF ended IS NULL AND guarding AND 'melee_c24b' = ANY (sk) AND next_intent LIKE 'g%:%' THEN
       next_intent := 'strike'; lines := lines || jsonb_build_array('「도발」 ' || m.monster_name || '이(가) 준비하던 수를 버리고 달려든다.');
     END IF;
@@ -1358,7 +1368,7 @@ begin
   update public.world_characters set inventory = CASE WHEN ammo_used > 0 THEN public.world_inv_add(inventory, ammo_k, -ammo_used) ELSE inventory END, health = hp, mental = mn, erosion = er,$a$, 1),
     (4, 'public.world_combat_stats(uuid,jsonb)', $a$pres := greatest(5, least(300, 30 + s_vit * 0.8 - s_agi * 0.4 + adef * 0.6 + g_pres));$a$,
         $a$pres := greatest(5, least(300, 30 + s_vit * 0.8 - s_agi * 0.4 + adef * 0.6 + g_pres
-    + CASE WHEN style = 'melee' AND 'melee_c24b' = ANY (public.world_skill_procs(p_owner)) THEN 60 ELSE 0 END));$a$, 1),
+    + CASE WHEN style = 'melee' THEN (SELECT coalesce(sum(CASE x WHEN 'melee_c13b' THEN 40 WHEN 'melee_c24b' THEN 60 WHEN 'melee_x30' THEN 30 WHEN 'melee_c43b' THEN 150 ELSE 0 END), 0) FROM unnest(public.world_skill_procs(p_owner)) x) ELSE 0 END));$a$, 1),
     (5, 'public.world_shop_refresh(text)', $a$'field_knife', 'ore_pick'];$a$, $a$'field_knife', 'ore_pick', 'ammo_arrow', 'ammo_bolt', 'ammo_dart'];$a$, 1)
   ) v(ord, fn, old, new, cnt) order by ord loop
     d := pg_get_functiondef(p.fn::regprocedure);
@@ -1468,6 +1478,28 @@ begin
   if (length(d) - length(replace(d, a1, ''))) / length(a1) <> 1 or (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception '기술 고르기 고칠 자리'; end if;
   execute replace(replace(d, a1, b1), a2, b2);
 end $$;
+
+-- ⑪ ─────────────────────────────────────────
+-- 근접 계열: 13·24·30·43단계를 모두 택일로(A 딜러 · B 탱커 — 이목). 같은 효과를 키우지 않고 단계마다 다른 동작.
+--   A: 13 발도(첫 공격 치명타) · 24 일격(마무리) · 30 유수검(막기·회피 뒤 치명타) · 43 파천(치명타가 방어를 무너뜨림)
+--   B: 13 호령(이목 +40·첫 공격 피해 −30%) · 24 도발(이목 +60·방어하면 기믹 끊기) · 30 철갑 강기(공격마다 보호막·이목 +30) · 43 사자후(이목 +150·방어하면 2턴 기믹 봉쇄·받는 피해 −15%)
+-- 유수검은 43단계 B에서 30단계 A(melee_c30a)로 옮기고, 43단계 B(melee_c43b)는 사자후가 된다.
+update public.world_skill_catalog set slot = 'a' where skill_id = 'melee_x13';
+update public.world_skill_catalog set slot = 'b' where skill_id = 'melee_x30';
+insert into public.world_skill_catalog(skill_id, skill_name, category, description, passive_effect, unlock_rank, active_skill, recipe_id, slot, requires) values
+  ('melee_c13b', '호령', 'melee', '', '{}'::jsonb, 13, null, null, 'b', null),
+  ('melee_c30a', '유수검', 'melee', '', '{}'::jsonb, 30, null, null, 'a', null)
+on conflict (skill_id) do nothing;
+update public.world_skill_catalog s set skill_name = v.n, description = v.d from (values
+  ('melee_x13', '발도', '택일 기술(딜러) · 전투의 첫 근접 공격은 반드시 치명타'),
+  ('melee_c13b', '호령', '택일 기술(탱커) · 이목 +40 · 전투에서 처음 받는 공격의 피해 −30%'),
+  ('melee_c24a', '일격', '택일 기술(딜러) · 적 체력이 30% 아래면 근접 피해 +40%(마무리)'),
+  ('melee_c24b', '도발', '택일 기술(탱커) · 이목 +60(한 적의 시선을 끈다) · 방어하면 적이 준비하던 기믹을 버리고 나에게 달려든다'),
+  ('melee_c30a', '유수검', '택일 기술(딜러) · 막기·회피에 성공하면 다음 공격이 반드시 치명타'),
+  ('melee_x30', '철갑 강기', '택일 기술(탱커) · 근접 공격할 때마다 보호막 +3(최대 15, 받는 피해를 먼저 막음) · 이목 +30'),
+  ('melee_c43a', '파천', '택일 기술(딜러) · 근접 치명타가 적의 방어를 2턴 무너뜨린다(받는 피해 +20%)'),
+  ('melee_c43b', '사자후', '택일 기술(탱커) · 이목 +150(원정 합동 전투에서 요괴가 거의 반드시 나를 노린다) · 방어하면 포효해 2턴 동안 적이 기믹을 쓰지 못하고 받는 피해 −15%')
+) v(id, n, d) where s.skill_id = v.id;
 
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
