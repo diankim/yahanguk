@@ -94,6 +94,8 @@ const presenceWord = p => p >= 90 ? '요괴가 가장 먼저 노림' : p >= 55 ?
 function durBar(d, max) { return `<div class="durab ${d <= 0 ? 'broken' : d * 4 < max ? 'worn' : ''}"><span>내구도 ${d}/${max}</span>${bar(d, max, d <= 0 ? 'enemy' : d * 4 < max ? 'er' : 'xp')}</div>`; }
 // 서버 world_item_max_durability와 같은 값(노리개·호신부·탈은 닳지 않는다)
 const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : ['tool', 'hat', 'shoes'].includes(it.category) ? 40 + (it.tier || 1) * 20 : 0) : 0;
+// 강화한 무기의 위력(서버 world_combat_stats: 단계마다 +5%)
+export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
 export function equipRows(inv, prof, here) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
   const kits = Number(have.repair_kit || 0);
@@ -102,8 +104,9 @@ export function equipRows(inv, prof, here) {
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx;
     const cost = Math.max(5, Math.ceil((mx - d) * ((it?.tier || 1) + 1) / 2));
-    const enh = slot === 'weapon' && prof?.current?.weapon?.enhance ? ` <span class="enh-lv">+${prof.current.weapon.enhance}</span>` : '';
-    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh}</b><small>${esc(effectText(it?.equipment_traits || {}).join(' · ') || it?.description || '')}</small>${mx ? durBar(d, mx) : ''}</div>
+    const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
+    const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
+    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh}</b><small>${esc(effectText(enhancedTraits(it?.equipment_traits, n)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}(위력 +${n * 5}%)` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;

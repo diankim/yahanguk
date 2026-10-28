@@ -1,7 +1,7 @@
 // 가방: 소지품 · 장비 · 제작. 제작은 어디서나 가능하고, 레시피의 지정 장소에서 하면 품질 보너스를 받는다.
 import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, safeZones } from './common.js';
-import { equipRows, bindRepair } from './character.js';
+import { equipRows, bindRepair, enhancedTraits } from './character.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, useItem } from './item.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
@@ -115,11 +115,12 @@ async function equip(body, inv) {
   const c = store.character;
   const [prof, zones] = await Promise.all([load('world_combat_profile').catch(() => null), safeZones().catch(() => null), import('../bond.js').then(m => m.loadBond(true))]);
   const here = zones ? [...zones.values()].find(r => r.region_name === c.location) : null;
+  const enh = Number(prof?.current?.weapon?.enhance) || 0;
   const slots = Object.keys(SLOTS).map(slot => {
     const cur = eq[slot], it = cmap.get(cur);
     const options = (inv.catalog || []).filter(i => i.category === slot && Number(have[i.id]) > 0 && i.id !== cur);
     return panel(SLOTS[slot][0], `
-      ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it)}</div>` : `<p class="muted">비어 있음</p>`}
+      ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}${slot === 'weapon' && enh ? ` <span class="enh-lv">+${enh}</span>` : ''}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it, slot === 'weapon' ? enh : 0)}</div>` : `<p class="muted">비어 있음</p>`}
       ${options.length ? `<ul class="spot-list">${options.map(o => {
         const blocked = gearBlock(o, c);
         const reqs = gearReqHtml(o, c);
@@ -129,8 +130,8 @@ async function equip(body, inv) {
   body.innerHTML = `${panel('장착 중인 장비', equipRows(inv, prof, here), { ico: 'shield' })}<h3 class="sub-h">바꿔 낄 장비</h3><div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다. 같은 단계라도 장비마다 갈래가 달라(위력·치명타·회피·방어·이목 등) 무엇을 끼느냐에 따라 캐릭터가 다르게 자랍니다. <b>이목</b>이 높으면 함께 싸울 때 요괴가 먼저 노립니다 — 앞을 막는 이는 높이고, 뒤에서 치는 이는 낮추세요.</p>`;
   bindActions(body); bindRepair(body);
 }
-function traits(it) {
-  const t = it?.equipment_traits; if (!t) return '';
+function traits(it, n = 0) {
+  const t = enhancedTraits(it?.equipment_traits, n); if (!it?.equipment_traits) return '';
   const STY = { melee: '근접 공격', ranged: '원거리 공격', magic: '술법 공격' };
   const parts = effectText(t);
   return `<small class="muted">${esc([STY[t.weapon_type] || t.trait, ...parts].filter(Boolean).join(' · '))}</small>`;
