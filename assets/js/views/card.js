@@ -31,6 +31,10 @@ async function draw(box, id) {
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
     const rel = c.relation || 'none', safe = !!(store.snaps?.['world_field_snapshotnull'] || store.snaps?.world_field_snapshot)?.region?.safe;
     // 파티 초대: 상대가 파티가 없고, 내가 파티장이거나 아직 파티가 없을 때(없으면 만들고 초대)
+    // 비무: 같은 곳(안전지대 포함)이면 신청할 수 있다. 못 하면 단추를 숨기지 않고 까닭을 적는다(서버 world_spar_challenge가 다시 검사)
+    const me = store.character || {};
+    const sparWhy = !c.same_place ? '같은 곳에 있어야 함' : c.downed ? '상대 전투불능' : c.away ? '상대 원정 중' : c.traveling ? '상대 이동 중' : c.in_combat ? '상대 전투 중'
+      : me.downed_at ? '내가 전투불능' : me.travel_destination ? '내가 이동 중' : '';
     const canInvite = !c.mine && !c.in_party && !c.is_dead && (!c.my_party_role || c.my_party_role === 'leader');
     const acts = c.mine ? `<a class="btn small" href="#/settings/profile" data-close>${icon('gear', 14)}<span>내 프로필 수정</span></a>` : c.blocked ? '' : `
       ${rel === 'friends' ? `<button class="btn small" data-do="unfriend">${icon('users', 14)}<span>친구 끊기</span></button>`
@@ -38,12 +42,12 @@ async function draw(box, id) {
         : rel === 'incoming' ? `<button class="btn small primary" data-do="accept">${icon('check', 14)}<span>친구 수락</span></button><button class="btn small" data-do="decline">거절</button>`
         : `<button class="btn small primary" data-do="friend">${icon('plus', 14)}<span>친구 신청</span></button>`}
       ${c.is_dead ? '' : `<button class="btn small" data-do="whisper">${icon('chat', 14)}<span>귓속말</span></button>`}
+      ${c.is_dead ? '' : sparWhy ? `<button class="btn small" disabled title="${esc(sparWhy)}">${icon('sword', 14)}<span>비무 · ${esc(sparWhy)}</span></button>` : `<button class="btn small" data-do="spar" title="목숨을 걸지 않는 겨루기(체력·물품은 줄지 않음)">${icon('sword', 14)}<span>비무 신청</span></button>`}
       ${canInvite ? `<button class="btn small" data-do="invite">${icon('users', 14)}<span>파티 초대</span></button>` : ''}
       ${!c.is_dead && circles().some(x => (x.role === 'leader' || x.role === 'manager') && !x.members.some(mm => mm.owner_id === c.owner_id)) ? `<button class="btn small" data-do="circle">${icon('chat', 14)}<span>모임에 초대</span></button>` : ''}
       ${c.same_party ? chip('같은 파티', 'accent') : ''}
       ${isPartner ? chip('정인', 'accent') : canBond ? `<button class="btn small" data-do="bond">${tokenSvg('heart', 14)}<span>연리 맺기</span></button>` : ''}
       ${c.same_place && safe && !c.is_dead ? `<button class="btn small" data-do="trade">${icon('coin', 14)}<span>거래 제안</span></button>` : ''}
-      ${c.same_place && !c.downed && !c.is_dead ? `<button class="btn small" data-do="spar" title="목숨을 걸지 않는 겨루기(체력·물품은 줄지 않음)">${icon('sword', 14)}<span>비무 신청</span></button>` : ''}
       ${c.same_place && c.downed && !c.is_dead ? `<button class="btn small primary" data-do="rescue">${icon('heart', 14)}<span>구조</span></button>` : ''}`;
     box.innerHTML = `
       <div class="profile-card">${patternLayer(c.profile?.pattern)}<div class="pc-emblem">${emblem(c.owner_id, c.profile, 72)}</div>
