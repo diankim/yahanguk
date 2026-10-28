@@ -215,6 +215,34 @@ async function dismantlePane(body) {
   });
 }
 
+// 물품 고르기(거래소 등록·직접 거래): 분류 칩 + 이름 검색 + 가나다순 목록. 입력칸은 다시 그리지 않아 한글 조합이 깨지지 않는다.
+const GEAR_CATS = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
+const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
+const pickCat = c => !c ? 'etc' : GEAR_CATS.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
+function pickerHtml(name, opts) {
+  return `<div class="pick" data-pick="${name}"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === 'all' ? 'accent' : ''}" data-pc="${k}">${t}</button>`).join('')}</div>
+    <input type="search" class="pick-q" placeholder="이름으로 찾기" aria-label="물품 찾기">
+    <select name="${name}" aria-label="물품">${opts.map(o => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('')}</select><small class="pick-n muted">${opts.length}가지</small></div>`;
+}
+// opts: [{id, label, cat}] (가나다순), onPick: 고른 물품이 바뀌면
+function bindPicker(root, name, opts, onPick) {
+  const box = $(`[data-pick="${name}"]`, root); if (!box) return;
+  const sel = box.querySelector('select'), qi = box.querySelector('.pick-q'), n = box.querySelector('.pick-n');
+  let cat = 'all';
+  const apply = () => {
+    const q = qi.value.trim().toLowerCase(), keep = sel.value;
+    const list = opts.filter(o => (cat === 'all' || o.cat === cat) && (!q || o.label.toLowerCase().includes(q)));
+    sel.innerHTML = list.map(o => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('') || '<option value="">맞는 물품이 없습니다</option>';
+    if (list.some(o => o.id === keep)) sel.value = keep;
+    n.textContent = `${list.length}가지`;
+    if (sel.value !== keep) onPick?.();
+  };
+  qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
+  qi.addEventListener('compositionend', apply);
+  box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
+}
+const koSort = (a, b) => a.label.localeCompare(b.label, 'ko');
+
 /* ── 거래소 ───────────────────────────────────────────── */
 // 거래소(누구나 사 가는 등록 판매)와 직접 거래(같은 안전지대의 조사원과 주고받기) 두 칸
 let marketMode = 'board';
@@ -224,21 +252,24 @@ export async function renderMarket(box) {
   const body = $('.mk-body', box);
   if (marketMode === 'direct') return renderDirect(body);
   try {
-    const [{ data: offers, error }, prices] = await Promise.all([
+    const [{ data: offers, error }, prices, , inv] = await Promise.all([
       db.from('world_trade_offers').select('offer_id,seller_id,item_id,quantity,unit_price,status,created_at,expires_at').eq('status', 'open').order('created_at', { ascending: false }).limit(60),
-      load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(),
+      load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
     ]);
+    const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     if (error) throw new Error(error.message);
     const c = store.character, me = c.owner_id, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
-    const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k));
+    const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k))
+      .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
+    const sellOpts = tradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' }));
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li><div class="item-main"><b>${infoName(o.item_id)}</b><span class="qty">×${o.quantity}</span>
         <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small></div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     body.innerHTML = `
       ${tradeable.length ? `<form class="form-grid trade-form" id="trade-form">
-          <label class="field"><span>물품</span><select name="item">${tradeable.map(([k, n]) => `<option value="${esc(k)}">${esc(nameOf(k))} (${n})</option>`).join('')}</select></label>
+          <div class="field"><span>물품</span>${pickerHtml('item', sellOpts)}</div>
           <label class="field"><span>수량</span><input name="qty" type="number" min="1" value="1"></label>
           <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}"></label>
           <button class="btn primary" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록</span></button></form>
@@ -252,13 +283,15 @@ export async function renderMarket(box) {
     if (form) {
       const hint = () => { const r = ref.get(form.item.value); $('#trade-hint', body).textContent = r?.reference_price ? `기준 시세 ${fmt.jeon(r.reference_price)} · 최대 ${fmt.jeon(r.reference_price * 10)}` : ''; };
       form.item.onchange = () => { const p = ref.get(form.item.value)?.reference_price; if (p) form.price.value = p; hint(); };
+      bindPicker(form, 'item', sellOpts, () => form.item.onchange());
       hint();
       form.onsubmit = e => {
         e.preventDefault();
         const qty = Math.floor(Number(form.qty.value)), price = Math.floor(Number(form.price.value));
         if (!(qty >= 1) || !(price >= 1)) return toast('수량과 가격은 1 이상이어야 합니다.', 'error');
         if (mine.length >= 10) return toast('거래소에는 동시에 10건까지 올려 둘 수 있습니다. 팔리거나 취소된 뒤 다시 등록하세요.', 'error');
-        guard(form.querySelector('button'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
+        if (!form.item.value) return toast('올릴 물품을 고르세요.', 'error');
+        guard(form.querySelector('[type=submit]'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
       };
     }
     $$('[data-take]', body).forEach(b => b.onclick = async () => { if (await ask('이 물품을 살까요?', { title: '거래소 구매', ok: '사기' })) guard(b, () => act('world_trade_offer_buy', { p_offer_id: b.dataset.take })); });
@@ -272,13 +305,17 @@ let dt = { to: '', give: {}, giveGil: 0, want: {}, wantGil: 0 };
 const bundle = (items, gil) => [...Object.entries(items || {}).map(([k, n]) => `${nameOf(k)} ×${n}`), gil > 0 ? fmt.jeon(gil) : ''].filter(Boolean).join(', ') || '없음';
 async function renderDirect(body) {
   try {
-    const [roster, prices, pending] = await Promise.all([load('world_region_roster', undefined, { maxAge: 10000 }).catch(() => []),
-      load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), load('world_trade_direct_snapshot').catch(() => []), loadLocks()]);
+    const [roster, prices, pending, , inv] = await Promise.all([load('world_region_roster', undefined, { maxAge: 10000 }).catch(() => []),
+      load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), load('world_trade_direct_snapshot').catch(() => []), loadLocks(),
+      load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
+    const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     const people = (roster || []).filter(p => !p.is_dead);
     const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k));
     const anyTradeable = (prices || []).filter(p => p.tradeable !== false).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
+    const giveOpts = mineTradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' })).sort(koSort);
+    const wantOpts = anyTradeable.map(p => ({ id: p.item_id, label: p.item_name || nameOf(p.item_id), cat: catMap.get(p.item_id) || 'etc' }));
     if (!people.some(p => p.owner_id === dt.to)) dt.to = people[0]?.owner_id || '';
     const chipList = (items, side) => Object.entries(items).map(([k, n]) => `<span class="chip">${esc(nameOf(k))} ×${n}<button class="chip-x" data-rm="${side}:${esc(k)}" aria-label="빼기">${icon('close', 12)}</button></span>`).join('') || '<span class="muted small">없음</span>';
     const inc = (pending || []).filter(t => t.incoming), out = (pending || []).filter(t => !t.incoming);
@@ -290,11 +327,11 @@ async function renderDirect(body) {
         <label class="field"><span>거래할 조사원 (같은 곳에 있는 사람)</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)} · Lv.${p.level}</option>`).join('')}</select></label>
         <fieldset class="dt-side"><legend>내가 줄 것</legend>
           <div class="chips">${chipList(dt.give, 'give')}</div>
-          <div class="dt-add"><select name="giveItem">${mineTradeable.map(([k, n]) => `<option value="${esc(k)}">${esc(nameOf(k))} (${n})</option>`).join('')}</select><input name="giveQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="give" ${mineTradeable.length ? '' : 'disabled'}>담기</button></div>
+          ${pickerHtml('giveItem', giveOpts)}<div class="dt-add"><input name="giveQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="give" ${mineTradeable.length ? '' : 'disabled'}>담기</button></div>
           <label class="field"><span>줄 전 (가진 ${fmt.jeon(c.gil)})</span><input name="giveGil" type="number" min="0" value="${dt.giveGil}"></label></fieldset>
         <fieldset class="dt-side"><legend>받을 것</legend>
           <div class="chips">${chipList(dt.want, 'want')}</div>
-          <div class="dt-add"><select name="wantItem">${anyTradeable.map(p => `<option value="${esc(p.item_id)}">${esc(p.item_name)}</option>`).join('')}</select><input name="wantQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="want">담기</button></div>
+          ${pickerHtml('wantItem', wantOpts)}<div class="dt-add"><input name="wantQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="want">담기</button></div>
           <label class="field"><span>받을 전</span><input name="wantGil" type="number" min="0" value="${dt.wantGil}"></label></fieldset>
         <button class="btn primary block" type="submit">${icon('coin', 16)}<span>거래 제안 보내기</span></button>
       </form>` : empty('같은 곳에 거래할 조사원이 없습니다. 상대와 같은 안전지대에 있어야 합니다.', 'users')}
@@ -304,6 +341,7 @@ async function renderDirect(body) {
     const f = $('#dt-form', body);
     if (f) {
       f.to.onchange = () => { dt.to = f.to.value; };
+      bindPicker(f, 'giveItem', giveOpts); bindPicker(f, 'wantItem', wantOpts);
       f.giveGil.oninput = () => { dt.giveGil = Math.max(0, Math.floor(Number(f.giveGil.value) || 0)); };
       f.wantGil.oninput = () => { dt.wantGil = Math.max(0, Math.floor(Number(f.wantGil.value) || 0)); };
       $$('[data-add]', f).forEach(b => b.onclick = () => {

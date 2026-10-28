@@ -1786,3 +1786,8 @@ b.contest { color: var(--warn); font-weight: 600; }
 .dlg-text { margin: 0; font: 15.5px/1.75 var(--font-serif, serif); } .dlg-text.narr { font-style: italic; color: var(--muted); }
 .dlg-foot { display: flex; justify-content: space-between; }
 .dlg-end { display: grid; gap: 8px; margin-top: 10px; } .dlg-end p { margin: 0; }
+/* 물품 고르기(거래소·직접 거래): 분류 칩 + 이름 검색 + 가나다 목록 */
+.pick { display: grid; gap: 6px; min-width: 0; }
+.pick-cats { display: flex; flex-wrap: wrap; gap: 4px; } .pick-cats .chip { cursor: pointer; }
+.pick select, .pick .pick-q { width: 100%; min-width: 0; }
+.pick-n { font-size: 11px; }
