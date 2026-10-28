@@ -31,18 +31,34 @@ const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) 
 const saveLast = p => { try { localStorage.setItem(LAST_KEY, JSON.stringify(p)); } catch {} };
 const STANCE_NAME = { cautious: '신중', balanced: '균형', bold: '강행' };
 const DUR_NAME = Object.fromEntries(DURATIONS);
-// 같은 곳의 파티원에게 함께 가자고 알린다(창의 체크가 켜져 있고 같은 곳에 동료가 있을 때만)
-let callParty = true, mateHere = 0;
 async function launch(p) {
   const out = await act('world_expedition_start', { p_node_id: p.node, p_minutes: p.minutes, p_stance: p.stance });
   saveLast({ node: p.node, minutes: p.minutes, stance: p.stance });
-  if (callParty && mateHere > 0) rpc('world_party_expedition_call').then(r => r?.called && toast(r.message, 'ok')).catch(() => {});
   return out;
 }
-async function partyHere() {
-  const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
-  const me = store.character;
-  return (p?.members || []).filter(m => m.owner_id !== me.owner_id && m.location === me.location && !m.downed && !m.expedition).length;
+// 파티 원정 함께 출발: 파티장이 제안하고 같은 곳의 동료가 답하면 서버가 한 번에 모두 출발시킨다(출발·귀환 시각이 같다)
+async function partyInfo() {
+  const [p, offer] = await Promise.all([load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null), rpc('world_party_expedition_offer_status').catch(() => null)]);
+  const me = store.character, members = p?.members || [];
+  return { offer, leader: members.some(m => m.owner_id === me.owner_id && m.role === 'leader'), inParty: members.length > 1,
+    here: members.filter(m => m.owner_id !== me.owner_id && m.location === me.location && !m.downed && !m.expedition).length };
+}
+const ANSWER = { accepted: '수락', declined: '거절' };
+function partyBox(info) {
+  const o = info.offer;
+  if (o) {
+    const head = `<b>${esc(o.leader)} 파티장의 제안</b> · ${esc(o.node_name || '원정지')} · ${DUR_NAME[o.minutes] || o.minutes + '분'} · ${STANCE_NAME[o.stance] || ''}`;
+    const who = (o.members || []).map(m => `${esc(m.name)} <i class="${m.answer || 'wait'}">${ANSWER[m.answer] || '대기'}</i>`).join(' · ');
+    if (o.is_leader) return `<div class="pexp-box">${icon('users', 14)}<div>${head}<small>동료 답: ${who} · ${fmt.remain(new Date(o.expires_at) - Date.now())} 남음</small>
+      <div class="btn-row"><button class="btn small primary" data-pexp-go="${esc(o.offer_id)}">지금 출발</button><button class="btn small" data-pexp-cancel="${esc(o.offer_id)}">제안 거두기</button></div></div></div>`;
+    if (!o.my_answer) return `<div class="pexp-box">${icon('users', 14)}<div>${head}<small>수락하면 모두 답한 순간 함께 출발합니다. 동료 답: ${who}</small>
+      <div class="btn-row"><button class="btn small primary" data-pexp-ans="1" data-offer="${esc(o.offer_id)}">수락</button><button class="btn small" data-pexp-ans="0" data-offer="${esc(o.offer_id)}">거절</button></div></div></div>`;
+    return `<div class="pexp-box">${icon('users', 14)}<div>${head}<small>${o.my_answer === 'accepted' ? '수락했습니다. 다른 동료의 답을 기다립니다.' : '이번 원정에서 빠졌습니다.'} 동료 답: ${who}</small></div></div>`;
+  }
+  if (info.leader && info.here > 0) return `<button class="btn block" id="exp-propose">${icon('users', 16)}<span>같은 곳의 동료 ${info.here}명과 함께 출발 제안</span></button>
+    <p class="muted small">동료가 수락하면 모두 같은 시각에 출발해 함께 돌아옵니다. 둘이면 동료가 수락해야, 셋 이상이면 거절한 사람을 빼고 출발합니다.</p>`;
+  if (info.inParty && !info.leader) return '<p class="muted small">파티 원정은 파티장이 제안합니다. 제안을 수락하면 모두 같은 시각에 출발합니다.</p>';
+  return '';
 }
 
 // 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
@@ -93,7 +109,7 @@ export function renderExpedition(box, ov) {
           ${JOB_SKILL[c.job_key] ? `<li class="skill">${icon('spark', 14)}<span><b>${esc(nameOf(c.job_key))} 원정 기술 · ${esc(JOB_SKILL[c.job_key][0])}</b>${esc(JOB_SKILL[c.job_key][1])}</span></li>` : ''}
           <li id="exp-hint-row">${icon('bag', 14)}<span id="exp-hint"></span></li>
         </ul>
-        <label class="check exp-call" id="exp-call-row" hidden><input type="checkbox" id="exp-call" ${callParty ? 'checked' : ''}><span>같은 곳의 동료 <b id="exp-call-n"></b>명에게 함께 가자고 알리기</span></label>
+        <div id="exp-party"></div>
         <button class="btn primary block" id="exp-go" ${pick.node ? '' : 'disabled'}>${icon('flame', 16)}<span>원정 출발</span></button>
         <p class="muted small exp-foot">원정 중에는 이동·전투·채집·거래를 할 수 없습니다. 언제든 일찍 돌아올 수 있지만 지난 시간만큼만 성과를 얻습니다.</p>
       </aside>
@@ -115,9 +131,15 @@ export function renderExpedition(box, ov) {
   hint();
   bindRecent(box, ov.recent);
   $('#exp-go', box).onclick = e => guard(e.currentTarget, () => launch(pick));
-  mateHere = 0;
-  partyHere().then(n => { mateHere = n; const row = $('#exp-call-row', box); if (!row || !n) return; row.hidden = false; $('#exp-call-n', box).textContent = n;
-    $('#exp-call', box).onchange = ev => { callParty = ev.target.checked; }; });
+  partyInfo().then(info => {
+    const slot = $('#exp-party', box); if (!slot) return;
+    slot.innerHTML = partyBox(info);
+    const prop = $('#exp-propose', slot);
+    if (prop) prop.onclick = e => guard(e.currentTarget, () => act('world_party_expedition_propose', { p_node_id: pick.node, p_minutes: pick.minutes, p_stance: pick.stance }));
+    $$('[data-pexp-ans]', slot).forEach(b => b.onclick = () => guard(b, () => act('world_party_expedition_respond', { p_offer: b.dataset.offer, p_accept: b.dataset.pexpAns === '1' })));
+    $$('[data-pexp-go]', slot).forEach(b => b.onclick = () => guard(b, () => act('world_party_expedition_depart', { p_offer: b.dataset.pexpGo, p_cancel: false })));
+    $$('[data-pexp-cancel]', slot).forEach(b => b.onclick = () => guard(b, () => act('world_party_expedition_depart', { p_offer: b.dataset.pexpCancel, p_cancel: true })));
+  });
   const again = $('#exp-again', box);
   if (again) again.onclick = e => guard(e.currentTarget, () => { pick = { ...last }; return launch(last); });
 }

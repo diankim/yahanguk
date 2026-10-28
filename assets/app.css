@@ -1706,3 +1706,10 @@ b.contest { color: var(--warn); font-weight: 600; }
 .guide-list mark { background: color-mix(in srgb, var(--gold) 35%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
 .guide-sec .guide-table { display: block; overflow-x: auto; }
 @media (prefers-reduced-motion: reduce) { .guide-item > summary .ico { transition: none; } }
+
+/* 원정 창의 파티 원정 제안 칸 */
+.pexp-box { display: flex; gap: 8px; align-items: flex-start; padding: 10px; margin: 8px 0; border-radius: var(--r-sm); border: var(--bw) solid color-mix(in srgb, var(--gold) 40%, var(--line)); background: var(--surface-2); }
+.pexp-box > div { display: grid; gap: 4px; min-width: 0; }
+.pexp-box small { color: var(--muted); font-size: 12px; }
+.pexp-box small i { font-style: normal; } .pexp-box i.accepted { color: var(--ok); } .pexp-box i.declined { color: var(--bad); } .pexp-box i.wait { color: var(--muted); }
+.pexp-box .btn-row { margin-top: 4px; }

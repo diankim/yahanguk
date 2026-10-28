@@ -413,7 +413,7 @@
 파티가 없는 이용자도 핵심적인 탐사·성장·생활 콘텐츠를 즐길 수 있어야 한다.
 
 - 현장 파티 칸(home.js partyHtml, 20261029050000): 파티원마다 있는 곳·상황(원정 남은 시간·전투·전투불능)·체력·정신·침식·세력 색(world_party_overview에 mental·erosion·major_faction_id·expedition을 더함), 같은 곳의 쓰러진 동료 구조, 「파티 원정」.
-- 파티 원정: 원정 창의 「같은 곳의 동료에게 함께 가자고 알리기」(기본 켬)가 출발 뒤 world_party_expedition_call(3분에 한 번)로 같은 곳·원정 중이 아닌 동료에게 party_expedition 알림을 보내고, 알림의 「함께 가기」는 같은 원정지·기간·태세로 원정 창을 연다. 같은 지역 원정은 합동 전투(동료 전투력 60%가 승률에, 이목으로 표적), 원정이 10분 이상 겹친 파티원 한 명마다 귀환 때 경험치·숙련 경험 +10%(3명까지, world_expedition_complete).
+- 파티 원정(5.0.0 묶음 20261029060000): 파티장이 원정 창에서 world_party_expedition_propose(원정지·기간·태세)로 같은 곳·떠날 수 있는 동료(world_pexp_ready)에게 party_exp_offer 알림을 보내고(3분 유효, world_party_exp_offers), 동료가 world_party_expedition_respond로 답해 모두 답하면 world_pexp_resolve가 한 트랜잭션에서 파티장·수락자의 world_expedition_start를 차례로 부른다(그 사람의 JWT sub로 바꿔 부르고 되돌림 — 같은 now()라 출발·귀환 시각이 같다). 2명은 수락해야 출발, 3명 이상은 거절·무응답 빼고 출발, 아무도 수락하지 않거나 파티장이 못 떠나면 아무도 안 떠남. 파티장은 world_party_expedition_depart로 지금 출발·거두기. 원정 창은 world_party_expedition_offer_status로 제안 칸을 그린다. 옛 「함께 가기」(world_party_expedition_call·party_expedition 알림, 따로 출발해 시각이 어긋남)는 화면에서 뺐다. 같은 지역 원정은 합동 전투(동료 전투력 60%가 승률에, 이목으로 표적), 원정이 10분 이상 겹친 파티원 한 명마다 귀환 때 경험치·숙련 경험 +10%(3명까지, world_expedition_complete).
 
 ## 14. 인게임 채팅과 커뮤니케이션
 
