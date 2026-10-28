@@ -1,6 +1,6 @@
 // 대세력 퀘스트·등급·의뢰판·비고·수련장·인물(캐릭터 › 세력). 진행과 판정은 서버(world_faction_*)가 하고, 여기서는 그리고 부른다.
 // 대화는 게임 안 팝업에서 한 줄씩 넘겨 보인다(지문은 기울임, 대사는 인물 이름표).
-import { act, esc, icon, guard, $, $$, fmt, openModal, closeModal, ask } from './core.js';
+import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask } from './core.js';
 import { panel, chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
 
@@ -76,8 +76,8 @@ export function factionPanels(s, c) {
     ${panel(kp.hall?.title || '수련장', `${kp.hall ? `<p class="fq-keeper"><b>${esc(kp.hall.who || '')}</b> “${esc(kp.hall.line || '')}”</p>` : ''}
       <p class="small">지금 등급(${rk}등급) 시련 · 이길 가능성 약 ${hall.chance ?? '-'}% · 하루 한 번 · 이기면 공훈 +${10 * rk}. 3·5등급 시련을 처음 넘으면 세력 칭호(5등급은 세력 낙관도)를 받습니다.</p>
       <button class="btn ${hall.done_today ? '' : 'primary'}" id="fq-trial" ${s.join_done && s.at_home && !hall.done_today ? '' : 'disabled'}>${icon('sword', 16)}<span>${hall.done_today ? '오늘은 이미 치렀습니다' : !s.join_done ? '가입 퀘스트를 마치면 열립니다' : !s.at_home ? '세력 안전지대에서 열립니다' : '시련 치르기'}</span></button>`, { ico: 'sword' })}
-    ${panel('세력 인물', (s.npcs || []).length ? `<ul class="fq-npcs">${s.npcs.map(n => `<li><b>${esc(n.name)}</b><small>${esc(n.bio)}</small></li>`).join('')}</ul>
-      <p class="muted small">만난 인물 ${s.npcs.length}/${s.npc_total || s.npcs.length} · 퀘스트에서 처음 대화하면 여기에 남습니다.</p>` : `<p class="muted small">아직 만난 인물이 없습니다. 퀘스트에서 대화하면 인물 정보가 여기에 남습니다.</p>`, { ico: 'users' })}`;
+    ${panel('세력 인물', (s.npcs || []).length ? `<ul class="fq-npcs">${s.npcs.map(n => `<li><button type="button" class="fq-npc" data-npc="${esc(n.key)}"><b>${esc(n.name)}</b>${n.quote ? `<q>${esc(n.quote)}</q>` : ''}<small>${esc(n.bio)}</small></button></li>`).join('')}</ul>
+      <p class="muted small">만난 인물 ${s.npcs.length}/${s.npc_total || s.npcs.length} · 이름을 누르면 인물 기록을 펼칩니다. 퀘스트에서 처음 대화하면 여기에 남습니다.</p>` : `<p class="muted small">아직 만난 인물이 없습니다. 퀘스트에서 대화하면 인물 정보가 여기에 남습니다.</p>`, { ico: 'users' })}`;
 }
 
 export function bindFaction(body, s, redraw) {
@@ -95,6 +95,16 @@ export function bindFaction(body, s, redraw) {
   });
   const tr = $('#fq-trial', body);
   if (tr) tr.onclick = () => guard(tr, async () => { const r = await act('world_faction_trial'); playDialogue({ title: '수련장 시련', lines: r.lines, reward: r.content }, s.faction_id); done(); return null; });
+  // 세력 인물 기록: 한 줄 소개 대사와 자세한 서술
+  $$('[data-npc]', body).forEach(b => b.onclick = () => {
+    const n = (s.npcs || []).find(x => x.key === b.dataset.npc); if (!n) return;
+    const cut = n.name.lastIndexOf(' '), title = cut > 0 ? n.name.slice(0, cut) : '', who = cut > 0 ? n.name.slice(cut + 1) : n.name;
+    openLayer({ title: '세력 인물', body: `<article class="npc-card" style="--fc:${factionColor(s.faction_id)}">
+      <header><small>${esc(title)}</small><h3>${esc(who)}</h3></header>
+      ${n.quote ? `<blockquote>“${esc(n.quote)}”</blockquote>` : ''}
+      <p class="npc-bio">${esc(n.bio)}</p>
+      ${n.detail ? n.detail.split(/(?<=다\.)\s+/).reduce((acc, t, i) => { const k = Math.floor(i / 2); (acc[k] = acc[k] || []).push(t); return acc; }, []).map(p => `<p>${esc(p.join(' '))}</p>`).join('') : ''}</article>` });
+  });
   const sh = $('#fq-show', body);
   if (sh) sh.onchange = () => guard(sh, async () => { const r = await act('world_faction_show_rank', { p_show: sh.checked }); done(); return r; });
 }

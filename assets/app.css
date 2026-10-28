@@ -1173,7 +1173,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .fr-wrap.t-legacy > :not(svg) { border-radius: 0; clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); }
 .fr-svg.lg .lg-out { fill: none; stroke: var(--fr); stroke-width: 3.4; stroke-linejoin: miter; }
 .fr-svg.lg .lg-in { fill: none; stroke: var(--fr-glyph); stroke-width: 1.2; }
-.fr-svg.lg .lg-star path { stroke-width: 1.5; }
+.fr-svg.lg .lg-star path { fill: var(--fr-glyph); stroke: none; }
 .fr-wrap.t-legacy.small .fr-svg.lg .lg-out { stroke-width: 6; }
 .fr-svg { position: absolute; inset: calc(var(--fbw, 2px) * -1); width: calc(100% + var(--fbw, 2px) * 2); height: calc(100% + var(--fbw, 2px) * 2); pointer-events: none; overflow: visible; }
 .fr-svg .fr-line { fill: none; stroke: var(--fr); stroke-width: 3; }
@@ -1791,3 +1791,12 @@ b.contest { color: var(--warn); font-weight: 600; }
 .pick-cats { display: flex; flex-wrap: wrap; gap: 4px; } .pick-cats .chip { cursor: pointer; }
 .pick select, .pick .pick-q { width: 100%; min-width: 0; }
 .pick-n { font-size: 11px; }
+
+/* 세력 인물 기록 */
+.fq-npc { display: grid; gap: 3px; width: 100%; text-align: left; background: none; border: 0; padding: 4px 0; color: var(--text); cursor: pointer; font: inherit; }
+.fq-npc q { font-family: var(--font-serif, serif); font-size: 12.5px; color: var(--gold); quotes: '“' '”'; }
+.fq-npc:hover b, .fq-npc:focus-visible b { color: var(--accent); }
+.npc-card { display: grid; gap: 10px; border-left: 3px solid var(--fc); padding-left: 14px; }
+.npc-card header small { color: var(--muted); letter-spacing: .08em; } .npc-card h3 { margin: 0; font: 700 20px var(--font-serif, serif); }
+.npc-card blockquote { margin: 0; font: 15px/1.6 var(--font-serif, serif); color: var(--gold); }
+.npc-card p { margin: 0; line-height: 1.75; } .npc-card .npc-bio { color: var(--muted); font-size: 13px; }

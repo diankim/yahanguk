@@ -10,7 +10,8 @@
 --   ⑨ 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나간다(남은 것은 새것)
 --   ⑩ 봉인술 계열 13·24·30·43단계를 모두 택일로(A 폭딜 · B 버프/디버프)
 --   ⑪ 근접 계열 13·24·30·43단계를 모두 택일로(A 딜러 · B 탱커·이목)
---   ⑫ 세력 가입 퀘스트(대화)·등급 5단계·등급 퀘스트·의뢰판·비고(공훈 상점)·수련장, 평판 상한 5000, 조사원 카드 세력 등급
+--   ⑫ 세력 가입 퀘스트(대화)·등급 5단계·등급 퀘스트·의뢰판·비고(공훈 상점)·수련장, 평판 상한 5000, 조사원 카드 세력 등급, 세력 인물 프로필
+--   ⑬ 1:1 직접 거래는 어디서나 · 수향연맹(등급마다 세금 −25%, 5등급 면세)·흑련회(−12.5%, 5등급 절반) 세금 감면
 --   (원정) 체력이 넉넉하면 밀린 싸움을 버틴다([버팀]) — ⑦의 원정 정산 고칠 자리 6~8
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
@@ -1516,6 +1517,7 @@ update public.world_skill_catalog s set skill_name = v.n, description = v.d from
 ) v(id, n, d) where s.skill_id = v.id;
 
 grant fn_owner_18669 to postgres with inherit true, set true;
+grant fn_owner_18881 to postgres with inherit true, set true;
 -- ⑫ 세력 가입 퀘스트·등급(5단계)·등급 퀘스트·의뢰판·비고(秘庫)·수련장
 --   · 대본(인물·장면)은 표에 두고, 진행은 world_faction_progress(캐릭터×세력)에 둔다. world_characters에는 열을 더하지 않는다.
 --   · 할 일은 world_events를 장면이 열린 뒤부터 센다(world_faction_task_count). 행동 한 번의 쓰기를 늘리지 않는다.
@@ -1803,7 +1805,7 @@ begin
     'join_done', p.join_done_at is not null, 'join_step', p.join_step, 'rejoin_pending', p.rejoin_pending, 'at_home', home,
     'home_names', (select jsonb_agg(m.region_name) from public.world_map_regions m where m.region_id = any (public.world_faction_home(c.major_faction_id))),
     'quest', case when p.rejoin_pending then null else public.world_faction_current(uid) end,
-    'npcs', (select coalesce(jsonb_agg(jsonb_build_object('key', z.npc_key, 'name', z.npc_name, 'bio', z.bio) order by z.sort), '[]'::jsonb)
+    'npcs', (select coalesce(jsonb_agg(jsonb_build_object('key', z.npc_key, 'name', z.npc_name, 'bio', z.bio, 'quote', z.quote, 'detail', z.detail) order by z.sort), '[]'::jsonb)
                from public.world_faction_npcs z where z.npc_key = any (p.npcs_met) and z.faction_id = c.major_faction_id),
     'npc_total', (select count(*) from public.world_faction_npcs z where z.faction_id = c.major_faction_id),
     'requests', reqs,
@@ -2088,7 +2090,80 @@ insert into public.world_faction_scenes(scene_key, faction_id, kind, step, title
   ('mandate_court:hall:1', 'mandate_court', 'hall', 1, '혼천의 시련실', '', '{}'::jsonb, '[{"s": "mandate_court:seo", "t": "시련실이에요. 혼천의가 도는 동안 버티면 돼요. 저는… 잠깐 눈 좀 붙일게요."}]'::jsonb, '{}'::jsonb, 1, 0)
 on conflict (scene_key) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward, min_level = excluded.min_level, rep_need = excluded.rep_need;
 
+-- 세력 인물 자세한 프로필: 한 줄 소개 대사(quote)와 인물 서술(detail). 세력 인물 칸에서 누르면 펼친다
+alter table public.world_faction_npcs add column if not exists quote text not null default '';
+alter table public.world_faction_npcs add column if not exists detail text not null default '';
+update public.world_faction_npcs n set quote = v.quote, detail = v.detail from (values
+  ('night_office:baek', '등잔은 누가 지켜보지 않아도 타야 하네.', '야행국이 세워질 무렵부터 정청을 지켜 온 도제조. 나이를 아는 사람은 없고, 본인도 묻는 말에 웃기만 한다. 젊은 시절 「백야(白夜)의 붓」이라 불리며 요괴 백 마리의 이름을 하룻밤에 적어 봉인했다는 이야기가 전하지만, 지금은 정청 안쪽 방에서 꺼지지 않는 등잔 하나를 지키며 결재 서류에 붉은 인장을 찍을 뿐이다. 말이 느리고 짧아 답답하다는 소리를 듣는데, 그가 「…앉게」라고 말한 뒤에 한 이야기는 누구도 잊지 못한다고 한다. 왼손 약지에 먹이 배어 지워지지 않는 자국이 있다.'),
+  ('night_office:han', '기록에 없는 일은 일어나지 않은 일이다. 그러니 적어라.', '정통파 감찰관. 보고서의 쉼표 하나까지 되돌려 보내는 것으로 유명해 신입들 사이에서는 「한 줄 더」라는 별명으로 불린다. 원래 현장 조사원이었으나 동료 셋을 잃은 사건의 보고서가 위에서 고쳐 쓰인 것을 본 뒤로 감찰관을 자청했다고 한다. 차갑게 굴지만 신입이 처음 올린 장부는 몰래 따로 묶어 서랍에 보관한다. 붓을 닦는 버릇이 있는데, 화가 날수록 더 천천히 닦는다.'),
+  ('night_office:mo', '장부 냄새 맡아 봤어요? 오래된 먹은 단내가 나요.', '장서각 지하서고를 맡은 기록관이자 정청 비고의 관리인. 서고의 책장 순서를 모두 외우고, 찾는 책이 어디 있는지 묻기도 전에 꺼내 온다. 말이 많고 다정해서 신입들의 고민 상담을 도맡지만, 장서각 깊은 곳의 봉인된 서가에 대해서는 웃으며 말을 돌린다. 손님이 오면 늘 식은 보리차를 내오는데, 뜨거운 차는 종이에 해롭다는 이유다.'),
+  ('night_office:kang', '땀으로 적은 기록은 번지지 않는다! 하하!', '팔괘 연무청의 교관. 목소리가 커서 연무장 끝에서 불러도 정청 마루까지 들린다. 북령맹에서 수련하다 정통파로 옮겨 온 드문 내력이 있어 산문의 무예와 야행국의 봉인술을 섞어 가르친다. 신입이 쓰러지면 제일 먼저 달려와 업고 가는 사람이 그다. 연무청 기둥마다 그가 부순 목인(木人)의 수가 칼자국으로 새겨져 있다.'),
+  ('red_moon_cult:wolhwa', '달은 원망하지 않는다. 기억할 뿐이다.', '적월교의 교주. 붉은 면사포 너머로 얼굴을 보인 적이 없고, 걸어도 발소리가 나지 않는다. 교도들은 그가 이미 반쯤 달에 먹혔다고 수군댄다. 월식성의 거울 앞에서 밤을 새우는 날이 많으며, 그 거울에 무엇이 비치는지는 장로들에게만 이야기한다고 한다. 목소리는 가까이서 들리는데 모습은 늘 몇 걸음 떨어져 있다. 교를 「이끈다」가 아니라 「붙들려 있다」고 말하는 유일한 사람.'),
+  ('red_moon_cult:sama', '약한 자는 들어오지 마라. 강한 자도 마찬가지다.', '적월교의 대호법. 문 두 짝을 합친 것만큼 어깨가 넓고, 팔뚝에는 삼킨 요기만큼 붉은 문신이 늘어 간다. 약한 자를 경멸하지만 한번 살아 돌아온 자는 끝까지 챙기는 사람이라, 교도들은 그를 두려워하면서도 그의 등 뒤에 서려 한다. 흑사단에 있었던 옛 동료들의 이름을 혼자 외우고 다닌다는 소문이 있다. 수련굴 입구에 앉아 무를 깎아 먹는 모습이 자주 보인다.'),
+  ('red_moon_cult:danbi', '어머, 무서워요? 괜찮아요. 처음엔 다 그래요.', '백골 장터 끝 붉은 등 아래 앉아 있는 주홍 무녀. 앳된 얼굴로 웃으며 오싹한 말을 아무렇지 않게 한다. 의식을 집전할 때만 목소리가 낮고 단단해지는데, 그때의 그를 본 교도들은 그 뒤로 그를 「아씨」라고 부르지 못한다. 혈월 비고의 열쇠를 머리 장식에 꽂고 다니며, 요기에 물든 붉은 손톱을 굳이 감추지 않는다. 장터 아이들에게는 사탕을 나눠 주는 다정한 누나다.'),
+  ('black_lotus:mumyeong', '나는 이름을 팔았다. 그 값으로 이 문을 샀지.', '흑련회의 회주. 진짜 이름을 아는 사람이 없고, 그 자신도 잊었다고 말한다. 열세 번째 문 너머 등도 의자도 없는 방에 목소리로만 존재하며, 회원 중 그의 얼굴을 본 이는 손에 꼽는다. 정청의 장부와 흑련회의 장부를 둘 다 외운다는 소문이 있고, 두 장부가 어긋나는 곳을 짚을 때만 목소리에 웃음기가 섞인다. 흑련의 뿌리가 어디에 있는지 묻는 이에게는 언제나 같은 대답을 한다. 「너희가 가장 잘 아는 곳.」'),
+  ('black_lotus:guseul', '딱, 딱, 딱. 빚은 세 번 튕기면 정해져요.', '십삼문 암시장의 장부지기. 주판알 튕기는 소리가 말버릇이라 대화 중에도 손가락이 쉬지 않는다. 암시장에서 오간 빚을 하나도 빠짐없이 외우고, 십 년 전 한 푼 덜 갚은 사람의 이름까지 기억한다. 손님에게는 깍듯하지만 계약을 어긴 자에게는 같은 미소로 여섯째를 부른다. 첫 손님에게만 이자를 받지 않는다는 원칙을 한 번도 어긴 적이 없다.'),
+  ('black_lotus:six', '…셋. 넷. 다섯. 여섯.', '흑련회의 채무 추적자. 사람을 이름이 아니라 숫자로 부르고, 자기 자신도 「여섯째」라고만 소개한다. 말이 적어 문장을 끝까지 말하는 일이 드물지만, 그가 무언가를 세기 시작하면 빚진 자들은 자리를 뜬다. 그림자 장부실에서 수련생들을 상대해 주는데, 이기면 장부에서 한 줄을 지워 주는 것이 그 나름의 칭찬이다. 왼쪽 손등에 여섯 개의 점이 새겨져 있고, 하나는 지워져 있다.'),
+  ('north_league:seok', '눈을 감는 자는 뒤에 선 사람을 못 지킨다.', '북령맹의 맹주. 얼음 인장을 맨손으로 짚고 서 있어도 손이 얼지 않는 노무인이다. 말보다 주먹이 먼저 나가지만, 그 주먹은 언제나 상대의 코앞에서 멈춘다. 젊은 시절 적월교와의 싸움에서 산문 아홉 곳을 홀로 지켰다는 전설이 있으며, 그때 생긴 흉터를 「맹약의 값」이라 부른다. 제자들이 잠든 새벽에 종각 아래에서 혼자 인장의 금을 세어 보는 모습을 혜각만이 알고 있다.'),
+  ('north_league:hyegak', '허허, 오늘은 누구를 눕혀 드릴까요. 아, 반대였던가요.', '철벽 고찰의 수좌승이자 연무장의 관리인. 늘 웃는 얼굴로 상대를 땅에 눕히는 재주가 있어 산문 제자들에게 「웃는 바위」라 불린다. 맹주의 오랜 벗으로, 맹주가 말하지 못한 것을 대신 말해 주는 역할을 자처한다. 차를 끓이는 솜씨가 좋아 연무장 한쪽에는 늘 김이 오르는 주전자가 있다. 얼음 인장의 금이 늘어날 때마다 염주 알을 하나씩 더한다.'),
+  ('north_league:yeo', '짐을 지켰군. 사람이었으면 살았겠다. 그거면 됐다.', '북령맹 호송대를 이끄는 여장수. 길과 날씨를 누구보다 잘 알아, 그가 「내일은 눈」이라고 하면 산문의 장작이 미리 쌓인다. 피난민 행렬을 지킨 횟수가 백을 넘었고, 지키지 못한 행렬의 수도 정확히 기억한다. 칭찬이 서툴러 「살았겠다」, 「됐다」 정도가 최고의 찬사다. 산문 무기고의 열쇠를 갑옷 안쪽에 두며, 창날에는 지난 행렬의 수만큼 가는 홈이 파여 있다.'),
+  ('river_alliance:jin', '강은 깊어요. 약속을 어기면 그만큼 깊이 가라앉죠.', '수향연맹의 도방. 연맹의 큰 배 위 비단 차양 아래에서 주판 하나로 강 전체의 물길을 다스린다. 웃는 얼굴로 값을 깎지만 한번 한 약속은 반드시 지키는 것으로 유명해, 정청과 적월교가 동시에 그의 배를 탄다. 어느 편에도 서지 않는 것이 연맹의 힘이라 믿으며, 그 믿음을 지키기 위해 잃은 것이 많다는 이야기를 가끔 술자리에서 흘린다. 주판에는 붉은 알이 하나 섞여 있는데, 그 알의 내력은 아무도 모른다.'),
+  ('river_alliance:nodeul', '떠났다 돌아오는 배가 제일 반가운 법이지.', '구름나루에서 오십 년 노를 저은 뱃사공. 곰방대를 문 채 손님을 훑어보는 눈이 매서워, 그가 보증을 선 사람은 열에 아홉이 돈을 번다고 한다. 물길에 떠도는 소문을 모두 알고, 안개 낀 날 강의 소리만 듣고도 상류에 무슨 일이 났는지 맞힌다. 물길 시험장의 관리인으로, 버티는 놈만 건너간다는 것이 그의 유일한 가르침이다. 젊은 시절 용잠 수궁 근처까지 노를 저어 갔다 돌아온 단 한 사람이라는 소문이 있다.'),
+  ('river_alliance:maehyang', '장사는 거짓말을 안 하는 게 제일 남는 장사예요.', '상단의 장부를 맡은 행수. 계산이 빠르고 말이 똑 부러져 상인들이 그 앞에서는 값을 부풀리지 못한다. 상단 별고의 관리인으로, 연맹이 신용을 걸고 내준 물건은 되팔지 못하게 하는 원칙을 칼같이 지킨다. 바쁜 와중에도 염등촌 사람들에게 보낼 기름은 직접 챙긴다. 장부 맨 뒷장에는 연맹 일을 하다 강에 잠긴 사람들의 이름이 따로 적혀 있다.'),
+  ('southern_remnant:jang', '불이 있는 한 나라는 끝나지 않는다.', '남명회의 수장이자 망국의 마지막 장군. 한쪽 팔을 잃은 채 잔불촌 한가운데의 꺼지지 않는 화로 앞을 지킨다. 빼앗긴 땅을 되찾자는 그의 말에 사람들은 웃지만, 그를 따르는 유민들은 웃지 않는다. 남은 한 팔로 검을 쥐는 대신 불씨를 나누는 쪽을 택했고, 그 불씨를 받은 이들이 지금의 남명회다. 밤이면 잃어버린 팔이 시리다며 화로 가까이 붙어 앉는다.'),
+  ('southern_remnant:soi', '그대가 지킨 화로에서 옛 노래가 들리더이다.', '망국의 기억을 노래로 전하는 무녀. 말끝마다 옛말이 섞여 처음 듣는 이는 고개를 갸웃한다. 재의 바다에서 건진 기와 조각과 유품을 모아 불씨 창고를 지키며, 물건 하나하나에 얽힌 사연을 모두 노래로 외운다. 망자들의 목소리를 들을 수 있다고 하는데, 본인은 「들리는 게 아니라 기억나는 것」이라고 고쳐 말한다. 그의 노래를 끝까지 들은 사람은 이상하게 고향 꿈을 꾼다.'),
+  ('southern_remnant:galmae', '흥. 다시 왔으면 이번엔 끝까지 있어.', '잔불촌의 젊은 정찰대장. 날래고 거칠어 말보다 발이 먼저 나간다. 망국이 무너진 날 태어났다고 해서 마을 어른들은 그를 「마지막 아이」라 부르는데, 본인은 그 이름을 몹시 싫어한다. 밤마다 재 속에서 기어 나오는 것들과 싸우며 마을의 경계를 지키고, 봉화대 수련장에서는 불이 꺼지기 전까지 버티라는 말만 한다. 고맙다는 말을 할 때 늘 고개를 돌린다.'),
+  ('mandate_court:hahu', '본 것을 다 말하지 않는 것, 그것이 첫 번째 계율이다.', '천명원의 수장인 태사령. 황실의 별을 읽어 온 노학자로, 혼천의 앞에서 눈을 감고 있는 시간이 눈을 뜨고 있는 시간보다 길다. 예언을 권력으로 쓴다는 비난에 「맞는 말이다」라고 답하는 사람이다. 평생 본 예언 가운데 입 밖에 낸 것은 셋뿐이며, 그 셋이 모두 맞았다는 이야기가 천명원의 무게가 되었다. 영대 감정이 될 사람에게만 말하지 않은 예언 하나를 물려준다.'),
+  ('mandate_court:seo', '아… 졸려요. 그래도 별은 봐야죠.', '무극 관성대의 수석 관측관. 밤을 새우는 게 일상이라 늘 반쯤 감긴 눈으로 하품을 한다. 그러나 별자리 도판을 펼치면 눈빛이 바뀌어, 하늘의 작은 흔들림 하나도 놓치지 않는다. 하늘의 변화는 땅에 먼저 내려온다는 것이 그의 지론이라 관측생들을 자꾸 땅으로 내보낸다. 혼천의 시련실에서 시련자가 버티는 동안 꾸벅꾸벅 조는데, 시련이 끝나는 순간에는 정확히 깨어난다.'),
+  ('mandate_court:mun', '기록은 정확하다. 결론은 쓰지 마라.', '황실 기록을 맡은 기밀 사관. 웃지 않는다는 것으로 유명해, 관측생들 사이에서는 그가 웃는 것을 보면 좋은 일이 생긴다는 미신까지 돈다. 영대 서고를 관리하며, 기록은 거래하지 않는다는 원칙에 따라 서고의 문서는 한 장도 밖으로 내보내지 않는다. 떠났다 돌아온 이에게 무엇을 보았는지 묻지 않는 것이 그 나름의 배려다. 붓 대신 쇠못으로 목판에 기록을 새기는 오래된 버릇이 있다.')
+) v(k, quote, detail) where n.npc_key = v.k;
+
+-- 1:1 직접 거래는 어디서나(같은 곳·안전지대 조건을 뺀다). 원정 중·전투불능·차단은 그대로 막는다
+do $$ declare p record; d text; n int;
+begin
+  for p in select * from (values
+    ('public.world_trade_direct_offer(uuid,jsonb,bigint,jsonb,bigint)', $a$if a.location is distinct from b.location then raise exception '같은 곳에 있는 조사원과만 거래할 수 있습니다.'; end if;$a$),
+    ('public.world_trade_direct_offer(uuid,jsonb,bigint,jsonb,bigint)', $a$if not coalesce(r.is_safe_zone, false) then raise exception '거래는 안전지대에서만 할 수 있습니다.'; end if;$a$),
+    ('public.world_trade_direct_respond(uuid,boolean)', $a$if a.location is distinct from b.location or a.location is distinct from t.location then raise exception '두 사람이 제안한 곳에 함께 있어야 거래할 수 있습니다.'; end if;$a$),
+    ('public.world_trade_direct_respond(uuid,boolean)', $a$if not coalesce(r.is_safe_zone, false) then raise exception '거래는 안전지대에서만 할 수 있습니다.'; end if;$a$)
+  ) v(fn, old) loop
+    d := pg_get_functiondef(p.fn::regprocedure);
+    n := (length(d) - length(replace(d, p.old, ''))) / length(p.old);
+    if n <> 1 then raise exception '직접 거래 고칠 자리(%): %곳', p.fn, n; end if;
+    execute replace(d, p.old, '');
+  end loop;
+end $$;
+
+-- 경제 세력 등급 세금 감면: 수향연맹 등급마다 25%(5등급 면세), 흑련회 등급마다 12.5%(5등급 절반). 상점 팔기·거래소 판매·직접 거래에
+create or replace function public.world_trade_tax_mult(p_owner uuid)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select greatest(0, 1 - (p.rank - 1) * case c.major_faction_id when 'river_alliance' then 0.25 when 'black_lotus' then 0.125 else 0 end)
+    from public.world_characters c join public.world_faction_progress p on p.owner_id = c.owner_id and p.faction_id = c.major_faction_id
+   where c.owner_id = p_owner and p.join_done_at is not null), 1)::numeric
+$$;
+alter function public.world_trade_tax_mult(uuid) owner to fn_owner_field;
+revoke all on function public.world_trade_tax_mult(uuid) from public, anon, authenticated;
+grant execute on function public.world_trade_tax_mult(uuid) to fn_owner_18878, fn_owner_18881;
+do $$ declare p record; d text; n int;
+begin
+  for p in select * from (values
+    ('public.world_shop_sell(text,integer)', $a$tax := greatest(1, round(price * p_qty * public.world_affil_tax())::bigint);$a$,
+      $a$tax := case when public.world_trade_tax_mult(uid) <= 0 then 0 else greatest(1, round(price * p_qty * public.world_affil_tax() * public.world_trade_tax_mult(uid))::bigint) end;$a$),
+    ('public.world_trade_offer_buy(uuid)', $a$tax:=greatest(1,round(total*0.05)::bigint);$a$,
+      $a$tax:=case when public.world_trade_tax_mult(s.seller_id)<=0 then 0 else greatest(1,round(total*0.05*public.world_trade_tax_mult(s.seller_id))::bigint) end;$a$),
+    ('public.world_trade_direct_respond(uuid,boolean)', $a$tax_a := case when t.want_gil > 0 then greatest(1, round(t.want_gil * 0.05)::bigint) else 0 end;$a$,
+      $a$tax_a := case when t.want_gil > 0 and public.world_trade_tax_mult(a.owner_id) > 0 then greatest(1, round(t.want_gil * 0.05 * public.world_trade_tax_mult(a.owner_id))::bigint) else 0 end;$a$),
+    ('public.world_trade_direct_respond(uuid,boolean)', $a$tax_b := case when t.give_gil > 0 then greatest(1, round(t.give_gil * 0.05)::bigint) else 0 end;$a$,
+      $a$tax_b := case when t.give_gil > 0 and public.world_trade_tax_mult(b.owner_id) > 0 then greatest(1, round(t.give_gil * 0.05 * public.world_trade_tax_mult(b.owner_id))::bigint) else 0 end;$a$)
+  ) v(fn, old, new) loop
+    d := pg_get_functiondef(p.fn::regprocedure);
+    n := (length(d) - length(replace(d, p.old, ''))) / length(p.old);
+    if n <> 1 then raise exception '세금 고칠 자리(%): %곳', p.fn, n; end if;
+    execute replace(d, p.old, p.new);
+  end loop;
+end $$;
 grant fn_owner_18669 to postgres with inherit false, set false;
+grant fn_owner_18881 to postgres with inherit false, set false;
 
 -- 물품 정보 「얻는 곳」: 상점·대장간·세력 비고를 나눠 알린다(정련 숯이 「상점에서 삽니다」로만 보이던 문의)
 do $$ declare d text := pg_get_functiondef('public.world_item_sources(text)'::regprocedure);

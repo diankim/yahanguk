@@ -56,16 +56,16 @@ function glyphSvg(key) {
   if (tier === 'legacy') body += MIDS.map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.6)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
   return `<svg class="fr-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${body}</svg>`;
 }
-// 레거시 테두리: 팔각 패(牌). 끊긴 자리는 오른쪽 위 빗변 가운데(둘레의 15~23%)다. 핏빛 굵은 테와 금빛 가는 테가 오른쪽 위에서 끊기고, 끊긴 자리에 육각 별이 앉는다(「미완」).
+// 레거시 테두리: 팔각 패(牌). 끊긴 자리는 오른쪽 위 빗변 가운데(둘레의 15~23%)다. 핏빛 굵은 테와 금빛 가는 테가 오른쪽 위에서 끊기고, 끊긴 자리에 여덟 갈래 별(✷)이 앉는다(「미완」).
 // 네 변 가운데의 작은 별은 첫 시안의 문양을 이어받았다. 작은 크기에서는 테만 그린다.
-const HEX_STAR = 'M0-7L6.06 3.5H-6.06zM0 7L-6.06-3.5H6.06z';
+const HEX_STAR = 'M0.00 -7.00L0.99 -2.40L4.95 -4.95L2.40 -0.99L7.00 0.00L2.40 0.99L4.95 4.95L0.99 2.40L0.00 7.00L-0.99 2.40L-4.95 4.95L-2.40 0.99L-7.00 0.00L-2.40 -0.99L-4.95 -4.95L-0.99 -2.40Z'; // ✷ 여덟 갈래 별
 function legacySvg(small) {
   const oct = i => { const a = 2 + i, b = 29 + i * .4; return `M${b} ${a}L${100 - b} ${a}L${100 - a} ${b}L${100 - a} ${100 - b}L${100 - b} ${100 - a}L${b} ${100 - a}L${a} ${100 - b}L${a} ${b}Z`; };
   const mids = small ? '' : [[50, 3, 0], [97, 50, 90], [50, 97, 180], [3, 50, 270]].map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.5)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
   return `<svg class="fr-svg lg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
     <path class="lg-out" d="${oct(0)}" pathLength="100" stroke-dasharray="92 8" stroke-dashoffset="77"/>
     ${small ? '' : `<path class="lg-in" d="${oct(6)}" pathLength="100" stroke-dasharray="90 10" stroke-dashoffset="76"/>`}
-    ${mids}<g class="lg-star" transform="translate(84 16) scale(${small ? .9 : .75})"><circle r="9" class="fr-bg"/><path d="${HEX_STAR}"/></g></svg>`;
+    ${mids}<g class="lg-star" transform="translate(84 16) scale(${small ? 1 : .95})"><circle r="9" class="fr-bg"/><path d="${HEX_STAR}"/></g></svg>`;
 }
 export const frameTier = key => FRAMES[key]?.[0] || 'common';
 // 테두리 두께(px)와 안쪽 여백: 정수로 잡아 위아래·좌우 간격이 똑같게 한다.

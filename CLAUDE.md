@@ -364,7 +364,7 @@
 - 등급 퀘스트: 평판(누적, 상한 5000 — world_track_major_faction_reputation) 300·800·1,600·3,000과 레벨 조건(이야기보다 앞서 드러나지 않게)이 차면 열린다. 등급 효과는 world_faction_rank_effect(가입 퀘스트를 마친 지금 세력, (등급−1)×값)를 world_status_effect_total에 더한다.
 - 공훈(merit, 쓰는 몫): 의뢰판(world_faction_request_claim, 하루 세 가지 md5(키·세력·날짜) 순, 그날 한 일, 평판·공훈)·퀘스트·수련장으로 얻고 비고(world_faction_vault_buy, 세력 안전지대·등급 조건, 팔기 없음)에서만 쓴다. 수련장(world_faction_trial, 하루 한 번, 승률 0.55+0.05×(레벨−등급 기준), 3·5등급 첫 통과 칭호 fac_<세력>_t3/_t5, t5는 세력 낙관 sl_f_*).
 - 세력 안전지대(world_faction_home): 정통파 정청·객사, 적월교 백골 장터(월식성은 안전지대 아님), 흑련회 십삼문, 북령맹 철벽 고찰, 수향 구름나루, 남명 잔불촌, 천명원 무극 관성대·본부 객사(Lv25 전 분소). 가입 퀘스트 보고는 정청 연락관도 받는다.
-- 화면: 캐릭터 › 세력(factionquest.js: 등급 사다리·퀘스트 카드·대화 팝업 playDialogue·의뢰판·비고·수련장·세력 인물). 조사원 카드 세력 표식에 「세력 · 등급」(world_character_card.faction_rank, world_faction_rank_label). 대본 원본·생성기는 작업 공간 faction_script(gen.py)였다.
+- 화면: 캐릭터 › 세력(factionquest.js: 등급 사다리·퀘스트 카드·대화 팝업 playDialogue·의뢰판·비고·수련장·세력 인물). 세력 인물은 world_faction_npcs.quote(한 줄 소개 대사)·detail(인물 서술)을 누르면 펼친다. 조사원 카드 세력 표식에 「세력 · 등급」(world_character_card.faction_rank, world_faction_rank_label). 대본 원본·생성기는 작업 공간 faction_script(gen.py)였다.
 
 ### 세력 판도(20261029050000)
 
@@ -398,7 +398,8 @@
 - 거래 완료와 취소 상태를 명확하게 관리한다.
 - 화폐와 아이템의 이동은 중복 처리되지 않아야 한다.
 - 비정상적인 가격을 통한 경제 시스템 악용을 방지한다. 거래소 등록은 한 사람당 동시에 10건까지(가격은 0전 불가·기준 시세 10배 이하).
-- 직접 거래(world_direct_trades): 같은 안전지대의 조사원에게 물품·전을 주고받는 제안을 보내고, 상대가 수락하면 서버가 양쪽을 한 번에 맞바꾼다. 전을 받는 쪽이 거래세 5%, 제안은 30분 유효, 응답 대기는 3건까지.
+- 직접 거래(world_direct_trades): 어디서든(5.0.0, 같은 곳·안전지대 조건 없앰) 조사원에게 물품·전을 주고받는 제안을 보내고, 상대가 수락하면 서버가 양쪽을 한 번에 맞바꾼다. 전을 받는 쪽이 거래세 5%, 제안은 30분 유효, 응답 대기는 3건까지. 화면 상대 목록은 같은 곳·친구·파티원과 조사원 카드에서 고른 사람.
+- 경제 세력 세금 감면(5.0.0, world_trade_tax_mult): 수향연맹 등급마다 −25%(5등급 면세)·흑련회 −12.5%(5등급 절반), 상점 팔기(world_shop_sell)·거래소 판매자(world_trade_offer_buy)·직접 거래 받는 쪽에.
 
 ### 거래 가능 여부
 
