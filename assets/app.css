@@ -1800,3 +1800,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 .npc-card header small { color: var(--muted); letter-spacing: .08em; } .npc-card h3 { margin: 0; font: 700 20px var(--font-serif, serif); }
 .npc-card blockquote { margin: 0; font: 15px/1.6 var(--font-serif, serif); color: var(--gold); }
 .npc-card p { margin: 0; line-height: 1.75; } .npc-card .npc-bio { color: var(--muted); font-size: 13px; }
+/* 한 줄씩 펼치는 전투 기록(비무·시련) */
+.spar-log.replay { max-height: 46vh; overflow-y: auto; }
+.spar-log.replay li { animation: replay-in .25s ease-out; }
+@keyframes replay-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .spar-log.replay li { animation: none; } }
+.spar-end { display: grid; gap: 8px; }

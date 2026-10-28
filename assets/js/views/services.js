@@ -242,6 +242,15 @@ function bindPicker(root, name, opts, onPick) {
   box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
 }
 const koSort = (a, b) => a.label.localeCompare(b.label, 'ko');
+// 목록에 안 보이는 가진 물품의 까닭: 거래 불가(희귀 성장 재료 등)·잠금
+function untradeNote(have, ref) {
+  const own = Object.entries(have || {}).filter(([, n]) => Number(n) > 0).map(([k]) => k);
+  const bound = own.filter(k => ref.get(k)?.tradeable === false).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
+  const locked = own.filter(k => ref.get(k)?.tradeable !== false && isLocked(k)).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
+  const part = (t, l) => l.length ? `<b>${t}</b> ${esc(l.slice(0, 8).join(' · '))}${l.length > 8 ? ` 외 ${l.length - 8}가지` : ''}` : '';
+  const txt = [part('거래 불가', bound), part('잠금', locked)].filter(Boolean).join(' / ');
+  return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 거래소·직접 거래에 올릴 수 없고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다.</p>` : '';
+}
 
 /* ── 거래소 ───────────────────────────────────────────── */
 // 거래소(누구나 사 가는 등록 판매)와 직접 거래(같은 안전지대의 조사원과 주고받기) 두 칸
@@ -263,6 +272,7 @@ export async function renderMarket(box) {
     const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k))
       .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
     const sellOpts = tradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' }));
+    const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li><div class="item-main"><b>${infoName(o.item_id)}</b><span class="qty">×${o.quantity}</span>
         <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small></div>
@@ -274,6 +284,7 @@ export async function renderMarket(box) {
           <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}"></label>
           <button class="btn primary" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록</span></button></form>
           <p class="muted small" id="trade-hint"></p>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
+      ${hiddenNote}
       <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다(지금 ${mine.length}/10건). 0전 등록은 불가하며, 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p>
       <h3 class="sub-h">판매 중 ${others.length}</h3>
       ${others.length ? `<ul class="item-list">${others.map(o => row(o, false)).join('')}</ul>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
@@ -320,6 +331,7 @@ async function renderDirect(body) {
     const people = [...seen.values()];
     const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k));
     const anyTradeable = (prices || []).filter(p => p.tradeable !== false).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
+    const hiddenNote = untradeNote(have, ref);
     const giveOpts = mineTradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' })).sort(koSort);
     const wantOpts = anyTradeable.map(p => ({ id: p.item_id, label: p.item_name || nameOf(p.item_id), cat: catMap.get(p.item_id) || 'etc' }));
     if (!people.some(p => p.owner_id === dt.to)) dt.to = people[0]?.owner_id || '';
@@ -334,7 +346,7 @@ async function renderDirect(body) {
         <fieldset class="dt-side"><legend>내가 줄 것</legend>
           <div class="chips">${chipList(dt.give, 'give')}</div>
           ${pickerHtml('giveItem', giveOpts)}<div class="dt-add"><input name="giveQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="give" ${mineTradeable.length ? '' : 'disabled'}>담기</button></div>
-          <label class="field"><span>줄 전 (가진 ${fmt.jeon(c.gil)})</span><input name="giveGil" type="number" min="0" value="${dt.giveGil}"></label></fieldset>
+          ${hiddenNote}<label class="field"><span>줄 전 (가진 ${fmt.jeon(c.gil)})</span><input name="giveGil" type="number" min="0" value="${dt.giveGil}"></label></fieldset>
         <fieldset class="dt-side"><legend>받을 것</legend>
           <div class="chips">${chipList(dt.want, 'want')}</div>
           ${pickerHtml('wantItem', wantOpts)}<div class="dt-add"><input name="wantQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="want">담기</button></div>

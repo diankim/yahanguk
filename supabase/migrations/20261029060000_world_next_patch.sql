@@ -11,6 +11,7 @@
 --   ⑩ 봉인술 계열 13·24·30·43단계를 모두 택일로(A 폭딜 · B 버프/디버프)
 --   ⑪ 근접 계열 13·24·30·43단계를 모두 택일로(A 딜러 · B 탱커·이목)
 --   ⑫ 세력 가입 퀘스트(대화)·등급 5단계·등급 퀘스트·의뢰판·비고(공훈 상점)·수련장, 평판 상한 5000, 조사원 카드 세력 등급, 세력 인물 프로필
+--   ⑭ 기존 대세력 가입자는 세력에서 나와 가입 퀘스트부터(재가입 제한 없음) · 천명원 효과(날씨 불이익 감소·예언) · 수련장 시련 전투 기록
 --   ⑬ 1:1 직접 거래는 어디서나 · 수향연맹(등급마다 세금 −25%, 5등급 면세)·흑련회(−12.5%, 5등급 절반) 세금 감면
 --   (원정) 체력이 넉넉하면 밀린 싸움을 버틴다([버팀]) — ⑦의 원정 정산 고칠 자리 6~8
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
@@ -1680,13 +1681,17 @@ $$;
 create or replace function public.world_faction_rank_effect(p_key text)
 returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
   select coalesce((select (p.rank - 1) * case c.major_faction_id
-      when 'night_office' then case p_key when 'clue_bonus_pct' then 2 end
-      when 'red_moon_cult' then case p_key when 'combat_damage_pct' then 1 end
-      when 'black_lotus' then case p_key when 'rare_loot_pct' then 1 end
-      when 'north_league' then case p_key when 'incoming_damage_pct' then -1 end
-      when 'river_alliance' then case p_key when 'travel_time_pct' then -2 end
-      when 'southern_remnant' then case p_key when 'gather_qty_pct' then 2 end
-      when 'mandate_court' then case p_key when 'erosion_pct' then -2 end end
+      when 'night_office' then case p_key when 'clue_bonus_pct' then 2 else 0 end
+      when 'red_moon_cult' then case p_key when 'combat_damage_pct' then 1 else 0 end
+      when 'black_lotus' then case p_key when 'rare_loot_pct' then 1 else 0 end
+      when 'north_league' then case p_key when 'incoming_damage_pct' then -1 else 0 end
+      when 'river_alliance' then case p_key when 'travel_time_pct' then -2 else 0 end
+      when 'southern_remnant' then case p_key when 'gather_qty_pct' then 2 else 0 end
+      -- 천명원: 예언(요괴 조우 −2%) + 지금 날씨·시간대가 주는 불이익을 10%씩 되돌린다
+      when 'mandate_court' then case p_key when 'encounter_pct' then -2 else 0 end
+        - 0.1 * case when p_key in ('erosion_pct', 'incoming_damage_pct', 'encounter_pct', 'mental_loss_pct', 'travel_time_pct')
+                     then greatest(0, public.world_env_total(c.owner_id, p_key)) else least(0, public.world_env_total(c.owner_id, p_key)) end
+      else 0 end
     from public.world_characters c join public.world_faction_progress p on p.owner_id = c.owner_id and p.faction_id = c.major_faction_id
    where c.owner_id = public.fn_owner_auth_uid() and p.join_done_at is not null), 0)::numeric
 $$;
@@ -1811,8 +1816,7 @@ begin
     'requests', reqs,
     'vault', (select coalesce(jsonb_agg(jsonb_build_object('item_id', v.item_id, 'name', i.item_name, 'price', v.price, 'rank_need', v.rank_need, 'locked', v.rank_need > p.rank) order by v.rank_need, v.sort), '[]'::jsonb)
                 from public.world_faction_vault v join public.world_item_catalog i on i.item_id = v.item_id where v.faction_id = c.major_faction_id),
-    'hall', jsonb_build_object('tier', p.rank, 'done_today', p.hall_day = v_day, 'best', p.hall_best,
-               'chance', round((greatest(0.15, least(0.9, 0.55 + 0.05 * (c.level - (array[3, 8, 14, 20, 26])[p.rank])))) * 100)),
+    'hall', jsonb_build_object('tier', p.rank, 'done_today', p.hall_day = v_day, 'best', p.hall_best, 'foe_level', (array[3, 7, 12, 18, 24])[p.rank]),
     'keepers', (select jsonb_object_agg(s.kind, jsonb_build_object('title', s.title, 'line', s.lines -> 0 ->> 't', 'who', (select z.npc_name from public.world_faction_npcs z where z.npc_key = s.lines -> 0 ->> 's')))
                   from public.world_faction_scenes s where s.faction_id = c.major_faction_id and s.kind in ('vault', 'hall')));
 end $$;
@@ -1925,11 +1929,13 @@ begin
   return jsonb_build_object('content', nm || ' ×' || p_qty || '을(를) 공훈 ' || cost || '으로 받았습니다.', 'merit', p.merit - cost);
 end $$;
 
--- 수련장: 하루 한 번 지금 등급의 시련. 3·5등급 시련을 처음 넘으면 칭호(5등급은 낙관도)
+-- 수련장: 하루 한 번 지금 등급의 시련. 내 전투 능력치(world_combat_stats)와 등급별 시련 상대가 최대 12합을 주고받고, 그 기록을 화면이 한 줄씩 보인다.
+-- 3·5등급 시련을 처음 넘으면 칭호(5등급은 낙관도)
 create or replace function public.world_faction_trial()
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
 declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype;
-  v_day date := (now() at time zone 'Asia/Seoul')::date; tier int; chance float8; won boolean; keeper text; lines jsonb; gain int := 0; tk text; got text;
+  v_day date := (now() at time zone 'Asia/Seoul')::date; tier int; won boolean; keeper text; lines jsonb := '[]'::jsonb; gain int := 0; tk text; got text;
+  cs jsonb; atk numeric; red numeric; crit numeric; eva numeric; mhp int; fhp int; fmax int; flv int; fatk numeric; dmg int; rnd int := 0; foe text;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
@@ -1941,12 +1947,40 @@ begin
   if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 시련을 치를 수 없습니다.'; end if;
   if p.hall_day = v_day then raise exception '오늘의 시련은 이미 치렀습니다. 내일 다시 오세요.'; end if;
   tier := p.rank;
-  chance := greatest(0.15, least(0.9, 0.55 + 0.05 * (c.level - (array[3, 8, 14, 20, 26])[tier])));
-  won := random() < chance;
   select z.npc_name into keeper from public.world_faction_scenes s join public.world_faction_npcs z on z.npc_key = s.lines -> 0 ->> 's' where s.scene_key = c.major_faction_id || ':hall:1';
-  lines := jsonb_build_array(
-    jsonb_build_object('s', null, 't', tier || '등급 시련. ' || coalesce(keeper, '관리인') || '이(가) 상대를 내보낸다.'),
-    jsonb_build_object('s', null, 't', case when won then '몇 합을 주고받은 끝에 상대의 자세가 무너졌다.' else '상대의 공세를 끝내 버티지 못하고 무릎을 꿇었다.' end));
+  cs := public.world_combat_stats(uid, null);
+  atk := coalesce((cs ->> 'attack')::numeric, 20); red := least(60, coalesce((cs ->> 'reduction_pct')::numeric, 0));
+  crit := least(60, coalesce((cs ->> 'crit_pct')::numeric, 5)); eva := least(40, coalesce((cs ->> 'evasion_pct')::numeric, 3));
+  flv := (array[3, 7, 12, 18, 24])[tier]; fmax := 100 + 8 * flv; fhp := fmax; fatk := 10 + flv * 2.6; mhp := 100 + 8 * c.level;
+  foe := tier || '등급 시련 상대';
+  lines := lines || jsonb_build_object('kind', 'start', 'who', 0, 'text', coalesce(keeper, '관리인') || '이(가) ' || foe || '(Lv' || flv || ')를 내보낸다. 기세 ' || mhp || ' 대 ' || fmax || '.');
+  while rnd < 12 and mhp > 0 and fhp > 0 loop
+    rnd := rnd + 1;
+    if random() * 100 < 6 then
+      lines := lines || jsonb_build_object('kind', 'miss', 'who', 1, 'text', rnd || '합 · 내 공격이 빗나갔다.');
+    else
+      dmg := round(atk * 0.3 * (0.85 + random() * 0.3));
+      if random() * 100 < crit then dmg := round(dmg * 1.6); fhp := greatest(0, fhp - dmg);
+        lines := lines || jsonb_build_object('kind', 'crit', 'who', 1, 'text', rnd || '합 · 급소를 꿰뚫었다! ' || dmg || ' (상대 기세 ' || fhp || ')');
+      else fhp := greatest(0, fhp - dmg);
+        lines := lines || jsonb_build_object('kind', 'hit', 'who', 1, 'text', rnd || '합 · ' || dmg || '을(를) 먹였다. (상대 기세 ' || fhp || ')');
+      end if;
+    end if;
+    exit when fhp <= 0;
+    if random() * 100 < eva then
+      lines := lines || jsonb_build_object('kind', 'miss', 'who', 2, 'text', '상대의 반격을 몸을 틀어 피했다.');
+    else
+      dmg := round(fatk * (1 - red / 100.0) * (0.85 + random() * 0.3));
+      if random() * 100 < 8 then dmg := round(dmg * 1.5); mhp := greatest(0, mhp - dmg);
+        lines := lines || jsonb_build_object('kind', 'crit', 'who', 2, 'text', '상대의 일격이 깊게 들어왔다! ' || dmg || ' (내 기세 ' || mhp || ')');
+      else mhp := greatest(0, mhp - dmg);
+        lines := lines || jsonb_build_object('kind', 'hit', 'who', 2, 'text', '상대가 ' || dmg || '을(를) 되갚았다. (내 기세 ' || mhp || ')');
+      end if;
+    end if;
+  end loop;
+  won := fhp <= 0 or (mhp > 0 and mhp::numeric / (100 + 8 * c.level) > fhp::numeric / fmax);
+  lines := lines || jsonb_build_object('kind', 'end', 'who', case when won then 1 else 2 end,
+    'text', case when fhp <= 0 then '상대가 무릎을 꿇었다. 시련을 넘었다.' when mhp <= 0 then '끝내 버티지 못하고 쓰러졌다.' when won then '12합이 끝났다. 기세가 더 남아 판정승.' else '12합이 끝났다. 기세가 모자라 판정패.' end);
   if won then
     gain := 10 * tier;
     tk := case when tier >= 5 and p.hall_best < 5 then 'fac_' || c.major_faction_id || '_t5' when tier >= 3 and p.hall_best < 3 then 'fac_' || c.major_faction_id || '_t3' end;
@@ -1960,7 +1994,7 @@ begin
   end if;
   update public.world_faction_progress set hall_day = v_day, hall_best = case when won then greatest(hall_best, tier) else hall_best end, merit = merit + gain, updated_at = now()
    where owner_id = uid and faction_id = c.major_faction_id;
-  return jsonb_build_object('won', won, 'tier', tier, 'lines', lines, 'merit', gain, 'title', got,
+  return jsonb_build_object('won', won, 'tier', tier, 'log', lines, 'merit', gain, 'title', got, 'foe_level', flv,
     'content', case when won then '시련을 넘었습니다. 공훈 +' || gain || coalesce(' · 칭호 「' || got || '」', '') else '시련에 졌습니다. 내일 다시 도전할 수 있습니다.' end);
 end $$;
 
@@ -2185,17 +2219,29 @@ grant fn_owner_18453 to postgres with inherit false, set false;
 grant fn_owner_18956 to postgres with inherit false, set false;
 grant fn_owner_18878 to postgres with inherit false, set false;
 
+-- 세력 가입 퀘스트 도입: 지금 대세력에 든 조사원은 세력에서 나와 처음부터 가입 퀘스트를 밟는다(2026-10-29 결정).
+-- 「떠남」 기록(payload.left)을 남기지 않아 12시간 재가입 제한에 걸리지 않고 바로 다시 들 수 있다. 쌓은 영향력은 세력에 남는다.
+do $$ declare r record; begin
+  for r in select owner_id, major_faction_id from public.world_characters where major_faction_id is not null loop
+    update public.world_characters set major_faction_id = null, faction_reputation = 0, updated_at = now() where owner_id = r.owner_id;
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (r.owner_id, 'faction', '세력 가입 퀘스트가 열렸습니다',
+      '5.0.0에서 세력 가입 퀘스트와 등급이 생겨, 세력에 든 모든 조사원이 세력에서 나와 처음부터 시작합니다. 캐릭터 › 세력에서 바로 다시 가입할 수 있고(12시간 제한 없음), 가입하면 세력 인물들과의 가입 퀘스트가 시작됩니다.',
+      jsonb_build_object('faction_id', r.major_faction_id, 'reset', true));
+  end loop;
+end $$;
+
 -- 패치노트 5.0.0
 insert into public.world_patch_notes(note_id, title, body, created_at) values
   ('5.0.0', '세력 퀘스트·등급 · 고유 기술 · 원거리 소모품 · 기력', $PN$## 5.0.0 · 세력 퀘스트·등급 · 고유 기술 · 원거리 소모품 · 기력 (통산 5번째 패치)
 
 ### 세력
-1. 세력에 처음 들면 **가입 퀘스트**(3장면)가 열립니다. 세력 인물들과 대화창으로 이야기하고, 맡은 일을 마친 뒤 정해진 곳에서 「보고하기」를 누르면 다음 장면이 이어집니다. 마치면 회복약 묶음과 공훈을 받습니다. 지금 세력에 든 분들도 처음부터 할 수 있습니다. 떠났다 다시 들면 짧은 재가입 대사만 나옵니다.
-2. **세력 등급 5단계**(세력마다 이름이 다름). 평판 300·800·1,600·3,000과 레벨 조건을 채우면 등급 퀘스트가 열리고, 마치면 오릅니다. 등급마다 세력 효과가 커집니다(정통파 단서 · 적월교 주는 피해 · 흑련회 희귀품 · 북령맹 받는 피해 감소 · 수향연맹 이동 · 남명회 채집량 · 천명원 침식 감소). 평판 상한은 5,000으로 올렸습니다.
+1. 세력에 처음 들면 **가입 퀘스트**(3장면)가 열립니다. 세력 인물들과 대화창으로 이야기하고, 맡은 일을 마친 뒤 정해진 곳에서 「보고하기」를 누르면 다음 장면이 이어집니다. 마치면 회복약 묶음과 공훈을 받습니다. 떠났다 다시 들면 짧은 재가입 대사만 나옵니다. **지금 세력에 든 분들은 모두 세력에서 나와 처음부터 시작합니다**(12시간 제한 없이 바로 다시 가입할 수 있습니다).
+2. **세력 등급 5단계**(세력마다 이름이 다름). 평판 300·800·1,600·3,000과 레벨 조건을 채우면 등급 퀘스트가 열리고, 마치면 오릅니다. 등급마다 세력 효과가 커집니다(정통파 단서 · 적월교 주는 피해 · 흑련회 희귀품 · 북령맹 받는 피해 감소 · 수향연맹 이동 · 남명회 채집량 · 천명원 날씨 불이익 감소와 예언(요괴 조우 감소)). 평판 상한은 5,000으로 올렸습니다.
 3. 조사원 카드의 세력 표식에 「세력 · 등급」이 보입니다(캐릭터 › 세력에서 숨길 수 있음).
 4. **의뢰판**: 매일 세 가지 세력 의뢰. 그날 한 일로 평판과 공훈을 받습니다.
 5. **비고(秘庫)**: 세력 안전지대에서 공훈으로 회복약·부적·강화 재료를 삽니다(사들이지는 않음). 등급이 오를수록 품목이 늘어납니다.
-6. **수련장**: 세력 안전지대에서 하루 한 번 등급 시련. 3·5등급 시련을 처음 넘으면 세력 칭호(14개), 5등급은 세력 낙관(錄·血·蓮·盟·舟·燼·星)도 받습니다.
+6. **수련장**: 세력 안전지대에서 하루 한 번 등급 시련. 내 전투 능력치로 시련 상대와 합을 주고받고, 한 줄씩 펼쳐지는 전투를 지켜봅니다(건너뛰기 가능). 3·5등급 시련을 처음 넘으면 세력 칭호(14개), 5등급은 세력 낙관(錄·血·蓮·盟·舟·燼·星)도 받습니다.
 7. **세력 인물**: 퀘스트에서 만난 인물의 기록(소개 대사·인물 서술)을 캐릭터 › 세력에서 펼쳐 봅니다.
 8. 수향연맹은 등급마다 세금이 25%씩 줄어 5등급이면 내지 않고, 흑련회는 12.5%씩 줄어 5등급이면 절반만 냅니다(상점 판매세·거래소·직접 거래).
 
@@ -2222,6 +2268,8 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 22. 물품 정보의 「얻는 곳」에 대장간·상점·세력 비고를 나눠 적습니다.
 23. 쓰러졌다 다시 일어나면 전체 채팅에 그 소식도 남습니다. 이동 중에는 탈것을 바꿀 수 없습니다. 노정 건량은 누구나 만듭니다.
 24. 화면: 환골탈태 서첩 창(모바일)·동료 화면 카드·조사원 카드 비무 단추·채팅 구조 알림 줄 정리.
+25. **비무**도 겨루는 모습이 한 줄씩 펼쳐집니다(건너뛰기 가능).
+26. 거래소·직접 거래 목록에 없는 물품은 거래할 수 없는 물품(응축 영핵·천공 깃털 같은 희귀 성장 재료 등)입니다. 이제 목록 아래에 어떤 물품이 빠졌는지 적어 둡니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

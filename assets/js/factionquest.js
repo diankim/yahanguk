@@ -3,12 +3,14 @@
 import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask } from './core.js';
 import { panel, chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
+import { replayLog } from './replay.js';
+import { logRow } from './spar.js';
 
 // 등급 효과(서버 world_faction_rank_effect와 같은 값, 2~5등급)
 const RANK_PERK = {
   night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}%`,
   north_league: r => `받는 피해 −${r - 1}%`, river_alliance: r => `이동 시간 −${(r - 1) * 2}%`, southern_remnant: r => `채집량 +${(r - 1) * 2}%`,
-  mandate_court: r => `침식 −${(r - 1) * 2}%`,
+  mandate_court: r => `예언 · 요괴 조우 −${(r - 1) * 2}% · 날씨·시간대 불이익 −${(r - 1) * 10}%`,
 };
 
 // 대화 팝업: lines [{s: 인물 키 | null, t}] · cast {키: {name}}
@@ -74,7 +76,7 @@ export function factionPanels(s, c) {
         <div class="fq-buy"><input type="number" min="1" max="99" value="1" id="fqq-${esc(v.item_id)}" aria-label="수량" ${vaultOpen && !v.locked ? '' : 'disabled'}><button class="btn small" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button></div></li>`).join('')}</ul>
       <p class="muted small">공훈으로만 사고, 비고는 물건을 사들이지 않습니다.</p>`, { ico: 'bag' })}
     ${panel(kp.hall?.title || '수련장', `${kp.hall ? `<p class="fq-keeper"><b>${esc(kp.hall.who || '')}</b> “${esc(kp.hall.line || '')}”</p>` : ''}
-      <p class="small">지금 등급(${rk}등급) 시련 · 이길 가능성 약 ${hall.chance ?? '-'}% · 하루 한 번 · 이기면 공훈 +${10 * rk}. 3·5등급 시련을 처음 넘으면 세력 칭호(5등급은 세력 낙관도)를 받습니다.</p>
+      <p class="small">지금 등급(${rk}등급) 시련 · 상대 Lv${hall.foe_level ?? '-'} · 하루 한 번 · 내 전투 능력치(공격력·방어·치명타·회피)로 12합까지 겨룹니다. 이기면 공훈 +${10 * rk}, 3·5등급 시련을 처음 넘으면 세력 칭호(5등급은 세력 낙관도)를 받습니다.</p>
       <button class="btn ${hall.done_today ? '' : 'primary'}" id="fq-trial" ${s.join_done && s.at_home && !hall.done_today ? '' : 'disabled'}>${icon('sword', 16)}<span>${hall.done_today ? '오늘은 이미 치렀습니다' : !s.join_done ? '가입 퀘스트를 마치면 열립니다' : !s.at_home ? '세력 안전지대에서 열립니다' : '시련 치르기'}</span></button>`, { ico: 'sword' })}
     ${panel('세력 인물', (s.npcs || []).length ? `<ul class="fq-npcs">${s.npcs.map(n => `<li><button type="button" class="fq-npc" data-npc="${esc(n.key)}"><b>${esc(n.name)}</b>${n.quote ? `<q>${esc(n.quote)}</q>` : ''}<small>${esc(n.bio)}</small></button></li>`).join('')}</ul>
       <p class="muted small">만난 인물 ${s.npcs.length}/${s.npc_total || s.npcs.length} · 이름을 누르면 인물 기록을 펼칩니다. 퀘스트에서 처음 대화하면 여기에 남습니다.</p>` : `<p class="muted small">아직 만난 인물이 없습니다. 퀘스트에서 대화하면 인물 정보가 여기에 남습니다.</p>`, { ico: 'users' })}`;
@@ -94,7 +96,15 @@ export function bindFaction(body, s, redraw) {
     guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: qty }); done(); return r; });
   });
   const tr = $('#fq-trial', body);
-  if (tr) tr.onclick = () => guard(tr, async () => { const r = await act('world_faction_trial'); playDialogue({ title: '수련장 시련', lines: r.lines, reward: r.content }, s.faction_id); done(); return null; });
+  if (tr) tr.onclick = () => guard(tr, async () => {
+    const r = await act('world_faction_trial');
+    // 시련 전투를 한 줄씩 펼치고, 끝나면(또는 건너뛰면) 결과를 보인다
+    const m = openModal({ title: `${s.keepers?.hall?.title || '수련장'} · ${r.tier}등급 시련`, body: `<div class="spar-result">
+      <ol class="spar-log replay"></ol><button class="btn small ghost" data-skip>건너뛰기</button>
+      <div class="spar-end" hidden><p class="lead ${r.won ? 'ok' : 'bad'}">${r.won ? '시련을 넘었습니다' : '시련에 졌습니다'}</p><p class="small">${esc(r.content || '')}</p></div></div>` });
+    replayLog($('.spar-log', m), r.log || [], logRow, { skipBtn: $('[data-skip]', m), onDone: () => { $('.spar-end', m).hidden = false; } });
+    done(); return null;
+  });
   // 세력 인물 기록: 한 줄 소개 대사와 자세한 서술
   $$('[data-npc]', body).forEach(b => b.onclick = () => {
     const n = (s.npcs || []).find(x => x.key === b.dataset.npc); if (!n) return;
