@@ -327,6 +327,26 @@ update public.world_region_sites s set rare_bonus = jsonb_set(coalesce(s.rare_bo
  where r.region_id = s.region_id and r.danger_level >= 7 and not coalesce(r.is_safe_zone, false)
    and not coalesce(s.rare_bonus -> 'items', '[]'::jsonb) ? 'gwiryeong_cho';
 
+-- 요화 기록(칭호 판정용, 규칙 'yohwa'): onset 걸림 · stage3 반요에 이름 · seal 봉인 받음 · cure 귀령초로 풂
+create table if not exists public.world_yohwa_log (
+  id bigint generated always as identity primary key,
+  owner_id uuid not null references public.world_characters(owner_id) on delete cascade,
+  kind text not null check (kind in ('onset', 'stage3', 'seal', 'cure')),
+  at timestamptz not null default now()
+);
+create index if not exists idx_world_yohwa_log_owner on public.world_yohwa_log(owner_id, kind);
+alter table public.world_yohwa_log enable row level security;
+revoke all on public.world_yohwa_log from anon, authenticated;
+grant select, insert on public.world_yohwa_log to fn_owner_field;
+create or replace function public.world_yohwa_mark(p_owner uuid, p_kind text)
+returns void language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+begin
+  insert into public.world_yohwa_log(owner_id, kind) values (p_owner, p_kind);
+  perform public.world_title_award_check(p_owner, 'yohwa');
+end $$;
+alter function public.world_yohwa_mark(uuid, text) owner to fn_owner_field;
+revoke all on function public.world_yohwa_mark(uuid, text) from public, anon, authenticated;
+
 -- 요화 시작: 침식이 80·90·100에 닿는 순간에만 판정한다(조건이 맞을 때만 함수가 돈다)
 create or replace function public.world_yohwa_onset()
 returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
@@ -341,6 +361,7 @@ begin
   values (new.owner_id, 'yohwa', 1, 1, 'erosion', now() + interval '3 days', jsonb_build_object('stage', 1, 'started_at', now()));
   insert into public.world_notifications(user_id, kind, title, content, payload)
   values (new.owner_id, 'yohwa', '요화: 1단계 요기 스밈', '깊은 침식 속에서 요기가 몸에 스며들었습니다. 3일 뒤 2단계로 나빠집니다. 귀령초로만 풀 수 있습니다.', jsonb_build_object('stage', 1));
+  perform public.world_yohwa_mark(new.owner_id, 'onset');
   return null;
 end $$;
 alter function public.world_yohwa_onset() owner to fn_owner_field;
@@ -367,6 +388,7 @@ begin
       values (s.owner_id, 'yohwa', case when s.potency = 1 then '요화: 2단계 요문 발현' else '요화: 3단계 반요' end,
         case when s.potency = 1 then '살갗에 요기의 무늬가 떠올랐습니다. 2일 뒤 마지막 단계로 넘어갑니다.' else '반쯤 요괴가 되었습니다. 하루 안에 귀령초를 쓰지 않으면 쓰러집니다.' end,
         jsonb_build_object('stage', s.potency + 1));
+      if s.potency = 2 then perform public.world_yohwa_mark(s.owner_id, 'stage3'); end if;
     else
       busy := exists (select 1 from public.world_expeditions where owner_id = s.owner_id and status = 'active');
       if busy then
@@ -412,6 +434,7 @@ begin
       erosion_stage = CASE WHEN er >= 80 THEN 4 WHEN er >= 55 THEN 3 WHEN er >= 30 THEN 2 WHEN er >= 10 THEN 1 ELSE 0 END, updated_at = now() WHERE owner_id = uid;
     INSERT INTO public.world_events(actor_id, actor_name, event_type, content, payload)
     VALUES (uid, c.character_name, ''use_item'', c.character_name || ''이(가) 귀령초로 요화를 풀었습니다.'', jsonb_build_object(''v2'', true, ''item_id'', p_item_id, ''cured'', ''yohwa''));
+    PERFORM public.world_yohwa_mark(uid, ''cure'');
     RETURN jsonb_build_object(''ok'', true, ''content'', ''귀령초를 달여 마시자 몸에 스민 요기가 빠져나갔습니다. 요화가 풀리고 침식 -20'');
   END IF;'),
     -- 정화 부적 조정
@@ -450,6 +473,7 @@ begin
    where owner_id = uid;
   insert into public.world_notifications(user_id, kind, title, content, payload)
   values (uid, 'yohwa', '안전지대 봉인', z.region_name || '의 봉인술사들이 요기를 해독합니다. 24시간 동안은 채팅만 할 수 있고, 끝나면 원래대로 움직일 수 있습니다.', jsonb_build_object('seal', true));
+  perform public.world_yohwa_mark(uid, 'seal');
   return jsonb_build_object('ok', true, 'location', z.region_name, 'content', z.region_name || '(으)로 옮겨져 봉인 해독을 받습니다. 24시간 뒤 원래대로 움직일 수 있습니다.');
 end $$;
 alter function public.world_yohwa_seal() owner to fn_owner_field;
@@ -484,6 +508,39 @@ begin
     if position(pat.b in d) > 0 then continue; end if;
     if (length(d) - length(replace(d, pat.a, ''))) / length(pat.a) <> 1 then raise exception '봉인 고칠 자리가 하나가 아닙니다: % / %', pat.fn, left(pat.a, 60); end if;
     execute replace(d, pat.a, pat.b);
+  end loop;
+end $$;
+
+-- 봉인 중에는 행동 기록을 남기지 않는 기능도 막는다(채팅·귓속말·친구·파티 맺기·프로필·칭호·꾸미기는 그대로)
+create or replace function public.world_seal_guard()
+returns void language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+begin
+  if exists (select 1 from public.world_character_statuses where owner_id = public.fn_owner_auth_uid() and status_key = 'yohwa_seal' and expires_at > now()) then
+    raise exception '봉인 해독 중에는 채팅 말고는 할 수 없습니다. 해독이 끝나면 다시 움직일 수 있습니다.';
+  end if;
+end $$;
+alter function public.world_seal_guard() owner to fn_owner_field;
+revoke all on function public.world_seal_guard() from public, anon, authenticated;
+do $$
+declare f record; d text; nd text;
+begin
+  for f in select p.oid, p.oid::regprocedure::text sig, pg_get_userbyid(p.proowner) own from pg_proc p
+            where p.pronamespace = 'public'::regnamespace and p.proname in (
+              'world_field_move', 'world_exploration_back', 'world_exploration_search_spot', 'world_claim_idle_activity',
+              'world_overflow_take', 'world_overflow_discard', 'world_party_loot_claim', 'world_party_loot_deposit', 'world_party_loot_distribute',
+              'world_trade_direct_offer', 'world_travel_party_invite', 'world_travel_party_invite_v2',
+              'world_bond_gift', 'world_bond_propose')
+              and p.prolang = (select oid from pg_language where lanname = 'plpgsql') loop
+    execute format('grant execute on function public.world_seal_guard() to %I', f.own);
+    d := pg_get_functiondef(f.oid);
+    if position('world_seal_guard' in d) > 0 then continue; end if;
+    -- 머리에서 받은 역할은 그대로 두고, 그 밖의 주인 역할만 잠깐 받았다가 거둔다
+    if f.own <> all (array['postgres', 'fn_owner_field', 'fn_owner_expedition', 'fn_owner_18451', 'fn_owner_18452', 'fn_owner_18925', 'fn_owner_20170', 'fn_owner_20175', 'fn_owner_18944', 'fn_owner_19180']) then execute format('grant %I to postgres with inherit true, set true', f.own); end if;
+    -- 함수 본문의 첫 BEGIN 바로 뒤에 넣는다
+    nd := regexp_replace(d, '(\$function\$.*?\mbegin\M)', E'\\1 perform public.world_seal_guard();', 'i');
+    if nd = d then raise exception '봉인 막기를 넣을 자리를 찾지 못했습니다: %', f.sig; end if;
+    execute nd;
+    if f.own <> all (array['postgres', 'fn_owner_field', 'fn_owner_expedition', 'fn_owner_18451', 'fn_owner_18452', 'fn_owner_18925', 'fn_owner_20170', 'fn_owner_20175', 'fn_owner_18944', 'fn_owner_19180']) then execute format('grant %I to postgres with inherit false, set false', f.own); end if;
   end loop;
 end $$;
 
@@ -717,6 +774,16 @@ alter function public.world_spar_respond(uuid, boolean) owner to fn_owner_field;
 revoke all on function public.world_spar_respond(uuid, boolean) from public, anon, authenticated;
 grant execute on function public.world_spar_respond(uuid, boolean) to authenticated;
 
+-- 요화 칭호 규칙: {"yohwa": "onset"|"stage3"|"seal"|"cure"|"overcome"(봉인·귀령초 합), "n": 횟수}
+create or replace function public.world_yohwa_rule_count(p_owner uuid, p_rule jsonb)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select count(*)::numeric from public.world_yohwa_log l
+   where l.owner_id = p_owner
+     and (case when p_rule ->> 'yohwa' = 'overcome' then l.kind in ('seal', 'cure') else l.kind = p_rule ->> 'yohwa' end)
+$$;
+alter function public.world_yohwa_rule_count(uuid, jsonb) owner to fn_owner_field;
+revoke all on function public.world_yohwa_rule_count(uuid, jsonb) from public, anon, authenticated;
+
 -- 비무 칭호 규칙: {"spar":"all"|"distinct", "n":개수, "won":true/false, "ko":true/false, "gap":상대가 높은 레벨 차}
 create or replace function public.world_spar_rule_count(p_owner uuid, p_rule jsonb)
 returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
@@ -737,6 +804,7 @@ do $$ declare ro text; begin
   for ro in select distinct pg_get_userbyid(p.proowner) from pg_proc p
              where p.oid in ('public.world_title_rule_ok(uuid,jsonb)'::regprocedure, 'public.world_title_rule_progress(uuid,jsonb)'::regprocedure) loop
     execute format('grant execute on function public.world_spar_rule_count(uuid, jsonb) to %I', ro);
+    execute format('grant execute on function public.world_yohwa_rule_count(uuid, jsonb) to %I', ro);
   end loop;
 end $$;
 do $$
@@ -746,14 +814,19 @@ begin
     ('public.world_title_rule_ok(uuid,jsonb)', '  ELSIF p_rule ? ''survey_full'' THEN',
      '  ELSIF p_rule ? ''spar'' THEN
     RETURN public.world_spar_rule_count(p_owner, p_rule) >= n;
+  ELSIF p_rule ? ''yohwa'' THEN
+    RETURN public.world_yohwa_rule_count(p_owner, p_rule) >= n;
   ELSIF p_rule ? ''survey_full'' THEN'),
     ('public.world_title_rule_progress(uuid,jsonb)', '  elsif p_rule ? ''survey_full'' then',
      '  elsif p_rule ? ''spar'' then
     v := public.world_spar_rule_count(p_owner, p_rule);
+  elsif p_rule ? ''yohwa'' then
+    v := public.world_yohwa_rule_count(p_owner, p_rule);
   elsif p_rule ? ''survey_full'' then'),
     ('public.world_title_award_check(uuid,text)', '    IF r ? ''distinct'' AND p_event_type IS NOT NULL AND r ->> ''distinct'' <> p_event_type THEN CONTINUE; END IF;',
      '    IF r ? ''distinct'' AND p_event_type IS NOT NULL AND r ->> ''distinct'' <> p_event_type THEN CONTINUE; END IF;
-    IF r ? ''spar'' AND p_event_type IS NOT NULL AND p_event_type <> ''spar'' THEN CONTINUE; END IF;')
+    IF r ? ''spar'' AND p_event_type IS NOT NULL AND p_event_type <> ''spar'' THEN CONTINUE; END IF;
+    IF r ? ''yohwa'' AND p_event_type IS NOT NULL AND p_event_type <> ''yohwa'' THEN CONTINUE; END IF;')
   ) as t(fn, a, b) loop
     d := pg_get_functiondef(pat.fn::regprocedure);
     if position(pat.b in d) > 0 then continue; end if;
@@ -762,7 +835,7 @@ begin
   end loop;
 end $$;
 
--- 비무 칭호 10가지(분류 비무, 둘은 숨김)
+-- 비무 칭호 10가지(분류 비무, 둘은 숨김)와 요화 칭호 5가지(넷은 숨김)
 insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade) values
 ('spar_first', '초출 무인', 'sword', '처음으로 남과 칼을 맞대 보았다.', '비무 1번', '{"presence": 3}'::jsonb, true, false, '{"spar": "all", "n": 1}'::jsonb, 108, '비무', 1),
 ('spar_win1', '첫 승리의 맛', 'sword', '이긴다는 것이 이런 기분이다.', '비무에서 1번 이기기', '{"crit_pct": 1}'::jsonb, true, false, '{"spar": "all", "won": true, "n": 1}'::jsonb, 109, '비무', 1),
@@ -773,6 +846,11 @@ insert into public.world_title_catalog(title_key, title_name, icon, description,
 ('spar_100', '백전노장', 'sword', '겨룬 횟수를 세는 것도 그만두었다.', '비무 100번', '{"defense": 3, "presence": 5, "incoming_damage_pct": -3}'::jsonb, true, false, '{"spar": "all", "n": 100}'::jsonb, 114, '비무', 3),
 ('spar_win50', '무림 명숙', 'sword', '그 이름을 들으면 다들 한 수 접는다.', '비무에서 50번 이기기', '{"combat_damage_pct": 4, "crit_pct": 2, "evasion_pct": 1}'::jsonb, true, false, '{"spar": "all", "won": true, "n": 50}'::jsonb, 115, '비무', 4),
 ('spar_upset', '하극상', 'sword', '레벨은 숫자일 뿐이었다.', '나보다 5레벨 이상 높은 조사원을 비무에서 이기기', '{"combat_damage_pct": 3, "crit_pct": 2, "magic_pct": 2}'::jsonb, true, true, '{"spar": "all", "won": true, "gap": 5, "n": 1}'::jsonb, 116, '비무', 4),
+('yohwa_first', '요기에 물든 자', 'mask', '거울 속 눈동자가 낯설다.', '요화에 걸리기', '{"erosion_pct": -3, "rare_loot_pct": 2}'::jsonb, true, true, '{"yohwa": "onset", "n": 1}'::jsonb, 118, '비밀', 2),
+('yohwa_half', '반요', 'mask', '사람과 요괴의 경계에 서 보았다.', '요화 3단계 반요에 이르기', '{"combat_damage_pct": 3, "erosion_pct": -3, "mental_loss_pct": -3}'::jsonb, true, true, '{"yohwa": "stage3", "n": 1}'::jsonb, 119, '비밀', 3),
+('yohwa_seal', '봉인의 잠', 'shield', '하루 동안 봉인 속에서 요기를 덜어 냈다.', '안전지대 봉인을 받기', '{"mental_loss_pct": -5, "healing_pct": 3}'::jsonb, true, true, '{"yohwa": "seal", "n": 1}'::jsonb, 120, '비밀', 2),
+('yohwa_cure', '귀령의 손길', 'leaf', '혼을 제자리로 돌려놓는 풀을 알게 되었다.', '귀령초로 요화를 풀기', '{"erosion_pct": -4, "healing_pct": 3}'::jsonb, true, false, '{"yohwa": "cure", "n": 1}'::jsonb, 121, '성장', 2),
+('yohwa_master', '요기를 다스리는 자', 'mask', '세 번 요괴가 되어 가다 세 번 돌아왔다.', '요화를 3번 이겨내기(봉인·귀령초)', '{"erosion_pct": -8, "mental_loss_pct": -6, "incoming_damage_pct": -3}'::jsonb, true, true, '{"yohwa": "overcome", "n": 3}'::jsonb, 122, '비밀', 4),
 ('spar_lose30', '칠전팔기', 'sword', '지는 법을 아는 자가 끝내 일어선다.', '비무에서 30번 지기', '{"mental_loss_pct": -5, "incoming_damage_pct": -2}'::jsonb, true, true, '{"spar": "all", "won": false, "n": 30}'::jsonb, 117, '비무', 3)
 on conflict (title_key) do update set title_name = excluded.title_name, description = excluded.description, condition_text = excluded.condition_text,
   bonus = excluded.bonus, hidden = excluded.hidden, rule = excluded.rule, sort = excluded.sort, category = excluded.category, grade = excluded.grade;
