@@ -1157,6 +1157,8 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .fr-wrap.t-rare, .fr-wrap.t-legend { border-style: double; }
 .fr-wrap.t-rare { --fr: var(--gold); --fr-glyph: var(--gold); }
 .fr-wrap.t-legend { --fr: var(--accent); --fr-glyph: var(--gold); }
+/* 레거시(야행의 흔적): 먹빛 바탕에 핏빛 겹테·금빛 문양 */
+.fr-wrap.t-legacy { border-style: double; --fr: #a3243a; --fr-glyph: #e0bd66; --frame-bg: #120d10; } [data-tone=light] .fr-wrap.t-legacy { --fr: #8a1b2e; --fr-glyph: #9a7420; --frame-bg: #f4eee2; }
 .fr-svg { position: absolute; inset: calc(var(--fbw, 2px) * -1); width: calc(100% + var(--fbw, 2px) * 2); height: calc(100% + var(--fbw, 2px) * 2); pointer-events: none; overflow: visible; }
 .fr-svg .fr-line { fill: none; stroke: var(--fr); stroke-width: 3; }
 .fr-svg .fr-line.thin { stroke-width: 1.4; opacity: .8; }
@@ -1175,6 +1177,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .seal-mark text { fill: currentColor; font-size: 13.5px; font-family: inherit; font-weight: inherit; }
 .seal-mark.t-rare { color: var(--gold); border-color: var(--gold); }
 .seal-mark.t-legend { color: var(--surface); background: var(--accent); border-color: var(--accent); }
+.seal-mark.t-legacy { color: #e0bd66; background: #160e12; border-color: #a3243a; border-style: double; border-width: 3px; } [data-tone=light] .seal-mark.t-legacy { color: #f4e2b0; background: #2a1418; border-color: #8a1b2e; }
 .seal-mark.none { display: inline-grid; place-items: center; width: auto; height: auto; min-height: 1.4em; padding: 0 6px; font-size: 12px; font-weight: 400; color: var(--muted); border-color: var(--line); margin: 0; }
 .cos-h { margin: 14px 0 8px; font-size: 13px; }
 .cos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
@@ -1558,6 +1561,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ns-1013 { --ns: #f29cb8; } [data-tone=light] .ns-1013 { --ns: #b4446a; }
 .ns-1014 { --ns: #9fe0d6; } [data-tone=light] .ns-1014 { --ns: #2f8579; }
 .ns-1015 { --ns: #c9a6f0; } [data-tone=light] .ns-1015 { --ns: #7348a8; }
+.ns-1016 { --ns: #e0bd66; } [data-tone=light] .ns-1016 { --ns: #8a5a12; }
+.chat-list li.msg.ns-1016 .meta b::before, .card-name.ns-1016::before, .hue-preview.ns-1016 b::before { background: #a3243a; outline: 1px solid #e0bd66; }
 .chat-list li.msg[class*="ns-"] .meta b, .card-name[class*="ns-"], .hue-preview[class*="ns-"] b, .hue-pick[class*="ns-"] { color: var(--ns) !important; font-weight: 750; }
 .chat-list li.msg[class*="ns-"] .meta b::before, .card-name[class*="ns-"]::before, .hue-preview[class*="ns-"] b::before { content: ''; display: inline-block; width: 5px; height: 5px; margin: 0 4px 2px 0; background: var(--ns); transform: rotate(45deg); vertical-align: middle; }
 .hue-pick[class*="ns-"] { min-width: 64px; }

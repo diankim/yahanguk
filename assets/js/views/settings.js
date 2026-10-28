@@ -159,7 +159,7 @@ export async function render(root, sub) {
 }
 // 꾸미기: 테두리·바탕 무늬·낙관. 얻은 것만 고를 수 있고, 잠긴 것은 얻는 방법을 보여 준다(숨김은 서버가 가린다).
 const KINDS = [['frame', '테두리'], ['pattern', '바탕 무늬'], ['seal', '낙관']];
-const TIER = { common: '', rare: '희귀', legend: '전설' };
+const TIER = { common: '', rare: '희귀', legend: '전설', legacy: '흔적' };
 function cosmeticsHtml(cos) {
   if (!cos) return `<h3 class="sub-h">꾸미기</h3><p class="muted small">꾸미기 목록을 불러오지 못했습니다.</p>`;
   const sample = (kind, key) => kind === 'frame' ? emblem(store.character.owner_id, { ...store.character.profile, frame: key || null }, 60)

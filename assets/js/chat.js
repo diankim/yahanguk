@@ -256,6 +256,7 @@ export const NAME_STYLES = {
   1007: ['묵영', '비밀 칭호를 5개 얻으면'], 1008: ['단풍', '탐사 칭호를 5개 얻으면'], 1009: ['송화', '채집 칭호를 3개 얻으면'],
   1010: ['무쇠', '제작 칭호를 3개 얻으면'], 1011: ['혈홍', '전투 칭호를 6개 얻으면'], 1012: ['무혼', '비무 칭호를 3개 얻으면'],
   1013: ['도화', '교류 칭호를 2개 얻으면'], 1014: ['바람결', '이동 칭호를 4개 얻으면'], 1015: ['성운', '성장 칭호를 4개 얻으면'],
+  1016: ['야행묵금', '「야행의 흔적」을 받은 이만'],
 };
 export const nameStyle = (v, id) => NAME_STYLES[v] ? { cls: ` ns-${v}`, hu: hue(id) } : { cls: '', hu: Number.isInteger(v) ? v : hue(id) };
 export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
