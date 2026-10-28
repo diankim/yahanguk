@@ -141,7 +141,7 @@ async function status(body) {
       <p class="bad"><b id="death-left">${deathAt ? `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}` : ''}</b></p>
       <div class="action-grid">
         <button class="btn primary" data-use="revival_charm" ${invItems.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(invItems.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
-        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금의 30%(최소 50전) · 가장 가까운 안전지대로 옮겨집니다</small></button>
+        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금의 30%(최소 50전)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>
       </div>
       <p class="muted small">시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.</p>`, { ico: 'heart', cls: 'danger' }) : ''}
     <div class="grid-2">
@@ -150,7 +150,7 @@ async function status(body) {
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0))}
         <div class="action-grid three">
-          <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || '정화 부적 1개 · 침식 -25 · 정신 +8')}</small></button>
+          <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || '정화 부적 1개 · 침식 -18 · 정신 +6')}</small></button>
           <button class="btn" data-surv="ground" ${groundWhy ? 'disabled' : ''}><span>마음 다잡기</span><small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '본부에서 · 정신 +18 · 침식 -10 · 15분마다')}</small></button>
         </div>`, { ico: 'heart' })}
       ${panel('전투 능력', prof?.current ? combatRows(prof.current) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword', extra: `<a class="btn small ghost" href="#/char/growth">능력치</a>` })}
@@ -174,7 +174,7 @@ async function status(body) {
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   bindRepair(body);
   const cr = $('#call-rescue', body);
-  if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 30%(최소 50전)를 내고 가장 가까운 안전지대로 옮겨집니다.', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
+  if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 30%(최소 50전)와 이번 레벨에 필요한 경험치의 5%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다).', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
   const t = setInterval(() => {
     if (!body.isConnected) return clearInterval(t);
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
@@ -194,7 +194,8 @@ function previewText(cur, next) {
 async function growth(body) {
   const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile').catch(() => null)]);
   const c = store.character, pts = Number(c.stat_points || 0), cur = prof?.current;
-  const ranks = [['전투', c.combat_rank, c.combat_xp], ['조사', c.investigation_rank, c.investigation_xp], ['채집', c.gathering_rank, c.gathering_xp], ['제작', c.crafting_rank, c.crafting_xp], ['요리', c.cooking_rank, c.cooking_xp]];
+  const sp = c.skill_progress || {}, bestOf = cats => { const k = cats.reduce((a, x) => (sp[x]?.rank || 1) > (sp[a]?.rank || 1) ? x : a, cats[0]); return `가장 높은 기술: ${SKILL_NAME[k] || nameOf(k)}`; };
+  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)]), ['요리', c.cooking_rank, `${fmt.num(c.cooking_xp)} 경험`]];
   body.innerHTML = `
     <div class="grid-2">
       ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다.</p>
@@ -204,8 +205,8 @@ async function growth(body) {
       ${panel('지금 전투 능력', cur ? combatRows(cur) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword' })}
     </div>
     <div class="grid-2">
-      ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, xp]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${fmt.num(xp)} 경험</small></li>`).join('')}</ul>
-        <p class="muted small">숙련은 해당 행동을 할 때만 오릅니다. 전투 숙련은 공격력을 단계마다 1.5% 올립니다.</p>`, { ico: 'target' })}
+      ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, best]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${esc(best)}</small></li>`).join('')}</ul>
+        <p class="muted small">숙련은 그 갈래 기술 가운데 가장 높은 단계입니다(최고 50, 요리는 따로 20단계). 전투 숙련은 단계마다 공격력 +0.6%입니다. 기술 탭에서 계열별 단계를 봅니다.</p>`, { ico: 'target' })}
       ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고, 내 제작 분야의 제작법은 품질 +12(종합 제작은 모든 분야 +4)입니다. 요리를 고르면 요리 제작법이 품질 +12입니다.</p>
         <p class="${profWait(c) > 0 ? 'hint' : 'muted small'}">${profWait(c) > 0 ? `${icon('hourglass', 14)} 다음 변경까지 ${fmt.remain(profWait(c))}` : '한 번 바꾸면 3일 동안 다시 바꿀 수 없습니다.'}</p>
         <div class="form-grid">
@@ -237,32 +238,60 @@ const CAT_DESC = {
   foraging: '일반 채집터에서 채집할 때 오릅니다.', herbalism: '약초 채집터에서 채집할 때 오릅니다.', mining: '광맥에서 채집할 때 오릅니다.',
   spirit_gathering: '영기가 서린 곳에서 채집할 때 오릅니다.', smithing: '단조·목공·법구 공예·직조·가죽 공예 제작법으로 만들 때 오릅니다.', alchemy: '연금 제작법으로 약제를 만들 때 오릅니다.', wardcraft: '봉인 공예 제작법으로 부적·봉인 도구를 만들 때 오릅니다.',
 };
-// 행동 한 번에 오르는 기술 경험(서버 world_track_specialized_skill과 같은 값). 100마다 한 단계, 최고 50단계.
+// 행동 한 번에 오르는 기술 경험(서버 world_track_specialized_skill과 같은 값).
+// 단계 r → r+1에 80+8r 경험(누적 4r²+76r−80, 서버 world_skill_line_xp), 최고 50단계.
 const SKILL_GAIN = {
   melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
   mining: '채집 +8', herbalism: '채집 +8', spirit_gathering: '채집 +8', foraging: '채집 +8',
   smithing: '제작 +12', alchemy: '제작 +12', wardcraft: '제작 +12', tracking: '탐색 +8 · 이야기 +10 · 이동 +3',
 };
-const SKILL_STEP = 100, SKILL_CAP = 50;
+const SKILL_CAP = 50;
+const lineXp = r => r <= 1 ? 0 : 4 * r * r + 76 * r - 80;
 const SKILL_NAME = { sealing: '봉인술' }; // 제작 분야 「봉인 공예」와 이름이 겹치는 전투 계열
+// 숙련 네 갈래 = 그 갈래 기술 가운데 가장 높은 단계(서버 world_skill_sync)
+export const BRANCHES = [
+  ['combat', '전투', 'sword', ['melee', 'ranged', 'sealing', 'analysis', 'guarding', 'first_aid']],
+  ['gathering', '채집', 'leaf', ['foraging', 'herbalism', 'mining', 'spirit_gathering']],
+  ['crafting', '제작', 'hammer', ['smithing', 'alchemy', 'wardcraft']],
+  ['investigation', '조사', 'search', ['tracking']],
+];
 async function skills(body) {
   const list = await load('world_skill_snapshot', undefined, { maxAge: 10000 });
   const groups = {};
   (list || []).forEach(s => (groups[s.category] ||= []).push(s));
-  const cats = Object.keys(groups);
-  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>기술이란</b><span>기술은 행동을 되풀이할수록 오르는 세부 숙련입니다. 계열마다 단계가 있고, 정해진 단계에 이르면 그 계열의 기술을 익혀 상시 효과가 붙습니다. 레벨·능력치와 따로 오르며, 관계없는 행동으로는 오르지 않습니다.</span></div></div>
-    ${cats.length ? `<div class="skill-groups">${cats.map(cat => { const sk = groups[cat][0], rank = Number(sk.rank || 1), xp = Number(sk.xp || 0);
-      const top = rank >= SKILL_CAP, into = top ? SKILL_STEP : xp - (rank - 1) * SKILL_STEP, next = groups[cat].find(x => !x.unlocked);
-      return panel(`${SKILL_NAME[cat] || nameOf(cat)} · ${fmt.num(rank)}단계`, `<p class="muted small">${esc(CAT_DESC[cat] || '관련 행동을 할 때 오릅니다.')}</p>
-      <div class="skill-meter"><div class="bar"><span style="width:${Math.max(0, Math.min(100, into / SKILL_STEP * 100))}%"></span></div>
-        <small>${top ? `최고 단계 · 누적 ${fmt.num(xp)} 경험` : `${fmt.num(into)} / ${SKILL_STEP} 경험 · 다음 단계까지 ${fmt.num(SKILL_STEP - into)}`}</small>
-        <small>${esc(SKILL_GAIN[cat] ? `얻는 경험: ${SKILL_GAIN[cat]}` : '')}${next ? ` · 다음 기술은 ${next.unlock_rank}단계(${fmt.num(Math.max(0, (next.unlock_rank - 1) * SKILL_STEP - xp))} 경험 남음)` : ''}</small></div>
-      <ul class="skill-list">${groups[cat].map(s => `<li class="${s.unlocked ? 'on' : ''}">
-      <div><b>${esc(s.skill_name)}</b><small>${esc(s.description || '')}</small></div>
-      <span class="chip ${s.unlocked ? 'ok' : ''}">${s.unlocked ? '익힘' : `${s.unlock_rank}단계에 익힘`}</span>
-      </li>`).join('')}</ul>`, { cls: 'compact' }); }).join('')}</div>`
+  const line = cat => {
+    const sk = groups[cat]; if (!sk) return '';
+    const rank = Number(sk[0].rank || 1), xp = Number(sk[0].xp || 0), top = rank >= SKILL_CAP;
+    const need = lineXp(rank + 1) - lineXp(rank), into = top ? need : Math.max(0, xp - lineXp(rank));
+    const next = sk.find(x => !x.unlocked);
+    return `<div class="sk-line" data-cat="${cat}">
+      <div class="sk-head"><b>${esc(SKILL_NAME[cat] || nameOf(cat))}</b><span class="sk-rank">${fmt.num(rank)}<small>/${SKILL_CAP}</small></span></div>
+      <div class="bar sk-bar"><span style="width:${Math.max(0, Math.min(100, into / need * 100))}%"></span></div>
+      <small class="muted">${top ? '최고 단계' : `${fmt.num(into)} / ${fmt.num(need)} 경험`}${next ? ` · 다음 기술 ${next.unlock_rank}단계까지 ${fmt.num(Math.max(0, lineXp(next.unlock_rank) - xp))}` : ''}</small>
+      <ol class="sk-nodes" style="--n:${sk.length}">${sk.map((s, i) => `<li><button type="button" class="sk-node ${s.unlocked ? 'on' : ''}" data-i="${i}" aria-label="${esc(s.skill_name)} · ${s.unlock_rank}단계" title="${esc(s.skill_name)}">${s.unlock_rank}</button></li>`).join('')}</ol>
+      <div class="sk-detail" hidden></div>
+    </div>`;
+  };
+  const c = store.character || {};
+  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 숙련(전투·채집·제작·조사)은 따로 오르지 않고 그 갈래 기술 가운데 가장 높은 단계를 그대로 씁니다. 네모를 누르면 그 단계에서 익히는 기술과 효과가 아래에 펼쳐집니다.</span></div></div>
+    ${Object.keys(groups).length ? `<div class="skill-groups">${BRANCHES.map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
+      `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
-    <p class="muted small">전투 계열(근접·원거리·봉인·분석)의 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다. 상태 탭의 전투 능력에서 적용 중인 기술을 확인할 수 있습니다.</p>`;
+    <p class="muted small">전투 계열(근접·원거리·봉인술·분석)의 피해·치명타 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다. 그 밖의 효과(채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다.</p>`;
+  $$('.sk-line', body).forEach(el => {
+    const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
+    $$('.sk-node', el).forEach(b => b.onclick = () => {
+      const open = b.classList.contains('sel');
+      $$('.sk-node', el).forEach(x => x.classList.remove('sel'));
+      if (open) { box.hidden = true; return; }
+      b.classList.add('sel');
+      const s = sk[Number(b.dataset.i)];
+      box.innerHTML = `<b>${esc(s.skill_name)}</b> <span class="chip ${s.unlocked ? 'ok' : ''}">${s.unlocked ? '익힘' : `${s.unlock_rank}단계에 익힘`}</span>
+        <p>${esc(s.description || '')}</p>
+        <p class="muted small">${esc(CAT_DESC[el.dataset.cat] || '')}${SKILL_GAIN[el.dataset.cat] ? ` 얻는 경험: ${esc(SKILL_GAIN[el.dataset.cat])}.` : ''}</p>`;
+      box.hidden = false;
+    });
+  });
 }
 
 /* ── 자율 활동 ───────────────────────────────────────── */

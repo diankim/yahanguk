@@ -5,7 +5,7 @@ import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openMo
 import { load, chip } from './common.js';
 
 export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
-  ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기',
+  ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
   // 영력 회복약(낮은 단계부터)
   spirit_tea: '영력 10', clear_spirit_pill: '영력 20', spirit_qi_pill: '영력 35', moonlight_essence: '영력 55 · 심신 동요 치료', heavenly_dew: '영력 80 · 심신 동요·사념 침식 치료',
   // 요리(서버 world_use_item과 같은 값)

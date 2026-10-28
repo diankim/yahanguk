@@ -1041,6 +1041,26 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .exp-feed .k-walk .ico { color: var(--muted); opacity: .7; }
 .exp-feed .k-round { font-weight: 600; } .exp-feed .k-round .ico, .exp-feed .k-start .ico { color: var(--gold); }
 .exp-feed li.fresh { animation: feed-in .6s ease-out; }
+/* 전투 묶음: 일반 기록과 다른 테 두른 칸, 결과 한 줄 + 눌러서 펼침 */
+.exp-feed .exp-battle { margin: 4px 0; border: var(--bw) solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-left: 3px solid var(--accent); border-radius: var(--r-sm); background: var(--surface); }
+.exp-feed .exp-battle.b-lose, .exp-feed .exp-battle.b-down { border-left-color: var(--bad); }
+.exp-feed .exp-battle.b-win { border-left-color: var(--ok); }
+.exp-feed .exp-battle > button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 0 6px; align-items: center; padding: 4px 8px; }
+.exp-feed .exp-battle > button .ico { color: var(--accent); }
+.exp-feed .exp-battle .eb-sum { grid-column: 2 / 3; font-size: 12px; color: var(--muted); }
+.exp-feed .exp-battle > button time { grid-row: 1; grid-column: 3; }
+.exp-feed .exp-battle > ul { display: none; list-style: none; margin: 0; padding: 0 8px 6px 22px; font-size: 13px; }
+.exp-feed .exp-battle.open > ul { display: block; }
+/* 비무 결과 */
+.spar-result .lead.ok { color: var(--ok); } .spar-result .lead.bad { color: var(--bad); }
+.spar-result .stat-tiles .win { box-shadow: inset 0 0 0 1px var(--ok); }
+.spar-log { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; max-height: 46vh; overflow: auto; }
+.spar-log li { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: start; font-size: 13px; padding: 4px 8px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--line); }
+.spar-log li.s1 { border-left-color: var(--accent); } .spar-log li.s2 { border-left-color: var(--mp); }
+.spar-log li.k-crit span { color: var(--gold); font-weight: 650; } .spar-log li.k-miss span { color: var(--muted); }
+.spar-log li.k-end, .spar-log li.k-start { border-left-color: var(--gold); font-weight: 600; }
+.exp-feed li.exp-battle { display: block; padding: 0; border-bottom: var(--bw) solid color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.exp-feed .exp-battle > ul li:last-child { border-bottom: 0; }
 @keyframes feed-in { from { background: color-mix(in srgb, var(--gold) 18%, transparent); } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .exp-feed li.fresh { animation: none; } }
 .exp-now { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 8px; padding: 8px 12px; border-radius: var(--r-sm); border: var(--bw) solid color-mix(in srgb, var(--gold) 40%, var(--line)); font-size: 13px; line-height: 1.55; }
@@ -1321,6 +1341,23 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .craft-cats .check small { color: var(--muted); font-size: 11px; }
 .craft-cats .check.mine span { color: var(--ok); font-weight: 600; }
 .skill-meter { display: grid; gap: 4px; margin: 2px 0 8px; }
+/* 기술 단계 노드: ㅁ-ㅁ-ㅁ, 누르면 아래에 펼친다 */
+.sk-lines { display: grid; gap: 12px; }
+.sk-line { display: grid; gap: 4px; }
+.sk-head { display: flex; justify-content: space-between; align-items: baseline; }
+.sk-rank { font-weight: 700; color: var(--accent); }
+.sk-rank small { color: var(--muted); font-weight: 400; }
+.sk-bar { height: 4px; }
+.sk-nodes { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n), 1fr); }
+.sk-nodes li { position: relative; display: flex; justify-content: center; }
+.sk-nodes li + li::before { content: ''; position: absolute; left: -50%; right: 50%; top: 50%; height: 2px; background: var(--line); z-index: 0; }
+.sk-nodes li:has(.on) + li:has(.on)::before { background: var(--ok); }
+.sk-node { position: relative; z-index: 1; width: 28px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); color: var(--muted); font-size: 11px; cursor: pointer; }
+.sk-node.on { border-color: var(--ok); color: var(--ok); background: var(--surface); }
+.sk-node.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sk-detail { margin-top: 4px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 13px; }
+.sk-detail p { margin: 4px 0 0; }
+@media (max-width: 420px) { .sk-node { width: 24px; height: 24px; font-size: 10px; } }
 .skill-meter small { font-size: 12px; color: var(--muted); }
 /* 채팅: 위쪽 손잡이로 시트 높이 조절(좁은 화면), 위를 읽는 중 새 메시지 알림 단추 */
 .chat-grip { display: none; }
@@ -1482,6 +1519,17 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list li.msg .av.face { background: none; border: 0; overflow: hidden; }
 .chat-list li.msg .av.face .emblem { width: 26px !important; height: 26px !important; border-radius: 8px; }
 .chat-list li.msg .av.face .emblem img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+/* 채팅 얼굴 테두리: 얼굴 크기는 그대로, 바깥에 테 한 줄(꾸미기 등급색) */
+.chat-list li.msg .av.face.fr { outline: 1.5px solid var(--muted); outline-offset: 1px; border-radius: 9px; }
+.chat-list li.msg .av.face.fr.t-rare { outline: 3px double var(--gold); }
+.chat-list li.msg .av.face.fr.t-legend { outline: 3px double var(--accent); }
+/* 특별 이름 색(칭호 보상): 평면 색 + 이름 앞 작은 마름모 */
+.ns-1001 { --ns: #b49cf0; } .ns-1002 { --ns: #ef6a3c; } .ns-1003 { --ns: #d9b45a; }
+[data-tone=light] .ns-1001 { --ns: #6a4bb8; } [data-tone=light] .ns-1002 { --ns: #c2421a; } [data-tone=light] .ns-1003 { --ns: #93701c; }
+.chat-list li.msg[class*="ns-"] .meta b, .card-name[class*="ns-"], .hue-preview[class*="ns-"] b, .hue-pick[class*="ns-"] { color: var(--ns) !important; font-weight: 750; }
+.chat-list li.msg[class*="ns-"] .meta b::before, .card-name[class*="ns-"]::before, .hue-preview[class*="ns-"] b::before { content: ''; display: inline-block; width: 5px; height: 5px; margin: 0 4px 2px 0; background: var(--ns); transform: rotate(45deg); vertical-align: middle; }
+.hue-pick[class*="ns-"] { min-width: 64px; }
+.hue-pick[class*="ns-"]:disabled { opacity: .45; cursor: not-allowed; }
 /* 침식 원형 게이지(현장 머리 오른쪽 위) */
 .scene > .er-ring { position: absolute; z-index: 3; top: 12px; right: 12px; width: 52px; height: 52px; display: grid; place-items: center; align-content: center; text-decoration: none; color: var(--text); border-radius: 50%; background: color-mix(in srgb, var(--bg) 72%, transparent); }
 .er-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }

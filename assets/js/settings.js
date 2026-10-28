@@ -64,7 +64,7 @@ export function bindCrop(root, onReady) {
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell;
 const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
-const POP_KINDS = new Set(['party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted']);
+const POP_KINDS = new Set(['party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -113,6 +113,8 @@ function noteActs(n) {
   if (n.kind === 'friend_request' && n.payload?.from_id) return `<button class="btn primary small" data-friend="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-friend="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'circle_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-circle="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-circle="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'bond_request' && n.payload?.request_id) return `<button class="btn primary small" data-bondn="${esc(n.id)}" data-acc="1">받기</button><button class="btn small" data-bondn="${esc(n.id)}" data-acc="0">돌려보내기</button>`;
+  if (n.kind === 'spar_request' && n.payload?.spar_id) return `<button class="btn primary small" data-spar="${esc(n.id)}" data-acc="1">겨루기</button><button class="btn small" data-spar="${esc(n.id)}" data-acc="0">사양</button>`;
+  if (n.kind === 'spar_result' && n.payload?.spar_id && /비무에서/.test(n.title || '')) return `<button class="btn primary small" data-sparv="${esc(n.id)}">결과 보기</button>`;
   if (n.kind === 'bug_report' || n.kind === 'bug_reply') return `<button class="btn primary small" data-bug="${esc(n.id)}">보기</button>`;
   if (n.kind === 'bag_overflow') return `<button class="btn primary small" data-ov="${esc(n.id)}">정리하기</button>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
@@ -120,7 +122,7 @@ function noteActs(n) {
 }
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp);
+  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.invite) {
@@ -144,6 +146,13 @@ async function runAct(btn) {
     await guard(btn, async () => { try { return await act('world_bond_respond', { p_request: n.payload.request_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); (await import('./bond.js')).loadBond(true); } });
     return true;
   }
+  if (btn.dataset.spar) {
+    let r = null;
+    await guard(btn, async () => { try { r = await act('world_spar_respond', { p_spar: n.payload.spar_id, p_accept: btn.dataset.acc === '1' }); return r?.result ? null : r; } finally { await markRead(n); } });
+    if (r?.result) (await import('./spar.js')).openSparResult(r.result);
+    return true;
+  }
+  if (btn.dataset.sparv) { await markRead(n); await guard(btn, async () => { await (await import('./spar.js')).viewSpar(n.payload.spar_id); return null; }); return true; }
   if (btn.dataset.bug) { await markRead(n); closeModal(); window.dispatchEvent(new CustomEvent('yh-open-bug', { detail: { tab: n.kind === 'bug_report' ? 'inbox' : 'send' } })); return true; }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
   return false;
@@ -154,10 +163,10 @@ function notePop(n) {
   let stack = document.querySelector('.note-pops');
   if (!stack) { stack = document.createElement('div'); stack.className = 'note-pops'; stack.setAttribute('aria-live', 'polite'); document.body.append(stack); }
   const card = h(`<div class="note-pop" data-id="${esc(n.id)}" role="alertdialog" aria-label="${esc(n.title || '알림')}">
-    ${icon(/^bond_/.test(n.kind) ? 'heart' : n.kind === 'circle_invite' ? 'chat' : n.kind === 'party_invite' ? 'users' : n.kind === 'friend_request' ? 'heart' : n.kind === 'trade_offer' ? 'coin' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
+    ${icon(/^bond_/.test(n.kind) ? 'heart' : n.kind === 'circle_invite' ? 'chat' : n.kind === 'party_invite' ? 'users' : n.kind === 'friend_request' ? 'heart' : n.kind === 'trade_offer' ? 'coin' : /^spar_/.test(n.kind) ? 'sword' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
     <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-pop-close aria-label="나중에">나중에</button></div></div>`);
   card.addEventListener('click', async e => {
-    const b = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-rescue],[data-go-exp],[data-ov]');
+    const b = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-rescue],[data-go-exp],[data-ov],[data-spar],[data-sparv]');
     if (b) { if (await runAct(b)) card.remove(); return; }
     if (e.target.closest('[data-pop-close]')) card.remove();
   });
@@ -181,8 +190,8 @@ function openNotifications() {
       <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-read="${esc(n.id)}">확인</button></div></article>`).join('') : '<p class="muted">새 알림이 없습니다.</p>'}
       ${notes.length > 1 ? '<button class="btn block" data-read-all>모두 확인</button>' : ''}</div>`);
   body.addEventListener('click', async e => {
-    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-bug],[data-rescue],[data-go-exp],[data-ov]'), all = e.target.closest('[data-read-all]');
-    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.invite || a.dataset.trade || a.dataset.friend || a.dataset.circle || a.dataset.bondn)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
+    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-bug],[data-rescue],[data-go-exp],[data-ov],[data-spar],[data-sparv]'), all = e.target.closest('[data-read-all]');
+    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.invite || a.dataset.trade || a.dataset.friend || a.dataset.circle || a.dataset.bondn || a.dataset.spar || a.dataset.sparv)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
     if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); emptyNew(); }
     if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>'; emptyNew(); }, { success: '알림을 모두 확인했습니다.' }); }
   });

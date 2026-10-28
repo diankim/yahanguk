@@ -5,6 +5,7 @@ import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendl
 import { onWhisper, openWhisperWindow } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
+import { FRAMES, frameTier } from './cosmetics.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -248,6 +249,9 @@ function draw() {
 }
 // 이름 색: 조사원이 고른 색(sender_color, 색상환 각도)이 있으면 그것, 없으면 이름에 따라 정해지는 색
 // 한 줄: 이름 첫 글자 인장 + 이름·칭호·시각, 같은 사람이 5분 안에 이어 말하면 머리글 없이 붙인다.
+// 칭호로 여는 특별 이름 색(서버 world_set_name_style, chat_hue 1001~1003). 평면 색 + 이름 앞 작은 표식
+export const NAME_STYLES = { 1001: ['자개빛', '명품 이상 칭호를 하나 얻으면'], 1002: ['주홍 칠', '신품 칭호를 하나 얻으면'], 1003: ['금박', '칭호를 30개 얻으면'] };
+export const nameStyle = (v, id) => NAME_STYLES[v] ? { cls: ` ns-${v}`, hu: hue(id) } : { cls: '', hu: Number.isInteger(v) ? v : hue(id) };
 export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
 function msgRow(r, prev) {
   const cont = prev && prev.sid === r.sid && r.at && prev.at && new Date(r.at) - new Date(prev.at) < 300000;
@@ -255,8 +259,10 @@ function msgRow(r, prev) {
   if (cont) return `<li class="${cls}"><p>${esc(r.text)}</p></li>`;
   const initial = esc([...String(r.who || '?')][0] || '?'), face = faces.get(r.sid);
   if (!faces.has(r.sid)) wantFace(r.sid);
-  const av = face ? `<i class="av face" aria-hidden="true">${emblem(r.sid, face, 26)}</i>` : `<i class="av" aria-hidden="true">${initial}</i>`;
-  return `<li class="${cls}" style="--hu:${Number.isInteger(r.color) ? r.color : hue(r.sid)}">${av}<div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
+  const fr = face?.frame && FRAMES[face.frame] ? ` fr t-${frameTier(face.frame)}` : '';
+  const av = face ? `<i class="av face${fr}" aria-hidden="true">${emblem(r.sid, { ...face, frame: null }, 26)}</i>` : `<i class="av" aria-hidden="true">${initial}</i>`;
+  const ns = nameStyle(r.color, r.sid);
+  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {

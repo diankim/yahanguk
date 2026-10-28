@@ -1,10 +1,10 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
-import { ask, db, store, act, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
+import { ask, db, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
 import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile } from '../settings.js';
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
-import { hue as autoHue } from '../chat.js';
+import { hue as autoHue, NAME_STYLES } from '../chat.js';
 // 채팅 이름 색: 색상환 각도. 밝기는 테마(어두움·밝음)에 맞춰 화면이 정한다.
 const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
@@ -22,7 +22,7 @@ export async function render(root, sub) {
   const resumed = kept && kept.owner === c.owner_id;
   if (resumed) { Object.assign(draft, kept.draft); dirty = true; if (draft.theme !== savedThemeId()) applyTheme(draft.theme, false, draft.theme === 'custom' ? draft.custom : undefined); }
   kept = null;
-  const [titles, cos] = await Promise.all([load('world_title_snapshot').catch(() => null), load('world_cosmetic_snapshot').catch(() => null)]);
+  const [titles, cos, styles] = await Promise.all([load('world_title_snapshot').catch(() => null), load('world_cosmetic_snapshot').catch(() => null), rpc('world_name_styles').catch(() => ({}))]);
   const earned = (titles?.titles || []).filter(t => t.earned);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('gear', 14)} 이 기기와 캐릭터의 설정</p><h1>게임 설정</h1></div>
       <div class="head-actions"><button class="btn primary" id="set-save" disabled>${icon('check', 16)}<span>변경 사항 저장</span></button></div></div>
@@ -46,6 +46,8 @@ export async function render(root, sub) {
         <h3 class="sub-h">색</h3><div class="color-grid">${Object.entries(EMBLEM_COLORS).map(([k, [n, col]]) => `<button class="col-pick" data-col="${k}" style="--c:${col}" aria-label="${n}"><i></i><small>${n}</small></button>`).join('')}</div>
         <h3 class="sub-h">채팅 이름 색</h3>
         <div class="hue-grid">${`<button class="hue-pick auto" data-hue="" aria-label="자동">자동</button>`}${CHAT_HUES.map(h => `<button class="hue-pick" data-hue="${h}" style="--hu:${h}" aria-label="색 ${h}">가</button>`).join('')}</div>
+        <div class="hue-grid">${Object.entries(NAME_STYLES).map(([v, [n, how]]) => `<button class="hue-pick ns-${v}" data-hue="${v}" ${styles?.[v] ? '' : 'disabled'} title="${esc(styles?.[v] ? `칭호 보상 이름 색 · ${n}` : `${how} 쓸 수 있습니다`)}">${esc(n)}</button>`).join('')}</div>
+        <p class="muted small">자개빛·주홍 칠·금박은 칭호로 여는 특별 이름 색입니다(명품 이상 칭호·신품 칭호·칭호 30개). 채팅과 조사원 카드의 이름에 보입니다.</p>
         <p class="hue-preview muted" id="hue-preview"></p>
         <label class="field"><span>한 줄 소개 (60자)</span><input id="pf-bio" maxlength="60" value="${esc(draft.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
         <label class="field"><span>대표 칭호 (채팅과 프로필에 보입니다)</span><select id="pf-title"><option value="">걸지 않음</option>${earned.map(t => `<option value="${esc(t.key)}" ${t.key === draft.title ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
@@ -107,7 +109,8 @@ export async function render(root, sub) {
     $$('.em-pick', el).forEach(b => { b.classList.toggle('on', b.dataset.em === draft.emblem); b.querySelector('.emblem').style.setProperty('--em', EMBLEM_COLORS[draft.color][1]); });
     $$('.col-pick', el).forEach(b => b.classList.toggle('on', b.dataset.col === draft.color));
     $$('.hue-pick', el).forEach(b => b.classList.toggle('on', b.dataset.hue === (draft.chatHue == null ? '' : String(draft.chatHue))));
-    const pv = $('#hue-preview', el); pv.style.setProperty('--hu', draft.chatHue ?? autoHue(c.owner_id));
+    const pv = $('#hue-preview', el), sp = NAME_STYLES[draft.chatHue];
+    pv.className = `hue-preview muted${sp ? ` ns-${draft.chatHue}` : ''}`; pv.style.setProperty('--hu', sp || draft.chatHue == null ? autoHue(c.owner_id) : draft.chatHue);
     pv.innerHTML = `<b>${esc(c.character_name)}</b> 채팅에 이렇게 보입니다.${draft.chatHue == null ? ' (자동: 이름마다 정해진 색)' : ''} 저장한 뒤 보내는 말부터 바뀝니다.`;
   };
   el.addEventListener('click', e => {
@@ -144,7 +147,7 @@ export async function render(root, sub) {
     if (draft.emblem !== p.emblem || draft.color !== p.color || draft.bio !== p.bio) tasks.push(act('world_set_profile_v2', { p_emblem: draft.emblem, p_color: draft.color, p_bio: draft.bio }));
     if (crop.has() && draft.avatar === 'pending') tasks.push(act('world_set_avatar', { p_image: crop.dataUrl() }));
     else if ($('#av-clear', el)?.checked) tasks.push(act('world_set_avatar', { p_image: null }));
-    if (draft.chatHue !== (Number.isInteger(c.profile?.chat_hue) ? c.profile.chat_hue : null)) tasks.push(act('world_set_chat_hue', { p_hue: draft.chatHue }));
+    if (draft.chatHue !== (Number.isInteger(c.profile?.chat_hue) ? c.profile.chat_hue : null)) tasks.push(NAME_STYLES[draft.chatHue] ? act('world_set_name_style', { p_style: draft.chatHue }) : act('world_set_chat_hue', { p_hue: draft.chatHue }));
     if (draft.title !== (c.profile?.title || '')) tasks.push(act('world_title_set_display', { p_title_key: draft.title || null }));
     for (const k of ['frame', 'pattern', 'seal']) if ((draft[k] || '') !== (c.profile?.[k] || '')) tasks.push(act('world_cosmetic_equip', { p_kind: k, p_key: draft[k] || null }));
     for (const t of tasks) await t;

@@ -80,6 +80,7 @@ export function renderExpedition(box, ov) {
           <li id="exp-fare-row">${icon('route', 14)}<span id="exp-fare"></span></li>
           ${c.level <= 10 ? `<li>${icon('spark', 14)}<span><b>신입 원정 지원</b>Lv.10까지는 원정 경험치가 30% 더 붙습니다.</span></li>` : ''}
           <li>${icon('bag', 14)}<span><b>원정에서만 얻는 것</b>길잡이 등불·비경 지도·비약·봉인된 보따리·강화 재료·원정 장비. 2시간 넘게 끝까지 다녀오면 그 지역의 비경을 찾기도 합니다.</span></li>
+          <li>${icon('check', 14)}<span><b>끝까지 다녀오면</b>1시간 이상은 원정지 수준 장비 하나(1시간 50%, 2시간 이상 반드시), 2시간 이상은 경험치·전·숙련 경험 +20%(4시간 +30%·8시간 +40%). 일찍 귀환하면 받지 못합니다.</span></li>
           ${JOB_SKILL[c.job_key] ? `<li class="skill">${icon('spark', 14)}<span><b>${esc(nameOf(c.job_key))} 원정 기술 · ${esc(JOB_SKILL[c.job_key][0])}</b>${esc(JOB_SKILL[c.job_key][1])}</span></li>` : ''}
           <li id="exp-hint-row">${icon('bag', 14)}<span id="exp-hint"></span></li>
         </ul>
@@ -136,6 +137,34 @@ function renderActive(box, a) {
   $('#exp-recall', box).onclick = async e => { const b = e.currentTarget; if (await ask('지금 귀환할까요? 지난 시간만큼의 성과만 얻습니다.', { title: '일찍 귀환', ok: '귀환하기' })) guard(b, async () => { const r = await act('world_expedition_complete', { p_recall: true }); showResult(r); return null; }); };
 }
 
+// 전투 줄(마주침부터 승패까지)은 한 덩어리로 묶어 결과 한 줄만 보이고, 누르면 주고받은 내용을 펼친다
+const BATTLE = new Set(['fight', 'atk', 'hurt', 'heal', 'skill', 'win', 'lose', 'down']);
+const openBattles = new Set();
+function battleGroups(ls) {
+  const out = [], open = new Map(); // 사람마다 진행 중인 전투(파티원 일지가 섞여도 끊기지 않게)
+  ls.forEach((l, i) => {
+    const g = open.get(l.owner);
+    if (g && BATTLE.has(l.kind)) {
+      g.lines.push([l, i]);
+      if (['win', 'lose', 'down'].includes(l.kind)) open.delete(l.owner);
+      return;
+    }
+    open.delete(l.owner);
+    if (l.kind === 'fight') { const ng = { lines: [[l, i]], key: `${l.owner}|${l.at}` }; open.set(l.owner, ng); out.push(ng); return; }
+    out.push({ l, i });
+  });
+  return out;
+}
+function battleBlock(g, row, me, myName) {
+  const f = g.lines[0][0], end = g.lines[g.lines.length - 1][0], done = ['win', 'lose', 'down'].includes(end.kind) ? end.kind : '';
+  const cnt = k => g.lines.filter(([l]) => l.kind === k).length;
+  const res = done === 'win' ? '<b class="ok">승리</b>' : done === 'lose' ? '<b class="bad">밀려남</b>' : done === 'down' ? '<b class="bad">쓰러짐</b>' : '<b class="muted">싸우는 중</b>';
+  return `<li class="exp-battle ${done ? 'b-' + done : ''} ${f.owner && f.owner !== me ? 'other' : 'mine'} ${openBattles.has(g.key) ? 'open' : ''}">
+    <button type="button" data-k="${esc(g.key)}">${icon('sword', 14)}<span class="eb-head"><b class="who">${esc(f.who || myName || '')}</b>${esc(f.text)}</span>
+      <span class="eb-sum">${res} · 공격 ${cnt('atk')} · 반격 ${cnt('hurt')}${cnt('heal') ? ` · 회복 ${cnt('heal')}` : ''}${cnt('skill') ? ` · 기술 ${cnt('skill')}` : ''}</span><time>${fmt.time(f.at)}</time></button>
+    <ul>${g.lines.slice(1).map(([l, i]) => row(l, i)).join('')}</ul></li>`;
+}
+
 // 진행 기록: 다음 수색 시각에 맞춰(없으면 1분마다) 다시 읽는다. 창이 닫히면 멈춘다.
 async function feed(box) {
   const list = $('#exp-feed', box); if (!list?.isConnected) return;
@@ -147,7 +176,9 @@ async function feed(box) {
     const ls = p.lines || [], first = !seenLines, atEnd = first || list.scrollHeight - list.scrollTop - list.clientHeight < 40;
     const fresh = seenLines && ls.length > seenLines ? ls.length - seenLines : 0;
     const me = store.character?.owner_id;
-    list.innerHTML = ls.map((l, i) => `<li class="k-${esc(l.kind)} ${l.owner && l.owner !== me ? 'other' : 'mine'} ${i >= ls.length - fresh ? 'fresh' : ''}">${icon(KIND_ICON[l.kind] || 'route', 14)}<span><b class="who">${esc(l.who || p.me || '')}</b>${esc(l.text)}</span><time>${fmt.time(l.at)}</time></li>`).join('');
+    const row = (l, i) => `<li class="k-${esc(l.kind)} ${l.owner && l.owner !== me ? 'other' : 'mine'} ${i >= ls.length - fresh ? 'fresh' : ''}">${icon(KIND_ICON[l.kind] || 'route', 14)}<span><b class="who">${esc(l.who || p.me || '')}</b>${esc(l.text)}</span><time>${fmt.time(l.at)}</time></li>`;
+    list.innerHTML = battleGroups(ls).map(g => g.lines ? battleBlock(g, row, me, p.me) : row(g.l, g.i)).join('');
+    $$('.exp-battle > button', list).forEach(b => b.onclick = () => { const k = b.dataset.k; openBattles.has(k) ? openBattles.delete(k) : openBattles.add(k); b.parentElement.classList.toggle('open'); });
     seenLines = ls.length || 1;
     // 처음 열면 가장 아래(가장 새 줄)를 보여 준다. 그 뒤로는 아래를 보고 있을 때만 따라 내려간다.
     if (atEnd) { list.scrollTop = list.scrollHeight; requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; }); }
@@ -183,6 +214,8 @@ export function showResult(r) {
       <h3 class="sub-h">챙겨 온 것</h3>
       <p>${items.length ? items.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ') : '없음'}</p>
       ${lost.length ? `<p class="bad small">가방이 가득 차 두고 온 것: ${lost.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ')}</p>` : ''}
+      ${x.full_bonus ? `<p class="hint good">${icon('check', 14)} 끝까지 다녀온 긴 원정 — 경험치·전·숙련 경험 +${x.full_bonus}%</p>` : ''}
+      ${x.full_gear ? `<p class="hint good">${icon('gear', 14)} 원정 끝에 ${esc(nameOf(x.full_gear))}을(를) 챙겼습니다.</p>` : ''}
       ${x.trail ? `<p class="hint good">${icon('spark', 14)} 비경을 찾았습니다. 3시간 동안 이 지역을 탐색하면 채집량 +50%·희귀품·단서 +10%입니다.</p>` : ''}
       ${x.job_skill?.name ? `<p class="hint">${icon('spark', 14)} 직업 기술 「${esc(x.job_skill.name)}」 ${x.job_skill.count ? `${x.job_skill.count}번 발동` : '발동하지 않음'}</p>` : ''}
       <h3 class="sub-h">원정 기록</h3>

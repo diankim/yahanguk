@@ -5,6 +5,7 @@ import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
 import { chip } from './common.js';
+import { nameStyle } from '../chat.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
 
 const RANKS = [['combat', '전투'], ['gathering', '채집'], ['crafting', '제작'], ['investigation', '조사']];
@@ -41,10 +42,11 @@ async function draw(box, id) {
       ${c.same_party ? chip('같은 파티', 'accent') : ''}
       ${isPartner ? chip('정인', 'accent') : canBond ? `<button class="btn small" data-do="bond">${tokenSvg('heart', 14)}<span>연리 맺기</span></button>` : ''}
       ${c.same_place && safe && !c.is_dead ? `<button class="btn small" data-do="trade">${icon('coin', 14)}<span>거래 제안</span></button>` : ''}
+      ${c.same_place && !c.downed && !c.is_dead ? `<button class="btn small" data-do="spar" title="목숨을 걸지 않는 겨루기(체력·물품은 줄지 않음)">${icon('sword', 14)}<span>비무 신청</span></button>` : ''}
       ${c.same_place && c.downed && !c.is_dead ? `<button class="btn small primary" data-do="rescue">${icon('heart', 14)}<span>구조</span></button>` : ''}`;
     box.innerHTML = `
       <div class="profile-card">${patternLayer(c.profile?.pattern)}<div class="pc-emblem">${emblem(c.owner_id, c.profile, 72)}</div>
-        <div><h3>${esc(c.character_name)}${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}</h3>
+        <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}">${esc(c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}</h3>
           ${c.display_title ? `<p class="title-badge">「${esc(c.display_title)}」</p>` : ''}
           <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}${c.major_faction_id ? ' · ' + esc(nameOf(c.major_faction_id)) : ''}</p>
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div></div>
@@ -53,7 +55,7 @@ async function draw(box, id) {
         <div><dt>지금</dt><dd>${state}</dd></div>
         <div><dt>있는 곳</dt><dd>${esc(c.location || '알 수 없음')}${c.same_place && !c.mine ? ' <span class="muted small">(같은 곳)</span>' : ''}</dd></div>
         ${c.last_active && !c.mine ? `<div><dt>최근 활동</dt><dd>${ago(c.last_active)}</dd></div>` : ''}
-        <div><dt>숙련</dt><dd>${RANKS.map(([k, n]) => `${n} ${c.ranks?.[k] || 1}`).join(' · ')}</dd></div>
+        <div><dt>숙련</dt><dd title="갈래마다 가장 높은 기술 단계(최고 50)">${RANKS.map(([k, n]) => `${n} ${c.ranks?.[k] || 1}`).join(' · ')} <span class="muted small">/ 50</span></dd></div>
         <div><dt>얻은 칭호</dt><dd>${fmt.num(c.title_count || 0)}개</dd></div>
         ${pub ? `<div><dt>정인</dt><dd class="bond-pub">${pub.wear ? tokenSvg(pub.token_key, 16) : ''}${esc(pub.partner_name || '')} <span class="muted small">· ${esc(pub.token_name)} · ${esc(pub.stage_name)}</span></dd></div>` : ''}
       </dl>
@@ -82,6 +84,7 @@ async function run(b, c, box) {
   if (k === 'circle') return inviteToCircle(id, c.character_name);
   if (k === 'bond') return openPropose(id, c.character_name);
   if (k === 'trade') { close(); const { openDirectTrade } = await import('./services.js'); return openDirectTrade(id); }
+  if (k === 'spar') return guard(b, () => act('world_spar_challenge', { p_target: id }));
   if (k === 'rescue') return guard(b, async () => { const r = await act('world_rescue_character', { p_target: id }); again(); return r; });
   if (k === 'block') {
     if (!(await ask(`${c.character_name}님을 차단할까요?\n친구 관계가 끊기고, 귓속말·친구 신청·파티 초대·거래 제안을 받지 않으며 채팅에서도 보이지 않습니다.`, { title: '차단하기', ok: '차단', danger: true }))) return;
