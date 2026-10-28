@@ -10,6 +10,8 @@
 --   ⑨ 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나간다(남은 것은 새것)
 --   ⑩ 봉인술 계열 13·24·30·43단계를 모두 택일로(A 폭딜 · B 버프/디버프)
 --   ⑪ 근접 계열 13·24·30·43단계를 모두 택일로(A 딜러 · B 탱커·이목)
+--   ⑫ 세력 가입 퀘스트(대화)·등급 5단계·등급 퀘스트·의뢰판·비고(공훈 상점)·수련장, 평판 상한 5000, 조사원 카드 세력 등급
+--   (원정) 체력이 넉넉하면 밀린 싸움을 버틴다([버팀]) — ⑦의 원정 정산 고칠 자리 6~8
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
 --   (화면) 동료 화면 친구·모임: 단추가 이름에서 멀리 떨어져 늘어나던 것을 사람·모임마다 카드로 나누고 단추를 이름 곁에
@@ -1512,6 +1514,581 @@ update public.world_skill_catalog s set skill_name = v.n, description = v.d from
   ('melee_c43a', '파천', '택일 기술(딜러) · 근접 치명타가 적의 방어를 2턴 무너뜨린다(받는 피해 +20%)'),
   ('melee_c43b', '사자후', '택일 기술(탱커) · 이목 +150(원정 합동 전투에서 요괴가 거의 반드시 나를 노린다) · 방어하면 포효해 2턴 동안 적이 기믹을 쓰지 못하고 받는 피해 −15%')
 ) v(id, n, d) where s.skill_id = v.id;
+
+grant fn_owner_18669 to postgres with inherit true, set true;
+-- ⑫ 세력 가입 퀘스트·등급(5단계)·등급 퀘스트·의뢰판·비고(秘庫)·수련장
+--   · 대본(인물·장면)은 표에 두고, 진행은 world_faction_progress(캐릭터×세력)에 둔다. world_characters에는 열을 더하지 않는다.
+--   · 할 일은 world_events를 장면이 열린 뒤부터 센다(world_faction_task_count). 행동 한 번의 쓰기를 늘리지 않는다.
+--   · 가입 퀘스트는 그 세력에 처음 들 때만, 다시 들면 재가입 대사만. 등급은 평판(누적)과 레벨로 열리는 등급 퀘스트를 마쳐야 오른다.
+--   · 공훈(merit)은 의뢰판·퀘스트로 모으는 쓰는 몫이고, 비고에서만 쓴다(비고는 사기만, 팔기 없음). 쓴다고 평판(등급 기준)은 줄지 않는다.
+create table if not exists public.world_faction_npcs (
+  npc_key text primary key, faction_id text not null, npc_name text not null, bio text not null default '', sort int not null default 0);
+create table if not exists public.world_faction_scenes (
+  scene_key text primary key, faction_id text not null, kind text not null check (kind in ('join', 'rejoin', 'rank', 'vault', 'hall')),
+  step int not null, title text not null, goal text not null default '', need jsonb not null default '{}'::jsonb, lines jsonb not null,
+  reward jsonb not null default '{}'::jsonb, min_level int not null default 1, rep_need int not null default 0);
+create table if not exists public.world_faction_ranks (
+  faction_id text not null, rank int not null check (rank between 1 and 5), rank_name text not null, primary key (faction_id, rank));
+create table if not exists public.world_faction_progress (
+  owner_id uuid not null, faction_id text not null,
+  join_step int not null default 0, join_done_at timestamptz, joined_at timestamptz,
+  rank int not null default 1 check (rank between 1 and 5), open_step text, step_started_at timestamptz not null default now(),
+  merit int not null default 0 check (merit >= 0), npcs_met text[] not null default '{}', rejoin_pending boolean not null default false,
+  show_rank boolean not null default true, hall_day date, hall_best int not null default 0, updated_at timestamptz not null default now(),
+  primary key (owner_id, faction_id));
+create table if not exists public.world_faction_requests (
+  req_key text primary key, title text not null, need jsonb not null, merit int not null, rep int not null, sort int not null default 0);
+create table if not exists public.world_faction_request_claims (
+  owner_id uuid not null, day date not null, req_key text not null, claimed_at timestamptz not null default now(), primary key (owner_id, day, req_key));
+create table if not exists public.world_faction_vault (
+  faction_id text not null, item_id text not null, rank_need int not null default 1, price int not null check (price > 0), sort int not null default 0,
+  primary key (faction_id, item_id));
+do $$ declare t text; begin
+  foreach t in array array['world_faction_npcs', 'world_faction_scenes', 'world_faction_ranks', 'world_faction_progress', 'world_faction_requests', 'world_faction_request_claims', 'world_faction_vault'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('revoke all on public.%I from anon, authenticated', t);
+    execute format('grant select on public.%I to fn_owner_field', t);
+  end loop;
+end $$;
+grant insert, update on public.world_faction_progress to fn_owner_field;
+grant insert on public.world_faction_request_claims to fn_owner_field;
+grant update (faction_reputation) on public.world_characters to fn_owner_field;
+
+insert into public.world_faction_ranks(faction_id, rank, rank_name) values
+  ('night_office', 1, '수습 야행관'), ('night_office', 2, '야행관'), ('night_office', 3, '감찰 야행관'), ('night_office', 4, '당상 야행관'), ('night_office', 5, '야행 판관'),
+  ('red_moon_cult', 1, '입문 교도'), ('red_moon_cult', 2, '혈인 교도'), ('red_moon_cult', 3, '월식 집사'), ('red_moon_cult', 4, '적월 호법'), ('red_moon_cult', 5, '홍월 장로'),
+  ('black_lotus', 1, '빚진 손님'), ('black_lotus', 2, '연잎'), ('black_lotus', 3, '흑련 손'), ('black_lotus', 4, '열세 번째 문지기'), ('black_lotus', 5, '연주 대리'),
+  ('north_league', 1, '산문 제자'), ('north_league', 2, '맹약 무사'), ('north_league', 3, '호위 무사'), ('north_league', 4, '철벽 호법'), ('north_league', 5, '북령 장로'),
+  ('river_alliance', 1, '보증 손님'), ('river_alliance', 2, '나루 객주'), ('river_alliance', 3, '상단 행수'), ('river_alliance', 4, '대행수'), ('river_alliance', 5, '연맹 도방'),
+  ('southern_remnant', 1, '불씨 지기'), ('southern_remnant', 2, '잔불'), ('southern_remnant', 3, '횃불'), ('southern_remnant', 4, '봉화'), ('southern_remnant', 5, '남명 수호장'),
+  ('mandate_court', 1, '관측생'), ('mandate_court', 2, '일관(日官)'), ('mandate_court', 3, '관상관'), ('mandate_court', 4, '천문 교수'), ('mandate_court', 5, '영대 감정')
+on conflict (faction_id, rank) do update set rank_name = excluded.rank_name;
+
+-- 의뢰판: 매일(한국 시각) 세력마다 셋. 그날 한 일을 센다
+insert into public.world_faction_requests(req_key, title, need, merit, rep, sort) values
+  ('r_hunt', '요괴 토벌', '{"tasks":[{"t":"win","n":4}]}', 20, 15, 1),
+  ('r_gather', '재료 납품', '{"tasks":[{"t":"gather","n":4}]}', 20, 15, 2),
+  ('r_search', '현장 탐색', '{"tasks":[{"t":"search","n":5}]}', 20, 15, 3),
+  ('r_clue', '단서 수집', '{"tasks":[{"t":"clue","n":1}]}', 25, 18, 4),
+  ('r_exped', '원정 보고', '{"tasks":[{"t":"expedition","n":1}]}', 30, 20, 5),
+  ('r_craft', '물자 제작', '{"tasks":[{"t":"craft","n":2}]}', 20, 15, 6),
+  ('r_travel', '연락 심부름', '{"tasks":[{"t":"travel","n":2}]}', 15, 12, 7),
+  ('r_sell', '시장 동향', '{"tasks":[{"t":"sell","n":2}]}', 15, 12, 8),
+  ('r_patrol', '경계 순찰', '{"tasks":[{"t":"search","n":3,"distinct":true}]}', 25, 18, 9)
+on conflict (req_key) do update set title = excluded.title, need = excluded.need, merit = excluded.merit, rep = excluded.rep, sort = excluded.sort;
+
+-- 비고: 공훈으로만 산다(팔기 없음). 등급마다 품목이 늘어난다
+insert into public.world_faction_vault(faction_id, item_id, rank_need, price, sort)
+select f.faction_id, v.item_id, v.rank_need, v.price, v.sort
+  from public.world_major_factions f
+  cross join (values ('tonic', 1, 10, 1), ('clear_spirit_pill', 1, 15, 2), ('ward_talisman', 1, 10, 3), ('travel_ration', 1, 8, 4),
+                     ('spirit_qi_pill', 2, 30, 5), ('repair_kit', 2, 25, 6), ('revival_charm', 2, 60, 7),
+                     ('rejuv_pill', 3, 50, 8), ('moonlight_essence', 3, 60, 9),
+                     ('grand_pill', 4, 100, 11), ('spirit_core', 4, 120, 12),
+                     ('heavenly_dew', 5, 150, 14)) v(item_id, rank_need, price, sort)
+on conflict (faction_id, item_id) do nothing;
+insert into public.world_faction_vault(faction_id, item_id, rank_need, price, sort) values
+  ('night_office', 'mirror_shard', 3, 80, 10), ('night_office', 'star_sand', 5, 150, 15),
+  ('red_moon_cult', 'monster_core', 3, 80, 10), ('red_moon_cult', 'ember_crystal', 5, 150, 15),
+  ('black_lotus', 'jade_shard', 3, 80, 10), ('black_lotus', 'mirror_shard', 5, 150, 15),
+  ('north_league', 'thunder_ore', 3, 80, 10), ('north_league', 'sky_feather', 5, 150, 15),
+  ('river_alliance', 'spirit_bark', 3, 60, 10), ('river_alliance', 'jade_shard', 5, 150, 15),
+  ('southern_remnant', 'ember_crystal', 3, 80, 10), ('southern_remnant', 'monster_core', 5, 150, 15),
+  ('mandate_court', 'star_sand', 3, 80, 10), ('mandate_court', 'sky_feather', 5, 150, 15)
+on conflict (faction_id, item_id) do nothing;
+delete from public.world_faction_vault v where not exists (select 1 from public.world_item_catalog i where i.item_id = v.item_id);
+
+-- 수련장 칭호(3·5등급 시련을 처음 넘으면) · 5등급 칭호를 가지면 세력 낙관
+insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade) values
+  ('fac_night_office_t3', '팔괘진을 깬 야행관', 'shield', '연무청의 팔괘진을 깨고 나온 정통파 조사원.', '정통파 수련장 3등급 시련 통과', '{"clue_bonus_pct": 3, "crit_pct": 1}', true, false, null, 950, '세력', 3),
+  ('fac_night_office_t5', '연무청의 판관', 'shield', '등잔을 지키는 자의 이름을 연무청에 새겼다.', '정통파 수련장 5등급 시련 통과', '{"clue_bonus_pct": 5, "crit_pct": 2, "defense": 4}', true, false, null, 951, '세력', 4),
+  ('fac_red_moon_cult_t3', '수련굴의 생존자', 'flame', '월식 수련굴에서 걸어 나온 몇 안 되는 교도.', '적월교 수련장 3등급 시련 통과', '{"combat_damage_pct": 3, "crit_pct": 1}', true, false, null, 952, '세력', 3),
+  ('fac_red_moon_cult_t5', '달을 삼킨 자', 'flame', '요기를 삼키고도 스스로를 잃지 않았다.', '적월교 수련장 5등급 시련 통과', '{"combat_damage_pct": 5, "crit_pct": 2, "erosion_pct": -3}', true, false, null, 953, '세력', 4),
+  ('fac_black_lotus_t3', '장부에서 지워진 빚', 'scroll', '그림자 장부실에서 빚 한 줄을 지워 냈다.', '흑련회 수련장 3등급 시련 통과', '{"rare_loot_pct": 3, "evasion_pct": 1}', true, false, null, 954, '세력', 3),
+  ('fac_black_lotus_t5', '열세 번째 문의 주인', 'scroll', '열세 번째 문은 이제 이 사람을 위해 열린다.', '흑련회 수련장 5등급 시련 통과', '{"rare_loot_pct": 5, "evasion_pct": 2, "clue_bonus_pct": 3}', true, false, null, 955, '세력', 4),
+  ('fac_north_league_t3', '철벽을 넘은 무사', 'shield', '철벽 연무장의 수좌를 땅에 눕혔다.', '북령맹 수련장 3등급 시련 통과', '{"incoming_damage_pct": -3, "presence": 6}', true, false, null, 956, '세력', 3),
+  ('fac_north_league_t5', '눈 속의 맹주감', 'shield', '산문의 노승들이 다음 맹주감이라 부르는 이.', '북령맹 수련장 5등급 시련 통과', '{"incoming_damage_pct": -5, "presence": 10, "defense": 4}', true, false, null, 957, '세력', 4),
+  ('fac_river_alliance_t3', '물길을 건넌 자', 'route', '쉬지 않는 물길 시험장을 끝까지 건넜다.', '수향연맹 수련장 3등급 시련 통과', '{"travel_time_pct": -3, "gather_qty_pct": 2}', true, false, null, 958, '세력', 3),
+  ('fac_river_alliance_t5', '강의 신용', 'route', '이 사람의 말 한마디면 강 위의 배가 움직인다.', '수향연맹 수련장 5등급 시련 통과', '{"travel_time_pct": -5, "gather_qty_pct": 3, "rare_loot_pct": 2}', true, false, null, 959, '세력', 4),
+  ('fac_southern_remnant_t3', '꺼지지 않는 횃불', 'flame', '봉화대가 꺼지기 전까지 버텨 낸 불씨.', '남명회 수련장 3등급 시련 통과', '{"gather_qty_pct": 3, "healing_pct": 2}', true, false, null, 960, '세력', 3),
+  ('fac_southern_remnant_t5', '마지막 봉화', 'flame', '망국의 마지막 봉화를 이어받았다.', '남명회 수련장 5등급 시련 통과', '{"gather_qty_pct": 5, "healing_pct": 4, "incoming_damage_pct": -2}', true, false, null, 961, '세력', 4),
+  ('fac_mandate_court_t3', '혼천의를 읽은 자', 'spark', '혼천의가 도는 동안 별의 흐름을 놓치지 않았다.', '천명원 수련장 3등급 시련 통과', '{"erosion_pct": -3, "clue_bonus_pct": 2}', true, false, null, 962, '세력', 3),
+  ('fac_mandate_court_t5', '별을 말하지 않는 자', 'spark', '본 것을 모두 말하지 않는 것이 별을 보는 자의 계율이다.', '천명원 수련장 5등급 시련 통과', '{"erosion_pct": -5, "clue_bonus_pct": 3, "mental_loss_pct": -3}', true, false, null, 963, '세력', 4)
+on conflict (title_key) do nothing;
+insert into public.world_cosmetic_catalog(cosmetic_key, kind, tier, cosmetic_name, condition_text, category, rule, hidden, active, sort) values
+  ('sl_f_night', 'seal', 'legend', '낙관 「錄」', '정통파 수련장 5등급 시련 통과', '세력', '{"title": "fac_night_office_t5"}', false, true, 950),
+  ('sl_f_redmoon', 'seal', 'legend', '낙관 「血」', '적월교 수련장 5등급 시련 통과', '세력', '{"title": "fac_red_moon_cult_t5"}', false, true, 951),
+  ('sl_f_lotus', 'seal', 'legend', '낙관 「蓮」', '흑련회 수련장 5등급 시련 통과', '세력', '{"title": "fac_black_lotus_t5"}', false, true, 952),
+  ('sl_f_north', 'seal', 'legend', '낙관 「盟」', '북령맹 수련장 5등급 시련 통과', '세력', '{"title": "fac_north_league_t5"}', false, true, 953),
+  ('sl_f_river', 'seal', 'legend', '낙관 「舟」', '수향연맹 수련장 5등급 시련 통과', '세력', '{"title": "fac_river_alliance_t5"}', false, true, 954),
+  ('sl_f_south', 'seal', 'legend', '낙관 「燼」', '남명회 수련장 5등급 시련 통과', '세력', '{"title": "fac_southern_remnant_t5"}', false, true, 955),
+  ('sl_f_mandate', 'seal', 'legend', '낙관 「星」', '천명원 수련장 5등급 시련 통과', '세력', '{"title": "fac_mandate_court_t5"}', false, true, 956)
+on conflict (cosmetic_key) do nothing;
+
+-- 평판 상한 1000 → 5000(등급 기준 1,600·3,000에 닿도록)
+do $$ declare d text := pg_get_functiondef('public.world_track_major_faction_reputation()'::regprocedure);
+  a text := 'least(1000, greatest(-1000,'; b text := 'least(5000, greatest(-1000,';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '평판 상한 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 장면이 열린 뒤 한 일을 센다
+create or replace function public.world_faction_task_count(p_uid uuid, p_task jsonb, p_since timestamptz)
+returns int language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  with ev as (
+    select e.payload, coalesce(e.payload ->> 'region_id', (select n.region_id from public.world_exploration_nodes n where n.node_id::text = e.payload ->> 'node_id')) region
+      from public.world_events e
+     where e.actor_id = p_uid and e.created_at >= p_since
+       and e.event_type = case p_task ->> 't' when 'search' then 'explore' when 'clue' then 'explore' when 'win' then 'combat' when 'gather' then 'gather'
+                            when 'travel' then 'travel' when 'expedition' then 'expedition_end' when 'sell' then 'shop_sell' when 'trade' then 'trade' when 'craft' then 'craft' end
+  ), ok as (
+    select ev.region from ev
+     where case p_task ->> 't'
+             when 'search' then ev.payload ->> 'kind' = 'field_search'
+             when 'clue' then ev.payload ->> 'kind' = 'field_search' and ev.payload ->> 'outcome' = 'clue'
+             when 'win' then coalesce((ev.payload ->> 'defeated')::boolean, false)
+             when 'travel' then ev.payload ? 'travel_history_id'
+             when 'expedition' then ev.payload ->> 'ended' = 'complete'
+             else true end
+       and (not p_task ? 'r' or ev.region in (select jsonb_array_elements_text(p_task -> 'r')))
+       and (not p_task ? 'rank' or ev.payload ->> 'rank' = p_task ->> 'rank')
+       and (not p_task ? 'phase' or ev.payload ->> 'env_phase' in (select jsonb_array_elements_text(p_task -> 'phase')))
+       and (not p_task ? 'weather' or ev.payload ->> 'env_weather' in (select jsonb_array_elements_text(p_task -> 'weather')))
+       and (not coalesce((p_task ->> 'safe')::boolean, false) or exists (select 1 from public.world_map_regions m where m.region_id = ev.region and m.is_safe_zone))
+  )
+  select case when coalesce((p_task ->> 'distinct')::boolean, false) then (select count(distinct region) from ok)::int else (select count(*) from ok)::int end
+$$;
+
+-- 할 일 한 줄의 화면 문구
+create or replace function public.world_faction_task_label(p_task jsonb)
+returns text language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select string_agg(m.region_name, '·') || '에서 ' from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(p_task -> 'r'))), '')
+    || case when p_task ->> 'phase' is not null then '삼경에 ' else '' end
+    || case when p_task ->> 'weather' is not null then '농무·삭풍·혈무 날씨에 ' else '' end
+    || case p_task ->> 't'
+         when 'search' then case when coalesce((p_task ->> 'distinct')::boolean, false) then '서로 다른 곳에서 탐색' else '탐색' end
+         when 'clue' then '탐색에서 단서 발견' when 'win' then case when p_task ->> 'rank' = 'guardian' then '우두머리 쓰러뜨리기' else '토벌 승리' end
+         when 'gather' then '채집' when 'travel' then case when coalesce((p_task ->> 'safe')::boolean, false) then '서로 다른 안전지대 들르기' when p_task ? 'r' then '도착' else '다른 지역으로 이동' end
+         when 'expedition' then '원정 완주' when 'sell' then '상점에서 팔기' when 'trade' then '거래소에서 사거나 팔기' when 'craft' then '제작' else '' end
+$$;
+
+-- 등급 효과(가입 퀘스트를 마친 지금 세력, 2~5등급)
+create or replace function public.world_faction_rank_effect(p_key text)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select (p.rank - 1) * case c.major_faction_id
+      when 'night_office' then case p_key when 'clue_bonus_pct' then 2 end
+      when 'red_moon_cult' then case p_key when 'combat_damage_pct' then 1 end
+      when 'black_lotus' then case p_key when 'rare_loot_pct' then 1 end
+      when 'north_league' then case p_key when 'incoming_damage_pct' then -1 end
+      when 'river_alliance' then case p_key when 'travel_time_pct' then -2 end
+      when 'southern_remnant' then case p_key when 'gather_qty_pct' then 2 end
+      when 'mandate_court' then case p_key when 'erosion_pct' then -2 end end
+    from public.world_characters c join public.world_faction_progress p on p.owner_id = c.owner_id and p.faction_id = c.major_faction_id
+   where c.owner_id = public.fn_owner_auth_uid() and p.join_done_at is not null), 0)::numeric
+$$;
+do $$ declare d text := pg_get_functiondef('public.world_status_effect_total(text)'::regprocedure);
+  a text := '+ public.world_social_effect(p_effect_key)'; b text := '+ public.world_social_effect(p_effect_key) + public.world_faction_rank_effect(p_effect_key)';
+begin
+  if position('world_faction_rank_effect' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '상태 효과 합계 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 조사원 카드·프로필에 보일 세력 등급(가입 퀘스트를 마쳤고 보이기로 한 경우)
+create or replace function public.world_faction_rank_label(p_owner uuid)
+returns text language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select r.rank_name from public.world_characters c
+    join public.world_faction_progress p on p.owner_id = c.owner_id and p.faction_id = c.major_faction_id
+    join public.world_faction_ranks r on r.faction_id = p.faction_id and r.rank = p.rank
+   where c.owner_id = p_owner and p.join_done_at is not null and p.show_rank
+$$;
+do $$ declare d text := pg_get_functiondef('public.world_character_card'::regproc);
+  a text := '''major_faction_id'', c.major_faction_id,'; b text := '''major_faction_id'', c.major_faction_id, ''faction_rank'', public.world_faction_rank_label(c.owner_id),';
+begin
+  if position('world_faction_rank_label' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '조사원 카드 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 진행 행을 지금 세력에 맞춘다(처음이면 만들고, 다시 들었으면 재가입 대사·등급 1로)
+create or replace function public.world_faction_sync(p_uid uuid)
+returns public.world_faction_progress language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare c public.world_characters%rowtype; p public.world_faction_progress%rowtype; jt timestamptz;
+begin
+  select * into c from public.world_characters where owner_id = p_uid;
+  if c.major_faction_id is null then return null; end if;
+  jt := coalesce((select max(e.created_at) from public.world_events e where e.actor_id = p_uid and e.event_type = 'faction'
+                   and e.payload ->> 'faction_id' = c.major_faction_id and coalesce(e.payload ->> 'left', 'false') <> 'true'), now());
+  insert into public.world_faction_progress(owner_id, faction_id, joined_at, step_started_at) values (p_uid, c.major_faction_id, jt, now())
+  on conflict (owner_id, faction_id) do nothing;
+  select * into p from public.world_faction_progress where owner_id = p_uid and faction_id = c.major_faction_id for update;
+  if p.joined_at is null or p.joined_at < jt then
+    update public.world_faction_progress
+       set joined_at = jt, rejoin_pending = (p.join_done_at is not null), rank = case when p.join_done_at is not null then 1 else p.rank end,
+           open_step = null, step_started_at = now(), updated_at = now()
+     where owner_id = p_uid and faction_id = c.major_faction_id returning * into p;
+  end if;
+  return p;
+end $$;
+
+-- 지금 진행할 장면(가입 → 등급). 등급 퀘스트는 평판·레벨이 차면 열리고, 열린 때부터 센다
+create or replace function public.world_faction_current(p_uid uuid, p_open boolean default true)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare c public.world_characters%rowtype; p public.world_faction_progress%rowtype; s public.world_faction_scenes%rowtype; k text; t jsonb;
+  tasks jsonb := '[]'::jsonb; ready boolean := true; locked text; here_ok boolean := true; n int;
+begin
+  select * into c from public.world_characters where owner_id = p_uid;
+  select * into p from public.world_faction_progress where owner_id = p_uid and faction_id = c.major_faction_id;
+  if p.owner_id is null then return null; end if;
+  if p.join_step < 3 then k := c.major_faction_id || ':join:' || (p.join_step + 1);
+  elsif p.rank < 5 then k := c.major_faction_id || ':rank:' || (p.rank + 1);
+  else return null; end if;
+  select * into s from public.world_faction_scenes where scene_key = k;
+  if s.scene_key is null then return null; end if;
+  if s.kind = 'rank' then
+    if c.level < s.min_level then locked := 'Lv' || s.min_level || '부터 열립니다(지금 Lv' || c.level || ').'; end if;
+    if coalesce(c.faction_reputation, 0) < s.rep_need then locked := coalesce(locked || ' ', '') || '평판 ' || s.rep_need || '에 닿으면 열립니다(지금 ' || coalesce(c.faction_reputation, 0) || ').'; end if;
+    if locked is null and p_open and p.open_step is distinct from k then
+      update public.world_faction_progress set open_step = k, step_started_at = now(), updated_at = now() where owner_id = p_uid and faction_id = p.faction_id;
+      p.step_started_at := now();
+    end if;
+  end if;
+  for t in select * from jsonb_array_elements(coalesce(s.need -> 'tasks', '[]'::jsonb)) loop
+    n := case when locked is null then least((t ->> 'n')::int, public.world_faction_task_count(p_uid, t, p.step_started_at)) else 0 end;
+    if n < (t ->> 'n')::int then ready := false; end if;
+    tasks := tasks || jsonb_build_object('label', public.world_faction_task_label(t), 'cur', n, 'n', (t ->> 'n')::int);
+  end loop;
+  if s.need ? 'erosion' then
+    tasks := tasks || jsonb_build_object('label', '침식 ' || (s.need ->> 'erosion') || ' 이상인 채로 보고', 'cur', least(c.erosion, (s.need ->> 'erosion')::int), 'n', (s.need ->> 'erosion')::int);
+    if c.erosion < (s.need ->> 'erosion')::int then ready := false; end if;
+  end if;
+  if s.need ? 'at' then
+    here_ok := exists (select 1 from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(s.need -> 'at')) and m.region_name = c.location);
+  end if;
+  return jsonb_build_object('scene_key', s.scene_key, 'kind', s.kind, 'step', s.step, 'title', s.title, 'goal', s.goal, 'tasks', tasks,
+    'at_names', (select jsonb_agg(m.region_name order by m.region_name) from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(coalesce(s.need -> 'at', '[]'::jsonb)))),
+    'here_ok', here_ok, 'cost', coalesce((s.need ->> 'cost')::int, 0), 'locked', locked, 'ready', ready and locked is null and here_ok,
+    'reward', s.reward, 'since', p.step_started_at);
+end $$;
+
+-- 세력 화면 한 번에: 등급·공훈·지금 퀘스트·만난 인물·오늘 의뢰·비고·수련장
+create or replace function public.world_faction_snapshot()
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype;
+  v_day date := (now() at time zone 'Asia/Seoul')::date; d0 timestamptz := ((now() at time zone 'Asia/Seoul')::date)::timestamp at time zone 'Asia/Seoul';
+  home boolean; reqs jsonb := '[]'::jsonb; r record; t jsonb; tl jsonb; ok boolean; n int; lv int;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid;
+  if c.major_faction_id is null then return jsonb_build_object('faction_id', null); end if;
+  p := public.world_faction_sync(uid);
+  home := c.location in (select m.region_name from public.world_map_regions m where m.region_id = any (public.world_faction_home(c.major_faction_id)));
+  for r in select q.* from public.world_faction_requests q order by md5(q.req_key || c.major_faction_id || v_day::text) limit 3 loop
+    tl := '[]'::jsonb; ok := true;
+    for t in select * from jsonb_array_elements(r.need -> 'tasks') loop
+      n := least((t ->> 'n')::int, public.world_faction_task_count(uid, t, d0));
+      if n < (t ->> 'n')::int then ok := false; end if;
+      tl := tl || jsonb_build_object('label', public.world_faction_task_label(t), 'cur', n, 'n', (t ->> 'n')::int);
+    end loop;
+    reqs := reqs || jsonb_build_object('key', r.req_key, 'title', r.title, 'tasks', tl, 'merit', r.merit, 'rep', r.rep, 'ready', ok,
+      'claimed', exists (select 1 from public.world_faction_request_claims x where x.owner_id = uid and x.day = v_day and x.req_key = r.req_key));
+  end loop;
+  lv := greatest(1, p.rank);
+  return jsonb_build_object(
+    'faction_id', c.major_faction_id, 'rep', coalesce(c.faction_reputation, 0), 'rank', p.rank, 'merit', p.merit, 'show_rank', p.show_rank,
+    'ranks', (select jsonb_agg(x.rank_name order by x.rank) from public.world_faction_ranks x where x.faction_id = c.major_faction_id),
+    'next', (select jsonb_build_object('rep', s.rep_need, 'level', s.min_level) from public.world_faction_scenes s where s.scene_key = c.major_faction_id || ':rank:' || (p.rank + 1)),
+    'join_done', p.join_done_at is not null, 'join_step', p.join_step, 'rejoin_pending', p.rejoin_pending, 'at_home', home,
+    'home_names', (select jsonb_agg(m.region_name) from public.world_map_regions m where m.region_id = any (public.world_faction_home(c.major_faction_id))),
+    'quest', case when p.rejoin_pending then null else public.world_faction_current(uid) end,
+    'npcs', (select coalesce(jsonb_agg(jsonb_build_object('key', z.npc_key, 'name', z.npc_name, 'bio', z.bio) order by z.sort), '[]'::jsonb)
+               from public.world_faction_npcs z where z.npc_key = any (p.npcs_met) and z.faction_id = c.major_faction_id),
+    'npc_total', (select count(*) from public.world_faction_npcs z where z.faction_id = c.major_faction_id),
+    'requests', reqs,
+    'vault', (select coalesce(jsonb_agg(jsonb_build_object('item_id', v.item_id, 'name', i.item_name, 'price', v.price, 'rank_need', v.rank_need, 'locked', v.rank_need > p.rank) order by v.rank_need, v.sort), '[]'::jsonb)
+                from public.world_faction_vault v join public.world_item_catalog i on i.item_id = v.item_id where v.faction_id = c.major_faction_id),
+    'hall', jsonb_build_object('tier', p.rank, 'done_today', p.hall_day = v_day, 'best', p.hall_best,
+               'chance', round((greatest(0.15, least(0.9, 0.55 + 0.05 * (c.level - (array[3, 8, 14, 20, 26])[p.rank])))) * 100)),
+    'keepers', (select jsonb_object_agg(s.kind, jsonb_build_object('title', s.title, 'line', s.lines -> 0 ->> 't', 'who', (select z.npc_name from public.world_faction_npcs z where z.npc_key = s.lines -> 0 ->> 's')))
+                  from public.world_faction_scenes s where s.faction_id = c.major_faction_id and s.kind in ('vault', 'hall')));
+end $$;
+
+-- 세력 안전지대(비고·수련장·보고 장소). 정청은 모든 세력 연락관이 있어 가입 퀘스트 보고를 받는다(장면 need.at)
+create or replace function public.world_faction_home(p_faction text)
+returns text[] language sql immutable set search_path to 'pg_catalog', 'public' as $$
+  select case p_faction when 'night_office' then array['hq_yard', 'hq_dorm'] when 'red_moon_cult' then array['bone_market'] when 'black_lotus' then array['hidden_bazaar']
+    when 'north_league' then array['iron_monastery'] when 'river_alliance' then array['river_ferry'] when 'southern_remnant' then array['ember_village']
+    when 'mandate_court' then array['star_observatory', 'hq_dorm'] else array[]::text[] end
+$$;
+
+-- 대화 보고: 할 일을 마쳤으면 장면 대사를 돌려주고 다음으로 넘긴다(재가입 대사도 여기서 한 번)
+create or replace function public.world_faction_report()
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype; s public.world_faction_scenes%rowtype;
+  cur jsonb; inv jsonb; it record; lim int; spk text[]; msg text := '';
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into c from public.world_characters where owner_id = uid for update;
+  if c.major_faction_id is null then raise exception '대세력에 들어야 합니다.'; end if;
+  p := public.world_faction_sync(uid);
+  if p.rejoin_pending then
+    select * into s from public.world_faction_scenes where scene_key = c.major_faction_id || ':rejoin:1';
+    update public.world_faction_progress set rejoin_pending = false, updated_at = now() where owner_id = uid and faction_id = p.faction_id;
+  else
+    cur := public.world_faction_current(uid);
+    if cur is null then raise exception '지금 이어 갈 세력 퀘스트가 없습니다.'; end if;
+    if cur ->> 'locked' is not null then raise exception '%', cur ->> 'locked'; end if;
+    if not (cur ->> 'here_ok')::boolean then raise exception '%에서 보고할 수 있습니다.', array_to_string(array(select jsonb_array_elements_text(cur -> 'at_names')), '·'); end if;
+    if not (cur ->> 'ready')::boolean then raise exception '아직 할 일이 남았습니다.'; end if;
+    if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 보고할 수 없습니다.'; end if;
+    select * into s from public.world_faction_scenes where scene_key = cur ->> 'scene_key';
+    if (cur ->> 'cost')::int > 0 then
+      if coalesce(c.gil, 0) < (cur ->> 'cost')::int then raise exception '전이 모자랍니다(%전 필요).', cur ->> 'cost'; end if;
+      update public.world_characters set gil = gil - (cur ->> 'cost')::int, updated_at = now() where owner_id = uid;
+      msg := msg || (cur ->> 'cost') || '전을 냈습니다. ';
+    end if;
+    -- 보상 물품: 가방에 들어가지 않으면 보고를 받지 않는다
+    inv := coalesce(c.inventory, '{}'::jsonb); lim := public.world_bag_limit(uid);
+    for it in select key, value::int q from jsonb_each_text(coalesce(s.reward -> 'items', '{}'::jsonb)) loop
+      if public.world_bag_room(inv, it.key, lim) < it.q then raise exception '가방 자리가 모자랍니다. 보상을 받을 자리를 비운 뒤 다시 보고하세요.'; end if;
+      inv := public.world_inv_add(inv, it.key, it.q);
+      msg := msg || (select item_name from public.world_item_catalog where item_id = it.key) || ' ×' || it.q || ' ';
+    end loop;
+    if inv is distinct from coalesce(c.inventory, '{}'::jsonb) then update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid; end if;
+    if coalesce((s.reward ->> 'merit')::int, 0) > 0 then msg := msg || '공훈 +' || (s.reward ->> 'merit') || ' '; end if;
+    update public.world_faction_progress
+       set join_step = case when s.kind = 'join' then s.step else join_step end,
+           join_done_at = case when s.kind = 'join' and s.step = 3 then now() else join_done_at end,
+           rank = case when s.kind = 'rank' then s.step else rank end,
+           merit = merit + coalesce((s.reward ->> 'merit')::int, 0), open_step = null, step_started_at = now(), updated_at = now()
+     where owner_id = uid and faction_id = p.faction_id;
+  end if;
+  select array_agg(distinct x ->> 's') into spk from jsonb_array_elements(s.lines) x where x ->> 's' is not null;
+  update public.world_faction_progress set npcs_met = array(select distinct unnest(npcs_met || coalesce(spk, '{}'))) where owner_id = uid and faction_id = p.faction_id;
+  return jsonb_build_object('title', s.title, 'kind', s.kind, 'step', s.step, 'lines', s.lines, 'reward', nullif(trim(msg), ''),
+    'cast', (select coalesce(jsonb_object_agg(z.npc_key, jsonb_build_object('name', z.npc_name, 'bio', z.bio)), '{}'::jsonb) from public.world_faction_npcs z where z.npc_key = any (spk)),
+    'rank_name', (select r.rank_name from public.world_faction_ranks r join public.world_faction_progress q on q.faction_id = r.faction_id and q.rank = r.rank where q.owner_id = uid and q.faction_id = p.faction_id));
+end $$;
+
+-- 의뢰판: 오늘 의뢰 하나를 마치고 받는다(평판·공훈)
+create or replace function public.world_faction_request_claim(p_req text)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; r public.world_faction_requests%rowtype; t jsonb;
+  v_day date := (now() at time zone 'Asia/Seoul')::date; d0 timestamptz := ((now() at time zone 'Asia/Seoul')::date)::timestamp at time zone 'Asia/Seoul';
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into c from public.world_characters where owner_id = uid for update;
+  if c.major_faction_id is null then raise exception '대세력에 들어야 합니다.'; end if;
+  perform public.world_faction_sync(uid);
+  if p_req not in (select q.req_key from public.world_faction_requests q order by md5(q.req_key || c.major_faction_id || v_day::text) limit 3) then raise exception '오늘의 의뢰가 아닙니다.'; end if;
+  select * into r from public.world_faction_requests where req_key = p_req;
+  for t in select * from jsonb_array_elements(r.need -> 'tasks') loop
+    if public.world_faction_task_count(uid, t, d0) < (t ->> 'n')::int then raise exception '아직 의뢰를 마치지 않았습니다.'; end if;
+  end loop;
+  insert into public.world_faction_request_claims(owner_id, day, req_key) values (uid, v_day, p_req) on conflict do nothing;
+  if not found then raise exception '이미 받은 의뢰입니다.'; end if;
+  update public.world_characters set faction_reputation = least(5000, coalesce(faction_reputation, 0) + r.rep), updated_at = now() where owner_id = uid;
+  update public.world_faction_progress set merit = merit + r.merit, updated_at = now() where owner_id = uid and faction_id = c.major_faction_id;
+  return jsonb_build_object('content', '의뢰 「' || r.title || '」를 마쳤습니다. 평판 +' || r.rep || ' · 공훈 +' || r.merit, 'merit', r.merit, 'rep', r.rep);
+end $$;
+
+-- 비고: 세력 안전지대에서 공훈으로 산다(팔기 없음)
+create or replace function public.world_faction_vault_buy(p_item text, p_qty int default 1)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype; v public.world_faction_vault%rowtype; cost int; nm text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  if p_qty is null or p_qty < 1 or p_qty > 99 then raise exception '수량은 1~99개입니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid for update;
+  if c.major_faction_id is null then raise exception '대세력에 들어야 합니다.'; end if;
+  p := public.world_faction_sync(uid);
+  if p.join_done_at is null then raise exception '가입 퀘스트를 마치면 비고가 열립니다.'; end if;
+  if c.location not in (select m.region_name from public.world_map_regions m where m.region_id = any (public.world_faction_home(c.major_faction_id))) then raise exception '세력 안전지대에서만 비고를 열 수 있습니다.'; end if;
+  if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 살 수 없습니다.'; end if;
+  select * into v from public.world_faction_vault where faction_id = c.major_faction_id and item_id = p_item;
+  if v.item_id is null then raise exception '비고에 없는 물품입니다.'; end if;
+  if v.rank_need > p.rank then raise exception '% 등급부터 살 수 있습니다.', (select rank_name from public.world_faction_ranks where faction_id = c.major_faction_id and rank = v.rank_need); end if;
+  cost := v.price * p_qty;
+  if p.merit < cost then raise exception '공훈이 모자랍니다(% 필요, 지금 %).', cost, p.merit; end if;
+  if public.world_bag_room(coalesce(c.inventory, '{}'::jsonb), p_item, public.world_bag_limit(uid)) < p_qty then raise exception '가방 자리가 모자랍니다.'; end if;
+  update public.world_faction_progress set merit = merit - cost, updated_at = now() where owner_id = uid and faction_id = c.major_faction_id and merit >= cost;
+  if not found then raise exception '공훈이 모자랍니다.'; end if;
+  update public.world_characters set inventory = public.world_inv_add(coalesce(inventory, '{}'::jsonb), p_item, p_qty), updated_at = now() where owner_id = uid;
+  select item_name into nm from public.world_item_catalog where item_id = p_item;
+  return jsonb_build_object('content', nm || ' ×' || p_qty || '을(를) 공훈 ' || cost || '으로 받았습니다.', 'merit', p.merit - cost);
+end $$;
+
+-- 수련장: 하루 한 번 지금 등급의 시련. 3·5등급 시련을 처음 넘으면 칭호(5등급은 낙관도)
+create or replace function public.world_faction_trial()
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype;
+  v_day date := (now() at time zone 'Asia/Seoul')::date; tier int; chance float8; won boolean; keeper text; lines jsonb; gain int := 0; tk text; got text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into c from public.world_characters where owner_id = uid for update;
+  if c.major_faction_id is null then raise exception '대세력에 들어야 합니다.'; end if;
+  p := public.world_faction_sync(uid);
+  if p.join_done_at is null then raise exception '가입 퀘스트를 마치면 수련장이 열립니다.'; end if;
+  if c.location not in (select m.region_name from public.world_map_regions m where m.region_id = any (public.world_faction_home(c.major_faction_id))) then raise exception '세력 안전지대에서만 수련장에 들어갈 수 있습니다.'; end if;
+  if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 시련을 치를 수 없습니다.'; end if;
+  if p.hall_day = v_day then raise exception '오늘의 시련은 이미 치렀습니다. 내일 다시 오세요.'; end if;
+  tier := p.rank;
+  chance := greatest(0.15, least(0.9, 0.55 + 0.05 * (c.level - (array[3, 8, 14, 20, 26])[tier])));
+  won := random() < chance;
+  select z.npc_name into keeper from public.world_faction_scenes s join public.world_faction_npcs z on z.npc_key = s.lines -> 0 ->> 's' where s.scene_key = c.major_faction_id || ':hall:1';
+  lines := jsonb_build_array(
+    jsonb_build_object('s', null, 't', tier || '등급 시련. ' || coalesce(keeper, '관리인') || '이(가) 상대를 내보낸다.'),
+    jsonb_build_object('s', null, 't', case when won then '몇 합을 주고받은 끝에 상대의 자세가 무너졌다.' else '상대의 공세를 끝내 버티지 못하고 무릎을 꿇었다.' end));
+  if won then
+    gain := 10 * tier;
+    tk := case when tier >= 5 and p.hall_best < 5 then 'fac_' || c.major_faction_id || '_t5' when tier >= 3 and p.hall_best < 3 then 'fac_' || c.major_faction_id || '_t3' end;
+    if tk is not null then
+      insert into public.world_character_titles(owner_id, title_key) values (uid, tk) on conflict do nothing;
+      if tier >= 5 and p.hall_best < 3 then insert into public.world_character_titles(owner_id, title_key) values (uid, 'fac_' || c.major_faction_id || '_t3') on conflict do nothing; end if;
+      insert into public.world_character_cosmetics(owner_id, cosmetic_key)
+        select uid, cc.cosmetic_key from public.world_cosmetic_catalog cc where cc.rule ->> 'title' = tk on conflict do nothing;
+      select title_name into got from public.world_title_catalog where title_key = tk;
+    end if;
+  end if;
+  update public.world_faction_progress set hall_day = v_day, hall_best = case when won then greatest(hall_best, tier) else hall_best end, merit = merit + gain, updated_at = now()
+   where owner_id = uid and faction_id = c.major_faction_id;
+  return jsonb_build_object('won', won, 'tier', tier, 'lines', lines, 'merit', gain, 'title', got,
+    'content', case when won then '시련을 넘었습니다. 공훈 +' || gain || coalesce(' · 칭호 「' || got || '」', '') else '시련에 졌습니다. 내일 다시 도전할 수 있습니다.' end);
+end $$;
+
+-- 프로필에 세력 등급 보이기·숨기기
+create or replace function public.world_faction_show_rank(p_show boolean)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); fid text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select major_faction_id into fid from public.world_characters where owner_id = uid;
+  if fid is null then raise exception '대세력에 들어야 합니다.'; end if;
+  perform public.world_faction_sync(uid);
+  update public.world_faction_progress set show_rank = coalesce(p_show, true), updated_at = now() where owner_id = uid and faction_id = fid;
+  return jsonb_build_object('content', case when p_show then '프로필에 세력 등급을 보입니다.' else '프로필에서 세력 등급을 숨깁니다.' end);
+end $$;
+
+do $$ declare f text; begin
+  foreach f in array array['world_faction_task_count(uuid,jsonb,timestamptz)', 'world_faction_task_label(jsonb)', 'world_faction_rank_effect(text)', 'world_faction_rank_label(uuid)',
+    'world_faction_sync(uuid)', 'world_faction_current(uuid,boolean)', 'world_faction_snapshot()', 'world_faction_home(text)', 'world_faction_report()',
+    'world_faction_request_claim(text)', 'world_faction_vault_buy(text,integer)', 'world_faction_trial()', 'world_faction_show_rank(boolean)'] loop
+    execute format('alter function public.%s owner to fn_owner_field', f);
+    execute format('revoke all on function public.%s from public, anon, authenticated', f);
+  end loop;
+  -- 화면이 부르는 것과 상태 효과 합계(여러 함수 주인이 부름)·이름표만 연다
+  foreach f in array array['world_faction_snapshot()', 'world_faction_report()', 'world_faction_request_claim(text)', 'world_faction_vault_buy(text,integer)', 'world_faction_trial()', 'world_faction_show_rank(boolean)'] loop
+    execute format('grant execute on function public.%s to authenticated', f);
+  end loop;
+  execute 'grant execute on function public.world_faction_rank_effect(text) to public';
+  execute 'grant execute on function public.world_faction_home(text) to public';
+end $$;
+
+insert into public.world_faction_npcs(npc_key, faction_id, npc_name, bio, sort) values
+  ('night_office:baek', 'night_office', '도제조 백운서', '정통파의 수장. 백발의 노관리. 말이 느리고 짧다.', 0),
+  ('night_office:han', 'night_office', '감찰관 한설', '규정과 보고를 무엇보다 앞세우는 감찰관. 차갑지만 공정하다.', 1),
+  ('night_office:mo', 'night_office', '기록관 모가람', '장서각을 지키는 기록관. 말이 많고 다정하다. 비고 관리인.', 2),
+  ('night_office:kang', 'night_office', '교관 강두철', '연무청 교관. 목소리가 크고 웃음이 많다. 수련장 관리인.', 3),
+  ('red_moon_cult:wolhwa', 'red_moon_cult', '교주 월화(月華)', '적월교의 교주. 붉은 면사포 너머로 얼굴을 보인 적이 없다.', 0),
+  ('red_moon_cult:sama', 'red_moon_cult', '대호법 사마겸', '교의 무력을 맡은 거한. 약한 자를 경멸하고 강한 자를 아낀다. 수련굴 관리인.', 1),
+  ('red_moon_cult:danbi', 'red_moon_cult', '주홍 무녀 단비', '의식을 집전하는 젊은 무녀. 웃는 얼굴로 무서운 말을 한다. 비고 관리인.', 2),
+  ('black_lotus:mumyeong', 'black_lotus', '회주 무명(無名)', '흑련회의 회주. 자기 이름을 팔았다고 한다. 누구도 진짜 이름을 모른다.', 0),
+  ('black_lotus:guseul', 'black_lotus', '장부지기 구슬', '암시장의 모든 빚을 외우는 여인. 주판 소리가 말버릇이다. 비고 관리인.', 1),
+  ('black_lotus:six', 'black_lotus', '채무 추적자 여섯째', '빚을 받아 내는 사람. 말이 적고 숫자로 부른다. 수련장 관리인.', 2),
+  ('north_league:seok', 'north_league', '맹주 석진악', '북령맹의 맹주. 얼음 인장을 지키는 노무인. 말보다 손이 먼저 나간다.', 0),
+  ('north_league:hyegak', 'north_league', '수좌 혜각', '철벽 고찰의 수좌승. 웃으면서 사람을 땅에 눕힌다. 수련장 관리인.', 1),
+  ('north_league:yeo', 'north_league', '호송대장 여운비', '맹의 호송대를 이끄는 여장수. 길과 날씨를 누구보다 잘 안다. 비고 관리인.', 2),
+  ('river_alliance:jin', 'river_alliance', '도방 진소랑', '수향연맹의 도방. 웃는 얼굴로 값을 깎는 장사꾼. 약속은 반드시 지킨다.', 0),
+  ('river_alliance:nodeul', 'river_alliance', '뱃사공 노들 영감', '구름나루에서 오십 년 노를 저은 노인. 물길의 모든 소문을 안다. 수련장 관리인.', 1),
+  ('river_alliance:maehyang', 'river_alliance', '장부 행수 매향', '상단의 장부를 맡은 행수. 계산이 빠르고 말이 똑 부러진다. 비고 관리인.', 2),
+  ('southern_remnant:jang', 'southern_remnant', '노장 장무현', '남명회의 수장. 망국의 마지막 장군. 한쪽 팔이 없다.', 0),
+  ('southern_remnant:soi', 'southern_remnant', '무녀 소이', '망국의 기억을 노래로 전하는 무녀. 말끝마다 옛말이 섞인다. 비고 관리인.', 1),
+  ('southern_remnant:galmae', 'southern_remnant', '정찰대장 갈매', '잔불촌의 젊은 정찰대장. 날래고 거칠다. 수련장 관리인.', 2),
+  ('mandate_court:hahu', 'mandate_court', '태사령 하후정', '천명원의 수장. 황실의 별을 읽는 노학자. 예언을 입 밖에 내지 않는다.', 0),
+  ('mandate_court:seo', 'mandate_court', '수석 관측관 서이연', '관성대의 수석 관측관. 밤을 새우는 게 일상이라 늘 졸린 얼굴이다. 수련장 관리인.', 1),
+  ('mandate_court:mun', 'mandate_court', '기밀 사관 문서진', '황실 기록을 맡은 사관. 웃지 않는다. 비고 관리인.', 2)
+on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio, sort = excluded.sort;
+
+insert into public.world_faction_scenes(scene_key, faction_id, kind, step, title, goal, need, lines, reward, min_level, rep_need) values
+  ('night_office:join:1', 'night_office', 'join', 1, '신원 심사', '본부 정청에서 감찰관 한설과 이야기한다', '{"at": ["hq_dorm", "hq_yard"]}'::jsonb, '[{"s": null, "t": "정청 마루의 등잔이 하나씩 밝혀진다. 문서 더미 너머에서 붓 끝을 닦던 사내가 고개를 든다."}, {"s": "night_office:han", "t": "입국 신청서. 이름, 직업, 소속. …전부 적혀 있군. 드문 일이다."}, {"s": "night_office:han", "t": "야행국 정통파는 퇴마를 하는 곳이 아니다. 퇴마를 「기록하는」 곳이지. 무엇을 베었는지보다 무엇을 보았는지가 먼저다."}, {"s": "night_office:mo", "t": "감찰관님, 또 겁부터 주시네. 어서 와요. 나는 장서각의 모가람. 여기서 쓰는 장부는 전부 내 손을 거쳐요."}, {"s": "night_office:han", "t": "기초 교육부터 받는다. 잿빛 들녘에 나가 보고, 본 것을 적어 와라. 하나도 빼놓지 말고."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('night_office:join:2', 'night_office', 'join', 2, '첫 현장 기록', '잿빛 들녘에서 탐색 3회·토벌 승리 2회 뒤 본부에 보고', '{"tasks": [{"t": "search", "n": 3, "r": ["field_outskirts"]}, {"t": "win", "n": 2, "r": ["field_outskirts"]}], "at": ["hq_dorm", "hq_yard"]}'::jsonb, '[{"s": null, "t": "잿빛 들녘의 풀은 밤에도 회색이다. 발밑에서 부러진 부적 조각이 바스락거린다."}, {"s": "night_office:kang", "t": "하하! 신입이 벌써 돌아왔나! 어디 보자… 요괴 둘에 흔적 셋. 숫자는 맞는데."}, {"s": "night_office:han", "t": "이 줄. 「검은 털이 많았음」. 몇 가닥이었나. 어느 방향으로 누워 있었나."}, {"s": null, "t": "한설이 붓으로 한 줄을 긋는다. 그러나 장부를 돌려주는 손길은 조심스럽다."}, {"s": "night_office:han", "t": "처음치고는 나쁘지 않다. 기록은 거짓말을 하지 않는다. 기록하는 자가 거짓말을 할 뿐이지."}, {"s": "night_office:mo", "t": "이 말 들었으면 합격이에요. 감찰관님이 칭찬을 저렇게 하시거든요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('night_office:join:3', 'night_office', 'join', 3, '등잔 아래의 서약', '본부 정청에서 도제조 백운서를 만난다', '{"at": ["hq_dorm", "hq_yard"]}'::jsonb, '[{"s": null, "t": "정청 가장 안쪽 방. 꺼지지 않는 등잔 하나 아래, 백발의 노인이 기다리고 있다."}, {"s": "night_office:baek", "t": "…앉게."}, {"s": "night_office:baek", "t": "야행국이 생긴 지 삼백 년일세. 그동안 우리는 요괴를 다 없애지 못했어. 다만 잊지 않았지."}, {"s": "night_office:baek", "t": "이름을 적는 것은 그것을 붙잡아 두는 일이네. 사람이든 요괴든. 자네 이름도 이제 이 장부에 남네."}, {"s": null, "t": "노인이 장부를 펼친다. 붉은 인장이 찍힐 자리가 비어 있다."}, {"s": "night_office:baek", "t": "야행국의 밤은 길다네. 등잔이 꺼지지 않게만 해 주게."}, {"s": null, "t": "「수습 야행관」의 직위를 받았다. 정통파의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('night_office:rejoin:1', 'night_office', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "night_office:han", "t": "돌아왔군. 장부에서 지웠던 이름을 다시 적는다. 이번엔 지우지 않게 해라."}, {"s": "night_office:mo", "t": "감찰관님 말은 반만 들어요. 다시 와서 다들 반가워해요. 정말로요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('night_office:rank:2', 'night_office', 'rank', 2, '두 번째 장부', '장서각 지하서고에서 탐색 2회', '{"tasks": [{"t": "search", "n": 2, "r": ["hq_archive"]}]}'::jsonb, '[{"s": "night_office:mo", "t": "지하서고에 오래된 장부가 하나 더 있대요. 첫 번째 장부랑 먹 색이 달라서 누가 따로 적은 거래요."}, {"s": null, "t": "서고 깊은 곳, 습기를 먹은 책장 사이에서 낡은 장부를 찾아냈다. 마지막 장이 뜯겨 있다."}, {"s": "night_office:han", "t": "뜯긴 자리는 기록해 둬라. 없는 것도 기록이다."}, {"s": null, "t": "「야행관」으로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 5, 300),
+  ('night_office:rank:3', 'night_office', 'rank', 3, '감찰의 눈', '토벌 승리 5회 · 탐색에서 단서 1개', '{"tasks": [{"t": "win", "n": 5}, {"t": "clue", "n": 1}]}'::jsonb, '[{"s": "night_office:han", "t": "야시장에 이름 없는 장부가 돈다. 산 사람도 판 사람도 입을 닫는다. 그 길을 따라가 봐라."}, {"s": null, "t": "장부를 판 자는 이미 사라졌다. 남은 것은 젖은 먹 냄새와 연꽃을 그린 종이 한 장이다."}, {"s": "night_office:han", "t": "…연꽃이라. 이 일은 내가 직접 올린다. 너는 오늘부터 감찰을 맡는다."}, {"s": null, "t": "「감찰 야행관」으로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 10, 800),
+  ('night_office:rank:4', 'night_office', 'rank', 4, '얼음 인장 호송', '철벽 고찰까지 이동 · 빙혼곡 원정 1회 완주', '{"tasks": [{"t": "travel", "n": 1, "r": ["iron_monastery"]}, {"t": "expedition", "n": 1, "r": ["frost_valley"]}]}'::jsonb, '[{"s": "night_office:baek", "t": "북령맹이 도움을 청해 왔네. 얼음 인장에 금이 갔다지. 우리 봉인 문서를 직접 건네주게."}, {"s": null, "t": "철벽 고찰의 승려들이 문서를 받아 들고 고개를 숙인다. 정통파와 북령맹의 인장이 나란히 찍힌다."}, {"s": "night_office:kang", "t": "산문 놈들이 고맙다는 말을 다 하네! 이런 날은 연무청에서 한잔해야지."}, {"s": null, "t": "「당상 야행관」으로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 16, 1600),
+  ('night_office:rank:5', 'night_office', 'rank', 5, '꺼지지 않는 등잔', '본부 정청에서 도제조 백운서를 만난다', '{"at": ["hq_dorm", "hq_yard"]}'::jsonb, '[{"s": "night_office:baek", "t": "판관의 자리는 쉽게 내주지 않네. 판관은 남이 쓴 기록을 다시 읽는 사람이거든."}, {"s": "night_office:baek", "t": "…그리고 언젠가는 우리 스스로 쓴 기록도 의심해야 하네. 등잔 밑이 가장 어두운 법이니."}, {"s": null, "t": "노인이 자신의 등잔에서 불을 덜어 새 등잔에 옮겨 붙인다."}, {"s": null, "t": "「야행 판관」이 되었다. 정통파 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 22, 3000),
+  ('night_office:vault:1', 'night_office', 'vault', 1, '본부 비고(秘庫)', '', '{}'::jsonb, '[{"s": "night_office:mo", "t": "어서 와요. 공훈은 여기서만 써요. 대신 파는 건 안 받아요. 비고는 받는 곳이 아니라 내주는 곳이라서요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('night_office:hall:1', 'night_office', 'hall', 1, '팔괘 연무청', '', '{}'::jsonb, '[{"s": "night_office:kang", "t": "연무청이다! 오늘 등급에 맞는 상대를 붙여 주지. 이기면 정통파 이름으로 칭호를 새겨 주마!"}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('red_moon_cult:join:1', 'red_moon_cult', 'join', 1, '장터의 붉은 등', '백골 장터(또는 본부 정청 연락관)에서 주홍 무녀 단비를 찾는다', '{"at": ["bone_market", "hq_yard"]}'::jsonb, '[{"s": null, "t": "백골 장터의 끝, 뼈로 엮은 차양 아래 붉은 등 하나가 걸려 있다. 등 아래 앉은 소녀가 손짓한다."}, {"s": "red_moon_cult:danbi", "t": "왔네요. 정청 사람들은 우리를 마교라고 부르죠? 맞아요. 우린 그 이름이 싫지 않아요."}, {"s": "red_moon_cult:danbi", "t": "요기는 독이 아니에요. 다룰 줄 모르는 사람한테만 독이죠. 당신은 어느 쪽일까요?"}, {"s": "red_moon_cult:danbi", "t": "황무지로 나가 보세요. 붉은 모래가 당신을 먹으려 들 거예요. 먹히지 않고 돌아오면 그다음 이야기를 해요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('red_moon_cult:join:2', 'red_moon_cult', 'join', 2, '붉은 모래의 시험', '적월 변경(적사 황무지 등)에서 토벌 승리 3회 · 침식 20 이상인 채로 돌아와 보고', '{"tasks": [{"t": "win", "n": 3, "r": ["red_plain", "glass_canyon", "black_sand_temple", "red_moon_fort"]}], "erosion": 20, "at": ["bone_market", "hq_yard"]}'::jsonb, '[{"s": null, "t": "돌아온 손끝이 붉게 저리다. 몸 어딘가에서 낯선 힘이 꿈틀거린다."}, {"s": "red_moon_cult:sama", "t": "흥. 살아 돌아왔군. 대부분은 첫 달을 못 넘긴다."}, {"s": "red_moon_cult:sama", "t": "그 저린 손. 그게 요기다. 정청 놈들은 그걸 씻어 내라고 하지. 우리는 삼키라고 한다."}, {"s": "red_moon_cult:danbi", "t": "호법님이 말을 거셨으니 합격이에요. 호법님은 시체한테는 말을 안 거시거든요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('red_moon_cult:join:3', 'red_moon_cult', 'join', 3, '월식의 입교', '백골 장터의 붉은 등 아래에서 입교 의식을 치른다', '{"at": ["bone_market", "hq_yard"]}'::jsonb, '[{"s": null, "t": "등불이 모두 꺼진다. 어둠 속에서 붉은 면사포가 흔들린다. 목소리는 가까운데 발소리는 들리지 않는다."}, {"s": "red_moon_cult:wolhwa", "t": "달은 차오르고, 먹히고, 다시 차오른다. 우리도 그렇다."}, {"s": "red_moon_cult:wolhwa", "t": "세상은 우리를 금기라 불렀다. 그러니 우리는 금기로 세상을 지킨다. 저들이 감당하지 못한 것을, 우리가 삼켜서."}, {"s": "red_moon_cult:wolhwa", "t": "네 피 한 방울을 달에 바쳐라. 그 대신 달이 너를 기억할 것이다."}, {"s": null, "t": "손바닥에 붉은 달 모양의 자국이 떠올랐다가 스며든다."}, {"s": null, "t": "「입문 교도」가 되었다. 적월교의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('red_moon_cult:rejoin:1', 'red_moon_cult', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "red_moon_cult:danbi", "t": "어머, 돌아왔네요. 달은 떠난 사람을 원망하지 않아요. 기억할 뿐이죠."}, {"s": "red_moon_cult:sama", "t": "한 번 등 돌린 자는 두 배로 증명해야 한다. 잊지 마라."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('red_moon_cult:rank:2', 'red_moon_cult', 'rank', 2, '혈서', '유리협곡에서 채집 3회', '{"tasks": [{"t": "gather", "n": 3, "r": ["glass_canyon"]}]}'::jsonb, '[{"s": "red_moon_cult:danbi", "t": "혈서를 쓸 먹이 모자라요. 유리협곡 절벽의 붉은 결정을 갈아서 써요."}, {"s": null, "t": "결정을 갈아 만든 먹으로 이름을 쓰자, 글자가 잠깐 맥박처럼 뛴다."}, {"s": null, "t": "「혈인 교도」로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 8, 300),
+  ('red_moon_cult:rank:3', 'red_moon_cult', 'rank', 3, '흑사단의 그림자', '흑사단 폐단에서 토벌 승리 5회', '{"tasks": [{"t": "win", "n": 5, "r": ["black_sand_temple"]}]}'::jsonb, '[{"s": "red_moon_cult:sama", "t": "흑사단. 한때 우리 형제였다. 지금은 이름 없는 시체들이 그 자리를 지킨다."}, {"s": "red_moon_cult:sama", "t": "그들이 무엇을 바쳤는지 묻지 마라. 너는 그 자리를 지나 돌아오기만 하면 된다."}, {"s": null, "t": "폐단의 벽에는 수백 개의 이름이 긁혀 지워져 있었다."}, {"s": null, "t": "「월식 집사」로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 10, 800),
+  ('red_moon_cult:rank:4', 'red_moon_cult', 'rank', 4, '먹히는 달', '적월교 월식성에서 탐색 3회', '{"tasks": [{"t": "search", "n": 3, "r": ["red_moon_fort"]}]}'::jsonb, '[{"s": null, "t": "월식성의 하늘에는 달이 반만 떠 있다. 나머지 반은 무언가에 먹힌 채로 멈춰 있다."}, {"s": "red_moon_cult:wolhwa", "t": "보았느냐. 저것이 우리가 지키는 것이다. 정청은 저 달을 원망하지만, 저 달이 다 먹히는 날 세상도 함께 먹힌다."}, {"s": null, "t": "「적월 호법」으로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 16, 1600),
+  ('red_moon_cult:rank:5', 'red_moon_cult', 'rank', 5, '면사포 너머', '백골 장터에서 교주 월화를 만난다', '{"at": ["bone_market", "hq_yard"]}'::jsonb, '[{"s": "red_moon_cult:wolhwa", "t": "장로가 되는 자에게만 하는 말이 있다."}, {"s": "red_moon_cult:wolhwa", "t": "나는 교를 이끄는 자가 아니다. 교에 붙들린 자다. 언젠가 내가 달에 먹히면, 그때는 네가 이 면사포를 들어라."}, {"s": null, "t": "면사포 아래로 붉은 눈 하나가 잠깐 보였다가 사라진다."}, {"s": null, "t": "「홍월 장로」가 되었다. 적월교 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 22, 3000),
+  ('red_moon_cult:vault:1', 'red_moon_cult', 'vault', 1, '혈월 비고', '', '{}'::jsonb, '[{"s": "red_moon_cult:danbi", "t": "위계로만 사요. 전으로는 못 사요. 팔러 오셨다면… 그건 장터에서 하세요. 여긴 바치는 곳이지 파는 곳이 아니에요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('red_moon_cult:hall:1', 'red_moon_cult', 'hall', 1, '월식 수련굴', '', '{}'::jsonb, '[{"s": "red_moon_cult:sama", "t": "수련굴이다. 약한 자는 들어가지 마라. 강한 자도 마찬가지다. 들어간 자만 강해진다."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('black_lotus:join:1', 'black_lotus', 'join', 1, '첫 번째 빚', '십삼문 암시장(또는 본부 정청 연락관)에서 장부지기 구슬과 계약한다 · 300전', '{"at": ["hidden_bazaar", "hq_yard"], "cost": 300}'::jsonb, '[{"s": null, "t": "열두 개의 문을 지나면 문이 하나 더 있다. 아무도 그 문을 세지 않는다."}, {"s": "black_lotus:guseul", "t": "어서 오세요, 손님. 여기선 무엇이든 팔아요. 물건, 소문, 기억, 이름까지요."}, {"s": "black_lotus:guseul", "t": "들어오려면 빚을 하나 지셔야 해요. 돈으로 갚을 수 있는 작은 빚. 그래야 우리가 손님을 믿죠."}, {"s": null, "t": "주판알이 세 번 튕긴다. 계약서 한 귀퉁이에 검은 연꽃이 피어난다."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('black_lotus:join:2', 'black_lotus', 'join', 2, '팔리지 않은 소문', '탐색 2회 · 탐색에서 단서 1개 뒤 보고', '{"tasks": [{"t": "search", "n": 2}, {"t": "clue", "n": 1}], "at": ["hidden_bazaar", "hq_yard"]}'::jsonb, '[{"s": "black_lotus:six", "t": "빚은 갚아야 한다. 돈 말고, 정보로."}, {"s": "black_lotus:six", "t": "정청이 숨기는 것. 아무거나 하나. 기록에 없는 것일수록 비싸다."}, {"s": null, "t": "가져온 단서를 받아 든 여섯째가 손가락으로 무언가를 센다. 그리고 한 번 고개를 끄덕인다."}, {"s": "black_lotus:guseul", "t": "빚은 갚으셨어요. 이자는 받지 않을게요. 첫 손님이니까."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('black_lotus:join:3', 'black_lotus', 'join', 3, '이름을 맡기는 밤', '열세 번째 문 앞에서 회주 무명을 만난다', '{"at": ["hidden_bazaar", "hq_yard"]}'::jsonb, '[{"s": null, "t": "문 너머 방에는 등도 의자도 없다. 목소리만 있다."}, {"s": "black_lotus:mumyeong", "t": "진실은 기록되지 않은 곳에 있다. 기록된 것은 이미 누군가가 고른 진실이지."}, {"s": "black_lotus:mumyeong", "t": "나는 내 이름을 팔았다. 그 값으로 이 문을 샀지. 너에게 그만큼을 바라진 않는다."}, {"s": "black_lotus:mumyeong", "t": "이름의 한 글자만 이 장부에 맡겨라. 네가 우리를 배신하지 않는 한 아무도 그 글자를 꺼내지 않는다."}, {"s": null, "t": "「빚진 손님」이 되었다. 흑련회의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('black_lotus:rejoin:1', 'black_lotus', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "black_lotus:guseul", "t": "돌아오셨네요. 맡기신 글자는 그대로 있어요. 우리는 손님을 잊지 않아요."}, {"s": "black_lotus:six", "t": "빚은 없다. 이번에는."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('black_lotus:rank:2', 'black_lotus', 'rank', 2, '만인장의 비석', '만인장에서 탐색 3회', '{"tasks": [{"t": "search", "n": 3, "r": ["burial_steps"]}]}'::jsonb, '[{"s": "black_lotus:guseul", "t": "만인장 비석 중에 이름이 지워진 게 있어요. 누가 그 이름을 샀는지 알아 오세요."}, {"s": null, "t": "비석 뒤편에 작은 글씨로 적힌 숫자. 장부의 쪽수다."}, {"s": null, "t": "「연잎」으로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 10, 300),
+  ('black_lotus:rank:3', 'black_lotus', 'rank', 3, '두 장부', '거래소에서 사거나 팔기 1회 · 탐색 3회', '{"tasks": [{"t": "trade", "n": 1}, {"t": "search", "n": 3}]}'::jsonb, '[{"s": "black_lotus:six", "t": "정청 장부와 우리 장부. 같은 일을 적었는데 숫자가 다르다. 어느 쪽이 틀렸는지 찾아라."}, {"s": null, "t": "틀린 쪽은 정청 장부였다. 그런데 고친 사람의 필체가 흑련회 것이다."}, {"s": "black_lotus:six", "t": "…거기까지만 봐라."}, {"s": null, "t": "「흑련 손」으로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 12, 800),
+  ('black_lotus:rank:4', 'black_lotus', 'rank', 4, '무명 고도의 문', '무명 고도 원정 1회 완주', '{"tasks": [{"t": "expedition", "n": 1, "r": ["forgotten_city"]}]}'::jsonb, '[{"s": "black_lotus:mumyeong", "t": "고도의 폐궁에는 문이 하나 있다. 아직 열 때가 아니다. 다만 문지기는 문을 알아야 한다."}, {"s": null, "t": "폐궁의 문에는 열세 개의 자물쇠가 있었고, 그중 몇 개는 이미 열려 있었다."}, {"s": null, "t": "「열세 번째 문지기」로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 16, 1600),
+  ('black_lotus:rank:5', 'black_lotus', 'rank', 5, '이름 없는 자의 대리', '열세 번째 문 앞에서 회주 무명을 만난다', '{"at": ["hidden_bazaar", "hq_yard"]}'::jsonb, '[{"s": "black_lotus:mumyeong", "t": "흑련의 뿌리가 어디 있는지 궁금하겠지. 너희가 가장 잘 아는 곳이다. 그래서 아무도 보지 못하는 곳."}, {"s": "black_lotus:mumyeong", "t": "언젠가 그 뿌리가 썩으면, 베는 것은 너다. 그것이 대리의 일이다."}, {"s": null, "t": "맡겨 두었던 이름의 한 글자를 돌려받았다. 이제 빚은 없다."}, {"s": null, "t": "「연주 대리」가 되었다. 흑련회 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 22, 3000),
+  ('black_lotus:vault:1', 'black_lotus', 'vault', 1, '열세 번째 문', '', '{}'::jsonb, '[{"s": "black_lotus:guseul", "t": "인연채무로만 받아요. 되파는 건 안 돼요. 여기서 나간 물건은 이미 누군가의 빚이거든요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('black_lotus:hall:1', 'black_lotus', 'hall', 1, '그림자 장부실', '', '{}'::jsonb, '[{"s": "black_lotus:six", "t": "장부실이다. 너보다 빚이 많은 자를 붙여 주마. 이기면 장부에서 한 줄 지워 주지."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('north_league:join:1', 'north_league', 'join', 1, '산문을 두드리다', '철벽 고찰(또는 본부 정청 연락관)에서 호송대장 여운비를 만난다', '{"at": ["hq_yard", "iron_monastery"]}'::jsonb, '[{"s": null, "t": "눈 덮인 산문 앞. 철갑을 두른 여인이 창을 땅에 꽂고 길을 막는다."}, {"s": "north_league:yeo", "t": "맹에 들고 싶다고? 북령맹은 세력이 아니다. 맹약이다. 약한 자를 지키겠다고 맹세하는 자들의 모임이지."}, {"s": "north_league:yeo", "t": "말로는 아무나 맹세한다. 길 위에서 보여 줘라. 회산 관문까지 짐 하나를 날라 와."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('north_league:join:2', 'north_league', 'join', 2, '호송의 길', '다른 지역으로 이동 2회 · 토벌 승리 3회 뒤 보고', '{"tasks": [{"t": "travel", "n": 2}, {"t": "win", "n": 3}], "at": ["hq_yard", "iron_monastery"]}'::jsonb, '[{"s": null, "t": "짐은 무겁지 않았다. 그런데 길 위의 요괴들은 꼭 짐 쪽을 노렸다."}, {"s": "north_league:yeo", "t": "짐을 지켰군. 사람이었으면 살았겠다. 그거면 됐다."}, {"s": "north_league:hyegak", "t": "허허, 대장께서 칭찬을 하시다니. 눈이 그치겠습니다."}, {"s": "north_league:hyegak", "t": "맹주께서 기다리십니다. 손이 먼저 나가는 분이니, 놀라지 마시고."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('north_league:join:3', 'north_league', 'join', 3, '얼음 인장 아래의 맹약', '맹주 석진악 앞에서 맹약을 맺는다', '{"at": ["hq_yard", "iron_monastery"]}'::jsonb, '[{"s": null, "t": "고찰의 종각 아래, 얼음처럼 투명한 인장이 매달려 있다. 노인이 맨손으로 그 인장을 짚고 서 있다."}, {"s": "north_league:seok", "t": "…"}, {"s": null, "t": "노인의 주먹이 바람을 가르며 코앞에서 멈춘다. 눈을 감지 않았다."}, {"s": "north_league:seok", "t": "좋다. 눈을 감는 자는 뒤에 선 사람을 못 지킨다."}, {"s": "north_league:seok", "t": "무력은 약한 자를 위해 있다. 그 반대가 되는 날, 맹은 너를 벤다. 맹세하겠느냐."}, {"s": null, "t": "「산문 제자」가 되었다. 북령맹의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('north_league:rejoin:1', 'north_league', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "north_league:yeo", "t": "돌아왔나. 맹약은 한 번 깨져도 다시 맺을 수 있다. 두 번째는 더 단단하게."}, {"s": "north_league:seok", "t": "…오너라."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('north_league:rank:2', 'north_league', 'rank', 2, '회산 관문의 밤', '회산 관문에서 토벌 승리 5회', '{"tasks": [{"t": "win", "n": 5, "r": ["ash_mountain"]}]}'::jsonb, '[{"s": "north_league:yeo", "t": "관문에 붉은 달 문양이 그려진 깃발이 꽂혔다. 뽑아 와라. 그리고 꽂은 놈들도."}, {"s": null, "t": "깃발을 뽑자 바람이 바뀌었다. 북쪽 바람이다."}, {"s": null, "t": "「맹약 무사」로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 7, 300),
+  ('north_league:rank:3', 'north_league', 'rank', 3, '옥문 협로 호송', '옥문 협로 원정 1회 완주', '{"tasks": [{"t": "expedition", "n": 1, "r": ["jade_pass"]}]}'::jsonb, '[{"s": "north_league:yeo", "t": "피난민 행렬이 협로를 지난다. 우리가 앞에 서고, 뒤에 서고, 옆에 선다."}, {"s": null, "t": "행렬 끝의 아이가 무사가 된 당신의 뒷모습을 오래 바라본다."}, {"s": null, "t": "「호위 무사」로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 10, 800),
+  ('north_league:rank:4', 'north_league', 'rank', 4, '금 간 인장', '빙혼곡에서 채집 3회 · 천경호에서 탐색 2회', '{"tasks": [{"t": "gather", "n": 3, "r": ["frost_valley"]}, {"t": "search", "n": 2, "r": ["sky_lake"]}]}'::jsonb, '[{"s": "north_league:hyegak", "t": "인장에 금이 갔습니다. 녹은 얼음을 다시 얼릴 수는 없지만, 더 녹지 않게는 할 수 있지요."}, {"s": "north_league:seok", "t": "인장이 깨지는 날이 와도 맹은 깨지지 않는다. 그걸 위해 너를 호법으로 세운다."}, {"s": null, "t": "「철벽 호법」으로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 13, 1600),
+  ('north_league:rank:5', 'north_league', 'rank', 5, '뇌명봉의 맹세', '뇌명봉 우두머리 쓰러뜨리기', '{"tasks": [{"t": "win", "n": 1, "r": ["thunder_peak"], "rank": "guardian"}]}'::jsonb, '[{"s": null, "t": "벼락이 그치지 않는 봉우리 꼭대기. 노인이 먼저 올라 기다리고 있다."}, {"s": "north_league:seok", "t": "나도 언젠가 늙어 쓰러진다. 그때 인장 앞에 설 자가 필요하다."}, {"s": "north_league:seok", "t": "…맹을 부탁한다."}, {"s": null, "t": "「북령 장로」가 되었다. 북령맹 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 22, 3000),
+  ('north_league:vault:1', 'north_league', 'vault', 1, '산문 무기고', '', '{}'::jsonb, '[{"s": "north_league:yeo", "t": "맹공으로 내준다. 되팔 생각이면 가져가지 마라. 맹의 무기는 지키는 데 쓰는 거다."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('north_league:hall:1', 'north_league', 'hall', 1, '철벽 연무장', '', '{}'::jsonb, '[{"s": "north_league:hyegak", "t": "허허, 연무장입니다. 오늘은 누구를 눕혀 드릴까요. 아, 반대였던가요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('river_alliance:join:1', 'river_alliance', 'join', 1, '보증인을 찾아서', '구름나루(또는 본부 정청 연락관)에서 뱃사공 노들 영감과 이야기한다', '{"at": ["hq_yard", "river_ferry"]}'::jsonb, '[{"s": null, "t": "안개 낀 나루. 배 한 척이 물결에 흔들리고, 노인이 곰방대를 문 채 손님을 훑어본다."}, {"s": "river_alliance:nodeul", "t": "연맹에 들겠다고? 그럼 보증인이 있어야지. 여긴 사람을 믿지 않아. 사람의 약속을 믿지."}, {"s": "river_alliance:nodeul", "t": "내가 서 주마. 대신 내 부탁 하나 들어줘. 염등촌에 물건 좀 대 줘야 하거든."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('river_alliance:join:2', 'river_alliance', 'join', 2, '첫 거래', '채집 3회 · 상점에서 물건 팔기 1회 뒤 보고', '{"tasks": [{"t": "gather", "n": 3}, {"t": "sell", "n": 1}], "at": ["hq_yard", "river_ferry"]}'::jsonb, '[{"s": "river_alliance:maehyang", "t": "노들 영감이 보증을 섰다고요? 흠. 영감이 보증 선 사람은 열 명 중 아홉이 돈을 벌었어요."}, {"s": "river_alliance:maehyang", "t": "물건은 잘 받았어요. 값도 제대로 매겼고요. 장사는 거짓말을 안 하는 게 제일 남는 장사예요."}, {"s": "river_alliance:nodeul", "t": "거 봐라. 내 눈은 아직 멀쩡하다니까."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('river_alliance:join:3', 'river_alliance', 'join', 3, '물 위의 서명', '도방 진소랑의 배 위에서 서명한다', '{"at": ["hq_yard", "river_ferry"]}'::jsonb, '[{"s": null, "t": "연맹의 큰 배 위, 비단 차양 아래에서 여인이 주판을 내려놓는다."}, {"s": "river_alliance:jin", "t": "강과 길은 누구의 것도 아니에요. 그 위를 오가는 약속만이 우리 것이죠."}, {"s": "river_alliance:jin", "t": "정청도 적월교도, 다 우리 배를 타요. 우리는 누구 편도 아니에요. 그래서 모두가 우리를 필요로 하죠."}, {"s": "river_alliance:jin", "t": "여기 서명하세요. 지키면 이 강이 당신을 실어 나를 거예요. 어기면… 강은 깊으니까요."}, {"s": null, "t": "「보증 손님」이 되었다. 수향연맹의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('river_alliance:rejoin:1', 'river_alliance', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "river_alliance:maehyang", "t": "다시 오셨네요. 지난 장부는 깨끗하게 닫혀 있어요. 새로 열죠."}, {"s": "river_alliance:nodeul", "t": "떠났다 돌아오는 배가 제일 반가운 법이지."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('river_alliance:rank:2', 'river_alliance', 'rank', 2, '염등촌의 등', '염등촌까지 이동 · 염등촌에서 채집 3회', '{"tasks": [{"t": "travel", "n": 1, "r": ["salt_village"]}, {"t": "gather", "n": 3, "r": ["salt_village"]}]}'::jsonb, '[{"s": "river_alliance:maehyang", "t": "염등촌 사람들이 소금 등잔에 쓸 기름이 떨어졌대요. 연맹 이름으로 대 주세요."}, {"s": null, "t": "등잔에 불이 다시 켜지자 마을 사람들이 연맹 깃발을 향해 고개를 숙인다."}, {"s": null, "t": "「나루 객주」로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 5, 300),
+  ('river_alliance:rank:3', 'river_alliance', 'rank', 3, '거꾸로 흐르는 물시계', '수경루에서 탐색 2회', '{"tasks": [{"t": "search", "n": 2, "r": ["mirror_pavilion"]}]}'::jsonb, '[{"s": "river_alliance:nodeul", "t": "수경루 물시계가 거꾸로 흐른다는 소문이 돌아. 물길이 뒤집히면 배도 뒤집혀."}, {"s": null, "t": "물시계 밑바닥에 작은 거울 조각이 박혀 있었다. 비친 것은 물 밑의 무언가였다."}, {"s": null, "t": "「상단 행수」로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 9, 800),
+  ('river_alliance:rank:4', 'river_alliance', 'rank', 4, '연맹의 뱃길', '거래소에서 사거나 팔기 1회 · 서로 다른 안전지대 3곳 들르기', '{"tasks": [{"t": "trade", "n": 1}, {"t": "travel", "n": 3, "safe": true, "distinct": true}]}'::jsonb, '[{"s": "river_alliance:jin", "t": "전쟁이 나면 제일 먼저 끊기는 게 뱃길이에요. 그 뱃길을 붙잡아 둘 사람이 필요해요."}, {"s": null, "t": "세 곳의 안전지대에 연맹 깃발이 새로 걸렸다."}, {"s": null, "t": "「대행수」로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 14, 1600),
+  ('river_alliance:rank:5', 'river_alliance', 'rank', 5, '용잠 수궁의 노래', '용잠 수궁 원정 1회 완주', '{"tasks": [{"t": "expedition", "n": 1, "r": ["sunken_palace"]}]}'::jsonb, '[{"s": "river_alliance:jin", "t": "수궁 깊은 곳에서 노래가 들린대요. 그 노래가 무엇을 부르는지, 연맹은 알아야 해요."}, {"s": "river_alliance:jin", "t": "그리고 이건 장사가 아니라 부탁이에요. 도방이 하는 첫 부탁."}, {"s": null, "t": "진소랑이 자신의 주판을 건넨다. 알 하나가 붉다."}, {"s": null, "t": "「연맹 도방」이 되었다. 수향연맹 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 21, 3000),
+  ('river_alliance:vault:1', 'river_alliance', 'vault', 1, '상단 별고(別庫)', '', '{}'::jsonb, '[{"s": "river_alliance:maehyang", "t": "신용으로 사 가세요. 별고 물건은 되팔 수 없어요. 연맹이 신용을 걸고 내준 물건이니까요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('river_alliance:hall:1', 'river_alliance', 'hall', 1, '물길 시험장', '', '{}'::jsonb, '[{"s": "river_alliance:nodeul", "t": "물길 시험장이다. 물은 쉬지 않아. 버티는 놈만 건너가지."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('southern_remnant:join:1', 'southern_remnant', 'join', 1, '꺼져 가는 마을', '잔불촌(또는 본부 정청 연락관)에서 정찰대장 갈매를 만난다', '{"at": ["ember_village", "hq_yard"]}'::jsonb, '[{"s": null, "t": "잔불촌의 화로들은 모두 반쯤 꺼져 있다. 사람들은 재를 긁어모아 불씨를 살린다."}, {"s": "southern_remnant:galmae", "t": "또 구경꾼인가? 여긴 볼 거 없어. 망한 나라 사람들이 아직 안 죽고 사는 것 말고는."}, {"s": "southern_remnant:galmae", "t": "…진심이야? 그럼 마을을 지켜 봐. 밤마다 재 속에서 뭔가가 기어 나와."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('southern_remnant:join:2', 'southern_remnant', 'join', 2, '잔불촌 수호', '토벌 승리 3회 · 채집 2회 뒤 보고', '{"tasks": [{"t": "win", "n": 3}, {"t": "gather", "n": 2}], "at": ["ember_village", "hq_yard"]}'::jsonb, '[{"s": null, "t": "새벽이 되자 화로 몇 개에 다시 불이 붙었다. 지킨 만큼 불이 살아난다."}, {"s": "southern_remnant:galmae", "t": "…고마워. 이런 말 잘 안 해."}, {"s": "southern_remnant:soi", "t": "그대가 지킨 화로에서 옛 노래가 들리더이다. 망자들도 그대를 보았나 보오."}, {"s": "southern_remnant:soi", "t": "장군께서 뵙자 하시오. 남은 한 팔로 그대를 맞으실 게요."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('southern_remnant:join:3', 'southern_remnant', 'join', 3, '불씨 나눔', '꺼지지 않는 화로 앞에서 노장 장무현을 만난다', '{"at": ["ember_village", "hq_yard"]}'::jsonb, '[{"s": null, "t": "마을 한가운데, 절대 꺼뜨리지 않는다는 화로. 외팔의 노장이 그 앞에 앉아 있다."}, {"s": "southern_remnant:jang", "t": "우리 나라는 망했다. 왕도, 성도, 깃발도 없다. 남은 건 이 불씨뿐이다."}, {"s": "southern_remnant:jang", "t": "빼앗긴 땅을 되찾자고 하면 다들 웃더군. 그래도 우리는 불을 끄지 않는다. 불이 있는 한 나라는 끝나지 않으니."}, {"s": null, "t": "노장이 화로에서 불씨 하나를 집어 작은 등에 옮겨 담아 건넨다."}, {"s": "southern_remnant:jang", "t": "꺼뜨리지 마라. 그게 맹세의 전부다."}, {"s": null, "t": "「불씨 지기」가 되었다. 남명회의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('southern_remnant:rejoin:1', 'southern_remnant', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "southern_remnant:soi", "t": "돌아오셨구려. 그대가 맡긴 불씨, 우리가 대신 지키고 있었소."}, {"s": "southern_remnant:galmae", "t": "흥. 다시 왔으면 이번엔 끝까지 있어."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('southern_remnant:rank:2', 'southern_remnant', 'rank', 2, '재의 해안', '재의 해안에서 탐색 3회', '{"tasks": [{"t": "search", "n": 3, "r": ["ash_coast"]}]}'::jsonb, '[{"s": "southern_remnant:soi", "t": "해안의 재 속에 옛 왕궁의 기와 조각이 묻혀 있소. 하나라도 건져 오시오."}, {"s": null, "t": "재를 털어 낸 기와에 희미하게 남명의 문장이 남아 있다."}, {"s": null, "t": "「잔불」로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 10, 300),
+  ('southern_remnant:rank:3', 'southern_remnant', 'rank', 3, '혈엽림의 쇠사슬', '혈엽림에서 토벌 승리 5회 · 채집 2회', '{"tasks": [{"t": "win", "n": 5, "r": ["red_forest"]}, {"t": "gather", "n": 2, "r": ["red_forest"]}]}'::jsonb, '[{"s": "southern_remnant:galmae", "t": "혈엽림에 묻힌 쇠사슬. 옛날에 뭔가를 매달았던 사슬이래. 누가 파 가기 전에 우리가 먼저."}, {"s": null, "t": "사슬 끝에는 아무것도 없었다. 매달려 있던 것은 이미 누군가 가져갔다."}, {"s": null, "t": "「횃불」로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 12, 800),
+  ('southern_remnant:rank:4', 'southern_remnant', 'rank', 4, '주혈 광산의 망자', '주혈 광산 원정 1회 완주', '{"tasks": [{"t": "expedition", "n": 1, "r": ["crimson_mine"]}]}'::jsonb, '[{"s": "southern_remnant:jang", "t": "광산에서 망자들이 일어났다. 우리 병사들이다. 저들을 다시 눕혀 다오."}, {"s": "southern_remnant:jang", "t": "…이번엔 편히 누우라고 전해 다오."}, {"s": null, "t": "「봉화」로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 14, 1600),
+  ('southern_remnant:rank:5', 'southern_remnant', 'rank', 5, '마지막 등대', '구등대 군도에서 탐색 3회', '{"tasks": [{"t": "search", "n": 3, "r": ["nine_lighthouse"]}]}'::jsonb, '[{"s": "southern_remnant:soi", "t": "아홉 등대 중 하나가 아직 켜져 있소. 망국의 마지막 날부터 한 번도 꺼진 적 없는 불이오."}, {"s": "southern_remnant:jang", "t": "수호장은 그 불을 지키는 자다. 나 다음은 너다."}, {"s": null, "t": "노장이 남은 한 팔로 처음으로 당신의 어깨를 짚는다."}, {"s": null, "t": "「남명 수호장」이 되었다. 남명회 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 22, 3000),
+  ('southern_remnant:vault:1', 'southern_remnant', 'vault', 1, '불씨 창고', '', '{}'::jsonb, '[{"s": "southern_remnant:soi", "t": "잔불로 바꿔 가시오. 다시 팔 생각은 마시오. 여기 물건은 다 누군가의 유품이니."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('southern_remnant:hall:1', 'southern_remnant', 'hall', 1, '봉화대 수련장', '', '{}'::jsonb, '[{"s": "southern_remnant:galmae", "t": "봉화대 수련장이야. 불이 꺼지기 전에 버텨. 그게 다야."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('mandate_court:join:1', 'mandate_court', 'join', 1, '관측 시험 응시', '본부 정청(또는 무극 관성대)에서 수석 관측관 서이연을 만난다', '{"at": ["hq_dorm", "hq_yard", "star_observatory"]}'::jsonb, '[{"s": null, "t": "정청 한구석, 별자리 도판을 펼쳐 놓은 관리가 하품을 한다."}, {"s": "mandate_court:seo", "t": "천명원 응시자? 아… 오늘 밤 관측 시험이에요. 별을 보는 시험은 아니고요, 땅을 보는 시험."}, {"s": "mandate_court:seo", "t": "하늘의 변화는 땅에 먼저 내려와요. 서로 다른 곳 세 군데를 살피고 와요. 날씨, 시간, 요기의 흐름까지."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('mandate_court:join:2', 'mandate_court', 'join', 2, '세 곳의 관측점', '서로 다른 지역 세 곳에서 탐색 뒤 보고', '{"tasks": [{"t": "search", "n": 3, "distinct": true}], "at": ["hq_dorm", "hq_yard", "star_observatory"]}'::jsonb, '[{"s": null, "t": "세 곳의 기록을 나란히 놓자, 요기의 흐름이 한 방향을 가리킨다. 남쪽이다."}, {"s": "mandate_court:seo", "t": "…오. 이걸 혼자 찾았어요? 보통 다섯 번은 다시 보내는데."}, {"s": "mandate_court:mun", "t": "기록은 정확하다. 결론은 쓰지 마라. 결론은 태사령께서 내리신다."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('mandate_court:join:3', 'mandate_court', 'join', 3, '별 아래의 서약', '혼천의 앞에서 태사령 하후정을 만난다', '{"at": ["hq_dorm", "hq_yard", "star_observatory"]}'::jsonb, '[{"s": null, "t": "혼천의가 천천히 돈다. 노학자가 그 앞에서 눈을 감고 있다."}, {"s": "mandate_court:hahu", "t": "천명은 정해져 있다. 다만 아는 자와 모르는 자가 있을 뿐이다."}, {"s": "mandate_court:hahu", "t": "우리를 두고 예언을 권력으로 쓴다고들 하지. 맞는 말이다. 그래서 우리는 예언을 함부로 입에 올리지 않는다."}, {"s": "mandate_court:hahu", "t": "본 것을 다 말하지 않겠다고 맹세하라. 그것이 별을 보는 자의 첫 번째 계율이다."}, {"s": null, "t": "「관측생」이 되었다. 천명원의 비고와 수련장이 열린다."}]'::jsonb, '{"items": {"tonic": 5, "clear_spirit_pill": 3, "spirit_qi_pill": 2}, "merit": 30}'::jsonb, 1, 0),
+  ('mandate_court:rejoin:1', 'mandate_court', 'rejoin', 1, '돌아온 이에게', '', '{}'::jsonb, '[{"s": "mandate_court:seo", "t": "아, 다시 왔네요. 별자리는 그새 조금 움직였어요. 다시 맞춰 봐요."}, {"s": "mandate_court:mun", "t": "떠난 동안 본 것은 묻지 않겠다. 기록에도 남기지 않는다."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('mandate_court:rank:2', 'mandate_court', 'rank', 2, '삼경의 별', '삼경(0~6시)에 탐색 2회', '{"tasks": [{"t": "search", "n": 2, "phase": ["night"]}]}'::jsonb, '[{"s": "mandate_court:seo", "t": "삼경의 별은 낮에 안 보이는 걸 보여 줘요. 졸려도 참고 봐요. 나도 참으니까."}, {"s": null, "t": "삼경의 하늘에 낯선 별 하나가 떠 있다. 도판에 없는 별이다."}, {"s": null, "t": "「일관」으로 올랐다."}]'::jsonb, '{"items": {"spirit_qi_pill": 3, "ward_talisman": 3}, "merit": 60}'::jsonb, 5, 300),
+  ('mandate_court:rank:3', 'mandate_court', 'rank', 3, '혈무의 기록', '농무·삭풍·혈무 가운데 한 날씨에 원정 1회 완주', '{"tasks": [{"t": "expedition", "n": 1, "weather": ["fog", "wind", "bloodmist"]}]}'::jsonb, '[{"s": "mandate_court:mun", "t": "날씨가 사나운 날에만 남는 흔적이 있다. 그 기록이 필요하다."}, {"s": null, "t": "사나운 날씨 속에서 쓴 기록에는 맑은 날에는 없던 숫자가 섞여 있다."}, {"s": null, "t": "「관상관」으로 올랐다."}]'::jsonb, '{"items": {"rejuv_pill": 2, "revival_charm": 1}, "merit": 90}'::jsonb, 10, 800),
+  ('mandate_court:rank:4', 'mandate_court', 'rank', 4, '백옥 천문탑', '백옥 천문탑에서 탐색 3회', '{"tasks": [{"t": "search", "n": 3, "r": ["white_tower"]}]}'::jsonb, '[{"s": "mandate_court:hahu", "t": "천문탑의 거울이 흐려졌다. 하늘이 흐려진 것인지 거울이 흐려진 것인지 알아 오너라."}, {"s": null, "t": "거울은 멀쩡했다. 흐려진 것은 하늘 쪽이었다."}, {"s": null, "t": "「천문 교수」로 올랐다."}]'::jsonb, '{"items": {"grand_pill": 1, "moonlight_essence": 2}, "merit": 120}'::jsonb, 20, 1600),
+  ('mandate_court:rank:5', 'mandate_court', 'rank', 5, '말하지 않은 예언', '무극 관성대(또는 본부 객사 분소)에서 태사령 하후정을 만난다', '{"at": ["hq_dorm", "hq_yard", "star_observatory"]}'::jsonb, '[{"s": "mandate_court:hahu", "t": "영대 감정은 내가 본 예언을 하나 물려받는다. 그리고 평생 그것을 말하지 않는다."}, {"s": null, "t": "노학자가 귓가에 무언가를 속삭인다. 그 말은 이 기록에 적지 않는다."}, {"s": null, "t": "「영대 감정」이 되었다. 천명원 최고 등급이다."}]'::jsonb, '{"items": {"heavenly_dew": 1, "grand_pill": 1}, "merit": 150}'::jsonb, 25, 3000),
+  ('mandate_court:vault:1', 'mandate_court', 'vault', 1, '영대 서고', '', '{}'::jsonb, '[{"s": "mandate_court:mun", "t": "천문 허가로만 열람… 아니, 구입이다. 서고의 물건은 되팔 수 없다. 기록은 거래하지 않는다."}]'::jsonb, '{}'::jsonb, 1, 0),
+  ('mandate_court:hall:1', 'mandate_court', 'hall', 1, '혼천의 시련실', '', '{}'::jsonb, '[{"s": "mandate_court:seo", "t": "시련실이에요. 혼천의가 도는 동안 버티면 돼요. 저는… 잠깐 눈 좀 붙일게요."}]'::jsonb, '{}'::jsonb, 1, 0)
+on conflict (scene_key) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward, min_level = excluded.min_level, rep_need = excluded.rep_need;
+
+grant fn_owner_18669 to postgres with inherit false, set false;
 
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
