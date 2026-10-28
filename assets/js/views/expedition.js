@@ -184,7 +184,7 @@ function battleGroups(ls) {
       if (['win', 'lose', 'down'].includes(l.kind)) open.delete(l.owner);
       return;
     }
-    open.delete(l.owner);
+    // 싸우는 중에 끼어든 다른 줄(보급품 먹기 등)은 전투를 끊지 않는다. 뒤따르는 전투 줄은 계속 그 칸에 담는다.
     if (l.kind === 'fight') { const ng = { lines: [[l, i]], key: `${l.owner}|${l.at}` }; open.set(l.owner, ng); out.push(ng); return; }
     out.push({ l, i });
   });

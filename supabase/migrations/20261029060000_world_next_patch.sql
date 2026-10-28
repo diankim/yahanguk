@@ -1369,7 +1369,19 @@ begin
     (4, 'public.world_combat_stats(uuid,jsonb)', $a$pres := greatest(5, least(300, 30 + s_vit * 0.8 - s_agi * 0.4 + adef * 0.6 + g_pres));$a$,
         $a$pres := greatest(5, least(300, 30 + s_vit * 0.8 - s_agi * 0.4 + adef * 0.6 + g_pres
     + CASE WHEN style = 'melee' THEN (SELECT coalesce(sum(CASE x WHEN 'melee_c13b' THEN 40 WHEN 'melee_c24b' THEN 60 WHEN 'melee_x30' THEN 30 WHEN 'melee_c43b' THEN 150 ELSE 0 END), 0) FROM unnest(public.world_skill_procs(p_owner)) x) ELSE 0 END));$a$, 1),
-    (5, 'public.world_shop_refresh(text)', $a$'field_knife', 'ore_pick'];$a$, $a$'field_knife', 'ore_pick', 'ammo_arrow', 'ammo_bolt', 'ammo_dart'];$a$, 1)
+    (5, 'public.world_shop_refresh(text)', $a$'field_knife', 'ore_pick'];$a$, $a$'field_knife', 'ore_pick', 'ammo_arrow', 'ammo_bolt', 'ammo_dart'];$a$, 1),
+    -- 원정 전투 승패가 체력과 상관없이 굴려져, 체력이 가득한데도 「밀려 물러났습니다」가 나왔다(문의).
+    -- 체력이 70 이상이면 밀린 싸움도 버텨 다시 맞선다(체력 70에서 20%, 100에서 50%). 대신 이긴 싸움보다 두 배로 맞는다.
+    (6, 'public.world_expedition_settle(uuid,integer)', $a$p_fight float8; dmg_mul float8;$a$, $a$grit boolean := false; p_fight float8; dmg_mul float8;$a$, 1),
+    (7, 'public.world_expedition_settle(uuid,integer)', $a$won := random() < win_p;$a$,
+        $a$won := random() < win_p; grit := false;
+        IF NOT won AND hp >= 70 AND random() < least(0.5, (hp - 50) / 100.0) THEN
+          won := true; grit := true;
+          seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'skill', 'who', me, 'owner', e.owner_id, 'text', '[버팀] ' || foe || '에게 밀렸지만 체력이 넉넉해 물러서지 않고 다시 맞섭니다.');
+        END IF;$a$, 1),
+    (8, 'public.world_expedition_settle(uuid,integer)', $a$if m.drops is not null and random() < 0.7 * loot_mul then$a$,
+        $a$IF grit THEN dmg := dmg * 2; END IF;
+          if m.drops is not null and random() < 0.7 * loot_mul then$a$, 1)
   ) v(ord, fn, old, new, cnt) order by ord loop
     d := pg_get_functiondef(p.fn::regprocedure);
     n := (length(d) - length(replace(d, p.old, ''))) / length(p.old);
