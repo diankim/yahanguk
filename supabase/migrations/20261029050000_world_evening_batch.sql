@@ -3,8 +3,11 @@
 --   ② 숫자 붙은 장소 이름 정리
 --   ③ 창고: 어디서나 보기(넣고 꺼내기는 안전지대만) · 안전지대에서 제작하면 창고 재료도 쓴다
 --   ④ 쓰러지면 전체 채팅에 구조 알림 · ⑤ 패치노트 표 · ⑥ 다시 시작하는 귀속 물품 2종(모두에게 하나씩) · ⑦ 물품 얻는 곳
+--   ⑩ 조사 바로잡기(원정 일지 시간대·구조용 물품) · 부적 정화가 중독·심신 동요·사념 침식도 푼다
 --   ⑧ 세력 판도(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
 grant fn_owner_social to postgres with inherit true, set true;
+grant fn_owner_18944 to postgres with inherit true, set true;
+grant fn_owner_18989 to postgres with inherit true, set true;
 grant fn_owner_field to postgres with inherit true, set true;
 grant fn_owner_expedition to postgres with inherit true, set true;
 grant fn_owner_18452 to postgres with inherit true, set true;
@@ -334,7 +337,8 @@ $$;
 -- 받침에 맞춘 조사: world_josa('적월교','이','가') → 적월교가
 create or replace function public.world_josa(w text, a text, b text)
 returns text language sql immutable set search_path to 'pg_catalog' as $$
-  select w || case when w is not null and ascii(right(w, 1)) between 44032 and 55203 and (ascii(right(w, 1)) - 44032) % 28 = 0 then b else a end
+  select w || case when w is not null and ascii(right(w, 1)) between 44032 and 55203
+                     and ((ascii(right(w, 1)) - 44032) % 28 = 0 or (a = '으로' and (ascii(right(w, 1)) - 44032) % 28 = 8)) then b else a end
 $$;
 create or replace function public.world_mf_name(f text)
 returns text language sql stable set search_path to 'pg_catalog', 'public' as $$
@@ -577,7 +581,54 @@ begin
   ' || a);
 end $$;
 
+-- ⑩ ─────────────────────────────────────────
+-- 조사 바로잡기: 원정 일지의 시간대 줄(「해돋이이 되었습니다」→「해돋이가 되었습니다」), 구조용 물품 문구(내부 코드 대신 물품 이름, 받침에 맞춘 조사)
+do $$ declare d text := pg_get_functiondef('public.world_expedition_walk_lines'::regproc);
+  a text := 'case ph when ''dawn'' then ''해돋이'' when ''noon'' then ''한낮'' when ''dusk'' then ''땅거미'' else ''삼경'' end || ''이 되었습니다.''';
+  b text := 'case ph when ''dawn'' then ''해돋이가'' when ''noon'' then ''한낮이'' when ''dusk'' then ''땅거미가'' else ''삼경이'' end || '' 되었습니다.''';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '원정 일지 시간대 줄 고칠 자리가 하나가 아닙니다'; end if;
+  execute replace(d, a, b);
+end $$;
+grant select on public.world_item_catalog to fn_owner_18989;
+do $$ declare d text := pg_get_functiondef('public.world_use_recovery_item'::regproc);
+  a text := '''구조용 아이템 사용: ''||p_item_id||''. 체력 ''||hp||''로 복귀했다.''';
+  b text := '''구조용 물품 사용: ''||coalesce((select item_name from public.world_item_catalog where item_id=p_item_id),''물품'')||''. 체력 ''||hp||''(으)로 복귀했다.''';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '구조용 물품 문구 고칠 자리가 하나가 아닙니다'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 부적 정화(현장 생존 행동): 상태 설명대로 정화 부적으로 풀리는 상태이상(중독·심신 동요·사념 침식)도 함께 푼다.
+--   침식이 없어도 그런 상태이상이 있으면 쓸 수 있다.
+grant select on public.world_status_catalog to fn_owner_18944;
+grant select, delete on public.world_character_statuses to fn_owner_18944;
+do $$
+declare pat record; d text;
+begin
+  for pat in select * from (values
+    ('er int;', 'er int; cl int := 0;'),
+    ('   if coalesce(c.erosion,0)<=0 then raise exception ''정화할 침식이 없습니다. 정화 부적은 그대로 남겨 두었습니다.''; end if;',
+     '   select count(*) into cl from public.world_character_statuses cs join public.world_status_catalog sc on sc.status_key=cs.status_key
+     where cs.owner_id=uid and cs.expires_at>now() and ''ward_talisman''=any(sc.cure_items);
+   if coalesce(c.erosion,0)<=0 and cl=0 then raise exception ''정화할 침식이나 부적으로 풀 상태이상이 없습니다. 정화 부적은 그대로 남겨 두었습니다.''; end if;
+   delete from public.world_character_statuses cs using public.world_status_catalog sc
+     where sc.status_key=cs.status_key and cs.owner_id=uid and cs.expires_at>now() and ''ward_talisman''=any(sc.cure_items);'),
+    ('   result_text:=''정화 부적을 태워 정화 의식을 마쳤다. 침식 -18, 정신 안정도 +6.'';',
+     '   result_text:=''정화 부적을 태워 정화 의식을 마쳤다. 침식 -18, 정신 안정도 +6.''||case when cl>0 then '' 상태이상 ''||cl||''개가 풀렸다.'' else '''' end;')
+  ) as t(a, b) loop
+    d := pg_get_functiondef('public.world_survival_action(text)'::regprocedure);
+    if position(pat.b in d) > 0 then continue; end if;
+    if (length(d) - length(replace(d, pat.a, ''))) / length(pat.a) <> 1 then raise exception '부적 정화 고칠 자리가 하나가 아닙니다: %', left(pat.a, 60); end if;
+    execute replace(d, pat.a, pat.b);
+  end loop;
+end $$;
+
 grant fn_owner_social to postgres with inherit false, set false;
+grant fn_owner_18944 to postgres with inherit false, set false;
+grant fn_owner_18989 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_expedition to postgres with inherit false, set false;
 grant fn_owner_18452 to postgres with inherit false, set false;

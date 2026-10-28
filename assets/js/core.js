@@ -62,7 +62,7 @@ export async function act(name, args) {
 }
 export async function loadCharacter() {
   if (!store.user) return null;
-  const [, { data, error }] = await Promise.all([stacks ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle(),
+  const [, { data, error }] = await Promise.all([stacksFresh ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle(),
     equipped ? null : loadEquipped()]);
   if (error) throw new Error(friendlyError(error));
   store.character = data;
@@ -409,11 +409,18 @@ export const LEVEL_CAP = 30;
 export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 1) ** 2;
 export function bagLimit(c) { return (c?.bag_capacity || 24) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
 // 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
-let stacks = null, stacksP = null;
+// 못 읽으면 기기에 남긴 지난 값을 쓰고 다음 캐릭터 읽기 때 다시 읽는다(전에는 실패하면 모두 1로 보고 다시 읽지 않아 물품 개수가 칸 수로 보였다).
+const STACK_KEY = 'yh-stacks-v1';
+let stacks = (() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); return o ? new Map(Object.entries(o)) : null; } catch { return null; } })();
+let stacksP = null, stacksFresh = false;
 function loadStacks() { return stacksP ||= readStacks(); } // 동시에 불려도 한 번만 읽는다
 async function readStacks() {
-  try { const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size'); stacks = error ? new Map() : new Map((data || []).map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)])); }
-  catch { stacks = new Map(); }
+  try {
+    const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size');
+    if (error || !data?.length) throw new Error(error?.message || 'empty');
+    stacks = new Map(data.map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)])); stacksFresh = true;
+    try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(stacks))); } catch {}
+  } catch { stacksP = null; } // 다음에 다시 시도
 }
 export const stackOf = id => stacks?.get(id) || 1;
 // 장착한 장비는 가방 칸을 차지하지 않는다(서버 world_bag_limit은 장착한 수만큼 용량을 더하고, 화면은 쓴 칸에서 뺀다)

@@ -134,7 +134,9 @@ async function status(body) {
   const wards = Number(invItems.ward_talisman || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location); // 서버 world_survival_action과 같은 곳
-  const cleanseWhy = downed ? '전투불능' : !wards ? '정화 부적이 없습니다' : er0 <= 0 ? '정화할 침식이 없습니다' : '';
+  // 부적으로 풀리는 상태이상(중독·심신 동요·사념 침식)이 있으면 침식이 없어도 쓸 수 있다(서버 world_survival_action)
+  const wardCures = (statuses || []).filter(s => (s.cure_items || []).includes('ward_talisman')).length;
+  const cleanseWhy = downed ? '전투불능' : !wards ? '정화 부적이 없습니다' : (er0 <= 0 && !wardCures) ? '정화할 침식·상태이상이 없습니다' : '';
   const groundWhy = downed ? '전투불능' : !atHq ? '본부(정청·객사·연무장)에서만' : (mn0 >= 100 && er0 <= 0) ? '정신이 이미 맑습니다' : groundReady > Date.now() ? `${fmt.remain(groundReady - Date.now())} 뒤 다시` : '';
   body.innerHTML = `
     ${downed ? panel(byYohwa ? '요화로 쓰러짐' : '전투불능', `
@@ -153,7 +155,7 @@ async function status(body) {
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0))}
         <div class="action-grid three">
-          <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || '정화 부적 1개 · 침식 -18 · 정신 +6')}</small></button>
+          <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || `정화 부적 1개 · 침식 -18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}</small></button>
           <button class="btn" data-surv="ground" ${groundWhy ? 'disabled' : ''}><span>마음 다잡기</span><small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '본부에서 · 정신 +18 · 침식 -10 · 15분마다')}</small></button>
         </div>`, { ico: 'heart' })}
       ${panel('전투 능력', prof?.current ? combatRows(prof.current) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword', extra: `<a class="btn small ghost" href="#/char/growth">능력치</a>` })}

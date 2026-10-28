@@ -73,7 +73,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const go = $('#shop-go', box); go.textContent = m === 'buy' ? '구매하기' : '판매하기';
     go.disabled = !n || (m === 'buy' && sum > gil) || (m === 'sell' && sold && net > sold.left);
     if (m === 'buy' && sum > gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
-    if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}를 넘습니다</span>`;
+    if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘습니다</span>`;
   };
   $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
     shopMode = b.dataset.mode;
