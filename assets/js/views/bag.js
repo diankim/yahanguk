@@ -66,6 +66,9 @@ async function draw(soft) {
 function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i])); }
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
+// 같은 계열의 더 높은 단계 도구는 낮은 단계 도구가 필요한 제작법도 만든다(서버 world_tool_lines·world_tool_covers와 같다)
+const TOOL_LINE = { field_knife: ['knife', 1], field_knife_2: ['knife', 2], t3_gather: ['knife', 3], t5_gather: ['knife', 5], ore_pick: ['pick', 1], t4_gather: ['pick', 4] };
+const toolCovers = (have, need) => have === need || (TOOL_LINE[have] && TOOL_LINE[need] && TOOL_LINE[have][0] === TOOL_LINE[need][0] && TOOL_LINE[have][1] >= TOOL_LINE[need][1]);
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 async function items(body, inv) {
   const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap() : Promise.resolve(new Map())]);
@@ -135,7 +138,7 @@ function craft(body, inv, stg) {
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id)); // 요리·손질 결과물
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
-    const toolOk = !r.tool || Number(bagHave[r.tool] || 0) > 0 || eq.has(r.tool);
+    const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));
     const jobOk = !r.required_job || r.required_job === c.job_key;
     const lvOk = !r.minimum_level || c.level >= r.minimum_level;
     const skRank = r.required_skill ? Number(c.skill_progress?.[r.required_skill]?.rank || 1) : 0;

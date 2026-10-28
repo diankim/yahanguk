@@ -5,6 +5,7 @@
 --   ④ 쓰러지면 전체 채팅에 구조 알림 · ⑤ 패치노트 표 · ⑥ 다시 시작하는 귀속 물품 2종(모두에게 하나씩) · ⑦ 물품 얻는 곳
 --   ⑩ 조사 바로잡기(원정 일지 시간대·구조용 물품) · 부적 정화가 중독·심신 동요·사념 침식도 푼다
 --   ⑪ 대세력 떠나기·옮기기(12시간) · 회복 완화(야영 ⅔·안전지대 자연 회복·구조대 비용)
+--   ⑫ 상위 도구로 하위 도구 제작법 · 원정 전투 여러 합 묘사(막기·회피·치명타·직업 기술·요괴 기믹) · 파티 원정은 동료마다 요괴 하나 더
 --   ⑧ 세력 판도(인원이 적은 세력 영향력 가산 포함)(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
 grant fn_owner_social to postgres with inherit true, set true;
 grant fn_owner_18666 to postgres with inherit true, set true;
@@ -732,6 +733,237 @@ begin
     if (length(d) - length(replace(d, pat.a, ''))) / length(pat.a) <> 1 then raise exception '구조대 고칠 자리가 하나가 아닙니다: %', left(pat.a, 60); end if;
     execute replace(d, pat.a, pat.b);
   end loop;
+end $$;
+
+-- ⑫ ─────────────────────────────────────────
+-- 상위 도구: 같은 계열의 더 높은 단계 도구를 장착하면 낮은 단계 도구가 필요한 제작법도 만들 수 있다.
+--   채집도 계열: 현장 채집도(1) → 강화 채집도(2) → 청강 채집도(3) → 천공 채집도(5) · 곡괭이 계열: 월철 곡괭이(1) → 영맥 곡괭이(4)
+create table if not exists public.world_tool_lines (item_id text primary key references public.world_item_catalog(item_id), line text not null);
+alter table public.world_tool_lines enable row level security;
+revoke all on public.world_tool_lines from public, anon, authenticated;
+grant select on public.world_tool_lines to authenticated;
+drop policy if exists world_tool_lines_read on public.world_tool_lines;
+create policy world_tool_lines_read on public.world_tool_lines for select to authenticated using (true);
+insert into public.world_tool_lines(item_id, line) values
+  ('field_knife', 'knife'), ('field_knife_2', 'knife'), ('t3_gather', 'knife'), ('t5_gather', 'knife'),
+  ('ore_pick', 'pick'), ('t4_gather', 'pick')
+on conflict (item_id) do update set line = excluded.line;
+
+-- 장착한 도구(p_have)가 필요한 도구(p_need)를 대신할 수 있는가: 같거나, 같은 계열에서 단계가 같거나 높다
+create or replace function public.world_tool_covers(p_have text, p_need text)
+returns boolean language sql stable set search_path to 'pg_catalog', 'public' as $$
+  select p_have = p_need or exists (
+    select 1 from public.world_tool_lines a join public.world_tool_lines b on b.line = a.line
+      join public.world_item_catalog ia on ia.item_id = a.item_id join public.world_item_catalog ib on ib.item_id = b.item_id
+     where a.item_id = p_have and b.item_id = p_need and ia.tier >= ib.tier)
+$$;
+revoke all on function public.world_tool_covers(text, text) from public, anon, authenticated;
+grant execute on function public.world_tool_covers(text, text) to fn_owner_18452;
+grant select on public.world_tool_lines to fn_owner_18452;
+
+do $$ declare d text := pg_get_functiondef('public.world_craft_item(text)'::regprocedure);
+  a text := 'e.slot=''tool'' and e.item_id=r.required_tool;';
+  b text := 'e.slot=''tool'' and public.world_tool_covers(e.item_id, r.required_tool);';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '제작 도구 검사 고칠 자리가 하나가 아닙니다'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 원정 전투 묘사: 승패와 주고받는 피해의 합은 지금 식(world_expedition_settle)이 정하고, 이 함수가 그 사이를 여러 합으로 풀어 쓴다.
+--   내 쪽 공격(무기 갈래별 묘사·치명타·직업 기술 한 번)과 요괴의 공격(기믹 묘사·회피·막기)을 번갈아 적는다.
+--   막기는 기술 「막기」 단계에 따라 확률이 오르고(6% + 단계×0.6%, 최대 35%) 그 공격의 피해를 절반으로 줄인다.
+--   파티 원정: 함께 싸우는 동료 한 명마다 요괴가 하나씩 더 나온다(같은 지역 일반 요괴). 피해는 이목을 따라 나뉜다.
+create or replace function public.world_exp_fight_story(p_owner uuid, p_me text, p_region text, p_foe jsonb, p_extra int, p_won boolean, p_ehp int, p_dmg int,
+  p_allies jsonb, p_power float8, p_pres float8, p_base timestamptz, p_seq int, p_job text, p_wtype text, p_guard int)
+returns jsonb language plpgsql volatile security definer set search_path to 'pg_catalog', 'public' as $$
+declare
+  foes jsonb := jsonb_build_array(p_foe); nf int; fhp int[]; a_n int; b_n int; t int; i int; seq int := p_seq; lines jsonb := '[]'::jsonb;
+  dealt int; hits int[]; w float8[]; wsum float8; acc int; hi int := 0; ei int := 0; tgt int; carry int; nm text; mech text;
+  who_n text; who_o uuid; pick float8; al jsonb; tot_w float8; nal int := coalesce(jsonb_array_length(p_allies), 0);
+  etype text[]; parts int[]; left_d int; part int; taken int := 0; skill_at int; txt text; blk float8; told text[] := '{}'; kind_ text;
+  vm text[]; va text[]; vh text[]; sk text;
+begin
+  if p_extra > 0 then
+    foes := foes || coalesce((select jsonb_agg(jsonb_build_object('n', x.monster_name, 'mech', x.mechanic_key, 'role', x.role))
+      from (select monster_name, mechanic_key, role from public.world_region_monsters where region_id = p_region and role <> 'guardian' order by random() limit p_extra) x), '[]'::jsonb);
+  end if;
+  nf := jsonb_array_length(foes);
+  fhp := array_fill(p_ehp / nf, array[nf]); fhp[nf] := fhp[nf] + p_ehp - (p_ehp / nf) * nf;
+  if nf > 1 then
+    seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'fight', 'who', p_me, 'owner', p_owner,
+      'text', (select string_agg(x ->> 'n', '·' order by o) from jsonb_array_elements(foes) with ordinality q(x, o) where o > 1) || '도 함께 덤벼듭니다. (요괴 ' || nf || ')');
+  end if;
+
+  -- 무기 갈래별 묘사
+  vm := case p_wtype
+    when 'ranged' then array['{f}에게 화살을 날렸습니다', '숨을 고르고 {f}의 눈을 노려 쏘았습니다', '거리를 벌리며 {f}에게 연달아 쏘았습니다', '{f}의 다리를 꿰뚫었습니다', '바람을 읽고 {f}의 등 뒤를 쏘았습니다']
+    when 'magic' then array['영령 방울을 흔들어 {f}의 요기를 흩었습니다', '부적을 날려 {f}을(를) 태웠습니다', '주문을 외워 {f}을(를) 옭아맸습니다', '방울 소리로 {f}의 혼을 뒤흔들었습니다', '먹물로 쓴 술식이 {f}에게 달라붙었습니다']
+    else array['{f}에게 칼날을 내리그었습니다', '{f}의 옆구리를 베어 냈습니다', '한 걸음 파고들어 {f}을(를) 찔렀습니다', '{f}의 공격을 흘리고 되받아쳤습니다', '자세를 낮춰 {f}의 다리를 쳐 냈습니다'] end;
+  va := array['{f}에게 일격을 넣었습니다', '{f}의 빈틈을 파고들었습니다', '{f}을(를) 몰아붙였습니다', '{f}의 등을 노려 쳤습니다'];
+  vh := array['{f}의 발톱에 긁혔습니다', '{f}이(가) 들이받았습니다', '{f}의 일격을 정면으로 맞았습니다', '{f}이(가) 물어뜯었습니다', '{f}이(가) 휘두른 팔에 밀려났습니다', '{f}의 요기에 살갗이 그을렸습니다'];
+  sk := case p_job when 'exorcist' then '[파사검결] 부적을 두른 일격이 {f}의 요기를 갈랐습니다'
+    when 'sealmaster' then '[봉인 결계] 결계를 펼쳐 {f}의 발을 묶었습니다'
+    when 'medic' then '[응급 지혈] 싸우는 틈에 상처를 눌러 피를 멈췄습니다'
+    when 'analyst' then '[약점 간파] {f}의 움직임에서 빈틈을 읽었습니다'
+    when 'scout' then '[연속 사격] 몸을 낮추고 {f}에게 연달아 쏘았습니다'
+    when 'artificer' then '[법구 발동] 허리춤의 법구가 빛을 뿜어 {f}을(를) 밀어냈습니다' else null end;
+
+  -- 내 쪽 공격 횟수와 각 공격의 피해(합 = 요괴에게 준 피해. 이기면 요괴 체력 전부)
+  a_n := least(16, case when p_won then 4 + floor(random() * 4)::int else 3 + floor(random() * 3)::int end + 2 * (nf - 1) + nal);
+  dealt := case when p_won then p_ehp else greatest(1, round(p_ehp * (0.45 + random() * 0.35))::int) end;
+  w := array[]::float8[]; for i in 1..a_n loop w := w || (0.6 + random()); end loop;
+  wsum := (select sum(x) from unnest(w) x); hits := array[]::int[]; acc := 0;
+  for i in 1..a_n loop
+    if i = a_n then hits := hits || greatest(1, dealt - acc); else hits := hits || greatest(1, round(dealt * w[i] / wsum)::int); acc := acc + hits[i]; end if;
+  end loop;
+  -- 요괴 쪽 행동: 이기면 내 마지막 공격보다 먼저 끝나고, 지면 한두 번 더 몰아친다. 회피한 공격은 피해가 없다.
+  b_n := greatest(2, case when p_won then a_n - 1 else a_n + 1 end + (nf - 1));
+  if p_won then b_n := least(b_n, a_n); end if;
+  etype := array[]::text[];
+  for i in 1..b_n loop etype := etype || case when random() < 0.14 then 'dodge' else 'hit' end; end loop;
+  if p_dmg > 0 and not ('hit' = any (etype)) then etype[1] := 'hit'; end if;
+  w := array[]::float8[]; for i in 1..b_n loop w := w || case when etype[i] = 'hit' then 0.6 + random() else 0 end; end loop;
+  wsum := greatest(0.0001, (select sum(x) from unnest(w) x)); parts := array[]::int[]; acc := 0;
+  for i in 1..b_n loop
+    if etype[i] <> 'hit' then parts := parts || 0;
+    elsif i = (select max(j) from generate_subscripts(etype, 1) j where etype[j] = 'hit') then parts := parts || greatest(0, p_dmg - acc);
+    else parts := parts || round(p_dmg * w[i] / wsum)::int; acc := acc + parts[i]; end if;
+  end loop;
+  blk := least(0.35, 0.06 + coalesce(p_guard, 0) * 0.006);
+  skill_at := case when sk is not null then 2 + floor(random() * greatest(1, a_n - 2))::int else 0 end;
+
+  for t in 1..greatest(a_n, b_n) loop
+    -- 요괴의 차례
+    if t <= b_n then
+      ei := ei + 1;
+      tgt := (select min(j) from generate_subscripts(fhp, 1) j where fhp[j] > 0);
+      if tgt is null then tgt := nf; end if;
+      -- 살아 있는 요괴 가운데 하나
+      tgt := coalesce((select j from generate_subscripts(fhp, 1) j where fhp[j] > 0 order by random() limit 1), tgt);
+      nm := foes -> (tgt - 1) ->> 'n'; mech := coalesce(foes -> (tgt - 1) ->> 'mech', '');
+      if not (nm = any (told)) and random() < 0.55 then
+        told := told || nm;
+        txt := case mech
+          when 'toxic' then '{f}이(가) 짙은 독기를 내뿜습니다' when 'spectral' then '{f}의 모습이 흐려졌다가 등 뒤에서 나타납니다'
+          when 'ambush' then '{f}이(가) 그림자 속으로 몸을 숨깁니다' when 'tide' then '검은 물결이 일어 발목을 휘감습니다'
+          when 'armored' then '{f}의 단단한 껍질에 공격이 미끄러집니다' when 'aerial' then '{f}이(가) 머리 위로 날아올라 덮쳐 옵니다'
+          when 'swarm' then '{f}이(가) 사방에서 몰려듭니다' when 'seal_breaker' then '{f}이(가) 봉인의 틈을 비집고 요기를 터뜨립니다'
+          when 'reflect' then '{f}이(가) 거울처럼 공격을 되비춥니다' when 'warded' then '{f} 주위의 금줄이 공격을 튕겨 냅니다'
+          when 'boss' then '{f}의 포효에 땅이 울립니다' else '{f}이(가) 낮게 으르렁거리며 틈을 엿봅니다' end;
+        seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'foe', 'who', p_me, 'owner', p_owner, 'text', replace(txt, '{f}', nm));
+      end if;
+      -- 이목(어그로)을 따라 맞는 사람을 고른다: 무게 = 이목^1.3
+      who_n := p_me; who_o := p_owner;
+      if nal > 0 then
+        tot_w := (greatest(5, p_pres) ^ 1.3) + coalesce((select sum((greatest(5, (x ->> 'pres')::float8) ^ 1.3)) from jsonb_array_elements(p_allies) x), 0);
+        pick := random() * tot_w - (greatest(5, p_pres) ^ 1.3);
+        if pick >= 0 then
+          for al in select x from jsonb_array_elements(p_allies) x loop
+            who_n := al ->> 'name'; who_o := (al ->> 'owner')::uuid;
+            exit when pick < (greatest(5, (al ->> 'pres')::float8) ^ 1.3);
+            pick := pick - (greatest(5, (al ->> 'pres')::float8) ^ 1.3);
+          end loop;
+        end if;
+      end if;
+      part := parts[ei];
+      if etype[ei] = 'dodge' or part <= 0 then
+        kind_ := 'guard'; txt := (array['{f}의 공격을 몸을 틀어 피했습니다', '{f}의 일격이 허공을 갈랐습니다', '한 발 물러서 {f}의 공격을 흘려보냈습니다'])[1 + floor(random() * 3)::int];
+        part := 0;
+      elsif random() < blk and who_o = p_owner then
+        part := greatest(1, round(part * 0.5)::int);
+        kind_ := 'guard'; txt := '[막기] {f}의 공격을 받아 냈습니다 · 체력 -' || part;
+      else
+        kind_ := 'hurt'; txt := vh[1 + floor(random() * cardinality(vh))::int] || ' · 체력 -' || part;
+      end if;
+      if part > 0 then
+        if who_o = p_owner then taken := taken + part; else insert into public.world_expedition_hits(owner_id, amount) values (who_o, part); end if;
+      end if;
+      seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', kind_, 'who', who_n, 'owner', who_o, 'text', replace(txt, '{f}', nm), 'value', part);
+    end if;
+    -- 내 쪽의 차례(동료는 전투력에 비례해 나선다)
+    if t <= a_n then
+      hi := hi + 1;
+      tgt := coalesce((select min(j) from generate_subscripts(fhp, 1) j where fhp[j] > 0), nf);
+      nm := foes -> (tgt - 1) ->> 'n';
+      who_n := p_me; who_o := p_owner;
+      if nal > 0 then
+        pick := random() * (p_power + coalesce((select sum((x ->> 'power')::float8) from jsonb_array_elements(p_allies) x), 0));
+        if pick >= p_power then
+          pick := pick - p_power;
+          for al in select x from jsonb_array_elements(p_allies) x loop
+            who_n := al ->> 'name'; who_o := (al ->> 'owner')::uuid;
+            exit when pick < (al ->> 'power')::float8;
+            pick := pick - (al ->> 'power')::float8;
+          end loop;
+        end if;
+      end if;
+      if hi = skill_at then
+        who_n := p_me; who_o := p_owner;
+        seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'skill', 'who', p_me, 'owner', p_owner, 'text', replace(sk, '{f}', nm));
+      end if;
+      txt := case when who_o = p_owner then vm[1 + floor(random() * cardinality(vm))::int] else va[1 + floor(random() * cardinality(va))::int] end;
+      if random() < 0.12 then txt := '급소를 찔렀습니다! ' || txt || ' · 치명타 ' || hits[hi] || ' 피해';
+      else txt := txt || ' · ' || hits[hi] || ' 피해'; end if;
+      seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'atk', 'who', who_n, 'owner', who_o, 'text', replace(txt, '{f}', nm), 'value', hits[hi]);
+      -- 피해를 앞 요괴부터 깎고, 넘친 만큼은 다음 요괴로 이어진다
+      carry := hits[hi];
+      while carry > 0 loop
+        tgt := (select min(j) from generate_subscripts(fhp, 1) j where fhp[j] > 0);
+        exit when tgt is null;
+        if carry >= fhp[tgt] then
+          carry := carry - fhp[tgt]; fhp[tgt] := 0;
+          if tgt < nf or not p_won then
+            seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'fight', 'who', p_me, 'owner', p_owner, 'text', (foes -> (tgt - 1) ->> 'n') || '이(가) 쓰러졌습니다.');
+          end if;
+        else fhp[tgt] := fhp[tgt] - carry; carry := 0; end if;
+      end loop;
+    end if;
+  end loop;
+  if not p_won then
+    seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'foe', 'who', p_me, 'owner', p_owner,
+      'text', (array['요괴의 기세가 꺾이지 않습니다. 더 버티기 어렵습니다', '숨이 가빠져 더는 맞서기 어렵습니다', '상처가 깊어 거리를 벌립니다'])[1 + floor(random() * 3)::int]);
+  end if;
+  return jsonb_build_object('lines', lines, 'seq', seq, 'taken', taken);
+end $$;
+grant select on public.world_region_monsters to fn_owner_field;
+grant insert on public.world_expedition_hits to fn_owner_field;
+alter function public.world_exp_fight_story(uuid, text, text, jsonb, int, boolean, int, int, jsonb, float8, float8, timestamptz, int, text, text, int) owner to fn_owner_field;
+revoke all on function public.world_exp_fight_story(uuid, text, text, jsonb, int, boolean, int, int, jsonb, float8, float8, timestamptz, int, text, text, int) from public, anon, authenticated;
+
+-- world_expedition_settle에 잇기: 무기 갈래·막기 단계를 읽고, 파티 동료 한 명마다 요괴 위협 +45%(전에는 +30%, 요괴가 하나씩 더 나오는 만큼)
+-- 이기면 더 나온 요괴마다 경험치와 전리품을 조금 더 얻는다. 주고받은 공격 줄은 위 함수가 쓴다.
+do $$
+declare d text; n int;
+  rx text := 'b_n := b_n \+ nal; a_n := a_n \+ nal; my_taken := 0;.*?(\s*seq := seq \+ 1;\s*jr := jr \|\| jsonb_build_object\(''at'', base_t \+ make_interval\(secs => seq \* 2\), ''kind'', case when won then ''win'')';
+begin
+  d := pg_get_functiondef('public.world_expedition_settle(uuid,integer)'::regprocedure);
+  if d like '%world_exp_fight_story%' then return; end if;
+  select count(*) into n from regexp_matches(d, rx, 'g');
+  if n <> 1 then raise exception '원정 전투 줄 고칠 자리가 하나가 아닙니다(%)', n; end if;
+  d := regexp_replace(d, rx, 'my_taken := 0;
+   fx := public.world_exp_fight_story(e.owner_id, me, r.region_id, jsonb_build_object(''n'', foe, ''mech'', m.mechanic_key, ''role'', m.role), nal, won, ehp, dmg, act, power, pres, base_t, seq, c.job_key, wtype, brank);
+   jr := jr || (fx -> ''lines''); seq := (fx ->> ''seq'')::int; my_taken := (fx ->> ''taken'')::int;
+   if won and nal > 0 then
+     xp := xp + (5 + danger) * nal;
+     for k in 1..nal loop
+       if m.drops is not null and random() < 0.35 * loot_mul then
+         select dd.k into item from jsonb_each(m.drops) dd(k, v) where exists (select 1 from public.world_item_catalog ic where ic.item_id = dd.k) order by random() limit 1;
+         if item is not null then loot := public.world_inv_add(loot, item, 1); end if;
+       end if;
+     end loop;
+   end if;\1');
+  if position('pend int;' in d) = 0 then raise exception '원정 변수 자리'; end if;
+  d := replace(d, 'pend int;', 'pend int; fx jsonb; wtype text; brank int;');
+  if (length(d) - length(replace(d, 'pres := coalesce((public.world_combat_stats(e.owner_id) ->> ''presence'')::float8, 30);', ''))) / length('pres := coalesce((public.world_combat_stats(e.owner_id) ->> ''presence'')::float8, 30);') <> 1 then raise exception '원정 이목 줄 자리'; end if;
+  d := replace(d, 'pres := coalesce((public.world_combat_stats(e.owner_id) ->> ''presence'')::float8, 30);',
+    'pres := coalesce((public.world_combat_stats(e.owner_id) ->> ''presence'')::float8, 30);
+ wtype := coalesce((select ic.equipment_traits ->> ''weapon_type'' from public.world_character_equipment q join public.world_item_catalog ic on ic.item_id = q.item_id where q.owner_id = e.owner_id and q.slot = ''weapon'' limit 1), ''melee'');
+ brank := coalesce((c.skill_progress -> ''guarding'' ->> ''rank'')::int, 0);');
+  if position('threat := threat * (1 + 0.3 * nal);' in d) = 0 or position('* (1 + 0.3 * nal));' in d) = 0 then raise exception '파티 위협 자리'; end if;
+  d := replace(d, 'threat := threat * (1 + 0.3 * nal);', 'threat := threat * (1 + 0.45 * nal);');
+  d := replace(d, '* (1 + 0.3 * nal));', '* (1 + 0.45 * nal));');
+  execute d;
 end $$;
 
 grant fn_owner_social to postgres with inherit false, set false;

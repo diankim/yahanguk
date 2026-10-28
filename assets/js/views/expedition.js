@@ -22,7 +22,7 @@ export const JOB_SKILL = {
   artificer: ['현장 가공', '채집할 때 25% 확률로 재료를 하나 더 손질해 챙깁니다.'],
 };
 const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check',
-  fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search' };
+  fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search', guard: 'shield', foe: 'flame' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
 // 같은 설정으로 다시 보내기: 마지막으로 보낸 곳·기간·태세를 기기에 남긴다
@@ -151,7 +151,7 @@ function renderActive(box, a) {
 }
 
 // 전투 줄(마주침부터 승패까지)은 한 덩어리로 묶어 결과 한 줄만 보이고, 누르면 주고받은 내용을 펼친다
-const BATTLE = new Set(['fight', 'atk', 'hurt', 'heal', 'skill', 'win', 'lose', 'down']);
+const BATTLE = new Set(['fight', 'atk', 'hurt', 'heal', 'skill', 'guard', 'foe', 'win', 'lose', 'down']);
 const openBattles = new Set();
 function battleGroups(ls) {
   const out = [], open = new Map(); // 사람마다 진행 중인 전투(파티원 일지가 섞여도 끊기지 않게)
@@ -174,7 +174,7 @@ function battleBlock(g, row, me, myName) {
   const res = done === 'win' ? '<b class="ok">승리</b>' : done === 'lose' ? '<b class="bad">밀려남</b>' : done === 'down' ? '<b class="bad">쓰러짐</b>' : '<b class="muted">싸우는 중</b>';
   return `<li class="exp-battle ${done ? 'b-' + done : ''} ${f.owner && f.owner !== me ? 'other' : 'mine'} ${openBattles.has(g.key) ? 'open' : ''}">
     <button type="button" data-k="${esc(g.key)}">${icon('sword', 14)}<span class="eb-head"><b class="who">${esc(f.who || myName || '')}</b>${esc(f.text)}</span>
-      <span class="eb-sum">${res} · 공격 ${cnt('atk')} · 반격 ${cnt('hurt')}${cnt('heal') ? ` · 회복 ${cnt('heal')}` : ''}${cnt('skill') ? ` · 기술 ${cnt('skill')}` : ''}</span><time>${fmt.time(f.at)}</time></button>
+      <span class="eb-sum">${res} · 공격 ${cnt('atk')} · 반격 ${cnt('hurt')}${cnt('heal') ? ` · 회복 ${cnt('heal')}` : ''}${cnt('skill') ? ` · 기술 ${cnt('skill')}` : ''}${cnt('guard') ? ` · 막기·회피 ${cnt('guard')}` : ''}</span><time>${fmt.time(f.at)}</time></button>
     <ul>${g.lines.slice(1).map(([l, i]) => row(l, i)).join('')}</ul></li>`;
 }
 

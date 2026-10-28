@@ -1619,3 +1619,6 @@ b.contest { color: var(--warn); font-weight: 600; }
 .pt-list li small { color: var(--muted); } .pt-list li .pt-stat { flex-basis: 100%; }
 .pt-list li .btn { margin-left: auto; }
 .exp-call { display: flex; gap: 8px; align-items: center; font-size: 12.5px; margin: 6px 0; cursor: pointer; } .exp-call input { width: 16px; height: 16px; accent-color: var(--accent); }
+.exp-feed .k-guard span, .exp-feed .k-guard .ico { color: color-mix(in srgb, var(--accent) 70%, var(--text)); }
+.exp-feed .k-foe span, .exp-feed .k-foe .ico { color: var(--muted); font-style: italic; }
+.exp-feed .k-guard, .exp-feed .k-foe { padding-left: 14px; }
