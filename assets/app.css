@@ -1597,6 +1597,14 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ns-1014 { --ns: #9fe0d6; } [data-tone=light] .ns-1014 { --ns: #2f8579; }
 .ns-1015 { --ns: #c9a6f0; } [data-tone=light] .ns-1015 { --ns: #7348a8; }
 .ns-1016 { --ns: #e0bd66; } [data-tone=light] .ns-1016 { --ns: #8a5a12; }
+/* 세력 비고 이름 색 */
+.ns-1021 { --ns: #84a9e8; } [data-tone=light] .ns-1021 { --ns: #2c4f94; }
+.ns-1022 { --ns: #e2485e; } [data-tone=light] .ns-1022 { --ns: #9e1328; }
+.ns-1023 { --ns: #b48ad8; } [data-tone=light] .ns-1023 { --ns: #5e3487; }
+.ns-1024 { --ns: #a8cde0; } [data-tone=light] .ns-1024 { --ns: #3d6d86; }
+.ns-1025 { --ns: #4fc2b6; } [data-tone=light] .ns-1025 { --ns: #19756b; }
+.ns-1026 { --ns: #f2924a; } [data-tone=light] .ns-1026 { --ns: #ad4f0e; }
+.ns-1027 { --ns: #9ab8f4; } [data-tone=light] .ns-1027 { --ns: #3a55a0; }
 /* 야행묵금(레거시): 마름모 대신 작은 「痕」, 이름 아래 붉은 붓 한 획 */
 .chat-list li.msg.ns-1016 .meta b, .card-name.ns-1016, .hue-preview.ns-1016 b, .hue-pick.ns-1016 { font-family: var(--font-serif, serif);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C20 2 45 3 70 4S95 5 99 2L99 4C90 7 60 7 35 6.5S8 7 1 5z' fill='%23b0263a'/%3E%3C/svg%3E") no-repeat left bottom / 100% 4px; padding-bottom: 3px; }
@@ -1812,3 +1820,11 @@ b.contest { color: var(--warn); font-weight: 600; }
 .chip.slot { color: var(--text); border-color: color-mix(in srgb, var(--text) 30%, var(--line)); }
 .recipe header { flex-wrap: wrap; }
 @media (max-width: 640px) { .craft-sort { margin-left: 0; width: 100%; } .craft-sort select { flex: 1; } }
+/* 세력 비고·기부 */
+.fq-vault > li.owned { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.fq-vault b .chip { margin-left: 4px; vertical-align: 1px; }
+.fq-ns { color: var(--ns); font-weight: 750; }
+.fq-don { max-height: 340px; overflow-y: auto; }
+.fq-don b.r-rare { color: var(--info, #6aa6e8); } .fq-don b.r-epic { color: #b48ad8; } .fq-don b.r-legendary { color: var(--accent); }
+#fq-don-sum .warn { color: var(--warn, var(--gold)); }
+@media (max-width: 640px) { .fq-vault > li { flex-wrap: wrap; } }

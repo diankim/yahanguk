@@ -1,6 +1,6 @@
 // 지도: 세계 지도(확대·축소·이동, 겹침 없는 이름표) · 세부 탐사 · 이동과 원정.
 import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast } from '../core.js';
-import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones } from './common.js';
+import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
 import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
@@ -409,7 +409,7 @@ async function drawTravel(body) {
       </article>`).join('')}</div>
       <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.</p>`, { ico: 'route' })}
     ${panel('얻을 수 있는 탈것', others.length ? `<ul class="spot-list">${others.map(m => `<li><div><b>${esc(m.mount_name)}</b>
-        <small>${m.acquire_method === 'event' ? '특별한 사건으로만 얻을 수 있습니다' : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
+        <small>${m.acquire_method === 'event' ? '특별한 사건으로만 얻을 수 있습니다' : m.acquire_method === 'faction' ? `${esc(MAJOR_FACTIONS[m.unlock_faction]?.name || '세력')} 비고에서 공훈으로` : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
         ${m.acquire_method === 'stable' && m.unlock_region ? `<button class="btn small ghost" data-goto="${esc(m.unlock_region)}">지도에서 보기</button>` : ''}</li>`).join('')}</ul>` : empty('모든 탈것을 가지고 있습니다.'), { ico: 'shop' })}`;
 
   $('#tr-map', body)?.addEventListener('click', () => switchTo('world'));

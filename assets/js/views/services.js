@@ -473,7 +473,7 @@ export async function renderStable(box) {
   box.innerHTML = loading();
   try {
     const m = await load('world_mount_snapshot');
-    const here = (m.mounts || []).filter(x => x.at_stable);
+    const here = (m.mounts || []).filter(x => x.at_stable && x.acquire_method !== 'faction'); // 세력 탈것은 비고에서만
     const c = store.character;
     // 단련: 가진 탈것을 노정패로 1~5단계까지 단련한다(단계마다 이동 속도 +4%, 값 20×다음 단계)
     const mine = (m.mounts || []).filter(x => x.owned);

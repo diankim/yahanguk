@@ -27,6 +27,7 @@ grant fn_owner_18452 to postgres with inherit true, set true;
 grant fn_owner_18453 to postgres with inherit true, set true;
 grant fn_owner_18956 to postgres with inherit true, set true;
 grant fn_owner_18878 to postgres with inherit true, set true;
+grant fn_owner_18883 to postgres with inherit true, set true; -- world_mount_acquire(세력 탈것은 비고에서만)
 
 -- ① ─────────────────────────────────────────
 -- world_mount_equip: 이동 중(travel_destination이 남아 있는 동안 — 도착·취소 때 비워진다)에는 거절한다
@@ -1548,8 +1549,16 @@ create table if not exists public.world_faction_request_claims (
 create table if not exists public.world_faction_vault (
   faction_id text not null, item_id text not null, rank_need int not null default 1, price int not null check (price > 0), sort int not null default 0,
   primary key (faction_id, item_id));
+-- 비고 품목 종류: item(물품·장비, item_id = 물품) · title(칭호) · frame(꾸미기) · name_style(채팅 이름 색, item_id = 'ns:번호') · mount(탈것). 물품 말고는 하나만 산다
+alter table public.world_faction_vault add column if not exists kind text not null default 'item';
+-- 기부: 하루(한국 시각) 넘긴 물품 값과 받은 공훈
+create table if not exists public.world_faction_donations (
+  owner_id uuid not null, day date not null, value int not null default 0, merit int not null default 0, primary key (owner_id, day));
+-- 비고에서 산 이름 색처럼 따로 둘 곳이 없는 것
+create table if not exists public.world_faction_unlocks (
+  owner_id uuid not null, unlock_key text not null, unlocked_at timestamptz not null default now(), primary key (owner_id, unlock_key));
 do $$ declare t text; begin
-  foreach t in array array['world_faction_npcs', 'world_faction_scenes', 'world_faction_ranks', 'world_faction_progress', 'world_faction_requests', 'world_faction_request_claims', 'world_faction_vault'] loop
+  foreach t in array array['world_faction_npcs', 'world_faction_scenes', 'world_faction_ranks', 'world_faction_progress', 'world_faction_requests', 'world_faction_request_claims', 'world_faction_vault', 'world_faction_donations', 'world_faction_unlocks'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
     execute format('grant select on public.%I to fn_owner_field', t);
@@ -1557,6 +1566,8 @@ do $$ declare t text; begin
 end $$;
 grant insert, update on public.world_faction_progress to fn_owner_field;
 grant insert on public.world_faction_request_claims to fn_owner_field;
+grant insert, update on public.world_faction_donations to fn_owner_field;
+grant insert on public.world_faction_unlocks to fn_owner_field;
 grant update (faction_reputation) on public.world_characters to fn_owner_field;
 
 insert into public.world_faction_ranks(faction_id, rank, rank_name) values
@@ -1601,7 +1612,74 @@ insert into public.world_faction_vault(faction_id, item_id, rank_need, price, so
   ('southern_remnant', 'ember_crystal', 3, 80, 10), ('southern_remnant', 'monster_core', 5, 150, 15),
   ('mandate_court', 'star_sand', 3, 80, 10), ('mandate_court', 'sky_feather', 5, 150, 15)
 on conflict (faction_id, item_id) do nothing;
-delete from public.world_faction_vault v where not exists (select 1 from public.world_item_catalog i where i.item_id = v.item_id);
+delete from public.world_faction_vault v where v.kind = 'item' and not exists (select 1 from public.world_item_catalog i where i.item_id = v.item_id);
+
+-- 비고 확장(2026-10-29 결정): 물품 말고도 세력 장비·칭호·테두리·채팅 이름 색·탈것을 공훈으로 산다(세력마다 하나씩, 등급이 오를수록).
+-- 세력 장비: 4단계·Lv15·거래 불가(세력에서 받은 것), 두세 갈래 효과를 고루 둔다(한 갈래만 큰 같은 단계 장비보다 덜 날카롭게).
+insert into public.world_item_catalog(item_id, item_name, category, rarity, tier, stackable, tradeable, stack_size, description,
+  required_job, minimum_level, required_stats, reference_price, equipment_traits, required_faction, drop_rate_modifier, acquisition_difficulty) values
+  ('fv_hat_night', '감찰 사모', 'hat', 'epic', 4, false, false, 1, '정통파 감찰 야행관이 쓰는 검은 사모. 흔적을 놓치지 않고 마음이 흔들리지 않는다. 세력 비고에서만 내준다.',
+    null, 15, '{"perception": 16}', 900, '{"trait": "관모", "clue_bonus_pct": 10, "crit_pct": 2, "mental_loss_pct": -8}', null, 0, 4),
+  ('fv_mask_redmoon', '월식 무녀탈', 'mask', 'epic', 4, false, false, 1, '적월교 무녀가 의식에서 쓰는 붉은 탈. 술법과 칼끝이 함께 매서워진다. 세력 비고에서만 내준다.',
+    null, 15, '{"spirit_affinity": 16}', 900, '{"trait": "탈", "magic_pct": 6, "combat_damage_pct": 4, "presence": 20}', null, 0, 4),
+  ('fv_norigae_lotus', '흑련 장도 노리개', 'norigae', 'epic', 4, false, false, 1, '흑련회 손님에게만 내주는 검은 장도 노리개. 값진 것을 먼저 알아보고 급소를 찾는다. 세력 비고에서만 내준다.',
+    null, 15, '{"agility": 16}', 900, '{"trait": "노리개", "rare_loot_pct": 7, "crit_pct": 4, "evasion_pct": 2}', null, 0, 4),
+  ('fv_shoes_north', '설원 행전', 'shoes', 'epic', 4, false, false, 1, '북령맹 무사가 눈길 호송에 감는 행전. 발이 땅에 붙어 밀리지 않고 동료 앞을 막아선다. 세력 비고에서만 내준다.',
+    null, 15, '{"vitality": 16}', 900, '{"trait": "신", "defense": 5, "incoming_damage_pct": -4, "presence": 16}', null, 0, 4),
+  ('fv_amulet_river', '상단 은호패', 'amulet', 'epic', 4, false, false, 1, '수향연맹 상단이 신용을 걸고 내준 은 호패. 길이 줄고 짐이 넉넉해진다. 세력 비고에서만 내준다.',
+    null, 15, '{"perception": 16}', 900, '{"trait": "호신부", "travel_time_pct": -6, "gather_qty_pct": 6, "supply_save_pct": 8}', null, 0, 4),
+  ('fv_amulet_ember', '불씨 향낭', 'amulet', 'epic', 4, false, false, 1, '남명회 불씨 창고에서 나온 재 냄새 나는 향낭. 침식을 막고 상처를 빨리 아물린다. 세력 비고에서만 내준다.',
+    null, 15, '{"willpower": 16}', 900, '{"trait": "호신부", "erosion_pct": -8, "healing_pct": 8, "mental_loss_pct": -6}', null, 0, 4),
+  ('fv_hat_mandate', '관상감 사모', 'hat', 'epic', 4, false, false, 1, '천명원 관상관의 별무늬 사모. 흉한 만남을 비켜 가고 단서와 귀한 것을 먼저 본다. 세력 비고에서만 내준다.',
+    null, 15, '{"spirit_affinity": 16}', 900, '{"trait": "관모", "encounter_pct": -6, "clue_bonus_pct": 6, "rare_loot_pct": 4}', null, 0, 4)
+on conflict (item_id) do nothing;
+-- 세력 칭호(양품): 비고에서 공훈으로 산다
+insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade) values
+  ('fv_night_office', '등잔 아래 서기', 'scroll', '정청 기록실의 등잔 아래에서 장부를 맡은 조사원.', '정통파 비고에서 공훈으로', '{"clue_bonus_pct": 2, "mental_loss_pct": -2}', true, false, null, 960, '세력', 2),
+  ('fv_red_moon_cult', '달을 섬기는 자', 'moon', '붉은 달 아래 서원을 올린 교도.', '적월교 비고에서 공훈으로', '{"combat_damage_pct": 2, "crit_pct": 1}', true, false, null, 961, '세력', 2),
+  ('fv_black_lotus', '빚을 셈하는 손', 'coin', '흑련회 장부에 이름이 적힌 손님. 빌린 것도 빌려준 것도 잊지 않는다.', '흑련회 비고에서 공훈으로', '{"rare_loot_pct": 2, "flee_pct": 3}', true, false, null, 962, '세력', 2),
+  ('fv_north_league', '산문의 방패', 'shield', '북령맹 산문 앞을 지킨 무사.', '북령맹 비고에서 공훈으로', '{"incoming_damage_pct": -2, "defense": 2}', true, false, null, 963, '세력', 2),
+  ('fv_river_alliance', '나루의 신용', 'route', '어느 나루에서나 외상이 통하는 이름.', '수향연맹 비고에서 공훈으로', '{"travel_time_pct": -3, "gather_qty_pct": 2}', true, false, null, 964, '세력', 2),
+  ('fv_southern_remnant', '불씨를 나르는 자', 'flame', '꺼진 마을에 불씨를 옮겨 붙인 이.', '남명회 비고에서 공훈으로', '{"healing_pct": 3, "erosion_pct": -2}', true, false, null, 965, '세력', 2),
+  ('fv_mandate_court', '별자리를 외는 자', 'star', '천명원 서고에서 별자리 스물여덟 수를 외운 관측생.', '천명원 비고에서 공훈으로', '{"encounter_pct": -2, "clue_bonus_pct": 2}', true, false, null, 966, '세력', 2)
+on conflict (title_key) do nothing;
+-- 세력 테두리(진품): 얻는 길은 비고뿐(규칙은 어디에도 맞지 않는 표시만, 저절로 주지 않음)
+insert into public.world_cosmetic_catalog(cosmetic_key, kind, tier, cosmetic_name, condition_text, category, rule, hidden, active, sort) values
+  ('fr_f_night', 'frame', 'rare', '정청 등잔 테두리', '정통파 비고에서 공훈으로', '세력', '{"vault": "night_office"}', false, true, 960),
+  ('fr_f_redmoon', 'frame', 'rare', '월식 테두리', '적월교 비고에서 공훈으로', '세력', '{"vault": "red_moon_cult"}', false, true, 961),
+  ('fr_f_lotus', 'frame', 'rare', '흑련 테두리', '흑련회 비고에서 공훈으로', '세력', '{"vault": "black_lotus"}', false, true, 962),
+  ('fr_f_north', 'frame', 'rare', '설산 맹약 테두리', '북령맹 비고에서 공훈으로', '세력', '{"vault": "north_league"}', false, true, 963),
+  ('fr_f_river', 'frame', 'rare', '나룻배 테두리', '수향연맹 비고에서 공훈으로', '세력', '{"vault": "river_alliance"}', false, true, 964),
+  ('fr_f_south', 'frame', 'rare', '잔불 테두리', '남명회 비고에서 공훈으로', '세력', '{"vault": "southern_remnant"}', false, true, 965),
+  ('fr_f_mandate', 'frame', 'rare', '성좌 테두리', '천명원 비고에서 공훈으로', '세력', '{"vault": "mandate_court"}', false, true, 966)
+on conflict (cosmetic_key) do nothing;
+-- 세력 탈것: 마구간에서는 들이지 않고 비고에서만(acquire_method 'faction'). 운임 노정패 1(싸게 다님).
+-- 수향연맹의 뱃길 이점을 지키려고 다른 세력은 ×1.9(수향 나룻배 ×2.1보다 느림), 수향연맹 화방선만 ×2.3(4인)으로 가장 빠른 세력 탈것이다.
+insert into public.world_mount_catalog(mount_id, mount_name, speed_multiplier, unlock_level, unlock_reputation, unlock_faction, unlock_region, unlock_item, price, description, tier, passenger_capacity, fare_tokens, fare_free, acquire_method) values
+  ('fm_night_office', '등롱 백마', 1.9, 18, 0, 'night_office', 'hq_yard', null, 0, '안장에 청사초롱을 단 정청의 흰 말. 밤길에도 발을 헛딛지 않는다.', '세력', 2, 1, false, 'faction'),
+  ('fm_red_moon_cult', '혈월 흑표', 1.9, 18, 0, 'red_moon_cult', 'bone_market', null, 0, '붉은 달밤에만 눈을 뜨는 검은 표범. 등이 넓어 둘이 탄다.', '세력', 2, 1, false, 'faction'),
+  ('fm_black_lotus', '그림자 너구리 수레', 1.9, 18, 0, 'black_lotus', 'hidden_bazaar', null, 0, '십삼문 뒷골목을 아는 너구리가 끄는 작은 수레. 길 아닌 길로 다닌다.', '세력', 2, 1, false, 'faction'),
+  ('fm_north_league', '설원 야크', 1.9, 18, 0, 'north_league', 'iron_monastery', null, 0, '눈보라에도 멈추지 않는 털 많은 야크. 피난민 넷을 태운다.', '세력', 4, 1, false, 'faction'),
+  ('fm_river_alliance', '화방선', 2.3, 18, 0, 'river_alliance', 'river_ferry', null, 0, '연맹 상단의 지붕 달린 놀잇배. 넷이 타고 물길을 따라간다.', '세력', 4, 1, false, 'faction'),
+  ('fm_southern_remnant', '불갈기 말', 1.9, 18, 0, 'southern_remnant', 'ember_village', null, 0, '갈기 끝에 불티가 이는 붉은 말. 재 언덕을 단숨에 넘는다.', '세력', 2, 1, false, 'faction'),
+  ('fm_mandate_court', '별무리 학', 1.9, 18, 0, 'mandate_court', 'star_observatory', null, 0, '날개에 별자리 무늬가 있는 큰 학. 한 사람만 태운다.', '세력', 1, 1, false, 'faction')
+on conflict (mount_id) do nothing;
+-- 비고 품목: 공통(원정 물품) + 세력마다 칭호(2등급)·테두리(3)·장비(3)·이름 색(4)·탈것(5)
+insert into public.world_faction_vault(faction_id, item_id, rank_need, price, sort, kind)
+select f.faction_id, v.item_id, v.rank_need, v.price, v.sort, 'item'
+  from public.world_major_factions f
+  cross join (values ('guide_lantern', 2, 25, 20), ('exp_elixir_iron', 2, 25, 21), ('exp_elixir_tiger', 2, 25, 22), ('exp_elixir_clear', 2, 25, 23),
+                     ('trail_map', 4, 60, 24), ('sealed_bundle', 4, 70, 25)) v(item_id, rank_need, price, sort)
+on conflict (faction_id, item_id) do nothing;
+insert into public.world_faction_vault(faction_id, item_id, rank_need, price, sort, kind) values
+  ('night_office', 'fv_night_office', 2, 150, 30, 'title'), ('night_office', 'fr_f_night', 3, 250, 31, 'frame'), ('night_office', 'fv_hat_night', 3, 300, 32, 'item'), ('night_office', 'ns:1021', 4, 350, 33, 'name_style'), ('night_office', 'fm_night_office', 5, 600, 34, 'mount'),
+  ('red_moon_cult', 'fv_red_moon_cult', 2, 150, 30, 'title'), ('red_moon_cult', 'fr_f_redmoon', 3, 250, 31, 'frame'), ('red_moon_cult', 'fv_mask_redmoon', 3, 300, 32, 'item'), ('red_moon_cult', 'ns:1022', 4, 350, 33, 'name_style'), ('red_moon_cult', 'fm_red_moon_cult', 5, 600, 34, 'mount'),
+  ('black_lotus', 'fv_black_lotus', 2, 150, 30, 'title'), ('black_lotus', 'fr_f_lotus', 3, 250, 31, 'frame'), ('black_lotus', 'fv_norigae_lotus', 3, 300, 32, 'item'), ('black_lotus', 'ns:1023', 4, 350, 33, 'name_style'), ('black_lotus', 'fm_black_lotus', 5, 600, 34, 'mount'),
+  ('north_league', 'fv_north_league', 2, 150, 30, 'title'), ('north_league', 'fr_f_north', 3, 250, 31, 'frame'), ('north_league', 'fv_shoes_north', 3, 300, 32, 'item'), ('north_league', 'ns:1024', 4, 350, 33, 'name_style'), ('north_league', 'fm_north_league', 5, 600, 34, 'mount'),
+  ('river_alliance', 'fv_river_alliance', 2, 150, 30, 'title'), ('river_alliance', 'fr_f_river', 3, 250, 31, 'frame'), ('river_alliance', 'fv_amulet_river', 3, 300, 32, 'item'), ('river_alliance', 'ns:1025', 4, 350, 33, 'name_style'), ('river_alliance', 'fm_river_alliance', 5, 600, 34, 'mount'),
+  ('southern_remnant', 'fv_southern_remnant', 2, 150, 30, 'title'), ('southern_remnant', 'fr_f_south', 3, 250, 31, 'frame'), ('southern_remnant', 'fv_amulet_ember', 3, 300, 32, 'item'), ('southern_remnant', 'ns:1026', 4, 350, 33, 'name_style'), ('southern_remnant', 'fm_southern_remnant', 5, 600, 34, 'mount'),
+  ('mandate_court', 'fv_mandate_court', 2, 150, 30, 'title'), ('mandate_court', 'fr_f_mandate', 3, 250, 31, 'frame'), ('mandate_court', 'fv_hat_mandate', 3, 300, 32, 'item'), ('mandate_court', 'ns:1027', 4, 350, 33, 'name_style'), ('mandate_court', 'fm_mandate_court', 5, 600, 34, 'mount')
+on conflict (faction_id, item_id) do update set rank_need = excluded.rank_need, price = excluded.price, sort = excluded.sort, kind = excluded.kind;
 
 -- 수련장 칭호(3·5등급 시련을 처음 넘으면) · 5등급 칭호를 가지면 세력 낙관
 insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade) values
@@ -1816,8 +1894,14 @@ begin
                from public.world_faction_npcs z where z.npc_key = any (p.npcs_met) and z.faction_id = c.major_faction_id),
     'npc_total', (select count(*) from public.world_faction_npcs z where z.faction_id = c.major_faction_id),
     'requests', reqs,
-    'vault', (select coalesce(jsonb_agg(jsonb_build_object('item_id', v.item_id, 'name', i.item_name, 'price', v.price, 'rank_need', v.rank_need, 'locked', v.rank_need > p.rank) order by v.rank_need, v.sort), '[]'::jsonb)
-                from public.world_faction_vault v join public.world_item_catalog i on i.item_id = v.item_id where v.faction_id = c.major_faction_id),
+    'vault', (select coalesce(jsonb_agg(x.j order by x.rn, x.so), '[]'::jsonb) from (
+                select v.rank_need rn, v.sort so, jsonb_build_object('item_id', v.item_id, 'kind', v.kind, 'price', v.price, 'rank_need', v.rank_need, 'locked', v.rank_need > p.rank,
+                  'name', public.world_faction_vault_name(v.kind, v.item_id), 'owned', public.world_faction_vault_owned(uid, v.kind, v.item_id),
+                  'tier', (select i.tier from public.world_item_catalog i where v.kind = 'item' and i.item_id = v.item_id),
+                  'slot', (select i.category from public.world_item_catalog i where v.kind = 'item' and i.item_id = v.item_id)) j
+                from public.world_faction_vault v where v.faction_id = c.major_faction_id
+                  and (v.kind <> 'item' or exists (select 1 from public.world_item_catalog i where i.item_id = v.item_id))) x),
+    'donate', public.world_faction_donate_info(uid),
     'hall', jsonb_build_object('tier', p.rank, 'done_today', p.hall_day = v_day, 'best', p.hall_best, 'foe_level', (array[3, 7, 12, 18, 24])[p.rank]),
     'keepers', (select jsonb_object_agg(s.kind, jsonb_build_object('title', s.title, 'line', s.lines -> 0 ->> 't', 'who', (select z.npc_name from public.world_faction_npcs z where z.npc_key = s.lines -> 0 ->> 's')))
                   from public.world_faction_scenes s where s.faction_id = c.major_faction_id and s.kind in ('vault', 'hall')));
@@ -1904,7 +1988,28 @@ begin
   return jsonb_build_object('content', '의뢰 「' || r.title || '」를 마쳤습니다. 평판 +' || r.rep || ' · 공훈 +' || r.merit, 'merit', r.merit, 'rep', r.rep);
 end $$;
 
--- 비고: 세력 안전지대에서 공훈으로 산다(팔기 없음)
+-- 비고 품목 이름·가졌는지(물품이 아닌 것은 하나만 산다)
+create or replace function public.world_faction_vault_name(p_kind text, p_key text)
+returns text language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case p_kind
+    when 'item' then (select item_name from public.world_item_catalog where item_id = p_key)
+    when 'title' then (select '칭호 「' || title_name || '」' from public.world_title_catalog where title_key = p_key)
+    when 'frame' then (select cosmetic_name from public.world_cosmetic_catalog where cosmetic_key = p_key)
+    when 'name_style' then '채팅 이름 색 「' || case p_key when 'ns:1021' then '정청 남빛' when 'ns:1022' then '월식 핏빛' when 'ns:1023' then '흑련 먹자주'
+      when 'ns:1024' then '설한 은청' when 'ns:1025' then '물길 청록' when 'ns:1026' then '잔불 주황' when 'ns:1027' then '성좌 금청' else p_key end || '」'
+    when 'mount' then (select '탈것 「' || mount_name || '」' from public.world_mount_catalog where mount_id = p_key) end
+$$;
+create or replace function public.world_faction_vault_owned(p_owner uuid, p_kind text, p_key text)
+returns boolean language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case p_kind
+    when 'title' then exists (select 1 from public.world_character_titles where owner_id = p_owner and title_key = p_key)
+    when 'frame' then exists (select 1 from public.world_character_cosmetics where owner_id = p_owner and cosmetic_key = p_key)
+    when 'name_style' then exists (select 1 from public.world_faction_unlocks where owner_id = p_owner and unlock_key = p_key)
+    when 'mount' then exists (select 1 from public.world_owned_mounts where owner_id = p_owner and mount_id = p_key)
+    else false end
+$$;
+
+-- 비고: 세력 안전지대에서 공훈으로 산다(팔기 없음). 물품은 여러 개, 칭호·테두리·이름 색·탈것은 하나만
 create or replace function public.world_faction_vault_buy(p_item text, p_qty int default 1)
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
 declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype; v public.world_faction_vault%rowtype; cost int; nm text;
@@ -1921,14 +2026,90 @@ begin
   select * into v from public.world_faction_vault where faction_id = c.major_faction_id and item_id = p_item;
   if v.item_id is null then raise exception '비고에 없는 물품입니다.'; end if;
   if v.rank_need > p.rank then raise exception '% 등급부터 살 수 있습니다.', (select rank_name from public.world_faction_ranks where faction_id = c.major_faction_id and rank = v.rank_need); end if;
+  if v.kind <> 'item' then
+    if p_qty <> 1 then raise exception '하나만 살 수 있습니다.'; end if;
+    if public.world_faction_vault_owned(uid, v.kind, v.item_id) then raise exception '이미 가지고 있습니다.'; end if;
+  end if;
   cost := v.price * p_qty;
   if p.merit < cost then raise exception '공훈이 모자랍니다(% 필요, 지금 %).', cost, p.merit; end if;
-  if public.world_bag_room(coalesce(c.inventory, '{}'::jsonb), p_item, public.world_bag_limit(uid)) < p_qty then raise exception '가방 자리가 모자랍니다.'; end if;
+  if v.kind = 'item' and public.world_bag_room(coalesce(c.inventory, '{}'::jsonb), p_item, public.world_bag_limit(uid)) < p_qty then raise exception '가방 자리가 모자랍니다.'; end if;
   update public.world_faction_progress set merit = merit - cost, updated_at = now() where owner_id = uid and faction_id = c.major_faction_id and merit >= cost;
   if not found then raise exception '공훈이 모자랍니다.'; end if;
-  update public.world_characters set inventory = public.world_inv_add(coalesce(inventory, '{}'::jsonb), p_item, p_qty), updated_at = now() where owner_id = uid;
-  select item_name into nm from public.world_item_catalog where item_id = p_item;
-  return jsonb_build_object('content', nm || ' ×' || p_qty || '을(를) 공훈 ' || cost || '으로 받았습니다.', 'merit', p.merit - cost);
+  nm := public.world_faction_vault_name(v.kind, v.item_id);
+  if v.kind = 'item' then
+    update public.world_characters set inventory = public.world_inv_add(coalesce(inventory, '{}'::jsonb), p_item, p_qty), updated_at = now() where owner_id = uid;
+    return jsonb_build_object('content', nm || ' ×' || p_qty || '을(를) 공훈 ' || cost || '으로 받았습니다.', 'merit', p.merit - cost);
+  elsif v.kind = 'title' then
+    insert into public.world_character_titles(owner_id, title_key) values (uid, v.item_id) on conflict do nothing;
+  elsif v.kind = 'frame' then
+    insert into public.world_character_cosmetics(owner_id, cosmetic_key) values (uid, v.item_id) on conflict do nothing;
+  elsif v.kind = 'name_style' then
+    insert into public.world_faction_unlocks(owner_id, unlock_key) values (uid, v.item_id) on conflict do nothing;
+  elsif v.kind = 'mount' then
+    insert into public.world_owned_mounts(owner_id, mount_id) values (uid, v.item_id) on conflict do nothing;
+  end if;
+  return jsonb_build_object('content', nm || '을(를) 공훈 ' || cost || '으로 받았습니다.' ||
+    case v.kind when 'title' then ' 캐릭터 › 칭호에서 장착하세요.' when 'frame' then ' 설정 › 프로필 꾸미기에서 답니다.' when 'name_style' then ' 설정 › 프로필 › 채팅 이름 색에서 고릅니다.'
+      when 'mount' then ' 지도 › 이동의 내 탈것에서 탑니다.' else '' end, 'merit', p.merit - cost, 'kind', v.kind);
+end $$;
+
+-- 기부: 필요 없는 물품(거래 불가 포함)을 세력에 넘기고 공훈을 조금 받는다. 기준 시세 50전마다 공훈 1, 하루(한국 시각) 30까지.
+-- 장착 중인 마지막 하나·잠근 물품·임무 물품·강화한 장비의 마지막 하나·시세 없는 물품은 넘길 수 없다. 넘긴 물품은 없어진다(경제에서 빠지는 길).
+create or replace function public.world_faction_donate_info(p_uid uuid)
+returns jsonb language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select jsonb_build_object('rate', 50, 'cap', 30,
+    'value', coalesce((select d.value from public.world_faction_donations d where d.owner_id = p_uid and d.day = (now() at time zone 'Asia/Seoul')::date), 0),
+    'merit', coalesce((select d.merit from public.world_faction_donations d where d.owner_id = p_uid and d.day = (now() at time zone 'Asia/Seoul')::date), 0),
+    'items', (select coalesce(jsonb_agg(jsonb_build_object('item_id', i.item_id, 'name', i.item_name, 'qty', q.qty - q.eq, 'price', i.reference_price, 'rarity', i.rarity,
+                'category', i.category, 'tier', i.tier, 'tradeable', i.tradeable) order by i.item_name), '[]'::jsonb)
+              from (select e.key item_id, (e.value)::text::int qty,
+                      (select count(*)::int from public.world_character_equipment x where x.owner_id = p_uid and x.item_id = e.key)
+                      + case when exists (select 1 from public.world_gear_enhance g where g.owner_id = p_uid and g.item_id = e.key and g.level > 0) then 1 else 0 end eq
+                    from public.world_characters c, jsonb_each(coalesce(c.inventory, '{}'::jsonb)) e
+                    where c.owner_id = p_uid and jsonb_typeof(e.value) = 'number') q
+              join public.world_item_catalog i on i.item_id = q.item_id
+              where q.qty - q.eq > 0 and coalesce(i.reference_price, 0) > 0 and i.category <> 'quest'
+                and not exists (select 1 from public.world_item_locks l where l.owner_id = p_uid and l.item_id = q.item_id)))
+$$;
+create or replace function public.world_faction_donate(p_items jsonb)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype;
+  v_day date := (now() at time zone 'Asia/Seoul')::date; d public.world_faction_donations%rowtype; info jsonb; e record; it jsonb;
+  inv jsonb; val int := 0; gain int; n int := 0; kinds int := 0;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  if p_items is null or jsonb_typeof(p_items) <> 'object' or p_items = '{}'::jsonb then raise exception '넘길 물품을 고르세요.'; end if;
+  select * into c from public.world_characters where owner_id = uid for update;
+  if c.major_faction_id is null then raise exception '대세력에 들어야 합니다.'; end if;
+  p := public.world_faction_sync(uid);
+  if p.join_done_at is null then raise exception '가입 퀘스트를 마치면 기부할 수 있습니다.'; end if;
+  if c.location not in (select m.region_name from public.world_map_regions m where m.region_id = any (public.world_faction_home(c.major_faction_id))) then raise exception '세력 안전지대에서만 기부할 수 있습니다.'; end if;
+  if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 기부할 수 없습니다.'; end if;
+  if exists (select 1 from public.world_expeditions x where x.owner_id = uid and x.status = 'active') then raise exception '원정 중에는 기부할 수 없습니다.'; end if;
+  if exists (select 1 from public.world_idle_activities x where x.owner_id = uid and x.status = 'active') then raise exception '자율 활동 중에는 기부할 수 없습니다.'; end if;
+  insert into public.world_faction_donations(owner_id, day) values (uid, v_day) on conflict do nothing;
+  select * into d from public.world_faction_donations where owner_id = uid and day = v_day for update;
+  if d.merit >= 30 then raise exception '오늘은 더 받지 않습니다(하루 공훈 30까지). 내일 다시 오세요.'; end if;
+  info := public.world_faction_donate_info(uid);
+  inv := coalesce(c.inventory, '{}'::jsonb);
+  for e in select key, value from jsonb_each(p_items) loop
+    if jsonb_typeof(e.value) <> 'number' or (e.value)::text::numeric <> floor((e.value)::text::numeric) or (e.value)::text::int < 1 then raise exception '수량이 올바르지 않습니다.'; end if;
+    it := (select x from jsonb_array_elements(info -> 'items') x where x ->> 'item_id' = e.key limit 1);
+    if it is null then raise exception '「%」은(는) 기부할 수 없는 물품입니다(장착 중·잠금·강화·임무 물품이거나 가지고 있지 않음).', coalesce((select item_name from public.world_item_catalog where item_id = e.key), e.key); end if;
+    if (e.value)::text::int > (it ->> 'qty')::int then raise exception '「%」을(를) % 개까지 넘길 수 있습니다.', it ->> 'name', it ->> 'qty'; end if;
+    val := val + (it ->> 'price')::int * (e.value)::text::int;
+    n := n + (e.value)::text::int; kinds := kinds + 1;
+    inv := public.world_inv_add(inv, e.key, -(e.value)::text::int);
+  end loop;
+  gain := least(30, (d.value + val) / 50) - d.merit;
+  perform set_config('yh.wear_leaves', 'on', true); -- 모두 넘겨 0개가 되면 내구도 기록도 지운다
+  update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid;
+  update public.world_faction_donations set value = value + val, merit = merit + gain where owner_id = uid and day = v_day;
+  if gain > 0 then update public.world_faction_progress set merit = merit + gain, updated_at = now() where owner_id = uid and faction_id = c.major_faction_id; end if;
+  return jsonb_build_object('merit', gain, 'value', val, 'today', d.merit + gain, 'cap', 30,
+    'content', kinds || '가지 ' || n || '개를 기부했습니다(시세 ' || val || '전). 공훈 +' || gain ||
+      case when d.merit + gain >= 30 then ' · 오늘 기부 상한(공훈 30)에 닿았습니다.' else ' · 오늘 ' || (d.merit + gain) || '/30' end);
 end $$;
 
 -- 수련장: 하루 한 번 지금 등급의 시련. 내 전투 능력치(world_combat_stats)와 등급별 시련 상대가 최대 12합을 주고받고, 그 기록을 화면이 한 줄씩 보인다.
@@ -2016,12 +2197,13 @@ end $$;
 do $$ declare f text; begin
   foreach f in array array['world_faction_task_count(uuid,jsonb,timestamptz)', 'world_faction_task_label(jsonb)', 'world_faction_rank_effect(text)', 'world_faction_rank_label(uuid)',
     'world_faction_sync(uuid)', 'world_faction_current(uuid,boolean)', 'world_faction_snapshot()', 'world_faction_home(text)', 'world_faction_report()',
-    'world_faction_request_claim(text)', 'world_faction_vault_buy(text,integer)', 'world_faction_trial()', 'world_faction_show_rank(boolean)'] loop
+    'world_faction_request_claim(text)', 'world_faction_vault_buy(text,integer)', 'world_faction_trial()', 'world_faction_show_rank(boolean)',
+    'world_faction_vault_name(text,text)', 'world_faction_vault_owned(uuid,text,text)', 'world_faction_donate_info(uuid)', 'world_faction_donate(jsonb)'] loop
     execute format('alter function public.%s owner to fn_owner_field', f);
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
   -- 화면이 부르는 것과 상태 효과 합계(여러 함수 주인이 부름)·이름표만 연다
-  foreach f in array array['world_faction_snapshot()', 'world_faction_report()', 'world_faction_request_claim(text)', 'world_faction_vault_buy(text,integer)', 'world_faction_trial()', 'world_faction_show_rank(boolean)'] loop
+  foreach f in array array['world_faction_snapshot()', 'world_faction_report()', 'world_faction_request_claim(text)', 'world_faction_vault_buy(text,integer)', 'world_faction_trial()', 'world_faction_show_rank(boolean)', 'world_faction_donate(jsonb)'] loop
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;
   execute 'grant execute on function public.world_faction_rank_effect(text) to public';
@@ -2219,6 +2401,38 @@ begin
   execute replace(d, a, b);
 end $$;
 
+-- 비고에서 산 채팅 이름 색(1021~1027)도 고를 수 있게: 이름 색 목록에 더하고(world_faction_unlocks), 고르는 범위를 넓힌다.
+-- 세력을 떠나도 산 것은 남는다. 레거시 1016을 넣는 대기 파일은 규칙 목록 줄을 고치므로 그 줄은 건드리지 않는다.
+do $$
+declare d text := pg_get_functiondef('public.world_name_styles()'::regprocedure);
+  a text := $a$select coalesce(jsonb_object_agg(r.style::text,$a$;
+  b text := $a$select (select coalesce(jsonb_object_agg(substr(u.unlock_key, 4), true), '{}'::jsonb) from public.world_faction_unlocks u
+      where u.owner_id = public.fn_owner_auth_uid() and u.unlock_key like 'ns:%') || coalesce(jsonb_object_agg(r.style::text,$a$;
+begin
+  if position('world_faction_unlocks' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '이름 색 목록 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+do $$
+declare d text := pg_get_functiondef('public.world_set_name_style(integer)'::regprocedure);
+  a text := $a$p_style > 1015$a$; b text := $a$p_style > 1099$a$;
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '이름 색 범위 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+-- 세력 탈것(acquire_method 'faction')은 마구간에서 들이지 않는다
+do $$
+declare d text := pg_get_functiondef('public.world_mount_acquire(text)'::regprocedure);
+  a text := $a$IF m.acquire_method='event' THEN RAISE EXCEPTION '이 탈것은 특별한 사건으로만 얻을 수 있습니다.'; END IF;$a$;
+  b text := $a$IF m.acquire_method='event' THEN RAISE EXCEPTION '이 탈것은 특별한 사건으로만 얻을 수 있습니다.'; END IF;
+  IF m.acquire_method='faction' THEN RAISE EXCEPTION '이 탈것은 세력 비고에서 공훈으로만 얻을 수 있습니다.'; END IF;$a$;
+begin
+  if position('세력 비고에서 공훈으로만' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '탈것 들이기 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
@@ -2226,6 +2440,7 @@ grant fn_owner_18452 to postgres with inherit false, set false;
 grant fn_owner_18453 to postgres with inherit false, set false;
 grant fn_owner_18956 to postgres with inherit false, set false;
 grant fn_owner_18878 to postgres with inherit false, set false;
+grant fn_owner_18883 to postgres with inherit false, set false;
 
 -- 세력 가입 퀘스트 도입: 지금 대세력에 든 조사원은 세력에서 나와 처음부터 가입 퀘스트를 밟는다(2026-10-29 결정).
 -- 「떠남」 기록(payload.left)을 남기지 않아 12시간 재가입 제한에 걸리지 않고 바로 다시 들 수 있다. 쌓은 영향력은 세력에 남는다.
@@ -2321,6 +2536,8 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 26. 거래소·직접 거래 목록에 없는 물품은 거래할 수 없는 물품(응축 영핵·천공 깃털 같은 희귀 성장 재료 등)입니다. 이제 목록 아래에 어떤 물품이 빠졌는지 적어 둡니다.
 27. **청동 호신패**·**행상인 짐틀**이 「장착 조건 누구나」로 보이는데 장착되지 않던 문제를 고쳤습니다. 청동 호신패는 호신부(3단계, Lv10·체질 12: 방어 +4·받는 피해 −4%), 행상인 짐틀은 노리개(4단계, Lv15·체질 16: 이동 시간 −6%·보급품 절약 10%)가 됩니다. 청동 호신패 제작법 둘은 이제 서로 다른 호신부를 만듭니다: 요핵 → 청동 호신패, 주사·비취 → **비취 청동패**(술법 +5%·침식 −5%·정신 손실 −4%).
 28. **제작 화면**: 「만드는 것」(무기·방어구·관모·신·노리개·호신부·탈·도구·소모품·재료)으로 거르고, 정렬(가능한 것 먼저·제작 레벨 낮은순·높은순)을 고를 수 있습니다. 장비 제작법 카드에는 장착 부위와 단계(예: 호신부 3단계)가 보입니다.
+29. **세력 기부**: 세력 안전지대에서 필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 50전마다 공훈 1을 받습니다. 하루 공훈 30까지이고, 진품 이상은 한 번 더 확인합니다.
+30. **비고 품목 확장**: 세력마다 세력 칭호(2등급)·세력 테두리(3등급)·세력 장비(3등급, 4단계·거래 불가)·채팅 이름 색(4등급)·세력 탈것(5등급)을 공훈으로 받습니다. 길잡이 등불·비약·비경 지도·봉인된 보따리도 들어왔습니다. 세력 탈것은 운임이 노정패 1이고, 수향연맹 화방선(×2.3)이 가장 빠릅니다(나머지 ×1.9).
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

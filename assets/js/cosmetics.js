@@ -30,6 +30,14 @@ const M = {
   // 야행(夜行)의 흔적(레거시): 그믐달 품에 든 등롱, 가장자리에는 별
   nightwalk: 'M3-8a8 8 0 100 16 6.3 6.3 0 010-16zM-4-3h4v6h-4zM-2-5v2M-2 3v3M-6 0h-1M2 0h1',
   star: 'M0-6l1.6 4.4L6 0 1.6 1.6 0 6-1.6 1.6-6 0-1.6-1.6z',
+  // 세력 테두리(비고): 장부 · 월식 · 흑련 · 설산 · 나룻배 · 불씨 · 별자리
+  ledger: 'M-6-7h12v14h-12zM-3-3h6M-3 0h6M-3 3h4',
+  eclipse: 'M0-7a7 7 0 110 14 7 7 0 110-14zM3-6a6.5 6.5 0 010 12',
+  lotus: 'M0 6C-6 2-7-3-4-6-1-3 0 2 0 6zM0 6C6 2 7-3 4-6 1-3 0 2 0 6zM0 6C-2 0-1-5 0-8 1-5 2 0 0 6zM-7 7h14',
+  peak: 'M-8 6L-3-3 0 1 3-5 8 6zM-3-3l1.5 2.5M3-5l1.6 3',
+  boat: 'M-8 2h16l-3 4h-10zM0 2V-7l5 6H0',
+  flame: 'M0-8c3 4 5 6 5 9a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-5 1-8z',
+  stars: 'M-7 4L-2-3 3 1 7-6M-8 4a1 1 0 102 0 1 1 0 10-2 0M-3-3a1 1 0 102 0 1 1 0 10-2 0M2 1a1 1 0 102 0 1 1 0 10-2 0M6-6a1 1 0 102 0 1 1 0 10-2 0',
 };
 export const FRAMES = {
   fr_lantern: ['common', 'lantern'], fr_path: ['common', 'path'], fr_compass: ['legend', 'compass'],
@@ -39,6 +47,8 @@ export const FRAMES = {
   fr_wave: ['common', 'wave'], fr_dragon_scale: ['legend', 'scale'], fr_knot: ['common', 'knot'], fr_twin_tree: ['rare', 'tree'],
   fr_coin: ['common', 'coin'], fr_moon: ['rare', 'moon'], fr_night_lamp: ['legend', 'lamp'], fr_bloodmist: ['rare', 'drop'],
   fr_yeonri: ['legend', 'branch'],
+  fr_f_night: ['rare', 'ledger'], fr_f_redmoon: ['rare', 'eclipse'], fr_f_lotus: ['rare', 'lotus'], fr_f_north: ['rare', 'peak'],
+  fr_f_river: ['rare', 'boat'], fr_f_south: ['rare', 'flame'], fr_f_mandate: ['rare', 'stars'], // 세력 비고에서 공훈으로
   fr_yahaeng: ['legacy', 'nightwalk'], // 레거시: 롤백 전 첫 시대를 함께한 이만(얻는 길 없음)
 };
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
