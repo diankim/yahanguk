@@ -357,9 +357,9 @@ function openFacility(k, s) {
   const offc = on('changed', () => { if (box.isConnected) fill(); else offc(); });
 }
 
-// 예상 회복량(서버 world_field_rest와 같은 식). 바깥 야영은 절반이고, 가득 찬 수치는 그만큼 덜 오른다.
+// 예상 회복량(서버 world_field_rest와 같은 식). 바깥 야영은 ⅔이고, 가득 찬 수치는 그만큼 덜 오른다.
 function restGain(r, full) {
-  const half = v => r.safe ? v : Math.floor(v / 2);
+  const half = v => r.safe ? v : Math.floor(v * 2 / 3);
   const q = r.rest_quality ?? 1;
   return { hp: half((full ? 65 : 25) + q * 5), mn: half(full ? 50 : 20), sp: half(full ? 35 : 12), er: half(full ? 18 : 6) };
 }

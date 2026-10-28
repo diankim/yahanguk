@@ -64,7 +64,7 @@ export function mountChat(colEl, fabEl) {
   switchTab(tab);
   subscribe();
   loadBlocks();
-  on('changed', ({ name }) => { if (/travel|join_major_faction/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
+  on('changed', ({ name }) => { if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
   subscribeCircles();
   window.addEventListener('yahang:arrived', load);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNew(); });

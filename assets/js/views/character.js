@@ -145,7 +145,7 @@ async function status(body) {
       <div class="action-grid">
         ${yo.y ? `<button class="btn primary" id="yohwa-seal"><span>안전지대 봉인</span><small>가장 가까운 안전지대에서 봉인술사들이 24시간 요기를 해독합니다 · 그동안 채팅만 가능 · 끝나면 요화가 풀리고 침식 40 아래</small></button>` : ''}
         <button class="btn primary" data-use="revival_charm" ${invItems.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(invItems.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
-        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금의 30%(최소 50전)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>
+        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>
       </div>
       <p class="muted small">${byYohwa ? '구조나 회생 부적으로 일어나면 요화는 남아 하루 뒤 다시 쓰러집니다. 귀령초로 풀거나 안전지대 봉인을 받으세요.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
@@ -181,7 +181,7 @@ async function status(body) {
   const ys = $('#yohwa-seal', body);
   if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
   const cr = $('#call-rescue', body);
-  if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 30%(최소 50전)와 이번 레벨에 필요한 경험치의 5%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다).', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
+  if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 15%(최소 30전, 레벨×80전까지, 오늘 첫 구조 반값, 가까운 안전지대가 내 대세력 지배면 다시 반값)와 이번 레벨에 필요한 경험치의 5%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다). 그 안전지대가 내 대세력 지배면 경험치는 잃지 않고 체력 50으로 깨어납니다.', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
   const t = setInterval(() => {
     if (!body.isConnected) return clearInterval(t);
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
@@ -444,8 +444,8 @@ function boardPanel(b) {
     .sort((x, y) => y.score - x.score);
   const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
   return panel('세력 판도', `
-    <p class="muted small">대세력 조사원이 안전지대 밖에서 토벌·탐색·채집·원정을 하면 그 지역에 세력 영향력이 쌓이고, 한 시간마다 정산해 지배 세력이 바뀝니다. 안전지대는 바뀌지 않습니다. 내 세력이 지배하는 곳에서는 채집 +8%·희귀품 +3%·회복량 +5%, 적대 세력이 지배하는 곳에서는 요괴 조우 +8%·정신 손실 +5%, 분쟁 중인 곳은 모두에게 희귀품 +3%·요괴 조우 +5%.</p>
-    <ul class="fboard">${b.factions.map(f => `<li class="${f.id === b.mine ? 'mine' : ''}" style="--fc:${factionColor(f.id)}"><b>${esc(f.name)}${f.id === b.mine ? ' <small class="accent">내 세력</small>' : ''}</b>조사원 ${f.members} · 지배 ${f.regions}곳 · 영향력 ${fmt.num(f.influence)}</li>`).join('')}</ul>
+    <p class="muted small">대세력 조사원이 안전지대 밖에서 토벌·탐색·채집·원정을 하면 그 지역에 세력 영향력이 쌓이고, 한 시간마다 정산해 지배 세력이 바뀝니다. 안전지대는 바뀌지 않습니다. 내 세력이 지배하는 곳에서는 채집 +8%·희귀품 +3%·회복량 +5%, 적대 세력이 지배하는 곳에서는 요괴 조우 +8%·정신 손실 +5%, 분쟁 중인 곳은 모두에게 희귀품 +3%·요괴 조우 +5%. 조사원이 적은 세력은 쌓는 영향력에 인원 보정(√(가장 많은 세력 인원 ÷ 우리 인원), 최대 ×2.5)이 붙습니다.</p>
+    <ul class="fboard">${b.factions.map(f => `<li class="${f.id === b.mine ? 'mine' : ''}" style="--fc:${factionColor(f.id)}"><b>${esc(f.name)}${f.id === b.mine ? ' <small class="accent">내 세력</small>' : ''}</b>조사원 ${f.members} · 지배 ${f.regions}곳 · 영향력 ${fmt.num(f.influence)}${f.boost > 1 ? ` · 인원 보정 ×${f.boost}` : ''}</li>`).join('')}</ul>
     <div class="grid-2" style="margin-top:8px">
       <div><h3 class="small">${b.mine ? `${esc(nm(b.mine))}의 관계` : '세력 관계'}</h3>
         <ul class="frel">${rels.map(r => { const o = b.mine ? (r.a === b.mine ? r.b : r.a) : null;
@@ -476,10 +476,11 @@ async function faction(body) {
     </div>
     ${major ? panel(`${nameOf(major)} 거점`, `
         <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
-        <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
+        <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${(() => { const bst = board?.factions?.find(f => f.id === major)?.boost; return bst > 1 ? chip(`인원 보정 영향력 ×${bst}`, 'ok') : ''; })()}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
         ${(base?.contents || []).length ? `<ul class="mission-list">${base.contents.map(x => `<li><div><b>${esc(x.title)}</b><small>${esc(x.description || '')}</small><small class="muted">Lv.${x.min_level}+${x.reward ? ' · ' + esc(itemsText(x.reward.items || x.reward)) : ''}</small></div>
           ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
-          ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}`, { ico: 'shield' })
+          ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}
+        <div class="btn-row" style="margin-top:8px"><button class="btn small ghost" id="leave-faction">세력 떠나기</button></div>`, { ico: 'shield' })
       : panel('대세력', `<p class="desc">대세력은 세계의 큰 흐름을 이끄는 조직입니다. 가입하면 전용 거점·임무·보상과 세력 채팅을 이용할 수 있습니다. 가입하려면 그 세력의 거점까지 직접 가야 합니다.</p>
         <div class="faction-grid">${Object.entries(MAJOR_FACTIONS).map(([k, f]) => {
           const at = here?.region_id === BASE[k];
@@ -491,6 +492,8 @@ async function faction(body) {
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; return r; });
   $$('[data-base]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_base_action', { p_content_id: b.dataset.base })));
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
+  const lv = $('#leave-faction', body);
+  if (lv) lv.onclick = async () => { if (await ask(`${nameOf(major)}에서 나갈까요?\n평판이 0이 되고 세력 채팅·거점·세력 효과가 사라집니다. 쌓은 영향력은 세력에 남습니다. 떠난 뒤 12시간이 지나야 다른 세력에 가입할 수 있습니다.`, { title: '세력 떠나기', ok: '떠나기', danger: true })) guard(lv, () => act('world_leave_major_faction')); };
   $$('[data-join]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.join, row = $(`#jr-${k}`, body);
     if (here?.region_id !== BASE[k]) {

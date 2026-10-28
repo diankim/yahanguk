@@ -4,8 +4,10 @@
 --   ③ 창고: 어디서나 보기(넣고 꺼내기는 안전지대만) · 안전지대에서 제작하면 창고 재료도 쓴다
 --   ④ 쓰러지면 전체 채팅에 구조 알림 · ⑤ 패치노트 표 · ⑥ 다시 시작하는 귀속 물품 2종(모두에게 하나씩) · ⑦ 물품 얻는 곳
 --   ⑩ 조사 바로잡기(원정 일지 시간대·구조용 물품) · 부적 정화가 중독·심신 동요·사념 침식도 푼다
---   ⑧ 세력 판도(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
+--   ⑪ 대세력 떠나기·옮기기(12시간) · 회복 완화(야영 ⅔·안전지대 자연 회복·구조대 비용)
+--   ⑧ 세력 판도(인원이 적은 세력 영향력 가산 포함)(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
 grant fn_owner_social to postgres with inherit true, set true;
+grant fn_owner_18666 to postgres with inherit true, set true;
 grant fn_owner_18944 to postgres with inherit true, set true;
 grant fn_owner_18989 to postgres with inherit true, set true;
 grant fn_owner_field to postgres with inherit true, set true;
@@ -404,6 +406,16 @@ begin
   execute replace(d, a, a || ' + public.world_social_effect(p_effect_key)');
 end $$;
 
+-- 인원이 적은 세력의 영향력 가산: √(가장 많은 세력 인원 ÷ 이 세력 인원), 1~2.5배. 가입 인원이 바뀌면 바로 달라진다.
+create or replace function public.world_faction_boost(p text)
+returns numeric language sql stable set search_path to 'pg_catalog', 'public' as $$
+  with m as (select f.faction_id, (select count(*) from public.world_characters c where c.major_faction_id = f.faction_id and not coalesce(c.is_dead, false)) n
+               from public.world_major_factions f where f.active)
+  select coalesce((select case when m.n = 0 then 1 else least(2.5, greatest(1, sqrt((select max(n) from m)::numeric / m.n))) end from m where m.faction_id = p), 1)
+$$;
+revoke all on function public.world_faction_boost(text) from public, anon, authenticated;
+grant execute on function public.world_faction_boost(text) to fn_owner_field;
+
 -- 한 시간마다: 영향력 쇠퇴 → 지난 시간 활동을 더함 → 지배 세력·분쟁 판정 → 관계 변화
 create or replace function public.world_influence_tick()
 returns jsonb language plpgsql set search_path to 'pg_catalog', 'public' as $$
@@ -430,7 +442,7 @@ begin
           group by 1, 2, 3 having sum(pts) > 0),
   agg as (select f, region_id, sum(pts) pts, (array_agg(actor_id order by pts desc))[1] top from per group by 1, 2)
   insert into public.world_region_influence(region_id, faction_id, points, last_actor, updated_at)
-  select region_id, f, pts, top, t1 from agg
+  select region_id, f, round(pts * public.world_faction_boost(f), 2), top, t1 from agg
   on conflict (region_id, faction_id) do update set points = public.world_region_influence.points + excluded.points, last_actor = excluded.last_actor, updated_at = t1;
 
   -- 지배 판정: 본거지 세력은 기본 150. 도전 세력이 max(150, 지배 세력 점수×1.25) 이상이면 넘어가고, 60% 이상이면 분쟁 중
@@ -501,7 +513,8 @@ begin
     'factions', (select coalesce(jsonb_agg(jsonb_build_object('id', f.faction_id, 'name', f.faction_name,
         'members', (select count(*) from public.world_characters c where c.major_faction_id = f.faction_id and not coalesce(c.is_dead, false)),
         'regions', (select count(*) from public.world_map_regions r where r.active and r.control_faction_id = f.faction_id),
-        'influence', (select coalesce(round(sum(points)), 0) from public.world_region_influence i where i.faction_id = f.faction_id)) order by f.faction_name), '[]') from public.world_major_factions f where f.active),
+        'influence', (select coalesce(round(sum(points)), 0) from public.world_region_influence i where i.faction_id = f.faction_id),
+        'boost', round(public.world_faction_boost(f.faction_id), 2)) order by f.faction_name), '[]') from public.world_major_factions f where f.active),
     'relations', (select coalesce(jsonb_agg(jsonb_build_object('a', faction_a, 'b', faction_b, 'score', round(score), 'stance', public.world_faction_stance(score))), '[]') from public.world_faction_relations),
     'regions', (select coalesce(jsonb_agg(jsonb_build_object('id', r.region_id, 'name', r.region_name, 'home', r.home_faction_id, 'control', r.control_faction_id, 'contested', r.contested,
         'top', (select coalesce(jsonb_agg(jsonb_build_object('f', i.faction_id, 'p', round(i.points))), '[]') from (select * from public.world_region_influence i where i.region_id = r.region_id and i.points >= 1 order by i.points desc limit 3) i))
@@ -626,7 +639,103 @@ begin
   end loop;
 end $$;
 
+-- ⑪ ─────────────────────────────────────────
+-- 대세력 떠나기·옮기기: 떠나면 평판 0, 세력 채팅(읽기 권한이 지금 소속을 따름)·거점·세력 효과가 사라지고, 12시간 뒤 다른 세력에 가입할 수 있다.
+create or replace function public.world_leave_major_faction()
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; nm text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into c from public.world_characters where owner_id = uid for update;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  if c.major_faction_id is null then raise exception '대세력에 들어 있지 않습니다.'; end if;
+  if exists (select 1 from public.world_expeditions e where e.owner_id = uid and e.status = 'active') then raise exception '원정 중에는 세력을 떠날 수 없습니다.'; end if;
+  select faction_name into nm from public.world_major_factions where faction_id = c.major_faction_id;
+  update public.world_characters set major_faction_id = null, faction_reputation = 0, updated_at = now() where owner_id = uid;
+  insert into public.world_events(actor_id, actor_name, event_type, content, payload)
+  values (uid, c.character_name, 'faction', c.character_name || ' 조사원이 ' || coalesce(nm, '세력') || '에서 나왔습니다.', jsonb_build_object('left', true, 'faction_id', c.major_faction_id));
+  return jsonb_build_object('ok', true, 'content', coalesce(nm, '세력') || '에서 나왔습니다. 평판이 0이 되고 세력 채팅·거점·세력 효과가 사라집니다. 12시간 뒤 다른 세력에 가입할 수 있습니다.');
+end $$;
+grant select on public.world_expeditions, public.world_major_factions to fn_owner_18666;
+grant select, insert on public.world_events to fn_owner_18666;
+grant execute on function public.world_seal_guard() to fn_owner_18666;
+grant create on schema public to fn_owner_18666;
+alter function public.world_leave_major_faction() owner to fn_owner_18666;
+revoke create on schema public from fn_owner_18666;
+revoke all on function public.world_leave_major_faction() from public, anon, authenticated;
+grant execute on function public.world_leave_major_faction() to authenticated;
+
+do $$ declare d text := pg_get_functiondef('public.world_join_major_faction(text)'::regprocedure);
+  a text := ' if c.major_faction_id is not null then raise exception ''현재 세력에서 탈퇴한 뒤에만 다른 세력에 가입할 수 있습니다.''; end if;';
+  b text := ' if c.major_faction_id is not null then raise exception ''지금 세력을 떠난 뒤에 다른 세력에 가입할 수 있습니다(캐릭터 › 세력 › 세력 떠나기).''; end if;
+ if exists (select 1 from public.world_events e where e.actor_id = uid and e.event_type = ''faction'' and e.payload ->> ''left'' = ''true'' and e.created_at > now() - interval ''12 hours'') then
+   raise exception ''세력을 떠난 지 12시간이 지나야 다시 가입할 수 있습니다.'';
+ end if;';
+begin
+  if position('12시간이 지나야' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '세력 가입 고칠 자리가 하나가 아닙니다'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 회복 완화(2026-10-28 결정)
+-- ① 바깥 야영: 숙소 회복의 절반 → ⅔
+do $$ declare d text := pg_get_functiondef('public.world_field_rest(text)'::regprocedure); n int;
+begin
+  if d like '%hp := hp * 2 / 3%' then return; end if;
+  select count(*) into n from regexp_matches(d, 'hp := hp / 2;\s*mn := mn / 2;\s*sp := sp / 2;\s*er := er / 2;', 'g');
+  if n <> 1 then raise exception '야영 회복 고칠 자리가 하나가 아닙니다'; end if;
+  execute regexp_replace(d, 'hp := hp / 2;\s*mn := mn / 2;\s*sp := sp / 2;\s*er := er / 2;', 'hp := hp * 2 / 3; mn := mn * 2 / 3; sp := sp * 2 / 3; er := er * 2 / 3;');
+end $$;
+
+-- ② 안전지대에 머물면 10분마다 체력·정신 +5(전투불능·이동·원정 중 제외, 가득 차면 쓰지 않음). pg_cron yh-safe-regen.
+create or replace function public.world_safe_regen()
+returns integer language plpgsql set search_path to 'pg_catalog', 'public' as $$
+declare n int;
+begin
+  update public.world_characters c set health = least(100, c.health + 5), mental = least(100, c.mental + 5)
+    from public.world_map_regions r
+   where r.is_safe_zone and r.active and r.region_name = c.location
+     and (c.health < 100 or c.mental < 100) and c.health > 0 and c.downed_at is null and not coalesce(c.is_dead, false)
+     and (c.travel_arrives_at is null or c.travel_arrives_at <= now())
+     and not exists (select 1 from public.world_expeditions e where e.owner_id = c.owner_id and e.status = 'active');
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.world_safe_regen() from public, anon, authenticated;
+do $$ begin
+  if not exists (select 1 from cron.job where jobname = 'yh-safe-regen') then
+    perform cron.schedule('yh-safe-regen', '*/10 * * * *', 'select public.world_safe_regen()');
+  end if;
+end $$;
+
+-- ③ 본부 구조대: 소지금 30% → 15%(최소 30전, 레벨×80전까지), 하루(한국 시각) 첫 구조는 반값.
+--    옮겨 가는 가까운 안전지대가 내 대세력 지배면 다시 반값·경험치 손실 없음·체력 50으로 깨어난다.
+do $$
+declare pat record; d text;
+begin
+  for pat in select * from (values
+    ('xp_loss int := 0;', 'xp_loss int := 0; own boolean := false; first_today boolean := true;'),
+    ('fee := least(c.gil, greatest(50, c.gil * 3 / 10));',
+     'own := s.control_faction_id is not null and s.control_faction_id = c.major_faction_id;
+  first_today := not exists (select 1 from public.world_events e where e.actor_id = uid and e.event_type = ''rescue'' and e.payload ->> ''self'' = ''true''
+                               and e.created_at >= (date_trunc(''day'', now() at time zone ''Asia/Seoul'') at time zone ''Asia/Seoul''));
+  fee := least(c.gil, least(c.level * 80, greatest(30, c.gil * 15 / 100)));
+  if first_today then fee := fee / 2; end if;
+  if own then fee := fee / 2; end if;'),
+    ('round(public.world_xp_need(c.level) * 0.05)::int);', 'round(public.world_xp_need(c.level) * 0.05)::int); if own then xp_loss := 0; end if;'),
+    ('health = 30, mental', 'health = case when own then 50 else 30 end, mental'),
+    ('|| '' 체력 30''', '|| '' 체력 '' || case when own then 50 else 30 end || case when own then '' · 소속 세력 구조대(비용 반값·경험치 손실 없음)'' else '''' end || case when first_today then '' · 오늘 첫 구조 반값'' else '''' end')
+  ) as t(a, b) loop
+    d := pg_get_functiondef('public.world_call_rescue()'::regprocedure);
+    if position(pat.b in d) > 0 then continue; end if;
+    if (length(d) - length(replace(d, pat.a, ''))) / length(pat.a) <> 1 then raise exception '구조대 고칠 자리가 하나가 아닙니다: %', left(pat.a, 60); end if;
+    execute replace(d, pat.a, pat.b);
+  end loop;
+end $$;
+
 grant fn_owner_social to postgres with inherit false, set false;
+grant fn_owner_18666 to postgres with inherit false, set false;
 grant fn_owner_18944 to postgres with inherit false, set false;
 grant fn_owner_18989 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
