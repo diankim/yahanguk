@@ -1450,3 +1450,20 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
   .field-log time, .chip { font-size: 10.5px; }
   .eyebrow { font-size: 11px; }
 }
+/* 시안 ① 넓히기: 화면 머리글은 꺾쇠 액자(왼쪽 위·오른쪽 아래), 하위 탭은 아이콘 + 짧은 이름 */
+.view-head { position: relative; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--surface); }
+.view-head::before, .view-head::after { content: ''; position: absolute; width: 16px; height: 16px; pointer-events: none; border: 0 solid var(--gold); }
+.view-head::before { left: -1.5px; top: -1.5px; border-left-width: 3px; border-top-width: 3px; }
+.view-head::after { right: -1.5px; bottom: -1.5px; border-right-width: 3px; border-bottom-width: 3px; }
+.view-head h1 { font-size: 19px; }
+.segmented.with-ico button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.segmented.with-ico button .ico { flex: none; color: var(--muted); }
+.segmented.with-ico button.on .ico { color: var(--gold); }
+.segmented.with-ico button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.segmented.with-ico button.on::after { display: none; }
+.segmented.with-ico button.on { box-shadow: inset 0 -2px 0 var(--accent), inset 0 0 0 var(--bw) var(--line); }
+@media (max-width: 759px) {
+  .segmented.with-ico button { flex-direction: column; gap: 2px; min-height: 48px; padding: 5px 2px; font-size: 11px; }
+  .view-head { padding: 10px 12px; }
+  .view-head h1 { font-size: 17px; }
+}

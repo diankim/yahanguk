@@ -4,7 +4,7 @@ import { load, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRows, bindRepair } from './character.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS } from './item.js';
 
-const SUBS = [['items', '소지품'], ['equip', '장비'], ['craft', '제작']];
+const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
 const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명

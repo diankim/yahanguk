@@ -3,7 +3,7 @@ import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segme
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones } from './common.js';
 import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
 
-const SUBS = [['world', '세계 지도'], ['travel', '이동·탈것']];
+const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
 let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null, zones = new Map();
 
 export async function render(root, s) {

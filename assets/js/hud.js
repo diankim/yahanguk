@@ -43,7 +43,8 @@ export async function refresh({ char = true, idle: readIdle = true } = {}) {
     store.hud = hud;
     render();
     // 원정을 보내거나 돌아오면 현장 화면이 곧바로 행동을 막거나 풀도록 알린다(새로고침 없이).
-    if (!first && was !== !!state.exp) emit('expedition', state.exp); // 첫 읽기는 화면이 이미 그 상태로 그린다
+    // 첫 읽기에서도 원정 중이면 알린다: 현장 화면은 이 응답보다 먼저 그려져 원정 칸·행동 막기를 놓친다
+    if (was !== !!state.exp) emit('expedition', state.exp);
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
 

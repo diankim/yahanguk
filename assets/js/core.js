@@ -350,9 +350,11 @@ export function bar(value, max = 100, kind = '') {
 export function empty(text, iconName = 'moon') {
   return `<div class="empty">${icon(iconName, 22)}<p>${esc(text)}</p></div>`;
 }
+// items: [key, label, icon?] — 아이콘이 있으면 아이콘 위·이름 아래로 쌓는다
 export function segmented(id, items, active) {
-  return `<div class="segmented" role="tablist" data-seg="${id}" style="--n:${items.length}">${items.map(([key, label]) =>
-    `<button role="tab" data-key="${key}" class="${key === active ? 'on' : ''}" aria-selected="${key === active}">${esc(label)}</button>`).join('')}</div>`;
+  const withIco = items.some(x => x[2]);
+  return `<div class="segmented ${withIco ? 'with-ico' : ''}" role="tablist" data-seg="${id}" style="--n:${items.length}">${items.map(([key, label, ic]) =>
+    `<button role="tab" data-key="${key}" class="${key === active ? 'on' : ''}" aria-selected="${key === active}" title="${esc(label)}">${ic ? icon(ic, 17) : ''}<span>${esc(label)}</span></button>`).join('')}</div>`;
 }
 export function bindSegmented(root, id, onChange) {
   const seg = $(`[data-seg="${id}"]`, root); if (!seg) return;

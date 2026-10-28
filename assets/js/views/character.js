@@ -8,7 +8,7 @@ import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS } from './item.js';
 import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
 
-const SUBS = [['status', '상태'], ['growth', '성장'], ['faction', '세력'], ['skills', '기술'], ['idle', '자율'], ['titles', '칭호']];
+const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot']];
 const STATS = [
   ['strength', '근력', '근접 무기의 위력'], ['agility', '민첩', '회피·달아나기·원거리 위력 · 이목 낮춤'], ['vitality', '체질', '방어력·응급 회복 · 이목 높임'],
   ['perception', '감각', '치명타·원거리 위력·단서 발견'], ['willpower', '의지', '술법 위력·응급 회복'], ['spirit_affinity', '영성', '술법 무기의 위력'],

@@ -9,7 +9,7 @@ import { hue as autoHue } from '../chat.js';
 const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
 
-const SUBS = [['profile', '프로필'], ['theme', '테마'], ['sound', '소리'], ['account', '계정']];
+const SUBS = [['profile', '프로필', 'idcard'], ['theme', '테마', 'palette'], ['sound', '소리', 'volume'], ['account', '계정', 'shield']];
 let el, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
 export async function render(root, sub) {

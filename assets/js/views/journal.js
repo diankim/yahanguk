@@ -5,7 +5,7 @@ import { load, panel, chip, loading, errorBox, currentRegion } from './common.js
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 
-const SUBS = [['story', '이야기'], ['commission', '의뢰'], ['survey', '답사'], ['history', '원정'], ['codex', '도감']];
+const SUBS = [['story', '이야기', 'scroll'], ['commission', '의뢰', 'letter'], ['survey', '답사', 'map'], ['history', '원정', 'flame'], ['codex', '도감', 'eye']];
 let el, sub = 'story', off = [];
 
 export async function render(root, s) {
