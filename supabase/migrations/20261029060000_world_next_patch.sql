@@ -2237,6 +2237,35 @@ do $$ declare r record; begin
   end loop;
 end $$;
 
+-- 장착 안 되던 옛 장비 정리(2026-10-29 제보): 청동 호신패·행상인 짐틀은 분류가 'equipment'라 장착 칸이 없고
+-- 특성·조건도 비어 화면에는 「장착 조건 누구나」로 보였지만 world_equip_item이 거절했다. 호신부·노리개로 옮기고,
+-- 청동 호신패 제작법 둘은 서로 다른 호신부를 만든다(요핵 → 청동 호신패, 주사·비취 → 비취 청동패).
+-- 값은 재료 시세 합 × 1.2 안팎, 같은 칸 3단계(≤ 4단계 최저 ÷ 1.15)·4단계(≥ 3단계 최고 × 1.15) 순서를 지킨다.
+update public.world_item_catalog set category = 'amulet', rarity = 'rare', tier = 3, minimum_level = 10,
+  required_stats = '{"vitality": 12}'::jsonb, reference_price = 460, drop_rate_modifier = 0.42, acquisition_difficulty = 3,
+  equipment_traits = '{"trait": "호신부", "defense": 4, "presence": 6, "incoming_damage_pct": -4}'::jsonb,
+  description = '요핵을 녹여 부은 청동 패. 몸을 단단히 하고 받는 피해를 줄인다.'
+where item_id = 'bronze_charm';
+insert into public.world_item_catalog(item_id, item_name, category, rarity, tier, stackable, tradeable, stack_size, description,
+  required_job, minimum_level, required_stats, reference_price, equipment_traits, required_faction, drop_rate_modifier, acquisition_difficulty)
+values ('jade_bronze_charm', '비취 청동패', 'amulet', 'rare', 3, false, true, 1,
+  '주사로 술식을 그리고 비취를 박은 청동 패. 술법을 돋우고 침식과 정신 손실을 막는다.',
+  null, 10, '{"spirit_affinity": 12}'::jsonb, 530,
+  '{"trait": "호신부", "magic_pct": 5, "erosion_pct": -5, "mental_loss_pct": -4}'::jsonb, null, 0.42, 3)
+on conflict (item_id) do nothing;
+update public.world_crafting_recipes set recipe_name = '청동 호신패 만들기', minimum_level = 10,
+  description = '요핵과 월철 주괴로 청동 호신패(방어·받는 피해 감소)를 만든다.'
+where recipe_id = 'recipe_monster_ward';
+update public.world_crafting_recipes set output_item = 'jade_bronze_charm', recipe_name = '비취 청동패 만들기', minimum_level = 10,
+  description = '주사와 비취를 결합해 비취 청동패(술법·침식·정신 손실)를 만든다.'
+where recipe_id = 'make_bronze_charm_advanced';
+update public.world_item_catalog set category = 'norigae', rarity = 'epic', tier = 4, minimum_level = 15,
+  required_stats = '{"vitality": 16}'::jsonb, reference_price = 1300, drop_rate_modifier = 0.2, acquisition_difficulty = 4,
+  equipment_traits = '{"trait": "노리개", "travel_time_pct": -6, "supply_save_pct": 10}'::jsonb,
+  description = '운반 준비를 갖춘 작은 등짐틀을 허리에 매단다. 길을 줄이고 보급품을 아낀다.'
+where item_id = 'wayfarer_pack';
+update public.world_crafting_recipes set minimum_level = 15 where recipe_id = 'make_wayfarer_pack';
+
 -- 패치노트 5.0.0
 insert into public.world_patch_notes(note_id, title, body, created_at) values
   ('5.0.0', '세력 퀘스트·등급 · 고유 기술 · 원거리 소모품 · 기력', $PN$## 5.0.0 · 세력 퀘스트·등급 · 고유 기술 · 원거리 소모품 · 기력 (통산 5번째 패치)
@@ -2276,6 +2305,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 24. 화면: 환골탈태 서첩 창(모바일)·동료 화면 카드·조사원 카드 비무 단추·채팅 구조 알림 줄 정리.
 25. **비무**도 겨루는 모습이 한 줄씩 펼쳐집니다(건너뛰기 가능).
 26. 거래소·직접 거래 목록에 없는 물품은 거래할 수 없는 물품(응축 영핵·천공 깃털 같은 희귀 성장 재료 등)입니다. 이제 목록 아래에 어떤 물품이 빠졌는지 적어 둡니다.
+27. **청동 호신패**·**행상인 짐틀**이 「장착 조건 누구나」로 보이는데 장착되지 않던 문제를 고쳤습니다. 청동 호신패는 호신부(3단계, Lv10·체질 12: 방어 +4·받는 피해 −4%), 행상인 짐틀은 노리개(4단계, Lv15·체질 16: 이동 시간 −6%·보급품 절약 10%)가 됩니다. 청동 호신패 제작법 둘은 이제 서로 다른 호신부를 만듭니다: 요핵 → 청동 호신패, 주사·비취 → **비취 청동패**(술법 +5%·침식 −5%·정신 손실 −4%).
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

@@ -226,7 +226,7 @@
 ### 장비 칸과 이목
 
 - 상위 도구(20261029050000): world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)와 world_tool_covers로, 같은 계열 높은 단계 도구를 장착하면 낮은 단계 도구가 필요한 제작법을 만든다(world_craft_item, 화면 bag.js TOOL_LINE). 새 도구 계열을 넣을 때 둘 다 고친다. 채집은 도구를 조건으로 보지 않는다(장착 도구의 채집 보너스만).
-- 장착 칸은 무기·방어구·관모(hat)·신(shoes)·노리개(norigae)·호신부(amulet)·탈(mask)·도구 여덟 개다(world_equip_item / world_unequip_item, 전투·원정 중에는 벗을 수 없다).
+- 장착 칸은 무기·방어구·관모(hat)·신(shoes)·노리개(norigae)·호신부(amulet)·탈(mask)·도구 여덟 개다(world_equip_item / world_unequip_item, 전투·원정 중에는 벗을 수 없다). 장비의 category는 반드시 이 칸 이름 가운데 하나다(옛 분류 'equipment'였던 청동 호신패·행상인 짐틀은 장착되지 않아 5.0.0에서 호신부·노리개로 옮김, 비취 청동패 추가).
 - 장비는 1~5단계이고 같은 단계 안에서도 갈래가 다르다(예: 무기 묵직·예리·소리 없음, 방어구 쇠미늘·철릭·도포·야행복). 5단계도 거래할 수 있고, 상점에 되팔거나 분해할 수 있다.
 - 장비 특성 합(world_gear_total, 무기 위력·피해·방어구 방어·피해 감소·도구 채집 보너스·낚싯대 특성 제외)은 상태 효과 합계(world_status_effect_total)에 더해지고, world_combat_stats가 방어·회피·치명타·달아나기·이목을 더한다(상한 회피 40·치명타 60·달아나기 95).
 - 이목(어그로) = 30 + 체질×0.8 − 민첩×0.4 + 방어구 방어력×0.6 + 장비 이목(5~300). 같은 지역으로 원정 중인 파티원은 합동 전투를 하고, 요괴는 이목^1.3에 비례해 표적을 고른다(동료가 대신 맞은 피해는 world_expedition_hits로 넘겨 동료 정산 때 반영, 쓰러뜨리지는 않음). 현장 토벌은 아직 혼자 싸운다.
