@@ -56,6 +56,17 @@ function glyphSvg(key) {
   if (tier === 'legacy') body += MIDS.map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.6)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
   return `<svg class="fr-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${body}</svg>`;
 }
+// 레거시 테두리: 팔각 패(牌). 끊긴 자리는 오른쪽 위 빗변 가운데(둘레의 15~23%)다. 핏빛 굵은 테와 금빛 가는 테가 오른쪽 위에서 끊기고, 끊긴 자리에 육각 별이 앉는다(「미완」).
+// 네 변 가운데의 작은 별은 첫 시안의 문양을 이어받았다. 작은 크기에서는 테만 그린다.
+const HEX_STAR = 'M0-7L6.06 3.5H-6.06zM0 7L-6.06-3.5H6.06z';
+function legacySvg(small) {
+  const oct = i => { const a = 2 + i, b = 29 + i * .4; return `M${b} ${a}L${100 - b} ${a}L${100 - a} ${b}L${100 - a} ${100 - b}L${100 - b} ${100 - a}L${b} ${100 - a}L${a} ${100 - b}L${a} ${b}Z`; };
+  const mids = small ? '' : [[50, 3, 0], [97, 50, 90], [50, 97, 180], [3, 50, 270]].map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.5)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
+  return `<svg class="fr-svg lg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <path class="lg-out" d="${oct(0)}" pathLength="100" stroke-dasharray="92 8" stroke-dashoffset="77"/>
+    ${small ? '' : `<path class="lg-in" d="${oct(6)}" pathLength="100" stroke-dasharray="90 10" stroke-dashoffset="76"/>`}
+    ${mids}<g class="lg-star" transform="translate(84 16) scale(${small ? .9 : .75})"><circle r="9" class="fr-bg"/><path d="${HEX_STAR}"/></g></svg>`;
+}
 export const frameTier = key => FRAMES[key]?.[0] || 'common';
 // 테두리 두께(px)와 안쪽 여백: 정수로 잡아 위아래·좌우 간격이 똑같게 한다.
 const frameBox = (key, size) => {
@@ -67,7 +78,8 @@ const frameBox = (key, size) => {
 export function framed(inner, key, size) {
   if (!FRAMES[key]) return inner;
   const f = frameBox(key, size);
-  return `<span class="fr-wrap t-${frameTier(key)} ${f.small ? 'small' : ''}" style="width:${size}px;height:${size}px;--fbw:${f.bw}px">${inner}${f.small ? '' : glyphSvg(key)}</span>`;
+  const legacy = frameTier(key) === 'legacy';
+  return `<span class="fr-wrap t-${frameTier(key)} ${f.small ? 'small' : ''}" style="width:${size}px;height:${size}px;--fbw:${f.bw}px">${inner}${legacy ? legacySvg(f.small) : f.small ? '' : glyphSvg(key)}</span>`;
 }
 export const framedInner = (key, size) => FRAMES[key] ? frameBox(key, size).inner : size;
 
@@ -84,7 +96,16 @@ const P = {
 };
 export const PATTERNS = Object.keys(P);
 let pid = 0;
+// 레거시 바탕 무늬는 되풀이하는 타일이 아니라 한 폭의 장면(그믐달·구름 두 줄·올라가는 불티, 위쪽 핏빛 줄)이다
+const SCENE = {
+  pt_yahaeng: `<svg class="pt-layer pt-scene" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <path class="sc-moon" d="M352 22a26 26 0 1 0 0 52a20 20 0 0 1 0-52z"/>
+    <path d="M-10 150C40 138 80 140 120 150S200 162 250 150S340 136 410 148M-10 166C50 156 110 158 160 168S260 178 320 166S380 158 410 162M60 150q10-12 22 0M200 162q12-14 26 0M300 150q8-10 18 0"/>
+    <g class="sc-ember"><circle cx="60" cy="120" r="1.6"/><circle cx="74" cy="96" r="1.1"/><circle cx="66" cy="72" r=".8"/><circle cx="250" cy="128" r="1.4"/><circle cx="262" cy="104" r="1"/><circle cx="330" cy="118" r="1.2"/></g>
+    <path class="sc-top" d="M0 1H400"/></svg>`,
+};
 export function patternLayer(key) {
+  if (SCENE[key]) return SCENE[key];
   if (!P[key]) return '';
   const id = `ptn${++pid}`;
   return `<svg class="pt-layer" aria-hidden="true" focusable="false"><defs><pattern id="${id}" width="20" height="20" patternUnits="userSpaceOnUse">${P[key]}</pattern></defs><rect width="100%" height="100%" fill="url(#${id})"/></svg>`;

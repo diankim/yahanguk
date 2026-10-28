@@ -372,6 +372,7 @@ const TCAT_ORDER = ['운영', '탐사', '전투', '이동', '이야기', '채집
 let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 등급(서버 world_title_catalog.grade)
 const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品
+const LEGACY_HANJA = { legacy_first_night: '第一夜', legacy_unfinished_road: '未完', legacy_ember: '殘火' };
 async function titles(body) {
   const snap = await load('world_title_snapshot');
   const list = snap?.titles || [];
@@ -390,8 +391,10 @@ async function titles(body) {
       <div class="cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)} <small>${countIn(c)}</small></button>`).join('')}</div>
     </div>
     <div id="t-list"></div>`;
-  const card = t => `<li class="t-card ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
-      <div class="t-top">${icon(t.icon || 'spark', 18)}${t.grade && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
+  // 레거시(야행의 흔적) 칭호는 등급 칩 대신 옻칠 현판: 세로 낙관 「흔적」과 한자 이름을 단다
+  const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
+      ${lg ? `<span class="lg-tag" aria-hidden="true">흔적</span>${LEGACY_HANJA[t.key] ? `<span class="lg-hj">${LEGACY_HANJA[t.key]}</span>` : ''}` : ''}
+      <div class="t-top">${lg ? '' : icon(t.icon || 'spark', 18)}${t.grade && !lg && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
         ${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
       ${t.description ? `<p class="t-desc">${esc(t.description)}</p>` : ''}
       <p class="t-cond">조건 · ${esc(t.condition || '-')}</p>
@@ -399,7 +402,7 @@ async function titles(body) {
       ${!t.earned && t.progress ? (() => { const cur = Number(t.progress.cur) || 0, need = Math.max(1, Number(t.progress.need) || 1);
         return `<div class="t-prog">${bar(cur, need, 'xp')}<small>${t.progress.pct ? `${Math.round(cur / need * 100)}%` : `${fmt.num(cur)} / ${fmt.num(need)}`}</small></div>`; })() : ''}
       ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
-        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button></div>` : ''}</li>`;
+        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button></div>` : ''}</li>`; };
   const paint = () => {
     const q = tq.trim().toLowerCase();
     const rows = list.filter(t => (!tOwned || t.earned) && (!tEquipped || t.equipped)
