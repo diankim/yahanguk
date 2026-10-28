@@ -256,6 +256,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 25. 제작할 때 가방 칸 메시지가 화면 숫자와 달랐던 문제, 가방이 186/42칸처럼 보이던 문제.
 26. 부적 정화가 중독·심신 동요·사념 침식을 풀지 못하던 문제, 몇몇 문장의 조사(이/가 등).
 27. 숫자 붙은 장소 이름을 정리했습니다.
+28. 거울막(반사) 완화: 바로 다음 행동 한 번에만 남고(한 턴 방어하거나 물품을 쓰면 사라짐), 되돌리는 피해는 술법 피해의 절반 → 30%·최대 15, 반사로는 쓰러지지 않습니다(마지막 일격이 되돌아와 함께 쓰러지던 문제).
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
@@ -1037,6 +1038,8 @@ begin
   -- 바꿀 자리가 정확히 한 번씩 있는지 먼저 본다
   for procedure_ in select unnest(array[
     'attacked boolean := false; wear jsonb; rare numeric;',
+    'reflect := round(dmg * 0.5); v_fx := v_fx - ''mirror'';',
+    'IF reflect > 0 THEN hp := greatest(0, hp - reflect);',
     'IF act = ''flee'' THEN' || chr(10) || '    IF random() * 100 < least(90,',
     '    mul := 0.85 + random() * 0.3;',
     '    dmg := greatest(1, round(base * mul - mdef * 0.8));',
@@ -1075,7 +1078,7 @@ begin
     ' 피해를 입었다.''); END IF;' || chr(10)
     || '    IF coalesce((v_fx ->> ''thorns'')::int, 0) > 0 AND style = ''melee'' AND dmg > 0 THEN thorn := greatest(1, round(dmg * 0.3)); hp := greatest(0, hp - thorn); lines := lines || jsonb_build_array(''가시에 찔려 '' || thorn || '' 피해를 입었다.''); END IF;');
   d := replace(d, '  IF a.current_hp <= 0 THEN' || chr(10) || '    ended := ''victory'';' || chr(10) || '  ELSIF fled THEN',
-    '  v_pfx := v_pfx - ''bound''; v_fx := v_fx - ''evade'' - ''thorns'';' || chr(10) || '  IF a.current_hp <= 0 THEN' || chr(10) || '    ended := ''victory'';' || chr(10) || '  ELSIF fled THEN');
+    '  v_pfx := v_pfx - ''bound''; v_fx := v_fx - ''evade'' - ''thorns'' - ''mirror'';' || chr(10) || '  IF a.current_hp <= 0 THEN' || chr(10) || '    ended := ''victory'';' || chr(10) || '  ELSIF fled THEN');
   d := replace(d, 'WHEN ''breach'' THEN 0.7 ELSE 0 END;', 'WHEN ''breach'' THEN 0.7 ELSE 0 END;
       IF v_intent LIKE ''g%:%'' THEN
         SELECT * INTO g FROM public.world_monster_gimmicks WHERE gimmick_key = split_part(v_intent, '':'', 2);
@@ -1121,6 +1124,9 @@ begin
           END IF;');
   d := replace(d, 'public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)',
     'public.world_battle_intent_k(m.kind, a.mlevel, m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)');
+  -- 거울막: 바로 다음 행동 한 번에만 남고(방어·물품으로 한 턴 넘기면 사라짐), 되돌리는 피해는 술법 피해의 30%·최대 15, 반사로는 쓰러지지 않는다(체력 1 남김)
+  d := replace(d, 'reflect := round(dmg * 0.5); v_fx := v_fx - ''mirror'';', 'reflect := least(15, round(dmg * 0.3)); v_fx := v_fx - ''mirror'';');
+  d := replace(d, 'IF reflect > 0 THEN hp := greatest(0, hp - reflect);', 'IF reflect > 0 AND hp > 1 THEN reflect := least(reflect, hp - 1); hp := hp - reflect;');
   -- 레벨 차 보정: 요괴보다 레벨이 높으면 받는 피해가 레벨마다 3% 줄고(최대 30%), 낮으면 3%씩 늘어난다(최대 30%)
   d := replace(d, 'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0));',
     'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0) * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - a.mlevel))));');
@@ -1166,7 +1172,7 @@ create or replace function public.world_gimmick_tip(p_key text) returns text lan
       when 'evade' then '다음 공격이 절반 확률로 빗나갑니다. 방어나 물품으로 한 턴 흘려보내면 사라지고, 표식·약점 간파가 있으면 빗나가지 않습니다.'
       when 'thorns' then '다음 근접 공격 피해의 30%를 되돌려 받습니다. 원거리·술법으로 치거나 한 턴 방어로 넘기세요.'
       when 'grapple' then '붙잡히면 다음 턴에 달아날 수 없습니다. 방어하면 덜 맞습니다.'
-      when 'mirror' then '다음 술법 피해의 절반을 되돌립니다. 술법이 아닌 공격이나 방어로 넘기세요.'
+      when 'mirror' then '바로 다음 술법 피해의 30%(최대 15)를 되돌립니다. 반사로는 쓰러지지 않고, 한 턴 방어하거나 물품을 쓰면 거울막이 사라집니다.'
       when 'summon' then '무리를 불러 체력을 조금 되찾고 다음 공격이 강해집니다. 빨리 몰아쳐 정리하세요.'
       else '' end
     || case when g.status is not null then ' 맞으면 「' || coalesce(sc.status_name, g.status) || '」이(가) 붙을 수 있고, 방어하면 그 확률이 절반입니다.' else '' end
