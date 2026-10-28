@@ -179,7 +179,7 @@
 
 숙련·기술 통합(20261029000000): 기술 14계열(skill_progress, 단계 r→r+1에 80+8r 경험, 최고 50, world_skill_line_rank)만 경험을 쌓고, 숙련 4갈래(combat/gathering/crafting/investigation_rank)는 그 갈래 기술 가운데 가장 높은 단계다(trg_world_skill_sync: 전투=근접·원거리·봉인술·분석·막기·응급 처치, 채집=일반·약초·광맥·영기 채집, 제작=단조·연금·결계 각인, 조사=추적). 기술은 3·8·13·18·24·30·36·43·50단계에서 익히고, 전투 계열 피해·치명타는 world_combat_stats, 그 밖 효과는 world_skill_effect(상한 있음)가 world_status_effect_total에 더한다. 숙련 효과는 50단계 기준으로 다시 맞췄다(전투 숙련 공격력 단계마다 +0.6% 등). 요리 숙련만 따로 1~20단계.
 
-기술 단계 보상 개편(20261029050000): 기존 9단계 기술(slot base)에 더해 계열마다 13·30단계 추가 기술(extra), 24·43단계 택일 기술(a·b 중 하나, world_skill_choose, 고른 것은 world_skill_picks — 처음 무료, 바꾸기 24단계 2,000전·43단계 5,000전), 50단계 가장 강한 숙달 기술(master). 단계가 높을수록 효과가 크다. 조합 기술 7개(category combo, requires: 두 계열 18단계, 계열마다 한 번씩: 근접·단조, 원거리·추적, 봉인술·결계 각인, 분석·영기 채집, 막기·광맥 채집, 응급 처치·약초 채집, 일반 채집·연금). 가졌는지는 world_skill_has 하나로 판정하고 world_skill_effect·world_combat_stats·world_skill_snapshot이 함께 쓴다. world_skill_effect 상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·요괴 조우 −15. 토벌 행동 기술(20261029050000): world_battle_action이 승리 기록 payload.acts(analysis·guarding·first_aid: 집중·방어·회복품/의무관 처치 횟수)를 남기고 world_skill_add가 종류마다 least(3,n)×8을 그 계열에 더한다(전에는 분석·막기·응급 처치가 오르지 않았다). 요괴 도감은 전투 한 번에 한 번만 쓰고(trg_world_codex_on_event p_seen=1), world_field_snapshot은 답사도를 한 번만 계산한다(svj). world_characters는 열마다 권한이 걸려 있어 새 열을 더하면 함수 주인 역할들의 select *가 깨지므로 캐릭터별 새 값은 별도 표에 둔다.
+기술 단계 보상 개편(20261029050000): 기존 9단계 기술(slot base)에 더해 계열마다 13·30단계 추가 기술(extra), 24·43단계 택일 기술(a·b 중 하나, world_skill_choose, 고른 것은 world_skill_picks — 처음 무료, 바꾸기 24단계 2,000전·43단계 5,000전), 50단계 가장 강한 숙달 기술(master). 단계가 높을수록 효과가 크다. 조합 기술 7개(category combo, requires: 두 계열 18단계, 계열마다 한 번씩: 근접·단조, 원거리·추적, 봉인술·결계 각인, 분석·영기 채집, 막기·광맥 채집, 응급 처치·약초 채집, 일반 채집·연금). 가졌는지는 world_skill_has 하나로 판정하고 world_skill_effect·world_combat_stats·world_skill_snapshot이 함께 쓴다. world_skill_effect 상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·요괴 조우 −15. 토벌 행동 기술(20261029050000): world_battle_action이 승리 기록 payload.acts(analysis·guarding·first_aid: 집중·방어·회복품/의무관 처치 횟수)를 남기고 world_skill_add가 종류마다 least(3,n)×8을 그 계열에 더한다(전에는 분석·막기·응급 처치가 오르지 않았다). 요괴 도감은 전투 한 번에 한 번만 쓰고(trg_world_codex_on_event p_seen=1), world_field_snapshot은 답사도를 한 번만 계산한다(svj). 기술 고유 효과 개편(5.0.0 묶음 20261029060000): 이름 있는 기술 105개(추가·택일·숙달·조합)는 passive_effect를 비우고 행동이 바뀌는 고유 효과로 바꿨다. world_skill_procs(uid)가 가진 고유 효과 skill_id 목록을 돌려주고 world_battle_action(현장 토벌)·world_field_gather·world_craft_item·world_field_search·world_travel_route·world_field_rest·world_weapon_enhance·world_enhance_quote·world_equipment_repair·world_repair_quote·world_rescue_character·world_combat_stats(도발 이목 +60)가 보고 처리한다(원정 묘사에는 아직 없음). 근접 택일 24b는 「도발」. 새 고유 효과를 넣으면 이 함수들과 skill_catalog.description을 함께 고친다. world_characters는 열마다 권한이 걸려 있어 새 열을 더하면 함수 주인 역할들의 select *가 깨지므로 캐릭터별 새 값은 별도 표에 둔다.
 
 전투, 제작, 채집, 조사 등 세부 기능에 각각 숙련도와 경험치를 부여한다.
 
@@ -232,6 +232,10 @@
 - 장비에는 장착 레벨에 맞는 주 능력치 조건을 붙여 낮은 레벨이 높은 단계 장비로 약한 요괴를 쓸어 버리지 못하게 한다(레벨마다 포인트 3점 기준, 무기·방어구 5+0.35×3×(장착 레벨−1), 관모·신·노리개·호신부·탈·채집 도구 5+0.25×3×(장착 레벨−1); 주 능력치는 무기 종류·장비 갈래로 정한다. 새 장비를 넣을 때도 같은 식을 쓴다).
 - 장착 조건(레벨·직업·소속·능력치)은 서버 world_equip_item이 검사하고, 가방 › 장비와 물품 정보 창에 「장착 조건」으로 채운 것(초록)·못 채운 것(빨강)을 함께 표기한다. 다른 직업이나 직업 무관 제작법이 필요로 하는 도구는 한 직업 전용으로 두지 않는다(각인 공구·강화 채집도는 직업 제한 없음, 영맥 낫은 현장 조사원 전용).
 - 장비 드롭(world_gear_drops: 요괴 유형·레벨대·등급별 확률, world_gear_roll): 한 번에 하나까지, 일반 최대 5%·정예 12%·우두머리 30%(희귀품 발견 보정). 원정 전투는 60% 수준. 2~4단계 제작법, 5단계 일부는 무극 관성대 제작, 1·2단계 일부는 상점 판매.
+
+### 무기 소모(5.0.0)
+
+근접은 기력(영력과 같은 spiritual_power, 근접 무기를 들면 화면이 노란 「기력」으로 보임, core.js spOf) 공격마다 2, 술법은 영력 3, 원거리는 장착 무기 equipment_traits.ammo(ammo_arrow 화살·ammo_bolt 쇠뇌살·ammo_dart 취관 침, 묶음 100, world_ammo_of) 한 발에 하나. 없으면 피해 절반. 원정은 정산 회차마다 둘(world_expedition_settle), 떠날 때 없으면 원정 전투력 ×0.6. 새 원거리 무기를 넣으면 ammo를 단다. 전투·원정 중에는 world_equip_item도 막는다(해제와 같이).
 
 ### 장비 내구도
 

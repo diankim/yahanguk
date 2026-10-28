@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
 import { envChip } from './env.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
@@ -115,7 +115,7 @@ function render() {
   const first = items[0];
   $('#hud-strip', root).innerHTML = `
     <span class="hs-name"><b>${esc(c.character_name)}${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
-    <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="sp"></i></span>
+    <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses), bad = yo.rest.filter(x => x.polarity !== 'positive').length;
       return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa seal">봉인</span>' : ''}${bad ? `<span class="hs-debuff">${icon('flame', 12)}${bad}</span>` : ''}`; })()}
@@ -133,7 +133,7 @@ function render() {
       <div class="xp"><span>경험치</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
     </section>
     <section class="hud-card vitals">
-      ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital('영력', c.spiritual_power, 'sp')}${vital('침식', c.erosion || 0, 'er')}
+      ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital(spOf()[0], c.spiritual_power, spOf()[1])}${vital('침식', c.erosion || 0, 'er')}
       ${stamina(c)}
     </section>
     ${statusCard()}

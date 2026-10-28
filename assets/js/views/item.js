@@ -7,7 +7,7 @@ import { load, chip } from './common.js';
 export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
   ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
   // 영력 회복약(낮은 단계부터)
-  spirit_tea: '영력 10', clear_spirit_pill: '영력 20', spirit_qi_pill: '영력 35', moonlight_essence: '영력 55 · 심신 동요 치료', heavenly_dew: '영력 80 · 심신 동요·사념 침식 치료',
+  spirit_tea: '영력·기력 10', clear_spirit_pill: '영력·기력 20', spirit_qi_pill: '영력·기력 35', moonlight_essence: '영력·기력 55 · 심신 동요 치료', heavenly_dew: '영력·기력 80 · 심신 동요·사념 침식 치료',
   // 요리(서버 world_use_item과 같은 값)
   grilled_fish: '체력 25 · 든든함(채집량·회복량)', spicy_stew: '체력 30 · 정신 10 · 속이 따뜻함(침식·받는 피해 감소)', fish_porridge: '정신 15 · 탐색력 +4',
   eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천',

@@ -3,7 +3,7 @@
   --bg: #0c0a0e; --surface: #16131a; --surface-2: #1e1a23; --line: #2e2733; --text: #efe7da; --muted: #a39889;
   --accent: #c8432d; --accent-ink: #fff4ea; --gold: #d1a65a; --glow: #c8432d;
   --ok: #5fb98a; --warn: #e0a64a; --bad: #e0564f;
-  --hp: #d4584c; --mp: #6c8fe0; --sp: #b07ae0; --er: #8b6fbf; --xp: var(--gold);
+  --hp: #d4584c; --mp: #6c8fe0; --sp: #b07ae0; --ki: #d9b23a; --er: #8b6fbf; --xp: var(--gold);
   --r-sm: 8px; --r: 12px; --r-lg: 16px;
   --top-h: 56px; --tab-h: 64px;
   --shadow: none;
@@ -149,7 +149,7 @@ textarea { resize: none; }
 /* ── 막대 ─────────────────────────────── */
 .bar { height: 6px; border-radius: 4px; background: color-mix(in srgb, var(--line) 80%, transparent); overflow: hidden; }
 .bar > span { display: block; height: 100%; border-radius: inherit; background: var(--gold); transition: width .4s; }
-.bar.hp > span { background: var(--hp); } .bar.mp > span { background: var(--mp); } .bar.sp > span { background: var(--sp); }
+.bar.hp > span { background: var(--hp); } .bar.mp > span { background: var(--mp); } .bar.sp > span { background: var(--sp); } .bar.ki > span { background: var(--ki); }
 .bar.er > span { background: var(--er); } .bar.xp > span { background: var(--xp); } .bar.enemy > span { background: var(--bad); }
 .mini-bar { height: 4px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 6px 0 2px; }
 .mini-bar > span { display: block; height: 100%; background: var(--gold); }
@@ -231,7 +231,7 @@ textarea { resize: none; }
 .hs-name small { font-size: 11px; color: var(--muted); }
 .hs-bars { display: grid; gap: 3px; width: 56px; flex: none; }
 .hs-bars i { display: block; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--c) var(--v), var(--line) var(--v)); }
-.hs-bars .hp { --c: var(--hp); } .hs-bars .mp { --c: var(--mp); } .hs-bars .sp { --c: var(--sp); }
+.hs-bars .hp { --c: var(--hp); } .hs-bars .mp { --c: var(--mp); } .hs-bars .sp { --c: var(--sp); } .hs-bars .ki { --c: var(--ki); }
 .hs-status { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; font-size: 12.5px; color: var(--muted); }
 .hs-status em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hs-caret { color: var(--muted); transform: rotate(90deg); transition: transform .2s; }

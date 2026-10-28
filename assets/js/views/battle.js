@@ -1,6 +1,6 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
 // 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
-import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal } from '../core.js';
+import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal, spOf } from '../core.js';
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
@@ -37,10 +37,10 @@ export const SKILL = {
   analyst: ['약점 간파', '다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.'],
   artificer: ['폭렬 부적', '방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
 };
-const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시' };
+const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
-  ['spirit_tea', '영력 10'], ['clear_spirit_pill', '영력 20'], ['spirit_qi_pill', '영력 35'], ['moonlight_essence', '영력 55'], ['heavenly_dew', '영력 80']];
+  ['spirit_tea', '영력·기력 10'], ['clear_spirit_pill', '영력·기력 20'], ['spirit_qi_pill', '영력·기력 35'], ['moonlight_essence', '영력·기력 55'], ['heavenly_dew', '영력·기력 80']];
 
 // 상성(갈래별 무기 배율 · 유리한 직업 +20%)은 그 요괴를 한 번 쓰러뜨려 도감에 적은 뒤에만 서버가 내보낸다(b.eff)
 export function effectiveness(style, eff) {
@@ -87,16 +87,16 @@ function draw(fresh = []) {
         <div class="me-bars">
           <div class="vital"><span>체력</span><b>${c.health}</b>${bar(c.health, 100, 'hp')}</div>
           <div class="vital"><span>정신</span><b>${c.mental}</b>${bar(c.mental, 100, 'mp')}</div>
-          <div class="vital"><span>영력</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, 'sp')}</div>
+          <div class="vital"><span>${spOf()[0]}</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, spOf()[1])}</div>
         </div>
-        <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${ef ? chip(ef[0], ef[1]) : ''}${(data.gear_warn || []).filter(g => g.slot === 'weapon' || g.slot === 'armor').map(g => chip(`${g.slot === 'weapon' ? '무기' : '방어구'} ${g.dur > 0 ? '닳음' : '부서짐'}`, 'bad')).join('')}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : ''}</p>
+        <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${ef ? chip(ef[0], ef[1]) : ''}${(data.gear_warn || []).filter(g => g.slot === 'weapon' || g.slot === 'armor').map(g => chip(`${g.slot === 'weapon' ? '무기' : '방어구'} ${g.dur > 0 ? '닳음' : '부서짐'}`, 'bad')).join('')}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : (w.type || 'melee') === 'melee' ? ' <small class="muted">근접 공격은 기력 2를 씁니다</small>' : ''}</p>
         <div class="float-layer" id="me-float"></div>
       </div>
       <div class="actions" id="actions">
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
-        <button class="act" data-a="skill" ${skillWait ? 'data-wait="' + skillWait + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${skillWait ? `${skillWait}턴 뒤` : '영력 12'}</small><i class="cd"></i></button>
-        <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · 영력 +4</small><i class="cd"></i></button>
-        <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력</small><i class="cd"></i></button>
+        <button class="act" data-a="skill" ${skillWait ? 'data-wait="' + skillWait + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} 12`}</small><i class="cd"></i></button>
+        <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · ${spOf()[0]} +4</small><i class="cd"></i></button>
+        <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력·기력</small><i class="cd"></i></button>
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>
       </div>
       <div class="item-tray" id="item-tray" hidden>${ITEMS.filter(([k], i) => i < 4 || inv[k] > 0).map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
@@ -163,7 +163,7 @@ function refreshVitals() {
   const c = store.character, box = $('.me-bars', host); if (!c || !box) return;
   box.innerHTML = `<div class="vital"><span>체력</span><b>${c.health}</b>${bar(c.health, 100, 'hp')}</div>
     <div class="vital"><span>정신</span><b>${c.mental}</b>${bar(c.mental, 100, 'mp')}</div>
-    <div class="vital"><span>영력</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, 'sp')}</div>`;
+    <div class="vital"><span>${spOf()[0]}</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, spOf()[1])}</div>`;
   const inv = c.inventory || {};
   $$('[data-item]', host).forEach(b => { const k = b.dataset.item, n = Number(inv[k] || 0); b.disabled = n <= 0; const t = b.firstChild; if (t?.nodeType === 3) t.textContent = `${nameOf(k)} ×${fmt.num(n)}`; });
 }

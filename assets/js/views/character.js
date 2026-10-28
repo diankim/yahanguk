@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -151,7 +151,7 @@ async function status(body) {
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     <div class="grid-2">
       ${panel('생존 상태', `
-        ${['health:체력:hp', 'mental:정신:mp', 'spiritual_power:영력:sp'].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
+        ${['health:체력:hp', 'mental:정신:mp', `spiritual_power:${spOf().join(':')}`].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0))}
         <div class="action-grid three">

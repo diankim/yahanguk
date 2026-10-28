@@ -425,11 +425,18 @@ async function readStacks() {
 }
 export const stackOf = id => stacks?.get(id) || 1;
 // 장착한 장비는 가방 칸을 차지하지 않는다(서버 world_bag_limit은 장착한 수만큼 용량을 더하고, 화면은 쓴 칸에서 뺀다)
-let equipped = null;
+let equipped = null, weaponStyle = 'melee';
 async function loadEquipped() {
-  try { const { data } = await db.from('world_character_equipment').select('item_id').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id); }
-  catch { equipped = null; }
+  try {
+    const { data } = await db.from('world_character_equipment').select('item_id,slot').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id);
+    const w = (data || []).find(r => r.slot === 'weapon');
+    // 무기 갈래(근접이면 영력 게이지를 「기력」으로 보인다). 무기가 없으면 서버도 근접으로 친다
+    weaponStyle = 'melee';
+    if (w) { const { data: it } = await db.from('world_item_catalog').select('equipment_traits').eq('item_id', w.item_id).maybeSingle(); weaponStyle = it?.equipment_traits?.weapon_type || 'melee'; }
+  } catch { equipped = null; }
 }
+// 근접 무기를 들면 영력 수치를 기력으로 쓴다(같은 spiritual_power, 노란 게이지). [이름, 게이지 갈래]
+export function spOf() { return weaponStyle === 'melee' ? ['기력', 'ki'] : ['영력', 'sp']; }
 // 목록에 붙이는 짧은 설명: 첫 문장만, 길면 줄인다
 export function brief(t, n = 42) { const s = String(t || '').split(/(?<=[.!?。])\s|\n/)[0].trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
 export function equippedIds() { return equipped || []; }
