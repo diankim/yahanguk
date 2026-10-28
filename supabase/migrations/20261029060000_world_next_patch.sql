@@ -28,6 +28,7 @@ grant fn_owner_18453 to postgres with inherit true, set true;
 grant fn_owner_18956 to postgres with inherit true, set true;
 grant fn_owner_18878 to postgres with inherit true, set true;
 grant fn_owner_18883 to postgres with inherit true, set true; -- world_mount_acquire(세력 탈것은 비고에서만)
+grant fn_owner_19203 to postgres with inherit true, set true; -- world_charge_mount_fare(수향연맹 뱃길)
 
 -- ① ─────────────────────────────────────────
 -- world_mount_equip: 이동 중(travel_destination이 남아 있는 동안 — 도착·취소 때 비워진다)에는 거절한다
@@ -2433,6 +2434,53 @@ begin
   execute replace(d, a, b);
 end $$;
 
+-- 수향연맹 뱃길(2026-10-29 결정): 가입 퀘스트를 마친 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도 ×(1.05 + 0.05×등급)
+-- (1등급 +10% ~ 5등급 +30%, 단련과 곱한다)이고 운임(노정패)이 없다. 다른 세력은 같은 배를 타도 그대로다.
+create or replace function public.world_river_boat_rank(p_uid uuid, p_mount text)
+returns int language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select p.rank from public.world_characters c join public.world_faction_progress p on p.owner_id = c.owner_id and p.faction_id = c.major_faction_id
+     where c.owner_id = p_uid and c.major_faction_id = 'river_alliance' and p.join_done_at is not null and p_mount in ('river_skiff', 'fm_river_alliance')), 0)
+$$;
+create or replace function public.world_river_boat_speed(p_uid uuid, p_mount text)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case when r > 0 then 1.05 + 0.05 * r else 1 end from (select public.world_river_boat_rank(p_uid, p_mount) r) x
+$$;
+create or replace function public.world_river_boat_member(p_uid uuid, p_mount text)
+returns boolean language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select public.world_river_boat_rank(p_uid, p_mount) > 0
+$$;
+do $$ declare f text; begin
+  foreach f in array array['world_river_boat_rank(uuid,text)', 'world_river_boat_speed(uuid,text)', 'world_river_boat_member(uuid,text)'] loop
+    execute format('alter function public.%s owner to fn_owner_field', f);
+    execute format('revoke all on function public.%s from public, anon, authenticated', f);
+    -- 이동 함수 주인들과 탈것 목록(부른 쪽 권한으로 돈다)에서 부른다
+    execute format('grant execute on function public.%s to authenticated, fn_owner_19203', f);
+  end loop;
+end $$;
+do $$
+declare p record; d text;
+begin
+  for p in select * from (values
+    ('public.world_travel_route(text)',
+     $a$  speed := coalesce(speed, 1) * (1 + 0.04 * coalesce((SELECT o.training FROM public.world_owned_mounts o WHERE o.owner_id = uid AND o.mount_id = c.mount_id), 0));$a$,
+     $a$  speed := coalesce(speed, 1) * (1 + 0.04 * coalesce((SELECT o.training FROM public.world_owned_mounts o WHERE o.owner_id = uid AND o.mount_id = c.mount_id), 0)) * public.world_river_boat_speed(uid, c.mount_id);$a$),
+    ('public.world_travel_route(text)',
+     $a$SELECT CASE WHEN coalesce(m.fare_free, false) THEN 0 ELSE greatest(0, coalesce(m.fare_tokens, 1)) END INTO fare_per$a$,
+     $a$SELECT CASE WHEN coalesce(m.fare_free, false) OR public.world_river_boat_member(uid, m.mount_id) THEN 0 ELSE greatest(0, coalesce(m.fare_tokens, 1)) END INTO fare_per$a$),
+    ('public.world_charge_mount_fare()',
+     $a$if not found or coalesce(m.fare_free,false) then return new; end if;$a$,
+     $a$if not found or coalesce(m.fare_free,false) or public.world_river_boat_member(new.owner_id, m.mount_id) then return new; end if;$a$),
+    ('public.world_mount_snapshot()',
+     $a$'equipped',c.mount_id=m.mount_id,$a$,
+     $a$'equipped',c.mount_id=m.mount_id,'river_speed',public.world_river_boat_speed(uid,m.mount_id),'river_free',public.world_river_boat_member(uid,m.mount_id),$a$)
+  ) v(fn, a, b) loop
+    d := pg_get_functiondef(p.fn::regprocedure);
+    if position(p.b in d) > 0 then continue; end if;
+    if (length(d) - length(replace(d, p.a, ''))) / length(p.a) <> 1 then raise exception '수향 뱃길: % 고칠 자리', p.fn; end if;
+    execute replace(d, p.a, p.b);
+  end loop;
+end $$;
+
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
@@ -2441,6 +2489,7 @@ grant fn_owner_18453 to postgres with inherit false, set false;
 grant fn_owner_18956 to postgres with inherit false, set false;
 grant fn_owner_18878 to postgres with inherit false, set false;
 grant fn_owner_18883 to postgres with inherit false, set false;
+grant fn_owner_19203 to postgres with inherit false, set false;
 
 -- 세력 가입 퀘스트 도입: 지금 대세력에 든 조사원은 세력에서 나와 처음부터 가입 퀘스트를 밟는다(2026-10-29 결정).
 -- 「떠남」 기록(payload.left)을 남기지 않아 12시간 재가입 제한에 걸리지 않고 바로 다시 들 수 있다. 쌓은 영향력은 세력에 남는다.
@@ -2538,6 +2587,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 28. **제작 화면**: 「만드는 것」(무기·방어구·관모·신·노리개·호신부·탈·도구·소모품·재료)으로 거르고, 정렬(가능한 것 먼저·제작 레벨 낮은순·높은순)을 고를 수 있습니다. 장비 제작법 카드에는 장착 부위와 단계(예: 호신부 3단계)가 보입니다.
 29. **세력 기부**: 세력 안전지대에서 필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 50전마다 공훈 1을 받습니다. 하루 공훈 30까지이고, 진품 이상은 한 번 더 확인합니다.
 30. **비고 품목 확장**: 세력마다 세력 칭호(2등급)·세력 테두리(3등급)·세력 장비(3등급, 4단계·거래 불가)·채팅 이름 색(4등급)·세력 탈것(5등급)을 공훈으로 받습니다. 길잡이 등불·비약·비경 지도·봉인된 보따리도 들어왔습니다. 세력 탈것은 운임이 노정패 1이고, 수향연맹 화방선(×2.3)이 가장 빠릅니다(나머지 ×1.9).
+31. **수향연맹 뱃길**: 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도가 등급마다 빨라지고(1등급 ×1.10 ~ 5등급 ×1.30) 운임(노정패)이 들지 않습니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

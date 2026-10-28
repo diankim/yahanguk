@@ -299,7 +299,8 @@ function hopSeconds(from, to, speed) {
 // 표시용 예상치. 실제 도착 시각과 운임은 서버가 정한다.
 function routeEstimate(route) {
   const m = (mountData?.mounts || []).find(x => x.equipped) || (mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id);
-  const speed = Number(m?.speed_multiplier) || 1;
+  // 수향연맹 뱃길(서버 world_river_boat_speed): 수향연맹 조사원이 배를 타면 더 빠르고 운임이 없다
+  const speed = (Number(m?.speed_multiplier) || 1) * (Number(m?.river_speed) || 1);
   let secs = 0;
   for (let i = 1; i < route.length; i++) secs += hopSeconds(route[i - 1], route[i], speed);
   if (route.length > 2) secs = Math.round(secs * 0.9);
@@ -308,6 +309,7 @@ function routeEstimate(route) {
 // 노정패: 구간마다 탈것 운임. 모자라면 서버가 탈것에서 내려 걸어가게 한다.
 function fareLine(est) {
   const m = est.mount; if (!m || m.fare_free) return '';
+  if (m.river_free) return ' · 수향연맹 뱃길: 운임 없음';
   const need = (Number(m.fare_tokens) || 0) * est.hops, have = Number(mountData?.mount_tokens ?? store.character?.mount_tokens) || 0;
   return need > have ? ` · 노정패 ${need}개가 필요하지만 ${have}개뿐이라 걸어갑니다` : ` · 노정패 ${need}개`;
 }
@@ -404,7 +406,7 @@ async function drawTravel(body) {
       <article class="mount ${m.equipped ? 'on' : ''}">
         <header><b>${esc(m.mount_name)}</b>${chip(m.tier)}</header>
         <p>${esc(m.description || '')}</p>
-        <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free ? '없음' : `구간당 노정패 ${m.fare_tokens}`}</dd></div></dl>
+        <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}${Number(m.river_speed) > 1 ? ` <small class="good">뱃길 ×${Number(m.river_speed).toFixed(2)}</small>` : ''}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free || m.river_free ? `없음${m.river_free && !m.fare_free ? ' (수향연맹 뱃길)' : ''}` : `구간당 노정패 ${m.fare_tokens}`}</dd></div></dl>
         ${m.equipped ? chip('사용 중', 'accent') : status?.in_transit ? `<button class="btn small" disabled title="도착한 뒤에 바꿀 수 있습니다">이동 중에는 못 바꿈</button>` : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
       </article>`).join('')}</div>
       <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.</p>`, { ico: 'route' })}
