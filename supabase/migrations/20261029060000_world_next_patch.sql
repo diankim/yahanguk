@@ -2582,6 +2582,41 @@ end $$;
 -- 원정 귀환 전리품(2026-10-29 제보): world_expedition_complete가 전리품을 가방 자리만큼만 넣고 나머지를 「두고 왔습니다」로 버려
 -- 짐 보따리(world_overflow_items)까지 가지 못했다. 넘친 것은 보따리에 담고 bag_overflow 알림을 보낸다(현장 「정리하기」에서 골라 챙기거나 버린다).
 grant fn_owner_field to postgres with inherit true, set true;
+grant fn_owner_expedition to postgres with inherit true, set true;
+-- 짐 보따리 알림은 한 처리(같은 now())에 하나만: 이미 보냈으면 담은 것을 더해 고친다(원정 귀환 함수와 가방 넘침 트리거가 함께 담을 때 두 개 뜨던 것)
+create or replace function public.world_overflow_notify(p_uid uuid, p_stashed jsonb, p_cap int)
+returns void language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare nid bigint; prev jsonb; merged jsonb;
+begin
+  if p_stashed is null or p_stashed = '{}'::jsonb then return; end if;
+  select id, payload -> 'stashed' into nid, prev from public.world_notifications
+   where user_id = p_uid and kind = 'bag_overflow' and created_at = now() order by id limit 1 for update;
+  select coalesce(jsonb_object_agg(k, q), '{}'::jsonb) into merged from (
+    select k, sum(v::numeric)::int q from (select key k, value v from jsonb_each(coalesce(prev, '{}'::jsonb))
+      union all select key, value from jsonb_each(p_stashed)) u group by k) s where q > 0;
+  if nid is null then
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (p_uid, 'bag_overflow', '원정 짐 보따리', '', jsonb_build_object('stashed', merged, 'capacity', p_cap)) returning id into nid;
+  end if;
+  update public.world_notifications set
+    content = (select string_agg(coalesce(i.item_name, t.k) || ' ×' || t.v, ', ' order by t.k) from jsonb_each_text(merged) t(k, v) left join public.world_item_catalog i on i.item_id = t.k)
+      || '은(는) 가방에 자리가 없어 보따리에 담았습니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.',
+    payload = jsonb_build_object('stashed', merged, 'capacity', p_cap)
+   where id = nid;
+end $$;
+alter function public.world_overflow_notify(uuid, jsonb, int) owner to fn_owner_field;
+revoke all on function public.world_overflow_notify(uuid, jsonb, int) from public, anon, authenticated;
+grant execute on function public.world_overflow_notify(uuid, jsonb, int) to fn_owner_expedition;
+-- 가방 넘침 트리거(원정 귀환 중 보따리에 담을 때)도 같은 알림으로
+do $$
+declare d text := pg_get_functiondef('public.world_enforce_bag_capacity()'::regprocedure); n int;
+  pat text := $p$INSERT INTO public\.world_notifications\(user_id, kind, title, content, payload\)\s+VALUES \(new\.owner_id, 'bag_overflow'.*?jsonb_build_object\('stashed', dropped, 'capacity', cap\)\);$p$;
+begin
+  if position('world_overflow_notify' in d) > 0 then return; end if;
+  select count(*) into n from regexp_matches(d, pat, 'g');
+  if n <> 1 then raise exception '가방 넘침 알림 고칠 자리(%)', n; end if;
+  execute regexp_replace(d, pat, 'PERFORM public.world_overflow_notify(new.owner_id, dropped, cap);');
+end $$;
 do $$
 declare d text := pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure);
   a text := $a$if lost <> '{}'::jsonb then lg := lg || jsonb_build_array('가방이 가득 차 일부 전리품을 두고 왔습니다.'); end if;$a$;
@@ -2589,11 +2624,7 @@ declare d text := pg_get_functiondef('public.world_expedition_complete(boolean)'
     insert into public.world_overflow_items(owner_id, item_id, qty)
     select uid, t.k, t.v::int from jsonb_each_text(lost) t(k, v) where t.v::int > 0
     on conflict (owner_id, item_id) do update set qty = public.world_overflow_items.qty + excluded.qty;
-    insert into public.world_notifications(user_id, kind, title, content, payload)
-    values (uid, 'bag_overflow', '원정 짐 보따리',
-      (select string_agg(coalesce(i.item_name, t.k) || ' ×' || t.v, ', ') from jsonb_each_text(lost) t(k, v) left join public.world_item_catalog i on i.item_id = t.k)
-        || '은(는) 가방에 자리가 없어 보따리에 담았습니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.',
-      jsonb_build_object('stashed', lost, 'capacity', cap));
+    perform public.world_overflow_notify(uid, lost, cap);
     lg := lg || jsonb_build_array('가방에 다 들어가지 않은 전리품은 짐 보따리에 담았습니다.');
   end if;$a$;
 begin
