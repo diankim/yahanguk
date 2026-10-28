@@ -2090,6 +2090,18 @@ on conflict (scene_key) do update set title = excluded.title, goal = excluded.go
 
 grant fn_owner_18669 to postgres with inherit false, set false;
 
+-- 물품 정보 「얻는 곳」: 상점·대장간·세력 비고를 나눠 알린다(정련 숯이 「상점에서 삽니다」로만 보이던 문의)
+do $$ declare d text := pg_get_functiondef('public.world_item_sources(text)'::regprocedure);
+  a text := $a$'shop', exists (select 1 from public.world_shop_catalog where item_id = p_item))$a$;
+  b text := $a$'shop', exists (select 1 from public.world_shop_catalog where item_id = p_item and shop_id <> 'smithy'),
+    'smithy', exists (select 1 from public.world_shop_catalog where item_id = p_item and shop_id = 'smithy'),
+    'vault', exists (select 1 from public.world_faction_vault where item_id = p_item))$a$;
+begin
+  if position('''smithy''' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '얻는 곳 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;

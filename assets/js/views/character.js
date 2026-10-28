@@ -8,6 +8,7 @@ import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
+import { factionPanels, bindFaction } from '../factionquest.js';
 
 const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot']];
 const STATS = [
@@ -368,7 +369,7 @@ async function idle(body) {
 
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
-const TCAT_ORDER = ['운영', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '성장', '비밀', '기타'];
+const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
 let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 등급(서버 world_title_catalog.grade)
 const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品
@@ -511,7 +512,8 @@ function boardPanel(b) {
 }
 
 async function faction(body) {
-  const [missions, base, map, board] = await Promise.all([load('world_faction_mission_snapshot'), load('world_faction_base_snapshot').catch(() => null), load('world_map_snapshot', undefined, { maxAge: 30000 }).catch(() => null), load('world_faction_board', undefined, { maxAge: 60000 }).catch(() => null)]);
+  const [missions, base, map, board, fq] = await Promise.all([load('world_faction_mission_snapshot'), load('world_faction_base_snapshot').catch(() => null), load('world_map_snapshot', undefined, { maxAge: 30000 }).catch(() => null), load('world_faction_board', undefined, { maxAge: 60000 }).catch(() => null),
+    store.character?.major_faction_id ? load('world_faction_snapshot').catch(() => null) : null]);
   const c = store.character, here = currentRegion(map);
   const mine = (missions || []).filter(m => m.faction_key === c.faction_key || m.eligible);
   const major = c.major_faction_id;
@@ -534,6 +536,7 @@ async function faction(body) {
           ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
           ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}
         <div class="btn-row" style="margin-top:8px"><button class="btn small ghost" id="leave-faction">세력 떠나기</button></div>`, { ico: 'shield' })
+        + (fq?.faction_id ? `<div class="grid-2 fq-grid">${factionPanels(fq, c)}</div>` : '')
       : panel('대세력', `<p class="desc">대세력은 세계의 큰 흐름을 이끄는 조직입니다. 가입하면 전용 거점·임무·보상과 세력 채팅을 이용할 수 있습니다. 가입하려면 그 세력의 거점까지 직접 가야 합니다.</p>
         <div class="faction-grid">${Object.entries(MAJOR_FACTIONS).map(([k, f]) => {
           const at = here?.region_id === BASE[k];
@@ -545,6 +548,7 @@ async function faction(body) {
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; return r; });
   $$('[data-base]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_base_action', { p_content_id: b.dataset.base })));
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
+  if (fq?.faction_id) bindFaction(body, fq, () => faction(body));
   const lv = $('#leave-faction', body);
   if (lv) lv.onclick = async () => { if (await ask(`${nameOf(major)}에서 나갈까요?\n평판이 0이 되고 세력 채팅·거점·세력 효과가 사라집니다. 쌓은 영향력은 세력에 남습니다. 떠난 뒤 12시간이 지나야 다른 세력에 가입할 수 있습니다.`, { title: '세력 떠나기', ok: '떠나기', danger: true })) guard(lv, () => act('world_leave_major_faction')); };
   $$('[data-join]', body).forEach(b => b.onclick = async () => {

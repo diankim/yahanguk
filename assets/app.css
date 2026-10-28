@@ -1758,3 +1758,31 @@ b.contest { color: var(--warn); font-weight: 600; }
 .pexp-box small { color: var(--muted); font-size: 12px; }
 .pexp-box small i { font-style: normal; } .pexp-box i.accepted { color: var(--ok); } .pexp-box i.declined { color: var(--bad); } .pexp-box i.wait { color: var(--muted); }
 .pexp-box .btn-row { margin-top: 4px; }
+
+/* 대세력 퀘스트·등급·의뢰판·비고·수련장(factionquest.js) */
+.fq-grid { margin-top: 12px; }
+.rank-ladder { list-style: none; margin: 0 0 10px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.rank-ladder li { display: grid; gap: 2px; justify-items: center; text-align: center; padding: 6px 2px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); color: var(--muted); font-size: 11.5px; line-height: 1.25; min-width: 0; }
+.rank-ladder li b { font-size: 12px; } .rank-ladder li span { overflow-wrap: anywhere; }
+.rank-ladder li.past { color: var(--text); border-color: color-mix(in srgb, var(--fc) 45%, var(--line)); }
+.rank-ladder li.now { color: var(--text); border-color: var(--fc); background: color-mix(in srgb, var(--fc) 16%, var(--surface)); font-weight: 650; }
+.fq-card { display: grid; gap: 6px; padding: 10px 12px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.fq-card.ready { border-color: var(--accent); }
+.fq-card p { margin: 0; }
+.fq-tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12.5px; }
+.fq-tasks li { display: flex; gap: 6px; align-items: center; } .fq-tasks li span { flex: 1; min-width: 0; } .fq-tasks li small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.fq-tasks li.done { color: var(--ok); } .fq-tasks li.done small { color: var(--ok); }
+.fq-reqs, .fq-vault, .fq-npcs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fq-reqs > li, .fq-vault > li { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); }
+.fq-reqs > li > div, .fq-vault > li > div:first-child { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.fq-vault > li.locked { opacity: .55; }
+.fq-buy { display: flex; gap: 6px; align-items: center; flex: none; } .fq-buy input { width: 56px; height: 32px; padding: 0 6px; }
+.fq-keeper { margin: 0 0 8px; font-size: 13px; } .fq-keeper b { font-family: var(--font-serif, serif); margin-right: 6px; }
+.fq-npcs li { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px dashed var(--line); } .fq-npcs li b { font-family: var(--font-serif, serif); } .fq-npcs li small { color: var(--muted); }
+/* 대화 팝업 */
+.dlg-box { display: grid; gap: 8px; padding: 14px 16px; border: var(--bw) solid var(--line); border-radius: var(--r); background: var(--surface-2); cursor: pointer; min-height: 140px; align-content: start; }
+.dlg-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dlg-plate { justify-self: start; padding: 2px 10px; border-radius: 4px; background: var(--fc); color: #fff; font: 700 13.5px var(--font-serif, serif); }
+.dlg-text { margin: 0; font: 15.5px/1.75 var(--font-serif, serif); } .dlg-text.narr { font-style: italic; color: var(--muted); }
+.dlg-foot { display: flex; justify-content: space-between; }
+.dlg-end { display: grid; gap: 8px; margin-top: 10px; } .dlg-end p { margin: 0; }
