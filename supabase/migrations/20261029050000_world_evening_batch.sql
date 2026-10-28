@@ -2,7 +2,14 @@
 --   ① 가방 가득 참 메시지를 화면과 같은 기준으로(장착 장비 제외) · 제작은 완성품 넣을 자리를 먼저 확인
 --   ② 숫자 붙은 장소 이름 정리
 --   ③ 창고: 어디서나 보기(넣고 꺼내기는 안전지대만) · 안전지대에서 제작하면 창고 재료도 쓴다
--- @@ROLES_ON@@
+--   ④ 쓰러지면 전체 채팅에 구조 알림 · ⑤ 패치노트 표 · ⑥ 다시 시작하는 귀속 물품 2종(모두에게 하나씩) · ⑦ 물품 얻는 곳
+--   ⑧ 세력 판도(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
+grant fn_owner_social to postgres with inherit true, set true;
+grant fn_owner_field to postgres with inherit true, set true;
+grant fn_owner_expedition to postgres with inherit true, set true;
+grant fn_owner_18452 to postgres with inherit true, set true;
+grant fn_owner_18987 to postgres with inherit true, set true;
+grant fn_owner_18475 to postgres with inherit true, set true;
 
 -- ① ─────────────────────────────────────────
 -- 강산하 님 제보(제작 시 36/35): 화면은 장착 장비를 뺀 29/29칸인데, 메시지는 장착 장비를 더한 숫자였다.
@@ -378,6 +385,12 @@ alter function public.world_social_effect(text) owner to fn_owner_field;
 revoke all on function public.world_faction_rel(text, text), public.world_social_effect(text) from public, anon, authenticated;
 grant execute on function public.world_faction_rel(text, text), public.world_social_effect(text) to authenticated;
 grant execute on function public.world_region_at(text) to fn_owner_field;
+-- world_status_effect_total을 부르는 함수 주인 역할(fn_owner_*)들도 부를 수 있어야 한다(world_skill_effect와 같은 방식)
+do $$ declare r text; begin
+  for r in select rolname from pg_roles where rolname like 'fn\_owner\_%' loop
+    execute format('grant execute on function public.world_social_effect(text) to %I', r);
+  end loop;
+end $$;
 
 do $$ declare d text := pg_get_functiondef('public.world_status_effect_total(text)'::regprocedure);
   a text := '+ public.world_skill_effect(p_effect_key)';
@@ -563,3 +576,13 @@ begin
   end;
   ' || a);
 end $$;
+
+grant fn_owner_social to postgres with inherit false, set false;
+grant fn_owner_field to postgres with inherit false, set false;
+grant fn_owner_expedition to postgres with inherit false, set false;
+grant fn_owner_18452 to postgres with inherit false, set false;
+grant fn_owner_18987 to postgres with inherit false, set false;
+grant fn_owner_18475 to postgres with inherit false, set false;
+
+insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261029050000', now())
+on conflict (key) do update set value = excluded.value, changed_at = now();
