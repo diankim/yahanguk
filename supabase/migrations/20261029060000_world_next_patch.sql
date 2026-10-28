@@ -7,6 +7,7 @@
 --   ⑥ 기술 단계 보상 개편: 4.0.0의 이름 있는 기술 105개(13·30 추가, 24·43 택일, 50 숙달, 조합 7)를 수치 보정 대신 행동이 바뀌는 고유 효과로(현장 토벌·채집·제작·탐색·이동·휴식·강화·수리·구조), 근접 택일 24b는 「도발」(이목)
 --   ⑦ 원거리 소모품: 화살·쇠뇌살·취관 침(묶음 100). 한 발에 하나(없으면 피해 절반), 원정은 회차마다 둘. 지금 원거리 무기를 든 조사원에게 100개
 --   ⑧ 기력: 근접 무기를 들면 영력을 「기력」으로 쓴다(공격마다 2). 전투·원정 중 장비 바꿔 끼기를 막는다
+--   ⑨ 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나간다(남은 것은 새것)
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
 --   (화면) 동료 화면 친구·모임: 단추가 이름에서 멀리 떨어져 늘어나던 것을 사람·모임마다 카드로 나누고 단추를 이름 곁에
@@ -19,6 +20,7 @@ grant fn_owner_field to postgres with inherit true, set true;
 grant fn_owner_18452 to postgres with inherit true, set true;
 grant fn_owner_18453 to postgres with inherit true, set true;
 grant fn_owner_18956 to postgres with inherit true, set true;
+grant fn_owner_18878 to postgres with inherit true, set true;
 
 -- ① ─────────────────────────────────────────
 -- world_mount_equip: 이동 중(travel_destination이 남아 있는 동안 — 도착·취소 때 비워진다)에는 거절한다
@@ -1389,12 +1391,43 @@ begin
   execute replace(d, a, a || b);
 end $$;
 
+-- ⑨ ─────────────────────────────────────────
+-- 같은 장비를 여럿 가졌을 때 내구도 기록(world_item_durability, 사람×물품 하나)은 장착해 닳은 한 벌을 뜻한다.
+-- 상점에 팔거나·버리거나·분해해 하나를 내놓으면 수량만 줄고 닳은 기록이 남아, 멀쩡한 쪽이 팔린 것처럼 됐다(문의: 닳은 장비를 팔고 새로 만든 것을 끼려 했는데 새것이 팔림).
+-- 이 세 행동에서는 닳은 쪽이 먼저 나가고 남은 것은 새것(기록을 지움)으로 본다. 창고·거래는 그대로(닳은 것을 넘겨 공짜로 고치는 길을 막는다).
+create or replace function public.world_wear_leaves_first()
+returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+begin
+  delete from public.world_item_durability d
+   where d.owner_id = new.owner_id and d.durability < d.max_durability
+     and coalesce((old.inventory ->> d.item_id)::numeric, 0) > coalesce((new.inventory ->> d.item_id)::numeric, 0)
+     and coalesce((new.inventory ->> d.item_id)::numeric, 0) >= 1;
+  return new;
+end $$;
+revoke all on function public.world_wear_leaves_first() from public, anon, authenticated;
+drop trigger if exists trg_world_wear_leaves_first on public.world_characters;
+create trigger trg_world_wear_leaves_first after update of inventory on public.world_characters
+  for each row when (current_setting('yh.wear_leaves', true) = 'on' and old.inventory is distinct from new.inventory)
+  execute function public.world_wear_leaves_first();
+
+do $$
+declare f text; d text; a text := 'if uid is null then raise exception ''로그인이 필요합니다.''; end if;';
+begin
+  foreach f in array array['public.world_shop_sell(text,integer)', 'public.world_item_discard(text,integer)', 'public.world_dismantle_item(text)'] loop
+    d := pg_get_functiondef(f::regprocedure);
+    if position('yh.wear_leaves' in d) > 0 then continue; end if;
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '닳은 장비 먼저: % 고칠 자리', f; end if;
+    execute replace(d, a, a || ' perform set_config(''yh.wear_leaves'', ''on'', true);');
+  end loop;
+end $$;
+
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
 grant fn_owner_18452 to postgres with inherit false, set false;
 grant fn_owner_18453 to postgres with inherit false, set false;
 grant fn_owner_18956 to postgres with inherit false, set false;
+grant fn_owner_18878 to postgres with inherit false, set false;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261029060000', now())
 on conflict (key) do update set value = excluded.value, changed_at = now();
