@@ -2532,6 +2532,12 @@ update public.world_item_catalog set category = 'norigae', rarity = 'epic', tier
 where item_id = 'wayfarer_pack';
 update public.world_crafting_recipes set minimum_level = 15 where recipe_id = 'make_wayfarer_pack';
 
+-- 최고 레벨(30)보다 높은 출입 레벨 정리(2026-10-29 확인): 답사 지점·채집터·원정지 레벨은 지역 레벨에 깊이마다 +2를 붙여 매겨져
+-- 구중 봉연(Lv30)의 깊은 곳이 Lv32·34·36, 무극 관성대 가장 깊은 곳이 Lv31이 되어 아무도 들어갈 수 없었다. 최고 레벨로 묶는다(요괴 레벨은 그대로).
+update public.world_exploration_nodes set min_level = 30 where min_level > 30;
+update public.world_gathering_spots set min_level = 30 where min_level > 30;
+update public.world_expedition_grounds set min_level = 30 where min_level > 30;
+
 -- 제보 #7 보상: 모두 분해한 뒤 새로 만든 정자관이 옛 내구도를 물려받아 낸 수리비 119전(2026-10-28 15:57 UTC)을 돌려준다. 두 번 돌려도 한 번만.
 do $$ declare u uuid := 'ea4e4e6b-3a21-4709-95d5-ac33afde971d'; begin
   if exists (select 1 from public.world_characters where owner_id = u)
@@ -2588,6 +2594,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 29. **세력 기부**: 세력 안전지대에서 필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 50전마다 공훈 1을 받습니다. 하루 공훈 30까지이고, 진품 이상은 한 번 더 확인합니다.
 30. **비고 품목 확장**: 세력마다 세력 칭호(2등급)·세력 테두리(3등급)·세력 장비(3등급, 4단계·거래 불가)·채팅 이름 색(4등급)·세력 탈것(5등급)을 공훈으로 받습니다. 길잡이 등불·비약·비경 지도·봉인된 보따리도 들어왔습니다. 세력 탈것은 운임이 노정패 1이고, 수향연맹 화방선(×2.3)이 가장 빠릅니다(나머지 ×1.9).
 31. **수향연맹 뱃길**: 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도가 등급마다 빨라지고(1등급 ×1.10 ~ 5등급 ×1.30) 운임(노정패)이 들지 않습니다.
+32. 구중 봉연·무극 관성대의 깊은 곳(답사 지점·채집터·원정지)이 최고 레벨(30)보다 높은 Lv31~36을 요구해 들어갈 수 없던 문제를 고쳤습니다(모두 Lv30).
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
