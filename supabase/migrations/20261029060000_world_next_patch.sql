@@ -2511,6 +2511,54 @@ begin
   end loop;
 end $$;
 
+-- 귀령초 얻는 길(2026-10-29 제보): 요화를 푸는 귀령초(gwiryeong_cho)가 「위험도 7 이상 채집터 희귀 발견물」로 설계됐지만 어디에도 연결되지 않아 얻을 수 없었다.
+-- 위험도 7 이상 지역에서 채집·토벌·원정 완주를 하면 낮은 확률로 얻는다(사망 위험이 없는 지금은 다른 희귀품보다 낮게):
+-- 채집 0.4% · 일반 0.3% · 정예 1% · 우두머리 3% · 금단 보스 5% · 원정 완주 2%, 위험도 10 지역은 ×1.5. 행동 기록 트리거 하나로 붙이고, 맞을 때만 캐릭터 행을 고친다.
+create or replace function public.world_gwiryeong_chance(p_type text, p_payload jsonb)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  with reg as (
+    select r.danger_level from public.world_map_regions r
+     where r.region_id = coalesce(p_payload ->> 'region_id',
+       (select n.region_id from public.world_exploration_nodes n
+         where n.node_id = case when p_payload ->> 'node_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then (p_payload ->> 'node_id')::uuid end))
+  )
+  select coalesce((select case when reg.danger_level < 7 then 0 else
+      case p_type
+        when 'gather' then 0.004
+        when 'expedition_end' then case when p_payload ->> 'ended' = 'complete' then 0.02 else 0 end
+        when 'combat' then case when not coalesce((p_payload ->> 'defeated')::boolean, false) then 0
+          when exists (select 1 from public.world_region_monsters m where m.monster_id = p_payload ->> 'monster_id' and m.role = 'main') then 0.05
+          else case p_payload ->> 'rank' when 'guardian' then 0.03 when 'elite' then 0.01 else 0.003 end end
+        else 0 end * case when reg.danger_level >= 10 then 1.5 else 1 end end from reg), 0)
+$$;
+create or replace function public.world_gwiryeong_roll()
+returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare ch numeric; nm text;
+begin
+  if new.actor_id is null then return new; end if;
+  ch := public.world_gwiryeong_chance(new.event_type, coalesce(new.payload, '{}'::jsonb));
+  if ch <= 0 or random() >= ch then return new; end if;
+  update public.world_characters set inventory = public.world_inv_add(coalesce(inventory, '{}'::jsonb), 'gwiryeong_cho', 1), updated_at = now()
+   where owner_id = new.actor_id returning character_name into nm;
+  insert into public.world_notifications(user_id, kind, title, content, payload)
+  values (new.actor_id, 'reward', '귀령초를 찾았습니다',
+    '음습한 기운 사이에서 귀령초 한 포기를 찾았습니다. 요화를 다스리는 귀한 풀입니다(가방이 가득 찼다면 넘친 만큼은 버려집니다).',
+    jsonb_build_object('item_id', 'gwiryeong_cho', 'qty', 1, 'source', new.event_type));
+  return new;
+end $$;
+do $$ declare f text; begin
+  foreach f in array array['world_gwiryeong_chance(text,jsonb)', 'world_gwiryeong_roll()'] loop
+    execute format('alter function public.%s owner to fn_owner_field', f);
+    execute format('revoke all on function public.%s from public, anon, authenticated', f);
+  end loop;
+end $$;
+drop trigger if exists trg_world_gwiryeong_roll on public.world_events;
+create trigger trg_world_gwiryeong_roll after insert on public.world_events
+  for each row when (new.event_type in ('gather', 'combat', 'expedition_end'))
+  execute function public.world_gwiryeong_roll();
+update public.world_item_catalog set description = '위험도 7 이상 지역에서 채집·토벌·원정 완주 때 드물게 찾는 음습한 풀. 요화를 풀고 침식을 20 낮춘다.'
+ where item_id = 'gwiryeong_cho';
+
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
@@ -2625,6 +2673,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 29. **세력 기부**: 세력 안전지대에서 필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 50전마다 공훈 1을 받습니다. 하루 공훈 30까지이고, 진품 이상은 한 번 더 확인합니다.
 30. **비고 품목 확장**: 세력마다 세력 칭호(2등급)·세력 테두리(3등급)·세력 장비(3등급, 4단계·거래 불가)·채팅 이름 색(4등급)·세력 탈것(5등급)을 공훈으로 받습니다. 길잡이 등불·비약·비경 지도·봉인된 보따리도 들어왔습니다. 세력 탈것은 운임이 노정패 1이고, 수향연맹 화방선(×2.3)이 가장 빠릅니다(나머지 ×1.9).
 31. **수향연맹 뱃길**: 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도가 등급마다 빨라지고(1등급 ×1.10 ~ 5등급 ×1.30) 운임(노정패)이 들지 않습니다.
+32. **귀령초**를 얻을 수 없던 문제를 고쳤습니다. 위험도 7 이상 지역에서 채집·토벌·원정 완주 때 드물게 찾습니다(채집 0.4% · 일반 요괴 0.3% · 정예 1% · 우두머리 3% · 금단 보스 5% · 원정 완주 2%, 위험도 10 지역은 ×1.5).
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
