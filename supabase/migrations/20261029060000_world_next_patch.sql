@@ -2411,6 +2411,27 @@ begin
   execute replace(d, a, b);
 end $$;
 
+-- 서버 부담(배포 전 점검): 전투 능력치 화면(world_combat_profile)이 부를 때마다 능력치 6종 미리보기까지 world_combat_stats를 7번 계산했다(평균 98ms, 가장 무거운 호출).
+-- 미리보기는 성장 탭에서 능력치 포인트가 있을 때만 쓰므로 p_preview를 받아 그때만 계산한다(그 밖의 화면은 1번, 약 12ms). 인자 없이 부르는 옛 화면은 미리보기 없이 받는다.
+drop function if exists public.world_combat_profile();
+create or replace function public.world_combat_profile(p_preview boolean default false)
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); k text; prev jsonb := '{}'::jsonb;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if coalesce(p_preview, false) then
+    foreach k in array array['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'] loop
+      prev := prev || jsonb_build_object(k, public.world_combat_stats(uid, jsonb_build_object(k, 1)) - 'weapon' - 'armor' - 'stats');
+    end loop;
+  end if;
+  return jsonb_build_object('current', public.world_combat_stats(uid), 'plus_one', prev,
+    'durability', (select coalesce(jsonb_object_agg(d.item_id, jsonb_build_object('durability', d.durability, 'max', d.max_durability)), '{}'::jsonb)
+                   from public.world_item_durability d where d.owner_id = uid));
+end $$;
+alter function public.world_combat_profile(boolean) owner to fn_owner_field;
+revoke all on function public.world_combat_profile(boolean) from public, anon, authenticated;
+grant execute on function public.world_combat_profile(boolean) to authenticated, service_role;
+
 -- 비고에서 산 채팅 이름 색(1021~1027)도 고를 수 있게: 이름 색 목록에 더하고(world_faction_unlocks), 고르는 범위를 넓힌다.
 -- 세력을 떠나도 산 것은 남는다. 레거시 1016을 넣는 대기 파일은 규칙 목록 줄을 고치므로 그 줄은 건드리지 않는다.
 do $$
@@ -2596,7 +2617,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 21. 현장의 **답사 지도**: 길·채집터 수를 말로 적고, 다 찾은 곳 표시, 찾지 못한 곳은 빈칸으로, 위에 답사도 단계 막대.
 22. 물품 정보의 「얻는 곳」에 대장간·상점·세력 비고를 나눠 적습니다.
 23. 쓰러졌다 다시 일어나면 전체 채팅에 그 소식도 남습니다. 이동 중에는 탈것을 바꿀 수 없습니다. 노정 건량은 누구나 만듭니다.
-24. 화면: 환골탈태 서첩 창(모바일)·동료 화면 카드·조사원 카드 비무 단추·채팅 구조 알림 줄 정리.
+24. 화면: 환골탈태 서첩 창(모바일)·동료 화면 카드·조사원 카드 비무 단추·채팅 구조 알림 줄 정리. 장착 장비 칸에 무기 강화 단계(+N)가 보이지 않던 문제를 고쳤고, 캐릭터·가방 화면이 서버를 덜 쓰도록 전투 능력치 미리보기는 성장 탭에서 능력치 포인트가 있을 때만 계산합니다.
 25. **비무**도 겨루는 모습이 한 줄씩 펼쳐집니다(건너뛰기 가능).
 26. 거래소·직접 거래 목록에 없는 물품은 거래할 수 없는 물품(응축 영핵·천공 깃털 같은 희귀 성장 재료 등)입니다. 이제 목록 아래에 어떤 물품이 빠졌는지 적어 둡니다.
 27. **청동 호신패**·**행상인 짐틀**이 「장착 조건 누구나」로 보이는데 장착되지 않던 문제를 고쳤습니다. 청동 호신패는 호신부(3단계, Lv10·체질 12: 방어 +4·받는 피해 −4%), 행상인 짐틀은 노리개(4단계, Lv15·체질 16: 이동 시간 −6%·보급품 절약 10%)가 됩니다. 청동 호신패 제작법 둘은 이제 서로 다른 호신부를 만듭니다: 요핵 → 청동 호신패, 주사·비취 → **비취 청동패**(술법 +5%·침식 −5%·정신 손실 −4%).
