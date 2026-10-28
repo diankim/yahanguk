@@ -123,7 +123,7 @@ function noteActs(n) {
 }
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv);
+  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.invite) {
@@ -170,7 +170,7 @@ function notePop(n) {
     ${icon(/^bond_/.test(n.kind) ? 'heart' : n.kind === 'circle_invite' ? 'chat' : /^party_/.test(n.kind) ? 'users' : n.kind === 'friend_request' ? 'heart' : n.kind === 'trade_offer' ? 'coin' : /^spar_/.test(n.kind) ? 'sword' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
     <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-pop-close aria-label="나중에">나중에</button></div></div>`);
   card.addEventListener('click', async e => {
-    const b = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-rescue],[data-go-exp],[data-ov],[data-spar],[data-sparv]');
+    const b = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-rescue],[data-go-exp],[data-ov],[data-spar],[data-sparv],[data-pexp]');
     if (b) { if (await runAct(b)) card.remove(); return; }
     if (e.target.closest('[data-pop-close]')) card.remove();
   });
@@ -194,7 +194,7 @@ function openNotifications() {
       <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-read="${esc(n.id)}">확인</button></div></article>`).join('') : '<p class="muted">새 알림이 없습니다.</p>'}
       ${notes.length > 1 ? '<button class="btn block" data-read-all>모두 확인</button>' : ''}</div>`);
   body.addEventListener('click', async e => {
-    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-bug],[data-rescue],[data-go-exp],[data-ov],[data-spar],[data-sparv]'), all = e.target.closest('[data-read-all]');
+    const r = e.target.closest('[data-read]'), a = e.target.closest('[data-invite],[data-trade],[data-friend],[data-circle],[data-bondn],[data-bug],[data-rescue],[data-go-exp],[data-ov],[data-spar],[data-sparv],[data-pexp]'), all = e.target.closest('[data-read-all]');
     if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.invite || a.dataset.trade || a.dataset.friend || a.dataset.circle || a.dataset.bondn || a.dataset.spar || a.dataset.sparv)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
     if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); emptyNew(); }
     if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>'; emptyNew(); }, { success: '알림을 모두 확인했습니다.' }); }
