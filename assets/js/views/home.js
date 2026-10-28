@@ -46,6 +46,11 @@ export function destroy() { off.forEach(f => f()); off = []; window.removeEventL
 let again = false, fishSpot = null, restSt = null, idleSt = null;
 const restAt = k => { const t = restSt?.[k + '_ready_at']; return t ? new Date(t).getTime() : 0; };
 // 다음 휴식까지 남은 시간(잠깐·푹). 둘 다 가능하면 빈 문자열
+// 야영 칸에는 잠깐·푹을 한 줄씩 나눠 보인다
+function restParts(now = Date.now()) {
+  const a = restAt('short') - now, b = restAt('full') - now;
+  return [a > 0 ? `잠깐 ${fmt.remain(a)}` : '', b > 0 ? `푹 ${fmt.remain(b)}` : ''].filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('');
+}
 function restLine(now = Date.now(), short = false) {
   const a = restAt('short') - now, b = restAt('full') - now;
   const p = [a > 0 ? `잠깐 ${fmt.remain(a)}` : '', b > 0 ? `푹 ${fmt.remain(b)}` : ''].filter(Boolean);
@@ -163,7 +168,7 @@ function field(s, roster, blocked) {
         <div class="act-tiles">
           <button class="tile primary" id="search" title="탐색력 1 · 길·채집터·요괴·보급·단서" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색</span></button>
           <button class="tile" id="exp-open2" title="원정 보내기" ${blocked ? 'disabled' : ''}>${icon('flame', 22)}<span>원정</span></button>
-          <button class="tile" id="camp" title="야영" ${blocked ? 'disabled' : ''}>${icon('moon', 22)}<span>야영</span><small class="rest-cd" data-rest-line="short">${esc(restLine(Date.now(), true))}</small></button>
+          <button class="tile" id="camp" title="야영" ${blocked ? 'disabled' : ''}>${icon('moon', 22)}<span>야영</span><small class="rest-cd" data-rest-line="short">${restParts()}</small></button>
           <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
         </div>
@@ -306,9 +311,9 @@ function tick() {
   $$('#fish-go', el).forEach(b => { const t = Number(b.dataset.ready); if (!t || b.dataset.busy === '1') return; if (t > now) { b.disabled = true; b.querySelector('span').textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.querySelector('span').textContent = '낚시하기'; } });
   $$('[data-gather]', el).forEach(b => { const t = Number(b.dataset.ready); if (!t) return; if (t > now) { b.disabled = true; b.textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.textContent = '채집'; } });
   const line = restLine(now);
-  $$('[data-rest-line]', el).forEach(x => { const fac = x.closest('.facility'); x.textContent = x.dataset.restLine === 'short' ? restLine(now, true) : (line || (fac ? '쉬며 회복하고 탐색력 채우기' : '')); });
+  $$('[data-rest-line]', el).forEach(x => { const fac = x.closest('.facility'); if (x.dataset.restLine === 'short') { const h = restParts(now); if (x.innerHTML !== h) x.innerHTML = h; } else x.textContent = line || (fac ? '쉬며 회복하고 탐색력 채우기' : ''); });
   $$('.modal [data-rest]').forEach(b => { const t = restAt(b.dataset.rest), sm = b.querySelector('[data-rest-cd]'); if (!sm) return;
-    if (t > now) { b.disabled = true; sm.textContent = `${fmt.remain(t - now)} 뒤 다시`; } else if (sm.textContent) { b.disabled = false; sm.textContent = ''; } });
+    if (t > now) { b.disabled = true; sm.textContent = `다시 쉬기까지 ${fmt.remain(t - now)}`; } else if (sm.textContent) { b.disabled = false; sm.textContent = ''; } });
   const c = store.character;
   $$('[data-death]', el).forEach(s => { const t = c?.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0; s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });
 }

@@ -47,7 +47,7 @@ function show(kind, key) {
   const el = document.createElement('div');
   el.className = 'update-pop'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-label', '새 버전');
   el.innerHTML = `${icon('refresh', 20)}<div><b>야행국이 새로 손질되었습니다</b><span>${esc(kind === 'db' ? '서버 규칙이 바뀌었습니다. 새로고침해야 바뀐 내용이 제대로 적용됩니다.' : '화면이 새로 바뀌었습니다. 새로고침하면 바뀐 내용을 볼 수 있습니다.')}</span></div>
-    <div class="note-actions"><button class="btn primary small" data-reload>지금 새로고침</button><button class="btn ghost small" data-later>나중에</button></div>`;
+    <div class="note-actions"><button class="btn primary small" data-reload>지금 새로고침</button><a class="btn ghost small" href="#/patch">패치노트</a><button class="btn ghost small" data-later>나중에</button></div>`;
   el.querySelector('[data-reload]').onclick = () => location.reload();
   el.querySelector('[data-later]').onclick = () => { dismissedAt = key; el.remove(); };
   document.body.append(el);

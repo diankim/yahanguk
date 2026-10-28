@@ -1080,7 +1080,8 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 /* 숨김 표시는 언제나 숨긴다(목록에 display를 준 class가 hidden을 이기던 문제: 상점 사기/팔기) */
 [hidden] { display: none !important; }
 /* 휴식 쿨타임 카운트다운 */
-.rest-cd { display: block; font-size: 11px; color: var(--warn); font-variant-numeric: tabular-nums; }
+.rest-cd { display: block; margin-top: 2px; font-size: 12px; font-weight: 700; color: var(--warn); font-variant-numeric: tabular-nums; }
+.action-grid [data-rest] { align-content: start; } .action-grid [data-rest] small { display: block; }
 .rest-cd:empty { display: none; }
 #camp { flex-wrap: wrap; } #camp .rest-cd { flex-basis: 100%; text-align: center; }
 .facility [data-rest-line] { font-variant-numeric: tabular-nums; }
@@ -1469,9 +1470,9 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .tile:hover:not(:disabled) { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
 .tile:disabled { opacity: .45; cursor: not-allowed; }
 .tile.searching .ico { animation: spin .8s linear infinite; }
-.tile .rest-cd { position: absolute; left: 4px; right: 4px; bottom: 3px; font-size: 9.5px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.tile .rest-cd { display: grid; gap: 0; font-size: 10.5px; line-height: 1.25; font-weight: 600; color: var(--warn); text-align: center; font-variant-numeric: tabular-nums; }
 .tile .rest-cd:empty { display: none; }
-.tile:has(.rest-cd:not(:empty)) { padding-bottom: 14px; }
+.tile .rest-cd span { white-space: nowrap; }
 @media (max-width: 1099px) {
   .tabbar { left: 10px; right: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); height: 56px; padding-bottom: 0; border-radius: 18px; border: var(--bw) solid var(--line); background: var(--surface); }
   .tabbar a { position: relative; gap: 0; }
@@ -1568,3 +1569,28 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .hs-yohwa.s1 { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
 .hs-yohwa.seal { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); }
 .yohwa-note em { font-style: normal; font-weight: 650; }
+.notice-line { display: flex; gap: 6px; align-items: center; margin: 6px 0; padding: 6px 8px; font-size: 12.5px; color: var(--muted); border: var(--bw) dashed var(--line); border-radius: var(--r-sm); }
+.ingr li small { margin-left: 4px; font-size: 11px; }
+.chat-list .chat-notice.sys { color: var(--text); border: var(--bw) solid color-mix(in srgb, var(--bad) 40%, var(--line)); background: color-mix(in srgb, var(--bad) 8%, var(--surface-2)); align-items: center; }
+.chat-list .chat-notice.sys svg { color: var(--bad); flex: none; }
+.patch-link { display: inline-flex; align-items: center; gap: 3px; padding: 0 6px; border-radius: 999px; border: var(--bw) solid var(--line); color: var(--accent); text-decoration: none; font-size: 12px; }
+/* 패치노트 */
+.patch-list { display: grid; gap: 10px; }
+.patch summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 12px 14px; cursor: pointer; list-style: none; }
+.patch summary::-webkit-details-marker { display: none; }
+.patch summary::before { content: '▸'; color: var(--muted); } .patch[open] summary::before { content: '▾'; }
+.patch-body { padding: 0 14px 12px; font-size: 13.5px; }
+.patch-body h3 { margin: 10px 0 4px; font-size: 14px; color: var(--gold); }
+.patch-body ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+/* 환골탈태 서첩 선택 */
+.choice { display: flex; gap: 8px; align-items: flex-start; padding: 10px; border-radius: var(--r-sm); border: var(--bw) solid var(--line); background: var(--surface-2); cursor: pointer; }
+.choice span { display: grid; gap: 2px; } .choice small { color: var(--muted); font-size: 11.5px; }
+.choice:has(input:checked) { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 9%, var(--surface-2)); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+/* 목록의 짧은 설명(작은 글씨 한 줄) */
+small.brief { display: block; font-size: 11px; line-height: 1.35; color: var(--muted); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.inv-name small.brief { margin-top: 1px; }
+/* 물품 정보: 얻는 곳(한 줄로 갈래를 이어 쓴다) */
+.kv.info .wide { grid-column: 1 / -1; }
+.src-row dd { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12.5px; }
+.src-row .src b { color: var(--gold); font-weight: 600; margin-right: 2px; }

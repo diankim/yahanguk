@@ -422,6 +422,8 @@ async function loadEquipped() {
   try { const { data } = await db.from('world_character_equipment').select('item_id').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id); }
   catch { equipped = null; }
 }
+// 목록에 붙이는 짧은 설명: 첫 문장만, 길면 줄인다
+export function brief(t, n = 42) { const s = String(t || '').split(/(?<=[.!?。])\s|\n/)[0].trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
 export function equippedIds() { return equipped || []; }
 export function bagUsed(c) {
   const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;

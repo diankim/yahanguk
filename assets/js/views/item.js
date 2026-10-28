@@ -1,10 +1,10 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf } from '../core.js';
+import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS } from '../core.js';
 import { load, chip } from './common.js';
 
-export const USABLE = { tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
+export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
   ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +5', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
   // 영력 회복약(낮은 단계부터)
   spirit_tea: '영력 10', clear_spirit_pill: '영력 20', spirit_qi_pill: '영력 35', moonlight_essence: '영력 55 · 심신 동요 치료', heavenly_dew: '영력 80 · 심신 동요·사념 침식 치료',
@@ -84,6 +84,19 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
 
+// 얻는 곳: 서버 world_item_sources(물품마다 이 접속 동안 기억)
+const srcCache = new Map();
+async function fillSources(box, id) {
+  const dd = $('[data-src]', box); if (!dd) return;
+  try {
+    if (!srcCache.has(id)) srcCache.set(id, await load('world_item_sources', { p_item: id }));
+    const s = srcCache.get(id) || {};
+    const part = (label, list, n) => list?.length ? `<span class="src"><b>${label}</b> ${esc(list.join(' · '))}${n > list.length ? ` 외 ${n - list.length}곳` : ''}</span>` : '';
+    const html = [part('채집', s.gather, s.gather_n), part('조사', s.sites, s.sites_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
+    dd.innerHTML = html || (s.craft ? '<span class="muted">제작으로 얻습니다</span>' : s.shop ? '<span class="muted">상점에서 삽니다</span>' : '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>');
+    if (html && s.craft) dd.insertAdjacentHTML('beforeend', '<span class="src muted">제작으로도 얻음</span>');
+  } catch { dd.textContent = '-'; }
+}
 function draw(box, id, inv, prices, mode) {
   const c = store.character, it = (inv.catalog || []).find(x => x.id === id), pr = prices.get(id);
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
@@ -101,12 +114,12 @@ function draw(box, id, inv, prices, mode) {
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     <dl class="kv info">
-      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''}</dd></div>
-      <div><dt>한 칸에</dt><dd>${fmt.num(stackOf(id))}개까지</dd></div>
+      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small></dd></div>
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
+      <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>
       ${it && GEAR.has(it.category) ? `<div><dt>장착 조건</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
     </dl>
     ${uses.length ? `<h3 class="sub-h">이 물품이 들어가는 제작법 ${uses.length}</h3><ul class="spot-list">${uses.map(recipeRow).join('')}</ul>
@@ -128,6 +141,7 @@ function draw(box, id, inv, prices, mode) {
       </div>
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
+  fillSources(box, id);
   box.onclick = async e => {
     const r = e.target.closest('[data-recipe]'), mat = e.target.closest('[data-mat]'), d = e.target.closest('[data-do]');
     if (r || mat) {
@@ -138,7 +152,7 @@ function draw(box, id, inv, prices, mode) {
     }
     if (!d) return;
     const k = d.dataset.do;
-    if (k === 'use') await guard(d, () => act('world_use_item', { p_item_id: id }));
+    if (k === 'use') await useItem(id, d);
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
     if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
     if (k === 'dismantle') {
@@ -156,5 +170,31 @@ function draw(box, id, inv, prices, mode) {
       const [inv2, prices2] = await Promise.all([load('world_inventory_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => [])]);
       if (box.isConnected) draw(box, id, inv2, new Map((prices2 || []).map(p => [p.item_id, p])), mode);
     } catch {}
+  };
+}
+
+// 물품 쓰기: 초기화 물품 두 가지는 확인 창·선택 창을 거쳐 전용 서버 함수로 쓴다
+export async function useItem(id, btn) {
+  if (id === 'reset_stats') {
+    if (!(await ask('능력치를 모두 처음(각 5)으로 되돌리고 쓴 포인트를 돌려받을까요? 세심단 하나를 씁니다.', { title: '세심단', ok: '쓰기' }))) return;
+    return guard(btn, () => act('world_reset_stats'));
+  }
+  if (id === 'reset_identity') return openResetIdentity();
+  return guard(btn, () => act('world_use_item', { p_item_id: id }));
+}
+function openResetIdentity() {
+  const c = store.character || {};
+  const m = openModal({ title: '환골탈태 서첩', body: `
+    <p class="muted small">직업과 소속을 다시 고릅니다. 대세력에서 나오고(평판 0) 능력치는 처음(각 5)으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·물품·전·칭호·기술은 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다.</p>
+    <h3 class="sub-h">직업</h3>
+    <div class="choice-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
+    <h3 class="sub-h">소속</h3>
+    <div class="choice-grid">${Object.entries(FACTIONS).filter(([k]) => ['headquarters', 'fieldbureau', 'archivebureau', 'sealbureau', 'medicalbureau', 'independent'].includes(k)).map(([k, f]) => `<label class="choice"><input type="radio" name="rf" value="${k}" ${k === c.faction_key ? 'checked' : ''}><span><b>${esc(f.name)}</b><small>${esc(f.trait || '')}</small></span></label>`).join('')}</div>
+    <div class="modal-actions"><button class="btn primary" id="ri-go">${icon('spark', 15)}<span>이대로 다시 시작</span></button></div>` });
+  $('#ri-go', m).onclick = async e => {
+    const job = $('input[name=rj]:checked', m)?.value, fac = $('input[name=rf]:checked', m)?.value;
+    if (!job || !fac) return toast('직업과 소속을 고르세요.', 'error');
+    if (!(await ask(`${JOBS[job]?.name} · ${FACTIONS[fac]?.name}(으)로 다시 시작할까요? 서첩 하나를 쓰고, 되돌릴 수 없습니다.`, { title: '환골탈태', ok: '다시 시작' }))) return;
+    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac }); closeModal(); return out; });
   };
 }

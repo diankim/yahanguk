@@ -8,7 +8,7 @@ const S = [
     <ol class="how">
       <li><b>입국</b> 캐릭터를 만들면 <em>야행국 본부 정청</em>(안전지대)에서 시작합니다. 화면 위(PC는 왼쪽) 상태판에서 체력·정신·영력·침식과 지금 하는 일을 늘 볼 수 있습니다.</li>
       <li><b>준비</b> 현장 탭의 <em>상점</em>에서 노정 건량과 청심환을 몇 개 삽니다. 원정은 1시간마다 노정 건량을 하나씩 먹습니다.</li>
-      <li><b>출발</b> 지도 탭에서 선으로 이어진 <em>제4구역 · 야외 현장</em>을 누르고 「이곳으로 이동」. 화면 위에 남은 이동 시간이 계속 떠 있고, 도착하면 알려 줍니다.</li>
+      <li><b>출발</b> 지도 탭에서 선으로 이어진 <em>잿빛 들녘</em>을 누르고 「이곳으로 이동」. 화면 위에 남은 이동 시간이 계속 떠 있고, 도착하면 알려 줍니다.</li>
       <li><b>직접 탐색</b> 현장 탭에서 <em>요괴 수색</em>으로 전투를 하거나, <em>채집</em>·<em>탐사 지점 조사</em>로 재료와 단서를 모읍니다.</li>
       <li><b>첫 원정</b> 같은 화면의 <em>원정</em>에서 「비젖은 돌길」을 골라 30분·신중 태세로 보내 보세요. 돌아오면 전투·채집·발견 결과와 함께 지역 답사도가 오릅니다.</li>
       <li><b>성장</b> 모은 재료로 가방 › 제작에서 도구나 장비를 만들고, 레벨이 오르면 캐릭터 › 성장에서 능력치를 나눕니다.</li>
@@ -227,7 +227,7 @@ const S = [
 
 export function render(el) {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('help', 14)} 조사원 수첩</p><h1>도움말</h1></div>
-      <div class="head-actions"><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록 다시 보기</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
+      <div class="head-actions"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록 다시 보기</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
     <div class="guide">
       <nav class="guide-toc" aria-label="목차">${S.map(([id, t]) => `<a href="#g-${id}" data-g="${id}">${esc(t)}</a>`).join('')}</nav>
       <div class="guide-body">${S.map(([id, t, body]) => `<section class="panel guide-sec" id="g-${id}"><header class="panel-head"><h2>${esc(t)}</h2></header><div class="panel-body">${body}</div></section>`).join('')}</div>

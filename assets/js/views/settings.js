@@ -25,7 +25,7 @@ export async function render(root, sub) {
   const [titles, cos, styles] = await Promise.all([load('world_title_snapshot').catch(() => null), load('world_cosmetic_snapshot').catch(() => null), rpc('world_name_styles').catch(() => ({}))]);
   const earned = (titles?.titles || []).filter(t => t.earned);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('gear', 14)} 이 기기와 캐릭터의 설정</p><h1>게임 설정</h1></div>
-      <div class="head-actions"><button class="btn primary" id="set-save" disabled>${icon('check', 16)}<span>변경 사항 저장</span></button></div></div>
+      <div class="head-actions"><a class="btn ghost" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn primary" id="set-save" disabled>${icon('check', 16)}<span>변경 사항 저장</span></button></div></div>
     <div class="set-links"><button class="btn small" id="set-view-profile">${icon('idcard', 14)}<span>프로필 보기</span></button><button class="btn small" id="set-bug">${icon('flag', 14)}<span>버그·문의 제보</span></button><button class="btn small ghost" id="set-logout-top">${icon('logout', 14)}<span>로그아웃</span></button></div>
     ${segmented('set-sub', SUBS, SUBS.some(x => x[0] === sub) ? sub : 'profile')}
     <section id="sec-profile" class="set-sec">
