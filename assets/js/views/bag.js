@@ -183,15 +183,15 @@ function craft(body, inv, stg) {
         <button class="btn small ${can ? 'primary' : ''}" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? '제작' : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`;
-  bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv); });
-  $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); craft(body, inv); });
-  $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); craft(body, inv); });
+  bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv, stg); });
+  $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); craft(body, inv, stg); });
+  $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); craft(body, inv, stg); });
   const ci = $('#craft-q', body);
   // 한글을 조합하는 동안에는 다시 그리지 않는다(조합이 끊긴다). 조합이 끝나면 그린다.
-  const redo = () => { cq = ci.value; const pos = ci.selectionStart; craft(body, inv); const n = $('#craft-q', body); n.focus(); n.setSelectionRange(pos, pos); };
+  const redo = () => { cq = ci.value; const pos = ci.selectionStart; craft(body, inv, stg); const n = $('#craft-q', body); n.focus(); n.setSelectionRange(pos, pos); };
   ci.oninput = e => { if (!e.isComposing) redo(); };
   ci.addEventListener('compositionend', redo);
-  $('#craft-unfocus', body)?.addEventListener('click', () => { matFocus = recipeFocus = null; craft(body, inv); });
+  $('#craft-unfocus', body)?.addEventListener('click', () => { matFocus = recipeFocus = null; craft(body, inv, stg); });
   // 제작법 이름·만드는 물품·재료·도구 이름을 누르면 물품 정보 창을 띄운다
   $$('.recipe [data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
   $$('[data-craft]', body).forEach(b => b.onclick = () => guard(b, () => act('world_craft_item', { p_recipe_id: b.dataset.craft })));
