@@ -1440,14 +1440,16 @@ end $$;
 -- ⑨ ─────────────────────────────────────────
 -- 같은 장비를 여럿 가졌을 때 내구도 기록(world_item_durability, 사람×물품 하나)은 장착해 닳은 한 벌을 뜻한다.
 -- 상점에 팔거나·버리거나·분해해 하나를 내놓으면 수량만 줄고 닳은 기록이 남아, 멀쩡한 쪽이 팔린 것처럼 됐다(문의: 닳은 장비를 팔고 새로 만든 것을 끼려 했는데 새것이 팔림).
--- 이 세 행동에서는 닳은 쪽이 먼저 나가고 남은 것은 새것(기록을 지움)으로 본다. 창고·거래는 그대로(닳은 것을 넘겨 공짜로 고치는 길을 막는다).
+-- 이 세 행동에서는 닳은 쪽이 먼저 나가고 남은 것은 새것(기록을 지움)으로 본다. 모두 내놓아 0개가 되어도 기록을 지운다(새로 만든 것이 옛 내구도를 물려받지 않게).
+-- 창고·거래는 그대로(닳은 것을 넘겨 공짜로 고치는 길을 막는다).
 create or replace function public.world_wear_leaves_first()
 returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
 begin
+  -- 하나도 남지 않으면 기록을 지운다(제보 #7: 모두 분해한 뒤 새로 만든 장비가 옛 내구도를 물려받음).
   delete from public.world_item_durability d
-   where d.owner_id = new.owner_id and d.durability < d.max_durability
+   where d.owner_id = new.owner_id
      and coalesce((old.inventory ->> d.item_id)::numeric, 0) > coalesce((new.inventory ->> d.item_id)::numeric, 0)
-     and coalesce((new.inventory ->> d.item_id)::numeric, 0) >= 1;
+     and (coalesce((new.inventory ->> d.item_id)::numeric, 0) < 1 or d.durability < d.max_durability);
   return new;
 end $$;
 revoke all on function public.world_wear_leaves_first() from public, anon, authenticated;
@@ -2288,7 +2290,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 ### 무기와 장비
 12. **원거리 소모품**: 화살·쇠뇌살·취관 침(묶음 100). 한 발에 하나를 쓰고, 없으면 피해가 절반입니다. 원정은 회차마다 둘. 지금 원거리 무기를 든 분께 100개를 드렸습니다(가방이 차면 창고로). 상점과 목공 제작법에서 구합니다.
 13. **기력**: 근접 무기를 들면 영력 게이지가 노란 「기력」이 되고, 근접 공격마다 2를 씁니다(모자라면 피해 절반). 영력 회복약은 기력도 채웁니다.
-14. 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나갑니다.
+14. 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나갑니다. 모두 팔거나 분해한 뒤 새로 만든 장비는 새 내구도로 시작합니다(전에는 옛 장비의 닳은 내구도가 남았습니다).
 
 ### 원정·파티
 15. **파티 원정**: 파티장이 제안하고 동료가 수락하면 한꺼번에 출발합니다(출발·귀환 시각이 같음).
