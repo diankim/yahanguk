@@ -121,6 +121,7 @@ function town(s, roster) {
     ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
+    ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
     ['board', 'scroll', '의뢰 게시판', '사건과 상시 의뢰'],
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
@@ -161,6 +162,7 @@ function field(s, roster, blocked) {
           <button class="tile primary" id="search" title="탐색력 1 · 길·채집터·요괴·보급·단서" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색</span></button>
           <button class="tile" id="exp-open2" title="원정 보내기" ${blocked ? 'disabled' : ''}>${icon('flame', 22)}<span>원정</span></button>
           <button class="tile" id="camp" title="야영" ${blocked ? 'disabled' : ''}>${icon('moon', 22)}<span>야영</span><small class="rest-cd" data-rest-line="short">${esc(restLine(Date.now(), true))}</small></button>
+          <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
         </div>
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
@@ -256,6 +258,7 @@ function bind(s) {
   const openExp = () => openExpedition();
   $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp); $('#exp-open3', el)?.addEventListener('click', openExp);
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
+  $('#idle-rest', el)?.addEventListener('click', goIdleRest);
   $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
   $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
@@ -309,10 +312,13 @@ function tick() {
 }
 
 /* ── 창 ───────────────────────────────────────────────── */
+// 자율 활동 › 휴식으로 바로 보낸다(캐릭터 › 자율 화면이 휴식 칸을 짚어 준다)
+function goIdleRest() { try { sessionStorage.setItem('yh-idle-focus', 'rest'); } catch {} window.yahangGo('char', 'idle'); }
 function openFacility(k, s) {
   if (k === 'depart') return window.yahangGo('map');
   if (k === 'board') return window.yahangGo('log', 'story');
   if (k === 'inn') return openRest(s.region);
+  if (k === 'idle') return goIdleRest();
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간' }[k];
   const m = openModal({ title, wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);

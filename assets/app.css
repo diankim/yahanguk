@@ -1420,7 +1420,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .frame-c i:nth-child(2) { right: 0; top: 0; border-right-width: 3px; border-top-width: 3px; }
 .frame-c i:nth-child(3) { left: 0; bottom: 0; border-left-width: 3px; border-bottom-width: 3px; }
 .frame-c i:nth-child(4) { right: 0; bottom: 0; border-right-width: 3px; border-bottom-width: 3px; }
-.act-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.act-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .tile { position: relative; display: grid; place-items: center; align-content: center; gap: 3px; min-height: 64px; padding: 6px 4px; border-radius: 14px; border: var(--bw) solid transparent; background: var(--surface-2); color: var(--text); font-weight: 600; font-size: 12.5px; text-decoration: none; cursor: pointer; }
 .tile .ico { color: var(--gold); }
 .tile.primary { background: var(--accent); color: var(--accent-ink); }
@@ -1473,3 +1473,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ov-list .item-act { display: flex; gap: 6px; flex: none; }
 .ov-foot { margin-top: 10px; justify-content: space-between; }
 .notice.warn { border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); } .notice.warn > .ico { color: var(--warn); }
+.tile span { white-space: nowrap; }
+@media (max-width: 380px) { .act-tiles { gap: 4px; } .tile { font-size: 11.5px; } }
+/* 현장의 「자율 휴식」에서 넘어오면 휴식 칸을 잠깐 짚어 준다 */
+.idle-card { transition: border-color .3s, box-shadow .3s; }
+.idle-card.focus { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }

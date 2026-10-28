@@ -280,7 +280,7 @@ async function idle(body) {
       <div class="btn-row">${ready ? `<button class="btn primary" id="idle-claim">${icon('check', 16)}<span>보상 수령</span></button>`
         : `<button class="btn" id="idle-stop">${icon('close', 16)}<span>그만두기</span></button>`}</div>
       <p class="muted small">완료 시각은 서버가 기록합니다. 접속하지 않아도 진행되며, 한 번에 하나만 할 수 있습니다. 도중에 그만두면 지난 시간만큼만 받습니다.</p>`, { ico: 'hourglass' }) : ''}
-    <div class="idle-grid">${IDLE.map(([k, n, d, ic]) => `<article class="idle-card">
+    <div class="idle-grid">${IDLE.map(([k, n, d, ic]) => `<article class="idle-card" data-idle-card="${k}">
       <header>${icon(ic, 18)}<b>${n}</b></header><p>${d}</p>
       <div class="dur">${DURATIONS.map(([m, l]) => `<button class="btn small" data-idle="${k}" data-min="${m}" ${active ? 'disabled' : ''}><b>${l}</b><small>${esc(idleReward(k, m, store.character?.level || 1).join(' · '))}</small></button>`).join('')}</div></article>`).join('')}</div>
     <p class="muted small">자율 활동은 접속하지 않는 동안의 보조 성장입니다. 직접 탐사·전투·제작이 더 큰 보상을 줍니다.</p>`;
@@ -293,6 +293,10 @@ async function idle(body) {
     if (!(await ask(`${name}을(를) 지금 그만둘까요?\n지난 시간 ${fmt.num(mins)}분만큼만 받습니다: ${got}\n그만두면 바로 다른 행동을 할 수 있습니다.`, { title: '자율 활동 그만두기', ok: '그만두기', cancel: '계속하기', danger: true }))) return;
     guard(stop, async () => { const r = await act('world_claim_idle_activity'); return { content: r?.message || '자율 활동을 그만두었습니다.' }; });
   };
+  // 현장의 「자율 휴식」에서 왔으면 휴식 칸을 짚어 준다
+  let focus = null; try { focus = sessionStorage.getItem('yh-idle-focus'); sessionStorage.removeItem('yh-idle-focus'); } catch {}
+  const fc = focus && $(`[data-idle-card="${focus}"]`, body);
+  if (fc) { fc.classList.add('focus'); requestAnimationFrame(() => fc.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => fc.classList.remove('focus'), 2600); }
   $$('[data-idle]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.idle, m = Number(b.dataset.min), n = IDLE.find(x => x[0] === k)?.[1] || '자율 활동', l = DURATIONS.find(x => x[0] === m)?.[1] || `${m}분`;
     const ok = await ask(`${n}을(를) ${l} 동안 할까요?\n받을 것: ${idleReward(k, m, store.character?.level || 1).join(' · ')}\n끝날 때까지 다른 자율 활동은 할 수 없고, 다 끝난 뒤에 보상을 받습니다.`, { title: '자율 활동 시작', ok: '시작', cancel: '그만두기' });
