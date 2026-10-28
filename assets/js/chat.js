@@ -1,7 +1,7 @@
 // 인게임 채팅: 전체·지역·세력·파티·모임. PC는 우측 열, 모바일은 하단 시트. 귓속말은 따로 상대별 창(whisper.js)으로 연다.
 // 모임 탭은 모임에 든 사람에게만 보이고, 탭 아래 단추로 볼 모임을 하나 골라 그 모임의 말만 보여 준다(모임마다 내가 정한 색으로).
 import { cardName } from './views/card.js';
-import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError } from './core.js';
+import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError, emblem } from './core.js';
 import { onWhisper, openWhisperWindow } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
@@ -209,6 +209,17 @@ async function loadParty() {
   catch (e) { drawError(friendlyError(e)); }
 }
 
+// 얼굴(프로필 사진·문장): 처음 보는 사람만 모아 한 번에 묻고 이 접속 동안 기억한다(world_chat_faces)
+const faces = new Map(); let faceAsk = null; const faceWait = new Set();
+function wantFace(id) {
+  if (!id || faces.has(id) || faceWait.has(id)) return;
+  faceWait.add(id);
+  clearTimeout(faceAsk); faceAsk = setTimeout(async () => {
+    const ids = [...faceWait].slice(0, 60); ids.forEach(x => faceWait.delete(x));
+    try { const r = await rpc('world_chat_faces', { p_ids: ids }); ids.forEach(x => faces.set(x, r?.[x] || {})); draw(); }
+    catch { ids.forEach(x => faces.set(x, null)); }
+  }, 120);
+}
 function draw() {
   const list = $('#chat-list', panel); if (!list) return;
   const me = store.user?.id;
@@ -241,8 +252,10 @@ function msgRow(r, prev) {
   const cont = prev && prev.sid === r.sid && r.at && prev.at && new Date(r.at) - new Date(prev.at) < 300000;
   const cls = ['msg', r.mine ? 'mine' : '', r.gm ? 'gm' : '', cont ? 'cont' : ''].filter(Boolean).join(' ');
   if (cont) return `<li class="${cls}"><p>${esc(r.text)}</p></li>`;
-  const initial = esc([...String(r.who || '?')][0] || '?');
-  return `<li class="${cls}" style="--hu:${Number.isInteger(r.color) ? r.color : hue(r.sid)}"><i class="av" aria-hidden="true">${initial}</i><div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
+  const initial = esc([...String(r.who || '?')][0] || '?'), face = faces.get(r.sid);
+  if (!faces.has(r.sid)) wantFace(r.sid);
+  const av = face ? `<i class="av face" aria-hidden="true">${emblem(r.sid, face, 26)}</i>` : `<i class="av" aria-hidden="true">${initial}</i>`;
+  return `<li class="${cls}" style="--hu:${Number.isInteger(r.color) ? r.color : hue(r.sid)}">${av}<div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${esc(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {
