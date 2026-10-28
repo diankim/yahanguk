@@ -1401,3 +1401,11 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .hue-pick.auto { color: var(--muted); font-weight: 600; }
 .hue-pick.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
 .hue-preview { font-size: 13px; } .hue-preview b { color: hsl(var(--hu) 50% 72%); } [data-tone=light] .hue-preview b { color: hsl(var(--hu) 45% 34%); }
+/* PC: 이동 띠가 뜨면 왼쪽 상태판·오른쪽 채팅 높이를 그만큼 줄여 화면에 세로 스크롤이 생기지 않게 한다 */
+@media (min-width: 1100px) {
+  .travel-banner { height: 46px; box-sizing: border-box; padding-top: 0; padding-bottom: 0; }
+  body.has-banner .hud { top: calc(var(--top-h) + 46px); height: calc(100vh - var(--top-h) - 46px); }
+}
+@media (min-width: 1280px) {
+  body.has-banner .chat-col { top: calc(var(--top-h) + 46px); height: calc(100vh - var(--top-h) - 46px); }
+}
