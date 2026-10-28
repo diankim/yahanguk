@@ -55,13 +55,15 @@ export function throttle(fn, gap) {
 // 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);
+  if (/equip/.test(name)) equipped = null; // 장착이 바뀌면 다음 읽기에서 장착 목록도 다시 읽는다
   try { await loadCharacter(); } catch {}
   emit('changed', { name, data });
   return data;
 }
 export async function loadCharacter() {
   if (!store.user) return null;
-  const [, { data, error }] = await Promise.all([stacks ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle()]);
+  const [, { data, error }] = await Promise.all([stacks ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle(),
+    equipped ? null : loadEquipped()]);
   if (error) throw new Error(friendlyError(error));
   store.character = data;
   emit('character', data);
@@ -413,4 +415,13 @@ async function readStacks() {
   catch { stacks = new Map(); }
 }
 export const stackOf = id => stacks?.get(id) || 1;
-export function bagUsed(c) { return Object.entries(c?.inventory || {}).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0); }
+// 장착한 장비는 가방 칸을 차지하지 않는다(서버 world_bag_limit은 장착한 수만큼 용량을 더하고, 화면은 쓴 칸에서 뺀다)
+let equipped = null;
+async function loadEquipped() {
+  try { const { data } = await db.from('world_character_equipment').select('item_id').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id); }
+  catch { equipped = null; }
+}
+export function bagUsed(c) {
+  const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;
+  return Object.entries(inv).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0) - eq;
+}
