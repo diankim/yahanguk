@@ -10,7 +10,7 @@ const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 33
 import { logout } from '../session.js';
 
 const SUBS = [['profile', '프로필', 'idcard'], ['theme', '테마', 'palette'], ['sound', '소리', 'volume'], ['account', '계정', 'shield']];
-let el, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
+let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
 export async function render(root, sub) {
   if (!store.character) return;
@@ -113,7 +113,9 @@ export async function render(root, sub) {
     pv.className = `hue-preview muted${sp ? ` ns-${draft.chatHue}` : ''}`; pv.style.setProperty('--hu', sp || draft.chatHue == null ? autoHue(c.owner_id) : draft.chatHue);
     pv.innerHTML = `<b>${esc(c.character_name)}</b> 채팅에 이렇게 보입니다.${draft.chatHue == null ? ' (자동: 이름마다 정해진 색)' : ''} 저장한 뒤 보내는 말부터 바뀝니다.`;
   };
-  el.addEventListener('click', e => {
+  // 화면 틀(root)은 다른 화면과 같이 쓰므로 들어올 때마다 붙이면 처리가 겹친다(잠긴 이름 색 안내가 두 번 뜨던 문제). 하나만 붙이고 나갈 때 뗀다.
+  if (onClick) el.removeEventListener('click', onClick);
+  el.addEventListener('click', onClick = e => {
     const em = e.target.closest('[data-em]'), col = e.target.closest('[data-col]'), th = e.target.closest('[data-theme-id]'), tr = e.target.closest('[data-try]'), cs = e.target.closest('[data-cos-kind]');
     if (cs && !cs.disabled) { draft[cs.dataset.cosKind] = cs.dataset.cosKey; touch(); drawProfile(); cosInfo(cs); }
     const lk = e.target.closest('[data-cos-lock]'); if (lk) cosInfo(lk);
@@ -176,6 +178,8 @@ function cosmeticsHtml(cos) {
 }
 // 저장하지 않고 나가면 테마 미리보기는 되돌리되, 고치던 내용은 기억해 두었다가 다시 들어오면 이어서 고친다.
 export function destroy() {
+  if (onClick && el) el.removeEventListener('click', onClick);
+  onClick = null;
   if (dirty && draft) {
     kept = { owner: store.character?.owner_id, draft: { emblem: draft.emblem, color: draft.color, bio: draft.bio, title: draft.title, frame: draft.frame, pattern: draft.pattern, seal: draft.seal, theme: draft.theme, custom: { ...draft.custom } } };
     applyTheme(savedThemeId(), false);
