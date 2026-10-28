@@ -24,9 +24,8 @@ async function check() {
 }
 async function kick() {
   if (kicking) return; kicking = true;
-  try { sessionStorage.setItem(NOTE, '다른 기기나 브라우저에서 이 계정으로 로그인해 여기서는 로그아웃되었습니다.'); } catch {}
   stopSessionGuard();
-  await logout();
+  await logout('다른 기기나 브라우저에서 이 계정으로 로그인해 여기서는 로그아웃되었습니다.');
   kicking = false;
 }
 export function mountSessionGuard() {
@@ -47,13 +46,16 @@ window.addEventListener('focus', () => { if (mounted) check(); });
 window.addEventListener('pageshow', () => { if (mounted) check(); });
 
 // 로그아웃: 서버에 알리되 응답이 늦거나 막혀도 3초 안에 이 기기의 로그인을 지우고 로그인 화면으로 간다.
-export async function logout() {
+export async function logout(note = '') {
   stopSessionGuard();
   const local = () => {
     try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch {}
+    // 다시 연 로그인 화면에 까닭을 띄운다(로그아웃 신호로 잠깐 그린 화면이 쪽지를 먼저 가져가도 다시 남긴다)
+    if (note) try { sessionStorage.setItem(NOTE, note); } catch {}
     location.replace(location.pathname + '#/home'); location.reload();
   };
   const timer = setTimeout(local, 3000);
-  try { await db.auth.signOut({ scope: 'local' }); clearTimeout(timer); }
-  catch { clearTimeout(timer); local(); }
+  // 서버가 이미 끊은 접속(다른 곳에서 로그인)은 로그아웃 요청이 거절(403)되고 화면이 그대로 남으므로, 응답과 상관없이 항상 지우고 다시 연다
+  try { await db.auth.signOut({ scope: 'local' }); } catch {}
+  clearTimeout(timer); local();
 }
