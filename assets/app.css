@@ -1622,3 +1622,16 @@ b.contest { color: var(--warn); font-weight: 600; }
 .exp-feed .k-guard span, .exp-feed .k-guard .ico { color: color-mix(in srgb, var(--accent) 70%, var(--text)); }
 .exp-feed .k-foe span, .exp-feed .k-foe .ico { color: var(--muted); font-style: italic; }
 .exp-feed .k-guard, .exp-feed .k-foe { padding-left: 14px; }
+
+/* 기술: 고를 기술이 있는 단계(빨간 점)·숙달 단계·한 단계에 여러 기술·조합 기술 */
+.sk-node { position: relative; }
+.sk-node.pick::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+.sk-node.master { border-color: color-mix(in srgb, var(--gold, var(--accent)) 70%, var(--line)); }
+.sk-one { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.sk-one:last-of-type { border-bottom: 0; }
+.sk-one p { margin: 2px 0 4px; font-size: 12.5px; }
+.sk-one.master b { color: var(--gold, var(--accent)); }
+.combo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.combo-list li { border: 1px solid var(--line); border-radius: var(--r-sm, 6px); padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+.combo-list li.on { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+.combo-list small .ok { color: var(--ok); } .combo-list small .bad { color: var(--bad); }

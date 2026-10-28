@@ -264,27 +264,36 @@ export const BRANCHES = [
 ];
 async function skills(body) {
   const list = await load('world_skill_snapshot', undefined, { maxAge: 10000 });
-  const groups = {};
-  (list || []).forEach(s => (groups[s.category] ||= []).push(s));
+  const groups = {}, combos = [];
+  (list || []).forEach(s => s.category === 'combo' ? combos.push(s) : (groups[s.category] ||= []).push(s));
+  const SLOT = { base: '', extra: '추가 기술', a: '택일 ①', b: '택일 ②', master: '숙달 기술' };
   const line = cat => {
     const sk = groups[cat]; if (!sk) return '';
     const rank = Number(sk[0].rank || 1), xp = Number(sk[0].xp || 0), top = rank >= SKILL_CAP;
     const need = lineXp(rank + 1) - lineXp(rank), into = top ? need : Math.max(0, xp - lineXp(rank));
-    const next = sk.find(x => !x.unlocked);
+    const tiers = [...new Set(sk.map(x => x.unlock_rank))].sort((a, b) => a - b);
+    const next = tiers.find(t => t > rank);
+    // 택일 단계에 닿았는데 아직 고르지 않았으면 그 칸에 표시한다
+    const pending = t => sk.some(x => x.unlock_rank === t && x.slot === 'a' && x.reached) && !sk.some(x => x.unlock_rank === t && x.picked);
     return `<div class="sk-line" data-cat="${cat}">
       <div class="sk-head"><b>${esc(SKILL_NAME[cat] || nameOf(cat))}</b><span class="sk-rank">${fmt.num(rank)}<small>/${SKILL_CAP}</small></span></div>
       <div class="bar sk-bar"><span style="width:${Math.max(0, Math.min(100, into / need * 100))}%"></span></div>
-      <small class="muted">${top ? '최고 단계' : `${fmt.num(into)} / ${fmt.num(need)} 경험`}${next ? ` · 다음 기술 ${next.unlock_rank}단계까지 ${fmt.num(Math.max(0, lineXp(next.unlock_rank) - xp))}` : ''}</small>
-      <ol class="sk-nodes" style="--n:${sk.length}">${sk.map((s, i) => `<li><button type="button" class="sk-node ${s.unlocked ? 'on' : ''}" data-i="${i}" aria-label="${esc(s.skill_name)} · ${s.unlock_rank}단계" title="${esc(s.skill_name)}">${s.unlock_rank}</button></li>`).join('')}</ol>
+      <small class="muted">${top ? '최고 단계' : `${fmt.num(into)} / ${fmt.num(need)} 경험`}${next ? ` · 다음 기술 ${next}단계까지 ${fmt.num(Math.max(0, lineXp(next) - xp))}` : ''}</small>
+      <ol class="sk-nodes" style="--n:${tiers.length}">${tiers.map(t => `<li><button type="button" class="sk-node ${rank >= t ? 'on' : ''} ${pending(t) ? 'pick' : ''} ${t === 50 ? 'master' : ''}" data-t="${t}" aria-label="${t}단계" title="${t}단계">${t}</button></li>`).join('')}</ol>
       <div class="sk-detail" hidden></div>
     </div>`;
   };
   const c = store.character || {};
-  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 숙련(전투·채집·제작·조사)은 따로 오르지 않고 그 갈래 기술 가운데 가장 높은 단계를 그대로 씁니다. 네모를 누르면 그 단계에서 익히는 기술과 효과가 아래에 펼쳐집니다.</span></div></div>
+  const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
+  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술, 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
     ${Object.keys(groups).length ? `<div class="skill-groups">${BRANCHES.map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
       `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
-    <p class="muted small">전투 계열(근접·원거리·봉인술·분석)의 피해·치명타 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다. 그 밖의 효과(채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다.</p>`;
+    ${combos.length ? panel('조합 기술', `<ul class="combo-list">${combos.map(x => {
+      const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');
+      return `<li class="${x.unlocked ? 'on' : ''}"><b>${esc(x.skill_name)}</b>${x.unlocked ? chip('익힘', 'ok') : ''}<small>${esc(String(x.description || '').replace(/^조합 기술\([^)]*\) · /, ''))}</small><small>${req}</small></li>`; }).join('')}</ul>
+      <p class="muted small">두 계열이 모두 18단계에 닿으면 열립니다. 계열마다 조합은 하나씩입니다.</p>`, { ico: 'knot' }) : ''}
+    <p class="muted small">전투 계열(근접·원거리·봉인술)의 피해 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 24단계 2,000전·43단계 5,000전입니다.</p>`;
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
     $$('.sk-node', el).forEach(b => b.onclick = () => {
@@ -292,11 +301,21 @@ async function skills(body) {
       $$('.sk-node', el).forEach(x => x.classList.remove('sel'));
       if (open) { box.hidden = true; return; }
       b.classList.add('sel');
-      const s = sk[Number(b.dataset.i)];
-      box.innerHTML = `<b>${esc(s.skill_name)}</b> <span class="chip ${s.unlocked ? 'ok' : ''}">${s.unlocked ? '익힘' : `${s.unlock_rank}단계에 익힘`}</span>
-        <p>${esc(s.description || '')}</p>
-        <p class="muted small">${esc(CAT_DESC[el.dataset.cat] || '')}${SKILL_GAIN[el.dataset.cat] ? ` 얻는 경험: ${esc(SKILL_GAIN[el.dataset.cat])}.` : ''}</p>`;
+      const t = Number(b.dataset.t), here = sk.filter(x => x.unlock_rank === t);
+      box.innerHTML = here.map(s => `<div class="sk-one ${s.slot}">
+          <b>${esc(s.skill_name)}</b>${SLOT[s.slot] ? ` <small class="accent">${SLOT[s.slot]}</small>` : ''}
+          <span class="chip ${s.unlocked ? 'ok' : ''}">${s.unlocked ? '익힘' : s.reached && (s.slot === 'a' || s.slot === 'b') ? '고르지 않음' : `${s.unlock_rank}단계에 익힘`}</span>
+          <p>${esc(String(s.description || '').replace(/^(추가|택일|숙달) 기술 · /, ''))}</p>
+          ${(s.slot === 'a' || s.slot === 'b') && s.reached && !s.picked ? `<button class="btn small primary" data-pick="${s.slot}" data-t="${t}">이 기술 고르기</button>` : ''}
+        </div>`).join('') + `<p class="muted small">${esc(CAT_DESC[el.dataset.cat] || '')}${SKILL_GAIN[el.dataset.cat] ? ` 얻는 경험: ${esc(SKILL_GAIN[el.dataset.cat])}.` : ''}</p>`;
       box.hidden = false;
+      $$('[data-pick]', box).forEach(pb => pb.onclick = async () => {
+        const other = here.find(x => x.slot !== pb.dataset.pick && (x.slot === 'a' || x.slot === 'b'));
+        const fee = other?.picked ? (t === 24 ? 2000 : 5000) : 0;
+        const pick = here.find(x => x.slot === pb.dataset.pick);
+        if (!(await ask(`「${pick.skill_name}」을(를) 고를까요?${other ? ` 「${other.skill_name}」은(는) 쓸 수 없게 됩니다.` : ''}${fee ? `\n바꾸는 값 ${fmt.jeon(fee)}이 듭니다.` : ' 처음 고르기는 무료이고, 나중에 바꾸려면 전이 듭니다.'}`, { title: `${t}단계 택일 기술`, ok: '고르기' }))) return;
+        guard(pb, () => act('world_skill_choose', { p_line: el.dataset.cat, p_tier: t, p_pick: pb.dataset.pick }));
+      });
     });
   });
 }

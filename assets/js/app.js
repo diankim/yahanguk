@@ -261,7 +261,7 @@ function renderGame() {
 }
 
 function parseHash() {
-  const [, view = 'home', sub = ''] = location.hash.match(/^#\/([a-z]+)\/?([a-z0-9-]*)/) || [];
+  const [, view = 'home', sub = ''] = location.hash.match(/^#\/([a-z]+)\/?([a-z0-9.-]*)/) || [];
   return { view: VIEWS[view] || PAGES[view] ? view : 'home', sub };
 }
 async function onHash() {

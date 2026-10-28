@@ -6,6 +6,7 @@
 --   ⑩ 조사 바로잡기(원정 일지 시간대·구조용 물품) · 부적 정화가 중독·심신 동요·사념 침식도 푼다
 --   ⑪ 대세력 떠나기·옮기기(12시간) · 회복 완화(야영 ⅔·안전지대 자연 회복·구조대 비용)
 --   ⑫ 상위 도구로 하위 도구 제작법 · 원정 전투 여러 합 묘사(막기·회피·치명타·직업 기술·요괴 기믹) · 파티 원정은 동료마다 요괴 하나 더
+--   ⑬ 기술 단계 보상 개편(13·30 추가 · 24·43 택일 · 50 숙달 · 조합 7)
 --   ⑧ 세력 판도(인원이 적은 세력 영향력 가산 포함)(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
 grant fn_owner_social to postgres with inherit true, set true;
 grant fn_owner_18666 to postgres with inherit true, set true;
@@ -130,7 +131,7 @@ end $$;
 -- ⑤ ─────────────────────────────────────────
 -- 패치노트: 채팅은 3일 뒤 지워지므로 따로 보관한다. 누구나 읽기만(화면 #/patch), 쓰기는 운영(SQL)만.
 create table if not exists public.world_patch_notes (
-  note_id text primary key check (note_id ~ '^[0-9-]{4,12}$'),
+  note_id text primary key check (note_id ~ '^[0-9][0-9.-]{2,11}$'),
   title text not null,
   body text not null,
   created_at timestamptz not null default now()
@@ -965,6 +966,226 @@ begin
   d := replace(d, '* (1 + 0.3 * nal));', '* (1 + 0.45 * nal));');
   execute d;
 end $$;
+
+-- ⑬ ─────────────────────────────────────────
+-- 기술 단계 보상 개편(2026-10-28 결정): 계열마다 13·30단계 추가 기술, 24·43단계 둘 중 하나를 고르는 기술, 50단계 가장 강한 숙달 기술.
+--   기존 9단계 기술은 그대로 두고 더한다. 단계가 높을수록 효과가 크다. 조합 기술 7개: 두 계열이 모두 18단계면 열리고, 계열마다 한 번씩만 쓰인다.
+--   고른 택일 기술은 world_skill_picks.picks('계열:단계' → 'a'|'b')에 남는다(world_characters는 열마다 권한이 걸려 있어 새 열을 더하지 않는다). 처음 고르기는 무료, 바꾸기는 24단계 2,000전·43단계 5,000전.
+alter table public.world_skill_catalog add column if not exists slot text not null default 'base';
+alter table public.world_skill_catalog add column if not exists requires jsonb;
+create table if not exists public.world_skill_picks (owner_id uuid primary key, picks jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now());
+alter table public.world_skill_picks enable row level security;
+revoke all on public.world_skill_picks from public, anon, authenticated;
+grant select on public.world_skill_picks to authenticated;
+drop policy if exists world_skill_picks_own on public.world_skill_picks;
+create policy world_skill_picks_own on public.world_skill_picks for select to authenticated using (owner_id = (select auth.uid()));
+grant select, insert, update on public.world_skill_picks to fn_owner_field;
+insert into public.world_skill_catalog(skill_id, skill_name, category, description, passive_effect, unlock_rank, slot, requires)
+values
+  ('melee_x13', '발도', 'melee', '추가 기술 · 치명타 +2%', '{"crit_pct": 2}'::jsonb, 13, 'extra', null),
+  ('melee_c24a', '일격', 'melee', '택일 기술 · 근접 피해 +5%', '{"damage_pct": 5}'::jsonb, 24, 'a', null),
+  ('melee_c24b', '연타', 'melee', '택일 기술 · 근접 피해 +3% · 치명타 +2%', '{"damage_pct": 3, "crit_pct": 2}'::jsonb, 24, 'b', null),
+  ('melee_x30', '강기 두르기', 'melee', '추가 기술 · 근접 피해 +4% · 받는 피해 −2%', '{"damage_pct": 4, "incoming_damage_pct": -2}'::jsonb, 30, 'extra', null),
+  ('melee_c43a', '파천', 'melee', '택일 기술 · 근접 피해 +8%', '{"damage_pct": 8}'::jsonb, 43, 'a', null),
+  ('melee_c43b', '유수검', 'melee', '택일 기술 · 근접 피해 +4% · 치명타 +4%', '{"damage_pct": 4, "crit_pct": 4}'::jsonb, 43, 'b', null),
+  ('melee_m50', '검신', 'melee', '숙달 기술 · 근접 피해 +10% · 치명타 +5%', '{"damage_pct": 10, "crit_pct": 5}'::jsonb, 50, 'master', null),
+  ('ranged_x13', '응시', 'ranged', '추가 기술 · 치명타 +2%', '{"crit_pct": 2}'::jsonb, 13, 'extra', null),
+  ('ranged_c24a', '저격', 'ranged', '택일 기술 · 원거리 피해 +5%', '{"damage_pct": 5}'::jsonb, 24, 'a', null),
+  ('ranged_c24b', '속사', 'ranged', '택일 기술 · 원거리 피해 +3% · 치명타 +2%', '{"damage_pct": 3, "crit_pct": 2}'::jsonb, 24, 'b', null),
+  ('ranged_x30', '풍향 사격', 'ranged', '추가 기술 · 원거리 피해 +4% · 치명타 +2%', '{"damage_pct": 4, "crit_pct": 2}'::jsonb, 30, 'extra', null),
+  ('ranged_c43a', '관통시', 'ranged', '택일 기술 · 원거리 피해 +8%', '{"damage_pct": 8}'::jsonb, 43, 'a', null),
+  ('ranged_c43b', '연환시', 'ranged', '택일 기술 · 원거리 피해 +4% · 치명타 +4%', '{"damage_pct": 4, "crit_pct": 4}'::jsonb, 43, 'b', null),
+  ('ranged_m50', '천궁', 'ranged', '숙달 기술 · 원거리 피해 +10% · 치명타 +5%', '{"damage_pct": 10, "crit_pct": 5}'::jsonb, 50, 'master', null),
+  ('sealing_x13', '부적 접기', 'sealing', '추가 기술 · 술법 피해 +3%', '{"damage_pct": 3}'::jsonb, 13, 'extra', null),
+  ('sealing_c24a', '폭렬부', 'sealing', '택일 기술 · 술법 피해 +5%', '{"damage_pct": 5}'::jsonb, 24, 'a', null),
+  ('sealing_c24b', '정심주', 'sealing', '택일 기술 · 술법 피해 +3% · 정신 손실 −4%', '{"damage_pct": 3, "mental_loss_pct": -4}'::jsonb, 24, 'b', null),
+  ('sealing_x30', '겹술식', 'sealing', '추가 기술 · 술법 피해 +4% · 침식 −4%', '{"damage_pct": 4, "erosion_pct": -4}'::jsonb, 30, 'extra', null),
+  ('sealing_c43a', '천뢰부', 'sealing', '택일 기술 · 술법 피해 +8%', '{"damage_pct": 8}'::jsonb, 43, 'a', null),
+  ('sealing_c43b', '청정결', 'sealing', '택일 기술 · 술법 피해 +4% · 침식 −6%', '{"damage_pct": 4, "erosion_pct": -6}'::jsonb, 43, 'b', null),
+  ('sealing_m50', '태을진결', 'sealing', '숙달 기술 · 술법 피해 +10% · 침식 −8%', '{"damage_pct": 10, "erosion_pct": -8}'::jsonb, 50, 'master', null),
+  ('analysis_x13', '관찰', 'analysis', '추가 기술 · 치명타 +2%', '{"crit_pct": 2}'::jsonb, 13, 'extra', null),
+  ('analysis_c24a', '급소 간파', 'analysis', '택일 기술 · 치명타 +4%', '{"crit_pct": 4}'::jsonb, 24, 'a', null),
+  ('analysis_c24b', '흐름 읽기', 'analysis', '택일 기술 · 주는 피해 +2% · 단서 +3%', '{"combat_damage_pct": 2, "clue_bonus_pct": 3}'::jsonb, 24, 'b', null),
+  ('analysis_x30', '약점 기록', 'analysis', '추가 기술 · 치명타 +3% · 주는 피해 +2%', '{"crit_pct": 3, "combat_damage_pct": 2}'::jsonb, 30, 'extra', null),
+  ('analysis_c43a', '필살 계산', 'analysis', '택일 기술 · 치명타 +6%', '{"crit_pct": 6}'::jsonb, 43, 'a', null),
+  ('analysis_c43b', '전장 분석', 'analysis', '택일 기술 · 주는 피해 +4% · 단서 +3%', '{"combat_damage_pct": 4, "clue_bonus_pct": 3}'::jsonb, 43, 'b', null),
+  ('analysis_m50', '만상통찰', 'analysis', '숙달 기술 · 치명타 +7% · 주는 피해 +4%', '{"crit_pct": 7, "combat_damage_pct": 4}'::jsonb, 50, 'master', null),
+  ('guarding_x13', '받아넘기기', 'guarding', '추가 기술 · 받는 피해 −2%', '{"incoming_damage_pct": -2}'::jsonb, 13, 'extra', null),
+  ('guarding_c24a', '철벽', 'guarding', '택일 기술 · 받는 피해 −4%', '{"incoming_damage_pct": -4}'::jsonb, 24, 'a', null),
+  ('guarding_c24b', '반격 태세', 'guarding', '택일 기술 · 받는 피해 −2% · 주는 피해 +2%', '{"incoming_damage_pct": -2, "combat_damage_pct": 2}'::jsonb, 24, 'b', null),
+  ('guarding_x30', '부동', 'guarding', '추가 기술 · 받는 피해 −3% · 정신 손실 −3%', '{"incoming_damage_pct": -3, "mental_loss_pct": -3}'::jsonb, 30, 'extra', null),
+  ('guarding_c43a', '금강불괴', 'guarding', '택일 기술 · 받는 피해 −6%', '{"incoming_damage_pct": -6}'::jsonb, 43, 'a', null),
+  ('guarding_c43b', '역류', 'guarding', '택일 기술 · 받는 피해 −3% · 주는 피해 +4%', '{"incoming_damage_pct": -3, "combat_damage_pct": 4}'::jsonb, 43, 'b', null),
+  ('guarding_m50', '만장성벽', 'guarding', '숙달 기술 · 받는 피해 −8% · 정신 손실 −5%', '{"incoming_damage_pct": -8, "mental_loss_pct": -5}'::jsonb, 50, 'master', null),
+  ('first_aid_x13', '지혈', 'first_aid', '추가 기술 · 회복량 +4%', '{"healing_pct": 4}'::jsonb, 13, 'extra', null),
+  ('first_aid_c24a', '붕대술', 'first_aid', '택일 기술 · 회복량 +7%', '{"healing_pct": 7}'::jsonb, 24, 'a', null),
+  ('first_aid_c24b', '안정 호흡', 'first_aid', '택일 기술 · 회복량 +3% · 정신 손실 −4%', '{"healing_pct": 3, "mental_loss_pct": -4}'::jsonb, 24, 'b', null),
+  ('first_aid_x30', '약침', 'first_aid', '추가 기술 · 회복량 +6% · 침식 −3%', '{"healing_pct": 6, "erosion_pct": -3}'::jsonb, 30, 'extra', null),
+  ('first_aid_c43a', '소생술', 'first_aid', '택일 기술 · 회복량 +10%', '{"healing_pct": 10}'::jsonb, 43, 'a', null),
+  ('first_aid_c43b', '해독술', 'first_aid', '택일 기술 · 회복량 +4% · 침식 −6%', '{"healing_pct": 4, "erosion_pct": -6}'::jsonb, 43, 'b', null),
+  ('first_aid_m50', '기사회생', 'first_aid', '숙달 기술 · 회복량 +14% · 받는 피해 −4%', '{"healing_pct": 14, "incoming_damage_pct": -4}'::jsonb, 50, 'master', null),
+  ('foraging_x13', '눈썰미', 'foraging', '추가 기술 · 채집량 +3%', '{"gather_qty_pct": 3}'::jsonb, 13, 'extra', null),
+  ('foraging_c24a', '넓게 줍기', 'foraging', '택일 기술 · 채집량 +6%', '{"gather_qty_pct": 6}'::jsonb, 24, 'a', null),
+  ('foraging_c24b', '골라 줍기', 'foraging', '택일 기술 · 채집량 +2% · 희귀품 +3%', '{"gather_qty_pct": 2, "rare_loot_pct": 3}'::jsonb, 24, 'b', null),
+  ('foraging_x30', '길목 기억', 'foraging', '추가 기술 · 채집량 +5% · 이동 시간 −3%', '{"gather_qty_pct": 5, "travel_time_pct": -3}'::jsonb, 30, 'extra', null),
+  ('foraging_c43a', '대풍', 'foraging', '택일 기술 · 채집량 +9%', '{"gather_qty_pct": 9}'::jsonb, 43, 'a', null),
+  ('foraging_c43b', '보물 감별', 'foraging', '택일 기술 · 채집량 +3% · 희귀품 +5%', '{"gather_qty_pct": 3, "rare_loot_pct": 5}'::jsonb, 43, 'b', null),
+  ('foraging_m50', '산천의 은혜', 'foraging', '숙달 기술 · 채집량 +12% · 희귀품 +4%', '{"gather_qty_pct": 12, "rare_loot_pct": 4}'::jsonb, 50, 'master', null),
+  ('herbalism_x13', '잎맥 살피기', 'herbalism', '추가 기술 · 채집량 +3%', '{"gather_qty_pct": 3}'::jsonb, 13, 'extra', null),
+  ('herbalism_c24a', '깊이 캐기', 'herbalism', '택일 기술 · 채집량 +6%', '{"gather_qty_pct": 6}'::jsonb, 24, 'a', null),
+  ('herbalism_c24b', '약효 보존', 'herbalism', '택일 기술 · 채집량 +2% · 회복량 +4%', '{"gather_qty_pct": 2, "healing_pct": 4}'::jsonb, 24, 'b', null),
+  ('herbalism_x30', '약초꾼의 길', 'herbalism', '추가 기술 · 채집량 +4% · 회복량 +3%', '{"gather_qty_pct": 4, "healing_pct": 3}'::jsonb, 30, 'extra', null),
+  ('herbalism_c43a', '약초 군락', 'herbalism', '택일 기술 · 채집량 +8%', '{"gather_qty_pct": 8}'::jsonb, 43, 'a', null),
+  ('herbalism_c43b', '영초 감별', 'herbalism', '택일 기술 · 희귀품 +5% · 회복량 +4%', '{"rare_loot_pct": 5, "healing_pct": 4}'::jsonb, 43, 'b', null),
+  ('herbalism_m50', '신농의 손', 'herbalism', '숙달 기술 · 채집량 +10% · 회복량 +8%', '{"gather_qty_pct": 10, "healing_pct": 8}'::jsonb, 50, 'master', null),
+  ('mining_x13', '광맥 읽기', 'mining', '추가 기술 · 채집량 +3%', '{"gather_qty_pct": 3}'::jsonb, 13, 'extra', null),
+  ('mining_c24a', '힘껏 캐기', 'mining', '택일 기술 · 채집량 +6%', '{"gather_qty_pct": 6}'::jsonb, 24, 'a', null),
+  ('mining_c24b', '옥석 가리기', 'mining', '택일 기술 · 채집량 +2% · 희귀품 +3%', '{"gather_qty_pct": 2, "rare_loot_pct": 3}'::jsonb, 24, 'b', null),
+  ('mining_x30', '갱도 감각', 'mining', '추가 기술 · 채집량 +5% · 받는 피해 −2%', '{"gather_qty_pct": 5, "incoming_damage_pct": -2}'::jsonb, 30, 'extra', null),
+  ('mining_c43a', '노다지', 'mining', '택일 기술 · 채집량 +9%', '{"gather_qty_pct": 9}'::jsonb, 43, 'a', null),
+  ('mining_c43b', '보석 눈', 'mining', '택일 기술 · 채집량 +3% · 희귀품 +5%', '{"gather_qty_pct": 3, "rare_loot_pct": 5}'::jsonb, 43, 'b', null),
+  ('mining_m50', '지맥의 주인', 'mining', '숙달 기술 · 채집량 +12% · 희귀품 +4%', '{"gather_qty_pct": 12, "rare_loot_pct": 4}'::jsonb, 50, 'master', null),
+  ('spirit_gathering_x13', '영기 감지', 'spirit_gathering', '추가 기술 · 채집량 +2% · 침식 −2%', '{"gather_qty_pct": 2, "erosion_pct": -2}'::jsonb, 13, 'extra', null),
+  ('spirit_gathering_c24a', '영기 흡수', 'spirit_gathering', '택일 기술 · 채집량 +5%', '{"gather_qty_pct": 5}'::jsonb, 24, 'a', null),
+  ('spirit_gathering_c24b', '정화 채집', 'spirit_gathering', '택일 기술 · 침식 −5%', '{"erosion_pct": -5}'::jsonb, 24, 'b', null),
+  ('spirit_gathering_x30', '영맥 조율', 'spirit_gathering', '추가 기술 · 채집량 +4% · 희귀품 +2%', '{"gather_qty_pct": 4, "rare_loot_pct": 2}'::jsonb, 30, 'extra', null),
+  ('spirit_gathering_c43a', '영기 폭주', 'spirit_gathering', '택일 기술 · 채집량 +8% · 희귀품 +2%', '{"gather_qty_pct": 8, "rare_loot_pct": 2}'::jsonb, 43, 'a', null),
+  ('spirit_gathering_c43b', '청명심', 'spirit_gathering', '택일 기술 · 침식 −7% · 정신 손실 −3%', '{"erosion_pct": -7, "mental_loss_pct": -3}'::jsonb, 43, 'b', null),
+  ('spirit_gathering_m50', '천지영기', 'spirit_gathering', '숙달 기술 · 채집량 +10% · 희귀품 +5% · 침식 −4%', '{"gather_qty_pct": 10, "rare_loot_pct": 5, "erosion_pct": -4}'::jsonb, 50, 'master', null),
+  ('smithing_x13', '불꽃 담금', 'smithing', '추가 기술 · 제작 품질 +3', '{"craft_quality": 3}'::jsonb, 13, 'extra', null),
+  ('smithing_c24a', '섬세한 단조', 'smithing', '택일 기술 · 제작 품질 +6', '{"craft_quality": 6}'::jsonb, 24, 'a', null),
+  ('smithing_c24b', '현장 수리', 'smithing', '택일 기술 · 제작 품질 +3 · 받는 피해 −2%', '{"craft_quality": 3, "incoming_damage_pct": -2}'::jsonb, 24, 'b', null),
+  ('smithing_x30', '명장의 눈', 'smithing', '추가 기술 · 제작 품질 +5', '{"craft_quality": 5}'::jsonb, 30, 'extra', null),
+  ('smithing_c43a', '일품 단조', 'smithing', '택일 기술 · 제작 품질 +9', '{"craft_quality": 9}'::jsonb, 43, 'a', null),
+  ('smithing_c43b', '강철 피부', 'smithing', '택일 기술 · 제작 품질 +4 · 받는 피해 −3%', '{"craft_quality": 4, "incoming_damage_pct": -3}'::jsonb, 43, 'b', null),
+  ('smithing_m50', '천하명장', 'smithing', '숙달 기술 · 제작 품질 +12 · 주는 피해 +3%', '{"craft_quality": 12, "combat_damage_pct": 3}'::jsonb, 50, 'master', null),
+  ('alchemy_x13', '달이기', 'alchemy', '추가 기술 · 제작 품질 +3', '{"craft_quality": 3}'::jsonb, 13, 'extra', null),
+  ('alchemy_c24a', '농축', 'alchemy', '택일 기술 · 제작 품질 +6', '{"craft_quality": 6}'::jsonb, 24, 'a', null),
+  ('alchemy_c24b', '약효 증폭', 'alchemy', '택일 기술 · 제작 품질 +2 · 회복량 +4%', '{"craft_quality": 2, "healing_pct": 4}'::jsonb, 24, 'b', null),
+  ('alchemy_x30', '화후 조절', 'alchemy', '추가 기술 · 제작 품질 +4 · 회복량 +3%', '{"craft_quality": 4, "healing_pct": 3}'::jsonb, 30, 'extra', null),
+  ('alchemy_c43a', '금단', 'alchemy', '택일 기술 · 제작 품질 +9', '{"craft_quality": 9}'::jsonb, 43, 'a', null),
+  ('alchemy_c43b', '영약 조제', 'alchemy', '택일 기술 · 제작 품질 +3 · 회복량 +6%', '{"craft_quality": 3, "healing_pct": 6}'::jsonb, 43, 'b', null),
+  ('alchemy_m50', '구전금단', 'alchemy', '숙달 기술 · 제작 품질 +10 · 회복량 +8%', '{"craft_quality": 10, "healing_pct": 8}'::jsonb, 50, 'master', null),
+  ('wardcraft_x13', '먹 고르기', 'wardcraft', '추가 기술 · 제작 품질 +3', '{"craft_quality": 3}'::jsonb, 13, 'extra', null),
+  ('wardcraft_c24a', '정교한 각인', 'wardcraft', '택일 기술 · 제작 품질 +6', '{"craft_quality": 6}'::jsonb, 24, 'a', null),
+  ('wardcraft_c24b', '결계 두르기', 'wardcraft', '택일 기술 · 제작 품질 +2 · 침식 −4%', '{"craft_quality": 2, "erosion_pct": -4}'::jsonb, 24, 'b', null),
+  ('wardcraft_x30', '겹결계', 'wardcraft', '추가 기술 · 제작 품질 +4 · 정신 손실 −3%', '{"craft_quality": 4, "mental_loss_pct": -3}'::jsonb, 30, 'extra', null),
+  ('wardcraft_c43a', '천하 각인', 'wardcraft', '택일 기술 · 제작 품질 +9', '{"craft_quality": 9}'::jsonb, 43, 'a', null),
+  ('wardcraft_c43b', '호신 결계', 'wardcraft', '택일 기술 · 제작 품질 +3 · 침식 −6%', '{"craft_quality": 3, "erosion_pct": -6}'::jsonb, 43, 'b', null),
+  ('wardcraft_m50', '만법귀일', 'wardcraft', '숙달 기술 · 제작 품질 +10 · 침식 −6% · 정신 손실 −4%', '{"craft_quality": 10, "erosion_pct": -6, "mental_loss_pct": -4}'::jsonb, 50, 'master', null),
+  ('tracking_x13', '흙자국 살피기', 'tracking', '추가 기술 · 단서 +3%', '{"clue_bonus_pct": 3}'::jsonb, 13, 'extra', null),
+  ('tracking_c24a', '끈질긴 추적', 'tracking', '택일 기술 · 단서 +6%', '{"clue_bonus_pct": 6}'::jsonb, 24, 'a', null),
+  ('tracking_c24b', '샛길', 'tracking', '택일 기술 · 단서 +2% · 이동 시간 −4%', '{"clue_bonus_pct": 2, "travel_time_pct": -4}'::jsonb, 24, 'b', null),
+  ('tracking_x30', '기척 숨기기', 'tracking', '추가 기술 · 단서 +4% · 요괴 조우 −4%', '{"clue_bonus_pct": 4, "encounter_pct": -4}'::jsonb, 30, 'extra', null),
+  ('tracking_c43a', '명탐', 'tracking', '택일 기술 · 단서 +9%', '{"clue_bonus_pct": 9}'::jsonb, 43, 'a', null),
+  ('tracking_c43b', '바람처럼', 'tracking', '택일 기술 · 이동 시간 −6% · 요괴 조우 −4%', '{"travel_time_pct": -6, "encounter_pct": -4}'::jsonb, 43, 'b', null),
+  ('tracking_m50', '만리추적', 'tracking', '숙달 기술 · 단서 +12% · 희귀품 +4% · 이동 시간 −4%', '{"clue_bonus_pct": 12, "rare_loot_pct": 4, "travel_time_pct": -4}'::jsonb, 50, 'master', null),
+  ('combo_melee_smithing', '대장장이 검객', 'combo', '조합 기술(근접·단조 둘 다 18단계) · 치명타 +2% · 제작 품질 +3', '{"crit_pct": 2, "craft_quality": 3}'::jsonb, 18, 'combo', '{"melee": 18, "smithing": 18}'::jsonb),
+  ('combo_ranged_tracking', '사냥꾼의 눈', 'combo', '조합 기술(원거리·추적 둘 다 18단계) · 치명타 +2% · 단서 +3%', '{"crit_pct": 2, "clue_bonus_pct": 3}'::jsonb, 18, 'combo', '{"ranged": 18, "tracking": 18}'::jsonb),
+  ('combo_sealing_wardcraft', '겹봉인', 'combo', '조합 기술(봉인술·결계 각인 둘 다 18단계) · 주는 피해 +3% · 침식 −3%', '{"combat_damage_pct": 3, "erosion_pct": -3}'::jsonb, 18, 'combo', '{"sealing": 18, "wardcraft": 18}'::jsonb),
+  ('combo_analysis_spirit_gathering', '영맥 판독', 'combo', '조합 기술(분석·영기 채집 둘 다 18단계) · 치명타 +2% · 희귀품 +2%', '{"crit_pct": 2, "rare_loot_pct": 2}'::jsonb, 18, 'combo', '{"analysis": 18, "spirit_gathering": 18}'::jsonb),
+  ('combo_guarding_mining', '바위 몸', 'combo', '조합 기술(막기·광맥 채집 둘 다 18단계) · 받는 피해 −3% · 채집량 +3%', '{"incoming_damage_pct": -3, "gather_qty_pct": 3}'::jsonb, 18, 'combo', '{"guarding": 18, "mining": 18}'::jsonb),
+  ('combo_first_aid_herbalism', '야전 약방', 'combo', '조합 기술(응급 처치·약초 채집 둘 다 18단계) · 회복량 +6%', '{"healing_pct": 6}'::jsonb, 18, 'combo', '{"first_aid": 18, "herbalism": 18}'::jsonb),
+  ('combo_foraging_alchemy', '현장 조제', 'combo', '조합 기술(일반 채집·연금 둘 다 18단계) · 채집량 +3% · 제작 품질 +3', '{"gather_qty_pct": 3, "craft_quality": 3}'::jsonb, 18, 'combo', '{"foraging": 18, "alchemy": 18}'::jsonb)
+on conflict (skill_id) do update set skill_name = excluded.skill_name, category = excluded.category, description = excluded.description,
+  passive_effect = excluded.passive_effect, unlock_rank = excluded.unlock_rank, slot = excluded.slot, requires = excluded.requires;
+
+-- 이 캐릭터가 이 기술을 가졌는가: 단계에 닿았고, 택일 기술이면 고른 쪽이고, 조합 기술이면 두 계열 모두 조건 단계
+create or replace function public.world_skill_has(p_prog jsonb, p_picks jsonb, p_cat text, p_unlock int, p_slot text, p_req jsonb)
+returns boolean language sql immutable set search_path to 'pg_catalog' as $$
+  select case
+    when p_cat = 'combo' then coalesce((select bool_and(coalesce((p_prog -> r.k ->> 'rank')::int, 1) >= r.v::int) from jsonb_each_text(coalesce(p_req, '{}'::jsonb)) r(k, v)), false)
+    when p_slot in ('a', 'b') then coalesce((p_prog -> p_cat ->> 'rank')::int, 1) >= p_unlock and coalesce(p_picks ->> (p_cat || ':' || p_unlock), '') = p_slot
+    else coalesce((p_prog -> p_cat ->> 'rank')::int, 1) >= p_unlock end
+$$;
+revoke all on function public.world_skill_has(jsonb, jsonb, text, int, text, jsonb) from public, anon, authenticated;
+do $$ declare r text; begin
+  for r in select rolname from pg_roles where rolname like 'fn\_owner\_%' loop
+    execute format('grant execute on function public.world_skill_has(jsonb, jsonb, text, int, text, jsonb) to %I', r);
+  end loop;
+end $$;
+-- 기술 화면(world_skill_snapshot)은 부른 사람 권한으로 돈다. 값만 계산하는 함수라 조사원에게도 열어 둔다.
+grant execute on function public.world_skill_has(jsonb, jsonb, text, int, text, jsonb) to authenticated;
+
+
+-- 기술 효과 합(상한을 조금 넓힌다: 기술이 늘어난 만큼)
+create or replace function public.world_skill_effect(p_effect_key text)
+returns numeric language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid; v numeric;
+begin
+  if p_effect_key not in ('gather_qty_pct', 'rare_loot_pct', 'clue_bonus_pct', 'healing_pct', 'incoming_damage_pct', 'mental_loss_pct', 'erosion_pct', 'travel_time_pct', 'craft_quality', 'combat_damage_pct', 'encounter_pct') then return 0; end if;
+  uid := public.fn_owner_auth_uid(); if uid is null then return 0; end if;
+  select coalesce(sum((sk.passive_effect ->> p_effect_key)::numeric), 0) into v
+    from public.world_skill_catalog sk join public.world_characters c on c.owner_id = uid left join public.world_skill_picks pk on pk.owner_id = uid
+   where sk.passive_effect ? p_effect_key and public.world_skill_has(c.skill_progress, coalesce(pk.picks, '{}'::jsonb), sk.category, sk.unlock_rank, sk.slot, sk.requires);
+  -- 효과마다 상한: 한 갈래만 깊게 파도 넘치지 않게
+  return case p_effect_key
+    when 'gather_qty_pct' then least(v, 40) when 'rare_loot_pct' then least(v, 22) when 'clue_bonus_pct' then least(v, 28)
+    when 'healing_pct' then least(v, 45) when 'craft_quality' then least(v, 40) when 'combat_damage_pct' then least(v, 15)
+    when 'incoming_damage_pct' then greatest(v, -28) when 'mental_loss_pct' then greatest(v, -32)
+    when 'erosion_pct' then greatest(v, -28) when 'travel_time_pct' then greatest(v, -20) when 'encounter_pct' then greatest(v, -15) else v end;
+end $$;
+
+-- 전투 능력치: 택일·조합 기술도 반영(조합 기술의 치명타 포함)
+do $$ declare d text := pg_get_functiondef('public.world_combat_stats(uuid,jsonb)'::regprocedure);
+  a text := 'WHERE sk.category IN (skill_cat, ''analysis'') AND coalesce((c.skill_progress -> sk.category ->> ''rank'')::int, 1) >= sk.unlock_rank;';
+  b text := 'WHERE sk.category IN (skill_cat, ''analysis'', ''combo'') AND public.world_skill_has(c.skill_progress, coalesce((select pk.picks from public.world_skill_picks pk where pk.owner_id = p_owner), ''{}''::jsonb), sk.category, sk.unlock_rank, sk.slot, sk.requires);';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '전투 능력치 기술 조건 고칠 자리가 하나가 아닙니다'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 기술 화면: 계열별 기술(추가·택일·숙달·조합 포함), 단계 도달·고른 쪽·조합 조건
+create or replace function public.world_skill_snapshot()
+returns jsonb language plpgsql set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; out jsonb; pk jsonb;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 생성하세요.'; end if;
+  pk := coalesce((select picks from public.world_skill_picks where owner_id = uid), '{}'::jsonb);
+  select jsonb_agg(jsonb_build_object('skill_id', s.skill_id, 'skill_name', s.skill_name, 'category', s.category, 'description', s.description,
+      'rank', coalesce((c.skill_progress -> s.category ->> 'rank')::int, 1), 'xp', coalesce((c.skill_progress -> s.category ->> 'xp')::int, 0),
+      'unlock_rank', s.unlock_rank, 'active_skill', s.active_skill, 'passive_effect', s.passive_effect, 'slot', s.slot, 'requires', s.requires,
+      'reached', case when s.category = 'combo' then public.world_skill_has(c.skill_progress, pk, s.category, s.unlock_rank, s.slot, s.requires)
+                      else coalesce((c.skill_progress -> s.category ->> 'rank')::int, 1) >= s.unlock_rank end,
+      'picked', case when s.slot in ('a', 'b') then coalesce(pk ->> (s.category || ':' || s.unlock_rank), '') = s.slot end,
+      'req_ranks', case when s.category = 'combo' then (select jsonb_object_agg(r.k, coalesce((c.skill_progress -> r.k ->> 'rank')::int, 1)) from jsonb_each(s.requires) r(k, v)) end,
+      'unlocked', public.world_skill_has(c.skill_progress, pk, s.category, s.unlock_rank, s.slot, s.requires))
+    order by s.category, s.unlock_rank, case s.slot when 'base' then 0 when 'extra' then 1 when 'a' then 2 when 'b' then 3 else 4 end) into out
+  from public.world_skill_catalog s;
+  return coalesce(out, '[]'::jsonb);
+end $$;
+
+-- 택일 기술 고르기: 그 단계에 닿아야 하고, 처음은 무료, 바꾸면 24단계 2,000전·43단계 5,000전
+create or replace function public.world_skill_choose(p_line text, p_tier int, p_pick text)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; cur text; fee int := 0; nm text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  if p_tier not in (24, 43) or p_pick not in ('a', 'b') then raise exception '고를 수 없는 기술입니다.'; end if;
+  select skill_name into nm from public.world_skill_catalog where category = p_line and unlock_rank = p_tier and slot = p_pick;
+  if nm is null then raise exception '고를 수 없는 기술입니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid for update;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  if coalesce((c.skill_progress -> p_line ->> 'rank')::int, 1) < p_tier then raise exception '%단계에 닿아야 고를 수 있습니다.', p_tier; end if;
+  cur := (select picks ->> (p_line || ':' || p_tier) from public.world_skill_picks where owner_id = uid);
+  if cur = p_pick then raise exception '이미 고른 기술입니다.'; end if;
+  if cur is not null then
+    fee := case p_tier when 24 then 2000 else 5000 end;
+    if c.gil < fee then raise exception '기술을 바꾸려면 %전이 필요합니다.', fee; end if;
+  end if;
+  insert into public.world_skill_picks(owner_id, picks) values (uid, jsonb_build_object(p_line || ':' || p_tier, p_pick))
+  on conflict (owner_id) do update set picks = public.world_skill_picks.picks || excluded.picks, updated_at = now();
+  if fee > 0 then update public.world_characters set gil = gil - fee, updated_at = now() where owner_id = uid; end if;
+  return jsonb_build_object('ok', true, 'fee', fee, 'content', '「' || nm || '」을(를) 익혔습니다.' || case when fee > 0 then ' 바꾸는 값 ' || fee || '전을 냈습니다.' else '' end);
+end $$;
+grant execute on function public.world_seal_guard() to fn_owner_field;
+alter function public.world_skill_choose(text, int, text) owner to fn_owner_field;
+revoke all on function public.world_skill_choose(text, int, text) from public, anon, authenticated;
+grant execute on function public.world_skill_choose(text, int, text) to authenticated;
 
 grant fn_owner_social to postgres with inherit false, set false;
 grant fn_owner_18666 to postgres with inherit false, set false;
