@@ -285,7 +285,7 @@ async function skills(body) {
   };
   const c = store.character || {};
   const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
-  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술, 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
+  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(봉인술은 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
     ${Object.keys(groups).length ? `<div class="skill-groups">${BRANCHES.map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
       `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
@@ -293,7 +293,7 @@ async function skills(body) {
       const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');
       return `<li class="${x.unlocked ? 'on' : ''}"><b>${esc(x.skill_name)}</b>${x.unlocked ? chip('익힘', 'ok') : ''}<small>${esc(String(x.description || '').replace(/^조합 기술\([^)]*\) · /, ''))}</small><small>${req}</small></li>`; }).join('')}</ul>
       <p class="muted small">두 계열이 모두 18단계에 닿으면 열립니다. 계열마다 조합은 하나씩입니다.</p>`, { ico: 'knot' }) : ''}
-    <p class="muted small">전투 계열(근접·원거리·봉인술)의 피해 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 24단계 2,000전·43단계 5,000전입니다.</p>`;
+    <p class="muted small">전투 계열(근접·원거리·봉인술)의 피해 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
     $$('.sk-node', el).forEach(b => b.onclick = () => {

@@ -37,7 +37,7 @@ export const SKILL = {
   analyst: ['약점 간파', '다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.'],
   artificer: ['폭렬 부적', '방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
 };
-const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비' };
+const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비', weak: '공격 약화' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
   ['spirit_tea', '영력·기력 10'], ['clear_spirit_pill', '영력·기력 20'], ['spirit_qi_pill', '영력·기력 35'], ['moonlight_essence', '영력·기력 55'], ['heavenly_dew', '영력·기력 80']];

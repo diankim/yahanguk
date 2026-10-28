@@ -8,6 +8,7 @@
 --   ⑦ 원거리 소모품: 화살·쇠뇌살·취관 침(묶음 100). 한 발에 하나(없으면 피해 절반), 원정은 회차마다 둘. 지금 원거리 무기를 든 조사원에게 100개
 --   ⑧ 기력: 근접 무기를 들면 영력을 「기력」으로 쓴다(공격마다 2). 전투·원정 중 장비 바꿔 끼기를 막는다
 --   ⑨ 같은 장비가 여럿일 때 상점 팔기·버리기·분해는 닳은 쪽이 먼저 나간다(남은 것은 새것)
+--   ⑩ 봉인술 계열 13·24·30·43단계를 모두 택일로(A 폭딜 · B 버프/디버프)
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
 --   (화면) 동료 화면 친구·모임: 단추가 이름에서 멀리 떨어져 늘어나던 것을 사람·모임마다 카드로 나누고 단추를 이름 곁에
@@ -724,10 +725,17 @@ BEGIN
     END IF;
     -- 고유 효과: 술법(폭렬부·천뢰부·정심주·청정결)
     IF style = 'magic' AND dmg > 0 AND a.current_hp > 0 THEN
-      IF 'sealing_c24a' = ANY (sk) AND random() < 0.2 THEN extra := greatest(1, round(dmg * 0.25)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「폭렬부」 술식이 터졌다: ' || extra || ' 피해'); END IF;
+      IF 'sealing_c13a' = ANY (sk) AND random() < 0.25 THEN extra := greatest(1, round(dmg * 0.4)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「연쇄부」 부적이 튀어 ' || extra || ' 피해'); END IF;
+      IF 'sealing_c30a' = ANY (sk) AND random() < 0.25 AND a.current_hp > 0 THEN extra := greatest(1, round(dmg * 0.7)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「연환부」 한 번 더 시전: ' || extra || ' 피해'); END IF;
+      IF 'sealing_c24a' = ANY (sk) AND random() < 0.2 AND a.current_hp > 0 THEN extra := greatest(1, round(dmg * 0.25)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「폭렬부」 술식이 터졌다: ' || extra || ' 피해'); END IF;
       IF 'sealing_c43a' = ANY (sk) AND random() < 0.15 AND a.current_hp > 0 THEN extra := greatest(1, round(a.max_hp * 0.08)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「천뢰부」 벼락: ' || extra || ' 피해'); END IF;
     END IF;
-    IF style = 'magic' AND 'sealing_c24b' = ANY (sk) AND coalesce((v_pfx ->> 'calm')::int, 0) < 5 THEN mn := least(100, mn + 2); v_pfx := v_pfx || jsonb_build_object('calm', coalesce((v_pfx ->> 'calm')::int, 0) + 1); END IF;
+    IF style = 'magic' AND 'sealing_c24b' = ANY (sk) THEN
+      v_pfx := v_pfx || jsonb_build_object('pshield', least(16, coalesce((v_pfx ->> 'pshield')::int, 0) + 4));
+      IF coalesce((v_pfx ->> 'calm')::int, 0) < 5 THEN mn := least(100, mn + 2); v_pfx := v_pfx || jsonb_build_object('calm', coalesce((v_pfx ->> 'calm')::int, 0) + 1); END IF;
+    END IF;
+    -- 청정결계: 술법을 쓰면 3턴 동안 받는 피해 −20%
+    IF style = 'magic' AND 'sealing_c43b' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('ward', 3); END IF;
     IF style = 'magic' AND 'sealing_c43b' = ANY (sk) AND random() < 0.3 AND er > 0 THEN er := er - 1; END IF;
     -- 강기 두르기: 근접 공격마다 보호막 +3(최대 15)
     IF style = 'melee' AND 'melee_x30' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('pshield', least(15, coalesce((v_pfx ->> 'pshield')::int, 0) + 3)); END IF;
@@ -739,6 +747,8 @@ BEGIN
       IF 'sealing_m50' = ANY (sk) THEN resist := resist / 2; END IF;
       IF a.rank = 'guardian' AND random() < resist THEN lines := lines || jsonb_build_array('우두머리가 봉인을 떨쳐냈다.');
       ELSE v_fx := v_fx || jsonb_build_object('stunned', CASE WHEN 'combo_sealing_wardcraft' = ANY (sk) THEN 2 ELSE 1 END);
+        IF 'sealing_x13' = ANY (sk) THEN v_fx := v_fx || jsonb_build_object('broken', 2); lines := lines || jsonb_build_array('「부적 접기」 묶인 틈에 방어가 풀렸다.'); END IF;
+        IF 'sealing_x30' = ANY (sk) THEN v_fx := v_fx || jsonb_build_object('weak', 4); lines := lines || jsonb_build_array('「겹술식」 기운이 꺾여 2턴 동안 공격이 약해진다.'); END IF;
         lines := lines || jsonb_build_array(m.monster_name || '의 움직임을 봉했다' || CASE WHEN 'combo_sealing_wardcraft' = ANY (sk) THEN '(겹봉인: 2턴)' ELSE '' END || '.'); END IF;
     END IF;
     IF NOT ('combo_melee_smithing' = ANY (sk) AND random() < 0.5) THEN
@@ -758,6 +768,14 @@ BEGIN
   IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN
     v_fx := v_fx || jsonb_build_object('broken', (v_fx ->> 'broken')::int - 1);
     IF (v_fx ->> 'broken')::int <= 0 THEN v_fx := v_fx - 'broken'; END IF;
+  END IF;
+  IF coalesce((v_fx ->> 'weak')::int, 0) > 0 THEN
+    v_fx := v_fx || jsonb_build_object('weak', (v_fx ->> 'weak')::int - 1);
+    IF (v_fx ->> 'weak')::int <= 0 THEN v_fx := v_fx - 'weak'; END IF;
+  END IF;
+  IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 AND NOT (style = 'magic' AND attacked AND 'sealing_c43b' = ANY (sk)) THEN
+    v_pfx := v_pfx || jsonb_build_object('ward', (v_pfx ->> 'ward')::int - 1);
+    IF (v_pfx ->> 'ward')::int <= 0 THEN v_pfx := v_pfx - 'ward'; END IF;
   END IF;
 
   v_pfx := v_pfx - 'bound'; v_fx := v_fx - 'evade' - 'thorns' - 'mirror';
@@ -782,6 +800,7 @@ BEGIN
     END IF;
     IF NOT skip_monster THEN
       hit := a.atk * (0.9 + random() * 0.2);
+      IF coalesce((v_fx ->> 'weak')::int, 0) > 0 THEN hit := hit * 0.8; END IF;
       IF coalesce((v_fx ->> 'swarm')::int, 0) > 0 AND v_intent IN ('strike', 'heavy') THEN hit := hit * 1.3; v_fx := v_fx - 'swarm'; END IF;
       hit := hit * CASE v_intent WHEN 'strike' THEN 1 WHEN 'heavy' THEN 1.9 WHEN 'dive' THEN 1.7 WHEN 'pounce' THEN 2.0 WHEN 'unleash' THEN 2.6
         WHEN 'harden' THEN 0.5 WHEN 'wail' THEN 0.6 WHEN 'venom' THEN 0.6 WHEN 'mirror' THEN 0.4 WHEN 'tide' THEN 0.8 WHEN 'barrier' THEN 0.3
@@ -829,6 +848,7 @@ BEGIN
         IF guarding THEN mdmg := round(mdmg * (CASE WHEN v_intent IN ('heavy', 'dive', 'pounce', 'unleash') OR gburst OR g.gtype IS NOT DISTINCT FROM 'big' THEN 0.25 ELSE 0.35 END)); END IF;
         IF guarding AND 'guarding_x13' = ANY (sk) THEN mdmg := round(mdmg * 0.8); END IF;
         IF g.gimmick_key IS NOT NULL AND 'analysis_x13' = ANY (sk) THEN mdmg := round(mdmg * 0.8); END IF;
+        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * 0.8); END IF;
         mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0) * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - a.mlevel))));
         IF c.health < 30 THEN mdmg := ceil(mdmg * 1.15); END IF;
         eva_now := eva + CASE WHEN 'analysis_m50' = ANY (sk) AND coalesce((v_pfx ->> 'focus')::int, 0) > 0 THEN 15 ELSE 0 END;
@@ -1419,6 +1439,34 @@ begin
     if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '닳은 장비 먼저: % 고칠 자리', f; end if;
     execute replace(d, a, a || ' perform set_config(''yh.wear_leaves'', ''on'', true);');
   end loop;
+end $$;
+
+-- ⑩ ─────────────────────────────────────────
+-- 봉인술 계열: 13·24·30·43단계를 모두 택일로(A 폭딜 · B 버프/디버프). 13·30단계의 추가 기술(부적 접기·겹술식)은 B가 되고 A를 새로 둔다.
+-- 13·30단계도 고를 수 있게(바꾸는 값 13단계 1,000전 · 24단계 2,000전 · 30단계 3,000전 · 43단계 5,000전). 이미 13·30단계에 닿은 조사원은 처음 고르기가 무료다.
+update public.world_skill_catalog set slot = 'b' where skill_id in ('sealing_x13', 'sealing_x30');
+insert into public.world_skill_catalog(skill_id, skill_name, category, description, passive_effect, unlock_rank, active_skill, recipe_id, slot, requires) values
+  ('sealing_c13a', '연쇄부', 'sealing', '', '{}'::jsonb, 13, null, null, 'a', null),
+  ('sealing_c30a', '연환부', 'sealing', '', '{}'::jsonb, 30, null, null, 'a', null)
+on conflict (skill_id) do nothing;
+update public.world_skill_catalog s set skill_name = v.n, description = v.d from (values
+  ('sealing_c13a', '연쇄부', '택일 기술(폭딜) · 술법이 적중하면 25% 확률로 부적이 튀어 피해 40% 추가'),
+  ('sealing_x13', '부적 접기', '택일 기술(버프·디버프) · 우두머리가 봉인술을 떨쳐 낼 확률 50% → 35%, 봉인하면 적의 방어가 2턴 무너진다(받는 피해 +20%)'),
+  ('sealing_c24a', '폭렬부', '택일 기술(폭딜) · 술법이 적중하면 20% 확률로 터져 피해 25% 추가'),
+  ('sealing_c24b', '호체부', '택일 기술(버프·디버프) · 술법 공격마다 내 보호막 +4(최대 16, 받는 피해를 먼저 막음) · 정신 +2(한 전투에 5번까지)'),
+  ('sealing_c30a', '연환부', '택일 기술(폭딜) · 술법 공격 때 25% 확률로 한 번 더 시전(피해 70%)'),
+  ('sealing_x30', '겹술식', '택일 기술(버프·디버프) · 봉인에 묶였던 적에게 주는 다음 공격 피해 +30%, 봉인한 뒤 2번의 공격 동안 적 공격력 −20%'),
+  ('sealing_c43a', '천뢰부', '택일 기술(폭딜) · 술법 공격 때 15% 확률로 벼락(적 최대 체력 8% 피해)'),
+  ('sealing_c43b', '청정결계', '택일 기술(버프·디버프) · 술법을 쓰면 3턴 동안 받는 피해 −20%, 술법 공격마다 30% 확률로 침식 −1')
+) v(id, n, d) where s.skill_id = v.id;
+
+do $$ declare d text := pg_get_functiondef('public.world_skill_choose(text,integer,text)'::regprocedure);
+  a1 text := 'if p_tier not in (24, 43)'; b1 text := 'if p_tier not in (13, 24, 30, 43)';
+  a2 text := 'fee := case p_tier when 24 then 2000 else 5000 end;'; b2 text := 'fee := case p_tier when 13 then 1000 when 24 then 2000 when 30 then 3000 else 5000 end;';
+begin
+  if position(b1 in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a1, ''))) / length(a1) <> 1 or (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception '기술 고르기 고칠 자리'; end if;
+  execute replace(replace(d, a1, b1), a2, b2);
 end $$;
 
 grant fn_owner_18885 to postgres with inherit false, set false;
