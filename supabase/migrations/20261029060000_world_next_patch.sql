@@ -1642,7 +1642,7 @@ insert into public.world_title_catalog(title_key, title_name, icon, description,
   ('fv_north_league', '산문의 방패', 'shield', '북령맹 산문 앞을 지킨 무사.', '북령맹 비고에서 공훈으로', '{"incoming_damage_pct": -2, "defense": 2}', true, false, null, 963, '세력', 2),
   ('fv_river_alliance', '나루의 신용', 'route', '어느 나루에서나 외상이 통하는 이름.', '수향연맹 비고에서 공훈으로', '{"travel_time_pct": -3, "gather_qty_pct": 2}', true, false, null, 964, '세력', 2),
   ('fv_southern_remnant', '불씨를 나르는 자', 'flame', '꺼진 마을에 불씨를 옮겨 붙인 이.', '남명회 비고에서 공훈으로', '{"healing_pct": 3, "erosion_pct": -2}', true, false, null, 965, '세력', 2),
-  ('fv_mandate_court', '별자리를 외는 자', 'star', '천명원 서고에서 별자리 스물여덟 수를 외운 관측생.', '천명원 비고에서 공훈으로', '{"encounter_pct": -2, "clue_bonus_pct": 2}', true, false, null, 966, '세력', 2)
+  ('fv_mandate_court', '별자리를 외는 자', 'spark', '천명원 서고에서 별자리 스물여덟 수를 외운 관측생.', '천명원 비고에서 공훈으로', '{"encounter_pct": -2, "clue_bonus_pct": 2}', true, false, null, 966, '세력', 2)
 on conflict (title_key) do nothing;
 -- 세력 테두리(진품): 얻는 길은 비고뿐(규칙은 어디에도 맞지 않는 표시만, 저절로 주지 않음)
 insert into public.world_cosmetic_catalog(cosmetic_key, kind, tier, cosmetic_name, condition_text, category, rule, hidden, active, sort) values
