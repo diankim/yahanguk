@@ -76,7 +76,7 @@ async function draw() {
 }
 
 function drawBattle() {
-  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div><div id="battle-box"></div>`;
+  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div><div id="battle-box"></div>`;
   renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); });
 }
 
@@ -92,6 +92,7 @@ function scene(s, traveling, downed) {
   return `
     <div class="scene theme-${esc(r.theme || 'wild')} ${r.safe ? 'safe' : ''}">
       ${sceneFx(r)}
+      <span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <div class="scene-top">
         <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · ${esc(r.faction_name || '무주 금역')}</p>
         <h1>${esc(r.region_name)}</h1>
@@ -143,6 +144,7 @@ function field(s, roster, blocked) {
   const whyNot = k => stateWhy || (c.level < k.min_level ? `Lv.${k.min_level}부터 들어갈 수 있습니다 · 지금 Lv.${c.level} (${k.min_level - c.level}레벨 더 필요)` : '');
   return `
     <div class="field-grid">
+      <div class="fg-col fg-a">
       <section class="panel explore-card">
         <div class="place">
           <p class="eyebrow">${esc(DEPTH[n.depth] || '')} · 권장 Lv.${n.min_level}+</p>
@@ -154,18 +156,24 @@ function field(s, roster, blocked) {
           <div class="st-pips">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
           <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득 찼습니다' : ''}</small>
         </div>
-        <button class="btn primary big-act" id="search" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색하기</span><small>탐색력 1 · 길·채집터·요괴·보급·단서</small></button>
+        <div class="act-tiles">
+          <button class="tile primary" id="search" title="탐색력 1 · 길·채집터·요괴·보급·단서" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색</span></button>
+          <button class="tile" id="exp-open2" title="원정 보내기" ${blocked ? 'disabled' : ''}>${icon('flame', 22)}<span>원정</span></button>
+          <button class="tile" id="camp" title="야영" ${blocked ? 'disabled' : ''}>${icon('moon', 22)}<span>야영</span><small class="rest-cd" data-rest-line="short">${esc(restLine(Date.now(), true))}</small></button>
+          <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
+        </div>
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
         ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
         ${s.story_here?.length ? `<p class="hint accent">${icon('scroll', 14)} 이 지역 어딘가에 「${esc(s.story_here[0].chapter)}」의 단서가 있습니다. 탐색을 이어가세요.</p>` : ''}
-        <div class="sub-acts">
-          <button class="btn" id="exp-open2" ${blocked ? 'disabled' : ''}>${icon('flame', 16)}<span>원정 보내기</span></button>
-          <button class="btn" id="camp" ${blocked ? 'disabled' : ''}>${icon('moon', 16)}<span>야영</span><small class="rest-cd" data-rest-line="short">${esc(restLine(Date.now(), true))}</small></button>
-          <a class="btn ghost" href="#/map">${icon('map', 16)}<span>지도</span></a>
-        </div>
         <p class="weapon-line small">${icon('sword', 14)} ${esc(w.name || '맨손')} · ${STYLE[w.type] || '근접'}${mechs.length ? ` · 이 지역 요괴: ${mechs.map(m => { const [e, k] = effectiveness(w.type, m); return `<span class="eff ${k}">${esc(MECH[m]?.[0] || m)} ${esc(e)}</span>`; }).join(' ')}` : ''}</p>
       </section>
 
+      <details class="panel fold log-card" data-fold="field-log" ${foldOpen('field-log') ? 'open' : ''}>
+        <summary class="panel-head"><h2>${icon('scroll', 16)}탐사 기록 <small class="muted">${(s.recent || []).length}</small></h2></summary>
+        <div class="panel-body"><ol class="field-log">${(s.recent || []).map(e => { const o = OUTCOME[e.kind] || OUTCOME.quiet; return `<li class="k-${esc(e.kind)}">${icon(o[0], 14)}<span>${esc(e.content)}</span><time>${fmt.time(e.at)}</time></li>`; }).join('') || `<li class="muted">아직 기록이 없습니다. 탐색을 시작하세요.</li>`}</ol></div>
+      </details>
+      </div>
+      <div class="fg-col fg-b">
       <section class="panel">
         <header class="panel-head"><h2>${icon('route', 16)}이어진 길</h2><span class="muted small">${s.hidden_paths ? `찾지 못한 길 ${s.hidden_paths}` : '모두 찾음'}</span></header>
         <div class="panel-body">
@@ -189,10 +197,7 @@ function field(s, roster, blocked) {
         </div>
       </section>
 
-      <details class="panel fold log-card" data-fold="field-log" ${foldOpen('field-log') ? 'open' : ''}>
-        <summary class="panel-head"><h2>${icon('scroll', 16)}탐사 기록 <small class="muted">${(s.recent || []).length}</small></h2></summary>
-        <div class="panel-body"><ol class="field-log">${(s.recent || []).map(e => { const o = OUTCOME[e.kind] || OUTCOME.quiet; return `<li class="k-${esc(e.kind)}">${icon(o[0], 14)}<span>${esc(e.content)}</span><time>${fmt.time(e.at)}</time></li>`; }).join('') || `<li class="muted">아직 기록이 없습니다. 탐색을 시작하세요.</li>`}</ol></div>
-      </details>
+      </div>
     </div>
     ${fishPanel(blocked)}
     <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>

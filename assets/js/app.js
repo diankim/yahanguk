@@ -220,7 +220,7 @@ let current = null;
 function renderGame() {
   window.dispatchEvent(new Event('yh-booted'));
   document.title = '야행국';
-  const tabs = Object.entries(VIEWS).map(([k, v]) => `<a href="#/${k}" data-view="${k}">${icon(v.icon, 20)}<span>${v.label}</span></a>`).join('');
+  const tabs = Object.entries(VIEWS).map(([k, v]) => `<a href="#/${k}" data-view="${k}" aria-label="${v.label}" title="${v.label}">${icon(v.icon, 20)}<span>${v.label}</span></a>`).join('');
   app.replaceChildren(h(`
   <div class="shell">
     <header class="topbar">

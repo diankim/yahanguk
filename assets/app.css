@@ -702,7 +702,9 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .facility:hover { border-color: var(--gold); } .facility .ico { color: var(--gold); }
 .facility small { color: var(--muted); font-size: 12px; }
 .field-grid { display: grid; gap: 14px; margin-bottom: 14px; } .field-grid > .panel { margin: 0; }
-@media (min-width: 900px) { .field-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } .field-grid .explore-card { grid-row: span 2; } }
+/* 좁은 화면은 한 줄(탐색 → 길 → 채집터 → 기록), 넓은 화면은 왼쪽(탐색·기록)·오른쪽(길·채집터) 두 칸을 따로 쌓아 빈칸이 생기지 않게 */
+.fg-col { display: contents; } .field-grid .panel { margin: 0; } .fg-a > .explore-card { order: 1; } .fg-b > .panel:first-child { order: 2; } .fg-b > .panel:nth-child(2) { order: 3; } .fg-a > .log-card { order: 4; }
+@media (min-width: 900px) { .field-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; } .fg-col { display: grid; gap: 14px; align-content: start; } .fg-col > * { order: 0 !important; } }
 .explore-card { padding: 16px; display: grid; gap: 14px; align-content: start; }
 .place h2 { font-size: 18px; margin: 2px 0 4px; }
 .stamina { display: grid; gap: 6px; }
@@ -1408,4 +1410,43 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 }
 @media (min-width: 1280px) {
   body.has-banner .chat-col { top: calc(var(--top-h) + 46px); height: calc(100vh - var(--top-h) - 46px); }
+}
+
+/* ── 시안 ①(등롱 + 꺾쇠 액자, 20261028): 장소 그림은 네 모서리 꺾쇠 액자, 현장 행동은 아이콘 칸, 모바일 아래 탭은 아이콘만 띄운 알약 ── */
+.scene { border-radius: 6px; border-width: 1.5px; }
+.scene > .frame-c { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.frame-c i { position: absolute; width: 16px; height: 16px; border: 0 solid var(--gold); }
+.frame-c i:nth-child(1) { left: 0; top: 0; border-left-width: 3px; border-top-width: 3px; }
+.frame-c i:nth-child(2) { right: 0; top: 0; border-right-width: 3px; border-top-width: 3px; }
+.frame-c i:nth-child(3) { left: 0; bottom: 0; border-left-width: 3px; border-bottom-width: 3px; }
+.frame-c i:nth-child(4) { right: 0; bottom: 0; border-right-width: 3px; border-bottom-width: 3px; }
+.act-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.tile { position: relative; display: grid; place-items: center; align-content: center; gap: 3px; min-height: 64px; padding: 6px 4px; border-radius: 14px; border: var(--bw) solid transparent; background: var(--surface-2); color: var(--text); font-weight: 600; font-size: 12.5px; text-decoration: none; cursor: pointer; }
+.tile .ico { color: var(--gold); }
+.tile.primary { background: var(--accent); color: var(--accent-ink); }
+.tile.primary .ico { color: currentColor; }
+.tile:hover:not(:disabled) { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
+.tile:disabled { opacity: .45; cursor: not-allowed; }
+.tile.searching .ico { animation: spin .8s linear infinite; }
+.tile .rest-cd { position: absolute; left: 4px; right: 4px; bottom: 3px; font-size: 9.5px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.tile .rest-cd:empty { display: none; }
+.tile:has(.rest-cd:not(:empty)) { padding-bottom: 14px; }
+@media (max-width: 1099px) {
+  .tabbar { left: 10px; right: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); height: 56px; padding-bottom: 0; border-radius: 18px; border: var(--bw) solid var(--line); background: var(--surface); }
+  .tabbar a { position: relative; gap: 0; }
+  .tabbar a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tabbar a .ico { width: 23px; height: 23px; }
+  .tabbar a.on::before { content: ''; position: absolute; top: 7px; left: 50%; width: 18px; height: 3px; margin-left: -9px; border-radius: 2px; background: var(--accent); }
+  .tabbar a.on .ico { color: var(--accent); }
+}
+@media (max-width: 759px) {
+  .facility small:not([data-rest-line]) { display: none; }
+  .facility { min-height: 78px; padding: 12px; }
+}
+/* 모바일: 제목·이름은 그대로, 자세한 설명은 한 단계 작고 옅게 */
+@media (max-width: 759px) {
+  .desc, .scene-desc, p.muted.small, .muted.small, .hint, .path small, .spots small, .spot-list small, .item-main small, .facility small, .weapon-line, .note-item p, .field-log li { font-size: 11.5px; line-height: 1.45; }
+  .desc, .scene-desc { color: var(--muted); }
+  .field-log time, .chip { font-size: 10.5px; }
+  .eyebrow { font-size: 11px; }
 }
