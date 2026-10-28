@@ -27,12 +27,16 @@ function ensureCtx() {
   master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
   bgmBus = ctx.createGain(); ambBus = ctx.createGain(); sfxBus = ctx.createGain();
   [bgmBus, ambBus, sfxBus].forEach(g => { g.gain.value = 0; g.connect(master); });
-  // 잔향: 짧게 흩어지는 소음으로 만든 공간감
+  // 잔향: 넓은 전각처럼 길게 남되, 꼬리로 갈수록 고음을 걸러 「쉬—」 하는 잡음이 들리지 않게 한다
   reverb = ctx.createConvolver();
-  const len = ctx.sampleRate * 2.6, ir = ctx.createBuffer(2, len, ctx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+  const len = ctx.sampleRate * 3.4, ir = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch); let lp = 0;
+    for (let i = 0; i < len; i++) { const x = i / len; lp += ((Math.random() * 2 - 1) - lp) * (0.3 - 0.26 * x); d[i] = lp * Math.pow(1 - x, 2.2) * 2.4; }
+  }
   reverb.buffer = ir;
-  const wet = ctx.createGain(); wet.gain.value = 0.38; reverb.connect(wet); wet.connect(bgmBus);
+  const rlp = ctx.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 3200;
+  const wet = ctx.createGain(); wet.gain.value = 0.34; reverb.connect(rlp); rlp.connect(wet); wet.connect(bgmBus);
   // 소음 재료
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
   const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -52,10 +56,10 @@ function pluck(f, t, dur, vol, bend = false) {
   const o = ctx.createOscillator(), o2 = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain(), g2 = ctx.createGain();
   o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o2.type = 'sine'; o2.frequency.setValueAtTime(f * 2, t); g2.gain.value = 0.25;
   if (bend) { o.detune.setValueAtTime(0, t + 0.12); o.detune.linearRampToValueAtTime(45, t + 0.35); o.detune.linearRampToValueAtTime(-10, t + 0.6); o.detune.linearRampToValueAtTime(0, t + 0.8); }
-  lp.type = 'lowpass'; lp.frequency.setValueAtTime(3800, t); lp.frequency.exponentialRampToValueAtTime(700, t + 0.4); lp.Q.value = 2;
-  envGain(g, t, vol, 0.004, Math.min(2.6, dur * 1.6 + 0.4));
+  lp.type = 'lowpass'; lp.frequency.setValueAtTime(2600, t); lp.frequency.exponentialRampToValueAtTime(520, t + 0.6); lp.Q.value = 0.8;
+  envGain(g, t, vol, 0.006, Math.min(3, dur * 1.8 + 0.6));
   o.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); toBgm(g, 0.45);
-  const end = t + Math.min(3.2, dur * 1.6 + 0.6); o.start(t); o2.start(t); o.stop(end); o2.stop(end);
+  const end = t + Math.min(3.8, dur * 1.8 + 0.8); o.start(t); o2.start(t); o.stop(end); o2.stop(end);
 }
 // 대금처럼 부는 소리: 사인파에 늦게 들어오는 떨림과 숨소리
 function flute(f, t, dur, vol) {
@@ -76,11 +80,12 @@ function drum(t, kind, vol) {
   if (kind === 'buk') {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = 'sine'; o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.25);
-    envGain(g, t, vol, 0.004, 0.35); o.connect(g); toBgm(g, 0.25); o.start(t); o.stop(t + 0.45);
+    envGain(g, t, vol, 0.006, 0.5); o.connect(g); toBgm(g, 0.35); o.start(t); o.stop(t + 0.6);
   } else {
-    const n = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain();
-    n.buffer = noiseBuf; hp.type = 'bandpass'; hp.frequency.value = kind === 'deok' ? 900 : 2600; hp.Q.value = 0.8;
-    envGain(g, t, vol, 0.002, kind === 'deok' ? 0.12 : 0.06); n.connect(hp); hp.connect(g); toBgm(g, 0.2); n.start(t); n.stop(t + 0.2);
+    // 덕·딱: 잡음 대신 짧은 나무 울림(사인파)
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(kind === 'deok' ? 260 : 520, t); o.frequency.exponentialRampToValueAtTime(kind === 'deok' ? 180 : 400, t + 0.08);
+    envGain(g, t, vol, 0.003, kind === 'deok' ? 0.14 : 0.08); o.connect(g); toBgm(g, 0.3); o.start(t); o.stop(t + 0.25);
   }
 }
 // 맑은 종: 배음이 어긋난 두 사인파
@@ -93,36 +98,37 @@ function bell(f, t, vol) {
 
 /* ── 곡조 ─────────────────────────────────────────────── */
 // 지역마다 정해진 주제 선율을 A·A′·B·A 형식으로 되풀이한다(같은 지역에서는 같은 곡이 들려 기억에 남는다).
-// 분위기(mood)가 영역마다 달라 빠르기·장단·리듬·선율의 도약 정도가 다르다: 차분·발랄·경쾌·긴박·웅장·으스스.
+// 방향(2026-10-28): 잔잔하고 아련한 사극풍·무협풍. 느린 빠르기, 긴 음 위주의 서정 선율 하나가 중심이고 반주는 성기게, 타악은 거의 없다.
+// 분위기(mood)가 영역마다 달라 빠르기·리듬·선율의 도약 정도가 다르다: 차분·애절·흐름·긴박·웅장·으스스.
 // 선율은 짧은 동기(2마디)를 만들고 한 칸 위·아래로 옮겨 부르거나(동기 반복·모방) 뒤집어 변주하며, 꾸밈음과 도약을 섞는다.
 // 아래에는 가야금 분산화음과 응답 선율, 은은한 화음, 분위기별 장단을 깐다.
 const GUNG = [0, 2, 4, 7, 9], PYEONG = [0, 2, 5, 7, 9], SHANG = [0, 2, 5, 7, 10], GYEMYEON = [0, 3, 5, 7, 10], JUE = [0, 3, 5, 8, 10], DARK = [0, 1, 5, 7, 8];
 const PROFILES = {
-  capital:    { scale: GUNG, root: 293.66, bpm: 104, mood: 'lively', lead: 'daegeum', drum: 0.6, bell: 0.08, drone: 0.12 },
-  north:      { scale: GYEMYEON, root: 220.0, bpm: 118, mood: 'tense', lead: 'haegeum', drum: 0.6, bell: 0, drone: 0.3 },
-  east:       { scale: PYEONG, root: 329.63, bpm: 88, mood: 'calm', lead: 'daegeum', drum: 0.35, bell: 0.12, drone: 0.15 },
-  south:      { scale: SHANG, root: 246.94, bpm: 112, mood: 'brisk', lead: 'daegeum', drum: 0.65, bell: 0.05, drone: 0.15 },
-  frontier:   { scale: GYEMYEON, root: 261.63, bpm: 126, mood: 'epic', lead: 'haegeum', drum: 0.85, bell: 0, drone: 0.35 },
-  underworld: { scale: JUE, root: 174.61, bpm: 70, mood: 'eerie', lead: 'haegeum', drum: 0.3, bell: 0.15, drone: 0.45 },
-  heavenward: { scale: PYEONG, root: 392.0, bpm: 80, mood: 'calm', lead: 'daegeum', drum: 0.15, bell: 0.4, drone: 0.2 },
-  abyss:      { scale: DARK, root: 146.83, bpm: 100, mood: 'tense', lead: 'haegeum', drum: 0.5, bell: 0.12, drone: 0.55 },
+  capital:    { scale: PYEONG, root: 293.66, bpm: 76, mood: 'calm', lead: 'daegeum', drum: 0.25, bell: 0.12, drone: 0.08 },
+  north:      { scale: GYEMYEON, root: 220.0, bpm: 72, mood: 'lyrical', lead: 'haegeum', drum: 0.1, bell: 0.06, drone: 0.18 },
+  east:       { scale: PYEONG, root: 329.63, bpm: 70, mood: 'calm', lead: 'daegeum', drum: 0.15, bell: 0.15, drone: 0.1 },
+  south:      { scale: GUNG, root: 246.94, bpm: 80, mood: 'flowing', lead: 'daegeum', drum: 0.3, bell: 0.08, drone: 0.1 },
+  frontier:   { scale: GYEMYEON, root: 261.63, bpm: 84, mood: 'epic', lead: 'haegeum', drum: 0.55, bell: 0, drone: 0.22 },
+  underworld: { scale: JUE, root: 174.61, bpm: 62, mood: 'eerie', lead: 'haegeum', drum: 0.15, bell: 0.15, drone: 0.3 },
+  heavenward: { scale: PYEONG, root: 392.0, bpm: 66, mood: 'calm', lead: 'daegeum', drum: 0, bell: 0.35, drone: 0.12 },
+  abyss:      { scale: DARK, root: 146.83, bpm: 78, mood: 'tense', lead: 'haegeum', drum: 0.35, bell: 0.1, drone: 0.35 },
 };
-// 분위기별 리듬 조각(박 단위, 한 마디 4박)·선율 도약 확률·꾸밈음 확률·분산화음 간격·장단(8분음 8칸: [칸, 악기, 세기])
+// 분위기별 리듬 조각(박 단위, 한 마디 4박)·선율 도약 확률·꾸밈음 확률·가야금 간격(박)·응답 확률·장단(8분음 8칸: [칸, 악기, 세기])
 const MOODS = {
-  calm:   { rhythms: [[2, 1, 1], [3, 1], [1, 1, 2], [2, 2], [1.5, 0.5, 2], [1, 2, 1]], leap: 0.2, orn: 0.25, arp: 1, answer: 0.3,
-            jang: [[0, 'buk', 1], [4, 'deok', 0.45], [6, 'tick', 0.3]] },
-  lively: { rhythms: [[0.5, 0.5, 1, 0.5, 0.5, 1], [1, 0.5, 0.5, 1, 1], [0.75, 0.25, 1, 1, 1], [0.5, 0.5, 0.5, 0.5, 1, 1], [1, 1, 0.5, 0.5, 1], [1.5, 0.5, 1, 1]], leap: 0.4, orn: 0.35, arp: 0.5, answer: 0.6,
-            jang: [[0, 'buk', 1], [3, 'tick', 0.5], [4, 'deok', 0.7], [6, 'tick', 0.5], [7, 'tick', 0.35]] },
-  brisk:  { rhythms: [[1, 0.5, 0.5, 1, 1], [0.5, 0.5, 1, 1, 1], [1, 1, 1, 1], [0.5, 1, 0.5, 2], [1, 0.5, 0.5, 2]], leap: 0.3, orn: 0.2, arp: 0.5, answer: 0.5,
-            jang: [[0, 'buk', 1], [2, 'tick', 0.5], [3, 'deok', 0.55], [4, 'buk', 0.7], [6, 'deok', 0.6], [7, 'tick', 0.45]] },
-  tense:  { rhythms: [[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1], [1, 0.5, 0.5, 1, 1], [0.5, 1, 0.5, 2], [0.5, 0.5, 1, 0.5, 0.5, 1]], leap: 0.3, orn: 0.1, arp: 0.5, answer: 0.4, ostinato: true,
-            jang: [[0, 'buk', 1], [1, 'tick', 0.4], [2, 'tick', 0.4], [3, 'buk', 0.6], [4, 'deok', 0.7], [5, 'tick', 0.4], [6, 'buk', 0.6], [7, 'tick', 0.5]] },
-  epic:   { rhythms: [[2, 1, 1], [1, 1, 1, 1], [1.5, 0.5, 1, 1], [3, 1], [1, 0.5, 0.5, 2]], leap: 0.45, orn: 0.15, arp: 0.5, answer: 0.5,
-            jang: [[0, 'buk', 1], [3, 'buk', 0.7], [4, 'deok', 0.8], [6, 'buk', 0.65], [7, 'deok', 0.5]] },
-  eerie:  { rhythms: [[3, 1], [2, 2], [1, 3], [2, 1, 1], [1.5, 2.5]], leap: 0.35, orn: 0.3, arp: 1, answer: 0.25,
-            jang: [[0, 'buk', 0.8], [5, 'tick', 0.3]] },
-  battle: { rhythms: [[0.5, 0.5, 0.5, 0.5, 1, 1], [1, 0.5, 0.5, 1, 1], [0.5, 0.5, 1, 0.5, 0.5, 1], [0.5, 0.5, 0.5, 0.5, 2]], leap: 0.35, orn: 0.1, arp: 0.5, answer: 0.6, ostinato: true,
-            jang: [[0, 'buk', 1], [1, 'tick', 0.5], [2, 'deok', 0.6], [3, 'tick', 0.5], [4, 'buk', 0.8], [5, 'tick', 0.5], [6, 'deok', 0.7], [7, 'buk', 0.6]] },
+  calm:    { rhythms: [[2, 1, 1], [3, 1], [4], [1.5, 0.5, 2], [2, 2], [1, 1, 2]], leap: 0.2, orn: 0.3, arp: 2, answer: 0.2,
+             jang: [[0, 'buk', 0.6]] },
+  lyrical: { rhythms: [[3, 1], [2, 2], [1.5, 0.5, 2], [4], [2, 1, 1], [1, 1, 2]], leap: 0.3, orn: 0.35, arp: 1, answer: 0.3,
+             jang: [[0, 'buk', 0.5]] },
+  flowing: { rhythms: [[1, 1, 2], [2, 1, 1], [1.5, 0.5, 1, 1], [1, 1, 1, 1], [3, 1]], leap: 0.25, orn: 0.25, arp: 1, answer: 0.35,
+             jang: [[0, 'buk', 0.7], [4, 'buk', 0.35]] },
+  tense:   { rhythms: [[1, 1, 2], [1.5, 0.5, 2], [1, 1, 1, 1], [2, 1, 1]], leap: 0.3, orn: 0.1, arp: 1, answer: 0.3, ostinato: true,
+             jang: [[0, 'buk', 1], [3, 'buk', 0.45], [4, 'buk', 0.7]] },
+  epic:    { rhythms: [[2, 1, 1], [3, 1], [1.5, 0.5, 2], [1, 1, 2], [4]], leap: 0.4, orn: 0.2, arp: 1, answer: 0.3,
+             jang: [[0, 'buk', 1], [4, 'buk', 0.6], [6, 'buk', 0.4]] },
+  eerie:   { rhythms: [[3, 1], [4], [2, 2], [1, 3]], leap: 0.35, orn: 0.3, arp: 2, answer: 0.15,
+             jang: [[0, 'buk', 0.5]] },
+  battle:  { rhythms: [[1, 0.5, 0.5, 2], [1, 1, 1, 1], [0.5, 0.5, 1, 2], [1.5, 0.5, 1, 1]], leap: 0.35, orn: 0.1, arp: 0.5, answer: 0.3, ostinato: true,
+             jang: [[0, 'buk', 1], [2, 'buk', 0.45], [3, 'deok', 0.4], [4, 'buk', 0.8], [6, 'buk', 0.55], [7, 'deok', 0.3]] },
 };
 const noteOf = (p, deg) => { const s = p.scale, oct = Math.floor(deg / s.length), i = ((deg % s.length) + s.length) % s.length; return p.root * Math.pow(2, oct + s[i] / 12); };
 let playing = false, phraseTimer = null, droneNodes = null, droneKey = '';
@@ -131,8 +137,8 @@ let song = null, songKey = '', barNo = 0, nextAt = 0;
 function profile() {
   const base = PROFILES[scene.territory] || PROFILES.capital;
   const p = { ...base };
-  if (scene.safe) { p.bpm *= 0.92; p.drum *= 0.45; if (p.mood === 'tense' || p.mood === 'epic') p.mood = 'brisk'; }
-  if (scene.battle) { p.bpm = Math.max(p.bpm * 1.22, 132); p.drum = Math.min(1, p.drum + 0.35); p.mood = 'battle'; }
+  if (scene.safe) { p.bpm *= 0.92; p.drum *= 0.4; if (p.mood === 'tense' || p.mood === 'epic') p.mood = 'flowing'; }
+  if (scene.battle) { p.bpm = Math.max(p.bpm * 1.3, 108); p.drum = Math.min(1, p.drum + 0.4); p.mood = 'battle'; }
   if (env.phase === 'night') { p.bpm *= 0.95; p.bell += 0.05; }
   return p;
 }
@@ -181,12 +187,12 @@ function legato(p, notes, t, beat, vol) {
   const o = ctx.createOscillator(), o2 = ctx.createOscillator(), mix = ctx.createGain(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
   const lfo = ctx.createOscillator(), lg = ctx.createGain();
   const hae = p.lead === 'haegeum';
-  o.type = hae ? 'sawtooth' : 'sine'; o2.type = 'triangle'; mix.gain.value = hae ? 0.35 : 0.18;
-  lp.type = 'lowpass'; lp.frequency.value = hae ? 1500 : 2600; lp.Q.value = hae ? 3 : 0.7;
+  o.type = hae ? 'triangle' : 'sine'; o2.type = hae ? 'sine' : 'triangle'; mix.gain.value = hae ? 0.3 : 0.15;
+  lp.type = 'lowpass'; lp.frequency.value = hae ? 1900 : 2400; lp.Q.value = hae ? 1.2 : 0.6;
   lfo.frequency.value = hae ? 5.6 : 4.8; lg.gain.value = 0;
   lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
   o.connect(lp); o2.connect(mix); mix.connect(lp); lp.connect(g); toBgm(g, 0.55);
-  const v = hae ? vol * 0.55 : vol;
+  const v = hae ? vol * 0.85 : vol;
   let at = t; g.gain.setValueAtTime(0.0001, t);
   notes.forEach(([d, len, orn], i) => {
     const f = noteOf(p, d), dur = len * beat;
@@ -205,7 +211,7 @@ function legato(p, notes, t, beat, vol) {
   if (!hae) {
     const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
     n.buffer = noiseBuf; bp.type = 'bandpass'; bp.frequency.value = noteOf(p, notes[0][0]) * 2.2; bp.Q.value = 1.2;
-    ng.gain.setValueAtTime(0.0001, t); ng.gain.setTargetAtTime(vol * 0.08, t, 0.1); ng.gain.setTargetAtTime(0.0001, at - 0.05, 0.12);
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.setTargetAtTime(vol * 0.03, t, 0.1); ng.gain.setTargetAtTime(0.0001, at - 0.05, 0.12);
     n.connect(bp); bp.connect(ng); toBgm(ng, 0.3); n.start(t); n.stop(at + 0.6);
   }
   [o, o2, lfo].forEach(x => { x.start(t); x.stop(at + 0.7); });
@@ -215,8 +221,8 @@ function pad(p, chord, t, dur, vol) {
   [chord - 5, chord - 2].forEach((d, i) => {
     const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
     o.type = 'triangle'; o.frequency.value = noteOf(p, d); o.detune.value = i ? 4 : -4;
-    lp.type = 'lowpass'; lp.frequency.value = 900;
-    g.gain.setValueAtTime(0.0001, t); g.gain.setTargetAtTime(vol, t, 0.35); g.gain.setTargetAtTime(0.0001, t + dur - 0.1, 0.4);
+    lp.type = 'lowpass'; lp.frequency.value = 760;
+    g.gain.setValueAtTime(0.0001, t); g.gain.setTargetAtTime(vol, t, 0.7); g.gain.setTargetAtTime(0.0001, t + dur - 0.2, 0.6);
     o.connect(lp); lp.connect(g); toBgm(g, 0.6); o.start(t); o.stop(t + dur + 1.6);
   });
 }
@@ -233,16 +239,16 @@ function phrase() {
   legato(p, notes, t, beat, p.mood === 'eerie' ? 0.06 : 0.07);
   pad(p, bar.chord, t, barDur, p.mood === 'epic' ? 0.03 : 0.022);
   // 가야금: 분산화음(긴박·전투는 같은 음을 빠르게 짚는 받침)과, 선율이 쉴 때 동기를 낮게 받아 부르는 응답 선율
-  const arp = mood.ostinato ? [bar.chord - 5, bar.chord - 5, bar.chord - 3, bar.chord - 5] : [bar.chord - 5, bar.chord - 3, bar.chord, bar.chord - 3, bar.chord + 2, bar.chord - 3, bar.chord, bar.chord - 3];
-  for (let b = 0, i = 0; b < 4; b += mood.arp, i++) pluck(noteOf(p, arp[i % arp.length]), t + b * beat, beat * mood.arp, i % 4 === 0 ? 0.06 : 0.038, p.mood === 'calm' && i === 0);
+  const arp = mood.ostinato ? [bar.chord - 5, bar.chord - 5, bar.chord - 3, bar.chord - 5] : [bar.chord - 5, bar.chord - 3, bar.chord - 2, bar.chord - 3];
+  for (let b = 0, i = 0; b < 4; b += mood.arp, i++) pluck(noteOf(p, arp[i % arp.length]), t + b * beat, beat * mood.arp, i === 0 ? 0.05 : 0.032, (p.mood === 'calm' || p.mood === 'lyrical') && i === 0);
   if (Math.random() < mood.answer) {
     let at = t + 2 * beat; const echo = notes.slice(0, 3);
-    echo.forEach(([d, l]) => { const len = Math.min(l, 1) * 0.5 * beat; if (at < t + barDur - 0.05) pluck(noteOf(p, d - 5), at, len * 2, 0.045, Math.random() < 0.3); at += len; });
+    echo.forEach(([d, l]) => { const len = Math.min(l, 1) * 0.5 * beat; if (at < t + barDur - 0.05) pluck(noteOf(p, d - 5), at, len * 2, 0.03, Math.random() < 0.3); at += len; });
   }
   if (Math.random() < p.bell) bell(noteOf(p, bar.chord + 5), t + 2 * beat, 0.025);
   // 장단: 분위기마다 다른 8분음 무늬
   if (p.drum > 0.05) mood.jang.forEach(([st, kind, v]) => {
-    const vol = (kind === 'buk' ? 0.2 : kind === 'deok' ? 0.08 : 0.05) * v * p.drum;
+    const vol = (kind === 'buk' ? 0.16 : kind === 'deok' ? 0.06 : 0.04) * v * p.drum;
     drum(t + st * beat / 2, kind, vol);
   });
   barNo++; nextAt = t + barDur;
