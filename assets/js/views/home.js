@@ -234,7 +234,7 @@ function field(s, roster, blocked) {
     </div>
     ${fishPanel(blocked)}
     <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
-      <div class="panel-body">${tree(s)}<p class="muted small">찾은 장소 ${s.survey?.nodes_found ?? 0}/${s.survey?.nodes_total ?? 0} · 채집터 ${s.survey?.spots_found ?? 0}/${s.survey?.spots_total ?? 0}. 모두 찾으면 가방이 넓어집니다.</p></div></details>
+      <div class="panel-body">${tree(s)}</div></details>
     <details class="panel fold"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
       <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => m.revealed === false
         ? `<li class="locked"><b>???</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.kind_name || '')} · 답사도 ${m.need}%에 드러납니다</small></li>`
@@ -262,11 +262,26 @@ function fishPanel(blocked) {
 function foldOpen(k) { try { return localStorage.getItem('yh-fold-' + k) !== '0'; } catch { return true; } }
 document.addEventListener('toggle', e => { const d = e.target; if (d?.dataset?.fold) try { localStorage.setItem('yh-fold-' + d.dataset.fold, d.open ? '1' : '0'); } catch {} }, true);
 
+// 답사 지도: 찾은 장소는 이름과 「길 찾음/전체 · 채집터 찾음/전체」를 말로 적고, 다 찾은 곳은 표시, 못 찾은 길은 그 자리에 빈칸으로 보인다
 function tree(s) {
   const nodes = s.nodes || [], byParent = new Map();
   for (const n of nodes) { const k = n.parent_id || 'root'; (byParent.get(k) || byParent.set(k, []).get(k)).push(n); }
-  const walk = pid => (byParent.get(pid) || []).map(n => `<li><button class="${n.here ? 'here' : ''}" data-move="${esc(n.node_id)}">${esc(n.name)}<small>${n.paths_found}/${n.paths_total} · ${n.spots_found}/${n.spots_total}</small></button>${byParent.has(n.node_id) ? `<ul>${walk(n.node_id)}</ul>` : ''}</li>`).join('');
-  return `<ul class="tree">${walk('root')}</ul>`;
+  const left = n => (n.paths_total - n.paths_found) + (n.spots_total - n.spots_found);
+  const walk = pid => (byParent.get(pid) || []).map(n => {
+    const missing = Math.max(0, n.paths_total - n.paths_found), done = !left(n);
+    return `<li><button class="${n.here ? 'here' : ''} ${done ? 'done' : ''}" data-move="${esc(n.node_id)}">
+        ${icon(done ? 'check' : n.here ? 'pin' : 'chevron', 13)}<span class="t-name">${esc(n.name)}${n.here ? '<em>지금 여기</em>' : ''}</span>
+        <small>${n.paths_total ? `길 ${n.paths_found}/${n.paths_total}` : '막다른 곳'}${n.spots_total ? ` · 채집터 ${n.spots_found}/${n.spots_total}` : ''}</small></button>
+      ${byParent.has(n.node_id) || missing ? `<ul>${walk(n.node_id)}${Array.from({ length: missing }, () => `<li class="t-unknown">${icon('help', 13)}<span>찾지 못한 곳</span><small>${esc(n.name)}에서 탐색</small></li>`).join('')}</ul>` : ''}</li>`;
+  }).join('');
+  const sv = s.survey || {}, pct = sv.pct ?? 0;
+  const steps = [[30, '심부 원정지'], [70, '핵심 원정지'], [100, '완전 답사 · 가방 +1칸']];
+  return `<div class="survey-sum">
+      <div class="bar"><i style="width:${Math.min(100, pct)}%"></i>${steps.map(([p]) => `<b style="left:${p}%" class="${pct >= p ? 'on' : ''}"></b>`).join('')}</div>
+      <p class="small">찾은 장소 <b>${sv.nodes_found ?? 0}/${sv.nodes_total ?? 0}</b> · 찾은 채집터 <b>${sv.spots_found ?? 0}/${sv.spots_total ?? 0}</b> · ${steps.map(([p, t]) => `<span class="${pct >= p ? 'ok' : 'muted'}">${p}% ${t}</span>`).join(' · ')}</p>
+    </div>
+    <ul class="tree">${walk('root')}</ul>
+    <p class="muted small">「길」은 그 장소에서 이어지는 다음 장소, 「채집터」는 그 장소의 채집터입니다(찾은 수/전체). 표시된 곳은 다 찾았고, 「찾지 못한 곳」은 바로 위 장소에서 탐색하면 드러납니다. 이름을 누르면 그곳으로 갑니다.</p>`;
 }
 
 function people(roster, corpses) {
