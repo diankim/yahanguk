@@ -29,6 +29,7 @@ grant fn_owner_18956 to postgres with inherit true, set true;
 grant fn_owner_18878 to postgres with inherit true, set true;
 grant fn_owner_18883 to postgres with inherit true, set true; -- world_mount_acquire(세력 탈것은 비고에서만)
 grant fn_owner_19203 to postgres with inherit true, set true; -- world_charge_mount_fare(수향연맹 뱃길)
+grant fn_owner_18941 to postgres with inherit true, set true; -- world_apply_event_progress(구중 봉연 희귀 전리품)
 
 -- ① ─────────────────────────────────────────
 -- world_mount_equip: 이동 중(travel_destination이 남아 있는 동안 — 도착·취소 때 비워진다)에는 거절한다
@@ -2511,6 +2512,7 @@ begin
   end loop;
 end $$;
 
+-- (4.0.5로 운영에 먼저 적용했다. 아래는 다시 돌려도 같은 결과)
 -- 귀령초 얻는 길(2026-10-29 제보): 요화를 푸는 귀령초(gwiryeong_cho)가 「위험도 7 이상 채집터 희귀 발견물」로 설계됐지만 어디에도 연결되지 않아 얻을 수 없었다.
 -- 위험도 7 이상 지역에서 채집·토벌·원정 완주를 하면 낮은 확률로 얻는다(사망 위험이 없는 지금은 다른 희귀품보다 낮게):
 -- 채집 0.4% · 일반 0.3% · 정예 1% · 우두머리 3% · 금단 보스 5% · 원정 완주 2%, 위험도 10 지역은 ×1.5. 행동 기록 트리거 하나로 붙이고, 맞을 때만 캐릭터 행을 고친다.
@@ -2559,6 +2561,24 @@ create trigger trg_world_gwiryeong_roll after insert on public.world_events
 update public.world_item_catalog set description = '위험도 7 이상 지역에서 채집·토벌·원정 완주 때 드물게 찾는 음습한 풀. 요화를 풀고 침식을 20 낮춘다.'
  where item_id = 'gwiryeong_cho';
 
+-- 구중 봉연 전리품(2026-10-29 결정): 마지막 지역답게 응축 영핵과 상위 재료를 준다(귀령초는 위 trg_world_gwiryeong_roll이 아주 낮은 확률로 따로 준다).
+-- 전리품 표는 품목마다 일반 60%·정예 80%·우두머리 100%(수량 ×2)로 굴리고, 원정 전투도 이 표에서 하나를 뽑는다.
+update public.world_region_monsters set drops = '{"spirit_core": 3, "heavenly_dew": 1, "star_sand": 2}'::jsonb where monster_id = 'm_28' and region_id = 'sealed_abyss';
+update public.world_region_monsters set drops = '{"spirit_core": 1, "moonlight_essence": 1, "ward_fragment": 2}'::jsonb where monster_id = 'regional_sealed_abyss_guardian';
+update public.world_region_monsters set drops = '{"spirit_core": 1, "ward_fragment": 1, "ghost_ash": 1}'::jsonb where monster_id = 'g_sealed_abyss';
+-- 토벌 승리 22% 희귀 전리품: 구중 봉연에서는 요괴 성질과 상관없이 응축 영핵
+do $$
+declare d text := pg_get_functiondef('public.world_apply_event_progress()'::regprocedure);
+  a text := $a$rare := case coalesce(payload->>'mechanic','')$a$;
+  b text := $a$rare := case when payload->>'region_id' = 'sealed_abyss' then 'spirit_core' else case coalesce(payload->>'mechanic','')$a$;
+  e text := $a$        else 'monster_core' end;$a$;
+  f text := $a$        else 'monster_core' end end;$a$;
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 or (length(d) - length(replace(d, e, ''))) / length(e) <> 1 then raise exception '구중 봉연 희귀 전리품 고칠 자리'; end if;
+  execute replace(replace(d, a, b), e, f);
+end $$;
+
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
@@ -2568,6 +2588,7 @@ grant fn_owner_18956 to postgres with inherit false, set false;
 grant fn_owner_18878 to postgres with inherit false, set false;
 grant fn_owner_18883 to postgres with inherit false, set false;
 grant fn_owner_19203 to postgres with inherit false, set false;
+grant fn_owner_18941 to postgres with inherit false, set false;
 
 -- 세력 가입 퀘스트 도입: 지금 대세력에 든 조사원은 세력에서 나와 처음부터 가입 퀘스트를 밟는다(2026-10-29 결정).
 -- 「떠남」 기록(payload.left)을 남기지 않아 12시간 재가입 제한에 걸리지 않고 바로 다시 들 수 있다. 쌓은 영향력은 세력에 남는다.
@@ -2673,7 +2694,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 29. **세력 기부**: 세력 안전지대에서 필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 50전마다 공훈 1을 받습니다. 하루 공훈 30까지이고, 진품 이상은 한 번 더 확인합니다.
 30. **비고 품목 확장**: 세력마다 세력 칭호(2등급)·세력 테두리(3등급)·세력 장비(3등급, 4단계·거래 불가)·채팅 이름 색(4등급)·세력 탈것(5등급)을 공훈으로 받습니다. 길잡이 등불·비약·비경 지도·봉인된 보따리도 들어왔습니다. 세력 탈것은 운임이 노정패 1이고, 수향연맹 화방선(×2.3)이 가장 빠릅니다(나머지 ×1.9).
 31. **수향연맹 뱃길**: 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도가 등급마다 빨라지고(1등급 ×1.10 ~ 5등급 ×1.30) 운임(노정패)이 들지 않습니다.
-32. **귀령초**를 얻을 수 없던 문제를 고쳤습니다. 위험도 7 이상 지역에서 채집·토벌·원정 완주 때 드물게 찾습니다(채집 0.4% · 일반 요괴 0.3% · 정예 1% · 우두머리 3% · 금단 보스 5% · 원정 완주 2%, 위험도 10 지역은 ×1.5).
+32. **구중 봉연 전리품**을 마지막 지역답게 올렸습니다. 금단 보스 구중 봉주는 응축 영핵·천령 감로·성진사, 우두머리 사슬 끊는 자는 응축 영핵·월광 정수, 심연 사슬귀도 응축 영핵을 떨어뜨리고, 토벌 희귀 전리품도 응축 영핵이 됩니다. 귀령초는 4.0.5부터 아주 드물게 함께 나옵니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
