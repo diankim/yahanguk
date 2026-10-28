@@ -2579,6 +2579,55 @@ begin
   execute replace(replace(d, a, b), e, f);
 end $$;
 
+-- 원정 귀환 전리품(2026-10-29 제보): world_expedition_complete가 전리품을 가방 자리만큼만 넣고 나머지를 「두고 왔습니다」로 버려
+-- 짐 보따리(world_overflow_items)까지 가지 못했다. 넘친 것은 보따리에 담고 bag_overflow 알림을 보낸다(현장 「정리하기」에서 골라 챙기거나 버린다).
+grant fn_owner_field to postgres with inherit true, set true;
+do $$
+declare d text := pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure);
+  a text := $a$if lost <> '{}'::jsonb then lg := lg || jsonb_build_array('가방이 가득 차 일부 전리품을 두고 왔습니다.'); end if;$a$;
+  b text := $a$if lost <> '{}'::jsonb then
+    insert into public.world_overflow_items(owner_id, item_id, qty)
+    select uid, t.k, t.v::int from jsonb_each_text(lost) t(k, v) where t.v::int > 0
+    on conflict (owner_id, item_id) do update set qty = public.world_overflow_items.qty + excluded.qty;
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (uid, 'bag_overflow', '원정 짐 보따리',
+      (select string_agg(coalesce(i.item_name, t.k) || ' ×' || t.v, ', ') from jsonb_each_text(lost) t(k, v) left join public.world_item_catalog i on i.item_id = t.k)
+        || '은(는) 가방에 자리가 없어 보따리에 담았습니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.',
+      jsonb_build_object('stashed', lost, 'capacity', cap));
+    lg := lg || jsonb_build_array('가방에 다 들어가지 않은 전리품은 짐 보따리에 담았습니다.');
+  end if;$a$;
+begin
+  if position('짐 보따리에 담았습니다' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '원정 귀환 전리품 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 이 문제로 두고 온 전리품(world_expeditions.result.lost)은 개인 창고로 돌려준다(보따리에 넣으면 정리 전까지 길이 막히므로). 한 번만.
+do $$
+declare r record; names text;
+begin
+  for r in
+    select x.owner_id uid, jsonb_object_agg(x.k, x.q) items
+      from (select e.owner_id, t.k, sum(t.v::int) q
+              from public.world_expeditions e, jsonb_each_text(e.result -> 'lost') t(k, v)
+             where jsonb_typeof(e.result -> 'lost') = 'object' and t.v::int > 0 and e.ends_at < '2026-10-29 06:00+00'
+             group by 1, 2) x
+     group by 1
+  loop
+    if exists (select 1 from public.world_notifications where user_id = r.uid and payload ->> 'refund' = 'exp_lost_drop') then continue; end if;
+    insert into public.world_storage(owner_id, items, updated_at) values (r.uid, r.items, now())
+    on conflict (owner_id) do update set items = (select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from (
+        select k, sum(v::numeric)::int v from (select key k, value v from jsonb_each(coalesce(public.world_storage.items, '{}'::jsonb))
+                                              union all select key, value from jsonb_each(excluded.items)) u group by k) s),
+      updated_at = now();
+    select string_agg(coalesce(i.item_name, t.k) || ' ×' || t.v, ', ') into names from jsonb_each_text(r.items) t(k, v) left join public.world_item_catalog i on i.item_id = t.k;
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (r.uid, 'reward', '두고 온 원정 전리품을 돌려드렸습니다',
+      '원정에서 돌아올 때 가방이 가득 차 두고 왔던 ' || names || '을(를) 개인 창고에 넣어 드렸습니다. 안전지대에서 꺼낼 수 있습니다. 이제는 넘친 전리품이 짐 보따리에 담깁니다.',
+      jsonb_build_object('refund', 'exp_lost_drop', 'items', r.items));
+  end loop;
+end $$;
+
 -- 거래소 등록 취소(2026-10-29 제보, 5.0.0에 묶음): 가방이 가득 찬 채 거래소 등록을 취소하면 world_trade_offer_cancel이 자리를 보지 않고 가방에 넣고,
 -- 가방 넘침 정리(world_enforce_bag_capacity)가 「얻기만 하는 행동」처럼 넘친 만큼 버려 물품이 사라졌다.
 -- 돌려받을 자리가 모자라면 취소를 거절한다(물품은 거래소에 그대로 남는다). 사라진 물품은 개인 창고로 돌려준다.
@@ -2753,6 +2802,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 31. **수향연맹 뱃길**: 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도가 등급마다 빨라지고(1등급 ×1.10 ~ 5등급 ×1.30) 운임(노정패)이 들지 않습니다.
 32. **구중 봉연 전리품**을 마지막 지역답게 올렸습니다. 금단 보스 구중 봉주는 응축 영핵·천령 감로·성진사, 우두머리 사슬 끊는 자는 응축 영핵·월광 정수, 심연 사슬귀도 응축 영핵을 떨어뜨리고, 토벌 희귀 전리품도 응축 영핵이 됩니다. 귀령초는 4.0.5부터 드물게 함께 나오고, 5.0.0에서 확률을 다섯 분의 일로 낮췄습니다(채집 0.08%·토벌 일반 0.06%·정예 0.2%·우두머리 0.6%·금단 보스 1%·원정 완주 0.4%, 위험도 10은 ×1.5, 최대 1%. 「영초 감별」 기술은 0.6%).
 33. **거래소 등록 취소**: 가방이 가득 찬 채 거래소 등록을 취소하면 물품이 사라지던 문제를 고쳤습니다. 이제 돌려받을 자리가 모자라면 취소되지 않고 물품은 거래소에 그대로 남습니다. 이 문제로 사라진 물품은 개인 창고로 돌려드렸습니다.
+34. **원정 귀환 전리품**: 원정에서 돌아올 때 가방이 가득 차면 넘친 전리품을 그냥 두고 오던 문제를 고쳤습니다. 이제 넘친 것은 짐 보따리에 담기고, 현장의 「정리하기」에서 골라 챙기거나 버릴 수 있습니다. 그동안 두고 온 전리품은 개인 창고로 돌려드렸습니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

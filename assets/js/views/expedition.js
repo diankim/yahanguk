@@ -248,7 +248,7 @@ export function showResult(r) {
       </div>
       <h3 class="sub-h">챙겨 온 것</h3>
       <p>${items.length ? items.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ') : '없음'}</p>
-      ${lost.length ? `<p class="bad small">가방이 가득 차 두고 온 것: ${lost.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ')}</p>` : ''}
+      ${lost.length ? `<p class="bad small">가방에 자리가 없어 짐 보따리에 담은 것: ${lost.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ')} · 현장의 「정리하기」에서 챙기거나 버리세요.</p>` : ''}
       ${x.full_bonus ? `<p class="hint good">${icon('check', 14)} 끝까지 다녀온 긴 원정 — 경험치·전·숙련 경험 +${x.full_bonus}%</p>` : ''}
       ${x.full_gear ? `<p class="hint good">${icon('gear', 14)} 원정 끝에 ${esc(nameOf(x.full_gear))}을(를) 챙겼습니다.</p>` : ''}
       ${x.trail ? `<p class="hint good">${icon('spark', 14)} 비경을 찾았습니다. 3시간 동안 이 지역을 탐색하면 채집량 +50%·희귀품·단서 +10%입니다.</p>` : ''}
