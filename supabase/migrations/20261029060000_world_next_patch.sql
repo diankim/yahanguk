@@ -2268,6 +2268,18 @@ update public.world_item_catalog set category = 'norigae', rarity = 'epic', tier
 where item_id = 'wayfarer_pack';
 update public.world_crafting_recipes set minimum_level = 15 where recipe_id = 'make_wayfarer_pack';
 
+-- 제보 #7 보상: 모두 분해한 뒤 새로 만든 정자관이 옛 내구도를 물려받아 낸 수리비 119전(2026-10-28 15:57 UTC)을 돌려준다. 두 번 돌려도 한 번만.
+do $$ declare u uuid := 'ea4e4e6b-3a21-4709-95d5-ac33afde971d'; begin
+  if exists (select 1 from public.world_characters where owner_id = u)
+     and not exists (select 1 from public.world_notifications where user_id = u and payload ->> 'refund' = 'bug7_repair') then
+    update public.world_characters set gil = gil + 119, updated_at = now() where owner_id = u;
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (u, 'system', '수리비를 돌려드렸습니다',
+      '제보하신 내구도 문제(모두 분해한 뒤 새로 만든 장비가 옛 내구도를 물려받음)로 낸 정자관 수리비 119전을 돌려드렸습니다. 5.0.0에서 고쳤습니다. 제보 고맙습니다.',
+      jsonb_build_object('refund', 'bug7_repair', 'gil', 119));
+  end if;
+end $$;
+
 -- 패치노트 5.0.0
 insert into public.world_patch_notes(note_id, title, body, created_at) values
   ('5.0.0', '세력 퀘스트·등급 · 고유 기술 · 원거리 소모품 · 기력', $PN$## 5.0.0 · 세력 퀘스트·등급 · 고유 기술 · 원거리 소모품 · 기력 (통산 5번째 패치)
