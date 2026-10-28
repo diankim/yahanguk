@@ -98,7 +98,10 @@ async function items(body, inv) {
   $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
   $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };
   const qi = $('#bag-q', body);
-  qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv).then(() => { const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); }); };
+  // 목록과 함께 검색칸도 다시 그리므로, 한글 조합 중에는 그리지 않고 조합이 끝나면(compositionend) 거른다(조합 중 칸이 바뀌면 「ㅂㅜㅈ」처럼 낱자로 깨진다)
+  const redo = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv).then(() => { const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); }); };
+  qi.oninput = e => { if (!e.isComposing) redo(); };
+  qi.addEventListener('compositionend', redo);
   $$('[data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
   bindActions(body);
 }
