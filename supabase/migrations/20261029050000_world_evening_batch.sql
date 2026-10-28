@@ -260,6 +260,7 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 29. 도움말 맨 위 단추(패치노트·처음 안내·첫 걸음·제보)가 모바일에서 한 글자씩 세로로 쪼개지던 문제: 두 줄 격자로 고쳤습니다.
 30. 제작할 때 「권한이 없다」며 막히던 문제: 가방 자리를 세는 서버 계산의 권한이 빠져 있었습니다. 지금은 바로 제작됩니다.
 31. 파티 원정 알림의 「함께 가기」가 눌리지 않던 문제: 화면 위 팝업과 알림 창 모두에서 같은 원정지·기간·태세로 원정 창이 열립니다(새로고침 뒤).
+32. 가방 검색칸에 한글을 치면 「ㅂㅜㅈㅓㄱ」처럼 낱자로 깨지던 문제(새로고침 뒤).
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
