@@ -341,6 +341,13 @@ body.chat-open .chat-fab { display: none; }
 .people li { display: flex; align-items: center; gap: 10px; }
 .people li > div { flex: 1; min-width: 0; display: grid; }
 .people small { color: var(--muted); font-size: 12px; }
+/* 단추 묶음은 늘어나지 않게(이름 칸만 늘어난다) */
+.people li > .btn-row { flex: none; display: flex; flex-wrap: wrap; gap: 6px; }
+/* 친구 카드: 한 사람마다 칸을 나누고, 단추는 이름 바로 아래에 둔다 */
+.people.cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.people.cards li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px 10px; padding: 10px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); }
+.people.cards li > .btn-row { grid-column: 1 / -1; }
+.people.cards li > .btn-row .btn { flex: 1; justify-content: center; }
 
 /* ── 지도 ─────────────────────────────── */
 .map-layout { display: grid; gap: 14px; margin-bottom: 14px; }
@@ -1239,7 +1246,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .circle-feed li.mine p { border-left: 0; border-right: 3px solid var(--cc); background: color-mix(in srgb, var(--cc) 20%, var(--surface-2)); }
 .chat-list .chat-notice { max-width: none; justify-self: center; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
 .chat-list .chat-notice time { font-size: 11px; white-space: nowrap; flex: none; }
-.circle-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.circle-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .circle-list li { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--cc); }
 .circle-list li > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .circle-list small { color: var(--muted); font-size: 12px; }
 .circle-new { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 6px; margin: 6px 0; }

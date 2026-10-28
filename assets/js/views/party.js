@@ -37,9 +37,9 @@ async function draw() {
     const canInvite = !pt || isLeader, memberIds = new Set((p?.members || []).map(m => m.owner_id));
     const fState = f => f.is_dead ? '숨을 거둠' : f.downed ? '전투불능' : f.in_combat ? '전투 중' : f.away ? '원정 중' : f.traveling ? '이동 중' : '';
     const friendsPanel = fr ? panel(`친구 · ${(fr.friends || []).length}명`, `
-      ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people">${fr.incoming.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
+      ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people cards">${fr.incoming.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
           <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
-      ${(fr.friends || []).length ? `<ul class="people">${fr.friends.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
+      ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small></div>
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
