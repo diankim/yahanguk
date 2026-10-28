@@ -116,7 +116,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {} }) {
 /* ── 대장간 ───────────────────────────────────────────── */
 // 재료 사기(장비 제작·강화 재료와 수리 도구) · 무기 강화 · 일괄 수리 · 분해
 let smithyTab = 'buy';
-const SMITHY_TABS = [['buy', '재료 사기'], ['enhance', '무기 강화'], ['repair', '일괄 수리'], ['dismantle', '분해']];
+const SMITHY_TABS = [['buy', '재료 사기'], ['enhance', '무기 강화'], ['repair', '수리'], ['dismantle', '분해']];
 const GEAR_CATS = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
 const DISMANTLE_NEED = t => ({ 1: 1, 2: 4, 3: 8, 4: 12 })[t] || 16; // 서버 world_dismantle_need와 같다
 export async function renderSmithy(box) {
@@ -174,12 +174,17 @@ async function repairPane(body) {
   const items = q?.items || [];
   body.innerHTML = items.length ? `
     <ul class="item-list">${items.map(i => `<li><div class="item-main"><b>${infoName(i.item_id, i.name)}</b><span class="qty">${fmt.jeon(i.cost)}</span>
-      <small>내구도 ${fmt.num(i.durability)} / ${fmt.num(i.max)}${i.equipped ? ' · 장착 중' : ''}</small></div></li>`).join('')}</ul>
+      <small>내구도 ${fmt.num(i.durability)} / ${fmt.num(i.max)}${i.equipped ? ' · 장착 중' : ''}</small></div>
+      <div class="item-act"><button class="btn small" data-rep-one="${esc(i.item_id)}" ${store.character?.gil < i.cost ? 'disabled' : ''}>고치기</button></div></li>`).join('')}</ul>
     <div class="shop-foot"><span>${items.length}개 · 합계 <b>${fmt.jeon(q.total)}</b>${store.character?.gil < q.total ? ' <span class="bad">· 전이 모자랍니다</span>' : ''}</span>
       <button class="btn primary" id="rep-all" ${store.character?.gil < q.total ? 'disabled' : ''}>모두 고치기</button></div>
-    <p class="muted small">닳은 장비를 한 번에 새것처럼 고칩니다. 값은 하나씩 고칠 때와 같습니다.</p>`
+    <p class="muted small">하나씩 고치거나 한 번에 모두 새것처럼 고칩니다. 값은 어느 쪽이든 같습니다.</p>`
     : empty('고칠 장비가 없습니다. 모두 멀쩡합니다.', 'shield');
   bindInfo(body);
+  $$('[data-rep-one]', body).forEach(b => b.onclick = async () => {
+    await guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repOne, p_method: 'gil' }));
+    repairPane(body);
+  });
   const go = $('#rep-all', body);
   if (go) go.onclick = async () => {
     if (!await ask(`장비 ${items.length}개를 ${fmt.jeon(q.total)}에 모두 고칠까요?`, { title: '일괄 수리', ok: '모두 고치기' })) return;
