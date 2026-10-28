@@ -187,10 +187,10 @@ function openResetIdentity() {
   const m = openModal({ title: '환골탈태 서첩', body: `
     <p class="muted small">직업과 소속을 다시 고릅니다. 대세력에서 나오고(평판 0) 능력치는 처음(각 5)으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·물품·전·칭호·기술은 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다.</p>
     <h3 class="sub-h">직업</h3>
-    <div class="choice-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
+    <div class="choice-grid ri-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
     <h3 class="sub-h">소속</h3>
-    <div class="choice-grid">${Object.entries(FACTIONS).filter(([k]) => ['headquarters', 'fieldbureau', 'archivebureau', 'sealbureau', 'medicalbureau', 'independent'].includes(k)).map(([k, f]) => `<label class="choice"><input type="radio" name="rf" value="${k}" ${k === c.faction_key ? 'checked' : ''}><span><b>${esc(f.name)}</b><small>${esc(f.trait || '')}</small></span></label>`).join('')}</div>
-    <div class="modal-actions"><button class="btn primary" id="ri-go">${icon('spark', 15)}<span>이대로 다시 시작</span></button></div>` });
+    <div class="choice-grid ri-grid">${Object.entries(FACTIONS).filter(([k]) => ['headquarters', 'fieldbureau', 'archivebureau', 'sealbureau', 'medicalbureau', 'independent'].includes(k)).map(([k, f]) => `<label class="choice"><input type="radio" name="rf" value="${k}" ${k === c.faction_key ? 'checked' : ''}><span><b>${esc(f.name)}</b><small>${esc(f.trait || '')}</small></span></label>`).join('')}</div>
+    <div class="modal-actions sticky-actions"><button class="btn primary" id="ri-go">${icon('spark', 15)}<span>이대로 다시 시작</span></button></div>` });
   $('#ri-go', m).onclick = async e => {
     const job = $('input[name=rj]:checked', m)?.value, fac = $('input[name=rf]:checked', m)?.value;
     if (!job || !fac) return toast('직업과 소속을 고르세요.', 'error');
