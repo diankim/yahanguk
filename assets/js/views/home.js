@@ -67,7 +67,7 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     noteRegion(s.region);
-    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt)}`;
+    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     bind(s);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
@@ -103,6 +103,7 @@ function scene(s, traveling, downed) {
       ${!r.safe ? `<nav class="crumbs" aria-label="지금 있는 곳">${(s.path || []).map((p, i, a) => i === a.length - 1
           ? `<b>${esc(p.name)}</b>` : `<button data-move="${esc(p.node_id)}">${esc(p.name)}</button>${icon('chevron', 12)}`).join('')}</nav>` : ''}
     </div>
+    ${s.overflow > 0 ? `<div class="notice warn">${icon('bag', 18)}<div><b>원정 짐 보따리 · ${fmt.num(s.overflow)}개</b><span>가방에 들어가지 못한 전리품입니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.</span></div><button class="btn small primary" id="ov-open">정리하기</button></div>` : ''}
     ${downed ? `<div class="notice danger">${icon('heart', 18)}<div><b>전투불능</b><span>구조를 기다리거나 회생 부적·본부 구조대를 쓰세요. <em data-death></em></span></div><a class="btn small" href="#/char/status">대처하기</a></div>` : ''}
     ${traveling ? `<div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(c.travel_destination) + '(으)로')} 이동 중</b><span>도착하면 그 지역에서 행동할 수 있습니다.</span></div></div>` : ''}
     ${store.expedition ? (new Date(store.expedition.ends_at) <= new Date()
@@ -138,7 +139,7 @@ function field(s, roster, blocked) {
   const mechs = [...new Set((s.monsters || []).map(m => m.mechanic).filter(Boolean))];
   // 길을 못 가는 까닭(서버 world_field_move와 같은 순서): 전투불능 → 이동 중 → 원정 중 → 레벨
   const c = store.character;
-  const stateWhy = !blocked ? '' : (c.downed_at || c.health <= 0) ? '전투불능 상태에서는 움직일 수 없습니다'
+  const stateWhy = !blocked ? '' : s.overflow > 0 ? '원정 짐 보따리를 먼저 정리하세요' : (c.downed_at || c.health <= 0) ? '전투불능 상태에서는 움직일 수 없습니다'
     : (c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date()) ? '다른 지역으로 이동 중에는 움직일 수 없습니다'
     : store.expedition ? '원정 중에는 움직일 수 없습니다' : '지금은 움직일 수 없습니다';
   const whyNot = k => stateWhy || (c.level < k.min_level ? `Lv.${k.min_level}부터 들어갈 수 있습니다 · 지금 Lv.${c.level} (${k.min_level - c.level}레벨 더 필요)` : '');
@@ -255,6 +256,7 @@ function bind(s) {
   const openExp = () => openExpedition();
   $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp); $('#exp-open3', el)?.addEventListener('click', openExp);
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
+  $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
   $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
 }

@@ -1467,3 +1467,9 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
   .view-head { padding: 10px 12px; }
   .view-head h1 { font-size: 17px; }
 }
+/* 원정 짐 보따리 */
+.ov-lead { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; font-size: 13px; } .ov-lead .ico { color: var(--gold); margin-top: 2px; flex: none; }
+.ov-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ov-list .item-act { display: flex; gap: 6px; flex: none; }
+.ov-foot { margin-top: 10px; justify-content: space-between; }
+.notice.warn { border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); } .notice.warn > .ico { color: var(--warn); }
