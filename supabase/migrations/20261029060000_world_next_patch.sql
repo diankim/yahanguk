@@ -450,7 +450,7 @@ from (values
   ('herbalism_c24b', '택일 기술 · 약초를 거둘 때 그 자리에서 씹어 체력 +3'),
   ('herbalism_x30', '추가 기술 · 약초를 거둘 때 도구가 닳지 않는다'),
   ('herbalism_c43a', '택일 기술 · 약초를 거둘 때 10% 확률로 세 배'),
-  ('herbalism_c43b', '택일 기술 · 위험도 7 이상 지역에서 약초를 거둘 때 3% 확률로 귀령초'),
+  ('herbalism_c43b', '택일 기술 · 위험도 7 이상 지역에서 약초를 거둘 때 0.6% 확률로 귀령초'),
   ('herbalism_m50', '숙달 기술 · 약초를 거둘 때 체력·정신 +2, 침식 −1'),
   -- 광맥 채집
   ('mining_x13', '추가 기술 · 광석을 캘 때 10% 확률로 정련 숯 하나 덤'),
@@ -1089,7 +1089,7 @@ BEGIN
   IF line = 'herbalism' THEN
     IF 'herbalism_x13' = ANY (sk) AND random() < 0.10 THEN extra := public.world_inv_add(extra, 'herbal_extract', 1); notes := notes || '「잎맥 살피기」 농축 약초액 덤'::text; END IF;
     IF 'herbalism_c24b' = ANY (sk) THEN dhp := dhp + 3; END IF;
-    IF 'herbalism_c43b' = ANY (sk) AND coalesce(rg.danger_level, 0) >= 7 AND random() < 0.03 THEN extra := public.world_inv_add(extra, 'gwiryeong_cho', 1); notes := notes || '「영초 감별」 귀령초를 찾았다'::text; END IF;
+    IF 'herbalism_c43b' = ANY (sk) AND coalesce(rg.danger_level, 0) >= 7 AND random() < 0.006 THEN extra := public.world_inv_add(extra, 'gwiryeong_cho', 1); notes := notes || '「영초 감별」 귀령초를 찾았다'::text; END IF;
     IF 'herbalism_m50' = ANY (sk) THEN dhp := dhp + 2; dmn := dmn + 2; der := der + 1; END IF;
   ELSIF line = 'mining' THEN
     IF 'mining_x13' = ANY (sk) AND random() < 0.10 THEN extra := public.world_inv_add(extra, 'charcoal', 1); notes := notes || '「광맥 읽기」 정련 숯 덤'::text; END IF;
@@ -2512,7 +2512,7 @@ begin
   end loop;
 end $$;
 
--- (4.0.5로 운영에 먼저 적용했다. 아래는 다시 돌려도 같은 결과)
+-- (4.0.5로 운영에 먼저 적용했다. 5.0.0에서 확률을 1/5로 낮춤(2026-10-29 결정), 최대 1%)
 -- 귀령초 얻는 길(2026-10-29 제보): 요화를 푸는 귀령초(gwiryeong_cho)가 「위험도 7 이상 채집터 희귀 발견물」로 설계됐지만 어디에도 연결되지 않아 얻을 수 없었다.
 -- 위험도 7 이상 지역에서 채집·토벌·원정 완주를 하면 낮은 확률로 얻는다(사망 위험이 없는 지금은 다른 희귀품보다 낮게):
 -- 채집 0.4% · 일반 0.3% · 정예 1% · 우두머리 3% · 금단 보스 5% · 원정 완주 2%, 위험도 10 지역은 ×1.5, 어떤 경우에도 최대 5%. 행동 기록 트리거 하나로 붙이고, 맞을 때만 캐릭터 행을 고친다.
@@ -2524,13 +2524,13 @@ returns numeric language sql stable security definer set search_path to 'pg_cata
        (select n.region_id from public.world_exploration_nodes n
          where n.node_id = case when p_payload ->> 'node_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then (p_payload ->> 'node_id')::uuid end))
   )
-  select coalesce((select least(0.05, case when reg.danger_level < 7 then 0 else
+  select coalesce((select least(0.01, case when reg.danger_level < 7 then 0 else
       case p_type
-        when 'gather' then 0.004
-        when 'expedition_end' then case when p_payload ->> 'ended' = 'complete' then 0.02 else 0 end
+        when 'gather' then 0.0008
+        when 'expedition_end' then case when p_payload ->> 'ended' = 'complete' then 0.004 else 0 end
         when 'combat' then case when not coalesce((p_payload ->> 'defeated')::boolean, false) then 0
-          when exists (select 1 from public.world_region_monsters m where m.monster_id = p_payload ->> 'monster_id' and m.role = 'main') then 0.05
-          else case p_payload ->> 'rank' when 'guardian' then 0.03 when 'elite' then 0.01 else 0.003 end end
+          when exists (select 1 from public.world_region_monsters m where m.monster_id = p_payload ->> 'monster_id' and m.role = 'main') then 0.01
+          else case p_payload ->> 'rank' when 'guardian' then 0.006 when 'elite' then 0.002 else 0.0006 end end
         else 0 end * case when reg.danger_level >= 10 then 1.5 else 1 end end) from reg), 0)
 $$;
 create or replace function public.world_gwiryeong_roll()
@@ -2578,6 +2578,63 @@ begin
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 or (length(d) - length(replace(d, e, ''))) / length(e) <> 1 then raise exception '구중 봉연 희귀 전리품 고칠 자리'; end if;
   execute replace(replace(d, a, b), e, f);
 end $$;
+
+-- 거래소 등록 취소(2026-10-29 제보, 5.0.0에 묶음): 가방이 가득 찬 채 거래소 등록을 취소하면 world_trade_offer_cancel이 자리를 보지 않고 가방에 넣고,
+-- 가방 넘침 정리(world_enforce_bag_capacity)가 「얻기만 하는 행동」처럼 넘친 만큼 버려 물품이 사라졌다.
+-- 돌려받을 자리가 모자라면 취소를 거절한다(물품은 거래소에 그대로 남는다). 사라진 물품은 개인 창고로 돌려준다.
+grant fn_owner_18903 to postgres with inherit true, set true;
+grant fn_owner_expedition to postgres with inherit true, set true;
+-- world_bag_limit은 fn_owner_expedition 소유(security definer)라 그 역할로 실행 권한을 준다.
+set role fn_owner_expedition;
+grant execute on function public.world_bag_limit(uuid) to fn_owner_18903;
+reset role;
+-- world_bag_room(부른 쪽 권한)이 묶음 크기를 읽으므로 다른 함수 주인 역할처럼 물품 목록 읽기만 준다.
+grant select on public.world_item_catalog to fn_owner_18903;
+
+do $$
+declare d text := pg_get_functiondef('public.world_trade_offer_cancel(uuid)'::regprocedure);
+  a text := $a$inv:=coalesce(c.inventory,'{}'::jsonb); inv:=jsonb_set(inv,array[o.item_id]$a$;
+  b text := $a$inv:=coalesce(c.inventory,'{}'::jsonb);
+ if public.world_bag_room(inv, o.item_id, public.world_bag_limit(uid)) < o.quantity then
+   raise exception '가방 자리가 모자라 돌려받을 수 없습니다. 빈 자리를 만든 뒤 다시 취소하세요(물품은 거래소에 그대로 있습니다).';
+ end if;
+ inv:=jsonb_set(inv,array[o.item_id]$a$;
+begin
+  if position('world_bag_room' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '거래소 등록 취소 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 이 문제로 사라진 물품 돌려주기(거래소 등록 취소와 같은 순간에 「가방이 가득 찼습니다」로 버려진 것: 연주 옥 부적낭 ×2·팔괘 나경 ×1). 한 번만.
+do $$
+declare r record; got jsonb; names text;
+begin
+  for r in
+    select x.actor_id uid, jsonb_object_agg(x.item, x.qty) items
+      from (select e.actor_id, e.payload ->> 'item' item, sum((n.payload -> 'dropped' ->> (e.payload ->> 'item'))::int) qty
+              from public.world_events e
+              join public.world_notifications n on n.user_id = e.actor_id and n.kind = 'bag_full'
+               and abs(extract(epoch from n.created_at - e.created_at)) < 1 and n.payload -> 'dropped' ? (e.payload ->> 'item')
+             where e.event_type = 'trade' and e.content like '거래 등록 취소%' and e.created_at < '2026-10-29 03:00+00'
+             group by 1, 2) x
+     group by 1
+  loop
+    if exists (select 1 from public.world_notifications where user_id = r.uid and payload ->> 'refund' = 'trade_cancel_drop') then continue; end if;
+    insert into public.world_storage(owner_id, items, updated_at) values (r.uid, r.items, now())
+    on conflict (owner_id) do update set items = (select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from (
+        select k, sum(v::numeric)::int v from (select key k, value v from jsonb_each(coalesce(public.world_storage.items, '{}'::jsonb))
+                                              union all select key, value from jsonb_each(excluded.items)) u group by k) s),
+      updated_at = now();
+    select string_agg(coalesce(i.item_name, k) || ' ×' || v, ', ') into names from jsonb_each_text(r.items) t(k, v) left join public.world_item_catalog i on i.item_id = t.k;
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (r.uid, 'reward', '사라진 물품을 돌려드렸습니다',
+      '가방이 가득 찬 채 거래소 등록을 취소해 사라졌던 ' || names || '을(를) 개인 창고에 넣어 드렸습니다. 안전지대에서 꺼낼 수 있습니다. 제보 고맙습니다.',
+      jsonb_build_object('refund', 'trade_cancel_drop', 'items', r.items));
+  end loop;
+end $$;
+
+grant fn_owner_18903 to postgres with inherit false, set false;
+grant fn_owner_expedition to postgres with inherit false, set false;
 
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;
@@ -2694,7 +2751,8 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 29. **세력 기부**: 세력 안전지대에서 필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 50전마다 공훈 1을 받습니다. 하루 공훈 30까지이고, 진품 이상은 한 번 더 확인합니다.
 30. **비고 품목 확장**: 세력마다 세력 칭호(2등급)·세력 테두리(3등급)·세력 장비(3등급, 4단계·거래 불가)·채팅 이름 색(4등급)·세력 탈것(5등급)을 공훈으로 받습니다. 길잡이 등불·비약·비경 지도·봉인된 보따리도 들어왔습니다. 세력 탈것은 운임이 노정패 1이고, 수향연맹 화방선(×2.3)이 가장 빠릅니다(나머지 ×1.9).
 31. **수향연맹 뱃길**: 수향연맹 조사원이 배(수향 나룻배·화방선)를 타면 이동 속도가 등급마다 빨라지고(1등급 ×1.10 ~ 5등급 ×1.30) 운임(노정패)이 들지 않습니다.
-32. **구중 봉연 전리품**을 마지막 지역답게 올렸습니다. 금단 보스 구중 봉주는 응축 영핵·천령 감로·성진사, 우두머리 사슬 끊는 자는 응축 영핵·월광 정수, 심연 사슬귀도 응축 영핵을 떨어뜨리고, 토벌 희귀 전리품도 응축 영핵이 됩니다. 귀령초는 4.0.5부터 아주 드물게(최대 5%) 함께 나옵니다.
+32. **구중 봉연 전리품**을 마지막 지역답게 올렸습니다. 금단 보스 구중 봉주는 응축 영핵·천령 감로·성진사, 우두머리 사슬 끊는 자는 응축 영핵·월광 정수, 심연 사슬귀도 응축 영핵을 떨어뜨리고, 토벌 희귀 전리품도 응축 영핵이 됩니다. 귀령초는 4.0.5부터 드물게 함께 나오고, 5.0.0에서 확률을 다섯 분의 일로 낮췄습니다(채집 0.08%·토벌 일반 0.06%·정예 0.2%·우두머리 0.6%·금단 보스 1%·원정 완주 0.4%, 위험도 10은 ×1.5, 최대 1%. 「영초 감별」 기술은 0.6%).
+33. **거래소 등록 취소**: 가방이 가득 찬 채 거래소 등록을 취소하면 물품이 사라지던 문제를 고쳤습니다. 이제 돌려받을 자리가 모자라면 취소되지 않고 물품은 거래소에 그대로 남습니다. 이 문제로 사라진 물품은 개인 창고로 돌려드렸습니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
