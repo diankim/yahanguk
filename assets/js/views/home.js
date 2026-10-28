@@ -4,7 +4,8 @@
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
-import { load, panel, chip, danger, loading, errorBox, invalidate } from './common.js';
+import { load, panel, chip, danger, loading, errorBox, invalidate, safeZones, zonesNow } from './common.js';
+import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
@@ -61,9 +62,11 @@ async function draw() {
   if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
   busy = true; again = false;
   try {
-    const [s, roster, fish, rest, idle] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
+    const [s, roster, fish, rest, idle, pty] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
       // 낚시터·휴식·자율 상태는 잘 바뀌지 않아 1분 동안 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(아래 changed)
-      load('world_fish_spot', undefined, { maxAge: 60000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 60000 }).catch(() => null)]);
+      load('world_fish_spot', undefined, { maxAge: 60000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 60000 }).catch(() => null),
+      // 파티 칸: 자리·파티가 바뀌는 행동 뒤에만 새로 읽는다(common.js ROSTER_CHANGERS)
+      load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null)]);
     snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
@@ -72,12 +75,30 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     noteRegion(s.region);
-    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     bind(s);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
   if (again) return draw();
+}
+
+// 파티 칸: 동료마다 있는 곳·상황·체력·정신·침식. 같은 곳의 동료와 원정을 같은 지역으로 보내면 합동 전투와 함께 다녀온 보너스.
+function partyHtml(p, s) {
+  if (!p?.party || (p.members || []).length < 2) return '';
+  const me = store.character.owner_id, here = store.character.location;
+  const mates = p.members.filter(m => m.owner_id !== me);
+  const near = mates.filter(m => m.location === here && !m.downed).length;
+  const state = m => m.downed ? '<b class="bad">전투불능</b>' : m.expedition ? `원정 중 · ${fmt.remain(new Date(m.expedition.ends_at) - Date.now())} 남음` : m.in_combat ? '전투 중' : '';
+  const row = m => `<li class="${m.location === here ? 'near' : ''}"><span class="fdot" style="--fc:${factionColor(m.major_faction_id)}"></span>
+      <b>${cardName(m.owner_id, m.character_name)}</b>${m.role === 'leader' ? '<small class="accent">파티장</small>' : ''}
+      <small>${esc(m.location || '')}${m.location === here ? ' (같은 곳)' : ''}${state(m) ? ' · ' + state(m) : ''}</small>
+      <small class="pt-stat">체력 ${m.health} · 정신 ${m.mental ?? '-'} · 침식 ${m.erosion ?? 0}</small>
+      ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`;
+  return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명</h2>
+      <div class="btn-row">${!s.region.safe ? `<button class="btn small primary" id="pt-exp" ${store.expedition ? 'disabled' : ''}>${icon('route', 14)}<span>파티 원정</span></button>` : ''}<a class="btn small ghost" href="#/party">동료 화면</a></div></header>
+    <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul>
+      <p class="muted small">${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}같은 지역으로 원정을 보내면 합동 전투(동료 전투력 60%가 승률에 더해지고 요괴는 이목이 높은 쪽을 노림)를 하고, 함께 다녀온 동료 한 명마다 경험치·숙련 경험 +10%(세 명까지).</p></div></section>`;
 }
 
 function drawBattle() {
@@ -94,13 +115,14 @@ function sceneFx(r) {
 }
 // 침식 원형 게이지: 현장 머리 오른쪽 위. 단계(주의 30·위험 55·붕괴 직전 80)마다 색이 짙어지고, 누르면 캐릭터 › 상태로 간다.
 function scene(s, traveling, downed) {
-  const r = s.region, c = store.character;
+  const r = s.region, c = store.character, z = zonesNow()?.get(r.region_id);
+  if (!zonesNow()) safeZones().catch(() => {});
   return `
     <div class="scene theme-${esc(r.theme || 'wild')} ${r.safe ? 'safe' : ''}">
       ${sceneFx(r)}
       <span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <div class="scene-top">
-        <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · ${esc(r.faction_name || '무주 금역')}</p>
+        <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · <span class="fdot" style="--fc:${factionColor(r.faction_id ?? z?.control_faction_id)}"></span>${esc(r.faction_name || '무주 금역')}${z?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}</p>
         <h1>${esc(r.region_name)}</h1>
         <div class="env-slot">${envChip()}</div>
         <div class="chips">${r.safe ? chip('안전지대', 'ok') : danger(r.danger)}${chip(THEME_SCENE[r.theme] || '야외')}${!r.safe ? chip(`답사 ${s.survey?.pct ?? 0}%`, 'accent') : ''}</div>
@@ -256,6 +278,7 @@ function people(roster, corpses) {
 
 /* ── 동작 ──────────────────────────────────────────────── */
 function bind(s) {
+  $('#pt-exp', el)?.addEventListener('click', () => openExpeditionWindow());
   $('#search', el)?.addEventListener('click', e => doSearch(e.currentTarget));
   $$('[data-move]', el).forEach(b => b.onclick = () => guard(b, () => act('world_field_move', { p_node_id: b.dataset.move }), { success: '' }));
   $$('[data-gather]', el).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }));

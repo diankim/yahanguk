@@ -241,7 +241,7 @@ function draw() {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
     rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name || m.character_name, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: m.sender_name === '구조 알림' && /쓰러졌습니다/.test(m.content || ''), sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')), sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
   list.innerHTML = rows.length ? rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;

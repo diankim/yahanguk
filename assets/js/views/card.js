@@ -5,6 +5,7 @@ import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
 import { chip } from './common.js';
+import { factionColor } from '../geo.js';
 import { nameStyle } from '../chat.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
 
@@ -48,7 +49,7 @@ async function draw(box, id) {
       <div class="profile-card">${patternLayer(c.profile?.pattern)}<div class="pc-emblem">${emblem(c.owner_id, c.profile, 72)}</div>
         <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}">${esc(c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}</h3>
           ${c.display_title ? `<p class="title-badge">「${esc(c.display_title)}」</p>` : ''}
-          <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}${c.major_faction_id ? ' · ' + esc(nameOf(c.major_faction_id)) : ''}</p>
+          <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id ? `<p><span class="fchip" style="--fc:${factionColor(c.major_faction_id)}">${esc(nameOf(c.major_faction_id))}</span></p>` : ''}
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div></div>
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
       <dl class="kv info">

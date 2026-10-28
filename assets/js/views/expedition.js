@@ -1,6 +1,6 @@
 // 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
 // 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
-import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
+import { ask, store, on, act, rpc, toast, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
@@ -31,21 +31,30 @@ const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) 
 const saveLast = p => { try { localStorage.setItem(LAST_KEY, JSON.stringify(p)); } catch {} };
 const STANCE_NAME = { cautious: '신중', balanced: '균형', bold: '강행' };
 const DUR_NAME = Object.fromEntries(DURATIONS);
+// 같은 곳의 파티원에게 함께 가자고 알린다(창의 체크가 켜져 있고 같은 곳에 동료가 있을 때만)
+let callParty = true, mateHere = 0;
 async function launch(p) {
   const out = await act('world_expedition_start', { p_node_id: p.node, p_minutes: p.minutes, p_stance: p.stance });
   saveLast({ node: p.node, minutes: p.minutes, stance: p.stance });
+  if (callParty && mateHere > 0) rpc('world_party_expedition_call').then(r => r?.called && toast(r.message, 'ok')).catch(() => {});
   return out;
+}
+async function partyHere() {
+  const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
+  const me = store.character;
+  return (p?.members || []).filter(m => m.owner_id !== me.owner_id && m.location === me.location && !m.downed && !m.expedition).length;
 }
 
 // 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
-export async function openExpeditionWindow() {
+export async function openExpeditionWindow(preset) {
+  if (preset?.node) pick = { node: preset.node, minutes: Number(preset.minutes) || pick.minutes, stance: preset.stance || pick.stance };
   const m = openModal({ title: '원정', wide: true, body: `<div class="exp-body">${loading()}</div>` });
   const box = $('.exp-body', m);
   const fill = async () => { try { renderExpedition(box, await load('world_expedition_overview')); } catch (e) { box.innerHTML = errorBox(e.message); } };
   await fill();
   const offc = on('changed', ({ name }) => { if (!box.isConnected) return offc(); if (/expedition/.test(name)) fill(); });
 }
-window.addEventListener('yh-open-expedition', () => openExpeditionWindow());
+window.addEventListener('yh-open-expedition', e => openExpeditionWindow(e.detail));
 
 export function renderExpedition(box, ov) {
   const c = store.character;
@@ -84,6 +93,7 @@ export function renderExpedition(box, ov) {
           ${JOB_SKILL[c.job_key] ? `<li class="skill">${icon('spark', 14)}<span><b>${esc(nameOf(c.job_key))} 원정 기술 · ${esc(JOB_SKILL[c.job_key][0])}</b>${esc(JOB_SKILL[c.job_key][1])}</span></li>` : ''}
           <li id="exp-hint-row">${icon('bag', 14)}<span id="exp-hint"></span></li>
         </ul>
+        <label class="check exp-call" id="exp-call-row" hidden><input type="checkbox" id="exp-call" ${callParty ? 'checked' : ''}><span>같은 곳의 동료 <b id="exp-call-n"></b>명에게 함께 가자고 알리기</span></label>
         <button class="btn primary block" id="exp-go" ${pick.node ? '' : 'disabled'}>${icon('flame', 16)}<span>원정 출발</span></button>
         <p class="muted small exp-foot">원정 중에는 이동·전투·채집·거래를 할 수 없습니다. 언제든 일찍 돌아올 수 있지만 지난 시간만큼만 성과를 얻습니다.</p>
       </aside>
@@ -105,6 +115,9 @@ export function renderExpedition(box, ov) {
   hint();
   bindRecent(box, ov.recent);
   $('#exp-go', box).onclick = e => guard(e.currentTarget, () => launch(pick));
+  mateHere = 0;
+  partyHere().then(n => { mateHere = n; const row = $('#exp-call-row', box); if (!row || !n) return; row.hidden = false; $('#exp-call-n', box).textContent = n;
+    $('#exp-call', box).onchange = ev => { callParty = ev.target.checked; }; });
   const again = $('#exp-again', box);
   if (again) again.onclick = e => guard(e.currentTarget, () => { pick = { ...last }; return launch(last); });
 }

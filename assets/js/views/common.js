@@ -82,12 +82,14 @@ export function inventoryOf() { return store.character?.inventory || {}; }
 export { fmt };
 
 // 안전지대·상점·마구간 정보(지역 테이블은 공개 읽기). 한 번 받아 두고 재사용한다.
-let zones = null;
+// 지배 세력·분쟁은 한 시간마다 바뀌므로 10분이 지나면 다시 읽는다.
+let zones = null, zonesAt = 0;
 export async function safeZones() {
-  if (zones) return zones;
-  const { data, error } = await db.from('world_map_regions').select('region_id,region_name,is_safe_zone,shop_name,has_stable,control_faction_id,territory_name');
-  if (error) throw new Error(error.message);
-  zones = new Map((data || []).map(r => [r.region_id, r]));
+  if (zones && Date.now() - zonesAt < 600000) return zones;
+  const { data, error } = await db.from('world_map_regions').select('region_id,region_name,is_safe_zone,shop_name,has_stable,control_faction_id,territory_name,contested');
+  if (error) { if (zones) return zones; throw new Error(error.message); }
+  zones = new Map((data || []).map(r => [r.region_id, r])); zonesAt = Date.now();
   return zones;
 }
+export function zonesNow() { return zones; }
 export function zoneOf(map, regionId) { return map?.get(regionId) || null; }

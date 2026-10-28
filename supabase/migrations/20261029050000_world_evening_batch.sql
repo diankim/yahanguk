@@ -274,3 +274,292 @@ grant select on public.world_gathering_spots, public.world_exploration_nodes, pu
 alter function public.world_item_sources(text) owner to fn_owner_field;
 revoke all on function public.world_item_sources(text) from public, anon, authenticated;
 grant execute on function public.world_item_sources(text) to authenticated;
+
+-- ⑧ ─────────────────────────────────────────
+-- 세력 판도: 대세력 조사원의 활동(토벌·탐색·채집·원정)이 그 지역에 세력 영향력을 쌓고, 한 시간마다 정산해
+-- 안전지대가 아닌 지역의 지배 세력이 바뀐다. 세력 사이 관계(동맹~적대)는 함께 파티를 하면 오르고 같은 지역을 다투면 내려간다.
+alter table public.world_map_regions add column if not exists home_faction_id text;
+alter table public.world_map_regions add column if not exists contested boolean not null default false;
+alter table public.world_map_regions add column if not exists control_changed_at timestamptz;
+update public.world_map_regions set home_faction_id = control_faction_id where home_faction_id is null and control_faction_id is not null;
+
+create table if not exists public.world_region_influence (
+  region_id text not null references public.world_map_regions(region_id),
+  faction_id text not null references public.world_major_factions(faction_id),
+  points numeric not null default 0,
+  last_actor uuid,
+  updated_at timestamptz not null default now(),
+  primary key (region_id, faction_id));
+create table if not exists public.world_faction_relations (
+  faction_a text not null references public.world_major_factions(faction_id),
+  faction_b text not null references public.world_major_factions(faction_id),
+  score numeric not null default 0 check (score between -100 and 100),
+  base numeric not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (faction_a, faction_b), check (faction_a < faction_b));
+create table if not exists public.world_faction_log (
+  id bigserial primary key, kind text not null, region_id text, faction_id text, other_id text,
+  content text not null, created_at timestamptz not null default now());
+alter table public.world_region_influence enable row level security;
+alter table public.world_faction_relations enable row level security;
+alter table public.world_faction_log enable row level security;
+revoke all on public.world_region_influence, public.world_faction_relations, public.world_faction_log from public, anon, authenticated;
+revoke all on sequence public.world_faction_log_id_seq from public, anon, authenticated;
+
+-- 처음 관계: 원래 적대 관계는 -60, 그 밖은 세계관에 맞춰 조금씩
+insert into public.world_faction_relations(faction_a, faction_b, score, base)
+select a.faction_id, b.faction_id, v, v from public.world_major_factions a join public.world_major_factions b on a.faction_id < b.faction_id,
+lateral (select case
+  when b.faction_id = any (coalesce(a.hostile_to, '{}')) or a.faction_id = any (coalesce(b.hostile_to, '{}')) then -60
+  when (a.faction_id, b.faction_id) in (('night_office', 'north_league')) then 40
+  when (a.faction_id, b.faction_id) in (('mandate_court', 'night_office')) then 25
+  when (a.faction_id, b.faction_id) in (('mandate_court', 'north_league'), ('black_lotus', 'southern_remnant')) then 10
+  when (a.faction_id, b.faction_id) in (('black_lotus', 'red_moon_cult')) then 15
+  when 'river_alliance' in (a.faction_id, b.faction_id) then 10
+  else 0 end v) x
+on conflict do nothing;
+
+create or replace function public.world_faction_rel(a text, b text)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case when a is null or b is null then 0 when a = b then 100
+    else coalesce((select score from public.world_faction_relations where faction_a = least(a, b) and faction_b = greatest(a, b)), 0) end
+$$;
+-- 받침에 맞춘 조사: world_josa('적월교','이','가') → 적월교가
+create or replace function public.world_josa(w text, a text, b text)
+returns text language sql immutable set search_path to 'pg_catalog' as $$
+  select w || case when w is not null and ascii(right(w, 1)) between 44032 and 55203 and (ascii(right(w, 1)) - 44032) % 28 = 0 then b else a end
+$$;
+create or replace function public.world_mf_name(f text)
+returns text language sql stable set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select faction_name from public.world_major_factions where faction_id = f), '무주 세력')
+$$;
+create or replace function public.world_faction_stance(s numeric)
+returns text language sql immutable set search_path to 'pg_catalog' as $$
+  select case when s >= 100 then '같은 세력' when s >= 40 then '동맹' when s >= 15 then '우호' when s > -15 then '중립' when s > -40 then '경계' else '적대' end
+$$;
+
+-- 지금 있는 곳의 지배 세력·분쟁, 같은 곳의 파티원이 주는 작은 효과(world_status_effect_total에 더함)
+create or replace function public.world_social_effect(p_key text)
+returns numeric language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); me record; reg record; v numeric := 0; mates int := 0; ally boolean := false; foe boolean := false; rel numeric;
+begin
+  if p_key not in ('gather_qty_pct', 'rare_loot_pct', 'healing_pct', 'encounter_pct', 'mental_loss_pct', 'incoming_damage_pct', 'clue_bonus_pct') then return 0; end if;
+  select c.location, c.major_faction_id into me from public.world_characters c where c.owner_id = uid;
+  if not found then return 0; end if;
+  select r.control_faction_id, r.contested, r.is_safe_zone into reg from public.world_map_regions r where r.region_id = (public.world_region_at(me.location)).region_id;
+  if found then
+    if reg.contested then v := v + case p_key when 'rare_loot_pct' then 3 when 'encounter_pct' then 5 else 0 end; end if;
+    if me.major_faction_id is not null and reg.control_faction_id is not null then
+      rel := public.world_faction_rel(me.major_faction_id, reg.control_faction_id);
+      if rel >= 100 then v := v + case p_key when 'gather_qty_pct' then 8 when 'rare_loot_pct' then 3 when 'healing_pct' then 5 else 0 end;
+      elsif rel >= 40 then v := v + case p_key when 'gather_qty_pct' then 4 when 'healing_pct' then 3 else 0 end;
+      elsif rel <= -40 and not reg.is_safe_zone then v := v + case p_key when 'encounter_pct' then 8 when 'mental_loss_pct' then 5 else 0 end;
+      end if;
+    end if;
+  end if;
+  -- 같은 곳에 있는 파티원(전투불능 제외, 세 명까지)
+  select count(*), bool_or(public.world_faction_rel(me.major_faction_id, o.major_faction_id) >= 40 and me.major_faction_id is not null and o.major_faction_id is not null),
+         bool_or(public.world_faction_rel(me.major_faction_id, o.major_faction_id) <= -40)
+    into mates, ally, foe
+  from public.world_party_members pm join public.world_party_members om on om.party_id = pm.party_id and om.owner_id <> pm.owner_id
+  join public.world_characters o on o.owner_id = om.owner_id
+  where pm.owner_id = uid and o.location = me.location and o.downed_at is null and not coalesce(o.is_dead, false);
+  mates := least(coalesce(mates, 0), 3);
+  if mates > 0 then
+    v := v + case p_key when 'incoming_damage_pct' then -3 * mates when 'healing_pct' then 4 else 0 end;
+    if ally then v := v + case p_key when 'clue_bonus_pct' then 5 when 'rare_loot_pct' then 2 else 0 end; end if;
+    if foe then v := v + case p_key when 'mental_loss_pct' then 5 else 0 end; end if;
+  end if;
+  return v;
+end $$;
+grant select on public.world_faction_relations, public.world_region_influence, public.world_faction_log, public.world_party_members, public.world_characters, public.world_map_regions, public.world_major_factions to fn_owner_field;
+alter function public.world_faction_rel(text, text) owner to fn_owner_field;
+alter function public.world_social_effect(text) owner to fn_owner_field;
+revoke all on function public.world_faction_rel(text, text), public.world_social_effect(text) from public, anon, authenticated;
+grant execute on function public.world_faction_rel(text, text), public.world_social_effect(text) to authenticated;
+grant execute on function public.world_region_at(text) to fn_owner_field;
+
+do $$ declare d text := pg_get_functiondef('public.world_status_effect_total(text)'::regprocedure);
+  a text := '+ public.world_skill_effect(p_effect_key)';
+begin
+  if d like '%world_social_effect%' then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'status_effect_total anchor'; end if;
+  execute replace(d, a, a || ' + public.world_social_effect(p_effect_key)');
+end $$;
+
+-- 한 시간마다: 영향력 쇠퇴 → 지난 시간 활동을 더함 → 지배 세력·분쟁 판정 → 관계 변화
+create or replace function public.world_influence_tick()
+returns jsonb language plpgsql set search_path to 'pg_catalog', 'public' as $$
+declare t0 timestamptz; t1 timestamptz := now(); r record; s record; flips int := 0; holder_score numeric; need numeric; old_stance text; new_stance text; who uuid;
+begin
+  select value::timestamptz into t0 from public.world_app_meta where key = 'influence_at';
+  t0 := greatest(coalesce(t0, t1 - interval '1 hour'), t1 - interval '3 hours');
+  update public.world_region_influence set points = round(points * 0.97, 2) where points > 0;
+
+  -- 활동: 토벌 승리 1(정예 2·우두머리 4)·탐색 0.3·채집 0.3·원정 20분마다 1(최대 24). 한 사람·한 지역에 한 번 정산당 40까지
+  with ev as (
+    select e.actor_id, coalesce(e.payload ->> 'region_id', n.region_id) region_id,
+      case e.event_type when 'combat' then case when (e.payload ->> 'defeated')::boolean then case e.payload ->> 'rank' when 'boss' then 4 when 'elite' then 2 else 1 end else 0 end
+                        else 0.3 end pts
+    from public.world_events e left join public.world_exploration_nodes n on e.event_type = 'gather' and n.node_id::text = e.payload ->> 'node_id'
+    where e.created_at > t0 and e.created_at <= t1 and e.event_type in ('combat', 'explore', 'gather')
+    union all
+    select x.owner_id, x.region_id, least(24, least(x.minutes, extract(epoch from x.finished_at - x.started_at) / 60) / 20.0) from public.world_expeditions x
+    where x.finished_at > t0 and x.finished_at <= t1 and x.status = 'done'),
+  per as (select c.major_faction_id f, ev.region_id, ev.actor_id, least(40, sum(pts)) pts
+          from ev join public.world_characters c on c.owner_id = ev.actor_id
+          join public.world_map_regions mr on mr.region_id = ev.region_id
+          where c.major_faction_id is not null and mr.active and not mr.is_safe_zone and mr.home_faction_id is not null
+          group by 1, 2, 3 having sum(pts) > 0),
+  agg as (select f, region_id, sum(pts) pts, (array_agg(actor_id order by pts desc))[1] top from per group by 1, 2)
+  insert into public.world_region_influence(region_id, faction_id, points, last_actor, updated_at)
+  select region_id, f, pts, top, t1 from agg
+  on conflict (region_id, faction_id) do update set points = public.world_region_influence.points + excluded.points, last_actor = excluded.last_actor, updated_at = t1;
+
+  -- 지배 판정: 본거지 세력은 기본 150. 도전 세력이 max(150, 지배 세력 점수×1.25) 이상이면 넘어가고, 60% 이상이면 분쟁 중
+  for r in select mr.region_id, mr.region_name, mr.home_faction_id, mr.control_faction_id from public.world_map_regions mr
+           where mr.active and not mr.is_safe_zone and mr.home_faction_id is not null loop
+    select coalesce((select points from public.world_region_influence where region_id = r.region_id and faction_id = r.control_faction_id), 0)
+           + case when r.control_faction_id = r.home_faction_id then 150 else 0 end into holder_score;
+    select f.faction_id, f.faction_name, coalesce(i.points, 0) + case when f.faction_id = r.home_faction_id then 150 else 0 end sc, i.last_actor into s
+      from public.world_major_factions f left join public.world_region_influence i on i.region_id = r.region_id and i.faction_id = f.faction_id
+      where f.active and f.faction_id is distinct from r.control_faction_id order by 3 desc limit 1;
+    need := greatest(150, holder_score * 1.25);
+    if s.faction_id is not null and s.sc >= need then
+      update public.world_map_regions set control_faction_id = s.faction_id, faction_control = s.faction_name, control_changed_at = t1, contested = false where region_id = r.region_id;
+      flips := flips + 1;
+      insert into public.world_faction_log(kind, region_id, faction_id, other_id, content)
+      values ('control', r.region_id, s.faction_id, r.control_faction_id, public.world_josa(s.faction_name, '이', '가') || ' ' || public.world_josa(r.region_name, '을', '를') || ' ' || public.world_mf_name(r.control_faction_id) || '에게서 차지했습니다.');
+      insert into public.world_notifications(user_id, kind, title, content, payload)
+      select c.owner_id, 'faction', '세력 판도 변화', public.world_josa(s.faction_name, '이', '가') || ' ' || public.world_josa(r.region_name, '을', '를') || ' 차지했습니다.', jsonb_build_object('region_id', r.region_id, 'faction_id', s.faction_id)
+        from public.world_characters c where c.major_faction_id in (s.faction_id, r.control_faction_id) and not coalesce(c.is_dead, false);
+      who := coalesce(s.last_actor, (select owner_id from public.world_characters where major_faction_id = s.faction_id limit 1));
+      if who is not null then
+        insert into public.world_chat_messages(channel_type, sender_id, sender_name, content)
+        values ('global', who, '세력 소식', public.world_josa(s.faction_name, '이', '가') || ' ' || public.world_josa(r.region_name, '을', '를') || ' 차지했습니다. 지배 세력이 바뀐 지역은 채집·희귀품·위험이 달라집니다.');
+      end if;
+    else
+      update public.world_map_regions set contested = (s.faction_id is not null and s.sc >= need * 0.6) where region_id = r.region_id and contested is distinct from (s.faction_id is not null and s.sc >= need * 0.6);
+    end if;
+  end loop;
+
+  -- 관계: 두 세력 조사원이 한 파티에서 활동하면 +0.5(쌍마다 한 시간 +1까지), 같은 지역에서 둘 다 3 이상 쌓으면 −0.5(−1.5까지), 처음 값으로 1%씩 돌아감
+  for r in select fr.faction_a, fr.faction_b, fr.score from public.world_faction_relations fr loop
+    old_stance := public.world_faction_stance(r.score);
+    update public.world_faction_relations fr set score = greatest(-100, least(100, round(fr.score + (fr.base - fr.score) * 0.01
+      + least(1, 0.5 * (select count(distinct pm.party_id) from public.world_party_members pm
+            join public.world_characters ca on ca.owner_id = pm.owner_id and ca.major_faction_id = r.faction_a
+            join public.world_party_members pm2 on pm2.party_id = pm.party_id join public.world_characters cb on cb.owner_id = pm2.owner_id and cb.major_faction_id = r.faction_b
+            where exists (select 1 from public.world_events e where e.actor_id = ca.owner_id and e.created_at > t0)
+              and exists (select 1 from public.world_events e where e.actor_id = cb.owner_id and e.created_at > t0)))
+      - least(1.5, 0.5 * (select count(*) from public.world_region_influence ia join public.world_region_influence ib on ib.region_id = ia.region_id and ib.faction_id = r.faction_b
+            where ia.faction_id = r.faction_a and ia.updated_at = t1 and ib.updated_at = t1 and ia.points >= 3 and ib.points >= 3)), 2))), updated_at = t1
+      where fr.faction_a = r.faction_a and fr.faction_b = r.faction_b returning score into holder_score;
+    new_stance := public.world_faction_stance(holder_score);
+    if new_stance <> old_stance then
+      insert into public.world_faction_log(kind, faction_id, other_id, content)
+      values ('relation', r.faction_a, r.faction_b, public.world_josa(public.world_mf_name(r.faction_a), '과', '와') || ' ' || public.world_mf_name(r.faction_b) || '의 관계가 ' || old_stance || '에서 ' || public.world_josa(new_stance, '으로', '로') || ' 바뀌었습니다.');
+    end if;
+  end loop;
+
+  insert into public.world_app_meta(key, value, changed_at) values ('influence_at', t1::text, now())
+  on conflict (key) do update set value = excluded.value, changed_at = now();
+  return jsonb_build_object('from', t0, 'to', t1, 'flips', flips);
+end $$;
+revoke all on function public.world_influence_tick() from public, anon, authenticated;
+do $$ begin
+  if not exists (select 1 from cron.job where jobname = 'yh-influence') then
+    perform cron.schedule('yh-influence', '7 * * * *', 'select public.world_influence_tick()');
+  end if;
+end $$;
+
+-- 세력 판도 화면: 세력마다 조사원 수·지배 지역·영향력, 관계, 다투는 지역, 최근 소식
+create or replace function public.world_faction_board()
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); mine text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select major_faction_id into mine from public.world_characters where owner_id = uid;
+  return jsonb_build_object('mine', mine,
+    'factions', (select coalesce(jsonb_agg(jsonb_build_object('id', f.faction_id, 'name', f.faction_name,
+        'members', (select count(*) from public.world_characters c where c.major_faction_id = f.faction_id and not coalesce(c.is_dead, false)),
+        'regions', (select count(*) from public.world_map_regions r where r.active and r.control_faction_id = f.faction_id),
+        'influence', (select coalesce(round(sum(points)), 0) from public.world_region_influence i where i.faction_id = f.faction_id)) order by f.faction_name), '[]') from public.world_major_factions f where f.active),
+    'relations', (select coalesce(jsonb_agg(jsonb_build_object('a', faction_a, 'b', faction_b, 'score', round(score), 'stance', public.world_faction_stance(score))), '[]') from public.world_faction_relations),
+    'regions', (select coalesce(jsonb_agg(jsonb_build_object('id', r.region_id, 'name', r.region_name, 'home', r.home_faction_id, 'control', r.control_faction_id, 'contested', r.contested,
+        'top', (select coalesce(jsonb_agg(jsonb_build_object('f', i.faction_id, 'p', round(i.points))), '[]') from (select * from public.world_region_influence i where i.region_id = r.region_id and i.points >= 1 order by i.points desc limit 3) i))
+        order by r.contested desc, r.min_level), '[]')
+      from public.world_map_regions r where r.active and not r.is_safe_zone and r.home_faction_id is not null
+        and (r.contested or r.control_faction_id is distinct from r.home_faction_id or exists (select 1 from public.world_region_influence i where i.region_id = r.region_id and i.points >= 1))),
+    'log', (select coalesce(jsonb_agg(jsonb_build_object('at', created_at, 'text', content) order by created_at desc), '[]') from (select * from public.world_faction_log order by id desc limit 12) l));
+end $$;
+alter function public.world_faction_board() owner to fn_owner_field;
+revoke all on function public.world_faction_board() from public, anon, authenticated;
+grant execute on function public.world_faction_board() to authenticated;
+grant execute on function public.world_faction_stance(numeric) to fn_owner_field;
+revoke all on function public.world_josa(text, text, text), public.world_mf_name(text) from public, anon, authenticated;
+
+-- ⑨ ─────────────────────────────────────────
+-- 파티: 현장 화면의 파티 칸에 쓸 상태(정신·침식·세력·원정 중인 곳), 함께 원정 가자는 알림, 함께 다녀온 원정의 보너스
+do $$ declare d text := pg_get_functiondef('public.world_party_overview()'::regprocedure);
+  a text := '''level'', c.level, ''job_key'', c.job_key, ''location'', c.location, ''health'', c.health, ''profile'', c.profile,';
+begin
+  if d like '%''erosion'', c.erosion%' then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'party_overview anchor'; end if;
+  execute replace(d, a, a || ' ''mental'', c.mental, ''erosion'', c.erosion, ''major_faction_id'', c.major_faction_id,
+        ''expedition'', (SELECT jsonb_build_object(''region_id'', e.region_id, ''node_id'', e.node_id, ''ends_at'', e.ends_at, ''minutes'', e.minutes, ''stance'', e.stance) FROM public.world_expeditions e WHERE e.owner_id = m.owner_id AND e.status = ''active'' LIMIT 1),');
+end $$;
+
+grant select (mental, erosion, major_faction_id) on public.world_characters to fn_owner_social;
+grant select (region_id, node_id, ends_at, minutes, stance) on public.world_expeditions to fn_owner_social;
+
+-- 원정을 떠난 뒤 같은 곳의 파티원에게 「함께 가기」 알림(3분에 한 번)
+create or replace function public.world_party_expedition_call()
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); me record; x record; pid uuid; n int := 0; nm text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select party_id into pid from public.world_party_members where owner_id = uid;
+  if pid is null then raise exception '파티에 들어 있지 않습니다.'; end if;
+  select c.character_name, c.location into me from public.world_characters c where c.owner_id = uid;
+  select * into x from public.world_expeditions where owner_id = uid and status = 'active' order by started_at desc limit 1;
+  if not found then raise exception '먼저 원정을 떠나야 동료를 부를 수 있습니다.'; end if;
+  if exists (select 1 from public.world_notifications where kind = 'party_expedition' and (payload ->> 'from') = uid::text and created_at > now() - interval '3 minutes') then
+    raise exception '방금 동료를 불렀습니다. 잠시 뒤에 다시 부를 수 있습니다.';
+  end if;
+  select node_name into nm from public.world_exploration_nodes where node_id = x.node_id;
+  insert into public.world_notifications(user_id, kind, title, content, payload)
+  select o.owner_id, 'party_expedition', '함께 원정 가기', me.character_name || ' 조사원이 ' || me.location || ' · ' || coalesce(nm, '원정지') || '(으)로 원정을 떠났습니다. 같은 곳으로 원정을 보내면 합동 전투를 하고 함께 다녀온 보너스를 받습니다.',
+         jsonb_build_object('from', uid, 'name', me.character_name, 'location', me.location, 'region_id', x.region_id, 'node_id', x.node_id, 'minutes', x.minutes, 'stance', x.stance, 'ends_at', x.ends_at)
+  from public.world_party_members pm join public.world_characters o on o.owner_id = pm.owner_id
+  where pm.party_id = pid and pm.owner_id <> uid and o.location = me.location and o.downed_at is null and not coalesce(o.is_dead, false)
+    and not exists (select 1 from public.world_expeditions e where e.owner_id = o.owner_id and e.status = 'active');
+  get diagnostics n = row_count;
+  return jsonb_build_object('ok', true, 'called', n, 'message', case when n > 0 then '같은 곳의 동료 ' || n || '명에게 함께 가자고 알렸습니다.' else '같은 곳에 부를 수 있는 동료가 없습니다.' end);
+end $$;
+grant select on public.world_exploration_nodes, public.world_expeditions to fn_owner_field;
+grant select, insert on public.world_notifications to fn_owner_field;
+alter function public.world_party_expedition_call() owner to fn_owner_field;
+revoke all on function public.world_party_expedition_call() from public, anon, authenticated;
+grant execute on function public.world_party_expedition_call() to authenticated;
+
+-- 함께 다녀온 원정: 같은 지역 원정이 겹친 파티원 한 명마다 경험치·숙련 경험 +10%(세 명까지)
+do $$ declare d text := pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure);
+  a text := '-- 긴 원정 완주 보상(20261029000000)';
+begin
+  if d like '%함께 간 동료(20261029050000)%' then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'expedition_complete anchor'; end if;
+  execute replace(d, a, '-- 함께 간 동료(20261029050000)
+  declare pa int; begin
+    select count(distinct px.owner_id) into pa from public.world_party_members me_ join public.world_party_members om on om.party_id = me_.party_id and om.owner_id <> me_.owner_id
+      join public.world_expeditions px on px.owner_id = om.owner_id and px.region_id = e.region_id and px.status in (''active'', ''done'')
+     where me_.owner_id = e.owner_id and px.started_at < now() and coalesce(px.finished_at, px.ends_at) > e.started_at + interval ''10 minutes'';
+    pa := least(coalesce(pa, 0), 3);
+    if pa > 0 and e.settled_rounds > 0 then
+      xp := round(xp * (1 + 0.1 * pa)); cxp := round(cxp * (1 + 0.1 * pa)); gxp := round(gxp * (1 + 0.1 * pa)); ixp := round(ixp * (1 + 0.1 * pa));
+      lg := lg || jsonb_build_array(''동료 '' || pa || ''명과 함께 다녀온 원정 — 경험치·숙련 경험 +'' || (10 * pa) || ''%'');
+    end if;
+  end;
+  ' || a);
+end $$;

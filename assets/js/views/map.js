@@ -339,7 +339,7 @@ function drawDetail() {
     <article class="panel region-detail" style="--fc:${factionColor(factionOf(r.region_id))}">
       <header class="panel-head"><h2>${esc(r.region_name)}</h2>${isHere ? chip('현재 위치', 'accent') : ''}</header>
       <div class="panel-body">
-        <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}</p>
+        <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}</p>
         <div class="chips">${zone?.is_safe_zone ? chip('안전지대', 'ok') : danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}</div>
         ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')} · 거래소${zone.has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>
