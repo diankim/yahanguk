@@ -46,8 +46,8 @@ export async function render(root, sub) {
         <h3 class="sub-h">색</h3><div class="color-grid">${Object.entries(EMBLEM_COLORS).map(([k, [n, col]]) => `<button class="col-pick" data-col="${k}" style="--c:${col}" aria-label="${n}"><i></i><small>${n}</small></button>`).join('')}</div>
         <h3 class="sub-h">채팅 이름 색</h3>
         <div class="hue-grid">${`<button class="hue-pick auto" data-hue="" aria-label="자동">자동</button>`}${CHAT_HUES.map(h => `<button class="hue-pick" data-hue="${h}" style="--hu:${h}" aria-label="색 ${h}">가</button>`).join('')}</div>
-        <div class="hue-grid">${Object.entries(NAME_STYLES).map(([v, [n, how]]) => `<button class="hue-pick ns-${v}" data-hue="${v}" ${styles?.[v] ? '' : 'disabled'} title="${esc(styles?.[v] ? `칭호 보상 이름 색 · ${n}` : `${how} 쓸 수 있습니다`)}">${esc(n)}</button>`).join('')}</div>
-        <p class="muted small">자개빛·주홍 칠·금박은 칭호로 여는 특별 이름 색입니다(명품 이상 칭호·신품 칭호·칭호 30개). 채팅과 조사원 카드의 이름에 보입니다.</p>
+        <div class="hue-grid">${Object.entries(NAME_STYLES).map(([v, [n, how]]) => `<button class="hue-pick ns-${v}" data-hue="${v}" ${styles?.[v] ? '' : `data-locked="${esc(`${n}: ${how} 쓸 수 있습니다.`)}"`} title="${esc(styles?.[v] ? `칭호 보상 이름 색 · ${n}` : `${how} 쓸 수 있습니다`)}">${esc(n)}</button>`).join('')}</div>
+        <p class="muted small">아래 15가지는 칭호로 여는 특별 이름 색입니다. 흐린 색은 아직 잠긴 것이고, 누르면 여는 조건이 보입니다. 채팅과 조사원 카드의 이름에 보입니다.</p>
         <p class="hue-preview muted" id="hue-preview"></p>
         <label class="field"><span>한 줄 소개 (60자)</span><input id="pf-bio" maxlength="60" value="${esc(draft.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
         <label class="field"><span>대표 칭호 (채팅과 프로필에 보입니다)</span><select id="pf-title"><option value="">걸지 않음</option>${earned.map(t => `<option value="${esc(t.key)}" ${t.key === draft.title ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
@@ -117,7 +117,7 @@ export async function render(root, sub) {
     const em = e.target.closest('[data-em]'), col = e.target.closest('[data-col]'), th = e.target.closest('[data-theme-id]'), tr = e.target.closest('[data-try]'), cs = e.target.closest('[data-cos-kind]');
     if (cs && !cs.disabled) { draft[cs.dataset.cosKind] = cs.dataset.cosKey; touch(); drawProfile(); cosInfo(cs); }
     const lk = e.target.closest('[data-cos-lock]'); if (lk) cosInfo(lk);
-    const hp = e.target.closest('[data-hue]'); if (hp) { draft.chatHue = hp.dataset.hue === '' ? null : Number(hp.dataset.hue); touch(); drawProfile(); }
+    const hp = e.target.closest('[data-hue]'); if (hp?.dataset.locked) { toast(hp.dataset.locked, 'info'); return; } if (hp) { draft.chatHue = hp.dataset.hue === '' ? null : Number(hp.dataset.hue); touch(); drawProfile(); }
     if (em) { draft.emblem = em.dataset.em; touch(); drawProfile(); }
     if (col) { draft.color = col.dataset.col; touch(); drawProfile(); }
     if (th) { draft.theme = th.dataset.themeId; applyTheme(draft.theme, false); markTheme(); touch(); }

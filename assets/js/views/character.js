@@ -2,7 +2,7 @@
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
 import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
-import { openStatus } from '../hud.js';
+import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS } from './item.js';
@@ -126,9 +126,9 @@ async function status(body) {
     rpc('world_rest_status').catch(() => null), loadBond(true)]);
   const c = store.character, invItems = c.inventory || {};
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
-  const statuses = (hud?.statuses || []).filter(x => new Date(x.expires_at) > new Date());
-  const downed = c.downed_at || c.health <= 0;
-  const deathAt = c.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
+  const yo = yohwaOf(hud?.statuses), statuses = yo.rest, yl = yohwaLine(yo);
+  const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
+  const deathAt = c.downed_at && !byYohwa ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
   // 부적 정화: 정화 부적이 있고 침식이 있어야 한다. 마음 다잡기: 본부에서 15분마다, 정신이 가득하고 침식이 없으면 쓸 수 없다(서버가 다시 검사).
   const wards = Number(invItems.ward_talisman || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
@@ -136,14 +136,16 @@ async function status(body) {
   const cleanseWhy = downed ? '전투불능' : !wards ? '정화 부적이 없습니다' : er0 <= 0 ? '정화할 침식이 없습니다' : '';
   const groundWhy = downed ? '전투불능' : !atHq ? '본부(정청·객사·연무장)에서만' : (mn0 >= 100 && er0 <= 0) ? '정신이 이미 맑습니다' : groundReady > Date.now() ? `${fmt.remain(groundReady - Date.now())} 뒤 다시` : '';
   body.innerHTML = `
-    ${downed ? panel('전투불능', `
-      <p class="desc">쓰러져 움직일 수 없습니다. 같은 지역의 조사원이 구조할 수 있고, 아래 방법으로 스스로 일어날 수도 있습니다.</p>
+    ${downed ? panel(byYohwa ? '요화로 쓰러짐' : '전투불능', `
+      <p class="desc">${byYohwa ? '요기를 이기지 못해 쓰러졌습니다. 요화로 쓰러진 것이라 목숨은 잃지 않습니다.' : '쓰러져 움직일 수 없습니다. 같은 지역의 조사원이 구조할 수 있고, 아래 방법으로 스스로 일어날 수도 있습니다.'}</p>
       <p class="bad"><b id="death-left">${deathAt ? `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}` : ''}</b></p>
       <div class="action-grid">
+        ${yo.y ? `<button class="btn primary" id="yohwa-seal"><span>안전지대 봉인</span><small>가장 가까운 안전지대에서 봉인술사들이 24시간 요기를 해독합니다 · 그동안 채팅만 가능 · 끝나면 요화가 풀리고 침식 40 아래</small></button>` : ''}
         <button class="btn primary" data-use="revival_charm" ${invItems.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(invItems.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
         <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금의 30%(최소 50전)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>
       </div>
-      <p class="muted small">시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.</p>`, { ico: 'heart', cls: 'danger' }) : ''}
+      <p class="muted small">${byYohwa ? '구조나 회생 부적으로 일어나면 요화는 남아 하루 뒤 다시 쓰러집니다. 귀령초로 풀거나 안전지대 봉인을 받으세요.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
+    ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     <div class="grid-2">
       ${panel('생존 상태', `
         ${['health:체력:hp', 'mental:정신:mp', 'spiritual_power:영력:sp'].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
@@ -173,6 +175,8 @@ async function status(body) {
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   bindRepair(body);
+  const ys = $('#yohwa-seal', body);
+  if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
   const cr = $('#call-rescue', body);
   if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 30%(최소 50전)와 이번 레벨에 필요한 경험치의 5%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다).', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
   const t = setInterval(() => {
@@ -342,7 +346,7 @@ async function idle(body) {
 
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
-const TCAT_ORDER = ['탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '교류', '성장', '비밀', '기타'];
+const TCAT_ORDER = ['탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '교류', '비무', '성장', '비밀', '기타'];
 let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 등급(서버 world_title_catalog.grade)
 const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品

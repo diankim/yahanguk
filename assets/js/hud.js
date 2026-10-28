@@ -75,7 +75,12 @@ function idleReadyAt(idle) {
 function statusItems(c) {
   const items = [];
   if (c.is_dead) items.push({ kind: 'danger', icon: 'flame', title: '영구 사망', text: c.death_reason || '이 캐릭터는 더 이상 행동할 수 없습니다.' });
-  else if (c.downed_at || c.health <= 0) items.push({ kind: 'danger', icon: 'heart', title: '전투불능', timer: new Date(c.downed_at || Date.now()).getTime() + 4 * 3600e3, text: '구조를 기다리거나 회생 부적·구조대를 쓰세요.', action: ['대처하기', () => window.yahangGo('char', 'status')] });
+  else if (c.downed_at || c.health <= 0) {
+    const yo = yohwaOf(state.hud?.statuses);
+    if (yohwaDowned(c, yo)) items.push({ kind: 'danger', icon: 'mask', title: '요화로 쓰러짐', text: '목숨은 잃지 않습니다. 안전지대 봉인(24시간 해독)이나 구조·회생 부적을 고르세요.', action: ['대처하기', () => window.yahangGo('char', 'status')] });
+    else items.push({ kind: 'danger', icon: 'heart', title: '전투불능', timer: new Date(c.downed_at || Date.now()).getTime() + 4 * 3600e3, text: '구조를 기다리거나 회생 부적·구조대를 쓰세요.', action: ['대처하기', () => window.yahangGo('char', 'status')] });
+  }
+  { const yo = yohwaOf(state.hud?.statuses); if (yo.seal) items.push({ kind: 'busy', icon: 'shield', title: '봉인 해독 중', timer: new Date(yo.seal.expires_at).getTime(), text: '끝날 때까지 채팅만 할 수 있습니다.' }); }
   if (c.travel_arrives_at) {
     const left = new Date(c.travel_arrives_at).getTime() - Date.now();
     items.push({ kind: 'travel', icon: 'route', title: `이동 중 → ${nameOf(c.travel_destination) || '목적지'}`, timer: c.travel_arrives_at, text: left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…', action: left > 0 ? ['이동 취소', cancelTravel] : null });
@@ -111,7 +116,9 @@ function render() {
   $('#hud-strip', root).innerHTML = `
     <span class="hs-name"><b>${esc(c.character_name)}${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="sp"></i></span>
-    ${(state.hud?.statuses || []).length ? `<span class="hs-debuff">${icon('flame', 12)}${(state.hud.statuses || []).filter(x => x.polarity !== 'positive').length}</span>` : ''}
+    ${erosionRing(c, 'mini')}
+    ${(() => { const yo = yohwaOf(state.hud?.statuses), bad = yo.rest.filter(x => x.polarity !== 'positive').length;
+      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa seal">봉인</span>' : ''}${bad ? `<span class="hs-debuff">${icon('flame', 12)}${bad}</span>` : ''}`; })()}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
     <span class="hs-caret">${icon('chevron', 14)}</span>`;
@@ -120,7 +127,7 @@ function render() {
     <section class="hud-card">
       <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
         <div><h2>${esc(c.character_name)}${gmBadge(c.owner_id)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
-        <span class="lv">Lv.${c.level}</span></div>
+        <span class="lv">Lv.${c.level}</span>${erosionRing(c)}</div>
       ${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
       ${envChip()}
       <div class="xp"><span>경험치</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
@@ -146,7 +153,7 @@ function render() {
     </section>`;
   body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
   body.querySelectorAll('[data-act2]').forEach(b => b.onclick = () => { closeStrip(); items[Number(b.dataset.act2)].action2[1](b); });
-  const sts = (state.hud?.statuses || []).filter(s => new Date(s.expires_at) > new Date());
+  const sts = yohwaOf(state.hud?.statuses).rest;
   body.querySelectorAll('[data-st]').forEach(b => b.onclick = () => openStatus(sts[Number(b.dataset.st)]));
 }
 function stamina(c) {
@@ -154,10 +161,36 @@ function stamina(c) {
   return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${st.next_at ? new Date(st.next_at).getTime() : ''}" data-kind="stamina">${st.now >= st.max ? '가득' : ''}</small></div>`;
 }
 function statusCard() {
-  const list = (state.hud?.statuses || []).filter(s => new Date(s.expires_at) > new Date());
-  return `<section class="hud-card statuses"><h3>상태 ${list.length}/10</h3>${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
+  const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);
+  return `<section class="hud-card statuses"><h3>상태 ${list.length}/10</h3>${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
       <b>${esc(s.name)}${s.stacks > 1 ? `×${s.stacks}` : ''}</b><i data-timer="${new Date(s.expires_at).getTime()}" data-kind="status">${fmt.remain(new Date(s.expires_at) - Date.now())}</i></button>`).join('')}</div>`
     : '<p class="muted small">걸린 상태가 없습니다.</p>'}</section>`;
+}
+// 요화·봉인 해독은 상태 칸(10칸)에 세지 않고 따로 늘 보인다(서버 world_status_roll도 세지 않음)
+export const YOHWA_STAGES = ['', '요기 스밈', '요문 발현', '반요'];
+export const PINNED = new Set(['yohwa', 'yohwa_seal']);
+export function yohwaOf(statuses) {
+  const now = new Date(), live = (statuses || []).filter(s => new Date(s.expires_at) > now || s.key === 'yohwa');
+  const y = live.find(s => s.key === 'yohwa'), seal = live.find(s => s.key === 'yohwa_seal');
+  return { y, seal, stage: y ? Math.max(1, Math.min(3, Number(y.potency || 1))) : 0, rest: live.filter(s => !PINNED.has(s.key) && new Date(s.expires_at) > now) };
+}
+// 요화 3단계 끝에 쓰러진 것인지(서버가 적어 둔 쓰러진 시각과 같으면 목숨을 잃지 않는다)
+export function yohwaDowned(c, yo) {
+  const e = Number(yo?.y?.metadata?.down_epoch || 0);
+  return !!(e && c?.downed_at && Math.abs(new Date(c.downed_at).getTime() / 1000 - e) < 1);
+}
+export function yohwaLine(st) {
+  if (st.seal) return { cls: 'seal', title: '봉인 해독 중', text: '안전지대 봉인술사들이 요기를 걷어내고 있습니다. 끝날 때까지 채팅만 할 수 있습니다.', until: st.seal.expires_at };
+  if (st.y) return { cls: `s${st.stage}`, title: `요화: ${st.stage}단계 ${YOHWA_STAGES[st.stage]}`, text: st.stage < 3 ? '다음 단계까지' : '쓰러지기까지', until: st.y.expires_at };
+  return null;
+}
+// 침식 원형 게이지(숫자·그림 없이 채움과 색으로): 상태판 이름 옆과 모바일 상태 띠에 둔다. 누르면 캐릭터 › 상태
+function erosionRing(c, cls = '') {
+  const v = Math.max(0, Math.min(100, Math.round(Number(c?.erosion || 0))));
+  const st = v >= 80 ? ['s3', '붕괴 직전'] : v >= 55 ? ['s2', '위험'] : v >= 30 ? ['s1', '주의'] : ['s0', '안정'];
+  const tag = cls === 'mini' ? 'span' : 'a'; // 모바일 띠는 단추 안이라 링크를 두지 않는다(띠를 누르면 펼쳐진다)
+  return `<${tag} class="er-ring ${st[0]} ${cls}" ${tag === 'a' ? 'href="#/char/status"' : ''} title="침식 ${v} · ${st[1]}" aria-label="침식 ${v}, ${st[1]}">
+    <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="t" cx="18" cy="18" r="15.9"/><circle class="v" cx="18" cy="18" r="15.9" stroke-dasharray="${v} 100" pathLength="100"/></svg></${tag}>`;
 }
 function vital(label, v, kind) {
   return `<div class="vital"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
@@ -172,6 +205,7 @@ function onTick() {
     const left = t - now, kind = el.dataset.kind;
     if (el.tagName === 'EM') return;
     if (kind === 'travel') el.textContent = left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…';
+    if (kind === 'busy') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '곧 끝납니다';
     if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
     if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
     if (kind === 'danger') el.textContent = left > 0 ? `목숨이 다하기까지 ${fmt.remain(left)}` : '시간이 다했습니다';
