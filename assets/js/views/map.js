@@ -389,7 +389,7 @@ async function drawTravel(body) {
     <div class="grid-2">
       ${panel('이동 상태', status?.in_transit ? `
         <div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(status.travel_destination) + '(으)로')} 이동 중</b><span data-arrive="${arrives}">${fmt.remain(arrives - Date.now())} 후 도착</span></div></div>
-        <button class="btn" id="tr-cancel">${icon('close', 16)}<span>이동 취소 (위약금 5전)</span></button>
+        <button class="btn" id="tr-cancel">${icon('close', 16)}<span>이동 취소 (3분 뒤 다시 출발)</span></button>
         <p class="muted small">동승 중이라도 내 이동은 따로 취소할 수 있습니다.</p>`
         : `<p class="desc">현재 <b>${esc(status?.location || c.location)}</b>에 있습니다. 세계 지도에서 아무 지역이나 고르면 길을 따라 한 번에 이동합니다.</p>
            <button class="btn primary" id="tr-map">${icon('map', 16)}<span>세계 지도 열기</span></button>`, { ico: 'route' })}
@@ -414,7 +414,7 @@ async function drawTravel(body) {
 
   $('#tr-map', body)?.addEventListener('click', () => switchTo('world'));
   const cancel = $('#tr-cancel', body);
-  if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 위약금 5전이 소모됩니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };
+  if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 취소하면 3분 동안 다시 출발할 수 없습니다. 출발할 때 낸 운임은 돌려받지 못합니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   $$('[data-goto]', body).forEach(b => b.onclick = () => { selected = b.dataset.goto; view = null; switchTo('world'); });

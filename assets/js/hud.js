@@ -235,7 +235,7 @@ function onTick() {
 }
 
 async function cancelTravel(btn) {
-  if (!(await ask('이동을 취소할까요? 위약금 5전이 소모됩니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true }))) return;
+  if (!(await ask('이동을 취소할까요? 취소하면 3분 동안 다시 출발할 수 없습니다. 출발할 때 낸 운임은 돌려받지 못합니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true }))) return;
   await guard(btn, () => act('world_travel_cancel'));
 }
 async function claimIdle(btn) {
