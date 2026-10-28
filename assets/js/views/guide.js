@@ -53,8 +53,8 @@ const S = [
   ['combat', '탐색과 전투', `
     <ul>
       <li>바깥 지역의 현장에서 <b>탐색하기</b>를 누르면 탐색력 1을 써서 길·채집터·단서·꾸러미를 찾거나 요괴와 마주칩니다. 탐색력은 6분에 1씩 찹니다.</li>
-      <li><b>무기가 공격 방식을 정합니다.</b> 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법(공격마다 영력 3). 요괴 습성마다 잘 통하는 방식이 다릅니다(비행에는 원거리, 영체·장갑에는 술법 등).</li>
-      <li>요괴는 다음 행동을 <b>예고</b>합니다. 강타·기습·폭발이 예고되면 <b>막기</b>로 크게 줄이고, 근접 무기라면 받아치기도 합니다. 행동 사이에는 1초를 기다립니다.</li>
+      <li><b>무기가 공격 방식을 정합니다.</b> 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법(공격마다 영력 3). 요괴는 열세 갈래로 나뉘고 갈래마다 잘 통하는 방식과 유리한 직업이 다릅니다(아래 「요괴 갈래와 도감」).</li>
+      <li>요괴는 다음 행동을 <b>예고</b>합니다. 강타·기습·폭발이나 갈래 기믹(이름과 낌새만 보입니다)이 예고되면 <b>방어</b>가 어느 경우든 피해를 크게 줄이고, 근접 무기라면 받아치기도 합니다. 행동 사이에는 1초를 기다립니다.</li>
       <li>직업 기술은 영력 12를 쓰고 3턴마다 쓸 수 있습니다. 회복약·정화 부적·영력 회복약은 전투 중에도 씁니다.</li>
       <li><b>영력 회복약</b>은 영초 차(+10) → 청령단(+20) → 영기환(+35) → 월광 정수(+55) → 천령 감로(+80) 순입니다. 영초 차·청령단은 안전지대 상점에서 팔고, 모두 제작할 수 있습니다(가방 › 제작).</li>
       <li>전투 수치(공격력·방어력·회피율·치명타율·달아날 확률)는 <b>캐릭터 › 상태</b>에서 숫자로 볼 수 있고, 능력치를 올리기 전에 바뀔 값을 <b>캐릭터 › 성장</b>에서 미리 볼 수 있습니다.</li>
@@ -157,11 +157,30 @@ const S = [
       <li><b>조합 기술</b>: 두 계열이 모두 18단계에 닿으면 열립니다(근접·단조 「대장장이 검객」, 원거리·추적 「사냥꾼의 눈」, 봉인술·결계 각인 「겹봉인」, 분석·영기 채집 「영맥 판독」, 막기·광맥 채집 「바위 몸」, 응급 처치·약초 채집 「야전 약방」, 일반 채집·연금 「현장 조제」).</li>
       <li><b>숙련</b>(전투·채집·제작·조사)은 따로 오르지 않고 그 갈래 기술 가운데 <b>가장 높은 단계</b>입니다. 전투 숙련은 공격력(단계마다 +0.6%)·원정 전투력, 채집 숙련은 채집량, 제작 숙련은 제작 품질·분해, 조사 숙련은 단서·답사에 쓰입니다. 요리 숙련은 따로 1~20단계입니다.</li>
       <li>생활 전문화로 채집 분야와 제작 분야를 고릅니다(바꾸면 3일 동안 다시 못 바꿈).</li>
-      <li><b>칭호</b>는 126가지입니다(기본 100 · 낚시 7 · 이야기 4 · 비무 10 · 요화 5). 최대 3개를 장착해 효과를 받고, 따로 대표 칭호 하나를 정하면 채팅과 프로필에 보입니다. 숨김 칭호는 얻기 전까지 조건이 가려져 있습니다.</li>
+      <li><b>칭호</b>는 146가지입니다(기본 100 · 낚시 7 · 이야기 4 · 비무 10 · 요화 5 · 도감 20). 최대 3개를 장착해 효과를 받고, 따로 대표 칭호 하나를 정하면 채팅과 프로필에 보입니다. 숨김 칭호는 얻기 전까지 조건이 가려져 있습니다.</li>
+      <li><b>칭호 묶음</b>: 칭호 화면 위 세 칸에 지금 장착한 칭호(최대 3)와 대표 칭호를 이름 붙여 저장하고, 「바꿔 끼기」로 한 번에 바꿉니다(전투용·채집용처럼).</li>
       <li><b>비무 칭호</b>(분류 비무): 초출 무인(비무 1번) · 첫 승리의 맛(1승) · 연무장 단골(20번) · 무명 고수(10승) · 일격필살(쓰러뜨려 10승) · 천하 주유(서로 다른 상대 10명) · 백전노장(100번) · 무림 명숙(50승), 그리고 숨김 칭호 둘이 더 있습니다.</li>
       <li><b>요화 칭호</b>: 귀령초로 요화를 풀면 「귀령의 손길」(성장 분류)을 얻습니다. 요화에 걸리거나 깊어지거나 봉인을 받는 데서 얻는 숨김 칭호가 더 있습니다.</li>
       <li><b>특별 이름 색</b> 15가지는 칭호로 엽니다: 자개빛(명품 이상 칭호 1) · 주홍 칠(신품 칭호 1) · 금박(칭호 30) · 청자빛(칭호 15) · 물비늘(낚시 3) · 월백(이야기 5) · 묵영(비밀 5) · 단풍(탐사 5) · 송화(채집 3) · 무쇠(제작 3) · 혈홍(전투 6) · 무혼(비무 3) · 도화(교류 2) · 바람결(이동 4) · 성운(성장 4). 게임 설정 › 프로필 › 채팅 이름 색에서 고르면 채팅과 조사원 카드 이름에 이름 앞 작은 마름모와 함께 보입니다. 잠긴 색은 흐리게 보이고 누르면 여는 조건이 뜹니다.</li>
       <li>직업·소속·대세력·능력치 분배에 따라 원정과 전투의 강점이 달라집니다. 아래 표를 참고해 자신만의 조사원을 키우세요.</li></ul>`],
+  ['affil', '소속 (생성 시 고정)', `
+    <p>캐릭터를 만들 때 고르는 <b>소속</b>은 야행국 안의 부서입니다. 대세력(아래)과는 별개로, 하루 한 번 받는 <b>소속 보급</b>과 소속 전용 <b>소속 임무</b>가 달라집니다(캐릭터 › 세력). 바꾸려면 귀속 물품 「환골탈태 서첩」을 씁니다.</p>
+    <table class="guide-table"><tr><th>소속</th><th>성향</th><th>하루 보급</th><th>소속 임무</th></tr>
+      <tr><td>본부 직속</td><td>본부 보급</td><td>야령초 2 · 황지 2 · 청심환 1</td><td>본부 보급 검수(제작 2번)</td></tr>
+      <tr><td>현장대응국</td><td>현장 적응</td><td>야령초 2 · 부적목 2 · 정화 부적 1</td><td>잿빛 들녘 표본 확보(채집 3번)</td></tr>
+      <tr><td>기록감찰국</td><td>사건 기록</td><td>황지 3 · 요기 결정 1</td><td>붉은 인장 기록 대조(이야기 2번)</td></tr>
+      <tr><td>봉인관리국</td><td>봉인 규정</td><td>정화 부적 2 · 요기 결정 1</td><td>사당 잔류 요기 정화(토벌 2번)</td></tr>
+      <tr><td>의무지원국</td><td>후방 지원</td><td>야령초 3 · 청심환 1</td><td>응급 물자 준비(채집 2번)</td></tr>
+      <tr><td>외부 협력자</td><td>자유 행동</td><td>야령초 1 · 부적목 1 · 황지 1</td><td>자유 계약 수행(아무 행동 3번)</td></tr></table>`],
+  ['monsters', '요괴 갈래와 도감', `
+    <ul><li>요괴는 <b>열세 갈래</b>입니다: 비금 · 갑각 · 영귀 · 독충 · 목령 · 은형 · 수귀 · 군충 · 금주 · 경요 · 파봉 · 천상 · 거괴. 갈래마다 잘 듣는 무기(근접·원거리·술법)가 있고, 갈래에 맞는 직업이면 피해가 20% 더 들어갑니다. 원정에서도 같은 상성이 승패에 반영됩니다.</li>
+      <li>갈래마다 <b>기믹</b>이 셋입니다. Lv1부터는 단순한 한 방이나 가벼운 상태이상, Lv10부터는 붙잡기·결계·허상 같은 까다로운 수, Lv20부터는 기를 모았다 터뜨리는 큰 기술이 나옵니다. 정예·우두머리일수록 자주 씁니다.</li>
+      <li>현장 토벌에서 기믹은 다음 행동 칸에 <b>이름과 낌새</b>로 드러납니다. 어떻게 대처할지는 직접 겪거나 도감에서 확인하세요. <b>방어</b>는 어느 기믹이든 피해를 줄입니다.</li>
+      <li>원정에서는 캐릭터가 기믹에 <b>저절로 대처</b>합니다. 기믹마다 맞는 기술(막기·응급 처치·봉인술·추적·분석) 단계, 레벨 차, 능력치에 따라 10~75%로 성공하고, 상성 무기를 들었거나 맞는 직업이면 25%p 더 잘 대처합니다. 실패하면 체력(때로 정신·침식)을 더 잃습니다.</li>
+      <li><b>요괴 도감</b>(일지 › 도감 › 요괴): 만난 요괴는 이름·사는 곳·레벨·설명이, 한 번 쓰러뜨린 요괴는 <b>상성·기믹 파훼법·전리품</b>이 적힙니다. 전투 화면의 갈래 칩을 누르면 쓰러뜨린 요괴는 상성 배율도 보입니다.</li>
+      <li><b>채집 도감</b>(일지 › 도감 › 채집): 현장 채집터에서 거둔 재료 32가지가 적힙니다. 아직 못 거둔 재료는 분류와 레벨만 보입니다.</li>
+      <li><b>도감 칭호</b> 20개: 갈래마다 하나(예: 비금 6종 토벌 「매사냥꾼」), 요괴 20종·50종 토벌, 13갈래를 하나씩 토벌 「백귀야행 기록관」, 채집 재료 10·20·32가지, 그리고 숨겨진 칭호 하나.</li>
+      <li><b>지역 정보 공개</b>: 현장의 「출몰 요괴」는 처음엔 갈래만 보이고, 그 지역 답사도 <b>30%</b>에서 일반 요괴, <b>70%</b>에서 우두머리가 드러납니다(이미 만난 요괴는 바로 보임). 「이 지역에서 얻는 것」은 30%에 채집 재료, 70%에 요괴 전리품, 100%에 희귀품이 드러납니다.</li></ul>`],
   ['jobs', '직업 (생성 시 고정)', `
     <table class="guide-table"><tr><th>직업</th><th>특성</th><th>원정에서</th></tr>
       <tr><td>퇴마관</td><td>부적 제압</td><td>전투력 +12%, 봉인 부적 효과 큼</td></tr>
@@ -219,7 +238,7 @@ const S = [
       <li>자율 활동과 원정은 동시에 할 수 없습니다.</li>
       <li>현장의 <b>자율 휴식</b> 칸(안전지대에서는 같은 이름의 칸)을 누르면 캐릭터 › 자율의 휴식으로 바로 갑니다. 자리를 비울 때 눌러 두세요.</li></ul>`],
   ['chat', '채팅', `
-    <ul><li>전체(하루 20회) · 지역(같은 지역) · 세력(같은 대세력) · 파티 · 모임. 별도의 방을 만들 필요가 없습니다.</li>
+    <ul><li>전체(하루 50회) · 지역(같은 지역) · 세력(같은 대세력) · 파티 · 모임. 별도의 방을 만들 필요가 없습니다.</li>
       <li><b>귓속말</b>은 채팅과 따로, 위쪽 편지 단추로 여는 창에서 상대별로 나눠 주고받습니다. 안 읽은 귓속말이 있으면 단추에 빨간 점이 찍힙니다.</li>
       <li><b>모임</b>은 세력·지역·파티와 상관없이 마음 맞는 조사원끼리 꾸리는 채팅방입니다. 동료 화면의 「모임」 칸에서 만들고(Lv.5부터), 조사원 카드의 [모임에 초대]로 부릅니다. 초대는 24시간 안에 수락해야 합니다.</li>
       <li>모임장인 모임은 2개, 든 모임(만든 것 포함)은 5개, 모임마다 정원은 20명까지입니다. 직위는 모임장·총무(3명까지)·모임원이고, 모임장은 총무를 정하고 모임장을 넘기거나 해산할 수 있습니다. 총무는 초대하고 모임원을 내보낼 수 있습니다.</li>
@@ -239,16 +258,63 @@ const S = [
       <li>접속하지 않은 사이(원정·자율 활동 보상 등) 자란 것도 다음에 들어왔을 때 알려 줍니다.</li></ul>`],
 ];
 
+// 묶음: 도움말을 주제별로 나눠 한 번에 한 묶음만 펼친다. 검색하면 묶음과 상관없이 맞는 항목만 보인다.
+const GROUPS = [
+  ['basic', '처음', 'spark', ['start', 'screen', 'growth-note']],
+  ['world', '세계·이동', 'map', ['world', 'mount', 'safe', 'weather']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'gear', 'durability', 'survival']],
+  ['life', '생활', 'leaf', ['gather', 'fishing', 'cooking', 'craft']],
+  ['exp', '원정', 'flame', ['expedition', 'idle']],
+  ['growth', '성장', 'target', ['growth', 'jobs', 'affil']],
+  ['faction', '세력', 'flag', ['factions']],
+  ['eco', '가방·경제', 'coin', ['bag', 'economy']],
+  ['social', '교류·사건', 'users', ['case', 'party', 'chat', 'yeonri']],
+];
+let gsel = 'basic', gq = '';
+const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
 export function render(el) {
+  const byId = Object.fromEntries(S.map(x => [x[0], x]));
+  const grouped = new Set(GROUPS.flatMap(g => g[3]));
+  const rest = S.filter(x => !grouped.has(x[0])).map(x => x[0]);
+  const groups = rest.length ? [...GROUPS, ['etc', '그 밖', 'help', rest]] : GROUPS;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('help', 14)} 조사원 수첩</p><h1>도움말</h1></div>
-      <div class="head-actions"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록 다시 보기</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
-    <div class="guide">
-      <nav class="guide-toc" aria-label="목차">${S.map(([id, t]) => `<a href="#g-${id}" data-g="${id}">${esc(t)}</a>`).join('')}</nav>
-      <div class="guide-body">${S.map(([id, t, body]) => `<section class="panel guide-sec" id="g-${id}"><header class="panel-head"><h2>${esc(t)}</h2></header><div class="panel-body">${body}</div></section>`).join('')}</div>
+      <div class="head-actions"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 다시 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>버그·문의 제보</span></button></div></div>
+    <div class="guide2">
+      <label class="search guide-search"><span>${icon('search', 16)}</span><input id="g-q" type="search" placeholder="궁금한 것을 찾아보세요 (예: 원정, 침식, 칭호 묶음)" value="${esc(gq)}"></label>
+      <nav class="guide-cats" aria-label="도움말 묶음">${groups.map(([k, n, ic, ids]) => `<button class="guide-cat" data-gk="${k}">${icon(ic, 20)}<b>${esc(n)}</b><small>${ids.map(id => esc(byId[id]?.[1] || '')).join(' · ')}</small></button>`).join('')}</nav>
+      <p class="muted small" id="g-info"></p>
+      <div class="guide-list" id="g-list"></div>
     </div>`;
+  const sec = ([id, t, body], open) => `<details class="guide-item" id="g-${id}" ${open ? 'open' : ''}><summary><span>${esc(t)}</span>${icon('chevron', 16)}</summary><div class="guide-sec">${body}</div></details>`;
+  const paint = () => {
+    const q = gq.trim().toLowerCase(), list = $('#g-list', el), info = $('#g-info', el);
+    $$('[data-gk]', el).forEach(b => b.classList.toggle('on', !q && b.dataset.gk === gsel));
+    if (q) {
+      const hits = S.filter(([, t, b]) => (t + ' ' + plain(b)).toLowerCase().includes(q));
+      info.textContent = hits.length ? `「${gq.trim()}」 찾은 항목 ${hits.length}개` : `「${gq.trim()}」에 맞는 항목이 없습니다. 다른 말로 찾아보세요.`;
+      list.innerHTML = hits.map(x => sec(x, true)).join('');
+      mark(list, q);
+    } else {
+      const g = groups.find(x => x[0] === gsel) || groups[0];
+      info.textContent = '';
+      list.innerHTML = g[3].map(id => byId[id]).filter(Boolean).map((x, i) => sec(x, i === 0)).join('');
+    }
+  };
+  $('#g-q', el).oninput = e => { gq = e.target.value; paint(); };
+  $$('[data-gk]', el).forEach(b => b.onclick = () => { gsel = b.dataset.gk; gq = ''; $('#g-q', el).value = ''; paint(); $('#g-list', el)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   $('#tut-again', el).onclick = () => startTutorial(0);
   $('#bug-open', el).onclick = () => window.dispatchEvent(new CustomEvent('yh-open-bug'));
   $('#fs-again', el).onclick = () => { reopenChecklist(); toast('현장 화면에 첫 걸음 목록을 다시 띄웠습니다.', 'ok'); window.yahangGo?.('home'); };
-  // 해시 라우터와 겹치지 않게 목차는 스크롤만 한다.
-  $$('[data-g]', el).forEach(a => a.onclick = e => { e.preventDefault(); $(`#g-${a.dataset.g}`, el)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  paint();
+}
+// 검색어를 글자 마디에서만 표시한다(태그는 건드리지 않는다)
+function mark(root, q) {
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
+  while (walk.nextNode()) if (walk.currentNode.nodeValue.toLowerCase().includes(q)) nodes.push(walk.currentNode);
+  for (const n of nodes) {
+    const v = n.nodeValue, low = v.toLowerCase(), frag = document.createDocumentFragment(); let at = 0, j;
+    while ((j = low.indexOf(q, at)) >= 0) { frag.append(v.slice(at, j)); const m = document.createElement('mark'); m.textContent = v.slice(j, j + q.length); frag.append(m); at = j + q.length; }
+    frag.append(v.slice(at)); n.replaceWith(frag);
+  }
 }

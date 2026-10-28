@@ -368,7 +368,7 @@ async function idle(body) {
 
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
-const TCAT_ORDER = ['탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '교류', '비무', '성장', '비밀', '기타'];
+const TCAT_ORDER = ['운영', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '성장', '비밀', '기타'];
 let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 등급(서버 world_title_catalog.grade)
 const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品
@@ -382,6 +382,7 @@ async function titles(body) {
     <div class="title-head">
       <div class="chips">${chip(`얻은 칭호 ${snap?.earned_count || 0}/${snap?.total || list.length}`, 'accent')}${chip(`숨겨진 칭호 ${snap?.hidden_earned || 0}/${snap?.hidden_total || 0}`)}${chip(`장착 ${snap?.equipped_count || 0}/3`)}</div>
       <p class="muted small">칭호는 최대 3개까지 장착해 효과를 받습니다. 그와 별개로 <b>대표 칭호</b> 하나를 정하면 채팅과 프로필에 이름과 함께 보입니다.</p>
+      ${presetsHtml(snap, list)}
       <label class="search"><span>${icon('search', 16)}</span><input id="t-q" type="search" placeholder="칭호 이름·조건·효과로 찾기" value="${esc(tq)}"></label>
       <div class="t-checks"><label class="check"><input type="checkbox" id="t-owned" ${tOwned ? 'checked' : ''}><span>얻은 칭호만 보기</span></label>
         <label class="check"><input type="checkbox" id="t-eq" ${tEquipped ? 'checked' : ''}><span>장착 중만 보기</span></label></div>
@@ -414,6 +415,7 @@ async function titles(body) {
     }));
     $$('[data-disp]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_set_display', { p_title_key: b.dataset.disp || null })));
   };
+  bindPresets(body, snap);
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
   $('#t-owned', body).onchange = e => { tOwned = e.target.checked; paint(); };
   $('#t-eq', body).onchange = e => { tEquipped = e.target.checked; paint(); };
@@ -421,6 +423,33 @@ async function titles(body) {
   paint();
   // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)
   if (list.some(t => t.new)) markTitlesSeen();
+}
+
+// 칭호 묶음 3칸: 지금 장착한 칭호(최대 3)와 대표 칭호를 저장해 두고 한 번에 바꿔 낀다(서버 world_title_preset_*)
+function presetsHtml(snap, list) {
+  const nm = Object.fromEntries(list.map(t => [t.key, t.name]));
+  const eq = list.filter(t => t.equipped).map(t => t.key).sort().join(','), disp = snap?.display || null;
+  return `<div class="t-presets">${[1, 2, 3].map(n => {
+    const p = (snap?.presets || []).find(x => x.slot === n);
+    const now = p && [...(p.titles || [])].sort().join(',') === eq && (p.display || null) === disp;
+    return `<div class="t-preset ${p ? '' : 'empty'} ${now ? 'now' : ''}">
+      <input class="t-pname" data-pname="${n}" maxlength="12" value="${esc(p?.name || '')}" placeholder="묶음 ${n}" aria-label="묶음 ${n} 이름">
+      <p class="t-pbody">${p ? `${(p.titles || []).map(k => esc(nm[k] || '?')).join(' · ') || '장착 없음'}${p.display ? `<small>대표 · ${esc(nm[p.display] || '?')}</small>` : ''}` : '<small>비어 있음 · 지금 장착한 칭호를 저장하세요</small>'}</p>
+      <div class="t-pact">${p ? `<button class="btn small ${now ? '' : 'primary'}" data-papply="${n}" ${now ? 'disabled' : ''}>${now ? '쓰는 중' : '바꿔 끼기'}</button>` : ''}
+        <button class="btn small ghost" data-psave="${n}">${p ? '덮어쓰기' : '저장'}</button>${p ? `<button class="chip-x" data-pclear="${n}" title="비우기" aria-label="묶음 비우기">×</button>` : ''}</div></div>`; }).join('')}</div>`;
+}
+function bindPresets(body, snap) {
+  const has = n => (snap?.presets || []).some(x => x.slot === n);
+  $$('[data-papply]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_preset_apply', { p_slot: Number(b.dataset.papply) })));
+  $$('[data-psave]', body).forEach(b => b.onclick = async () => {
+    const n = Number(b.dataset.psave);
+    if (has(n) && !(await ask('지금 장착한 칭호와 대표 칭호로 이 묶음을 덮어씁니다.', { title: '묶음 덮어쓰기', ok: '덮어쓰기' }))) return;
+    guard(b, () => act('world_title_preset_save', { p_slot: n, p_name: $(`[data-pname="${n}"]`, body)?.value || '' }));
+  });
+  $$('[data-pclear]', body).forEach(b => b.onclick = async () => {
+    if (!(await ask('이 묶음을 비웁니다. 장착한 칭호는 그대로 둡니다.', { title: '묶음 비우기', ok: '비우기', danger: true }))) return;
+    guard(b, () => act('world_title_preset_clear', { p_slot: Number(b.dataset.pclear) }));
+  });
 }
 
 /* ── 세력: 소속 임무·일일 보급·대세력 ─────────────────────── */

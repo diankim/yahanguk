@@ -4,14 +4,7 @@ import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, frien
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-// 서버 world_battle_action과 같은 배율
-const WEAK = {
-  aerial: { melee: 0.6, ranged: 1.35, magic: 1 }, armored: { melee: 0.85, ranged: 0.7, magic: 1.25 },
-  spectral: { melee: 0.6, ranged: 0.8, magic: 1.4 }, warded: { melee: 1.1, ranged: 1, magic: 0.8 },
-  reflect: { melee: 1, ranged: 1.15, magic: 0.7 }, swarm: { melee: 1.25, ranged: 0.9, magic: 1.1 },
-  toxic: { melee: 0.9, ranged: 1.15, magic: 1 }, tide: { melee: 1, ranged: 0.9, magic: 1.15 },
-  seal_breaker: { melee: 1.1, ranged: 1, magic: 0.85 },
-};
+export const JOB = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '기록 분석관', medic: '의무관', artificer: '법구 제작사' };
 export const MECH = {
   aerial: ['비행', '날아올랐다가 내리꽂힙니다. 원거리가 잘 맞고, 공중에 있을 때 근접은 거의 닿지 않습니다.'],
   armored: ['갑각', '단단한 껍질이 있습니다. 술법이 잘 통하고, 껍질을 굳히면 무기 공격이 막힙니다.'],
@@ -44,13 +37,14 @@ export const SKILL = {
   analyst: ['약점 간파', '다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.'],
   artificer: ['폭렬 부적', '방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
 };
-const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리' };
+const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
   ['spirit_tea', '영력 10'], ['clear_spirit_pill', '영력 20'], ['spirit_qi_pill', '영력 35'], ['moonlight_essence', '영력 55'], ['heavenly_dew', '영력 80']];
 
-export function effectiveness(style, mech) {
-  const m = WEAK[mech]?.[style] ?? 1;
+// 상성(갈래별 무기 배율 · 유리한 직업 +20%)은 그 요괴를 한 번 쓰러뜨려 도감에 적은 뒤에만 서버가 내보낸다(b.eff)
+export function effectiveness(style, eff) {
+  const m = eff?.[style]; if (m == null) return null;
   return m >= 1.2 ? ['효과 좋음', 'ok'] : m <= 0.85 ? ['효과 약함', 'bad'] : ['보통', ''];
 }
 
@@ -69,8 +63,9 @@ export function stopBattle() { clearInterval(cdTimer); host = null; }
 function draw(fresh = []) {
   if (!host || !data?.battle) return;
   const b = data.battle, c = store.character, w = data.weapon || { type: 'melee', name: '맨손' };
-  const [eff, effK] = effectiveness(w.type, b.mechanic);
-  const intent = INTENT[b.intent] || INTENT.strike, mech = MECH[b.mechanic];
+  const ef = effectiveness(w.type, b.eff);
+  // 기믹(g:키 · 터뜨리는 턴 g!:키)은 이름과 낌새만 보인다. 대처법은 도감에서 쓰러뜨린 뒤에 열린다.
+  const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[b.intent] || INTENT.strike);
   const skill = SKILL[c.job_key] || ['기술', ''];
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
   const skillWait = Math.max(0, ready - turnNow);
@@ -84,7 +79,7 @@ function draw(fresh = []) {
           <span class="foe-hp">${fmt.num(b.hp)} / ${fmt.num(b.max_hp)}</span>
         </div>
         ${bar(b.hp, b.max_hp, 'enemy big')}
-        <div class="chips">${mech ? `<button class="chip mech" id="mech-info">${esc(mech[0])} ${icon('help', 12)}</button>` : ''}${Object.entries(b.fx || {}).filter(([, v]) => v).map(([k]) => chip(FX[k] || k, 'warn')).join('')}</div>
+        <div class="chips">${b.kind_name ? `<button class="chip mech" id="mech-info">${esc(b.kind_name)} ${icon('help', 12)}</button>` : ''}${Object.entries(b.fx || {}).filter(([, v]) => v).map(([k]) => chip(FX[k] || k, 'warn')).join('')}${b.pfx?.bound ? chip('붙잡힘', 'bad') : ''}</div>
         <div class="intent lvl-${intent[2]}">${icon(intent[2] >= 2 ? 'flame' : 'eye', 18)}<div><b>다음 행동 · ${esc(intent[0])}</b><span>${esc(intent[1])}</span></div></div>
         <div class="float-layer" id="foe-float"></div>
       </div>
@@ -94,7 +89,7 @@ function draw(fresh = []) {
           <div class="vital"><span>정신</span><b>${c.mental}</b>${bar(c.mental, 100, 'mp')}</div>
           <div class="vital"><span>영력</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, 'sp')}</div>
         </div>
-        <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${chip(eff, effK)}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : ''}</p>
+        <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${ef ? chip(ef[0], ef[1]) : ''}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : ''}</p>
         <div class="float-layer" id="me-float"></div>
       </div>
       <div class="actions" id="actions">
@@ -108,7 +103,8 @@ function draw(fresh = []) {
       <ol class="battle-log">${log.map((l, i) => `<li class="${i >= log.length - fresh.length ? 'new' : ''}">${esc(l)}</li>`).join('')}</ol>
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;
-  $('#mech-info', host)?.addEventListener('click', () => openModal({ title: `습성 · ${mech[0]}`, body: `<p>${esc(mech[1])}</p><p class="muted small">지금 무기(${STYLE[w.type] || '근접'})의 상성: ${eff}</p>` }));
+  $('#mech-info', host)?.addEventListener('click', () => openModal({ title: `갈래 · ${b.kind_name}`, body: `<p>${esc(b.kind_desc || '')}</p>
+    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${b.eff.job ? ` · ${esc(JOB[b.eff.job] || '')} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 기믹 파훼법이 적힙니다.</p>'}` }));
   $$('[data-a]', host).forEach(btn => btn.onclick = async () => {
     const a = btn.dataset.a;
     if (a === 'item') { $('#item-tray', host).hidden = !$('#item-tray', host).hidden; return; }

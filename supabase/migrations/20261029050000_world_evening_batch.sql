@@ -7,6 +7,9 @@
 --   ⑪ 대세력 떠나기·옮기기(12시간) · 회복 완화(야영 ⅔·안전지대 자연 회복·구조대 비용)
 --   ⑫ 상위 도구로 하위 도구 제작법 · 원정 전투 여러 합 묘사(막기·회피·치명타·직업 기술·요괴 기믹) · 파티 원정은 동료마다 요괴 하나 더
 --   ⑬ 기술 단계 보상 개편(13·30 추가 · 24·43 택일 · 50 숙달 · 조합 7)
+--   ⑯ 전체 채팅 하루 50회 · 칭호 묶음 3칸
+--   ⑮ 운영진 칭호(운영진만, 효과 없음)
+--   ⑭ 요괴 13갈래(무기·직업 상성)·기믹 39(토벌 예고·원정 자동 대처) · 요괴 도감·채집 도감·도감 칭호 20 (⑫보다 먼저 실행: 원정 묘사가 ⑭의 표를 쓴다)
 --   ⑧ 세력 판도(인원이 적은 세력 영향력 가산 포함)(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
 grant fn_owner_social to postgres with inherit true, set true;
 grant fn_owner_18666 to postgres with inherit true, set true;
@@ -17,6 +20,7 @@ grant fn_owner_expedition to postgres with inherit true, set true;
 grant fn_owner_18452 to postgres with inherit true, set true;
 grant fn_owner_18987 to postgres with inherit true, set true;
 grant fn_owner_18475 to postgres with inherit true, set true;
+grant fn_owner_19141 to postgres with inherit true, set true;
 
 -- ① ─────────────────────────────────────────
 -- 강산하 님 제보(제작 시 36/35): 화면은 장착 장비를 뺀 29/29칸인데, 메시지는 장착 장비를 더한 숫자였다.
@@ -736,6 +740,456 @@ begin
   end loop;
 end $$;
 
+-- ⑭ ─────────────────────────────────────────
+-- 요괴 갈래 13가지: 갈래마다 든 무기(근접·원거리·술법) 상성과 유리한 직업(+20%)이 있고, 갈래마다 기믹 3개(Lv1·Lv10·Lv20부터)를 쓴다.
+--   현장 토벌: 기믹은 다음 행동으로 미리 드러난다(이름과 낌새만, 대처 안내는 하지 않는다). 방어는 어느 기믹이든 피해를 줄인다.
+--   원정: 두 번째 합에 기믹을 한 번 쓰고, 캐릭터가 기술 단계·레벨 차·능력치로 저절로 대처한다(10~75%, 상성 무기·직업이면 +25%p).
+-- 요괴 도감: 만나면 기본 정보, 쓰러뜨리면 상성·기믹 파훼법·전리품이 열린다. 채집 도감: 현장에서 채집한 재료. 도감 칭호 20개.
+create table if not exists public.world_monster_kinds (
+  kind_key text primary key, kind_name text not null, melee numeric not null default 1, ranged numeric not null default 1, magic numeric not null default 1,
+  job_key text, description text not null, sort int not null default 0);
+alter table public.world_monster_kinds enable row level security;
+revoke all on public.world_monster_kinds from public, anon, authenticated;
+insert into public.world_monster_kinds(kind_key, kind_name, melee, ranged, magic, job_key, description, sort) values
+  ('bird', '비금', 0.6, 1.35, 1.0, 'scout', '하늘을 나는 요괴. 높이 솟았다가 내리꽂는다.', 1),
+  ('shell', '갑각', 0.85, 0.7, 1.25, 'artificer', '단단한 껍질과 비늘을 두른 요괴.', 2),
+  ('ghost', '영귀', 0.6, 0.8, 1.4, 'exorcist', '형체가 흐릿한 혼백과 원령.', 3),
+  ('venom', '독충', 0.9, 1.15, 1.0, 'medic', '독을 품은 벌레·뱀·두꺼비.', 4),
+  ('wood', '목령', 1.3, 0.85, 1.1, 'artificer', '나무와 덩굴에 깃든 요괴.', 5),
+  ('shadow', '은형', 1.1, 0.9, 1.0, 'scout', '그림자와 어둠에 숨었다가 덮치는 요괴.', 6),
+  ('water', '수귀', 1.0, 0.9, 1.15, 'medic', '물에 사는 귀신과 요괴.', 7),
+  ('swarm', '군충', 1.25, 0.9, 1.1, null, '떼를 지어 몰려드는 요괴.', 8),
+  ('ward', '금주', 1.1, 1.0, 0.8, 'sealmaster', '금줄과 결계를 두르는 요괴.', 9),
+  ('mirror', '경요', 1.0, 1.15, 0.7, 'analyst', '거울과 빛을 다루는 요괴.', 10),
+  ('breaker', '파봉', 1.1, 1.0, 0.85, 'exorcist', '봉인을 깨뜨려 요기를 퍼뜨리는 요괴.', 11),
+  ('sky', '천상', 1.15, 0.85, 1.0, 'analyst', '별과 벼락의 힘을 쓰는 요괴.', 12),
+  ('giant', '거괴', 1.0, 1.0, 1.0, 'sealmaster', '거대한 몸집으로 땅을 울리는 우두머리.', 13)
+on conflict (kind_key) do update set kind_name = excluded.kind_name, melee = excluded.melee, ranged = excluded.ranged, magic = excluded.magic,
+  job_key = excluded.job_key, description = excluded.description, sort = excluded.sort;
+
+alter table public.world_region_monsters add column if not exists kind text references public.world_monster_kinds(kind_key);
+update public.world_region_monsters set kind = case
+  when monster_name in ('천문식자', '별자리 포식자', '유성 파편귀', '벼락 산령', '뇌각 산군') then 'sky'
+  when monster_name in ('죽성객', '혈엽수인', '목인귀', '덩굴 손') then 'wood'
+  when monster_name = '비묻은 도깨비불' then 'ghost'
+  else case mechanic_key when 'aerial' then 'bird' when 'armored' then 'shell' when 'spectral' then 'ghost' when 'toxic' then 'venom'
+    when 'ambush' then 'shadow' when 'tide' then 'water' when 'swarm' then 'swarm' when 'warded' then 'ward' when 'reflect' then 'mirror'
+    when 'seal_breaker' then 'breaker' else 'giant' end end
+where kind is null;
+
+-- 기믹: gtype big(큰 한 방) · charge(한 턴 모았다가 터뜨림) · status(상태이상) · drain(흡수) · heal(회복) · shield(결계) · evade(허상)
+--   · thorns(가시) · grapple(붙잡기) · mirror(거울막) · summon(무리 부르기). power = 공격 배율, power2 = 회복·결계 비율
+create table if not exists public.world_monster_gimmicks (
+  gimmick_key text primary key, kind_key text not null references public.world_monster_kinds(kind_key), tier int not null check (tier between 1 and 3),
+  name text not null, tell text not null, gtype text not null, power numeric not null default 1, power2 numeric not null default 0,
+  status text, chance numeric not null default 0, mental int not null default 0, erosion int not null default 0);
+alter table public.world_monster_gimmicks enable row level security;
+revoke all on public.world_monster_gimmicks from public, anon, authenticated;
+insert into public.world_monster_gimmicks(gimmick_key, kind_key, tier, name, tell, gtype, power, power2, status, chance, mental, erosion) values
+  ('bird_dive', 'bird', 1, '내리꽂기', '날개를 접고 머리 위로 솟구친다.', 'big', 1.4, 0, null, 0, 0, 0),
+  ('bird_gale', 'bird', 2, '날개 돌풍', '날개를 크게 펼쳐 바람을 모은다.', 'status', 0.9, 0, 'disoriented', 0.4, 3, 0),
+  ('bird_sky', 'bird', 3, '천공 강하', '구름 위로 사라져 날갯소리만 들린다.', 'charge', 2.4, 0, null, 0, 0, 0),
+  ('shell_curl', 'shell', 1, '몸 말기', '껍질 속으로 몸을 웅크린다.', 'shield', 0.5, 0.08, null, 0, 0, 0),
+  ('shell_harden', 'shell', 2, '껍질 가시', '껍질의 가시가 곤두선다.', 'thorns', 0.8, 0, null, 0, 0, 0),
+  ('shell_thorn', 'shell', 3, '갑각 돌진', '껍질을 굳히고 몸을 낮춘다.', 'charge', 2.3, 0, null, 0, 0, 0),
+  ('ghost_wail', 'ghost', 1, '흐느낌', '희미한 흐느낌이 들려온다.', 'status', 0.6, 0, 'shaken', 0.25, 4, 0),
+  ('ghost_possess', 'ghost', 2, '빙의', '형체가 흐려지며 몸 안으로 스며들려 한다.', 'grapple', 1.0, 0, null, 0, 6, 2),
+  ('ghost_soul', 'ghost', 3, '혼 빼기', '차가운 손을 가슴께로 뻗는다.', 'drain', 1.6, 0.6, null, 0, 8, 3),
+  ('venom_sting', 'venom', 1, '독침', '꼬리 끝의 독침을 치켜든다.', 'status', 0.8, 0, 'poisoned', 0.35, 0, 0),
+  ('venom_mist', 'venom', 2, '독무', '주둥이에서 탁한 안개가 샌다.', 'status', 0.7, 0, 'poisoned', 0.6, 2, 0),
+  ('venom_stack', 'venom', 3, '맹독 주입', '독낭이 부풀어 오른다.', 'charge', 2.0, 0, 'poisoned', 0.8, 0, 0),
+  ('wood_vine', 'wood', 1, '덩굴 채찍', '덩굴이 채찍처럼 휘어진다.', 'big', 1.3, 0, null, 0, 0, 0),
+  ('wood_root', 'wood', 2, '뿌리 옭아매기', '발밑의 흙이 들썩인다.', 'grapple', 0.9, 0, null, 0, 2, 0),
+  ('wood_regen', 'wood', 3, '수액 재생', '몸통의 상처에서 수액이 흘러내린다.', 'heal', 0.4, 0.18, null, 0, 0, 0),
+  ('shadow_ambush', 'shadow', 1, '그림자 찌르기', '그림자가 발치로 스며든다.', 'big', 1.5, 0, null, 0, 0, 0),
+  ('shadow_hide', 'shadow', 2, '그림자 숨기', '몸이 어둠에 녹아든다.', 'evade', 0.6, 0, null, 0, 2, 0),
+  ('shadow_clone', 'shadow', 3, '그림자 분신', '그림자가 둘, 셋으로 갈라진다.', 'evade', 1.8, 0, 'bleeding', 0.3, 0, 0),
+  ('water_splash', 'water', 1, '물 끼얹기', '물을 한 아름 끌어 올린다.', 'status', 0.7, 0, 'cold', 0.25, 0, 0),
+  ('water_pull', 'water', 2, '물밑 끌어당기기', '발목에 차가운 손이 감긴다.', 'grapple', 1.1, 0, null, 0, 3, 0),
+  ('water_chill', 'water', 3, '심해 냉기', '주위의 물이 얼어붙듯 차가워진다.', 'charge', 2.2, 0, 'cold', 0.7, 0, 0),
+  ('swarm_bite', 'swarm', 1, '떼 물기', '무리가 한꺼번에 이빨을 드러낸다.', 'big', 1.3, 0, null, 0, 0, 0),
+  ('swarm_call', 'swarm', 2, '무리 부르기', '날카로운 울음으로 무리를 부른다.', 'summon', 0.5, 0.12, null, 0, 0, 0),
+  ('swarm_wave', 'swarm', 3, '떼의 파도', '흩어졌던 무리가 한 덩어리로 뭉친다.', 'charge', 2.4, 0, 'bleeding', 0.4, 0, 0),
+  ('ward_rope', 'ward', 1, '금줄 휘감기', '금줄이 뱀처럼 꿈틀거린다.', 'grapple', 0.8, 0, null, 0, 0, 0),
+  ('ward_absorb', 'ward', 2, '결계 흡수', '주위의 요기를 결계로 빨아들인다.', 'shield', 0.4, 0.15, null, 0, 0, 0),
+  ('ward_curse', 'ward', 3, '저주 금줄', '금줄에 핏빛 글자가 떠오른다.', 'status', 1.4, 0, 'erosion_whisper', 0.6, 4, 5),
+  ('mirror_glint', 'mirror', 1, '거울 번쩍임', '거울면이 빛을 모은다.', 'status', 0.6, 0, 'disoriented', 0.3, 0, 0),
+  ('mirror_wall', 'mirror', 2, '거울막', '앞에 얇은 거울막이 선다.', 'mirror', 0.5, 0, null, 0, 0, 0),
+  ('mirror_clone', 'mirror', 3, '거울 분신', '거울 속 모습이 하나둘 걸어 나온다.', 'evade', 1.9, 0, null, 0, 3, 0),
+  ('breaker_crack', 'breaker', 1, '봉인 금 긋기', '손톱으로 허공에 금을 긋는다.', 'big', 1.3, 0, null, 0, 0, 2),
+  ('breaker_burst', 'breaker', 2, '요기 분출', '금 간 틈에서 검은 기운이 샌다.', 'status', 1.2, 0, 'erosion_whisper', 0.35, 0, 4),
+  ('breaker_unseal', 'breaker', 3, '대봉인 해방', '봉인문이 삐걱이며 열리기 시작한다.', 'charge', 2.6, 0, null, 0, 5, 8),
+  ('sky_starlight', 'sky', 1, '별빛 가르기', '별빛이 칼날처럼 모인다.', 'big', 1.4, 0, null, 0, 0, 0),
+  ('sky_bolt', 'sky', 2, '낙뢰', '머리 위로 먹구름이 모인다.', 'charge', 2.0, 0, 'burned', 0.4, 0, 0),
+  ('sky_nebula', 'sky', 3, '성운 장막', '별가루가 몸을 감싼다.', 'shield', 0.6, 0.2, null, 0, 0, 0),
+  ('giant_roar', 'giant', 1, '포효', '가슴을 크게 부풀린다.', 'status', 0.8, 0, 'shaken', 0.4, 5, 0),
+  ('giant_charge', 'giant', 2, '땅 울리기 돌진', '땅을 박차며 몸을 낮춘다.', 'charge', 2.2, 0, null, 0, 0, 0),
+  ('giant_blast', 'giant', 3, '파멸의 일격', '온몸의 요기가 한 팔로 모인다.', 'charge', 3.0, 0, null, 0, 0, 4)
+on conflict (gimmick_key) do update set kind_key = excluded.kind_key, tier = excluded.tier, name = excluded.name, tell = excluded.tell, gtype = excluded.gtype,
+  power = excluded.power, power2 = excluded.power2, status = excluded.status, chance = excluded.chance, mental = excluded.mental, erosion = excluded.erosion;
+
+-- 레벨 → 기믹 단계(Lv1~9: 1 · Lv10~19: 2 · Lv20~: 3)
+create or replace function public.world_monster_tier(p_level int) returns int language sql immutable set search_path to 'pg_catalog' as $$
+  select case when coalesce(p_level, 1) >= 20 then 3 when coalesce(p_level, 1) >= 10 then 2 else 1 end
+$$;
+-- 원정에서 기믹에 대처하는 기술·능력치
+create or replace function public.world_gimmick_counter(p_gtype text) returns text[] language sql immutable set search_path to 'pg_catalog' as $$
+  select case p_gtype when 'big' then array['guarding', 'agility'] when 'charge' then array['guarding', 'vitality']
+    when 'status' then array['first_aid', 'willpower'] when 'drain' then array['sealing', 'willpower'] when 'grapple' then array['sealing', 'willpower']
+    when 'evade' then array['tracking', 'perception'] when 'thorns' then array['tracking', 'perception'] else array['analysis', 'perception'] end
+$$;
+-- 갈래 상성: 든 무기 갈래 배율 × 유리한 직업이면 1.2
+create or replace function public.world_kind_mult(p_kind text, p_style text, p_job text) returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select case p_style when 'ranged' then k.ranged when 'magic' then k.magic else k.melee end * case when k.job_key = p_job then 1.2 else 1 end
+    from public.world_monster_kinds k where k.kind_key = p_kind), 1)
+$$;
+alter function public.world_kind_mult(text, text, text) owner to fn_owner_field;
+
+-- 다음 행동 고르기: 단계에 따라 기믹을 쓰고(1단계 12%·2단계 22%·3단계 30%, 정예·우두머리 +6%p), 아니면 지금까지의 행동
+create or replace function public.world_battle_intent_k(p_kind text, p_level int, p_mech text, p_ratio numeric, p_rank text)
+returns text language plpgsql volatile security definer set search_path to 'pg_catalog', 'public' as $$
+declare t int := public.world_monster_tier(p_level); k text;
+  pr float8 := (case t when 1 then 0.12 when 2 then 0.22 else 0.30 end) + (case when coalesce(p_rank, 'normal') <> 'normal' then 0.06 else 0 end);
+begin
+  if p_kind is not null and random() < pr then
+    select gimmick_key into k from public.world_monster_gimmicks where kind_key = p_kind and tier <= t order by -ln(greatest(random(), 1e-9)) / tier limit 1;
+    if k is not null then return 'g:' || k; end if;
+  end if;
+  return public.world_battle_intent(p_mech, p_ratio, p_rank);
+end $$;
+alter function public.world_battle_intent_k(text, int, text, numeric, text) owner to fn_owner_field;
+
+-- 요괴 도감
+create table if not exists public.world_monster_codex (
+  owner_id uuid not null, monster_id text not null references public.world_region_monsters(monster_id) on delete cascade,
+  seen int not null default 1, defeated int not null default 0, first_seen timestamptz not null default now(), first_defeat timestamptz,
+  primary key (owner_id, monster_id));
+alter table public.world_monster_codex enable row level security;
+revoke all on public.world_monster_codex from public, anon, authenticated;
+create or replace function public.world_codex_mark(p_owner uuid, p_monster text, p_seen int, p_def int)
+returns void language sql volatile security definer set search_path to 'pg_catalog', 'public' as $$
+  insert into public.world_monster_codex as x (owner_id, monster_id, seen, defeated, first_defeat)
+  select p_owner, p_monster, greatest(1, p_seen), p_def, case when p_def > 0 then now() end
+   where p_owner is not null and exists (select 1 from public.world_region_monsters m where m.monster_id = p_monster)
+  on conflict (owner_id, monster_id) do update set seen = x.seen + p_seen, defeated = x.defeated + p_def,
+    first_defeat = coalesce(x.first_defeat, case when p_def > 0 then now() end)
+$$;
+alter function public.world_codex_mark(uuid, text, int, int) owner to fn_owner_field;
+-- 토벌 기록(어느 전투 함수든)으로 도감을 채운다. 만난 것은 전투를 열 때 world_battle_open이 적는다.
+create or replace function public.world_codex_on_event() returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+begin
+  if new.actor_id is not null and new.payload ? 'monster_id' then
+    perform public.world_codex_mark(new.actor_id, new.payload ->> 'monster_id', 0,
+      case when new.event_type = 'combat' and coalesce(new.payload ->> 'defeated', 'true') <> 'false' then 1 else 0 end);
+  end if;
+  return null;
+end $$;
+alter function public.world_codex_on_event() owner to fn_owner_field;
+drop trigger if exists trg_world_codex_on_event on public.world_events;
+create trigger trg_world_codex_on_event after insert on public.world_events for each row
+  when (new.event_type in ('combat', 'battle_lost', 'battle_fled')) execute function public.world_codex_on_event();
+-- 지금까지의 기록으로 채우기
+insert into public.world_monster_codex(owner_id, monster_id, seen, defeated, first_seen, first_defeat)
+select e.actor_id, e.payload ->> 'monster_id', count(*),
+  count(*) filter (where e.event_type = 'combat' and coalesce(e.payload ->> 'defeated', 'true') <> 'false'), min(e.created_at),
+  min(e.created_at) filter (where e.event_type = 'combat' and coalesce(e.payload ->> 'defeated', 'true') <> 'false')
+  from public.world_events e join public.world_region_monsters m on m.monster_id = e.payload ->> 'monster_id'
+ where e.event_type in ('combat', 'battle_lost', 'battle_fled') and e.actor_id is not null
+ group by 1, 2
+on conflict (owner_id, monster_id) do nothing;
+
+-- 표·함수 권한: 전투·원정 함수 주인 역할들이 읽는다(화면에는 도감 함수로만 내보낸다)
+do $$ declare r record; begin
+  for r in select rolname from pg_roles where rolname like 'fn\_owner\_%' loop
+    execute format('grant select on public.world_monster_kinds, public.world_monster_gimmicks, public.world_monster_codex to %I', r.rolname);
+    execute format('grant execute on function public.world_kind_mult(text, text, text), public.world_battle_intent_k(text, int, text, numeric, text), public.world_codex_mark(uuid, text, int, int), public.world_monster_tier(int), public.world_gimmick_counter(text) to %I', r.rolname);
+  end loop;
+end $$;
+grant insert, update on public.world_monster_codex to fn_owner_field;
+revoke all on function public.world_kind_mult(text, text, text) from public, anon, authenticated;
+revoke all on function public.world_battle_intent_k(text, int, text, numeric, text) from public, anon, authenticated;
+revoke all on function public.world_codex_mark(uuid, text, int, int) from public, anon, authenticated;
+revoke all on function public.world_codex_on_event() from public, anon, authenticated;
+revoke all on function public.world_monster_tier(int) from public, anon, authenticated;
+revoke all on function public.world_gimmick_counter(text) from public, anon, authenticated;
+
+-- 전투 열기: 첫 행동도 기믹을 쓸 수 있고, 만난 요괴를 도감에 적는다
+do $$ declare d text := pg_get_functiondef('public.world_battle_open(uuid,text,uuid,integer,integer)'::regprocedure);
+  a text := 'public.world_battle_intent(m.mechanic_key, 1, rk)'; b text := 'public.world_battle_intent_k(m.kind, lv, m.mechanic_key, 1, rk)';
+  a2 text := '  RETURN jsonb_build_object(''monster_id'', m.monster_id, ''name'', m.monster_name, ''rank'', rk, ''level'', lv);';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 or (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception '전투 열기 고칠 자리'; end if;
+  d := replace(d, a, b);
+  d := replace(d, a2, '  PERFORM public.world_codex_mark(p_owner, m.monster_id, 1, 0);' || chr(10) || a2);
+  execute d;
+end $$;
+
+-- 토벌 전투: 갈래 상성(무기·직업)과 기믹
+do $$
+declare d text := pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure); n int;
+  procedure_ text;
+begin
+  if position('world_kind_mult' in d) > 0 then return; end if;
+  -- 바꿀 자리가 정확히 한 번씩 있는지 먼저 본다
+  for procedure_ in select unnest(array[
+    'attacked boolean := false; wear jsonb; rare numeric;',
+    'IF act = ''flee'' THEN' || chr(10) || '    IF random() * 100 < least(90,',
+    '    mul := 0.85 + random() * 0.3;',
+    '    dmg := greatest(1, round(base * mul - mdef * 0.8));',
+    ' 피해를 입었다.''); END IF;',
+    '  IF a.current_hp <= 0 THEN' || chr(10) || '    ended := ''victory'';' || chr(10) || '  ELSIF fled THEN',
+    'WHEN ''breach'' THEN 0.7 ELSE 0 END;',
+    'CASE WHEN v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') THEN 0.25 ELSE 0.35 END',
+    'eva * (CASE WHEN v_intent IN (''heavy'', ''pounce'', ''unleash'') THEN 0.6 ELSE 1 END)',
+    'WHEN ''breach'' THEN ''의 봉인 깨기'' ELSE ''의 공격'' END',
+    'IF guarding AND v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') AND style = ''melee'' THEN',
+    'IF v_intent IN (''heavy'', ''pounce'') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, ''bleeding''); END IF;']) loop
+    if (length(d) - length(replace(d, procedure_, ''))) / length(procedure_) <> 1 then raise exception '토벌 전투 고칠 자리가 하나가 아닙니다: %', procedure_; end if;
+  end loop;
+  if (length(d) - length(replace(d, 'public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)', ''))) / length('public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)') <> 2 then raise exception '다음 행동 자리'; end if;
+  select count(*) into n from regexp_matches(d, 'mul := mul \* CASE coalesce\(m\.mechanic_key, ''''\).*?ELSE 1 END;', 'g');
+  if n <> 1 then raise exception '무기 상성 자리(%)', n; end if;
+
+  d := replace(d, 'attacked boolean := false; wear jsonb; rare numeric;',
+    'attacked boolean := false; wear jsonb; rare numeric; g public.world_monster_gimmicks%rowtype; gburst boolean := false; keen boolean := false; mheal int := 0; thorn int := 0;');
+  d := replace(d, 'IF act = ''flee'' THEN' || chr(10) || '    IF random() * 100 < least(90,',
+    'IF act = ''flee'' THEN' || chr(10) || '    IF coalesce((v_pfx ->> ''bound'')::int, 0) > 0 THEN' || chr(10)
+    || '      lines := lines || jsonb_build_array(''붙잡혀 있어 달아날 수 없다.'');' || chr(10) || '    ELSIF random() * 100 < least(90,');
+  d := replace(d, '    mul := 0.85 + random() * 0.3;',
+    '    keen := coalesce((v_pfx ->> ''focus'')::int, 0) > 0 OR coalesce((v_fx ->> ''marked'')::int, 0) > 0;' || chr(10) || '    mul := 0.85 + random() * 0.3;');
+  d := regexp_replace(d, 'mul := mul \* CASE coalesce\(m\.mechanic_key, ''''\).*?ELSE 1 END;', 'mul := mul * public.world_kind_mult(m.kind, style, c.job_key);');
+  d := replace(d, '    dmg := greatest(1, round(base * mul - mdef * 0.8));',
+    '    dmg := greatest(1, round(base * mul - mdef * 0.8));' || chr(10)
+    || '    IF coalesce((v_fx ->> ''evade'')::int, 0) > 0 AND NOT keen AND random() < 0.5 THEN dmg := 0; lines := lines || jsonb_build_array(''허상을 쳤다. 공격이 빗나갔다.''); END IF;');
+  d := replace(d, ' 피해를 입었다.''); END IF;',
+    ' 피해를 입었다.''); END IF;' || chr(10)
+    || '    IF coalesce((v_fx ->> ''thorns'')::int, 0) > 0 AND style = ''melee'' AND dmg > 0 THEN thorn := greatest(1, round(dmg * 0.3)); hp := greatest(0, hp - thorn); lines := lines || jsonb_build_array(''가시에 찔려 '' || thorn || '' 피해를 입었다.''); END IF;');
+  d := replace(d, '  IF a.current_hp <= 0 THEN' || chr(10) || '    ended := ''victory'';' || chr(10) || '  ELSIF fled THEN',
+    '  v_pfx := v_pfx - ''bound''; v_fx := v_fx - ''evade'' - ''thorns'';' || chr(10) || '  IF a.current_hp <= 0 THEN' || chr(10) || '    ended := ''victory'';' || chr(10) || '  ELSIF fled THEN');
+  d := replace(d, 'WHEN ''breach'' THEN 0.7 ELSE 0 END;', 'WHEN ''breach'' THEN 0.7 ELSE 0 END;
+      IF v_intent LIKE ''g%:%'' THEN
+        SELECT * INTO g FROM public.world_monster_gimmicks WHERE gimmick_key = split_part(v_intent, '':'', 2);
+        gburst := v_intent LIKE ''g!:%'';
+        IF g.gimmick_key IS NULL THEN hit := a.atk * (0.9 + random() * 0.2);
+        ELSIF g.gtype = ''charge'' AND NOT gburst THEN
+          hit := 0;
+          IF dmg >= a.max_hp * 0.15 THEN lines := lines || jsonb_build_array(m.monster_name || ''의 기세가 흐트러져 「'' || g.name || ''」이(가) 끊겼다.'');
+          ELSE next_intent := ''g!:'' || g.gimmick_key; lines := lines || jsonb_build_array(m.monster_name || '': '' || g.tell); END IF;
+        ELSE
+          hit := a.atk * (0.9 + random() * 0.2) * g.power;
+          IF g.gtype = ''heal'' THEN
+            mheal := round(a.max_hp * g.power2 * CASE WHEN act = ''skill'' THEN 0.5 ELSE 1 END); a.current_hp := least(a.max_hp, a.current_hp + mheal);
+            lines := lines || jsonb_build_array(m.monster_name || ''의 「'' || g.name || ''」: 체력 '' || mheal || '' 회복'' || CASE WHEN act = ''skill'' THEN '' (기술로 절반을 끊음)'' ELSE '''' END);
+          ELSIF g.gtype = ''summon'' THEN
+            a.current_hp := least(a.max_hp, a.current_hp + round(a.max_hp * g.power2)); v_fx := v_fx || jsonb_build_object(''swarm'', 1);
+            lines := lines || jsonb_build_array(m.monster_name || ''의 「'' || g.name || ''」: 무리가 몰려든다.'');
+          ELSIF g.gtype = ''shield'' THEN
+            v_fx := v_fx || jsonb_build_object(''barrier'', coalesce((v_fx ->> ''barrier'')::int, 0) + round(a.max_hp * g.power2));
+            lines := lines || jsonb_build_array(m.monster_name || ''의 「'' || g.name || ''」: 결계가 둘러졌다.'');
+          ELSIF g.gtype = ''evade'' THEN v_fx := v_fx || jsonb_build_object(''evade'', 1);
+          ELSIF g.gtype = ''thorns'' THEN v_fx := v_fx || jsonb_build_object(''thorns'', 1);
+          ELSIF g.gtype = ''mirror'' THEN v_fx := v_fx || jsonb_build_object(''mirror'', 1);
+          END IF;
+        END IF;
+      END IF;');
+  d := replace(d, 'CASE WHEN v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') THEN 0.25 ELSE 0.35 END',
+    'CASE WHEN v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') OR gburst OR g.gtype IS NOT DISTINCT FROM ''big'' THEN 0.25 ELSE 0.35 END');
+  d := replace(d, 'eva * (CASE WHEN v_intent IN (''heavy'', ''pounce'', ''unleash'') THEN 0.6 ELSE 1 END)',
+    'eva * (CASE WHEN v_intent IN (''heavy'', ''pounce'', ''unleash'') OR gburst THEN 0.6 ELSE 1 END)');
+  d := replace(d, 'WHEN ''breach'' THEN ''의 봉인 깨기'' ELSE ''의 공격'' END',
+    'WHEN ''breach'' THEN ''의 봉인 깨기'' ELSE CASE WHEN g.gimmick_key IS NOT NULL THEN ''의 「'' || g.name || ''」'' ELSE ''의 공격'' END END');
+  d := replace(d, 'IF guarding AND v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') AND style = ''melee'' THEN',
+    'IF guarding AND (v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') OR gburst OR g.gtype IS NOT DISTINCT FROM ''big'') AND style = ''melee'' THEN');
+  d := replace(d, 'IF v_intent IN (''heavy'', ''pounce'') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, ''bleeding''); END IF;',
+    'IF v_intent IN (''heavy'', ''pounce'') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, ''bleeding''); END IF;
+          IF g.gimmick_key IS NOT NULL THEN
+            IF g.status IS NOT NULL AND random() < g.chance * (CASE WHEN guarding THEN 0.5 ELSE 1 END) THEN statuses := array_append(statuses, g.status); END IF;
+            IF g.mental > 0 THEN mn := greatest(0, mn - greatest(0, round(g.mental * (CASE WHEN guarding THEN 0.5 ELSE 1 END) * (1 + public.world_status_effect_total(''mental_loss_pct'') / 100.0))::int)); END IF;
+            IF g.erosion > 0 THEN er := least(100, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total(''erosion_pct'') / 100.0))::int)); END IF;
+            IF g.gtype = ''drain'' THEN mheal := round(mdmg * g.power2); a.current_hp := least(a.max_hp, a.current_hp + mheal); lines := lines || jsonb_build_array(m.monster_name || ''이(가) 기운을 빨아 체력 '' || mheal || '' 회복''); END IF;
+            IF g.gtype = ''grapple'' THEN v_pfx := v_pfx || jsonb_build_object(''bound'', 1); lines := lines || jsonb_build_array(''붙잡혔다. 다음 턴에는 달아날 수 없다.''); END IF;
+          END IF;');
+  d := replace(d, 'public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)',
+    'public.world_battle_intent_k(m.kind, a.mlevel, m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)');
+  execute d;
+end $$;
+
+-- 전투 화면 정보: 갈래 이름·설명, 기믹은 이름과 낌새만. 상성 배율은 그 요괴를 쓰러뜨려 도감에 적은 뒤에만 보인다.
+create or replace function public.world_field_battle_view(p_owner uuid)
+returns jsonb language sql stable set search_path to 'pg_catalog', 'public' as $$
+  SELECT CASE WHEN a.owner_id IS NULL OR a.defeated OR coalesce(a.fled, false) OR a.mlevel IS NULL THEN NULL ELSE jsonb_build_object(
+    'monster_id', m.monster_id, 'name', m.monster_name, 'type', m.monster_type, 'mechanic', m.mechanic_key, 'role', m.role,
+    'description', m.description, 'rank', a.rank, 'level', a.mlevel, 'hp', a.current_hp, 'max_hp', a.max_hp, 'atk', a.atk,
+    'intent', a.intent, 'turn', a.turn_count, 'fx', a.fx, 'pfx', a.pfx, 'log', a.log,
+    'next_action_at', a.last_action_at + interval '1 second',
+    'kind', m.kind, 'kind_name', k.kind_name, 'kind_desc', k.description,
+    'gimmick', CASE WHEN g.gimmick_key IS NOT NULL THEN jsonb_build_object('name', g.name, 'tell', g.tell, 'burst', a.intent LIKE 'g!:%', 'tier', g.tier) END,
+    'known', coalesce(x.defeated, 0) > 0,
+    'eff', CASE WHEN coalesce(x.defeated, 0) > 0 THEN jsonb_build_object('melee', k.melee, 'ranged', k.ranged, 'magic', k.magic, 'job', k.job_key) END) END
+  FROM (SELECT p_owner AS o) q
+  LEFT JOIN public.world_active_encounters a ON a.owner_id = q.o
+  LEFT JOIN public.world_region_monsters m ON m.monster_id = a.monster_id
+  LEFT JOIN public.world_monster_kinds k ON k.kind_key = m.kind
+  LEFT JOIN public.world_monster_gimmicks g ON a.intent LIKE 'g%:%' AND g.gimmick_key = split_part(a.intent, ':', 2)
+  LEFT JOIN public.world_monster_codex x ON x.owner_id = q.o AND x.monster_id = m.monster_id
+$$;
+
+-- 기믹 파훼법 글(도감에서 쓰러뜨린 요괴에만 보인다)
+create or replace function public.world_gimmick_tip(p_key text) returns text language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case g.gtype
+      when 'big' then '큰 한 방입니다. 방어하면 4분의 1만 받고, 근접 무기로 막으면 받아칩니다.'
+      when 'charge' then '한 턴 동안 기를 모았다가 다음 턴에 터뜨립니다. 모으는 턴에 체력의 15% 넘게 깎거나 봉인술로 묶으면 끊기고, 못 끊었으면 방어하세요(4분의 1).'
+      when 'status' then '상태이상을 노리는 공격입니다.'
+      when 'drain' then '때린 만큼 체력을 되찾습니다. 방어하면 덜 맞고 덜 빼앗깁니다.'
+      when 'heal' then '체력을 크게 되찾습니다. 그 턴에 직업 기술을 쓰면 회복을 절반으로 끊습니다.'
+      when 'shield' then '피해를 삼키는 결계를 칩니다. 술법은 결계를 두 배로 깎고, 폭렬 부적은 결계를 무시합니다.'
+      when 'evade' then '다음 공격이 절반 확률로 빗나갑니다. 방어나 물품으로 한 턴 흘려보내면 사라지고, 표식·약점 간파가 있으면 빗나가지 않습니다.'
+      when 'thorns' then '다음 근접 공격 피해의 30%를 되돌려 받습니다. 원거리·술법으로 치거나 한 턴 방어로 넘기세요.'
+      when 'grapple' then '붙잡히면 다음 턴에 달아날 수 없습니다. 방어하면 덜 맞습니다.'
+      when 'mirror' then '다음 술법 피해의 절반을 되돌립니다. 술법이 아닌 공격이나 방어로 넘기세요.'
+      when 'summon' then '무리를 불러 체력을 조금 되찾고 다음 공격이 강해집니다. 빨리 몰아쳐 정리하세요.'
+      else '' end
+    || case when g.status is not null then ' 맞으면 「' || coalesce(sc.status_name, g.status) || '」이(가) 붙을 수 있고, 방어하면 그 확률이 절반입니다.' else '' end
+    || case when g.mental > 0 or g.erosion > 0 then ' 맞으면 ' || concat_ws(' · ', case when g.mental > 0 then '정신 -' || g.mental end, case when g.erosion > 0 then '침식 +' || g.erosion end) || '.' else '' end
+    || case when g.tier >= 2 then ' 원정에서는 '
+         || case (public.world_gimmick_counter(g.gtype))[1] when 'guarding' then '막기' when 'first_aid' then '응급 처치' when 'sealing' then '봉인술' when 'tracking' then '추적' else '분석' end
+         || ' 기술과 ' || case (public.world_gimmick_counter(g.gtype))[2] when 'agility' then '민첩' when 'vitality' then '체질' when 'willpower' then '의지' else '감각' end
+         || '이(가) 높을수록 저절로 잘 대처하고, ' || case when greatest(k.melee, k.ranged, k.magic) <= 1 then '' when k.ranged >= greatest(k.melee, k.magic) then '원거리 무기' when k.magic >= k.melee then '술법 무기' else '근접 무기' end
+         || case when greatest(k.melee, k.ranged, k.magic) > 1 and k.job_key is not null then '나 ' else '' end
+         || coalesce(case k.job_key when 'exorcist' then '퇴마관' when 'sealmaster' then '봉인술사' when 'scout' then '현장 조사원' when 'analyst' then '기록 분석관' when 'medic' then '의무관' when 'artificer' then '법구 제작사' end, '')
+         || '(이)면 더 잘 대처합니다.'
+       else ' 원정에서는 따로 대처하지 않아도 되는 가벼운 기믹입니다.' end
+  from public.world_monster_gimmicks g join public.world_monster_kinds k on k.kind_key = g.kind_key
+  left join public.world_status_catalog sc on sc.status_key = g.status where g.gimmick_key = p_key
+$$;
+alter function public.world_gimmick_tip(text) owner to fn_owner_field;
+revoke all on function public.world_gimmick_tip(text) from public, anon, authenticated;
+
+-- 도감 칭호 판정: {"codex":"kind","kind":k,"n":N} 그 갈래에서 쓰러뜨린 요괴 수 · {"codex":"all"} 쓰러뜨린 요괴 수
+--   · {"codex":"kinds"} 하나라도 쓰러뜨린 갈래 수 · {"codex":"gather"} 채집 도감에 오른 재료 수
+create or replace function public.world_codex_rule_count(p_owner uuid, p_rule jsonb) returns int language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case p_rule ->> 'codex'
+    when 'kind' then (select count(*) from public.world_monster_codex x join public.world_region_monsters m using (monster_id) where x.owner_id = p_owner and x.defeated > 0 and m.kind = p_rule ->> 'kind')
+    when 'all' then (select count(*) from public.world_monster_codex x where x.owner_id = p_owner and x.defeated > 0)
+    when 'kinds' then (select count(distinct m.kind) from public.world_monster_codex x join public.world_region_monsters m using (monster_id) where x.owner_id = p_owner and x.defeated > 0)
+    when 'gather' then (select count(distinct e.payload ->> 'item_id') from public.world_events e
+      where e.actor_id = p_owner and e.event_type = 'gather' and e.payload ->> 'item_id' in (select unnest(s.loot_items) from public.world_gathering_spots s where s.active))
+    else 0 end::int
+$$;
+alter function public.world_codex_rule_count(uuid, jsonb) owner to fn_owner_field;
+revoke all on function public.world_codex_rule_count(uuid, jsonb) from public, anon, authenticated;
+
+do $$ declare d text;
+  a text := 'ELSIF p_rule ? ''survey_full'' THEN';
+  b text := 'elsif p_rule ? ''survey_full'' then';
+  c text := '    IF (r ? ''nodes'' OR r ? ''spots'')';
+begin
+  d := pg_get_functiondef('public.world_title_rule_ok(uuid,jsonb)'::regprocedure);
+  if position('world_codex_rule_count' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '칭호 판정 자리'; end if;
+    execute replace(d, a, 'ELSIF p_rule ? ''codex'' THEN' || chr(10) || '    RETURN public.world_codex_rule_count(p_owner, p_rule) >= n;' || chr(10) || '  ' || a);
+  end if;
+  d := pg_get_functiondef('public.world_title_rule_progress(uuid,jsonb)'::regprocedure);
+  if position('world_codex_rule_count' in d) = 0 then
+    if (length(d) - length(replace(d, b, ''))) / length(b) <> 1 then raise exception '칭호 진행 자리'; end if;
+    execute replace(d, b, 'elsif p_rule ? ''codex'' then' || chr(10) || '    v := public.world_codex_rule_count(p_owner, p_rule);' || chr(10) || '  ' || b);
+  end if;
+  d := pg_get_functiondef('public.world_title_award_check(uuid,text)'::regprocedure);
+  if position('''codex''' in d) = 0 then
+    if (length(d) - length(replace(d, c, ''))) / length(c) <> 1 then raise exception '칭호 판정 시점 자리'; end if;
+    execute replace(d, c, '    IF r ? ''codex'' AND p_event_type IS NOT NULL AND NOT (CASE WHEN r ->> ''codex'' = ''gather'' THEN p_event_type = ''gather'' ELSE p_event_type IN (''combat'', ''expedition_end'') END) THEN CONTINUE; END IF;' || chr(10) || c);
+  end if;
+end $$;
+
+insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade) values
+  ('codex_bird', '매사냥꾼', 'eye', '하늘을 나는 요괴의 날갯짓을 읽는다.', '비금 요괴 6종 토벌', '{"ranged_pct":3,"evasion_pct":1}', true, false, '{"codex":"kind","kind":"bird","n":6}', 123, '도감', 2),
+  ('codex_shell', '껍질 깨는 자', 'eye', '아무리 단단한 껍질도 틈은 있다.', '갑각 요괴 6종 토벌', '{"magic_pct":3,"defense":1}', true, false, '{"codex":"kind","kind":"shell","n":6}', 124, '도감', 2),
+  ('codex_ghost', '원혼 달래는 자', 'eye', '흐느끼는 혼백을 여럿 보냈다.', '영귀 요괴 6종 토벌', '{"magic_pct":3,"mental_loss_pct":-3}', true, false, '{"codex":"kind","kind":"ghost","n":6}', 125, '도감', 2),
+  ('codex_venom', '독벌레 잡이', 'eye', '독침이 어디서 올지 안다.', '독충 요괴 5종 토벌', '{"ranged_pct":3,"healing_pct":2}', true, false, '{"codex":"kind","kind":"venom","n":5}', 126, '도감', 2),
+  ('codex_wood', '나무꾼 퇴마사', 'eye', '덩굴과 뿌리를 베어 길을 낸다.', '목령 요괴 3종 토벌', '{"melee_pct":3,"gather_qty_pct":2}', true, false, '{"codex":"kind","kind":"wood","n":3}', 127, '도감', 2),
+  ('codex_shadow', '그림자 사냥꾼', 'eye', '어둠 속 숨은 몸을 찾아낸다.', '은형 요괴 6종 토벌', '{"melee_pct":3,"crit_pct":1}', true, false, '{"codex":"kind","kind":"shadow","n":6}', 128, '도감', 2),
+  ('codex_water', '물귀신 건지는 자', 'eye', '물밑에서 뻗는 손을 뿌리친다.', '수귀 요괴 6종 토벌', '{"magic_pct":3,"fish_bite_pct":3}', true, false, '{"codex":"kind","kind":"water","n":6}', 129, '도감', 2),
+  ('codex_swarm', '떼 쫓는 자', 'eye', '몰려드는 무리를 흩어 놓는다.', '군충 요괴 5종 토벌', '{"melee_pct":3,"defense":1}', true, false, '{"codex":"kind","kind":"swarm","n":5}', 130, '도감', 2),
+  ('codex_ward', '금줄 끊는 자', 'eye', '휘감는 금줄도 끊어 낸다.', '금주 요괴 3종 토벌', '{"melee_pct":3,"erosion_pct":-3}', true, false, '{"codex":"kind","kind":"ward","n":3}', 131, '도감', 2),
+  ('codex_mirror', '거울 깨는 자', 'eye', '거울 속 허상에 속지 않는다.', '경요 요괴 3종 토벌', '{"ranged_pct":3,"crit_pct":1}', true, false, '{"codex":"kind","kind":"mirror","n":3}', 132, '도감', 2),
+  ('codex_breaker', '봉인 지킴이', 'eye', '깨지려는 봉인을 몇 번이나 지켜 냈다.', '파봉 요괴 4종 토벌', '{"erosion_pct":-6,"melee_pct":2}', true, false, '{"codex":"kind","kind":"breaker","n":4}', 133, '도감', 3),
+  ('codex_sky', '하늘을 벤 자', 'eye', '별과 벼락을 다루는 요괴를 꺾었다.', '천상 요괴 3종 토벌', '{"crit_pct":2,"combat_damage_pct":2}', true, false, '{"codex":"kind","kind":"sky","n":3}', 134, '도감', 3),
+  ('codex_giant', '거괴 토벌자', 'eye', '땅을 울리는 거대한 요괴를 쓰러뜨렸다.', '거괴 요괴 2종 토벌', '{"incoming_damage_pct":-3,"combat_damage_pct":2}', true, false, '{"codex":"kind","kind":"giant","n":2}', 135, '도감', 3),
+  ('codex_20', '요괴 도감 기록관', 'scroll', '요괴 도감의 첫 권을 채웠다.', '요괴 20종 토벌', '{"combat_damage_pct":2,"rare_loot_pct":1}', true, false, '{"codex":"all","n":20}', 136, '도감', 2),
+  ('codex_50', '백귀 사냥꾼', 'scroll', '쉰 가지 요괴의 약점을 안다.', '요괴 50종 토벌', '{"combat_damage_pct":3,"crit_pct":1}', true, false, '{"codex":"all","n":50}', 137, '도감', 3),
+  ('codex_kinds', '백귀야행 기록관', 'scroll', '열세 갈래 요괴를 모두 기록했다.', '13갈래 요괴를 하나씩 토벌', '{"combat_damage_pct":4,"rare_loot_pct":3,"incoming_damage_pct":-2}', true, false, '{"codex":"kinds","n":13}', 138, '도감', 4),
+  ('codex_100', '만귀보', 'scroll', '세상의 요괴를 빠짐없이 적은 책의 주인.', '숨겨진 조건', '{"combat_damage_pct":6,"crit_pct":3,"rare_loot_pct":3}', true, true, '{"codex":"all","n":100}', 139, '도감', 5),
+  ('codex_gather_10', '채집 도감 첫 장', 'leaf', '거둔 재료를 하나씩 적어 나간다.', '재료 10가지 채집', '{"gather_qty_pct":2}', true, false, '{"codex":"gather","n":10}', 140, '도감', 1),
+  ('codex_gather_20', '채집 도감 반권', 'leaf', '어디서 무엇이 나는지 훤하다.', '재료 20가지 채집', '{"gather_qty_pct":3,"rare_loot_pct":1}', true, false, '{"codex":"gather","n":20}', 141, '도감', 2),
+  ('codex_gather_all', '채집 도감 완성', 'leaf', '세상의 채집 재료를 모두 거두었다.', '채집 도감 32가지 모두 채집', '{"gather_qty_pct":6,"rare_loot_pct":3,"craft_quality":2}', true, false, '{"codex":"gather","n":32}', 142, '도감', 4)
+on conflict (title_key) do update set title_name = excluded.title_name, icon = excluded.icon, description = excluded.description, condition_text = excluded.condition_text,
+  bonus = excluded.bonus, active = excluded.active, hidden = excluded.hidden, rule = excluded.rule, sort = excluded.sort, category = excluded.category, grade = excluded.grade;
+
+-- 요괴 도감 화면: 만난 요괴는 기본 정보, 쓰러뜨린 요괴는 상성·기믹 파훼법·전리품. 만나지 못한 요괴는 갈래와 사는 곳만.
+create or replace function public.world_monster_codex_snapshot()
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid();
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  return jsonb_build_object(
+    'kinds', (select jsonb_agg(jsonb_build_object('key', k.kind_key, 'name', k.kind_name, 'desc', k.description,
+        'total', (select count(*) from public.world_region_monsters m where m.kind = k.kind_key),
+        'seen', (select count(*) from public.world_monster_codex x join public.world_region_monsters m using (monster_id) where x.owner_id = uid and m.kind = k.kind_key),
+        'defeated', (select count(*) from public.world_monster_codex x join public.world_region_monsters m using (monster_id) where x.owner_id = uid and m.kind = k.kind_key and x.defeated > 0))
+      order by k.sort) from public.world_monster_kinds k),
+    'monsters', (select jsonb_agg(case when x.owner_id is null then
+        jsonb_build_object('id', m.monster_id, 'kind', m.kind, 'known', false, 'region', r.region_name, 'region_id', m.region_id, 'level', m.min_level, 'role', m.role)
+      else jsonb_build_object('id', m.monster_id, 'kind', m.kind, 'known', true, 'name', m.monster_name, 'region', r.region_name, 'region_id', m.region_id,
+        'level', m.min_level, 'max_level', m.max_level, 'role', m.role, 'desc', m.description, 'seen', x.seen, 'defeated', x.defeated,
+        'counter', case when x.defeated > 0 then jsonb_build_object('melee', k.melee, 'ranged', k.ranged, 'magic', k.magic, 'job', k.job_key, 'habit', m.mechanic_description,
+          'gimmicks', (select jsonb_agg(jsonb_build_object('name', g.name, 'tier', g.tier, 'from', case g.tier when 1 then 1 when 2 then 10 else 20 end, 'tell', g.tell, 'tip', public.world_gimmick_tip(g.gimmick_key)) order by g.tier)
+            from public.world_monster_gimmicks g where g.kind_key = m.kind),
+          'drops', (select jsonb_agg(jsonb_build_object('id', dd.key, 'name', ic.item_name)) from jsonb_each(coalesce(m.drops, '{}'::jsonb)) dd join public.world_item_catalog ic on ic.item_id = dd.key)) end) end
+      order by k.sort, m.min_level, m.monster_name)
+      from public.world_region_monsters m join public.world_map_regions r on r.region_id = m.region_id join public.world_monster_kinds k on k.kind_key = m.kind
+      left join public.world_monster_codex x on x.owner_id = uid and x.monster_id = m.monster_id),
+    'titles', (select jsonb_agg(jsonb_build_object('name', case when tc.hidden and ct.title_key is null then '숨겨진 칭호' else tc.title_name end,
+        'condition', case when tc.hidden and ct.title_key is null then '숨겨진 조건' else tc.condition_text end, 'earned', ct.title_key is not null,
+        'progress', case when ct.title_key is null and not tc.hidden then public.world_codex_rule_count(uid, tc.rule) end, 'need', case when not tc.hidden then (tc.rule ->> 'n')::int end) order by tc.sort)
+      from public.world_title_catalog tc left join public.world_character_titles ct on ct.owner_id = uid and ct.title_key = tc.title_key
+      where tc.active and tc.category = '도감' and tc.rule ->> 'codex' <> 'gather'));
+end $$;
+alter function public.world_monster_codex_snapshot() owner to fn_owner_field;
+revoke all on function public.world_monster_codex_snapshot() from public, anon, authenticated;
+grant execute on function public.world_monster_codex_snapshot() to authenticated;
+
+-- 채집 도감: 채집터에서 나는 재료(지금 32가지). 거둔 것은 이름·설명·나는 곳·거둔 횟수, 아직은 분류와 레벨만.
+create or replace function public.world_gather_codex_snapshot()
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid();
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  return jsonb_build_object(
+    'items', (with it as (
+        select x as item_id, min(s.category) as cat, min(s.min_level) as lv,
+          (select jsonb_agg(z.n order by z.l) from (select distinct r2.region_name as n, coalesce(r2.min_level, 1) as l from public.world_gathering_spots s2
+             join public.world_exploration_nodes n2 on n2.node_id = s2.node_id join public.world_map_regions r2 on r2.region_id = n2.region_id
+            where s2.active and x = any (s2.loot_items) order by 2 limit 6) z) as regions
+          from public.world_gathering_spots s, unnest(s.loot_items) x where s.active group by x),
+      got as (select e.payload ->> 'item_id' as item_id, count(*) as n, sum(coalesce((e.payload ->> 'qty')::int, 1)) as q
+          from public.world_events e where e.actor_id = uid and e.event_type = 'gather' and e.payload ? 'item_id' group by 1)
+      select jsonb_agg(case when g.item_id is null then jsonb_build_object('known', false, 'cat', it.cat, 'level', it.lv)
+          else jsonb_build_object('known', true, 'id', it.item_id, 'name', coalesce(ic.item_name, it.item_id), 'desc', ic.description, 'cat', it.cat, 'level', it.lv,
+            'regions', it.regions, 'count', g.n, 'qty', g.q) end order by it.cat, it.lv, it.item_id)
+        from it left join got g on g.item_id = it.item_id left join public.world_item_catalog ic on ic.item_id = it.item_id),
+    'titles', (select jsonb_agg(jsonb_build_object('name', tc.title_name, 'condition', tc.condition_text, 'earned', ct.title_key is not null,
+        'progress', public.world_codex_rule_count(uid, tc.rule), 'need', (tc.rule ->> 'n')::int) order by tc.sort)
+      from public.world_title_catalog tc left join public.world_character_titles ct on ct.owner_id = uid and ct.title_key = tc.title_key
+      where tc.active and tc.rule ->> 'codex' = 'gather'));
+end $$;
+alter function public.world_gather_codex_snapshot() owner to fn_owner_field;
+revoke all on function public.world_gather_codex_snapshot() from public, anon, authenticated;
+grant execute on function public.world_gather_codex_snapshot() to authenticated;
+grant select on public.world_gathering_spots, public.world_exploration_nodes, public.world_map_regions, public.world_item_catalog, public.world_events,
+  public.world_title_catalog, public.world_character_titles, public.world_status_catalog to fn_owner_field;
+grant execute on function public.world_gimmick_tip(text), public.world_codex_rule_count(uuid, jsonb) to fn_owner_field;
+
 -- ⑫ ─────────────────────────────────────────
 -- 상위 도구: 같은 계열의 더 높은 단계 도구를 장착하면 낮은 단계 도구가 필요한 제작법도 만들 수 있다.
 --   채집도 계열: 현장 채집도(1) → 강화 채집도(2) → 청강 채집도(3) → 천공 채집도(5) · 곡괭이 계열: 월철 곡괭이(1) → 영맥 곡괭이(4)
@@ -776,7 +1230,7 @@ end $$;
 --   막기는 기술 「막기」 단계에 따라 확률이 오르고(6% + 단계×0.6%, 최대 35%) 그 공격의 피해를 절반으로 줄인다.
 --   파티 원정: 함께 싸우는 동료 한 명마다 요괴가 하나씩 더 나온다(같은 지역 일반 요괴). 피해는 이목을 따라 나뉜다.
 create or replace function public.world_exp_fight_story(p_owner uuid, p_me text, p_region text, p_foe jsonb, p_extra int, p_won boolean, p_ehp int, p_dmg int,
-  p_allies jsonb, p_power float8, p_pres float8, p_base timestamptz, p_seq int, p_job text, p_wtype text, p_guard int)
+  p_allies jsonb, p_power float8, p_pres float8, p_base timestamptz, p_seq int, p_job text, p_wtype text, p_guard int, p_ctx jsonb default '{}'::jsonb)
 returns jsonb language plpgsql volatile security definer set search_path to 'pg_catalog', 'public' as $$
 declare
   foes jsonb := jsonb_build_array(p_foe); nf int; fhp int[]; a_n int; b_n int; t int; i int; seq int := p_seq; lines jsonb := '[]'::jsonb;
@@ -784,12 +1238,17 @@ declare
   who_n text; who_o uuid; pick float8; al jsonb; tot_w float8; nal int := coalesce(jsonb_array_length(p_allies), 0);
   etype text[]; parts int[]; left_d int; part int; taken int := 0; skill_at int; txt text; blk float8; told text[] := '{}'; kind_ text;
   vm text[]; va text[]; vh text[]; sk text;
+  g public.world_monster_gimmicks%rowtype; mlv int := coalesce((p_ctx ->> 'mlv')::int, 1); gt int; gch float8; cn text[]; gx int; gml int := 0; ger int := 0;
+  gbest text; gjob text;
 begin
   if p_extra > 0 then
-    foes := foes || coalesce((select jsonb_agg(jsonb_build_object('n', x.monster_name, 'mech', x.mechanic_key, 'role', x.role))
-      from (select monster_name, mechanic_key, role from public.world_region_monsters where region_id = p_region and role <> 'guardian' order by random() limit p_extra) x), '[]'::jsonb);
+    foes := foes || coalesce((select jsonb_agg(jsonb_build_object('n', x.monster_name, 'mech', x.mechanic_key, 'role', x.role, 'id', x.monster_id, 'kind', x.kind))
+      from (select monster_name, mechanic_key, role, monster_id, kind from public.world_region_monsters where region_id = p_region and role <> 'guardian' order by random() limit p_extra) x), '[]'::jsonb);
   end if;
   nf := jsonb_array_length(foes);
+  -- 요괴 도감: 만난 요괴(이기면 쓰러뜨린 요괴)로 적는다
+  perform public.world_codex_mark(p_owner, x ->> 'id', 1, case when p_won then 1 else 0 end) from jsonb_array_elements(foes) x where x ? 'id';
+  gt := public.world_monster_tier(mlv);
   fhp := array_fill(p_ehp / nf, array[nf]); fhp[nf] := fhp[nf] + p_ehp - (p_ehp / nf) * nf;
   if nf > 1 then
     seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'fight', 'who', p_me, 'owner', p_owner,
@@ -835,6 +1294,39 @@ begin
   skill_at := case when sk is not null then 2 + floor(random() * greatest(1, a_n - 2))::int else 0 end;
 
   for t in 1..greatest(a_n, b_n) loop
+    -- 요괴 기믹(Lv10부터): 두 번째 합에 한 번. 기술 단계·레벨 차·능력치로 대처하고, 상성 무기나 직업이면 더 잘 대처한다
+    if t = 2 and gt >= 2 and p_foe ? 'kind' then
+      select * into g from public.world_monster_gimmicks where kind_key = p_foe ->> 'kind' and tier between 2 and gt order by random() limit 1;
+      if g.gimmick_key is not null and random() < (case gt when 2 then 0.55 else 0.75 end) then
+        cn := public.world_gimmick_counter(g.gtype);
+        gch := 35 + (coalesce((p_ctx -> 'sp' -> cn[1] ->> 'rank')::int, 1) - case g.tier when 2 then 15 else 30 end) * 1.5
+          + (coalesce((p_ctx ->> 'lv')::int, 1) - mlv) * 2 + coalesce((p_ctx -> 'st' ->> cn[2])::int, 0) * 0.3;
+        gch := greatest(10, least(75, gch));
+        select case when greatest(k.melee, k.ranged, k.magic) <= 1 then null when k.ranged >= greatest(k.melee, k.magic) then 'ranged' when k.magic >= k.melee then 'magic' else 'melee' end, k.job_key
+          into gbest, gjob from public.world_monster_kinds k where k.kind_key = g.kind_key;
+        if p_wtype = gbest or p_job = gjob then gch := gch + 25; end if;
+        nm := p_foe ->> 'n';
+        seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'foe', 'who', p_me, 'owner', p_owner, 'text', nm || ' · 「' || g.name || '」 ' || g.tell);
+        if random() * 100 < gch then
+          txt := case g.gtype when 'big' then '[막기] 「' || g.name || '」을(를) 받아 흘렸습니다'
+            when 'charge' then '[끊기] 기를 모으는 틈을 파고들어 「' || g.name || '」을(를) 끊었습니다'
+            when 'status' then '[버티기] 「' || g.name || '」을(를) 견뎌 냈습니다'
+            when 'drain' then '[떨치기] 「' || g.name || '」을(를) 떨쳐 냈습니다' when 'grapple' then '[떨치기] 「' || g.name || '」을(를) 뿌리쳤습니다'
+            when 'evade' then '[추적] 「' || g.name || '」 속 진짜 몸을 찾아냈습니다' when 'thorns' then '[추적] 가시가 없는 틈을 골라 쳤습니다'
+            else '[간파] 「' || g.name || '」의 흐름을 읽어 냈습니다' end;
+          seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'guard', 'who', p_me, 'owner', p_owner, 'text', txt, 'value', 0);
+        else
+          gx := greatest(1, round((2 + mlv * 0.25) * greatest(1, g.power))::int);
+          taken := taken + gx; gml := gml + g.mental; ger := ger + g.erosion;
+          txt := case g.gtype when 'big' then '「' || g.name || '」에 정통으로 맞았습니다' when 'charge' then '「' || g.name || '」이(가) 터졌습니다'
+            when 'status' then '「' || g.name || '」에 휩쓸렸습니다' when 'drain' then '「' || g.name || '」에 기운을 빼앗겼습니다'
+            when 'grapple' then '「' || g.name || '」에 붙잡혔습니다' when 'evade' then '「' || g.name || '」에 속아 헛손질했습니다'
+            when 'thorns' then '가시에 손을 베였습니다' else '「' || g.name || '」 때문에 공격이 무뎌졌습니다' end
+            || ' · 체력 -' || gx || case when g.mental > 0 then ' · 정신 -' || g.mental else '' end || case when g.erosion > 0 then ' · 침식 +' || g.erosion else '' end;
+          seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'hurt', 'who', p_me, 'owner', p_owner, 'text', txt, 'value', gx);
+        end if;
+      end if;
+    end if;
     -- 요괴의 차례
     if t <= b_n then
       ei := ei + 1;
@@ -925,12 +1417,13 @@ begin
     seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'foe', 'who', p_me, 'owner', p_owner,
       'text', (array['요괴의 기세가 꺾이지 않습니다. 더 버티기 어렵습니다', '숨이 가빠져 더는 맞서기 어렵습니다', '상처가 깊어 거리를 벌립니다'])[1 + floor(random() * 3)::int]);
   end if;
-  return jsonb_build_object('lines', lines, 'seq', seq, 'taken', taken);
+  return jsonb_build_object('lines', lines, 'seq', seq, 'taken', taken, 'mn', gml, 'er', ger);
 end $$;
 grant select on public.world_region_monsters to fn_owner_field;
 grant insert on public.world_expedition_hits to fn_owner_field;
-alter function public.world_exp_fight_story(uuid, text, text, jsonb, int, boolean, int, int, jsonb, float8, float8, timestamptz, int, text, text, int) owner to fn_owner_field;
-revoke all on function public.world_exp_fight_story(uuid, text, text, jsonb, int, boolean, int, int, jsonb, float8, float8, timestamptz, int, text, text, int) from public, anon, authenticated;
+-- 원정 기믹·도감에 쓰는 표와 함수는 ⑭에서 만든다(함수 안에서만 부르므로 실행 순서는 상관없다)
+alter function public.world_exp_fight_story(uuid, text, text, jsonb, int, boolean, int, int, jsonb, float8, float8, timestamptz, int, text, text, int, jsonb) owner to fn_owner_field;
+revoke all on function public.world_exp_fight_story(uuid, text, text, jsonb, int, boolean, int, int, jsonb, float8, float8, timestamptz, int, text, text, int, jsonb) from public, anon, authenticated;
 
 -- world_expedition_settle에 잇기: 무기 갈래·막기 단계를 읽고, 파티 동료 한 명마다 요괴 위협 +45%(전에는 +30%, 요괴가 하나씩 더 나오는 만큼)
 -- 이기면 더 나온 요괴마다 경험치와 전리품을 조금 더 얻는다. 주고받은 공격 줄은 위 함수가 쓴다.
@@ -943,8 +1436,10 @@ begin
   select count(*) into n from regexp_matches(d, rx, 'g');
   if n <> 1 then raise exception '원정 전투 줄 고칠 자리가 하나가 아닙니다(%)', n; end if;
   d := regexp_replace(d, rx, 'my_taken := 0;
-   fx := public.world_exp_fight_story(e.owner_id, me, r.region_id, jsonb_build_object(''n'', foe, ''mech'', m.mechanic_key, ''role'', m.role), nal, won, ehp, dmg, act, power, pres, base_t, seq, c.job_key, wtype, brank);
+   fx := public.world_exp_fight_story(e.owner_id, me, r.region_id, jsonb_build_object(''n'', foe, ''mech'', m.mechanic_key, ''role'', m.role, ''id'', m.monster_id, ''kind'', m.kind), nal, won, ehp, dmg, act, power, pres, base_t, seq, c.job_key, wtype, brank,
+     jsonb_build_object(''lv'', c.level, ''mlv'', n.min_level + 1, ''sp'', c.skill_progress, ''st'', jsonb_build_object(''agility'', c.agility, ''vitality'', c.vitality, ''willpower'', c.willpower, ''perception'', c.perception)));
    jr := jr || (fx -> ''lines''); seq := (fx ->> ''seq'')::int; my_taken := (fx ->> ''taken'')::int;
+   mn := mn - coalesce((fx ->> ''mn'')::int, 0); er := er + coalesce((fx ->> ''er'')::int, 0);
    if won and nal > 0 then
      xp := xp + (5 + danger) * nal;
      for k in 1..nal loop
@@ -963,6 +1458,11 @@ begin
  brank := coalesce((c.skill_progress -> ''guarding'' ->> ''rank'')::int, 0);');
   if position('threat := threat * (1 + 0.3 * nal);' in d) = 0 or position('* (1 + 0.3 * nal));' in d) = 0 then raise exception '파티 위협 자리'; end if;
   d := replace(d, 'threat := threat * (1 + 0.3 * nal);', 'threat := threat * (1 + 0.45 * nal);');
+  -- 요괴 갈래 상성(⑭ world_kind_mult): 든 무기·직업이 유리하면 위협이 줄고 불리하면 는다(현장보다 완만하게 0.6제곱)
+  if (length(d) - length(replace(d, 'spirit_mech := coalesce(m.mechanic_key, '''') in (''spectral'', ''warded'', ''seal_breaker'');', ''))) / length('spirit_mech := coalesce(m.mechanic_key, '''') in (''spectral'', ''warded'', ''seal_breaker'');') <> 1 then raise exception '원정 상성 자리'; end if;
+  d := replace(d, 'spirit_mech := coalesce(m.mechanic_key, '''') in (''spectral'', ''warded'', ''seal_breaker'');',
+    'spirit_mech := coalesce(m.mechanic_key, '''') in (''spectral'', ''warded'', ''seal_breaker'');
+        threat := threat / power(public.world_kind_mult(m.kind, wtype, c.job_key)::float8, 0.6);');
   d := replace(d, '* (1 + 0.3 * nal));', '* (1 + 0.45 * nal));');
   execute d;
 end $$;
@@ -1187,6 +1687,130 @@ alter function public.world_skill_choose(text, int, text) owner to fn_owner_fiel
 revoke all on function public.world_skill_choose(text, int, text) from public, anon, authenticated;
 grant execute on function public.world_skill_choose(text, int, text) to authenticated;
 
+-- 현장 화면: 지역 답사도에 따라 정보를 차례로 연다(서버가 가린다). 이미 만난 요괴는 답사도와 상관없이 보인다.
+--   출몰 요괴: 갈래만 → 30% 일반 요괴 이름·레벨 → 70% 우두머리 · 얻는 것(lore): 30% 채집 재료 → 70% 요괴 전리품 → 100% 희귀품
+do $$ declare d text := pg_get_functiondef('public.world_field_snapshot()'::regprocedure); n int;
+  rx text := '''monsters'', \(SELECT coalesce\(jsonb_agg\(jsonb_build_object\(''name'', m\.monster_name.*?FROM public\.world_region_monsters m WHERE m\.region_id = r\.region_id\),';
+begin
+  if position('''lore''' in d) > 0 then return; end if;
+  select count(*) into n from regexp_matches(d, rx, 'g');
+  if n <> 1 then raise exception '현장 요괴 목록 고칠 자리(%)', n; end if;
+  d := regexp_replace(d, rx, $R$'monsters', (SELECT coalesce(jsonb_agg(CASE WHEN x.owner_id IS NOT NULL OR sv.p >= (CASE WHEN m.role = 'guardian' THEN 70 ELSE 30 END)
+        THEN jsonb_build_object('name', m.monster_name, 'type', m.monster_type, 'mechanic', m.mechanic_key, 'kind', m.kind, 'kind_name', k.kind_name, 'role', m.role,
+          'min_level', m.min_level, 'max_level', m.max_level, 'revealed', true)
+        ELSE jsonb_build_object('name', '???', 'kind_name', k.kind_name, 'role', m.role, 'revealed', false, 'need', CASE WHEN m.role = 'guardian' THEN 70 ELSE 30 END) END
+        ORDER BY m.role DESC, m.min_level), '[]'::jsonb)
+      FROM public.world_region_monsters m LEFT JOIN public.world_monster_kinds k ON k.kind_key = m.kind
+      LEFT JOIN public.world_monster_codex x ON x.owner_id = uid AND x.monster_id = m.monster_id
+      CROSS JOIN (SELECT coalesce((public.world_field_survey(uid, r.region_id) ->> 'pct')::int, 0) AS p) sv
+      WHERE m.region_id = r.region_id),
+    'lore', (SELECT jsonb_build_object('pct', sv.p,
+        'gather', CASE WHEN sv.p >= 30 THEN (SELECT coalesce(jsonb_agg(DISTINCT li), '[]'::jsonb) FROM public.world_gathering_spots gs JOIN public.world_exploration_nodes gn ON gn.node_id = gs.node_id, unnest(gs.loot_items) li WHERE gn.region_id = r.region_id AND gs.active) END,
+        'drops', CASE WHEN sv.p >= 70 THEN (SELECT coalesce(jsonb_agg(DISTINCT dd.key), '[]'::jsonb) FROM public.world_region_monsters dm, jsonb_each(coalesce(dm.drops, '{}'::jsonb)) dd WHERE dm.region_id = r.region_id) END,
+        'rare', CASE WHEN sv.p >= 100 THEN (SELECT coalesce(jsonb_agg(si), '[]'::jsonb) FROM public.world_region_profiles rp, unnest(rp.signature_items) si WHERE rp.region_id = r.region_id AND si NOT IN ('courier_token', 'spirit_compass')) END)
+      FROM (SELECT coalesce((public.world_field_survey(uid, r.region_id) ->> 'pct')::int, 0) AS p) sv),$R$);
+  execute d;
+end $$;
+grant select on public.world_region_profiles to fn_owner_field;
+
+-- ⑮ ─────────────────────────────────────────
+-- 운영진 칭호: 운영진(world_staff)만 가진다. 능력치 효과는 없고, 다른 조사원의 칭호 목록에는 나오지 않는다(분류 '운영').
+insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade) values
+  ('gm_staff', '야행국 운영진', 'shield', '야행국을 돌보는 운영진입니다.', '운영진만 가집니다', '{}', true, true, null, 200, '운영', 5)
+on conflict (title_key) do update set title_name = excluded.title_name, description = excluded.description, condition_text = excluded.condition_text,
+  bonus = excluded.bonus, active = excluded.active, hidden = excluded.hidden, rule = excluded.rule, sort = excluded.sort, category = excluded.category, grade = excluded.grade;
+insert into public.world_character_titles(owner_id, title_key)
+select s.owner_id, 'gm_staff' from public.world_staff s join public.world_characters c on c.owner_id = s.owner_id
+on conflict do nothing;
+do $$ declare d text := pg_get_functiondef('public.world_title_snapshot()'::regprocedure);
+  a text := '  where tc.active;'; b text := '  where tc.active and (tc.category is distinct from ''운영'' or ct.owner_id is not null);';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '칭호 목록 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- ⑯ ─────────────────────────────────────────
+-- 전체 채팅 하루 20회 → 50회
+do $$ declare d text := pg_get_functiondef('public.world_chat_send(text,text,text)'::regprocedure);
+  a text := 'if day_count>=20 then raise exception ''전체 채팅은 하루 20회까지 보낼 수 있어요.''; end if;';
+  b text := 'if day_count>=50 then raise exception ''전체 채팅은 하루 50회까지 보낼 수 있어요.''; end if;';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '전체 채팅 한도 고칠 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
+-- 칭호 묶음(프리셋) 3칸: 지금 장착한 칭호(최대 3)와 대표 칭호를 이름 붙여 저장하고, 한 번에 바꿔 낀다.
+create table if not exists public.world_title_presets (
+  owner_id uuid not null, slot int not null check (slot between 1 and 3), name text not null,
+  titles text[] not null default '{}', display text, updated_at timestamptz not null default now(),
+  primary key (owner_id, slot));
+alter table public.world_title_presets enable row level security;
+revoke all on public.world_title_presets from public, anon, authenticated;
+grant select, insert, update, delete on public.world_title_presets to fn_owner_field;
+grant update (is_equipped) on public.world_character_titles to fn_owner_field;
+
+create or replace function public.world_title_preset_save(p_slot int, p_name text)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); nm text := left(btrim(coalesce(p_name, '')), 12); t text[]; disp text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if p_slot not between 1 and 3 then raise exception '묶음은 1~3번까지입니다.'; end if;
+  if nm = '' then nm := '묶음 ' || p_slot; end if;
+  select profile ->> 'title' into disp from public.world_characters where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select coalesce(array_agg(title_key order by earned_at, title_key), '{}') into t from public.world_character_titles where owner_id = uid and is_equipped;
+  if cardinality(t) = 0 and disp is null then raise exception '장착한 칭호나 대표 칭호가 있어야 저장할 수 있습니다.'; end if;
+  insert into public.world_title_presets(owner_id, slot, name, titles, display) values (uid, p_slot, nm, t, disp)
+  on conflict (owner_id, slot) do update set name = excluded.name, titles = excluded.titles, display = excluded.display, updated_at = now();
+  return jsonb_build_object('ok', true, 'content', '「' || nm || '」에 지금 칭호를 저장했습니다.');
+end $$;
+
+create or replace function public.world_title_preset_apply(p_slot int)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid(); pr public.world_title_presets%rowtype; nm text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform 1 from public.world_characters where owner_id = uid for update;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select * into pr from public.world_title_presets where owner_id = uid and slot = p_slot;
+  if not found then raise exception '저장된 묶음이 없습니다.'; end if;
+  update public.world_character_titles set is_equipped = (title_key = any (pr.titles[1:3])) where owner_id = uid and (is_equipped or title_key = any (pr.titles[1:3]));
+  if pr.display is not null then
+    select tc.title_name into nm from public.world_character_titles ct join public.world_title_catalog tc using (title_key) where ct.owner_id = uid and ct.title_key = pr.display;
+  end if;
+  update public.world_characters set profile = case when nm is null then coalesce(profile, '{}'::jsonb) - 'title' - 'title_name'
+      else coalesce(profile, '{}'::jsonb) || jsonb_build_object('title', pr.display, 'title_name', nm) end, updated_at = now()
+   where owner_id = uid;
+  return jsonb_build_object('ok', true, 'content', '「' || pr.name || '」 묶음으로 바꿨습니다.');
+end $$;
+
+create or replace function public.world_title_preset_clear(p_slot int)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := public.fn_owner_auth_uid();
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  delete from public.world_title_presets where owner_id = uid and slot = p_slot;
+  return jsonb_build_object('ok', true, 'content', '묶음을 비웠습니다.');
+end $$;
+do $$ declare f text; begin
+  foreach f in array array['public.world_title_preset_save(int, text)', 'public.world_title_preset_apply(int)', 'public.world_title_preset_clear(int)'] loop
+    execute format('alter function %s owner to fn_owner_field', f);
+    execute format('revoke all on function %s from public, anon, authenticated', f);
+    execute format('grant execute on function %s to authenticated', f);
+  end loop;
+end $$;
+-- 칭호 화면이 한 번에 받도록 묶음 목록을 world_title_snapshot에 싣는다
+do $$ declare d text := pg_get_functiondef('public.world_title_snapshot()'::regprocedure);
+  a text := '''max_equipped'', 3, ''display'', disp,';
+  b text := '''max_equipped'', 3, ''display'', disp, ''presets'', (select coalesce(jsonb_agg(jsonb_build_object(''slot'', p.slot, ''name'', p.name, ''titles'', p.titles, ''display'', p.display) order by p.slot), ''[]''::jsonb) from public.world_title_presets p where p.owner_id = uid),';
+begin
+  if position('''presets''' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '칭호 목록 묶음 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+
 grant fn_owner_social to postgres with inherit false, set false;
 grant fn_owner_18666 to postgres with inherit false, set false;
 grant fn_owner_18944 to postgres with inherit false, set false;
@@ -1196,6 +1820,7 @@ grant fn_owner_expedition to postgres with inherit false, set false;
 grant fn_owner_18452 to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
 grant fn_owner_18475 to postgres with inherit false, set false;
+grant fn_owner_19141 to postgres with inherit false, set false;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261029050000', now())
 on conflict (key) do update set value = excluded.value, changed_at = now();

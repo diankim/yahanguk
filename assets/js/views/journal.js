@@ -131,7 +131,59 @@ const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', dee
 const PHASE = { dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경' };
 const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
 const RAR = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };
+// 도감: 요괴 · 채집 · 어종. 요괴는 만나면 기본 정보, 쓰러뜨리면 상성·기믹 파훼법·전리품이 열린다.
+const CODEX = [['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
+let cx = 'monster', cxKind = '';
 async function codex(body) {
+  body.innerHTML = `${segmented('cx-sub', CODEX, cx)}<div id="cx-body">${loading()}</div>`;
+  bindSegmented(body, 'cx-sub', k => { cx = k; codex(body); });
+  const box = $('#cx-body', body);
+  try { await ({ monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[cx](box); }
+  catch (e) { box.innerHTML = errorBox(e.message); }
+}
+const JOBN = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '기록 분석관', medic: '의무관', artificer: '법구 제작사' };
+const mul = v => { const n = Number(v); return `<span class="eff ${n >= 1.2 ? 'ok' : n <= 0.85 ? 'bad' : ''}">×${n}</span>`; };
+const codexTitles = list => (list || []).length ? panel('도감 칭호', `<ul class="spot-list">${list.map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}${t.need && !t.earned ? ` · ${fmt.num(t.progress ?? 0)}/${fmt.num(t.need)}` : ''}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>`, { ico: 'spark' }) : '';
+async function monsterCodex(box) {
+  const o = await load('world_monster_codex_snapshot', undefined, { maxAge: 20000 });
+  const kinds = o.kinds || [], all = o.monsters || [];
+  const got = all.filter(m => m.defeated > 0).length, seen = all.filter(m => m.known).length;
+  if (!kinds.some(k => k.key === cxKind)) cxKind = '';
+  const list = all.filter(m => !cxKind || m.kind === cxKind);
+  const kname = Object.fromEntries(kinds.map(k => [k.key, k.name]));
+  box.innerHTML = `
+    <div class="codex-head"><p class="desc">요괴는 열세 갈래로 나뉘고, 갈래마다 잘 듣는 무기(근접·원거리·술법)와 유리한 직업이 있습니다. 만난 요괴는 기본 정보가, 한 번 쓰러뜨린 요괴는 상성·기믹 파훼법·전리품이 적힙니다.</p>
+      <div class="chips">${chip(`만남 ${seen}/${all.length}`, '')}${chip(`토벌 ${got}/${all.length}`, 'accent')}</div>${bar(got, all.length || 1, 'xp')}</div>
+    <div class="chips kind-chips"><button class="chip ${cxKind ? '' : 'on'}" data-kind="">전체</button>${kinds.map(k => `<button class="chip ${cxKind === k.key ? 'on' : ''}" data-kind="${esc(k.key)}">${esc(k.name)} <small>${k.defeated}/${k.total}</small></button>`).join('')}</div>
+    ${cxKind ? `<p class="muted small">${esc(kinds.find(k => k.key === cxKind)?.desc || '')}</p>` : ''}
+    <ul class="mon-grid">${list.map(m => m.known ? `<li class="mon-card ${m.defeated > 0 ? 'done' : ''}">
+        <div class="mon-top"><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}</div>
+        <small>${esc(kname[m.kind] || '')} · ${esc(m.region)} · Lv.${m.level}–${m.max_level}</small>
+        ${m.desc ? `<small class="muted">${esc(m.desc)}</small>` : ''}
+        <small class="best">만남 ${fmt.num(m.seen)} · 토벌 ${fmt.num(m.defeated)}</small>
+        ${m.counter ? `<details class="mon-counter"><summary>${icon('scroll', 12)} 파훼법</summary>
+          <p class="small">상성: 근접 ${mul(m.counter.melee)} · 원거리 ${mul(m.counter.ranged)} · 술법 ${mul(m.counter.magic)}${m.counter.job ? ` · ${esc(JOBN[m.counter.job] || '')} +20%` : ''}</p>
+          ${m.counter.habit ? `<p class="small muted">${esc(m.counter.habit)}</p>` : ''}
+          <ul class="gim-list">${(m.counter.gimmicks || []).map(g => `<li><b>「${esc(g.name)}」</b><small>Lv.${g.from}부터 · ${esc(g.tell)}</small><small>${esc(g.tip)}</small></li>`).join('')}</ul>
+          ${(m.counter.drops || []).length ? `<p class="small">전리품: ${m.counter.drops.map(d => esc(d.name)).join(', ')}</p>` : ''}</details>` : '<small class="muted">쓰러뜨리면 파훼법이 적힙니다</small>'}
+      </li>` : `<li class="mon-card unknown"><b>???</b><small>${esc(kname[m.kind] || '')} · ${esc(m.region)}${m.role === 'guardian' ? ' · 우두머리' : ''}</small><small>아직 만나지 못했습니다</small></li>`).join('')}</ul>
+    ${codexTitles(o.titles)}`;
+  $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
+}
+const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
+async function gatherCodex(box) {
+  const o = await load('world_gather_codex_snapshot', undefined, { maxAge: 20000 });
+  const items = o.items || [], got = items.filter(x => x.known).length;
+  box.innerHTML = `
+    <div class="codex-head"><p class="desc">현장 채집터에서 거둔 재료가 적힙니다. 아직 거두지 못한 재료는 이름이 가려져 있고, 분류와 처음 나오는 레벨만 알려 줍니다.</p>
+      <div class="chips">${chip(`도감 ${got}/${items.length}`, 'accent')}</div>${bar(got, items.length || 1, 'xp')}</div>
+    ${Object.entries(GCAT).map(([c, cn]) => { const list = items.filter(x => x.cat === c); if (!list.length) return '';
+      return panel(`${cn} · ${list.filter(x => x.known).length}/${list.length}`, `<ul class="fish-grid">${list.map(x => x.known ? `<li class="fish-card">
+        <b>${esc(x.name)}</b><small>Lv.${x.level}+ · ${fmt.num(x.count)}번 · ${fmt.num(x.qty)}개</small>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}
+        <small class="muted">${esc((x.regions || []).join(', '))}</small></li>` : `<li class="fish-card unknown"><b>???</b><small>${esc(cn)} · Lv.${x.level}+</small><small>아직 거두지 못했습니다</small></li>`).join('')}</ul>`, { ico: 'leaf', cls: 'compact' }); }).join('')}
+    ${codexTitles(o.titles)}`;
+}
+async function fishCodex(body) {
   const [o, map] = await Promise.all([load('world_fish_codex'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
   const sp = o.species || [], got = sp.filter(x => x.caught).length;
   const grounds = o.grounds || [];

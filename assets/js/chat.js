@@ -274,7 +274,7 @@ function msgRow(r, prev) {
   const fr = face?.frame && FRAMES[face.frame] ? ` fr t-${frameTier(face.frame)}` : '';
   const av = face ? `<i class="av face${fr}" aria-hidden="true">${emblem(r.sid, { ...face, frame: null }, 26)}</i>` : `<i class="av" aria-hidden="true">${initial}</i>`;
   const ns = nameStyle(r.color, r.sid);
-  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta"><b>${cardName(r.sid, r.who)}</b>${r.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
+  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta">${r.gm ? `<b><button type="button" class="name-link" data-card="${esc(r.sid)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b>${cardName(r.sid, r.who)}</b>`}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {

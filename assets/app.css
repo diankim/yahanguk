@@ -1636,3 +1636,46 @@ b.contest { color: var(--warn); font-weight: 600; }
 .combo-list li.on { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
 .combo-list small .ok { color: var(--ok); } .combo-list small .bad { color: var(--bad); }
 .combo-list li .chip { align-self: flex-start; }
+/* 요괴 도감 */
+.kind-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.kind-chips button.chip { cursor: pointer; } .kind-chips .chip.on { color: var(--gold); border-color: var(--gold); }
+.kind-chips .chip small { opacity: .75; font-weight: 500; }
+.mon-grid { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
+.mon-card { display: grid; gap: 2px; align-content: start; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--line); min-width: 0; }
+.mon-card.done { border-left-color: var(--gold); }
+.mon-card.unknown { opacity: .7; } .mon-card.unknown b { color: var(--muted); letter-spacing: .2em; }
+.mon-card small { font-size: 12px; color: var(--muted); } .mon-card .best { color: var(--gold); }
+.mon-top { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+.mon-counter { margin-top: 4px; } .mon-counter summary { cursor: pointer; font-size: 12px; color: var(--accent); }
+.mon-counter p { margin: 4px 0; } .eff.ok { color: var(--ok); } .eff.bad { color: var(--bad); }
+.gim-list { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 4px; }
+.gim-list li { display: grid; gap: 1px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--surface); }
+.gim-list small { font-size: 11.5px; }
+/* 칭호 묶음 */
+.t-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 8px 0; }
+.t-preset { display: grid; gap: 4px; align-content: start; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); min-width: 0; }
+.t-preset.now { border-color: var(--gold); } .t-preset.empty { border-style: dashed; }
+.t-pname { width: 100%; min-height: 30px; padding: 2px 6px; border: 0; border-bottom: var(--bw) solid var(--line); background: transparent; color: var(--text); font-weight: 700; font-size: 13px; }
+.t-pbody { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; } .t-pbody small { display: block; color: var(--muted); font-size: 11.5px; }
+.t-pact { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 560px) { .t-presets { grid-template-columns: minmax(0, 1fr); } }
+.foe-list li.locked { opacity: .65; } .foe-list li.locked > b { color: var(--muted); }
+/* 도움말: 묶음 카드 · 펼침 항목 · 검색 */
+.guide2 { display: grid; gap: 10px; }
+.guide-search { max-width: 640px; }
+.guide-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 6px; }
+.guide-cat { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 10px 12px; border-radius: var(--r-sm); border: var(--bw) solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; min-width: 0; }
+.guide-cat .ico { grid-row: 1 / 3; color: var(--gold); }
+.guide-cat b { font-size: 14px; } .guide-cat small { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-cat:hover { border-color: var(--gold); } .guide-cat.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--surface)); }
+.guide-list { display: grid; gap: 6px; }
+.guide-item { border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface); scroll-margin-top: calc(var(--top-h) + 64px); }
+.guide-item > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 14px; cursor: pointer; font-weight: 700; list-style: none; }
+.guide-item > summary::-webkit-details-marker { display: none; }
+.guide-item > summary .ico { color: var(--muted); transition: transform .15s; } .guide-item[open] > summary .ico { transform: rotate(90deg); }
+.guide-item[open] > summary { border-bottom: 1px solid var(--line); color: var(--gold); }
+.guide-item .guide-sec { padding: 12px 14px; }
+.guide-sec p { margin: 0 0 8px; }
+.guide-list mark { background: color-mix(in srgb, var(--gold) 35%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.guide-sec .guide-table { display: block; overflow-x: auto; }
+@media (prefers-reduced-motion: reduce) { .guide-item > summary .ico { transition: none; } }

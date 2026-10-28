@@ -8,7 +8,7 @@ import { load, panel, chip, danger, loading, errorBox, invalidate, safeZones, zo
 import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
-import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
+import { renderBattle, stopBattle, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
 import { sceneArt } from '../scenery.js';
@@ -166,7 +166,7 @@ function field(s, roster, blocked) {
   const kids = (s.nodes || []).filter(x => x.parent_id === n.node_id);
   const parent = (s.nodes || []).find(x => x.node_id === n.parent_id);
   const w = s.weapon || {};
-  const mechs = [...new Set((s.monsters || []).map(m => m.mechanic).filter(Boolean))];
+  const kinds = [...new Set((s.monsters || []).map(m => m.kind_name).filter(Boolean))];
   // 길을 못 가는 까닭(서버 world_field_move와 같은 순서): 전투불능 → 이동 중 → 원정 중 → 레벨
   const c = store.character;
   const stateWhy = !blocked ? '' : s.overflow > 0 ? '원정 짐 보따리를 먼저 정리하세요' : (c.downed_at || c.health <= 0) ? '전투불능 상태에서는 움직일 수 없습니다'
@@ -197,7 +197,7 @@ function field(s, roster, blocked) {
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
         ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
         ${s.story_here?.length ? `<p class="hint accent">${icon('scroll', 14)} 이 지역 어딘가에 「${esc(s.story_here[0].chapter)}」의 단서가 있습니다. 탐색을 이어가세요.</p>` : ''}
-        <p class="weapon-line small">${icon('sword', 14)} ${esc(w.name || '맨손')} · ${STYLE[w.type] || '근접'}${mechs.length ? ` · 이 지역 요괴: ${mechs.map(m => { const [e, k] = effectiveness(w.type, m); return `<span class="eff ${k}">${esc(MECH[m]?.[0] || m)} ${esc(e)}</span>`; }).join(' ')}` : ''}</p>
+        <p class="weapon-line small">${icon('sword', 14)} ${esc(w.name || '맨손')} · ${STYLE[w.type] || '근접'}${kinds.length ? ` · 이 지역 요괴 갈래: ${kinds.map(k => esc(k)).join('·')}` : ''}</p>
       </section>
 
       <details class="panel fold log-card" data-fold="field-log" ${foldOpen('field-log') ? 'open' : ''}>
@@ -235,7 +235,10 @@ function field(s, roster, blocked) {
     <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
       <div class="panel-body">${tree(s)}<p class="muted small">찾은 장소 ${s.survey?.nodes_found ?? 0}/${s.survey?.nodes_total ?? 0} · 채집터 ${s.survey?.spots_found ?? 0}/${s.survey?.spots_total ?? 0}. 모두 찾으면 가방이 넓어집니다.</p></div></details>
     <details class="panel fold"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
-      <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => `<li><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.type || '')} · ${esc(MECH[m.mechanic]?.[0] || '')} · Lv.${m.min_level}–${m.max_level}</small>${MECH[m.mechanic] ? `<small class="muted">${esc(MECH[m.mechanic][1])}</small>` : ''}</li>`).join('')}</ul></div></details>
+      <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => m.revealed === false
+        ? `<li class="locked"><b>???</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.kind_name || '')} · 답사도 ${m.need}%에 드러납니다</small></li>`
+        : `<li><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.type || '')}${m.kind_name ? ` · ${esc(m.kind_name)}` : ''} · Lv.${m.min_level}–${m.max_level}</small></li>`).join('')}</ul>
+        ${loreHtml(s.lore)}</div></details>
     ${people(roster, s.corpses)}`;
 }
 
@@ -379,3 +382,12 @@ function openRest(r) {
 }
 
 const openExpedition = () => openExpeditionWindow();
+
+// 이 지역에서 얻는 것: 답사도 30% 채집 재료 → 70% 요괴 전리품 → 100% 희귀품(서버 world_field_snapshot.lore가 가린다)
+function loreHtml(l) {
+  if (!l) return '';
+  const row = (label, need, list) => `<li class="${list ? '' : 'locked'}"><b>${label}</b>${list ? `<small>${list.map(k => esc(nameOf(k))).join(', ') || '없음'}</small>` : `<small>답사도 ${need}%에 드러납니다</small>`}</li>`;
+  return `<h3 class="sub-h">이 지역에서 얻는 것 <small class="muted">답사도 ${l.pct ?? 0}%</small></h3><ul class="foe-list">
+    ${row('채집 재료', 30, l.gather)}${row('요괴 전리품', 70, l.drops)}${row('희귀품', 100, l.rare)}</ul>
+    <p class="muted small">원정과 탐색으로 답사도를 올리면 출몰 요괴와 얻는 것이 차례로 드러납니다. 이미 만난 요괴는 바로 보입니다.</p>`;
+}

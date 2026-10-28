@@ -109,7 +109,7 @@ function drawThread(loading) {
   let draft = ''; try { draft = sessionStorage.getItem(draftKey(cur)) || ''; } catch {}
   main.innerHTML = `
     <header class="wh-head"><button class="icon-btn wh-back" aria-label="대화 목록으로">${icon('back')}</button>
-      <b>${cur.id ? cardName(cur.id, cur.name) : esc(cur.name)}</b>${cur.id && isGM(cur.id) ? '<span class="gm-badge">GM</span>' : ''}<small class="muted">둘만 보는 대화</small></header>
+      ${cur.id && isGM(cur.id) ? `<b><button type="button" class="name-link" data-card="${esc(cur.id)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b>${cur.id ? cardName(cur.id, cur.name) : esc(cur.name)}</b>`}<small class="muted">둘만 보는 대화</small></header>
     <ol class="chat-list wh-list" id="wh-list">${loading ? '<li class="chat-empty">불러오는 중…</li>' : ''}</ol>
     <form class="chat-form" id="wh-form"><div class="chat-row"><textarea name="text" rows="1" maxlength="500" placeholder="${esc(cur.name)}님에게 귓속말" aria-label="귓속말"></textarea>
       <button class="chat-send" type="submit" aria-label="보내기">${icon('chevron', 16)}</button></div></form>`;
