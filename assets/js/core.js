@@ -55,7 +55,8 @@ export function throttle(fn, gap) {
 // 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);
-  if (/equip/.test(name)) equipped = null; // 장착이 바뀌면 다음 읽기에서 장착 목록도 다시 읽는다
+  // 장착이 바뀌는 행동 뒤에는 다음 읽기에서 장착 목록도 다시 읽는다(장착·해제 말고도 원정 귀환은 원정 장비를, 환골탈태는 전용 장비를, 분해는 장비를 바꾼다)
+  if (/equip|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
   try { await loadCharacter(); } catch {}
   emit('changed', { name, data });
   return data;
