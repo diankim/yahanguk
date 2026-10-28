@@ -1635,3 +1635,4 @@ b.contest { color: var(--warn); font-weight: 600; }
 .combo-list li { border: 1px solid var(--line); border-radius: var(--r-sm, 6px); padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
 .combo-list li.on { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
 .combo-list small .ok { color: var(--ok); } .combo-list small .bad { color: var(--bad); }
+.combo-list li .chip { align-self: flex-start; }
