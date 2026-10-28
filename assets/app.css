@@ -1238,7 +1238,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .circle-feed li p { border-left: 3px solid var(--cc); }
 .circle-feed li.mine p { border-left: 0; border-right: 3px solid var(--cc); background: color-mix(in srgb, var(--cc) 20%, var(--surface-2)); }
 .chat-list .chat-notice { max-width: none; justify-self: center; font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
-.chat-list .chat-notice time { font-size: 11px; }
+.chat-list .chat-notice time { font-size: 11px; white-space: nowrap; flex: none; }
 .circle-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
 .circle-list li { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--cc); }
 .circle-list li > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .circle-list small { color: var(--muted); font-size: 12px; }
@@ -1579,6 +1579,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ingr li small { margin-left: 4px; font-size: 11px; }
 .chat-list .chat-notice.sys { color: var(--text); border: var(--bw) solid color-mix(in srgb, var(--bad) 40%, var(--line)); background: color-mix(in srgb, var(--bad) 8%, var(--surface-2)); align-items: center; }
 .chat-list .chat-notice.sys svg { color: var(--bad); flex: none; }
+.chat-list .chat-notice.sys { justify-self: stretch; border-radius: var(--r-sm); padding: 6px 10px; }
+.chat-list .chat-notice.sys > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .patch-link { display: inline-flex; align-items: center; gap: 3px; padding: 0 6px; border-radius: 999px; border: var(--bw) solid var(--line); color: var(--accent); text-decoration: none; font-size: 12px; }
 /* 패치노트 */
 .patch-list { display: grid; gap: 10px; }

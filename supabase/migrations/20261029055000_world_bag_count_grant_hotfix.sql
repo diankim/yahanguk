@@ -9,3 +9,7 @@ do $T$ declare r text; begin
   end loop;
   grant fn_owner_expedition to postgres with inherit false, set false;
 end $T$;
+
+-- 접속 중인 화면에 「새로고침」 안내를 띄운다
+insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261029055000', now())
+on conflict (key) do update set value = excluded.value, changed_at = now();
