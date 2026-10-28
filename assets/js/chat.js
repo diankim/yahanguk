@@ -259,7 +259,7 @@ export const NAME_STYLES = {
 };
 export const nameStyle = (v, id) => NAME_STYLES[v] ? { cls: ` ns-${v}`, hu: hue(id) } : { cls: '', hu: Number.isInteger(v) ? v : hue(id) };
 export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
-// 채팅 글의 「#패치노트」(또는 「#패치노트:1.0.0」 같은 패치 번호)는 패치노트 화면으로 가는 링크가 된다
+// 채팅 글의 「#패치노트」(또는 「#패치노트:4.0.0」 같은 패치 번호)는 패치노트 화면으로 가는 링크가 된다
 export function richText(t) {
   return esc(t).replace(/#패치노트(?::([0-9][0-9.-]{2,11}))?/g, (_, id) => `<a class="patch-link" href="#/patch${id ? `/${id}` : ''}">${icon('scroll', 12)}패치노트${id ? ` ${id}` : ''}</a>`);
 }

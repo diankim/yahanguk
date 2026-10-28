@@ -7,6 +7,7 @@
 --   ⑪ 대세력 떠나기·옮기기(12시간) · 회복 완화(야영 ⅔·안전지대 자연 회복·구조대 비용)
 --   ⑫ 상위 도구로 하위 도구 제작법 · 원정 전투 여러 합 묘사(막기·회피·치명타·직업 기술·요괴 기믹) · 파티 원정은 동료마다 요괴 하나 더
 --   ⑬ 기술 단계 보상 개편(13·30 추가 · 24·43 택일 · 50 숙달 · 조합 7)
+--   ⑱ 분석·막기·응급 처치 기술이 오르지 않던 문제(약점 간파·방어·회복 횟수를 토벌 기록에 싣고 기술 경험에 더함)
 --   ⑰ 소속 효과(전투·생활·탐사·이동·경제)
 --   ⑯ 전체 채팅 하루 50회 · 칭호 묶음(3칸 + 칭호로 최대 6칸) · 레벨 차 피해 보정(토벌·원정, 레벨마다 3%, 최대 30%) · 닳은 장비 알림
 --   ⑮ 운영진 칭호(운영진만, 효과 없음)
@@ -23,6 +24,7 @@ grant fn_owner_18987 to postgres with inherit true, set true;
 grant fn_owner_18475 to postgres with inherit true, set true;
 grant fn_owner_19141 to postgres with inherit true, set true;
 grant fn_owner_18878 to postgres with inherit true, set true;
+grant fn_owner_18962 to postgres with inherit true, set true;
 
 -- ① ─────────────────────────────────────────
 -- 강산하 님 제보(제작 시 36/35): 화면은 장착 장비를 뺀 29/29칸인데, 메시지는 장착 장비를 더한 숫자였다.
@@ -147,15 +149,115 @@ revoke all on public.world_patch_notes from public, anon, authenticated;
 grant select on public.world_patch_notes to authenticated;
 drop policy if exists world_patch_notes_read on public.world_patch_notes;
 create policy world_patch_notes_read on public.world_patch_notes for select to authenticated using (true);
--- 지금까지 채팅에 올린 공지를 옮겨 둔다(「[패치 n/m] 제목」 → 「## 제목」)
-insert into public.world_patch_notes(note_id, title, body, created_at)
-select v.id, v.title, string_agg(regexp_replace(m.content, '^\[패치[^\]]*\]\s*', '## '), E'\n\n' order by m.id), min(m.created_at)
-  from (values ('2026-10-28-1', '원정 개편 · 화면 꾸미기', array[71, 73, 74, 75, 76]),
-               ('2026-10-28-2', '숙련·기술 통합 · 요화 · 비무', array[90, 91, 92, 93, 94, 95, 96]),
-               ('2026-10-28-3', '개인 창고 · 새 배경음악', array[97, 98, 99, 136])) v(id, title, ids)
-  join public.world_chat_messages m on m.id = any (v.ids) and m.sender_name = 'GM'
- group by v.id, v.title
-on conflict (note_id) do nothing;
+-- 패치노트: 번호 규칙(대규모.소규모.버그)에 맞춰 앞선 대규모 패치 셋을 1.0.0·2.0.0·3.0.0으로, 이번 저녁 묶음을 4.0.0으로 적는다(항목은 묶음 안에서 1부터 번호).
+insert into public.world_patch_notes(note_id, title, body, created_at) values
+  ('1.0.0', '원정 개편 · 화면 꾸미기', $PN$## 1.0.0 · 원정 개편 · 화면 꾸미기 (통산 1번째 패치)
+
+### 원정
+1. 출발할 때 노정패 운임(외곽 1·심부 2·핵심 3)을 냅니다.
+2. 원정에서만 나오는 물품: 길잡이 등불·비경 지도·비약 3종·봉인된 보따리·강화 재료.
+3. 2시간 이상 다녀오면 비경을 찾습니다(3시간 동안 그 지역 채집량 +50%).
+4. 같은 설정으로 다시 보내기.
+5. 원정 짐 보따리: 귀환 때 가방이 넘치면 넘친 전리품을 보따리에 담아 두고 현장의 「정리하기」에서 골라 챙기거나 버립니다. 비우기 전에는 이동·탐색·채집·낚시·전투·원정 출발을 할 수 없습니다.
+6. 마구간에서 노정패로 탈것 단련(단계마다 속도 +4%).
+
+### 화면
+7. 글자와 간격을 촘촘하게, 채팅을 새로 꾸밈, 알림 창에 「지난 알림」.
+8. 장소 그림에 꺾쇠 액자, 현장 행동을 아이콘 칸으로(탐색·원정·야영·자율 휴식·지도), 모바일 아래 탭은 아이콘만.
+9. 모든 화면 머리글에 액자, 하위 탭에 아이콘, 모바일 설명 글자 축소.
+10. 모바일 지도의 출발 띠를 위로, 모바일 크롬에서 앱 설치.
+11. 「자율 휴식」을 누르면 캐릭터 › 자율의 휴식으로 바로 갑니다.
+
+### 그 밖
+12. 대장간 › 수리에서 장비를 하나씩 고칩니다.
+13. 채팅 이름 색을 직접 고릅니다(설정 › 프로필 › 채팅 이름 색). 대화 기록은 3일 보관.
+14. 고친 것: PC 현장의 빈 공간과 이동 중 세로 스크롤, 원정 중 현장에 원정 칸이 보이지 않던 문제.$PN$, '2026-10-27 23:39:40+00'),
+  ('2.0.0', '숙련·기술 통합 · 요화 · 비무', $PN$## 2.0.0 · 숙련·기술 통합 · 요화 · 비무 (통산 2번째 패치)
+
+### 성장
+1. 숙련(전투·채집·제작·조사)은 그 갈래 기술 가운데 가장 높은 단계입니다(최고 50). 새 기준으로 다시 계산해 숙련이 내려간 분이 있습니다.
+2. 기술은 3·8·13·18·24·30·36·43·50단계에서 익히고, 채집량·희귀품·회복·받는 피해 같은 효과가 실제로 적용됩니다. 캐릭터 › 기술의 네모 노드를 누르면 펼쳐집니다.
+3. 나누지 않은 능력치 포인트가 있으면 캐릭터 탭에 빨간 점.
+
+### 원정
+4. 1시간 이상 끝까지 다녀오면 원정지 수준 장비 하나(1시간 50%, 2시간 이상 반드시).
+5. 2시간 이상 완주하면 경험치·전·숙련 경험 +20%(4시간 +30%, 8시간 +40%).
+6. 같은 영역 이웃 지역의 요괴도 섞여 나오고, 원정 경험 절반이 기술로도 들어갑니다.
+7. 원정 일지의 전투는 테두리 칸으로 묶여 결과만 보이고, 누르면 펼쳐집니다.
+
+### 침식·요화
+8. 침식 게이지를 상태판으로. 부적 정화는 침식 −18·정신 +6.
+9. 요화: 침식이 80·90·100에 닿을 때 낮은 확률로 걸리고(요기 스밈 3일 → 요문 발현 2일 → 반요 1일 → 쓰러짐) 귀령초로만 풉니다. 요화로 쓰러져도 목숨은 잃지 않고, 「안전지대 봉인」 24시간 뒤 돌아옵니다.
+
+### 교류·꾸미기
+10. 비무: 같은 곳의 조사원 카드에서 신청, 목숨·물품·전·경험치는 그대로. 비무 칭호 10가지.
+11. 칭호로 여는 특별 이름 색 15가지, 채팅 얼굴에 프로필 테두리, 요화 칭호.
+
+### 그 밖
+12. 본부 구조대로 일어나면 이번 레벨 경험치 5%도 잃습니다(레벨은 내려가지 않음).
+13. 배경음악이 영역마다 분위기·빠르기·장단이 달라졌습니다.
+14. 현장 채집도·월철 곡괭이를 모든 안전지대 상점에서 늘 팝니다.$PN$, '2026-10-28 03:57:46+00'),
+  ('3.0.0', '개인 창고 · 새 배경음악', $PN$## 3.0.0 · 개인 창고 · 새 배경음악 (통산 3번째 패치)
+
+### 창고
+1. 모든 안전지대에 같은 「창고」(기본 30칸, 가방과 같은 묶음 기준). 꺼낼 때는 가방에 들어가는 만큼만.
+2. 장착 중인 마지막 하나·강화한 장비의 마지막 하나·임무 물품은 맡길 수 없고, 전투불능·이동·원정·자율 중에는 열 수 없습니다.
+3. 넓히기(최대 68칸): 전 4번(1,000·2,500·5,000·10,000전, +4씩) · 이야기 6~10장 +2씩 · 대세력 평판 300·600·1000 +2씩 · 지역 완전 답사 10·20·30곳 +2씩.
+
+### 가방·이동
+4. 장착한 장비는 가방 칸을 차지하지 않습니다.
+5. 이동 경험치·추적 기술·이동 칭호 진행은 도착할 때만.
+6. 이동 취소는 위약금 대신 취소 뒤 3분 동안 다시 출발할 수 없습니다.
+
+### 소리
+7. 배경음악을 실제 악기 소리(대금·해금·가야금·현악·첼로·하프·종)로 새로 만들었습니다. 영역마다 다른 곡이 이어지고 전투에서는 빠르기와 북 장단이 더해집니다.
+
+### 고친 것
+8. 원정 귀환 때 「e.owner_id is ambiguous」 오류.$PN$, '2026-10-28 05:02:27+00'),
+  ('4.0.0', '요괴 갈래와 도감 · 세력 판도 · 기술 단계 보상 개편', $PN$## 4.0.0 · 요괴 갈래와 도감 · 세력 판도 · 기술 단계 보상 개편 (통산 4번째 패치)
+
+이번부터 패치 번호를 「대규모.소규모.버그」로 붙입니다. 앞선 대규모 패치 셋을 1.0.0·2.0.0·3.0.0으로 다시 붙였고, 이번이 네 번째 대규모 패치 4.0.0입니다.
+
+### 전투와 요괴
+1. 요괴를 13갈래(비금·갑각·영귀·독충·목령·은형·수귀·군충·금주·경요·파봉·천상·거괴)로 나눴습니다. 갈래마다 잘 듣는 무기(근접·원거리·술법)가 있고, 맞는 직업이면 피해 +20%입니다.
+2. 갈래마다 기믹 3개(Lv1·10·20부터), 모두 39개. 토벌에서는 다음 행동 칸에 이름과 낌새만 보이고, 방어는 어느 기믹이든 피해를 줄입니다.
+3. 원정 전투가 여러 합으로 묘사되고(막기·회피·치명타·직업 기술), 캐릭터가 기믹에 저절로 대처합니다(기술 단계·레벨 차·능력치, 상성 무기·직업이면 더 잘).
+4. 파티 원정은 함께 싸우는 동료마다 요괴가 하나씩 더 나옵니다(이기면 경험치·전리품도 더).
+5. 레벨 차 보정: 요괴보다 레벨이 높으면 받는 피해가 레벨마다 3% 줄고(최대 30%), 낮으면 늘어납니다. 토벌·원정 모두.
+6. 닳은 장비 알림: 무기·방어구 등이 4분의 1 아래로 닳거나 부서지면 현장·전투 화면에 알립니다. 체력 35 아래에서 탐색하면 한 번 묻습니다.
+
+### 도감과 칭호
+7. 일지 › 도감을 요괴·채집·어종 세 칸으로. 만난 요괴는 기본 정보, 쓰러뜨린 요괴는 상성·기믹 파훼법·전리품이 열립니다. 채집 도감은 재료 32가지.
+8. 도감 칭호 20개(갈래별 13 · 요괴 20·50종 · 13갈래 모두 · 숨김 1 · 채집 10·20·32가지). 칭호는 모두 146개입니다.
+9. 칭호 묶음: 장착 칭호와 대표 칭호를 저장해 한 번에 바꿔 낍니다. 처음 3칸, 「믿음직한 해결사」·「대지의 손」·「공방의 주인」을 얻을 때마다 한 칸(최대 6칸).
+10. 현장의 출몰 요괴·얻는 것이 지역 답사도에 따라 차례로 드러납니다(30% 일반 요괴·채집 재료 → 70% 우두머리·전리품 → 100% 희귀품, 만난 요괴는 바로).
+
+### 성장
+11. 기술 단계 보상 개편: 13·30단계 추가 기술, 24·43단계 택일 기술(처음 무료, 바꾸면 2,000·5,000전), 50단계 숙달 기술, 두 계열 18단계에서 여는 조합 기술 7개.
+12. 소속에 실제 효과가 생겼습니다. 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%.
+13. 모두에게 귀속 물품 「환골탈태 서첩」(직업·소속 다시 고르기)과 「세심단」(능력치 되돌리기)을 하나씩 드립니다.
+
+### 세력과 파티
+14. 세력 판도: 대세력 조사원의 토벌·탐색·채집·원정이 지역 영향력이 되어 한 시간마다 지배 세력이 바뀝니다. 지배·분쟁·세력 관계에 따른 효과, 인원이 적은 세력은 영향력 가산(최대 ×2.5).
+15. 대세력 떠나기·옮기기(떠난 뒤 12시간이 지나면 다른 세력 가입).
+16. 현장 파티 칸(동료 위치·상황·체력·정신·침식), 파티 원정 부르기, 10분 이상 함께 다녀온 원정은 경험치·숙련 +10%(3명까지).
+
+### 생활·편의
+17. 상위 도구로 하위 도구 제작법을 만듭니다(강화 채집도로 현장 채집도 제작법 등).
+18. 창고는 어디서나 보기, 안전지대에서 제작하면 창고 재료도 씁니다.
+19. 회복 완화: 야영은 숙소의 ⅔, 안전지대에 있으면 10분마다 체력·정신 +5, 구조대 비용 완화(하루 첫 구조 반값, 내 대세력 지배 안전지대는 더 반값·경험치 손실 없음).
+20. 물품 정보 창에 「얻는 곳」, 가방·상점 목록에 짧은 설명.
+21. 전체 채팅 하루 50회(전에는 20회). 누가 쓰러지면 전체 채팅에 구조 알림.
+22. 패치노트 페이지(#패치노트 링크), 도움말을 주제 묶음·검색으로 정리하고 소속 항목을 더했습니다.
+23. 운영진은 채팅에 이름 대신 GM 표식만 보입니다.
+
+### 고친 것
+24. 분석·막기·응급 처치 기술이 오르지 않던 문제: 토벌에서 약점 간파·방어·회복(물품·응급 처방)을 쓰면 한 전투에 계열마다 3번까지 한 번에 8경험씩 오릅니다.
+25. 제작할 때 가방 칸 메시지가 화면 숫자와 달랐던 문제, 가방이 186/42칸처럼 보이던 문제.
+26. 부적 정화가 중독·심신 동요·사념 침식을 풀지 못하던 문제, 몇몇 문장의 조사(이/가 등).
+27. 숫자 붙은 장소 이름을 정리했습니다.
+$PN$, now())
+on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
 -- ⑥ ─────────────────────────────────────────
 -- 시험 운영 동안 캐릭터를 다시 키우고 싶은 조사원을 위한 귀속 소모품 2종(거래·판매 불가, 창고에는 넣을 수 있음).
@@ -877,11 +979,11 @@ returns void language sql volatile security definer set search_path to 'pg_catal
     first_defeat = coalesce(x.first_defeat, case when p_def > 0 then now() end)
 $$;
 alter function public.world_codex_mark(uuid, text, int, int) owner to fn_owner_field;
--- 토벌 기록(어느 전투 함수든)으로 도감을 채운다. 만난 것은 전투를 열 때 world_battle_open이 적는다.
+-- 토벌·패배·도주 기록(어느 전투 함수든)으로 도감을 채운다. 전투 한 번에 한 번만 쓴다(만남 +1, 이기면 토벌 +1).
 create or replace function public.world_codex_on_event() returns trigger language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
 begin
   if new.actor_id is not null and new.payload ? 'monster_id' then
-    perform public.world_codex_mark(new.actor_id, new.payload ->> 'monster_id', 0,
+    perform public.world_codex_mark(new.actor_id, new.payload ->> 'monster_id', 1,
       case when new.event_type = 'combat' and coalesce(new.payload ->> 'defeated', 'true') <> 'false' then 1 else 0 end);
   end if;
   return null;
@@ -915,7 +1017,7 @@ revoke all on function public.world_codex_on_event() from public, anon, authenti
 revoke all on function public.world_monster_tier(int) from public, anon, authenticated;
 revoke all on function public.world_gimmick_counter(text) from public, anon, authenticated;
 
--- 전투 열기: 첫 행동도 기믹을 쓸 수 있고, 만난 요괴를 도감에 적는다
+-- 전투 열기: 첫 행동도 기믹을 쓸 수 있다
 do $$ declare d text := pg_get_functiondef('public.world_battle_open(uuid,text,uuid,integer,integer)'::regprocedure);
   a text := 'public.world_battle_intent(m.mechanic_key, 1, rk)'; b text := 'public.world_battle_intent_k(m.kind, lv, m.mechanic_key, 1, rk)';
   a2 text := '  RETURN jsonb_build_object(''monster_id'', m.monster_id, ''name'', m.monster_name, ''rank'', rk, ''level'', lv);';
@@ -923,7 +1025,6 @@ begin
   if position(b in d) > 0 then return; end if;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 or (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1 then raise exception '전투 열기 고칠 자리'; end if;
   d := replace(d, a, b);
-  d := replace(d, a2, '  PERFORM public.world_codex_mark(p_owner, m.monster_id, 1, 0);' || chr(10) || a2);
   execute d;
 end $$;
 
@@ -947,7 +1048,12 @@ begin
     'WHEN ''breach'' THEN ''의 봉인 깨기'' ELSE ''의 공격'' END',
     'IF guarding AND v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') AND style = ''melee'' THEN',
     'IF v_intent IN (''heavy'', ''pounce'') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, ''bleeding''); END IF;',
-    'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0));']) loop
+    'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0));',
+    'v_pfx := v_pfx || jsonb_build_object(''focus'', 3);',
+    'guarding := true; sp := least(100, sp + 4);',
+    'inv := public.world_inv_add(inv, it, -1);',
+    'heal := least(60, 25 + c.vitality + c.willpower / 2); hp := least(100, hp + heal);',
+    '''rank'', a.rank, ''level'', a.mlevel, ''loot'', loot, ''turns'', turn));']) loop
     if (length(d) - length(replace(d, procedure_, ''))) / length(procedure_) <> 1 then raise exception '토벌 전투 고칠 자리가 하나가 아닙니다: %', procedure_; end if;
   end loop;
   if (length(d) - length(replace(d, 'public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)', ''))) / length('public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)') <> 2 then raise exception '다음 행동 자리'; end if;
@@ -1018,6 +1124,13 @@ begin
   -- 레벨 차 보정: 요괴보다 레벨이 높으면 받는 피해가 레벨마다 3% 줄고(최대 30%), 낮으면 3%씩 늘어난다(최대 30%)
   d := replace(d, 'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0));',
     'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0) * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - a.mlevel))));');
+  -- 분석·막기·응급 처치 기술: 약점 간파·방어·회복(물품·응급 처방)을 쓴 횟수를 세어 토벌 기록(payload.acts)에 싣는다(전에는 실리지 않아 세 기술이 오르지 않았다)
+  d := replace(d, 'v_pfx := v_pfx || jsonb_build_object(''focus'', 3);', 'v_pfx := v_pfx || jsonb_build_object(''focus'', 3, ''u_an'', coalesce((v_pfx ->> ''u_an'')::int, 0) + 1);');
+  d := replace(d, 'guarding := true; sp := least(100, sp + 4);', 'guarding := true; sp := least(100, sp + 4); v_pfx := v_pfx || jsonb_build_object(''u_gd'', coalesce((v_pfx ->> ''u_gd'')::int, 0) + 1);');
+  d := replace(d, 'inv := public.world_inv_add(inv, it, -1);', 'inv := public.world_inv_add(inv, it, -1); v_pfx := v_pfx || jsonb_build_object(''u_fa'', coalesce((v_pfx ->> ''u_fa'')::int, 0) + 1);');
+  d := replace(d, 'heal := least(60, 25 + c.vitality + c.willpower / 2); hp := least(100, hp + heal);', 'heal := least(60, 25 + c.vitality + c.willpower / 2); hp := least(100, hp + heal); v_pfx := v_pfx || jsonb_build_object(''u_fa'', coalesce((v_pfx ->> ''u_fa'')::int, 0) + 1);');
+  d := replace(d, '''rank'', a.rank, ''level'', a.mlevel, ''loot'', loot, ''turns'', turn));', '''rank'', a.rank, ''level'', a.mlevel, ''loot'', loot, ''turns'', turn,
+        ''acts'', jsonb_build_object(''analysis'', coalesce((v_pfx ->> ''u_an'')::int, 0), ''guarding'', coalesce((v_pfx ->> ''u_gd'')::int, 0), ''first_aid'', coalesce((v_pfx ->> ''u_fa'')::int, 0))));');
   execute d;
 end $$;
 
@@ -1699,11 +1812,20 @@ grant execute on function public.world_skill_choose(text, int, text) to authenti
 -- 현장 화면: 지역 답사도에 따라 정보를 차례로 연다(서버가 가린다). 이미 만난 요괴는 답사도와 상관없이 보인다.
 --   출몰 요괴: 갈래만 → 30% 일반 요괴 이름·레벨 → 70% 우두머리 · 얻는 것(lore): 30% 채집 재료 → 70% 요괴 전리품 → 100% 희귀품
 do $$ declare d text := pg_get_functiondef('public.world_field_snapshot()'::regprocedure); n int;
+  a1 text := 'n public.world_exploration_nodes%rowtype; st int; mx int; theme text; weapon jsonb; chap text;';
+  a2 text := '  r := public.world_field_region(c.location);';
+  a3 text := '''survey'', public.world_field_survey(uid, r.region_id),';
   rx text := '''monsters'', \(SELECT coalesce\(jsonb_agg\(jsonb_build_object\(''name'', m\.monster_name.*?FROM public\.world_region_monsters m WHERE m\.region_id = r\.region_id\),';
 begin
   if position('''lore''' in d) > 0 then return; end if;
   select count(*) into n from regexp_matches(d, rx, 'g');
   if n <> 1 then raise exception '현장 요괴 목록 고칠 자리(%)', n; end if;
+  if (length(d) - length(replace(d, a1, ''))) / length(a1) <> 1 or (length(d) - length(replace(d, a2, ''))) / length(a2) <> 1
+     or (length(d) - length(replace(d, a3, ''))) / length(a3) <> 1 then raise exception '현장 답사도 자리'; end if;
+  -- 답사도는 한 번만 계산해 survey·monsters·lore가 함께 쓴다
+  d := replace(d, a1, a1 || ' svj jsonb; svp int;');
+  d := replace(d, a2, a2 || chr(10) || '  svj := public.world_field_survey(uid, r.region_id); svp := coalesce((svj ->> ''pct'')::int, 0);');
+  d := replace(d, a3, '''survey'', svj,');
   d := regexp_replace(d, rx, $R$'monsters', (SELECT coalesce(jsonb_agg(CASE WHEN x.owner_id IS NOT NULL OR sv.p >= (CASE WHEN m.role = 'guardian' THEN 70 ELSE 30 END)
         THEN jsonb_build_object('name', m.monster_name, 'type', m.monster_type, 'mechanic', m.mechanic_key, 'kind', m.kind, 'kind_name', k.kind_name, 'role', m.role,
           'min_level', m.min_level, 'max_level', m.max_level, 'revealed', true)
@@ -1711,13 +1833,13 @@ begin
         ORDER BY m.role DESC, m.min_level), '[]'::jsonb)
       FROM public.world_region_monsters m LEFT JOIN public.world_monster_kinds k ON k.kind_key = m.kind
       LEFT JOIN public.world_monster_codex x ON x.owner_id = uid AND x.monster_id = m.monster_id
-      CROSS JOIN (SELECT coalesce((public.world_field_survey(uid, r.region_id) ->> 'pct')::int, 0) AS p) sv
+      CROSS JOIN (SELECT svp AS p) sv
       WHERE m.region_id = r.region_id),
     'lore', (SELECT jsonb_build_object('pct', sv.p,
         'gather', CASE WHEN sv.p >= 30 THEN (SELECT coalesce(jsonb_agg(DISTINCT li), '[]'::jsonb) FROM public.world_gathering_spots gs JOIN public.world_exploration_nodes gn ON gn.node_id = gs.node_id, unnest(gs.loot_items) li WHERE gn.region_id = r.region_id AND gs.active) END,
         'drops', CASE WHEN sv.p >= 70 THEN (SELECT coalesce(jsonb_agg(DISTINCT dd.key), '[]'::jsonb) FROM public.world_region_monsters dm, jsonb_each(coalesce(dm.drops, '{}'::jsonb)) dd WHERE dm.region_id = r.region_id) END,
         'rare', CASE WHEN sv.p >= 100 THEN (SELECT coalesce(jsonb_agg(si), '[]'::jsonb) FROM public.world_region_profiles rp, unnest(rp.signature_items) si WHERE rp.region_id = r.region_id AND si NOT IN ('courier_token', 'spirit_compass')) END)
-      FROM (SELECT coalesce((public.world_field_survey(uid, r.region_id) ->> 'pct')::int, 0) AS p) sv),$R$);
+      FROM (SELECT svp AS p) sv),$R$);
   execute d;
 end $$;
 grant select on public.world_region_profiles to fn_owner_field;
@@ -1850,14 +1972,15 @@ end $$;
 --   기록감찰국 단서 +8% · 희귀품 +3% · 주는 피해 +2% / 봉인관리국 정신 손실 −10% · 침식 −8% · 주는 피해 +3%
 --   의무지원국 회복량 +10% · 받는 피해 −4% · 채집량 +3% / 외부 협력자 이동 시간 −5% · 희귀품 +2% · 상점 판매 수수료 5% → 3%
 create or replace function public.world_affil_effect(p_key text) returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
-  select coalesce((select case c.faction_key
+  select case when p_key not in ('craft_quality', 'healing_pct', 'gather_qty_pct', 'travel_time_pct', 'encounter_pct', 'clue_bonus_pct', 'rare_loot_pct', 'combat_damage_pct', 'mental_loss_pct', 'erosion_pct', 'incoming_damage_pct') then 0::numeric
+  else coalesce((select case c.faction_key
     when 'headquarters' then case p_key when 'craft_quality' then 4 when 'healing_pct' then 5 end
     when 'fieldbureau' then case p_key when 'gather_qty_pct' then 6 when 'travel_time_pct' then -6 when 'encounter_pct' then -5 end
     when 'archivebureau' then case p_key when 'clue_bonus_pct' then 8 when 'rare_loot_pct' then 3 when 'combat_damage_pct' then 2 end
     when 'sealbureau' then case p_key when 'mental_loss_pct' then -10 when 'erosion_pct' then -8 when 'combat_damage_pct' then 3 end
     when 'medicalbureau' then case p_key when 'healing_pct' then 10 when 'incoming_damage_pct' then -4 when 'gather_qty_pct' then 3 end
     when 'independent' then case p_key when 'travel_time_pct' then -5 when 'rare_loot_pct' then 2 end
-    end from public.world_characters c where c.owner_id = public.fn_owner_auth_uid()), 0)::numeric
+    end from public.world_characters c where c.owner_id = public.fn_owner_auth_uid()), 0)::numeric end
 $$;
 alter function public.world_affil_effect(text) owner to fn_owner_field;
 revoke all on function public.world_affil_effect(text) from public, anon, authenticated;
@@ -1902,6 +2025,37 @@ begin
   end loop;
 end $$;
 
+-- ⑱ ─────────────────────────────────────────
+-- 분석·막기·응급 처치 기술이 오르지 않던 문제: 기술 경험 트리거가 토벌 기록의 acts(약점 간파·방어·회복 횟수)를 읽어
+--   한 전투에 계열마다 3번까지 한 번에 8경험씩 더한다. 기존 갱신 한 번에 합친다(캐릭터 행을 따로 또 고치지 않음).
+create or replace function public.world_skill_add(p_sp jsonb, p_key text, p_xp int, p_acts jsonb) returns jsonb language plpgsql immutable set search_path to 'pg_catalog' as $$
+declare sp jsonb := coalesce(p_sp, '{}'::jsonb); k text; x int; n int;
+begin
+  for k, x in select p_key, p_xp
+    union all select a.key, least(3, greatest(0, (a.value #>> '{}')::int)) * 8 from jsonb_each(coalesce(p_acts, '{}'::jsonb)) a
+     where a.key in ('analysis', 'guarding', 'first_aid') and jsonb_typeof(a.value) = 'number' loop
+    if k is null or coalesce(x, 0) <= 0 then continue; end if;
+    n := coalesce((sp -> k ->> 'xp')::int, 0) + x;
+    sp := sp || jsonb_build_object(k, coalesce(sp -> k, '{}'::jsonb) || jsonb_build_object('xp', n, 'rank', least(50, 1 + floor(n / 100.0)::int)));
+  end loop;
+  return sp;
+end $$;
+revoke all on function public.world_skill_add(jsonb, text, int, jsonb) from public, anon, authenticated;
+do $$ declare r text; begin
+  for r in select rolname from pg_roles where rolname like 'fn\_owner\_%' loop
+    execute format('grant execute on function public.world_skill_add(jsonb, text, int, jsonb) to %I', r);
+  end loop;
+end $$;
+do $$ declare d text := pg_get_functiondef('public.world_track_specialized_skill()'::regprocedure); n int;
+  rx text := 'update public\.world_characters c set skill_progress=.*?where c\.owner_id=new\.actor_id;';
+begin
+  if position('world_skill_add' in d) > 0 then return; end if;
+  select count(*) into n from regexp_matches(d, rx, 'g');
+  if n <> 1 then raise exception '기술 경험 갱신 자리(%)', n; end if;
+  d := regexp_replace(d, rx, 'update public.world_characters c set skill_progress=public.world_skill_add(c.skill_progress, v_key, v_xp, case when new.event_type = ''combat'' then v_payload -> ''acts'' end),updated_at=now() where c.owner_id=new.actor_id;');
+  execute d;
+end $$;
+
 grant fn_owner_social to postgres with inherit false, set false;
 grant fn_owner_18666 to postgres with inherit false, set false;
 grant fn_owner_18944 to postgres with inherit false, set false;
@@ -1913,6 +2067,7 @@ grant fn_owner_18987 to postgres with inherit false, set false;
 grant fn_owner_18475 to postgres with inherit false, set false;
 grant fn_owner_19141 to postgres with inherit false, set false;
 grant fn_owner_18878 to postgres with inherit false, set false;
+grant fn_owner_18962 to postgres with inherit false, set false;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261029050000', now())
 on conflict (key) do update set value = excluded.value, changed_at = now();

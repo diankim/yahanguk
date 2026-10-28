@@ -1,5 +1,5 @@
 // 패치노트: 서버 world_patch_notes(읽기 전용)를 최신순으로 보인다. #/patch/날짜 로 열면 그 노트를 펼치고 그 자리로 간다.
-// 채팅에 「#패치노트」나 「#패치노트:2026-10-29」라고 쓰면 이 화면으로 가는 링크가 된다(chat.js richText).
+// 채팅에 「#패치노트」나 「#패치노트:4.0.0」라고 쓰면 이 화면으로 가는 링크가 된다(chat.js richText).
 import { db, icon, esc, $ } from '../core.js';
 import { loading, errorBox } from './common.js';
 
@@ -10,15 +10,18 @@ async function notes() {
   if (error) throw error;
   cache = data || []; cacheAt = Date.now(); return cache;
 }
-// 본문: 「## 」 소제목, 「· 」 항목, 빈 줄은 문단 나눔
+// 본문: 「## 」 제목, 「### 」 소제목, 「1. 」 번호 항목(묶음 안에서 이어지는 번호), 「· 」 항목, 빈 줄은 문단 나눔
 function bodyHtml(t) {
-  const out = []; let list = null;
-  const flush = () => { if (list) { out.push(`<ul>${list.join('')}</ul>`); list = null; } };
+  const out = []; let list = null, kind = 'ul', start = 1;
+  const flush = () => { if (list) { out.push(kind === 'ol' ? `<ol start="${start}">${list.join('')}</ol>` : `<ul>${list.join('')}</ul>`); list = null; } };
   String(t || '').split('\n').forEach(line => {
     const l = line.trim();
     if (!l) { flush(); return; }
+    if (l.startsWith('### ')) { flush(); out.push(`<h4>${esc(l.slice(4))}</h4>`); return; }
     if (l.startsWith('## ')) { flush(); out.push(`<h3>${esc(l.slice(3))}</h3>`); return; }
-    if (/^[·\-]\s?/.test(l)) { (list ||= []).push(`<li>${esc(l.replace(/^[·\-]\s?/, ''))}</li>`); return; }
+    const num = l.match(/^(\d+)\.\s+(.*)$/);
+    if (num) { if (!list || kind !== 'ol') { flush(); kind = 'ol'; start = Number(num[1]); list = []; } list.push(`<li>${esc(num[2])}</li>`); return; }
+    if (/^[·\-]\s?/.test(l)) { if (list && kind !== 'ul') flush(); if (!list) { kind = 'ul'; list = []; } list.push(`<li>${esc(l.replace(/^[·\-]\s?/, ''))}</li>`); return; }
     flush(); out.push(`<p>${esc(l)}</p>`);
   });
   flush(); return out.join('');
