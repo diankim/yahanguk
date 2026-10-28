@@ -194,6 +194,7 @@ function field(s, roster, blocked) {
           <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
         </div>
+        ${(s.gear_warn || []).length ? `<p class="hint warn gear-warn">${icon('wrench', 14)} <span><b>닳은 장비</b> · ${s.gear_warn.map(g => `${esc(g.name)}(${g.dur > 0 ? `${g.dur}/${g.max}` : '부서짐'})`).join(', ')} — 부서진 장비는 효과가 없고, 4분의 1 아래면 성능이 20% 떨어집니다. 안전지대 대장간이나 수리 도구로 고치세요.</span></p>` : ''}
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
         ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
         ${s.story_here?.length ? `<p class="hint accent">${icon('scroll', 14)} 이 지역 어딘가에 「${esc(s.story_here[0].chapter)}」의 단서가 있습니다. 탐색을 이어가세요.</p>` : ''}
@@ -299,6 +300,9 @@ function bind(s) {
 
 async function doSearch(btn) {
   if (btn.dataset.busy === '1') return;
+  // 체력이 낮으면 요괴를 만났을 때 쓰러지기 쉽다: 한 번 묻는다
+  const hp = Number(store.character?.health ?? 100);
+  if (hp < 35 && !(await ask(`체력이 ${hp}입니다. 탐색하다 요괴를 만나면 쓰러질 수 있습니다. 쉬거나 회복약을 먼저 쓰는 것이 좋습니다.`, { title: '체력이 낮습니다', ok: '그래도 탐색', cancel: '그만두기' }))) return;
   btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('searching');
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'search' }));
   try {

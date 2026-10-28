@@ -7,7 +7,8 @@
 --   ⑪ 대세력 떠나기·옮기기(12시간) · 회복 완화(야영 ⅔·안전지대 자연 회복·구조대 비용)
 --   ⑫ 상위 도구로 하위 도구 제작법 · 원정 전투 여러 합 묘사(막기·회피·치명타·직업 기술·요괴 기믹) · 파티 원정은 동료마다 요괴 하나 더
 --   ⑬ 기술 단계 보상 개편(13·30 추가 · 24·43 택일 · 50 숙달 · 조합 7)
---   ⑯ 전체 채팅 하루 50회 · 칭호 묶음 3칸
+--   ⑰ 소속 효과(전투·생활·탐사·이동·경제)
+--   ⑯ 전체 채팅 하루 50회 · 칭호 묶음(3칸 + 칭호로 최대 6칸) · 레벨 차 피해 보정(토벌·원정, 레벨마다 3%, 최대 30%) · 닳은 장비 알림
 --   ⑮ 운영진 칭호(운영진만, 효과 없음)
 --   ⑭ 요괴 13갈래(무기·직업 상성)·기믹 39(토벌 예고·원정 자동 대처) · 요괴 도감·채집 도감·도감 칭호 20 (⑫보다 먼저 실행: 원정 묘사가 ⑭의 표를 쓴다)
 --   ⑧ 세력 판도(인원이 적은 세력 영향력 가산 포함)(지역 영향력·지배 변화·세력 관계·지배/분쟁/파티 효과, pg_cron yh-influence) · ⑨ 파티 칸·파티 원정 부르기·함께 다녀온 원정 보너스
@@ -21,6 +22,7 @@ grant fn_owner_18452 to postgres with inherit true, set true;
 grant fn_owner_18987 to postgres with inherit true, set true;
 grant fn_owner_18475 to postgres with inherit true, set true;
 grant fn_owner_19141 to postgres with inherit true, set true;
+grant fn_owner_18878 to postgres with inherit true, set true;
 
 -- ① ─────────────────────────────────────────
 -- 강산하 님 제보(제작 시 36/35): 화면은 장착 장비를 뺀 29/29칸인데, 메시지는 장착 장비를 더한 숫자였다.
@@ -755,7 +757,7 @@ insert into public.world_monster_kinds(kind_key, kind_name, melee, ranged, magic
   ('shell', '갑각', 0.85, 0.7, 1.25, 'artificer', '단단한 껍질과 비늘을 두른 요괴.', 2),
   ('ghost', '영귀', 0.6, 0.8, 1.4, 'exorcist', '형체가 흐릿한 혼백과 원령.', 3),
   ('venom', '독충', 0.9, 1.15, 1.0, 'medic', '독을 품은 벌레·뱀·두꺼비.', 4),
-  ('wood', '목령', 1.3, 0.85, 1.1, 'artificer', '나무와 덩굴에 깃든 요괴.', 5),
+  ('wood', '목령', 1.25, 0.9, 1.1, 'artificer', '나무와 덩굴에 깃든 요괴.', 5),
   ('shadow', '은형', 1.1, 0.9, 1.0, 'scout', '그림자와 어둠에 숨었다가 덮치는 요괴.', 6),
   ('water', '수귀', 1.0, 0.9, 1.15, 'medic', '물에 사는 귀신과 요괴.', 7),
   ('swarm', '군충', 1.25, 0.9, 1.1, null, '떼를 지어 몰려드는 요괴.', 8),
@@ -800,7 +802,7 @@ insert into public.world_monster_gimmicks(gimmick_key, kind_key, tier, name, tel
   ('venom_stack', 'venom', 3, '맹독 주입', '독낭이 부풀어 오른다.', 'charge', 2.0, 0, 'poisoned', 0.8, 0, 0),
   ('wood_vine', 'wood', 1, '덩굴 채찍', '덩굴이 채찍처럼 휘어진다.', 'big', 1.3, 0, null, 0, 0, 0),
   ('wood_root', 'wood', 2, '뿌리 옭아매기', '발밑의 흙이 들썩인다.', 'grapple', 0.9, 0, null, 0, 2, 0),
-  ('wood_regen', 'wood', 3, '수액 재생', '몸통의 상처에서 수액이 흘러내린다.', 'heal', 0.4, 0.18, null, 0, 0, 0),
+  ('wood_regen', 'wood', 3, '수액 재생', '몸통의 상처에서 수액이 흘러내린다.', 'heal', 0.4, 0.10, null, 0, 0, 0),
   ('shadow_ambush', 'shadow', 1, '그림자 찌르기', '그림자가 발치로 스며든다.', 'big', 1.5, 0, null, 0, 0, 0),
   ('shadow_hide', 'shadow', 2, '그림자 숨기', '몸이 어둠에 녹아든다.', 'evade', 0.6, 0, null, 0, 2, 0),
   ('shadow_clone', 'shadow', 3, '그림자 분신', '그림자가 둘, 셋으로 갈라진다.', 'evade', 1.8, 0, 'bleeding', 0.3, 0, 0),
@@ -944,7 +946,8 @@ begin
     'eva * (CASE WHEN v_intent IN (''heavy'', ''pounce'', ''unleash'') THEN 0.6 ELSE 1 END)',
     'WHEN ''breach'' THEN ''의 봉인 깨기'' ELSE ''의 공격'' END',
     'IF guarding AND v_intent IN (''heavy'', ''dive'', ''pounce'', ''unleash'') AND style = ''melee'' THEN',
-    'IF v_intent IN (''heavy'', ''pounce'') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, ''bleeding''); END IF;']) loop
+    'IF v_intent IN (''heavy'', ''pounce'') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, ''bleeding''); END IF;',
+    'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0));']) loop
     if (length(d) - length(replace(d, procedure_, ''))) / length(procedure_) <> 1 then raise exception '토벌 전투 고칠 자리가 하나가 아닙니다: %', procedure_; end if;
   end loop;
   if (length(d) - length(replace(d, 'public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)', ''))) / length('public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)') <> 2 then raise exception '다음 행동 자리'; end if;
@@ -1012,6 +1015,9 @@ begin
           END IF;');
   d := replace(d, 'public.world_battle_intent(m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)',
     'public.world_battle_intent_k(m.kind, a.mlevel, m.mechanic_key, a.current_hp::numeric / a.max_hp, a.rank)');
+  -- 레벨 차 보정: 요괴보다 레벨이 높으면 받는 피해가 레벨마다 3% 줄고(최대 30%), 낮으면 3%씩 늘어난다(최대 30%)
+  d := replace(d, 'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0));',
+    'mdmg := round(mdmg * (1 + inc / 100.0) * (1 - adr / 100.0) * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - a.mlevel))));');
   execute d;
 end $$;
 
@@ -1464,6 +1470,9 @@ begin
     'spirit_mech := coalesce(m.mechanic_key, '''') in (''spectral'', ''warded'', ''seal_breaker'');
         threat := threat / power(public.world_kind_mult(m.kind, wtype, c.job_key)::float8, 0.6);');
   d := replace(d, '* (1 + 0.3 * nal));', '* (1 + 0.45 * nal));');
+  -- 레벨 차 보정(현장 토벌과 같은 식): 원정지 요괴 수준(원정지 최소 레벨 + 1)보다 높으면 받는 피해가 줄어든다
+  if (length(d) - length(replace(d, 'dmg := round(dmg * greatest(0.3, 1 + g_inc / 100.0)', ''))) / length('dmg := round(dmg * greatest(0.3, 1 + g_inc / 100.0)') <> 1 then raise exception '원정 레벨 차 자리'; end if;
+  d := replace(d, 'dmg := round(dmg * greatest(0.3, 1 + g_inc / 100.0)', 'dmg := round(dmg * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - n.min_level - 1))) * greatest(0.3, 1 + g_inc / 100.0)');
   execute d;
 end $$;
 
@@ -1712,6 +1721,20 @@ begin
   execute d;
 end $$;
 grant select on public.world_region_profiles to fn_owner_field;
+-- 닳은 장비 알림: 내구도가 4분의 1 아래인 장착 장비(부서진 것 포함)를 현장 화면에 알린다
+do $$ declare d text := pg_get_functiondef('public.world_field_snapshot()'::regprocedure);
+  a text := '''weapon'', coalesce(weapon,';
+  b text := '''gear_warn'', (SELECT coalesce(jsonb_agg(jsonb_build_object(''slot'', ge.slot, ''name'', gi.item_name, ''dur'', gd.durability, ''max'', public.world_item_max_durability(ge.item_id))), ''[]''::jsonb)
+      FROM public.world_character_equipment ge JOIN public.world_item_catalog gi ON gi.item_id = ge.item_id
+      JOIN public.world_item_durability gd ON gd.owner_id = ge.owner_id AND gd.item_id = ge.item_id
+      WHERE ge.owner_id = uid AND gd.durability * 4 < public.world_item_max_durability(ge.item_id)),
+    ''weapon'', coalesce(weapon,';
+begin
+  if position('''gear_warn''' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '현장 장비 알림 자리'; end if;
+  execute replace(d, a, b);
+end $$;
+grant select on public.world_item_durability to fn_owner_field;
 
 -- ⑮ ─────────────────────────────────────────
 -- 운영진 칭호: 운영진(world_staff)만 가진다. 능력치 효과는 없고, 다른 조사원의 칭호 목록에는 나오지 않는다(분류 '운영').
@@ -1741,22 +1764,30 @@ begin
   execute replace(d, a, b);
 end $$;
 
--- 칭호 묶음(프리셋) 3칸: 지금 장착한 칭호(최대 3)와 대표 칭호를 이름 붙여 저장하고, 한 번에 바꿔 낀다.
+-- 칭호 묶음(프리셋): 처음 3칸, 얻기 어려운데 효과가 약했던 칭호 셋(믿음직한 해결사 의뢰 50건 · 대지의 손 채집 500회 · 공방의 주인 제작 200회)을 얻을 때마다 한 칸씩(최대 6칸).
+--   지금 장착한 칭호(최대 3)와 대표 칭호를 이름 붙여 저장하고, 한 번에 바꿔 낀다.
 create table if not exists public.world_title_presets (
-  owner_id uuid not null, slot int not null check (slot between 1 and 3), name text not null,
+  owner_id uuid not null, slot int not null check (slot between 1 and 6), name text not null,
   titles text[] not null default '{}', display text, updated_at timestamptz not null default now(),
   primary key (owner_id, slot));
 alter table public.world_title_presets enable row level security;
 revoke all on public.world_title_presets from public, anon, authenticated;
 grant select, insert, update, delete on public.world_title_presets to fn_owner_field;
 grant update (is_equipped) on public.world_character_titles to fn_owner_field;
+create or replace function public.world_title_preset_slots(p_owner uuid) returns int language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select 3 + (select count(*)::int from public.world_character_titles where owner_id = p_owner and title_key in ('commission_50', 'gather_500', 'craft_200'))
+$$;
+alter function public.world_title_preset_slots(uuid) owner to fn_owner_field;
+revoke all on function public.world_title_preset_slots(uuid) from public, anon, authenticated;
+update public.world_title_catalog set description = description || ' 칭호 묶음 한 칸이 늘어납니다.'
+ where title_key in ('commission_50', 'gather_500', 'craft_200') and description not like '%칭호 묶음%';
 
 create or replace function public.world_title_preset_save(p_slot int, p_name text)
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
 declare uid uuid := public.fn_owner_auth_uid(); nm text := left(btrim(coalesce(p_name, '')), 12); t text[]; disp text;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
-  if p_slot not between 1 and 3 then raise exception '묶음은 1~3번까지입니다.'; end if;
+  if p_slot < 1 or p_slot > public.world_title_preset_slots(uid) then raise exception '아직 열리지 않은 묶음 칸입니다.'; end if;
   if nm = '' then nm := '묶음 ' || p_slot; end if;
   select profile ->> 'title' into disp from public.world_characters where owner_id = uid;
   if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
@@ -1804,11 +1835,71 @@ end $$;
 -- 칭호 화면이 한 번에 받도록 묶음 목록을 world_title_snapshot에 싣는다
 do $$ declare d text := pg_get_functiondef('public.world_title_snapshot()'::regprocedure);
   a text := '''max_equipped'', 3, ''display'', disp,';
-  b text := '''max_equipped'', 3, ''display'', disp, ''presets'', (select coalesce(jsonb_agg(jsonb_build_object(''slot'', p.slot, ''name'', p.name, ''titles'', p.titles, ''display'', p.display) order by p.slot), ''[]''::jsonb) from public.world_title_presets p where p.owner_id = uid),';
+  b text := '''max_equipped'', 3, ''display'', disp, ''preset_slots'', public.world_title_preset_slots(uid),
+    ''preset_unlocks'', (select jsonb_agg(jsonb_build_object(''name'', tc.title_name, ''condition'', tc.condition_text, ''earned'', exists (select 1 from public.world_character_titles x where x.owner_id = uid and x.title_key = tc.title_key)) order by tc.sort) from public.world_title_catalog tc where tc.title_key in (''commission_50'', ''gather_500'', ''craft_200'')),
+    ''presets'', (select coalesce(jsonb_agg(jsonb_build_object(''slot'', p.slot, ''name'', p.name, ''titles'', p.titles, ''display'', p.display) order by p.slot), ''[]''::jsonb) from public.world_title_presets p where p.owner_id = uid),';
 begin
   if position('''presets''' in d) > 0 then return; end if;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '칭호 목록 묶음 자리'; end if;
   execute replace(d, a, b);
+end $$;
+
+-- ⑰ ─────────────────────────────────────────
+-- 소속 효과: 생성 때 고른 소속(faction_key)마다 전투·생활·탐사·이동·경제에 나눠 실제 효과를 준다(world_status_effect_total에 더함).
+--   본부 직속 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전 / 현장대응국 채집량 +6% · 이동 시간 −6% · 요괴 조우 −5%
+--   기록감찰국 단서 +8% · 희귀품 +3% · 주는 피해 +2% / 봉인관리국 정신 손실 −10% · 침식 −8% · 주는 피해 +3%
+--   의무지원국 회복량 +10% · 받는 피해 −4% · 채집량 +3% / 외부 협력자 이동 시간 −5% · 희귀품 +2% · 상점 판매 수수료 5% → 3%
+create or replace function public.world_affil_effect(p_key text) returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select case c.faction_key
+    when 'headquarters' then case p_key when 'craft_quality' then 4 when 'healing_pct' then 5 end
+    when 'fieldbureau' then case p_key when 'gather_qty_pct' then 6 when 'travel_time_pct' then -6 when 'encounter_pct' then -5 end
+    when 'archivebureau' then case p_key when 'clue_bonus_pct' then 8 when 'rare_loot_pct' then 3 when 'combat_damage_pct' then 2 end
+    when 'sealbureau' then case p_key when 'mental_loss_pct' then -10 when 'erosion_pct' then -8 when 'combat_damage_pct' then 3 end
+    when 'medicalbureau' then case p_key when 'healing_pct' then 10 when 'incoming_damage_pct' then -4 when 'gather_qty_pct' then 3 end
+    when 'independent' then case p_key when 'travel_time_pct' then -5 when 'rare_loot_pct' then 2 end
+    end from public.world_characters c where c.owner_id = public.fn_owner_auth_uid()), 0)::numeric
+$$;
+alter function public.world_affil_effect(text) owner to fn_owner_field;
+revoke all on function public.world_affil_effect(text) from public, anon, authenticated;
+do $$ declare r text; begin
+  for r in select rolname from pg_roles where rolname like 'fn\_owner\_%' loop
+    execute format('grant execute on function public.world_affil_effect(text) to %I', r);
+  end loop;
+end $$;
+grant execute on function public.world_affil_effect(text) to authenticated;
+do $$ declare d text := pg_get_functiondef('public.world_status_effect_total(text)'::regprocedure);
+  a text := '+ public.world_skill_effect(p_effect_key)';
+begin
+  if d like '%world_affil_effect%' then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'status_effect_total 소속 자리'; end if;
+  execute replace(d, a, a || ' + public.world_affil_effect(p_effect_key)');
+end $$;
+create or replace function public.world_affil_cap() returns int language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case when (select faction_key from public.world_characters where owner_id = public.fn_owner_auth_uid()) = 'headquarters' then 500 else 0 end
+$$;
+create or replace function public.world_affil_tax() returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select case when (select faction_key from public.world_characters where owner_id = public.fn_owner_auth_uid()) = 'independent' then 0.03 else 0.05 end
+$$;
+do $$ declare r text; begin
+  for r in select rolname from pg_roles where rolname like 'fn\_owner\_%' loop
+    execute format('grant execute on function public.world_affil_cap(), public.world_affil_tax() to %I', r);
+  end loop;
+end $$;
+alter function public.world_affil_cap() owner to fn_owner_field;
+alter function public.world_affil_tax() owner to fn_owner_field;
+revoke all on function public.world_affil_cap() from public, anon, authenticated;
+revoke all on function public.world_affil_tax() from public, anon, authenticated;
+-- 경제: 본부 직속 판매 한도 +500전, 외부 협력자 판매 수수료 3%
+do $$ declare d text; f text;
+begin
+  foreach f in array array['public.world_shop_sell_status()', 'public.world_shop_sell(text,integer)'] loop
+    d := pg_get_functiondef(f::regprocedure);
+    if position('world_affil_cap' in d) > 0 then continue; end if;
+    if (length(d) - length(replace(d, 'cap := 2000;', ''))) / length('cap := 2000;') <> 1 then raise exception '판매 한도 자리: %', f; end if;
+    d := replace(d, 'cap := 2000;', 'cap := 2000 + public.world_affil_cap();');
+    d := replace(d, 'tax := greatest(1, round(price * p_qty * 0.05)::bigint);', 'tax := greatest(1, round(price * p_qty * public.world_affil_tax())::bigint);');
+    execute d;
+  end loop;
 end $$;
 
 grant fn_owner_social to postgres with inherit false, set false;
@@ -1821,6 +1912,7 @@ grant fn_owner_18452 to postgres with inherit false, set false;
 grant fn_owner_18987 to postgres with inherit false, set false;
 grant fn_owner_18475 to postgres with inherit false, set false;
 grant fn_owner_19141 to postgres with inherit false, set false;
+grant fn_owner_18878 to postgres with inherit false, set false;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261029050000', now())
 on conflict (key) do update set value = excluded.value, changed_at = now();

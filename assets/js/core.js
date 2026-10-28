@@ -80,12 +80,12 @@ export const JOBS = {
   artificer: { name: '법구 제작사', trait: '정밀 가공', desc: '근력이 강하고 장비 제작·채집에 특화되어 있습니다.' },
 };
 export const FACTIONS = {
-  headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비 활동에 익숙하고 보급을 안정적으로 받습니다.' },
-  fieldbureau: { name: '현장대응국', trait: '현장 적응', desc: '외부 현장 임무를 중심으로 성장합니다.' },
-  archivebureau: { name: '기록감찰국', trait: '사건 기록', desc: '단서와 사건 기록을 다루는 조사 임무에 특화됩니다.' },
-  sealbureau: { name: '봉인관리국', trait: '봉인 규정', desc: '봉인과 요괴 대응 절차에 특화되어 정신 소모에 강합니다.' },
-  medicalbureau: { name: '의무지원국', trait: '후방 지원', desc: '회복과 생존 지원 임무에 특화됩니다.' },
-  independent: { name: '외부 협력자', trait: '자유 행동', desc: '정규 부서의 제약이 적고 다양한 현장과 협력합니다.' },
+  headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비에 익숙합니다. 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전.' },
+  fieldbureau: { name: '현장대응국', trait: '현장 적응', desc: '외부 현장을 누빕니다. 채집량 +6% · 이동 시간 −6% · 요괴 조우 −5%.' },
+  archivebureau: { name: '기록감찰국', trait: '사건 기록', desc: '단서와 기록을 다룹니다. 단서 +8% · 희귀품 +3% · 주는 피해 +2%.' },
+  sealbureau: { name: '봉인관리국', trait: '봉인 규정', desc: '봉인과 요괴 대응 절차에 밝습니다. 정신 손실 −10% · 침식 −8% · 주는 피해 +3%.' },
+  medicalbureau: { name: '의무지원국', trait: '후방 지원', desc: '회복과 생존을 돕습니다. 회복량 +10% · 받는 피해 −4% · 채집량 +3%.' },
+  independent: { name: '외부 협력자', trait: '자유 행동', desc: '정규 부서에 매이지 않습니다. 이동 시간 −5% · 희귀품 +2% · 상점 판매 수수료 3%(보통 5%).' },
 };
 const FIXED = {
   // 생활 전문화

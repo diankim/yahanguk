@@ -425,18 +425,20 @@ async function titles(body) {
   if (list.some(t => t.new)) markTitlesSeen();
 }
 
-// 칭호 묶음 3칸: 지금 장착한 칭호(최대 3)와 대표 칭호를 저장해 두고 한 번에 바꿔 낀다(서버 world_title_preset_*)
+// 칭호 묶음: 처음 3칸, 정해진 칭호 셋을 얻을 때마다 한 칸씩(최대 6칸). 지금 장착한 칭호(최대 3)와 대표 칭호를 저장해 두고 한 번에 바꿔 낀다(서버 world_title_preset_*)
 function presetsHtml(snap, list) {
   const nm = Object.fromEntries(list.map(t => [t.key, t.name]));
   const eq = list.filter(t => t.equipped).map(t => t.key).sort().join(','), disp = snap?.display || null;
-  return `<div class="t-presets">${[1, 2, 3].map(n => {
+  const open = Number(snap?.preset_slots || 3), locked = (snap?.preset_unlocks || []).filter(u => !u.earned);
+  return `<div class="t-presets">${Array.from({ length: open }, (_, i) => i + 1).map(n => {
     const p = (snap?.presets || []).find(x => x.slot === n);
     const now = p && [...(p.titles || [])].sort().join(',') === eq && (p.display || null) === disp;
     return `<div class="t-preset ${p ? '' : 'empty'} ${now ? 'now' : ''}">
       <input class="t-pname" data-pname="${n}" maxlength="12" value="${esc(p?.name || '')}" placeholder="묶음 ${n}" aria-label="묶음 ${n} 이름">
       <p class="t-pbody">${p ? `${(p.titles || []).map(k => esc(nm[k] || '?')).join(' · ') || '장착 없음'}${p.display ? `<small>대표 · ${esc(nm[p.display] || '?')}</small>` : ''}` : '<small>비어 있음 · 지금 장착한 칭호를 저장하세요</small>'}</p>
       <div class="t-pact">${p ? `<button class="btn small ${now ? '' : 'primary'}" data-papply="${n}" ${now ? 'disabled' : ''}>${now ? '쓰는 중' : '바꿔 끼기'}</button>` : ''}
-        <button class="btn small ghost" data-psave="${n}">${p ? '덮어쓰기' : '저장'}</button>${p ? `<button class="chip-x" data-pclear="${n}" title="비우기" aria-label="묶음 비우기">×</button>` : ''}</div></div>`; }).join('')}</div>`;
+        <button class="btn small ghost" data-psave="${n}">${p ? '덮어쓰기' : '저장'}</button>${p ? `<button class="chip-x" data-pclear="${n}" title="비우기" aria-label="묶음 비우기">×</button>` : ''}</div></div>`; }).join('')}
+    ${locked.map(u => `<div class="t-preset locked">${icon('chest', 16)}<p class="t-pbody"><b>잠긴 칸</b><small>「${esc(u.name)}」 칭호를 얻으면 열립니다 · ${esc(u.condition)}</small></p></div>`).join('')}</div>`;
 }
 function bindPresets(body, snap) {
   const has = n => (snap?.presets || []).some(x => x.slot === n);
