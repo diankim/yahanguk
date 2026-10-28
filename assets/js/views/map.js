@@ -405,7 +405,7 @@ async function drawTravel(body) {
         <header><b>${esc(m.mount_name)}</b>${chip(m.tier)}</header>
         <p>${esc(m.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free ? '없음' : `구간당 노정패 ${m.fare_tokens}`}</dd></div></dl>
-        ${m.equipped ? chip('사용 중', 'accent') : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
+        ${m.equipped ? chip('사용 중', 'accent') : status?.in_transit ? `<button class="btn small" disabled title="도착한 뒤에 바꿀 수 있습니다">이동 중에는 못 바꿈</button>` : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
       </article>`).join('')}</div>
       <p class="muted small">노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.</p>`, { ico: 'route' })}
     ${panel('얻을 수 있는 탈것', others.length ? `<ul class="spot-list">${others.map(m => `<li><div><b>${esc(m.mount_name)}</b>
