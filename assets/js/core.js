@@ -165,6 +165,7 @@ const ICONS = {
   map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
   user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',
   bag: 'M6 8h12l-1 12H7L6 8zM9 8V6a3 3 0 016 0v2',
+  chest: 'M3 10h18v10H3zM3 10l2-5h14l2 5M10 14h4',
   scroll: 'M7 3h10v14a3 3 0 01-3 3H6a3 3 0 01-3-3v-1h11M7 3a3 3 0 00-3 3v1h3M10 8h4M10 12h4',
   help: 'M12 22a10 10 0 100-20 10 10 0 000 20zM9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01',
   gear: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z',
@@ -421,6 +422,7 @@ async function loadEquipped() {
   try { const { data } = await db.from('world_character_equipment').select('item_id').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id); }
   catch { equipped = null; }
 }
+export function equippedIds() { return equipped || []; }
 export function bagUsed(c) {
   const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;
   return Object.entries(inv).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0) - eq;

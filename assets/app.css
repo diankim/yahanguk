@@ -1103,6 +1103,10 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
   background: var(--surface); border-top: var(--bw) solid var(--line); font-size: 13px; }
 .shop-foot .btn { min-width: 120px; justify-content: center; }
 @media (max-width: 480px) { .shop-list li { flex-wrap: nowrap; } .shop-list .item-act { width: auto; } }
+/* 창고: 항목마다 수량 + 맡기기·꺼내기 */
+.row-act { flex: none; display: flex; align-items: center; gap: 6px; }
+.row-act input { width: 60px !important; min-height: 32px !important; padding: 4px 6px !important; text-align: center; font-variant-numeric: tabular-nums; }
+.spot-list small .ok { color: var(--ok); text-decoration: line-through; }
 
 /* GM 표식 */
 .gm-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: .06em; line-height: 16px; vertical-align: middle;

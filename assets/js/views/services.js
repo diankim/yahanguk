@@ -1,5 +1,5 @@
 // 안전지대 시설: 상점 · 대장간 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, bar, registerNames } from '../core.js';
+import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
@@ -343,6 +343,66 @@ export function openDirectTrade(to) {
   const box = $('.fac-body', m);
   renderMarket(box);
   const offc = on('changed', () => { if (box.isConnected) renderMarket(box); else offc(); });
+}
+
+/* ── 창고 ─────────────────────────────────────────────── */
+// 어느 안전지대에서 열어도 같은 개인 창고. 기본 30칸이고 전·이야기 6~10장·세력 평판·지역 완전 답사로 넓어진다(서버 world_storage_capacity).
+let storeMode = 'put';
+const STORE_PRICES = [1000, 2500, 5000, 10000];
+export async function renderStorage(box) {
+  box.innerHTML = loading();
+  try {
+    const [s] = await Promise.all([load('world_storage_snapshot'), loadLocks()]);
+    const c = store.character, have = c?.inventory || {};
+    const src = s.sources || {}, steps = Number(src.bought_steps || 0);
+    const equippedSet = new Set(equippedIds());
+    const putMax = k => Math.max(0, (Number(have[k]) || 0) - (equippedSet.has(k) ? 1 : 0));
+    const putList = Object.entries(have).filter(([k, n]) => n > 0 && putMax(k) > 0);
+    const bagSpace = bagLimit(c) - bagUsed(c);
+    const row = (id, label, n, max, m, note) => `<li>
+        <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span>${note ? `<small>${note}</small>` : ''}</div>
+        <div class="row-act"><input type="number" inputmode="numeric" min="1" max="${max}" value="${max}" aria-label="수량" ${max ? '' : 'disabled'}>
+          <button class="btn small ${m === 'put' ? '' : 'primary'}" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button></div></li>`;
+    const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
+      .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
+    box.innerHTML = `
+      <div class="shop-head"><div><b>개인 창고</b><small>어느 안전지대에서 열어도 같은 창고입니다 · ${esc(parts)}</small></div>
+        <span class="chip ${s.used >= s.capacity ? 'warn' : 'accent'}">${icon('chest', 14)} ${s.used} / ${s.capacity}칸</span></div>
+      ${bar(s.used, s.capacity, s.used >= s.capacity ? 'enemy' : 'xp')}
+      <div class="seg-mini" role="tablist"><button class="${storeMode === 'put' ? 'on' : ''}" data-mode="put">맡기기</button><button class="${storeMode === 'take' ? 'on' : ''}" data-mode="take">꺼내기</button><button class="${storeMode === 'grow' ? 'on' : ''}" data-mode="grow">넓히기</button></div>
+      <section data-list="put" ${storeMode === 'put' ? '' : 'hidden'}>
+        <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·강화한 장비의 마지막 하나·임무 물품은 맡길 수 없습니다.</p>
+        <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
+      </section>
+      <section data-list="take" ${storeMode === 'take' ? '' : 'hidden'}>
+        <p class="muted small">가방 여유 ${Math.max(0, bagSpace)}칸 · 가방에 들어가는 만큼만 꺼냅니다.</p>
+        <ul class="item-list shop-list">${(s.items || []).map(i => row(i.item_id, i.name, i.qty, Math.min(i.qty, i.room), 'take', i.room <= 0 ? '<span class="bad">가방에 자리가 없습니다</span>' : '')).join('') || `<li>${empty('창고가 비어 있습니다.', 'chest')}</li>`}</ul>
+      </section>
+      <section data-list="grow" ${storeMode === 'grow' ? '' : 'hidden'}>
+        <ul class="spot-list">
+          <li><div><b>전으로 넓히기</b><small>4번까지 +4칸씩 · ${STORE_PRICES.map((p, i) => `<span class="${i < steps ? 'ok' : ''}">${fmt.num(p)}전</span>`).join(' → ')} · 넓힌 횟수 ${steps}/4</small></div>
+            ${steps >= 4 ? chip('다 넓힘', 'ok') : `<button class="btn small primary" id="st-grow" ${(c?.gil ?? s.gil) < src.next_price ? 'disabled' : ''}>+4칸 · ${fmt.jeon(src.next_price)}</button>`}</li>
+          <li><div><b>이야기 6~10장</b><small>장을 해결할 때마다 +2칸 (최대 +10)</small></div>${chip(`+${src.story || 0}`, src.story ? 'ok' : '')}</li>
+          <li><div><b>대세력 평판</b><small>평판 300·600·1000에서 +2칸씩 (최대 +6) · 세력을 떠나면 사라집니다</small></div>${chip(`+${src.faction || 0}`, src.faction ? 'ok' : '')}</li>
+          <li><div><b>지역 완전 답사</b><small>10·20·30곳에서 +2칸씩 (최대 +6) · 지금 ${src.surveyed || 0}곳</small></div>${chip(`+${src.survey || 0}`, src.survey ? 'ok' : '')}</li>
+        </ul>
+        <p class="muted small">용량이 줄어 창고가 넘쳐도 물품은 그대로 남고, 새로 맡기기만 막힙니다.</p>
+      </section>`;
+    $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
+      storeMode = b.dataset.mode;
+      $$('.seg-mini button[data-mode]', box).forEach(x => x.classList.toggle('on', x === b));
+      $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== storeMode);
+    });
+    const move = (b, fn, id) => guard(b, () => {
+      const q = Math.floor(Number(b.closest('li').querySelector('input')?.value) || 0);
+      return act(fn, { p_item: id, p_qty: q > 0 ? q : null });
+    });
+    $$('[data-put]', box).forEach(b => b.onclick = () => move(b, 'world_storage_put', b.dataset.put));
+    $$('[data-take]', box).forEach(b => b.onclick = () => move(b, 'world_storage_take', b.dataset.take));
+    const g = $('#st-grow', box);
+    if (g) g.onclick = async () => { if (await ask(`${fmt.jeon(src.next_price)}을 내고 창고를 4칸 넓힐까요?`, { title: '창고 넓히기', ok: '넓히기' })) guard(g, () => act('world_storage_expand')); };
+    bindInfo(box);
+  } catch (e) { box.innerHTML = errorBox(e.message); }
 }
 
 /* ── 마구간 ───────────────────────────────────────────── */

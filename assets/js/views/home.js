@@ -5,7 +5,7 @@ import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, invalidate } from './common.js';
-import { renderShop, renderMarket, renderStable, renderSmithy } from './services.js';
+import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, MECH, effectiveness, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
@@ -120,6 +120,7 @@ function town(s, roster) {
     ['shop', 'shop', r.shop_name || '상점', '물자 사고팔기'],
     ['smithy', 'hammer', '대장간', '재료 사기 · 강화 · 수리 · 분해'],
     ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
+    ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
@@ -320,10 +321,10 @@ function openFacility(k, s) {
   if (k === 'board') return window.yahangGo('log', 'story');
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
-  const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간' }[k];
+  const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];
   const m = openModal({ title, wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
-  const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : renderShop)(box);
+  const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : k === 'storage' ? renderStorage : renderShop)(box);
   fill();
   const offc = on('changed', () => { if (box.isConnected) fill(); else offc(); });
 }
