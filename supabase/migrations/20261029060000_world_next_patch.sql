@@ -2,6 +2,7 @@
 --   ① 이동 중에는 탈것을 바꿀 수 없다(출발한 뒤 다른 탈것으로 갈아타던 것을 막는다)
 --   ② 노정 건량 준비(make_travel_ration)의 의무관 전용 조건을 뺀다(원정·이동 보급품으로 쓰이는 곳이 많아 누구나 만들게)
 --   ④ 파티 원정 함께 출발: 파티장 제안 → 동료 수락 → 한 트랜잭션에서 모두 출발(출발·귀환 시각이 같다). 2명은 수락해야 출발, 3명 이상은 거절·무응답 빼고 출발
+--   ⑤ 지역마다 요괴 2종 더(안전지대 제외 33곳 66종, 이름·갈래·설명만 새로, 능력치·전리품은 그 지역 같은 역할을 따름)
 --   ③ 전체 채팅에 쓰러짐을 알린 조사원이 다시 일어나면(구조·본부 구조대·회복품·요화 봉인) 그 소식도 한 줄 남긴다(헛걸음 방지)
 --   (화면) 채팅의 구조 알림 줄: 시각이 「21:/00」처럼 세로로 쪼개지던 것을 한 줄로
 --   (화면) 환골탈태 서첩 창: 모바일에서 직업·소속 12칸이 한 줄씩 쌓여 「이대로 다시 시작」 단추가 한참 아래로 밀려 안 보이던 것을 두 줄 격자·아래 고정 단추로
@@ -251,6 +252,100 @@ do $$ declare f text; begin
     execute format('grant execute on function %s to authenticated', f);
   end loop;
 end $$;
+
+-- ⑤ ─────────────────────────────────────────
+-- 지역마다 요괴 2종 더(일반 1·주력 1, 안전지대 제외 33곳 = 66종): 한 지역을 답사도 100%까지 도는 동안 같은 3종만 만나 지루하던 것을 덜어 준다.
+-- 이름·갈래·설명만 새로 짓고, 레벨대·체력·공격·나오는 비율·전리품·위험 등급은 그 지역의 같은 역할 요괴를 그대로 따른다(밸런스·경제 그대로).
+-- 갈래는 그 지역 풍경에 맞추되 되도록 그 지역에 없던 갈래로 골라 상성이 다양해지게 했다. 기믹·도감·「얻는 곳」은 갈래와 전리품을 따라 저절로 붙는다.
+insert into public.world_region_monsters(monster_id, region_id, monster_name, monster_type, min_level, max_level, hp, attack_power, spawn_weight,
+  description, drops, difficulty_rank, mechanic_key, mechanic_description, role, kind)
+select 'x_' || v.region || '_' || v.n, v.region, v.name,
+  case v.kind when 'bird' then '비행 요괴' when 'shell' then '갑각 요괴' when 'ghost' then '원령' when 'venom' then '독충' when 'wood' then '수목 요괴'
+    when 'shadow' then '매복 요괴' when 'water' then '수귀' when 'swarm' then '무리 요괴' when 'mirror' then '거울 요괴' when 'ward' then '결계 요괴'
+    when 'sky' then '천상 요괴' else '요괴' end,
+  t.min_level, t.max_level, t.hp, t.attack_power, t.spawn_weight, v.descr, t.drops, t.difficulty_rank,
+  case v.kind when 'bird' then 'aerial' when 'sky' then 'aerial' when 'shell' then 'armored' when 'ghost' then 'spectral' when 'venom' then 'toxic' when 'wood' then 'toxic'
+    when 'shadow' then 'ambush' when 'water' then 'tide' when 'swarm' then 'swarm' when 'mirror' then 'reflect' when 'ward' then 'warded' else 'standard' end,
+  case v.kind when 'bird' then '공중에 머물러 근접 타격이 약해진다. 원거리 사격에 취약하다.' when 'sky' then '공중에 머물러 근접 타격이 약해진다. 원거리 사격에 취약하다.'
+    when 'shell' then '물리 방어가 높다. 봉인 제압은 방어를 무시하는 추가 피해를 준다.'
+    when 'ghost' then '영체 장막이 정신을 흔든다. 봉인 제압이 효과적이며 정신 피해를 경계하라.'
+    when 'venom' then '독성 기운이 짝수 행동마다 정신 안정도를 깎는다.' when 'wood' then '독성 기운이 짝수 행동마다 정신 안정도를 깎는다.'
+    when 'shadow' then '빈틈을 노려 기습한다. 방어 태세로 첫 강공격을 대비하라.'
+    when 'water' then '물의 기운으로 전투가 길어질수록 압박이 커진다. 빠르게 제압하라.'
+    when 'swarm' then '군체의 압박으로 세 번째 행동마다 강한 반격을 가한다.'
+    when 'mirror' then '공격의 일부를 되돌린다. 원거리 사격이나 봉인 제압을 활용하라.'
+    when 'ward' then '결계막으로 공격을 완화한다. 봉인 제압으로 결계를 무너뜨려라.' else '일반 반격. 세 번째 행동마다 강한 공격을 한다.' end,
+  v.role, v.kind
+from (values
+  ('field_outskirts', 1, 'common', '허수 까마귀', 'bird', '잿빛 허수아비 어깨에 앉아 이삭과 사람 눈을 노린다.'),
+  ('field_outskirts', 2, 'main', '이삭 도깨비', 'wood', '잿빛 이삭 더미가 뭉쳐 일어선 도깨비. 낫 가는 소리를 흉내 낸다.'),
+  ('hq_training', 1, 'common', '과녁 쥐떼', 'swarm', '과녁 짚단 속에 둥지를 튼 쥐 요괴 떼.'),
+  ('hq_training', 2, 'main', '팔괘 거울귀', 'mirror', '팔괘진 거울에 맺힌 수련생의 잔상이 칼을 휘두른다.'),
+  ('hq_archive', 1, 'common', '먹물 거미', 'venom', '서가 틈에 숨어 먹물 같은 독을 품은 거미.'),
+  ('hq_archive', 2, 'main', '봉서 결계귀', 'ward', '봉인된 서책의 결계가 스스로 걸어 나왔다.'),
+  ('shrine_ruins', 1, 'common', '촛농 도깨비불', 'ghost', '꺼진 제단 촛농에서 피어오르는 도깨비불.'),
+  ('shrine_ruins', 2, 'main', '신목 덩굴귀', 'wood', '사당 신목에 감긴 덩굴이 금줄을 끊고 일어섰다.'),
+  ('west_gate', 1, 'common', '성벽 박쥐 떼', 'swarm', '무너진 성벽 틈에서 쏟아져 나오는 박쥐 떼.'),
+  ('west_gate', 2, 'main', '녹슨 창귀', 'shell', '녹슨 갑주를 걸친 채 아직도 성문을 지키는 수비병의 혼.'),
+  ('paper_bridge', 1, 'common', '먹물 잉어', 'water', '다리 아래 먹물 든 물에서 뛰어오르는 잉어 요괴.'),
+  ('paper_bridge', 2, 'main', '부적 허수', 'ward', '다리 난간에 붙은 부적들이 모여 사람 꼴을 했다.'),
+  ('old_canal', 1, 'common', '수로 독개구리', 'venom', '고인 수로에서 독을 뿜는 개구리.'),
+  ('old_canal', 2, 'main', '그림자 뱃사공', 'shadow', '어둠 속 수문 사이로 소리 없이 노를 젓는 그림자.'),
+  ('sealed_garden', 1, 'common', '연잎 두꺼비', 'venom', '연잎 아래 숨어 있다 독을 뿜는 두꺼비.'),
+  ('sealed_garden', 2, 'main', '봉인 석등귀', 'ward', '연화원 석등에 깃든 결계의 잔재.'),
+  ('ghost_bamboo', 1, 'common', '댓잎 참새 떼', 'bird', '대숲을 가르며 날카로운 깃을 날리는 참새 떼.'),
+  ('ghost_bamboo', 2, 'main', '죽엽 은자', 'shadow', '댓잎 그림자 사이로 사라졌다 나타나는 은자.'),
+  ('salt_village', 1, 'common', '염전 갈매기', 'bird', '소금 자루를 쪼아 대는 갈매기 요괴.'),
+  ('salt_village', 2, 'main', '소금 기둥귀', 'shell', '굳은 소금 껍질을 겹겹이 두른 요괴.'),
+  ('sunken_district', 1, 'common', '이끼 쥐떼', 'swarm', '잠긴 골목 지붕 위로 몰려다니는 쥐 떼.'),
+  ('sunken_district', 2, 'main', '물 먹은 상여귀', 'ghost', '떠내려온 상여에 붙어 다니는 원령.'),
+  ('red_plain', 1, 'common', '적사 독수리', 'bird', '적사 위를 맴돌며 쓰러진 이를 노리는 독수리.'),
+  ('red_plain', 2, 'main', '사암 갑귀', 'shell', '사암 껍질을 두른 채 모래 속을 헤엄친다.'),
+  ('ash_mountain', 1, 'common', '잿더미 쥐떼', 'swarm', '뜨거운 재 속을 굴러다니는 쥐 떼.'),
+  ('ash_mountain', 2, 'main', '용암 원령', 'ghost', '식은 용암 틈으로 떠도는 원령.'),
+  ('lotus_marsh', 1, 'common', '연밥 물새', 'bird', '늪 위를 스치며 연밥과 사람 손을 노리는 물새 요괴.'),
+  ('lotus_marsh', 2, 'main', '연화 수귀', 'water', '연꽃 아래 잠긴 수귀가 발목을 끌어당긴다.'),
+  ('glass_canyon', 1, 'common', '유리 전갈', 'venom', '투명한 껍질 속 독이 비쳐 보이는 전갈.'),
+  ('glass_canyon', 2, 'main', '협곡 바람귀', 'sky', '유리 벽에 부딪혀 울리는 바람이 날을 세운다.'),
+  ('mirror_pavilion', 1, 'common', '달그림자 학', 'bird', '수면에 비친 달을 쪼는 학 요괴.'),
+  ('mirror_pavilion', 2, 'main', '누각 밑 수귀', 'water', '누각 아래 거울 같은 물속에서 손을 뻗는 수귀.'),
+  ('ash_coast', 1, 'common', '잿빛 게 떼', 'swarm', '잿빛 모래를 뒤덮은 게 떼.'),
+  ('ash_coast', 2, 'main', '난파선 망령', 'ghost', '잿바다에 가라앉은 배의 선원 혼백.'),
+  ('black_sand_temple', 1, 'common', '흑사 박쥐', 'bird', '폐단 천장에 매달려 있다 날아드는 검은 박쥐.'),
+  ('black_sand_temple', 2, 'main', '금주 사제', 'ward', '끊어진 금주를 다시 감는 사교 사제의 망령.'),
+  ('burial_steps', 1, 'common', '무덤 쥐떼', 'swarm', '무덤 사이를 파고드는 쥐 떼.'),
+  ('burial_steps', 2, 'main', '백골 갑사', 'shell', '백골 위에 녹슨 갑옷을 두른 무덤 수호병.'),
+  ('jade_pass', 1, 'common', '옥빛 뱀', 'venom', '비취 바위 틈에 숨은 독뱀.'),
+  ('jade_pass', 2, 'main', '잔도 매복귀', 'shadow', '벼랑 잔도 그늘에 숨었다가 길손을 떠민다.'),
+  ('frost_valley', 1, 'common', '서리 까마귀', 'bird', '얼음 깃을 흩뿌리는 까마귀.'),
+  ('frost_valley', 2, 'main', '빙벽 갑귀', 'shell', '얼음 껍질을 겹겹이 두른 요괴.'),
+  ('crimson_mine', 1, 'common', '광석 지네', 'venom', '붉은 광석 사이를 기는 독지네.'),
+  ('crimson_mine', 2, 'main', '갱도 원령', 'ghost', '무너진 갱도에 갇힌 광부의 혼.'),
+  ('red_forest', 1, 'common', '핏잎 나비 떼', 'swarm', '붉은 잎과 함께 흩날리는 나비 떼.'),
+  ('red_forest', 2, 'main', '낙엽 원령', 'ghost', '붉은 낙엽 더미 아래 묻힌 나그네의 혼.'),
+  ('sky_lake', 1, 'common', '서리 나비 떼', 'swarm', '얼어붙은 호수 위를 춤추는 나비 떼.'),
+  ('sky_lake', 2, 'main', '하늘 거울귀', 'mirror', '호수에 비친 하늘에서 걸어 나온 요괴.'),
+  ('nine_lighthouse', 1, 'common', '갯바위 집게', 'shell', '갯바위에 붙어 지나는 이를 집는 큰 게.'),
+  ('nine_lighthouse', 2, 'main', '등불 원령', 'ghost', '꺼진 등불을 들고 섬 사이를 떠도는 원령.'),
+  ('sunken_palace', 1, 'common', '수궁 해파리 떼', 'swarm', '빛을 내며 몰려드는 해파리 떼.'),
+  ('sunken_palace', 2, 'main', '용궁 시녀귀', 'ghost', '용궁을 섬기던 시녀의 혼백.'),
+  ('forgotten_city', 1, 'common', '처마 박쥐', 'bird', '무너진 궁궐 처마에서 날아드는 박쥐.'),
+  ('forgotten_city', 2, 'main', '고도 결계관', 'ward', '망국의 결계를 지키던 관리의 혼.'),
+  ('red_moon_fort', 1, 'common', '월식 박쥐 떼', 'swarm', '붉은 달빛 아래 몰려드는 박쥐 떼.'),
+  ('red_moon_fort', 2, 'main', '혈월 무사', 'shadow', '월식 그늘에서 칼을 뽑는 교단 무사.'),
+  ('thunder_peak', 1, 'common', '벼락 지네', 'venom', '벼락 맞은 바위 틈에서 기어 나온 지네.'),
+  ('thunder_peak', 2, 'main', '뇌석 갑귀', 'shell', '벼락을 머금은 바위 껍질의 요괴.'),
+  ('under_root', 1, 'common', '뿌리 덩굴손', 'wood', '지맥의 뿌리가 뻗어 나와 발을 휘감는다.'),
+  ('under_root', 2, 'main', '지하 수맥귀', 'water', '뿌리 사이를 흐르는 수맥에 깃든 요괴.'),
+  ('white_tower', 1, 'common', '별빛 박쥐', 'bird', '탑 꼭대기에서 별빛을 쪼는 박쥐.'),
+  ('white_tower', 2, 'main', '천문 거울귀', 'mirror', '관측용 거울에 맺힌 별의 그림자.'),
+  ('black_tide_rift', 1, 'common', '검은 게 떼', 'swarm', '균열 틈에서 쏟아지는 검은 게 떼.'),
+  ('black_tide_rift', 2, 'main', '심해 원령', 'ghost', '검은 물결 아래 잠긴 혼백.'),
+  ('sealed_abyss', 1, 'common', '봉연 박쥐 떼', 'swarm', '봉인 틈으로 새어 나온 박쥐 떼.'),
+  ('sealed_abyss', 2, 'main', '봉연 거울귀', 'mirror', '아홉 겹 봉인에 비친 요기가 형체를 얻었다.')
+) v(region, n, role, name, kind, descr)
+join lateral (select * from public.world_region_monsters t where t.region_id = v.region and t.role = v.role and t.monster_id not like 'x\_%' order by t.min_level, t.monster_id limit 1) t on true
+on conflict (monster_id) do nothing;
 
 grant fn_owner_18885 to postgres with inherit false, set false;
 grant fn_owner_field to postgres with inherit false, set false;

@@ -3,14 +3,6 @@ import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyE
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
-// 모바일에서 창·물품 목록이 내용 폭만큼 늘어나 가로로 스크롤되던 것을 막는다(창 틀·목록 격자 칸을 화면 폭 안으로, 긴 설명은 말줄임).
-// app.css를 고치면 접속 중인 화면에 새로고침 안내가 뜨므로 우선 여기서 조용히 넣고, 다음 대규모 패치 때 app.css로 옮긴다.
-if (!document.getElementById('yh-fit-fix')) {
-  const st = document.createElement('style'); st.id = 'yh-fit-fix';
-  st.textContent = '.modal-backdrop{grid-template-columns:minmax(0,1fr)} .item-list{grid-template-columns:minmax(0,1fr)} .item-main small.brief{overflow:hidden;text-overflow:ellipsis}';
-  document.head.append(st);
-}
-
 // 물품 이름을 누르면 정보 창(설명·효과·제작법)을 연다.
 const infoName = (id, label) => `<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
