@@ -217,7 +217,8 @@ function wantFace(id) {
   clearTimeout(faceAsk); faceAsk = setTimeout(async () => {
     const ids = [...faceWait].slice(0, 60); ids.forEach(x => faceWait.delete(x));
     try { const r = await rpc('world_chat_faces', { p_ids: ids }); ids.forEach(x => faces.set(x, r?.[x] || {})); draw(); }
-    catch { ids.forEach(x => faces.set(x, null)); }
+    // 못 읽었으면 잠시 이름 첫 글자로 두고 30초 뒤 다시 묻는다(서버 함수가 아직 없거나 연결이 끊긴 때)
+    catch { ids.forEach(x => faces.set(x, null)); setTimeout(() => { ids.forEach(x => { if (faces.get(x) === null) faces.delete(x); }); draw(); }, 30000); }
   }, 120);
 }
 function draw() {
