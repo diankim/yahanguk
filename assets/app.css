@@ -1806,3 +1806,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 @keyframes replay-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .spar-log.replay li { animation: none; } }
 .spar-end { display: grid; gap: 8px; }
+/* 제작: 만드는 것 거르기·정렬·장착 부위 표시 */
+.craft-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.craft-sort select { min-height: 32px; font-size: 13px; padding: 2px 8px; }
+.chip.slot { color: var(--text); border-color: color-mix(in srgb, var(--text) 30%, var(--line)); }
+.recipe header { flex-wrap: wrap; }
+@media (max-width: 640px) { .craft-sort { margin-left: 0; width: 100%; } .craft-sort select { flex: 1; } }
