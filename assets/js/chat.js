@@ -10,7 +10,7 @@ import { FRAMES, frameTier } from './cosmetics.js';
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
 const HINT = {
-  global: '모든 조사원에게 보입니다 · 하루 20회',
+  global: '모든 조사원에게 보입니다 · 하루 50회',
   region: '같은 지역에 있는 조사원에게만 보입니다',
   faction: '같은 대세력 소속에게만 보입니다',
   party: '파티원에게만 보입니다',
