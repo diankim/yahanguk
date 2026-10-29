@@ -3,7 +3,7 @@
 // 보낼 때 지금 화면 위치·화면 크기·기기·최근 오류를 함께 붙일 수 있다(전·가방 같은 게임 값은 붙이지 않는다).
 import { store, rpc, act, esc, icon, guard, $, $$, fmt, openModal, isGM } from './core.js';
 
-const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['other', '기타']];
+const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감'], ['other', '기타']];
 const STATUS = { open: '접수', checking: '확인 중', fixed: '고침', closed: '닫음' };
 const errors = [];
 const keep = msg => { errors.push({ at: new Date().toISOString(), msg: String(msg || '').slice(0, 300) }); if (errors.length > 5) errors.shift(); };
@@ -23,7 +23,7 @@ window.addEventListener('yh-open-bug', e => openBug(e.detail?.tab));
 
 export async function openBug(tab) {
   const gm = isGM(store.user?.id);
-  const m = openModal({ title: '버그·문의 제보', wide: true, body: `<div class="bug-box">
+  const m = openModal({ title: '제보·소감', wide: true, body: `<div class="bug-box">
     ${gm ? `<div class="segmented bug-tabs" style="--n:2"><button data-bt="send">보내기</button><button data-bt="inbox">받은 제보</button></div>` : ''}
     <div class="bug-body"></div></div>` });
   const box = $('.bug-box', m), body = $('.bug-body', box);
@@ -35,7 +35,8 @@ export async function openBug(tab) {
 async function send(body) {
   const d = loadDraft(), cat = CATS.some(c => c[0] === d.cat) ? d.cat : 'bug';
   body.innerHTML = `
-    <p class="desc">게임을 하다 이상한 점이나 바라는 점이 있으면 운영진(GM)에게 바로 보내 주세요. 답이 오면 알림으로 알려 드립니다.</p>
+    <p class="desc">게임을 하다 이상한 점·바라는 점은 물론, 오류가 아니어도 <b>게임을 하며 느낀 점(소감)</b>을 운영진(GM)에게 편하게 보내 주세요. 답이 오면 알림으로 알려 드립니다.</p>
+    <p class="notice-line small" id="bug-reward" hidden>${icon('spark', 14)} 처음 보내 주시면 한 번 <b>노정 건량 2개·청심환 2개</b>를 드립니다.</p>
     <form class="bug-form" autocomplete="off">
       <div class="chip-pick bug-cat" role="radiogroup" aria-label="분류">${CATS.map(([k, l]) => `<button type="button" data-cat="${k}" class="${k === cat ? 'on' : ''}" role="radio" aria-checked="${k === cat}">${l}</button>`).join('')}</div>
       <label class="field"><span>제목 (2~60자)</span><input name="title" maxlength="60" value="${esc(d.title || '')}" placeholder="예: 모바일에서 지도 출발 단추가 눌리지 않아요"></label>
@@ -60,6 +61,7 @@ async function send(body) {
   try {
     const r = await rpc('world_bug_report_list', { p_status: null });
     const mine = (r?.reports || []).filter(x => x.owner_id === store.user?.id);
+    if (r && r.reward_done === false && !r.is_gm) $('#bug-reward', body).hidden = false;
     $('.bug-mine', body).innerHTML = mine.length ? `<ul class="bug-list">${mine.map(x => `<li><div class="bug-top"><span class="chip">${esc(CATS.find(c => c[0] === x.category)?.[1] || '')}</span><b>${esc(x.title)}</b>
         <span class="chip ${x.status === 'fixed' ? 'ok' : x.status === 'checking' ? 'accent' : ''}">${esc(STATUS[x.status] || '')}</span><time>${fmt.time(x.created_at)}</time></div>
         <p class="bug-text">${esc(x.body)}</p>${x.reply ? `<p class="bug-reply"><b>운영진 답</b> ${esc(x.reply)}</p>` : ''}</li>`).join('')}</ul>`
