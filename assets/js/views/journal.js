@@ -54,7 +54,13 @@ async function story(body) {
     ${chapters.filter(c => c.status === 'locked').map(c => `<section class="panel locked-ch"><header class="panel-head"><h2>${icon('help', 16)}${c.seq}장 · ${esc(c.title)}</h2>${chip(`Lv.${c.min_level}`)}</header>
       <div class="panel-body"><p class="muted small">${c.locked_reason === 'level' ? `레벨 ${c.min_level}부터 시작할 수 있습니다.` : '앞의 장을 마치면 열립니다.'}</p></div></section>`).join('')}
     ${regional(b?.regional)}`;
-  $$('[data-combo]', body).forEach(x => x.onclick = () => guard(x, () => act('world_story_combine', { p_combo_id: x.dataset.combo })));
+  // 장을 마치면 장 결말(epilogue)을 대화창으로 보인다
+  $$('[data-combo]', body).forEach(x => x.onclick = () => guard(x, async () => {
+    const r = await act('world_story_combine', { p_combo_id: x.dataset.combo });
+    if (r?.epilogue?.lines?.length) (await import('../factionquest.js')).playDialogue({ title: r.epilogue.title, lines: r.epilogue.lines, cast: r.epilogue.cast,
+      extra: `<p class="hint good">${icon('check', 14)} 장을 마쳤습니다</p>` });
+    return r;
+  }));
   const rs = $('#reg-submit', body); if (rs) rs.onclick = () => guard(rs, () => act('world_case_combine_regional'));
   $$('[data-sub]', body).forEach(x => x.onclick = () => { sub = x.dataset.sub; window.yahangGo('log', sub); });
   bindGo(body);
@@ -63,6 +69,7 @@ function chapterCard(ch, map) {
   const got = (ch.clues || []).filter(c => c.found).length;
   return panel(`${ch.seq}장 · ${ch.title}`, `
     <p class="desc">${esc(ch.intro)}</p>
+    ${ch.scenes_open === false ? `<p class="hint accent">${icon('scroll', 14)} 먼저 현장의 「퀘스트」 칸에서 이 장의 이야기를 따라가세요. 장면을 모두 마치면 단서를 탐색에서 찾을 수 있습니다.</p>` : ''}
     ${ch.rewards?.text ? `<p class="muted small">마치면: ${esc(ch.rewards.text)}</p>` : ''}
     <div class="chips">${chip(`단서 ${got}/${(ch.clues || []).length}`, 'accent')}${chip(`가설 ${(ch.combos || []).filter(x => x.done).length}/${(ch.combos || []).length}`)}</div>
     <div class="clue-grid">${(ch.clues || []).map(k => `<article class="clue ${k.found ? 'on' : ''}"><header><b>${k.found ? esc(k.name) : '찾지 못한 단서'}</b>${chip(k.tag)}</header>

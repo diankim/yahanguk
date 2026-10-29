@@ -8,7 +8,7 @@ import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
-import { factionPanels, bindFaction } from '../factionquest.js';
+import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 
 const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot']];
 const STATS = [
@@ -202,6 +202,8 @@ function previewText(cur, next) {
   const parts = PREVIEW.filter(([k]) => Number(next[k]) !== Number(cur[k])).map(([k, n, u]) => `${n} ${cur[k]}${u} → <b>${next[k]}${u}</b>`);
   return parts.length ? parts.join(' · ') : '전투 수치 변화 없음 (지금 무기로는 영향이 적습니다)';
 }
+// 능력치 하나의 상한(서버 world_stat_cap과 같은 식)
+const statCap = lv => 5 + Math.floor(Math.max(1, Number(lv) || 1) * 1.5);
 async function growth(body) {
   // 능력치를 올렸을 때 바뀔 값(plus_one)은 서버가 7번 계산하므로 쓸 포인트가 있을 때만 받는다
   const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', Number(store.character?.stat_points || 0) > 0 ? { p_preview: true } : undefined).catch(() => null)]);
@@ -210,10 +212,10 @@ async function growth(body) {
   const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)]), ['요리', c.cooking_rank, `${fmt.num(c.cooking_xp)} 경험`]];
   body.innerHTML = `
     <div class="grid-2">
-      ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다.</p>
+      ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다. 한 능력치는 지금 레벨에서 <b>${statCap(c.level)}</b>까지 올릴 수 있습니다(5 + 레벨×1.5).</p>
         <ul class="stat-list">${STATS.map(([k, n, d]) => `<li><div><b>${n} <span class="stat-val">${fmt.num(c[k])}</span></b><small>${d}</small>
             <small class="preview">${previewText(cur, prof?.plus_one?.[k])}</small></div>
-          <button class="icon-btn" data-stat="${k}" ${pts > 0 ? '' : 'disabled'} aria-label="${n} 올리기">${icon('plus', 16)}</button></li>`).join('')}</ul>`, { ico: 'spark' })}
+          <button class="icon-btn" data-stat="${k}" ${pts > 0 && c[k] < statCap(c.level) ? '' : 'disabled'} aria-label="${n} 올리기" title="${c[k] >= statCap(c.level) ? '지금 레벨의 상한입니다' : ''}">${icon('plus', 16)}</button></li>`).join('')}</ul>`, { ico: 'spark' })}
       ${panel('지금 전투 능력', cur ? combatRows(cur) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword' })}
     </div>
     <div class="grid-2">
@@ -515,46 +517,79 @@ function boardPanel(b) {
     </div>`, { ico: 'flag' });
 }
 
+// 세력 화면: 칸 단추만 두고 누르면 팝업으로 연다(상점처럼). 세력 판도만 화면에 그대로 보인다.
+// 팝업 안에서 행동하면 화면이 'changed'로 다시 그려질 때 열린 팝업도 새 값으로 다시 채운다.
+let fx = null;
+const missionsHtml = mine => mine.length ? `<ul class="mission-list">${mine.map(m => {
+  const done = m.progress >= m.target_count;
+  return `<li><div><b>${esc(m.title)}</b><small>${esc(m.description || '')}</small>
+    <div class="mini-bar"><span style="width:${Math.min(100, m.progress / m.target_count * 100)}%"></span></div>
+    <small class="muted">${Math.min(m.progress, m.target_count)}/${m.target_count} · 보상 경험치 ${m.reward_xp}${m.reward_items ? ' · ' + esc(itemsText(m.reward_items)) : ''}</small></div>
+    ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.');
+const baseHtml = (c, base, board) => { const major = c.major_faction_id; return `
+  <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
+  <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${(() => { const bst = board?.factions?.find(f => f.id === major)?.boost; return bst > 1 ? chip(`인원 보정 영향력 ×${bst}`, 'ok') : ''; })()}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
+  ${(base?.contents || []).length ? `<ul class="mission-list">${base.contents.map(x => `<li><div><b>${esc(x.title)}</b><small>${esc(x.description || '')}</small><small class="muted">Lv.${x.min_level}+${x.reward ? ' · ' + esc(itemsText(x.reward.items || x.reward)) : ''}</small></div>
+    ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
+    ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}
+  <div class="btn-row" style="margin-top:8px"><button class="btn small ghost" id="leave-faction">세력 떠나기</button></div>`; };
+function popOf(key) {
+  const { c, mine, base, board, fq } = fx;
+  if (key === 'missions') return [`${nameOf(c.faction_key)} 임무`, missionsHtml(mine)];
+  if (key === 'base') return [`${nameOf(c.major_faction_id)} 거점`, baseHtml(c, base, board)];
+  const t = fq?.faction_id && fqPops(fq).find(x => x[0] === key);
+  return t ? [t[1], fqPopHtml(key, fq)] : null;
+}
+function bindPop(root) {
+  const { c, fq } = fx, major = c.major_faction_id;
+  $$('[data-mission]', root).forEach(b => b.onclick = () => guard(b, () => act('world_faction_mission_action', { p_mission_id: b.dataset.mission })));
+  $$('[data-base]', root).forEach(b => b.onclick = () => guard(b, () => act('world_faction_base_action', { p_content_id: b.dataset.base })));
+  const lv = $('#leave-faction', root);
+  if (lv) lv.onclick = async () => { if (await ask(`${nameOf(major)}에서 나갈까요?\n평판이 0이 되고 세력 채팅·거점·세력 효과가 사라집니다. 쌓은 영향력은 세력에 남습니다. 떠난 뒤 12시간이 지나야 다른 세력에 가입할 수 있습니다.`, { title: '세력 떠나기', ok: '떠나기', danger: true })) guard(lv, async () => { const r = await act('world_leave_major_faction'); closeModal(); return r; }); };
+  if (fq?.faction_id) bindFaction(root, fq);
+}
+function openPop(key) {
+  const p = popOf(key); if (!p) return;
+  const m = openModal({ title: p[0], body: p[1], wide: key === 'vault' || key === 'donate' });
+  m.dataset.fpop = key; bindPop($('.modal-body', m));
+}
+function refreshPop() {
+  const m = $('#modal'), key = m?.dataset.fpop; if (!key) return;
+  const p = popOf(key); if (!p) { closeModal(); return; }
+  const mb = $('.modal-body', m), top = mb.scrollTop;
+  mb.innerHTML = `<div>${p[1]}</div>`; mb.scrollTop = top; bindPop(mb);
+}
+
 async function faction(body) {
   const [missions, base, map, board, fq] = await Promise.all([load('world_faction_mission_snapshot'), load('world_faction_base_snapshot').catch(() => null), load('world_map_snapshot', undefined, { maxAge: 30000 }).catch(() => null), load('world_faction_board', undefined, { maxAge: 60000 }).catch(() => null),
     store.character?.major_faction_id ? load('world_faction_snapshot').catch(() => null) : null]);
   const c = store.character, here = currentRegion(map);
   const mine = (missions || []).filter(m => m.faction_key === c.faction_key || m.eligible);
   const major = c.major_faction_id;
+  fx = { c, mine, base, board, fq };
+  const supplied = !!store.hud?.supply?.claimed_today;
+  const tile = (k, label, ico, dot, extra = '') => `<button class="tile" data-fpop="${k}" ${extra}>${icon(ico, 20)}<span>${esc(label)}</span>${dot ? '<i class="tile-dot" aria-label="할 일 있음"></i>' : ''}</button>`;
+  const tiles = [
+    tile('missions', '소속 임무', 'scroll', mine.some(m => !m.claimed && m.progress >= m.target_count)),
+    `<button class="tile ${supplied ? '' : 'primary'}" id="supply" ${supplied ? 'disabled' : ''} title="소속 부서에서 하루 한 번 보급품을 받습니다">${icon('bag', 20)}<span>${supplied ? '보급 받음' : '일일 보급'}</span></button>`,
+    ...(major ? [tile('base', '거점', 'shield', false)] : []),
+    ...(major && fq?.faction_id ? fqPops(fq).map(([k, l, ico, dot]) => tile(k, l, ico, dot)) : []),
+  ].join('');
   body.innerHTML = `
-    <div class="grid-2">
-      ${panel(`${nameOf(c.faction_key)} 임무`, mine.length ? `<ul class="mission-list">${mine.map(m => {
-        const done = m.progress >= m.target_count;
-        return `<li><div><b>${esc(m.title)}</b><small>${esc(m.description || '')}</small>
-          <div class="mini-bar"><span style="width:${Math.min(100, m.progress / m.target_count * 100)}%"></span></div>
-          <small class="muted">${Math.min(m.progress, m.target_count)}/${m.target_count} · 보상 경험치 ${m.reward_xp}${m.reward_items ? ' · ' + esc(itemsText(m.reward_items)) : ''}</small></div>
-          ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.'), { ico: 'scroll' })}
-      ${panel('일일 보급', store.hud?.supply?.claimed_today
-          ? `<p class="desc">${icon('check', 14)} 오늘 보급은 이미 받았습니다.</p><p class="muted small">다음 보급: ${store.hud.supply.next_at ? new Date(store.hud.supply.next_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '내일'}</p><button class="btn" disabled>${icon('check', 16)}<span>수령 완료</span></button>`
-          : `<p class="desc">소속 부서에서 하루 한 번 보급품을 받을 수 있습니다.</p><button class="btn primary" id="supply">${icon('bag', 16)}<span>오늘 보급 받기</span></button>`, { ico: 'bag' })}
-    </div>
-    ${major ? panel(`${nameOf(major)} 거점`, `
-        <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
-        <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${(() => { const bst = board?.factions?.find(f => f.id === major)?.boost; return bst > 1 ? chip(`인원 보정 영향력 ×${bst}`, 'ok') : ''; })()}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
-        ${(base?.contents || []).length ? `<ul class="mission-list">${base.contents.map(x => `<li><div><b>${esc(x.title)}</b><small>${esc(x.description || '')}</small><small class="muted">Lv.${x.min_level}+${x.reward ? ' · ' + esc(itemsText(x.reward.items || x.reward)) : ''}</small></div>
-          ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
-          ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}
-        <div class="btn-row" style="margin-top:8px"><button class="btn small ghost" id="leave-faction">세력 떠나기</button></div>`, { ico: 'shield' })
-        + (fq?.faction_id ? `<div class="grid-2 fq-grid">${factionPanels(fq, c)}</div>` : '')
-      : panel('대세력', `<p class="desc">대세력은 세계의 큰 흐름을 이끄는 조직입니다. 가입하면 전용 거점·임무·보상과 세력 채팅을 이용할 수 있습니다. 가입하려면 그 세력의 거점까지 직접 가야 합니다.</p>
+    ${panel(major ? `${nameOf(major)}${fq?.ranks ? ` · ${esc(fq.ranks[(fq.rank || 1) - 1] || '')}` : ''}` : `${nameOf(c.faction_key)}`, `
+      ${major && fq?.faction_id ? `<div class="chips">${chip(`평판 ${fmt.num(fq.rep)}`, 'accent')}${chip(`공훈 ${fmt.num(fq.merit)}`, 'ok')}${base?.at_base ? chip('거점에 있음', 'ok') : ''}</div>` : ''}
+      <div class="act-tiles fq-tiles">${tiles}</div>
+      ${supplied ? `<p class="muted small">다음 보급: ${store.hud.supply.next_at ? new Date(store.hud.supply.next_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '내일'}</p>` : ''}`, { ico: 'flag' })}
+    ${major ? '' : panel('대세력', `<p class="desc">대세력은 세계의 큰 흐름을 이끄는 조직입니다. 가입하면 전용 거점·임무·보상과 세력 채팅을 이용할 수 있습니다. 가입하려면 그 세력의 거점까지 직접 가야 합니다.</p>
         <div class="faction-grid">${Object.entries(MAJOR_FACTIONS).map(([k, f]) => {
           const at = here?.region_id === BASE[k];
           return `<article class="faction">
           <header><b>${esc(f.name)}</b>${chip(f.type)}</header><p>${esc(f.desc)}</p><small class="accent">${esc(PERKS[k] || '')}</small><small class="muted">가입 조건: ${esc(f.entry)} · 거점 ${esc(nameOf(f.base))}</small>
           <div class="join-row" id="jr-${k}"><button class="btn small ${at ? 'primary' : ''}" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
     ${board ? boardPanel(board) : ''}`;
-  $$('[data-mission]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_mission_action', { p_mission_id: b.dataset.mission })));
+  $$('[data-fpop]', body).forEach(b => b.onclick = () => openPop(b.dataset.fpop));
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; return r; });
-  $$('[data-base]', body).forEach(b => b.onclick = () => guard(b, () => act('world_faction_base_action', { p_content_id: b.dataset.base })));
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
-  if (fq?.faction_id) bindFaction(body, fq, () => faction(body));
-  const lv = $('#leave-faction', body);
-  if (lv) lv.onclick = async () => { if (await ask(`${nameOf(major)}에서 나갈까요?\n평판이 0이 되고 세력 채팅·거점·세력 효과가 사라집니다. 쌓은 영향력은 세력에 남습니다. 떠난 뒤 12시간이 지나야 다른 세력에 가입할 수 있습니다.`, { title: '세력 떠나기', ok: '떠나기', danger: true })) guard(lv, () => act('world_leave_major_faction')); };
   $$('[data-join]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.join, row = $(`#jr-${k}`, body);
     if (here?.region_id !== BASE[k]) {
@@ -565,4 +600,7 @@ async function faction(body) {
     }
     if (await ask(`${MAJOR_FACTIONS[k].name}에 가입할까요? 대세력은 하나만 들 수 있습니다.`, { title: '대세력 가입', ok: '가입하기' })) guard(b, () => act('world_join_major_faction', { p_faction_id: k }));
   });
+  refreshPop();
+  // 현장 「세력」 칸·퀘스트 칸에서 넘어오면 바로 그 팝업을 연다
+  try { const k = sessionStorage.getItem('yh-fpop'); if (k) { sessionStorage.removeItem('yh-fpop'); openPop(k); } } catch {}
 }

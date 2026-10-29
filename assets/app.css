@@ -607,6 +607,7 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .bag-cap { display: grid; gap: 6px; padding: 12px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--line); margin-bottom: 12px; }
 .bag-cap span { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .bag-cap small { font-size: 12px; color: var(--muted); }
+.bag-cap .cap-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .bag-cap.full { border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); }
 
 .survey-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -1769,6 +1770,8 @@ b.contest { color: var(--warn); font-weight: 600; }
 
 /* 대세력 퀘스트·등급·의뢰판·비고·수련장(factionquest.js) */
 .fq-grid { margin-top: 12px; }
+.fq-tiles { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); margin-top: 8px; }
+.tile .tile-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
 .rank-ladder { list-style: none; margin: 0 0 10px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .rank-ladder li { display: grid; gap: 2px; justify-items: center; text-align: center; padding: 6px 2px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); color: var(--muted); font-size: 11.5px; line-height: 1.25; min-width: 0; }
 .rank-ladder li b { font-size: 12px; } .rank-ladder li span { overflow-wrap: anywhere; }
@@ -1828,3 +1831,24 @@ b.contest { color: var(--warn); font-weight: 600; }
 .fq-don b.r-rare { color: var(--info, #6aa6e8); } .fq-don b.r-epic { color: #b48ad8; } .fq-don b.r-legendary { color: var(--accent); }
 #fq-don-sum .warn { color: var(--warn, var(--gold)); }
 @media (max-width: 640px) { .fq-vault > li { flex-wrap: wrap; } }
+
+/* 퀘스트 칸(현장) */
+.quest-box .panel-head h2 small { font-weight: 400; margin-left: 6px; }
+.quest-box > .q-here { margin: 10px 12px 0; }
+.q-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.q-item { padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); display: grid; gap: 4px; }
+.q-item.ready { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); }
+.q-item header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.q-item header b { font-size: 14px; }
+.q-step, .q-goal { margin: 0; font-size: 12.5px; }
+.q-step { color: var(--muted); }
+.q-tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; }
+.q-tasks li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; color: var(--muted); }
+.q-tasks li.ok { color: var(--ok); }
+.q-at { margin: 0; font-size: 12px; color: var(--muted); display: flex; gap: 4px; align-items: center; }
+.q-at.ok { color: var(--ok); }
+.q-item .btn-row { margin-top: 2px; }
+.q-more { margin-top: 8px; }
+.q-more > summary { cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 4px 0; }
+.q-more .q-list { margin-top: 6px; }
+.hint.good, .q-done { color: var(--ok); }

@@ -83,7 +83,7 @@ async function items(body, inv) {
     .filter(r => !q.trim() || [nameOf(r.id), r.it?.description, nameOf(r.it?.category)].join(' ').toLowerCase().includes(q.trim().toLowerCase()))
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
-  body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
+  body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><div class="cap-top"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span><button class="btn small" data-storage title="창고에 무엇이 있는지 봅니다. 맡기기·꺼내기는 안전지대에서만 됩니다.">${icon('chest', 14)}<span>창고 열기</span></button></div>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
       <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비 1개 · 소모품 3~20개 · 재료 5~20개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
@@ -98,6 +98,7 @@ async function items(body, inv) {
         ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
+  $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
   $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
   $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };

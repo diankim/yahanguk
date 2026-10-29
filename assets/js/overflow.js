@@ -22,7 +22,7 @@ async function draw(body) {
   body.innerHTML = `
     <p class="ov-lead">${icon('bag', 16)}<span>가방 <b>${fmt.num(bag.used)} / ${fmt.num(bag.limit)}칸</b> · 들어가지 못한 전리품입니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.</span></p>
     <ul class="item-list ov-list">${items.map(i => `<li>
-      <div class="item-main"><b>${esc(i.name)} <span class="qty">×${fmt.num(i.qty)}</span></b>
+      <div class="item-main"><b><button class="linkish" data-info="${esc(i.item_id)}" title="물품 정보">${esc(i.name)}</button> <span class="qty">×${fmt.num(i.qty)}</span></b>
         <small>${esc(RARITY[i.rarity] || '')}${i.room > 0 ? ` · 지금 ${fmt.num(Math.min(i.room, i.qty))}개 들어감` : ' · 가방에 자리 없음'}</small></div>
       <div class="item-act">
         <button class="btn small primary" data-take="${esc(i.item_id)}" ${i.room > 0 ? '' : 'disabled'}>${icon('plus', 14)}<span>챙기기</span></button>
@@ -33,6 +33,8 @@ async function draw(body) {
       <button class="btn small ghost" data-drop-all>모두 버리기</button>
     </div>
     <p class="muted small">가방에서 물품을 쓰거나 버리거나 팔아 자리를 만들면 더 챙길 수 있습니다. 버린 것은 되찾을 수 없습니다.</p>`;
+  // 이름을 누르면 물품 정보(보따리 창 위에 겹쳐 뜬다)
+  $$('[data-info]', body).forEach(b => b.onclick = () => import('./views/item.js').then(m => m.openItemInfo(b.dataset.info)));
   $$('[data-take]', body).forEach(b => b.onclick = async () => { await guard(b, () => act('world_overflow_take', { p_item: b.dataset.take, p_qty: null })); draw(body); });
   $$('[data-drop]', body).forEach(b => b.onclick = async () => {
     if (!await ask(`${b.dataset.name} ×${b.dataset.qty}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '보따리에서 버리기', ok: '버리기', danger: true })) return;

@@ -13,6 +13,7 @@ import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
 import { sceneArt } from '../scenery.js';
 import { checklistHtml, noteRegion } from '../tutorial.js';
+import { questBox, fillQuests } from '../quests.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -75,8 +76,10 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     noteRegion(s.region);
-    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     bind(s);
+    // 퀘스트 칸은 따로 읽어 채운다(15초 동안 다시 씀, 보고 뒤에는 새로 읽음)
+    fillQuests($('#quest-box', el));
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
@@ -152,6 +155,7 @@ function town(s, roster) {
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
     ['board', 'scroll', '의뢰 게시판', '사건과 상시 의뢰'],
+    ['faction', 'flag', '세력', store.character?.major_faction_id ? `${nameOf(store.character.major_faction_id)} · 퀘스트·의뢰판·비고` : '대세력 살펴보기·가입'],
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
   return `
@@ -369,6 +373,7 @@ function goIdleRest() { try { sessionStorage.setItem('yh-idle-focus', 'rest'); }
 function openFacility(k, s) {
   if (k === 'depart') return window.yahangGo('map');
   if (k === 'board') return window.yahangGo('log', 'story');
+  if (k === 'faction') return window.yahangGo('char', 'faction');
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];
