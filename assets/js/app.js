@@ -71,7 +71,13 @@ async function routeOnce(session) {
   }
 }
 db.auth.onAuthStateChange((evt, session) => {
-  if (evt === 'SIGNED_OUT') { stopSessionGuard(); routedFor = null; store.user = null; store.character = null; return renderAuth('login', takeKickNote()); }
+  if (evt === 'SIGNED_OUT') {
+    const wasIn = !!routedFor;
+    stopSessionGuard(); routedFor = null; store.user = null; store.character = null;
+    // 게임 화면이 걸어 둔 타이머(상태판·채팅·알림 읽기)가 로그인 없이 계속 요청을 보내지 않게, 게임 중에 로그인이 풀리면(갱신 거절 등) 페이지를 새로 연다
+    if (wasIn) { try { if (!sessionStorage.getItem('yh-kick-note')) sessionStorage.setItem('yh-kick-note', '로그인이 풀려 로그아웃되었습니다. 다시 로그인해 주세요.'); } catch {} location.replace(location.pathname + '#/home'); return location.reload(); }
+    return renderAuth('login', takeKickNote());
+  }
   if (evt === 'SIGNED_IN' || evt === 'INITIAL_SESSION') route(session);
 });
 
