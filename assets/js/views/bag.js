@@ -71,7 +71,7 @@ function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i]
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
 // 같은 계열의 더 높은 단계 도구는 낮은 단계 도구가 필요한 제작법도 만든다(서버 world_tool_lines·world_tool_covers와 같다)
-const TOOL_LINE = { field_knife: ['knife', 1], field_knife_2: ['knife', 2], t3_gather: ['knife', 3], t5_gather: ['knife', 5], ore_pick: ['pick', 1], t4_gather: ['pick', 4] };
+const TOOL_LINE = { field_knife: ['knife', 1], field_knife_2: ['knife', 2], t3_gather: ['knife', 3], t5_gather: ['knife', 5], t6_gather: ['knife', 6], ore_pick: ['pick', 1], t4_gather: ['pick', 4] };
 const toolCovers = (have, need) => have === need || (TOOL_LINE[have] && TOOL_LINE[need] && TOOL_LINE[have][0] === TOOL_LINE[need][0] && TOOL_LINE[have][1] >= TOOL_LINE[need][1]);
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 async function items(body, inv) {

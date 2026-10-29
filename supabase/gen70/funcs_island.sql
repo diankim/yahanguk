@@ -127,9 +127,9 @@ select pg_temp.yh_patch('public.world_shop_buy(text,integer)', '  if not found t
     insert into public.world_shop_buy_caps(owner_id, day, item_id, qty) values (uid, (now() at time zone ''Asia/Seoul'')::date, p_item_id, p_qty)
     on conflict (owner_id, day, item_id) do update set qty = world_shop_buy_caps.qty + excluded.qty;
   end if;');
--- 반요촌 품목은 회차마다 4가지 이상, 귀허 부적은 늘
+-- 반요촌 품목은 회차마다 4가지 이상, 귀허 부적·화살·쇠뇌살·취관 침은 늘
 select pg_temp.yh_patch('public.world_shop_refresh(text)', 'case when sc.item_id = any(staples) or random() < 0.55 then 1 else 0 end',
-  'case when (p_shop <> ''banyo_shop'' and sc.item_id = any(staples)) or sc.item_id = ''gwiheo_charm'' or random() < case when p_shop = ''banyo_shop'' then 0.3 else 0.55 end then 1 else 0 end');
+  'case when (sc.item_id = any(staples) and (p_shop <> ''banyo_shop'' or sc.item_id like ''ammo%'')) or sc.item_id = ''gwiheo_charm'' or random() < case when p_shop = ''banyo_shop'' then 0.3 else 0.55 end then 1 else 0 end');
 select pg_temp.yh_patch('public.world_shop_refresh(text)', 'limit greatest(0, 6 - (select count(*)', 'limit greatest(0, case when p_shop = ''banyo_shop'' then 4 else 6 end - (select count(*)');
 -- 반요촌 대장간: 강화 재료는 월철 주괴·정련 숯만
 select pg_temp.yh_patch('public.world_smithy_snapshot()', '   where ss.shop_id = ''smithy'' and ss.stock > 0;',
@@ -149,3 +149,6 @@ select pg_temp.yh_patch('public.world_equipment_repair(text,text)', '    IF ''sm
     cost := cost * public.world_repair_mult(uid);');
 select pg_temp.yh_patch('public.world_repair_quote()', '''cost'', (case when half', '''cost'', public.world_repair_mult(public.fn_owner_auth_uid()) * (case when half');
 select pg_temp.yh_patch('public.world_repair_quote()', '''total'', coalesce(sum((case when half', '''total'', coalesce(sum(public.world_repair_mult(public.fn_owner_auth_uid()) * (case when half');
+
+-- 6단계 채집도는 채집도 계열(낮은 단계 채집도가 필요한 제작법도 만든다)
+insert into public.world_tool_lines(item_id, line) values ('t6_gather', 'knife') on conflict do nothing;

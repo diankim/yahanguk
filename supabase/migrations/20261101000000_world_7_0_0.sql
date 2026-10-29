@@ -272,9 +272,9 @@ select pg_temp.yh_patch('public.world_shop_buy(text,integer)', '  if not found t
     insert into public.world_shop_buy_caps(owner_id, day, item_id, qty) values (uid, (now() at time zone ''Asia/Seoul'')::date, p_item_id, p_qty)
     on conflict (owner_id, day, item_id) do update set qty = world_shop_buy_caps.qty + excluded.qty;
   end if;');
--- 반요촌 품목은 회차마다 4가지 이상, 귀허 부적은 늘
+-- 반요촌 품목은 회차마다 4가지 이상, 귀허 부적·화살·쇠뇌살·취관 침은 늘
 select pg_temp.yh_patch('public.world_shop_refresh(text)', 'case when sc.item_id = any(staples) or random() < 0.55 then 1 else 0 end',
-  'case when (p_shop <> ''banyo_shop'' and sc.item_id = any(staples)) or sc.item_id = ''gwiheo_charm'' or random() < case when p_shop = ''banyo_shop'' then 0.3 else 0.55 end then 1 else 0 end');
+  'case when (sc.item_id = any(staples) and (p_shop <> ''banyo_shop'' or sc.item_id like ''ammo%'')) or sc.item_id = ''gwiheo_charm'' or random() < case when p_shop = ''banyo_shop'' then 0.3 else 0.55 end then 1 else 0 end');
 select pg_temp.yh_patch('public.world_shop_refresh(text)', 'limit greatest(0, 6 - (select count(*)', 'limit greatest(0, case when p_shop = ''banyo_shop'' then 4 else 6 end - (select count(*)');
 -- 반요촌 대장간: 강화 재료는 월철 주괴·정련 숯만
 select pg_temp.yh_patch('public.world_smithy_snapshot()', '   where ss.shop_id = ''smithy'' and ss.stock > 0;',
@@ -294,6 +294,9 @@ select pg_temp.yh_patch('public.world_equipment_repair(text,text)', '    IF ''sm
     cost := cost * public.world_repair_mult(uid);');
 select pg_temp.yh_patch('public.world_repair_quote()', '''cost'', (case when half', '''cost'', public.world_repair_mult(public.fn_owner_auth_uid()) * (case when half');
 select pg_temp.yh_patch('public.world_repair_quote()', '''total'', coalesce(sum((case when half', '''total'', coalesce(sum(public.world_repair_mult(public.fn_owner_auth_uid()) * (case when half');
+
+-- 6단계 채집도는 채집도 계열(낮은 단계 채집도가 필요한 제작법도 만든다)
+insert into public.world_tool_lines(item_id, line) values ('t6_gather', 'knife') on conflict do nothing;
 
 
 -- ─────────────────────────────────────────────────────────────
@@ -1073,7 +1076,7 @@ select '7.0.0', '7.0.0 · 귀허도와 요인록', $N$
 - 10장 「구중 봉연」을 마치면 구중 봉연 아래 검은 물길 너머로 **귀허도**가 지도에 나타납니다. 그 전에는 보이지 않습니다.
 - 반요촌(안전지대) · 잿빛 갈대숲(Lv30) · 거꾸로 선 사당(Lv33) · 달 없는 저잣거리(Lv36) · 귀허(Lv38). 지역마다 답사 길·채집터·요괴·원정지·조사 지점이 있고, 갈대숲과 귀허에는 낚시터도 있습니다.
 - 섬에서는 **침식이 바깥보다 빨리 쌓입니다**. 대신 섬에 있는 동안은 요화가 다음 단계로 넘어가지 않습니다.
-- **반요촌**은 빈약한 안전지대입니다: 상점 품목이 적고 값이 비싸며 사람마다 하루에 살 수 있는 개수가 정해져 있습니다. 되팔면 절반 값이고, 대장간 수리비가 세 배입니다. 거래소·창고·마구간은 없습니다. 귀허 부적·반요 고약·망각 향은 여기서만 팝니다.
+- **반요촌**은 빈약한 안전지대입니다: 상점 품목이 적고 값이 비싸며 사람마다 하루에 살 수 있는 개수가 정해져 있습니다. 되팔면 절반 값이고, 대장간 수리비가 세 배입니다. 거래소·창고·마구간은 없습니다. 귀허 부적·반요 고약·망각 향은 여기서만 팝니다. 화살·쇠뇌살·취관 침은 늘 팝니다.
 - 섬 재료 8가지(갈대 영사·거꾸로 향목·망각 수정·무월 비단·귀허 흑철·반요 비늘·요인 혈정·귀허 진주)로 **6단계 장비 33가지**(Lv32)를 만듭니다. 섬 요괴에게서도 드물게 떨어집니다.
 
 ## 외전 「요인록(妖人錄)」
