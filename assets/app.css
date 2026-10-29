@@ -1660,10 +1660,10 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .yohwa-pin .ico { color: var(--bad); }
 .yohwa-pin span { display: grid; min-width: 0; } .yohwa-pin b { font-size: 13px; } .yohwa-pin small { font-size: 11.5px; color: var(--muted); } .yohwa-pin i { font-style: normal; }
 .yohwa-pin.s1 { border-left-color: var(--warn); } .yohwa-pin.s1 .ico { color: var(--warn); }
-.yohwa-pin.seal { background: var(--surface-2); border-left-color: var(--mp); } .yohwa-pin.seal .ico { color: var(--mp); }
+.yohwa-pin.sealed { background: var(--surface-2); border-left-color: var(--mp); } .yohwa-pin.sealed .ico { color: var(--mp); }
 .hs-yohwa { flex: none; padding: 1px 6px; border-radius: 99px; font-size: 11px; font-weight: 700; color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 55%, transparent); }
 .hs-yohwa.s1 { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
-.hs-yohwa.seal { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); }
+.hs-yohwa.sealed { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); }
 .yohwa-note em { font-style: normal; font-weight: 650; }
 .notice-line { display: flex; gap: 6px; align-items: center; margin: 6px 0; padding: 6px 8px; font-size: 12.5px; color: var(--muted); border: var(--bw) dashed var(--line); border-radius: var(--r-sm); }
 .ingr li small { margin-left: 4px; font-size: 11px; }
@@ -1931,7 +1931,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 .seal-ring { fill: none; stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 2; }
 .lg.sealed { border: 1.5px dashed var(--bad); background: transparent; }
 b.sealed { color: var(--bad); }
-.chat-notice.sys.seal .ico { color: var(--warn); }
+/* 봉연 소식 줄: 프로필 낙관 .seal(32px 정사각형)과 이름이 겹쳐 칸이 좁아지던 것 → raidnote */
+.chat-list .chat-notice.sys.raidnote { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: color-mix(in srgb, var(--warn) 8%, var(--surface-2)); }
+.chat-list .chat-notice.sys.raidnote svg { color: var(--warn); }
 .coop-list li small + small { margin-top: 2px; }
 /* 6.1.1 세계관 글: 물품 내력·지역 기록·요괴 목격담 */
 .item-lore { margin: 4px 0 8px; padding-left: 10px; border-left: 2px solid var(--gold); color: var(--muted); font-size: 12.5px; line-height: 1.55; font-family: var(--font-serif); }

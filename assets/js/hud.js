@@ -138,7 +138,7 @@ function render() {
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
-      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa seal">봉인</span>' : ''}`; })()}
+      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}`; })()}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
     <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개" title="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
@@ -202,7 +202,7 @@ export function yohwaDowned(c, yo) {
   return !!(e && c?.downed_at && Math.abs(new Date(c.downed_at).getTime() / 1000 - e) < 1);
 }
 export function yohwaLine(st) {
-  if (st.seal) return { cls: 'seal', title: '봉인 해독 중', text: '안전지대 봉인술사들이 요기를 걷어내고 있습니다. 끝날 때까지 채팅만 할 수 있습니다.', until: st.seal.expires_at };
+  if (st.seal) return { cls: 'sealed', title: '봉인 해독 중', text: '안전지대 봉인술사들이 요기를 걷어내고 있습니다. 끝날 때까지 채팅만 할 수 있습니다.', until: st.seal.expires_at };
   if (st.y) return { cls: `s${st.stage}`, title: `요화: ${st.stage}단계 ${YOHWA_STAGES[st.stage]}`, text: st.stage < 3 ? '다음 단계까지' : '쓰러지기까지', until: st.y.expires_at };
   return null;
 }
