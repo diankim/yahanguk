@@ -10,19 +10,20 @@ async function notes() {
   if (error) throw error;
   cache = data || []; cacheAt = Date.now(); return cache;
 }
-// 본문: 「## 」 제목, 「### 」 소제목, 「1. 」 번호 항목(묶음 안에서 이어지는 번호), 「· 」 항목, 빈 줄은 문단 나눔
+// 본문: 「## 」 제목, 「### 」 소제목, 「1. 」 번호 항목(묶음 안에서 이어지는 번호), 「· 」 항목, 빈 줄은 문단 나눔, 「**굵게**」
+const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
 function bodyHtml(t) {
   const out = []; let list = null, kind = 'ul', start = 1;
   const flush = () => { if (list) { out.push(kind === 'ol' ? `<ol start="${start}">${list.join('')}</ol>` : `<ul>${list.join('')}</ul>`); list = null; } };
   String(t || '').split('\n').forEach(line => {
     const l = line.trim();
     if (!l) { flush(); return; }
-    if (l.startsWith('### ')) { flush(); out.push(`<h4>${esc(l.slice(4))}</h4>`); return; }
-    if (l.startsWith('## ')) { flush(); out.push(`<h3>${esc(l.slice(3))}</h3>`); return; }
+    if (l.startsWith('### ')) { flush(); out.push(`<h4>${inl(l.slice(4))}</h4>`); return; }
+    if (l.startsWith('## ')) { flush(); out.push(`<h3>${inl(l.slice(3))}</h3>`); return; }
     const num = l.match(/^(\d+)\.\s+(.*)$/);
-    if (num) { if (!list || kind !== 'ol') { flush(); kind = 'ol'; start = Number(num[1]); list = []; } list.push(`<li>${esc(num[2])}</li>`); return; }
-    if (/^[·\-]\s?/.test(l)) { if (list && kind !== 'ul') flush(); if (!list) { kind = 'ul'; list = []; } list.push(`<li>${esc(l.replace(/^[·\-]\s?/, ''))}</li>`); return; }
-    flush(); out.push(`<p>${esc(l)}</p>`);
+    if (num) { if (!list || kind !== 'ol') { flush(); kind = 'ol'; start = Number(num[1]); list = []; } list.push(`<li>${inl(num[2])}</li>`); return; }
+    if (/^[·\-]\s?/.test(l)) { if (list && kind !== 'ul') flush(); if (!list) { kind = 'ul'; list = []; } list.push(`<li>${inl(l.replace(/^[·\-]\s?/, ''))}</li>`); return; }
+    flush(); out.push(`<p>${inl(l)}</p>`);
   });
   flush(); return out.join('');
 }
