@@ -1,6 +1,7 @@
 import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
 import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
+import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { mountWhisper } from './whisper.js';
@@ -133,8 +134,6 @@ function renderAuth(mode = 'login', notice = '') {
 }
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
-const STAT_KO = { strength: '힘', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영기' };
-const baseText = b => Object.entries(b).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${STAT_KO[k]} ${v}`).join(' · ');
 function renderCreate() {
   document.title = '야행국 · 캐릭터 생성';
   // 쓰던 이름·고른 직업·소속을 이 기기에 잠시 남겨, 다른 앱에 다녀오거나 화면이 다시 그려져도 되살린다(입국하면 지운다).
@@ -145,18 +144,19 @@ function renderCreate() {
   const saveDraft = () => { try { localStorage.setItem(draftKey, JSON.stringify({ name: form.name.value, job: pick.job, faction: pick.faction })); } catch {} };
   const cards = (obj, kind) => Object.entries(obj).map(([k, v]) => `
     <button type="button" class="choice-card" data-${kind}="${k}" aria-pressed="false">
-      <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(v.desc)}</small>${v.base ? `<small class="muted">기본 능력치 ${baseText(v.base)}<br>시작 장비: ${esc(v.kit)}</small>` : ''}
+      <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(kind === 'job' ? `「${JOB_LORE[k]?.motto || ''}」` : AFFIL_LORE[k]?.work || '')}</small>
     </button>`).join('');
   app.replaceChildren(h(`
   <div class="create-screen">
     <header class="create-head"><div class="seal">夜</div><div><h1>조사원 등록</h1><p class="muted">야행국에 입국할 캐릭터를 만듭니다.</p></div>
       <button class="btn ghost small" id="create-logout">${icon('logout', 16)}<span>로그아웃</span></button></header>
     <form id="create-form" class="create-body" novalidate>
+      <section class="card"><h2 class="step"><b>夜</b>야행국에 오신 것을</h2>${primerHtml()}</section>
       <section class="card"><h2 class="step"><b>1</b>이름</h2>
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
       </section>
-      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 역할(근접·원거리 물리·술법·생활 특화·치유·보조)과 기본 능력치·시작 장비를 정합니다. 무기는 어느 직업이나 들 수 있지만 직업 효과는 그 역할의 무기에서 가장 잘 살아납니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div></section>
-      <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 일일 보급과 전용 임무를 정합니다.</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div></section>
+      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 역할(근접·원거리 물리·술법·생활 특화·치유·보조)과 기본 능력치·시작 장비를 정합니다. 무기는 어느 직업이나 들 수 있지만 직업 효과는 그 역할의 무기에서 가장 잘 살아납니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div><div class="lore-detail" id="job-detail"></div></section>
+      <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 처음 배속되는 야행국 안의 부서로, 늘 붙는 소속 효과와 일일 보급·전용 임무를 정합니다. ${esc(AFFIL_VS_FACTION.split('. ').slice(1).join('. '))}</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div><div class="lore-detail" id="faction-detail"></div></section>
       <section class="card confirm-card">
         <div class="confirm-row"><span>이름</span><b id="sum-name">—</b></div>
         <div class="confirm-row"><span>직업</span><b id="sum-job">—</b></div>
@@ -172,6 +172,9 @@ function renderCreate() {
     $('#sum-name').textContent = form.name.value.trim() || '—';
     $('#sum-job').textContent = pick.job ? JOBS[pick.job].name : '—';
     $('#sum-faction').textContent = pick.faction ? FACTIONS[pick.faction].name : '—';
+    // 고른 직업·소속의 이야기와 역할을 카드 아래에 펼친다
+    $('#job-detail').innerHTML = pick.job ? jobLoreHtml(pick.job) : '<p class="muted small">직업을 고르면 이야기와 역할이 여기에 펼쳐집니다.</p>';
+    $('#faction-detail').innerHTML = pick.faction ? affilLoreHtml(pick.faction) : '<p class="muted small">소속을 고르면 부서 이야기가 여기에 펼쳐집니다.</p>';
   };
   if (typeof draft.name === 'string') form.name.value = draft.name.slice(0, 12);
   for (const kind of ['job', 'faction']) if (pick[kind]) $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x.dataset[kind] === pick[kind]));

@@ -1118,3 +1118,16 @@ end $$;
 -- 패치노트 6.1.0에 일지 개편을 더한다
 update public.world_patch_notes set body = replace(body, E'### 칭호\n- 분류 「토벌」', E'### 일지 개편\n- 일지를 **퀘스트 중심**으로 바꿨습니다. 칸은 **주 이야기 · 보조 퀘스트 · 의뢰 · 기록**(답사·원정·도감) 넷입니다.\n- **주 이야기**: 위의 장 목록을 누르면 그 장이 아래에 펼쳐집니다. 장마다 **장면 순서**(마친 장면·지금 할 일·남은 장면)가 먼저 보이고, 장면을 모두 마친 뒤에 단서와 가설이 나옵니다. 마친 장면과 장 결말은 **「다시 보기」로 대사를 다시 읽을 수** 있습니다.\n- **보조 퀘스트**: 전투·채집·제작·조사·낚시 **분야별로 나눠** 보여 주고, 분야·상태(진행 중·받을 수 있음·마침·레벨 부족)로 거르고 레벨·지역·이름순으로 정렬합니다. 마친 퀘스트도 여기서 장면을 다시 볼 수 있습니다.\n\n### 칭호\n- 분류 「토벌」')
  where note_id = '6.1.0' and position('### 일지 개편' in body) = 0;
+
+-- 백공 기술관(생활 특화)은 다른 직업 전용 제작법도 모두 만든다(장착 조건은 그대로 — 만든 것은 쓰거나 거래한다)
+do $$ declare d text := pg_get_functiondef('public.world_craft_item(text)'::regprocedure);
+  a text := 'if r.required_job is not null and c.job_key<>r.required_job then';
+  b text := 'if r.required_job is not null and c.job_key<>r.required_job and c.job_key<>''analyst'' then';
+begin
+  if position(b in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '고칠 자리 없음: 백공 제작'; end if;
+  execute replace(d, a, b);
+end $$;
+
+update public.world_patch_notes set body = replace(body, E'### 일지 개편\n', E'### 직업·소속 이야기\n- 캐릭터를 만들 때 직업·소속을 고르면 그 **이야기와 역할**(전투·원정에서 하는 일, 맞는 무기, 유리한 요괴, 어울리는 사람, 조심할 점, 이야기 속 인연)이 카드 아래에 펼쳐집니다. 맨 위에는 야행국이 어떤 곳인지 짧게 적었습니다.\n- 같은 글을 **도움말**의 「야행국은 어떤 곳인가」(처음)·「직업 이야기」·「소속 이야기」(성장)에서 언제든 볼 수 있습니다.\n- **백공 기술관은 다른 직업 전용 제작법도 모두 만들 수 있습니다**(청동 호신패·영맥 나침반·강철 정련·봉인 먹·청심환 등). 만든 장비의 장착 조건은 그대로라, 다른 직업 전용 장비는 동료에게 넘기거나 팔 수 있습니다.\n\n### 일지 개편\n')
+ where note_id = '6.1.0' and position('### 직업·소속 이야기' in body) = 0;

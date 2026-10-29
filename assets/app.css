@@ -190,6 +190,16 @@ textarea { resize: none; }
 .choice-card { display: grid; gap: 4px; text-align: left; padding: 14px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); cursor: pointer; color: var(--text); }
 .choice-card small { color: var(--muted); font-size: 12.5px; }
 .choice-card[aria-pressed=true] { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 9%, var(--surface-2)); box-shadow: 0 0 0 1px var(--gold); }
+/* 세계관 안내(lore.js): 생성 화면의 자세히 칸·도움말 */
+.lore-primer p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; } .lore-primer p:last-child { margin: 0; color: var(--text); }
+.lore-detail { margin-top: 10px; } .lore-detail:empty { display: none; }
+.lore-card { display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); margin-bottom: 10px; }
+.lore-card header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; } .lore-card header strong { font-size: 16px; font-family: var(--font-serif); }
+.lore-hanja { color: var(--muted); font-size: 12px; letter-spacing: .1em; }
+.lore-card p { margin: 0; font-size: 13.5px; line-height: 1.6; } .lore-motto { color: var(--gold); font-family: var(--font-serif); }
+.lore-rows { display: grid; gap: 4px; margin-top: 4px; border-top: var(--bw) solid var(--line); padding-top: 8px; }
+.lore-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px; font-size: 12.5px; line-height: 1.5; } .lore-row b { color: var(--muted); font-weight: 600; }
+@media (max-width: 560px) { .lore-row { grid-template-columns: 1fr; gap: 0; } .lore-row b { font-size: 11.5px; } }
 .confirm-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .confirm-row span { color: var(--muted); }
 .warn { display: flex; gap: 8px; align-items: flex-start; color: var(--warn); font-size: 12.5px; }

@@ -153,14 +153,15 @@ function craft(body, inv, stg) {
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));
-    const jobOk = !r.required_job || r.required_job === c.job_key;
+    // 백공 기술관(생활 특화)은 다른 직업 전용 제작법도 만든다(6.1.0, 서버 world_craft_item과 같음)
+    const jobOk = !r.required_job || r.required_job === c.job_key || c.job_key === 'analyst';
     const lvOk = !r.minimum_level || c.level >= r.minimum_level;
     const skRank = r.required_skill ? Number(c.skill_progress?.[r.required_skill]?.rank || 1) : 0;
     const skOk = !r.required_skill || skRank >= (r.required_skill_rank || 1);
     // 제작 조건(레벨·직업·기술 숙련): 채운 것은 초록, 못 채운 것은 빨강으로 카드에 바로 보인다
     const reqs = [
       r.minimum_level > 1 && [`Lv.${r.minimum_level} 이상${lvOk ? '' : ` (지금 Lv.${c.level})`}`, lvOk],
-      r.required_job && [`${nameOf(r.required_job)} 전용`, jobOk],
+      r.required_job && [`${nameOf(r.required_job)}·백공 기술관 제작`, jobOk],
       r.required_skill && [`${nameOf(r.required_skill)} 기술 ${r.required_skill_rank}단계${skOk ? '' : ` (지금 ${skRank}단계)`}`, skOk],
     ].filter(Boolean);
     const can = !lacks.length && toolOk && jobOk && lvOk && skOk;

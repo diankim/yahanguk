@@ -1,7 +1,8 @@
 // 도움말: 튜토리얼을 대신하는 안내서. 실제 서버 규칙과 같은 수치를 적는다.
 import { icon, esc, $, $$ } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
-import { toast, RAID_ON } from '../core.js';
+import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
+import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 
 const S = [
   ['start', '처음 30분', `
@@ -194,6 +195,9 @@ const S = [
       <li><b>채집 도감</b>(일지 › 도감 › 채집): 현장 채집터에서 거둔 재료 32가지가 적힙니다. 아직 못 거둔 재료는 분류와 레벨만 보입니다.</li>
       <li><b>도감 칭호</b> 20개: 갈래마다 하나(예: 비금 6종 토벌 「매사냥꾼」), 요괴 20종·50종 토벌, 13갈래를 하나씩 토벌 「백귀야행 기록관」, 채집 재료 10·20·32가지, 그리고 숨겨진 칭호 하나.</li>
       <li><b>지역 정보 공개</b>: 현장의 「출몰 요괴」는 처음엔 갈래만 보이고, 그 지역 답사도 <b>30%</b>에서 일반 요괴, <b>70%</b>에서 우두머리가 드러납니다(이미 만난 요괴는 바로 보임). 「이 지역에서 얻는 것」은 30%에 채집 재료, 70%에 요괴 전리품, 100%에 희귀품이 드러납니다.</li></ul>`],
+  ['lore-world', '야행국은 어떤 곳인가', `${primerHtml()}<p class="muted small">${AFFIL_VS_FACTION}</p>`],
+  ['lore-jobs', '직업 이야기', `<p>직업마다 야행국 안에서 맡아 온 일과 이야기, 싸우는 방식, 어울리는 사람이 다릅니다. 표의 수치는 아래 「직업과 역할」과 같습니다.</p>${Object.keys(JOBS).map(jobLoreHtml).join('')}`],
+  ['lore-affil', '소속 이야기', `<p>${AFFIL_VS_FACTION}</p>${Object.keys(FACTIONS).map(affilLoreHtml).join('')}`],
   ['jobs', '직업과 역할 (생성 시 고정)', `
     <p>직업은 여섯 역할로 나뉩니다. 무기는 어느 직업이나 들 수 있지만, 직업의 피해 보정은 그 역할의 무기(근접·원거리·술법)를 들었을 때만 붙습니다. 기본 능력치는 합이 모두 30이고 직업마다 배분이 다르며, 한 능력치의 상한은 <b>직업 기본값 + 레벨×1.5</b>입니다.</p>
     <table class="guide-table"><tr><th>직업</th><th>역할</th><th>기본 능력치(높은 순)</th><th>직업 효과</th></tr>
@@ -251,7 +255,7 @@ const S = [
       <li>짝이 맞는 단서 두 개를 모으면 가설을 세울 수 있고, 가설을 모두 세우면 사건이 끝납니다. 보상은 한 번만 받습니다.</li>
       <li>이야기는 10장입니다: 1장 Lv1 · 2장 Lv5 · 3장 Lv8 · 4장 Lv12 · 5장 Lv15 · 6장 「월식의 문」 Lv18 · 7장 「물 밑의 등불」 Lv21 · 8장 「재의 바다」 Lv24 · 9장 「등잔 밑」 Lv27 · 10장 「구중 봉연」 Lv30. 장을 마치면 다음 장이 그 레벨에 열립니다.</li>
       <li>장 보상: 1~5장은 가방 칸, 6장부터는 능력치 포인트(6·8·9장 +2, 10장 +3), 7장 탈것 「연화 거북」, 8장 고유 장비 「구등대 등불 노리개」(거래 불가), 9장 낙관 「燈」과 강화 재료입니다. 보상 물품이 가방에 들어갈 자리가 없으면 마지막 가설을 확정할 수 없으니 가방을 조금 비워 두세요.</li>
-      <li>일지 › 답사에서 지역별 답사도를, 원정 기록에서 지난 원정을 다시 볼 수 있습니다.</li></ul>`],
+      <li>일지 › 보조 퀘스트에서 분야별로 퀘스트를 거르고 정렬하며, 마친 장면과 장 결말은 「다시 보기」로 다시 읽습니다. 일지 › 기록에서 지역별 답사도·지난 원정·도감을 봅니다.</li></ul>`],
   ['party', '동료와 파티', `
     <ul><li>위의 동료 버튼에서 동료 모임을 만들고(이름은 필요 없습니다) 같은 지역의 조사원을 초대합니다. 파티원은 동승·파티 채팅·전리품 분배(기여도순·지정순·균등)를 함께 씁니다.</li>
       <li>쓰러진 동료나 같은 지역 조사원을 「구조」할 수 있습니다. 누군가 쓰러지면 전체 채팅에 구조 알림이 올라오고, 그 사람이 다시 일어나면(구조·본부 구조대·회복품) 초록 줄로 「다시 일어났습니다」가 올라오니 헛걸음하지 않아도 됩니다.</li>
@@ -301,12 +305,12 @@ const S = [
 
 // 묶음: 도움말을 주제별로 나눠 한 번에 한 묶음만 펼친다. 검색하면 묶음과 상관없이 맞는 항목만 보인다.
 const GROUPS = [
-  ['basic', '처음', 'spark', ['start', 'screen', 'quests', 'growth-note']],
+  ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note']],
   ['world', '세계·이동', 'map', ['world', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'raid', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'fishing', 'cooking', 'craft']],
   ['exp', '원정', 'flame', ['expedition', 'idle']],
-  ['growth', '성장', 'target', ['growth', 'jobs', 'affil']],
+  ['growth', '성장', 'target', ['growth', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['factions']],
   ['eco', '가방·경제', 'coin', ['bag', 'economy']],
   ['social', '교류·사건', 'users', ['case', 'party', 'chat', 'yeonri']],
