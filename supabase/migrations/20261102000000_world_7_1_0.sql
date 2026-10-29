@@ -1571,21 +1571,21 @@ select pg_temp.yh_patch('public.world_bond_snapshot()', '      ''gifted_today'',
 -- G. 의뢰 보상 상향 · 서신(친구 우편) · 원정 일지의 현대풍 문구
 -- ─────────────────────────────────────────────────────────────
 
--- G-1. 상시 의뢰 전 보상: 6.0.0의 ×0.4를 거두고 기본값을 올린다(하루 세 가지 합 Lv10 약 900전·Lv30 약 2,000전)
+-- G-1. 상시 의뢰 전 보상: 6.0.0의 ×0.4를 거두고 기본값을 올린다(하루 세 가지 합 Lv10 약 1,000전·Lv30 약 2,000전, 납품 재료 시세 평균 기준)
 create or replace function public.world_commission_gil_v6() returns trigger
 language plpgsql set search_path to 'pg_catalog', 'public' as $$
 begin
   new.reward_gil := round(coalesce(new.reward_gil, 0));   -- 7.1.0: 깎지 않는다(이름은 트리거가 걸려 있어 그대로 둔다)
   return new;
 end $$;
-select pg_temp.yh_patch('public.world_commission_board()', '3, 50 + c.level * 8, 30 + c.level * 5);', '3, 150 + c.level * 24, 30 + c.level * 5);');
-select pg_temp.yh_patch('public.world_commission_board()', 'n, 38 + c.level * 5, 25 + c.level * 4', 'n, 110 + c.level * 18, 25 + c.level * 4');
-select pg_temp.yh_patch('public.world_commission_board()', 'it, q, round(price * q * 1.75)::int, 20 + c.level * 3);', 'it, q, round(price * q * 1.6)::int + 60 + c.level * 10, 20 + c.level * 3);');
+select pg_temp.yh_patch('public.world_commission_board()', '3, 50 + c.level * 8, 30 + c.level * 5);', '3, 160 + c.level * 25, 30 + c.level * 5);');
+select pg_temp.yh_patch('public.world_commission_board()', 'n, 38 + c.level * 5, 25 + c.level * 4', 'n, 110 + c.level * 19, 25 + c.level * 4');
+select pg_temp.yh_patch('public.world_commission_board()', 'it, q, round(price * q * 1.75)::int, 20 + c.level * 3);', 'it, q, round(price * q * 1.2)::int + 30 + c.level * 5, 20 + c.level * 3);');
 -- 오늘 이미 받은 게시판(아직 보상을 안 받은 것)도 새 값으로: 경험치에서 그날 레벨을 되짚는다
 update public.world_commissions m set reward_gil = case m.kind
-    when 'hunt' then 150 + ((m.reward_xp - 30) / 5) * 24
-    when 'deliver' then round(coalesce((select reference_price from public.world_item_catalog i where i.item_id = m.target_item), 20) * m.need * 1.6)::int + 60 + ((m.reward_xp - 20) / 3) * 10
-    else 110 + ((m.reward_xp - 25) / 4) * 18 end
+    when 'hunt' then 160 + ((m.reward_xp - 30) / 5) * 25
+    when 'deliver' then round(coalesce((select reference_price from public.world_item_catalog i where i.item_id = m.target_item), 20) * m.need * 1.2)::int + 30 + ((m.reward_xp - 20) / 3) * 5
+    else 110 + ((m.reward_xp - 25) / 4) * 19 end
  where m.day = (now() at time zone 'Asia/Seoul')::date and m.claimed_at is null;
 
 -- G-2. 원정 일지에서 무협·퇴마 세계에 어울리지 않는 현대풍 문구
@@ -1785,7 +1785,9 @@ end $$;
 
 create or replace function public.world_letter_claim(p_id bigint) returns jsonb
 language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
-declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; l public.world_letters%rowtype; inv jsonb; k text; q int; lim int;
+-- 가방에 들어가는 만큼 모두 받고, 못 들어간 몫은 서신에 남긴다(다시 누르면 이어서 받음). 하나도 못 받을 때만 가방을 비우라고 한다.
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; l public.world_letters%rowtype; inv jsonb; k text; q int; lim int; put int;
+  got jsonb := '{}'::jsonb; left_ jsonb := '{}'::jsonb;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
@@ -1793,18 +1795,21 @@ begin
   if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
   select * into l from public.world_letters where id = p_id and recipient_id = uid for update;
   if not found then raise exception '서신을 찾을 수 없습니다.'; end if;
-  if l.claimed_at is not null or l.items = '{}'::jsonb then raise exception '받을 물품이 없습니다.'; end if;
+  if l.claimed_at is not null or l.items = '{}'::jsonb then raise exception '이 서신의 물품은 이미 모두 받았습니다.'; end if;
   perform public.world_letter_place_check(uid);
   inv := coalesce(c.inventory, '{}'::jsonb);
-  for k, q in select key, value::text::numeric::int from jsonb_each(l.items) loop
-    inv := public.world_inv_add(inv, k, q);
-  end loop;
   lim := public.world_bag_limit(uid);
-  if public.world_bag_count(inv) > lim then
-    raise exception '가방 자리가 모자랍니다. (% / %칸) 자리를 비우고 받으세요.', public.world_bag_count(inv), lim; end if;
+  for k, q in select key, value::text::numeric::int from jsonb_each(l.items) loop
+    put := least(q, greatest(0, public.world_bag_room(inv, k, lim)));
+    if put > 0 then inv := public.world_inv_add(inv, k, put); got := got || jsonb_build_object(k, put); end if;
+    if q > put then left_ := left_ || jsonb_build_object(k, q - put); end if;
+  end loop;
+  if got = '{}'::jsonb then raise exception '가방이 가득 찼습니다. 가방을 비운 뒤 받으세요. (% / %칸)', public.world_bag_count(inv), lim; end if;
   update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid;
-  update public.world_letters set claimed_at = now(), read_at = coalesce(read_at, now()) where id = p_id;
-  return jsonb_build_object('ok', true, 'changed', true, 'content', '서신의 물품을 받았습니다.');
+  update public.world_letters set items = left_, claimed_at = case when left_ = '{}'::jsonb then now() end, read_at = coalesce(read_at, now()) where id = p_id;
+  return jsonb_build_object('ok', true, 'changed', true, 'got', got, 'left', left_,
+    'content', case when left_ = '{}'::jsonb then '서신의 물품을 모두 받았습니다.'
+                    else '가방 자리만큼 받았습니다. 남은 물품은 서신에 그대로 있으니 가방을 비우고 다시 받으세요.' end);
 end $$;
 
 -- 매일 정리: 기한 지난 서신(물품은 창고로)과 지난 보낸 수
@@ -1907,13 +1912,13 @@ select '7.1.0', '7.1.0 · 비무회와 혼례', $N$
 
 ## 서신(書信)
 - 동료 화면의 **서신** 칸, 또는 조사원 카드의 「서신 보내기」로 **친구**에게 서신을 부칩니다. 하루 10통까지, 제목 24자·본문 400자.
-- 물품을 다섯 가지까지 붙일 수 있습니다(거래할 수 있는 물품만, 거래소 전용 희귀 재료·잠근 물품·장착 중 마지막 하나는 안 됨). 물품이 든 서신은 안전지대(반요촌 제외)에서 부치고 받습니다. 글만 든 서신은 어디서나 됩니다.
+- 물품을 다섯 가지까지 붙일 수 있습니다(거래할 수 있는 물품만, 거래소 전용 희귀 재료·잠근 물품·장착 중 마지막 하나는 안 됨). 물품이 든 서신은 안전지대(반요촌 제외)에서 부치고 받습니다. 가방에 들어가는 만큼 받고, 남은 몫은 서신에 남아 가방을 비운 뒤 이어서 받습니다. 글만 든 서신은 어디서나 됩니다.
 - 받은 서신함은 10통까지입니다. 새 서신이 와서 넘치면 가장 오래된 서신부터 지워지고, 받은 지 3일이 지난 서신도 지워집니다.
 - 지우고 싶지 않은 서신은 **고정**하세요(다섯 통까지). 고정한 서신은 기한이 지나도 남습니다.
 - 지워지는 서신에 아직 받지 않은 물품이 있으면 개인 창고에 넣어 드립니다.
 
 ## 상시 의뢰 보상 상향
-- 의뢰판 세 가지의 전 보상을 크게 올렸습니다(토벌 150+레벨×24 · 채집·정찰 110+레벨×18 · 납품 시세×1.6+60+레벨×10). Lv10이면 하루 세 가지로 약 900전, Lv30이면 약 2,000전입니다. 오늘 아직 받지 않은 의뢰에도 바로 적용됩니다.
+- 의뢰판 세 가지의 전 보상을 크게 올렸습니다(토벌 160+레벨×25 · 채집·정찰 110+레벨×19 · 납품 시세×1.2+30+레벨×5). Lv10이면 하루 세 가지로 약 1,000전, Lv30이면 약 2,000전입니다(납품 물품에 따라 조금 다름). 오늘 아직 받지 않은 의뢰에도 바로 적용됩니다.
 
 ## 그 밖
 - 원정 일지에서 세계에 어울리지 않던 현대풍 문구(신발 끈·분필·붕대·수첩 등)를 고쳤습니다.

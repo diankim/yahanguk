@@ -55,7 +55,7 @@ function openLetter(l, again) {
   $$('[data-l]', m).forEach(b => b.onclick = async () => {
     const k = b.dataset.l;
     if (k === 'reply') { closeModal(); return openCompose(l.from, l.from_name, again, `답: ${l.title}`.slice(0, 24)); }
-    if (k === 'claim') return guard(b, async () => { const r = await act('world_letter_claim', { p_id: l.id }); closeModal(); again(); return r; });
+    if (k === 'claim') return guard(b, async () => { const r = await act('world_letter_claim', { p_id: l.id }); closeModal(); again(); return r; });  // 가방 자리만큼 받고 남은 몫은 서신에 남는다
     if (k === 'delete' && !(await ask('이 서신을 지울까요?', { title: '서신 지우기', ok: '지우기', danger: true }))) return;
     guard(b, async () => { const r = await act('world_letter_mark', { p_id: l.id, p_op: k }); closeModal(); again(); return r; });
   });
