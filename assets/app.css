@@ -1962,11 +1962,11 @@ b.sealed { color: var(--bad); }
 .trade-form .tf-go { width: 100%; justify-content: center; }
 @media (max-width: 720px) { .mk-list li, .mk-mine li { flex-wrap: nowrap; } .mk-list .item-act, .mk-mine .item-act { width: auto; } .mk-list .item-main, .mk-mine .item-main { min-width: 0; } }
 .bug-cat { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-/* 접힌 상태 띠: 상태 칸 10개를 5×2 작은 점으로(나쁜 상태 깜빡이는 빨강·이로운 상태 초록·빈칸 옅은 테, 제보 17) */
+/* 접힌 상태 띠: 상태 칸 10개를 5×2 작은 점으로(나쁜 상태 깜빡이는 빨강·이로운 상태 초록·빈칸은 투명, 제보 17) */
 .hs-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hs-name b { display: flex; align-items: center; gap: 4px; }
 .hs-slots { flex: none; display: grid; grid-template-columns: repeat(5, 5px); gap: 3px; }
-.hs-slots i { box-sizing: border-box; width: 5px; height: 5px; border-radius: 50%; border: 1px solid var(--line); }
-.hs-slots i.good { background: var(--ok); border-color: var(--ok); }
-.hs-slots i.bad { background: var(--bad); border-color: var(--bad); animation: hs-blink 1.2s ease-in-out infinite; }
+.hs-slots i { width: 5px; height: 5px; border-radius: 50%; }
+.hs-slots i.good { background: var(--ok); }
+.hs-slots i.bad { background: var(--bad); animation: hs-blink 1.2s ease-in-out infinite; }
 @keyframes hs-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
