@@ -383,6 +383,8 @@ async function idle(body) {
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
 const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
 let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
+// 칭호 보기 순서(6.1.1): 분류별 · 등급 높은순 · 등급 낮은순(기기에 기억)
+let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 // 칭호 등급(서버 world_title_catalog.grade)
 const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品
 const LEGACY_HANJA = { legacy_first_night: '第一夜', legacy_unfinished_road: '未完', legacy_ember: '殘火' };
@@ -399,7 +401,8 @@ async function titles(body) {
       ${presetsHtml(snap, list)}
       <label class="search"><span>${icon('search', 16)}</span><input id="t-q" type="search" placeholder="칭호 이름·조건·효과로 찾기" value="${esc(tq)}"></label>
       <div class="t-checks"><label class="check"><input type="checkbox" id="t-owned" ${tOwned ? 'checked' : ''}><span>얻은 칭호만 보기</span></label>
-        <label class="check"><input type="checkbox" id="t-eq" ${tEquipped ? 'checked' : ''}><span>장착 중만 보기</span></label></div>
+        <label class="check"><input type="checkbox" id="t-eq" ${tEquipped ? 'checked' : ''}><span>장착 중만 보기</span></label>
+        <label class="t-sort"><span>보기</span><select id="t-sort" aria-label="칭호 보기 순서">${[['cat', '분류별'], ['grade_desc', '등급 높은순'], ['grade_asc', '등급 낮은순']].map(([v, n]) => `<option value="${v}" ${tsort === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
       <p class="muted small t-grades">등급: ${Object.entries(TGRADE).map(([g, n]) => `<span class="t-grade g${g}">${n}</span>`).join(' ')} — 범품(凡品)에서 신품(神品)으로 갈수록 얻기 어렵고, 효과가 크고 여러 갈래입니다.</p>
       <div class="cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)} <small>${countIn(c)}</small></button>`).join('')}</div>
     </div>
@@ -408,7 +411,7 @@ async function titles(body) {
   const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
       ${lg ? `<span class="lg-tag" aria-hidden="true">흔적</span>${LEGACY_HANJA[t.key] ? `<span class="lg-hj">${LEGACY_HANJA[t.key]}</span>` : ''}` : ''}
       <div class="t-top">${lg ? '' : icon(t.icon || 'spark', 18)}${t.grade && !lg && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
-        ${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
+        ${tsort !== 'cat' ? `<small class="muted t-catl">${esc(t.category)}</small>` : ''}${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
       ${t.description ? `<p class="t-desc">${esc(t.description)}</p>` : ''}
       <p class="t-cond">조건 · ${esc(t.condition || '-')}</p>
       ${t.bonus ? `<p class="t-bonus">${esc(effectText(t.bonus).join(' · '))}</p>` : ''}
@@ -421,8 +424,18 @@ async function titles(body) {
     const rows = list.filter(t => (!tOwned || t.earned) && (!tEquipped || t.equipped)
       && (!tcat || t.category === tcat)
       && (!q || [t.name, t.description, t.condition, effectText(t.bonus || {}).join(' ')].join(' ').toLowerCase().includes(q)));
-    const groups = cats.map(c => [c, rows.filter(t => t.category === c)]).filter(([, l]) => l.length);
-    $('#t-list', body).innerHTML = groups.length ? groups.map(([c, l]) => `<section class="t-group"><h3 class="sub-h">${esc(c)} <small class="muted">${l.length}개 · 얻음 ${countIn(c)}</small></h3>
+    // 등급순: 신품→범품(또는 반대)으로 묶고, 같은 등급 안은 얻은 것 먼저. 얻지 못한 숨김 칭호는 등급을 드러내지 않게 맨 끝 「숨김」에
+    const gradeOf = t => (t.hidden && !t.earned) || t.category === '레거시' ? 0 : Number(t.grade) || 1;
+    const byGrade = tsort !== 'cat';
+    const gLabel = g => g ? `${TGRADE[g] || ''}` : '숨김·기타';
+    const gradeKeys = [...new Set(rows.map(gradeOf))].sort((a, b) => !a ? 1 : !b ? -1 : tsort === 'grade_desc' ? b - a : a - b);
+    const groups = byGrade
+      ? gradeKeys.map(g => [g, rows.filter(t => gradeOf(t) === g).sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0) || order(a.category) - order(b.category))])
+      : cats.map(c => [c, rows.filter(t => t.category === c)]).filter(([, l]) => l.length);
+    const headOf = (k, l) => byGrade
+      ? `${k ? `<span class="t-grade g${k}">${esc(gLabel(k))}</span>` : esc(gLabel(k))} <small class="muted">${l.length}개 · 얻음 ${l.filter(t => t.earned).length}</small>`
+      : `${esc(k)} <small class="muted">${l.length}개 · 얻음 ${countIn(k)}</small>`;
+    $('#t-list', body).innerHTML = groups.length ? groups.map(([c, l]) => `<section class="t-group"><h3 class="sub-h">${headOf(c, l)}</h3>
         <ul class="t-grid">${l.map(card).join('')}</ul></section>`).join('')
       : empty('조건에 맞는 칭호가 없습니다.', 'search');
     $$('[data-title]', body).forEach(b => b.onclick = () => guard(b, async () => {
@@ -441,6 +454,7 @@ async function titles(body) {
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
   $('#t-owned', body).onchange = e => { tOwned = e.target.checked; paint(); };
   $('#t-eq', body).onchange = e => { tEquipped = e.target.checked; paint(); };
+  $('#t-sort', body).onchange = e => { tsort = e.target.value; try { localStorage.setItem('yh-title-sort', tsort); } catch {} paint(); };
   $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
   paint();
   // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)

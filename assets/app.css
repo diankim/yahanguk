@@ -1938,3 +1938,14 @@ b.sealed { color: var(--bad); }
 .lore-list li { display: grid; gap: 3px; } .lore-list li b { font-size: 14px; } .lore-list li p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
 .witness { display: grid; gap: 4px; margin: 4px 0 8px; }
 .w-line { margin: 0; font-size: 12.5px; line-height: 1.5; } .w-line b { color: var(--gold); margin-right: 4px; } .w-line.locked { color: var(--muted); opacity: .75; display: flex; gap: 4px; align-items: center; }
+
+/* 물품 갈래 표(6.1.1): 상점·대장간·거래소·직접 거래·창고 목록의 이름 앞 */
+.kind-chip { display: inline-block; font-size: 11px; line-height: 1.5; padding: 0 5px; margin-right: 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); vertical-align: 1px; white-space: nowrap; }
+.kind-chip.k-weapon { color: var(--bad); border-color: currentColor; }
+.kind-chip.k-armor, .kind-chip.k-hat, .kind-chip.k-shoes { color: var(--mp); border-color: currentColor; }
+.kind-chip.k-norigae, .kind-chip.k-amulet, .kind-chip.k-mask { color: var(--sp); border-color: currentColor; }
+.kind-chip.k-tool { color: var(--ok); border-color: currentColor; }
+.kind-chip.k-consumable { color: var(--warn); border-color: currentColor; }
+.t-checks .t-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 13px; color: var(--muted); }
+.t-checks .t-sort select { min-height: 32px; width: auto; }
+.t-top .t-catl { font-size: 11px; }

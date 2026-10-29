@@ -1,10 +1,11 @@
 // 안전지대 시설: 상점 · 대장간 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf } from '../core.js';
+import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
 // 물품 이름을 누르면 정보 창(설명·효과·제작법)을 연다.
-const infoName = (id, label) => `<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
+// 이름 앞에 물품 갈래(무기·방어구·소모품·재료…)를 작게 붙인다(6.1.1)
+const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
 
 /* ── 상점 ─────────────────────────────────────────────── */
@@ -50,8 +51,8 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     <section data-list="buy" ${mode === 'buy' ? '' : 'hidden'}>
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
       <ul class="item-list shop-list">${list.map(i => `<li>
-        <div class="item-main"><b>${infoName(i.item_id, i.item_name)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
-          <small>${esc(nameOf(i.category))} · ${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
+        <div class="item-main"><b>${infoName(i.item_id, i.item_name, i.category)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
+          <small>${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
         ${stepper('buy', i.item_id, 99)}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
     </section>
     ${sell ? `<section data-list="sell" ${mode === 'sell' ? '' : 'hidden'}>

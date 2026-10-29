@@ -425,19 +425,25 @@ export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 
 export function bagLimit(c) { return (c?.bag_capacity || 24) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
 // 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
 // 못 읽으면 기기에 남긴 지난 값을 쓰고 다음 캐릭터 읽기 때 다시 읽는다(전에는 실패하면 모두 1로 보고 다시 읽지 않아 물품 개수가 칸 수로 보였다).
-const STACK_KEY = 'yh-stacks-v1';
-let stacks = (() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); return o ? new Map(Object.entries(o)) : null; } catch { return null; } })();
+// 물품 묶음 크기와 분류(갈래)를 함께 기억한다: { id: [묶음, 분류] }
+const STACK_KEY = 'yh-stacks-v2';
+let stacks = null, cats = null;
+(() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); if (o) { stacks = new Map(Object.entries(o).map(([k, v]) => [k, v[0]])); cats = new Map(Object.entries(o).map(([k, v]) => [k, v[1]])); } } catch {} })();
 let stacksP = null, stacksFresh = false;
 function loadStacks() { return stacksP ||= readStacks(); } // 동시에 불려도 한 번만 읽는다
 async function readStacks() {
   try {
-    const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size');
+    const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size,category');
     if (error || !data?.length) throw new Error(error?.message || 'empty');
-    stacks = new Map(data.map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)])); stacksFresh = true;
-    try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(stacks))); } catch {}
+    stacks = new Map(data.map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)]));
+    cats = new Map(data.map(r => [r.item_id, r.category || ''])); stacksFresh = true;
+    try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(data.map(r => [r.item_id, [stacks.get(r.item_id), r.category || '']])))); } catch {}
   } catch { stacksP = null; } // 다음에 다시 시도
 }
 export const stackOf = id => stacks?.get(id) || 1;
+// 물품 갈래(무기·방어구·관모… 소모품·재료) 표: 상점·대장간·거래소·직접 거래 목록의 이름 옆에 붙인다
+export const catOf = id => cats?.get(id) || '';
+export const kindChip = (id, cat) => { const c = cat || catOf(id); return c ? `<span class="kind-chip k-${esc(c)}">${esc(nameOf(c))}</span>` : ''; };
 // 장착한 장비는 가방 칸을 차지하지 않는다(서버 world_bag_limit은 장착한 수만큼 용량을 더하고, 화면은 쓴 칸에서 뺀다)
 let equipped = null, weaponStyle = 'melee';
 async function loadEquipped() {
