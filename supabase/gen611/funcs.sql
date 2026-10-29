@@ -172,6 +172,27 @@ begin
   end if;
 end $$;
 
+-- ⑥-4 옛 경로 닫기(2026-10-29 점검): 화면·다른 함수·예약 작업 어디서도 부르지 않는 옛 행동 함수의 실행 권한만 거둔다(함수는 남겨 되돌릴 수 있음).
+-- 탐색력·쿨타임·안전지대 규칙이 생기기 전 경로라 직접 부르면 재료를 공짜로 얻을 수 있었다.
+do $$ declare f regprocedure; o text; begin
+  for f, o in select p.oid::regprocedure, pg_get_userbyid(p.proowner) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in (
+      'world_case_investigate','world_combat_action','world_combat_snapshot','world_expedition_board','world_expedition_finish','world_expedition_launch',
+      'world_expedition_prepare','world_expedition_retreat','world_exploration_back','world_exploration_enter','world_exploration_gather','world_exploration_overview',
+      'world_exploration_search_spot','world_gather_action','world_mark_character_dead','world_party_candidates','world_party_expedition_call','world_party_loot_deposit',
+      'world_party_snapshot','world_public_activity_feed','world_public_roster','world_region_combat_action','world_region_encounter_snapshot','world_region_site_explore',
+      'world_region_tactic_action','world_rest_at_spot','world_rpg_action','world_status_snapshot','world_status_treat','world_story_choice','world_trade_market_snapshot',
+      'world_use_recovery_item') loop
+    -- 권한은 주인 역할이 준 것이라 그 역할 이름으로 거둔다(postgres가 그 역할을 쓸 수 있게 먼저 맞춘다)
+    if o like 'fn_owner%' and not pg_has_role('postgres', o, 'usage') then execute format('grant %I to postgres with inherit true, set true', o); end if;
+    execute format('set role %I', o);
+    execute format('revoke execute on function %s from public, anon, authenticated', f);
+    reset role;
+  end loop;
+end $$;
+-- 강화 기록 읽기 정책: 줄마다 auth.uid()를 다시 부르지 않게(뜻은 같음)
+drop policy if exists world_gear_enhance_read_own on public.world_gear_enhance;
+create policy world_gear_enhance_read_own on public.world_gear_enhance for select to authenticated using (owner_id = (select auth.uid()));
+
 -- ⑦ 6.1.0 숨김 풀기: 보관해 둔 6.1.0 패치노트를 되살리고, 서버 보스 예약을 다시 켠다(아무도 모이지 않은 예고 회차는 지우고 새로 잡는다)
 do $$ begin
   if to_regclass('yh_deploy.hold_patch_note') is not null then
@@ -182,7 +203,7 @@ delete from public.world_raids r where r.kind = 'world' and r.status = 'announce
 select public.world_raid_schedule_next() where not exists (select 1 from public.world_raids where kind = 'world' and status in ('announced', 'signup', 'fight'));
 select cron.alter_job(jobid, active := true) from cron.job where jobname = 'yh-raid';
 
-update public.world_patch_notes set body = body || E'\n### 6.1.1\n- **직업·소속 퀘스트 12개**: 직업마다 하나(호위 무사 「마지막 파수의 칼」·현장 조사원 「빈 과녁의 주인」·퇴마관 「방울을 돌려주는 밤」·의무관 「외상 장부의 약값」·봉인술사 「봉인 부적 출납부」·백공 기술관 「이름 붙은 등」), 소속마다 하나(본부 직속 「서리의 하루」·현장대응국 「귀죽림 순찰로」·기록감찰국 「젖은 쪽의 먹」·봉인관리국 「닫힌 줄 모르는 수문」·의무지원국 「담 밖의 약초밭」·외부 협력자 「명부 밖의 손님」). 이야기 속 인물들이 맡기고, 내 직업·소속에게만 보입니다(Lv3·4).\n- **1장 첫 장면**에서 연서희가 직업과 소속에 따라 다르게 맞아 줍니다(일지에서 다시 보기로도 보입니다).\n- **소속 보급 편지**: 하루 소속 보급을 받으면 부서에서 짧은 편지가 함께 옵니다. 이야기를 진행할수록 내용이 달라집니다.\n- **지역 첫 방문 글**: 지역에 처음 들어가면 그곳의 내력을 짧게 보여 주고, 일지 › 기록 › 지역에 남깁니다.\n- **물품 내력**: 시작 장비와 주요 물품 정보 창에 한 줄 내력이 붙습니다.\n- **요괴 목격담**: 요괴 도감에서 갈래를 고르면, 그 갈래를 1·10마리 쓰러뜨릴 때마다 이야기 속 인물의 한마디가 열립니다.\n- **숨김 칭호 유래**: 얻은 숨김 칭호 카드의 「유래」를 누르면 그 칭호를 두고 인물들이 하는 말을 보여 줍니다.\n- **환골탈태 장면**: 서첩을 쓰면 정청 서기관이 배속 변경을 처리하는 짧은 장면이 나옵니다.\n- **탈것에서 내리기**: 지도 › 탈것에서 탈것을 내려 걸어 다닐 수 있습니다(속도 ×1, 노정패 운임 없음). 언제든 다시 탈 수 있습니다.\n- **물품 버리기 편의(제보)**: 물품 정보 창의 버리기 칸에 가진 수량을 함께 적고, 「최대」(버릴 수 있는 만큼 채우기)와 「모두 버리기」 단추를 더했습니다. 장착 중인 장비는 하나를 남깁니다. 창 안의 글자를 끌어 고르다 바깥에서 손을 떼도 창이 닫히지 않습니다.\n- **초반~중반 전 수입 보강**: 레벨 15 미만은 본부 구조대 비용 상한이 절반(레벨×40전)입니다. 상시 의뢰의 보상 전을 약 25~30% 올렸습니다(예: Lv10 토벌 의뢰 40전 → 52전, 다음 날 게시판부터).\n'
+update public.world_patch_notes set body = body || E'\n### 6.1.1\n- **직업·소속 퀘스트 12개**: 직업마다 하나(호위 무사 「마지막 파수의 칼」·현장 조사원 「빈 과녁의 주인」·퇴마관 「방울을 돌려주는 밤」·의무관 「외상 장부의 약값」·봉인술사 「봉인 부적 출납부」·백공 기술관 「이름 붙은 등」), 소속마다 하나(본부 직속 「서리의 하루」·현장대응국 「귀죽림 순찰로」·기록감찰국 「젖은 쪽의 먹」·봉인관리국 「닫힌 줄 모르는 수문」·의무지원국 「담 밖의 약초밭」·외부 협력자 「명부 밖의 손님」). 이야기 속 인물들이 맡기고, 내 직업·소속에게만 보입니다(Lv3·4).\n- **1장 첫 장면**에서 연서희가 직업과 소속에 따라 다르게 맞아 줍니다(일지에서 다시 보기로도 보입니다).\n- **소속 보급 편지**: 하루 소속 보급을 받으면 부서에서 짧은 편지가 함께 옵니다. 이야기를 진행할수록 내용이 달라집니다.\n- **지역 첫 방문 글**: 지역에 처음 들어가면 그곳의 내력을 짧게 보여 주고, 일지 › 기록 › 지역에 남깁니다.\n- **물품 내력**: 시작 장비와 주요 물품 정보 창에 한 줄 내력이 붙습니다.\n- **요괴 목격담**: 요괴 도감에서 갈래를 고르면, 그 갈래를 1·10마리 쓰러뜨릴 때마다 이야기 속 인물의 한마디가 열립니다.\n- **숨김 칭호 유래**: 얻은 숨김 칭호 카드의 「유래」를 누르면 그 칭호를 두고 인물들이 하는 말을 보여 줍니다.\n- **환골탈태 장면**: 서첩을 쓰면 정청 서기관이 배속 변경을 처리하는 짧은 장면이 나옵니다.\n- **탈것에서 내리기**: 지도 › 탈것에서 탈것을 내려 걸어 다닐 수 있습니다(속도 ×1, 노정패 운임 없음). 언제든 다시 탈 수 있습니다.\n- **물품 버리기 편의(제보)**: 물품 정보 창의 버리기 칸에 가진 수량을 함께 적고, 「최대」(버릴 수 있는 만큼 채우기)와 「모두 버리기」 단추를 더했습니다. 장착 중인 장비는 하나를 남깁니다. 창 안의 글자를 끌어 고르다 바깥에서 손을 떼도 창이 닫히지 않습니다.\n- **초반~중반 전 수입 보강**: 레벨 15 미만은 본부 구조대 비용 상한이 절반(레벨×40전)입니다. 상시 의뢰의 보상 전을 약 25~30% 올렸습니다(예: Lv10 토벌 의뢰 40전 → 52전, 다음 날 게시판부터).\n- **서버 정리**: 지금은 쓰지 않는 옛 행동 경로 32개를 닫았습니다(화면에서 쓰는 기능은 그대로입니다).\n'
  where note_id = '6.1.0' and position('### 6.1.1' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261031010000', now())
