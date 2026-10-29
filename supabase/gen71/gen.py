@@ -70,6 +70,7 @@ RG.emit(DR, w, J, bulk, TA, U, json.load(open(os.path.join(HERE, 'ref', 'existin
 part('d_faction.sql')
 part('e_tourney.sql')
 part('f_bond.sql')
+part('g_letter.sql')
 part('patch_note.sql')
 
 w("""

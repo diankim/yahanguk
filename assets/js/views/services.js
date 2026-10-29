@@ -243,6 +243,8 @@ function bindPicker(root, name, opts, onPick) {
   box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
 }
 const koSort = (a, b) => a.label.localeCompare(b.label, 'ko');
+// 서신(letters.js)이 같은 물품 고르기를 쓴다
+export { pickerHtml, bindPicker, pickCat, koSort, untradeNote };
 
 // 목록에 안 보이는 가진 물품의 까닭: 거래 불가(희귀 성장 재료 등)·잠금
 function untradeNote(have, ref, direct = false) {

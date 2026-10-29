@@ -4,6 +4,7 @@ import { sealMark } from '../cosmetics.js';
 import { openWhisper } from '../chat.js';
 import { loadCircles, circlesPanelHtml, bindCirclesPanel } from '../circles.js';
 import { loadBond, bondPanelHtml, bindBondPanel, tokenSvg } from '../bond.js';
+import { loadLetters, lettersPanelHtml, bindLettersPanel, openCompose } from '../letters.js';
 
 const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
@@ -28,7 +29,7 @@ export function destroy() { off.forEach(f => f()); off = []; clearInterval(poll)
 async function draw() {
   const body = $('#party-body', el); if (!body) return;
   try {
-    const [p, loot, roster, fr, cs, bs] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => []), load('world_friend_overview').catch(() => null), loadCircles(true), loadBond(true)]);
+    const [p, loot, roster, fr, cs, bs, lt] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => []), load('world_friend_overview').catch(() => null), loadCircles(true), loadBond(true), loadLetters()]);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
     const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
@@ -42,6 +43,7 @@ async function draw() {
       ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small></div>
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
+            ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
             ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
         : empty('아직 친구가 없습니다. 채팅이나 같은 곳에 있는 조사원의 이름을 눌러 친구 신청을 보내 보세요.', 'users')}
@@ -50,9 +52,12 @@ async function draw() {
       <p class="muted small">친구는 어디에 있든 위치와 상황을 볼 수 있고, 귓속말과 파티 초대를 바로 보낼 수 있습니다.</p>`, { ico: 'heart' }) : '';
     const circlePanel = panel(`모임 · ${(cs?.circles || []).length}개`, circlesPanelHtml(cs), { ico: 'chat' });
     const bondPanel = panel('연리', bondPanelHtml(bs), { ico: 'heart' });
+    const unreadLt = (lt?.letters || []).filter(l => !l.read).length;
+    const letterPanel = panel(`서신${unreadLt ? ` · 안 읽음 ${unreadLt}` : ''}`, lettersPanelHtml(lt), { ico: 'letter' });
     body.innerHTML = `
       ${bondPanel}
       ${friendsPanel}
+      ${letterPanel}
       ${circlePanel}
       ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.inviter_name || '조사원')}의 동료 초대</b><small>수락하면 함께 이동하고 전리품을 나눕니다</small></div>
         <div class="btn-row"><button class="btn small primary" data-inv="${esc(i.invite_id)}" data-acc="1">수락</button><button class="btn small" data-inv="${esc(i.invite_id)}" data-acc="0">거절</button></div></li>`).join('')}</ul>`, { ico: 'bell' }) : ''}
@@ -99,5 +104,7 @@ async function draw() {
     const cl = $('#loot-claim', body); if (cl) cl.onclick = () => guard(cl, () => act('world_party_loot_claim'));
     bindCirclesPanel(body);
     bindBondPanel(body, draw);
+    bindLettersPanel(body, draw);
+    $$('[data-letter]', body).forEach(b => b.onclick = () => openCompose(b.dataset.letter, b.dataset.letterName, async () => { await loadLetters(true); draw(); }));
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }

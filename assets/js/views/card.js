@@ -43,6 +43,7 @@ async function draw(box, id) {
         : rel === 'incoming' ? `<button class="btn small primary" data-do="accept">${icon('check', 14)}<span>친구 수락</span></button><button class="btn small" data-do="decline">거절</button>`
         : `<button class="btn small primary" data-do="friend">${icon('plus', 14)}<span>친구 신청</span></button>`}
       ${c.is_dead ? '' : `<button class="btn small" data-do="whisper">${icon('chat', 14)}<span>귓속말</span></button>`}
+      ${rel === 'friends' && !c.is_dead ? `<button class="btn small" data-do="letter">${icon('letter', 14)}<span>서신 보내기</span></button>` : ''}
       ${c.is_dead ? '' : sparWhy ? `<button class="btn small" disabled title="${esc(sparWhy)}">${icon('sword', 14)}<span>비무 · ${esc(sparWhy)}</span></button>` : `<button class="btn small" data-do="spar" title="목숨을 걸지 않는 겨루기(체력·물품은 줄지 않음)">${icon('sword', 14)}<span>비무 신청</span></button>`}
       ${canInvite ? `<button class="btn small" data-do="invite">${icon('users', 14)}<span>파티 초대</span></button>` : ''}
       ${!c.is_dead && circles().some(x => (x.role === 'leader' || x.role === 'manager') && !x.members.some(mm => mm.owner_id === c.owner_id)) ? `<button class="btn small" data-do="circle">${icon('chat', 14)}<span>모임에 초대</span></button>` : ''}
@@ -84,6 +85,7 @@ async function run(b, c, box) {
     if (c.relation === 'friends' && !(await ask(`${c.character_name}님과 친구를 끊을까요?`, { title: '친구 끊기', ok: '끊기', danger: true }))) return;
     return guard(b, async () => { const r = await act('world_friend_remove', { p_target: id }); again(); return r; });
   }
+  if (k === 'letter') { close(); const { openCompose } = await import('../letters.js'); return openCompose(c.owner_id, c.character_name); }
   if (k === 'whisper') { close(); const { openWhisper } = await import('../chat.js'); return openWhisper(c.character_name, c.owner_id); }
   if (k === 'invite') return guard(b, async () => {
     if (!c.my_party_role) await act('world_party_create', { p_party_name: `${store.character?.character_name || '조사원'}의 동료`.slice(0, 20) });

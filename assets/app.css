@@ -2127,3 +2127,12 @@ b.sealed { color: var(--bad); }
 .cf-badge .fr-bg { fill: var(--frame-bg, var(--surface)); stroke: var(--fr); stroke-width: 1.4; }
 .chat-list li.msg.t-legacy .cf-badge path, .chat-list li.msg .av.face.fr.t-legacy .cf-badge path { fill: var(--fr-glyph); stroke: none; }
 .chat-list li.msg { grid-template-columns: 28px minmax(0, 1fr); column-gap: 11px; }
+
+/* 서신(7.1.0) */
+.lt-head { align-items: center; gap: 8px; margin-bottom: 6px; }
+.lt-list li.unread b { color: var(--text); }
+.lt-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--bad); margin-right: 6px; vertical-align: middle; }
+.letter h3 { margin: 0 0 2px; }
+.letter-body { white-space: pre-wrap; word-break: break-word; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); font-size: calc(14px * var(--fz, 1)); line-height: 1.6; }
+.lt-compose textarea { width: 100%; resize: vertical; min-height: 96px; font-size: max(16px, calc(14px * var(--fz, 1))); }
+@media (hover: hover) { .lt-compose textarea { font-size: calc(14px * var(--fz, 1)); } }
