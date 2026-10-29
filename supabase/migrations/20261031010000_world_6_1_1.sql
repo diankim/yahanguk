@@ -610,6 +610,29 @@ do $$ declare f regprocedure; begin
   end loop;
 end $$;
 
+-- ⑥-6 퀘스트 채집 할 일은 얻은 개수로 센다(전에는 채집 횟수, 덤 물품 제외 — 「약제 바탕 0/2」가 가방에 있어도 오래 안 차던 것)
+do $$ declare d text; a text; b text; n int;
+begin
+  d := pg_get_functiondef('public.world_quest_task_count(uuid,jsonb,timestamptz)'::regprocedure);
+  if position('얻은 개수' in d) = 0 then
+    a := E'    when p_task ->> ''t'' in (''win'', ''gather'', ''craft'', ''fish'') then (';
+    b := E'    -- 채집(물품 지정): 얻은 개수(주 물품 수량 + 덤 물품)\n'
+      || E'    when p_task ->> ''t'' = ''gather'' and p_task ? ''items'' then (\n'
+      || E'    select coalesce(sum(\n'
+      || E'        (case when e.payload ->> ''item_id'' in (select jsonb_array_elements_text(p_task -> ''items'')) then greatest(1, coalesce((e.payload ->> ''qty'')::int, 1)) else 0 end)\n'
+      || E'      + coalesce((select sum((x.value)::text::int) from jsonb_each(case when jsonb_typeof(e.payload -> ''extra'') = ''object'' then e.payload -> ''extra'' else ''{}''::jsonb end) x\n'
+      || E'                   where jsonb_typeof(x.value) = ''number'' and x.key in (select jsonb_array_elements_text(p_task -> ''items''))), 0)), 0)::int\n'
+      || E'      from public.world_events e\n'
+      || E'     where e.actor_id = p_uid and e.created_at >= p_since and e.event_type = ''gather''\n'
+      || E'       and (not p_task ? ''r'' or (select n.region_id from public.world_exploration_nodes n\n'
+      || E'                                   where n.node_id = case when e.payload ->> ''node_id'' ~* ''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'' then (e.payload ->> ''node_id'')::uuid end)\n'
+      || E'                                 in (select jsonb_array_elements_text(p_task -> ''r''))))\n'
+      || a;
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 퀘스트 채집 개수(%)', n; end if;
+    execute replace(d, a, b);
+  end if;
+end $$;
+
 -- ⑦ 6.1.0 숨김 풀기: 보관해 둔 6.1.0 패치노트를 되살리고, 서버 보스 예약을 다시 켠다(아무도 모이지 않은 예고 회차는 지우고 새로 잡는다)
 do $$ begin
   if to_regclass('yh_deploy.hold_patch_note') is not null then
@@ -620,7 +643,7 @@ delete from public.world_raids r where r.kind = 'world' and r.status = 'announce
 select public.world_raid_schedule_next() where not exists (select 1 from public.world_raids where kind = 'world' and status in ('announced', 'signup', 'fight'));
 select cron.alter_job(jobid, active := true) from cron.job where jobname = 'yh-raid';
 
-update public.world_patch_notes set body = body || E'\n### 6.1.1\n- **직업·소속 퀘스트 12개**: 직업마다 하나(호위 무사 「마지막 파수의 칼」·현장 조사원 「빈 과녁의 주인」·퇴마관 「방울을 돌려주는 밤」·의무관 「외상 장부의 약값」·봉인술사 「봉인 부적 출납부」·백공 기술관 「이름 붙은 등」), 소속마다 하나(본부 직속 「서리의 하루」·현장대응국 「귀죽림 순찰로」·기록감찰국 「젖은 쪽의 먹」·봉인관리국 「닫힌 줄 모르는 수문」·의무지원국 「담 밖의 약초밭」·외부 협력자 「명부 밖의 손님」). 이야기 속 인물들이 맡기고, 내 직업·소속에게만 보입니다(Lv3·4).\n- **1장 첫 장면**에서 연서희가 직업과 소속에 따라 다르게 맞아 줍니다(일지에서 다시 보기로도 보입니다).\n- **소속 보급 편지**: 하루 소속 보급을 받으면 부서에서 짧은 편지가 함께 옵니다. 이야기를 진행할수록 내용이 달라집니다.\n- **지역 첫 방문 글**: 지역에 처음 들어가면 그곳의 내력을 짧게 보여 주고, 일지 › 기록 › 지역에 남깁니다.\n- **물품 내력**: 시작 장비와 주요 물품 정보 창에 한 줄 내력이 붙습니다.\n- **요괴 목격담**: 요괴 도감에서 갈래를 고르면, 그 갈래를 1·10마리 쓰러뜨릴 때마다 이야기 속 인물의 한마디가 열립니다.\n- **숨김 칭호 유래**: 얻은 숨김 칭호 카드의 「유래」를 누르면 그 칭호를 두고 인물들이 하는 말을 보여 줍니다.\n- **환골탈태 장면**: 서첩을 쓰면 정청 서기관이 배속 변경을 처리하는 짧은 장면이 나옵니다.\n- **탈것에서 내리기**: 지도 › 탈것에서 탈것을 내려 걸어 다닐 수 있습니다(속도 ×1, 노정패 운임 없음). 언제든 다시 탈 수 있습니다.\n- **물품 버리기 편의(제보)**: 물품 정보 창의 버리기 칸에 가진 수량을 함께 적고, 「최대」(버릴 수 있는 만큼 채우기)와 「모두 버리기」 단추를 더했습니다. 장착 중인 장비는 하나를 남깁니다. 창 안의 글자를 끌어 고르다 바깥에서 손을 떼도 창이 닫히지 않습니다.\n- **초반~중반 전 수입 보강**: 레벨 15 미만은 본부 구조대 비용 상한이 절반(레벨×40전)입니다. 상시 의뢰의 보상 전을 약 25~30% 올렸습니다(예: Lv10 토벌 의뢰 40전 → 52전, 다음 날 게시판부터).\n- **물품 갈래 표시**: 상점(사기·팔기)·대장간·수리·분해·거래소·직접 거래·창고 목록의 물품 이름 앞에 무기·방어구·관모·신·노리개·호신부·탈·도구·소모품·재료 같은 갈래를 작게 붙였습니다.\n- **칭호 등급순 보기**: 칭호 화면에서 「보기」를 분류별·등급 높은순·등급 낮은순으로 고를 수 있습니다(등급순이면 신품~범품으로 묶고 카드에 분류를 적습니다. 얻지 못한 숨김 칭호는 맨 끝에 둡니다).\n- **서버 정리**: 지금은 쓰지 않는 옛 행동 경로 32개를 닫았습니다(화면에서 쓰는 기능은 그대로입니다).\n'
+update public.world_patch_notes set body = body || E'\n### 6.1.1\n- **직업·소속 퀘스트 12개**: 직업마다 하나(호위 무사 「마지막 파수의 칼」·현장 조사원 「빈 과녁의 주인」·퇴마관 「방울을 돌려주는 밤」·의무관 「외상 장부의 약값」·봉인술사 「봉인 부적 출납부」·백공 기술관 「이름 붙은 등」), 소속마다 하나(본부 직속 「서리의 하루」·현장대응국 「귀죽림 순찰로」·기록감찰국 「젖은 쪽의 먹」·봉인관리국 「닫힌 줄 모르는 수문」·의무지원국 「담 밖의 약초밭」·외부 협력자 「명부 밖의 손님」). 이야기 속 인물들이 맡기고, 내 직업·소속에게만 보입니다(Lv3·4).\n- **1장 첫 장면**에서 연서희가 직업과 소속에 따라 다르게 맞아 줍니다(일지에서 다시 보기로도 보입니다).\n- **소속 보급 편지**: 하루 소속 보급을 받으면 부서에서 짧은 편지가 함께 옵니다. 이야기를 진행할수록 내용이 달라집니다.\n- **지역 첫 방문 글**: 지역에 처음 들어가면 그곳의 내력을 짧게 보여 주고, 일지 › 기록 › 지역에 남깁니다.\n- **물품 내력**: 시작 장비와 주요 물품 정보 창에 한 줄 내력이 붙습니다.\n- **요괴 목격담**: 요괴 도감에서 갈래를 고르면, 그 갈래를 1·10마리 쓰러뜨릴 때마다 이야기 속 인물의 한마디가 열립니다.\n- **숨김 칭호 유래**: 얻은 숨김 칭호 카드의 「유래」를 누르면 그 칭호를 두고 인물들이 하는 말을 보여 줍니다.\n- **환골탈태 장면**: 서첩을 쓰면 정청 서기관이 배속 변경을 처리하는 짧은 장면이 나옵니다.\n- **탈것에서 내리기**: 지도 › 탈것에서 탈것을 내려 걸어 다닐 수 있습니다(속도 ×1, 노정패 운임 없음). 언제든 다시 탈 수 있습니다.\n- **물품 버리기 편의(제보)**: 물품 정보 창의 버리기 칸에 가진 수량을 함께 적고, 「최대」(버릴 수 있는 만큼 채우기)와 「모두 버리기」 단추를 더했습니다. 장착 중인 장비는 하나를 남깁니다. 창 안의 글자를 끌어 고르다 바깥에서 손을 떼도 창이 닫히지 않습니다.\n- **초반~중반 전 수입 보강**: 레벨 15 미만은 본부 구조대 비용 상한이 절반(레벨×40전)입니다. 상시 의뢰의 보상 전을 약 25~30% 올렸습니다(예: Lv10 토벌 의뢰 40전 → 52전, 다음 날 게시판부터).\n- **물품 갈래 표시**: 상점(사기·팔기)·대장간·수리·분해·거래소·직접 거래·창고 목록의 물품 이름 앞에 무기·방어구·관모·신·노리개·호신부·탈·도구·소모품·재료 같은 갈래를 작게 붙였습니다.\n- **칭호 등급순 보기**: 칭호 화면에서 「보기」를 분류별·등급 높은순·등급 낮은순으로 고를 수 있습니다(등급순이면 신품~범품으로 묶고 카드에 분류를 적습니다. 얻지 못한 숨김 칭호는 맨 끝에 둡니다).\n- **퀘스트 채집 할 일**: 채집 횟수가 아니라 **얻은 개수**로 셉니다(한 번에 3개를 캐면 3, 덤으로 따라 나온 물품도 셈). 그 장면이 열린 뒤에 채집한 것만 세는 것은 같습니다.\n- **서버 정리**: 지금은 쓰지 않는 옛 행동 경로 32개를 닫았습니다(화면에서 쓰는 기능은 그대로입니다).\n'
  where note_id = '6.1.0' and position('### 6.1.1' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261031010000', now())
