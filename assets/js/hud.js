@@ -27,14 +27,16 @@ export function mountHud(el) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 }
 
+// 로그인이 풀려 거절되면(권한 없음) 바로 로그인 확인을 돌려 이 탭을 로그아웃시킨다(session.js) — 거절당한 요청을 되풀이하지 않게
+function authLost(e) { if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) window.dispatchEvent(new Event('yh-auth-lost')); return null; }
 export async function refresh({ char = true, idle: readIdle = true } = {}) {
   try {
     // 원정 중이면 지난 수색 회차를 먼저 정산해 체력·정신·침식이 바로 맞게 한다
     if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
     const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
     const [idle, hud] = await Promise.all([
-      readIdle || first ? rpc('world_idle_activity_snapshot').catch(() => null) : state.idle,
-      rpc('world_hud_snapshot').catch(() => null),
+      readIdle || first ? rpc('world_idle_activity_snapshot').catch(authLost) : state.idle,
+      rpc('world_hud_snapshot').catch(authLost),
       (first || !char) && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;

@@ -48,6 +48,7 @@ export function stopSessionGuard() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && mounted) check(); });
 window.addEventListener('focus', () => { if (mounted) check(); });
 window.addEventListener('pageshow', () => { if (mounted) check(); });
+window.addEventListener('yh-auth-lost', () => { if (mounted) check(); });
 
 // 로그아웃: 서버에 알리되 응답이 늦거나 막혀도 3초 안에 이 기기의 로그인을 지우고 로그인 화면으로 간다.
 export async function logout(note = '') {
