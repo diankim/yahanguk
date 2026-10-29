@@ -1030,3 +1030,91 @@ do $$ begin
     alter publication supabase_realtime add table public.world_party_messages;
   end if;
 end $$;
+
+-- 일지 퀘스트 개편: 주 이야기·보조 퀘스트를 일지에서 장면 단위로 보고, 마친 장면·결말을 다시 읽는다(읽기만)
+--   world_quest_journal(): 모든 퀘스트의 상태(done·active·available·locked)·장면 목록(제목·목표·마침 여부)·지금 장면의 할 일
+--   world_quest_scene(p_quest, p_step): 마친 장면의 대사(0이면 마친 주 이야기의 결말). 마치지 않은 장면은 내주지 않는다
+create or replace function public.world_quest_journal()
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $function$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; q record; out jsonb := '[]'::jsonb;
+  here_id text; ok boolean; after_ok boolean; a text; nsteps int; done boolean; stp int; status text; st jsonb; hidden int := 0;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select region_id into here_id from public.world_map_regions where region_name = c.location limit 1;
+  for q in select x.*, g.step gstep, g.done_at, m.region_name
+             from public.world_quests x left join public.world_quest_progress g on g.quest_id = x.quest_id and g.owner_id = uid
+             left join public.world_map_regions m on m.region_id = x.region_id
+            where x.active order by (x.kind = 'main') desc, x.min_level, x.sort, x.quest_id loop
+    select count(*) into nsteps from public.world_quest_steps where quest_id = q.quest_id;
+    done := public.world_quest_done(uid, q.quest_id);
+    stp := case when done then nsteps else least(coalesce(q.gstep, 0), nsteps) end;
+    st := null;
+    if done then status := 'done';
+    elsif stp >= 1 then
+      status := 'active';
+      if stp < nsteps then st := public.world_quest_step_state(uid, q.quest_id); end if;
+    else
+      ok := c.level >= q.min_level; after_ok := true;
+      foreach a in array q.after loop
+        if not public.world_quest_done(uid, a) then after_ok := false; end if;
+      end loop;
+      -- 앞 퀘스트를 마치지 않은 보조 퀘스트는 이름을 숨기고 수만 센다(주 이야기는 장 목록이라 보인다)
+      if not after_ok and q.kind <> 'main' then hidden := hidden + 1; continue; end if;
+      status := case when ok and after_ok then 'available' else 'locked' end;
+      if status = 'available' then st := public.world_quest_step_state(uid, q.quest_id); end if;
+    end if;
+    out := out || jsonb_build_object('quest_id', q.quest_id, 'kind', q.kind, 'cat', q.cat, 'title', q.title, 'summary', q.summary,
+      'region_id', q.region_id, 'region_name', q.region_name, 'min_level', q.min_level, 'chapter_id', q.chapter_id,
+      'status', status, 'locked_reason', case when status = 'locked' then case when c.level < q.min_level then 'level' else 'after' end end,
+      'step', stp, 'steps', nsteps, 'done_at', q.done_at, 'here', q.region_id = here_id,
+      'has_epilogue', q.kind = 'main' and done and jsonb_array_length(coalesce(q.epilogue, '[]'::jsonb)) > 0,
+      'scenes', (select coalesce(jsonb_agg(jsonb_build_object('step', s.step, 'title', s.title,
+                   'goal', case when s.step <= stp + 1 then s.goal end, 'done', s.step <= stp) order by s.step), '[]'::jsonb)
+                   from public.world_quest_steps s where s.quest_id = q.quest_id),
+      'cur', case when st is not null then st - 'title' end);
+  end loop;
+  return jsonb_build_object('quests', out, 'hidden', hidden, 'here_id', here_id, 'level', c.level);
+end $function$;
+alter function public.world_quest_journal() owner to fn_owner_field;
+revoke all on function public.world_quest_journal() from public, anon, authenticated;
+grant execute on function public.world_quest_journal() to authenticated;
+
+create or replace function public.world_quest_scene(p_quest text, p_step int)
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $function$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; q public.world_quests%rowtype; s public.world_quest_steps%rowtype;
+  stp int; done boolean; ln jsonb; spk text[];
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select * into q from public.world_quests where quest_id = p_quest and active;
+  if not found then raise exception '알 수 없는 퀘스트입니다.'; end if;
+  done := public.world_quest_done(uid, p_quest);
+  select coalesce(max(step), 0) into stp from public.world_quest_progress where owner_id = uid and quest_id = p_quest;
+  if coalesce(p_step, 0) = 0 then
+    if q.kind <> 'main' or not done or jsonb_array_length(coalesce(q.epilogue, '[]'::jsonb)) = 0 then raise exception '아직 볼 수 없는 장면입니다.'; end if;
+    ln := q.epilogue;
+    select array_agg(distinct x ->> 's') into spk from jsonb_array_elements(ln) x where x ->> 's' is not null;
+    return jsonb_build_object('quest_title', q.title, 'title', '결말', 'step', 0, 'lines', ln, 'cast', public.world_quest_cast(spk, c.character_name));
+  end if;
+  if not done and p_step > stp then raise exception '아직 볼 수 없는 장면입니다.'; end if;
+  select * into s from public.world_quest_steps where quest_id = p_quest and step = p_step;
+  if not found then raise exception '알 수 없는 장면입니다.'; end if;
+  select array_agg(distinct x ->> 's') into spk from jsonb_array_elements(s.lines) x where x ->> 's' is not null;
+  return jsonb_build_object('quest_title', q.title, 'title', s.title, 'step', s.step, 'lines', s.lines, 'cast', public.world_quest_cast(spk, c.character_name));
+end $function$;
+alter function public.world_quest_scene(text, int) owner to fn_owner_field;
+revoke all on function public.world_quest_scene(text, int) from public, anon, authenticated;
+grant execute on function public.world_quest_scene(text, int) to authenticated;
+
+-- 보고 오류 문구의 일지 칸 이름을 새 이름(일지 › 주 이야기)으로
+do $$ declare d text := pg_get_functiondef('public.world_quest_report(text)'::regprocedure);
+begin
+  if position('일지 › 사건' in d) > 0 then execute replace(d, '일지 › 사건', '일지 › 주 이야기'); end if;
+end $$;
+
+-- 패치노트 6.1.0에 일지 개편을 더한다
+update public.world_patch_notes set body = replace(body, E'### 칭호\n- 분류 「토벌」', E'### 일지 개편\n- 일지를 **퀘스트 중심**으로 바꿨습니다. 칸은 **주 이야기 · 보조 퀘스트 · 의뢰 · 기록**(답사·원정·도감) 넷입니다.\n- **주 이야기**: 위의 장 목록을 누르면 그 장이 아래에 펼쳐집니다. 장마다 **장면 순서**(마친 장면·지금 할 일·남은 장면)가 먼저 보이고, 장면을 모두 마친 뒤에 단서와 가설이 나옵니다. 마친 장면과 장 결말은 **「다시 보기」로 대사를 다시 읽을 수** 있습니다.\n- **보조 퀘스트**: 전투·채집·제작·조사·낚시 **분야별로 나눠** 보여 주고, 분야·상태(진행 중·받을 수 있음·마침·레벨 부족)로 거르고 레벨·지역·이름순으로 정렬합니다. 마친 퀘스트도 여기서 장면을 다시 볼 수 있습니다.\n\n### 칭호\n- 분류 「토벌」')
+ where note_id = '6.1.0' and position('### 일지 개편' in body) = 0;

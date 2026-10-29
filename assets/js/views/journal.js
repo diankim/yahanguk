@@ -1,16 +1,22 @@
-// 일지: 주 이야기(장마다 단서를 모아 가설을 세운다) · 상시 의뢰 · 지역 답사 · 원정 기록.
-// 단서가 있는 지역으로 바로 출발할 수 있다. 단서는 그 지역을 탐색하면 찾을 수 있다.
-import { store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar } from '../core.js';
+// 일지: 퀘스트를 보는 곳. 주 이야기(장마다 장면 → 단서 → 가설) · 보조 퀘스트(분야별) · 상시 의뢰 · 기록(답사·원정·도감).
+// 마친 장면과 장 결말은 다시 읽을 수 있다(world_quest_scene). 진행 판정은 서버(world_quest_journal·world_quest_report)가 한다.
+import { store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar } from '../core.js';
 import { load, panel, chip, loading, errorBox, currentRegion } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
+import { taskLine, giveLine, atLine, report } from '../quests.js';
 
-const SUBS = [['story', '이야기', 'scroll'], ['commission', '의뢰', 'letter'], ['survey', '답사', 'map'], ['history', '원정', 'flame'], ['codex', '도감', 'eye']];
-let el, sub = 'story', off = [];
+const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
+const REC = [['survey', '답사', 'map'], ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
+let el, sub = 'story', rec = 'survey', off = [];
 
 export async function render(root, s) {
   if (!store.character) return;
-  el = root; sub = SUBS.some(x => x[0] === s) ? s : 'story';
+  el = root;
+  // 옛 주소(#/log/survey·history·codex)와 기록 칸 주소(#/log/fish 등)는 기록 칸으로
+  if (REC.some(x => x[0] === s)) { sub = 'record'; rec = s; }
+  else if (s === 'codex') { sub = 'record'; rec = 'monster'; }
+  else sub = SUBS.some(x => x[0] === s) ? s : 'story';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('scroll', 14)} 조사원 일지</p><h1>일지</h1></div></div>
     ${segmented('log-sub', SUBS, sub)}<div id="log-body"></div>`;
   bindSegmented(el, 'log-sub', k => { sub = k; window.history.replaceState(null, '', `#/log/${k}`); draw(); });
@@ -22,7 +28,7 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#log-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
-  try { await ({ story, commission, survey, history: expHistory, codex })[sub](body); }
+  try { await ({ story, side, commission, record })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
@@ -40,20 +46,54 @@ function bindGo(body) {
   $$('[data-route]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.route); window.yahangGo('map', 'world'); });
 }
 
-/* ── 이야기: 장마다 단서를 모으고 짝을 맞춰 가설을 세운다 ───────────────── */
-async function story(body) {
-  const [b, map] = await Promise.all([load('world_story_board'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
+/* ── 퀘스트 공통: 장면 목록·다시 보기·보고 ───────────────────── */
+// 일지 목록(6.1.0 서버 함수). 없으면(배포 전) 장면 없이 단서·가설만 보인다
+const journal = () => load('world_quest_journal').catch(() => null);
+function sceneList(q, map) {
+  const cur = q.cur, next = q.status === 'done' ? null : (q.scenes || []).find(x => !x.done);
+  return `<ol class="scene-line">${(q.scenes || []).map(x => {
+    if (x.done) return `<li class="done">${icon('check', 12)}<div><b>장면 ${x.step} · ${esc(x.title)}</b><small>${esc(x.goal || '')}</small></div>
+      <button class="btn small ghost" data-scene="${esc(q.quest_id)}:${x.step}">${icon('scroll', 12)}<span>다시 보기</span></button></li>`;
+    if (x === next) return `<li class="now">${icon('chevron', 12)}<div><b>장면 ${x.step} · ${esc(x.title)}</b><small>${esc(x.goal || '')}</small>
+      ${cur && ((cur.tasks || []).length || (cur.give || []).length) ? `<ul class="q-tasks">${(cur.tasks || []).map(taskLine).join('')}${(cur.give || []).map(giveLine).join('')}</ul>` : ''}
+      ${cur ? atLine(cur) : ''}
+      ${q.status === 'locked' ? '' : `<div class="btn-row">${cur?.ready ? `<button class="btn small primary" data-q-report="${esc(q.quest_id)}">${icon('scroll', 14)}<span>${q.status === 'available' ? '이야기 듣기' : '보고하기'}</span></button>`
+        : (cur?.at || [])[0] && !cur.here_ok ? goButton(cur.at[0], map) : ''}</div>`}</div></li>`;
+    return `<li class="later">${icon('help', 12)}<div><b>장면 ${x.step}</b><small>앞 장면을 마치면 열립니다</small></div></li>`;
+  }).join('')}${q.has_epilogue ? `<li class="done">${icon('moon', 12)}<div><b>결말</b><small>단서를 맞춰 세운 결론</small></div>
+      <button class="btn small ghost" data-scene="${esc(q.quest_id)}:0">${icon('scroll', 12)}<span>다시 보기</span></button></li>` : ''}</ol>`;
+}
+function bindQuests(body) {
+  $$('[data-scene]', body).forEach(b => b.onclick = () => guard(b, async () => {
+    const [qid, step] = b.dataset.scene.split(':');
+    const r = await rpc('world_quest_scene', { p_quest: qid, p_step: Number(step) });
+    (await import('../factionquest.js')).playDialogue({ title: `${r.quest_title} · ${r.title}`, lines: r.lines, cast: r.cast }, null);
+    return null;
+  }));
+  $$('[data-q-report]', body).forEach(x => x.onclick = () => report(x));
+  bindGo(body);
+}
+
+/* ── 주 이야기: 위의 장 목록을 누르면 그 장(장면 → 단서 → 가설)이 아래에 펼쳐진다 ── */
+// 장·거르기만 바꿀 때는 서버를 다시 읽지 않고 지난 응답으로 다시 그린다
+let selCh = '', lastStory = null, lastSide = null;
+async function story(body, keep) {
+  const [b, j, map] = keep && lastStory ? lastStory : (lastStory = await Promise.all([load('world_story_board'), journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
   const chapters = b?.chapters || [];
-  const cur = chapters.find(c => c.status === 'active');
+  const mains = new Map((j?.quests || []).filter(q => q.kind === 'main').map(q => [q.chapter_id, q]));
+  if (!chapters.some(c => c.chapter_id === selCh && c.status !== 'locked'))
+    selCh = (chapters.find(c => c.status === 'active') || [...chapters].reverse().find(c => c.status === 'done') || chapters[0])?.chapter_id || '';
+  const ch = chapters.find(c => c.chapter_id === selCh);
+  const doneN = chapters.filter(c => c.status === 'done').length;
   body.innerHTML = `
-    ${b?.all_done ? `<div class="notice safe">${icon('moon', 18)}<div><b>지금까지의 이야기를 모두 마쳤습니다</b><span>다음 장은 준비 중입니다. 그동안 의뢰 게시판의 상시 의뢰로 보상을 받을 수 있습니다.</span></div><button class="btn small" data-sub="commission">의뢰 보기</button></div>` : ''}
-    <ol class="chapter-line">${chapters.map(c => `<li class="${c.status}"><b>${c.seq}장</b><span>${esc(c.title)}</span></li>`).join('')}</ol>
-    ${cur ? chapterCard(cur, map) : ''}
-    ${chapters.filter(c => c.status === 'done').reverse().map(c => `<details class="panel fold"><summary class="panel-head"><h2>${icon('check', 16)}${c.seq}장 · ${esc(c.title)}</h2></summary>
-      <div class="panel-body"><p class="desc">${esc(c.outro)}</p>${(c.combos || []).map(x => `<p class="muted small"><b>${esc(x.name)}</b> — ${esc(x.conclusion)}</p>`).join('')}</div></details>`).join('')}
-    ${chapters.filter(c => c.status === 'locked').map(c => `<section class="panel locked-ch"><header class="panel-head"><h2>${icon('help', 16)}${c.seq}장 · ${esc(c.title)}</h2>${chip(`Lv.${c.min_level}`)}</header>
-      <div class="panel-body"><p class="muted small">${c.locked_reason === 'level' ? `레벨 ${c.min_level}부터 시작할 수 있습니다.` : '앞의 장을 마치면 열립니다.'}</p></div></section>`).join('')}
+    ${b?.all_done ? `<div class="notice safe">${icon('moon', 18)}<div><b>지금까지의 이야기를 모두 마쳤습니다</b><span>장을 눌러 지난 장면과 결말을 다시 읽을 수 있습니다. 보조 퀘스트와 의뢰도 계속 받을 수 있습니다.</span></div><button class="btn small" data-sub="side">보조 퀘스트</button></div>` : ''}
+    <div class="chips">${chip(`마친 장 ${doneN}/${chapters.length}`, 'accent')}<span class="muted small">장을 누르면 아래에 펼쳐집니다</span></div>
+    <ol class="chapter-line">${chapters.map(c => `<li class="${c.status} ${c.chapter_id === selCh ? 'sel' : ''}"><button data-ch="${esc(c.chapter_id)}" ${c.status === 'locked' ? 'disabled' : ''} aria-pressed="${c.chapter_id === selCh}">
+      <b>${c.seq}장</b><span>${c.status === 'locked' ? `Lv.${c.min_level}` : esc(c.title)}</span></button></li>`).join('')}</ol>
+    ${ch ? chapterView(ch, mains.get(ch.chapter_id), map) : ''}
+    ${chapters.filter(c => c.status === 'locked').length ? `<p class="muted small">잠긴 장 ${chapters.filter(c => c.status === 'locked').length}개 — 앞 장을 마치고 레벨이 되면 열립니다.</p>` : ''}
     ${regional(b?.regional)}`;
+  $$('[data-ch]', body).forEach(x => x.onclick = () => { selCh = x.dataset.ch; story(body, true); });
   // 장을 마치면 장 결말(epilogue)을 대화창으로 보인다
   $$('[data-combo]', body).forEach(x => x.onclick = () => guard(x, async () => {
     const r = await act('world_story_combine', { p_combo_id: x.dataset.combo });
@@ -63,15 +103,21 @@ async function story(body) {
   }));
   const rs = $('#reg-submit', body); if (rs) rs.onclick = () => guard(rs, () => act('world_case_combine_regional'));
   $$('[data-sub]', body).forEach(x => x.onclick = () => { sub = x.dataset.sub; window.yahangGo('log', sub); });
-  bindGo(body);
+  bindQuests(body);
 }
-function chapterCard(ch, map) {
-  const got = (ch.clues || []).filter(c => c.found).length;
-  return panel(`${ch.seq}장 · ${ch.title}`, `
-    <p class="desc">${esc(ch.intro)}</p>
-    ${ch.scenes_open === false ? `<p class="hint accent">${icon('scroll', 14)} 먼저 현장의 「퀘스트」 칸에서 이 장의 이야기를 따라가세요. 장면을 모두 마치면 단서를 탐색에서 찾을 수 있습니다.</p>` : ''}
-    ${ch.rewards?.text ? `<p class="muted small">마치면: ${esc(ch.rewards.text)}</p>` : ''}
-    <div class="chips">${chip(`단서 ${got}/${(ch.clues || []).length}`, 'accent')}${chip(`가설 ${(ch.combos || []).filter(x => x.done).length}/${(ch.combos || []).length}`)}</div>
+function chapterView(ch, q, map) {
+  const done = ch.status === 'done';
+  const scenesDone = done || !q || q.step >= q.steps;
+  const head = `<p class="desc">${esc(ch.intro)}</p>${ch.rewards?.text ? `<p class="muted small">마치면: ${esc(ch.rewards.text)}</p>` : ''}
+    ${q ? `<div class="chips">${chip(`장면 ${q.step}/${q.steps}`, scenesDone ? 'ok' : 'accent')}${chip(`단서 ${(ch.clues || []).filter(c => c.found).length}/${(ch.clues || []).length}`)}${chip(`가설 ${(ch.combos || []).filter(x => x.done).length}/${(ch.combos || []).length}`)}${q.region_name ? chip(q.region_name) : ''}</div>` : ''}`;
+  const scenes = q ? `<h3 class="sub-h">장면</h3>${q.status === 'available' && !q.cur?.here_ok ? `<p class="hint">${icon('pin', 14)} ${esc(q.region_name || '')}에서 이 장의 이야기를 들을 수 있습니다.</p>` : ''}${sceneList(q, map)}` : '';
+  const clues = done ? `<h3 class="sub-h">결론</h3><p class="desc">${esc(ch.outro)}</p>${(ch.combos || []).map(x => `<p class="muted small"><b>${esc(x.name)}</b> — ${esc(x.conclusion)}</p>`).join('')}`
+    : scenesDone ? clueBlock(ch, map)
+    : `<h3 class="sub-h">단서와 가설</h3><p class="muted small">장면을 모두 마치면 이 장의 단서 ${(ch.clues || []).length}개를 탐색에서 찾을 수 있고, 모은 단서로 가설을 세웁니다.</p>`;
+  return panel(`${ch.seq}장 · ${ch.title}`, head + scenes + clues, { ico: done ? 'check' : 'scroll' });
+}
+function clueBlock(ch, map) {
+  return `<h3 class="sub-h">단서</h3>
     <div class="clue-grid">${(ch.clues || []).map(k => `<article class="clue ${k.found ? 'on' : ''}"><header><b>${k.found ? esc(k.name) : '찾지 못한 단서'}</b>${chip(k.tag)}</header>
         <p>${k.found ? esc(k.description) : `${esc(k.region_name)} 어딘가에 있습니다. 그곳을 탐색하세요. 깊이 들어갈수록 찾기 쉽습니다.`}</p>
         ${k.found ? chip('확보', 'ok') : goButton(k.region_id, map)}</article>`).join('')}</div>
@@ -80,7 +126,7 @@ function chapterCard(ch, map) {
       const ready = (x.needs || []).every(n => (ch.clues || []).find(k => k.clue_id === n)?.found);
       return `<article class="combo ${x.done ? 'on' : ''}"><b>${esc(x.name)}</b><p>${esc(x.done ? x.conclusion : x.description)}</p>
         <div class="combo-need">${(x.needs || []).map(n => { const k = (ch.clues || []).find(y => y.clue_id === n); return `<span class="${k?.found ? 'ok' : ''}">${k?.found ? esc(k.name) : '?'}</span>`; }).join(icon('plus', 12))}</div>
-        ${x.done ? chip('결론 확정', 'ok') : `<button class="btn small ${ready ? 'primary' : ''}" data-combo="${esc(x.combo_id)}" ${ready ? '' : 'disabled'}>${ready ? '가설 확정' : '단서 부족'}</button>`}</article>`; }).join('')}</div>`, { ico: 'scroll' });
+        ${x.done ? chip('결론 확정', 'ok') : `<button class="btn small ${ready ? 'primary' : ''}" data-combo="${esc(x.combo_id)}" ${ready ? '' : 'disabled'}>${ready ? '가설 확정' : '단서 부족'}</button>`}</article>`; }).join('')}</div>`;
 }
 function regional(r) {
   const n = r?.regions || 0;
@@ -90,6 +136,59 @@ function regional(r) {
     ${r?.submitted ? '' : `<button class="btn ${n >= 3 ? 'primary' : ''}" id="reg-submit" ${n >= 3 ? '' : 'disabled'}>${icon('scroll', 16)}<span>보고서 제출</span></button>`}`, { ico: 'map' });
 }
 
+/* ── 보조 퀘스트: 분야별로 나눠 보고, 상태로 거르고, 정렬한다 ───────────── */
+const FIELDS = [['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye']];
+const STATUS = [['', '전체'], ['active', '진행 중'], ['available', '받을 수 있음'], ['done', '마침'], ['locked', '레벨 부족']];
+const STATUS_N = { active: ['진행 중', 'accent'], available: ['받을 수 있음', 'ok'], done: ['마침', ''], locked: ['레벨 부족', 'bad'] };
+const SORTS = { level: (a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'),
+  region: (a, b) => (a.region_name || '').localeCompare(b.region_name || '', 'ko') || a.min_level - b.min_level,
+  name: (a, b) => a.title.localeCompare(b.title, 'ko') };
+const ORDER = { active: 0, available: 1, locked: 2, done: 3 };
+const fieldOf = q => (q.cat || '').split('·')[0] || '기타';
+let sField = '', sStatus = '', sSort = 'level';
+async function side(body, keep) {
+  const [j, map] = keep && lastSide ? lastSide : (lastSide = await Promise.all([journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
+  if (!j) { body.innerHTML = empty('보조 퀘스트 목록은 다음 서버 갱신 뒤에 열립니다. 지금은 현장의 퀘스트 칸에서 볼 수 있습니다.', 'flag'); return; }
+  const all = (j.quests || []).filter(q => q.kind === 'side');
+  const fields = [...FIELDS.filter(([f]) => all.some(q => fieldOf(q) === f)), ...[...new Set(all.map(fieldOf))].filter(f => !FIELDS.some(x => x[0] === f)).map(f => [f, 'flag'])];
+  if (sField && !fields.some(([f]) => f === sField)) sField = '';
+  const pass = q => (!sField || fieldOf(q) === sField) && (!sStatus || q.status === sStatus);
+  const sorted = list => [...list].sort((a, b) => (sStatus ? 0 : ORDER[a.status] - ORDER[b.status]) || SORTS[sSort](a, b));
+  const cnt = (list, st) => list.filter(q => q.status === st).length;
+  const group = ([f, ic]) => {
+    const list = sorted(all.filter(q => fieldOf(q) === f && pass(q))); if (!list.length) return '';
+    const mine = all.filter(q => fieldOf(q) === f);
+    return `<details class="panel fold q-field" ${sField || cnt(list, 'active') || sStatus ? 'open' : ''}><summary class="panel-head"><h2>${icon(ic, 16)}${esc(f)} <small class="muted">마침 ${cnt(mine, 'done')}/${mine.length}${cnt(mine, 'active') ? ` · 진행 ${cnt(mine, 'active')}` : ''}</small></h2></summary>
+      <div class="panel-body"><ul class="q-list">${list.map(q => sideItem(q, map)).join('')}</ul></div></details>`;
+  };
+  const shown = all.filter(pass).length;
+  body.innerHTML = `
+    <p class="desc">보조 퀘스트는 지역의 인물에게서 받습니다. 받은 퀘스트의 할 일을 마치고 보고 장소에서 보고하면 보상과 다음 장면이 나옵니다. 마친 퀘스트도 장면을 다시 읽을 수 있습니다.</p>
+    <div class="chips">${chip(`마침 ${cnt(all, 'done')}/${all.length + (j.hidden || 0)}`, 'accent')}${chip(`진행 ${cnt(all, 'active')}`)}${chip(`받을 수 있음 ${cnt(all, 'available')}`, 'ok')}</div>
+    <div class="q-filter">
+      <div class="chips kind-chips" role="group" aria-label="분야"><button class="chip ${sField ? '' : 'on'}" data-f="">전체</button>${fields.map(([f]) => `<button class="chip ${sField === f ? 'on' : ''}" data-f="${esc(f)}">${esc(f)} <small>${cnt(all.filter(q => fieldOf(q) === f), 'done')}/${all.filter(q => fieldOf(q) === f).length}</small></button>`).join('')}</div>
+      <div class="chips kind-chips" role="group" aria-label="상태">${STATUS.map(([k, n]) => `<button class="chip ${sStatus === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div>
+      <label class="q-sort"><span class="muted small">정렬</span><select id="q-sort"><option value="level" ${sSort === 'level' ? 'selected' : ''}>레벨순</option><option value="region" ${sSort === 'region' ? 'selected' : ''}>지역순</option><option value="name" ${sSort === 'name' ? 'selected' : ''}>이름순</option></select></label>
+    </div>
+    ${shown ? (sField ? group(fields.find(([f]) => f === sField)) : fields.map(group).join('')) : empty('조건에 맞는 퀘스트가 없습니다.', 'flag')}
+    ${j.hidden ? `<p class="muted small">앞 퀘스트를 마치면 열리는 퀘스트가 ${j.hidden}개 더 있습니다.</p>` : ''}`;
+  $$('[data-f]', body).forEach(b => b.onclick = () => { sField = b.dataset.f; side(body, true); });
+  $$('[data-st]', body).forEach(b => b.onclick = () => { sStatus = b.dataset.st; side(body, true); });
+  $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
+  bindQuests(body);
+}
+function sideItem(q, map) {
+  const [sn, tone] = STATUS_N[q.status] || ['', ''];
+  const subCat = (q.cat || '').split('·')[1] || '';
+  const where = `${icon('pin', 12)} ${esc(q.region_name || '')} · Lv.${q.min_level}${q.here ? ' · 지금 여기' : ''}`;
+  return `<li class="q-item ${q.status} ${q.cur?.ready ? 'ready' : ''}"><details ${q.status === 'active' ? 'open' : ''}>
+    <summary><header>${chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
+      <p class="q-at ${q.here ? 'ok' : ''}">${where}</p></summary>
+    <p class="q-goal">${esc(q.summary || '')}</p>
+    ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`
+      : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}
+  </details></li>`;
+}
 /* ── 상시 의뢰: 날마다 바뀌는 세 가지 일 ─────────────────────── */
 async function commission(body) {
   const b = await load('world_commission_board');
@@ -104,6 +203,15 @@ async function commission(body) {
       ${x.claimed ? chip('완료', 'ok') : `<button class="btn small ${x.progress >= x.need ? 'primary' : ''}" data-claim="${x.slot}" ${x.progress >= x.need ? '' : 'disabled'}>${x.kind === 'deliver' ? '납품하기' : '보상 받기'}</button>`}
     </article>`).join('') || empty('오늘의 의뢰가 없습니다.', 'scroll')}</div>`;
   $$('[data-claim]', body).forEach(x => x.onclick = () => guard(x, () => act('world_commission_claim', { p_slot: Number(x.dataset.claim) })));
+}
+
+/* ── 기록: 답사 · 원정 · 도감(요괴·채집·어종) ─────────────────── */
+async function record(body) {
+  body.innerHTML = `${segmented('rec-sub', REC, rec)}<div id="rec-body">${loading()}</div>`;
+  bindSegmented(body, 'rec-sub', k => { rec = k; window.history.replaceState(null, '', `#/log/${k}`); record(body); });
+  const box = $('#rec-body', body);
+  try { await ({ survey, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[rec](box); }
+  catch (e) { box.innerHTML = errorBox(e.message); }
 }
 
 /* ── 답사: 지역별 답사도 ──────────────────────────────────── */
@@ -139,15 +247,7 @@ const PHASE = { dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '�
 const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
 const RAR = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };
 // 도감: 요괴 · 채집 · 어종. 요괴는 만나면 기본 정보, 쓰러뜨리면 상성·기믹 파훼법·전리품이 열린다.
-const CODEX = [['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
-let cx = 'monster', cxKind = '';
-async function codex(body) {
-  body.innerHTML = `${segmented('cx-sub', CODEX, cx)}<div id="cx-body">${loading()}</div>`;
-  bindSegmented(body, 'cx-sub', k => { cx = k; codex(body); });
-  const box = $('#cx-body', body);
-  try { await ({ monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[cx](box); }
-  catch (e) { box.innerHTML = errorBox(e.message); }
-}
+let cxKind = '';
 const JOBN = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '백공 기술관', medic: '의무관', artificer: '호위 무사' };
 const mul = v => { const n = Number(v); return `<span class="eff ${n >= 1.2 ? 'ok' : n <= 0.85 ? 'bad' : ''}">×${n}</span>`; };
 const codexTitles = list => (list || []).length ? panel('도감 칭호', `<ul class="spot-list">${list.map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}${t.need && !t.earned ? ` · ${fmt.num(t.progress ?? 0)}/${fmt.num(t.need)}` : ''}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>`, { ico: 'spark' }) : '';

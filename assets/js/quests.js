@@ -19,17 +19,17 @@ function noteReady(b) {
   if (fresh) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' })); try { sessionStorage.setItem('yh-q-ready', JSON.stringify([...seen].slice(-200))); } catch {} }
 }
 
-const taskLine = t => `<li class="${t.cur >= t.n ? 'ok' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}</b></li>`;
-const giveLine = g => `<li class="${g.have >= g.n ? 'ok' : ''}">${icon('bag', 12)}<span>${esc(g.name || nameOf(g.item_id))} 넘기기</span><b>${g.have}/${g.n}</b></li>`;
-const atLine = q => (q.at_names || []).length ? `<p class="q-at ${q.here_ok ? 'ok' : ''}">${icon('pin', 12)} 보고: ${esc(q.at_names.join('·'))}${q.here_ok ? ' (지금 여기)' : ''}</p>` : '';
+export const taskLine = t => `<li class="${t.cur >= t.n ? 'ok' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}</b></li>`;
+export const giveLine = g => `<li class="${g.have >= g.n ? 'ok' : ''}">${icon('bag', 12)}<span>${esc(g.name || nameOf(g.item_id))} 넘기기</span><b>${g.have}/${g.n}</b></li>`;
+export const atLine = q => (q.at_names || []).length ? `<p class="q-at ${q.here_ok ? 'ok' : ''}">${icon('pin', 12)} 보고: ${esc(q.at_names.join('·'))}${q.here_ok ? ' (지금 여기)' : ''}</p>` : '';
 const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${chip(q.cat || '')}<b>${esc(q.title)}</b></header>`;
 
 function activeItem(q) {
   if (q.phase === 'clues') {
     const c = q.clues || {};
     return `<li class="q-item">${head(q.kind, q)}
-      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc((c.region_names || []).join('·'))}을(를) 탐색하고, 모으면 일지 › 사건에서 가설을 확정하세요.</p>
-      <div class="btn-row"><a class="btn small" href="#/log/story">${icon('scroll', 14)}<span>사건 일지</span></a></div></li>`;
+      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc((c.region_names || []).join('·'))}을(를) 탐색하고, 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>
+      <div class="btn-row"><a class="btn small" href="#/log/story">${icon('scroll', 14)}<span>일지 보기</span></a></div></li>`;
   }
   return `<li class="q-item ${q.ready ? 'ready' : ''}">${head(q.kind, q)}
     <p class="q-step">장면 ${q.step}/${q.steps} · ${esc(q.step_title || '')}</p>
@@ -101,13 +101,13 @@ export async function fillQuests(box) {
   $('[data-go-faction]', box)?.addEventListener('click', () => { try { sessionStorage.setItem('yh-fpop', 'rank'); } catch {} window.yahangGo('char', 'faction'); });
 }
 
-async function report(btn) {
+export async function report(btn) {
   await guard(btn, async () => {
     const r = await act('world_quest_report', { p_quest: btn.dataset.qReport });
     invalidate('world_quest_board');
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.done ? 'reward' : 'confirm' }));
     const extra = r.done ? `<p class="hint good q-done">${icon('check', 14)} <b>퀘스트 완료</b> · 「${esc(r.quest_title)}」</p>`
-      : r.clues_open ? `<p class="hint accent">${icon('scroll', 14)} 이제 이 장의 단서를 탐색에서 찾을 수 있습니다. 모으면 일지 › 사건에서 가설을 확정하세요.</p>`
+      : r.clues_open ? `<p class="hint accent">${icon('scroll', 14)} 이제 이 장의 단서를 탐색에서 찾을 수 있습니다. 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>`
       : r.next ? `<p class="hint">${icon('chevron', 14)} 다음 · <b>${esc(r.next.title)}</b> — ${esc(r.next.goal)}</p>` : '';
     playDialogue({ title: `${r.quest_title} · ${r.title}`, lines: r.lines, cast: r.cast, reward: r.reward, extra }, null);
     return null;

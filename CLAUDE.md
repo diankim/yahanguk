@@ -348,6 +348,7 @@
 - 진행: 첫 장면 보고가 받기. 할 일(win m·r·rank / gather items·r / craft items·field / fish r / 그 밖은 세력 할 일 world_faction_task_count)은 지난 보고 뒤부터 world_events를 센다(world_quest_task_count). 도착(travel)은 지금 그곳에 있으면 마친 것. world_quest_report가 장소·할 일·넘길 물품(잠금·장착 마지막 하나 거절)·가방 자리를 확인하고 보상과 대사를 한 번에 준다. world_quest_board는 진행 중·받을 수 있는 것·세력 퀘스트를 한 번에 돌려준다(현장 퀘스트 칸 quests.js, 접기 yh-fold-quests).
 - 주 이야기: 장마다 mq_<장> 퀘스트의 장면을 다 보고해야 그 장 단서가 탐색에 나온다(world_quest_main_open, world_field_search). 장 마침은 그대로 world_story_combine(가설 확정)이고 결말 대사(epilogue)를 돌려준다. 6.0.0 전에 마친 장·단서를 찾은 장은 장면을 건너뛴 것으로 넣었다.
 - 보상 기준: 보조 퀘스트 경험치 합 = 0.4×xp_need(L)을 할 일·넘김이 있는 장면에 나누고 마지막 장면 전 5+4L, 주 이야기 장면 0.15×xp_need(L)·전 5+2L.
+- 일지(6.1.0, views/journal.js): 칸은 주 이야기·보조 퀘스트·의뢰·기록(답사·원정·요괴·채집·어종, 옛 주소 #/log/survey·history·codex·fish도 기록 칸으로). 주 이야기는 위 장 목록 단추를 누르면 그 장이 아래에 펼쳐지고 장면 순서(world_quest_journal: 모든 퀘스트의 상태 done·active·available·locked·장면 목록·지금 장면 할 일, 앞 퀘스트를 마치지 않은 보조 퀘스트는 수만 hidden) → 단서 → 가설 순이다. 마친 장면·장 결말은 world_quest_scene(p_quest, p_step, 0이면 결말)으로 다시 읽고 마치지 않은 장면은 서버가 내주지 않는다. 보조 퀘스트는 분야(cat의 「·」 앞: 전투·채집·제작·조사·낚시)별 접는 칸·상태 거르기·레벨/지역/이름 정렬. 장·거르기를 바꿀 때는 다시 읽지 않는다.
 - 바깥 지역마다 들머리(답사 첫 칸)에 「어귀의 …」 채집터 하나를 두고 모두 처음부터 찾은 것으로 한다(새 캐릭터는 trg_world_entry_spots). 「○○에서 채집」 할 일이 길을 찾기 전에도 진행되게.
 
 단순히 선택지 하나를 고르는 분기형 사건 화면은 사용하지 않는다(2026-10-26 라이브 테스트에서 제거). 사건은 지역에서 단서를 조사하고 조합하는 방식으로 진행한다.

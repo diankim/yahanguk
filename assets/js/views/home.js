@@ -253,7 +253,7 @@ function field(s, roster, blocked) {
 function fishPanel(blocked) {
   const f = fishSpot; if (!f) return '';
   const recent = (f.recent || []).slice(0, 3);
-  return `<section class="panel fish-panel"><header class="panel-head"><h2>${icon('leaf', 16)}낚시터 · ${esc(f.ground_name)}</h2><a class="btn small ghost" href="#/log/codex">도감 ${f.species_caught}/${f.species_total}</a></header>
+  return `<section class="panel fish-panel"><header class="panel-head"><h2>${icon('leaf', 16)}낚시터 · ${esc(f.ground_name)}</h2><a class="btn small ghost" href="#/log/fish">도감 ${f.species_caught}/${f.species_total}</a></header>
     <div class="panel-body">
       <p class="desc">${esc(f.description || '')}</p>
       <div class="fish-act">
