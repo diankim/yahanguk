@@ -6,9 +6,22 @@ sys.path.insert(0, HERE)
 import data_life as L
 
 J = lambda o: '$J$' + json.dumps(o, ensure_ascii=False, separators=(',', ':')) + '$J$::jsonb'
+U = lambda *k: 'g71/' + '/'.join(k)   # SQL에서 md5(키)::uuid로 바꾼다
+TA = lambda c: f"array(select jsonb_array_elements_text(x.{c}))"
 out = []
 w = out.append
 part = lambda f: w(open(os.path.join(HERE, f)).read())
+
+
+def bulk(table, rows, cols, conflict, upd, conv=None):
+    """rows(dict 목록)를 JSON 하나로 넘겨 한 번에 넣는다. cols: [(열, 타입)], conv: 열 → SQL 식"""
+    if not rows: return
+    conv = conv or {}
+    ins = [c for c, _ in cols if c != 'r']
+    sel = ', '.join(conv.get(c, 'x.' + c) for c in ins)
+    w(f"""insert into public.{table}({', '.join(ins)})
+select {sel} from jsonb_to_recordset({J(rows)}) as x({', '.join(c + ' ' + t for c, t in cols)})
+on conflict ({conflict}) do {('update set ' + ', '.join(f'{u} = excluded.{u}' for u in upd)) if upd else 'nothing'};""")
 
 w("""-- 7.1.0: 방어구 짝 능력치 · 능력치 나눠 두고 확정 · 생활 칸 셋 · 생활 장비 Lv40까지 · …
 -- 생성기: supabase/gen71/gen.py (손으로 고치지 말고 생성기를 고친 뒤 다시 만든다)
@@ -50,6 +63,12 @@ for i, t in L.RETRAIT.items():
     w(f"update public.world_item_catalog set equipment_traits = equipment_traits || {J(t)} where item_id = '{i}';")
 part('b_life.sql')
 part('c_pfight.sql')
+
+# ─── D. 새 지역·세력 배치·세력 겨루기 ───
+import data_regions as DR, regions as RG
+RG.emit(DR, w, J, bulk, TA, U, json.load(open(os.path.join(HERE, 'ref', 'existing_names.json')))['spots'])
+part('d_faction.sql')
+part('e_tourney.sql')
 
 w("""
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261102000000', now())

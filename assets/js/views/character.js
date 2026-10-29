@@ -545,24 +545,30 @@ const PERKS = {
 };
 const HOSTILE = { night_office: ['red_moon_cult', 'black_lotus'], red_moon_cult: ['night_office', 'north_league'], black_lotus: ['night_office', 'mandate_court'],
   north_league: ['red_moon_cult'], river_alliance: [], southern_remnant: ['mandate_court'], mandate_court: ['black_lotus'] };
+// 가입을 받는 곳(서버 world_faction_join_regions와 같음): 거점 · 본부 정청 · 그 세력의 들머리 지역. 가입은 레벨 5부터
+const JOIN_AT = { night_office: ['hq_yard', 'hq_dorm', 'ghost_bamboo'], red_moon_cult: ['red_moon_fort', 'hq_yard', 'bone_market', 'red_plain'], black_lotus: ['hidden_bazaar', 'hq_yard', 'lamp_alley'],
+  north_league: ['iron_monastery', 'hq_yard', 'snow_hollow'], river_alliance: ['river_ferry', 'hq_yard', 'salt_village'], southern_remnant: ['ember_village', 'hq_yard', 'ember_pass'],
+  mandate_court: ['star_observatory', 'hq_yard', 'hq_dorm', 'star_hill'] };
+const JOIN_LV = 5;
 const BASE = { night_office: 'hq_yard', red_moon_cult: 'red_moon_fort', black_lotus: 'hidden_bazaar', north_league: 'iron_monastery', river_alliance: 'river_ferry', southern_remnant: 'ember_village', mandate_court: 'star_observatory' };
 
 async function openFactionGuide(id) {
   const f = MAJOR_FACTIONS[id]; if (!f) return;
   const map = await load('world_map_snapshot', undefined, { maxAge: 30000 }).catch(() => null);
   const base = (map?.regions || []).find(r => r.region_id === BASE[id]), here = currentRegion(map), c = store.character;
-  const atBase = here?.region_id === BASE[id];
+  const atBase = (JOIN_AT[id] || [BASE[id]]).includes(here?.region_id);
+  const places = (JOIN_AT[id] || [BASE[id]]).map(r => (map?.regions || []).find(x => x.region_id === r)?.region_name || nameOf(r)).join('·');
   const m = openModal({ title: `${f.name} 가입 안내`, body: `<div class="faction-guide">
     <p class="desc">${esc(f.desc)}</p>
     <ol class="guide-steps">
       <li><b>거점으로 가기</b><span>${esc(base?.region_name || nameOf(BASE[id]))}${base ? ` · ${esc(base.territory_name || '')} · 레벨 ${base.min_level}부터` : ''}. 지도에서 목적지로 고르면 경유지를 거쳐 한 번에 이동합니다.</span></li>
-      <li><b>가입 조건 채우기</b><span>${esc(f.entry)}. 거점에 도착한 뒤 이 화면에서 「가입 신청」을 누르면 서버가 조건을 확인합니다.</span></li>
+      <li><b>가입 조건 채우기</b><span>레벨 ${JOIN_LV}부터. ${esc(f.entry)}. ${esc(places)} 가운데 한 곳에서 「가입 신청」을 누르면 서버가 조건을 확인합니다.</span></li>
       <li><b>한 세력만</b><span>대세력은 하나만 들 수 있습니다. 이미 다른 대세력에 들어 있다면 가입할 수 없습니다.</span></li>
     </ol>
     <dl class="kv"><div><dt>혜택</dt><dd>${esc(PERKS[id] || '')}</dd></div><div><dt>적대</dt><dd>${(HOSTILE[id] || []).map(x => esc(MAJOR_FACTIONS[x]?.name)).join(', ') || '없음'}</dd></div>
       <div><dt>지금 위치</dt><dd>${esc(c.location)}${atBase ? ' (거점에 있음)' : ''}</dd></div></dl>
     <p class="muted small">가입하면 전용 거점 콘텐츠·임무·세력 채팅을 쓸 수 있고, 적대 세력 지역에서는 견제를 받을 수 있습니다.</p>
-    <div class="btn-row">${atBase ? `<button class="btn primary" data-join-now="${id}">가입 신청</button>`
+    <div class="btn-row">${atBase && (c.level || 1) >= JOIN_LV ? `<button class="btn primary" data-join-now="${id}">가입 신청</button>` : atBase ? `<span class="hint">${icon('pin', 14)} 레벨 ${JOIN_LV}부터 가입할 수 있습니다.</span>`
       : base && !base.level_locked ? `<button class="btn primary" data-go="${BASE[id]}">${icon('route', 16)}<span>거점으로 출발</span></button>` : ''}
       <button class="btn" data-show="${BASE[id]}">${icon('map', 16)}<span>지도에서 보기</span></button></div></div>` });
   $('[data-go]', m)?.addEventListener('click', e => guard(e.currentTarget, async () => { const r = await act('world_travel_route', { p_region_id: BASE[id] }); closeModal(); return r; }));
@@ -655,7 +661,7 @@ async function faction(body) {
       ${supplied ? `<p class="muted small">다음 보급: ${store.hud.supply.next_at ? new Date(store.hud.supply.next_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '내일'}</p>` : ''}`, { ico: 'flag' })}
     ${major ? '' : panel('대세력', `<p class="desc">대세력은 세계의 큰 흐름을 이끄는 조직입니다. 가입하면 전용 거점·임무·보상과 세력 채팅을 이용할 수 있습니다. 가입하려면 그 세력의 거점까지 직접 가야 합니다.</p>
         <div class="faction-grid">${Object.entries(MAJOR_FACTIONS).map(([k, f]) => {
-          const at = here?.region_id === BASE[k];
+          const at = (JOIN_AT[k] || [BASE[k]]).includes(here?.region_id);
           return `<article class="faction">
           <header><b>${esc(f.name)}</b>${chip(f.type)}</header><p>${esc(f.desc)}</p><small class="accent">${esc(PERKS[k] || '')}</small><small class="muted">가입 조건: ${esc(f.entry)} · 거점 ${esc(nameOf(f.base))}</small>
           <div class="join-row" id="jr-${k}"><button class="btn small ${at ? 'primary' : ''}" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
@@ -665,10 +671,10 @@ async function faction(body) {
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
   $$('[data-join]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.join, row = $(`#jr-${k}`, body);
-    if (here?.region_id !== BASE[k]) {
-      // 거점 밖: 짧은 안내와 함께 가이드 버튼을 바로 옆에 둔다
+    if ((store.character?.level || 1) < JOIN_LV || !(JOIN_AT[k] || [BASE[k]]).includes(here?.region_id)) {
+      // 가입할 수 없는 곳·레벨: 짧은 안내와 함께 가이드 버튼을 바로 옆에 둔다
       row.querySelector('.join-msg')?.remove();
-      row.insertAdjacentHTML('beforeend', `<p class="join-msg hint">${icon('pin', 14)} ${esc(nameOf(BASE[k]))}에 가야 가입할 수 있습니다.</p>`);
+      row.insertAdjacentHTML('beforeend', `<p class="join-msg hint">${icon('pin', 14)} ${(store.character?.level || 1) < JOIN_LV ? `레벨 ${JOIN_LV}부터 가입할 수 있습니다.` : `${esc((JOIN_AT[k] || [BASE[k]]).map(r => nameOf(r)).join('·'))} 가운데 한 곳에서 가입할 수 있습니다.`}</p>`);
       return;
     }
     if (await ask(`${MAJOR_FACTIONS[k].name}에 가입할까요? 대세력은 하나만 들 수 있습니다.`, { title: '대세력 가입', ok: '가입하기' })) guard(b, () => act('world_join_major_faction', { p_faction_id: k }));

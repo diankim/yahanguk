@@ -1635,6 +1635,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ns-1026 { --ns: #f2924a; } [data-tone=light] .ns-1026 { --ns: #ad4f0e; }
 .ns-1027 { --ns: #9ab8f4; } [data-tone=light] .ns-1027 { --ns: #3a55a0; }
 .ns-1028 { --ns: #5fc4c9; } [data-tone=light] .ns-1028 { --ns: #1f6f74; }
+.ns-1029 { --ns: #e8c25a; } [data-tone=light] .ns-1029 { --ns: #8a6510; }
+.ns-1030 { --ns: #e07b8a; } [data-tone=light] .ns-1030 { --ns: #9b2f4a; }
 /* 야행묵금(레거시): 마름모 대신 작은 「痕」, 이름 아래 붉은 붓 한 획 */
 .chat-list li.msg.ns-1016 .meta b, .card-name.ns-1016, .hue-preview.ns-1016 b, .hue-pick.ns-1016 { font-family: var(--font-serif, serif);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C20 2 45 3 70 4S95 5 99 2L99 4C90 7 60 7 35 6.5S8 7 1 5z' fill='%23b0263a'/%3E%3C/svg%3E") no-repeat left bottom / 100% 4px; padding-bottom: 3px; }
