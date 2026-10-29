@@ -1098,6 +1098,14 @@ on conflict (note_id) do update set title = excluded.title, body = excluded.body
 --   기본 능력치 합은 전과 같은 30(전에는 모두 5). 기존 캐릭터는 새 기본값 + 지금까지 직접 찍은 몫(능력치 − 5)으로 다시 셈하고,
 --   한 능력치 상한(직업 기본값 + 레벨×1.5)을 넘는 몫은 포인트로 돌려준다.
 
+-- 이 묶음이 고치는 함수의 주인 역할(제작·장착·거래소·캐릭터 생성·원정 마침)
+grant fn_owner_18452 to postgres with inherit true, set true; -- world_craft_item
+grant fn_owner_18453 to postgres with inherit true, set true; -- world_equip_item
+grant fn_owner_18879 to postgres with inherit true, set true; -- world_trade_offer_create
+grant fn_owner_18881 to postgres with inherit true, set true; -- world_trade_offer_buy
+grant fn_owner_19111 to postgres with inherit true, set true; -- world_create_character_v2
+grant fn_owner_expedition to postgres with inherit true, set true; -- world_expedition_finish
+
 create or replace function public.world_job_base(p_job text)
 returns jsonb language sql immutable set search_path to 'pg_catalog' as $$
   select case p_job
