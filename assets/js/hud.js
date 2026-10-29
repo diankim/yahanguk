@@ -123,16 +123,19 @@ function render() {
   const items = statusItems(c);
   const need = xpNeed(c.level);
   const first = items[0];
-  // 나쁜 상태가 있으면 접힌 띠의 이름 옆에 디버프 색 점을 깜빡여 알린다(제보 17)
-  const badN = yohwaOf(state.hud?.statuses).rest.filter(x => x.polarity !== 'positive').length;
+  // 상태 칸 10개를 접힌 띠 오른쪽에 작은 점으로(나쁜 상태는 깜빡이는 빨강·이로운 상태 초록·빈칸, 제보 17)
+  const rest = yohwaOf(state.hud?.statuses).rest;
+  const badN = rest.filter(x => x.polarity !== 'positive').length, goodN = Math.min(10 - Math.min(10, badN), rest.length - badN);
+  const slots = Array.from({ length: 10 }, (_, i) => i < badN ? 'bad' : i < badN + goodN ? 'good' : '');
   $('#hud-strip', root).innerHTML = `
-    <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}${badN ? `<i class="hs-bad-dot" role="img" aria-label="나쁜 상태 ${badN}개" title="나쁜 상태 ${badN}개"></i>` : ''}</b><small>Lv.${c.level}</small></span>
+    <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
-    ${(() => { const yo = yohwaOf(state.hud?.statuses), bad = yo.rest.filter(x => x.polarity !== 'positive').length;
-      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa seal">봉인</span>' : ''}${bad ? `<span class="hs-debuff">${icon('flame', 12)}${bad}</span>` : ''}`; })()}
+    ${(() => { const yo = yohwaOf(state.hud?.statuses);
+      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa seal">봉인</span>' : ''}`; })()}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
+    <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개" title="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
     <span class="hs-caret">${icon('chevron', 14)}</span>`;
   const body = $('#hud-body', root);
   body.innerHTML = `
