@@ -9,6 +9,7 @@ import { SLOTS } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
+import { showLetter } from '../lore.js';
 
 const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot']];
 const STATS = [
@@ -414,7 +415,7 @@ async function titles(body) {
       ${!t.earned && t.progress ? (() => { const cur = Number(t.progress.cur) || 0, need = Math.max(1, Number(t.progress.need) || 1);
         return `<div class="t-prog">${bar(cur, need, 'xp')}<small>${t.progress.pct ? `${Math.round(cur / need * 100)}%` : `${fmt.num(cur)} / ${fmt.num(need)}`}</small></div>`; })() : ''}
       ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
-        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button></div>` : ''}</li>`; };
+        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button>${RAID_ON && t.hidden ? `<button class="btn ghost" data-story="${esc(t.key)}">유래</button>` : ''}</div>` : ''}</li>`; };
   const paint = () => {
     const q = tq.trim().toLowerCase();
     const rows = list.filter(t => (!tOwned || t.earned) && (!tEquipped || t.equipped)
@@ -429,6 +430,12 @@ async function titles(body) {
       return { content: r?.equipped ? '칭호를 장착했습니다. (3개를 넘으면 가장 오래된 칭호가 내려갑니다)' : '칭호를 내렸습니다.' };
     }));
     $$('[data-disp]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_set_display', { p_title_key: b.dataset.disp || null })));
+    // 숨김 칭호 유래(6.1.1): 그 칭호를 두고 이야기 속 인물이 하는 말
+    $$('[data-story]', body).forEach(b => b.onclick = () => guard(b, async () => {
+      const r = await rpc('world_title_story', { p_title: b.dataset.story });
+      if (!r?.lines?.length) { toast('이 칭호의 유래는 아직 전해지지 않았습니다.'); return null; }
+      (await import('../factionquest.js')).playDialogue({ title: r.title, lines: r.lines, cast: r.cast }, null); return null;
+    }));
   };
   bindPresets(body, snap);
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
@@ -593,7 +600,7 @@ async function faction(body) {
           <div class="join-row" id="jr-${k}"><button class="btn small ${at ? 'primary' : ''}" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
     ${board ? boardPanel(board) : ''}`;
   $$('[data-fpop]', body).forEach(b => b.onclick = () => openPop(b.dataset.fpop));
-  const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; return r; });
+  const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; if (r?.letter) showLetter(r.letter); return r; });
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
   $$('[data-join]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.join, row = $(`#jr-${k}`, body);

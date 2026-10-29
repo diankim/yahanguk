@@ -1,7 +1,8 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS } from '../core.js';
+import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON } from '../core.js';
+import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip } from './common.js';
 
 export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
@@ -125,6 +126,7 @@ function draw(box, id, inv, prices, mode) {
     <div class="chips">${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${chip(nameOf(it?.rarity || 'common'), 'rar')}
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
+    <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
       <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small></dd></div>
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
@@ -154,6 +156,8 @@ function draw(box, id, inv, prices, mode) {
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   fillSources(box, id);
+  // 물품 내력(6.1.1, 서버 world_lore_bundle)
+  loreBundle().then(l => { const p = $('[data-lore]', box); if (p && l.items?.[id]) { p.textContent = l.items[id]; p.hidden = false; } });
   box.onclick = async e => {
     const r = e.target.closest('[data-recipe]'), mat = e.target.closest('[data-mat]'), d = e.target.closest('[data-do]');
     if (r || mat) {
@@ -207,6 +211,6 @@ function openResetIdentity() {
     const job = $('input[name=rj]:checked', m)?.value, fac = $('input[name=rf]:checked', m)?.value;
     if (!job || !fac) return toast('직업과 소속을 고르세요.', 'error');
     if (!(await ask(`${JOBS[job]?.name} · ${FACTIONS[fac]?.name}(으)로 다시 시작할까요? 서첩 하나를 쓰고, 되돌릴 수 없습니다.`, { title: '환골탈태', ok: '다시 시작' }))) return;
-    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac }); closeModal(); return out; });
+    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac }); closeModal(); if (RAID_ON) rebirthScene(job, fac); return out; });
   };
 }

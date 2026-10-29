@@ -1932,3 +1932,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 b.sealed { color: var(--bad); }
 .chat-notice.sys.seal .ico { color: var(--warn); }
 .coop-list li small + small { margin-top: 2px; }
+/* 6.1.1 세계관 글: 물품 내력·지역 기록·요괴 목격담 */
+.item-lore { margin: 4px 0 8px; padding-left: 10px; border-left: 2px solid var(--gold); color: var(--muted); font-size: 12.5px; line-height: 1.55; font-family: var(--font-serif); }
+.lore-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lore-list li { display: grid; gap: 3px; } .lore-list li b { font-size: 14px; } .lore-list li p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.witness { display: grid; gap: 4px; margin: 4px 0 8px; }
+.w-line { margin: 0; font-size: 12.5px; line-height: 1.5; } .w-line b { color: var(--gold); margin-right: 4px; } .w-line.locked { color: var(--muted); opacity: .75; display: flex; gap: 4px; align-items: center; }

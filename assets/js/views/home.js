@@ -15,6 +15,7 @@ import { sceneArt } from '../scenery.js';
 import { checklistHtml, noteRegion } from '../tutorial.js';
 import { questBox, fillQuests } from '../quests.js';
 import { raidBand, fillRaidBand } from './raid.js';
+import { regionIntro } from '../lore.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -77,6 +78,8 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     noteRegion(s.region);
+    // 지역 첫 방문 글(6.1.1): 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
+    if (!traveling) regionIntro(s.region?.region_id);
     el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     bind(s);
     // 퀘스트 칸은 따로 읽어 채운다(15초 동안 다시 씀, 보고 뒤에는 새로 읽음)

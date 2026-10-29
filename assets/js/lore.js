@@ -1,7 +1,7 @@
 // 세계관 안내: 야행국 소개 · 직업 이야기 · 소속 이야기. 캐릭터 생성 화면(app.js)과 도움말(guide.js)이 함께 쓴다.
 // 수치(효과·능력치·시작 장비)는 core.js JOBS·FACTIONS가 원본이고, 여기는 이야기와 역할 설명만 둔다.
 // 유리한 요괴 갈래는 서버 world_monster_kinds.job_key, 덜 듣는 갈래는 그 무기 배율이 0.8 이하인 것을 적었다.
-import { JOBS, FACTIONS, esc } from './core.js';
+import { JOBS, FACTIONS, esc, rpc, RAID_ON } from './core.js';
 
 export const WORLD_PRIMER = {
   title: '야행국(夜行局)',
@@ -166,3 +166,31 @@ export function affilLoreHtml(key) {
     <div class="lore-rows">${row('있는 곳', esc(l.place))}${row('하는 일', esc(l.work))}${row('어울리는 사람', esc(l.fits))}${row('소속 효과', esc(f.desc.replace(/^[^.]*\.\s*/, '')))}</div></article>`;
 }
 export const primerHtml = () => `<div class="lore-primer">${WORLD_PRIMER.lines.map(p => `<p>${esc(p)}</p>`).join('')}</div>`;
+
+/* ── 6.1.1 서버 세계관 글: 물품 내력·요괴 목격담(접속 동안 한 번 읽음) · 지역 첫 방문 · 칭호 유래 ─────── */
+let bundleP = null;
+export const loreBundle = () => RAID_ON ? (bundleP ||= rpc('world_lore_bundle').catch(() => { bundleP = null; return { items: {}, witness: {} }; })) : Promise.resolve({ items: {}, witness: {} });
+// 지역에 처음 들어가면 그곳의 내력을 대화창으로 한 번 보인다(서버가 다녀간 지역을 기억해 두 번 보이지 않는다)
+const asked = new Set();
+export async function regionIntro(regionId) {
+  if (!RAID_ON || !regionId || asked.has(regionId)) return;
+  asked.add(regionId);
+  try {
+    const r = await rpc('world_region_intro', { p_region: regionId });
+    if (r?.lines?.length) (await import('./factionquest.js')).playDialogue({ title: r.title, lines: r.lines, cast: {},
+      extra: `<p class="muted small">일지 › 기록 › 지역에 남겼습니다.</p>` }, null);
+  } catch {}
+}
+// 소속 보급 편지 · 환골탈태 장면: 대화창으로 보인다
+export async function showLetter(letter) {
+  if (!letter?.lines?.length) return;
+  (await import('./factionquest.js')).playDialogue({ title: letter.title, lines: letter.lines, cast: {} }, null);
+}
+export async function rebirthScene(job, affil) {
+  const j = JOBS[job]?.name || '', f = FACTIONS[affil]?.name || '';
+  (await import('./factionquest.js')).playDialogue({ title: '배속 변경', cast: { 'q:m_yeon': { name: '사건 서기관 연서희' } }, lines: [
+    { s: null, t: '정청 서기관 책상 위에 환골탈태 서첩이 펼쳐진다. 붓이 이름 옆 두 칸을 지우고 새로 적는다.' },
+    { s: 'q:m_yeon', t: `${j}, 그리고 ${f}. 이렇게 적어 둘게요.` },
+    { s: 'q:m_yeon', t: '배속이 바뀌어도 장부 맨 앞의 이름은 그대로예요. 당신이 걸어온 밤도 그대로고요.' },
+    { s: 'q:m_yeon', t: '새 자리에서도 돌아오기만 하면 돼요. 그게 제일 중요해요.' }] }, null);
+}

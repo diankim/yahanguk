@@ -1,13 +1,14 @@
 // 일지: 퀘스트를 보는 곳. 주 이야기(장마다 장면 → 단서 → 가설) · 보조 퀘스트(분야별) · 상시 의뢰 · 기록(답사·원정·도감).
 // 마친 장면과 장 결말은 다시 읽을 수 있다(world_quest_scene). 진행 판정은 서버(world_quest_journal·world_quest_report)가 한다.
-import { store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar } from '../core.js';
+import { store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON } from '../core.js';
+import { loreBundle } from '../lore.js';
 import { load, panel, chip, loading, errorBox, currentRegion } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report } from '../quests.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
-const REC = [['survey', '답사', 'map'], ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
+const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
 let el, sub = 'story', rec = 'survey', off = [];
 
 export async function render(root, s) {
@@ -137,7 +138,7 @@ function regional(r) {
 }
 
 /* ── 보조 퀘스트: 분야별로 나눠 보고, 상태로 거르고, 정렬한다 ───────────── */
-const FIELDS = [['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye']];
+const FIELDS = [['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye']];
 const STATUS = [['', '전체'], ['active', '진행 중'], ['available', '받을 수 있음'], ['done', '마침'], ['locked', '레벨 부족']];
 const STATUS_N = { active: ['진행 중', 'accent'], available: ['받을 수 있음', 'ok'], done: ['마침', ''], locked: ['레벨 부족', 'bad'] };
 const SORTS = { level: (a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'),
@@ -210,7 +211,7 @@ async function record(body) {
   body.innerHTML = `${segmented('rec-sub', REC, rec)}<div id="rec-body">${loading()}</div>`;
   bindSegmented(body, 'rec-sub', k => { rec = k; window.history.replaceState(null, '', `#/log/${k}`); record(body); });
   const box = $('#rec-body', body);
-  try { await ({ survey, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[rec](box); }
+  try { await ({ survey, lore: regionLore, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[rec](box); }
   catch (e) { box.innerHTML = errorBox(e.message); }
 }
 
@@ -228,6 +229,16 @@ async function survey(body) {
         ${r.safe_zone ? chip('상점·거래소', 'ok') : `<div class="sv-bar">${bar(r.progress, 100, 'xp')}<span>${r.progress}%</span></div>`}
         ${goButton(r.region_id, map)}</li>`).join('')}</ul>`, { cls: 'compact' })).join('')}`;
   bindGo(body);
+}
+
+/* ── 지역 기록(6.1.1): 처음 들어갈 때 본 지역의 내력 ─────────────────── */
+async function regionLore(body) {
+  const list = await load('world_region_lore_seen');
+  const groups = {};
+  (list || []).forEach(r => (groups[r.territory || '기타'] ||= []).push(r));
+  body.innerHTML = (list || []).length ? `<p class="desc">처음 들어간 지역의 내력이 여기에 남습니다. 아직 가 보지 않은 곳은 비어 있습니다.</p>
+    ${Object.entries(groups).map(([t, l]) => panel(`${t} · ${l.length}곳`, `<ul class="lore-list">${l.map(r => `<li><b>${esc(r.region_name)}</b>${(r.lines || []).map(x => `<p>${esc(x.t)}</p>`).join('')}</li>`).join('')}</ul>`, { ico: 'map', cls: 'compact' })).join('')}`
+    : empty('아직 남긴 지역 기록이 없습니다. 새 지역에 들어가면 그곳의 내력이 적힙니다.', 'scroll');
 }
 
 /* ── 원정 기록 ─────────────────────────────────────────── */
@@ -262,7 +273,7 @@ async function monsterCodex(box) {
     <div class="codex-head"><p class="desc">요괴는 열세 갈래로 나뉘고, 갈래마다 잘 듣는 무기(근접·원거리·술법)와 유리한 직업이 있습니다. 만난 요괴는 기본 정보가, 한 번 쓰러뜨린 요괴는 상성·기믹 파훼법·전리품이 적힙니다.</p>
       <div class="chips">${chip(`만남 ${seen}/${all.length}`, '')}${chip(`토벌 ${got}/${all.length}`, 'accent')}</div>${bar(got, all.length || 1, 'xp')}</div>
     <div class="chips kind-chips"><button class="chip ${cxKind ? '' : 'on'}" data-kind="">전체</button>${kinds.map(k => `<button class="chip ${cxKind === k.key ? 'on' : ''}" data-kind="${esc(k.key)}">${esc(k.name)} <small>${k.defeated}/${k.total}</small></button>`).join('')}</div>
-    ${cxKind ? `<p class="muted small">${esc(kinds.find(k => k.key === cxKind)?.desc || '')}</p>` : ''}
+    ${cxKind ? `<p class="muted small">${esc(kinds.find(k => k.key === cxKind)?.desc || '')}</p><div class="witness" data-witness></div>` : ''}
     <ul class="mon-grid">${list.map(m => m.known ? `<li class="mon-card ${m.defeated > 0 ? 'done' : ''}">
         <div class="mon-top"><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}</div>
         <small>${esc(kname[m.kind] || '')} · ${esc(m.region)} · Lv.${m.level}–${m.max_level}</small>
@@ -276,6 +287,10 @@ async function monsterCodex(box) {
       </li>` : `<li class="mon-card unknown"><b>???</b><small>${esc(kname[m.kind] || '')} · ${esc(m.region)}${m.role === 'guardian' ? ' · 우두머리' : ''}</small><small>아직 만나지 못했습니다</small></li>`).join('')}</ul>
     ${codexTitles(o.titles)}`;
   $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
+  // 목격담(6.1.1): 그 갈래를 1·10마리 쓰러뜨리면 이야기 속 인물의 한마디가 열린다
+  const wb = $('[data-witness]', box);
+  if (wb) loreBundle().then(l => { const k = kinds.find(x => x.key === cxKind), n = Number(k?.defeated) || 0, arr = l.witness?.[cxKind] || [];
+    wb.innerHTML = arr.map(w => n >= w.need ? `<p class="w-line"><b>${esc(w.name)}</b> 「${esc(w.t)}」</p>` : `<p class="w-line locked">${icon('help', 12)} 이 갈래를 ${w.need}마리 쓰러뜨리면 열리는 목격담</p>`).join(''); });
 }
 const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
 async function gatherCodex(box) {
