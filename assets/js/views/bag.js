@@ -2,7 +2,7 @@
 import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRows, bindRepair, enhancedTraits } from './character.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, useItem } from './item.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem } from './item.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -17,7 +17,7 @@ const craftFields = new Set();
 // 만드는 것(장착 부위·소모품·재료)으로 거르기, 제작법 정렬(가능 먼저 · 레벨 낮은순 · 레벨 높은순)
 const craftKinds = new Set();
 let craftSort = 'can';
-const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '도구', consumable: '소모품', material: '재료', etc: '기타' };
+const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', consumable: '소모품', material: '재료', etc: '기타' };
 // 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
 const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
   name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '신품 먼저', '범품 먼저'] };
@@ -119,7 +119,7 @@ async function equip(body, inv) {
   const enh = Number(prof?.current?.weapon?.enhance) || 0;
   const slots = Object.keys(SLOTS).map(slot => {
     const cur = eq[slot], it = cmap.get(cur);
-    const options = (inv.catalog || []).filter(i => i.category === slot && Number(have[i.id]) > 0 && i.id !== cur);
+    const options = (inv.catalog || []).filter(i => slotOf(i) === slot && Number(have[i.id]) > 0 && i.id !== cur);
     return panel(SLOTS[slot][0], `
       ${cur ? `<div class="equip-cur"><b>${esc(nameOf(cur))}${slot === 'weapon' && enh ? ` <span class="enh-lv">+${enh}</span>` : ''}</b>${it?.tier ? chip(`${it.tier}단계`) : ''}${traits(it, slot === 'weapon' ? enh : 0)}</div>` : `<p class="muted">비어 있음</p>`}
       ${options.length ? `<ul class="spot-list">${options.map(o => {
@@ -128,7 +128,7 @@ async function equip(body, inv) {
         return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${reqs ? `<small class="reqs">장착 조건 ${reqs}</small>` : ''}</div>
           <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">교체할 수 있는 물품이 없습니다.</p>`}`, { ico: SLOTS[slot][1], cls: 'compact' });
   }).join('');
-  body.innerHTML = `${panel('장착 중인 장비', equipRows(inv, prof, here), { ico: 'shield' })}<h3 class="sub-h">바꿔 낄 장비</h3><div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 도구는 채집량을 늘립니다. 같은 단계라도 장비마다 갈래가 달라(위력·치명타·회피·방어·이목 등) 무엇을 끼느냐에 따라 캐릭터가 다르게 자랍니다. <b>이목</b>이 높으면 함께 싸울 때 요괴가 먼저 노립니다 — 앞을 막는 이는 높이고, 뒤에서 치는 이는 낮추세요.</p>`;
+  body.innerHTML = `${panel('장착 중인 장비', equipRows(inv, prof, here), { ico: 'shield' })}<h3 class="sub-h">바꿔 낄 장비</h3><div class="grid-2">${slots}</div><p class="muted small">무기 종류가 공격 방식을 정합니다: 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법. 요괴마다 잘 통하는 방식이 다릅니다. 방어구는 받는 피해를 줄이고, 생활 칸은 채집(채집도·곡괭이·낫·등)·탐사(나침반)·낚시(낚싯대) 셋입니다. 제작 공구는 가방에 있으면 됩니다. 같은 단계라도 장비마다 갈래가 달라(위력·치명타·회피·방어·이목 등) 무엇을 끼느냐에 따라 캐릭터가 다르게 자랍니다. <b>이목</b>이 높으면 함께 싸울 때 요괴가 먼저 노립니다 — 앞을 막는 이는 높이고, 뒤에서 치는 이는 낮추세요.</p>`;
   bindActions(body); bindRepair(body);
 }
 function traits(it, n = 0) {
@@ -146,7 +146,7 @@ function craft(body, inv, stg) {
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id)); // 요리·손질 결과물
   const cmap = catalogMap(inv);
-  const kindOf = r => { const it = cmap.get(r.output); if (!it) return 'etc'; if (SLOTS[it.category]) return it.category; const k = catOf(it); return k === 'consumable' || k === 'material' ? k : 'etc'; };
+  const kindOf = r => { const it = cmap.get(r.output); if (!it) return 'etc'; if (SLOTS[slotOf(it)]) return slotOf(it); const k = catOf(it); return k === 'consumable' || k === 'material' ? k : 'etc'; };
   const lvOf = x => Number(x.r.minimum_level) || 1, tierOf = x => Number(cmap.get(x.r.output)?.tier) || 0;
   const byLv = (a, b) => lvOf(a) - lvOf(b) || tierOf(a) - tierOf(b) || (a.r.difficulty || 0) - (b.r.difficulty || 0) || String(a.r.name).localeCompare(String(b.r.name), 'ko');
   const SORTS = { can: (a, b) => b.can - a.can || b.atLoc - a.atLoc || byLv(a, b), lv: byLv, lvd: (a, b) => byLv(b, a) };

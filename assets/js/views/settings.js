@@ -1,6 +1,6 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
 import { ask, db, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
-import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile } from '../settings.js';
+import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile, FONT_SIZES, savedFontSize, applyFontSize } from '../settings.js';
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
@@ -71,6 +71,8 @@ export async function render(root, sub) {
       </div>`, { ico: 'idcard' })}
     </section>
     <section id="sec-theme" class="set-sec">
+      ${panel('글자 크기', `<p class="muted small">이 기기에만 남고 바로 바뀝니다(저장 단추와 상관없음).</p>
+        <div class="fz-row" role="radiogroup" aria-label="글자 크기">${FONT_SIZES.map(([k, n, z]) => `<button type="button" class="btn ${savedFontSize() === k ? 'primary' : ''}" data-fz="${k}" role="radio" aria-checked="${savedFontSize() === k}"><span style="font-size:${Math.round(14 * z * 10) / 10}px">가</span><small>${n}</small></button>`).join('')}</div>`, { ico: 'scroll' })}
       ${panel('테마', `<p class="muted small">고르면 바로 미리 보입니다. 저장해야 다음 접속에도 남습니다.</p>
         <div class="theme-grid">${THEMES.map(t => themeCard(t, t.id === draft.theme)).join('')}</div>
         <h3 class="sub-h">직접 설정</h3>
@@ -162,6 +164,8 @@ export async function render(root, sub) {
     if (col) { draft.color = col.dataset.col; touch(); drawProfile(); }
     if (th) { draft.theme = th.dataset.themeId; applyTheme(draft.theme, false); markTheme(); touch(); }
     if (tr) playSfx(tr.dataset.try);
+    const fz = e.target.closest('[data-fz]');
+    if (fz) { applyFontSize(fz.dataset.fz); $$('[data-fz]', el).forEach(x => { const on = x === fz; x.classList.toggle('primary', on); x.setAttribute('aria-checked', String(on)); }); }
   });
   $('#pf-bio', el).oninput = () => { draft.bio = $('#pf-bio', el).value; touch(); };
   $('#pf-title', el).onchange = () => { draft.title = $('#pf-title', el).value; touch(); };

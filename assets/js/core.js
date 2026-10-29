@@ -129,6 +129,7 @@ const FIXED = {
   magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '수련 경험치',
   action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
+  supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',
   presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   // 서식지
   river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
@@ -194,7 +195,7 @@ const ICONS = {
   coin: 'M12 21a9 9 0 100-18 9 9 0 000 18zM9 12h6M12 9v6',
   token: 'M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z',
   pin: 'M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12zM12 11a2 2 0 100-4 2 2 0 000 4z',
-  plus: 'M12 5v14M5 12h14', minus: 'M5 12h14', target: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 16a4 4 0 100-8 4 4 0 000 8zM12 12h.01',
+  plus: 'M12 5v14M5 12h14', minus: 'M5 12h14', fish: 'M3 12c3-5 9-6 13-2l4-3v10l-4-3c-4 4-10 3-13-2zM8 11h.01', compass: 'M12 21a9 9 0 100-18 9 9 0 000 18zM15 9l-2 4-4 2 2-4z', target: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 16a4 4 0 100-8 4 4 0 000 8zM12 12h.01',
   close: 'M6 6l12 12M18 6L6 18', check: 'M5 12l5 5L20 7', chevron: 'M9 6l6 6-6 6', back: 'M15 6l-6 6 6 6',
   search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4', flame: 'M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-5 5-5 8-1-1-2-2-2-4-2 2-2 5-2 8 0 4 3 7 7 7z',
   moon: 'M20 14A8 8 0 1110 4a7 7 0 0010 10z', users: 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M17 11a3 3 0 000-6M22 21a6 6 0 00-4-5.7',

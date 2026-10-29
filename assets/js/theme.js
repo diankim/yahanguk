@@ -68,7 +68,16 @@ export function applyTheme(id, save = true, custom) {
   if (save) try { localStorage.setItem('yh-theme', t.id); if (custom) localStorage.setItem('yh-theme-custom', JSON.stringify(custom)); } catch {}
 }
 export function savedThemeId() { try { return localStorage.getItem('yh-theme') || 'yahang'; } catch { return 'yahang'; } }
-export function applySavedTheme() { applyTheme(savedThemeId(), false); }
+export function applySavedTheme() { applyTheme(savedThemeId(), false); applyFontSize(savedFontSize(), false); }
+// 글자 크기 다섯 단계(기기에 남김): 글자만 키우고 줄이며 단추·칸 크기는 그대로다. 터치 화면 입력칸은 16px 아래로 내려가지 않는다
+export const FONT_SIZES = [['xs', '아주 작게', 0.85], ['s', '작게', 0.92], ['m', '보통', 1], ['l', '크게', 1.1], ['xl', '아주 크게', 1.22]];
+export function savedFontSize() { try { return localStorage.getItem('yh-fz') || 'm'; } catch { return 'm'; } }
+export function applyFontSize(k, save = true) {
+  const f = FONT_SIZES.find(x => x[0] === k) || FONT_SIZES[2];
+  document.documentElement.style.setProperty('--fz', String(f[2]));
+  document.documentElement.dataset.fz = f[0];
+  if (save) try { localStorage.setItem('yh-fz', f[0]); } catch {}
+}
 export function themeCard(t, on) {
   return `<button class="theme-card ${on ? 'on' : ''}" data-theme-id="${t.id}" style="--tb:${t.c[0]};--ts:${t.c[1]};--tl:${t.c[3]};--tt:${t.c[4]};--ta:${t.c[6]};--tg:${t.c[8]};--tr:${t.r}px;--tf:${t.font === 'sans' ? 'var(--font-sans)' : 'var(--font-serif)'}">
     <span class="tc-preview"><i></i><i></i><i></i><em>가</em></span><b>${esc(t.name)}</b><small>${esc(t.desc)}</small></button>`;

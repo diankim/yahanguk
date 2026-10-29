@@ -122,7 +122,7 @@ export function bindRepair(root) {
 }
 // 빈 칸에 무엇을 끼우면 좋은지
 const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
-  norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집에 필요합니다' };
+  norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집량·채집터 덤', explore: '나침반: 숨은 길·채집터를 더 잘 찾음', fishing: '낚싯대: 비워 두면 가방의 가장 좋은 것을 씀' };
 async function hereZone() {
   const z = await safeZones().catch(() => null), c = store.character;
   return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
@@ -210,18 +210,28 @@ function previewText(cur, next) {
 // 능력치 하나의 상한(서버 world_stat_cap과 같은 식)
 // 직업마다 기본 능력치가 달라 상한도 능력치마다 다르다(world_stat_cap_of = 직업 기본값 + 레벨×1.5)
 const statCap = (lv, k, job) => (JOBS[job]?.base?.[k] ?? 5) + Math.floor(Math.max(1, Number(lv) || 1) * 1.5);
+// 화면에서 나눈 점수(확정 전): 캐릭터마다 sessionStorage에 남긴다
+const allocKey = c => `yh-alloc-${c?.owner_id || c?.character_name || ''}`;
+const allocSum = a => Object.values(a || {}).reduce((x, y) => x + (Number(y) || 0), 0);
+function loadAlloc(c) { try { const a = JSON.parse(sessionStorage.getItem(allocKey(c)) || '{}'); return a && typeof a === 'object' ? a : {}; } catch { return {}; } }
+function saveAlloc(c, a) { try { allocSum(a) ? sessionStorage.setItem(allocKey(c), JSON.stringify(a)) : sessionStorage.removeItem(allocKey(c)); } catch { /* 저장 못 해도 화면은 그대로 */ } }
 async function growth(body) {
   // 능력치를 올렸을 때 바뀔 값(plus_one)은 서버가 7번 계산하므로 쓸 포인트가 있을 때만 받는다
   const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', Number(store.character?.stat_points || 0) > 0 ? { p_preview: true } : undefined, { maxAge: 60000 }).catch(() => null)]);
   const c = store.character, pts = Number(c.stat_points || 0), cur = prof?.current;
+  // 남은 포인트·상한을 넘는 몫은 버린다(다른 기기에서 썼거나 세심단을 쓴 뒤)
+  let pend = {}, room = pts;
+  Object.entries(loadAlloc(c)).forEach(([k, v]) => { if (!STATS.some(x => x[0] === k)) return; const n = Math.max(0, Math.min(Number(v) || 0, room, statCap(c.level, k, c.job_key) - c[k])); if (n) { pend[k] = n; room -= n; } });
   const sp = c.skill_progress || {}, bestOf = cats => { const k = cats.reduce((a, x) => (sp[x]?.rank || 1) > (sp[a]?.rank || 1) ? x : a, cats[0]); return `가장 높은 기술: ${SKILL_NAME[k] || nameOf(k)}`; };
   const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)]), ['요리', c.cooking_rank, `${fmt.num(c.cooking_xp)} 경험`]];
   body.innerHTML = `
     <div class="grid-2">
-      ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
-        <ul class="stat-list">${STATS.map(([k, n, d]) => `<li><div><b>${n} <span class="stat-val">${fmt.num(c[k])}</span> <small class="muted">/ ${statCap(c.level, k, c.job_key)}</small></b><small>${d}</small>
+      ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent" id="al-left">${pts - allocSum(pend)}</b> / ${pts} · + / − 로 나눈 뒤 「확정」을 눌러야 반영됩니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
+        <ul class="stat-list">${STATS.map(([k, n, d]) => `<li><div><b>${n} <span class="stat-val">${fmt.num(c[k])}</span><em class="al-add" data-add="${k}">${pend[k] ? ` +${pend[k]}` : ''}</em> <small class="muted">/ ${statCap(c.level, k, c.job_key)}</small></b><small>${d}</small>
             <small class="preview">${previewText(cur, prof?.plus_one?.[k])}</small></div>
-          <button class="icon-btn" data-stat="${k}" ${pts > 0 && c[k] < statCap(c.level, k, c.job_key) ? '' : 'disabled'} aria-label="${n} 올리기" title="${c[k] >= statCap(c.level, k, c.job_key) ? '지금 레벨의 상한입니다' : ''}">${icon('plus', 16)}</button></li>`).join('')}</ul>`, { ico: 'spark' })}
+          <span class="al-btns"><button class="icon-btn" data-dec="${k}" aria-label="${n} 내리기">${icon('minus', 16)}</button><button class="icon-btn" data-stat="${k}" aria-label="${n} 올리기">${icon('plus', 16)}</button></span></li>`).join('')}</ul>
+        <div class="al-foot"><p class="preview" id="al-prev"></p>
+          <div class="row-actions"><button class="btn ghost" id="al-reset">되돌리기</button><button class="btn" id="al-preview">미리 보기</button><button class="btn primary" id="al-ok">${icon('check', 16)}<span>확정</span></button></div></div>`, { ico: 'spark' })}
       ${panel('지금 전투 능력', cur ? combatRows(cur) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword' })}
     </div>
     <div class="grid-2">
@@ -237,10 +247,43 @@ async function growth(body) {
     ${panel('신원', `<dl class="kv"><div><dt>이름</dt><dd>${esc(c.character_name)}</dd></div><div><dt>직업</dt><dd>${esc(nameOf(c.job_key))} · ${esc(JOBS[c.job_key]?.trait || '')}</dd></div>
       <div><dt>소속</dt><dd>${esc(nameOf(c.faction_key))}</dd></div><div><dt>대세력</dt><dd>${c.major_faction_id ? `${esc(nameOf(c.major_faction_id))} · 평판 ${fmt.num(c.faction_reputation)}` : '미가입'}</dd></div></dl>
       <p class="muted small">이름·직업·소속은 캐릭터 생성 시 정해지며 바꿀 수 없습니다.</p>`, { ico: 'idcard' })}`;
-  $$('[data-stat]', body).forEach(b => b.onclick = () => guard(b, async () => {
-    const r = await act('world_allocate_stat', { p_stat: b.dataset.stat });
-    return { content: `${STATS.find(x => x[0] === b.dataset.stat)?.[1] || '능력치'} +1 · 남은 포인트 ${r?.stat_points ?? ''}` };
-  }));
+  // 나눈 점수는 화면을 옮겨도 남는다(sessionStorage, 캐릭터마다). 미리 보기는 누를 때 한 번만 서버에 묻는다
+  const sync = () => {
+    const left = pts - allocSum(pend);
+    $('#al-left', body).textContent = left;
+    STATS.forEach(([k]) => {
+      $(`[data-add="${k}"]`, body).textContent = pend[k] ? ` +${pend[k]}` : '';
+      const up = $(`[data-stat="${k}"]`, body), cap = statCap(c.level, k, c.job_key);
+      up.disabled = left <= 0 || c[k] + (pend[k] || 0) >= cap; up.title = c[k] + (pend[k] || 0) >= cap ? '지금 레벨의 상한입니다' : '';
+      $(`[data-dec="${k}"]`, body).disabled = !pend[k];
+    });
+    const any = allocSum(pend) > 0;
+    ['#al-reset', '#al-preview', '#al-ok'].forEach(id => $(id, body).disabled = !any);
+    if (!any) $('#al-prev', body).innerHTML = '';
+    saveAlloc(c, pend);
+  };
+  $$('[data-stat]', body).forEach(b => b.onclick = () => { const k = b.dataset.stat; pend[k] = (pend[k] || 0) + 1; $('#al-prev', body).innerHTML = ''; sync(); });
+  $$('[data-dec]', body).forEach(b => b.onclick = () => { const k = b.dataset.dec; if (pend[k] > 0) pend[k]--; if (!pend[k]) delete pend[k]; $('#al-prev', body).innerHTML = ''; sync(); });
+  $('#al-reset', body).onclick = () => { pend = {}; sync(); };
+  const pv = $('#al-preview', body);
+  pv.onclick = () => guard(pv, async () => {
+    const r = await rpc('world_combat_preview', { p_alloc: pend });
+    $('#al-prev', body).innerHTML = previewText(r?.current, r?.after);
+  });
+  const ok = $('#al-ok', body);
+  ok.onclick = async () => {
+    const list = STATS.filter(([k]) => pend[k]).map(([k, n]) => `${n} +${pend[k]}`).join(' · ');
+    if (!(await ask(`능력치를 이대로 올릴까요? ${list} (포인트 ${allocSum(pend)}점) 한 번 올린 능력치는 세심단 없이는 되돌릴 수 없습니다.`, { title: '능력치 확정', ok: '확정' }))) return;
+    guard(ok, async () => {
+      const spent = { ...pend };
+      pend = {}; saveAlloc(c, pend);
+      try {
+        const r = await act('world_allocate_stats', { p_alloc: spent });
+        return { content: `능력치 +${r?.spent ?? allocSum(spent)} · 남은 포인트 ${r?.stat_points ?? ''}` };
+      } catch (e) { pend = spent; saveAlloc(c, pend); throw e; }
+    });
+  };
+  sync();
   const save = $('#prof-save', body);
   save.onclick = async () => { if (await ask('전문화를 이대로 정할까요? 3일 동안 다시 바꿀 수 없습니다.', { title: '생활 전문화', ok: '정하기' })) guard(save, () => act('world_set_life_profession_v2', { p_gathering: $('#g-prof', body).value, p_crafting: $('#c-prof', body).value })); };
 }

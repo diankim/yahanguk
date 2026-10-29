@@ -5,7 +5,7 @@ import { logout } from './session.js';
 export { initSound, playSfx } from './sound.js';
 
 // 테마는 의존성 없는 theme.js에 있다(점검 페이지도 같은 테마를 쓴다).
-export { THEMES, deriveCustom, readCustom, themeOf, applyTheme, savedThemeId, applySavedTheme, themeCard } from './theme.js';
+export { THEMES, deriveCustom, readCustom, themeOf, applyTheme, savedThemeId, applySavedTheme, themeCard, FONT_SIZES, savedFontSize, applyFontSize } from './theme.js';
 
 /* ── 프로필 보기(고치기는 설정 페이지에서) ─────────────────── */
 export function openProfile() {

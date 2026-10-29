@@ -33,7 +33,9 @@ const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amu
 const dismantleNeed = t => ({ 1: 1, 2: 5, 3: 10, 4: 15 })[t || 1] || 20; // 서버 world_dismantle_need와 같다
 // 장착 칸(서버 world_equip_item·world_unequip_item과 같은 이름): [이름, 아이콘, 닳는 때]
 export const SLOTS = { weapon: ['무기', 'sword', '공격할 때'], armor: ['방어구', 'shield', '맞을 때'], hat: ['관모', 'hat', '맞을 때'], shoes: ['신', 'shoe', '이동할 때'],
-  norigae: ['노리개', 'knot', ''], amulet: ['호신부', 'talisman', ''], mask: ['탈', 'mask', ''], tool: ['도구', 'hammer', '채집할 때'] };
+  norigae: ['노리개', 'knot', ''], amulet: ['호신부', 'talisman', ''], mask: ['탈', 'mask', ''], tool: ['채집', 'hammer', '채집할 때'], explore: ['탐사', 'compass', ''], fishing: ['낚시', 'fish', ''] };
+// 장착 칸: 도구는 equipment_traits.life_slot(탐사 explore·낚시 fishing, 없으면 채집 tool)으로 나뉜다(서버 world_equip_item과 같은 규칙)
+export const slotOf = it => it?.category === 'tool' ? (it.equipment_traits?.life_slot || 'tool') : it?.category;
 const STY = { melee: '근접 공격', ranged: '원거리 공격', magic: '술법 공격' };
 
 // 잠근 물품 목록(서버 world_item_locks, 내 것만 보인다)
@@ -52,6 +54,7 @@ export const isLocked = id => !!locks?.has(id);
 // 장신구(관모·신·노리개·호신부·탈)는 적힌 능력치 대신 가장 높은 능력치가 그 값 이상이면 된다(6.0.0, 서버 world_equip_item과 같음)
 const ACCESSORY = new Set(['hat', 'shoes', 'norigae', 'amulet', 'mask']);
 const STAT_KEYS = ['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'];
+const STAT_PAIR = { vitality: 'strength', strength: 'vitality', agility: 'perception', perception: 'agility', willpower: 'spirit_affinity', spirit_affinity: 'willpower' };
 const topStat = c => Math.max(...STAT_KEYS.map(k => Number(c?.[k] || 0)));
 // 생활 도구는 능력치 대신 숙련 단계(7.0.0, equipment_traits.req_line·req_rank, 서버 world_equip_item과 같음)
 const RANK_NAME = { gathering_rank: '채집 숙련', crafting_rank: '제작 숙련', investigation_rank: '조사 숙련' };
@@ -64,6 +67,9 @@ const statReqs = (o, c) => {
   const req = Object.entries(o.required_stats || {});
   if (!req.length) return [];
   if (ACCESSORY.has(o.category)) { const v = Math.max(...req.map(([, n]) => Number(n))); return [[`가장 높은 능력치 ${v} 이상`, topStat(c) >= v, `가장 높은 능력치 ${v} 필요 (지금 ${topStat(c)})`]]; }
+  // 방어구는 적힌 능력치와 짝(체질↔근력·민첩↔감각·의지↔영성) 가운데 높은 것으로 본다(7.1)
+  if (o.category === 'armor') return req.map(([k, v]) => { const p = STAT_PAIR[k] || k, have = Math.max(Number(c?.[k] || 0), Number(c?.[p] || 0));
+    return [`${nameOf(k)} 또는 ${nameOf(p)} ${v} 이상`, have >= Number(v), `${nameOf(k)} 또는 ${nameOf(p)} ${v} 필요 (지금 ${have})`]; });
   return req.map(([k, v]) => [`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v), `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`]);
 };
 // 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업 → 소속 → 능력치
