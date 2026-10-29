@@ -113,6 +113,12 @@
 - 외전 「요인록」 gq_1~gq_5(kind side, cat 「외전·요인록」, Lv30·32·34·36·38, 앞 장이 after), 인물 g_*. 마지막 장 할 일 {t:'gw'}(world_quest_task_count).
 - 최종 보스 「귀허의 주인」(world_gw_fights·members·log·records, 실시간 목록에 넣지 않음): 귀허에서 Lv38·외전 4장 마침·귀허 부적, 혼자 또는 같은 곳 파티원 4명까지(world_gw_open 60초 모음·world_gw_join·world_gw_begin). 라운드 5초(기믹 10초), 참가자마다 행동 하나(attack·guard·item·purify·chain, 안 고르면 방어), 마감이 지났거나 모두 고르면 누군가 world_gw_snapshot·world_gw_act를 부를 때 world_gw_resolve가 푼다(예약 작업 없음). 단계 4(두 얼굴·사슬 넷·이름 빼앗기·귀허의 소용돌이), 체력 max(6000, Σ공격×40), 15분. 쓰러지면 세 라운드 물러남·체력 30으로 복귀. 실패: 장착 장비 내구도 −10%·침식 +10·30분 뒤 재도전. 처치는 하루 한 번(처음 1,500전·경험치 0.5배·탈것 moonless_boat·이름 색 ns:1028, 뒤로는 120전·0.05배), 처치마다 world_events gw_win → 칭호 gw_kill1/3/10/25·gw_solo·gw_flawless(분류 '외전')·꾸미기 fr_gwiheo·pt_gwiheo·sl_gwi. 파훼법(world_gw_tips)은 처치한 사람만. 화면 views/gw.js(#/gw/<id>): 라운드 마감 직후·내가 고른 뒤 2초마다·모이는 중 3초마다만 다시 읽는다.
 
+### 3.5-2 새 지역·세력 배치(7.1.0, 20261102000000)
+
+- 생성기 supabase/gen71/(data_regions.py·regions.py·d_faction.sql·gen.py → migrations/20261102000000_world_7_1_0.sql). 새 지역 11곳: 옛 의금부 옥사 15·봉인고 19(정통파) · 만조의 갑문 18(수향) · 적월 제단터 19(적월) · 설피골 5(북령) · 불씨 고개 5(남명) · 등잔골 뒷골목 5(흑련) · 별바라기 언덕 5·물시계 터 9·혜성 낙하지 13·구름 위 회랑 16(천명). 지역마다 답사 길·채집터(들머리 「어귀의 …」)·요괴 r71_*·원정지·조사 지점·처음 방문 글·보조 퀘스트 rq_* 하나. 이름은 ref/existing_names.json으로 겹침을 검사한다.
+- 직할령 Lv1~3 여덟 곳은 중립(home_faction_id null, 겨루기에서 빠짐), 옥문 협로는 정통파. 세력마다 들머리 지역(world_faction_join_regions)에서 가입·가입 퀘스트 보고를 받는다. 대세력 가입 Lv5부터(Lv5가 되면 faction_open 알림 한 번).
+- 세력 겨루기: A 방치 점령지(본래 주인 아닌 세력이 6시간 활동 없으면 감소 3%→8%/시간, 24시간이면 본래 주인에게) · B 독식 보정(본래 땅 밖 차지 수로 새 영향력 ×1·0.8(3)·0.65(4)·0.5(5+)) · C 주간 정산(pg_cron yh-faction-week 월 04:00 KST: 지킨 지역마다 그 주 활동한 조사원 공훈 5, 그 뒤 영향력 절반, faction_week 알림).
+
 ### 3.6 탐사 방식
 
 탐사는 텍스트 서술, 선택지, 발견 이벤트, 자원 획득, 몬스터 조우를 조합한다.
@@ -174,6 +180,12 @@
 - 체력은 레벨과 상관없이 100이고 요괴 공격력은 레벨마다 오르므로, 요괴보다 레벨이 높으면 받는 피해를 레벨마다 3% 줄이고(최대 30%) 낮으면 3%씩 늘린다(최대 30%). 현장 토벌 world_battle_action과 원정 world_expedition_settle(원정지 최소 레벨 + 1 기준)에 같은 식.
 - 닳은 장비 알림: world_field_snapshot.gear_warn(내구도 4분의 1 아래 장착 장비)을 현장 화면·전투 화면에 띄운다. 체력 35 아래에서 탐색하면 한 번 묻는다(home.js doSearch).
 
+### 파티 현장 토벌(7.1.0, c_pfight.sql)
+
+- 현장 토벌 중 world_pfight_call(동료 부르기) → 같은 곳 파티원에게 pfight_invite 알림 60초 → world_pfight_join(탐색력 1, 요괴 체력 +70%×기준 체력, 4명까지) → world_pfight_start 또는 모집 마감.
+- 10초 라운드: 참가자마다 행동 하나(world_pfight_act: attack·skill·guard·item·flee, 안 고르면 방어), 모두 고르거나 마감이 지나면 world_pfight_snapshot·act를 부른 쪽이 푼다(예약 작업 없음). 풀 때는 world_battle_action을 참가자마다 그 사람의 JWT sub로 부르고(yh.pf_resolve로 1초 간격 건너뜀), 요괴는 이목^1.3으로 고른 한 명에게만 반격한다(나머지는 yh.pf_skip). 파티 토벌 중에는 world_battle_action을 직접 못 부른다.
+- 보상은 혼자 토벌과 같고(전리품도 각자 굴림, 파티 분배 풀은 쓰지 않음) 경험치 +10%/명(3명까지). 화면 views/pfight.js(#/pfight/<id>).
+
 ### 전투불능과 구조
 
 전투불능 상태는 단순한 메시지로 끝나는 것이 아니라 실제 플레이에 영향을 주는 상태다.
@@ -201,6 +213,11 @@
 - 각 기능에는 최대 숙련도 또는 성장 상한이 존재한다.
 - 특정 활동을 많이 했다는 이유만으로 관계없는 모든 능력이 함께 상승하지 않도록 한다.
 - 반복 입력이나 비정상적인 요청으로 경험치를 빠르게 얻는 행위를 방지한다.
+
+### 능력치 분배·방어구 조건(7.1.0, a_basic.sql)
+
+- 능력치는 화면에서 + / − 로 쌓아 두고 world_combat_preview(p_alloc)로 한 번 미리 본 뒤 world_allocate_stats(p_alloc jsonb)로 한 트랜잭션에 반영한다(포인트 합·능력치마다 상한, 캐릭터 행 갱신 한 번·progression 기록 한 줄). 옛 world_allocate_stat은 남아 있다.
+- 방어구 능력치 조건은 적힌 능력치와 짝 능력치(world_stat_pair: 체질↔힘·민첩↔감각·의지↔영기) 가운데 높은 것으로 본다(world_equip_item·화면 item.js STAT_PAIR). 장신구는 여전히 가장 높은 능력치.
 
 ### 캐릭터 신원
 
@@ -252,6 +269,11 @@
 - 장착 조건(레벨·직업·소속·능력치)은 서버 world_equip_item이 검사하고, 가방 › 장비와 물품 정보 창에 「장착 조건」으로 채운 것(초록)·못 채운 것(빨강)을 함께 표기한다. 다른 직업이나 직업 무관 제작법이 필요로 하는 도구는 한 직업 전용으로 두지 않는다(각인 공구·강화 채집도는 직업 제한 없음, 영맥 낫은 현장 조사원 전용).
 - 장비 드롭(world_gear_drops: 요괴 유형·레벨대·등급별 확률, world_gear_roll): 한 번에 하나까지, 6.0.0부터 일반 최대 1%·정예 5%·우두머리 15%(희귀품 발견 보정), 3단계 이상은 우두머리만. 원정 전투는 60% 수준. 2~4단계 제작법, 5단계 일부는 무극 관성대 제작, 1·2단계 일부는 상점 판매.
 
+### 생활 칸 셋·생활 장비 Lv40(7.1.0, a_basic.sql·b_life.sql·data_life.py)
+
+- 장착 칸에 생활 칸 셋: 채집(tool) · 탐사(explore: 나침반, 탐색 찾기 search_find_pct, world_explore_find_pct) · 낚시(fishing: 낚싯대, world_fish_rod). 칸은 equipment_traits.life_slot이 정하고(없으면 채집), 'craft'(제작 공구)는 장착하지 않고 가방에 있으면 world_craft_tool_bonus가 그 분야(craft_fields) 제작 품질 +craft_quality(가장 큰 것 하나)를 더한다.
+- 생활 장비 32가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대 6단계·제작 공구 15, 제작법 r_lt_*). 낫·등은 sig_pct·sig_where로 지역 희귀품, 낚싯대는 단계 덤을 2단계까지만 두고 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 화면 views/item.js SLOTS·bag.js TOOL_LINE.
+
 ### 무기 소모(5.0.0)
 
 근접은 기력(영력과 같은 spiritual_power, 근접 무기를 들면 화면이 노란 「기력」으로 보임, core.js spOf) 공격마다 2, 술법은 영력 3, 원거리는 장착 무기 equipment_traits.ammo(ammo_arrow 화살·ammo_bolt 쇠뇌살·ammo_dart 취관 침, 묶음 100, world_ammo_of) 한 발에 하나. 없으면 피해 절반. 원정은 정산 회차마다 둘(world_expedition_settle), 떠날 때 없으면 원정 전투력 ×0.6. 새 원거리 무기를 넣으면 ammo를 단다. 전투·원정 중에는 world_equip_item도 막는다(해제와 같이).
@@ -295,6 +317,22 @@
 - 낚시터는 물가 14곳(강: 백지교·구름나루 / 늪: 천엽 연화늪·폐쇄된 연화원 / 바다: 재의 해안·구등대 군도·염등촌 / 호수: 천경호·수경루 / 깊은 물: 용잠 수궁 / 수로: 구룡 폐수로·침수된 구시가지 / 심연: 흑조 균열·구중 봉연)이다. 현장 풍경이 물가(water)인 지역에는 낚시터를 둔다. 낚싯대를 가방에 두고 탐색력 1로 20초마다 낚는다. 원정·전투·이동 중에는 낚을 수 없다.
 - 어종 37종(20261028100000에서 17종 추가, Lv1~28)은 서식지·희귀도·잘 무는 시간대와 날씨가 다르다. 모든 어종은 하나 이상의 제작법에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 요괴 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘). 새 어종을 넣을 때도 제작법을 함께 잇는다. 어종 도감(일지 › 도감)은 낚지 못한 어종의 이름을 서버가 감추고 힌트만 준다. 낚시 칭호 7개는 입질·희귀 어종·크기 효과를 준다.
 - 요리: 물고기를 손질한 생선으로 만들고 요리 6종을 만든다. 먹으면 회복과 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복)가 붙는다.
+
+### 별채(7.2.0, 20261103000000)
+
+- 생성기 supabase/gen72/(h_housing.sql·p_pets.sql·pets_data.py·x_misc.sql·patch_note.sql·gen.py → migrations/20261103000000_world_7_2_0.sql). 그림은 assets/js/housing/(render.js 도트 그리개 · furniture.js 가구·벽지·바닥재·기본 세트 · pets.js 동무 · petsprite.js), 화면 views/housing.js(#/house · #/house/<주인>, 캐릭터 › 별채 탭은 이리로 보낸다).
+- 표: world_housing(주인마다: size 6~9 · items [{k,x,y,r}] · wall [{k,side L|R,t,z}] · paper · ground · gate open|friends|closed · 발걸음 · pet_id · pet_out) · world_housing_store(곳간) · world_housing_guestbook(최근 20개) · world_housing_visits(하루 한 번) · world_housing_rewards(한 번 주는 가구) · world_furniture_sources(drop_normal·drop_guardian·expedition·raid_world 확률 / title:<칭호>·chapter:<장>·raid_final·gw_first 한 번). 모두 RLS·직접 읽기 없음, 함수로만.
+- 가구 = 물품(category furniture, 단계=등급 1~5, 묶음 1, item_id hf_<키>·벽지 hp_·바닥재 hg_, equipment_traits {hk, kind floor|rug|surface|wall|paper|ground, w, d, top, ww, wh, cat, pet bed|toy|bowl|perch}). 상점(범품, 상점마다 다섯)·제작·전리품 가구는 거래 가능, 조건 보상·기본 세트·세력 비고 가구는 거래 불가(상점 팔기도 막음, world_shop_sell, 세력 기부는 됨). world_item_catalog_category_check에 furniture·pet을 더했다.
+- world_housing_save(p_owner, p_state)가 배치 전체를 다시 검사한다: 칸 안·겹침(바닥·깔개 따로)·소품은 top 있는 가구 위·벽 장식은 벽 안(t 0.1칸, z 4~75px)·같은 벽 겹침·설치 상한(6×6 15·7×7 20·8×8 26·9×9 32)·같은 가구 상한(범품 4·양품 3·진품 2·명품·신품 1). 늘어난 가구는 곳간 → 고치는 사람 가방 순서로 빼고, 줄어든 가구는 주인 곳간(30 + 넓힐 때마다 5)으로 간다. 고치기·곳간(world_housing_store_move put·take·discard)·넓히기(world_housing_expand: 7×7 2,500전·가공 부적목 10 / 8×8 Lv20·6,000전·강화 부적목 4·칠액 6 / 9×9 Lv25·15,000전·강화 부적목 6·영맥 수피 4·비취 파편 2)는 world_housing_edit_block(창고와 같은 조건, 반요촌 안 됨)이 막는다. 구경(world_housing_snapshot)은 어디서나, 대문·차단은 world_housing_can_view. 혼례 정인(world_housing_married: bonds.marks.married)은 서로의 별채를 고친다.
+- 개방: 보조 퀘스트 hs_byeolchae 「객사 별채」(본부 객사, Lv15, after mq_frost_seal, 인물 hs_bomi, 마지막 장면 need.gil 1,000 — world_quest_report가 need.gil을 받게 고침). 마치면 trg_world_housing_quest가 world_housing_open으로 6×6과 기본 세트 「단청 별채」(world_housing_default_set)를 놓는다.
+- 가구 보상: trg_world_housing_event(world_events combat·expedition_end·story·gw_win, 캐릭터 행은 고치지 않고 곳간·알림만: 일반 0.4%·정예 1.2%·우두머리 3%·원정 완주 4%, 별채가 있는 사람만, 곳간이 차면 버림)·trg_world_housing_title(칭호)·trg_world_housing_raid(봉연의 그림자 기여 1%↑ 6%+20%×몫, 10장 결전 첫 승리). 방명록 80자·한 별채 하루 3개. 알림 갈래 housing(housing_visit·housing_guest·housing_item·pet_play).
+
+### 꼬마 동무(7.2.0)
+
+- 30종(world_pet_species: grade·kind·likes·how·egg), 내 동무 world_pets(affinity 0~300, 100이면 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3번까지 친밀도), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩, +1), 출처 world_pet_sources(quest:<퀘스트>·title:<칭호>·gw_first).
+- 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색(world_event_char_apply의 희귀 전리품 길: 탐색 한 번에 0.5%·0.06%)으로 가방에 온다. world_pet_adopt(바구니·알 열기, 알은 아직 없는 그 등급 egg 종), 조건 보상은 world_pet_grant로 바로 도감에(이미 있으면 pet_food 3을 개인 창고로).
+- 별채에 한 마리(world_pet_place), 데리고 다니기(world_pet_walk → 조사원 카드 pet), 별명 8자(world_pet_nickname), 놀기 world_pet_act(pat·play·feed, 먹이 pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음. 칭호·꾸미기 규칙 'home'(world_home_rule_count: open·size·visits·guest·furn·pets·adult·pet_grade, 칭호 12개 분류 '별채', 꾸미기 fr_home·pt_home·sl_dong).
+- 동무 그림 원본은 tools/pet_art/(art*.py → gen.py가 테두리를 둘러 pets.js를 만든다).
 
 ## 8. 생존과 침식
 
@@ -475,6 +513,11 @@
 - 현장 파티 칸(home.js partyHtml, 20261029050000): 파티원마다 있는 곳·상황(원정 남은 시간·전투·전투불능)·체력·정신·침식·세력 색(world_party_overview에 mental·erosion·major_faction_id·expedition을 더함), 같은 곳의 쓰러진 동료 구조, 「파티 원정」.
 - 파티 원정(5.0.0 묶음 20261029060000): 파티장이 원정 창에서 world_party_expedition_propose(원정지·기간·태세)로 같은 곳·떠날 수 있는 동료(world_pexp_ready)에게 party_exp_offer 알림을 보내고(3분 유효, world_party_exp_offers), 동료가 world_party_expedition_respond로 답해 모두 답하면 world_pexp_resolve가 한 트랜잭션에서 파티장·수락자의 world_expedition_start를 차례로 부른다(그 사람의 JWT sub로 바꿔 부르고 되돌림 — 같은 now()라 출발·귀환 시각이 같다). 2명은 수락해야 출발, 3명 이상은 거절·무응답 빼고 출발, 아무도 수락하지 않거나 파티장이 못 떠나면 아무도 안 떠남. 파티장은 world_party_expedition_depart로 지금 출발·거두기. 원정 창은 world_party_expedition_offer_status로 제안 칸을 그린다. 옛 「함께 가기」(world_party_expedition_call·party_expedition 알림, 따로 출발해 시각이 어긋남)는 화면에서 뺐다. 같은 지역 원정은 합동 전투(동료 전투력 60%가 승률에, 이목으로 표적), 원정이 10분 이상 겹친 파티원 한 명마다 귀환 때 경험치·숙련 경험 +10%(3명까지, world_expedition_complete).
 
+### 야행 비무회·혼례(7.1.0, e_tourney.sql·f_bond.sql)
+
+- 비무회: world_tourneys·entries·entrants·matches, pg_cron yh-tourney(1분, world_tourney_tick). 신청 월 00:00~금 23:59(KST, 안전지대 「비무 방」 views/tourney.js #/tourney), 토 21:00 1:1·일 21:00 팀전(같은 파티 2명), 개최지는 주마다 도는 안전지대(반요촌 제외), 1시간·30분 전 알림, 10분 전 개최지에 없으면 불참(부전승), 최소 4명(팀). 단판 토너먼트, 작전(태세·회복품 둘·기술 쓰는 때), 기세 100+8×평균 레벨, 레벨 차 1마다 2%(최대 20%), 능력치·장비 차이 절반. 합마다 2초씩 화면이 펼친다. world_events를 남기지 않고 칭호·꾸미기는 규칙 'tourney'(world_tourney_rule_count). 탈것 tn_white_horse(3회 우승), 조사원 카드 tn_champ(7일).
+- 인연도(7.1): 하루 100, 함께 토벌 +2·탐색·채집 +1·안부 +5·선물 +10·원정 완주 +20·구조 +20. 혼례 world_weddings·guests·lines: 인연도 300·둘 다 Lv20·6장 마침, 본부 정청 또는 한 사람의 세력 거점, 3,000전(1,500씩), 받은 5분 뒤 10분, 하객 박수 3·꽃잎 3·축사 1(40자, 15초 간격), 혼례 떡, 칭호 wed_vow·fr_wed·sl_hap·marks.married(별채 한 지붕). 혼례 올린 연리가 끝나면 다시 맺기 7일. 화면 bond.js openWedding.
+
 ## 14. 인게임 채팅과 커뮤니케이션
 
 채팅은 별도의 교류실이나 방을 생성해야만 사용할 수 있는 구조가 아니라 게임 화면 안에서 상시 이용할 수 있어야 한다.
@@ -507,6 +550,10 @@
 - 장식보다 실제 게임 편의성을 우선
 
 화면에 이모지를 장식 목적으로 사용하지 않는다. 상태와 기능을 명확하게 표현하는 아이콘과 텍스트를 활용한다.
+
+- 테마(7.2.0, theme.js THEMES 32가지): 색 아홉 가지·모서리·글꼴·선 굵기에 deco {tex 바탕 무늬(tile·brush·dot·bamboo·wave·lattice·star·grain·hanji), frame 모서리 장식(bracket·dot·round·double·line·none), head 머리글(plain·band·under)}를 더해 :root data-tex·data-frame·data-head로 CSS가 그린다(또렷한 선·점만, 번지는 그라데이션 없음). 새 테마도 deco를 단다.
+- 글자 크기(7.1.0): 다섯 단계(theme.js FONT_SIZES, --fz 0.85~1.22, 기기 저장 yh-fz). CSS 글자 크기는 calc(Npx * var(--fz, 1))로 쓰고, 터치 입력칸은 16px 아래로 내려가지 않는다.
+- 채팅 얼굴(7.2.0): 28px, 꾸미기 테두리 문양 배지(cosmetics.js chatFrameBadges: 범품 하나·양품 이상 둘·레거시 별).
 
 ### PC
 - 넓은 화면을 활용한 2~3열 레이아웃
