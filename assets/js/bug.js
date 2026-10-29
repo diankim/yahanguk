@@ -42,7 +42,7 @@ async function send(body) {
     <form class="bug-form" autocomplete="off">
       <div class="chip-pick bug-cat" role="radiogroup" aria-label="분류">${PICK.map(([k, l]) => `<button type="button" data-cat="${k}" class="${k === cat ? 'on' : ''}" role="radio" aria-checked="${k === cat}">${l}</button>`).join('')}</div>
       <label class="field"><span>제목 (2~60자)</span><input name="title" maxlength="60" value="${esc(d.title || '')}" placeholder="예: 모바일에서 지도 출발 단추가 눌리지 않아요"></label>
-      <label class="field"><span>내용 (2~2000자)</span><textarea name="body" rows="6" maxlength="2000" placeholder="언제·어디서·무엇을 했을 때 어떻게 되었는지 적어 주시면 빨리 고칠 수 있습니다.">${esc(d.body || '')}</textarea></label>
+      <label class="field"><span>내용 (5~2000자)</span><textarea name="body" rows="6" maxlength="2000" placeholder="언제·어디서·무엇을 했을 때 어떻게 되었는지 적어 주시면 빨리 고칠 수 있습니다.">${esc(d.body || '')}</textarea></label>
       <label class="check"><input type="checkbox" name="ctx" ${d.ctx === false ? '' : 'checked'}><span>지금 화면 정보 함께 보내기 <small class="muted">(화면 위치·크기·기기·최근 오류 ${errors.length}건 · 전·가방 같은 게임 값은 보내지 않습니다)</small></span></label>
       <button class="btn primary" type="submit">${icon('flag', 16)}<span>GM에게 보내기</span></button>
     </form>

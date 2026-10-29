@@ -1,7 +1,7 @@
 -- 6.1.4 퀘스트 「단서 찾기」가 영영 안 나오던 것(제보 16): 탐색의 단서 결과는 지금 주 이야기 장의 못 찾은 단서가
 -- 그 지역에 있을 때만 나와서, 보조 퀘스트(sq_* 10개)·세력 장면(흑련회 가입·야행청 등급) 「단서 찾기」가 다른 지역·다른 장에서는 막혔다.
 -- 이제 그런 할 일이 걸려 있으면 이야기 단서가 없는 곳에서도 같은 확률로 「맡은 일의 실마리」(outcome clue, side_clue)를 찾는다.
--- 이야기 단서가 있는 곳에서는 지금처럼 이야기 단서가 먼저다. 함께: 제보 내용 최소 글자 5 → 2(제보 15, 짧은 소감).
+-- 이야기 단서가 있는 곳에서는 지금처럼 이야기 단서가 먼저다.
 lock table public.world_characters in access exclusive mode;
 
 -- 걸려 있는 「단서 찾기」 할 일이 이 지역에서 진행되는가(보조·직업·소속 퀘스트의 지금 장면, 세력 가입·등급 장면)
@@ -47,14 +47,9 @@ begin
     d := replace(d, a, b);
     execute d;
   end if;
-  d := pg_get_functiondef('public.world_bug_report_submit(text,text,text,jsonb)'::regprocedure);
-  a := E'if char_length(b) < 5 or char_length(b) > 2000 then raise exception ''내용은 5~2000자로 적어 주세요.''; end if;';
-  if position(a in d) > 0 then
-    execute replace(d, a, E'if char_length(b) < 2 or char_length(b) > 2000 then raise exception ''내용은 2~2000자로 적어 주세요.''; end if;');
-  end if;
 end $$;
 
-update public.world_patch_notes set body = body || E'\n### 6.1.4\n- **퀘스트 「단서 찾기」(제보)**: 보조 퀘스트·세력 퀘스트의 「단서 찾기」가 주 이야기 단서가 있는 지역에서만 나와, 다른 곳에서는 아무리 탐색해도 진행되지 않던 문제를 고쳤습니다. 이제 그런 할 일을 맡고 있으면 그 지역 탐색에서 「맡은 일의 실마리」를 찾을 수 있습니다(주 이야기 단서가 있는 곳은 그 단서가 먼저 나옵니다).\n- **제보·소감 글자 수**: 내용은 2자부터 보낼 수 있습니다.\n'
+update public.world_patch_notes set body = body || E'\n### 6.1.4\n- **퀘스트 「단서 찾기」(제보)**: 보조 퀘스트·세력 퀘스트의 「단서 찾기」가 주 이야기 단서가 있는 지역에서만 나와, 다른 곳에서는 아무리 탐색해도 진행되지 않던 문제를 고쳤습니다. 이제 그런 할 일을 맡고 있으면 그 지역 탐색에서 「맡은 일의 실마리」를 찾을 수 있습니다(주 이야기 단서가 있는 곳은 그 단서가 먼저 나옵니다).\n'
  where note_id = '6.1.0' and position('### 6.1.4' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261031030000', now())

@@ -1,6 +1,6 @@
 // 일지: 퀘스트를 보는 곳. 주 이야기(장마다 장면 → 단서 → 가설) · 보조 퀘스트(분야별) · 상시 의뢰 · 기록(답사·원정·도감).
 // 마친 장면과 장 결말은 다시 읽을 수 있다(world_quest_scene). 진행 판정은 서버(world_quest_journal·world_quest_report)가 한다.
-import { store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON } from '../core.js';
+import { store, on, act, rpc, ask, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON } from '../core.js';
 import { loreBundle, refreshLore } from '../lore.js';
 import { load, panel, chip, loading, errorBox, currentRegion } from './common.js';
 import { focusRegion } from './map.js';
@@ -73,6 +73,11 @@ function bindQuests(body) {
   }));
   $$('[data-q-report]', body).forEach(x => x.onclick = () => report(x));
   bindGo(body);
+  // 보조 퀘스트 포기: 처음부터 다시 받을 수 있고, 포기 전에 보상을 받은 장면은 다시 보고해도 보상이 없다(서버 world_quest_abandon)
+  $$('[data-q-abandon]', body).forEach(x => x.onclick = async () => {
+    if (!(await ask(`「${x.dataset.qTitle}」을(를) 포기할까요?\n진행이 처음으로 돌아가고, 다시 받아 처음부터 할 수 있습니다.\n이미 보상을 받은 장면은 다시 보고해도 보상이 없습니다.`, { title: '퀘스트 포기', ok: '포기하기', danger: true }))) return;
+    guard(x, () => act('world_quest_abandon', { p_quest: x.dataset.qAbandon }));
+  });
 }
 
 /* ── 주 이야기: 위의 장 목록을 누르면 그 장(장면 → 단서 → 가설)이 아래에 펼쳐진다 ── */
@@ -188,6 +193,7 @@ function sideItem(q, map) {
     <p class="q-goal">${esc(q.summary || '')}</p>
     ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`
       : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}
+    ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
   </details></li>`;
 }
 /* ── 상시 의뢰: 날마다 바뀌는 세 가지 일 ─────────────────────── */
