@@ -80,7 +80,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ── 입력 ─────────────────────────────── */
 .field { display: grid; gap: 4px; }
 .field > span { font-size: 12.5px; color: var(--muted); font-weight: 500; }
-input:not([type=checkbox]):not([type=range]), select, textarea {
+input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea {
   width: 100%; min-height: 40px; padding: 8px 11px; border-radius: var(--r-sm); border: var(--bw) solid var(--line);
   background: color-mix(in srgb, var(--bg) 70%, var(--surface)); color: var(--text); font-size: 14px;
 }
@@ -1444,7 +1444,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .train-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .train-list li .btn { flex: none; }
 
-@media (hover: none) and (pointer: coarse) { input:not([type=checkbox]):not([type=range]), select, textarea { font-size: 16px; } }
+@media (hover: none) and (pointer: coarse) { input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px; } }
 
 /* ── 채팅 다듬기(20261028-0930): 말풍선 대신 이름 인장 + 이어 말하기 묶음, 입력은 한 줄 알약 ── */
 .chat-head { padding: 8px 8px 4px 12px; } .chat-head h2 { font-size: 14px; letter-spacing: .02em; }
@@ -1658,6 +1658,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 /* 환골탈태 서첩 선택 */
 .choice { display: flex; gap: 8px; align-items: flex-start; padding: 10px; border-radius: var(--r-sm); border: var(--bw) solid var(--line); background: var(--surface-2); cursor: pointer; }
 .choice span { display: grid; gap: 2px; } .choice small { color: var(--muted); font-size: 11.5px; }
+.choice input[type=radio] { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--gold); }
+.choice span { min-width: 0; word-break: keep-all; }
 .choice:has(input:checked) { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 9%, var(--surface-2)); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 /* 긴 선택 창(환골탈태 서첩 등): 확인 단추를 창 아래에 붙여 두고, 모바일에서는 고를 칸을 두 줄로 촘촘히 둔다 */

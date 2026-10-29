@@ -188,7 +188,7 @@ function draw(box, id, inv, prices, mode) {
 // 물품 쓰기: 초기화 물품 두 가지는 확인 창·선택 창을 거쳐 전용 서버 함수로 쓴다
 export async function useItem(id, btn) {
   if (id === 'reset_stats') {
-    if (!(await ask('능력치를 모두 처음(각 5)으로 되돌리고 쓴 포인트를 돌려받을까요? 세심단 하나를 씁니다.', { title: '세심단', ok: '쓰기' }))) return;
+    if (!(await ask('능력치를 모두 직업 기본값으로 되돌리고 쓴 포인트를 돌려받을까요? 세심단 하나를 씁니다.', { title: '세심단', ok: '쓰기' }))) return;
     return guard(btn, () => act('world_reset_stats'));
   }
   if (id === 'reset_identity') return openResetIdentity();
@@ -197,7 +197,7 @@ export async function useItem(id, btn) {
 function openResetIdentity() {
   const c = store.character || {};
   const m = openModal({ title: '환골탈태 서첩', body: `
-    <p class="muted small">직업과 소속을 다시 고릅니다. 대세력에서 나오고(평판 0) 능력치는 처음(각 5)으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·물품·전·칭호·기술은 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다.</p>
+    <p class="muted small">직업과 소속을 다시 고릅니다. 대세력에서 나오고(평판 0) 능력치는 새 직업의 기본값으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·물품·전·칭호·기술은 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다.</p>
     <h3 class="sub-h">직업</h3>
     <div class="choice-grid ri-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
     <h3 class="sub-h">소속</h3>
