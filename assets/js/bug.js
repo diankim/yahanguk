@@ -3,7 +3,9 @@
 // 보낼 때 지금 화면 위치·화면 크기·기기·최근 오류를 함께 붙일 수 있다(전·가방 같은 게임 값은 붙이지 않는다).
 import { store, rpc, act, esc, icon, guard, $, $$, fmt, openModal, isGM } from './core.js';
 
-const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감'], ['other', '기타']];
+const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감 및 기타'], ['other', '기타']];
+// 보낼 때 고르는 분류는 넷(모바일 한 줄). 화면·기타는 옛 제보 표시용으로만 남긴다(화면 오류는 「오류」, 그 밖은 「소감 및 기타」).
+const PICK = [['bug', '오류'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감 및 기타']];
 const STATUS = { open: '접수', checking: '확인 중', fixed: '고침', closed: '닫음' };
 const errors = [];
 const keep = msg => { errors.push({ at: new Date().toISOString(), msg: String(msg || '').slice(0, 300) }); if (errors.length > 5) errors.shift(); };
@@ -33,12 +35,12 @@ export async function openBug(tab) {
 }
 
 async function send(body) {
-  const d = loadDraft(), cat = CATS.some(c => c[0] === d.cat) ? d.cat : 'bug';
+  const d = loadDraft(), cat = PICK.some(c => c[0] === d.cat) ? d.cat : 'bug';
   body.innerHTML = `
     <p class="desc">게임을 하다 이상한 점·바라는 점은 물론, 오류가 아니어도 <b>게임을 하며 느낀 점(소감)</b>을 운영진(GM)에게 편하게 보내 주세요. 답이 오면 알림으로 알려 드립니다.</p>
-    <p class="notice-line small" id="bug-reward" hidden>${icon('spark', 14)} 처음 보내 주시면 한 번 <b>노정 건량 2개·청심환 2개</b>를 드립니다.</p>
+    <p class="notice-line small" id="bug-reward" hidden>${icon('spark', 14)}<span>처음 보내 주시면 한 번 <b>노정 건량 2개·청심환 2개</b>를 드립니다.</span></p>
     <form class="bug-form" autocomplete="off">
-      <div class="chip-pick bug-cat" role="radiogroup" aria-label="분류">${CATS.map(([k, l]) => `<button type="button" data-cat="${k}" class="${k === cat ? 'on' : ''}" role="radio" aria-checked="${k === cat}">${l}</button>`).join('')}</div>
+      <div class="chip-pick bug-cat" role="radiogroup" aria-label="분류">${PICK.map(([k, l]) => `<button type="button" data-cat="${k}" class="${k === cat ? 'on' : ''}" role="radio" aria-checked="${k === cat}">${l}</button>`).join('')}</div>
       <label class="field"><span>제목 (2~60자)</span><input name="title" maxlength="60" value="${esc(d.title || '')}" placeholder="예: 모바일에서 지도 출발 단추가 눌리지 않아요"></label>
       <label class="field"><span>내용 (5~2000자)</span><textarea name="body" rows="6" maxlength="2000" placeholder="언제·어디서·무엇을 했을 때 어떻게 되었는지 적어 주시면 빨리 고칠 수 있습니다.">${esc(d.body || '')}</textarea></label>
       <label class="check"><input type="checkbox" name="ctx" ${d.ctx === false ? '' : 'checked'}><span>지금 화면 정보 함께 보내기 <small class="muted">(화면 위치·크기·기기·최근 오류 ${errors.length}건 · 전·가방 같은 게임 값은 보내지 않습니다)</small></span></label>
