@@ -46,14 +46,24 @@ export async function loadLocks(force) {
 }
 export const isLocked = id => !!locks?.has(id);
 
+// 장신구(관모·신·노리개·호신부·탈)는 적힌 능력치 대신 가장 높은 능력치가 그 값 이상이면 된다(6.0.0, 서버 world_equip_item과 같음)
+const ACCESSORY = new Set(['hat', 'shoes', 'norigae', 'amulet', 'mask']);
+const STAT_KEYS = ['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'];
+const topStat = c => Math.max(...STAT_KEYS.map(k => Number(c?.[k] || 0)));
+const statReqs = (o, c) => {
+  const req = Object.entries(o.required_stats || {});
+  if (!req.length) return [];
+  if (ACCESSORY.has(o.category)) { const v = Math.max(...req.map(([, n]) => Number(n))); return [[`가장 높은 능력치 ${v} 이상`, topStat(c) >= v, `가장 높은 능력치 ${v} 필요 (지금 ${topStat(c)})`]]; }
+  return req.map(([k, v]) => [`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v), `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`]);
+};
 // 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업 → 소속 → 능력치
 export const gearBlock = (o, c) => {
   if (!o) return '';
   if (o.minimum_level > (c?.level || 1)) return `Lv.${o.minimum_level} 필요`;
   if (o.required_job && o.required_job !== c?.job_key) return `${nameOf(o.required_job)} 전용`;
   if (o.required_faction && o.required_faction !== c?.faction_key) return `${nameOf(o.required_faction)} 전용`;
-  for (const [k, v] of Object.entries(o.required_stats || {})) if (Number(c?.[k] || 0) < Number(v)) return `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`;
-  return '';
+  const miss = statReqs(o, c).find(r => !r[1]);
+  return miss ? miss[2] : '';
 };
 // 장착 조건 목록: [글, 채웠는지]. 레벨 1·조건 없음은 뺀다
 export function gearReqs(o, c) {
@@ -62,7 +72,7 @@ export function gearReqs(o, c) {
   if (o.minimum_level > 1) out.push([`Lv.${o.minimum_level} 이상`, (c?.level || 1) >= o.minimum_level]);
   if (o.required_job) out.push([`${nameOf(o.required_job)} 전용`, o.required_job === c?.job_key]);
   if (o.required_faction) out.push([`${nameOf(o.required_faction)} 전용`, o.required_faction === c?.faction_key]);
-  for (const [k, v] of Object.entries(o.required_stats || {})) out.push([`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v)]);
+  for (const [t, ok] of statReqs(o, c)) out.push([t, ok]);
   return out;
 }
 export const gearReqHtml = (o, c) => gearReqs(o, c).map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('');

@@ -1,5 +1,5 @@
 // 안전지대 시설: 상점 · 대장간 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief } from '../core.js';
+import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
@@ -242,13 +242,15 @@ function bindPicker(root, name, opts, onPick) {
   box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
 }
 const koSort = (a, b) => a.label.localeCompare(b.label, 'ko');
+
 // 목록에 안 보이는 가진 물품의 까닭: 거래 불가(희귀 성장 재료 등)·잠금
-function untradeNote(have, ref) {
+function untradeNote(have, ref, direct = false) {
   const own = Object.entries(have || {}).filter(([, n]) => Number(n) > 0).map(([k]) => k);
+  const market = direct ? own.filter(k => MARKET_ONLY.has(k) && ref.get(k)?.tradeable !== false).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko')) : [];
   const bound = own.filter(k => ref.get(k)?.tradeable === false).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
   const locked = own.filter(k => ref.get(k)?.tradeable !== false && isLocked(k)).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
   const part = (t, l) => l.length ? `<b>${t}</b> ${esc(l.slice(0, 8).join(' · '))}${l.length > 8 ? ` 외 ${l.length - 8}가지` : ''}` : '';
-  const txt = [part('거래 불가', bound), part('잠금', locked)].filter(Boolean).join(' / ');
+  const txt = [part('거래 불가', bound), part('거래소 전용', market), part('잠금', locked)].filter(Boolean).join(' / ');
   return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 거래소·직접 거래에 올릴 수 없고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다.</p>` : '';
 }
 
@@ -285,6 +287,7 @@ export async function renderMarket(box) {
           <button class="btn primary" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록</span></button></form>
           <p class="muted small" id="trade-hint"></p>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
       ${hiddenNote}
+      <p class="muted small"><b>희귀 재료</b>(비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽)는 거래소에서만 사고팝니다: 기준 시세 70% 이상 · 한 사람 24시간 20개까지 · 거래세 10%.</p>
       <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다(지금 ${mine.length}/10건). 0전 등록은 불가하며, 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p>
       <h3 class="sub-h">판매 중 ${others.length}</h3>
       ${others.length ? `<ul class="item-list">${others.map(o => row(o, false)).join('')}</ul>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
@@ -324,9 +327,9 @@ async function renderDirect(body) {
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     // 직접 거래는 같은 곳에 있는 조사원과(5.0.0부터 안전지대 밖에서도)
     const people = (roster || []).filter(p => !p.is_dead);
-    const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k));
-    const anyTradeable = (prices || []).filter(p => p.tradeable !== false).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
-    const hiddenNote = untradeNote(have, ref);
+    const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k));
+    const anyTradeable = (prices || []).filter(p => p.tradeable !== false && !MARKET_ONLY.has(p.item_id)).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
+    const hiddenNote = untradeNote(have, ref, true);
     const giveOpts = mineTradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' })).sort(koSort);
     const wantOpts = anyTradeable.map(p => ({ id: p.item_id, label: p.item_name || nameOf(p.item_id), cat: catMap.get(p.item_id) || 'etc' }));
     if (!people.some(p => p.owner_id === dt.to)) dt.to = people[0]?.owner_id || '';

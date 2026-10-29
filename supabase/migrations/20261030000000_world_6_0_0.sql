@@ -1347,3 +1347,62 @@ begin
   end loop;
   insert into public.world_app_meta(key, value) values ('v6_job_reset_gift', '1');
 end $$;
+
+-- ⑧ 제보 반영(2026-10-29)
+--   제보 10: 장신구(관모·신·노리개·호신부·탈)는 적힌 능력치 대신 「가장 높은 능력치」가 그 값 이상이면 낀다(어느 역할이든 장신구를 고르게)
+--   제보 9: 희귀 재료 9가지를 거래소에서만 거래(직접 거래·정인 선물 불가) · 기준 시세 70% 이상 · 24시간 20개까지 · 거래세 10%. 응축 영핵은 그대로 거래 불가
+do $$ declare d text := pg_get_functiondef('public.world_equip_item(text)'::regprocedure);
+  a text := 'if coalesce((to_jsonb(c)->>stat_key)::int,0)<required then raise exception ''능력치 조건 미달: % % 필요'',public.world_stat_name(stat_key),required; end if;';
+  b text := 'if it.category in (''hat'',''shoes'',''norigae'',''amulet'',''mask'') then if greatest(c.strength,c.agility,c.vitality,c.perception,c.willpower,c.spirit_affinity)<required then raise exception ''능력치 조건 미달: 가장 높은 능력치 % 필요(장신구는 어느 능력치든 됩니다)'',required; end if; elsif coalesce((to_jsonb(c)->>stat_key)::int,0)<required then raise exception ''능력치 조건 미달: % % 필요'',public.world_stat_name(stat_key),required; end if;';
+begin
+  if position('장신구는 어느 능력치든' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '제보 반영 고칠 자리 없음: 장신구 장착'; end if;
+  execute replace(d, a, b);
+end $$;
+
+create or replace function public.world_market_only(p_item text)
+returns boolean language sql immutable set search_path to 'pg_catalog' as $$
+  select p_item = any (array['jade_shard', 'mirror_shard', 'thunder_ore', 'star_sand', 'monster_core', 'ember_crystal', 'sky_feather', 'rune_plate', 'reinforced_leather'])
+$$;
+alter function public.world_market_only(text) owner to fn_owner_field;
+grant execute on function public.world_market_only(text) to public;
+update public.world_item_catalog set tradeable = true where public.world_market_only(item_id) and not coalesce(tradeable, false);
+
+do $$
+declare d text; a text; b text;
+begin
+  -- 직접 거래·정인 선물로는 넘기지 않는다
+  d := pg_get_functiondef('public.world_trade_bundle_check(uuid,jsonb,jsonb)'::regprocedure);
+  a := 'if not coalesce(it.tradeable, false) then raise exception ''%은(는) 거래할 수 없는 물품입니다.'', it.item_name; end if;';
+  b := a || ' if public.world_market_only(it.item_id) then raise exception ''%은(는) 거래소에서만 사고팔 수 있는 희귀 재료입니다.'', it.item_name; end if;';
+  if position('world_market_only' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '제보 반영 고칠 자리 없음: 직접 거래'; end if;
+    execute replace(d, a, b);
+  end if;
+  d := pg_get_functiondef('public.world_bond_gift(text,integer,integer)'::regprocedure);
+  a := 'if not found or not coalesce(it.tradeable, true) then raise exception ''이 물품은 주고받을 수 없습니다.''; end if;';
+  b := a || ' if public.world_market_only(it.item_id) then raise exception ''희귀 재료는 거래소에서만 사고팔 수 있습니다.''; end if;';
+  if position('world_market_only' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '제보 반영 고칠 자리 없음: 정인 선물'; end if;
+    execute replace(d, a, b);
+  end if;
+  -- 거래소 등록: 기준 시세 70% 이상, 24시간 20개까지
+  d := pg_get_functiondef('public.world_trade_offer_create(text,integer,bigint)'::regprocedure);
+  a := 'PERFORM public.world_trade_listing_guard(uid,p_item_id,p_unit_price);';
+  b := a || ' IF public.world_market_only(p_item_id) THEN IF p_unit_price < ceil(coalesce(item.reference_price, 0) * 0.7) THEN RAISE EXCEPTION ''희귀 재료는 기준 시세의 70%%(%전) 아래로 등록할 수 없습니다.'', ceil(item.reference_price * 0.7); END IF; IF (SELECT coalesce(sum(o.quantity), 0) FROM public.world_trade_offers o WHERE o.seller_id = uid AND o.created_at > now() - interval ''24 hours'' AND public.world_market_only(o.item_id)) + p_qty > 20 THEN RAISE EXCEPTION ''희귀 재료는 24시간에 20개까지 등록할 수 있습니다.''; END IF; END IF;';
+  if position('world_market_only' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '제보 반영 고칠 자리 없음: 거래소 등록'; end if;
+    execute replace(d, a, b);
+  end if;
+  -- 판매 대금: 희귀 재료는 거래세 10%(수향연맹 감면은 그대로)
+  d := pg_get_functiondef('public.world_trade_offer_buy(uuid)'::regprocedure);
+  a := 'round(total*0.05*public.world_trade_tax_mult(s.seller_id))';
+  b := 'round(total*(case when public.world_market_only(s.item_id) then 0.10 else 0.05 end)*public.world_trade_tax_mult(s.seller_id))';
+  if position('world_market_only' in d) = 0 then
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '제보 반영 고칠 자리 없음: 거래세'; end if;
+    execute replace(d, a, b);
+  end if;
+end $$;
+
+update public.world_patch_notes set body = replace(body, E'### 밸런스\n', E'### 거래와 장신구(제보 반영)\n- **희귀 재료 9가지를 거래소에서 사고팔 수 있습니다**: 비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽. 시장을 어지럽히지 않도록 **거래소에서만**(직접 거래·정인 선물 불가), 기준 시세의 **70% 이상**, 한 사람이 **24시간에 20개까지** 등록하고, 판매 대금의 **거래세는 10%**입니다. 응축 영핵은 강화의 핵심이라 지금처럼 거래할 수 없습니다.\n- **장신구(관모·신·노리개·호신부·탈)는 적힌 능력치가 아니어도 가장 높은 능력치가 그 값 이상이면** 낄 수 있습니다. 무기·방어구는 지금처럼 그 갈래의 능력치를 봅니다.\n\n### 밸런스\n')
+ where note_id = '6.0.0' and position('### 거래와 장신구' in body) = 0;

@@ -1,7 +1,7 @@
 // 연리(連理): 조사원끼리 맺는 연인 관계. 상대는 「정인」이라 부른다(서버 world_bond_*).
 // 정표는 가방과 별개로 「정표 칸」에 착용·벗기를 하고, 둘 다 착용하고 같은 곳·같은 파티이면 연리의 기운(회복량 +5% · 침식 -5%)을 받는다.
 // 동료 화면의 연리 칸, 조사원 카드의 [연리 맺기], 장비 목록의 정표 칸, 마음 전하기·선물·파기 창을 맡는다.
-import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, toast } from './core.js';
+import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, toast, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
 
 // 정표 종류: [이름, 뜻, 그림(24×24 선)]
@@ -104,7 +104,7 @@ async function openGift(after) {
   const inv = await rpc('world_inventory_snapshot').catch(() => null);
   const have = inv?.inventory || {}, equipped = new Set(Object.values(inv?.equipment || {}));
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i]));
-  const items = Object.entries(have).filter(([id, n]) => Number(n) - (equipped.has(id) ? 1 : 0) > 0 && cmap.get(id)?.tradeable !== false)
+  const items = Object.entries(have).filter(([id, n]) => Number(n) - (equipped.has(id) ? 1 : 0) > 0 && cmap.get(id)?.tradeable !== false && !MARKET_ONLY.has(id))
     .map(([id, n]) => ({ id, n: Number(n) - (equipped.has(id) ? 1 : 0), name: nameOf(id) })).sort((a, b2) => a.name.localeCompare(b2.name, 'ko'));
   const m = openModal({ title: `${b.partner_name}님에게 선물`, body: `<form class="bond-gift">
     <p class="desc">하루에 한 번, 물품이나 전 가운데 하나를 보냅니다. 잠근 물품·거래할 수 없는 물품·장착 중인 마지막 한 개는 보낼 수 없습니다.</p>
