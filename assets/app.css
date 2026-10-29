@@ -1962,3 +1962,8 @@ b.sealed { color: var(--bad); }
 .trade-form .tf-go { width: 100%; justify-content: center; }
 @media (max-width: 720px) { .mk-list li, .mk-mine li { flex-wrap: nowrap; } .mk-list .item-act, .mk-mine .item-act { width: auto; } .mk-list .item-main, .mk-mine .item-main { min-width: 0; } }
 .bug-cat { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* 접힌 상태 띠: 나쁜 상태가 있으면 이름 옆에 작은 깜빡이는 점(디버프 색, 제보 17) */
+.hs-name b { display: flex; align-items: center; gap: 4px; }
+.hs-bad-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--bad); animation: hs-blink 1.2s ease-in-out infinite; }
+@keyframes hs-blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+.hs-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

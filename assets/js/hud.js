@@ -123,8 +123,10 @@ function render() {
   const items = statusItems(c);
   const need = xpNeed(c.level);
   const first = items[0];
+  // 나쁜 상태가 있으면 접힌 띠의 이름 옆에 디버프 색 점을 깜빡여 알린다(제보 17)
+  const badN = yohwaOf(state.hud?.statuses).rest.filter(x => x.polarity !== 'positive').length;
   $('#hud-strip', root).innerHTML = `
-    <span class="hs-name"><b>${esc(c.character_name)}${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
+    <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}${badN ? `<i class="hs-bad-dot" role="img" aria-label="나쁜 상태 ${badN}개" title="나쁜 상태 ${badN}개"></i>` : ''}</b><small>Lv.${c.level}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses), bad = yo.rest.filter(x => x.polarity !== 'positive').length;
