@@ -270,7 +270,7 @@ export const BRANCHES = [
   ['investigation', '조사', 'search', ['tracking']],
 ];
 async function skills(body) {
-  const list = await load('world_skill_snapshot', undefined, { maxAge: 10000 });
+  const [list, coop] = await Promise.all([load('world_skill_snapshot', undefined, { maxAge: 10000 }), load('world_coop_list', undefined, { maxAge: 60000 }).catch(() => [])]);
   const groups = {}, combos = [];
   (list || []).forEach(s => s.category === 'combo' ? combos.push(s) : (groups[s.category] ||= []).push(s));
   const SLOT = { base: '', extra: '추가 기술', a: '택일 ①', b: '택일 ②', master: '숙달 기술' };
@@ -300,6 +300,10 @@ async function skills(body) {
       const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');
       return `<li class="${x.unlocked ? 'on' : ''}"><b>${esc(x.skill_name)}</b>${x.unlocked ? chip('익힘', 'ok') : ''}<small>${esc(String(x.description || '').replace(/^조합 기술\([^)]*\) · /, ''))}</small><small>${req}</small></li>`; }).join('')}</ul>
       <p class="muted small">두 계열이 모두 18단계에 닿으면 열립니다. 계열마다 조합은 하나씩입니다.</p>`, { ico: 'knot' }) : ''}
+    ${(coop || []).length ? panel(`협동 기술 · 전투 숙련 ${fmt.num(c.combat_rank || 1)}단계`, `<ul class="combo-list coop-list">${coop.map(x => `<li class="${x.unlocked ? 'on' : ''}">
+        <b>${esc(x.name)}</b>${x.unlocked ? chip('익힘', 'ok') : chip(`전투 숙련 ${x.rank}단계`)}
+        <small>${esc(x.desc || '')}</small><small>${x.target === 'ally' ? '동료 한 명' : x.target === 'all' ? '참가자 모두' : x.target === 'boss' ? '요괴' : '나'} · 영력 ${x.cost} · 다시 쓰기 ${x.cooldown}초</small></li>`).join('')}</ul>
+      <p class="muted small">합동 토벌(10장 결전·봉연의 그림자)에서만 그 턴의 행동으로 고릅니다. 같은 지역 파티 원정의 합동 전투에서는 열린 기술이 확률로 저절로 나옵니다.</p>`, { ico: 'users' }) : ''}
     <p class="muted small">전투 계열(근접·원거리·봉인술)의 피해 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);

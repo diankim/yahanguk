@@ -2,9 +2,10 @@
 import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
 import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
+import { raidLocks } from './raid.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
-let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null, zones = new Map();
+let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set();
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -15,6 +16,8 @@ export async function render(root, s) {
   off.forEach(f => f());
   off = [on('changed', () => draw(true)), on('env', () => draw(true))];
   window.addEventListener('yahang:arrived', onArrive);
+  // 봉연에 잠긴 곳(서버 토벌 실패): 따로 읽어 지도에 표시한다(1분 동안 다시 씀)
+  raidLocks().then(l => { sealed = new Set(l.map(x => x.region_id)); if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', onArrive); window.removeEventListener('resize', onResize); }
@@ -51,7 +54,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span></div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg sealed"></i>봉연에 잠김</span></div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -249,6 +252,7 @@ function paint() {
       ${safe ? `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" transform="rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})" class="dot" data-region="${esc(r.region_id)}"/>`
              : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 6.5 : 5}" class="dot" data-region="${esc(r.region_id)}"/>`}
       ${r.region_id === here?.region_id ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" class="here-ring"/>` : ''}
+      ${sealed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9.5" class="seal-ring"/>` : ''}
       <title>${esc(r.region_name)}</title></g>`;
     const l = labels.get(r.region_id);
     if (l) {
@@ -341,7 +345,7 @@ function drawDetail() {
     <article class="panel region-detail" style="--fc:${factionColor(factionOf(r.region_id))}">
       <header class="panel-head"><h2>${esc(r.region_name)}</h2>${isHere ? chip('현재 위치', 'accent') : ''}</header>
       <div class="panel-body">
-        <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}</p>
+        <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${sealed.has(r.region_id) ? ' · <b class="sealed">봉연에 잠김</b>' : ''}</p>
         <div class="chips">${zone?.is_safe_zone ? chip('안전지대', 'ok') : danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}</div>
         ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')} · 거래소${zone.has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>

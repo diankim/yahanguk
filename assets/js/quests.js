@@ -1,7 +1,7 @@
 // 현장의 퀘스트 칸: 진행 중인 주 이야기·보조 퀘스트·세력 퀘스트와 여기서 받을 수 있는 퀘스트(접고 펼친다).
 // 진행과 판정은 서버(world_quest_board·world_quest_report, 세력은 world_faction_*)가 하고, 여기서는 그리고 부른다.
 // 할 일을 다 마치면 한 번 알리고(이 기기·접속 동안), 보고하면 장면 대사를 대화창으로 보인다.
-import { store, act, esc, icon, guard, $, $$, nameOf, toast } from './core.js';
+import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast } from './core.js';
 import { load, invalidate, chip } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 
@@ -36,7 +36,7 @@ function activeItem(q) {
     <p class="q-goal">${esc(q.goal || '')}</p>
     ${(q.tasks || []).length || (q.give || []).length ? `<ul class="q-tasks">${(q.tasks || []).map(taskLine).join('')}${(q.give || []).map(giveLine).join('')}</ul>` : ''}
     ${atLine(q)}
-    <div class="btn-row"><button class="btn small ${q.ready ? 'primary' : ''}" data-q-report="${esc(q.quest_id)}" ${q.ready ? '' : 'disabled'}>${icon('scroll', 14)}<span>${q.ready ? '보고하기' : '진행 중'}</span></button></div></li>`;
+    <div class="btn-row">${q.quest_id === 'fq_sealed_lord' && q.step === 2 && !q.ready ? `<button class="btn small primary" data-q-final>${icon('sword', 14)}<span>결전 시작</span></button>` : ''}<button class="btn small ${q.ready ? 'primary' : ''}" data-q-report="${esc(q.quest_id)}" ${q.ready ? '' : 'disabled'}>${icon('scroll', 14)}<span>${q.ready ? '보고하기' : '진행 중'}</span></button></div></li>`;
 }
 function factionItem(f) {
   if (!f) return '';
@@ -89,6 +89,10 @@ export async function fillQuests(box) {
       </div></details>`;
   $('[data-q-fold]', box).addEventListener('toggle', e => { try { localStorage.setItem(foldKey, e.target.open ? '1' : '0'); } catch {} });
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
+  // 10장 최종 결전: 혼자 또는 같은 곳의 파티원(4명까지)과 결전을 연다 — 판정은 world_raid_final_start
+  $('[data-q-final]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
+    const r = await rpc('world_raid_final_start'); window.yahangGo('raid', r?.raid_id || ''); return null;
+  }));
   $('[data-f-report]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
     const r = await act('world_faction_report'); invalidate('world_quest_board'); invalidate('world_faction_snapshot');
     playDialogue(r, store.character?.major_faction_id); return null;

@@ -14,6 +14,7 @@ import { envChip } from '../env.js';
 import { sceneArt } from '../scenery.js';
 import { checklistHtml, noteRegion } from '../tutorial.js';
 import { questBox, fillQuests } from '../quests.js';
+import { raidBand, fillRaidBand } from './raid.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -76,10 +77,11 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(); return; }
     stopBattle();
     noteRegion(s.region);
-    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     bind(s);
     // 퀘스트 칸은 따로 읽어 채운다(15초 동안 다시 씀, 보고 뒤에는 새로 읽음)
     fillQuests($('#quest-box', el));
+    fillRaidBand($('#raid-band', el));
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }

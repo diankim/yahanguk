@@ -24,6 +24,7 @@ import * as guide from './views/guide.js';
 import * as account from './views/account.js';
 import * as settingsPage from './views/settings.js';
 import * as patchPage from './views/patch.js';
+import * as raidPage from './views/raid.js';
 import { preloadNames, hasNameCache } from './views/common.js';
 
 mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
@@ -40,7 +41,7 @@ const VIEWS = {
   log: { mod: journal, label: '일지', icon: 'scroll' },
 };
 // 탭에는 없지만 헤더에서 여는 화면
-const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' } };
+const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' } };
 
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null, routing = null;
