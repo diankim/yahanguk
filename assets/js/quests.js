@@ -54,14 +54,13 @@ function availItem(q) {
     ${q.here && !q.locked ? `<div class="btn-row"><button class="btn small primary" data-q-report="${esc(q.quest_id)}">${icon('scroll', 14)}<span>이야기 듣기</span></button></div>` : ''}</li>`;
 }
 
+// 진행 중인 퀘스트의 할 일·보고 장소·단서 지역에 지금 있는 곳이 들어 있는가
+const isHere = (q, here) => !!here && new Set([...(q.at || []), ...(q.tasks || []).flatMap(t => t.regions || []), ...(q.clues?.regions || [])]).has(here);
 // 이 지역이 퀘스트 지역인가(할 일·보고 장소·의뢰인이 여기)
 function hereNote(b) {
   const here = b.here_id; if (!here) return '';
   const hits = [];
-  for (const q of b.active || []) {
-    const regs = new Set([...(q.at || []), ...(q.tasks || []).flatMap(t => t.regions || []), ...(q.clues?.regions || [])]);
-    if (regs.has(here)) hits.push(q.title);
-  }
+  for (const q of b.active || []) if (isHere(q, here)) hits.push(q.title);
   if (b.faction && (b.faction.regions || []).includes(here)) hits.push(b.faction.title);
   const givers = (b.available || []).filter(q => q.here && !q.locked).length;
   if (!hits.length && !givers) return '';
@@ -75,7 +74,10 @@ export async function fillQuests(box) {
   let b;
   try { b = await load('world_quest_board', undefined, { maxAge: 15000 }); } catch { box.remove(); return; }
   if (!box.isConnected) return;
-  const act_ = b.active || [];
+  // 진행 중인 퀘스트가 여럿이면 지금 있는 지역의 퀘스트를 위로(같은 무리 안에서는 원래 순서)
+  const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));
+  const facHere = !!(b.faction && b.here_id && (b.faction.regions || []).includes(b.here_id));
+  const nHere = act_.filter(q => isHere(q, b.here_id)).length;
   const here = (b.available || []).filter(q => q.here), other = (b.available || []).filter(q => !q.here);
   const nAct = act_.length + (b.faction ? 1 : 0);
   noteReady({ ...b, active: act_ });
@@ -83,7 +85,7 @@ export async function fillQuests(box) {
     <details class="fold" ${isOpen() ? 'open' : ''} data-q-fold>
       <summary class="panel-head"><h2>${icon('scroll', 16)}퀘스트 <small class="muted">진행 ${nAct} · 마침 ${b.done}/${b.total}</small></h2></summary>
       <div class="panel-body">
-        ${nAct ? `<ul class="q-list">${factionItem(b.faction)}${act_.map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}
+        ${nAct ? `<ul class="q-list">${facHere ? factionItem(b.faction) : ''}${act_.slice(0, nHere).map(activeItem).join('')}${facHere ? '' : factionItem(b.faction)}${act_.slice(nHere).map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}
         ${here.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${here.map(availItem).join('')}</ul>` : ''}
         ${other.length ? `<details class="q-more"><summary>다른 곳에서 받을 수 있는 퀘스트 ${other.length}개</summary><ul class="q-list">${other.map(availItem).join('')}</ul></details>` : ''}
       </div></details>`;
