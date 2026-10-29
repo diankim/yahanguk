@@ -1325,5 +1325,25 @@ insert into public.world_app_meta(key, value) values ('v6_job_base', '1') on con
 drop function pg_temp.yh_patch(text, text, text[]);
 
 -- 패치노트 6.0.0에 직업 역할을 더한다
-update public.world_patch_notes set body = replace(body, E'### 밸런스\n', E'### 직업 역할\n- 직업을 **여섯 역할**로 나눴습니다. 호위 무사(옛 법구 제작사) **근접** · 현장 조사원 **원거리 물리** · 퇴마관 **술법** · 의무관 **치유** · 봉인술사 **보조(버프·디버프)** · 백공 기술관(옛 기록 분석관) **생활 특화**.\n- 직업마다 **기본 능력치**가 다릅니다(합은 모두 30). 지금 캐릭터는 새 기본값에 지금까지 직접 올린 몫을 그대로 더했고, 한 능력치 상한(**직업 기본값 + 레벨×1.5**)을 넘은 몫은 포인트로 돌려드렸습니다. 세심단·환골탈태도 직업 기본값으로 되돌립니다.\n- 직업 효과: 호위 무사 근접 피해 +8%·받는 피해 −6%·이목 +30, 현장 조사원 원거리 피해 +8%, 퇴마관 술법 피해 +8%, 의무관 회복 +10%, 봉인술사 정신 손실 −10%·침식 −5%, 백공 기술관 채집량 +15%·희귀품 +3%. 피해 보정은 그 역할의 무기를 들었을 때만 붙습니다.\n- 옛 법구 제작사의 제작 품질 +15·강화 확률 +10%p·원정 「현장 가공」은 **백공 기술관**으로, 옛 기록 분석관의 원정 「약점 간파」는 호위 무사의 「반격 태세」로 옮겼습니다. 기록 분석관의 치명타 +8은 없앴습니다. 호위 무사의 현장 기술은 「파갑참」(근접, 방어·결계 무시)입니다.\n- 새 캐릭터는 역할에 맞는 **시작 장비**를 갖추고 시작합니다(현장 조사원은 화살 100발 포함).\n\n### 밸런스\n')
+update public.world_patch_notes set body = replace(body, E'### 밸런스\n', E'### 직업 역할\n- 직업을 **여섯 역할**로 나눴습니다. 호위 무사(옛 법구 제작사) **근접** · 현장 조사원 **원거리 물리** · 퇴마관 **술법** · 의무관 **치유** · 봉인술사 **보조(버프·디버프)** · 백공 기술관(옛 기록 분석관) **생활 특화**.\n- 직업마다 **기본 능력치**가 다릅니다(합은 모두 30). 지금 캐릭터는 새 기본값에 지금까지 직접 올린 몫을 그대로 더했고, 한 능력치 상한(**직업 기본값 + 레벨×1.5**)을 넘은 몫은 포인트로 돌려드렸습니다. 세심단·환골탈태도 직업 기본값으로 되돌립니다.\n- 직업 효과: 호위 무사 근접 피해 +8%·받는 피해 −6%·이목 +30, 현장 조사원 원거리 피해 +8%, 퇴마관 술법 피해 +8%, 의무관 회복 +10%, 봉인술사 정신 손실 −10%·침식 −5%, 백공 기술관 채집량 +15%·희귀품 +3%. 피해 보정은 그 역할의 무기를 들었을 때만 붙습니다.\n- 옛 법구 제작사의 제작 품질 +15·강화 확률 +10%p·원정 「현장 가공」은 **백공 기술관**으로, 옛 기록 분석관의 원정 「약점 간파」는 호위 무사의 「반격 태세」로 옮겼습니다. 기록 분석관의 치명타 +8은 없앴습니다. 호위 무사의 현장 기술은 「파갑참」(근접, 방어·결계 무시)입니다.\n- 새 캐릭터는 역할에 맞는 **시작 장비**를 갖추고 시작합니다(현장 조사원은 화살 100발 포함).\n- 새 역할로 갈아타실 수 있도록 모두에게 **「환골탈태 서첩」을 하나씩** 드렸습니다(가방에 자리가 없으면 창고).\n\n### 밸런스\n')
  where note_id = '6.0.0' and position('### 직업 역할' in body) = 0;
+
+-- 직업 역할이 바뀌었으니 모두에게 「환골탈태 서첩」 하나씩(이미 있어도 하나 더). 가방에 자리가 없으면 창고(한 번만)
+update public.world_item_catalog set description = '능력치를 직업 기본값으로 되돌리고 쓴 포인트를 모두 돌려받습니다. 귀속 물품이라 거래·판매할 수 없습니다(창고에는 맡길 수 있습니다).'
+ where item_id = 'reset_stats';
+do $$
+declare r record;
+begin
+  if exists (select 1 from public.world_app_meta where key = 'v6_job_reset_gift') then return; end if;
+  for r in select owner_id, inventory from public.world_characters where not coalesce(is_dead, false) loop
+    if public.world_bag_room(r.inventory, 'reset_identity', public.world_bag_limit(r.owner_id)) >= 1 then
+      update public.world_characters set inventory = public.world_inv_add(inventory, 'reset_identity', 1) where owner_id = r.owner_id;
+    else
+      insert into public.world_storage(owner_id, items) values (r.owner_id, jsonb_build_object('reset_identity', 1))
+      on conflict (owner_id) do update set items = public.world_inv_add(public.world_storage.items, 'reset_identity', 1), updated_at = now();
+    end if;
+    insert into public.world_notifications(user_id, kind, title, content, payload)
+    values (r.owner_id, 'reward', '직업 역할 개편 · 환골탈태 서첩', '직업이 여섯 역할(근접·원거리 물리·술법·생활 특화·치유·보조)로 나뉘었습니다. 새 역할로 갈아타실 수 있도록 「환골탈태 서첩」을 하나 드렸습니다(가방에 자리가 없으면 창고). 능력치는 새 직업 기본값으로 다시 셌습니다.', '{}'::jsonb);
+  end loop;
+  insert into public.world_app_meta(key, value) values ('v6_job_reset_gift', '1');
+end $$;
