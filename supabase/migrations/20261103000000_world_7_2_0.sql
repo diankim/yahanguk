@@ -607,7 +607,7 @@ on conflict do nothing;
 -- 기본 세트 「단청 별채」
 create or replace function public.world_housing_default_set() returns jsonb language sql immutable set search_path = '' as $D$ select $J${"paper":"dancheong","ground":"maru","items":[{"k":"table_lacquer","x":2,"y":2,"r":0},{"k":"cushion_obang","x":2,"y":3,"r":0},{"k":"cushion_obang","x":3,"y":1,"r":0},{"k":"lantern_cheongsa","x":5,"y":0,"r":0}],"wall":[{"k":"beam_dancheong","side":"R","t":1.5,"z":44},{"k":"window_flower","side":"L","t":2.2,"z":24}]}$J$::jsonb $D$;
 
-insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset($J$[{"k":"hs_bomi","n":"객사 살림꾼 보미","b":"본부 객사의 살림을 맡은 사람. 손님 방부터 뒤뜰 장독까지 모르는 것이 없다. 오래 비어 있던 별채를 아까워한다."}]$J$::jsonb) as x(k text, n text, b text)
+insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset($J$[{"k":"q:hs_bomi","n":"객사 살림꾼 보미","b":"본부 객사의 살림을 맡은 사람. 손님 방부터 뒤뜰 장독까지 모르는 것이 없다. 오래 비어 있던 별채를 아까워한다."}]$J$::jsonb) as x(k text, n text, b text)
 on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;
 insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active)
 values ('hs_byeolchae', 'side', '생활·별채', '객사 별채', '본부 객사 뒤뜰의 빈 별채를 손봐 내 방으로 삼는다. (주 이야기 4장을 마친 뒤 Lv15부터)', 'hq_dorm', 15, array['mq_frost_seal'], null, 950, '[]'::jsonb, true)

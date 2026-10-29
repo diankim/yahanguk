@@ -2136,3 +2136,7 @@ b.sealed { color: var(--bad); }
 .letter-body { white-space: pre-wrap; word-break: break-word; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); font-size: calc(14px * var(--fz, 1)); line-height: 1.6; }
 .lt-compose textarea { width: 100%; resize: vertical; min-height: 96px; font-size: max(16px, calc(14px * var(--fz, 1))); }
 @media (hover: hover) { .lt-compose textarea { font-size: calc(14px * var(--fz, 1)); } }
+
+/* 패치노트 맨 위 공지(note_id 0.0.0) */
+.patch.notice-pin { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.patch.notice-pin > summary b::before { content: '공지'; display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--r-sm); background: var(--accent); color: var(--accent-ink); font-size: calc(11.5px * var(--fz, 1)); vertical-align: 1px; }

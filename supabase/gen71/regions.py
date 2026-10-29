@@ -153,7 +153,7 @@ select c.owner_id, gs.spot_id from public.world_characters c
 on conflict do nothing;""")
 
     # 보조 퀘스트(지역마다 하나): 경험치 합 0.4×xp_need(L)을 할 일·넘김 장면에 나누고, 마지막 장면에 전 5+4L와 물품
-    bulk('world_quest_npcs', [dict(npc_key=k, npc_name=nm, bio=bio) for k, (nm, bio) in D.NPCS.items()], [('npc_key', 'text'), ('npc_name', 'text'), ('bio', 'text')], 'npc_key', ['npc_name', 'bio'])
+    bulk('world_quest_npcs', [dict(npc_key=('' if k.startswith('q:') else 'q:') + k, npc_name=nm, bio=bio) for k, (nm, bio) in D.NPCS.items()], [('npc_key', 'text'), ('npc_name', 'text'), ('bio', 'text')], 'npc_key', ['npc_name', 'bio'])
     qrows, strows = [], []
     for i, q in enumerate(D.QUESTS):
         L = q['L']; tot = round(0.4 * xp_need(L))

@@ -193,7 +193,7 @@ STEPS = [
         ('q:hs_bomi', '손님이 오면 방명록도 받아 보구려. 빈방에 사람 냄새가 나야 집이 살아.'),
         (None, '문을 밀자 마루 냄새가 훅 끼친다. 오래 잠들어 있던 방이 숨을 쉬기 시작한다.')], {'xp': xp - xp // 2}),
 ]
-w(f"""insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset({J([dict(k=k, n=v[0], b=v[1]) for k, v in NPC.items()])}) as x(k text, n text, b text)
+w(f"""insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset({J([dict(k='q:' + k, n=v[0], b=v[1]) for k, v in NPC.items()])}) as x(k text, n text, b text)
 on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;
 insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active)
 values ('hs_byeolchae', 'side', '생활·별채', '객사 별채', '본부 객사 뒤뜰의 빈 별채를 손봐 내 방으로 삼는다. (주 이야기 4장을 마친 뒤 Lv15부터)', 'hq_dorm', 15, array['mq_frost_seal'], null, 950, '[]'::jsonb, true)
