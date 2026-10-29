@@ -253,7 +253,7 @@ begin
   if rd.status <> 'signup' then return; end if;
   select count(*), coalesce(sum((stats ->> 'attack')::numeric), 0), coalesce(avg((stats ->> 'attack')::numeric), 0) into n, s, a
     from public.world_raid_members where raid_id = p_raid;
-  if n = 0 then
+  if n = 0 and rd.kind = 'final' then
     perform public.world_raid_settle(p_raid, false); return;
   end if;
   hpv := case when rd.kind = 'world' then greatest(2500, round(s * 110))
@@ -262,7 +262,7 @@ begin
     ends_at = now() + case when kind = 'world' then interval '2 hours' else interval '20 minutes' end, updated_at = now() where raid_id = p_raid;
   perform public.world_raid_say(p_raid, 'phase', rd.boss_name || '이(가) 모습을 드러냈습니다. 참가자 ' || n || '명 · 체력 ' || hpv || '.');
   if rd.kind = 'world' then
-    perform public.world_raid_chat('「' || rd.boss_name || '」 토벌이 시작되었습니다(참가 ' || n || '명). 진행은 현장의 봉연 띠에서 볼 수 있습니다.');
+    perform public.world_raid_chat('「' || rd.boss_name || '」 토벌이 시작되었습니다(참가 ' || n || '명). ' || (select region_name from public.world_map_regions where region_id = rd.region_id) || '에 가면 지금도 합류할 수 있고, 현장의 봉연 띠에서 진행을 볼 수 있습니다.');
   end if;
 end $$;
 
@@ -299,16 +299,17 @@ begin
   return jsonb_build_object('raid_id', rid);
 end $$;
 
--- 참가 신청(서버 보스: 출현 30분 안·그 지역 / 결전: 결전 시작 90초 안·같은 곳의 파티원)
+-- 참가(서버 보스: 출현 뒤 모이는 30분과 토벌 2시간 내내 그 지역에서 — 도중 합류는 남은 시간만큼 체력이 늘어난다 / 결전: 결전 시작 90초 안·같은 곳의 파티원)
 create or replace function public.world_raid_join(p_raid uuid)
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
-declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; rd public.world_raids%rowtype; here text;
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; rd public.world_raids%rowtype; here text; hp_add int;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
   select * into rd from public.world_raids where raid_id = p_raid for update;
   if not found then raise exception '알 수 없는 토벌입니다.'; end if;
-  if rd.status <> 'signup' or rd.signup_until <= now() then raise exception '참가 신청 시간이 지났습니다. 진행은 관전으로 볼 수 있습니다.'; end if;
+  if not ((rd.status = 'signup' and rd.signup_until > now()) or (rd.kind = 'world' and rd.status = 'fight' and rd.ends_at > now())) then
+    raise exception '%', case when rd.kind = 'final' then '합류 시간이 지났습니다. 진행은 관전으로 볼 수 있습니다.' else '토벌이 끝났습니다.' end; end if;
   select * into c from public.world_characters where owner_id = uid for update;
   if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
   if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 신청할 수 없습니다.'; end if;
@@ -324,8 +325,15 @@ begin
   if exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id = uid) then raise exception '이미 신청했습니다.'; end if;
   insert into public.world_raid_members(raid_id, owner_id, name, level, job_key, stats)
   values (p_raid, uid, c.character_name, c.level, c.job_key, public.world_raid_stats(uid));
-  perform public.world_raid_say(p_raid, 'join', c.character_name || '(Lv' || c.level || ') — 참가했습니다.');
-  update public.world_raids set updated_at = now() where raid_id = p_raid;
+  if rd.status = 'fight' then
+    -- 도중 합류: 남은 시간 비율만큼(최소 4분의 1) 요괴 체력을 늘린다. 늦게 온 만큼 기여도는 덜 쌓인다
+    hp_add := round(coalesce((public.world_raid_stats(uid) ->> 'attack')::numeric, 0) * 110 * greatest(0.25, least(1, extract(epoch from rd.ends_at - now()) / 7200)));
+    update public.world_raids set hp = hp + hp_add, max_hp = max_hp + hp_add, updated_at = now() where raid_id = p_raid;
+    perform public.world_raid_say(p_raid, 'join', c.character_name || '(Lv' || c.level || ') — 토벌에 뛰어들었습니다. 그림자의 체력 +' || hp_add || '.');
+  else
+    perform public.world_raid_say(p_raid, 'join', c.character_name || '(Lv' || c.level || ') — 참가했습니다.');
+    update public.world_raids set updated_at = now() where raid_id = p_raid;
+  end if;
   return public.world_raid_snapshot(p_raid);
 end $$;
 
@@ -717,8 +725,8 @@ begin
     hm := to_char(rd.spawn_at at time zone 'Asia/Seoul', 'MM"월" DD"일" HH24"시" MI"분"');
     if rd.spawn_at <= now() then
       update public.world_raids set status = 'signup', signup_until = now() + interval '30 minutes', notices = notices || '{spawn}', updated_at = now() where raid_id = rd.raid_id;
-      perform public.world_raid_say(rd.raid_id, 'phase', '봉연의 그림자가 ' || reg || '에 드러났습니다. 30분 동안 참가를 받습니다.');
-      perform public.world_raid_broadcast(rd.raid_id, '봉연의 그림자 출현', '봉연의 그림자가 ' || reg || '에 드러났습니다! 30분 안에 그곳에서 토벌 참가를 신청하세요.');
+      perform public.world_raid_say(rd.raid_id, 'phase', '봉연의 그림자가 ' || reg || '에 드러났습니다. 30분 동안 모인 뒤 토벌이 시작되고, 토벌 중에도 그곳에서 합류할 수 있습니다.');
+      perform public.world_raid_broadcast(rd.raid_id, '봉연의 그림자 출현', '봉연의 그림자가 ' || reg || '에 드러났습니다! 30분 뒤 토벌이 시작되고, 끝나기 전까지 언제든 그곳에서 합류할 수 있습니다.');
     elsif rd.spawn_at - interval '3 hours' <= now() and not ('3h' = any (rd.notices)) then
       update public.world_raids set notices = notices || '{3h,6h,12h,24h}' where raid_id = rd.raid_id;
       perform public.world_raid_broadcast(rd.raid_id, '봉연 · 세 시간 전', '세 시간 뒤(' || hm || ') ' || reg || '에 봉연의 그림자가 드러납니다.');
@@ -783,8 +791,10 @@ begin
     into mem from public.world_raid_members x join public.world_characters ch on ch.owner_id = x.owner_id where x.raid_id = rid;
   select coalesce(jsonb_agg(jsonb_build_object('id', l.id, 'at', l.at, 'kind', l.kind, 'text', l.text) order by l.id), '[]'::jsonb) into logs
     from (select * from public.world_raid_log where raid_id = rid order by id desc limit 40) l;
-  if rd.status = 'signup' and me.owner_id is null then
-    if rd.signup_until <= now() then why := '신청 시간이 지났습니다.';
+  if me.owner_id is null and (rd.status = 'signup' or (rd.kind = 'world' and rd.status = 'fight')) then
+    if rd.status = 'signup' and rd.signup_until <= now() then why := '신청 시간이 지났습니다.';
+    elsif rd.status = 'fight' and rd.ends_at <= now() then why := '토벌이 끝났습니다.';
+    elsif c.health <= 0 or c.downed_at is not null then why := '전투불능 상태에서는 합류할 수 없습니다.';
     elsif here is distinct from rd.region_id then why := (select region_name from public.world_map_regions where region_id = rd.region_id) || '에 있어야 신청할 수 있습니다.';
     elsif rd.kind = 'final' and not exists (select 1 from public.world_party_members a join public.world_party_members b on b.party_id = a.party_id where a.owner_id = uid and b.owner_id = rd.leader_id) then why := '시작한 조사원의 파티원만 합류할 수 있습니다.';
     else can_join := true; end if;
@@ -991,14 +1001,14 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 ### 합동 토벌
 - 여러 조사원이 **체력 하나를 함께 깎는** 큰 싸움이 생겼습니다. 1초마다 공격·방어·물품·협동 기술 가운데 하나를 고릅니다. 요괴는 행동한 사람에게 반격하고, 몇 턴마다 모두를 치거나 사슬로 묶거나 기운을 모읍니다. 기운을 모을 때는 정해진 만큼 몰아쳐야 끊깁니다. 체력이 70%·40% 아래로 내려가면 더 거세집니다.
 - 토벌에서 쓰러지면 전투불능이 아니라 체력 1로 **60초 동안 물러났다가** 돌아옵니다.
-- 참가자의 체력·기여도·걸린 효과가 한 화면에 보입니다. 신청하지 않은 사람도 같은 화면에서 **실시간으로 지켜볼 수** 있습니다.
+- 참가자의 체력·기여도·걸린 효과가 한 화면에 보입니다. 참가하지 않은 사람도 같은 화면에서 **실시간으로 지켜볼 수** 있습니다.
 
 ### 10장 최종 결전 「구중 봉주」
 - 10장을 마치면 구중 봉연에서 퀘스트 「구중 봉주」가 열립니다. **혼자, 또는 같은 곳의 파티원과(4명까지)** 결전에 들어갑니다. 요괴 체력은 인원에 따라 늘어나고, 20분 안에 이겨야 합니다.
 
 ### 서버 보스 「봉연의 그림자」
 - **사흘~나흘마다** 세상 어딘가에 나타납니다. 24시간 전에 후보 지역 셋, 12시간 전에 확정 지역을 알리고, 6시간·3시간 전에 한 번 더 알립니다(전체 채팅 「봉연 소식」·알림·현장 띠).
-- 나타나면 그 지역에서 **30분 동안 참가 신청**을 받고, 신청한 사람만 **2시간** 동안 싸웁니다. 레벨과 상관없이 누구나 들 수 있습니다. 다만 요괴는 지역 레벨보다 3 높게 치고, 낮은 레벨은 기여도가 적게 잡힙니다.
+- 나타나면 그 지역에 **30분 동안 모인 뒤 2시간 동안 토벌**합니다. 돌발 임무처럼 **토벌 도중에도 그 지역에 가면 바로 합류**할 수 있습니다(늦게 합류하면 남은 시간만큼 그림자의 체력이 늘고, 기여도는 그만큼 덜 쌓입니다). 합류하지 않은 사람은 같은 화면에서 지켜봅니다. 레벨과 상관없이 누구나 들 수 있습니다. 다만 요괴는 지역 레벨보다 3 높게 치고, 낮은 레벨은 기여도가 적게 잡힙니다.
 - 기여도 1% 이상이면 보상을 받습니다. 전·경험치·봉연 조각은 기여도에 따라 나오고, 회복약·강화 재료·**토벌 전용 장비**(노리개·호신부·탈, 5단계·거래 불가)는 확률로 나옵니다.
 - 막지 못하면 다음 회차까지 그 지역이 **봉연에 잠깁니다**. 그곳은 침식 +30%·요괴 조우 +10%·채집량 −25%·받는 피해 +10%이고(채집·원정은 할 수 있음), 바로 이웃한 지역은 침식 +30%·조우 +10%, 그 이웃은 침식 +10%·조우 +5%입니다. 지도와 현장에 「봉연에 잠김」이 보입니다.
 

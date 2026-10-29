@@ -91,10 +91,13 @@ function draw() {
 }
 
 function joinHtml(r, me) {
-  if (r.status !== 'signup') return '';
+  // 서버 보스는 토벌 중에도 그 지역에서 합류할 수 있다(돌발 임무처럼, 늦을수록 기여도는 덜 쌓인다)
+  const late = r.kind === 'world' && r.status === 'fight';
+  if (r.status !== 'signup' && !late) return '';
+  if (late && me.joined) return '';
   if (me.joined) return `<p class="hint good">${icon('check', 14)} 참가를 신청했습니다. 신청이 끝나면 토벌이 시작됩니다.</p>
     ${r.kind === 'final' && r.leader ? `<button class="btn primary" id="raid-begin">${icon('sword', 16)}<span>지금 시작하기</span></button><p class="muted small">함께할 동료가 다 왔으면 바로 시작합니다. 90초가 지나면 저절로 시작합니다.</p>` : ''}`;
-  return me.can_join ? `<button class="btn primary" id="raid-join">${icon('flag', 16)}<span>${r.kind === 'final' ? '결전에 합류' : '토벌 참가 신청'}</span></button>`
+  return me.can_join ? `<button class="btn primary" id="raid-join">${icon('flag', 16)}<span>${r.kind === 'final' ? '결전에 합류' : late ? '지금 토벌에 합류' : '토벌 참가 신청'}</span></button>${late ? '<p class="muted small">지금 합류하면 남은 시간만큼 그림자의 체력이 늘고, 기여도는 합류한 뒤부터 쌓입니다.</p>' : ''}`
     : `<p class="hint">${icon('pin', 14)} ${esc(me.why || '신청할 수 없습니다.')}</p>`;
 }
 
@@ -194,8 +197,8 @@ export async function fillRaidBand(box) {
     const t = x => x ? left(x) : '';
     const what = w.status === 'announced' ? (w.region ? `<b>${esc(w.region)}</b> · ${t(w.spawn_at)} 뒤 출현` : `후보 · ${esc((w.candidates || []).join(', '))}`)
       : w.status === 'signup' ? `<b>${esc(w.region || '')}</b> · 참가 신청 ${t(w.signup_until)} 남음${w.joined ? ' · 신청함' : ''}`
-      : `<b>${esc(w.region || '')}</b> · 토벌 중 ${w.max_hp ? Math.round(w.hp / w.max_hp * 100) : 0}% · ${t(w.ends_at)} 남음`;
-    rows.push(`<a class="raid-band-row ${w.status === 'announced' ? '' : 'hot'}" href="#/raid/${esc(w.id)}">${icon('flame', 14)}<span>${esc(w.boss)} · ${what}</span><small>${w.status === 'announced' ? '보기' : w.joined ? '들어가기' : w.status === 'signup' ? '신청·보기' : '관전'}</small></a>`);
+      : `<b>${esc(w.region || '')}</b> · 토벌 중 ${w.max_hp ? Math.round(w.hp / w.max_hp * 100) : 0}% · ${t(w.ends_at)} 남음${w.joined ? '' : ' · 지금도 합류 가능'}`;
+    rows.push(`<a class="raid-band-row ${w.status === 'announced' ? '' : 'hot'}" href="#/raid/${esc(w.id)}">${icon('flame', 14)}<span>${esc(w.boss)} · ${what}</span><small>${w.status === 'announced' ? '보기' : w.joined ? '들어가기' : w.status === 'signup' ? '신청·보기' : '합류·관전'}</small></a>`);
   }
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
