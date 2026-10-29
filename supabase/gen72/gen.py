@@ -199,6 +199,7 @@ if os.path.exists(os.path.join(HERE, 'p_pets.sql')):
     pets_data.emit(w, J, node_dump)
 if os.path.exists(os.path.join(HERE, 'x_misc.sql')):
     part('x_misc.sql')
+part('s_expskill.sql')
 part('patch_note.sql')
 w("""
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261103000000', now())
