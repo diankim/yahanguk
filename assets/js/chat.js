@@ -64,7 +64,7 @@ export function mountChat(colEl, fabEl) {
   switchTab(tab);
   subscribe();
   loadBlocks();
-  on('changed', ({ name }) => { if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
+  on('changed', ({ name }) => { if (/party/.test(name)) partyLoaded = false; if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
   subscribeCircles();
   subscribeParty();
   window.addEventListener('yahang:arrived', load);
@@ -105,8 +105,14 @@ function switchTab(t) {
   $('#chat-hint', panel).textContent = HINT[t];
   $('#chat-circles', panel).hidden = t !== 'circle';
   clearInterval(partyPoll);
-  if (t === 'party') { partyNew = false; paintPartyDot(); loadParty(); partyPoll = setInterval(() => { if (!document.hidden) loadParty(); }, 20000); }
-  else if (t === 'circle') { drawCircleChips(); loadCircleMsgs(); }
+  // 탭을 바꿀 때 이미 받은 말은 다시 읽지 않는다(실시간이 살아 있을 때). 끊겨 있을 때만 서버에서 읽는다.
+  if (t === 'party') {
+    if (!partyLoaded || partyNew || !partyLive) loadParty(); else draw();
+    partyNew = false; paintPartyDot();
+    partyPoll = setInterval(() => { if (!document.hidden && !partyLive) loadParty(); }, 20000);
+  }
+  else if (t === 'circle') { drawCircleChips(); showCircle(); }
+  else if (msgs.length && live) draw();
   else load();
 }
 
@@ -133,7 +139,13 @@ function paintCircleDots() {
 function pickCircle(id) {
   forceEnd = true;
   circleId = id; try { sessionStorage.setItem('yh-chat-circle', id); } catch {}
-  drawCircleChips(); loadCircleMsgs();
+  drawCircleChips(); showCircle();
+}
+// 고른 모임: 이미 받은 말이 있고 실시간이 살아 있으면 그대로 그린다(안 읽은 말이 있을 때만 읽음 표시)
+function showCircle() {
+  const id = circleId;
+  if (!id || !circleMsgs[id] || !circleLive) return loadCircleMsgs();
+  draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id);
 }
 async function loadCircleMsgs() {
   const id = circleId; if (!id) return draw();
@@ -141,12 +153,12 @@ async function loadCircleMsgs() {
     const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
     circleMsgs[id] = (data || []).reverse();
-    if (tab === 'circle' && circleId === id) { draw(); markCircleRead(id); }
+    if (tab === 'circle' && circleId === id) { draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id); }
   } catch (e) { if (tab === 'circle') drawError(friendlyError(e)); }
 }
 function markCircleRead(id) {
   circleUnread[id] = 0; drawCircleChips(); paintCircleDots();
-  clearTimeout(readTimer); readTimer = setTimeout(() => rpc('world_circle_mark_read', { p_circle: id }).catch(() => {}), 800);
+  clearTimeout(readTimer); readTimer = setTimeout(() => rpc('world_circle_mark_read', { p_circle: id }).catch(() => {}), 3000);
 }
 function onCircleMsg(m) {
   if (!m?.circle_id || blocked.has(m.sender_id)) return;
@@ -162,13 +174,17 @@ function onCircleMsg(m) {
   if (sheetClosed && m.kind === 'chat' && m.sender_id !== store.user?.id) { unread++; badge(); }
 }
 // 파티 채팅: 새 말이 오면(파티원만 읽는 RLS) 파티 탭에 빨간 점, 닫힌 시트에는 안 읽은 수를 더한다
-let partyChannel = null, partyNew = false;
+let partyChannel = null, partyNew = false, partyLive = false, partyLoaded = false;
 function subscribeParty() {
   try {
     if (partyChannel) db.removeChannel(partyChannel);
     const ch = db.channel('yh-party-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_party_messages' }, p => onPartyMsg(p.new));
     partyChannel = ch;
-    ch.subscribe(status => { if (partyChannel === ch && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) setTimeout(() => { if (partyChannel === ch) subscribeParty(); }, 15000); });
+    ch.subscribe(status => {
+      if (partyChannel !== ch) return;
+      partyLive = status === 'SUBSCRIBED';
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setTimeout(() => { if (partyChannel === ch && !partyLive) subscribeParty(); }, 15000);
+    });
   } catch {}
 }
 function onPartyMsg(m) {
@@ -226,7 +242,7 @@ function addMsg(m) {
   if (sheetClosed && m.sender_id !== store.user?.id && !blocked.has(m.sender_id)) { unread++; badge(); }
 }
 async function loadParty() {
-  try { const s = await rpc('world_party_chat_snapshot'); partyMsgs = s?.messages || []; store.partyId = s?.party_id || null; draw(); }
+  try { const s = await rpc('world_party_chat_snapshot'); partyMsgs = s?.messages || []; store.partyId = s?.party_id || null; partyLoaded = true; draw(); }
   catch (e) { drawError(friendlyError(e)); }
 }
 
@@ -343,10 +359,10 @@ async function send(e) {
   btn.disabled = true; forceEnd = true;
   try {
     if (tab === 'party') { await act('world_party_chat_send', { p_content: text }); await loadParty(); }
-    else if (tab === 'circle') { if (!circleId) throw new Error('모임을 골라 주세요.'); await rpc('world_circle_send', { p_circle: circleId, p_content: text }); await loadCircleMsgs(); }
+    else if (tab === 'circle') { if (!circleId) throw new Error('모임을 골라 주세요.'); await rpc('world_circle_send', { p_circle: circleId, p_content: text }); if (!circleLive) await loadCircleMsgs(); }
     else {
       await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: null });
-      await load();
+      await (live && msgs.length ? loadNew() : load());
     }
     form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {} form._fit?.();
   } catch (err) { toast(friendlyError(err), 'error'); }
