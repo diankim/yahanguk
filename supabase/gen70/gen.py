@@ -243,6 +243,7 @@ bulk('world_quest_steps', strows, [('quest_id', 'text'), ('step', 'int'), ('titl
      'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
 
 part('g_qol.sql')
+part('g_tools.sql')
 part('patch_note.sql')
 w("""insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261101000000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;""")

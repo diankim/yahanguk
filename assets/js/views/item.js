@@ -53,7 +53,14 @@ export const isLocked = id => !!locks?.has(id);
 const ACCESSORY = new Set(['hat', 'shoes', 'norigae', 'amulet', 'mask']);
 const STAT_KEYS = ['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'];
 const topStat = c => Math.max(...STAT_KEYS.map(k => Number(c?.[k] || 0)));
+// 생활 도구는 능력치 대신 숙련 단계(7.0.0, equipment_traits.req_line·req_rank, 서버 world_equip_item과 같음)
+const RANK_NAME = { gathering_rank: '채집 숙련', crafting_rank: '제작 숙련', investigation_rank: '조사 숙련' };
 const statReqs = (o, c) => {
+  const tr = o.equipment_traits || {};
+  if (o.category === 'tool' && Number(tr.req_rank) > 1) {
+    const n = RANK_NAME[tr.req_line] || '채집 숙련', have = Number(c?.[tr.req_line] || 1), need = Number(tr.req_rank);
+    return [[`${n} ${need}단계 이상`, have >= need, `${n} ${need}단계 필요 (지금 ${have}단계)`]];
+  }
   const req = Object.entries(o.required_stats || {});
   if (!req.length) return [];
   if (ACCESSORY.has(o.category)) { const v = Math.max(...req.map(([, n]) => Number(n))); return [[`가장 높은 능력치 ${v} 이상`, topStat(c) >= v, `가장 높은 능력치 ${v} 필요 (지금 ${topStat(c)})`]]; }

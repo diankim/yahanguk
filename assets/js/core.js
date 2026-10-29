@@ -139,7 +139,7 @@ const FIXED = {
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
 const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
 export function effectText(effects, potency = 1) {
-  return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && Number(v)).map(([k, v]) => {
+  return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && k !== 'req_rank' && Number(v)).map(([k, v]) => {
     const n = Math.round(Number(v) * (potency || 1) * 10) / 10;
     if (PER_ACTION.has(k)) return `${FIXED[k]} -${Math.abs(n)}`;
     return `${FIXED[k] || '기타 효과'} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) ? '' : '%'}`;

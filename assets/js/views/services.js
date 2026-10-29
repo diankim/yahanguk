@@ -265,12 +265,16 @@ export async function renderMarket(box) {
   const body = $('.mk-body', box);
   if (marketMode === 'direct') return renderDirect(body);
   try {
-    const [{ data: offers, error }, prices, , inv] = await Promise.all([
-      db.from('world_trade_offers').select('offer_id,seller_id,item_id,quantity,unit_price,status,created_at,expires_at').eq('status', 'open').order('created_at', { ascending: false }).limit(60),
+    // 열린 등록은 사람마다 10건까지라 다 읽는다(예전 60건 한도에 오래된 등록이 「사기」와 「내 등록」에서 빠져 사라진 것처럼 보이던 것). 내 등록은 따로 읽어 늘 다 보인다
+    const OCOLS = 'offer_id,seller_id,item_id,quantity,unit_price,status,created_at,expires_at';
+    const [{ data: openAll, error }, { data: myOpen, error: e2 }, prices, , inv] = await Promise.all([
+      db.from('world_trade_offers').select(OCOLS).eq('status', 'open').order('created_at', { ascending: false }).limit(300),
+      db.from('world_trade_offers').select(OCOLS).eq('status', 'open').eq('seller_id', store.character.owner_id).order('created_at', { ascending: false }),
       load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
     ]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
-    if (error) throw new Error(error.message);
+    if (error || e2) throw new Error((error || e2).message);
+    const offers = [...(myOpen || []), ...(openAll || []).filter(o => !(myOpen || []).some(m => m.offer_id === o.offer_id))];
     const c = store.character, me = c.owner_id, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k))
