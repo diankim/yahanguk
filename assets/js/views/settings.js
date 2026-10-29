@@ -25,6 +25,7 @@ const NOTIFY_GROUPS = [
   ['spar', '비무', '비무 신청·결과'],
   ['bond', '연리', '정인 신청·선물·안부'],
   ['faction', '세력', '세력 소식'],
+  ['housing', '별채', '발걸음·방명록·새 가구·손님이 동무와 놀아 줌'],
 ];
 let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 

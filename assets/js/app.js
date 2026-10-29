@@ -29,6 +29,7 @@ import * as raidPage from './views/raid.js';
 import * as gwPage from './views/gw.js';
 import * as pfightPage from './views/pfight.js';
 import * as tourneyPage from './views/tourney.js';
+import * as housePage from './views/housing.js';
 import { preloadNames, hasNameCache } from './views/common.js';
 
 mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
@@ -45,7 +46,7 @@ const VIEWS = {
   log: { mod: journal, label: '일지', icon: 'scroll' },
 };
 // 탭에는 없지만 헤더에서 여는 화면
-const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' }, pfight: { mod: pfightPage, label: '파티 토벌' }, tourney: { mod: tourneyPage, label: '비무 방' } };
+const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' }, pfight: { mod: pfightPage, label: '파티 토벌' }, tourney: { mod: tourneyPage, label: '비무 방' }, house: { mod: housePage, label: '별채' } };
 
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null, routing = null;

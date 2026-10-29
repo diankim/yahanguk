@@ -11,7 +11,7 @@ import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 
-const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot']];
+const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot'], ['house', '별채', 'home']];
 const STATS = [
   ['strength', '근력', '근접 무기의 위력'], ['agility', '민첩', '회피·달아나기·원거리 위력 · 이목 낮춤'], ['vitality', '체질', '방어력·응급 회복 · 이목 높임'],
   ['perception', '감각', '치명타·원거리 위력·단서 발견'], ['willpower', '의지', '술법 위력·응급 회복'], ['spirit_affinity', '영성', '술법 무기의 위력'],
@@ -59,7 +59,7 @@ export async function render(root, s) {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('user', 14)} ${esc(JOBS[c.job_key]?.name || nameOf(c.job_key))} · ${esc(FACTIONS[c.faction_key]?.name || nameOf(c.faction_key))}</p><h1>${esc(c.character_name)}${gmBadge(c.owner_id)} <small>Lv.${c.level}</small></h1></div></div>
     ${segmented('char-sub', SUBS, sub)}<div id="char-body"></div>`;
   paintTitleDot();
-  bindSegmented(el, 'char-sub', k => { sub = k; window.history.replaceState(null, '', `#/char/${k}`); draw(); });
+  bindSegmented(el, 'char-sub', k => { if (k === 'house') return window.yahangGo?.('house'); sub = k; window.history.replaceState(null, '', `#/char/${k}`); draw(); });
   // 행동 뒤에는 그 행동이 바꿀 수 있는 것만 다시 읽는다(전투 능력치·쉼·정인은 관련 행동 뒤에만, 상태판 요약은 상태판과 같이 씀)
   off.forEach(f => f()); off = [on('changed', ev => { if (midBattle(ev)) return; lastChange = ev.name || ''; draw(true); })];
   await draw();
