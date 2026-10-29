@@ -25,3 +25,7 @@ select pg_temp.yh_patch('public.world_use_item(text)', '''oblivion_incense'', ''
   '''oblivion_incense'', ''wedding_rice_cake'', ''herb_rice'', ''moss_porridge'', ''bark_stew'') THEN RAISE EXCEPTION');
 select pg_temp.yh_patch('public.world_use_item(text)', 'WHEN ''wedding_rice_cake'' THEN hp := 20; mn := 15;',
   'WHEN ''wedding_rice_cake'' THEN hp := 20; mn := 15; WHEN ''herb_rice'' THEN hp := 20; buffs := ARRAY[''well_fed'']; WHEN ''moss_porridge'' THEN hp := 35; mn := 10; buffs := ARRAY[''warm_belly'']; WHEN ''bark_stew'' THEN hp := 50; mn := 10; buffs := ARRAY[''vigor''];');
+
+-- 안전지대 회복(pg_cron yh-safe-regen, 10분마다): 체력 +5 → +12 · 정신 +5 → +6. 주기는 그대로 두어 쓰기 횟수는 늘리지 않는다(빈 체력도 1시간 반 안팎이면 찬다)
+select pg_temp.yh_patch('public.world_safe_regen()', 'set health = least(100, c.health + 5), mental = least(100, c.mental + 5)',
+  'set health = least(100, c.health + 12), mental = least(100, c.mental + 6)');
