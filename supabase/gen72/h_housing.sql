@@ -139,13 +139,13 @@ begin
     n := least(n, greatest(0, cap - public.world_housing_store_count(s.items)));
     if n <= 0 then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'housing_item', '곳간이 가득 참', nm || public.world_josa(nm, '을', '를') || ' 얻었지만 곳간이 가득 차 두고 왔습니다.', jsonb_build_object('item', p_item));
+      values (p_owner, 'housing_item', '곳간이 가득 참', public.world_josa(nm, '을', '를') || ' 얻었지만 곳간이 가득 차 두고 왔습니다.', jsonb_build_object('item', p_item));
       return 0;
     end if;
   end if;
   update public.world_housing_store set items = public.world_inv_add(items, p_item, n), updated_at = now() where owner_id = p_owner;
   insert into public.world_notifications(user_id, kind, title, content, payload)
-  values (p_owner, 'housing_item', '별채 가구 · ' || nm, coalesce(p_note || ' · ', '') || nm || public.world_josa(nm, '이', '가') || ' 곳간에 들어왔습니다.', jsonb_build_object('item', p_item, 'qty', n));
+  values (p_owner, 'housing_item', '별채 가구 · ' || nm, coalesce(p_note || ' · ', '') || public.world_josa(nm, '이', '가') || ' 곳간에 들어왔습니다.', jsonb_build_object('item', p_item, 'qty', n));
   return n;
 end $$;
 -- 한 번만 주는 보상
@@ -538,3 +538,7 @@ select pg_temp.yh_patch('public.world_shop_sell(text,integer)', 'if not found or
 -- 별채 알림은 설정에서 끈다
 select pg_temp.yh_patch('public.world_notify_group(text)', '    else null end', '    when p_kind in (''housing_visit'', ''housing_guest'', ''housing_item'', ''pet_play'') then ''housing''
     else null end');
+
+-- 퀘스트 완료 알림의 조사(「제목」제목을 → 「제목」을)
+select pg_temp.yh_patch('public.world_quest_report(text)', '''」'' || public.world_josa(q.title, ''을'', ''를'') || '' 마쳤습니다.''',
+  '''」'' || substr(public.world_josa(q.title, ''을'', ''를''), char_length(q.title) + 1) || '' 마쳤습니다.''');

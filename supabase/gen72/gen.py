@@ -181,7 +181,7 @@ STEPS = [
         ('q:hs_bomi', '자, 이제 당신 방이우. 단청 들보랑 꽃살창은 옛 주인이 남기고 간 걸 닦아 둔 거고.'),
         ('q:hs_bomi', '가구는 안전지대에 있을 때 들이고 옮길 수 있수. 바깥에선 구경만 하고.'),
         ('q:hs_bomi', '손님이 오면 방명록도 받아 보구려. 빈방에 사람 냄새가 나야 집이 살아.'),
-        (None, '문을 밀자 마루 냄새가 훅 끼친다. 오래 잠들어 있던 방이 숨을 쉬기 시작한다.')], {'xp': xp - xp // 2, 'gil': 5 + 4 * L}),
+        (None, '문을 밀자 마루 냄새가 훅 끼친다. 오래 잠들어 있던 방이 숨을 쉬기 시작한다.')], {'xp': xp - xp // 2}),
 ]
 w(f"""insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset({J([dict(k=k, n=v[0], b=v[1]) for k, v in NPC.items()])}) as x(k text, n text, b text)
 on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;

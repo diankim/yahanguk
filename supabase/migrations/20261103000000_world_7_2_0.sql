@@ -161,13 +161,13 @@ begin
     n := least(n, greatest(0, cap - public.world_housing_store_count(s.items)));
     if n <= 0 then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'housing_item', '곳간이 가득 참', nm || public.world_josa(nm, '을', '를') || ' 얻었지만 곳간이 가득 차 두고 왔습니다.', jsonb_build_object('item', p_item));
+      values (p_owner, 'housing_item', '곳간이 가득 참', public.world_josa(nm, '을', '를') || ' 얻었지만 곳간이 가득 차 두고 왔습니다.', jsonb_build_object('item', p_item));
       return 0;
     end if;
   end if;
   update public.world_housing_store set items = public.world_inv_add(items, p_item, n), updated_at = now() where owner_id = p_owner;
   insert into public.world_notifications(user_id, kind, title, content, payload)
-  values (p_owner, 'housing_item', '별채 가구 · ' || nm, coalesce(p_note || ' · ', '') || nm || public.world_josa(nm, '이', '가') || ' 곳간에 들어왔습니다.', jsonb_build_object('item', p_item, 'qty', n));
+  values (p_owner, 'housing_item', '별채 가구 · ' || nm, coalesce(p_note || ' · ', '') || public.world_josa(nm, '이', '가') || ' 곳간에 들어왔습니다.', jsonb_build_object('item', p_item, 'qty', n));
   return n;
 end $$;
 -- 한 번만 주는 보상
@@ -561,6 +561,10 @@ select pg_temp.yh_patch('public.world_shop_sell(text,integer)', 'if not found or
 select pg_temp.yh_patch('public.world_notify_group(text)', '    else null end', '    when p_kind in (''housing_visit'', ''housing_guest'', ''housing_item'', ''pet_play'') then ''housing''
     else null end');
 
+-- 퀘스트 완료 알림의 조사(「제목」제목을 → 「제목」을)
+select pg_temp.yh_patch('public.world_quest_report(text)', '''」'' || public.world_josa(q.title, ''을'', ''를'') || '' 마쳤습니다.''',
+  '''」'' || substr(public.world_josa(q.title, ''을'', ''를''), char_length(q.title) + 1) || '' 마쳤습니다.''');
+
 
 -- ─── 가구 69가지(바닥·벽·벽지·바닥재) · 제작법 48 · 상점 · 출처 ───
 insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, required_stats, minimum_level, equipment_traits, tradeable, reference_price, stack_size)
@@ -593,7 +597,7 @@ insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, 
 values ('hs_byeolchae', 'side', '생활·별채', '객사 별채', '본부 객사 뒤뜰의 빈 별채를 손봐 내 방으로 삼는다. (주 이야기 4장을 마친 뒤 Lv15부터)', 'hq_dorm', 15, array['mq_frost_seal'], null, 950, '[]'::jsonb, true)
 on conflict (quest_id) do update set cat = excluded.cat, title = excluded.title, summary = excluded.summary, region_id = excluded.region_id, min_level = excluded.min_level, after = excluded.after, sort = excluded.sort, active = true;
 insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward)
-select 'hs_byeolchae', x.step, x.title, x.goal, x.need, x.lines, x.reward from jsonb_to_recordset($J$[{"step":1,"title":"빈 별채","goal":"본부 객사의 살림꾼 보미에게 말을 겁니다.","need":{"at":["hq_dorm"]},"lines":[{"s":null,"t":"객사 뒤뜰, 마른 감나무 너머로 지붕 낮은 별채가 보인다. 문살에 먼지가 하얗게 앉았다."},{"s":"q:hs_bomi","t":"저 별채 말이우? 예전엔 오래 머무는 조사원들이 쓰던 방이었지."},{"s":"q:hs_bomi","t":"주인이 안 돌아온 지 몇 해째라, 이제 들일 사람을 찾고 있었수."},{"s":"q:hs_bomi","t":"손 좀 보면 쓸 만해. 마음 있으면 채비부터 같이 해 봅시다."}],"reward":{}},{"step":2,"title":"채비","goal":"부적목 6개·황지 4개를 채집해 오고, 오방색 방석 하나를 직접 만듭니다.","need":{"at":["hq_dorm"],"give":{"wood":6,"seal_paper":4},"tasks":[{"t":"gather","n":6,"items":["wood"]},{"t":"gather","n":4,"items":["seal_paper"]},{"t":"craft","n":1,"items":["hf_cushion_obang"]}]},"lines":[{"s":null,"t":"보미가 부적목을 하나씩 두드려 보고 고개를 끄덕인다."},{"s":"q:hs_bomi","t":"나무는 좋수. 황지는 문창에 바를 거라 넉넉해야 해."},{"s":"q:hs_bomi","t":"방석은 손수 만든 거네. 바느질이 삐뚤어도 처음 깔 자리는 제 손으로 만든 게 제일이우."},{"s":"q:hs_bomi","t":"이제 수리비만 치르면 열쇠를 넘겨 드리지."}],"reward":{"xp":840}},{"step":3,"title":"입주","goal":"수리비 1,000전을 치르고 별채 열쇠를 받습니다.","need":{"at":["hq_dorm"],"gil":1000},"lines":[{"s":null,"t":"보미가 허리춤에서 녹슨 열쇠 꾸러미를 풀어 하나를 골라낸다."},{"s":"q:hs_bomi","t":"자, 이제 당신 방이우. 단청 들보랑 꽃살창은 옛 주인이 남기고 간 걸 닦아 둔 거고."},{"s":"q:hs_bomi","t":"가구는 안전지대에 있을 때 들이고 옮길 수 있수. 바깥에선 구경만 하고."},{"s":"q:hs_bomi","t":"손님이 오면 방명록도 받아 보구려. 빈방에 사람 냄새가 나야 집이 살아."},{"s":null,"t":"문을 밀자 마루 냄새가 훅 끼친다. 오래 잠들어 있던 방이 숨을 쉬기 시작한다."}],"reward":{"xp":840,"gil":65}}]$J$::jsonb)
+select 'hs_byeolchae', x.step, x.title, x.goal, x.need, x.lines, x.reward from jsonb_to_recordset($J$[{"step":1,"title":"빈 별채","goal":"본부 객사의 살림꾼 보미에게 말을 겁니다.","need":{"at":["hq_dorm"]},"lines":[{"s":null,"t":"객사 뒤뜰, 마른 감나무 너머로 지붕 낮은 별채가 보인다. 문살에 먼지가 하얗게 앉았다."},{"s":"q:hs_bomi","t":"저 별채 말이우? 예전엔 오래 머무는 조사원들이 쓰던 방이었지."},{"s":"q:hs_bomi","t":"주인이 안 돌아온 지 몇 해째라, 이제 들일 사람을 찾고 있었수."},{"s":"q:hs_bomi","t":"손 좀 보면 쓸 만해. 마음 있으면 채비부터 같이 해 봅시다."}],"reward":{}},{"step":2,"title":"채비","goal":"부적목 6개·황지 4개를 채집해 오고, 오방색 방석 하나를 직접 만듭니다.","need":{"at":["hq_dorm"],"give":{"wood":6,"seal_paper":4},"tasks":[{"t":"gather","n":6,"items":["wood"]},{"t":"gather","n":4,"items":["seal_paper"]},{"t":"craft","n":1,"items":["hf_cushion_obang"]}]},"lines":[{"s":null,"t":"보미가 부적목을 하나씩 두드려 보고 고개를 끄덕인다."},{"s":"q:hs_bomi","t":"나무는 좋수. 황지는 문창에 바를 거라 넉넉해야 해."},{"s":"q:hs_bomi","t":"방석은 손수 만든 거네. 바느질이 삐뚤어도 처음 깔 자리는 제 손으로 만든 게 제일이우."},{"s":"q:hs_bomi","t":"이제 수리비만 치르면 열쇠를 넘겨 드리지."}],"reward":{"xp":840}},{"step":3,"title":"입주","goal":"수리비 1,000전을 치르고 별채 열쇠를 받습니다.","need":{"at":["hq_dorm"],"gil":1000},"lines":[{"s":null,"t":"보미가 허리춤에서 녹슨 열쇠 꾸러미를 풀어 하나를 골라낸다."},{"s":"q:hs_bomi","t":"자, 이제 당신 방이우. 단청 들보랑 꽃살창은 옛 주인이 남기고 간 걸 닦아 둔 거고."},{"s":"q:hs_bomi","t":"가구는 안전지대에 있을 때 들이고 옮길 수 있수. 바깥에선 구경만 하고."},{"s":"q:hs_bomi","t":"손님이 오면 방명록도 받아 보구려. 빈방에 사람 냄새가 나야 집이 살아."},{"s":null,"t":"문을 밀자 마루 냄새가 훅 끼친다. 오래 잠들어 있던 방이 숨을 쉬기 시작한다."}],"reward":{"xp":840}}]$J$::jsonb)
   as x(step int, title text, goal text, need jsonb, lines jsonb, reward jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
 
@@ -635,7 +639,7 @@ begin
   if found then
     if p_notify then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'pet_new', '꼬마 동무 · ' || nm, nm || public.world_josa(nm, '이', '가') || ' 동무가 되었습니다. 캐릭터 › 별채에서 만날 수 있습니다.', jsonb_build_object('pet_id', p_pet));
+      values (p_owner, 'pet_new', '꼬마 동무 · ' || nm, public.world_josa(nm, '이', '가') || ' 동무가 되었습니다. 캐릭터 › 별채에서 만날 수 있습니다.', jsonb_build_object('pet_id', p_pet));
     end if;
     perform public.world_title_award_check(p_owner, 'home');
     return true;
@@ -682,8 +686,8 @@ begin
   perform public.world_pet_grant(uid, pid, 'item:' || p_item, false);
   select * into sp from public.world_pet_species where pet_id = pid;
   return jsonb_build_object('ok', true, 'pet_id', pid, 'name', sp.pet_name, 'grade', sp.grade,
-    'content', case when pid = it.equipment_traits ->> 'pet' then sp.pet_name || public.world_josa(sp.pet_name, '이', '가') || ' 바구니에서 고개를 내밀었습니다.'
-                    else '알이 갈라지고 ' || sp.pet_name || public.world_josa(sp.pet_name, '이', '가') || ' 태어났습니다!' end);
+    'content', case when pid = it.equipment_traits ->> 'pet' then public.world_josa(sp.pet_name, '이', '가') || ' 바구니에서 고개를 내밀었습니다.'
+                    else '알이 갈라지고 ' || public.world_josa(sp.pet_name, '이', '가') || ' 태어났습니다!' end);
 end $$;
 
 -- 별명: 8자까지, 비우면 원래 이름
@@ -763,13 +767,13 @@ begin
     if p_act = 'feed' then raise exception '먹이는 주인만 줄 수 있습니다.'; end if;
     insert into public.world_pet_guest(owner_id, visitor_id, day) values (p_owner, uid, today) on conflict do nothing;
     select * into g from public.world_pet_guest where owner_id = p_owner and visitor_id = uid and day = today for update;
-    if (p_act = 'pat' and g.pat) or (p_act = 'play' and g.play) then raise exception '오늘은 이미 %했습니다. 내일 또 와 주세요.', case when p_act = 'pat' then '쓰다듬어 주었' else '놀아 주었' end; end if;
+    if (p_act = 'pat' and g.pat) or (p_act = 'play' and g.play) then raise exception '오늘은 이미 %. 내일 또 와 주세요.', case when p_act = 'pat' then '쓰다듬어 주었습니다' else '놀아 주었습니다' end; end if;
     update public.world_pet_guest set pat = pat or p_act = 'pat', play = play or p_act = 'play' where owner_id = p_owner and visitor_id = uid and day = today;
     gain := 1; react := case when p_act = 'play' then 'note' else 'heart' end;
     if not g.pat and not g.play then
       select character_name into vn from public.world_characters where owner_id = uid;
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'pet_play', '별채의 동무', vn || '님이 ' || nm || public.world_josa(nm, '과', '와') || ' ' || case when p_act = 'pat' then '쓰다듬어 주었습니다.' else '놀아 주었습니다.' end, jsonb_build_object('visitor', uid));
+      values (p_owner, 'pet_play', '별채의 동무', vn || '님이 ' || case when p_act = 'pat' then public.world_josa(nm, '을', '를') || ' 쓰다듬어 주었습니다.' else public.world_josa(nm, '과', '와') || ' 놀아 주었습니다.' end, jsonb_build_object('visitor', uid));
     end if;
   end if;
   pt.affinity := least(300, pt.affinity + gain);
@@ -777,7 +781,7 @@ begin
    where owner_id = p_owner and pet_id = h.pet_id;
   if not was_adult and pt.affinity >= 100 then
     insert into public.world_notifications(user_id, kind, title, content, payload)
-    values (p_owner, 'pet_new', '꼬마 동무가 자랐습니다', nm || public.world_josa(nm, '이', '가') || ' 훌쩍 자랐습니다.', jsonb_build_object('pet_id', h.pet_id));
+    values (p_owner, 'pet_new', '꼬마 동무가 자랐습니다', public.world_josa(nm, '이', '가') || ' 훌쩍 자랐습니다.', jsonb_build_object('pet_id', h.pet_id));
     perform public.world_title_award_check(p_owner, 'home');
   end if;
   return jsonb_build_object('ok', true, 'affinity', pt.affinity, 'gain', gain, 'adult', pt.affinity >= 100, 'grew', not was_adult and pt.affinity >= 100, 'react', react,

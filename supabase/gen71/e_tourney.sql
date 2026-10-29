@@ -221,7 +221,7 @@ begin
         elsif job[i] = 'sealmaster' then mul := 1.1; stun[tgt] := 1; lg := lg || jsonb_build_array(jsonb_build_object('x', x, 'k', 'skill', 'w', side[i], 't', nm[i] || '의 「봉인술」: ' || nm[tgt] || '을(를) 묶었다.'));
         end if;
       end if;
-      if random() * 100 < eva[tgt] + case when stance[tgt] = 'defense' then 5 else 0 end and not is_crit then
+      if random() * 100 < eva[tgt] + (case when stance[tgt] = 'defense' then 5 else 0 end) and not is_crit then
         lg := lg || jsonb_build_array(jsonb_build_object('x', x, 'k', 'miss', 'w', side[i], 't', nm[tgt] || '이(가) ' || nm[i] || '의 공격을 흘려 피했다.'));
         continue;
       end if;

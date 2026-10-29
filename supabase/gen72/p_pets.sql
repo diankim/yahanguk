@@ -36,7 +36,7 @@ begin
   if found then
     if p_notify then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'pet_new', '꼬마 동무 · ' || nm, nm || public.world_josa(nm, '이', '가') || ' 동무가 되었습니다. 캐릭터 › 별채에서 만날 수 있습니다.', jsonb_build_object('pet_id', p_pet));
+      values (p_owner, 'pet_new', '꼬마 동무 · ' || nm, public.world_josa(nm, '이', '가') || ' 동무가 되었습니다. 캐릭터 › 별채에서 만날 수 있습니다.', jsonb_build_object('pet_id', p_pet));
     end if;
     perform public.world_title_award_check(p_owner, 'home');
     return true;
@@ -83,8 +83,8 @@ begin
   perform public.world_pet_grant(uid, pid, 'item:' || p_item, false);
   select * into sp from public.world_pet_species where pet_id = pid;
   return jsonb_build_object('ok', true, 'pet_id', pid, 'name', sp.pet_name, 'grade', sp.grade,
-    'content', case when pid = it.equipment_traits ->> 'pet' then sp.pet_name || public.world_josa(sp.pet_name, '이', '가') || ' 바구니에서 고개를 내밀었습니다.'
-                    else '알이 갈라지고 ' || sp.pet_name || public.world_josa(sp.pet_name, '이', '가') || ' 태어났습니다!' end);
+    'content', case when pid = it.equipment_traits ->> 'pet' then public.world_josa(sp.pet_name, '이', '가') || ' 바구니에서 고개를 내밀었습니다.'
+                    else '알이 갈라지고 ' || public.world_josa(sp.pet_name, '이', '가') || ' 태어났습니다!' end);
 end $$;
 
 -- 별명: 8자까지, 비우면 원래 이름
@@ -164,13 +164,13 @@ begin
     if p_act = 'feed' then raise exception '먹이는 주인만 줄 수 있습니다.'; end if;
     insert into public.world_pet_guest(owner_id, visitor_id, day) values (p_owner, uid, today) on conflict do nothing;
     select * into g from public.world_pet_guest where owner_id = p_owner and visitor_id = uid and day = today for update;
-    if (p_act = 'pat' and g.pat) or (p_act = 'play' and g.play) then raise exception '오늘은 이미 %했습니다. 내일 또 와 주세요.', case when p_act = 'pat' then '쓰다듬어 주었' else '놀아 주었' end; end if;
+    if (p_act = 'pat' and g.pat) or (p_act = 'play' and g.play) then raise exception '오늘은 이미 %. 내일 또 와 주세요.', case when p_act = 'pat' then '쓰다듬어 주었습니다' else '놀아 주었습니다' end; end if;
     update public.world_pet_guest set pat = pat or p_act = 'pat', play = play or p_act = 'play' where owner_id = p_owner and visitor_id = uid and day = today;
     gain := 1; react := case when p_act = 'play' then 'note' else 'heart' end;
     if not g.pat and not g.play then
       select character_name into vn from public.world_characters where owner_id = uid;
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'pet_play', '별채의 동무', vn || '님이 ' || nm || public.world_josa(nm, '과', '와') || ' ' || case when p_act = 'pat' then '쓰다듬어 주었습니다.' else '놀아 주었습니다.' end, jsonb_build_object('visitor', uid));
+      values (p_owner, 'pet_play', '별채의 동무', vn || '님이 ' || case when p_act = 'pat' then public.world_josa(nm, '을', '를') || ' 쓰다듬어 주었습니다.' else public.world_josa(nm, '과', '와') || ' 놀아 주었습니다.' end, jsonb_build_object('visitor', uid));
     end if;
   end if;
   pt.affinity := least(300, pt.affinity + gain);
@@ -178,7 +178,7 @@ begin
    where owner_id = p_owner and pet_id = h.pet_id;
   if not was_adult and pt.affinity >= 100 then
     insert into public.world_notifications(user_id, kind, title, content, payload)
-    values (p_owner, 'pet_new', '꼬마 동무가 자랐습니다', nm || public.world_josa(nm, '이', '가') || ' 훌쩍 자랐습니다.', jsonb_build_object('pet_id', h.pet_id));
+    values (p_owner, 'pet_new', '꼬마 동무가 자랐습니다', public.world_josa(nm, '이', '가') || ' 훌쩍 자랐습니다.', jsonb_build_object('pet_id', h.pet_id));
     perform public.world_title_award_check(p_owner, 'home');
   end if;
   return jsonb_build_object('ok', true, 'affinity', pt.affinity, 'gain', gain, 'adult', pt.affinity >= 100, 'grew', not was_adult and pt.affinity >= 100, 'react', react,
