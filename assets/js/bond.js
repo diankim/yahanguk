@@ -28,6 +28,30 @@ export async function loadBond(force) {
   return loading;
 }
 const refresh = () => loadBond(true);
+// 혼례 창(7.1): 절차 줄은 시작부터 지난 만큼 서버가 내주고, 하객은 박수·꽃잎·축사로 자기 줄을 더한다. 진행 중에만 4초마다 읽는다
+export async function openWedding(wedId) {
+  let v = null, t = null, skew = 0;
+  const l = openLayer({ title: '혼례', body: '<div class="wed-box"><p class="muted">불러오는 중…</p></div>' });
+  const box = $('.wed-box', l);
+  const draw = () => {
+    if (!box.isConnected) return clearInterval(t);
+    const live = ['ready', 'ceremony'].includes(v.status), me = v.me || {};
+    const lines = [...(v.script || []), ...(v.lines || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
+    const startIn = new Date(v.starts_at) - (Date.now() + skew);
+    box.innerHTML = `<p class="desc">${esc(v.a)}과(와) ${esc(v.b)}의 혼례 · ${esc(v.place)}${v.status === 'done' ? ' · 끝남' : startIn > 0 ? ` · ${fmt.remain(startIn)} 뒤 시작` : ''} · 하객 ${fmt.num(v.guests)}명</p>
+      <ol class="raid-log wed-log">${lines.map(x => `<li class="k-${esc(x.k)}"><span>${esc(x.t)}</span></li>`).join('') || '<li class="muted">곧 혼례가 시작됩니다.</li>'}</ol>
+      ${live && !v.couple ? (v.here ? `<div class="btn-row"><button class="btn small" data-cheer="clap" ${me.claps >= 3 ? 'disabled' : ''}>박수 치기 ${me.claps}/3</button><button class="btn small" data-cheer="petal" ${me.petals >= 3 ? 'disabled' : ''}>꽃잎 뿌리기 ${me.petals}/3</button></div>
+          ${me.wished ? '' : '<div class="btn-row"><input id="wed-wish" maxlength="40" placeholder="축사 한마디(40자)"><button class="btn small primary" data-cheer="wish">축사</button></div>'}
+          <p class="muted small">단추 사이 15초 · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`) : ''}`;
+    const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
+    $$('[data-cheer]', box).forEach(b => b.onclick = () => guard(b, async () => {
+      v = await rpc('world_wedding_cheer', { p_wed: wedId, p_kind: b.dataset.cheer, p_text: b.dataset.cheer === 'wish' ? $('#wed-wish', box)?.value : null }); draw(); return null;
+    }));
+  };
+  const read = async () => { try { v = await rpc('world_wedding_view', { p_wed: wedId }); skew = new Date(v.now) - Date.now(); draw(); if (v.status === 'done' || v.status === 'cancelled') clearInterval(t); } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; clearInterval(t); } };
+  await read();
+  t = setInterval(() => { if (!box.isConnected) return clearInterval(t); if (!document.hidden) read(); }, 4000);
+}
 const run = (b, fn, args, after) => guard(b, async () => { const r = await act(fn, args); await refresh(); after?.(); return r; });
 
 /* ── 동료 화면의 연리 칸 ─────────────────────────────── */
@@ -41,7 +65,7 @@ export function bondPanelHtml(s) {
         <div class="bond-main">
           <b>정인 · ${cardName(b.partner_id, b.partner_name)}</b>
           <small>${esc(b.token_name)} · 연리를 맺은 지 ${fmt.num(b.days + 1)}일째 · Lv.${b.partner_level || 1} · ${esc(b.partner_location || '')}</small>
-          <div class="bond-stage"><span>인연 · ${esc(b.stage_name)}</span><span class="muted small">${fmt.num(b.affinity)}${nextAt ? ` / ${fmt.num(nextAt)}` : ''} · 오늘 +${b.gain_today}/30</span></div>
+          <div class="bond-stage"><span>인연 · ${esc(b.stage_name)}</span><span class="muted small">${fmt.num(b.affinity)}${nextAt ? ` / ${fmt.num(nextAt)}` : ''} · 오늘 +${b.gain_today}/100</span></div>
           <div class="bar xp"><span style="width:${pct}%"></span></div>
           <p class="small ${b.together ? 'ok' : 'muted'}">${b.together ? '연리의 기운: 회복량 +5% · 침식 -5%' : '연리의 기운은 둘 다 정표를 착용하고 같은 곳·같은 파티일 때 생깁니다.'}</p>
         </div>
@@ -50,9 +74,10 @@ export function bondPanelHtml(s) {
         <button class="btn small" data-bond="wear">${b.my_wear ? '정표 벗기' : '정표 착용'}</button>
         <button class="btn small" data-bond="hide">${b.my_hide ? '연리 보이기' : '연리 숨기기'}</button>
         <button class="btn small primary" data-bond="gift" ${b.gifted_today ? 'disabled' : ''}>${icon('plus', 14)}<span>${b.gifted_today ? '오늘 선물함' : '선물 보내기'}</span></button>
+        ${b.married ? '<span class="chip ok">백년가약</span>' : `<button class="btn small" data-bond="wed">${icon('knot', 14)}<span>혼례 올리기</span></button>`}
         <button class="btn small ghost danger-text" data-bond="break">정표 파기</button>
       </div>
-      <p class="muted small">인연은 정인과 같은 파티로 함께 토벌(+1)·하루 한 번 안부 귓속말(+3${b.greeted_today ? ', 오늘 함' : ''})·선물(+5)·구조(+10)로 하루 30까지 오릅니다. 마음이 이어짐(100)·연리(300)·백년해로(700)에 이르면 둘 다 꾸미기를 받습니다. 정인을 구조하면 체력 50으로 일어납니다.${b.partner_hide || b.my_hide ? ' 지금은 다른 조사원에게 연리가 보이지 않습니다.' : ''}</p>`;
+      <p class="muted small">인연은 정인과 같은 곳·같은 파티로 함께 토벌(+2)·탐색·채집(+1), 하루 한 번 안부 귓속말(+5${b.greeted_today ? ', 오늘 함' : ''})·선물(+10), 함께 원정 완주(+20)·구조(+20)로 하루 100까지 오릅니다. 인연 300·둘 다 Lv.20·주 이야기 6장을 마치면 혼례를 올릴 수 있습니다. 마음이 이어짐(100)·연리(300)·백년해로(700)에 이르면 둘 다 꾸미기를 받습니다. 정인을 구조하면 체력 50으로 일어납니다.${b.partner_hide || b.my_hide ? ' 지금은 다른 조사원에게 연리가 보이지 않습니다.' : ''}</p>`;
   }
   return `
     ${br ? `<div class="bond-card broken"><div class="bond-token">${tokenSvg(br.token_key, 34)}</div><div class="bond-main"><b>깨진 정표 · ${esc(br.token_name)}</b>
@@ -75,6 +100,10 @@ export function bindBondPanel(root, redraw) {
     if (k === 'cancel') return run(b, 'world_bond_cancel', {}, after);
     if (k === 'clear') return run(b, 'world_bond_clear', {}, after);
     if (k === 'gift') return openGift(after);
+    if (k === 'wed') {
+      if (!(await ask(`${cur?.partner_name || '정인'}님에게 혼례를 청할까요?\n본부 정청이나 두 사람 가운데 한 사람의 세력 거점에 둘이 함께 있어야 하고, 받으면 5분 뒤 시작해 10분 동안 이어집니다. 비용은 둘이 1,500전씩입니다.`, { title: '혼례 청하기', ok: '청하기' }))) return;
+      return guard(b, async () => { const r = await act('world_wedding_ask'); after(); return r; });
+    }
     if (k === 'break') {
       if (!(await ask(`「${cur?.token_name || '정표'}」을(를) 파기할까요?\n연리가 끝나고, ${cur?.partner_name || '정인'}님에게는 정표가 파기되었다고 알려집니다. 3일 동안은 새 연리를 맺을 수 없습니다.`, { title: '정표 파기', ok: '파기하기', danger: true }))) return;
       return run(b, 'world_bond_break', { p_reason: 'break' }, after);

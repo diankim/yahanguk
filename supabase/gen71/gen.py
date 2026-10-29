@@ -69,6 +69,7 @@ import data_regions as DR, regions as RG
 RG.emit(DR, w, J, bulk, TA, U, json.load(open(os.path.join(HERE, 'ref', 'existing_names.json')))['spots'])
 part('d_faction.sql')
 part('e_tourney.sql')
+part('f_bond.sql')
 
 w("""
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261102000000', now())
