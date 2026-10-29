@@ -64,7 +64,7 @@ export function bindCrop(root, onReady) {
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell;
 const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
-const POP_KINDS = new Set(['party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite']);
+const POP_KINDS = new Set(['party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'gw_invite']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -120,6 +120,8 @@ function noteActs(n) {
   if (n.kind === 'bag_overflow') return `<button class="btn primary small" data-ov="${esc(n.id)}">정리하기</button>`;
   if (n.kind === 'party_exp_offer' && n.payload?.offer_id) return `<button class="btn primary small" data-pexo="${esc(n.id)}" data-acc="1">함께 가기</button><button class="btn small" data-pexo="${esc(n.id)}" data-acc="0">빠지기</button>`;
   if (n.kind === 'party_expedition' && n.payload?.node_id) return `<button class="btn primary small" data-pexp="${esc(n.id)}">함께 가기</button>`;
+  if (n.kind === 'gw_invite' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}">합류</button>`;
+  if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
   if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">합류</button>`;
   if ((n.kind === 'raid_notice' || n.kind === 'raid_result') && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">보기</button>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
@@ -127,7 +129,7 @@ function noteActs(n) {
 }
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo);
+  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.fdown);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.invite) {
@@ -164,6 +166,8 @@ async function runAct(btn) {
     if (store.character?.location !== p.location) { toast(`${p.location || '그곳'}에 있어야 같은 곳으로 원정을 보낼 수 있습니다.`, 'warn'); return true; }
     window.dispatchEvent(new CustomEvent('yh-open-expedition', { detail: { node: p.node_id, minutes: p.minutes, stance: p.stance } })); return true; }
   if (btn.dataset.raid) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('raid', n.payload.raid_id); return true; }
+  if (btn.dataset.gw) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('gw', n.payload.fight_id); return true; }
+  if (btn.dataset.fdown) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('map'); return true; }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
   return false;
 }

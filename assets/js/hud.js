@@ -2,7 +2,7 @@
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
 import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
 import { envChip } from './env.js';
-import { load } from './views/common.js';
+import { load, invalidate } from './views/common.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -149,7 +149,7 @@ function render() {
       <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
         <div><h2>${esc(c.character_name)}${gmBadge(c.owner_id)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
         <span class="lv">Lv.${c.level}</span>${erosionRing(c)}</div>
-      ${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}
+      <div class="title-row">${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}<button class="btn small ghost" id="hud-title-swap" title="저장해 둔 칭호 묶음으로 바꿔 낍니다">${icon('refresh', 13)}<span>칭호 바꾸기</span></button></div>
       ${envChip()}
       <div class="xp"><span>경험치</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
     </section>
@@ -172,6 +172,7 @@ function render() {
         ${it.action || it.action2 ? `<div class="now-acts">${it.action ? `<button class="btn small ${it.ready ? 'primary' : 'ghost'}" data-act="${i}">${esc(it.action[0])}</button>` : ''}${it.action2 ? `<button class="btn small ghost" data-act2="${i}">${esc(it.action2[0])}</button>` : ''}</div>` : ''}
       </div>`).join('')}
     </section>`;
+  const ts = $('#hud-title-swap', body); if (ts) ts.onclick = () => openTitleSwap();
   body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
   body.querySelectorAll('[data-act2]').forEach(b => b.onclick = () => { closeStrip(); items[Number(b.dataset.act2)].action2[1](b); });
   const sts = yohwaOf(state.hud?.statuses).rest;
@@ -264,4 +265,24 @@ async function claimIdle(btn) {
     const r = await act('world_claim_idle_activity');
     return { content: `${r.message || '보상 수령'} · 경험치 +${r.experience || 0}` };
   });
+}
+
+// 칭호 묶음 바꿔 끼기(제보 19): 누를 때만 칭호 목록을 읽는다(상태판이 따로 다시 읽지 않음)
+async function openTitleSwap() {
+  const m = openModal({ title: '칭호 바꾸기', body: '<div class="t-swap"><p class="muted small">읽는 중…</p></div>' });
+  const box = $('.t-swap', m);
+  try {
+    invalidate('world_title_snapshot'); const snap = await load('world_title_snapshot');
+    const list = snap?.titles || [], nm = Object.fromEntries(list.map(t => [t.key, t.name]));
+    const eq = list.filter(t => t.equipped).map(t => t.key).sort().join(','), disp = snap?.display || null;
+    const ps = (snap?.presets || []).slice().sort((a, b) => a.slot - b.slot);
+    box.innerHTML = ps.length ? `<ul class="spot-list">${ps.map(p => {
+      const now = [...(p.titles || [])].sort().join(',') === eq && (p.display || null) === disp;
+      return `<li><div><b>${esc(p.name || `묶음 ${p.slot}`)}</b><small>${(p.titles || []).map(k => esc(nm[k] || '?')).join(' · ') || '장착 없음'}${p.display ? ` · 대표 ${esc(nm[p.display] || '?')}` : ''}</small></div>
+        <button class="btn small ${now ? '' : 'primary'}" data-tsw="${p.slot}" ${now ? 'disabled' : ''}>${now ? '쓰는 중' : '바꿔 끼기'}</button></li>`; }).join('')}</ul>`
+      : '<p class="muted small">저장한 칭호 묶음이 없습니다. 캐릭터 › 칭호 위의 묶음 칸에 지금 장착한 칭호를 저장해 두세요.</p>';
+    box.insertAdjacentHTML('beforeend', '<p class="muted small"><a href="#/char/titles" data-tsw-go>칭호 화면에서 묶음 고치기</a></p>');
+    $('[data-tsw-go]', box).onclick = () => closeModal();
+    $$('[data-tsw]', box).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_title_preset_apply', { p_slot: Number(b.dataset.tsw) }); closeModal(); return r; }));
+  } catch (e) { box.innerHTML = `<p class="bad small">${esc(e.message)}</p>`; }
 }

@@ -423,12 +423,14 @@ export function openDirectTrade(to) {
 
 /* ── 창고 ─────────────────────────────────────────────── */
 // 어느 안전지대에서 열어도 같은 개인 창고. 기본 30칸이고 전·이야기 6~10장·세력 평판·지역 완전 답사로 넓어진다(서버 world_storage_capacity).
-let storeMode = 'put';
+let storeMode = 'put', storeCat = 'all', storeQ = '';
 const STORE_PRICES = [1000, 2500, 5000, 10000];
 export async function renderStorage(box) {
   box.innerHTML = loading();
   try {
-    const [s] = await Promise.all([load('world_storage_snapshot'), loadLocks()]);
+    const [s, , inv] = await Promise.all([load('world_storage_snapshot'), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
+    // 분류는 거래소와 같은 장비·소모품·재료·기타(제보 18)
+    const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c?.inventory || {};
     const src = s.sources || {}, steps = Number(src.bought_steps || 0);
     // 안전지대 밖·이동·원정·자율 중에는 보기만 한다(서버 can_move)
@@ -442,7 +444,7 @@ export async function renderStorage(box) {
     const putMax = k => Math.min(canGive(k), roomOf(k));
     const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
-    const row = (id, label, n, max, m, note) => `<li>
+    const row = (id, label, n, max, m, note) => `<li data-mk-cat="${esc(catMap.get(id) || 'etc')}" data-mk-name="${esc((label || nameOf(id)).toLowerCase())}">
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span>${note ? `<small>${note}</small>` : ''}</div>
         ${ro ? '' : `<div class="row-act"><input type="number" inputmode="numeric" min="1" max="${max}" value="${max}" aria-label="수량" ${max ? '' : 'disabled'}>
           <button class="btn small ${m === 'put' ? '' : 'primary'}" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button></div>`}</li>`;
@@ -454,6 +456,8 @@ export async function renderStorage(box) {
       ${bar(s.used, s.capacity, s.used >= s.capacity ? 'enemy' : 'xp')}
       ${ro ? `<p class="notice-line">${icon('chest', 14)} 보기만 할 수 있습니다 · ${esc(s.reason || '넣고 꺼내기는 안전지대에서만 됩니다.')}</p>` : ''}
       <div class="seg-mini" role="tablist">${ro ? '' : `<button class="${mode === 'put' ? 'on' : ''}" data-mode="put">맡기기</button>`}<button class="${mode === 'take' ? 'on' : ''}" data-mode="take">${ro ? '보관 물품' : '꺼내기'}</button><button class="${mode === 'grow' ? 'on' : ''}" data-mode="grow">넓히기</button></div>
+      <div class="mk-filter st-filter" ${mode === 'grow' ? 'hidden' : ''}><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === storeCat ? 'accent' : ''}" data-sc="${k}">${t}</button>`).join('')}</div>
+        <input type="search" class="st-q" placeholder="이름으로 찾기" aria-label="창고 물품 찾기" value="${esc(storeQ)}"></div>
       <section data-list="put" ${mode === 'put' ? '' : 'hidden'}>
         <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·강화한 장비의 마지막 하나·임무 물품은 맡길 수 없습니다.</p>
         <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', putMax(k) <= 0 ? '<span class="bad">창고에 자리가 없습니다</span>' : equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
@@ -476,7 +480,20 @@ export async function renderStorage(box) {
       storeMode = b.dataset.mode;
       $$('.seg-mini button[data-mode]', box).forEach(x => x.classList.toggle('on', x === b));
       $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== storeMode);
+      $('.st-filter', box).hidden = storeMode === 'grow';
     });
+    // 거르기: 다시 그리지 않고 줄만 숨긴다(한글 조합 유지)
+    const sq = $('.st-q', box);
+    const applyStore = () => {
+      storeQ = sq.value; const q = storeQ.trim().toLowerCase();
+      $$('[data-list="put"] li[data-mk-cat], [data-list="take"] li[data-mk-cat]', box).forEach(li => {
+        li.hidden = !((storeCat === 'all' || li.dataset.mkCat === storeCat) && (!q || li.dataset.mkName.includes(q)));
+      });
+    };
+    sq.addEventListener('input', e => { if (!e.isComposing) applyStore(); });
+    sq.addEventListener('compositionend', applyStore);
+    $$('[data-sc]', box).forEach(b => b.onclick = () => { storeCat = b.dataset.sc; $$('[data-sc]', box).forEach(x => x.classList.toggle('accent', x === b)); applyStore(); });
+    applyStore();
     const move = (b, fn, id) => guard(b, () => {
       const q = Math.floor(Number(b.closest('li').querySelector('input')?.value) || 0);
       return act(fn, { p_item: id, p_qty: q > 0 ? q : null });

@@ -26,6 +26,7 @@ import * as account from './views/account.js';
 import * as settingsPage from './views/settings.js';
 import * as patchPage from './views/patch.js';
 import * as raidPage from './views/raid.js';
+import * as gwPage from './views/gw.js';
 import { preloadNames, hasNameCache } from './views/common.js';
 
 mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
@@ -42,7 +43,7 @@ const VIEWS = {
   log: { mod: journal, label: '일지', icon: 'scroll' },
 };
 // 탭에는 없지만 헤더에서 여는 화면
-const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' } };
+const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' } };
 
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null, routing = null;
@@ -87,6 +88,39 @@ function renderError(msg) {
 }
 
 /* ── 로그인 / 회원가입 ──────────────────────────────────── */
+// 로그인 화면의 한 줄 안내: 놓치기 쉬운 규칙을 하나씩(누르면 다음 줄)
+const TIPS = [
+  '탐색력은 15분에 1씩 찹니다. 바닥나면 원정을 보내 두면 시간을 버리지 않습니다.',
+  '원정은 2시간 이상 끝까지 다녀오면 경험치·전·숙련 경험이 더 붙고, 비경을 찾기도 합니다.',
+  '안전지대에 머물면 10분마다 체력·정신이 조금씩 오릅니다.',
+  '같은 지역으로 원정 간 파티원은 함께 싸우고, 귀환 때 경험치가 더 붙습니다.',
+  '장착한 장비는 가방 칸을 차지하지 않습니다.',
+  '물품을 잠그면 팔기·버리기·거래가 막혀 실수로 내놓지 않습니다.',
+  '창고는 어느 안전지대에서 열어도 같은 창고입니다. 안전지대에서 제작하면 창고의 재료도 씁니다.',
+  '요괴를 한 번 쓰러뜨리면 도감에 상성과 기믹 파훼법이 적힙니다.',
+  '방어는 어느 기믹이든 피해를 줄입니다. 모으는 턴에 크게 몰아치면 끊기도 합니다.',
+  '내 레벨보다 높은 요괴는 더 아프게, 낮은 요괴는 덜 아프게 칩니다(레벨마다 3%, 최대 30%).',
+  '침식이 30·55·80을 넘으면 불이익이 커집니다. 정화 부적·마음 다잡기로 미리 낮추세요.',
+  '침식이 80을 넘으면 드물게 요화가 시작됩니다. 귀령초나 안전지대 봉인으로 풉니다.',
+  '본부 구조대는 한국 시각 하루 첫 구조가 반값입니다.',
+  '쓰러진 동료가 있으면 같은 곳에 가서 구조할 수 있습니다. 의무관은 회복품 효과가 더 큽니다.',
+  '노정패는 토벌·탐색·채집·이야기·의뢰로 얻고, 탈것 운임·원정 운임·탈것 단련에 씁니다.',
+  '이동은 출발 60초 안에만 위약금 없이 취소할 수 있습니다.',
+  '상점 품목과 값은 하루 세 번(07·15·23시) 바뀝니다.',
+  '상점에 되파는 수익은 24시간 2,000전까지입니다. 남은 몫은 팔기 칸에 보입니다.',
+  '희귀 재료 일부는 거래소에서만 팔 수 있습니다(직접 거래·선물 불가).',
+  '무기 강화는 +3까지 반드시 붙고, 그 뒤로는 확률입니다. 실패해도 단계는 그대로입니다.',
+  '부서진 장비는 효과가 없습니다. 내구도 4분의 1 아래면 성능이 20% 떨어집니다.',
+  '같은 계열의 높은 단계 도구를 장착하면 낮은 단계 도구가 필요한 제작법도 만듭니다.',
+  '제작법에 적힌 장소에서 만들면 품질이 더 좋습니다.',
+  '칭호는 세 개까지 장착해 효과를 받습니다. 칭호 묶음으로 한 번에 바꿔 낄 수 있습니다.',
+  '기술은 3·8·13·18·24·30·36·43·50단계에서 새로 익힙니다. 24·43단계는 둘 가운데 하나를 고릅니다.',
+  '자율 활동은 접속하지 않는 동안에도 쌓입니다. 도중에 그만두면 지난 시간만큼만 받습니다.',
+  '세력 의뢰판은 하루 세 가지가 바뀝니다. 공훈은 세력 비고에서만 씁니다.',
+  '보조 퀘스트는 일지에서 포기하고 처음부터 다시 받을 수 있습니다.',
+  '설정 › 알림에서 끄고 싶은 알림을 고를 수 있습니다. 끈 알림은 지난 알림에만 남습니다.',
+  '버그·밸런스·제안은 도움말이나 설정의 「제보·소감」으로 바로 보낼 수 있습니다.',
+];
 function renderAuth(mode = 'login', notice = '') {
   window.dispatchEvent(new Event('yh-booted'));
   document.title = '야행국 · 입국';
@@ -109,7 +143,11 @@ function renderAuth(mode = 'login', notice = '') {
       <button class="btn primary block" type="submit">${mode === 'login' ? '로그인' : '계정 만들기'}</button>
       <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
     </form>
+    <button type="button" class="auth-tip" id="auth-tip" title="누르면 다음 안내">${icon('scroll', 14)}<span></span></button>
   </div>`));
+  const tipBox = $('#auth-tip'); let tipN = Math.floor(Math.random() * TIPS.length);
+  const showTip = () => { tipBox.querySelector('span').textContent = TIPS[tipN % TIPS.length]; tipN++; };
+  showTip(); tipBox.onclick = showTip;
   $$('[data-mode]').forEach(b => b.onclick = () => renderAuth(b.dataset.mode));
   $('#auth-form').onsubmit = async e => {
     e.preventDefault();

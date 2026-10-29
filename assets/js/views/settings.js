@@ -9,7 +9,23 @@ import { hue as autoHue, NAME_STYLES } from '../chat.js';
 const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
 
-const SUBS = [['profile', '프로필', 'idcard'], ['theme', '테마', 'palette'], ['sound', '소리', 'volume'], ['account', '계정', 'shield']];
+const SUBS = [['profile', '프로필', 'idcard'], ['theme', '테마', 'palette'], ['sound', '소리', 'volume'], ['notify', '알림', 'bell'], ['account', '계정', 'shield']];
+// 알림 갈래(서버 world_notify_group과 같은 키). 끈 갈래는 들어올 때 읽음 처리되어 화면에 뜨지 않고 지난 알림에만 남는다.
+const NOTIFY_GROUPS = [
+  ['rescue', '같은 곳의 구조 요청', '같은 지역에서 누가 쓰러졌을 때'],
+  ['friend_rescue', '친구 구조', '친구가 다른 곳에서 쓰러졌을 때'],
+  ['party', '파티', '초대·파티 원정 제안·돌보기·탈퇴'],
+  ['friend', '친구', '친구 신청·수락'],
+  ['trade', '거래', '직접 거래 제안·결과'],
+  ['raid', '토벌·결전', '합동 토벌 소식·귀허의 주인 초대'],
+  ['title', '칭호·꾸미기', '새 칭호·꾸미기를 얻었을 때'],
+  ['reward', '보상', '보상 수령·기술 단계 변경'],
+  ['bag', '가방', '가방이 가득 차 버린 물품'],
+  ['circle', '모임', '모임 초대'],
+  ['spar', '비무', '비무 신청·결과'],
+  ['bond', '연리', '정인 신청·선물·안부'],
+  ['faction', '세력', '세력 소식'],
+];
 let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
 export async function render(root, sub) {
@@ -78,6 +94,10 @@ export async function render(root, sub) {
         <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}</div>
         <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
     </section>
+    <section id="sec-notify" class="set-sec">
+      ${panel('알림', `<p class="muted small">끈 알림은 화면 위에 뜨지 않고 알림 창의 「지난 알림」에만 남습니다. 운영 공지·제보 답장·원정 귀환·요화 같은 알림은 끌 수 없습니다. 바꾸면 바로 저장됩니다(어느 기기에서나 같음).</p>
+        <div id="nt-list">${NOTIFY_GROUPS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-nt="${k}" checked disabled></label>`).join('')}</div>`, { ico: 'bell' })}
+    </section>
     <section id="sec-account" class="set-sec">
       ${panel('계정', `<p class="desc">아이디 확인·비밀번호 변경, 로그아웃, 캐릭터 정리는 계정 화면에서 합니다.</p>
         <div class="btn-row"><a class="btn" href="#/account">${icon('idcard', 16)}<span>계정 관리 열기</span></a>
@@ -90,7 +110,25 @@ export async function render(root, sub) {
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
   if (resumed) { save.disabled = false; toast('저장하지 않은 설정을 이어서 고칩니다.', 'info'); }
-  const showSub = k => { $$('.set-sec', el).forEach(s => s.classList.toggle('on', s.id === `sec-${k}`)); };
+  // 알림 칸: 처음 열 때 한 번만 읽고, 바꾸면 그 자리에서 저장한다
+  let ntLoaded = false;
+  const loadNotify = async () => {
+    if (ntLoaded) return; ntLoaded = true;
+    const boxes = $$('[data-nt]', el);
+    try {
+      const p = await rpc('world_notify_prefs_get');
+      const off = new Set(p?.off || []);
+      boxes.forEach(b => { b.checked = !off.has(b.dataset.nt); b.disabled = false; });
+    } catch (e) { ntLoaded = false; toast(e.message, 'error'); return; }
+    boxes.forEach(b => b.onchange = async () => {
+      const off = boxes.filter(x => !x.checked).map(x => x.dataset.nt);
+      boxes.forEach(x => x.disabled = true);
+      try { await rpc('world_notify_prefs_set', { p_off: off }); toast('알림 설정을 저장했습니다.', 'ok'); }
+      catch (e) { b.checked = !b.checked; toast(e.message, 'error'); }
+      finally { boxes.forEach(x => x.disabled = false); }
+    });
+  };
+  const showSub = k => { $$('.set-sec', el).forEach(s => s.classList.toggle('on', s.id === `sec-${k}`)); if (k === 'notify') loadNotify(); };
   bindSegmented(el, 'set-sub', k => { history.replaceState(null, '', `#/settings/${k}`); window.dispatchEvent(new Event('yh-subpage')); showSub(k); });
   showSub(SUBS.some(x => x[0] === sub) ? sub : 'profile');
 

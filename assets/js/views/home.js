@@ -163,12 +163,12 @@ function scene(s, traveling, downed) {
 
 /* ── 안전지대 ───────────────────────────────────────────── */
 function town(s, roster) {
-  const r = s.region;
+  const r = s.region, banyo = r.region_id === 'banyo_village'; // 반요촌: 거래소·창고·마구간 없음(서버도 막음)
   const tiles = [
-    ['shop', 'shop', r.shop_name || '상점', '물자 사고팔기'],
-    ['smithy', 'hammer', '대장간', '재료 사기 · 강화 · 수리 · 분해'],
-    ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
-    ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
+    ['shop', 'shop', r.shop_name || '상점', banyo ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
+    ['smithy', 'hammer', '대장간', banyo ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
+    banyo ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
+    banyo ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
@@ -215,6 +215,7 @@ function field(s, roster, blocked) {
           <button class="tile" id="camp" title="야영" ${blocked ? 'disabled' : ''}>${icon('moon', 22)}<span>야영</span><small class="rest-cd" data-rest-line="short">${restParts()}</small></button>
           <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
+          ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
         </div>
         ${(s.gear_warn || []).length ? `<p class="hint warn gear-warn">${icon('wrench', 14)} <span><b>닳은 장비</b> · ${s.gear_warn.map(g => `${esc(g.name)}(${g.dur > 0 ? `${g.dur}/${g.max}` : '부서짐'})`).join(', ')} — 부서진 장비는 효과가 없고, 4분의 1 아래면 성능이 20% 떨어집니다. 안전지대 대장간이나 수리 도구로 고치세요.</span></p>` : ''}
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}

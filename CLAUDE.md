@@ -40,7 +40,7 @@
 
 ### 2.4 성장에는 장기적인 목표와 후발주자의 기회가 있어야 한다
 
-성장 상한과 기능별 숙련도 상한을 둔다. 레벨이 높아질수록 요구 경험치가 증가하되, 특정 시점부터 성장이 무한히 벌어지는 구조는 피한다. 최고 레벨은 30(능력치 포인트 상한 87), 다음 레벨까지 경험치는 world_xp_need = 100×레벨 + 12×레벨²(화면 core.js xpNeed)로 같은 레벨 요괴만 잡으면 한 마리 경험치가 사냥 (6+레벨×3) + 토벌 기록 12라 Lv10 약 46마리 → Lv20 약 87마리 → Lv29 약 124마리로 점점 느려진다(실제로는 탐색·퀘스트 경험치가 섞여 이보다 빠르다).
+성장 상한과 기능별 숙련도 상한을 둔다. 레벨이 높아질수록 요구 경험치가 증가하되, 특정 시점부터 성장이 무한히 벌어지는 구조는 피한다. 최고 레벨은 40(7.0.0에서 30→40, 쌓아 둘 능력치 포인트 상한 117), 다음 레벨까지 경험치는 world_xp_need = 100×레벨 + 12×레벨²(화면 core.js xpNeed)로 같은 레벨 요괴만 잡으면 한 마리 경험치가 사냥 (6+레벨×3) + 토벌 기록 12라 Lv10 약 46마리 → Lv20 약 87마리 → Lv29 약 124마리 → Lv39 약 170마리로 점점 느려진다(실제로는 탐색·퀘스트 경험치가 섞여 이보다 빠르다).
 
 후발 플레이어가 효율적인 성장 경로와 전문화로 기존 플레이어를 따라잡을 수 있어야 한다. 오래 플레이했다는 이유만으로 모든 영역에서 영구적으로 압도적인 우위를 가지게 하지 않는다.
 
@@ -77,11 +77,11 @@
 
 단순히 지역 수만 늘리지 말고 각 지역을 방문할 이유를 마련한다.
 
-답사 지점·채집터·원정지의 출입 레벨은 지역 레벨에 깊이마다 +2를 붙여 매겨져 있어 최고 레벨(30)을 넘던 곳(구중 봉연 깊은 곳 32~36, 무극 관성대 가장 깊은 곳 31)을 4.0.4에서 모두 Lv30으로 묶었다. 나중에 최고 레벨을 올리고 구중 봉연 뒤 고난도 지역을 열 때 깊이별 레벨을 다시 올린다.
+답사 지점·채집터·원정지의 출입 레벨은 지역 레벨에 깊이마다 +2를 붙인다(최고 40). 4.0.4에서 최고 레벨 30을 넘던 구중 봉연·무극 관성대 깊은 곳을 Lv30으로 묶었다가 7.0.0에서 깊이별 레벨로 되돌렸다.
 
 ### 3.3 안전지대
 
-일정 간격으로 안전지대를 둔다(현재 9곳: 본부 정청·본부 객사·백등 야시장·구름나루·백골 장터·잔불촌·철벽 고찰·십삼문 암시장·무극 관성대).
+일정 간격으로 안전지대를 둔다(현재 10곳: 본부 정청·본부 객사·백등 야시장·구름나루·백골 장터·잔불촌·철벽 고찰·십삼문 암시장·무극 관성대·반요촌). 반요촌(귀허도)은 빈약한 안전지대라 거래소·창고·마구간이 없다(아래 §3.5).
 
 - 안전지대에서는 요괴 수색·전투·원정을 할 수 없다.
 - 상점과 플레이어 간 거래소는 안전지대에만 있다. 그 밖의 지역에는 상점이 없다.
@@ -103,7 +103,17 @@
 - 원정 전투 버팀(5.0.0): 승패는 win_p로 굴리되, 밀린 싸움도 체력 70 이상이면 (체력−50)/100(최대 50%) 확률로 버텨 이긴다(그 싸움 피해 두 배, 일지 [버팀]). 원정 일지 화면은 전투 중에 끼어든 다른 줄(보급품 먹기 등)이 전투 칸을 끊지 않는다(expedition.js battleGroups).
 - 직업별 원정 기술: 퇴마관 파사 부적 · 현장 조사원 흔적 추적 · 의무관 야전 처치 · 봉인술사 결계 야영 · 호위 무사 반격 태세 · 백공 기술관 현장 가공(서버 계산, 결과에 발동 횟수 기록).
 
-### 3.5 탐사 방식
+### 3.5 귀허도(7.0.0, 20261101000000)
+
+- 영역 gwiheo(귀허도): 반요촌(안전지대 Lv30, 상점 banyo_shop) · 잿빛 갈대숲 Lv30 · 거꾸로 선 사당 Lv33 · 달 없는 저잣거리 Lv36 · 귀허 Lv38(모두 위험도 10, 반요촌 8 — world_map_regions.danger_level 상한 10). 구중 봉연에서 반요촌으로 이어진다. 데이터 원본·생성기는 supabase/gen70/(data_island.py·data_gaiden.py·funcs_island.sql·funcs_gw.sql·g_qol.sql·gen.py → migrations/20261101000000_world_7_0_0.sql).
+- 열림: world_gwiheo_open(uid) = 10장(nine_gates) 마침 또는 world_staff. 그 전에는 world_map_snapshot이 섬 지역과 그리로 가는 travel_from을 내주지 않고, world_travel_route·world_travel_region·동승(world_travel_party_invite_v2·respond_v2)이 막는다. 봉연의 그림자(world_raid_schedule_next)는 섬에 나오지 않는다.
+- 섬 규칙: world_island_effect가 섬에서 침식 보정 +60%(world_status_effect_total에 더함), 섬에 있는 동안 world_yohwa_tick이 요화 단계를 넘기지 않고 10분 미룬다, 섬 토벌의 희귀 전리품은 반요 비늘(banyo_scale).
+- 반요촌: 거래소(world_guard_action_context)·창고(world_storage_check)·마구간 없음, 반요촌 제작은 창고 재료를 안 씀(world_craft_item), 상점은 회차마다 4가지 이상·귀허 부적은 늘, 사람마다 품목별 하루 개수(world_shop_catalog.daily_cap·world_shop_buy_caps), 되팔기 절반·판매 한도 절반, 대장간은 월철 주괴·정련 숯만, 수리비 ×3(world_repair_mult). 화면 home.js town이 거래소·창고 칸을 숨긴다.
+- 재료 8(갈대 영사·거꾸로 향목·망각 수정·무월 비단·귀허 흑철·반요 비늘·요인 혈정·귀허 진주), 소모품 귀허 부적(거래 불가, 보스 입장)·반요 고약·망각 향(world_use_item), 6단계 장비 33(Lv32, 반요촌 제작, world_gear_drops 31~40레벨).
+- 외전 「요인록」 gq_1~gq_5(kind side, cat 「외전·요인록」, Lv30·32·34·36·38, 앞 장이 after), 인물 g_*. 마지막 장 할 일 {t:'gw'}(world_quest_task_count).
+- 최종 보스 「귀허의 주인」(world_gw_fights·members·log·records, 실시간 목록에 넣지 않음): 귀허에서 Lv38·외전 4장 마침·귀허 부적, 혼자 또는 같은 곳 파티원 4명까지(world_gw_open 60초 모음·world_gw_join·world_gw_begin). 라운드 5초(기믹 10초), 참가자마다 행동 하나(attack·guard·item·purify·chain, 안 고르면 방어), 마감이 지났거나 모두 고르면 누군가 world_gw_snapshot·world_gw_act를 부를 때 world_gw_resolve가 푼다(예약 작업 없음). 단계 4(두 얼굴·사슬 넷·이름 빼앗기·귀허의 소용돌이), 체력 max(6000, Σ공격×40), 15분. 쓰러지면 세 라운드 물러남·체력 30으로 복귀. 실패: 장착 장비 내구도 −10%·침식 +10·30분 뒤 재도전. 처치는 하루 한 번(처음 1,500전·경험치 0.5배·탈것 moonless_boat·이름 색 ns:1028, 뒤로는 120전·0.05배), 처치마다 world_events gw_win → 칭호 gw_kill1/3/10/25·gw_solo·gw_flawless(분류 '외전')·꾸미기 fr_gwiheo·pt_gwiheo·sl_gwi. 파훼법(world_gw_tips)은 처치한 사람만. 화면 views/gw.js(#/gw/<id>): 라운드 마감 직후·내가 고른 뒤 2초마다·모이는 중 3초마다만 다시 읽는다.
+
+### 3.6 탐사 방식
 
 탐사는 텍스트 서술, 선택지, 발견 이벤트, 자원 획득, 몬스터 조우를 조합한다.
 
@@ -180,7 +190,7 @@
 
 ### 기능별 숙련도
 
-숙련·기술 통합(20261029000000): 기술 14계열(skill_progress, 단계 r→r+1에 80+8r 경험, 최고 50, world_skill_line_rank)만 경험을 쌓고, 숙련 4갈래(combat/gathering/crafting/investigation_rank)는 그 갈래 기술 가운데 가장 높은 단계다(trg_world_skill_sync: 전투=근접·원거리·봉인술·분석·막기·응급 처치, 채집=일반·약초·광맥·영기 채집, 제작=단조·연금·결계 각인, 조사=추적). 기술은 3·8·13·18·24·30·36·43·50단계에서 익히고, 전투 계열 피해·치명타는 world_combat_stats, 그 밖 효과는 world_skill_effect(상한 있음)가 world_status_effect_total에 더한다. 숙련 효과는 50단계 기준으로 다시 맞췄다(전투 숙련 공격력 단계마다 +0.6% 등). 요리 숙련만 따로 1~20단계.
+숙련·기술 통합(20261029000000): 기술 14계열(skill_progress, 단계 r→r+1에 80+8r 경험, 30단계부터 6×(r−29)²를 더함(7.0.0, 누적 40단계 11,670·50단계 30,940 — 최고 레벨 40 무렵 50단계), 최고 50, world_skill_line_xp·world_skill_line_rank, 7.0.0 배포 때 쌓은 경험은 두고 단계만 다시 매기고 내려간 사람에게 skill_rerank 알림, 탐색 한 번 추적 경험 5)만 경험을 쌓고, 숙련 4갈래(combat/gathering/crafting/investigation_rank)는 그 갈래 기술 가운데 가장 높은 단계다(trg_world_skill_sync: 전투=근접·원거리·봉인술·분석·막기·응급 처치, 채집=일반·약초·광맥·영기 채집, 제작=단조·연금·결계 각인, 조사=추적). 기술은 3·8·13·18·24·30·36·43·50단계에서 익히고, 전투 계열 피해·치명타는 world_combat_stats, 그 밖 효과는 world_skill_effect(상한 있음)가 world_status_effect_total에 더한다. 숙련 효과는 50단계 기준으로 다시 맞췄다(전투 숙련 공격력 단계마다 +0.6% 등). 요리 숙련만 따로 1~20단계.
 
 기술 단계 보상 개편(20261029050000): 기존 9단계 기술(slot base)에 더해 계열마다 13·30단계 추가 기술(extra), 24·43단계 택일 기술(a·b 중 하나, world_skill_choose, 고른 것은 world_skill_picks — 처음 무료, 바꾸기 24단계 2,000전·43단계 5,000전), 50단계 가장 강한 숙달 기술(master). 단계가 높을수록 효과가 크다. 조합 기술 7개(category combo, requires: 두 계열 18단계, 계열마다 한 번씩: 근접·단조, 원거리·추적, 봉인술·결계 각인, 분석·영기 채집, 막기·광맥 채집, 응급 처치·약초 채집, 일반 채집·연금). 가졌는지는 world_skill_has 하나로 판정하고 world_skill_effect·world_combat_stats·world_skill_snapshot이 함께 쓴다. world_skill_effect 상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·요괴 조우 −15. 토벌 행동 기술(20261029050000): world_battle_action이 승리 기록 payload.acts(analysis·guarding·first_aid: 집중·방어·회복품/의무관 처치 횟수)를 남기고 world_skill_add가 종류마다 least(3,n)×8을 그 계열에 더한다(전에는 분석·막기·응급 처치가 오르지 않았다). 요괴 도감은 전투 한 번에 한 번만 쓰고(trg_world_codex_on_event p_seen=1), world_field_snapshot은 답사도를 한 번만 계산한다(svj). 기술 고유 효과 개편(5.0.0 묶음 20261029060000): 이름 있는 기술 105개(추가·택일·숙달·조합)는 passive_effect를 비우고 행동이 바뀌는 고유 효과로 바꿨다. world_skill_procs(uid)가 가진 고유 효과 skill_id 목록을 돌려주고 world_battle_action(현장 토벌)·world_field_gather·world_craft_item·world_field_search·world_travel_route·world_field_rest·world_weapon_enhance·world_enhance_quote·world_equipment_repair·world_repair_quote·world_rescue_character·world_combat_stats(도발 이목 +60)가 보고 처리한다(원정 묘사에는 아직 없음). 근접 계열도 13·24·30·43단계가 모두 택일(A 딜러 발도·일격·유수검·파천 / B 탱커 호령·도발·철갑 강기·사자후, 이목은 world_combat_stats에 더함). 봉인술 계열은 13·24·30·43단계가 모두 택일(A 폭딜 연쇄부·폭렬부·연환부·천뢰부 / B 버프·디버프 부적 접기·호체부·겹술식·청정결계, world_skill_choose가 13·30단계도 받음: 바꾸기 13단계 1,000·24단계 2,000·30단계 3,000·43단계 5,000전). 새 고유 효과를 넣으면 이 함수들과 skill_catalog.description을 함께 고친다. world_characters는 열마다 권한이 걸려 있어 새 열을 더하면 함수 주인 역할들의 select *가 깨지므로 캐릭터별 새 값은 별도 표에 둔다.
 
@@ -305,7 +315,7 @@
 
 - 오르는 곳: 탐색(world_field_search) 한 번에 위험도 1~2 반쯤 +1·3~4 +1·5 이상 +2, 삼경 +0.5, 어두운 곳(사당·폐단·묘역·지하·심연·균열·고도·수궁·흉가 정원·혈림) +0.5, 침식 보정(world_status_effect_total('erosion_pct'): 장비·칭호·음식·상태·날씨, 혈무 포함)을 곱하고 소수는 확률로 올림. 토벌(world_event_char_apply, 옛 world_apply_event_progress): 위험도 3 이상 승리 +1·패배(battle_lost) +3, 영체·독성·반사·매복·정예·우두머리 +2(보정은 world_erosion_pct_self). 원정은 위험도·깊이에 따라 회차마다.
 - 단계 효과(world_erosion_effect를 world_status_effect_total에 더함): 주의 30 회복량 −15%·희귀품·단서 +5% / 위험 55 회복량 −25%·받는 피해 +10%·행동마다 정신 −1(world_event_char_apply)·희귀품·단서 +10% / 붕괴 직전 80 회복량 −35%·받는 피해 +20%·주는 피해 −10%·요괴 조우 +20%·희귀품·단서 +15%. 술법 −10/−20/−30%(world_combat_stats). 100에 닿으면 정신 0(trg_world_erosion_overflow). 캐릭터 › 상태에 지금 단계 효과를 보여 준다.
-- 요화(妖化, 20261029000000): 침식이 80·90·100에 처음 닿을 때 한 번씩 0.1%·1%·5%(trg_world_yohwa_onset). world_character_statuses 'yohwa'(세기 = 단계)로 1단계 요기 스밈 3일 → 2단계 요문 발현 2일 → 3단계 반요 1일 → 전투불능(원정 중이면 1시간 미룸, 풀기 전까지 하루마다 다시), 단계 진행은 pg_cron yh-yohwa(5분, world_yohwa_tick). 요화로 쓰러진 것(metadata.down_epoch = downed_at)은 world_death_sweep이 사망 처리하지 않는다(지금은 저레벨 구간이라 요화 사망 OFF). 쓰러진 채 world_yohwa_seal(안전지대 봉인)을 고르면 가까운 안전지대로 옮겨 24시간 'yohwa_seal'(채팅만: 행동 기록을 남기는 것은 world_guard_action_context, 남기지 않는 것(현장 이동·조사 지점·자율 시작/수령·보따리·파티 전리품·직접 거래 제안·동승 요청·연리 선물/신청)은 함수 첫머리의 world_seal_guard()가 막고, 비무도 막음. 채팅·귓속말·친구·파티 맺기·프로필·칭호·꾸미기는 됨. 새 행동 함수를 만들면 행동 기록을 남기거나 world_seal_guard()를 부른다) 뒤 요화가 풀리고 침식 40 아래. 요화·봉인은 상태 칸 10칸에 세지 않고(world_status_roll) 상태판·상태 띠에 따로 늘 보인다(hud.js yohwaOf). 만료 정리(world_status_snapshot·world_apply_activity_status)에서 뺀다. 귀령초(gwiryeong_cho, 명품·거래 가능)를 world_use_item으로 쓰면 풀리고 침식 −20. 얻는 곳(4.0.5, 전에는 어디에도 연결되지 않아 얻을 수 없었다): 위험도 7 이상 지역의 채집 0.08%·토벌 일반 0.06%·정예 0.2%·우두머리 0.6%·구중 봉연 우두머리 1%(6.3.2 — 전에는 role main을 금단 보스로 봤는데 main은 지역 대표 요괴 77종이라 일반 토벌 대부분이 1%를 받았다)·원정 완주 0.4%, 위험도 10은 ×1.5, 최대 1%(5.0.0에서 4.0.5 값의 1/5로 낮춤, 택일 기술 「영초 감별」 0.6%, world_gwiryeong_chance, world_events 트리거 trg_world_gwiryeong_roll, 맞을 때만 캐릭터 행을 고치고 알림). 사망 위험이 없는 동안은 다른 희귀품보다 낮게 둔다. 구중 봉연 전리품(5.0.0): 구중 봉주 응축 영핵 3·천령 감로·성진사 2, 사슬 끊는 자 응축 영핵·월광 정수·결계 파편, 심연 사슬귀 응축 영핵·결계 파편·귀령 재, 토벌 22% 희귀 전리품도 응축 영핵(world_apply_event_progress). 귀령초는 전리품 표(품목마다 60~100%)에 넣지 않고 위 확률로만 준다.
+- 요화(妖化, 20261029000000): 침식이 80·90·100에 처음 닿을 때 한 번씩 0.1%·1%·5%(trg_world_yohwa_onset). world_character_statuses 'yohwa'(세기 = 단계)로 1단계 요기 스밈 3일 → 2단계 요문 발현 2일 → 3단계 반요 1일 → 전투불능(원정 중이면 1시간 미룸, 풀기 전까지 하루마다 다시), 단계 진행은 pg_cron yh-yohwa(5분, world_yohwa_tick). 요화로 쓰러진 것(metadata.down_epoch = downed_at)은 world_death_sweep이 사망 처리하지 않는다(지금은 저레벨 구간이라 요화 사망 OFF). 쓰러진 채 world_yohwa_seal(안전지대 봉인)을 고르면 가까운 안전지대로 옮겨 24시간 'yohwa_seal'(채팅만: 행동 기록을 남기는 것은 world_guard_action_context, 남기지 않는 것(현장 이동·조사 지점·자율 시작/수령·보따리·파티 전리품·직접 거래 제안·동승 요청·연리 선물/신청)은 함수 첫머리의 world_seal_guard()가 막고, 비무도 막음. 채팅·귓속말·친구·파티 맺기·프로필·칭호·꾸미기는 됨. 새 행동 함수를 만들면 행동 기록을 남기거나 world_seal_guard()를 부른다) 뒤 요화가 풀리고 침식 40 아래. 요화·봉인은 상태 칸 10칸에 세지 않고(world_status_roll) 상태판·상태 띠에 따로 늘 보인다(hud.js yohwaOf). 만료 정리(world_status_snapshot·world_apply_activity_status)에서 뺀다. 귀령초(gwiryeong_cho, 명품·거래 가능)를 world_use_item으로 쓰면 풀리고 침식 −20. 얻는 곳(7.0.0에서 다시 낮춤, world_gwiryeong_chance·world_gwiryeong_give): 위험도 7 이상 지역의 채집 0.02%·토벌 일반 0.02%·정예 0.08%·우두머리 0.3%·구중 봉연 우두머리 1%·원정 완주 0.15%, 위험도 10은 ×1.5, 합동 토벌·결전 승리(trg_world_gwiryeong_raid, 싸운 사람마다)·귀허의 주인 처치(gw_win) 1%. 한 번 얻으면 72시간 다시 안 나오고(world_gwiryeong_log), 서버 전체 7일 몫 = 지난 7일 요화가 걸린 수의 절반(최소 1) — 얻는 모든 길(기록 트리거·토벌 트리거·택일 기술 「영초 감별」 0.2%)이 world_gwiryeong_reserve를 거친다(봉연의 그림자 정산이 따로 굴리던 1%는 뺐다). 새로 귀령초를 주는 곳도 반드시 이 함수를 거친다. 조사 지점의 희귀 보너스(world_region_sites.rare_bonus)에 섞여 있던 귀령초는 뺐다(world_events 트리거 trg_world_gwiryeong_roll, 맞을 때만 캐릭터 행을 고치고 알림). 사망 위험이 없는 동안은 다른 희귀품보다 낮게 둔다. 구중 봉연 전리품(5.0.0): 구중 봉주 응축 영핵 3·천령 감로·성진사 2, 사슬 끊는 자 응축 영핵·월광 정수·결계 파편, 심연 사슬귀 응축 영핵·결계 파편·귀령 재, 토벌 22% 희귀 전리품도 응축 영핵(world_apply_event_progress). 귀령초는 전리품 표(품목마다 60~100%)에 넣지 않고 위 확률로만 준다.
 - 수치를 바꿀 때는 위 함수들과 화면(character.js erosionNote·guide.js)을 함께 고친다.
 
 ## 9. 자율 활동과 현실 시간
@@ -471,6 +481,7 @@
 - 전체 채팅: 하루 50회 제한(world_chat_send)
 - 지역 채팅: 무제한 사용 가능하되 도배 방지
 - 쓰러짐·세력 소식: 누가 쓰러지면 world_notify_downed가 전체 채팅에 sender_name '구조 알림'으로(다시 일어나면 — downed_at이 비워지는 모든 길 — 같은 트리거가 「다시 일어났습니다」 한 줄을 더 남기고 화면은 초록 시스템 줄 chat-notice sys up으로 그린다, 5.0.0 묶음 20261029060000), 지배 세력이 바뀌면 world_influence_tick이 '세력 소식'으로 한 줄을 남기고 채팅은 이것을 시스템 줄(chat-notice sys)로 그린다(기존 세력·친구 알림은 그대로).
+- 채팅 탭 빨간 점(7.0.0): 전체·지역·세력은 다른 탭을 보는 동안 실시간으로 받은 새 말이 있으면(chat.js chanNew), 파티는 world_party_messages 구독, 모임은 모임마다 안 읽은 수. 빨간 점을 위해 따로 서버에 묻지 않는다.
 - 귓속말: 채팅 탭이 아니라 헤더의 귓속말 단추로 여는 별도 창에서 상대별로 나눠 주고받는다(world_whisper_threads·world_whisper_mark_read). 안 읽은 귓속말이 있으면 단추에 빨간 점을 찍고, 읽음은 서버(world_whisper_reads)에 남아 기기가 달라도 같다.
 - 세력 채팅
 - 파티 채팅
@@ -546,6 +557,8 @@
 - 물품 정보 창의 「얻는 곳」(world_item_sources): 채집터·조사 지점·요괴·낚시터가 있는 지역을 낮은 레벨부터 한 줄로 줄여 보이고(세로 공간을 늘리지 않음), 제작과 사는 곳(대장간 smithy·안전지대 상점 shop·세력 비고 vault, 5.0.0)을 함께 적는다.
 - 거래소 등록·직접 거래의 물품 고르기(services.js pickerHtml·bindPicker): 분류 칩(장비·소모품·재료·기타)·이름 검색·가나다순(5.0.0). 거래소 창은 사기·팔기·직접 거래 세 칸(6.1.2, 모바일에서 등록 칸이 목록을 밀어내던 것): 사기 칸은 분류 칩·이름 검색으로 줄만 숨겨 거르고(다시 읽지 않음), 팔기 칸은 물품 한 줄·수량/가격 한 줄·등록 단추와 내 등록, 규칙 안내는 접는 「거래 규칙」(details.mk-rules).
 - 현장의 답사 지도(home.js tree): 길·채집터를 「길 찾은/전체 · 채집터 찾은/전체」로 말해 적고, 다 찾은 곳은 표시, 찾지 못한 길은 그 자리에 빈칸, 위에 답사도 막대(30·70·100%). 가방·상점·대장간 목록의 물품 이름 아래에는 짧은 설명(core.js brief)을 작게 둔다.
+- 알림 설정(7.0.0, 설정 › 알림): world_notify_prefs(off 갈래 목록), world_notify_group(kind→갈래: rescue·friend_rescue·party·friend·trade·raid·title·reward·bag·circle·spar·bond·faction, 나머지는 끌 수 없음), BEFORE INSERT 트리거 trg_world_notify_prefs가 끈 갈래 알림을 읽음으로 넣는다(지난 알림에는 남음). world_notify_prefs_get·set. 친구가 쓰러지면 다른 곳의 친구에게 friend_down(world_notify_downed, 같은 곳 사람은 rescue_request). 새 알림 종류를 만들면 world_notify_group에도 넣는다.
+- 상태판 「칭호 바꾸기」(7.0.0, 제보 19, hud.js openTitleSwap): 누를 때만 world_title_snapshot을 읽어 칭호 묶음을 바꿔 낀다. 로그인 화면 한 줄 안내(app.js TIPS, 누르면 다음 줄). 창고 창에 거래소와 같은 분류 칩·이름 찾기(제보 18, services.js renderStorage, 줄만 숨김). 모임 순서(world_circle_members.sort, world_circle_reorder, 동료 화면 모임 칸의 위·아래 단추, 채팅 모임 단추 줄도 같은 순서).
 - 확인 창은 브라우저 confirm 대신 게임 안 팝업(ask)으로 띄운다. 도주는 확인 없이 바로 시도하고, 성공·실패 모두 결과 팝업(받은 피해·남은 체력)을 보여 준다. 캐릭터 › 상태의 회복·치료 물품은 확인 창(효과·남은 수량)을 거쳐 쓴다.
 - 상점은 사기·팔기 칸에서 항목마다 수량을 고르고, 아래 구매하기/판매하기 단추로 확인 팝업 뒤 한꺼번에 처리한다. 물품 목록은 "이름 ×수량"을 붙여 쓰고 행동 단추는 오른쪽 끝에 둔다.
 - 제보·소감(도움말·설정 페이지의 단추, 6.1.3 전 이름 「버그·문의 제보」): 분류(오류·밸런스·제안·소감 및 기타(review) 넷, 옛 제보의 화면·기타는 표시만)·제목·내용을 GM에게 바로 보내고, 원하면 화면 위치·크기·기기·최근 오류를 붙인다(world_bug_reports, 1시간 5건). GM에게 알림이 가고, GM은 같은 창의 「받은 제보」에서 상태(접수·확인 중·고침·닫음)를 바꾸고 답하며, 답하면 보낸 사람에게 알림이 간다. 조사원은 자기 제보만 본다. 첫 의견 보상(6.1.3, 20261031020000): 계정마다 처음 보낸 제보에 한 번 노정 건량 2·청심환 2(world_report_reward_give, world_report_rewards, 운영진 제외, 가방에 안 들어가는 몫은 개인 창고로, 6.1.3 전에 제보한 6명에게도 소급). world_bug_report_list.reward_done으로 창에 안내를 띄운다.

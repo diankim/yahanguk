@@ -38,6 +38,7 @@ const M = {
   boat: 'M-8 2h16l-3 4h-10zM0 2V-7l5 6H0',
   flame: 'M0-8c3 4 5 6 5 9a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-5 1-8z',
   stars: 'M-7 4L-2-3 3 1 7-6M-8 4a1 1 0 102 0 1 1 0 10-2 0M-3-3a1 1 0 102 0 1 1 0 10-2 0M2 1a1 1 0 102 0 1 1 0 10-2 0M6-6a1 1 0 102 0 1 1 0 10-2 0',
+  vortex: 'M0 0a1.5 1.5 0 013 0 3 3 0 01-6 0 4.5 4.5 0 019 0 6 6 0 01-12 0',
 };
 export const FRAMES = {
   fr_lantern: ['common', 'lantern'], fr_path: ['common', 'path'], fr_compass: ['legend', 'compass'],
@@ -49,6 +50,7 @@ export const FRAMES = {
   fr_yeonri: ['legend', 'branch'],
   fr_f_night: ['rare', 'ledger'], fr_f_redmoon: ['rare', 'eclipse'], fr_f_lotus: ['rare', 'lotus'], fr_f_north: ['rare', 'peak'],
   fr_f_river: ['rare', 'boat'], fr_f_south: ['rare', 'flame'], fr_f_mandate: ['rare', 'stars'], // 세력 비고에서 공훈으로
+  fr_gwiheo: ['legend', 'vortex'], // 외전: 귀허의 주인 처치
   fr_yahaeng: ['legacy', 'nightwalk'], // 레거시: 롤백 전 첫 시대를 함께한 이만(얻는 길 없음)
 };
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
@@ -102,6 +104,7 @@ const P = {
   pt_stars: '<circle cx="4" cy="5" r=".9"/><circle cx="15" cy="9" r=".7"/><circle cx="8" cy="16" r=".8"/><path d="M4 5l11 4-7 7"/>',
   pt_bamboo: '<path d="M5 0v20M15 0v20M3 7h4M13 14h4M5 7c3-2 5-2 7-4"/>',
   pt_yeonri: '<path d="M3 19C3 12 10 11 10 3M17 19C17 12 10 11 10 3"/><circle cx="10" cy="3" r=".9"/>',
+  pt_gwiheo: '<path d="M0 6c3-3 7-3 10 0s7 3 10 0M0 15c3-3 7-3 10 0s7 3 10 0"/><path d="M10 10.5a1.5 1.5 0 013 0 3 3 0 01-6 0"/>',
   pt_yahaeng: '<path d="M15 2a4 4 0 100 8 3.2 3.2 0 010-8z"/><path d="M1 18c0-2 2-3 4-2 1-2 4-2 5 0 1-.5 3 0 3 2z"/><path d="M5 6h2v3H5zM6 5v1"/><circle cx="18" cy="15" r=".6"/><circle cx="2" cy="10" r=".5"/>',
 };
 export const PATTERNS = Object.keys(P);
@@ -124,9 +127,9 @@ export function patternLayer(key) {
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
 // 낙관: 이름 옆 작은 도장
-export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕',
+export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸',
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星' };
-const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy',
+const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend' };
 // 글자는 SVG의 가운데 기준선(central)에 둔다. 글꼴마다 위아래 여백이 달라 글자 상자 가운데에 두면 한쪽으로 쏠린다.
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

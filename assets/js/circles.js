@@ -26,8 +26,9 @@ export function circlesPanelHtml(s) {
   return `
     ${got.length ? `<h3 class="sub-h">받은 모임 초대 ${got.length}</h3><ul class="spot-list">${got.map(i => `<li><div><b>「${esc(i.circle_name)}」</b><small>${esc(i.from || '조사원')}님의 초대 · ${i.member_count}명 · ${fmt.remain(new Date(i.expires_at) - Date.now())} 남음</small></div>
       <div class="btn-row"><button class="btn small primary" data-circle-acc="${esc(i.invite_id)}">수락</button><button class="btn small" data-circle-dec="${esc(i.invite_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
-    ${list.length ? `<ul class="circle-list">${list.map(c => `<li style="--cc:${esc(c.color)}"><span class="cc-dot"></span><div><b>${esc(c.name)}</b>
+    ${list.length ? `<ul class="circle-list">${list.map((c, i) => `<li style="--cc:${esc(c.color)}"><span class="cc-dot"></span><div><b>${esc(c.name)}</b>
         <small>${esc(ROLE[c.role] || '')} · ${c.member_count}/${lim.size}명${c.intro ? ' · ' + esc(c.intro) : ''}</small></div>
+        ${list.length > 1 ? `<span class="circle-ord"><button class="btn small ghost" data-circle-up="${esc(c.circle_id)}" ${i === 0 ? 'disabled' : ''} aria-label="위로">${icon('up', 14)}</button><button class="btn small ghost" data-circle-down="${esc(c.circle_id)}" ${i === list.length - 1 ? 'disabled' : ''} aria-label="아래로">${icon('down', 14)}</button></span>` : ''}
         <button class="btn small" data-circle-open="${esc(c.circle_id)}">관리</button></li>`).join('')}</ul>`
       : '<p class="muted small">아직 든 모임이 없습니다. 모임을 만들거나, 다른 조사원의 초대를 받아 보세요.</p>'}
     <form class="circle-new" autocomplete="off">
@@ -41,6 +42,13 @@ export function circlesPanelHtml(s) {
 export function bindCirclesPanel(root) {
   $$('[data-circle-acc],[data-circle-dec]', root).forEach(b => b.onclick = () => run(b, 'world_circle_respond', { p_invite: b.dataset.circleAcc || b.dataset.circleDec, p_accept: !!b.dataset.circleAcc }));
   $$('[data-circle-open]', root).forEach(b => b.onclick = () => openCircle(b.dataset.circleOpen));
+  // 순서: 내 화면의 모임 순서(채팅의 모임 단추 줄도 이 순서)를 서버에 저장한다
+  $$('[data-circle-up],[data-circle-down]', root).forEach(b => b.onclick = () => guard(b, async () => {
+    const ids = circles().map(c => c.circle_id), id = b.dataset.circleUp || b.dataset.circleDown, i = ids.indexOf(id), j = i + (b.dataset.circleUp ? -1 : 1);
+    if (i < 0 || j < 0 || j >= ids.length) return null;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    await rpc('world_circle_reorder', { p_ids: ids }); await refresh(); return null;
+  }));
   const f = $('.circle-new', root);
   if (f) f.onsubmit = e => { e.preventDefault(); const b = f.querySelector('button'); run(b, 'world_circle_create', { p_name: f.name.value.trim(), p_intro: f.intro.value.trim() }); };
 }

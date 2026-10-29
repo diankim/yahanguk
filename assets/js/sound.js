@@ -143,6 +143,8 @@ const PROFILES = {
   underworld: { tonic: 61, mode: 'phryg', bpm: 56, lead: 'shakuhachi', lead2: 'fiddle', counter: 'harp', arp: 'harp', style: 'sparse', bell: 0.35, taiko: 0 },
   heavenward: { tonic: 65, mode: 'major', bpm: 60, lead: 'flute', lead2: 'shakuhachi', counter: 'harp', arp: 'harp', style: 'sparse', bell: 0.5, taiko: 0 },
   abyss:      { tonic: 59, mode: 'phryg', bpm: 64, lead: 'fiddle', lead2: 'shakuhachi', counter: 'koto', arp: 'koto', style: 'sparse', bell: 0.15, taiko: 0.35 },
+  // 귀허도: 느리고 낮은 해금·대금, 종을 많이 쓰는 배웅 노래 느낌(G 프리지안)
+  gwiheo:     { tonic: 55, mode: 'phryg', bpm: 52, lead: 'fiddle', lead2: 'shakuhachi', counter: 'harp', arp: 'koto', style: 'sparse', bell: 0.45, taiko: 0.2 },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0;
 let droneKey = ''; // 지역이 바뀌었는지 보는 열쇠(예전 이름을 그대로 쓴다)
@@ -354,7 +356,7 @@ function critters() {
   clearTimeout(critterTimer);
   if (away) return;
   if (!ctx || !sound.ambOn) { critterTimer = setTimeout(critters, 4000); return; }
-  const under = scene.territory === 'underworld' || scene.territory === 'abyss';
+  const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
   const quiet = w === 'rain' || w === 'snow' || w === 'wind';
   if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.55 : 0.3)) {
@@ -377,7 +379,7 @@ function critters() {
 }
 function updateAmbience() {
   if (!ctx) return;
-  const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss';
+  const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   setLayer('rain', w === 'rain' ? 0.12 : 0, BUILD.rain);
   setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
   setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : 0, BUILD.water);

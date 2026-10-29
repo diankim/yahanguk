@@ -1634,6 +1634,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ns-1025 { --ns: #4fc2b6; } [data-tone=light] .ns-1025 { --ns: #19756b; }
 .ns-1026 { --ns: #f2924a; } [data-tone=light] .ns-1026 { --ns: #ad4f0e; }
 .ns-1027 { --ns: #9ab8f4; } [data-tone=light] .ns-1027 { --ns: #3a55a0; }
+.ns-1028 { --ns: #5fc4c9; } [data-tone=light] .ns-1028 { --ns: #1f6f74; }
 /* 야행묵금(레거시): 마름모 대신 작은 「痕」, 이름 아래 붉은 붓 한 획 */
 .chat-list li.msg.ns-1016 .meta b, .card-name.ns-1016, .hue-preview.ns-1016 b, .hue-pick.ns-1016 { font-family: var(--font-serif, serif);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C20 2 45 3 70 4S95 5 99 2L99 4C90 7 60 7 35 6.5S8 7 1 5z' fill='%23b0263a'/%3E%3C/svg%3E") no-repeat left bottom / 100% 4px; padding-bottom: 3px; }
@@ -1970,3 +1971,16 @@ b.sealed { color: var(--bad); }
 .hs-slots i.good { background: var(--ok); }
 .hs-slots i.bad { background: var(--bad); animation: hs-blink 1.2s ease-in-out infinite; }
 @keyframes hs-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* 7.0 귀허의 주인(라운드 전투) · 창고 거르기 */
+.gw-round-bar { height: 6px; margin: 4px 0 8px; }
+.gw-round-bar span { transition: width .25s linear; background: var(--warn); }
+.raid-buttons .btn.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+.c-blue { color: #5b8fd6; } .c-red { color: var(--bad); } .c-yellow { color: #d9b23a; } .c-white { color: var(--text); }
+.btn.c-blue { border-color: #5b8fd6; } .btn.c-red { border-color: var(--bad); } .btn.c-yellow { border-color: #d9b23a; } .btn.c-white { border-color: var(--text); }
+.tile.danger { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); color: var(--bad); }
+.st-filter { margin: 8px 0; } .mk-filter .st-q { width: 100%; min-width: 0; }
+.circle-ord { display: inline-flex; gap: 2px; } .circle-ord .btn { min-height: 28px; padding: 2px 6px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; } .title-row .btn { min-height: 26px; padding: 2px 8px; font-size: 11.5px; }
+.auth-tip { display: flex; gap: 8px; align-items: flex-start; max-width: 420px; margin: 14px auto 0; padding: 8px 12px; border: 1px dashed var(--line); border-radius: var(--r, 10px); background: transparent; color: var(--muted); font-size: 12.5px; text-align: left; line-height: 1.5; cursor: pointer; }
+.auth-tip .ico { flex: none; margin-top: 2px; color: var(--gold); }

@@ -96,11 +96,15 @@ function renderTabs() {
   if (!t.some(x => x[0] === tab)) tab = 'global';
   box.style.setProperty('--n', t.length);
   box.innerHTML = t.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
-  paintCircleDots(); paintPartyDot();
+  paintCircleDots(); paintPartyDot(); paintChanDots();
 }
+// 전체·지역·세력 탭: 다른 탭을 보는 동안 새 말이 오면 빨간 점(이미 받는 실시간 메시지로만 센다, 서버에 따로 묻지 않음)
+const chanNew = { global: false, region: false, faction: false };
+function paintChanDots() { for (const k of Object.keys(chanNew)) $(`.chat-tabs [data-tab="${k}"]`, panel)?.classList.toggle('has-dot', chanNew[k] && tab !== k); }
 
 function switchTab(t) {
   tab = t; forceEnd = true;
+  if (t in chanNew) { chanNew[t] = false; paintChanDots(); }
   $$('.chat-tabs button', panel).forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   $('#chat-hint', panel).textContent = HINT[t];
   $('#chat-circles', panel).hidden = t !== 'circle';
@@ -238,6 +242,7 @@ function addMsg(m) {
   // 귓속말은 채팅 목록에 섞지 않고 귓속말 창으로 넘긴다
   if (m.channel_type === 'whisper') { if (!blocked.has(m.sender_id)) onWhisper(m); return; }
   if (m.channel_type === tab) draw();
+  else if (m.channel_type in chanNew && m.sender_id !== store.user?.id && !blocked.has(m.sender_id) && !chanNew[m.channel_type]) { chanNew[m.channel_type] = true; paintChanDots(); }
   const sheetClosed = !matchMedia('(min-width: 1280px)').matches && !document.body.classList.contains('chat-open');
   if (sheetClosed && m.sender_id !== store.user?.id && !blocked.has(m.sender_id)) { unread++; badge(); }
 }
@@ -295,7 +300,7 @@ export const NAME_STYLES = {
   1016: ['야행묵금', '「야행의 흔적」을 받은 이만'],
   // 세력 비고에서 공훈으로 받는 이름 색(세력을 떠나도 남는다)
   1021: ['정청 남빛', '정통파 비고에서 받으면'], 1022: ['월식 핏빛', '적월교 비고에서 받으면'], 1023: ['흑련 먹자주', '흑련회 비고에서 받으면'],
-  1024: ['설한 은청', '북령맹 비고에서 받으면'], 1025: ['물길 청록', '수향연맹 비고에서 받으면'], 1026: ['잔불 주황', '남명회 비고에서 받으면'], 1027: ['성좌 금청', '천명원 비고에서 받으면'],
+  1024: ['설한 은청', '북령맹 비고에서 받으면'], 1025: ['물길 청록', '수향연맹 비고에서 받으면'], 1026: ['잔불 주황', '남명회 비고에서 받으면'], 1027: ['성좌 금청', '천명원 비고에서 받으면'], 1028: ['귀허청', '귀허의 주인을 처음 쓰러뜨리면'],
 };
 export const nameStyle = (v, id) => NAME_STYLES[v] ? { cls: ` ns-${v}`, hu: hue(id) } : { cls: '', hu: Number.isInteger(v) ? v : hue(id) };
 export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }
