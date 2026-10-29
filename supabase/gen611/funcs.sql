@@ -242,6 +242,108 @@ do $$ declare f text; d text; n int; begin
   end loop;
 end $$;
 
+-- ⑥-8 의무관 조정(2026-10-29 직업 점검): 응급 처방을 공짜로 계속 돌려 다른 직업보다 회복품을 덜 쓰고 탐색을 더 자주 하던 것.
+-- 응급 처방은 한 전투에 한 번·기력/영력 25(전에는 3턴마다 12)·체력 15 + 체질/2 + 의지/2(최대 40, 전에는 25 + 체질 + 의지/2·최대 60).
+-- 의무관 회복품 배율 ×1.4 → ×1.15(현장 토벌·물품 사용·원정 보급품 ×1.5 → ×1.15). 대신 파티원에게 쓰면 ×1.4(world_party_use_item, 새 함수).
+do $$ declare d text; a text; b text; n int;
+begin
+  d := pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure);
+  if position('med_used' in d) = 0 then
+    a := E'    IF sp < 12 THEN RAISE EXCEPTION ''%'', CASE WHEN style = ''melee'' THEN ''기력'' ELSE ''영력'' END || ''이 모자랍니다. (필요 12)''; END IF;\n    sp := sp - 12; v_pfx := v_pfx || jsonb_build_object(''skill_ready'', turn + 3);';
+    b := E'    IF c.job_key = ''medic'' AND (v_pfx ->> ''med_used'') IS NOT NULL THEN RAISE EXCEPTION ''응급 처방은 한 전투에 한 번만 쓸 수 있습니다.''; END IF;\n'
+      || E'    IF sp < (CASE WHEN c.job_key = ''medic'' THEN 25 ELSE 12 END) THEN RAISE EXCEPTION ''%'', CASE WHEN style = ''melee'' THEN ''기력'' ELSE ''영력'' END || ''이 모자랍니다. (필요 '' || CASE WHEN c.job_key = ''medic'' THEN 25 ELSE 12 END || '')''; END IF;\n'
+      || E'    sp := sp - CASE WHEN c.job_key = ''medic'' THEN 25 ELSE 12 END; v_pfx := v_pfx || jsonb_build_object(''skill_ready'', turn + 3);';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 기술 비용(%)', n; end if;
+    d := replace(d, a, b);
+    a := E'heal := least(60, 25 + c.vitality + c.willpower / 2); hp := least(100, hp + heal); v_pfx := v_pfx || jsonb_build_object(''u_fa'', coalesce((v_pfx ->> ''u_fa'')::int, 0) + 1);';
+    b := E'heal := least(40, 15 + c.vitality / 2 + c.willpower / 2); hp := least(100, hp + heal); v_pfx := v_pfx || jsonb_build_object(''u_fa'', coalesce((v_pfx ->> ''u_fa'')::int, 0) + 1, ''med_used'', true);';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 응급 처방(%)', n; end if;
+    d := replace(d, a, b);
+    a := E'IF c.job_key = ''medic'' THEN heal := round(heal * 1.4); END IF;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 2 then raise exception '고칠 자리 없음: 토벌 회복품 배율(%)', n; end if;
+    d := replace(d, a, E'IF c.job_key = ''medic'' THEN heal := round(heal * 1.15); END IF;');
+    execute d;
+  end if;
+  d := pg_get_functiondef('public.world_use_item(text)'::regprocedure);
+  a := E'mul := (CASE WHEN c.job_key = ''medic'' THEN 1.4 ELSE 1 END)';
+  if position(a in d) > 0 then
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 물품 배율(%)', n; end if;
+    execute replace(d, a, E'mul := (CASE WHEN c.job_key = ''medic'' THEN 1.15 ELSE 1 END)');
+  end if;
+  d := pg_get_functiondef('public.world_expedition_settle(uuid,integer)'::regprocedure);
+  a := E'if c.job_key = ''medic'' then heal := round(heal * 1.5); end if;';
+  if position(a in d) > 0 then
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 원정 보급품 배율(%)', n; end if;
+    execute replace(d, a, E'if c.job_key = ''medic'' then heal := round(heal * 1.15); end if;');
+  end if;
+end $$;
+
+-- 파티원에게 회복품 쓰기: 같은 곳·같은 파티의 동료에게 약·부적을 쓴다. 의무관이 쓰면 ×1.4, 그 밖은 ×1(쓰는 사람의 회복량 보정은 함께 받음).
+-- 쓰러진 동료는 구조(world_rescue_character)로, 원정 중인 동료에게는 쓸 수 없다. 두 사람이 서로에게 동시에 써도 엇갈려 막히지 않게 owner_id 순서로 잠근다.
+create or replace function public.world_party_use_item(p_target uuid, p_item_id text)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $f$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; t public.world_characters%rowtype; pid uuid;
+  hp int := 0; mn int := 0; er int := 0; cures text[] := '{}'; cleared int := 0; mul float8; nm text; msg text; ne int;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  if p_target is null or p_target = uid then raise exception '자기에게 쓸 때는 가방에서 쓰세요.'; end if;
+  perform 1 from public.world_characters where owner_id in (uid, p_target) order by owner_id for update;
+  select * into c from public.world_characters where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select * into t from public.world_characters where owner_id = p_target;
+  if not found then raise exception '대상 조사원을 찾을 수 없습니다.'; end if;
+  if coalesce(c.is_dead, false) or c.downed_at is not null or c.health <= 0 then raise exception '쓰러진 상태에서는 동료를 돌볼 수 없습니다.'; end if;
+  if c.travel_destination is not null then raise exception '이동 중에는 동료를 돌볼 수 없습니다.'; end if;
+  if exists (select 1 from public.world_expeditions e where e.owner_id = uid and e.status = 'active') then raise exception '원정 중에는 동료를 돌볼 수 없습니다.'; end if;
+  select party_id into pid from public.world_party_members where owner_id = uid;
+  if pid is null or not exists (select 1 from public.world_party_members where owner_id = p_target and party_id = pid) then raise exception '같은 파티의 동료에게만 쓸 수 있습니다.'; end if;
+  if coalesce(t.is_dead, false) then raise exception '숨을 거둔 조사원입니다.'; end if;
+  if t.downed_at is not null or t.health <= 0 then raise exception '쓰러진 동료는 구조해야 합니다.'; end if;
+  if coalesce(c.location, '') <> coalesce(t.location, '') or t.travel_destination is not null then raise exception '같은 곳에 있는 동료에게만 쓸 수 있습니다.'; end if;
+  if exists (select 1 from public.world_expeditions e where e.owner_id = p_target and e.status = 'active') then raise exception '원정 중인 동료에게는 쓸 수 없습니다.'; end if;
+  if coalesce((c.inventory ->> p_item_id)::int, 0) < 1 then raise exception '가방에 그 물품이 없습니다.'; end if;
+  case p_item_id
+    when 'tonic' then hp := 35; cures := array['shaken'];
+    when 'herbal_extract' then hp := 22; cures := array['bleeding', 'burned', 'sprain'];
+    when 'herb' then hp := 12; cures := array['poisoned', 'stomach_upset'];
+    when 'medicine_base' then mn := 12; cures := array['fatigue', 'cold', 'exhausted', 'overtrained'];
+    when 'ward_talisman' then mn := 8; er := 12; cures := array['erosion_whisper', 'shaken', 'poisoned'];
+    when 'rejuv_pill' then hp := 60; cures := array['bleeding', 'burned', 'sprain', 'poisoned'];
+    when 'grand_pill' then hp := 100; mn := 20; cures := array['shaken', 'exhausted'];
+    when 'purify_water' then mn := 5; er := 20; cures := array['erosion_whisper'];
+    when 'calm_brew' then mn := 30; cures := array['shaken', 'fatigue'];
+    else raise exception '동료에게 쓸 수 있는 것은 약과 부적입니다.';
+  end case;
+  mul := (case when c.job_key = 'medic' then 1.4 else 1 end) * (1 + public.world_status_effect_total('healing_pct') / 100.0);
+  hp := round(hp * mul); mn := round(mn * mul);
+  select count(*) into cleared from public.world_character_statuses where owner_id = p_target and status_key = any (cures) and expires_at > now();
+  if cleared = 0 and (hp = 0 or t.health >= 100) and (mn = 0 or t.mental >= 100) and (er = 0 or coalesce(t.erosion, 0) <= 0) then raise exception '그 동료에게는 지금 쓸 필요가 없습니다.'; end if;
+  hp := least(hp, 100 - t.health); mn := least(mn, 100 - t.mental); er := least(er, coalesce(t.erosion, 0));
+  delete from public.world_character_statuses where owner_id = p_target and status_key = any (cures);
+  update public.world_characters set inventory = public.world_inv_add(inventory, p_item_id, -1), updated_at = now() where owner_id = uid;
+  ne := greatest(0, coalesce(t.erosion, 0) - er);
+  update public.world_characters set health = health + hp, mental = mental + mn, erosion = ne,
+    erosion_stage = case when ne >= 80 then 4 when ne >= 55 then 3 when ne >= 30 then 2 when ne >= 10 then 1 else 0 end, updated_at = now() where owner_id = p_target;
+  select item_name into nm from public.world_item_catalog where item_id = p_item_id;
+  msg := c.character_name || '이(가) ' || t.character_name || '에게 ' || nm || '을(를) 썼습니다.'
+    || case when hp > 0 then ' 체력 +' || hp else '' end || case when mn > 0 then ' 정신 +' || mn else '' end
+    || case when er > 0 then ' 침식 -' || er else '' end || case when cleared > 0 then ' · 상태 ' || cleared || '개 치료' else '' end;
+  insert into public.world_events(actor_id, actor_name, event_type, content, payload)
+  values (uid, c.character_name, 'use_item', msg, jsonb_build_object('v2', true, 'item_id', p_item_id, 'target_id', p_target, 'target_name', t.character_name, 'cleared_statuses', cleared));
+  insert into public.world_notifications(user_id, kind, title, content, payload)
+  values (p_target, 'system', '동료의 치료', msg, jsonb_build_object('from', uid, 'item_id', p_item_id));
+  return jsonb_build_object('ok', true, 'content', msg, 'health', t.health + hp, 'mental', t.mental + mn);
+end $f$;
+do $$ begin
+  if not pg_has_role('postgres', 'fn_owner_field', 'usage') then grant fn_owner_field to postgres with inherit true, set true; end if;
+end $$;
+alter function public.world_party_use_item(uuid, text) owner to fn_owner_field;
+set role fn_owner_field;
+revoke all on function public.world_party_use_item(uuid, text) from public, anon;
+grant execute on function public.world_party_use_item(uuid, text) to authenticated;
+reset role;
+
 -- ⑦ 6.1.0 숨김 풀기: 보관해 둔 6.1.0 패치노트를 되살리고, 서버 보스 예약을 다시 켠다(아무도 모이지 않은 예고 회차는 지우고 새로 잡는다)
 do $$ begin
   if to_regclass('yh_deploy.hold_patch_note') is not null then
@@ -252,7 +354,7 @@ delete from public.world_raids r where r.kind = 'world' and r.status = 'announce
 select public.world_raid_schedule_next() where not exists (select 1 from public.world_raids where kind = 'world' and status in ('announced', 'signup', 'fight'));
 select cron.alter_job(jobid, active := true) from cron.job where jobname = 'yh-raid';
 
-update public.world_patch_notes set body = body || E'\n### 6.1.1\n- **직업·소속 퀘스트 12개**: 직업마다 하나(호위 무사 「마지막 파수의 칼」·현장 조사원 「빈 과녁의 주인」·퇴마관 「방울을 돌려주는 밤」·의무관 「외상 장부의 약값」·봉인술사 「봉인 부적 출납부」·백공 기술관 「이름 붙은 등」), 소속마다 하나(본부 직속 「서리의 하루」·현장대응국 「귀죽림 순찰로」·기록감찰국 「젖은 쪽의 먹」·봉인관리국 「닫힌 줄 모르는 수문」·의무지원국 「담 밖의 약초밭」·외부 협력자 「명부 밖의 손님」). 이야기 속 인물들이 맡기고, 내 직업·소속에게만 보입니다(Lv3·4).\n- **1장 첫 장면**에서 연서희가 직업과 소속에 따라 다르게 맞아 줍니다(일지에서 다시 보기로도 보입니다).\n- **소속 보급 편지**: 하루 소속 보급을 받으면 부서에서 짧은 편지가 함께 옵니다. 이야기를 진행할수록 내용이 달라집니다.\n- **지역 첫 방문 글**: 지역에 처음 들어가면 그곳의 내력을 짧게 보여 주고, 일지 › 기록 › 지역에 남깁니다.\n- **물품 내력**: 시작 장비와 주요 물품 정보 창에 한 줄 내력이 붙습니다.\n- **요괴 목격담**: 요괴 도감에서 갈래를 고르면, 그 갈래를 1·10마리 쓰러뜨릴 때마다 이야기 속 인물의 한마디가 열립니다.\n- **숨김 칭호 유래**: 얻은 숨김 칭호 카드의 「유래」를 누르면 그 칭호를 두고 인물들이 하는 말을 보여 줍니다.\n- **환골탈태 장면**: 서첩을 쓰면 정청 서기관이 배속 변경을 처리하는 짧은 장면이 나옵니다.\n- **탈것에서 내리기**: 지도 › 탈것에서 탈것을 내려 걸어 다닐 수 있습니다(속도 ×1, 노정패 운임 없음). 언제든 다시 탈 수 있습니다.\n- **물품 버리기 편의(제보)**: 물품 정보 창의 버리기 칸에 가진 수량을 함께 적고, 「최대」(버릴 수 있는 만큼 채우기)와 「모두 버리기」 단추를 더했습니다. 장착 중인 장비는 하나를 남깁니다. 창 안의 글자를 끌어 고르다 바깥에서 손을 떼도 창이 닫히지 않습니다.\n- **초반~중반 전 수입 보강**: 레벨 15 미만은 본부 구조대 비용 상한이 절반(레벨×40전)입니다. 상시 의뢰의 보상 전을 약 25~30% 올렸습니다(예: Lv10 토벌 의뢰 40전 → 52전, 다음 날 게시판부터).\n- **물품 갈래 표시**: 상점(사기·팔기)·대장간·수리·분해·거래소·직접 거래·창고 목록의 물품 이름 앞에 무기·방어구·관모·신·노리개·호신부·탈·도구·소모품·재료 같은 갈래를 작게 붙였습니다.\n- **칭호 등급순 보기**: 칭호 화면에서 「보기」를 분류별·등급 높은순·등급 낮은순으로 고를 수 있습니다(등급순이면 신품~범품으로 묶고 카드에 분류를 적습니다. 얻지 못한 숨김 칭호는 맨 끝에 둡니다).\n- **퀘스트 채집 할 일**: 채집 횟수가 아니라 **얻은 개수**로 셉니다(한 번에 3개를 캐면 3, 덤으로 따라 나온 물품도 셈). 그 장면이 열린 뒤에 채집한 것만 세는 것은 같습니다.\n- **탐색력 다음 회복 시각**: 현장·상태판의 「다음 탐색력까지」가 예전 간격(6분)으로 보이던 것을 실제 회복 간격(15분)에 맞췄습니다.\n- **서버 정리**: 지금은 쓰지 않는 옛 행동 경로 32개를 닫았습니다(화면에서 쓰는 기능은 그대로입니다).\n'
+update public.world_patch_notes set body = body || E'\n### 6.1.1\n- **직업·소속 퀘스트 12개**: 직업마다 하나(호위 무사 「마지막 파수의 칼」·현장 조사원 「빈 과녁의 주인」·퇴마관 「방울을 돌려주는 밤」·의무관 「외상 장부의 약값」·봉인술사 「봉인 부적 출납부」·백공 기술관 「이름 붙은 등」), 소속마다 하나(본부 직속 「서리의 하루」·현장대응국 「귀죽림 순찰로」·기록감찰국 「젖은 쪽의 먹」·봉인관리국 「닫힌 줄 모르는 수문」·의무지원국 「담 밖의 약초밭」·외부 협력자 「명부 밖의 손님」). 이야기 속 인물들이 맡기고, 내 직업·소속에게만 보입니다(Lv3·4).\n- **1장 첫 장면**에서 연서희가 직업과 소속에 따라 다르게 맞아 줍니다(일지에서 다시 보기로도 보입니다).\n- **소속 보급 편지**: 하루 소속 보급을 받으면 부서에서 짧은 편지가 함께 옵니다. 이야기를 진행할수록 내용이 달라집니다.\n- **지역 첫 방문 글**: 지역에 처음 들어가면 그곳의 내력을 짧게 보여 주고, 일지 › 기록 › 지역에 남깁니다.\n- **물품 내력**: 시작 장비와 주요 물품 정보 창에 한 줄 내력이 붙습니다.\n- **요괴 목격담**: 요괴 도감에서 갈래를 고르면, 그 갈래를 1·10마리 쓰러뜨릴 때마다 이야기 속 인물의 한마디가 열립니다.\n- **숨김 칭호 유래**: 얻은 숨김 칭호 카드의 「유래」를 누르면 그 칭호를 두고 인물들이 하는 말을 보여 줍니다.\n- **환골탈태 장면**: 서첩을 쓰면 정청 서기관이 배속 변경을 처리하는 짧은 장면이 나옵니다.\n- **탈것에서 내리기**: 지도 › 탈것에서 탈것을 내려 걸어 다닐 수 있습니다(속도 ×1, 노정패 운임 없음). 언제든 다시 탈 수 있습니다.\n- **물품 버리기 편의(제보)**: 물품 정보 창의 버리기 칸에 가진 수량을 함께 적고, 「최대」(버릴 수 있는 만큼 채우기)와 「모두 버리기」 단추를 더했습니다. 장착 중인 장비는 하나를 남깁니다. 창 안의 글자를 끌어 고르다 바깥에서 손을 떼도 창이 닫히지 않습니다.\n- **초반~중반 전 수입 보강**: 레벨 15 미만은 본부 구조대 비용 상한이 절반(레벨×40전)입니다. 상시 의뢰의 보상 전을 약 25~30% 올렸습니다(예: Lv10 토벌 의뢰 40전 → 52전, 다음 날 게시판부터).\n- **물품 갈래 표시**: 상점(사기·팔기)·대장간·수리·분해·거래소·직접 거래·창고 목록의 물품 이름 앞에 무기·방어구·관모·신·노리개·호신부·탈·도구·소모품·재료 같은 갈래를 작게 붙였습니다.\n- **칭호 등급순 보기**: 칭호 화면에서 「보기」를 분류별·등급 높은순·등급 낮은순으로 고를 수 있습니다(등급순이면 신품~범품으로 묶고 카드에 분류를 적습니다. 얻지 못한 숨김 칭호는 맨 끝에 둡니다).\n- **퀘스트 채집 할 일**: 채집 횟수가 아니라 **얻은 개수**로 셉니다(한 번에 3개를 캐면 3, 덤으로 따라 나온 물품도 셈). 그 장면이 열린 뒤에 채집한 것만 세는 것은 같습니다.\n- **탐색력 다음 회복 시각**: 현장·상태판의 「다음 탐색력까지」가 예전 간격(6분)으로 보이던 것을 실제 회복 간격(15분)에 맞췄습니다.\n- **의무관 조정**: 「응급 처방」은 한 전투에 한 번만 쓸 수 있고, 기력·영력 25를 쓰며(전에는 3턴마다 12), 체력 회복은 15 + 체질/2 + 의지/2(최대 40)입니다(전에는 25 + 체질 + 의지/2, 최대 60). 의무관의 회복품 효과는 ×1.4에서 ×1.15로 낮췄습니다(현장 토벌·물품 사용·원정 보급품).\n- **파티원에게 회복품 쓰기**: 현장의 파티 칸에서 같은 곳에 있는 동료에게 약·부적(청심환·농축 약초액·야령초·약제 바탕·정화 부적·회춘단·대환단·청정수·안신탕)을 쓸 수 있습니다. 의무관이 쓰면 효과 ×1.4입니다. 쓰러진 동료는 구조로, 원정 중인 동료에게는 쓸 수 없습니다.\n- **서버 정리**: 지금은 쓰지 않는 옛 행동 경로 32개를 닫았습니다(화면에서 쓰는 기능은 그대로입니다).\n'
  where note_id = '6.1.0' and position('### 6.1.1' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261031010000', now())

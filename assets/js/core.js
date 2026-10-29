@@ -80,7 +80,7 @@ export const JOBS = {
     base: { strength: 4, agility: 8, vitality: 4, perception: 8, willpower: 3, spirit_affinity: 3 }, kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리' },
   artificer: { name: '호위 무사', trait: '근접', desc: '앞에 서서 베고 막는 근접 전사. 근접 피해 +8%·받는 피해 −6%·이목 +30, 파갑참(근접 ×1.7, 방어·결계 무시).',
     base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
-  medic: { name: '의무관', trait: '치유', desc: '다치고 쓰러진 동료를 살리는 치유사. 회복량 ×1.4·회복 +10%, 응급 처방(체력 회복·나쁜 상태 걷기).',
+  medic: { name: '의무관', trait: '치유', desc: '다치고 쓰러진 동료를 살리는 치유사. 회복품 ×1.15(파티원에게 쓰면 ×1.4)·회복 +10%, 응급 처방(한 전투에 한 번, 체력 회복·나쁜 상태 걷기).',
     base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
   sealmaster: { name: '봉인술사', trait: '보조', desc: '요괴를 묶고 동료를 북돋는 버프·디버프 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },

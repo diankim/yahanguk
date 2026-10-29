@@ -33,7 +33,7 @@ export const SKILL = {
   exorcist: ['퇴마진', '술법으로 두 배 피해를 주고 결계를 깨뜨립니다.'],
   sealmaster: ['봉인술', '피해를 주고 요괴의 다음 행동을 묶습니다. 우두머리는 절반 확률.'],
   scout: ['급소 사격', '원거리로 반드시 치명타를 내고 두 턴 동안 표식을 남깁니다.'],
-  medic: ['응급 처방', '체력을 크게 회복하고 나쁜 상태 하나를 걷어냅니다.'],
+  medic: ['응급 처방', '체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.'],
   analyst: ['약점 간파', '다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.'],
   artificer: ['파갑참', '근접으로 방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
 };
@@ -69,6 +69,8 @@ function draw(fresh = []) {
   const skill = SKILL[c.job_key] || ['기술', ''];
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
   const skillWait = Math.max(0, ready - turnNow);
+  // 의무관 응급 처방은 한 전투에 한 번·25(그 밖의 직업 기술은 3턴마다 12)
+  const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = c.job_key === 'medic' ? 25 : 12;
   const inv = c.inventory || {};
   const log = (b.log || []).slice(-8);
   host.innerHTML = `
@@ -94,7 +96,7 @@ function draw(fresh = []) {
       </div>
       <div class="actions" id="actions">
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
-        <button class="act" data-a="skill" ${skillWait ? 'data-wait="' + skillWait + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} 12`}</small><i class="cd"></i></button>
+        <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
         <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · ${spOf()[0]} +4</small><i class="cd"></i></button>
         <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력·기력</small><i class="cd"></i></button>
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>

@@ -102,11 +102,24 @@ function partyHtml(p, s) {
       <b>${cardName(m.owner_id, m.character_name)}</b>${m.role === 'leader' ? '<small class="accent">파티장</small>' : ''}
       <small>${esc(m.location || '')}${m.location === here ? ' (같은 곳)' : ''}${state(m) ? ' · ' + state(m) : ''}</small>
       <small class="pt-stat">체력 ${m.health} · 정신 ${m.mental ?? '-'} · 침식 ${m.erosion ?? 0}</small>
-      ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`;
+      ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}
+      ${!m.downed && !m.expedition && m.location === here ? `<button class="btn small" data-aid="${esc(m.owner_id)}" data-aid-name="${esc(m.character_name)}">돌보기</button>` : ''}</li>`;
   return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명</h2>
       <div class="btn-row">${!s.region.safe ? `<button class="btn small primary" id="pt-exp" ${store.expedition ? 'disabled' : ''}>${icon('route', 14)}<span>파티 원정</span></button>` : ''}<a class="btn small ghost" href="#/party">동료 화면</a></div></header>
     <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul>
       <p class="muted small">${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}같은 지역으로 원정을 보내면 합동 전투(동료 전투력 60%가 승률에 더해지고 요괴는 이목이 높은 쪽을 노림)를 하고, 함께 다녀온 동료 한 명마다 경험치·숙련 경험 +10%(세 명까지).</p></div></section>`;
+}
+
+// 파티원에게 회복품 쓰기(world_party_use_item): 같은 곳의 동료에게 약·부적을 쓴다. 의무관이 쓰면 효과 ×1.4(서버가 정함, 여기 수치는 안내).
+const AID_ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22·출혈·화상·삠'], ['herb', '체력 12·중독'], ['rejuv_pill', '체력 60·출혈·화상·삠·중독'], ['grand_pill', '체력 100·정신 20'],
+  ['medicine_base', '정신 12·피로·감기'], ['calm_brew', '정신 30·심신 동요'], ['ward_talisman', '정신 8·침식 −12·사념 침식'], ['purify_water', '정신 5·침식 −20']];
+function openAid(target, name) {
+  const inv = store.character.inventory || {}, medic = store.character.job_key === 'medic';
+  const have = AID_ITEMS.filter(([k]) => Number(inv[k] || 0) > 0);
+  const m = openModal({ title: `${name} 돌보기`, body: `<p class="muted small">같은 곳에 있는 동료에게 약·부적을 씁니다.${medic ? ' 의무관이 쓰면 효과가 1.4배입니다.' : ''} 쓰러진 동료는 구조해야 합니다.</p>
+    ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
+      : empty('가방에 동료에게 쓸 약·부적이 없습니다.')}` });
+  $$('[data-aid-use]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_party_use_item', { p_target: target, p_item_id: b.dataset.aidUse }); closeModal(); return r; }));
 }
 
 function drawBattle() {
@@ -311,6 +324,7 @@ function bind(s) {
   $$('[data-move]', el).forEach(b => b.onclick = () => guard(b, () => act('world_field_move', { p_node_id: b.dataset.move }), { success: '' }));
   $$('[data-gather]', el).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }));
   $$('[data-rescue]', el).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
+  $$('[data-aid]', el).forEach(b => b.onclick = () => openAid(b.dataset.aid, b.dataset.aidName));
   $$('[data-respect]', el).forEach(b => b.onclick = () => guard(b, () => act('world_corpse_respect', { p_corpse_id: b.dataset.respect })));
   $$('[data-loot]', el).forEach(b => b.onclick = async () => { if (await ask('유품을 수습할까요? 다른 조사원이 남긴 물건을 가져갑니다.', { title: '유품 수습', ok: '수습하기' })) guard(b, () => act('world_corpse_loot', { p_corpse_id: b.dataset.loot })); });
   const openExp = () => openExpedition();
