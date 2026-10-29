@@ -66,7 +66,7 @@ export async function loadCharacter() {
   const [, { data, error }] = await Promise.all([stacksFresh ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle(),
     equipped ? null : loadEquipped()]);
   if (error) throw new Error(friendlyError(error));
-  store.character = data;
+  store.character = data; store.charAt = Date.now();
   emit('character', data);
   return data;
 }

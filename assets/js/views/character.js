@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON } from '../core.js';
+import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -60,7 +60,8 @@ export async function render(root, s) {
     ${segmented('char-sub', SUBS, sub)}<div id="char-body"></div>`;
   paintTitleDot();
   bindSegmented(el, 'char-sub', k => { sub = k; window.history.replaceState(null, '', `#/char/${k}`); draw(); });
-  off.forEach(f => f()); off = [on('changed', () => { invalidate('world_combat_profile'); draw(true); })];
+  // 행동 뒤에는 그 행동이 바꿀 수 있는 것만 다시 읽는다(전투 능력치·쉼·정인은 관련 행동 뒤에만, 상태판 요약은 상태판과 같이 씀)
+  off.forEach(f => f()); off = [on('changed', ev => { if (midBattle(ev)) return; lastChange = ev.name || ''; draw(true); })];
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; }
@@ -126,10 +127,13 @@ async function hereZone() {
   const z = await safeZones().catch(() => null), c = store.character;
   return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
 }
+let lastChange = '';
 async function status(body) {
-  const [sv, hud, prof, inv, here, rs] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot').catch(() => null),
-    load('world_combat_profile').catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
-    rpc('world_rest_status').catch(() => null), loadBond(true)]);
+  const ch = lastChange; lastChange = '';
+  if (/rest|idle|travel|field_move/.test(ch)) invalidate('world_rest_status');
+  const [sv, hud, prof, inv, here, rs] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
+    load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
+    load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || /bond|equip|travel|party|field_move/.test(ch))]);
   const c = store.character, invItems = c.inventory || {};
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
   const yo = yohwaOf(hud?.statuses), statuses = yo.rest, yl = yohwaLine(yo);
@@ -208,7 +212,7 @@ function previewText(cur, next) {
 const statCap = (lv, k, job) => (JOBS[job]?.base?.[k] ?? 5) + Math.floor(Math.max(1, Number(lv) || 1) * 1.5);
 async function growth(body) {
   // 능력치를 올렸을 때 바뀔 값(plus_one)은 서버가 7번 계산하므로 쓸 포인트가 있을 때만 받는다
-  const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', Number(store.character?.stat_points || 0) > 0 ? { p_preview: true } : undefined).catch(() => null)]);
+  const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', Number(store.character?.stat_points || 0) > 0 ? { p_preview: true } : undefined, { maxAge: 60000 }).catch(() => null)]);
   const c = store.character, pts = Number(c.stat_points || 0), cur = prof?.current;
   const sp = c.skill_progress || {}, bestOf = cats => { const k = cats.reduce((a, x) => (sp[x]?.rank || 1) > (sp[a]?.rank || 1) ? x : a, cats[0]); return `가장 높은 기술: ${SKILL_NAME[k] || nameOf(k)}`; };
   const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)]), ['요리', c.cooking_rank, `${fmt.num(c.cooking_xp)} 경험`]];

@@ -3,6 +3,7 @@
 // 동료 화면의 연리 칸, 조사원 카드의 [연리 맺기], 장비 목록의 정표 칸, 마음 전하기·선물·파기 창을 맡는다.
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, toast, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
+import { load } from './views/common.js';
 
 // 정표 종류: [이름, 뜻, 그림(24×24 선)]
 export const TOKENS = {
@@ -101,7 +102,7 @@ export async function openPropose(targetId, targetName) {
 /* ── 선물 ───────────────────────────────────────────── */
 async function openGift(after) {
   const b = bond(); if (!b) return;
-  const inv = await rpc('world_inventory_snapshot').catch(() => null);
+  const inv = await load('world_inventory_snapshot', undefined, { maxAge: 10000 }).catch(() => null);
   const have = inv?.inventory || {}, equipped = new Set(Object.values(inv?.equipment || {}));
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i]));
   const items = Object.entries(have).filter(([id, n]) => Number(n) - (equipped.has(id) ? 1 : 0) > 0 && cmap.get(id)?.tradeable !== false && !MARKET_ONLY.has(id))

@@ -2,6 +2,7 @@
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
 import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
 import { envChip } from './env.js';
+import { load } from './views/common.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -19,24 +20,29 @@ export function mountHud(el) {
   on('changed', ev => {
     if (midBattle(ev)) return render();
     const idle = /idle/.test(ev.name || '');
-    clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle }), 350);
+    // 다른 화면(캐릭터 › 상태)이 방금 같은 요약을 읽었으면 그것을 같이 쓴다(1초 안)
+    clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle, hudAge: 1000 }), 350);
   });
   refresh();
   clearInterval(tick); tick = setInterval(onTick, 1000);
-  clearInterval(poll); poll = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
+  // 1분 읽기: 방금(45초 안) 행동해 이미 읽었으면 건너뛴다. 자율 상태는 자율 활동 중일 때만, 캐릭터는 45초 넘게 안 읽었을 때만.
+  clearInterval(poll); poll = setInterval(() => {
+    if (document.hidden) return;
+    refresh({ char: Date.now() - (store.charAt || 0) > 45000, idle: !!state.idle?.active, hudAge: 45000 });
+  }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 }
 
 // 로그인이 풀려 거절되면(권한 없음) 바로 로그인 확인을 돌려 이 탭을 로그아웃시킨다(session.js) — 거절당한 요청을 되풀이하지 않게
 function authLost(e) { if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) window.dispatchEvent(new Event('yh-auth-lost')); return null; }
-export async function refresh({ char = true, idle: readIdle = true } = {}) {
+export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 } = {}) {
   try {
     // 원정 중이면 지난 수색 회차를 먼저 정산해 체력·정신·침식이 바로 맞게 한다
     if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
     const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
     const [idle, hud] = await Promise.all([
       readIdle || first ? rpc('world_idle_activity_snapshot').catch(authLost) : state.idle,
-      rpc('world_hud_snapshot').catch(authLost),
+      load('world_hud_snapshot', undefined, { maxAge: hudAge }).catch(authLost),
       (first || !char) && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;

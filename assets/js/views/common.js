@@ -8,10 +8,22 @@ export async function load(name, args, { maxAge = 0 } = {}) {
   const key = name + JSON.stringify(args ?? null);
   if (maxAge && store.snaps[key] && Date.now() - (cacheAt.get(key) || 0) < maxAge) return store.snaps[key];
   if (inflight.has(key)) return inflight.get(key);
-  const p = rpc(name, args).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); return d; })
+  const p = (name === 'world_inventory_snapshot' ? inventorySnap() : rpc(name, args)).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); return d; })
     .finally(() => inflight.delete(key));
   inflight.set(key, p);
   return p;
+}
+// 가방 정보: 물품 목록·제작법(약 220KB 가운데 218KB)은 배포 전까지 바뀌지 않으므로 접속 동안 한 번만 받고,
+// 그 뒤에는 캐릭터마다 바뀌는 몫만 받는다(world_inventory_state). 서버에 아직 없으면 전체를 받는다.
+let invStatic = null, invLite = true;
+async function inventorySnap() {
+  if (invStatic && invLite) {
+    try { const d = await rpc('world_inventory_state'); return { ...d, catalog: invStatic.catalog, recipes: invStatic.recipes }; }
+    catch (e) { if (!/로그인|권한/.test(String(e?.message || ''))) invLite = false; else throw e; }
+  }
+  const d = await rpc('world_inventory_snapshot');
+  if (d?.catalog?.length) invStatic = { catalog: d.catalog, recipes: d.recipes || [] };
+  return d;
 }
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
 // 위치·소속이 바뀌는 행동 뒤에는 지도 캐시를 버린다.
@@ -20,7 +32,9 @@ const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/
 // 일지 퀘스트 목록은 15초 동안 다시 쓰고, 할 일이 진행될 수 있는 행동 뒤에만 버린다
 const QUEST_CHANGERS = /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/;
 const ROSTER_CHANGERS = /travel|field_move|rescue|party|expedition|downed|idle/;
-on('changed', ({ name }) => { if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
+// 전투 능력치(world_combat_profile, 한 번 약 100ms)는 능력치·장비·상태·칭호가 바뀔 수 있는 행동 뒤에만 버린다(그 밖에는 1분 캐시)
+const COMBAT_CHANGERS = /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/;
+on('changed', ({ name }) => { if (COMBAT_CHANGERS.test(name || '')) invalidate('world_combat_profile'); if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
 // 응답에 들어 있는 이름을 사전에 등록해 내부 코드(hq_archive 등)가 화면에 노출되지 않게 한다.
