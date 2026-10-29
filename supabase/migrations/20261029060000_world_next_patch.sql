@@ -1507,6 +1507,8 @@ end $$;
 -- 유수검은 43단계 B에서 30단계 A(melee_c30a)로 옮기고, 43단계 B(melee_c43b)는 사자후가 된다.
 update public.world_skill_catalog set slot = 'a' where skill_id = 'melee_x13';
 update public.world_skill_catalog set slot = 'b' where skill_id = 'melee_x30';
+-- 4.0.0에서 43단계 B(melee_c43b)가 「유수검」이었으므로 이름을 먼저 비운다(같은 계열 안 기술 이름은 겹칠 수 없다)
+update public.world_skill_catalog set skill_name = '사자후' where skill_id = 'melee_c43b' and skill_name = '유수검';
 insert into public.world_skill_catalog(skill_id, skill_name, category, description, passive_effect, unlock_rank, active_skill, recipe_id, slot, requires) values
   ('melee_c13b', '호령', 'melee', '', '{}'::jsonb, 13, null, null, 'b', null),
   ('melee_c30a', '유수검', 'melee', '', '{}'::jsonb, 30, null, null, 'a', null)
