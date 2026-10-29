@@ -119,7 +119,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
 let smithyTab = 'buy';
 const SMITHY_TABS = [['buy', '재료 사기'], ['enhance', '무기 강화'], ['repair', '수리'], ['dismantle', '분해']];
 const GEAR_CATS = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
-const DISMANTLE_NEED = t => ({ 1: 1, 2: 4, 3: 8, 4: 12 })[t] || 16; // 서버 world_dismantle_need와 같다
+const DISMANTLE_NEED = t => ({ 1: 1, 2: 5, 3: 10, 4: 15 })[t] || 20; // 서버 world_dismantle_need와 같다
 export async function renderSmithy(box) {
   box.innerHTML = `<div class="seg-mini smithy-tabs" role="tablist">${SMITHY_TABS.map(([k, n]) => `<button class="${smithyTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div><div class="sm-body">${loading()}</div>`;
   $$('[data-st]', box).forEach(b => b.onclick = () => { smithyTab = b.dataset.st; renderSmithy(box); });
@@ -206,7 +206,7 @@ async function dismantlePane(body) {
       return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small></div>
         <div class="item-act"><button class="btn small" data-dis="${esc(k)}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
-  body.innerHTML += `<p class="muted small">장비를 부수어 제작 재료 일부(제작법 재료의 절반)를 돌려받고 제작 경험을 얻습니다. 단계마다 필요한 제작 숙련: 1단계 1 · 2단계 4 · 3단계 8 · 4단계 12 · 5단계 16. 강화한 무기를 분해하면 강화도 사라집니다.</p>`;
+  body.innerHTML += `<p class="muted small">장비를 부수어 제작 재료 일부(제작법 재료의 절반)를 돌려받고 제작 경험을 얻습니다. 단계마다 필요한 제작 숙련: 1단계 1 · 2단계 5 · 3단계 10 · 4단계 15 · 5단계 20. 강화한 무기를 분해하면 강화도 사라집니다.</p>`;
   bindInfo(body);
   $$('[data-dis]', body).forEach(b => b.onclick = async () => {
     if (!await ask(`${nameOf(b.dataset.dis)} 하나를 분해할까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' })) return;

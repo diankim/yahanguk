@@ -27,7 +27,7 @@ export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능�
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
 // 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
 const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
-const dismantleNeed = t => ({ 1: 1, 2: 4, 3: 8, 4: 12 })[t || 1] || 16;
+const dismantleNeed = t => ({ 1: 1, 2: 5, 3: 10, 4: 15 })[t || 1] || 20; // 서버 world_dismantle_need와 같다
 // 장착 칸(서버 world_equip_item·world_unequip_item과 같은 이름): [이름, 아이콘, 닳는 때]
 export const SLOTS = { weapon: ['무기', 'sword', '공격할 때'], armor: ['방어구', 'shield', '맞을 때'], hat: ['관모', 'hat', '맞을 때'], shoes: ['신', 'shoe', '이동할 때'],
   norigae: ['노리개', 'knot', ''], amulet: ['호신부', 'talisman', ''], mask: ['탈', 'mask', ''], tool: ['도구', 'hammer', '채집할 때'] };
