@@ -362,6 +362,7 @@
 - 잠김(world_raid_lock_effect, world_status_effect_total에 더함, 다음 회차까지): 출현 지역 침식 +30·조우 +10·채집량 −25·받는 피해 +10, 이웃(world_region_neighbors: travel_from 양방향) 침식 +30·조우 +10, 이웃의 이웃 침식 +10·조우 +5.
 - 협동 기술(world_coop_skills 24개, 직업마다 4개, 전투 숙련 3·8·18·36): 합동 토벌에서만 그 턴의 행동으로 고른다(영력·다시 쓰기). 파티 원정 합동 전투는 world_coop_exp_procs가 열린 기술마다 10%, 한 싸움 두 번까지(world_expedition_settle의 win_p 뒤). 화면: 캐릭터 › 기술 아래 「협동 기술」(world_coop_list).
 - 칭호 13개(분류 '토벌', 규칙 'raid' → world_raid_rule_count, world_title_award_check는 이벤트 'raid'일 때만 셈).
+- 6.1.0 DB 상태(2026-10-29): 되돌리는 시험 하나가 「exception when others then null」로 오류를 삼키고 raise 줄이 빠져 14:10 KST에 6.1 SQL(buf61 1~10) 전체가 운영 DB에 적용됐다. 사용자 결정으로 화면 배포 전까지 숨김: 6.1.0 패치노트는 yh_deploy.hold_patch_note에 보관 후 삭제, pg_cron yh-raid는 active=false(만인장 announced 회차 하나 남음), db_version 20261031000000. 6.1 화면을 배포할 때 ① 패치노트를 hold에서 되살리고 ② yh-raid를 켜고 남은 announced 회차를 지운 뒤 world_raid_schedule_next()로 다시 예약하고 ③ RAID_ON=true·version을 올린다. 되돌리는 시험은 예외를 삼키는 블록을 쓰지 말고 반드시 마지막 줄이 raise exception 'ROLLBACK_TEST …'인지 확인한다.
 - 배포할 때 큰 DO 블록은 `lock table public.world_characters in access exclusive mode;`로 시작한다(pg_cron·접속자와 교착 방지 — share row exclusive는 파일 안에서 더 센 잠금으로 올라가다 교착이 났다).
 
 ## 11. 세력과 거점
