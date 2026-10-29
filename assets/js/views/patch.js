@@ -4,6 +4,7 @@ import { db, icon, esc, $ } from '../core.js';
 import { loading, errorBox } from './common.js';
 
 let cache = null, cacheAt = 0;
+const NOTICE = '0.0.0';
 async function notes() {
   if (cache && Date.now() - cacheAt < 300000) return cache;
   const { data, error } = await db.from('world_patch_notes').select('note_id,title,body,created_at').order('created_at', { ascending: false }).limit(60);
@@ -34,8 +35,14 @@ export async function render(el, sub) {
   try {
     const list = await notes();
     if (!list.length) { box.innerHTML = '<p class="muted">아직 올라온 패치노트가 없습니다.</p>'; return; }
-    const open = sub && list.some(n => n.note_id === sub) ? sub : list[0].note_id;
-    box.innerHTML = `<div class="patch-list">${list.map(n => `
+    // 공지(note_id 0.0.0)는 늘 맨 위에 펼쳐 둔다. 내용은 그 한 줄만 고쳐 바꾼다
+    const notice = list.find(n => n.note_id === NOTICE), rest = list.filter(n => n.note_id !== NOTICE);
+    const open = sub && list.some(n => n.note_id === sub) ? sub : rest[0]?.note_id;
+    box.innerHTML = `<div class="patch-list">${notice ? `
+      <details class="panel patch notice-pin" id="pn-${NOTICE}" open>
+        <summary><b>${esc(notice.title)}</b><small class="muted">공지</small></summary>
+        <div class="patch-body">${bodyHtml(notice.body)}</div>
+      </details>` : ''}${rest.map(n => `
       <details class="panel patch" id="pn-${esc(n.note_id)}" ${n.note_id === open ? 'open' : ''}>
         <summary><b>${esc(n.title)}</b><small class="muted">${esc(n.note_id)} · ${new Date(n.created_at).toLocaleDateString('ko-KR')}</small></summary>
         <div class="patch-body">${bodyHtml(n.body)}</div>
