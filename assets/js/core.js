@@ -88,6 +88,8 @@ export const JOBS = {
     base: { strength: 5, agility: 6, vitality: 6, perception: 7, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
 };
 // 거래소에서만 사고파는 희귀 재료(6.0.0, 서버 world_market_only와 같은 목록): 직접 거래·정인 선물 불가, 기준 시세 70% 이상, 24시간 20개, 거래세 10%
+// 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
+export const RAID_ON = false;
 export const MARKET_ONLY = new Set(['jade_shard', 'mirror_shard', 'thunder_ore', 'star_sand', 'monster_core', 'ember_crystal', 'sky_feather', 'rune_plate', 'reinforced_leather']);
 export const FACTIONS = {
   headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비에 익숙합니다. 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전.' },

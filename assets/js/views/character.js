@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -271,7 +271,7 @@ export const BRANCHES = [
   ['investigation', '조사', 'search', ['tracking']],
 ];
 async function skills(body) {
-  const [list, coop] = await Promise.all([load('world_skill_snapshot', undefined, { maxAge: 10000 }), load('world_coop_list', undefined, { maxAge: 60000 }).catch(() => [])]);
+  const [list, coop] = await Promise.all([load('world_skill_snapshot', undefined, { maxAge: 10000 }), RAID_ON ? load('world_coop_list', undefined, { maxAge: 60000 }).catch(() => []) : []]);
   const groups = {}, combos = [];
   (list || []).forEach(s => s.category === 'combo' ? combos.push(s) : (groups[s.category] ||= []).push(s));
   const SLOT = { base: '', extra: '추가 기술', a: '택일 ①', b: '택일 ②', master: '숙달 기술' };

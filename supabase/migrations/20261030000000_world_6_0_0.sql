@@ -1418,3 +1418,12 @@ update public.world_patch_notes set body = replace(body, E'### 밸런스\n', E'#
 -- 분해 안내(제보): 화면이 2단계 장비를 제작 숙련 4단계부터라고 잘못 보여 주던 것(서버는 5단계) — 화면을 서버에 맞춤
 update public.world_patch_notes set body = replace(body, E'### 고친 것\n', E'### 고친 것\n- 장비 분해에 필요한 제작 숙련이 화면에 잘못 적혀 있던 문제를 고쳤습니다(2단계 장비는 4단계가 아니라 **5단계**부터, 3단계 10 · 4단계 15 · 5단계 20). 서버 판정은 그대로입니다.\n')
  where note_id = '6.0.0' and position('장비 분해에 필요한 제작 숙련' in body) = 0;
+
+-- 파티 채팅 알림(제보 8): 파티 말을 실시간으로 받아 탭에 표시한다. 읽기는 기존 RLS(world_party_messages_member_read, 그 파티원만)가 막는다
+do $$ begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'world_party_messages') then
+    alter publication supabase_realtime add table public.world_party_messages;
+  end if;
+end $$;
+update public.world_patch_notes set body = replace(body, E'### 고친 것\n', E'### 고친 것\n- 파티 채팅에 새 말이 와도 아무 표시가 없던 문제를 고쳤습니다(제보 감사합니다). 다른 탭을 보고 있으면 「파티」 탭에 빨간 점과 알림음이, 모바일에서 채팅을 닫아 두었으면 채팅 단추에 안 읽은 수가 뜹니다.\n')
+ where note_id = '6.0.0' and position('파티 채팅에 새 말이 와도' in body) = 0;

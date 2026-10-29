@@ -1021,9 +1021,6 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 
 ### 칭호
 - 분류 「토벌」 칭호 **13가지**가 생겼습니다. 참가·승리 횟수, 최다 기여, 치료·협동, 결전 등으로 얻고, 일부는 숨겨져 있습니다.
-
-### 고친 것
-- 파티 채팅에 새 말이 와도 아무 표시가 없던 문제를 고쳤습니다(제보 감사합니다). 이제 다른 탭을 보고 있으면 「파티」 탭에 빨간 점과 알림음이, 모바일에서 채팅을 닫아 두었으면 채팅 단추에 안 읽은 수가 뜹니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

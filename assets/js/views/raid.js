@@ -1,6 +1,6 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS } from '../core.js';
+import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, RAID_ON } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
@@ -189,6 +189,7 @@ export async function startFinal() {
 export const raidBand = () => '<div id="raid-band"></div>';
 export async function fillRaidBand(box) {
   if (!box) return;
+  if (!RAID_ON) { box.remove(); return; }
   let b; try { b = await load('world_raid_brief', undefined, { maxAge: 60000 }); } catch { box.remove(); return; }
   if (!box.isConnected) return;
   const w = b?.world, rows = [];
@@ -203,4 +204,4 @@ export async function fillRaidBand(box) {
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
 }
-export const raidLocks = async () => { try { return (await load('world_raid_brief', undefined, { maxAge: 60000 }))?.locks || []; } catch { return []; } };
+export const raidLocks = async () => { if (!RAID_ON) return []; try { return (await load('world_raid_brief', undefined, { maxAge: 60000 }))?.locks || []; } catch { return []; } };

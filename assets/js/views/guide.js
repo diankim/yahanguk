@@ -1,7 +1,7 @@
 // 도움말: 튜토리얼을 대신하는 안내서. 실제 서버 규칙과 같은 수치를 적는다.
 import { icon, esc, $, $$ } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
-import { toast } from '../core.js';
+import { toast, RAID_ON } from '../core.js';
 
 const S = [
   ['start', '처음 30분', `
@@ -315,6 +315,7 @@ let gsel = 'basic', gq = '';
 const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
 export function render(el) {
+  if (!RAID_ON) { const i = S.findIndex(x => x[0] === 'raid'); if (i >= 0) S.splice(i, 1); GROUPS.forEach(g => { const j = g[3].indexOf('raid'); if (j >= 0) g[3].splice(j, 1); }); }
   const byId = Object.fromEntries(S.map(x => [x[0], x]));
   const grouped = new Set(GROUPS.flatMap(g => g[3]));
   const rest = S.filter(x => !grouped.has(x[0])).map(x => x[0]);
