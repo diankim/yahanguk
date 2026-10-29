@@ -49,6 +49,7 @@ on conflict do nothing;""")
 for i, t in L.RETRAIT.items():
     w(f"update public.world_item_catalog set equipment_traits = equipment_traits || {J(t)} where item_id = '{i}';")
 part('b_life.sql')
+part('c_pfight.sql')
 
 w("""
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261102000000', now())

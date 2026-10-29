@@ -3,7 +3,7 @@
 // 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
-import { gmBadge, ask, store, on, act, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, invalidate, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage } from './services.js';
@@ -75,7 +75,7 @@ async function draw() {
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
     setScene({ safe: !!s.region.safe, battle: !!(s.battle && !downed) });
-    if (s.battle && !downed) { drawBattle(); return; }
+    if (s.battle && !downed) { drawBattle(pty); return; }
     stopBattle();
     noteRegion(s.region);
     // 지역 첫 방문 글(6.1.1): 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
@@ -122,9 +122,17 @@ function openAid(target, name) {
   $$('[data-aid-use]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_party_use_item', { p_target: target, p_item_id: b.dataset.aidUse }); closeModal(); return r; }));
 }
 
-function drawBattle() {
-  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div><div id="battle-box"></div>`;
+// 파티 현장 토벌(7.1): 같은 곳에 합류할 수 있는 동료가 있으면 「동료 부르기」, 이미 든 파티 토벌이 있으면 그 화면으로 보낸다
+function drawBattle(pty) {
+  const me = store.character.owner_id, here = store.character.location;
+  const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
+  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
+    ${near ? `<div class="notice pf-call">${icon('users', 18)}<div><b>같은 곳의 동료 ${near}명</b><span>불러서 함께 싸웁니다(10초 라운드). 합류한 사람마다 요괴 체력이 늘고, 이기면 경험치를 한 사람마다 10% 더 받습니다.</span></div><button class="btn small primary" id="pf-call">동료 부르기</button></div>` : ''}
+    <div id="battle-box"></div>`;
   renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); });
+  const b = $('#pf-call', el);
+  if (b) b.onclick = () => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
+  if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
 }
 
 /* ── 장면 머리 ───────────────────────────────────────────── */
