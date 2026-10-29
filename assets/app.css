@@ -1949,3 +1949,15 @@ b.sealed { color: var(--bad); }
 .t-checks .t-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 13px; color: var(--muted); }
 .t-checks .t-sort select { min-height: 32px; width: auto; }
 .t-top .t-catl { font-size: 11px; }
+/* 거래소(6.1.1 모바일 정리): 사기·팔기·직접 거래 한 줄 탭, 사기 칸 거르기, 팔기 칸은 물품 한 줄·수량/가격 한 줄·등록 단추 한 줄 */
+.mk-tabs { width: 100%; } .mk-tabs button { flex: 1; }
+.mk-filter { display: grid; gap: 6px; margin: 10px 0 6px; } .mk-filter .mk-q { width: 100%; min-width: 0; }
+.mk-count { margin: 8px 0 0; }
+.trade-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin: 10px 0 4px; align-items: end; }
+.trade-form .tf-item, .trade-form .tf-hint, .trade-form .tf-go { grid-column: 1 / -1; }
+.trade-form .tf-hint { margin: -2px 0 0; min-height: 0; }
+.trade-form input { width: 100%; min-width: 0; }
+.mk-rules { margin: 12px 0 4px; } .mk-rules summary { cursor: pointer; color: var(--muted); font-size: 12.5px; display: flex; align-items: center; gap: 4px; min-height: 32px; }
+.mk-rules p { margin: 4px 0; }
+.trade-form .tf-go { width: 100%; justify-content: center; }
+@media (max-width: 720px) { .mk-list li, .mk-mine li { flex-wrap: nowrap; } .mk-list .item-act, .mk-mine .item-act { width: auto; } .mk-list .item-main, .mk-mine .item-main { min-width: 0; } }

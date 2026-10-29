@@ -257,10 +257,11 @@ function untradeNote(have, ref, direct = false) {
 
 /* ── 거래소 ───────────────────────────────────────────── */
 // 거래소(누구나 사 가는 등록 판매)와 직접 거래(같은 안전지대의 조사원과 주고받기) 두 칸
-let marketMode = 'board';
+let marketMode = 'board', boardTab = 'buy', buyCat = 'all', buyQ = '';
 export async function renderMarket(box) {
-  box.innerHTML = `<div class="seg-mini" role="tablist"><button class="${marketMode === 'board' ? 'on' : ''}" data-mm="board">거래소</button><button class="${marketMode === 'direct' ? 'on' : ''}" data-mm="direct">직접 거래</button></div><div class="mk-body">${loading()}</div>`;
-  $$('[data-mm]', box).forEach(b => b.onclick = () => { marketMode = b.dataset.mm; renderMarket(box); });
+  const mm = marketMode === 'direct' ? 'direct' : boardTab;
+  box.innerHTML = `<div class="seg-mini mk-tabs" role="tablist"><button class="${mm === 'buy' ? 'on' : ''}" data-mm="buy">사기</button><button class="${mm === 'sell' ? 'on' : ''}" data-mm="sell">팔기</button><button class="${mm === 'direct' ? 'on' : ''}" data-mm="direct">직접 거래</button></div><div class="mk-body">${loading()}</div>`;
+  $$('[data-mm]', box).forEach(b => b.onclick = () => { if (b.dataset.mm === 'direct') marketMode = 'direct'; else { marketMode = 'board'; boardTab = b.dataset.mm; } renderMarket(box); });
   const body = $('.mk-body', box);
   if (marketMode === 'direct') return renderDirect(body);
   try {
@@ -277,23 +278,42 @@ export async function renderMarket(box) {
     const sellOpts = tradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' }));
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
-    const row = (o, own) => `<li><div class="item-main"><b>${infoName(o.item_id)}</b><span class="qty">×${o.quantity}</span>
+    const row = (o, own) => `<li data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b><span class="qty">×${o.quantity}</span>
         <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small></div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
-    body.innerHTML = `
-      ${tradeable.length ? `<form class="form-grid trade-form" id="trade-form">
-          <div class="field"><span>물품</span>${pickerHtml('item', sellOpts)}</div>
-          <label class="field"><span>수량</span><input name="qty" type="number" min="1" value="1"></label>
-          <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}"></label>
-          <button class="btn primary" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록</span></button></form>
-          <p class="muted small" id="trade-hint"></p>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
-      ${hiddenNote}
+    // 규칙 안내는 접어 둔다(모바일에서 목록이 화면 아래로 밀리던 것)
+    const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
       <p class="muted small"><b>희귀 재료</b>(비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽)는 거래소에서만 사고팝니다: 기준 시세 70% 이상 · 한 사람 24시간 20개까지 · 거래세 10%.</p>
-      <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다(지금 ${mine.length}/10건). 0전 등록은 불가하며, 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p>
-      <h3 class="sub-h">판매 중 ${others.length}</h3>
-      ${others.length ? `<ul class="item-list">${others.map(o => row(o, false)).join('')}</ul>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
+      <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다. 0전 등록은 불가하고 가격은 기준 시세의 10배까지입니다. 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p></details>`;
+    body.innerHTML = (boardTab === 'buy' ? `<p class="muted small mk-count">판매 중 ${others.length}건</p>
+      <div class="mk-filter"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === buyCat ? 'accent' : ''}" data-bc="${k}">${t}</button>`).join('')}</div>
+        <input type="search" class="mk-q" placeholder="이름으로 찾기" aria-label="판매 물품 찾기" value="${esc(buyQ)}"></div>
+      ${others.length ? `<ul class="item-list mk-list">${others.map(o => row(o, false)).join('')}</ul><p class="muted small mk-none" hidden>맞는 물품이 없습니다.</p>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
+      ${rules}` : `
+      ${tradeable.length ? `<form class="trade-form" id="trade-form">
+          <div class="field tf-item"><span>올릴 물품</span>${pickerHtml('item', sellOpts)}</div>
+          <label class="field"><span>수량</span><input name="qty" type="number" min="1" value="1" inputmode="numeric"></label>
+          <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}" inputmode="numeric"></label>
+          <p class="muted small tf-hint" id="trade-hint"></p>
+          <button class="btn primary tf-go" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록 (${mine.length}/10건)</span></button></form>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
+      ${hiddenNote}
       <h3 class="sub-h">내 등록 ${mine.length}</h3>
-      ${mine.length ? `<ul class="item-list">${mine.map(o => row(o, true)).join('')}</ul>` : `<p class="muted small">등록한 물품이 없습니다.</p>`}`;
+      ${mine.length ? `<ul class="item-list mk-mine">${mine.map(o => row(o, true)).join('')}</ul>` : `<p class="muted small">등록한 물품이 없습니다.</p>`}
+      ${rules}`);
+    // 사기 칸 거르기: 목록을 다시 그리지 않고 줄만 숨긴다(입력칸 한글 조합 유지)
+    const list = $('.mk-list', body);
+    if (list) {
+      const qi = $('.mk-q', body);
+      const apply = () => {
+        buyQ = qi.value; const q = buyQ.trim().toLowerCase(); let shown = 0;
+        $$('li', list).forEach(li => { const ok = (buyCat === 'all' || li.dataset.mkCat === buyCat) && (!q || li.dataset.mkName.includes(q)); li.hidden = !ok; if (ok) shown++; });
+        $('.mk-none', body).hidden = shown > 0;
+      };
+      qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
+      qi.addEventListener('compositionend', apply);
+      $$('[data-bc]', body).forEach(b => b.onclick = () => { buyCat = b.dataset.bc; $$('[data-bc]', body).forEach(x => x.classList.toggle('accent', x === b)); apply(); });
+      apply();
+    }
     const form = $('#trade-form', body);
     if (form) {
       const hint = () => { const r = ref.get(form.item.value); $('#trade-hint', body).textContent = r?.reference_price ? `기준 시세 ${fmt.jeon(r.reference_price)} · 최대 ${fmt.jeon(r.reference_price * 10)}` : ''; };
