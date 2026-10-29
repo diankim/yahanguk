@@ -42,6 +42,8 @@ const M = {
   // 비무회(7.1): 장원 금테는 교차한 두 칼과 술, 쌍룡 테는 마주 보는 두 고리
   crossed: 'M-7-7L7 7M7-7L-7 7M-8-5l3-3M5 8l3-3M5-8l3 3M-8 5l3 3M0 3v5',
   twin: 'M-7 0a4 4 0 108 0 4 4 0 10-8 0M-1 0a4 4 0 108 0 4 4 0 10-8 0M-3-6l2 2M3-6l-2 2',
+  // 혼례(7.1): 청실홍실로 맺은 동심결
+  wedknot: 'M-6-2a3 3 0 106 0 3 3 0 10-6 0M0-2a3 3 0 106 0 3 3 0 10-6 0M0 1v6M-3 7h6M-2-8l2 3 2-3',
 };
 export const FRAMES = {
   fr_lantern: ['common', 'lantern'], fr_path: ['common', 'path'], fr_compass: ['legend', 'compass'],
@@ -54,6 +56,7 @@ export const FRAMES = {
   fr_f_night: ['rare', 'ledger'], fr_f_redmoon: ['rare', 'eclipse'], fr_f_lotus: ['rare', 'lotus'], fr_f_north: ['rare', 'peak'],
   fr_f_river: ['rare', 'boat'], fr_f_south: ['rare', 'flame'], fr_f_mandate: ['rare', 'stars'], // 세력 비고에서 공훈으로
   fr_gwiheo: ['legend', 'vortex'], // 외전: 귀허의 주인 처치
+  fr_wed: ['legend', 'wedknot'], // 연리 혼례
   fr_tn_solo: ['legend', 'crossed'], fr_tn_team: ['legend', 'twin'], // 야행 비무회 우승(1:1·팀전)
   fr_yahaeng: ['legacy', 'nightwalk'], // 레거시: 롤백 전 첫 시대를 함께한 이만(얻는 길 없음)
 };
@@ -132,9 +135,9 @@ export function patternLayer(key) {
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
 // 낙관: 이름 옆 작은 도장
-export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_tn_solo: '武', sl_tn_team: '雙',
+export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合',
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星' };
-const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend',
+const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend' };
 // 글자는 SVG의 가운데 기준선(central)에 둔다. 글꼴마다 위아래 여백이 달라 글자 상자 가운데에 두면 한쪽으로 쏠린다.
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';
