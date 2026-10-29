@@ -503,3 +503,9 @@ insert into public.world_mount_catalog(mount_id, mount_name, speed_multiplier, u
 values ('tn_white_horse', '비무 장원 백마', 2.2, 1, 0, 0, '비무회에서 세 번 우승한 조사원에게 내리는 흰 말. 갈기에 장원의 붉은 술을 달았다. 운임은 구간당 노정패 1.', '영물', 2, 1, false, 'event')
 on conflict (mount_id) do update set description = excluded.description, speed_multiplier = excluded.speed_multiplier;
 select pg_temp.yh_patch('public.world_notify_group(text)', 'when p_kind in (''spar_request'', ''spar_result'') then ''spar''', 'when p_kind in (''spar_request'', ''spar_result'', ''tourney_alert'', ''tourney_result'', ''tourney_partner'') then ''spar''');
+
+-- 조사원 카드: 지난 7일 사이 비무회 장원이면 「비무 장원」 표식(tn_champ: 'solo' 또는 'team')
+select pg_temp.yh_patch('public.world_character_card(uuid)', '''faction_rank'', public.world_faction_rank_label(c.owner_id),',
+  '''faction_rank'', public.world_faction_rank_label(c.owner_id),
+    ''tn_champ'', (select t.mode from public.world_tourney_entries e join public.world_tourneys t on t.t_id = e.t_id
+                  where t.status = ''done'' and e.place = 1 and c.owner_id = any (e.members) and t.updated_at > now() - interval ''7 days'' order by t.updated_at desc limit 1),');

@@ -181,6 +181,7 @@ function town(s, roster) {
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
     ['board', 'scroll', '의뢰 게시판', '사건과 상시 의뢰'],
+    ['tourney', 'sword', '비무 방', '야행 비무회 신청·대진표·관람'],
     ['faction', 'flag', '세력', store.character?.major_faction_id ? `${nameOf(store.character.major_faction_id)} · 퀘스트·의뢰판·비고` : '대세력 살펴보기·가입'],
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
@@ -402,6 +403,7 @@ function openFacility(k, s) {
   if (k === 'depart') return window.yahangGo('map');
   if (k === 'board') return window.yahangGo('log', 'story');
   if (k === 'faction') return window.yahangGo('char', 'faction');
+  if (k === 'tourney') return window.yahangGo('tourney');
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];

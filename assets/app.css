@@ -2009,3 +2009,24 @@ b.sealed { color: var(--bad); }
 .notice-form input, .notice-form textarea { width: 100%; }
 .notice-form textarea { min-height: 320px; resize: vertical; line-height: 1.6; }
 .notice-form .btn { justify-self: end; }
+/* 7.1 야행 비무회: 비무 방·대진표·관람 */
+.tn-tac { margin: 8px 0; padding: 8px 10px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); }
+.tn-tac summary { cursor: pointer; font-weight: 650; display: flex; gap: 6px; align-items: center; }
+.tn-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 6px 0; }
+.tn-row > span:first-child { min-width: 72px; color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.tn-past { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tn-past li { display: grid; gap: 2px; }
+.tn-bracket { display: grid; grid-template-columns: repeat(var(--r), minmax(150px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.tn-col { display: grid; align-content: space-around; gap: 8px; }
+.tn-col h3 { font-size: calc(13px * var(--fz, 1)); color: var(--muted); margin: 0 0 2px; }
+.tn-match { display: grid; gap: 2px; text-align: left; padding: 6px 8px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); }
+.tn-match span { font-size: calc(13px * var(--fz, 1)); }
+.tn-match .won { font-weight: 700; color: var(--ok); } .tn-match .lost { opacity: .55; text-decoration: line-through; }
+.tn-match .mine { color: var(--accent); }
+.tn-match.live { border-color: var(--accent); }
+.tn-match small { color: var(--accent); display: flex; gap: 4px; align-items: center; font-size: calc(11px * var(--fz, 1)); }
+.tn-log .side-1 span { color: var(--text); } .tn-log .side-2 span { color: var(--gold); }
+.tn-log .k-end span, .tn-log .k-down span { font-weight: 700; }
+@media (max-width: 640px) { .tn-bracket { grid-template-columns: repeat(var(--r), 160px); } }
+.pf-call { margin: 8px 0; }
+.chip.tn-badge { background: color-mix(in srgb, var(--gold) 22%, transparent); color: var(--gold); border-color: var(--gold); font-weight: 700; }
