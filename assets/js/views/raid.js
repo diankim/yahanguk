@@ -4,7 +4,7 @@ import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, RAID_
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
-const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve', 'fish_porridge', 'herb_fish_steam', 'spirit_gukbap', 'calm_brew',
+const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve', 'fish_porridge', 'herb_rice', 'moss_porridge', 'bark_stew', 'herb_fish_steam', 'spirit_gukbap', 'calm_brew',
   'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 const BOSS_FX = { expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계' };
 const BUFF = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '호법', guard: '방어', bound: '사슬' };
