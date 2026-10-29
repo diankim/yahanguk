@@ -304,7 +304,7 @@ async function openStore() {
   const drawStore = () => {
     const st = Object.entries(snap.store || {}).filter(([, n]) => n > 0), bag = Object.entries(snap.bag || {}).filter(([, n]) => n > 0);
     const used = st.reduce((a, [, n]) => a + n, 0);
-    return `<p class="muted small">거둔 가구가 들어가는 곳입니다. 곳간 ${used}/${snap.store_cap}칸 · 꺼내면 가방으로 갑니다. 곳간·가방 일은 안전지대에서만 됩니다.${snap.edit_block ? ` <b class="bad-text">${esc(snap.edit_block)}</b>` : ''}</p>
+    return `<p class="muted small">거둔 가구가 들어가는 곳입니다. 곳간 ${used}/${snap.store_cap}칸 · 꺼내면 가방으로 갑니다. 넣기·꺼내기는 안전지대에서, 버리기는 어디서나 됩니다. 곳간이 차면 새로 얻은 가구는 가방으로 갑니다.${snap.edit_block ? ` <b class="bad-text">넣기·꺼내기: ${esc(snap.edit_block)}</b>` : ''}</p>
       <h4>곳간</h4><ul class="hs-list">${st.map(([id, n]) => `<li><span>${esc(furName(id))} ×${n} <small class="muted">${GRADE[gradeOf(id)]}</small></span><span><button class="btn small" data-st="take:${id}">꺼내기</button><button class="btn small danger" data-st="discard:${id}">버리기</button></span></li>`).join('') || '<li class="muted small">비어 있습니다.</li>'}</ul>
       <h4>가방의 가구</h4><ul class="hs-list">${bag.map(([id, n]) => `<li><span>${esc(furName(id))} ×${n}</span><span><button class="btn small" data-st="put:${id}">곳간에 넣기</button></span></li>`).join('') || '<li class="muted small">가방에 가구가 없습니다.</li>'}</ul>`;
   };

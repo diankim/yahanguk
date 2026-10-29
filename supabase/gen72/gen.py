@@ -81,7 +81,7 @@ for k in list(ONCE) + RAID_WORLD + list(VAULT):
 def price_of(mats): return int(math.ceil(sum(MAT[m] * q for m, q in mats.items()) * 1.2 / 10.0) * 10)
 
 
-rows, recipes, sources, shop, vault = [], [], [], [], []
+rows, recipes, sources, shop, vault, default_shop = [], [], [], [], [], []
 for typ in ('FUR', 'WALL', 'PAPER', 'GROUND'):
     for k, f in FUR[typ].items():
         g = f['grade']
@@ -108,6 +108,12 @@ for typ in ('FUR', 'WALL', 'PAPER', 'GROUND'):
                 mats = by.get(g) or by[max(x for x in by if x <= g)] if any(x <= g for x in by) else by[min(by)]
                 field = fld
         price = price_of(mats) if mats else COND_PRICE.get(g, 120)
+        if dkey in DEFAULT_ONLY:
+            # 기본 세트는 만들 수 없으니 본부 상점(capital_market)에서 늘 판다. 값은 같은 갈래·등급 제작품 재료값의 1.5배(만들 수 없는 몫), 귀속이라 되팔 수 없다
+            fld, by = RECIPE_BY_CAT[cat]
+            dm = by.get(g) or by[max(x for x in by if x <= g)]
+            price = int(math.ceil(price_of(dm) * 1.5 / 10.0) * 10)
+            default_shop.append(dict(item_id=iid, price=price))
         src = []
         if dkey in DEFAULT_ONLY: src.append('기본 세트')
         if k in ONCE: src.append({'raid_final': '10장 결전 첫 승리', 'gw_first': '귀허의 주인 첫 처치'}.get(ONCE[k], '칭호 보상' if ONCE[k].startswith('title:') else '이야기 장 보상'))
@@ -151,6 +157,10 @@ insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, s
 select s.shop_id, x.item_id, x.price, 0, 10, null
   from (select distinct shop_id from public.world_shop_catalog where shop_id not in ('smithy', 'banyo_shop')) s
   cross join lateral (select y.item_id, y.price from jsonb_to_recordset({J(shop)}) as y(item_id text, price int) order by md5(s.shop_id || y.item_id) limit 5) x
+on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
+-- 기본 세트 「단청 별채」 여섯 가지는 본부 상점에서 늘 판다(버려도 다시 살 수 있게, 귀속)
+insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max, daily_cap)
+select 'capital_market', x.item_id, x.price, 0, 10, null from jsonb_to_recordset({J(default_shop)}) as y(item_id text, price int) cross join lateral (select y.item_id, y.price) x
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
 delete from public.world_furniture_sources;
 insert into public.world_furniture_sources(source, item_id, chance) select x.source, x.item_id, x.chance from jsonb_to_recordset({J(sources)}) as x(source text, item_id text, chance numeric);
@@ -197,6 +207,8 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
 if os.path.exists(os.path.join(HERE, 'p_pets.sql')):
     import pets_data
     pets_data.emit(w, J, node_dump)
+# 기본 세트를 늘 파는 품목에(꼬마 동무 조각이 pet_food를 넣은 뒤라 그 뒤에 잇는다)
+w("select pg_temp.yh_patch('public.world_shop_refresh(text)', '''pet_food''];', '''pet_food'', " + ', '.join("''" + d['item_id'] + "''" for d in default_shop) + "];');")
 if os.path.exists(os.path.join(HERE, 'x_misc.sql')):
     part('x_misc.sql')
 part('s_expskill.sql')

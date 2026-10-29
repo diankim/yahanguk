@@ -71,6 +71,7 @@ part('d_faction.sql')
 part('e_tourney.sql')
 part('f_bond.sql')
 part('g_letter.sql')
+part('h_effects.sql')
 part('patch_note.sql')
 
 w("""

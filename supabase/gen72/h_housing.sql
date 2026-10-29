@@ -128,7 +128,7 @@ language sql immutable set search_path = '' as $$ select coalesce(sum(value::int
 -- 곳간에 넣는다(보상·전리품). p_force면 상한을 넘어도 넣는다. 들어간 수를 돌려준다.
 create or replace function public.world_housing_grant(p_owner uuid, p_item text, p_qty int, p_note text, p_force boolean default true) returns int
 language plpgsql security definer set search_path = '' as $$
-declare s public.world_housing_store%rowtype; cap int; n int := greatest(0, coalesce(p_qty, 0)); nm text;
+declare s public.world_housing_store%rowtype; cap int; n int := greatest(0, coalesce(p_qty, 0)); nm text; room int;
 begin
   select item_name into nm from public.world_item_catalog where item_id = p_item and category = 'furniture';
   if nm is null or n <= 0 then return 0; end if;
@@ -136,10 +136,17 @@ begin
   select * into s from public.world_housing_store where owner_id = p_owner for update;
   if not p_force then
     cap := public.world_housing_store_cap((select size from public.world_housing where owner_id = p_owner));
-    n := least(n, greatest(0, cap - public.world_housing_store_count(s.items)));
-    if n <= 0 then
+    if public.world_housing_store_count(s.items) + n > cap then
+      -- 곳간이 차면 가방으로 받는다(드문 일이라 캐릭터 행을 여기서 한 번 고친다). 가방도 차면 다른 전리품처럼 두고 오고 알린다.
+      select greatest(0, public.world_bag_room(c.inventory, p_item, public.world_bag_limit(p_owner))) into room from public.world_characters c where c.owner_id = p_owner;
+      if coalesce(room, 0) > 0 then
+        update public.world_characters set inventory = public.world_inv_add(inventory, p_item, 1), updated_at = now() where owner_id = p_owner;
+        insert into public.world_notifications(user_id, kind, title, content, payload)
+        values (p_owner, 'housing_item', '별채 가구 · ' || nm, coalesce(p_note || ' · ', '') || '곳간이 가득 차 ' || public.world_josa(nm, '을', '를') || ' 가방에 넣었습니다. 곳간을 비우면 옮길 수 있습니다.', jsonb_build_object('item', p_item, 'qty', 1, 'bag', true));
+        return 1;
+      end if;
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (p_owner, 'housing_item', '곳간이 가득 참', public.world_josa(nm, '을', '를') || ' 얻었지만 곳간이 가득 차 두고 왔습니다.', jsonb_build_object('item', p_item));
+      values (p_owner, 'housing_item', '곳간이 가득 참', public.world_josa(nm, '을', '를') || ' 얻었지만 곳간과 가방이 모두 가득 차 두고 왔습니다. 곳간은 어디서나 비울(버릴) 수 있습니다.', jsonb_build_object('item', p_item));
       return 0;
     end if;
   end if;
@@ -404,16 +411,21 @@ begin
   return public.world_housing_snapshot(own);
 end $$;
 
--- 곳간: 가방에서 넣기·가방으로 꺼내기·버리기(주인만, 안전지대에서)
+-- 곳간: 가방에서 넣기·가방으로 꺼내기(주인만, 안전지대에서)·버리기(어디서나)
 create or replace function public.world_housing_store_move(p_item text, p_qty int, p_dir text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; s public.world_housing_store%rowtype; why text; nm text; have int; n int; room int; sz int;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
-  why := public.world_housing_edit_block(uid);
-  if why is not null then raise exception '%', replace(why, '별채를 고칠', '곳간을 쓸'); end if;
   if p_dir not in ('put', 'take', 'discard') then raise exception '알 수 없는 일입니다.'; end if;
+  -- 버리기는 곳간 안에서만 일어나므로 어디서나(전투불능·사망 빼고) 된다. 넣기·꺼내기는 가방이 오가므로 안전지대에서
+  if p_dir = 'discard' then
+    if exists (select 1 from public.world_characters x where x.owner_id = uid and (coalesce(x.is_dead, false) or x.downed_at is not null)) then raise exception '전투불능 상태에서는 곳간을 정리할 수 없습니다.'; end if;
+  else
+    why := public.world_housing_edit_block(uid);
+    if why is not null then raise exception '%', replace(why, '별채를 고칠', '곳간을 쓸'); end if;
+  end if;
   if p_qty is null or p_qty < 1 or p_qty > 99 then raise exception '수량이 올바르지 않습니다.'; end if;
   select item_name into nm from public.world_item_catalog where item_id = p_item and category = 'furniture';
   if nm is null then raise exception '곳간에는 별채 가구만 둘 수 있습니다.'; end if;

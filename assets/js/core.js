@@ -126,7 +126,7 @@ const FIXED = {
   // 효과
   gather_qty_pct: '채집량', rare_loot_pct: '희귀품 발견', craft_quality: '제작 품질', combat_damage_pct: '주는 피해', incoming_damage_pct: '받는 피해',
   travel_time_pct: '이동 시간', clue_bonus_pct: '단서 발견', healing_pct: '회복량', erosion_pct: '침식 위험', melee_pct: '근접 피해', ranged_pct: '원거리 피해',
-  magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '수련 경험치',
+  magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '기술 경험',
   action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
   supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',

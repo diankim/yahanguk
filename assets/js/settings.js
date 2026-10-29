@@ -125,6 +125,7 @@ function noteActs(n) {
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">비무 방</button>`;
   if ((n.kind === 'pfight_invite' || n.kind === 'pfight_join') && n.payload?.fight_id) return `<button class="btn primary small" data-pfight="${esc(n.id)}" data-join="${n.kind === 'pfight_invite' ? 1 : ''}">${n.kind === 'pfight_invite' ? '합류 · 탐색력 1' : '보기'}</button>`;
+  if (n.kind === 'housing_item') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
   if (n.kind === 'letter' && n.payload?.letter_id) return `<button class="btn primary small" data-letter="${esc(n.id)}">서신함</button>`;
   if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
   if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">합류</button>`;
@@ -134,7 +135,7 @@ function noteActs(n) {
 }
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.fdown || btn.dataset.letter);
+  const n = byId(btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.invite) {
@@ -187,6 +188,7 @@ async function runAct(btn) {
     if (ok) { closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('pfight', n.payload.fight_id); }
     return true;
   }
+  if (btn.dataset.house) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('house'); return true; }
   if (btn.dataset.letter) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('party'); return true; }
   if (btn.dataset.fdown) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('map'); return true; }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
