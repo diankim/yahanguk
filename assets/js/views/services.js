@@ -1,5 +1,5 @@
 // 안전지대 시설: 상점 · 대장간 · 거래소 · 마구간. 서버도 안전지대에서만 허용한다.
-import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY } from '../core.js';
+import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
@@ -413,8 +413,13 @@ export async function renderStorage(box) {
     // 안전지대 밖·이동·원정·자율 중에는 보기만 한다(서버 can_move)
     const ro = !s.can_move, mode = ro && storeMode === 'put' ? 'take' : storeMode;
     const equippedSet = new Set(equippedIds());
-    const putMax = k => Math.max(0, (Number(have[k]) || 0) - (equippedSet.has(k) ? 1 : 0));
-    const putList = Object.entries(have).filter(([k, n]) => n > 0 && putMax(k) > 0);
+    const canGive = k => Math.max(0, (Number(have[k]) || 0) - (equippedSet.has(k) ? 1 : 0));
+    // 창고에 들어갈 수 있는 만큼: 빈 칸 × 묶음 + 이미 맡긴 묶음의 남은 자리(서버 world_storage_put과 같은 셈)
+    const stored = new Map((s.items || []).map(i => [i.item_id, Number(i.qty) || 0]));
+    const free = Math.max(0, s.capacity - s.used);
+    const roomOf = k => { const st = stackOf(k), q = stored.get(k) || 0; return free * st + (q % st ? st - q % st : 0); };
+    const putMax = k => Math.min(canGive(k), roomOf(k));
+    const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
     const row = (id, label, n, max, m, note) => `<li>
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span>${note ? `<small>${note}</small>` : ''}</div>
@@ -430,7 +435,7 @@ export async function renderStorage(box) {
       <div class="seg-mini" role="tablist">${ro ? '' : `<button class="${mode === 'put' ? 'on' : ''}" data-mode="put">맡기기</button>`}<button class="${mode === 'take' ? 'on' : ''}" data-mode="take">${ro ? '보관 물품' : '꺼내기'}</button><button class="${mode === 'grow' ? 'on' : ''}" data-mode="grow">넓히기</button></div>
       <section data-list="put" ${mode === 'put' ? '' : 'hidden'}>
         <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·강화한 장비의 마지막 하나·임무 물품은 맡길 수 없습니다.</p>
-        <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
+        <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', putMax(k) <= 0 ? '<span class="bad">창고에 자리가 없습니다</span>' : equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
       </section>
       <section data-list="take" ${mode === 'take' ? '' : 'hidden'}>
         ${ro ? '' : `<p class="muted small">가방 여유 ${Math.max(0, bagSpace)}칸 · 가방에 들어가는 만큼만 꺼냅니다.</p>`}

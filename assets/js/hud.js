@@ -65,6 +65,14 @@ export function openStatus(st) {
   $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_use_item', { p_item_id: b.dataset.cure }); closeModal(); return r; }));
 }
 
+// 상태·탐색력 시간이 다 되면 1.5초 뒤 한 번 다시 읽는다. 읽기가 실패해(로그인 풀림·서버 오류) 시간이 그대로여도 30초에 한 번까지만 다시 묻는다
+let dirtyAt = 0, dirtyWait = false;
+function dirtyRefresh() {
+  if (dirtyWait || Date.now() - dirtyAt < 30000) return;
+  dirtyWait = true; dirtyAt = Date.now();
+  setTimeout(() => { dirtyWait = false; refresh(); }, 1500);
+}
+
 function idleReadyAt(idle) {
   if (!idle?.active) return null;
   if (idle.ready_at) return new Date(idle.ready_at).getTime();
@@ -209,8 +217,8 @@ function onTick() {
     if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
     if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
     if (kind === 'danger') el.textContent = left > 0 ? `목숨이 다하기까지 ${fmt.remain(left)}` : '시간이 다했습니다';
-    if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0 && !root.dataset.stDirty) { root.dataset.stDirty = '1'; setTimeout(() => { delete root.dataset.stDirty; refresh(); }, 1500); } }
-    if (kind === 'stamina') { el.textContent = left > 0 ? `${fmt.remain(left)} 뒤 +1` : ''; if (left <= 0 && !root.dataset.stamDirty) { root.dataset.stamDirty = '1'; setTimeout(() => { delete root.dataset.stamDirty; refresh(); }, 1500); } }
+    if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0) dirtyRefresh(); }
+    if (kind === 'stamina') { el.textContent = left > 0 ? `${fmt.remain(left)} 뒤 +1` : ''; if (left <= 0) dirtyRefresh(); }
   });
   const c = store.character;
   if (c?.travel_arrives_at && new Date(c.travel_arrives_at).getTime() <= now && !arriving && now - lastArriveTry > 5000) {

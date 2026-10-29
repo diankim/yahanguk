@@ -20,7 +20,11 @@ export function takeKickNote() { try { const v = sessionStorage.getItem(NOTE) ||
 async function check() {
   if (pending) await pending;
   if (kicking || !store.user || document.hidden) return;
-  try { const r = await rpc('world_session_check'); if (r && r.active === false) kick(); } catch {}
+  try { const r = await rpc('world_session_check'); if (r && r.active === false) kick(); }
+  catch (e) {
+    // 로그인 정보가 사라져 비로그인으로 요청이 나가면(권한 거부·토큰 없음) 이 탭도 로그아웃한다 — 그대로 두면 화면이 거절당한 요청을 계속 보낸다
+    if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) kick();
+  }
 }
 async function kick() {
   if (kicking) return; kicking = true;
