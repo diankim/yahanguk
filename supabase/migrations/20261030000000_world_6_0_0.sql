@@ -487,7 +487,7 @@ do $$ declare d text := pg_get_functiondef('public.world_story_combine(text)'::r
     || E'\n    UPDATE public.world_quest_progress SET done_at = now() WHERE owner_id = uid AND quest_id = ''mq_'' || ch.chapter_id AND done_at IS NULL;';
   a2 text := 'RETURN jsonb_build_object(''ok'', true, ''content'', msg, ''chapter_done'', done_all);';
   b2 text := 'RETURN jsonb_build_object(''ok'', true, ''content'', msg, ''chapter_done'', done_all, ''epilogue'', CASE WHEN done_all THEN (SELECT jsonb_build_object(''title'', q.title, ''lines'', q.epilogue,'
-    || ' ''cast'', public.world_quest_cast(ARRAY(SELECT DISTINCT x ->> ''s'' FROM jsonb_array_elements(q.epilogue) x WHERE x ->> ''s'' IS NOT NULL), c.character_name))'
+    || ' ''cast'', public.world_quest_cast(ARRAY(SELECT DISTINCT ep ->> ''s'' FROM jsonb_array_elements(q.epilogue) ep WHERE ep ->> ''s'' IS NOT NULL), c.character_name))'
     || ' FROM public.world_quests q WHERE q.quest_id = ''mq_'' || ch.chapter_id AND jsonb_array_length(q.epilogue) > 0) END);';
 begin
   if position('world_quest_progress' in d) > 0 then return; end if;
