@@ -4,7 +4,7 @@ import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, frien
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-export const JOB = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '기록 분석관', medic: '의무관', artificer: '법구 제작사' };
+export const JOB = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '백공 기술관', medic: '의무관', artificer: '호위 무사' };
 export const MECH = {
   aerial: ['비행', '날아올랐다가 내리꽂힙니다. 원거리가 잘 맞고, 공중에 있을 때 근접은 거의 닿지 않습니다.'],
   armored: ['갑각', '단단한 껍질이 있습니다. 술법이 잘 통하고, 껍질을 굳히면 무기 공격이 막힙니다.'],
@@ -35,7 +35,7 @@ export const SKILL = {
   scout: ['급소 사격', '원거리로 반드시 치명타를 내고 두 턴 동안 표식을 남깁니다.'],
   medic: ['응급 처방', '체력을 크게 회복하고 나쁜 상태 하나를 걷어냅니다.'],
   analyst: ['약점 간파', '다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.'],
-  artificer: ['폭렬 부적', '방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
+  artificer: ['파갑참', '근접으로 방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
 };
 const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비', weak: '공격 약화' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };

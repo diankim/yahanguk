@@ -154,7 +154,7 @@ async function enhancePane(body) {
       <div class="btn-row"><button class="btn primary" id="enh-go" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(법구 제작사는 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(백공 기술관은 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
   bindInfo(body);
   const go = $('#enh-go', body);
   if (go) go.onclick = async () => {

@@ -203,7 +203,8 @@ function previewText(cur, next) {
   return parts.length ? parts.join(' · ') : '전투 수치 변화 없음 (지금 무기로는 영향이 적습니다)';
 }
 // 능력치 하나의 상한(서버 world_stat_cap과 같은 식)
-const statCap = lv => 5 + Math.floor(Math.max(1, Number(lv) || 1) * 1.5);
+// 직업마다 기본 능력치가 달라 상한도 능력치마다 다르다(world_stat_cap_of = 직업 기본값 + 레벨×1.5)
+const statCap = (lv, k, job) => (JOBS[job]?.base?.[k] ?? 5) + Math.floor(Math.max(1, Number(lv) || 1) * 1.5);
 async function growth(body) {
   // 능력치를 올렸을 때 바뀔 값(plus_one)은 서버가 7번 계산하므로 쓸 포인트가 있을 때만 받는다
   const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', Number(store.character?.stat_points || 0) > 0 ? { p_preview: true } : undefined).catch(() => null)]);
@@ -212,10 +213,10 @@ async function growth(body) {
   const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)]), ['요리', c.cooking_rank, `${fmt.num(c.cooking_xp)} 경험`]];
   body.innerHTML = `
     <div class="grid-2">
-      ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다. 한 능력치는 지금 레벨에서 <b>${statCap(c.level)}</b>까지 올릴 수 있습니다(5 + 레벨×1.5).</p>
-        <ul class="stat-list">${STATS.map(([k, n, d]) => `<li><div><b>${n} <span class="stat-val">${fmt.num(c[k])}</span></b><small>${d}</small>
+      ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent">${pts}</b> · 아래에 +1 했을 때 바뀌는 전투 수치가 보입니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
+        <ul class="stat-list">${STATS.map(([k, n, d]) => `<li><div><b>${n} <span class="stat-val">${fmt.num(c[k])}</span> <small class="muted">/ ${statCap(c.level, k, c.job_key)}</small></b><small>${d}</small>
             <small class="preview">${previewText(cur, prof?.plus_one?.[k])}</small></div>
-          <button class="icon-btn" data-stat="${k}" ${pts > 0 && c[k] < statCap(c.level) ? '' : 'disabled'} aria-label="${n} 올리기" title="${c[k] >= statCap(c.level) ? '지금 레벨의 상한입니다' : ''}">${icon('plus', 16)}</button></li>`).join('')}</ul>`, { ico: 'spark' })}
+          <button class="icon-btn" data-stat="${k}" ${pts > 0 && c[k] < statCap(c.level, k, c.job_key) ? '' : 'disabled'} aria-label="${n} 올리기" title="${c[k] >= statCap(c.level, k, c.job_key) ? '지금 레벨의 상한입니다' : ''}">${icon('plus', 16)}</button></li>`).join('')}</ul>`, { ico: 'spark' })}
       ${panel('지금 전투 능력', cur ? combatRows(cur) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword' })}
     </div>
     <div class="grid-2">

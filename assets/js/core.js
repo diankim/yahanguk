@@ -73,12 +73,19 @@ export async function loadCharacter() {
 
 /* ── 이름 사전 (내부 코드를 화면에 그대로 노출하지 않는다) ───────────── */
 export const JOBS = {
-  exorcist: { name: '퇴마관', trait: '부적 제압', desc: '공격 시 영성 보정이 강화되고, 요괴를 토벌하면 영력을 추가로 회복합니다.' },
-  scout: { name: '현장 조사원', trait: '흔적 추적', desc: '탐사·채집에서 감각 보정을 얻고 희귀 재료 발견에 유리합니다.' },
-  medic: { name: '의무관', trait: '응급 처치', desc: '약초 회복 효과가 강화되고 체질이 높아 생존에 유리합니다.' },
-  sealmaster: { name: '봉인술사', trait: '결계 유지', desc: '의지가 강해 반격 피해와 정신 교란에 잘 버팁니다.' },
-  analyst: { name: '기록 분석관', trait: '패턴 해독', desc: '감각이 예리해 전투에서 치명타를 노리고 사건 조사에 유리합니다.' },
-  artificer: { name: '법구 제작사', trait: '정밀 가공', desc: '근력이 강하고 장비 제작·채집에 특화되어 있습니다.' },
+  // 역할 6가지(6.0.0): 근접·원거리 물리·술법·생활 특화·치유·보조. base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
+  exorcist: { name: '퇴마관', trait: '술법', desc: '부적과 방울로 요괴를 치는 술법 딜러. 술법 피해 +8%, 퇴마진(술법 ×2.0, 결계 깨기).',
+    base: { strength: 3, agility: 3, vitality: 4, perception: 4, willpower: 7, spirit_affinity: 9 }, kit: '영령 방울 · 삼베 도포 · 무명 부적낭' },
+  scout: { name: '현장 조사원', trait: '원거리 물리', desc: '활로 먼 곳에서 노리는 원거리 딜러. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
+    base: { strength: 4, agility: 8, vitality: 4, perception: 8, willpower: 3, spirit_affinity: 3 }, kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리' },
+  artificer: { name: '호위 무사', trait: '근접', desc: '앞에 서서 베고 막는 근접 전사. 근접 피해 +8%·받는 피해 −6%·이목 +30, 파갑참(근접 ×1.7, 방어·결계 무시).',
+    base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
+  medic: { name: '의무관', trait: '치유', desc: '다치고 쓰러진 동료를 살리는 치유사. 회복량 ×1.4·회복 +10%, 응급 처방(체력 회복·나쁜 상태 걷기).',
+    base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
+  sealmaster: { name: '봉인술사', trait: '보조', desc: '요괴를 묶고 동료를 북돋는 버프·디버프 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
+    base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
+  analyst: { name: '백공 기술관', trait: '생활 특화', desc: '캐고 만들고 찾아내는 생활 전문가. 채집량 +15%·희귀품 +3%·제작 품질 +15·강화 확률 +10%p·단서 발견.',
+    base: { strength: 5, agility: 6, vitality: 6, perception: 7, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
 };
 export const FACTIONS = {
   headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비에 익숙합니다. 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전.' },

@@ -18,8 +18,8 @@ export const JOB_SKILL = {
   scout: ['흔적 추적', '요괴와 마주치기 전에 흔적을 읽고 30% 확률로 피해 가며, 대신 무언가를 발견합니다.'],
   medic: ['야전 처치', '보급품이 떨어졌을 때 원정마다 한 번 주변 약초로 체력을 30 되찾습니다.'],
   sealmaster: ['결계 야영', '스며드는 요기(침식·정신 손실)를 50% 확률로 결계로 막습니다.'],
-  analyst: ['약점 간파', '싸움에서 밀리면 다음 싸움의 승률이 15% 오릅니다.'],
-  artificer: ['현장 가공', '채집할 때 25% 확률로 재료를 하나 더 손질해 챙깁니다.'],
+  analyst: ['현장 가공', '채집할 때 25% 확률로 재료를 하나 더 손질해 챙깁니다.'],
+  artificer: ['반격 태세', '싸움에서 밀리면 다음 싸움의 승률이 15% 오릅니다.'],
 };
 const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check',
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search', guard: 'shield', foe: 'flame' };

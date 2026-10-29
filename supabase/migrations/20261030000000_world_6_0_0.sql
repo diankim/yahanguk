@@ -1091,3 +1091,239 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 - 도움말의 귀령초 확률을 5.0.0 값으로 고쳤습니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
+
+-- ⑦ 직업 역할 나누기(2026-10-29 결정): 근접 · 원거리 물리 · 술법 · 생활 특화 · 치유 · 보조
+--   퇴마관 술법 딜 / 현장 조사원 원거리 물리 / 호위 무사(옛 법구 제작사) 근접 / 의무관 치유 / 봉인술사 보조(버프·디버프) / 백공 기술관(옛 기록 분석관) 생활 특화
+--   내부 키(artificer·analyst)는 그대로 두고 이름·기본 능력치·시작 장비·직업 효과를 바꾼다.
+--   기본 능력치 합은 전과 같은 30(전에는 모두 5). 기존 캐릭터는 새 기본값 + 지금까지 직접 찍은 몫(능력치 − 5)으로 다시 셈하고,
+--   한 능력치 상한(직업 기본값 + 레벨×1.5)을 넘는 몫은 포인트로 돌려준다.
+
+create or replace function public.world_job_base(p_job text)
+returns jsonb language sql immutable set search_path to 'pg_catalog' as $$
+  select case p_job
+    when 'artificer'  then '{"strength":9,"agility":5,"vitality":7,"perception":3,"willpower":3,"spirit_affinity":3}'
+    when 'scout'      then '{"strength":4,"agility":8,"vitality":4,"perception":8,"willpower":3,"spirit_affinity":3}'
+    when 'exorcist'   then '{"strength":3,"agility":3,"vitality":4,"perception":4,"willpower":7,"spirit_affinity":9}'
+    when 'medic'      then '{"strength":3,"agility":3,"vitality":6,"perception":3,"willpower":8,"spirit_affinity":7}'
+    when 'sealmaster' then '{"strength":3,"agility":3,"vitality":5,"perception":4,"willpower":8,"spirit_affinity":7}'
+    when 'analyst'    then '{"strength":5,"agility":6,"vitality":6,"perception":7,"willpower":3,"spirit_affinity":3}'
+    else '{"strength":5,"agility":5,"vitality":5,"perception":5,"willpower":5,"spirit_affinity":5}' end::jsonb
+$$;
+alter function public.world_job_base(text) owner to fn_owner_field;
+grant execute on function public.world_job_base(text) to public;
+
+-- 능력치 하나의 상한 = 그 직업의 기본값 + 레벨×1.5(내림)
+create or replace function public.world_stat_cap_of(p_job text, p_stat text, p_level int)
+returns int language sql immutable set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((public.world_job_base(p_job) ->> p_stat)::int, 5) + floor(greatest(1, coalesce(p_level, 1)) * 1.5)::int
+$$;
+alter function public.world_stat_cap_of(text, text, int) owner to fn_owner_field;
+grant execute on function public.world_stat_cap_of(text, text, int) to public;
+
+create or replace function public.world_job_label(p_job text)
+returns text language sql immutable set search_path to 'pg_catalog' as $$
+  select case p_job when 'exorcist' then '퇴마관' when 'scout' then '현장 조사원' when 'medic' then '의무관'
+    when 'sealmaster' then '봉인술사' when 'analyst' then '백공 기술관' when 'artificer' then '호위 무사' end
+$$;
+alter function public.world_job_label(text) owner to fn_owner_field;
+grant execute on function public.world_job_label(text) to public;
+
+-- 직업 효과(상태 효과 합계에 더함). 피해 %는 그 공격 방식 무기를 들었을 때만 붙는다(world_combat_stats의 style_pct)
+create or replace function public.world_job_effect(p_key text)
+returns numeric language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select coalesce((select case c.job_key
+      when 'exorcist'   then case p_key when 'magic_pct' then 8 else 0 end
+      when 'scout'      then case p_key when 'ranged_pct' then 8 else 0 end
+      when 'artificer'  then case p_key when 'melee_pct' then 8 when 'incoming_damage_pct' then -6 else 0 end
+      when 'medic'      then case p_key when 'healing_pct' then 10 else 0 end
+      when 'sealmaster' then case p_key when 'mental_loss_pct' then -10 when 'erosion_pct' then -5 else 0 end
+      when 'analyst'    then case p_key when 'gather_qty_pct' then 15 when 'rare_loot_pct' then 3 else 0 end
+      else 0 end
+    from public.world_characters c where c.owner_id = public.fn_owner_auth_uid()), 0)::numeric
+$$;
+alter function public.world_job_effect(text) owner to fn_owner_field;
+revoke all on function public.world_job_effect(text) from public, anon, authenticated;
+grant execute on function public.world_job_effect(text) to public;
+
+-- 바꿀 자리를 정확히 한 번씩 찾아 고치는 도우미(이 파일 안에서만 쓰고 지운다)
+create or replace function pg_temp.yh_patch(p_sig text, p_done text, p_pairs text[])
+returns void language plpgsql as $$
+declare d text := pg_get_functiondef(p_sig::regprocedure); i int;
+begin
+  if p_done is not null and position(p_done in d) > 0 then return; end if;
+  for i in 1 .. array_length(p_pairs, 1) / 2 loop
+    if (length(d) - length(replace(d, p_pairs[2 * i - 1], ''))) / length(p_pairs[2 * i - 1]) <> 1 then
+      raise exception '직업 역할 고칠 자리 없음: % (%)', p_sig, left(p_pairs[2 * i - 1], 60); end if;
+    d := replace(d, p_pairs[2 * i - 1], p_pairs[2 * i]);
+  end loop;
+  execute d;
+end $$;
+
+select pg_temp.yh_patch('public.world_status_effect_total(text)', 'world_job_effect', array[
+  '+ public.world_level_gap_effect(p_effect_key)', '+ public.world_level_gap_effect(p_effect_key) + public.world_job_effect(p_effect_key)']);
+
+-- 이름
+select pg_temp.yh_patch('public.world_job_name(text)', '백공 기술관', array[
+  'when ''analyst'' then ''기록 분석관'' when ''artificer'' then ''법구 제작사''', 'when ''analyst'' then ''백공 기술관'' when ''artificer'' then ''호위 무사''']);
+select pg_temp.yh_patch('public.world_gimmick_tip(text)', '백공 기술관', array[
+  'when ''analyst'' then ''기록 분석관''', 'when ''analyst'' then ''백공 기술관''',
+  'when ''artificer'' then ''법구 제작사''', 'when ''artificer'' then ''호위 무사''',
+  '폭렬 부적은 결계를 무시합니다.', '파갑참은 결계를 무시합니다.']);
+update public.world_characters set occupation = public.world_job_label(job_key) where occupation is distinct from public.world_job_label(job_key) and public.world_job_label(job_key) is not null;
+
+-- 제작 품질 +15·강화 확률 +10%p는 백공 기술관으로 옮긴다
+select pg_temp.yh_patch('public.world_craft_item(text)', 'when ''analyst'' then ''백공 기술관''', array[
+  '+case when c.job_key=''artificer'' then 15 else 0 end+', '+case when c.job_key=''analyst'' then 15 else 0 end+',
+  'when ''analyst'' then ''기록 분석관'' when ''artificer'' then ''법구 제작사''', 'when ''analyst'' then ''백공 기술관'' when ''artificer'' then ''호위 무사''']);
+select pg_temp.yh_patch('public.world_weapon_enhance()', 'c.job_key = ''analyst'' then 10', array[
+  'case when c.job_key = ''artificer'' then 10 else 0 end', 'case when c.job_key = ''analyst'' then 10 else 0 end']);
+select pg_temp.yh_patch('public.world_enhance_quote()', 'c.job_key = ''analyst'' then 10', array[
+  'case when c.job_key = ''artificer'' then 10 else 0 end', 'case when c.job_key = ''analyst'' then 10 else 0 end']);
+
+-- 탐색: 채집터 찾기 보정은 현장 조사원·백공 기술관
+select pg_temp.yh_patch('public.world_field_search()', 'c.job_key IN (''analyst'', ''scout'') THEN 4', array[
+  'CASE WHEN c.job_key IN (''artificer'', ''scout'') THEN 4 ELSE 0 END', 'CASE WHEN c.job_key IN (''analyst'', ''scout'') THEN 4 ELSE 0 END']);
+
+-- 전투 능력치: 치명타 +8(기록 분석관) → 없앰, 호위 무사 이목 +30(앞에 서서 공격을 끈다)
+select pg_temp.yh_patch('public.world_combat_stats(uuid,jsonb)', 'c.job_key = ''artificer'' THEN 30', array[
+  ' + CASE WHEN c.job_key = ''analyst'' THEN 8 ELSE 0 END', '',
+  'pres := greatest(5, least(300, 30 + s_vit * 0.8', 'pres := greatest(5, least(300, 30 + CASE WHEN c.job_key = ''artificer'' THEN 30 ELSE 0 END + s_vit * 0.8']);
+
+-- 현장 토벌 직업 기술: 호위 무사 「파갑참」(근접, 방어·껍질·결계 무시, ×1.7)
+do $$ declare d text := pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure);
+  a text := 'ELSIF act = ''skill'' AND c.job_key = ''artificer'' THEN skill_name := ''폭렬 부적'';';
+  b text := 'ELSIF act = ''skill'' AND c.job_key = ''artificer'' THEN style := ''melee''; skill_name := ''파갑참'';';
+begin
+  if position('파갑참' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '직업 역할 고칠 자리 없음: 파갑참'; end if;
+  execute replace(replace(d, a, b), '''폭렬 부적''', '''파갑참''');
+end $$;
+
+-- 원정 직업 기술: 호위 무사 「반격 태세」(밀린 다음 싸움 승률 +15%), 백공 기술관 「현장 가공」(채집 25% 하나 더)
+select pg_temp.yh_patch('public.world_expedition_settle(uuid,integer)', '[반격 태세]', array[
+  'if c.job_key = ''analyst'' then weak_bonus := 0.15; end if;', 'if c.job_key = ''artificer'' then weak_bonus := 0.15; end if;',
+  '''[약점 간파] 앞서 밀렸던 싸움에서 읽어 낸 약점을 노립니다.''', '''[반격 태세] 앞서 밀렸던 싸움을 되새겨 빈틈없이 맞받아칩니다.''',
+  'case when c.job_key in (''artificer'', ''scout'') then 0.15 else 0 end', 'case when c.job_key in (''analyst'', ''scout'') then 0.15 else 0 end',
+  'if c.job_key = ''artificer'' and qty > 0 and random() < 0.25 then', 'if c.job_key = ''analyst'' and qty > 0 and random() < 0.25 then']);
+select pg_temp.yh_patch('public.world_expedition_finish(boolean)', 'c.job_key IN (''analyst'', ''scout'') THEN 0.15', array[
+  'CASE WHEN c.job_key IN (''artificer'', ''scout'') THEN 0.15 ELSE 0 END', 'CASE WHEN c.job_key IN (''analyst'', ''scout'') THEN 0.15 ELSE 0 END']);
+select pg_temp.yh_patch('public.world_expedition_complete(boolean)', 'when ''artificer'' then ''반격 태세''', array[
+  'when ''analyst'' then ''약점 간파'' when ''artificer'' then ''현장 가공''', 'when ''analyst'' then ''현장 가공'' when ''artificer'' then ''반격 태세''']);
+select pg_temp.yh_patch('public.world_expedition_progress()', 'when ''artificer'' then ''반격 태세''', array[
+  'when ''analyst'' then ''약점 간파'' when ''artificer'' then ''현장 가공''', 'when ''analyst'' then ''현장 가공'' when ''artificer'' then ''반격 태세''']);
+select pg_temp.yh_patch('public.world_exp_fight_story(uuid,text,text,jsonb,integer,boolean,integer,integer,jsonb,double precision,double precision,timestamp with time zone,integer,text,text,integer,jsonb)', '[호위 일격]', array[
+  'when ''analyst'' then ''[약점 간파] {f}의 움직임에서 빈틈을 읽었습니다''', 'when ''analyst'' then ''[현장 기지] 주변 지형을 이용해 {f}의 발을 묶었습니다''',
+  'when ''artificer'' then ''[법구 발동] 허리춤의 법구가 빛을 뿜어 {f}을(를) 밀어냈습니다''', 'when ''artificer'' then ''[호위 일격] 앞을 막아서며 {f}을(를) 베어 넘겼습니다''']);
+select pg_temp.yh_patch('public.world_expedition_walk_lines(uuid)', '동료가 지나갈 길목', array[
+  'when ''analyst'' then array[''지금까지 본 요괴의 습성을 수첩에 정리합니다.'', ''흔적의 순서를 맞춰 보며 동선을 추론합니다.'', ''모순되는 단서 하나에 밑줄을 그어 둡니다.'']',
+  'when ''analyst'' then array[''쓸 만한 부품을 주워 주머니에 넣습니다.'', ''바위틈의 약초 뿌리를 다치지 않게 캐 둡니다.'', ''이상한 광택의 금속 조각을 수첩에 그려 둡니다.'']',
+  'when ''artificer'' then array[''쓸 만한 부품을 주워 주머니에 넣습니다.'', ''헐거워진 장비의 매듭을 고쳐 조입니다.'', ''이상한 광택의 금속 조각을 살펴봅니다.'']',
+  'when ''artificer'' then array[''칼자루를 고쳐 쥐고 앞장섭니다.'', ''동료가 지나갈 길목을 먼저 살핍니다.'', ''갑옷 끈을 다시 단단히 조입니다.'']']);
+
+-- 능력치 올리기: 직업별 상한
+select pg_temp.yh_patch('public.world_allocate_stat(text)', 'world_stat_cap_of', array[
+  '>= public.world_stat_cap(c.level) then raise exception', '>= public.world_stat_cap_of(c.job_key, p_stat, c.level) then raise exception',
+  '(레벨이 오르면 늘어납니다).'', public.world_stat_cap(c.level);', '(레벨이 오르면 늘어납니다).'', public.world_stat_cap_of(c.job_key, p_stat, c.level);']);
+
+-- 되돌릴 포인트 = 직업 기본값을 넘는 몫
+create or replace function public.world_reset_points(p_uid uuid)
+returns integer language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
+  select greatest(0, c.strength - (b ->> 'strength')::int) + greatest(0, c.agility - (b ->> 'agility')::int) + greatest(0, c.vitality - (b ->> 'vitality')::int)
+       + greatest(0, c.perception - (b ->> 'perception')::int) + greatest(0, c.willpower - (b ->> 'willpower')::int) + greatest(0, c.spirit_affinity - (b ->> 'spirit_affinity')::int)
+    from public.world_characters c cross join lateral (select public.world_job_base(c.job_key) b) j where c.owner_id = p_uid
+$$;
+-- 세심단: 지금 직업의 기본값으로 / 환골탈태: 새 직업의 기본값으로
+select pg_temp.yh_patch('public.world_reset_stats()', 'world_job_base', array[
+  'set strength = least(strength, 5), agility = least(agility, 5), vitality = least(vitality, 5), perception = least(perception, 5),',
+  'set strength = (public.world_job_base(job_key) ->> ''strength'')::int, agility = (public.world_job_base(job_key) ->> ''agility'')::int, vitality = (public.world_job_base(job_key) ->> ''vitality'')::int, perception = (public.world_job_base(job_key) ->> ''perception'')::int,',
+  'willpower = least(willpower, 5), spirit_affinity = least(spirit_affinity, 5), stat_points = stat_points + back,',
+  'willpower = (public.world_job_base(job_key) ->> ''willpower'')::int, spirit_affinity = (public.world_job_base(job_key) ->> ''spirit_affinity'')::int, stat_points = stat_points + back,']);
+select pg_temp.yh_patch('public.world_reset_identity(text,text)', 'world_job_base', array[
+  'job_label := case p_job when ''exorcist'' then ''퇴마관'' when ''scout'' then ''현장 조사원'' when ''medic'' then ''의무관''', 'job_label := public.world_job_label(p_job); /*',
+  'when ''sealmaster'' then ''봉인술사'' when ''analyst'' then ''기록 분석관'' when ''artificer'' then ''법구 제작사'' end;', '*/',
+  'strength = least(strength, 5), agility = least(agility, 5), vitality = least(vitality, 5), perception = least(perception, 5),',
+  'strength = (public.world_job_base(p_job) ->> ''strength'')::int, agility = (public.world_job_base(p_job) ->> ''agility'')::int, vitality = (public.world_job_base(p_job) ->> ''vitality'')::int, perception = (public.world_job_base(p_job) ->> ''perception'')::int,',
+  'willpower = least(willpower, 5), spirit_affinity = least(spirit_affinity, 5), stat_points = stat_points + back,',
+  'willpower = (public.world_job_base(p_job) ->> ''willpower'')::int, spirit_affinity = (public.world_job_base(p_job) ->> ''spirit_affinity'')::int, stat_points = stat_points + back,']);
+
+-- 새 캐릭터: 직업 기본 능력치와 역할에 맞는 시작 장비
+create or replace function public.world_create_character_v2(p_name text, p_job text, p_faction text)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $function$
+declare
+  uid uuid := public.fn_owner_auth_uid();
+  nm text := btrim(coalesce(p_name, ''));
+  r public.world_characters%rowtype;
+  job_label text; b jsonb; kit jsonb; inv jsonb; it record;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.' using errcode = '28000'; end if;
+  if exists (select 1 from public.world_characters where owner_id = uid) then
+    raise exception '이미 캐릭터가 있습니다. 이름·직업·소속은 생성 후 변경할 수 없습니다.';
+  end if;
+  if char_length(nm) < 2 or char_length(nm) > 12 then raise exception '이름은 2~12자로 입력하세요.'; end if;
+  if nm !~ '^[가-힣A-Za-z0-9 ]+$' then raise exception '이름에는 한글·영문·숫자·공백만 사용할 수 있습니다.'; end if;
+  job_label := public.world_job_label(p_job);
+  if job_label is null then raise exception '직업을 선택하세요.'; end if;
+  if p_faction is null or p_faction not in ('headquarters','fieldbureau','archivebureau','sealbureau','medicalbureau','independent') then
+    raise exception '소속을 선택하세요.';
+  end if;
+  if exists (select 1 from public.world_characters where lower(btrim(character_name)) = lower(nm)) then
+    raise exception '이미 사용 중인 이름입니다.';
+  end if;
+  b := public.world_job_base(p_job);
+  -- 역할별 시작 장비(장착 칸 → 물품)와 덤 물품
+  kit := case p_job
+    when 'artificer'  then '{"weapon":"iron_sword","armor":"a1_iron","hat":"h1_guard","amulet":"m1_ward","tool":"field_knife"}'
+    when 'scout'      then '{"weapon":"w_ranged1_keen","armor":"a1_light","shoes":"s1_swift","tool":"field_knife"}'
+    when 'exorcist'   then '{"weapon":"spirit_bell","armor":"a1_robe","amulet":"m1_spell","tool":"field_knife"}'
+    when 'medic'      then '{"weapon":"w_magic1_silent","armor":"a1_robe","amulet":"m1_purify","tool":"field_knife"}'
+    when 'sealmaster' then '{"weapon":"w_magic1_heavy","armor":"padded_coat","hat":"h1_calm","tool":"field_knife"}'
+    else                   '{"weapon":"w_melee1_keen","armor":"padded_coat","norigae":"n1_plenty","shoes":"s1_road","tool":"field_knife"}' end::jsonb;
+  inv := '{"herb":2,"ward_talisman":1,"ore_pick":1,"seal_paper":1,"wood":0,"ore":0}'::jsonb;
+  for it in select value v from jsonb_each_text(kit) loop inv := inv || jsonb_build_object(it.v, coalesce((inv ->> it.v)::int, 0) + 1); end loop;
+  inv := inv || case p_job
+    when 'scout'      then '{"ammo_arrow":100}'
+    when 'medic'      then '{"herb":5,"tonic":3}'
+    when 'sealmaster' then '{"seal_paper":4,"ward_talisman":2}'
+    when 'analyst'    then '{"fishing_rod":1}'
+    else '{}' end::jsonb;
+  begin
+    insert into public.world_characters(owner_id, character_name, occupation, inventory, job_key, faction_key,
+                                        strength, agility, vitality, perception, willpower, spirit_affinity)
+    values (uid, nm, job_label, inv, p_job, p_faction,
+            (b ->> 'strength')::int, (b ->> 'agility')::int, (b ->> 'vitality')::int, (b ->> 'perception')::int, (b ->> 'willpower')::int, (b ->> 'spirit_affinity')::int)
+    returning * into r;
+  exception when unique_violation then
+    raise exception '이미 사용 중인 이름이거나 캐릭터가 이미 있습니다.';
+  end;
+  insert into public.world_character_equipment(owner_id, slot, item_id)
+  select uid, k.key, k.value from jsonb_each_text(kit) k
+  on conflict (owner_id, slot) do nothing;
+  return jsonb_build_object('ok', true, 'character_name', r.character_name, 'job_key', r.job_key, 'faction_key', r.faction_key);
+end
+$function$;
+
+-- 기존 캐릭터: 새 기본값 + 직접 찍은 몫, 상한을 넘는 몫은 포인트로(한 번만)
+with x as (
+  select c.owner_id, b,
+         (b ->> 'strength')::int + greatest(0, c.strength - 5) s1, (b ->> 'agility')::int + greatest(0, c.agility - 5) s2,
+         (b ->> 'vitality')::int + greatest(0, c.vitality - 5) s3, (b ->> 'perception')::int + greatest(0, c.perception - 5) s4,
+         (b ->> 'willpower')::int + greatest(0, c.willpower - 5) s5, (b ->> 'spirit_affinity')::int + greatest(0, c.spirit_affinity - 5) s6,
+         floor(greatest(1, c.level) * 1.5)::int lv
+    from public.world_characters c cross join lateral (select public.world_job_base(c.job_key) b) j
+   where not exists (select 1 from public.world_app_meta m where m.key = 'v6_job_base'))
+update public.world_characters c
+   set strength = least(x.s1, (x.b ->> 'strength')::int + x.lv), agility = least(x.s2, (x.b ->> 'agility')::int + x.lv),
+       vitality = least(x.s3, (x.b ->> 'vitality')::int + x.lv), perception = least(x.s4, (x.b ->> 'perception')::int + x.lv),
+       willpower = least(x.s5, (x.b ->> 'willpower')::int + x.lv), spirit_affinity = least(x.s6, (x.b ->> 'spirit_affinity')::int + x.lv),
+       stat_points = c.stat_points + greatest(0, x.s1 - (x.b ->> 'strength')::int - x.lv) + greatest(0, x.s2 - (x.b ->> 'agility')::int - x.lv)
+                   + greatest(0, x.s3 - (x.b ->> 'vitality')::int - x.lv) + greatest(0, x.s4 - (x.b ->> 'perception')::int - x.lv)
+                   + greatest(0, x.s5 - (x.b ->> 'willpower')::int - x.lv) + greatest(0, x.s6 - (x.b ->> 'spirit_affinity')::int - x.lv),
+       updated_at = now()
+  from x where x.owner_id = c.owner_id;
+insert into public.world_app_meta(key, value) values ('v6_job_base', '1') on conflict (key) do nothing;
+
+drop function pg_temp.yh_patch(text, text, text[]);
+
+-- 패치노트 6.0.0에 직업 역할을 더한다
+update public.world_patch_notes set body = replace(body, E'### 밸런스\n', E'### 직업 역할\n- 직업을 **여섯 역할**로 나눴습니다. 호위 무사(옛 법구 제작사) **근접** · 현장 조사원 **원거리 물리** · 퇴마관 **술법** · 의무관 **치유** · 봉인술사 **보조(버프·디버프)** · 백공 기술관(옛 기록 분석관) **생활 특화**.\n- 직업마다 **기본 능력치**가 다릅니다(합은 모두 30). 지금 캐릭터는 새 기본값에 지금까지 직접 올린 몫을 그대로 더했고, 한 능력치 상한(**직업 기본값 + 레벨×1.5**)을 넘은 몫은 포인트로 돌려드렸습니다. 세심단·환골탈태도 직업 기본값으로 되돌립니다.\n- 직업 효과: 호위 무사 근접 피해 +8%·받는 피해 −6%·이목 +30, 현장 조사원 원거리 피해 +8%, 퇴마관 술법 피해 +8%, 의무관 회복 +10%, 봉인술사 정신 손실 −10%·침식 −5%, 백공 기술관 채집량 +15%·희귀품 +3%. 피해 보정은 그 역할의 무기를 들었을 때만 붙습니다.\n- 옛 법구 제작사의 제작 품질 +15·강화 확률 +10%p·원정 「현장 가공」은 **백공 기술관**으로, 옛 기록 분석관의 원정 「약점 간파」는 호위 무사의 「반격 태세」로 옮겼습니다. 기록 분석관의 치명타 +8은 없앴습니다. 호위 무사의 현장 기술은 「파갑참」(근접, 방어·결계 무시)입니다.\n- 새 캐릭터는 역할에 맞는 **시작 장비**를 갖추고 시작합니다(현장 조사원은 화살 100발 포함).\n\n### 밸런스\n')
+ where note_id = '6.0.0' and position('### 직업 역할' in body) = 0;

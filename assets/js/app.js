@@ -133,6 +133,8 @@ function renderAuth(mode = 'login', notice = '') {
 }
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
+const STAT_KO = { strength: '힘', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영기' };
+const baseText = b => Object.entries(b).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${STAT_KO[k]} ${v}`).join(' · ');
 function renderCreate() {
   document.title = '야행국 · 캐릭터 생성';
   // 쓰던 이름·고른 직업·소속을 이 기기에 잠시 남겨, 다른 앱에 다녀오거나 화면이 다시 그려져도 되살린다(입국하면 지운다).
@@ -143,7 +145,7 @@ function renderCreate() {
   const saveDraft = () => { try { localStorage.setItem(draftKey, JSON.stringify({ name: form.name.value, job: pick.job, faction: pick.faction })); } catch {} };
   const cards = (obj, kind) => Object.entries(obj).map(([k, v]) => `
     <button type="button" class="choice-card" data-${kind}="${k}" aria-pressed="false">
-      <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(v.desc)}</small>
+      <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(v.desc)}</small>${v.base ? `<small class="muted">기본 능력치 ${baseText(v.base)}<br>시작 장비: ${esc(v.kit)}</small>` : ''}
     </button>`).join('');
   app.replaceChildren(h(`
   <div class="create-screen">
@@ -153,7 +155,7 @@ function renderCreate() {
       <section class="card"><h2 class="step"><b>1</b>이름</h2>
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
       </section>
-      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투·채집·제작 효율과 고유 특성을 정합니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div></section>
+      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 역할(근접·원거리 물리·술법·생활 특화·치유·보조)과 기본 능력치·시작 장비를 정합니다. 무기는 어느 직업이나 들 수 있지만 직업 효과는 그 역할의 무기에서 가장 잘 살아납니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div></section>
       <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 일일 보급과 전용 임무를 정합니다.</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div></section>
       <section class="card confirm-card">
         <div class="confirm-row"><span>이름</span><b id="sum-name">—</b></div>
