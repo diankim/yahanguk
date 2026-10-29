@@ -148,9 +148,9 @@ QUESTS = [
    ('뽑힌 표식', '귀죽림을 2번 탐색하고 대나무 원숭이를 3번 쓰러뜨린다',
     {'at': ['ghost_bamboo'], 'tasks': [{'t': 'search', 'r': ['ghost_bamboo'], 'n': 2}, {'t': 'win', 'm': ['g_ghost_bamboo'], 'n': 3}]}, [
      ('q:dh_cheongun', '원숭이 놈들이 표식을 다 뽑아 갔었군요.'),
-     ('q:dh_cheongun', '길을 다시 묶으려면 약제 바탕이랑 영맥 수피가 필요해요. 표식에 바르면 요괴가 안 건드려요.')]),
-   ('다시 난 길', '귀죽림에서 약제 바탕과 영맥 수피를 2번씩 거둬 수피를 건넨다',
-    {'at': ['ghost_bamboo'], 'tasks': [{'t': 'gather', 'items': ['medicine_base'], 'r': ['ghost_bamboo'], 'n': 2}, {'t': 'gather', 'items': ['spirit_bark'], 'r': ['ghost_bamboo'], 'n': 2}], 'give': {'spirit_bark': 2}}, [
+     ('q:dh_cheongun', '길을 다시 묶으려면 약제 바탕이랑 부적목 수지가 필요해요. 표식에 바르면 요괴가 안 건드려요.')]),
+   ('다시 난 길', '귀죽림에서 약제 바탕과 부적목 수지를 2번씩 거둬 수지를 건넨다',
+    {'at': ['ghost_bamboo'], 'tasks': [{'t': 'gather', 'items': ['medicine_base'], 'r': ['ghost_bamboo'], 'n': 2}, {'t': 'gather', 'items': ['resin'], 'r': ['ghost_bamboo'], 'n': 2}], 'give': {'resin': 2}}, [
      (N, '새 표식이 대숲 깊은 곳까지 이어진다. 바람이 지나가자 대나무가 조금 덜 운다.'),
      ('q:dh_cheongun', '길이 났어요. 동생이 어디 있든, 이 길로 오면 돼요.'),
      ('q:dh_cheongun', '현장대응국이 낸 길은 오래간다던데, 정말이네요.')])],
@@ -202,9 +202,9 @@ QUESTS = [
    ('덩굴 걷기', '덩굴 손을 3번 쓰러뜨리고 연화원을 2번 탐색한다',
     {'at': ['sealed_garden'], 'tasks': [{'t': 'win', 'm': ['g_sealed_garden'], 'n': 3}, {'t': 'search', 'r': ['sealed_garden'], 'n': 2}]}, [
      ('q:dh_seonhwa', '덩굴이 물러났어요. 이제 씨를 심을 수 있겠어요.'),
-     ('q:dh_seonhwa', '약제 바탕이랑 수피 좀 모아 주세요. 흙에 섞으면 연화원 흙 맛이 나요.')]),
-   ('첫 싹', '연화원에서 약제 바탕과 영맥 수피를 2번씩 거둬 약제 바탕을 건넨다',
-    {'at': ['sealed_garden'], 'tasks': [{'t': 'gather', 'items': ['medicine_base'], 'r': ['sealed_garden'], 'n': 2}, {'t': 'gather', 'items': ['spirit_bark'], 'r': ['sealed_garden'], 'n': 2}], 'give': {'medicine_base': 2}}, [
+     ('q:dh_seonhwa', '약제 바탕이랑 월광 이끼 좀 모아 주세요. 흙에 섞으면 연화원 흙 맛이 나요.')]),
+   ('첫 싹', '연화원에서 약제 바탕과 월광 이끼를 2번씩 거둬 약제 바탕을 건넨다',
+    {'at': ['sealed_garden'], 'tasks': [{'t': 'gather', 'items': ['medicine_base'], 'r': ['sealed_garden'], 'n': 2}, {'t': 'gather', 'items': ['moon_moss'], 'r': ['sealed_garden'], 'n': 2}], 'give': {'medicine_base': 2}}, [
      (N, '새로 일군 밭고랑에 첫 싹이 올라온다.'),
      ('q:dh_seonhwa', '봄이면 객사 의원에 다시 약초를 댈 수 있어요.'),
      ('q:dh_seonhwa', '다친 분들한테 전해 줘요. 연화원 약초가 돌아온다고.')])],

@@ -1,7 +1,7 @@
 // 일지: 퀘스트를 보는 곳. 주 이야기(장마다 장면 → 단서 → 가설) · 보조 퀘스트(분야별) · 상시 의뢰 · 기록(답사·원정·도감).
 // 마친 장면과 장 결말은 다시 읽을 수 있다(world_quest_scene). 진행 판정은 서버(world_quest_journal·world_quest_report)가 한다.
 import { store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON } from '../core.js';
-import { loreBundle } from '../lore.js';
+import { loreBundle, refreshLore } from '../lore.js';
 import { load, panel, chip, loading, errorBox, currentRegion } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
@@ -49,7 +49,7 @@ function bindGo(body) {
 
 /* ── 퀘스트 공통: 장면 목록·다시 보기·보고 ───────────────────── */
 // 일지 목록(6.1.0 서버 함수). 없으면(배포 전) 장면 없이 단서·가설만 보인다
-const journal = () => load('world_quest_journal').catch(() => null);
+const journal = () => load('world_quest_journal', undefined, { maxAge: 15000 }).catch(() => null);
 function sceneList(q, map) {
   const cur = q.cur, next = q.status === 'done' ? null : (q.scenes || []).find(x => !x.done);
   return `<ol class="scene-line">${(q.scenes || []).map(x => {
@@ -289,8 +289,11 @@ async function monsterCodex(box) {
   $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
   // 목격담(6.1.1): 그 갈래를 1·10마리 쓰러뜨리면 이야기 속 인물의 한마디가 열린다
   const wb = $('[data-witness]', box);
-  if (wb) loreBundle().then(l => { const k = kinds.find(x => x.key === cxKind), n = Number(k?.defeated) || 0, arr = l.witness?.[cxKind] || [];
-    wb.innerHTML = arr.map(w => n >= w.need ? `<p class="w-line"><b>${esc(w.name)}</b> 「${esc(w.t)}」</p>` : `<p class="w-line locked">${icon('help', 12)} 이 갈래를 ${w.need}마리 쓰러뜨리면 열리는 목격담</p>`).join(''); });
+  // 열림은 서버가 정하고(그 갈래 토벌 수), 화면이 센 수가 넘었는데 아직 잠긴 줄이 있으면 한 번 다시 읽는다
+  const n = all.filter(m => m.kind === cxKind).reduce((s, m) => s + (Number(m.defeated) || 0), 0);
+  const paint = l => { const arr = l.witness?.[cxKind] || [];
+    wb.innerHTML = arr.map(w => w.open ? `<p class="w-line"><b>${esc(w.name)}</b> 「${esc(w.t)}」</p>` : `<p class="w-line locked">${icon('help', 12)} 이 갈래를 ${w.need}마리 쓰러뜨리면 열리는 목격담</p>`).join(''); return arr; };
+  if (wb) loreBundle().then(l => { if (paint(l).some(w => !w.open && n >= w.need)) refreshLore().then(l2 => wb.isConnected && paint(l2)); });
 }
 const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
 async function gatherCodex(box) {

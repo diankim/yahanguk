@@ -424,7 +424,7 @@ async function drawTravel(body) {
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   // 탈것에서 내리기(6.1.1): 걸어 다니기 — 서버 world_mount_unequip
-  const off = $('#mt-off', body); if (off) off.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(off, () => act('world_mount_unequip')); };
+  const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
   $$('[data-goto]', body).forEach(b => b.onclick = () => { selected = b.dataset.goto; view = null; switchTo('world'); });
   const span = $('[data-arrive]', body);
   if (span) { const t = setInterval(() => { if (!span.isConnected) return clearInterval(t); span.textContent = `${fmt.remain(Number(span.dataset.arrive) - Date.now())} 후 도착`; }, 1000); }

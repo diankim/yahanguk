@@ -1,6 +1,6 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, RAID_ON } from '../core.js';
+import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, RAID_ON, loadCharacter } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
@@ -10,7 +10,7 @@ const BOSS_FX = { expose: '약점 드러남', stagger: '휘청임', smoke: '연�
 const BUFF = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '호법', guard: '방어', bound: '사슬' };
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0;
+let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, pickedItem = null, outUntil = 0;
 
 export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null;
@@ -25,12 +25,23 @@ async function refresh() {
   if (!el) return;
   lastFetch = Date.now();
   try {
+    const prev = snap?.raid?.status;
     snap = await rpc('world_raid_snapshot', { p_raid: rid });
     if (snap?.raid?.id && rid !== snap.raid.id) { rid = snap.raid.id; subscribe(); }
+    // 다른 사람의 마지막 한 방으로 끝났으면 내 전·경험치·가방을 다시 읽는다
+    if (prev === 'fight' && settled(snap) && snap.me?.joined) settle();
     draw();
   } catch (e) { el.innerHTML = errorBox(e.message); }
 }
-// 다른 사람이 행동하면 토벌 줄이 바뀐다 — 너무 자주 다시 읽지 않게 간격을 둔다
+const settled = s => s?.raid?.status === 'won' || s?.raid?.status === 'failed';
+async function settle() { try { await loadCharacter(); } catch {} invalidate('world_raid_brief'); emit('changed', { name: 'world_raid_settle' }); }
+// 다른 사람이 행동하면 토벌 줄이 바뀐다 — 너무 자주 다시 읽지 않게 간격을 둔다.
+// 내 행동의 응답이 이미 스냅샷을 돌려주므로, 그 직후 같은 값으로 오는 실시간 변경은 건너뛴다
+function onChange(p) {
+  const n = p?.new, r = snap?.raid;
+  if (n && r && Date.now() - lastFetch < 1200 && n.hp === r.hp && n.phase === r.phase && n.status === r.status && (n.intent ?? null) === (r.intent ?? null)) return;
+  soon();
+}
 function soon() {
   clearTimeout(timer);
   const gap = snap?.me?.joined && snap?.raid?.status === 'fight' ? 1000 : 2000;
@@ -38,7 +49,7 @@ function soon() {
 }
 function subscribe() {
   if (ch) db.removeChannel(ch);
-  ch = db.channel(`yh-raid-${rid || 'any'}`).on('postgres_changes', { event: '*', schema: 'public', table: 'world_raids', ...(rid ? { filter: `raid_id=eq.${rid}` } : {}) }, () => soon()).subscribe();
+  ch = db.channel(`yh-raid-${rid || 'any'}`).on('postgres_changes', { event: '*', schema: 'public', table: 'world_raids', ...(rid ? { filter: `raid_id=eq.${rid}` } : {}) }, onChange).subscribe();
 }
 
 const left = t => { const ms = new Date(t) - Date.now(); return ms > 0 ? fmt.remain(ms) : '곧'; };
@@ -46,7 +57,8 @@ function countdown() {
   if (!el) return;
   $$('[data-until]', el).forEach(x => { x.textContent = left(x.dataset.until); });
   const cd = Math.max(0, readyAt - Date.now());
-  $$('[data-act]', el).forEach(b => { if (!b.dataset.lock) b.disabled = cd > 0 || sending; });
+  const out = outUntil > Date.now();
+  $$('[data-act]', el).forEach(b => { if (!b.dataset.lock) b.disabled = cd > 0 || sending || out; });
 }
 
 function draw() {
@@ -58,6 +70,9 @@ function draw() {
     return;
   }
   const me = s.me || {}, fight = r.status === 'fight', ended = r.status === 'won' || r.status === 'failed';
+  outUntil = me.out ? Date.now() + me.out * 1000 : 0;
+  // 다시 그려도 고른 물품과 읽던 기록 자리를 지킨다
+  const oldLog = $('.raid-log', el), atBottom = !oldLog || oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24, oldTop = oldLog?.scrollTop || 0;
   const pct = r.max_hp ? Math.max(0, Math.min(100, r.hp / r.max_hp * 100)) : 100;
   const timeLine = r.status === 'announced' ? (r.spawn_at ? `${icon('hourglass', 14)} <b>${esc(r.region || '')}</b> · <span data-until="${esc(r.spawn_at)}">${left(r.spawn_at)}</span> 뒤 출현`
       : `${icon('hourglass', 14)} 후보 · ${esc((r.candidates || []).join(', '))} 가운데 한 곳`)
@@ -85,7 +100,7 @@ function draw() {
         <ol class="raid-log">${(s.log || []).map(l => `<li class="k-${esc(l.kind)}"><time>${fmt.time(l.at)}</time><span>${esc(l.text)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
     </div>
     ${locksHtml(s.locks)}`;
-  const log = $('.raid-log', el); if (log) log.scrollTop = log.scrollHeight;
+  const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
   bind();
   countdown();
 }
@@ -125,7 +140,7 @@ function actionsHtml(r, me, members) {
     <div class="raid-buttons">
       <button class="btn primary" data-act="attack">${icon('sword', 16)}<span>공격</span></button>
       <button class="btn" data-act="guard">${icon('shield', 16)}<span>방어</span></button>
-      ${items.length ? `<select id="raid-item" aria-label="쓸 물품">${items.map(k => `<option value="${esc(k)}">${esc(nameOf(k))} ×${inv[k]}</option>`).join('')}</select><button class="btn" data-act="item">${icon('heart', 16)}<span>쓰기</span></button>` : ''}
+      ${items.length ? `<select id="raid-item" aria-label="쓸 물품">${items.map(k => `<option value="${esc(k)}" ${k === pickedItem ? 'selected' : ''}>${esc(nameOf(k))} ×${inv[k]}</option>`).join('')}</select><button class="btn" data-act="item">${icon('heart', 16)}<span>쓰기</span></button>` : ''}
     </div>
     ${coop ? `<h3 class="sub-h">협동 기술 <small class="muted">대상: <b>${esc(tName)}</b> (참가자 이름을 눌러 고름)</small></h3><div class="coop-grid">${coop}</div>`
       : `<p class="muted small">협동 기술은 전투 숙련 3·8·18·36단계에서 열립니다.</p>`}
@@ -148,6 +163,7 @@ function locksHtml(locks) {
 
 function bind() {
   const r = snap?.raid; if (!r) return;
+  const sel = $('#raid-item', el); if (sel) sel.onchange = () => { pickedItem = sel.value; };
   const jb = $('#raid-join', el);
   if (jb) jb.onclick = () => run(jb, () => rpc('world_raid_join', { p_raid: r.id }));
   const bb = $('#raid-begin', el);
@@ -170,10 +186,11 @@ async function run(btn, fn, isAct) {
     const out = await fn();
     if (out?.raid) { snap = out; lastFetch = Date.now(); }
     if (isAct) readyAt = Date.now() + 1000;
-    // 상태판의 체력·영력을 서버 값에 맞춘다(캐릭터를 따로 다시 읽지 않는다)
-    if (store.character && snap?.me) { store.character = { ...store.character, health: snap.me.hp, spiritual_power: snap.me.sp }; emit('character', store.character); }
+    // 상태판의 체력·영력을 서버 값에 맞춘다(물품을 쓴 때만 가방까지 캐릭터를 다시 읽는다)
+    if (settled(snap)) await settle();
+    else if (btn.dataset.act === 'item') { try { await loadCharacter(); } catch {} }
+    else if (store.character && snap?.me) { store.character = { ...store.character, health: snap.me.hp, spiritual_power: snap.me.sp }; emit('character', store.character); }
     invalidate('world_raid_brief');
-    if (snap?.raid && (snap.raid.status === 'won' || snap.raid.status === 'failed')) emit('changed', { name: 'world_raid_settle' });
     draw();
   } catch (e) { toast(e.message || String(e), 'error'); }
   finally { sending = false; countdown(); }

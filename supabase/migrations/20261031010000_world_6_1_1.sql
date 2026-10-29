@@ -144,9 +144,9 @@ on conflict (quest_id) do update set cat = excluded.cat, title = excluded.title,
   sort = excluded.sort, active = true, job_key = excluded.job_key, faction_key = excluded.faction_key;
 insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_fieldbureau$T$, 1, $T$끊긴 길$T$, $T$귀죽림의 나무꾼 하청운을 만난다$T$, $J${"at": ["ghost_bamboo"]}$J$::jsonb, $J$[{"s": null, "t": "대숲이 바람도 없이 운다. 도끼를 멘 젊은이가 길 표식을 다시 묶고 있다."}, {"s": "q:dh_cheongun", "t": "현장대응국 분이시죠. 순찰로가 끊긴 지 석 달이에요."}, {"s": "q:dh_cheongun", "t": "동생이 그 길에서 사라졌어요. 길이라도 다시 나 있으면… 돌아올 수 있잖아요."}]$J$::jsonb, $J${}$J$::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
-insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_fieldbureau$T$, 2, $T$뽑힌 표식$T$, $T$귀죽림을 2번 탐색하고 대나무 원숭이를 3번 쓰러뜨린다$T$, $J${"at": ["ghost_bamboo"], "tasks": [{"t": "search", "r": ["ghost_bamboo"], "n": 2}, {"t": "win", "m": ["g_ghost_bamboo"], "n": 3}]}$J$::jsonb, $J$[{"s": "q:dh_cheongun", "t": "원숭이 놈들이 표식을 다 뽑아 갔었군요."}, {"s": "q:dh_cheongun", "t": "길을 다시 묶으려면 약제 바탕이랑 영맥 수피가 필요해요. 표식에 바르면 요괴가 안 건드려요."}]$J$::jsonb, $J${"xp": 118}$J$::jsonb)
+insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_fieldbureau$T$, 2, $T$뽑힌 표식$T$, $T$귀죽림을 2번 탐색하고 대나무 원숭이를 3번 쓰러뜨린다$T$, $J${"at": ["ghost_bamboo"], "tasks": [{"t": "search", "r": ["ghost_bamboo"], "n": 2}, {"t": "win", "m": ["g_ghost_bamboo"], "n": 3}]}$J$::jsonb, $J$[{"s": "q:dh_cheongun", "t": "원숭이 놈들이 표식을 다 뽑아 갔었군요."}, {"s": "q:dh_cheongun", "t": "길을 다시 묶으려면 약제 바탕이랑 부적목 수지가 필요해요. 표식에 바르면 요괴가 안 건드려요."}]$J$::jsonb, $J${"xp": 118}$J$::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
-insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_fieldbureau$T$, 3, $T$다시 난 길$T$, $T$귀죽림에서 약제 바탕과 영맥 수피를 2번씩 거둬 수피를 건넨다$T$, $J${"at": ["ghost_bamboo"], "tasks": [{"t": "gather", "items": ["medicine_base"], "r": ["ghost_bamboo"], "n": 2}, {"t": "gather", "items": ["spirit_bark"], "r": ["ghost_bamboo"], "n": 2}], "give": {"spirit_bark": 2}}$J$::jsonb, $J$[{"s": null, "t": "새 표식이 대숲 깊은 곳까지 이어진다. 바람이 지나가자 대나무가 조금 덜 운다."}, {"s": "q:dh_cheongun", "t": "길이 났어요. 동생이 어디 있든, 이 길로 오면 돼요."}, {"s": "q:dh_cheongun", "t": "현장대응국이 낸 길은 오래간다던데, 정말이네요."}]$J$::jsonb, $J${"xp": 118, "gil": 21, "items": {"travel_ration": 2, "ward_talisman": 1}}$J$::jsonb)
+insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_fieldbureau$T$, 3, $T$다시 난 길$T$, $T$귀죽림에서 약제 바탕과 부적목 수지를 2번씩 거둬 수지를 건넨다$T$, $J${"at": ["ghost_bamboo"], "tasks": [{"t": "gather", "items": ["medicine_base"], "r": ["ghost_bamboo"], "n": 2}, {"t": "gather", "items": ["resin"], "r": ["ghost_bamboo"], "n": 2}], "give": {"resin": 2}}$J$::jsonb, $J$[{"s": null, "t": "새 표식이 대숲 깊은 곳까지 이어진다. 바람이 지나가자 대나무가 조금 덜 운다."}, {"s": "q:dh_cheongun", "t": "길이 났어요. 동생이 어디 있든, 이 길로 오면 돼요."}, {"s": "q:dh_cheongun", "t": "현장대응국이 낸 길은 오래간다던데, 정말이네요."}]$J$::jsonb, $J${"xp": 118, "gil": 21, "items": {"travel_ration": 2, "ward_talisman": 1}}$J$::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
 insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
 values ($T$aq_archivebureau$T$, 'side', $T$소속·기록감찰국$T$, $T$젖은 쪽의 먹$T$, $T$장서각 기록관이 기록감찰국 조사원에게 빈 쪽 앞장에 번진 먹을 감식하게 한다.$T$, $T$hq_archive$T$, 4, '{}', null, 908, '[]'::jsonb, true, null, $T$archivebureau$T$)
@@ -174,9 +174,9 @@ on conflict (quest_id) do update set cat = excluded.cat, title = excluded.title,
   sort = excluded.sort, active = true, job_key = excluded.job_key, faction_key = excluded.faction_key;
 insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_medicalbureau$T$, 1, $T$담 너머$T$, $T$폐쇄된 연화원의 약초꾼 남선화를 만난다$T$, $J${"at": ["sealed_garden"]}$J$::jsonb, $J$[{"s": null, "t": "연화원 담장 아래, 여인이 담 너머를 보며 호미질을 한다."}, {"s": "q:dh_seonhwa", "t": "의무지원국에서 오셨어요? 객사 의원에 약초를 대던 게 저였어요. 연화원이 닫히기 전까지는요."}, {"s": "q:dh_seonhwa", "t": "담 밖에 밭을 새로 일구는 중인데, 덩굴 손들이 자꾸 넘어와요."}]$J$::jsonb, $J${}$J$::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
-insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_medicalbureau$T$, 2, $T$덩굴 걷기$T$, $T$덩굴 손을 3번 쓰러뜨리고 연화원을 2번 탐색한다$T$, $J${"at": ["sealed_garden"], "tasks": [{"t": "win", "m": ["g_sealed_garden"], "n": 3}, {"t": "search", "r": ["sealed_garden"], "n": 2}]}$J$::jsonb, $J$[{"s": "q:dh_seonhwa", "t": "덩굴이 물러났어요. 이제 씨를 심을 수 있겠어요."}, {"s": "q:dh_seonhwa", "t": "약제 바탕이랑 수피 좀 모아 주세요. 흙에 섞으면 연화원 흙 맛이 나요."}]$J$::jsonb, $J${"xp": 118}$J$::jsonb)
+insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_medicalbureau$T$, 2, $T$덩굴 걷기$T$, $T$덩굴 손을 3번 쓰러뜨리고 연화원을 2번 탐색한다$T$, $J${"at": ["sealed_garden"], "tasks": [{"t": "win", "m": ["g_sealed_garden"], "n": 3}, {"t": "search", "r": ["sealed_garden"], "n": 2}]}$J$::jsonb, $J$[{"s": "q:dh_seonhwa", "t": "덩굴이 물러났어요. 이제 씨를 심을 수 있겠어요."}, {"s": "q:dh_seonhwa", "t": "약제 바탕이랑 월광 이끼 좀 모아 주세요. 흙에 섞으면 연화원 흙 맛이 나요."}]$J$::jsonb, $J${"xp": 118}$J$::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
-insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_medicalbureau$T$, 3, $T$첫 싹$T$, $T$연화원에서 약제 바탕과 영맥 수피를 2번씩 거둬 약제 바탕을 건넨다$T$, $J${"at": ["sealed_garden"], "tasks": [{"t": "gather", "items": ["medicine_base"], "r": ["sealed_garden"], "n": 2}, {"t": "gather", "items": ["spirit_bark"], "r": ["sealed_garden"], "n": 2}], "give": {"medicine_base": 2}}$J$::jsonb, $J$[{"s": null, "t": "새로 일군 밭고랑에 첫 싹이 올라온다."}, {"s": "q:dh_seonhwa", "t": "봄이면 객사 의원에 다시 약초를 댈 수 있어요."}, {"s": "q:dh_seonhwa", "t": "다친 분들한테 전해 줘요. 연화원 약초가 돌아온다고."}]$J$::jsonb, $J${"xp": 118, "gil": 21, "items": {"tonic": 2, "spirit_tea": 2}}$J$::jsonb)
+insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ($T$aq_medicalbureau$T$, 3, $T$첫 싹$T$, $T$연화원에서 약제 바탕과 월광 이끼를 2번씩 거둬 약제 바탕을 건넨다$T$, $J${"at": ["sealed_garden"], "tasks": [{"t": "gather", "items": ["medicine_base"], "r": ["sealed_garden"], "n": 2}, {"t": "gather", "items": ["moon_moss"], "r": ["sealed_garden"], "n": 2}], "give": {"medicine_base": 2}}$J$::jsonb, $J$[{"s": null, "t": "새로 일군 밭고랑에 첫 싹이 올라온다."}, {"s": "q:dh_seonhwa", "t": "봄이면 객사 의원에 다시 약초를 댈 수 있어요."}, {"s": "q:dh_seonhwa", "t": "다친 분들한테 전해 줘요. 연화원 약초가 돌아온다고."}]$J$::jsonb, $J${"xp": 118, "gil": 21, "items": {"tonic": 2, "spirit_tea": 2}}$J$::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
 insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
 values ($T$aq_independent$T$, 'side', $T$소속·외부 협력자$T$, $T$명부 밖의 손님$T$, $T$구름나루 주모가 외부 협력자에게 셈은 맞는데 손이 찬 손님들의 물길을 따라가 보게 한다.$T$, $T$river_ferry$T$, 4, '{}', null, 911, '[]'::jsonb, true, null, $T$independent$T$)
@@ -411,9 +411,14 @@ begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   return jsonb_build_object(
     'items', (select coalesce(jsonb_object_agg(item_id, lore), '{}'::jsonb) from public.world_item_lore),
+    -- 목격담은 그 갈래를 need마리 쓰러뜨린 것만 글을 내준다(못 연 것은 조건만)
     'witness', (select coalesce(jsonb_object_agg(kind_key, arr), '{}'::jsonb) from (
-       select w.kind_key, jsonb_agg(jsonb_build_object('need', w.need, 'name', coalesce(public.world_quest_cast(array[w.speaker], '') -> w.speaker ->> 'name', ''), 't', w.line) order by w.need) arr
-         from public.world_kind_witness w group by w.kind_key) z));
+       select w.kind_key, jsonb_agg(case when coalesce(kk.n, 0) >= w.need
+           then jsonb_build_object('need', w.need, 'open', true, 'name', coalesce(public.world_quest_cast(array[w.speaker], '') -> w.speaker ->> 'name', ''), 't', w.line)
+           else jsonb_build_object('need', w.need, 'open', false) end order by w.need) arr
+         from public.world_kind_witness w
+         left join (select m.kind, sum(x.defeated) n from public.world_monster_codex x join public.world_region_monsters m using (monster_id) where x.owner_id = uid group by m.kind) kk on kk.kind = w.kind_key
+        group by w.kind_key) z));
 end $function$;
 
 create or replace function public.world_region_intro(p_region text)
@@ -503,6 +508,45 @@ do $$ declare f text; begin
   end loop;
   -- 보급 함수 주인이 편지 함수를 부른다
   execute format('grant execute on function public.world_affil_letter(uuid,text) to %I', (select pg_get_userbyid(proowner) from pg_proc where oid = 'public.world_claim_faction_supply()'::regprocedure));
+end $$;
+
+-- ⑥-2 6.1.0 합동 토벌 보강(배포 전 검토)
+-- 봉연 예고(출현지·후보·시각)는 world_raid_brief가 때맞춰 공개하므로, 표 직접 읽기는 예고가 아닌 회차만
+drop policy if exists world_raids_read on public.world_raids;
+create policy world_raids_read on public.world_raids for select to authenticated using (status <> 'announced');
+
+do $$ declare d text; a text; b text; n int;
+begin
+  d := pg_get_functiondef('public.world_raid_action(uuid,text,text,uuid,text)'::regprocedure);
+  if position('토벌 보강 6.1.1' in d) = 0 then
+    -- ① 신청 뒤에도 자율 활동·이동 중이면 싸울 수 없다
+    a := 'raise exception ''원정 중에는 싸울 수 없습니다.''; end if;';
+    b := a || E'\n  -- 토벌 보강 6.1.1\n  if c.travel_destination is not null then raise exception ''이동 중에는 싸울 수 없습니다.''; end if;\n  if exists (select 1 from public.world_idle_activities where owner_id = uid and status = ''active'') then raise exception ''자율 활동 중에는 싸울 수 없습니다.''; end if;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 토벌 상태 확인(%)', n; end if;
+    d := replace(d, a, b);
+    -- ② 협동 기술 기본 기여도는 공격 한 번보다 적게(효과가 없어도 공격보다 많이 쌓이던 것)
+    a := 'credit := (st ->> ''attack'')::numeric * 1.2;';
+    b := 'credit := (st ->> ''attack'')::numeric * 0.6;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 협동 기여도(%)', n; end if;
+    d := replace(d, a, b);
+    -- ③ 회복·소생은 실제로 오른 체력만 센다
+    a := 'update public.world_characters set health = greatest(health, amt), updated_at = now() where owner_id = tgt;';
+    b := 'select health into h1 from public.world_characters where owner_id = tgt;' || E'\n        ' || a || E'\n        amt := greatest(0, amt - coalesce(h1, 0));';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 소생(%)', n; end if;
+    d := replace(d, a, b);
+    a := 'update public.world_characters set health = least(100, health + amt), updated_at = now() where owner_id = tgt and health > 0;';
+    b := 'select health into h1 from public.world_characters where owner_id = tgt;' || E'\n        ' || a || E'\n        amt := case when coalesce(h1, 0) > 0 then greatest(0, least(100, h1 + amt) - h1) else 0 end;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 회복(%)', n; end if;
+    d := replace(d, a, b);
+    a := E'      get diagnostics n_act = row_count;\n      mb.heal := mb.heal + amt * n_act; credit := credit + amt * n_act * 2;';
+    b := E'      get diagnostics n_act = row_count;\n      mb.heal := mb.heal + coalesce(acc, 0)::int; credit := credit + coalesce(acc, 0) * 2;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 모두 회복(%)', n; end if;
+    d := replace(d, a, b);
+    a := E'      update public.world_characters ch set health = least(100, ch.health + amt), updated_at = now()\n        from public.world_raid_members x';
+    b := E'      select sum(greatest(0, least(100, ch.health + amt) - ch.health)) into acc from public.world_characters ch join public.world_raid_members x on x.owner_id = ch.owner_id\n       where x.raid_id = p_raid and (x.out_until is null or x.out_until <= now()) and ch.health > 0;\n' || a;
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 모두 회복 합(%)', n; end if;
+    execute replace(d, a, b);
+  end if;
 end $$;
 
 -- ⑦ 6.1.0 숨김 풀기: 보관해 둔 6.1.0 패치노트를 되살리고, 서버 보스 예약을 다시 켠다(아무도 모이지 않은 예고 회차는 지우고 새로 잡는다)

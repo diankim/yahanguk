@@ -17,8 +17,10 @@ export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!p
 // 위치·소속이 바뀌는 행동 뒤에는 지도 캐시를 버린다.
 const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/;
 // 여기 있는 이들·동료 목록은 자리나 파티가 바뀌는 행동 뒤에만 새로 읽는다(행동마다 읽으면 서버 부담, 2026-10-28)
+// 일지 퀘스트 목록은 15초 동안 다시 쓰고, 할 일이 진행될 수 있는 행동 뒤에만 버린다
+const QUEST_CHANGERS = /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/;
 const ROSTER_CHANGERS = /travel|field_move|rescue|party|expedition|downed|idle/;
-on('changed', ({ name }) => { if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); });
+on('changed', ({ name }) => { if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
 // 응답에 들어 있는 이름을 사전에 등록해 내부 코드(hq_archive 등)가 화면에 노출되지 않게 한다.

@@ -169,17 +169,23 @@ export const primerHtml = () => `<div class="lore-primer">${WORLD_PRIMER.lines.m
 
 /* ── 6.1.1 서버 세계관 글: 물품 내력·요괴 목격담(접속 동안 한 번 읽음) · 지역 첫 방문 · 칭호 유래 ─────── */
 let bundleP = null;
-export const loreBundle = () => RAID_ON ? (bundleP ||= rpc('world_lore_bundle').catch(() => { bundleP = null; return { items: {}, witness: {} }; })) : Promise.resolve({ items: {}, witness: {} });
+// 실패하면 빈 값을 기억해 물품 창을 열 때마다 다시 부르지 않는다. 목격담이 새로 열릴 때만 다시 읽는다(refreshLore)
+export const loreBundle = () => RAID_ON ? (bundleP ||= rpc('world_lore_bundle').catch(() => ({ items: {}, witness: {} }))) : Promise.resolve({ items: {}, witness: {} });
+export const refreshLore = () => { bundleP = null; return loreBundle(); };
 // 지역에 처음 들어가면 그곳의 내력을 대화창으로 한 번 보인다(서버가 다녀간 지역을 기억해 두 번 보이지 않는다)
 const asked = new Set();
 export async function regionIntro(regionId) {
   if (!RAID_ON || !regionId || asked.has(regionId)) return;
   asked.add(regionId);
+  // 처음 안내(900ms 뒤 뜸)나 다른 창을 덮지 않게 잠깐 기다렸다가, 무언가 떠 있으면 다음 그리기 때 다시 본다
+  await new Promise(r => setTimeout(r, 1500));
+  const busy = () => document.querySelector('.tut, #modal, .modal-backdrop.layer');
+  if (busy()) { asked.delete(regionId); return; }
   try {
     const r = await rpc('world_region_intro', { p_region: regionId });
     if (r?.lines?.length) (await import('./factionquest.js')).playDialogue({ title: r.title, lines: r.lines, cast: {},
       extra: `<p class="muted small">일지 › 기록 › 지역에 남겼습니다.</p>` }, null);
-  } catch {}
+  } catch { asked.delete(regionId); }
 }
 // 소속 보급 편지 · 환골탈태 장면: 대화창으로 보인다
 export async function showLetter(letter) {

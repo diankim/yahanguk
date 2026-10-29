@@ -7,9 +7,14 @@ begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   return jsonb_build_object(
     'items', (select coalesce(jsonb_object_agg(item_id, lore), '{}'::jsonb) from public.world_item_lore),
+    -- 목격담은 그 갈래를 need마리 쓰러뜨린 것만 글을 내준다(못 연 것은 조건만)
     'witness', (select coalesce(jsonb_object_agg(kind_key, arr), '{}'::jsonb) from (
-       select w.kind_key, jsonb_agg(jsonb_build_object('need', w.need, 'name', coalesce(public.world_quest_cast(array[w.speaker], '') -> w.speaker ->> 'name', ''), 't', w.line) order by w.need) arr
-         from public.world_kind_witness w group by w.kind_key) z));
+       select w.kind_key, jsonb_agg(case when coalesce(kk.n, 0) >= w.need
+           then jsonb_build_object('need', w.need, 'open', true, 'name', coalesce(public.world_quest_cast(array[w.speaker], '') -> w.speaker ->> 'name', ''), 't', w.line)
+           else jsonb_build_object('need', w.need, 'open', false) end order by w.need) arr
+         from public.world_kind_witness w
+         left join (select m.kind, sum(x.defeated) n from public.world_monster_codex x join public.world_region_monsters m using (monster_id) where x.owner_id = uid group by m.kind) kk on kk.kind = w.kind_key
+        group by w.kind_key) z));
 end $function$;
 
 create or replace function public.world_region_intro(p_region text)
@@ -99,6 +104,45 @@ do $$ declare f text; begin
   end loop;
   -- 보급 함수 주인이 편지 함수를 부른다
   execute format('grant execute on function public.world_affil_letter(uuid,text) to %I', (select pg_get_userbyid(proowner) from pg_proc where oid = 'public.world_claim_faction_supply()'::regprocedure));
+end $$;
+
+-- ⑥-2 6.1.0 합동 토벌 보강(배포 전 검토)
+-- 봉연 예고(출현지·후보·시각)는 world_raid_brief가 때맞춰 공개하므로, 표 직접 읽기는 예고가 아닌 회차만
+drop policy if exists world_raids_read on public.world_raids;
+create policy world_raids_read on public.world_raids for select to authenticated using (status <> 'announced');
+
+do $$ declare d text; a text; b text; n int;
+begin
+  d := pg_get_functiondef('public.world_raid_action(uuid,text,text,uuid,text)'::regprocedure);
+  if position('토벌 보강 6.1.1' in d) = 0 then
+    -- ① 신청 뒤에도 자율 활동·이동 중이면 싸울 수 없다
+    a := 'raise exception ''원정 중에는 싸울 수 없습니다.''; end if;';
+    b := a || E'\n  -- 토벌 보강 6.1.1\n  if c.travel_destination is not null then raise exception ''이동 중에는 싸울 수 없습니다.''; end if;\n  if exists (select 1 from public.world_idle_activities where owner_id = uid and status = ''active'') then raise exception ''자율 활동 중에는 싸울 수 없습니다.''; end if;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 토벌 상태 확인(%)', n; end if;
+    d := replace(d, a, b);
+    -- ② 협동 기술 기본 기여도는 공격 한 번보다 적게(효과가 없어도 공격보다 많이 쌓이던 것)
+    a := 'credit := (st ->> ''attack'')::numeric * 1.2;';
+    b := 'credit := (st ->> ''attack'')::numeric * 0.6;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 협동 기여도(%)', n; end if;
+    d := replace(d, a, b);
+    -- ③ 회복·소생은 실제로 오른 체력만 센다
+    a := 'update public.world_characters set health = greatest(health, amt), updated_at = now() where owner_id = tgt;';
+    b := 'select health into h1 from public.world_characters where owner_id = tgt;' || E'\n        ' || a || E'\n        amt := greatest(0, amt - coalesce(h1, 0));';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 소생(%)', n; end if;
+    d := replace(d, a, b);
+    a := 'update public.world_characters set health = least(100, health + amt), updated_at = now() where owner_id = tgt and health > 0;';
+    b := 'select health into h1 from public.world_characters where owner_id = tgt;' || E'\n        ' || a || E'\n        amt := case when coalesce(h1, 0) > 0 then greatest(0, least(100, h1 + amt) - h1) else 0 end;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 회복(%)', n; end if;
+    d := replace(d, a, b);
+    a := E'      get diagnostics n_act = row_count;\n      mb.heal := mb.heal + amt * n_act; credit := credit + amt * n_act * 2;';
+    b := E'      get diagnostics n_act = row_count;\n      mb.heal := mb.heal + coalesce(acc, 0)::int; credit := credit + coalesce(acc, 0) * 2;';
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 모두 회복(%)', n; end if;
+    d := replace(d, a, b);
+    a := E'      update public.world_characters ch set health = least(100, ch.health + amt), updated_at = now()\n        from public.world_raid_members x';
+    b := E'      select sum(greatest(0, least(100, ch.health + amt) - ch.health)) into acc from public.world_characters ch join public.world_raid_members x on x.owner_id = ch.owner_id\n       where x.raid_id = p_raid and (x.out_until is null or x.out_until <= now()) and ch.health > 0;\n' || a;
+    n := (length(d) - length(replace(d, a, ''))) / length(a); if n <> 1 then raise exception '고칠 자리 없음: 모두 회복 합(%)', n; end if;
+    execute replace(d, a, b);
+  end if;
 end $$;
 
 -- ⑦ 6.1.0 숨김 풀기: 보관해 둔 6.1.0 패치노트를 되살리고, 서버 보스 예약을 다시 켠다(아무도 모이지 않은 예고 회차는 지우고 새로 잡는다)

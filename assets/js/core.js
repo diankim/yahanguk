@@ -56,7 +56,7 @@ export function throttle(fn, gap) {
 export async function act(name, args) {
   const data = await rpc(name, args);
   // 장착이 바뀌는 행동 뒤에는 다음 읽기에서 장착 목록도 다시 읽는다(장착·해제 말고도 원정 귀환은 원정 장비를, 환골탈태는 전용 장비를, 분해는 장비를 바꾼다)
-  if (/equip|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
+  if (/equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
   try { await loadCharacter(); } catch {}
   emit('changed', { name, data });
   return data;
@@ -89,7 +89,7 @@ export const JOBS = {
 };
 // 거래소에서만 사고파는 희귀 재료(6.0.0, 서버 world_market_only와 같은 목록): 직접 거래·정인 선물 불가, 기준 시세 70% 이상, 24시간 20개, 거래세 10%
 // 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
-export const RAID_ON = false;
+export const RAID_ON = true;
 export const MARKET_ONLY = new Set(['jade_shard', 'mirror_shard', 'thunder_ore', 'star_sand', 'monster_core', 'ember_crystal', 'sky_feather', 'rune_plate', 'reinforced_leather']);
 export const FACTIONS = {
   headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비에 익숙합니다. 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전.' },
