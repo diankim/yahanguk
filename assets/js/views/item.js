@@ -113,6 +113,7 @@ async function fillSources(box, id) {
 function draw(box, id, inv, prices, mode) {
   const c = store.character, it = (inv.catalog || []).find(x => x.id === id), pr = prices.get(id);
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
+  const dcMax = Math.max(0, have - (equipped ? 1 : 0));
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[id]);
   const makes = (inv.recipes || []).filter(r => r.output === id);
   const block = it && GEAR.has(it.category) ? gearBlock(it, c) : '';
@@ -150,8 +151,10 @@ function draw(box, id, inv, prices, mode) {
             : `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>`; })() : ''}
       </div>
       <div class="discard-row ${locked ? 'off' : ''}">
-        <label class="field"><span>버릴 수량</span><input type="number" min="1" max="${have}" value="1" id="dc-qty" ${locked ? 'disabled' : ''}></label>
-        <button class="btn small danger" data-do="discard" ${locked ? 'disabled' : ''}>${icon('close', 14)}<span>버리기</span></button>
+        <label class="field"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="1" id="dc-qty" ${locked || dcMax < 1 ? 'disabled' : ''}></label>
+        <button class="btn small ghost" data-do="dc-max" ${locked || dcMax < 1 ? 'disabled' : ''}>최대</button>
+        <button class="btn small danger" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>${icon('close', 14)}<span>버리기</span></button>
+        ${dcMax > 1 ? `<button class="btn small danger" data-do="discard-all" ${locked ? 'disabled' : ''}>${icon('close', 14)}<span>모두 버리기</span></button>` : ''}
       </div>
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
@@ -175,9 +178,11 @@ function draw(box, id, inv, prices, mode) {
       if (!(await ask(`${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' }))) return;
       await guard(d, () => act('world_dismantle_item', { p_item_id: id }));
     }
-    if (k === 'discard') {
-      const q = Math.floor(Number($('#dc-qty', box)?.value) || 0);
-      if (!(q >= 1 && q <= have)) return toast(`1~${have}개 사이로 정하세요.`, 'error');
+    // 버리기(제보 12): 「최대」는 칸을 채우고, 「모두 버리기」는 버릴 수 있는 만큼 한 번에(장착 중이면 하나 남김)
+    if (k === 'dc-max') { const q = $('#dc-qty', box); if (q) q.value = dcMax; return; }
+    if (k === 'discard' || k === 'discard-all') {
+      const q = k === 'discard-all' ? dcMax : Math.floor(Number($('#dc-qty', box)?.value) || 0);
+      if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
       if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
       await guard(d, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
     }

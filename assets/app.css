@@ -1015,7 +1015,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .focus-bar span { flex: 1; min-width: 0; }
 .item-info { display: grid; gap: 12px; }
 .kv.info > div { display: grid; grid-template-columns: 84px 1fr; gap: 8px; font-size: 12.5px; } .kv.info dt { color: var(--muted); } .kv.info dd { margin: 0; }
-.discard-row { display: flex; align-items: end; gap: 8px; } .discard-row .field { flex: 0 0 120px; } .discard-row.off { opacity: .55; }
+.discard-row { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; } .discard-row .field { flex: 0 0 120px; } .discard-row.off { opacity: .55; }
 .recipe .ingr .linkish { color: inherit; text-decoration: underline dotted; text-align: left; }
 /* 직접 거래 */
 .mk-body { margin-top: 12px; display: grid; gap: 10px; }

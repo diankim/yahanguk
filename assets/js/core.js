@@ -319,7 +319,9 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
     <div class="modal-body"></div></div></div>`);
   const content = typeof body === 'string' ? h(`<div>${body}</div>`) : body;
   $('.modal-body', el).append(content);
-  el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close]')) closeModal(); });
+  // 바탕에서 누르기 시작한 때만 닫는다(입력칸 글자를 끌어 고르다 바깥에서 놓으면 창이 꺼지던 것, 제보 12)
+  let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
+  el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]')) closeModal(); });
   document.addEventListener('keydown', escClose);
   el._onClose = onClose;
   document.body.append(el);
@@ -340,7 +342,8 @@ export function openLayer({ title, body, wide = false } = {}) {
     document.removeEventListener('keydown', key, true); el.remove();
     if (!$('#modal') && !$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
   };
-  el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) close(); });
+  let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
+  el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) close(); });
   document.addEventListener('keydown', key, true);
   el.close = close;
   document.body.append(el);
