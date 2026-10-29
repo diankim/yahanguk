@@ -5,7 +5,7 @@ import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendl
 import { onWhisper, openWhisperWindow } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
-import { FRAMES, frameTier } from './cosmetics.js';
+import { FRAMES, frameTier, chatFrameBadges } from './cosmetics.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -317,7 +317,7 @@ function msgRow(r, prev) {
   const initial = esc([...String(r.who || '?')][0] || '?'), face = faces.get(r.sid);
   if (!faces.has(r.sid)) wantFace(r.sid);
   const fr = face?.frame && FRAMES[face.frame] ? ` fr t-${frameTier(face.frame)}` : '';
-  const av = face ? `<i class="av face${fr}" aria-hidden="true">${emblem(r.sid, { ...face, frame: null }, 26)}</i>` : `<i class="av" aria-hidden="true">${initial}</i>`;
+  const av = face ? `<i class="av face${fr}" aria-hidden="true">${emblem(r.sid, { ...face, frame: null }, 28)}${fr ? chatFrameBadges(face.frame) : ''}</i>` : `<i class="av" aria-hidden="true">${initial}</i>`;
   const ns = nameStyle(r.color, r.sid);
   return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta">${r.gm ? `<b><button type="button" class="name-link" data-card="${esc(r.sid)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b>${cardName(r.sid, r.who)}</b>`}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
 }

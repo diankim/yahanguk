@@ -29,6 +29,47 @@ export const THEMES = [
     c: ['#000000', '#0d0d0d', '#181818', '#333333', '#f2f2f2', '#9a9a9a', '#ffffff', '#000000', '#cfcfcf'] },
   { id: 'baekja', name: '백자', desc: '흰 바탕에 먹빛만 남긴 백자', tone: 'light', r: 0, font: 'sans', bw: 1,
     c: ['#f7f7f5', '#ffffff', '#efefec', '#d6d6d1', '#191919', '#6d6d6a', '#2a2a2a', '#ffffff', '#7d7d7a'] },
+  // 7.2: 바탕 무늬(tex)·모서리 장식(frame)·머리글(head)까지 다른 테마 20가지
+  { id: 'giwa', name: '기와', desc: '먹빛 기왓골 위로 번진 황토', tone: 'dark', r: 4, font: 'serif', bw: 1, deco: { tex: 'tile', frame: 'bracket', head: 'under' },
+    c: ['#17191c', '#202328', '#292d33', '#3d434b', '#ece6d8', '#a59f92', '#c2814a', '#1a0f06', '#d9b36c'] },
+  { id: 'nokcha', name: '녹차', desc: '갓 우린 찻잎의 연두와 다기 빛', tone: 'light', r: 14, font: 'mixed', bw: 1, deco: { tex: 'brush', frame: 'round', head: 'plain' },
+    c: ['#e6ecd7', '#f3f6ea', '#dbe4c8', '#b9c79c', '#24301a', '#5f6e4c', '#5d7f2e', '#f6fbee', '#8a6a3a'] },
+  { id: 'jaun', name: '자운영', desc: '봄 논두렁의 연보랏빛 꽃밭', tone: 'light', r: 16, font: 'sans', bw: 1, deco: { tex: 'dot', frame: 'round', head: 'band' },
+    c: ['#eee7f2', '#f8f4fa', '#e4dbea', '#c9b8d4', '#2c2133', '#6c5d76', '#7d4fa0', '#fbf6ff', '#5f8a4a'] },
+  { id: 'noeul', name: '노을', desc: '해 지는 강 위의 주황과 보랏빛', tone: 'dark', r: 10, font: 'sans', bw: 1, deco: { tex: 'none', frame: 'bracket', head: 'band' },
+    c: ['#1c1420', '#26192a', '#312035', '#4a3150', '#f4e6df', '#b39aa8', '#f08a4b', '#2a1008', '#e7c063'] },
+  { id: 'seolwon', name: '설원', desc: '눈 덮인 북령 들판의 푸른 그림자', tone: 'light', r: 8, font: 'sans', bw: 1, deco: { tex: 'star', frame: 'dot', head: 'under' },
+    c: ['#e7eef4', '#f6f9fc', '#dbe5ee', '#b7c8d8', '#16222e', '#566a7d', '#2f6a9e', '#f3f9ff', '#8a5a3a'] },
+  { id: 'daesup', name: '대숲', desc: '바람 지나는 대숲의 짙은 초록', tone: 'dark', r: 3, font: 'serif', bw: 1, deco: { tex: 'bamboo', frame: 'line', head: 'plain' },
+    c: ['#0f1a14', '#16241c', '#1d2f24', '#2c4636', '#e3ece2', '#9db3a2', '#7fbf5a', '#0d1a07', '#d8c070'] },
+  { id: 'yeonji', name: '연지', desc: '연지 곤지 찍은 고운 분홍', tone: 'light', r: 18, font: 'mixed', bw: 1, deco: { tex: 'wave', frame: 'round', head: 'plain' },
+    c: ['#f6e8ea', '#fff7f8', '#f0dcdf', '#dfbcc2', '#3b1f26', '#7f5b63', '#c23b5a', '#fff2f5', '#3f7a6a'] },
+  { id: 'bichwi', name: '비취', desc: '깊은 물빛 비취 노리개', tone: 'dark', r: 12, font: 'mixed', bw: 1, deco: { tex: 'lattice', frame: 'bracket', head: 'plain' },
+    c: ['#0b1d1c', '#112927', '#163432', '#24504c', '#e2f0ec', '#93b6ae', '#3fc2a6', '#04201a', '#e0c279'] },
+  { id: 'geumbak', name: '금박', desc: '검은 비단에 찍은 금박 무늬', tone: 'dark', r: 2, font: 'serif', bw: 2, deco: { tex: 'star', frame: 'double', head: 'under' },
+    c: ['#100d08', '#1a1610', '#231e16', '#3a3122', '#f2e9d2', '#ab9f84', '#e2b549', '#1c1203', '#f0d48a'] },
+  { id: 'bada', name: '바다', desc: '밤바다 위 등대 불빛', tone: 'dark', r: 14, font: 'sans', bw: 1, deco: { tex: 'wave', frame: 'round', head: 'plain' },
+    c: ['#0c1626', '#122035', '#192a43', '#284062', '#e4edf8', '#93a6c0', '#59b5e8', '#04121f', '#f2c35c'] },
+  { id: 'danpung', name: '단풍', desc: '가을 산 단풍잎과 마른 풀빛', tone: 'light', r: 6, font: 'serif', bw: 1, deco: { tex: 'brush', frame: 'bracket', head: 'band' },
+    c: ['#f2e6d6', '#fbf4ea', '#eadac4', '#d4b894', '#33190e', '#77553e', '#b8401f', '#fff3ea', '#6b7a2a'] },
+  { id: 'cheongsa', name: '청사초롱', desc: '푸른 비단 초롱에 붉은 띠', tone: 'dark', r: 8, font: 'sans', bw: 1, deco: { tex: 'dot', frame: 'bracket', head: 'band' },
+    c: ['#101a2e', '#16233d', '#1d2c4b', '#2d416a', '#edf0f8', '#9fabc6', '#e0503e', '#ffffff', '#7fb4ff'] },
+  { id: 'angae', name: '안개', desc: '새벽 안개 낀 잿빛 마을', tone: 'light', r: 10, font: 'sans', bw: 1, deco: { tex: 'none', frame: 'none', head: 'under' },
+    c: ['#e4e5e3', '#f2f3f1', '#dadbd8', '#bfc1bd', '#22252a', '#636770', '#4c5f78', '#f4f7fb', '#8a6d3b'] },
+  { id: 'cheongdong', name: '청동', desc: '녹슨 청동 거울의 푸른 녹', tone: 'dark', r: 6, font: 'serif', bw: 1, deco: { tex: 'grain', frame: 'dot', head: 'plain' },
+    c: ['#141a15', '#1c241d', '#242e25', '#384637', '#e8e6d8', '#a3a690', '#6aa889', '#0b1a12', '#c79a52'] },
+  { id: 'jangji', name: '장지', desc: '장지문 창살에 비친 한낮', tone: 'light', r: 0, font: 'serif', bw: 1, deco: { tex: 'lattice', frame: 'line', head: 'under' },
+    c: ['#eee6d3', '#f9f4e8', '#e6dcc4', '#cbbb98', '#2b2215', '#6c5e46', '#7a4b23', '#fff8ec', '#9b3a2a'] },
+  { id: 'yasijang', name: '야시장', desc: '백등 야시장 천막 아래 주홍 등', tone: 'dark', r: 12, font: 'sans', bw: 1, deco: { tex: 'star', frame: 'bracket', head: 'band' },
+    c: ['#1a1222', '#22182c', '#2b1f37', '#423152', '#f3e9ee', '#ab9bb0', '#ff9a3d', '#2a1300', '#e8d06a'] },
+  { id: 'jusa', name: '주사', desc: '부적 쓰는 주사 빛 붉은 먹', tone: 'light', r: 4, font: 'serif', bw: 2, deco: { tex: 'hanji', frame: 'double', head: 'band' },
+    c: ['#f0e4d2', '#faf3e6', '#e8d8c0', '#d0b48e', '#2e1810', '#70533f', '#c2261b', '#fff4ec', '#2e5f8a'] },
+  { id: 'eunha', name: '은하', desc: '무극 관성대에서 올려다본 별밭', tone: 'dark', r: 16, font: 'mixed', bw: 1, deco: { tex: 'star', frame: 'round', head: 'plain' },
+    c: ['#090c1c', '#10142a', '#161b36', '#262d52', '#e7e9fb', '#9aa0c8', '#a7b4ff', '#0b1036', '#f4d57a'] },
+  { id: 'jae', name: '재', desc: '남명의 잿빛 해안과 꺼진 불씨', tone: 'dark', r: 4, font: 'sans', bw: 1, deco: { tex: 'brush', frame: 'line', head: 'under' },
+    c: ['#1b1917', '#24211e', '#2d2925', '#433d37', '#ebe5dc', '#a59c90', '#e06a3a', '#1f0d04', '#b8a27a'] },
+  { id: 'bomnal', name: '봄날', desc: '개나리 핀 담장과 새싹', tone: 'light', r: 18, font: 'sans', bw: 1, deco: { tex: 'dot', frame: 'round', head: 'band' },
+    c: ['#f3f0d8', '#fcfaec', '#ebe6c4', '#d4cb98', '#2a2a14', '#6a6942', '#c79a10', '#1d1600', '#4f8a3a'] },
 ];
 const OLD = { lantern: 'indigo', jade: 'celadon', palace: 'najeon', maple: 'ocher', moonwhite: 'moonlit', bloodmoon: 'yahang', ghostfire: 'pine', goldorchid: 'ocher', snownight: 'moonlit', paper: 'hanji' };
 const VARS = ['--bg', '--surface', '--surface-2', '--line', '--text', '--muted', '--accent', '--accent-ink', '--gold'];
@@ -64,6 +105,7 @@ export function applyTheme(id, save = true, custom) {
   root.style.setProperty('--font', FONTS[t.font]?.[0] || FONTS.sans[0]);
   root.style.setProperty('--font-head', FONTS[t.font]?.[1] || FONTS.sans[1]);
   root.dataset.theme = t.id; root.dataset.tone = t.tone; root.style.colorScheme = t.tone;
+  const d = t.deco || {}; root.dataset.tex = d.tex || 'none'; root.dataset.frame = d.frame || 'bracket'; root.dataset.head = d.head || 'plain';
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', t.c[0]);
   if (save) try { localStorage.setItem('yh-theme', t.id); if (custom) localStorage.setItem('yh-theme-custom', JSON.stringify(custom)); } catch {}
 }
@@ -78,8 +120,9 @@ export function applyFontSize(k, save = true) {
   document.documentElement.dataset.fz = f[0];
   if (save) try { localStorage.setItem('yh-fz', f[0]); } catch {}
 }
+const TEX_NAME = { none: '민무늬', tile: '기왓골', brush: '붓결', dot: '점무늬', bamboo: '대나무 결', wave: '물결', lattice: '살창', star: '별밭', grain: '나뭇결', hanji: '한지 결' };
 export function themeCard(t, on) {
   return `<button class="theme-card ${on ? 'on' : ''}" data-theme-id="${t.id}" style="--tb:${t.c[0]};--ts:${t.c[1]};--tl:${t.c[3]};--tt:${t.c[4]};--ta:${t.c[6]};--tg:${t.c[8]};--tr:${t.r}px;--tf:${t.font === 'sans' ? 'var(--font-sans)' : 'var(--font-serif)'}">
-    <span class="tc-preview"><i></i><i></i><i></i><em>가</em></span><b>${esc(t.name)}</b><small>${esc(t.desc)}</small></button>`;
+    <span class="tc-preview tex-${t.deco?.tex || 'none'}"><i></i><i></i><i></i><em>가</em></span><b>${esc(t.name)}</b><small>${esc(t.desc)}${t.deco ? ` · ${esc(TEX_NAME[t.deco.tex] || '')}` : ''}</small></button>`;
 }
 

@@ -2080,3 +2080,50 @@ b.sealed { color: var(--bad); }
 .pc-pet small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
 @media (max-width: 900px) { .hs-wrap.editing { grid-template-columns: minmax(0, 1fr); } .hs-pal { max-height: none; } }
 @media (max-width: 640px) { .hs-stage { padding: 6px; } .hs-pal-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); } .hs-petbtn { margin-left: 0; } }
+/* 7.2 테마 꾸밈: 바탕 무늬(data-tex)·모서리 장식(data-frame)·머리글(data-head). 무늬는 또렷한 선·점만 쓴다(번지는 그라데이션 없음). */
+:root { --tx: color-mix(in srgb, var(--line) 45%, transparent); }
+.tc-preview { --tx: color-mix(in srgb, var(--tl) 70%, transparent); }
+:root[data-tex="tile"] body, .tc-preview.tex-tile { background-image: radial-gradient(circle at 50% 100%, transparent 9px, var(--tx) 9px 10px, transparent 10px); background-size: 22px 11px; }
+:root[data-tex="brush"] body, .tc-preview.tex-brush { background-image: repeating-linear-gradient(-8deg, transparent 0 13px, var(--tx) 13px 14px, transparent 14px 31px); }
+:root[data-tex="dot"] body, .tc-preview.tex-dot { background-image: radial-gradient(circle, var(--tx) 1.2px, transparent 1.6px); background-size: 16px 16px; }
+:root[data-tex="bamboo"] body, .tc-preview.tex-bamboo { background-image: repeating-linear-gradient(90deg, transparent 0 26px, var(--tx) 26px 27px), repeating-linear-gradient(0deg, transparent 0 60px, var(--tx) 60px 62px); }
+:root[data-tex="wave"] body, .tc-preview.tex-wave { background-image: radial-gradient(circle at 50% 0, transparent 8px, var(--tx) 8px 9px, transparent 9px), radial-gradient(circle at 0 100%, transparent 8px, var(--tx) 8px 9px, transparent 9px); background-size: 18px 12px; }
+:root[data-tex="lattice"] body, .tc-preview.tex-lattice { background-image: repeating-linear-gradient(45deg, transparent 0 20px, var(--tx) 20px 21px), repeating-linear-gradient(-45deg, transparent 0 20px, var(--tx) 20px 21px); }
+:root[data-tex="star"] body, .tc-preview.tex-star { background-image: radial-gradient(circle, var(--tx) 1px, transparent 1.4px), radial-gradient(circle, color-mix(in srgb, var(--gold) 30%, transparent) 1px, transparent 1.5px); background-size: 37px 41px, 89px 73px; background-position: 0 0, 19px 23px; }
+:root[data-tex="grain"] body, .tc-preview.tex-grain { background-image: repeating-linear-gradient(3deg, transparent 0 9px, var(--tx) 9px 10px, transparent 10px 17px, var(--tx) 17px 17.6px); }
+:root[data-tex="hanji"] body, .tc-preview.tex-hanji { background-image: repeating-linear-gradient(23deg, transparent 0 17px, var(--tx) 17px 17.7px), repeating-linear-gradient(-61deg, transparent 0 29px, var(--tx) 29px 29.6px), repeating-linear-gradient(77deg, transparent 0 41px, var(--tx) 41px 41.6px); }
+:root[data-tex]:not([data-tex="none"]) body { background-attachment: fixed; }
+.tc-preview[class*="tex-"] { background-color: var(--ts); }
+/* 모서리 장식: bracket(꺾쇠, 기본) · dot(매듭 점) · round(둥근 모서리 선) · double(겹 꺾쇠) · line(가는 테두리만) · none */
+:root[data-frame="dot"] .frame-c i { width: 7px; height: 7px; border: 0; background: var(--gold); margin: 3px; }
+:root[data-frame="dot"] .view-head::before, :root[data-frame="dot"] .view-head::after { width: 7px; height: 7px; border: 0; background: var(--gold); }
+:root[data-frame="dot"] .view-head::before { left: 5px; top: 5px; } :root[data-frame="dot"] .view-head::after { right: 5px; bottom: 5px; }
+:root[data-frame="round"] .frame-c i:nth-child(1), :root[data-frame="round"] .view-head::before { border-top-left-radius: 14px; }
+:root[data-frame="round"] .frame-c i:nth-child(2) { border-top-right-radius: 14px; } :root[data-frame="round"] .frame-c i:nth-child(3) { border-bottom-left-radius: 14px; }
+:root[data-frame="round"] .frame-c i:nth-child(4), :root[data-frame="round"] .view-head::after { border-bottom-right-radius: 14px; }
+:root[data-frame="double"] .frame-c i { width: 18px; height: 18px; border-style: double; }
+:root[data-frame="double"] .frame-c i:nth-child(1) { border-left-width: 5px; border-top-width: 5px; } :root[data-frame="double"] .frame-c i:nth-child(2) { border-right-width: 5px; border-top-width: 5px; }
+:root[data-frame="double"] .frame-c i:nth-child(3) { border-left-width: 5px; border-bottom-width: 5px; } :root[data-frame="double"] .frame-c i:nth-child(4) { border-right-width: 5px; border-bottom-width: 5px; }
+:root[data-frame="double"] .view-head::before, :root[data-frame="double"] .view-head::after { border-style: double; width: 18px; height: 18px; }
+:root[data-frame="double"] .view-head::before { border-left-width: 5px; border-top-width: 5px; } :root[data-frame="double"] .view-head::after { border-right-width: 5px; border-bottom-width: 5px; }
+:root[data-frame="line"] .frame-c i, :root[data-frame="line"] .view-head::before, :root[data-frame="line"] .view-head::after { display: none; }
+:root[data-frame="line"] .view-head { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+:root[data-frame="none"] .frame-c i, :root[data-frame="none"] .view-head::before, :root[data-frame="none"] .view-head::after { display: none; }
+/* 머리글: band(강조색 띠) · under(밑줄) */
+:root[data-head="band"] .view-head { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border-left: 4px solid var(--accent); }
+:root[data-head="under"] .view-head h1 { display: inline-block; border-bottom: 2px solid var(--gold); padding-bottom: 2px; }
+:root[data-head="under"] .panel-head h2 { border-bottom: 1px solid color-mix(in srgb, var(--gold) 50%, transparent); padding-bottom: 2px; }
+
+/* 7.2 채팅 얼굴 테두리: 얼굴을 28px로 키우고 꾸미기 테두리 문양 배지를 모서리에 얹는다 */
+.chat-list li.msg .av.face { width: 28px; height: 28px; overflow: visible; position: relative; }
+.chat-list li.msg .av.face .emblem { width: 28px !important; height: 28px !important; }
+.chat-list li.msg .av.face.fr { --fr: var(--muted); --fr-glyph: var(--muted); --frame-bg: var(--surface); }
+.chat-list li.msg .av.face.fr.t-rare { --fr: var(--gold); --fr-glyph: var(--gold); }
+.chat-list li.msg .av.face.fr.t-legend { --fr: var(--accent); --fr-glyph: var(--gold); }
+.chat-list li.msg .av.face.fr.t-legacy { --fr: #a3243a; --fr-glyph: #e0bd66; }
+.cf-badge { position: absolute; width: 14px; height: 14px; pointer-events: none; overflow: visible; }
+.cf-badge.br { right: -6px; bottom: -6px; } .cf-badge.tl { left: -6px; top: -6px; } .cf-badge.tr { right: -6px; top: -6px; }
+.cf-badge path { fill: none; stroke: var(--fr-glyph); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cf-badge .fr-bg { fill: var(--frame-bg, var(--surface)); stroke: var(--fr); stroke-width: 1.4; }
+.chat-list li.msg.t-legacy .cf-badge path, .chat-list li.msg .av.face.fr.t-legacy .cf-badge path { fill: var(--fr-glyph); stroke: none; }
+.chat-list li.msg { grid-template-columns: 28px minmax(0, 1fr); column-gap: 11px; }
