@@ -216,9 +216,9 @@ async function dismantlePane(body) {
 }
 
 // 물품 고르기(거래소 등록·직접 거래): 분류 칩 + 이름 검색 + 가나다순 목록. 입력칸은 다시 그리지 않아 한글 조합이 깨지지 않는다.
-const GEAR_CATS = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
+const PICK_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
 const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
-const pickCat = c => !c ? 'etc' : GEAR_CATS.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
+const pickCat = c => !c ? 'etc' : PICK_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
 function pickerHtml(name, opts) {
   return `<div class="pick" data-pick="${name}"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === 'all' ? 'accent' : ''}" data-pc="${k}">${t}</button>`).join('')}</div>
     <input type="search" class="pick-q" placeholder="이름으로 찾기" aria-label="물품 찾기">
