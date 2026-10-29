@@ -150,7 +150,7 @@ function draw(box, id, inv, prices, mode) {
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
       <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>
-      ${it && GEAR.has(it.category) ? `<div><dt>장착 조건</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
+      ${it && GEAR.has(it.category) ? `<div><dt>${slotOf(it) === 'craft' ? '쓰는 조건(가방에 두면)' : '장착 조건'}</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
     </dl>
     ${uses.length ? `<h3 class="sub-h">이 물품이 들어가는 제작법 ${uses.length}</h3><ul class="spot-list">${uses.map(recipeRow).join('')}</ul>
       <button class="btn small ghost" data-mat="${esc(id)}">${icon('hammer', 14)}<span>이 재료로 만들 수 있는 것 모두 보기</span></button>` : ''}
@@ -159,7 +159,7 @@ function draw(box, id, inv, prices, mode) {
     ${mode === 'bag' && have > 0 ? `<h3 class="sub-h">다루기</h3>
       <div class="btn-row">
         ${USABLE[id] ? `<button class="btn small primary" data-do="use">${icon('heart', 14)}<span>사용</span></button>` : ''}
-        ${it && GEAR.has(it.category) && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
+        ${it && GEAR.has(it.category) && slotOf(it) !== 'craft' && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
         ${it && DISMANTLABLE.has(it.category) ? (() => { const need = dismantleNeed(it.tier), rank = c?.crafting_rank || 1;
           return rank < need ? `<span class="muted small">분해: 제작 숙련 ${need}단계부터(지금 ${rank})</span>`

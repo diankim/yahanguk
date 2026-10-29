@@ -86,7 +86,8 @@ update public.world_character_equipment e set slot = i.equipment_traits ->> 'lif
   from public.world_item_catalog i where i.item_id = e.item_id and e.slot = 'tool' and i.equipment_traits ? 'life_slot';
 
 select pg_temp.yh_patch('public.world_equip_item(text)', ' slot_name:=it.category;',
-  ' slot_name:=case when it.category = ''tool'' then coalesce(it.equipment_traits->>''life_slot'', ''tool'') else it.category end;');
+  ' slot_name:=case when it.category = ''tool'' then coalesce(it.equipment_traits->>''life_slot'', ''tool'') else it.category end;
+ if slot_name = ''craft'' then raise exception ''제작 공구는 장착하지 않습니다. 가방에 두면 그 분야를 만들 때 저절로 씁니다.''; end if;');
 select pg_temp.yh_patch('public.world_unequip_item(text)', '(''tool'', ''weapon'', ''armor'', ''hat'', ''shoes'', ''norigae'', ''amulet'', ''mask'')',
   '(''tool'', ''explore'', ''fishing'', ''weapon'', ''armor'', ''hat'', ''shoes'', ''norigae'', ''amulet'', ''mask'')');
 
