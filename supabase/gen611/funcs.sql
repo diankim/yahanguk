@@ -193,6 +193,19 @@ end $$;
 drop policy if exists world_gear_enhance_read_own on public.world_gear_enhance;
 create policy world_gear_enhance_read_own on public.world_gear_enhance for select to authenticated using (owner_id = (select auth.uid()));
 
+-- ⑥-5 옛 방 기반 시절 표·함수 지우기(2026-10-29 사용자 승인): 화면·지금 함수·예약 작업 어디서도 쓰지 않는다. 행이 있는 것은 옛 견본(items 10·locations 5·location_connections 8)뿐.
+-- profiles는 회원가입 트리거(handle_new_user)가 쓰므로 남긴다. cascade 없이 지워, 다른 것이 기대고 있으면 실패해 전체가 되돌려진다.
+drop table if exists public.action_results, public.activity_logs, public.character_inventory, public.character_secrets, public.character_states,
+  public.event_choices, public.event_participants, public.event_steps, public.scheduled_events, public.game_actions, public.message_reads, public.messages,
+  public.relationship_history, public.relationships, public.room_invites, public.room_members, public.notifications, public.world_clock,
+  public.characters, public.events, public.game_rooms, public.location_connections, public.locations, public.items;
+do $$ declare f regprocedure; begin
+  for f in select p.oid::regprocedure from pg_proc p where p.pronamespace = 'public'::regnamespace
+      and p.proname in ('chat_create_invite', 'chat_create_room', 'chat_join_invite', 'create_game_room', 'create_room_invite', 'join_room_with_invite', 'initialize_character_records') loop
+    execute format('drop function %s', f);
+  end loop;
+end $$;
+
 -- ⑦ 6.1.0 숨김 풀기: 보관해 둔 6.1.0 패치노트를 되살리고, 서버 보스 예약을 다시 켠다(아무도 모이지 않은 예고 회차는 지우고 새로 잡는다)
 do $$ begin
   if to_regclass('yh_deploy.hold_patch_note') is not null then
