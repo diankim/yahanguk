@@ -358,7 +358,7 @@
 - 잠김(world_raid_lock_effect, world_status_effect_total에 더함, 다음 회차까지): 출현 지역 침식 +30·조우 +10·채집량 −25·받는 피해 +10, 이웃(world_region_neighbors: travel_from 양방향) 침식 +30·조우 +10, 이웃의 이웃 침식 +10·조우 +5.
 - 협동 기술(world_coop_skills 24개, 직업마다 4개, 전투 숙련 3·8·18·36): 합동 토벌에서만 그 턴의 행동으로 고른다(영력·다시 쓰기). 파티 원정 합동 전투는 world_coop_exp_procs가 열린 기술마다 10%, 한 싸움 두 번까지(world_expedition_settle의 win_p 뒤). 화면: 캐릭터 › 기술 아래 「협동 기술」(world_coop_list).
 - 칭호 13개(분류 '토벌', 규칙 'raid' → world_raid_rule_count, world_title_award_check는 이벤트 'raid'일 때만 셈).
-- 배포할 때 큰 DO 블록은 `lock table public.world_characters in share row exclusive mode;`로 시작한다(pg_cron·접속자와 교착 방지).
+- 배포할 때 큰 DO 블록은 `lock table public.world_characters in access exclusive mode;`로 시작한다(pg_cron·접속자와 교착 방지 — share row exclusive는 파일 안에서 더 센 잠금으로 올라가다 교착이 났다).
 
 ## 11. 세력과 거점
 
@@ -575,7 +575,7 @@
 - 접속 속도: index.html이 서버·esm.sh에 미리 연결하고 게임 모듈을 modulepreload로 한꺼번에 받는다(새 JS 파일을 만들면 이 목록에 더한다). 점검 확인 두 개는 동시에 보내고, 로그인 이벤트가 두 번 와도 게임 화면은 한 번만 꾸린다(app.js route). 캐릭터와 묶음 크기는 함께 읽고, 지역·물품 이름 사전은 기기(yh-names-v1)에 남겨 다음 접속부터는 기다리지 않고 바로 그린다.
 - 행동 뒤 다시 읽기(서버 부담, 2026-10-28 접속자 10명에 1시간 2만 건으로 무료 플랜이 느려지고 500·503이 남): 행동(act)은 캐릭터를 한 번 읽고 changed를 보낸다. 전투 중 끝나지 않은 턴(core.js midBattle)에는 다른 화면이 다시 읽지 않는다. 상태판은 캐릭터를 다시 읽지 않고 요약만, 자율 상태는 자율 행동 뒤에만 읽는다. 칭호 점은 20초·알림은 15초에 한 번까지(throttle). 전투 능력치 화면(world_combat_profile)은 능력치 미리보기(plus_one, world_combat_stats 7번)를 p_preview=true일 때만 계산한다 — 성장 탭에서 쓸 포인트가 있을 때만 넘기고 나머지 화면은 1번(5.0.0, 98ms→약 20ms). 현장의 낚시터·휴식·자율 상태는 1분 동안 다시 쓰고 관련 행동 뒤에만 새로 읽는다. 새 화면·기능을 넣을 때도 changed마다 여러 요청을 보내지 않게 한다.
 - 「접속 중」 화면은 8초가 지나면 응답이 늦다는 안내, 25초가 지나면 서버가 바쁘다는 안내와 「다시 시도」 단추를 보이고, 게임 파일을 받지 못하면 그 까닭을 띄운다(boot.js). 무료 서버(Nano)는 디스크 I/O 예산이 바닥나면 요청마다 수십 초가 걸린다(2026-10-28 새벽 확인).
-- 실시간(supabase_realtime) 감시 목록에는 화면이 구독하는 표만 둔다(지금 world_active_sessions·world_chat_messages·world_circle_messages·world_notifications, 20261028180000). 자주 고쳐지는 표(world_characters·world_events)를 넣으면 아무도 구독하지 않아도 변경 기록 처리로 DB가 바빠진다. 새로 구독하는 표가 생기면 그때 더한다.
+- 실시간(supabase_realtime) 감시 목록에는 화면이 구독하는 표만 둔다(지금 world_active_sessions·world_chat_messages·world_circle_messages·world_notifications·world_raids·world_party_messages, 20261028180000·6.1.0 — 파티 말은 chat.js subscribeParty가 받아 파티 탭 빨간 점·닫힌 시트 안 읽은 수). 자주 고쳐지는 표(world_characters·world_events)를 넣으면 아무도 구독하지 않아도 변경 기록 처리로 DB가 바빠진다. 새로 구독하는 표가 생기면 그때 더한다.
 - 디스크 I/O 방침(2026-10-28 결정): ① 행동 한 번의 쓰기를 늘리지 않는다 — 탐색 1번에 캐릭터 행(약 2.4KB) 갱신 9~10번·변경 기록 약 20KB(world_events 트리거 13개가 각자 캐릭터를 고침)가 지금 기준이고, 새 트리거·함수는 캐릭터 행을 따로 또 고치지 말고 기존 갱신에 합친다. ② 행동 뒤 화면이 다시 읽는 요청은 캐릭터·상태판·현재 화면 정도로 둔다(여기 있는 이들·동료는 자리·파티가 바뀔 때만, 첫 걸음 진행은 15초에 한 번, views/common.js ROSTER_CHANGERS). ③ DB 변경은 작은 SQL을 여러 번 돌리지 말고 한 파일로 모아 한 번에 실행한다(실행할 때마다 API 서버가 스키마를 다시 읽는다). ④ 기록 정리: pg_cron yh-housekeeping이 매일 04:13(KST)에 world_housekeeping()으로 읽은 알림 14일·채팅·귓속말·모임·파티 채팅 3일·경제 장부 60일·지난 비경 1일 지난 것을 지운다(20261028190000, 대화 3일은 20261028220000). 확인한 알림은 알림 창 「지난 알림」에서 다시 본다. world_events는 칭호 진행·첫 걸음이 처음부터 세므로 지우지 않는다. ⑤ 일주일에 한 번 대시보드 Reports의 Disk IO와 pg_stat_statements의 wal_bytes 상위를 본다.
 - 부른 쪽 권한으로 도는 도우미(security invoker: world_bag_room·world_bag_count·world_item_stack·world_inv_count 등)를 security definer 함수에서 새로 부르면, 그 함수 주인 역할(fn_owner_*)에 도우미 안쪽 함수까지 실행 권한이 있어야 한다(20261029055000, 4.0.0 제작 권한 오류). 되돌리는 시험은 postgres로 돌아 이런 권한 문제를 못 잡으므로, `set local role fn_owner_…`로 그 역할로도 한 번 불러 본다.
 - 새 함수를 만들면 이 프로젝트의 기본 권한이 anon·authenticated에도 실행 권한을 주므로, 공개할 함수가 아니면 revoke all ... from public, anon, authenticated를 함께 쓴다.

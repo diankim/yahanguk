@@ -328,6 +328,8 @@ begin
   if rd.status = 'fight' then
     -- 도중 합류: 남은 시간 비율만큼(최소 4분의 1) 요괴 체력을 늘린다. 늦게 온 만큼 기여도는 덜 쌓인다
     hp_add := round(coalesce((public.world_raid_stats(uid) ->> 'attack')::numeric, 0) * 110 * greatest(0.25, least(1, extract(epoch from rd.ends_at - now()) / 7200)));
+    -- 아무도 없이 시작한 토벌(기본 체력)이면 첫 합류는 그 기본 몫을 넘는 만큼만 더한다
+    if not exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id <> uid) then hp_add := greatest(0, hp_add - rd.max_hp); end if;
     update public.world_raids set hp = hp + hp_add, max_hp = max_hp + hp_add, updated_at = now() where raid_id = p_raid;
     perform public.world_raid_say(p_raid, 'join', c.character_name || '(Lv' || c.level || ') — 토벌에 뛰어들었습니다. 그림자의 체력 +' || hp_add || '.');
   else
@@ -795,7 +797,7 @@ begin
     if rd.status = 'signup' and rd.signup_until <= now() then why := '신청 시간이 지났습니다.';
     elsif rd.status = 'fight' and rd.ends_at <= now() then why := '토벌이 끝났습니다.';
     elsif c.health <= 0 or c.downed_at is not null then why := '전투불능 상태에서는 합류할 수 없습니다.';
-    elsif here is distinct from rd.region_id then why := (select region_name from public.world_map_regions where region_id = rd.region_id) || '에 있어야 신청할 수 있습니다.';
+    elsif here is distinct from rd.region_id then why := (select region_name from public.world_map_regions where region_id = rd.region_id) || case when rd.status = 'fight' then '에 가면 토벌에 합류할 수 있습니다.' else '에 있어야 신청할 수 있습니다.' end;
     elsif rd.kind = 'final' and not exists (select 1 from public.world_party_members a join public.world_party_members b on b.party_id = a.party_id where a.owner_id = uid and b.owner_id = rd.leader_id) then why := '시작한 조사원의 파티원만 합류할 수 있습니다.';
     else can_join := true; end if;
   end if;
@@ -1019,5 +1021,15 @@ insert into public.world_patch_notes(note_id, title, body, created_at) values
 
 ### 칭호
 - 분류 「토벌」 칭호 **13가지**가 생겼습니다. 참가·승리 횟수, 최다 기여, 치료·협동, 결전 등으로 얻고, 일부는 숨겨져 있습니다.
+
+### 고친 것
+- 파티 채팅에 새 말이 와도 아무 표시가 없던 문제를 고쳤습니다(제보 감사합니다). 이제 다른 탭을 보고 있으면 「파티」 탭에 빨간 점과 알림음이, 모바일에서 채팅을 닫아 두었으면 채팅 단추에 안 읽은 수가 뜹니다.
 $PN$, now())
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
+
+-- 파티 채팅 알림(제보 8): 파티 말을 실시간으로 받아 탭에 표시한다. 읽기는 기존 RLS(world_party_messages_member_read, 그 파티원만)가 막는다
+do $$ begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'world_party_messages') then
+    alter publication supabase_realtime add table public.world_party_messages;
+  end if;
+end $$;

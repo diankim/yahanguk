@@ -66,6 +66,7 @@ export function mountChat(colEl, fabEl) {
   loadBlocks();
   on('changed', ({ name }) => { if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
   subscribeCircles();
+  subscribeParty();
   window.addEventListener('yahang:arrived', load);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNew(); });
   setInterval(() => {
@@ -95,7 +96,7 @@ function renderTabs() {
   if (!t.some(x => x[0] === tab)) tab = 'global';
   box.style.setProperty('--n', t.length);
   box.innerHTML = t.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${l}</button>`).join('');
-  paintCircleDots();
+  paintCircleDots(); paintPartyDot();
 }
 
 function switchTab(t) {
@@ -104,7 +105,7 @@ function switchTab(t) {
   $('#chat-hint', panel).textContent = HINT[t];
   $('#chat-circles', panel).hidden = t !== 'circle';
   clearInterval(partyPoll);
-  if (t === 'party') { loadParty(); partyPoll = setInterval(() => { if (!document.hidden) loadParty(); }, 20000); }
+  if (t === 'party') { partyNew = false; paintPartyDot(); loadParty(); partyPoll = setInterval(() => { if (!document.hidden) loadParty(); }, 20000); }
   else if (t === 'circle') { drawCircleChips(); loadCircleMsgs(); }
   else load();
 }
@@ -160,6 +161,25 @@ function onCircleMsg(m) {
   const sheetClosed = !matchMedia('(min-width: 1280px)').matches && !document.body.classList.contains('chat-open');
   if (sheetClosed && m.kind === 'chat' && m.sender_id !== store.user?.id) { unread++; badge(); }
 }
+// 파티 채팅: 새 말이 오면(파티원만 읽는 RLS) 파티 탭에 빨간 점, 닫힌 시트에는 안 읽은 수를 더한다
+let partyChannel = null, partyNew = false;
+function subscribeParty() {
+  try {
+    if (partyChannel) db.removeChannel(partyChannel);
+    const ch = db.channel('yh-party-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_party_messages' }, p => onPartyMsg(p.new));
+    partyChannel = ch;
+    ch.subscribe(status => { if (partyChannel === ch && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) setTimeout(() => { if (partyChannel === ch) subscribeParty(); }, 15000); });
+  } catch {}
+}
+function onPartyMsg(m) {
+  if (!m || blocked.has(m.sender_id) || m.sender_id === store.user?.id) return;
+  if (tab === 'party') loadParty();
+  else { partyNew = true; paintPartyDot(); }
+  const sheetClosed = !matchMedia('(min-width: 1280px)').matches && !document.body.classList.contains('chat-open');
+  if (sheetClosed || tab !== 'party') window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'chime' }));
+  if (sheetClosed) { unread++; badge(); }
+}
+function paintPartyDot() { $('.chat-tabs [data-tab="party"]', panel)?.classList.toggle('has-dot', partyNew && tab !== 'party'); }
 function subscribeCircles() {
   try {
     if (circleChannel) db.removeChannel(circleChannel);
