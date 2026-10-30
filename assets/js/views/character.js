@@ -216,8 +216,8 @@ const allocSum = a => Object.values(a || {}).reduce((x, y) => x + (Number(y) || 
 function loadAlloc(c) { try { const a = JSON.parse(sessionStorage.getItem(allocKey(c)) || '{}'); return a && typeof a === 'object' ? a : {}; } catch { return {}; } }
 function saveAlloc(c, a) { try { allocSum(a) ? sessionStorage.setItem(allocKey(c), JSON.stringify(a)) : sessionStorage.removeItem(allocKey(c)); } catch { /* 저장 못 해도 화면은 그대로 */ } }
 async function growth(body) {
-  // 능력치를 올렸을 때 바뀔 값(plus_one)은 서버가 7번 계산하므로 쓸 포인트가 있을 때만 받는다
-  const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', Number(store.character?.stat_points || 0) > 0 ? { p_preview: true } : undefined, { maxAge: 60000 }).catch(() => null)]);
+  // 능력치마다 +1 미리보기(서버가 전투 계산을 7번 하던 것)는 받지 않는다. + / − 를 누르면 쌓아 둔 분배 전체를 잠시 뒤 한 번만 미리 본다(world_combat_preview)
+  const [inv, prof] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 5000 }), load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null)]);
   const c = store.character, pts = Number(c.stat_points || 0), cur = prof?.current;
   // 남은 포인트·상한을 넘는 몫은 버린다(다른 기기에서 썼거나 세심단을 쓴 뒤)
   let pend = {}, room = pts;
@@ -228,7 +228,7 @@ async function growth(body) {
     <div class="grid-2">
       ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent" id="al-left">${pts - allocSum(pend)}</b> / ${pts} · + / − 로 나눈 뒤 「확정」을 눌러야 반영됩니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
         <ul class="stat-list">${STATS.map(([k, n, d]) => `<li><div><b>${n} <span class="stat-val">${fmt.num(c[k])}</span><em class="al-add" data-add="${k}">${pend[k] ? ` +${pend[k]}` : ''}</em> <small class="muted">/ ${statCap(c.level, k, c.job_key)}</small></b><small>${d}</small>
-            <small class="preview">${previewText(cur, prof?.plus_one?.[k])}</small></div>
+</div>
           <span class="al-btns"><button class="icon-btn" data-dec="${k}" aria-label="${n} 내리기">${icon('minus', 16)}</button><button class="icon-btn" data-stat="${k}" aria-label="${n} 올리기">${icon('plus', 16)}</button></span></li>`).join('')}</ul>
         <div class="al-foot"><p class="preview" id="al-prev"></p>
           <div class="row-actions"><button class="btn ghost" id="al-reset">되돌리기</button><button class="btn" id="al-preview">미리 보기</button><button class="btn primary" id="al-ok">${icon('check', 16)}<span>확정</span></button></div></div>`, { ico: 'spark' })}
@@ -262,13 +262,25 @@ async function growth(body) {
     if (!any) $('#al-prev', body).innerHTML = '';
     saveAlloc(c, pend);
   };
-  $$('[data-stat]', body).forEach(b => b.onclick = () => { const k = b.dataset.stat; pend[k] = (pend[k] || 0) + 1; $('#al-prev', body).innerHTML = ''; sync(); });
-  $$('[data-dec]', body).forEach(b => b.onclick = () => { const k = b.dataset.dec; if (pend[k] > 0) pend[k]--; if (!pend[k]) delete pend[k]; $('#al-prev', body).innerHTML = ''; sync(); });
-  $('#al-reset', body).onclick = () => { pend = {}; sync(); };
+  // + / − 를 멈추고 0.6초 뒤 한 번만 미리 본다(누를 때마다 묻지 않음). 늦게 온 답이 더 나중 분배를 덮지 않게 순번을 본다
+  let pvTimer = null, pvSeq = 0;
+  const autoPreview = () => {
+    clearTimeout(pvTimer); $('#al-prev', body).innerHTML = allocSum(pend) ? '<span class="muted">미리 보는 중…</span>' : '';
+    if (!allocSum(pend)) return;
+    const seq = ++pvSeq, snapAlloc = { ...pend };
+    pvTimer = setTimeout(async () => {
+      try { const r = await rpc('world_combat_preview', { p_alloc: snapAlloc }); if (seq === pvSeq && body.isConnected) $('#al-prev', body).innerHTML = previewText(r?.current, r?.after); }
+      catch (e) { if (seq === pvSeq && body.isConnected) $('#al-prev', body).innerHTML = `<span class="bad">${esc(e.message || '미리 보지 못했습니다.')}</span>`; }
+    }, 600);
+  };
+  $$('[data-stat]', body).forEach(b => b.onclick = () => { const k = b.dataset.stat; pend[k] = (pend[k] || 0) + 1; sync(); autoPreview(); });
+  $$('[data-dec]', body).forEach(b => b.onclick = () => { const k = b.dataset.dec; if (pend[k] > 0) pend[k]--; if (!pend[k]) delete pend[k]; sync(); autoPreview(); });
+  $('#al-reset', body).onclick = () => { pend = {}; sync(); autoPreview(); };
   const pv = $('#al-preview', body);
   pv.onclick = () => guard(pv, async () => {
+    clearTimeout(pvTimer); const seq = ++pvSeq;
     const r = await rpc('world_combat_preview', { p_alloc: pend });
-    $('#al-prev', body).innerHTML = previewText(r?.current, r?.after);
+    if (seq === pvSeq) $('#al-prev', body).innerHTML = previewText(r?.current, r?.after);
   });
   const ok = $('#al-ok', body);
   ok.onclick = async () => {
