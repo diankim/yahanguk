@@ -184,7 +184,19 @@ function renderAuth(mode = 'login', notice = '') {
 }
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
+// 다시 연 뒤(롤백 뒤) 처음 캐릭터를 만들 때 한 번 「아침」 컷씬을 보인다(계정마다, 이 기기에 남김)
+const REOPEN_AT = Date.parse('2026-11-02T00:00:00+09:00');
 function renderCreate() {
+  const mk = `yh-morning:${store.user?.id || ''}`;
+  let seen = true; try { seen = !!localStorage.getItem(mk); } catch {}
+  if (!seen && Date.now() >= REOPEN_AT) {
+    try { localStorage.setItem(mk, '1'); } catch {}
+    import('./cutscene.js').then(m => m.playCutscene('morning', { onEnd: () => renderCreate() })).catch(() => renderCreate());
+    return;
+  }
+  renderCreateForm();
+}
+function renderCreateForm() {
   document.title = '야행국 · 캐릭터 생성';
   // 쓰던 이름·고른 직업·소속을 이 기기에 잠시 남겨, 다른 앱에 다녀오거나 화면이 다시 그려져도 되살린다(입국하면 지운다).
   const draftKey = `yh-create-draft:${store.user?.id || ''}`;

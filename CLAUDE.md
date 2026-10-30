@@ -578,6 +578,7 @@
 - PC 화면을 단순히 축소하는 방식은 피한다.
 
 ### 공통 편의 기능
+- 롤백 연출(20261103120000·cutscene.js): pg_cron yh-rollback-close가 월 11/2 00:00 KST에 world_rollback_close(마지막 토벌을 실패로 마무리·봉연 소식·anon·authenticated의 public 스키마 사용 거둠 = maintenance/start.sql, 끝나면 예약 삭제)로 게임을 닫는다. 점검 페이지(maintenance.js)는 maintenance.json scene 'rollback'이면 「첫째 밤의 끝」 컷씬을 창마다 한 번(sessionStorage yh-cs-rollback) 틀고 「다시 보기」 단추를 둔다. 다시 연 뒤 캐릭터 만들기 화면(app.js renderCreate)은 계정마다 한 번(기기 yh-morning:<uid>) 「아침」 컷씬을 먼저 보인다(REOPEN_AT 이후만). 롤백 뒤에는 maintenance.json의 scene을 지운다. 1장 첫 장면 대사 덧붙임은 supabase/pending/rollback_intro.sql.
 - 초대권(20261103090000, world_invites, 함수로만 읽음): 정원 60 = 계정 + 초대권. pg_cron yh-invite-day가 10/31 00:00 KST에 world_invite_distribute를 한 번 돌려(끝나면 예약 삭제) 60 − 계정 수만큼 만들고 계정마다 한 장씩 고정 서신(정청)·알림, 남은 것은 비축분, world_app_meta invite_required를 켠다. 그 뒤 가입은 world_hook_before_user_created가 초대권(user_metadata.invite)을 확인하고 trg on_auth_user_invite(world_invite_on_user)가 계정을 만들 때 쓴 것으로 남긴다(같은 번호 동시 가입은 하나만). 쓸 수 있는 때는 world_app_meta invite_open_at(롤백을 마친 때에 넣음)부터 7일, 그 전에는 가입 불가. 내 초대권 world_invite_mine(계정 화면·캐릭터 만들기 화면, account.js fillInvites), 운영진 world_invite_admin(비축분 보기·정원 안에서 더 만들기). 회원가입 화면에 초대권 번호 칸.
 - 로그인 페이지와 실제 게임 화면을 분리한다.
 - 로그아웃은 게임 설정 페이지 위 단추·설정 › 계정·프로필 창에 있다(확인 팝업). 서버 응답이 막혀도 3초 안에 이 기기의 로그인을 지우고 로그인 화면으로 간다.

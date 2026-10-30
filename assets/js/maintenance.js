@@ -2,6 +2,7 @@
 // 안내 문구·예상 종료·작업 목록은 maintenance.json(message·until·notes)에서 읽는다.
 import { applySavedTheme } from './theme.js';
 import { serverState } from './config.js';
+import { playCutscene } from './cutscene.js';
 
 applySavedTheme();
 const EVERY = 30000;
@@ -13,8 +14,23 @@ const clock = d => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-d
 let nextAt = 0, busy = false;
 const LOADED = Date.now();
 
+// 롤백 점검(maintenance.json scene 'rollback'): 처음 한 번 「첫째 밤의 끝」 컷씬을 보이고, 안내 칸에 다시 보기 단추를 둔다
+let played = false;
+function rollbackScene(info) {
+  if (info.scene !== 'rollback' || played) return;
+  played = true;
+  if (!document.querySelector('[data-cs-again]')) {
+    const b = Object.assign(document.createElement('button'), { className: 'btn block', textContent: '첫째 밤의 끝 다시 보기' });
+    b.dataset.csAgain = ''; b.onclick = () => playCutscene('rollback');
+    q('.mt-actions')?.append(b);
+  }
+  // 점검 페이지는 5분마다 새로 읽으므로 이 창에서 한 번 본 뒤에는 저절로 다시 틀지 않는다
+  let seen = false; try { seen = !!sessionStorage.getItem('yh-cs-rollback'); sessionStorage.setItem('yh-cs-rollback', '1'); } catch {}
+  if (!seen) playCutscene('rollback');
+}
 function show(s) {
   const info = s.info || {};
+  if (s.state === 'maintenance') rollbackScene(info);
   const off = s.state === 'offline';
   state?.classList.toggle('offline', off);
   state?.classList.toggle('open', s.state === 'open');
