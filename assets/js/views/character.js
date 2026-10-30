@@ -75,7 +75,7 @@ async function draw(soft) {
 
 /* ── 상태 ─────────────────────────────────────────────── */
 const USE = [['tonic', '체력 35 · 마음 진정'], ['herbal_extract', '체력 22 · 출혈·화상·근맥 치료'], ['herb', '체력 12 · 중독·소화 불량 치료'],
-  ['medicine_base', '정신 12 · 기력 저하·한기·탈진 치료'], ['ward_talisman', '정신 8 · 침식 완화 · 사념·동요·중독 치료'], ['travel_ration', '탐색력 +5']];
+  ['medicine_base', '정신 12 · 기력 저하·한기·탈진 치료'], ['ward_talisman', '정신 8 · 침식 완화 · 사념·동요·중독 치료'], ['travel_ration', '탐색력 +2']];
 export function combatRows(cur) {
   if (!cur) return '';
   const rows = [
