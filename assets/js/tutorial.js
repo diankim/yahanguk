@@ -200,7 +200,7 @@ document.addEventListener('click', e => {
 on('changed', ({ name, data }) => {
   if (!store.character) return;
   if (/world_claim_faction_supply/.test(name)) mark('supply');
-  if (name === 'world_field_search') { mark('search'); if (data?.outcome === 'clue') mark('clue'); }
+  if (name === 'world_field_search' || name === 'world_field_search_quiet') { mark('search'); if (data?.outcome === 'clue') mark('clue'); }
   if (name === 'world_field_gather') mark('gather');
   if (name === 'world_battle_action' && data?.ended === 'victory') mark('victory');
 });

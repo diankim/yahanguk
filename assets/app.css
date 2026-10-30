@@ -2152,3 +2152,9 @@ b.sealed { color: var(--bad); }
 /* 패치노트 맨 위 공지(note_id 0.0.0) */
 .patch.notice-pin { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .patch.notice-pin > summary b::before { content: '공지'; display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--r-sm); background: var(--accent); color: var(--accent-ink); font-size: calc(11.5px * var(--fz, 1)); vertical-align: 1px; }
+
+/* 7.2.7 조용히 살피기·기척 숨기기 */
+.quiet-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; font-size: calc(13px * var(--fz, 1)); cursor: pointer; }
+.quiet-toggle input { width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
+.sneak-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0; }
+.sneak-ask > span:first-of-type { flex: 1 1 220px; }

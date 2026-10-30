@@ -232,6 +232,7 @@ function field(s, roster, blocked) {
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
         </div>
+        <label class="quiet-toggle"><input type="checkbox" id="quiet-mode" ${quietOn() ? 'checked' : ''}><span><b>조용히 살피기</b> <small class="muted">요괴 조우 −${quietPct()}% · 꾸러미 −${Math.floor(quietPct() / 2)}% (민첩·감각, 최대 50%)</small></span></label>
         ${(s.gear_warn || []).length ? `<p class="hint warn gear-warn">${icon('wrench', 14)} <span><b>닳은 장비</b> · ${s.gear_warn.map(g => `${esc(g.name)}(${g.dur > 0 ? `${g.dur}/${g.max}` : '부서짐'})`).join(', ')} — 부서진 장비는 효과가 없고, 4분의 1 아래면 성능이 20% 떨어집니다. 안전지대 대장간이나 수리 도구로 고치세요.</span></p>` : ''}
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
         ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
@@ -337,6 +338,7 @@ function people(roster, corpses) {
 function bind(s) {
   $('#pt-exp', el)?.addEventListener('click', () => openExpeditionWindow());
   $('#search', el)?.addEventListener('click', e => doSearch(e.currentTarget));
+  $('#quiet-mode', el)?.addEventListener('change', e => { try { localStorage.setItem(QUIET_KEY, e.target.checked ? '1' : '0'); } catch {} });
   $$('[data-move]', el).forEach(b => b.onclick = () => guard(b, () => act('world_field_move', { p_node_id: b.dataset.move }), { success: '' }));
   $$('[data-gather]', el).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }));
   $$('[data-rescue]', el).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
@@ -352,6 +354,10 @@ function bind(s) {
   $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
 }
 
+// 조용히 살피기(7.2.7): 켜면 world_field_search_quiet로 탐색한다. 줄어드는 몫은 서버와 같은 식((민첩+감각)×0.8%, 최대 50%)
+const QUIET_KEY = 'yh-quiet-search';
+const quietOn = () => { try { return localStorage.getItem(QUIET_KEY) === '1'; } catch { return false; } };
+const quietPct = () => { const c = store.character || {}; return Math.min(50, Math.floor(((Number(c.agility) || 0) + (Number(c.perception) || 0)) * 0.8)); };
 async function doSearch(btn) {
   if (btn.dataset.busy === '1') return;
   // 체력이 낮으면 요괴를 만났을 때 쓰러지기 쉽다: 한 번 묻는다
@@ -360,7 +366,7 @@ async function doSearch(btn) {
   btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('searching');
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'search' }));
   try {
-    const r = await act('world_field_search');
+    const r = await act(quietOn() ? 'world_field_search_quiet' : 'world_field_search');
     const o = OUTCOME[r.outcome] || OUTCOME.quiet;
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.outcome === 'encounter' ? 'encounter' : r.outcome === 'hazard' ? 'hurt' : ['path', 'spot', 'clue', 'cache', 'regional'].includes(r.outcome) ? 'find' : 'tick' }));
     if (r.outcome === 'encounter') toast(r.content, 'warn');

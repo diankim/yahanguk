@@ -130,7 +130,9 @@
 - 반복 탐사에도 다양한 결과와 상황이 나타나도록 한다.
 - 탐사 결과는 서버에서 검증하고 저장한다.
 
-채집과 지점 조사에는 재사용 대기시간을 적용해 반복 입력을 통한 과도한 수확을 막는다. 이미 논의된 기본안은 90초이지만, 실제 적용 상태와 최종 설정은 현재 DB 및 게임 로직을 확인한 뒤 확정한다.
+채집과 지점 조사에는 재사용 대기시간을 적용해 반복 입력을 통한 과도한 수확을 막는다.
+
+탐색·채집 건의 반영(7.2.7): 빈손(outcome quiet, 기척이 사라진 조우 포함)은 탐색력 1을 돌려준다(world_stamina_change +1, 그때만 캐릭터 행 갱신 한 번 더). 꾸러미는 2~3개·지역 특산물 50%+깊이×8%·전 3~(8+위험도×3), 대세력 조사원은 25%로 길에서 만난 이와 나눠(개수 −1·전 절반) payload.infl 1.5를 남기고 world_influence_tick이 탐색 0.3에 더한다. 조용히 살피기는 world_field_search_quiet(yh.quiet를 켜고 부른 뒤 끔): 조우 무게 ×(1−q)·꾸러미 ×(1−q/2), q = min(0.5, (민첩+감각)×0.008), 기록 payload.quiet_mode, 화면 home.js quietOn(기기 yh-quiet-search). 기척 숨기기는 world_battle_action('sneak'): 마주친 직후(turn_count 0) 한 번, world_sneak_pct = 25+민첩×0.8+감각×0.5(+조사원 10)−(요괴Lv−내Lv)×3−우두머리 15, 10~75%, 성공은 fled(battle_fled.sneak), 실패는 그 턴에 요괴가 친다, 탐색력은 돌려주지 않음, 전투 화면 battle.js sneak-ask(world_field_battle_view.sneak). 채집은 한국 시각 하루 처음 10번 탐색력 무료(gather payload.free_day, 응답 free_left) — 채집터마다 하루 제한으로 바꾸지 않은 까닭은 찾아 둔 채집터가 수십~수백 곳이라 재료가 넘치기 때문. 이미 논의된 기본안은 90초이지만, 실제 적용 상태와 최종 설정은 현재 DB 및 게임 로직을 확인한 뒤 확정한다.
 
 ## 4. 이동과 탈것
 
@@ -331,7 +333,7 @@
 ### 꼬마 동무(7.2.0)
 
 - 30종(world_pet_species: grade·kind·likes·how·egg), 내 동무 world_pets(affinity 0~300, 100이면 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3번까지 친밀도), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩, +1), 출처 world_pet_sources(quest:<퀘스트>·title:<칭호>·gw_first).
-- 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색(world_event_char_apply의 희귀 전리품 길: 탐색 한 번에 0.5%·0.06%)으로 가방에 온다. world_pet_adopt(바구니·알 열기, 알은 아직 없는 그 등급 egg 종), 조건 보상은 world_pet_grant로 바로 도감에(이미 있으면 pet_food 3을 개인 창고로).
+- 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때, 7.2.7부터)마다 world_event_char_apply의 희귀 전리품 길로 0.5%·0.06% 가방에 온다. world_pet_adopt(바구니·알 열기, 알은 아직 없는 그 등급 egg 종), 조건 보상은 world_pet_grant로 바로 도감에(이미 있으면 pet_food 3을 개인 창고로).
 - 별채에 한 마리(world_pet_place), 데리고 다니기(world_pet_walk → 조사원 카드 pet), 별명 8자(world_pet_nickname), 놀기 world_pet_act(pat·play·feed, 먹이 pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음. 칭호·꾸미기 규칙 'home'(world_home_rule_count: open·size·visits·guest·furn·pets·adult·pet_grade, 칭호 12개 분류 '별채', 꾸미기 fr_home·pt_home·sl_dong).
 - 동무 그림 원본은 tools/pet_art/(art*.py → gen.py가 테두리를 둘러 pets.js를 만든다).
 

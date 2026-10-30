@@ -95,6 +95,8 @@ function draw(fresh = []) {
         <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${ef ? chip(ef[0], ef[1]) : ''}${(data.gear_warn || []).filter(g => g.slot === 'weapon' || g.slot === 'armor').map(g => chip(`${g.slot === 'weapon' ? '무기' : '방어구'} ${g.dur > 0 ? '닳음' : '부서짐'}`, 'bad')).join('')}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : (w.type || 'melee') === 'melee' ? ' <small class="muted">근접 공격은 기력 2를 씁니다</small>' : ''}</p>
         <div class="float-layer" id="me-float"></div>
       </div>
+      ${b.sneak != null ? `<div class="hint accent sneak-ask" id="sneak-ask">${icon('eye', 16)}<span><b>기척을 숨기겠습니까?</b> 성공 ${b.sneak}% · 실패하면 요괴가 먼저 덤벼듭니다. 탐색력은 돌아오지 않습니다.</span>
+        <span class="btn-row"><button class="btn small primary" data-sneak>기척 숨기기</button><button class="btn small" data-sneak-no>맞서기</button></span></div>` : ''}
       <div class="actions" id="actions">
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
         <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
@@ -114,6 +116,9 @@ function draw(fresh = []) {
     send(a);
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
+  // 기척 숨기기(7.2.7): 마주친 직후 한 번만. 맞서기를 고르면 묻는 칸만 닫는다(첫 행동을 하면 서버도 더는 받지 않는다)
+  $('[data-sneak]', host)?.addEventListener('click', () => send('sneak'));
+  $('[data-sneak-no]', host)?.addEventListener('click', () => { $('#sneak-ask', host)?.remove(); });
   clearInterval(cdTimer); cdTimer = setInterval(tickCooldown, 50); tickCooldown();
 }
 
@@ -148,7 +153,7 @@ async function send(action, item) {
     if (r.ended) {
       data.battle = null;
       refreshCharacter().then(() => emit('changed', { name: 'world_battle_action', data: r }));
-      setTimeout(() => { showEnd(r, foe); onEnd?.(r); }, 650);
+      setTimeout(() => { if (action === 'sneak') toast(`기척을 숨겨 ${foe}의 눈을 피했습니다.`, 'ok'); else showEnd(r, foe); onEnd?.(r); }, 650);
     } else {
       if (action === 'flee') setTimeout(() => showFleeFail(r, foe), 400);
       data.battle = r.battle;
