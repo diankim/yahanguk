@@ -680,6 +680,10 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .cell.sel { fill: color-mix(in srgb, var(--fc) 78%, var(--text)); }
 .cell.here { fill: color-mix(in srgb, var(--fc) 80%, var(--surface)); }
 .cell-lock { fill: url(#lock-hatch); pointer-events: none; }
+/* 중립 직할령: 정통파 색을 옅게(직할령 땅이 한 덩어리로 보이게) */
+.cell.neutral { fill: color-mix(in srgb, var(--fc) 30%, var(--surface)); }
+.cell.neutral:hover { fill: color-mix(in srgb, var(--fc) 45%, var(--surface)); }
+.faction-legend i.neutral { opacity: .5; }
 .hatch-line { stroke: color-mix(in srgb, var(--bg) 55%, transparent); stroke-width: 3; }
 .b-inner { fill: none; stroke: color-mix(in srgb, var(--bg) 45%, transparent); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .b-border { fill: none; stroke: color-mix(in srgb, var(--gold) 80%, var(--bg)); stroke-width: 2.4; stroke-linecap: round; pointer-events: none; }

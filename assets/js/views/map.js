@@ -144,6 +144,8 @@ function geometry() {
   return geom;
 }
 function factionOf(id) { return zones.get(id)?.control_faction_id ?? null; }
+// 칠하는 색: 중립 직할령(Lv1~3, 세력 겨루기에서 빠짐)은 정통파 색을 옅게 칠해 직할령 땅이 한 덩어리로 보이게 한다
+function shadeOf(r) { const f = factionOf(r.region_id); return f || (r.territory_id === 'capital' ? 'night_office' : null); }
 
 // 지금 위치에서 목적지까지 이어진 길(경과 지역 목록). 레벨이 모자란 지역은 지나가지 않는다.
 export function routeTo(target) {
@@ -185,14 +187,15 @@ function paint() {
   for (const r of regions) {
     const poly = g.cells.get(r.region_id); if (!poly?.length) continue;
     const cls = r.region_id === here?.region_id ? ' here' : r.region_id === selected ? ' sel' : '';
-    land += `<path d="${pathOf(poly)}" class="cell${cls}" style="--fc:${factionColor(factionOf(r.region_id))}" data-region="${esc(r.region_id)}"/>`;
+    const neutralCap = !factionOf(r.region_id) && r.territory_id === 'capital';
+    land += `<path d="${pathOf(poly)}" class="cell${cls}${neutralCap ? ' neutral' : ''}" style="--fc:${factionColor(shadeOf(r))}" data-region="${esc(r.region_id)}"/>`;
     if (r.level_locked) hatch += `<path d="${pathOf(poly)}" class="cell-lock" data-region="${esc(r.region_id)}"/>`;
   }
   // ② 경계: 같은 세력 안은 옅은 선, 세력이 바뀌면 국경, 이웃이 없으면 해안선
   let inner = '', border = '', coast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
-    if (!e.b) coast += d; else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
+    if (!e.b) coast += d; else if (shadeOf(byId.get(e.a)) !== shadeOf(byId.get(e.b))) border += d; else inner += d;
   }
   // ③ 길
   const seen = new Set(); let roads = '';
@@ -320,8 +323,14 @@ function fareLine(est) {
 
 function factionLegend() {
   const seen = new Map();
-  for (const r of mapData.regions) { const f = factionOf(r.region_id); if (!seen.has(f)) seen.set(f, r.faction_control || '무주 금역'); }
-  return `<div class="faction-legend">${[...seen].map(([f, n]) => `<span><i style="background:${factionColor(f)}"></i>${esc(n)}</span>`).join('')}</div>`;
+  // 중립은 한 칸(중립 직할령은 정통파 색으로 옅게 칠하므로 범례에서도 정통파 옆에 「중립 직할령」을 따로 적는다)
+  const label = { null: '중립 · 무주 금역' };
+  for (const r of mapData.regions) {
+    const f = factionOf(r.region_id), neutralCap = !f && r.territory_id === 'capital';
+    if (neutralCap) { if (!seen.has('neutral-cap')) seen.set('neutral-cap', '중립 직할령'); continue; }
+    if (!seen.has(f)) seen.set(f, f == null ? label.null : r.faction_control);
+  }
+  return `<div class="faction-legend">${[...seen].map(([f, n]) => `<span><i class="${f === 'neutral-cap' ? 'neutral' : ''}" style="background:${factionColor(f === 'neutral-cap' ? 'night_office' : f)}"></i>${esc(n)}</span>`).join('')}</div>`;
 }
 
 function drawDetail() {
