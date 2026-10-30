@@ -1898,7 +1898,8 @@ b.contest { color: var(--warn); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .spar-log.replay li { animation: none; } }
 .spar-end { display: grid; gap: 8px; }
 /* 제작: 만드는 것 거르기·정렬·장착 부위 표시 */
-.craft-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.craft-sort { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
+.craft-sort > span { white-space: nowrap; } /* 「정렬」이 세로로 쪼개지던 것(7.4.2) */
 .craft-sort select { min-height: 32px; font-size: calc(13px * var(--fz, 1)); padding: 2px 8px; }
 .chip.slot { color: var(--text); border-color: color-mix(in srgb, var(--text) 30%, var(--line)); }
 .recipe header { flex-wrap: wrap; }
