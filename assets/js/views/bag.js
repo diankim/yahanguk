@@ -94,7 +94,7 @@ async function items(body, inv) {
       const tags = [it?.tier ? `${it.tier}단계` : '', equipped.has(id) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(n)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(n)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
@@ -196,6 +196,7 @@ function craft(body, inv, stg) {
         <header><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         <p class="muted small">${esc(r.description || '')}</p>
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
+        ${USABLE[r.output] ? `<p class="use-fx small">${icon('heart', 12)} ${esc(USABLE[r.output])}</p>` : ''}
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}</p>

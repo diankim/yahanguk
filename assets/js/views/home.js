@@ -185,10 +185,20 @@ function town(s, roster) {
     ['faction', 'flag', '세력', store.character?.major_faction_id ? `${nameOf(store.character.major_faction_id)} · 퀘스트·의뢰판·비고` : '대세력 살펴보기·가입'],
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
+  // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게, 제보 20)
   return `
+    ${s.stamina ? `<section class="panel town-st">${staminaBox(s.stamina)}</section>` : ''}
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
+}
+
+function staminaBox(st) {
+  return `<div class="stamina">
+          <div class="st-top"><span>${icon('spark', 14)} 탐색력</span><b>${st.now} / ${st.max}</b></div>
+          <div class="st-pips">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
+          <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득 찼습니다' : ''}</small>
+        </div>`;
 }
 
 /* ── 바깥 지역 ──────────────────────────────────────────── */
@@ -213,11 +223,7 @@ function field(s, roster, blocked) {
           <h2>${esc(n.name)}</h2>
           <p class="desc">${esc(n.description || '')}</p>
         </div>
-        <div class="stamina">
-          <div class="st-top"><span>${icon('spark', 14)} 탐색력</span><b>${st.now} / ${st.max}</b></div>
-          <div class="st-pips">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
-          <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득 찼습니다' : ''}</small>
-        </div>
+        ${staminaBox(st)}
         <div class="act-tiles">
           <button class="tile primary" id="search" title="탐색력 1 · 길·채집터·요괴·보급·단서" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색</span></button>
           <button class="tile" id="exp-open2" title="원정 보내기" ${blocked ? 'disabled' : ''}>${icon('flame', 22)}<span>원정</span></button>

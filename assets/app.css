@@ -737,6 +737,8 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .st-pips { display: grid; grid-template-columns: repeat(auto-fill, minmax(10px, 1fr)); gap: 3px; }
 .st-pips i { height: 8px; border-radius: 3px; background: var(--surface-2); border: var(--bw) solid var(--line); }
 .st-pips i.on { background: var(--gold); border-color: transparent; }
+.town-st { margin-bottom: 12px; }
+.recipe .use-fx, .inv-name .use-fx { margin: 0; color: var(--ok, var(--accent)); display: flex; gap: 4px; align-items: center; }
 .big-act { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; justify-items: start; text-align: left; min-height: 72px; padding: 12px 18px; font-size: calc(16px * var(--fz, 1)); }
 .big-act .ico { grid-row: span 2; } .big-act small { font-size: calc(12px * var(--fz, 1)); opacity: .85; font-weight: 500; }
 .big-act.searching .ico { animation: spin .8s linear infinite; }
