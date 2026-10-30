@@ -1,0 +1,19 @@
+# Cloudflare Pages 캐시 지시. 따로 정하지 않으면 브라우저(특히 iPhone Safari)가 게임 파일을 짐작으로 오래 붙잡아
+# 배포 뒤에도 옛 화면 파일을 쓰는 일이 생긴다(2026-10-30: 7.1 음식의 「사용」 단추가 안 보임).
+# no-cache = 쓸 때마다 서버에 바뀌었는지 묻고(ETag), 같으면 304로 받아 가볍다.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/maintenance.html
+  Cache-Control: no-cache
+/maintenance.json
+  Cache-Control: no-cache
+/version.json
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+/assets/js/*
+  Cache-Control: no-cache
+/assets/app.css
+  Cache-Control: no-cache
