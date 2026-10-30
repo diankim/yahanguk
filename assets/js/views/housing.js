@@ -10,7 +10,8 @@ import { cardName } from './card.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = ['', '범품', '양품', '진품', '명품', '신품'];
-const KIND_CAP = [0, 4, 3, 2, 1, 1];
+const KIND_CAP = [0, 4, 3, 2, 1, 1]; // 한 지붕(혼례 정인과 함께 쓰는 별채)이면 서버가 두 배로 내려 준다(snap.kind_caps)
+const kindCap = g => snap?.kind_caps?.[g - 1] ?? KIND_CAP[g];
 const GATE = [['open', '활짝 엶', '누구나 구경'], ['friends', '벗에게만', '친구만 구경'], ['closed', '닫음', '나만 구경']];
 const FOODS = ['pet_food', 'treat_fish', 'treat_rice', 'treat_honey', 'treat_herb', 'treat_meat'];
 const PAL_TABS = [['floor', '바닥'], ['wall', '벽'], ['paper', '벽지'], ['ground', '바닥재']];
@@ -54,7 +55,9 @@ function drawClosed() {
     <div class="notice">${icon('help', 18)}<div><b>본부 객사의 「객사 별채」 퀘스트</b><span>주 이야기 4장 「북령의 얼음 인장」을 마치고 Lv15가 되면 본부 객사의 살림꾼 보미에게서 받을 수 있습니다. 부적목·황지를 채집하고 오방색 방석을 만든 뒤 수리비 1,000전을 치르면 6×6 별채와 기본 세트 「단청 별채」를 받습니다.</span></div></div>
     ${panel('지금 내 상태', `<ul class="hs-req"><li class="${c.level >= 15 ? 'ok' : 'no'}">레벨 15 이상 (지금 Lv.${c.level || 1})</li><li class="${q.step ? 'ok' : ''}">퀘스트 ${q.done ? '마침' : q.step ? `${q.step}장면까지 보고함` : '받지 않음'}</li></ul>
       <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>`, { ico: 'scroll' })}
+    ${mergePanel()}
     ${store_.length ? panel('곳간에 쌓인 가구', `<p class="muted small">별채를 얻기 전에 받은 가구입니다. 별채를 얻으면 꺼내 놓을 수 있습니다.</p><ul class="hs-list">${store_.map(([id, n]) => `<li>${esc(furName(id))} ×${n}</li>`).join('')}</ul>`, { ico: 'chest' }) : ''}`;
+  $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
 }
 
 // ─── 수 세기·검사(서버 world_housing_save와 같은 규칙) ───
@@ -91,7 +94,7 @@ function validate(st) {
   if (st.items.length + st.wall.length > snap.cap) return `이 별채에는 가구를 ${snap.cap}개까지 놓을 수 있습니다.`;
   const c = counts(st);
   for (const [id, n] of Object.entries(c)) {
-    if (id.startsWith('hf_') && n > KIND_CAP[gradeOf(id)]) return `${furName(id)}은(는) 한 별채에 ${KIND_CAP[gradeOf(id)]}개까지 놓을 수 있습니다.`;
+    if (id.startsWith('hf_') && n > kindCap(gradeOf(id))) return `${furName(id)}은(는) 한 별채에 ${kindCap(gradeOf(id))}개까지 놓을 수 있습니다.`;
     if (n > haveAll(id)) return `${furName(id)}이(가) 모자랍니다.`;
   }
   return null;
@@ -109,7 +112,7 @@ function draw() {
   if (!el || !snap) return;
   const me = snap.role === 'owner', can = !!snap.role, edBlock = snap.edit_block;
   const p = snap.pet;
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${snap.size}×${snap.size}</p><h1>${esc(snap.owner_name)}의 별채</h1>
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${snap.size}×${snap.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
       ${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
@@ -120,6 +123,7 @@ function draw() {
       ${p && !editing ? petBar(p) : ''}
     </div>
     ${me && !editing ? ownerPanel() : ''}
+    ${me && !editing ? mergePanel() : ''}
     ${guestbook()}`;
   cv = $('#hs-cv'); fit(); paint(true); loop();
   bind();
@@ -197,6 +201,37 @@ function ownerPanel() {
       <p class="muted small">Lv${nx.level} · ${nx.gil.toLocaleString()}전 · ${Object.entries(nx.items).map(([i, n]) => `${esc(nameOf(i))} ×${n}`).join(' · ')}</p><button class="btn small" id="hs-expand">넓히기</button>`
       : '<p class="muted small">가장 넓은 9×9 별채입니다.</p>', { ico: 'up' })}</div>`;
 }
+// 한 지붕(7.3): 혼례를 올린 정인과 별채 하나를 함께 쓴다 — 제안·받기·미루기·거두기·각자 별채로
+function mergePanel() {
+  const m = snap.merge; if (!m) return '';
+  let body;
+  if (m.shared) {
+    const s = m.shared;
+    body = `<p><b>${esc(s.home_name)}</b>님의 별채를 <b>${esc(s.mate_name)}</b>님과 함께 씁니다${snap.cap ? ` · 가구 ${snap.cap}개 · 곳간 ${snap.store_cap}칸 · 같은 가구 두 배` : ''}.</p>
+      <p class="muted small">${esc(s.mate_name)}님의 별채는 그대로 보관합니다. 각자 별채로 돌아가면 ${esc(s.mate_name)}님이 들여온 가구${s.mate_items ? `(지금 ${s.mate_items}점)` : ''}는 ${esc(s.mate_name)}님의 곳간으로 돌아갑니다. 연리가 끝나도 저절로 돌아갑니다.</p>
+      <button class="btn small danger" data-merge="split">각자 별채로 돌아가기</button>`;
+  } else if (m.ask_in) {
+    const mine = m.ask_in.home_id !== m.partner_id;
+    body = `<p><b>${esc(m.ask_in.from_name)}</b>님이 ${mine ? '내 별채' : `${esc(m.ask_in.from_name)}님의 별채`}를 함께 쓰자고 합니다.</p>
+      <p class="muted small">받으면 한 별채를 둘이 고치고, 설치할 수 있는 가구와 곳간이 두 사람 몫이 됩니다. ${mine ? '정인' : '내'} 별채는 그대로 보관하고 그 곳간 가구는 함께 쓰는 곳간으로 옮깁니다.</p>
+      <div class="btn-row"><button class="btn small primary" data-merge="yes">받기</button><button class="btn small" data-merge="no">미루기</button></div>`;
+  } else if (m.ask_out) {
+    body = `<p>${esc(m.partner_name)}님의 답을 기다립니다. (24시간 안에 받지 않으면 사라집니다)</p><button class="btn small" data-merge="cancel">제안 거두기</button>`;
+  } else if (m.partner_id) {
+    body = `<p>혼례를 올린 <b>${esc(m.partner_name)}</b>님과 별채 하나를 함께 쓸 수 있습니다.</p>
+      <p class="muted small">고른 별채가 「우리 집」이 되어 둘이 함께 꾸미고, 넓이는 그대로지만 설치할 수 있는 가구·곳간이 두 사람 몫이 됩니다(넓히기는 둘 중 누구나). 다른 별채는 지우지 않고 보관하며, 각자 별채로 돌아가면 들여온 가구는 들여온 사람에게 돌아갑니다.</p>
+      <div class="btn-row">${m.my_house ? '<button class="btn small primary" data-merge="mine">내 별채로 합치자고 하기</button>' : ''}${m.partner_house ? `<button class="btn small" data-merge="theirs">${esc(m.partner_name)}님 별채로 합치자고 하기</button>` : ''}</div>
+      ${!m.my_house && !m.partner_house ? '<p class="muted small">둘 중 한 사람에게 별채가 있어야 합칠 수 있습니다.</p>' : ''}`;
+  } else return '';
+  return panel('한 지붕', body, { ico: 'heart' });
+}
+async function mergeAct(b, k) {
+  if (k === 'split' && !(await ask('각자 별채로 돌아갈까요? 정인이 들여온 가구는 정인의 곳간으로 돌아가고, 다시 합치려면 제안부터 다시 해야 합니다.', { title: '한 지붕', ok: '각자 별채로', danger: true }))) return;
+  if ((k === 'mine' || k === 'theirs') && !(await ask(`${k === 'mine' ? '내 별채' : '정인의 별채'}를 함께 쓰자고 정인에게 전할까요?`, { title: '한 지붕', ok: '전하기' }))) return;
+  const r = k === 'split' ? await rpc('world_housing_split') : k === 'cancel' ? await rpc('world_housing_merge_cancel')
+    : k === 'yes' || k === 'no' ? await rpc('world_housing_merge_answer', { p_accept: k === 'yes' }) : await rpc('world_housing_merge_ask', { p_home: k });
+  await reload(); return r;
+}
 function guestbook() {
   const g = snap.guestbook || [], left3 = Math.max(0, 3 - (snap.wrote_today || 0));
   return panel('방명록', `<form class="hs-gb-form" id="hs-gb"><input maxlength="80" name="body" placeholder="한 줄 남기기 (80자 · 오늘 ${left3}개 더)" ${left3 ? '' : 'disabled'} autocomplete="off"><button class="btn small primary" ${left3 ? '' : 'disabled'}>남기기</button></form>
@@ -234,6 +269,7 @@ function bind() {
     const r = await act('world_housing_expand'); await reload(); return r;
   }));
   $('#hs-store')?.addEventListener('click', openStore);
+  $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
   $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet)));
   $('#hs-gb')?.addEventListener('submit', e => {

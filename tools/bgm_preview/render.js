@@ -8,7 +8,7 @@ const LIST = (process.argv[3] || 'capital,east,north,south,frontier,underworld,h
   const b = await chromium.launch(), info = {};
   for (const t of LIST) for (const battle of [false, true]) {
     const p = await b.newPage();
-    await p.goto('http://127.0.0.1:8765/maintenance.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await p.goto('http://127.0.0.1:8765/tools/bgm_preview/blank.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
     await p.addScriptTag({ url: 'http://127.0.0.1:8765/tools/bgm_preview/harness.js' });
     const r = await p.evaluate(([t, bt]) => window.renderRegion(t, bt, bt ? 40 : 95), [t, battle]);
     await p.close();

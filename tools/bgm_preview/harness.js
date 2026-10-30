@@ -1,7 +1,7 @@
 // 지역 배경음악 미리듣기용: sound.js를 그대로 읽어 OfflineAudioContext에서 영역 하나를 몇십 초 굽는다(render.js가 부름)
 window.renderRegion = async (territory, battle, seconds, sr = 32000) => {
-  let code = await (await fetch('assets/js/sound.js')).text();
-  code = code.replace(/^import .*$/m, 'const on = () => {};').replace(/^export /gm, '');
+  let code = await (await fetch('/assets/js/sound.js')).text();
+  code = code.replace(/^import .*$/m, 'const on = () => {};').replace(/^export /gm, '').replace('fetch(`assets/audio/', 'fetch(`/assets/audio/');
   code += `
 ;window.__render = async (territory, battle, seconds, sr) => {
   const off = new OfflineAudioContext(2, Math.ceil(seconds * sr), sr);

@@ -263,6 +263,7 @@ function cutsceneMusic(M, onState) {
   let musicBuf = musicBufs[M.url] || null;
   let ac = null, gain = null, src = null, since = 0, want = true, vol = 0.6, dead = false, at0 = 0, off0 = 0;
   try { const s = JSON.parse(localStorage.getItem('yh-sound') || '{}'); if (s.bgmOn === false) want = false; if (typeof s.bgm === 'number') vol = Math.min(1, s.bgm * 1.5); } catch {}
+  vol *= M.vol ?? 1;
   try { if (localStorage.getItem('yh-cs-sound') === 'off') want = false; else if (localStorage.getItem('yh-cs-sound') === 'on') want = true; } catch {}
   const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch { return false; } })();
   const load = musicBuf ? Promise.resolve(musicBuf) : fetch(M.url).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); });
@@ -327,6 +328,20 @@ function cutsceneMusic(M, onState) {
   document.addEventListener('visibilitychange', vis);
   load.catch(() => onState(null));
   return api;
+}
+
+// 로그인 화면 음악(다시 연 뒤): 「아침」 곡의 되풀이 여덟 마디를 조용히 튼다. 브라우저가 소리를 막으면 화면을 처음 누를 때 시작한다.
+// 게임 배경음악은 그동안 쉬고, 돌려준 함수를 부르면(로그인해 화면을 떠날 때) 1.5초 동안 잦아들며 멈춘다.
+export function loginMusic() {
+  const M = { ...MUSIC.morning, vol: 0.7 };
+  window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: true }));
+  const music = cutsceneMusic(M, () => {});
+  music.sceneTime = () => M.loopStart;
+  const kick = () => { if (!music.on) music.resume(); };
+  document.addEventListener('pointerdown', kick);
+  music.resume();
+  let done = false;
+  return () => { if (done) return; done = true; document.removeEventListener('pointerdown', kick); music.stop(1.5); window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: false })); };
 }
 
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,

@@ -48,6 +48,8 @@ const VIEWS = {
 // 탭에는 없지만 헤더에서 여는 화면
 const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' }, pfight: { mod: pfightPage, label: '파티 토벌' }, tourney: { mod: tourneyPage, label: '비무 방' }, house: { mod: housePage, label: '별채' } };
 
+// 서버를 다시 여는 때(롤백 뒤): 로그인 화면 음악·첫 캐릭터 만들기 앞 「아침」 컷씬
+const REOPEN_AT = Date.parse('2026-11-02T00:00:00+09:00');
 /* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null, routing = null;
 // 로그인 이벤트가 연달아 두 번(INITIAL_SESSION·SIGNED_IN) 와도 같은 사람이면 한 번만 화면을 꾸린다
@@ -63,6 +65,7 @@ async function routeOnce(session) {
   if (uid && routedFor === uid && $('.shell')) return; // 이미 게임 화면
   store.user = session?.user || null;
   if (!store.user) { routedFor = null; return renderAuth('login', takeKickNote()); }
+  loginMusicOff();
   mountSessionGuard();
   try {
     const c = await loadCharacter();
@@ -124,8 +127,17 @@ const TIPS = [
   '설정 › 알림에서 끄고 싶은 알림을 고를 수 있습니다. 끈 알림은 지난 알림에만 남습니다.',
   '버그·밸런스·제안은 도움말이나 설정의 「제보·소감」으로 바로 보낼 수 있습니다.',
 ];
+// 다시 연 뒤(롤백 뒤)에는 로그인 화면에 「아침」 곡의 되풀이 부분을 조용히 깐다(로그인하면 멈춤)
+let stopLoginMusic = null;
+function loginMusicOn() {
+  if (stopLoginMusic || Date.now() < REOPEN_AT) return;
+  stopLoginMusic = () => {};
+  import('./cutscene.js').then(m => { if (stopLoginMusic && !store.user) stopLoginMusic = m.loginMusic(); else stopLoginMusic = null; }).catch(() => { stopLoginMusic = null; });
+}
+function loginMusicOff() { const f = stopLoginMusic; stopLoginMusic = null; f?.(); }
 function renderAuth(mode = 'login', notice = '') {
   window.dispatchEvent(new Event('yh-booted'));
+  loginMusicOn();
   document.title = '야행국 · 입국';
   app.replaceChildren(h(`
   <div class="auth-screen">
@@ -185,7 +197,6 @@ function renderAuth(mode = 'login', notice = '') {
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
 // 다시 연 뒤(롤백 뒤) 처음 캐릭터를 만들 때 한 번 「아침」 컷씬을 보인다(계정마다, 이 기기에 남김)
-const REOPEN_AT = Date.parse('2026-11-02T00:00:00+09:00');
 function renderCreate() {
   const mk = `yh-morning:${store.user?.id || ''}`;
   let seen = true; try { seen = !!localStorage.getItem(mk); } catch {}
