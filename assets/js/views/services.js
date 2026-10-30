@@ -428,7 +428,7 @@ export function openDirectTrade(to) {
 }
 
 /* ── 창고 ─────────────────────────────────────────────── */
-// 어느 안전지대에서 열어도 같은 개인 창고. 기본 30칸이고 전·이야기 6~10장·세력 평판·지역 완전 답사로 넓어진다(서버 world_storage_capacity).
+// 어느 안전지대에서 열어도 같은 개인 창고. 기본 60칸이고 전·이야기 6~10장·세력 평판·지역 완전 답사로 넓어진다(서버 world_storage_capacity).
 let storeMode = 'put', storeCat = 'all', storeQ = '';
 const STORE_PRICES = [1000, 2500, 5000, 10000];
 export async function renderStorage(box) {

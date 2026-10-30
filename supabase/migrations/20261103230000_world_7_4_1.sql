@@ -106,6 +106,10 @@ revoke all on function public.world_craft_fav_toggle(text) from public, anon;
 grant execute on function public.world_craft_favs() to authenticated;
 grant execute on function public.world_craft_fav_toggle(text) to authenticated;
 
+-- ④ 개인 창고 기본 칸 30 → 60(사용자 요청, 넓히기는 그대로라 최대 68 → 98)
+select pg_temp.yh_patch('public.world_storage_capacity(uuid)', '''base'', 30,', '''base'', 60,');
+select pg_temp.yh_patch('public.world_storage_capacity(uuid)', '''total'', 30 + b.v', '''total'', 60 + b.v');
+
 -- ③ 패치노트: 7.4.0 본문 아래에 7.4.1
 update public.world_patch_notes set body = body || $N$
 ## 7.4.1
@@ -113,6 +117,7 @@ update public.world_patch_notes set body = body || $N$
 - **귀허도 요기 순응**: 섬에서는 침식이 늘 높을 수밖에 없어 침식 불이익을 절반으로 줄였습니다(회복량·받는 피해·요괴 조우·공격력). 위험(55)부터는 요기가 오히려 힘이 되어 주는 피해 +4%, 붕괴 직전(80)은 +8%입니다(바깥에서는 −10%). 희귀품·단서 덤과 100에 닿으면 정신 0이 되는 것은 그대로입니다.
 - **채팅 지난 말 읽기**: 채팅을 위로 올리면 그 탭의 더 이전 말을 이어서 불러옵니다(전체·지역·세력·모임, 채팅은 2일 보관). 전에는 처음 받은 몇 줄밖에 볼 수 없었습니다.
 - 캐릭터 › 상태·도움말에 침식 불이익이 「술법」으로 적혀 있었지만 실제로는 무기와 상관없이 공격력 전체에 붙습니다. 글을 「공격력」으로 고쳤습니다(수치는 그대로).
+- **개인 창고 기본 칸 30 → 60칸**: 넓히기(전·이야기·세력 평판·완전 답사)는 그대로라 최대 98칸까지 늘어납니다.
 - **원정 보급품**: 고르는 칸을 두 줄 격자로 바꿔 세로로 길어지지 않게 했습니다.
 - **원정 중 배경음악**: 원정대가 나가 있는 동안은 전투 음악이 흐르고, 돌아오면 평소 음악으로 돌아갑니다.
 $N$ where note_id = '7.4.0' and position('## 7.4.1' in body) = 0;
