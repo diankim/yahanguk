@@ -2,12 +2,10 @@
 // 실시간 구독 없이 world_pfight_snapshot을 읽는다. 다시 읽는 때: 라운드 마감 직후 한 번 · 내가 고른 뒤 다른 사람을 기다리는 동안 2초마다 · 모이는 중 3초마다.
 import { rpc, emit, esc, icon, fmt, $, $$, toast, nameOf, loadCharacter, store, bar, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
-import { INTENT, SKILL, JOB } from './battle.js';
+import { INTENT, SKILL, JOB, ITEMS } from './battle.js';
 
 const ACT = { attack: '공격', skill: '기술', guard: '방어', item: '물품', flee: '달아나기' };
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
-const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
-  ['spirit_tea', '영력·기력 10'], ['clear_spirit_pill', '영력·기력 20'], ['spirit_qi_pill', '영력·기력 35'], ['moonlight_essence', '영력·기력 55'], ['heavenly_dew', '영력·기력 80']];
 
 let el = null, fid = null, snap = null, timer = null, tick = null, skew = 0, sending = false, tray = false;
 

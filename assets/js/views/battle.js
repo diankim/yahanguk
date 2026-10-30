@@ -39,7 +39,8 @@ export const SKILL = {
 };
 const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비', weak: '공격 약화' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
-const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
+// 현장 토벌에서 쓸 수 있는 물품(서버 world_battle_action이 받는 11가지와 같다 — 음식·반요 고약은 토벌 중에 못 씀). 파티 토벌(pfight.js)도 이 목록을 쓴다
+export const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
   ['spirit_tea', '영력·기력 10'], ['clear_spirit_pill', '영력·기력 20'], ['spirit_qi_pill', '영력·기력 35'], ['moonlight_essence', '영력·기력 55'], ['heavenly_dew', '영력·기력 80']];
 
 // 상성(갈래별 무기 배율 · 유리한 직업 +20%)은 그 요괴를 한 번 쓰러뜨려 도감에 적은 뒤에만 서버가 내보낸다(b.eff)

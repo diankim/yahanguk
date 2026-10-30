@@ -6,6 +6,7 @@ import { onWhisper, openWhisperWindow } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
 import { FRAMES, frameTier, chatFrameBadges } from './cosmetics.js';
+import { load as loadSnap } from './views/common.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -64,9 +65,9 @@ export function mountChat(colEl, fabEl) {
   switchTab(tab);
   subscribe();
   loadBlocks();
-  on('changed', ({ name }) => { if (/party/.test(name)) partyLoaded = false; if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
+  on('changed', ({ name }) => { if (/party/.test(name)) { partyLoaded = false; setTimeout(syncPartySub, 300); } if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
   subscribeCircles();
-  subscribeParty();
+  syncPartySub();
   window.addEventListener('yahang:arrived', load);
   // 화면 복귀: 실시간이 끊겼거나 30초 넘게 비웠을 때만 빠진 말을 채운다
   let hiddenAt = 0;
@@ -198,11 +199,21 @@ function onCircleMsg(m) {
   if (sheetClosed && m.kind === 'chat' && m.sender_id !== store.user?.id) { unread++; badge(); }
 }
 // 파티 채팅: 새 말이 오면(파티원만 읽는 RLS) 파티 탭에 빨간 점, 닫힌 시트에는 안 읽은 수를 더한다
-let partyChannel = null, partyNew = false, partyLive = false, partyLoaded = false;
+// 내 파티 말만 구독한다(필터가 없으면 파티 말 한 줄마다 서버가 접속자 모두의 권한을 검사한다). 파티가 없으면 구독하지 않는다.
+let partyChannel = null, partyNew = false, partyLive = false, partyLoaded = false, partySubId;
+async function syncPartySub() {
+  let pid = null;
+  try { const p = await loadSnap('world_party_overview', undefined, { maxAge: 60000 }); pid = p?.party?.party_id || null; } catch { return; }
+  if (pid === partySubId && (partyChannel || !pid)) return;
+  partySubId = pid;
+  if (!pid) { if (partyChannel) db.removeChannel(partyChannel); partyChannel = null; partyLive = false; return; }
+  subscribeParty();
+}
 function subscribeParty() {
   try {
     if (partyChannel) db.removeChannel(partyChannel);
-    const ch = db.channel('yh-party-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_party_messages' }, p => onPartyMsg(p.new));
+    if (!partySubId) { partyChannel = null; partyLive = false; return; }
+    const ch = db.channel('yh-party-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_party_messages', filter: `party_id=eq.${partySubId}` }, p => onPartyMsg(p.new));
     partyChannel = ch;
     ch.subscribe(status => {
       if (partyChannel !== ch) return;
