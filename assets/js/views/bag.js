@@ -81,6 +81,21 @@ const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === '
 const TOOL_LINE = { ore_pick: ['pick', 1], t4_gather: ['pick', 4], spirit_sickle: ['sickle', 2], spirit_lantern: ['lantern', 2], spirit_compass: ['explore', 3], fishing_rod: ['rod', 1], spirit_rod: ['rod', 2], seal_knife: ['carve', 2], field_knife: ['knife', 1], field_knife_2: ['knife', 2], t3_gather: ['knife', 3], t5_gather: ['knife', 5], t6_gather: ['knife', 6], lt_pick_2: ['pick', 2], lt_pick_3: ['pick', 3], lt_pick_5: ['pick', 5], lt_pick_6: ['pick', 6], lt_knife_4: ['knife', 4], lt_knife_7: ['knife', 6], lt_sickle_4: ['sickle', 4], lt_sickle_6: ['sickle', 6], lt_lantern_4: ['lantern', 4], lt_lantern_6: ['lantern', 6], lt_staff_2: ['explore', 2], lt_compass_4: ['explore', 4], lt_compass_5: ['explore', 5], lt_compass_6: ['explore', 6], lt_rod_3: ['rod', 3], lt_rod_4: ['rod', 4], lt_rod_5: ['rod', 5], lt_rod_6: ['rod', 6], lt_hammer_2: ['hammer', 2], lt_hammer_4: ['hammer', 4], lt_hammer_6: ['hammer', 6], lt_needle_2: ['needle', 2], lt_needle_4: ['needle', 4], lt_needle_6: ['needle', 6], lt_still_2: ['still', 2], lt_still_4: ['still', 4], lt_still_6: ['still', 6], lt_carve_4: ['carve', 4], lt_carve_6: ['carve', 6], lt_cook_2: ['cook', 2], lt_cook_4: ['cook', 4], lt_cook_6: ['cook', 6] };
 const toolCovers = (have, need) => have === need || (TOOL_LINE[have] && TOOL_LINE[need] && TOOL_LINE[have][0] === TOOL_LINE[need][0] && TOOL_LINE[have][1] >= TOOL_LINE[need][1]);
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
+
+// 검색칸은 그대로 두고 나머지만 새로 그린다(7.5.0, 제보: 아이폰에서 한 글자 칠 때마다 칸을 새로 만들어 키보드가 내려가던 것)
+function renderKeep(body, html, sel) {
+  const keep = body.querySelector(sel);
+  if (!keep || keep.parentNode !== body) { body.innerHTML = html; return false; }
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const ph = tmp.querySelector(sel);
+  if (!ph || ph.parentNode !== tmp) { body.innerHTML = html; return false; }
+  const before = [], after = []; let seen = false;
+  [...tmp.childNodes].forEach(n => { if (n === ph) seen = true; else (seen ? after : before).push(n); });
+  [...body.childNodes].forEach(n => { if (n !== keep) n.remove(); });
+  keep.before(...before); keep.after(...after);
+  return true;
+}
+
 async function items(body, inv) {
   const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap() : Promise.resolve(new Map())]);
   const cmap = catalogMap(inv), equipped = new Set(Object.values(inv.equipment || {}));
@@ -90,7 +105,7 @@ async function items(body, inv) {
     .filter(r => !q.trim() || [nameOf(r.id), r.it?.description, nameOf(r.it?.category)].join(' ').toLowerCase().includes(q.trim().toLowerCase()))
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
-  body.innerHTML = `<div class="bag-cap ${used >= cap ? 'full' : ''}"><div class="cap-top"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span><button class="btn small" data-storage title="창고에 무엇이 있는지 봅니다. 맡기기·꺼내기는 안전지대에서만 됩니다.">${icon('chest', 14)}<span>창고 열기</span></button></div>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
+  renderKeep(body, `<div class="bag-cap ${used >= cap ? 'full' : ''}"><div class="cap-top"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span><button class="btn small" data-storage title="창고에 무엇이 있는지 봅니다. 맡기기·꺼내기는 안전지대에서만 됩니다.">${icon('chest', 14)}<span>창고 열기</span></button></div>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
       <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비 1개 · 소모품 3~20개 · 재료 5~20개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
@@ -106,16 +121,16 @@ async function items(body, inv) {
 </button>
         ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
-    <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`;
+    <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
   $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
   $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };
   const qi = $('#bag-q', body);
   // 목록과 함께 검색칸도 다시 그리므로, 한글 조합 중에는 그리지 않고 조합이 끝나면(compositionend) 거른다(조합 중 칸이 바뀌면 「ㅂㅜㅈ」처럼 낱자로 깨진다)
-  const redo = () => { q = qi.value; const pos = qi.selectionStart; items(body, inv).then(() => { const n = $('#bag-q', body); n.focus(); n.setSelectionRange(pos, pos); }); };
+  const redo = () => { q = qi.value; items(body, inv); };
   qi.oninput = e => { if (!e.isComposing) redo(); };
-  qi.addEventListener('compositionend', redo);
+  if (!qi.dataset.bound) { qi.dataset.bound = '1'; qi.addEventListener('compositionend', () => qi.oninput({})); }
   $$('[data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
   bindActions(body);
 }
@@ -185,7 +200,7 @@ async function craft(body, inv, stg) {
     .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'fav' ? favs.has(x.r.id) : craftFilter === 'can' ? x.can : x.atLoc))
     .sort(favFirst);
   const kindCount = {}; (inv.recipes || []).forEach(r => { const k = kindOf(r); kindCount[k] = (kindCount[k] || 0) + 1; });
-  body.innerHTML = `
+  renderKeep(body, `
     ${stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession))} · ${fmt.num(inv.crafting_rank)}단계</span></div></div>
@@ -212,7 +227,7 @@ async function craft(body, inv, stg) {
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}</p>
         <button class="btn small ${can ? 'primary' : ''}" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? '제작' : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
       </article>`).join('')}</div>`
-      : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`;
+      : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`, 'label.search');
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv, stg); });
   $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); craft(body, inv, stg); });
   $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); craft(body, inv, stg); });
@@ -221,9 +236,9 @@ async function craft(body, inv, stg) {
   $('#craft-sort', body).onchange = e => { craftSort = e.target.value; craft(body, inv, stg); };
   const ci = $('#craft-q', body);
   // 한글을 조합하는 동안에는 다시 그리지 않는다(조합이 끊긴다). 조합이 끝나면 그린다.
-  const redo = () => { cq = ci.value; const pos = ci.selectionStart; craft(body, inv, stg); const n = $('#craft-q', body); n.focus(); n.setSelectionRange(pos, pos); };
+  const redo = () => { cq = ci.value; craft(body, inv, stg); };
   ci.oninput = e => { if (!e.isComposing) redo(); };
-  ci.addEventListener('compositionend', redo);
+  if (!ci.dataset.bound) { ci.dataset.bound = '1'; ci.addEventListener('compositionend', () => ci.oninput({})); }
   $('#craft-unfocus', body)?.addEventListener('click', () => { matFocus = recipeFocus = null; craft(body, inv, stg); });
   // 제작법 이름·만드는 물품·재료·도구 이름을 누르면 물품 정보 창을 띄운다
   $$('.recipe [data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
