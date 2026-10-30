@@ -118,7 +118,6 @@ async function setColor(b, id, color, then) {
 }
 
 /* ── 조사원 카드의 [모임에 초대] ─────────────────────── */
-export async function canInviteSomewhere() { await loadCircles(); return circles().some(c => c.role === 'leader' || c.role === 'manager'); }
 export async function inviteToCircle(targetId, targetName) {
   await loadCircles();
   const mine = circles().filter(c => (c.role === 'leader' || c.role === 'manager') && !c.members.some(x => x.owner_id === targetId));

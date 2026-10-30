@@ -104,15 +104,6 @@ export function framed(inner, key, size) {
   return `<span class="fr-wrap t-${frameTier(key)} ${f.small ? 'small' : ''}" style="width:${size}px;height:${size}px;--fbw:${f.bw}px">${inner}${legacy ? legacySvg(f.small) : f.small ? '' : glyphSvg(key)}</span>`;
 }
 export const framedInner = (key, size) => FRAMES[key] ? frameBox(key, size).inner : size;
-// 채팅 얼굴(7.2): 작은 얼굴에도 테두리 문양이 보이게, 모서리에 문양 배지를 얹는다(범품 하나, 양품 이상 둘, 레거시는 별)
-export function chatFrameBadges(key) {
-  const [tier, motif] = FRAMES[key] || [];
-  if (!motif) return '';
-  const one = (pos, d) => `<svg class="cf-badge ${pos}" viewBox="-10 -10 20 20" aria-hidden="true" focusable="false"><circle r="9.5" class="fr-bg"/><path d="${d}"/></svg>`;
-  if (tier === 'legacy') return one('tr', HEX_STAR);
-  return one('br', M[motif]) + (tier === 'common' ? '' : one('tl', M[motif]));
-}
-
 // 바탕 무늬: 프로필 카드 뒤에 아주 옅게 깐다(20×20 반복)
 const P = {
   pt_mapline: '<path d="M0 10h20M10 0v20" stroke-dasharray="2 3"/><path d="M2 16c4-6 10-6 16-12"/>',

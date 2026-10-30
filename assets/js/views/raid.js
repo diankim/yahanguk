@@ -196,12 +196,6 @@ async function run(btn, fn, isAct) {
   finally { sending = false; countdown(); }
 }
 
-// 다른 화면에서 쓰는 도우미: 결전 시작
-export async function startFinal() {
-  const r = await rpc('world_raid_final_start');
-  window.yahangGo('raid', r?.raid_id || '');
-}
-
 // 현장 머리의 토벌 띠: 봉연의 그림자 예고·신청·토벌, 내 결전, 봉연에 잠긴 곳(1분 동안 다시 씀)
 export const raidBand = () => '<div id="raid-band"></div>';
 export async function fillRaidBand(box) {

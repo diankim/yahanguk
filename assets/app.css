@@ -2161,11 +2161,6 @@ b.sealed { color: var(--bad); }
 .chat-list li.msg .av.face.fr:not(.mini).t-legacy { --fr: #a3243a; --fr-glyph: #e0bd66; }
 .chat-list li.msg .av.face.mini { width: 34px; height: 34px; margin: -1px -3px 0; outline: 0; border-radius: 0; overflow: visible; }
 .chat-list li.msg .av.face.mini .mini-in { display: block; width: 72px; height: 72px; transform: scale(calc(34 / 72)); transform-origin: 0 0; }
-.cf-badge { position: absolute; width: 14px; height: 14px; pointer-events: none; overflow: visible; }
-.cf-badge.br { right: -6px; bottom: -6px; } .cf-badge.tl { left: -6px; top: -6px; } .cf-badge.tr { right: -6px; top: -6px; }
-.cf-badge path { fill: none; stroke: var(--fr-glyph); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.cf-badge .fr-bg { fill: var(--frame-bg, var(--surface)); stroke: var(--fr); stroke-width: 1.4; }
-.chat-list li.msg.t-legacy .cf-badge path, .chat-list li.msg .av.face.fr.t-legacy .cf-badge path { fill: var(--fr-glyph); stroke: none; }
 .chat-list li.msg { grid-template-columns: 28px minmax(0, 1fr); column-gap: 11px; }
 
 /* 서신(7.1.0) */

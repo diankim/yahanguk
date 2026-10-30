@@ -112,7 +112,6 @@ export function currentRegion(mapSnap) {
   const c = store.character; if (!mapSnap || !c) return null;
   return (mapSnap.regions || []).find(r => r.region_id === mapSnap.current_region_id) || (mapSnap.regions || []).find(r => r.region_name === c.location) || null;
 }
-export function inventoryOf() { return store.character?.inventory || {}; }
 export { fmt };
 
 // 안전지대·상점·마구간 정보(지역 테이블은 공개 읽기). 한 번 받아 두고 재사용한다.
@@ -126,4 +125,3 @@ export async function safeZones() {
   return zones;
 }
 export function zonesNow() { return zones; }
-export function zoneOf(map, regionId) { return map?.get(regionId) || null; }
