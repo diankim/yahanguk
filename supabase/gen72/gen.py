@@ -107,6 +107,8 @@ for typ in ('FUR', 'WALL', 'PAPER', 'GROUND'):
                 fld, by = RECIPE_BY_CAT[cat]
                 mats = by.get(g) or by[max(x for x in by if x <= g)] if any(x <= g for x in by) else by[min(by)]
                 field = fld
+        # 분야는 영문 키로 넣는다(7.4.4: 한글로 들어가 분야 거르기·품질 보너스·기술 경험이 안 붙던 것)
+        field = {'단조': 'smithing', '목공': 'carpentry', '법구 공예': 'artifice', '봉인 공예': 'sealing', '직조': 'weaving', '가죽 공예': 'leatherwork', '연금': 'alchemy', '요리': 'cooking'}.get(field, field)
         price = price_of(mats) if mats else COND_PRICE.get(g, 120)
         if dkey in DEFAULT_ONLY:
             # 기본 세트는 만들 수 없으니 본부 상점(capital_market)에서 늘 판다. 값은 같은 갈래·등급 제작품 재료값의 1.5배(만들 수 없는 몫), 귀속이라 되팔 수 없다

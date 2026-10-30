@@ -103,7 +103,7 @@ select s.shop_id, x.item_id, 300, 0, 10, null
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
 -- 요리: 말린 생선포(손질한 생선 2 → 3개)
 insert into public.world_crafting_recipes(recipe_id, recipe_name, output_item, output_qty, ingredients, required_tool, required_tool_tier, required_location, description, minimum_level, required_job, recipe_difficulty, required_skill, required_skill_rank, craft_field)
-values ('r_treat_fish', '말린 생선포 만들기', 'treat_fish', 3, '{{"fish_fillet": 2}}'::jsonb, null, 1, null, '손질한 생선을 말려 꼬마 동무 별미를 만든다.', 1, null, 1, null, 1, '요리')
+values ('r_treat_fish', '말린 생선포 만들기', 'treat_fish', 3, '{{"fish_fillet": 2}}'::jsonb, null, 1, null, '손질한 생선을 말려 꼬마 동무 별미를 만든다.', 1, null, 1, null, 1, 'cooking')
 on conflict (recipe_id) do update set ingredients = excluded.ingredients, output_qty = excluded.output_qty;
 -- 칭호(효과 없음)·꾸미기: 별채·꼬마 동무
 insert into public.world_title_catalog(title_key, title_name, icon, description, condition_text, bonus, active, hidden, rule, sort, category, grade)
