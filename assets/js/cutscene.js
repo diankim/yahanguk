@@ -1,5 +1,5 @@
 // 컷씬: 롤백 순간(점검 페이지, maintenance.json scene 'rollback')과 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞).
-// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 평면 도형만 쓰고, 글은 저절로 넘어가며 누르면 다음 줄, 「건너뛰기」로 끝낸다.
+// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 평면 도형을 쓰되 붉은 안개만 흐림 필터로 번지게 하고(사용자 요청), 글은 저절로 넘어가며 누르면 다음 줄, 「건너뛰기」로 끝낸다.
 // 움직임 줄이기 설정이면 도형 움직임 없이 글만 넘긴다.
 
 const ZONES = ['반요촌', '무극 관성대', '십삼문 암시장', '철벽 고찰', '잔불촌', '백골 장터', '구름나루', '백등 야시장', '본부 객사', '본부 정청'];
@@ -14,9 +14,13 @@ const CSS = `
 .cs .cs-lamp.out { fill: #2a2622; }
 .cs .cs-glow { fill: #e0a64a; opacity: .14; transition: opacity .6s; }
 .cs .cs-glow.out { opacity: 0; }
-.cs .cs-mist rect { fill: #8e1f2a; opacity: 0; transition: opacity 2.4s linear, transform 6s linear; }
-.cs.mist .cs-mist rect { opacity: .22; transform: translateY(-40px); }
-.cs.mist2 .cs-mist rect { opacity: .38; transform: translateY(-90px); }
+.cs .cs-mist { opacity: 0; transform: translateY(30px); transition: opacity 3s linear, transform 8s ease-out; }
+.cs.mist .cs-mist { opacity: .55; transform: translateY(-20px); }
+.cs.mist2 .cs-mist { opacity: .85; transform: translateY(-70px); }
+.cs .cs-mist ellipse { fill: #8e1f2a; animation: cs-drift 14s ease-in-out infinite alternate; }
+.cs .cs-mist ellipse:nth-child(2n) { fill: #6d1620; animation-duration: 19s; animation-direction: alternate-reverse; }
+.cs .cs-mist ellipse:nth-child(3n) { animation-duration: 23s; }
+@keyframes cs-drift { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
 .cs .cs-sun { fill: #f2d8a0; opacity: 0; transform: translateY(40px); transition: opacity 3s, transform 5s linear; }
 .cs.dawn3 .cs-sun { opacity: 1; transform: none; }
 .cs .cs-ledger { opacity: 0; transition: opacity 1.2s; }
@@ -53,7 +57,8 @@ function scene(kind) {
     <path class="cs-roof" d="M-2000 2000V170H30L58 154L86 170H120V180H150L190 150L230 180H250L290 156L330 180H350V172H380L410 154L440 172H2480V2000Z"/>
     <path d="M10 118Q120 150 240 124T470 128" fill="none" stroke="#2a2530" stroke-width="1.5"/>
     ${kind === 'rollback' ? lamps : `<g data-lamp="9"><circle class="cs-glow" cx="240" cy="150" r="18"/><rect class="cs-lamp" x="235" y="142" width="10" height="15" rx="4"/></g>`}
-    <g class="cs-mist"><rect x="-2000" y="200" width="4480" height="2000"/><rect x="-2000" y="230" width="4480" height="2000"/></g>
+    <defs><filter id="cs-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter></defs>
+    <g class="cs-mist" filter="url(#cs-blur)">${[[-40, 214, 150, 42], [120, 222, 170, 48], [300, 210, 160, 44], [470, 220, 150, 46], [40, 250, 220, 50], [260, 256, 240, 56], [480, 250, 200, 50], [200, 300, 600, 90]].map(([cx, cy, rx, ry]) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`).join('')}<rect x="-2000" y="290" width="4480" height="2000" fill="#6d1620"/></g>
     <g class="cs-ledger">
       <rect x="-2000" y="-2000" width="4480" height="4240" fill="#07060a" opacity=".86"/>
       <rect class="cs-page" x="170" y="50" width="260" height="150"/>
