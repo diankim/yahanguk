@@ -15,7 +15,7 @@ REGIONS = [
          theme='shrine', terr='frontier', desc='적월교가 붉은 달에 제물을 바치던 바깥 제단 벌판. 돌기둥마다 마른 피가 검게 엉겨 있다.'),
     dict(id='snow_hollow', name='설피골', type='ice_valley', danger=4, lv=5, x=430, y=240, el=3, nb=['paper_bridge', 'ash_mountain', 'iron_monastery'],
          theme='mountain', terr='north', desc='북령맹 사냥꾼들이 설피를 신고 드나드는 눈 골짜기. 처음 눈길을 익히는 이들이 많이 찾는다.'),
-    dict(id='ember_pass', name='불씨 고개', type='mountain_pass', danger=4, lv=5, x=720, y=450, el=1, nb=['sealed_garden', 'ember_village'],
+    dict(id='ember_pass', name='불씨 고개', type='mountain_pass', danger=4, lv=5, x=625, y=490, el=1, nb=['sealed_garden', 'ember_village'],
          theme='wild', terr='south', desc='무너진 남녘 나라의 피난민들이 불씨 항아리를 안고 넘던 고개. 고갯마루에는 지금도 화톳불이 꺼지지 않는다.'),
     dict(id='lamp_alley', name='등잔골 뒷골목', type='underground', danger=4, lv=5, x=455, y=455, el=-1, nb=['old_canal', 'hidden_bazaar', 'hq_archive'],
          theme='city', terr='underworld', desc='도성 아래로 얽힌 좁은 골목. 기름 등잔 불빛 아래에서 흑련회의 좀도둑과 밀수꾼이 오간다.'),

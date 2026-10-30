@@ -17,7 +17,8 @@ update public.world_map_regions set home_faction_id = 'night_office', control_fa
 update public.world_map_regions m set home_faction_id = x.f, control_faction_id = x.f, faction_control = (select faction_name from public.world_major_factions where faction_id = x.f), contested = false
   from (values ('old_prison', 'night_office'), ('seal_vault', 'night_office'), ('tide_gate', 'river_alliance'), ('crimson_altar', 'red_moon_cult'),
                ('snow_hollow', 'north_league'), ('ember_pass', 'southern_remnant'), ('lamp_alley', 'black_lotus'),
-               ('star_hill', 'mandate_court'), ('water_clock', 'mandate_court'), ('comet_crater', 'mandate_court'), ('cloud_corridor', 'mandate_court')) as x(r, f)
+               ('star_hill', 'mandate_court'), ('water_clock', 'mandate_court'), ('comet_crater', 'mandate_court'), ('cloud_corridor', 'mandate_court'),
+               ('black_tide_rift', 'southern_remnant')) as x(r, f) -- 흑조 균열은 7.2.3에서 남명회로(지도가 끊기지 않게)
  where m.region_id = x.r;
 -- 옮겨지거나 중립이 된 곳의 영향력은 0에서 다시(기록은 남김)
 update public.world_region_influence set points = 0
