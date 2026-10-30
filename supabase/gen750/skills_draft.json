@@ -1,5 +1,5 @@
 {
- "summary": "7.5.0 셋째 시안. 둘째 시안(제작 계열은 그 분야 생산 이점만, 장비 제작 여섯 계열 같은 틀, 30단계 「품질 85 이상 하나 더」, 기본 품질은 그 분야만·합 40, 결계 각인 → 봉인 공예(키 wardcraft), 「짐틀 장인」은 분해 덤)을 그대로 두고 사용자 결정 여섯을 더했다. ① 생활 전문화에서 「종합 제작」을 없애고 제작 분야를 반드시 하나 고른다(없으면 단조). 자율 「정비」 경험은 고른 분야 계열로. ② 제작 칭호를 계열마다 다섯 단계(10·20·30·40·50단계)로, 효과는 그 분야 생산 이점(8계열 × 5 = 40개). ③ 조합 기술은 새 채집 계열(채집·채광·낚시)과 짝지었다. ④ 단조·봉인 공예(그리고 합쳐지는 채집 계열) 택일을 이미 고른 사람은 한 번 무료로 다시 고른다(world_skill_picks.free_repick). ⑤ 요리를 16기술 계열(키 cooking)로 만들어 제작 숙련에 넣는다(cooking_xp를 1:1로 옮김). ⑥ 채집 계열을 채집(foraging: 약초·목재·보급품·물가·영기 채집터) · 채광(mining: 광맥·유물 채집터) · 낚시(fishing, 새) 셋으로 줄인다(약초 채집·영기 채집은 채집에 합침). 조사 중 찾은 큰 문제: 지금 제작 품질식의 crafting_xp/20 덤이 오래 한 사람은 수백(1위 974)이라 최근 이틀 제작의 89%가 품질 85 이상(대부분 100)이다 — 이대로면 기술·칭호의 품질 효과가 아무 뜻이 없고 「85 이상 하나 더」가 늘 터진다. 7.5.0에서 품질식을 다시 맞춰야 한다(아래 quality 절, 사용자 결정 필요). 또 채집 계열 3단계 기본 기술의 gather_bonus(+1)와 단조 8단계·연금 8단계의 extra_output·extra_output_pct는 어느 함수도 읽지 않는 죽은 효과다.",
+ "summary": "7.5.0 넷째 시안. 셋째 시안을 그대로 두고 사용자 답 여덟을 반영했다: ① 분해하면 그 장비 분야 계열에 기술 경험 12(제작법이 없는 장비는 무기 갈래·부위로 정함), 분해 조건은 그 분야 계열 단계 1/3/6/9/12/15(1~6단계 장비). ② 귀령초는 채집에서 빼고 조사(추적) 계열 36단계 추가 기술 「영초 감별」(탐색·조사 지점, 위험도 7 이상 0.2%, world_gwiryeong_reserve)로. ③ 조합 기술은 채집·채광·낚시에 셋씩. ④ 칭호 수집 조건 20 → 23 · 60 → 69. ⑤ 칭호는 얕게: 제작 계열마다 둘 + 그 계열 50단계 하나, 채집 계열마다 하나 + 50단계 하나, 그리고 전 제작 만렙·전 채집 만렙(새 칭호 32개, 215 → 247). ⑥ 무료 다시 고르기는 기한 없이 롤백 때 함께 사라진다. ⑦ 기술 경험은 갈래 안에서 모두 같게: 제작·분해 한 번 12(요리 포함), 채집·채광·낚시 한 번 8 — 생활 전문화 이점만 분야마다 다르다. ⑧ 채집 계열 기본 기술의 채집량·희귀품은 그 계열 채집터에서만. 품질식은 사용자 결정대로 10 + 계열 단계×k + 그 계열 기본 기술 + … − 8×난이도(k = 1 주안, 1.2·1.5 비교)로 하고, quality 절에 단계별 85 이상 비율과 지난 2일 제작 2,085건 실측 어림을 두었다: 이주 뒤 계열 평균 8단계라 k 셋 모두 85 이상 0%(지금 90%), 생산량 회복약 −37%·부적 −32%·화살 −27%·전체 −36%.",
  "current_state": [
   "지금은 기본 기술의 제작 품질이 계열과 상관없이 모든 제작에 더해집니다. 7.5.0부터는 그 계열 분야 제작법에만 붙습니다(결정).",
   "결계 각인 계열 이름을 「봉인 공예」로 바꿉니다(결정).",
@@ -895,10 +895,6 @@
   },
   {
    "line": "모든 제작 계열",
-   "what": "제작 숙련(crafting_rank) = max(단조, 목공, 법구 공예, 봉인 공예(wardcraft), 직조, 가죽 공예, 연금, 요리). world_skill_sync의 제작 갈래 목록을 여덟으로. 요리가 들어가므로 요리만 올린 사람도 분해 조건(제작 숙련 1/5/10/15/20단계)·제작 공구 조건을 채운다 — 분해 조건만 「장비 제작 계열(요리·연금 제외) 가운데 가장 높은 단계」로 볼지 결정."
-  },
-  {
-   "line": "모든 제작 계열",
    "what": "world_craft_line(recipe) 표에 cooking → cooking을 더하고(지금은 null), world_event_char_apply의 craft 기술 경험이 요리도 cooking 계열로 가게 한다. world_craft_item의 cooking_xp·cooking_rank 갱신 줄은 지운다(열은 남김 — world_characters 열 권한 규칙)."
   },
   {
@@ -916,6 +912,22 @@
   {
    "line": "생활 전문화",
    "what": "아래 profession 절: 종합 제작 없앰, 기본값 단조, 정비 경험은 고른 분야 계열."
+  },
+  {
+   "line": "분해",
+   "what": "world_dismantle_item: 그 장비 계열(world_gear_line)에 기술 경험 12, 조건 world_dismantle_need(단계, 계열 단계) 1/3/6/9/12/15. 오류 문구 「%s단계 장비는 %s 기술 %s단계부터 분해할 수 있습니다(지금 %s단계)」. 화면 대장간 분해 목록(services.js)·도움말의 1/5/10/15/20을 고친다. 둘째 시안의 분해 덤 택일(법기 해체·올 풀기·짐틀 장인·부적 해체)도 world_gear_line으로 「그 분야로 만든 장비」를 판정한다(제작법이 없는 전리품 장비도 부위로 들어감)."
+  },
+  {
+   "line": "조사(추적)",
+   "what": "36단계 추가 기술 「영초 감별」(tracking_x36)을 더한다 — world_field_search·world_region_site_explore."
+  },
+  {
+   "line": "칭호 수집",
+   "what": "title_collector rule titles 20 → 23(condition_text 「칭호 23개 획득」), title_master 60 → 69."
+  },
+  {
+   "line": "기술 경험",
+   "what": "요리 기술 경험 12(요리 숙련 10 + 난이도×5 줄을 지움), 낚시 한 번 8(world_event_char_apply의 기술 경험 갈래에 'fish' → fishing, 8), 분해 12."
   }
  ],
  "combos": [
@@ -925,8 +937,8 @@
     "채집"
    ],
    "name": "영맥 판독",
-   "status": "기존 · requires를 analysis 18·foraging 18로",
-   "effect": "영기 채집터에서 거둔 채집터는 다시 쓰는 대기가 절반(그대로). skill_id combo_analysis_spirit_gathering은 코드가 부르므로 그대로 둔다."
+   "status": "기존 · requires analysis 18·foraging 18",
+   "effect": "영기 채집터에서 거둔 채집터는 다시 쓰는 대기가 절반(그대로)."
   },
   {
    "lines": [
@@ -934,7 +946,7 @@
     "채집"
    ],
    "name": "야전 약방",
-   "status": "기존 · requires를 first_aid 18·foraging 18로",
+   "status": "기존 · requires first_aid 18·foraging 18",
    "effect": "약초를 쓰면 약초액만큼(체력 22) 회복(그대로)."
   },
   {
@@ -952,17 +964,8 @@
     "채광"
    ],
    "name": "바위 몸",
-   "status": "기존 · 그대로(광맥 채집 → 채광 이름만)",
+   "status": "기존 · 이름만 채광",
    "effect": "방어한 턴에 받은 피해의 30%만큼 체력 회복."
-  },
-  {
-   "lines": [
-    "채집",
-    "목공"
-   ],
-   "name": "산판 목수",
-   "status": "새",
-   "effect": "두 계열 18단계 · 목재 채집터에서 거두면 15% 확률로 하나 더."
   },
   {
    "lines": [
@@ -970,17 +973,8 @@
     "법구 공예"
    ],
    "name": "영맥 세공",
-   "status": "새(둘째 시안의 영기 채집 → 채광)",
-   "effect": "두 계열 18단계 · 유물 채집터에서 거두면 15% 확률로 하나 더(영유리·비취 파편·결계 파편 같은 법구 재료가 나오는 곳)."
-  },
-  {
-   "lines": [
-    "낚시",
-    "직조"
-   ],
-   "name": "그물 짓기",
-   "status": "새(둘째 시안의 약초 채집 → 낚시)",
-   "effect": "두 계열 18단계 · 낚을 때 10% 확률로 그물에 한 마리가 더 걸린다(같은 어종 하나 더, 낚시 「두 마리」와 굴림은 따로·한 번에 하나만 더)."
+   "status": "새",
+   "effect": "두 계열 18단계 · 유물 채집터에서 거두면 15% 확률로 하나 더."
   },
   {
    "lines": [
@@ -988,8 +982,17 @@
     "가죽 공예"
    ],
    "name": "짐꾼의 요령",
-   "status": "새(둘째 시안 그대로, 광맥 채집 → 채광)",
+   "status": "새",
    "effect": "두 계열 18단계 · 채집·채광 때 채집 도구가 닳지 않을 확률 50%."
+  },
+  {
+   "lines": [
+    "낚시",
+    "직조"
+   ],
+   "name": "그물 짓기",
+   "status": "새",
+   "effect": "두 계열 18단계 · 낚을 때 10% 확률로 같은 어종 하나 더(낚시 「두 마리」와 따로 굴리되 한 번에 하나만 더)."
   },
   {
    "lines": [
@@ -999,20 +1002,26 @@
    "name": "갯가 주방",
    "status": "새",
    "effect": "두 계열 18단계 · 물고기를 낚으면 20% 확률로 손질한 생선 하나를 함께 얻는다."
+  },
+  {
+   "lines": [
+    "낚시",
+    "목공"
+   ],
+   "name": "낚싯대 깎는 손",
+   "status": "새(셋째 시안의 채집·목공 「산판 목수」를 낚시로 옮김 — 낚싯대가 목공 제작품)",
+   "effect": "두 계열 18단계 · 낚싯대 단계 덤(입질 단계마다 +6%p·희귀 +3%)을 2단계에서 3단계까지 받는다(world_fish의 least(rod, 2) → 3)."
   }
  ],
- "migration": "둘째 시안의 제작 이주(새 계열 넷 = 12 × 그 분야 제작 기록, 단조 경험은 깎지 않음, 한글 craft_field 정규화)에 더해: ① 요리 계열 경험 = cooking_xp. ② 채집 계열은 gathering.migration(채집 = 일반+약초+영기 − 유물 몫, 가장 컸던 값 아래로 안 내림 · 채광 = 광맥 + 8 × 유물 기록 · 낚시 = 낚시 기록으로 다시 셈). ③ 생활 전문화: general → smithing, botany·spirit_harvest → fieldwork, 바뀐 사람은 life_changed_at = null. ④ free_repick: 단조·봉인 공예·(옮겨 온) 채집 24·43 택일 보유자. ⑤ 조합 기술 requires 고침(영맥 판독·야전 약방). ⑥ 새 칭호 40개를 넣고 그 자리에서 world_title_award_check로 지금 단계를 판정(배포 직후 조건을 채운 사람에게 한꺼번에 알림이 가므로 알림은 한 사람에 한 번으로 묶는다). ⑦ skill_progress는 사람마다 한 번의 UPDATE로 고치고(yh.rank_sync='all'), herbalism·spirit_gathering 키는 지우지 않는다. 배포는 큰 DO 블록이 lock table public.world_characters in access exclusive mode로 시작, 끝에 db_version.",
+ "migration": "둘째 시안의 제작 이주(새 계열 넷 = 12 × 그 분야 제작 기록, 단조 경험은 깎지 않음, 한글 craft_field 정규화)에 더해: ① 요리 계열 경험 = cooking_xp. ② 채집 계열은 gathering.migration(채집 = 일반+약초+영기 − 유물 몫, 가장 컸던 값 아래로 안 내림 · 채광 = 광맥 + 8 × 유물 기록 · 낚시 = 낚시 기록으로 다시 셈). ③ 생활 전문화: general → smithing, botany·spirit_harvest → fieldwork, 바뀐 사람은 life_changed_at = null. ④ free_repick: 단조·봉인 공예·(옮겨 온) 채집 24·43 택일 보유자. ⑤ 조합 기술 requires 고침(영맥 판독·야전 약방). ⑥ 새 칭호 40개를 넣고 그 자리에서 world_title_award_check로 지금 단계를 판정(배포 직후 조건을 채운 사람에게 한꺼번에 알림이 가므로 알림은 한 사람에 한 번으로 묶는다). ⑦ skill_progress는 사람마다 한 번의 UPDATE로 고치고(yh.rank_sync='all'), herbalism·spirit_gathering 키는 지우지 않는다. 배포는 큰 DO 블록이 lock table public.world_characters in access exclusive mode로 시작, 끝에 db_version. 넷째 시안 덧붙임: ⑧ 낚시 경험 = 8 × 낚시 기록 수(낚든 놓치든, 최고 낚은 114마리 + 놓친 것). ⑨ 분해 경험은 소급하지 않는다(분해 기록 payload.item로 셀 수는 있으나 지금은 경험을 준 적이 없어 덤이 됨 — 원하면 12 × 그 계열 분해 기록 수). ⑩ title_collector·title_master 조건 수 변경, 새 칭호 32개를 넣은 뒤 한 번 판정. ⑪ 추적 36 「영초 감별」 행 추가.",
  "open_questions": [
-  "품질식(quality 절): crafting_xp/20을 없애 품질을 계열 단계·기본 기술 중심으로 다시 맞출지, 아니면 그 덤을 줄이는 완만한 길로 갈지. 그리고 「85 이상이면 누구나 +50%」를 그대로 둘지(품질을 내리면 회복약·부적·화살 공급이 크게 준다).",
-  "제작 숙련에 요리를 넣으면 요리만 한 사람도 분해(제작 숙련 단계 조건)를 할 수 있다. 분해 조건만 장비 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 최고 단계로 볼지.",
-  "요리 이주를 cooking_xp 1:1(권장, 숫자는 20 → 17처럼 낮아 보임)로 할지, 단계를 그대로 맞춰 줄지(경험을 늘려 줌).",
-  "요리 기술 경험을 다른 계열처럼 한 번 12로 할지, 지금처럼 10 + 난이도×5로 둘지.",
-  "약초 「영초 감별」(귀령초 0.2%)을 빼면 귀령초 얻는 길이 하나 줄어든다. 채집 43b 「본초 감별」에 위험도 7 이상 약초 채집터 0.2% 귀령초(world_gwiryeong_reserve 경유)를 함께 넣어 살릴지.",
-  "채집 계열 조합 기술이 채집 넷·채광 셋·낚시 둘로 고르지 않다. 그대로 둘지(채집 쪽 셋은 기존 기술), 「산판 목수」를 다른 짝으로 옮길지.",
-  "채집 계열 기본 기술의 채집량·희귀품도 그 계열 행동에만 붙게(제작과 같은 원칙) 할지 — 지금은 모든 채집·토벌·낚시에 합쳐서 붙는다.",
-  "새 칭호 40개로 칭호 수 215 → 255: 「칭호 수집」 칭호 조건 수를 올릴지. 그리고 채집·채광·낚시에도 같은 단계 칭호 사다리를 둘지(이번 결정 범위 밖).",
-  "free_repick에 기한(예: 7일)을 둘지.",
-  "결계 각인 → 봉인 공예 이름 바꿈으로 전투 계열 「봉인술」과 나란히 보인다(둘째 시안에서 결정됨, 화면에서 갈래 이름 「제작 › 봉인 공예」로 구분)."
+  "분해 조건 완충: 그 계열 단계만(권장) 또는 「그 계열 단계와 전체 제작 숙련의 절반 가운데 큰 값」 — 지금 전체 숙련으로 4단계 장비를 분해하던 사람이 새 계열에서는 2단계까지로 내려간다.",
+  "분해 경험 소급(12 × 그 계열 분해 기록 수)을 할지.",
+  "제작법이 없는 장비 61가지의 계열을 표(world_gear_line_map)로 한 번 적을지, 부위·이름 규칙으로 계산할지(표 권장).",
+  "제작 숙련에 요리를 넣으면 요리만 올린 사람도 분해·제작 공구 조건(제작 숙련)을 채운다 — 분해는 이제 그 계열 단계라 상관없고, 제작 공구 조건(req_line crafting_rank)만 남는다. 제작 공구 조건도 그 공구 분야 계열 단계로 볼지.",
+  "요리 이주: cooking_xp 1:1(권장, 숫자는 20 → 17처럼 낮아 보임).",
+  "k 값: 1(주안)·1.2·1.5. 지금 사람들에게는 셋 다 85 이상 0%라 차이는 30단계 이후에 난다.",
+  "공급 대책: 소모품 기본 개수를 올릴지(권장 — 회복약·부적 −32~37%), 85 이상 덤을 계단(85 +25%·95 +50%)으로 바꿀지, 둘 다 안 할지."
  ],
  "gathering": {
   "summary": "채집 계열 넷(일반 채집·약초 채집·광맥 채집·영기 채집)을 셋(채집·채광·낚시)으로 줄인다. 채집 숙련(gathering_rank) = max(채집, 채광, 낚시).",
@@ -1034,7 +1043,7 @@
   },
   "why_spirit_into_채집": "영기 채집터(spirit 734곳)의 재료는 월광 이끼·운면 같은 풀과 요기 결정·영유리·응축 영핵·원령재 같은 결정이 섞여 있고, 행동은 손으로 거두는 채집이다(곡괭이 도구 보너스 대상이 아님). 영기 채집 고유 효과는 침식·정신·영력·상태 풀기처럼 생산이 아닌 것뿐이라 「생산 이점만」 원칙이면 남길 몫이 거의 없다. 따로 두면 채집터가 가장 많은 갈래가 홀로 남아 계열 셋 원칙이 깨진다. 유물(relics)은 지금 일반 채집으로 세지만 곡괭이 계열 도구 보너스와 영등 희귀품이 붙는 땅 파기 채집이라 채광으로 옮긴다. 물가 채집터(water: 갈대·수귀 비늘)는 낚시가 아니라 손으로 거두는 채집이라 채집에 둔다.",
   "keys": "채집은 키 foraging(이름 「채집」, 화면 이름표 core.js '채취' → '채집'), 채광은 mining(이름 「채광」), 낚시는 새 키 fishing. herbalism·spirit_gathering 계열은 skill_catalog에서 빼고(기술 32개), skill_progress의 두 키는 지우지 않고 남겨 둔다(되돌리기용, world_skill_sync 갈래 목록과 화면에서만 뺌).",
-  "base_scope": "채집 계열 기본 기술의 채집량·희귀품도 그 계열 행동에만 붙게 한다(제작 계열과 같은 원칙): world_field_gather가 그 채집터 계열의 기본 기술 gather_qty_pct 합(상한 30)·rare_loot_pct 합(상한 8)을 더하고, world_skill_effect('gather_qty_pct'·'rare_loot_pct')에서 채집 계열을 뺀다(rare_loot_pct가 토벌 전리품·낚시 희귀 어종에도 새어 들던 것을 막음). 낚시 계열은 world_fish만.",
+  "base_scope": "결정: 채집 계열 기본 기술의 채집량(gather_qty_pct)·희귀품(rare_loot_pct)은 그 계열 채집터에서만 붙는다 — 채집 기본은 herbs·wood·supplies·water·spirit, 채광 기본은 ore·relics, 낚시 기본(입질·희귀 어종·크기)은 world_fish만. world_field_gather가 그 채집터 계열 기본 기술 합(채집량 상한 30·희귀품 상한 8)을 직접 더하고, world_skill_effect('gather_qty_pct'·'rare_loot_pct')에서 채집 계열(foraging·mining·fishing)을 빼 토벌 전리품·낚시·원정에 새던 몫을 막는다(추적 계열 희귀품 +2·+3은 그대로 world_skill_effect). 원정 채집(world_expedition_settle)은 그 원정지 채집 몫에 채집 계열 기본을 쓴다.",
   "lines": [
    {
     "key": "foraging",
@@ -1140,7 +1149,7 @@
       "effect": "채집 때 25% 확률로 탐색력을 쓰지 않는다(그대로)."
      }
     ],
-    "dropped": "약초: 약효 보존(체력 +3)·영초 감별(귀령초 0.2%)·신농의 손(체력·정신·침식) / 영기: 영기 감지(침식 −1)·영기 흡수(영력 +5)·정화 채집·청명심(정신 +6)·천지영기(희귀품 20%) / 일반: 보물 감별(엽전). 생산이 아닌 효과라 뺀다. 「영초 감별」은 귀령초가 나오는 길 하나(world_gwiryeong_reserve 'skill_herbalism')라 빼면 CLAUDE.md §8 얻는 곳 목록도 고친다."
+    "dropped": "약초: 약효 보존(체력 +3)·영초 감별(귀령초 0.2%)·신농의 손(체력·정신·침식) / 영기: 영기 감지(침식 −1)·영기 흡수(영력 +5)·정화 채집·청명심(정신 +6)·천지영기(희귀품 20%) / 일반: 보물 감별(엽전). 생산이 아닌 효과라 뺀다. 귀령초 길(약초 「영초 감별」)은 채집에 두지 않고 조사(추적) 계열 36단계로 옮긴다(아래 tracking_36)."
    },
    {
     "key": "mining",
@@ -1375,85 +1384,228 @@
   ]
  },
  "quality": {
+  "status": "사용자 결정: crafting_xp/20·crafting_rank×1.2를 빼고 그 제작법 계열 단계로 오르게 한다. 주안 k = 1, 비교 k = 1.2·1.5. 「85 이상 +50%」는 주안에서 그대로.",
   "problem": "crafting_xp/20 덤 때문에 품질이 거의 늘 100이다(1위 +974, 5천 경험이면 +257). 최근 이틀 제작 89%가 85 이상. 그래서 ① 기본 기술 품질(합 40)·칭호 품질·「두 번 굴림」 택일이 뜻이 없고 ② 30단계 「85 이상 하나 더」가 늘 터지며 ③ 85 이상이면 누구에게나 붙는 완성품 +50%가 사실상 기본 생산량이다.",
-  "proposal": "품질 = 10 + 그 계열 단계(1~50) + 그 계열 기본 기술(≤40) + 분야 일치 12 + 백공 15 + 장비 crafting_specialization 10 + 제작 공구 + 장비·칭호·음식·상태 craft_quality + 계열 칭호 cq_<계열> − 난이도×8 + 0~19 굴림 + 장소 12, 0~100. crafting_xp/20·round(crafting_rank×1.2)·required_skill 단계×2는 뺀다(요리의 cooking_rank×3도). 목표 예: 30단계·분야 일치·난이도 3·장소 없음이면 10+30+28(30단계까지 기본 기술)+12−24+평균 9.5 ≈ 66(85 이상 드묾, 장소 +12면 약 78), 50단계·분야 일치·칭호면 거의 늘 85 이상.",
-  "impact": "지금 사실상 기본이던 「85 이상 +50%」가 드물어져 회복약·부적·화살 공급이 줄어든다(경제 영향 큼). 대안: 85 이상 +50% 규칙을 「85 이상 +1개(만드는 개수 2개 이상이면 +50%)」로 두고 품질식만 바꾸거나, crafting_xp 덤을 min(15, crafting_xp/400)으로 줄이는 완만한 길. 로컬 복제 DB에서 지금 조사원 30명의 계열 단계로 품질 분포를 계산해 본 뒤 정한다."
+  "formula": "품질 = 10 + floor(그 계열 단계 × k) + 그 계열 기본 기술(≤40) + 분야 일치 12 + 백공 15 + 장비·칭호(cq_<계열> 포함)·음식·상태 craft_quality + 제작 공구 + 장소 12 − 8×난이도 + 0~19 굴림, 0~100. required_skill×2·cooking_rank×3도 뺀다.",
+  "method": "이론표: 굴림 0~19가 고르다고 보고 85 이상 몫을 셈. 가정 — 분야 일치(12) 또는 다른 분야(0), 난이도 2(제작법 가운데값) 또는 4, 백공·장소·칭호·공구 없음(백공이면 +15, 장소면 +12를 더해 읽는다). 실측: 지난 2일 world_events craft(payload.quality·qty·recipe, 장소 가산 문구)를 한 건씩, 그 사람의 7.5.0 이주 뒤 계열 단계(단조·연금·봉인 공예는 지금 경험, 새 넷은 12 × 그 분야 제작 기록, 요리는 cooking_xp → world_skill_line_rank)와 생활 전문화(general → 단조)·백공·장착 칭호·제작 공구로 다시 계산.",
+  "by_rank": [
+   {
+    "k": 1.0,
+    "line_rank": 5,
+    "base": 8,
+    "match_d2": "평균 28 · 85 이상 0%",
+    "match_d4": "평균 12 · 85 이상 0%",
+    "other_d2": "평균 16 · 85 이상 0%",
+    "other_d4": "평균 0 · 85 이상 0%"
+   },
+   {
+    "k": 1.0,
+    "line_rank": 15,
+    "base": 17,
+    "match_d2": "평균 48 · 85 이상 0%",
+    "match_d4": "평균 32 · 85 이상 0%",
+    "other_d2": "평균 36 · 85 이상 0%",
+    "other_d4": "평균 20 · 85 이상 0%"
+   },
+   {
+    "k": 1.0,
+    "line_rank": 30,
+    "base": 28,
+    "match_d2": "평균 74 · 85 이상 0%",
+    "match_d4": "평균 58 · 85 이상 0%",
+    "other_d2": "평균 62 · 85 이상 0%",
+    "other_d4": "평균 46 · 85 이상 0%"
+   },
+   {
+    "k": 1.0,
+    "line_rank": 40,
+    "base": 32,
+    "match_d2": "평균 88 · 85 이상 65%",
+    "match_d4": "평균 72 · 85 이상 0%",
+    "other_d2": "평균 76 · 85 이상 5%",
+    "other_d4": "평균 60 · 85 이상 0%"
+   },
+   {
+    "k": 1.0,
+    "line_rank": 50,
+    "base": 40,
+    "match_d2": "평균 100 · 85 이상 100%",
+    "match_d4": "평균 90 · 85 이상 75%",
+    "other_d2": "평균 94 · 85 이상 95%",
+    "other_d4": "평균 78 · 85 이상 15%"
+   },
+   {
+    "k": 1.2,
+    "line_rank": 5,
+    "base": 8,
+    "match_d2": "평균 30 · 85 이상 0%",
+    "match_d4": "평균 14 · 85 이상 0%",
+    "other_d2": "평균 18 · 85 이상 0%",
+    "other_d4": "평균 2 · 85 이상 0%"
+   },
+   {
+    "k": 1.2,
+    "line_rank": 15,
+    "base": 17,
+    "match_d2": "평균 50 · 85 이상 0%",
+    "match_d4": "평균 34 · 85 이상 0%",
+    "other_d2": "평균 38 · 85 이상 0%",
+    "other_d4": "평균 22 · 85 이상 0%"
+   },
+   {
+    "k": 1.2,
+    "line_rank": 30,
+    "base": 28,
+    "match_d2": "평균 80 · 85 이상 25%",
+    "match_d4": "평균 64 · 85 이상 0%",
+    "other_d2": "평균 68 · 85 이상 0%",
+    "other_d4": "평균 52 · 85 이상 0%"
+   },
+   {
+    "k": 1.2,
+    "line_rank": 40,
+    "base": 32,
+    "match_d2": "평균 96 · 85 이상 100%",
+    "match_d4": "평균 80 · 85 이상 25%",
+    "other_d2": "평균 84 · 85 이상 45%",
+    "other_d4": "평균 68 · 85 이상 0%"
+   },
+   {
+    "k": 1.2,
+    "line_rank": 50,
+    "base": 40,
+    "match_d2": "평균 100 · 85 이상 100%",
+    "match_d4": "평균 100 · 85 이상 100%",
+    "other_d2": "평균 100 · 85 이상 100%",
+    "other_d4": "평균 88 · 85 이상 65%"
+   },
+   {
+    "k": 1.5,
+    "line_rank": 5,
+    "base": 8,
+    "match_d2": "평균 30 · 85 이상 0%",
+    "match_d4": "평균 14 · 85 이상 0%",
+    "other_d2": "평균 18 · 85 이상 0%",
+    "other_d4": "평균 2 · 85 이상 0%"
+   },
+   {
+    "k": 1.5,
+    "line_rank": 15,
+    "base": 17,
+    "match_d2": "평균 54 · 85 이상 0%",
+    "match_d4": "평균 38 · 85 이상 0%",
+    "other_d2": "평균 42 · 85 이상 0%",
+    "other_d4": "평균 26 · 85 이상 0%"
+   },
+   {
+    "k": 1.5,
+    "line_rank": 30,
+    "base": 28,
+    "match_d2": "평균 88 · 85 이상 70%",
+    "match_d4": "평균 72 · 85 이상 0%",
+    "other_d2": "평균 76 · 85 이상 10%",
+    "other_d4": "평균 60 · 85 이상 0%"
+   },
+   {
+    "k": 1.5,
+    "line_rank": 40,
+    "base": 32,
+    "match_d2": "평균 100 · 85 이상 100%",
+    "match_d4": "평균 92 · 85 이상 85%",
+    "other_d2": "평균 96 · 85 이상 100%",
+    "other_d4": "평균 80 · 85 이상 25%"
+   },
+   {
+    "k": 1.5,
+    "line_rank": 50,
+    "base": 40,
+    "match_d2": "평균 100 · 85 이상 100%",
+    "match_d4": "평균 100 · 85 이상 100%",
+    "other_d2": "평균 100 · 85 이상 100%",
+    "other_d4": "평균 100 · 85 이상 100%"
+   }
+  ],
+  "by_rank_read": "k = 1(분야 일치·난이도 2): 5·15·30단계 0% · 40단계 65% · 50단계 100%(난이도 4면 50단계 75%, 다른 분야·난이도 2면 50단계 95%). k = 1.2: 30단계 25% · 40단계 100%. k = 1.5: 30단계 70% · 40단계 100%. 백공(+15)이나 제작 장소(+12)면 한 줄 위 단계쯤으로 읽는다(예: k = 1, 30단계 + 장소 12 → 85 이상 약 55%).",
+  "empirical": {
+   "note": "지난 2일 제작 2,085건, 7.5.0 이주 뒤 계열 단계(평균 8.3)로 다시 계산. k = 1·1.2·1.5 모두 85 이상 0%(계열 단계가 낮아 k 차이가 floor 안에서 1~4밖에 안 남).",
+   "now": "실제 85 이상 89.8%, 제작 한 번 평균 완성품 2.95개",
+   "rows": [
+    {
+     "group": "전체",
+     "n": 2085,
+     "now85": "89.8%",
+     "new85": "0%",
+     "out_now": 2.95,
+     "out_new": 1.88,
+     "drop": "−36%"
+    },
+    {
+     "group": "회복약(연금 소모품)",
+     "n": 210,
+     "now85": "80.0%",
+     "new85": "0%",
+     "out_now": 2.14,
+     "out_new": 1.35,
+     "drop": "−37%",
+     "avg_line_rank": 4.5
+    },
+    {
+     "group": "부적(봉인 공예 소모품)",
+     "n": 288,
+     "now85": "93.1%",
+     "new85": "0%",
+     "out_now": 2.91,
+     "out_new": 1.98,
+     "drop": "−32%",
+     "avg_line_rank": 6.8
+    },
+    {
+     "group": "화살·탄(목공 소모품)",
+     "n": 16,
+     "now85": "75.0%",
+     "new85": "0%",
+     "out_now": 67.8,
+     "out_new": 49.4,
+     "drop": "−27%",
+     "avg_line_rank": 1.8
+    },
+    {
+     "group": "그 밖(장비·재료·요리)",
+     "n": 1571,
+     "now85": "90.6%",
+     "new85": "0%",
+     "out_now": 2.4,
+     "out_new": 1.45,
+     "drop": "−40%",
+     "avg_line_rank": 9.2
+    }
+   ],
+   "caveat": "out_now는 기록된 실제 개수라 85 이상 덤 외의 기술 덤(농축·정교한 각인 등)도 들어 있다. 새 쪽은 기본 개수 + 85 이상 덤만 셌다. 장비 crafting_specialization·음식·상태 품질은 빼서 새 쪽이 조금 낮게 나온다(평균 몇 점)."
+  },
+  "supply": "이 식이면 지금 사람들(계열 평균 8단계)은 85 이상 덤이 사라져 회복약 −37%·부적 −32%·화살 −27%·전체 −36% 생산이 준다. 계열을 30단계로 올리려면 제작 약 480번(경험 5,800)이라 회복에는 시간이 걸린다. 공급을 지키려면 아래 둘 가운데 하나를 함께: ① 회복약·부적·화살·노정 건량 제작법의 기본 개수(output_qty)를 지금 기대량(≈ 1.4배)에 맞춰 올림 ② 85 이상 덤을 계단으로.",
+  "ramp_alternative": "85 이상 +25%(최소 1)·95 이상 +50%로 완만히. 지금 사람들에게는 어느 쪽이든 덤이 0%라 당장 차이는 없고, 높은 단계에서 덤이 덜 커진다(k = 1, 50단계·분야 일치·난이도 4: 지금 규칙은 +50% 75%, 계단이면 +25% 50%·+50% 25%). 덤을 줄이는 쪽이라 공급 문제는 풀지 못한다 — 공급은 기본 개수를 올려 맞춘다.",
+  "old_options": "앞서 낸 A(상수 40·난이도 6, 지금 85 이상 약 13%)·B(경험 덤 상한 40, 약 37%)·C(상한 20, 약 26%)는 사용자 결정으로 접는다(기록으로만 남김)."
  },
  "free_repick": {
   "who": "7.5.0 배포 때 world_skill_picks.picks에 'smithing:24'·'smithing:43'·'wardcraft:24'·'wardcraft:43'(효과가 바뀌는 계열), 그리고 합쳐지는 채집 계열에서 옮겨 온 'foraging:24'·'foraging:43' 키가 있는 사람. 2026-10-30 기준 0명(고른 택일은 모두 근접·봉인술·추적)이지만 배포 시점에 다시 센다.",
-  "mechanism": "world_skill_picks에 열 free_repick text[] not null default '{}'를 더한다(world_characters에는 열을 더하지 않는다는 규칙). 배포 UPDATE가 위 키들을 free_repick에 넣는다(고른 것은 지우지 않음 — 지우면 그 사이 효과가 사라지고 화면에서 「고르세요」로 되돌아가 헷갈림). world_skill_choose: cur가 있고 (p_line||':'||p_tier) = any(free_repick)이면 fee = 0으로 하고 그 키를 free_repick에서 뺀다(바꿀 때 한 번만). 같은 것을 다시 고르면 지금처럼 「이미 고른 기술」로 거절하고 free_repick은 남긴다. world_skill_snapshot이 free_repick을 돌려주고 캐릭터 › 기술 노드에 「한 번 무료로 다시 고를 수 있음」 표시, 알림 skill_repick 한 번(world_notify_group에 넣지 않으면 끌 수 없는 알림). 기한은 두지 않는다(원하면 7일)."
+  "mechanism": "world_skill_picks에 열 free_repick text[] not null default '{}'를 더한다(world_characters에는 열을 더하지 않는다는 규칙). 배포 UPDATE가 위 키들을 free_repick에 넣는다(고른 것은 지우지 않음 — 지우면 그 사이 효과가 사라지고 화면에서 「고르세요」로 되돌아가 헷갈림). world_skill_choose: cur가 있고 (p_line||':'||p_tier) = any(free_repick)이면 fee = 0으로 하고 그 키를 free_repick에서 뺀다(바꿀 때 한 번만). 같은 것을 다시 고르면 지금처럼 「이미 고른 기술」로 거절하고 free_repick은 남긴다. world_skill_snapshot이 free_repick을 돌려주고 캐릭터 › 기술 노드에 「한 번 무료로 다시 고를 수 있음」 표시, 알림 skill_repick 한 번(world_notify_group에 넣지 않으면 끌 수 없는 알림). 기한은 두지 않는다(원하면 7일).",
+  "expiry": "기한 없음. world_skill_picks.free_repick은 쓸 때까지 남는다. 11월 서버 전체 롤백(CLAUDE.md §16)이 캐릭터·기술·택일을 모두 처음으로 되돌리므로 그때 함께 사라진다 — 따로 지우는 작업이나 만료 예약은 두지 않는다. 롤백 뒤 새로 만든 캐릭터에는 줄 대상이 없다(옮겨 올 택일이 없음)."
  },
  "titles": {
-  "rule": "새 규칙 키 'skill': {\"skill\": \"<계열 키>\", \"n\": 단계} — world_title_rule_ok·world_title_rule_progress가 skill_progress -> 계열 ->> 'rank'를 읽는다. 판정은 제작 기록 'craft'(그리고 자율 정비 수령) 뒤 world_title_award_check가 이미 도는 자리에서. 분류는 '제작', 숨김 아님, 진행 게이지는 지금 단계/조건 단계.",
-  "effects": "효과 키는 그 분야에서만 쓰이는 생산 효과 넷을 새로 만들고 world_craft_item이 world_title_bonus('<키>_' || 계열)로 읽는다: cq_<계열>(그 분야 제작 품질), cs_<계열>(그 분야 제작 때 재료 한 종류를 하나 돌려받을 확률 %), cx_<계열>(그 분야 제작 때 하나 더 확률 %). 요리만 food_dur_pct(내가 먹은 음식 상태 지속 %)를 world_use_item이 읽는다. 첫 효과는 그 등급 크기, 둘째·셋째는 한·두 등급 아래 크기(지금 칭호 규칙). 「효과 키를 만들면 쓰는 곳을 함께 만든다」.",
-  "ladder_template": [
-   {
-    "grade": 1,
-    "n": 10,
-    "bonus": {
-     "cq": 2
-    }
-   },
-   {
-    "grade": 2,
-    "n": 20,
-    "bonus": {
-     "cq": 3,
-     "cs": 1
-    }
-   },
-   {
-    "grade": 3,
-    "n": 30,
-    "bonus": {
-     "cq": 4,
-     "cs": 2
-    }
-   },
-   {
-    "grade": 4,
-    "n": 40,
-    "bonus": {
-     "cq": 6,
-     "cs": 3,
-     "cx": 2
-    }
-   },
-   {
-    "grade": 5,
-    "n": 50,
-    "bonus": {
-     "cq": 8,
-     "cx": 4,
-     "cs": 3
-    }
-   }
-  ],
+  "decision": "얕은 사다리 + 만렙 칭호. 제작 계열마다 15·35단계 둘과 50단계(계열 만렙) 하나, 채집 계열마다 25단계 하나와 50단계 하나, 그리고 전 제작 만렙·전 채집 만렙. 새 칭호 8×3 + 3×2 + 2 = 32개(215 → 247). 셋째 시안의 다섯 단계 사다리(40개)는 버린다.",
+  "rule": "새 규칙 키 'skill' {skill, n}: skill_progress -> 계열 ->> 'rank' ≥ n, 'skill_all' {skill_all:[…], n}: 모두 ≥ n. world_title_rule_ok·world_title_rule_progress에 두 갈래를 더한다(진행 게이지는 skill: 단계/n, skill_all: n을 넘긴 계열 수/계열 수). 판정은 제작·분해·채집·낚시 기록과 자율 정비 수령 뒤 이미 도는 world_title_award_check.",
+  "effects": "그 분야 효과 키(world_craft_item·world_field_gather가 world_title_bonus('<키>_' || 계열)로 읽음): cq_<제작 계열> 품질 · cs_<제작 계열> 재료 한 종류를 하나 돌려받을 확률 % · cx_<제작 계열> 하나 더 확률 % · gq_<채집·채광> 채집량 % · gr_<채집·채광> 희귀품 %. 전 계열 칭호는 cs_all·cx_all(모든 제작)·기존 craft_quality·gather_qty_pct·rare_loot_pct·fish_bite_pct. 요리 food_dur_pct는 world_use_item(meal 상태 지속). 낚시 칭호는 기존 fish_* 키. 첫 효과는 그 등급 크기, 둘째·셋째는 한·두 등급 아래 크기(지금 규칙).",
+  "category": "분류: 제작 계열 칭호 → '제작', 채집 계열 칭호 → '채집'(낚시 계열도 '채집'에 두고 기존 낚시 칭호 11개는 '낚시' 그대로), 두 만렙 칭호 → '성장'. 숨김 아님.",
   "list": [
    {
-    "id": "ct_smithing_10",
-    "name": "풀무 지기",
-    "line": "단조",
-    "grade": 1,
-    "condition": "단조 기술 10단계",
-    "rule": {
-     "skill": "smithing",
-     "n": 10
-    },
-    "bonus": {
-     "cq_smithing": 2
-    },
-    "effect": "단조 품질 +2"
-   },
-   {
-    "id": "ct_smithing_20",
+    "id": "ct_smithing_15",
     "name": "쇠를 아는 손",
-    "line": "단조",
+    "kind": "제작",
     "grade": 2,
-    "condition": "단조 기술 20단계",
+    "condition": "단조 기술 15단계",
     "rule": {
      "skill": "smithing",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_smithing": 3,
@@ -1462,14 +1614,14 @@
     "effect": "단조 품질 +3 · 단조 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_smithing_30",
-    "name": "담금질 장인",
-    "line": "단조",
+    "id": "ct_smithing_35",
+    "name": "백련강의 대장장이",
+    "kind": "제작",
     "grade": 3,
-    "condition": "단조 기술 30단계",
+    "condition": "단조 기술 35단계",
     "rule": {
      "skill": "smithing",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_smithing": 4,
@@ -1478,63 +1630,31 @@
     "effect": "단조 품질 +4 · 단조 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_smithing_40",
-    "name": "백련강의 대장장이",
-    "line": "단조",
-    "grade": 4,
-    "condition": "단조 기술 40단계",
-    "rule": {
-     "skill": "smithing",
-     "n": 40
-    },
-    "bonus": {
-     "cq_smithing": 6,
-     "cs_smithing": 3,
-     "cx_smithing": 2
-    },
-    "effect": "단조 품질 +6 · 단조 재료 한 종류 돌려받기 3% · 단조 하나 더 2%"
-   },
-   {
     "id": "ct_smithing_50",
     "name": "천하제일 야장",
-    "line": "단조",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "단조 기술 50단계",
     "rule": {
      "skill": "smithing",
      "n": 50
     },
     "bonus": {
-     "cq_smithing": 8,
-     "cx_smithing": 4,
-     "cs_smithing": 3
+     "cq_smithing": 6,
+     "cx_smithing": 3,
+     "cs_smithing": 2
     },
-    "effect": "단조 품질 +8 · 단조 재료 한 종류 돌려받기 3% · 단조 하나 더 4%"
+    "effect": "단조 품질 +6 · 단조 재료 한 종류 돌려받기 2% · 단조 하나 더 3%"
    },
    {
-    "id": "ct_carpentry_10",
-    "name": "대패 든 견습",
-    "line": "목공",
-    "grade": 1,
-    "condition": "목공 기술 10단계",
-    "rule": {
-     "skill": "carpentry",
-     "n": 10
-    },
-    "bonus": {
-     "cq_carpentry": 2
-    },
-    "effect": "목공 품질 +2"
-   },
-   {
-    "id": "ct_carpentry_20",
+    "id": "ct_carpentry_15",
     "name": "결을 읽는 목수",
-    "line": "목공",
+    "kind": "제작",
     "grade": 2,
-    "condition": "목공 기술 20단계",
+    "condition": "목공 기술 15단계",
     "rule": {
      "skill": "carpentry",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_carpentry": 3,
@@ -1543,14 +1663,14 @@
     "effect": "목공 품질 +3 · 목공 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_carpentry_30",
-    "name": "활 짓는 장인",
-    "line": "목공",
+    "id": "ct_carpentry_35",
+    "name": "도편수",
+    "kind": "제작",
     "grade": 3,
-    "condition": "목공 기술 30단계",
+    "condition": "목공 기술 35단계",
     "rule": {
      "skill": "carpentry",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_carpentry": 4,
@@ -1559,63 +1679,31 @@
     "effect": "목공 품질 +4 · 목공 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_carpentry_40",
-    "name": "도편수",
-    "line": "목공",
-    "grade": 4,
-    "condition": "목공 기술 40단계",
-    "rule": {
-     "skill": "carpentry",
-     "n": 40
-    },
-    "bonus": {
-     "cq_carpentry": 6,
-     "cs_carpentry": 3,
-     "cx_carpentry": 2
-    },
-    "effect": "목공 품질 +6 · 목공 재료 한 종류 돌려받기 3% · 목공 하나 더 2%"
-   },
-   {
     "id": "ct_carpentry_50",
     "name": "천년 목심의 주인",
-    "line": "목공",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "목공 기술 50단계",
     "rule": {
      "skill": "carpentry",
      "n": 50
     },
     "bonus": {
-     "cq_carpentry": 8,
-     "cx_carpentry": 4,
-     "cs_carpentry": 3
+     "cq_carpentry": 6,
+     "cx_carpentry": 3,
+     "cs_carpentry": 2
     },
-    "effect": "목공 품질 +8 · 목공 재료 한 종류 돌려받기 3% · 목공 하나 더 4%"
+    "effect": "목공 품질 +6 · 목공 재료 한 종류 돌려받기 2% · 목공 하나 더 3%"
    },
    {
-    "id": "ct_artifice_10",
-    "name": "방울 깎는 손",
-    "line": "법구 공예",
-    "grade": 1,
-    "condition": "법구 공예 기술 10단계",
-    "rule": {
-     "skill": "artifice",
-     "n": 10
-    },
-    "bonus": {
-     "cq_artifice": 2
-    },
-    "effect": "법구 공예 품질 +2"
-   },
-   {
-    "id": "ct_artifice_20",
+    "id": "ct_artifice_15",
     "name": "영문 새기는 장인",
-    "line": "법구 공예",
+    "kind": "제작",
     "grade": 2,
-    "condition": "법구 공예 기술 20단계",
+    "condition": "법구 공예 기술 15단계",
     "rule": {
      "skill": "artifice",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_artifice": 3,
@@ -1624,14 +1712,14 @@
     "effect": "법구 공예 품질 +3 · 법구 공예 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_artifice_30",
-    "name": "법기 장인",
-    "line": "법구 공예",
+    "id": "ct_artifice_35",
+    "name": "혼천의 설계자",
+    "kind": "제작",
     "grade": 3,
-    "condition": "법구 공예 기술 30단계",
+    "condition": "법구 공예 기술 35단계",
     "rule": {
      "skill": "artifice",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_artifice": 4,
@@ -1640,63 +1728,31 @@
     "effect": "법구 공예 품질 +4 · 법구 공예 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_artifice_40",
-    "name": "혼천의 설계자",
-    "line": "법구 공예",
-    "grade": 4,
-    "condition": "법구 공예 기술 40단계",
-    "rule": {
-     "skill": "artifice",
-     "n": 40
-    },
-    "bonus": {
-     "cq_artifice": 6,
-     "cs_artifice": 3,
-     "cx_artifice": 2
-    },
-    "effect": "법구 공예 품질 +6 · 법구 공예 재료 한 종류 돌려받기 3% · 법구 공예 하나 더 2%"
-   },
-   {
     "id": "ct_artifice_50",
     "name": "신기를 빚는 자",
-    "line": "법구 공예",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "법구 공예 기술 50단계",
     "rule": {
      "skill": "artifice",
      "n": 50
     },
     "bonus": {
-     "cq_artifice": 8,
-     "cx_artifice": 4,
-     "cs_artifice": 3
+     "cq_artifice": 6,
+     "cx_artifice": 3,
+     "cs_artifice": 2
     },
-    "effect": "법구 공예 품질 +8 · 법구 공예 재료 한 종류 돌려받기 3% · 법구 공예 하나 더 4%"
+    "effect": "법구 공예 품질 +6 · 법구 공예 재료 한 종류 돌려받기 2% · 법구 공예 하나 더 3%"
    },
    {
-    "id": "ct_weaving_10",
-    "name": "베틀 앞의 손",
-    "line": "직조",
-    "grade": 1,
-    "condition": "직조 기술 10단계",
-    "rule": {
-     "skill": "weaving",
-     "n": 10
-    },
-    "bonus": {
-     "cq_weaving": 2
-    },
-    "effect": "직조 품질 +2"
-   },
-   {
-    "id": "ct_weaving_20",
+    "id": "ct_weaving_15",
     "name": "고운 결 짓는 이",
-    "line": "직조",
+    "kind": "제작",
     "grade": 2,
-    "condition": "직조 기술 20단계",
+    "condition": "직조 기술 15단계",
     "rule": {
      "skill": "weaving",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_weaving": 3,
@@ -1705,14 +1761,14 @@
     "effect": "직조 품질 +3 · 직조 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_weaving_30",
-    "name": "침선 장인",
-    "line": "직조",
+    "id": "ct_weaving_35",
+    "name": "비단 명장",
+    "kind": "제작",
     "grade": 3,
-    "condition": "직조 기술 30단계",
+    "condition": "직조 기술 35단계",
     "rule": {
      "skill": "weaving",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_weaving": 4,
@@ -1721,63 +1777,31 @@
     "effect": "직조 품질 +4 · 직조 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_weaving_40",
-    "name": "비단 명장",
-    "line": "직조",
-    "grade": 4,
-    "condition": "직조 기술 40단계",
-    "rule": {
-     "skill": "weaving",
-     "n": 40
-    },
-    "bonus": {
-     "cq_weaving": 6,
-     "cs_weaving": 3,
-     "cx_weaving": 2
-    },
-    "effect": "직조 품질 +6 · 직조 재료 한 종류 돌려받기 3% · 직조 하나 더 2%"
-   },
-   {
     "id": "ct_weaving_50",
     "name": "하늘 옷을 지은 자",
-    "line": "직조",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "직조 기술 50단계",
     "rule": {
      "skill": "weaving",
      "n": 50
     },
     "bonus": {
-     "cq_weaving": 8,
-     "cx_weaving": 4,
-     "cs_weaving": 3
+     "cq_weaving": 6,
+     "cx_weaving": 3,
+     "cs_weaving": 2
     },
-    "effect": "직조 품질 +8 · 직조 재료 한 종류 돌려받기 3% · 직조 하나 더 4%"
+    "effect": "직조 품질 +6 · 직조 재료 한 종류 돌려받기 2% · 직조 하나 더 3%"
    },
    {
-    "id": "ct_leatherwork_10",
-    "name": "무두 견습",
-    "line": "가죽 공예",
-    "grade": 1,
-    "condition": "가죽 공예 기술 10단계",
-    "rule": {
-     "skill": "leatherwork",
-     "n": 10
-    },
-    "bonus": {
-     "cq_leatherwork": 2
-    },
-    "effect": "가죽 공예 품질 +2"
-   },
-   {
-    "id": "ct_leatherwork_20",
+    "id": "ct_leatherwork_15",
     "name": "가죽 다루는 손",
-    "line": "가죽 공예",
+    "kind": "제작",
     "grade": 2,
-    "condition": "가죽 공예 기술 20단계",
+    "condition": "가죽 공예 기술 15단계",
     "rule": {
      "skill": "leatherwork",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_leatherwork": 3,
@@ -1786,14 +1810,14 @@
     "effect": "가죽 공예 품질 +3 · 가죽 공예 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_leatherwork_30",
-    "name": "갖바치",
-    "line": "가죽 공예",
+    "id": "ct_leatherwork_35",
+    "name": "경갑 명장",
+    "kind": "제작",
     "grade": 3,
-    "condition": "가죽 공예 기술 30단계",
+    "condition": "가죽 공예 기술 35단계",
     "rule": {
      "skill": "leatherwork",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_leatherwork": 4,
@@ -1802,63 +1826,31 @@
     "effect": "가죽 공예 품질 +4 · 가죽 공예 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_leatherwork_40",
-    "name": "경갑 명장",
-    "line": "가죽 공예",
-    "grade": 4,
-    "condition": "가죽 공예 기술 40단계",
-    "rule": {
-     "skill": "leatherwork",
-     "n": 40
-    },
-    "bonus": {
-     "cq_leatherwork": 6,
-     "cs_leatherwork": 3,
-     "cx_leatherwork": 2
-    },
-    "effect": "가죽 공예 품질 +6 · 가죽 공예 재료 한 종류 돌려받기 3% · 가죽 공예 하나 더 2%"
-   },
-   {
     "id": "ct_leatherwork_50",
     "name": "야행 갖바치",
-    "line": "가죽 공예",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "가죽 공예 기술 50단계",
     "rule": {
      "skill": "leatherwork",
      "n": 50
     },
     "bonus": {
-     "cq_leatherwork": 8,
-     "cx_leatherwork": 4,
-     "cs_leatherwork": 3
+     "cq_leatherwork": 6,
+     "cx_leatherwork": 3,
+     "cs_leatherwork": 2
     },
-    "effect": "가죽 공예 품질 +8 · 가죽 공예 재료 한 종류 돌려받기 3% · 가죽 공예 하나 더 4%"
+    "effect": "가죽 공예 품질 +6 · 가죽 공예 재료 한 종류 돌려받기 2% · 가죽 공예 하나 더 3%"
    },
    {
-    "id": "ct_wardcraft_10",
-    "name": "먹 가는 손",
-    "line": "봉인 공예",
-    "grade": 1,
-    "condition": "봉인 공예 기술 10단계",
-    "rule": {
-     "skill": "wardcraft",
-     "n": 10
-    },
-    "bonus": {
-     "cq_wardcraft": 2
-    },
-    "effect": "봉인 공예 품질 +2"
-   },
-   {
-    "id": "ct_wardcraft_20",
+    "id": "ct_wardcraft_15",
     "name": "부적 그리는 이",
-    "line": "봉인 공예",
+    "kind": "제작",
     "grade": 2,
-    "condition": "봉인 공예 기술 20단계",
+    "condition": "봉인 공예 기술 15단계",
     "rule": {
      "skill": "wardcraft",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_wardcraft": 3,
@@ -1867,14 +1859,14 @@
     "effect": "봉인 공예 품질 +3 · 봉인 공예 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_wardcraft_30",
-    "name": "각인 장인",
-    "line": "봉인 공예",
+    "id": "ct_wardcraft_35",
+    "name": "결계 설계자",
+    "kind": "제작",
     "grade": 3,
-    "condition": "봉인 공예 기술 30단계",
+    "condition": "봉인 공예 기술 35단계",
     "rule": {
      "skill": "wardcraft",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_wardcraft": 4,
@@ -1883,63 +1875,31 @@
     "effect": "봉인 공예 품질 +4 · 봉인 공예 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_wardcraft_40",
-    "name": "결계 설계자",
-    "line": "봉인 공예",
-    "grade": 4,
-    "condition": "봉인 공예 기술 40단계",
-    "rule": {
-     "skill": "wardcraft",
-     "n": 40
-    },
-    "bonus": {
-     "cq_wardcraft": 6,
-     "cs_wardcraft": 3,
-     "cx_wardcraft": 2
-    },
-    "effect": "봉인 공예 품질 +6 · 봉인 공예 재료 한 종류 돌려받기 3% · 봉인 공예 하나 더 2%"
-   },
-   {
     "id": "ct_wardcraft_50",
     "name": "만법을 새긴 자",
-    "line": "봉인 공예",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "봉인 공예 기술 50단계",
     "rule": {
      "skill": "wardcraft",
      "n": 50
     },
     "bonus": {
-     "cq_wardcraft": 8,
-     "cx_wardcraft": 4,
-     "cs_wardcraft": 3
+     "cq_wardcraft": 6,
+     "cx_wardcraft": 3,
+     "cs_wardcraft": 2
     },
-    "effect": "봉인 공예 품질 +8 · 봉인 공예 재료 한 종류 돌려받기 3% · 봉인 공예 하나 더 4%"
+    "effect": "봉인 공예 품질 +6 · 봉인 공예 재료 한 종류 돌려받기 2% · 봉인 공예 하나 더 3%"
    },
    {
-    "id": "ct_alchemy_10",
-    "name": "약탕관 지기",
-    "line": "연금",
-    "grade": 1,
-    "condition": "연금 기술 10단계",
-    "rule": {
-     "skill": "alchemy",
-     "n": 10
-    },
-    "bonus": {
-     "cq_alchemy": 2
-    },
-    "effect": "연금 품질 +2"
-   },
-   {
-    "id": "ct_alchemy_20",
+    "id": "ct_alchemy_15",
     "name": "달이는 손",
-    "line": "연금",
+    "kind": "제작",
     "grade": 2,
-    "condition": "연금 기술 20단계",
+    "condition": "연금 기술 15단계",
     "rule": {
      "skill": "alchemy",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_alchemy": 3,
@@ -1948,14 +1908,14 @@
     "effect": "연금 품질 +3 · 연금 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_alchemy_30",
-    "name": "단약 장인",
-    "line": "연금",
+    "id": "ct_alchemy_35",
+    "name": "연단의 대가",
+    "kind": "제작",
     "grade": 3,
-    "condition": "연금 기술 30단계",
+    "condition": "연금 기술 35단계",
     "rule": {
      "skill": "alchemy",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_alchemy": 4,
@@ -1964,63 +1924,31 @@
     "effect": "연금 품질 +4 · 연금 재료 한 종류 돌려받기 2%"
    },
    {
-    "id": "ct_alchemy_40",
-    "name": "연단의 대가",
-    "line": "연금",
-    "grade": 4,
-    "condition": "연금 기술 40단계",
-    "rule": {
-     "skill": "alchemy",
-     "n": 40
-    },
-    "bonus": {
-     "cq_alchemy": 6,
-     "cs_alchemy": 3,
-     "cx_alchemy": 2
-    },
-    "effect": "연금 품질 +6 · 연금 재료 한 종류 돌려받기 3% · 연금 하나 더 2%"
-   },
-   {
     "id": "ct_alchemy_50",
     "name": "금단을 빚은 자",
-    "line": "연금",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "연금 기술 50단계",
     "rule": {
      "skill": "alchemy",
      "n": 50
     },
     "bonus": {
-     "cq_alchemy": 8,
-     "cx_alchemy": 4,
-     "cs_alchemy": 3
+     "cq_alchemy": 6,
+     "cx_alchemy": 3,
+     "cs_alchemy": 2
     },
-    "effect": "연금 품질 +8 · 연금 재료 한 종류 돌려받기 3% · 연금 하나 더 4%"
+    "effect": "연금 품질 +6 · 연금 재료 한 종류 돌려받기 2% · 연금 하나 더 3%"
    },
    {
-    "id": "ct_cooking_10",
-    "name": "부뚜막 지기",
-    "line": "요리",
-    "grade": 1,
-    "condition": "요리 기술 10단계",
-    "rule": {
-     "skill": "cooking",
-     "n": 10
-    },
-    "bonus": {
-     "cq_cooking": 2
-    },
-    "effect": "요리 품질 +2"
-   },
-   {
-    "id": "ct_cooking_20",
+    "id": "ct_cooking_15",
     "name": "간 보는 손",
-    "line": "요리",
+    "kind": "제작",
     "grade": 2,
-    "condition": "요리 기술 20단계",
+    "condition": "요리 기술 15단계",
     "rule": {
      "skill": "cooking",
-     "n": 20
+     "n": 15
     },
     "bonus": {
      "cq_cooking": 3,
@@ -2029,14 +1957,14 @@
     "effect": "요리 품질 +3 · 요리 재료 한 종류 돌려받기 1%"
    },
    {
-    "id": "ct_cooking_30",
-    "name": "숙수",
-    "line": "요리",
+    "id": "ct_cooking_35",
+    "name": "수라간 숙수",
+    "kind": "제작",
     "grade": 3,
-    "condition": "요리 기술 30단계",
+    "condition": "요리 기술 35단계",
     "rule": {
      "skill": "cooking",
-     "n": 30
+     "n": 35
     },
     "bonus": {
      "cq_cooking": 4,
@@ -2046,42 +1974,200 @@
     "effect": "요리 품질 +4 · 요리 재료 한 종류 돌려받기 2% · 내가 먹은 음식 기운 지속 +5%"
    },
    {
-    "id": "ct_cooking_40",
-    "name": "수라간 숙수",
-    "line": "요리",
-    "grade": 4,
-    "condition": "요리 기술 40단계",
-    "rule": {
-     "skill": "cooking",
-     "n": 40
-    },
-    "bonus": {
-     "cq_cooking": 6,
-     "cs_cooking": 3,
-     "cx_cooking": 2,
-     "food_dur_pct": 10
-    },
-    "effect": "요리 품질 +6 · 요리 재료 한 종류 돌려받기 3% · 요리 하나 더 2% · 내가 먹은 음식 기운 지속 +10%"
-   },
-   {
     "id": "ct_cooking_50",
     "name": "팔도 밥상의 주인",
-    "line": "요리",
-    "grade": 5,
+    "kind": "제작 · 계열 만렙",
+    "grade": 4,
     "condition": "요리 기술 50단계",
     "rule": {
      "skill": "cooking",
      "n": 50
     },
     "bonus": {
-     "cq_cooking": 8,
-     "cx_cooking": 4,
-     "cs_cooking": 3,
-     "food_dur_pct": 15
+     "cq_cooking": 6,
+     "cx_cooking": 3,
+     "cs_cooking": 2,
+     "food_dur_pct": 10
     },
-    "effect": "요리 품질 +8 · 요리 재료 한 종류 돌려받기 3% · 요리 하나 더 4% · 내가 먹은 음식 기운 지속 +15%"
+    "effect": "요리 품질 +6 · 요리 재료 한 종류 돌려받기 2% · 요리 하나 더 3% · 내가 먹은 음식 기운 지속 +10%"
+   },
+   {
+    "id": "gt_foraging_25",
+    "name": "산야를 아는 손",
+    "kind": "채집",
+    "grade": 2,
+    "condition": "채집 기술 25단계",
+    "rule": {
+     "skill": "foraging",
+     "n": 25
+    },
+    "bonus": {
+     "gq_foraging": 3,
+     "gr_foraging": 1
+    },
+    "effect": "채집 채집량 +3% · 채집 희귀품 +1%"
+   },
+   {
+    "id": "gt_foraging_50",
+    "name": "산천을 거둔 자",
+    "kind": "채집 · 계열 만렙",
+    "grade": 4,
+    "condition": "채집 기술 50단계",
+    "rule": {
+     "skill": "foraging",
+     "n": 50
+    },
+    "bonus": {
+     "gq_foraging": 6,
+     "gr_foraging": 3
+    },
+    "effect": "채집 채집량 +6% · 채집 희귀품 +3%"
+   },
+   {
+    "id": "gt_mining_25",
+    "name": "맥을 짚는 광부",
+    "kind": "채집",
+    "grade": 2,
+    "condition": "채광 기술 25단계",
+    "rule": {
+     "skill": "mining",
+     "n": 25
+    },
+    "bonus": {
+     "gq_mining": 3,
+     "gr_mining": 1
+    },
+    "effect": "채광 채집량 +3% · 채광 희귀품 +1%"
+   },
+   {
+    "id": "gt_mining_50",
+    "name": "지맥의 주인",
+    "kind": "채집 · 계열 만렙",
+    "grade": 4,
+    "condition": "채광 기술 50단계",
+    "rule": {
+     "skill": "mining",
+     "n": 50
+    },
+    "bonus": {
+     "gq_mining": 6,
+     "gr_mining": 3
+    },
+    "effect": "채광 채집량 +6% · 채광 희귀품 +3%"
+   },
+   {
+    "id": "gt_fishing_25",
+    "name": "찌를 읽는 낚시꾼",
+    "kind": "채집",
+    "grade": 2,
+    "condition": "낚시 기술 25단계",
+    "rule": {
+     "skill": "fishing",
+     "n": 25
+    },
+    "bonus": {
+     "fish_bite_pct": 3,
+     "fish_rare_pct": 2
+    },
+    "effect": "입질 +3%p · 희귀 어종 +2%"
+   },
+   {
+    "id": "gt_fishing_50",
+    "name": "용왕의 벗",
+    "kind": "채집 · 계열 만렙",
+    "grade": 4,
+    "condition": "낚시 기술 50단계",
+    "rule": {
+     "skill": "fishing",
+     "n": 50
+    },
+    "bonus": {
+     "fish_rare_pct": 6,
+     "fish_size_pct": 4,
+     "fish_bite_pct": 3
+    },
+    "effect": "희귀 어종 +6% · 크기 +4% · 입질 +3%p"
+   },
+   {
+    "id": "ct_all_50",
+    "name": "만공(萬工)의 주인",
+    "kind": "제작 · 전 계열 만렙",
+    "grade": 5,
+    "condition": "제작 여덟 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예·연금·요리) 모두 50단계",
+    "rule": {
+     "skill_all": [
+      "smithing",
+      "carpentry",
+      "artifice",
+      "wardcraft",
+      "weaving",
+      "leatherwork",
+      "alchemy",
+      "cooking"
+     ],
+     "n": 50
+    },
+    "bonus": {
+     "craft_quality": 6,
+     "cs_all": 3,
+     "cx_all": 2
+    },
+    "effect": "모든 제작 품질 +6 · 모든 제작 재료 한 종류 돌려받기 3% · 하나 더 2%"
+   },
+   {
+    "id": "gt_all_50",
+    "name": "천지를 거둔 자",
+    "kind": "채집 · 전 계열 만렙",
+    "grade": 5,
+    "condition": "채집·채광·낚시 모두 50단계",
+    "rule": {
+     "skill_all": [
+      "foraging",
+      "mining",
+      "fishing"
+     ],
+     "n": 50
+    },
+    "bonus": {
+     "gather_qty_pct": 6,
+     "rare_loot_pct": 3,
+     "fish_bite_pct": 4
+    },
+    "effect": "모든 채집량 +6% · 희귀품 +3% · 입질 +4%p"
    }
   ],
-  "old_titles": "전체 제작 숙련 단계를 조건으로 쓰는 칭호는 지금 없다. 제작 횟수·품질 칭호 넷(솜씨 입문 20명·백련 장인 13명·명품 장인 18명·공방의 주인 4명 보유)과 비밀 「한낮의 장인」(7명)은 분야와 상관없는 제작 활동 칭호라 그대로 둔다(권장): 공방의 주인은 칭호 묶음 한 칸·명품 동무 출처라 바꾸면 이어진 보상이 흔들리고, 효과(제작 품질 +1~+6)는 장비·칭호의 품질처럼 모든 분야에 붙는 몫으로 남는다. 다만 「명품 장인」(품질 90 이상 한 번)은 품질식을 고치면 지금보다 얻기 어려워지는데 이미 18명이 가졌으니 그대로 둔다. 칭호가 215 → 255개가 되어 「칭호 수집」 규칙(title_collector·title_master)이 쉬워진다 — 그 조건 수를 올릴지 결정."
+  "collector": {
+   "now": "칭호 수집가(title_collector, 3등급) 칭호 20개 — 21명 보유 · 칭호의 주인(title_master, 5등급) 칭호 60개 — 8명 보유. 조사원별 칭호 수 위에서부터 104·97·96·87·81·80·77·70·55·53…",
+   "new": "칭호 수집가 23개 · 칭호의 주인 69개(칭호 수 215 → 247, 약 ×1.15). 이미 가진 사람은 그대로 가진다(칭호는 거두지 않음). 69개를 넘긴 사람이 지금 8명이라 5등급의 무게는 그대로다."
+  },
+  "old_titles": "셋째 시안대로 제작 횟수·품질 칭호 넷(솜씨 입문·백련 장인·명품 장인·공방의 주인)과 한낮의 장인은 그대로 둔다(전체 제작 숙련 단계 칭호는 원래 없음)."
+ },
+ "dismantle": {
+  "xp": "world_dismantle_item: 분해 한 번에 그 장비 분야 계열 기술 경험 12(제작 한 번과 같음, world_skill_add로 skill_progress에 더함). 지금 주는 제작 경험(crafting_xp 6×단계)은 그대로. 분해 기록 world_events 'dismantle' payload에 line을 남긴다. 기술 경험은 world_event_char_apply가 아니라 분해 함수가 캐릭터 행을 고치는 같은 UPDATE에서 더한다(행 갱신을 늘리지 않음).",
+  "line_of_item": "새 도우미 world_gear_line(item_id): ① 그 물품을 만드는 제작법이 있으면 그 제작법의 world_craft_line(제작법이 여럿이면 첫째). ② 없으면(전리품·상점·시작 장비 61가지) 무기는 weapon_type(melee → 단조 · ranged → 목공 · magic → 법구 공예), 그 밖은 부위: 갑옷 → 직조(이름에 갑·찰·미늘·투구가 든 것은 단조: 금강 철찰갑·쇠미늘 갑옷 / 야행복은 가죽 공예: 무영 야행복) · 관모 → 직조(금강 투구는 단조) · 신 → 가죽 공예 · 노리개 → 직조 · 호신부·탈 → 봉인 공예 · 도구 → world_tool_lines의 pick·knife면 단조, 영등은 법구 공예. 이름 규칙 대신 제작법 없는 61가지를 표(world_gear_line_map)에 한 번 적어 두는 것을 권한다(새 장비를 넣을 때도 한 줄).",
+  "need": {
+   "now": "world_dismantle_need: 1단계 1 · 2단계 5 · 3단계 10 · 4단계 15 · 5·6단계 20, 전체 제작 숙련(crafting_rank).",
+   "new": "1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15, 그 장비 분야 계열 단계(권장).",
+   "why": "분해가 그 분야 계열 경험을 주므로 조건도 그 계열 단계가 자연스럽다(목공 장비를 분해하며 목공이 오름). 6단계 장비(Lv32 귀허도)는 지금 5단계와 같이 20이었는데 따로 15로 둔다. 곡선을 완만히 해 새 계열(이주 뒤 대부분 1~7단계)도 2~3단계 장비부터 분해할 수 있다.",
+   "risk": "지금 전체 제작 숙련 16인 조사원도 새 계열(예: 목공 3단계)의 장비는 2단계까지만 분해한다 — 지금은 4단계까지 됐다. 원하면 조건을 「그 계열 단계와 전체 제작 숙련의 절반 가운데 큰 값」으로 완충."
+  }
+ },
+ "tracking_36": {
+  "line": "tracking(조사 — 화면 core.js 이름표는 지금 '탐사')",
+  "check": "추적 계열 36단계에는 기본 기술 「귀신 길잡이」(단서 +4%)만 있고 추가·택일·숙달 칸은 비어 있다(추가 13·30, 택일 24·43, 숙달 50). 기본 기술은 그대로 두고 같은 단계에 추가 기술(slot extra)을 하나 더한다 — world_skill_has·world_skill_procs는 extra를 단계만 보고 판정하므로 36단계 extra도 고칠 것 없이 동작하고, 캐릭터 › 기술 노드(3·8·…·36·…)도 이미 있다.",
+  "skill": {
+   "rank": 36,
+   "slot": "extra",
+   "name": "영초 감별",
+   "effect": "위험도 7 이상 지역에서 탐색(world_field_search)이나 조사 지점 살피기(world_region_site_explore)를 할 때 0.2% 확률로 귀령초 하나(world_gwiryeong_reserve(uid, 'skill_tracking') 경유 — 72시간 개인 제한·서버 7일 몫 그대로)."
+  },
+  "skill_id": "tracking_x36",
+  "notes": "옛 약초 「영초 감별」(herbalism_c43b, reserve 사유 'skill_herbalism')은 계열과 함께 빠진다. CLAUDE.md §8 귀령초 얻는 곳의 「택일 기술 「영초 감별」 0.2%」를 「조사 계열 36단계 「영초 감별」 0.2%(탐색·조사 지점)」로 고친다. 탐색 한 번의 캐릭터 행 갱신을 늘리지 않게, 맞을 때만 탐색 마무리 갱신의 inventory에 더한다."
+ },
+ "combo_balance": "채집 3(영맥 판독·야전 약방·현장 조제 — 모두 기존) · 채광 3(바위 몸·영맥 세공·짐꾼의 요령) · 낚시 3(그물 짓기·갯가 주방·낚싯대 깎는 손). 제작 계열마다 하나 이상: 단조(대장장이 검객, 근접)·봉인 공예(겹봉인, 봉인술)·연금(현장 조제)·법구 공예·가죽 공예·직조·요리·목공(위). 2026-10-30에 바뀌는 조합의 두 계열 18단계를 다 채운 사람은 없다(연금 최고 8·약초 경험 최고 533).",
+ "xp_unify": {
+  "now": "제작: 한 번 기술 경험 12(world_event_char_apply, 만든 개수와 무관) — 요리만 기술 경험 없이 요리 숙련 10 + 난이도×5. 채집: 한 번 8(네 계열 같음). 낚시: 기술 경험 없음(gathering_xp 6~50만). 분해: 기술 경험 없음(crafting_xp 6×단계). 자율 정비: floor(4.2×시간)을 정비 기술로.",
+  "new": "제작 여덟 계열(요리 포함) 한 번 12 · 분해 한 번 12 · 채집·채광 한 번 8 · 낚시 한 번 8(낚든 놓치든 — 탐색력 1을 쓰는 같은 한 번) · 자율 정비 floor(4.2×시간)을 고른 제작 분야 계열로(그대로). 셋째 시안의 낚시 희귀도 덤·놓침 3은 뺀다. 기술 경험 보정(training_xp_pct)은 모두에게 같게.",
+  "profession_differs": "분야마다 다른 것은 생활 전문화뿐: 고른 제작 분야 제작법 품질 +12, 고른 채집 분야 채집터 수량 +1(낚시 전문화는 입질 +8%p)."
  }
 }
