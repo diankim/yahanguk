@@ -204,7 +204,9 @@ function draw(box, id, inv, prices, mode) {
       const q = k === 'discard-all' ? dcMax : Math.floor(Number($('#dc-qty', box)?.value) || 0);
       if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
       if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
-      await guard(d, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
+      const ok = await guard(d, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
+      // 버리고 나면 이 정보 창을 닫아 가방으로 돌아간다(7.3.5, 제보 36). 겹쳐 뜬 창이면 그 창만 닫는다.
+      if (ok) { box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click(); return; }
     }
     // 바뀐 가방으로 창을 다시 그린다(다 써서 0개가 되면 정보만 남는다)
     try {
