@@ -12,7 +12,7 @@ async function fingerprint() {
     try {
       const r = await fetch(`${f}?vc=${Date.now()}`, { method: f === 'version.json' ? 'GET' : 'HEAD', cache: 'no-store' });
       if (!r.ok) return '';
-      if (f === 'version.json') { const j = await r.json().catch(() => null); return `v:${j?.version || ''}`; }
+      if (f === 'version.json') { const j = await r.json().catch(() => null); if (j) setNotice(j.notice); return `v:${j?.version || ''}`; }
       return r.headers.get('etag') || r.headers.get('last-modified') || '';
     } catch { return null; }
   }));
@@ -57,10 +57,30 @@ function show(kind, key) {
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'confirm' }));
 }
 
+// 배포 예고 띠(7.4.6): version.json의 notice(글 한 줄, 비우면 내림)를 화면 맨 위에 띄운다.
+// version 값만 비교하므로 notice만 바꿔 올리면 새로고침 안내는 뜨지 않는다. 서버(DB) 요청 없이 정적 파일만 2분마다 읽는다.
+let noticeText = '', noticeHidden = '';
+function setNotice(t) {
+  t = typeof t === 'string' ? t.trim() : '';
+  if (t === noticeText) return;
+  noticeText = t;
+  let el = document.querySelector('.deploy-notice');
+  if (!t) { el?.remove(); return; }
+  if (noticeHidden === t) return;
+  if (!el) { el = document.createElement('div'); el.className = 'deploy-notice'; el.setAttribute('role', 'status'); document.body.prepend(el); }
+  el.innerHTML = `${icon('bell', 16)}<span>${esc(t)}</span><button class="btn ghost small" type="button" aria-label="닫기">닫기</button>`;
+  el.querySelector('button').onclick = () => { noticeHidden = t; el.remove(); };
+}
+async function readNotice() {
+  if (document.hidden) return;
+  try { const r = await fetch(`version.json?vc=${Date.now()}`, { cache: 'no-store' }); if (r.ok) setNotice((await r.json())?.notice); } catch { /* 다음에 다시 */ }
+}
+
 export function mountVersionCheck() {
   if (timer) return;
   check();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { check(); readNotice(); } });
   window.addEventListener('focus', check);
   timer = setInterval(check, 5 * 60 * 1000);
+  setInterval(readNotice, 2 * 60 * 1000);
 }

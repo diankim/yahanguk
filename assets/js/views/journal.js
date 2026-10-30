@@ -183,13 +183,20 @@ async function side(body, keep) {
   $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
   bindQuests(body);
 }
+// 진행 중인 퀘스트는 접혀 있어도 지금 할 일과 장소가 보이게(7.4.6, 제보)
+function nowLine(q) {
+  if (q.status !== 'active' || !q.cur) return '';
+  const left = (q.cur.tasks || []).filter(t => t.cur < t.n), regs = [...new Set(left.flatMap(t => t.regions || []))].map(nameOf);
+  const where = q.cur.ready ? `보고: ${(q.cur.at_names || []).join('·') || '의뢰인에게'}` : regs.length ? `할 곳: ${regs.slice(0, 3).join('·')}` : (q.cur.at_names || []).length ? `보고: ${q.cur.at_names.join('·')}` : '';
+  return `<p class="q-now">${icon('chevron', 12)}<span><b>${q.cur.ready ? '보고하면 끝' : `장면 ${q.cur.step}`}</b> · ${esc(q.cur.goal || q.cur.title || '')}${where ? ` <small class="muted">(${esc(where)})</small>` : ''}</span></p>`;
+}
 function sideItem(q, map) {
   const [sn, tone] = STATUS_N[q.status] || ['', ''];
   const subCat = (q.cat || '').split('·')[1] || '';
   const where = `${icon('pin', 12)} ${esc(q.region_name || '')} · Lv.${q.min_level}${q.here ? ' · 지금 여기' : ''}`;
   return `<li class="q-item ${q.status} ${q.cur?.ready ? 'ready' : ''}"><details ${q.status === 'active' ? 'open' : ''}>
     <summary><header>${chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
-      <p class="q-at ${q.here ? 'ok' : ''}">${where}</p></summary>
+      <p class="q-at ${q.here ? 'ok' : ''}">${where}</p>${nowLine(q)}</summary>
     <p class="q-goal">${esc(q.summary || '')}</p>
     ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`
       : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}

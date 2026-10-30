@@ -17,6 +17,8 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 // 그 뒤에는 캐릭터마다 바뀌는 몫만 받는다(world_inventory_state). 서버에 아직 없으면 전체를 받는다.
 // 물품 목록·제작법은 서버 규칙 버전(db_version)과 함께 기기에도 남겨, 새로고침해도 버전이 같으면 가벼운 몫만 받는다.
 let invStatic = null, invLite = true;
+// 받아 둔 제작법 목록(퀘스트의 「제작법」 단추가 쓴다, 아직 안 받았으면 빈 목록)
+export const knownRecipes = () => invStatic?.recipes || [];
 const INV_KEY = 'yh-inv-static-v1';
 async function inventorySnap() {
   if (!invStatic) {
