@@ -1,0 +1,180 @@
+[
+ {
+  "q": "sq_ash_mountain_1",
+  "step": 2,
+  "need": {
+   "at": [
+    "ash_mountain"
+   ],
+   "tasks": [
+    {
+     "n": 4,
+     "r": [
+      "ash_mountain"
+     ],
+     "t": "gather",
+     "items": [
+      "raw_iron"
+     ]
+    },
+    {
+     "n": 2,
+     "r": [
+      "ash_mountain"
+     ],
+     "t": "gather",
+     "items": [
+      "ore"
+     ]
+    }
+   ]
+  },
+  "old_need": {
+   "at": [
+    "ash_mountain"
+   ],
+   "tasks": [
+    {
+     "n": 4,
+     "r": [
+      "ash_mountain"
+     ],
+     "t": "gather",
+     "items": [
+      "raw_iron"
+     ]
+    },
+    {
+     "n": 2,
+     "r": [
+      "ash_mountain"
+     ],
+     "t": "gather",
+     "items": [
+      "steel_ingot"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "q": "sq_ash_mountain_1",
+  "step": 3,
+  "need": {
+   "at": [
+    "ash_mountain"
+   ],
+   "give": {
+    "raw_iron": 4,
+    "ore": 2
+   }
+  },
+  "old_need": {
+   "at": [
+    "ash_mountain"
+   ],
+   "give": {
+    "raw_iron": 4,
+    "steel_ingot": 2
+   }
+  }
+ },
+ {
+  "q": "sq_crimson_mine_2",
+  "step": 2,
+  "need": {
+   "at": [
+    "crimson_mine"
+   ],
+   "tasks": [
+    {
+     "n": 3,
+     "r": [
+      "crimson_mine"
+     ],
+     "t": "gather",
+     "items": [
+      "ore"
+     ]
+    },
+    {
+     "n": 2,
+     "r": [
+      "crimson_mine"
+     ],
+     "t": "gather",
+     "items": [
+      "raw_iron"
+     ]
+    }
+   ]
+  },
+  "old_need": {
+   "at": [
+    "crimson_mine"
+   ],
+   "tasks": [
+    {
+     "n": 3,
+     "r": [
+      "crimson_mine"
+     ],
+     "t": "gather",
+     "items": [
+      "ore"
+     ]
+    },
+    {
+     "n": 2,
+     "r": [
+      "crimson_mine"
+     ],
+     "t": "gather",
+     "items": [
+      "steel_ingot"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "q": "sq_crimson_mine_2",
+  "step": 3,
+  "need": {
+   "at": [
+    "ember_village"
+   ],
+   "give": {
+    "ore": 3,
+    "raw_iron": 2
+   },
+   "tasks": [
+    {
+     "n": 1,
+     "r": [
+      "ember_village"
+     ],
+     "t": "travel"
+    }
+   ]
+  },
+  "old_need": {
+   "at": [
+    "ember_village"
+   ],
+   "give": {
+    "ore": 3,
+    "steel_ingot": 2
+   },
+   "tasks": [
+    {
+     "n": 1,
+     "r": [
+      "ember_village"
+     ],
+     "t": "travel"
+    }
+   ]
+  }
+ }
+]

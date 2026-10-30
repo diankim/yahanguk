@@ -1,0 +1,517 @@
+[
+ {
+  "item": 1,
+  "where": "mq_ash_sea #1 줄1",
+  "what": "「하룻밤에 하나씩」(한 달이면 다 꺼짐)을 「지난달부터 하나씩」으로 고쳐 셋이 남은 지금과 맞춤"
+ },
+ {
+  "item": 1,
+  "where": "mq_ash_sea #3 줄5",
+  "what": "마지막 등대지기가 남은 세 등대를 혼자 돌며 지킨다고 미리 알림"
+ },
+ {
+  "item": 1,
+  "where": "mq_ash_sea #4 줄0",
+  "what": "도화가 등대를 돌아다니며 돌보는 모습을 서술에 더함"
+ },
+ {
+  "item": 1,
+  "where": "mq_ash_sea #4 줄2",
+  "what": "도화가 마지막 등대지기로 남은 세 등대를 돌아가며 지킨다고 밝힘(나머지 여덟 = 10장 「등대지기 여덟」)"
+ },
+ {
+  "item": 1,
+  "where": "mq_ash_sea #4 줄6",
+  "what": "불이 꺼져 가는 까닭을 혼자 세 등대를 돌보느라 기름이 떨어진 것으로 이음"
+ },
+ {
+  "item": 1,
+  "where": "mq_ash_sea 결말 줄3",
+  "what": "결말에서도 도화가 남은 세 등대를 돌아가며 지킨다고 맞춤"
+ },
+ {
+  "item": 1,
+  "where": "sq_nine_lighthouse_1 #4 줄4",
+  "what": "(Lv14) 다른 등대를 누군가 돌본다는 암시로 바꿔 8장 도화와 이음"
+ },
+ {
+  "item": 1,
+  "where": "sq_black_tide_rift_1 #1 줄1",
+  "what": "(Lv21) 등대가 꺼지기 시작한 것은 8장 「지난달」이므로, 아들이 사라진 때를 폭풍 치던 밤으로 바꿈"
+ },
+ {
+  "item": 1,
+  "where": "southern_remnant:rank:4 넣은 줄(after 2)",
+  "what": "「아홉 가운데 하나만 켜짐」을 빼고 꺼지지 않은 등불이 남았다는 말로(8장 「셋」과 어긋나지 않게)"
+ },
+ {
+  "item": 1,
+  "where": "southern_remnant:rank:5 줄0",
+  "what": "하나만 켜졌다는 말을 빼고, 등대지기가 섬을 돌며 지켜 온 불로 맞춤"
+ },
+ {
+  "item": 2,
+  "where": "jq_sealmaster #2 줄1",
+  "what": "(Lv3) 윤도한이 금줄을 거꾸로 묶은 것을 아는 듯한 말(범인 암시)을 흐림"
+ },
+ {
+  "item": 2,
+  "where": "jq_sealmaster #3 줄0",
+  "what": "(Lv3) 9장 글씨 단서(정갈한 글씨)를 미리 짚는 서술을 바꿈"
+ },
+ {
+  "item": 2,
+  "where": "aq_archivebureau #3 줄2",
+  "what": "(Lv4) 「정청 출납부」로 윤도한을 가리키던 것을 「정청 안」(1장에서 이미 나온 내용)으로 흐림"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #1 줄1",
+  "what": "(5장 뒤) 아직 하지 않은 「종을 따라 내려감」을 「종의 자취를 쫓는」으로"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #3 줄1",
+  "what": "(Lv16) 9장 정체(연화원 관리)를 드러내던 직함을 「야행국 본부」까지만 남김"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #3 줄2",
+  "what": "(Lv16) 「스스로 이름을 내려놓음」(9장)을 뺌"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #3 줄3",
+  "what": "(Lv16) 「내려놓은 이름」을 빼고 막연한 실마리로"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #4 줄0",
+  "what": "(Lv16) 연화원 직함 언급 삭제"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #4 줄1",
+  "what": "(Lv16) 「이름을 버린 자」(9장 자기 지움)를 흐림"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #4 줄2",
+  "what": "(Lv16) 바뀐 직함에 맞춤"
+ },
+ {
+  "item": 2,
+  "where": "sq_forgotten_city_1 #4 줄3",
+  "what": "(Lv16) 9장 제목 「등잔 밑」을 그대로 쓰던 말을 막연한 암시로"
+ },
+ {
+  "item": 2,
+  "where": "sq_under_root_1 #3 줄1",
+  "what": "(Lv17) 10장 장소 「구중 봉연」을 이름으로 답하던 것을 흐림"
+ },
+ {
+  "item": 2,
+  "where": "sq_red_moon_fort_1 #2 줄2",
+  "what": "(Lv15, 6장 Lv18 전) 아직 오지 않은 「월식」을 「붉은 보름」으로"
+ },
+ {
+  "item": 2,
+  "where": "sq_red_moon_fort_1 #3 줄1",
+  "what": "(Lv15) 「월식 날」을 「붉은 보름달」로"
+ },
+ {
+  "item": 2,
+  "where": "sq_red_moon_fort_2 #1 줄1",
+  "what": "(Lv16) 「월식 날」을 뺌"
+ },
+ {
+  "item": 2,
+  "where": "sq_thunder_peak_2 #3 줄3",
+  "what": "(6장 뒤) 여운비가 알 수 없던 월화의 말을 조사원에게서 들은 것으로"
+ },
+ {
+  "item": 2,
+  "where": "sq_nine_lighthouse_2 #3 줄4",
+  "what": "(Lv15) 8장 사건(흑련회가 등대를 끔)을 미리 말하던 것을 흐림"
+ },
+ {
+  "item": 4,
+  "where": "hs_byeolchae #2 줄0",
+  "what": "객사 살림꾼 이름 보미→순덕"
+ },
+ {
+  "item": 4,
+  "where": "hs_byeolchae #3 줄0",
+  "what": "객사 살림꾼 이름 보미→순덕"
+ },
+ {
+  "item": 4,
+  "where": "hs_byeolchae #1 할 일 문구",
+  "what": "할 일 문구의 보미→순덕"
+ },
+ {
+  "item": 5,
+  "where": "sq_ash_mountain_1 #1 줄2",
+  "what": "맡기는 물품 강철 주괴 2 → 월철 광석 2"
+ },
+ {
+  "item": 5,
+  "where": "sq_ash_mountain_1 #2 줄1",
+  "what": "저절로 굳은 강철 이야기를 광맥 이야기로"
+ },
+ {
+  "item": 5,
+  "where": "sq_ash_mountain_1 #2 줄2",
+  "what": "넘길 물품 강철 주괴 → 월철 광석"
+ },
+ {
+  "item": 5,
+  "where": "sq_ash_mountain_1 #2 할 일 문구",
+  "what": "할 일 문구 강철 주괴 → 월철 광석"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #1 줄2",
+  "what": "맡기는 물품 강철 주괴 2 → 생 월철 2"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #2 줄1",
+  "what": "강철 덩이 → 생 월철"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #2 줄2",
+  "what": "넘길 물품 강철 주괴 → 생 월철"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #3 줄0",
+  "what": "주괴 → 생 월철"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #2 할 일 문구",
+  "what": "할 일 문구 강철 주괴 → 생 월철"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #3 할 일 문구",
+  "what": "할 일 문구 주괴 → 생 월철"
+ },
+ {
+  "item": 3,
+  "where": "night_office:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 3,
+  "where": "black_lotus:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 3,
+  "where": "mandate_court:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 3,
+  "where": "north_league:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 3,
+  "where": "red_moon_cult:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 3,
+  "where": "river_alliance:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 3,
+  "where": "southern_remnant:rejoin:1 끝에 새 줄",
+  "what": "다시 든 조사원에게 등급 2 일(그 세력 rank:2 할 일)과 평판 300 조건을 맡기는 줄"
+ },
+ {
+  "item": 5,
+  "where": "sq_ash_mountain_1 #2 need",
+  "what": "강철 주괴(steel_ingot) → 월철 광석(ore), 개수 그대로"
+ },
+ {
+  "item": 5,
+  "where": "sq_ash_mountain_1 #3 need",
+  "what": "강철 주괴(steel_ingot) → 월철 광석(ore), 개수 그대로"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #2 need",
+  "what": "강철 주괴(steel_ingot) → 생 월철(raw_iron), 개수 그대로"
+ },
+ {
+  "item": 5,
+  "where": "sq_crimson_mine_2 #3 need",
+  "what": "강철 주괴(steel_ingot) → 생 월철(raw_iron), 개수 그대로"
+ },
+ {
+  "item": 4,
+  "where": "world_quest_npcs q:hs_bomi",
+  "what": "이름 「객사 살림꾼 보미」 → 「객사 살림꾼 순덕」(npcs.json)"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_seal #1 줄17 뒤 새 줄",
+  "what": "연서희가 「명줄」을 처음 풀어 줌(장부 한 쪽 = 사람)"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_seal #2 줄2 뒤 새 줄",
+  "what": "모가람이 「해마다 오래된 쪽을 거둔다」고 무심코 말함(명부 정리 복선)"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_seal #2 줄3",
+  "what": "책벌레가 이름을 갉아 먹는 요괴임을 밝힘"
+ },
+ {
+  "item": 6,
+  "where": "mq_drowned_ledger #4 줄5 뒤 새 줄",
+  "what": "노들 영감이 이름을 사고파는 장사를 넌지시 비침"
+ },
+ {
+  "item": 6,
+  "where": "mq_drowned_ledger 결말 줄5",
+  "what": "윤도한이 죽은 이라도 이름이 남으면 영이라는 것을 풀어 줌"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_moon_oath #4 줄2",
+  "what": "「지워진 이름」 = 적힌 데도 부르는 이도 없는 이름으로 풀이"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_moon_oath #4 줄6 뒤 새 줄",
+  "what": "사월이 이름이 지워진다는 것의 무서움을 한마디로 말함"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_moon_oath #5 줄3",
+  "what": "단비가 정청 장부의 오래된 쪽을 비꼼(명부 정리 복선)"
+ },
+ {
+  "item": 6,
+  "where": "mq_red_moon_oath 결말 줄8",
+  "what": "「정청은 이름을 지키는 법을 알아요?」에 한설의 침묵을 더해 복선"
+ },
+ {
+  "item": 6,
+  "where": "mq_frost_seal #4 줄5 뒤 새 줄",
+  "what": "적힌 이름이 말뚝(봉인)을 붙잡는다는 백무의 말"
+ },
+ {
+  "item": 6,
+  "where": "mq_nameless_bell #3 줄1",
+  "what": "혈엽림 나무 = 이름이 남은 조상 영이었다가 이름을 잃음"
+ },
+ {
+  "item": 6,
+  "where": "mq_nameless_bell #3 줄2 뒤 새 줄",
+  "what": "이름을 다 잃으면 요괴가 되어 갈래로 불린다고 소이가 풀어 줌"
+ },
+ {
+  "item": 6,
+  "where": "mq_nameless_bell #5 줄6",
+  "what": "무명 = 이름을 맡겨 둔 빈칸(설정 §3)으로 맞춤"
+ },
+ {
+  "item": 6,
+  "where": "mq_nameless_bell #5 줄6 뒤 새 줄",
+  "what": "구슬이 「이름을 맡긴다」를 처음 풀어 줌"
+ },
+ {
+  "item": 6,
+  "where": "mq_eclipse_gate #1 줄4",
+  "what": "흑사단 명부의 이름 = 적힌 가닥만 남은 영, 그것을 걷어 바침"
+ },
+ {
+  "item": 6,
+  "where": "mq_eclipse_gate #4 줄3 뒤 새 줄",
+  "what": "월화가 이름을 버리는 쪽(정청)을 넌지시 비꼼"
+ },
+ {
+  "item": 6,
+  "where": "mq_eclipse_gate #5 줄3",
+  "what": "기억하고 세어 주는 것이 이름을 붙든다는 사월의 말"
+ },
+ {
+  "item": 6,
+  "where": "mq_sunken_lantern #1 줄7 뒤 새 줄",
+  "what": "노들 영감이 「역린」을 처음 풀어 줌"
+ },
+ {
+  "item": 6,
+  "where": "mq_sunken_lantern #3 줄2",
+  "what": "지워졌는데 흩어지지 않은 행렬 = 누군가 세어 붙들고 있음(윤도한 복선)"
+ },
+ {
+  "item": 6,
+  "where": "mq_ash_sea #3 줄3",
+  "what": "망국 백성이 정리 순서 맨 앞이라는 복선"
+ },
+ {
+  "item": 6,
+  "where": "mq_ash_sea #3 줄4",
+  "what": "원령 = 이름 없이 원한만 남아 요괴가 된 것"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #1 줄0 뒤 새 줄",
+  "what": "(사용자 결정) 9장 첫머리에 도화의 세 등대 가운데 둘이 꺼졌다는 소식"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #1 줄0 뒤 새 줄",
+  "what": "(사용자 결정) 열린 문 여덟·남은 하나로 10장 셈과 맞춤"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #2 줄4 뒤 새 줄",
+  "what": "9장에서 명부 정리(먹 거두기)를 처음 드러냄"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #2 줄4 뒤 새 줄",
+  "what": "명부 정리에 대한 연서희의 물음"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #2 줄4 뒤 새 줄",
+  "what": "정리 기준(중요도·오래됨)과 지워진 이름의 출처를 밝힘"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #4 줄5",
+  "what": "윤도한이 정리에서 맨 먼저 거둬지는 이름들을 짚음(긴 줄을 둘로 나눔)"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #4 줄5 뒤 새 줄",
+  "what": "윤도한이 먹 거두기를 직접 해 왔다고 밝힘"
+ },
+ {
+  "item": 6,
+  "where": "mq_lamp_shadow #5 줄3 뒤 새 줄",
+  "what": "10장 결말(이름을 다시 적음)을 위한 빈칸 장면"
+ },
+ {
+  "item": 6,
+  "where": "mq_nine_gates #4 줄1",
+  "what": "(사용자 결정) 지나온 문을 3+5=8로 세어 「여덟 개가 열렸어요」와 맞춤"
+ },
+ {
+  "item": 6,
+  "where": "mq_nine_gates #5 줄5 뒤 새 줄",
+  "what": "연서희가 명부 정리를 바꾸겠다고 답함"
+ },
+ {
+  "item": 6,
+  "where": "mq_nine_gates 결말 줄8",
+  "what": "도제조가 그해 명부 정리를 거둠(결말 매듭)"
+ },
+ {
+  "item": 6,
+  "where": "mq_nine_gates 결말 줄10",
+  "what": "봉주가 지워진 이름을 먹고 자란다는 설정을 드러냄"
+ },
+ {
+  "item": 6,
+  "where": "gq_1 #2 줄3 뒤 새 줄",
+  "what": "두 이름 문패의 까닭을 촌장이 풀어 줌"
+ },
+ {
+  "item": 6,
+  "where": "gq_1 #3 줄3 뒤 새 줄",
+  "what": "여울이 반요와 요화 단계를 풀어 줌"
+ },
+ {
+  "item": 6,
+  "where": "gq_2 #3 줄5",
+  "what": "이름을 불러 주어 영을 보낸다는 것을 이음"
+ },
+ {
+  "item": 6,
+  "where": "gq_3 #3 줄5",
+  "what": "불리는 이름이 이름을 붙든다는 주지의 말"
+ },
+ {
+  "item": 6,
+  "where": "gq_4 #2 줄4 뒤 새 줄",
+  "what": "「잔여 없음」을 명부 정리와 이음"
+ },
+ {
+  "item": 6,
+  "where": "sq_shrine_ruins_1 #1 줄1 뒤 새 줄",
+  "what": "가을이 이름이 불려 영으로 남았다고 밝힘"
+ },
+ {
+  "item": 6,
+  "where": "sq_shrine_ruins_1 #2 줄2",
+  "what": "무녀귀 = 이름을 잃고 갈래로 불리는 요괴"
+ },
+ {
+  "item": 6,
+  "where": "jq_exorcist #3 줄-1 뒤 새 줄",
+  "what": "퇴마관이 부른 옛 이름에 요괴가 잠깐 돌아봄"
+ },
+ {
+  "item": 6,
+  "where": "sq_field_outskirts_1 #3 줄2",
+  "what": "갚지 못한 품삯이 덕삼이 이름을 붙든다"
+ },
+ {
+  "item": 6,
+  "where": "sq_burial_steps_2 #1 줄1",
+  "what": "죽음 = 잊히는 것"
+ },
+ {
+  "item": 6,
+  "where": "sq_hq_archive_1 #2 줄3 뒤 새 줄",
+  "what": "모가람이 오래된 쪽을 해마다 거둔다고 무심코 말함(복선)"
+ },
+ {
+  "item": 6,
+  "where": "aq_archivebureau #3 줄1 뒤 새 줄",
+  "what": "기록감찰국이 오래된 쪽을 거둔다는 복선"
+ },
+ {
+  "item": 6,
+  "where": "sq_hidden_bazaar_1 #1 줄2 뒤 새 줄",
+  "what": "여섯째가 맡긴 이름의 규칙을 짧게 말함"
+ },
+ {
+  "item": 6,
+  "where": "sq_hidden_bazaar_1 #3 줄2",
+  "what": "「팔았다」를 흑련회식 「맡겼다」로 맞춤"
+ },
+ {
+  "item": 6,
+  "where": "sq_nine_lighthouse_2 #3 줄2",
+  "what": "이름을 잃고 갈래로 불림"
+ },
+ {
+  "item": 6,
+  "where": "black_lotus:join:3 줄2",
+  "what": "무명 = 이름을 맡겨 둔 사람(9장 대사와 맞춤)"
+ },
+ {
+  "item": 6,
+  "where": "black_lotus:join:3 줄3",
+  "what": "맡긴 글자로 불리면 늦게 돌아본다(맡김의 대가)"
+ },
+ {
+  "item": 6,
+  "where": "night_office:join:3 줄3",
+  "what": "요괴는 이름이 없다는 설정에 맞춰 「사람이든 요괴든」을 명줄로 바꿈"
+ }
+]

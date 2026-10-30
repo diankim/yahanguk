@@ -52,7 +52,7 @@ function drawClosed() {
   const q = snap.quest || {}, c = store.character || {};
   const store_ = Object.entries(snap.store || {}).filter(([, n]) => n > 0);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>아직 별채가 없습니다</h1></div></div>
-    <div class="notice">${icon('help', 18)}<div><b>본부 객사의 「객사 별채」 퀘스트</b><span>주 이야기 4장 「북령의 얼음 인장」을 마치고 Lv15가 되면 본부 객사의 살림꾼 보미에게서 받을 수 있습니다. 부적목·황지를 채집하고 오방색 방석을 만든 뒤 수리비 1,000전을 치르면 6×6 별채와 기본 세트 「단청 별채」를 받습니다.</span></div></div>
+    <div class="notice">${icon('help', 18)}<div><b>본부 객사의 「객사 별채」 퀘스트</b><span>주 이야기 4장 「북령의 얼음 인장」을 마치고 Lv15가 되면 본부 객사의 살림꾼 순덕에게서 받을 수 있습니다. 부적목·황지를 채집하고 오방색 방석을 만든 뒤 수리비 1,000전을 치르면 6×6 별채와 기본 세트 「단청 별채」를 받습니다.</span></div></div>
     ${panel('지금 내 상태', `<ul class="hs-req"><li class="${c.level >= 15 ? 'ok' : 'no'}">레벨 15 이상 (지금 Lv.${c.level || 1})</li><li class="${q.step ? 'ok' : ''}">퀘스트 ${q.done ? '마침' : q.step ? `${q.step}장면까지 보고함` : '받지 않음'}</li></ul>
       <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>`, { ico: 'scroll' })}
     ${mergePanel()}
