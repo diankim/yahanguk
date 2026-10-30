@@ -1937,6 +1937,22 @@ do $$ begin
   reset role;
 end $$;
 
+-- 운영진 공지 고치기(7.0.4에 운영 DB에 먼저 넣음, 같은 정의를 다시 둔다): 패치노트 맨 위 공지(note_id 0.0.0)
+create or replace function public.world_patch_notice_save(p_title text, p_body text) returns jsonb
+language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare uid uuid := auth.uid(); t text := btrim(coalesce(p_title, '')); b text := btrim(coalesce(p_body, ''));
+begin
+  if uid is null or not exists (select 1 from public.world_staff s where s.owner_id = uid) then raise exception '운영진만 공지를 고칠 수 있습니다.'; end if;
+  if t = '' or b = '' then raise exception '제목과 내용을 적으세요.'; end if;
+  if char_length(t) > 80 then raise exception '제목은 80자까지입니다.'; end if;
+  if char_length(b) > 6000 then raise exception '내용은 6,000자까지입니다.'; end if;
+  insert into public.world_patch_notes(note_id, title, body) values ('0.0.0', t, b)
+  on conflict (note_id) do update set title = excluded.title, body = excluded.body;
+  return jsonb_build_object('ok', true, 'content', '공지를 고쳤습니다.');
+end $$;
+revoke all on function public.world_patch_notice_save(text, text) from public, anon;
+grant execute on function public.world_patch_notice_save(text, text) to authenticated;
+
 
 -- ─── 패치노트 7.1.0 ───
 insert into public.world_patch_notes(note_id, title, body)
