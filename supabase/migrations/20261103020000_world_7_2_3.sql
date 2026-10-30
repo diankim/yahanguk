@@ -35,4 +35,64 @@ update public.world_map_regions set home_faction_id = 'southern_remnant', contro
 update public.world_map_regions set faction_control = '야행국 정통파'
  where control_faction_id = 'night_office' and faction_control = '야행국';
 
+-- ③ 서버 부담: 탐색 한 번에 드는 시간의 대부분이던 꾸미기·칭호의 「완전 답사」 계산을 줄인다(결과는 같고 셈만 바꿈)
+create or replace function pg_temp.yh_patch(p_fn text, p_old text, p_new text, p_n int default 1) returns void
+language plpgsql as $f$
+declare d text; o text; k int;
+begin
+  d := pg_get_functiondef(p_fn::regprocedure);
+  k := (length(d) - length(replace(d, p_old, ''))) / greatest(1, length(p_old));
+  if k = 0 and position(p_new in d) > 0 then return; end if;
+  if k <> p_n then raise exception '고칠 자리 수가 다름: % (%번 기대, %번)', p_fn, p_n, k; end if;
+  o := pg_get_userbyid((select proowner from pg_proc where oid = p_fn::regprocedure));
+  if o like 'fn_owner%' and not exists (select 1 from pg_auth_members am where am.roleid = o::regrole and am.member = 'postgres'::regrole and am.set_option) then
+    execute format('grant %I to postgres with set true', o);
+  end if;
+  execute replace(d, p_old, p_new);
+end $f$;
+
+--  완전 답사한 지역 수: 지역마다 world_field_survey를 부르던 것(48번)을 질의 하나로. 기준은 같다(답사 길 2단계 이상 + 쓰는 채집터를 모두 찾음, 안전지대 제외)
+create or replace function public.world_survey_full_count(p_owner uuid)
+returns int language sql stable set search_path = pg_catalog, public as $f$
+  with n as (select x.region_id, count(*) t, count(d.node_id) f from public.world_exploration_nodes x
+               left join public.world_exploration_discoveries d on d.node_id = x.node_id and d.owner_id = p_owner
+              where x.hierarchy_level >= 2 group by 1),
+       s as (select y.region_id, count(*) t, count(d.spot_id) f from public.world_gathering_spots x
+               join public.world_exploration_nodes y on y.node_id = x.node_id
+               left join public.world_gathering_discoveries d on d.spot_id = x.spot_id and d.owner_id = p_owner
+              where x.active group by 1)
+  select count(*)::int from public.world_map_regions r
+    left join n on n.region_id = r.region_id left join s on s.region_id = r.region_id
+   where r.active and not coalesce(r.is_safe_zone, false)
+     and coalesce(n.t, 0) + coalesce(s.t, 0) > 0
+     and coalesce(n.f, 0) + coalesce(s.f, 0) >= coalesce(n.t, 0) + coalesce(s.t, 0)
+$f$;
+alter function public.world_survey_full_count(uuid) owner to fn_owner_field;
+set role fn_owner_field;
+revoke all on function public.world_survey_full_count(uuid) from public, anon, authenticated;
+reset role;
+
+select pg_temp.yh_patch('public.world_title_rule_ok(uuid,jsonb)',
+  'WHERE r.active AND NOT coalesce(r.is_safe_zone, false) AND coalesce((public.world_field_survey(p_owner, r.region_id) ->> ''pct'')::int, 0) >= 100;',
+  'WHERE false; v := public.world_survey_full_count(p_owner);');
+select pg_temp.yh_patch('public.world_title_rule_progress(uuid,jsonb)',
+  'where r.active and not coalesce(r.is_safe_zone, false) and coalesce((public.world_field_survey(p_owner, r.region_id) ->> ''pct'')::int, 0) >= 100;',
+  'where false; v := public.world_survey_full_count(p_owner);');
+
+--  꾸미기 판정: 답사 규칙(완전 답사·길·채집터 수)은 칭호 판정처럼 탐색에서 길·채집터를 찾았을 때와 원정 귀환 때만 센다(전에는 탐색마다)
+select pg_temp.yh_patch('public.world_cosmetic_award_check(uuid,text)',
+  'declare t record; got int := 0; r jsonb; kname text;',
+  'declare t record; got int := 0; r jsonb; kname text; last_outcome text := case when p_event_type = ''explore'' then (select e.payload ->> ''outcome'' from public.world_events e where e.actor_id = p_owner order by e.created_at desc, e.id desc limit 1) end;');
+select pg_temp.yh_patch('public.world_cosmetic_award_check(uuid,text)',
+  'if (r ? ''survey_full'' or r ? ''nodes'' or r ? ''spots'') and p_event_type not in (''explore'', ''expedition_end'') then continue; end if;',
+  'if (r ? ''survey_full'' or r ? ''nodes'' or r ? ''spots'') and p_event_type <> ''expedition_end'' and not (p_event_type = ''explore'' and last_outcome in (''path'', ''spot'')) then continue; end if;');
+
+--  날씨·시간대 효과: 환경 표의 줄마다 날씨·시간대·영역을 다시 계산하던 것을 한 번만(효과를 쓰는 모든 계산이 함께 빨라짐)
+create or replace function public.world_env_total(p_owner uuid, p_key text)
+returns numeric language sql stable security definer set search_path = pg_catalog, public as $f$
+  select coalesce(sum(case when (e.effects ->> p_key) ~ '^-?[0-9]+(\.[0-9]+)?$' then (e.effects ->> p_key)::numeric else 0 end), 0)
+    from (select public.world_time_phase(now()) tp, public.world_weather_key(public.world_owner_territory(p_owner), now()) wk where p_owner is not null) k
+    join public.world_environment_catalog e on e.env_key in (k.tp, k.wk)
+$f$;
+
 update public.world_app_meta set value = '20261103020000' where key = 'db_version';
