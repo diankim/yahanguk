@@ -19,6 +19,8 @@ const craftKinds = new Set();
 let craftSort = 'can';
 // 즐겨찾는 제작법(서버 world_craft_favorites, 30개까지): 접속 동안 한 번 읽고, 별을 누르면 서버가 돌려준 목록으로 바꾼다(7.4.1)
 const FAV_MAX = 30;
+// 별 하나(빈 별 = 즐겨찾기 아님, 채운 별 = 즐겨찾기). 공용 아이콘의 별은 선만 그려 꽃처럼 보여 따로 그린다(7.4.2)
+const STAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
 let favs = null;
 const loadFavs = () => favs ? Promise.resolve(favs) : rpc('world_craft_favs').then(r => (favs = new Set(r || []))).catch(() => (favs = new Set()));
 const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', consumable: '소모품', material: '재료', etc: '기타' };
@@ -201,7 +203,7 @@ async function craft(body, inv, stg) {
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, atLoc, kind, tier }) => `
       <article class="recipe ${can ? 'can' : ''}">
-        <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${icon('star', 15)}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
+        <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         <p class="muted small">${esc(r.description || '')}</p>
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         ${USABLE[r.output] ? `<p class="use-fx small">${icon('heart', 12)} ${esc(USABLE[r.output])}</p>` : ''}

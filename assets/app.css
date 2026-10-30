@@ -2235,4 +2235,6 @@ b.sealed { color: var(--bad); }
 .fav-star { display: inline-grid; place-items: center; width: 32px; height: 32px; margin: -6px 0 -6px -6px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 6px; flex: none; }
 .fav-star:hover { color: var(--text); }
 .fav-star.on { color: var(--accent); }
+.fav-star svg { fill: none; stroke: currentColor; stroke-width: 1.7; }
+.fav-star.on { color: var(--warn, #d4a017); }
 .fav-star.on svg { fill: currentColor; }
