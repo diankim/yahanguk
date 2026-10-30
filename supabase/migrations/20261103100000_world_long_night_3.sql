@@ -46,7 +46,7 @@ select pg_temp.yh_patch('public.world_raid_action(uuid,text,text,uuid,text)',
   $o$    rd.hp := greatest(0, rd.hp - dmg);$o$,
   $o$    rd.hp := greatest(case when rd.fx ? 'last_night' then ceil(rd.max_hp * 0.03)::int else 0 end, rd.hp - dmg);$o$);
 
--- 바닥에 닿으면 세 번까지 40%로 일어서고, 끝나면(실패) 등불이 꺼졌다고 알린다
+-- 월 0시까지 이어지고, 바닥에 닿을 때마다 40%로 일어서며, 끝나면(실패) 등불이 꺼졌다고 알린다
 create or replace function public.world_last_night_raid_fx()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public as $f$
 declare n int;
