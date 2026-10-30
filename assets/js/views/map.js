@@ -55,7 +55,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span>' : ''}</div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span>' : ''}</div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -188,6 +188,8 @@ function paint() {
     const cls = r.region_id === here?.region_id ? ' here' : r.region_id === selected ? ' sel' : '';
     land += `<path d="${pathOf(poly)}" class="cell${cls}" style="--fc:${factionColor(factionOf(r.region_id))}" data-region="${esc(r.region_id)}"/>`;
     if (r.level_locked) hatch += `<path d="${pathOf(poly)}" class="cell-lock" data-region="${esc(r.region_id)}"/>`;
+    // 분쟁 중(7.3.5): 붉은 빗금과 굵은 점선 테두리로 땅 전체를 표시한다
+    if (zones.get(r.region_id)?.contested) hatch += `<path d="${pathOf(poly)}" class="cell-contest"/>`;
   }
   // ② 경계: 같은 세력 안은 옅은 선, 세력이 바뀌면 국경, 이웃이 없으면 해안선
   let inner = '', border = '', coast = '';
@@ -253,6 +255,7 @@ function paint() {
       ${safe ? `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" transform="rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})" class="dot" data-region="${esc(r.region_id)}"/>`
              : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 6.5 : 5}" class="dot" data-region="${esc(r.region_id)}"/>`}
       ${r.region_id === here?.region_id ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" class="here-ring"/>` : ''}
+      ${zones.get(r.region_id)?.contested ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring late"/>` : ''}
       ${sealed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9.5" class="seal-ring"/>` : ''}
       <title>${esc(r.region_name)}</title></g>`;
     const l = labels.get(r.region_id);
@@ -263,6 +266,7 @@ function paint() {
   }
   svg.innerHTML = `<defs>
       <pattern id="sea-wave" width="28" height="14" patternUnits="userSpaceOnUse"><path d="M0 7q7-5 14 0t14 0" class="sea-line"/></pattern>
+      <pattern id="contest-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><line x1="0" y1="0" x2="0" y2="10" class="contest-line"/></pattern>
       <pattern id="lock-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" class="hatch-line"/></pattern>
     </defs>
     <rect width="${W}" height="${H}" class="sea"/><rect width="${W}" height="${H}" fill="url(#sea-wave)"/>
