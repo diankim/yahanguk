@@ -685,6 +685,24 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .b-border { fill: none; stroke: color-mix(in srgb, var(--gold) 80%, var(--bg)); stroke-width: 2.4; stroke-linecap: round; pointer-events: none; }
 .b-coast { fill: none; stroke: color-mix(in srgb, var(--text) 35%, transparent); stroke-width: 1.6; pointer-events: none; }
 .road { stroke: color-mix(in srgb, var(--text) 30%, transparent); stroke-width: 1.1; stroke-dasharray: 2 4; pointer-events: none; }
+/* 7.3.4 물길(water.js): 테마 바탕에 물빛을 섞어 어느 테마에서나 맞춘다 */
+#map-svg { --water: color-mix(in srgb, var(--bg) 42%, #3f8fb8); --water-edge: color-mix(in srgb, var(--bg) 35%, #1d4f6a); --shallow: color-mix(in srgb, var(--bg) 62%, #3f8fb8);
+  --ice: color-mix(in srgb, #e6f4fa 55%, var(--water)); --abyss: color-mix(in srgb, var(--bg) 55%, #160b2c); --rift: color-mix(in srgb, var(--bg) 40%, #050307); }
+.water, .w-shallow { pointer-events: none; }
+.w-shallow { fill: none; stroke: var(--shallow); stroke-linecap: round; stroke-linejoin: round; }
+.w-bank path, .w-flow path, .w-ice path, .w-under path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.w-bank path { stroke: var(--water-edge); } .w-flow path { stroke: var(--water); } .w-ice path { stroke: var(--ice); }
+.w-under path { stroke: var(--water); stroke-dasharray: 5 4; stroke-linecap: butt; opacity: .8; }
+.w-pool { fill: var(--water); stroke: var(--water-edge); stroke-width: 1.2; } .w-pool.ice { fill: var(--ice); }
+.w-ripple { fill: none; stroke: color-mix(in srgb, var(--text) 30%, var(--water)); stroke-width: 1; opacity: .7; }
+.w-lotus { fill: color-mix(in srgb, var(--accent) 40%, var(--text)); }
+.w-reed { fill: none; stroke: color-mix(in srgb, var(--text) 45%, #7a8a4a); stroke-width: 1.1; stroke-linecap: round; }
+.w-abyss { fill: var(--abyss); stroke: color-mix(in srgb, var(--accent) 45%, var(--abyss)); stroke-width: 1.4; }
+.w-abyss-ring { fill: none; stroke: color-mix(in srgb, var(--accent) 35%, var(--abyss)); stroke-width: 1; opacity: .8; }
+.w-rift { fill: var(--rift); stroke: color-mix(in srgb, var(--accent) 60%, var(--rift)); stroke-width: 1.2; }
+.w-whirl { fill: none; stroke: color-mix(in srgb, var(--text) 40%, var(--abyss)); stroke-width: 1.3; stroke-linecap: round; }
+.w-isle { fill: color-mix(in srgb, var(--muted) 30%, var(--surface)); stroke: color-mix(in srgb, var(--text) 35%, transparent); stroke-width: 1; }
+.w-light { fill: var(--gold); }
 .route-line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 7 5; pointer-events: none; animation: march 1s linear infinite; }
 @keyframes march { to { stroke-dashoffset: -24; } }
 .terr-name { fill: var(--text); font-weight: 800; letter-spacing: .25em; paint-order: stroke; stroke: color-mix(in srgb, var(--bg) 80%, transparent); stroke-width: 5px; pointer-events: none; transition: opacity .2s; }

@@ -2,6 +2,7 @@
 import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
 import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
+import { waterUnder, waterOver } from '../water.js';
 import { raidLocks } from './raid.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
@@ -265,7 +266,8 @@ function paint() {
       <pattern id="lock-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" class="hatch-line"/></pattern>
     </defs>
     <rect width="${W}" height="${H}" class="sea"/><rect width="${W}" height="${H}" fill="url(#sea-wave)"/>
-    <g class="land">${land}</g><g>${hatch}</g>
+    ${waterUnder(g, X, Y, view.k)}
+    <g class="land">${land}</g>${waterOver(g, id => byId.has(id), X, Y, view.k, zoom)}<g>${hatch}</g>
     <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
     <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
