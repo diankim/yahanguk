@@ -30,6 +30,11 @@ const NOTIFY_GROUPS = [
 ];
 let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
+// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다(7.4.0 — 이름과 게이지가 한 줄 양 끝에 떨어져 보기 어렵던 것)
+const sndBlock = (k, name, desc, v, sw) => `<div class="snd-block">
+  <div class="snd-head"><span><b>${name}</b><small>${desc}</small></span>${sw ? `<label class="snd-on"><input type="checkbox" data-sw="${sw}" ${sound[sw] ? 'checked' : ''}><span>켜기</span></label>` : ''}</div>
+  <div class="snd-range"><input type="range" data-vol="${k}" min="0" max="1" step="0.05" value="${v}" aria-label="${name} 음량"><output data-vol-out="${k}">${Math.round(v * 100)}%</output></div></div>`;
+
 export async function render(root, sub) {
   if (!store.character) return;
   el = root;
@@ -89,13 +94,10 @@ export async function render(root, sub) {
     </section>
     <section id="sec-sound" class="set-sec">
       ${panel('소리', `
-        <label class="range-row"><span><b>전체 음량</b></span><input type="range" data-vol="vol" min="0" max="1" step="0.05" value="${sound.vol ?? 1}"></label>
-        <label class="toggle-row"><span><b>배경음악</b><small>가야금·대금 느낌의 곡조가 영역마다 다르게 흐릅니다</small></span><input type="checkbox" data-sw="bgmOn" ${sound.bgmOn ? 'checked' : ''}></label>
-        <label class="range-row"><span>배경음악 음량</span><input type="range" data-vol="bgm" min="0" max="1" step="0.05" value="${sound.bgm}"></label>
-        <label class="toggle-row"><span><b>환경음</b><small>날씨와 시간대에 따라 빗소리·바람·풀벌레·새소리가 작게 깔립니다</small></span><input type="checkbox" data-sw="ambOn" ${sound.ambOn ? 'checked' : ''}></label>
-        <label class="range-row"><span>환경음 음량</span><input type="range" data-vol="amb" min="0" max="1" step="0.05" value="${sound.amb}"></label>
-        <label class="toggle-row"><span><b>효과음</b><small>이동·전투·거래·제작·보상마다 다른 짧은 소리</small></span><input type="checkbox" data-sw="sfxOn" ${sound.sfxOn ? 'checked' : ''}></label>
-        <label class="range-row"><span>효과음 음량</span><input type="range" data-vol="sfx" min="0" max="1" step="0.05" value="${sound.sfx}"></label>
+        ${sndBlock('vol', '전체 음량', '배경음악·환경음·효과음을 한꺼번에 올리고 내립니다', sound.vol ?? 1)}
+        ${sndBlock('bgm', '배경음악', '가야금·대금 느낌의 곡조가 영역마다 다르게 흐릅니다', sound.bgm, 'bgmOn')}
+        ${sndBlock('amb', '환경음', '날씨와 시간대에 따라 빗소리·바람·풀벌레·새소리가 작게 깔립니다', sound.amb, 'ambOn')}
+        ${sndBlock('sfx', '효과음', '이동·전투·거래·제작·보상마다 다른 짧은 소리', sound.sfx, 'sfxOn')}
         <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}</div>
         <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
     </section>
@@ -186,7 +188,7 @@ export async function render(root, sub) {
 
   // 소리(바로 적용)
   $$('[data-sw]', el).forEach(i => i.onchange = () => setEnabled(i.dataset.sw, i.checked));
-  $$('[data-vol]', el).forEach(i => i.oninput = () => { setVolume(i.dataset.vol, Number(i.value)); if (i.dataset.vol === 'sfx') playSfx('tap'); });
+  $$('[data-vol]', el).forEach(i => i.oninput = () => { setVolume(i.dataset.vol, Number(i.value)); const o = $(`[data-vol-out="${i.dataset.vol}"]`, el); if (o) o.textContent = `${Math.round(i.value * 100)}%`; if (i.dataset.vol === 'sfx') playSfx('tap'); });
 
   save.onclick = () => guard(save, async () => {
     const tasks = [];

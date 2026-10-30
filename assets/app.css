@@ -494,6 +494,19 @@ body.chat-open .chat-fab { display: none; }
 .toggle-row small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
 .toggle-row input { width: 22px; height: 22px; accent-color: var(--accent); }
 .range-row input { width: 55%; accent-color: var(--accent); }
+/* 설정 › 소리: 갈래마다 이름·설명(켜기) 아래에 음량 게이지(7.4.0) */
+.snd-block { display: grid; gap: 6px; padding: 10px 12px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.snd-block + .snd-block { margin-top: 8px; }
+.snd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.snd-head > span { display: grid; gap: 1px; min-width: 0; }
+.snd-head small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.snd-on { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: calc(12.5px * var(--fz, 1)); cursor: pointer; }
+.snd-on input { width: 20px; height: 20px; accent-color: var(--accent); }
+.snd-range { display: flex; align-items: center; gap: 10px; }
+.snd-range input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.snd-range output { flex: none; width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: calc(12.5px * var(--fz, 1)); }
+.snd-block:has(.snd-on input:not(:checked)) .snd-range { opacity: .45; }
+#sec-sound .sfx-preview { margin-top: 10px; }
 .account { display: grid; gap: 14px; }
 .account-id { display: flex; align-items: center; gap: 12px; }
 .account-id p { color: var(--muted); font-size: calc(12.5px * var(--fz, 1)); }
