@@ -19,7 +19,7 @@ const POOLS = [
   { in: 'mirror_pavilion', at: [760,230,18,1.25,0.75], ripple: 1 },
   { in: 'sunken_district', at: [370,362,20,1.1,0.85] },
   { in: 'sealed_garden', at: [553,416,12,1.2,0.8], lotus: 5, small: 1 },
-  { in: 'glass_canyon', at: [186,318,14,1.3,0.75], ripple: 1 },   // 월영 유리못(7.3.4)
+  { in: 'glass_canyon', at: [138,260,17,1.3,0.8], ripple: 1 },   // 월영 유리못(7.3.4)
   { in: 'lotus_marsh', at: [726,352,15,1.4,0.75] }, { in: 'lotus_marsh', at: [756,348,12,1.3,0.85] },
   { in: 'lotus_marsh', at: [750,312,9,1.4,0.8], small: 1 }, { in: 'lotus_marsh', at: [708,330,9,1.3,0.85], small: 1 }, { in: 'lotus_marsh', at: [772,340,7,1.2,0.9], small: 1 },
   { in: 'ash_reeds', at: [418,888,9,1.3,0.8] }, { in: 'ash_reeds', at: [444,920,8,1.2,0.8] }, { in: 'ash_reeds', at: [412,925,6,1.3,0.8], small: 1 },
