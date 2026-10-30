@@ -551,8 +551,8 @@ function bindPresets(body, snap) {
 
 /* ── 세력: 소속 임무·일일 보급·대세력 ─────────────────────── */
 const PERKS = {
-  night_office: '원정·임무 보급이 안정적입니다(보급 보너스).', red_moon_cult: '강행 태세 원정의 전리품 +15%. 위험한 지역에 강합니다.',
-  black_lotus: '정보·암시장에 밝습니다.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +6칸. 교역과 운송에 강합니다.',
+  night_office: '공인 조사 수당: 원정 귀환 경험치·숙련 경험·전 +15%. 법적 권한: 본부 구조대가 어디서든 반값·경험치 손실 없음·체력 50으로 데려옵니다.', red_moon_cult: '강행 태세 원정의 전리품 +15%. 위험한 지역에 강합니다.',
+  black_lotus: '정보망: 희귀품 발견 +5%. 암시장 줄: 상점 하루 판매 한도 +500전.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +6칸. 교역과 운송에 강합니다.',
   southern_remnant: '원정 채집량 +15%.', mandate_court: '원정 답사도 상승 +20%.',
 };
 const HOSTILE = { night_office: ['red_moon_cult', 'black_lotus'], red_moon_cult: ['night_office', 'north_league'], black_lotus: ['night_office', 'mandate_court'],
