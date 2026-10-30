@@ -77,28 +77,28 @@ on conflict (item_id) do nothing;
 
 insert into public.world_crafting_recipes(recipe_id, recipe_name, output_item, output_qty, ingredients, required_tool, required_tool_tier, required_location, description, minimum_level, required_job, recipe_difficulty, quality_bonus, required_skill, required_skill_rank, craft_field) values
   -- 손질(손질한 생선은 생선구이·생선죽·말린 생선포의 바탕)
-  ('fillet_filefish', '쥐치 손질', 'fish_fillet', 1, '{"filefish": 1}', 'field_knife', 1, '십삼문 암시장', '쥐치를 손질해 생선살을 얻습니다.', 1, null, 1, 0, null, null, 'cooking'),
-  ('fillet_jack', '전갱이 손질', 'fish_fillet', 1, '{"jack_mackerel": 1}', 'field_knife', 1, '잔불촌', '전갱이를 손질해 생선살을 얻습니다.', 1, null, 1, 0, null, null, 'cooking'),
-  ('fillet_black_rockfish', '우럭 손질', 'fish_fillet', 2, '{"black_rockfish": 1}', 'field_knife', 1, '구름나루', '우럭 한 마리에서 생선살 둘이 나옵니다.', 1, null, 1, 0, null, null, 'cooking'),
-  ('fillet_flounder', '광어 손질', 'fish_fillet', 2, '{"flounder": 1}', 'field_knife', 1, '십삼문 암시장', '광어 한 마리에서 생선살 둘이 나옵니다.', 1, null, 1, 0, null, null, 'cooking'),
+  ('fillet_filefish', '쥐치 손질', 'fish_fillet', 1, '{"filefish": 1}', 'field_knife', 1, '십삼문 암시장', '쥐치를 손질해 생선살을 얻습니다.', 1, null, 1, 0, null, 1, 'cooking'),
+  ('fillet_jack', '전갱이 손질', 'fish_fillet', 1, '{"jack_mackerel": 1}', 'field_knife', 1, '잔불촌', '전갱이를 손질해 생선살을 얻습니다.', 1, null, 1, 0, null, 1, 'cooking'),
+  ('fillet_black_rockfish', '우럭 손질', 'fish_fillet', 2, '{"black_rockfish": 1}', 'field_knife', 1, '구름나루', '우럭 한 마리에서 생선살 둘이 나옵니다.', 1, null, 1, 0, null, 1, 'cooking'),
+  ('fillet_flounder', '광어 손질', 'fish_fillet', 2, '{"flounder": 1}', 'field_knife', 1, '십삼문 암시장', '광어 한 마리에서 생선살 둘이 나옵니다.', 1, null, 1, 0, null, 1, 'cooking'),
   -- 요리
-  ('cook_rockfish_stew', '우럭 매운탕', 'rockfish_stew', 1, '{"black_rockfish": 1, "herb": 1, "charcoal": 1}', 'field_knife', 1, '구름나루', '우럭을 약초·숯불로 얼큰하게 끓입니다.', 5, null, 2, 0, null, null, 'cooking'),
-  ('cook_flounder_sashimi', '광어회', 'flounder_sashimi', 1, '{"flounder": 1}', 'field_knife', 1, '십삼문 암시장', '광어를 얇게 떠냅니다.', 9, null, 3, 0, null, null, 'cooking'),
-  ('cook_mackerel_grill', '삼치구이', 'mackerel_grill', 1, '{"spanish_mackerel": 1, "charcoal": 1}', 'field_knife', 1, '잔불촌', '삼치를 숯불에 굽습니다.', 15, null, 2, 0, null, null, 'cooking'),
-  ('cook_cod_soup', '대구탕', 'cod_soup', 1, '{"cod": 1, "medicine_base": 1, "herb": 1}', 'field_knife', 1, '철벽 고찰', '대구를 약제와 맑게 끓입니다.', 11, null, 3, 0, null, null, 'cooking'),
-  ('cook_skate_ferment', '홍어 삭히기', 'skate_ferment', 1, '{"eclipse_skate": 1, "herb": 1}', 'field_knife', 1, '백골 장터', '월식 홍어를 약초에 묻어 삭힙니다.', 15, null, 3, 0, null, null, 'cooking'),
-  ('cook_yellowtail_sashimi', '방어회', 'yellowtail_sashimi', 1, '{"yellowtail": 1}', 'field_knife', 1, '구름나루', '방어를 두껍게 썹니다.', 18, null, 3, 0, null, null, 'cooking'),
-  ('cook_grouper_steam', '다금바리 찜', 'grouper_steam', 1, '{"grouper": 1, "spirit_tea": 1, "medicine_base": 1}', 'field_knife', 1, '잔불촌', '다금바리를 영초 차와 약제로 찝니다.', 20, null, 4, 0, null, null, 'cooking'),
-  ('cook_marlin_grill', '청새치 별빛구이', 'marlin_grill', 1, '{"starlit_marlin": 1, "charcoal": 1, "spirit_tea": 1}', 'field_knife', 1, '무극 관성대', '성하 청새치에 영초 차를 끼얹어 굽습니다.', 25, null, 4, 0, null, null, 'cooking'),
-  ('cook_haeryong_feast', '해룡 어보찜', 'haeryong_feast', 1, '{"sea_dotdom": 1, "spirit_core": 1, "medicine_base": 1}', 'field_knife', 1, '구등대 군도', '해룡 돗돔을 응축 영핵·약제와 찝니다.', 24, null, 5, 0, null, null, 'cooking'),
+  ('cook_rockfish_stew', '우럭 매운탕', 'rockfish_stew', 1, '{"black_rockfish": 1, "herb": 1, "charcoal": 1}', 'field_knife', 1, '구름나루', '우럭을 약초·숯불로 얼큰하게 끓입니다.', 5, null, 2, 0, null, 1, 'cooking'),
+  ('cook_flounder_sashimi', '광어회', 'flounder_sashimi', 1, '{"flounder": 1}', 'field_knife', 1, '십삼문 암시장', '광어를 얇게 떠냅니다.', 9, null, 3, 0, null, 1, 'cooking'),
+  ('cook_mackerel_grill', '삼치구이', 'mackerel_grill', 1, '{"spanish_mackerel": 1, "charcoal": 1}', 'field_knife', 1, '잔불촌', '삼치를 숯불에 굽습니다.', 15, null, 2, 0, null, 1, 'cooking'),
+  ('cook_cod_soup', '대구탕', 'cod_soup', 1, '{"cod": 1, "medicine_base": 1, "herb": 1}', 'field_knife', 1, '철벽 고찰', '대구를 약제와 맑게 끓입니다.', 11, null, 3, 0, null, 1, 'cooking'),
+  ('cook_skate_ferment', '홍어 삭히기', 'skate_ferment', 1, '{"eclipse_skate": 1, "herb": 1}', 'field_knife', 1, '백골 장터', '월식 홍어를 약초에 묻어 삭힙니다.', 15, null, 3, 0, null, 1, 'cooking'),
+  ('cook_yellowtail_sashimi', '방어회', 'yellowtail_sashimi', 1, '{"yellowtail": 1}', 'field_knife', 1, '구름나루', '방어를 두껍게 썹니다.', 18, null, 3, 0, null, 1, 'cooking'),
+  ('cook_grouper_steam', '다금바리 찜', 'grouper_steam', 1, '{"grouper": 1, "spirit_tea": 1, "medicine_base": 1}', 'field_knife', 1, '잔불촌', '다금바리를 영초 차와 약제로 찝니다.', 20, null, 4, 0, null, 1, 'cooking'),
+  ('cook_marlin_grill', '청새치 별빛구이', 'marlin_grill', 1, '{"starlit_marlin": 1, "charcoal": 1, "spirit_tea": 1}', 'field_knife', 1, '무극 관성대', '성하 청새치에 영초 차를 끼얹어 굽습니다.', 25, null, 4, 0, null, 1, 'cooking'),
+  ('cook_haeryong_feast', '해룡 어보찜', 'haeryong_feast', 1, '{"sea_dotdom": 1, "spirit_core": 1, "medicine_base": 1}', 'field_knife', 1, '구등대 군도', '해룡 돗돔을 응축 영핵·약제와 찝니다.', 24, null, 5, 0, null, 1, 'cooking'),
   -- 기존 낚시 연결: 봉인 먹·독낭·말린 생선포·낚싯대·수조
-  ('ink_greenling_ink', '노래미 먹 짜기', 'sealing_ink', 2, '{"ink_greenling": 1}', null, null, '십삼문 암시장', '먹빛 노래미의 먹물로 봉인 먹을 만듭니다.', 9, null, 2, 0, null, null, 'sealing'),
-  ('scorpion_venom', '쏨뱅이 독낭 떼기', 'venom_gland', 1, '{"red_scorpionfish": 2}', 'field_knife', 1, '잔불촌', '붉은 쏨뱅이 가시에서 독낭을 떼어 냅니다.', 12, null, 2, 0, null, null, 'alchemy'),
-  ('r_treat_filefish', '쥐치포 말리기', 'treat_fish', 3, '{"filefish": 2}', null, null, null, '쥐치를 말려 동무 별미(말린 생선포)를 만듭니다.', 1, null, 1, 0, null, null, 'cooking'),
-  ('r_lt_rod_4_sea', '바다 낚싯대(다금바리 뼈)', 'lt_rod_4', 1, '{"spirit_bark": 1, "grouper": 2, "spirit_thread": 2}', null, null, '잔불촌', '다금바리 뼈로 낚싯대 허리를 받칩니다. 은린어 대신 쓰는 바다 제작법.', 17, null, 4, 0, null, null, 'carpentry'),
-  ('r_lt_rod_5_sea', '바다 낚싯대(청새치 주둥이)', 'lt_rod_5', 1, '{"sky_feather": 1, "starlit_marlin": 2, "reinforced_lumber": 2}', null, null, '무극 관성대', '청새치 주둥이 뼈로 낚싯대 끝을 곧게 세웁니다. 비늘잉어 대신 쓰는 바다 제작법.', 24, null, 5, 0, null, null, 'carpentry'),
-  ('r_lt_rod_6_sea', '바다 낚싯대(해룡 비늘)', 'lt_rod_6', 1, '{"reed_silk": 3, "gwiheo_pearl": 1, "sea_dotdom": 1}', null, null, '반요촌', '해룡 돗돔 비늘을 감아 귀허의 물살도 버티게 합니다. 흑룡어 대신 쓰는 바다 제작법.', 34, null, 6, 0, null, null, 'carpentry'),
-  ('r_hf_aquarium_sea', '물고기 수조(광어)', 'hf_aquarium', 1, '{"ore": 2, "flounder": 1, "spirit_glass": 1, "reinforced_lumber": 1}', null, null, null, '광어를 넣은 수조. 금빛 잉어 대신 바다 물고기로 꾸밉니다.', 15, null, 3, 0, null, null, '목공')
+  ('ink_greenling_ink', '노래미 먹 짜기', 'sealing_ink', 2, '{"ink_greenling": 1}', null, 1, '십삼문 암시장', '먹빛 노래미의 먹물로 봉인 먹을 만듭니다.', 9, null, 2, 0, null, 1, 'sealing'),
+  ('scorpion_venom', '쏨뱅이 독낭 떼기', 'venom_gland', 1, '{"red_scorpionfish": 2}', 'field_knife', 1, '잔불촌', '붉은 쏨뱅이 가시에서 독낭을 떼어 냅니다.', 12, null, 2, 0, null, 1, 'alchemy'),
+  ('r_treat_filefish', '쥐치포 말리기', 'treat_fish', 3, '{"filefish": 2}', null, 1, null, '쥐치를 말려 동무 별미(말린 생선포)를 만듭니다.', 1, null, 1, 0, null, 1, 'cooking'),
+  ('r_lt_rod_4_sea', '바다 낚싯대(다금바리 뼈)', 'lt_rod_4', 1, '{"spirit_bark": 1, "grouper": 2, "spirit_thread": 2}', null, 1, '잔불촌', '다금바리 뼈로 낚싯대 허리를 받칩니다. 은린어 대신 쓰는 바다 제작법.', 17, null, 4, 0, null, 1, 'carpentry'),
+  ('r_lt_rod_5_sea', '바다 낚싯대(청새치 주둥이)', 'lt_rod_5', 1, '{"sky_feather": 1, "starlit_marlin": 2, "reinforced_lumber": 2}', null, 1, '무극 관성대', '청새치 주둥이 뼈로 낚싯대 끝을 곧게 세웁니다. 비늘잉어 대신 쓰는 바다 제작법.', 24, null, 5, 0, null, 1, 'carpentry'),
+  ('r_lt_rod_6_sea', '바다 낚싯대(해룡 비늘)', 'lt_rod_6', 1, '{"reed_silk": 3, "gwiheo_pearl": 1, "sea_dotdom": 1}', null, 1, '반요촌', '해룡 돗돔 비늘을 감아 귀허의 물살도 버티게 합니다. 흑룡어 대신 쓰는 바다 제작법.', 34, null, 6, 0, null, 1, 'carpentry'),
+  ('r_hf_aquarium_sea', '물고기 수조(광어)', 'hf_aquarium', 1, '{"ore": 2, "flounder": 1, "spirit_glass": 1, "reinforced_lumber": 1}', null, 1, null, '광어를 넣은 수조. 금빛 잉어 대신 바다 물고기로 꾸밉니다.', 15, null, 3, 0, null, 1, '목공')
 on conflict (recipe_id) do nothing;
 
 -- ⑤ 낚시: 어종의 낚시터 제한
