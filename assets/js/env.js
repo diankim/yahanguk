@@ -29,9 +29,15 @@ export function mountEnv() {
 // 상태판·현장 머리에 붙는 작은 표시
 export function envChip(e = store.env, { compact = false } = {}) {
   if (!e?.phase || !e?.weather) return '';
-  return `<button class="env-chip w-${esc(e.weather.key)} p-${esc(e.phase.key)}" data-env-open title="날씨와 시간대 효과 보기">
+  return `<button class="env-chip w-${esc(e.weather.key)} p-${esc(e.phase.key)}${e.long_night?.stage ? ' long-night' : ''}" data-env-open title="날씨와 시간대 효과 보기">
     ${icon(ENV_ICON[e.phase.key] || 'moon', 14)}<span>${esc(e.phase.name)}</span><i></i>${icon(ENV_ICON[e.weather.key] || 'cloud', 14)}<span>${esc(e.weather.name)}</span>
     ${compact ? '' : `<small data-env-left="${new Date(e.weather.ends_at).getTime()}">${fmt.remain(new Date(e.weather.ends_at) - Date.now())}</small>`}</button>`;
+}
+// 장야(롤백 전 사흘): 밤이 길어지고 2단계부터 요괴가 늘어난다(서버 world_long_night_fx)
+const LN_FX = { 2: '요괴 조우 +15% · 침식 +20% · 희귀품·단서 +5%', 3: '요괴 조우 +50% · 침식 +30% · 정신 손실 +10% · 희귀품·단서 +10%' };
+function longNight(e) {
+  const l = e.long_night; if (!l?.stage) return '';
+  return `<section class="long-night"><h3>${icon('moon', 16)} 장야(長夜) · ${esc(l.name || '')}</h3><p>${esc(l.text || '')}</p>${LN_FX[Math.min(3, l.stage)] ? `<p class="bad small">${esc(LN_FX[Math.min(3, l.stage)])}</p>` : ''}</section>`;
 }
 function fxList(effects) {
   return `<ul class="fx-list">${Object.entries(effects || {}).map(([k, v]) => `<li class="${effectGood(k, v) ? 'good' : 'bad'}">${esc(effectText({ [k]: v })[0] || '')}</li>`).join('')}</ul>`;
@@ -39,10 +45,10 @@ function fxList(effects) {
 export function openEnv(e = store.env) {
   if (!e) return;
   const left = t => fmt.remain(new Date(t) - Date.now());
-  openModal({ title: '날씨와 시간대', body: `<div class="env-detail">
+  openModal({ title: '날씨와 시간대', body: `<div class="env-detail">${longNight(e)}
     <section><h3>${icon(ENV_ICON[e.phase.key], 16)} ${esc(e.phase.name)} <small>${left(e.phase.ends_at)} 뒤 바뀜</small></h3><p>${esc(e.phase.description)}</p>${fxList(e.phase.effects)}</section>
     <section><h3>${icon(ENV_ICON[e.weather.key], 16)} ${esc(e.weather.name)} <small>${left(e.weather.ends_at)} 뒤 ${esc((e.next_weather?.name || '') + '(으)로')}</small></h3><p>${esc(e.weather.description)}</p>${fxList(e.weather.effects)}</section>
-    <p class="muted small">시간대는 한국 시각으로 6시간마다(해돋이 6시·한낮 12시·땅거미 18시·삼경 0시), 날씨는 12시간마다(0시·12시) 바뀝니다. 날씨는 영역마다 다르며, 효과는 탐색·채집·제작·이동·회복·전투에 모두 적용됩니다.</p>
+    <p class="muted small">${e.long_night?.stage ? '장야 동안에는 시간대가 평소와 다르게 흐릅니다. 평소에는 ' : ''}시간대는 한국 시각으로 6시간마다(해돋이 6시·한낮 12시·땅거미 18시·삼경 0시), 날씨는 12시간마다(0시·12시) 바뀝니다. 날씨는 영역마다 다르며, 효과는 탐색·채집·제작·이동·회복·전투에 모두 적용됩니다.</p>
   </div>` });
 }
 document.addEventListener('click', ev => { if (ev.target.closest('[data-env-open]')) openEnv(); });

@@ -921,6 +921,8 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 
 /* 날씨·시간대 */
 .env-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); font-size: calc(12px * var(--fz, 1)); font-weight: 600; cursor: pointer; justify-self: start; }
+.env-chip.long-night { border-color: var(--bad); }
+.env-detail .long-night { border-left: 3px solid var(--bad); padding-left: 10px; }
 .env-chip i { width: 1px; height: 12px; background: var(--line); margin: 0 2px; }
 .env-chip small { color: var(--muted); font-weight: 500; margin-left: 4px; font-variant-numeric: tabular-nums; }
 .env-chip.w-bloodmist { border-color: var(--bad); color: var(--bad); } .env-chip.w-rain .ico, .env-chip.w-fog .ico { color: var(--mp); }
