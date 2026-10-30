@@ -79,6 +79,9 @@ const CSS = `
 @keyframes cs-line { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
 .cs-skip { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
 .cs-skip:focus-visible { outline: 2px solid #e0a64a; }
+.cs-snd { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
+.cs-snd.on { color: #e0a64a; border-color: #5a4a30; }
+.cs-snd:focus-visible { outline: 2px solid #e0a64a; }
 .cs-end { display: flex; gap: 8px; justify-content: flex-end; animation: cs-line .9s cubic-bezier(.2,.7,.2,1) both; }
 .cs-btn { min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid #3a3440; background: transparent; color: #d8d0c2; font: 600 14px "Noto Sans KR", sans-serif; cursor: pointer; }
 .cs-btn.main { border-color: #e0a64a; color: #f2e6cc; }
@@ -243,6 +246,73 @@ function embers(root) {
   }
 }
 
+
+// 롤백 컷씬 전용 곡(tools/cutscene_music: 게임 악기 조각으로 구운 음원). 컷씬 시간에 맞춰 있다:
+// 73초 무렵(resolve) 제목과 함께 버티는 화음, 87초(outro)부터 끝(end)까지는 마지막 장면에 머무는 동안 되풀이한다.
+// 소리는 사용자가 한 번 누른 뒤에야 나므로(브라우저 규칙) 저절로 안 나면 [소리 켜기] 단추를 보이고, 화면 어디든 처음 누를 때도 켠다.
+const MUSIC = { url: new URL('../audio/cutscene.mp3', import.meta.url).href, resolve: 73.33, outro: 86.67, end: 109.5 };
+let musicBuf = null;
+function cutsceneMusic(onState) {
+  let ac = null, gain = null, src = null, want = true, vol = 0.6, dead = false, at0 = 0, off0 = 0;
+  try { const s = JSON.parse(localStorage.getItem('yh-sound') || '{}'); if (s.bgmOn === false) want = false; if (typeof s.bgm === 'number') vol = Math.min(1, s.bgm * 1.5); } catch {}
+  try { if (localStorage.getItem('yh-cs-sound') === 'off') want = false; else if (localStorage.getItem('yh-cs-sound') === 'on') want = true; } catch {}
+  const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch { return false; } })();
+  const load = musicBuf ? Promise.resolve(musicBuf) : fetch(MUSIC.url).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); });
+  const ensure = () => {
+    if (ac) return ac;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    ac = new AC(); gain = ac.createGain(); gain.gain.value = 0; gain.connect(ac.destination);
+    return ac;
+  };
+  const playing = () => !!src && ac?.state === 'running';
+  function startAt(offset) {
+    if (dead || !ac || !musicBuf) return;
+    if (src) { try { src.stop(); } catch {} src = null; }
+    src = ac.createBufferSource(); src.buffer = musicBuf;
+    src.loop = true; src.loopStart = MUSIC.outro; src.loopEnd = Math.min(MUSIC.end, musicBuf.duration);
+    src.connect(gain);
+    const t = ac.currentTime;
+    gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(0.0001, t); gain.gain.linearRampToValueAtTime(vol, t + (offset > 1 ? 1.6 : 0.4));
+    src.start(t, Math.min(offset, musicBuf.duration - 0.1)); at0 = t; off0 = offset;
+  }
+  const api = {
+    // 컷씬이 시작된 때부터 지난 초(마지막 장면이면 되풀이 부분)
+    sceneTime: () => 0,
+    get on() { return want && playing(); },
+    async toggle() {
+      want = !want; try { localStorage.setItem('yh-cs-sound', want ? 'on' : 'off'); } catch {}
+      if (want) await api.resume(); else { if (ac) { const t = ac.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setTargetAtTime(0, t, 0.25); setTimeout(() => { if (!want && src) { try { src.stop(); } catch {} src = null; } }, 900); } }
+      onState(api.on);
+    },
+    async resume() {
+      if (dead || !want || !ensure()) return;
+      try { if (ac.state !== 'running') await ac.resume(); } catch {}
+      if (!musicBuf) { try { const b = await load; musicBuf = b instanceof AudioBuffer ? b : await ac.decodeAudioData(b); } catch { onState(null); return; } }
+      if (ac.state === 'running' && !src && want) startAt(api.sceneTime());
+      onState(api.on);
+    },
+    // 건너뛰기: 버티는 화음 자리로 옮긴다(이미 지났으면 그대로)
+    jumpToResolve() {
+      if (!playing()) return;
+      const pos = off0 + (ac.currentTime - at0);
+      if (pos >= MUSIC.resolve - 1) return;
+      const t = ac.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setTargetAtTime(0, t, 0.12);
+      setTimeout(() => { if (want && !dead) startAt(MUSIC.resolve); }, 450);
+    },
+    stop(fade = 1) {
+      dead = true; document.removeEventListener('visibilitychange', vis);
+      if (!ac) return;
+      const t = ac.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setTargetAtTime(0, t, fade / 3);
+      setTimeout(() => { try { src?.stop(); } catch {} ac.close?.().catch(() => {}); }, fade * 1000 + 200);
+    },
+  };
+  // 모바일은 화면을 내리면 멈추고 돌아오면 다시 낸다(게임 배경음악과 같은 규칙)
+  const vis = () => { if (!ac || !MOBILE) return; if (document.hidden) ac.suspend().catch(() => {}); else if (want) ac.resume().catch(() => {}); };
+  document.addEventListener('visibilitychange', vis);
+  load.catch(() => onState(null));
+  return api;
+}
+
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
 //       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때)
 export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false } = {}) {
@@ -250,14 +320,25 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
   root.className = 'cs'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', kind === 'rollback' ? '첫째 밤의 끝' : '아침');
-  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div>' : ''}<button type="button" class="cs-skip">건너뛰기</button></div>
+  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div><button type="button" class="cs-snd" hidden>소리 켜기</button>' : ''}<button type="button" class="cs-skip">건너뛰기</button></div>
     <div class="cs-box" aria-live="polite"><div class="cs-who"></div><div class="cs-text"></div></div>`;
   document.body.append(root);
   if (kind === 'rollback') embers(root);
   const who = root.querySelector('.cs-who'), text = root.querySelector('.cs-text');
   let i = -1, timer = 0, done = false;
+  const t0 = performance.now();
+  let ended = false, endedAt = 0, music = null;
+  if (kind === 'rollback') {
+    const btn = root.querySelector('.cs-snd');
+    music = cutsceneMusic(on => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', on); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
+    // 마지막 장면에 막 닿았으면(건너뛰기 포함) 버티는 화음부터, 오래 머문 뒤 켜면 되풀이 부분부터
+    music.sceneTime = () => ended ? (performance.now() - endedAt < 15000 && !atEnd ? MUSIC.resolve : MUSIC.outro) : Math.min((performance.now() - t0) / 1000, MUSIC.resolve);
+    btn.addEventListener('click', e => { e.stopPropagation(); music.toggle(); });
+    root.addEventListener('pointerdown', () => { if (!music.on) music.resume(); }, { once: true });
+    music.resume();
+  }
   const finish = () => {
-    if (done) return; done = true; clearTimeout(timer);
+    if (done) return; done = true; clearTimeout(timer); music?.stop(1);
     root.style.transition = 'opacity 1s'; root.style.opacity = '0';
     setTimeout(() => { root.remove(); onEnd?.(); }, 1000);
   };
@@ -283,21 +364,21 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
     clearTimeout(timer);
     root.dataset.fast = '1';
     for (let k = Math.max(0, i + 1); k < lines.length; k++) lines[k][2]?.(root);
+    music?.jumpToResolve();
     i = lines.length - 1;
     who.textContent = ''; text.textContent = '';
     showEnd();
   };
   skip.addEventListener('click', jumpToEnd);
-  let ended = false;
   function showEnd() {
     if (done || ended) return;
-    ended = true; skip.hidden = true;
+    ended = true; endedAt = performance.now(); skip.hidden = true;
     if (note) { who.textContent = ''; text.textContent = note; text.classList.add('nar', 'note'); text.classList.remove('cs-line-in'); void text.offsetWidth; text.classList.add('cs-line-in'); }
     const bar = document.createElement('div'); bar.className = 'cs-end';
     bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button>' + (stay ? '' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
     root.querySelector('.cs-box').append(bar);
     bar.querySelector('[data-close]')?.addEventListener('click', finish);
-    bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); root.remove(); playCutscene(kind, { onEnd, stay, note }); });
+    bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); music?.stop(0.3); root.remove(); playCutscene(kind, { onEnd, stay, note }); });
   }
   if (atEnd) { i = -1; jumpToEnd(); return finish; }
   setTimeout(step, 1200);
