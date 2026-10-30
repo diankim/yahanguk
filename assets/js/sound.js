@@ -84,12 +84,17 @@ function keepOnly(keys) { Object.keys(buffers).forEach(k => { if (!keys.includes
 // 한 음 내기: t초에 midi 높이로 dur초 동안. o.slide = 아래에서 미끄러져 올라올 반음 수, o.grace = 짧게 스칠 윗음(반음),
 // o.att = 소리가 차오르는 시간(초), o.expr = 길게 끄는 음에 숨결(조금 여리게 시작해 부풀었다 가라앉음), o.swell = 바닥 화음처럼 천천히 부풀었다 잦아듦,
 // o.vib = 떨림(길게 끄는 음의 뒤쪽에 살짝)
+// 여린 피아노(심연): 세기를 줄이고, 건반이 닿는 순간을 조금 무르게 하고, 높은 쇳소리를 걸러 꽝꽝 때리지 않게 한다
+let soft = 0;
 function playNote(k, midi, t, dur, vel, o = {}) {
   const I = INS[k], buf = buffers[k]; if (!I || !buf || vel <= 0) return;
+  if (k === 'piano' && soft) { vel *= soft; o = { ...o, lp: o.lp || 1800, att: Math.max(o.att ?? I.att, 0.02) }; }
   let idx = 0, best = 99; I.notes.forEach((n, i) => { const d = Math.abs(midi - n); if (d < best) { best = d; idx = i; } });
   const rate = Math.pow(2, (midi - I.notes[idx]) / 12), off = idx * SLOT;
   const g = ctx.createGain(), pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-  if (pan) { pan.pan.value = I.pan + (Math.random() - 0.5) * 0.1; g.connect(pan); toBgm(pan, I.send); } else toBgm(g, I.send);
+  let head = g;
+  if (o.lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; f.Q.value = 0.4; g.connect(f); head = f; }
+  if (pan) { pan.pan.value = I.pan + (Math.random() - 0.5) * 0.1; head.connect(pan); toBgm(pan, I.send); } else toBgm(head, I.send);
   const peak = Math.max(0.0002, vel * I.gain);
   // 뜯는 악기는 자연스럽게 울리게 두고(최대 샘플 길이), 부는·켜는 악기는 dur 동안 이어 낸다
   const ring = I.sus ? dur : Math.max(dur, Math.min(I.len, dur + 1.6));
@@ -272,8 +277,8 @@ const PROFILES = {
     bt: { bpm: 104, lead: 'piano', lead2: 'flute', acc: 'shimmer', arp: 'harp', bass: 'half', drum: 'b_heaven', bell: 0.6, form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { echo: 'bell' })] },
     form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.62, { echo: 'bell' }), F('B', 'lead2', 0.7, { duet: 'shakuhachi' }), F('A3', 'lead', 0.5)] },
   // 심연: 검은 물 아래 잊힌 것들 — 피아졸라 「망각」 결의 단조 탱고 애가를 건반으로만. 왼손이 3+3+2로 저음을 짚고, 오른손이 길게 끄는 선율을 꺾어 넘긴다
-  abyss: { tonic: 59, mode: 'minor', prog: 'tango', bpm: 56, meter: 4, rhy: 'oblivion', lead: 'piano', lead2: 'piano', counter: 'piano', arp: 'piano', acc: 'tango', bass: 'tango', bassIns: 'piano', drum: null, pad: 'none', bell: 0,
-    bt: { bpm: 72, rhy: 'oblivion2', lead: 'piano', lead2: 'piano', counter: 'piano', arp: 'piano', acc: 'tango8', bass: 'tango', bassIns: 'piano', pad: 'none', bell: 0,
+  abyss: { tonic: 59, mode: 'minor', prog: 'tango', bpm: 56, meter: 4, rhy: 'oblivion', lead: 'piano', lead2: 'piano', counter: 'piano', arp: 'piano', acc: 'tango', bass: 'tango', bassIns: 'piano', drum: null, pad: 'none', bell: 0, soft: 0.8,
+    bt: { bpm: 72, soft: 0.85, rhy: 'oblivion2', lead: 'piano', lead2: 'piano', counter: 'piano', arp: 'piano', acc: 'tango8', bass: 'tango', bassIns: 'piano', pad: 'none', bell: 0,
       form: [F('A', 'lead', 0.8), F('B', 'lead2', 0.92, { duet: 'piano' }), F('A2', 'lead', 0.85, { oct: -7 })] },
     form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead', 0.62, { echo: 'piano' }), F('B', 'lead2', 0.78, { duet: 'piano' }), F('A3', 'lead', 0.5, { oct: -7 }), F('bridge', 0, 0.35, { n: 1 })] },
   // 귀허도: 망자를 배웅하는 노래 — 심연과 같은 「망각」 결의 탱고 애가를 현악기로. 첼로가 이끌고 현악이 이어 받으며, 하프가 3+3+2를 뜯는다
@@ -395,6 +400,7 @@ const LEAD_GAIN = { strings: 1.9, cello: 1.05, piano: 1.1 };
 // 마디 하나를 연주한다
 function playBar(p, S, bar, t, beat) {
   const { midi, mod7, chordTones } = S, mb = p.meter;
+  soft = p.soft || 0;
   const dyn = (DYN[bar.pi ?? 0] ?? 1) * (bar.pj ? 1.04 : 1);
   const inten = bar.inten * (p.safe ? 0.85 : 1) * dyn;
   const human = () => (Math.random() - 0.5) * 0.02, hv = v => v * (0.9 + Math.random() * 0.2);
