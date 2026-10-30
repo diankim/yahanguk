@@ -2166,3 +2166,16 @@ b.sealed { color: var(--bad); }
 .invite-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
 .invite-list code { font-size: calc(17px * var(--fz, 1)); font-weight: 700; letter-spacing: .12em; user-select: all; }
 .invite-list li.muted code { text-decoration: line-through; }
+
+/* 장야의 붉은 안개(env.js fog): 화면 아래에서 차오르는 옅은 안개. 누르기를 막지 않고 채팅 시트·창 아래에 깔린다.
+   게임 화면은 평면이 원칙이지만 이 연출만 사용자 요청으로 흐림을 쓴다. */
+#ln-fog { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none; overflow: hidden; filter: blur(10px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 35%, transparent 100%); mask-image: linear-gradient(to top, #000 0%, #000 35%, transparent 100%);
+  height: 30vh; opacity: .38; transition: height 4s ease, opacity 4s ease; }
+#ln-fog[data-stage="3"] { height: 48vh; opacity: .55; }
+#ln-fog .fog-a, #ln-fog .fog-b { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; display: flex; will-change: transform; }
+#ln-fog .fog-a { animation: ln-fog-flow 140s linear infinite; }
+#ln-fog .fog-b { height: 80%; opacity: .8; animation: ln-fog-flow 90s linear infinite reverse; }
+#ln-fog svg { width: 50%; height: 100%; display: block; }
+@keyframes ln-fog-flow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { #ln-fog .fog-a, #ln-fog .fog-b { animation: none; } }

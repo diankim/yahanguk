@@ -17,6 +17,8 @@ const CSS = `
 .cs .cs-mist { opacity: 0; transform: translateY(30px); transition: opacity 3s linear, transform 8s ease-out; }
 .cs.mist .cs-mist { opacity: .55; transform: translateY(-20px); }
 .cs.mist2 .cs-mist { opacity: .85; transform: translateY(-70px); }
+.cs .cs-wisp rect { animation: cs-wisp 60s linear infinite; }
+@keyframes cs-wisp { from { transform: translateX(0); } to { transform: translateX(480px); } }
 .cs .cs-mist ellipse { fill: #8e1f2a; animation: cs-drift 14s ease-in-out infinite alternate; }
 .cs .cs-mist ellipse:nth-child(2n) { fill: #6d1620; animation-duration: 19s; animation-direction: alternate-reverse; }
 .cs .cs-mist ellipse:nth-child(3n) { animation-duration: 23s; }
@@ -57,8 +59,11 @@ function scene(kind) {
     <path class="cs-roof" d="M-2000 2000V170H30L58 154L86 170H120V180H150L190 150L230 180H250L290 156L330 180H350V172H380L410 154L440 172H2480V2000Z"/>
     <path d="M10 118Q120 150 240 124T470 128" fill="none" stroke="#2a2530" stroke-width="1.5"/>
     ${kind === 'rollback' ? lamps : `<g data-lamp="9"><circle class="cs-glow" cx="240" cy="150" r="18"/><rect class="cs-lamp" x="235" y="142" width="10" height="15" rx="4"/></g>`}
-    <defs><filter id="cs-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter></defs>
+    <defs><filter id="cs-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+      <filter id="cs-turb" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.04" numOctaves="3" seed="11"/>
+        <feColorMatrix values="0 0 0 0 0.5  0 0 0 0 0.07  0 0 0 0 0.11  2.2 0 0 0 -0.75"/><feGaussianBlur stdDeviation="2"/></filter></defs>
     <g class="cs-mist" filter="url(#cs-blur)">${[[-40, 214, 150, 42], [120, 222, 170, 48], [300, 210, 160, 44], [470, 220, 150, 46], [40, 250, 220, 50], [260, 256, 240, 56], [480, 250, 200, 50], [200, 300, 600, 90]].map(([cx, cy, rx, ry]) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`).join('')}<rect x="-2000" y="290" width="4480" height="2000" fill="#6d1620"/></g>
+    <g class="cs-mist cs-wisp"><g filter="url(#cs-blur)"><rect x="-480" y="160" width="1440" height="900" filter="url(#cs-turb)" opacity=".55"/></g></g>
     <g class="cs-ledger">
       <rect x="-2000" y="-2000" width="4480" height="4240" fill="#07060a" opacity=".86"/>
       <rect class="cs-page" x="170" y="50" width="260" height="150"/>

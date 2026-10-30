@@ -350,7 +350,7 @@
 - 상태 회복과 페널티 적용은 서버에서 일관되게 처리한다.
 
 ### 날씨와 시간대
-- 장야(長夜, 20261103080000, 롤백 전 연출): world_long_night_stage(날짜, 한국 시각 자정) 1 = 10/30 밤이 일찍(땅거미 15시·삼경 20시) · 2 = 10/31 해가 거의 안 뜸(9~10시 해돋이·10~11 한낮·11~15 땅거미, 조우 +15·침식 +20·희귀품/단서 +5) · 3 = 11/1 끝나지 않는 밤(늘 삼경, 조우 +50·침식 +30·정신 손실 +10·희귀품/단서 +10) · 4 = 11/2 0시 롤백. world_time_phase가 단계를 따르고 world_long_night_fx를 world_env_total이 더한다. world_time_phase_end가 시간대가 바뀌는 때, world_environment_snapshot.long_night가 화면 안내(env.js). pg_cron yh-long-night(매시 정각, world_long_night_tick)이 단계 전환·정해진 시각에 「봉연 소식」 한 줄(world_app_meta long_night_announced).
+- 장야(長夜, 20261103080000, 롤백 전 연출): world_long_night_stage(날짜, 한국 시각 자정) 1 = 10/30 밤이 일찍(땅거미 15시·삼경 20시) · 2 = 10/31 해가 거의 안 뜸(9~10시 해돋이·10~11 한낮·11~15 땅거미, 조우 +15·침식 +20·희귀품/단서 +5) · 3 = 11/1 끝나지 않는 밤(늘 삼경, 조우 +50·침식 +30·정신 손실 +10·희귀품/단서 +10) · 4 = 11/2 0시 롤백. world_time_phase가 단계를 따르고 world_long_night_fx를 world_env_total이 더한다. world_time_phase_end가 시간대가 바뀌는 때, world_environment_snapshot.long_night가 화면 안내(env.js). pg_cron yh-long-night(매시 정각, world_long_night_tick)이 단계 전환·정해진 시각에 「봉연 소식」 한 줄(world_app_meta long_night_announced). 2단계부터 게임 화면 아래에 붉은 안개(env.js fog, #ln-fog: SVG 잡음을 붉게 물들여 흐리게 흘림, 2단계 옅게·3단계 짙게, 누르기 막지 않음, 날씨 창에서 끄기 yh-fog-off) — 평면 원칙의 예외로 사용자 요청에 따라 흐림을 쓴다.
 
 - 시간대는 한국 시각 6시간마다(해돋이 6~12·한낮 12~18·땅거미 18~24·삼경 0~6), 날씨는 12시간마다(0시·12시) 영역별로 바뀐다(청명·담운·장우·농무·삭풍·설한·혈무).
 - 효과는 상태이상 효과 합계(world_status_effect_total)에 더해져 채집·제작·이동·회복·전투·탐색 조우·침식에 함께 적용된다. 모든 기록(world_events)에 그때의 시간대·날씨가 남는다.
