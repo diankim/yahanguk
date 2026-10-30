@@ -199,7 +199,7 @@ create or replace function pg_temp.yh_patch(p_fn text, p_old text, p_new text, p
 language plpgsql as $f$
 declare d text; o text; k int;
 begin
-  d := replace(pg_get_functiondef(p_fn::regprocedure), E'\r\n', E'\n'); -- 줄 끝이 CRLF인 함수도 있다
+  d := replace(pg_get_functiondef(p_fn::regprocedure), E'\\r\\n', E'\\n'); -- 줄 끝이 CRLF인 함수도 있다
   k := (length(d) - length(replace(d, p_old, ''))) / greatest(1, length(p_old));
   if k = 0 and position(p_new in d) > 0 then return; end if;
   if k <> p_n then raise exception '고칠 자리 수가 다름: % (%번 기대, %번)', p_fn, p_n, k; end if;
