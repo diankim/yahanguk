@@ -1,5 +1,5 @@
 // 컷씬: 롤백 순간(점검 페이지, maintenance.json scene 'rollback')과 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞).
-// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고 「건너뛰기」로만 끝낸다.
+// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고, 도중에는 「건너뛰기」, 마지막 장면에서는 [닫기]·[다시 보기].
 // 게임 화면은 평면이 원칙이지만 컷씬만은 사용자 요청으로 흐림·질감(SVG 잡음 필터)을 써 실감 나게 그린다.
 // 움직임 줄이기 설정이면 흔들림·흐름은 멈추고 장면 전환만 남는다.
 
@@ -69,6 +69,7 @@ const CSS = `
 .cs.dawn3 .cs-sun { opacity: 1; transform: none; }
 .cs .cs-title { opacity: 0; transition: opacity 3s; fill: #e9e2d4; font-size: 26px; letter-spacing: .4em; text-anchor: middle; }
 .cs.fin .cs-title { opacity: 1; }
+.cs.dawn3 .cs-title { fill: #3a2a1c; }
 .cs-box { min-height: 128px; padding: 18px max(16px, env(safe-area-inset-left)) max(22px, env(safe-area-inset-bottom)); border-top: 1px solid #2a2530; background: #0b0a10; display: grid; gap: 6px; align-content: start; }
 .cs-who { font-size: 13px; color: #e0a64a; letter-spacing: .06em; min-height: 18px; }
 .cs-text { font-size: 17px; line-height: 1.75; white-space: pre-line; }
@@ -77,6 +78,10 @@ const CSS = `
 @keyframes cs-line { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
 .cs-skip { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
 .cs-skip:focus-visible { outline: 2px solid #e0a64a; }
+.cs-end { display: flex; gap: 8px; justify-content: flex-end; animation: cs-line .9s cubic-bezier(.2,.7,.2,1) both; }
+.cs-btn { min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid #3a3440; background: transparent; color: #d8d0c2; font: 600 14px "Noto Sans KR", sans-serif; cursor: pointer; }
+.cs-btn.main { border-color: #e0a64a; color: #f2e6cc; }
+.cs-btn:focus-visible { outline: 2px solid #e0a64a; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   .cs .cs-lantern, .cs .cs-flame, .cs .cs-glow, .cs .cs-star, .cs .cs-flow-a, .cs .cs-flow-b { animation: none !important; }
   .cs-embers { display: none; }
@@ -254,17 +259,28 @@ export function playCutscene(kind = 'rollback', { onEnd } = {}) {
   const step = () => {
     clearTimeout(timer);
     i++;
-    if (i >= lines.length) { timer = setTimeout(finish, 4000); return; }
     const [s, t, fx] = lines[i];
     who.textContent = s || '';
     text.textContent = t;
     text.classList.toggle('nar', !s);
     for (const el of [who, text]) { el.classList.remove('cs-line-in'); void el.offsetWidth; el.classList.add('cs-line-in'); }
     fx?.(root);
-    // 글 길이에 맞춰 저절로 넘긴다(마지막 제목은 길게 보인다)
+    // 마지막 장면(제목)에 닿으면 저절로 닫지 않고 [닫기]·[다시 보기]를 띄운다
+    if (i === lines.length - 1) { timer = setTimeout(showEnd, 2600); return; }
+    // 글 길이에 맞춰 저절로 넘긴다
     timer = setTimeout(step, t ? 2200 + t.length * 75 : 6000);
   };
-  root.querySelector('.cs-skip').addEventListener('click', finish);
+  const skip = root.querySelector('.cs-skip');
+  skip.addEventListener('click', finish);
+  function showEnd() {
+    if (done) return;
+    skip.hidden = true;
+    const bar = document.createElement('div'); bar.className = 'cs-end';
+    bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button><button type="button" class="cs-btn main" data-close>닫기</button>';
+    root.querySelector('.cs-box').append(bar);
+    bar.querySelector('[data-close]').addEventListener('click', finish);
+    bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); root.remove(); playCutscene(kind, { onEnd }); });
+  }
   setTimeout(step, 1200);
   return finish;
 }
