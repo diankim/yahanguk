@@ -187,7 +187,8 @@ function town(s, roster) {
   ].filter(Boolean);
   // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게, 제보 20)
   return `
-    ${s.stamina ? `<section class="panel town-st">${staminaBox(s.stamina)}</section>` : ''}
+    ${s.stamina ? `<section class="panel town-st"><span class="ts-label">${icon('spark', 14)} 탐색력</span>${bar(s.stamina.now, s.stamina.max, 'st big')}<b>${s.stamina.now} / ${s.stamina.max}</b>
+      <small class="muted" data-st-next="${s.stamina.next_at ? new Date(s.stamina.next_at).getTime() : ''}">${s.stamina.now >= s.stamina.max ? '가득' : ''}</small></section>` : ''}
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
