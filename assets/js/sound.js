@@ -54,9 +54,10 @@ function toBgm(node, send = 0.5) { node.connect(bgmBus); if (send > 0) { const s
 /* ── 악기(녹음 조각) ───────────────────────────────────── */
 // FluidR3 GM 사운드폰트(CC BY 3.0)에서 악기마다 몇 음을 잘라 한 파일(assets/audio/*.mp3)에 3.2초 칸으로 이어 붙였다.
 // 가장 가까운 음을 골라 빠르기를 바꿔 원하는 높이로 낸다(최대 1.5~2반음). 길게 끄는 악기는 가운데를 겹쳐 이어 늘린다.
-// 가야금 → 고토, 대금 → 샤쿠하치·플루트, 해금 → 피들로 대신하고, 첼로·현악·하프·종·북을 받침으로 쓴다.
+// 가야금 → 고토, 대금 → 샤쿠하치·플루트, 해금 → 피들로 대신하고, 첼로·현악·하프·종·북을 받침으로 쓴다. 피아노(7.3.2)는 북령·지하·천문·심연에 쓴다(tools/bgm_samples/build.py).
 const SLOT = 3.2;
 const INS = {
+  piano:      { notes: [33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85], len: 3.1, sus: false, gain: 0.5, att: 0.004, rel: 0.7, pan: 0.08, send: 0.5 },
   koto:       { notes: [45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84], len: 2.8, sus: false, gain: 0.5, att: 0.004, rel: 0.5, pan: -0.28, send: 0.45 },
   harp:       { notes: [43, 47, 51, 55, 59, 63, 67, 71, 75, 79, 83, 87], len: 2.6, sus: false, gain: 0.42, att: 0.004, rel: 0.6, pan: 0.3, send: 0.5 },
   shakuhachi: { notes: [57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90], len: 3.1, sus: true, gain: 0.5, att: 0.07, rel: 0.45, pan: 0.05, send: 0.55 },
@@ -233,41 +234,42 @@ const DRUM = {
 // 영역마다 조성·빠르기·악기·짜임. tonic = 주선율 으뜸음(MIDI). form의 ins는 lead·lead2·counter 또는 악기 이름, oct는 음계 칸 옮김(-7 = 한 옥타브 아래)
 const F = (s, ins, v, o = {}) => ({ s, ins, v, ...o });
 const PROFILES = {
-  // 직할령: 도성의 위엄 — 대금이 주제를 부르고 가야금이 따라 부르며, B에서 해금·대금이 겹쳐 부푼다
-  capital: { tonic: 62, mode: 'minor', bpm: 72, meter: 4, rhy: 'calm', lead: 'shakuhachi', lead2: 'fiddle', counter: 'koto', arp: 'harp', acc: 'calm', bass: 'half', drum: 'pulse', drumIn: ['B', 'A3'], pad: 'swell', bell: 0.25,
-    bt: { bpm: 104, lead: 'shakuhachi', lead2: 'strings', acc: 'battle', arp: 'koto', bass: 'battle', drum: 'b_capital', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -7, trem: true })] },
+  // 직할령: 도성의 위엄 — 대금이 주제를 부르고 가야금이 따라 부르며, B에서는 가야금이 선율을 받고 대금이 아래에서 겹친다
+  capital: { tonic: 62, mode: 'minor', bpm: 72, meter: 4, rhy: 'calm', lead: 'shakuhachi', lead2: 'koto', counter: 'koto', arp: 'harp', acc: 'calm', bass: 'half', drum: 'pulse', drumIn: ['B', 'A3'], pad: 'light', bell: 0.25,
+    bt: { bpm: 104, lead: 'shakuhachi', lead2: 'flute', acc: 'battle', arp: 'koto', bass: 'battle', drum: 'b_capital', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { duet: 'shakuhachi', trem: true })] },
     form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.66, { echo: 'koto' }), F('B', 'lead2', 0.85, { duet: 'shakuhachi' }), F('A3', 'lead', 0.58), F('bridge', 0, 0.3, { n: 2 })] },
   // 수향: 물 위의 장터 — 3박 춤곡, 플루트와 가야금이 선율을 주고받고 하프가 쿵·짝·짝
   east: { tonic: 64, mode: 'major', bpm: 108, meter: 3, rhy: 'dance3', lead: 'flute', lead2: 'koto', counter: 'harp', arp: 'koto', acc: 'waltz', bass: 'waltz', drum: 'tap3', drumIn: ['A2', 'B', 'C'], pad: 'light', bell: 0.15,
     bt: { bpm: 120, lead: 'flute', lead2: 'koto', acc: 'flowing', arp: 'harp', bass: 'drive', drum: 'b_east', form: [F('A', 'lead', 0.85, { echo: 'koto' }), F('B', 'lead2', 0.9, { duet: 'flute' })] },
-    form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.6), F('B', 'lead2', 0.7, { echo: 'harp' }), F('A2', 'lead', 0.75, { duet: 'fiddle' }), F('C', 'shakuhachi', 0.6), F('A', 'lead', 0.7)] },
-  // 북령: 눈 덮인 고개의 애가 — 느린 해금 독주, 첼로가 낮게 받아 부르고, 북 없이 현악이 길게 깔린다
-  north: { tonic: 57, mode: 'minor', bpm: 54, meter: 4, rhy: 'lament', lead: 'fiddle', lead2: 'cello', counter: 'shakuhachi', arp: 'harp', acc: 'sparse', bass: 'long', drum: null, pad: 'sustain', bell: 0.12,
-    bt: { bpm: 72, mode: 'minor', lead: 'strings', lead2: 'cello', counter: 'shakuhachi', arp: 'harp', acc: 'sparse', bass: 'long', drum: 'b_north', pad: 'swell', bell: 0.7, rhy: 'lament', form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.95, { oct: -14, duet: 'strings' })] },
-    form: [F('intro', 0, 0.3, { n: 3 }), F('A', 'lead', 0.5), F('A2', 'lead2', 0.6, { oct: -14 }), F('B', 'lead', 0.78, { duet: 'shakuhachi' }), F('A3', 'lead', 0.45), F('bridge', 0, 0.25, { n: 2 })] },
+    form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.6), F('B', 'lead2', 0.7, { echo: 'harp' }), F('A2', 'lead', 0.75, { duet: 'shakuhachi' }), F('C', 'shakuhachi', 0.6), F('A', 'lead', 0.7)] },
+  // 북령: 눈 덮인 고개의 애가 — 느린 피아노 독주, 첼로가 낮게 받아 부르고, 대금이 멀리서 겹친다
+  north: { tonic: 57, mode: 'minor', bpm: 54, meter: 4, rhy: 'lament', lead: 'piano', lead2: 'cello', counter: 'shakuhachi', arp: 'piano', acc: 'sparse', bass: 'long', drum: null, pad: 'light', bell: 0.12,
+    bt: { bpm: 72, mode: 'minor', lead: 'piano', lead2: 'cello', counter: 'shakuhachi', arp: 'piano', acc: 'sparse', bass: 'long', drum: 'b_north', pad: 'swell', bell: 0.7, rhy: 'lament', form: [F('A', 'lead', 0.9, { oct: -7 }), F('B', 'lead2', 0.95, { oct: -14, duet: 'shakuhachi' })] },
+    form: [F('intro', 0, 0.3, { n: 3 }), F('A', 'lead', 0.55), F('A2', 'lead2', 0.6, { oct: -14 }), F('B', 'lead', 0.78, { duet: 'shakuhachi' }), F('A3', 'lead', 0.5), F('bridge', 0, 0.25, { n: 2 })] },
   // 남명: 불씨 고개의 신명 — 빠른 장단, 대금·플루트가 겹쳐 내달리고 가야금이 16분음으로 굴린다
-  south: { tonic: 60, mode: 'major', bpm: 124, meter: 4, rhy: 'fast', lead: 'shakuhachi', lead2: 'fiddle', counter: 'koto', arp: 'koto', acc: 'fast', bass: 'drive', drum: 'groove', pad: 'light', bell: 0.08,
+  south: { tonic: 60, mode: 'major', bpm: 124, meter: 4, rhy: 'fast', lead: 'shakuhachi', lead2: 'koto', counter: 'koto', arp: 'koto', acc: 'fast', bass: 'drive', drum: 'groove', pad: 'light', bell: 0.08,
     bt: { bpm: 136, lead: 'shakuhachi', lead2: 'flute', acc: 'fast', arp: 'koto', bass: 'drive', drum: 'b_south', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { duet: 'shakuhachi' })] },
-    form: [F('drop', 0, 0.55, { n: 2 }), F('A', 'lead', 0.7, { duet: 'flute' }), F('A2', 'lead', 0.78, { echo: 'koto' }), F('B', 'lead2', 0.85), F('drop', 0, 0.6, { n: 2 }), F('A', 'flute', 0.8, { duet: 'shakuhachi' })] },
-  // 변경: 성벽 너머의 행군 — 현악 8분음 받침과 북 행진, 해금 주제 위로 플루트가 옥타브로 겹친다
+    form: [F('drop', 0, 0.55, { n: 2 }), F('A', 'lead', 0.7, { duet: 'flute' }), F('A2', 'lead', 0.78, { echo: 'koto' }), F('B', 'lead2', 0.85, { duet: 'flute' }), F('drop', 0, 0.6, { n: 2 }), F('A', 'flute', 0.8, { duet: 'shakuhachi' })] },
+  // 변경: 성벽 너머의 행군 — 현악 8분음 받침과 북 행진, 해금 주제 위로 플루트가 겹친다(해금을 주로 쓰는 곳)
   frontier: { tonic: 64, mode: 'minor', bpm: 88, meter: 4, rhy: 'calm', lead: 'fiddle', lead2: 'flute', counter: 'shakuhachi', arp: 'harp', acc: 'ostinato', accIns: 'strings', bass: 'march', drum: 'march', pad: 'swell', bell: 0.05,
-    bt: { bpm: 112, lead: 'fiddle', lead2: 'strings', acc: 'ostinato', accIns: 'strings', bass: 'march', drum: 'b_frontier', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -7, trem: true })] },
+    bt: { bpm: 112, lead: 'fiddle', lead2: 'strings', acc: 'ostinato', accIns: 'strings', bass: 'march', drum: 'b_frontier', pad: 'swell', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -7, trem: true })] },
     form: [F('drop', 0, 0.5, { n: 2 }), F('A', 'lead', 0.65), F('A2', 'lead', 0.78, { duet: 'shakuhachi' }), F('B', 'lead2', 0.92, { duet: 'fiddle', trem: true }), F('A3', 'lead', 0.7), F('bridge', 0, 0.4, { n: 1 })] },
-  // 지하: 무너진 굴의 음산함 — 아주 느리게, 반음 부딪는 바닥음과 심장 박동 같은 북, 하프가 드문드문 어긋난 음을 짚는다
-  underworld: { tonic: 61, mode: 'phryg', bpm: 48, meter: 4, rhy: 'lament', lead: 'shakuhachi', lead2: 'fiddle', counter: 'harp', arp: 'harp', acc: 'eerie', bass: 'pedal', drum: 'heart', pad: 'open', bell: 0.4,
-    bt: { bpm: 96, lead: 'shakuhachi', lead2: 'cello', acc: 'eerie', arp: 'harp', bass: 'drive', drum: 'b_underworld', pad: 'open', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -14 })] },
-    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('drop', 0, 0.35, { n: 2 }), F('A2', 'lead', 0.55, { echo: 'harp' }), F('B', 'lead2', 0.65), F('A3', 'lead', 0.45)] },
-  // 천문: 별을 보는 높은 대 — 하프가 두 옥타브를 넘나드는 반짝이는 분산화음, 플루트와 종, 북 없이 맑게
-  heavenward: { tonic: 65, mode: 'major', bpm: 66, meter: 4, rhy: 'calm', lead: 'flute', lead2: 'shakuhachi', counter: 'harp', arp: 'harp', acc: 'shimmer', bass: 'long', drum: null, pad: 'sustain', bell: 0.55,
-    bt: { bpm: 104, lead: 'flute', lead2: 'strings', acc: 'shimmer', arp: 'harp', bass: 'half', drum: 'b_heaven', bell: 0.6, form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -7, echo: 'bell' })] },
-    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.62, { echo: 'bell' }), F('B', 'lead2', 0.7, { duet: 'flute' }), F('A3', 'lead', 0.5)] },
-  // 심연: 검은 물이 휘도는 곳 — 무거운 북과 몰아치는 첼로 8분음, 해금이 높게 울부짖고 가야금이 낮게 되풀이한다
-  abyss: { tonic: 59, mode: 'phryg', bpm: 84, meter: 4, rhy: 'calm', lead: 'fiddle', lead2: 'shakuhachi', counter: 'koto', arp: 'koto', acc: 'ostinato', bass: 'drive', drum: 'heavy', drumIn: ['drop', 'A2', 'B', 'A3'], pad: 'open', bell: 0.15,
-    bt: { bpm: 118, lead: 'fiddle', lead2: 'cello', acc: 'ostinato', arp: 'koto', bass: 'drive', drum: 'b_abyss', pad: 'open', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -14, trem: true })] },
-    form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.6), F('drop', 0, 0.6, { n: 2 }), F('B', 'lead2', 0.8, { duet: 'fiddle', trem: true }), F('A2', 'lead', 0.75, { echo: 'koto' }), F('A3', 'lead', 0.6)] },
-  // 귀허도: 망자를 배웅하는 느린 3박 노래 — 해금과 대금, 종을 많이 쓰고 심장 박동처럼 북이 낮게
-  gwiheo: { tonic: 55, mode: 'phryg', bpm: 50, meter: 3, rhy: 'slow3', lead: 'fiddle', lead2: 'shakuhachi', counter: 'harp', arp: 'koto', acc: 'slow3', bass: 'waltz', drum: 'heart', drumIn: ['B', 'A3'], pad: 'sustain', bell: 0.45,
-    bt: { bpm: 92, lead: 'shakuhachi', lead2: 'strings', acc: 'battle', arp: 'harp', bass: 'battle', drum: 'b_gwiheo', bell: 0.5, form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -7 })] },
+  // 지하: 무너진 굴의 음산함 — 아주 느리게, 대금 위로 낮은 피아노가 드문드문 어긋난 음을 짚고 심장 박동 같은 북
+  underworld: { tonic: 61, mode: 'phryg', bpm: 48, meter: 4, rhy: 'lament', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', acc: 'eerie', bass: 'pedal', drum: 'heart', pad: 'open', bell: 0.4,
+    bt: { bpm: 96, lead: 'shakuhachi', lead2: 'piano', acc: 'eerie', arp: 'piano', bass: 'drive', drum: 'b_underworld', pad: 'open', form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { oct: -7 })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('drop', 0, 0.35, { n: 2 }), F('A2', 'lead', 0.55, { echo: 'harp' }), F('B', 'lead2', 0.65, { oct: -7 }), F('A3', 'lead', 0.45)] },
+  // 천문: 별을 보는 높은 대 — 피아노 주제 위로 하프가 두 옥타브를 넘나들며 반짝이고, 플루트와 종, 북 없이 맑게
+  heavenward: { tonic: 65, mode: 'major', bpm: 66, meter: 4, rhy: 'calm', lead: 'piano', lead2: 'flute', counter: 'harp', arp: 'harp', acc: 'shimmer', bass: 'long', drum: null, pad: 'light', bell: 0.55,
+    bt: { bpm: 104, lead: 'piano', lead2: 'flute', acc: 'shimmer', arp: 'harp', bass: 'half', drum: 'b_heaven', bell: 0.6, form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { echo: 'bell' })] },
+    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.62, { echo: 'bell' }), F('B', 'lead2', 0.7, { duet: 'shakuhachi' }), F('A3', 'lead', 0.5)] },
+  // 심연: 검은 물이 휘도는 곳 — 무거운 북과 몰아치는 첼로 8분음, 낮은 피아노가 주제를 두드리고 절정에서 해금이 울부짖는다
+  abyss: { tonic: 59, mode: 'phryg', bpm: 84, meter: 4, rhy: 'calm', lead: 'piano', lead2: 'fiddle', counter: 'koto', arp: 'koto', acc: 'ostinato', bass: 'drive', drum: 'heavy', drumIn: ['drop', 'A2', 'B', 'A3'], pad: 'open', bell: 0.15,
+    bt: { bpm: 118, lead: 'piano', lead2: 'cello', acc: 'ostinato', arp: 'koto', bass: 'drive', drum: 'b_abyss', pad: 'open', form: [F('A', 'lead', 0.9, { oct: -7 }), F('B', 'lead2', 0.95, { oct: -14, trem: true })] },
+    form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.65, { oct: -7 }), F('drop', 0, 0.6, { n: 2 }), F('B', 'lead2', 0.8, { duet: 'shakuhachi', trem: true }), F('A2', 'lead', 0.75, { oct: -7, echo: 'koto' }), F('A3', 'lead', 0.6, { oct: -7 })] },
+  // 귀허도: 망자를 배웅하는 느린 3박 노래 — 낮은 대금이 이끌고 첼로가 받으며, 쨍한 고음 악기 없이 하프는 낮게, 종은 드물게
+  gwiheo: { tonic: 55, mode: 'phryg', bpm: 50, meter: 3, rhy: 'slow3', lead: 'shakuhachi', lead2: 'cello', counter: 'cello', arp: 'harp', acc: 'slow3', bass: 'waltz', drum: 'heart', drumIn: ['B', 'A3'], pad: 'light', bell: 0.15,
+    bt: { bpm: 92, lead: 'shakuhachi', lead2: 'cello', counter: 'cello', acc: 'battle', arp: 'harp', bass: 'battle', drum: 'b_gwiheo', bell: 0.15, form: [F('A', 'lead', 0.9, { duet: 'cello' }), F('B', 'lead2', 0.95, { oct: -14, duet: 'shakuhachi' })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead2', 0.6, { oct: -14, echo: 'shakuhachi' }), F('B', 'lead', 0.7, { duet: 'cello' }), F('A3', 'lead', 0.5)] },
     form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead2', 0.55, { echo: 'harp' }), F('B', 'lead', 0.65, { duet: 'shakuhachi' }), F('A3', 'lead', 0.45)] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0, held = false;
@@ -276,7 +278,7 @@ let droneKey = ''; // 지역이 바뀌었는지 보는 열쇠(예전 이름을 �
 // 전투: 그 영역의 조성을 두고 영역마다 정한 편성(battle)으로 4박 장단을 몰아친다
 function battleOf(p) {
   const b = p.bt || {};
-  return { ...p, battle: true, meter: 4, rhy: 'battle', acc: 'battle', bass: 'battle', drumIn: null, pad: 'swell', accIns: null, counter: p.counter, ...b,
+  return { ...p, battle: true, meter: 4, rhy: 'battle', acc: 'battle', bass: 'battle', drumIn: null, pad: 'light', accIns: null, counter: p.counter, ...b,
     bpm: Math.min(140, b.bpm || Math.max(Math.round(p.bpm * 1.4), 100)), form: b.form || [F('A', 'lead', 0.85), F('B', 'lead2', 0.95)] };
 }
 function profile(battle = scene.battle) {
@@ -379,7 +381,7 @@ function makeSong(p, key, loop) {
 
 // 프레이즈 안 마디 자리(0~3)마다 세기: 오르다 셋째 마디에서 가장 크고 맺는 마디에서 가라앉는다. 대구(뒷 프레이즈)는 조금 더 크게
 const DYN = [0.84, 0.95, 1.08, 0.86];
-const LEAD_GAIN = { strings: 1.9, cello: 1.05 };
+const LEAD_GAIN = { strings: 1.9, cello: 1.05, piano: 1.1 };
 // 마디 하나를 연주한다
 function playBar(p, S, bar, t, beat) {
   const { midi, mod7, chordTones } = S, mb = p.meter;
