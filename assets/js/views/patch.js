@@ -55,9 +55,9 @@ export async function render(el, sub) {
 }
 // 운영진만: 공지(0.0.0) 제목·본문 고치기. 서버 world_patch_notice_save가 world_staff인지 다시 검사한다
 function editNotice(n, done) {
-  const m = openModal({ title: '공지 고치기', wide: true, body: `<form class="form-grid" id="notice-form">
+  const m = openModal({ title: '공지 고치기', wide: true, body: `<form class="notice-form" id="notice-form">
       <label class="field"><span>제목 (80자)</span><input name="title" maxlength="80" required value="${esc(n?.title || '[공지] ')}"></label>
-      <label class="field"><span>본문 (6,000자) · 「## 」 제목 · 「· 」 항목 · 「**굵게**」 · 빈 줄로 문단</span><textarea name="body" rows="14" maxlength="6000" required>${esc(n?.body?.trim() || '')}</textarea></label>
+      <label class="field"><span>본문 (6,000자) · 「## 」 제목 · 「· 」 항목 · 「**굵게**」 · 빈 줄로 문단</span><textarea name="body" rows="16" maxlength="6000" required>${esc(n?.body?.trim() || '')}</textarea></label>
       <p class="muted small">저장하면 모든 조사원의 패치노트 맨 위 공지가 바로 바뀝니다(이미 열어 둔 화면은 5분 안에).</p>
       <button class="btn primary" type="submit">${icon('check', 15)}<span>저장</span></button></form>` });
   const f = $('#notice-form', m);

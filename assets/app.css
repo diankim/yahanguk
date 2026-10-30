@@ -1990,3 +1990,10 @@ b.sealed { color: var(--bad); }
 /* 패치노트 맨 위 공지(note_id 0.0.0) */
 .patch.notice-pin { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .patch.notice-pin > summary b::before { content: '공지'; display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--r-sm); background: var(--accent); color: var(--accent-ink); font-size: 11.5px; vertical-align: 1px; }
+
+/* 공지 고치기 창: 제목·본문을 위아래로 쌓는다(여러 칸으로 나뉘어 좁아지던 것) */
+.notice-form { display: grid; gap: 12px; }
+.notice-form .field { display: grid; gap: 4px; min-width: 0; }
+.notice-form input, .notice-form textarea { width: 100%; }
+.notice-form textarea { min-height: 320px; resize: vertical; line-height: 1.6; }
+.notice-form .btn { justify-self: end; }
