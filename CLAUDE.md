@@ -578,6 +578,7 @@
 - PC 화면을 단순히 축소하는 방식은 피한다.
 
 ### 공통 편의 기능
+- 초대권(20261103090000, world_invites, 함수로만 읽음): 정원 60 = 계정 + 초대권. pg_cron yh-invite-day가 10/31 00:00 KST에 world_invite_distribute를 한 번 돌려(끝나면 예약 삭제) 60 − 계정 수만큼 만들고 계정마다 한 장씩 고정 서신(정청)·알림, 남은 것은 비축분, world_app_meta invite_required를 켠다. 그 뒤 가입은 world_hook_before_user_created가 초대권(user_metadata.invite)을 확인하고 trg on_auth_user_invite(world_invite_on_user)가 계정을 만들 때 쓴 것으로 남긴다(같은 번호 동시 가입은 하나만). 쓸 수 있는 때는 world_app_meta invite_open_at(롤백을 마친 때에 넣음)부터 7일, 그 전에는 가입 불가. 내 초대권 world_invite_mine(계정 화면·캐릭터 만들기 화면, account.js fillInvites), 운영진 world_invite_admin(비축분 보기·정원 안에서 더 만들기). 회원가입 화면에 초대권 번호 칸.
 - 로그인 페이지와 실제 게임 화면을 분리한다.
 - 로그아웃은 게임 설정 페이지 위 단추·설정 › 계정·프로필 창에 있다(확인 팝업). 서버 응답이 막혀도 3초 안에 이 기기의 로그인을 지우고 로그인 화면으로 간다.
 - 한 계정은 한 곳에서만 접속한다. 로그인한 브라우저가 현재 접속(world_active_sessions, JWT session_id)이 되고 다른 곳의 갱신 토큰을 끊으며, 다른 브라우저는 실시간·화면 복귀·1분 확인(화면을 보는 동안)으로 알아채 스스로 로그아웃하고 그 까닭을 로그인 화면에 알린다. 게임 중에 로그인이 풀리면(갱신 토큰 거절 등 SIGNED_OUT) app.js가 페이지를 새로 열어 상태판·채팅·알림 타이머를 모두 끊는다(6.3.1 — 전에는 로그인 화면만 그리고 타이머가 남아 로그인 없이 요청을 계속 보냈다, 옛 화면은 2초마다).
