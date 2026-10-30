@@ -379,7 +379,7 @@ function markHeader(view, sub) {
 }
 window.addEventListener('yh-subpage', () => { const { view, sub } = parseHash(); markHeader(view, sub); });
 window.addEventListener('hashchange', onHash);
-export function go(view, sub = '') { const target = `#/${view}${sub ? '/' + sub : ''}`; if (location.hash === target) onHash(); else location.hash = target; }
+export function go(view, sub = '') { const target = `#/${view}${sub ? '/' + sub : ''}`; window.dispatchEvent(new Event('yh-nav')); if (location.hash === target) onHash(); else location.hash = target; }
 window.yahangGo = go;
 mountGrowth(); // 레벨·숙련이 오르면 화면 위에 잠깐 알린다
 

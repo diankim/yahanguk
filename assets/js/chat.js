@@ -45,6 +45,11 @@ export function mountChat(colEl, fabEl) {
   matchMedia('(min-width: 1280px)').addEventListener('change', placePanel);
   fab.onclick = () => toggleSheet(true);
   $('.chat-close', panel).onclick = () => toggleSheet(false);
+  // 채팅·조사원 카드에서 패치노트·별채 구경 같은 다른 화면으로 가면 모바일 채팅 시트를 닫는다(7.3.4)
+  const closeOnNav = () => { if (document.body.classList.contains('chat-open')) toggleSheet(false); };
+  window.addEventListener('hashchange', closeOnNav);
+  panel.addEventListener('click', e => { if (e.target.closest('a[href^="#/"]')) closeOnNav(); });
+  window.addEventListener('yh-nav', closeOnNav);
   panel.querySelector('.chat-tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) switchTab(b.dataset.tab); };
   $('#chat-circles', panel).onclick = e => { const b = e.target.closest('[data-circle]'); if (b) pickCircle(b.dataset.circle); };
   renderTabs();
