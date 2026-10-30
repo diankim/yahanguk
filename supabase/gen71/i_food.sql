@@ -34,3 +34,33 @@ select pg_temp.yh_patch('public.world_safe_regen()', 'set health = least(100, c.
 update public.world_quest_npcs n set npc_key = 'q:' || n.npc_key
  where n.npc_key not like 'q:%' and n.npc_key not like '%:%'
    and not exists (select 1 from public.world_quest_npcs x where x.npc_key = 'q:' || n.npc_key);
+
+-- 원정 보급품 고르기: 출발할 때 보급품마다 챙길 개수(0 = 사용 안 함)를 정한다. 기본은 지금처럼 가진 만큼(가지마다 20개까지)
+--   world_expedition_start(4인자)가 고른 개수를 그 거래 안에서만 넘기고(yh.exp_sup) 옛 3인자 함수가 읽은 뒤 비운다.
+--   파티 원정(world_pexp_resolve)은 3인자를 부르므로 그대로 기본값.
+select pg_temp.yh_patch('public.world_expedition_start(uuid,integer,text)', 'q := least(20, coalesce((inv ->> k)::int, 0));',
+  'q := least(20, coalesce((inv ->> k)::int, 0), greatest(0, coalesce((nullif(current_setting(''yh.exp_sup'', true), '''')::jsonb ->> k)::int, 20)));');
+select pg_temp.yh_patch('public.world_expedition_start(uuid,integer,text)', '  ends := now() + make_interval(mins => p_minutes);',
+  '  PERFORM set_config(''yh.exp_sup'', '''', true);
+  ends := now() + make_interval(mins => p_minutes);');
+create or replace function public.world_expedition_start(p_node_id uuid, p_minutes integer, p_stance text, p_supplies jsonb)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare s jsonb := '{}'::jsonb; k text; v jsonb;
+begin
+  if p_supplies is not null and jsonb_typeof(p_supplies) = 'object' then
+    for k, v in select * from jsonb_each(p_supplies) loop
+      if k in ('tonic', 'herbal_extract', 'herb', 'ward_talisman', 'seal_paper', 'revival_charm', 'travel_ration') and jsonb_typeof(v) = 'number' then
+        s := s || jsonb_build_object(k, greatest(0, least(20, floor(v::text::numeric)::int)));
+      end if;
+    end loop;
+  end if;
+  perform set_config('yh.exp_sup', s::text, true);
+  return public.world_expedition_start(p_node_id, p_minutes, p_stance);
+end $$;
+alter function public.world_expedition_start(uuid, integer, text, jsonb) owner to fn_owner_field;
+do $$ begin
+  set role fn_owner_field;
+  revoke all on function public.world_expedition_start(uuid, integer, text, jsonb) from public, anon;
+  grant execute on function public.world_expedition_start(uuid, integer, text, jsonb) to authenticated;
+  reset role;
+end $$;

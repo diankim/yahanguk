@@ -101,6 +101,7 @@
 - 원정 짐 보따리(20261028230000, world_overflow_items): 원정 귀환(world_expedition_complete가 yh.overflow_to=expedition을 켬) 중 가방이 넘치면 world_enforce_bag_capacity가 넘친 만큼 버리지 않고 보따리에 담고 bag_overflow 알림을 보낸다. world_overflow_snapshot·world_overflow_take(들어가는 만큼만)·world_overflow_discard로 정리하고, 비기 전에는 world_guard_action_context(explore·gather·fish·combat·encounter·expedition_start·travel 출발)와 world_field_move가 막는다. 현장 화면은 world_field_snapshot.overflow로 안내 칸을 띄운다(overflow.js). 원정 밖의 얻기는 지금처럼 넘친 만큼 버린다.
 - 원정 전투 묘사(20261029050000, world_exp_fight_story): 승패와 주고받는 피해 합은 world_expedition_settle이 정하고, 이 함수가 무기 갈래별 공격·치명타·직업 기술(한 번)·요괴 기믹(kind foe)·회피·막기(kind guard, 기술 guarding 단계로 6%+단계×0.6%·최대 35%, 그 공격 피해 절반)를 여러 합으로 적는다. 파티 합동 전투는 동료 한 명마다 같은 지역 일반 요괴가 하나 더 나오고 위협 +45%(전에는 +30%), 이기면 더 나온 요괴마다 경험치 5+위험도·전리품 35% 굴림을 더한다.
 - 원정 전투 버팀(5.0.0): 승패는 win_p로 굴리되, 밀린 싸움도 체력 70 이상이면 (체력−50)/100(최대 50%) 확률로 버텨 이긴다(그 싸움 피해 두 배, 일지 [버팀]). 원정 일지 화면은 전투 중에 끼어든 다른 줄(보급품 먹기 등)이 전투 칸을 끊지 않는다(expedition.js battleGroups).
+- 원정 보급품 고르기(7.1.0): world_expedition_start(p_node_id, p_minutes, p_stance, p_supplies jsonb)가 보급품마다 0~20(0 = 사용 안 함)을 받아 yh.exp_sup으로 3인자 함수에 넘기고, 3인자는 읽은 뒤 비운다. 고르지 않은 것은 가진 만큼(20개까지). 파티 원정(world_pexp_resolve)은 3인자라 기본값. 화면 expedition.js supPick.
 - 직업별 원정 기술: 퇴마관 파사 부적 · 현장 조사원 흔적 추적 · 의무관 야전 처치 · 봉인술사 결계 야영 · 호위 무사 반격 태세 · 백공 기술관 현장 가공(서버 계산, 결과에 발동 횟수 기록).
 
 ### 3.5 귀허도(7.0.0, 20261101000000)

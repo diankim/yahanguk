@@ -31,8 +31,12 @@ const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) 
 const saveLast = p => { try { localStorage.setItem(LAST_KEY, JSON.stringify(p)); } catch {} };
 const STANCE_NAME = { cautious: '신중', balanced: '균형', bold: '강행' };
 const DUR_NAME = Object.fromEntries(DURATIONS);
+// 보급품 고르기(7.1): 고른 개수만 보낸다(고르지 않은 것은 서버 기본값 = 가진 만큼, 가지마다 20개까지). 0은 사용 안 함
+let supPick = {};
 async function launch(p) {
-  const out = await act('world_expedition_start', { p_node_id: p.node, p_minutes: p.minutes, p_stance: p.stance });
+  const sup = Object.fromEntries(Object.entries(supPick).filter(([, n]) => n >= 0));
+  const out = await act('world_expedition_start', Object.keys(sup).length ? { p_node_id: p.node, p_minutes: p.minutes, p_stance: p.stance, p_supplies: sup } : { p_node_id: p.node, p_minutes: p.minutes, p_stance: p.stance });
+  supPick = {};
   saveLast({ node: p.node, minutes: p.minutes, stance: p.stance });
   return out;
 }
@@ -82,7 +86,9 @@ export function renderExpedition(box, ov) {
   const tokens = Number(ov.tokens ?? c.mount_tokens ?? 0);
   const fareOf = id => Number(opts.find(o => o.node_id === id)?.fare || 1);
   const last = lastPick(), lastOpt = last && opts.find(o => o.node_id === last.node && !o.locked);
-  const rations = Number(ov.supplies?.travel_ration || 0);
+  for (const k of Object.keys(supPick)) if (!(ov.supplies?.[k] > 0) || supPick[k] > ov.supplies[k]) delete supPick[k];
+  const supN = k => supPick[k] ?? Number(ov.supplies?.[k] || 0);
+  const rations = () => supN('travel_ration');
   // PC: 왼쪽에 보낼 곳·기간·태세, 오른쪽에 보급품·안내·출발. 모바일: 한 줄로 쌓는다.
   box.innerHTML = `
     <div class="exp-progress"><span>${esc(ov.region_name || '')} 답사</span><b>${ov.survey?.pct ?? 0}%</b>${bar(ov.survey?.pct ?? 0, 100, 'xp')}<small>원정에서 길과 채집터를 새로 찾으면 답사가 오릅니다. 깊은 곳일수록 위험하고 얻는 것이 많습니다.</small></div>
@@ -98,8 +104,10 @@ export function renderExpedition(box, ov) {
         <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
       </div>
       <aside class="exp-col exp-side">
-        <h3 class="sub-h">챙겨 갈 보급품 <small class="muted">가방에서 자동으로 챙깁니다</small></h3>
-        ${sup.length ? `<ul class="supply-auto">${sup.map(([k, n]) => `<li><b>${esc(nameOf(k))} <span class="muted">×${n}</span></b><small>${esc(SUPPLY_USE[k] || '필요할 때')} 씁니다</small></li>`).join('')}</ul>`
+        <h3 class="sub-h">챙겨 갈 보급품 <small class="muted">기본은 가진 만큼(가지마다 20개까지) · 개수를 줄이거나 빼도 됩니다</small></h3>
+        ${sup.length ? `<ul class="supply-auto">${sup.map(([k, n]) => `<li class="${supN(k) === 0 ? 'off' : ''}"><b>${esc(nameOf(k))}</b>
+            <select data-sup="${esc(k)}" aria-label="${esc(nameOf(k))} 챙길 개수"><option value="-1" ${supPick[k] == null ? 'selected' : ''}>전부 ×${n}</option>${Array.from({ length: n - 1 }, (_, i) => n - 1 - i).map(v => `<option value="${v}" ${supPick[k] === v ? 'selected' : ''}>×${v}</option>`).join('')}<option value="0" ${supPick[k] === 0 ? 'selected' : ''}>사용 안 함</option></select>
+            <small>${esc(SUPPLY_USE[k] || '필요할 때')} 씁니다</small></li>`).join('')}</ul>`
           : `<p class="muted small">가방에 원정용 보급품이 없습니다. 청심환·약초·정화 부적·노정 건량을 챙기면 더 오래 버팁니다.</p>`}
         <ul class="exp-notes">
           <li id="exp-fare-row">${icon('route', 14)}<span id="exp-fare"></span></li>
@@ -117,8 +125,8 @@ export function renderExpedition(box, ov) {
     ${recent(ov.recent)}`;
   const hint = () => {
     const need = Math.floor(pick.minutes / 60);
-    const short = need > rations;
-    $('#exp-hint', box).textContent = short ? `노정 건량이 ${need - rations}개 모자랍니다. 허기 때문에 정신이 깎이고 수확이 줄어듭니다.` : `가방 ${bagUsed(c)}/${bagLimit(c)}칸 · 전리품이 가방을 넘치면 남는 것은 두고 옵니다.`;
+    const short = need > rations();
+    $('#exp-hint', box).textContent = short ? `노정 건량이 ${need - rations()}개 모자랍니다. 허기 때문에 정신이 깎이고 수확이 줄어듭니다.` : `가방 ${bagUsed(c)}/${bagLimit(c)}칸 · 전리품이 가방을 넘치면 남는 것은 두고 옵니다.`;
     $('#exp-hint-row', box).classList.toggle('warn', short);
     const fare = fareOf(pick.node), poor = !!pick.node && tokens < fare;
     $('#exp-fare', box).textContent = pick.node ? `운임 노정패 ${fare}개 · 가진 노정패 ${tokens}개${poor ? ' — 모자랍니다' : ''}` : `가진 노정패 ${tokens}개`;
@@ -127,6 +135,11 @@ export function renderExpedition(box, ov) {
   };
   $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-pick=minutes] button', box).forEach(b => b.onclick = () => { pick.minutes = Number(b.dataset.v); $$('[data-pick=minutes] button', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
+  $$('[data-sup]', box).forEach(sel => sel.onchange = () => {
+    const v = Number(sel.value);
+    if (v < 0) delete supPick[sel.dataset.sup]; else supPick[sel.dataset.sup] = v;
+    sel.closest('li')?.classList.toggle('off', v === 0); hint();
+  });
   $$('[data-stance]', box).forEach(b => b.onclick = () => { pick.stance = b.dataset.stance; $$('[data-stance]', box).forEach(x => x.classList.toggle('on', x === b)); });
   hint();
   bindRecent(box, ov.recent);

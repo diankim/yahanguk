@@ -873,6 +873,9 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .supply-auto li { display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); }
 .supply-auto b { font-size: calc(13px * var(--fz, 1)); }
 .supply-auto small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); line-height: 1.45; }
+.supply-auto select { width: 100%; min-height: 32px; padding: 2px 6px; font-size: max(16px, calc(13px * var(--fz, 1))); }
+@media (hover: hover) { .supply-auto select { font-size: calc(13px * var(--fz, 1)); } }
+.supply-auto li.off { opacity: .55; }
 /* 원정 계획: PC 두 칸, 모바일 한 칸 */
 .exp-plan { display: grid; gap: 4px 20px; }
 .exp-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
