@@ -42,7 +42,7 @@ function longNight(e) {
 }
 // 장야의 붉은 안개: 단계가 오를수록 화면 아래에서 짙게 차오른다(누르는 데 방해되지 않게 pointer-events 없음).
 // 안개 결은 SVG 잡음(feTurbulence)을 붉게 물들이고 흐리게 번진 두 겹을 서로 다른 빠르기로 흘린다.
-// 눈이 피로하지 않게 옅게 두고, 날씨 창에서 끌 수 있다(기기 yh-fog-off). 움직임 줄이기면 흐르지 않는다.
+// 눈이 피로하지 않게 옅게 두고, 날씨 창에서 끌 수 있다(기기 yh-fog-off). 기기의 움직임 줄이기와 상관없이 흐른다(7.4.4).
 const FOG_KEY = 'yh-fog-off';
 const fogOff = () => { try { return localStorage.getItem(FOG_KEY) === '1'; } catch { return false; } };
 const fogLayer = (seed, fx, fy) => `<svg class="fog-l" viewBox="0 0 1600 400" preserveAspectRatio="none" aria-hidden="true">

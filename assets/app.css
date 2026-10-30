@@ -2231,7 +2231,12 @@ b.sealed { color: var(--bad); }
 @keyframes ln-fog-flow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes ln-fog-breath-a { 0% { opacity: 1; } 55% { opacity: .5; } 100% { opacity: .8; } }
 @keyframes ln-fog-breath-b { 0% { opacity: .35; } 60% { opacity: .9; } 100% { opacity: .55; } }
-@media (prefers-reduced-motion: reduce) { #ln-fog .fog-a, #ln-fog .fog-b { animation: none; } }
+/* 안개는 날씨 창에서 따로 끌 수 있으니 기기의 「동작 줄이기」와 상관없이 흐른다(7.4.4, 사용자 결정 — 창 움직임은 끄고 안개만 보고 싶은 사람). 전역 animation: none !important보다 앞서도록 id로 !important */
+@media (prefers-reduced-motion: reduce) {
+  #ln-fog .fog-a { animation: ln-fog-flow 48s linear infinite, ln-fog-breath-a 14s ease-in-out infinite alternate !important; }
+  #ln-fog .fog-b { animation: ln-fog-flow 31s linear infinite reverse, ln-fog-breath-b 21s ease-in-out -7s infinite alternate !important; }
+  #ln-fog { transition: height 4s ease, opacity 4s ease !important; }
+}
 /* 제작법 즐겨찾기 별(7.4.1) */
 .recipe header { justify-content: flex-start; }
 .recipe header .recipe-name { flex: 1 1 auto; min-width: 0; }
