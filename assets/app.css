@@ -1928,6 +1928,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .mem-pick:disabled { cursor: default; } .mem-pick small, .mem-num { color: var(--muted); font-size: calc(11.5px * var(--fz, 1)); }
 .raid-log { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; display: grid; gap: 2px; font-size: calc(13px * var(--fz, 1)); }
 .raid-log li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; }
+.raid-log li.muted, .raid-log li.no-time { display: block; }
 .raid-log time { color: var(--muted); font-size: calc(11.5px * var(--fz, 1)); font-variant-numeric: tabular-nums; }
 .raid-log .k-boss span, .raid-log .k-fall span { color: color-mix(in srgb, var(--bad) 70%, var(--text)); }
 .raid-log .k-phase span { color: var(--warn); font-weight: 600; }

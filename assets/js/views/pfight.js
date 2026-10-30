@@ -78,7 +78,7 @@ function draw() {
           <small class="mem-num">체력 ${m.health} · 정신 ${m.mental} · 영력·기력 ${m.sp}</small></li>`).join('')}</ul>
         <p class="muted small">요괴는 이목이 높은 이를 더 자주 노립니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
-        <ol class="raid-log">${(s.log || []).map(l => `<li class="${/^—/.test(l) ? 'k-round' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
+        <ol class="raid-log">${(s.log || []).map(l => `<li class="no-time${/^—/.test(l) ? ' k-round' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
     </div>`;
   const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
   bind(); countdown();
