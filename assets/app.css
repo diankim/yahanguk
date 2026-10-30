@@ -1537,7 +1537,9 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list li.msg .meta { gap: 6px; font-size: calc(12px * var(--fz, 1)); min-width: 0; line-height: 1.35; }
 .chat-list li.msg .meta b { color: hsl(var(--hu) 50% 72%); font-weight: 650; }
 [data-tone=light] .chat-list li.msg .meta b { color: hsl(var(--hu) 45% 34%); }
-.chat-list li.msg .meta .c-title { font-size: calc(10.5px * var(--fz, 1)); padding: 0 5px; border-radius: 4px; border: 1px solid var(--line); line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 9em; }
+.chat-list li.msg .meta .c-title { font-size: calc(10.5px * var(--fz, 1)); padding: 0 5px; border-radius: 4px; border: 1px solid var(--line); line-height: 15px; white-space: nowrap; max-width: 100%; }
+/* 칭호를 자르지 않고, 길면 이름·칭호·시각 줄이 다음 줄로 넘어간다(7.5.0, 「삼경의 우두머리 …」처럼 잘리던 것) */
+.chat-list li.msg .meta { flex-wrap: wrap; row-gap: 2px; }
 .chat-list li.msg .meta time { margin-left: auto; font-size: calc(10.5px * var(--fz, 1)); opacity: .8; }
 .chat-list li.msg p { grid-column: 2; background: none; padding: 1px 0 0; border-radius: 0; font-size: calc(13.5px * var(--fz, 1)); line-height: 1.5; border: 0; }
 .chat-list li.msg.mine { justify-self: stretch; }
