@@ -1,12 +1,12 @@
-# python3 gen.py → ../migrations/20261103220000_world_7_3_7_narration.sql
+# python3 gen.py → ../migrations/20261103220000_world_7_4_0_narration.sql
 import os
 from me_lines import LINES
 
 def lit(s):
     return "'" + s.replace("'", "''") + "'"
 
-out = ["-- 7.3.7 주인공 대사를 서술로(사용자 요청): 말하는 이가 'me'(조사원)인 줄 190개를 「나는 ~라고 했다 / ~를 물었다」 서술로 바꾼다.",
-       "-- 원본 me_lines.py·gen.py(supabase/gen737). 그 자리 줄이 아직 'me'일 때만 바꾼다(다시 돌려도 그대로).",
+out = ["-- 7.4.0 주인공 대사를 서술로(사용자 요청): 말하는 이가 'me'(조사원)인 줄 190개를 「나는 ~라고 했다 / ~를 물었다」 서술로 바꾼다.",
+       "-- 원본 me_lines.py·gen.py(supabase/gen740). 그 자리 줄이 아직 'me'일 때만 바꾼다(다시 돌려도 그대로).",
        "do $do$",
        "declare n int := 0; k int;",
        "begin"]
@@ -28,6 +28,6 @@ out += ["  raise notice '바꾼 줄 %', n;",
         "",
         "update public.world_app_meta set value = '20261103220000' where key = 'db_version';",
         ""]
-p = os.path.join(os.path.dirname(__file__), '..', 'migrations', '20261103220000_world_7_3_7_narration.sql')
+p = os.path.join(os.path.dirname(__file__), '..', 'migrations', '20261103220000_world_7_4_0_narration.sql')
 open(p, 'w').write('\n'.join(out))
 print(len(LINES), 'lines →', os.path.normpath(p))

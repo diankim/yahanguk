@@ -20,7 +20,7 @@ export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능�
   trout_sashimi: '체력 25 · 정신 10 · 기운 충천', mirror_soup: '정신 35 · 영력 30 · 침식 -10 · 속이 따뜻함', hagfish_grill: '체력 55 · 정신 10 · 기운 충천',
   ray_steam: '체력 70 · 정신 30 · 침식 -15 · 속이 따뜻함 · 기운 충천', koi_broth: '체력 100 · 정신 40 · 영력 40 · 기운 충천 · 바다의 복 · 속이 따뜻함',
   dragon_feast: '체력 100 · 정신 50 · 영력 50 · 침식 -25 · 기운 충천 · 바다의 복 · 속이 따뜻함 · 든든함',
-  // 바다 요리(7.3.7)
+  // 바다 요리(7.4.0)
   rockfish_stew: '체력 45 · 정신 10 · 한기 치료 · 속이 따뜻함', flounder_sashimi: '체력 35 · 정신 15 · 기운 충천', mackerel_grill: '체력 45 · 영력 15 · 든든함',
   cod_soup: '체력 60 · 정신 15 · 한기 치료 · 속이 따뜻함 · 기운 충천', skate_ferment: '정신 30 · 침식 -10 · 심신 동요 치료 · 기운 충천',
   yellowtail_sashimi: '체력 50 · 정신 15 · 바다의 복 · 기운 충천', grouper_steam: '체력 80 · 정신 30 · 침식 -10 · 속이 따뜻함 · 기운 충천',
