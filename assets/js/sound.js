@@ -57,7 +57,7 @@ function toBgm(node, send = 0.5) { node.connect(bgmBus); if (send > 0) { const s
 // 가야금 → 고토, 대금 → 샤쿠하치·플루트, 해금 → 피들로 대신하고, 첼로·현악·하프·종·북을 받침으로 쓴다. 피아노(7.3.2)는 북령·지하·천문·심연에 쓴다(tools/bgm_samples/build.py).
 const SLOT = 3.2;
 const INS = {
-  piano:      { notes: [33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85], len: 3.1, sus: false, gain: 0.5, att: 0.004, rel: 0.7, pan: 0.08, send: 0.5 },
+  piano:      { notes: [33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85], len: 3.1, sus: false, gain: 0.45, att: 0.004, rel: 0.7, pan: 0.08, send: 0.5 },
   koto:       { notes: [45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84], len: 2.8, sus: false, gain: 0.5, att: 0.004, rel: 0.5, pan: -0.28, send: 0.45 },
   harp:       { notes: [43, 47, 51, 55, 59, 63, 67, 71, 75, 79, 83, 87], len: 2.6, sus: false, gain: 0.42, att: 0.004, rel: 0.6, pan: 0.3, send: 0.5 },
   shakuhachi: { notes: [57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90], len: 3.1, sus: true, gain: 0.5, att: 0.07, rel: 0.45, pan: 0.05, send: 0.55 },
@@ -167,6 +167,9 @@ const PROG = {
            bA: [[5, 6, 2, 5], [3, 4, 5, 6], [5, 3, 6, 2]], bC: [[3, 6, 2, 4], [5, 3, 4, 4], [3, 5, 6, 6]] },
   major: { ante: [[0, 3, 4, 4], [0, 5, 3, 4], [0, 2, 3, 4], [5, 3, 1, 4]], cons: [[0, 3, 4, 0], [5, 3, 4, 0], [3, 4, 0, 0], [1, 4, 0, 0]],
            bA: [[5, 2, 3, 0], [3, 4, 2, 5], [5, 3, 0, 4]], bC: [[1, 4, 2, 5], [3, 1, 4, 4], [5, 1, 4, 4]] },
+  // 탱고 애가(피아졸라 「망각」 결): 단조 i–♭VII–VI–V로 저음이 한 칸씩 내려가 딸림화음에 걸린다
+  tango: { ante: [[0, 6, 5, 4], [0, 3, 6, 2], [0, 5, 1, 4], [3, 6, 2, 5]], cons: [[5, 1, 4, 0], [3, 4, 0, 0], [5, 6, 4, 0], [3, 1, 4, 0]],
+           bA: [[5, 2, 3, 4], [3, 6, 2, 5], [5, 6, 4, 4]], bC: [[3, 4, 5, 4], [1, 4, 0, 0], [5, 3, 4, 4]] },
 };
 // 선율 리듬: 마디마다 박 길이 묶음('r1' = 1박 쉼). 4박·3박, 빠르기에 따라 고른다
 const RHY = {
@@ -179,6 +182,9 @@ const RHY = {
             mid: [[1, 0.5, 0.5, 1, 1], [1, 1, 2], [2, 1, 1]], end: [[1, 1, 2], [2, 2], [4]] },
   dance3: { move: [[1, 1, 1], [2, 1], [1.5, 0.5, 1], [1, 0.5, 0.5, 1], [0.5, 0.5, 1, 1]], mid: [[2, 1], [1, 2], [1.5, 0.5, 1]], end: [[3], [2, 1]] },
   slow3: { move: [[2, 1], [1.5, 0.5, 1], ['r1', 1, 1], [3]], mid: [[3], [2, 1]], end: [[3], [3]] },
+  // 「망각」처럼 길게 끄는 음 사이로 짧게 꺾어 넘어간다(전투는 조금 더 움직인다)
+  oblivion: { move: [[3, 1], [1.5, 0.5, 2], [2, 1, 1], ['r0.5', 0.5, 1, 2], [2.5, 0.5, 1]], mid: [[4], [3, 1], [2, 2]], end: [[4], [3, 1]] },
+  oblivion2: { move: [[1.5, 0.5, 1, 1], [1, 0.5, 0.5, 2], [2, 1, 1], [1.5, 0.5, 2], [0.5, 0.5, 1, 2]], mid: [[2, 2], [3, 1], [1.5, 0.5, 2]], end: [[4], [2, 2]] },
 };
 // 반주(분산화음) 꼴: [박, 음계 칸(뿌리에서), 세기]. 박자(meter)에 맞는 것만 쓴다
 const ACC = {
@@ -193,6 +199,9 @@ const ACC = {
   dance3: [[0, 0, 1], [0.5, 4, .65], [1, 7, .8], [1.5, 9, .6], [2, 7, .75], [2.5, 4, .6]],
   slow3: [[0, 0, 1], [1, 4, .7], [2, 7, .75]],
   battle: [[0, 0, 1], [0.5, 0, .7], [1, 2, .8], [1.5, 0, .7], [2, 4, .85], [2.5, 0, .7], [3, 2, .8], [3.5, 4, .75]],
+  // 탱고 3+3+2: 셋째·다섯째 음을 겹쳐 0·1.5·3박에 여리게 짚는다(tango8은 사이 8분음까지 채운 전투용)
+  tango: [[0, 2, .6], [0, 4, .55], [1.5, 2, .5], [1.5, 4, .45], [3, 2, .55], [3, 4, .5]],
+  tango8: [[0, 2, .7], [0, 4, .6], [0.5, 7, .35], [1, 4, .4], [1.5, 2, .65], [1.5, 4, .55], [2, 7, .35], [2.5, 4, .4], [3, 2, .7], [3, 4, .6], [3.5, 7, .4]],
 };
 // 큰북 장단: 이름마다 기본(main)·변형(alt, 짝수 마디)·몰아치기(fill, 프레이즈 끝 마디). [박, 세기, big|mid|small]
 const roll = (from, to, step, v0, v1, k = 'small') => { const o = []; for (let x = from, i = 0, n = Math.round((to - from) / step); x < to - 1e-6; x += step, i++) o.push([x, v0 + (v1 - v0) * i / Math.max(1, n - 1), k]); return o; };
@@ -262,14 +271,16 @@ const PROFILES = {
   heavenward: { tonic: 65, mode: 'major', bpm: 66, meter: 4, rhy: 'calm', lead: 'piano', lead2: 'flute', counter: 'harp', arp: 'harp', acc: 'shimmer', bass: 'long', drum: null, pad: 'light', bell: 0.55,
     bt: { bpm: 104, lead: 'piano', lead2: 'flute', acc: 'shimmer', arp: 'harp', bass: 'half', drum: 'b_heaven', bell: 0.6, form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { echo: 'bell' })] },
     form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.62, { echo: 'bell' }), F('B', 'lead2', 0.7, { duet: 'shakuhachi' }), F('A3', 'lead', 0.5)] },
-  // 심연: 검은 물이 휘도는 곳 — 무거운 북과 몰아치는 첼로 8분음, 낮은 피아노가 주제를 두드리고 절정에서 해금이 울부짖는다
-  abyss: { tonic: 59, mode: 'phryg', bpm: 84, meter: 4, rhy: 'calm', lead: 'piano', lead2: 'fiddle', counter: 'koto', arp: 'koto', acc: 'ostinato', bass: 'drive', drum: 'heavy', drumIn: ['drop', 'A2', 'B', 'A3'], pad: 'open', bell: 0.15,
-    bt: { bpm: 118, lead: 'piano', lead2: 'cello', acc: 'ostinato', arp: 'koto', bass: 'drive', drum: 'b_abyss', pad: 'open', form: [F('A', 'lead', 0.9, { oct: -7 }), F('B', 'lead2', 0.95, { oct: -14, trem: true })] },
-    form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.65, { oct: -7 }), F('drop', 0, 0.6, { n: 2 }), F('B', 'lead2', 0.8, { duet: 'shakuhachi', trem: true }), F('A2', 'lead', 0.75, { oct: -7, echo: 'koto' }), F('A3', 'lead', 0.6, { oct: -7 })] },
-  // 귀허도: 망자를 배웅하는 느린 3박 노래 — 낮은 대금이 이끌고 첼로가 받으며, 쨍한 고음 악기 없이 하프는 낮게, 종은 드물게
-  gwiheo: { tonic: 55, mode: 'phryg', bpm: 50, meter: 3, rhy: 'slow3', lead: 'shakuhachi', lead2: 'cello', counter: 'cello', arp: 'harp', acc: 'slow3', bass: 'waltz', drum: 'heart', drumIn: ['B', 'A3'], pad: 'light', bell: 0.15,
-    bt: { bpm: 92, lead: 'shakuhachi', lead2: 'cello', counter: 'cello', acc: 'battle', arp: 'harp', bass: 'battle', drum: 'b_gwiheo', bell: 0.15, form: [F('A', 'lead', 0.9, { duet: 'cello' }), F('B', 'lead2', 0.95, { oct: -14, duet: 'shakuhachi' })] },
-    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead2', 0.6, { oct: -14, echo: 'shakuhachi' }), F('B', 'lead', 0.7, { duet: 'cello' }), F('A3', 'lead', 0.5)] },
+  // 심연: 검은 물 아래 잊힌 것들 — 피아졸라 「망각」 결의 단조 탱고 애가를 건반으로만. 왼손이 3+3+2로 저음을 짚고, 오른손이 길게 끄는 선율을 꺾어 넘긴다
+  abyss: { tonic: 59, mode: 'minor', prog: 'tango', bpm: 56, meter: 4, rhy: 'oblivion', lead: 'piano', lead2: 'piano', counter: 'piano', arp: 'piano', acc: 'tango', bass: 'tango', bassIns: 'piano', drum: null, pad: 'none', bell: 0,
+    bt: { bpm: 72, rhy: 'oblivion2', lead: 'piano', lead2: 'piano', counter: 'piano', arp: 'piano', acc: 'tango8', bass: 'tango', bassIns: 'piano', pad: 'none', bell: 0,
+      form: [F('A', 'lead', 0.8), F('B', 'lead2', 0.92, { duet: 'piano' }), F('A2', 'lead', 0.85, { oct: -7 })] },
+    form: [F('intro', 0, 0.4, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead', 0.62, { echo: 'piano' }), F('B', 'lead2', 0.78, { duet: 'piano' }), F('A3', 'lead', 0.5, { oct: -7 }), F('bridge', 0, 0.35, { n: 1 })] },
+  // 귀허도: 망자를 배웅하는 노래 — 심연과 같은 「망각」 결의 탱고 애가를 현악기로. 첼로가 이끌고 현악이 이어 받으며, 하프가 3+3+2를 뜯는다
+  gwiheo: { tonic: 50, mode: 'minor', prog: 'tango', bpm: 54, meter: 4, rhy: 'oblivion', lead: 'cello', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'tango', bass: 'tango', drum: null, pad: 'sustain', bell: 0,
+    bt: { bpm: 70, rhy: 'oblivion2', lead: 'cello', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'tango8', bass: 'tango', pad: 'sustain', bell: 0,
+      form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'cello' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'strings' })] },
+    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.6, { oct: -7 }), F('A2', 'lead', 0.66, { oct: -7, echo: 'strings' }), F('B', 'lead2', 0.8, { duet: 'cello' }), F('A3', 'lead', 0.55, { oct: -7 }), F('bridge', 0, 0.35, { n: 1 })] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = ''; // 지역이 바뀌었는지 보는 열쇠(예전 이름을 그대로 쓴다)
@@ -287,14 +298,14 @@ function profile(battle = scene.battle) {
   if (env.phase === 'night') p.bpm *= 0.96;
   return p;
 }
-const insOf = p => [...new Set([p.lead, p.lead2, p.counter, p.arp, p.accIns, 'cello', 'strings', 'bell', p.drum ? 'taiko' : null,
+const insOf = p => [...new Set([p.lead, p.lead2, p.counter, p.arp, p.accIns, p.bassIns || 'cello', p.pad === 'none' ? null : 'strings', p.bell > 0 ? 'bell' : null, p.drum ? 'taiko' : null,
   ...p.form.flatMap(f => [f.ins && INS[f.ins] ? f.ins : null, f.echo, f.duet, f.trem ? 'koto' : null])].filter(k => k && INS[k]))];
 
 // 정해진 씨앗으로 늘 같은 결과를 낸다
 function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909); h >>>= 0; return h / 4294967296; }; }
 
 function makeSong(p, key, loop) {
-  const M = MODES[p.mode], pent = PENT[p.mode], prog0 = PROG[p.mode === 'major' ? 'major' : 'minor'];
+  const M = MODES[p.mode], pent = PENT[p.mode], prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
   // 프리지안의 V(감화음)는 거칠어 ♭II(프리지안 맺음)로 바꾼다
   const prog = p.mode === 'phryg' ? Object.fromEntries(Object.entries(prog0).map(([k, v]) => [k, v.map(c => c.map(x => (x === 4 ? 1 : x)))])) : prog0;
   const theme = seeded(key), vary = seeded(`${key}:${loop}`);
@@ -423,26 +434,28 @@ function playBar(p, S, bar, t, beat) {
   const accIns = p.accIns || p.arp, accBase = d => hm(d - (accIns === 'strings' ? 14 : 7), p.tonic);
   const pat = (ACC[p.acc] || ACC.calm).filter(([pos]) => pos < mb);
   const accVol = (answer ? 0.5 : 1) * (['intro', 'bridge', 'drop'].includes(bar.sec) ? 0.55 : 0.4) * inten * (accIns === 'strings' ? 0.9 : 1);
-  const accLen = p.acc === 'sparse' || p.acc === 'eerie' || p.acc === 'slow3' ? 2 : p.acc === 'fast' ? 0.3 : p.acc === 'ostinato' || p.acc === 'battle' || p.acc === 'flowing' || p.acc === 'shimmer' || p.acc === 'dance3' ? 0.6 : 1;
+  const accLen = p.acc === 'tango' ? 1.3 : p.acc === 'tango8' ? 0.7 : p.acc === 'sparse' || p.acc === 'eerie' || p.acc === 'slow3' ? 2 : p.acc === 'fast' ? 0.3 : p.acc === 'ostinato' || p.acc === 'battle' || p.acc === 'flowing' || p.acc === 'shimmer' || p.acc === 'dance3' ? 0.6 : 1;
   pat.forEach(([pos, step, v], i) => playNote(accIns, accBase(root + step), t + pos * beat + human(), accLen * beat, hv(accVol * v * (1 - 0.15 * (i / Math.max(1, pat.length - 1))))));
   // 가야금 떨림(절정 단락): 마디 안에서 부풀었다 잦아든다
   if (bar.trem) { const n = mb * 4; for (let k = 0; k < n; k++) playNote('koto', hm(tri[k % 3]), t + k * beat / 4, beat / 2, hv((k % 4 ? 0.16 : 0.28) * inten * (0.7 + 0.5 * Math.sin(Math.PI * k / n)))); }
   // 저음(첼로)
-  const bass = midi(root - 14, p.tonic), five = midi(root + 4 - 14, p.tonic), bv = 0.75 * inten + 0.05;
+  const bI = p.bassIns || 'cello', bO = p.tonic < 53 ? -7 : -14, bass = midi(root + bO, p.tonic), five = midi(root + 4 + bO, p.tonic), bv = 0.75 * inten + 0.05;
   // 도입에도 길게 끄는 저음(long·pedal)은 깔아 첫 마디가 비지 않게 한다
-  if (bar.sec !== 'intro' || p.bass === 'pedal' || p.bass === 'long') {
+  if (bar.sec !== 'intro' || p.bass === 'pedal' || p.bass === 'long' || p.bass === 'tango') {
     switch (p.bass) {
-      case 'battle': [[0, 1], [1.5, .7], [2, .9], [3, .7]].forEach(([pos, v]) => playNote('cello', bass, t + pos * beat, 0.45 * beat, hv(0.6 * v))); break;
-      case 'drive': for (let k = 0; k < mb * 2; k++) playNote('cello', k === 4 ? five : bass, t + k * beat / 2, 0.42 * beat, hv((k % 2 ? 0.42 : 0.68) * (0.6 + inten * 0.5))); break;
-      case 'march': [[0, bass, 1], [1.5, bass, .6], [2, five, .85], [3, bass, .6]].forEach(([pos, m, v]) => playNote('cello', m, t + pos * beat, 0.8 * beat, hv(v * bv))); break;
-      case 'waltz': playNote('cello', bass, t, 0.9 * beat, hv(bv)); break;
-      case 'pedal': playNote('cello', midi(-14, p.tonic), t, mb * beat, hv(0.6 * inten + 0.1), { swell: true }); break;
-      case 'half': playNote('cello', bass, t, 2 * beat, hv(bv), { expr: true }); playNote('cello', five, t + 2 * beat, (mb - 2) * beat, hv(0.85 * bv), { expr: true }); break;
-      default: playNote('cello', bass, t, mb * beat, hv(bv), { swell: true });
+      case 'battle': [[0, 1], [1.5, .7], [2, .9], [3, .7]].forEach(([pos, v]) => playNote(bI, bass, t + pos * beat, 0.45 * beat, hv(0.6 * v))); break;
+      case 'drive': for (let k = 0; k < mb * 2; k++) playNote(bI, k === 4 ? five : bass, t + k * beat / 2, 0.42 * beat, hv((k % 2 ? 0.42 : 0.68) * (0.6 + inten * 0.5))); break;
+      case 'march': [[0, bass, 1], [1.5, bass, .6], [2, five, .85], [3, bass, .6]].forEach(([pos, m, v]) => playNote(bI, m, t + pos * beat, 0.8 * beat, hv(v * bv))); break;
+      // 탱고 3+3+2: 뿌리·다섯째·뿌리, 마지막 반 박에 다음 마디로 반음 내려가는 이음음
+      case 'tango': [[0, bass, 1], [1.5, five, .72], [3, bass, .85]].forEach(([pos, m, v]) => playNote(bI, m, t + pos * beat, (pos === 3 ? 0.9 : 1.4) * beat, hv(v * bv), { expr: true })); if (!bar.last && p.battle) playNote(bI, bass - 1, t + 3.5 * beat, 0.45 * beat, hv(0.5 * bv)); break;
+      case 'waltz': playNote(bI, bass, t, 0.9 * beat, hv(bv)); break;
+      case 'pedal': playNote(bI, midi(-14, p.tonic), t, mb * beat, hv(0.6 * inten + 0.1), { swell: true }); break;
+      case 'half': playNote(bI, bass, t, 2 * beat, hv(bv), { expr: true }); playNote(bI, five, t + 2 * beat, (mb - 2) * beat, hv(0.85 * bv), { expr: true }); break;
+      default: playNote(bI, bass, t, mb * beat, hv(bv), { swell: true });
     }
   }
   // 바닥 화음(현악): 마디 안에서 천천히 부풀었다 잦아든다. open = 뿌리·5도·옥타브(어두운 곳)
-  const padOn = p.pad === 'sustain' || p.pad === 'open' || p.battle ? true
+  const padOn = p.pad === 'none' ? false : p.pad === 'sustain' || p.pad === 'open' || p.battle ? true
     : p.pad === 'light' ? bar.sec === 'B' || bar.sec === 'C'
     : ['A2', 'B', 'C'].includes(bar.sec) || (bar.sec === 'A3' && !bar.last);
   if (padOn && bar.sec !== 'drop' && !(bar.lead === 'strings' && bar.mel.length)) {

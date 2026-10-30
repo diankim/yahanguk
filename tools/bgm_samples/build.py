@@ -19,5 +19,10 @@ for i, m in enumerate(notes):
     parts.append(wav)
 lst = os.path.join(tmp, 'list.txt'); open(lst, 'w').write(''.join(f"file '{p}'\n" for p in parts))
 out = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'audio', name + '.mp3')
-subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', lst, '-ac', '1', '-ar', '32000', '-b:a', '56k', out], check=True)
+# 다른 악기 조각과 크기를 맞춘다: 가장 큰 소리가 -1.5dB가 되게 키운다(사운드폰트마다 녹음 크기가 달라 피아노가 20dB쯤 작았다)
+cat = os.path.join(tmp, 'all.wav')
+subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', lst, cat], check=True)
+det = subprocess.run(['ffmpeg', '-hide_banner', '-i', cat, '-af', 'volumedetect', '-f', 'null', '-'], capture_output=True, text=True).stderr
+gain = -1.5 - float(re.search(r'max_volume: (-?[\d.]+) dB', det).group(1))
+subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', cat, '-af', f'volume={gain:.2f}dB', '-ac', '1', '-ar', '32000', '-b:a', '56k', out], check=True)
 print(out, os.path.getsize(out))
