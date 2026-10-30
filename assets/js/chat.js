@@ -129,7 +129,7 @@ function syncCircles() {
   const had = tab;
   renderTabs();
   if (had === 'circle' && tab !== 'circle') switchTab(tab);
-  else if (tab === 'circle') { drawCircleChips(); draw(); }
+  else if (tab === 'circle') { drawCircleChips(); showCircle(); }
 }
 function drawCircleChips() {
   const box = $('#chat-circles', panel); if (!box) return;
@@ -145,10 +145,12 @@ function pickCircle(id) {
   circleId = id; try { sessionStorage.setItem('yh-chat-circle', id); } catch {}
   drawCircleChips(); showCircle();
 }
-// 고른 모임: 이미 받은 말이 있고 실시간이 살아 있으면 그대로 그린다(안 읽은 말이 있을 때만 읽음 표시)
+// 고른 모임: 지난 말을 한 번 읽어 왔고 실시간이 살아 있으면 그대로 그린다(안 읽은 말이 있을 때만 읽음 표시).
+// 실시간으로 먼저 들어온 말만 있는 것은 읽어 온 것으로 치지 않는다(새로고침 뒤 지난 말이 사라져 보이던 것).
+const circleLoaded = new Set();
 function showCircle() {
   const id = circleId;
-  if (!id || !circleMsgs[id] || !circleLive) return loadCircleMsgs();
+  if (!id || !circleLoaded.has(id) || !circleLive) return loadCircleMsgs();
   draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id);
 }
 async function loadCircleMsgs() {
@@ -156,7 +158,10 @@ async function loadCircleMsgs() {
   try {
     const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
-    circleMsgs[id] = (data || []).reverse();
+    // 읽는 동안 실시간으로 들어온 말은 합친다
+    const got = (data || []).reverse(), seen = new Set(got.map(m => m.id));
+    circleMsgs[id] = got.concat((circleMsgs[id] || []).filter(m => !seen.has(m.id))).slice(-120);
+    circleLoaded.add(id);
     if (tab === 'circle' && circleId === id) { draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id); }
   } catch (e) { if (tab === 'circle') drawError(friendlyError(e)); }
 }
