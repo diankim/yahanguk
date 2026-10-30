@@ -25,12 +25,27 @@ export function mountHud(el) {
   });
   refresh();
   clearInterval(tick); tick = setInterval(onTick, 1000);
-  // 1분 읽기: 방금(45초 안) 행동해 이미 읽었으면 건너뛴다. 자율 상태는 자율 활동 중일 때만, 캐릭터는 45초 넘게 안 읽었을 때만.
+  // 1분 읽기: 방금(45초 안) 행동해 이미 읽었으면 건너뛴다. 자율 상태는 자율 활동 중일 때만, 캐릭터는 3분 넘게 안 읽었을 때만
+  // (안전지대 회복은 10분마다라 늦게 보여도 괜찮고, 구조·쓰러짐은 알림으로 바로 온다)
   clearInterval(poll); poll = setInterval(() => {
     if (document.hidden) return;
-    refresh({ char: Date.now() - (store.charAt || 0) > 45000, idle: !!state.idle?.active, hudAge: 45000 });
+    refresh({ char: Date.now() - (store.charAt || 0) > 180000, idle: !!state.idle?.active, hudAge: 45000 });
   }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  // 화면 복귀: 30초 넘게 비웠을 때만 다시 읽는다. 캐릭터는 45초 넘게 안 읽었을 때만, 자율 상태는 자율 활동 중일 때만
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (Date.now() - hiddenAt < 30000) return;
+    refresh({ char: Date.now() - (store.charAt || 0) > 45000, idle: !!state.idle?.active });
+  });
+}
+// 탐색력 1이 차는 시각이 되면 서버에 묻지 않고 화면에서 1 올린다(15분마다 요청 셋이 나가던 것)
+function bumpStamina() {
+  const st = state.hud?.stamina; if (!st?.next_at) return false;
+  const t = new Date(st.next_at).getTime(); if (t > Date.now()) return false;
+  st.now = Math.min(st.max, (st.now || 0) + 1);
+  st.next_at = st.now >= st.max ? null : new Date(t + (st.per_seconds || 900) * 1000).toISOString();
+  return true;
 }
 
 // 로그인이 풀려 거절되면(권한 없음) 바로 로그인 확인을 돌려 이 탭을 로그아웃시킨다(session.js) — 거절당한 요청을 되풀이하지 않게
@@ -41,7 +56,8 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
     if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
     const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
     const [idle, hud] = await Promise.all([
-      readIdle || first ? rpc('world_idle_activity_snapshot').catch(authLost) : state.idle,
+      // 현장 화면과 같은 캐시를 쓴다(자율 행동 뒤에는 common.js가 버린다)
+      readIdle || first ? load('world_idle_activity_snapshot', undefined, { maxAge: first ? 0 : 10000 }).catch(authLost) : state.idle,
       load('world_hud_snapshot', undefined, { maxAge: hudAge }).catch(authLost),
       (first || !char) && store.character ? null : loadCharacter(),
     ]);
@@ -219,9 +235,11 @@ function vital(label, v, kind) {
 }
 
 let arriving = false, lastArriveTry = 0; // 도착 확인은 5초에 한 번까지만
+let staminaDue = false;
 function onTick() {
   if (!root) return;
   const now = Date.now();
+  if (staminaDue) { staminaDue = false; if (bumpStamina()) render(); }
   root.querySelectorAll('[data-timer]').forEach(el => {
     const t = Number(el.dataset.timer); if (!t) return;
     const left = t - now, kind = el.dataset.kind;
@@ -232,7 +250,7 @@ function onTick() {
     if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
     if (kind === 'danger') el.textContent = left > 0 ? `목숨이 다하기까지 ${fmt.remain(left)}` : '시간이 다했습니다';
     if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0) dirtyRefresh(); }
-    if (kind === 'stamina') { el.textContent = left > 0 ? `${fmt.remain(left)} 뒤 +1` : ''; if (left <= 0) dirtyRefresh(); }
+    if (kind === 'stamina') { el.textContent = left > 0 ? `${fmt.remain(left)} 뒤 +1` : ''; if (left <= 0) staminaDue = true; }
   });
   const c = store.character;
   if (c?.travel_arrives_at && new Date(c.travel_arrives_at).getTime() <= now && !arriving && now - lastArriveTry > 5000) {

@@ -37,9 +37,7 @@ export async function render(root) {
   off.forEach(f => f());
   off = [on('changed', ({ name }) => {
     if (/battle_action/.test(name)) return;
-    if (/fish|travel|field_move|craft|shop|trade|discard/.test(name)) invalidate('world_fish_spot');
-    if (/rest|survival|travel|idle/.test(name)) invalidate('world_rest_status');
-    if (/idle/.test(name)) invalidate('world_idle_activity_snapshot');
+    // 낚시터·휴식·자율 캐시는 common.js가 행동 종류를 보고 버린다
     draw();
   }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
@@ -66,8 +64,8 @@ async function draw() {
   busy = true; again = false;
   try {
     const [s, roster, fish, rest, idle, pty] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
-      // 낚시터·휴식·자율 상태는 잘 바뀌지 않아 1분 동안 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(아래 changed)
-      load('world_fish_spot', undefined, { maxAge: 60000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 60000 }).catch(() => null),
+      // 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(common.js FISH_CHANGERS 등)
+      load('world_fish_spot', undefined, { maxAge: 1800000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 600000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }).catch(() => null),
       // 파티 칸: 자리·파티가 바뀌는 행동 뒤에만 새로 읽는다(common.js ROSTER_CHANGERS)
       load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null)]);
     snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;

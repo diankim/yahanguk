@@ -62,7 +62,7 @@ export function bindCrop(root, onReady) {
 
 /* ── 알림 ────────────────────────────────────────────────── */
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
-let notes = [], bell;
+let notes = [], bell, notesLive = false;
 const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
 const POP_KINDS = new Set(['party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite']);
 export function mountNotifications(btn) {
@@ -75,13 +75,23 @@ export function mountNotifications(btn) {
       shown.add(n.id); notes.unshift(n); drawDot();
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
-    }).subscribe();
+    }).subscribe(status => {
+      const was = notesLive; notesLive = status === 'SUBSCRIBED';
+      if (notesLive && !was && !first) loadNotes(); // 끊겼다 다시 붙으면 그 사이 알림을 채운다
+      first = false;
+    });
   } catch {}
-  // 실시간 연결이 놓쳐도 늦지 않게: 행동 뒤(전투 턴 중은 빼고, 15초에 한 번까지)·화면 복귀·화면을 보는 동안 1분마다 다시 읽는다.
-  const soon = throttle(() => loadNotes(), 15000);
-  on('changed', ev => { if (!midBattle(ev)) setTimeout(soon, 600); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNotes(); });
-  setInterval(() => { if (!document.hidden) loadNotes(); }, 60000);
+  // 실시간 연결이 놓쳐도 늦지 않게 다시 읽는다. 실시간이 살아 있으면 예비로만(행동 뒤는 건너뛰고, 화면 복귀는 1분 넘게 비웠을 때, 주기는 5분),
+  // 끊겼으면 지금처럼(행동 뒤 15초에 한 번까지·화면 복귀·1분마다).
+  let first = true, hiddenAt = 0, lastRead = Date.now();
+  const read = () => { lastRead = Date.now(); return loadNotes(); };
+  const soon = throttle(read, 15000);
+  on('changed', ev => { if (!midBattle(ev) && !notesLive) setTimeout(soon, 600); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (!notesLive || Date.now() - hiddenAt > 60000) read();
+  });
+  setInterval(() => { if (!document.hidden && (!notesLive || Date.now() - lastRead > 300000)) read(); }, 60000);
   // 서버 알림이 아닌 화면 안 알림(원정 귀환 등)
   window.addEventListener('yh-local-note', e => { if (e.detail) notePop(e.detail); });
 }

@@ -34,6 +34,13 @@ const QUEST_CHANGERS = /quest|story|battle|gather|craft|fish|travel|field_|exped
 const ROSTER_CHANGERS = /travel|field_move|rescue|party|expedition|downed|idle/;
 // 전투 능력치(world_combat_profile, 한 번 약 100ms)는 능력치·장비·상태·칭호가 바뀔 수 있는 행동 뒤에만 버린다(그 밖에는 1분 캐시)
 const COMBAT_CHANGERS = /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/;
+// 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 바뀔 수 있는 행동 뒤에는 어느 화면에서 했든 버린다
+const FISH_CHANGERS = /fish|travel|field_move|craft|shop|trade|discard|equip|storage|letter|use_item|market|dismantle|overflow|quest/;
+on('changed', ({ name = '' }) => {
+  if (FISH_CHANGERS.test(name)) invalidate('world_fish_spot');
+  if (/rest|survival|travel|idle/.test(name)) invalidate('world_rest_status');
+  if (/idle/.test(name)) invalidate('world_idle_activity_snapshot');
+});
 on('changed', ({ name }) => { if (COMBAT_CHANGERS.test(name || '')) invalidate('world_combat_profile'); if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
