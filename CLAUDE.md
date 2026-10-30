@@ -136,7 +136,7 @@
 
 이동 시간은 단순히 모든 지역에 동일하게 적용하지 않는다. 거리, 지역 간 위치, 지형 등의 요소를 반영한다.
 
-탈것은 이동 효율을 높이는 수단이며 획득 조건과 사용 조건을 갖는다. 모든 탈것은 지나는 구간마다 운임(노정패 1~2개)을 쓰고(world_travel_route가 출발할 때 구간 수×운임을 차감), 모자라면 탈것에서 내려 걸어간다(속도 ×1, 운임 없음). 노정패는 토벌 승리 1·탐색·채집 6번에 1번꼴 1·이야기 3·의뢰·임무 2로 얻고(원정 귀환은 주지 않음), 원정 운임(외곽 1·심부 2·핵심 3, world_expedition_start)과 탈것 단련(world_mount_train: 마구간에서 20×다음 단계, 단계마다 속도 +4%, 최고 5, world_owned_mounts.training)에 쓴다(20261028200000). 이동 보상(경험치·추적 기술·상태 굴림·세력 임무·이동 칭호/꾸미기 진행)은 도착 기록(world_events travel + travel_history_id)에만 붙고 출발 기록은 건너뛴다(20261029030000). 이동 취소(world_travel_cancel)는 출발 60초 안에만, 위약금 없이 취소 뒤 3분 동안 다시 출발할 수 없다(world_guard_action_context, 20261029030000). 이동 중(travel_destination이 남아 있는 동안)에는 world_mount_equip이 탈것 바꾸기를 거절한다(20261029060000, 화면 map.js도 단추를 막음). 탈것은 안전지대의 마구간에서 들이거나 특별한 사건으로만 얻는다. 가방이나 메뉴에서 바로 구매하는 방식은 쓰지 않는다. 이동과 탈것 관련 기능은 세계 지도에서 이해하기 쉽게 제공한다.
+탈것은 이동 효율을 높이는 수단이며 획득 조건과 사용 조건을 갖는다. 모든 탈것은 지나는 구간마다 운임(노정패 1~2개)을 쓰고(world_travel_route가 출발할 때 구간 수×운임을 차감), 모자라면 탈것에서 내려 걸어간다(속도 ×1, 운임 없음). 노정패는 토벌 승리 1·탐색·채집 6번에 1번꼴 1·이야기 3·의뢰·임무 2로 얻고(원정 귀환은 주지 않음), 원정 운임(외곽 1·심부 2·핵심 3, world_expedition_start)과 탈것 단련(world_mount_train: 마구간에서 20×다음 단계, 단계마다 속도 +4%, 최고 5, world_owned_mounts.training)에 쓴다(20261028200000). 이동 보상(경험치·추적 기술·상태 굴림·세력 임무·이동 칭호/꾸미기 진행)은 도착 기록(world_events travel + travel_history_id)에만 붙고 출발 기록은 건너뛴다(20261029030000, 상태 굴림은 7.2.7부터 안전지대 도착이면 하지 않음). 이동 취소(world_travel_cancel)는 출발 60초 안에만, 위약금 없이 취소 뒤 3분 동안 다시 출발할 수 없다(world_guard_action_context, 20261029030000). 이동 중(travel_destination이 남아 있는 동안)에는 world_mount_equip이 탈것 바꾸기를 거절한다(20261029060000, 화면 map.js도 단추를 막음). 탈것은 안전지대의 마구간에서 들이거나 특별한 사건으로만 얻는다. 가방이나 메뉴에서 바로 구매하는 방식은 쓰지 않는다. 이동과 탈것 관련 기능은 세계 지도에서 이해하기 쉽게 제공한다.
 
 ### 파티 동승 규칙
 
@@ -556,7 +556,7 @@
 
 - 테마(7.2.0, theme.js THEMES 32가지): 색 아홉 가지·모서리·글꼴·선 굵기에 deco {tex 바탕 무늬(tile·brush·dot·bamboo·wave·lattice·star·grain·hanji), frame 모서리 장식(bracket·dot·round·double·line·none), head 머리글(plain·band·under)}를 더해 :root data-tex·data-frame·data-head로 CSS가 그린다(또렷한 선·점만, 번지는 그라데이션 없음). 새 테마도 deco를 단다.
 - 글자 크기(7.1.0): 다섯 단계(theme.js FONT_SIZES, --fz 0.85~1.22, 기기 저장 yh-fz). CSS 글자 크기는 calc(Npx * var(--fz, 1))로 쓰고, 터치 입력칸은 16px 아래로 내려가지 않는다.
-- 채팅 얼굴(7.2.0): 28px, 꾸미기 테두리 문양 배지(cosmetics.js chatFrameBadges: 범품 하나·양품 이상 둘·레거시 별).
+- 채팅 얼굴(7.2.0·7.2.7): 28px, 테두리를 단 얼굴은 프로필 카드 얼굴(72px, 모서리 문양까지)을 그대로 그려 34px로 줄인다(chat.js .av.mini — 옛 배지 chatFrameBadges는 안 씀).
 
 ### PC
 - 넓은 화면을 활용한 2~3열 레이아웃
