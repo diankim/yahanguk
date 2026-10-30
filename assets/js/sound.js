@@ -429,7 +429,8 @@ function playBar(p, S, bar, t, beat) {
   if (bar.trem) { const n = mb * 4; for (let k = 0; k < n; k++) playNote('koto', hm(tri[k % 3]), t + k * beat / 4, beat / 2, hv((k % 4 ? 0.16 : 0.28) * inten * (0.7 + 0.5 * Math.sin(Math.PI * k / n)))); }
   // 저음(첼로)
   const bass = midi(root - 14, p.tonic), five = midi(root + 4 - 14, p.tonic), bv = 0.75 * inten + 0.05;
-  if (bar.sec !== 'intro' || p.bass === 'pedal') {
+  // 도입에도 길게 끄는 저음(long·pedal)은 깔아 첫 마디가 비지 않게 한다
+  if (bar.sec !== 'intro' || p.bass === 'pedal' || p.bass === 'long') {
     switch (p.bass) {
       case 'battle': [[0, 1], [1.5, .7], [2, .9], [3, .7]].forEach(([pos, v]) => playNote('cello', bass, t + pos * beat, 0.45 * beat, hv(0.6 * v))); break;
       case 'drive': for (let k = 0; k < mb * 2; k++) playNote('cello', k === 4 ? five : bass, t + k * beat / 2, 0.42 * beat, hv((k % 2 ? 0.42 : 0.68) * (0.6 + inten * 0.5))); break;
