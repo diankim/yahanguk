@@ -160,6 +160,8 @@ function pickCircle(id) {
 // 고른 모임: 지난 말을 한 번 읽어 왔고 실시간이 살아 있으면 그대로 그린다(안 읽은 말이 있을 때만 읽음 표시).
 // 실시간으로 먼저 들어온 말만 있는 것은 읽어 온 것으로 치지 않는다(새로고침 뒤 지난 말이 사라져 보이던 것).
 const circleLoaded = new Set();
+// 모임 말을 시각 순(같으면 id 순)으로 늘어놓는다
+const byTime = a => a.sort((x, y) => (x.created_at < y.created_at ? -1 : x.created_at > y.created_at ? 1 : (x.id > y.id ? 1 : -1)));
 function showCircle() {
   const id = circleId;
   if (!id || !circleLoaded.has(id) || !circleLive) return loadCircleMsgs();
@@ -179,9 +181,9 @@ async function loadCircleMsgs() {
   try {
     const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
-    // 읽는 동안 실시간으로 들어온 말은 합친다
+    // 읽는 동안 실시간으로 들어온 말은 합치고 시각 순으로 맞춘다(전에는 이미 들고 있던 몇 시간 전 말이 새로 읽은 것 뒤에 붙어 끌려 올라왔다, 제보 33)
     const got = (data || []).reverse(), seen = new Set(got.map(m => m.id));
-    circleMsgs[id] = got.concat((circleMsgs[id] || []).filter(m => !seen.has(m.id))).slice(-120);
+    circleMsgs[id] = byTime(got.concat((circleMsgs[id] || []).filter(m => !seen.has(m.id)))).slice(-120);
     circleLoaded.add(id);
     if (tab === 'circle' && circleId === id) { draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id); }
   } catch (e) { if (tab === 'circle') drawError(friendlyError(e)); }
@@ -207,7 +209,9 @@ function onCircleMsg(m) {
   if (!m?.circle_id || blocked.has(m.sender_id)) return;
   const arr = circleMsgs[m.circle_id] || (circleMsgs[m.circle_id] = []);
   if (arr.some(x => x.id === m.id)) return;
-  arr.push(m); if (arr.length > 120) arr.shift();
+  // 늦게 도착한 말도 제자리(시각 순)에 넣는다
+  arr.push(m); if (arr.length > 1 && arr[arr.length - 2].created_at > m.created_at) byTime(arr);
+  if (arr.length > 120) arr.shift();
   // 모임 이름·인원이 바뀌는 안내 줄이면 목록도 새로 읽는다
   if (m.kind === 'notice') loadCircles(true);
   const viewing = tab === 'circle' && circleId === m.circle_id;

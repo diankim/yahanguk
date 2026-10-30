@@ -28,5 +28,6 @@ $function$;
 update public.world_patch_notes set body = body || $n$
 ## 7.3.3
 - 퀘스트의 「단서 찾기」를 이미 채운 뒤에도 탐색할 때마다 「맡은 일의 실마리」만 연달아 나오던 것을 고쳤습니다. 이제 아직 채우지 못한 단서 할 일이 있을 때만 나옵니다. (제보 고맙습니다)
+- 모임 채팅에서 몇 시간 전 말이 새 말 아래로 끌려 올라와 섞이던 것을 고쳤습니다. 이제 늘 보낸 시각 순서대로 보입니다. (제보 고맙습니다)
 $n$ where note_id = '7.2.0' and position('## 7.3.3' in body) = 0;
 update public.world_app_meta set value = '20261103170000' where key = 'db_version';
