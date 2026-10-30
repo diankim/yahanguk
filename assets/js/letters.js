@@ -84,7 +84,7 @@ export async function openCompose(to, toName, done, title = '') {
         <label class="field"><span>제목 (24자)</span><input name="title" maxlength="24" value="${esc(st.title)}" required></label>
         <label class="field"><span>본문 (400자)</span><textarea name="body" maxlength="400" rows="5">${esc(st.body)}</textarea></label>
         <fieldset class="dt-side"><legend>붙일 물품 (다섯 가지까지 · 안전지대에서)</legend>
-          ${placeOk ? '' : `<p class="notice-line">${icon('letter', 14)} ${esc(placeWhy)} 글만 적은 서신은 지금도 부칠 수 있습니다.</p>`}
+          ${placeOk ? '<p class="muted small">물품은 안전지대(반요촌 제외)에서 이동·원정·자율 활동 중이 아닐 때만 붙여 부칠 수 있고, 받는 사람도 안전지대에서 받습니다. 글만 적은 서신은 어디서나 부칩니다.</p>' : `<p class="notice-line">${icon('letter', 14)} ${esc(placeWhy)} 글만 적은 서신은 지금도 부칠 수 있습니다.</p>`}
           <div class="chips">${Object.entries(st.items).map(([k, n]) => `<span class="chip">${esc(nameOf(k))} ×${n}<button type="button" class="chip-x" data-rm="${esc(k)}" aria-label="빼기">${icon('close', 12)}</button></span>`).join('') || '<span class="muted small">없음</span>'}</div>
           ${pickerHtml('ltItem', opts)}<div class="dt-add"><input name="qty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add ${opts.length ? '' : 'disabled'}>담기</button></div>
           ${untradeNote(have, ref, true)}</fieldset>
