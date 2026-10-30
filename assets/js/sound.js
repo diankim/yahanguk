@@ -197,7 +197,7 @@ let droneKey = ''; // 지역이 바뀌었는지 보는 열쇠(예전 이름을 �
 
 // 전투: 그 영역의 조성·악기를 두고 빠르기를 올려 4박 장단으로 몰아친다
 function battleOf(p) {
-  return { ...p, battle: true, meter: 4, rhy: 'battle', bpm: Math.max(Math.round(p.bpm * (p.meter === 3 ? 1.1 : 1.4)), 100), acc: 'battle', bass: 'battle', drum: 'battle', drumIn: null, pad: 'swell',
+  return { ...p, battle: true, meter: 4, rhy: 'battle', bpm: Math.min(140, Math.max(Math.round(p.bpm * (p.meter === 3 ? 1.1 : 1.4)), 100)), acc: 'battle', bass: 'battle', drum: 'battle', drumIn: null, pad: 'swell',
     lead: p.mode === 'major' ? (p.lead === 'flute' ? 'flute' : 'shakuhachi') : 'fiddle', arp: 'koto',
     form: [F('A', 'lead', 0.85, { duet: p.mode === 'major' ? 'fiddle' : 'shakuhachi' }), F('B', 'lead2', 0.95, { trem: true })] };
 }
