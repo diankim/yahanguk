@@ -18,6 +18,7 @@ export async function render(el) {
         <label class="field"><span>새 비밀번호 확인</span><input name="pw2" type="password" autocomplete="new-password" minlength="6" required></label>
         <button class="btn primary" type="submit">${icon('check', 16)}<span>비밀번호 바꾸기</span></button></form>`, { ico: 'shield' })}
     </div>
+    <div id="acc-invites"></div>
     <details class="panel fold danger-zone"><summary class="panel-head"><h2>${icon('flame', 16)}캐릭터 정리</h2></summary><div class="panel-body">
       <p class="desc">지금 캐릭터를 정리하고 처음부터 새 조사원을 키웁니다. 계정은 그대로 남습니다.</p>
       <ul class="muted small"><li>레벨·소지품·장비·탈것·진행도가 모두 사라지며 되돌릴 수 없습니다.</li>
@@ -27,6 +28,7 @@ export async function render(el) {
         <label class="field"><span>확인을 위해 캐릭터 이름 <b>${esc(store.character?.character_name || '')}</b>${particle(store.character?.character_name, '을(를)')} 그대로 적으세요</span><input name="confirm" autocomplete="off"></label>
         <button class="btn danger" type="submit">${icon('flame', 16)}<span>캐릭터 정리하고 새로 시작</span></button></form>
     </div></details>`;
+  fillInvites($('#acc-invites', el));
   $('#acc-logout', el).onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) logout(); };
   const submit = (form, fn) => form.onsubmit = async e => {
     e.preventDefault(); const btn = form.querySelector('button'); if (btn.disabled) return; btn.disabled = true;
@@ -48,4 +50,15 @@ export async function render(el) {
     toast('캐릭터를 정리했습니다. 새 조사원을 만드세요.', 'ok');
     await loadCharacter();
   });
+}
+
+// 내 초대권: 함께할 사람에게 건네는 번호(서버를 다시 연 때부터 7일 동안 회원가입에 씀). 없으면 칸을 그리지 않는다.
+export async function fillInvites(box) {
+  if (!box) return;
+  let r; try { r = await rpc('world_invite_mine'); } catch { return; }
+  if (!box.isConnected || !(r?.codes || []).length) return;
+  const day = t => t ? new Date(t).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const when = r.open_at ? `${day(r.open_at)}부터 ${day(r.close_at)}까지 쓸 수 있습니다.` : '서버를 다시 연 때부터 7일 동안 쓸 수 있습니다.';
+  box.innerHTML = panel('내 초대권', `<p class="desc">함께할 사람에게 건네세요. 새로 가입하는 사람이 회원가입 화면에 이 번호를 적습니다. ${esc(when)} 한 장으로 한 사람만 가입합니다. 번호는 따로 적어 두세요.</p>
+    <ul class="invite-list">${r.codes.map(c => `<li class="${c.used || c.expired ? 'muted' : ''}"><code>${esc(c.code)}</code><span>${c.used ? '쓰임' : c.expired ? '기한 지남' : '쓸 수 있음'}</span></li>`).join('')}</ul>`, { ico: 'scroll' });
 }

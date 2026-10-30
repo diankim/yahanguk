@@ -141,7 +141,8 @@ function renderAuth(mode = 'login', notice = '') {
       </div>
       <label class="field"><span>아이디</span><input name="uid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="latin" required maxlength="40" placeholder="영문 소문자·숫자 4~16자"></label>
       <label class="field"><span>비밀번호</span><input name="password" type="password" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}" required minlength="6" placeholder="6자 이상"></label>
-      ${mode === 'signup' ? `<label class="field"><span>비밀번호 확인</span><input name="password2" type="password" autocomplete="new-password" required minlength="6"></label>` : ''}
+      ${mode === 'signup' ? `<label class="field"><span>비밀번호 확인</span><input name="password2" type="password" autocomplete="new-password" required minlength="6"></label>
+      <label class="field"><span>초대권 번호</span><input name="invite" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="영문 대문자·숫자 8자"></label>` : ''}
       <p class="form-msg ${notice ? 'show' : ''}" id="auth-msg">${esc(notice)}</p>
       <button class="btn primary block" type="submit">${mode === 'login' ? '로그인' : '계정 만들기'}</button>
       <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
@@ -170,7 +171,9 @@ function renderAuth(mode = 'login', notice = '') {
         if (error) throw error;
         await claimSession(); // 이 브라우저가 현재 접속이 되고, 다른 곳의 접속은 로그아웃된다
       } else {
-        const { data, error } = await db.auth.signUp({ email, password: pw });
+        // 초대권(롤백 뒤 가입): 번호는 서버 가입 훅이 확인하고 계정을 만들 때 쓴 것으로 남긴다
+        const invite = String(f.get('invite') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const { data, error } = await db.auth.signUp({ email, password: pw, options: invite ? { data: { invite } } : undefined });
         if (error) throw error;
         if (data.session) await claimSession();
         if (!data.session) return renderAuth('login', '가입은 되었지만 바로 로그인되지 않았습니다. 관리자에게 Supabase의 "Confirm email" 설정을 꺼 달라고 알려 주세요.');
@@ -198,6 +201,7 @@ function renderCreate() {
     <header class="create-head"><div class="seal">夜</div><div><h1>조사원 등록</h1><p class="muted">야행국에 입국할 캐릭터를 만듭니다.</p></div>
       <button class="btn ghost small" id="create-logout">${icon('logout', 16)}<span>로그아웃</span></button></header>
     <form id="create-form" class="create-body" novalidate>
+      <div id="create-invites"></div>
       <section class="card"><h2 class="step"><b>夜</b>야행국에 오신 것을</h2>${primerHtml()}</section>
       <section class="card"><h2 class="step"><b>1</b>이름</h2>
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
@@ -235,6 +239,7 @@ function renderCreate() {
     sync(); saveDraft();
   });
   $('#create-logout').onclick = () => logout();
+  account.fillInvites($('#create-invites')); // 롤백 뒤 다시 만드는 조사원에게도 내 초대권을 보인다
   form.onsubmit = async e => {
     e.preventDefault();
     const name = form.name.value.trim(), msg = $('#create-msg');
