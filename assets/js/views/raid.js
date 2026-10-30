@@ -1,6 +1,6 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, RAID_ON, loadCharacter } from '../core.js';
+import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
@@ -83,7 +83,7 @@ function draw() {
   const charge = r.charge ? `<div class="raid-charge"><span>${icon('flame', 14)} 기운 모으기 · 남은 ${r.charge.left}번</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div><small>${fmt.num(r.charge.got || 0)} / ${fmt.num(r.charge.need)} 몰아치면 끊긴다</small></div>` : '';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'} · ${esc(r.region || '')}</p>
       <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
-      <div class="head-actions">${me.joined ? '' : chip('관전 중')}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
+      <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
     <div class="raid-grid">
       <section class="panel raid-boss"><div class="panel-body">
         <p class="raid-time">${timeLine}</p>
@@ -166,6 +166,16 @@ function bind() {
   const sel = $('#raid-item', el); if (sel) sel.onchange = () => { pickedItem = sel.value; };
   const jb = $('#raid-join', el);
   if (jb) jb.onclick = () => run(jb, () => rpc('world_raid_join', { p_raid: r.id }));
+  // 결전 포기(7.4.3): 혼자면 실패로 끝나고, 여럿이면 나만 빠진다(서버 world_raid_forfeit)
+  const fb = $('#raid-forfeit', el);
+  if (fb) fb.onclick = async () => {
+    const solo = (snap.members || []).length <= 1;
+    const ok = await ask(solo ? '결전을 포기하면 지금 바로 실패로 끝납니다.\n보상은 없고, 다시 도전할 수 있습니다.'
+      : '나만 결전에서 빠집니다. 남은 동료는 그대로 싸우고, 구중 봉주의 체력은 줄지 않습니다.\n나는 보상을 받지 못합니다.', { title: '결전을 포기합니까?', ok: '포기하고 나오기', cancel: '계속 싸우기', danger: true });
+    if (!ok) return;
+    await run(fb, () => rpc('world_raid_forfeit', { p_raid: r.id }));
+    if (!snap?.me?.joined) await settle();
+  };
   const bb = $('#raid-begin', el);
   if (bb) bb.onclick = () => run(bb, () => rpc('world_raid_begin', { p_raid: r.id }));
   $$('[data-pick]', el).forEach(b => b.onclick = () => { target = b.dataset.pick; draw(); });

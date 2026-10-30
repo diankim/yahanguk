@@ -2238,3 +2238,10 @@ b.sealed { color: var(--bad); }
 .fav-star svg { fill: none; stroke: currentColor; stroke-width: 1.7; }
 .fav-star.on { color: var(--warn, #d4a017); }
 .fav-star.on svg { fill: currentColor; }
+/* 되돌리기 어려운 위험 경고 창(ask alarm, 7.4.3 — 혼자 여는 결전) */
+.ask-card.alarm { border: 2px solid var(--bad); background: color-mix(in srgb, var(--bad) 22%, var(--surface)); animation: rise .18s ease-out, alarm-pulse 1.2s ease-in-out 2; }
+.ask-card.alarm h3 { display: flex; align-items: center; gap: 6px; color: var(--bad); font-size: calc(17px * var(--fz, 1)); }
+.ask-card.alarm .ask-body { color: var(--text); }
+.ask-card.alarm .ask-body p:first-child { color: var(--bad); font-weight: 800; font-size: calc(15px * var(--fz, 1)); }
+@keyframes alarm-pulse { 50% { outline: 4px solid color-mix(in srgb, var(--bad) 45%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .ask-card.alarm { animation: none; } }

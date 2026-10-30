@@ -309,12 +309,13 @@ export const gmBadge = id => isGM(id) ? '<span class="gm-badge" title="운영진
 
 // 게임 안 확인 팝업(브라우저 confirm 대신). 열린 창 위에 겹쳐 뜨고, 고르면 true/false로 끝난다.
 // ask('도망칠까요?', { title: '도주', ok: '도망치기', danger: true })
-export function ask(message, { title = '확인', ok = '확인', cancel = '그만두기', danger = false } = {}) {
+// alarm: 되돌리기 어려운 위험을 새빨갛게 경고하는 창(혼자 여는 결전 등)
+export function ask(message, { title = '확인', ok = '확인', cancel = '그만두기', danger = false, alarm = false } = {}) {
   return new Promise(resolve => {
     const lines = String(message ?? '').split('\n').map(l => `<p>${esc(l)}</p>`).join('');
-    const el = h(`<div class="ask-layer" role="alertdialog" aria-modal="true" aria-label="${esc(title)}"><div class="ask-card">
-      <h3>${esc(title)}</h3><div class="ask-body">${lines}</div>
-      <div class="ask-act"><button class="btn" data-ask="0">${esc(cancel)}</button><button class="btn ${danger ? 'danger' : 'primary'}" data-ask="1">${esc(ok)}</button></div></div></div>`);
+    const el = h(`<div class="ask-layer" role="alertdialog" aria-modal="true" aria-label="${esc(title)}"><div class="ask-card${alarm ? ' alarm' : ''}">
+      <h3>${alarm ? icon('flame', 18) : ''}${esc(title)}</h3><div class="ask-body">${lines}</div>
+      <div class="ask-act"><button class="btn" data-ask="0">${esc(cancel)}</button><button class="btn ${danger || alarm ? 'danger' : 'primary'}" data-ask="1">${esc(ok)}</button></div></div></div>`);
     const done = v => { el.remove(); document.removeEventListener('keydown', key, true); resolve(v); };
     // Enter는 포커스가 있는 단추를 따른다(「그만두기」에 두고 Enter를 누르면 그만둔다 — 전에는 늘 확인으로 처리됨)
     const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } if (e.key === 'Enter') { e.preventDefault(); done(!document.activeElement?.closest?.('[data-ask="0"]')); } };

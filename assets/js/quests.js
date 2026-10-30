@@ -1,7 +1,7 @@
 // 현장의 퀘스트 칸: 진행 중인 주 이야기·보조 퀘스트·세력 퀘스트와 여기서 받을 수 있는 퀘스트(접고 펼친다).
 // 진행과 판정은 서버(world_quest_board·world_quest_report, 세력은 world_faction_*)가 하고, 여기서는 그리고 부른다.
 // 할 일을 다 마치면 한 번 알리고(이 기기·접속 동안), 보고하면 장면 대사를 대화창으로 보인다.
-import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, RAID_ON } from './core.js';
+import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON } from './core.js';
 import { load, invalidate, chip } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 
@@ -67,6 +67,21 @@ function hereNote(b) {
   return `<p class="hint accent q-here">${icon('flag', 14)}<span><b>퀘스트 지역</b> · ${hits.length ? `「${esc(hits.slice(0, 3).join('」·「'))}」의 할 일이 이곳에 있습니다.` : ''}${givers ? ` 이곳에서 받을 수 있는 퀘스트 ${givers}개.` : ''}</span></p>`;
 }
 
+// 결전을 열기 전에 인원에 맞춰 묻는다(7.4.3). 체력은 인원마다 늘지만(1·1.7·2.3·2.8배) 혼자서는 거의 이길 수 없고, 둘은 어렵지만 해볼 만하다.
+// 셈은 같은 곳에 있는 파티원 가운데 쓰러짐·원정이 아닌 사람(초대 알림이 가는 사람)이고, 실제로 오는지는 90초 안에 정해진다.
+async function askFinal() {
+  const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
+  const here = store.character?.location, me = store.user?.id;
+  const n = 1 + Math.min(3, (p?.party ? p.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition).length);
+  const tail = '결전은 20분 동안 이어지고, 체력이 다하면 1분씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.';
+  if (n === 1) return ask(`혼자서는 거의 이길 수 없습니다.\n구중 봉주는 넷이 함께 맞서도록 만든 최종 보스입니다. 같은 곳에 함께할 파티원이 없어 혼자 시작하게 됩니다.\n${tail}\n파티원을 모아 함께 오기를 강하게 권합니다.`,
+    { title: '혼자서 결전을 엽니까?', ok: '그래도 혼자 시작', cancel: '돌아가기', alarm: true });
+  const msg = { 2: '둘이서는 어렵지만 해볼 만한 싸움입니다. 회복품을 넉넉히 챙기고, 한 사람이 막는 동안 다른 사람이 몰아치세요.',
+    3: '셋이면 해볼 만한 싸움입니다. 막는 사람·치는 사람·돌보는 사람으로 나누면 한결 수월합니다.',
+    4: '넷이 함께하는 것이 이 결전에 가장 알맞은 인원입니다.' }[n];
+  return ask(`같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(90초 안에 합류, 함께 ${n}명).\n${msg}\n${tail}`, { title: `${n}명이 함께 결전을 엽니까?`, ok: '결전 시작', cancel: '돌아가기' });
+}
+
 export const questBox = () => `<section class="panel quest-box" id="quest-box"></section>`;
 
 export async function fillQuests(box) {
@@ -93,6 +108,7 @@ export async function fillQuests(box) {
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
   // 10장 최종 결전: 혼자 또는 같은 곳의 파티원(4명까지)과 결전을 연다 — 판정은 world_raid_final_start
   $('[data-q-final]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
+    if (!(await askFinal())) return null;
     const r = await rpc('world_raid_final_start'); window.yahangGo('raid', r?.raid_id || ''); return null;
   }));
   $('[data-f-report]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
