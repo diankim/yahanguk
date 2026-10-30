@@ -230,6 +230,7 @@ alter table public.world_characters alter column crafting_profession set default
     w(part('f_dismantle.sql'))
     w(part('f_gather.sql'))
     w(part('f_fish.sql'))
+    w(part('f_quickslot.sql'))
 
     # ── 기술 표
     w('\n-- ── 기술 표 ─────────────────────────────────────────────────────────────\n')

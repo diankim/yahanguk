@@ -5,7 +5,7 @@ import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, items
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen } from '../titledot.js';
-import { SLOTS } from './item.js';
+import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
@@ -133,14 +133,62 @@ async function hereZone() {
   const z = await safeZones().catch(() => null), c = store.character;
   return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
 }
+// ── 상태 화면 칸들(7.5.0): 장비·전투 능력은 작게, 회복 물품은 퀵슬롯으로 ──
+const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
+const QS_N = 8;
+const baseOf = k => String(k || '').replace(/_hq$/, '');
+const qsDesc = k => { const d = USABLE[baseOf(k)] || USE.find(([x]) => x === k)?.[1] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
+// 회복·치료 효과가 있는 물품(음식·약초 같은 재료 포함): 서버 world_use_item이 받는 것 가운데 몸·정신·영력·침식·탐색력이 오르는 것
+const QS_OK = k => /체력|정신|영력|기력|침식|탐색력|전투불능/.test(USABLE[baseOf(k)] || '') || USE.some(([x]) => x === baseOf(k));
+function qsSlots(snap) {
+  const s = Array.isArray(snap?.slots) ? snap.slots : QS_DEFAULT;
+  return Array.from({ length: QS_N }, (_, i) => s[i] || '');
+}
+function qsCell(k, i, inv, downed) {
+  if (!k) return `<button class="qs-cell empty" type="button" data-qs-empty="${i}">${icon('plus', 16)}<small>빈 칸</small></button>`;
+  const n = Number(inv[k] || 0), off = !n || (downed && baseOf(k) !== 'revival_charm');
+  return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
+    <b>${esc(nameOf(k))}</b><span class="qs-n">×${fmt.num(n)}</span><small>${esc(qsDesc(k))}</small></button>`;
+}
+function eqMini(inv, prof) {
+  const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, durs = prof?.durability || {};
+  return `<ul class="eq-mini">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
+    const id = eq[slot], it = cmap.get(id);
+    if (!id) return `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
+    const mx = maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
+    return `<li><button type="button" data-eqi="${esc(id)}">${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
+      ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
+  }).join('')}</ul>`;
+}
+function combatMini(cur) {
+  return `<p class="combat-mini">${esc(STYLE[cur.style] || '근접')} · 공격 <b>${fmt.num(cur.attack)}</b> · 방어 <b>${fmt.num(cur.defense)}</b> <small>(−${cur.reduction_pct}%)</small> · 회피 <b>${cur.evasion_pct}%</b> · 치명 <b>${cur.crit_pct}%</b> · 달아나기 <b>${cur.flee_pct}%</b> · 이목 <b>${fmt.num(cur.presence)}</b> <a class="linkish" href="#/char/growth">자세히</a></p>`;
+}
+// 칸 바꾸기: 칸마다 가방의 회복 물품 가운데 고른다(가진 것이 없는 물품도 기본 회복약은 고를 수 있음)
+function openQuickslots(cur, inv) {
+  const owned = Object.keys(inv).filter(k => Number(inv[k]) > 0 && QS_OK(k));
+  const pool = [...new Set([...owned, ...QS_DEFAULT, ...cur.filter(Boolean)])].sort((a, b) => (Number(inv[b] || 0) > 0) - (Number(inv[a] || 0) > 0) || nameOf(a).localeCompare(nameOf(b), 'ko'));
+  const opt = (sel) => `<option value="">비우기</option>${pool.map(k => `<option value="${esc(k)}" ${k === sel ? 'selected' : ''}>${esc(nameOf(k))} ×${fmt.num(inv[k] || 0)}</option>`).join('')}`;
+  const m = openModal({ title: '퀵슬롯 칸 바꾸기', body: `<p class="muted small">칸마다 쓸 물품을 고릅니다. 가방에 없는 물품은 「×0」으로 남아 있다가 생기면 바로 쓸 수 있습니다.</p>
+    <div class="qs-edit">${cur.map((k, i) => `<label class="field"><span>${i + 1}번 칸</span><select data-qs="${i}">${opt(k)}</select></label>`).join('')}</div>
+    <div class="btn-row"><button class="btn ghost" id="qs-default">기본 칸으로</button><button class="btn primary" id="qs-save">${icon('check', 16)}<span>저장</span></button></div>` });
+  $('#qs-default', m).onclick = () => $$('[data-qs]', m).forEach((s, i) => { s.innerHTML = opt(QS_DEFAULT[i]); });
+  $('#qs-save', m).onclick = () => guard($('#qs-save', m), async () => {
+    const slots = $$('[data-qs]', m).map(s => s.value || '');
+    await rpc('world_quickslots_set', { p_slots: slots });
+    invalidate('world_quickslots_get'); closeModal(); draw(true);
+    return { content: '퀵슬롯을 바꿨습니다.' };
+  });
+}
 let lastChange = '';
 async function status(body) {
   const ch = lastChange; lastChange = '';
   if (/rest|idle|travel|field_move/.test(ch)) invalidate('world_rest_status');
-  const [sv, hud, prof, inv, here, rs] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
+  const [sv, hud, prof, inv, here, rs, , qsSnap] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
     load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
-    load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || /bond|equip|travel|party|field_move/.test(ch))]);
+    load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || /bond|equip|travel|party|field_move/.test(ch)),
+    load('world_quickslots_get', undefined, { maxAge: 600000 }).catch(() => null)]);
   const c = store.character, invItems = c.inventory || {};
+  const qs = qsSlots(qsSnap);
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
   const yo = yohwaOf(hud?.statuses), statuses = yo.rest, yl = yohwaLine(yo);
   const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
@@ -164,34 +212,40 @@ async function status(body) {
       </div>
       <p class="muted small">${byYohwa ? '구조나 회생 부적으로 일어나면 요화는 남아 하루 뒤 다시 쓰러집니다. 귀령초로 풀거나 안전지대 봉인을 받으세요.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
-    <div class="grid-2">
-      ${panel('생존 상태', `
-        ${['health:체력:hp', 'mental:정신:mp', `spiritual_power:${spOf().join(':')}`].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
-        <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
+    ${panel('조사원 상태', `<div class="st-box">
+      <div class="st-main">
+        <div class="vitals-mini">
+          ${['health:체력:hp', 'mental:정신:mp', `spiritual_power:${spOf().join(':')}`].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
+          <div class="vital"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
+        </div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0), ISLAND.has(c.location))}
-        <div class="action-grid three">
-          <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || `정화 부적 1개 · 침식 -18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}</small></button>
-          <button class="btn" data-surv="ground" ${groundWhy ? 'disabled' : ''}><span>마음 다잡기</span><small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '본부에서 · 정신 +18 · 침식 -10 · 15분마다')}</small></button>
-        </div>`, { ico: 'heart' })}
-      ${panel('전투 능력', prof?.current ? combatRows(prof.current) : empty('전투 능력을 불러오지 못했습니다.'), { ico: 'sword', extra: `<a class="btn small ghost" href="#/char/growth">능력치</a>` })}
-    </div>
-    <div class="grid-2">
-      ${panel('장착 장비', inv ? equipRows(inv, prof, here) : empty('장비 정보를 불러오지 못했습니다.'), { ico: 'shield', extra: `<a class="btn small ghost" href="#/bag/equip">바꾸기</a>` })}
-      ${panel(`상태 ${statuses.length}/10`, statuses.length ? `<ul class="status-list">${statuses.map((x, i) => `<li class="${x.polarity === 'positive' ? 'good' : 'bad'}">
+        <div class="btn-row st-acts">
+          <button class="btn small" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · 침식 -18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
+          <button class="btn small" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="본부에서 · 정신 +18 · 침식 -10 · 15분마다">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
+        </div>
+        ${inv ? eqMini(inv, prof) : ''}
+        ${prof?.current ? combatMini(prof.current) : ''}
+      </div>
+      <div class="st-side">
+        <h3 class="sub-h">상태 ${statuses.length}/10</h3>
+        ${statuses.length ? `<ul class="status-list">${statuses.map((x, i) => `<li class="${x.polarity === 'positive' ? 'good' : 'bad'}">
           <button class="st-open" data-st="${i}"><b>${esc(x.name)}${x.stacks > 1 ? ` ×${x.stacks}` : ''}</b><small>${esc(x.description || '')}</small></button>
           <span class="muted small" data-left="${new Date(x.expires_at).getTime()}">${fmt.remain(new Date(x.expires_at) - Date.now())}</span></li>`).join('')}</ul>
-          <p class="muted small">상태를 누르면 자세한 효과와 치료 방법을 볼 수 있습니다.</p>`
-        : empty('걸린 상태가 없습니다.', 'shield'), { ico: 'flame' })}
-    </div>
-    ${panel('회복·치료 물품', `<div class="action-grid">${USE.map(([k, d]) => `<button class="btn" data-use="${k}" ${invItems[k] > 0 && !downed ? '' : 'disabled'}><span>${esc(nameOf(k))} <small>×${fmt.num(invItems[k])}</small></span><small>${d}</small></button>`).join('')}</div>
-      <p class="muted small">전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`, { ico: 'plus' })}`;
+          <p class="muted small">상태를 누르면 자세한 효과와 치료 방법을 볼 수 있습니다.</p>` : `<p class="muted small">걸린 상태가 없습니다.</p>`}
+      </div></div>`, { ico: 'heart', extra: `<a class="btn small ghost" href="#/bag/equip">장비 손질</a>` })}
+    ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
+      <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`,
+      { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}`;
   $$('[data-surv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_survival_action', { p_action: b.dataset.surv })));
   $$('[data-use]', body).forEach(b => b.onclick = async () => {
-    const k = b.dataset.use, d = USE.find(([x]) => x === k)?.[1] || '';
+    const k = b.dataset.use, d = qsDesc(k);
     if (!(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
     guard(b, () => act('world_use_item', { p_item_id: k }));
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
+  $$('[data-eqi]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.eqi, { mode: 'bag' }));
+  $('#qs-edit', body)?.addEventListener('click', () => openQuickslots(qs, invItems));
+  $$('[data-qs-empty]', body).forEach(b => b.onclick = () => openQuickslots(qs, invItems));
   bindRepair(body);
   const ys = $('#yohwa-seal', body);
   if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
