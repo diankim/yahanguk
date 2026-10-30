@@ -64,7 +64,7 @@ export function bindCrop(root, onReady) {
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell, notesLive = false;
 const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
-const POP_KINDS = new Set(['party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite']);
+const POP_KINDS = new Set(['party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'raid_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -143,6 +143,7 @@ function noteActs(n) {
   if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
   if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">합류</button>`;
   if ((n.kind === 'raid_notice' || n.kind === 'raid_result') && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">보기</button>`;
+  if (n.kind === 'raid_vote' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">결전 화면에서 답하기</button>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
   return '';
 }

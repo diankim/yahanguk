@@ -90,6 +90,7 @@ function draw() {
         ${r.status === 'announced' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(r.hp)} / ${fmt.num(r.max_hp)}</b>${r.phase > 1 ? chip(`${r.phase}단계`, 'bad') : ''}</div>`}
         ${r.intent ? `<p class="hint warn">${icon('flame', 14)} ${esc(r.intent)}</p>` : ''}${charge}
         ${bossFx ? `<div class="chips">${bossFx}</div>` : ''}
+        ${voteHtml(s.vote)}
         ${joinHtml(r, me)}
         ${ended ? resultHtml(r, s.members) : ''}
       </div></section>
@@ -104,6 +105,20 @@ function draw() {
   bind();
   countdown();
 }
+
+// 포기 제안이 오면 한 번 팝업으로 묻는다(제안마다 한 번, 내가 이미 동의했으면 묻지 않음). 창이 열린 사이 끝나면 답이 거절된다.
+let votedFor = null;
+function askVote(r) {
+  const v = snap?.vote;
+  if (!v || v.mine || votedFor === v.until || !snap.me?.joined) return;
+  votedFor = v.until;
+  ask(`${v.by}이(가) 결전을 포기하자고 합니다.\n모두 동의하면 다 함께 물러나고 결전은 실패로 끝납니다(보상 없음).\n한 사람이라도 반대하면 결전을 이어 갑니다.\n지금 동의 ${v.yes}/${v.need} · ${left(v.until)} 안에 답해 주세요.`,
+    { title: '결전 포기 제안', ok: '동의하고 물러나기', cancel: '반대하고 계속 싸우기', danger: true })
+    .then(agree => rpc('world_raid_forfeit_vote', { p_raid: r.id, p_agree: !!agree }))
+    .then(out => { if (out?.raid) { snap = out; lastFetch = Date.now(); if (settled(snap)) settle(); draw(); } })
+    .catch(e => toast(e.message || String(e), 'error'));
+}
+const voteHtml = v => v ? `<p class="hint warn">${icon('flag', 14)}<span><b>${esc(v.by)}</b>의 포기 제안 · 동의 <b>${v.yes}/${v.need}</b> · <span data-until="${esc(v.until)}">${left(v.until)}</span> 남음${v.mine ? ' · 나는 동의함' : ''}</span></p>` : '';
 
 function joinHtml(r, me) {
   // 서버 보스는 토벌 중에도 그 지역에서 합류할 수 있다(돌발 임무처럼, 늦을수록 기여도는 덜 쌓인다)
@@ -166,16 +181,18 @@ function bind() {
   const sel = $('#raid-item', el); if (sel) sel.onchange = () => { pickedItem = sel.value; };
   const jb = $('#raid-join', el);
   if (jb) jb.onclick = () => run(jb, () => rpc('world_raid_join', { p_raid: r.id }));
-  // 결전 포기(7.4.3): 혼자면 실패로 끝나고, 여럿이면 나만 빠진다(서버 world_raid_forfeit)
+  // 결전 포기(7.4.3): 혼자면 바로 실패, 함께면 동료에게 제안하고 모두 동의하면 다 함께 물러난다(서버 world_raid_forfeit)
   const fb = $('#raid-forfeit', el);
   if (fb) fb.onclick = async () => {
-    const solo = (snap.members || []).length <= 1;
+    const solo = (snap.members || []).length <= 1, v = snap.vote;
     const ok = await ask(solo ? '결전을 포기하면 지금 바로 실패로 끝납니다.\n보상은 없고, 다시 도전할 수 있습니다.'
-      : '나만 결전에서 빠집니다. 남은 동료는 그대로 싸우고, 구중 봉주의 체력은 줄지 않습니다.\n나는 보상을 받지 못합니다.', { title: '결전을 포기합니까?', ok: '포기하고 나오기', cancel: '계속 싸우기', danger: true });
+      : v ? `${v.by}의 포기 제안에 동의합니다.\n모두 동의하면 다 함께 물러나고 결전은 실패로 끝납니다(보상 없음).`
+      : '함께 싸우는 동료들에게 포기를 제안합니다.\n60초 안에 모두 동의하면 다 함께 물러나고 결전은 실패로 끝납니다(보상 없음).\n한 사람이라도 반대하면 결전을 이어 갑니다.',
+      { title: solo ? '결전을 포기합니까?' : '동료에게 포기를 제안합니까?', ok: solo ? '포기하고 나오기' : v ? '동의하기' : '포기 제안하기', cancel: '계속 싸우기', danger: true });
     if (!ok) return;
     await run(fb, () => rpc('world_raid_forfeit', { p_raid: r.id }));
-    if (!snap?.me?.joined) await settle();
   };
+  askVote(r);
   const bb = $('#raid-begin', el);
   if (bb) bb.onclick = () => run(bb, () => rpc('world_raid_begin', { p_raid: r.id }));
   $$('[data-pick]', el).forEach(b => b.onclick = () => { target = b.dataset.pick; draw(); });

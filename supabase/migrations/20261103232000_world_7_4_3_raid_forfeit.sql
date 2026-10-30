@@ -120,6 +120,20 @@ revoke all on function public.world_raid_forfeit_vote(uuid, boolean) from public
 grant execute on function public.world_raid_forfeit(uuid) to authenticated;
 grant execute on function public.world_raid_forfeit_vote(uuid, boolean) to authenticated;
 
+-- 새 알림 종류 raid_vote를 알림 설정의 「토벌」 갈래에 넣는다
+do $do$
+declare d text; o text; old text := 'when p_kind in (''raid_invite'', ''raid'', ''gw'', ''gw_invite'') then ''raid''';
+begin
+  d := pg_get_functiondef('public.world_notify_group(text)'::regprocedure);
+  if position('raid_vote' in d) > 0 then return; end if;
+  if position(old in d) = 0 then raise exception 'world_notify_group의 토벌 줄을 찾지 못함'; end if;
+  o := pg_get_userbyid((select proowner from pg_proc where oid = 'public.world_notify_group(text)'::regprocedure));
+  if o like 'fn_owner%' and not exists (select 1 from pg_auth_members am where am.roleid = o::regrole and am.member = 'postgres'::regrole and am.set_option) then
+    execute format('grant %I to postgres with set true', o);
+  end if;
+  execute replace(d, old, 'when p_kind in (''raid_invite'', ''raid_vote'', ''raid'', ''gw'', ''gw_invite'') then ''raid''');
+end $do$;
+
 update public.world_patch_notes set body = body || $N$
 ## 7.4.3
 - **10장 결전 「포기하고 나오기」**: 결전 화면 위의 단추로 물러날 수 있습니다. 혼자라면 바로 실패로 끝나고(다시 도전 가능), 함께라면 동료들에게 포기를 제안합니다. 60초 안에 모두 동의하면 다 함께 물러나고, 한 사람이라도 반대하면 결전을 이어 갑니다. 포기하면 보상은 없습니다.
