@@ -2,7 +2,7 @@
 // - 화면: version.json(배포마다 값을 올린다)과 주요 파일(index.html·app.js·app.css)의 ETag를 함께 본다.
 // - 서버: world_app_version()의 db_version(SQL 마이그레이션 끝에서 올린다).
 // 처음 읽은 값을 기준으로, 화면으로 돌아올 때와 보고 있는 동안 5분마다 비교한다(가벼운 HEAD·RPC 한 번씩).
-import { rpc, esc, icon } from './core.js';
+import { rpc, esc, icon, dbVersion } from './core.js';
 
 const FILES = ['version.json', 'index.html', 'assets/js/app.js', 'assets/app.css'];
 let base = null, dismissedAt = null, timer = null, checking = false;
@@ -17,7 +17,8 @@ async function fingerprint() {
     } catch { return null; }
   }));
   let db = null;
-  try { db = (await rpc('world_app_version'))?.db_version || ''; } catch { db = null; }
+  // 처음에는 접속하며 읽은 값을 같이 쓴다(묶음 크기·가방 사전 확인과 같은 요청)
+  try { db = base ? (await rpc('world_app_version'))?.db_version || '' : await dbVersion(); } catch { db = null; }
   // 네트워크가 끊겨 읽지 못한 값(null)은 비교에서 뺀다
   return { web: parts, db };
 }
@@ -28,9 +29,11 @@ const changed = (a, b) => {
   return false;
 };
 
+// 화면 복귀와 창 선택이 겹쳐도 2분 안에는 다시 확인하지 않는다(5분 주기는 그대로)
+let lastAt = 0;
 async function check() {
-  if (checking || document.hidden) return;
-  checking = true;
+  if (checking || document.hidden || Date.now() - lastAt < 120000) return;
+  checking = true; lastAt = Date.now();
   try {
     const now = await fingerprint();
     if (!base) { base = now; return; }

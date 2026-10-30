@@ -29,8 +29,9 @@ export async function markTitlesSeen() {
 }
 export function mountTitleDot() {
   refreshTitleDot();
-  // 칭호는 행동 끝에 서버가 판정하므로, 행동 뒤에 잠시 기다렸다가 한 번 센다.
-  const soon = throttle(refreshTitleDot, 20000); // 20초에 한 번까지, 전투 턴 중은 빼고
+  // 칭호를 얻으면 알림(칭호·꾸미기)이 실시간으로 오므로 그때 바로 센다. 알림을 놓칠 때를 대비해 행동 뒤에는 2분에 한 번까지만 센다(전에는 20초).
+  const soon = throttle(refreshTitleDot, 120000);
   on('character', () => paintTitleDot());
   on('changed', ev => { if (midBattle(ev)) return; clearTimeout(timer); timer = setTimeout(soon, 1500); });
+  window.addEventListener('yh-note', e => { if (/title|cosmetic/.test(e.detail?.kind || '')) setTimeout(refreshTitleDot, 500); });
 }

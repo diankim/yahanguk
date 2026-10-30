@@ -290,11 +290,20 @@ export async function guard(btn, fn, { success } = {}) {
 
 /* ── 모달·시트 ───────────────────────────────────────────── */
 // 운영진(GM) 표식: 서버 명단(world_staff)에 있는 캐릭터만. 이름에 GM을 넣어도 붙지 않는다.
+// 명단은 잘 바뀌지 않아 기기에 6시간 남겨 두고 그동안은 다시 묻지 않는다
 store.staff = new Set();
+const STAFF_KEY = 'yh-staff-v1';
 export async function loadStaff() {
-  try { const { data, error } = await db.from('world_staff').select('owner_id'); if (!error) store.staff = new Set((data || []).map(r => r.owner_id)); } catch {}
+  try { const c = JSON.parse(localStorage.getItem(STAFF_KEY) || 'null'); if (c && Date.now() - c.at < 6 * 3600e3) { store.staff = new Set(c.ids || []); return store.staff; } } catch {}
+  try {
+    const { data, error } = await db.from('world_staff').select('owner_id');
+    if (!error) { store.staff = new Set((data || []).map(r => r.owner_id)); try { localStorage.setItem(STAFF_KEY, JSON.stringify({ at: Date.now(), ids: [...store.staff] })); } catch {} }
+  } catch {}
   return store.staff;
 }
+// 서버 규칙 버전(db_version, SQL 배포마다 올림): 접속 동안 한 번 읽어 기기에 남긴 사전(묶음 크기·가방 정보)이 아직 맞는지 본다
+let dbvP = null;
+export function dbVersion() { return dbvP ||= rpc('world_app_version').then(r => r?.db_version || null).catch(() => { dbvP = null; return null; }); }
 export const isGM = id => !!id && store.staff.has(id);
 export const gmBadge = id => isGM(id) ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : '';
 
@@ -429,18 +438,22 @@ export function bagLimit(c) { return (c?.bag_capacity || 24) + (c?.major_faction
 // 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
 // 못 읽으면 기기에 남긴 지난 값을 쓰고 다음 캐릭터 읽기 때 다시 읽는다(전에는 실패하면 모두 1로 보고 다시 읽지 않아 물품 개수가 칸 수로 보였다).
 // 물품 묶음 크기와 분류(갈래)를 함께 기억한다: { id: [묶음, 분류] }
-const STACK_KEY = 'yh-stacks-v2';
-let stacks = null, cats = null;
-(() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); if (o) { stacks = new Map(Object.entries(o).map(([k, v]) => [k, v[0]])); cats = new Map(Object.entries(o).map(([k, v]) => [k, v[1]])); } } catch {} })();
+// 기기에 남긴 표가 지금 서버 규칙 버전(db_version)의 것이면 다시 읽지 않는다(새로고침할 때마다 물품 사전을 받던 것)
+const STACK_KEY = 'yh-stacks-v3', STACK_VER = 'yh-stacks-ver';
+let stacks = null, cats = null, wtypes = null;
+(() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); if (o) { const e = Object.entries(o); stacks = new Map(e.map(([k, v]) => [k, v[0]])); cats = new Map(e.map(([k, v]) => [k, v[1]])); wtypes = new Map(e.filter(([, v]) => v[2]).map(([k, v]) => [k, v[2]])); } } catch {} })();
 let stacksP = null, stacksFresh = false;
 function loadStacks() { return stacksP ||= readStacks(); } // 동시에 불려도 한 번만 읽는다
 async function readStacks() {
   try {
-    const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size,category');
+    const v = await dbVersion();
+    let saved = null; try { saved = localStorage.getItem(STACK_VER); } catch {}
+    if (v && stacks?.size && wtypes && saved === v) { stacksFresh = true; return; }
+    const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size,category,wt:equipment_traits->>weapon_type');
     if (error || !data?.length) throw new Error(error?.message || 'empty');
     stacks = new Map(data.map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)]));
-    cats = new Map(data.map(r => [r.item_id, r.category || ''])); stacksFresh = true;
-    try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(data.map(r => [r.item_id, [stacks.get(r.item_id), r.category || '']])))); } catch {}
+    cats = new Map(data.map(r => [r.item_id, r.category || ''])); wtypes = new Map(data.filter(r => r.wt).map(r => [r.item_id, r.wt])); stacksFresh = true;
+    try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(data.map(r => [r.item_id, [stacks.get(r.item_id), r.category || '', r.wt || '']])))); if (v) localStorage.setItem(STACK_VER, v); } catch {}
   } catch { stacksP = null; } // 다음에 다시 시도
 }
 export const stackOf = id => stacks?.get(id) || 1;
@@ -455,7 +468,12 @@ async function loadEquipped() {
     const w = (data || []).find(r => r.slot === 'weapon');
     // 무기 갈래(근접이면 영력 게이지를 「기력」으로 보인다). 무기가 없으면 서버도 근접으로 친다
     weaponStyle = 'melee';
-    if (w) { const { data: it } = await db.from('world_item_catalog').select('equipment_traits').eq('item_id', w.item_id).maybeSingle(); weaponStyle = it?.equipment_traits?.weapon_type || 'melee'; }
+    // 무기 갈래는 물품 사전(묶음 크기와 함께 읽음)에서 찾고, 없을 때만 따로 묻는다
+    if (w) {
+      if (!stacksFresh) await loadStacks();
+      if (wtypes) weaponStyle = wtypes.get(w.item_id) || 'melee';
+      else { const { data: it } = await db.from('world_item_catalog').select('equipment_traits').eq('item_id', w.item_id).maybeSingle(); weaponStyle = it?.equipment_traits?.weapon_type || 'melee'; }
+    }
   } catch { equipped = null; }
 }
 // 근접 무기를 들면 영력 수치를 기력으로 쓴다(같은 spiritual_power, 노란 게이지). [이름, 게이지 갈래]

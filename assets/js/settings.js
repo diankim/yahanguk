@@ -70,9 +70,12 @@ export function mountNotifications(btn) {
   bell.onclick = openNotifications;
   loadNotes(true);
   try {
-    db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications' }, p => {
+    // 내 알림만 받는다(필터가 없으면 알림 한 줄마다 서버가 접속자 모두의 권한을 검사한다)
+    const mine = store.user?.id ? { filter: `user_id=eq.${store.user.id}` } : {};
+    db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications', ...mine }, p => {
       const n = p.new; if (!n?.id || n.user_id !== store.user?.id || notes.some(x => x.id === n.id)) return;
       shown.add(n.id); notes.unshift(n); drawDot();
+      window.dispatchEvent(new CustomEvent('yh-note', { detail: n })); // 칭호 빨간 점 등이 알림 종류를 보고 바로 다시 센다
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     }).subscribe(status => {

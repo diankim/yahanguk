@@ -150,7 +150,9 @@ const TASKS = [
 function progress() { return get('prog', {}); }
 function mark(k, n = 1) {
   const p = progress(); const before = done(p, k);
-  p[k] = (p[k] || 0) + n; set('prog', p); syncSoon();
+  // 이미 마친 항목이거나 목록이 보이지 않으면(닫음·Lv6 이상) 서버에 다시 묻지 않는다(탐색할 때마다 15초 간격으로 읽던 것)
+  p[k] = (p[k] || 0) + n; set('prog', p);
+  if (!before && !get('closed') && ((store.character?.level || 1) < 6 || get('reopened'))) syncSoon();
   if (!before && done(p, k)) {
     const t = TASKS.find(x => x[0] === k);
     const left = TASKS.filter(([x]) => !done(p, x)).length;

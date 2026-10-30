@@ -68,12 +68,14 @@ export function mountChat(colEl, fabEl) {
   subscribeCircles();
   subscribeParty();
   window.addEventListener('yahang:arrived', load);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadNew(); });
+  // 화면 복귀: 실시간이 끊겼거나 30초 넘게 비웠을 때만 빠진 말을 채운다
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (!live || Date.now() - hiddenAt > 30000) loadNew(); });
   setInterval(() => {
     if (document.hidden || tab === 'party') return;
     if (tab === 'circle') { if (!circleLive) loadCircleMsgs(); return; }
-    // 실시간이 끊겼으면 10초마다, 살아 있어도 1분마다 한 번은 빠진 메시지를 채운다
-    if (!live || Date.now() - lastFull > 60000) loadNew();
+    // 실시간이 끊겼으면 10초마다, 살아 있으면 5분마다 한 번 빠진 메시지를 채운다
+    if (!live || Date.now() - lastFull > 300000) loadNew();
   }, 10000);
 }
 
@@ -165,10 +167,23 @@ async function loadCircleMsgs() {
     if (tab === 'circle' && circleId === id) { draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id); }
   } catch (e) { if (tab === 'circle') drawError(friendlyError(e)); }
 }
+// 읽음 표시는 서버에 20초 모아서 한 번 보낸다. 화면이 숨겨져 있으면 미뤘다가 돌아올 때 보낸다(대화가 오가는 동안 3초마다 나가던 것).
+let readPending = null;
 function markCircleRead(id) {
   circleUnread[id] = 0; drawCircleChips(); paintCircleDots();
-  clearTimeout(readTimer); readTimer = setTimeout(() => rpc('world_circle_mark_read', { p_circle: id }).catch(() => {}), 3000);
+  if (readPending && readPending !== id) flushCircleRead();
+  readPending = id;
+  if (!readTimer) readTimer = setTimeout(flushCircleRead, 20000);
 }
+function flushCircleRead() {
+  clearTimeout(readTimer); readTimer = null;
+  if (!readPending) return;
+  if (document.hidden) { readTimer = setTimeout(flushCircleRead, 20000); return; }
+  const id = readPending; readPending = null;
+  rpc('world_circle_mark_read', { p_circle: id }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && readPending) flushCircleRead(); });
+window.addEventListener('pagehide', () => { if (readPending) { const id = readPending; readPending = null; rpc('world_circle_mark_read', { p_circle: id }).catch(() => {}); } });
 function onCircleMsg(m) {
   if (!m?.circle_id || blocked.has(m.sender_id)) return;
   const arr = circleMsgs[m.circle_id] || (circleMsgs[m.circle_id] = []);
@@ -192,6 +207,7 @@ function subscribeParty() {
     ch.subscribe(status => {
       if (partyChannel !== ch) return;
       partyLive = status === 'SUBSCRIBED';
+      if (!partyLive) partyLoaded = false; // 끊긴 사이 온 말이 있을 수 있으니 다음에 탭을 열 때 다시 읽는다
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setTimeout(() => { if (partyChannel === ch && !partyLive) subscribeParty(); }, 15000);
     });
   } catch {}
@@ -213,6 +229,7 @@ function subscribeCircles() {
     ch.subscribe(status => {
       if (circleChannel !== ch) return;
       circleLive = status === 'SUBSCRIBED';
+      if (!circleLive) circleLoaded.clear(); // 끊긴 사이 온 말이 있을 수 있으니 다음에 모임을 열 때 다시 읽는다
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setTimeout(() => { if (circleChannel === ch && !circleLive) subscribeCircles(); }, 15000);
     });
   } catch { circleLive = false; }

@@ -17,9 +17,13 @@ export async function claimSession() {
 }
 export function takeKickNote() { try { const v = sessionStorage.getItem(NOTE) || ''; sessionStorage.removeItem(NOTE); return v; } catch { return ''; } }
 
-async function check() {
+// 화면 복귀·창 선택·pageshow가 한꺼번에 와도 10초 안에는 한 번만 묻는다(실시간 신호·권한 거절 때는 바로)
+let lastCheck = 0, live = false;
+async function check(force = false) {
   if (pending) await pending;
   if (kicking || !store.user || document.hidden) return;
+  if (!force && Date.now() - lastCheck < 10000) return;
+  lastCheck = Date.now();
   try { const r = await rpc('world_session_check'); if (r && r.active === false) kick(); }
   catch (e) {
     // 로그인 정보가 사라져 비로그인으로 요청이 나가면(권한 거부·토큰 없음) 이 탭도 로그아웃한다 — 그대로 두면 화면이 거절당한 요청을 계속 보낸다
@@ -36,19 +40,21 @@ export function mountSessionGuard() {
   const uid = store.user?.id; if (!uid || mounted === uid) return;
   stopSessionGuard(); mounted = uid;
   try {
-    channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check()).subscribe();
+    channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check(true))
+      .subscribe(status => { live = status === 'SUBSCRIBED'; });
   } catch {}
-  timer = setInterval(check, 60000); // 실시간 신호가 바로 알려 주므로 확인은 1분마다면 된다
-  check();
+  // 실시간 신호가 바로 알려 주므로, 실시간이 살아 있으면 5분마다·끊겼으면 1분마다 확인한다
+  timer = setInterval(() => { if (!live || Date.now() - lastCheck > 300000) check(); }, 60000);
+  check(true);
 }
 export function stopSessionGuard() {
-  mounted = null; clearInterval(timer); timer = null;
+  mounted = null; live = false; clearInterval(timer); timer = null;
   if (channel) { try { db.removeChannel(channel); } catch {} channel = null; }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && mounted) check(); });
 window.addEventListener('focus', () => { if (mounted) check(); });
 window.addEventListener('pageshow', () => { if (mounted) check(); });
-window.addEventListener('yh-auth-lost', () => { if (mounted) check(); });
+window.addEventListener('yh-auth-lost', () => { if (mounted) check(true); });
 
 // 로그아웃: 서버에 알리되 응답이 늦거나 막혀도 3초 안에 이 기기의 로그인을 지우고 로그인 화면으로 간다.
 export async function logout(note = '') {

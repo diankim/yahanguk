@@ -14,7 +14,9 @@ export function mountWhisper(button) {
   btn = button;
   btn.onclick = () => openWhisperWindow();
   refresh();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  // 화면 복귀: 1분 넘게 비웠을 때만 목록을 다시 읽는다(새 귓속말은 채팅 실시간으로 바로 온다)
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 60000) refresh(); });
 }
 
 export async function refresh() {
@@ -96,7 +98,7 @@ async function openThread(t) {
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       if (cur !== t) return;
-      msgs = (data || []).reverse();
+      { const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)); msgs = got.concat(msgs.filter(m => !seen.has(m.id))); } // 읽는 사이 실시간으로 온 말은 남긴다
     } catch (e) { const l = cur === t && $('#wh-list', box); if (l) l.innerHTML = `<li class="chat-empty">${esc(friendlyError(e))}</li>`; return; }
     markRead(t.id);
   }
@@ -155,7 +157,7 @@ async function reloadMsgs(t) {
     const { data, error } = await db.from('world_chat_messages').select(COLS).eq('channel_type', 'whisper')
       .or(`and(sender_id.eq.${me},recipient_id.eq.${t.id}),and(sender_id.eq.${t.id},recipient_id.eq.${me})`)
       .order('created_at', { ascending: false }).limit(100);
-    if (!error && cur === t) { msgs = (data || []).reverse(); drawMsgs(); drawList(); }
+    if (!error && cur === t) { const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)); msgs = got.concat(msgs.filter(m => !seen.has(m.id))); drawMsgs(); drawList(); }
   } catch {}
 }
 async function markRead(id) {

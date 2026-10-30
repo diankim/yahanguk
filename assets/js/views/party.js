@@ -18,18 +18,21 @@ export async function render(root) {
   el = root;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('users', 14)} 함께 걷는 이들</p><h1>동료</h1></div>
     <button class="btn small ghost" id="party-refresh">${icon('back', 14)}<span>새로 보기</span></button></div><div id="party-body">${loading()}</div>`;
-  off.forEach(f => f()); off = [on('changed', draw)];
-  $('#party-refresh', el).onclick = e => guard(e.currentTarget, () => draw(), { success: '' });
-  // 다른 조사원이 오가는 것은 내 행동으로 알 수 없으므로, 화면을 보고 있는 동안만 20초마다 다시 읽는다.
-  clearInterval(poll); poll = setInterval(() => { if (!document.hidden && el?.isConnected && !el.contains(document.activeElement?.closest('select,input'))) draw(); }, 20000);
-  await draw();
+  // 모임·연리·서신·전리품은 처음 열 때와 그와 관련된 행동 뒤에만 새로 읽는다. 다른 행동 뒤에는 바뀐 것(파티·여기 있는 이들은 common.js가 버림)만 읽는다.
+  off.forEach(f => f()); off = [on('changed', ({ name = '' }) => draw(/party|circle|bond|letter|loot|friend|block|wedding|rescue/.test(name)))];
+  $('#party-refresh', el).onclick = e => guard(e.currentTarget, () => draw(true), { success: '' });
+  // 다른 조사원이 오가는 것은 내 행동으로 알 수 없으므로, 화면을 보고 있는 동안만 45초마다 파티·여기 있는 이들·친구만 다시 읽는다.
+  clearInterval(poll); poll = setInterval(() => { if (!document.hidden && el?.isConnected && !el.contains(document.activeElement?.closest('select,input'))) draw(false, true); }, 45000);
+  await draw(true);
 }
 export function destroy() { off.forEach(f => f()); off = []; clearInterval(poll); poll = null; }
 
-async function draw() {
+async function draw(heavy = false, tick = false) {
   const body = $('#party-body', el); if (!body) return;
   try {
-    const [p, loot, roster, fr, cs, bs, lt] = await Promise.all([load('world_party_overview'), load('world_party_loot_snapshot').catch(() => null), load('world_region_roster').catch(() => []), load('world_friend_overview').catch(() => null), loadCircles(true), loadBond(true), loadLetters()]);
+    const fresh = tick ? 0 : 45000; // 주기 읽기는 파티·여기 있는 이들·친구를 새로, 행동 뒤에는 캐시(버려졌으면 새로)
+    const [p, loot, roster, fr, cs, bs, lt] = await Promise.all([load('world_party_overview', undefined, { maxAge: heavy ? 0 : fresh }), load('world_party_loot_snapshot', undefined, { maxAge: heavy ? 0 : 300000 }).catch(() => null),
+      load('world_region_roster', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => []), load('world_friend_overview', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => null), loadCircles(heavy), loadBond(heavy), loadLetters(heavy)]);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
     const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>

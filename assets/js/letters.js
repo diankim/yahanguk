@@ -51,13 +51,14 @@ function openLetter(l, again) {
         ${l.from ? `<button class="btn" data-l="reply">${icon('letter', 14)}<span>답장</span></button>` : ''}
         <button class="btn" data-l="${l.pinned ? 'unpin' : 'pin'}">${l.pinned ? '고정 풀기' : '고정'}</button>
         <button class="btn ghost danger-text" data-l="delete">지우기</button></div></div>` });
-  if (!l.read) act('world_letter_mark', { p_id: l.id, p_op: 'read' }).then(() => { l.read = true; again(); }).catch(() => {});
+  // 읽음·고정·지우기는 캐릭터에 영향이 없어 rpc로 보낸다(act는 캐릭터를 다시 읽고 모든 화면을 다시 그린다). 물품 받기만 act.
+  if (!l.read) rpc('world_letter_mark', { p_id: l.id, p_op: 'read' }).then(() => { l.read = true; again(); }).catch(() => {});
   $$('[data-l]', m).forEach(b => b.onclick = async () => {
     const k = b.dataset.l;
     if (k === 'reply') { closeModal(); return openCompose(l.from, l.from_name, again, `답: ${l.title}`.slice(0, 24)); }
     if (k === 'claim') return guard(b, async () => { const r = await act('world_letter_claim', { p_id: l.id }); closeModal(); again(); return r; });  // 가방 자리만큼 받고 남은 몫은 서신에 남는다
     if (k === 'delete' && !(await ask('이 서신을 지울까요?', { title: '서신 지우기', ok: '지우기', danger: true }))) return;
-    guard(b, async () => { const r = await act('world_letter_mark', { p_id: l.id, p_op: k }); closeModal(); again(); return r; });
+    guard(b, async () => { const r = await rpc('world_letter_mark', { p_id: l.id, p_op: k }); closeModal(); again(); return r; });
   });
 }
 

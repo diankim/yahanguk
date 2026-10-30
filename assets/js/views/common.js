@@ -1,5 +1,5 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
-import { db, rpc, store, on, registerNames, namesDump, nameOf, esc, icon, fmt } from '../core.js';
+import { db, rpc, store, on, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion } from '../core.js';
 
 // 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
 const inflight = new Map();
@@ -15,14 +15,24 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 }
 // 가방 정보: 물품 목록·제작법(약 220KB 가운데 218KB)은 배포 전까지 바뀌지 않으므로 접속 동안 한 번만 받고,
 // 그 뒤에는 캐릭터마다 바뀌는 몫만 받는다(world_inventory_state). 서버에 아직 없으면 전체를 받는다.
+// 물품 목록·제작법은 서버 규칙 버전(db_version)과 함께 기기에도 남겨, 새로고침해도 버전이 같으면 가벼운 몫만 받는다.
 let invStatic = null, invLite = true;
+const INV_KEY = 'yh-inv-static-v1';
 async function inventorySnap() {
+  if (!invStatic) {
+    const v = await dbVersion();
+    try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length) invStatic = { catalog: c.catalog, recipes: c.recipes || [] }; } catch {}
+  }
   if (invStatic && invLite) {
     try { const d = await rpc('world_inventory_state'); return { ...d, catalog: invStatic.catalog, recipes: invStatic.recipes }; }
     catch (e) { if (!/로그인|권한/.test(String(e?.message || ''))) invLite = false; else throw e; }
   }
   const d = await rpc('world_inventory_snapshot');
-  if (d?.catalog?.length) invStatic = { catalog: d.catalog, recipes: d.recipes || [] };
+  if (d?.catalog?.length) {
+    invStatic = { catalog: d.catalog, recipes: d.recipes || [] };
+    const v = await dbVersion();
+    if (v) try { localStorage.setItem(INV_KEY, JSON.stringify({ v, ...invStatic })); } catch {}
+  }
   return d;
 }
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
