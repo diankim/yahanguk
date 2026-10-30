@@ -81,6 +81,8 @@ const CSS = `
 .cs-skip:focus-visible { outline: 2px solid #e0a64a; }
 .cs-snd { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
 .cs-snd.on { color: #e0a64a; border-color: #5a4a30; }
+.cs-snd.ask { color: #f2e6cc; border-color: #e0a64a; animation: cs-ask 1.6s ease-in-out infinite; }
+@keyframes cs-ask { 50% { border-color: #5a4a30; color: #b9b0a2; } }
 .cs-snd:focus-visible { outline: 2px solid #e0a64a; }
 .cs-end { display: flex; gap: 8px; justify-content: flex-end; animation: cs-line .9s cubic-bezier(.2,.7,.2,1) both; }
 .cs-btn { min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid #3a3440; background: transparent; color: #d8d0c2; font: 600 14px "Noto Sans KR", sans-serif; cursor: pointer; }
@@ -253,7 +255,7 @@ function embers(root) {
 const MUSIC = { url: new URL('../audio/cutscene.mp3', import.meta.url).href, resolve: 73.33, outro: 86.67, end: 109.5 };
 let musicBuf = null;
 function cutsceneMusic(onState) {
-  let ac = null, gain = null, src = null, want = true, vol = 0.6, dead = false, at0 = 0, off0 = 0;
+  let ac = null, gain = null, src = null, since = 0, want = true, vol = 0.6, dead = false, at0 = 0, off0 = 0;
   try { const s = JSON.parse(localStorage.getItem('yh-sound') || '{}'); if (s.bgmOn === false) want = false; if (typeof s.bgm === 'number') vol = Math.min(1, s.bgm * 1.5); } catch {}
   try { if (localStorage.getItem('yh-cs-sound') === 'off') want = false; else if (localStorage.getItem('yh-cs-sound') === 'on') want = true; } catch {}
   const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch { return false; } })();
@@ -262,6 +264,8 @@ function cutsceneMusic(onState) {
     if (ac) return ac;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
     ac = new AC(); gain = ac.createGain(); gain.gain.value = 0; gain.connect(ac.destination);
+    // 막혀 있던 소리가 나중에 풀리면(화면을 누름) 그때 이어 튼다
+    ac.onstatechange = () => { if (ac.state === 'running' && want && !src && musicBuf && !dead) startAt(api.sceneTime()); onState(api.on, want); };
     return ac;
   };
   const playing = () => !!src && ac?.state === 'running';
@@ -273,23 +277,29 @@ function cutsceneMusic(onState) {
     src.connect(gain);
     const t = ac.currentTime;
     gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(0.0001, t); gain.gain.linearRampToValueAtTime(vol, t + (offset > 1 ? 1.6 : 0.4));
-    src.start(t, Math.min(offset, musicBuf.duration - 0.1)); at0 = t; off0 = offset;
+    src.start(t, Math.min(offset, musicBuf.duration - 0.1)); at0 = t; off0 = offset; since = performance.now();
   }
   const api = {
     // 컷씬이 시작된 때부터 지난 초(마지막 장면이면 되풀이 부분)
     sceneTime: () => 0,
     get on() { return want && playing(); },
-    async toggle() {
-      want = !want; try { localStorage.setItem('yh-cs-sound', want ? 'on' : 'off'); } catch {}
+    // 들린 지 조금 지났는지(같은 누름으로 막 풀린 소리는 「나고 있던 것」으로 치지 않는다)
+    get heard() { return api.on && performance.now() - since > 500; },
+    // 단추를 누르기 시작한 때에 나고 있었으면 끄고, 아니면(막혀 있던 것 포함) 켠다
+    async toggle(wasOn) {
+      if (!wasOn && want) { await api.resume(); return; }
+      want = !wasOn; try { localStorage.setItem('yh-cs-sound', want ? 'on' : 'off'); } catch {}
       if (want) await api.resume(); else { if (ac) { const t = ac.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setTargetAtTime(0, t, 0.25); setTimeout(() => { if (!want && src) { try { src.stop(); } catch {} src = null; } }, 900); } }
-      onState(api.on);
+      onState(api.on, want);
     },
     async resume() {
-      if (dead || !want || !ensure()) return;
-      try { if (ac.state !== 'running') await ac.resume(); } catch {}
+      if (!dead && !want) { onState(false, false); return; }
+      if (dead || !ensure()) return;
+      // 휴대폰 브라우저는 누르기 전에는 resume()이 끝나지 않고 기다리므로 잠깐만 기다린다
+      try { if (ac.state !== 'running') await Promise.race([ac.resume(), new Promise(r => setTimeout(r, 400))]); } catch {}
       if (!musicBuf) { try { const b = await load; musicBuf = b instanceof AudioBuffer ? b : await ac.decodeAudioData(b); } catch { onState(null); return; } }
       if (ac.state === 'running' && !src && want) startAt(api.sceneTime());
-      onState(api.on);
+      onState(api.on, want);
     },
     // 건너뛰기: 버티는 화음 자리로 옮긴다(이미 지났으면 그대로)
     jumpToResolve() {
@@ -330,11 +340,15 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
   let ended = false, endedAt = 0, music = null;
   if (kind === 'rollback') {
     const btn = root.querySelector('.cs-snd');
-    music = cutsceneMusic(on => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', on); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
+    // 켜 두었는데 브라우저가 막고 있으면 단추를 깜빡여 눌러 달라고 한다
+    music = cutsceneMusic((on, want) => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', !!on); btn.classList.toggle('ask', !on && !!want); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
     // 마지막 장면에 막 닿았으면(건너뛰기 포함) 버티는 화음부터, 오래 머문 뒤 켜면 되풀이 부분부터
     music.sceneTime = () => ended ? (performance.now() - endedAt < 15000 && !atEnd ? MUSIC.resolve : MUSIC.outro) : Math.min((performance.now() - t0) / 1000, MUSIC.resolve);
-    btn.addEventListener('click', e => { e.stopPropagation(); music.toggle(); });
+    let wasOn = null;
+    btn.addEventListener('pointerdown', e => { e.stopPropagation(); wasOn = music.heard; });
+    btn.addEventListener('click', e => { e.stopPropagation(); music.toggle(wasOn ?? music.heard); wasOn = null; });
     root.addEventListener('pointerdown', () => { if (!music.on) music.resume(); }, { once: true });
+    btn.hidden = false; btn.classList.add('ask');
     music.resume();
   }
   const finish = () => {
