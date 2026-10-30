@@ -2168,6 +2168,16 @@ b.sealed { color: var(--bad); }
 .letter-body { white-space: pre-wrap; word-break: break-word; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); font-size: calc(14px * var(--fz, 1)); line-height: 1.6; }
 .lt-compose textarea { width: 100%; resize: vertical; min-height: 96px; font-size: max(16px, calc(14px * var(--fz, 1))); }
 @media (hover: hover) { .lt-compose textarea { font-size: calc(14px * var(--fz, 1)); } }
+/* 서신 쓰기(7.3.4): 휴대폰은 한 줄로 쌓고, 넓은 화면은 왼쪽 받는 사람·제목·본문 / 오른쪽 물품 */
+.lt-compose .form-grid { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+.lt-compose .form-grid > * { min-width: 0; }
+.lt-compose .dt-side legend { white-space: normal; }
+@media (min-width: 720px) {
+  .lt-compose .form-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .lt-compose .form-grid > .field { grid-column: 1; }
+  .lt-compose .form-grid > .dt-side { grid-column: 2; grid-row: 1 / span 3; }
+  .lt-compose .form-grid > [type=submit] { grid-column: 1 / -1; }
+}
 
 /* 패치노트 맨 위 공지(note_id 0.0.0) */
 .patch.notice-pin { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
