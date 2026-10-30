@@ -108,7 +108,7 @@ export function renderExpedition(box, ov) {
       <aside class="exp-col exp-side">
         <h3 class="sub-h">챙겨 갈 보급품 <small class="muted">기본은 가진 만큼(가지마다 20개까지) · 개수를 줄이거나 빼도 됩니다</small></h3>
         ${sup.length ? `<ul class="supply-auto">${sup.map(([k, n]) => `<li class="${supN(k) === 0 ? 'off' : ''}"><b>${esc(nameOf(k))}</b>
-            <select data-sup="${esc(k)}" aria-label="${esc(nameOf(k))} 챙길 개수"><option value="-1" ${supPick[k] == null ? 'selected' : ''}>전부 ×${n}</option>${Array.from({ length: n - 1 }, (_, i) => n - 1 - i).map(v => `<option value="${v}" ${supPick[k] === v ? 'selected' : ''}>×${v}</option>`).join('')}<option value="0" ${supPick[k] === 0 ? 'selected' : ''}>사용 안 함</option></select>
+            <span class="sup-step" data-sup="${esc(k)}" data-max="${n}" role="group" aria-label="${esc(nameOf(k))} 챙길 개수"><button type="button" class="btn small" data-op="none">없음</button><button type="button" class="btn small" data-op="minus" aria-label="하나 덜">−</button><b>${supN(k)}</b><button type="button" class="btn small" data-op="plus" aria-label="하나 더">+</button><button type="button" class="btn small" data-op="all">전부</button></span>
             <small>${esc(SUPPLY_USE[k] || '필요할 때')} 씁니다</small></li>`).join('')}</ul>`
           : `<p class="muted small">가방에 원정용 보급품이 없습니다. 청심환·약초·정화 부적·노정 건량을 챙기면 더 오래 버팁니다.</p>`}
         <ul class="exp-notes">
@@ -137,10 +137,13 @@ export function renderExpedition(box, ov) {
   };
   $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-pick=minutes] button', box).forEach(b => b.onclick = () => { pick.minutes = Number(b.dataset.v); $$('[data-pick=minutes] button', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
-  $$('[data-sup]', box).forEach(sel => sel.onchange = () => {
-    const v = Number(sel.value);
-    if (v < 0) delete supPick[sel.dataset.sup]; else supPick[sel.dataset.sup] = v;
-    sel.closest('li')?.classList.toggle('off', v === 0); hint();
+  // 보급품 개수: [없음] − 수 + [전부](7.4.0 — 0~20을 모두 늘어놓던 드롭다운이 휴대폰에서 너무 길었다). 전부는 가진 만큼(20까지)
+  $$('.sup-step', box).forEach(g => g.onclick = e => {
+    const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return;
+    const k = g.dataset.sup, max = Number(g.dataset.max), cur = supN(k);
+    const v = op === 'none' ? 0 : op === 'all' ? max : Math.max(0, Math.min(max, cur + (op === 'plus' ? 1 : -1)));
+    if (v === max) delete supPick[k]; else supPick[k] = v;
+    $('b', g).textContent = v; g.closest('li')?.classList.toggle('off', v === 0); hint();
   });
   $$('[data-stance]', box).forEach(b => b.onclick = () => { pick.stance = b.dataset.stance; $$('[data-stance]', box).forEach(x => x.classList.toggle('on', x === b)); });
   hint();

@@ -906,12 +906,13 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .commission-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .commission { display: grid; gap: 6px; padding: 12px; border-radius: var(--r); background: var(--surface-2); border: var(--bw) solid var(--line); }
 .commission header { display: flex; gap: 8px; align-items: center; } .commission.ready { border-color: var(--gold); } .commission.done { opacity: .6; } .commission .btn { justify-self: start; }
-.supply-auto { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.supply-auto { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 6px; }
 .supply-auto li { display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); }
 .supply-auto b { font-size: calc(13px * var(--fz, 1)); }
 .supply-auto small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); line-height: 1.45; }
-.supply-auto select { width: 100%; min-height: 32px; padding: 2px 6px; font-size: max(16px, calc(13px * var(--fz, 1))); }
-@media (hover: hover) { .supply-auto select { font-size: calc(13px * var(--fz, 1)); } }
+.sup-step { display: grid; grid-template-columns: auto 32px 1fr 32px auto; align-items: center; gap: 4px; }
+.sup-step .btn { min-height: 30px; padding: 0 8px; justify-content: center; }
+.sup-step b { text-align: center; font-variant-numeric: tabular-nums; font-size: calc(14px * var(--fz, 1)); }
 .supply-auto li.off { opacity: .55; }
 /* 원정 계획: PC 두 칸, 모바일 한 칸 */
 .exp-plan { display: grid; gap: 4px 20px; }
