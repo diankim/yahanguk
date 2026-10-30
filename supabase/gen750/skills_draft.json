@@ -1,5 +1,5 @@
 {
- "summary": "7.5.0 넷째 시안. 셋째 시안을 그대로 두고 사용자 답 여덟을 반영했다: ① 분해하면 그 장비 분야 계열에 기술 경험 12(제작법이 없는 장비는 무기 갈래·부위로 정함), 분해 조건은 그 분야 계열 단계 1/3/6/9/12/15(1~6단계 장비). ② 귀령초는 채집에서 빼고 조사(추적) 계열 36단계 추가 기술 「영초 감별」(탐색·조사 지점, 위험도 7 이상 0.2%, world_gwiryeong_reserve)로. ③ 조합 기술은 채집·채광·낚시에 셋씩. ④ 칭호 수집 조건 20 → 23 · 60 → 69. ⑤ 칭호는 얕게: 제작 계열마다 둘 + 그 계열 50단계 하나, 채집 계열마다 하나 + 50단계 하나, 그리고 전 제작 만렙·전 채집 만렙(새 칭호 32개, 215 → 247). ⑥ 무료 다시 고르기는 기한 없이 롤백 때 함께 사라진다. ⑦ 기술 경험은 갈래 안에서 모두 같게: 제작·분해 한 번 12(요리 포함), 채집·채광·낚시 한 번 8 — 생활 전문화 이점만 분야마다 다르다. ⑧ 채집 계열 기본 기술의 채집량·희귀품은 그 계열 채집터에서만. 품질식은 사용자 결정대로 10 + 계열 단계×k + 그 계열 기본 기술 + … − 8×난이도(k = 1 주안, 1.2·1.5 비교)로 하고, quality 절에 단계별 85 이상 비율과 지난 2일 제작 2,085건 실측 어림을 두었다: 이주 뒤 계열 평균 8단계라 k 셋 모두 85 이상 0%(지금 90%), 생산량 회복약 −37%·부적 −32%·화살 −27%·전체 −36%.",
+ "summary": "7.5.0 다섯째 시안. 넷째 시안의 2~8은 받아들여진 그대로, 분해와 품질만 바꿨다. ① 분해는 계열 단계와 상관없이 늘 할 수 있고 그 분야 경험 12를 준다. 계열 단계가 그 장비 단계 조건(1/3/6/9/12/15)보다 낮으면 재료는 돌려주지 않는다(경험만). 누구의 할 수 있던 일도 막지 않는다. ② 품질은 개수를 바꾸지 않는다: 「85 이상 +50%」와 30단계 「85 이상 하나 더」를 없애고, 품질 85 이상이면 완성품이 「우수품」이 된다(한 단계뿐). 우수품은 수치 효과가 있는 소모품(회복 +15%·음식 기운 지속 +20% 등)과 장비(능력치·특성 +5%·최대 내구도 +10%)에만 있고, 재료·중간재·가구·탄에는 없다. ③ 사라진 +50%를 메우려고 잘 쓰이는 소모품·재료 제작법의 기본 개수를 지난 7일 실제 평균 개수로 올린다(소모품 공급 +3%·재료 +3%로 지금 수준, 장비는 −38%·가구 −40% — 장비는 대신 우수품). ④ 우수품은 물품 표의 별도 행(<item_id>_hq, 이름 「… (우수)」, 같은 묶음·거래 여부, 시세 ×1.3)으로 만든다 — 소모품 51 + 장비 187 = 238행(지금 520 → 758). ⑤ 품질식은 사용자 결정(10 + 계열 단계×k + 그 계열 기본 + …)대로, k = 1에서 우수품 비율은 계열 5·15·30단계 0% · 40단계 65% · 50단계 100%(분야 일치·난이도 2).",
  "current_state": [
   "지금은 기본 기술의 제작 품질이 계열과 상관없이 모든 제작에 더해집니다. 7.5.0부터는 그 계열 분야 제작법에만 붙습니다(결정).",
   "결계 각인 계열 이름을 「봉인 공예」로 바꿉니다(결정).",
@@ -82,7 +82,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "명장의 눈",
-     "effect": "단조 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 장비 제작 계열 같음)."
+     "effect": "단조 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -190,7 +190,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "목심 보기",
-     "effect": "목공 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 장비 제작 계열 같음)."
+     "effect": "목공 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -298,7 +298,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "명기 감정",
-     "effect": "법구 공예 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 장비 제작 계열 같음)."
+     "effect": "법구 공예 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -406,7 +406,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "천의 솜씨",
-     "effect": "직조 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 장비 제작 계열 같음)."
+     "effect": "직조 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -514,7 +514,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "가죽 눈썰미",
-     "effect": "가죽 공예 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 장비 제작 계열 같음)."
+     "effect": "가죽 공예 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -622,7 +622,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "천하 각인",
-     "effect": "봉인 공예 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 장비 제작 계열 같음)."
+     "effect": "봉인 공예 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -731,7 +731,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "단약 감정",
-     "effect": "연금 제작 품질 85 이상이면 그 완성품을 하나 더 만든다(모든 제작 계열 같음)."
+     "effect": "연금 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -839,7 +839,7 @@
      "rank": 30,
      "slot": "extra",
      "name": "일품 요리",
-     "effect": "요리 품질 85 이상이면 그 음식을 하나 더 만든다(모든 제작 계열 같음)."
+     "effect": "요리 제작은 품질 80부터 우수품이 된다(보통 85). 개수는 바뀌지 않는다."
     },
     {
      "rank": 36,
@@ -914,10 +914,6 @@
    "what": "아래 profession 절: 종합 제작 없앰, 기본값 단조, 정비 경험은 고른 분야 계열."
   },
   {
-   "line": "분해",
-   "what": "world_dismantle_item: 그 장비 계열(world_gear_line)에 기술 경험 12, 조건 world_dismantle_need(단계, 계열 단계) 1/3/6/9/12/15. 오류 문구 「%s단계 장비는 %s 기술 %s단계부터 분해할 수 있습니다(지금 %s단계)」. 화면 대장간 분해 목록(services.js)·도움말의 1/5/10/15/20을 고친다. 둘째 시안의 분해 덤 택일(법기 해체·올 풀기·짐틀 장인·부적 해체)도 world_gear_line으로 「그 분야로 만든 장비」를 판정한다(제작법이 없는 전리품 장비도 부위로 들어감)."
-  },
-  {
    "line": "조사(추적)",
    "what": "36단계 추가 기술 「영초 감별」(tracking_x36)을 더한다 — world_field_search·world_region_site_explore."
   },
@@ -928,6 +924,10 @@
   {
    "line": "기술 경험",
    "what": "요리 기술 경험 12(요리 숙련 10 + 난이도×5 줄을 지움), 낚시 한 번 8(world_event_char_apply의 기술 경험 갈래에 'fish' → fishing, 8), 분해 12."
+  },
+  {
+   "line": "분해",
+   "what": "world_dismantle_item: 제작 숙련 조건 거절을 지우고 need := world_dismantle_need(단계), rank := 그 계열 단계, rank ≥ need면 world_dismantle_yield, 아니면 yield {}·no_yield. 둘 다 그 계열 기술 경험 12(world_skill_add)·crafting_xp 6×단계, 같은 UPDATE 한 번. payload에 line·need·rank·no_yield. 둘째 시안의 분해 덤 택일(법기 해체·올 풀기·짐틀 장인·부적 해체)은 재료를 받는 분해에만. 우수품 장비는 기본 물품의 제작법으로 계산(같은 재료, 우수품이라 더 주지 않음)."
   }
  ],
  "combos": [
@@ -1013,15 +1013,21 @@
    "effect": "두 계열 18단계 · 낚싯대 단계 덤(입질 단계마다 +6%p·희귀 +3%)을 2단계에서 3단계까지 받는다(world_fish의 least(rod, 2) → 3)."
   }
  ],
- "migration": "둘째 시안의 제작 이주(새 계열 넷 = 12 × 그 분야 제작 기록, 단조 경험은 깎지 않음, 한글 craft_field 정규화)에 더해: ① 요리 계열 경험 = cooking_xp. ② 채집 계열은 gathering.migration(채집 = 일반+약초+영기 − 유물 몫, 가장 컸던 값 아래로 안 내림 · 채광 = 광맥 + 8 × 유물 기록 · 낚시 = 낚시 기록으로 다시 셈). ③ 생활 전문화: general → smithing, botany·spirit_harvest → fieldwork, 바뀐 사람은 life_changed_at = null. ④ free_repick: 단조·봉인 공예·(옮겨 온) 채집 24·43 택일 보유자. ⑤ 조합 기술 requires 고침(영맥 판독·야전 약방). ⑥ 새 칭호 40개를 넣고 그 자리에서 world_title_award_check로 지금 단계를 판정(배포 직후 조건을 채운 사람에게 한꺼번에 알림이 가므로 알림은 한 사람에 한 번으로 묶는다). ⑦ skill_progress는 사람마다 한 번의 UPDATE로 고치고(yh.rank_sync='all'), herbalism·spirit_gathering 키는 지우지 않는다. 배포는 큰 DO 블록이 lock table public.world_characters in access exclusive mode로 시작, 끝에 db_version. 넷째 시안 덧붙임: ⑧ 낚시 경험 = 8 × 낚시 기록 수(낚든 놓치든, 최고 낚은 114마리 + 놓친 것). ⑨ 분해 경험은 소급하지 않는다(분해 기록 payload.item로 셀 수는 있으나 지금은 경험을 준 적이 없어 덤이 됨 — 원하면 12 × 그 계열 분해 기록 수). ⑩ title_collector·title_master 조건 수 변경, 새 칭호 32개를 넣은 뒤 한 번 판정. ⑪ 추적 36 「영초 감별」 행 추가.",
+ "migration": "둘째 시안의 제작 이주(새 계열 넷 = 12 × 그 분야 제작 기록, 단조 경험은 깎지 않음, 한글 craft_field 정규화)에 더해: ① 요리 계열 경험 = cooking_xp. ② 채집 계열은 gathering.migration(채집 = 일반+약초+영기 − 유물 몫, 가장 컸던 값 아래로 안 내림 · 채광 = 광맥 + 8 × 유물 기록 · 낚시 = 낚시 기록으로 다시 셈). ③ 생활 전문화: general → smithing, botany·spirit_harvest → fieldwork, 바뀐 사람은 life_changed_at = null. ④ free_repick: 단조·봉인 공예·(옮겨 온) 채집 24·43 택일 보유자. ⑤ 조합 기술 requires 고침(영맥 판독·야전 약방). ⑥ 새 칭호 40개를 넣고 그 자리에서 world_title_award_check로 지금 단계를 판정(배포 직후 조건을 채운 사람에게 한꺼번에 알림이 가므로 알림은 한 사람에 한 번으로 묶는다). ⑦ skill_progress는 사람마다 한 번의 UPDATE로 고치고(yh.rank_sync='all'), herbalism·spirit_gathering 키는 지우지 않는다. 배포는 큰 DO 블록이 lock table public.world_characters in access exclusive mode로 시작, 끝에 db_version. 넷째 시안 덧붙임: ⑧ 낚시 경험 = 8 × 낚시 기록 수(낚든 놓치든, 최고 낚은 114마리 + 놓친 것). ⑨ 분해 경험은 소급하지 않는다(분해 기록 payload.item로 셀 수는 있으나 지금은 경험을 준 적이 없어 덤이 됨 — 원하면 12 × 그 계열 분해 기록 수). ⑩ title_collector·title_master 조건 수 변경, 새 칭호 32개를 넣은 뒤 한 번 판정. ⑪ 추적 36 「영초 감별」 행 추가. 다섯째 시안 덧붙임: ⑫ 우수품 행 238개를 넣고(base_item_id·quality_grade 열 추가) 동기화 트리거. 이미 가진 물품은 모두 보통품(지난 제작의 품질은 남아 있지 않음). ⑬ 제작법 output_qty를 supply 표대로 고침. ⑭ 30단계 추가 기술 설명·world_craft_item.",
  "open_questions": [
-  "분해 조건 완충: 그 계열 단계만(권장) 또는 「그 계열 단계와 전체 제작 숙련의 절반 가운데 큰 값」 — 지금 전체 숙련으로 4단계 장비를 분해하던 사람이 새 계열에서는 2단계까지로 내려간다.",
-  "분해 경험 소급(12 × 그 계열 분해 기록 수)을 할지.",
   "제작법이 없는 장비 61가지의 계열을 표(world_gear_line_map)로 한 번 적을지, 부위·이름 규칙으로 계산할지(표 권장).",
   "제작 숙련에 요리를 넣으면 요리만 올린 사람도 분해·제작 공구 조건(제작 숙련)을 채운다 — 분해는 이제 그 계열 단계라 상관없고, 제작 공구 조건(req_line crafting_rank)만 남는다. 제작 공구 조건도 그 공구 분야 계열 단계로 볼지.",
   "요리 이주: cooking_xp 1:1(권장, 숫자는 20 → 17처럼 낮아 보임).",
-  "k 값: 1(주안)·1.2·1.5. 지금 사람들에게는 셋 다 85 이상 0%라 차이는 30단계 이후에 난다.",
-  "공급 대책: 소모품 기본 개수를 올릴지(권장 — 회복약·부적 −32~37%), 85 이상 덤을 계단(85 +25%·95 +50%)으로 바꿀지, 둘 다 안 할지."
+  "k 값: 1(주안) 또는 1.2. 이주 직후는 둘 다 우수품 0%이고 30단계부터 갈린다.",
+  "우수품 기준 85(주안) 또는 75(처음부터 조금씩 나옴). 30단계 추가 기술은 기준을 5 낮춘다(85 → 80).",
+  "우수품 효과 크기: 회복 ×1.15·음식 기운 지속 ×1.2·장비 특성 ×1.05(최소 +1)·최대 내구도 ×1.1 그대로 갈지.",
+  "노정 건량 우수품: 탐색력 +2는 정수라 ×1.15가 뜻이 없다 — 우수품을 빼거나, 「원정 보급으로 회차 하나 더」처럼 따로 정할지.",
+  "퀘스트·세력·의뢰 납품에 우수품도 받을지(권장: 받되 보통을 먼저 가져감).",
+  "원정·전투에서 보통과 우수품이 함께 있을 때 어느 쪽을 먼저 쓸지(권장: 원정은 우수품 먼저, 현장에서 고르는 사용은 고른 것).",
+  "응축 영핵 기본 개수를 3으로 올릴지(지금 실제 평균 2.96) 2로 둘지.",
+  "「경험만 분해」에 하루 횟수 제한(예: 20번)을 둘지 — 상점 장비를 사서 경험을 사는 길.",
+  "가구는 기본 1개 그대로(가구 공급 −40%)로 둘지, 가구도 기본 개수를 올릴지.",
+  "청심환 기본 개수 1 그대로(−29%) 또는 2(+42%)."
  ],
  "gathering": {
   "summary": "채집 계열 넷(일반 채집·약초 채집·광맥 채집·영기 채집)을 셋(채집·채광·낚시)으로 줄인다. 채집 숙련(gathering_rank) = max(채집, 채광, 낚시).",
@@ -1384,207 +1390,626 @@
   ]
  },
  "quality": {
-  "status": "사용자 결정: crafting_xp/20·crafting_rank×1.2를 빼고 그 제작법 계열 단계로 오르게 한다. 주안 k = 1, 비교 k = 1.2·1.5. 「85 이상 +50%」는 주안에서 그대로.",
+  "status": "사용자 결정: 품질은 개수를 바꾸지 않고 「우수품」을 정한다. 품질식은 넷째 시안의 결정(10 + floor(그 계열 단계 × k) + 그 계열 기본 기술(≤40) + 분야 일치 12 + 백공 15 + 장비·칭호·음식·상태 + 제작 공구 + 장소 12 − 8×난이도 + 0~19, 0~100), k = 1 주안.",
   "problem": "crafting_xp/20 덤 때문에 품질이 거의 늘 100이다(1위 +974, 5천 경험이면 +257). 최근 이틀 제작 89%가 85 이상. 그래서 ① 기본 기술 품질(합 40)·칭호 품질·「두 번 굴림」 택일이 뜻이 없고 ② 30단계 「85 이상 하나 더」가 늘 터지며 ③ 85 이상이면 누구에게나 붙는 완성품 +50%가 사실상 기본 생산량이다.",
   "formula": "품질 = 10 + floor(그 계열 단계 × k) + 그 계열 기본 기술(≤40) + 분야 일치 12 + 백공 15 + 장비·칭호(cq_<계열> 포함)·음식·상태 craft_quality + 제작 공구 + 장소 12 − 8×난이도 + 0~19 굴림, 0~100. required_skill×2·cooking_rank×3도 뺀다.",
-  "method": "이론표: 굴림 0~19가 고르다고 보고 85 이상 몫을 셈. 가정 — 분야 일치(12) 또는 다른 분야(0), 난이도 2(제작법 가운데값) 또는 4, 백공·장소·칭호·공구 없음(백공이면 +15, 장소면 +12를 더해 읽는다). 실측: 지난 2일 world_events craft(payload.quality·qty·recipe, 장소 가산 문구)를 한 건씩, 그 사람의 7.5.0 이주 뒤 계열 단계(단조·연금·봉인 공예는 지금 경험, 새 넷은 12 × 그 분야 제작 기록, 요리는 cooking_xp → world_skill_line_rank)와 생활 전문화(general → 단조)·백공·장착 칭호·제작 공구로 다시 계산.",
-  "by_rank": [
-   {
-    "k": 1.0,
-    "line_rank": 5,
-    "base": 8,
-    "match_d2": "평균 28 · 85 이상 0%",
-    "match_d4": "평균 12 · 85 이상 0%",
-    "other_d2": "평균 16 · 85 이상 0%",
-    "other_d4": "평균 0 · 85 이상 0%"
-   },
-   {
-    "k": 1.0,
-    "line_rank": 15,
-    "base": 17,
-    "match_d2": "평균 48 · 85 이상 0%",
-    "match_d4": "평균 32 · 85 이상 0%",
-    "other_d2": "평균 36 · 85 이상 0%",
-    "other_d4": "평균 20 · 85 이상 0%"
-   },
-   {
-    "k": 1.0,
-    "line_rank": 30,
-    "base": 28,
-    "match_d2": "평균 74 · 85 이상 0%",
-    "match_d4": "평균 58 · 85 이상 0%",
-    "other_d2": "평균 62 · 85 이상 0%",
-    "other_d4": "평균 46 · 85 이상 0%"
-   },
-   {
-    "k": 1.0,
-    "line_rank": 40,
-    "base": 32,
-    "match_d2": "평균 88 · 85 이상 65%",
-    "match_d4": "평균 72 · 85 이상 0%",
-    "other_d2": "평균 76 · 85 이상 5%",
-    "other_d4": "평균 60 · 85 이상 0%"
-   },
-   {
-    "k": 1.0,
-    "line_rank": 50,
-    "base": 40,
-    "match_d2": "평균 100 · 85 이상 100%",
-    "match_d4": "평균 90 · 85 이상 75%",
-    "other_d2": "평균 94 · 85 이상 95%",
-    "other_d4": "평균 78 · 85 이상 15%"
-   },
-   {
-    "k": 1.2,
-    "line_rank": 5,
-    "base": 8,
-    "match_d2": "평균 30 · 85 이상 0%",
-    "match_d4": "평균 14 · 85 이상 0%",
-    "other_d2": "평균 18 · 85 이상 0%",
-    "other_d4": "평균 2 · 85 이상 0%"
-   },
-   {
-    "k": 1.2,
-    "line_rank": 15,
-    "base": 17,
-    "match_d2": "평균 50 · 85 이상 0%",
-    "match_d4": "평균 34 · 85 이상 0%",
-    "other_d2": "평균 38 · 85 이상 0%",
-    "other_d4": "평균 22 · 85 이상 0%"
-   },
-   {
-    "k": 1.2,
-    "line_rank": 30,
-    "base": 28,
-    "match_d2": "평균 80 · 85 이상 25%",
-    "match_d4": "평균 64 · 85 이상 0%",
-    "other_d2": "평균 68 · 85 이상 0%",
-    "other_d4": "평균 52 · 85 이상 0%"
-   },
-   {
-    "k": 1.2,
-    "line_rank": 40,
-    "base": 32,
-    "match_d2": "평균 96 · 85 이상 100%",
-    "match_d4": "평균 80 · 85 이상 25%",
-    "other_d2": "평균 84 · 85 이상 45%",
-    "other_d4": "평균 68 · 85 이상 0%"
-   },
-   {
-    "k": 1.2,
-    "line_rank": 50,
-    "base": 40,
-    "match_d2": "평균 100 · 85 이상 100%",
-    "match_d4": "평균 100 · 85 이상 100%",
-    "other_d2": "평균 100 · 85 이상 100%",
-    "other_d4": "평균 88 · 85 이상 65%"
-   },
-   {
-    "k": 1.5,
-    "line_rank": 5,
-    "base": 8,
-    "match_d2": "평균 30 · 85 이상 0%",
-    "match_d4": "평균 14 · 85 이상 0%",
-    "other_d2": "평균 18 · 85 이상 0%",
-    "other_d4": "평균 2 · 85 이상 0%"
-   },
-   {
-    "k": 1.5,
-    "line_rank": 15,
-    "base": 17,
-    "match_d2": "평균 54 · 85 이상 0%",
-    "match_d4": "평균 38 · 85 이상 0%",
-    "other_d2": "평균 42 · 85 이상 0%",
-    "other_d4": "평균 26 · 85 이상 0%"
-   },
-   {
-    "k": 1.5,
-    "line_rank": 30,
-    "base": 28,
-    "match_d2": "평균 88 · 85 이상 70%",
-    "match_d4": "평균 72 · 85 이상 0%",
-    "other_d2": "평균 76 · 85 이상 10%",
-    "other_d4": "평균 60 · 85 이상 0%"
-   },
-   {
-    "k": 1.5,
-    "line_rank": 40,
-    "base": 32,
-    "match_d2": "평균 100 · 85 이상 100%",
-    "match_d4": "평균 92 · 85 이상 85%",
-    "other_d2": "평균 96 · 85 이상 100%",
-    "other_d4": "평균 80 · 85 이상 25%"
-   },
-   {
-    "k": 1.5,
-    "line_rank": 50,
-    "base": 40,
-    "match_d2": "평균 100 · 85 이상 100%",
-    "match_d4": "평균 100 · 85 이상 100%",
-    "other_d2": "평균 100 · 85 이상 100%",
-    "other_d4": "평균 100 · 85 이상 100%"
-   }
+  "removed": [
+   "world_craft_item의 「quality >= 85면 out_qty + greatest(1, ceil(output_qty × 0.5))」를 지운다.",
+   "30단계 추가 기술 「품질 85 이상이면 그 완성품 하나 더」(명장의 눈·목심 보기·명기 감정·천의 솜씨·가죽 눈썰미·천하 각인·단약 감정·일품 요리)를 「그 분야 제작은 품질 80부터 우수품」으로 바꾼다(이름 그대로, 기술 설명만). 개수와 상관없고 우수품 기준만 낮춘다.",
+   "결과 문구의 「고품질 추가 생산!」을 「우수품!」으로."
   ],
-  "by_rank_read": "k = 1(분야 일치·난이도 2): 5·15·30단계 0% · 40단계 65% · 50단계 100%(난이도 4면 50단계 75%, 다른 분야·난이도 2면 50단계 95%). k = 1.2: 30단계 25% · 40단계 100%. k = 1.5: 30단계 70% · 40단계 100%. 백공(+15)이나 제작 장소(+12)면 한 줄 위 단계쯤으로 읽는다(예: k = 1, 30단계 + 장소 12 → 85 이상 약 55%).",
-  "empirical": {
-   "note": "지난 2일 제작 2,085건, 7.5.0 이주 뒤 계열 단계(평균 8.3)로 다시 계산. k = 1·1.2·1.5 모두 85 이상 0%(계열 단계가 낮아 k 차이가 floor 안에서 1~4밖에 안 남).",
-   "now": "실제 85 이상 89.8%, 제작 한 번 평균 완성품 2.95개",
-   "rows": [
+  "kept": "품질과 상관없는 개수 효과(13단계 재료 돌려받기, 24·43단계 「하나 더」 확률, 50단계 「재료 없이」, 칭호 cx_<계열>)는 그대로 둔다 — 품질이 개수를 바꾸지 않는다는 결정에 들지 않는다.",
+  "hq": {
+   "threshold": "품질 85 이상(30단계 추가 기술이 있으면 그 분야 80 이상)이면 그 제작에서 나온 완성품 전부가 우수품. 한 단계뿐.",
+   "which_items": "우수품이 있는 것: 제작법이 있는 소모품 가운데 수치 효과가 있는 51가지(회복약·영력약·부적·요리 39·어유 등잔·장비 수리 도구·노정 건량) + 제작법이 있는 장비 187가지(무기 55·도구 43·갑옷 20·노리개 15·호신부 15·관모 13·신 13·탈 13). 없는 것: 재료 20·가구 48·탄(화살·쇠뇌살·취관 침 — 한 발 효과가 없음)·말린 생선포(동무 별미). 전리품·상점 장비는 제작하지 않으므로 우수품이 없다.",
+   "effects": {
+    "recovery": "체력·정신·영력·침식 회복량 ×1.15(올림): 청령단 영력 20 → 23, 청심환 체력 35 → 41, 대환단 체력 100(상한)·정신 20 → 23, 정화 부적 정신 8 → 10·침식 12 → 14, 회생 부적 일어날 때 체력 50 → 58. 푸는 상태이상은 같다.",
+    "food": "요리: 회복량 ×1.15, 붙는 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복) 지속 ×1.2. 효과 세기는 그대로(상태 표는 세기 하나라 세기를 바꾸면 상태 행을 따로 만들어야 함).",
+    "others": "어유 등잔 등잔빛 지속 ×1.2 · 장비 수리 도구 내구도 회복 50% → 60%(「현장 수리」 등 전부 되살리는 기술이 있으면 같음) · 노정 건량 탐색력 +2 → +2, 그리고 원정 보급으로 쓸 때 회차 하나를 더 버틴다(정수라 ×1.15가 뜻이 없음 — 결정 필요).",
+    "gear": "equipment_traits의 수치(위력·방어·피해 감소·회피·치명·이목·채집 보너스·낚시 덤·제작 공구 품질 등)를 ×1.05로 하되 0이 아닌 것은 최소 +1, 최대 내구도 ×1.1. 장착 조건(레벨·능력치·직업)은 같다. 무기 강화는 우수품도 같은 식(+10까지)."
+   },
+   "rates": [
     {
-     "group": "전체",
-     "n": 2085,
-     "now85": "89.8%",
-     "new85": "0%",
-     "out_now": 2.95,
-     "out_new": 1.88,
-     "drop": "−36%"
+     "k": 1.0,
+     "line_rank": 5,
+     "분야 일치·난이도2": "0%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "0%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "0%"
     },
     {
-     "group": "회복약(연금 소모품)",
-     "n": 210,
-     "now85": "80.0%",
-     "new85": "0%",
-     "out_now": 2.14,
-     "out_new": 1.35,
-     "drop": "−37%",
-     "avg_line_rank": 4.5
+     "k": 1.0,
+     "line_rank": 15,
+     "분야 일치·난이도2": "0%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "0%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "0%"
     },
     {
-     "group": "부적(봉인 공예 소모품)",
-     "n": 288,
-     "now85": "93.1%",
-     "new85": "0%",
-     "out_now": 2.91,
-     "out_new": 1.98,
-     "drop": "−32%",
-     "avg_line_rank": 6.8
+     "k": 1.0,
+     "line_rank": 30,
+     "분야 일치·난이도2": "0%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "0%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "55%"
     },
     {
-     "group": "화살·탄(목공 소모품)",
-     "n": 16,
-     "now85": "75.0%",
-     "new85": "0%",
-     "out_now": 67.8,
-     "out_new": 49.4,
-     "drop": "−27%",
-     "avg_line_rank": 1.8
+     "k": 1.0,
+     "line_rank": 40,
+     "분야 일치·난이도2": "65%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "5%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "100%"
     },
     {
-     "group": "그 밖(장비·재료·요리)",
-     "n": 1571,
-     "now85": "90.6%",
-     "new85": "0%",
-     "out_now": 2.4,
-     "out_new": 1.45,
-     "drop": "−40%",
-     "avg_line_rank": 9.2
+     "k": 1.0,
+     "line_rank": 50,
+     "분야 일치·난이도2": "100%",
+     "분야 일치·난이도4": "75%",
+     "다른 분야·난이도2": "95%",
+     "다른 분야·난이도4": "15%",
+     "분야 일치·난이도2·제작 장소": "100%"
+    },
+    {
+     "k": 1.2,
+     "line_rank": 5,
+     "분야 일치·난이도2": "0%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "0%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "0%"
+    },
+    {
+     "k": 1.2,
+     "line_rank": 15,
+     "분야 일치·난이도2": "0%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "0%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "0%"
+    },
+    {
+     "k": 1.2,
+     "line_rank": 30,
+     "분야 일치·난이도2": "25%",
+     "분야 일치·난이도4": "0%",
+     "다른 분야·난이도2": "0%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "85%"
+    },
+    {
+     "k": 1.2,
+     "line_rank": 40,
+     "분야 일치·난이도2": "100%",
+     "분야 일치·난이도4": "25%",
+     "다른 분야·난이도2": "45%",
+     "다른 분야·난이도4": "0%",
+     "분야 일치·난이도2·제작 장소": "100%"
+    },
+    {
+     "k": 1.2,
+     "line_rank": 50,
+     "분야 일치·난이도2": "100%",
+     "분야 일치·난이도4": "100%",
+     "다른 분야·난이도2": "100%",
+     "다른 분야·난이도4": "65%",
+     "분야 일치·난이도2·제작 장소": "100%"
     }
    ],
-   "caveat": "out_now는 기록된 실제 개수라 85 이상 덤 외의 기술 덤(농축·정교한 각인 등)도 들어 있다. 새 쪽은 기본 개수 + 85 이상 덤만 셌다. 장비 crafting_specialization·음식·상태 품질은 빼서 새 쪽이 조금 낮게 나온다(평균 몇 점)."
+   "rates_read": "k = 1, 분야 일치, 난이도 2: 계열 5·15·30단계 0% · 40단계 65% · 50단계 100%. 제작 장소(+12)에서는 30단계 55%. k = 1.2면 30단계 25% · 40단계 100%. 30단계 추가 기술(기준 80)을 가지면 같은 줄이 25%p쯤 오른다. 지난 2일 제작 2,085건을 이주 뒤 계열 단계(평균 8.3)로 다시 계산하면 우수품 0% — 우수품은 오래 판 사람의 몫이 된다. 처음부터 조금은 나오게 하려면 기준을 75로(30단계 분야 일치·난이도 2에서 약 50%)."
   },
-  "supply": "이 식이면 지금 사람들(계열 평균 8단계)은 85 이상 덤이 사라져 회복약 −37%·부적 −32%·화살 −27%·전체 −36% 생산이 준다. 계열을 30단계로 올리려면 제작 약 480번(경험 5,800)이라 회복에는 시간이 걸린다. 공급을 지키려면 아래 둘 가운데 하나를 함께: ① 회복약·부적·화살·노정 건량 제작법의 기본 개수(output_qty)를 지금 기대량(≈ 1.4배)에 맞춰 올림 ② 85 이상 덤을 계단으로.",
-  "ramp_alternative": "85 이상 +25%(최소 1)·95 이상 +50%로 완만히. 지금 사람들에게는 어느 쪽이든 덤이 0%라 당장 차이는 없고, 높은 단계에서 덤이 덜 커진다(k = 1, 50단계·분야 일치·난이도 4: 지금 규칙은 +50% 75%, 계단이면 +25% 50%·+50% 25%). 덤을 줄이는 쪽이라 공급 문제는 풀지 못한다 — 공급은 기본 개수를 올려 맞춘다.",
-  "old_options": "앞서 낸 A(상수 40·난이도 6, 지금 85 이상 약 13%)·B(경험 덤 상한 40, 약 37%)·C(상한 20, 약 26%)는 사용자 결정으로 접는다(기록으로만 남김)."
+  "representation": {
+   "recommend": "물품 표에 우수품을 별도 행으로: item_id = <기본>_hq, item_name = 「<기본 이름> (우수)」(지금 「비경 호신부 (닳음)」과 같은 꼴), 새 열 world_item_catalog.base_item_id(우수품만 기본 id, 나머지 null)와 quality_grade smallint(0·1). category·tier·stack_size·tradeable·required_*·minimum_level·rarity는 기본과 같고, reference_price ×1.3, equipment_traits는 위 규칙으로 계산해 넣는다. 생성은 배포 SQL 한 번(INSERT … SELECT … FROM world_item_catalog WHERE 우수품 대상) + 기본 물품을 고칠 때 우수품 행도 따라 고치는 트리거 trg_world_item_hq_sync(equipment_traits·이름·시세·묶음). world_normalize_item_rarity 트리거가 단계로 희귀도를 덮어쓰므로 단계는 기본과 같게 둔다.",
+   "why": "가방·창고·거래소·직접 거래·서신·잠금·내구도·강화·장착이 모두 item_id 하나로 돌아가므로 별도 행이면 그대로 동작한다(같은 칸에 섞이지 않고 따로 쌓임). 장비 수치를 읽는 함수(world_combat_stats·world_gear_total·world_fish·world_field_gather·world_explore_find_pct·world_craft_tool_bonus·world_ammo_of·world_fish_rod·world_equip_item)는 equipment_traits를 item_id로 읽으니 고칠 것이 없다.",
+   "alternatives": [
+    "inventory 값을 {보통, 우수} 묶음으로 바꾸기: 가방을 읽는 함수 수백 곳(world_inv_add·world_bag_count·world_bag_room…)이 깨진다 — 안 됨.",
+    "inventory 키에 접미 「#hq」만 붙이고 물품 행은 두지 않기: 이름·묶음·시세·거래 검사가 물품 표를 찾지 못해 모두 예외 처리가 필요 — 별도 행보다 고칠 곳이 많다.",
+    "사람마다 우수품 개수를 따로 적는 표(world_item_hq: owner·item·n): 거래·창고·서신으로 옮길 때마다 함께 옮겨야 하고 어느 하나를 빠뜨리면 복제가 생긴다 — 안 됨."
+   ]
+  },
+  "functions": {
+   "must_change": [
+    "world_craft_item: 품질 85(또는 80) 이상이면 output_item 대신 그 _hq를 넣음(가방 자리 계산도 _hq로). 85 이상 +50% 줄 지움. 재료 확인·차감은 「기본 + 우수품」을 함께 세고 기본을 먼저 씀(아래 ingredients).",
+    "world_use_item: 앞머리에서 base := coalesce(base_item_id, p_item_id), hq := base_item_id is not null, 그 뒤 CASE는 base로, 회복량·상태 지속에 ×1.15·×1.2. 가방 차감은 p_item_id 그대로.",
+    "world_battle_action(현장 토벌의 회복품·부적 사용), world_party_use_item(의무관 ×1.4와 곱함), world_raid_action(world_use_item을 부름 — 확인만), world_gw_act·world_gw_resolve(결전 item), world_status_treat, world_tourney_tactic·world_tourney_duel(작전 회복품 둘: 우수품을 고를 수 있게 목록에 넣음).",
+    "world_expedition_start·world_expedition_settle·world_expedition_walk_lines·world_pexp_resolve: 보급품 셀 때 기본 + 우수품, 쓸 때 우수품을 먼저 쓰고(원정은 효과가 큰 쪽을 먼저 — 결정 가능) 일지 줄에 「(우수)」. yh.exp_sup의 보급품 고르기(0~20)는 기본 id 기준으로 둘을 합쳐 센다.",
+    "world_equipment_repair·world_repair_quote: 우수품 장비도 같은 수리비 식(최대 내구도가 커서 조금 더 듦), 수리 도구 우수품은 60%.",
+    "world_item_max_durability: 우수품은 기본 × 1.1.",
+    "world_dismantle_yield·world_dismantle_item·world_gear_line: 우수품은 base_item_id로 제작법을 찾음.",
+    "world_tool_lines·world_tool_covers(상위 도구가 하위 도구 제작법을 덮음): 우수품 도구도 같은 줄로(world_tool_covers가 base로 비교).",
+    "world_quest_task_count·world_faction_task_count: 「○○ 만들기」 할 일은 craft payload의 output이 _hq여도 기본으로 셈(payload에 base를 함께 남김), 「○○ 채집」은 재료라 상관없음.",
+    "world_quest_report·world_faction_report·world_commission(납품)·world_faction_donate: 넘길 물품(need.give·납품)은 우수품도 받음(권장) — 기본을 먼저 가져가고 모자라면 우수품. 기부 공훈은 우수품 시세(×1.3)로.",
+    "world_shop_sell·world_shop_sell_unit: 되팔기 값 = 우수품 시세(기준가 ×1.3)의 지금 비율. 상점은 우수품을 팔지 않음(world_shop_refresh 그대로).",
+    "world_trade_offer_create: 등록가 상한(기준 시세 10배)·거래소 전용 하한이 우수품 시세로 계산되므로 그대로 동작(확인만). world_market_only 목록은 재료라 해당 없음.",
+    "world_item_sources: 우수품은 「제작(품질 85 이상)」 한 줄. world_item_lore·world_lore_bundle: base로 내력을 찾음.",
+    "world_equip_item: 고칠 것 없음(category·required_* 복사). 다만 「장착 중 마지막 하나」 검사·world_item_give_guard는 item_id 그대로라 됨.",
+    "world_inventory_snapshot·world_inventory_state: 물품 사전에 우수품 행이 들어가므로 화면 가방 사전(yh-inv-static-v1)은 db_version으로 다시 받음."
+   ],
+   "ingredients": "제작법 재료로 우수품을 받을지: 재료(material)에는 우수품이 없으므로 대부분 상관없다. 장비·소모품이 재료로 들어가는 제작법(상위 도구 pick_upgrade가 월철 곡괭이를, 몇 요리가 손질 안 된 물고기를 씀 등)에서는 「기본 먼저, 모자라면 우수품」을 권한다(우수품을 재료로 쓰면 손해라 화면이 한 번 묻는다).",
+   "ui": [
+    "core.js: 이름 뒤 「(우수)」를 작은 금빛 표식으로(평면 색, 그라데이션 없음), brief()에 「우수품: 회복 +15%」.",
+    "item.js: 회복량 표(world_use_item과 같은 값)를 _hq면 ×1.15·×1.2로, 장비 특성 표는 equipment_traits 그대로(이미 계산돼 있음), 「장착 조건」 같음.",
+    "bag.js: 정렬·거르기에서 우수품을 기본 바로 뒤에, 「우수품만」 체크. 제작 결과 팝업에 「우수품!」.",
+    "services.js 거래소·직접 거래 고르기, 원정 보급품 고르기(expedition.js supPick)는 기본과 우수품을 따로 보이되 원정은 합친 수로.",
+    "도움말 guide.js 「제작 › 우수품」 항목: 기준·효과·없는 물품."
+   ],
+   "count": "우수품 행 238개(소모품 51 + 장비 187), 물품 표 520 → 758. 노정 건량을 빼면 237."
+  },
+  "supply": {
+   "rule": "잘 쓰이는 소모품·재료 제작법의 기본 개수 = 지난 7일 실제 평균 개수(반올림, 지금 값보다 낮추지 않음; 7일에 5번 미만 만든 것은 지금 값 ×1.5 올림). 탄은 화살 50 → 70 · 쇠뇌살 40 → 60 · 취관 침 50 → 70. 장비·가구·도구는 1 그대로(품질 덤 하나가 사라지는 대신 우수품).",
+   "estimate": "지난 7일 제작(소모품 1,328번·재료 880번·장비 374번·가구 43번)에 새 기본 개수를 곱하면: 소모품 4,486 → 4,608개(+3%), 재료 2,109 → 2,162개(+3%), 장비 602 → 374개(−38%), 가구 72 → 43개(−40%). 13·24·43·50단계 기술의 개수 덤은 지금 평균에 이미 조금 들어 있어 실제로는 몇 % 더 많을 수 있다.",
+   "consumables": [
+    {
+     "recipe": "ward_recipe",
+     "item": "정화 부적",
+     "now_base": 2,
+     "crafts_7d": 365,
+     "avg_out_now": 2.88,
+     "new_base": 3
+    },
+    {
+     "recipe": "cook_herb_fish",
+     "item": "약초 생선찜",
+     "now_base": 1,
+     "crafts_7d": 162,
+     "avg_out_now": 1.95,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_travel_ration",
+     "item": "노정 건량",
+     "now_base": 3,
+     "crafts_7d": 126,
+     "avg_out_now": 4.87,
+     "new_base": 5
+    },
+    {
+     "recipe": "cook_fish_porridge",
+     "item": "어죽",
+     "now_base": 1,
+     "crafts_7d": 109,
+     "avg_out_now": 1.89,
+     "new_base": 2
+    },
+    {
+     "recipe": "spirit_tea_recipe",
+     "item": "영초 차",
+     "now_base": 2,
+     "crafts_7d": 89,
+     "avg_out_now": 2.8,
+     "new_base": 3
+    },
+    {
+     "recipe": "brew_purify_water",
+     "item": "청정수",
+     "now_base": 1,
+     "crafts_7d": 71,
+     "avg_out_now": 1.85,
+     "new_base": 2
+    },
+    {
+     "recipe": "cook_gukbap",
+     "item": "영기 국밥",
+     "now_base": 1,
+     "crafts_7d": 68,
+     "avg_out_now": 1.91,
+     "new_base": 2
+    },
+    {
+     "recipe": "tonic_recipe",
+     "item": "청심환",
+     "now_base": 1,
+     "crafts_7d": 34,
+     "avg_out_now": 1.41,
+     "new_base": 1
+    },
+    {
+     "recipe": "cook_grilled_fish",
+     "item": "생선구이",
+     "now_base": 1,
+     "crafts_7d": 30,
+     "avg_out_now": 1.87,
+     "new_base": 2
+    },
+    {
+     "recipe": "spirit_qi_pill_recipe",
+     "item": "영기환",
+     "now_base": 2,
+     "crafts_7d": 21,
+     "avg_out_now": 3.0,
+     "new_base": 3
+    },
+    {
+     "recipe": "brew_calm",
+     "item": "안신탕",
+     "now_base": 1,
+     "crafts_7d": 19,
+     "avg_out_now": 1.68,
+     "new_base": 2
+    },
+    {
+     "recipe": "cook_catfish",
+     "item": "메기찜",
+     "now_base": 1,
+     "crafts_7d": 17,
+     "avg_out_now": 1.82,
+     "new_base": 2
+    },
+    {
+     "recipe": "stew_lenok",
+     "item": "매운탕",
+     "now_base": 1,
+     "crafts_7d": 16,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_ammo_arrow",
+     "item": "화살",
+     "now_base": 50,
+     "crafts_7d": 15,
+     "avg_out_now": 68.33,
+     "new_base": 70
+    },
+    {
+     "recipe": "clear_spirit_pill_recipe",
+     "item": "청령단",
+     "now_base": 2,
+     "crafts_7d": 14,
+     "avg_out_now": 2.93,
+     "new_base": 3
+    },
+    {
+     "recipe": "cook_spicy_stew",
+     "item": "매운탕",
+     "now_base": 1,
+     "crafts_7d": 14,
+     "avg_out_now": 1.86,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_oil_lamp",
+     "item": "어유 등잔",
+     "now_base": 2,
+     "crafts_7d": 13,
+     "avg_out_now": 3.0,
+     "new_base": 3
+    },
+    {
+     "recipe": "cook_herb_rice",
+     "item": "야령초 나물밥",
+     "now_base": 2,
+     "crafts_7d": 13,
+     "avg_out_now": 2.77,
+     "new_base": 3
+    },
+    {
+     "recipe": "cook_bark_stew",
+     "item": "영맥 약선탕",
+     "now_base": 2,
+     "crafts_7d": 13,
+     "avg_out_now": 3.0,
+     "new_base": 3
+    },
+    {
+     "recipe": "repair_kit_recipe",
+     "item": "장비 수리 도구",
+     "now_base": 2,
+     "crafts_7d": 12,
+     "avg_out_now": 2.92,
+     "new_base": 3
+    },
+    {
+     "recipe": "moonlight_essence_recipe",
+     "item": "월광 정수",
+     "now_base": 1,
+     "crafts_7d": 11,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "cook_sweetfish",
+     "item": "은어 소금구이",
+     "now_base": 1,
+     "crafts_7d": 11,
+     "avg_out_now": 1.91,
+     "new_base": 2
+    },
+    {
+     "recipe": "cook_carp_broth",
+     "item": "잉어 고음",
+     "now_base": 1,
+     "crafts_7d": 8,
+     "avg_out_now": 1.88,
+     "new_base": 2
+    },
+    {
+     "recipe": "brew_grand_pill",
+     "item": "대환단",
+     "now_base": 1,
+     "crafts_7d": 7,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "brew_rejuv_pill",
+     "item": "회춘단",
+     "now_base": 1,
+     "crafts_7d": 7,
+     "avg_out_now": 1.57,
+     "new_base": 2
+    },
+    {
+     "recipe": "cook_croaker_soup",
+     "item": "민어탕",
+     "now_base": 1,
+     "crafts_7d": 7,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "r_treat_fish",
+     "item": "말린 생선포",
+     "now_base": 3,
+     "crafts_7d": 6,
+     "avg_out_now": 5.0,
+     "new_base": 5
+    },
+    {
+     "recipe": "cook_goby",
+     "item": "망둥어 맑은국",
+     "now_base": 1,
+     "crafts_7d": 6,
+     "avg_out_now": 1.83,
+     "new_base": 2
+    },
+    {
+     "recipe": "heavenly_dew_recipe",
+     "item": "천령 감로",
+     "now_base": 1,
+     "crafts_7d": 5,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "recipe_revival_charm",
+     "item": "회생 부적",
+     "now_base": 1,
+     "crafts_7d": 5,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_ammo_bolt",
+     "item": "쇠뇌살",
+     "now_base": 40,
+     "crafts_7d": 1,
+     "avg_out_now": 60.0,
+     "new_base": 60
+    },
+    {
+     "recipe": "make_ammo_dart",
+     "item": "취관 침",
+     "now_base": 50,
+     "crafts_7d": 0,
+     "avg_out_now": null,
+     "new_base": 70
+    }
+   ],
+   "materials": [
+    {
+     "recipe": "refine_iron",
+     "item": "월철 주괴",
+     "now_base": 2,
+     "crafts_7d": 103,
+     "avg_out_now": 2.9,
+     "new_base": 3
+    },
+    {
+     "recipe": "synth_spirit_core",
+     "item": "응축 영핵",
+     "now_base": 2,
+     "crafts_7d": 71,
+     "avg_out_now": 2.96,
+     "new_base": 3
+    },
+    {
+     "recipe": "spin_spirit_thread",
+     "item": "영사 실타래",
+     "now_base": 2,
+     "crafts_7d": 65,
+     "avg_out_now": 2.91,
+     "new_base": 3
+    },
+    {
+     "recipe": "fillet_canal_carp",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 62,
+     "avg_out_now": 1.82,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_lumber",
+     "item": "가공 부적목",
+     "now_base": 2,
+     "crafts_7d": 51,
+     "avg_out_now": 2.49,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_resin",
+     "item": "부적목 수지",
+     "now_base": 2,
+     "crafts_7d": 51,
+     "avg_out_now": 2.37,
+     "new_base": 2
+    },
+    {
+     "recipe": "extract_herb",
+     "item": "농축 약초액",
+     "now_base": 1,
+     "crafts_7d": 43,
+     "avg_out_now": 1.93,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_minnow",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 38,
+     "avg_out_now": 1.79,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_mandarin",
+     "item": "손질한 생선",
+     "now_base": 2,
+     "crafts_7d": 38,
+     "avg_out_now": 2.74,
+     "new_base": 3
+    },
+    {
+     "recipe": "recipe_field_tonic",
+     "item": "농축 약초액",
+     "now_base": 2,
+     "crafts_7d": 37,
+     "avg_out_now": 2.97,
+     "new_base": 3
+    },
+    {
+     "recipe": "melt_spirit_glass",
+     "item": "영유리",
+     "now_base": 1,
+     "crafts_7d": 36,
+     "avg_out_now": 1.75,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_bullhead",
+     "item": "손질한 생선",
+     "now_base": 2,
+     "crafts_7d": 33,
+     "avg_out_now": 2.67,
+     "new_base": 3
+    },
+    {
+     "recipe": "fillet_rockfish",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 32,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_dace",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 31,
+     "avg_out_now": 1.87,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_reinforced_leather",
+     "item": "강화 요수 가죽",
+     "now_base": 1,
+     "crafts_7d": 25,
+     "avg_out_now": 1.84,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_lacquer",
+     "item": "칠액",
+     "now_base": 2,
+     "crafts_7d": 23,
+     "avg_out_now": 2.57,
+     "new_base": 3
+    },
+    {
+     "recipe": "fillet_shad",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 20,
+     "avg_out_now": 1.65,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_rune_plate",
+     "item": "각인판",
+     "now_base": 1,
+     "crafts_7d": 17,
+     "avg_out_now": 1.94,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_canal_eel",
+     "item": "손질한 생선",
+     "now_base": 2,
+     "crafts_7d": 17,
+     "avg_out_now": 2.35,
+     "new_base": 2
+    },
+    {
+     "recipe": "make_sealing_ink",
+     "item": "봉인 먹",
+     "now_base": 2,
+     "crafts_7d": 16,
+     "avg_out_now": 2.94,
+     "new_base": 3
+    },
+    {
+     "recipe": "reinforce_lumber",
+     "item": "강화 부적목",
+     "now_base": 1,
+     "crafts_7d": 15,
+     "avg_out_now": 1.8,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_smelt",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 13,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_mackerel",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 10,
+     "avg_out_now": 1.9,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_loach",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 6,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    },
+    {
+     "recipe": "fillet_filefish",
+     "item": "손질한 생선",
+     "now_base": 1,
+     "crafts_7d": 5,
+     "avg_out_now": 2.0,
+     "new_base": 2
+    }
+   ],
+   "other_low_volume": "7일에 5번 미만 만든 나머지 요리(1 → 2)·약(귀어 환혼단 1 → 2)·재료(1 → 2, 2 → 3)는 같은 ×1.5 올림 규칙.",
+   "watch": [
+    "응축 영핵(synth_spirit_core 2 → 3)은 +7 강화 핵심이고 거래 불가다. 지금도 85 이상 덤으로 평균 2.96개가 나와 실제 공급은 같지만, 기본으로 박으면 품질과 상관없이 3개 — 강화 속도를 지키려면 2로 두고 한 번 묻는다.",
+    "제작품 시세 규칙(기준 시세 ≥ 재료 시세 합 ÷ 만드는 개수 × 1.1)은 만드는 개수가 늘수록 쉽게 지켜진다. 반대로 상점에서 사는 재료로 만들어 되파는 이득이 생기는지(정화 부적·노정 건량·영초 차·화살) 배포 전에 시세 검사로 본다 — 지금도 평균 1.4~1.5배가 나와 사실상 같은 조건이다.",
+    "장비 공급이 −38%: 그 몫을 우수품(높은 단계에서만)이 대신한다. 가구는 덤 없이 1개로 — 별채 가구 모으기가 느려진다(가구 +1 칭호 「공방의 주인」 등에는 영향 없음).",
+    "청심환(tonic_recipe)은 실제 평균 1.41개라 반올림하면 1 그대로 — 청심환만 공급이 약 −29%. 2로 올리면 +42%. 한 번 묻는다(전체 소모품 합에는 거의 영향 없음)."
+   ]
+  }
  },
  "free_repick": {
   "who": "7.5.0 배포 때 world_skill_picks.picks에 'smithing:24'·'smithing:43'·'wardcraft:24'·'wardcraft:43'(효과가 바뀌는 계열), 그리고 합쳐지는 채집 계열에서 옮겨 온 'foraging:24'·'foraging:43' 키가 있는 사람. 2026-10-30 기준 0명(고른 택일은 모두 근접·봉인술·추적)이지만 배포 시점에 다시 센다.",
@@ -2146,10 +2571,15 @@
   "xp": "world_dismantle_item: 분해 한 번에 그 장비 분야 계열 기술 경험 12(제작 한 번과 같음, world_skill_add로 skill_progress에 더함). 지금 주는 제작 경험(crafting_xp 6×단계)은 그대로. 분해 기록 world_events 'dismantle' payload에 line을 남긴다. 기술 경험은 world_event_char_apply가 아니라 분해 함수가 캐릭터 행을 고치는 같은 UPDATE에서 더한다(행 갱신을 늘리지 않음).",
   "line_of_item": "새 도우미 world_gear_line(item_id): ① 그 물품을 만드는 제작법이 있으면 그 제작법의 world_craft_line(제작법이 여럿이면 첫째). ② 없으면(전리품·상점·시작 장비 61가지) 무기는 weapon_type(melee → 단조 · ranged → 목공 · magic → 법구 공예), 그 밖은 부위: 갑옷 → 직조(이름에 갑·찰·미늘·투구가 든 것은 단조: 금강 철찰갑·쇠미늘 갑옷 / 야행복은 가죽 공예: 무영 야행복) · 관모 → 직조(금강 투구는 단조) · 신 → 가죽 공예 · 노리개 → 직조 · 호신부·탈 → 봉인 공예 · 도구 → world_tool_lines의 pick·knife면 단조, 영등은 법구 공예. 이름 규칙 대신 제작법 없는 61가지를 표(world_gear_line_map)에 한 번 적어 두는 것을 권한다(새 장비를 넣을 때도 한 줄).",
   "need": {
-   "now": "world_dismantle_need: 1단계 1 · 2단계 5 · 3단계 10 · 4단계 15 · 5·6단계 20, 전체 제작 숙련(crafting_rank).",
-   "new": "1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15, 그 장비 분야 계열 단계(권장).",
-   "why": "분해가 그 분야 계열 경험을 주므로 조건도 그 계열 단계가 자연스럽다(목공 장비를 분해하며 목공이 오름). 6단계 장비(Lv32 귀허도)는 지금 5단계와 같이 20이었는데 따로 15로 둔다. 곡선을 완만히 해 새 계열(이주 뒤 대부분 1~7단계)도 2~3단계 장비부터 분해할 수 있다.",
-   "risk": "지금 전체 제작 숙련 16인 조사원도 새 계열(예: 목공 3단계)의 장비는 2단계까지만 분해한다 — 지금은 4단계까지 됐다. 원하면 조건을 「그 계열 단계와 전체 제작 숙련의 절반 가운데 큰 값」으로 완충."
+   "now": "world_dismantle_need: 1단계 1 · 2단계 5 · 3단계 10 · 4단계 15 · 5·6단계 20, 전체 제작 숙련(crafting_rank). 모자라면 분해를 거절한다.",
+   "new": "분해는 언제나 된다(제작 숙련 조건으로 거절하지 않음). 그 장비 분야 계열 단계가 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15) 이상이면 지금처럼 재료(제작법 재료의 절반) + 그 계열 경험 12, 낮으면 재료 없이 경험 12만. 제작 경험(crafting_xp 6×단계)은 두 경우 모두.",
+   "no_loss": "지금 분해할 수 있던 사람이 못 하게 되는 경우는 없다(거절 자체가 없어짐). 지금 전체 제작 숙련으로 재료를 받던 사람이 새 계열에서 단계가 낮으면 그 장비는 재료 없이 경험만 받는다 — 그 계열을 올리는 길이 바로 그 분해다.",
+   "ui": {
+    "list": "대장간 › 분해 목록(services.js)의 장비 줄마다: 조건을 채웠으면 「돌려받는 재료: 월철 주괴 ×2 · 정련 숯 ×1 · 단조 경험 +12」, 못 채웠으면 「재료 없음 · 단조 경험 +12만(단조 6단계부터 재료)」을 빨간 글씨로.",
+    "confirm": "못 채운 장비를 누르면 확인 창(core.js ask): 제목 「경험만 얻는 분해」, 본문 「단조 기술이 6단계가 되지 않아(지금 3단계) 재료를 돌려받지 못합니다. 분해하면 단조 경험 12만 얻고 이 장비는 사라집니다.」, 단추 「경험만 받고 분해」·「그만두기」. 조건을 채운 분해의 확인 창은 지금 그대로.",
+    "result": "결과 문구: 「흑철 두정갑을(를) 분해했습니다 · 재료는 돌려받지 못했습니다(단조 6단계부터) · 단조 경험 +12」. 서버 응답에 yield {}·no_yield true·need·rank를 넣는다."
+   },
+   "guard": "분해 경험이 늘 나오므로 상점의 싼 장비(현장 채집도·월철 곡괭이 50전 등)를 사서 분해만 되풀이해 경험을 사는 길이 생긴다. 제작 한 번(재료값)과 비교하면 비슷하거나 싸다. 막으려면 ① 상점에서 산 장비는 표시가 없어 가릴 수 없으므로 ② 「경험만 분해」는 한국 시각 하루 20번까지(그 뒤로는 경험 0, 재료 받는 분해는 제한 없음) — 제안."
   }
  },
  "tracking_36": {
