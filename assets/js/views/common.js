@@ -25,7 +25,8 @@ async function inventorySnap() {
   }
   if (invStatic && invLite) {
     try { const d = await rpc('world_inventory_state'); return { ...d, catalog: invStatic.catalog, recipes: invStatic.recipes }; }
-    catch (e) { if (!/로그인|권한/.test(String(e?.message || ''))) invLite = false; else throw e; }
+    // 서버에 함수가 없을 때만 가벼운 길을 끈다(잠깐 난 오류 한 번에 접속 내내 220KB를 받던 것)
+    catch (e) { const m = String(e?.message || '') + ' ' + String(e?.code || ''); if (/로그인|권한/.test(m)) throw e; if (/PGRST202|does not exist|Could not find/.test(m)) invLite = false; }
   }
   const d = await rpc('world_inventory_snapshot');
   if (d?.catalog?.length) {

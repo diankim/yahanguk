@@ -71,7 +71,16 @@ export function mountChat(colEl, fabEl) {
   window.addEventListener('yahang:arrived', load);
   // 화면 복귀: 실시간이 끊겼거나 30초 넘게 비웠을 때만 빠진 말을 채운다
   let hiddenAt = 0;
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (!live || Date.now() - hiddenAt > 30000) loadNew(); });
+  // 휴대폰은 화면을 껐다 켜면 실시간 연결이 끊긴 채 「살아 있음」으로 남을 수 있어 모임·파티 말도 함께 채운다
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    const away = Date.now() - hiddenAt > 30000;
+    if (!live || away) loadNew();
+    if (away) {
+      [...circleLoaded].forEach(x => { if (x !== circleId) circleLoaded.delete(x); });
+      if (tab === 'circle') loadCircleNew(); else if (tab === 'party') loadParty(); else partyLoaded = false;
+    }
+  });
   setInterval(() => {
     if (document.hidden || tab === 'party') return;
     if (tab === 'circle') { if (!circleLive) loadCircleMsgs(); return; }
@@ -155,6 +164,15 @@ function showCircle() {
   const id = circleId;
   if (!id || !circleLoaded.has(id) || !circleLive) return loadCircleMsgs();
   draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id);
+}
+// 고른 모임에서 마지막으로 받은 말 뒤의 것만 읽어 붙인다(보낸 뒤·화면 복귀 때. 실시간이 조용히 끊겨 있어도 빠지지 않게)
+async function loadCircleNew() {
+  const id = circleId, arr = circleMsgs[id] || [];
+  if (!id || !circleLoaded.has(id) || !arr.length) return loadCircleMsgs();
+  try {
+    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).gt('created_at', arr[arr.length - 1].created_at).order('created_at', { ascending: true }).limit(60);
+    if (!error) (data || []).forEach(onCircleMsg);
+  } catch {}
 }
 async function loadCircleMsgs() {
   const id = circleId; if (!id) return draw();
@@ -397,7 +415,7 @@ async function send(e) {
   btn.disabled = true; forceEnd = true;
   try {
     if (tab === 'party') { await act('world_party_chat_send', { p_content: text }); await loadParty(); }
-    else if (tab === 'circle') { if (!circleId) throw new Error('모임을 골라 주세요.'); await rpc('world_circle_send', { p_circle: circleId, p_content: text }); if (!circleLive) await loadCircleMsgs(); }
+    else if (tab === 'circle') { if (!circleId) throw new Error('모임을 골라 주세요.'); await rpc('world_circle_send', { p_circle: circleId, p_content: text }); await loadCircleNew(); }
     else {
       await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: null });
       await (live && msgs.length ? loadNew() : load());
