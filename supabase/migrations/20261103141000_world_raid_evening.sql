@@ -1,7 +1,8 @@
 -- 봉연의 그림자는 실시간으로 함께 싸우는 토벌이라 저녁에만 드러나게 한다(사용자 요청 2026-10-30).
 --   72시간(배포 직후 첫 회는 30시간) 뒤를 기준으로, 그날(또는 다음 날) 한국 시각 18:00~21:30 사이 어느 때에 드러난다.
 --   드러난 뒤 30분 모이고 2시간 토벌하므로 늦어도 자정 전에 끝난다.
---   이미 잡혀 있던 회차(10/31 03:13 서문 폐성벽)는 같은 날 저녁 20:00으로 옮기고, 출현지 확정 알림을 그 시각으로 다시 보낸다.
+--   이미 잡혀 있던 회차(10/31 03:13 서문 폐성벽)는 같은 날 저녁 20:00으로 옮기고, 출현지 확정(12시간 전) 알림부터 새 시각으로 다시 나간다.
+--   바뀐 시각 공지는 운영진이 따로 쓴다(7.3.1 긴급 수정).
 
 create or replace function pg_temp.yh_patch(p_fn text, p_old text, p_new text, p_n int default 1) returns void
 language plpgsql as $f$
@@ -37,14 +38,19 @@ select pg_temp.yh_patch('public.world_raid_schedule_next()',
   'at := public.world_raid_evening(now() + case when cnt = 0 then interval ''30 hours'' else interval ''72 hours'' end); -- 저녁 18:00~21:30(KST)에만');
 
 -- 잡혀 있던 회차 옮기기(저녁 창 밖이면 그날 20:00, 이미 지난 날이면 건드리지 않음)
-do $$ declare r public.world_raids%rowtype; t timestamptz; reg text; begin
+do $$ declare r public.world_raids%rowtype; t timestamptz; begin
   for r in select * from public.world_raids where kind = 'world' and status = 'announced' and not (fx ? 'last_night') loop
     if (r.spawn_at at time zone 'Asia/Seoul')::time between time '18:00' and time '21:30' then continue; end if;
     t := ((r.spawn_at at time zone 'Asia/Seoul')::date + time '20:00') at time zone 'Asia/Seoul';
     if t <= now() + interval '1 hour' then t := t + interval '1 day'; end if;
     update public.world_raids set spawn_at = t, notices = array['24h'], updated_at = now() where raid_id = r.raid_id;
-    select region_name into reg from public.world_map_regions where region_id = r.region_id;
-    perform public.world_raid_broadcast(r.raid_id, '봉연 · 출현 시각 변경', '봉연의 그림자가 늦은 밤이 아닌 저녁에 드러납니다. ' ||
-      to_char(t at time zone 'Asia/Seoul', 'MM"월" DD"일" HH24"시" MI"분"') || '쯤 ' || reg || '에 봉연의 그림자가 드러납니다.');
   end loop;
 end $$;
+
+-- 7.3.1 패치노트(7.2.0 본문 끝에 덧붙임)
+update public.world_patch_notes set body = body || $n$
+## 7.3.1
+- 봉연의 그림자가 이제 저녁(18:00~21:30 사이)에만 드러납니다. 실시간으로 함께 싸우는 토벌이라 새벽에 나오지 않게 했고, 늦어도 자정 전에 토벌이 끝납니다. 다음 회차는 지난 회차 72시간 뒤를 기준으로 그날(또는 다음 날) 저녁에 잡힙니다.
+- 10월 31일 새벽 3시 13분으로 잡혀 있던 서문 폐성벽 회차는 같은 날 저녁 8시로 옮겼습니다.
+$n$ where note_id = '7.2.0' and position('## 7.3.1' in body) = 0;
+update public.world_app_meta set value = '20261103141000' where key = 'db_version';
