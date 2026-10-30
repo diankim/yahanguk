@@ -33,7 +33,7 @@ select pg_temp.yh_patch('public.world_battle_open(uuid,text,uuid,integer,integer
 select pg_temp.yh_patch('public.world_raid_schedule_next()',
   $o$  select count(*) into cnt from public.world_raids where kind = 'world';$o$,
   $o$  if public.world_long_night_stage(now()) between 1 and 4 then
-    if exists (select 1 from public.world_raids where kind = 'world' and fx ? 'last_night') or now() >= timestamptz '2026-11-01 20:00+09' then return null; end if;
+    if exists (select 1 from public.world_raids where kind = 'world' and fx ? 'last_night') or now() >= timestamptz '2026-11-01 20:00+09' then return timestamptz '2026-11-02 00:00+09'; end if; -- 정산이 이 시각으로 지역 잠금을 잡는다(빈 값이면 실패 정산이 멈춤)
     insert into public.world_raids(kind, boss_name, region_id, status, candidates, spawn_at, fx)
     values ('world', '봉연의 그림자', 'hq_training', 'announced', array['hq_training', 'field_outskirts', 'shrine_ruins'],
             timestamptz '2026-11-01 20:00+09', '{"last_night": true}');
