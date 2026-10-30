@@ -454,8 +454,9 @@ export async function renderStorage(box) {
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
     const row = (id, label, n, max, m, note) => `<li data-mk-cat="${esc(catMap.get(id) || 'etc')}" data-mk-name="${esc((label || nameOf(id)).toLowerCase())}">
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
-        ${ro ? '' : `<div class="row-act"><input type="number" inputmode="numeric" min="1" max="${max}" value="${max}" aria-label="수량" ${max ? '' : 'disabled'}>
-          <button class="btn small ${m === 'put' ? '' : 'primary'}" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button></div>`}</li>`;
+        ${ro && m === 'put' ? '' : `<div class="row-act"><input type="number" inputmode="numeric" min="1" max="${m === 'take' ? n : max}" value="${max || n}" aria-label="수량">
+          ${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
+          ${m === 'take' ? `<button class="btn small ghost" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div>`}</li>`;
     const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
     box.innerHTML = `
@@ -508,6 +509,12 @@ export async function renderStorage(box) {
     });
     $$('[data-put]', box).forEach(b => b.onclick = () => move(b, 'world_storage_put', b.dataset.put));
     $$('[data-take]', box).forEach(b => b.onclick = () => move(b, 'world_storage_take', b.dataset.take));
+    // 창고에서 바로 버리기(7.3.4): 꺼내지 않고 어디서나, 확인 창을 거친다
+    $$('[data-toss]', box).forEach(b => b.onclick = async () => {
+      const q = Math.floor(Number(b.closest('li').querySelector('input')?.value) || 0);
+      if (q <= 0) return;
+      if (await ask(`${b.dataset.tossName} ×${fmt.num(q)}을(를) 창고에서 버릴까요? 되돌릴 수 없습니다.`, { title: '창고에서 버리기', ok: '버리기', danger: true })) guard(b, () => act('world_storage_discard', { p_item: b.dataset.toss, p_qty: q }));
+    });
     const g = $('#st-grow', box);
     if (g) g.onclick = async () => { if (await ask(`${fmt.jeon(src.next_price)}을 내고 창고를 4칸 넓힐까요?`, { title: '창고 넓히기', ok: '넓히기' })) guard(g, () => act('world_storage_expand')); };
     bindInfo(box);
