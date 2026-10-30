@@ -262,7 +262,7 @@ const musicBufs = {};
 function cutsceneMusic(M, onState) {
   let musicBuf = musicBufs[M.url] || null;
   let ac = null, gain = null, src = null, since = 0, want = true, vol = 0.6, dead = false, at0 = 0, off0 = 0;
-  try { const s = JSON.parse(localStorage.getItem('yh-sound') || '{}'); if (s.bgmOn === false) want = false; if (typeof s.bgm === 'number') vol = Math.min(1, s.bgm * 1.5); } catch {}
+  try { const s = JSON.parse(localStorage.getItem('yh-sound') || '{}'); if (s.bgmOn === false) want = false; if (typeof s.bgm === 'number') vol = Math.min(1, s.bgm * 1.5); if (typeof s.vol === 'number') vol *= Math.max(0, Math.min(1, s.vol)); } catch {}
   vol *= M.vol ?? 1;
   try { if (localStorage.getItem('yh-cs-sound') === 'off') want = false; else if (localStorage.getItem('yh-cs-sound') === 'on') want = true; } catch {}
   const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch { return false; } })();

@@ -2,7 +2,8 @@
 // 외부 음원을 쓰지 않으므로 저작권 걱정이 없고 내려받을 파일도 없다.
 import { on } from './core.js';
 
-export const sound = { bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
+// vol = 전체 음량(7.3.4, 설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
+export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
 let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
 const scene = { territory: 'capital', safe: false, battle: false };
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
@@ -12,9 +13,11 @@ let env = { weather: 'clear', phase: 'noon' };
 
 export function loadSound() { try { Object.assign(sound, JSON.parse(localStorage.getItem('yh-sound') || '{}')); } catch {} }
 export function saveSound() { try { localStorage.setItem('yh-sound', JSON.stringify(sound)); } catch {} }
+const masterLevel = () => 0.9 * Math.max(0, Math.min(1, sound.vol ?? 1));
 export function applyVolumes() {
   if (!ctx) return;
   const t = ctx.currentTime;
+  if (!away) master.gain.setTargetAtTime(masterLevel(), t, 0.1);
   bgmBus.gain.setTargetAtTime(sound.bgmOn ? sound.bgm * 0.8 : 0, t, 0.3);
   ambBus.gain.setTargetAtTime(sound.ambOn ? sound.amb * 0.5 : 0, t, 0.4);
   sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.5 : 0, t, 0.05);
@@ -25,7 +28,7 @@ function ensureCtx() {
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
   // 32kHz로 열어 악기 샘플을 풀어 둘 메모리를 줄인다(지원하지 않으면 기본값)
   try { ctx = new AC({ sampleRate: 32000 }); } catch { ctx = new AC(); }
-  master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+  master = ctx.createGain(); master.gain.value = masterLevel(); master.connect(ctx.destination);
   bgmBus = ctx.createGain(); ambBus = ctx.createGain(); sfxBus = ctx.createGain();
   [bgmBus, ambBus, sfxBus].forEach(g => { g.gain.value = 0; g.connect(master); });
   // 잔향: 넓은 전각처럼 길게 남되, 꼬리로 갈수록 고음을 걸러 「쉬—」 하는 잡음이 들리지 않게 한다
@@ -655,7 +658,7 @@ export function initSound() {
     const back = () => {
       if (!away || document.hidden) return; away = false;
       if (!ctx) return;
-      const wake = () => { master.gain.setTargetAtTime(0.9, ctx.currentTime, 0.2); if (playing) { clearTimeout(phraseTimer); phraseTimer = setTimeout(phrase, 400); } critters(); };
+      const wake = () => { master.gain.setTargetAtTime(masterLevel(), ctx.currentTime, 0.2); if (playing) { clearTimeout(phraseTimer); phraseTimer = setTimeout(phrase, 400); } critters(); };
       Promise.resolve(ctx.resume?.()).then(wake, wake);
     };
     document.addEventListener('visibilitychange', () => (document.hidden ? leave() : back()));

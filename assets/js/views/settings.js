@@ -89,6 +89,7 @@ export async function render(root, sub) {
     </section>
     <section id="sec-sound" class="set-sec">
       ${panel('소리', `
+        <label class="range-row"><span><b>전체 음량</b></span><input type="range" data-vol="vol" min="0" max="1" step="0.05" value="${sound.vol ?? 1}"></label>
         <label class="toggle-row"><span><b>배경음악</b><small>가야금·대금 느낌의 곡조가 영역마다 다르게 흐릅니다</small></span><input type="checkbox" data-sw="bgmOn" ${sound.bgmOn ? 'checked' : ''}></label>
         <label class="range-row"><span>배경음악 음량</span><input type="range" data-vol="bgm" min="0" max="1" step="0.05" value="${sound.bgm}"></label>
         <label class="toggle-row"><span><b>환경음</b><small>날씨와 시간대에 따라 빗소리·바람·풀벌레·새소리가 작게 깔립니다</small></span><input type="checkbox" data-sw="ambOn" ${sound.ambOn ? 'checked' : ''}></label>

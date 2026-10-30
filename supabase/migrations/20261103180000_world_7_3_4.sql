@@ -31,5 +31,6 @@ select pg_temp.yh_patch('public.world_quest_task_count(uuid,jsonb,timestamp with
 update public.world_patch_notes set body = body || $n$
 ## 7.3.4
 - 퀘스트의 「○○ 만들기」가 만든 횟수로 세어지던 것을 만든 개수로 세게 고쳤습니다. 노정 건량처럼 한 번에 여러 개 나오는 물품은 이제 필요한 개수만큼만 만들면 됩니다. (제보 고맙습니다)
+- 설정 › 소리 맨 위에 「전체 음량」을 더했습니다. 배경음악·환경음·효과음(컷씬 음악 포함)을 한꺼번에 올리고 내립니다.
 $n$ where note_id = '7.2.0' and position('## 7.3.4' in body) = 0;
 update public.world_app_meta set value = '20261103180000' where key = 'db_version';
