@@ -2219,15 +2219,18 @@ b.sealed { color: var(--bad); }
 
 /* 장야의 붉은 안개(env.js fog): 화면 아래에서 차오르는 옅은 안개. 누르기를 막지 않고 채팅 시트·창 아래에 깔린다.
    게임 화면은 평면이 원칙이지만 이 연출만 사용자 요청으로 흐림을 쓴다. */
-#ln-fog { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none; overflow: hidden; filter: blur(10px);
+#ln-fog { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none; overflow: hidden; filter: blur(6px);
   -webkit-mask-image: linear-gradient(to top, #000 0%, rgb(0 0 0 / .75) 30%, rgb(0 0 0 / .35) 60%, rgb(0 0 0 / .1) 82%, transparent 100%); mask-image: linear-gradient(to top, #000 0%, rgb(0 0 0 / .75) 30%, rgb(0 0 0 / .35) 60%, rgb(0 0 0 / .1) 82%, transparent 100%);
   height: 30vh; opacity: .38; transition: height 4s ease, opacity 4s ease; }
 #ln-fog[data-stage="3"] { height: 48vh; opacity: .55; }
 #ln-fog .fog-a, #ln-fog .fog-b { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; display: flex; will-change: transform; }
-#ln-fog .fog-a { animation: ln-fog-flow 140s linear infinite; }
-#ln-fog .fog-b { height: 80%; opacity: .8; animation: ln-fog-flow 90s linear infinite reverse; }
+/* 7.4.4: 가로로 흐르는 게 보이게 빠르기를 올리고, 두 겹이 서로 다른 빠르기로 아주 느리게 짙어졌다 옅어진다 */
+#ln-fog .fog-a { animation: ln-fog-flow 48s linear infinite, ln-fog-breath-a 14s ease-in-out infinite alternate; }
+#ln-fog .fog-b { height: 80%; opacity: .8; animation: ln-fog-flow 31s linear infinite reverse, ln-fog-breath-b 21s ease-in-out -7s infinite alternate; }
 #ln-fog svg { width: 50%; height: 100%; display: block; }
 @keyframes ln-fog-flow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ln-fog-breath-a { 0% { opacity: 1; } 55% { opacity: .5; } 100% { opacity: .8; } }
+@keyframes ln-fog-breath-b { 0% { opacity: .35; } 60% { opacity: .9; } 100% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { #ln-fog .fog-a, #ln-fog .fog-b { animation: none; } }
 /* 제작법 즐겨찾기 별(7.4.1) */
 .recipe header { justify-content: flex-start; }
