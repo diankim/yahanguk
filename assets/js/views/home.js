@@ -23,7 +23,8 @@ const OUTCOME = {
   cache: ['bag', '보급'], hazard: ['flame', '위험'], omen: ['moon', '징조'], quiet: ['eye', '고요'], gather: ['leaf', '채집'],
   combat: ['sword', '토벌'], battle_lost: ['heart', '패배'], battle_fled: ['back', '도주'],
 };
-const CAT = { herbs: '약초', ore: '광석', wood: '목재', water: '수변', spirit: '영물', relics: '유물', supplies: '보급' };
+// 채집터 갈래 이름은 일지 › 도감(journal.js GCAT)과 같게 쓴다
+const CAT = { herbs: '약초', ore: '광맥', wood: '목재', water: '물가', spirit: '영기', relics: '유물', supplies: '보급' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false;

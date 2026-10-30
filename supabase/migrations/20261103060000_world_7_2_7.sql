@@ -31,6 +31,7 @@ update public.world_patch_notes set body = body || $n$
 ## 7.2.7
 - 채팅 얼굴의 테두리를 프로필 카드의 테두리 그대로 작게 줄여 보여 줍니다(모서리 문양까지).
 - 안전지대에 도착하는 이동에서는 상태이상이 붙지 않습니다(안전지대 사이를 오가기만 해도 디버프가 생기던 것, 제보 22). 바깥 지역에 도착할 때 상태이상이 붙을 확률도 3분의 1로 줄였습니다(약 24% → 약 8%).
+- 현장의 채집터 갈래 이름을 일지 › 도감과 같게 맞췄습니다(영물 → 영기, 광석 → 광맥, 수변 → 물가).
 $n$ where note_id = '7.2.0' and position('## 7.2.7' in body) = 0;
 
 update public.world_app_meta set value = '20261103060000' where key = 'db_version';
