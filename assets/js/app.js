@@ -145,7 +145,7 @@ function renderAuth(mode = 'login', notice = '') {
       <label class="field"><span>초대권 번호</span><input name="invite" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="영문 대문자·숫자 8자"></label>` : ''}
       <p class="form-msg ${notice ? 'show' : ''}" id="auth-msg">${esc(notice)}</p>
       <button class="btn primary block" type="submit">${mode === 'login' ? '로그인' : '계정 만들기'}</button>
-      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다.' : '아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
+      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다. 이미 계정이 있으면 초대권 없이 그대로 로그인합니다.' : '새 가입에는 조사원에게 받은 초대권 번호가 필요합니다(서버를 다시 연 때부터 7일 동안). 아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정하며, 세 가지는 생성 후 바꿀 수 없습니다.'}</p>
     </form>
     <button type="button" class="auth-tip" id="auth-tip" title="누르면 다음 안내">${icon('scroll', 14)}<span></span></button>
   </div>`));
