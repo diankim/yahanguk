@@ -43,12 +43,18 @@ function idleReward(k, min, level, early = false) {
 const DURATIONS = [[30, '30분'], [60, '1시간'], [240, '4시간'], [480, '8시간']];
 const EROSION = ['안정', '경미', '주의', '위험', '붕괴 직전', '붕괴'];
 // 침식 단계 효과(서버 world_erosion_effect·world_combat_stats·world_apply_activity_status와 같은 값)
-function erosionNote(e) {
-  const [bad, good] = e >= 80 ? [['회복량 −35%', '받는 피해 +20%', '주는 피해 −10%', '요괴 조우 +20%', '술법 −30%', '행동마다 정신 −1'], '희귀품·단서 +15%']
+// 귀허도(서버 world_on_island): 침식이 늘 높을 수밖에 없어 불이익이 절반이고, 위험(55)부터는 주는 피해가 오른다(7.4.1, world_erosion_effect)
+const ISLAND = new Set(['반요촌', '잿빛 갈대숲', '거꾸로 선 사당', '달 없는 저잣거리', '귀허']);
+function erosionNote(e, isl) {
+  const [bad, good] = isl
+    ? (e >= 80 ? [['회복량 −18%', '받는 피해 +10%', '요괴 조우 +10%', '술법 −15%', '행동마다 정신 −1'], '주는 피해 +8%·희귀품·단서 +15%']
+      : e >= 55 ? [['회복량 −12%', '받는 피해 +5%', '술법 −10%', '행동마다 정신 −1'], '주는 피해 +4%·희귀품·단서 +10%']
+      : e >= 30 ? [['회복량 −8%', '술법 −5%'], '희귀품·단서 +5%'] : [[], ''])
+    : e >= 80 ? [['회복량 −35%', '받는 피해 +20%', '주는 피해 −10%', '요괴 조우 +20%', '술법 −30%', '행동마다 정신 −1'], '희귀품·단서 +15%']
     : e >= 55 ? [['회복량 −25%', '받는 피해 +10%', '술법 −20%', '행동마다 정신 −1'], '희귀품·단서 +10%']
     : e >= 30 ? [['회복량 −15%', '술법 −10%'], '희귀품·단서 +5%'] : [[], ''];
   const next = e >= 80 ? '100에 닿으면 정신이 0이 됩니다.' : e >= 55 ? '80부터 붕괴 직전입니다.' : e >= 30 ? '55부터 위험 단계입니다.' : '30부터 불이익이 생깁니다.';
-  return `<p class="muted small">${bad.length ? `<b class="bad-text">지금 침식 효과: ${esc(bad.join(' · '))}</b> · 대신 ${esc(good)}. ` : ''}${esc(next)} 위험한 곳·삼경·어두운 곳을 탐색하거나 싸움에서 지면 오릅니다. 정화 부적·휴식으로 낮추세요.</p>`;
+  return `<p class="muted small">${isl ? '<b>귀허도 요기 순응</b>: 섬에서는 침식 불이익이 절반이고 위험 단계부터 요기가 힘이 됩니다. ' : ''}${bad.length ? `<b class="bad-text">지금 침식 효과: ${esc(bad.join(' · '))}</b> · 대신 ${esc(good)}. ` : ''}${esc(next)} 위험한 곳·삼경·어두운 곳을 탐색하거나 싸움에서 지면 오릅니다. 정화 부적·휴식으로 낮추세요.</p>`;
 }
 let el, sub = 'status', off = [];
 
@@ -162,7 +168,7 @@ async function status(body) {
       ${panel('생존 상태', `
         ${['health:체력:hp', 'mental:정신:mp', `spiritual_power:${spOf().join(':')}`].map(x => { const [k, l, cls] = x.split(':'); return `<div class="vital big"><span>${l}</span><b>${fmt.num(sv?.[k] ?? c[k])}</b>${bar(sv?.[k] ?? c[k], 100, cls)}</div>`; }).join('')}
         <div class="vital big"><span>침식</span><b>${fmt.num(sv?.erosion ?? c.erosion)} <small>${EROSION[Math.min(stage, 5)]}</small></b>${bar(sv?.erosion ?? c.erosion, 100, 'er')}</div>
-        ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0))}
+        ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0), ISLAND.has(c.location))}
         <div class="action-grid three">
           <button class="btn" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''}><span>부적 정화 <small>×${fmt.num(wards)}</small></span><small>${esc(cleanseWhy || `정화 부적 1개 · 침식 -18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}</small></button>
           <button class="btn" data-surv="ground" ${groundWhy ? 'disabled' : ''}><span>마음 다잡기</span><small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '본부에서 · 정신 +18 · 침식 -10 · 15분마다')}</small></button>

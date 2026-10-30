@@ -1,5 +1,5 @@
 // 가방: 소지품 · 장비 · 제작. 제작은 어디서나 가능하고, 레시피의 지정 장소에서 하면 품질 보너스를 받는다.
-import { db, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
+import { db, store, on, act, rpc, toast, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRows, bindRepair, enhancedTraits } from './character.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem } from './item.js';
@@ -17,6 +17,10 @@ const craftFields = new Set();
 // 만드는 것(장착 부위·소모품·재료)으로 거르기, 제작법 정렬(가능 먼저 · 레벨 낮은순 · 레벨 높은순)
 const craftKinds = new Set();
 let craftSort = 'can';
+// 즐겨찾는 제작법(서버 world_craft_favorites, 30개까지): 접속 동안 한 번 읽고, 별을 누르면 서버가 돌려준 목록으로 바꾼다(7.4.1)
+const FAV_MAX = 30;
+let favs = null;
+const loadFavs = () => favs ? Promise.resolve(favs) : rpc('world_craft_favs').then(r => (favs = new Set(r || []))).catch(() => (favs = new Set()));
 const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', consumable: '소모품', material: '재료', etc: '기타' };
 // 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
 const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
@@ -141,7 +145,8 @@ function traits(it, n = 0) {
   return `<small class="muted">${esc([STY[t.weapon_type] || t.trait, ...parts].filter(Boolean).join(' · '))}</small>`;
 }
 
-function craft(body, inv, stg) {
+async function craft(body, inv, stg) {
+  await loadFavs();
   const bagHave = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   // 안전지대면 창고 수량을 더해 보인다
   const stHave = stg?.in_safe ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
@@ -153,6 +158,7 @@ function craft(body, inv, stg) {
   const lvOf = x => Number(x.r.minimum_level) || 1, tierOf = x => Number(cmap.get(x.r.output)?.tier) || 0;
   const byLv = (a, b) => lvOf(a) - lvOf(b) || tierOf(a) - tierOf(b) || (a.r.difficulty || 0) - (b.r.difficulty || 0) || String(a.r.name).localeCompare(String(b.r.name), 'ko');
   const SORTS = { can: (a, b) => b.can - a.can || b.atLoc - a.atLoc || byLv(a, b), lv: byLv, lvd: (a, b) => byLv(b, a) };
+  const favFirst = (f => (a, b) => favs.has(b.r.id) - favs.has(a.r.id) || f(a, b))(SORTS[craftSort] || SORTS.can);
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));
@@ -174,15 +180,15 @@ function craft(body, inv, stg) {
     return [x.r.name, x.r.output_name || nameOf(x.r.output), x.r.description, x.r.tool_name || (x.r.tool ? nameOf(x.r.tool) : ''), ...Object.keys(x.r.ingredients || {}).map(nameOf)].join(' ').toLowerCase().includes(t); })
     .filter(x => !craftFields.size || craftFields.has(x.r.field || (cookOut.has(x.r.output) ? 'cooking' : '')))
     .filter(x => !craftKinds.size || craftKinds.has(x.kind))
-    .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'can' ? x.can : x.atLoc))
-    .sort(SORTS[craftSort] || SORTS.can);
+    .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'fav' ? favs.has(x.r.id) : craftFilter === 'can' ? x.can : x.atLoc))
+    .sort(favFirst);
   const kindCount = {}; (inv.recipes || []).forEach(r => { const k = kindOf(r); kindCount[k] = (kindCount[k] || 0) + 1; });
   body.innerHTML = `
     ${stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession))} · ${fmt.num(inv.crafting_rank)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="제작법 찾기 (이름·완성품·재료·도구)" value="${esc(cq)}"></label>
-    ${segmented('craft-filter', [['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
+    ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
     <div class="craft-cats" role="group" aria-label="제작 분야 거르기"><span class="muted small">분야</span>${FIELDS.map(f => { const n = (inv.recipes || []).filter(r => (r.field || '') === f).length;
       return `<label class="check ${inv.crafting_profession === f ? 'mine' : ''}"><input type="checkbox" data-field="${f}" ${craftFields.has(f) ? 'checked' : ''}><span>${esc(nameOf(f))} <small>${n}</small></span></label>`; }).join('')}
       ${craftFields.size ? '<button class="btn small ghost" id="craft-fields-clear">모든 분야</button>' : ''}</div>
@@ -195,7 +201,7 @@ function craft(body, inv, stg) {
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, atLoc, kind, tier }) => `
       <article class="recipe ${can ? 'can' : ''}">
-        <header><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
+        <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${icon('star', 15)}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         <p class="muted small">${esc(r.description || '')}</p>
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         ${USABLE[r.output] ? `<p class="use-fx small">${icon('heart', 12)} ${esc(USABLE[r.output])}</p>` : ''}
@@ -204,7 +210,7 @@ function craft(body, inv, stg) {
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}</p>
         <button class="btn small ${can ? 'primary' : ''}" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? '제작' : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
       </article>`).join('')}</div>`
-      : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`;
+      : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`;
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv, stg); });
   $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); craft(body, inv, stg); });
   $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); craft(body, inv, stg); });
@@ -220,6 +226,10 @@ function craft(body, inv, stg) {
   // 제작법 이름·만드는 물품·재료·도구 이름을 누르면 물품 정보 창을 띄운다
   $$('.recipe [data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
   $$('[data-craft]', body).forEach(b => b.onclick = () => guard(b, () => act('world_craft_item', { p_recipe_id: b.dataset.craft })));
+  $$('[data-fav]', body).forEach(b => b.onclick = () => guard(b, async () => {
+    try { const r = await rpc('world_craft_fav_toggle', { p_recipe: b.dataset.fav }); favs = new Set(r?.favs || []); craft(body, inv, stg); }
+    catch (e) { toast(friendlyError(e), 'error'); }
+  }));
 }
 
 function bindActions(body) {

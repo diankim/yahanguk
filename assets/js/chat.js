@@ -54,7 +54,7 @@ export function mountChat(colEl, fabEl) {
   $('#chat-circles', panel).onclick = e => { const b = e.target.closest('[data-circle]'); if (b) pickCircle(b.dataset.circle); };
   renderTabs();
   const list = $('#chat-list', panel);
-  list.addEventListener('scroll', () => { stick = list.scrollHeight - list.scrollTop - list.clientHeight < 40; if (stick) $('#chat-jump', panel).hidden = true; }, { passive: true });
+  list.addEventListener('scroll', () => { stick = list.scrollHeight - list.scrollTop - list.clientHeight < 40; if (stick) $('#chat-jump', panel).hidden = true; if (list.scrollTop < 80) loadOlder(); }, { passive: true });
   $('#chat-jump', panel).onclick = () => { forceEnd = true; scrollEnd(); };
   bindGrip();
   window.addEventListener('yh-circles', () => { syncCircles(); });
@@ -188,8 +188,8 @@ async function loadCircleMsgs() {
     if (error) throw error;
     // 읽는 동안 실시간으로 들어온 말은 합치고 시각 순으로 맞춘다(전에는 이미 들고 있던 몇 시간 전 말이 새로 읽은 것 뒤에 붙어 끌려 올라왔다, 제보 33)
     const got = (data || []).reverse(), seen = new Set(got.map(m => m.id));
-    circleMsgs[id] = byTime(got.concat((circleMsgs[id] || []).filter(m => !seen.has(m.id)))).slice(-120);
-    circleLoaded.add(id);
+    circleMsgs[id] = byTime(got.concat((circleMsgs[id] || []).filter(m => !seen.has(m.id)))).slice(-KEEP);
+    circleLoaded.add(id); delete olderDone['c:' + id];
     if (tab === 'circle' && circleId === id) { draw(); if ((circleUnread[id] || 0) > 0) markCircleRead(id); }
   } catch (e) { if (tab === 'circle') drawError(friendlyError(e)); }
 }
@@ -216,7 +216,7 @@ function onCircleMsg(m) {
   if (arr.some(x => x.id === m.id)) return;
   // 늦게 도착한 말도 제자리(시각 순)에 넣는다
   arr.push(m); if (arr.length > 1 && arr[arr.length - 2].created_at > m.created_at) byTime(arr);
-  if (arr.length > 120) arr.shift();
+  if (arr.length > KEEP) arr.shift();
   // 모임 이름·인원이 바뀌는 안내 줄이면 목록도 새로 읽는다
   if (m.kind === 'notice') loadCircles(true);
   const viewing = tab === 'circle' && circleId === m.circle_id;
@@ -279,6 +279,7 @@ async function load() {
     const { data, error } = await db.from('world_chat_messages').select(COLS).order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
     msgs = (data || []).reverse(); lastFull = Date.now();
+    for (const k of Object.keys(olderDone)) if (!k.startsWith('c:')) delete olderDone[k];
     draw();
   } catch (e) { drawError(friendlyError(e)); }
 }
@@ -293,12 +294,43 @@ async function loadNew() {
     (data || []).forEach(addMsg);
   } catch {}
 }
+// 위로 올려 읽기: 목록 맨 위 가까이 가면 지금 탭(전체·지역·세력·모임)의 더 이전 말을 50개씩 읽어 앞에 붙인다.
+// 처음 읽는 80개는 모든 갈래(귓속말 포함)를 섞은 것이라, 접속하지 않은 사이의 말은 탭마다 몇 개밖에 안 보이던 것(7.4.1).
+// 서버는 채팅을 2일 보관하므로 끝까지 읽으면 맨 위에 그렇다고 적는다.
+const KEEP = 600, PAGE = 50, olderDone = {};
+let olderBusy = false, holdScroll = false;
+async function loadOlder() {
+  if (olderBusy) return;
+  const circle = tab === 'circle', key = circle ? 'c:' + circleId : tab;
+  if (circle ? !circleId || !circleLoaded.has(circleId) : !(tab in chanNew)) return;
+  if (olderDone[key]) return;
+  const have = circle ? (circleMsgs[circleId] || []) : msgs.filter(m => m.channel_type === tab);
+  const first = have.reduce((a, m) => (!a || m.created_at < a ? m.created_at : a), null);
+  olderBusy = true;
+  try {
+    let q = circle
+      ? db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', circleId)
+      : db.from('world_chat_messages').select(COLS).eq('channel_type', tab);
+    if (first) q = q.lt('created_at', first);
+    const { data, error } = await q.order('created_at', { ascending: false }).limit(PAGE);
+    if (error || key !== (tab === 'circle' ? 'c:' + circleId : tab)) return;
+    if ((data || []).length < PAGE) olderDone[key] = true;
+    const got = (data || []).reverse();
+    if (circle) { const seen = new Set(have.map(m => m.id)); circleMsgs[circleId] = got.filter(m => !seen.has(m.id)).concat(have); }
+    else { const seen = new Set(msgs.map(m => m.id)); msgs = got.filter(m => !seen.has(m.id)).concat(msgs); }
+    // 읽던 자리를 그대로 둔다(앞에 붙은 만큼 내려 준다)
+    const list = $('#chat-list', panel), h0 = list.scrollHeight, top0 = list.scrollTop;
+    holdScroll = true; draw(); holdScroll = false;
+    list.scrollTop = top0 + (list.scrollHeight - h0); list.dataset.h = String(list.scrollHeight);
+  } catch {} finally { olderBusy = false; }
+}
+const topNote = key => olderDone[key] ? `<li class="chat-notice chat-top">여기까지가 남아 있는 말입니다(채팅은 2일 보관)</li>` : '';
 async function loadBlocks() {
   try { const { data, error } = await db.from('world_blocks').select('blocked_id'); if (!error) blocked = new Set((data || []).map(r => r.blocked_id)); } catch {}
 }
 function addMsg(m) {
   if (!m || msgs.some(x => x.id === m.id)) return;
-  msgs.push(m); if (msgs.length > 120) msgs.shift();
+  msgs.push(m); if (msgs.length > KEEP) msgs.shift();
   // 귓속말은 채팅 목록에 섞지 않고 귓속말 창으로 넘긴다
   if (m.channel_type === 'whisper') { if (!blocked.has(m.sender_id)) onWhisper(m); return; }
   if (m.channel_type === tab) draw();
@@ -333,7 +365,7 @@ function draw() {
     if (!c) { list.innerHTML = `<li class="chat-empty">모임을 골라 주세요.</li>`; return; }
     list.style.setProperty('--cc', c.color);
     const ms = (circleMsgs[c.circle_id] || []).filter(m => !blocked.has(m.sender_id));
-    list.innerHTML = ms.length ? ms.map((m, i) => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
+    list.innerHTML = ms.length ? topNote('c:' + c.circle_id) + ms.map((m, i) => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
       : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
       : `<li class="chat-empty">「${esc(c.name)}」에 아직 말이 없습니다.</li>`;
     scrollEnd(); return;
@@ -344,7 +376,7 @@ function draw() {
   } else {
     rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다|일어났습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')) || m.sender_name === '봉연 소식', up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), seal: m.sender_name === '봉연 소식', sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
-  list.innerHTML = rows.length ? rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
+  list.innerHTML = rows.length ? (tab in chanNew ? topNote(tab) : '') + rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
   scrollEnd();
 }
@@ -389,6 +421,7 @@ function drawError(msg) { const list = $('#chat-list', panel); if (list) list.in
 function scrollEnd() {
   const list = $('#chat-list', panel); if (!list) return;
   const grew = list.scrollHeight > (Number(list.dataset.h) || 0); list.dataset.h = String(list.scrollHeight);
+  if (holdScroll) return;
   if (forceEnd || stick) { list.scrollTop = list.scrollHeight; stick = true; forceEnd = false; $('#chat-jump', panel).hidden = true; }
   else if (grew) $('#chat-jump', panel).hidden = false; // 위를 읽는 중: 자리는 그대로 두고 새 메시지가 왔음만 알린다
 }

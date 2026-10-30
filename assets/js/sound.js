@@ -5,7 +5,9 @@ import { on } from './core.js';
 // vol = 전체 음량(7.3.4, 설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
 let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
-const scene = { territory: 'capital', safe: false, battle: false };
+const scene = { territory: 'capital', safe: false, battle: false, exp: false };
+// 전투 음악: 현장 토벌 중(battle)이거나 원정대가 길에 나가 있는 동안(exp, 7.4.1 — 원정은 회차마다 싸우므로)
+const inBattle = () => scene.battle || scene.exp;
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
 let away = false;
@@ -299,7 +301,7 @@ function battleOf(p) {
   return { ...p, battle: true, meter: 4, rhy: 'battle', acc: 'battle', bass: 'battle', drumIn: null, pad: 'light', accIns: null, counter: p.counter, ...b,
     bpm: Math.min(140, b.bpm || Math.max(Math.round(p.bpm * 1.4), 100)), form: b.form || [F('A', 'lead', 0.85), F('B', 'lead2', 0.95)] };
 }
-function profile(battle = scene.battle) {
+function profile(battle = inBattle()) {
   let p = { ...(PROFILES[scene.territory] || PROFILES.capital) };
   if (battle) p = battleOf(p);
   if (scene.safe && !battle) { p.bpm *= 0.94; p.drum = null; p.safe = true; }
@@ -504,7 +506,7 @@ function phrase() {
 // 지역·전투가 바뀌면 필요한 악기를 미리 받고 쓰지 않는 악기는 내려놓는다(이름은 예전 지속음 함수 그대로)
 function updateDrone() {
   if (!ctx) return;
-  const key = `${scene.territory}:${scene.battle}`;
+  const key = `${scene.territory}:${inBattle()}`;
   if (droneKey === key) return;
   droneKey = key;
   if (!playing) return;
@@ -613,9 +615,9 @@ export const SFX_SAMPLES = [['confirm', '확인'], ['find', '발견'], ['hit', '
 
 /* ── 바깥에서 부르는 것 ───────────────────────────────── */
 export function setScene(part) {
-  const before = `${scene.territory}:${scene.safe}:${scene.battle}`;
+  const before = `${scene.territory}:${scene.safe}:${inBattle()}`;
   Object.assign(scene, part);
-  if (before === `${scene.territory}:${scene.safe}:${scene.battle}`) return;
+  if (before === `${scene.territory}:${scene.safe}:${inBattle()}`) return;
   updateDrone(); updateAmbience();
 }
 export function setEnabled(key, value) {
@@ -636,6 +638,10 @@ const SFX_OF = [
 export function initSound() {
   loadSound();
   on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
+  // 원정을 보내면 돌아오는 시각까지 전투 음악, 돌아오면(결과를 받기 전이라도) 평소 음악으로
+  let expTimer = null;
+  const setExp = e => { clearTimeout(expTimer); const left = e?.ends_at ? new Date(e.ends_at) - Date.now() : 0; if (left > 0) expTimer = setTimeout(() => setExp(null), Math.min(left + 500, 2 ** 31 - 1)); setScene({ exp: left > 0 }); };
+  on('expedition', setExp);
   on('env', e => { if (!e) return; env = { weather: e.weather?.key || 'clear', phase: e.phase?.key || 'noon' }; if (e.territory_id) scene.territory = e.territory_id; updateDrone(); updateAmbience(); });
   window.addEventListener('yh-sfx', e => playSfx(e.detail));
   // 컷씬이 제 곡을 트는 동안 배경음악을 쉰다(cutscene.js가 알림)

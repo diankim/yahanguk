@@ -2224,3 +2224,10 @@ b.sealed { color: var(--bad); }
 #ln-fog svg { width: 50%; height: 100%; display: block; }
 @keyframes ln-fog-flow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { #ln-fog .fog-a, #ln-fog .fog-b { animation: none; } }
+/* 제작법 즐겨찾기 별(7.4.1) */
+.recipe header { justify-content: flex-start; }
+.recipe header .recipe-name { flex: 1 1 auto; min-width: 0; }
+.fav-star { display: inline-grid; place-items: center; width: 32px; height: 32px; margin: -6px 0 -6px -6px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 6px; flex: none; }
+.fav-star:hover { color: var(--text); }
+.fav-star.on { color: var(--accent); }
+.fav-star.on svg { fill: currentColor; }
