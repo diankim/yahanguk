@@ -23,7 +23,7 @@ export function goMaintenance() {
 export async function serverState() {
   let info = null;
   // 두 확인을 동시에 보낸다(차례로 기다리면 접속이 한 번 왕복만큼 늦어진다)
-  const probe = fetch(`${SUPABASE_URL}/rest/v1/world_map_regions?select=region_id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' });
+  const probe = fetch(`${SUPABASE_URL}/rest/v1/world_story_chapters?select=chapter_id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' });
   probe.catch(() => {});
   try {
     const f = await fetch('maintenance.json', { cache: 'no-store' });
