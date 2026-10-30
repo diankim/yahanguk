@@ -82,12 +82,14 @@ export function renderExpedition(box, ov) {
   const opts = ov?.options || [];
   if (!opts.length) { box.innerHTML = empty('원정을 보낼 곳이 없습니다. 바깥 지역에서 탐색으로 장소를 먼저 찾으세요.', 'map'); return; }
   if (!opts.some(o => o.node_id === pick.node && !o.locked)) pick.node = opts.find(o => !o.locked)?.node_id || null;
-  const sup = Object.entries(ov.supplies || {}).filter(([, n]) => n > 0);
+  // 서버는 가지마다 20개까지만 챙긴다(world_expedition_start) — 고르는 칸과 건량 계산도 20을 넘지 않게
+  const SUP_CAP = 20, capOf = k => Math.min(SUP_CAP, Number(ov.supplies?.[k] || 0));
+  const sup = Object.entries(ov.supplies || {}).filter(([, n]) => n > 0).map(([k, n]) => [k, Math.min(SUP_CAP, n)]);
   const tokens = Number(ov.tokens ?? c.mount_tokens ?? 0);
   const fareOf = id => Number(opts.find(o => o.node_id === id)?.fare || 1);
   const last = lastPick(), lastOpt = last && opts.find(o => o.node_id === last.node && !o.locked);
-  for (const k of Object.keys(supPick)) if (!(ov.supplies?.[k] > 0) || supPick[k] > ov.supplies[k]) delete supPick[k];
-  const supN = k => supPick[k] ?? Number(ov.supplies?.[k] || 0);
+  for (const k of Object.keys(supPick)) if (!(ov.supplies?.[k] > 0) || supPick[k] > capOf(k)) delete supPick[k];
+  const supN = k => supPick[k] ?? capOf(k);
   const rations = () => supN('travel_ration');
   // PC: 왼쪽에 보낼 곳·기간·태세, 오른쪽에 보급품·안내·출발. 모바일: 한 줄로 쌓는다.
   box.innerHTML = `

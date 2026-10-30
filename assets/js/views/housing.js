@@ -185,7 +185,7 @@ function palette() {
 }
 function petBar(p) {
   const me = snap.role === 'owner', today = snap.pet_today || {};
-  if (p.out) return `<div class="hs-petbar"><span class="muted small">${esc(p.nick || p.name)}${esc(me ? '은(는) 나와 함께 나가 있습니다.' : '은(는) 주인과 함께 나가 있습니다.')}</span></div>`;
+  if (p.out) return `<div class="hs-petbar"><span class="muted small">${esc(`${p.nick || p.name}은(는) ${me ? '나와' : '주인과'} 함께 나가 있습니다.`)}</span></div>`;
   return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b><span class="muted small">친밀도 ${p.affinity || 0}${p.adult ? ' · 다 자람' : ' / 100이면 자람'}</span>
     <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}</span></div>`;
 }

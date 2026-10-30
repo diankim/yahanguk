@@ -271,7 +271,12 @@ function renderDeath(c) {
 
 /* ── 게임 화면 ──────────────────────────────────────────── */
 let current = null;
+// 게임 화면은 페이지마다 한 번만 꾸민다. 이미 꾸민 뒤(사망 → 새 캐릭터 등)에 다시 불리면 페이지를 새로 연다
+// (상태판·채팅·알림의 타이머와 처리기가 두 벌로 걸려 요청이 두 배가 되던 것)
+let gameMounted = false;
 function renderGame() {
+  if (gameMounted) { location.reload(); return; }
+  gameMounted = true;
   window.dispatchEvent(new Event('yh-booted'));
   document.title = '야행국';
   const tabs = Object.entries(VIEWS).map(([k, v]) => `<a href="#/${k}" data-view="${k}" aria-label="${v.label}" title="${v.label}">${icon(v.icon, 20)}<span>${v.label}</span></a>`).join('');
@@ -326,11 +331,15 @@ async function onHash() {
   const el = $('#view');
   if (current?.mod?.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
   current = { name: view, mod: entry.mod };
-  el.replaceChildren();
+  // 화면마다 새 칸을 만들어 넘긴다: 응답을 기다리는 사이 다른 화면으로 가면 이전 화면의 칸이 문서에서 빠져(isConnected=false)
+  // 늦게 온 응답이 새 화면을 덮어쓰지 않는다(전에는 늘 붙어 있는 #view를 넘겨 검사가 소용없었다)
+  const host = document.createElement('div');
+  host.className = 'view-host';
+  el.replaceChildren(host);
   el.dataset.view = view;
   $('#main').scrollTop = 0; window.scrollTo(0, 0);
-  try { await entry.mod.render(el, sub); }
-  catch (e) { console.error(e); el.replaceChildren(h(`<div class="card"><h2>화면을 불러오지 못했습니다</h2><p class="muted">${esc(friendlyError(e))}</p></div>`)); }
+  try { await entry.mod.render(host, sub); }
+  catch (e) { console.error(e); if (host.isConnected) host.replaceChildren(h(`<div class="card"><h2>화면을 불러오지 못했습니다</h2><p class="muted">${esc(friendlyError(e))}</p></div>`)); }
 }
 // 헤더 단추 강조: 테마(설정의 테마 칸)와 게임 설정(나머지 칸)이 함께 켜지지 않게 한다.
 function markHeader(view, sub) {

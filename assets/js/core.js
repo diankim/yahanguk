@@ -316,7 +316,8 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
       <h3>${esc(title)}</h3><div class="ask-body">${lines}</div>
       <div class="ask-act"><button class="btn" data-ask="0">${esc(cancel)}</button><button class="btn ${danger ? 'danger' : 'primary'}" data-ask="1">${esc(ok)}</button></div></div></div>`);
     const done = v => { el.remove(); document.removeEventListener('keydown', key, true); resolve(v); };
-    const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } if (e.key === 'Enter') { e.preventDefault(); done(true); } };
+    // Enter는 포커스가 있는 단추를 따른다(「그만두기」에 두고 Enter를 누르면 그만둔다 — 전에는 늘 확인으로 처리됨)
+    const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } if (e.key === 'Enter') { e.preventDefault(); done(!document.activeElement?.closest?.('[data-ask="0"]')); } };
     el.addEventListener('click', e => { const b = e.target.closest('[data-ask]'); if (b) done(b.dataset.ask === '1'); else if (e.target === el) done(false); });
     document.addEventListener('keydown', key, true);
     document.body.append(el);

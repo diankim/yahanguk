@@ -38,19 +38,32 @@ export async function openWedding(wedId) {
     const live = ['ready', 'ceremony'].includes(v.status), me = v.me || {};
     const lines = [...(v.script || []), ...(v.lines || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
     const startIn = new Date(v.starts_at) - (Date.now() + skew);
-    box.innerHTML = `<p class="desc">${esc(v.a)}과(와) ${esc(v.b)}의 혼례 · ${esc(v.place)}${v.status === 'done' ? ' · 끝남' : startIn > 0 ? ` · ${fmt.remain(startIn)} 뒤 시작` : ''} · 하객 ${fmt.num(v.guests)}명</p>
-      <ol class="raid-log wed-log">${lines.map(x => `<li class="k-${esc(x.k)}"><span>${esc(x.t)}</span></li>`).join('') || '<li class="muted">곧 혼례가 시작됩니다.</li>'}</ol>
+    // 조사는 앞 낱말과 한 문자열로 넘겨야 받침에 맞게 고쳐진다(esc가 고름)
+    const desc = `<p class="desc">${esc(`${v.a}과(와) ${v.b}의 혼례`)} · ${esc(v.place)}${v.status === 'done' ? ' · 끝남' : startIn > 0 ? ` · ${fmt.remain(startIn)} 뒤 시작` : ''} · 하객 ${fmt.num(v.guests)}명</p>`;
+    const logHtml = lines.map(x => `<li class="k-${esc(x.k)}"><span>${esc(x.t)}</span></li>`).join('') || '<li class="muted">곧 혼례가 시작됩니다.</li>';
+    // 축사를 쓰는 중이면 입력칸은 그대로 두고 기록·머리글만 고친다(4초마다 다시 그려 쓰던 글이 지워지던 것)
+    const wish = $('#wed-wish', box);
+    if (wish && document.activeElement === wish) {
+      const d = $('.desc', box); if (d) d.outerHTML = desc;
+      const lg = $('.wed-log', box); if (lg) { lg.innerHTML = logHtml; lg.scrollTop = lg.scrollHeight; }
+      return;
+    }
+    const kept = wish?.value || '';
+    box.innerHTML = `${desc}
+      <ol class="raid-log wed-log">${logHtml}</ol>
       ${live && !v.couple ? (v.here ? `<div class="btn-row"><button class="btn small" data-cheer="clap" ${me.claps >= 3 ? 'disabled' : ''}>박수 치기 ${me.claps}/3</button><button class="btn small" data-cheer="petal" ${me.petals >= 3 ? 'disabled' : ''}>꽃잎 뿌리기 ${me.petals}/3</button></div>
           ${me.wished ? '' : '<div class="btn-row"><input id="wed-wish" maxlength="40" placeholder="축사 한마디(40자)"><button class="btn small primary" data-cheer="wish">축사</button></div>'}
           <p class="muted small">단추 사이 15초 · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`) : ''}`;
     const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
+    const w2 = $('#wed-wish', box); if (w2 && kept) w2.value = kept;
     $$('[data-cheer]', box).forEach(b => b.onclick = () => guard(b, async () => {
       v = await rpc('world_wedding_cheer', { p_wed: wedId, p_kind: b.dataset.cheer, p_text: b.dataset.cheer === 'wish' ? $('#wed-wish', box)?.value : null }); draw(); return null;
     }));
   };
   const read = async () => { try { v = await rpc('world_wedding_view', { p_wed: wedId }); skew = new Date(v.now) - Date.now(); draw(); if (v.status === 'done' || v.status === 'cancelled') clearInterval(t); } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; clearInterval(t); } };
   await read();
-  t = setInterval(() => { if (!box.isConnected) return clearInterval(t); if (!document.hidden) read(); }, 4000);
+  // 진행 중인 혼례만 4초마다 읽는다(처음부터 끝난 혼례면 타이머를 걸지 않는다)
+  if (v && !['done', 'cancelled'].includes(v.status)) t = setInterval(() => { if (!box.isConnected) return clearInterval(t); if (!document.hidden) read(); }, 4000);
 }
 const run = (b, fn, args, after) => guard(b, async () => { const r = await act(fn, args); await refresh(); after?.(); return r; });
 
