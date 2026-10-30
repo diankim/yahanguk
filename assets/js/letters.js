@@ -67,8 +67,10 @@ export async function openCompose(to, toName, done, title = '') {
   const m = openModal({ title: '서신 쓰기', wide: true, body: '<div class="lt-compose"><p class="muted">불러오는 중…</p></div>' });
   const box = $('.lt-compose', m);
   try {
-    const [fr, prices, inv] = await Promise.all([load('world_friend_overview').catch(() => null), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
-      load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks()]);
+    const [fr, prices, inv, , stg] = await Promise.all([load('world_friend_overview').catch(() => null), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
+      load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks(), load('world_storage_snapshot', undefined, { maxAge: 15000 }).catch(() => null)]);
+    // 물품을 붙일 수 있는 곳인지(서버 world_letter_place_check와 창고 조건이 같다: 안전지대·반요촌 아님·이동/원정/자율/전투불능 아님)
+    const placeOk = !stg || stg.can_move !== false, placeWhy = store.character?.travel_destination ? '이동 중에는 물품을 붙일 수 없습니다.' : '물품이 든 서신은 안전지대(반요촌 제외)에서, 이동·원정·자율 활동 중이 아닐 때만 부칩니다.';
     const friends = (fr?.friends || []).filter(f => !f.is_dead);
     if (!friends.length) { box.innerHTML = '<p class="muted">서신은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.</p>'; return; }
     const have = store.character?.inventory || {}, ref = new Map((prices || []).map(p => [p.item_id, p]));
@@ -82,11 +84,15 @@ export async function openCompose(to, toName, done, title = '') {
         <label class="field"><span>제목 (24자)</span><input name="title" maxlength="24" value="${esc(st.title)}" required></label>
         <label class="field"><span>본문 (400자)</span><textarea name="body" maxlength="400" rows="5">${esc(st.body)}</textarea></label>
         <fieldset class="dt-side"><legend>붙일 물품 (다섯 가지까지 · 안전지대에서)</legend>
+          ${placeOk ? '' : `<p class="notice-line">${icon('letter', 14)} ${esc(placeWhy)} 글만 적은 서신은 지금도 부칠 수 있습니다.</p>`}
           <div class="chips">${Object.entries(st.items).map(([k, n]) => `<span class="chip">${esc(nameOf(k))} ×${n}<button type="button" class="chip-x" data-rm="${esc(k)}" aria-label="빼기">${icon('close', 12)}</button></span>`).join('') || '<span class="muted small">없음</span>'}</div>
           ${pickerHtml('ltItem', opts)}<div class="dt-add"><input name="qty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add ${opts.length ? '' : 'disabled'}>담기</button></div>
           ${untradeNote(have, ref, true)}</fieldset>
         <button class="btn primary block" type="submit">${icon('letter', 16)}<span>부치기</span></button></form>`;
       const f = $('#lt-form', box);
+      // 물품 찾기·수량·제목 칸에서 엔터를 눌러도 부치지 않는다(키패드의 「검색」이 서신을 바로 부치던 것, 7.3.6). 부치기는 단추로만.
+      f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault(); });
+      if (!placeOk) $$('[data-add]', f).forEach(b => b.disabled = true);
       bindPicker(f, 'ltItem', opts);
       f.to.onchange = () => { st.to = f.to.value; };
       f.title.oninput = () => { st.title = f.title.value; };
