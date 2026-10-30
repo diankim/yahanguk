@@ -35,7 +35,14 @@ for f in FILES:
         else: goals[f"{x['q']}/{x['step']}"] = x['goal']
 
 j = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
-ST = j(steps); EP = j(epis); SC = j(scenes); GO = j(goals); SG = j(sgoals)
+# 할 일 조건을 바꾼 장면(needs.json: 제련품 채집을 생재료로)과 인물 이름(npcs.json)
+needs, npcs = {}, []
+if os.path.exists(os.path.join(D, 'needs.json')):
+    for x in json.load(open(os.path.join(D, 'needs.json'), encoding='utf-8')):
+        needs[f"{x['q']}/{x['step']}"] = {'new': x['need'], 'old': x['old_need']}
+if os.path.exists(os.path.join(D, 'npcs.json')):
+    npcs = json.load(open(os.path.join(D, 'npcs.json'), encoding='utf-8'))
+ST = j(steps); EP = j(epis); SC = j(scenes); GO = j(goals); SG = j(sgoals); NE = j(needs); NP = j(npcs)
 n_e = sum(len(v['e']) for g in (steps, epis, scenes) for v in g.values())
 n_i = sum(len(l) for g in (steps, scenes) for v in g.values() for l in v['ins'].values())
 n_d = sum(len(v['d']) for g in (steps, scenes) for v in g.values())
@@ -70,7 +77,7 @@ end $f$;
 
 do $do$
 declare st jsonb := {lit(ST)}::jsonb; ep jsonb := {lit(EP)}::jsonb; sc jsonb := {lit(SC)}::jsonb;
-  go jsonb := {lit(GO)}::jsonb; sg jsonb := {lit(SG)}::jsonb;
+  go jsonb := {lit(GO)}::jsonb; sg jsonb := {lit(SG)}::jsonb; ne jsonb := {lit(NE)}::jsonb; np jsonb := {lit(NP)}::jsonb;
   e record; p text[]; k int; bad text;
 begin
   if exists (select 1 from public.world_app_meta where key = 'quest_lines_744') then raise notice '이미 적용됨'; return; end if;
@@ -95,6 +102,15 @@ begin
   for e in select key, value #>> '{{}}' as v from jsonb_each(sg) loop
     update public.world_faction_scenes set goal = e.v where scene_key = e.key;
     get diagnostics k = row_count; if k <> 1 then raise exception '세력 장면 없음(goal) %', e.key; end if;
+  end loop;
+  for e in select key, value from jsonb_each(ne) loop
+    p := string_to_array(e.key, '/');
+    update public.world_quest_steps set need = e.value -> 'new' where quest_id = p[1] and step = p[2]::int and need = e.value -> 'old';
+    get diagnostics k = row_count; if k <> 1 then raise exception '할 일 조건이 DB와 다름 %', e.key; end if;
+  end loop;
+  for e in select value from jsonb_array_elements(np) loop
+    update public.world_quest_npcs set npc_name = e.value ->> 'npc_name', bio = coalesce(e.value ->> 'bio', bio) where npc_key = e.value ->> 'npc_key';
+    get diagnostics k = row_count; if k <> 1 then raise exception '인물 없음 %', e.value ->> 'npc_key'; end if;
   end loop;
   -- 말하는 이: 서술(null)이거나 아는 인물만, 주인공('me')은 없음
   select string_agg(distinct l ->> 's', ', ') into bad from (
