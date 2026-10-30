@@ -341,6 +341,7 @@
 - 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때, 7.2.7부터)마다 world_event_char_apply의 희귀 전리품 길로 0.5%·0.06% 가방에 온다. world_pet_adopt(바구니·알 열기, 알은 아직 없는 그 등급 egg 종), 조건 보상은 world_pet_grant로 바로 도감에(이미 있으면 pet_food 3을 개인 창고로).
 - 별채에 한 마리(world_pet_place), 데리고 다니기(world_pet_walk → 조사원 카드 pet), 별명 8자(world_pet_nickname), 놀기 world_pet_act(pat·play·feed, 먹이 pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음. 칭호·꾸미기 규칙 'home'(world_home_rule_count: open·size·visits·guest·furn·pets·adult·pet_grade, 칭호 12개 분류 '별채', 꾸미기 fr_home·pt_home·sl_dong).
 - 동무 그림 원본은 tools/pet_art/(art*.py → gen.py가 테두리를 둘러 pets.js를 만든다).
+- 1.0.0(롤백) 대기(supabase/pending/pets_rollback.sql, 아직 운영 DB에 없음): 조사원 제보 동무 8종(art4.py, 38종) · 동무 두 자리 — 데리고 다니는 동무 world_pet_profile(조사원 카드 pet = world_pet_profile_of, 별채 없어도 world_pet_profile_set)과 별채 동무 world_housing.pet_id, 같은 동무는 한 자리에만(world_pet_place·profile_set이 서로 빼고 계정마다 advisory 잠금), pet_out은 더 쓰지 않음(world_pet_walk는 옛 화면 호환). 제보 동무 주기는 world_pet_gifts + world_app_meta 'pet_gift'(on일 때 새 캐릭터 trg_world_pet_gift_on_create, 켤 때 world_pet_gift_apply_all()).
 
 ## 8. 생존과 침식
 
