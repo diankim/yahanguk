@@ -18,7 +18,7 @@ update public.world_map_regions m set home_faction_id = x.f, control_faction_id 
   from (values ('old_prison', 'night_office'), ('seal_vault', 'night_office'), ('tide_gate', 'river_alliance'), ('crimson_altar', 'red_moon_cult'),
                ('snow_hollow', 'north_league'), ('ember_pass', 'southern_remnant'), ('lamp_alley', 'black_lotus'),
                ('star_hill', 'mandate_court'), ('water_clock', 'mandate_court'), ('comet_crater', 'mandate_court'), ('cloud_corridor', 'mandate_court'),
-               ('black_tide_rift', 'southern_remnant')) as x(r, f) -- 흑조 균열은 7.2.3에서 남명회로(지도가 끊기지 않게)
+               ('black_tide_rift', 'southern_remnant')) as x(r, f) -- 7.2.3(20261103020000): 흑조 균열→남명회·옥문 협로→천명원·회산 관문→정통파, 칸 자리 맞바꿈(구룡 폐수로↔귀죽림·서문 폐성벽↔회산 관문)은 그 마이그레이션이 한다
  where m.region_id = x.r;
 -- 옮겨지거나 중립이 된 곳의 영향력은 0에서 다시(기록은 남김)
 update public.world_region_influence set points = 0

@@ -19,7 +19,7 @@ REGIONS = [
          theme='wild', terr='south', desc='무너진 남녘 나라의 피난민들이 불씨 항아리를 안고 넘던 고개. 고갯마루에는 지금도 화톳불이 꺼지지 않는다.'),
     dict(id='lamp_alley', name='등잔골 뒷골목', type='underground', danger=4, lv=5, x=455, y=455, el=-1, nb=['old_canal', 'hidden_bazaar', 'hq_archive'],
          theme='city', terr='underworld', desc='도성 아래로 얽힌 좁은 골목. 기름 등잔 불빛 아래에서 흑련회의 좀도둑과 밀수꾼이 오간다.'),
-    dict(id='star_hill', name='별바라기 언덕', type='wilderness', danger=4, lv=5, x=590, y=235, el=2, nb=['field_outskirts', 'jade_pass', 'water_clock'],
+    dict(id='star_hill', name='별바라기 언덕', type='wilderness', danger=4, lv=5, x=570, y=280, el=2, nb=['field_outskirts', 'jade_pass', 'water_clock'],
          theme='sky', terr='heavenward', desc='천명원 견습생들이 밤마다 별을 헤아리는 완만한 언덕. 풀벌레 소리 사이로 별자리를 외는 목소리가 들린다.'),
     dict(id='water_clock', name='물시계 터', type='pavilion', danger=6, lv=9, x=630, y=195, el=4, nb=['star_hill', 'jade_pass', 'comet_crater'],
          theme='sky', terr='heavenward', desc='나라의 시각을 알리던 물시계가 무너진 자리. 물이 끊겼는데도 누각의 인형들이 이따금 시보를 울린다.'),

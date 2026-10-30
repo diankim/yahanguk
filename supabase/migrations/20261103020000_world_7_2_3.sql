@@ -21,16 +21,20 @@ begin
   return jsonb_build_object('notifications', a, 'chat', b, 'circle', m, 'party', p, 'ledger', c, 'trails', t);
 end $$;
 
--- ② 지도: 영향력이 없는 기본 지도(본래 주인)에서 세력 땅이 다른 세력 칸에 끊기지 않게, 세력마다 레벨 구간(1~5·6~10·11~15·16~20)이 다 있게
---  옥문 협로(정통파 Lv10, 정통파의 6~10 구간) ↔ 별바라기 언덕(천명원 Lv5): 소속·길 연결은 그대로 두고 칸 자리만 맞바꾼다
-update public.world_map_regions set world_x = 570, world_y = 280 where region_id = 'jade_pass';
-update public.world_map_regions set world_x = 590, world_y = 235 where region_id = 'star_hill';
---  흑조 균열(Lv20): 이웃이 잔불촌·불씨 고개·혈엽림이라 남명회 땅으로 옮긴다(남명회에 없던 16~20 구간, 흑련회는 지맥의 뿌리 Lv17이 남음)
---  쌓인 영향력은 그대로 두며, 새 주인의 기본 150보다 낮아 지배도 남명회가 된다
-update public.world_map_regions set home_faction_id = 'southern_remnant', control_faction_id = 'southern_remnant',
-       faction_control = public.world_mf_name('southern_remnant'), contested = false,
-       territory_id = 'south', territory_name = (select territory_name from public.world_map_regions where territory_id = 'south' and region_id <> 'black_tide_rift' limit 1)
- where region_id = 'black_tide_rift';
+-- ② 지도: 영향력이 없는 기본 지도(본래 주인)에서 세력 땅·중립 직할령이 다른 칸에 끊기지 않게, 세력마다 레벨 구간(1~5·6~10·11~15·16~20)이 다 있게
+--  · 흑조 균열(Lv20) → 남명회: 이웃이 잔불촌·불씨 고개·혈엽림. 남명회에 없던 16~20 구간(흑련회는 지맥의 뿌리 Lv17이 남음)
+--  · 옥문 협로(Lv10) → 천명원: 이웃이 물시계 터·별바라기 언덕. 별바라기 언덕도 천명원 본토와 이어진다
+--  · 회산 관문(Lv7) → 정통파: 정통파의 6~10 구간(북령맹은 철벽 고찰 Lv9가 남음)
+--  · 칸 자리만 맞바꿈(소속·레벨·길 연결은 그대로): 구룡 폐수로 ↔ 귀죽림, 서문 폐성벽 ↔ 회산 관문 — 중립 직할령 여덟 곳이 한 덩어리가 된다
+--  쌓인 영향력은 그대로 두고, 새 주인의 기본 150으로 지배가 바로 넘어간다(옮긴 곳들은 그 세력 영향력이 150 아래)
+update public.world_map_regions m set home_faction_id = x.f, control_faction_id = x.f, faction_control = public.world_mf_name(x.f), contested = false,
+       territory_id = x.t, territory_name = (select territory_name from public.world_map_regions o where o.territory_id = x.t and o.region_id <> m.region_id limit 1)
+  from (values ('black_tide_rift', 'southern_remnant', 'south'), ('jade_pass', 'mandate_court', 'heavenward'), ('ash_mountain', 'night_office', 'capital')) as x(r, f, t)
+ where m.region_id = x.r;
+update public.world_map_regions set world_x = 408, world_y = 286 where region_id = 'old_canal';
+update public.world_map_regions set world_x = 418, world_y = 420 where region_id = 'ghost_bamboo';
+update public.world_map_regions set world_x = 355, world_y = 215 where region_id = 'west_gate';
+update public.world_map_regions set world_x = 335, world_y = 312 where region_id = 'ash_mountain';
 --  정통파 본토 다섯 곳의 세력 이름이 「야행국」으로 남아 범례에 정통파가 보이지 않던 것
 update public.world_map_regions set faction_control = '야행국 정통파'
  where control_faction_id = 'night_office' and faction_control = '야행국';
