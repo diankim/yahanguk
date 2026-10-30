@@ -228,7 +228,8 @@ for i, q in enumerate(QUESTS):
     task_steps = [k for k, st in enumerate(q['steps']) if st[2].get('tasks') or st[2].get('give')]
     per = tot // max(1, len(task_steps)); gil = 20 + 10 * L
     epi = [{'s': s_, 't': t} for s_, t in q.get('epilogue', [])]
-    qrows.append(dict(quest_id=q['id'], cat='외전·요인록', title=q['title'], summary=q['summary'], region_id=q['region'], min_level=L, after=q['after'], sort=1000 + i, epilogue=epi))
+    # 보조 퀘스트는 결말을 따로 틀지 않으므로 결말은 마지막 장면 끝에만 붙이고 결말 칸은 비운다(7.4.4, 두 번 적히던 것)
+    qrows.append(dict(quest_id=q['id'], cat='외전·요인록', title=q['title'], summary=q['summary'], region_id=q['region'], min_level=L, after=q['after'], sort=1000 + i, epilogue=[]))
     for k, (title, goal, need, ls) in enumerate(q['steps']):
         rw = {}
         if k in task_steps: rw['xp'] = per
