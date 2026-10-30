@@ -1,9 +1,12 @@
-// 롤백 컷씬 「첫째 밤의 끝」 전용 곡: 게임 배경음악과 같은 녹음 악기 조각(assets/audio/*.mp3, FluidR3 GM)으로
+// 컷씬 전용 곡: 게임 배경음악과 같은 녹음 악기 조각(assets/audio/*.mp3, FluidR3 GM)으로
 // OfflineAudioContext에서 한 번 연주해 음원 하나로 굽는다(render.js가 헤드리스 브라우저에서 부르고 ffmpeg로 mp3를 만든다).
-// D단조 72 BPM, 약 1분 47초(컷씬 75초에 맞춤): 도입 → 대금 주제 → 해금 변주 → 북이 몰아치는 고조 → 모든 악기가 겹치는 절정 → 가야금만 남는 끝.
-// 마지막 「끝」 부분(OUTRO_AT초부터 곡 끝(end)까지)은 컷씬이 마지막 장면에 머무는 동안 조용히 되풀이한다.
-window.composeCutscene = async function (sr = 32000) {
-  const BPM = 72, B = 60 / BPM, BAR = 4 * B;
+// rollback 「첫째 밤의 끝」: D단조 72 BPM, 컷씬 75초에 맞춤 — 도입 → 대금 주제 → 해금 변주 → 북이 몰아치는 고조 → 모든 악기가 겹치는 절정 → 버티는 화음 → 되풀이 마디.
+// morning 「아침」: 76 BPM, 컷씬 20초에 맞춤 — 어두운 D단조 → 등불이 켜지며 B♭·C로 올라 → D장조로 밝아지는 주제 → 되풀이 마디.
+// 되풀이(마지막 장면에 머무는 동안): 같은 8마디를 세 번 이어 굽고 가운데 한 번(loopStart~loopEnd)을 되풀이한다.
+// 그 자리에는 앞 번의 잔향·끄는 음이 그대로 깔려 있어 이음매가 들리지 않고, mp3 앞뒤 여백으로 시각이 조금 밀려도 같은 소리라 괜찮다.
+window.composeCutscene = async function (kind = 'rollback', sr = 32000) {
+  // 마디 길이를 표본 수로 딱 떨어지게 맞춰 되풀이 번마다 소리가 표본 하나까지 같게 한다
+  const BPM = kind === 'morning' ? 76 : 72, BAR = Math.round(4 * 60 / BPM * sr) / sr, B = BAR / 4;
   const SLOT = 3.2;
   const INS = {
     koto: { notes: [45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84], sus: false, gain: 0.5, pan: -0.3 },
@@ -16,7 +19,7 @@ window.composeCutscene = async function (sr = 32000) {
     bell: { notes: [60, 66, 72, 78, 84], sus: false, gain: 0.2, pan: 0.25 },
     taiko: { notes: [36], sus: false, gain: 0.7, pan: 0 },
   };
-  const TOTAL_BARS = 32, DUR = TOTAL_BARS * BAR + 6;
+  const TOTAL_BARS = kind === 'morning' ? 33 : 50, DUR = TOTAL_BARS * BAR + 1.5;
   const ctx = new OfflineAudioContext(2, Math.ceil(DUR * sr), sr);
   const buf = {};
   await Promise.all(Object.keys(INS).map(async k => { const r = await fetch(`assets/audio/${k}.mp3`); buf[k] = await ctx.decodeAudioData(await r.arrayBuffer()); }));
@@ -88,6 +91,54 @@ window.composeCutscene = async function (sr = 32000) {
   }
   const bells = (startBar, bars, vel, every = 2) => { for (let i = 0; i < bars; i += every) note('bell', CH[PROG[i % 8]][0] + 24, bar(startBar + i), 3, vel); };
 
+  let LOOP_AT;
+  if (kind === 'morning') {
+  // ── 아침(76 BPM, 1마디 3.16초): 0~6초 어둠 · 4초 등불이 다시 켜짐 · 6~13초 B♭·C로 밝아 옴 · 12.6초(4마디) D장조로 해가 뜸 · 17초 제목
+  const MCH = { Dm: [50, 53, 57], Bb: [46, 50, 53], C: [48, 52, 55], D: [50, 54, 57], G: [43, 47, 50], Bm: [47, 50, 54], Em: [52, 55, 59], A: [45, 49, 52] };
+  const MRT = { Dm: 38, Bb: 34, C: 36, D: 38, G: 43, Bm: 35, Em: 40, A: 33 };
+  const chord = (c, st, len, vel, octs = [0], o = {}) => MCH[c].forEach(n => octs.forEach(k => note('strings', n + k, st, len, vel, { att: 0.5, rel: 1.2, ...o })));
+  // 어둠: 낮은 첼로·현악, 멀리 대금이 한숨처럼
+  chord('Dm', 0, BAR * 2, 0.36, [0], { att: 2 }); note('cello', 38, 0, BAR * 2, 0.55, { att: 1.8 });
+  note('bell', 62, 0.3, 3, 0.35); [[69, 3], [65, 2]].reduce((t, [n, d]) => { note('shakuhachi', n, t, d * B, 0.4, { att: 0.6 }); return t + d * B; }, B * 0.5);
+  // 4.1초: 등불 — 하프·가야금이 위에서 반짝
+  [[74, 0], [78, .25], [81, .5], [86, .75]].forEach(([n, d], i) => note('harp', n - (i === 1 ? 1 : 0), 4.1 + d * B, 2, 0.4 - i * 0.04)); note('bell', 74, 4.1, 3, 0.5);
+  // 6~13초: B♭ → C, 현악이 부풀고 플루트가 올라간다, 북이 살짝
+  chord('Bb', bar(2), BAR, 0.42, [0, 12]); note('cello', MRT.Bb, bar(2), BAR, 0.6);
+  chord('C', bar(3), BAR, 0.5, [0, 12], { swell: 1.3 }); note('cello', MRT.C, bar(3), BAR, 0.68);
+  [[62, 1], [65, 1], [69, 2]].reduce((t, [n, d]) => { note('fiddle', n + 12, t, d * B, 0.5, { swell: 1.1 }); return t + d * B; }, bar(2));
+  [69, 70, 72, 74, 76].forEach((n, k) => note('flute', n, bar(3) + k * B * 0.75, B * 0.8, 0.5 + k * 0.06));
+  for (let k = 0; k < 8; k++) note('taiko', 36, bar(3) + 2 * B + k * B / 4, 1, 0.25 + k * 0.06);
+  // 12.6초: 해가 뜬다 — D장조, 모든 악기
+  const SUN = ['D', 'G', 'Em', 'A'];
+  const SUNMEL = [[[74, 1.5], [76, .5], [78, 1], [81, 1]], [[79, 2], [78, 1], [76, 1]], [[76, 1.5], [78, .5], [79, 1], [83, 1]], [[81, 3], [0, 1]]];
+  note('taiko', 36, bar(4), 1, 0.9); note('bell', 74, bar(4), 3, 0.8); note('bell', 81, bar(4) + 2 * B, 3, 0.5);
+  SUN.forEach((c, i) => {
+    chord(c, bar(4 + i), BAR * 1.02, 0.5, [0, 12]);
+    note('cello', MRT[c], bar(4 + i), 2 * B, 0.75); note('cello', MRT[c] + 7, bar(4 + i) + 2 * B, 2 * B, 0.6);
+    const tri = MCH[c]; [0, 1, 2, 1, 2, 1, 0, 1].forEach((x, k) => note('harp', tri[x] + 24, bar(4 + i) + k * B / 2, B, k % 2 ? 0.26 : 0.34));
+    if (i >= 2) for (let k = 0; k < 16; k++) note('koto', tri[k % 3] + 24, bar(4 + i) + k * B / 4, B / 2, k % 4 ? 0.22 : 0.36);
+    note('taiko', 36, bar(4 + i), 1, 0.55); note('taiko', 36, bar(4 + i) + 2 * B, 1, 0.38);
+    let b = 0; SUNMEL[i].forEach(([n, d]) => { if (n) { note('flute', n, bar(4 + i) + b * B, d * B * 0.98, 0.85); if (i >= 2) note('fiddle', n - 12, bar(4 + i) + b * B, d * B * 0.98, 0.6); note('shakuhachi', n - 12, bar(4 + i) + b * B, d * B * 0.98, 0.35); } b += d; });
+  });
+  // 8마디째: 맺음 — D장조로 길게, 위에서 플루트가 높은 D
+  chord('D', bar(8), BAR * 1.3, 0.55, [-12, 0, 12], { rel: 2.5 }); note('cello', 38, bar(8), BAR * 1.3, 0.8, { rel: 2.5 });
+  note('flute', 86, bar(8), BAR * 1.1, 0.7, { rel: 2 }); note('fiddle', 78, bar(8), BAR * 1.1, 0.55, { rel: 2 }); note('taiko', 36, bar(8), 1, 0.85); note('bell', 74, bar(8), 3, 0.7);
+  // ── 되풀이(9~16마디부터 세 번): 들판의 아침처럼 잔잔한 D장조, 8마디 끝의 A가 다음 번 D로 이어진다
+  const MLOOP = ['D', 'G', 'Bm', 'A', 'D', 'G', 'Em', 'A'];
+  const mLoop = st => {
+    MLOOP.forEach((c, i) => {
+      chord(c, bar(st + i), BAR * 1.04, 0.26, [0], { att: 0.8, rel: 1.4 });
+      note('cello', MRT[c], bar(st + i), BAR, 0.4, { att: 0.3 });
+      [0, 1, 2, 1, 2, 1, 0, 1].forEach((x, k) => note('harp', MCH[c][x] + 24, bar(st + i) + k * B / 2, B, k % 2 ? 0.14 : 0.2));
+    });
+    [[74, 0], [76, 1.5], [78, 2], [81, 3], [79, 4], [78, 5], [76, 6], [74, 7]].forEach(([n, b]) => note('koto', n - 12, bar(st) + b * B, 2, 0.55));
+    [[[76, 2], [78, 2], [79, 4]], [[78, 2], [76, 2], [73, 4]]].forEach((ph, j) => ph.reduce((t, [n, d]) => { note('flute', n, t, d * B * 0.98, 0.34, { att: 0.4 }); return t + d * B; }, bar(st + 4 + j * 2)));
+    note('bell', 81, bar(st), 3, 0.35); note('bell', 78, bar(st + 4), 3, 0.25);
+  };
+  window.OUTRO_AT = bar(9); mLoop(9); mLoop(17); mLoop(25);
+  window.RESOLVE_AT = bar(4);
+  LOOP_AT = [bar(17), bar(25)];
+  } else {
   // 컷씬(약 75초)에 맞춘 마디(1마디 3.33초): 등불이 꺼져 가는 동안 주제, 장부가 펼쳐질 때 고조,
   // 인장이 찍히는 59초 무렵 절정(18마디 = 60초), 제목이 뜨는 73초(22마디)에 길게 버티는 화음, 26마디부터 끝(되풀이).
   // ── 도입(1~4마디, 0~13초): 현악 바닥이 부풀고 종이 울린다
@@ -118,13 +169,23 @@ window.composeCutscene = async function (sr = 32000) {
     note('cello', ROOT[c], bar(b), BAR, 0.9 - (b - 22) * 0.1); note('taiko', 36, bar(b), 1, 1 - (b - 22) * 0.18); note('bell', CH[c][0] + 24, bar(b), 3, 0.9 - (b - 22) * 0.12);
   });
   [[74, 2], [72, 1], [70, 1], [69, 2], [67, 1], [69, 1], [73, 3], [74, 5]].reduce((t, [n, d]) => { note('fiddle', n + 12, t, d * B, 0.95, { swell: 1.1 }); note('flute', n, t, d * B, 0.7); return t + d * B; }, bar(22));
-  // ── 끝(27~32, 87~107초): 모두 빠지고 가야금이 주제 조각을 짚는다, 마지막은 D·A 빈 오도. 마지막 장면에 머무는 동안 여기를 되풀이한다
-  window.OUTRO_AT = bar(26);
-  pad(26, 6, 0.3); note('cello', 38, bar(26), BAR * 6, 0.42, { att: 1.5, rel: 3 });
-  [[69, 0], [67, 1.5], [65, 2], [64, 3], [62, 4], [57, 6], [62, 7]].forEach(([n, b]) => note('koto', n, bar(27) + b * B, 2, 0.75));
-  [[65, 0], [67, 1.5], [69, 2], [72, 3], [69, 4]].forEach(([n, b]) => note('koto', n, bar(29) + b * B, 2, 0.6));
-  note('bell', 74, bar(31), 3, 0.6); note('strings', 50, bar(31), BAR * 1.2, 0.38, { att: 0.5, rel: 2.5 }); note('strings', 57, bar(31), BAR * 1.2, 0.33, { att: 0.5, rel: 2.5 });
+  // ── 되풀이(27~34마디부터 세 번): 모두 빠지고 가야금이 주제 조각을 짚는다. 8마디 끝의 A가 다음 번 Dm으로 이어진다
+  const LOOP = ['Dm', 'Bb', 'F', 'C', 'Gm', 'Bb', 'C', 'A'];
+  const loopBars = st => {
+    LOOP.forEach((c, i) => {
+      CH[c].forEach(n => note('strings', n, bar(st + i), BAR * 1.04, 0.3, { att: 0.9, rel: 1.4 }));
+      note('cello', ROOT[c], bar(st + i), BAR, 0.42, { att: 0.4 });
+      [0, 1, 2, 3].forEach(k => note('harp', CH[c][[0, 1, 2, 1][k]] + 12, bar(st + i) + k * B, B, k ? 0.18 : 0.24));
+    });
+    [[69, 0], [67, 1.5], [65, 2], [64, 3], [62, 4], [57, 6], [62, 7]].forEach(([n, b]) => note('koto', n, bar(st) + b * B, 2, 0.7));
+    [[65, 0], [67, 1.5], [69, 2], [72, 3], [69, 4]].forEach(([n, b]) => note('koto', n, bar(st + 2) + b * B, 2, 0.58));
+    [[67, 4], [65, 2], [64, 2], [65, 4], [64, 2], [61, 2]].reduce((t, [n, d]) => { note('shakuhachi', n, t, d * B * 0.98, 0.32, { att: 0.5 }); return t + d * B; }, bar(st + 4));
+    note('bell', 74, bar(st), 3, 0.45); note('bell', 69, bar(st + 4), 3, 0.3);
+  };
+  window.OUTRO_AT = bar(26); loopBars(26); loopBars(34); loopBars(42);
+  LOOP_AT = [bar(34), bar(42)];
 
+  }
   const out = await ctx.startRendering();
   // 16비트 WAV
   const n = out.length, ch0 = out.getChannelData(0), ch1 = out.getChannelData(1);
@@ -136,5 +197,5 @@ window.composeCutscene = async function (sr = 32000) {
   v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 4, true);
   for (let i = 0, o = 44; i < n; i++, o += 4) { v.setInt16(o, Math.max(-1, Math.min(1, ch0[i] * norm)) * 32767, true); v.setInt16(o + 2, Math.max(-1, Math.min(1, ch1[i] * norm)) * 32767, true); }
   let bin = ''; const u8 = new Uint8Array(ab); for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
-  return { wav: btoa(bin), outro: window.OUTRO_AT, resolve: window.RESOLVE_AT, end: TOTAL_BARS * BAR, dur: DUR };
+  return { wav: btoa(bin), outro: window.OUTRO_AT, resolve: window.RESOLVE_AT, loopStart: LOOP_AT[0], loopEnd: LOOP_AT[1], dur: DUR };
 };

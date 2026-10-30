@@ -252,14 +252,20 @@ function embers(root) {
 // 롤백 컷씬 전용 곡(tools/cutscene_music: 게임 악기 조각으로 구운 음원). 컷씬 시간에 맞춰 있다:
 // 73초 무렵(resolve) 제목과 함께 버티는 화음, 87초(outro)부터 끝(end)까지는 마지막 장면에 머무는 동안 되풀이한다.
 // 소리는 사용자가 한 번 누른 뒤에야 나므로(브라우저 규칙) 저절로 안 나면 [소리 켜기] 단추를 보이고, 화면 어디든 처음 누를 때도 켠다.
-const MUSIC = { url: new URL('../audio/cutscene.mp3', import.meta.url).href, resolve: 73.33, outro: 86.67, end: 109.5 };
-let musicBuf = null;
-function cutsceneMusic(onState) {
+// 시각은 tools/cutscene_music/render.js가 찍은 값: resolve = 건너뛰면 옮겨 갈 자리, clamp = 컷씬이 끝나는 무렵(늦게 켜도 그 뒤로는 가지 않음),
+// outro = 마지막 장면에 오래 머문 뒤 켤 때 시작하는 자리, loopStart~loopEnd = 끊김 없이 되풀이하는 8마디
+const MUSIC = {
+  rollback: { url: new URL('../audio/cutscene.mp3', import.meta.url).href, resolve: 73.3336, clamp: 73.3336, outro: 86.6669, loopStart: 113.3336875, loopEnd: 140.0004375 },
+  morning: { url: new URL('../audio/cutscene_morning.mp3', import.meta.url).href, resolve: 12.6316, clamp: 20, outro: 28.4212, loopStart: 53.6844063, loopEnd: 78.9476563 },
+};
+const musicBufs = {};
+function cutsceneMusic(M, onState) {
+  let musicBuf = musicBufs[M.url] || null;
   let ac = null, gain = null, src = null, since = 0, want = true, vol = 0.6, dead = false, at0 = 0, off0 = 0;
   try { const s = JSON.parse(localStorage.getItem('yh-sound') || '{}'); if (s.bgmOn === false) want = false; if (typeof s.bgm === 'number') vol = Math.min(1, s.bgm * 1.5); } catch {}
   try { if (localStorage.getItem('yh-cs-sound') === 'off') want = false; else if (localStorage.getItem('yh-cs-sound') === 'on') want = true; } catch {}
   const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch { return false; } })();
-  const load = musicBuf ? Promise.resolve(musicBuf) : fetch(MUSIC.url).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); });
+  const load = musicBuf ? Promise.resolve(musicBuf) : fetch(M.url).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); });
   const ensure = () => {
     if (ac) return ac;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
@@ -273,7 +279,7 @@ function cutsceneMusic(onState) {
     if (dead || !ac || !musicBuf) return;
     if (src) { try { src.stop(); } catch {} src = null; }
     src = ac.createBufferSource(); src.buffer = musicBuf;
-    src.loop = true; src.loopStart = MUSIC.outro; src.loopEnd = Math.min(MUSIC.end, musicBuf.duration);
+    src.loop = true; src.loopStart = M.loopStart; src.loopEnd = Math.min(M.loopEnd, musicBuf.duration);
     src.connect(gain);
     const t = ac.currentTime;
     gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(0.0001, t); gain.gain.linearRampToValueAtTime(vol, t + (offset > 1 ? 1.6 : 0.4));
@@ -297,7 +303,7 @@ function cutsceneMusic(onState) {
       if (dead || !ensure()) return;
       // 휴대폰 브라우저는 누르기 전에는 resume()이 끝나지 않고 기다리므로 잠깐만 기다린다
       try { if (ac.state !== 'running') await Promise.race([ac.resume(), new Promise(r => setTimeout(r, 400))]); } catch {}
-      if (!musicBuf) { try { const b = await load; musicBuf = b instanceof AudioBuffer ? b : await ac.decodeAudioData(b); } catch { onState(null); return; } }
+      if (!musicBuf) { try { const b = await load; musicBuf = musicBufs[M.url] = b instanceof AudioBuffer ? b : await ac.decodeAudioData(b); } catch { onState(null); return; } }
       if (ac.state === 'running' && !src && want) startAt(api.sceneTime());
       onState(api.on, want);
     },
@@ -305,9 +311,9 @@ function cutsceneMusic(onState) {
     jumpToResolve() {
       if (!playing()) return;
       const pos = off0 + (ac.currentTime - at0);
-      if (pos >= MUSIC.resolve - 1) return;
+      if (pos >= M.resolve - 1) return;
       const t = ac.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setTargetAtTime(0, t, 0.12);
-      setTimeout(() => { if (want && !dead) startAt(MUSIC.resolve); }, 450);
+      setTimeout(() => { if (want && !dead) startAt(M.resolve); }, 450);
     },
     stop(fade = 1) {
       dead = true; document.removeEventListener('visibilitychange', vis);
@@ -330,20 +336,23 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
   root.className = 'cs'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', kind === 'rollback' ? '첫째 밤의 끝' : '아침');
-  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div><button type="button" class="cs-snd" hidden>소리 켜기</button>' : ''}<button type="button" class="cs-skip">건너뛰기</button></div>
+  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div>' : ''}<button type="button" class="cs-snd" hidden>소리 켜기</button><button type="button" class="cs-skip">건너뛰기</button></div>
     <div class="cs-box" aria-live="polite"><div class="cs-who"></div><div class="cs-text"></div></div>`;
   document.body.append(root);
   if (kind === 'rollback') embers(root);
   const who = root.querySelector('.cs-who'), text = root.querySelector('.cs-text');
   let i = -1, timer = 0, done = false;
   const t0 = performance.now();
+  // 게임 배경음악은 컷씬 동안 쉰다(sound.js)
+  window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: true }));
   let ended = false, endedAt = 0, music = null;
-  if (kind === 'rollback') {
+  {
+    const M = MUSIC[kind] || MUSIC.rollback;
     const btn = root.querySelector('.cs-snd');
     // 켜 두었는데 브라우저가 막고 있으면 단추를 깜빡여 눌러 달라고 한다
-    music = cutsceneMusic((on, want) => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', !!on); btn.classList.toggle('ask', !on && !!want); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
+    music = cutsceneMusic(M, (on, want) => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', !!on); btn.classList.toggle('ask', !on && !!want); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
     // 마지막 장면에 막 닿았으면(건너뛰기 포함) 버티는 화음부터, 오래 머문 뒤 켜면 되풀이 부분부터
-    music.sceneTime = () => ended ? (performance.now() - endedAt < 15000 && !atEnd ? MUSIC.resolve : MUSIC.outro) : Math.min((performance.now() - t0) / 1000, MUSIC.resolve);
+    music.sceneTime = () => ended ? (performance.now() - endedAt < 15000 && !atEnd ? Math.max(M.resolve, Math.min((performance.now() - t0) / 1000, M.clamp)) : M.outro) : Math.min((performance.now() - t0) / 1000, M.clamp);
     let wasOn = null;
     btn.addEventListener('pointerdown', e => { e.stopPropagation(); wasOn = music.heard; });
     btn.addEventListener('click', e => { e.stopPropagation(); music.toggle(wasOn ?? music.heard); wasOn = null; });
@@ -352,7 +361,7 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
     music.resume();
   }
   const finish = () => {
-    if (done) return; done = true; clearTimeout(timer); music?.stop(1);
+    if (done) return; done = true; clearTimeout(timer); music?.stop(1); window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: false }));
     root.style.transition = 'opacity 1s'; root.style.opacity = '0';
     setTimeout(() => { root.remove(); onEnd?.(); }, 1000);
   };
