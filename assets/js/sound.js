@@ -270,7 +270,6 @@ const PROFILES = {
   gwiheo: { tonic: 55, mode: 'phryg', bpm: 50, meter: 3, rhy: 'slow3', lead: 'shakuhachi', lead2: 'cello', counter: 'cello', arp: 'harp', acc: 'slow3', bass: 'waltz', drum: 'heart', drumIn: ['B', 'A3'], pad: 'light', bell: 0.15,
     bt: { bpm: 92, lead: 'shakuhachi', lead2: 'cello', counter: 'cello', acc: 'battle', arp: 'harp', bass: 'battle', drum: 'b_gwiheo', bell: 0.15, form: [F('A', 'lead', 0.9, { duet: 'cello' }), F('B', 'lead2', 0.95, { oct: -14, duet: 'shakuhachi' })] },
     form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead2', 0.6, { oct: -14, echo: 'shakuhachi' }), F('B', 'lead', 0.7, { duet: 'cello' }), F('A3', 'lead', 0.5)] },
-    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead2', 0.55, { echo: 'harp' }), F('B', 'lead', 0.65, { duet: 'shakuhachi' }), F('A3', 'lead', 0.45)] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = ''; // 지역이 바뀌었는지 보는 열쇠(예전 이름을 그대로 쓴다)
