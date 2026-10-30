@@ -1,7 +1,7 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON } from '../core.js';
+import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip } from './common.js';
 
@@ -36,7 +36,6 @@ export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능�
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
 // 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
 const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
-const dismantleNeed = t => ({ 1: 1, 2: 5, 3: 10, 4: 15 })[t || 1] || 20; // 서버 world_dismantle_need와 같다
 // 장착 칸(서버 world_equip_item·world_unequip_item과 같은 이름): [이름, 아이콘, 닳는 때]
 export const SLOTS = { weapon: ['무기', 'sword', '공격할 때'], armor: ['방어구', 'shield', '맞을 때'], hat: ['관모', 'hat', '맞을 때'], shoes: ['신', 'shoe', '이동할 때'],
   norigae: ['노리개', 'knot', ''], amulet: ['호신부', 'talisman', ''], mask: ['탈', 'mask', ''], tool: ['채집', 'hammer', '채집할 때'], explore: ['탐사', 'compass', ''], fishing: ['낚시', 'fish', ''] };
@@ -67,6 +66,12 @@ const RANK_NAME = { gathering_rank: '채집 숙련', crafting_rank: '제작 숙�
 const statReqs = (o, c) => {
   const tr = o.equipment_traits || {};
   if (o.category === 'tool' && Number(tr.req_rank) > 1) {
+    // 제작 공구는 그 공구 분야 계열 가운데 가장 높은 단계로 본다(7.5.0, 서버 world_craft_tool_bonus와 같음)
+    if ((tr.req_line || 'crafting_rank') === 'crafting_rank' && Array.isArray(tr.craft_fields) && tr.craft_fields.length) {
+      const lines = tr.craft_fields.map(f => FIELD_LINE[f] || f), need = Number(tr.req_rank);
+      const have = Math.max(...lines.map(l => Number(c?.skill_progress?.[l]?.rank || 1))), n = lines.map(l => nameOf(l)).join('·');
+      return [[`${n} 기술 ${need}단계 이상`, have >= need, `${n} 기술 ${need}단계 필요 (지금 ${have}단계)`]];
+    }
     const n = RANK_NAME[tr.req_line] || '채집 숙련', have = Number(c?.[tr.req_line] || 1), need = Number(tr.req_rank);
     return [[`${n} ${need}단계 이상`, have >= need, `${n} ${need}단계 필요 (지금 ${have}단계)`]];
   }
@@ -78,6 +83,22 @@ const statReqs = (o, c) => {
     return [`${nameOf(k)} 또는 ${nameOf(p)} ${v} 이상`, have >= Number(v), `${nameOf(k)} 또는 ${nameOf(p)} ${v} 필요 (지금 ${have})`]; });
   return req.map(([k, v]) => [`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v), `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`]);
 };
+// 제작 분야 → 기술 계열(봉인 공예 분야의 계열 키는 wardcraft)
+const FIELD_LINE = { sealing: 'wardcraft' };
+// 어울리는 직업(7.5.0, 제보): 무기는 공격 방식과 주 능력치, 방어구는 주 능력치로 고른다. 장착 조건과는 상관없는 안내
+const STAT_JOBS = { strength: ['artificer'], vitality: ['artificer'], agility: ['scout', 'analyst'], perception: ['scout', 'analyst'], spirit_affinity: ['exorcist'], willpower: ['medic', 'sealmaster'] };
+export function suitedJobs(o) {
+  if (!o || !['weapon', 'armor'].includes(o.category)) return [];
+  const req = Object.entries(o.required_stats || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
+  const wt = o.equipment_traits?.weapon_type;
+  let jobs = req.length ? STAT_JOBS[req[0][0]] || [] : [];
+  if (o.category === 'weapon') {
+    if (wt === 'melee') jobs = ['artificer'];
+    else if (wt === 'ranged') jobs = ['scout'];
+    else if (wt === 'magic') jobs = jobs.filter(j => ['exorcist', 'medic', 'sealmaster'].includes(j)).length ? jobs : ['exorcist', 'medic', 'sealmaster'];
+  }
+  return o.required_job ? [o.required_job] : jobs;
+}
 // 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업 → 소속 → 능력치
 export const gearBlock = (o, c) => {
   if (!o) return '';
@@ -154,6 +175,7 @@ function draw(box, id, inv, prices, mode) {
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
+      ${suitedJobs(it).length ? `<div><dt>어울리는 직업</dt><dd>${esc(suitedJobs(it).map(nameOf).join(' · '))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
       <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>
       ${it && GEAR.has(it.category) ? `<div><dt>${slotOf(it) === 'craft' ? '쓰는 조건(가방에 두면)' : '장착 조건'}</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
@@ -169,9 +191,7 @@ function draw(box, id, inv, prices, mode) {
         ${it?.category === 'furniture' ? `<button class="btn small" data-do="house">${icon('home', 14)}<span>별채에서 놓기</span></button>` : ''}
         ${it && GEAR.has(it.category) && slotOf(it) !== 'craft' && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
-        ${it && DISMANTLABLE.has(it.category) ? (() => { const need = dismantleNeed(it.tier), rank = c?.crafting_rank || 1;
-          return rank < need ? `<span class="muted small">분해: 제작 숙련 ${need}단계부터(지금 ${rank})</span>`
-            : `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>`; })() : ''}
+        ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
       <div class="discard-row ${locked ? 'off' : ''}">
         <label class="field"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="1" id="dc-qty" ${locked || dcMax < 1 ? 'disabled' : ''}></label>
@@ -200,7 +220,12 @@ function draw(box, id, inv, prices, mode) {
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
     if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
     if (k === 'dismantle') {
-      if (!(await ask(`${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' }))) return;
+      // 7.5.0: 그 장비 계열 단계가 모자라면 재료 없이 경험만(서버 world_dismantle_info로 미리 알린다)
+      const di = (await rpc('world_dismantle_info').catch(() => ({})))?.[id];
+      const low = di && di.rank < di.need;
+      if (!(await ask(low ? `${di.line_name} 기술이 ${di.need}단계가 되지 않아(지금 ${di.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${di.line_name} 경험 12만 얻고 이 장비는 사라집니다.`
+        : `${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요?${di ? ` ${di.line_name} 경험 +12.` : ''} 되돌릴 수 없습니다.`,
+        { title: low ? '경험만 얻는 분해' : '분해', ok: low ? '경험만 받고 분해' : '분해하기', cancel: '그만두기' }))) return;
       await guard(d, () => act('world_dismantle_item', { p_item_id: id }));
     }
     // 버리기(제보 12): 「최대」는 칸을 채우고, 「모두 버리기」는 버릴 수 있는 만큼 한 번에(장착 중이면 하나 남김)

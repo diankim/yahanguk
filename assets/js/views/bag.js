@@ -169,7 +169,8 @@ async function craft(body, inv, stg) {
   const bagHave = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   // 안전지대면 창고 수량을 더해 보인다
   const stHave = stg?.in_safe ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
-  const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) });
+  // 우수품(<id>_hq)도 같은 재료로 쓴다(7.5.0, 서버는 보통을 먼저 쓴다)
+  const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[k + '_hq']) || 0) + (stHave[k + '_hq'] || 0) });
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id)); // 요리·손질 결과물
   const cmap = catalogMap(inv);
@@ -205,7 +206,7 @@ async function craft(body, inv, stg) {
   renderKeep(body, `
     ${stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
-    <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession))} · ${fmt.num(inv.crafting_rank)}단계</span></div></div>
+    <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="제작법 찾기 (이름·완성품·재료·도구)" value="${esc(cq)}"></label>
     ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
     <div class="craft-cats" role="group" aria-label="제작 분야 거르기"><span class="muted small">분야</span>${FIELDS.map(f => { const n = (inv.recipes || []).filter(r => (r.field || '') === f).length;
@@ -215,7 +216,7 @@ async function craft(body, inv, stg) {
       `<label class="check"><input type="checkbox" data-kind="${k}" ${craftKinds.has(k) ? 'checked' : ''}><span>${esc(KIND_LABEL[k])} <small>${kindCount[k]}</small></span></label>`).join('')}
       ${craftKinds.size ? '<button class="btn small ghost" id="craft-kinds-clear">모두</button>' : ''}
       <label class="craft-sort"><span class="muted small">정렬</span><select id="craft-sort">${[['can', '가능한 것 먼저'], ['lv', '제작 레벨 낮은순'], ['lvd', '제작 레벨 높은순']].map(([k, t]) => `<option value="${k}" ${craftSort === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label></div>
-    <p class="muted small">내 제작 분야(${esc(nameOf(inv.crafting_profession || 'general'))})의 제작법은 품질 +12, 종합 제작은 모든 분야 +4입니다. 분야는 캐릭터 › 성장 › 생활 전문화에서 정합니다.</p>
+    <p class="muted small">내 제작 분야(${esc(nameOf(inv.crafting_profession || 'smithing'))})의 제작법은 품질 +12입니다. 제작하면 그 제작법 분야의 기술 계열이 오르고, 품질은 그 계열 단계를 따릅니다. 품질 85 이상이면 「우수품」이 나옵니다(30단계 추가 기술이 있으면 80). 분야는 캐릭터 › 성장 › 생활 전문화에서 정합니다.</p>
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, atLoc, kind, tier }) => `

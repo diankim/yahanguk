@@ -17,18 +17,18 @@ const STATS = [
   ['perception', '감각', '치명타·원거리 위력·단서 발견'], ['willpower', '의지', '술법 위력·응급 회복'], ['spirit_affinity', '영성', '술법 무기의 위력'],
 ];
 const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-const GATHER = ['fieldwork', 'mining', 'botany', 'spirit_harvest', 'fishing'];
-const CRAFT = ['general', 'smithing', 'carpentry', 'alchemy', 'sealing', 'weaving', 'leatherwork', 'artifice', 'cooking'];
+const GATHER = ['fieldwork', 'mining', 'fishing'];
+const CRAFT = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
 const IDLE = [
   ['training', '자율 수련', '경험치와 전투 숙련, 든 무기에 맞는 전투 기술(근접·원거리·봉인술)을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 탐사 기술을 올립니다.', 'search'],
-  ['maintenance', '장비 정비', '경험치와 제작 숙련, 제작 분야에 맞는 기술(단조·연금·결계 각인)을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
+  ['maintenance', '장비 정비', '경험치와 제작 숙련, 고른 제작 분야의 기술 계열을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
 ];
 // 자율 활동 보상(서버 world_claim_idle_activity와 같은 식): 시간 h에 대해 숙련·회복 floor(h×12×0.35), 경험치 floor(h×비율×0.35)(최소 1, 최고 레벨이면 0)
 const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
 // 오르는 기술(서버 world_idle_skill_for와 같은 규칙): 수련은 든 무기 종류, 정비는 제작 분야
 let idleWeapon = 'melee';
 const trainSkill = () => ({ ranged: '원거리', magic: '봉인술' })[idleWeapon] || '근접';
-const maintSkill = () => ({ sealing: '결계 각인', alchemy: '연금' })[store.character?.crafting_profession] || '단조';
+const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing'); // 고른 제작 분야 계열(7.5.0)
 // early: 끝나기 전에 그만두면 지난 시간만큼만, 최소 1 보정 없이
 function idleReward(k, min, level, early = false) {
   const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, Math.floor(h * IDLE_RATE[k] * 0.35));
@@ -229,7 +229,7 @@ async function growth(body) {
   let pend = {}, room = pts;
   Object.entries(loadAlloc(c)).forEach(([k, v]) => { if (!STATS.some(x => x[0] === k)) return; const n = Math.max(0, Math.min(Number(v) || 0, room, statCap(c.level, k, c.job_key) - c[k])); if (n) { pend[k] = n; room -= n; } });
   const sp = c.skill_progress || {}, bestOf = cats => { const k = cats.reduce((a, x) => (sp[x]?.rank || 1) > (sp[a]?.rank || 1) ? x : a, cats[0]); return `가장 높은 기술: ${SKILL_NAME[k] || nameOf(k)}`; };
-  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)]), ['요리', c.cooking_rank, `${fmt.num(c.cooking_xp)} 경험`]];
+  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)])]; // 요리는 7.5.0부터 제작 계열 하나
   body.innerHTML = `
     <div class="grid-2">
       ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent" id="al-left">${pts - allocSum(pend)}</b> / ${pts} · + / − 로 나눈 뒤 「확정」을 눌러야 반영됩니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
@@ -243,7 +243,7 @@ async function growth(body) {
     <div class="grid-2">
       ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, best]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${esc(best)}</small></li>`).join('')}</ul>
         <p class="muted small">숙련은 그 갈래 기술 가운데 가장 높은 단계입니다(최고 50, 요리는 따로 20단계). 전투 숙련은 단계마다 공격력 +0.6%입니다. 기술 탭에서 계열별 단계를 봅니다.</p>`, { ico: 'target' })}
-      ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고, 내 제작 분야의 제작법은 품질 +12(종합 제작은 모든 분야 +4)입니다. 요리를 고르면 요리 제작법이 품질 +12입니다.</p>
+      ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고(채집: 약초·목재·보급품·영기 / 채광: 광맥·유물 / 낚시: 물가), 고른 제작 분야의 제작법은 품질 +12이며 자율 「장비 정비」가 그 분야 계열을 올립니다. 제작 분야는 반드시 하나를 고릅니다(정하지 않았으면 단조).</p>
         <p class="${profWait(c) > 0 ? 'hint' : 'muted small'}">${profWait(c) > 0 ? `${icon('hourglass', 14)} 다음 변경까지 ${fmt.remain(profWait(c))}` : '한 번 바꾸면 3일 동안 다시 바꿀 수 없습니다.'}</p>
         <div class="form-grid">
           <label class="field"><span>채집 분야</span><select id="g-prof">${GATHER.map(k => `<option value="${k}" ${inv?.gathering_profession === k ? 'selected' : ''}>${esc(nameOf(k))}</option>`).join('')}</select></label>
@@ -316,15 +316,19 @@ const CAT_DESC = {
   guarding: '막기 자세로 공격을 받아낼 때 오릅니다.',
   first_aid: '회복약을 쓰거나 동료를 구조할 때 오릅니다.',
   tracking: '탐색과 원정으로 낯선 곳을 살필 때 오릅니다.',
-  foraging: '일반 채집터에서 채집할 때 오릅니다.', herbalism: '약초 채집터에서 채집할 때 오릅니다.', mining: '광맥에서 채집할 때 오릅니다.',
-  spirit_gathering: '영기가 서린 곳에서 채집할 때 오릅니다.', smithing: '단조·목공·법구 공예·직조·가죽 공예 제작법으로 만들 때 오릅니다.', alchemy: '연금 제작법으로 약제를 만들 때 오릅니다.', wardcraft: '봉인 공예 제작법으로 부적·봉인 도구를 만들 때 오릅니다.',
+  foraging: '약초·목재·보급품·물가·영기 채집터에서 채집할 때 오릅니다.', mining: '광맥·유물 채집터에서 캘 때 오릅니다.', fishing: '낚싯대를 던질 때마다 오릅니다(낚든 놓치든).',
+  smithing: '단조 제작법(무기·갑옷·주괴·도구)으로 만들거나 단조 장비를 분해할 때 오릅니다.', carpentry: '목공 제작법(활·화살·목재·가구)으로 만들 때 오릅니다.',
+  artifice: '법구 공예 제작법(술법 무기·영등)으로 만들 때 오릅니다.', wardcraft: '봉인 공예 제작법(부적·호신부·탈)으로 만들 때 오릅니다.',
+  weaving: '직조 제작법(옷·관모·노리개)으로 만들 때 오릅니다.', leatherwork: '가죽 공예 제작법(신·가죽 갑옷)으로 만들 때 오릅니다.',
+  alchemy: '연금 제작법(약·영약)으로 만들 때 오릅니다.', cooking: '요리를 만들 때 오릅니다.',
 };
 // 행동 한 번에 오르는 기술 경험(서버 world_track_specialized_skill과 같은 값).
 // 단계 r → r+1에 80+8r 경험, 30단계부터 6×(r−29)²를 더함(누적 4r²+76r−80 + n(n+1)(2n+1), n=r−30, 서버 world_skill_line_xp), 최고 50단계.
 const SKILL_GAIN = {
   melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
-  mining: '채집 +8', herbalism: '채집 +8', spirit_gathering: '채집 +8', foraging: '채집 +8',
-  smithing: '제작 +12', alchemy: '제작 +12', wardcraft: '제작 +12', tracking: '탐색 +5 · 이야기 +10 · 이동 +3',
+  foraging: '채집 +8', mining: '채집 +8', fishing: '던질 때 +8',
+  smithing: '제작·분해 +12', carpentry: '제작·분해 +12', artifice: '제작·분해 +12', wardcraft: '제작·분해 +12', weaving: '제작·분해 +12', leatherwork: '제작·분해 +12',
+  alchemy: '제작 +12', cooking: '요리 +12', tracking: '탐색 +5 · 이야기 +10 · 이동 +3',
 };
 const SKILL_CAP = 50;
 const lineXp = r => { if (r <= 1) return 0; const n = Math.max(0, r - 30); return 4 * r * r + 76 * r - 80 + n * (n + 1) * (2 * n + 1); };
@@ -332,8 +336,8 @@ const SKILL_NAME = { sealing: '봉인술' }; // 제작 분야 「봉인 공예�
 // 숙련 네 갈래 = 그 갈래 기술 가운데 가장 높은 단계(서버 world_skill_sync)
 export const BRANCHES = [
   ['combat', '전투', 'sword', ['melee', 'ranged', 'sealing', 'analysis', 'guarding', 'first_aid']],
-  ['gathering', '채집', 'leaf', ['foraging', 'herbalism', 'mining', 'spirit_gathering']],
-  ['crafting', '제작', 'hammer', ['smithing', 'alchemy', 'wardcraft']],
+  ['gathering', '채집', 'leaf', ['foraging', 'mining', 'fishing']],
+  ['crafting', '제작', 'hammer', ['smithing', 'carpentry', 'artifice', 'wardcraft', 'weaving', 'leatherwork', 'alchemy', 'cooking']],
   ['investigation', '조사', 'search', ['tracking']],
 ];
 async function skills(body) {
@@ -348,7 +352,7 @@ async function skills(body) {
     const tiers = [...new Set(sk.map(x => x.unlock_rank))].sort((a, b) => a - b);
     const next = tiers.find(t => t > rank);
     // 택일 단계에 닿았는데 아직 고르지 않았으면 그 칸에 표시한다
-    const pending = t => sk.some(x => x.unlock_rank === t && x.slot === 'a' && x.reached) && !sk.some(x => x.unlock_rank === t && x.picked);
+    const pending = t => (sk.some(x => x.unlock_rank === t && x.slot === 'a' && x.reached) && !sk.some(x => x.unlock_rank === t && x.picked)) || sk.some(x => x.unlock_rank === t && x.free_repick);
     return `<div class="sk-line" data-cat="${cat}">
       <div class="sk-head"><b>${esc(SKILL_NAME[cat] || nameOf(cat))}</b><span class="sk-rank">${fmt.num(rank)}<small>/${SKILL_CAP}</small></span></div>
       <div class="bar sk-bar"><span style="width:${Math.max(0, Math.min(100, into / need * 100))}%"></span></div>
@@ -384,14 +388,15 @@ async function skills(body) {
           <b>${esc(s.skill_name)}</b>${SLOT[s.slot] ? ` <small class="accent">${SLOT[s.slot]}</small>` : ''}
           <span class="chip ${s.unlocked ? 'ok' : ''}">${s.unlocked ? '익힘' : s.reached && (s.slot === 'a' || s.slot === 'b') ? '고르지 않음' : `${s.unlock_rank}단계에 익힘`}</span>
           <p>${esc(String(s.description || '').replace(/^(추가|택일|숙달) 기술 · /, ''))}</p>
-          ${(s.slot === 'a' || s.slot === 'b') && s.reached && !s.picked ? `<button class="btn small primary" data-pick="${s.slot}" data-t="${t}">이 기술 고르기</button>` : ''}
+          ${(s.slot === 'a' || s.slot === 'b') && s.reached && !s.picked ? `<button class="btn small primary" data-pick="${s.slot}" data-t="${t}">${s.free_repick ? '무료로 바꾸기' : '이 기술 고르기'}</button>` : ''}
         </div>`).join('') + `<p class="muted small">${esc(CAT_DESC[el.dataset.cat] || '')}${SKILL_GAIN[el.dataset.cat] ? ` 얻는 경험: ${esc(SKILL_GAIN[el.dataset.cat])}.` : ''}</p>`;
       box.hidden = false;
       $$('[data-pick]', box).forEach(pb => pb.onclick = async () => {
         const other = here.find(x => x.slot !== pb.dataset.pick && (x.slot === 'a' || x.slot === 'b'));
-        const fee = other?.picked ? (t === 24 ? 2000 : 5000) : 0;
+        const free = here.some(x => x.free_repick); // 7.5.0: 효과가 바뀐 택일은 한 번 무료로 다시 고른다
+        const fee = other?.picked && !free ? ({ 13: 1000, 24: 2000, 30: 3000 })[t] || 5000 : 0;
         const pick = here.find(x => x.slot === pb.dataset.pick);
-        if (!(await ask(`「${pick.skill_name}」을(를) 고를까요?${other ? ` 「${other.skill_name}」은(는) 쓸 수 없게 됩니다.` : ''}${fee ? `\n바꾸는 값 ${fmt.jeon(fee)}이 듭니다.` : ' 처음 고르기는 무료이고, 나중에 바꾸려면 전이 듭니다.'}`, { title: `${t}단계 택일 기술`, ok: '고르기' }))) return;
+        if (!(await ask(`「${pick.skill_name}」을(를) 고를까요?${other ? ` 「${other.skill_name}」은(는) 쓸 수 없게 됩니다.` : ''}${fee ? `\n바꾸는 값 ${fmt.jeon(fee)}이 듭니다.` : free && other?.picked ? '\n효과가 바뀐 기술이라 이번 한 번은 무료로 바꿉니다.' : ' 처음 고르기는 무료이고, 나중에 바꾸려면 전이 듭니다.'}`, { title: `${t}단계 택일 기술`, ok: '고르기' }))) return;
         guard(pb, () => act('world_skill_choose', { p_line: el.dataset.cat, p_tier: t, p_pick: pb.dataset.pick }));
       });
     });

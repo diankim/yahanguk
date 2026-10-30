@@ -120,7 +120,6 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
 let smithyTab = 'buy';
 const SMITHY_TABS = [['buy', '재료 사기'], ['enhance', '무기 강화'], ['repair', '수리'], ['dismantle', '분해']];
 const GEAR_CATS = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
-const DISMANTLE_NEED = t => ({ 1: 1, 2: 5, 3: 10, 4: 15 })[t] || 20; // 서버 world_dismantle_need와 같다
 export async function renderSmithy(box) {
   box.innerHTML = `<div class="seg-mini smithy-tabs" role="tablist">${SMITHY_TABS.map(([k, n]) => `<button class="${smithyTab === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div><div class="sm-body">${loading()}</div>`;
   $$('[data-st]', box).forEach(b => b.onclick = () => { smithyTab = b.dataset.st; renderSmithy(box); });
@@ -196,21 +195,29 @@ async function repairPane(body) {
 }
 
 async function dismantlePane(body) {
-  const inv = await load('world_inventory_snapshot');
-  const c = store.character, rank = inv.crafting_rank || c?.crafting_rank || 1;
+  // 7.5.0: 분해는 언제나 된다. 그 장비를 맡는 계열 단계가 모자라면 재료 없이 그 계열 경험 12만(서버 world_dismantle_info가 계열·단계를 알려 줌)
+  const [inv, di] = await Promise.all([load('world_inventory_snapshot'), rpc('world_dismantle_info').catch(() => ({}))]);
   const cat = new Map((inv.catalog || []).map(i => [i.id, i])), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([k, n]) => n > 0 && GEAR_CATS.has(cat.get(k)?.category))
-    .map(([k, n]) => ({ k, n, it: cat.get(k), free: n - (equipped.has(k) ? 1 : 0) }))
+    .map(([k, n]) => ({ k, n, it: cat.get(k), free: n - (equipped.has(k) ? 1 : 0), d: di?.[k] || {} }))
     .sort((a, b) => (a.it.tier || 0) - (b.it.tier || 0) || nameOf(a.k).localeCompare(nameOf(b.k), 'ko'));
-  body.innerHTML = rows.length ? `<ul class="item-list">${rows.map(({ k, n, it, free }) => {
-      const need = DISMANTLE_NEED(it.tier || 1), why = rank < need ? `제작 숙련 ${need}단계 필요(지금 ${rank})` : free < 1 ? '장착 중인 마지막 하나' : isLocked(k) ? '잠금' : '';
-      return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small></div>
-        <div class="item-act"><button class="btn small" data-dis="${esc(k)}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
+  const yieldText = y => Object.entries(y || {}).map(([k, v]) => `${nameOf(k)} ×${v}`).join(' · ');
+  body.innerHTML = rows.length ? `<ul class="item-list">${rows.map(({ k, n, it, free, d }) => {
+      const why = free < 1 ? '장착 중인 마지막 하나' : isLocked(k) ? '잠금' : '';
+      const low = d.line && d.rank < d.need;
+      const what = !d.line ? '' : low ? `<span class="bad">재료 없음 · ${esc(d.line_name)} 경험 +12만(${esc(d.line_name)} ${d.need}단계부터 재료)</span>`
+        : `돌려받는 재료: ${esc(yieldText(d.yield) || '—')} · ${esc(d.line_name)} 경험 +12`;
+      return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
+        <div class="item-act"><button class="btn small" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
-  body.innerHTML += `<p class="muted small">장비를 부수어 제작 재료 일부(제작법 재료의 절반)를 돌려받고 제작 경험을 얻습니다. 단계마다 필요한 제작 숙련: 1단계 1 · 2단계 5 · 3단계 10 · 4단계 15 · 5단계 20. 강화한 무기를 분해하면 강화도 사라집니다.</p>`;
+  body.innerHTML += `<p class="muted small">장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.</p>`;
   bindInfo(body);
   $$('[data-dis]', body).forEach(b => b.onclick = async () => {
-    if (!await ask(`${nameOf(b.dataset.dis)} 하나를 분해할까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' })) return;
+    const d = di?.[b.dataset.dis] || {};
+    const ok = b.dataset.low
+      ? await ask(`${d.line_name} 기술이 ${d.need}단계가 되지 않아(지금 ${d.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${d.line_name} 경험 12만 얻고 「${nameOf(b.dataset.dis)}」 하나는 사라집니다.`, { title: '경험만 얻는 분해', ok: '경험만 받고 분해', cancel: '그만두기' })
+      : await ask(`${nameOf(b.dataset.dis)} 하나를 분해할까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' });
+    if (!ok) return;
     await guard(b, () => act('world_dismantle_item', { p_item_id: b.dataset.dis }));
     dismantlePane(body);
   });
