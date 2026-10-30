@@ -1,5 +1,5 @@
 // 컷씬: 롤백 순간(점검 페이지, maintenance.json scene 'rollback')과 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞).
-// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고, 도중에는 「건너뛰기」, 마지막 장면에서는 [닫기]·[다시 보기].
+// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고, 「건너뛰기」는 마지막 장면으로 보내며, 마지막 장면의 [닫기]로만 닫는다(롤백 점검 중에는 닫기 없음).
 // 게임 화면은 평면이 원칙이지만 컷씬만은 사용자 요청으로 흐림·질감(SVG 잡음 필터)을 써 실감 나게 그린다.
 // 움직임 줄이기 설정이면 흔들림·흐름은 멈추고 장면 전환만 남는다.
 
@@ -74,6 +74,7 @@ const CSS = `
 .cs-who { font-size: 13px; color: #e0a64a; letter-spacing: .06em; min-height: 18px; }
 .cs-text { font-size: 17px; line-height: 1.75; white-space: pre-line; }
 .cs-text.nar { color: #b9b0a2; }
+.cs-text.note { font-size: 14.5px; line-height: 1.7; }
 .cs-line-in { animation: cs-line .9s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes cs-line { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
 .cs-skip { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
@@ -194,7 +195,9 @@ const lampsOut = n => root => {
     const g = root.querySelector(`[data-lamp="${i}"]`);
     if (!g || g.dataset.state) continue;
     g.dataset.state = 'out';
-    const l = g.querySelector('.cs-lantern'); l.classList.add('dying');
+    const l = g.querySelector('.cs-lantern');
+    if (root.dataset.fast) { l.classList.add('out'); g.querySelector('.cs-zone')?.classList.add('off'); continue; }
+    l.classList.add('dying');
     setTimeout(() => { l.classList.remove('dying'); l.classList.add('out'); g.querySelector('.cs-zone')?.classList.add('off'); }, 1400);
   }
 };
@@ -240,7 +243,9 @@ function embers(root) {
   }
 }
 
-export function playCutscene(kind = 'rollback', { onEnd } = {}) {
+// 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
+//       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때)
+export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
@@ -257,6 +262,7 @@ export function playCutscene(kind = 'rollback', { onEnd } = {}) {
     setTimeout(() => { root.remove(); onEnd?.(); }, 1000);
   };
   const step = () => {
+    if (ended) return;
     clearTimeout(timer);
     i++;
     const [s, t, fx] = lines[i];
@@ -271,16 +277,29 @@ export function playCutscene(kind = 'rollback', { onEnd } = {}) {
     timer = setTimeout(step, t ? 2200 + t.length * 75 : 6000);
   };
   const skip = root.querySelector('.cs-skip');
-  skip.addEventListener('click', finish);
+  // 건너뛰기: 남은 장면 변화를 한꺼번에 적용해 마지막 장면으로 간다(닫기는 마지막 장면의 [닫기]로만)
+  const jumpToEnd = () => {
+    if (done || ended) return;
+    clearTimeout(timer);
+    root.dataset.fast = '1';
+    for (let k = Math.max(0, i + 1); k < lines.length; k++) lines[k][2]?.(root);
+    i = lines.length - 1;
+    who.textContent = ''; text.textContent = '';
+    showEnd();
+  };
+  skip.addEventListener('click', jumpToEnd);
+  let ended = false;
   function showEnd() {
-    if (done) return;
-    skip.hidden = true;
+    if (done || ended) return;
+    ended = true; skip.hidden = true;
+    if (note) { who.textContent = ''; text.textContent = note; text.classList.add('nar', 'note'); text.classList.remove('cs-line-in'); void text.offsetWidth; text.classList.add('cs-line-in'); }
     const bar = document.createElement('div'); bar.className = 'cs-end';
-    bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button><button type="button" class="cs-btn main" data-close>닫기</button>';
+    bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button>' + (stay ? '' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
     root.querySelector('.cs-box').append(bar);
-    bar.querySelector('[data-close]').addEventListener('click', finish);
-    bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); root.remove(); playCutscene(kind, { onEnd }); });
+    bar.querySelector('[data-close]')?.addEventListener('click', finish);
+    bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); root.remove(); playCutscene(kind, { onEnd, stay, note }); });
   }
+  if (atEnd) { i = -1; jumpToEnd(); return finish; }
   setTimeout(step, 1200);
   return finish;
 }
