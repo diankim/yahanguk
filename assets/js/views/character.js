@@ -547,16 +547,16 @@ async function titles(body) {
   // 레거시(야행의 흔적) 칭호는 등급 칩 대신 옻칠 현판: 세로 낙관 「흔적」과 한자 이름을 단다
   // 모바일(좁은 화면)은 카드를 두 칸으로 줄여 이름·등급만 보이고, 누르면 그 카드만 펼쳐 설명·조건·효과·단추를 보인다(7.5.4)
   const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}" data-tkey="${esc(t.key)}">
+      ${t.earned ? `<button class="t-rep ${t.display ? 'on' : ''}" data-disp="${t.display ? '' : esc(t.key)}" title="${t.display ? '대표 칭호에서 내립니다' : '채팅·프로필에 보이는 대표 칭호로 정합니다'}" aria-pressed="${t.display ? 'true' : 'false'}">${t.display ? '대표 중' : '대표로'}</button>` : ''}
       ${lg ? `<span class="lg-tag" aria-hidden="true">흔적</span>${LEGACY_HANJA[t.key] ? `<span class="lg-hj">${LEGACY_HANJA[t.key]}</span>` : ''}` : ''}
       <div class="t-top">${lg ? '' : icon(t.icon || 'spark', 18)}${t.grade && !lg && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
-        ${tsort !== 'cat' ? `<small class="muted t-catl">${esc(t.category)}</small>` : ''}${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
+        ${tsort !== 'cat' ? `<small class="muted t-catl">${esc(t.category)}</small>` : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
       ${t.description ? `<p class="t-desc">${esc(t.description)}</p>` : ''}
       <p class="t-cond">조건 · ${esc(t.condition || '-')}</p>
       ${t.bonus ? `<p class="t-bonus">${esc(effectText(t.bonus).join(' · '))}</p>` : ''}
       ${!t.earned && t.progress ? (() => { const cur = Number(t.progress.cur) || 0, need = Math.max(1, Number(t.progress.need) || 1);
         return `<div class="t-prog">${bar(cur, need, 'xp')}<small>${t.progress.pct ? `${Math.round(cur / need * 100)}%` : `${fmt.num(cur)} / ${fmt.num(need)}`}</small></div>`; })() : ''}
-      ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
-        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button>${RAID_ON && t.hidden ? `<button class="btn ghost" data-story="${esc(t.key)}">유래</button>` : ''}</div>` : ''}</li>`; };
+      ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>${RAID_ON && t.hidden ? `<button class="btn ghost" data-story="${esc(t.key)}">유래</button>` : ''}</div>` : ''}</li>`; };
   const paint = () => {
     const q = tq.trim().toLowerCase();
     const rows = list.filter(t => (!tOwned || t.earned) && (!tEquipped || t.equipped)
@@ -588,7 +588,6 @@ async function titles(body) {
       (await import('../factionquest.js')).playDialogue({ title: r.title, lines: r.lines, cast: r.cast }, null); return null;
     }));
     // 좁은 화면: 카드를 누르면 펼치고 다시 누르면 접는다(단추 누르기는 그대로)
-    $$('.t-card', body).forEach(c => c.onclick = e => { if (e.target.closest('button, a')) return; c.classList.toggle('open'); });
   };
   bindPresets(body, snap);
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };

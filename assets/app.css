@@ -1359,19 +1359,27 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .t-desc { font-size: calc(12.5px * var(--fz, 1)); line-height: 1.5; margin: 0; }
 .t-cond { font-size: calc(12px * var(--fz, 1)); color: var(--muted); line-height: 1.5; margin: 0; }
 .t-bonus { font-size: calc(12px * var(--fz, 1)); color: var(--gold); line-height: 1.5; margin: 0; }
-.t-act { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: auto; padding-top: 6px; }
-.t-act .btn { min-height: 42px; }
+.t-card { position: relative; }
+.t-card:has(.t-rep) .t-top { padding-right: 58px; }
+/* 대표 칭호 단추는 카드 오른쪽 위(7.5.9) */
+.t-rep { position: absolute; top: 6px; right: 6px; z-index: 1; min-height: 24px; padding: 0 8px; border-radius: 999px; border: var(--bw) solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: calc(11px * var(--fz, 1)); cursor: pointer; white-space: nowrap; }
+.t-rep:hover { border-color: var(--accent); color: var(--text); }
+.t-rep.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--text); font-weight: 600; }
+.t-act { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; }
+.t-act .btn { min-height: 30px; padding: 0 12px; font-size: calc(12px * var(--fz, 1)); flex: 1; }
 .t-card.focus { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
-/* 모바일 칭호(7.5.4): 두 칸 작은 카드(이름·등급·상태·진행), 누르면 그 카드만 한 줄을 다 써서 펼친다 */
+/* 모바일 칭호(7.5.9, 사용자 요청): 두 칸 카드에 설명·조건·효과까지 모두 적고(누르지 않아도), 단추는 작게 */
 @media (max-width: 640px) {
-  .t-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: dense; gap: 6px; }
-  .t-card { padding: 8px 9px; gap: 3px; cursor: pointer; }
-  .t-card:not(.open) :is(.t-desc, .t-cond, .t-bonus, .t-act, .lg-hj) { display: none; }
-  .t-card.open { grid-column: 1 / -1; cursor: default; }
+  .t-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .t-card { padding: 8px 8px; gap: 3px; }
+  .t-card:has(.t-rep) .t-top { padding-right: 0; padding-top: 22px; }
+  .t-rep { top: 5px; right: 5px; min-height: 22px; padding: 0 7px; font-size: calc(10.5px * var(--fz, 1)); }
   .t-top { gap: 4px; }
   .t-top b { flex-basis: 100%; order: 2; font-size: calc(12.5px * var(--fz, 1)); }
-  .t-card.open .t-top b { flex-basis: auto; order: 0; }
   .t-top .chip { font-size: calc(10.5px * var(--fz, 1)); padding: 0 5px; min-height: 18px; }
+  .t-desc { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.45; }
+  .t-cond, .t-bonus { font-size: calc(11px * var(--fz, 1)); line-height: 1.45; }
+  .t-act .btn { min-height: 28px; padding: 0 8px; font-size: calc(11.5px * var(--fz, 1)); }
   .t-card.legacy { padding: 10px 10px 10px 40px; }
   .t-card.legacy .lg-tag { left: 9px; }
 }
