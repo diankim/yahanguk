@@ -11,6 +11,11 @@ const inBattle = () => scene.battle || scene.exp;
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
 let away = false;
+// 배경음악·환경음이 창마다 겹치지 않게(7.5.5): 채팅·귓속말 새 창(?pop=)은 효과음만 내고,
+// 게임 창이 여럿이면 가장 최근에 누르거나 고른 창 하나만 배경음악·환경음을 낸다(나머지는 yielded — 브라우저 안 신호 BroadcastChannel 'yh-sound')
+const POPWIN = (() => { try { return !!new URLSearchParams(location.search).get('pop'); } catch { return false; } })();
+let yielded = POPWIN;
+const musicOk = () => sound.bgmOn && !yielded;
 let env = { weather: 'clear', phase: 'noon' };
 
 export function loadSound() { try { Object.assign(sound, JSON.parse(localStorage.getItem('yh-sound') || '{}')); } catch {} }
@@ -20,8 +25,8 @@ export function applyVolumes() {
   if (!ctx) return;
   const t = ctx.currentTime;
   if (!away) master.gain.setTargetAtTime(masterLevel(), t, 0.1);
-  bgmBus.gain.setTargetAtTime(sound.bgmOn ? sound.bgm * 0.8 : 0, t, 0.3);
-  ambBus.gain.setTargetAtTime(sound.ambOn ? sound.amb * 0.5 : 0, t, 0.4);
+  bgmBus.gain.setTargetAtTime(musicOk() ? sound.bgm * 0.8 : 0, t, 0.3);
+  ambBus.gain.setTargetAtTime(sound.ambOn && !yielded ? sound.amb * 0.5 : 0, t, 0.4);
   sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.5 : 0, t, 0.05);
 }
 
@@ -552,7 +557,7 @@ let critterTimer = null;
 // 짧게 끊어지는 소리들: 새·풀벌레·물방울·부엉이
 function critters() {
   clearTimeout(critterTimer);
-  if (away) return;
+  if (away || yielded) return;
   if (!ctx || !sound.ambOn) { critterTimer = setTimeout(critters, 4000); return; }
   const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
@@ -624,7 +629,7 @@ export function setEnabled(key, value) {
   sound[key] = value; saveSound();
   if (!ensureCtx()) return;
   ctx.resume?.();
-  if (key === 'bgmOn') value ? startMusic() : stopMusic();
+  if (key === 'bgmOn') musicOk() ? startMusic() : stopMusic();
   applyVolumes(); updateAmbience();
 }
 export function setVolume(key, value) { sound[key] = value; saveSound(); ensureCtx(); applyVolumes(); }
@@ -635,6 +640,25 @@ const SFX_OF = [
   [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
+// 게임 창이 여럿일 때: 누르거나(pointerdown·keydown) 창을 고를 때(focus) 이 창이 소리를 맡겠다고 알리고, 알림을 받은 다른 창은 배경음악·환경음을 끈다
+function soundLink() {
+  if (POPWIN || !('BroadcastChannel' in window)) return;
+  const id = Math.random().toString(36).slice(2), bc = new BroadcastChannel('yh-sound');
+  let last = 0;
+  const claim = () => {
+    if (Date.now() - last < 3000 && !yielded) return; last = Date.now();
+    try { bc.postMessage({ t: 'claim', id }); } catch {}
+    if (yielded) { yielded = false; if (ctx) { applyVolumes(); if (musicOk()) startMusic(); updateAmbience(); critters(); } }
+  };
+  bc.onmessage = e => {
+    if (e.data?.t !== 'claim' || e.data.id === id || yielded) return;
+    yielded = true; stopMusic(); clearTimeout(critterTimer); applyVolumes();
+  };
+  claim();
+  document.addEventListener('pointerdown', claim, { capture: true });
+  document.addEventListener('keydown', claim, { capture: true });
+  window.addEventListener('focus', claim);
+}
 export function initSound() {
   loadSound();
   on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
@@ -652,7 +676,8 @@ export function initSound() {
     playSfx(b.closest('.tabbar, .topnav') ? 'nav' : 'tap');
   }, { capture: true });
   // 브라우저는 사용자가 한 번 누른 뒤에야 소리를 허락한다.
-  const unlock = () => { if (!ensureCtx()) return; ctx.resume?.(); applyVolumes(); if (sound.bgmOn) startMusic(); updateAmbience(); critters(); };
+  const unlock = () => { if (!ensureCtx()) return; ctx.resume?.(); applyVolumes(); if (musicOk()) startMusic(); if (!yielded) { updateAmbience(); critters(); } };
+  soundLink();
   document.addEventListener('pointerdown', unlock, { once: true });
   document.addEventListener('keydown', unlock, { once: true });
   if (MOBILE) {
