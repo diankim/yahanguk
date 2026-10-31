@@ -11,7 +11,7 @@ const inBattle = () => scene.battle || scene.exp;
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
 let away = false;
-// 배경음악·환경음이 창마다 겹치지 않게(7.5.5): 채팅·귓속말 새 창(?pop=)은 효과음만 내고,
+// 배경음악·환경음이 창마다 겹치지 않게(7.5.5): 채팅·귓속말 새 창(?pop=)은 소리를 전혀 내지 않고,
 // 게임 창이 여럿이면 가장 최근에 누르거나 고른 창 하나만 배경음악·환경음을 낸다(나머지는 yielded — 브라우저 안 신호 BroadcastChannel 'yh-sound')
 const POPWIN = (() => { try { return !!new URLSearchParams(location.search).get('pop'); } catch { return false; } })();
 let yielded = POPWIN;
@@ -613,7 +613,7 @@ const SFX = {
   chime: () => tone(660, 0.2, 0.05), error: () => seq([240, 200], 0.1, 0.1, 0.06), repair: () => { tone(900, 0.04, 0.05); tone(700, 0.05, 0.05, 'sine', 0.07); },
 };
 export function playSfx(kind) {
-  if (!sound.sfxOn || away || !ensureCtx()) return;
+  if (POPWIN || !sound.sfxOn || away || !ensureCtx()) return;
   try { (SFX[kind] || SFX.tap)(); } catch {}
 }
 export const SFX_SAMPLES = [['confirm', '확인'], ['find', '발견'], ['hit', '전투'], ['coin', '거래'], ['craft', '제작'], ['travel', '출발'], ['reward', '보상'], ['error', '오류']];
@@ -660,6 +660,7 @@ function soundLink() {
   window.addEventListener('focus', claim);
 }
 export function initSound() {
+  if (POPWIN) return; // 채팅·귓속말 새 창은 소리를 전혀 내지 않는다(7.5.5, 사용자 요청 — 소리는 게임 창에서만)
   loadSound();
   on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
   // 원정을 보내면 돌아오는 시각까지 전투 음악, 돌아오면(결과를 받기 전이라도) 평소 음악으로
