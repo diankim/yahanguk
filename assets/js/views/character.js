@@ -212,6 +212,9 @@ async function status(body) {
       </div>
       <p class="muted small">${byYohwa ? '구조나 회생 부적으로 일어나면 요화는 남아 하루 뒤 다시 쓰러집니다. 귀령초로 풀거나 안전지대 봉인을 받으세요.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
+    ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
+      <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`,
+      { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}
     ${panel('조사원 상태', `<div class="st-box">
       <div class="st-main">
         <div class="vitals-mini">
@@ -232,10 +235,7 @@ async function status(body) {
           <button class="st-open" data-st="${i}"><b>${esc(x.name)}${x.stacks > 1 ? ` ×${x.stacks}` : ''}</b><small>${esc(x.description || '')}</small></button>
           <span class="muted small" data-left="${new Date(x.expires_at).getTime()}">${fmt.remain(new Date(x.expires_at) - Date.now())}</span></li>`).join('')}</ul>
           <p class="muted small">상태를 누르면 자세한 효과와 치료 방법을 볼 수 있습니다.</p>` : `<p class="muted small">걸린 상태가 없습니다.</p>`}
-      </div></div>`, { ico: 'heart', extra: `<a class="btn small ghost" href="#/bag/equip">장비 손질</a>` })}
-    ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
-      <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`,
-      { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}`;
+      </div></div>`, { ico: 'heart', extra: `<a class="btn small ghost" href="#/bag/equip">장비 손질</a>` })}`;
   $$('[data-surv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_survival_action', { p_action: b.dataset.surv })));
   $$('[data-use]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.use, d = qsDesc(k);
