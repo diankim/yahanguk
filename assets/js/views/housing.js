@@ -1,6 +1,6 @@
 // 별채(7.2, #/house · #/house/<주인>): 도트 방 구경·꾸미기·곳간·넓히기·대문·방명록·꼬마 동무.
 // 서버는 world_housing_*·world_pet_*가 검사하고(겹침·칸·설치 상한·소유·안전지대), 화면은 같은 규칙으로 미리 막아 준다.
-// 다시 읽는 때: 화면을 열 때 · 저장·곳간·넓히기·방명록·동무 행동 뒤(실시간 구독·주기 읽기 없음). 방 그림은 동무가 있을 때만 1초 8번 다시 그린다.
+// 다시 읽는 때: 화면을 열 때 · 저장·곳간·넓히기·방명록·동무 행동 뒤(실시간 구독·주기 읽기 없음). 동무 창은 별채가 없어도 연다(데리고 다니는 동무). 방 그림은 동무가 있을 때만 1초 8번 다시 그린다.
 import { rpc, act, store, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH } from '../housing/render.js';
@@ -56,8 +56,10 @@ function drawClosed() {
     ${panel('지금 내 상태', `<ul class="hs-req"><li class="${c.level >= 15 ? 'ok' : 'no'}">레벨 15 이상 (지금 Lv.${c.level || 1})</li><li class="${q.step ? 'ok' : ''}">퀘스트 ${q.done ? '마침' : q.step ? `${q.step}장면까지 보고함` : '받지 않음'}</li></ul>
       <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>`, { ico: 'scroll' })}
     ${mergePanel()}
+    ${panel('꼬마 동무', `<p class="muted small">별채가 없어도 동무를 모으고 한 마리를 데리고 다닐 수 있습니다(조사원 카드에 함께 보입니다).</p><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무 도감</button>`, { ico: 'heart' })}
     ${store_.length ? panel('곳간에 쌓인 가구', `<p class="muted small">별채를 얻기 전에 받은 가구입니다. 별채를 얻으면 꺼내 놓을 수 있습니다.</p><ul class="hs-list">${store_.map(([id, n]) => `<li>${esc(furName(id))} ×${n}</li>`).join('')}</ul>`, { ico: 'chest' }) : ''}`;
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
+  $('#hs-pets')?.addEventListener('click', openPets);
 }
 
 // ─── 수 세기·검사(서버 world_housing_save와 같은 규칙) ───
@@ -189,7 +191,6 @@ function palette() {
 }
 function petBar(p) {
   const me = snap.role === 'owner', today = snap.pet_today || {};
-  if (p.out) return `<div class="hs-petbar"><span class="muted small">${esc(`${p.nick || p.name}은(는) ${me ? '나와' : '주인과'} 함께 나가 있습니다.`)}</span></div>`;
   return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b><span class="muted small">친밀도 ${p.affinity || 0}${p.adult ? ' · 다 자람' : ' / 100이면 자람'}</span>
     <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}</span></div>`;
 }
@@ -366,19 +367,31 @@ async function openPets() {
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
   const inv = store.character?.inventory || {};
   const items = Object.entries(inv).filter(([k, n]) => n > 0 && (k.startsWith('pt_') || k.startsWith('pet_egg_')));
-  const mine = new Map((ps.mine || []).map(p => [p.id, p])), room_ = ps.room || {};
-  const body = `<p class="muted small">꼬마 동무는 능력치 효과가 없습니다. 별채에 한 마리를 두면 방 안을 돌아다니고, 손님도 쓰다듬거나 놀아 줄 수 있습니다. 데리고 다니면 조사원 카드에 함께 보입니다.</p>
-    ${room_.pet_id ? `<div class="hs-petnow"><img src="${petImage(room_.pet_id, mine.get(room_.pet_id)?.adult, { scale: 2 })}" alt=""><b>${esc(mine.get(room_.pet_id)?.nick || PETS[room_.pet_id]?.name || '')}</b>
-      <button class="btn small" data-walk="${room_.pet_out ? '0' : '1'}">${room_.pet_out ? '별채에 돌려놓기' : '데리고 다니기'}</button><button class="btn small" data-place="">별채에서 내보내기</button></div>` : ''}
+  // 두 자리(1.0.0): 데리고 다니는 동무(world_pet_profile, 조사원 카드) · 별채 동무(world_housing.pet_id). 같은 동무는 한 자리에만.
+  const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null, petId = room_?.pet_id || null;
+  const nm = id => mine.get(id)?.nick || PETS[id]?.name || '';
+  const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2 })}" alt="">` : '<span class="ps-empty"></span>';
+  const houseNote = !ps.house ? '별채를 얻으면 한 마리를 둘 수 있습니다.' : ps.shared ? '함께 쓰는 별채에는 집주인의 동무가 머뭅니다.' : '도감에서 「별채에 두기」';
+  const slots = `<div class="pet-slots">
+      <div class="pet-slot"><small class="eyebrow">데리고 다니는 동무 · 조사원 카드에 보임</small>${pic(prof)}<span class="ps-body">${prof ? `<b>${esc(nm(prof))}</b><button class="btn small" data-prof="">쉬게 하기</button>` : '<span class="muted small">도감에서 「데리고 다니기」</span>'}</span></div>
+      <div class="pet-slot"><small class="eyebrow">별채 동무 · 방 안을 돌아다님</small>${pic(petId)}<span class="ps-body">${petId ? `<b>${esc(nm(petId))}</b><button class="btn small" data-place="">별채에서 내보내기</button>` : `<span class="muted small">${esc(houseNote)}</span>`}</span></div>
+    </div>`;
+  const acts = s => {
+    const out = [prof === s.id ? '<em class="on">데리고 다님</em>' : `<button class="btn small" data-prof="${s.id}">데리고 다니기</button>`];
+    if (room_) out.push(petId === s.id ? '<em class="on">별채에 있음</em>' : `<button class="btn small" data-place="${s.id}">별채에 두기</button>`);
+    return out.join('');
+  };
+  const body = `<p class="muted small">꼬마 동무는 능력치 효과가 없습니다. 두 자리에 한 마리씩 둡니다. 데리고 다니는 동무는 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채 동무는 방 안을 돌아다니며 손님도 쓰다듬거나 놀아 줄 수 있습니다. 같은 동무를 두 자리에 함께 둘 수는 없어서, 다른 자리로 고르면 앞 자리에서 빠집니다.</p>
+    ${slots}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
     <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
     <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id); return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
       <img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3 })}" alt=""><b>${esc(m?.nick || s.name)}</b><small>${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
-      ${m ? `<span class="pet-act">${room_.pet_id === s.id ? '<em>별채에 있음</em>' : `<button class="btn small" data-place="${s.id}">별채에 두기</button>`}<button class="linkish small" data-nick="${s.id}">별명</button></span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
+      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button></span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-walk],[data-nick]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick]'); if (!b) return;
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
       openModal({ title: '별명 짓기', body: `<form id="pet-nick" class="hs-gb-form"><input name="nick" maxlength="8" value="${esc(cur)}" placeholder="${esc(PETS[id]?.name || '')}" autocomplete="off"><button class="btn small primary">짓기</button></form><p class="muted small">8자까지 · 한글·영문·숫자 · 비우면 원래 이름으로 돌아갑니다.</p>` });
@@ -391,7 +404,7 @@ async function openPets() {
     guard(b, async () => {
       let r;
       if (b.dataset.adopt) r = await act('world_pet_adopt', { p_item: b.dataset.adopt });
-      else if (b.dataset.walk) r = await rpc('world_pet_walk', { p_out: b.dataset.walk === '1' });
+      else if (b.dataset.prof !== undefined) r = await rpc('world_pet_profile_set', { p_pet: b.dataset.prof || null });
       else r = await rpc('world_pet_place', { p_pet: b.dataset.place || null });
       closeModal(); await reload(); openPets();
       return r?.content ? r : { content: '바꿨습니다.' };
