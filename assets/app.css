@@ -717,7 +717,7 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .cell-lock { fill: url(#lock-hatch); pointer-events: none; }
 .hatch-line { stroke: color-mix(in srgb, var(--bg) 55%, transparent); stroke-width: 3; }
 .b-inner { fill: none; stroke: color-mix(in srgb, var(--bg) 45%, transparent); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
-.b-border { fill: none; stroke: color-mix(in srgb, var(--gold) 80%, var(--bg)); stroke-width: 2.4; stroke-linecap: round; pointer-events: none; }
+.b-border { fill: none; stroke: color-mix(in srgb, var(--gold) 80%, var(--bg)); stroke-width: 1.6; stroke-linecap: round; pointer-events: none; }
 .b-coast { fill: none; stroke: color-mix(in srgb, var(--text) 35%, transparent); stroke-width: 1.6; pointer-events: none; }
 .road { stroke: color-mix(in srgb, var(--text) 30%, transparent); stroke-width: 1.1; stroke-dasharray: 2 4; pointer-events: none; }
 /* 7.3.4 물길(water.js): 테마 바탕에 물빛을 섞어 어느 테마에서나 맞춘다 */
