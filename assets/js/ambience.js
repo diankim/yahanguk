@@ -51,13 +51,14 @@ function loopBuf(ctx, dest, b, hp, lp) {
 }
 // 층마다 (ctx, dest, 재료) → 멈출 소리 목록
 export const LAYERS = {
-  // 세우: 성긴 잔방울 + 가끔 또도독, 높은 결은 4.5kHz에서 접고 바탕은 아주 옅게
+  // 세우(7.5.9k, 사용자 요청): 처마·잎에서 간헐적으로 떨어지는 「똑 · 또독」이 주인공이고,
+  // 장우와 같은 빗소리 결은 아주 작게 뒤에 깐다(잔방울만 겹치면 물 흐르는 소리처럼 들렸다).
   drizzle: (ctx, dest, m) => {
-    // 7.5.9k: 굵은 「똑」을 잔방울 속에 묻히게 줄이고(bigAmp), 뒤에 깔리던 낮은 바탕(바람처럼 들리던 것)은 아주 옅게
-    const b = m.drizzleBuf || (m.drizzleBuf = rainBuffer(ctx, { seconds: 14, rate: 150, big: 5, tone: 1, bigAmp: 0.45, soft: 1 }));
-    const g = ctx.createGain(); g.gain.value = 0.12; g.connect(dest);
-    const lo = ctx.createGain(); lo.gain.value = 0.03; lo.connect(dest);
-    return [loopBuf(ctx, g, b, 300, 3200), bed(ctx, lo, m.brown, 300)];
+    const drops = m.drizzleBuf || (m.drizzleBuf = rainBuffer(ctx, { seconds: 17, rate: 0, big: 1.6, tone: 1.25, bigAmp: 1 }));
+    const rain = m.rainBuf || (m.rainBuf = rainBuffer(ctx, { seconds: 12, rate: 1500, big: 10, tone: 0.8, bigAmp: 0.6 }));
+    const g = ctx.createGain(); g.gain.value = 0.21; g.connect(dest);
+    const back = ctx.createGain(); back.gain.value = 0.035; back.connect(dest);
+    return [loopBuf(ctx, g, drops, 400, 4200), loopBuf(ctx, back, rain, 200, 2600)];
   },
   // 장우: 촘촘한 방울 두 겹(가까운 것·먼 것) + 낮은 바탕 — 같은 방울 결이라 세우보다 굵고 빽빽할 뿐 쇳소리가 없다
   rain: (ctx, dest, m) => {
