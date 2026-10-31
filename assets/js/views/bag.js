@@ -24,7 +24,7 @@ const FAV_MAX = 30;
 const STAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
 let favs = null;
 const loadFavs = () => favs ? Promise.resolve(favs) : rpc('world_craft_favs').then(r => (favs = new Set(r || []))).catch(() => (favs = new Set()));
-const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', consumable: '소모품', material: '재료', etc: '기타' };
+const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', craft: '제작 공구', consumable: '소모품', material: '재료', furniture: '가구', etc: '기타' };
 // 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
 const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
   name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '신품 먼저', '범품 먼저'] };
@@ -200,7 +200,7 @@ async function craft(body, inv, stg) {
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id)); // 요리·손질 결과물
   const cmap = catalogMap(inv);
-  const kindOf = r => { const it = cmap.get(r.output); if (!it) return 'etc'; if (SLOTS[slotOf(it)]) return slotOf(it); const k = catOf(it); return k === 'consumable' || k === 'material' ? k : 'etc'; };
+  const kindOf = r => { const it = cmap.get(r.output); if (!it) return 'etc'; if (SLOTS[slotOf(it)]) return slotOf(it); if (slotOf(it) === 'craft') return 'craft'; if (it.category === 'furniture') return 'furniture'; const k = catOf(it); return k === 'consumable' || k === 'material' ? k : 'etc'; };
   const lvOf = x => Number(x.r.minimum_level) || 1, tierOf = x => Number(cmap.get(x.r.output)?.tier) || 0;
   const byLv = (a, b) => lvOf(a) - lvOf(b) || tierOf(a) - tierOf(b) || (a.r.difficulty || 0) - (b.r.difficulty || 0) || String(a.r.name).localeCompare(String(b.r.name), 'ko');
   const SORTS = { can: (a, b) => b.can - a.can || b.atLoc - a.atLoc || byLv(a, b), lv: byLv, lvd: (a, b) => byLv(b, a) };
