@@ -1796,6 +1796,9 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .hs-yohwa { flex: none; padding: 1px 6px; border-radius: 99px; font-size: calc(11px * var(--fz, 1)); font-weight: 700; color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 55%, transparent); }
 .hs-yohwa.s1 { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
 .hs-yohwa.sealed { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); }
+/* 요괴화(7.6.2): 요화 3단계가 끝난 마지막 1시간 — 채운 빨강으로 다른 단계와 가른다 */
+.yohwa-pin.frenzy { background: color-mix(in srgb, var(--bad) 26%, var(--surface-2)); border-left-width: 5px; }
+.hs-yohwa.frenzy { color: var(--bg); background: var(--bad); border-color: var(--bad); }
 .yohwa-note em { font-style: normal; font-weight: 650; }
 .notice-line { display: flex; gap: 6px; align-items: center; margin: 6px 0; padding: 6px 8px; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); border: var(--bw) dashed var(--line); border-radius: var(--r-sm); }
 .ingr li small { margin-left: 4px; font-size: calc(11px * var(--fz, 1)); }
