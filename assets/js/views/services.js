@@ -331,12 +331,26 @@ export async function renderMarket(box) {
     }
     const form = $('#trade-form', body);
     if (form) {
-      const hint = () => { const r = ref.get(form.item.value); $('#trade-hint', body).textContent = r?.reference_price ? `기준 시세 ${fmt.jeon(r.reference_price)} · 최대 ${fmt.jeon(r.reference_price * 10)}` : ''; };
+      // 등록 가격 범위(서버 world_trade_offer_create와 같은 값): 1전 ~ 기준 시세 10배, 거래소 전용 희귀 재료는 기준 시세 70%부터
+      const bounds = () => { const p = Number(ref.get(form.item.value)?.reference_price) || 0; return { p, min: MARKET_ONLY.has(form.item.value) && p ? Math.ceil(p * 0.7) : 1, max: p ? p * 10 : Infinity }; };
+      const hint = () => { const { p, min, max } = bounds(); $('#trade-hint', body).textContent = p ? `기준 시세 ${fmt.jeon(p)}${min > 1 ? ` · 최소 ${fmt.jeon(min)}` : ''} · 최대 ${fmt.jeon(max)}` : ''; };
+      // 범위를 벗어난 가격은 알리고 가장 가까운 값으로 고친다(7.5.5, 사용자 요청). 고쳤으면 true
+      const fixPrice = () => {
+        const { min, max } = bounds(), v = Math.floor(Number(form.price.value));
+        if (v >= min && v <= max) return false;
+        const to = !(v >= min) ? min : max;
+        form.price.value = to;
+        toast(MARKET_ONLY.has(form.item.value) && !(v >= min) ? `희귀 재료는 기준 시세의 70%(${fmt.jeon(min)}) 아래로 등록할 수 없어 ${fmt.jeon(to)}으로 고쳤습니다.`
+          : !(v >= min) ? `가격은 1전 이상이어야 해서 ${fmt.jeon(to)}으로 고쳤습니다.` : `가격은 기준 시세의 10배(${fmt.jeon(max)})까지라 ${fmt.jeon(to)}으로 고쳤습니다.`, 'error');
+        return true;
+      };
       form.item.onchange = () => { const p = ref.get(form.item.value)?.reference_price; if (p) form.price.value = p; hint(); };
+      form.price.addEventListener('change', fixPrice);
       bindPicker(form, 'item', sellOpts, () => form.item.onchange());
       hint();
       form.onsubmit = e => {
         e.preventDefault();
+        if (fixPrice()) return; // 고친 값을 보고 다시 누르게 한다
         const qty = Math.floor(Number(form.qty.value)), price = Math.floor(Number(form.price.value));
         if (!(qty >= 1) || !(price >= 1)) return toast('수량과 가격은 1 이상이어야 합니다.', 'error');
         if (mine.length >= 10) return toast('거래소에는 동시에 10건까지 올려 둘 수 있습니다. 팔리거나 취소된 뒤 다시 등록하세요.', 'error');
