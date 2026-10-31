@@ -565,9 +565,10 @@ function critters() {
 function updateAmbience() {
   if (!ctx) return;
   const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
-  setLayer('rain', w === 'rain' ? 0.45 : 0, BUILD.rain);
+  setLayer('rain', w === 'rain' ? 0.38 : 0, BUILD.rain);
   setLayer('drizzle', w === 'drizzle' ? (under ? 0.3 : 0.55) : 0, BUILD.drizzle);
-  setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06, drizzle: 0.02 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
+  // 바람은 삭풍(wind) 날씨에만(7.5.9k, 사용자 요청 — 다른 날씨에 늘 깔리던 바람결을 뺐다)
+  setLayer('wind', w === 'wind' ? 0.5 * (under ? 0.4 : 1) : 0, BUILD.wind);
   setLayer('water', w === 'fog' || under ? 0.14 : w === 'rain' ? 0.06 : w === 'drizzle' ? 0.01 : 0, BUILD.water);
   setLayer('hiss', w === 'snow' ? 0.006 : 0, BUILD.hiss);
   setLayer('mist', w === 'bloodmist' ? 0.05 : 0, BUILD.mist);

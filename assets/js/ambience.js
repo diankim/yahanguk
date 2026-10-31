@@ -5,7 +5,7 @@
 // 빗소리 바탕: 아주 짧은 빗방울 수천 개를 버퍼에 직접 흩뿌려 만든다(흰 잡음을 거르면 「촤아」 하는 쇳소리가 나서).
 // 버퍼 끝과 처음을 이어 붙이도록 방울을 길이로 감아 넣어 되풀이 이음매가 없다.
 // rate: 1초에 떨어지는 작은 방울 수, big: 1초에 떨어지는 굵은 「톡」 수, tone: 방울 울림(높을수록 잎·처마, 낮을수록 땅)
-export function rainBuffer(ctx, { seconds = 12, rate = 160, big = 6, tone = 1 } = {}) {
+export function rainBuffer(ctx, { seconds = 12, rate = 160, big = 6, tone = 1, bigAmp = 1 } = {}) {
   const sr = ctx.sampleRate, len = Math.floor(sr * seconds), buf = ctx.createBuffer(2, len, sr);
   for (let ch = 0; ch < 2; ch++) {
     const d = buf.getChannelData(ch);
@@ -28,7 +28,7 @@ export function rainBuffer(ctx, { seconds = 12, rate = 160, big = 6, tone = 1 } 
       // 굵은 방울은 2~4개가 짧게 이어 떨어지기도 한다(또도독)
       let at = Math.floor(Math.random() * len); const cnt = Math.random() < 0.45 ? 2 + Math.floor(Math.random() * 3) : 1;
       for (let c = 0; c < cnt; c++) {
-        const a = 0.22 + Math.random() * 0.3, n = Math.floor(sr * (0.018 + Math.random() * 0.02));
+        const a = (0.22 + Math.random() * 0.3) * bigAmp, n = Math.floor(sr * (0.018 + Math.random() * 0.02));
         put(at, n, a, n / 5, (900 + Math.random() * 1300) * tone, 0.6);
         at += Math.floor(sr * (0.05 + Math.random() * 0.07));
       }
@@ -51,26 +51,37 @@ function loopBuf(ctx, dest, b, hp, lp) {
 export const LAYERS = {
   // 세우: 성긴 잔방울 + 가끔 또도독, 높은 결은 4.5kHz에서 접고 바탕은 아주 옅게
   drizzle: (ctx, dest, m) => {
-    const b = m.drizzleBuf || (m.drizzleBuf = rainBuffer(ctx, { seconds: 14, rate: 110, big: 5, tone: 1 }));
-    const g = ctx.createGain(); g.gain.value = 0.18; g.connect(dest);
-    const lo = ctx.createGain(); lo.gain.value = 0.25; lo.connect(dest);
+    // 7.5.9k: 굵은 「똑」을 잔방울 속에 묻히게 줄이고(bigAmp), 뒤에 깔리던 낮은 바탕(바람처럼 들리던 것)은 아주 옅게
+    const b = m.drizzleBuf || (m.drizzleBuf = rainBuffer(ctx, { seconds: 14, rate: 140, big: 5, tone: 1, bigAmp: 0.45 }));
+    const g = ctx.createGain(); g.gain.value = 0.2; g.connect(dest);
+    const lo = ctx.createGain(); lo.gain.value = 0.03; lo.connect(dest);
     return [loopBuf(ctx, g, b, 250, 4500), bed(ctx, lo, m.brown, 300)];
   },
   // 장우: 촘촘한 방울 두 겹(가까운 것·먼 것) + 낮은 바탕 — 같은 방울 결이라 세우보다 굵고 빽빽할 뿐 쇳소리가 없다
   rain: (ctx, dest, m) => {
-    const b = m.rainBuf || (m.rainBuf = rainBuffer(ctx, { seconds: 12, rate: 900, big: 14, tone: 0.85 }));
-    const g = ctx.createGain(); g.gain.value = 0.2; g.connect(dest);
-    const far = ctx.createGain(); far.gain.value = 0.12; far.connect(dest);
-    const lo = ctx.createGain(); lo.gain.value = 0.5; lo.connect(dest);
-    return [loopBuf(ctx, g, b, 200, 5200), loopBuf(ctx, far, b, 150, 1600), bed(ctx, lo, m.brown, 420)];
+    // 7.5.9k: 땅·지붕을 고르게 적시는 빽빽한 빗소리(방울을 더 촘촘히, 높은 결은 4kHz에서 부드럽게 접음), 낮은 바탕은 줄임
+    const b = m.rainBuf || (m.rainBuf = rainBuffer(ctx, { seconds: 12, rate: 1500, big: 10, tone: 0.8, bigAmp: 0.6 }));
+    const g = ctx.createGain(); g.gain.value = 0.17; g.connect(dest);
+    const far = ctx.createGain(); far.gain.value = 0.14; far.connect(dest);
+    const lo = ctx.createGain(); lo.gain.value = 0.12; lo.connect(dest);
+    return [loopBuf(ctx, g, b, 220, 4000), loopBuf(ctx, far, b, 160, 1500), bed(ctx, lo, m.brown, 380)];
   },
-  // 바람: 갈색 잡음의 띠를 천천히 오르내리게 하고 세기를 숨 쉬듯 바꾼다(휘파람 같은 공명은 낮춤)
+  // 바람(7.5.9k, 사용자 요청 「휘이잉」): 좁은 띠로 거른 잡음이 휘파람처럼 울고, 돌풍이 몇 초마다 일었다 잦아들며
+  // 셀수록 음이 올라간다(돌풍 하나가 세기와 높이를 함께 흔든다). 낮은 웅웅거림은 넣지 않는다.
   wind: (ctx, dest, m) => {
-    const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(), sw = ctx.createGain();
-    n.buffer = m.brown; n.loop = true; bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.9; lp.type = 'lowpass'; lp.frequency.value = 1400;
-    const l1 = ctx.createOscillator(), g1 = ctx.createGain(); l1.frequency.value = 0.05; g1.gain.value = 220; l1.connect(g1); g1.connect(bp.frequency);
-    const l2 = ctx.createOscillator(), g2 = ctx.createGain(); l2.frequency.value = 0.031; g2.gain.value = 0.35; sw.gain.value = 0.65; l2.connect(g2); g2.connect(sw.gain);
-    n.connect(bp); bp.connect(lp); lp.connect(sw); sw.connect(dest); n.start(); l1.start(); l2.start(); return [n, l1, l2];
+    const gust = ctx.createGain(); gust.gain.value = 0; // 돌풍 세기(-1~1 남짓)를 모으는 곳
+    const lfo = (f, a) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; g.gain.value = a; o.connect(g); g.connect(gust); o.start(); return o; };
+    const ls = [lfo(0.17, 0.5), lfo(0.29, 0.3), lfo(0.071, 0.35)];
+    const out = [];
+    // 휘파람 두 갈래(조금 다른 높이) + 넓고 옅은 바람결
+    [[620, 9, 0.9, 260], [930, 12, 0.45, 380], [800, 0.8, 0.22, 200]].forEach(([f, q, v, sweep]) => {
+      const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(), g = ctx.createGain(), ga = ctx.createGain();
+      n.buffer = m.noise; n.loop = true; bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; lp.type = 'lowpass'; lp.frequency.value = 2400;
+      const fs = ctx.createGain(); fs.gain.value = sweep; gust.connect(fs); fs.connect(bp.frequency);
+      g.gain.value = v * 0.55; ga.gain.value = v * 0.5; gust.connect(ga); ga.connect(g.gain);
+      n.connect(bp); bp.connect(lp); lp.connect(g); g.connect(dest); n.start(0, Math.random() * 2); out.push(n);
+    });
+    return [...out, ...ls];
   },
   // 물: 낮게 흐르는 소리 + 잔잔하게 일렁이는 물결(가운데 띠를 느리게 흔듦)
   water: (ctx, dest, m) => {
