@@ -4,6 +4,7 @@ import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, es
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
+import { QS_DEFAULT, qsDesc } from './views/character.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -147,6 +148,25 @@ function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.s
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 // 화면을 옮기면 「현장 보기」 단추가 생기거나 사라지도록 다시 그린다
 window.addEventListener('hashchange', () => render());
+// 상태판 퀵슬롯(7.5.7, 제보 61): 캐릭터 › 상태의 퀵슬롯 8칸을 작게. 칸 목록은 접속 동안 한 번(10분 캐시) 읽고, 칸을 바꾸면 다시 읽는다.
+let qsList = null, qsBusy = false;
+async function loadQs() {
+  if (qsBusy) return; qsBusy = true;
+  try { const r = await load('world_quickslots_get', undefined, { maxAge: 600000 }); qsList = Array.isArray(r?.slots) ? r.slots : QS_DEFAULT; }
+  catch { qsList = qsList || QS_DEFAULT; }
+  qsBusy = false; render();
+}
+window.addEventListener('yh-qs-changed', () => { qsList = null; loadQs(); });
+function qsCard(c) {
+  if (!qsList) { loadQs(); return ''; }
+  const inv = c.inventory || {}, moving = !!c.travel_destination, downed = c.health <= 0 || !!c.downed_at;
+  const cells = Array.from({ length: 8 }, (_, i) => qsList[i] || '').map(k => {
+    if (!k) return '<span class="hqs empty"></span>';
+    const n = Number(inv[k] || 0), off = !n || ((downed || moving) && k.replace(/_hq$/, '') !== 'revival_charm');
+    return `<button class="hqs ${n ? '' : 'none'}" data-hqs="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(nameOf(k))}${qsDesc(k) ? ` · ${esc(qsDesc(k))}` : ''}"><b>${esc(nameOf(k))}</b><small>×${fmt.num(n)}</small></button>`;
+  }).join('');
+  return `<section class="hud-card hud-qs"><h3>퀵슬롯 <a class="linkish" href="#/char/status">바꾸기</a></h3><div class="hqs-grid">${cells}</div></section>`;
+}
 function render() {
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);
@@ -187,6 +207,7 @@ function render() {
       <div>${icon('bag', 16)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
       <div>${icon('pin', 16)}<span>위치</span><b>${esc(c.location)}</b></div>
     </section>
+    ${qsCard(c)}
     <section class="hud-card now"><h3>진행 중</h3>
       ${items.map((it, i) => `<div class="now-item st-${it.kind}">
         <div class="now-ico">${icon(it.icon, 18)}</div>
@@ -196,6 +217,7 @@ function render() {
       </div>`).join('')}
     </section>`;
   const ts = $('#hud-title-swap', body); if (ts) ts.onclick = () => openTitleSwap();
+  body.querySelectorAll('[data-hqs]').forEach(b => b.onclick = () => guard(b, () => act('world_use_item', { p_item_id: b.dataset.hqs })));
   body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
   body.querySelectorAll('[data-act2]').forEach(b => b.onclick = () => { closeStrip(); items[Number(b.dataset.act2)].action2[1](b); });
   const sts = yohwaOf(state.hud?.statuses).rest;

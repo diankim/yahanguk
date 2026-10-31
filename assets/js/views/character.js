@@ -139,10 +139,10 @@ async function hereZone() {
   return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
 }
 // ── 상태 화면 칸들(7.5.0): 장비·전투 능력은 작게, 회복 물품은 퀵슬롯으로 ──
-const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
+export const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
 const QS_N = 8;
 const baseOf = k => String(k || '').replace(/_hq$/, '');
-const qsDesc = k => { const d = USABLE[baseOf(k)] || USE.find(([x]) => x === k)?.[1] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
+export const qsDesc = k => { const d = USABLE[baseOf(k)] || USE.find(([x]) => x === k)?.[1] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
 // 회복·치료 효과가 있는 물품(음식·약초 같은 재료 포함): 서버 world_use_item이 받는 것 가운데 몸·정신·영력·침식·탐색력이 오르는 것
 const QS_OK = k => /체력|정신|영력|기력|침식|탐색력|전투불능/.test(USABLE[baseOf(k)] || '') || USE.some(([x]) => x === baseOf(k));
 function qsSlots(snap) {
@@ -184,7 +184,7 @@ function openQuickslots(cur, inv) {
   $('#qs-save', m).onclick = () => guard($('#qs-save', m), async () => {
     const slots = $$('[data-qs]', m).map(s => s.value || '');
     await rpc('world_quickslots_set', { p_slots: slots });
-    invalidate('world_quickslots_get'); closeModal(); draw(true);
+    invalidate('world_quickslots_get'); closeModal(); draw(true); window.dispatchEvent(new Event('yh-qs-changed'));
     return { content: '퀵슬롯을 바꿨습니다.' };
   });
 }

@@ -255,6 +255,11 @@ textarea { resize: none; }
 .hud.open .hud-body { display: grid; }
 .hud-card { padding: 12px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--line); display: grid; gap: 8px; }
 .hud-card h3 { font-size: calc(12px * var(--fz, 1)); color: var(--muted); font-weight: 600; letter-spacing: .04em; }
+.hud-qs h3 { display: flex; justify-content: space-between; align-items: baseline; } .hud-qs h3 .linkish { font-weight: 400; letter-spacing: 0; }
+.hqs-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.hqs { display: grid; gap: 0; min-width: 0; padding: 4px 3px; border-radius: var(--r-sm); border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); text-align: center; cursor: pointer; font: inherit; }
+.hqs b { font-size: calc(11px * var(--fz, 1)); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hqs small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
+.hqs:hover:not(:disabled) { border-color: var(--accent); } .hqs:disabled { opacity: .45; cursor: default; } .hqs.empty { border-style: dashed; min-height: 34px; background: none; }
 .hud-id { display: flex; align-items: center; gap: 10px; }
 .hud-id > div:nth-child(2) { flex: 1; min-width: 0; }
 .hud-id h2 { font-size: calc(15px * var(--fz, 1)); }
