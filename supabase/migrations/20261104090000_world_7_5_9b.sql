@@ -15,12 +15,11 @@ begin
   if inh is not null and not inh then execute format('grant %I to postgres with inherit false', own); end if;
 end $p$;
 
-update public.world_patch_notes set body = body || $N$
-
-## 7.5.9b
+-- 패치노트는 사용자 요청으로 따로 번호를 두지 않고 7.5.0 본문 맨 끝(## 7.5.9 항목 아래)에 이어 쓴다
+update public.world_patch_notes set body = rtrim(body, E'\n') || $N$
 - 퀘스트의 채집 할 일 문구를 고쳤습니다. 물품을 정한 채집(예: 「정제 황지」)은 처음부터 **캔 개수**로 셌는데, 문구가 「…에서 정제 황지 채집 1/3」이라 3번 채집해야 하는지 헷갈렸습니다. 이제 「…에서 정제 황지 모으기(캔 개수)」처럼 적고, 한 번에 3개를 캐면 3이 오릅니다. 물품을 정하지 않은 채집은 「…에서 채집하기(채집 횟수)」로 적습니다.
 - 알림음(설정 › 소리)이 울릴 때 화면 아래에도 글로 알려 줍니다: 탐색력 가득 · 잠깐 쉬기 가능 · 푹 쉬기 가능 · 자율 활동 끝. 전에는 소리만 나서 소리를 꺼 두었거나 못 들으면 알 수 없었습니다. 알림을 끈 종류는 글도 뜨지 않습니다.
 $N$
- where note_id = '7.5.0' and position('## 7.5.9b' in body) = 0;
+ where note_id = '7.5.0' and position('(캔 개수)' in body) = 0;
 
 update public.world_app_meta set value = '20261104090000' where key = 'db_version';
