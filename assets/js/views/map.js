@@ -8,7 +8,7 @@ import { raidLocks, raidShadow } from './raid.js';
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
 const shadowText = w => w.status === 'fight' ? '봉연의 그림자 토벌 중' : w.status === 'signup' ? '봉연의 그림자 · 모이는 중'
   : `봉연의 그림자 출현 예정${w.spawn_at ? ` · ${new Date(w.spawn_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`;
-let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set(), shadow = null;
+let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set(), shadow = null, surveyed = new Set();
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -17,13 +17,23 @@ export async function render(root, s) {
     ${segmented('map-sub', SUBS, sub)}<div id="map-body"></div>`;
   bindSegmented(el, 'map-sub', k => { sub = k; history.replaceState(null, '', `#/map/${k}`); draw(); });
   off.forEach(f => f());
-  off = [on('changed', () => draw(true)), on('env', () => draw(true))];
+  off = [on('changed', ({ name } = {}) => { if (/field_|gather|expedition/.test(name || '')) loadSurveyed(true); draw(true); }), on('env', () => draw(true))];
   window.addEventListener('yahang:arrived', onArrive);
   // 봉연에 잠긴 곳(서버 토벌 실패): 따로 읽어 지도에 표시한다(1분 동안 다시 씀)
   raidLocks().then(l => { sealed = new Set(l.map(x => x.region_id)); if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
   // 봉연의 그림자가 나올 곳(출현지가 확정된 뒤·모이는 중·토벌 중, 7.5.9): 같은 값(world_raid_brief, 1분 캐시)을 쓰고 다른 표시와 겹치지 않는 보라 마름모 별로 짚는다
   raidShadow().then(w => { shadow = w; if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
+  // 완전 답사한 지역(나에게만, 7.5.9c): 점 바로 바깥 금빛 테. 10분 캐시, 탐색·채집·원정 뒤에만 새로 읽는다
+  loadSurveyed();
   await draw();
+}
+function loadSurveyed(force) {
+  if (force) invalidate('world_survey_full_regions');
+  load('world_survey_full_regions', undefined, { maxAge: 600000 }).then(l => {
+    const next = new Set(Array.isArray(l) ? l : []);
+    if (next.size === surveyed.size && [...next].every(x => surveyed.has(x))) return;
+    surveyed = next; if (mapData && $('#map-body', el)) { try { paint(); } catch {} }
+  }).catch(() => {});
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', onArrive); window.removeEventListener('resize', onResize); }
 function onArrive() { draw(true); }
@@ -61,7 +71,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -263,6 +273,7 @@ function paint() {
       ${r.region_id === dest ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" class="dest-ring"/>` : ''}
       ${safe ? `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" transform="rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})" class="dot" data-region="${esc(r.region_id)}"/>`
              : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 6.5 : 5}" class="dot" data-region="${esc(r.region_id)}"/>`}
+      ${!safe && surveyed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 9.6 : 8.1}" class="survey-edge"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 8.25 : 6.75}" class="survey-ring"/>` : ''}
       ${r.region_id === here?.region_id ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" class="here-ring"/>` : ''}
       ${zones.get(r.region_id)?.contested ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring late"/>` : ''}
       ${sealed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9.5" class="seal-ring"/>` : ''}

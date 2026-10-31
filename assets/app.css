@@ -2072,6 +2072,10 @@ b.contest { color: var(--warn); font-weight: 600; }
 .contest-ring.late { animation-delay: 1.2s; }
 @keyframes contest { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.6); } }
 @media (prefers-reduced-motion: reduce) { .contest-ring { opacity: .8; transform: scale(1.3); } .contest-ring.late { display: none; } }
+/* 답사 완료(7.5.9c): 점 바로 바깥 금빛 테 + 그 바깥 바탕색 테 — 금빛·주황 세력 땅(천명원·남명회) 위에서도 묻히지 않게 */
+.survey-ring { fill: none; stroke: var(--gold); stroke-width: 1.5; pointer-events: none; }
+.survey-edge { fill: none; stroke: var(--bg); stroke-width: 1.3; pointer-events: none; }
+.lg.survey { background: var(--muted); background-clip: content-box; padding: 1.5px; border: 1.5px solid var(--gold); }
 .lg.contest { background: repeating-linear-gradient(-45deg, var(--bad) 0 2px, transparent 2px 5px); border: 1px dashed var(--bad); border-radius: 2px; }
 .lg.sealed { border: 1.5px dashed var(--bad); background: transparent; }
 b.sealed { color: var(--bad); }
