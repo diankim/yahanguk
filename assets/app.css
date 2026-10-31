@@ -2588,3 +2588,25 @@ b.shadow { color: var(--sp); }
 .raid-wrap .raid-mem .raid-mem-empty { grid-column: 1 / -1; }
 .spot-list li .btn { white-space: nowrap; flex: none; }
 
+/* 제작 거르기 접는 칸(7.6.3): 체크박스 대신 누르면 켜지는 작은 칩, 닫혀 있을 때는 고른 것을 한 줄로 요약 */
+.craft-filt { margin: 8px 0 4px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.craft-filt > summary { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 4px 10px; cursor: pointer; list-style: none; font-size: calc(13px * var(--fz, 1)); }
+.craft-filt > summary::-webkit-details-marker { display: none; }
+.craft-filt > summary::after { content: ''; margin-left: auto; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+.craft-filt[open] > summary::after { transform: rotate(-135deg); }
+.craft-filt .cf-sum { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.craft-filt .cf-on { font-style: normal; flex: none; min-width: 18px; padding: 0 5px; border-radius: 99px; text-align: center; background: var(--accent); color: var(--accent-ink); font-size: calc(11px * var(--fz, 1)); font-weight: 700; }
+.craft-filt .cf-body { display: grid; gap: 8px; padding: 4px 10px 10px; border-top: var(--bw) solid var(--line); }
+.craft-filt .cf-row { display: grid; grid-template-columns: 4.5em 1fr; gap: 6px; align-items: start; }
+.craft-filt .cf-h { padding-top: 5px; color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.craft-filt .cf-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.craft-filt .tg { position: relative; cursor: pointer; }
+.craft-filt .tg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.craft-filt .tg span { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 2px 9px; border-radius: 99px; border: var(--bw) solid var(--line); background: var(--surface); font-size: calc(12.5px * var(--fz, 1)); }
+.craft-filt .tg small { color: var(--muted); font-size: calc(10.5px * var(--fz, 1)); }
+.craft-filt .tg.mine span { color: var(--ok); font-weight: 600; }
+.craft-filt .tg input:checked + span { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); border-color: var(--accent); color: var(--text); font-weight: 600; }
+.craft-filt .tg input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 1px; }
+.craft-filt .cf-foot { grid-template-columns: 1fr auto; align-items: center; }
+.craft-filt .cf-foot .craft-sort { margin-left: 0; }
+@media (max-width: 640px) { .craft-filt .cf-row { grid-template-columns: 1fr; gap: 2px; } .craft-filt .cf-h { padding-top: 0; } .craft-filt .cf-foot { grid-template-columns: 1fr; } }

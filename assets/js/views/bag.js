@@ -109,6 +109,28 @@ function gearFx(it, kind) {
   const t = traitText(it), head = SLOTS[kind]?.[0];
   return head && t.startsWith(head + ' · ') ? t.slice(head.length + 3) : t === head ? '' : t;
 }
+// 제작 거르기(7.6.3, 사용자 요청 — 체크박스가 너무 많았다): 분야·만드는 것·정렬을 접는 칸 하나에 넣고,
+// 닫혀 있을 때는 지금 고른 것을 한 줄로 요약한다. 체크박스 대신 누르면 켜지는 작은 칩, 만드는 것은 장비·생활 도구·그 밖으로 묶는다.
+let craftFiltOpen = (() => { try { return localStorage.getItem('yh-craft-filt') === '1'; } catch { return false; } })();
+const KIND_GROUPS = [['장비', ['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask']], ['생활 도구', ['tool', 'explore', 'fishing', 'craft']], ['그 밖', ['consumable', 'material', 'furniture', 'etc']]];
+const CRAFT_SORTS = [['can', '가능한 것 먼저'], ['lv', '제작 레벨 낮은순'], ['lvd', '제작 레벨 높은순']];
+function craftFilterBox(inv, kindCount) {
+  const tog = (attr, k, on, label, n, cls = '') => `<label class="tg ${cls}"><input type="checkbox" ${attr}="${k}" ${on ? 'checked' : ''}><span>${esc(label)}${n != null ? ` <small>${n}</small>` : ''}</span></label>`;
+  const fieldN = f => (inv.recipes || []).filter(r => (r.field || '') === f).length;
+  const sumF = craftFields.size ? [...craftFields].map(f => nameOf(f)).join('·') : '모든 분야';
+  const sumK = craftKinds.size ? [...craftKinds].map(k => KIND_LABEL[k]).join('·') : '모든 물품';
+  const sumS = (CRAFT_SORTS.find(x => x[0] === craftSort) || CRAFT_SORTS[0])[1];
+  const on = craftFields.size + craftKinds.size;
+  return `<details class="craft-filt" ${craftFiltOpen ? 'open' : ''}>
+    <summary>${icon('filter', 14)}<b>거르기·정렬</b>${on ? `<i class="cf-on">${on}</i>` : ''}<span class="cf-sum">${esc(sumF)} · ${esc(sumK)} · ${esc(sumS)}</span></summary>
+    <div class="cf-body">
+      <div class="cf-row"><span class="cf-h">분야</span><div class="cf-tags">${FIELDS.map(f => tog('data-field', f, craftFields.has(f), nameOf(f), fieldN(f), inv.crafting_profession === f ? 'mine' : '')).join('')}</div></div>
+      ${KIND_GROUPS.map(([g, ks]) => { const list = ks.filter(k => kindCount[k]); return list.length ? `<div class="cf-row"><span class="cf-h">${esc(g)}</span><div class="cf-tags">${list.map(k => tog('data-kind', k, craftKinds.has(k), KIND_LABEL[k], kindCount[k])).join('')}</div></div>` : ''; }).join('')}
+      <div class="cf-row cf-foot"><label class="craft-sort"><span class="muted small">정렬</span><select id="craft-sort">${CRAFT_SORTS.map(([k, t]) => `<option value="${k}" ${craftSort === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        ${on ? '<button class="btn small ghost" id="craft-filt-clear">거르기 모두 풀기</button>' : ''}</div>
+      <p class="muted small">내 제작 분야(${esc(nameOf(inv.crafting_profession || 'smithing'))}, 초록)의 제작법은 품질 +12입니다. 품질 85 이상이면 「우수품」이 나옵니다(30단계 추가 기술이 있으면 80). 분야는 캐릭터 › 성장 › 생활 전문화에서 정합니다.</p>
+    </div></details>`;
+}
 async function stay(sel, fn, box = document.querySelector('.view-host') || document.body) {
   const before = document.querySelector(sel)?.getBoundingClientRect().top;
   box.style.minHeight = box.offsetHeight + 'px';
@@ -287,14 +309,7 @@ async function craft(body, inv, stg) {
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="만들 물품 찾기 (제작법·완성품 이름)" value="${esc(cq)}"></label>
     ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
-    <div class="craft-cats" role="group" aria-label="제작 분야 거르기"><span class="muted small">분야</span>${FIELDS.map(f => { const n = (inv.recipes || []).filter(r => (r.field || '') === f).length;
-      return `<label class="check ${inv.crafting_profession === f ? 'mine' : ''}"><input type="checkbox" data-field="${f}" ${craftFields.has(f) ? 'checked' : ''}><span>${esc(nameOf(f))} <small>${n}</small></span></label>`; }).join('')}
-      ${craftFields.size ? '<button class="btn small ghost" id="craft-fields-clear">모든 분야</button>' : ''}</div>
-    <div class="craft-cats" role="group" aria-label="만드는 것 거르기"><span class="muted small">만드는 것</span>${Object.keys(KIND_LABEL).filter(k => kindCount[k]).map(k =>
-      `<label class="check"><input type="checkbox" data-kind="${k}" ${craftKinds.has(k) ? 'checked' : ''}><span>${esc(KIND_LABEL[k])} <small>${kindCount[k]}</small></span></label>`).join('')}
-      ${craftKinds.size ? '<button class="btn small ghost" id="craft-kinds-clear">모두</button>' : ''}
-      <label class="craft-sort"><span class="muted small">정렬</span><select id="craft-sort">${[['can', '가능한 것 먼저'], ['lv', '제작 레벨 낮은순'], ['lvd', '제작 레벨 높은순']].map(([k, t]) => `<option value="${k}" ${craftSort === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label></div>
-    <p class="muted small">내 제작 분야(${esc(nameOf(inv.crafting_profession || 'smithing'))})의 제작법은 품질 +12입니다. 제작하면 그 제작법 분야의 기술 계열이 오르고, 품질은 그 계열 단계를 따릅니다. 품질 85 이상이면 「우수품」이 나옵니다(30단계 추가 기술이 있으면 80). 분야는 캐릭터 › 성장 › 생활 전문화에서 정합니다.</p>
+    ${craftFilterBox(inv, kindCount)}
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, atLoc, kind, tier }) => `
@@ -313,9 +328,9 @@ async function craft(body, inv, stg) {
   const redraw = sel => stay(sel, () => craft(body, inv, stg));
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; redraw('[data-seg="craft-filter"]'); });
   $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); redraw(`[data-field="${b.dataset.field}"]`); });
-  $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); redraw('[data-field]'); });
   $$('[data-kind]', body).forEach(b => b.onchange = () => { b.checked ? craftKinds.add(b.dataset.kind) : craftKinds.delete(b.dataset.kind); redraw(`[data-kind="${b.dataset.kind}"]`); });
-  $('#craft-kinds-clear', body)?.addEventListener('click', () => { craftKinds.clear(); redraw('[data-kind]'); });
+  $('#craft-filt-clear', body)?.addEventListener('click', () => { craftFields.clear(); craftKinds.clear(); redraw('.craft-filt'); });
+  $('.craft-filt', body)?.addEventListener('toggle', e => { craftFiltOpen = e.target.open; try { localStorage.setItem('yh-craft-filt', craftFiltOpen ? '1' : '0'); } catch {} });
   $('#craft-sort', body).onchange = e => { craftSort = e.target.value; redraw('#craft-sort'); };
   const ci = $('#craft-q', body);
   // 한글을 조합하는 동안에는 다시 그리지 않는다(조합이 끊긴다). 조합이 끝나면 그린다.
