@@ -10,6 +10,8 @@ import { mountVersionCheck } from './version.js';
 import { mountBug } from './bug.js';
 import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
+import { installColorPicker } from './colorpick.js';
+installColorPicker(); // 휴대폰 기본 색 선택 창 대신 게임 안 색 고르기 창(7.6.1)
 import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';

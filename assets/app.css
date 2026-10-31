@@ -2556,3 +2556,25 @@ body.chat-out .chat-col { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .shadow-mark .sh-sq { animation: none; } }
 .lg.shadow { border: 1.5px dashed var(--sp); background: transparent; transform: rotate(45deg) scale(.8); border-radius: 1px; }
 b.shadow { color: var(--sp); }
+
+/* 색 고르기 창(7.6.1, colorpick.js): 사각형 판(가로 채도·세로 밝기) + 색조 막대 + Hex + 추천색 — 색을 고르는 판만 그라데이션을 쓴다 */
+.cpk { display: grid; gap: 12px; }
+.cpk-sv { position: relative; height: 190px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); cursor: crosshair; touch-action: none;
+  background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, var(--hue, red)); }
+.cpk-dot { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .55); pointer-events: none; }
+.cpk-hue { position: relative; height: 22px; border-radius: 11px; border: var(--bw, 1px) solid var(--line); cursor: pointer; touch-action: none;
+  background: linear-gradient(to right, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00); }
+.cpk-knob { position: absolute; top: 50%; width: 14px; height: 26px; margin: -13px 0 0 -7px; border-radius: 4px; background: #fff; border: 1px solid rgba(0, 0, 0, .5); pointer-events: none; }
+.cpk-sv:focus-visible, .cpk-hue:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cpk-row { display: flex; align-items: center; gap: 10px; }
+.cpk-prev { width: 44px; height: 40px; flex: none; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); }
+.cpk-hex { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
+.cpk-hex input { flex: 1; min-width: 0; height: 40px; font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; text-transform: lowercase; }
+.cpk-hex input.bad { border-color: var(--bad); }
+.cpk-h { margin: 0; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); font-weight: 600; }
+.cpk-picks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.cpk-sw { aspect-ratio: 1; min-width: 0; border-radius: var(--r-sm); border: var(--bw, 1px) solid color-mix(in srgb, var(--text) 25%, transparent); background: var(--sw); cursor: pointer; padding: 0; }
+.cpk-sw.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cpk-acts { justify-content: flex-end; }
+@media (max-width: 640px) { .cpk-hex input { font-size: 16px; } }
+
