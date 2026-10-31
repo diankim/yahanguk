@@ -4,7 +4,7 @@ import { cardName } from './views/card.js';
 import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError, emblem } from './core.js';
 import { onWhisper, openWhisperWindow, whisperFeed, whisperOut } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
-import { growInput } from './grow.js';
+import { growInput, keepKeyboard } from './grow.js';
 import { playAlarm } from './sound.js';
 import { FRAMES, frameTier } from './cosmetics.js';
 import { load as loadSnap } from './views/common.js';
@@ -67,6 +67,7 @@ export function mountChat(colEl, fabEl) {
   form._fit = growInput(form);
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
+  keepKeyboard(form);
   // 쓰던 메시지는 새로고침하거나 시트를 닫았다 열어도 남는다(이 탭에만 저장).
   try { form.text.value = sessionStorage.getItem('yh-chat-draft') || ''; } catch {}
   form._fit?.();

@@ -34,3 +34,12 @@ export function growInput(form) {
   requestAnimationFrame(fit);
   return fit;
 }
+
+// 보내기 단추를 눌러도 입력칸이 초점을 잃지 않게(모바일에서 보낸 뒤 키패드가 내려가던 것, 7.5.7)
+export function keepKeyboard(form) {
+  const b = form.querySelector('button[type=submit]'); if (!b) return;
+  let had = false;
+  b.addEventListener('pointerdown', () => { had = document.activeElement === form.text; });
+  b.addEventListener('mousedown', e => e.preventDefault());
+  form.addEventListener('submit', () => { if (had) form.text.focus({ preventScroll: true }); had = false; }, true);
+}

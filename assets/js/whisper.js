@@ -3,7 +3,7 @@
 // 메시지는 world_chat_messages(channel_type = 'whisper')를 그대로 쓰고, 새 귓속말은 채팅의 실시간 연결(chat.js)이 넘겨준다.
 import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal, closeModal, isGM } from './core.js';
 import { cardName } from './views/card.js';
-import { growInput } from './grow.js';
+import { growInput, keepKeyboard } from './grow.js';
 import { playAlarm } from './sound.js';
 
 const COLS = 'id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at';
@@ -207,6 +207,7 @@ function drawThread(loading) {
   form.text.addEventListener('input', () => { try { sessionStorage.setItem(draftKey(cur), form.text.value); } catch {} });
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
+  keepKeyboard(form);
   $('.wh-back', main).onclick = () => { box.classList.remove('thread-open'); };
   if (matchMedia('(pointer: fine)').matches) setTimeout(() => form.text.focus({ preventScroll: true }), 30);
 }
