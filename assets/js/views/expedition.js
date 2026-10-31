@@ -181,7 +181,7 @@ function renderActive(box, a) {
     <p class="exp-now" id="exp-now">${icon('pin', 14)}<span>기록을 불러오는 중…</span></p>
     <ol class="exp-feed" id="exp-feed"></ol>
     <div id="exp-party"></div>
-    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척, 수색 회차, 전투(공격·반격·회복·승패)가 시간에 맞춰 쌓이고 같은 파티원의 일지도 함께 보입니다. 전투로 바뀐 체력·정신·침식은 곧바로 상태에 반영되고, 전리품은 돌아왔을 때 정리됩니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
+    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척, 수색 회차, 전투(공격·반격·회복·승패)가 시간에 맞춰 쌓이고 같은 지역으로 원정 중인 파티원(함께 싸우는 동료)의 일지도 함께 보입니다. 전투로 바뀐 체력·정신·침식은 곧바로 상태에 반영되고, 전리품은 돌아왔을 때 정리됩니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
   const tick = () => {
     const left = end - Date.now(), span = $('#exp-left', box); if (!span) return clearInterval(t);
     span.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '돌아왔습니다. 결과를 확인하세요.';
