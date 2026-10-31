@@ -535,7 +535,8 @@ pet(id='baby_girin', name='아기 기린', grade=4, kind='sky', likes='treat_her
     desc='사슴 몸에 외뿔과 비늘을 지닌 상서로운 기린의 새끼입니다. 풀 한 포기도 밟지 않으려 사뿐사뿐 걷습니다.',
     baby=dict(pal=GIR,
         idle='''
-......a.h.a.
+....h.......
+.....ha...a.
 ....maaaaaaa
 ...mmaieaiea
 ...mmaeeaeea
@@ -549,7 +550,8 @@ m.mm.pacncap
 ...a.a.a.a..
 ...f.f.f..f.''',
         sleep='''
-......a.h.a.
+....h.......
+.....ha...a.
 ....maaaaaaa
 ...mmakkakka
 m.mm.pacncap
@@ -558,8 +560,9 @@ m.mm.pacncap
 ..ffaaaaaff.'''),
     adult=dict(pal=GIR,
         idle='''
-...........h....
-.........a.h.a..
+.....h..........
+......h.........
+.......ha....a..
 .......maaaaaaa.
 ......mmaieaiea.
 ......mmaeeaeea.
@@ -577,8 +580,9 @@ mm.aaasasasaac..
 ..a....a.a...a..
 ..f....f.f...f..''',
         sleep='''
-...........h....
-.........a.h.a..
+.....h..........
+......h.........
+.......ha....a..
 .......maaaaaaa.
 ......mmakkakka.
 .....mmmpacncap.
