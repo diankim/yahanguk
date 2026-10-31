@@ -1204,6 +1204,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .shop-list li { gap: 8px; } .shop-list li.off { opacity: .55; } .shop-list li.picked { border-left-color: var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--surface-2)); }
 .stepper { flex: none; display: flex; align-items: center; gap: 2px; }
 .stepper input { width: 52px !important; min-height: 36px !important; padding: 4px 6px !important; text-align: center; font-variant-numeric: tabular-nums; }
+.stepper [data-all] { min-height: 32px; padding: 0 8px; margin-left: 2px; }
 .stepper .icon-btn { width: 36px; height: 36px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); }
 .shop-foot { position: sticky; bottom: -1px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px -4px 0; padding: 10px 4px;
   background: var(--surface); border-top: var(--bw) solid var(--line); font-size: calc(13px * var(--fz, 1)); }

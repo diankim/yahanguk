@@ -43,7 +43,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
   const stepper = (m, id, max) => `<div class="stepper" data-step="${m}:${esc(id)}">
       <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
       <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[m][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
-      <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button></div>`;
+      <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button>${m === 'sell' && max > 1 ? `<button class="btn small ghost" data-all aria-label="가진 것 전부">전부</button>` : ''}</div>`;
   box.innerHTML = `
     <div class="shop-head"><div><b>${esc(s.shop_name)}</b><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
       <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(c?.gil ?? s.gil)}</span></div>
@@ -86,6 +86,8 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const [m, id] = st.dataset.step.split(':'), inp = st.querySelector('input'), max = Number(inp.max) || 0;
     const set = v => { v = Math.max(0, Math.min(max, Math.floor(Number(v) || 0))); inp.value = v; if (v) cart[m][id] = v; else delete cart[m][id]; st.closest('li').classList.toggle('picked', v > 0); foot(); };
     st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
+    // 팔기 「전부」(7.5.1, 제보 47): 누를 때마다 전부 ↔ 0
+    st.querySelector('[data-all]')?.addEventListener('click', () => set(Number(inp.value) === max ? 0 : max));
     inp.oninput = () => set(inp.value);
     if (cart[m][id]) st.closest('li').classList.add('picked');
   });
