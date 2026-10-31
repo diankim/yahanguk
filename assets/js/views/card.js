@@ -95,7 +95,16 @@ async function run(b, c, box) {
   if (k === 'bond') return openPropose(id, c.character_name);
   if (k === 'trade') { close(); const { openDirectTrade } = await import('./services.js'); return openDirectTrade(id); }
   if (k === 'spar') return guard(b, () => act('world_spar_challenge', { p_target: id }));
-  if (k === 'house') { close(); return window.yahangGo?.('house', c.mine ? '' : id); }
+  // 남의 별채는 먼저 들어갈 수 있는지 물어 보고, 막혀 있으면(대문 닫힘·벗에게만·차단) 화면을 옮기지 않고 알림만(7.5.6, 사용자 요청)
+  // 받은 별채는 별채 화면이 다시 묻지 않게 잠깐 넘겨 둔다(store.houseSnap)
+  if (k === 'house') {
+    if (c.mine) { close(); return window.yahangGo?.('house', ''); }
+    return guard(b, async () => {
+      const snap = await rpc('world_housing_snapshot', { p_owner: id });
+      store.houseSnap = { owner: id, snap, at: Date.now() };
+      close(); window.yahangGo?.('house', id);
+    });
+  }
   if (k === 'rescue') return guard(b, async () => { const r = await act('world_rescue_character', { p_target: id }); again(); return r; });
   if (k === 'block') {
     if (!(await ask(`${c.character_name}님을 차단할까요?\n친구 관계가 끊기고, 귓속말·친구 신청·파티 초대·거래 제안을 받지 않으며 채팅에서도 보이지 않습니다.`, { title: '차단하기', ok: '차단', danger: true }))) return;

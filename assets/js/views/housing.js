@@ -33,7 +33,8 @@ export function destroy() { cancelAnimationFrame(raf); raf = null; el = null; cv
 async function reload() {
   if (!el) return;
   try {
-    snap = await rpc('world_housing_snapshot', { p_owner: ownerArg });
+    const pre = store.houseSnap; store.houseSnap = null; // 조사원 카드가 막 받아 둔 것이면 다시 묻지 않는다
+    snap = pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
     if (!el) return;
     if (!snap.open) return drawClosed();
     resetState(); draw();
