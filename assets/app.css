@@ -2339,3 +2339,12 @@ b.sealed { color: var(--bad); }
   .eq-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .qs-edit { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* 새 창(7.5.4, 제보 54): ?pop=chat · ?pop=whisper — 채팅·귓속말만 창 가득 */
+body.pop-win { overflow: hidden; }
+.pop-shell { height: 100dvh; }
+body.pop-win .chat-col { display: block; position: fixed; inset: 0; height: 100dvh; width: auto; border: 0; border-radius: 0; animation: none; }
+body.pop-win .chat-close, body.pop-win .chat-grip { display: none; }
+.pop-wh { height: 100dvh; padding: 8px; box-sizing: border-box; }
+.pop-wh .wh { height: 100%; }
+.wh-new .icon-btn { flex: none; }

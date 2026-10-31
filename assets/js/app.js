@@ -4,7 +4,7 @@ import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
-import { mountWhisper } from './whisper.js';
+import { mountWhisper, mountWhisperPage } from './whisper.js';
 import { mountGrowth } from './growth.js';
 import { mountVersionCheck } from './version.js';
 import { mountBug } from './bug.js';
@@ -72,6 +72,7 @@ async function routeOnce(session) {
     routedFor = uid;
     if (!c) return renderCreate();
     if (c.is_dead) return renderDeath(c);
+    if (POP) return renderPop(POP);
     renderGame();
   } catch (e) {
     renderError(friendlyError(e));
@@ -296,6 +297,40 @@ function renderDeath(c) {
   $('#death-logout').onclick = () => logout();
   $('#reborn').onclick = e => guard(e.currentTarget, async () => { await rpc('world_character_delete', { p_confirm: c.character_name }); await loadCharacter(); return { content: '새 조사원을 만드세요.' }; });
 }
+
+/* ── 새 창(7.5.4, 제보 54): 채팅·귓속말만 따로 띄운 창 ──────────── */
+// 주소 ?pop=chat · ?pop=whisper. 같은 브라우저의 로그인을 그대로 쓰므로 한 곳 접속 규칙에 걸리지 않는다.
+// 게임 화면(상태판·알림·현장)은 꾸미지 않아 요청이 늘지 않는다. 화면 안 링크(#/…)는 본 창으로 보낸다.
+const POP = (p => ['chat', 'whisper'].includes(p) ? p : null)(new URLSearchParams(location.search).get('pop'));
+let popMounted = false;
+function renderPop(kind) {
+  if (popMounted) return; popMounted = true;
+  window.dispatchEvent(new Event('yh-booted'));
+  document.body.classList.add('pop-win');
+  document.title = kind === 'whisper' ? '야행국 · 귓속말' : '야행국 · 통신망';
+  if (kind === 'whisper') {
+    app.replaceChildren(h(`<div class="pop-shell"><div class="pop-wh" id="pop-wh"></div></div>`));
+    mountWhisperPage($('#pop-wh'));
+  } else {
+    app.replaceChildren(h(`<div class="pop-shell"><aside class="chat-col" id="chat-col" aria-label="채팅"></aside><button id="chat-fab" hidden></button></div>`));
+    mountChat($('#chat-col'), $('#chat-fab'));
+  }
+  Promise.allSettled([preloadNames(), loadStaff()]);
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#/"]'); if (!a) return;
+    e.preventDefault();
+    try { if (window.opener && !window.opener.closed) { window.opener.location.hash = a.getAttribute('href'); window.opener.focus(); return; } } catch {}
+    window.open(location.pathname + a.getAttribute('href'), 'yh-main');
+  });
+}
+// 본 창에서 새 창 열기(채팅 머리·귓속말 창의 단추). 이미 열려 있으면 그 창을 앞으로 가져온다
+export function openPopWindow(kind) {
+  const size = kind === 'whisper' ? 'width=800,height=640' : 'width=420,height=760';
+  const w = window.open(`${location.pathname}?pop=${kind}`, `yh-pop-${kind}`, `popup,${size}`);
+  if (w) w.focus(); else toast('브라우저가 새 창을 막았습니다. 주소창의 팝업 허용을 눌러 주세요.', 'error');
+}
+window.yahangPop = openPopWindow;
+export const isPopWin = () => !!POP;
 
 /* ── 게임 화면 ──────────────────────────────────────────── */
 let current = null;

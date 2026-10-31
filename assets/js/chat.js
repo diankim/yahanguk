@@ -26,11 +26,13 @@ let stick = true, forceEnd = true;
 let circleId = null, circleMsgs = {}, circleUnread = {}, circleChannel = null, circleLive = false, readTimer = null;
 try { circleId = sessionStorage.getItem('yh-chat-circle') || null; } catch {}
 
+// 새 창으로 열기(7.5.4, 제보 54): 마우스를 쓰는 화면에서만, 새 창 안에서는 두지 않는다
+export const canPop = () => matchMedia('(pointer: fine)').matches && !document.body.classList.contains('pop-win');
 export function mountChat(colEl, fabEl) {
   col = colEl; fab = fabEl;
   panel = h(`<section class="chat" aria-label="채팅">
     <div class="chat-grip" role="separator" aria-orientation="horizontal" aria-label="채팅창 크기 조절 (위아래로 끌기)" tabindex="0"><i></i></div>
-    <header class="chat-head"><h2>${icon('chat', 15)} 통신망</h2><button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
+    <header class="chat-head"><h2>${icon('chat', 15)} 통신망</h2>${canPop() ? `<button class="icon-btn chat-pop" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}<button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
     <div class="segmented chat-tabs"></div>
     <div class="chat-circles" id="chat-circles" hidden></div>
     <p class="chat-hint" id="chat-hint"></p>
@@ -45,6 +47,7 @@ export function mountChat(colEl, fabEl) {
   matchMedia('(min-width: 1280px)').addEventListener('change', placePanel);
   fab.onclick = () => toggleSheet(true);
   $('.chat-close', panel).onclick = () => toggleSheet(false);
+  $('.chat-pop', panel)?.addEventListener('click', () => { toggleSheet(false); window.yahangPop?.('chat'); });
   // 채팅·조사원 카드에서 패치노트·별채 구경 같은 다른 화면으로 가면 모바일 채팅 시트를 닫는다(7.3.4)
   const closeOnNav = () => { if (document.body.classList.contains('chat-open')) toggleSheet(false); };
   window.addEventListener('hashchange', closeOnNav);

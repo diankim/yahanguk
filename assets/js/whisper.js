@@ -50,16 +50,40 @@ export function onWhisper(m) {
 }
 
 // 조사원 카드·친구 목록의 [귓속말]: 그 상대와의 대화를 바로 연다(이름만 알면 새 대화로 시작한다).
+let pageHost = null;
 export function openWhisperWindow(target) {
-  const m = openModal({ title: '귓속말', wide: true, onClose: () => { box = null; cur = null; },
-    body: `<div class="wh">
+  // 귓속말 새 창 안에서 조사원 카드의 [귓속말]을 누르면 창을 겹쳐 띄우지 않고 그 자리에서 연다
+  if (pageHost?.isConnected) {
+    box = $('.wh', pageHost);
+    if (target?.id || target?.name) { const known = threads.find(t => (target.id && t.partner_id === target.id) || t.name === target.name); openThread(known ? { id: known.partner_id, name: known.name } : { id: target.id || null, name: target.name }); }
+    return;
+  }
+  const m = openModal({ title: '귓속말', wide: true, onClose: () => { box = null; cur = null; }, body: '<div class="wh-host"></div>' });
+  buildUI($('.wh-host', m), target);
+}
+// 새 창(7.5.4, 제보 54): ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
+export function mountWhisperPage(el) {
+  const me = store.user?.id;
+  pageHost = el;
+  buildUI(el).then(() => { if (!cur && wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name }); });
+  try {
+    db.channel('yh-wh-pop').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_chat_messages', filter: `recipient_id=eq.${me}` },
+      p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); }).subscribe();
+  } catch {}
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 30000) { refresh(); if (cur) reloadMsgs(cur); } });
+}
+const canPop = () => matchMedia('(pointer: fine)').matches && !document.body.classList.contains('pop-win');
+function buildUI(host, target) {
+  host.innerHTML = `<div class="wh">
       <aside class="wh-side">
-        <form class="wh-new" autocomplete="off"><input name="to" maxlength="24" placeholder="이름으로 새 귓속말" aria-label="받는 사람 이름"><button class="btn small" type="submit">시작</button></form>
+        <form class="wh-new" autocomplete="off"><input name="to" maxlength="24" placeholder="이름으로 새 귓속말" aria-label="받는 사람 이름"><button class="btn small" type="submit">시작</button>${canPop() ? `<button class="icon-btn wh-pop" type="button" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}</form>
         <ul class="wh-threads" id="wh-threads"></ul>
       </aside>
       <section class="wh-main" id="wh-main"></section>
-    </div>` });
-  box = $('.wh', m);
+    </div>`;
+  box = $('.wh', host);
+  $('.wh-pop', box)?.addEventListener('click', () => { window.yahangPop?.('whisper'); });
   $('.wh-new', box).onsubmit = e => {
     e.preventDefault();
     const name = e.target.to.value.trim(); if (!name) return;
@@ -73,7 +97,7 @@ export function openWhisperWindow(target) {
     openThread(known ? { id: known.partner_id, name: known.name } : { id: target.id || null, name: target.name });
   } else if (wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name });
   else drawThread();
-  refresh();
+  return refresh();
 }
 
 function drawList() {
