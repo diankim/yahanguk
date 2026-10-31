@@ -27,7 +27,7 @@ export function applyVolumes() {
   if (!away) master.gain.setTargetAtTime(masterLevel(), t, 0.1);
   bgmBus.gain.setTargetAtTime(musicOk() ? sound.bgm * 0.8 : 0, t, 0.3);
   ambBus.gain.setTargetAtTime(sound.ambOn && !yielded ? sound.amb * 0.5 : 0, t, 0.4);
-  sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.5 : 0, t, 0.05);
+  sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.95 : 0, t, 0.05); // 7.5.9i: 배경음악·빗소리에 묻혀 0.5에서 올림
 }
 
 function ensureCtx() {
@@ -545,13 +545,6 @@ const BUILD = {
     gust.gain.value = 0.7; glfo.frequency.value = 0.045; glg.gain.value = 0.3; glfo.connect(glg); glg.connect(gust.gain);
     n.connect(lp); lp.connect(gust); gust.connect(g); lfo.start(); glfo.start(); return [n, lfo, glfo];
   },
-  // 가랑비(7.5.9i): 쏟아지는 쏴아 대신 낮고 부드러운 사르르 — 높은 결을 깎고(2.4kHz 아래) 아주 느리게 부풀었다 잦아든다
-  drizzle: g => {
-    const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(), sw = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-    hp.type = 'highpass'; hp.frequency.value = 350; lp.type = 'lowpass'; lp.frequency.value = 2400; lp.Q.value = 0.4;
-    sw.gain.value = 0.75; lfo.frequency.value = 0.07; lg.gain.value = 0.25; lfo.connect(lg); lg.connect(sw.gain);
-    n.connect(hp); hp.connect(lp); lp.connect(sw); sw.connect(g); lfo.start(); return [n, lfo];
-  },
   water: g => { const n = noiseSrc(brownBuf), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; n.connect(lp); lp.connect(g); return [n]; },
   hiss: g => { const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5200; n.connect(hp); hp.connect(g); return [n]; },
   mist: g => {
@@ -560,6 +553,16 @@ const BUILD = {
     o.connect(t); o2.connect(t); t.connect(g); o.start(); o2.start(); lfo.start(); return [o, o2, lfo];
   },
 };
+// 빗방울 하나: 아주 짧은 잡음을 좁은 띠로 걸러 「톡」, 위에 작은 물 울림을 살짝. low면 처마·나무에 떨어진 조금 낮고 둥근 소리
+function rainDrop(s, low) {
+  const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+  n.buffer = noiseBuf; bp.type = 'bandpass'; bp.frequency.value = low ? 900 + Math.random() * 500 : 2200 + Math.random() * 2600; bp.Q.value = low ? 5 : 3 + Math.random() * 3;
+  const pk = (low ? 0.26 : 0.15) * (0.55 + Math.random() * 0.45);
+  g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(pk, s + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, s + (low ? 0.05 : 0.025));
+  n.connect(bp); bp.connect(g); g.connect(ambBus); n.start(s, Math.random() * 1.5, 0.07);
+  const o = ctx.createOscillator(), og = ctx.createGain(), f = low ? 700 + Math.random() * 300 : 1700 + Math.random() * 1400;
+  o.frequency.setValueAtTime(f, s); o.frequency.exponentialRampToValueAtTime(f * 1.35, s + 0.03); envGain(og, s, low ? 0.012 : 0.006, 0.002, 0.035); o.connect(og); og.connect(ambBus); o.start(s); o.stop(s + 0.06);
+}
 let critterTimer = null;
 // 짧게 끊어지는 소리들: 새·풀벌레·물방울·부엉이
 function critters() {
@@ -580,28 +583,26 @@ function critters() {
       envGain(g, s, ph === 'night' ? 0.022 : 0.014, 0.004, 0.03); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.05); }
     if (ph === 'night' && Math.random() < 0.05) { [0, 0.45].forEach((d, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i ? 340 : 390; envGain(g, t + 1 + d, 0.03, 0.06, 0.35); o.connect(g); g.connect(ambBus); o.start(t + 1 + d); o.stop(t + 1.6 + d); }); }
   }
-  // 가랑비: 잎·처마에 떨어지는 작은 빗방울(톡·토독)과 가끔 낮은 처마 물방울
+  // 세우(7.5.9i): 쏴아 하는 바탕 소리 없이 빗방울만 「또도도독」 — 잎·처마·돌에 떨어지는 짧은 톡 소리를 3~5개씩 묶어 흩뿌리고, 가끔 한 방울씩
   if (w === 'drizzle' && !under) {
-    const n = 1 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < n; i++) { const s = t + Math.random() * 0.45, o = ctx.createOscillator(), g = ctx.createGain(), f = 1300 + Math.random() * 1500; o.type = 'sine';
-      o.frequency.setValueAtTime(f, s); o.frequency.exponentialRampToValueAtTime(f * 0.7, s + 0.04); envGain(g, s, 0.008 + Math.random() * 0.008, 0.002, 0.045); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.08); }
-    if (Math.random() < 0.12) { const s = t + 0.2 + Math.random() * 0.3, o = ctx.createOscillator(), g = ctx.createGain(), f = 520 + Math.random() * 260; o.type = 'sine';
-      o.frequency.setValueAtTime(f * 1.25, s); o.frequency.exponentialRampToValueAtTime(f, s + 0.06); envGain(g, s, 0.02, 0.003, 0.14); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.2); }
+    const burst = Math.random() < 0.6, n = burst ? 3 + Math.floor(Math.random() * 3) : 1;
+    let s = t + Math.random() * 0.2;
+    for (let i = 0; i < n; i++) { rainDrop(s, i === 0 && Math.random() < 0.25); s += 0.045 + Math.random() * 0.075; }
+    if (Math.random() < 0.5) rainDrop(t + 0.3 + Math.random() * 0.4, false);
   }
   if (w === 'rain' || w === 'fog' || under) {
     if (Math.random() < (w === 'rain' ? 0.8 : 0.3)) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const f = 1800 + Math.random() * 2000;
       o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.05); envGain(g, t, 0.025, 0.002, 0.06); o.connect(g); g.connect(ambBus); o.start(t); o.stop(t + 0.1); }
   }
-  const gap = w === 'drizzle' && !under ? 350 + Math.random() * 500 : ph === 'dusk' || ph === 'night' ? 500 + Math.random() * 900 : 1800 + Math.random() * 4000;
+  const gap = w === 'drizzle' && !under ? 380 + Math.random() * 820 : ph === 'dusk' || ph === 'night' ? 500 + Math.random() * 900 : 1800 + Math.random() * 4000;
   critterTimer = setTimeout(critters, gap);
 }
 function updateAmbience() {
   if (!ctx) return;
   const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   setLayer('rain', w === 'rain' ? 0.12 : 0, BUILD.rain);
-  setLayer('drizzle', w === 'drizzle' ? (under ? 0.035 : 0.07) : 0, BUILD.drizzle);
-  setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06, drizzle: 0.04 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
-  setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : w === 'drizzle' ? 0.06 : 0, BUILD.water);
+  setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06, drizzle: 0.02 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
+  setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : w === 'drizzle' ? 0.025 : 0, BUILD.water);
   setLayer('hiss', w === 'snow' ? 0.012 : 0, BUILD.hiss);
   setLayer('mist', w === 'bloodmist' ? 0.05 : 0, BUILD.mist);
 }
@@ -615,7 +616,8 @@ function tone(freq, dur, vol = 0.1, type = 'sine', at = 0, glide) {
 }
 const seq = (notes, step, dur, vol, type = 'sine') => notes.forEach((f, i) => tone(f, dur, vol, type, i * step));
 const SFX = {
-  tap: () => tone(1050, 0.03, 0.035), tick: () => tone(980, 0.03, 0.04), nav: () => tone(620, 0.06, 0.05, 'sine', 0, 700),
+  // 누름 소리(7.5.9i): 귀에 거슬리지 않는 짧고 둥근 「톡」(높은 삑 대신 아래로 살짝 내려앉는 소리)
+  tap: () => { tone(880, 0.045, 0.07, 'sine', 0, 660); tone(1760, 0.02, 0.012, 'triangle'); }, tick: () => tone(980, 0.03, 0.05), nav: () => { tone(620, 0.07, 0.07, 'sine', 0, 720); tone(1240, 0.03, 0.01, 'triangle'); },
   step: () => tone(420, 0.06, 0.06, 'sine', 0, 360), confirm: () => seq([660, 880], 0.06, 0.08, 0.06),
   coin: () => seq([1250, 1660], 0.06, 0.09, 0.05, 'triangle'),
   craft: () => { tone(330, 0.12, 0.09, 'sine', 0, 220); tone(990, 0.05, 0.04, 'sine', 0.1); },
@@ -728,7 +730,9 @@ export function initSound() {
   // 컷씬이 제 곡을 트는 동안 배경음악을 쉰다(cutscene.js가 알림)
   window.addEventListener('yh-cutscene', e => { held = !!e.detail; });
   document.addEventListener('click', e => {
-    const b = e.target.closest('.btn, .segmented button, .tabbar a, .topnav a, .icon-btn, .facility, .path, .act'); if (!b || b.disabled) return;
+    // 7.5.9i: 정해진 소리가 없는 단추·칩·링크·접는 칸도 모두 누름 소리를 낸다(전투 칸·탐색은 결과 소리를 따로 냄, data-nosfx는 뺌)
+    const b = e.target.closest('button, [role="button"], a[href], summary, .chip, .facility, .path, .act, input[type="checkbox"], input[type="radio"]');
+    if (!b || b.disabled || b.closest('[data-nosfx]')) return;
     if (b.closest('.battle') || b.id === 'search') return;
     playSfx(b.closest('.tabbar, .topnav') ? 'nav' : 'tap');
   }, { capture: true });

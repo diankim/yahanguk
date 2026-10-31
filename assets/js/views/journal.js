@@ -268,7 +268,7 @@ async function expHistory(body) {
 /* ── 어종 도감 ─────────────────────────────────────────── */
 const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연' };
 const PHASE = { dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경' };
-const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', drizzle: '가랑비', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
+const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
 const RAR = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };
 // 도감: 요괴 · 채집 · 어종. 요괴는 만나면 기본 정보, 쓰러뜨리면 상성·수법 대처법·전리품이 열린다.
 let cxKind = '';

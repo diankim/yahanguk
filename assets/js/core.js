@@ -134,7 +134,7 @@ const FIXED = {
   // 서식지
   river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
   // 날씨·시간대
-  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '가랑비', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
+  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
 // 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
