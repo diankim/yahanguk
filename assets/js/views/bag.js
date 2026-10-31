@@ -3,7 +3,7 @@ import { db, store, on, act, rpc, toast, openModal, closeModal, friendlyError, n
 import { load, invalidate, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRowLi, eqMini, bindRepair, enhancedTraits, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem } from './item.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText } from './item.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -96,6 +96,11 @@ function stayFit(box) {
   const need = window.scrollY + window.innerHeight - (box.getBoundingClientRect().top + window.scrollY);
   const cur = parseFloat(box.style.minHeight) || 0;
   if (need < cur) box.style.minHeight = need > 0 ? need + 'px' : '';
+}
+// 제작법 카드의 완성품 효과(7.6.2, 사용자 요청): 장비·제작 공구만, 효과가 없으면 비운다. 부위 이름(관모 등)은 카드 칩에 있으니 앞에서 뗀다.
+function gearFx(it, kind) {
+  const t = traitText(it), head = SLOTS[kind]?.[0];
+  return head && t.startsWith(head + ' · ') ? t.slice(head.length + 3) : t === head ? '' : t;
 }
 async function stay(sel, fn, box = document.querySelector('.view-host') || document.body) {
   const before = document.querySelector(sel)?.getBoundingClientRect().top;
@@ -291,6 +296,7 @@ async function craft(body, inv, stg) {
         <p class="muted small">${esc(r.description || '')}</p>
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         ${USABLE[r.output] ? `<p class="use-fx small">${icon('heart', 12)} ${esc(USABLE[r.output])}</p>` : ''}
+        ${(() => { const fx = !USABLE[r.output] && (SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''; return fx ? `<p class="use-fx small">${icon(SLOTS[kind]?.[1] || 'hammer', 12)} ${esc(fx)}</p>` : ''; })()}
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}</p>
