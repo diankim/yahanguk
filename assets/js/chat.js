@@ -475,7 +475,12 @@ function scrollEnd() {
 
 /* ── 시트 높이(좁은 화면): 위쪽 손잡이를 위아래로 끌어 넓히거나 줄인다. 높이는 이 기기에 남긴다. ── */
 const H_KEY = 'yh-chat-h';
-function sheetBounds() { const vh = window.visualViewport?.height || innerHeight, gap = Math.max(0, innerHeight - col.getBoundingClientRect().bottom); return [Math.round(vh * 0.35), Math.round(vh - gap - 56)]; }
+function sheetBounds() {
+  // 아래 여백은 보이는 화면(visualViewport) 아래 끝 기준으로 잰다 — 키패드가 올라와 시트가 그 위에 붙어 있을 때 innerHeight 기준이면 키패드 높이만큼 여백으로 잘못 세어 시트가 아주 작아졌다(7.6.3d)
+  const vv = window.visualViewport, vh = vv?.height || innerHeight, vvBottom = vv ? vv.offsetTop + vv.height : innerHeight;
+  const gap = Math.max(0, vvBottom - col.getBoundingClientRect().bottom);
+  return [Math.round(vh * 0.35), Math.round(vh - gap - 56)];
+}
 function applyHeight(px) {
   let h = px; if (h == null) { try { h = Number(localStorage.getItem(H_KEY)) || 0; } catch { h = 0; } }
   if (!h) { col.style.removeProperty('--chat-h'); return; }
@@ -497,13 +502,16 @@ function bindGrip() {
   // 손잡이를 두 번 누르면 가장 넓게 ↔ 처음 크기
   grip.addEventListener('dblclick', () => { const [, hi] = sheetBounds(); const big = col.getBoundingClientRect().height >= hi - 4; try { big ? localStorage.removeItem(H_KEY) : localStorage.setItem(H_KEY, String(hi)); } catch {} applyHeight(big ? 0 : hi); });
   grip.addEventListener('keydown', e => { if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault(); const h = col.getBoundingClientRect().height + (e.key === 'ArrowUp' ? 40 : -40); applyHeight(h); try { localStorage.setItem(H_KEY, String(Math.round(h))); } catch {} });
-  window.visualViewport?.addEventListener('resize', () => { if (document.body.classList.contains('chat-open')) { applyHeight(); fitSheetToKeyboard(); } });
+  // 키패드가 내려갈 때 --kb가 남은 채 높이를 먼저 맞추면 시트가 작게 잘린 채 내려왔다(7.6.3d) → 키패드 맞추기를 먼저, 그 뒤 높이
+  window.visualViewport?.addEventListener('resize', () => { if (document.body.classList.contains('chat-open')) { fitSheetToKeyboard(); applyHeight(); } });
   window.visualViewport?.addEventListener('scroll', () => { if (document.body.classList.contains('chat-open')) fitSheetToKeyboard(); });
   // 입력칸을 누르면(휴대폰은 키패드가 올라오며 목록이 가려진다) 가장 아래 말을 보인다(7.3.6)
   $('#chat-form textarea', panel)?.addEventListener('focus', () => {
     const go = () => { forceEnd = true; scrollEnd(); };
     go(); setTimeout(go, 120); setTimeout(go, 400);
   });
+  // 입력칸에서 나오면(키패드가 내려감) 시트를 본래 크기로 되돌린다 — 브라우저가 resize를 늦게 주거나 안 줄 때를 대비
+  $('#chat-form textarea', panel)?.addEventListener('blur', () => { const go = () => { fitSheetToKeyboard(); applyHeight(); }; setTimeout(go, 80); setTimeout(go, 350); });
 }
 
 async function send(e) {
