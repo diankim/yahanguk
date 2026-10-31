@@ -59,6 +59,9 @@ export function mountChat(colEl, fabEl) {
   renderTabs();
   const list = $('#chat-list', panel);
   list.addEventListener('scroll', () => { stick = list.scrollHeight - list.scrollTop - list.clientHeight < 40; if (stick) $('#chat-jump', panel).hidden = true; if (list.scrollTop < 80) loadOlder(); }, { passive: true });
+  // 목록 높이가 바뀌면(휴대폰 키패드가 올라오거나 시트·입력칸 크기가 바뀔 때) 맨 아래를 보고 있었으면 그대로 맨 아래로(7.5.7)
+  // 전에는 입력칸을 누른 뒤 0.4초까지만 맞춰서, 키패드가 늦게 다 올라오면 마지막 말이 가려졌다
+  if ('ResizeObserver' in window) { let lh = 0; new ResizeObserver(() => { const h = list.clientHeight; if (h === lh) return; lh = h; if (stick && !holdScroll) list.scrollTop = list.scrollHeight; }).observe(list); }
   $('#chat-jump', panel).onclick = () => { forceEnd = true; scrollEnd(); };
   bindGrip();
   window.addEventListener('yh-circles', () => { syncCircles(); });
