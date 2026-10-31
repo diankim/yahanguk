@@ -636,10 +636,10 @@ export const PETS = {
     }
   },
   cheese_cat: {
-    name: "치즈 고양이",
+    name: "누렁 줄고양이",
     grade: 1,
     kind: "shadow",
-    desc: "노란 털에 주황 줄무늬가 진 고양이입니다. 밥그릇 소리만 나면 어디서든 달려옵니다.",
+    desc: "노란 털에 주황 줄무늬가 진 고양이입니다. 장터 사람들은 「호박이」라고 부릅니다. 밥그릇 소리만 나면 어디서든 달려옵니다.",
     likes: "treat_fish",
     baby: {
       pal: { a: "#f0a24e", o: "#c96f28", c: "#fbf1df", n: "#e07a86", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
@@ -657,10 +657,10 @@ export const PETS = {
     }
   },
   mackerel_cat: {
-    name: "고등어 고양이",
+    name: "잿빛 줄고양이",
     grade: 1,
     kind: "shadow",
-    desc: "등에 고등어처럼 잿빛 줄무늬가 든 고양이입니다. 담장 위를 제 길처럼 걸어 다닙니다.",
+    desc: "등에 물고기 비늘 같은 잿빛 줄무늬가 든 고양이입니다. 담장 위를 제 길처럼 걸어 다닙니다.",
     likes: "treat_fish",
     baby: {
       pal: { a: "#8e8a80", o: "#3e3a35", c: "#efece4", n: "#d88a8e", e: "#3c4a1e", i: "#d8ec8a", p: "#f3a0a0", k: "#1a120e" },
@@ -678,10 +678,10 @@ export const PETS = {
     }
   },
   tuxedo_cat: {
-    name: "턱시도 고양이",
+    name: "까치 고양이",
     grade: 1,
     kind: "shadow",
-    desc: "검은 털옷에 흰 앞섶을 받쳐 입은 듯한 고양이입니다. 늘 차려입은 얼굴로 손님을 맞습니다.",
+    desc: "까치처럼 검은 등에 흰 앞섶을 받쳐 입은 고양이입니다. 늘 차려입은 얼굴로 손님을 맞습니다.",
     likes: "treat_fish",
     baby: {
       pal: { a: "#4a4553", c: "#f6f3ec", n: "#e48a96", e: "#c9b23a", i: "#fff4b0", p: "#d98a96", k: "#1a120e" },
@@ -702,28 +702,28 @@ export const PETS = {
     name: "똥개",
     grade: 1,
     kind: "ward",
-    desc: "어디서 얹었는지 늘 머리에 똥 한 덩이를 이고 다니는 동네 개입니다. 본인은 모자인 줄 알고 아주 뿌듯해합니다.",
+    desc: "주둥이·귀·발이 까무잡잡한 동네 개입니다. 어디서 얹었는지 늘 머리에 똥 한 덩이를 이고 다닙니다. 본인은 모자인 줄 알고 아주 뿌듯해합니다.",
     likes: "treat_meat",
     baby: {
-      pal: { a: "#ead6ab", b: "#b88a52", c: "#fbf3e2", n: "#3a2418", q: "#4e2c12", r: "#7e4a20", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
-      idle: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaieaieabk", "kbkkbbeeaeebbk", "kbkkkpacncapk.", ".kbaaaaacccak.", ".kabbaaaaaaaak", ".kaaaabbaaaaak", ".kaakakkkakaak", "..kk.k...k.kk."],
-      blink: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaaaaaaabk", "kbkkbbkkakkbbk", "kbkkkpacncapk.", ".kbaaaaacccak.", ".kabbaaaaaaaak", ".kaaaabbaaaaak", ".kaakakkkakaak", "..kk.k...k.kk."],
-      step: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaieaieabk", "kbkkbbeeaeebbk", "kbkkkpacncapk.", ".kbaaaaacccak.", ".kabbaaaaaaaak", ".kaaaabbaaaaak", "..kaakakaakak.", "...kk.k.kk.k.."],
-      sleep: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".kkkbakkakkabk", "kbaabpacncapbk", ".kabbaaaaaaaak", ".kaaaaabbaaak.", "..kkkkkkkkkk.."]
+      pal: { a: "#ead6ab", b: "#4a3222", g: "#d8b47c", m: "#5c3f2a", c: "#fbf3e2", n: "#1a0f0a", q: "#4e2c12", r: "#7e4a20", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaieaieabk", "kbkkbbeeaeebbk", "kbkkkpamnmapk.", ".kbaaaaacccak.", ".kaggaaaaaaaak", ".kaaaaggaaaaak", ".kmmkmkkkmkmmk", "..kk.k...k.kk."],
+      blink: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaaaaaaabk", "kbkkbbkkakkbbk", "kbkkkpamnmapk.", ".kbaaaaacccak.", ".kaggaaaaaaaak", ".kaaaaggaaaaak", ".kmmkmkkkmkmmk", "..kk.k...k.kk."],
+      step: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaieaieabk", "kbkkbbeeaeebbk", "kbkkkpamnmapk.", ".kbaaaaacccak.", ".kaggaaaaaaaak", ".kaaaaggaaaaak", "..kmmkmkmmkmk.", "...kk.k.kk.k.."],
+      sleep: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".kkkbakkakkabk", "kbaabpamnmapbk", ".kaggaaaaaaaak", ".kaaaaaggaaak.", "..kkkkkkkkkk.."]
     },
     adult: {
-      pal: { a: "#ead6ab", b: "#b88a52", c: "#fbf3e2", n: "#3a2418", q: "#4e2c12", r: "#7e4a20", d: "#c0392b", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
-      idle: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", "......kbaieaieabk", ".k....kbbeeaeebbk", "kbk....kpacncapk.", ".kbk....kacccak..", ".kbkkkkkdddddddk.", ".kaaaaaaaacccaak.", ".kabbaaaabbaaaak.", ".kaakaakkkkaakaak", ".kaakaak..kaakaak", "..kk.kk....kk.kk."],
-      blink: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", "......kbaaaaaaabk", ".k....kbbkkakkbbk", "kbk....kpacncapk.", ".kbk....kacccak..", ".kbkkkkkdddddddk.", ".kaaaaaaaacccaak.", ".kabbaaaabbaaaak.", ".kaakaakkkkaakaak", ".kaakaak..kaakaak", "..kk.kk....kk.kk."],
-      step: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", "......kbaieaieabk", ".k....kbbeeaeebbk", "kbk....kpacncapk.", ".kbk....kacccak..", ".kbkkkkkdddddddk.", ".kaaaaaaaacccaak.", ".kabbaaaabbaaaak.", ".kaakkaakkaakaak.", "kaak..kaakaakkaak", ".kk....kk.kk..kk."],
-      sleep: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", ".kkkkkkbakkakkabk", "kbaaaaabpacncapbk", ".kaaaaaaadddddddk", "kaabbaaaabbaaaaak", ".kaaaaaaaaaaaaak.", "..kkkkkkkkkkkkk.."]
+      pal: { a: "#ead6ab", b: "#4a3222", g: "#d8b47c", m: "#5c3f2a", c: "#fbf3e2", n: "#1a0f0a", q: "#4e2c12", r: "#7e4a20", d: "#c0392b", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", "......kbaieaieabk", ".k....kbbeeaeebbk", "kbk....kpamnmapk.", ".kbk....kacccak..", ".kbkkkkkdddddddk.", ".kaaaaaaaacccaak.", ".kaggaaaaggaaaak.", ".kaakaakkkkaakaak", ".kmmkmmk..kmmkmmk", "..kk.kk....kk.kk."],
+      blink: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", "......kbaaaaaaabk", ".k....kbbkkakkbbk", "kbk....kpamnmapk.", ".kbk....kacccak..", ".kbkkkkkdddddddk.", ".kaaaaaaaacccaak.", ".kaggaaaaggaaaak.", ".kaakaakkkkaakaak", ".kmmkmmk..kmmkmmk", "..kk.kk....kk.kk."],
+      step: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", "......kbaieaieabk", ".k....kbbeeaeebbk", "kbk....kpamnmapk.", ".kbk....kacccak..", ".kbkkkkkdddddddk.", ".kaaaaaaaacccaak.", ".kaggaaaaggaaaak.", ".kaakkaakkaakaak.", "kmmk..kmmkmmkkmmk", ".kk....kk.kk..kk."],
+      sleep: ["...........k.....", "..........kqk....", ".........kqrqk...", "........kqqrqqk..", ".......kkaaaaakk.", "......kbaaaaaaabk", ".kkkkkkbakkakkabk", "kbaaaaabpamnmapbk", ".kaaaaaaadddddddk", "kaaggaaaaggaaaaak", ".kaaaaaaaaaaaaak.", "..kkkkkkkkkkkkk.."]
     }
   },
   platypus: {
-    name: "오리너구리",
+    name: "부리너구리",
     grade: 2,
     kind: "water",
-    desc: "오리 부리에 너구리 몸, 납작한 꼬리를 단 먼 바다 건너의 동무입니다. 물가에서는 누구보다 날쌥니다.",
+    desc: "오리 부리에 너구리 몸, 납작한 꼬리를 단 먼 바다 건너의 동무입니다. 뱃사람들이 구등대 군도에서 데려왔다고 합니다. 물가에서는 누구보다 날쌥니다.",
     likes: "treat_fish",
     baby: {
       pal: { a: "#8a5a36", t: "#5c3a22", b: "#3e3b38", w: "#4a3a30", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
