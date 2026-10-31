@@ -26,9 +26,11 @@ const craftBtn = id => `<button type="button" class="q-link" data-q-craft="${esc
 // 줄을 그린 뒤 비어 있는 칸만 채운다(물품마다 이 접속 동안 한 번 읽음).
 const srcSlot = id => `<span class="q-src" data-q-src="${esc(id)}"></span>`;
 const itemsOf = t => Array.isArray(t.items) ? t.items : Object.keys(t.items || {});
+// 단위(7.5.9d, 사용자 요청): 물품을 정한 채집·제작은 「야령초 모으기 0/3개」, 물품을 정하지 않은 채집은 「채집하기 0/3회」
+const unitOf = t => t.t === 'gather' ? (itemsOf(t).length ? '개' : '회') : t.t === 'craft' && itemsOf(t).length ? '개' : '';
 export const taskLine = t => { const done = t.cur >= t.n, items = t.t === 'craft' ? itemsOf(t) : [];
   const src = !done && t.t === 'gather' && !(t.regions || []).length ? itemsOf(t).slice(0, 1).map(srcSlot).join('') : '';
-  return `<li class="${done ? 'ok' : ''}">${icon(done ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}</b>${done ? '' : `<span class="q-links">${mapBtns(t.regions)}${items.slice(0, 1).map(craftBtn).join('')}${src}</span>`}</li>`; };
+  return `<li class="${done ? 'ok' : ''}">${icon(done ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}${unitOf(t)}</b>${done ? '' : `<span class="q-links">${mapBtns(t.regions)}${items.slice(0, 1).map(craftBtn).join('')}${src}</span>`}</li>`; };
 export const giveLine = g => { const done = g.have >= g.n;
   return `<li class="${done ? 'ok' : ''}">${icon('bag', 12)}<span>${esc(g.name || nameOf(g.item_id))} 넘기기</span><b>${g.have}/${g.n}</b>${done ? '' : `<span class="q-links">${hasRecipe(g.item_id) ? craftBtn(g.item_id) : ''}${srcSlot(g.item_id)}</span>`}</li>`; };
 const srcCache = new Map();
