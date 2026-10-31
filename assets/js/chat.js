@@ -511,10 +511,12 @@ function suspend() {
   toggleSheet(false);
   document.body.classList.add('chat-out');
   panel.hidden = true;
-  if (!$('.chat-out-note', col)) {
-    const n = h(`<div class="chat-out-note">${icon('popout', 18)}<p>채팅은 새 창에서 열려 있습니다.</p><button class="btn small" type="button">여기로 되돌리기</button></div>`);
-    $('button', n).onclick = () => { try { bc?.postMessage({ t: 'chat-close-req' }); } catch {} resume(); };
-    col.append(n);
+  // 오른쪽 채팅 칸은 통째로 빠지고(그만큼 화면이 넓어짐) 머리에 「채팅 되돌리기」 단추를 둔다
+  const top = $('.top-actions');
+  if (top && !$('#btn-chat-back')) {
+    const b = h(`<button class="icon-btn chat-back" id="btn-chat-back" aria-label="채팅을 이 창으로 되돌리기" title="채팅을 이 창으로 되돌리기">${icon('chat')}</button>`);
+    b.onclick = () => { try { bc?.postMessage({ t: 'chat-close-req' }); } catch {} resume(); };
+    top.prepend(b);
   }
   whisperFeed(true);
 }
@@ -523,7 +525,7 @@ function resume() {
   away = false;
   whisperFeed(false);
   document.body.classList.remove('chat-out');
-  $('.chat-out-note', col)?.remove();
+  $('#btn-chat-back')?.remove();
   panel.hidden = false;
   subscribe(); subscribeCircles(); syncPartySub(); load();
 }
