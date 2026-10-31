@@ -41,5 +41,12 @@ export function keepKeyboard(form) {
   let had = false;
   b.addEventListener('pointerdown', () => { had = document.activeElement === form.text; });
   b.addEventListener('mousedown', e => e.preventDefault());
+  // 휴대폰(7.6.1, 사용자 제보): 손가락을 떼는 순간(touchend) 기본 동작을 막아야 입력칸에서 초점이 빠지지 않는다 —
+  // mousedown만 막으면 터치에서는 초점이 단추로 옮겨 가 키패드가 내려갔다. 기본 동작(click)이 막히므로 직접 보낸다.
+  b.addEventListener('touchend', e => {
+    if (document.activeElement !== form.text || b.disabled) return;
+    e.preventDefault(); had = true;
+    if (form.requestSubmit) form.requestSubmit(b); else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }, { passive: false });
   form.addEventListener('submit', () => { if (had) form.text.focus({ preventScroll: true }); had = false; }, true);
 }
