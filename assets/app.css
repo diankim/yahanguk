@@ -461,6 +461,7 @@ body.chat-open .chat-fab { display: none; }
 .item-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border-left: 3px solid var(--line); }
 .item-list li.r-uncommon { border-left-color: var(--ok); } .item-list li.r-rare { border-left-color: var(--mp); }
 .item-list li.r-epic { border-left-color: var(--sp); } .item-list li.r-legendary { border-left-color: #c8412f; }
+.rar-tag { font-size: calc(11px * var(--fz, 1)); font-weight: 600; padding: 0 5px; border: 1px solid currentColor; border-radius: 3px; line-height: 1.5; color: var(--muted); } .rar-tag.r-uncommon { color: var(--ok); } .rar-tag.r-rare { color: var(--mp); } .rar-tag.r-epic { color: var(--sp); } .rar-tag.r-legendary { color: #c8412f; }
 .item-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .item-main b { font-size: calc(13px * var(--fz, 1)); }
 .item-main .qty { font-weight: 700; color: var(--gold); white-space: nowrap; }
