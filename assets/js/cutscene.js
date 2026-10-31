@@ -413,7 +413,8 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
     ended = true; endedAt = performance.now(); skip.hidden = true;
     if (note) { who.textContent = ''; text.textContent = note; text.classList.add('nar', 'note'); text.classList.remove('cs-line-in'); void text.offsetWidth; text.classList.add('cs-line-in'); }
     const bar = document.createElement('div'); bar.className = 'cs-end';
-    bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button>' + (stay ? '' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
+    // 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 help.html로 잇는다(7.5.8)
+    bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button>' + (stay ? '<a class="cs-btn main" href="help.html" style="text-decoration:none;display:inline-flex;align-items:center">도움말 보기</a>' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
     root.querySelector('.cs-box').append(bar);
     bar.querySelector('[data-close]')?.addEventListener('click', finish);
     bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); music?.stop(0.3); root.remove(); playCutscene(kind, { onEnd, stay, note }); });

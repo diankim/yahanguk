@@ -427,14 +427,15 @@ const GROUPS = [
 let gsel = 'basic', gq = '';
 const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
-export function render(el) {
+// standalone: 점검 대기 화면에서 여는 도움말(help.html) — 게임 서버가 필요한 단추(패치노트·처음 안내·첫 걸음·제보)는 뺀다
+export function render(el, { standalone = false } = {}) {
   if (!RAID_ON) { const i = S.findIndex(x => x[0] === 'raid'); if (i >= 0) S.splice(i, 1); GROUPS.forEach(g => { const j = g[3].indexOf('raid'); if (j >= 0) g[3].splice(j, 1); }); }
   const byId = Object.fromEntries(S.map(x => [x[0], x]));
   const grouped = new Set(GROUPS.flatMap(g => g[3]));
   const rest = S.filter(x => !grouped.has(x[0])).map(x => x[0]);
   const groups = rest.length ? [...GROUPS, ['etc', '그 밖', 'help', rest]] : GROUPS;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('help', 14)} 조사원 수첩</p><h1>도움말</h1></div>
-      <div class="head-actions grid4"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>제보·소감</span></button></div></div>
+      ${standalone ? '<div class="head-actions"><a class="btn" href="maintenance.html">' + icon('back', 16) + '<span>대기 화면으로</span></a></div>' : `<div class="head-actions grid4"><a class="btn" href="#/patch">${icon('scroll', 16)}<span>패치노트</span></a><button class="btn" id="tut-again">${icon('spark', 16)}<span>처음 안내 보기</span></button><button class="btn" id="fs-again">${icon('check', 16)}<span>첫 걸음 목록</span></button><button class="btn" id="bug-open">${icon('flag', 16)}<span>제보·소감</span></button></div>`}</div>
     <div class="guide2">
       <label class="search guide-search"><span>${icon('search', 16)}</span><input id="g-q" type="search" placeholder="궁금한 것을 찾아보세요 (예: 원정, 침식, 칭호 묶음)" value="${esc(gq)}"></label>
       <nav class="guide-cats" aria-label="도움말 묶음">${groups.map(([k, n, ic, ids]) => `<button class="guide-cat" data-gk="${k}">${icon(ic, 20)}<b>${esc(n)}</b><small>${ids.map(id => esc(byId[id]?.[1] || '')).join(' · ')}</small></button>`).join('')}</nav>
@@ -458,6 +459,7 @@ export function render(el) {
   };
   $('#g-q', el).oninput = e => { gq = e.target.value; paint(); };
   $$('[data-gk]', el).forEach(b => b.onclick = () => { gsel = b.dataset.gk; gq = ''; $('#g-q', el).value = ''; paint(); $('#g-list', el)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  if (standalone) { paint(); return; }
   $('#tut-again', el).onclick = () => startTutorial(0);
   $('#bug-open', el).onclick = () => window.dispatchEvent(new CustomEvent('yh-open-bug'));
   $('#fs-again', el).onclick = () => { reopenChecklist(); toast('현장 화면에 첫 걸음 목록을 다시 띄웠습니다.', 'ok'); window.yahangGo?.('home'); };
