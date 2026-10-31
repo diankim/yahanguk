@@ -26,7 +26,7 @@ begin
   d := replace(pg_get_functiondef('public.world_use_item(text)'::regprocedure), E'\r\n', E'\n');
   a := $o$UPDATE public.world_character_statuses SET expires_at = now() + make_interval(mins => ceil((SELECT duration_minutes FROM public.world_status_catalog WHERE status_key = buff) * v_dur * (CASE WHEN buff IN ('well_fed', 'warm_belly', 'vigor', 'sea_luck') THEN v_meal ELSE 1 END))::int)
        WHERE owner_id = uid AND status_key = buff AND expires_at > now();$o$;
-  if position('now() + make_interval(mins => ceil((SELECT duration_minutes FROM public.world_status_catalog WHERE status_key = buff) * v_dur * (CASE WHEN buff IN ('well_fed', 'warm_belly', 'vigor', 'sea_luck') THEN v_meal ELSE 1 END))::int) * 2' in d) > 0 then return; end if;
+  if position('expires_at = least(expires_at + make_interval' in d) > 0 then return; end if; -- 이미 고쳤으면 건너뜀
   n := (length(d) - length(replace(d, a, ''))) / length(a);
   if n <> 1 then raise exception '7.5.4 use_item anchor %', n; end if;
   execute replace(d, a, $n$UPDATE public.world_character_statuses SET expires_at = least(expires_at + make_interval(mins => ceil((SELECT duration_minutes FROM public.world_status_catalog WHERE status_key = buff) * v_dur * (CASE WHEN buff IN ('well_fed', 'warm_belly', 'vigor', 'sea_luck') THEN v_meal ELSE 1 END))::int), now() + make_interval(mins => ceil((SELECT duration_minutes FROM public.world_status_catalog WHERE status_key = buff) * v_dur * (CASE WHEN buff IN ('well_fed', 'warm_belly', 'vigor', 'sea_luck') THEN v_meal ELSE 1 END))::int) * 2)
