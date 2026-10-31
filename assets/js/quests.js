@@ -63,7 +63,17 @@ document.addEventListener('click', e => {
   if (m) import('./views/map.js').then(x => { x.focusRegion(m.dataset.qMap); window.yahangGo('map', 'world'); });
   else { window.dispatchEvent(new CustomEvent('yh-craft-focus', { detail: { search: c.dataset.qCraft } })); window.yahangGo('bag', 'craft'); }
 });
-export const atLine = q => (q.at_names || []).length ? `<p class="q-at ${q.here_ok ? 'ok' : ''}">${icon('pin', 12)} 보고: ${esc(q.at_names.join('·'))}${q.here_ok ? ' (지금 여기)' : ''}</p>` : '';
+// 보고 장소 줄(7.6.1, 사용자 제보): 할 일이 남았으면 그 할 일을 하는 곳을 먼저 적고, 보고 장소는 「다 하면 보고」로 낮춰 적는다
+// (전에는 할 일이 주혈 광산에 남았는데도 「보고: 잔불촌 (지금 여기)」만 보여 그곳에서 끝내는 것처럼 읽혔다).
+export const atLine = q => {
+  const at = q.at_names || [], here = store.character?.location;
+  const left = (q.tasks || []).filter(t => t.cur < t.n);
+  const where = [...new Set(left.flatMap(t => (t.regions || []).map(r => nameOf(r))))];
+  const doLine = where.length ? `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 할 곳: ${esc(where.slice(0, 3).join('·'))}${where.length > 3 ? ` 외 ${where.length - 3}곳` : ''}${where.includes(here) ? ' (지금 여기)' : ''}</p>` : '';
+  if (!at.length) return doLine;
+  const done = !left.length;
+  return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${esc(at.join('·'))}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
+};
 const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${chip(q.cat || '')}<b>${esc(q.title)}</b></header>`;
 
 function activeItem(q) {
