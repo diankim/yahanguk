@@ -3,7 +3,7 @@
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
 import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
-import { load, chip } from './common.js';
+import { load, chip, zonesNow } from './common.js';
 
 const USABLE_BASE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
   ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +2', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
@@ -163,6 +163,9 @@ function draw(box, id, inv, prices, mode) {
   const c = store.character, it = (inv.catalog || []).find(x => x.id === id), pr = prices.get(id);
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
+  // 안전지대(반요촌 빼고)에 있으면 가방에서 바로 창고에 넣는다(7.5.7, 제보 60). 지역 정보는 이미 받아 둔 것만 쓰고 따로 묻지 않는다.
+  const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
+  const stashOk = !!here?.is_safe_zone && here.region_id !== 'banyo_village' && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[id]);
   const makes = (inv.recipes || []).filter(r => r.output === id);
   const block = it && GEAR.has(it.category) ? gearBlock(it, c) : '';
@@ -201,6 +204,11 @@ function draw(box, id, inv, prices, mode) {
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
         ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
+      ${stashOk && dcMax > 0 ? `<div class="discard-row">
+        <label class="field"><span>창고에 넣을 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="${dcMax}" id="st-qty"></label>
+        <button class="btn small ghost" data-do="st-max">최대</button>
+        <button class="btn small primary" data-do="stash">${icon('bag', 14)}<span>창고에 넣기</span></button>
+      </div>` : ''}
       <div class="discard-row ${locked ? 'off' : ''}">
         <label class="field"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="1" id="dc-qty" ${locked || dcMax < 1 ? 'disabled' : ''}></label>
         <button class="btn small ghost" data-do="dc-max" ${locked || dcMax < 1 ? 'disabled' : ''}>최대</button>
@@ -237,6 +245,13 @@ function draw(box, id, inv, prices, mode) {
       await guard(d, () => act('world_dismantle_item', { p_item_id: id }));
     }
     // 버리기(제보 12): 「최대」는 칸을 채우고, 「모두 버리기」는 버릴 수 있는 만큼 한 번에(장착 중이면 하나 남김)
+    if (k === 'st-max') { const q = $('#st-qty', box); if (q) q.value = dcMax; return; }
+    if (k === 'stash') {
+      const q = Math.floor(Number($('#st-qty', box)?.value) || 0);
+      if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
+      const ok = await guard(d, () => act('world_storage_put', { p_item: id, p_qty: q }));
+      if (ok && q >= have) { box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click(); return; }
+    }
     if (k === 'dc-max') { const q = $('#dc-qty', box); if (q) q.value = dcMax; return; }
     if (k === 'discard' || k === 'discard-all') {
       const q = k === 'discard-all' ? dcMax : Math.floor(Number($('#dc-qty', box)?.value) || 0);
