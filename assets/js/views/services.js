@@ -289,6 +289,7 @@ export async function renderMarket(box) {
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     // 등급(범품~신품): 사기 목록·내 등록·올릴 물품 고르기에 함께 적는다(7.5.6, 사용자 요청)
     const rarMap = new Map((inv?.catalog || []).map(i => [i.id, i.rarity || 'common']));
+    const mkDesc = new Map((inv?.catalog || []).map(i => [i.id, i.description || '']));
     const rarOf = id => rarMap.get(id) || 'common', rarTag = id => `<span class="rar-tag r-${esc(rarOf(id))}">${esc(RAR_NAME[rarOf(id)] || '범품')}</span>`;
     if (error || e2) throw new Error((error || e2).message);
     const offers = [...(myOpen || []), ...(openAll || []).filter(o => !(myOpen || []).some(m => m.offer_id === o.offer_id))];
@@ -300,7 +301,7 @@ export async function renderMarket(box) {
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rarTag(o.item_id)}<span class="qty">×${o.quantity}</span>
-        <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small></div>
+        <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     // 규칙 안내는 접어 둔다(모바일에서 목록이 화면 아래로 밀리던 것)
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
