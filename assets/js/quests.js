@@ -54,6 +54,10 @@ function activeItem(q) {
 }
 function factionItem(f) {
   if (!f) return '';
+  // 등급 퀘스트가 아직 잠겨 있으면(평판·레벨) 할 일을 보이지 않고 언제 열리는지만 적는다(7.5.7 — 다시 가입한 뒤 잠긴 2등급이 진행 중처럼 보이던 것)
+  if (f.locked) return `<li class="q-item locked">${head('faction', { cat: nameOf(f.faction_id), title: f.title })}
+    <p class="muted small">아직 열리지 않았습니다 · ${esc(f.locked)}</p>
+    <div class="btn-row"><button class="btn small ghost" data-go-faction>세력 화면</button></div></li>`;
   return `<li class="q-item ${f.ready ? 'ready' : ''}">${head('faction', { cat: nameOf(f.faction_id), title: f.title })}
     <p class="q-goal">${esc(f.goal || '')}</p>
     ${f.locked ? `<p class="muted small">${esc(f.locked)}</p>` : ''}
@@ -75,7 +79,7 @@ function hereNote(b) {
   const here = b.here_id; if (!here) return '';
   const hits = [];
   for (const q of b.active || []) if (isHere(q, here)) hits.push(q.title);
-  if (b.faction && (b.faction.regions || []).includes(here)) hits.push(b.faction.title);
+  if (b.faction && !b.faction.locked && (b.faction.regions || []).includes(here)) hits.push(b.faction.title);
   const givers = (b.available || []).filter(q => q.here && !q.locked).length;
   if (!hits.length && !givers) return '';
   return `<p class="hint accent q-here">${icon('flag', 14)}<span><b>퀘스트 지역</b> · ${hits.length ? `「${esc(hits.slice(0, 3).join('」·「'))}」의 할 일이 이곳에 있습니다.` : ''}${givers ? ` 이곳에서 받을 수 있는 퀘스트 ${givers}개.` : ''}</span></p>`;
@@ -108,10 +112,17 @@ function grouped(list, b) {
   for (const q of list) { const k = by(q); if (!map.has(k)) map.set(k, []); map.get(k).push(q); }
   const here = store.character?.location;
   const keys = [...map.keys()].sort((x, y) => (y === here) - (x === here) || (x === '주 이야기' ? -1 : y === '주 이야기' ? 1 : 0) || x.localeCompare(y, 'ko'));
-  return `${b.faction ? `<h3 class="sub-h">세력</h3><ul class="q-list">${factionItem(b.faction)}</ul>` : ''}
+  return `${facBox(b.faction)}
     ${keys.map(k => `<details class="q-grp" data-q-grp="${esc(grp() + ':' + k)}" ${opened().includes(grp() + ':' + k) ? 'open' : ''}>
       <summary class="sub-h">${esc(k)}${k === here ? ' <small class="ok">· 지금 여기</small>' : ''} <small class="muted">${map.get(k).length}</small></summary>
       <ul class="q-list">${map.get(k).map(activeItem).join('')}</ul></details>`).join('')}`;
+}
+// 세력 퀘스트 칸(7.5.7): 다른 묶음처럼 접을 수 있다. 처음엔 펼친 채, 접은 것만 '!fac'으로 남긴다
+function facBox(f) {
+  if (!f) return '';
+  return `<details class="q-grp" data-q-fac ${opened().includes('!fac') ? '' : 'open'}>
+    <summary class="sub-h">세력 <small class="muted">${esc(nameOf(f.faction_id))}${f.locked ? ' · 잠김' : f.ready ? ' · <b class="ok">보고 가능</b>' : ''}</small></summary>
+    <ul class="q-list">${factionItem(f)}</ul></details>`;
 }
 // 묶음마다 접기(7.5.1, 제보 44): 처음엔 모두 접힌 채로, 펼친 묶음만 기기에 남긴다(7.5.3)
 const OKEY = 'yh-q-open';
@@ -130,23 +141,21 @@ export async function fillQuests(box) {
   if (!box.isConnected) return;
   // 진행 중인 퀘스트가 여럿이면 지금 있는 지역의 퀘스트를 위로(같은 무리 안에서는 원래 순서)
   const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));
-  const facHere = !!(b.faction && b.here_id && (b.faction.regions || []).includes(b.here_id));
-  const nHere = act_.filter(q => isHere(q, b.here_id)).length;
   const here = (b.available || []).filter(q => q.here), other = (b.available || []).filter(q => !q.here);
-  const nAct = act_.length + (b.faction ? 1 : 0);
+  const nAct = act_.length + (b.faction && !b.faction.locked ? 1 : 0);
   noteReady({ ...b, active: act_ });
   box.innerHTML = `${hereNote({ ...b, active: act_ })}
     <details class="fold" ${isOpen() ? 'open' : ''} data-q-fold>
       <summary class="panel-head"><h2>${icon('scroll', 16)}퀘스트 <small class="muted">진행 ${nAct} · 마침 ${b.done}/${b.total}</small></h2></summary>
       <div class="panel-body q-board">
         ${nAct > 1 ? `<div class="chips kind-chips q-group" role="group" aria-label="묶어 보기"><span class="muted small">묶어 보기</span>${GROUPS.map(([k, n]) => `<button class="chip ${grp() === k ? 'on' : ''}" data-q-group="${k}">${n}</button>`).join('')}</div>` : ''}
-        ${!nAct ? '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'
-          : grp() ? grouped(act_, b) : `<ul class="q-list">${facHere ? factionItem(b.faction) : ''}${act_.slice(0, nHere).map(activeItem).join('')}${facHere ? '' : factionItem(b.faction)}${act_.slice(nHere).map(activeItem).join('')}</ul>`}
+        ${grp() && act_.length > 1 ? grouped(act_, b) : `${facBox(b.faction)}${act_.length ? `<ul class="q-list">${act_.map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}`}
         ${here.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${here.map(availItem).join('')}</ul>` : ''}
         ${other.length ? `<details class="q-more"><summary>다른 곳에서 받을 수 있는 퀘스트 ${other.length}개</summary><ul class="q-list">${other.map(availItem).join('')}</ul></details>` : ''}
       </div></details>`;
   $('[data-q-fold]', box).addEventListener('toggle', e => { try { localStorage.setItem(foldKey, e.target.open ? '1' : '0'); } catch {} });
   $$('[data-q-grp]', box).forEach(d => d.addEventListener('toggle', () => setOpen(d.dataset.qGrp, d.open)));
+  $('[data-q-fac]', box)?.addEventListener('toggle', e => setOpen('!fac', !e.target.open));
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
   $$('[data-q-group]', box).forEach(x => x.onclick = () => { try { localStorage.setItem(GKEY, x.dataset.qGroup); } catch {} fillQuests(box); });
   // 10장 최종 결전: 혼자 또는 같은 곳의 파티원(4명까지)과 결전을 연다 — 판정은 world_raid_final_start
