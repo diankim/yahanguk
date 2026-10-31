@@ -1993,6 +1993,8 @@ b.contest { color: var(--warn); font-weight: 600; }
 .q-more { margin-top: 8px; }
 .q-more > summary { cursor: pointer; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); padding: 4px 0; }
 .q-more .q-list { margin-top: 6px; }
+/* PC 현장 퀘스트 칸: 넓으면 카드를 두 칸(이상)으로 나눠 가로로 길게 늘어나지 않게(7.5.7) */
+@media (min-width: 900px) { .q-board .q-list { grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); align-items: start; } }
 .q-grp > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
 .q-grp > summary::-webkit-details-marker { display: none; }
 .q-grp > summary::before { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; opacity: .7; }

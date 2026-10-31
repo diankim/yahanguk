@@ -138,7 +138,7 @@ export async function fillQuests(box) {
   box.innerHTML = `${hereNote({ ...b, active: act_ })}
     <details class="fold" ${isOpen() ? 'open' : ''} data-q-fold>
       <summary class="panel-head"><h2>${icon('scroll', 16)}퀘스트 <small class="muted">진행 ${nAct} · 마침 ${b.done}/${b.total}</small></h2></summary>
-      <div class="panel-body">
+      <div class="panel-body q-board">
         ${nAct > 1 ? `<div class="chips kind-chips q-group" role="group" aria-label="묶어 보기"><span class="muted small">묶어 보기</span>${GROUPS.map(([k, n]) => `<button class="chip ${grp() === k ? 'on' : ''}" data-q-group="${k}">${n}</button>`).join('')}</div>` : ''}
         ${!nAct ? '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'
           : grp() ? grouped(act_, b) : `<ul class="q-list">${facHere ? factionItem(b.faction) : ''}${act_.slice(0, nHere).map(activeItem).join('')}${facHere ? '' : factionItem(b.faction)}${act_.slice(nHere).map(activeItem).join('')}</ul>`}
