@@ -49,8 +49,11 @@ begin
   end loop;
 end $p$;
 
--- 묶음 크기(사용자 결정 2026-10-31, 제보 67): 장비·가구(1)와 탄(100)은 그대로, 나머지 2~39개짜리는 모두 한 칸에 40개.
+-- 묶음 크기(사용자 결정 2026-10-31, 제보 67·68): 장비·가구(1)와 탄(100)은 그대로,
+-- 고급 소모품(진품 이상 — 전에 한 칸 3·5개였던 대환단·회춘단·천령 감로·영기환·바다 요리 등)은 20개, 나머지 2~39개짜리는 모두 40개.
 -- 우수품(_hq)도 같은 줄에 걸려 함께 바뀐다(trg_world_item_hq_sync는 기본 물품을 따라 맞추므로 결과가 같다).
-update public.world_item_catalog set stack_size = 40 where stack_size between 2 and 39;
+update public.world_item_catalog
+   set stack_size = case when category = 'consumable' and stack_size <= 5 then 20 else 40 end
+ where stack_size between 2 and 39;
 
 update public.world_app_meta set value = '20261104180000' where key = 'db_version';

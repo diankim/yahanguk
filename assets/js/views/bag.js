@@ -89,16 +89,30 @@ const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '�
 
 // 검색칸은 그대로 두고 나머지만 새로 그린다(7.5.0, 제보: 아이폰에서 한 글자 칠 때마다 칸을 새로 만들어 키보드가 내려가던 것)
 // 다시 그리기 전후로 같은 요소(sel)의 화면 속 높이를 맞춘다
-// 목록이 크게 줄면 페이지가 짧아져 브라우저가 스크롤을 끌어올리므로, 다시 그리는 동안 칸 높이를 그대로 붙잡아 둔다(다른 화면으로 가면 푼다)
+// 목록이 크게 줄면 페이지가 짧아져 브라우저가 스크롤을 끌어올리므로, 다시 그리는 동안 칸 높이를 붙잡아 둔다.
+// 다 그린 뒤에는 지금 보는 자리를 지킬 만큼(화면 아래 끝까지)만 남기고, 위로 올리면 그만큼 더 줄여 아래 빈칸을 남기지 않는다(7.6.1)
+function stayFit(box) {
+  if (!box.style.minHeight) return;
+  const need = window.scrollY + window.innerHeight - (box.getBoundingClientRect().top + window.scrollY);
+  const cur = parseFloat(box.style.minHeight) || 0;
+  if (need < cur) box.style.minHeight = need > 0 ? need + 'px' : '';
+}
 async function stay(sel, fn, box = document.querySelector('.view-host') || document.body) {
   const before = document.querySelector(sel)?.getBoundingClientRect().top;
-  box.style.minHeight = Math.max(box.offsetHeight, parseFloat(box.style.minHeight) || 0) + 'px';
-  if (!box.dataset.stayHold) { box.dataset.stayHold = '1'; window.addEventListener('hashchange', () => { box.style.minHeight = ''; delete box.dataset.stayHold; }, { once: true }); }
+  box.style.minHeight = box.offsetHeight + 'px';
+  if (!box.dataset.stayHold) {
+    box.dataset.stayHold = '1';
+    const onScroll = () => stayFit(box);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('hashchange', () => { box.style.minHeight = ''; delete box.dataset.stayHold; window.removeEventListener('scroll', onScroll); }, { once: true });
+  }
   await fn();
   const el = document.querySelector(sel);
-  if (before == null || !el) return;
-  const d = el.getBoundingClientRect().top - before;
-  if (Math.abs(d) > 1) window.scrollBy(0, d);
+  if (before != null && el) {
+    const d = el.getBoundingClientRect().top - before;
+    if (Math.abs(d) > 1) window.scrollBy(0, d);
+  }
+  stayFit(box);
 }
 function renderKeep(body, html, sel) {
   const keep = body.querySelector(sel);
