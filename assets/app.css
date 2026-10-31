@@ -1742,6 +1742,10 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .patch summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 12px 14px; cursor: pointer; list-style: none; }
 .patch summary::-webkit-details-marker { display: none; }
 .patch summary::before { content: '▸'; color: var(--muted); } .patch[open] summary::before { content: '▾'; }
+.patch-archive { display: grid; gap: 10px; border-top: var(--bw) dashed var(--line); padding-top: 10px; margin-top: 4px; }
+.patch-archive > summary { display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none; color: var(--muted); padding: 4px 2px; }
+.patch-archive > summary::-webkit-details-marker { display: none; }
+.patch-archive > summary::before { content: '▸'; } .patch-archive[open] > summary::before { content: '▾'; }
 .patch-body { padding: 0 14px 12px; font-size: calc(13.5px * var(--fz, 1)); }
 .patch-body h3 { margin: 10px 0 4px; font-size: calc(14px * var(--fz, 1)); color: var(--gold); }
 .patch-body ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }

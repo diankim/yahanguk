@@ -36,20 +36,28 @@ export async function render(el, sub) {
     const list = await notes();
     if (!list.length) { box.innerHTML = '<p class="muted">아직 올라온 패치노트가 없습니다.</p>'; return; }
     // 공지(note_id 0.0.0)는 늘 맨 위에 펼쳐 둔다. 내용은 그 한 줄만 고쳐 바꾼다
-    const notice = list.find(n => n.note_id === NOTICE), rest = list.filter(n => n.note_id !== NOTICE);
+    // 「0-」로 시작하는 노트는 롤백 전(시험 기간) 기록 — 맨 아래 접힌 칸에 모은다(1.0.0)
+    const notice = list.find(n => n.note_id === NOTICE), rest = list.filter(n => n.note_id !== NOTICE && !n.note_id.startsWith('0-'));
+    const archive = list.filter(n => n.note_id.startsWith('0-'));
+    const shownId = id => id.replace(/^0-/, '');
+    const item = (n, isOpen) => `
+      <details class="panel patch" id="pn-${esc(n.note_id)}" ${isOpen ? 'open' : ''}>
+        <summary><b>${esc(n.title)}</b><small class="muted">${esc(shownId(n.note_id))} · ${new Date(n.created_at).toLocaleDateString('ko-KR')}</small></summary>
+        <div class="patch-body">${bodyHtml(n.body)}</div>
+      </details>`;
     const gm = isGM(store.character?.owner_id);
-    const open = sub && list.some(n => n.note_id === sub) ? sub : rest[0]?.note_id;
+    const want = sub && !list.some(n => n.note_id === sub) && list.some(n => n.note_id === '0-' + sub) ? '0-' + sub : sub;
+    const open = want && list.some(n => n.note_id === want) ? want : rest[0]?.note_id;
     box.innerHTML = `<div class="patch-list">${notice ? `
       <details class="panel patch notice-pin" id="pn-${NOTICE}" open>
         <summary><b>${esc(notice.title)}</b><small class="muted">공지</small></summary>
         <div class="patch-body">${bodyHtml(notice.body)}</div>
         ${gm ? `<div class="btn-row"><button class="btn small" id="notice-edit">${icon('scroll', 14)}<span>공지 고치기</span></button></div>` : ''}
-      </details>` : gm ? `<div class="btn-row"><button class="btn small" id="notice-edit">${icon('scroll', 14)}<span>공지 쓰기</span></button></div>` : ''}${rest.map(n => `
-      <details class="panel patch" id="pn-${esc(n.note_id)}" ${n.note_id === open ? 'open' : ''}>
-        <summary><b>${esc(n.title)}</b><small class="muted">${esc(n.note_id)} · ${new Date(n.created_at).toLocaleDateString('ko-KR')}</small></summary>
-        <div class="patch-body">${bodyHtml(n.body)}</div>
-      </details>`).join('')}</div>`;
-    if (sub) $(`#pn-${CSS.escape(open)}`, box)?.scrollIntoView({ block: 'start' });
+      </details>` : gm ? `<div class="btn-row"><button class="btn small" id="notice-edit">${icon('scroll', 14)}<span>공지 쓰기</span></button></div>` : ''}${rest.map(n => item(n, n.note_id === open)).join('')}
+      ${archive.length ? `<details class="patch-archive" ${archive.some(n => n.note_id === open) ? 'open' : ''}>
+        <summary><b>시험 기간 기록</b><small class="muted">첫째 밤 · ${archive.length}개</small></summary>
+        ${archive.map(n => item(n, n.note_id === open)).join('')}</details>` : ''}</div>`;
+    if (want) $(`#pn-${CSS.escape(open)}`, box)?.scrollIntoView({ block: 'start' });
     $('#notice-edit', box)?.addEventListener('click', () => editNotice(notice, () => render(el, sub)));
   } catch (e) { box.innerHTML = errorBox(e.message || '패치노트를 읽지 못했습니다.'); }
 }
