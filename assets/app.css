@@ -1849,6 +1849,15 @@ b.contest { color: var(--warn); font-weight: 600; }
 .t-pbody { margin: 0; font-size: calc(12px * var(--fz, 1)); line-height: 1.45; color: var(--text); overflow-wrap: anywhere; } .t-pbody small { display: block; color: var(--muted); font-size: calc(11.5px * var(--fz, 1)); }
 .t-pact { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .t-preset.locked { border-style: dashed; opacity: .7; grid-template-columns: auto minmax(0, 1fr); align-items: start; } .t-preset.locked .ico { color: var(--muted); margin-top: 2px; }
+/* 모바일 칭호 묶음(7.5.4): 한 줄에 하나씩 넓게 늘어나던 것을 두 칸 작은 칸으로 */
+@media (max-width: 640px) {
+  .t-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .t-preset { padding: 6px 7px; gap: 3px; }
+  .t-presets .t-pname { min-height: 30px !important; height: 30px; padding: 0 4px !important; font-size: calc(12px * var(--fz, 1)); }
+  .t-pbody { font-size: calc(11px * var(--fz, 1)); line-height: 1.35; } .t-pbody small { font-size: calc(10.5px * var(--fz, 1)); }
+  .t-pact .btn.small { min-height: 28px; padding: 0 8px; font-size: calc(11.5px * var(--fz, 1)); }
+  .t-preset.locked { grid-template-columns: minmax(0, 1fr); } .t-preset.locked .ico { display: none; }
+}
 .foe-list li.locked { opacity: .65; } .foe-list li.locked > b { color: var(--muted); }
 /* 도움말: 묶음 카드 · 펼침 항목 · 검색 */
 .guide2 { display: grid; gap: 10px; }
