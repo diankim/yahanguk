@@ -126,7 +126,7 @@ def main():
             "// 프레임: idle 가만히 · blink 눈 감기 · step 걷기(idle과 번갈아) · sleep 자기(폭은 같고 키는 낮을 수 있음).\n"
             "// pal: 글자 → '#rrggbb'(k는 테두리 #1a120e), '.'은 빈칸. 화면이 render.js P()로 바꿔 쓴다.\n"
             "// 등급 grade 1 범품 · 2 양품 · 3 진품 · 4 명품 · 5 신품, kind는 요괴 13갈래, likes는 좋아하는 별미.\n"
-            "// 자동 생성: 작업 공간 pets/gen.py(안쪽 그림 + 자동 테두리). 직접 고쳐도 된다.\n\n")
+            "// 자동 생성: tools/pet_art/gen.py(안쪽 그림 + 자동 테두리). 직접 고쳐도 된다.\n\n")
     s = head + 'export const PETS = ' + js(pets) + ';\n\nexport const EFFECTS = ' + js(effects) + ';\n'
     open(OUT, 'w').write(s)
     print('\n'.join(sizes))
