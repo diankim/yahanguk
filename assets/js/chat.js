@@ -32,7 +32,7 @@ export function mountChat(colEl, fabEl) {
   col = colEl; fab = fabEl;
   panel = h(`<section class="chat" aria-label="채팅">
     <div class="chat-grip" role="separator" aria-orientation="horizontal" aria-label="채팅창 크기 조절 (위아래로 끌기)" tabindex="0"><i></i></div>
-    <header class="chat-head"><h2>${icon('chat', 15)} 통신망</h2>${canPop() ? `<button class="icon-btn chat-pop" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}<button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
+    <header class="chat-head"><h2>${icon('chat', 15)} 통신망</h2>${canPop() ? `<button class="icon-btn chat-pop" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}${document.body.classList.contains('pop-win') ? `<button class="btn small chat-home" type="button" title="이 창을 닫고 게임 창의 채팅 칸으로 되돌립니다">${icon('back', 14)}<span>게임 창으로 되돌리기</span></button>` : ''}<button class="icon-btn chat-close" aria-label="채팅 닫기">${icon('close')}</button></header>
     <div class="segmented chat-tabs"></div>
     <div class="chat-circles" id="chat-circles" hidden></div>
     <p class="chat-hint" id="chat-hint"></p>
@@ -494,6 +494,8 @@ function popLink() {
     say('chat-open'); setInterval(() => say('chat-open'), 20000);
     bc.onmessage = e => { if (e.data?.t === 'ping') say('chat-open'); if (e.data?.t === 'chat-close-req') window.close(); };
     window.addEventListener('pagehide', () => say('chat-closed'));
+    // 새 창 안의 「게임 창으로 되돌리기」: 본 창에 알리고 이 창을 닫는다(직접 연 창이라 닫히지 않으면 안내)
+    $('.chat-home', panel)?.addEventListener('click', () => { say('chat-closed'); window.close(); setTimeout(() => { if (!window.closed) toast('게임 창의 채팅을 되돌렸습니다. 이 창은 직접 닫아 주세요.'); }, 300); });
     return;
   }
   bc.onmessage = e => {

@@ -33,6 +33,7 @@ function whLink() {
     const say = (t, x = {}) => { try { wbc.postMessage({ t, uid: store.user?.id, ...x }); } catch {} };
     say('wh-open'); setInterval(() => say('wh-open', { n: unreadTotal }), 20000);
     window.addEventListener('pagehide', () => say('wh-closed'));
+    $('.wh-home')?.addEventListener('click', () => { say('wh-closed'); window.close(); setTimeout(() => { if (!window.closed) toast('게임 창의 귓속말을 되돌렸습니다. 이 창은 직접 닫아 주세요.'); }, 300); });
     wbc.onmessage = e => {
       const d = e.data; if (!mine(d)) return;
       if (d.t === 'wh-ping') say('wh-open', { n: unreadTotal });
@@ -114,8 +115,8 @@ export function openWhisperWindow(target) {
 // 새 창(7.5.4, 제보 54): ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
 export function mountWhisperPage(el) {
   pageHost = el;
-  whLink();
   buildUI(el).then(() => { if (!cur && wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name }); });
+  whLink(); // 화면을 그린 뒤에 잇는다(되돌리기 단추에 처리를 건다)
   whisperFeed(true);
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 30000) { refresh(); if (cur) reloadMsgs(cur); } });
@@ -134,7 +135,7 @@ const canPop = () => matchMedia('(pointer: fine)').matches && !document.body.cla
 function buildUI(host, target) {
   host.innerHTML = `<div class="wh">
       <aside class="wh-side">
-        <form class="wh-new" autocomplete="off"><input name="to" maxlength="24" placeholder="이름으로 새 귓속말" aria-label="받는 사람 이름"><button class="btn small" type="submit">시작</button>${canPop() ? `<button class="icon-btn wh-pop" type="button" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}</form>
+        <form class="wh-new" autocomplete="off"><input name="to" maxlength="24" placeholder="이름으로 새 귓속말" aria-label="받는 사람 이름"><button class="btn small" type="submit">시작</button>${canPop() ? `<button class="icon-btn wh-pop" type="button" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}${isPopWin() ? `<button class="icon-btn wh-home" type="button" aria-label="게임 창으로 되돌리기" title="이 창을 닫고 게임 창에서 귓속말을 엽니다">${icon('back', 16)}</button>` : ''}</form>
         <ul class="wh-threads" id="wh-threads"></ul>
       </aside>
       <section class="wh-main" id="wh-main"></section>
