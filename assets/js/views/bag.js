@@ -260,9 +260,10 @@ async function craft(body, inv, stg) {
     ].filter(Boolean);
     const can = !lacks.length && toolOk && jobOk && lvOk && skOk;
     return { r, lacks, toolOk, jobOk, lvOk, reqs, can, atLoc: atPlace(r.location, c.location), kind: kindOf(r), tier: cmap.get(r.output)?.tier };
-  // 검색: 제작법 이름·만드는 물품·재료·도구·설명으로 찾는다. 검색하는 동안에는 위 거르기와 상관없이 모든 제작법에서 찾는다.
+  // 검색: 제작법 이름·완성품 이름으로만 찾는다(7.6.2, 사용자 요청 — 재료까지 찾으면 「응축 영핵」을 쳤을 때 그것이 들어가는 제작법이 섞였다.
+  // 재료로 쓰는 곳은 물품 정보 창의 「들어가는 제작법」이 맡는다). 검색하는 동안에는 위 거르기와 상관없이 모든 제작법에서 찾는다.
   }).filter(x => { const t = cq.trim().toLowerCase(); if (!t) return true;
-    return [x.r.name, x.r.output_name || nameOf(x.r.output), x.r.description, x.r.tool_name || (x.r.tool ? nameOf(x.r.tool) : ''), ...Object.keys(x.r.ingredients || {}).map(nameOf)].join(' ').toLowerCase().includes(t); })
+    return [x.r.name, x.r.output_name || nameOf(x.r.output)].join(' ').toLowerCase().includes(t); })
     .filter(x => !craftFields.size || craftFields.has(x.r.field || (cookOut.has(x.r.output) ? 'cooking' : '')))
     .filter(x => !craftKinds.size || craftKinds.has(x.kind))
     .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'fav' ? favs.has(x.r.id) : craftFilter === 'can' ? x.can : x.atLoc))
@@ -272,7 +273,7 @@ async function craft(body, inv, stg) {
     ${stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
-    <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="제작법 찾기 (이름·완성품·재료·도구)" value="${esc(cq)}"></label>
+    <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="만들 물품 찾기 (제작법·완성품 이름)" value="${esc(cq)}"></label>
     ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
     <div class="craft-cats" role="group" aria-label="제작 분야 거르기"><span class="muted small">분야</span>${FIELDS.map(f => { const n = (inv.recipes || []).filter(r => (r.field || '') === f).length;
       return `<label class="check ${inv.crafting_profession === f ? 'mine' : ''}"><input type="checkbox" data-field="${f}" ${craftFields.has(f) ? 'checked' : ''}><span>${esc(nameOf(f))} <small>${n}</small></span></label>`; }).join('')}
