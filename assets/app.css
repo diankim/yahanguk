@@ -1339,8 +1339,9 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .t-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
 .t-card { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); min-width: 0; }
 .t-card.on { border-color: var(--gold); }
-.t-card:not(.earned) { opacity: .62; }
-.t-card.secret { opacity: .5; }
+/* 못 얻은 칭호는 글만 흐리게, 진행 게이지는 또렷하게(7.5.9 — 카드 전체를 흐리면 게이지도 함께 흐려졌다) */
+.t-card:not(.earned) > :not(.t-prog) { opacity: .62; }
+.t-card.secret > :not(.t-prog) { opacity: .5; }
 /* 레거시 칭호: 옻칠 현판(모서리를 따낸 패) · 금박 줄 · 왼쪽 세로 낙관 「흔적」 · 위에 한자 이름. 테마와 상관없이 옻칠 검정 */
 .t-card.legacy { position: relative; padding: 12px 14px 12px 50px; border: 0; border-radius: 0; background: #0d0a0c; color: #e9dcc0;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px); }
