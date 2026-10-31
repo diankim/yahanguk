@@ -1,6 +1,6 @@
 // 음향: 브라우저에서 직접 연주하는 동양풍 배경음악(영역마다 다른 곡조) · 날씨·시간대 환경음 · 행동별 효과음.
 // 외부 음원을 쓰지 않으므로 저작권 걱정이 없고 내려받을 파일도 없다.
-import { on } from './core.js';
+import { on, toast } from './core.js';
 
 // vol = 전체 음량(7.3.4, 설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
@@ -624,15 +624,19 @@ export function playSfx(kind) {
 export const ALARMS = [['whisper', '귓속말', '귓속말이 오면'], ['mention', '내 이름 부르기', '채팅에서 누가 @내 이름을 쓰면'], ['stamina', '탐색력 가득', '탐색력이 가득 차면'],
   ['rest_short', '잠깐 쉬기 가능', '잠깐 쉬기 쿨타임(10분)이 끝나면'], ['rest_full', '푹 쉬기 가능', '푹 쉬기 쿨타임(30분)이 끝나면'], ['exp', '원정 귀환', '원정대가 돌아오면'], ['idle', '자율 활동 끝', '자율 활동이 끝나 보상을 받을 수 있으면']];
 let alarmReady = false;
+const ALARM_TEXT = { stamina: '탐색력이 가득 찼습니다.', rest_short: '잠깐 쉬기를 다시 할 수 있습니다.', rest_full: '푹 쉬기를 다시 할 수 있습니다.', idle: '자율 활동이 끝났습니다. 캐릭터 › 자율에서 보상을 받으세요.' };
 export const alarmOn = kind => sound.alarm?.[kind] !== false;
 export function setAlarm(kind, on) { sound.alarm = { ...(sound.alarm || {}), [kind]: !!on }; saveSound(); }
 export function playAlarm(kind, key) {
   if (POPWIN && !alarmReady) { alarmReady = true; loadSound(); }
   if (kind && !alarmOn(kind)) return;
-  if (away || !ensureCtx()) return;
   // 잠깐·푹 쉬기가 거의 같이 끝나면 한 번만(둘 다 켰을 때 10초 안에 겹친 것은 건너뜀)
   if (/^rest_/.test(kind || '')) { let l = 0; try { l = Number(localStorage.getItem('yh-alarm:rest-any') || 0); } catch {} if (Date.now() - l < 10000) return; try { localStorage.setItem('yh-alarm:rest-any', String(Date.now())); } catch {} }
   if (key) try { const k = 'yh-alarm:' + key; if (localStorage.getItem(k)) return; localStorage.setItem(k, String(Date.now())); setTimeout(() => { try { localStorage.removeItem(k); } catch {} }, 60000); } catch {}
+  // 시간이 다 된 알림은 소리와 함께 화면 아래에도 글로 띄운다(7.5.9b, 사용자 요청 — 소리를 꺼 두었거나 못 들으면 몰랐다).
+  // 귓속말·이름 부르기는 저마다 창·빨간 점이 있고, 원정 귀환은 귀환 창이 따로 뜨므로 뺀다
+  if (ALARM_TEXT[kind] && !POPWIN) toast(ALARM_TEXT[kind], 'ok');
+  if (away || !ensureCtx()) return;
   try {
     ctx.resume?.();
     if (!alarmBus) { alarmBus = ctx.createGain(); alarmBus.connect(master); }
