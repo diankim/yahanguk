@@ -97,6 +97,8 @@ export function suitedJobs(o) {
   const req = Object.entries(o.required_stats || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
   const wt = o.equipment_traits?.weapon_type;
   let jobs = req.length ? STAT_JOBS[req[0][0]] || [] : [];
+  // 방어구는 짝 능력치로도 입으므로(world_stat_pair) 짝 능력치의 직업도 넣는다(7.5.4, 제보 52 — 법의에 퇴마관이 빠졌다)
+  if (o.category === 'armor' && req.length) jobs = [...new Set([...jobs, ...(STAT_JOBS[STAT_PAIR[req[0][0]]] || [])])];
   if (o.category === 'weapon') {
     if (wt === 'melee') jobs = ['artificer'];
     else if (wt === 'ranged') jobs = ['scout'];
