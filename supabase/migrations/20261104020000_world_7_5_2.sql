@@ -10,13 +10,20 @@ set local check_function_bodies = off;
 
 create or replace function pg_temp.yh_patch(p_fn regprocedure, p_old text, p_new text) returns void
 language plpgsql as $f$
-declare d text; n int;
+declare d text; n int; o text := (select pg_get_userbyid(proowner) from pg_proc where oid = p_fn); me text := current_user; sw boolean; inh boolean;
 begin
   d := replace(pg_get_functiondef(p_fn), E'\r\n', E'\n');
   if position(p_old in d) = 0 and position(p_new in d) > 0 then return; end if;  -- 이미 고침
   n := (length(d) - length(replace(d, p_old, ''))) / greatest(1, length(p_old));
   if n <> 1 then raise exception '7.5.2 anchor % in % (found %)', left(p_old, 60), p_fn, n; end if;
+  -- 주인 역할(fn_owner_18956 등)의 권한을 postgres가 물려받지 않으면 잠깐 INHERIT를 켜고 고친 뒤 원래대로(주인 역할은 public에 CREATE가 없어 SET ROLE로는 못 고친다)
+  sw := not pg_has_role(me, o, 'USAGE');
+  if sw then
+    select m.inherit_option into inh from pg_auth_members m where m.roleid = (select oid from pg_roles where rolname = o) and m.member = (select oid from pg_roles where rolname = me);
+    execute format('grant %I to %I with inherit true', o, me);
+  end if;
   execute replace(d, p_old, p_new);
+  if sw then execute format('grant %I to %I with inherit %s', o, me, case when coalesce(inh, false) then 'true' else 'false' end); end if;
 end $f$;
 
 -- ── 함수 주인 역할에 빠진 실행 권한(제보 50 — 자율 활동을 끝내면 「권한이 없다」) ─────────
