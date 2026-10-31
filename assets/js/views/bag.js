@@ -88,6 +88,18 @@ const toolCovers = (have, need) => have === need || (TOOL_LINE[have] && TOOL_LIN
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 
 // 검색칸은 그대로 두고 나머지만 새로 그린다(7.5.0, 제보: 아이폰에서 한 글자 칠 때마다 칸을 새로 만들어 키보드가 내려가던 것)
+// 다시 그리기 전후로 같은 요소(sel)의 화면 속 높이를 맞춘다
+// 목록이 크게 줄면 페이지가 짧아져 브라우저가 스크롤을 끌어올리므로, 다시 그리는 동안 칸 높이를 그대로 붙잡아 둔다(다른 화면으로 가면 푼다)
+async function stay(sel, fn, box = document.querySelector('.view-host') || document.body) {
+  const before = document.querySelector(sel)?.getBoundingClientRect().top;
+  box.style.minHeight = Math.max(box.offsetHeight, parseFloat(box.style.minHeight) || 0) + 'px';
+  if (!box.dataset.stayHold) { box.dataset.stayHold = '1'; window.addEventListener('hashchange', () => { box.style.minHeight = ''; delete box.dataset.stayHold; }, { once: true }); }
+  await fn();
+  const el = document.querySelector(sel);
+  if (before == null || !el) return;
+  const d = el.getBoundingClientRect().top - before;
+  if (Math.abs(d) > 1) window.scrollBy(0, d);
+}
 function renderKeep(body, html, sel) {
   const keep = body.querySelector(sel);
   if (!keep || keep.parentNode !== body) { body.innerHTML = html; return false; }
@@ -270,12 +282,14 @@ async function craft(body, inv, stg) {
         <button class="btn small ${can ? 'primary' : ''}" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? '제작' : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`, 'label.search');
-  bindSegmented(body, 'craft-filter', k => { craftFilter = k; craft(body, inv, stg); });
-  $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); craft(body, inv, stg); });
-  $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); craft(body, inv, stg); });
-  $$('[data-kind]', body).forEach(b => b.onchange = () => { b.checked ? craftKinds.add(b.dataset.kind) : craftKinds.delete(b.dataset.kind); craft(body, inv, stg); });
-  $('#craft-kinds-clear', body)?.addEventListener('click', () => { craftKinds.clear(); craft(body, inv, stg); });
-  $('#craft-sort', body).onchange = e => { craftSort = e.target.value; craft(body, inv, stg); };
+  // 거르기·정렬을 바꾸면 목록을 다시 그리는데, 누른 칸이 화면의 같은 높이에 남게 한다(7.6.1, 사용자 제보 — 체크할 때마다 화면이 내려갔다)
+  const redraw = sel => stay(sel, () => craft(body, inv, stg));
+  bindSegmented(body, 'craft-filter', k => { craftFilter = k; redraw('[data-seg="craft-filter"]'); });
+  $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); redraw(`[data-field="${b.dataset.field}"]`); });
+  $('#craft-fields-clear', body)?.addEventListener('click', () => { craftFields.clear(); redraw('[data-field]'); });
+  $$('[data-kind]', body).forEach(b => b.onchange = () => { b.checked ? craftKinds.add(b.dataset.kind) : craftKinds.delete(b.dataset.kind); redraw(`[data-kind="${b.dataset.kind}"]`); });
+  $('#craft-kinds-clear', body)?.addEventListener('click', () => { craftKinds.clear(); redraw('[data-kind]'); });
+  $('#craft-sort', body).onchange = e => { craftSort = e.target.value; redraw('#craft-sort'); };
   const ci = $('#craft-q', body);
   // 한글을 조합하는 동안에는 다시 그리지 않는다(조합이 끊긴다). 조합이 끝나면 그린다.
   const redo = () => { cq = ci.value; craft(body, inv, stg); };
