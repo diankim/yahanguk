@@ -63,15 +63,21 @@ export function openWhisperWindow(target) {
 }
 // 새 창(7.5.4, 제보 54): ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
 export function mountWhisperPage(el) {
-  const me = store.user?.id;
   pageHost = el;
   buildUI(el).then(() => { if (!cur && wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name }); });
-  try {
-    db.channel('yh-wh-pop').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_chat_messages', filter: `recipient_id=eq.${me}` },
-      p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); }).subscribe();
-  } catch {}
+  whisperFeed(true);
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 30000) { refresh(); if (cur) reloadMsgs(cur); } });
+}
+// 받는 귓속말만 듣는 가벼운 실시간(나에게 온 줄만). 귓속말 새 창, 그리고 채팅을 새 창으로 뺀 본 창이 쓴다(채팅 실시간이 멈춰 있으므로)
+let feed = null;
+export function whisperFeed(on) {
+  if (feed) { try { db.removeChannel(feed); } catch {} feed = null; }
+  if (!on || !store.user?.id) return;
+  try {
+    feed = db.channel('yh-wh-feed').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_chat_messages', filter: `recipient_id=eq.${store.user.id}` },
+      p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); }).subscribe();
+  } catch {}
 }
 const canPop = () => matchMedia('(pointer: fine)').matches && !document.body.classList.contains('pop-win');
 function buildUI(host, target) {

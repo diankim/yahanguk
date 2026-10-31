@@ -2348,3 +2348,7 @@ body.pop-win .chat-close, body.pop-win .chat-grip { display: none; }
 .pop-wh { height: 100dvh; padding: 8px; box-sizing: border-box; }
 .pop-wh .wh { height: 100%; }
 .wh-new .icon-btn { flex: none; }
+/* 채팅을 새 창으로 뺀 동안 본 창: 채팅 칸 대신 안내 한 줄, 모바일 채팅 단추 숨김 */
+body.chat-out .chat-fab { display: none; }
+.chat-out-note { display: grid; justify-items: center; align-content: center; gap: 8px; height: 100%; padding: 16px; text-align: center; color: var(--muted); background: var(--surface); }
+.chat-out-note p { margin: 0; font-size: calc(13px * var(--fz, 1)); }

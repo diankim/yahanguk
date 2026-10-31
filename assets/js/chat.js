@@ -2,7 +2,7 @@
 // 모임 탭은 모임에 든 사람에게만 보이고, 탭 아래 단추로 볼 모임을 하나 골라 그 모임의 말만 보여 준다(모임마다 내가 정한 색으로).
 import { cardName } from './views/card.js';
 import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError, emblem } from './core.js';
-import { onWhisper, openWhisperWindow } from './whisper.js';
+import { onWhisper, openWhisperWindow, whisperFeed } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
 import { FRAMES, frameTier } from './cosmetics.js';
@@ -73,24 +73,26 @@ export function mountChat(colEl, fabEl) {
   switchTab(tab);
   subscribe();
   loadBlocks();
-  on('changed', ({ name }) => { if (/party/.test(name)) { partyLoaded = false; setTimeout(syncPartySub, 300); } if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
+  on('changed', ({ name }) => { if (away) return; if (/party/.test(name)) { partyLoaded = false; setTimeout(syncPartySub, 300); } if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
   subscribeCircles();
   syncPartySub();
-  window.addEventListener('yahang:arrived', load);
+  window.addEventListener('yahang:arrived', () => { if (!away) load(); });
+  popLink();
   // 화면 복귀: 실시간이 끊겼거나 30초 넘게 비웠을 때만 빠진 말을 채운다
   let hiddenAt = 0;
   // 휴대폰은 화면을 껐다 켜면 실시간 연결이 끊긴 채 「살아 있음」으로 남을 수 있어 모임·파티 말도 함께 채운다
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { hiddenAt = Date.now(); return; }
-    const away = Date.now() - hiddenAt > 30000;
-    if (!live || away) loadNew();
-    if (away) {
+    if (away) return; // 채팅이 새 창에 나가 있으면 본 창은 읽지 않는다
+    const gone = Date.now() - hiddenAt > 30000;
+    if (!live || gone) loadNew();
+    if (gone) {
       [...circleLoaded].forEach(x => { if (x !== circleId) circleLoaded.delete(x); });
       if (tab === 'circle') loadCircleNew(); else if (tab === 'party') loadParty(); else partyLoaded = false;
     }
   });
   setInterval(() => {
-    if (document.hidden || tab === 'party') return;
+    if (away || document.hidden || tab === 'party') return;
     if (tab === 'circle') { if (!circleLive) loadCircleMsgs(); return; }
     // 실시간이 끊겼으면 10초마다, 살아 있으면 5분마다 한 번 빠진 메시지를 채운다
     if (!live || Date.now() - lastFull > 300000) loadNew();
@@ -232,6 +234,7 @@ function onCircleMsg(m) {
 // 내 파티 말만 구독한다(필터가 없으면 파티 말 한 줄마다 서버가 접속자 모두의 권한을 검사한다). 파티가 없으면 구독하지 않는다.
 let partyChannel = null, partyNew = false, partyLive = false, partyLoaded = false, partySubId;
 async function syncPartySub() {
+  if (away) return;
   let pid = null;
   try { const p = await loadSnap('world_party_overview', undefined, { maxAge: 60000 }); pid = p?.party?.party_id || null; } catch { return; }
   if (pid === partySubId && (partyChannel || !pid)) return;
@@ -477,6 +480,52 @@ async function send(e) {
     form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {} form._fit?.();
   } catch (err) { toast(friendlyError(err), 'error'); }
   finally { btn.disabled = false; }
+}
+
+// ── 새 창과 나눠 쓰기(7.5.4): 채팅 새 창이 떠 있는 동안 본 창의 채팅은 멈춘다(실시간·읽기가 두 벌이 되지 않게) ──
+// 두 창은 서버를 거치지 않는 브라우저 안 신호(BroadcastChannel 'yh-pop')로 알린다. 새 창: 열릴 때·20초마다 chat-open, 닫힐 때 chat-closed.
+// 본 창: chat-open을 받으면 멈추고(받는 귓속말만 가볍게 들음), chat-closed나 60초 동안 소식이 없으면 다시 잇는다.
+let away = false, beat = 0, bc = null;
+function popLink() {
+  if (!('BroadcastChannel' in window)) return;
+  bc = new BroadcastChannel('yh-pop');
+  if (document.body.classList.contains('pop-win')) {
+    const say = t => { try { bc.postMessage({ t, uid: store.user?.id }); } catch {} };
+    say('chat-open'); setInterval(() => say('chat-open'), 20000);
+    bc.onmessage = e => { if (e.data?.t === 'ping') say('chat-open'); if (e.data?.t === 'chat-close-req') window.close(); };
+    window.addEventListener('pagehide', () => say('chat-closed'));
+    return;
+  }
+  bc.onmessage = e => {
+    if (e.data?.uid && e.data.uid !== store.user?.id) return;
+    if (e.data?.t === 'chat-open') { beat = Date.now(); if (!away) suspend(); }
+    if (e.data?.t === 'chat-closed' && away) resume();
+  };
+  try { bc.postMessage({ t: 'ping' }); } catch {}
+  setInterval(() => { if (away && Date.now() - beat > 60000) resume(); }, 15000);
+}
+function suspend() {
+  away = true;
+  for (const c of [channel, circleChannel, partyChannel]) if (c) try { db.removeChannel(c); } catch {}
+  channel = circleChannel = partyChannel = null; live = circleLive = partyLive = false; partySubId = undefined;
+  toggleSheet(false);
+  document.body.classList.add('chat-out');
+  panel.hidden = true;
+  if (!$('.chat-out-note', col)) {
+    const n = h(`<div class="chat-out-note">${icon('popout', 18)}<p>채팅은 새 창에서 열려 있습니다.</p><button class="btn small" type="button">여기로 되돌리기</button></div>`);
+    $('button', n).onclick = () => { try { bc?.postMessage({ t: 'chat-close-req' }); } catch {} resume(); };
+    col.append(n);
+  }
+  whisperFeed(true);
+}
+function resume() {
+  if (!away) return;
+  away = false;
+  whisperFeed(false);
+  document.body.classList.remove('chat-out');
+  $('.chat-out-note', col)?.remove();
+  panel.hidden = false;
+  subscribe(); subscribeCircles(); syncPartySub(); load();
 }
 
 function subscribe() {
