@@ -3,7 +3,7 @@
 // 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
-import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, invalidate, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
@@ -79,11 +79,18 @@ async function draw() {
     noteRegion(s.region);
     // 지역 첫 방문 글(6.1.1): 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
     if (!traveling) regionIntro(s.region?.region_id);
+    // 다시 그릴 때 스크롤 자리를 지킨다(7.5.9h): 퀘스트 칸·토벌 띠는 따로 읽어 늦게 채우므로, 지난 내용을 그대로 옮겨 두고
+    // 채운 뒤에도 같은 자리로 맞춘다(전에는 그 칸이 잠깐 비어 화면이 짧아지며 위로 튀었다). 토벌에서 돌아올 때는 들어가기 전 자리로.
+    const y = fieldY ?? window.scrollY; fieldY = null;
+    const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    if (oldQ && $('#quest-box', el)) $('#quest-box', el).innerHTML = oldQ;
+    if (oldR && $('#raid-band', el)) $('#raid-band', el).innerHTML = oldR;
+    const keepY = () => { if (y > 0 && el.isConnected) scrollAfterModal(y); };
+    keepY();
     bind(s);
     // 퀘스트 칸은 따로 읽어 채운다(15초 동안 다시 씀, 보고 뒤에는 새로 읽음)
-    fillQuests($('#quest-box', el));
-    fillRaidBand($('#raid-band', el));
+    Promise.all([fillQuests($('#quest-box', el)), fillRaidBand($('#raid-band', el))]).then(keepY, keepY);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
@@ -122,9 +129,11 @@ function openAid(target, name) {
 }
 
 // 파티 현장 토벌(7.1): 같은 곳에 합류할 수 있는 동료가 있으면 「동료 부르기」, 이미 든 파티 토벌이 있으면 그 화면으로 보낸다
+let fieldY = null; // 토벌에 들어가기 전 현장 스크롤 자리(끝나고 현장으로 돌아오면 되돌림)
 function drawBattle(pty) {
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
+  if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
   el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
     ${near ? `<div class="notice pf-call">${icon('users', 18)}<div><b>같은 곳의 동료 ${near}명</b><span>불러서 함께 싸웁니다(10초 라운드). 합류한 사람마다 요괴 체력이 늘고, 이기면 경험치를 한 사람마다 10% 더 받습니다.</span></div><button class="btn small primary" id="pf-call">동료 부르기</button></div>` : ''}
     <div id="battle-box"></div>`;

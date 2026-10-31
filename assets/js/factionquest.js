@@ -36,7 +36,7 @@ export function playDialogue(r, fid) {
   box.onclick = next;
   box.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); next(); } };
   $('[data-dlg-close]', m).onclick = () => closeModal();
-  show(); box.focus();
+  show(); try { box.focus({ preventScroll: true }); } catch { box.focus(); }
 }
 
 // 비고 품목 종류 표시(물품이 아닌 것은 하나만 산다)
@@ -203,7 +203,7 @@ function bindDonate(body, s, done) {
     const q = $('#fq-don-q', box);
     if (q) {
       // 한글 조합 중에는 다시 그리지 않는다
-      const redo = () => { donQ = q.value.trim(); box.innerHTML = donateHtml(s, true); bind(); const n = $('#fq-don-q', box); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
+      const redo = () => { donQ = q.value.trim(); box.innerHTML = donateHtml(s, true); bind(); const n = $('#fq-don-q', box); n.focus({ preventScroll: true }); n.setSelectionRange(n.value.length, n.value.length); };
       q.oninput = e => { if (!e.isComposing) redo(); };
       q.addEventListener('compositionend', redo);
     }

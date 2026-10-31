@@ -333,10 +333,28 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
     el.addEventListener('click', e => { const b = e.target.closest('[data-ask]'); if (b) done(b.dataset.ask === '1'); else if (e.target === el) done(false); });
     document.addEventListener('keydown', key, true);
     document.body.append(el);
-    setTimeout(() => el.querySelector('[data-ask="1"]')?.focus(), 20);
+    setTimeout(() => focusIn(el.querySelector('[data-ask="1"]')), 20);
   });
 }
 
+// 창을 여닫는 동안 바탕 화면의 스크롤 자리를 지킨다(7.5.9h, 사용자 요청): 첫 창이 열릴 때 자리를 적어 두고,
+// 마지막 창이 닫히면 같은 화면(주소)일 때만 그 자리로 되돌린다. 창이 떠 있는 사이 바탕이 다시 그려져 높이가 잠깐 줄었다가
+// 늘어나도(현장 토벌·세력 팝업·칭호 유래 등) 위로 튀지 않게, 다시 그려질 틈을 두고 한 번 더 맞춘다.
+let modalY = null, modalHash = '';
+function lockPage() {
+  if (!document.body.classList.contains('has-modal')) { modalY = window.scrollY; modalHash = location.hash; }
+  document.body.classList.add('has-modal');
+}
+function unlockPage() {
+  document.body.classList.remove('has-modal');
+  const y = modalY; modalY = null;
+  if (y == null || location.hash !== modalHash) return;
+  const fix = () => { if (location.hash === modalHash && Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); };
+  requestAnimationFrame(fix); setTimeout(fix, 250); setTimeout(fix, 700);
+}
+// 창이 떠 있는 사이 바탕 화면이 새 자리를 정했으면(현장 토벌이 끝나 현장으로 돌아옴 등) 창을 닫을 때 그 자리로 간다
+export function scrollAfterModal(y) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2) window.scrollTo(0, y); }
+const focusIn = (el) => { try { el?.focus({ preventScroll: true }); } catch { el?.focus(); } };
 export function openModal({ title, body, wide = false, onClose } = {}) {
   closeModal();
   const el = h(`<div class="modal-backdrop" id="modal"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
@@ -350,8 +368,8 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
   document.addEventListener('keydown', escClose);
   el._onClose = onClose;
   document.body.append(el);
-  document.body.classList.add('has-modal');
-  setTimeout(() => $('.modal button, .modal input', el)?.focus(), 30);
+  lockPage();
+  setTimeout(() => focusIn($('.modal button, .modal input', el)), 30);
   return el;
 }
 function escClose(e) { if (e.key === 'Escape') closeModal(); }
@@ -365,15 +383,15 @@ export function openLayer({ title, body, wide = false } = {}) {
   const key = e => { if (e.key === 'Escape' && $$('.modal-backdrop.layer').pop() === el) { e.stopImmediatePropagation(); close(); } };
   const close = () => {
     document.removeEventListener('keydown', key, true); el.remove();
-    if (!$('#modal') && !$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
+    if (!$('#modal') && !$('.modal-backdrop.layer')) unlockPage();
   };
   let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
   el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) close(); });
   document.addEventListener('keydown', key, true);
   el.close = close;
   document.body.append(el);
-  document.body.classList.add('has-modal');
-  setTimeout(() => $('.modal-head button', el)?.focus(), 30);
+  lockPage();
+  setTimeout(() => focusIn($('.modal-head button', el)), 30);
   return el;
 }
 export const closeLayers = () => $$('.modal-backdrop.layer').forEach(l => l.close?.());
@@ -382,7 +400,7 @@ export function closeModal() {
   document.removeEventListener('keydown', escClose);
   el._onClose?.();
   el.remove();
-  if (!$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
+  if (!$('.modal-backdrop.layer')) unlockPage();
 }
 
 /* ── 공통 조각 ───────────────────────────────────────────── */
