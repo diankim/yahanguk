@@ -146,7 +146,9 @@ function qsSlots(snap) {
 }
 function qsCell(k, i, inv, downed) {
   if (!k) return `<button class="qs-cell empty" type="button" data-qs-empty="${i}">${icon('plus', 16)}<small>빈 칸</small></button>`;
-  const n = Number(inv[k] || 0), off = !n || (downed && baseOf(k) !== 'revival_charm');
+  // 이동 중에는 쓸 수 없다(7.5.2, 서버 world_use_item도 막음)
+  const moving = !!store.character?.travel_destination;
+  const n = Number(inv[k] || 0), off = !n || ((downed || moving) && baseOf(k) !== 'revival_charm');
   return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
     <b>${esc(nameOf(k))}</b><span class="qs-n">×${fmt.num(n)}</span><small>${esc(qsDesc(k))}</small></button>`;
 }
@@ -213,7 +215,7 @@ async function status(body) {
       <p class="muted small">${byYohwa ? '구조나 회생 부적으로 일어나면 요화는 남아 하루 뒤 다시 쓰러집니다. 귀령초로 풀거나 안전지대 봉인을 받으세요.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
-      <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`,
+      <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 바로 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 이동 중에는 쓸 수 없고, 전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`,
       { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}
     ${panel('조사원 상태', `<div class="st-box">
       <div class="st-main">
