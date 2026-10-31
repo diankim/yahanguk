@@ -1,7 +1,7 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
 import { ask, db, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
 import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile, FONT_SIZES, savedFontSize, applyFontSize } from '../settings.js';
-import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
+import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES, ALARMS, alarmOn, setAlarm, playAlarm } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
 import { hue as autoHue, NAME_STYLES } from '../chat.js';
@@ -99,6 +99,8 @@ export async function render(root, sub) {
         ${sndBlock('amb', '환경음', '날씨와 시간대에 따라 빗소리·바람·풀벌레·새소리가 작게 깔립니다', sound.amb, 'ambOn')}
         ${sndBlock('sfx', '효과음', '이동·전투·거래·제작·보상마다 다른 짧은 소리', sound.sfx, 'sfxOn')}
         <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}</div>
+        <div class="snd-block"><div class="snd-head"><span><b>알림음 「띠로링」</b><small>게임 창을 내려 두고 다른 일을 하다가도 알 수 있게 울립니다. 효과음을 꺼도 울리고, 크기는 효과음 음량을 따릅니다.</small></span><button class="btn small" type="button" data-try-alarm>들어 보기</button></div>
+          <div id="alarm-list">${ALARMS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-alarm="${k}" ${alarmOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>
         <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
     </section>
     <section id="sec-notify" class="set-sec">
@@ -192,6 +194,8 @@ export async function render(root, sub) {
 
   // 소리(바로 적용)
   $$('[data-sw]', el).forEach(i => i.onchange = () => setEnabled(i.dataset.sw, i.checked));
+  $$('[data-alarm]', el).forEach(i => i.onchange = () => setAlarm(i.dataset.alarm, i.checked));
+  $('[data-try-alarm]', el)?.addEventListener('click', () => playAlarm(null));
   $$('[data-vol]', el).forEach(i => i.oninput = () => { setVolume(i.dataset.vol, Number(i.value)); const o = $(`[data-vol-out="${i.dataset.vol}"]`, el); if (o) o.textContent = `${Math.round(i.value * 100)}%`; if (i.dataset.vol === 'sfx') playSfx('tap'); });
 
   save.onclick = () => guard(save, async () => {

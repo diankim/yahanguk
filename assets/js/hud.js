@@ -3,6 +3,7 @@
 import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
+import { playAlarm, armAlarm } from './sound.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -43,7 +44,10 @@ export function mountHud(el) {
 function bumpStamina() {
   const st = state.hud?.stamina; if (!st?.next_at) return false;
   const t = new Date(st.next_at).getTime(); if (t > Date.now()) return false;
+  const was = st.now || 0;
   st.now = Math.min(st.max, (st.now || 0) + 1);
+  // 탐색력이 가득 차면 띠로링(7.5.6, 제보 59 — 다른 일을 하다가 듣고 돌아오게). 같은 때를 여러 창이 함께 울리지 않게 key
+  if (was < st.max && st.now >= st.max) playAlarm('stamina', 'st:' + t);
   st.next_at = st.now >= st.max ? null : new Date(t + (st.per_seconds || 900) * 1000).toISOString();
   return true;
 }
@@ -62,7 +66,10 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
       (first || !char) && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;
+    { const was = state.hud?.stamina, st = hud?.stamina; // 다시 읽은 값으로 가득 찼어도 띠로링(화면에서 올리기 전에 읽힌 때)
+      if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
     state = { idle, hud, exp: hud?.expedition || null };
+    armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at); // 끝나는 때 띠로링(7.5.6)
     store.expedition = state.exp;
     store.hud = hud;
     render();

@@ -591,10 +591,11 @@ function updateAmbience() {
 }
 
 /* ── 효과음(짧고 단순하게) ───────────────────────────── */
+let toBus = null, alarmBus = null; // 알림음은 효과음을 꺼도 따로 울리게 제 길(alarmBus)로 낸다
 function tone(freq, dur, vol = 0.1, type = 'sine', at = 0, glide) {
   const t0 = now() + at, o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t0);
   if (glide) o.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
-  envGain(g, t0, vol, Math.min(0.012, dur / 4), dur); o.connect(g); g.connect(sfxBus); o.start(t0); o.stop(t0 + dur + 0.05);
+  envGain(g, t0, vol, Math.min(0.012, dur / 4), dur); o.connect(g); g.connect(toBus || sfxBus); o.start(t0); o.stop(t0 + dur + 0.05);
 }
 const seq = (notes, step, dur, vol, type = 'sine') => notes.forEach((f, i) => tone(f, dur, vol, type, i * step));
 const SFX = {
@@ -610,11 +611,43 @@ const SFX = {
   hit: () => tone(200, 0.09, 0.1, 'sine', 0, 110), crit: () => { tone(200, 0.09, 0.1, 'sine', 0, 110); tone(1400, 0.07, 0.05, 'sine', 0.05); },
   hurt: () => tone(260, 0.14, 0.08, 'sine', 0, 170), guard: () => tone(500, 0.1, 0.06, 'triangle'),
   victory: () => seq([523, 659, 784, 1046], 0.08, 0.18, 0.06, 'triangle'), defeat: () => seq([392, 330, 262], 0.12, 0.22, 0.06),
+  ding: () => { seq([1047, 1319, 1568], 0.1, 0.4, 0.08); tone(2093, 0.5, 0.025, 'sine', 0.2); },
   chime: () => tone(660, 0.2, 0.05), error: () => seq([240, 200], 0.1, 0.1, 0.06), repair: () => { tone(900, 0.04, 0.05); tone(700, 0.05, 0.05, 'sine', 0.07); },
 };
 export function playSfx(kind) {
   if (POPWIN || !sound.sfxOn || away || !ensureCtx()) return;
   try { (SFX[kind] || SFX.tap)(); } catch {}
+}
+// 알림음 「띠로링」(7.5.6): 귓속말·채팅의 @내 이름·탐색력 가득·휴식 쿨타임 끝·원정 귀환·자율 활동 끝.
+// 종류마다 설정 › 소리에서 켜고 끈다(sound.alarm, 이 기기에 저장). 효과음을 꺼도 울리고, 크기는 효과음 음량을 따른다(너무 작으면 25%).
+// 채팅·귓속말 새 창에서도 울린다(그 창이 말을 받는 동안 본 창은 받지 않으므로). 같은 일로 창 여럿이 함께 울리지 않게 key를 기기에 1분 남긴다.
+export const ALARMS = [['whisper', '귓속말', '귓속말이 오면'], ['mention', '내 이름 부르기', '채팅에서 누가 @내 이름을 쓰면'], ['stamina', '탐색력 가득', '탐색력이 가득 차면'],
+  ['rest', '휴식 가능', '잠깐 쉬기·푹 쉬기를 다시 할 수 있게 되면'], ['exp', '원정 귀환', '원정대가 돌아오면'], ['idle', '자율 활동 끝', '자율 활동이 끝나 보상을 받을 수 있으면']];
+let alarmReady = false;
+export const alarmOn = kind => sound.alarm?.[kind] !== false;
+export function setAlarm(kind, on) { sound.alarm = { ...(sound.alarm || {}), [kind]: !!on }; saveSound(); }
+export function playAlarm(kind, key) {
+  if (POPWIN && !alarmReady) { alarmReady = true; loadSound(); }
+  if (kind && !alarmOn(kind)) return;
+  if (away || !ensureCtx()) return;
+  if (key) try { const k = 'yh-alarm:' + key; if (localStorage.getItem(k)) return; localStorage.setItem(k, String(Date.now())); setTimeout(() => { try { localStorage.removeItem(k); } catch {} }, 60000); } catch {}
+  try {
+    ctx.resume?.();
+    if (!alarmBus) { alarmBus = ctx.createGain(); alarmBus.connect(master); }
+    alarmBus.gain.value = Math.max(0.25, sound.sfx ?? 0.55) * 0.5;
+    toBus = alarmBus; SFX.ding();
+  } catch {} finally { toBus = null; }
+}
+// 끝나는 시각에 맞춰 알림을 걸어 둔다(같은 종류·같은 이름은 새 시각으로 바꿈). 이미 지난 시각이면 걸지 않는다.
+const armed = new Map();
+export function armAlarm(kind, name, at) {
+  const id = kind + ':' + name, t = at ? new Date(at).getTime() : 0, old = armed.get(id);
+  if (old?.at === t) return;
+  if (old) clearTimeout(old.timer);
+  armed.delete(id);
+  const left = t - Date.now();
+  if (!t || left <= 0 || left > 2 ** 31 - 1) return;
+  armed.set(id, { at: t, timer: setTimeout(() => { armed.delete(id); playAlarm(kind, id + ':' + t); }, left + 300) });
 }
 export const SFX_SAMPLES = [['confirm', '확인'], ['find', '발견'], ['hit', '전투'], ['coin', '거래'], ['craft', '제작'], ['travel', '출발'], ['reward', '보상'], ['error', '오류']];
 
@@ -660,7 +693,8 @@ function soundLink() {
   window.addEventListener('focus', claim);
 }
 export function initSound() {
-  if (POPWIN) return; // 채팅·귓속말 새 창은 소리를 전혀 내지 않는다(7.5.5, 사용자 요청 — 소리는 게임 창에서만)
+  // 채팅·귓속말 새 창은 배경음악·환경음·효과음을 내지 않는다(7.5.5, 사용자 요청). 알림음(playAlarm)만 울리므로 처음 누를 때 소리 장치를 깨워 둔다
+  if (POPWIN) { document.addEventListener('pointerdown', () => { if (!alarmReady) { alarmReady = true; loadSound(); } if (ensureCtx()) { ctx.resume?.(); applyVolumes(); } }, { once: true }); return; }
   loadSound();
   on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
   // 원정을 보내면 돌아오는 시각까지 전투 음악, 돌아오면(결과를 받기 전이라도) 평소 음악으로

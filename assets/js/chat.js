@@ -5,6 +5,7 @@ import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendl
 import { onWhisper, openWhisperWindow, whisperFeed, whisperOut } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
+import { playAlarm } from './sound.js';
 import { FRAMES, frameTier } from './cosmetics.js';
 import { load as loadSnap } from './views/common.js';
 
@@ -219,6 +220,7 @@ function onCircleMsg(m) {
   if (!m?.circle_id || blocked.has(m.sender_id)) return;
   const arr = circleMsgs[m.circle_id] || (circleMsgs[m.circle_id] = []);
   if (arr.some(x => x.id === m.id)) return;
+  mentionAlarm(m, 'c');
   // 늦게 도착한 말도 제자리(시각 순)에 넣는다
   arr.push(m); if (arr.length > 1 && arr[arr.length - 2].created_at > m.created_at) byTime(arr);
   if (arr.length > KEEP) arr.shift();
@@ -258,6 +260,7 @@ function subscribeParty() {
 }
 function onPartyMsg(m) {
   if (!m || blocked.has(m.sender_id) || m.sender_id === store.user?.id) return;
+  mentionAlarm(m, 'p');
   if (tab === 'party') loadParty();
   else { partyNew = true; paintPartyDot(); }
   const sheetClosed = !matchMedia('(min-width: 1280px)').matches && !document.body.classList.contains('chat-open');
@@ -334,11 +337,20 @@ const topNote = key => olderDone[key] ? `<li class="chat-notice chat-top">여기
 async function loadBlocks() {
   try { const { data, error } = await db.from('world_blocks').select('blocked_id'); if (!error) blocked = new Set((data || []).map(r => r.blocked_id)); } catch {}
 }
+// @이름 부르기(7.5.6): 남이 보낸 말에 「@내 캐릭터 이름」이 있으면 띠로링. 받은 지 2분 안의 말만(다시 읽어 채운 지난 말은 울리지 않음)
+function mentionAlarm(m, kind = 'm') {
+  const n = store.character?.character_name;
+  if (!n || !m || m.sender_id === store.user?.id || blocked.has(m.sender_id)) return;
+  if (!String(m.content || '').includes('@' + n)) return;
+  if (m.created_at && Date.now() - new Date(m.created_at) > 120000) return;
+  playAlarm('mention', kind + ':' + (m.id ?? m.message_id ?? m.created_at));
+}
 function addMsg(m) {
   if (!m || msgs.some(x => x.id === m.id)) return;
   msgs.push(m); if (msgs.length > KEEP) msgs.shift();
   // 귓속말은 채팅 목록에 섞지 않고 귓속말 창으로 넘긴다
   if (m.channel_type === 'whisper') { if (!blocked.has(m.sender_id)) onWhisper(m); return; }
+  mentionAlarm(m);
   if (m.channel_type === tab) draw();
   else if (m.channel_type in chanNew && m.sender_id !== store.user?.id && !blocked.has(m.sender_id) && !chanNew[m.channel_type]) { chanNew[m.channel_type] = true; paintChanDots(); }
   const sheetClosed = !matchMedia('(min-width: 1280px)').matches && !document.body.classList.contains('chat-open');

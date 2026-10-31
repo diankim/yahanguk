@@ -4,6 +4,7 @@
 import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal, closeModal, isGM } from './core.js';
 import { cardName } from './views/card.js';
 import { growInput } from './grow.js';
+import { playAlarm } from './sound.js';
 
 const COLS = 'id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at';
 let btn = null, threads = [], unreadTotal = 0, box = null, cur = null, msgs = [], refreshTimer = null;
@@ -96,6 +97,8 @@ export function onWhisper(m) {
   } else if (m.sender_id !== me) {
     toast(`귓속말 · ${m.sender_name || '조사원'}: ${String(m.content || '').slice(0, 40)}`);
   }
+  // 띠로링(7.5.6): 받은 지 2분 안의 귓속말만(다시 잇기로 채운 지난 말은 울리지 않음), 보고 있는 대화에 온 말은 울리지 않음
+  if (m.sender_id !== me && (!m.created_at || Date.now() - new Date(m.created_at) < 120000) && !(open && document.hasFocus())) playAlarm('whisper', 'w:' + m.id);
   if (!whOut || isPopWin()) refreshSoon();
 }
 
