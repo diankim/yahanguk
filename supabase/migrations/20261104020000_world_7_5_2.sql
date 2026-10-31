@@ -19,6 +19,14 @@ begin
   execute replace(d, p_old, p_new);
 end $f$;
 
+-- ── 함수 주인 역할에 빠진 실행 권한(제보 50 — 자율 활동을 끝내면 「권한이 없다」) ─────────
+-- 보안 정의 함수가 부르는 안쪽 함수를 그 주인 역할이 실행할 수 없던 곳 넷. 조사원(authenticated) 권한은 그대로다.
+grant execute on function public.world_title_award_check(uuid, text) to fn_owner_19181;          -- world_claim_idle_activity
+grant execute on function public.world_raid_snapshot(uuid) to fn_owner_field;                     -- world_raid_action·begin·join
+grant execute on function public.world_inv_add(jsonb, text, integer) to fn_owner_19255;          -- world_region_site_explore
+grant execute on function public.world_river_boat_member(uuid, text) to fn_owner_party_respond_v2; -- world_travel_party_respond_v2
+grant execute on function public.world_river_boat_speed(uuid, text) to fn_owner_party_respond_v2;
+
 -- ── ② 남의 능력치를 그 사람 기준으로 ───────────────────────────────────────────
 create or replace function public.world_raid_stats(p_owner uuid)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public'
@@ -251,6 +259,7 @@ end $v$;
 update public.world_patch_notes set body = body || $N$
 
 ## 7.5.2
+- **자율 활동을 끝내면 「권한이 없다」로 일어나지 못하던 것**을 고쳤습니다(아도니스 님 제보). 같은 원인으로 막혀 있던 합동 토벌 행동·조사 지점·뱃길 동승 수락도 함께 고쳤습니다.
 - **원정**에 장비 말고 다른 효과도 붙습니다: 칭호·음식과 상태·날씨·소속·직업·침식 단계·섬·레벨 차·봉연 잠김. 원정에서 얻는 철벽·맹호·청명 비약도 이제 원정에서 듣습니다. 직업 피해 %는 그 역할 무기를 들었을 때 붙고(퇴마관만 따로 받던 +12%는 이것으로 바뀜), 회복품도 회복량 효과를 받습니다.
 - **귀허의 주인** 결전에서 참가자마다 자기 효과로 능력치를 잽니다. 전에는 결전을 연 사람의 상태·직업 효과가 모두에게 붙었습니다.
 - **감소 상한**: 모든 효과를 합쳐도 받는 피해 −60%, 침식·정신 손실 −75%, 이동 시간 −50%까지입니다(전에는 상한이 없어 피해 0이 될 수 있었습니다).
