@@ -269,6 +269,8 @@ function untradeNote(have, ref, direct = false) {
 /* ── 거래소 ───────────────────────────────────────────── */
 // 거래소(누구나 사 가는 등록 판매)와 직접 거래(같은 안전지대의 조사원과 주고받기) 두 칸
 let marketMode = 'board', boardTab = 'buy', buyCat = 'all', buyQ = '';
+// 팔기 칸에서 마지막으로 올린 물품·수량·가격(7.5.5, 사용자 요청: 하나씩 여러 번 올릴 때 다시 고르지 않게)
+let lastSell = null;
 export async function renderMarket(box) {
   const mm = marketMode === 'direct' ? 'direct' : boardTab;
   box.innerHTML = `<div class="seg-mini mk-tabs" role="tablist"><button class="${mm === 'buy' ? 'on' : ''}" data-mm="buy">사기</button><button class="${mm === 'sell' ? 'on' : ''}" data-mm="sell">팔기</button><button class="${mm === 'direct' ? 'on' : ''}" data-mm="direct">직접 거래</button></div><div class="mk-body">${loading()}</div>`;
@@ -347,6 +349,12 @@ export async function renderMarket(box) {
       form.item.onchange = () => { const p = ref.get(form.item.value)?.reference_price; if (p) form.price.value = p; hint(); };
       form.price.addEventListener('change', fixPrice);
       bindPicker(form, 'item', sellOpts, () => form.item.onchange());
+      // 올린 뒤 다시 그려져도 고른 물품·수량·가격을 그대로 둔다(그 물품이 가방에 남아 있을 때만, 수량은 남은 개수까지)
+      if (lastSell && have[lastSell.item] > 0 && sellOpts.some(o => o.id === lastSell.item)) {
+        form.item.value = lastSell.item;
+        form.qty.value = Math.min(lastSell.qty, have[lastSell.item]);
+        form.price.value = lastSell.price;
+      } else lastSell = null;
       hint();
       form.onsubmit = e => {
         e.preventDefault();
@@ -355,6 +363,7 @@ export async function renderMarket(box) {
         if (!(qty >= 1) || !(price >= 1)) return toast('수량과 가격은 1 이상이어야 합니다.', 'error');
         if (mine.length >= 10) return toast('거래소에는 동시에 10건까지 올려 둘 수 있습니다. 팔리거나 취소된 뒤 다시 등록하세요.', 'error');
         if (!form.item.value) return toast('올릴 물품을 고르세요.', 'error');
+        lastSell = { item: form.item.value, qty, price };
         guard(form.querySelector('[type=submit]'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
       };
     }
