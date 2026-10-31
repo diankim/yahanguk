@@ -1,16 +1,17 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief } from '../core.js';
+import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
+const SP_ITEMS = new Set(['spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew']);
 const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve', 'fish_porridge', 'herb_rice', 'moss_porridge', 'bark_stew', 'herb_fish_steam', 'spirit_gukbap', 'calm_brew',
   'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 const BOSS_FX = { expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계' };
 const BUFF = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '호법', guard: '방어', bound: '사슬' };
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false;
+let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false;
 
 export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null; built = ''; logCount = 0;
@@ -60,8 +61,8 @@ function countdown() {
   const out = outUntil > Date.now() || away;
   $$('[data-act]', el).forEach(b => { if (!b.dataset.lock) b.disabled = cd > 0 || sending || out; });
   const os = $('#raid-out-sec', el); if (os) os.textContent = Math.max(0, Math.ceil((outUntil - Date.now()) / 1000));
-  const ob = $('#raid-out', el); if (ob && !out && !ob.hidden) { ob.hidden = true; el.classList.remove('raid-is-out'); }
-  const oc = $('#raid-out-count', el); if (oc) oc.hidden = away;
+  // 물러남 시간이 이 기기에서 끝났으면 다시 읽기 전에도 「쉬는 중」으로 바꿔 보인다(7.6.1 — 저절로 돌아가지 않음)
+  if (outUntil && outUntil <= Date.now() && !resting && !away) { outUntil = 0; resting = true; outBox(); }
 }
 
 // 화면은 처음 한 번(또는 회차·상태·참가 여부가 바뀔 때)만 통째로 그리고, 그 뒤에는 칸마다 내용만 바꾼다(7.5.9k, 제보 65·66):
@@ -78,6 +79,7 @@ function draw() {
   const me = s.me || {};
   outUntil = me.out ? Date.now() + me.out * 1000 : 0;
   away = !!(me.joined && me.away && r.status === 'fight');
+  resting = !!(me.joined && me.resting && !me.out && !away && r.status === 'fight');
   const key = `${r.id}:${r.status}:${!!me.joined}:${me.can_join ? 1 : 0}:${s.vote ? s.vote.until : ''}`;
   if (key !== built) { build(); built = key; } else patch();
   countdown();
@@ -228,22 +230,32 @@ function patchActions(me, members) {
   const box = $('#raid-me', el); if (!box) return;
   const tgt = target && members.some(m => m.id === target) ? target : members.find(m => m.me)?.id;
   const tName = members.find(m => m.id === tgt)?.name || '나';
-  box.innerHTML = `<span class="raid-stat hp ${me.hp < 35 ? 'low' : ''}">체력 <b>${me.hp}</b></span><span class="raid-stat sp">영력 <b>${me.sp}</b></span>${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}`;
-  const ob = $('#raid-out', el);
-  if (ob) {
-    const off = !!me.out || away; ob.hidden = !off; el.classList.toggle('raid-is-out', off);
-    const region = esc(snap.raid.region || '토벌 자리');
-    $('#raid-out-title', ob).innerHTML = away ? `${icon('pin', 14)} 토벌 자리를 비웠습니다` : `${icon('hourglass', 14)} 물러나 숨을 고르는 중 · <span id="raid-out-sec">${me.out}</span>초 뒤 돌아옵니다`;
-    $('#raid-out-text', ob).innerHTML = away
-      ? `지금은 물러난 것으로 셉니다. 요괴가 나를 노리지 않고 쌓은 기여도는 그대로입니다. 가방·퀵슬롯·거점 휴식으로 회복한 뒤 <b>${region}</b>(으)로 돌아오면 다시 합류하지 않고 바로 싸웁니다.`
-      : `체력이 1이 되어 물러났습니다. 지금은 <b>「물품」·가방·퀵슬롯</b>으로 회복품을 쓰거나, 거점에 가서 쉬고 돌아와도 됩니다(자리를 비운 동안도 물러난 것으로 셉니다). 돌아오면 그 체력 그대로 싸우니 채우고 먼저 <b>방어</b>하세요.`;
-  }
+  // 내 체력·영력은 막대로 크게, 내가 준 피해·기여도도 함께(제보 67)
+  const mine = members.find(m => m.me), spName = spOf()[0];
+  box.innerHTML = `<div class="raid-vit hp ${me.hp < 35 ? 'low' : ''}"><span>체력</span><b>${me.hp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.hp))}%"></i></i></div>
+    <div class="raid-vit ${spOf()[1]}"><span>${esc(spName)}</span><b>${me.sp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.sp))}%"></i></i></div>
+    <div class="raid-mine">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>` : ''}${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</div>`;
+  outBox(me);
   const cb = $('#raid-coopbox', el);
   if (cb) {
     const btns = coopButtons(me);
     cb.innerHTML = btns ? `<p class="raid-tgt muted small">협동 기술 대상 · <b>${esc(tName)}</b></p><div class="coop-grid">${btns}</div>` : '<p class="muted small">협동 기술은 전투 숙련 3·8·18·36단계에서 열립니다.</p>';
     bindActs(cb);
   }
+}
+// 물러남·쉬는 중·자리 비움 안내 칸
+function outBox(me = snap?.me || {}) {
+  const ob = el && $('#raid-out', el); if (!ob || !snap?.raid) return;
+  const outNow = outUntil > Date.now(), off = outNow || away || resting;
+  ob.hidden = !off; el.classList.toggle('raid-is-out', outNow || away); el.classList.toggle('raid-is-rest', !outNow && !away && resting); ob.classList.toggle('rest', resting && !outNow && !away);
+  const region = esc(snap.raid.region || '토벌 자리');
+  $('#raid-out-title', ob).innerHTML = away ? `${icon('pin', 14)} 토벌 자리를 비웠습니다`
+    : outNow ? `${icon('hourglass', 14)} 물러나 숨을 고르는 중 · <span id="raid-out-sec">${Math.ceil((outUntil - Date.now()) / 1000)}</span>초`
+    : `${icon('check', 14)} 쉬는 중 · 준비되면 행동해서 돌아가세요`;
+  $('#raid-out-text', ob).innerHTML = away
+    ? `지금은 물러난 것으로 셉니다. 요괴가 나를 노리지 않고 쌓은 기여도는 그대로입니다. 가방·퀵슬롯·거점 휴식으로 회복한 뒤 <b>${region}</b>(으)로 돌아오면 다시 합류하지 않고 바로 싸웁니다.`
+    : outNow ? `체력이 1이 되어 물러났습니다. 1분 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, 그사이 <b>「물품」·가방·퀵슬롯</b>으로 회복하거나 거점에 가서 쉬고 오세요(자리를 비운 동안도 물러난 것으로 셉니다).`
+    : `요괴가 나를 노리지 않습니다. 가방·퀵슬롯으로 마저 회복하고, 준비가 되면 <b>공격·방어·기술</b>을 눌러 돌아가세요(「물품」 창의 물품도 쉬는 동안은 행동이 되지 않습니다). 돌아가면 먼저 <b>방어</b>가 안전합니다.`;
 }
 // 물품 고르기: 겹쳐 뜨는 창(토벌 화면이 다시 그려져도 닫히지 않고, 닫기는 직접)
 function openItems() {
@@ -253,13 +265,16 @@ function openItems() {
 }
 function fillItems() {
   const box = itemLayer && $('#raid-items-body', itemLayer); if (!box) return;
-  const inv = store.character?.inventory || {}, out = outUntil > Date.now() || away;
-  const items = RAID_ITEMS.flatMap(k => [k, k + '_hq']).filter(k => Number(inv[k]) > 0);
-  box.innerHTML = `<p class="muted small">${out ? '물러나 있거나 자리를 비운 동안에는 행동 간격 없이 쓸 수 있습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
-    ${items.length ? `<ul class="raid-item-list">${items.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}"><b>${esc(nameOf(k))}</b><small>${esc(brief(k) || '')}</small><span>×${inv[k]}</span></button></li>`).join('')}</ul>` : '<p class="muted">토벌에서 쓸 회복·영력 물품이 가방에 없습니다.</p>'}`;
+  const inv = store.character?.inventory || {}, out = outUntil > Date.now() || away || resting;
+  const have = list => list.flatMap(k => [k, k + '_hq']).filter(k => Number(inv[k]) > 0);
+  // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67)
+  const hp = have(RAID_ITEMS.filter(k => !SP_ITEMS.has(k))), sp = have(RAID_ITEMS.filter(k => SP_ITEMS.has(k)));
+  const list = ks => ks.length ? `<ul class="raid-item-list">${ks.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}"><b>${esc(nameOf(k))}</b><small>${esc(brief(k) || '')}</small><span>×${inv[k]}</span></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
+  box.innerHTML = `<p class="muted small">${out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
+    <h3 class="raid-item-h">체력·정신 회복</h3>${list(hp)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${list(sp)}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => {
     const k = b.dataset.use;
-    if (outUntil > Date.now() || away) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(fillItems);
+    if (outUntil > Date.now() || away || resting) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(fillItems);
     else run(b, () => rpc('world_raid_action', { p_raid: snap.raid.id, p_action: 'item', p_item: k }), true).then(fillItems);
   });
 }
@@ -267,9 +282,9 @@ function fillItems() {
 function membersHtml(list, me, r) {
   if (!(list || []).length) return '<li class="muted small">아직 참가자가 없습니다.</li>';
   const can = me.joined && r.status === 'fight';
-  return list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out || m.away ? 'out' : ''}">
+  return list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out || m.away || m.resting ? 'out' : ''}">
       <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${can ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">
-        <span class="mem-top"><b>${esc(m.name)}</b><small>${m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : `${m.hp}`}</small></span>
+        <span class="mem-top"><b>${esc(m.name)}</b><small>${m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : `${m.hp}`}</small></span>
         <span class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></span>
         <small class="mem-sub">${esc(JOBS[m.job]?.name || nameOf(m.job))} · 기여 ${m.share}%${m.buffs?.length ? ` · ${m.buffs.filter(k => BUFF[k]).map(k => BUFF[k]).join('·')}` : ''}</small></button></li>`).join('');
 }

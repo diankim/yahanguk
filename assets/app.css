@@ -2091,6 +2091,19 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-says .raid-charge.on { border-color: color-mix(in srgb, var(--warn) 50%, var(--line)); color: var(--warn); }
 .raid-bfx { display: flex; gap: 4px; overflow: hidden; flex-wrap: nowrap; }
 .raid-act .panel-body { display: grid; gap: 8px; }
+.raid-wrap .raid-me { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 10px; align-items: center; }
+/* 내 체력·영력 막대(7.6.1, 제보 67 — 토벌 중에 왼쪽 상태판까지 눈이 가지 않게) */
+.raid-vit { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 6px; font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
+.raid-vit b { font-size: calc(17px * var(--fz, 1)); color: var(--text); font-variant-numeric: tabular-nums; min-width: 2.2em; }
+.raid-vit .bar { display: block; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.raid-vit .bar > i { display: block; height: 100%; }
+.raid-vit.hp .bar > i { background: var(--hp); } .raid-vit.sp .bar > i { background: var(--sp, var(--accent)); } .raid-vit.ki .bar > i { background: var(--ki); }
+.raid-vit.hp.low b { color: var(--bad); } .raid-vit.hp.low .bar > i { background: var(--bad); }
+.raid-mine { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: calc(12px * var(--fz, 1)); color: var(--muted); min-height: 22px; }
+.raid-mine b { color: var(--gold); font-variant-numeric: tabular-nums; }
+.raid-out.rest { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
+.raid-out.rest > b { color: var(--ok); }
+.raid-item-h { margin: 10px 0 0; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); font-weight: 600; }
 .raid-me { margin: 0; align-items: center; min-height: 26px; }
 .raid-stat { font-size: calc(13px * var(--fz, 1)); padding: 2px 8px; border-radius: 999px; border: var(--bw, 1px) solid var(--line); font-variant-numeric: tabular-nums; }
 .raid-stat.hp b { color: var(--hp); } .raid-stat.sp b { color: var(--sp, var(--accent)); }
@@ -2169,7 +2182,7 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-wrap .raid-mem { max-height: 88px; gap: 4px; }
   .mem-pick { padding: 3px 5px; gap: 2px; } .mem-sub { display: none; }
   .raid-wrap .raid-log { height: 92px; font-size: calc(12px * var(--fz, 1)); }
-  .raid-is-out .raid-wrap .raid-log { height: 70px; }
+  .raid-is-out .raid-wrap .raid-log, .raid-is-rest .raid-wrap .raid-log { height: 70px; }
   .raid-log li { grid-template-columns: 38px minmax(0, 1fr); gap: 4px; }
   .raid-legend { font-size: calc(10.5px * var(--fz, 1)); }
   .coop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
