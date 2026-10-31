@@ -1,6 +1,6 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter } from '../core.js';
+import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
@@ -10,16 +10,16 @@ const BOSS_FX = { expose: '약점 드러남', stagger: '휘청임', smoke: '연�
 const BUFF = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '호법', guard: '방어', bound: '사슬' };
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, pickedItem = null, outUntil = 0;
+let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null;
 
 export async function render(root, sub) {
-  el = root; rid = sub || null; snap = null; target = null;
+  el = root; rid = sub || null; snap = null; target = null; built = ''; logCount = 0;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>${loading()}`;
   await refresh();
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; }
+export function destroy() { if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; itemLayer?.close?.(); itemLayer = null; }
 
 async function refresh() {
   if (!el) return;
@@ -59,53 +59,95 @@ function countdown() {
   const cd = Math.max(0, readyAt - Date.now());
   const out = outUntil > Date.now();
   $$('[data-act]', el).forEach(b => { if (!b.dataset.lock) b.disabled = cd > 0 || sending || out; });
+  const os = $('#raid-out-sec', el); if (os) os.textContent = Math.max(0, Math.ceil((outUntil - Date.now()) / 1000));
+  const ob = $('#raid-out', el); if (ob && !out && !ob.hidden) { ob.hidden = true; el.classList.remove('raid-is-out'); }
 }
 
+// 화면은 처음 한 번(또는 회차·상태·참가 여부가 바뀔 때)만 통째로 그리고, 그 뒤에는 칸마다 내용만 바꾼다(7.5.9k, 제보 65·66):
+// 통째로 다시 그리면 요괴의 말 줄이 늘었다 줄며 단추가 위아래로 움직이고, 열어 둔 물품 목록이 닫혔다.
 function draw() {
   if (!el) return;
   const s = snap || {}, r = s.raid;
   if (!r) {
+    built = '';
     el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>
       <div class="panel"><div class="panel-body"><p class="desc">지금은 드러난 봉연의 그림자가 없습니다. 출현 하루 전부터 전체 채팅 「봉연 소식」과 알림으로 후보 지역을 알려 드립니다.</p>${locksHtml(s.locks)}</div></div>`;
     return;
   }
-  const me = s.me || {}, fight = r.status === 'fight', ended = r.status === 'won' || r.status === 'failed';
+  const me = s.me || {};
   outUntil = me.out ? Date.now() + me.out * 1000 : 0;
-  // 다시 그려도 고른 물품과 읽던 기록 자리를 지킨다
-  const oldLog = $('.raid-log', el), atBottom = !oldLog || oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24, oldTop = oldLog?.scrollTop || 0;
-  const pct = r.max_hp ? Math.max(0, Math.min(100, r.hp / r.max_hp * 100)) : 100;
+  const key = `${r.id}:${r.status}:${!!me.joined}:${me.can_join ? 1 : 0}:${s.vote ? s.vote.until : ''}`;
+  if (key !== built) { build(); built = key; } else patch();
+  countdown();
+}
+function build() {
+  const s = snap, r = s.raid, me = s.me || {}, fight = r.status === 'fight', ended = r.status === 'won' || r.status === 'failed';
   const timeLine = r.status === 'announced' ? (r.spawn_at ? `${icon('hourglass', 14)} <b>${esc(r.region || '')}</b> · <span data-until="${esc(r.spawn_at)}">${left(r.spawn_at)}</span> 뒤 출현`
       : `${icon('hourglass', 14)} 후보 · ${esc((r.candidates || []).join(', '))} 가운데 한 곳`)
     : r.status === 'signup' ? `${icon('hourglass', 14)} 참가 신청 · <span data-until="${esc(r.signup_until)}">${left(r.signup_until)}</span> 남음`
     : fight ? `${icon('hourglass', 14)} 남은 시간 · <span data-until="${esc(r.ends_at)}">${left(r.ends_at)}</span>`
     : `${icon('check', 14)} ${r.ended_at ? new Date(r.ended_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''} 끝남`;
-  const bossFx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => chip(BOSS_FX[k], 'ok')).join('');
-  const charge = r.charge ? `<div class="raid-charge"><span>${icon('flame', 14)} 기운 모으기 · 남은 ${r.charge.left}번</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div><small>${fmt.num(r.charge.got || 0)} / ${fmt.num(r.charge.need)} 몰아치면 끊긴다</small></div>` : '';
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'} · ${esc(r.region || '')}</p>
+  const playing = me.joined && fight;
+  el.innerHTML = `<div class="view-head raid-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'} · ${esc(r.region || '')}</p>
       <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
       <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
-    <div class="raid-grid">
+    <div class="raid-wrap ${playing ? 'playing' : ''}">
       <section class="panel raid-boss"><div class="panel-body">
         <p class="raid-time">${timeLine}</p>
-        ${r.status === 'announced' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(r.hp)} / ${fmt.num(r.max_hp)}</b>${r.phase > 1 ? chip(`${r.phase}단계`, 'bad') : ''}</div>`}
-        ${r.intent ? `<p class="hint warn">${icon('flame', 14)} ${esc(r.intent)}</p>` : ''}${charge}
-        ${bossFx ? `<div class="chips">${bossFx}</div>` : ''}
+        ${r.status === 'announced' ? '' : `<div class="raid-hp"><div class="bar boss"><span id="raid-hpbar"></span></div><b id="raid-hpnum"></b><span id="raid-phase"></span></div>`}
+        ${r.status === 'announced' || ended ? '' : '<div class="raid-says" id="raid-says" aria-live="polite"></div>'}
         ${voteHtml(s.vote)}
         ${joinHtml(r, me)}
         ${ended ? resultHtml(r, s.members) : ''}
       </div></section>
-      ${me.joined && fight ? actionsHtml(r, me, s.members) : ''}
-      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 ${(s.members || []).length}명</h2></header><div class="panel-body">
-        ${membersHtml(s.members, me, r)}</div></section>
-      <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
-        <ol class="raid-log">${(s.log || []).map(l => `<li class="k-${esc(l.kind)}"><time>${fmt.time(l.at)}</time><span>${esc(l.text)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
+      ${playing ? actionsShell(me) : ''}
+      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul></div></section>
+      <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2><span class="raid-legend"><i class="lg-out"></i>내가 준 피해<i class="lg-in"></i>받은 피해</span></header><div class="panel-body"><ol class="raid-log" id="raid-log"></ol></div></section>
     </div>
     ${locksHtml(s.locks)}`;
-  const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
+  logCount = 0;
+  patch();
   bind();
-  countdown();
 }
-
+// 바뀌는 칸만 고친다
+function patch() {
+  const s = snap, r = s.raid, me = s.me || {}, members = s.members || [];
+  const pct = r.max_hp ? Math.max(0, Math.min(100, r.hp / r.max_hp * 100)) : 100;
+  const hb = $('#raid-hpbar', el); if (hb) hb.style.width = pct + '%';
+  const hn = $('#raid-hpnum', el); if (hn) hn.textContent = `${fmt.num(r.hp)} / ${fmt.num(r.max_hp)}`;
+  const ph = $('#raid-phase', el); if (ph) ph.innerHTML = r.phase > 1 ? chip(`${r.phase}단계`, 'bad') : '';
+  // 요괴의 말·기운 모으기·약점: 높이가 정해진 칸 안에서만 바뀐다(줄이 없어도 자리는 남김)
+  const sy = $('#raid-says', el);
+  if (sy) {
+    const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => chip(BOSS_FX[k], 'ok')).join('');
+    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르고 있습니다.'}</span></p>
+      <div class="raid-charge ${r.charge ? 'on' : ''}">${r.charge ? `<span>${icon('flame', 14)} 기운 모으기 · 남은 ${r.charge.left}번 · ${fmt.num(r.charge.got || 0)} / ${fmt.num(r.charge.need)} 몰아치면 끊긴다</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
+      <div class="chips raid-bfx">${fx}</div>`;
+  }
+  const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
+  const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members, me, r);
+  patchActions(me, members);
+  // 기록은 새 줄만 덧붙이고, 맨 아래를 보던 중이면 따라 내려간다
+  const log = $('#raid-log', el);
+  if (log) {
+    const all = s.log || [], atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 24;
+    const myName = members.find(m => m.me)?.name || '';
+    if (all.length < logCount || logCount === 0) { log.innerHTML = all.map(l => logLine(l, r.boss, myName)).join('') || '<li class="muted">아직 기록이 없습니다.</li>'; log.scrollTop = log.scrollHeight; }
+    else if (all.length > logCount) { log.insertAdjacentHTML('beforeend', all.slice(logCount).map(l => logLine(l, r.boss, myName)).join('')); if (atBottom) log.scrollTop = log.scrollHeight; }
+    logCount = all.length;
+  }
+  if (itemLayer?.isConnected) fillItems();
+}
+// 기록 한 줄: 내가(조사원이) 준 피해와 받은 피해를 색·모양으로 가른다(서버 줄 「이름 — N의 피해.」는 둘이 같은 모양이었다)
+function logLine(l, boss, myName) {
+  const m = /^(.+?) — (\d+)의 피해(\(치명타\))?/.exec(l.text || ''), mine = m && m[1] === myName ? ' mine' : '';
+  const t = `<time>${fmt.time(l.at)}</time>`;
+  if (m && (l.kind === 'atk' || l.kind === 'crit')) return `<li class="k-out${mine}">${t}<span><b>${esc(m[1])}</b> → ${esc(boss)} <em>${fmt.num(+m[2])}</em> 피해${m[3] ? ' <i class="crit">치명타</i>' : ''}</span></li>`;
+  if (m && l.kind === 'hit') return `<li class="k-in${mine}">${t}<span>${esc(boss)} → <b>${esc(m[1])}</b> <em>−${fmt.num(+m[2])}</em> 맞음</span></li>`;
+  if (m && l.kind === 'fall') return `<li class="k-in fall${mine}">${t}<span>${esc(boss)} → <b>${esc(m[1])}</b> <em>−${fmt.num(+m[2])}</em> 쓰러져 물러남</span></li>`;
+  const who = /^(.+?) — /.exec(l.text || '')?.[1];
+  return `<li class="k-${esc(l.kind)}${who && who === myName ? ' mine' : ''}">${t}<span>${esc(l.text)}</span></li>`;
+}
 // 포기 제안이 오면 한 번 팝업으로 묻는다(제안마다 한 번, 내가 이미 동의했으면 묻지 않음). 창이 열린 사이 끝나면 답이 거절된다.
 let votedFor = null;
 function askVote(r) {
@@ -139,46 +181,84 @@ function resultHtml(r, members) {
     ${r.kind === 'world' && r.status === 'failed' ? '<p class="muted small">출현 지역이 다음 회차까지 봉연에 잠깁니다(그곳·이웃 침식과 요괴 조우 증가).</p>' : ''}</div>`;
 }
 
-function actionsHtml(r, me, members) {
-  const inv = store.character?.inventory || {};
-  const items = RAID_ITEMS.filter(k => Number(inv[k]) > 0);
-  const tgt = target && (members || []).some(m => m.id === target) ? target : (members || []).find(m => m.me)?.id;
-  const tName = (members || []).find(m => m.id === tgt)?.name || '나';
-  const coop = (me.coop || []).map(k => {
+function actionsShell(me) {
+  return `<section class="panel raid-act"><div class="panel-body">
+    <div class="raid-out" id="raid-out" hidden><b>${icon('hourglass', 14)} 물러나 숨을 고르는 중 · <span id="raid-out-sec">0</span>초 뒤 돌아옵니다</b>
+      <span>체력이 1이 되어 물러났습니다. 물러난 동안에는 <b>「물품」·가방·퀵슬롯</b>으로 회복품을 쓸 수 있습니다. 돌아오면 그 체력 그대로 싸우니 채우고 돌아와 먼저 <b>방어</b>하세요.</span></div>
+    <div class="raid-me" id="raid-me"></div>
+    <div class="raid-buttons">
+      <button class="btn primary" data-act="attack">${icon('sword', 16)}<span>공격</span></button>
+      <button class="btn" data-act="guard">${icon('shield', 16)}<span>방어</span></button>
+      <button class="btn" id="raid-items" type="button">${icon('heart', 16)}<span>물품</span></button>
+      <button class="btn raid-coop-open" id="raid-coop-open" type="button">${icon('users', 16)}<span>기술</span></button>
+    </div>
+    <div class="raid-coopbox" id="raid-coopbox"></div>
+  </div></section>`;
+}
+function coopButtons(me) {
+  return (me.coop || []).map(k => {
     const lock = !k.unlocked, cd = k.cd > 0, low = (me.sp || 0) < k.cost;
     return `<button type="button" class="coop-btn ${lock ? 'locked' : ''}" data-act="coop" data-skill="${esc(k.id)}" data-tgt="${esc(k.target)}" ${lock || cd || low ? 'data-lock="1" disabled' : ''}
       title="${esc(k.desc)}"><b>${esc(k.name)}</b><small>${lock ? `전투 숙련 ${k.rank}단계` : cd ? `${k.cd}초` : `영력 ${k.cost}`}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
   }).join('');
-  return `<section class="panel raid-act"><header class="panel-head"><h2>${icon('sword', 16)} 내 행동</h2></header><div class="panel-body">
-    ${me.out ? `<p class="hint warn">${icon('hourglass', 14)}<span>물러나 숨을 고르는 중 · <b>${me.out}초</b> 뒤 돌아옵니다.</span></p>` : ''}
-    <div class="raid-me">${chip(`체력 ${me.hp}`, me.hp < 35 ? 'bad' : '')}${chip(`영력 ${me.sp}`)}${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</div>
-    <div class="raid-buttons">
-      <button class="btn primary" data-act="attack">${icon('sword', 16)}<span>공격</span></button>
-      <button class="btn" data-act="guard">${icon('shield', 16)}<span>방어</span></button>
-      ${items.length ? `<select id="raid-item" aria-label="쓸 물품">${items.map(k => `<option value="${esc(k)}" ${k === pickedItem ? 'selected' : ''}>${esc(nameOf(k))} ×${inv[k]}</option>`).join('')}</select><button class="btn" data-act="item">${icon('heart', 16)}<span>쓰기</span></button>` : ''}
-    </div>
-    ${coop ? `<h3 class="sub-h">협동 기술 <small class="muted">대상: <b>${esc(tName)}</b> (참가자 이름을 눌러 고름)</small></h3><div class="coop-grid">${coop}</div>`
-      : `<p class="muted small">협동 기술은 전투 숙련 3·8·18·36단계에서 열립니다.</p>`}
-  </div></section>`;
 }
-
+function patchActions(me, members) {
+  const box = $('#raid-me', el); if (!box) return;
+  const tgt = target && members.some(m => m.id === target) ? target : members.find(m => m.me)?.id;
+  const tName = members.find(m => m.id === tgt)?.name || '나';
+  box.innerHTML = `<span class="raid-stat hp ${me.hp < 35 ? 'low' : ''}">체력 <b>${me.hp}</b></span><span class="raid-stat sp">영력 <b>${me.sp}</b></span>${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}`;
+  const ob = $('#raid-out', el); if (ob) { ob.hidden = !me.out; el.classList.toggle('raid-is-out', !!me.out); }
+  const cb = $('#raid-coopbox', el);
+  if (cb) {
+    const btns = coopButtons(me);
+    cb.innerHTML = btns ? `<p class="raid-tgt muted small">협동 기술 대상 · <b>${esc(tName)}</b></p><div class="coop-grid">${btns}</div>` : '<p class="muted small">협동 기술은 전투 숙련 3·8·18·36단계에서 열립니다.</p>';
+    bindActs(cb);
+  }
+}
+// 물품 고르기: 겹쳐 뜨는 창(토벌 화면이 다시 그려져도 닫히지 않고, 닫기는 직접)
+function openItems() {
+  if (itemLayer?.isConnected) return;
+  itemLayer = openLayer({ title: '토벌에서 쓸 물품', body: '<div id="raid-items-body"></div>' });
+  fillItems();
+}
+function fillItems() {
+  const box = itemLayer && $('#raid-items-body', itemLayer); if (!box) return;
+  const inv = store.character?.inventory || {}, out = outUntil > Date.now();
+  const items = RAID_ITEMS.flatMap(k => [k, k + '_hq']).filter(k => Number(inv[k]) > 0);
+  box.innerHTML = `<p class="muted small">${out ? '물러나 있는 동안에는 행동 간격 없이 쓸 수 있습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
+    ${items.length ? `<ul class="raid-item-list">${items.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}"><b>${esc(nameOf(k))}</b><small>${esc(brief(k) || '')}</small><span>×${inv[k]}</span></button></li>`).join('')}</ul>` : '<p class="muted">토벌에서 쓸 회복·영력 물품이 가방에 없습니다.</p>'}`;
+  $$('[data-use]', box).forEach(b => b.onclick = () => {
+    const k = b.dataset.use;
+    if (outUntil > Date.now()) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(fillItems);
+    else run(b, () => rpc('world_raid_action', { p_raid: snap.raid.id, p_action: 'item', p_item: k }), true).then(fillItems);
+  });
+}
+// 휴대폰: 협동 기술은 단추 하나로 접어 두고 누르면 펼친다(한 화면에 담기)
 function membersHtml(list, me, r) {
-  if (!(list || []).length) return '<p class="muted small">아직 참가자가 없습니다.</p>';
-  return `<ul class="raid-mem">${list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out ? 'out' : ''}">
-      <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${me.joined && r.status === 'fight' ? '' : 'disabled'}>
-        <b>${esc(m.name)}</b><small>Lv${m.level} · ${esc(JOBS[m.job]?.name || nameOf(m.job))}${m.out ? ` · 물러남 ${m.out}초` : ''}</small></button>
-      <div class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></div>
-      <small class="mem-num">체력 ${m.hp} · 기여 ${m.share}%${m.buffs?.length ? ` · ${m.buffs.filter(k => BUFF[k]).map(k => BUFF[k]).join('·')}` : ''}</small></li>`).join('')}</ul>`;
+  if (!(list || []).length) return '<li class="muted small">아직 참가자가 없습니다.</li>';
+  const can = me.joined && r.status === 'fight';
+  return list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out ? 'out' : ''}">
+      <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${can ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">
+        <span class="mem-top"><b>${esc(m.name)}</b><small>${m.out ? `쉼 ${m.out}초` : `${m.hp}`}</small></span>
+        <span class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></span>
+        <small class="mem-sub">${esc(JOBS[m.job]?.name || nameOf(m.job))} · 기여 ${m.share}%${m.buffs?.length ? ` · ${m.buffs.filter(k => BUFF[k]).map(k => BUFF[k]).join('·')}` : ''}</small></button></li>`).join('');
 }
-
 function locksHtml(locks) {
   if (!(locks || []).length) return '';
   return `<p class="hint warn raid-locks">${icon('flame', 14)}<span>봉연에 잠긴 곳 · ${locks.map(l => `<b>${esc(l.region)}</b>`).join(', ')} — 그곳은 침식·요괴 조우·받는 피해가 늘고 채집량이 줄며, 이웃 지역도 침식·요괴 조우가 늘어납니다. 다음 그림자를 물리치면 풀립니다.</span></p>`;
 }
 
+function bindActs(scope) {
+  const r = snap?.raid; if (!r) return;
+  $$('[data-act]', scope).forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    const args = { p_raid: r.id, p_action: a };
+    if (a === 'coop') { args.p_skill = b.dataset.skill; if (b.dataset.tgt === 'ally') args.p_target = target || (snap.members || []).find(m => m.me)?.id; }
+    run(b, () => rpc('world_raid_action', args), true);
+  });
+}
 function bind() {
   const r = snap?.raid; if (!r) return;
-  const sel = $('#raid-item', el); if (sel) sel.onchange = () => { pickedItem = sel.value; };
   const jb = $('#raid-join', el);
   if (jb) jb.onclick = () => run(jb, () => rpc('world_raid_join', { p_raid: r.id }));
   // 결전 포기(7.4.3): 혼자면 바로 실패, 함께면 동료에게 제안하고 모두 동의하면 다 함께 물러난다(서버 world_raid_forfeit)
@@ -195,14 +275,12 @@ function bind() {
   askVote(r);
   const bb = $('#raid-begin', el);
   if (bb) bb.onclick = () => run(bb, () => rpc('world_raid_begin', { p_raid: r.id }));
-  $$('[data-pick]', el).forEach(b => b.onclick = () => { target = b.dataset.pick; draw(); });
-  $$('[data-act]', el).forEach(b => b.onclick = () => {
-    const a = b.dataset.act;
-    const args = { p_raid: r.id, p_action: a };
-    if (a === 'item') args.p_item = $('#raid-item', el)?.value;
-    if (a === 'coop') { args.p_skill = b.dataset.skill; if (b.dataset.tgt === 'ally') args.p_target = target || (snap.members || []).find(m => m.me)?.id; }
-    run(b, () => rpc('world_raid_action', args), true);
-  });
+  // 참가자 고르기: 칸 안에서 처리(다시 그리지 않음)
+  const ml = $('#raid-mem', el);
+  if (ml) ml.onclick = e => { const b = e.target.closest('[data-pick]'); if (!b || b.disabled) return; target = b.dataset.pick; patch(); };
+  $$('.raid-buttons [data-act]', el).forEach(b => b.onclick = () => run(b, () => rpc('world_raid_action', { p_raid: r.id, p_action: b.dataset.act }), true));
+  const ib = $('#raid-items', el); if (ib) ib.onclick = openItems;
+  const co = $('#raid-coop-open', el); if (co) co.onclick = () => { const w = $('.raid-act', el); w?.classList.toggle('coop-open'); co.classList.toggle('on', !!w?.classList.contains('coop-open')); };
 }
 
 // 행동: 응답을 받은 때부터 이 기기 시계로 1초를 센다(전투 화면과 같은 방식)
@@ -215,12 +293,13 @@ async function run(btn, fn, isAct) {
     if (isAct) readyAt = Date.now() + 1000;
     // 상태판의 체력·영력을 서버 값에 맞춘다(물품을 쓴 때만 가방까지 캐릭터를 다시 읽는다)
     if (settled(snap)) await settle();
-    else if (btn.dataset.act === 'item') { try { await loadCharacter(); } catch {} }
+    else if (btn.dataset.act === 'item' || btn.dataset.use) { try { await loadCharacter(); } catch {} }
     else if (store.character && snap?.me) { store.character = { ...store.character, health: snap.me.hp, spiritual_power: snap.me.sp }; emit('character', store.character); }
     invalidate('world_raid_brief');
     draw();
   } catch (e) { toast(e.message || String(e), 'error'); }
   finally { sending = false; countdown(); }
+  return null;
 }
 
 // 현장 머리의 토벌 띠: 봉연의 그림자 예고·신청·토벌, 내 결전, 봉연에 잠긴 곳(1분 동안 다시 씀)

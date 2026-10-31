@@ -151,12 +151,17 @@ async function fillSources(box, id) {
   try {
     if (!srcCache.has(id)) srcCache.set(id, await load('world_item_sources', { p_item: id }));
     const s = srcCache.get(id) || {};
-    const part = (label, list, n) => list?.length ? `<span class="src"><b>${label}</b> ${esc(list.join(' · '))}${n > list.length ? ` 외 ${n - list.length}곳` : ''}</span>` : '';
+    // 지역 이름을 누르면 창을 닫고 지도에서 그 지역을 짚는다(7.5.9k, 제보 66)
+    const part = (label, list, n) => list?.length ? `<span class="src"><b>${label}</b> ${list.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join(' · ')}${n > list.length ? ` 외 ${n - list.length}곳` : ''}</span>` : '';
     const html = [part('채집', s.gather, s.gather_n), part('조사', s.sites, s.sites_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
     // 사는 곳: 대장간(모든 안전지대)·안전지대 상점(회차마다 품목이 바뀜)·세력 비고(공훈)
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
     const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`].filter(Boolean).join('');
     dd.innerHTML = (html + extra) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
+    $$('[data-src-go]', dd).forEach(btn => btn.onclick = async () => {
+      const { focusRegion } = await import('./map.js');
+      closeLayers(); closeModal(); focusRegion(btn.dataset.srcGo); window.yahangGo('map', 'world');
+    });
   } catch { dd.textContent = '-'; }
 }
 function draw(box, id, inv, prices, mode) {
