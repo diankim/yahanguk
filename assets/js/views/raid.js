@@ -242,4 +242,6 @@ export async function fillRaidBand(box) {
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
 }
+// 봉연의 그림자가 나올 곳이 정해졌으면(world_raid_brief.world.region — 12시간 전 확정부터) 그 회차를, 아니면 null(지도 표시용, 7.5.9)
+export const raidShadow = async () => { if (!RAID_ON) return null; try { const w = (await load('world_raid_brief', undefined, { maxAge: 60000 }))?.world; return w?.region ? w : null; } catch { return null; } };
 export const raidLocks = async () => { if (!RAID_ON) return []; try { return (await load('world_raid_brief', undefined, { maxAge: 60000 }))?.locks || []; } catch { return []; } };

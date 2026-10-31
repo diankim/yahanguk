@@ -2414,3 +2414,12 @@ body.chat-out .chat-col { display: none !important; }
 .gx-more { font-size: calc(11px * var(--fz, 1)); color: var(--muted); align-self: center; }
 .gx-rest > summary { cursor: pointer; font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); }
 .gx-rest[open] { display: grid; gap: 6px; }
+/* 지도: 봉연의 그림자가 나올 곳(7.5.9) — 원 고리(현재 위치·분쟁·잠김)와 헷갈리지 않게 보라 마름모 테 + 위쪽 네 갈래 별, 테가 천천히 돈다 */
+.shadow-mark { pointer-events: none; }
+.shadow-mark .sh-sq { fill: none; stroke: var(--sp); stroke-width: 1.6; stroke-dasharray: 4 3; transform: rotate(45deg); transform-box: fill-box; transform-origin: center; animation: sh-spin 9s linear infinite; }
+.shadow-mark .sh-star { fill: var(--sp); stroke: var(--bg); stroke-width: .8; }
+.shadow-mark.fight .sh-sq, .shadow-mark.signup .sh-sq { stroke-width: 2.2; stroke-dasharray: none; }
+@keyframes sh-spin { from { transform: rotate(45deg); } to { transform: rotate(405deg); } }
+@media (prefers-reduced-motion: reduce) { .shadow-mark .sh-sq { animation: none; } }
+.lg.shadow { border: 1.5px dashed var(--sp); background: transparent; transform: rotate(45deg) scale(.8); border-radius: 1px; }
+b.shadow { color: var(--sp); }
