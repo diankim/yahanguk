@@ -529,7 +529,18 @@ function resume() {
   document.body.classList.remove('chat-out');
   $('#btn-chat-back')?.remove();
   panel.hidden = false;
-  subscribe(); subscribeCircles(); syncPartySub(); load();
+  subscribe(); subscribeCircles(); syncPartySub(); refillAfterPop();
+}
+// 되돌린 뒤 채팅 채우기: 최근 80개(모든 갈래 섞임)만 읽으면 새 창에 나가 있던 사이 말이 많을 때 탭마다 몇 개만 남고
+// 그 앞이 비어 중간이 잘려 보였다(7.5.5) — 전체·지역·세력 탭마다 최근 한 쪽(50개)을 더 읽어 붙인다. 모임·파티는 다음에 열 때 새로 읽는다
+async function refillAfterPop() {
+  await load();
+  const got = await Promise.all(['global', 'region', 'faction'].map(t => db.from('world_chat_messages').select(COLS).eq('channel_type', t)
+    .order('created_at', { ascending: false }).limit(PAGE).then(r => r.data || [], () => [])));
+  const seen = new Set(msgs.map(m => m.id)), add = got.flat().filter(m => !seen.has(m.id));
+  if (add.length) { msgs = byTime(msgs.concat(add)); forceEnd = true; draw(); }
+  circleLoaded.clear(); partyLoaded = false;
+  if (tab === 'circle') loadCircleMsgs(); else if (tab === 'party') loadParty();
 }
 
 function subscribe() {
