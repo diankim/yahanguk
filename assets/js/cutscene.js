@@ -77,7 +77,10 @@ const CSS = `
 .cs-text.note { font-size: 14.5px; line-height: 1.7; }
 .cs-line-in { animation: cs-line .9s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes cs-line { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
-.cs-skip { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
+.cs-tr { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: flex; gap: 8px; z-index: 2; }
+.cs-help { padding: 6px 14px; border: 1px solid #e0a64a; border-radius: 999px; background: rgb(11 10 16 / .8); color: #f2e6cc; font: 600 13px "Noto Sans KR", sans-serif; text-decoration: none; }
+.cs-help:focus-visible { outline: 2px solid #e0a64a; }
+.cs-skip { padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
 .cs-skip:focus-visible { outline: 2px solid #e0a64a; }
 .cs-snd { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); padding: 6px 14px; border: 1px solid #3a3440; border-radius: 999px; background: rgb(11 10 16 / .8); color: #b9b0a2; font: 13px "Noto Sans KR", sans-serif; cursor: pointer; z-index: 2; }
 .cs-snd.on { color: #e0a64a; border-color: #5a4a30; }
@@ -346,12 +349,13 @@ export function loginMusic() {
 
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
 //       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때)
+// 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(7.5.8, 처음부터 늘 보임)
 export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
   root.className = 'cs'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', kind === 'rollback' ? '첫째 밤의 끝' : '아침');
-  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div>' : ''}<button type="button" class="cs-snd" hidden>소리 켜기</button><button type="button" class="cs-skip">건너뛰기</button></div>
+  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div>' : ''}<button type="button" class="cs-snd" hidden>소리 켜기</button><div class="cs-tr"><button type="button" class="cs-skip">건너뛰기</button>${stay ? '<a class="cs-help" href="help.html">도움말</a>' : ''}</div></div>
     <div class="cs-box" aria-live="polite"><div class="cs-who"></div><div class="cs-text"></div></div>`;
   document.body.append(root);
   if (kind === 'rollback') embers(root);
@@ -413,8 +417,7 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
     ended = true; endedAt = performance.now(); skip.hidden = true;
     if (note) { who.textContent = ''; text.textContent = note; text.classList.add('nar', 'note'); text.classList.remove('cs-line-in'); void text.offsetWidth; text.classList.add('cs-line-in'); }
     const bar = document.createElement('div'); bar.className = 'cs-end';
-    // 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 help.html로 잇는다(7.5.8)
-    bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button>' + (stay ? '<a class="cs-btn main" href="help.html" style="text-decoration:none;display:inline-flex;align-items:center">도움말 보기</a>' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
+        bar.innerHTML = '<button type="button" class="cs-btn" data-again>다시 보기</button>' + (stay ? '' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
     root.querySelector('.cs-box').append(bar);
     bar.querySelector('[data-close]')?.addEventListener('click', finish);
     bar.querySelector('[data-again]').addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); music?.stop(0.3); root.remove(); playCutscene(kind, { onEnd, stay, note }); });
