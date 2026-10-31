@@ -30,6 +30,8 @@ p { margin: 0; }
 a { color: var(--gold); }
 button, input, select, textarea { font: inherit; color: inherit; }
 .ico { flex: none; display: block; }
+/* 글 줄 안의 아이콘은 글과 같은 줄에(7.6.1, 화면점검 — 제작 창고 안내·도감 파훼법이 아이콘만 한 줄을 차지했다) */
+p > .ico, summary > .ico { display: inline-block; vertical-align: -2px; margin-right: 3px; }
 .muted { color: var(--muted); }
 .small { font-size: calc(12.5px * var(--fz, 1)); }
 .accent { color: var(--gold); }
@@ -489,7 +491,7 @@ body.chat-open .chat-fab { display: none; }
 .recipe.can { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .recipe .out { font-size: calc(12.5px * var(--fz, 1)); color: var(--gold); display: flex; align-items: center; gap: 4px; }
 .ingr { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: calc(12.5px * var(--fz, 1)); }
-.ingr li { display: flex; justify-content: space-between; }
+.ingr li { display: flex; justify-content: space-between; gap: 6px; } .ingr li > :first-child { margin-right: auto; }
 .ingr li.ok b { color: var(--ok); } .ingr li.bad b { color: var(--bad); }
 .faction-grid, .clue-grid, .combo-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .clue.on, .combo.on { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
@@ -1093,7 +1095,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .focus-bar span { flex: 1; min-width: 0; }
 .item-info { display: grid; gap: 12px; }
 .kv.info > div { display: grid; grid-template-columns: 84px 1fr; gap: 8px; font-size: calc(12.5px * var(--fz, 1)); } .kv.info dt { color: var(--muted); } .kv.info dd { margin: 0; }
-.discard-row { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; } .discard-row .field { flex: 0 0 120px; } .discard-row.off { opacity: .55; }
+.discard-row { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; } .discard-row .field { flex: 0 1 170px; min-width: 120px; } .discard-row.off { opacity: .55; }
 .recipe .ingr .linkish { color: inherit; text-decoration: underline dotted; text-align: left; }
 /* 직접 거래 */
 .mk-body { margin-top: 12px; display: grid; gap: 10px; }
@@ -1249,7 +1251,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .stepper input { width: 52px !important; min-height: 36px !important; padding: 4px 6px !important; text-align: center; font-variant-numeric: tabular-nums; }
 .stepper [data-all] { min-height: 32px; padding: 0 8px; margin-left: 2px; }
 .stepper .icon-btn { width: 36px; height: 36px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); }
-.shop-foot { position: sticky; bottom: -1px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px -4px 0; padding: 10px 4px;
+.shop-foot { position: sticky; bottom: -20px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px -4px -20px; padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
   background: var(--surface); border-top: var(--bw) solid var(--line); font-size: calc(13px * var(--fz, 1)); }
 .shop-foot .btn { min-width: 120px; justify-content: center; }
 @media (max-width: 480px) { .shop-list li { flex-wrap: nowrap; } .shop-list .item-act { width: auto; } }
@@ -2170,6 +2172,7 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-time { margin-bottom: 4px; font-size: calc(12px * var(--fz, 1)); }
   .raid-hp { margin-bottom: 4px; } .bar.boss { height: 10px; }
   .raid-says { height: 58px; grid-template-rows: 34px 20px; }
+  .raid-says .raid-charge { grid-template-columns: minmax(0, 1fr) 44px; gap: 6px; padding: 0 6px; font-size: calc(11.5px * var(--fz, 1)); }
   .raid-says .raid-bfx { display: none; }
   .raid-intent { font-size: calc(12px * var(--fz, 1)); line-height: 1.4; }
   .raid-wrap .raid-buttons { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
@@ -2577,4 +2580,7 @@ b.shadow { color: var(--sp); }
 .cpk-sw.on { outline: 2px solid var(--accent); outline-offset: 2px; }
 .cpk-acts { justify-content: flex-end; }
 @media (max-width: 640px) { .cpk-hex input { font-size: 16px; } }
+/* 7.6.1 화면점검 고침 */
+.raid-wrap .raid-mem .raid-mem-empty { grid-column: 1 / -1; }
+.spot-list li .btn { white-space: nowrap; flex: none; }
 

@@ -147,7 +147,7 @@ function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEve
 function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 // 화면을 옮기면 「현장 보기」 단추가 생기거나 사라지도록 다시 그린다
-window.addEventListener('hashchange', () => render());
+window.addEventListener('hashchange', () => { closeStrip(); render(); }); // 휴대폰: 펼친 상태 띠는 화면을 옮기면 접는다(7.6.1, 화면점검 — 새 화면을 덮고 있었다)
 // 상태판 퀵슬롯(7.5.7, 제보 61): 캐릭터 › 상태의 퀵슬롯 8칸을 작게. 칸 목록은 접속 동안 한 번(10분 캐시) 읽고, 칸을 바꾸면 다시 읽는다.
 let qsList = null, qsBusy = false;
 async function loadQs() {

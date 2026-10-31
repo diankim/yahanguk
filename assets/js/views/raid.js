@@ -92,7 +92,7 @@ function build() {
     : fight ? `${icon('hourglass', 14)} 남은 시간 · <span data-until="${esc(r.ends_at)}">${left(r.ends_at)}</span>`
     : `${icon('check', 14)} ${r.ended_at ? new Date(r.ended_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''} 끝남`;
   const playing = me.joined && fight;
-  el.innerHTML = `<div class="view-head raid-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'} · ${esc(r.region || '')}</p>
+  el.innerHTML = `<div class="view-head raid-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'}${r.region ? ` · ${esc(r.region)}` : ''}</p>
       <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
       <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
     <div class="raid-wrap ${playing ? 'playing' : ''}">
@@ -125,7 +125,7 @@ function patch() {
   if (sy) {
     const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => chip(BOSS_FX[k], 'ok')).join('');
     sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르고 있습니다.'}</span></p>
-      <div class="raid-charge ${r.charge ? 'on' : ''}">${r.charge ? `<span>${icon('flame', 14)} 기운 모으기 · 남은 ${r.charge.left}번 · ${fmt.num(r.charge.got || 0)} / ${fmt.num(r.charge.need)} 몰아치면 끊긴다</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
+      <div class="raid-charge ${r.charge ? 'on' : ''}">${r.charge ? `<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.left}번 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
   }
   const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
@@ -157,9 +157,14 @@ const mobileLog = () => window.matchMedia('(max-width: 640px)').matches;
 function fitLog() {
   const log = el && $('#raid-log', el); if (!log) return;
   if (!mobileLog()) { log.style.height = ''; return; }
-  const bar = document.querySelector('.tabbar'), barTop = bar && getComputedStyle(bar).display !== 'none' ? bar.getBoundingClientRect().top : window.innerHeight;
+  // 떠 있는 탭 막대와 채팅 단추(오른쪽 아래) 위에서 멈춘다(7.6.1, 화면점검 — 채팅 단추가 기록 끝을 가렸다)
+  const vis = q => { const e = document.querySelector(q); return e && !e.hidden && getComputedStyle(e).display !== 'none' && e.getClientRects().length ? e.getBoundingClientRect().top : window.innerHeight; }; // 떠 있는(fixed) 요소는 offsetParent가 null이라 getClientRects로 본다
+  const stop = Math.min(vis('.tabbar'), vis('#chat-fab'));
   const top = log.getBoundingClientRect().top, pad = 14;
-  log.style.height = Math.max(92, Math.floor(barTop - top - pad)) + 'px';
+  log.style.height = Math.max(92, Math.floor(stop - top - pad)) + 'px';
+  // 그래도 화면이 조금 넘치면(머리·여백 차이) 넘친 만큼 줄인다
+  const over = document.documentElement.scrollHeight - window.innerHeight;
+  if (over > 0 && window.scrollY < 4) log.style.height = Math.max(92, log.offsetHeight - over) + 'px';
 }
 let fitT = null;
 window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => { if (el && snap?.raid && built) { logCount = 0; patch(); } }, 150); });
@@ -280,7 +285,7 @@ function fillItems() {
 }
 // 휴대폰: 협동 기술은 단추 하나로 접어 두고 누르면 펼친다(한 화면에 담기)
 function membersHtml(list, me, r) {
-  if (!(list || []).length) return '<li class="muted small">아직 참가자가 없습니다.</li>';
+  if (!(list || []).length) return '<li class="muted small raid-mem-empty">아직 참가자가 없습니다.</li>';
   const can = me.joined && r.status === 'fight';
   return list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out || m.away || m.resting ? 'out' : ''}">
       <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${can ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">

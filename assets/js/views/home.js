@@ -422,7 +422,7 @@ function tick() {
 function goIdleRest() { try { sessionStorage.setItem('yh-idle-focus', 'rest'); } catch {} window.yahangGo('char', 'idle'); }
 function openFacility(k, s) {
   if (k === 'depart') return window.yahangGo('map');
-  if (k === 'board') return window.yahangGo('log', 'story');
+  if (k === 'board') return window.yahangGo('log', 'commission');
   if (k === 'faction') return window.yahangGo('char', 'faction');
   if (k === 'tourney') return window.yahangGo('tourney');
   if (k === 'inn') return openRest(s.region);
