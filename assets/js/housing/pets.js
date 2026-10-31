@@ -656,25 +656,25 @@ export const PETS = {
       sleep: ["..........k...k..", ".........kak.kak.", "........kaaakaaak", "..kkkkkkkaoaoaoak", ".kaaaaaaaakkakkak", "kaaoaoaoapacncapk", "kaaaoaoaaacccaaak", ".kooooooooooookk.", "..kkkkkkkkkkkk..."]
     }
   },
-  mackerel_cat: {
-    name: "잿빛 줄고양이",
+  gray_longhair: {
+    name: "잿빛 장모 고양이",
     grade: 1,
     kind: "shadow",
-    desc: "등에 물고기 비늘 같은 잿빛 줄무늬가 든 고양이입니다. 담장 위를 제 길처럼 걸어 다닙니다.",
+    desc: "잿빛 털이 솜뭉치처럼 부푼 고양이입니다. 앞머리에 눈이 반쯤 가려도 밥그릇만큼은 용케 찾아갑니다.",
     likes: "treat_fish",
     baby: {
-      pal: { a: "#8e8a80", o: "#3e3a35", c: "#efece4", n: "#d88a8e", e: "#3c4a1e", i: "#d8ec8a", p: "#f3a0a0", k: "#1a120e" },
-      idle: ["......k...k...", ".....kak.kak..", "....kaaakaaak.", ".k..kaoaoaoak.", "kok.kaieaieak.", "kok.kaeeaeeak.", ".kokkpacncapk.", ".kaaoaoacccck.", ".kaoaoaacccck.", ".kaakakkckcck.", "..kk.k..k.kk.."],
-      blink: ["......k...k...", ".....kak.kak..", "....kaaakaaak.", ".k..kaoaoaoak.", "kok.kaaaaaaak.", "kok.kakkakkak.", ".kokkpacncapk.", ".kaaoaoacccck.", ".kaoaoaacccck.", ".kaakakkckcck.", "..kk.k..k.kk.."],
-      step: ["......k...k...", ".....kak.kak..", "....kaaakaaak.", ".k..kaoaoaoak.", "kok.kaieaieak.", "kok.kaeeaeeak.", ".kokkpacncapk.", ".kaaoaoacccck.", ".kaoaoaacccck.", "..kaakakckcck.", "...kk.k.k.kk.."],
-      sleep: [".......k...k..", "......kak.kak.", ".....kaaakaaak", "..kkkkaoaoaoak", ".kaaaaakkakkak", "kaoaoapacncapk", "kaccccccccaak.", ".kkkkkkkkkkk.."]
+      pal: { a: "#cfd2d8", s: "#9ea2ad", w: "#eef0f4", p: "#eaa6a6", e: "#3a3440", n: "#e58f98", k: "#1a120e" },
+      idle: ["...........k..k...", "..........kakkak..", "........kkapaapak.", "......kkaaaaaaaak.", ".....kaaaaaaaaaaak", "....kaaasasasasaak", "...kaaaaseasaseaak", ".kkaaaaaaaaanaaaak", "kskaaawaaaaaaaaak.", "kssaaaaaaaaaaaaak.", "ksssaaaaaaaaaaak..", "kssskaaaaaaaaaak..", ".kskkasaasaasak...", "..k..kkkkkkkkk...."],
+      blink: ["...........k..k...", "..........kakkak..", "........kkapaapak.", "......kkaaaaaaaak.", ".....kaaaaaaaaaaak", "....kaaasasasasaak", "...kaaaassasassaak", ".kkaaaaaaaaanaaaak", "kskaaawaaaaaaaaak.", "kssaaaaaaaaaaaaak.", "ksssaaaaaaaaaaak..", "kssskaaaaaaaaaak..", ".kskkasaasaasak...", "..k..kkkkkkkkk...."],
+      step: ["...........k..k...", "..........kakkak..", "........kkapaapak.", "......kkaaaaaaaak.", ".....kaaaaaaaaaaak", "....kaaasasasasaak", "...kaaaaseasaseaak", ".kkaaaaaaaaanaaaak", "kskaaawaaaaaaaaak.", "kssaaaaaaaaaaaaak.", "ksssaaaaaaaaaaak..", "kssskaaaaaaaaaak..", ".kskkaasaasaasak..", "..k..kkkkkkkkkk..."],
+      sleep: ["...........k..k...", "..........kakkak..", ".......kkkapaapak.", ".....kkaaaaaaaaak.", ".kk.kaaasasasasaak", "ksskaaaaskkaskkaak", "ksssaaaaaaaanaaak.", ".kssaaaaaaaaaaak..", "..kkkasaasaasak...", ".....kkkkkkkkk...."]
     },
     adult: {
-      pal: { a: "#8e8a80", o: "#3e3a35", c: "#efece4", n: "#d88a8e", e: "#3c4a1e", i: "#d8ec8a", p: "#f3a0a0", k: "#1a120e" },
-      idle: [".........k...k...", "........kak.kak..", ".......kaaakaaak.", "..k....kaoaoaoak.", ".kok...kaieaieak.", "kok....kaeeaeeak.", "kok....kpacncapk.", ".kokkkkkkacccak..", "..koaaaaaaccccck.", "..kaoaoaoaccccak.", "..kaaoaoaaaaaaak.", "..kaakaakkkcckck.", "..kaakaak.kcckck.", "...kk.kk...kk.k.."],
-      blink: [".........k...k...", "........kak.kak..", ".......kaaakaaak.", "..k....kaoaoaoak.", ".kok...kaaaaaaak.", "kok....kakkakkak.", "kok....kpacncapk.", ".kokkkkkkacccak..", "..koaaaaaaccccck.", "..kaoaoaoaccccak.", "..kaaoaoaaaaaaak.", "..kaakaakkkcckck.", "..kaakaak.kcckck.", "...kk.kk...kk.k.."],
-      step: [".........k...k...", "........kak.kak..", ".......kaaakaaak.", "..k....kaoaoaoak.", ".kok...kaieaieak.", "kok....kaeeaeeak.", "kok....kpacncapk.", ".kokkkkkkacccak..", "..koaaaaaaccccck.", "..kaoaoaoaccccak.", "..kaaoaoaaaaaaak.", "...kaakaakkcckck.", "..kaak.kaakckkck.", "...kk...kk.k..k.."],
-      sleep: ["..........k...k..", ".........kak.kak.", "........kaaakaaak", "..kkkkkkkaoaoaoak", ".kaaaaaaaakkakkak", "kaaoaoaoapacncapk", "kaaaoaoaaacccaaak", ".kooooooooooookk.", "..kkkkkkkkkkkk..."]
+      pal: { a: "#cfd2d8", s: "#9ea2ad", w: "#eef0f4", p: "#eaa6a6", e: "#3a3440", n: "#e58f98", k: "#1a120e" },
+      idle: ["...............k...k....", "..............kak.kak...", "............kkapakapak..", "..........kkaaaaaaaaaak.", ".........kaaaaaaaaaaaaak", "........kaaasasasasasaak", ".......kaaaasasasasasaak", "......kaaaaaaseasaseaaak", ".....kaaaaaaaaaaanaaaaak", ".k..kaaaaaawaaaaaaaaaak.", "kskkaaawaaaaaaaaaaaaaak.", "ksssaaaaaaaaaaaaaaaaaak.", "kssssaaaaaaaaaaaaaaaak..", "ksssssaaaaaaaaaaaaaaak..", ".ksskkkasaaasaaasaakk...", "..kk...kkkkkkkkkkkk....."],
+      blink: ["...............k...k....", "..............kak.kak...", "............kkapakapak..", "..........kkaaaaaaaaaak.", ".........kaaaaaaaaaaaaak", "........kaaasasasasasaak", ".......kaaaasasasasasaak", "......kaaaaaassasassaaak", ".....kaaaaaaaaaaanaaaaak", ".k..kaaaaaawaaaaaaaaaak.", "kskkaaawaaaaaaaaaaaaaak.", "ksssaaaaaaaaaaaaaaaaaak.", "kssssaaaaaaaaaaaaaaaak..", "ksssssaaaaaaaaaaaaaaak..", ".ksskkkasaaasaaasaakk...", "..kk...kkkkkkkkkkkk....."],
+      step: ["...............k...k....", "..............kak.kak...", "............kkapakapak..", "..........kkaaaaaaaaaak.", ".........kaaaaaaaaaaaaak", "........kaaasasasasasaak", ".......kaaaasasasasasaak", "......kaaaaaaseasaseaaak", ".....kaaaaaaaaaaanaaaaak", ".k..kaaaaaawaaaaaaaaaak.", "kskkaaawaaaaaaaaaaaaaak.", "ksssaaaaaaaaaaaaaaaaaak.", "kssssaaaaaaaaaaaaaaaak..", "ksssssaaaaaaaaaaaaaaak..", ".ksskkkaasaaasaaasakk...", "..kk...kkkkkkkkkkkk....."],
+      sleep: ["...............k...k....", "..............kak.kak...", ".........kkkkkapakapak..", ".......kkaaaaaaaaaaaaak.", ".kk..kkaaaaasasasasasaak", "ksskkaaaaaaaskkaaskkaaak", "kssskaaaaaaaaaaaanaaaaak", "kssssaaaaaaaaaaaaaaaaak.", ".ksssaaaaaaaaaaaaaaaak..", "..ksskkasaaasaaasaakk...", "...kk..kkkkkkkkkkkk....."]
     }
   },
   tuxedo_cat: {

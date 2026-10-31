@@ -1,4 +1,4 @@
-# 롤백 뒤 더하는 꼬마 동무 6종(사용자 요청, 2026-10-31): 누렁 줄고양이(치즈)·잿빛 줄고양이(고등어)·까치 고양이(턱시도), 똥개, 부리너구리(오리너구리), 산토끼
+# 롤백 뒤 더하는 꼬마 동무 6종(사용자 요청, 2026-10-31): 누렁 줄고양이(치즈)·잿빛 장모 고양이·까치 고양이(턱시도), 똥개, 부리너구리(오리너구리), 산토끼
 # ── 고양이 셋: 같은 몸틀에 빛깔만 다르다(o 줄무늬 · c 흰 털) ──
 CAT_B = dict(
     idle='''
@@ -56,10 +56,59 @@ pet(id='cheese_cat', name='누렁 줄고양이', grade=1, kind='shadow', likes='
     desc='노란 털에 주황 줄무늬가 진 고양이입니다. 장터 사람들은 「호박이」라고 부릅니다. 밥그릇 소리만 나면 어디서든 달려옵니다.',
     baby=cat_form(CAT_B, CHEESE), adult=cat_form(CAT_A, CHEESE))
 
-MACK = {'a': '#8e8a80', 'o': '#3e3a35', 'c': '#efece4', 'n': '#d88a8e', 'e': '#3c4a1e', 'i': '#d8ec8a', 'p': PK}
-pet(id='mackerel_cat', name='잿빛 줄고양이', grade=1, kind='shadow', likes='treat_fish',
-    desc='등에 물고기 비늘 같은 잿빛 줄무늬가 든 고양이입니다. 담장 위를 제 길처럼 걸어 다닙니다.',
-    baby=cat_form(CAT_B, MACK), adult=cat_form(CAT_A, MACK))
+# 잿빛 장모 고양이: 솜뭉치처럼 둥근 몸, 앞머리에 반쯤 가린 눈, 작은 코, 부숭한 꼬리(사용자 그림 참고)
+LONG = {'a': '#cfd2d8', 's': '#9ea2ad', 'w': '#eef0f4', 'p': '#eaa6a6', 'e': '#3a3440', 'n': '#e58f98'}
+LONG_B = dict(idle='''
+..........a..a..
+.........apaapa.
+.......aaaaaaaa.
+.....aaaaaaaaaaa
+....aaasasasasaa
+...aaaaseasaseaa
+..aaaaaaaaanaaaa
+s.aaawaaaaaaaaa.
+ssaaaaaaaaaaaaa.
+sssaaaaaaaaaaa..
+sss.aaaaaaaaaa..
+.s..asaasaasa...''', step_tail='''
+.s..aasaasaasa..''', sleep='''
+..........a..a..
+.........apaapa.
+......aaaaaaaaa.
+....aaasasasasaa
+ss.aaaaskkaskkaa
+sssaaaaaaaanaaa.
+.ssaaaaaaaaaaa..
+....asaasaasa...''')
+LONG_A = dict(idle='''
+..............a...a...
+.............apa.apa..
+...........aaaaaaaaaa.
+.........aaaaaaaaaaaaa
+........aaasasasasasaa
+.......aaaasasasasasaa
+......aaaaaaseasaseaaa
+.....aaaaaaaaaaanaaaaa
+....aaaaaawaaaaaaaaaa.
+s..aaawaaaaaaaaaaaaaa.
+sssaaaaaaaaaaaaaaaaaa.
+ssssaaaaaaaaaaaaaaaa..
+sssssaaaaaaaaaaaaaaa..
+.ss...asaaasaaasaa....''', step_tail='''
+.ss...aasaaasaaasa....''', sleep='''
+..............a...a...
+.............apa.apa..
+........aaaaaaaaaaaaa.
+......aaaaasasasasasaa
+ss..aaaaaaaskkaaskkaaa
+sss.aaaaaaaaaaaanaaaaa
+ssssaaaaaaaaaaaaaaaaa.
+.sssaaaaaaaaaaaaaaaa..
+..ss..asaaasaaasaa....''')
+for f in (LONG_B, LONG_A): f['blink'] = f['idle'].replace('e', 's')
+pet(id='gray_longhair', name='잿빛 장모 고양이', grade=1, kind='shadow', likes='treat_fish',
+    desc='잿빛 털이 솜뭉치처럼 부푼 고양이입니다. 앞머리에 눈이 반쯤 가려도 밥그릇만큼은 용케 찾아갑니다.',
+    baby=dict(pal=LONG, **LONG_B), adult=dict(pal=LONG, **LONG_A))
 
 # 턱시도: 줄무늬 없이 검고, 주둥이·가슴·네 발이 희다
 TUX = {'a': '#4a4553', 'c': '#f6f3ec', 'n': '#e48a96', 'e': '#c9b23a', 'i': '#fff4b0', 'p': '#d98a96'}
