@@ -282,7 +282,7 @@
 
 ### 무기 소모(5.0.0)
 
-근접은 기력(영력과 같은 spiritual_power, 근접 무기를 들면 화면이 노란 「기력」으로 보임, core.js spOf) 공격마다 2, 술법은 영력 3, 원거리는 장착 무기 equipment_traits.ammo(ammo_arrow 화살·ammo_bolt 쇠뇌살·ammo_dart 취관 침, 묶음 100, world_ammo_of) 한 발에 하나. 없으면 피해 절반. 원정은 정산 회차마다 둘(world_expedition_settle), 떠날 때 없으면 원정 전투력 ×0.6. 새 원거리 무기를 넣으면 ammo를 단다. 전투·원정 중에는 world_equip_item도 막는다(해제와 같이).
+근접은 기력(영력과 같은 spiritual_power, 근접 무기를 들면 화면이 노란 「기력」으로 보임, core.js spOf) 공격마다 2, 술법은 영력 3, 원거리는 장착 무기 equipment_traits.ammo(ammo_arrow 화살·ammo_bolt 쇠뇌살·ammo_dart 취관 침, 묶음 100, world_ammo_of) 한 발에 하나. 없으면 피해 절반. 원정은 정산 회차마다 둘(world_expedition_settle), 떠날 때 없으면 원정 전투력 ×0.6. 새 원거리 무기를 넣으면 ammo를 단다. 현장 토벌에서 탄·기력·영력이 없어 피해가 절반이 되면 화면 아래 알림(battle.js weakNote: 서버 기록 문구 「쏠 것이 떨어져」「기력이 바닥나」「영력이 바닥나」로 알아봄, 같은 알림 5초에 한 번, 7.5.9) — 서버 문구를 바꾸면 여기도 고친다. 전투·원정 중에는 world_equip_item도 막는다(해제와 같이).
 
 ### 장비 내구도
 

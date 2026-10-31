@@ -137,6 +137,14 @@ function tickCooldown() {
 }
 
 let busy = false;
+// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다(7.5.9, 사용자 요청 — 전에는 기록 한 줄로만 지나가 몰랐다).
+// 서버(world_battle_action)가 남기는 기록 문구로 알아보고, 같은 알림은 5초에 한 번만
+const WEAK = [[/쏠 것이 떨어져/, '화살(탄)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
+const weakAt = {};
+function weakNote(lines) {
+  const text = (lines || []).join('\n');
+  for (const [re, msg] of WEAK) if (re.test(text) && Date.now() - (weakAt[msg] || 0) > 5000) { weakAt[msg] = Date.now(); toast(msg, 'warn'); }
+}
 async function send(action, item) {
   if (busy || Date.now() < nextAt) return;
   busy = true; tickCooldown();
@@ -149,6 +157,7 @@ async function send(action, item) {
     if (c) c.health = r.health ?? c.health;
     sfx(r);
     floats(r);
+    weakNote(r.lines);
     const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;

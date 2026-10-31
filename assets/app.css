@@ -164,6 +164,7 @@ textarea { resize: none; }
 .toast { padding: 11px 14px; border-radius: var(--r); background: var(--surface-2); border: var(--bw) solid var(--line); box-shadow: var(--shadow); font-size: calc(13px * var(--fz, 1)); animation: rise .2s ease-out; }
 .toast-ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
 .toast-error { border-color: color-mix(in srgb, var(--bad) 60%, var(--line)); color: color-mix(in srgb, var(--bad) 30%, var(--text)); }
+.toast-warn { border-color: color-mix(in srgb, var(--warn) 60%, var(--line)); color: color-mix(in srgb, var(--warn) 35%, var(--text)); }
 .toast.out { opacity: 0; transition: opacity .3s; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 .modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgb(0 0 0 / .62); display: grid; place-items: center; grid-template-columns: minmax(0, 1fr); padding: 16px; }
