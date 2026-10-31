@@ -1,6 +1,7 @@
 // 음향: 브라우저에서 직접 연주하는 동양풍 배경음악(영역마다 다른 곡조) · 날씨·시간대 환경음 · 행동별 효과음.
 // 외부 음원을 쓰지 않으므로 저작권 걱정이 없고 내려받을 파일도 없다.
 import { on, toast } from './core.js';
+import { LAYERS as AMB, bird, cricket, owl, drip } from './ambience.js';
 
 // vol = 전체 음량(7.3.4, 설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
@@ -537,32 +538,9 @@ function setLayer(name, level, build) {
   L.g.gain.setTargetAtTime(Math.max(0.0001, level), now(), 1.5);
 }
 const noiseSrc = (buf) => { const n = ctx.createBufferSource(); n.buffer = buf; n.loop = true; n.start(); return n; };
-const BUILD = {
-  rain: g => { const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900; lp.type = 'lowpass'; lp.frequency.value = 6500; n.connect(hp); hp.connect(lp); lp.connect(g); return [n]; },
-  wind: g => {
-    const n = noiseSrc(brownBuf), lp = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), lg = ctx.createGain(), gust = ctx.createGain(), glfo = ctx.createOscillator(), glg = ctx.createGain();
-    lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 3; lfo.frequency.value = 0.06; lg.gain.value = 320; lfo.connect(lg); lg.connect(lp.frequency);
-    gust.gain.value = 0.7; glfo.frequency.value = 0.045; glg.gain.value = 0.3; glfo.connect(glg); glg.connect(gust.gain);
-    n.connect(lp); lp.connect(gust); gust.connect(g); lfo.start(); glfo.start(); return [n, lfo, glfo];
-  },
-  water: g => { const n = noiseSrc(brownBuf), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; n.connect(lp); lp.connect(g); return [n]; },
-  hiss: g => { const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5200; n.connect(hp); hp.connect(g); return [n]; },
-  mist: g => {
-    const o = ctx.createOscillator(), o2 = ctx.createOscillator(), t = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-    o.frequency.value = 55; o2.frequency.value = 58.3; o.type = o2.type = 'sine'; t.gain.value = 0.6; lfo.frequency.value = 0.3; lg.gain.value = 0.4; lfo.connect(lg); lg.connect(t.gain);
-    o.connect(t); o2.connect(t); t.connect(g); o.start(); o2.start(); lfo.start(); return [o, o2, lfo];
-  },
-};
-// 빗방울 하나: 아주 짧은 잡음을 좁은 띠로 걸러 「톡」, 위에 작은 물 울림을 살짝. low면 처마·나무에 떨어진 조금 낮고 둥근 소리
-function rainDrop(s, low) {
-  const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
-  n.buffer = noiseBuf; bp.type = 'bandpass'; bp.frequency.value = low ? 900 + Math.random() * 500 : 2200 + Math.random() * 2600; bp.Q.value = low ? 5 : 3 + Math.random() * 3;
-  const pk = (low ? 0.26 : 0.15) * (0.55 + Math.random() * 0.45);
-  g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(pk, s + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, s + (low ? 0.05 : 0.025));
-  n.connect(bp); bp.connect(g); g.connect(ambBus); n.start(s, Math.random() * 1.5, 0.07);
-  const o = ctx.createOscillator(), og = ctx.createGain(), f = low ? 700 + Math.random() * 300 : 1700 + Math.random() * 1400;
-  o.frequency.setValueAtTime(f, s); o.frequency.exponentialRampToValueAtTime(f * 1.35, s + 0.03); envGain(og, s, low ? 0.012 : 0.006, 0.002, 0.035); o.connect(og); og.connect(ambBus); o.start(s); o.stop(s + 0.06);
-}
+// 환경음 층은 ambience.js(7.5.9i 다듬기)가 만든다 — 비는 빗방울을 버퍼에 흩뿌린 결, 바람은 숨 쉬듯, 물은 일렁이게
+const ambMat = {};
+const BUILD = Object.fromEntries(Object.keys(AMB).map(k => [k, g => { ambMat.noise = noiseBuf; ambMat.brown = brownBuf; return AMB[k](ctx, g, ambMat); }]));
 let critterTimer = null;
 // 짧게 끊어지는 소리들: 새·풀벌레·물방울·부엉이
 function critters() {
@@ -572,38 +550,26 @@ function critters() {
   const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
   const quiet = w === 'rain' || w === 'drizzle' || w === 'snow' || w === 'wind';
-  if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.55 : 0.3)) {
-    const n = 2 + Math.floor(Math.random() * 4), base = 2600 + Math.random() * 1200;
-    for (let i = 0; i < n; i++) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const s = t + i * (0.09 + Math.random() * 0.05);
-      o.frequency.setValueAtTime(base, s); o.frequency.exponentialRampToValueAtTime(base * (1.25 + Math.random() * 0.3), s + 0.07); envGain(g, s, 0.05, 0.005, 0.08); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.12); }
+  if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.6 : 0.3)) {
+    bird(ctx, ambBus, t); if (ph === 'dawn' && Math.random() < 0.35) bird(ctx, ambBus, t + 0.4 + Math.random() * 0.6, 0.55); // 먼 데서 받아 우는 새
   }
   if (!under && (ph === 'dusk' || ph === 'night') && w !== 'snow' && w !== 'rain') {
-    const n = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < n; i++) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = 4400 + Math.random() * 300; const s = t + i * 0.045;
-      envGain(g, s, ph === 'night' ? 0.022 : 0.014, 0.004, 0.03); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.05); }
-    if (ph === 'night' && Math.random() < 0.05) { [0, 0.45].forEach((d, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i ? 340 : 390; envGain(g, t + 1 + d, 0.03, 0.06, 0.35); o.connect(g); g.connect(ambBus); o.start(t + 1 + d); o.stop(t + 1.6 + d); }); }
+    const v = (ph === 'night' ? 1 : 0.65) * (w === 'drizzle' ? 0.5 : 1);
+    cricket(ctx, ambBus, t, v); if (Math.random() < 0.5) cricket(ctx, ambBus, t + 0.12 + Math.random() * 0.2, v * 0.55);
+    if (ph === 'night' && Math.random() < 0.04) owl(ctx, ambBus, t + 1);
   }
-  // 세우(7.5.9i): 쏴아 하는 바탕 소리 없이 빗방울만 「또도도독」 — 잎·처마·돌에 떨어지는 짧은 톡 소리를 3~5개씩 묶어 흩뿌리고, 가끔 한 방울씩
-  if (w === 'drizzle' && !under) {
-    const burst = Math.random() < 0.6, n = burst ? 3 + Math.floor(Math.random() * 3) : 1;
-    let s = t + Math.random() * 0.2;
-    for (let i = 0; i < n; i++) { rainDrop(s, i === 0 && Math.random() < 0.25); s += 0.045 + Math.random() * 0.075; }
-    if (Math.random() < 0.5) rainDrop(t + 0.3 + Math.random() * 0.4, false);
-  }
-  if (w === 'rain' || w === 'fog' || under) {
-    if (Math.random() < (w === 'rain' ? 0.8 : 0.3)) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const f = 1800 + Math.random() * 2000;
-      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.05); envGain(g, t, 0.025, 0.002, 0.06); o.connect(g); g.connect(ambBus); o.start(t); o.stop(t + 0.1); }
-  }
-  const gap = w === 'drizzle' && !under ? 380 + Math.random() * 820 : ph === 'dusk' || ph === 'night' ? 500 + Math.random() * 900 : 1800 + Math.random() * 4000;
+  if ((w === 'fog' || under) && Math.random() < 0.3) drip(ctx, ambBus, t);
+  const gap = ph === 'dusk' || ph === 'night' ? 450 + Math.random() * 800 : 1500 + Math.random() * 3500;
   critterTimer = setTimeout(critters, gap);
 }
 function updateAmbience() {
   if (!ctx) return;
   const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
-  setLayer('rain', w === 'rain' ? 0.12 : 0, BUILD.rain);
+  setLayer('rain', w === 'rain' ? 0.45 : 0, BUILD.rain);
+  setLayer('drizzle', w === 'drizzle' ? (under ? 0.3 : 0.55) : 0, BUILD.drizzle);
   setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06, drizzle: 0.02 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
-  setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : w === 'drizzle' ? 0.025 : 0, BUILD.water);
-  setLayer('hiss', w === 'snow' ? 0.012 : 0, BUILD.hiss);
+  setLayer('water', w === 'fog' || under ? 0.14 : w === 'rain' ? 0.06 : w === 'drizzle' ? 0.01 : 0, BUILD.water);
+  setLayer('hiss', w === 'snow' ? 0.006 : 0, BUILD.hiss);
   setLayer('mist', w === 'bloodmist' ? 0.05 : 0, BUILD.mist);
 }
 
