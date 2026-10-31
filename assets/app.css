@@ -398,7 +398,7 @@ body.chat-open .chat-fab { display: none; }
 .dest-ring { fill: none; stroke: var(--mp); stroke-width: 2; stroke-dasharray: 3 3; }
 .lbl { fill: var(--text); font-weight: 600; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; cursor: pointer; }
 .lbl.far, .lbl.lock { fill: var(--muted); font-weight: 500; }
-.lbl.here { fill: var(--accent-ink); }
+.lbl.here { fill: color-mix(in srgb, var(--accent) 60%, var(--text)); font-weight: 800; } /* 현재 위치(7.6.3): 전에는 강조색 위 글자색(--accent-ink)이라 밝은 테마 등 22개 테마에서 바탕과 거의 같은 색(대비 1.0~1.4)이었다. 강조색에 글자색을 40% 섞어 32개 테마 모두 대비 4.3 이상 */
 .lbl.sel { fill: var(--gold); font-weight: 700; }
 .map-tools { position: absolute; right: 10px; top: 10px; display: grid; gap: 4px; padding: 4px; border-radius: var(--r); background: color-mix(in srgb, var(--surface) 88%, transparent); border: var(--bw) solid var(--line); }
 .map-tools .icon-btn { color: var(--text); width: 40px; height: 40px; }
