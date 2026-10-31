@@ -98,8 +98,8 @@ export async function render(root, sub) {
         ${sndBlock('bgm', '배경음악', '가야금·대금 느낌의 곡조가 영역마다 다르게 흐릅니다', sound.bgm, 'bgmOn')}
         ${sndBlock('amb', '환경음', '날씨와 시간대에 따라 빗소리·바람·풀벌레·새소리가 작게 깔립니다', sound.amb, 'ambOn')}
         ${sndBlock('sfx', '효과음', '이동·전투·거래·제작·보상마다 다른 짧은 소리', sound.sfx, 'sfxOn')}
-        <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}</div>
-        <div class="snd-block"><div class="snd-head"><span><b>알림음 「띠로링」</b><small>게임 창을 내려 두고 다른 일을 하다가도 알 수 있게 울립니다. 효과음을 꺼도 울리고, 크기는 효과음 음량을 따릅니다.</small></span><button class="btn small" type="button" data-try-alarm>들어 보기</button></div>
+        <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}<button class="btn small" type="button" data-try-alarm>알림</button></div>
+        <div class="snd-block"><div class="snd-head"><span><b>알림음</b><small>게임 창을 내려 두고 다른 일을 하다가도 알 수 있게 울립니다. 효과음을 꺼도 울리고, 크기는 효과음 음량을 따릅니다. 소리는 위 「알림」 단추로 들어 볼 수 있습니다.</small></span></div>
           <div id="alarm-list">${ALARMS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-alarm="${k}" ${alarmOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>
         <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
     </section>
