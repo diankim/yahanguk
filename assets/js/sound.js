@@ -631,7 +631,7 @@ export function playAlarm(kind, key) {
   if (kind && !alarmOn(kind)) return;
   if (away || !ensureCtx()) return;
   // 잠깐·푹 쉬기가 거의 같이 끝나면 한 번만(둘 다 켰을 때 10초 안에 겹친 것은 건너뜀)
-  if (/^rest_/.test(kind || '')) { const r = 'yh-alarm:rest-any', l = Number(localStorage.getItem(r) || 0); if (Date.now() - l < 10000) return; try { localStorage.setItem(r, String(Date.now())); } catch {} }
+  if (/^rest_/.test(kind || '')) { let l = 0; try { l = Number(localStorage.getItem('yh-alarm:rest-any') || 0); } catch {} if (Date.now() - l < 10000) return; try { localStorage.setItem('yh-alarm:rest-any', String(Date.now())); } catch {} }
   if (key) try { const k = 'yh-alarm:' + key; if (localStorage.getItem(k)) return; localStorage.setItem(k, String(Date.now())); setTimeout(() => { try { localStorage.removeItem(k); } catch {} }, 60000); } catch {}
   try {
     ctx.resume?.();
