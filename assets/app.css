@@ -2323,3 +2323,17 @@ b.sealed { color: var(--bad); }
   .eq-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .qs-edit { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* 정청 기록고(1.0.0): 반쯤 지워진 장부 조각 */
+.lr-lead { font-size: calc(13px * var(--fz, 1)); line-height: 1.7; }
+.lr-list { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 8px; }
+.lr-row { display: grid; gap: 2px; padding: 10px 12px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); font-family: var(--font-serif, serif); }
+.lr-row.mine { border-color: var(--accent); }
+.lr-name { font-size: calc(15px * var(--fz, 1)); letter-spacing: .04em; }
+.lr-row span { font-size: calc(12.5px * var(--fz, 1)); }
+.lr-title { color: var(--accent); }
+.lr-mine { color: var(--muted); font-style: italic; }
+.lr-row i { font-style: normal; color: var(--muted); display: inline-block; animation: lr-flick 7s steps(1) infinite; }
+.lr-row i:nth-child(3n) { animation-delay: -2.3s; } .lr-row i:nth-child(4n) { animation-delay: -4.1s; }
+@keyframes lr-flick { 0%, 96% { opacity: 1; } 97% { opacity: .25; } 98% { opacity: .8; } 99% { opacity: .1; } }
+@media (prefers-reduced-motion: reduce) { .lr-row i { animation: none; } }

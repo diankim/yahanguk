@@ -182,6 +182,7 @@ function town(s, roster) {
     ['board', 'scroll', '의뢰 게시판', '사건과 상시 의뢰'],
     ['tourney', 'sword', '비무 방', '야행 비무회 신청·대진표·관람'],
     ['faction', 'flag', '세력', store.character?.major_faction_id ? `${nameOf(store.character.major_faction_id)} · 퀘스트·의뢰판·비고` : '대세력 살펴보기·가입'],
+    r.region_id === 'hq_yard' ? ['records', 'scroll', '정청 기록고', '첫째 밤의 흔적이 남은 장부'] : null,
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
   // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게, 제보 20)
@@ -416,6 +417,7 @@ function openFacility(k, s) {
   if (k === 'board') return window.yahangGo('log', 'story');
   if (k === 'faction') return window.yahangGo('char', 'faction');
   if (k === 'tourney') return window.yahangGo('tourney');
+  if (k === 'records') return import('./legacy.js').then(x => x.openLegacyRecords());
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];
