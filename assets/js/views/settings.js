@@ -178,6 +178,10 @@ export async function render(root, sub) {
   const crop = bindCrop(el, () => { draft.avatar = 'pending'; touch(); });
   drawProfile();
   $$('[data-cos-kind].on', el).forEach(cosInfo); // 지금 고른 것의 얻은 경로부터 보여 준다
+  // 꾸미기 알림의 「보러 가기」로 왔으면(7.5.4) 얻은 그 꾸미기 칸을 짚어 준다
+  let cf = null; try { cf = sessionStorage.getItem('yh-cos-focus'); sessionStorage.removeItem('yh-cos-focus'); } catch {}
+  const cb = cf && $(`[data-cos-kind][data-cos-key="${CSS.escape(cf)}"]`, el);
+  if (cb) { cosInfo(cb); cb.classList.add('focus'); cb.closest('details')?.setAttribute('open', ''); requestAnimationFrame(() => cb.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => cb.classList.remove('focus'), 2600); }
 
   // 테마
   const markTheme = () => { $$('.theme-card', el).forEach(x => x.classList.toggle('on', x.dataset.themeId === draft.theme)); $('.custom-theme', el).classList.toggle('on', draft.theme === 'custom'); };

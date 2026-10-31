@@ -521,6 +521,9 @@ async function titles(body) {
   const order = c => { const i = TCAT_ORDER.indexOf(c); return i < 0 ? 99 : i; };
   const cats = [...new Set(list.map(t => t.category))].sort((a, b) => order(a) - order(b));
   const countIn = c => { const l = list.filter(t => t.category === c); return `${l.filter(t => t.earned).length}/${l.length}`; };
+  // 칭호 알림의 「보러 가기」로 왔으면(7.5.4) 거르기를 풀고 그 칭호 칸으로 데려간다
+  let focus = null; try { focus = sessionStorage.getItem('yh-title-focus'); sessionStorage.removeItem('yh-title-focus'); } catch {}
+  if (focus && list.some(t => t.key === focus)) { tq = ''; tcat = ''; tOwned = false; tEquipped = false; } else focus = null;
   body.innerHTML = `
     <div class="title-head">
       <div class="chips">${chip(`얻은 칭호 ${snap?.earned_count || 0}/${snap?.total || list.length}`, 'accent')}${chip(`숨겨진 칭호 ${snap?.hidden_earned || 0}/${snap?.hidden_total || 0}`)}${chip(`장착 ${snap?.equipped_count || 0}/3`)}</div>
@@ -535,7 +538,8 @@ async function titles(body) {
     </div>
     <div id="t-list"></div>`;
   // 레거시(야행의 흔적) 칭호는 등급 칩 대신 옻칠 현판: 세로 낙관 「흔적」과 한자 이름을 단다
-  const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
+  // 모바일(좁은 화면)은 카드를 두 칸으로 줄여 이름·등급만 보이고, 누르면 그 카드만 펼쳐 설명·조건·효과·단추를 보인다(7.5.4)
+  const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}" data-tkey="${esc(t.key)}">
       ${lg ? `<span class="lg-tag" aria-hidden="true">흔적</span>${LEGACY_HANJA[t.key] ? `<span class="lg-hj">${LEGACY_HANJA[t.key]}</span>` : ''}` : ''}
       <div class="t-top">${lg ? '' : icon(t.icon || 'spark', 18)}${t.grade && !lg && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
         ${tsort !== 'cat' ? `<small class="muted t-catl">${esc(t.category)}</small>` : ''}${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
@@ -576,6 +580,8 @@ async function titles(body) {
       if (!r?.lines?.length) { toast('이 칭호의 유래는 아직 전해지지 않았습니다.'); return null; }
       (await import('../factionquest.js')).playDialogue({ title: r.title, lines: r.lines, cast: r.cast }, null); return null;
     }));
+    // 좁은 화면: 카드를 누르면 펼치고 다시 누르면 접는다(단추 누르기는 그대로)
+    $$('.t-card', body).forEach(c => c.onclick = e => { if (e.target.closest('button, a')) return; c.classList.toggle('open'); });
   };
   bindPresets(body, snap);
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
@@ -584,6 +590,8 @@ async function titles(body) {
   $('#t-sort', body).onchange = e => { tsort = e.target.value; try { localStorage.setItem('yh-title-sort', tsort); } catch {} paint(); };
   $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
   paint();
+  const fc = focus && $(`.t-card[data-tkey="${CSS.escape(focus)}"]`, body);
+  if (fc) { fc.classList.add('open', 'focus'); requestAnimationFrame(() => fc.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => fc.classList.remove('focus'), 2600); }
   // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)
   if (list.some(t => t.new)) markTitlesSeen();
 }

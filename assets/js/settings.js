@@ -213,7 +213,13 @@ async function runAct(btn) {
   if (btn.dataset.letter) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('party'); return true; }
   if (btn.dataset.fdown) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('map'); return true; }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
-  if (btn.dataset.goto) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/'); window.yahangGo(v, sub || ''); return true; }
+  if (btn.dataset.goto) {
+    await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');
+    // 칭호·꾸미기 알림은 얻은 그 칸으로 바로 데려간다(7.5.4): 받는 화면이 한 번 읽고 지운다
+    try {
+      if (n.kind === 'title' && n.payload?.title_key) sessionStorage.setItem('yh-title-focus', n.payload.title_key);
+      if (n.kind === 'cosmetic' && n.payload?.cosmetic_key) sessionStorage.setItem('yh-cos-focus', n.payload.cosmetic_key);
+    } catch {} window.yahangGo(v, sub || ''); return true; }
   return false;
 }
 // 초대·원정 완료처럼 바로 답해야 하는 알림은 화면 위에 띄운다(다른 창을 덮지 않는다).
