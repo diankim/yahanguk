@@ -199,13 +199,13 @@ function render() {
     <section class="hud-card vitals">
       ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital(spOf()[0], c.spiritual_power, spOf()[1])}${vital('침식', c.erosion || 0, 'er')}
       ${stamina(c)}
+      ${statusCard()}
     </section>
-    ${statusCard()}
     <section class="hud-card money">
-      <div>${icon('coin', 16)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
-      <div>${icon('token', 16)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
-      <div>${icon('bag', 16)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
-      <div>${icon('pin', 16)}<span>위치</span><b>${esc(c.location)}</b></div>
+      <div>${icon('coin', 14)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
+      <div>${icon('token', 14)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
+      <div>${icon('bag', 14)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
+      <div title="${esc(c.location)}">${icon('pin', 14)}<span>위치</span><b>${esc(c.location)}</b></div>
     </section>
     ${qsCard(c)}
     <section class="hud-card now"><h3>진행 중</h3>
@@ -229,9 +229,9 @@ function stamina(c) {
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);
-  return `<section class="hud-card statuses"><h3>상태 ${list.length}/10</h3>${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
+  return `<div class="statuses"><h3>상태 ${list.length}/10</h3>${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
       <b>${esc(s.name)}${s.stacks > 1 ? `×${s.stacks}` : ''}</b><i data-timer="${new Date(s.expires_at).getTime()}" data-kind="status">${fmt.remain(new Date(s.expires_at) - Date.now())}</i></button>`).join('')}</div>`
-    : '<p class="muted small">걸린 상태가 없습니다.</p>'}</section>`;
+    : ''}</div>`;
 }
 // 요화·봉인 해독은 상태 칸(10칸)에 세지 않고 따로 늘 보인다(서버 world_status_roll도 세지 않음)
 export const YOHWA_STAGES = ['', '요기 스밈', '요문 발현', '반요'];
