@@ -105,9 +105,14 @@ const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.
 // 강화한 무기의 위력(서버 world_combat_stats: 단계마다 +5%)
 export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
 export function equipRows(inv, prof, here) {
+  return `<ul class="equip-list">${Object.keys(SLOTS).map(slot => equipRowLi(inv, prof, here, slot)).join('')}${tokenRowHtml()}</ul>
+  <p class="muted small">${DUR_NOTE}</p>`;
+}
+// 장착 칸 한 줄(내구도·수리·벗기). 모바일 가방 › 장비의 부위 창(bag.js)도 쓴다(7.5.4)
+export function equipRowLi(inv, prof, here, slot) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
   const kits = Number(have.repair_kit || 0);
-  return `<ul class="equip-list">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
+  const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx;
@@ -118,9 +123,9 @@ export function equipRows(inv, prof, here) {
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
-  }).join('')}${tokenRowHtml()}</ul>
-  <p class="muted small">공격할 때마다 무기, 맞을 때마다 방어구·관모, 채집할 때마다 도구, 이동할 때마다 신이 1씩 닳습니다(노리개·호신부·탈은 닳지 않습니다). 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.</p>`;
+  }
 }
+export const DUR_NOTE = `공격할 때마다 무기, 맞을 때마다 방어구·관모, 채집할 때마다 도구, 이동할 때마다 신이 1씩 닳습니다(노리개·호신부·탈은 닳지 않습니다). 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.`;
 export function bindRepair(root) {
   $$('[data-repair]', root).forEach(b => b.onclick = () => guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repair, p_method: b.dataset.how })));
   $$('[data-unequip]', root).forEach(b => b.onclick = () => guard(b, () => act('world_unequip_item', { p_slot: b.dataset.unequip })));
@@ -152,13 +157,15 @@ function qsCell(k, i, inv, downed) {
   return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
     <b>${esc(nameOf(k))}</b><span class="qs-n">×${fmt.num(n)}</span><small>${esc(qsDesc(k))}</small></button>`;
 }
-function eqMini(inv, prof) {
+// pick: 가방 › 장비(모바일)에서 칸을 누르면 그 부위 창을 연다(빈 칸도 누를 수 있게, data-eqslot)
+export function eqMini(inv, prof, pick = false) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, durs = prof?.durability || {};
-  return `<ul class="eq-mini">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
+  return `<ul class="eq-mini${pick ? ' pick' : ''}">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
     const id = eq[slot], it = cmap.get(id);
-    if (!id) return `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
+    if (!id) return pick ? `<li><button type="button" class="none" data-eqslot="${slot}">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></button></li>`
+      : `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
-    return `<li><button type="button" data-eqi="${esc(id)}">${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
+    return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
       ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
   }).join('')}</ul>`;
 }

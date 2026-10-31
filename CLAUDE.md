@@ -631,6 +631,7 @@
 - 현장의 답사 지도(home.js tree): 길·채집터를 「길 찾은/전체 · 채집터 찾은/전체」로 말해 적고, 다 찾은 곳은 표시, 찾지 못한 길은 그 자리에 빈칸, 위에 답사도 막대(30·70·100%). 가방·상점·대장간 목록의 물품 이름 아래에는 짧은 설명(core.js brief)을 작게 둔다.
 - 알림 설정(7.0.0, 설정 › 알림): world_notify_prefs(off 갈래 목록), world_notify_group(kind→갈래: rescue·friend_rescue·party·friend·trade·raid·title·reward·bag·circle·spar·bond·faction, 나머지는 끌 수 없음), BEFORE INSERT 트리거 trg_world_notify_prefs가 끈 갈래 알림을 읽음으로 넣는다(지난 알림에는 남음). world_notify_prefs_get·set. 친구가 쓰러지면 다른 곳의 친구에게 friend_down(world_notify_downed, 같은 곳 사람은 rescue_request). 새 알림 종류를 만들면 world_notify_group에도 넣는다.
 - 상태판 「칭호 바꾸기」(7.0.0, 제보 19, hud.js openTitleSwap): 누를 때만 world_title_snapshot을 읽어 칭호 묶음을 바꿔 낀다. 로그인 화면 한 줄 안내(app.js TIPS, 누르면 다음 줄). 창고 창에 거래소와 같은 분류 칩·이름 찾기(제보 18, services.js renderStorage, 줄만 숨김). 모임 순서(world_circle_members.sort, world_circle_reorder, 동료 화면 모임 칸의 위·아래 단추, 채팅 모임 단추 줄도 같은 순서).
+- 가방 › 장비(7.5.4, 제보 53): PC는 장착 목록(character.js equipRows)과 부위별 바꿔 낄 칸, 모바일(640px 아래)은 작은 칸(eqMini pick)만 두고 칸을 누르면 부위 창(equipRowLi + 바꿔 낄 장비, 성공하면 닫힘)을 연다(bag.js equip, .eq-mobile/.eq-desktop).
 - 캐릭터 › 상태(7.5.0, 7.5.1에 퀵슬롯을 맨 위로): 맨 위 퀵슬롯 8칸, 한 칸(조사원 상태)에 생존 상태 2×2·정화/마음 다잡기·착용 장비 축소 8칸(누르면 물품 정보, 수리·벗기는 가방 › 장비)·전투 능력 한 줄, 옆에 상태이상.
 - 확인 창은 브라우저 confirm 대신 게임 안 팝업(ask)으로 띄운다. 도주는 확인 없이 바로 시도하고, 성공·실패 모두 결과 팝업(받은 피해·남은 체력)을 보여 준다. 캐릭터 › 상태의 회복·치료 물품은 확인 창(효과·남은 수량)을 거쳐 쓴다.
 - 상점은 사기·팔기 칸에서 항목마다 수량을 고르고, 아래 구매하기/판매하기 단추로 확인 팝업 뒤 한꺼번에 처리한다. 물품 목록은 "이름 ×수량"을 붙여 쓰고 행동 단추는 오른쪽 끝에 둔다.
