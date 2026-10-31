@@ -30,9 +30,35 @@ create table if not exists public.world_legacy_marks (
 );
 alter table public.world_legacy_marks enable row level security;
 revoke all on public.world_legacy_marks from anon, authenticated;
-insert into public.world_legacy_marks(owner_id, character_name, level)
-select c.owner_id, c.character_name, c.level from public.world_characters c
-on conflict (owner_id) do nothing;
+-- 「정청의 흔적」(정청 기록고, 다시 연 뒤 깨진 장부 조각으로 보임): 지우기 전에 첫째 밤의 모습을 함께 찍어 둔다
+alter table public.world_legacy_marks add column if not exists job_key text, add column if not exists major_faction_id text,
+  add column if not exists location text, add column if not exists chapters int, add column if not exists title_name text,
+  add column if not exists last_seen timestamptz;
+insert into public.world_legacy_marks(owner_id, character_name, level, job_key, major_faction_id, location, chapters, title_name, last_seen)
+select c.owner_id, c.character_name, c.level, c.job_key, c.major_faction_id, c.location,
+       (select count(*)::int from public.world_quest_progress q where q.owner_id = c.owner_id and q.quest_id like 'mq\_%' and q.done_at is not null),
+       (select t.title_name from public.world_character_titles ct join public.world_title_catalog t using (title_key)
+         where ct.owner_id = c.owner_id and ct.is_equipped order by t.grade desc, ct.earned_at limit 1),
+       c.updated_at
+  from public.world_characters c
+on conflict (owner_id) do update set character_name = excluded.character_name, level = excluded.level, job_key = excluded.job_key,
+  major_faction_id = excluded.major_faction_id, location = excluded.location, chapters = excluded.chapters,
+  title_name = excluded.title_name, last_seen = excluded.last_seen;
+
+-- 기록고 읽기(로그인한 조사원 누구나): 계정 id는 내주지 않는다
+create or replace function public.world_legacy_records()
+returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+begin
+  if public.fn_owner_auth_uid() is null then raise exception '로그인이 필요합니다.'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object(
+      'name', m.character_name, 'level', m.level, 'job', public.world_job_name(m.job_key),
+      'faction', (select f.faction_name from public.world_major_factions f where f.faction_id = m.major_faction_id),
+      'location', m.location, 'chapters', coalesce(m.chapters, 0), 'title', m.title_name,
+      'mine', m.owner_id = public.fn_owner_auth_uid()) order by m.level desc nulls last, m.character_name)
+    from public.world_legacy_marks m where m.character_name is not null and m.owner_id not in (select s.owner_id from public.world_staff s)), '[]'::jsonb);
+end $$;
+revoke all on function public.world_legacy_records() from public, anon;
+grant execute on function public.world_legacy_records() to authenticated;
 
 -- ════════ p2_wipe.sql ════════
 -- ── 2. 캐릭터와 지난 세계를 비운다(사용자 결정 2026-10-31) ─────────────────────────
