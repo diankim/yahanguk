@@ -239,7 +239,8 @@ async function status(body) {
   $$('[data-surv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_survival_action', { p_action: b.dataset.surv })));
   $$('[data-use]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.use, d = qsDesc(k);
-    if (!(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
+    // 퀵슬롯은 묻지 않고 바로 쓴다(7.5.2, 제보 49 — 가방의 「사용」과 같게)
+    if (!b.classList.contains('qs-cell') && !(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
     guard(b, () => act('world_use_item', { p_item_id: k }));
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));

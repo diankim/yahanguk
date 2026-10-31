@@ -5,7 +5,7 @@ import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, o
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip } from './common.js';
 
-export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
+const USABLE_BASE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
   ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +2', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
   // 영력 회복약(낮은 단계부터)
   spirit_tea: '영력·기력 10', clear_spirit_pill: '영력·기력 20', spirit_qi_pill: '영력·기력 35', moonlight_essence: '영력·기력 55 · 심신 동요 치료', heavenly_dew: '영력·기력 80 · 심신 동요·사념 침식 치료',
@@ -33,6 +33,11 @@ export const USABLE = { reset_identity: '직업·소속 다시 고르기 · 능�
   purify_water: '침식 -20 · 정신 5 · 사념 침식 치료', calm_brew: '정신 30 · 동요·피로 치료',
   // 반요촌(귀허도)
   banyo_salve: '체력 70 · 정신 15 · 출혈·화상·중독 치료', oblivion_incense: '침식 -30 · 정신 20 · 사념 침식·심신 동요 치료' };
+// 우수품(<id>_hq)도 같은 물품으로 쓴다(7.5.2, 제보 48 — 전에는 우수품에 사용 단추가 없었다)
+export const USABLE = new Proxy(USABLE_BASE, { get(t, k) {
+  if (typeof k !== 'string' || k in t) return t[k];
+  return k.endsWith('_hq') && t[k.slice(0, -3)] ? `${t[k.slice(0, -3)]} · 우수품 효과 더 큼` : undefined;
+} });
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
 // 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
 const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);

@@ -130,7 +130,7 @@ const FIXED = {
   action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
   supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',
-  presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
+  sig_pct: '지역 희귀품', presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   // 서식지
   river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
   // 날씨·시간대
@@ -152,12 +152,12 @@ function fxLabel(k) {
 export function effectText(effects, potency = 1) {
   return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && k !== 'req_rank' && Number(v)).map(([k, v]) => {
     const n = Math.round(Number(v) * (potency || 1) * 10) / 10;
-    if (PER_ACTION.has(k)) return `${FIXED[k]} -${Math.abs(n)}`;
+    if (PER_ACTION.has(k)) return n < 0 ? `${FIXED[k]} 손실 ${Math.abs(n)} 줄임` : `${FIXED[k]} -${Math.abs(n)}`;
     return `${fxLabel(k)} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) || k.startsWith('cq_') ? '' : '%'}`;
   });
 }
 // 효과가 이로운지(받는 피해·이동 시간·침식은 줄어야 좋다)
-const LOWER_BETTER = new Set(['incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_loss_pct', 'mental_per_action', 'health_per_action']);
+const LOWER_BETTER = new Set(['encounter_pct', 'incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_loss_pct', 'mental_per_action', 'health_per_action']);
 export function effectGood(k, v) { return LOWER_BETTER.has(k) ? Number(v) < 0 : Number(v) > 0; }
 const names = new Map(Object.entries(FIXED));
 export function registerNames(entries) { for (const [k, v] of entries) if (k && v) names.set(k, v); }
