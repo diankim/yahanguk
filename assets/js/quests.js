@@ -20,11 +20,37 @@ function noteReady(b) {
 }
 
 // 할 일 줄 끝의 바로 가기(7.4.6): 할 일 지역 → 지도에서 짚기, 만들기·넘길 물품 → 제작 화면(검색칸에 이름)
-const mapBtns = regs => (regs || []).slice(0, 3).map(r => `<button type="button" class="q-link" data-q-map="${esc(r)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(nameOf(r))}</span></button>`).join('');
+const mapBtns = (regs, n = 3) => (regs || []).slice(0, n).map(r => `<button type="button" class="q-link" data-q-map="${esc(r)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(nameOf(r))}</span></button>`).join('');
 const craftBtn = id => `<button type="button" class="q-link" data-q-craft="${esc(nameOf(id))}" title="제작법 찾기">${icon('hammer', 12)}<span>제작법</span></button>`;
-export const taskLine = t => { const done = t.cur >= t.n, items = t.t === 'craft' ? (Array.isArray(t.items) ? t.items : Object.keys(t.items || {})) : [];
-  return `<li class="${done ? 'ok' : ''}">${icon(done ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}</b>${done ? '' : `<span class="q-links">${mapBtns(t.regions)}${items.slice(0, 1).map(craftBtn).join('')}</span>`}</li>`; };
-export const giveLine = g => `<li class="${g.have >= g.n ? 'ok' : ''}">${icon('bag', 12)}<span>${esc(g.name || nameOf(g.item_id))} 넘기기</span><b>${g.have}/${g.n}</b>${g.have >= g.n || !hasRecipe(g.item_id) ? '' : `<span class="q-links">${craftBtn(g.item_id)}</span>`}</li>`;
+// 얻는 곳(7.5.9, 사용자 요청): 지역을 정하지 않은 채집 할 일·넘길 물품은 그 물품이 나오는 지역을 5곳까지(물품 정보의 「얻는 곳」과 같은 world_item_sources).
+// 줄을 그린 뒤 비어 있는 칸만 채운다(물품마다 이 접속 동안 한 번 읽음).
+const srcSlot = id => `<span class="q-src" data-q-src="${esc(id)}"></span>`;
+const itemsOf = t => Array.isArray(t.items) ? t.items : Object.keys(t.items || {});
+export const taskLine = t => { const done = t.cur >= t.n, items = t.t === 'craft' ? itemsOf(t) : [];
+  const src = !done && t.t === 'gather' && !(t.regions || []).length ? itemsOf(t).slice(0, 1).map(srcSlot).join('') : '';
+  return `<li class="${done ? 'ok' : ''}">${icon(done ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}</b>${done ? '' : `<span class="q-links">${mapBtns(t.regions)}${items.slice(0, 1).map(craftBtn).join('')}${src}</span>`}</li>`; };
+export const giveLine = g => { const done = g.have >= g.n;
+  return `<li class="${done ? 'ok' : ''}">${icon('bag', 12)}<span>${esc(g.name || nameOf(g.item_id))} 넘기기</span><b>${g.have}/${g.n}</b>${done ? '' : `<span class="q-links">${hasRecipe(g.item_id) ? craftBtn(g.item_id) : ''}${srcSlot(g.item_id)}</span>`}</li>`; };
+const srcCache = new Map();
+async function fillSrc(root = document) {
+  for (const el of root.querySelectorAll('[data-q-src]:not([data-f])')) {
+    el.dataset.f = '1';
+    const id = el.dataset.qSrc;
+    try {
+      if (!srcCache.has(id)) srcCache.set(id, rpc('world_item_sources', { p_item: id }));
+      const s = await srcCache.get(id) || {};
+      const places = [...new Set([...(s.gather || []), ...(s.sites || []), ...(s.monsters || []), ...(s.fish || [])])];
+      const total = Math.max(places.length, (s.gather_n || 0), (s.sites_n || 0), (s.monsters_n || 0), (s.fish_n || 0));
+      if (!el.isConnected) continue;
+      el.innerHTML = places.length ? `<small class="muted">얻는 곳</small>${mapBtns(places, 5)}${total > 5 ? `<small class="muted">외 ${total - 5}곳</small>` : ''}`
+        : s.shop || s.smithy ? `<small class="muted">안전지대 ${s.smithy ? '대장간' : '상점'}에서 삽니다</small>` : '';
+    } catch { srcCache.delete(id); }
+  }
+}
+// 퀘스트 칸·일지가 다시 그려질 때마다 빈 칸을 채운다(그리기 뒤 한 번 모아서)
+let srcTimer = 0;
+new MutationObserver(() => { clearTimeout(srcTimer); srcTimer = setTimeout(() => { if (document.querySelector('[data-q-src]:not([data-f])')) fillSrc(); }, 80); })
+  .observe(document.body, { childList: true, subtree: true });
 // 넘길 물품에 제작법이 있는가(가방 정보를 이미 받았을 때만 — 없으면 단추를 달지 않음)
 const hasRecipe = id => knownRecipes().some(r => r.output === id);
 // 퀘스트 칸·일지 어디서든 바로 가기를 누르면

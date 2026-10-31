@@ -111,7 +111,7 @@ export function equipRows(inv, prof, here) {
 // 장착 칸 한 줄(내구도·수리·벗기). 모바일 가방 › 장비의 부위 창(bag.js)도 쓴다(7.5.4)
 export function equipRowLi(inv, prof, here, slot) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
-  const kits = Number(have.repair_kit || 0);
+  const kits = Number(have.repair_kit || 0) + Number(have.repair_kit_hq || 0); // 우수 수리 도구도 센다(7.5.9, 제보 64 — 서버는 둘 다 받는데 화면이 보통만 세어 단추가 잠겼다)
   const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;

@@ -2396,3 +2396,20 @@ body.chat-out .chat-fab { display: none; }
 body.chat-out .chat-col { display: none !important; }
 @media (min-width: 1280px) { body.chat-out .layout { grid-template-columns: 280px minmax(0, 1fr); } }
 .chat-back { color: var(--accent); }
+/* 퀘스트 할 일의 「얻는 곳」(7.5.9): 지역 바로 가기 5곳까지 */
+.q-src { display: contents; }
+.q-src > small { font-size: calc(11.5px * var(--fz, 1)); align-self: center; }
+/* 채집 도감의 세부 채집터(7.5.9): 지역 한 줄 + 채집터 꼬리표 */
+.gx-spots { display: grid; gap: 6px; margin-top: 4px; padding-top: 6px; border-top: var(--bw) dashed var(--line); }
+.gx-row { display: grid; gap: 3px; }
+.gx-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.gx-head .q-link { min-height: 22px; font-weight: 600; }
+.gx-head small { font-size: calc(11px * var(--fz, 1)); white-space: nowrap; }
+.gx-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.gx-tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; border: var(--bw) solid var(--line); background: var(--surface); font-size: calc(11px * var(--fz, 1)); color: var(--muted); line-height: 1.6; }
+.gx-tag i { font-style: normal; font-size: calc(10px * var(--fz, 1)); opacity: .7; }
+.gx-tag.f { color: var(--text); border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+.gx-tag.f .ico { color: var(--ok); }
+.gx-more { font-size: calc(11px * var(--fz, 1)); color: var(--muted); align-self: center; }
+.gx-rest > summary { cursor: pointer; font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); }
+.gx-rest[open] { display: grid; gap: 6px; }

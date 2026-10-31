@@ -309,6 +309,16 @@ async function monsterCodex(box) {
   if (wb) loreBundle().then(l => { if (paint(l).some(w => !w.open && n >= w.need)) refreshLore().then(l2 => wb.isConnected && paint(l2)); });
 }
 const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
+// 채집 도감의 세부 채집터(7.5.9, 사용자 요청): 지역 한 줄(지도 바로 가기·출입 레벨·찾은 수/채집터 수) 아래 채집터 이름 꼬리표(찾은 곳 먼저, 넷까지).
+// 지역은 셋까지 펼치고 나머지는 「지역 n곳 더」로 접는다(줄글처럼 길어지지 않게)
+const spotRow = g => `<div class="gx-row"><div class="gx-head"><button type="button" class="q-link" data-q-map="${esc(g.r)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(g.r)}</span></button>
+    <small class="muted">Lv.${g.l}+ · 찾음 ${g.fc}/${g.c}</small></div>
+  <div class="gx-tags">${(g.s || []).map(t => `<span class="gx-tag ${t.f ? 'f' : ''}" title="${t.f ? '찾은 채집터' : '아직 찾지 못한 채집터'} · Lv.${t.lv}">${t.f ? icon('check', 10) : ''}${esc(t.n)}<i>${t.lv}</i></span>`).join('')}${g.c > (g.s || []).length ? `<span class="gx-more">외 ${g.c - (g.s || []).length}곳</span>` : ''}</div></div>`;
+function spotsHtml(x) {
+  const sp = x.spots || [];
+  if (!sp.length) return `<small class="muted">${esc((x.regions || []).join(', '))}</small>`;
+  return `<div class="gx-spots">${sp.slice(0, 3).map(spotRow).join('')}${sp.length > 3 ? `<details class="gx-rest"><summary>지역 ${sp.length - 3}곳 더</summary>${sp.slice(3).map(spotRow).join('')}</details>` : ''}</div>`;
+}
 async function gatherCodex(box) {
   const o = await load('world_gather_codex_snapshot', undefined, { maxAge: 20000 });
   const items = o.items || [], got = items.filter(x => x.known).length;
@@ -318,7 +328,7 @@ async function gatherCodex(box) {
     ${Object.entries(GCAT).map(([c, cn]) => { const list = items.filter(x => x.cat === c); if (!list.length) return '';
       return panel(`${cn} · ${list.filter(x => x.known).length}/${list.length}`, `<ul class="fish-grid">${list.map(x => x.known ? `<li class="fish-card">
         <b>${esc(x.name)}</b><small>Lv.${x.level}+ · ${fmt.num(x.count)}번 · ${fmt.num(x.qty)}개</small>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}
-        <small class="muted">${esc((x.regions || []).join(', '))}</small></li>` : `<li class="fish-card unknown"><b>???</b><small>${esc(cn)} · Lv.${x.level}+</small><small>아직 거두지 못했습니다</small></li>`).join('')}</ul>`, { ico: 'leaf', cls: 'compact' }); }).join('')}
+        ${spotsHtml(x)}</li>` : `<li class="fish-card unknown"><b>???</b><small>${esc(cn)} · Lv.${x.level}+</small><small>아직 거두지 못했습니다</small></li>`).join('')}</ul>`, { ico: 'leaf', cls: 'compact' }); }).join('')}
     ${codexTitles(o.titles)}`;
 }
 async function fishCodex(body) {
