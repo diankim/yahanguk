@@ -31,6 +31,8 @@ const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 
 const RARITY = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
 let sortKey = 'tier', sortRev = false;
 try { const v = JSON.parse(localStorage.getItem('yh-bag-sort') || 'null'); if (v && SORTS[v.k]) { sortKey = v.k; sortRev = !!v.r; } } catch {}
+// 칸대로 나눠 보기(7.5.9, 제보 63): 같은 물품을 묶음 크기만큼 한 줄(한 칸)씩 나눠 보인다. 기본 켬, 기기에 남김
+let splitView = true; try { splitView = localStorage.getItem('yh-bag-split') !== '0'; } catch {}
 const saveSort = () => { try { localStorage.setItem('yh-bag-sort', JSON.stringify({ k: sortKey, r: sortRev })); } catch {} };
 // 물품별 마지막으로 얻은 시각(서버 world_item_acquired). 기록이 없는 물품은 오래전에 얻은 것으로 본다.
 async function acquiredMap() {
@@ -113,22 +115,33 @@ async function items(body, inv) {
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름·설명)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
     <div class="bag-sort"><label><span>정렬</span><select id="bag-sort">${Object.entries(SORTS).map(([k, [n]]) => `<option value="${k}" ${k === sortKey ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-      <button class="btn small" id="bag-dir" aria-label="정렬 방향 바꾸기">${icon('back', 14)}<span>${SORTS[sortKey][sortRev ? 2 : 1]}</span></button></div>
-    ${rows.length ? `<ul class="inv-list">${rows.map(({ id, n, it }) => {
+      <button class="btn small" id="bag-dir" aria-label="정렬 방향 바꾸기">${icon('back', 14)}<span>${SORTS[sortKey][sortRev ? 2 : 1]}</span></button>
+      <label class="check" title="같은 물품을 묶음 크기만큼 한 칸씩 나눠 보입니다"><input type="checkbox" id="bag-split" ${splitView ? 'checked' : ''}><span>칸대로 나눠 보기</span></label></div>
+    ${rows.length ? `<ul class="inv-list">${rows.flatMap(r => {
+      if (!splitView) return [{ ...r, part: null }];
+      // 장착한 하나는 칸을 쓰지 않으므로 따로, 나머지는 묶음 크기(가득 찬 칸 먼저)로 나눈다
+      const st = stackOf(r.id), out = []; let left = r.n;
+      if (equipped.has(r.id) && left > 0) { out.push({ ...r, part: { q: 1, eq: true, first: true } }); left -= 1; }
+      while (left > 0) { const q = Math.min(st, left); out.push({ ...r, part: { q, st, first: !out.length } }); left -= q; }
+      return out;
+    }).map(({ id, n, it, part }) => {
       // 차지하는 칸(장착한 하나는 칸을 쓰지 않음) · 묶음 크기(제보 23)
       const st = stackOf(id), cells = Math.ceil(Math.max(0, n - (equipped.has(id) ? 1 : 0)) / st);
-      const tags = [it?.tier ? `${it.tier}단계` : '', `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`, equipped.has(id) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
+      const cellTag = part ? (part.eq ? '' : st > 1 ? `한 칸 ${part.q}/${st}` : '') : `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`;
+      const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
+      const showQty = part ? part.q : n, showUse = USABLE[id] && (!part || part.first);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(n)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
-        ${USABLE[id] ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
+        ${showUse ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
   $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
   $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };
+  $('#bag-split', body).onchange = e => { splitView = e.target.checked; try { localStorage.setItem('yh-bag-split', splitView ? '1' : '0'); } catch {} items(body, inv); };
   const qi = $('#bag-q', body);
   // 목록과 함께 검색칸도 다시 그리므로, 한글 조합 중에는 그리지 않고 조합이 끝나면(compositionend) 거른다(조합 중 칸이 바뀌면 「ㅂㅜㅈ」처럼 낱자로 깨진다)
   const redo = () => { q = qi.value; items(body, inv); };
