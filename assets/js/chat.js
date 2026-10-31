@@ -2,7 +2,7 @@
 // 모임 탭은 모임에 든 사람에게만 보이고, 탭 아래 단추로 볼 모임을 하나 골라 그 모임의 말만 보여 준다(모임마다 내가 정한 색으로).
 import { cardName } from './views/card.js';
 import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError, emblem } from './core.js';
-import { onWhisper, openWhisperWindow, whisperFeed } from './whisper.js';
+import { onWhisper, openWhisperWindow, whisperFeed, whisperOut } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput } from './grow.js';
 import { FRAMES, frameTier } from './cosmetics.js';
@@ -518,7 +518,7 @@ function suspend() {
     b.onclick = () => { try { bc?.postMessage({ t: 'chat-close-req' }); } catch {} resume(); };
     top.prepend(b);
   }
-  whisperFeed(true);
+  whisperFeed(!whisperOut()); // 귓속말 새 창이 떠 있으면 그 창이 귓속말을 듣는다
 }
 function resume() {
   if (!away) return;
