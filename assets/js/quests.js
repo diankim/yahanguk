@@ -109,16 +109,16 @@ function grouped(list, b) {
   const here = store.character?.location;
   const keys = [...map.keys()].sort((x, y) => (y === here) - (x === here) || (x === '주 이야기' ? -1 : y === '주 이야기' ? 1 : 0) || x.localeCompare(y, 'ko'));
   return `${b.faction ? `<h3 class="sub-h">세력</h3><ul class="q-list">${factionItem(b.faction)}</ul>` : ''}
-    ${keys.map(k => `<details class="q-grp" data-q-grp="${esc(grp() + ':' + k)}" ${shut().includes(grp() + ':' + k) ? '' : 'open'}>
+    ${keys.map(k => `<details class="q-grp" data-q-grp="${esc(grp() + ':' + k)}" ${opened().includes(grp() + ':' + k) ? 'open' : ''}>
       <summary class="sub-h">${esc(k)}${k === here ? ' <small class="ok">· 지금 여기</small>' : ''} <small class="muted">${map.get(k).length}</small></summary>
       <ul class="q-list">${map.get(k).map(activeItem).join('')}</ul></details>`).join('')}`;
 }
-// 묶음마다 접기(7.5.1, 제보 44): 접은 묶음을 기기에 남긴다
-const SKEY = 'yh-q-shut';
-const shut = () => { try { return JSON.parse(localStorage.getItem(SKEY) || '[]'); } catch { return []; } };
-function setShut(k, closed) {
-  const s = new Set(shut()); closed ? s.add(k) : s.delete(k);
-  try { localStorage.setItem(SKEY, JSON.stringify([...s].slice(-40))); } catch {}
+// 묶음마다 접기(7.5.1, 제보 44): 처음엔 모두 접힌 채로, 펼친 묶음만 기기에 남긴다(7.5.3)
+const OKEY = 'yh-q-open';
+const opened = () => { try { return JSON.parse(localStorage.getItem(OKEY) || '[]'); } catch { return []; } };
+function setOpen(k, open) {
+  const s = new Set(opened()); open ? s.add(k) : s.delete(k);
+  try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
 export const questBox = () => `<section class="panel quest-box" id="quest-box"></section>`;
@@ -146,7 +146,7 @@ export async function fillQuests(box) {
         ${other.length ? `<details class="q-more"><summary>다른 곳에서 받을 수 있는 퀘스트 ${other.length}개</summary><ul class="q-list">${other.map(availItem).join('')}</ul></details>` : ''}
       </div></details>`;
   $('[data-q-fold]', box).addEventListener('toggle', e => { try { localStorage.setItem(foldKey, e.target.open ? '1' : '0'); } catch {} });
-  $$('[data-q-grp]', box).forEach(d => d.addEventListener('toggle', () => setShut(d.dataset.qGrp, !d.open)));
+  $$('[data-q-grp]', box).forEach(d => d.addEventListener('toggle', () => setOpen(d.dataset.qGrp, d.open)));
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
   $$('[data-q-group]', box).forEach(x => x.onclick = () => { try { localStorage.setItem(GKEY, x.dataset.qGroup); } catch {} fillQuests(box); });
   // 10장 최종 결전: 혼자 또는 같은 곳의 파티원(4명까지)과 결전을 연다 — 판정은 world_raid_final_start
