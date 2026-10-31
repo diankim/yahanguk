@@ -139,11 +139,21 @@ const FIXED = {
 // 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
 const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
+// 계열별 효과 키(7.5.0 기술 칭호): cq_<계열> 제작 품질 · cs_ 재료 아낌 · cx_ 하나 더 · gq_ 채집량 · gr_ 희귀품
+const LINE_FX = { cq: '제작 품질', cs: '재료 아낄 확률', cx: '하나 더 만들 확률', gq: '채집량', gr: '희귀품 발견' };
+function fxLabel(k) {
+  if (FIXED[k]) return FIXED[k];
+  if (k === 'food_dur_pct') return '음식 기운 지속';
+  const m = /^(cq|cs|cx|gq|gr)_(.+)$/.exec(k);
+  if (!m) return '기타 효과';
+  const line = m[2] === 'all' ? (m[1][0] === 'g' ? '모든 채집' : '모든 제작') : (FIXED[m[2]] || m[2]);
+  return `${line} ${LINE_FX[m[1]]}`;
+}
 export function effectText(effects, potency = 1) {
   return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && k !== 'req_rank' && Number(v)).map(([k, v]) => {
     const n = Math.round(Number(v) * (potency || 1) * 10) / 10;
     if (PER_ACTION.has(k)) return `${FIXED[k]} -${Math.abs(n)}`;
-    return `${FIXED[k] || '기타 효과'} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) ? '' : '%'}`;
+    return `${fxLabel(k)} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) || k.startsWith('cq_') ? '' : '%'}`;
   });
 }
 // 효과가 이로운지(받는 피해·이동 시간·침식은 줄어야 좋다)
