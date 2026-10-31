@@ -182,6 +182,7 @@ function draw(box, id, inv, prices, mode) {
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${suitedJobs(it).length ? `<div><dt>어울리는 직업</dt><dd>${esc(suitedJobs(it).map(nameOf).join(' · '))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
+      ${/\d+분|든든함|속이 따뜻함|기운 충천|바다의 복/.test(USABLE[id] || '') ? `<div><dt>다시 쓰면</dt><dd>같은 기운이 남아 있으면 그 시간에 더해집니다(두 번 몫까지)</dd></div>` : ''}
       <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>
       ${it && GEAR.has(it.category) ? `<div><dt>${slotOf(it) === 'craft' ? '쓰는 조건(가방에 두면)' : '장착 조건'}</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
     </dl>
