@@ -141,7 +141,7 @@ let busy = false;
 // 서버(world_battle_action)가 남기는 기록 문구로 알아보고, 같은 알림은 5초에 한 번만
 const WEAK = [[/쏠 것이 떨어져/, '화살(탄)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
 const weakAt = {};
-function weakNote(lines) {
+export function weakNote(lines) {
   const text = (lines || []).join('\n');
   for (const [re, msg] of WEAK) if (re.test(text) && Date.now() - (weakAt[msg] || 0) > 5000) { weakAt[msg] = Date.now(); toast(msg, 'warn'); }
 }

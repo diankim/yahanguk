@@ -2,11 +2,12 @@
 // 실시간 구독 없이 world_pfight_snapshot을 읽는다. 다시 읽는 때: 라운드 마감 직후 한 번 · 내가 고른 뒤 다른 사람을 기다리는 동안 2초마다 · 모이는 중 3초마다.
 import { rpc, emit, esc, icon, fmt, $, $$, toast, nameOf, loadCharacter, store, bar, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
-import { INTENT, SKILL, JOB, ITEMS } from './battle.js';
+import { INTENT, SKILL, JOB, ITEMS, weakNote } from './battle.js';
 
 const ACT = { attack: '공격', skill: '기술', guard: '방어', item: '물품', flee: '달아나기' };
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
 
+let seenLog = -1, seenFid = null; // 탄·기력·영력 부족 알림(7.5.9): 처음 그릴 때의 지난 기록은 건너뛰고 새로 붙은 내 줄만 본다
 let el = null, fid = null, snap = null, timer = null, tick = null, skew = 0, sending = false, tray = false;
 
 export async function render(root, sub) {
@@ -53,6 +54,9 @@ function countdown() {
 function draw() {
   if (!el || !snap) return;
   const s = snap, b = s.battle || {}, me = s.me, c = store.character || {};
+  const lg = s.log || [];
+  if (seenFid !== fid) { seenFid = fid; seenLog = lg.length; }
+  else if (lg.length > seenLog) { const mine = `${c.character_name} · `; weakNote(lg.slice(seenLog).filter(l => l.startsWith(mine))); seenLog = lg.length; }
   const pct = s.max_hp ? Math.max(0, Math.min(100, s.hp / s.max_hp * 100)) : 100;
   const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[s.intent] || INTENT.strike);
   const tgt = (s.members || []).find(m => m.id === s.target_id);
