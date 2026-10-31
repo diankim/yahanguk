@@ -65,7 +65,7 @@ function draw(fresh = []) {
   if (!host || !data?.battle) return;
   const b = data.battle, c = store.character, w = data.weapon || { type: 'melee', name: '맨손' };
   const ef = effectiveness(w.type, b.eff);
-  // 기믹(g:키 · 터뜨리는 턴 g!:키)은 이름과 낌새만 보인다. 대처법은 도감에서 쓰러뜨린 뒤에 열린다.
+  // 요괴의 수법(g:키 · 터뜨리는 턴 g!:키)은 이름과 낌새만 보인다. 대처법은 도감에서 쓰러뜨린 뒤에 열린다.
   const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[b.intent] || INTENT.strike);
   const skill = SKILL[c.job_key] || ['기술', ''];
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
@@ -109,7 +109,7 @@ function draw(fresh = []) {
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;
   $('#mech-info', host)?.addEventListener('click', () => openModal({ title: `갈래 · ${b.kind_name}`, body: `<p>${esc(b.kind_desc || '')}</p>
-    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${b.eff.job ? ` · ${esc(JOB[b.eff.job] || '')} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 기믹 파훼법이 적힙니다.</p>'}` }));
+    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${b.eff.job ? ` · ${esc(JOB[b.eff.job] || '')} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 수법 대처법이 적힙니다.</p>'}` }));
   $$('[data-a]', host).forEach(btn => btn.onclick = async () => {
     const a = btn.dataset.a;
     if (a === 'item') { $('#item-tray', host).hidden = !$('#item-tray', host).hidden; return; }

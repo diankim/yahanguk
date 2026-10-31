@@ -121,7 +121,7 @@ function askVote(r) {
 const voteHtml = v => v ? `<p class="hint warn">${icon('flag', 14)}<span><b>${esc(v.by)}</b>의 포기 제안 · 동의 <b>${v.yes}/${v.need}</b> · <span data-until="${esc(v.until)}">${left(v.until)}</span> 남음${v.mine ? ' · 나는 동의함' : ''}</span></p>` : '';
 
 function joinHtml(r, me) {
-  // 서버 보스는 토벌 중에도 그 지역에서 합류할 수 있다(돌발 임무처럼, 늦을수록 기여도는 덜 쌓인다)
+  // 서버 보스는 토벌 중에도 그 지역에서 합류할 수 있다(늦게 와도 합류할 수 있고, 늦을수록 기여도는 덜 쌓인다)
   const late = r.kind === 'world' && r.status === 'fight';
   if (r.status !== 'signup' && !late) return '';
   if (late && me.joined) return '';
