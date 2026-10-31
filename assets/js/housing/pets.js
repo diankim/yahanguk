@@ -538,17 +538,17 @@ export const PETS = {
     likes: "treat_herb",
     baby: {
       pal: { a: "#ecc462", s: "#c8983a", m: "#4aa090", h: "#f6f0d8", c: "#f8ecc4", n: "#8a5a30", f: "#5a4030", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
-      idle: [".....k........", "....khkk...k..", ".....khakkkak.", "....kmaaaaaaak", "...kmmaieaieak", ".k.kmmaeeaeeak", "kmkmmkpacncapk", ".kmmasaaccckk.", ".kaasasaaaak..", "..kasasaaask..", "..kakakkakak..", "..kfkfkkfkfk..", "...k.k..k.k..."],
-      blink: [".....k........", "....khkk...k..", ".....khakkkak.", "....kmaaaaaaak", "...kmmaaaaaaak", ".k.kmmakkakkak", "kmkmmkpacncapk", ".kmmasaaccckk.", ".kaasasaaaak..", "..kasasaaask..", "..kakakkakak..", "..kfkfkkfkfk..", "...k.k..k.k..."],
-      step: [".....k........", "....khkk...k..", ".....khakkkak.", "....kmaaaaaaak", "...kmmaieaieak", ".k.kmmaeeaeeak", "kmkmmkpacncapk", ".kmmasaaccckk.", ".kaasasaaaak..", "..kasasaaask..", "...kakakakak..", "...kfkfkfkkfk.", "....k.k.k..k.."],
-      sleep: [".....k........", "....khkk...k..", ".....khakkkak.", "....kmaaaaaaak", ".k.kmmakkakkak", "kmkmmkpacncapk", ".kmmasaacccck.", ".kaasasasaaaak", "..kffaaaaaffk.", "...kkkkkkkkk.."]
+      idle: [".......k.k.k..", ".....kkakhkak.", "....kmaaaaaaak", "...kmmaieaieak", ".k.kmmaeeaeeak", "kmkmmkpacncapk", ".kmmasaaccckk.", ".kaasasaaaak..", "..kasasaaask..", "..kakakkakak..", "..kfkfkkfkfk..", "...k.k..k.k..."],
+      blink: [".......k.k.k..", ".....kkakhkak.", "....kmaaaaaaak", "...kmmaaaaaaak", ".k.kmmakkakkak", "kmkmmkpacncapk", ".kmmasaaccckk.", ".kaasasaaaak..", "..kasasaaask..", "..kakakkakak..", "..kfkfkkfkfk..", "...k.k..k.k..."],
+      step: [".......k.k.k..", ".....kkakhkak.", "....kmaaaaaaak", "...kmmaieaieak", ".k.kmmaeeaeeak", "kmkmmkpacncapk", ".kmmasaaccckk.", ".kaasasaaaak..", "..kasasaaask..", "...kakakakak..", "...kfkfkfkkfk.", "....k.k.k..k.."],
+      sleep: [".......k.k.k..", ".....kkakhkak.", "....kmaaaaaaak", ".k.kmmakkakkak", "kmkmmkpacncapk", ".kmmasaacccck.", ".kaasasasaaaak", "..kffaaaaaffk.", "...kkkkkkkkk.."]
     },
     adult: {
       pal: { a: "#ecc462", s: "#c8983a", m: "#4aa090", h: "#f6f0d8", c: "#f8ecc4", n: "#8a5a30", f: "#5a4030", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
-      idle: ["......k...........", ".....khk..........", "......khkk....k...", ".......khakkkkak..", ".......kmaaaaaaak.", "......kmmaieaieak.", "......kmmaeeaeeak.", ".....kmmmpacncapk.", ".k....kkmmaaccak..", "kmk.kkmmmaaaccck..", "kmmkaaasasasaack..", ".kmmasasasasaaak..", "..kkasasasasaask..", "...kaakakkkkakak..", "...kakkak..kakkak.", "...kfkkfk..kfkkfk.", "....k..k....k..k.."],
-      blink: ["......k...........", ".....khk..........", "......khkk....k...", ".......khakkkkak..", ".......kmaaaaaaak.", "......kmmaaaaaaak.", "......kmmakkakkak.", ".....kmmmpacncapk.", ".k....kkmmaaccak..", "kmk.kkmmmaaaccck..", "kmmkaaasasasaack..", ".kmmasasasasaaak..", "..kkasasasasaask..", "...kaakakkkkakak..", "...kakkak..kakkak.", "...kfkkfk..kfkkfk.", "....k..k....k..k.."],
-      step: ["......k...........", ".....khk..........", "......khkk....k...", ".......khakkkkak..", ".......kmaaaaaaak.", "......kmmaieaieak.", "......kmmaeeaeeak.", ".....kmmmpacncapk.", ".k....kkmmaaccak..", "kmk.kkmmmaaaccck..", "kmmkaaasasasaack..", ".kmmasasasasaaak..", "..kkasasasasaask..", "...kaakakkkakak...", "..kakk.kakak.kak..", "..kfk..kfkfk.kfk..", "...k....k.k...k..."],
-      sleep: ["......k...........", ".....khk..........", "......khkk....k...", ".......khakkkkak..", ".......kmaaaaaaak.", "......kmmakkakkak.", ".k...kmmmpacncapk.", "kmk.kkmmmaaacckk..", "kmmkaaasasasaacck.", ".kmmasasasasasaaak", "..kkafasasasaafak.", "....kffffffffffk..", ".....kkkkkkkkkk..."]
+      idle: ["............k.....", "..........kkhkk...", "........kkakhkak..", ".......kmaaaaaaak.", "......kmmaieaieak.", "......kmmaeeaeeak.", ".....kmmmpacncapk.", ".k....kkmmaaccak..", "kmk.kkmmmaaaccck..", "kmmkaaasasasaack..", ".kmmasasasasaaak..", "..kkasasasasaask..", "...kaakakkkkakak..", "...kakkak..kakkak.", "...kfkkfk..kfkkfk.", "....k..k....k..k.."],
+      blink: ["............k.....", "..........kkhkk...", "........kkakhkak..", ".......kmaaaaaaak.", "......kmmaaaaaaak.", "......kmmakkakkak.", ".....kmmmpacncapk.", ".k....kkmmaaccak..", "kmk.kkmmmaaaccck..", "kmmkaaasasasaack..", ".kmmasasasasaaak..", "..kkasasasasaask..", "...kaakakkkkakak..", "...kakkak..kakkak.", "...kfkkfk..kfkkfk.", "....k..k....k..k.."],
+      step: ["............k.....", "..........kkhkk...", "........kkakhkak..", ".......kmaaaaaaak.", "......kmmaieaieak.", "......kmmaeeaeeak.", ".....kmmmpacncapk.", ".k....kkmmaaccak..", "kmk.kkmmmaaaccck..", "kmmkaaasasasaack..", ".kmmasasasasaaak..", "..kkasasasasaask..", "...kaakakkkakak...", "..kakk.kakak.kak..", "..kfk..kfkfk.kfk..", "...k....k.k...k..."],
+      sleep: ["............k.....", "..........kkhkk...", "........kkakhkak..", ".......kmaaaaaaak.", "......kmmakkakkak.", ".k...kmmmpacncapk.", "kmk.kkmmmaaacckk..", "kmmkaaasasasaacck.", ".kmmasasasasasaaak", "..kkafasasasaafak.", "....kffffffffffk..", ".....kkkkkkkkkk..."]
     }
   },
   little_cheongryong: {
