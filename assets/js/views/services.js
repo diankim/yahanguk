@@ -461,7 +461,7 @@ export function openDirectTrade(to) {
   const m = openModal({ title: '거래소', wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
   renderMarket(box);
-  const offc = on('changed', () => { if (box.isConnected) renderMarket(box); else offc(); });
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderMarket(box)); else offc(); });
 }
 
 /* ── 창고 ─────────────────────────────────────────────── */
@@ -559,11 +559,21 @@ export async function renderStorage(box) {
 }
 
 // 가방 화면 등 어디서나 여는 창고 창(안전지대 밖에서는 보기만)
+// 맡기기·꺼내기·사기 뒤 창을 다시 그려도 보던 자리를 지킨다(7.5.7, 사용자 요청 — 전에는 「불러오는 중」으로 줄었다 다시 그려지며 맨 위로 올라갔다)
+function scrollerOf(el) {
+  for (let p = el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p; }
+  return document.scrollingElement;
+}
+export async function keepScroll(box, fn) {
+  const sc = scrollerOf(box), top = sc?.scrollTop || 0;
+  box.style.minHeight = `${box.offsetHeight}px`;
+  try { await fn(); } finally { box.style.minHeight = ''; if (sc) sc.scrollTop = top; }
+}
 export function openStorage() {
   const m = openModal({ title: '창고', wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
   renderStorage(box);
-  const offc = on('changed', () => { if (box.isConnected) renderStorage(box); else offc(); });
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderStorage(box)); else offc(); });
 }
 
 /* ── 마구간 ───────────────────────────────────────────── */

@@ -6,7 +6,7 @@ import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, invalidate, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
-import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage } from './services.js';
+import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, STYLE } from './battle.js';
 import { setScene } from '../sound.js';
@@ -423,7 +423,7 @@ function openFacility(k, s) {
   const box = $('.fac-body', m);
   const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : k === 'storage' ? renderStorage : renderShop)(box);
   fill();
-  const offc = on('changed', () => { if (box.isConnected) fill(); else offc(); });
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, fill); else offc(); }); // 사고팔고 맡긴 뒤에도 보던 자리 그대로(7.5.7)
 }
 
 // 예상 회복량(서버 world_field_rest와 같은 식). 바깥 야영은 ⅔이고, 가득 찬 수치는 그만큼 덜 오른다.
