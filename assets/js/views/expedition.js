@@ -25,6 +25,8 @@ const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', s
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search', guard: 'shield', foe: 'flame' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
+// 창을 열 때 한 번, 지금 서 있는 답사 지점(current_exploration_node_id)을 보낼 곳으로 먼저 고른다(7.5.5, 제보)
+let preferHere = false;
 // 같은 설정으로 다시 보내기: 마지막으로 보낸 곳·기간·태세를 기기에 남긴다
 const LAST_KEY = 'yh-exp-last';
 const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch { return null; } };
@@ -68,6 +70,7 @@ function partyBox(info) {
 // 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
 export async function openExpeditionWindow(preset) {
   if (preset?.node) pick = { node: preset.node, minutes: Number(preset.minutes) || pick.minutes, stance: preset.stance || pick.stance };
+  preferHere = !preset?.node;
   const m = openModal({ title: '원정', wide: true, body: `<div class="exp-body">${loading()}</div>` });
   const box = $('.exp-body', m);
   const fill = async () => { try { renderExpedition(box, await load('world_expedition_overview')); } catch (e) { box.innerHTML = errorBox(e.message); } };
@@ -81,6 +84,8 @@ export function renderExpedition(box, ov) {
   if (ov?.active) return renderActive(box, ov.active);
   const opts = ov?.options || [];
   if (!opts.length) { box.innerHTML = empty('원정을 보낼 곳이 없습니다. 바깥 지역에서 탐색으로 장소를 먼저 찾으세요.', 'map'); return; }
+  const hereId = c?.current_exploration_node_id;
+  if (preferHere) { preferHere = false; if (opts.some(o => o.node_id === hereId && !o.locked)) pick.node = hereId; }
   if (!opts.some(o => o.node_id === pick.node && !o.locked)) pick.node = opts.find(o => !o.locked)?.node_id || null;
   // 서버는 가지마다 20개까지만 챙긴다(world_expedition_start) — 고르는 칸과 건량 계산도 20을 넘지 않게
   const SUP_CAP = 20, capOf = k => Math.min(SUP_CAP, Number(ov.supplies?.[k] || 0));
@@ -99,8 +104,8 @@ export function renderExpedition(box, ov) {
     <div class="exp-plan">
       <div class="exp-col">
         <h3 class="sub-h">보낼 곳</h3>
-        <div class="ground-list">${opts.map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
-            <header><b>${esc(o.name)}</b>${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
+        <div class="ground-list">${[...opts.filter(o => o.node_id === hereId), ...opts.filter(o => o.node_id !== hereId)].map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
+            <header><b>${esc(o.name)}</b>${o.node_id === hereId ? chip('지금 있는 곳', 'ok') : ''}${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
             <small>${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+ · 운임 노정패 ${o.fare || 1}`}</small></button>`).join('')}</div>
         <h3 class="sub-h">기간</h3><div class="chip-pick" data-pick="minutes">${DURATIONS.map(([m, l]) => `<button data-v="${m}" class="${m === pick.minutes ? 'on' : ''}">${l}</button>`).join('')}</div>
         <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
