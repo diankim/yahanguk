@@ -9,7 +9,7 @@ export async function load(name, args, { maxAge = 0 } = {}) {
   const key = name + JSON.stringify(args ?? null);
   if (maxAge && store.snaps[key] && Date.now() - (cacheAt.get(key) || 0) < maxAge) return store.snaps[key];
   if (inflight.has(key)) return inflight.get(key);
-  const p = (name === 'world_inventory_snapshot' ? inventorySnap() : rpc(name, args)).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); if (name === 'world_rest_status') { armAlarm('rest', 'short', d?.short_ready_at); armAlarm('rest', 'full', d?.full_ready_at); } return d; })
+  const p = (name === 'world_inventory_snapshot' ? inventorySnap() : rpc(name, args)).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); if (name === 'world_rest_status') { armAlarm('rest_short', 'end', d?.short_ready_at); armAlarm('rest_full', 'end', d?.full_ready_at); } return d; })
     .finally(() => inflight.delete(key));
   inflight.set(key, p);
   return p;

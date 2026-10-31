@@ -622,7 +622,7 @@ export function playSfx(kind) {
 // 종류마다 설정 › 소리에서 켜고 끈다(sound.alarm, 이 기기에 저장). 효과음을 꺼도 울리고, 크기는 효과음 음량을 따른다(너무 작으면 25%).
 // 채팅·귓속말 새 창에서도 울린다(그 창이 말을 받는 동안 본 창은 받지 않으므로). 같은 일로 창 여럿이 함께 울리지 않게 key를 기기에 1분 남긴다.
 export const ALARMS = [['whisper', '귓속말', '귓속말이 오면'], ['mention', '내 이름 부르기', '채팅에서 누가 @내 이름을 쓰면'], ['stamina', '탐색력 가득', '탐색력이 가득 차면'],
-  ['rest', '휴식 가능', '잠깐 쉬기·푹 쉬기를 다시 할 수 있게 되면'], ['exp', '원정 귀환', '원정대가 돌아오면'], ['idle', '자율 활동 끝', '자율 활동이 끝나 보상을 받을 수 있으면']];
+  ['rest_short', '잠깐 쉬기 가능', '잠깐 쉬기 쿨타임(10분)이 끝나면'], ['rest_full', '푹 쉬기 가능', '푹 쉬기 쿨타임(30분)이 끝나면'], ['exp', '원정 귀환', '원정대가 돌아오면'], ['idle', '자율 활동 끝', '자율 활동이 끝나 보상을 받을 수 있으면']];
 let alarmReady = false;
 export const alarmOn = kind => sound.alarm?.[kind] !== false;
 export function setAlarm(kind, on) { sound.alarm = { ...(sound.alarm || {}), [kind]: !!on }; saveSound(); }
@@ -630,6 +630,8 @@ export function playAlarm(kind, key) {
   if (POPWIN && !alarmReady) { alarmReady = true; loadSound(); }
   if (kind && !alarmOn(kind)) return;
   if (away || !ensureCtx()) return;
+  // 잠깐·푹 쉬기가 거의 같이 끝나면 한 번만(둘 다 켰을 때 10초 안에 겹친 것은 건너뜀)
+  if (/^rest_/.test(kind || '')) { const r = 'yh-alarm:rest-any', l = Number(localStorage.getItem(r) || 0); if (Date.now() - l < 10000) return; try { localStorage.setItem(r, String(Date.now())); } catch {} }
   if (key) try { const k = 'yh-alarm:' + key; if (localStorage.getItem(k)) return; localStorage.setItem(k, String(Date.now())); setTimeout(() => { try { localStorage.removeItem(k); } catch {} }, 60000); } catch {}
   try {
     ctx.resume?.();
