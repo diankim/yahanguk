@@ -6,8 +6,8 @@ import { on } from './core.js';
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
 let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
 const scene = { territory: 'capital', safe: false, battle: false, exp: false };
-// 전투 음악: 현장 토벌 중(battle)이거나 원정대가 길에 나가 있는 동안(exp, 7.4.1 — 원정은 회차마다 싸우므로)
-const inBattle = () => scene.battle || scene.exp;
+// 전투 음악: 원정대가 길에 나가 있는 동안(exp, 7.4.1 — 원정은 회차마다 싸우므로). 현장 토벌(battle)은 곡을 바꾸지 않는다(7.5.6, 사용자 요청 — 탐색 중 마주칠 때마다 곡이 끊겼다)
+const inBattle = () => scene.exp;
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
 let away = false;
