@@ -134,7 +134,7 @@ const FIXED = {
   // 서식지
   river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
   // 날씨·시간대
-  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
+  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '가랑비', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
 // 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
@@ -218,6 +218,7 @@ const ICONS = {
   sun: 'M12 16a4 4 0 100-8 4 4 0 000 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
   cloud: 'M7 18h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 18z',
   rain: 'M7 14h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3',
+  drizzle: 'M7 14h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 14zM9 17.5l-.5 1.5M14 18.5l-.5 1.5',
   fog: 'M4 9h16M3 13h18M5 17h14M7 5h10',
   wind: 'M3 8h11a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h8',
   snow: 'M12 2v20M4 7l16 10M20 7L4 17M9 4l3 2 3-2M9 20l3-2 3 2',
@@ -232,7 +233,7 @@ const ICONS = {
   up: 'M6 14l6-6 6 6',
   down: 'M6 10l6 6 6-6',
 };
-export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
+export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', drizzle: 'drizzle', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
 export function icon(name, size = 18) {
   const p = ICONS[name] || ICONS.spark;
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg>`;

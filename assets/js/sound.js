@@ -545,6 +545,13 @@ const BUILD = {
     gust.gain.value = 0.7; glfo.frequency.value = 0.045; glg.gain.value = 0.3; glfo.connect(glg); glg.connect(gust.gain);
     n.connect(lp); lp.connect(gust); gust.connect(g); lfo.start(); glfo.start(); return [n, lfo, glfo];
   },
+  // 가랑비(7.5.9i): 쏟아지는 쏴아 대신 낮고 부드러운 사르르 — 높은 결을 깎고(2.4kHz 아래) 아주 느리게 부풀었다 잦아든다
+  drizzle: g => {
+    const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(), sw = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    hp.type = 'highpass'; hp.frequency.value = 350; lp.type = 'lowpass'; lp.frequency.value = 2400; lp.Q.value = 0.4;
+    sw.gain.value = 0.75; lfo.frequency.value = 0.07; lg.gain.value = 0.25; lfo.connect(lg); lg.connect(sw.gain);
+    n.connect(hp); hp.connect(lp); lp.connect(sw); sw.connect(g); lfo.start(); return [n, lfo];
+  },
   water: g => { const n = noiseSrc(brownBuf), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; n.connect(lp); lp.connect(g); return [n]; },
   hiss: g => { const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5200; n.connect(hp); hp.connect(g); return [n]; },
   mist: g => {
@@ -561,7 +568,7 @@ function critters() {
   if (!ctx || !sound.ambOn) { critterTimer = setTimeout(critters, 4000); return; }
   const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
-  const quiet = w === 'rain' || w === 'snow' || w === 'wind';
+  const quiet = w === 'rain' || w === 'drizzle' || w === 'snow' || w === 'wind';
   if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.55 : 0.3)) {
     const n = 2 + Math.floor(Math.random() * 4), base = 2600 + Math.random() * 1200;
     for (let i = 0; i < n; i++) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const s = t + i * (0.09 + Math.random() * 0.05);
@@ -573,19 +580,28 @@ function critters() {
       envGain(g, s, ph === 'night' ? 0.022 : 0.014, 0.004, 0.03); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.05); }
     if (ph === 'night' && Math.random() < 0.05) { [0, 0.45].forEach((d, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i ? 340 : 390; envGain(g, t + 1 + d, 0.03, 0.06, 0.35); o.connect(g); g.connect(ambBus); o.start(t + 1 + d); o.stop(t + 1.6 + d); }); }
   }
+  // 가랑비: 잎·처마에 떨어지는 작은 빗방울(톡·토독)과 가끔 낮은 처마 물방울
+  if (w === 'drizzle' && !under) {
+    const n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) { const s = t + Math.random() * 0.45, o = ctx.createOscillator(), g = ctx.createGain(), f = 1300 + Math.random() * 1500; o.type = 'sine';
+      o.frequency.setValueAtTime(f, s); o.frequency.exponentialRampToValueAtTime(f * 0.7, s + 0.04); envGain(g, s, 0.008 + Math.random() * 0.008, 0.002, 0.045); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.08); }
+    if (Math.random() < 0.12) { const s = t + 0.2 + Math.random() * 0.3, o = ctx.createOscillator(), g = ctx.createGain(), f = 520 + Math.random() * 260; o.type = 'sine';
+      o.frequency.setValueAtTime(f * 1.25, s); o.frequency.exponentialRampToValueAtTime(f, s + 0.06); envGain(g, s, 0.02, 0.003, 0.14); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.2); }
+  }
   if (w === 'rain' || w === 'fog' || under) {
     if (Math.random() < (w === 'rain' ? 0.8 : 0.3)) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const f = 1800 + Math.random() * 2000;
       o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.05); envGain(g, t, 0.025, 0.002, 0.06); o.connect(g); g.connect(ambBus); o.start(t); o.stop(t + 0.1); }
   }
-  const gap = ph === 'dusk' || ph === 'night' ? 500 + Math.random() * 900 : 1800 + Math.random() * 4000;
+  const gap = w === 'drizzle' && !under ? 350 + Math.random() * 500 : ph === 'dusk' || ph === 'night' ? 500 + Math.random() * 900 : 1800 + Math.random() * 4000;
   critterTimer = setTimeout(critters, gap);
 }
 function updateAmbience() {
   if (!ctx) return;
   const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   setLayer('rain', w === 'rain' ? 0.12 : 0, BUILD.rain);
-  setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
-  setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : 0, BUILD.water);
+  setLayer('drizzle', w === 'drizzle' ? (under ? 0.035 : 0.07) : 0, BUILD.drizzle);
+  setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06, drizzle: 0.04 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
+  setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : w === 'drizzle' ? 0.06 : 0, BUILD.water);
   setLayer('hiss', w === 'snow' ? 0.012 : 0, BUILD.hiss);
   setLayer('mist', w === 'bloodmist' ? 0.05 : 0, BUILD.mist);
 }

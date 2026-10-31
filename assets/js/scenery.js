@@ -120,7 +120,7 @@ LAND.default = LAND.wild;
 
 /* ── 하늘: 해·달과 둘레의 고리, 구름 띠, 별 ─────────────────── */
 function sky(phase, weather) {
-  const dim = ['cloudy', 'rain', 'fog', 'snow', 'bloodmist'].includes(weather);
+  const dim = ['cloudy', 'rain', 'drizzle', 'fog', 'snow', 'bloodmist'].includes(weather);
   const bands = (n, y0) => Array.from({ length: n }, (_, i) => `<rect x="${330 + i * 70 + (i % 2) * 24}" y="${y0 + (i % 3) * 9}" width="${70 + (i % 2) * 40}" height="5" rx="2.5"/>`).join('');
   let out = '';
   if (phase === 'night') {
