@@ -109,11 +109,36 @@ export function openWhisper(name, id) { openWhisperWindow({ name, id }); }
 
 function placePanel() {
   const wide = matchMedia('(min-width: 1280px)').matches;
-  if (wide) { col.append(panel); document.body.classList.remove('chat-open'); }
+  if (wide) { col.append(panel); document.body.classList.remove('chat-open'); lockSheetPage(false); fitSheetToKeyboard(); }
   else if (!document.body.classList.contains('chat-open')) col.append(panel);
+}
+// 휴대폰 시트(7.6.3c, 사용자 요청 — 입력칸을 누르면 키패드가 올라오며 시트와 함께 뒤 화면까지 밀려 올라갔다):
+// 시트가 열려 있는 동안 바탕 문서를 그 자리에 고정하고(body position fixed), 시트는 키패드 바로 위(visualViewport 아래 끝)에 붙인다.
+// 바탕이 스크롤되지 않으니 브라우저가 입력칸을 보이려고 화면 전체를 끌어올리지 않는다.
+let sheetLockY = null;
+function lockSheetPage(on) {
+  const b = document.body.style;
+  if (on && sheetLockY == null) {
+    sheetLockY = window.scrollY;
+    Object.assign(b, { position: 'fixed', top: `-${sheetLockY}px`, left: '0', right: '0', width: '100%' });
+  } else if (!on && sheetLockY != null) {
+    const y = sheetLockY; sheetLockY = null;
+    Object.assign(b, { position: '', top: '', left: '', right: '', width: '' });
+    window.scrollTo(0, y);
+  }
+}
+function fitSheetToKeyboard() {
+  const vv = window.visualViewport;
+  if (!vv || !document.body.classList.contains('chat-open') || !matchMedia('(max-width: 1099px)').matches) { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); return; }
+  const kb = Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop));
+  if (kb > 40) { col.style.setProperty('--kb', `${kb}px`); col.style.setProperty('--vvh', `${Math.round(vv.height)}px`); }
+  else { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); }
+  if (vv.offsetTop > 0 && sheetLockY != null) window.scrollTo(0, 0); // 브라우저가 화면을 끌어올렸으면 되돌린다(바탕은 고정돼 있어 위치가 바뀌지 않는다)
 }
 function toggleSheet(open) {
   document.body.classList.toggle('chat-open', open);
+  if (matchMedia('(max-width: 1099px)').matches) lockSheetPage(open); // 아래에서 올라오는 시트일 때만(넓은 화면은 떠 있는 창이라 바탕을 그대로 둔다)
+  if (!open) fitSheetToKeyboard();
   // 모바일에서는 시트를 열 때 키패드를 띄우지 않는다(입력칸을 눌렀을 때만). 마우스를 쓰는 화면에서만 바로 입력칸으로 간다.
   if (open) { unread = 0; badge(); forceEnd = true; applyHeight(); requestAnimationFrame(() => $('#chat-form', panel)?._fit?.()); loadNew(); if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#chat-form textarea', panel)?.focus({ preventScroll: true }), 50); scrollEnd(); }
 }
@@ -472,7 +497,8 @@ function bindGrip() {
   // 손잡이를 두 번 누르면 가장 넓게 ↔ 처음 크기
   grip.addEventListener('dblclick', () => { const [, hi] = sheetBounds(); const big = col.getBoundingClientRect().height >= hi - 4; try { big ? localStorage.removeItem(H_KEY) : localStorage.setItem(H_KEY, String(hi)); } catch {} applyHeight(big ? 0 : hi); });
   grip.addEventListener('keydown', e => { if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault(); const h = col.getBoundingClientRect().height + (e.key === 'ArrowUp' ? 40 : -40); applyHeight(h); try { localStorage.setItem(H_KEY, String(Math.round(h))); } catch {} });
-  window.visualViewport?.addEventListener('resize', () => { if (document.body.classList.contains('chat-open')) applyHeight(); });
+  window.visualViewport?.addEventListener('resize', () => { if (document.body.classList.contains('chat-open')) { applyHeight(); fitSheetToKeyboard(); } });
+  window.visualViewport?.addEventListener('scroll', () => { if (document.body.classList.contains('chat-open')) fitSheetToKeyboard(); });
   // 입력칸을 누르면(휴대폰은 키패드가 올라오며 목록이 가려진다) 가장 아래 말을 보인다(7.3.6)
   $('#chat-form textarea', panel)?.addEventListener('focus', () => {
     const go = () => { forceEnd = true; scrollEnd(); };

@@ -344,7 +344,7 @@ textarea { resize: none; }
   .wh.thread-open .wh-side { display: none; } .wh:not(.thread-open) .wh-main { display: none; }
   .wh-back { display: inline-grid; }
 }
-body.chat-open .chat-col { display: block; position: fixed; z-index: 70; left: 0; right: 0; bottom: 0; height: var(--chat-h, min(78dvh, 640px)); border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; animation: rise .2s ease-out; }
+body.chat-open .chat-col { display: block; position: fixed; z-index: 70; left: 0; right: 0; bottom: var(--kb, 0px); height: min(var(--chat-h, min(78dvh, 640px)), calc(var(--vvh, 100dvh) - 12px)); border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; animation: rise .2s ease-out; }
 body.chat-open::after { content: ''; position: fixed; inset: 0; z-index: 65; background: rgb(0 0 0 / .5); }
 body.chat-open .chat-fab { display: none; }
 
