@@ -211,7 +211,7 @@ async function runAct(btn) {
   }
   if (btn.dataset.house) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('house'); return true; }
   if (btn.dataset.letter) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('party'); return true; }
-  if (btn.dataset.fdown) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('map'); return true; }
+  if (btn.dataset.fdown) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const { focusRegion } = await import('./views/map.js'); focusRegion(n.payload?.location); window.yahangGo('map', 'world'); return true; }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
   if (btn.dataset.goto) {
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');

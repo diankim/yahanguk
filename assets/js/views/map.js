@@ -6,7 +6,7 @@ import { waterUnder, waterOver } from '../water.js';
 import { raidLocks } from './raid.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
-let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set();
+let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set();
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -42,6 +42,8 @@ async function drawWorld(body, soft) {
     safeZones().catch(() => new Map()),
   ]);
   const here = currentRegion(mapData);
+  // 다른 화면이 지역 이름으로 넘겨도(구조 요청 알림 등) 찾아 고른다
+  if (selected && !mapData.regions.some(r => r.region_id === selected)) selected = mapData.regions.find(r => r.region_name === selected)?.region_id || null;
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
   const keepScroll = soft && $('#region-q', body)?.value;
   body.innerHTML = `
@@ -82,8 +84,11 @@ function setupMap(here) {
   const b = bounds();
   const fitK = () => Math.min(frame.clientWidth / b.w, frame.clientHeight / b.h);
   if (!view) {
-    const k = fitK() * (frame.clientWidth < 520 ? 2.4 : 1.8);
-    view = { cx: here?.world_x ?? b.x + b.w / 2, cy: here?.world_y ?? b.y + b.h / 2, k };
+    // 다른 화면에서 지역을 짚어 열었으면(focusRegion) 그 지역을 가운데에 더 크게(7.5.7, 구조 요청 「지도에서 보기」)
+    const tgt = focusPending ? mapData.regions.find(r => r.region_id === selected && r.world_x != null) : null; focusPending = false;
+    const k = fitK() * (frame.clientWidth < 520 ? (tgt ? 3.4 : 2.4) : (tgt ? 2.8 : 1.8));
+    const at = tgt || here;
+    view = { cx: at?.world_x ?? b.x + b.w / 2, cy: at?.world_y ?? b.y + b.h / 2, k };
   }
   const minK = () => fitK() * 0.9, maxK = () => fitK() * 6;
   const clamp = () => {
@@ -432,10 +437,10 @@ async function drawTravel(body) {
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   // 탈것에서 내리기(6.1.1): 걸어 다니기 — 서버 world_mount_unequip
   const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
-  $$('[data-goto]', body).forEach(b => b.onclick = () => { selected = b.dataset.goto; view = null; switchTo('world'); });
+  $$('[data-goto]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.goto); switchTo('world'); });
   const span = $('[data-arrive]', body);
   if (span) { const t = setInterval(() => { if (!span.isConnected) return clearInterval(t); span.textContent = `${fmt.remain(Number(span.dataset.arrive) - Date.now())} 후 도착`; }, 1000); }
 }
 function switchTo(k) { sub = k; history.replaceState(null, '', `#/map/${k}`); render(el, k); }
 // 다른 화면(사건 바로가기 등)에서 특정 지역을 골라 지도를 열 때 쓴다.
-export function focusRegion(id) { selected = id; view = null; }
+export function focusRegion(id) { selected = id; view = null; focusPending = true; }
