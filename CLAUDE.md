@@ -473,7 +473,7 @@
 - 떠나기·옮기기: world_leave_major_faction(원정 중 불가, 평판 0, 세력 채팅은 RLS가 지금 소속을 따르므로 바로 안 보임, 쌓은 영향력은 세력에 남음). world_join_major_faction은 떠난 지 12시간이 지나야 가입을 받는다(world_events faction payload.left).
 - 관계(world_faction_relations, −100~100, 동맹 40·우호 15·중립·경계 −15·적대 −40, world_faction_rel·world_faction_stance): 두 세력 조사원이 한 파티로 활동하면 +0.5(쌍마다 한 시간 +1까지), 같은 지역에서 둘 다 3 이상 쌓으면 −0.5(−1.5까지), 처음 값(base)으로 1%씩 돌아간다.
 - 효과(world_social_effect를 world_status_effect_total에 더함): 내 세력 지배 채집 +8·희귀품 +3·회복 +5, 동맹 지배 채집 +4·회복 +3, 적대 지배(바깥) 조우 +8·정신 손실 +5, 분쟁 중 누구나 희귀품 +3·조우 +5. 같은 곳 파티원(전투불능 제외, 3명까지) 한 명마다 받는 피해 −3·있으면 회복 +4, 동맹 동료 단서 +5·희귀품 +2, 적대 동료 정신 손실 +5.
-- 화면: 캐릭터 › 세력의 「세력 판도」(world_faction_board), 지도의 분쟁 지역은 땅에 붉은 빗금·점선 테두리와 표식에서 퍼지는 붉은 고리(7.3.5, map.js cell-contest·contest-ring, 범례 「분쟁 중」), 현장 머리의 세력 색 점과 「분쟁 중」(common.js safeZones가 contested를 10분마다 다시 읽음), 조사원 카드의 세력 색 칩(geo.js factionColor).
+- 화면: 캐릭터 › 세력의 「세력 판도」(world_faction_board), 지도의 분쟁 지역은 땅에 붉은 빗금·점선 테두리와 표식에서 퍼지는 붉은 고리(7.3.5, map.js cell-contest·contest-ring, 범례 「분쟁 중」), 현장 머리의 세력 색 점과 「분쟁 중」(common.js safeZones가 contested를 10분마다 다시 읽음), 조사원 카드의 세력 색 칩(geo.js factionColor, FACTION_COLORS — 7.5.7에 남명회를 갈색 #9a6a34에서 불씨 주황 #c2571f로, 천명원 금빛 #a68a3c와 구분).
 
 ## 12. 경제와 거래
 

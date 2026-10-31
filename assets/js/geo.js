@@ -75,6 +75,6 @@ export function centroid(poly) {
 // 세력 색(어두운 바탕에서 구분되되 채도를 낮춘다)
 export const FACTION_COLORS = {
   night_office: '#3e5f9a', north_league: '#6f8193', mandate_court: '#a68a3c', river_alliance: '#2f8a80',
-  red_moon_cult: '#9a3a3e', black_lotus: '#6a4c8c', southern_remnant: '#9a6a34', null: '#4a4a4f',
+  red_moon_cult: '#9a3a3e', black_lotus: '#6a4c8c', southern_remnant: '#c2571f', null: '#4a4a4f',
 };
 export function factionColor(id) { return FACTION_COLORS[id] || FACTION_COLORS.null; }
