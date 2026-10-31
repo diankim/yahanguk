@@ -1138,7 +1138,16 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 @keyframes fx-blow-170 { to { transform: translateX(-170px); } }
 @keyframes fx-twinkle { from { opacity: .22; } to { opacity: .55; } }
 .scene-fx[data-p=night] .fx-c { inset: 0 0 45% 0; }
-@media (prefers-reduced-motion: reduce) { .scene-fx i { animation: none !important; } }
+/* 현장 장소 그림의 날씨·별빛 움직임은 기기의 「동작 줄이기」와 상관없이 움직인다(7.5.5, 사용자 요청 — 붉은 안개와 같은 방식).
+   전역 animation: none !important보다 앞서도록 같은 선택자에 !important를 다시 건다 */
+@media (prefers-reduced-motion: reduce) {
+  .scene-fx[data-w=rain] .fx-a { animation: fx-fall-96 .55s linear infinite !important; }
+  .scene-fx[data-w=rain] .fx-b { animation: fx-fall-150 .9s linear infinite !important; }
+  .scene-fx[data-w=snow] .fx-a { animation: fx-fall-80 7s linear infinite !important; }
+  .scene-fx[data-w=snow] .fx-b { animation: fx-fall-110 11s linear infinite !important; }
+  .scene-fx[data-w=wind] .fx-a { animation: fx-blow-170 1.8s linear infinite !important; }
+  .scene-fx[data-p=night] .fx-c { animation: fx-twinkle 3.6s ease-in-out infinite alternate !important; }
+}
 /* 원정 진행 기록 */
 .exp-feed { list-style: none; margin: 0; padding: 4px 12px; display: grid; gap: 0; max-height: min(46vh, 420px); overflow: auto; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); overscroll-behavior: contain; }
 .exp-feed:empty { display: none; }
