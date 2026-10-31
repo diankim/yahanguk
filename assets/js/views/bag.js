@@ -97,6 +97,13 @@ function stayFit(box) {
   const cur = parseFloat(box.style.minHeight) || 0;
   if (need < cur) box.style.minHeight = need > 0 ? need + 'px' : '';
 }
+// 설명 안의 완성품 이름 바로 뒤에 「(효과: …)」를 넣는다 — 「오색 술 노리개(효과: 제작 품질 +2 · 채집량 +6%)를 만든다.」
+// 효과만 이어 붙이면 제작할 때 받는 효과처럼 읽혀서(7.6.3, 사용자 요청). 이름이 설명에 없으면 끝에 붙인다.
+function descFx(desc, name, fx) {
+  const d = esc(desc); if (!fx) return d; // esc가 「을(를)」을 이름 받침에 맞춰 먼저 고른 뒤에 끼운다
+  const tag = `<span class="desc-fx">(효과: ${esc(fx)})</span>`, n = name ? esc(name) : '', i = n ? d.indexOf(n) : -1;
+  return i < 0 ? `${d} ${tag}` : d.slice(0, i + n.length) + tag + d.slice(i + n.length);
+}
 // 제작법 카드의 완성품 효과(7.6.2, 사용자 요청): 장비·제작 공구만, 효과가 없으면 비운다. 부위 이름(관모 등)은 카드 칩에 있으니 앞에서 뗀다.
 function gearFx(it, kind) {
   const t = traitText(it), head = SLOTS[kind]?.[0];
@@ -293,7 +300,7 @@ async function craft(body, inv, stg) {
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, atLoc, kind, tier }) => `
       <article class="recipe ${can ? 'can' : ''}">
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
-        ${(() => { const fx = !USABLE[r.output] && (SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''; return `<p class="muted small">${esc(r.description || '')}${fx ? ` <span class="desc-fx">${esc(fx)}</span>` : ''}</p>`; })()}
+        ${(() => { const fx = !USABLE[r.output] && (SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''; return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         ${USABLE[r.output] ? `<p class="use-fx small">${icon('heart', 12)} ${esc(USABLE[r.output])}</p>` : ''}
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
