@@ -445,6 +445,7 @@ body.chat-open .chat-fab { display: none; }
 .rank-list small { font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
 .skill-groups { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; }
 .skill-groups .panel { margin: 0; }
+.skill-groups .sk-col { display: grid; gap: 14px; align-content: start; min-width: 0; } /* 세 칸: 전투 | 채집 + 조사 | 제작(7.7.4 — 조사가 홀로 동떨어져 보였다) */
 .skill-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); opacity: .75; }
 .skill-list li.on { opacity: 1; box-shadow: inset 2px 0 0 var(--ok); }
 .skill-list li > div:first-child { display: grid; }
