@@ -11,12 +11,12 @@ returns jsonb language sql immutable as $f$
   -- final_dmg: 구중 봉주 결전 혼자일 때만 solo_dmg 대신(회복품이 다섯이라 회복 기술·회피가 있는 직업이 크게 유리해서 따로 맞춤)
   -- final_all: 결전에서 인원과 상관없이(혼자면 final_dmg가 대신)
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 28, "final_all": 15}'
+    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 22, "final_all": 15}'
     when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12, "final_dmg": 30, "final_all": 15}'
-    when 'medic'      then '{"solo_dmg": 5, "solo_falls": 2, "final_dmg": -5}'
-    when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1, "final_dmg": 3}'
-    when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2, "final_dmg": -12}'
-    when 'analyst'    then '{"final_dmg": -35}'
+    when 'medic'      then '{"solo_dmg": 5, "solo_falls": 2, "final_dmg": -6}'
+    when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1, "final_dmg": -2}'
+    when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2, "final_dmg": -18}'
+    when 'analyst'    then '{"final_dmg": -38}'
     else '{}' end::jsonb
 $f$;
 revoke all on function public.world_solo_aid(text) from public, anon, authenticated;
