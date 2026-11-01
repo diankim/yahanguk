@@ -151,14 +151,22 @@ const SORTS = { level: (a, b) => a.min_level - b.min_level || a.title.localeComp
   name: (a, b) => a.title.localeCompare(b.title, 'ko') };
 const ORDER = { active: 0, available: 1, locked: 2, done: 3 };
 const fieldOf = q => (q.cat || '').split('·')[0] || '기타';
-let sField = '', sStatus = '', sSort = 'level';
+let sField = '', sStatus = '', sSort = 'level', sRegion = '';
+// 지역 거르기(7.7.4, 제보 80): 받는 곳·할 일 지역·보고 장소 가운데 하나라도 그 지역이면 보인다. 「지금 있는 곳」은 q.here이거나 위와 같은 지역이 지금 위치.
+const regionsOf = q => new Set([q.region_id, ...((q.cur?.tasks || []).flatMap(t => t.regions || [])), ...(q.cur?.at || [])].filter(Boolean));
 async function side(body, keep) {
   const [j, map] = keep && lastSide ? lastSide : (lastSide = await Promise.all([journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
   if (!j) { body.innerHTML = empty('보조 퀘스트 목록은 다음 서버 갱신 뒤에 열립니다. 지금은 현장의 퀘스트 칸에서 볼 수 있습니다.', 'flag'); return; }
   const all = (j.quests || []).filter(q => q.kind === 'side');
   const fields = [...FIELDS.filter(([f]) => all.some(q => fieldOf(q) === f)), ...[...new Set(all.map(fieldOf))].filter(f => !FIELDS.some(x => x[0] === f)).map(f => [f, 'flag'])];
   if (sField && !fields.some(([f]) => f === sField)) sField = '';
-  const pass = q => (!sField || fieldOf(q) === sField) && (!sStatus || q.status === sStatus);
+  const hereId = currentRegion(map)?.region_id || null;
+  const inRegion = q => !sRegion || (sRegion === '@here' ? q.here || (hereId && regionsOf(q).has(hereId)) : regionsOf(q).has(sRegion));
+  const pass = q => (!sField || fieldOf(q) === sField) && (!sStatus || q.status === sStatus) && inRegion(q);
+  // 고를 수 있는 지역: 마치지 않은 퀘스트가 걸린 지역만, 퀘스트 수가 많은 순
+  const regCount = new Map(); all.filter(q => q.status !== 'done').forEach(q => regionsOf(q).forEach(r => regCount.set(r, (regCount.get(r) || 0) + 1)));
+  const regOpts = [...regCount].sort((a, b) => b[1] - a[1] || nameOf(a[0]).localeCompare(nameOf(b[0]), 'ko'));
+  if (sRegion && sRegion !== '@here' && !regCount.has(sRegion)) sRegion = '';
   const sorted = list => [...list].sort((a, b) => (sStatus ? 0 : ORDER[a.status] - ORDER[b.status]) || SORTS[sSort](a, b));
   const cnt = (list, st) => list.filter(q => q.status === st).length;
   const group = ([f, ic]) => {
@@ -174,6 +182,7 @@ async function side(body, keep) {
     <div class="q-filter">
       <div class="chips kind-chips" role="group" aria-label="분야"><button class="chip ${sField ? '' : 'on'}" data-f="">전체</button>${fields.map(([f]) => `<button class="chip ${sField === f ? 'on' : ''}" data-f="${esc(f)}">${esc(f)} <small>${cnt(all.filter(q => fieldOf(q) === f), 'done')}/${all.filter(q => fieldOf(q) === f).length}</small></button>`).join('')}</div>
       <div class="chips kind-chips" role="group" aria-label="상태">${STATUS.map(([k, n]) => `<button class="chip ${sStatus === k ? 'on' : ''}" data-st="${k}">${n}</button>`).join('')}</div>
+      <label class="q-sort"><span class="muted small">지역</span><select id="q-region"><option value="">모든 지역</option><option value="@here" ${sRegion === '@here' ? 'selected' : ''}>지금 있는 곳</option>${regOpts.map(([r, n]) => `<option value="${esc(r)}" ${sRegion === r ? 'selected' : ''}>${esc(nameOf(r))} (${n})</option>`).join('')}</select></label>
       <label class="q-sort"><span class="muted small">정렬</span><select id="q-sort"><option value="level" ${sSort === 'level' ? 'selected' : ''}>레벨순</option><option value="region" ${sSort === 'region' ? 'selected' : ''}>지역순</option><option value="name" ${sSort === 'name' ? 'selected' : ''}>이름순</option></select></label>
     </div>
     ${shown ? (sField ? group(fields.find(([f]) => f === sField)) : fields.map(group).join('')) : empty('조건에 맞는 퀘스트가 없습니다.', 'flag')}
@@ -181,6 +190,7 @@ async function side(body, keep) {
   $$('[data-f]', body).forEach(b => b.onclick = () => { sField = b.dataset.f; side(body, true); });
   $$('[data-st]', body).forEach(b => b.onclick = () => { sStatus = b.dataset.st; side(body, true); });
   $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
+  $('#q-region', body).onchange = e => { sRegion = e.target.value; side(body, true); };
   bindQuests(body);
 }
 // 진행 중인 퀘스트는 접혀 있어도 지금 할 일과 장소가 보이게(7.4.6, 제보)
