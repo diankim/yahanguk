@@ -2199,11 +2199,15 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-band.aoe .gw-tell, .gw-band.gim .gw-tell { font-weight: 600; }
 .gw-mine { margin: 0; font-size: calc(12px * var(--fz, 1)); color: var(--muted); display: flex; gap: 4px; align-items: center; }
 .gw-mine b { color: var(--accent); }
-.gw-skills { display: grid; gap: 5px; margin-top: 6px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.gw-skills { display: grid; gap: 5px; margin-top: 6px; grid-template-columns: repeat(4, minmax(0, 1fr)); } /* 기술 넷을 행동 단추처럼 한 줄로(7.7.4 사용자 요청), 설명은 title */
 .gw-skill { display: grid; gap: 2px; text-align: left; padding: 6px 8px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
 .gw-skill.on { border: 2px solid var(--accent); }
 .gw-skill:disabled { opacity: .5; cursor: default; }
-.gw-skill-top { display: flex; gap: 6px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.gw-skill-top { display: grid; gap: 1px; justify-items: center; text-align: center; }
+.gw-skill { justify-items: center; text-align: center; padding: 6px 4px; }
+.gw-skill-top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.gw-skill-top small { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gw-skill-desc { display: none; }
 .gw-skill-top small, .gw-skill-desc { color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
 .gw-skill-top em { font-style: normal; color: var(--bad); }
 .gw-gim { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); border: 2px dashed color-mix(in srgb, var(--bad) 60%, var(--line)); display: grid; gap: 6px; }
@@ -2756,9 +2760,8 @@ b.shadow { color: var(--sp); }
   .gw-ladder li { padding: 3px 4px; }
   .gw-tell { font-size: calc(13px * var(--fz, 1)); line-height: 1.45; }
   .gw-band { padding: 6px 8px; gap: 3px; }
-  .gw-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+  .gw-skills { gap: 4px; margin-top: 4px; }
   .gw-skill { padding: 4px 6px; gap: 0; }
-  .gw-skill-top { display: grid; gap: 0; }
   .gw-skill-top b { font-size: calc(12.5px * var(--fz, 1)); }
   .gw-skill-top small { font-size: calc(10px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gw-skill-desc { display: none; }
