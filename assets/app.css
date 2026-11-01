@@ -2650,3 +2650,6 @@ b.shadow { color: var(--sp); }
 .uc-form { display: grid; gap: 6px; border-top: var(--bw) solid var(--line); padding-top: 8px; }
 .uc-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 @media (max-width: 640px) { .uc-items { grid-template-columns: 1fr 1fr; max-height: 36vh; } }
+
+/* 거래소 가격(7.7.3): 개당·합계 금액을 굵게, 본문 색으로 */
+.mk-price b { font-weight: 700; color: var(--text); }

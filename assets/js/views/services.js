@@ -229,6 +229,10 @@ async function dismantlePane(body) {
 const PICK_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
 const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
 const pickCat = c => !c ? 'etc' : PICK_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
+// 폼 안 입력칸에서 엔터를 눌러도 보내지 않는다 — 등록·제안은 단추로만(7.7.3)
+function noEnterSubmit(form) {
+  form.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input') && !e.isComposing) { e.preventDefault(); e.target.blur(); } });
+}
 function pickerHtml(name, opts) {
   return `<div class="pick" data-pick="${name}"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === 'all' ? 'accent' : ''}" data-pc="${k}">${t}</button>`).join('')}</div>
     <input type="search" class="pick-q" placeholder="이름으로 찾기" aria-label="물품 찾기">
@@ -248,6 +252,8 @@ function bindPicker(root, name, opts, onPick) {
     if (sel.value !== keep) onPick?.();
   };
   qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
+  // 찾기 칸의 엔터·키패드 「검색」은 폼을 보내지 않고 키패드만 내린다(7.7.3 — 거래소 등록·거래 제안이 바로 되던 것)
+  qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
   qi.addEventListener('compositionend', apply);
   box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
 }
@@ -301,7 +307,7 @@ export async function renderMarket(box) {
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rarTag(o.item_id)}<span class="qty">×${o.quantity}</span>
-        <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
+        <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     // 규칙 안내는 접어 둔다(모바일에서 목록이 화면 아래로 밀리던 것)
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
@@ -333,6 +339,7 @@ export async function renderMarket(box) {
       };
       qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
       qi.addEventListener('compositionend', apply);
+      qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
       $$('[data-bc]', body).forEach(b => b.onclick = () => { buyCat = b.dataset.bc; $$('[data-bc]', body).forEach(x => x.classList.toggle('accent', x === b)); apply(); });
       apply();
     }
@@ -361,6 +368,7 @@ export async function renderMarket(box) {
         form.price.value = lastSell.price;
       } else lastSell = null;
       hint();
+      noEnterSubmit(form);
       form.onsubmit = e => {
         e.preventDefault();
         if (fixPrice()) return; // 고친 값을 보고 다시 누르게 한다
@@ -432,6 +440,7 @@ async function renderDirect(body) {
         if (side === 'give' && next > Number(have[id] || 0)) return toast(`${nameOf(id)}은(는) ${have[id] || 0}개까지 줄 수 있습니다.`, 'error');
         box[id] = Math.min(999, next); renderDirect(body);
       });
+      noEnterSubmit(f);
       f.onsubmit = async e => {
         e.preventDefault();
         if (!dt.to) return toast('거래할 조사원을 고르세요.', 'error');
