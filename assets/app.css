@@ -2819,3 +2819,49 @@ b.shadow { color: var(--sp); }
 .gw-tray { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .gw-tray .btn { display: inline-flex; gap: 4px; align-items: baseline; }
 .gw-tray .btn small { color: var(--muted); }
+/* 피해 기록판(7.7.4, meter.js): 휴대폰은 오른쪽 끝 손잡이로 펼치는 반투명 창, PC는 참가자 칸 아래 */
+.dmeter { --dm-o: color-mix(in srgb, var(--gold) 80%, var(--text)); --dm-i: var(--bad); --dm-h: var(--ok); font-size: calc(11.5px * var(--fz, 1)); }
+.dmeter .jb-artificer { --jb: var(--hp); } .dmeter .jb-scout { --jb: var(--ok); } .dmeter .jb-exorcist { --jb: var(--mp); }
+.dmeter .jb-medic { --jb: var(--gold); } .dmeter .jb-sealmaster { --jb: var(--sp); } .dmeter .jb-analyst { --jb: var(--warn); }
+.dm-box { display: grid; gap: 3px; }
+.dm-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dm-head > b { font-size: calc(11.5px * var(--fz, 1)); white-space: nowrap; }
+.dm-seg { display: inline-flex; margin-left: auto; border: var(--bw, 1px) solid var(--line); border-radius: 999px; overflow: hidden; }
+.dm-seg button { font: inherit; font-size: calc(10.5px * var(--fz, 1)); padding: 1px 7px; min-height: 20px; border: 0; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.dm-seg button.on { background: var(--accent); color: var(--accent-ink); }
+.dm-x { display: none; }
+.dm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.dm-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 0 6px; padding: 1px 6px; min-height: 19px; border-radius: 3px; overflow: hidden;
+  background: color-mix(in srgb, var(--text) 5%, transparent); border-left: 3px solid var(--jb, var(--line)); }
+.dm-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--jb, var(--accent)) 34%, transparent); pointer-events: none; transition: width .3s; }
+.dm-row > :not(.dm-fill) { position: relative; }
+.dm-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dm-row.me .dm-name { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.dm-val { font-variant-numeric: tabular-nums; }
+.dm-pct { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 3.6em; text-align: right; }
+.dm-sub { display: flex; gap: 6px; justify-content: flex-end; min-width: 4.6em; font-size: calc(10px * var(--fz, 1)); line-height: 1.25; font-variant-numeric: tabular-nums; }
+.dm-sub:empty { min-width: 0; }
+.dmeter em { font-style: normal; } .dmeter em.o { color: var(--dm-o); } .dmeter em.i { color: var(--dm-i); } .dmeter em.h { color: var(--dm-h); }
+.dm-foot { margin: 0; display: flex; gap: 6px; color: var(--muted); font-size: calc(10.5px * var(--fz, 1)); font-variant-numeric: tabular-nums; }
+.dm-legend { margin-left: auto; display: flex; gap: 6px; }
+.dm-empty { color: var(--muted); padding: 2px 0; }
+.dm-handle { display: none; }
+@media (min-width: 900px) {
+  .dm-host { margin-top: 8px; padding-top: 8px; border-top: var(--bw, 1px) solid var(--line); }
+}
+@media (max-width: 899px) {
+  .dm-host:empty { display: none; }
+  .dmeter { position: fixed; right: 0; top: calc(var(--top-h) + env(safe-area-inset-top, 0px) + 96px); z-index: 40; display: flex; align-items: flex-start; pointer-events: none; }
+  .dmeter > * { pointer-events: auto; }
+  .dm-handle { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 3px; border: var(--bw, 1px) solid var(--line); border-right: 0;
+    border-radius: 6px 0 0 6px; background: color-mix(in srgb, var(--surface) 82%, transparent); color: var(--text); font: inherit; font-size: calc(10px * var(--fz, 1)); cursor: pointer; writing-mode: vertical-rl; }
+  .dm-handle svg { writing-mode: horizontal-tb; }
+  .dmeter.open .dm-handle { display: none; }
+  .dm-box { display: none; width: min(290px, 78vw); max-height: 46vh; overflow: auto; padding: 5px 6px;
+    padding-right: max(6px, env(safe-area-inset-right, 0px)); border: var(--bw, 1px) solid var(--line); border-right: 0; border-radius: 6px 0 0 6px;
+    background: color-mix(in srgb, var(--surface) 74%, transparent); }
+  .dmeter.open .dm-box { display: grid; }
+  .dm-x { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+  .dm-row { min-height: 17px; padding: 0 5px; }
+  .dm-seg button { padding: 1px 5px; }
+}

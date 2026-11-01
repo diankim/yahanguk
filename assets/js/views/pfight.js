@@ -3,6 +3,7 @@
 import { rpc, emit, esc, icon, fmt, $, $$, toast, nameOf, loadCharacter, store, bar, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { INTENT, SKILL, JOB, trayList, weakNote } from './battle.js';
+import { mountMeter } from './meter.js';
 
 const ACT = { attack: '공격', skill: '기술', guard: '방어', item: '물품', flee: '달아나기' };
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
@@ -98,11 +99,13 @@ function draw() {
           <span class="bar ${m.health < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.health))}%"></span></span>
           <small class="mem-sub">${esc(JOB[m.job] || nameOf(m.job))}${st ? ` · ${st}` : ''}${m.id === s.target_id && fight ? ' · 노림받음' : ''}</small>
           <small class="mem-sub">정신 ${m.mental} · 영력·기력 ${m.sp}</small></div></li>`; }).join('')}</ul>
+        <div class="dm-host" id="pf-meter"></div>
         <p class="muted small">빠른 사람(민첩 + 감각÷2)부터 차례로 움직입니다. 요괴는 라운드마다 이목이 높은 이를 더 자주 노리고, 그 사람의 차례 바로 뒤에 반격합니다(그 차례에 방어하면 막습니다). 30초 동안 고르지 않으면 방어로 넘어갑니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
         <ol class="raid-log">${lg.map(l => `<li class="no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
     </div>`;
   const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
+  if (s.status !== 'gather') mountMeter($('#pf-meter', el), members.map(m => ({ ...m, me: m.id === c.owner_id })));
   bind(); countdown();
 }
 

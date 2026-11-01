@@ -5,6 +5,7 @@
 //        라운드 띠(단계 사다리·이번 라운드의 낌새 문구), 끝난 싸움은 라운드별 기록 전체를 펼쳐 되짚어 본다.
 import { rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, loadCharacter, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
+import { mountMeter } from './meter.js';
 
 const PHASE = { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' };
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
@@ -136,12 +137,13 @@ function draw() {
           <small class="mem-sub">${[m.out ? `물러남 ${m.out}라운드` : fight ? (m.acted ? '골랐음' : '고르는 중') : '', m.nameless ? '이름 잃음' : '', (s.members || []).length === 1 ? `쓰러짐 ${m.falls || 0}/10` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : ''].filter(Boolean).join(' · ') || '&nbsp;'}</small>
           <small class="mem-sub">준 피해 ${fmt.num(m.dmg)}${m.heal ? ` · 회복 ${fmt.num(m.heal)}` : ''}${done && m.falls ? ` · 물러남 ${m.falls}번` : ''}</small>
           ${(m.fx || []).filter(k => FX[k]).length ? `<span class="gw-fx">${(m.fx || []).filter(k => FX[k]).map(k => `<i>${FX[k]}</i>`).join('')}</span>` : ''}</button></li>`).join('')}</ul>
-</div></section>
+${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
         ${logHtml(s, me, done)}</div></section>
     </div>
     ${tipsHtml(s.tips)}`;
   const log = $('.raid-log', el); if (log && !done) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
+  mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   bind(); countdown();
 }
 

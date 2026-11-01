@@ -2,6 +2,7 @@
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
+import { mountMeter } from './meter.js';
 // 기여도 갈래(7.7.4, 서버 world_raid_members.credits): 직접 피해·늘려 준 피해·막아 준 피해·회복·받아 낸 피해
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
 const creditLine = c => { const parts = CREDIT.filter(([k]) => Number(c?.[k]) > 0).map(([k, n]) => `${n} ${fmt.num(c[k])}`); return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : ''; };
@@ -108,7 +109,7 @@ function build() {
         ${ended ? resultHtml(r, s.members) : ''}
       </div></section>
       ${playing ? actionsShell(me) : ''}
-      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul></div></section>
+      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul>${r.status === 'announced' ? '' : '<div class="dm-host" id="raid-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2><span class="raid-legend"><i class="lg-out"></i>내가 준 피해<i class="lg-in"></i>받은 피해</span></header><div class="panel-body"><ol class="raid-log" id="raid-log"></ol></div></section>
     </div>
     ${locksHtml(s.locks)}`;
@@ -133,6 +134,7 @@ function patch() {
   }
   const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
   const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members, me, r);
+  mountMeter($('#raid-meter', el), members);
   patchActions(me, members);
   // 기록은 새 줄만 덧붙이고, 맨 아래를 보던 중이면 따라 내려간다
   const log = $('#raid-log', el);
