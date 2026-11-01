@@ -366,7 +366,8 @@ function unlockPage() {
   requestAnimationFrame(fix); setTimeout(fix, 250); setTimeout(fix, 700);
 }
 // 창이 떠 있는 사이 바탕 화면이 새 자리를 정했으면(현장 토벌이 끝나 현장으로 돌아옴 등) 창을 닫을 때 그 자리로 간다
-export function scrollAfterModal(y) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2) window.scrollTo(0, y); }
+// force: 아래로 내려가 있어도 그 자리로(토벌에서 현장으로 돌아올 때, 7.7.3)
+export function scrollAfterModal(y, force = false) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2 || (force && Math.abs(window.scrollY - y) > 2)) window.scrollTo(0, y); }
 const focusIn = (el) => { try { el?.focus({ preventScroll: true }); } catch { el?.focus(); } };
 export function openModal({ title, body, wide = false, onClose } = {}) {
   closeModal();
