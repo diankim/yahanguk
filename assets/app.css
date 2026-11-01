@@ -676,6 +676,11 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .guide-table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fz, 1)); }
 .guide-table th, .guide-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .guide-table th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fz, 1)); }
+.guide-sec { word-break: keep-all; overflow-wrap: break-word; }
+.guide-sec > ul, .guide-sec > ol, .guide-sec > .guide-table { margin-bottom: 10px; }
+.guide-sec > :last-child { margin-bottom: 0; }
+.guide-sec > h4 { margin: 14px 0 6px; } .guide-sec > h4:first-child { margin-top: 0; }
+.guide-sec li > ul { margin-top: 4px; gap: 3px; }
 @media (min-width: 1100px) { .guide { grid-template-columns: 200px minmax(0, 1fr); align-items: start; } .guide-toc { position: sticky; top: calc(var(--top-h) + 20px); flex-direction: column; } .guide-toc a { border-radius: 8px; } }
 
 .theme-modal .sub-h { margin: 4px 0 10px; }
