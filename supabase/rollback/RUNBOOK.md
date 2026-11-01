@@ -31,7 +31,7 @@
      - `world_characters` 0
      - `world_legacy_marks` = 롤백 전 캐릭터 수
      - `world_staff` 1
-     - `world_pet_species` 45
+     - `world_pet_species` 44
      - 패치노트 `1.0.0`과 `0-…` 13개
      - `db_version` 20261105000000
    - 예약 작업에서 `yh-long-night`·`yh-last-night-wipe`·`yh-rollback-close`·`yh-invite-day`가 없어야 한다.
