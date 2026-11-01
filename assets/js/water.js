@@ -4,7 +4,7 @@
 
 // 강: [x, y, 폭] 점을 매끄럽게 잇고 내려갈수록 넓어진다. ice: 앞에서 몇 구간이 얼음물인지.
 const RIVERS = [
-  { in: 'sky_lake', ice: 4, pts: [[480,122,3],[472,150,3.4],[458,182,3.8],[446,212,4.2],[449,242,4.8],[458,272,5.2],[470,298,5.8],[500,312,6.2],[540,306,6.8],[585,313,7.2],[625,318,7.8],[655,314,8.2],[695,322,8.8],[722,336,9.2],[770,323,10],[805,306,10.8],[838,302,11.6],[864,324,12.6],[886,352,14],[918,372,16],[968,386,19]] },
+  { in: 'sky_lake', ice: 4, pts: [[480,122,3],[472,150,3.4],[458,182,3.8],[446,212,4.2],[449,242,4.8],[458,272,5.2],[470,298,5.8],[500,312,6.2],[540,306,6.8],[585,313,7.2],[625,318,7.8],[655,314,8.2],[695,322,8.8],[722,336,9.2],[770,323,10],[805,306,10.8],[838,302,11.6],[864,324,12.6],[886,352,14],[918,372,15],[938,381,15.5]] },   // 끝은 만조의 갑문 해안(약 942) 안쪽에서 멈춘다(7.7.3 — 968까지 그려 땅 밖 바다로 삐져나왔다)
   { in: 'mirror_pavilion', small: 1, pts: [[762,244,2.4],[765,272,2.8],[767,300,3.2],[770,322,3.6]] },
   { in: 'salt_village', small: 1, pts: [[640,318,2.6],[650,340,2.8],[662,360,3],[676,380,3.1],[690,404,3.3],[704,428,3.5]] },
 ];
@@ -28,7 +28,7 @@ const REEDS = { lotus_marsh: [[720,358],[742,334],[766,338],[735,306],[704,340],
 const ABYSS = [{ in: 'sealed_abyss', at: [530,642,24] }];
 const RIFTS = [{ in: 'black_tide_rift', pts: [[702,424],[712,436],[704,448],[720,456],[712,470],[730,476],[748,494],[740,476],[754,468],[734,454],[738,440],[722,436],[716,424]] }];
 const WHIRLS = [{ in: 'gwiheo_core', at: [630,1078,20] }];
-// 구등대 군도 바깥 작은 섬(땅에 닿는 자리는 뺀다), 큰 섬에는 등대 불빛
+// 구등대 군도 바깥 작은 섬(땅에 닿는 자리는 뺀다). 남는 섬 가운데 가장 큰 섬 하나에 등대(7.7.3 — 전에는 큰 섬마다 금빛 점 하나라 빨간 점처럼 보였다)
 const ISLES = { in: 'nine_lighthouse', at: [[968,690,13],[996,646,8],[948,742,10],[1012,712,6],[930,770,7],[985,760,5]] };
 
 function smooth(pts) { // Catmull-Rom → 구간마다 베지어 하나
@@ -48,6 +48,18 @@ function inside(pt, poly) {
   let c = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) c = !c; }
   return c;
+}
+// 등대: 섬 위에 선 탑(아래가 넓은 사다리꼴 · 가운데 띠 · 불빛 방 · 지붕)과 가까이 볼 때만 양옆으로 퍼지는 불빛
+function lighthouse(cx, by, s, near) {
+  const f = v => v.toFixed(1), h = 13 * s, bw = 3.2 * s, tw = 2 * s, top = by - h;
+  const body = `M${f(cx - bw)},${f(by)}L${f(cx - tw)},${f(top + 3 * s)}L${f(cx + tw)},${f(top + 3 * s)}L${f(cx + bw)},${f(by)}Z`;
+  const yb = by - h * .45, wb = bw - (bw - tw) * .55, yb2 = yb - 2.2 * s, wb2 = bw - (bw - tw) * .72;
+  const band = `M${f(cx - wb)},${f(yb)}L${f(cx - wb2)},${f(yb2)}L${f(cx + wb2)},${f(yb2)}L${f(cx + wb)},${f(yb)}Z`;
+  const lamp = `<rect x="${f(cx - tw * .9)}" y="${f(top + .8 * s)}" width="${f(tw * 1.8)}" height="${f(2.2 * s)}" class="w-lh-lamp"/>`;
+  const roof = `M${f(cx - tw * 1.2)},${f(top + .9 * s)}L${f(cx)},${f(top - 1.6 * s)}L${f(cx + tw * 1.2)},${f(top + .9 * s)}Z`;
+  const ly = top + 1.9 * s;
+  const rays = near ? `<path d="M${f(cx - tw)},${f(ly)}L${f(cx - 14 * s)},${f(ly - 4 * s)}L${f(cx - 14 * s)},${f(ly + 4 * s)}ZM${f(cx + tw)},${f(ly)}L${f(cx + 14 * s)},${f(ly - 4 * s)}L${f(cx + 14 * s)},${f(ly + 4 * s)}Z" class="w-lh-ray"/>` : '';
+  return `<g class="w-lh">${rays}<path d="${body}" class="w-lh-body"/><path d="${band}" class="w-lh-band"/>${lamp}<path d="${roof}" class="w-lh-roof"/></g>`;
 }
 let isleCache = null, isleCells = null;
 function isles(cells) {
@@ -108,9 +120,11 @@ export function waterOver(g, has, X, Y, k, zoom) {
     for (let t = 0; t <= 3.2 * Math.PI; t += 0.25) { const rr = r * (1 - t / (3.4 * Math.PI)); d += (d ? 'L' : 'M') + P([x + Math.cos(t) * rr * 1.2, y + Math.sin(t) * rr * 0.8]); }
     dark += `<path d="${ringPath([x, y, r, 1.2, 0.8], 4)}" class="w-abyss"/><path d="${d}" class="w-whirl"/>`;
   }
-  if (has(ISLES.in)) isles(g.cells).forEach(([x, y, r], i) => {
-    isl += `<path d="${ringPath([x, y, r, 1.2, 0.85], i + 3)}" class="w-isle"/>`;
-    if (r >= 8) isl += `<circle cx="${f(X(x))}" cy="${f(Y(y - r * .2))}" r="2.2" class="w-light"/>`;
-  });
+  if (has(ISLES.in)) {
+    const list = isles(g.cells);
+    list.forEach(([x, y, r], i) => { isl += `<path d="${ringPath([x, y, r, 1.2, 0.85], i + 3)}" class="w-isle"/>`; });
+    const big = list.reduce((m, v) => (!m || v[2] > m[2] ? v : m), null);
+    if (big && big[2] >= 8) isl += lighthouse(X(big[0]), Y(big[1] + big[2] * .25), Math.max(.8, Math.min(1.6, k * 1.1)), near);
+  }
   return `<g class="water">${isl}<g class="w-bank">${bank}</g><g class="w-flow">${flow}</g><g class="w-ice">${ice}</g><g class="w-under">${under}</g>${pools}${reeds ? `<path d="${reeds}" class="w-reed"/>` : ''}${dark}</g>`;
 }
