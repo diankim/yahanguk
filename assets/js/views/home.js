@@ -406,7 +406,7 @@ function showFind([ic, label], r) {
   setTimeout(() => n.classList.add('out'), 2600); setTimeout(() => n.remove(), 3100);
 }
 
-// 채집 간격(7.7.3, 사용자 요청): 서버(world_guard_repeat_farming)가 채집터와 상관없이 12초마다 한 번만 받으므로,
+// 채집 간격(7.7.2c, 사용자 요청): 서버(world_guard_repeat_farming)가 채집터와 상관없이 12초마다 한 번만 받으므로,
 // 채집에 성공하면 이 기기 시계로 12초 동안 모든 채집 단추를 잠그고 남은 초를 보인다(연타 요청을 보내지 않음).
 // 응답을 받은 때부터 세므로 서버보다 조금 늦게 풀린다. 새로 연 창이면 기기에 남긴 값을 쓰고, 그래도 거절되면 3초 기다린다.
 const GATHER_GAP = 12000, GATHER_KEY = 'yh-gather-cd';
