@@ -60,7 +60,7 @@ async function check() {
       return;
     }
     // 점검 중 배포가 바뀌면(서버 주소 변경 등) 이 화면이 읽어 둔 옛 설정으로만 확인하게 되므로, 5분마다 페이지를 새로 읽는다
-    if (Date.now() - LOADED > 5 * 60000) { location.reload(); return; }
+    if (Date.now() - LOADED > 5 * 60000 && !document.querySelector('.help-ov')) { location.reload(); return; }  // 도움말 창을 보는 동안은 미룬다
   } finally {
     busy = false; nextAt = Date.now() + EVERY;
     if (retry) { retry.disabled = false; retry.textContent = '지금 다시 확인'; }
