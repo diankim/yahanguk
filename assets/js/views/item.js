@@ -240,6 +240,9 @@ function draw(box, id, inv, prices, mode) {
     }
     if (!d) return;
     const k = d.dataset.do;
+    // 서버 함수가 값을 돌려주지 않아도(버리기 등) 성공했는지 알 수 있게 따로 센다(7.7.2 — 전에는 돌려준 값으로만 판단해 버린 뒤에도 창이 남았다)
+    const run = async fn => { let ok = false; await guard(d, async () => { const r = await fn(); ok = true; return r; }); return ok; };
+    const closeInfo = () => box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click();
     if (k === 'use') await useItem(id, d);
     if (k === 'adopt') await guard(d, () => act('world_pet_adopt', { p_item: id }));
     if (k === 'house') { closeLayers(); closeModal(); window.yahangGo?.('house'); return; }
@@ -252,24 +255,27 @@ function draw(box, id, inv, prices, mode) {
       if (!(await ask(low ? `${di.line_name} 기술이 ${di.need}단계가 되지 않아(지금 ${di.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${di.line_name} 경험 12만 얻고 이 장비는 사라집니다.`
         : `${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요?${di ? ` ${di.line_name} 경험 +12.` : ''} 되돌릴 수 없습니다.`,
         { title: low ? '경험만 얻는 분해' : '분해', ok: low ? '경험만 받고 분해' : '분해하기', cancel: '그만두기' }))) return;
-      await guard(d, () => act('world_dismantle_item', { p_item_id: id }));
+      // 분해하면 이 정보 창을 닫아 가방으로 돌아간다(7.7.2, 사용자 요청)
+      if (await run(() => act('world_dismantle_item', { p_item_id: id }))) { closeInfo(); return; }
+      return;
     }
     // 버리기(제보 12): 「최대」는 칸을 채우고, 「모두 버리기」는 버릴 수 있는 만큼 한 번에(장착 중이면 하나 남김)
     if (k === 'st-max') { const q = $('#st-qty', box); if (q) q.value = dcMax; return; }
     if (k === 'stash') {
       const q = Math.floor(Number($('#st-qty', box)?.value) || 0);
       if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
-      const ok = await guard(d, () => act('world_storage_put', { p_item: id, p_qty: q }));
-      if (ok && q >= have) { box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click(); return; }
+      const ok = await run(() => act('world_storage_put', { p_item: id, p_qty: q }));
+      if (ok && q >= have) { closeInfo(); return; }
     }
     if (k === 'dc-max') { const q = $('#dc-qty', box); if (q) q.value = dcMax; return; }
     if (k === 'discard' || k === 'discard-all') {
       const q = k === 'discard-all' ? dcMax : Math.floor(Number($('#dc-qty', box)?.value) || 0);
       if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
       if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
-      const ok = await guard(d, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
+      const ok = await run(() => act('world_item_discard', { p_item_id: id, p_qty: q }));
       // 버리고 나면 이 정보 창을 닫아 가방으로 돌아간다(7.3.5, 제보 36). 겹쳐 뜬 창이면 그 창만 닫는다.
-      if (ok) { box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click(); return; }
+      if (ok) { closeInfo(); return; }
+      return;
     }
     // 바뀐 가방으로 창을 다시 그린다(다 써서 0개가 되면 정보만 남는다)
     try {
