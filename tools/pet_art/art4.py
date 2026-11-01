@@ -101,60 +101,7 @@ aaaaaaaaaaabbaa
 
 # 3) 잿빛 장모 고양이(제보 여보): 회색 긴 털, 눈이 털에 가려 안 보임 → 눈 글자가 없어 깜빡임도 없다
 GL = {'a': '#a2a2ac', 'b': '#78788a', 'c': '#cfcfd8', 'n': '#e07a86', 'p': PK}
-pet(id='ash_longhair', name='잿빛 장모 고양이', grade=2, kind='shadow', likes='treat_fish',
-    desc='털이 길게 늘어져 눈이 보이지 않는 잿빛 고양이입니다. 앞이 안 보일 텐데도 먹이 그릇만은 한 번에 찾아갑니다.',
-    baby=dict(pal=GL,
-        idle='''
-....a.....a..
-....aa...aa..
-...aaaaaaaaa.
-...acbcacbca.
-...abbbabbba.
-b..aacbnbcaa.
-bb.aaacccaaa.
-bbaaaaaccaaaa
-.aaabaaabaaaa
-.aaaaaaaaaaa.
-..aa.aa.aa.aa''',
-        step_tail='''
-.aa.aa..aa.a.''',
-        sleep='''
-....a.....a..
-....aa...aa..
-...aaaaaaaaa.
-...abbbabbba.
-bbbaacbnbcaa.
-bbaaaaacccaaa
-.aaabaaabaaaa
-.aaaaaaaaaaa.'''),
-    adult=dict(pal=GL,
-        idle='''
-.........a.....a.
-.........aa...aa.
-........aaaaaaaaa
-........acbcacbca
-........abbbabbba
-........aacbnbcaa
-.b......caacccaac
-bb.....ccaaccccac
-bb..aaaaaaaacccaa
-.baaaaaaaaaaaaaa.
-.bbaabaaabaaabaa.
-..aaaaaaaaaaaaaa.
-..aa.aa.....aa.aa''',
-        step_tail='''
-...aa.aa..aa.aa..''',
-        sleep='''
-.........a.....a.
-.........aa...aa.
-........aaaaaaaaa
-........abbbabbba
-.b......aacbnbcaa
-bb..aaaaccaacccac
-bbaaaaaaaaaacccaa
-.bbaabaaabaaabaaa
-..aaaaaaaaaaaaaa.'''))
-
+# (잿빛 장모 고양이는 art5.py의 그림으로 바꿨다 — 2026-11-01 사용자 결정)
 # 4) 점박이 하늘다람쥐(제보 윤아람): 하얀 바탕에 검은 무늬, 작은 동물(비막 c)
 FS = {'a': '#f6f4ee', 'd': '#2e2c34', 'c': '#d2ced8', 'n': '#e8909a', 'e': '#0c0806', 'i': I, 'p': PK}
 pet(id='spotted_glider', name='점박이 하늘다람쥐', grade=2, kind='sky', likes='treat_rice',

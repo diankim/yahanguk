@@ -677,27 +677,6 @@ export const PETS = {
       sleep: [".......kk.....kk.", "......kaakkkkkaak", "......kapaaaaapak", "..kk..kaakkakkaak", ".kaakkkkpabnbapk.", "kakkaaaaasssysssk", "kaaaaaaaaaaabbaak", ".kaaaaaaaaaaaaak.", "..kkkkkkkkkkkkk.."]
     }
   },
-  ash_longhair: {
-    name: "잿빛 장모 고양이",
-    grade: 2,
-    kind: "shadow",
-    desc: "털이 길게 늘어져 눈이 보이지 않는 잿빛 고양이입니다. 앞이 안 보일 텐데도 먹이 그릇만은 한 번에 찾아갑니다.",
-    likes: "treat_fish",
-    baby: {
-      pal: { a: "#a2a2ac", b: "#78788a", c: "#cfcfd8", n: "#e07a86", k: "#1a120e" },
-      idle: [".....k.....k...", "....kak...kak..", "....kaakkkaak..", "...kaaaaaaaaak.", "...kacbcacbcak.", ".k.kabbbabbbak.", "kbkkaacbnbcaak.", "kbbkaaacccaaak.", "kbbaaaaaccaaaak", ".kaaabaaabaaaak", ".kaaaaaaaaaaak.", "..kaakaakaakaak", "...kk.kk.kk.kk."],
-      blink: [".....k.....k...", "....kak...kak..", "....kaakkkaak..", "...kaaaaaaaaak.", "...kacbcacbcak.", ".k.kabbbabbbak.", "kbkkaacbnbcaak.", "kbbkaaacccaaak.", "kbbaaaaaccaaaak", ".kaaabaaabaaaak", ".kaaaaaaaaaaak.", "..kaakaakaakaak", "...kk.kk.kk.kk."],
-      step: [".....k.....k...", "....kak...kak..", "....kaakkkaak..", "...kaaaaaaaaak.", "...kacbcacbcak.", ".k.kabbbabbbak.", "kbkkaacbnbcaak.", "kbbkaaacccaaak.", "kbbaaaaaccaaaak", ".kaaabaaabaaaak", ".kaaaaaaaaaaak.", ".kaakaakkaakak.", "..kk.kk..kk.k.."],
-      sleep: [".....k.....k...", "....kak...kak..", "....kaakkkaak..", "...kaaaaaaaaak.", ".kkkabbbabbbak.", "kbbbaacbnbcaak.", "kbbaaaaacccaaak", ".kaaabaaabaaaak", ".kaaaaaaaaaaak.", "..kkkkkkkkkkk.."]
-    },
-    adult: {
-      pal: { a: "#a2a2ac", b: "#78788a", c: "#cfcfd8", n: "#e07a86", k: "#1a120e" },
-      idle: ["..........k.....k..", ".........kak...kak.", ".........kaakkkaak.", "........kaaaaaaaaak", "........kacbcacbcak", "........kabbbabbbak", "..k.....kaacbnbcaak", ".kbk....kcaacccaack", "kbbk.kkkccaaccccack", "kbbkkaaaaaaaacccaak", ".kbaaaaaaaaaaaaaak.", ".kbbaabaaabaaabaak.", "..kaaaaaaaaaaaaaak.", "..kaakaakkkkkaakaak", "...kk.kk.....kk.kk."],
-      blink: ["..........k.....k..", ".........kak...kak.", ".........kaakkkaak.", "........kaaaaaaaaak", "........kacbcacbcak", "........kabbbabbbak", "..k.....kaacbnbcaak", ".kbk....kcaacccaack", "kbbk.kkkccaaccccack", "kbbkkaaaaaaaacccaak", ".kbaaaaaaaaaaaaaak.", ".kbbaabaaabaaabaak.", "..kaaaaaaaaaaaaaak.", "..kaakaakkkkkaakaak", "...kk.kk.....kk.kk."],
-      step: ["..........k.....k..", ".........kak...kak.", ".........kaakkkaak.", "........kaaaaaaaaak", "........kacbcacbcak", "........kabbbabbbak", "..k.....kaacbnbcaak", ".kbk....kcaacccaack", "kbbk.kkkccaaccccack", "kbbkkaaaaaaaacccaak", ".kbaaaaaaaaaaaaaak.", ".kbbaabaaabaaabaak.", "..kaaaaaaaaaaaaaak.", "...kaakaakkaakaak..", "....kk.kk..kk.kk..."],
-      sleep: ["..........k.....k..", ".........kak...kak.", ".........kaakkkaak.", "........kaaaaaaaaak", "..k.....kabbbabbbak", ".kbk.kkkkaacbnbcaak", "kbbkkaaaaccaacccack", "kbbaaaaaaaaaacccaak", ".kbbaabaaabaaabaaak", "..kaaaaaaaaaaaaaak.", "...kkkkkkkkkkkkkk.."]
-    }
-  },
   spotted_glider: {
     name: "점박이 하늘다람쥐",
     grade: 2,
@@ -845,9 +824,9 @@ export const PETS = {
       sleep: ["..........k...k..", ".........kak.kak.", "........kaaakaaak", "..kkkkkkkaoaoaoak", ".kaaaaaaaakkakkak", "kaaoaoaoapacncapk", "kaaaoaoaaacccaaak", ".kooooooooooookk.", "..kkkkkkkkkkkk..."]
     }
   },
-  gray_longhair: {
-    name: "잿빛 솜털 고양이",
-    grade: 1,
+  ash_longhair: {
+    name: "잿빛 장모 고양이",
+    grade: 2,
     kind: "shadow",
     desc: "잿빛 털이 솜뭉치처럼 부푼 고양이입니다. 앞머리에 눈이 반쯤 가려도 밥그릇만큼은 용케 찾아갑니다.",
     likes: "treat_fish",
