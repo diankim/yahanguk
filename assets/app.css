@@ -2633,3 +2633,20 @@ b.shadow { color: var(--sp); }
   .recipe .craft-qty .cq-n { width: 2.8em; padding: 0 2px; }
   .recipe .craft-act .craft-go { padding-inline: 10px; white-space: nowrap; }
 }
+
+/* 조사원 의뢰(7.7.2, journal.js userCommissions·openUcommPost) */
+.ucomm { display: grid; gap: 8px; margin-top: 16px; }
+.ucomm .sub-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ucomm .sub-h.small { font-size: calc(13px * var(--fz, 1)); margin: 6px 0 0; color: var(--muted); }
+.commission.uc .uc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.commission.uc .linkish { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; text-align: left; }
+.uc-post { display: grid; gap: 8px; }
+.uc-post .pick-cats { display: flex; flex-wrap: wrap; gap: 4px; }
+.uc-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
+.uc-item { width: 100%; display: grid; gap: 2px; text-align: left; padding: 6px 9px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.uc-item.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--surface-2)); }
+.uc-item b { font-size: calc(13px * var(--fz, 1)); }
+.uc-more { grid-column: 1 / -1; padding: 4px 2px; }
+.uc-form { display: grid; gap: 6px; border-top: var(--bw) solid var(--line); padding-top: 8px; }
+.uc-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .uc-items { grid-template-columns: 1fr 1fr; max-height: 36vh; } }
