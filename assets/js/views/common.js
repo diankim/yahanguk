@@ -20,6 +20,17 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 let invStatic = null, invLite = true;
 // 받아 둔 제작법 목록(퀘스트의 「제작법」 단추가 쓴다, 아직 안 받았으면 빈 목록)
 export const knownRecipes = () => invStatic?.recipes || [];
+// 받아 둔 물품 설명(7.7.5: 토벌 물품 창). 아직 안 받았으면 기기에 남긴 사전, 그것도 없으면 빈 글
+let descMap = null;
+export function itemDesc(id) {
+  if (!descMap) {
+    let cat = invStatic?.catalog;
+    if (!cat) try { cat = JSON.parse(localStorage.getItem('yh-inv-static-v1') || 'null')?.catalog; } catch {}
+    if (!cat?.length) return '';
+    descMap = new Map(cat.map(i => [i.id, i.description || '']));
+  }
+  return descMap.get(id) || descMap.get(String(id).replace(/_hq$/, '')) || '';
+}
 const INV_KEY = 'yh-inv-static-v1';
 async function inventorySnap() {
   if (!invStatic) {

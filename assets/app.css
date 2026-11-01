@@ -2121,7 +2121,11 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-vit .bar > i { display: block; height: 100%; }
 .raid-vit.hp .bar > i { background: var(--hp); } .raid-vit.sp .bar > i { background: var(--sp, var(--accent)); } .raid-vit.ki .bar > i { background: var(--ki); }
 .raid-vit.hp.low b { color: var(--bad); } .raid-vit.hp.low .bar > i { background: var(--bad); }
-.raid-mine { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: calc(12px * var(--fz, 1)); color: var(--muted); min-height: 22px; }
+/* 7.7.5: 북돋기 칩이 붙고 빠져도 아래 행동 단추가 움직이지 않게 — 글 한 줄·칩 한 줄을 높이 고정으로 */
+.raid-mine { grid-column: 1 / -1; display: grid; grid-template-rows: auto 22px; gap: 2px; font-size: calc(12px * var(--fz, 1)); color: var(--muted); min-width: 0; }
+.raid-mine .rm-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.5em; }
+.raid-mine .rm-fx { display: flex; flex-wrap: nowrap; gap: 4px; align-items: center; overflow: hidden; height: 22px; }
+.raid-mine .rm-fx > * { flex: none; }
 .raid-mine b { color: var(--gold); font-variant-numeric: tabular-nums; }
 .raid-out.rest { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
 .raid-out.rest > b { color: var(--ok); }

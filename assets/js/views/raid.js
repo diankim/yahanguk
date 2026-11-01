@@ -1,7 +1,7 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
-import { load, invalidate, loading, errorBox, chip } from './common.js';
+import { load, invalidate, loading, errorBox, chip, itemDesc } from './common.js';
 import { mountMeter } from './meter.js';
 // 기여도 갈래(7.7.4, 서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
 // 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
@@ -250,7 +250,7 @@ function patchActions(me, members) {
   const mine = members.find(m => m.me), spName = spOf()[0];
   box.innerHTML = `<div class="raid-vit hp ${me.hp < 35 ? 'low' : ''}"><span>체력</span><b>${me.hp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.hp))}%"></i></i></div>
     <div class="raid-vit ${spOf()[1]}"><span>${esc(spName)}</span><b>${me.sp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.sp))}%"></i></i></div>
-    <div class="raid-mine">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</div>`;
+    <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</span></div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
   if (cb) {
@@ -278,6 +278,7 @@ function openItems() {
   if (itemLayer?.isConnected) return;
   itemLayer = openLayer({ title: '토벌에서 쓸 물품', body: '<div id="raid-items-body"></div>' });
   fillItems();
+  if (!itemDesc('tonic')) load('world_inventory_snapshot').then(fillItems).catch(() => {});
 }
 function fillItems() {
   const box = itemLayer && $('#raid-items-body', itemLayer); if (!box) return;
@@ -285,7 +286,7 @@ function fillItems() {
   const have = list => list.flatMap(k => [k, k + '_hq']).filter(k => Number(inv[k]) > 0);
   // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67)
   const hp = have(RAID_ITEMS.filter(k => !SP_ITEMS.has(k))), sp = have(RAID_ITEMS.filter(k => SP_ITEMS.has(k)));
-  const list = ks => ks.length ? `<ul class="raid-item-list">${ks.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}"><b>${esc(nameOf(k))}</b><small>${esc(brief(k) || '')}</small><span>×${inv[k]}</span></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
+  const list = ks => ks.length ? `<ul class="raid-item-list">${ks.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}"><b>${esc(nameOf(k))}</b><small>${esc(brief(itemDesc(k)) || '')}</small><span>×${inv[k]}</span></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
   box.innerHTML = `<p class="muted small">${out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
     <h3 class="raid-item-h">체력·정신 회복</h3>${list(hp)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${list(sp)}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => {
