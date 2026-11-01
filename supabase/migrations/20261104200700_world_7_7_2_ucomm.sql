@@ -68,16 +68,16 @@ begin
   return jsonb_build_object(
     'fee_pct', 10, 'xp_left', greatest(0, 3 - xp_used), 'xp', 20 + c.level * 3, 'max_open', 5,
     'here', jsonb_build_object('safe', coalesce(r.is_safe_zone, false) and r.region_id <> 'banyo_village', 'region', r.region_name,
-      'faction', public.world_faction_name(coalesce(r.control_faction_id, r.home_faction_id))),
+      'faction', (select mf.faction_name from public.world_major_factions mf where mf.faction_id = coalesce(r.control_faction_id, r.home_faction_id))),
     'open', (select coalesce(jsonb_agg(jsonb_build_object('id', u.id, 'owner', u.owner_name, 'item', u.item_id, 'qty', u.qty, 'reward', u.reward,
-        'region', (select region_name from public.world_map_regions where region_id = u.region_id), 'faction', public.world_faction_name(u.fee_faction),
+        'region', (select region_name from public.world_map_regions where region_id = u.region_id), 'faction', (select mf.faction_name from public.world_major_factions mf where mf.faction_id = u.fee_faction),
         'expires_at', u.expires_at,
         'have', coalesce((c.inventory ->> u.item_id)::int, 0) + coalesce((c.inventory ->> (u.item_id || '_hq'))::int, 0)) order by u.created_at desc), '[]'::jsonb)
       from public.world_user_commissions u
       where u.status = 'open' and u.owner_id <> uid
         and not exists (select 1 from public.world_blocks b where (b.owner_id = uid and b.blocked_id = u.owner_id) or (b.owner_id = u.owner_id and b.blocked_id = uid))),
     'mine', (select coalesce(jsonb_agg(jsonb_build_object('id', u.id, 'item', u.item_id, 'qty', u.qty, 'reward', u.reward, 'status', u.status,
-        'region', (select region_name from public.world_map_regions where region_id = u.region_id), 'faction', public.world_faction_name(u.fee_faction),
+        'region', (select region_name from public.world_map_regions where region_id = u.region_id), 'faction', (select mf.faction_name from public.world_major_factions mf where mf.faction_id = u.fee_faction),
         'fulfiller', u.fulfiller_name, 'delivered', u.delivered, 'expires_at', u.expires_at, 'done_at', u.done_at, 'settled', u.settled_at is not null) order by u.created_at desc), '[]'::jsonb)
       from public.world_user_commissions u
       where u.owner_id = uid and (u.settled_at is null or u.settled_at > now() - interval '3 days')));
@@ -223,5 +223,14 @@ begin
   execute replace(d, a, b);
   if inh is not null and not inh then execute format('grant %I to postgres with inherit false', own); end if;
 end $p$;
+
+update public.world_patch_notes set body = rtrim(body, E'\n') || $N$
+
+## 7.7.2
+- 조사원 의뢰: 일지 › 의뢰에 조사원이 직접 올리는 의뢰가 생겼습니다. 안전지대에서 「의뢰 올리기」로 구할 물품(분류·이름으로 찾기)·수량·보수를 정해 올리면 보수가 게시판에 맡겨집니다. 다른 조사원이 그 물품을 넘기면 보수와 경험치(상시 납품 의뢰와 같음, 하루 세 번까지)를 받고, 의뢰를 올린 안전지대의 세력이 보수의 10%를 수수료로 뗍니다. 의뢰가 끝나면 알림이 가고, 안전지대의 게시판에서 물품을 받습니다. 아무도 맡지 않은 의뢰는 거둘 수 있고, 3일이 지나면 보수를 그대로 돌려받습니다.
+- 제작법을 검색한 뒤 물품 정보 창에서 다른 제작법으로 넘어가면 처음 검색어가 남아 그 제작법이 가려지던 것을 고쳤습니다(제보 74).
+- 물품 정보 창에서 분해하거나 버리면 창이 닫히고 가방으로 돌아갑니다(버리기는 닫히게 되어 있었지만 실제로는 남아 있었습니다).
+$N$
+ where note_id = '7.7.0' and position('## 7.7.2' in body) = 0;
 
 update public.world_app_meta set value = '20261104200700' where key = 'db_version';
