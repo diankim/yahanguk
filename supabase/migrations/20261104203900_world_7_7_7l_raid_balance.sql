@@ -1,0 +1,134 @@
+-- 7.7.7l — 파티 전투 균형(사용자 결정 2026-11-01, 복제 DB 시뮬레이션 결과):
+--  ① 구중 봉주 결전도 귀허처럼 체력 회복품을 한 싸움에 네 개까지(아래 단계 토벌이라 귀허 둘보다 둘 더), 쉬다 돌아오면 체력 30, 혼자면 회복 기술 절반. 결전 중에는 가방·퀵슬롯에서 바로 못 쓰고 결전 화면 「물품」으로만.
+--     영력·기력 회복품(체력이 오르지 않는 것)은 세지 않는다.
+--  ② 혼자 싸울 때만 직업 보정(world_solo_aid): 혼자 귀허 승률이 백공 67%·호위 무사 42%·조사원 17%·퇴마관·봉인술사·의무관 0%로 갈려서
+--     주는 피해 +%와(귀허) 쓰러짐 상한 +n번. 둘 이상은 그대로.
+alter table public.world_raid_members add column if not exists items_used integer not null default 0;
+
+create or replace function public.world_solo_aid(p_job text)
+returns jsonb language sql immutable as $f$
+  -- dmg: 주는 피해 %, falls: 귀허 쓰러짐 상한 +, guard: 받는 피해 −%(world_cb_mitigate가 stats.solo_guard로) — 혼자 도전 10판씩 복제 DB 시뮬레이션으로 맞춤
+  select case p_job
+    when 'exorcist'   then '{"solo_dmg": 20, "solo_falls": 3, "solo_guard": 25}'
+    when 'sealmaster' then '{"solo_dmg": 20, "solo_falls": 3, "solo_guard": 20}'
+    when 'medic'      then '{"solo_dmg": 10, "solo_falls": 2, "solo_guard": 5}'
+    when 'artificer'  then '{"solo_dmg": 10, "solo_falls": 1, "solo_guard": 10}'
+    when 'scout'      then '{"solo_dmg": 5}'
+    when 'analyst'    then '{"solo_dmg": -10}'
+    else '{}' end::jsonb
+$f$;
+revoke all on function public.world_solo_aid(text) from public, anon, authenticated;
+grant execute on function public.world_solo_aid(text) to fn_owner_field;
+
+create or replace function pg_temp.yh_sub(d text, o text, n text, tag text) returns text language plpgsql as $f$
+begin
+  if (length(d) - length(replace(d, o, ''))) / greatest(1, length(o)) <> 1 then raise exception '7.7.7l anchor %', tag; end if;
+  return replace(d, o, n);
+end $f$;
+
+do $p$
+declare d text;
+begin
+  -- 귀허: 혼자 시작하면 보정을 참가자 능력치에 적어 둔다(주인 체력 계산 뒤라 체력은 그대로)
+  d := replace(pg_get_functiondef('public.world_gw_start(uuid)'::regprocedure), E'\r\n', E'\n');
+  if position('world_solo_aid' in d) = 0 then
+    d := pg_temp.yh_sub(d, '  perform public.world_gw_say(p_fight, 0, ''phase'',',
+      '  if n = 1 then update public.world_gw_members m set stats = m.stats || public.world_solo_aid(m.job_key) where fight_id = p_fight; end if;
+  perform public.world_gw_say(p_fight, 0, ''phase'',', 'gw_start');
+    execute d;
+  end if;
+
+  d := replace(pg_get_functiondef('public.world_gw_resolve(uuid)'::regprocedure), E'\r\n', E'\n');
+  if position('solo_dmg' in d) = 0 then
+    d := pg_temp.yh_sub(d, '* case when cr then 1.5 else 1 end * mul;
+      physical',
+      '* case when cr then 1.5 else 1 end * mul * (1 + coalesce((m.stats ->> ''solo_dmg'')::numeric, 0) / 100.0);
+      physical', 'gw_resolve dmg');
+    d := pg_temp.yh_sub(d, '(select max(falls) from public.world_gw_members where fight_id = p_fight) > 10 then',
+      '(select max(falls) - coalesce(max((stats ->> ''solo_falls'')::int), 0) from public.world_gw_members where fight_id = p_fight) > 10 then', 'gw_resolve cap');
+    d := pg_temp.yh_sub(d, '''열한 번째로 쓰러졌습니다. 홀로 선 이의 넋이 더는 버티지 못합니다.''',
+      '''쓰러질 수 있는 횟수를 넘겼습니다. 홀로 선 이의 넋이 더는 버티지 못합니다.''', 'gw_resolve msg');
+    execute d;
+  end if;
+
+  d := replace(pg_get_functiondef('public.world_gw_hurt(uuid,uuid,integer,integer,text)'::regprocedure), E'\r\n', E'\n');
+  if position('solo_falls' in d) = 0 then
+    d := pg_temp.yh_sub(d, 'greatest(0, 10 - (m.falls + 1))', 'greatest(0, 10 + coalesce((m.stats ->> ''solo_falls'')::int, 0) - (m.falls + 1))', 'gw_hurt');
+    execute d;
+  end if;
+
+  d := replace(pg_get_functiondef('public.world_gw_snapshot(uuid)'::regprocedure), E'\r\n', E'\n');
+  if position('falls_cap' in d) = 0 then
+    d := pg_temp.yh_sub(d, '''items_left'', greatest(0, 2 - coalesce(me.items_used, 0)),',
+      '''items_left'', greatest(0, 2 - coalesce(me.items_used, 0)),
+    ''falls_cap'', 10 + coalesce((select max((x.stats ->> ''solo_falls'')::int) from public.world_gw_members x where x.fight_id = fid), 0),
+    ''solo'', case when (select count(*) from public.world_gw_members x where x.fight_id = fid) = 1 then jsonb_build_object(''dmg'', me.stats -> ''solo_dmg'', ''falls'', me.stats -> ''solo_falls'', ''guard'', me.stats -> ''solo_guard'') end,', 'gw_snapshot');
+    execute d;
+  end if;
+
+  -- 결전: 회복품 셋·혼자 주는 피해
+  d := replace(pg_get_functiondef('public.world_raid_action(uuid,text,text,uuid,text)'::regprocedure), E'\r\n', E'\n');
+  if position('items_used' in d) = 0 then
+    d := pg_temp.yh_sub(d, '  if mb.out_until is not null then mb.out_until := null; end if;',
+      '  if mb.out_until is not null then mb.out_until := null;
+    -- 결전: 쉬다가 돌아오면 체력 30(귀허와 같게 — 회복품이 셋뿐이라 체력 1로 돌아오면 곧바로 다시 쓰러진다)
+    if rd.kind = ''final'' and c.health < 30 then c.health := 30; update public.world_characters set health = 30, updated_at = now() where owner_id = uid; end if;
+  end if;', 'raid_action return');
+    d := pg_temp.yh_sub(d, '      if k = ''revive'' then
+        select health into h1',
+      '      -- 결전 혼자: 회복 기술은 절반(귀허 의무관과 같은 까닭 — 회복품을 묶어도 기술 회복이 끝없이 이어진다)
+      if rd.kind = ''final'' and k in (''heal'', ''cleanse_heal'') and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then amt := ceil(amt * 0.5); end if;
+      if k = ''revive'' then
+        select health into h1', 'raid_action solo heal');
+    d := pg_temp.yh_sub(d, '    if crit then mul := mul * 1.5; end if;',
+      '    if crit then mul := mul * 1.5; end if;
+    if rd.kind = ''final'' and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then
+      mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> ''solo_dmg'')::numeric, 0) / 100.0); end if;', 'raid_action dmg');
+    d := pg_temp.yh_sub(d, '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;',
+      '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;
+    if rd.kind = ''final'' and h1 > h0 then
+      if mb.items_used >= 4 then raise exception ''결전에서는 체력 회복품을 한 싸움에 네 개까지만 쓸 수 있습니다.''; end if;
+      mb.items_used := mb.items_used + 1;
+    end if;', 'raid_action item');
+    d := pg_temp.yh_sub(d, 'contrib = mb.contrib, last_action_at = mb.last_action_at, out_until = mb.out_until, stats = st where raid_id = p_raid and owner_id = uid;',
+      'contrib = mb.contrib, last_action_at = mb.last_action_at, out_until = mb.out_until, stats = case when rd.kind = ''final'' and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then st || public.world_solo_aid(c.job_key) else st end, items_used = mb.items_used where raid_id = p_raid and owner_id = uid;', 'raid_action save');
+    execute d;
+  end if;
+
+  d := replace(pg_get_functiondef('public.world_raid_snapshot_core(uuid)'::regprocedure), E'\r\n', E'\n');
+  if position('items_left' in d) = 0 then
+    d := pg_temp.yh_sub(d, '''resting'', me.out_until is not null and me.out_until <= now(),',
+      '''resting'', me.out_until is not null and me.out_until <= now(),
+      ''items_left'', case when rd.kind = ''final'' and me.owner_id is not null then greatest(0, 4 - me.items_used) end,
+      ''solo'', case when rd.kind = ''final'' and me.owner_id is not null and (select count(*) from public.world_raid_members x where x.raid_id = rd.raid_id) = 1 then public.world_solo_aid(me.job_key) end,', 'raid_snapshot');
+    execute d;
+  end if;
+
+  -- 결전 중에는 가방·퀵슬롯에서 바로 쓰지 않는다(물러나 있거나 자리를 비워도) — 결전 화면 「물품」(world_raid_action)만
+  d := replace(pg_get_functiondef('public.world_use_item(text)'::regprocedure), E'\r\n', E'\n');
+  if position('결전 중에는' in d) = 0 then
+    d := pg_temp.yh_sub(d, '  IF coalesce(c.is_dead, false) THEN RAISE EXCEPTION',
+      '  IF coalesce(current_setting(''yh.raid_item'', true), '''') <> ''1'' AND EXISTS (
+       SELECT 1 FROM public.world_raid_members m JOIN public.world_raids rd ON rd.raid_id = m.raid_id
+        WHERE m.owner_id = uid AND rd.status = ''fight'' AND rd.kind = ''final'') THEN
+    RAISE EXCEPTION ''결전 중에는 가방의 물품을 바로 쓸 수 없습니다. 결전 화면의 「물품」으로 쓰세요(체력 회복품은 한 싸움에 네 개까지).'';
+  END IF;
+  IF coalesce(c.is_dead, false) THEN RAISE EXCEPTION', 'use_item');
+    execute d;
+  end if;
+  -- 혼자 도전 보정의 받는 피해 감소(stats.solo_guard — 귀허 시작 때·결전 행동 때 적음)
+  d := replace(pg_get_functiondef('public.world_cb_mitigate(numeric,jsonb,jsonb,uuid,boolean,boolean,text,boolean)'::regprocedure), E'\r\n', E'\n');
+  if position('solo_guard' in d) = 0 then
+    d := pg_temp.yh_sub(d, '  d := d * (1 - red / 100.0) * (1 + coalesce((p_stats ->> ''inc'')::numeric, 0) / 100.0);',
+      '  d := d * (1 - red / 100.0) * (1 + coalesce((p_stats ->> ''inc'')::numeric, 0) / 100.0) * (1 - coalesce((p_stats ->> ''solo_guard'')::numeric, 0) / 100.0);', 'cb_mitigate solo');
+    execute d;
+  end if;
+end $p$;
+
+update public.world_patch_notes set body = body || $N$
+## 7.7.7l
+- 구중 봉주 결전에서도 체력 회복품을 한 싸움에 네 개까지만 쓸 수 있습니다(귀허의 주인은 두 개). 혼자 싸우면 회복 기술의 회복량은 절반입니다. 결전 중에는 가방·퀵슬롯에서 바로 쓰지 않고 결전 화면의 「물품」으로 씁니다. 영력·기력 회복품은 세지 않습니다. 결전에서 물러났다가 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
+- 혼자 도전할 때만 직업 보정이 붙습니다(둘 이상이면 그대로): 퇴마관 주는 피해 +20%·받는 피해 −25% · 봉인술사 +20%·−20% · 의무관 +10%·−5% · 호위 무사 +10%·−10% · 현장 조사원 +5% · 백공 주는 피해 −10%. 귀허의 주인에서는 쓰러질 수 있는 횟수도 퇴마관·봉인술사 +3번·의무관 +2번·호위 무사 +1번.
+$N$ where note_id = '7.7.0' and position('## 7.7.7l' in body) = 0;
+
+update public.world_app_meta set value = '20261104203900' where key = 'db_version';

@@ -57,6 +57,7 @@
 - 보급품 고르기: world_expedition_start(p_node_id, p_minutes, p_stance, p_supplies jsonb)가 보급품마다 0~20(0 = 안 씀)을 yh.exp_sup으로 3인자 함수에 넘기고 3인자는 읽은 뒤 비움. 고르지 않은 것은 가진 만큼(20까지). 파티 원정(world_pexp_resolve)은 3인자 기본값. 화면 expedition.js supPick.
 - 짐 보따리(world_overflow_items): 원정 귀환(world_expedition_complete가 yh.overflow_to=expedition) 중 가방이 넘치면 world_enforce_bag_capacity가 넘친 몫을 담고 bag_overflow 알림. world_overflow_snapshot·world_overflow_take(들어가는 만큼)·world_overflow_discard. 비기 전에는 world_guard_action_context(explore·gather·fish·combat·encounter·expedition_start·travel 출발)·world_field_move가 막음. 현장 안내 world_field_snapshot.overflow(overflow.js). 원정 밖의 얻기는 넘친 만큼 버림.
 - 직업별 원정 기술: 퇴마관 파사 부적·조사원 흔적 추적·의무관 야전 처치·봉인술사 결계 야영·호위 무사 반격 태세·백공 현장 가공(결과에 발동 횟수). 기술 고유 효과는 §6.
+- 의무관 [야전 처치]: 체력이 회복 기준(heal_at) 아래면 보급품보다 먼저 체력 +25(회복 보정), 원정 한 번에 세 번(jobn). 원정 중 쓰러짐 기록(downed)은 world_guard_action_context가 허용(정산이 쓰러짐에서 되돌려지지 않게).
 - 화면: 지금 서 있는 답사 지점(world_characters.current_exploration_node_id)을 먼저 고르고 맨 위 「지금 있는 곳」(expedition.js preferHere), 같은 설정으로 다시 보내기(yh-exp-last), 탐색력 0이면 현장에 원정 권유. PC 두 칸(왼쪽 보낼 곳·기간·태세 / 오른쪽 보급품·기술·안내·출발), 모바일 한 칸.
 
 ### 3.5 귀허도
@@ -95,7 +96,7 @@
 - 꾸러미 2~3개·지역 특산물 50%+깊이×8%·전 3~(8+위험도×3). 대세력 조사원은 25%로 길에서 만난 이와 나눠(개수 −1·전 절반) payload.infl 1.5 → world_influence_tick이 탐색 0.3에 더함.
 - 조용히 살피기 world_field_search_quiet(yh.quiet): 조우 무게 ×(1−q)·꾸러미 ×(1−q/2), q = min(0.5, (민첩+감각)×0.008), payload.quiet_mode, home.js quietOn(yh-quiet-search).
 - 기척 숨기기 world_battle_action('sneak'): 마주친 직후(turn_count 0) 한 번, world_sneak_pct = 25+민첩×0.8+감각×0.5(+조사원 10)−(요괴Lv−내Lv)×3−우두머리 15, 10~75%. 성공 fled(battle_fled.sneak), 실패면 그 턴에 요괴가 침, 탐색력 반환 없음. battle.js sneak-ask(world_field_battle_view.sneak).
-- 채집 간격 12초(world_guard_repeat_farming, 채집터 무관). 화면은 성공 뒤 기기 시계로 12초 모든 채집 단추를 잠그고 남은 초 표시(home.js setGatherCd·paintGather, yh-gather-cd, 거절되면 3초).
+- 채집 간격 12초(world_guard_repeat_farming, 채집터 무관 — 함수 맨 앞 world_rate_check('gather')가 잠그기 전에 먼저 돌려보냄). 화면은 성공 뒤 기기 시계로 12초 모든 채집 단추를 잠그고 남은 초 표시(home.js setGatherCd·paintGather, yh-gather-cd, 거절되면 3초).
 - 채집은 한국 시각 하루 처음 10번 탐색력 무료(payload.free_day, 응답 free_left). 채집터마다 하루 제한은 두지 않는다(찾은 채집터가 많아 재료가 넘침).
 - 바깥 지역마다 들머리(답사 첫 칸)에 「어귀의 …」 채집터를 두고 처음부터 찾은 것으로(새 캐릭터 trg_world_entry_spots).
 
@@ -199,7 +200,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 피해 계수: 근접 힘 1.0 · 술법 영기 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
 - 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 내 레벨보다 3·5 높은 바깥 지역은 침식 +50%·+100%(world_level_gap_effect). 퀘스트·이야기 전 ×0.4.
 - 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
-- 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
+- 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
 - 공격·방어·회피·치명타·도주 확률은 world_combat_stats 하나로 계산해 엔진과 화면이 같은 값을 쓰고, 올리기 전에 바뀔 값을 미리 보인다.
 
 ### 칭호
@@ -409,6 +410,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 기여도(합동 토벌·결전·귀허·파티 토벌 공통) world_contrib_score(갈래 원값, 공격력, K) = 준 피해 + 0.75×늘려 준 동료 피해 + 0.4×공격력×협동 기술 횟수 + K×(막아 준 피해 + 동료 회복 + ½자기 회복 + ½받아 낸 피해). K = 1.5×평균 공격력÷요괴 한 대(world_raid_k: world_raid_boss_base · world_gw_k: (35+4×단계)×인원 배율 · 파티 토벌 4+0.7×(요괴Lv+3)). 계수는 6직업 넷·둘 모든 조합 정석 모형(넷 24~26%·둘 46~54%) 기준. 행동마다 원값만 credits(dmg·boost·guard·heal·heal_self·taken·skill)에 쌓고(world_raid_credit·world_gw_credit·world_gw_credit_hit, 효과 json의 건 사람 by·shield_by·critnext/crit_next uid·gward uid·block_by·break_by·stagger_by), 점수는 스냅샷이 계산(world_raid_score·world_gw_shares·world_pfight_shares), 합동 토벌 정산 첫머리 world_raid_recontrib가 contrib에 적음(서버 보스 L/30). 막아 준 피해에 드는 것: 퇴마 결계(꺾은 광역)·호법 신장(끌어와 맞은 전부 + 줄인 몫)·휘청임/묶은 손길(놓친 반격 기대 피해)·영력 보급(채운 영력×공격력×0.05를 북돋움으로). 화면 raid.js creditLine, 기록판 「기여」.
 - 협동 기술 world_coop_skills 24개(직업마다 4, 전투 숙련 3·8·18·36): 합동 토벌·귀허에서 그 턴 행동으로(영력·다시 쓰기). 호위 무사 패턴 공유·급소 지시·흐름 끊기·파진 돌격(제 공격 세 번 +30%, target self), 백공 현장 수선·영력 보급·방호 법구·공명 법진. 파티 원정 합동 전투는 world_coop_exp_procs가 기술마다 10%, 한 싸움 두 번까지(win_p 뒤).
 - 받는 피해 공용 world_cb_mitigate(원값, 능력치, 효과, 나, 광역, 터뜨림, 태세, 피하기): 능력치 → 방어·버티기 → 진언(봉연 {by,pct}·귀허 건 사람 id 50%) → 결계 → 호법 → 보호막 순, 효과를 닳게 하고 막아 준 credits를 돌려주면 world_raid_hit·world_gw_hit가 기여·체력·기록에 적음(대신 막기는 world_raid_hit). 새 보스 전투도 이 함수를 쓴다. 엔진마다 따로: 물품(봉연 world_use_item, 귀허 world_gw_resolve 안), 쓰러짐/쉬는 중(봉연 초·out_until, 귀허 라운드·out_rounds·rest), 협동 기술 효과 걸기.
+- 파티 전투 공용 함수(7.7.7n — 새 전투도 이것을 쓴다): 물품 효과 world_item_fx(기본 물품 → hp·mn·sp·er·stam·cures·buffs, world_use_item·world_party_use_item·귀허·원정 보급), 공격 굴림 world_cb_attack(능력치, fx, bfx, 하한, 폭 → d·crit·fx·bfx·src: 기세·사슬·약점 드러내기·약점·급소 crit_next), 늘려 준 몫 world_cb_boost_credits(→ [[사람, 몫, boost]…, [나, 남은 몫, dmg]]), 기운 걸기 world_cb_buff(종류, 효과, 건 사람 → fx 조각), 표적 order by world_cb_pick_key(이목) limit 1(무게 world_cb_aggro = max(5,이목)^1.3).
 - 칭호 13(분류 '토벌', 규칙 'raid' → world_raid_rule_count, world_title_award_check는 이벤트 'raid'일 때만).
 - 피해 기록판 views/meter.js mountMeter(합동·파티 토벌·귀허): 파티원마다 준 피해·받은 피해·회복의 수치·몫·게이지, 갈래 단추 정렬. 받은 피해 world_raid_members.taken(world_raid_hit)·world_gw_members.taken(world_gw_hurt), 파티 토벌 world_pfight_members.dmg·taken·heal(world_pfight_resolve가 차례 앞뒤 체력 차, yh.pf_hb). 스냅샷 members로 — 따로 안 묻는다. 휴대폰(899px↓) 오른쪽 손잡이 반투명 창(yh-meter-open·yh-meter-tab), PC 참가자 칸 아래.
 
