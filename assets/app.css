@@ -2276,10 +2276,18 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-wrap .panel-body { padding: 8px 10px; }
   .raid-wrap .panel-head { padding: 6px 10px; } .raid-wrap .panel-head h2 { font-size: calc(13px * var(--fz, 1)); }
   .raid-wrap .panel-head > small { display: none; }
-  .raid-time { margin-bottom: 4px; font-size: calc(12px * var(--fz, 1)); }
-  .raid-hp { margin-bottom: 4px; } .bar.boss { height: 10px; }
+  /* 7.7.7b(사용자 요청): 요괴 칸(남은 시간·체력·낌새)을 빠듯하게 */
+  .raid-wrap .raid-boss .panel-body { padding: 6px 8px; display: grid; gap: 3px; }
+  .raid-time { margin: 0; font-size: calc(11px * var(--fz, 1)); line-height: 16px; gap: 4px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+  .raid-time .ico { width: 12px; height: 12px; }
+  .raid-hp { margin: 0; gap: 6px; } .bar.boss { height: 7px; }
+  .raid-hp b { font-size: calc(11.5px * var(--fz, 1)); line-height: 16px; }
+  .raid-hp #raid-phase .chip { font-size: calc(10px * var(--fz, 1)); padding: 0 6px; min-height: 0; height: 16px; line-height: 14px; }
   /* 7.7.7(사용자 요청): 요괴 낌새 칸을 두 줄(낌새 18px · 기운 모으기 18px)로 촘촘히 */
-  .raid-says { height: 38px; grid-template-rows: 18px 18px; gap: 2px; }
+  .raid-says { height: 18px; grid-template-rows: 18px; gap: 0; }
+  .raid-says > * { grid-area: 1 / 1; }
+  .raid-says .raid-charge:not(.on) { display: none; }
+  .raid-says:has(.raid-charge.on) .raid-intent { visibility: hidden; }
   .raid-says .raid-charge { grid-template-columns: minmax(0, 1fr) 44px; gap: 6px; padding: 0 6px; font-size: calc(11px * var(--fz, 1)); line-height: 16px; }
   .raid-says .raid-charge .bar { height: 5px; }
   .raid-says .raid-bfx { display: none; }
