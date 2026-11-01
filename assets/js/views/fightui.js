@@ -11,7 +11,7 @@ export const FX_NAME = { ward: '결계', might: '기세', crit: '약점', crit_n
 export const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vital', critnext: 'vital', evade: 'dodge', shield: 'bubble', cover: 'hand', gward: 'talisman', taunt: 'star', guard: 'shield', bound: 'chain',
   expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward', block: 'hand' };
 export const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 동안).', might: '주는 피해가 늘어난다(정해진 횟수 동안).', crit: '치명타가 더 잘 터진다.', crit_next: '다음 공격이 반드시 치명타로 들어간다.', critnext: '다음 공격이 반드시 치명타로 들어간다.',
-  evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음 큰 공격(광역·기운 터뜨림)의 피해를 크게 줄이고 정신을 지킨다.',
+  evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음에 받는 공격 한 번의 피해를 절반으로 줄이고 정신을 지킨다.',
   taunt: '요괴의 눈길을 끌어 대신 맞고, 받는 피해가 줄어든다.', guard: '방어 태세 — 다음 공격의 피해가 줄어든다.', bound: '사슬에 묶여 다음 공격의 피해가 절반이 된다.',
   expose: '요괴가 받는 피해가 늘어난다.', stagger: '요괴가 휘청여 반격하지 못한다.', smoke: '연막 속에서 요괴의 공격이 빗나갈 수 있다.', break: '다음 광역·기운 터뜨림의 피해가 줄어든다.', block: '손길이 묶여 반격하지 못한다.' };
 export const SKILL_ICON = { art_mend: 'ward', art_supply: 'drop', art_shield: 'bubble', art_array: 'spark', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
