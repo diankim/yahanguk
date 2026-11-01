@@ -228,11 +228,10 @@ async function items(body, inv, stg) {
 }
 
 async function equip(body, inv) {
-  const cmap = catalogMap(inv), eq = inv.equipment || {}, have = inv.inventory || {};
+  const eq = inv.equipment || {}, have = inv.inventory || {};
   const c = store.character;
   const [prof, zones] = await Promise.all([load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), safeZones().catch(() => null), import('../bond.js').then(m => m.loadBond())]);
   const here = zones ? [...zones.values()].find(r => r.region_name === c.location) : null;
-  const enh = Number(prof?.current?.weapon?.enhance) || 0;
   // 그 부위에 바꿔 낄 수 있는 장비 목록(PC 칸·모바일 부위 창이 함께 쓴다)
   const optionsHtml = slot => {
     const cur = eq[slot], options = (inv.catalog || []).filter(i => slotOf(i) === slot && Number(have[i.id]) > 0 && i.id !== cur);

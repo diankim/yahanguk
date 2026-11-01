@@ -1,8 +1,8 @@
 // 야행 비무회(7.1, #/tourney): 비무 방(신청·작전·이번 주 대회·지난 결과)과 대진표·경기 다시 보기.
 // 판정은 서버(world_tourney_*, 1분마다 예약 작업)가 하고, 경기 기록은 합마다 2초씩 서버 시각에 맞춰 펼친다.
 // 다시 읽는 때: 화면을 열 때 · 신청·작전 뒤 · 대회가 진행 중이면 다음 회차 시각에 한 번(실시간 구독 없음).
-import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, guard, ask, openModal } from '../core.js';
-import { loading, errorBox, chip, panel } from './common.js';
+import { rpc, store, esc, icon, fmt, $, $$, nameOf, guard, ask } from '../core.js';
+import { loading, errorBox, panel } from './common.js';
 
 const MODE = { solo: '1:1', team: '팀전(2:2)' };
 const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시작', running: '진행 중', done: '끝남', cancelled: '열리지 않음' };

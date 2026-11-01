@@ -2,12 +2,12 @@
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
 import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
-import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
+import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
-import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
+import { loadBond, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 
@@ -106,10 +106,6 @@ function durBar(d, max) { return `<div class="durab ${d <= 0 ? 'broken' : d * 4 
 const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : ['tool', 'hat', 'shoes'].includes(it.category) ? 40 + (it.tier || 1) * 20 : 0) : 0;
 // 강화한 무기의 위력(서버 world_combat_stats: 단계마다 +5%)
 export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
-export function equipRows(inv, prof, here) {
-  return `<ul class="equip-list">${Object.keys(SLOTS).map(slot => equipRowLi(inv, prof, here, slot)).join('')}${tokenRowHtml()}</ul>
-  <p class="muted small">${DUR_NOTE}</p>`;
-}
 // 장착 칸 한 줄(내구도·수리·벗기). 모바일 가방 › 장비의 부위 창(bag.js)도 쓴다(7.5.4)
 export function equipRowLi(inv, prof, here, slot) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
@@ -136,10 +132,6 @@ export function bindRepair(root) {
 // 빈 칸에 무엇을 끼우면 좋은지
 const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
   norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집량·채집터 덤', explore: '나침반: 숨은 길·채집터를 더 잘 찾음', fishing: '낚싯대: 비워 두면 가방의 가장 좋은 것을 씀' };
-async function hereZone() {
-  const z = await safeZones().catch(() => null), c = store.character;
-  return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
-}
 // ── 상태 화면 칸들(7.5.0): 장비·전투 능력은 작게, 회복 물품은 퀵슬롯으로 ──
 export const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
 const QS_N = 8;
@@ -194,8 +186,8 @@ let lastChange = '';
 async function status(body) {
   const ch = lastChange; lastChange = '';
   if (/rest|idle|travel|field_move/.test(ch)) invalidate('world_rest_status');
-  const [sv, hud, prof, inv, here, rs, , qsSnap] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
-    load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
+  const [sv, hud, prof, inv, , rs, , qsSnap] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
+    load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), safeZones().catch(() => null),
     load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || /bond|equip|travel|party|field_move/.test(ch)),
     load('world_quickslots_get', undefined, { maxAge: 600000 }).catch(() => null)]);
   const c = store.character, invItems = c.inventory || {};
@@ -519,7 +511,7 @@ async function idle(body) {
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
 const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
-let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
+let tq = '', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 보기 순서(6.1.1): 분류별 · 등급 높은순 · 등급 낮은순(기기에 기억)
 let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 // 칭호 등급(서버 world_title_catalog.grade)

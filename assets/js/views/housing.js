@@ -20,7 +20,7 @@ const gradeOf = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith
 const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.name || nameOf(id);
 
 let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0;
-let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false, busy = false;
+let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
 let pet = null, fx = [];
 
 export async function render(root, sub) {

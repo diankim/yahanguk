@@ -1,9 +1,9 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
+import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip, itemDesc } from './common.js';
 import { mountMeter } from './meter.js';
-import { fxIcons, fxChip, fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups } from './fightui.js';
+import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups } from './fightui.js';
 // 기여도 갈래(7.7.4, 서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
 // 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
@@ -15,7 +15,6 @@ const creditLine = c => {
 };
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
-const SP_ITEMS = new Set(['spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew']);
 const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve', 'fish_porridge', 'herb_rice', 'moss_porridge', 'bark_stew', 'herb_fish_steam', 'spirit_gukbap', 'calm_brew',
   'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];

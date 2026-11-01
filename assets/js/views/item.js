@@ -1,7 +1,7 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
+import { ask, db, store, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip, zonesNow } from './common.js';
 
@@ -33,7 +33,7 @@ const USABLE_BASE = { reset_identity: '직업·소속 다시 고르기 · 능력
   purify_water: '침식 -20 · 정신 5 · 사념 침식 치료', calm_brew: '정신 30 · 동요·피로 치료',
   // 반요촌(귀허도)
   banyo_salve: '체력 70 · 정신 15 · 출혈·화상·중독 치료', oblivion_incense: '침식 -30 · 정신 20 · 사념 침식·심신 동요 치료' };
-// 우수품(<id>_hq)도 같은 물품으로 쓴다(7.5.2, 제보 48 — 전에는 우수품에 사용 단추가 없었다)
+// 우수품(<id>_hq)도 같은 물품으로 쓴다(7.5.2, 제보 48)
 export const USABLE = new Proxy(USABLE_BASE, { get(t, k) {
   if (typeof k !== 'string' || k in t) return t[k];
   return k.endsWith('_hq') && t[k.slice(0, -3)] ? `${t[k.slice(0, -3)]} · 우수품 효과 더 큼` : undefined;
@@ -262,7 +262,7 @@ function draw(box, id, inv, prices, mode) {
     }
     if (!d) return;
     const k = d.dataset.do;
-    // 서버 함수가 값을 돌려주지 않아도(버리기 등) 성공했는지 알 수 있게 따로 센다(7.7.2 — 전에는 돌려준 값으로만 판단해 버린 뒤에도 창이 남았다)
+    // 서버 함수가 값을 돌려주지 않아도(버리기 등) 성공했는지 알 수 있게 따로 센다(7.7.2)
     const run = async fn => { let ok = false; await guard(d, async () => { const r = await fn(); ok = true; return r; }); return ok; };
     const closeInfo = () => box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click();
     if (k === 'use') await useItem(id, d);

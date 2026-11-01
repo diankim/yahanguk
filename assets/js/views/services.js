@@ -285,7 +285,7 @@ export async function renderMarket(box) {
   const body = $('.mk-body', box);
   if (marketMode === 'direct') return renderDirect(body);
   try {
-    // 열린 등록은 사람마다 10건까지라 다 읽는다(예전 60건 한도에 오래된 등록이 「사기」와 「내 등록」에서 빠져 사라진 것처럼 보이던 것). 내 등록은 따로 읽어 늘 다 보인다
+    // 열린 등록은 사람마다 10건까지라 다 읽는다(한도를 두면 오래된 등록이 빠져 사라진 것처럼 보인다). 내 등록은 따로 읽어 늘 다 보인다
     const OCOLS = 'offer_id,seller_id,item_id,quantity,unit_price,status,created_at,expires_at';
     const [{ data: openAll, error }, { data: myOpen, error: e2 }, prices, , inv] = await Promise.all([
       db.from('world_trade_offers').select(OCOLS).eq('status', 'open').order('created_at', { ascending: false }).limit(300),
@@ -568,7 +568,7 @@ export async function renderStorage(box) {
 }
 
 // 가방 화면 등 어디서나 여는 창고 창(안전지대 밖에서는 보기만)
-// 맡기기·꺼내기·사기 뒤 창을 다시 그려도 보던 자리를 지킨다(7.5.7, 사용자 요청 — 전에는 「불러오는 중」으로 줄었다 다시 그려지며 맨 위로 올라갔다)
+// 맡기기·꺼내기·사기 뒤 창을 다시 그려도 보던 자리를 지킨다(7.5.7)
 function scrollerOf(el) {
   for (let p = el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p; }
   return document.scrollingElement;

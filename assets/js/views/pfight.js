@@ -6,7 +6,6 @@ import { bindTips, hideTip, memberLi, showMemDetail, vitHtml, itemListHtml, SP_I
 import { INTENT, SKILL, JOB, trayList, weakNote } from './battle.js';
 import { mountMeter } from './meter.js';
 
-const ACT = { attack: '공격', skill: '기술', guard: '방어', item: '물품', flee: '달아나기' };
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
 
 let seenLog = -1, seenFid = null; // 탄·기력·영력 부족 알림(7.5.9): 처음 그릴 때의 지난 기록은 건너뛰고 새로 붙은 내 줄만 본다
