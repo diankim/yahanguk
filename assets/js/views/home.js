@@ -272,7 +272,7 @@ function field(s, roster, blocked) {
         <div class="panel-body">
           ${(s.spots || []).length ? `<ul class="spots">${s.spots.map(p => `<li>
               <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${esc((p.items || []).map(nameOf).join(', '))}</small></div>
-              <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled' : ''}>채집</button></li>`).join('')}</ul>`
+              <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
           <p class="muted small">채집은 탐색력 1을 쓰고, 같은 채집터는 5분 뒤에 다시 쓸 수 있습니다.</p>
         </div>
@@ -349,7 +349,10 @@ function bind(s) {
   $('#search', el)?.addEventListener('click', e => doSearch(e.currentTarget));
   $('#quiet-mode', el)?.addEventListener('change', e => { try { localStorage.setItem(QUIET_KEY, e.target.checked ? '1' : '0'); } catch {} });
   $$('[data-move]', el).forEach(b => b.onclick = () => guard(b, () => act('world_field_move', { p_node_id: b.dataset.move }), { success: '' }));
-  $$('[data-gather]', el).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }));
+  $$('[data-gather]', el).forEach(b => b.onclick = () => { if (gatherWait() > 0) return; guard(b, async () => {
+    try { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); setGatherCd(GATHER_GAP); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }
+    catch (e) { if (/12초마다/.test(String(e?.message))) setGatherCd(3000); throw e; } }); });
+  paintGather(Date.now());
   $$('[data-rescue]', el).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
   $$('[data-aid]', el).forEach(b => b.onclick = () => openAid(b.dataset.aid, b.dataset.aidName));
   $$('[data-respect]', el).forEach(b => b.onclick = () => guard(b, () => act('world_corpse_respect', { p_corpse_id: b.dataset.respect })));
@@ -403,12 +406,29 @@ function showFind([ic, label], r) {
   setTimeout(() => n.classList.add('out'), 2600); setTimeout(() => n.remove(), 3100);
 }
 
+// 채집 간격(7.7.3, 사용자 요청): 서버(world_guard_repeat_farming)가 채집터와 상관없이 12초마다 한 번만 받으므로,
+// 채집에 성공하면 이 기기 시계로 12초 동안 모든 채집 단추를 잠그고 남은 초를 보인다(연타 요청을 보내지 않음).
+// 응답을 받은 때부터 세므로 서버보다 조금 늦게 풀린다. 새로 연 창이면 기기에 남긴 값을 쓰고, 그래도 거절되면 3초 기다린다.
+const GATHER_GAP = 12000, GATHER_KEY = 'yh-gather-cd';
+let gatherCd = 0;
+try { gatherCd = Number(localStorage.getItem(GATHER_KEY)) || 0; } catch {}
+function setGatherCd(ms) { gatherCd = Date.now() + ms; try { localStorage.setItem(GATHER_KEY, String(gatherCd)); } catch {} paintGather(Date.now()); }
+const gatherWait = () => Math.max(0, gatherCd - Date.now());
+function paintGather(now) {
+  $$('[data-gather]', el).forEach(b => {
+    if (b.dataset.blocked === '1' || b.dataset.busy === '1') return;
+    const own = Number(b.dataset.ready) || 0, t = Math.max(own, gatherCd);
+    if (t > now) { b.disabled = true; const txt = t === own ? fmt.remain(t - now) : `${Math.ceil((t - now) / 1000)}초`; if (b.textContent !== txt) b.textContent = txt; }
+    else { if (own) b.dataset.ready = ''; if (b.disabled || b.textContent !== '채집') { b.disabled = false; b.textContent = '채집'; } }
+  });
+}
+
 function tick() {
   if (!el?.isConnected) return clearInterval(timer);
   const now = Date.now();
   $$('[data-st-next]', el).forEach(s => { const t = Number(s.dataset.stNext); if (t) s.textContent = t > now ? `${fmt.remain(t - now)} 뒤 1 회복` : '곧 회복'; if (t && t <= now) { s.dataset.stNext = ''; draw(); } });
   $$('#fish-go', el).forEach(b => { const t = Number(b.dataset.ready); if (!t || b.dataset.busy === '1') return; if (t > now) { b.disabled = true; b.querySelector('span').textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.querySelector('span').textContent = '낚시하기'; } });
-  $$('[data-gather]', el).forEach(b => { const t = Number(b.dataset.ready); if (!t) return; if (t > now) { b.disabled = true; b.textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.textContent = '채집'; } });
+  paintGather(now);
   const line = restLine(now);
   $$('[data-rest-line]', el).forEach(x => { const fac = x.closest('.facility'); if (x.dataset.restLine === 'short') { const h = restParts(now); if (x.innerHTML !== h) x.innerHTML = h; } else x.textContent = line || (fac ? '쉬며 회복하고 탐색력 채우기' : ''); });
   $$('.modal [data-rest]').forEach(b => { const t = restAt(b.dataset.rest), sm = b.querySelector('[data-rest-cd]'); if (!sm) return;
