@@ -273,7 +273,8 @@ async function craft(body, inv, stg) {
   await loadFavs();
   const bagHave = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   // 안전지대면 창고 수량을 더해 보인다
-  const stHave = stg?.in_safe ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
+  // 반요촌 제작은 창고 재료를 쓰지 않는다(서버 world_craft_item과 같게, 7.7.3 — 화면이 창고 몫을 더해 「만들 수 있음」·「전부」를 잘못 보였다)
+  const stHave = stg?.in_safe && store.character?.location !== '반요촌' ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
   // 우수품(<id>_hq)도 같은 재료로 쓴다(7.5.0, 서버는 보통을 먼저 쓴다)
   const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[k + '_hq']) || 0) + (stHave[k + '_hq'] || 0) });
   const c = store.character;
