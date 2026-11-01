@@ -40,6 +40,7 @@ exec(open(__file__.replace('data.py', 'art1.py')).read())
 exec(open(__file__.replace('data.py', 'art2.py')).read())
 exec(open(__file__.replace('data.py', 'art3.py')).read())
 exec(open(__file__.replace('data.py', 'art4.py')).read())
+exec(open(__file__.replace('data.py', 'art5.py')).read())
 
 EFFECTS = {
     'heart': {'pal': {'r': '#e2475a', 'w': '#ff9aa6'}, 'rows': '''

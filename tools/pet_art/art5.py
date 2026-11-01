@@ -1,4 +1,4 @@
-# 롤백 뒤 더하는 꼬마 동무 6종(사용자 요청, 2026-10-31): 누렁 줄고양이(치즈)·잿빛 장모 고양이·까치 고양이(턱시도), 똥개, 부리너구리(오리너구리), 산토끼
+# 롤백 뒤 더하는 꼬마 동무 6종(사용자 요청, 2026-10-31·11-01 확정): 누렁 줄고양이(치즈)·잿빛 솜털 고양이·까치 고양이(턱시도), 똥개, 부리너구리(오리너구리), 산토끼
 # ── 고양이 셋: 같은 몸틀에 빛깔만 다르다(o 줄무늬 · c 흰 털) ──
 CAT_B = dict(
     idle='''
@@ -106,7 +106,7 @@ ssssaaaaaaaaaaaaaaaaa.
 .sssaaaaaaaaaaaaaaaa..
 ..ss..asaaasaaasaa....''')
 for f in (LONG_B, LONG_A): f['blink'] = f['idle'].replace('e', 's')
-pet(id='gray_longhair', name='잿빛 장모 고양이', grade=1, kind='shadow', likes='treat_fish',
+pet(id='gray_longhair', name='잿빛 솜털 고양이', grade=1, kind='shadow', likes='treat_fish',
     desc='잿빛 털이 솜뭉치처럼 부푼 고양이입니다. 앞머리에 눈이 반쯤 가려도 밥그릇만큼은 용케 찾아갑니다.',
     baby=dict(pal=LONG, **LONG_B), adult=dict(pal=LONG, **LONG_A))
 
