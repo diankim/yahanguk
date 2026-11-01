@@ -212,14 +212,14 @@ async function loadCircleNew() {
   const id = circleId, arr = circleMsgs[id] || [];
   if (!id || !circleLoaded.has(id) || !arr.length) return loadCircleMsgs();
   try {
-    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).gt('created_at', arr[arr.length - 1].created_at).order('created_at', { ascending: true }).limit(60);
+    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,sender_mark,kind,content,created_at').eq('circle_id', id).gt('created_at', arr[arr.length - 1].created_at).order('created_at', { ascending: true }).limit(60);
     if (!error) (data || []).forEach(onCircleMsg);
   } catch {}
 }
 async function loadCircleMsgs() {
   const id = circleId; if (!id) return draw();
   try {
-    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
+    const { data, error } = await db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,sender_mark,kind,content,created_at').eq('circle_id', id).order('created_at', { ascending: false }).limit(80);
     if (error) throw error;
     // 읽는 동안 실시간으로 들어온 말은 합치고 시각 순으로 맞춘다(전에는 이미 들고 있던 몇 시간 전 말이 새로 읽은 것 뒤에 붙어 끌려 올라왔다, 제보 33)
     const got = (data || []).reverse(), seen = new Set(got.map(m => m.id));
@@ -311,7 +311,7 @@ function subscribeCircles() {
   } catch { circleLive = false; }
 }
 
-const COLS = 'id,channel_type,sender_id,sender_name,sender_title,sender_color,recipient_id,content,created_at';
+const COLS = 'id,channel_type,sender_id,sender_name,sender_title,sender_color,sender_mark,recipient_id,content,created_at';
 async function load() {
   try {
     const { data, error } = await db.from('world_chat_messages').select(COLS).order('created_at', { ascending: false }).limit(80);
@@ -347,7 +347,7 @@ async function loadOlder() {
   olderBusy = true;
   try {
     let q = circle
-      ? db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,kind,content,created_at').eq('circle_id', circleId)
+      ? db.from('world_circle_messages').select('id,circle_id,sender_id,sender_name,sender_title,sender_color,sender_mark,kind,content,created_at').eq('circle_id', circleId)
       : db.from('world_chat_messages').select(COLS).eq('channel_type', tab);
     if (first) q = q.lt('created_at', first);
     const { data, error } = await q.order('created_at', { ascending: false }).limit(PAGE);
@@ -413,7 +413,7 @@ function draw() {
     list.style.setProperty('--cc', c.color);
     const ms = (circleMsgs[c.circle_id] || []).filter(m => !blocked.has(m.sender_id));
     list.innerHTML = ms.length ? topNote('c:' + c.circle_id) + ms.map((m, i) => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
-      : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
+      : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, mark: m.sender_mark, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
       : `<li class="chat-empty">「${esc(c.name)}」에 아직 말이 없습니다.</li>`;
     scrollEnd(); return;
   }
@@ -421,7 +421,7 @@ function draw() {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
     rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name || m.character_name, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다|일어났습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')) || m.sender_name === '봉연 소식', up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), seal: m.sender_name === '봉연 소식', sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다|일어났습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')) || m.sender_name === '봉연 소식', up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), seal: m.sender_name === '봉연 소식', sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, mark: m.sender_mark, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
   list.innerHTML = rows.length ? (tab in chanNew ? topNote(tab) : '') + rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
@@ -447,6 +447,8 @@ export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 
 export function richText(t) {
   return esc(t).replace(/#패치노트(?::([0-9][0-9.-]{2,11}))?/g, (_, id) => `<a class="patch-link" href="#/patch${id ? `/${id}` : ''}">${icon('scroll', 12)}패치노트${id ? ` ${id}` : ''}</a>`);
 }
+// 요괴화(요화 마지막 1시간) 중에 보낸 말: 이름 옆 붉은 표식(7.7.5, 서버가 보낼 때 sender_mark를 찍음)
+const YOHWA_MARK = '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>';
 function msgRow(r, prev) {
   // 시스템 알림 줄(서버가 「구조 알림」 이름으로 남긴 쓰러짐·다시 일어남 소식 등). 다시 일어남(up)은 차분한 색으로 구조가 끝났음을 알린다
   if (r.sys) return `<li class="chat-notice sys${r.up ? ' up' : ''}${r.seal ? ' raidnote' : ''}">${icon(r.up ? 'check' : r.seal ? 'flame' : 'heart', 12)}<span>${richText(r.text)}</span><time>${r.at ? fmt.time(r.at) : ''}</time></li>`;
@@ -462,7 +464,7 @@ function msgRow(r, prev) {
     : fr ? `<i class="av face mini${fr}" aria-hidden="true"><span class="mini-in">${emblem(r.sid, face, 72)}</span></i>`
     : `<i class="av face" aria-hidden="true">${emblem(r.sid, { ...face, frame: null }, 28)}</i>`;
   const ns = nameStyle(r.color, r.sid);
-  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta">${r.gm ? `<b><button type="button" class="name-link" data-card="${esc(r.sid)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b>${cardName(r.sid, r.who)}</b>`}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
+  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta">${r.gm ? `<b><button type="button" class="name-link" data-card="${esc(r.sid)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b>${cardName(r.sid, r.who)}</b>`}${r.mark === 'frenzy' ? YOHWA_MARK : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {

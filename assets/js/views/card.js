@@ -30,6 +30,8 @@ async function draw(box, id) {
     const p = profileOf(c.owner_id, c.profile);
     const state = c.is_dead ? chip('숨을 거둠', 'bad') : c.downed ? chip('전투불능', 'bad') : c.in_combat ? chip('전투 중', 'warn')
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
+    // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(7.7.5, 서버 world_yohwa_public — 1·2단계는 본인만)
+    const yoChip = c.yohwa === 'frenzy' ? chip('요괴화', 'bad') : c.yohwa === '3' ? chip('반요 · 요화 3단계', 'warn') : '';
     const rel = c.relation || 'none', safe = !!(store.snaps?.['world_field_snapshotnull'] || store.snaps?.world_field_snapshot)?.region?.safe;
     // 파티 초대: 상대가 파티가 없고, 내가 파티장이거나 아직 파티가 없을 때(없으면 만들고 초대)
     // 비무: 같은 곳(안전지대 포함)이면 신청할 수 있다. 못 하면 단추를 숨기지 않고 까닭을 적는다(서버 world_spar_challenge가 다시 검사)
@@ -54,14 +56,14 @@ async function draw(box, id) {
       ${c.same_place && c.downed && !c.is_dead ? `<button class="btn small primary" data-do="rescue">${icon('heart', 14)}<span>구조</span></button>` : ''}`;
     box.innerHTML = `
       <div class="profile-card">${patternLayer(c.profile?.pattern)}<div class="pc-emblem">${emblem(c.owner_id, c.profile, 72)}</div>
-        <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}">${esc(c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}</h3>
+        <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}">${esc(c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${c.yohwa === 'frenzy' ? '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>' : ''}</h3>
           ${c.display_title ? `<p class="title-badge">「${esc(c.display_title)}」</p>` : ''}
           <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id ? `<p><span class="fchip" style="--fc:${factionColor(c.major_faction_id)}">${esc(nameOf(c.major_faction_id))}${c.faction_rank ? ` · ${esc(c.faction_rank)}` : ''}</span></p>` : ''}${c.tn_champ ? `<p><span class="chip tn-badge">${c.tn_champ === 'team' ? '비무 장원 · 팀전' : '비무 장원'}</span></p>` : ''}
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div>
         ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div>
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
       <dl class="kv info">
-        <div><dt>지금</dt><dd>${state}</dd></div>
+        <div><dt>지금</dt><dd>${state}${yoChip}</dd></div>
         <div><dt>있는 곳</dt><dd>${esc(c.location || '알 수 없음')}${c.same_place && !c.mine ? ' <span class="muted small">(같은 곳)</span>' : ''}</dd></div>
         ${c.last_active && !c.mine ? `<div><dt>최근 활동</dt><dd>${ago(c.last_active)}</dd></div>` : ''}
         <div><dt>숙련</dt><dd title="갈래마다 가장 높은 기술 단계(최고 50)">${RANKS.map(([k, n]) => `${n} ${c.ranks?.[k] || 1}`).join(' · ')} <span class="muted small">/ 50</span></dd></div>
