@@ -117,7 +117,9 @@ function draw() {
   const f = s.fight, me = (s.members || []).find(m => m.id === s.me) || {};
   const pct = f.max_hp ? Math.max(0, Math.min(100, f.hp / f.max_hp * 100)) : 100;
   const done = ended(), fight = f.status === 'fight';
-  const oldLog = $('.raid-log', el), atBottom = !oldLog || oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24, oldTop = oldLog?.scrollTop || 0;
+  // 7.7.7g(사용자 요청): 휴대폰(640px 아래)은 싸우는 동안 최근 라운드·최근 줄이 맨 위(끝난 뒤 되짚어 보기는 처음부터)
+  const top = window.matchMedia('(max-width: 640px)').matches && !done;
+  const oldLog = $('.raid-log', el), atBottom = !oldLog || (top ? oldLog.scrollTop < 24 : oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24), oldTop = oldLog?.scrollTop || 0;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 외전 · 요인록 · 귀허</p>
       <h1>귀허의 주인 <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
       <div class="head-actions">${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
@@ -142,7 +144,7 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
         ${logHtml(s, me, done)}</div></section>
     </div>
     ${tipsHtml(s.tips)}`;
-  const log = $('.raid-log', el); if (log && !done) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
+  const log = $('.raid-log', el); if (log && !done) log.scrollTop = atBottom ? (top ? 0 : log.scrollHeight) : oldTop;
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   bind(); countdown();
 }
@@ -151,10 +153,14 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
 function logHtml(s, me, done) {
   const rows = s.log || [];
   if (!rows.length) return '<ol class="raid-log"><li class="muted">아직 기록이 없습니다.</li></ol>';
-  let last = null, out = '';
-  for (const l of rows) {
-    if (l.round !== last) { last = l.round; out += `<li class="gw-rhead">${l.round ? `${l.round}라운드` : '시작'}</li>`; }
-    out += `<li class="${KIND[l.kind] || ''}${me.name && String(l.text).startsWith(me.name) ? ' mine' : ''}"><span>${esc(l.text)}</span></li>`;
+  // 라운드마다 묶고, 휴대폰 싸우는 중이면 최근 라운드·최근 줄을 위로(7.7.7g)
+  const groups = [];
+  for (const l of rows) { if (!groups.length || groups[groups.length - 1].round !== l.round) groups.push({ round: l.round, lines: [] }); groups[groups.length - 1].lines.push(l); }
+  const newestTop = !done && window.matchMedia('(max-width: 640px)').matches;
+  let out = '';
+  for (const g of newestTop ? groups.reverse() : groups) {
+    out += `<li class="gw-rhead">${g.round ? `${g.round}라운드` : '시작'}</li>`;
+    for (const l of newestTop ? g.lines.reverse() : g.lines) out += `<li class="${KIND[l.kind] || ''}${me.name && String(l.text).startsWith(me.name) ? ' mine' : ''}"><span>${esc(l.text)}</span></li>`;
   }
   return `<ol class="raid-log gw-log ${done ? 'full' : ''}">${out}</ol>`;
 }

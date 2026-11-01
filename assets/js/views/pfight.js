@@ -70,7 +70,9 @@ function draw() {
   const members = s.members || [], byId = Object.fromEntries(members.map(m => [m.id, m]));
   const tgt = byId[s.target_id], cur = byId[s.turn_id];
   const fight = s.status === 'fight', playing = fight && me && !me.out;
-  const oldLog = $('.raid-log', el), atBottom = !oldLog || oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24, oldTop = oldLog?.scrollTop || 0;
+  // 7.7.7g(사용자 요청): 휴대폰(640px 아래)은 최근 기록이 맨 위 — 봉연 토벌과 같게
+  const top = window.matchMedia('(max-width: 640px)').matches;
+  const oldLog = $('.raid-log', el), atBottom = !oldLog || (top ? oldLog.scrollTop < 24 : oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24), oldTop = oldLog?.scrollTop || 0;
   const head = s.status === 'gather' ? '동료를 기다리는 중' : fight ? `${s.round}라운드` : s.status === 'won' ? '쓰러뜨림' : s.status === 'cancelled' ? '혼자 싸우기로' : '싸움이 끝남';
   // 차례 줄: 순서대로 이름, 요괴는 노린 사람 뒤에(이번 라운드에 이미 쳤으면 흐리게)
   const order = (s.order || []).filter(id => byId[id]);
@@ -102,9 +104,9 @@ function draw() {
         <div class="dm-host" id="pf-meter"></div>
         <p class="muted small">빠른 사람(민첩 + 감각÷2)부터 차례로 움직입니다. 요괴는 라운드마다 이목이 높은 이를 더 자주 노리고, 그 사람의 차례 바로 뒤에 반격합니다(그 차례에 방어하면 막습니다). 30초 동안 고르지 않으면 방어로 넘어갑니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
-        <ol class="raid-log">${lg.map(l => `<li class="no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
+        <ol class="raid-log">${(top ? [...lg].reverse() : lg).map(l => `<li class="no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
     </div>`;
-  const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? log.scrollHeight : oldTop;
+  const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? (top ? 0 : log.scrollHeight) : oldTop;
   if (s.status !== 'gather') mountMeter($('#pf-meter', el), members.map(m => ({ ...m, me: m.id === c.owner_id })));
   bind(); countdown();
 }
