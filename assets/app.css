@@ -2080,6 +2080,13 @@ b.contest { color: var(--warn); font-weight: 600; }
 .coop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
 .coop-btn { display: grid; gap: 2px; text-align: left; padding: 7px 9px; border-radius: var(--r-sm); border: var(--bw, 1px) solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: var(--surface-2); color: var(--text); cursor: pointer; font: inherit; }
 .coop-btn b { font-size: calc(13px * var(--fz, 1)); } .coop-btn small { font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); }
+/* 7.7.7c: 협동 기술·북돋기 아이콘 */
+.coop-btn b { display: flex; align-items: center; gap: 4px; min-width: 0; } .coop-btn b .ico { flex: none; color: var(--accent-ink, var(--accent)); }
+.fx-icons { display: inline-flex; gap: 1px; margin-left: 3px; vertical-align: -1px; }
+.fx-i { display: inline-flex; color: var(--ok); font-style: normal; } .fx-i.bad { color: var(--bad); } .fx-i .ico { width: 12px; height: 12px; }
+.mem-top b { display: inline-flex; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
+.fx-chip { gap: 3px; } .fx-chip .ico { flex: none; }
+.raid-mine .rm-fx .chip { line-height: 16px; padding: 1px 7px; font-size: calc(11px * var(--fz, 1)); }
 .coop-btn:disabled { opacity: .55; cursor: default; } .coop-btn.locked { border-style: dashed; border-color: var(--line); }
 .raid-mem { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .raid-mem li { padding: 6px 8px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); display: grid; gap: 3px; }
@@ -2313,7 +2320,8 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-legend { font-size: calc(10.5px * var(--fz, 1)); }
   .raid-act .raid-coopbox .coop-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
   .raid-act .raid-coopbox .coop-btn { padding: 4px 4px; gap: 0; text-align: center; min-width: 0; min-height: 40px; align-content: center; }
-  .raid-act .raid-coopbox .coop-btn b { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .raid-act .raid-coopbox .coop-btn b { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: center; gap: 2px; }
+  .raid-act .raid-coopbox .coop-btn b .ico { width: 12px; height: 12px; }
   .raid-act .raid-coopbox .coop-btn small { font-size: calc(10px * var(--fz, 1)); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .raid-wrap.playing ~ .raid-locks { display: none; }
 }

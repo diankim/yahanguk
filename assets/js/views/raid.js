@@ -19,6 +19,14 @@ const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill
   'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 const BOSS_FX = { expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계' };
 const BUFF = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '호법', guard: '방어', bound: '사슬' };
+// 7.7.7c(사용자 요청): 북돋기·약화와 협동 기술마다 아이콘 — 참가자 이름 옆에 지금 걸린 것을 아이콘으로
+const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vital', evade: 'dodge', shield: 'bubble', cover: 'hand', gward: 'talisman', taunt: 'star', guard: 'shield', bound: 'chain',
+  expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward' };
+const SKILL_ICON = { art_mend: 'ward', art_supply: 'drop', art_shield: 'bubble', art_array: 'spark', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
+  exo_cover: 'hand', exo_mantra: 'talisman', exo_barrier: 'ward', exo_guardian: 'star', med_aid: 'heart', med_needle: 'needle', med_revive: 'refresh', med_pulse: 'heart',
+  sc_mark: 'crosshair', sc_path: 'dodge', sc_smoke: 'fog', sc_signal: 'flag', seal_ward: 'ward', seal_might: 'bolt', seal_chain: 'chain', seal_bagua: 'shield' };
+const fxIcons = (keys, map = BUFF) => (keys || []).filter(k => map[k]).map(k => `<i class="fx-i ${k === 'bound' ? 'bad' : ''}" title="${esc(map[k])}">${icon(FX_ICON[k] || 'spark', 12)}</i>`).join('');
+const fxChip = (k, map = BUFF, kind = 'ok') => `<span class="chip fx-chip ${k === 'bound' ? 'bad' : kind}">${icon(FX_ICON[k] || 'spark', 12)}${esc(map[k])}</span>`;
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
 let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false;
@@ -133,7 +141,7 @@ function patch() {
   // 요괴의 말·기운 모으기·약점: 높이가 정해진 칸 안에서만 바뀐다(줄이 없어도 자리는 남김)
   const sy = $('#raid-says', el);
   if (sy) {
-    const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => chip(BOSS_FX[k], 'ok')).join('');
+    const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => fxChip(k, BOSS_FX)).join('');
     sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
       <div class="raid-charge ${r.charge ? 'on' : ''}">${r.charge ? `<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.kind === 'world' ? `약 ${r.charge.left * 2}초` : `${r.charge.left}번`} 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
@@ -239,7 +247,7 @@ function coopButtons(me) {
   return (me.coop || []).map(k => {
     const lock = !k.unlocked, cd = k.cd > 0, low = (me.sp || 0) < k.cost;
     return `<button type="button" class="coop-btn ${lock ? 'locked' : ''}" data-act="coop" data-skill="${esc(k.id)}" data-tgt="${esc(k.target)}" ${lock || cd || low ? 'data-lock="1" disabled' : ''}
-      title="${esc(k.desc)}"><b>${esc(k.name)}</b><small>${lock ? `전투 숙련 ${k.rank}단계` : cd ? `${k.cd}초` : `영력 ${k.cost}`}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
+      title="${esc(k.desc)}"><b>${icon(SKILL_ICON[k.id] || 'spark', 13)}${esc(k.name)}</b><small>${lock ? `전투 숙련 ${k.rank}단계` : cd ? `${k.cd}초` : `영력 ${k.cost}`}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
   }).join('');
 }
 function patchActions(me, members) {
@@ -250,7 +258,7 @@ function patchActions(me, members) {
   const mine = members.find(m => m.me), spName = spOf()[0];
   box.innerHTML = `<div class="raid-vit hp ${me.hp < 35 ? 'low' : ''}"><span>체력</span><b>${me.hp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.hp))}%"></i></i></div>
     <div class="raid-vit ${spOf()[1]}"><span>${esc(spName)}</span><b>${me.sp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.sp))}%"></i></i></div>
-    <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</span></div>`;
+    <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => fxChip(k)).join('')}</span></div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
   if (cb) {
@@ -301,7 +309,7 @@ function membersHtml(list, me, r) {
   const can = me.joined && r.status === 'fight';
   return list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out || m.away || m.resting ? 'out' : ''}">
       <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${can ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">
-        <span class="mem-top"><b>${esc(m.name)}</b><small>${m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : `${m.hp}`}</small></span>
+        <span class="mem-top"><b>${esc(m.name)}<span class="fx-icons">${fxIcons(m.buffs)}</span></b><small>${m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : `${m.hp}`}</small></span>
         <span class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></span>
         <small class="mem-sub">${esc(JOBS[m.job]?.name || nameOf(m.job))} · 기여 ${m.share}%${m.buffs?.length ? ` · ${m.buffs.filter(k => BUFF[k]).map(k => BUFF[k]).join('·')}` : ''}</small></button></li>`).join('');
 }
