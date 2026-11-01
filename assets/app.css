@@ -2312,7 +2312,7 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-act .raid-coopbox .raid-tgt { margin: 0; font-size: calc(10.5px * var(--fz, 1)); line-height: 1.3; }
   .raid-act .panel-body { gap: 6px; }
   .raid-out { font-size: calc(11.5px * var(--fz, 1)); padding: 6px 8px; }
-  .raid-wrap .raid-mem { max-height: 88px; gap: 4px; }
+  .raid-wrap .raid-mem { max-height: none; overflow: visible; gap: 4px; } /* 7.7.7d: 스크롤 없이 참가자 모두 */
   .mem-pick { padding: 3px 5px; gap: 2px; } .mem-sub { display: none; }
   .raid-wrap .raid-log { height: 92px; font-size: calc(12px * var(--fz, 1)); }
   .raid-is-out .raid-wrap .raid-log, .raid-is-rest .raid-wrap .raid-log { height: 70px; }
@@ -2719,6 +2719,23 @@ b.shadow { color: var(--sp); }
 @media (max-width: 640px) { .cpk-hex input { font-size: 16px; } }
 /* 7.6.1 화면점검 고침 */
 .raid-wrap .raid-mem .raid-mem-empty { grid-column: 1 / -1; }
+/* 7.7.7d(사용자 요청): 참가자 직업 색·막대 안 체력 숫자·누르면 자세히 */
+.raid-mem .jb-artificer, .mem-detail.jb-artificer { --jb: var(--hp); } .raid-mem .jb-scout, .mem-detail.jb-scout { --jb: var(--ok); } .raid-mem .jb-exorcist, .mem-detail.jb-exorcist { --jb: var(--mp); }
+.raid-mem .jb-medic, .mem-detail.jb-medic { --jb: var(--gold); } .raid-mem .jb-sealmaster, .mem-detail.jb-sealmaster { --jb: var(--sp); } .raid-mem .jb-analyst, .mem-detail.jb-analyst { --jb: var(--warn); }
+.raid-mem li[class*="jb-"] .mem-pick { border-left: 3px solid var(--jb, var(--line)); }
+.raid-mem li[class*="jb-"] .mem-top b { color: color-mix(in srgb, var(--jb, var(--text)) 70%, var(--text)); }
+.raid-mem li.sel .mem-pick { background: color-mix(in srgb, var(--jb, var(--accent)) 12%, var(--surface-2)); }
+.bar.mem-hp { position: relative; height: 14px; border-radius: 4px; }
+.bar.mem-hp > em { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: calc(10.5px * var(--fz, 1)); font-weight: 700; line-height: 1; color: var(--text); text-shadow: 0 0 2px var(--bg), 0 0 2px var(--bg); font-variant-numeric: tabular-nums; }
+.mem-detail .bar > span { background: var(--hp); } .mem-detail .bar.low > span { background: var(--bad); }
+.bar.mem-hp.big { height: 18px; } .bar.mem-hp.big > em { font-size: calc(12px * var(--fz, 1)); }
+.mem-detail { margin-top: 6px; padding: 8px 10px; border-radius: var(--r-sm); border: var(--bw, 1px) solid color-mix(in srgb, var(--jb, var(--accent)) 50%, var(--line)); border-left-width: 3px; background: var(--surface-2); display: grid; gap: 6px; }
+.md-head { display: flex; align-items: baseline; gap: 6px; min-width: 0; } .md-head b { font-size: calc(15px * var(--fz, 1)); color: color-mix(in srgb, var(--jb, var(--text)) 70%, var(--text)); }
+.md-head span { font-size: calc(12px * var(--fz, 1)); color: var(--muted); } .md-head small { margin-left: auto; font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); }
+.md-x { all: unset; cursor: pointer; display: inline-flex; padding: 2px; color: var(--muted); }
+.md-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); }
+.md-nums span { display: grid; } .md-nums b { color: var(--text); font-size: calc(13px * var(--fz, 1)); font-variant-numeric: tabular-nums; }
+.md-fx { display: flex; flex-wrap: wrap; gap: 4px; } .md-fx .chip { line-height: 16px; padding: 1px 7px; font-size: calc(11px * var(--fz, 1)); }
 .spot-list li .btn { white-space: nowrap; flex: none; }
 
 /* 제작 거르기 접는 칸(7.6.3): 체크박스 대신 누르면 켜지는 작은 칩, 닫혀 있을 때는 고른 것을 한 줄로 요약 */

@@ -29,10 +29,10 @@ const fxIcons = (keys, map = BUFF) => (keys || []).filter(k => map[k]).map(k => 
 const fxChip = (k, map = BUFF, kind = 'ok') => `<span class="chip fx-chip ${k === 'bound' ? 'bad' : kind}">${icon(FX_ICON[k] || 'spark', 12)}${esc(map[k])}</span>`;
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false;
+let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false, sel = null;
 
 export async function render(root, sub) {
-  el = root; rid = sub || null; snap = null; target = null; built = ''; logCount = 0;
+  el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>${loading()}`;
   await refresh();
   subscribe();
@@ -123,7 +123,7 @@ function build() {
         ${ended ? resultHtml(r, s.members) : ''}
       </div></section>
       ${playing ? actionsShell(me) : ''}
-      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul>${r.status === 'announced' ? '' : '<div class="dm-host" id="raid-meter"></div>'}</div></section>
+      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul><div class="mem-detail" id="raid-memdetail" hidden></div>${r.status === 'announced' ? '' : '<div class="dm-host" id="raid-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2><span class="raid-legend"><i class="lg-out"></i>내가 준 피해<i class="lg-in"></i>받은 피해</span></header><div class="panel-body"><ol class="raid-log" id="raid-log"></ol></div></section>
     </div>
     ${locksHtml(s.locks)}`;
@@ -148,6 +148,7 @@ function patch() {
   }
   const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
   const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members, me, r);
+  memDetail(members);
   mountMeter($('#raid-meter', el), members);
   patchActions(me, members);
   // 기록은 새 줄만 덧붙이고, 맨 아래를 보던 중이면 따라 내려간다
@@ -306,12 +307,29 @@ function fillItems() {
 // 휴대폰: 협동 기술은 단추 하나로 접어 두고 누르면 펼친다(한 화면에 담기)
 function membersHtml(list, me, r) {
   if (!(list || []).length) return '<li class="muted small raid-mem-empty">아직 참가자가 없습니다.</li>';
-  const can = me.joined && r.status === 'fight';
-  return list.map(m => `<li class="${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.out || m.away || m.resting ? 'out' : ''}">
-      <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${can ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">
-        <span class="mem-top"><b>${esc(m.name)}<span class="fx-icons">${fxIcons(m.buffs)}</span></b><small>${m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : `${m.hp}`}</small></span>
-        <span class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></span>
+  // 7.7.7d(사용자 요청): 직업 색(이름·왼쪽 띠), 체력 숫자는 막대 안, 누르면 아래에 자세히(동료 선택은 싸우는 중에만)
+  return list.map(m => `<li class="jb-${esc(m.job || '')} ${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.id === sel ? 'sel' : ''} ${m.out || m.away || m.resting ? 'out' : ''}">
+      <button type="button" class="mem-pick" data-pick="${esc(m.id)}" title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">
+        <span class="mem-top"><b>${esc(m.name)}<span class="fx-icons">${fxIcons(m.buffs)}</span></b>${m.away ? '<small>자리 비움</small>' : m.out ? `<small>쉼 ${m.out}초</small>` : m.resting ? '<small>쉬는 중</small>' : ''}</span>
+        <span class="bar mem-hp ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span><em>${m.hp}</em></span>
         <small class="mem-sub">${esc(JOBS[m.job]?.name || nameOf(m.job))} · 기여 ${m.share}%${m.buffs?.length ? ` · ${m.buffs.filter(k => BUFF[k]).map(k => BUFF[k]).join('·')}` : ''}</small></button></li>`).join('');
+}
+// 고른 참가자 자세히(PC·휴대폰 모두 누르면 열림, 다시 누르거나 닫기로 접음)
+function memDetail(list) {
+  const box = el && $('#raid-memdetail', el); if (!box) return;
+  const m = (list || []).find(x => x.id === sel);
+  if (!m) { box.hidden = true; box.innerHTML = ''; return; }
+  const st = m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : '싸우는 중';
+  const fx = (m.buffs || []).filter(k => BUFF[k]);
+  box.hidden = false;
+  box.className = `mem-detail jb-${m.job || ''}`;
+  box.innerHTML = `<div class="md-head"><b>${esc(m.name)}</b><span>Lv${m.level} ${esc(JOBS[m.job]?.name || nameOf(m.job))}</span><small>${st}</small>
+      <button type="button" class="md-x" data-md-close aria-label="닫기">${icon('close', 14)}</button></div>
+    <div class="bar mem-hp big ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span><em>체력 ${m.hp} / 100</em></div>
+    <div class="md-nums"><span>기여 <b>${m.share}%</b></span><span>준 피해 <b>${fmt.num(m.dmg || 0)}</b></span><span>받은 피해 <b>${fmt.num(m.taken || 0)}</b></span><span>회복 <b>${fmt.num(m.heal || 0)}</b></span></div>
+    <div class="md-fx">${fx.length ? fx.map(k => fxChip(k)).join('') : '<small class="muted">걸린 효과 없음</small>'}</div>
+    ${creditLine(m.credits)}`;
+  const x = $('[data-md-close]', box); if (x) x.onclick = () => { sel = null; patch(); };
 }
 function locksHtml(locks) {
   if (!(locks || []).length) return '';
@@ -347,7 +365,7 @@ function bind() {
   if (bb) bb.onclick = () => run(bb, () => rpc('world_raid_begin', { p_raid: r.id }));
   // 참가자 고르기: 칸 안에서 처리(다시 그리지 않음)
   const ml = $('#raid-mem', el);
-  if (ml) ml.onclick = e => { const b = e.target.closest('[data-pick]'); if (!b || b.disabled) return; target = b.dataset.pick; patch(); };
+  if (ml) ml.onclick = e => { const b = e.target.closest('[data-pick]'); if (!b) return; const id = b.dataset.pick; sel = sel === id ? null : id; if (snap?.me?.joined && snap?.raid?.status === 'fight') target = id; patch(); };
   $$('.raid-buttons [data-act]', el).forEach(b => b.onclick = () => run(b, () => rpc('world_raid_action', { p_raid: r.id, p_action: b.dataset.act }), true));
   const ib = $('#raid-items', el); if (ib) ib.onclick = openItems;
   const co = $('#raid-coop-open', el); if (co) co.onclick = () => { const w = $('.raid-act', el); w?.classList.toggle('coop-open'); co.classList.toggle('on', !!w?.classList.contains('coop-open')); };
