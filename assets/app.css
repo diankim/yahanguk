@@ -2620,11 +2620,16 @@ b.shadow { color: var(--sp); }
 .recipe .craft-act { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .recipe .craft-act .craft-go { margin-left: auto; }
 .recipe .craft-qty { display: flex; align-items: center; gap: 4px; }
-.recipe .craft-qty .btn { padding-inline: 8px; }
+.recipe .craft-qty .btn { padding-inline: 8px; white-space: nowrap; flex: none; }
 .recipe .craft-qty .cq-step { min-width: 32px; padding-inline: 0; font-size: calc(16px * var(--fz, 1)); line-height: 1; }
 .recipe .craft-qty .cq-n { width: 3.4em; height: 32px; min-height: 32px; text-align: center; padding: 0 4px; -moz-appearance: textfield; }
 .recipe .craft-qty .cq-n::-webkit-outer-spin-button, .recipe .craft-qty .cq-n::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+/* 휴대폰도 한 줄에 나란히(7.7.1b, 사용자 요청 — 전에는 횟수 칸이 한 줄을 다 써서 제작 단추가 아래로 내려갔다) */
 @media (max-width: 640px) {
-  .recipe .craft-qty { flex: 1 1 100%; }
-  .recipe .craft-qty .cq-n { flex: 0 0 3.4em; }
+  .recipe .craft-act { flex-wrap: nowrap; gap: 6px; }
+  .recipe .craft-qty { gap: 3px; min-width: 0; }
+  .recipe .craft-qty .btn { padding-inline: 6px; }
+  .recipe .craft-qty .cq-step { min-width: 28px; }
+  .recipe .craft-qty .cq-n { width: 2.8em; padding: 0 2px; }
+  .recipe .craft-act .craft-go { padding-inline: 10px; white-space: nowrap; }
 }
