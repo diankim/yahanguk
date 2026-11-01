@@ -1,12 +1,14 @@
 // 지도: 세계 지도(확대·축소·이동, 겹침 없는 이름표) · 세부 탐사 · 이동과 원정.
-import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast, RAID_ON } from '../core.js';
+import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
-import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
-import { waterUnder, waterOver } from '../water.js';
-import { raidLocks } from './raid.js';
+import { buildCells, centroid, factionColor } from '../geo.js';
+import { waterUnder, waterOver, SEA_FISH } from '../water.js';
+import { raidLocks, raidShadow } from './raid.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
-let el, sub = 'world', off = [], selected = null, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set();
+const shadowText = w => w.status === 'fight' ? '봉연의 그림자 토벌 중' : w.status === 'signup' ? '봉연의 그림자 · 모이는 중'
+  : `봉연의 그림자 출현 예정${w.spawn_at ? ` · ${new Date(w.spawn_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`;
+let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set(), shadow = null, surveyed = new Set();
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -15,11 +17,23 @@ export async function render(root, s) {
     ${segmented('map-sub', SUBS, sub)}<div id="map-body"></div>`;
   bindSegmented(el, 'map-sub', k => { sub = k; history.replaceState(null, '', `#/map/${k}`); draw(); });
   off.forEach(f => f());
-  off = [on('changed', () => draw(true)), on('env', () => draw(true))];
+  off = [on('changed', ({ name } = {}) => { if (/field_|gather|expedition/.test(name || '')) loadSurveyed(true); draw(true); }), on('env', () => draw(true))];
   window.addEventListener('yahang:arrived', onArrive);
   // 봉연에 잠긴 곳(서버 토벌 실패): 따로 읽어 지도에 표시한다(1분 동안 다시 씀)
   raidLocks().then(l => { sealed = new Set(l.map(x => x.region_id)); if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
+  // 봉연의 그림자가 나올 곳(출현지가 확정된 뒤·모이는 중·토벌 중, 7.5.9): 같은 값(world_raid_brief, 1분 캐시)을 쓰고 다른 표시와 겹치지 않는 보라 마름모 별로 짚는다
+  raidShadow().then(w => { shadow = w; if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
+  // 완전 답사한 지역(나에게만, 7.5.9c): 점 바로 바깥 금빛 테. 10분 캐시, 탐색·채집·원정 뒤에만 새로 읽는다
+  loadSurveyed();
   await draw();
+}
+function loadSurveyed(force) {
+  if (force) invalidate('world_survey_full_regions');
+  load('world_survey_full_regions', undefined, { maxAge: 600000 }).then(l => {
+    const next = new Set(Array.isArray(l) ? l : []);
+    if (next.size === surveyed.size && [...next].every(x => surveyed.has(x))) return;
+    surveyed = next; if (mapData && $('#map-body', el)) { try { paint(); } catch {} }
+  }).catch(() => {});
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', onArrive); window.removeEventListener('resize', onResize); }
 function onArrive() { draw(true); }
@@ -42,6 +56,8 @@ async function drawWorld(body, soft) {
     safeZones().catch(() => new Map()),
   ]);
   const here = currentRegion(mapData);
+  // 다른 화면이 지역 이름으로 넘겨도(구조 요청 알림 등) 찾아 고른다
+  if (selected && !mapData.regions.some(r => r.region_id === selected)) selected = mapData.regions.find(r => r.region_name === selected)?.region_id || null;
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
   const keepScroll = soft && $('#region-q', body)?.value;
   body.innerHTML = `
@@ -55,7 +71,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span>' : ''}</div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -82,8 +98,11 @@ function setupMap(here) {
   const b = bounds();
   const fitK = () => Math.min(frame.clientWidth / b.w, frame.clientHeight / b.h);
   if (!view) {
-    const k = fitK() * (frame.clientWidth < 520 ? 2.4 : 1.8);
-    view = { cx: here?.world_x ?? b.x + b.w / 2, cy: here?.world_y ?? b.y + b.h / 2, k };
+    // 다른 화면에서 지역을 짚어 열었으면(focusRegion) 그 지역을 가운데에 더 크게(7.5.7, 구조 요청 「지도에서 보기」)
+    const tgt = focusPending ? mapData.regions.find(r => r.region_id === selected && r.world_x != null) : null; focusPending = false;
+    const k = fitK() * (frame.clientWidth < 520 ? (tgt ? 3.4 : 2.4) : (tgt ? 2.8 : 1.8));
+    const at = tgt || here;
+    view = { cx: at?.world_x ?? b.x + b.w / 2, cy: at?.world_y ?? b.y + b.h / 2, k };
   }
   const minK = () => fitK() * 0.9, maxK = () => fitK() * 6;
   const clamp = () => {
@@ -192,10 +211,11 @@ function paint() {
     if (zones.get(r.region_id)?.contested) hatch += `<path d="${pathOf(poly)}" class="cell-contest"/>`;
   }
   // ② 경계: 같은 세력 안은 옅은 선, 세력이 바뀌면 국경, 이웃이 없으면 해안선
-  let inner = '', border = '', coast = '';
+  // 바다낚시가 되는 지역의 해안은 물빛으로 조금 굵게(7.7.1, 1안)
+  let inner = '', border = '', coast = '', seaCoast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
-    if (!e.b) coast += d; else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
+    if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
   }
   // ③ 길
   const seen = new Set(); let roads = '';
@@ -254,9 +274,11 @@ function paint() {
       ${r.region_id === dest ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" class="dest-ring"/>` : ''}
       ${safe ? `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" transform="rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})" class="dot" data-region="${esc(r.region_id)}"/>`
              : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 6.5 : 5}" class="dot" data-region="${esc(r.region_id)}"/>`}
+      ${!safe && surveyed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 9.6 : 8.1}" class="survey-edge"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${sel ? 8.25 : 6.75}" class="survey-ring"/>` : ''}
       ${r.region_id === here?.region_id ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" class="here-ring"/>` : ''}
       ${zones.get(r.region_id)?.contested ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring late"/>` : ''}
       ${sealed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9.5" class="seal-ring"/>` : ''}
+      ${shadow && shadow.region === r.region_name ? `<g class="shadow-mark ${shadow.status}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><rect x="-11" y="-11" width="22" height="22" class="sh-sq"/><path d="M0 -24 L2.6 -19.4 L7 -17 L2.6 -14.6 L0 -10 L-2.6 -14.6 L-7 -17 L-2.6 -19.4 Z" class="sh-star"/></g>` : ''}
       <title>${esc(r.region_name)}</title></g>`;
     const l = labels.get(r.region_id);
     if (l) {
@@ -272,7 +294,7 @@ function paint() {
     <rect width="${W}" height="${H}" class="sea"/><rect width="${W}" height="${H}" fill="url(#sea-wave)"/>
     ${waterUnder(g, X, Y, view.k)}
     <g class="land">${land}</g>${waterOver(g, id => byId.has(id), X, Y, view.k, zoom)}<g>${hatch}</g>
-    <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${border}" class="b-border"/>
+    <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
     <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
 }
@@ -352,7 +374,7 @@ function drawDetail() {
     <article class="panel region-detail" style="--fc:${factionColor(factionOf(r.region_id))}">
       <header class="panel-head"><h2>${esc(r.region_name)}</h2>${isHere ? chip('현재 위치', 'accent') : ''}</header>
       <div class="panel-body">
-        <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${sealed.has(r.region_id) ? ' · <b class="sealed">봉연에 잠김</b>' : ''}</p>
+        <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${sealed.has(r.region_id) ? ' · <b class="sealed">봉연에 잠김</b>' : ''}${shadow && shadow.region === r.region_name ? ` · <b class="shadow">${esc(shadowText(shadow))}</b>` : ''}</p>
         <div class="chips">${zone?.is_safe_zone ? chip('안전지대', 'ok') : danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}</div>
         ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')} · 거래소${zone.has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>
@@ -432,10 +454,10 @@ async function drawTravel(body) {
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   // 탈것에서 내리기(6.1.1): 걸어 다니기 — 서버 world_mount_unequip
   const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
-  $$('[data-goto]', body).forEach(b => b.onclick = () => { selected = b.dataset.goto; view = null; switchTo('world'); });
+  $$('[data-goto]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.goto); switchTo('world'); });
   const span = $('[data-arrive]', body);
   if (span) { const t = setInterval(() => { if (!span.isConnected) return clearInterval(t); span.textContent = `${fmt.remain(Number(span.dataset.arrive) - Date.now())} 후 도착`; }, 1000); }
 }
 function switchTo(k) { sub = k; history.replaceState(null, '', `#/map/${k}`); render(el, k); }
 // 다른 화면(사건 바로가기 등)에서 특정 지역을 골라 지도를 열 때 쓴다.
-export function focusRegion(id) { selected = id; view = null; }
+export function focusRegion(id) { selected = id; view = null; focusPending = true; }

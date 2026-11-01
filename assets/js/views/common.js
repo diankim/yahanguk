@@ -1,5 +1,6 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
 import { db, rpc, store, on, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion } from '../core.js';
+import { armAlarm } from '../sound.js';
 
 // 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
 const inflight = new Map();
@@ -8,7 +9,7 @@ export async function load(name, args, { maxAge = 0 } = {}) {
   const key = name + JSON.stringify(args ?? null);
   if (maxAge && store.snaps[key] && Date.now() - (cacheAt.get(key) || 0) < maxAge) return store.snaps[key];
   if (inflight.has(key)) return inflight.get(key);
-  const p = (name === 'world_inventory_snapshot' ? inventorySnap() : rpc(name, args)).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); return d; })
+  const p = (name === 'world_inventory_snapshot' ? inventorySnap() : rpc(name, args)).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); if (name === 'world_rest_status') { armAlarm('rest_short', 'end', d?.short_ready_at); armAlarm('rest_full', 'end', d?.full_ready_at); } return d; })
     .finally(() => inflight.delete(key));
   inflight.set(key, p);
   return p;
@@ -19,6 +20,17 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 let invStatic = null, invLite = true;
 // 받아 둔 제작법 목록(퀘스트의 「제작법」 단추가 쓴다, 아직 안 받았으면 빈 목록)
 export const knownRecipes = () => invStatic?.recipes || [];
+// 받아 둔 물품 설명(7.7.5: 토벌 물품 창). 아직 안 받았으면 기기에 남긴 사전, 그것도 없으면 빈 글
+let descMap = null;
+export function itemDesc(id) {
+  if (!descMap) {
+    let cat = invStatic?.catalog;
+    if (!cat) try { cat = JSON.parse(localStorage.getItem('yh-inv-static-v1') || 'null')?.catalog; } catch {}
+    if (!cat?.length) return '';
+    descMap = new Map(cat.map(i => [i.id, i.description || '']));
+  }
+  return descMap.get(id) || descMap.get(String(id).replace(/_hq$/, '')) || '';
+}
 const INV_KEY = 'yh-inv-static-v1';
 async function inventorySnap() {
   if (!invStatic) {

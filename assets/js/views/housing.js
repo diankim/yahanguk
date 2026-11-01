@@ -20,7 +20,7 @@ const gradeOf = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith
 const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.name || nameOf(id);
 
 let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0;
-let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false, busy = false;
+let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
 let pet = null, fx = [];
 
 export async function render(root, sub) {
@@ -33,7 +33,8 @@ export function destroy() { cancelAnimationFrame(raf); raf = null; el = null; cv
 async function reload() {
   if (!el) return;
   try {
-    snap = await rpc('world_housing_snapshot', { p_owner: ownerArg });
+    const pre = store.houseSnap; store.houseSnap = null; // 조사원 카드가 막 받아 둔 것이면 다시 묻지 않는다
+    snap = pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
     if (!el) return;
     if (!snap.open) return drawClosed();
     resetState(); draw();
@@ -362,6 +363,8 @@ async function openStore() {
 }
 
 // ─── 꼬마 동무 ───
+// 동무 정표(7.7.4): 친밀도를 다 채운 동무가 알에서 다시 나오면 하나, 다섯 개로 「빛나는 알」 하나(world_pet_token_trade, 어디서나)
+const tokenRow = inv => { const n = Number(inv.pet_token || 0); return n ? `<div class="hs-token"><span>${icon('heart', 14)} 동무 정표 ×${n} <small class="muted">다섯 개 = 빛나는 알 하나</small></span><button class="btn small ${n >= 5 ? 'primary' : ''}" data-token ${n >= 5 ? '' : 'disabled'}>빛나는 알로 바꾸기</button></div>` : ''; };
 async function openPets() {
   let ps;
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
@@ -383,6 +386,7 @@ async function openPets() {
   };
   const body = `<p class="muted small">꼬마 동무는 능력치 효과가 없습니다. 두 자리에 한 마리씩 둡니다. 데리고 다니는 동무는 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채 동무는 방 안을 돌아다니며 손님도 쓰다듬거나 놀아 줄 수 있습니다. 같은 동무를 두 자리에 함께 둘 수는 없어서, 다른 자리로 고르면 앞 자리에서 빠집니다.</p>
     ${slots}
+    ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
     <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
     <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id); return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
@@ -391,7 +395,7 @@ async function openPets() {
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token]'); if (!b) return;
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
       openModal({ title: '별명 짓기', body: `<form id="pet-nick" class="hs-gb-form"><input name="nick" maxlength="8" value="${esc(cur)}" placeholder="${esc(PETS[id]?.name || '')}" autocomplete="off"><button class="btn small primary">짓기</button></form><p class="muted small">8자까지 · 한글·영문·숫자 · 비우면 원래 이름으로 돌아갑니다.</p>` });
@@ -404,6 +408,7 @@ async function openPets() {
     guard(b, async () => {
       let r;
       if (b.dataset.adopt) r = await act('world_pet_adopt', { p_item: b.dataset.adopt });
+      else if (b.dataset.token != null) r = await act('world_pet_token_trade');
       else if (b.dataset.prof !== undefined) r = await rpc('world_pet_profile_set', { p_pet: b.dataset.prof || null });
       else r = await rpc('world_pet_place', { p_pet: b.dataset.place || null });
       closeModal(); await reload(); openPets();

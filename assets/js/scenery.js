@@ -1,6 +1,5 @@
 // 현장 머리 배경: 산수화처럼 거리감이 다른 네 겹(하늘 · 먼 산 · 장소의 상징물 · 앞쪽 땅과 풀)을 평면 도형으로 쌓는다.
 // 그라데이션·그림자·흐림 없이 장소 색(--sc)을 겹마다 다른 농도로 섞어 깊이를 만들고, 글자가 있는 왼쪽은 비워 둔다.
-const VB = '0 0 640 150';
 
 /* ── 그리기 도우미 ──────────────────────────────────────── */
 const r1 = (seed => () => (seed = (seed * 9301 + 49297) % 233280) / 233280);
@@ -120,32 +119,40 @@ LAND.default = LAND.wild;
 
 /* ── 하늘: 해·달과 둘레의 고리, 구름 띠, 별 ─────────────────── */
 function sky(phase, weather) {
-  const dim = ['cloudy', 'rain', 'fog', 'snow', 'bloodmist'].includes(weather);
+  const dim = ['cloudy', 'rain', 'drizzle', 'fog', 'snow', 'bloodmist'].includes(weather);
   const bands = (n, y0) => Array.from({ length: n }, (_, i) => `<rect x="${330 + i * 70 + (i % 2) * 24}" y="${y0 + (i % 3) * 9}" width="${70 + (i % 2) * 40}" height="5" rx="2.5"/>`).join('');
-  let out = '';
+  let out = '', orb = '';
   if (phase === 'night') {
     const rnd = r1(7);
     out += `<g class="sk-stars">${Array.from({ length: 16 }, () => `<circle cx="${(260 + rnd() * 370).toFixed(0)}" cy="${(10 + rnd() * 56).toFixed(0)}" r="${(0.6 + rnd() * 0.9).toFixed(1)}"/>`).join('')}</g>`;
-    out += `<g class="sk-moon ${dim ? 'dim' : ''}"><circle cx="560" cy="40" r="26" class="halo"/><circle cx="560" cy="40" r="19" class="halo2"/><circle cx="560" cy="40" r="13"/><circle cx="566" cy="36" r="11" class="sk-cut"/></g>`;
+    orb = `<g class="sk-moon ${dim ? 'dim' : ''}"><circle cx="560" cy="40" r="26" class="halo"/><circle cx="560" cy="40" r="19" class="halo2"/><circle cx="560" cy="40" r="13"/><circle cx="566" cy="36" r="11" class="sk-cut"/></g>`;
   } else if (!dim) {
     const low = phase === 'dawn' || phase === 'dusk';
     const cx = phase === 'dawn' ? 520 : phase === 'dusk' ? 590 : 560, cy = low ? 82 : 40, rr = low ? 20 : 12;
-    out += `<g class="sk-sun ${low ? 'low' : ''}"><circle cx="${cx}" cy="${cy}" r="${rr + 16}" class="halo"/><circle cx="${cx}" cy="${cy}" r="${rr + 8}" class="halo2"/><circle cx="${cx}" cy="${cy}" r="${rr}"/></g>`;
+    orb = `<g class="sk-sun ${low ? 'low' : ''}"><circle cx="${cx}" cy="${cy}" r="${rr + 16}" class="halo"/><circle cx="${cx}" cy="${cy}" r="${rr + 8}" class="halo2"/><circle cx="${cx}" cy="${cy}" r="${rr}"/></g>`;
   }
   out += `<g class="sk-cloud">${bands(dim ? 5 : 3, dim ? 18 : 30)}</g>`;
-  return out;
+  return { orb, out };
 }
 
+// 넓은 화면(7.7.4, 사용자 요청): 한 폭(640) 그림을 왼쪽으로 두 번 더 이어 붙여 되풀이한다 — 하나 걸러 좌우를 뒤집어 이음매가 맞닿게, 해·달은 오른쪽 한 번만,
+// 이음매에 가는 선이 비치지 않게 조금씩 겹치고(0.8), 폭 사이가 끊기지 않게 맨 아래에 앞땅 띠를 길게 깐다. 오른쪽 끝에 맞춰 잘라 보이므로(xMaxYMax slice) 좁은 화면은 전과 같다.
+const REPEAT = 3;
 export function sceneArt(theme, phase, weather) {
   const L = (LAND[theme] || LAND.default)();
-  return `<svg class="scene-art" viewBox="${VB}" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
-    ${sky(phase, weather)}
+  const sk = sky(phase, weather);
+  const land = `${sk.out}
     <path class="ln-far" d="${L.far}"/>
     ${L.far2 ? `<path class="ln-far2" d="${L.far2}"/>` : ''}
     ${L.mid ? `<path class="ln-mid" d="${L.mid}"/>` : ''}
     ${L.snow ? `<path class="ln-snow" d="${L.snow}"/>` : ''}
     ${L.line ? `<g class="ln-line">${L.line}</g>` : ''}
     ${L.near ? `<path class="ln-near" d="${L.near}"/>` : ''}
-    ${L.gold ? `<g class="ln-gold">${L.gold}</g>` : ''}
+    ${L.gold ? `<g class="ln-gold">${L.gold}</g>` : ''}`;
+  const w = 640 * REPEAT;
+  return `<svg class="scene-art" viewBox="${-(w - 640)} 0 ${w} 150" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
+    ${sk.orb}
+    ${Array.from({ length: REPEAT }, (_, i) => `<g transform="${i % 2 ? `translate(${-640 * (i - 1) + i * 0.8} 0) scale(-1 1)` : `translate(${-640 * i + i * 0.8} 0)`}">${land}</g>`).join('')}
+    <rect class="ln-near" x="${-(w - 640)}" y="145" width="${w}" height="5"/>
   </svg>`;
 }

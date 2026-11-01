@@ -1,9 +1,9 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON } from '../core.js';
+import { ask, db, store, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
-import { load, chip } from './common.js';
+import { load, chip, zonesNow } from './common.js';
 
 const USABLE_BASE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
   ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +2', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
@@ -33,11 +33,19 @@ const USABLE_BASE = { reset_identity: '직업·소속 다시 고르기 · 능력
   purify_water: '침식 -20 · 정신 5 · 사념 침식 치료', calm_brew: '정신 30 · 동요·피로 치료',
   // 반요촌(귀허도)
   banyo_salve: '체력 70 · 정신 15 · 출혈·화상·중독 치료', oblivion_incense: '침식 -30 · 정신 20 · 사념 침식·심신 동요 치료' };
-// 우수품(<id>_hq)도 같은 물품으로 쓴다(7.5.2, 제보 48 — 전에는 우수품에 사용 단추가 없었다)
+// 우수품(<id>_hq)도 같은 물품으로 쓴다(7.5.2, 제보 48)
 export const USABLE = new Proxy(USABLE_BASE, { get(t, k) {
   if (typeof k !== 'string' || k in t) return t[k];
   return k.endsWith('_hq') && t[k.slice(0, -3)] ? `${t[k.slice(0, -3)]} · 우수품 효과 더 큼` : undefined;
 } });
+// 7.7.7h(제보 85): 효과 문구를 회복 종류마다 색으로 — 「체력 35 · 정신 10 · 침식 -8」을 마디(·)로 나눠 체력 붉게·정신 푸르게·영력 보라·침식·치료·탐색력
+export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
+const FX_ORDER = ['cure', 'hp', 'mind', 'sp', 'er', 'stam'].map(k => FX_KINDS.find(x => x[0] === k)); // 「사념 침식 치료」는 침식이 아니라 치료
+const fxKindOf = seg => (FX_ORDER.find(([, , re]) => re.test(seg)) || [])[0] || '';
+export function fxHtml(text) {
+  return String(text || '').split(' · ').map(seg => { const k = fxKindOf(seg.trim()); return k ? `<span class="fxk fxk-${k}">${esc(seg)}</span>` : esc(seg); }).join(' · ');
+}
+export const fxKindsOf = id => { const t = USABLE[id]; return t ? new Set(String(t).split(' · ').map(x => fxKindOf(x.trim())).filter(Boolean)) : new Set(); };
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
 // 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
 const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);
@@ -97,6 +105,8 @@ export function suitedJobs(o) {
   const req = Object.entries(o.required_stats || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
   const wt = o.equipment_traits?.weapon_type;
   let jobs = req.length ? STAT_JOBS[req[0][0]] || [] : [];
+  // 방어구는 짝 능력치로도 입으므로(world_stat_pair) 짝 능력치의 직업도 넣는다(7.5.4, 제보 52 — 법의에 퇴마관이 빠졌다)
+  if (o.category === 'armor' && req.length) jobs = [...new Set([...jobs, ...(STAT_JOBS[STAT_PAIR[req[0][0]]] || [])])];
   if (o.category === 'weapon') {
     if (wt === 'melee') jobs = ['artificer'];
     else if (wt === 'ranged') jobs = ['scout'];
@@ -143,30 +153,56 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
 }
 
 // 얻는 곳: 서버 world_item_sources(물품마다 이 접속 동안 기억)
-const srcCache = new Map();
+const srcCache = new Map(), srcAllCache = new Map();
+async function goRegion(name) {
+  const { focusRegion } = await import('./map.js');
+  closeLayers(); closeModal(); focusRegion(name); window.yahangGo('map', 'world');
+}
+async function openAllSources(id) {
+  let s;
+  try { if (!srcAllCache.has(id)) srcAllCache.set(id, await rpc('world_item_sources_all', { p_item: id })); s = srcAllCache.get(id) || {}; }
+  catch (e) { toast(e.message, 'error'); return; }
+  const sec = (label, all) => (all || []).length ? `<h3 class="sub-h">${label} <small class="muted">${all.length}곳 · 낮은 레벨부터</small></h3>
+    <div class="src-all">${all.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '';
+  const body = [sec('채집', s.gather), sec('조사', s.sites), sec('요괴', s.monsters), sec('낚시', s.fish)].join('') || '<p class="muted">-</p>';
+  const m = openLayer({ title: `${nameOf(id)} · 얻는 곳`, body: `<p class="muted small">지역 이름을 누르면 지도에서 짚어 줍니다.</p>${body}` });
+  $$('[data-src-go]', m).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
+}
 async function fillSources(box, id) {
   const dd = $('[data-src]', box); if (!dd) return;
   try {
     if (!srcCache.has(id)) srcCache.set(id, await load('world_item_sources', { p_item: id }));
     const s = srcCache.get(id) || {};
-    const part = (label, list, n) => list?.length ? `<span class="src"><b>${label}</b> ${esc(list.join(' · '))}${n > list.length ? ` 외 ${n - list.length}곳` : ''}</span>` : '';
+    // 지역 이름을 누르면 창을 닫고 지도에서 그 지역을 짚는다(7.5.9k, 제보 66)
+    // 갈래마다 낮은 레벨부터 두 곳까지만(7.6.3, 사용자 요청 — 길어지면 아래 단추가 밀려 내려갔다), 나머지는 「외 n곳」
+    const part = (label, all, n) => { const list = (all || []).slice(0, 2), tot = Math.max(n || 0, (all || []).length);
+      return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join(' · ')}${tot > list.length ? ` <button type="button" class="q-link src-more" data-src-more>외 ${tot - list.length}곳</button>` : ''}</span>` : ''; };
     const html = [part('채집', s.gather, s.gather_n), part('조사', s.sites, s.sites_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
     // 사는 곳: 대장간(모든 안전지대)·안전지대 상점(회차마다 품목이 바뀜)·세력 비고(공훈)
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
     const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`].filter(Boolean).join('');
     dd.innerHTML = (html + extra) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
+    $$('[data-src-go]', dd).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
+    // 「외 n곳」(7.7.4, 제보 82): 창 안에서 펼치면 휴대폰에서 끝없이 길어지므로(80곳이 넘는 재료도 있다) 겹쳐 뜨는 창에 모두 보인다
+    $$('[data-src-more]', dd).forEach(btn => btn.onclick = () => openAllSources(id));
   } catch { dd.textContent = '-'; }
 }
 function draw(box, id, inv, prices, mode) {
   const c = store.character, it = (inv.catalog || []).find(x => x.id === id), pr = prices.get(id);
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
+  // 짝이 되는 우수품·보통 물품도 함께 센다(7.7.0, 제보 69 — 우수품만 있는데 재료 정보가 「없음」으로 보였다). 서버 제작·사용은 둘을 같은 물품으로 쓴다
+  const pairId = id.endsWith('_hq') ? id.slice(0, -3) : `${id}_hq`, pairHave = Number(inv.inventory?.[pairId] || 0);
+  const both = k => Number(inv.inventory?.[k] || 0) + (k.endsWith('_hq') ? 0 : Number(inv.inventory?.[`${k}_hq`] || 0));
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
+  // 안전지대(반요촌 빼고)에 있으면 가방에서 바로 창고에 넣는다(7.5.7, 제보 60). 지역 정보는 이미 받아 둔 것만 쓰고 따로 묻지 않는다.
+  const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
+  const stashOk = !!here?.is_safe_zone && here.region_id !== 'banyo_village' && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[id]);
   const makes = (inv.recipes || []).filter(r => r.output === id);
   const block = it && GEAR.has(it.category) ? gearBlock(it, c) : '';
   const tradeable = pr ? pr.tradeable !== false : null;
   const recipeRow = r => {
-    const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(inv.inventory?.[k] || 0) < n).length;
+    const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => both(k) < n).length;
     return `<li><div><b>${esc(r.name)}</b><small>${esc(Object.entries(r.ingredients || {}).map(([k, n]) => `${nameOf(k)} ${n}`).join(' · '))} → ${esc(r.output_name || nameOf(r.output))} ×${r.qty || 1}</small></div>
       <button class="btn small ${lacks ? '' : 'primary'}" data-recipe="${esc(r.id)}">${lacks ? '제작법 보기' : '만들 수 있음'}</button></li>`;
   };
@@ -176,12 +212,13 @@ function draw(box, id, inv, prices, mode) {
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
-      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small></dd></div>
+      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${id.endsWith('_hq') ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${suitedJobs(it).length ? `<div><dt>어울리는 직업</dt><dd>${esc(suitedJobs(it).map(nameOf).join(' · '))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
+      ${/\d+분|든든함|속이 따뜻함|기운 충천|바다의 복/.test(USABLE[id] || '') ? `<div><dt>다시 쓰면</dt><dd>같은 기운이 남아 있으면 그 시간에 더해집니다(두 번 몫까지)</dd></div>` : ''}
       <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>
       ${it && GEAR.has(it.category) ? `<div><dt>${slotOf(it) === 'craft' ? '쓰는 조건(가방에 두면)' : '장착 조건'}</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
     </dl>
@@ -193,11 +230,17 @@ function draw(box, id, inv, prices, mode) {
       <div class="btn-row">
         ${USABLE[id] ? `<button class="btn small primary" data-do="use">${icon('heart', 14)}<span>사용</span></button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small primary" data-do="adopt">${icon('heart', 14)}<span>열기</span></button>` : ''}
+        ${id === 'pet_token' ? `<button class="btn small ${have >= 5 ? 'primary' : ''}" data-do="token" ${have >= 5 ? '' : 'disabled'} title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">${icon('heart', 14)}<span>빛나는 알로 바꾸기</span></button>` : ''}
         ${it?.category === 'furniture' ? `<button class="btn small" data-do="house">${icon('home', 14)}<span>별채에서 놓기</span></button>` : ''}
         ${it && GEAR.has(it.category) && slotOf(it) !== 'craft' && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
         ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
+      ${stashOk && dcMax > 0 ? `<div class="discard-row">
+        <label class="field"><span>창고에 넣을 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="${dcMax}" id="st-qty"></label>
+        <button class="btn small ghost" data-do="st-max">최대</button>
+        <button class="btn small primary" data-do="stash">${icon('bag', 14)}<span>창고에 넣기</span></button>
+      </div>` : ''}
       <div class="discard-row ${locked ? 'off' : ''}">
         <label class="field"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="1" id="dc-qty" ${locked || dcMax < 1 ? 'disabled' : ''}></label>
         <button class="btn small ghost" data-do="dc-max" ${locked || dcMax < 1 ? 'disabled' : ''}>최대</button>
@@ -219,8 +262,12 @@ function draw(box, id, inv, prices, mode) {
     }
     if (!d) return;
     const k = d.dataset.do;
+    // 서버 함수가 값을 돌려주지 않아도(버리기 등) 성공했는지 알 수 있게 따로 센다(7.7.2)
+    const run = async fn => { let ok = false; await guard(d, async () => { const r = await fn(); ok = true; return r; }); return ok; };
+    const closeInfo = () => box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click();
     if (k === 'use') await useItem(id, d);
     if (k === 'adopt') await guard(d, () => act('world_pet_adopt', { p_item: id }));
+    if (k === 'token') await guard(d, () => act('world_pet_token_trade'));
     if (k === 'house') { closeLayers(); closeModal(); window.yahangGo?.('house'); return; }
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
     if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
@@ -231,17 +278,27 @@ function draw(box, id, inv, prices, mode) {
       if (!(await ask(low ? `${di.line_name} 기술이 ${di.need}단계가 되지 않아(지금 ${di.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${di.line_name} 경험 12만 얻고 이 장비는 사라집니다.`
         : `${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요?${di ? ` ${di.line_name} 경험 +12.` : ''} 되돌릴 수 없습니다.`,
         { title: low ? '경험만 얻는 분해' : '분해', ok: low ? '경험만 받고 분해' : '분해하기', cancel: '그만두기' }))) return;
-      await guard(d, () => act('world_dismantle_item', { p_item_id: id }));
+      // 분해하면 이 정보 창을 닫아 가방으로 돌아간다(7.7.2, 사용자 요청)
+      if (await run(() => act('world_dismantle_item', { p_item_id: id }))) { closeInfo(); return; }
+      return;
     }
     // 버리기(제보 12): 「최대」는 칸을 채우고, 「모두 버리기」는 버릴 수 있는 만큼 한 번에(장착 중이면 하나 남김)
+    if (k === 'st-max') { const q = $('#st-qty', box); if (q) q.value = dcMax; return; }
+    if (k === 'stash') {
+      const q = Math.floor(Number($('#st-qty', box)?.value) || 0);
+      if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
+      const ok = await run(() => act('world_storage_put', { p_item: id, p_qty: q }));
+      if (ok && q >= have) { closeInfo(); return; }
+    }
     if (k === 'dc-max') { const q = $('#dc-qty', box); if (q) q.value = dcMax; return; }
     if (k === 'discard' || k === 'discard-all') {
       const q = k === 'discard-all' ? dcMax : Math.floor(Number($('#dc-qty', box)?.value) || 0);
       if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
       if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
-      const ok = await guard(d, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
+      const ok = await run(() => act('world_item_discard', { p_item_id: id, p_qty: q }));
       // 버리고 나면 이 정보 창을 닫아 가방으로 돌아간다(7.3.5, 제보 36). 겹쳐 뜬 창이면 그 창만 닫는다.
-      if (ok) { box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click(); return; }
+      if (ok) { closeInfo(); return; }
+      return;
     }
     // 바뀐 가방으로 창을 다시 그린다(다 써서 0개가 되면 정보만 남는다)
     try {
@@ -258,7 +315,7 @@ export async function useItem(id, btn) {
     return guard(btn, () => act('world_reset_stats'));
   }
   if (id === 'reset_identity') return openResetIdentity();
-  return guard(btn, () => act('world_use_item', { p_item_id: id }));
+  return guard(btn, () => useItemAct(id));
 }
 function openResetIdentity() {
   const c = store.character || {};

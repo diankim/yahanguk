@@ -1,15 +1,17 @@
 import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
-import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
+import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
-import { mountWhisper } from './whisper.js';
+import { mountWhisper, mountWhisperPage } from './whisper.js';
 import { mountGrowth } from './growth.js';
 import { mountVersionCheck } from './version.js';
 import { mountBug } from './bug.js';
-import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
+import { applySavedTheme, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
+import { installColorPicker } from './colorpick.js';
+installColorPicker(); // 휴대폰 기본 색 선택 창 대신 게임 안 색 고르기 창(7.6.1)
 import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';
@@ -72,6 +74,7 @@ async function routeOnce(session) {
     routedFor = uid;
     if (!c) return renderCreate();
     if (c.is_dead) return renderDeath(c);
+    if (POP) return renderPop(POP);
     renderGame();
   } catch (e) {
     renderError(friendlyError(e));
@@ -103,8 +106,8 @@ const TIPS = [
   '장착한 장비는 가방 칸을 차지하지 않습니다.',
   '물품을 잠그면 팔기·버리기·거래가 막혀 실수로 내놓지 않습니다.',
   '창고는 어느 안전지대에서 열어도 같은 창고입니다. 안전지대에서 제작하면 창고의 재료도 씁니다.',
-  '요괴를 한 번 쓰러뜨리면 도감에 상성과 기믹 파훼법이 적힙니다.',
-  '방어는 어느 기믹이든 피해를 줄입니다. 모으는 턴에 크게 몰아치면 끊기도 합니다.',
+  '요괴를 한 번 쓰러뜨리면 도감에 상성과 수법 대처법이 적힙니다.',
+  '방어는 어느 수법이든 피해를 줄입니다. 모으는 턴에 크게 몰아치면 끊기도 합니다.',
   '내 레벨보다 높은 요괴는 더 아프게, 낮은 요괴는 덜 아프게 칩니다(레벨마다 3%, 최대 30%).',
   '침식이 30·55·80을 넘으면 불이익이 커집니다. 정화 부적·마음 다잡기로 미리 낮추세요.',
   '침식이 80을 넘으면 드물게 요화가 시작됩니다. 귀령초나 안전지대 봉인으로 풉니다.',
@@ -296,6 +299,40 @@ function renderDeath(c) {
   $('#death-logout').onclick = () => logout();
   $('#reborn').onclick = e => guard(e.currentTarget, async () => { await rpc('world_character_delete', { p_confirm: c.character_name }); await loadCharacter(); return { content: '새 조사원을 만드세요.' }; });
 }
+
+/* ── 새 창(7.5.4, 제보 54): 채팅·귓속말만 따로 띄운 창 ──────────── */
+// 주소 ?pop=chat · ?pop=whisper. 같은 브라우저의 로그인을 그대로 쓰므로 한 곳 접속 규칙에 걸리지 않는다.
+// 게임 화면(상태판·알림·현장)은 꾸미지 않아 요청이 늘지 않는다. 화면 안 링크(#/…)는 본 창으로 보낸다.
+const POP = (p => ['chat', 'whisper'].includes(p) ? p : null)(new URLSearchParams(location.search).get('pop'));
+let popMounted = false;
+function renderPop(kind) {
+  if (popMounted) return; popMounted = true;
+  window.dispatchEvent(new Event('yh-booted'));
+  document.body.classList.add('pop-win');
+  document.title = kind === 'whisper' ? '야행국 · 귓속말' : '야행국 · 통신망';
+  if (kind === 'whisper') {
+    app.replaceChildren(h(`<div class="pop-shell"><div class="pop-wh" id="pop-wh"></div></div>`));
+    mountWhisperPage($('#pop-wh'));
+  } else {
+    app.replaceChildren(h(`<div class="pop-shell"><aside class="chat-col" id="chat-col" aria-label="채팅"></aside><button id="chat-fab" hidden></button></div>`));
+    mountChat($('#chat-col'), $('#chat-fab'));
+  }
+  Promise.allSettled([preloadNames(), loadStaff()]);
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#/"]'); if (!a) return;
+    e.preventDefault();
+    try { if (window.opener && !window.opener.closed) { window.opener.location.hash = a.getAttribute('href'); window.opener.focus(); return; } } catch {}
+    window.open(location.pathname + a.getAttribute('href'), 'yh-main');
+  });
+}
+// 본 창에서 새 창 열기(채팅 머리·귓속말 창의 단추). 이미 열려 있으면 그 창을 앞으로 가져온다
+export function openPopWindow(kind) {
+  const size = kind === 'whisper' ? 'width=800,height=640' : 'width=420,height=760';
+  const w = window.open(`${location.pathname}?pop=${kind}`, `yh-pop-${kind}`, `popup,${size}`);
+  if (w) w.focus(); else toast('브라우저가 새 창을 막았습니다. 주소창의 팝업 허용을 눌러 주세요.', 'error');
+}
+window.yahangPop = openPopWindow;
+export const isPopWin = () => !!POP;
 
 /* ── 게임 화면 ──────────────────────────────────────────── */
 let current = null;

@@ -118,7 +118,6 @@ const P = {
   pt_gwiheo: '<path d="M0 6c3-3 7-3 10 0s7 3 10 0M0 15c3-3 7-3 10 0s7 3 10 0"/><path d="M10 10.5a1.5 1.5 0 013 0 3 3 0 01-6 0"/>',
   pt_yahaeng: '<path d="M15 2a4 4 0 100 8 3.2 3.2 0 010-8z"/><path d="M1 18c0-2 2-3 4-2 1-2 4-2 5 0 1-.5 3 0 3 2z"/><path d="M5 6h2v3H5zM6 5v1"/><circle cx="18" cy="15" r=".6"/><circle cx="2" cy="10" r=".5"/>',
 };
-export const PATTERNS = Object.keys(P);
 let pid = 0;
 // 레거시 바탕 무늬는 되풀이하는 타일이 아니라 한 폭의 장면(그믐달·구름 두 줄·올라가는 불티, 위쪽 핏빛 줄)이다
 const SCENE = {

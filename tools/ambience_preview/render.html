@@ -1,0 +1,20 @@
+<!doctype html><html><body><script type="module">
+// 환경음 미리듣기: assets/js/ambience.js를 그대로 써서 장면마다 굽는다(render.cjs가 부름)
+import * as A from '../../assets/js/ambience.js';
+window.render = async (scene, D = 20) => {
+  const SR = 32000, ctx = new OfflineAudioContext(2, SR * D, SR), out = ctx.createGain(); out.connect(ctx.destination);
+  const noise = ctx.createBuffer(1, SR * 2, SR); const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  const brown = ctx.createBuffer(1, SR * 4, SR); const bd = brown.getChannelData(0); let last = 0; for (let i = 0; i < bd.length; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; bd[i] = last * 3.5; }
+  const m = { noise, brown };
+  const lay = (k, lvl) => { const g = ctx.createGain(); g.gain.value = lvl; g.connect(out); A.LAYERS[k](ctx, g, m); };
+  for (const [k, lvl] of scene.layers || []) lay(k, lvl);
+  for (let t = 0.3; t < D - 1; ) {
+    for (const c of scene.events || []) if (Math.random() < c.p) A[c.fn](ctx, out, t + Math.random() * 0.3, c.vol ?? 1);
+    t += scene.gap?.() ?? (1 + Math.random() * 2);
+  }
+  const b = await ctx.startRendering(), L = b.getChannelData(0), R = b.getChannelData(1);
+  const outArr = new Int16Array(L.length * 2); for (let i = 0; i < L.length; i++) { outArr[2 * i] = Math.max(-32768, Math.min(32767, L[i] * 32767 * 1.6)); outArr[2 * i + 1] = Math.max(-32768, Math.min(32767, R[i] * 32767 * 1.6)); }
+  return Array.from(new Uint8Array(outArr.buffer));
+};
+window.ready = true;
+</script></body></html>

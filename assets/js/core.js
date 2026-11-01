@@ -52,6 +52,18 @@ export function throttle(fn, gap) {
   let last = 0, t = null;
   return () => { const wait = last + gap - Date.now(); if (wait <= 0) { last = Date.now(); fn(); } else if (!t) t = setTimeout(() => { t = null; last = Date.now(); fn(); }, wait); };
 }
+// 싸우는 중의 물품 쓰기(7.7.2b): 퀵슬롯·가방·상태 창에서 물품을 눌러도 떠 있는 전투 화면(현장 토벌 battle.js·파티 토벌 pfight.js·귀허의 주인 gw.js)이
+// 그 턴의 「물품」 행동으로 받는다(턴이 지나감). 받았으면 true — 부른 쪽은 world_use_item을 부르지 않는다. 전투 화면이 없으면 서버 world_use_item이 싸우는 중인지 다시 본다.
+export function battleItemRoute(id) {
+  const ev = new CustomEvent('yh-battle-item', { detail: { id, handled: false } });
+  window.dispatchEvent(ev);
+  return ev.detail.handled;
+}
+// 물품 쓰기의 공통 길: 전투 화면이 받으면 그쪽으로, 아니면 world_use_item
+export function useItemAct(id) {
+  if (battleItemRoute(id)) return Promise.resolve(null);
+  return act('world_use_item', { p_item_id: id });
+}
 // 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);
@@ -74,15 +86,15 @@ export async function loadCharacter() {
 /* ── 이름 사전 (내부 코드를 화면에 그대로 노출하지 않는다) ───────────── */
 export const JOBS = {
   // 역할 6가지(6.0.0): 근접·원거리 물리·술법·생활 특화·치유·보조. base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
-  exorcist: { name: '퇴마관', trait: '술법', desc: '부적과 방울로 요괴를 치는 술법 딜러. 술법 피해 +8%, 퇴마진(술법 ×2.0, 결계 깨기).',
+  exorcist: { name: '퇴마관', trait: '술법', desc: '부적과 방울로 요괴를 치는 술법 공격수. 술법 피해 +8%, 퇴마진(술법 ×2.0, 결계 깨기).',
     base: { strength: 3, agility: 3, vitality: 4, perception: 4, willpower: 7, spirit_affinity: 9 }, kit: '영령 방울 · 삼베 도포 · 무명 부적낭' },
-  scout: { name: '현장 조사원', trait: '원거리 물리', desc: '활로 먼 곳에서 노리는 원거리 딜러. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
+  scout: { name: '현장 조사원', trait: '원거리 물리', desc: '활로 먼 곳에서 노리는 원거리 공격수. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
     base: { strength: 4, agility: 8, vitality: 4, perception: 8, willpower: 3, spirit_affinity: 3 }, kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리' },
   artificer: { name: '호위 무사', trait: '근접', desc: '앞에 서서 베고 막는 근접 전사. 근접 피해 +8%·받는 피해 −6%·이목 +30, 파갑참(근접 ×1.7, 방어·결계 무시).',
     base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
   medic: { name: '의무관', trait: '치유', desc: '다치고 쓰러진 동료를 살리는 치유사. 회복품 ×1.15(파티원에게 쓰면 ×1.4)·회복 +10%, 응급 처방(한 전투에 한 번, 체력 회복·나쁜 상태 걷기).',
     base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
-  sealmaster: { name: '봉인술사', trait: '보조', desc: '요괴를 묶고 동료를 북돋는 버프·디버프 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
+  sealmaster: { name: '봉인술사', trait: '보조', desc: '요괴를 묶고 동료를 북돋는 북돋기·약화 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
   analyst: { name: '백공 기술관', trait: '생활 특화', desc: '캐고 만들고 찾아내는 생활 전문가. 채집량 +15%·희귀품 +3%·제작 품질 +15·강화 확률 +10%p·단서 발견.',
     base: { strength: 5, agility: 6, vitality: 6, perception: 7, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
@@ -132,9 +144,9 @@ const FIXED = {
   supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',
   sig_pct: '지역 희귀품', presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   // 서식지
-  river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
+  river: '강', marsh: '늪', sea: '바다', deep: '깊은 물', canal: '수로', // 호수·심연·낚시·요리는 위에 있다
   // 날씨·시간대
-  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
+  dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
 // 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
@@ -185,6 +197,7 @@ export const fmt = {
 /* ── 아이콘 (선형 SVG, 장식용 이모지 대신 사용) ───────────────────── */
 const ICONS = {
   home: 'M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z',
+  popout: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
   map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
   user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',
   bag: 'M6 8h12l-1 12H7L6 8zM9 8V6a3 3 0 016 0v2',
@@ -207,7 +220,7 @@ const ICONS = {
   pin: 'M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12zM12 11a2 2 0 100-4 2 2 0 000 4z',
   plus: 'M12 5v14M5 12h14', minus: 'M5 12h14', fish: 'M3 12c3-5 9-6 13-2l4-3v10l-4-3c-4 4-10 3-13-2zM8 11h.01', compass: 'M12 21a9 9 0 100-18 9 9 0 000 18zM15 9l-2 4-4 2 2-4z', target: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 16a4 4 0 100-8 4 4 0 000 8zM12 12h.01',
   close: 'M6 6l12 12M18 6L6 18', check: 'M5 12l5 5L20 7', chevron: 'M9 6l6 6-6 6', back: 'M15 6l-6 6 6 6',
-  search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4', flame: 'M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-5 5-5 8-1-1-2-2-2-4-2 2-2 5-2 8 0 4 3 7 7 7z',
+  search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4-4', filter: 'M4 6h16M7 12h10M10 18h4', flame: 'M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-5 5-5 8-1-1-2-2-2-4-2 2-2 5-2 8 0 4 3 7 7 7z',
   moon: 'M20 14A8 8 0 1110 4a7 7 0 0010 10z', users: 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M17 11a3 3 0 000-6M22 21a6 6 0 00-4-5.7',
   shop: 'M4 9l1-5h14l1 5M4 9h16v11H4zM4 9c0 2 2 3 4 3s4-1 4-3c0 2 2 3 4 3s4-1 4-3M10 20v-5h4v5',
   heart: 'M12 20s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 9c0 6-8 11-8 11z', eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7zM12 15a3 3 0 100-6 3 3 0 000 6z',
@@ -217,6 +230,7 @@ const ICONS = {
   sun: 'M12 16a4 4 0 100-8 4 4 0 000 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
   cloud: 'M7 18h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 18z',
   rain: 'M7 14h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3',
+  drizzle: 'M7 14h10a4 4 0 000-8 6 6 0 00-11.5 1.5A3.5 3.5 0 007 14zM9 17.5l-.5 1.5M14 18.5l-.5 1.5',
   fog: 'M4 9h16M3 13h18M5 17h14M7 5h10',
   wind: 'M3 8h11a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h8',
   snow: 'M12 2v20M4 7l16 10M20 7L4 17M9 4l3 2 3-2M9 20l3-2 3 2',
@@ -228,10 +242,17 @@ const ICONS = {
   mask: 'M5 5c4-1 10-1 14 0 0 8-3 14-7 14S5 13 5 5zM8 10h3M13 10h3M10 15h4',
   letter: 'M3 6h18v12H3zM3 7l9 6 9-6', flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
   wrench: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
+  // 7.7.7c: 토벌 협동 기술·북돋기 표식
+  crosshair: 'M12 20a8 8 0 100-16 8 8 0 000 16zM12 2v5M12 17v5M2 12h5M17 12h5', vital: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 12h.01M12 3v3M12 18v3M3 12h3M18 12h3',
+  bolt: 'M13 2L4 14h7l-1 8 9-12h-7z', dodge: 'M4 19c4 0 5-7 9-7s4-6 7-6M16 4l4 2-2 4',
+  bubble: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 10a5 5 0 015-3', ward: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
+  hand: 'M8 12V6a1.5 1.5 0 013 0v5M11 11V4.5a1.5 1.5 0 013 0V11M14 11V6.5a1.5 1.5 0 013 0V14a7 7 0 01-7 7h-.5a6 6 0 01-5-2.7L3 15a1.5 1.5 0 012.5-1.7L8 15',
+  chain: 'M10 14l4-4M10.5 6.5l1.5-1.5a3.5 3.5 0 015 5L15.5 11.5M8.5 12.5L7 14a3.5 3.5 0 005 5l1.5-1.5', star: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+  spiral: 'M12 12a1.5 1.5 0 102 2 3.5 3.5 0 01-4.5 3A5.5 5.5 0 016.5 10 7.5 7.5 0 0120 13', needle: 'M4 20l9-9M13 11l3-7 4 4-7 3M7 14l3 3', drop: 'M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z',
   up: 'M6 14l6-6 6 6',
   down: 'M6 10l6 6 6-6',
 };
-export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
+export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', drizzle: 'drizzle', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
 export function icon(name, size = 18) {
   const p = ICONS[name] || ICONS.spark;
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg>`;
@@ -332,10 +353,29 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
     el.addEventListener('click', e => { const b = e.target.closest('[data-ask]'); if (b) done(b.dataset.ask === '1'); else if (e.target === el) done(false); });
     document.addEventListener('keydown', key, true);
     document.body.append(el);
-    setTimeout(() => el.querySelector('[data-ask="1"]')?.focus(), 20);
+    setTimeout(() => focusIn(el.querySelector('[data-ask="1"]')), 20);
   });
 }
 
+// 창을 여닫는 동안 바탕 화면의 스크롤 자리를 지킨다(7.5.9h, 사용자 요청): 첫 창이 열릴 때 자리를 적어 두고,
+// 마지막 창이 닫히면 같은 화면(주소)일 때만 그 자리로 되돌린다. 창이 떠 있는 사이 바탕이 다시 그려져 높이가 잠깐 줄었다가
+// 늘어나도(현장 토벌·세력 팝업·칭호 유래 등) 위로 튀지 않게, 다시 그려질 틈을 두고 한 번 더 맞춘다.
+let modalY = null, modalHash = '';
+function lockPage() {
+  if (!document.body.classList.contains('has-modal')) { modalY = window.scrollY; modalHash = location.hash; }
+  document.body.classList.add('has-modal');
+}
+function unlockPage() {
+  document.body.classList.remove('has-modal');
+  const y = modalY; modalY = null;
+  if (y == null || location.hash !== modalHash) return;
+  const fix = () => { if (location.hash === modalHash && Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); };
+  requestAnimationFrame(fix); setTimeout(fix, 250); setTimeout(fix, 700);
+}
+// 창이 떠 있는 사이 바탕 화면이 새 자리를 정했으면(현장 토벌이 끝나 현장으로 돌아옴 등) 창을 닫을 때 그 자리로 간다
+// force: 아래로 내려가 있어도 그 자리로(토벌에서 현장으로 돌아올 때, 7.7.3)
+export function scrollAfterModal(y, force = false) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2 || (force && Math.abs(window.scrollY - y) > 2)) window.scrollTo(0, y); }
+const focusIn = (el) => { try { el?.focus({ preventScroll: true }); } catch { el?.focus(); } };
 export function openModal({ title, body, wide = false, onClose } = {}) {
   closeModal();
   const el = h(`<div class="modal-backdrop" id="modal"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
@@ -349,8 +389,8 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
   document.addEventListener('keydown', escClose);
   el._onClose = onClose;
   document.body.append(el);
-  document.body.classList.add('has-modal');
-  setTimeout(() => $('.modal button, .modal input', el)?.focus(), 30);
+  lockPage();
+  setTimeout(() => focusIn($('.modal button, .modal input', el)), 30);
   return el;
 }
 function escClose(e) { if (e.key === 'Escape') closeModal(); }
@@ -364,15 +404,15 @@ export function openLayer({ title, body, wide = false } = {}) {
   const key = e => { if (e.key === 'Escape' && $$('.modal-backdrop.layer').pop() === el) { e.stopImmediatePropagation(); close(); } };
   const close = () => {
     document.removeEventListener('keydown', key, true); el.remove();
-    if (!$('#modal') && !$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
+    if (!$('#modal') && !$('.modal-backdrop.layer')) unlockPage();
   };
   let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
   el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) close(); });
   document.addEventListener('keydown', key, true);
   el.close = close;
   document.body.append(el);
-  document.body.classList.add('has-modal');
-  setTimeout(() => $('.modal-head button', el)?.focus(), 30);
+  lockPage();
+  setTimeout(() => focusIn($('.modal-head button', el)), 30);
   return el;
 }
 export const closeLayers = () => $$('.modal-backdrop.layer').forEach(l => l.close?.());
@@ -381,7 +421,7 @@ export function closeModal() {
   document.removeEventListener('keydown', escClose);
   el._onClose?.();
   el.remove();
-  if (!$('.modal-backdrop.layer')) document.body.classList.remove('has-modal');
+  if (!$('.modal-backdrop.layer')) unlockPage();
 }
 
 /* ── 공통 조각 ───────────────────────────────────────────── */

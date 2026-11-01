@@ -1,13 +1,13 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON } from '../core.js';
+import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
-import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
+import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen } from '../titledot.js';
 import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
-import { loadBond, tokenRowHtml, bindTokenRow } from '../bond.js';
+import { loadBond, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 
@@ -75,8 +75,10 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#char-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
+  const y = window.scrollY; // 행동 뒤 다시 그릴 때(soft) 보던 자리를 지킨다(7.5.9h — 다시 그리는 사이 칸이 잠깐 비어 위로 튀던 것)
   try { await ({ status, growth, faction, skills, idle, titles })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
+  if (soft && y > 0 && body.isConnected) scrollAfterModal(y);
 }
 
 /* ── 상태 ─────────────────────────────────────────────── */
@@ -104,10 +106,11 @@ function durBar(d, max) { return `<div class="durab ${d <= 0 ? 'broken' : d * 4 
 const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : ['tool', 'hat', 'shoes'].includes(it.category) ? 40 + (it.tier || 1) * 20 : 0) : 0;
 // 강화한 무기의 위력(서버 world_combat_stats: 단계마다 +5%)
 export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
-export function equipRows(inv, prof, here) {
+// 장착 칸 한 줄(내구도·수리·벗기). 모바일 가방 › 장비의 부위 창(bag.js)도 쓴다(7.5.4)
+export function equipRowLi(inv, prof, here, slot) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
-  const kits = Number(have.repair_kit || 0);
-  return `<ul class="equip-list">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
+  const kits = Number(have.repair_kit || 0) + Number(have.repair_kit_hq || 0); // 우수 수리 도구도 센다(7.5.9, 제보 64 — 서버는 둘 다 받는데 화면이 보통만 세어 단추가 잠겼다)
+  const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx;
@@ -118,9 +121,9 @@ export function equipRows(inv, prof, here) {
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
-  }).join('')}${tokenRowHtml()}</ul>
-  <p class="muted small">공격할 때마다 무기, 맞을 때마다 방어구·관모, 채집할 때마다 도구, 이동할 때마다 신이 1씩 닳습니다(노리개·호신부·탈은 닳지 않습니다). 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.</p>`;
+  }
 }
+export const DUR_NOTE = `공격할 때마다 무기, 맞을 때마다 방어구·관모, 채집할 때마다 도구, 이동할 때마다 신이 1씩 닳습니다(노리개·호신부·탈은 닳지 않습니다). 4분의 1 아래로 떨어지면 성능이 20% 줄고, 0이 되면 부서져 효과가 없습니다. 수리 도구는 어디서나 절반을 되살리고, 안전지대에서는 전을 내고 완전히 고칠 수 있습니다.`;
 export function bindRepair(root) {
   $$('[data-repair]', root).forEach(b => b.onclick = () => guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repair, p_method: b.dataset.how })));
   $$('[data-unequip]', root).forEach(b => b.onclick = () => guard(b, () => act('world_unequip_item', { p_slot: b.dataset.unequip })));
@@ -129,15 +132,11 @@ export function bindRepair(root) {
 // 빈 칸에 무엇을 끼우면 좋은지
 const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
   norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집량·채집터 덤', explore: '나침반: 숨은 길·채집터를 더 잘 찾음', fishing: '낚싯대: 비워 두면 가방의 가장 좋은 것을 씀' };
-async function hereZone() {
-  const z = await safeZones().catch(() => null), c = store.character;
-  return z ? [...z.values()].find(r => r.region_name === c.location) || null : null;
-}
 // ── 상태 화면 칸들(7.5.0): 장비·전투 능력은 작게, 회복 물품은 퀵슬롯으로 ──
-const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
+export const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
 const QS_N = 8;
 const baseOf = k => String(k || '').replace(/_hq$/, '');
-const qsDesc = k => { const d = USABLE[baseOf(k)] || USE.find(([x]) => x === k)?.[1] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
+export const qsDesc = k => { const d = USABLE[baseOf(k)] || USE.find(([x]) => x === k)?.[1] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
 // 회복·치료 효과가 있는 물품(음식·약초 같은 재료 포함): 서버 world_use_item이 받는 것 가운데 몸·정신·영력·침식·탐색력이 오르는 것
 const QS_OK = k => /체력|정신|영력|기력|침식|탐색력|전투불능/.test(USABLE[baseOf(k)] || '') || USE.some(([x]) => x === baseOf(k));
 function qsSlots(snap) {
@@ -152,13 +151,15 @@ function qsCell(k, i, inv, downed) {
   return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
     <b>${esc(nameOf(k))}</b><span class="qs-n">×${fmt.num(n)}</span><small>${esc(qsDesc(k))}</small></button>`;
 }
-function eqMini(inv, prof) {
+// pick: 가방 › 장비(모바일)에서 칸을 누르면 그 부위 창을 연다(빈 칸도 누를 수 있게, data-eqslot)
+export function eqMini(inv, prof, pick = false) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, durs = prof?.durability || {};
-  return `<ul class="eq-mini">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
+  return `<ul class="eq-mini${pick ? ' pick' : ''}">${Object.entries(SLOTS).map(([slot, [label, ic]]) => {
     const id = eq[slot], it = cmap.get(id);
-    if (!id) return `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
+    if (!id) return pick ? `<li><button type="button" class="none" data-eqslot="${slot}">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></button></li>`
+      : `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
     const mx = maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
-    return `<li><button type="button" data-eqi="${esc(id)}">${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
+    return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
       ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
   }).join('')}</ul>`;
 }
@@ -177,7 +178,7 @@ function openQuickslots(cur, inv) {
   $('#qs-save', m).onclick = () => guard($('#qs-save', m), async () => {
     const slots = $$('[data-qs]', m).map(s => s.value || '');
     await rpc('world_quickslots_set', { p_slots: slots });
-    invalidate('world_quickslots_get'); closeModal(); draw(true);
+    invalidate('world_quickslots_get'); closeModal(); draw(true); window.dispatchEvent(new Event('yh-qs-changed'));
     return { content: '퀵슬롯을 바꿨습니다.' };
   });
 }
@@ -185,8 +186,8 @@ let lastChange = '';
 async function status(body) {
   const ch = lastChange; lastChange = '';
   if (/rest|idle|travel|field_move/.test(ch)) invalidate('world_rest_status');
-  const [sv, hud, prof, inv, here, rs, , qsSnap] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
-    load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), hereZone(),
+  const [sv, hud, prof, inv, , rs, , qsSnap] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
+    load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 3000 }).catch(() => null), safeZones().catch(() => null),
     load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || /bond|equip|travel|party|field_move/.test(ch)),
     load('world_quickslots_get', undefined, { maxAge: 600000 }).catch(() => null)]);
   const c = store.character, invItems = c.inventory || {};
@@ -196,7 +197,8 @@ async function status(body) {
   const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
   const deathAt = c.downed_at && !byYohwa ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
   // 부적 정화: 정화 부적이 있고 침식이 있어야 한다. 마음 다잡기: 본부에서 15분마다, 정신이 가득하고 침식이 없으면 쓸 수 없다(서버가 다시 검사).
-  const wards = Number(invItems.ward_talisman || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
+  // 우수 정화 부적도 센다(7.7.0, 제보 73 — 서버 world_survival_action도 둘 다 받고, 보통을 먼저 쓴다)
+  const wards = Number(invItems.ward_talisman || 0) + Number(invItems.ward_talisman_hq || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location); // 서버 world_survival_action과 같은 곳
   // 부적으로 풀리는 상태이상(중독·심신 동요·사념 침식)이 있으면 침식이 없어도 쓸 수 있다(서버 world_survival_action)
@@ -213,7 +215,7 @@ async function status(body) {
         <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>
       </div>
       <p class="muted small">${byYohwa ? '구조나 회생 부적으로 일어나면 요화는 남아 하루 뒤 다시 쓰러집니다. 귀령초로 풀거나 안전지대 봉인을 받으세요.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
-    ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em> · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
+    ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>${yo.fr ? ' · 요화와 합친 효과: 주는 피해 +42%·받는 피해 −12%·정신 손실 −20%·민첩 +15%·침식 +24% · 끝나면 쓰러집니다. 귀령초를 쓰면 요화와 함께 풀립니다.' : ' · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 귀령초로만 풀립니다.'}`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
       <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 바로 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 이동 중에는 쓸 수 없고, 전투불능일 때는 회생 부적만 쓸 수 있습니다.</p>`,
       { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}
@@ -243,7 +245,7 @@ async function status(body) {
     const k = b.dataset.use, d = qsDesc(k);
     // 퀵슬롯은 묻지 않고 바로 쓴다(7.5.2, 제보 49 — 가방의 「사용」과 같게)
     if (!b.classList.contains('qs-cell') && !(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
-    guard(b, () => act('world_use_item', { p_item_id: k }));
+    guard(b, () => useItemAct(k));
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   $$('[data-eqi]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.eqi, { mode: 'bag' }));
@@ -421,8 +423,8 @@ async function skills(body) {
   const c = store.character || {};
   const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
   body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(근접·봉인술은 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
-    ${Object.keys(groups).length ? `<div class="skill-groups">${BRANCHES.map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
-      `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`
+    ${Object.keys(groups).length ? `<div class="skill-groups">${[['combat'], ['gathering', 'investigation'], ['crafting']].map(col => `<div class="sk-col">${col.map(key => BRANCHES.find(b => b[0] === key)).map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
+      `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
     ${combos.length ? panel('조합 기술', `<ul class="combo-list">${combos.map(x => {
       const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');
@@ -509,7 +511,7 @@ async function idle(body) {
 /* ── 칭호: 검색·분류·장착 3개·대표 칭호 ──────────────────── */
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
 const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
-let tq = '', tf = 'all', tcat = '', tOwned = false, tEquipped = false;
+let tq = '', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 보기 순서(6.1.1): 분류별 · 등급 높은순 · 등급 낮은순(기기에 기억)
 let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 // 칭호 등급(서버 world_title_catalog.grade)
@@ -521,6 +523,9 @@ async function titles(body) {
   const order = c => { const i = TCAT_ORDER.indexOf(c); return i < 0 ? 99 : i; };
   const cats = [...new Set(list.map(t => t.category))].sort((a, b) => order(a) - order(b));
   const countIn = c => { const l = list.filter(t => t.category === c); return `${l.filter(t => t.earned).length}/${l.length}`; };
+  // 칭호 알림의 「보러 가기」로 왔으면(7.5.4) 거르기를 풀고 그 칭호 칸으로 데려간다
+  let focus = null; try { focus = sessionStorage.getItem('yh-title-focus'); sessionStorage.removeItem('yh-title-focus'); } catch {}
+  if (focus && list.some(t => t.key === focus)) { tq = ''; tcat = ''; tOwned = false; tEquipped = false; } else focus = null;
   body.innerHTML = `
     <div class="title-head">
       <div class="chips">${chip(`얻은 칭호 ${snap?.earned_count || 0}/${snap?.total || list.length}`, 'accent')}${chip(`숨겨진 칭호 ${snap?.hidden_earned || 0}/${snap?.hidden_total || 0}`)}${chip(`장착 ${snap?.equipped_count || 0}/3`)}</div>
@@ -535,17 +540,18 @@ async function titles(body) {
     </div>
     <div id="t-list"></div>`;
   // 레거시(야행의 흔적) 칭호는 등급 칩 대신 옻칠 현판: 세로 낙관 「흔적」과 한자 이름을 단다
-  const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}">
+  // 모바일(좁은 화면)은 카드를 두 칸으로 줄여 이름·등급만 보이고, 누르면 그 카드만 펼쳐 설명·조건·효과·단추를 보인다(7.5.4)
+  const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}" data-tkey="${esc(t.key)}">
+      ${t.earned ? `<button class="t-rep ${t.display ? 'on' : ''}" data-disp="${t.display ? '' : esc(t.key)}" title="${t.display ? '대표 칭호에서 내립니다' : '채팅·프로필에 보이는 대표 칭호로 정합니다'}" aria-pressed="${t.display ? 'true' : 'false'}">${t.display ? '대표 중' : '대표로'}</button>` : ''}
       ${lg ? `<span class="lg-tag" aria-hidden="true">흔적</span>${LEGACY_HANJA[t.key] ? `<span class="lg-hj">${LEGACY_HANJA[t.key]}</span>` : ''}` : ''}
       <div class="t-top">${lg ? '' : icon(t.icon || 'spark', 18)}${t.grade && !lg && !(t.hidden && !t.earned) ? `<span class="t-grade g${t.grade}">${TGRADE[t.grade] || ''}</span>` : ''}<b>${esc(t.name)}${t.new ? ' <span class="new-dot" title="새로 얻은 칭호" aria-label="새로 얻은 칭호"></span>' : ''}</b>
-        ${tsort !== 'cat' ? `<small class="muted t-catl">${esc(t.category)}</small>` : ''}${t.display ? chip('대표', 'accent') : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
+        ${tsort !== 'cat' ? `<small class="muted t-catl">${esc(t.category)}</small>` : ''}${t.equipped ? chip('장착 중', 'ok') : !t.earned ? chip(t.hidden ? '숨김' : '미획득') : ''}</div>
       ${t.description ? `<p class="t-desc">${esc(t.description)}</p>` : ''}
       <p class="t-cond">조건 · ${esc(t.condition || '-')}</p>
       ${t.bonus ? `<p class="t-bonus">${esc(effectText(t.bonus).join(' · '))}</p>` : ''}
       ${!t.earned && t.progress ? (() => { const cur = Number(t.progress.cur) || 0, need = Math.max(1, Number(t.progress.need) || 1);
         return `<div class="t-prog">${bar(cur, need, 'xp')}<small>${t.progress.pct ? `${Math.round(cur / need * 100)}%` : `${fmt.num(cur)} / ${fmt.num(need)}`}</small></div>`; })() : ''}
-      ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>
-        <button class="btn ghost" data-disp="${t.display ? '' : esc(t.key)}">${t.display ? '대표 내리기' : '대표로'}</button>${RAID_ON && t.hidden ? `<button class="btn ghost" data-story="${esc(t.key)}">유래</button>` : ''}</div>` : ''}</li>`; };
+      ${t.earned ? `<div class="t-act"><button class="btn ${t.equipped ? '' : 'primary'}" data-title="${esc(t.key)}">${t.equipped ? '장착 해제' : '장착'}</button>${RAID_ON && t.hidden ? `<button class="btn ghost" data-story="${esc(t.key)}">유래</button>` : ''}</div>` : ''}</li>`; };
   const paint = () => {
     const q = tq.trim().toLowerCase();
     const rows = list.filter(t => (!tOwned || t.earned) && (!tEquipped || t.equipped)
@@ -576,6 +582,7 @@ async function titles(body) {
       if (!r?.lines?.length) { toast('이 칭호의 유래는 아직 전해지지 않았습니다.'); return null; }
       (await import('../factionquest.js')).playDialogue({ title: r.title, lines: r.lines, cast: r.cast }, null); return null;
     }));
+    // 좁은 화면: 카드를 누르면 펼치고 다시 누르면 접는다(단추 누르기는 그대로)
   };
   bindPresets(body, snap);
   $('#t-q', body).oninput = e => { tq = e.target.value; paint(); };
@@ -584,6 +591,8 @@ async function titles(body) {
   $('#t-sort', body).onchange = e => { tsort = e.target.value; try { localStorage.setItem('yh-title-sort', tsort); } catch {} paint(); };
   $$('[data-cat]', body).forEach(b => b.onclick = () => { tcat = b.dataset.cat; $$('[data-cat]', body).forEach(x => x.classList.toggle('accent', x === b)); paint(); });
   paint();
+  const fc = focus && $(`.t-card[data-tkey="${CSS.escape(focus)}"]`, body);
+  if (fc) { fc.classList.add('open', 'focus'); requestAnimationFrame(() => fc.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => fc.classList.remove('focus'), 2600); }
   // 한 번 본 새 칭호는 확인 처리한다(이번 화면에서는 점이 남고, 다음부터는 사라진다)
   if (list.some(t => t.new)) markTitlesSeen();
 }

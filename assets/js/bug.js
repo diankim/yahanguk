@@ -1,7 +1,7 @@
 // 버그·문의 제보: 헤더의 깃발 단추로 여는 창. 조사원은 GM에게 바로 보내고 자기 제보의 처리 상태·답을 보며,
 // GM(world_staff)은 같은 창의 「받은 제보」에서 모든 제보를 보고 상태를 바꾸고 답한다(서버 world_bug_report_*).
 // 보낼 때 지금 화면 위치·화면 크기·기기·최근 오류를 함께 붙일 수 있다(전·가방 같은 게임 값은 붙이지 않는다).
-import { store, rpc, act, esc, icon, guard, $, $$, fmt, openModal, isGM } from './core.js';
+import { store, rpc, act, esc, icon, guard, $, $$, fmt, openModal, isGM, ask } from './core.js';
 
 const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감 및 기타'], ['other', '기타']];
 // 보낼 때 고르는 분류는 넷(모바일 한 줄). 화면·기타는 옛 제보 표시용으로만 남긴다(화면 오류는 「오류」, 그 밖은 「소감 및 기타」).
@@ -62,12 +62,18 @@ async function send(body) {
   };
   try {
     const r = await rpc('world_bug_report_list', { p_status: null });
-    const mine = (r?.reports || []).filter(x => x.owner_id === store.user?.id);
+    const mine = (r?.reports || []).filter(x => x.owner_id === store.user?.id && !x.hidden);
     if (r && r.reward_done === false && !r.is_gm) $('#bug-reward', body).hidden = false;
     $('.bug-mine', body).innerHTML = mine.length ? `<ul class="bug-list">${mine.map(x => `<li><div class="bug-top"><span class="chip">${esc(CATS.find(c => c[0] === x.category)?.[1] || '')}</span><b>${esc(x.title)}</b>
         <span class="chip ${x.status === 'fixed' ? 'ok' : x.status === 'checking' ? 'accent' : ''}">${esc(STATUS[x.status] || '')}</span><time>${fmt.time(x.created_at)}</time></div>
-        <p class="bug-text">${esc(x.body)}</p>${x.reply ? `<p class="bug-reply"><b>운영진 답</b> ${esc(x.reply)}</p>` : ''}</li>`).join('')}</ul>`
+        <p class="bug-text">${esc(x.body)}</p>${x.reply ? `<p class="bug-reply"><b>운영진 답</b> ${esc(x.reply)}</p>` : ''}
+        <div class="btn-row bug-del-row"><button class="btn small ghost" data-del="${x.report_id}" type="button">지우기</button></div></li>`).join('')}</ul>`
       : '<p class="muted small">아직 보낸 제보가 없습니다.</p>';
+    // 보낸 제보 지우기(7.7.4): 내 목록에서만 감추고, 운영진에게는 「보낸 이가 지움」으로 남는다
+    $$('[data-del]', body).forEach(b => b.onclick = async () => {
+      if (!await ask('이 제보를 내 목록에서 지울까요? 운영진에게 이미 전달된 내용은 처리 기록으로 남습니다.', { ok: '지우기' })) return;
+      guard(b, async () => { const res = await act('world_bug_report_hide', { p_report: Number(b.dataset.del) }); send(body); return res; });
+    });
   } catch (e) { $('.bug-mine', body).innerHTML = `<p class="bad small">${esc(e.message)}</p>`; }
 }
 
@@ -79,7 +85,7 @@ async function inbox(body) {
   const list = all.filter(x => filter === 'all' || (filter === 'active' ? ['open', 'checking'].includes(x.status) : x.status === filter));
   body.innerHTML = `
     <div class="chip-pick bug-filter">${[['active', `처리할 것 ${all.filter(x => ['open', 'checking'].includes(x.status)).length}`], ['fixed', '고침'], ['closed', '닫음'], ['all', '전체']].map(([k, l]) => `<button data-f="${k}" class="${k === filter ? 'on' : ''}">${l}</button>`).join('')}</div>
-    ${list.length ? `<ul class="bug-list">${list.map(x => `<li data-id="${x.report_id}"><div class="bug-top"><span class="chip">${esc(CATS.find(c => c[0] === x.category)?.[1] || '')}</span><b>${esc(x.title)}</b>
+    ${list.length ? `<ul class="bug-list">${list.map(x => `<li data-id="${x.report_id}"><div class="bug-top"><span class="chip">${esc(CATS.find(c => c[0] === x.category)?.[1] || '')}</span><b>${esc(x.title)}</b>${x.hidden ? '<span class="chip">보낸 이가 지움</span>' : ''}
         <span class="chip ${x.status === 'fixed' ? 'ok' : x.status === 'checking' ? 'accent' : x.status === 'open' ? 'warn' : ''}">${esc(STATUS[x.status])}</span><time>${fmt.time(x.created_at)}</time></div>
         <p class="muted small">${esc(x.character_name || '조사원')}${x.context?.hash ? ` · ${esc(x.context.hash)}` : ''}${x.context?.screen ? ` · ${esc(x.context.screen)}` : ''}${x.context?.location ? ` · ${esc(x.context.location)}` : ''}</p>
         <p class="bug-text">${esc(x.body)}</p>

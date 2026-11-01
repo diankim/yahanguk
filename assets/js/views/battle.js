@@ -1,23 +1,10 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
 // 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
-import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal, spOf } from '../core.js';
+import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, spOf } from '../core.js';
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '백공 기술관', medic: '의무관', artificer: '호위 무사' };
-export const MECH = {
-  aerial: ['비행', '날아올랐다가 내리꽂힙니다. 원거리가 잘 맞고, 공중에 있을 때 근접은 거의 닿지 않습니다.'],
-  armored: ['갑각', '단단한 껍질이 있습니다. 술법이 잘 통하고, 껍질을 굳히면 무기 공격이 막힙니다.'],
-  spectral: ['영체', '형체가 흐릿합니다. 술법에 약하고 근접은 잘 통하지 않습니다. 곡성으로 정신을 깎습니다.'],
-  warded: ['결계', '결계를 둘러 피해를 삼킵니다. 술법은 결계를 두 배로 깎습니다.'],
-  reflect: ['반사', '거울막으로 다음 술법 피해의 일부를 되돌립니다. 한 턴 방어하면 거울막이 사라집니다.'],
-  swarm: ['무리', '무리를 불러 회복하고 다음 공격이 강해집니다. 근접 공격이 잘 통합니다.'],
-  toxic: ['독성', '독을 뿜어 중독시킵니다. 거리를 두는 원거리가 유리합니다.'],
-  tide: ['수계', '물살로 몸을 식혀 한기를 남깁니다. 술법이 조금 더 잘 통합니다.'],
-  ambush: ['매복', '숨었다가 크게 덮칩니다. 숨어들면 방어를 준비하세요.'],
-  boss: ['우두머리', '기를 모았다가 폭발시킵니다. 기를 모으면 방어하거나 봉인술로 끊으세요.'],
-  seal_breaker: ['봉인 파괴', '봉인을 깨뜨려 침식을 일으킵니다. 근접 공격이 조금 더 잘 통합니다.'],
-};
 export const INTENT = {
   strike: ['공격', '평범한 공격입니다.', 0], heavy: ['강타 준비', '큰 피해가 옵니다. 방어하면 4분의 1로 줄이고, 근접 무기면 받아칩니다.', 2],
   soar: ['날아오름', '하늘로 솟구칩니다. 다음 턴에 급강하합니다.', 1], dive: ['급강하', '높은 곳에서 내리꽂습니다. 방어하세요.', 2],
@@ -42,6 +29,12 @@ const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 // 현장 토벌에서 쓸 수 있는 물품(서버 world_battle_action이 받는 11가지와 같다 — 음식·반요 고약은 토벌 중에 못 씀). 파티 토벌(pfight.js)도 이 목록을 쓴다
 export const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
   ['spirit_tea', '영력·기력 10'], ['clear_spirit_pill', '영력·기력 20'], ['spirit_qi_pill', '영력·기력 35'], ['moonlight_essence', '영력·기력 55'], ['heavenly_dew', '영력·기력 80']];
+// 물품 칸에 보일 것: 보통 물품과 우수품(<id>_hq)을 함께(7.7.1 — 보통 id만 보아 우수품만 가진 사람에게는 단추가 뜨지 않았다. 서버는 world_item_base로 받는다)
+// always: 앞에서 몇 가지는 없어도 잠긴 단추로 보인다
+export function trayList(inv, always = 0) {
+  return ITEMS.flatMap(([k, d], i) => [[k, d, i < always], [`${k}_hq`, `${d} · 우수품 +15%`, false]])
+    .filter(([k, , show]) => show || Number(inv[k]) > 0);
+}
 
 // 상성(갈래별 무기 배율 · 유리한 직업 +20%)은 그 요괴를 한 번 쓰러뜨려 도감에 적은 뒤에만 서버가 내보낸다(b.eff)
 export function effectiveness(style, eff) {
@@ -52,20 +45,31 @@ export function effectiveness(style, eff) {
 let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 
 // box: 그릴 곳, snap: world_field_snapshot, done: 전투가 끝나면 부를 함수
-export function renderBattle(box, snap, done) {
-  host = box; data = snap; onEnd = done;
+// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(7.7.3, 행동 칸 여섯째)
+let callOpt = null;
+export function renderBattle(box, snap, done, opts) {
+  host = box; data = snap; onEnd = done; callOpt = opts?.call ? opts : null;
   // 서버 시각을 그대로 쓰면 기기 시계가 늦을 때 대기가 길어지므로, 남은 시간은 최대 1초로 자른다
   // 첫 수(아직 한 번도 행동하지 않은 전투)는 기다리지 않는다(서버도 전투를 열 때 바로 행동할 수 있게 둔다)
   nextAt = Number(snap.battle?.turn || 0) === 0 ? 0 : Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
   draw();
 }
 export function stopBattle() { clearInterval(cdTimer); host = null; }
+// 퀵슬롯·가방에서 누른 물품도 이 전투의 「물품」 행동으로 쓴다(7.7.2b — 턴이 지나감, core.js battleItemRoute)
+window.addEventListener('yh-battle-item', e => {
+  if (!host?.isConnected || !data?.battle) return;
+  e.detail.handled = true;
+  const id = e.detail.id, base = String(id).replace(/_hq$/, '');
+  if (!ITEMS.some(([k]) => k === base)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 전투의 「물품」으로 씁니다.', 'warn'); return; }
+  if (busy || Date.now() < nextAt) { toast('아직 다음 행동을 할 수 없습니다.', 'warn'); return; }
+  send('item', id);
+});
 
 function draw(fresh = []) {
   if (!host || !data?.battle) return;
   const b = data.battle, c = store.character, w = data.weapon || { type: 'melee', name: '맨손' };
   const ef = effectiveness(w.type, b.eff);
-  // 기믹(g:키 · 터뜨리는 턴 g!:키)은 이름과 낌새만 보인다. 대처법은 도감에서 쓰러뜨린 뒤에 열린다.
+  // 요괴의 수법(g:키 · 터뜨리는 턴 g!:키)은 이름과 낌새만 보인다. 대처법은 도감에서 쓰러뜨린 뒤에 열린다.
   const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[b.intent] || INTENT.strike);
   const skill = SKILL[c.job_key] || ['기술', ''];
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
@@ -97,25 +101,27 @@ function draw(fresh = []) {
       </div>
       ${b.sneak != null ? `<div class="hint accent sneak-ask" id="sneak-ask">${icon('eye', 16)}<span><b>기척을 숨기겠습니까?</b> 성공 ${b.sneak}% · 실패하면 요괴가 먼저 덤벼듭니다. 탐색력은 돌아오지 않습니다.</span>
         <span class="btn-row"><button class="btn small primary" data-sneak>기척 숨기기</button><button class="btn small" data-sneak-no>맞서기</button></span></div>` : ''}
-      <div class="actions" id="actions">
+      <div class="actions ${callOpt ? 'has-call' : ''}" id="actions">
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
         <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
         <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · ${spOf()[0]} +4</small><i class="cd"></i></button>
         <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력·기력</small><i class="cd"></i></button>
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>
+        ${callOpt ? `<button class="act call" id="act-call" title="같은 곳의 파티원에게 합류 알림(60초) · 합류한 사람마다 요괴 체력이 늘고, 이기면 경험치를 한 사람마다 10% 더 받습니다">${icon('users', 20)}<b>동료 부르기</b><small>같은 곳 ${callOpt.call}명 · 차례대로 함께</small></button>` : ''}
       </div>
-      <div class="item-tray" id="item-tray" hidden>${ITEMS.filter(([k], i) => i < 4 || inv[k] > 0).map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
+      <div class="item-tray" id="item-tray" hidden>${trayList(inv, 4).map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
       <ol class="battle-log">${log.map((l, i) => `<li class="${i >= log.length - fresh.length ? 'new' : ''}">${esc(l)}</li>`).join('')}</ol>
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;
   $('#mech-info', host)?.addEventListener('click', () => openModal({ title: `갈래 · ${b.kind_name}`, body: `<p>${esc(b.kind_desc || '')}</p>
-    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${b.eff.job ? ` · ${esc(JOB[b.eff.job] || '')} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 기믹 파훼법이 적힙니다.</p>'}` }));
+    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${b.eff.job ? ` · ${esc(JOB[b.eff.job] || '')} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 수법 대처법이 적힙니다.</p>'}` }));
   $$('[data-a]', host).forEach(btn => btn.onclick = async () => {
     const a = btn.dataset.a;
     if (a === 'item') { $('#item-tray', host).hidden = !$('#item-tray', host).hidden; return; }
     send(a);
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
+  const cb = $('#act-call', host); if (cb && callOpt?.onCall) cb.onclick = () => callOpt.onCall(cb);
   // 기척 숨기기(7.2.7): 마주친 직후 한 번만. 맞서기를 고르면 묻는 칸만 닫는다(첫 행동을 하면 서버도 더는 받지 않는다)
   $('[data-sneak]', host)?.addEventListener('click', () => send('sneak'));
   $('[data-sneak-no]', host)?.addEventListener('click', () => { $('#sneak-ask', host)?.remove(); });
@@ -137,6 +143,14 @@ function tickCooldown() {
 }
 
 let busy = false;
+// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다(7.5.9).
+// 서버(world_battle_action)가 남기는 기록 문구로 알아보고, 같은 알림은 5초에 한 번만
+const WEAK = [[/쏠 것이 떨어져/, '화살(탄)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
+const weakAt = {};
+export function weakNote(lines) {
+  const text = (lines || []).join('\n');
+  for (const [re, msg] of WEAK) if (re.test(text) && Date.now() - (weakAt[msg] || 0) > 5000) { weakAt[msg] = Date.now(); toast(msg, 'warn'); }
+}
 async function send(action, item) {
   if (busy || Date.now() < nextAt) return;
   busy = true; tickCooldown();
@@ -149,6 +163,7 @@ async function send(action, item) {
     if (c) c.health = r.health ?? c.health;
     sfx(r);
     floats(r);
+    weakNote(r.lines);
     const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;

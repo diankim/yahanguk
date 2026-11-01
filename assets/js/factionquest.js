@@ -2,7 +2,7 @@
 // 대화는 게임 안 팝업에서 한 줄씩 넘겨 보인다(지문은 기울임, 대사는 인물 이름표).
 import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf } from './core.js';
 import { openItemInfo } from './views/item.js';
-import { panel, chip, invalidate } from './views/common.js';
+import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';
@@ -36,7 +36,7 @@ export function playDialogue(r, fid) {
   box.onclick = next;
   box.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); next(); } };
   $('[data-dlg-close]', m).onclick = () => closeModal();
-  show(); box.focus();
+  show(); try { box.focus({ preventScroll: true }); } catch { box.focus(); }
 }
 
 // 비고 품목 종류 표시(물품이 아닌 것은 하나만 산다)
@@ -62,7 +62,9 @@ const donateHtml = (s, open) => {
     <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
 
-const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}</small></li>`).join('');
+// 단위(7.5.9d): quests.js unitOf와 같은 규칙(서로 불러오면 순환이 생겨 따로 둠)
+const unitOf = t => { const it = Array.isArray(t.items) ? t.items : Object.keys(t.items || {}); return t.t === 'gather' ? (it.length ? '개' : '회') : t.t === 'craft' && it.length ? '개' : ''; };
+const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}${unitOf(t)}</small></li>`).join('');
 
 // 세력 화면은 칸 단추만 두고, 누르면 그 칸을 팝업으로 연다(긴 스크롤을 줄임). 세력 판도만 화면에 그대로 둔다.
 export function fqPops(s) {
@@ -201,7 +203,7 @@ function bindDonate(body, s, done) {
     const q = $('#fq-don-q', box);
     if (q) {
       // 한글 조합 중에는 다시 그리지 않는다
-      const redo = () => { donQ = q.value.trim(); box.innerHTML = donateHtml(s, true); bind(); const n = $('#fq-don-q', box); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
+      const redo = () => { donQ = q.value.trim(); box.innerHTML = donateHtml(s, true); bind(); const n = $('#fq-don-q', box); n.focus({ preventScroll: true }); n.setSelectionRange(n.value.length, n.value.length); };
       q.oninput = e => { if (!e.isComposing) redo(); };
       q.addEventListener('compositionend', redo);
     }

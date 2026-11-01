@@ -100,7 +100,9 @@ declare
     'world_storage', 'world_story_progress', 'world_title_presets', 'world_title_seen_migrated', 'world_tourney_entrants', 'world_tourney_entries',
     'world_tourney_matches', 'world_tourneys', 'world_trade_offers', 'world_trade_requests', 'world_travel_history', 'world_travel_party_requests',
     'world_tutorial_state', 'world_wedding_guests', 'world_wedding_lines', 'world_weddings', 'world_whisper_reads', 'world_yohwa_log',
-    'world_pet_profile', 'world_pet_gifts'];
+    'world_pet_profile', 'world_pet_gifts',
+    -- 10/31 뒤에 생긴 캐릭터 표(7.7.x): 동무 연속 기록 · 조사원 의뢰
+    'world_pet_streak', 'world_user_commissions'];
   have text;
 begin
   -- 있는 표만(운영과 복제 DB의 표 차이), CASCADE 없이 — 남길 표가 지울 표를 가리키고 있으면 여기서 멈춘다
@@ -265,10 +267,10 @@ update public.world_quest_steps s
 -- ════════ p6_pets.src.sql ════════
 -- 대기 파일: 꼬마 동무 1.0.0(롤백 패치) — 새 동무 8종(조사원 제보) · 동무 두 자리(프로필 동무 / 별채 동무)
 -- 1.0.0 묶음에 합칠 것(db_version 줄은 넣지 않았다 — 묶음 마지막에 한 번). migrations 폴더 밖에 두어 실수로 돌지 않게 했다.
--- 화면: assets/js/housing/pets.js(38종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
+-- 화면: assets/js/housing/pets.js(39종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
 -- 그림(pets.js)이 먼저 배포돼 있어도 world_pet_species에 없으면 도감에 나오지 않는다.
 --
--- ① 새 동무 8종(제보한 조사원 → 동무)
+-- ① 새 동무 9종(제보한 조사원 → 동무, 꼬마 매는 2026-11-01 제보 76 아도니스 · 양품 얼룩무늬 알)
 --   네눈박이 강아지(박시현) 범품 · 바구니 / 흰둥이 강아지(조의신) 범품 · 바구니
 --   잿빛 장모 고양이(여보) · 점박이 하늘다람쥐(윤아람) · 꼬마 족제비(강산하) 양품 · 얼룩무늬 알
 --   금빛 날개늑대(나락) 진품 · 퀘스트 「벼락을 부르는 문」 + 빛나는 알
@@ -310,7 +312,8 @@ select x.pet_id, x.pet_name, x.grade, x.kind, x.likes, x.how, x.sort, x.egg
     ('golden_wingwolf',  '금빛 날개늑대',     3, 'sky',     'treat_meat',  '퀘스트 「벼락을 부르는 문」을(를) 마친다 · 빛나는 알', 34, true),
     ('little_ferret',    '꼬마 족제비',       2, 'shadow',  'treat_meat',  '탐색 중 「얼룩무늬 알」', 35, true),
     ('onehorn_goat',     '외뿔 팔족염소',     4, 'giant',   'treat_herb',  '외전 「거꾸로 선 기도」를 마친다', 36, false),
-    ('little_hongryong', '꼬마 홍룡',         4, 'breaker', 'treat_meat',  '이야기 8장 「재의 바다」를 마친다', 37, false)
+    ('little_hongryong', '꼬마 홍룡',         4, 'breaker', 'treat_meat',  '이야기 8장 「재의 바다」를 마친다', 37, false),
+    ('little_hawk',      '꼬마 매',           2, 'bird',    'treat_meat',  '탐색 중 「얼룩무늬 알」', 38, true)
   ) as x(pet_id, pet_name, grade, kind, likes, how, sort, egg)
 on conflict (pet_id) do update set pet_name = excluded.pet_name, grade = excluded.grade, kind = excluded.kind, likes = excluded.likes, how = excluded.how, sort = excluded.sort, egg = excluded.egg;
 
@@ -551,7 +554,7 @@ insert into public.world_patch_notes(note_id, title, body) values ('1.0.0', '1.0
 - 테두리 「야행(夜行)의 테」 · 바탕 무늬 「흑야 운문」 · 낙관 「痕」 · 이름 색 「야행묵금」
 
 ## 꼬마 동무
-- 새 동무 8종: 네눈박이 강아지·흰둥이 강아지·잿빛 장모 고양이·점박이 하늘다람쥐·꼬마 족제비·금빛 날개늑대·외뿔 팔족염소·꼬마 홍룡(조사원 제보로 태어났습니다).
+- 새 동무 9종: 네눈박이 강아지·흰둥이 강아지·잿빛 장모 고양이·점박이 하늘다람쥐·꼬마 족제비·꼬마 매·금빛 날개늑대·외뿔 팔족염소·꼬마 홍룡(조사원 제보로 태어났습니다).
 - **동무 두 자리**: 데리고 다니는 동무(조사원 카드에 보임, 별채가 없어도 됨)와 별채에 머무는 동무를 따로 정합니다.
 
 ## 초대권

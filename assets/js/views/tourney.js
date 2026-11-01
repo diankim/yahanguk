@@ -1,8 +1,8 @@
 // 야행 비무회(7.1, #/tourney): 비무 방(신청·작전·이번 주 대회·지난 결과)과 대진표·경기 다시 보기.
 // 판정은 서버(world_tourney_*, 1분마다 예약 작업)가 하고, 경기 기록은 합마다 2초씩 서버 시각에 맞춰 펼친다.
 // 다시 읽는 때: 화면을 열 때 · 신청·작전 뒤 · 대회가 진행 중이면 다음 회차 시각에 한 번(실시간 구독 없음).
-import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, guard, ask, openModal } from '../core.js';
-import { loading, errorBox, chip, panel } from './common.js';
+import { rpc, store, esc, icon, fmt, $, $$, nameOf, guard, ask } from '../core.js';
+import { loading, errorBox, panel } from './common.js';
 
 const MODE = { solo: '1:1', team: '팀전(2:2)' };
 const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시작', running: '진행 중', done: '끝남', cancelled: '열리지 않음' };
@@ -47,7 +47,7 @@ function drawBoard() {
   const b = board || {}, c = store.character || {};
   const cur = b.current || [];
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('sword', 14)} 야행 비무회</p><h1>비무 방</h1></div></div>
-    <div class="notice">${icon('help', 18)}<div><b>한 주의 흐름</b><span>월요일 0시부터 금요일 23시 59분까지 안전지대의 비무 방에서 신청합니다. 토요일 21시 1:1, 일요일 21시 팀전(같은 파티 2명)이 개최지에서 열립니다. 시작 10분 전에 개최지에 없으면 불참입니다. 목숨·체력·물품·전·경험치는 그대로이고, 능력치·장비 차이는 절반만 반영됩니다.</span></div></div>
+    <div class="notice">${icon('help', 18)}<div><b>한 주의 흐름</b><span>월요일 0시부터 금요일 23시 59분까지 안전지대의 비무 방에서 신청합니다. 토요일 21시 1:1, 일요일 21시 팀전(같은 파티 2명)이 개최지에서 열리고, 신청만 해 두면 어디에 있든 나섭니다(시작 10분 전에 쓰러져 있으면 불참). 목숨·체력·물품·전·경험치는 그대로이고, 능력치·장비 차이는 절반만 반영됩니다.</span></div></div>
     <div class="grid-2">${cur.map(t => tCard(t, b, c)).join('') || panel('이번 주 대회', '<p class="muted">대회를 준비하는 중입니다.</p>')}</div>
     ${panel('지난 대회', (b.past || []).length ? `<ul class="tn-past">${b.past.map(p => `<li><button class="linkish" data-view="${esc(p.t_id)}"><b>${esc(MODE[p.mode])}</b> · ${fmt.date ? fmt.date(p.starts_at) : new Date(p.starts_at).toLocaleDateString('ko-KR')} · ${esc(p.venue_name || '')}</button>
         <small>${p.status === 'done' ? `장원 ${esc(p.result?.champion_names || '')}${p.result?.runner_up ? ` · 준우승 ${esc(p.result.runner_up)}` : ''}` : '열리지 않음'}</small></li>`).join('')}</ul>` : '<p class="muted small">지난 일주일 사이 열린 대회가 없습니다.</p>', { ico: 'scroll' })}`;

@@ -1,16 +1,22 @@
 // 음향: 브라우저에서 직접 연주하는 동양풍 배경음악(영역마다 다른 곡조) · 날씨·시간대 환경음 · 행동별 효과음.
 // 외부 음원을 쓰지 않으므로 저작권 걱정이 없고 내려받을 파일도 없다.
-import { on } from './core.js';
+import { on, toast } from './core.js';
+import { LAYERS as AMB, bird, cricket, owl, drip } from './ambience.js';
 
 // vol = 전체 음량(7.3.4, 설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
 let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
 const scene = { territory: 'capital', safe: false, battle: false, exp: false };
-// 전투 음악: 현장 토벌 중(battle)이거나 원정대가 길에 나가 있는 동안(exp, 7.4.1 — 원정은 회차마다 싸우므로)
-const inBattle = () => scene.battle || scene.exp;
+// 전투 음악: 원정대가 길에 나가 있는 동안(exp, 7.4.1 — 원정은 회차마다 싸우므로). 현장 토벌(battle)은 곡을 바꾸지 않는다(7.5.6, 사용자 요청 — 탐색 중 마주칠 때마다 곡이 끊겼다)
+const inBattle = () => scene.exp;
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
 let away = false;
+// 배경음악·환경음이 창마다 겹치지 않게(7.5.5): 채팅·귓속말 새 창(?pop=)은 소리를 전혀 내지 않고,
+// 게임 창이 여럿이면 가장 최근에 누르거나 고른 창 하나만 배경음악·환경음을 낸다(나머지는 yielded — 브라우저 안 신호 BroadcastChannel 'yh-sound')
+const POPWIN = (() => { try { return !!new URLSearchParams(location.search).get('pop'); } catch { return false; } })();
+let yielded = POPWIN;
+const musicOk = () => sound.bgmOn && !yielded;
 let env = { weather: 'clear', phase: 'noon' };
 
 export function loadSound() { try { Object.assign(sound, JSON.parse(localStorage.getItem('yh-sound') || '{}')); } catch {} }
@@ -20,9 +26,9 @@ export function applyVolumes() {
   if (!ctx) return;
   const t = ctx.currentTime;
   if (!away) master.gain.setTargetAtTime(masterLevel(), t, 0.1);
-  bgmBus.gain.setTargetAtTime(sound.bgmOn ? sound.bgm * 0.8 : 0, t, 0.3);
-  ambBus.gain.setTargetAtTime(sound.ambOn ? sound.amb * 0.5 : 0, t, 0.4);
-  sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.5 : 0, t, 0.05);
+  bgmBus.gain.setTargetAtTime(musicOk() ? sound.bgm * 0.8 : 0, t, 0.3);
+  ambBus.gain.setTargetAtTime(sound.ambOn && !yielded ? sound.amb * 0.5 : 0, t, 0.4);
+  sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.95 : 0, t, 0.05); // 7.5.9i: 배경음악·빗소리에 묻혀 0.5에서 올림
 }
 
 function ensureCtx() {
@@ -171,7 +177,6 @@ function playDrum(t, vel, kind = 'big') {
 // 오음 고집을 풀고 3~6도 도약을 섞어 음 폭을 넓혔다. ③ 큰북(playDrum) — 영역마다 장단 셋(기본·변형·몰아치기)을 두어 마디마다 바꾸고 프레이즈 끝에서 몰아친다.
 // ④ 전투는 영역마다 따로 편성한다(PROFILES[].bt: 북령은 현악·첼로·종의 진혼곡, 해금·가야금 잔걸음을 뺌).
 const MODES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], phryg: [0, 1, 3, 5, 7, 8, 10] };
-const PENT = { minor: [0, 2, 3, 4, 6], major: [0, 1, 2, 4, 5], phryg: [0, 1, 3, 4, 5] }; // 오음(음계 칸 번호)
 const PROG = {
   minor: { ante: [[0, 5, 3, 4], [0, 3, 5, 6], [0, 6, 5, 4], [5, 6, 0, 4], [0, 2, 3, 6]], cons: [[5, 6, 0, 0], [3, 4, 0, 0], [0, 5, 6, 0], [5, 3, 4, 0], [2, 5, 6, 0]],
            bA: [[5, 6, 2, 5], [3, 4, 5, 6], [5, 3, 6, 2]], bC: [[3, 6, 2, 4], [5, 3, 4, 4], [3, 5, 6, 6]] },
@@ -315,14 +320,13 @@ const insOf = p => [...new Set([p.lead, p.lead2, p.counter, p.arp, p.accIns, p.b
 function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909); h >>>= 0; return h / 4294967296; }; }
 
 function makeSong(p, key, loop) {
-  const M = MODES[p.mode], pent = PENT[p.mode], prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
+  const M = MODES[p.mode], prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
   // 프리지안의 V(감화음)는 거칠어 ♭II(프리지안 맺음)로 바꾼다
   const prog = p.mode === 'phryg' ? Object.fromEntries(Object.entries(prog0).map(([k, v]) => [k, v.map(c => c.map(x => (x === 4 ? 1 : x)))])) : prog0;
   const theme = seeded(key), vary = seeded(`${key}:${loop}`);
   const pick = (r, a) => a[Math.floor(r() * a.length)];
   const mod7 = d => ((d % 7) + 7) % 7;
   const midi = (d, base = p.tonic) => base + 12 * Math.floor(d / 7) + M[mod7(d)];
-  const isPent = d => pent.includes(mod7(d));
   const chordTones = c => [mod7(c), mod7(c + 2), mod7(c + 4)];
   const LO = 2, HI = 13, RS = RHY[p.rhy] || RHY.calm, beats = p.meter;
   // 프레이즈(4마디): 마디마다 [[박, 음계 칸, 길이, 꾸밈]]
@@ -531,69 +535,53 @@ function setLayer(name, level, build) {
   const L = loopLayer(name, build);
   L.g.gain.setTargetAtTime(Math.max(0.0001, level), now(), 1.5);
 }
-const noiseSrc = (buf) => { const n = ctx.createBufferSource(); n.buffer = buf; n.loop = true; n.start(); return n; };
-const BUILD = {
-  rain: g => { const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900; lp.type = 'lowpass'; lp.frequency.value = 6500; n.connect(hp); hp.connect(lp); lp.connect(g); return [n]; },
-  wind: g => {
-    const n = noiseSrc(brownBuf), lp = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), lg = ctx.createGain(), gust = ctx.createGain(), glfo = ctx.createOscillator(), glg = ctx.createGain();
-    lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 3; lfo.frequency.value = 0.06; lg.gain.value = 320; lfo.connect(lg); lg.connect(lp.frequency);
-    gust.gain.value = 0.7; glfo.frequency.value = 0.045; glg.gain.value = 0.3; glfo.connect(glg); glg.connect(gust.gain);
-    n.connect(lp); lp.connect(gust); gust.connect(g); lfo.start(); glfo.start(); return [n, lfo, glfo];
-  },
-  water: g => { const n = noiseSrc(brownBuf), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; n.connect(lp); lp.connect(g); return [n]; },
-  hiss: g => { const n = noiseSrc(noiseBuf), hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5200; n.connect(hp); hp.connect(g); return [n]; },
-  mist: g => {
-    const o = ctx.createOscillator(), o2 = ctx.createOscillator(), t = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-    o.frequency.value = 55; o2.frequency.value = 58.3; o.type = o2.type = 'sine'; t.gain.value = 0.6; lfo.frequency.value = 0.3; lg.gain.value = 0.4; lfo.connect(lg); lg.connect(t.gain);
-    o.connect(t); o2.connect(t); t.connect(g); o.start(); o2.start(); lfo.start(); return [o, o2, lfo];
-  },
-};
+// 환경음 층은 ambience.js(7.5.9i 다듬기)가 만든다 — 비는 빗방울을 버퍼에 흩뿌린 결, 바람은 숨 쉬듯, 물은 일렁이게
+const ambMat = {};
+const BUILD = Object.fromEntries(Object.keys(AMB).map(k => [k, g => { ambMat.noise = noiseBuf; ambMat.brown = brownBuf; return AMB[k](ctx, g, ambMat); }]));
 let critterTimer = null;
 // 짧게 끊어지는 소리들: 새·풀벌레·물방울·부엉이
 function critters() {
   clearTimeout(critterTimer);
-  if (away) return;
+  if (away || yielded) return;
   if (!ctx || !sound.ambOn) { critterTimer = setTimeout(critters, 4000); return; }
   const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
-  const quiet = w === 'rain' || w === 'snow' || w === 'wind';
-  if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.55 : 0.3)) {
-    const n = 2 + Math.floor(Math.random() * 4), base = 2600 + Math.random() * 1200;
-    for (let i = 0; i < n; i++) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const s = t + i * (0.09 + Math.random() * 0.05);
-      o.frequency.setValueAtTime(base, s); o.frequency.exponentialRampToValueAtTime(base * (1.25 + Math.random() * 0.3), s + 0.07); envGain(g, s, 0.05, 0.005, 0.08); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.12); }
+  const quiet = w === 'rain' || w === 'drizzle' || w === 'snow' || w === 'wind';
+  if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.6 : 0.3)) {
+    bird(ctx, ambBus, t); if (ph === 'dawn' && Math.random() < 0.35) bird(ctx, ambBus, t + 0.4 + Math.random() * 0.6, 0.55); // 먼 데서 받아 우는 새
   }
   if (!under && (ph === 'dusk' || ph === 'night') && w !== 'snow' && w !== 'rain') {
-    const n = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < n; i++) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = 4400 + Math.random() * 300; const s = t + i * 0.045;
-      envGain(g, s, ph === 'night' ? 0.022 : 0.014, 0.004, 0.03); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s + 0.05); }
-    if (ph === 'night' && Math.random() < 0.05) { [0, 0.45].forEach((d, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = i ? 340 : 390; envGain(g, t + 1 + d, 0.03, 0.06, 0.35); o.connect(g); g.connect(ambBus); o.start(t + 1 + d); o.stop(t + 1.6 + d); }); }
+    const v = (ph === 'night' ? 1 : 0.65) * (w === 'drizzle' ? 0.5 : 1);
+    cricket(ctx, ambBus, t, v); if (Math.random() < 0.5) cricket(ctx, ambBus, t + 0.12 + Math.random() * 0.2, v * 0.55);
+    if (ph === 'night' && Math.random() < 0.04) owl(ctx, ambBus, t + 1);
   }
-  if (w === 'rain' || w === 'fog' || under) {
-    if (Math.random() < (w === 'rain' ? 0.8 : 0.3)) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; const f = 1800 + Math.random() * 2000;
-      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.05); envGain(g, t, 0.025, 0.002, 0.06); o.connect(g); g.connect(ambBus); o.start(t); o.stop(t + 0.1); }
-  }
-  const gap = ph === 'dusk' || ph === 'night' ? 500 + Math.random() * 900 : 1800 + Math.random() * 4000;
+  if ((w === 'fog' || under) && Math.random() < 0.3) drip(ctx, ambBus, t);
+  const gap = ph === 'dusk' || ph === 'night' ? 450 + Math.random() * 800 : 1500 + Math.random() * 3500;
   critterTimer = setTimeout(critters, gap);
 }
 function updateAmbience() {
   if (!ctx) return;
   const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
-  setLayer('rain', w === 'rain' ? 0.12 : 0, BUILD.rain);
-  setLayer('wind', (({ wind: 0.5, snow: 0.28, cloudy: 0.12, clear: 0.07, bloodmist: 0.12, fog: 0.05, rain: 0.06 })[w] || 0) * (under ? 0.4 : 1), BUILD.wind);
-  setLayer('water', w === 'fog' || under ? 0.35 : w === 'rain' ? 0.15 : 0, BUILD.water);
-  setLayer('hiss', w === 'snow' ? 0.012 : 0, BUILD.hiss);
+  setLayer('rain', w === 'rain' ? 0.38 : 0, BUILD.rain);
+  setLayer('drizzle', w === 'drizzle' ? (under ? 0.3 : 0.55) : 0, BUILD.drizzle);
+  // 바람은 삭풍(wind) 날씨에만(7.5.9k, 사용자 요청 — 다른 날씨에 늘 깔리던 바람결을 뺐다)
+  setLayer('wind', w === 'wind' ? 0.5 * (under ? 0.4 : 1) : 0, BUILD.wind);
+  setLayer('water', w === 'fog' || under ? 0.14 : w === 'rain' ? 0.06 : w === 'drizzle' ? 0.01 : 0, BUILD.water);
+  setLayer('hiss', w === 'snow' ? 0.006 : 0, BUILD.hiss);
   setLayer('mist', w === 'bloodmist' ? 0.05 : 0, BUILD.mist);
 }
 
 /* ── 효과음(짧고 단순하게) ───────────────────────────── */
+let toBus = null, alarmBus = null; // 알림음은 효과음을 꺼도 따로 울리게 제 길(alarmBus)로 낸다
 function tone(freq, dur, vol = 0.1, type = 'sine', at = 0, glide) {
   const t0 = now() + at, o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t0);
   if (glide) o.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
-  envGain(g, t0, vol, Math.min(0.012, dur / 4), dur); o.connect(g); g.connect(sfxBus); o.start(t0); o.stop(t0 + dur + 0.05);
+  envGain(g, t0, vol, Math.min(0.012, dur / 4), dur); o.connect(g); g.connect(toBus || sfxBus); o.start(t0); o.stop(t0 + dur + 0.05);
 }
 const seq = (notes, step, dur, vol, type = 'sine') => notes.forEach((f, i) => tone(f, dur, vol, type, i * step));
 const SFX = {
-  tap: () => tone(1050, 0.03, 0.035), tick: () => tone(980, 0.03, 0.04), nav: () => tone(620, 0.06, 0.05, 'sine', 0, 700),
+  // 누름 소리(7.5.9i): 귀에 거슬리지 않는 짧고 둥근 「톡」(높은 삑 대신 아래로 살짝 내려앉는 소리)
+  tap: () => { tone(880, 0.045, 0.07, 'sine', 0, 660); tone(1760, 0.02, 0.012, 'triangle'); }, tick: () => tone(980, 0.03, 0.05), nav: () => { tone(620, 0.07, 0.07, 'sine', 0, 720); tone(1240, 0.03, 0.01, 'triangle'); },
   step: () => tone(420, 0.06, 0.06, 'sine', 0, 360), confirm: () => seq([660, 880], 0.06, 0.08, 0.06),
   coin: () => seq([1250, 1660], 0.06, 0.09, 0.05, 'triangle'),
   craft: () => { tone(330, 0.12, 0.09, 'sine', 0, 220); tone(990, 0.05, 0.04, 'sine', 0.1); },
@@ -605,11 +593,49 @@ const SFX = {
   hit: () => tone(200, 0.09, 0.1, 'sine', 0, 110), crit: () => { tone(200, 0.09, 0.1, 'sine', 0, 110); tone(1400, 0.07, 0.05, 'sine', 0.05); },
   hurt: () => tone(260, 0.14, 0.08, 'sine', 0, 170), guard: () => tone(500, 0.1, 0.06, 'triangle'),
   victory: () => seq([523, 659, 784, 1046], 0.08, 0.18, 0.06, 'triangle'), defeat: () => seq([392, 330, 262], 0.12, 0.22, 0.06),
+  ding: () => { seq([1047, 1319, 1568], 0.1, 0.4, 0.08); tone(2093, 0.5, 0.025, 'sine', 0.2); },
   chime: () => tone(660, 0.2, 0.05), error: () => seq([240, 200], 0.1, 0.1, 0.06), repair: () => { tone(900, 0.04, 0.05); tone(700, 0.05, 0.05, 'sine', 0.07); },
 };
 export function playSfx(kind) {
-  if (!sound.sfxOn || away || !ensureCtx()) return;
+  if (POPWIN || !sound.sfxOn || away || !ensureCtx()) return;
   try { (SFX[kind] || SFX.tap)(); } catch {}
+}
+// 알림음 「띠로링」(7.5.6): 귓속말·채팅의 @내 이름·탐색력 가득·휴식 쿨타임 끝·원정 귀환·자율 활동 끝.
+// 종류마다 설정 › 소리에서 켜고 끈다(sound.alarm, 이 기기에 저장). 효과음을 꺼도 울리고, 크기는 효과음 음량을 따른다(너무 작으면 25%).
+// 채팅·귓속말 새 창에서도 울린다(그 창이 말을 받는 동안 본 창은 받지 않으므로). 같은 일로 창 여럿이 함께 울리지 않게 key를 기기에 1분 남긴다.
+export const ALARMS = [['whisper', '귓속말', '귓속말이 오면'], ['mention', '내 이름 부르기', '채팅에서 누가 @내 이름을 쓰면'], ['stamina', '탐색력 가득', '탐색력이 가득 차면'],
+  ['rest_short', '잠깐 쉬기 가능', '잠깐 쉬기 쿨타임(10분)이 끝나면'], ['rest_full', '푹 쉬기 가능', '푹 쉬기 쿨타임(30분)이 끝나면'], ['exp', '원정 귀환', '원정대가 돌아오면'], ['idle', '자율 활동 끝', '자율 활동이 끝나 보상을 받을 수 있으면']];
+let alarmReady = false;
+const ALARM_TEXT = { stamina: '탐색력이 가득 찼습니다.', rest_short: '잠깐 쉬기를 다시 할 수 있습니다.', rest_full: '푹 쉬기를 다시 할 수 있습니다.', idle: '자율 활동이 끝났습니다. 캐릭터 › 자율에서 보상을 받으세요.' };
+export const alarmOn = kind => sound.alarm?.[kind] !== false;
+export function setAlarm(kind, on) { sound.alarm = { ...(sound.alarm || {}), [kind]: !!on }; saveSound(); }
+export function playAlarm(kind, key) {
+  if (POPWIN && !alarmReady) { alarmReady = true; loadSound(); }
+  if (kind && !alarmOn(kind)) return;
+  // 잠깐·푹 쉬기가 거의 같이 끝나면 한 번만(둘 다 켰을 때 10초 안에 겹친 것은 건너뜀)
+  if (/^rest_/.test(kind || '')) { let l = 0; try { l = Number(localStorage.getItem('yh-alarm:rest-any') || 0); } catch {} if (Date.now() - l < 10000) return; try { localStorage.setItem('yh-alarm:rest-any', String(Date.now())); } catch {} }
+  if (key) try { const k = 'yh-alarm:' + key; if (localStorage.getItem(k)) return; localStorage.setItem(k, String(Date.now())); setTimeout(() => { try { localStorage.removeItem(k); } catch {} }, 60000); } catch {}
+  // 시간이 다 된 알림은 소리와 함께 화면 아래에도 글로 띄운다(7.5.9b, 사용자 요청 — 소리를 꺼 두었거나 못 들으면 몰랐다).
+  // 귓속말·이름 부르기는 저마다 창·빨간 점이 있고, 원정 귀환은 귀환 창이 따로 뜨므로 뺀다
+  if (ALARM_TEXT[kind] && !POPWIN) toast(ALARM_TEXT[kind], 'ok');
+  if (away || !ensureCtx()) return;
+  try {
+    ctx.resume?.();
+    if (!alarmBus) { alarmBus = ctx.createGain(); alarmBus.connect(master); }
+    alarmBus.gain.value = Math.max(0.25, sound.sfx ?? 0.55) * 0.5;
+    toBus = alarmBus; SFX.ding();
+  } catch {} finally { toBus = null; }
+}
+// 끝나는 시각에 맞춰 알림을 걸어 둔다(같은 종류·같은 이름은 새 시각으로 바꿈). 이미 지난 시각이면 걸지 않는다.
+const armed = new Map();
+export function armAlarm(kind, name, at) {
+  const id = kind + ':' + name, t = at ? new Date(at).getTime() : 0, old = armed.get(id);
+  if (old?.at === t) return;
+  if (old) clearTimeout(old.timer);
+  armed.delete(id);
+  const left = t - Date.now();
+  if (!t || left <= 0 || left > 2 ** 31 - 1) return;
+  armed.set(id, { at: t, timer: setTimeout(() => { armed.delete(id); playAlarm(kind, id + ':' + t); }, left + 300) });
 }
 export const SFX_SAMPLES = [['confirm', '확인'], ['find', '발견'], ['hit', '전투'], ['coin', '거래'], ['craft', '제작'], ['travel', '출발'], ['reward', '보상'], ['error', '오류']];
 
@@ -624,7 +650,7 @@ export function setEnabled(key, value) {
   sound[key] = value; saveSound();
   if (!ensureCtx()) return;
   ctx.resume?.();
-  if (key === 'bgmOn') value ? startMusic() : stopMusic();
+  if (key === 'bgmOn') musicOk() ? startMusic() : stopMusic();
   applyVolumes(); updateAmbience();
 }
 export function setVolume(key, value) { sound[key] = value; saveSound(); ensureCtx(); applyVolumes(); }
@@ -635,7 +661,28 @@ const SFX_OF = [
   [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
+// 게임 창이 여럿일 때: 누르거나(pointerdown·keydown) 창을 고를 때(focus) 이 창이 소리를 맡겠다고 알리고, 알림을 받은 다른 창은 배경음악·환경음을 끈다
+function soundLink() {
+  if (POPWIN || !('BroadcastChannel' in window)) return;
+  const id = Math.random().toString(36).slice(2), bc = new BroadcastChannel('yh-sound');
+  let last = 0;
+  const claim = () => {
+    if (Date.now() - last < 3000 && !yielded) return; last = Date.now();
+    try { bc.postMessage({ t: 'claim', id }); } catch {}
+    if (yielded) { yielded = false; if (ctx) { applyVolumes(); if (musicOk()) startMusic(); updateAmbience(); critters(); } }
+  };
+  bc.onmessage = e => {
+    if (e.data?.t !== 'claim' || e.data.id === id || yielded) return;
+    yielded = true; stopMusic(); clearTimeout(critterTimer); applyVolumes();
+  };
+  claim();
+  document.addEventListener('pointerdown', claim, { capture: true });
+  document.addEventListener('keydown', claim, { capture: true });
+  window.addEventListener('focus', claim);
+}
 export function initSound() {
+  // 채팅·귓속말 새 창은 배경음악·환경음·효과음을 내지 않는다(7.5.5, 사용자 요청). 알림음(playAlarm)만 울리므로 처음 누를 때 소리 장치를 깨워 둔다
+  if (POPWIN) { document.addEventListener('pointerdown', () => { if (!alarmReady) { alarmReady = true; loadSound(); } if (ensureCtx()) { ctx.resume?.(); applyVolumes(); } }, { once: true }); return; }
   loadSound();
   on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
   // 원정을 보내면 돌아오는 시각까지 전투 음악, 돌아오면(결과를 받기 전이라도) 평소 음악으로
@@ -647,12 +694,15 @@ export function initSound() {
   // 컷씬이 제 곡을 트는 동안 배경음악을 쉰다(cutscene.js가 알림)
   window.addEventListener('yh-cutscene', e => { held = !!e.detail; });
   document.addEventListener('click', e => {
-    const b = e.target.closest('.btn, .segmented button, .tabbar a, .topnav a, .icon-btn, .facility, .path, .act'); if (!b || b.disabled) return;
+    // 7.5.9i: 정해진 소리가 없는 단추·칩·링크·접는 칸도 모두 누름 소리를 낸다(전투 칸·탐색은 결과 소리를 따로 냄, data-nosfx는 뺌)
+    const b = e.target.closest('button, [role="button"], a[href], summary, .chip, .facility, .path, .act, input[type="checkbox"], input[type="radio"]');
+    if (!b || b.disabled || b.closest('[data-nosfx]')) return;
     if (b.closest('.battle') || b.id === 'search') return;
     playSfx(b.closest('.tabbar, .topnav') ? 'nav' : 'tap');
   }, { capture: true });
   // 브라우저는 사용자가 한 번 누른 뒤에야 소리를 허락한다.
-  const unlock = () => { if (!ensureCtx()) return; ctx.resume?.(); applyVolumes(); if (sound.bgmOn) startMusic(); updateAmbience(); critters(); };
+  const unlock = () => { if (!ensureCtx()) return; ctx.resume?.(); applyVolumes(); if (musicOk()) startMusic(); if (!yielded) { updateAmbience(); critters(); } };
+  soundLink();
   document.addEventListener('pointerdown', unlock, { once: true });
   document.addEventListener('keydown', unlock, { once: true });
   if (MOBILE) {

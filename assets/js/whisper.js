@@ -1,9 +1,10 @@
 // 귓속말 창: 채팅과 따로, 상대별로 나눈 대화. 헤더 단추로 열고, 안 읽은 귓속말이 있으면 단추에 빨간 점을 찍는다.
 // 대화 목록·안 읽은 수는 서버(world_whisper_threads), 읽음 표시는 world_whisper_mark_read로 어느 기기에서든 같다.
 // 메시지는 world_chat_messages(channel_type = 'whisper')를 그대로 쓰고, 새 귓속말은 채팅의 실시간 연결(chat.js)이 넘겨준다.
-import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal, isGM } from './core.js';
+import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal, closeModal, isGM } from './core.js';
 import { cardName } from './views/card.js';
-import { growInput } from './grow.js';
+import { growInput, keepKeyboard } from './grow.js';
+import { playAlarm } from './sound.js';
 
 const COLS = 'id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at';
 let btn = null, threads = [], unreadTotal = 0, box = null, cur = null, msgs = [], refreshTimer = null;
@@ -13,19 +14,69 @@ const draftKey = t => `yh-wh-draft:${t?.id || t?.name || ''}`;
 export function mountWhisper(button) {
   btn = button;
   btn.onclick = () => openWhisperWindow();
+  whLink();
   refresh();
   // 화면 복귀: 1분 넘게 비웠을 때만 목록을 다시 읽는다(새 귓속말은 채팅 실시간으로 바로 온다)
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 60000) refresh(); });
 }
 
+// ── 귓속말 새 창과 나눠 쓰기(7.5.4): 새 창이 떠 있으면 본 창은 목록을 읽지 않고, 귓속말 단추·[귓속말]은 그 창을 앞으로 가져온다 ──
+// 브라우저 안 신호(BroadcastChannel 'yh-pop'): 새 창 → wh-open(열릴 때·20초마다)·wh-closed·wh-unread(안 읽은 수), 본 창 → wh-ping·wh-target(열 상대)
+let whOut = false, whBeat = 0, wbc = null;
+const isPopWin = () => document.body.classList.contains('pop-win');
+export const whisperOut = () => whOut;
+function whLink() {
+  if (!('BroadcastChannel' in window)) return;
+  wbc = new BroadcastChannel('yh-pop');
+  const mine = d => !d?.uid || d.uid === store.user?.id;
+  if (isPopWin()) {
+    const say = (t, x = {}) => { try { wbc.postMessage({ t, uid: store.user?.id, ...x }); } catch {} };
+    say('wh-open'); setInterval(() => say('wh-open', { n: unreadTotal }), 20000);
+    window.addEventListener('pagehide', () => say('wh-closed'));
+    $('.wh-home')?.addEventListener('click', () => { say('wh-closed'); window.close(); setTimeout(() => { if (!window.closed) toast('게임 창의 귓속말을 되돌렸습니다. 이 창은 직접 닫아 주세요.'); }, 300); });
+    wbc.onmessage = e => {
+      const d = e.data; if (!mine(d)) return;
+      if (d.t === 'wh-ping') say('wh-open', { n: unreadTotal });
+      if (d.t === 'wh-target') { window.focus(); if (d.id || d.name) openWhisperWindow({ id: d.id, name: d.name }); }
+    };
+    return;
+  }
+  const setOut = v => {
+    if (whOut === v) return; whOut = v;
+    // 채팅이 새 창에 나가 있으면 본 창이 귓속말만 듣고 있었다 — 귓속말 새 창이 그 일을 맡으니 끄고, 닫히면 다시 켠다
+    if (document.body.classList.contains('chat-out')) whisperFeed(!v);
+    if (!v) refresh();
+  };
+  wbc.onmessage = e => {
+    const d = e.data; if (!mine(d)) return;
+    if (d.t === 'wh-open') { whBeat = Date.now(); setOut(true); if (d.n != null) { unreadTotal = Number(d.n) || 0; paintDot(); } }
+    if (d.t === 'wh-unread') { unreadTotal = Number(d.n) || 0; paintDot(); }
+    if (d.t === 'wh-closed') setOut(false);
+  };
+  try { wbc.postMessage({ t: 'wh-ping', uid: store.user?.id }); } catch {}
+  setInterval(() => { if (whOut && Date.now() - whBeat > 60000) setOut(false); }, 15000);
+}
+// 떠 있는 귓속말 새 창을 앞으로(이름으로 같은 창을 찾는다 — 주소를 주지 않으면 그 창을 새로 읽지 않는다)
+function focusWhisperPop(target) {
+  let w = null;
+  try { w = window.open('', 'yh-pop-whisper'); } catch {}
+  if (!w) { whOut = false; return false; }
+  try { if (w.location.href === 'about:blank') w.location.replace(`${location.pathname}?pop=whisper`); } catch {}
+  try { w.focus(); } catch {}
+  try { wbc?.postMessage({ t: 'wh-target', uid: store.user?.id, id: target?.id || null, name: target?.name || null }); } catch {}
+  return true;
+}
+
 export async function refresh() {
+  if (whOut && !isPopWin()) return; // 귓속말 새 창이 목록을 읽는다
   try {
     const r = await rpc('world_whisper_threads');
     threads = r?.threads || []; unreadTotal = Number(r?.unread_total || 0);
   } catch { return; }
   paintDot();
   if (box?.isConnected) drawList();
+  if (isPopWin()) try { wbc?.postMessage({ t: 'wh-unread', uid: store.user?.id, n: unreadTotal }); } catch {}
 }
 const refreshSoon = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 400); };
 
@@ -46,20 +97,54 @@ export function onWhisper(m) {
   } else if (m.sender_id !== me) {
     toast(`귓속말 · ${m.sender_name || '조사원'}: ${String(m.content || '').slice(0, 40)}`);
   }
-  refreshSoon();
+  // 띠로링(7.5.6): 받은 지 2분 안의 귓속말만(다시 잇기로 채운 지난 말은 울리지 않음), 보고 있는 대화에 온 말은 울리지 않음
+  if (m.sender_id !== me && (!m.created_at || Date.now() - new Date(m.created_at) < 120000) && !(open && document.hasFocus())) playAlarm('whisper', 'w:' + m.id);
+  if (!whOut || isPopWin()) refreshSoon();
 }
 
 // 조사원 카드·친구 목록의 [귓속말]: 그 상대와의 대화를 바로 연다(이름만 알면 새 대화로 시작한다).
+let pageHost = null;
 export function openWhisperWindow(target) {
-  const m = openModal({ title: '귓속말', wide: true, onClose: () => { box = null; cur = null; },
-    body: `<div class="wh">
+  // 귓속말 새 창 안에서 조사원 카드의 [귓속말]을 누르면 창을 겹쳐 띄우지 않고 그 자리에서 연다
+  if (pageHost?.isConnected) {
+    box = $('.wh', pageHost);
+    if (target?.id || target?.name) { const known = threads.find(t => (target.id && t.partner_id === target.id) || t.name === target.name); openThread(known ? { id: known.partner_id, name: known.name } : { id: target.id || null, name: target.name }); }
+    return;
+  }
+  if (whOut && !isPopWin() && focusWhisperPop(target)) return;
+  const m = openModal({ title: '귓속말', wide: true, onClose: () => { box = null; cur = null; }, body: '<div class="wh-host"></div>' });
+  buildUI($('.wh-host', m), target);
+}
+// 새 창(7.5.4, 제보 54): ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
+export function mountWhisperPage(el) {
+  pageHost = el;
+  buildUI(el).then(() => { if (!cur && wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name }); });
+  whLink(); // 화면을 그린 뒤에 잇는다(되돌리기 단추에 처리를 건다)
+  whisperFeed(true);
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 30000) { refresh(); if (cur) reloadMsgs(cur); } });
+}
+// 받는 귓속말만 듣는 가벼운 실시간(나에게 온 줄만). 귓속말 새 창, 그리고 채팅을 새 창으로 뺀 본 창이 쓴다(채팅 실시간이 멈춰 있으므로)
+let feed = null;
+export function whisperFeed(on) {
+  if (feed) { try { db.removeChannel(feed); } catch {} feed = null; }
+  if (!on || !store.user?.id) return;
+  try {
+    feed = db.channel('yh-wh-feed').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_chat_messages', filter: `recipient_id=eq.${store.user.id}` },
+      p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); }).subscribe();
+  } catch {}
+}
+const canPop = () => matchMedia('(pointer: fine)').matches && !document.body.classList.contains('pop-win');
+function buildUI(host, target) {
+  host.innerHTML = `<div class="wh">
       <aside class="wh-side">
-        <form class="wh-new" autocomplete="off"><input name="to" maxlength="24" placeholder="이름으로 새 귓속말" aria-label="받는 사람 이름"><button class="btn small" type="submit">시작</button></form>
+        <form class="wh-new" autocomplete="off"><input name="to" maxlength="24" placeholder="이름으로 새 귓속말" aria-label="받는 사람 이름"><button class="btn small" type="submit">시작</button>${canPop() ? `<button class="icon-btn wh-pop" type="button" aria-label="새 창으로 열기" title="새 창으로 열기">${icon('popout', 16)}</button>` : ''}${isPopWin() ? `<button class="icon-btn wh-home" type="button" aria-label="게임 창으로 되돌리기" title="이 창을 닫고 게임 창에서 귓속말을 엽니다">${icon('back', 16)}</button>` : ''}</form>
         <ul class="wh-threads" id="wh-threads"></ul>
       </aside>
       <section class="wh-main" id="wh-main"></section>
-    </div>` });
-  box = $('.wh', m);
+    </div>`;
+  box = $('.wh', host);
+  $('.wh-pop', box)?.addEventListener('click', () => { closeModal(); window.yahangPop?.('whisper'); });
   $('.wh-new', box).onsubmit = e => {
     e.preventDefault();
     const name = e.target.to.value.trim(); if (!name) return;
@@ -73,7 +158,7 @@ export function openWhisperWindow(target) {
     openThread(known ? { id: known.partner_id, name: known.name } : { id: target.id || null, name: target.name });
   } else if (wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name });
   else drawThread();
-  refresh();
+  return refresh();
 }
 
 function drawList() {
@@ -122,6 +207,7 @@ function drawThread(loading) {
   form.text.addEventListener('input', () => { try { sessionStorage.setItem(draftKey(cur), form.text.value); } catch {} });
   form.text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
   form.onsubmit = send;
+  keepKeyboard(form);
   $('.wh-back', main).onclick = () => { box.classList.remove('thread-open'); };
   if (matchMedia('(pointer: fine)').matches) setTimeout(() => form.text.focus({ preventScroll: true }), 30);
 }
@@ -162,6 +248,6 @@ async function reloadMsgs(t) {
 }
 async function markRead(id) {
   const t = threads.find(x => x.partner_id === id);
-  if (t && t.unread > 0) { unreadTotal = Math.max(0, unreadTotal - t.unread); t.unread = 0; paintDot(); drawList(); }
+  if (t && t.unread > 0) { unreadTotal = Math.max(0, unreadTotal - t.unread); t.unread = 0; paintDot(); drawList(); if (isPopWin()) try { wbc?.postMessage({ t: 'wh-unread', uid: store.user?.id, n: unreadTotal }); } catch {} }
   try { await rpc('world_whisper_mark_read', { p_partner: id }); } catch {}
 }

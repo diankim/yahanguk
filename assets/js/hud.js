@@ -1,8 +1,10 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, guard, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct } from './core.js';
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
+import { playAlarm, armAlarm } from './sound.js';
+import { QS_DEFAULT, qsDesc } from './views/character.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -43,7 +45,10 @@ export function mountHud(el) {
 function bumpStamina() {
   const st = state.hud?.stamina; if (!st?.next_at) return false;
   const t = new Date(st.next_at).getTime(); if (t > Date.now()) return false;
+  const was = st.now || 0;
   st.now = Math.min(st.max, (st.now || 0) + 1);
+  // 탐색력이 가득 차면 띠로링(7.5.6, 제보 59 — 다른 일을 하다가 듣고 돌아오게). 같은 때를 여러 창이 함께 울리지 않게 key
+  if (was < st.max && st.now >= st.max) playAlarm('stamina', 'st:' + t);
   st.next_at = st.now >= st.max ? null : new Date(t + (st.per_seconds || 900) * 1000).toISOString();
   return true;
 }
@@ -62,7 +67,10 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
       (first || !char) && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;
+    { const was = state.hud?.stamina, st = hud?.stamina; // 다시 읽은 값으로 가득 찼어도 띠로링(화면에서 올리기 전에 읽힌 때)
+      if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
     state = { idle, hud, exp: hud?.expedition || null };
+    armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at); // 끝나는 때 띠로링(7.5.6)
     store.expedition = state.exp;
     store.hud = hud;
     render();
@@ -86,7 +94,7 @@ export function openStatus(st) {
         ${(st.cure_items || []).length ? `<div class="btn-row">${st.cure_items.map(k => `<button class="btn small primary" data-cure="${esc(k)}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} 쓰기 <small>×${fmt.num(inv[k])}</small></button>`).join('')}</div>` : ''}`}
     </div>` });
   const t = setInterval(() => { const b = m.querySelector('[data-left]'); if (!b) return clearInterval(t); b.textContent = fmt.remain(Number(b.dataset.left) - Date.now()); }, 1000);
-  $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_use_item', { p_item_id: b.dataset.cure }); closeModal(); return r; }));
+  $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await useItemAct(b.dataset.cure); closeModal(); return r; }));
 }
 
 // 상태·탐색력 시간이 다 되면 1.5초 뒤 한 번 다시 읽는다. 읽기가 실패해(로그인 풀림·서버 오류) 시간이 그대로여도 30초에 한 번까지만 다시 묻는다
@@ -139,7 +147,26 @@ function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEve
 function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 // 화면을 옮기면 「현장 보기」 단추가 생기거나 사라지도록 다시 그린다
-window.addEventListener('hashchange', () => render());
+window.addEventListener('hashchange', () => { closeStrip(); render(); }); // 휴대폰: 펼친 상태 띠는 화면을 옮기면 접는다(7.6.1, 화면점검 — 새 화면을 덮고 있었다)
+// 상태판 퀵슬롯(7.5.7, 제보 61): 캐릭터 › 상태의 퀵슬롯 8칸을 작게. 칸 목록은 접속 동안 한 번(10분 캐시) 읽고, 칸을 바꾸면 다시 읽는다.
+let qsList = null, qsBusy = false;
+async function loadQs() {
+  if (qsBusy) return; qsBusy = true;
+  try { const r = await load('world_quickslots_get', undefined, { maxAge: 600000 }); qsList = Array.isArray(r?.slots) ? r.slots : QS_DEFAULT; }
+  catch { qsList = qsList || QS_DEFAULT; }
+  qsBusy = false; render();
+}
+window.addEventListener('yh-qs-changed', () => { qsList = null; loadQs(); });
+function qsCard(c) {
+  if (!qsList) { loadQs(); return ''; }
+  const inv = c.inventory || {}, moving = !!c.travel_destination, downed = c.health <= 0 || !!c.downed_at;
+  const cells = Array.from({ length: 8 }, (_, i) => qsList[i] || '').map(k => {
+    if (!k) return '<span class="hqs empty"></span>';
+    const n = Number(inv[k] || 0), off = !n || ((downed || moving) && k.replace(/_hq$/, '') !== 'revival_charm');
+    return `<button class="hqs ${n ? '' : 'none'}" data-hqs="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(nameOf(k))}${qsDesc(k) ? ` · ${esc(qsDesc(k))}` : ''}"><b>${esc(nameOf(k))}</b><small>×${fmt.num(n)}</small></button>`;
+  }).join('');
+  return `<section class="hud-card hud-qs"><h3>퀵슬롯 <a class="linkish" href="#/char/status">바꾸기</a></h3><div class="hqs-grid">${cells}</div></section>`;
+}
 function render() {
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);
@@ -154,7 +181,7 @@ function render() {
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
-      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}">요화${yo.stage}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}`; })()}
+      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}${yo.fr ? ' frenzy' : ''}">${yo.fr ? '요괴화' : `요화${yo.stage}`}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}`; })()}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
     <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개" title="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
@@ -172,14 +199,15 @@ function render() {
     <section class="hud-card vitals">
       ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital(spOf()[0], c.spiritual_power, spOf()[1])}${vital('침식', c.erosion || 0, 'er')}
       ${stamina(c)}
+      ${statusCard()}
     </section>
-    ${statusCard()}
     <section class="hud-card money">
-      <div>${icon('coin', 16)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
-      <div>${icon('token', 16)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
-      <div>${icon('bag', 16)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
-      <div>${icon('pin', 16)}<span>위치</span><b>${esc(c.location)}</b></div>
+      <div>${icon('coin', 14)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
+      <div>${icon('token', 14)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
+      <div>${icon('bag', 14)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
+      <div title="${esc(c.location)}">${icon('pin', 14)}<span>위치</span><b>${esc(c.location)}</b></div>
     </section>
+    ${qsCard(c)}
     <section class="hud-card now"><h3>진행 중</h3>
       ${items.map((it, i) => `<div class="now-item st-${it.kind}">
         <div class="now-ico">${icon(it.icon, 18)}</div>
@@ -189,6 +217,7 @@ function render() {
       </div>`).join('')}
     </section>`;
   const ts = $('#hud-title-swap', body); if (ts) ts.onclick = () => openTitleSwap();
+  body.querySelectorAll('[data-hqs]').forEach(b => b.onclick = () => guard(b, () => useItemAct(b.dataset.hqs)));
   body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
   body.querySelectorAll('[data-act2]').forEach(b => b.onclick = () => { closeStrip(); items[Number(b.dataset.act2)].action2[1](b); });
   const sts = yohwaOf(state.hud?.statuses).rest;
@@ -196,21 +225,24 @@ function render() {
 }
 function stamina(c) {
   const st = state.hud?.stamina; if (!st) return '';
-  return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${st.next_at ? new Date(st.next_at).getTime() : ''}" data-kind="stamina">${st.now >= st.max ? '가득' : ''}</small></div>`;
+  // 「n분 뒤 +1」은 그릴 때 바로 적는다(7.7.0, 제보 71 — 다음 초 틱까지 비어 있어 토벌처럼 매초 다시 그리는 동안 깜빡이고 칸 높이가 흔들렸다)
+  const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
+  return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);
-  return `<section class="hud-card statuses"><h3>상태 ${list.length}/10</h3>${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
+  return `<div class="statuses"><h3>상태 ${list.length}/10</h3>${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
       <b>${esc(s.name)}${s.stacks > 1 ? `×${s.stacks}` : ''}</b><i data-timer="${new Date(s.expires_at).getTime()}" data-kind="status">${fmt.remain(new Date(s.expires_at) - Date.now())}</i></button>`).join('')}</div>`
-    : '<p class="muted small">걸린 상태가 없습니다.</p>'}</section>`;
+    : ''}</div>`;
 }
 // 요화·봉인 해독은 상태 칸(10칸)에 세지 않고 따로 늘 보인다(서버 world_status_roll도 세지 않음)
 export const YOHWA_STAGES = ['', '요기 스밈', '요문 발현', '반요'];
-export const PINNED = new Set(['yohwa', 'yohwa_seal']);
+export const PINNED = new Set(['yohwa', 'yohwa_seal', 'yohwa_frenzy']);
 export function yohwaOf(statuses) {
   const now = new Date(), live = (statuses || []).filter(s => new Date(s.expires_at) > now || s.key === 'yohwa');
   const y = live.find(s => s.key === 'yohwa'), seal = live.find(s => s.key === 'yohwa_seal');
-  return { y, seal, stage: y ? Math.max(1, Math.min(3, Number(y.potency || 1))) : 0, rest: live.filter(s => !PINNED.has(s.key) && new Date(s.expires_at) > now) };
+  const fr = y ? live.find(s => s.key === 'yohwa_frenzy' && new Date(s.expires_at) > now) : null; // 3단계 끝 1시간: 요괴화(7.6.2)
+  return { y, seal, fr, stage: y ? Math.max(1, Math.min(3, Number(y.potency || 1))) : 0, rest: live.filter(s => !PINNED.has(s.key) && new Date(s.expires_at) > now) };
 }
 // 요화 3단계 끝에 쓰러진 것인지(서버가 적어 둔 쓰러진 시각과 같으면 목숨을 잃지 않는다)
 export function yohwaDowned(c, yo) {
@@ -219,6 +251,7 @@ export function yohwaDowned(c, yo) {
 }
 export function yohwaLine(st) {
   if (st.seal) return { cls: 'sealed', title: '봉인 해독 중', text: '안전지대 봉인술사들이 요기를 걷어내고 있습니다. 끝날 때까지 채팅만 할 수 있습니다.', until: st.seal.expires_at };
+  if (st.fr) return { cls: 's3 frenzy', title: '요괴화', text: '요괴의 힘이 몸을 차지했습니다 · 쓰러지기까지', until: st.fr.expires_at };
   if (st.y) return { cls: `s${st.stage}`, title: `요화: ${st.stage}단계 ${YOHWA_STAGES[st.stage]}`, text: st.stage < 3 ? '다음 단계까지' : '쓰러지기까지', until: st.y.expires_at };
   return null;
 }

@@ -142,7 +142,7 @@ async function enhancePane(body) {
   const q = await rpc('world_enhance_quote');
   if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword'); return; }
   registerNames(Object.entries(q.names || {}));
-  const have = q.have || {}, items = Object.entries(q.items || {});
+  const have = q.have || {}, stored = q.stored || {}, items = Object.entries(q.items || {}); // have = 가방 + 창고(안전지대, 반요촌 제외 — 7.7.3)
   const short = items.filter(([k, n]) => (have[k] || 0) < n);
   const maxed = q.level >= q.max;
   body.innerHTML = `
@@ -152,11 +152,11 @@ async function enhancePane(body) {
         <div><dt>위력</dt><dd>${q.power}${maxed ? '' : ` → <b>${q.next_power}</b>`}</dd></div>
         ${maxed ? '' : `<div><dt>성공 확률</dt><dd>${q.chance}%</dd></div><div><dt>비용</dt><dd>${fmt.jeon(q.gil)}${q.have_gil < q.gil ? ' <span class="bad">(모자람)</span>' : ''}</dd></div>`}
       </dl>
-      ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}</span></li>`).join('')}</ul>
+      ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}${stored[k] ? ` <small class="muted">(창고 ${fmt.num(stored[k])})</small>` : ''}</span></li>`).join('')}</ul>
       <div class="btn-row"><button class="btn primary" id="enh-go" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(백공 기술관은 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(백공 기술관은 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(반요촌 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
   bindInfo(body);
   const go = $('#enh-go', body);
   if (go) go.onclick = async () => {
@@ -229,6 +229,10 @@ async function dismantlePane(body) {
 const PICK_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
 const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
 const pickCat = c => !c ? 'etc' : PICK_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
+// 폼 안 입력칸에서 엔터를 눌러도 보내지 않는다 — 등록·제안은 단추로만(7.7.3)
+function noEnterSubmit(form) {
+  form.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input') && !e.isComposing) { e.preventDefault(); e.target.blur(); } });
+}
 function pickerHtml(name, opts) {
   return `<div class="pick" data-pick="${name}"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === 'all' ? 'accent' : ''}" data-pc="${k}">${t}</button>`).join('')}</div>
     <input type="search" class="pick-q" placeholder="이름으로 찾기" aria-label="물품 찾기">
@@ -248,6 +252,8 @@ function bindPicker(root, name, opts, onPick) {
     if (sel.value !== keep) onPick?.();
   };
   qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
+  // 찾기 칸의 엔터·키패드 「검색」은 폼을 보내지 않고 키패드만 내린다(7.7.3 — 거래소 등록·거래 제안이 바로 되던 것)
+  qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
   qi.addEventListener('compositionend', apply);
   box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
 }
@@ -269,6 +275,9 @@ function untradeNote(have, ref, direct = false) {
 /* ── 거래소 ───────────────────────────────────────────── */
 // 거래소(누구나 사 가는 등록 판매)와 직접 거래(같은 안전지대의 조사원과 주고받기) 두 칸
 let marketMode = 'board', boardTab = 'buy', buyCat = 'all', buyQ = '';
+// 팔기 칸에서 마지막으로 올린 물품·수량·가격(7.5.5, 사용자 요청: 하나씩 여러 번 올릴 때 다시 고르지 않게)
+let lastSell = null;
+const RAR_NAME = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };
 export async function renderMarket(box) {
   const mm = marketMode === 'direct' ? 'direct' : boardTab;
   box.innerHTML = `<div class="seg-mini mk-tabs" role="tablist"><button class="${mm === 'buy' ? 'on' : ''}" data-mm="buy">사기</button><button class="${mm === 'sell' ? 'on' : ''}" data-mm="sell">팔기</button><button class="${mm === 'direct' ? 'on' : ''}" data-mm="direct">직접 거래</button></div><div class="mk-body">${loading()}</div>`;
@@ -276,7 +285,7 @@ export async function renderMarket(box) {
   const body = $('.mk-body', box);
   if (marketMode === 'direct') return renderDirect(body);
   try {
-    // 열린 등록은 사람마다 10건까지라 다 읽는다(예전 60건 한도에 오래된 등록이 「사기」와 「내 등록」에서 빠져 사라진 것처럼 보이던 것). 내 등록은 따로 읽어 늘 다 보인다
+    // 열린 등록은 사람마다 10건까지라 다 읽는다(한도를 두면 오래된 등록이 빠져 사라진 것처럼 보인다). 내 등록은 따로 읽어 늘 다 보인다
     const OCOLS = 'offer_id,seller_id,item_id,quantity,unit_price,status,created_at,expires_at';
     const [{ data: openAll, error }, { data: myOpen, error: e2 }, prices, , inv] = await Promise.all([
       db.from('world_trade_offers').select(OCOLS).eq('status', 'open').order('created_at', { ascending: false }).limit(300),
@@ -284,17 +293,21 @@ export async function renderMarket(box) {
       load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
     ]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
+    // 등급(범품~신품): 사기 목록·내 등록·올릴 물품 고르기에 함께 적는다(7.5.6, 사용자 요청)
+    const rarMap = new Map((inv?.catalog || []).map(i => [i.id, i.rarity || 'common']));
+    const mkDesc = new Map((inv?.catalog || []).map(i => [i.id, i.description || '']));
+    const rarOf = id => rarMap.get(id) || 'common', rarTag = id => `<span class="rar-tag r-${esc(rarOf(id))}">${esc(RAR_NAME[rarOf(id)] || '범품')}</span>`;
     if (error || e2) throw new Error((error || e2).message);
     const offers = [...(myOpen || []), ...(openAll || []).filter(o => !(myOpen || []).some(m => m.offer_id === o.offer_id))];
     const c = store.character, me = c.owner_id, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k))
       .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
-    const sellOpts = tradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' }));
+    const sellOpts = tradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n}) · ${RAR_NAME[rarOf(k)] || '범품'}`, cat: catMap.get(k) || 'etc' }));
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
-    const row = (o, own) => `<li data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b><span class="qty">×${o.quantity}</span>
-        <small>개당 ${fmt.jeon(o.unit_price)} · 합계 ${fmt.jeon(o.unit_price * o.quantity)}${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small></div>
+    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rarTag(o.item_id)}<span class="qty">×${o.quantity}</span>
+        <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     // 규칙 안내는 접어 둔다(모바일에서 목록이 화면 아래로 밀리던 것)
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
@@ -326,21 +339,44 @@ export async function renderMarket(box) {
       };
       qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
       qi.addEventListener('compositionend', apply);
+      qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
       $$('[data-bc]', body).forEach(b => b.onclick = () => { buyCat = b.dataset.bc; $$('[data-bc]', body).forEach(x => x.classList.toggle('accent', x === b)); apply(); });
       apply();
     }
     const form = $('#trade-form', body);
     if (form) {
-      const hint = () => { const r = ref.get(form.item.value); $('#trade-hint', body).textContent = r?.reference_price ? `기준 시세 ${fmt.jeon(r.reference_price)} · 최대 ${fmt.jeon(r.reference_price * 10)}` : ''; };
+      // 등록 가격 범위(서버 world_trade_offer_create와 같은 값): 1전 ~ 기준 시세 10배, 거래소 전용 희귀 재료는 기준 시세 70%부터
+      const bounds = () => { const p = Number(ref.get(form.item.value)?.reference_price) || 0; return { p, min: MARKET_ONLY.has(form.item.value) && p ? Math.ceil(p * 0.7) : 1, max: p ? p * 10 : Infinity }; };
+      const hint = () => { const { p, min, max } = bounds(); $('#trade-hint', body).textContent = p ? `기준 시세 ${fmt.jeon(p)}${min > 1 ? ` · 최소 ${fmt.jeon(min)}` : ''} · 최대 ${fmt.jeon(max)}` : ''; };
+      // 범위를 벗어난 가격은 알리고 가장 가까운 값으로 고친다(7.5.5, 사용자 요청). 고쳤으면 true
+      const fixPrice = () => {
+        const { min, max } = bounds(), v = Math.floor(Number(form.price.value));
+        if (v >= min && v <= max) return false;
+        const to = !(v >= min) ? min : max;
+        form.price.value = to;
+        toast(MARKET_ONLY.has(form.item.value) && !(v >= min) ? `희귀 재료는 기준 시세의 70%(${fmt.jeon(min)}) 아래로 등록할 수 없어 ${fmt.jeon(to)}으로 고쳤습니다.`
+          : !(v >= min) ? `가격은 1전 이상이어야 해서 ${fmt.jeon(to)}으로 고쳤습니다.` : `가격은 기준 시세의 10배(${fmt.jeon(max)})까지라 ${fmt.jeon(to)}으로 고쳤습니다.`, 'error');
+        return true;
+      };
       form.item.onchange = () => { const p = ref.get(form.item.value)?.reference_price; if (p) form.price.value = p; hint(); };
+      form.price.addEventListener('change', fixPrice);
       bindPicker(form, 'item', sellOpts, () => form.item.onchange());
+      // 올린 뒤 다시 그려져도 고른 물품·수량·가격을 그대로 둔다(그 물품이 가방에 남아 있을 때만, 수량은 남은 개수까지)
+      if (lastSell && have[lastSell.item] > 0 && sellOpts.some(o => o.id === lastSell.item)) {
+        form.item.value = lastSell.item;
+        form.qty.value = Math.min(lastSell.qty, have[lastSell.item]);
+        form.price.value = lastSell.price;
+      } else lastSell = null;
       hint();
+      noEnterSubmit(form);
       form.onsubmit = e => {
         e.preventDefault();
+        if (fixPrice()) return; // 고친 값을 보고 다시 누르게 한다
         const qty = Math.floor(Number(form.qty.value)), price = Math.floor(Number(form.price.value));
         if (!(qty >= 1) || !(price >= 1)) return toast('수량과 가격은 1 이상이어야 합니다.', 'error');
         if (mine.length >= 10) return toast('거래소에는 동시에 10건까지 올려 둘 수 있습니다. 팔리거나 취소된 뒤 다시 등록하세요.', 'error');
         if (!form.item.value) return toast('올릴 물품을 고르세요.', 'error');
+        lastSell = { item: form.item.value, qty, price };
         guard(form.querySelector('[type=submit]'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
       };
     }
@@ -404,6 +440,7 @@ async function renderDirect(body) {
         if (side === 'give' && next > Number(have[id] || 0)) return toast(`${nameOf(id)}은(는) ${have[id] || 0}개까지 줄 수 있습니다.`, 'error');
         box[id] = Math.min(999, next); renderDirect(body);
       });
+      noEnterSubmit(f);
       f.onsubmit = async e => {
         e.preventDefault();
         if (!dt.to) return toast('거래할 조사원을 고르세요.', 'error');
@@ -433,7 +470,7 @@ export function openDirectTrade(to) {
   const m = openModal({ title: '거래소', wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
   renderMarket(box);
-  const offc = on('changed', () => { if (box.isConnected) renderMarket(box); else offc(); });
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderMarket(box)); else offc(); });
 }
 
 /* ── 창고 ─────────────────────────────────────────────── */
@@ -531,11 +568,21 @@ export async function renderStorage(box) {
 }
 
 // 가방 화면 등 어디서나 여는 창고 창(안전지대 밖에서는 보기만)
+// 맡기기·꺼내기·사기 뒤 창을 다시 그려도 보던 자리를 지킨다(7.5.7)
+function scrollerOf(el) {
+  for (let p = el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p; }
+  return document.scrollingElement;
+}
+export async function keepScroll(box, fn) {
+  const sc = scrollerOf(box), top = sc?.scrollTop || 0;
+  box.style.minHeight = `${box.offsetHeight}px`;
+  try { await fn(); } finally { box.style.minHeight = ''; if (sc) sc.scrollTop = top; }
+}
 export function openStorage() {
   const m = openModal({ title: '창고', wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
   renderStorage(box);
-  const offc = on('changed', () => { if (box.isConnected) renderStorage(box); else offc(); });
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderStorage(box)); else offc(); });
 }
 
 /* ── 마구간 ───────────────────────────────────────────── */

@@ -1,6 +1,6 @@
-// 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
+// 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 고른 만큼(고르지 않으면 가진 만큼) 챙겨 가서
 // 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
-import { ask, store, on, act, rpc, toast, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
+import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
@@ -25,6 +25,8 @@ const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', s
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search', guard: 'shield', foe: 'flame' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
+// 창을 열 때 한 번, 지금 서 있는 답사 지점(current_exploration_node_id)을 보낼 곳으로 먼저 고른다(7.5.5, 제보)
+let preferHere = false;
 // 같은 설정으로 다시 보내기: 마지막으로 보낸 곳·기간·태세를 기기에 남긴다
 const LAST_KEY = 'yh-exp-last';
 const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch { return null; } };
@@ -68,6 +70,7 @@ function partyBox(info) {
 // 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
 export async function openExpeditionWindow(preset) {
   if (preset?.node) pick = { node: preset.node, minutes: Number(preset.minutes) || pick.minutes, stance: preset.stance || pick.stance };
+  preferHere = !preset?.node;
   const m = openModal({ title: '원정', wide: true, body: `<div class="exp-body">${loading()}</div>` });
   const box = $('.exp-body', m);
   const fill = async () => { try { renderExpedition(box, await load('world_expedition_overview')); } catch (e) { box.innerHTML = errorBox(e.message); } };
@@ -81,6 +84,8 @@ export function renderExpedition(box, ov) {
   if (ov?.active) return renderActive(box, ov.active);
   const opts = ov?.options || [];
   if (!opts.length) { box.innerHTML = empty('원정을 보낼 곳이 없습니다. 바깥 지역에서 탐색으로 장소를 먼저 찾으세요.', 'map'); return; }
+  const hereId = c?.current_exploration_node_id;
+  if (preferHere) { preferHere = false; if (opts.some(o => o.node_id === hereId && !o.locked)) pick.node = hereId; }
   if (!opts.some(o => o.node_id === pick.node && !o.locked)) pick.node = opts.find(o => !o.locked)?.node_id || null;
   // 서버는 가지마다 20개까지만 챙긴다(world_expedition_start) — 고르는 칸과 건량 계산도 20을 넘지 않게
   const SUP_CAP = 20, capOf = k => Math.min(SUP_CAP, Number(ov.supplies?.[k] || 0));
@@ -99,8 +104,8 @@ export function renderExpedition(box, ov) {
     <div class="exp-plan">
       <div class="exp-col">
         <h3 class="sub-h">보낼 곳</h3>
-        <div class="ground-list">${opts.map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
-            <header><b>${esc(o.name)}</b>${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
+        <div class="ground-list">${[...opts.filter(o => o.node_id === hereId), ...opts.filter(o => o.node_id !== hereId)].map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
+            <header><b>${esc(o.name)}</b>${o.node_id === hereId ? chip('지금 있는 곳', 'ok') : ''}${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
             <small>${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+ · 운임 노정패 ${o.fare || 1}`}</small></button>`).join('')}</div>
         <h3 class="sub-h">기간</h3><div class="chip-pick" data-pick="minutes">${DURATIONS.map(([m, l]) => `<button data-v="${m}" class="${m === pick.minutes ? 'on' : ''}">${l}</button>`).join('')}</div>
         <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
@@ -176,7 +181,7 @@ function renderActive(box, a) {
     <p class="exp-now" id="exp-now">${icon('pin', 14)}<span>기록을 불러오는 중…</span></p>
     <ol class="exp-feed" id="exp-feed"></ol>
     <div id="exp-party"></div>
-    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척, 수색 회차, 전투(공격·반격·회복·승패)가 시간에 맞춰 쌓이고 같은 파티원의 일지도 함께 보입니다. 전투로 바뀐 체력·정신·침식은 곧바로 상태에 반영되고, 전리품은 돌아왔을 때 정리됩니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
+    <p class="muted small exp-foot">원정 일지에는 걸음마다 마주친 풍경·흔적·기척, 수색 회차, 전투(공격·반격·회복·승패)가 시간에 맞춰 쌓이고 같은 지역으로 원정 중인 파티원(함께 싸우는 동료)의 일지도 함께 보입니다. 전투로 바뀐 체력·정신·침식은 곧바로 상태에 반영되고, 전리품은 돌아왔을 때 정리됩니다. 원정 중에는 현장 행동을 할 수 없습니다. 능력치 분배·임무 보상·사건 추론·거래 취소는 할 수 있습니다.</p>`;
   const tick = () => {
     const left = end - Date.now(), span = $('#exp-left', box); if (!span) return clearInterval(t);
     span.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '돌아왔습니다. 결과를 확인하세요.';
@@ -268,7 +273,7 @@ export function showResult(r) {
       <p>${items.length ? items.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ') : '없음'}</p>
       ${lost.length ? `<p class="bad small">가방에 자리가 없어 짐 보따리에 담은 것: ${lost.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ')} · 현장의 「정리하기」에서 챙기거나 버리세요.</p>` : ''}
       ${x.full_bonus ? `<p class="hint good">${icon('check', 14)} 끝까지 다녀온 긴 원정 — 경험치·전·숙련 경험 +${x.full_bonus}%</p>` : ''}
-      ${x.full_gear ? `<p class="hint good">${icon('gear', 14)} 원정 끝에 ${esc(nameOf(x.full_gear))}을(를) 챙겼습니다.</p>` : ''}
+      ${x.full_gear ? `<p class="hint good">${icon('gear', 14)} 원정 끝에 ${esc(`${nameOf(x.full_gear)}을(를)`)} 챙겼습니다.</p>` : ''}
       ${x.trail ? `<p class="hint good">${icon('spark', 14)} 비경을 찾았습니다. 3시간 동안 이 지역을 탐색하면 채집량 +50%·희귀품·단서 +10%입니다.</p>` : ''}
       ${x.job_skill?.name ? `<p class="hint">${icon('spark', 14)} 직업 기술 「${esc(x.job_skill.name)}」 ${x.job_skill.count ? `${x.job_skill.count}번 발동` : '발동하지 않음'}</p>` : ''}
       <h3 class="sub-h">원정 기록</h3>

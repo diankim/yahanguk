@@ -7,6 +7,8 @@
   Cache-Control: no-cache
 /maintenance.html
   Cache-Control: no-cache
+/help.html
+  Cache-Control: no-cache
 /maintenance.json
   Cache-Control: no-cache
 /version.json

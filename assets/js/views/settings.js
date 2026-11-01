@@ -1,7 +1,7 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
-import { ask, db, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
+import { ask, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
 import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile, FONT_SIZES, savedFontSize, applyFontSize } from '../settings.js';
-import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES } from '../sound.js';
+import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES, ALARMS, alarmOn, setAlarm, playAlarm } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
 import { hue as autoHue, NAME_STYLES } from '../chat.js';
@@ -30,7 +30,7 @@ const NOTIFY_GROUPS = [
 ];
 let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
-// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다(7.4.0 — 이름과 게이지가 한 줄 양 끝에 떨어져 보기 어렵던 것)
+// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다(7.4.0)
 const sndBlock = (k, name, desc, v, sw) => `<div class="snd-block">
   <div class="snd-head"><span><b>${name}</b><small>${desc}</small></span>${sw ? `<label class="snd-on"><input type="checkbox" data-sw="${sw}" ${sound[sw] ? 'checked' : ''}><span>켜기</span></label>` : ''}</div>
   <div class="snd-range"><input type="range" data-vol="${k}" min="0" max="1" step="0.05" value="${v}" aria-label="${name} 음량"><output data-vol-out="${k}">${Math.round(v * 100)}%</output></div></div>`;
@@ -98,7 +98,9 @@ export async function render(root, sub) {
         ${sndBlock('bgm', '배경음악', '가야금·대금 느낌의 곡조가 영역마다 다르게 흐릅니다', sound.bgm, 'bgmOn')}
         ${sndBlock('amb', '환경음', '날씨와 시간대에 따라 빗소리·바람·풀벌레·새소리가 작게 깔립니다', sound.amb, 'ambOn')}
         ${sndBlock('sfx', '효과음', '이동·전투·거래·제작·보상마다 다른 짧은 소리', sound.sfx, 'sfxOn')}
-        <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}</div>
+        <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}<button class="btn small" type="button" data-try-alarm>알림</button></div>
+        <div class="snd-block"><div class="snd-head"><span><b>알림음</b><small>게임 창을 내려 두고 다른 일을 하다가도 알 수 있게 울립니다. 효과음을 꺼도 울리고, 크기는 효과음 음량을 따릅니다. 소리는 위 「알림」 단추로 들어 볼 수 있습니다.</small></span></div>
+          <div id="alarm-list">${ALARMS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-alarm="${k}" ${alarmOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>
         <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
     </section>
     <section id="sec-notify" class="set-sec">
@@ -178,6 +180,10 @@ export async function render(root, sub) {
   const crop = bindCrop(el, () => { draft.avatar = 'pending'; touch(); });
   drawProfile();
   $$('[data-cos-kind].on', el).forEach(cosInfo); // 지금 고른 것의 얻은 경로부터 보여 준다
+  // 꾸미기 알림의 「보러 가기」로 왔으면(7.5.4) 얻은 그 꾸미기 칸을 짚어 준다
+  let cf = null; try { cf = sessionStorage.getItem('yh-cos-focus'); sessionStorage.removeItem('yh-cos-focus'); } catch {}
+  const cb = cf && $(`[data-cos-kind][data-cos-key="${CSS.escape(cf)}"]`, el);
+  if (cb) { cosInfo(cb); cb.classList.add('focus'); cb.closest('details')?.setAttribute('open', ''); requestAnimationFrame(() => cb.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => cb.classList.remove('focus'), 2600); }
 
   // 테마
   const markTheme = () => { $$('.theme-card', el).forEach(x => x.classList.toggle('on', x.dataset.themeId === draft.theme)); $('.custom-theme', el).classList.toggle('on', draft.theme === 'custom'); };
@@ -188,6 +194,8 @@ export async function render(root, sub) {
 
   // 소리(바로 적용)
   $$('[data-sw]', el).forEach(i => i.onchange = () => setEnabled(i.dataset.sw, i.checked));
+  $$('[data-alarm]', el).forEach(i => i.onchange = () => setAlarm(i.dataset.alarm, i.checked));
+  $('[data-try-alarm]', el)?.addEventListener('click', () => playAlarm(null));
   $$('[data-vol]', el).forEach(i => i.oninput = () => { setVolume(i.dataset.vol, Number(i.value)); const o = $(`[data-vol-out="${i.dataset.vol}"]`, el); if (o) o.textContent = `${Math.round(i.value * 100)}%`; if (i.dataset.vol === 'sfx') playSfx('tap'); });
 
   save.onclick = () => guard(save, async () => {
