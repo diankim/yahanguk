@@ -100,7 +100,9 @@ declare
     'world_storage', 'world_story_progress', 'world_title_presets', 'world_title_seen_migrated', 'world_tourney_entrants', 'world_tourney_entries',
     'world_tourney_matches', 'world_tourneys', 'world_trade_offers', 'world_trade_requests', 'world_travel_history', 'world_travel_party_requests',
     'world_tutorial_state', 'world_wedding_guests', 'world_wedding_lines', 'world_weddings', 'world_whisper_reads', 'world_yohwa_log',
-    'world_pet_profile', 'world_pet_gifts'];
+    'world_pet_profile', 'world_pet_gifts',
+    -- 10/31 뒤에 생긴 캐릭터 표(7.7.x): 동무 연속 기록 · 조사원 의뢰
+    'world_pet_streak', 'world_user_commissions'];
   have text;
 begin
   -- 있는 표만(운영과 복제 DB의 표 차이), CASCADE 없이 — 남길 표가 지울 표를 가리키고 있으면 여기서 멈춘다
