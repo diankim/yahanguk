@@ -2809,3 +2809,8 @@ b.shadow { color: var(--sp); }
   .gw-wrap .raid-buttons.pf-btns.gw-btns .btn { min-height: 36px; flex-direction: row; gap: 4px; }
   .gw-wrap .raid-members .panel-head { padding-block: 6px; }
 }
+
+/* 물품 얻는 곳 전체(7.7.4, 제보 82): 겹쳐 뜨는 창 안에서 지역 이름을 여러 줄로 */
+.src-all { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 2px 0 10px; }
+.src-all .q-link { font-size: calc(13px * var(--fz, 1)); }
+.src-more { font-size: inherit; }

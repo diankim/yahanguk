@@ -145,7 +145,21 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
 }
 
 // 얻는 곳: 서버 world_item_sources(물품마다 이 접속 동안 기억)
-const srcCache = new Map();
+const srcCache = new Map(), srcAllCache = new Map();
+async function goRegion(name) {
+  const { focusRegion } = await import('./map.js');
+  closeLayers(); closeModal(); focusRegion(name); window.yahangGo('map', 'world');
+}
+async function openAllSources(id) {
+  let s;
+  try { if (!srcAllCache.has(id)) srcAllCache.set(id, await rpc('world_item_sources_all', { p_item: id })); s = srcAllCache.get(id) || {}; }
+  catch (e) { toast(e.message, 'error'); return; }
+  const sec = (label, all) => (all || []).length ? `<h3 class="sub-h">${label} <small class="muted">${all.length}곳 · 낮은 레벨부터</small></h3>
+    <div class="src-all">${all.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '';
+  const body = [sec('채집', s.gather), sec('조사', s.sites), sec('요괴', s.monsters), sec('낚시', s.fish)].join('') || '<p class="muted">-</p>';
+  const m = openLayer({ title: `${nameOf(id)} · 얻는 곳`, body: `<p class="muted small">지역 이름을 누르면 지도에서 짚어 줍니다.</p>${body}` });
+  $$('[data-src-go]', m).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
+}
 async function fillSources(box, id) {
   const dd = $('[data-src]', box); if (!dd) return;
   try {
@@ -154,16 +168,15 @@ async function fillSources(box, id) {
     // 지역 이름을 누르면 창을 닫고 지도에서 그 지역을 짚는다(7.5.9k, 제보 66)
     // 갈래마다 낮은 레벨부터 두 곳까지만(7.6.3, 사용자 요청 — 길어지면 아래 단추가 밀려 내려갔다), 나머지는 「외 n곳」
     const part = (label, all, n) => { const list = (all || []).slice(0, 2), tot = Math.max(n || 0, (all || []).length);
-      return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join(' · ')}${tot > list.length ? ` 외 ${tot - list.length}곳` : ''}</span>` : ''; };
+      return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join(' · ')}${tot > list.length ? ` <button type="button" class="q-link src-more" data-src-more>외 ${tot - list.length}곳</button>` : ''}</span>` : ''; };
     const html = [part('채집', s.gather, s.gather_n), part('조사', s.sites, s.sites_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
     // 사는 곳: 대장간(모든 안전지대)·안전지대 상점(회차마다 품목이 바뀜)·세력 비고(공훈)
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
     const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`].filter(Boolean).join('');
     dd.innerHTML = (html + extra) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
-    $$('[data-src-go]', dd).forEach(btn => btn.onclick = async () => {
-      const { focusRegion } = await import('./map.js');
-      closeLayers(); closeModal(); focusRegion(btn.dataset.srcGo); window.yahangGo('map', 'world');
-    });
+    $$('[data-src-go]', dd).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
+    // 「외 n곳」(7.7.4, 제보 82): 창 안에서 펼치면 휴대폰에서 끝없이 길어지므로(80곳이 넘는 재료도 있다) 겹쳐 뜨는 창에 모두 보인다
+    $$('[data-src-more]', dd).forEach(btn => btn.onclick = () => openAllSources(id));
   } catch { dd.textContent = '-'; }
 }
 function draw(box, id, inv, prices, mode) {
