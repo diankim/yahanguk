@@ -169,6 +169,9 @@ async function fillSources(box, id) {
 function draw(box, id, inv, prices, mode) {
   const c = store.character, it = (inv.catalog || []).find(x => x.id === id), pr = prices.get(id);
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
+  // 짝이 되는 우수품·보통 물품도 함께 센다(7.7.0, 제보 69 — 우수품만 있는데 재료 정보가 「없음」으로 보였다). 서버 제작·사용은 둘을 같은 물품으로 쓴다
+  const pairId = id.endsWith('_hq') ? id.slice(0, -3) : `${id}_hq`, pairHave = Number(inv.inventory?.[pairId] || 0);
+  const both = k => Number(inv.inventory?.[k] || 0) + (k.endsWith('_hq') ? 0 : Number(inv.inventory?.[`${k}_hq`] || 0));
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
   // 안전지대(반요촌 빼고)에 있으면 가방에서 바로 창고에 넣는다(7.5.7, 제보 60). 지역 정보는 이미 받아 둔 것만 쓰고 따로 묻지 않는다.
   const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
@@ -178,7 +181,7 @@ function draw(box, id, inv, prices, mode) {
   const block = it && GEAR.has(it.category) ? gearBlock(it, c) : '';
   const tradeable = pr ? pr.tradeable !== false : null;
   const recipeRow = r => {
-    const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(inv.inventory?.[k] || 0) < n).length;
+    const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => both(k) < n).length;
     return `<li><div><b>${esc(r.name)}</b><small>${esc(Object.entries(r.ingredients || {}).map(([k, n]) => `${nameOf(k)} ${n}`).join(' · '))} → ${esc(r.output_name || nameOf(r.output))} ×${r.qty || 1}</small></div>
       <button class="btn small ${lacks ? '' : 'primary'}" data-recipe="${esc(r.id)}">${lacks ? '제작법 보기' : '만들 수 있음'}</button></li>`;
   };
@@ -188,7 +191,7 @@ function draw(box, id, inv, prices, mode) {
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
-      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small></dd></div>
+      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${id.endsWith('_hq') ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}

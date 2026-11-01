@@ -225,7 +225,9 @@ function render() {
 }
 function stamina(c) {
   const st = state.hud?.stamina; if (!st) return '';
-  return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${st.next_at ? new Date(st.next_at).getTime() : ''}" data-kind="stamina">${st.now >= st.max ? '가득' : ''}</small></div>`;
+  // 「n분 뒤 +1」은 그릴 때 바로 적는다(7.7.0, 제보 71 — 다음 초 틱까지 비어 있어 토벌처럼 매초 다시 그리는 동안 깜빡이고 칸 높이가 흔들렸다)
+  const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
+  return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);

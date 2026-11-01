@@ -205,7 +205,8 @@ async function status(body) {
   const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
   const deathAt = c.downed_at && !byYohwa ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
   // 부적 정화: 정화 부적이 있고 침식이 있어야 한다. 마음 다잡기: 본부에서 15분마다, 정신이 가득하고 침식이 없으면 쓸 수 없다(서버가 다시 검사).
-  const wards = Number(invItems.ward_talisman || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
+  // 우수 정화 부적도 센다(7.7.0, 제보 73 — 서버 world_survival_action도 둘 다 받고, 보통을 먼저 쓴다)
+  const wards = Number(invItems.ward_talisman || 0) + Number(invItems.ward_talisman_hq || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location); // 서버 world_survival_action과 같은 곳
   // 부적으로 풀리는 상태이상(중독·심신 동요·사념 침식)이 있으면 침식이 없어도 쓸 수 있다(서버 world_survival_action)
