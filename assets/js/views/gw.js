@@ -23,12 +23,16 @@ export async function render(root, sub) {
   await refresh();
 }
 export function destroy() { clearTimeout(timer); clearInterval(tick); el = null; }
-// 귀허의 주인과 싸우는 동안에는 물품을 쓰지 않는다(7.7.4) — 퀵슬롯·가방에서 눌러도 알리기만
+// 체력 회복품만 한 싸움에 두 개까지(7.7.4, 서버 world_gw_act item) — 퀵슬롯·가방에서 눌러도 이번 라운드의 「회복품」 행동으로 보낸다
+const HEAL_ITEMS = ['tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
+let trayOpen = false;
 window.addEventListener('yh-battle-item', e => {
   const f = snap?.fight;
   if (!el?.isConnected || f?.status !== 'fight' || !snap?.joined) return;
   e.detail.handled = true;
-  toast('귀허의 주인과 싸우는 동안에는 물품을 쓸 수 없습니다. 기술과 버티기로 대처하세요.', 'warn');
+  const id = e.detail.id || e.detail.item;
+  if (!HEAL_ITEMS.includes(String(id || '').replace(/_hq$/, ''))) { toast('귀허의 주인과 싸우는 동안에는 체력 회복품만 쓸 수 있습니다.', 'warn'); return; }
+  run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'item', p_target: target || snap.me, p_item: id }));
 });
 
 async function refresh() {
@@ -101,6 +105,7 @@ function roundBand(s) {
 function actName(s, a) {
   const t = a.t ? nameOfMember(s, a.t) : '';
   if (a.a === 'coop') { const sk = (s.skills || []).find(x => x.id === a.s); return `기술 「${sk?.name || ''}」${t ? ` → ${t}` : ''}`; }
+  if (a.a === 'item') return `회복품 「${nameOf(a.i)}」${t ? ` → ${t}` : ''}`;
   return ({ attack: '공격', guard: '방어', brace: '버티기', call: `이름 부르기 → ${t}`, chain: `${a.c || ''} 사슬 끊기` })[a.a] || a.a;
 }
 
@@ -128,7 +133,7 @@ function draw() {
         <ul class="raid-mem pf-mem">${(s.members || []).map(m => `<li class="${m.id === s.me ? 'me' : ''} ${m.id === (target || s.me) && fight ? 'pick' : ''} ${m.out ? 'out' : ''} ${m.nameless ? 'tgt' : ''}">
           <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${fight && s.joined ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)}`)}"><span class="mem-top"><b>${esc(m.name)}</b><small class="mem-job">${esc(JOBS[m.job]?.name || nameOf(m.job))}</small><small class="mem-hp">${m.hp}</small></span>
           <span class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></span>
-          <small class="mem-sub">${[m.out ? `물러남 ${m.out}라운드` : fight ? (m.acted ? '골랐음' : '고르는 중') : '', m.nameless ? '이름 잃음' : '', (s.members || []).length === 1 ? `쓰러짐 ${m.falls || 0}/12` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : ''].filter(Boolean).join(' · ') || '&nbsp;'}</small>
+          <small class="mem-sub">${[m.out ? `물러남 ${m.out}라운드` : fight ? (m.acted ? '골랐음' : '고르는 중') : '', m.nameless ? '이름 잃음' : '', (s.members || []).length === 1 ? `쓰러짐 ${m.falls || 0}/10` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : ''].filter(Boolean).join(' · ') || '&nbsp;'}</small>
           <small class="mem-sub">준 피해 ${fmt.num(m.dmg)}${m.heal ? ` · 회복 ${fmt.num(m.heal)}` : ''}${done && m.falls ? ` · 물러남 ${m.falls}번` : ''}</small>
           ${(m.fx || []).filter(k => FX[k]).length ? `<span class="gw-fx">${(m.fx || []).filter(k => FX[k]).map(k => `<i>${FX[k]}</i>`).join('')}</span>` : ''}</button></li>`).join('')}</ul>
 </div></section>
@@ -161,13 +166,16 @@ function actHtml(s, me) {
   const on = k => a?.a === k ? 'on' : '';
   const hp = me.hp ?? c.health, sp = s.sp ?? c.spiritual_power;
   const skills = s.skills || [];
+  const items = Object.keys(s.items || {}).filter(k => Number(s.items[k]) > 0), left = Number(s.items_left ?? 0);
   return `<section class="panel raid-act ${a ? '' : 'my-turn'}"><header class="panel-head"><h2>${icon('sword', 16)} 이번 라운드의 행동</h2><small class="muted">대상: <b>${esc(tName)}</b></small></header><div class="panel-body">
     <div class="gw-vits">${gauge('체력', hp, 'hp')}${gauge('정신', c.mental, 'mp')}${gauge(spOf()[0], sp, spOf()[1])}</div>
     <div class="raid-buttons pf-btns gw-btns">
       <button class="btn primary ${on('attack')}" data-gw="attack">${icon('sword', 16)}<span>공격</span></button>
       <button class="btn ${on('guard')}" data-gw="guard">${icon('shield', 16)}<span>방어</span></button>
       <button class="btn ${on('brace')}" data-gw="brace" title="몸을 낮춰 막기만 합니다. 쏟아지는 물살·소용돌이에 방어보다 강합니다">${icon('down', 16)}<span>버티기</span></button>
+      <button class="btn ${on('item')} ${trayOpen ? 'open' : ''}" data-gw-tray ${left && items.length ? '' : 'disabled'} title="체력 회복품을 한 싸움에 두 개까지 씁니다(나 또는 고른 동료)">${icon('heart', 16)}<span>회복품 ${left}/2</span></button>
     </div>
+    ${trayOpen && left && items.length ? `<div class="gw-tray">${items.map(k => `<button class="btn small ${a?.a === 'item' && a?.i === k ? 'on' : ''}" data-gw-item="${esc(k)}">${esc(nameOf(k))} ×${s.items[k]}<small>→ ${esc(tName)}</small></button>`).join('')}</div>` : ''}
     <div class="gw-skills">${skills.map(k => {
         const why = !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `영력 ${k.cost} 필요` : '';
         return `<button class="gw-skill ${a?.a === 'coop' && a?.s === k.id ? 'on' : ''}" data-gw-skill="${esc(k.id)}" ${why ? 'disabled' : ''} title="${esc(`${k.desc} (영력 ${k.cost} · ${k.rounds}라운드마다)`)}">
@@ -211,6 +219,9 @@ function bind() {
   const b = $('#gw-begin', el); if (b) b.onclick = () => run(b, () => rpc('world_gw_begin', { p_fight: f.id }));
   const j = $('#gw-join', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: f.id }));
   $$('[data-pick]', el).forEach(x => x.onclick = () => { target = x.dataset.pick; draw(); });
+  const tr = $('[data-gw-tray]', el); if (tr) tr.onclick = () => { trayOpen = !trayOpen; draw(); };
+  $$('[data-gw-item]', el).forEach(x => x.onclick = () => { trayOpen = false;
+    run(x, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'item', p_target: target || snap.me, p_item: x.dataset.gwItem })); });
   $$('[data-gw-skill]', el).forEach(x => x.onclick = () => {
     run(x, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'coop', p_target: target || snap.me, p_item: x.dataset.gwSkill }));
   });
@@ -231,7 +242,7 @@ async function run(btn, fn) {
     if (out) { snap = out; if (out.now) skew = new Date(out.now).getTime() - Date.now(); }
     if (snap?.fight?.id && fid !== snap.fight.id) { fid = snap.fight.id; history.replaceState(null, '', `#/gw/${fid}`); }
     if (ended() && prev !== snap.fight.status) await settle();
-    else if (btn.dataset.gwSkill || btn.id === 'gw-open' || btn.id?.startsWith('gw-join')) { try { await loadCharacter(); } catch {} }
+    else if (btn.dataset.gwSkill || btn.dataset.gwItem || btn.id === 'gw-open' || btn.id?.startsWith('gw-join')) { try { await loadCharacter(); } catch {} }
     draw(); plan();
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
   finally { sending = false; }

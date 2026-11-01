@@ -2,6 +2,9 @@
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
+// 기여도 갈래(7.7.4, 서버 world_raid_members.credits): 직접 피해·늘려 준 피해·막아 준 피해·회복·받아 낸 피해
+const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
+const creditLine = c => { const parts = CREDIT.filter(([k]) => Number(c?.[k]) > 0).map(([k, n]) => `${n} ${fmt.num(c[k])}`); return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : ''; };
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
 const SP_ITEMS = new Set(['spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew']);
@@ -239,7 +242,7 @@ function patchActions(me, members) {
   const mine = members.find(m => m.me), spName = spOf()[0];
   box.innerHTML = `<div class="raid-vit hp ${me.hp < 35 ? 'low' : ''}"><span>체력</span><b>${me.hp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.hp))}%"></i></i></div>
     <div class="raid-vit ${spOf()[1]}"><span>${esc(spName)}</span><b>${me.sp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.sp))}%"></i></i></div>
-    <div class="raid-mine">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>` : ''}${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</div>`;
+    <div class="raid-mine">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => chip(BUFF[k], k === 'bound' ? 'bad' : 'ok')).join('')}</div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
   if (cb) {
