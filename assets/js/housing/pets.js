@@ -845,27 +845,6 @@ export const PETS = {
       sleep: ["..........k...k..", ".........kak.kak.", "........kaaakaaak", "..kkkkkkkaoaoaoak", ".kaaaaaaaakkakkak", "kaaoaoaoapacncapk", "kaaaoaoaaacccaaak", ".kooooooooooookk.", "..kkkkkkkkkkkk..."]
     }
   },
-  gray_longhair: {
-    name: "잿빛 솜털 고양이",
-    grade: 1,
-    kind: "shadow",
-    desc: "잿빛 털이 솜뭉치처럼 부푼 고양이입니다. 앞머리에 눈이 반쯤 가려도 밥그릇만큼은 용케 찾아갑니다.",
-    likes: "treat_fish",
-    baby: {
-      pal: { a: "#cfd2d8", s: "#9ea2ad", w: "#eef0f4", p: "#eaa6a6", e: "#3a3440", n: "#e58f98", k: "#1a120e" },
-      idle: ["...........k..k...", "..........kakkak..", "........kkapaapak.", "......kkaaaaaaaak.", ".....kaaaaaaaaaaak", "....kaaasasasasaak", "...kaaaaseasaseaak", ".kkaaaaaaaaanaaaak", "kskaaawaaaaaaaaak.", "kssaaaaaaaaaaaaak.", "ksssaaaaaaaaaaak..", "kssskaaaaaaaaaak..", ".kskkasaasaasak...", "..k..kkkkkkkkk...."],
-      blink: ["...........k..k...", "..........kakkak..", "........kkapaapak.", "......kkaaaaaaaak.", ".....kaaaaaaaaaaak", "....kaaasasasasaak", "...kaaaassasassaak", ".kkaaaaaaaaanaaaak", "kskaaawaaaaaaaaak.", "kssaaaaaaaaaaaaak.", "ksssaaaaaaaaaaak..", "kssskaaaaaaaaaak..", ".kskkasaasaasak...", "..k..kkkkkkkkk...."],
-      step: ["...........k..k...", "..........kakkak..", "........kkapaapak.", "......kkaaaaaaaak.", ".....kaaaaaaaaaaak", "....kaaasasasasaak", "...kaaaaseasaseaak", ".kkaaaaaaaaanaaaak", "kskaaawaaaaaaaaak.", "kssaaaaaaaaaaaaak.", "ksssaaaaaaaaaaak..", "kssskaaaaaaaaaak..", ".kskkaasaasaasak..", "..k..kkkkkkkkkk..."],
-      sleep: ["...........k..k...", "..........kakkak..", ".......kkkapaapak.", ".....kkaaaaaaaaak.", ".kk.kaaasasasasaak", "ksskaaaaskkaskkaak", "ksssaaaaaaaanaaak.", ".kssaaaaaaaaaaak..", "..kkkasaasaasak...", ".....kkkkkkkkk...."]
-    },
-    adult: {
-      pal: { a: "#cfd2d8", s: "#9ea2ad", w: "#eef0f4", p: "#eaa6a6", e: "#3a3440", n: "#e58f98", k: "#1a120e" },
-      idle: ["...............k...k....", "..............kak.kak...", "............kkapakapak..", "..........kkaaaaaaaaaak.", ".........kaaaaaaaaaaaaak", "........kaaasasasasasaak", ".......kaaaasasasasasaak", "......kaaaaaaseasaseaaak", ".....kaaaaaaaaaaanaaaaak", ".k..kaaaaaawaaaaaaaaaak.", "kskkaaawaaaaaaaaaaaaaak.", "ksssaaaaaaaaaaaaaaaaaak.", "kssssaaaaaaaaaaaaaaaak..", "ksssssaaaaaaaaaaaaaaak..", ".ksskkkasaaasaaasaakk...", "..kk...kkkkkkkkkkkk....."],
-      blink: ["...............k...k....", "..............kak.kak...", "............kkapakapak..", "..........kkaaaaaaaaaak.", ".........kaaaaaaaaaaaaak", "........kaaasasasasasaak", ".......kaaaasasasasasaak", "......kaaaaaassasassaaak", ".....kaaaaaaaaaaanaaaaak", ".k..kaaaaaawaaaaaaaaaak.", "kskkaaawaaaaaaaaaaaaaak.", "ksssaaaaaaaaaaaaaaaaaak.", "kssssaaaaaaaaaaaaaaaak..", "ksssssaaaaaaaaaaaaaaak..", ".ksskkkasaaasaaasaakk...", "..kk...kkkkkkkkkkkk....."],
-      step: ["...............k...k....", "..............kak.kak...", "............kkapakapak..", "..........kkaaaaaaaaaak.", ".........kaaaaaaaaaaaaak", "........kaaasasasasasaak", ".......kaaaasasasasasaak", "......kaaaaaaseasaseaaak", ".....kaaaaaaaaaaanaaaaak", ".k..kaaaaaawaaaaaaaaaak.", "kskkaaawaaaaaaaaaaaaaak.", "ksssaaaaaaaaaaaaaaaaaak.", "kssssaaaaaaaaaaaaaaaak..", "ksssssaaaaaaaaaaaaaaak..", ".ksskkkaasaaasaaasakk...", "..kk...kkkkkkkkkkkk....."],
-      sleep: ["...............k...k....", "..............kak.kak...", ".........kkkkkapakapak..", ".......kkaaaaaaaaaaaaak.", ".kk..kkaaaaasasasasasaak", "ksskkaaaaaaaskkaaskkaaak", "kssskaaaaaaaaaaaanaaaaak", "kssssaaaaaaaaaaaaaaaaak.", ".ksssaaaaaaaaaaaaaaaak..", "..ksskkasaaasaaasaakk...", "...kk..kkkkkkkkkkkk....."]
-    }
-  },
   tuxedo_cat: {
     name: "까치 고양이",
     grade: 1,
