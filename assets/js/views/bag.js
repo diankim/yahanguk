@@ -1,6 +1,6 @@
 // 가방: 소지품 · 장비 · 제작. 제작은 어디서나 가능하고, 레시피의 지정 장소에서 하면 품질 보너스를 받는다.
 import { db, store, on, act, rpc, toast, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
-import { load, invalidate, panel, chip, loading, errorBox, safeZones } from './common.js';
+import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } from './common.js';
 import { equipRowLi, eqMini, bindRepair, enhancedTraits, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS } from './item.js';
@@ -89,12 +89,13 @@ async function draw(soft) {
 function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i])); }
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
-// 같은 계열의 더 높은 단계 도구는 낮은 단계 도구가 필요한 제작법도 만든다(서버 world_tool_lines·world_tool_covers와 같다)
-// 도구 계열(서버 world_tool_lines와 같음, supabase/gen71/data_life.py가 만든 줄): 같은 계열 높은 단계가 낮은 단계 대신 쓰인다
-const TOOL_LINE = { ore_pick: ['pick', 1], t4_gather: ['pick', 4], spirit_sickle: ['sickle', 2], spirit_lantern: ['lantern', 2], spirit_compass: ['explore', 3], fishing_rod: ['rod', 1], spirit_rod: ['rod', 2], seal_knife: ['carve', 2], field_knife: ['knife', 1], field_knife_2: ['knife', 2], t3_gather: ['knife', 3], t5_gather: ['knife', 5], t6_gather: ['knife', 6], lt_pick_2: ['pick', 2], lt_pick_3: ['pick', 3], lt_pick_5: ['pick', 5], lt_pick_6: ['pick', 6], lt_knife_4: ['knife', 4], lt_knife_7: ['knife', 6], lt_sickle_4: ['sickle', 4], lt_sickle_6: ['sickle', 6], lt_lantern_4: ['lantern', 4], lt_lantern_6: ['lantern', 6], lt_staff_2: ['explore', 2], lt_compass_4: ['explore', 4], lt_compass_5: ['explore', 5], lt_compass_6: ['explore', 6], lt_rod_3: ['rod', 3], lt_rod_4: ['rod', 4], lt_rod_5: ['rod', 5], lt_rod_6: ['rod', 6], lt_hammer_2: ['hammer', 2], lt_hammer_4: ['hammer', 4], lt_hammer_6: ['hammer', 6], lt_needle_2: ['needle', 2], lt_needle_4: ['needle', 4], lt_needle_6: ['needle', 6], lt_still_2: ['still', 2], lt_still_4: ['still', 4], lt_still_6: ['still', 6], lt_carve_4: ['carve', 4], lt_carve_6: ['carve', 6], lt_cook_2: ['cook', 2], lt_cook_4: ['cook', 4], lt_cook_6: ['cook', 6] };
-// 우수품(…_hq)은 기본 물품과 같은 도구로 본다(서버 world_tool_covers도 world_item_base로 판정, 제보 83 — 「귀허 각인도 (우수)」가 각인 공구로 취급되지 않았다)
+// 같은 계열의 더 높은 단계 도구는 낮은 단계 도구가 필요한 제작법도 만든다(서버 world_tool_covers와 같은 셈).
+// 도구 계열은 물품 목록의 tl(서버 world_tool_lines, 7.7.7o)·단계는 tier — 새 계열·도구는 서버 표만 고친다.
+// 우수품(…_hq)은 기본 물품과 같은 도구로 본다(제보 83 — 「귀허 각인도 (우수)」가 각인 공구로 취급되지 않았다)
 const toolCovers = (have, need) => { const h = String(have || '').replace(/_hq$/, '');
-  return h === need || !!(TOOL_LINE[h] && TOOL_LINE[need] && TOOL_LINE[h][0] === TOOL_LINE[need][0] && TOOL_LINE[h][1] >= TOOL_LINE[need][1]); };
+  if (h === need) return true;
+  const a = catItem(h), b = catItem(need);
+  return !!(a?.tl && b?.tl && a.tl === b.tl && Number(a.tier) >= Number(b.tier)); };
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 
 // 검색칸은 그대로 두고 나머지만 새로 그린다(7.5.0, 제보: 아이폰에서 한 글자 칠 때마다 칸을 새로 만들어 키보드가 내려가던 것)

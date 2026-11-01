@@ -1,8 +1,7 @@
 // 원정 짐 보따리: 원정에서 돌아올 때 가방에 다 들어가지 않은 전리품. 골라서 챙기거나 버린다.
 // 보따리가 비기 전에는 서버가 이동·탐색·채집·낚시·전투·원정 출발을 막는다(world_guard_action_context·world_field_move).
-import { rpc, act, esc, icon, h, $, $$, openModal, guard, ask, fmt, emit } from './core.js';
+import { rpc, act, esc, icon, h, $, $$, openModal, guard, ask, fmt, emit, nameOf } from './core.js';
 
-const RARITY = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };
 
 export async function openOverflow() {
   const body = h(`<div class="overflow-box"><p class="muted small">불러오는 중…</p></div>`);
@@ -23,7 +22,7 @@ async function draw(body) {
     <p class="ov-lead">${icon('bag', 16)}<span>가방 <b>${fmt.num(bag.used)} / ${fmt.num(bag.limit)}칸</b> · 들어가지 못한 전리품입니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.</span></p>
     <ul class="item-list ov-list">${items.map(i => `<li>
       <div class="item-main"><b><button class="linkish" data-info="${esc(i.item_id)}" title="물품 정보">${esc(i.name)}</button> <span class="qty">×${fmt.num(i.qty)}</span></b>
-        <small>${esc(RARITY[i.rarity] || '')}${i.room > 0 ? ` · 지금 ${fmt.num(Math.min(i.room, i.qty))}개 들어감` : ' · 가방에 자리 없음'}</small></div>
+        <small>${esc(i.rarity ? nameOf(i.rarity) : '')}${i.room > 0 ? ` · 지금 ${fmt.num(Math.min(i.room, i.qty))}개 들어감` : ' · 가방에 자리 없음'}</small></div>
       <div class="item-act">
         <button class="btn small primary" data-take="${esc(i.item_id)}" ${i.room > 0 ? '' : 'disabled'}>${icon('plus', 14)}<span>챙기기</span></button>
         <button class="btn small ghost" data-drop="${esc(i.item_id)}" data-name="${esc(i.name)}" data-qty="${i.qty}">버리기</button>

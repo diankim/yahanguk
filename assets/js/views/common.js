@@ -1,5 +1,5 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
-import { db, rpc, store, on, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion } from '../core.js';
+import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY } from '../core.js';
 import { armAlarm } from '../sound.js';
 
 // 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
@@ -20,22 +20,41 @@ export async function load(name, args, { maxAge = 0 } = {}) {
 let invStatic = null, invLite = true;
 // 받아 둔 제작법 목록(퀘스트의 「제작법」 단추가 쓴다, 아직 안 받았으면 빈 목록)
 export const knownRecipes = () => invStatic?.recipes || [];
-// 받아 둔 물품 설명(7.7.5: 토벌 물품 창). 아직 안 받았으면 기기에 남긴 사전, 그것도 없으면 빈 글
-let descMap = null;
-export function itemDesc(id) {
-  if (!descMap) {
-    let cat = invStatic?.catalog;
-    if (!cat) try { cat = JSON.parse(localStorage.getItem('yh-inv-static-v1') || 'null')?.catalog; } catch {}
-    if (!cat?.length) return '';
-    descMap = new Map(cat.map(i => [i.id, i.description || '']));
-  }
-  return descMap.get(id) || descMap.get(String(id).replace(/_hq$/, '')) || '';
-}
 const INV_KEY = 'yh-inv-static-v1';
+// 물품 목록 한 원본(7.7.7o): 설명·사용 효과(fx = 서버 world_item_catalog.use_fx)·거래소 전용(mk)·도구 계열(tl)과 효과 이름표(fx_names)를
+// 여기서만 읽는다. 아직 서버에서 안 받았으면 기기에 남긴 목록을 쓴다(버전이 달라도 — 받으면 바로 바꿔 끼움).
+let catMap = null, fxNameMap = {};
+function useCatalog(cat, names) {
+  if (!cat?.length) return;
+  catMap = new Map(cat.map(i => [i.id, i])); fxNameMap = names || {};
+  MARKET_ONLY.clear(); for (const i of cat) if (i.mk) MARKET_ONLY.add(i.id);
+}
+function catalogMap() {
+  if (!catMap) {
+    if (invStatic?.catalog) useCatalog(invStatic.catalog, invStatic.fxNames);
+    else try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); useCatalog(c?.catalog, c?.fxNames); } catch {}
+  }
+  return catMap;
+}
+const baseId = id => String(id || '').replace(/_hq$/, '');
+export const catItem = id => catalogMap()?.get(id) || catMap?.get(baseId(id)) || null;
+export const fxNames = () => (catalogMap(), fxNameMap);
+export const catalogList = () => { const m = catalogMap(); return m ? [...m.values()] : null; };
+// 받아 둔 물품 설명(7.7.5: 토벌 물품 창). 아직 안 받았으면 빈 글
+export const itemDesc = id => catItem(id)?.description || '';
+catalogMap(); // 거래소 전용 목록(core.js MARKET_ONLY)을 접속하자마자 채운다
+// 물품 목록을 아직 한 번도 받지 않은 기기(처음 접속)는 로그인 뒤 한 번 받아 둔다 — 퀵슬롯·상태 창의 사용 효과가 가방을 열기 전에도 보이게
+export async function ensureCatalog() {
+  if (invStatic) return;
+  const v = await dbVersion();
+  try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length && c.fxNames) { invStatic = { catalog: c.catalog, recipes: c.recipes || [], fxNames: c.fxNames }; useCatalog(c.catalog, c.fxNames); return; } } catch {}
+  try { await inventorySnap(); emit('catalog'); } catch {}
+}
 async function inventorySnap() {
   if (!invStatic) {
     const v = await dbVersion();
-    try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length) invStatic = { catalog: c.catalog, recipes: c.recipes || [] }; } catch {}
+    // fxNames가 없는 옛 기기 사본(7.7.7o 전)은 쓰지 않는다
+    try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length && c.fxNames) { invStatic = { catalog: c.catalog, recipes: c.recipes || [], fxNames: c.fxNames }; useCatalog(c.catalog, c.fxNames); } } catch {}
   }
   if (invStatic && invLite) {
     try { const d = await rpc('world_inventory_state'); return { ...d, catalog: invStatic.catalog, recipes: invStatic.recipes }; }
@@ -44,7 +63,8 @@ async function inventorySnap() {
   }
   const d = await rpc('world_inventory_snapshot');
   if (d?.catalog?.length) {
-    invStatic = { catalog: d.catalog, recipes: d.recipes || [] };
+    invStatic = { catalog: d.catalog, recipes: d.recipes || [], fxNames: d.fx_names || {} };
+    useCatalog(invStatic.catalog, invStatic.fxNames);
     const v = await dbVersion();
     if (v) try { localStorage.setItem(INV_KEY, JSON.stringify({ v, ...invStatic })); } catch {}
   }

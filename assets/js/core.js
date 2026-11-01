@@ -99,10 +99,13 @@ export const JOBS = {
   analyst: { name: '백공 기술관', trait: '생활 특화', desc: '캐고 만들고 찾아내는 생활 전문가. 채집량 +15%·희귀품 +3%·제작 품질 +15·강화 확률 +10%p·단서 발견.',
     base: { strength: 5, agility: 6, vitality: 6, perception: 7, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
 };
-// 거래소에서만 사고파는 희귀 재료(6.0.0, 서버 world_market_only와 같은 목록): 직접 거래·정인 선물 불가, 기준 시세 70% 이상, 24시간 20개, 거래세 10%
 // 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
 export const RAID_ON = true;
-export const MARKET_ONLY = new Set(['jade_shard', 'mirror_shard', 'thunder_ore', 'star_sand', 'monster_core', 'ember_crystal', 'sky_feather', 'rune_plate', 'reinforced_leather']);
+// 거래소에서만 사고파는 희귀 재료(직접 거래·정인 선물 불가, 기준 시세 70% 이상, 24시간 20개, 거래세 10%)
+// 원본은 서버 world_item_catalog.market_only(7.7.7o) — 물품 목록을 받으면 views/common.js가 채운다.
+export const MARKET_ONLY = new Set();
+// 등급 이름(물품 희귀도·칭호·가구·동무가 함께 씀): 1 범품 … 5 신품 — 희귀도 키(common…legendary)는 nameOf가 같은 이름을 준다
+export const GRADES = ['', '범품', '양품', '진품', '명품', '신품'];
 export const FACTIONS = {
   headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비에 익숙합니다. 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전.' },
   fieldbureau: { name: '현장대응국', trait: '현장 적응', desc: '외부 현장을 누빕니다. 채집량 +6% · 이동 시간 −6% · 요괴 조우 −5%.' },

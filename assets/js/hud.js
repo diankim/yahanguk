@@ -157,6 +157,7 @@ async function loadQs() {
   qsBusy = false; render();
 }
 window.addEventListener('yh-qs-changed', () => { qsList = null; loadQs(); });
+on('catalog', () => render()); // 물품 목록을 막 받으면 퀵슬롯 효과 문구를 다시 그린다(7.7.7o)
 function qsCard(c) {
   if (!qsList) { loadQs(); return ''; }
   const inv = c.inventory || {}, moving = !!c.travel_destination, downed = c.health <= 0 || !!c.downed_at;

@@ -32,7 +32,7 @@ import * as gwPage from './views/gw.js';
 import * as pfightPage from './views/pfight.js';
 import * as tourneyPage from './views/tourney.js';
 import * as housePage from './views/housing.js';
-import { preloadNames, hasNameCache } from './views/common.js';
+import { preloadNames, hasNameCache, ensureCatalog } from './views/common.js';
 
 mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
 
@@ -376,6 +376,7 @@ function renderGame() {
   mountVersionCheck(); // 배포·SQL 적용 뒤 새로고침 안내
   mountBug(); // 제보 창은 도움말·설정 페이지의 단추와 알림에서 연다
   mountTitleDot();
+  ensureCatalog(); // 물품 목록(사용 효과·거래소 전용·도구 계열)을 처음 접속한 기기에서도 미리 받아 둔다(같은 버전이면 기기 것)
   if (!location.hash.startsWith('#/')) location.replace('#/home');
   // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
   const names = Promise.allSettled([preloadNames(), loadStaff()]);

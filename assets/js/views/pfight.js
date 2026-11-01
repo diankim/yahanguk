@@ -2,7 +2,7 @@
 // 실시간 구독 없이 world_pfight_snapshot을 읽는다(plan 참고). 차례를 30초 비우면 서버가 방어로 넘긴다(초는 세어 보이지 않음).
 import { rpc, emit, esc, icon, fmt, $, $$, toast, nameOf, loadCharacter, store, spOf, openLayer } from '../core.js';
 import { loading, errorBox, chip, itemDesc, load } from './common.js';
-import { bindTips, hideTip, memberLi, showMemDetail, vitHtml, itemListHtml, SP_ITEMS } from './fightui.js';
+import { bindTips, hideTip, memberLi, showMemDetail, vitHtml, itemListHtml, isSpItem } from './fightui.js';
 import { INTENT, SKILL, JOB, trayList, weakNote } from './battle.js';
 import { mountMeter } from './meter.js';
 
@@ -149,7 +149,7 @@ function openItems() {
 function fillItems() {
   const box = itemLayer && $('#pf-items-body', itemLayer); if (!box) return;
   const inv = store.character?.inventory || {}, ids = trayList(inv).map(([k]) => k);
-  const sp = ids.filter(k => SP_ITEMS.has(k.replace(/_hq$/, ''))), hp = ids.filter(k => !sp.includes(k));
+  const sp = ids.filter(k => isSpItem(k)), hp = ids.filter(k => !sp.includes(k));
   box.innerHTML = `<p class="muted small">${snap?.my_turn ? '물품을 고르면 내 차례의 행동이 됩니다.' : '내 차례가 오면 쓸 수 있습니다.'}</p>
     <h3 class="raid-item-h">체력·정신 회복·치료</h3>${itemListHtml(hp, inv)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${itemListHtml(sp, inv)}`;
   $$('[data-use]', box).forEach(x => { x.disabled = !snap?.my_turn; x.onclick = () => { itemLayer?.close?.(); itemLayer = null; run(x, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: x.dataset.use })); }; });

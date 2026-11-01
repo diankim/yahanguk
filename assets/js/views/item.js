@@ -1,43 +1,48 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
+import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
-import { load, chip, zonesNow } from './common.js';
+import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 
-const USABLE_BASE = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기', tonic: '체력 35 · 마음 진정', herbal_extract: '체력 22 · 출혈·화상 치료', herb: '체력 12 · 중독 치료', medicine_base: '정신 12 · 피로·한기 치료',
-  ward_talisman: '정신 8 · 침식 완화', travel_ration: '탐색력 +2', revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
-  // 영력 회복약(낮은 단계부터)
-  spirit_tea: '영력·기력 10', clear_spirit_pill: '영력·기력 20', spirit_qi_pill: '영력·기력 35', moonlight_essence: '영력·기력 55 · 심신 동요 치료', heavenly_dew: '영력·기력 80 · 심신 동요·사념 침식 치료',
-  // 요리(서버 world_use_item과 같은 값)
-  wedding_rice_cake: '체력 20 · 정신 15', herb_rice: '체력 20 · 든든함', moss_porridge: '체력 35 · 정신 10 · 속이 따뜻함', bark_stew: '체력 50 · 정신 10 · 기운 충천',
-  grilled_fish: '체력 25 · 든든함(채집량·회복량)', spicy_stew: '체력 30 · 정신 10 · 속이 따뜻함(침식·받는 피해 감소)', fish_porridge: '정신 15 · 탐색력 +4',
-  eel_tonic: '체력 45 · 기운 충천(주는 피해·이동 시간)', carp_broth: '체력 60 · 정신 20 · 든든함 · 속이 따뜻함', bream_sashimi: '체력 40 · 정신 10 · 바다의 복 · 기운 충천',
-  herb_fish_steam: '체력 40 · 중독 치료 · 기운 충천', spirit_gukbap: '체력 30 · 정신 15 · 영력 15 · 탐색력 +3 · 속이 따뜻함',
-  sweetfish_grill: '체력 30 · 정신 5 · 든든함', catfish_braise: '체력 45 · 중독 치료 · 속이 따뜻함', snakehead_broth: '체력 35 · 정신 15 · 탈진·피로 치료 · 기운 충천',
-  goby_soup: '정신 25 · 침식 -8 · 심신 동요 치료', hairtail_braise: '체력 50 · 정신 10 · 든든함', dried_croaker: '체력 15 · 탐색력 +3 · 든든함',
-  croaker_soup: '체력 60 · 정신 15 · 속이 따뜻함 · 기운 충천', char_grill: '체력 40 · 정신 10 · 한기 치료 · 든든함', salmon_grill: '체력 40 · 정신 10 · 영력 10 · 든든함',
-  trout_sashimi: '체력 25 · 정신 10 · 기운 충천', mirror_soup: '정신 35 · 영력 30 · 침식 -10 · 속이 따뜻함', hagfish_grill: '체력 55 · 정신 10 · 기운 충천',
-  ray_steam: '체력 70 · 정신 30 · 침식 -15 · 속이 따뜻함 · 기운 충천', koi_broth: '체력 100 · 정신 40 · 영력 40 · 기운 충천 · 바다의 복 · 속이 따뜻함',
-  dragon_feast: '체력 100 · 정신 50 · 영력 50 · 침식 -25 · 기운 충천 · 바다의 복 · 속이 따뜻함 · 든든함',
-  // 바다 요리(7.4.0)
-  rockfish_stew: '체력 45 · 정신 10 · 한기 치료 · 속이 따뜻함', flounder_sashimi: '체력 35 · 정신 15 · 기운 충천', mackerel_grill: '체력 45 · 영력 15 · 든든함',
-  cod_soup: '체력 60 · 정신 15 · 한기 치료 · 속이 따뜻함 · 기운 충천', skate_ferment: '정신 30 · 침식 -10 · 심신 동요 치료 · 기운 충천',
-  yellowtail_sashimi: '체력 50 · 정신 15 · 바다의 복 · 기운 충천', grouper_steam: '체력 80 · 정신 30 · 침식 -10 · 속이 따뜻함 · 기운 충천',
-  marlin_grill: '체력 80 · 정신 30 · 영력 40 · 바다의 복 · 기운 충천', haeryong_feast: '체력 100 · 정신 50 · 영력 50 · 침식 -20 · 기운 충천 · 바다의 복 · 속이 따뜻함 · 든든함',
-  wraith_soul_pill: '정신 40 · 침식 -15 · 심신 동요·사념 침식 치료', fish_oil_lamp: '등잔빛 40분(요괴 조우 -15% · 침식 -5% · 정신 손실 -10%)',
-  guide_lantern: '탐색력 +10', trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', exp_elixir_iron: '철벽 30분(받는 피해 -15%)',
-  exp_elixir_tiger: '맹호 30분(주는 피해 +12%)', exp_elixir_clear: '청명 30분(침식 -30% · 정신 손실 -15%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나',
-  // 연금
-  rejuv_pill: '체력 60 · 출혈·화상·삠·중독 치료(전투 중에도)', grand_pill: '체력 100 · 정신 20 · 동요·탈진 치료(전투 중에도)',
-  purify_water: '침식 -20 · 정신 5 · 사념 침식 치료', calm_brew: '정신 30 · 동요·피로 치료',
-  // 반요촌(귀허도)
-  banyo_salve: '체력 70 · 정신 15 · 출혈·화상·중독 치료', oblivion_incense: '침식 -30 · 정신 20 · 사념 침식·심신 동요 치료' };
+// 쓸 수 있는 물품과 효과 문구(7.7.7o): 원본은 서버 world_item_catalog.use_fx(world_item_fx와 같은 값) — 물품 목록의 fx와 효과 이름표로 여기서 만든다.
+// 새 소모품은 서버 use_fx만 채우면 사용 단추·효과 문구·색·거르기가 따른다. 아래는 회복·기운으로 적을 수 없는 특별한 물품만.
+const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
+  revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
+  trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나' };
+const useCache = new Map();
+function useText(id) {
+  if (USE_SPECIAL[id]) return USE_SPECIAL[id];
+  const f = catItem(id)?.fx;
+  if (!f) return undefined;
+  if (useCache.has(id)) return useCache.get(id);
+  const names = fxNames(), nm = k => names[k]?.n || nameOf(k), out = [];
+  if (f.hp > 0) out.push(`체력 ${f.hp}`);
+  if (f.mn > 0) out.push(`정신 ${f.mn}`);
+  if (f.sp > 0) out.push(`영력·기력 ${f.sp}`);
+  if (f.er > 0) out.push(`침식 -${f.er}`);
+  if (f.stam > 0) out.push(`탐색력 +${f.stam}`);
+  if (f.cures?.length) out.push(`${f.cures.map(nm).join('·')} 치료`);
+  for (const b of f.buffs || []) {
+    const s = names[b], fx = effectText(s?.e || {});
+    out.push(`${nm(b)}${s?.m ? ` ${s.m}분` : ''}${fx.length ? `(${fx.join(', ')})` : ''}`);
+  }
+  const t = out.join(' · ') || undefined;
+  useCache.set(id, t);
+  return t;
+}
+on('catalog', () => useCache.clear());
 // 우수품(<id>_hq)도 같은 물품으로 쓴다(7.5.2, 제보 48)
-export const USABLE = new Proxy(USABLE_BASE, { get(t, k) {
-  if (typeof k !== 'string' || k in t) return t[k];
-  return k.endsWith('_hq') && t[k.slice(0, -3)] ? `${t[k.slice(0, -3)]} · 우수품 효과 더 큼` : undefined;
-} });
+export const USABLE = new Proxy({}, {
+  get(t, k) {
+    if (typeof k !== 'string') return undefined;
+    const v = useText(k);
+    if (v || !k.endsWith('_hq')) return v;
+    const b = useText(k.slice(0, -3));
+    return b ? `${b} · 우수품 효과 더 큼` : undefined;
+  },
+  has(t, k) { return !!this.get(t, k); },
+});
 // 7.7.7h(제보 85): 효과 문구를 회복 종류마다 색으로 — 「체력 35 · 정신 10 · 침식 -8」을 마디(·)로 나눠 체력 붉게·정신 푸르게·영력 보라·침식·치료·탐색력
 export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
 const FX_ORDER = ['cure', 'hp', 'mind', 'sp', 'er', 'stam'].map(k => FX_KINDS.find(x => x[0] === k)); // 「사념 침식 치료」는 침식이 아니라 치료

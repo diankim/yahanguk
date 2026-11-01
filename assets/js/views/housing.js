@@ -1,7 +1,7 @@
 // 별채(7.2, #/house · #/house/<주인>): 도트 방 구경·꾸미기·곳간·넓히기·대문·방명록·꼬마 동무.
 // 서버는 world_housing_*·world_pet_*가 검사하고(겹침·칸·설치 상한·소유·안전지대), 화면은 같은 규칙으로 미리 막아 준다.
 // 다시 읽는 때: 화면을 열 때 · 저장·곳간·넓히기·방명록·동무 행동 뒤(실시간 구독·주기 읽기 없음). 방 그림은 동무가 있을 때만 1초 8번 다시 그린다.
-import { rpc, act, store, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf } from '../core.js';
+import { rpc, act, store, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf, GRADES } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
@@ -9,7 +9,7 @@ import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
 import { cardName } from './card.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
-const GRADE = ['', '범품', '양품', '진품', '명품', '신품'];
+const GRADE = GRADES;
 const KIND_CAP = [0, 4, 3, 2, 1, 1]; // 한 지붕(혼례 정인과 함께 쓰는 별채)이면 서버가 두 배로 내려 준다(snap.kind_caps)
 const kindCap = g => snap?.kind_caps?.[g - 1] ?? KIND_CAP[g];
 const GATE = [['open', '활짝 엶', '누구나 구경'], ['friends', '벗에게만', '친구만 구경'], ['closed', '닫음', '나만 구경']];
