@@ -136,10 +136,10 @@ begin
     d := replace(d, 'case n when 1 then 1 when 2', 'case n when 1 then 1.12 when 2');
     execute d;
   end if;
-  -- 결전: 혼자면 보스 체력 ×1.8·둘이면 ×2.3(전 1·1.7) (회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
+  -- 결전: 혼자면 보스 체력 ×1.8·둘이면 ×2.0(전 1·1.7) (회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
   d := replace(pg_get_functiondef('public.world_raid_begin_fight(uuid)'::regprocedure), E'\r\n', E'\n');
-  if position('when 1 then 1.8 when 2 then 2.3' in d) = 0 then
-    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.8 when 2 then 2.3', 'final solo hp');
+  if position('when 1 then 1.8 when 2 then 2.0' in d) = 0 then
+    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.8 when 2 then 2.0', 'final solo hp');
     execute d;
   end if;
   -- 협동 기술(사용자 결정 2026-11-01, 파티 효율 점검): 퇴마관 파사 진언은 광역뿐 아니라 다음에 받는 공격 한 번에
@@ -155,6 +155,15 @@ begin
     d := replace(d, '(e ->> ''amt'')::int * 0.5)', '(e ->> ''amt'')::int * 0.65)');
     execute d;
   end if;
+  -- 결전: 쓰러졌을 때 쉬는 시간 60초 → 30초(회복 직업 없는 조가 쉬는 동안 시간이 다 가 버리던 것)
+  d := replace(pg_get_functiondef('public.world_raid_hit(uuid,uuid,numeric,text)'::regprocedure), E'\r\n', E'\n');
+  if position('30 seconds' in d) = 0 then
+    d := pg_temp.yh_sub(d, 'out_until = now() + interval ''60 seconds'', falls = falls + 1',
+      'out_until = now() + case when (select x.kind from public.world_raids x where x.raid_id = p_raid) = ''final'' then interval ''30 seconds'' else interval ''60 seconds'' end, falls = falls + 1', 'hit out30');
+    d := pg_temp.yh_sub(d, '의 피해를 입고 물러났습니다(1분 쉰 뒤 행동하면 돌아옴).''',
+      '의 피해를 입고 물러났습니다('' || case when (select x.kind from public.world_raids x where x.raid_id = p_raid) = ''final'' then ''30초'' else ''1분'' end || '' 쉰 뒤 행동하면 돌아옴).''', 'hit out30 msg');
+    execute d;
+  end if;
 end $p$;
 
 -- 협동 기술 수치: 의무관 응급 처치 16→20·맥 짚기 12→15, 퇴마관 대신 막기 다시 쓰기 12→8초·퇴마 결계 25→20초, 백공 영력 보급 20→25
@@ -168,7 +177,7 @@ update public.world_coop_skills set effect = jsonb_set(effect, '{amt}', '25'), d
 update public.world_patch_notes set body = body || $N$
 ## 7.7.7l
 - 구중 봉주 결전에서도 체력 회복품을 한 싸움에 다섯 개까지만 쓸 수 있습니다(귀허의 주인은 두 개). 모두 물러났을 때 결전 보스가 되찾는 체력은 8%에서 3%로 줄였습니다. 혼자 싸우면 회복 기술의 회복량은 절반입니다. 결전 중에는 가방·퀵슬롯에서 바로 쓰지 않고 결전 화면의 「물품」으로 씁니다. 영력·기력 회복품은 세지 않습니다. 결전에서 물러났다가 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
-- 혼자 도전하면 귀허의 주인 체력이 1.12배, 구중 봉주 체력이 1.8배입니다(전 1배). 둘이 도전하는 구중 봉주 체력은 1.7배에서 2.3배로 올렸습니다.
+- 혼자 도전하면 귀허의 주인 체력이 1.12배, 구중 봉주 체력이 1.8배입니다(전 1배). 둘이 도전하는 구중 봉주 체력은 1.7배에서 2배로 올렸습니다. 결전에서 쓰러졌을 때 쉬는 시간은 1분에서 30초로 줄였습니다.
 - 혼자 도전할 때만 직업 보정이 붙습니다(둘 이상이면 그대로): 의무관 주는 피해 +15%·받는 피해 −8% · 퇴마관 +12%·−8% · 봉인술사 +12%·−12% · 현장 조사원 +8% · 호위 무사 +5%. 귀허의 주인에서는 쓰러질 수 있는 횟수도 의무관 +3번·퇴마관·봉인술사·조사원 +2번·호위 무사 +1번.
 - 협동 기술: 의무관 응급 처치 체력 16→20·맥 짚기 12→15, 퇴마관 대신 막기 다시 쓰기 12초→8초·퇴마 결계 25초→20초·파사 진언은 광역뿐 아니라 다음에 받는 공격 한 번에, 백공 영력 보급 20→25. 귀허의 주인에서 의무관 회복 기술은 절반이 아니라 0.65배입니다.
 $N$ where note_id = '7.7.0' and position('## 7.7.7l' in body) = 0;
