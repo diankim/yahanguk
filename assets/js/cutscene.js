@@ -58,7 +58,7 @@ const CSS = `
 .cs .cs-writing { transition: filter 6s ease-in, opacity 7s ease-in; }
 .cs.ink .cs-writing { filter: blur(2.5px); opacity: .15; }
 .cs .cs-seal { opacity: 0; transform-box: fill-box; transform-origin: center; }
-.cs.seal .cs-seal { animation: cs-stamp .9s cubic-bezier(.3,0,.4,1) forwards; }
+.cs.cs-stamped .cs-seal { animation: cs-stamp .9s cubic-bezier(.3,0,.4,1) forwards; }
 @keyframes cs-stamp { 0% { opacity: 0; transform: translate(-6px, -26px) scale(1.5) rotate(-9deg); } 55% { opacity: 1; transform: translate(0, 0) scale(.96) rotate(-3deg); } 70% { opacity: 1; transform: scale(1.02) rotate(-3deg); } 100% { opacity: 1; transform: scale(1) rotate(-3deg); } }
 .cs .cs-ink { transform-box: fill-box; transform-origin: center; transform: scale(0); }
 .cs.ink .cs-ink { animation: cs-bleed 8s cubic-bezier(.3,.1,.3,1) forwards; }
@@ -225,10 +225,10 @@ const ROLLBACK = [
   ['도제조 백운서', '…정청 문을 닫지 마라. 마지막 하나는 여기서 지킨다.'],
   [null, '정청 깊은 곳, 마지막 등불 아래. 사건 서기관 연서희가 장부를 펼친다.', r => r.classList.add('ledger')],
   ['사건 서기관 연서희', '이름을 적어 둘게요. 이 밤을 걸었던 사람들의 이름을, 하나도 빠짐없이.'],
-  [null, '붉은 인장이 장부 위에 내려앉는다.', r => r.classList.add('seal')],
+  [null, '붉은 인장이 장부 위에 내려앉는다.', r => r.classList.add('cs-stamped')],
   [null, '먹이 번진다. 글자가 흐려지고, 지난 밤의 모든 것이 지워져 간다.', r => r.classList.add('ink')],
   ['사건 서기관 연서희', '괜찮아요. 이름만 남아 있으면… 아침은 다시 와요.'],
-  [null, '', r => { r.classList.remove('ledger', 'seal', 'ink', 'mist', 'mist2'); r.classList.add('fin'); }],
+  [null, '', r => { r.classList.remove('ledger', 'cs-stamped', 'ink', 'mist', 'mist2'); r.classList.add('fin'); }],
 ];
 const MORNING = [
   [null, '긴 밤이 끝났다.', r => r.querySelector('[data-lamp="9"] .cs-lantern')?.classList.add('out')],
