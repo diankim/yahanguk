@@ -187,8 +187,8 @@
 ### 파티 현장 토벌(7.1.0, c_pfight.sql)
 
 - 현장 토벌 중 world_pfight_call(동료 부르기) → 같은 곳 파티원에게 pfight_invite 알림 60초 → world_pfight_join(탐색력 1, 요괴 체력 +70%×기준 체력, 4명까지) → world_pfight_start 또는 모집 마감.
-- 10초 라운드: 참가자마다 행동 하나(world_pfight_act: attack·skill·guard·item·flee, 안 고르면 방어), 모두 고르거나 마감이 지나면 world_pfight_snapshot·act를 부른 쪽이 푼다(예약 작업 없음). 풀 때는 world_battle_action을 참가자마다 그 사람의 JWT sub로 부르고(yh.pf_resolve로 1초 간격 건너뜀), 요괴는 이목^1.3으로 고른 한 명에게만 반격한다(나머지는 yh.pf_skip). 파티 토벌 중에는 world_battle_action을 직접 못 부른다.
-- 보상은 혼자 토벌과 같고(전리품도 각자 굴림, 파티 분배 풀은 쓰지 않음) 경험치 +10%/명(3명까지). 화면 views/pfight.js(#/pfight/<id>) — 함께 선 이는 봉연 토벌처럼 칸 격자(.raid-mem.pf-mem: PC 네 칸·휴대폰 두 칸, 이름·체력 막대·직업·상태·정신·영력, 7.7.3 사용자 요청).
+- 속도순 차례(7.7.3, 20261104201100, 사용자 요청 — 전에는 10초 라운드에 모두 고른 뒤 한꺼번에): world_pfight_round가 라운드마다 남은 참가자를 속도(world_combat_stats.stats 민첩 + 감각×0.5) 높은 순으로 turn_order에 세우고 노릴 사람(target_id, 이목^1.3)을 정한다. world_pfight_act는 turn_id인 사람만 받고 world_pfight_resolve가 그 한 사람만 바로 푼 뒤 다음 차례로(world_battle_action을 그 사람 JWT sub로, yh.pf_resolve로 1초 간격 건너뜀). 요괴는 노린 사람 차례에만 반격(yh.pf_skip 0, 그 사람이 빠졌으면 그 뒤 첫 차례, mon_done), 기운 모으기 끊기는 라운드 누적 피해 round_dmg. 차례를 30초(round_ends) 비우면 누가 스냅샷을 읽을 때 방어로 넘김(예약 작업 없음, 화면에 초를 세지 않음). 파티 토벌 중에는 world_battle_action을 직접 못 부른다. 화면은 남의 차례 2초·내 차례 10초·모이는 중 3초마다 world_pfight_snapshot(turn_id·my_turn·order·mon_done·members[].spd).
+- 보상은 혼자 토벌과 같고(전리품도 각자 굴림, 파티 분배 풀은 쓰지 않음) 경험치 +10%/명(3명까지). 화면 views/pfight.js(#/pfight/<id>) — 봉연 토벌 칸 배치(.raid-wrap.pf-wrap: PC 왼쪽 요괴·행동·기록·오른쪽 참가자), 「내 차례」 띠(.pf-turn)·차례 줄(.pf-order, 요괴는 노린 사람 뒤), 행동 단추는 내 차례에만 켜짐, 함께 선 이는 칸 격자(.raid-mem.pf-mem 두 칸, 순번·체력 막대·직업·차례/행동함/기다림·노림받음, 7.7.3 사용자 요청). 현장 토벌의 「동료 부르기」는 전투 행동 칸 여섯째(battle.js renderBattle opts.call, .act.call — 7.7.3, 전에는 전투 위 안내 띠).
 
 ### 전투불능과 구조
 
