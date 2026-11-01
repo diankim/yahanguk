@@ -142,7 +142,7 @@ async function enhancePane(body) {
   const q = await rpc('world_enhance_quote');
   if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword'); return; }
   registerNames(Object.entries(q.names || {}));
-  const have = q.have || {}, items = Object.entries(q.items || {});
+  const have = q.have || {}, stored = q.stored || {}, items = Object.entries(q.items || {}); // have = 가방 + 창고(안전지대, 반요촌 제외 — 7.7.3)
   const short = items.filter(([k, n]) => (have[k] || 0) < n);
   const maxed = q.level >= q.max;
   body.innerHTML = `
@@ -152,11 +152,11 @@ async function enhancePane(body) {
         <div><dt>위력</dt><dd>${q.power}${maxed ? '' : ` → <b>${q.next_power}</b>`}</dd></div>
         ${maxed ? '' : `<div><dt>성공 확률</dt><dd>${q.chance}%</dd></div><div><dt>비용</dt><dd>${fmt.jeon(q.gil)}${q.have_gil < q.gil ? ' <span class="bad">(모자람)</span>' : ''}</dd></div>`}
       </dl>
-      ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}</span></li>`).join('')}</ul>
+      ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}${stored[k] ? ` <small class="muted">(창고 ${fmt.num(stored[k])})</small>` : ''}</span></li>`).join('')}</ul>
       <div class="btn-row"><button class="btn primary" id="enh-go" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(백공 기술관은 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다(백공 기술관은 +10%p). 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(반요촌 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
   bindInfo(body);
   const go = $('#enh-go', body);
   if (go) go.onclick = async () => {
