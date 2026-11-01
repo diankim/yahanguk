@@ -9,13 +9,14 @@ create or replace function public.world_solo_aid(p_job text)
 returns jsonb language sql immutable as $f$
   -- dmg: 주는 피해 %, falls: 귀허 쓰러짐 상한 +, guard: 받는 피해 −%(world_cb_mitigate가 stats.solo_guard로) — 혼자 도전 10판씩 복제 DB 시뮬레이션으로 맞춤
   -- final_dmg: 구중 봉주 결전 혼자일 때만 solo_dmg 대신(회복품이 다섯이라 회복 기술·회피가 있는 직업이 크게 유리해서 따로 맞춤)
+  -- final_all: 결전에서 인원과 상관없이(혼자면 final_dmg가 대신)
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 40}'
-    when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12, "final_dmg": 40}'
-    when 'medic'      then '{"solo_dmg": 5, "solo_falls": 2, "final_dmg": -15}'
-    when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1, "final_dmg": -5}'
-    when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2, "final_dmg": 5}'
-    when 'analyst'    then '{"final_dmg": -40}'
+    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 28, "final_all": 15}'
+    when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12, "final_dmg": 30, "final_all": 15}'
+    when 'medic'      then '{"solo_dmg": 5, "solo_falls": 2, "final_dmg": -5}'
+    when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1, "final_dmg": 3}'
+    when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2, "final_dmg": -12}'
+    when 'analyst'    then '{"final_dmg": -35}'
     else '{}' end::jsonb
 $f$;
 revoke all on function public.world_solo_aid(text) from public, anon, authenticated;
@@ -84,7 +85,8 @@ begin
     d := pg_temp.yh_sub(d, '    if crit then mul := mul * 1.5; end if;',
       '    if crit then mul := mul * 1.5; end if;
     if rd.kind = ''final'' and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then
-      mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> ''final_dmg'')::numeric, (public.world_solo_aid(c.job_key) ->> ''solo_dmg'')::numeric, 0) / 100.0); end if;', 'raid_action dmg');
+      mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> ''final_dmg'')::numeric, (public.world_solo_aid(c.job_key) ->> ''solo_dmg'')::numeric, 0) / 100.0);
+    elsif rd.kind = ''final'' then mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> ''final_all'')::numeric, 0) / 100.0); end if;', 'raid_action dmg');
     d := pg_temp.yh_sub(d, '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;',
       '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;
     if rd.kind = ''final'' and h1 > h0 then
