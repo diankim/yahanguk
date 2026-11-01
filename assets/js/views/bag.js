@@ -54,7 +54,8 @@ function sorter(acq) {
   return sortRev ? (a, b) => base(b, a) : base;
 }
 let matFocus = null, recipeFocus = null; // 물품 정보에서 넘어온 제작 거르기
-window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material || null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) craftFilter = 'all';
+// 물품 정보에서 제작법·재료로 넘어오면 검색어를 비운다(7.7.2, 제보 74 — 처음 검색한 말이 남아 넘어온 제작법이 걸러졌다)
+window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material || null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) { craftFilter = 'all'; cq = ''; }
   // 퀘스트에서 넘어온 「○○ 만들기」: 검색칸에 그 이름을 넣어 둔다(7.4.6)
   if (e.detail?.search) cq = e.detail.search; });
 
