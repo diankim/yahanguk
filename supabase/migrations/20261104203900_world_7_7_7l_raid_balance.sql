@@ -8,12 +8,14 @@ alter table public.world_raid_members add column if not exists items_used intege
 create or replace function public.world_solo_aid(p_job text)
 returns jsonb language sql immutable as $f$
   -- dmg: 주는 피해 %, falls: 귀허 쓰러짐 상한 +, guard: 받는 피해 −%(world_cb_mitigate가 stats.solo_guard로) — 혼자 도전 10판씩 복제 DB 시뮬레이션으로 맞춤
+  -- final_dmg: 구중 봉주 결전 혼자일 때만 solo_dmg 대신(회복품이 다섯이라 회복 기술·회피가 있는 직업이 크게 유리해서 따로 맞춤)
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8}'
-    when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12}'
+    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 20}'
+    when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12, "final_dmg": 20}'
     when 'medic'      then '{"solo_dmg": 5, "solo_falls": 2}'
-    when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1}'
-    when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2}'
+    when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1, "final_dmg": 15}'
+    when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2, "final_dmg": -15}'
+    when 'analyst'    then '{"final_dmg": -25}'
     else '{}' end::jsonb
 $f$;
 revoke all on function public.world_solo_aid(text) from public, anon, authenticated;
@@ -82,7 +84,7 @@ begin
     d := pg_temp.yh_sub(d, '    if crit then mul := mul * 1.5; end if;',
       '    if crit then mul := mul * 1.5; end if;
     if rd.kind = ''final'' and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then
-      mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> ''solo_dmg'')::numeric, 0) / 100.0); end if;', 'raid_action dmg');
+      mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> ''final_dmg'')::numeric, (public.world_solo_aid(c.job_key) ->> ''solo_dmg'')::numeric, 0) / 100.0); end if;', 'raid_action dmg');
     d := pg_temp.yh_sub(d, '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;',
       '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;
     if rd.kind = ''final'' and h1 > h0 then
@@ -136,10 +138,10 @@ begin
     d := replace(d, 'case n when 1 then 1 when 2', 'case n when 1 then 1.12 when 2');
     execute d;
   end if;
-  -- 결전: 혼자면 보스 체력 ×1.8·둘이면 ×2.0(전 1·1.7) (회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
+  -- 결전: 혼자면 보스 체력 ×1.3·둘이면 ×2.6(전 1·1.7) (회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
   d := replace(pg_get_functiondef('public.world_raid_begin_fight(uuid)'::regprocedure), E'\r\n', E'\n');
-  if position('when 1 then 1.8 when 2 then 2.0' in d) = 0 then
-    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.8 when 2 then 2.0', 'final solo hp');
+  if position('when 1 then 1.3 when 2 then 2.6' in d) = 0 then
+    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.3 when 2 then 2.6', 'final solo hp');
     execute d;
   end if;
   -- 협동 기술(사용자 결정 2026-11-01, 파티 효율 점검): 퇴마관 파사 진언은 광역뿐 아니라 다음에 받는 공격 한 번에
