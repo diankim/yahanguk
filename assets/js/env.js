@@ -31,7 +31,7 @@ export function mountEnv() {
 export function envChip(e = store.env, { compact = false } = {}) {
   if (!e?.phase || !e?.weather) return '';
   return `<button class="env-chip w-${esc(e.weather.key)} p-${esc(e.phase.key)}${e.long_night?.stage ? ' long-night' : ''}" data-env-open title="날씨와 시간대 효과 보기">
-    ${icon(ENV_ICON[e.phase.key] || 'moon', 14)}<span>${esc(e.phase.name)}</span><i></i>${icon(ENV_ICON[e.weather.key] || 'cloud', 14)}<span>${esc(e.weather.name)}</span>
+    ${icon(ENV_ICON[e.phase.key] || 'moon', 14)}<span>${esc(e.phase.name)}</span>${icon(ENV_ICON[e.weather.key] || 'cloud', 14)}<span>${esc(e.weather.name)}</span>
     ${compact ? '' : `<small data-env-left="${new Date(e.weather.ends_at).getTime()}">${fmt.remain(new Date(e.weather.ends_at) - Date.now())}</small>`}</button>`;
 }
 // 장야(롤백 전 사흘): 밤이 길어지고 2단계부터 요괴가 늘어난다(서버 world_long_night_fx)
