@@ -144,7 +144,7 @@ const FIXED = {
   supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',
   sig_pct: '지역 희귀품', presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   // 서식지
-  river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연', fishing: '낚시', cooking: '요리',
+  river: '강', marsh: '늪', sea: '바다', deep: '깊은 물', canal: '수로', // 호수·심연·낚시·요리는 위에 있다
   // 날씨·시간대
   dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };

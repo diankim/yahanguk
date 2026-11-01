@@ -80,7 +80,7 @@ function activeItem(q) {
   if (q.phase === 'clues') {
     const c = q.clues || {};
     return `<li class="q-item">${head(q.kind, q)}
-      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc((c.region_names || []).join('·'))}을(를) 탐색하고, 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>
+      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc((c.region_names || []).join('·') + '을(를)')} 탐색하고, 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>
       <div class="btn-row"><a class="btn small" href="#/log/story">${icon('scroll', 14)}<span>일지 보기</span></a></div></li>`;
   }
   return `<li class="q-item ${q.ready ? 'ready' : ''}">${head(q.kind, q)}

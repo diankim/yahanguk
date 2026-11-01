@@ -1,5 +1,5 @@
 // 헤더 기능: 테마(프리셋·흑백·직접 설정) · 프로필 보기 · 알림. 고치는 화면은 설정 페이지(views/settings.js)에 있다.
-import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, $$, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
+import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 export { initSound, playSfx } from './sound.js';
