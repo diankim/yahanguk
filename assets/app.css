@@ -1012,7 +1012,8 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .env-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); font-size: calc(12px * var(--fz, 1)); font-weight: 600; cursor: pointer; justify-self: start; }
 .env-chip.long-night { border-color: var(--bad); }
 .env-detail .long-night { border-left: 3px solid var(--bad); padding-left: 10px; }
-.env-chip i { width: 1px; height: 12px; background: var(--line); margin: 0 2px; }
+/* 7.7.7k(사용자 요청): 시간대와 날씨 사이 세로줄·빈칸을 빼고 바로 잇는다 */
+.env-chip > span + .ico { margin-left: 3px; }
 .env-chip small { color: var(--muted); font-weight: 500; margin-left: 4px; font-variant-numeric: tabular-nums; }
 .env-chip.w-bloodmist { border-color: var(--bad); color: var(--bad); } .env-chip.w-rain .ico, .env-chip.w-drizzle .ico, .env-chip.w-fog .ico { color: var(--mp); }
 .env-chip.p-night { background: color-mix(in srgb, var(--sp) 10%, var(--surface-2)); }
