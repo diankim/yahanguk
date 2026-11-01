@@ -47,6 +47,14 @@
   try {
     const { render } = await import('./assets/js/views/guide.js');
     render(document.getElementById('help-root'), { standalone: true });
+    // 대기 화면 위 겹친 창으로 열렸으면(?embed=1) 「대기 화면으로」는 창을 닫는다(배경음악이 끊기지 않게)
+    if (new URLSearchParams(location.search).has('embed')) {
+      document.querySelector('.hp-brand')?.remove();
+      document.addEventListener('click', e => {
+        const a = e.target.closest?.('a[href="maintenance.html"]');
+        if (a) { e.preventDefault(); parent.postMessage('yh-help-close', location.origin); }
+      }, true);
+    }
   } catch (e) {
     document.getElementById('help-root').innerHTML = '<p class="muted">도움말을 불러오지 못했습니다. <a href="maintenance.html">대기 화면으로</a></p>';
     console.error(e);
