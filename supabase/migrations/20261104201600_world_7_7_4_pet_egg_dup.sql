@@ -12,6 +12,20 @@ on conflict (item_id) do nothing;
 update public.world_item_catalog set description = '탐색하다 주운 따뜻한 알. 쓰면 양품 꼬마 동무가 태어난다. 이미 함께하는 동무가 나오면 친밀도가 오르고, 친밀도를 다 채운 동무면 동무 정표가 된다.' where item_id = 'pet_egg_2';
 update public.world_item_catalog set description = '안쪽에서 은은한 빛이 새는 알. 쓰면 진품 꼬마 동무가 태어난다. 이미 함께하는 동무가 나오면 친밀도가 오르고, 친밀도를 다 채운 동무면 동무 정표가 된다.' where item_id = 'pet_egg_3';
 
+-- 알에서 이미 함께하는 동무가 잇달아 나온 횟수(7.7.4 사용자 요청: 연속 겹침 칭호). 함수로만 읽고 쓴다.
+create table if not exists public.world_pet_streak (owner_id uuid primary key, cur int not null default 0, best int not null default 0, updated_at timestamptz not null default now());
+alter table public.world_pet_streak enable row level security;
+revoke all on public.world_pet_streak from public, anon, authenticated;
+grant select, insert, update on public.world_pet_streak to fn_owner_field;
+
+-- 칭호 둘(효과 없음, 분류 별채): 세 번 잇달아 「또 너니?」, 다섯 번 잇달아(숨김) 「끊어지지 않는 인연」
+insert into public.world_title_catalog(title_key, title_name, category, grade, hidden, active, icon, sort, bonus, rule, description, condition_text)
+values ('pet_dup3', '또 너니?', '별채', 2, false, true, 'heart', 1450, '{}'::jsonb, '{"n":3,"home":"eggdup"}'::jsonb,
+        '알을 깰 때마다 같은 얼굴들이 고개를 내민다. 아무래도 동무들이 이 사람을 무척 좋아하는 모양이다.', '알에서 이미 함께하는 동무가 세 번 잇달아 나온다'),
+       ('pet_dup5', '끊어지지 않는 인연', '별채', 3, true, true, 'heart', 1451, '{}'::jsonb, '{"n":5,"home":"eggdup"}'::jsonb,
+        '다섯 번을 깨도 아는 얼굴뿐이었다. 동무들 사이에 이 사람 곁이 좋다는 소문이 난 게 틀림없다.', '알에서 이미 함께하는 동무가 다섯 번 잇달아 나온다')
+on conflict (title_key) do nothing;
+
 do $p$
 declare r record; d text; n int; own text; inh boolean;
 begin
@@ -29,7 +43,11 @@ $B$    -- 7.7.4: 그 등급 알 동무 가운데 고르게 뽑는다(이미 함�
     select s.pet_id into pid from public.world_pet_species s where s.grade = g and s.egg order by random() limit 1;
     if pid is null then raise exception '이 알에서 나올 동무가 없습니다.'; end if;
     select affinity into aff0 from public.world_pets where owner_id = uid and pet_id = pid;
-    dup := aff0 is not null;$B$),
+    dup := aff0 is not null;
+    -- 잇달아 겹친 횟수(연속 겹침 칭호 pet_dup3·pet_dup5, 규칙 home eggdup)
+    insert into public.world_pet_streak as ps(owner_id, cur, best) values (uid, case when dup then 1 else 0 end, case when dup then 1 else 0 end)
+      on conflict (owner_id) do update set cur = case when dup then ps.cur + 1 else 0 end, best = greatest(ps.best, case when dup then ps.cur + 1 else 0 end), updated_at = now();
+    if dup then perform public.world_title_award_check(uid, 'home'); end if;$B$),
       ('public.world_pet_adopt(text)'::regprocedure,
 $A$  perform public.world_pet_grant(uid, pid, 'item:' || p_item, false);
   select * into sp from public.world_pet_species where pet_id = pid;$A$,
@@ -69,6 +87,20 @@ $B$  select * into sp from public.world_pet_species where pet_id = pid;
     execute replace(d, r.a, r.b);
     if inh is null and own <> 'postgres' then execute format('grant %I to postgres with inherit false', own); end if;
   end loop;
+end $p$;
+
+-- 칭호 규칙 home: eggdup = 알에서 잇달아 겹친 가장 긴 횟수
+do $p$
+declare d text; own text;
+begin
+  d := replace(pg_get_functiondef('public.world_home_rule_count(uuid,jsonb)'::regprocedure), E'\r\n', E'\n');
+  if position('eggdup' in d) > 0 then return; end if;
+  if position($a$    when 'pets' then$a$ in d) = 0 then raise exception '7.7.4 home rule anchor'; end if;
+  d := replace(d, $a$    when 'pets' then$a$, $b$    when 'eggdup' then (select best from public.world_pet_streak where owner_id = p_owner)
+    when 'pets' then$b$);
+  select p.proowner::regrole::text into own from pg_proc p where p.oid = 'public.world_home_rule_count(uuid,jsonb)'::regprocedure;
+  if own <> 'postgres' and not pg_has_role('postgres', own, 'USAGE') then execute format('grant %I to postgres with inherit true', own); end if;
+  execute d;
 end $p$;
 
 -- 동무 정표 5개 → 빛나는 알 1개(어디서나, 봉인 중 아님, 가방 자리 확인)

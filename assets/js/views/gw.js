@@ -128,7 +128,7 @@ function draw() {
         <ul class="raid-mem pf-mem">${(s.members || []).map(m => `<li class="${m.id === s.me ? 'me' : ''} ${m.id === (target || s.me) && fight ? 'pick' : ''} ${m.out ? 'out' : ''} ${m.nameless ? 'tgt' : ''}">
           <button type="button" class="mem-pick" data-pick="${esc(m.id)}" ${fight && s.joined ? '' : 'disabled'} title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)}`)}"><span class="mem-top"><b>${esc(m.name)}</b><small class="mem-job">${esc(JOBS[m.job]?.name || nameOf(m.job))}</small><small class="mem-hp">${m.hp}</small></span>
           <span class="bar ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span></span>
-          <small class="mem-sub">${[m.out ? `물러남 ${m.out}라운드` : fight ? (m.acted ? '골랐음' : '고르는 중') : '', m.nameless ? '이름 잃음' : '', (s.members || []).length === 1 ? `쓰러짐 ${m.falls || 0}/8` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : ''].filter(Boolean).join(' · ') || '&nbsp;'}</small>
+          <small class="mem-sub">${[m.out ? `물러남 ${m.out}라운드` : fight ? (m.acted ? '골랐음' : '고르는 중') : '', m.nameless ? '이름 잃음' : '', (s.members || []).length === 1 ? `쓰러짐 ${m.falls || 0}/12` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : ''].filter(Boolean).join(' · ') || '&nbsp;'}</small>
           <small class="mem-sub">준 피해 ${fmt.num(m.dmg)}${m.heal ? ` · 회복 ${fmt.num(m.heal)}` : ''}${done && m.falls ? ` · 물러남 ${m.falls}번` : ''}</small>
           ${(m.fx || []).filter(k => FX[k]).length ? `<span class="gw-fx">${(m.fx || []).filter(k => FX[k]).map(k => `<i>${FX[k]}</i>`).join('')}</span>` : ''}</button></li>`).join('')}</ul>
 </div></section>
