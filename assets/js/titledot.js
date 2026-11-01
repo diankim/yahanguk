@@ -1,6 +1,7 @@
 // 새 칭호 빨간 점: 아직 확인하지 않은 칭호(world_character_titles.seen_at 없음)가 있으면 캐릭터 탭과 칭호 칸에 점을 찍는다.
 // 칭호 화면을 열면 서버에 확인 처리(world_title_mark_seen)해 다른 기기에서도 점이 사라진다.
 // 나누지 않은 능력치 포인트(stat_points)가 있어도 캐릭터 탭과 성장 칸에 점을 찍는다(캐릭터 정보만 보므로 따로 묻지 않는다).
+// 고를 택일 기술이 있으면 캐릭터 탭과 기술 칸에도(world_skill_pending, 칭호 수와 같은 때에 읽음 — 7.7.4 제보 78).
 import { db, store, on, rpc, midBattle, throttle } from './core.js';
 
 let timer = null;
@@ -10,17 +11,20 @@ export async function refreshTitleDot() {
     const { count, error } = await db.from('world_character_titles').select('title_key', { count: 'exact', head: true }).is('seen_at', null);
     if (error) return;
     store.newTitles = count || 0;
+    // 고를 택일 기술(7.7.4, 제보 78): 숫자 하나만 받는 가벼운 함수
+    try { store.skillPending = Number(await rpc('world_skill_pending')) || 0; } catch {}
   } catch { return; }
   paintTitleDot();
 }
 export function paintTitleDot() {
-  const n = store.newTitles || 0, pts = Number(store.character?.stat_points || 0);
-  const label = [n > 0 ? `새 칭호 ${n}개` : '', pts > 0 ? `나누지 않은 능력치 ${pts}점` : ''].filter(Boolean).join(' · ');
+  const n = store.newTitles || 0, pts = Number(store.character?.stat_points || 0), sk = store.skillPending || 0;
+  const label = [n > 0 ? `새 칭호 ${n}개` : '', pts > 0 ? `나누지 않은 능력치 ${pts}점` : '', sk > 0 ? `고를 기술 ${sk}개` : ''].filter(Boolean).join(' · ');
   const mark = (sel, on, text) => document.querySelectorAll(sel).forEach(a => {
     a.classList.toggle('has-dot', on);
     if (on) a.setAttribute('data-dot-label', text); else a.removeAttribute('data-dot-label');
   });
-  mark('.topnav a[data-view="char"], .tabbar a[data-view="char"]', n > 0 || pts > 0, label);
+  mark('.topnav a[data-view="char"], .tabbar a[data-view="char"]', n > 0 || pts > 0 || sk > 0, label);
+  mark('[data-seg="char-sub"] [data-key="skills"]', sk > 0, `고를 기술 ${sk}개`);
   mark('[data-seg="char-sub"] [data-key="titles"]', n > 0, `새 칭호 ${n}개`);
   mark('[data-seg="char-sub"] [data-key="growth"]', pts > 0, `나누지 않은 능력치 ${pts}점`);
 }
@@ -32,6 +36,6 @@ export function mountTitleDot() {
   // 칭호를 얻으면 알림(칭호·꾸미기)이 실시간으로 오므로 그때 바로 센다. 알림을 놓칠 때를 대비해 행동 뒤에는 2분에 한 번까지만 센다(전에는 20초).
   const soon = throttle(refreshTitleDot, 120000);
   on('character', () => paintTitleDot());
-  on('changed', ev => { if (midBattle(ev)) return; clearTimeout(timer); timer = setTimeout(soon, 1500); });
+  on('changed', ev => { if (midBattle(ev)) return; if (ev?.name === 'world_skill_choose') { setTimeout(refreshTitleDot, 300); return; } clearTimeout(timer); timer = setTimeout(soon, 1500); });
   window.addEventListener('yh-note', e => { if (/title|cosmetic/.test(e.detail?.kind || '')) setTimeout(refreshTitleDot, 500); });
 }

@@ -168,9 +168,9 @@ function actHtml(s, me) {
     </div>
     ${skillOpen ? `<div class="gw-skills">${skills.map(k => {
         const why = !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `영력 ${k.cost} 필요` : '';
-        return `<button class="gw-skill ${a?.a === 'coop' && a?.s === k.id ? 'on' : ''}" data-gw-skill="${esc(k.id)}" ${why ? 'disabled' : ''}>
-          <span class="gw-skill-top"><b>${esc(k.name)}</b><small>${k.target === 'ally' ? `→ ${esc(tName)}` : k.target === 'all' ? '모두' : k.target === 'boss' ? '주인' : '나'} · 영력 ${k.cost} · ${k.rounds}라운드마다</small></span>
-          <small class="gw-skill-desc">${why ? `<em>${esc(why)}</em> · ` : ''}${esc(k.desc)}</small></button>`; }).join('') || '<p class="muted small">쓸 수 있는 협동 기술이 없습니다.</p>'}</div>` : ''}
+        return `<button class="gw-skill ${a?.a === 'coop' && a?.s === k.id ? 'on' : ''}" data-gw-skill="${esc(k.id)}" ${why ? 'disabled' : ''} title="${esc(k.desc)}">
+          <span class="gw-skill-top"><b>${esc(k.name)}</b><small>${why ? `<em>${esc(why)}</em>` : `${k.target === 'ally' ? `→ ${esc(tName)}` : k.target === 'all' ? '모두' : k.target === 'boss' ? '주인' : '나'} · 영력 ${k.cost} · ${k.rounds}라운드마다`}</small></span>
+          <small class="gw-skill-desc">${esc(k.desc)}</small></button>`; }).join('') || '<p class="muted small">쓸 수 있는 협동 기술이 없습니다.</p>'}</div>` : ''}
     ${mech.k === 'name' || mech.k === 'chain' ? `<div class="gw-gim"><p class="small"><b>${icon('bell', 13)} 이번 라운드만의 행동</b></p>
       ${mech.k === 'name' ? `<button class="btn ${on('call')}" data-gw="call">${icon('users', 16)}<span>${esc(tName)}의 이름 부르기</span></button>` : ''}
       ${mech.k === 'chain' ? `<div class="raid-buttons">${(mech.colors || []).filter((v, i, x) => x.indexOf(v) === i).map(col => `<button class="btn ${COLOR[col] || ''} ${a?.a === 'chain' && a?.c === col ? 'on' : ''}" data-gw="chain" data-c="${esc(col)}">${esc(col)} 사슬 끊기</button>`).join('')}</div>` : ''}

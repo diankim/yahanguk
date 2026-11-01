@@ -1887,6 +1887,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 
 /* 기술: 고를 기술이 있는 단계(빨간 점)·숙달 단계·한 단계에 여러 기술·조합 기술 */
 .sk-node { position: relative; }
+.sk-node.pick { display: inline-block; gap: 0; } /* 전역 .pick(grid)이 붙어 숫자가 흐트러지던 것(제보 78) */
 .sk-node.pick::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
 .sk-node.master { border-color: color-mix(in srgb, var(--gold, var(--accent)) 70%, var(--line)); }
 .sk-one { padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -2204,7 +2205,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-skill:disabled { opacity: .5; cursor: default; }
 .gw-skill-top { display: flex; gap: 6px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
 .gw-skill-top small, .gw-skill-desc { color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
-.gw-skill-desc em { font-style: normal; color: var(--bad); }
+.gw-skill-top em { font-style: normal; color: var(--bad); }
 .gw-gim { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); border: 2px dashed color-mix(in srgb, var(--bad) 60%, var(--line)); display: grid; gap: 6px; }
 .gw-gim p { margin: 0; }
 .gw-fx { display: flex; flex-wrap: wrap; gap: 3px; }
@@ -2744,3 +2745,24 @@ b.shadow { color: var(--sp); }
 .gx-line .q-link { display: inline; min-height: 0; padding: 0; font-weight: 600; }
 .gx-line .gx-f { color: var(--text); }
 .gw-wrap.ended .raid-log-box, .gw-wrap.ended .raid-members { grid-column: 1 / -1; }
+/* 귀허의 주인 배치(7.7.4 사용자 검토): PC는 기록을 오른쪽 참가자 칸 아래로, 끝난 화면은 참가자 네 칸 한 줄, 휴대폰은 한 화면에 */
+@media (min-width: 900px) {
+  .raid-wrap.gw-wrap.playing { grid-template-areas: "boss mem" "boss log" "act log"; grid-template-rows: auto auto 1fr; }
+  .raid-wrap.gw-wrap.playing .raid-log { height: auto; max-height: 560px; min-height: 240px; }
+  .gw-wrap.ended .raid-mem.pf-mem { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .gw-ladder li small { display: none; }
+  .gw-ladder li { padding: 3px 4px; }
+  .gw-tell { font-size: calc(13px * var(--fz, 1)); line-height: 1.45; }
+  .gw-band { padding: 6px 8px; gap: 3px; }
+  .gw-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+  .gw-skill { padding: 4px 6px; gap: 0; }
+  .gw-skill-top { display: grid; gap: 0; }
+  .gw-skill-top b { font-size: calc(12.5px * var(--fz, 1)); }
+  .gw-skill-top small { font-size: calc(10px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gw-skill-desc { display: none; }
+  .gw-gim { margin-top: 4px; padding: 4px 6px; gap: 4px; }
+  .gw-wrap .raid-mem.pf-mem .mem-sub + .mem-sub { display: none; }
+  .gw-wrap.ended .raid-mem.pf-mem { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
