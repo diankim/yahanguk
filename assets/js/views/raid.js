@@ -134,7 +134,7 @@ function patch() {
   const sy = $('#raid-says', el);
   if (sy) {
     const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => chip(BOSS_FX[k], 'ok')).join('');
-    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르고 있습니다.'}</span></p>
+    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
       <div class="raid-charge ${r.charge ? 'on' : ''}">${r.charge ? `<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.kind === 'world' ? `약 ${r.charge.left * 2}초` : `${r.charge.left}번`} 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
   }
