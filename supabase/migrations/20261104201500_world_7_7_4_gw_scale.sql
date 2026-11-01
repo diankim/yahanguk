@@ -1,6 +1,6 @@
 -- 7.7.4 — 귀허의 주인: 인원에 맞춘 물러남·손아귀(사용자 요청 2026-11-01).
 -- 둘이 했을 때 돌아가며 버티다 겹쳐 쓰러져 실패했는데, 넷이면 손아귀(한 라운드 한 명)가 넷에게 나뉘고 넷이 한꺼번에 빠질 일이 거의 없어 너무 쉬웠다.
--- ① 물러남: 혼자 1·둘 3(그대로)·셋 4·넷 5라운드. 혼자는 「모두 물러남」으로 끝나지 않는다(15분이 지나면 실패).
+-- ① 물러남: 혼자 1·둘 2(전에는 3)·셋 4·넷 5라운드. 혼자는 「모두 물러남」으로 끝나지 않는다(15분이 지나면 실패).
 -- ② 손아귀: 1·2명 하나, 3명 하나·둘 번갈아(짝수 라운드 둘), 4명 둘 — 같은 사람을 두 번 노리지 않고, 연막은 라운드에 한 번만 줄어든다.
 do $p$
 declare r record; d text; n int; own text; inh boolean;
@@ -13,9 +13,9 @@ $B$declare m public.world_gw_members%rowtype; d int := greatest(0, p_dmg); v_n i
       ('public.world_gw_hurt(uuid,uuid,integer,integer,text)'::regprocedure,
 $A$    update public.world_gw_members set hp = 0, out_rounds = 4, falls = falls + 1, nameless = false where fight_id = p_fight and owner_id = p_uid;
     perform public.world_gw_say(p_fight, p_round, 'fall', m.name || ' — ' || p_why || ' ' || d || '의 피해를 입고 물러났습니다(세 라운드 뒤 돌아옴).');$A$,
-$B$    -- 물러남 길이는 인원에 맞춘다(7.7.4): 혼자 한 라운드·둘 세 라운드·셋 네 라운드·넷 다섯 라운드(라운드 끝에 하나 줄어드니 +1로 넣음)
+$B$    -- 물러남 길이는 인원에 맞춘다(7.7.4): 혼자 한 라운드·둘 두 라운드·셋 네 라운드·넷 다섯 라운드(라운드 끝에 하나 줄어드니 +1로 넣음)
     select count(*) into v_n from public.world_gw_members where fight_id = p_fight;
-    v_out := case when v_n <= 1 then 2 when v_n = 2 then 4 when v_n = 3 then 5 else 6 end;
+    v_out := case when v_n <= 1 then 2 when v_n = 2 then 3 when v_n = 3 then 5 else 6 end;
     update public.world_gw_members set hp = 0, out_rounds = v_out, falls = falls + 1, nameless = false where fight_id = p_fight and owner_id = p_uid;
     perform public.world_gw_say(p_fight, p_round, 'fall', m.name || ' — ' || p_why || ' ' || d || '의 피해를 입고 물러났습니다(' || (v_out - 1) || '라운드 뒤 돌아옴).');$B$),
       ('public.world_gw_resolve(uuid)'::regprocedure,
