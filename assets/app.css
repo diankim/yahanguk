@@ -2439,6 +2439,8 @@ b.sealed { color: var(--bad); }
 .hs-req { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; }
 .hs-req li.ok { color: var(--ok); } .hs-req li.no { color: var(--bad); }
 .hs-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.hs-token { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; padding: 6px 8px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); }
+.hs-token > span { display: inline-flex; align-items: center; gap: 4px; }
 .hs-list li { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hs-list li > span:last-child { display: flex; gap: 6px; }
 .hs-gb-form { display: flex; gap: 6px; margin-bottom: 8px; }

@@ -362,6 +362,8 @@ async function openStore() {
 }
 
 // ─── 꼬마 동무 ───
+// 동무 정표(7.7.4): 친밀도를 다 채운 동무가 알에서 다시 나오면 하나, 다섯 개로 「빛나는 알」 하나(world_pet_token_trade, 어디서나)
+const tokenRow = inv => { const n = Number(inv.pet_token || 0); return n ? `<div class="hs-token"><span>${icon('heart', 14)} 동무 정표 ×${n} <small class="muted">다섯 개 = 빛나는 알 하나</small></span><button class="btn small ${n >= 5 ? 'primary' : ''}" data-token ${n >= 5 ? '' : 'disabled'}>빛나는 알로 바꾸기</button></div>` : ''; };
 async function openPets() {
   let ps;
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
@@ -371,6 +373,7 @@ async function openPets() {
   const body = `<p class="muted small">꼬마 동무는 능력치 효과가 없습니다. 별채에 한 마리를 두면 방 안을 돌아다니고, 손님도 쓰다듬거나 놀아 줄 수 있습니다. 데리고 다니면 조사원 카드에 함께 보입니다.</p>
     ${room_.pet_id ? `<div class="hs-petnow"><img src="${petImage(room_.pet_id, mine.get(room_.pet_id)?.adult, { scale: 2 })}" alt=""><b>${esc(mine.get(room_.pet_id)?.nick || PETS[room_.pet_id]?.name || '')}</b>
       <button class="btn small" data-walk="${room_.pet_out ? '0' : '1'}">${room_.pet_out ? '별채에 돌려놓기' : '데리고 다니기'}</button><button class="btn small" data-place="">별채에서 내보내기</button></div>` : ''}
+    ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
     <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
     <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id); return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
@@ -379,7 +382,7 @@ async function openPets() {
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-walk],[data-nick]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-walk],[data-nick],[data-token]'); if (!b) return;
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
       openModal({ title: '별명 짓기', body: `<form id="pet-nick" class="hs-gb-form"><input name="nick" maxlength="8" value="${esc(cur)}" placeholder="${esc(PETS[id]?.name || '')}" autocomplete="off"><button class="btn small primary">짓기</button></form><p class="muted small">8자까지 · 한글·영문·숫자 · 비우면 원래 이름으로 돌아갑니다.</p>` });
@@ -392,6 +395,7 @@ async function openPets() {
     guard(b, async () => {
       let r;
       if (b.dataset.adopt) r = await act('world_pet_adopt', { p_item: b.dataset.adopt });
+      else if (b.dataset.token != null) r = await act('world_pet_token_trade');
       else if (b.dataset.walk) r = await rpc('world_pet_walk', { p_out: b.dataset.walk === '1' });
       else r = await rpc('world_pet_place', { p_pet: b.dataset.place || null });
       closeModal(); await reload(); openPets();

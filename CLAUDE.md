@@ -340,7 +340,7 @@
 ### 꼬마 동무(7.2.0)
 
 - 30종(world_pet_species: grade·kind·likes·how·egg), 내 동무 world_pets(affinity 0~300, 100이면 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3번까지 친밀도), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩, +1), 출처 world_pet_sources(quest:<퀘스트>·title:<칭호>·gw_first).
-- 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때, 7.2.7부터)마다 world_event_char_apply의 희귀 전리품 길로 0.5%·0.06% 가방에 온다. world_pet_adopt(바구니·알 열기, 알은 그 등급 egg 종 가운데 고르게 — 이미 함께하는 동무가 나오면 친밀도 +30·최대 300, 친밀도를 가득 채운 동무는 뽑지 않고 모두 가득이면 열 수 없음, 7.7.4 20261104201600), 조건 보상은 world_pet_grant로 바로 도감에(이미 있으면 pet_food 3을 개인 창고로).
+- 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때, 7.2.7부터)마다 world_event_char_apply의 희귀 전리품 길로 0.5%·0.06% 가방에 온다. world_pet_adopt(바구니·알 열기, 알은 그 등급 egg 종 가운데 고르게 — 이미 함께하는 동무가 나오면 친밀도 +30·최대 300, 친밀도를 가득 채운 동무면 「동무 정표」 pet_token 하나(거래 불가, 가방이 차면 개인 창고), 정표 5개 → 빛나는 알 world_pet_token_trade(어디서나, 가방 「알로 바꾸기」·물품 정보·별채 › 꼬마 동무 창), 7.7.4 20261104201600), 조건 보상은 world_pet_grant로 바로 도감에(이미 있으면 pet_food 3을 개인 창고로).
 - 별채에 한 마리(world_pet_place), 데리고 다니기(world_pet_walk → 조사원 카드 pet), 별명 8자(world_pet_nickname), 놀기 world_pet_act(pat·play·feed, 먹이 pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음. 칭호·꾸미기 규칙 'home'(world_home_rule_count: open·size·visits·guest·furn·pets·adult·pet_grade, 칭호 12개 분류 '별채', 꾸미기 fr_home·pt_home·sl_dong).
 - 동무 그림 원본은 tools/pet_art/(art*.py → gen.py가 테두리를 둘러 pets.js를 만든다).
 

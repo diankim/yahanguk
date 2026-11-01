@@ -209,6 +209,7 @@ function draw(box, id, inv, prices, mode) {
       <div class="btn-row">
         ${USABLE[id] ? `<button class="btn small primary" data-do="use">${icon('heart', 14)}<span>사용</span></button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small primary" data-do="adopt">${icon('heart', 14)}<span>열기</span></button>` : ''}
+        ${id === 'pet_token' ? `<button class="btn small ${have >= 5 ? 'primary' : ''}" data-do="token" ${have >= 5 ? '' : 'disabled'} title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">${icon('heart', 14)}<span>빛나는 알로 바꾸기</span></button>` : ''}
         ${it?.category === 'furniture' ? `<button class="btn small" data-do="house">${icon('home', 14)}<span>별채에서 놓기</span></button>` : ''}
         ${it && GEAR.has(it.category) && slotOf(it) !== 'craft' && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
@@ -245,6 +246,7 @@ function draw(box, id, inv, prices, mode) {
     const closeInfo = () => box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click();
     if (k === 'use') await useItem(id, d);
     if (k === 'adopt') await guard(d, () => act('world_pet_adopt', { p_item: id }));
+    if (k === 'token') await guard(d, () => act('world_pet_token_trade'));
     if (k === 'house') { closeLayers(); closeModal(); window.yahangGo?.('house'); return; }
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
     if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
