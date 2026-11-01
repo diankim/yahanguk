@@ -2178,6 +2178,48 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .raid-mem.pf-mem li.pick .mem-pick { outline: 2px solid var(--accent); outline-offset: -1px; }
 .gw-wrap .raid-mem.pf-mem .mem-pick:not(:disabled) { cursor: pointer; }
+/* 귀허의 주인 7.7.4: 단계 사다리·이번 라운드 띠·기술 목록·기믹 전용 행동·라운드별 기록 */
+.gw-ladder { list-style: none; margin: 8px 0 4px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.gw-ladder li { display: grid; gap: 1px; padding: 4px 6px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); min-width: 0; }
+.gw-ladder li b { font-size: calc(10px * var(--fz, 1)); }
+.gw-ladder li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gw-ladder li small { font-size: calc(10px * var(--fz, 1)); }
+.gw-ladder li.now { border: 2px solid var(--accent); color: var(--text); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.gw-ladder li.now span { font-weight: 700; color: var(--accent); }
+.gw-ladder li.done { opacity: .5; }
+.gw-band { margin-top: 8px; padding: 8px 10px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); display: grid; gap: 4px; }
+.gw-band.aoe { border: 2px solid var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--surface)); }
+.gw-band.gim { border: 2px solid var(--bad); background: color-mix(in srgb, var(--bad) 8%, var(--surface)); }
+.gw-band-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gw-round { font-weight: 800; font-size: calc(15px * var(--fz, 1)); }
+.gw-band-time { margin-left: auto; font-variant-numeric: tabular-nums; }
+.gw-band .gw-round-bar { margin: 0; }
+.gw-tell { margin: 2px 0; font-size: calc(14px * var(--fz, 1)); line-height: 1.55; font-family: var(--font-serif, inherit); }
+.gw-band.aoe .gw-tell, .gw-band.gim .gw-tell { font-weight: 600; }
+.gw-mine { margin: 0; font-size: calc(12px * var(--fz, 1)); color: var(--muted); display: flex; gap: 4px; align-items: center; }
+.gw-mine b { color: var(--accent); }
+.gw-skills { display: grid; gap: 5px; margin-top: 6px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.gw-skill { display: grid; gap: 2px; text-align: left; padding: 6px 8px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
+.gw-skill.on { border: 2px solid var(--accent); }
+.gw-skill:disabled { opacity: .5; cursor: default; }
+.gw-skill-top { display: flex; gap: 6px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.gw-skill-top small, .gw-skill-desc { color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
+.gw-skill-desc em { font-style: normal; color: var(--bad); }
+.gw-gim { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); border: 2px dashed color-mix(in srgb, var(--bad) 60%, var(--line)); display: grid; gap: 6px; }
+.gw-gim p { margin: 0; }
+.gw-fx { display: flex; flex-wrap: wrap; gap: 3px; }
+.gw-fx i { font-style: normal; font-size: calc(10px * var(--fz, 1)); padding: 0 5px; border-radius: 999px; background: color-mix(in srgb, var(--good, var(--accent)) 16%, var(--surface)); color: var(--text); }
+.raid-log.gw-log li { display: block; padding: 2px 0 2px 8px; border-left: 3px solid transparent; }
+.raid-log.gw-log li.gw-rhead { border: 0; padding: 6px 0 2px; font-weight: 700; color: var(--accent); font-size: calc(12px * var(--fz, 1)); }
+.gw-log li.k-tell span { color: var(--muted); font-style: italic; }
+.gw-log li.k-warn { border-left-color: var(--warn); } .gw-log li.k-warn span { font-weight: 600; }
+.gw-log li.k-phase { border-left-color: var(--accent); } .gw-log li.k-phase span { font-weight: 700; }
+.gw-log li.k-skill { border-left-color: var(--accent); } .gw-log li.k-skill span { color: var(--accent); }
+.gw-log li.k-good span { color: var(--good, #3a9b5a); } .gw-log li.k-bad span, .gw-log li.k-fall span { color: var(--bad); }
+.gw-log li.k-boss { border-left-color: var(--bad); } .gw-log li.k-boss span { font-weight: 600; }
+.gw-log li.k-miss span, .gw-log li.k-guard span { color: var(--muted); }
+.gw-wrap.ended .raid-log.gw-log.full { height: auto; max-height: 70vh; overflow-y: auto; }
+.raid-result-panel { margin-bottom: 10px; }
 @media (max-width: 640px) {
   .pf-wrap .raid-mem.pf-mem { max-height: none; }
   .raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -2701,3 +2743,4 @@ b.shadow { color: var(--sp); }
 .gx-line { margin: 0; font-size: calc(12px * var(--fz, 1)); line-height: 1.55; }
 .gx-line .q-link { display: inline; min-height: 0; padding: 0; font-weight: 600; }
 .gx-line .gx-f { color: var(--text); }
+.gw-wrap.ended .raid-log-box, .gw-wrap.ended .raid-members { grid-column: 1 / -1; }
