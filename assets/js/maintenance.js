@@ -77,3 +77,27 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 window.addEventListener('online', check);
 retry?.addEventListener('click', check);
 check();
+
+// 도움말은 페이지를 넘기지 않고 겹친 창(iframe)으로 연다 — 대기 화면 배경음악(컷씬 곡)이 끊기지 않게.
+// help.html?embed=1 안의 「대기 화면으로」는 이 창을 닫는다(yh-help-close).
+let helpOv = null;
+function closeHelp() { if (!helpOv) return; helpOv.remove(); helpOv = null; document.documentElement.style.overflow = ''; }
+function openHelp() {
+  if (helpOv) return;
+  if (!document.getElementById('help-ov-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'help-ov-style', textContent: `
+.help-ov { position: fixed; inset: 0; z-index: 2147483000; display: grid; grid-template-rows: auto 1fr; background: var(--bg, #0e0c10); }
+.help-ov-bar { display: flex; justify-content: flex-end; padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px 12px; border-bottom: 1px solid var(--line, #333); }
+.help-ov-bar button { min-height: 36px; padding: 0 14px; border-radius: var(--r-sm, 8px); border: 1px solid var(--line, #444); background: var(--surface, #1a171d); color: var(--text, #eee); font: inherit; cursor: pointer; }
+.help-ov iframe { width: 100%; height: 100%; border: 0; background: var(--bg, #0e0c10); }` }));
+  helpOv = document.createElement('div'); helpOv.className = 'help-ov'; helpOv.setAttribute('role', 'dialog'); helpOv.setAttribute('aria-label', '도움말');
+  helpOv.innerHTML = '<div class="help-ov-bar"><button type="button">대기 화면으로 돌아가기</button></div><iframe src="help.html?embed=1" title="도움말"></iframe>';
+  helpOv.querySelector('button').onclick = closeHelp;
+  document.body.append(helpOv); document.documentElement.style.overflow = 'hidden';
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest?.('a[href="help.html"]');
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  e.preventDefault(); openHelp();
+}, true);
+window.addEventListener('message', e => { if (e.origin === location.origin && e.data === 'yh-help-close') closeHelp(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
