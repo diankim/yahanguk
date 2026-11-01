@@ -78,7 +78,9 @@ async function draw(soft) {
     const inv = await load('world_inventory_snapshot');
     const head = $('.view-head .eyebrow', el); if (head) head.innerHTML = `${icon('bag', 14)} 소지금 ${fmt.jeon(store.character.gil)}`;
     // 제작: 안전지대에서는 창고 재료도 쓴다(서버 world_craft_item). 창고 수량은 30초 동안 다시 쓰고, 제작·창고·이동 뒤에는 새로 읽는다.
-    const stg = sub === 'craft' ? await load('world_storage_snapshot', undefined, { maxAge: 30000 }).catch(() => null) : null;
+    // 소지품: 물품마다 창고에 든 수도 작게 보인다(7.7.4, 제보 79 — 밖에서 버릴지 들고 갈지 정할 때). 창고는 어디서나 볼 수 있고, 창고 행동 뒤에만 새로 읽는다(5분 캐시).
+    const stg = sub === 'craft' ? await load('world_storage_snapshot', undefined, { maxAge: 30000 }).catch(() => null)
+      : sub === 'items' ? await load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null) : null;
     await ({ items, equip, craft })[sub](body, inv, stg);
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
@@ -166,7 +168,8 @@ function renderKeep(body, html, sel) {
   return true;
 }
 
-async function items(body, inv) {
+async function items(body, inv, stg) {
+  const stored = Object.fromEntries((stg?.items || []).map(i => [i.item_id, Number(i.qty) || 0]));
   const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap() : Promise.resolve(new Map())]);
   const cmap = catalogMap(inv), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
@@ -193,11 +196,11 @@ async function items(body, inv) {
       // 차지하는 칸(장착한 하나는 칸을 쓰지 않음) · 묶음 크기(제보 23)
       const st = stackOf(id), cells = Math.ceil(Math.max(0, n - (equipped.has(id) ? 1 : 0)) / st);
       const cellTag = part ? (part.eq ? '' : st > 1 ? `한 칸 ${part.q}/${st}` : '') : `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`;
-      const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
+      const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', (!part || part.first) && stored[id] ? `창고 ${fmt.num(stored[id])}` : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
       const showQty = part ? part.q : n, showUse = !!USABLE[id];
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${showUse ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}</li>`; }).join('')}</ul>`

@@ -1101,7 +1101,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .inv-name b { font-size: calc(13px * var(--fz, 1)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inv-name small { display: flex; flex-wrap: wrap; gap: 4px; font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
 .inv-name small i { font-style: normal; } .inv-name small i + i::before { content: '·'; margin-right: 4px; color: var(--line); }
-.inv-name small i.eq { color: var(--gold); } .inv-name small i.lk { color: var(--warn); } .inv-name small i.bad { color: var(--bad); }
+.inv-name small i.eq { color: var(--gold); } .inv-name small i.st { color: var(--accent); } .inv-name small i.lk { color: var(--warn); } .inv-name small i.bad { color: var(--bad); }
 .inv-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .inv-qty { flex: none; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); }
 .inv-qty::before { content: '×'; margin-right: 1px; font-weight: 500; color: var(--muted); }
@@ -2177,7 +2177,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-wrap .raid-buttons.pf-btns { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .raid-wrap .raid-buttons.pf-btns .btn { padding-inline: 4px; }
 /* 귀허의 주인(7.7.3): 같은 칸 배치, 단추 넷, 고른 대상(물품·정화)은 포인트색 테두리 */
-.raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .raid-mem.pf-mem li.pick .mem-pick { outline: 2px solid var(--accent); outline-offset: -1px; }
 .gw-wrap .raid-mem.pf-mem .mem-pick:not(:disabled) { cursor: pointer; }
 /* 귀허의 주인 7.7.4: 단계 사다리·이번 라운드 띠·기술 목록·기믹 전용 행동·라운드별 기록 */
@@ -2228,7 +2228,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-result-panel { margin-bottom: 10px; }
 @media (max-width: 640px) {
   .pf-wrap .raid-mem.pf-mem { max-height: none; }
-  .raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .raid-wrap .raid-buttons.pf-btns { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .pf-wrap .raid-log { height: 140px; }
 }
@@ -2769,4 +2769,42 @@ b.shadow { color: var(--sp); }
   .gw-gim { margin-top: 4px; padding: 4px 6px; gap: 4px; }
   .gw-wrap .raid-mem.pf-mem .mem-sub + .mem-sub { display: none; }
   .gw-wrap.ended .raid-mem.pf-mem { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 귀허의 주인 휴대폰 다듬기(7.7.4 사용자 검토 2): 납작한 단계 사다리, 모래시계와 초 나란히, 긴 낌새 문구는 글자를 줄임,
+   체력·정신·영력은 글자 높이 게이지 안에 숫자, 협동 기술은 늘 펼침(단추 셋 + 기술 줄), 직업은 이름 옆 */
+.gw-ladder { margin: 6px 0 2px; }
+.gw-ladder li { display: flex; align-items: baseline; gap: 5px; padding: 2px 7px; line-height: 1.5; }
+.gw-ladder li b { font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
+.gw-ladder li.now b { color: var(--accent); }
+.gw-band-top { flex-wrap: nowrap; min-width: 0; }
+.gw-band-time { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; flex: none; }
+.gw-band-time b { font-size: calc(14px * var(--fz, 1)); }
+.gw-chosen { white-space: nowrap; flex: none; }
+.gw-tell.l { font-size: calc(13px * var(--fz, 1)); }
+.gw-tell.xl { font-size: calc(12px * var(--fz, 1)); line-height: 1.45; }
+.gw-tell.xxl { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.4; }
+.gw-vits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 6px; }
+.gw-vit { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
+.gw-vit > span { flex: none; }
+.bar.gw-gauge { position: relative; flex: 1; min-width: 0; height: calc(17px * var(--fz, 1)); border-radius: 4px; }
+.bar.gw-gauge > span { position: absolute; inset: 0 auto 0 0; }
+.bar.gw-gauge > b { position: relative; display: block; text-align: right; padding-right: 5px; font-size: calc(11.5px * var(--fz, 1)); line-height: calc(17px * var(--fz, 1)); color: var(--text); font-variant-numeric: tabular-nums; }
+.gw-skills-h { margin: 6px 0 0; display: flex; align-items: center; gap: 5px; font-size: calc(12px * var(--fz, 1)); font-weight: 700; }
+.gw-skills-h small { font-weight: 500; }
+.gw-wrap .mem-top { justify-content: flex-start; }
+.gw-wrap .mem-top .mem-job { font-size: calc(10.5px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.gw-wrap .mem-top .mem-hp { margin-left: auto; }
+.gw-gim > p b { display: inline-flex; align-items: center; gap: 4px; }
+.gw-pick-hint { font-size: calc(11px * var(--fz, 1)); text-align: right; }
+@media (max-width: 640px) {
+  .gw-wrap .raid-act > .panel-head { display: none; }
+  .gw-wrap .raid-boss .panel-body { padding-block: 8px; }
+  .gw-ladder li { padding: 1px 5px; font-size: calc(11px * var(--fz, 1)); }
+  .gw-band { margin-top: 6px; }
+  .gw-vits { gap: 6px; margin-bottom: 4px; }
+  .gw-vit { gap: 3px; font-size: calc(11px * var(--fz, 1)); }
+  .gw-wrap .raid-buttons.pf-btns.gw-btns .btn { min-height: 36px; flex-direction: row; gap: 4px; }
+  .gw-skills-h { margin-top: 4px; }
+  .gw-wrap .raid-members .panel-head { padding-block: 6px; }
 }
