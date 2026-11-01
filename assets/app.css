@@ -1905,6 +1905,11 @@ b.contest { color: var(--warn); font-weight: 600; }
 .guide-sec p { margin: 0 0 8px; }
 .guide-list mark { background: color-mix(in srgb, var(--gold) 35%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
 .guide-sec .guide-table { display: block; overflow-x: auto; }
+.guide-sec { word-break: keep-all; overflow-wrap: break-word; }
+.guide-sec > ul, .guide-sec > ol, .guide-sec > .guide-table { margin-bottom: 10px; }
+.guide-sec > :last-child { margin-bottom: 0; }
+.guide-sec > h4 { margin: 14px 0 6px; } .guide-sec > h4:first-child { margin-top: 0; }
+.guide-sec li > ul { margin-top: 4px; gap: 3px; }
 @media (prefers-reduced-motion: reduce) { .guide-item > summary .ico { transition: none; } }
 
 /* 원정 창의 파티 원정 제안 칸 */

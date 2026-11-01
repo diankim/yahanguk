@@ -165,7 +165,7 @@
 - 숙련 4갈래(combat/gathering/crafting/investigation_rank) = 그 갈래 계열의 최고 단계(trg_world_skill_sync·world_skill_sync). 제작으로 오르는 계열 = world_craft_line_of(제작법 craft_field)(world_event_char_apply).
 - 토벌 행동 기술: world_battle_action이 승리 기록 payload.acts(analysis·guarding·first_aid: 집중·방어·회복품/처치 횟수), world_skill_add가 종류마다 least(3,n)×8.
 - 단계 보상(3·8·13·18·24·30·36·43·50단계): 기본(slot base), 13·30 추가(extra), 24·43 택일(a·b, world_skill_choose, world_skill_picks — 처음 무료, 바꾸기 24단계 2,000·43단계 5,000전), 50 숙달(master). 근접은 13·24·30·43 모두 택일(A 공격 발도·일격·유수검·파천 / B 방패 호령·도발·철갑 강기·사자후, 이목은 world_combat_stats). 봉인술도 13·24·30·43 모두 택일(A 몰아치기 연쇄부·폭렬부·연환부·천뢰부 / B 북돋기·약화 부적 접기·호체부·겹술식·청정결계; 바꾸기 13단계 1,000·24 2,000·30 3,000·43 5,000전). 무료 다시 고르기 world_skill_picks.free_repick(기한 없음, 롤백 때 사라짐). 무기 강화 택일은 근접 단조·원거리 목공·술법 법구 공예 43a.
-- 조합 기술(category combo, requires 두 계열 18단계, 원본 world_skill_catalog): 영맥 판독(분석·채집)·야전 약방(응급 처치·채집)·현장 조제(채집·연금)·바위 몸(막기·채광)·영맥 세공(채광·법구 공예)·짐꾼의 요령(채광·가죽 공예)·그물 짓기(낚시·직조)·갯가 주방(낚시·요리)·낚싯대 깎는 손(낚시·목공)·겹봉인(봉인술·봉인 공예).
+- 조합 기술 12(category combo, requires 두 계열 18단계, 원본 world_skill_catalog): 대장장이 검객·사냥꾼의 눈·영맥 판독(분석·채집)·야전 약방(응급 처치·채집)·현장 조제(채집·연금)·바위 몸(막기·채광)·영맥 세공(채광·법구 공예)·짐꾼의 요령(채광·가죽 공예)·그물 짓기(낚시·직조)·갯가 주방(낚시·요리)·낚싯대 깎는 손(낚시·목공)·겹봉인(봉인술·봉인 공예).
 - 보유 판정 world_skill_has 하나(world_skill_effect·world_combat_stats·world_skill_snapshot 공용). 전투 피해·치명타는 world_combat_stats, 그 밖은 world_skill_effect(상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·조우 −15) → world_status_effect_total. 숙련 효과는 50단계 기준(전투 숙련 공격력 단계마다 +0.6% 등). 기본 기술 효과는 그 계열 분야에서만.
 - 고유 효과: 이름 있는 기술(추가·택일·숙달·조합)은 passive_effect가 비고 행동을 바꾼다. world_skill_procs(uid)가 skill_id 목록을 주고 world_battle_action·world_field_gather·world_craft_item·world_field_search·world_travel_route·world_field_rest·world_weapon_enhance·world_enhance_quote·world_equipment_repair·world_repair_quote·world_rescue_character·world_combat_stats(도발 이목 +60)가 처리. 원정은 world_exp_skill_def(atk·guard·win·loot·find·heal·ward·일지 줄)를 world_exp_skill_fx가 합쳐(상한 전투력 25·피해 30·승률 0.08·채집 30·발견 35·회복 4·침식 35) settle에 보정과 「[기술] …」 줄로. 새 고유 효과를 넣으면 이 함수들과 skill_catalog.description을 함께 고친다.
 - 기술 칭호 32(ct_<계열>_15·35·50, gt_<계열>_25·50, ct_all_50·gt_all_50, 규칙 'skill'·'skill_all'). 함수 주인 역할은 기술표를 못 읽으므로 이름은 world_skill_name. 생성기 supabase/gen750(skills_draft.json(사용자 확정 시안 5, decisions_5) + f_*.sql·m_*.sql → gen.py).
@@ -205,7 +205,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 칭호
 
-- 160개: 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
+- 249개(공개 179): 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
 - 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만, 남의 목록에 안 나옴.
 - 등급 world_title_catalog.grade 1 범품·2 양품·3 진품·4 명품·5 신품(색 회색·초록·파랑·보라 칠·주홍 칠), 어려울수록 높고 효과도 큼(첫 효과 그 등급, 둘째·셋째 한·두 등급 아래). 효과 키: 주는/받는 피해·근접/원거리/술법·치명타·회피·달아나기·방어·이목(world_combat_stats가 world_title_bonus_of로)·회복·침식·정신 손실·조우(world_status_effect_total이 world_title_extra로)·단서·희귀품·채집·제작·이동·낚시.
 - 최대 3개 장착 + 대표 칭호 하나(채팅·프로필). 숨김 칭호는 얻기 전까지 이름·조건을 서버가 감춤.
@@ -219,7 +219,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 가방 용량
 
 - 같은 물품은 묶음(world_item_catalog.stack_size)까지 한 칸: 장비·가구 1 · 탄 100 · 고급 소모품(진품 이상) 20 · 그 밖 재료·소모품·임무 물품 40(사용자 결정). 새 물품도 같은 기준. 희귀도 이름은 칭호 등급과 같음.
-- 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_inv_count·world_bag_room, core.js bagUsed). 기본 24칸, 넓히기: 이야기 장 +3(「아홉 개의 문」·붉은 인장 +5)·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
+- 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_inv_count·world_bag_room, core.js bagUsed). 기본 24칸, 넓히기: 이야기 1장(붉은 인장) +5·2~5장 +3씩·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
 - 완전 답사(+1칸)는 길·채집터를 찾을 때마다 판정(world_survey_award, world_exploration_discoveries·world_gathering_discoveries 삽입 트리거 trg_world_survey_award).
 - 장착 장비는 칸을 안 쓴다: inventory에 남으므로 서버는 장착 수만큼 용량을 더하고(world_bag_limit·world_enforce_bag_capacity·원정 귀환·보따리·직접 거래), core.js bagUsed는 뺀다. 장착 목록은 접속 때와 장착을 바꾸는 행동(장착·해제·원정 귀환·환골탈태·분해, core.js act) 뒤에만 다시 읽는다. 서버에서 가방 자리는 bag_capacity가 아니라 world_bag_limit으로 따진다.
 - 내주는 행동(구매·제작)은 가방이 넘치면 거절, 얻기만 하는 행동(전리품·채집)은 넘친 만큼 버리고 알림. 같은 갱신에서 물품이 줄기도 하면(마지막 한 방의 화살·회복품) world_enforce_bag_capacity가 맞바꾸기로 보고 거절하므로 얻기만 하는 함수는 yh.bag_drop을 켠다(world_battle_action).
