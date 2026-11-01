@@ -1,7 +1,7 @@
 // 지도: 세계 지도(확대·축소·이동, 겹침 없는 이름표) · 세부 탐사 · 이동과 원정.
-import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast, RAID_ON } from '../core.js';
+import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
-import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
+import { buildCells, centroid, factionColor } from '../geo.js';
 import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
 

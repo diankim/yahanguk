@@ -1,6 +1,6 @@
-// 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 가방에 있는 것을 자동으로 챙겨 가서
+// 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 고른 만큼(고르지 않으면 가진 만큼) 챙겨 가서
 // 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
-import { ask, store, on, act, rpc, toast, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
+import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
@@ -273,7 +273,7 @@ export function showResult(r) {
       <p>${items.length ? items.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ') : '없음'}</p>
       ${lost.length ? `<p class="bad small">가방에 자리가 없어 짐 보따리에 담은 것: ${lost.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ')} · 현장의 「정리하기」에서 챙기거나 버리세요.</p>` : ''}
       ${x.full_bonus ? `<p class="hint good">${icon('check', 14)} 끝까지 다녀온 긴 원정 — 경험치·전·숙련 경험 +${x.full_bonus}%</p>` : ''}
-      ${x.full_gear ? `<p class="hint good">${icon('gear', 14)} 원정 끝에 ${esc(nameOf(x.full_gear))}을(를) 챙겼습니다.</p>` : ''}
+      ${x.full_gear ? `<p class="hint good">${icon('gear', 14)} 원정 끝에 ${esc(`${nameOf(x.full_gear)}을(를)`)} 챙겼습니다.</p>` : ''}
       ${x.trail ? `<p class="hint good">${icon('spark', 14)} 비경을 찾았습니다. 3시간 동안 이 지역을 탐색하면 채집량 +50%·희귀품·단서 +10%입니다.</p>` : ''}
       ${x.job_skill?.name ? `<p class="hint">${icon('spark', 14)} 직업 기술 「${esc(x.job_skill.name)}」 ${x.job_skill.count ? `${x.job_skill.count}번 발동` : '발동하지 않음'}</p>` : ''}
       <h3 class="sub-h">원정 기록</h3>

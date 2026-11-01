@@ -4,7 +4,7 @@
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal } from '../core.js';
-import { load, panel, chip, danger, loading, errorBox, invalidate, safeZones, zonesNow } from './common.js';
+import { load, chip, danger, loading, errorBox, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -79,10 +79,8 @@ async function draw() {
     noteRegion(s.region);
     // 지역 첫 방문 글(6.1.1): 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
     if (!traveling) regionIntro(s.region?.region_id);
-    // 다시 그릴 때 스크롤 자리를 지킨다(7.5.9h): 퀘스트 칸·토벌 띠는 따로 읽어 늦게 채우므로, 지난 내용을 그대로 옮겨 두고
-    // 채운 뒤에도 같은 자리로 맞춘다(전에는 그 칸이 잠깐 비어 화면이 짧아지며 위로 튀었다). 토벌에서 돌아올 때는 들어가기 전 자리로.
-    // 토벌에서 돌아올 때(7.7.3, 휴대폰): 들어가기 전 자리가 맨 위(0)여도 그 자리로 — 전에는 0이면 건너뛰어
-    // 결과 창이 기억한 전투 화면 아래쪽 자리로 내려가 있었다. 전투 화면에서 아래로 내려간 만큼도 되돌린다(force).
+    // 다시 그릴 때 스크롤 자리를 지킨다(7.5.9h): 퀘스트 칸·토벌 띠는 늦게 채우므로 지난 내용을 옮겨 두고 채운 뒤에도 같은 자리로.
+    // 토벌에서 돌아올 때(7.7.3)는 들어가기 전 자리로 — 맨 위(0)여도, 전투 화면에서 내려가 있었어도 되돌린다(force).
     const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;

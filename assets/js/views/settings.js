@@ -1,5 +1,5 @@
 // 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
-import { ask, db, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
+import { ask, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
 import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile, FONT_SIZES, savedFontSize, applyFontSize } from '../settings.js';
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES, ALARMS, alarmOn, setAlarm, playAlarm } from '../sound.js';
 import { load, panel } from './common.js';
@@ -30,7 +30,7 @@ const NOTIFY_GROUPS = [
 ];
 let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
-// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다(7.4.0 — 이름과 게이지가 한 줄 양 끝에 떨어져 보기 어렵던 것)
+// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다(7.4.0)
 const sndBlock = (k, name, desc, v, sw) => `<div class="snd-block">
   <div class="snd-head"><span><b>${name}</b><small>${desc}</small></span>${sw ? `<label class="snd-on"><input type="checkbox" data-sw="${sw}" ${sound[sw] ? 'checked' : ''}><span>켜기</span></label>` : ''}</div>
   <div class="snd-range"><input type="range" data-vol="${k}" min="0" max="1" step="0.05" value="${v}" aria-label="${name} 음량"><output data-vol-out="${k}">${Math.round(v * 100)}%</output></div></div>`;

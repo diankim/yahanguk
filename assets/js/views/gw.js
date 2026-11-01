@@ -1,17 +1,16 @@
 // 외전 최종 보스 「귀허의 주인」: 라운드 전투(보통 5초 · 수법 10초). 판정은 모두 서버(world_gw_*)가 하고,
 // 화면은 실시간 구독 없이 world_gw_snapshot을 읽는다. 다시 읽는 때: 라운드 마감 직후 한 번 · 내가 고른 뒤 다른 사람을 기다리는 동안 2초마다 · 모이는 중 3초마다.
 // 서버가 라운드를 읽는 순간에 풀어내므로(마감이 지났거나 모두 골랐을 때) 따로 도는 예약 작업이 없다.
-// 7.7.4: 행동은 공격·방어·버티기와 협동 기술(늘 펼쳐 둠), 기믹 전용(이름 부르기·사슬 끊기). 물품은 쓰지 않는다.
+// 7.7.4: 행동은 공격·방어·버티기와 협동 기술(늘 펼쳐 둠), 수법 전용(이름 부르기·사슬 끊기), 물품(한 싸움 두 개).
 //        라운드 띠(단계 사다리·이번 라운드의 낌새 문구), 끝난 싸움은 라운드별 기록 전체를 펼쳐 되짚어 본다.
 import { rpc, store, emit, esc, icon, fmt, $, $$, toast, nameOf, JOBS, loadCharacter, spOf, openLayer } from '../core.js';
 import { loading, errorBox, chip, itemDesc, load } from './common.js';
-import { fxChips, FX_NAME, fxKeys, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups } from './fightui.js';
+import { fxChips, fxKeys, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups } from './fightui.js';
 import { mountMeter } from './meter.js';
 
 const PHASE = { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' };
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
 const COLOR = { 청: 'c-blue', 적: 'c-red', 황: 'c-yellow', 백: 'c-white' };
-// 이로운 기운(서버 world_gw_members.fx 키)·주인에게 걸린 것(bfx 키) — 이름·아이콘·설명은 fightui.js(봉연과 같은 표)
 const KIND = { tell: 'k-tell', warn: 'k-warn', phase: 'k-phase', skill: 'k-skill', atk: 'k-out', hit: 'k-in', fall: 'k-fall', good: 'k-good', bad: 'k-bad', miss: 'k-miss', guard: 'k-guard', boss: 'k-boss' };
 
 let el = null, fid = null, snap = null, timer = null, tick = null, skew = 0, sending = false, target = null, sel = null, itemLayer = null;

@@ -32,7 +32,7 @@ async function draw(box, id) {
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
     // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(7.7.4b, 서버 world_yohwa_public — 1·2단계는 본인만)
     const yoChip = c.yohwa === 'frenzy' ? chip('요괴화', 'bad') : c.yohwa === '3' ? chip('반요 · 요화 3단계', 'warn') : '';
-    const rel = c.relation || 'none', safe = !!(store.snaps?.['world_field_snapshotnull'] || store.snaps?.world_field_snapshot)?.region?.safe;
+    const rel = c.relation || 'none';
     // 파티 초대: 상대가 파티가 없고, 내가 파티장이거나 아직 파티가 없을 때(없으면 만들고 초대)
     // 비무: 같은 곳(안전지대 포함)이면 신청할 수 있다. 못 하면 단추를 숨기지 않고 까닭을 적는다(서버 world_spar_challenge가 다시 검사)
     const me = store.character || {};

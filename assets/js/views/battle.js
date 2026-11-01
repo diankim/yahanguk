@@ -1,23 +1,10 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
 // 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
-import { store, act, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, closeModal, spOf } from '../core.js';
+import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, spOf } from '../core.js';
 import { chip } from './common.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '백공 기술관', medic: '의무관', artificer: '호위 무사' };
-export const MECH = {
-  aerial: ['비행', '날아올랐다가 내리꽂힙니다. 원거리가 잘 맞고, 공중에 있을 때 근접은 거의 닿지 않습니다.'],
-  armored: ['갑각', '단단한 껍질이 있습니다. 술법이 잘 통하고, 껍질을 굳히면 무기 공격이 막힙니다.'],
-  spectral: ['영체', '형체가 흐릿합니다. 술법에 약하고 근접은 잘 통하지 않습니다. 곡성으로 정신을 깎습니다.'],
-  warded: ['결계', '결계를 둘러 피해를 삼킵니다. 술법은 결계를 두 배로 깎습니다.'],
-  reflect: ['반사', '거울막으로 다음 술법 피해의 일부를 되돌립니다. 한 턴 방어하면 거울막이 사라집니다.'],
-  swarm: ['무리', '무리를 불러 회복하고 다음 공격이 강해집니다. 근접 공격이 잘 통합니다.'],
-  toxic: ['독성', '독을 뿜어 중독시킵니다. 거리를 두는 원거리가 유리합니다.'],
-  tide: ['수계', '물살로 몸을 식혀 한기를 남깁니다. 술법이 조금 더 잘 통합니다.'],
-  ambush: ['매복', '숨었다가 크게 덮칩니다. 숨어들면 방어를 준비하세요.'],
-  boss: ['우두머리', '기를 모았다가 폭발시킵니다. 기를 모으면 방어하거나 봉인술로 끊으세요.'],
-  seal_breaker: ['봉인 파괴', '봉인을 깨뜨려 침식을 일으킵니다. 근접 공격이 조금 더 잘 통합니다.'],
-};
 export const INTENT = {
   strike: ['공격', '평범한 공격입니다.', 0], heavy: ['강타 준비', '큰 피해가 옵니다. 방어하면 4분의 1로 줄이고, 근접 무기면 받아칩니다.', 2],
   soar: ['날아오름', '하늘로 솟구칩니다. 다음 턴에 급강하합니다.', 1], dive: ['급강하', '높은 곳에서 내리꽂습니다. 방어하세요.', 2],
@@ -58,7 +45,7 @@ export function effectiveness(style, eff) {
 let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 
 // box: 그릴 곳, snap: world_field_snapshot, done: 전투가 끝나면 부를 함수
-// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(7.7.3 — 행동 칸 여섯째로 옮김, 전에는 전투 위 안내 띠라 눈에 덜 띄었다)
+// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(7.7.3, 행동 칸 여섯째)
 let callOpt = null;
 export function renderBattle(box, snap, done, opts) {
   host = box; data = snap; onEnd = done; callOpt = opts?.call ? opts : null;
@@ -156,7 +143,7 @@ function tickCooldown() {
 }
 
 let busy = false;
-// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다(7.5.9, 사용자 요청 — 전에는 기록 한 줄로만 지나가 몰랐다).
+// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다(7.5.9).
 // 서버(world_battle_action)가 남기는 기록 문구로 알아보고, 같은 알림은 5초에 한 번만
 const WEAK = [[/쏠 것이 떨어져/, '화살(탄)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
 const weakAt = {};

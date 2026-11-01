@@ -3,7 +3,7 @@ import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { openWhisper } from '../chat.js';
 import { loadCircles, circlesPanelHtml, bindCirclesPanel } from '../circles.js';
-import { loadBond, bondPanelHtml, bindBondPanel, tokenSvg } from '../bond.js';
+import { loadBond, bondPanelHtml, bindBondPanel } from '../bond.js';
 import { loadLetters, lettersPanelHtml, bindLettersPanel, openCompose } from '../letters.js';
 
 const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };

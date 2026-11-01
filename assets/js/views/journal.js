@@ -300,7 +300,7 @@ async function openUcommPost(here, feePct) {
         <label class="field"><span>수량</span><input type="number" id="uc-qty" min="1" max="999" value="1" inputmode="numeric"></label>
         <label class="field"><span>보수(전)</span><input type="number" id="uc-reward" min="10" value="" inputmode="numeric"></label>
       </div>
-      <p class="muted small" id="uc-hint">보수는 지금 바로 게시판에 맡기고, 3일 안에 아무도 맡지 않으면 돌려받습니다. 수행한 사람은 보수의 ${100 - feePct}%를 받고 ${feePct}%는 등록처 ${esc(here.region || '')}${here.faction ? `(${esc(here.faction)})` : ''}이(가) 수수료로 뗍니다.</p>
+      <p class="muted small" id="uc-hint">보수는 지금 바로 게시판에 맡기고, 3일 안에 아무도 맡지 않으면 돌려받습니다. 수행한 사람은 보수의 ${100 - feePct}%를 받고 ${feePct}%는 등록처 ${esc(`${here.region || ''}${here.faction ? `(${here.faction})` : ''}이(가)`)} 수수료로 뗍니다.</p>
       <div class="modal-actions"><button class="btn primary" id="uc-go" disabled>${icon('check', 15)}<span>등록</span></button></div>
     </div>`;
   const list = $('#uc-items', box), qtyI = $('#uc-qty', box), rewI = $('#uc-reward', box), go = $('#uc-go', box), picked = $('#uc-picked', box);
