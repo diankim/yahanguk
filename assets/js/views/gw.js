@@ -102,7 +102,8 @@ function draw() {
 function actHtml(s, me) {
   const f = s.fight, mech = f.mech || {}, a = s.my_act;
   if (me.out) return `<section class="panel raid-act"><div class="panel-body"><p class="hint warn">${icon('hourglass', 14)} 물러나 있습니다 · ${me.out}라운드 뒤 체력 30으로 돌아옵니다.</p></div></section>`;
-  const items = ITEMS.filter(k => Number(s.items?.[k]) > 0);
+  // 우수품도 함께(7.7.1, 서버 world_gw_snapshot.items가 _hq 수도 내준다)
+  const items = ITEMS.flatMap(k => [k, `${k}_hq`]).filter(k => Number(s.items?.[k]) > 0);
   const tName = (s.members || []).find(m => m.id === (target || s.me))?.name || '나';
   const on = k => a?.a === k ? 'on' : '';
   return `<section class="panel raid-act"><header class="panel-head"><h2>${icon('sword', 16)} 이번 라운드</h2><small class="muted">${a ? '골랐습니다 · 마감 전에는 바꿀 수 있습니다' : '고르지 않으면 방어합니다'}</small></header><div class="panel-body">

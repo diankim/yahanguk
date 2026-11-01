@@ -2,7 +2,7 @@
 // 실시간 구독 없이 world_pfight_snapshot을 읽는다. 다시 읽는 때: 라운드 마감 직후 한 번 · 내가 고른 뒤 다른 사람을 기다리는 동안 2초마다 · 모이는 중 3초마다.
 import { rpc, emit, esc, icon, fmt, $, $$, toast, nameOf, loadCharacter, store, bar, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
-import { INTENT, SKILL, JOB, ITEMS, weakNote } from './battle.js';
+import { INTENT, SKILL, JOB, trayList, weakNote } from './battle.js';
 
 const ACT = { attack: '공격', skill: '기술', guard: '방어', item: '물품', flee: '달아나기' };
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
@@ -104,7 +104,7 @@ function actHtml(s, b, c) {
       <button class="btn ${on('item')}" data-pf-tray>${icon('plus', 16)}<span>물품${a === 'item' && s.me?.item ? ` · ${esc(nameOf(s.me.item))}` : ''}</span></button>
       <button class="btn ghost ${on('flee')}" data-pf="flee">${icon('back', 16)}<span>달아나기</span></button>
     </div>
-    <div class="item-tray" ${tray ? '' : 'hidden'}>${ITEMS.filter(([k]) => inv[k] > 0).map(([k, d]) => `<button class="btn small" data-pf-item="${k}">${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('') || '<p class="muted small">전투에 쓸 물품이 없습니다.</p>'}</div>
+    <div class="item-tray" ${tray ? '' : 'hidden'}>${trayList(inv).map(([k, d]) => `<button class="btn small" data-pf-item="${k}">${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('') || '<p class="muted small">전투에 쓸 물품이 없습니다.</p>'}</div>
     <p class="muted small">${esc(skill[0])}: ${esc(skill[1])} 달아나면 이 싸움에서 빠집니다.</p>
   </div></section>`;
 }

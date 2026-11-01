@@ -23,6 +23,10 @@ const FAV_MAX = 30;
 // 별 하나(빈 별 = 즐겨찾기 아님, 채운 별 = 즐겨찾기). 공용 아이콘의 별은 선만 그려 꽃처럼 보여 따로 그린다(7.4.2)
 const STAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
 let favs = null;
+// 한 번에 여러 개 만들기(7.7.1, 사용자 요청): 제작법마다 고른 횟수(이 접속 동안). 서버 world_craft_batch가 한 요청으로 차례로 만든다
+const CRAFT_MAX = 50; // 서버 world_craft_batch 상한과 같다
+const craftN = new Map();
+const craftLabel = n => n > 1 ? `제작 ×${n}` : '제작';
 const loadFavs = () => favs ? Promise.resolve(favs) : rpc('world_craft_favs').then(r => (favs = new Set(r || []))).catch(() => (favs = new Set()));
 const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', craft: '제작 공구', consumable: '소모품', material: '재료', furniture: '가구', etc: '기타' };
 // 정렬: 기본(단계) · 획득순 · 이름순 · 희귀도순, 각각 정순·역순. 고른 정렬은 이 기기에 기억한다.
@@ -194,7 +198,8 @@ async function items(body, inv) {
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
-        ${showUse ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}</li>`; }).join('')}</ul>`
+        ${showUse ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
+        ${it?.category === 'pet' && (!part || part.first) ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
@@ -293,7 +298,9 @@ async function craft(body, inv, stg) {
       r.required_skill && [`${nameOf(r.required_skill)} 기술 ${r.required_skill_rank}단계${skOk ? '' : ` (지금 ${skRank}단계)`}`, skOk],
     ].filter(Boolean);
     const can = !lacks.length && toolOk && jobOk && lvOk && skOk;
-    return { r, lacks, toolOk, jobOk, lvOk, reqs, can, atLoc: atPlace(r.location, c.location), kind: kindOf(r), tier: cmap.get(r.output)?.tier };
+    // 재료로 만들 수 있는 최대 횟수(가방·창고·우수품 합). 가방 자리는 서버가 한 번씩 보며 모자라면 거기서 멈춘다
+    const maxN = Math.min(CRAFT_MAX, ...Object.entries(r.ingredients || {}).map(([k, n]) => Math.floor(Number(have[k] || 0) / Math.max(1, n))));
+    return { r, lacks, toolOk, jobOk, lvOk, reqs, can, maxN: can ? Math.max(1, maxN) : 0, atLoc: atPlace(r.location, c.location), kind: kindOf(r), tier: cmap.get(r.output)?.tier };
   // 검색: 제작법 이름·완성품 이름으로만 찾는다(7.6.2, 사용자 요청 — 재료까지 찾으면 「응축 영핵」을 쳤을 때 그것이 들어가는 제작법이 섞였다.
   // 재료로 쓰는 곳은 물품 정보 창의 「들어가는 제작법」이 맡는다). 검색하는 동안에는 위 거르기와 상관없이 모든 제작법에서 찾는다.
   }).filter(x => { const t = cq.trim().toLowerCase(); if (!t) return true;
@@ -312,7 +319,7 @@ async function craft(body, inv, stg) {
     ${craftFilterBox(inv, kindCount)}
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
-    ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, atLoc, kind, tier }) => `
+    ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, maxN, atLoc, kind, tier }) => `
       <article class="recipe ${can ? 'can' : ''}">
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); /* 소모품 효과도 같은 자리에(7.6.3b) */ return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
@@ -320,7 +327,16 @@ async function craft(body, inv, stg) {
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}</p>
-        <button class="btn small ${can ? 'primary' : ''}" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? '제작' : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
+        <div class="craft-act">
+          ${can ? (() => { const n = Math.min(maxN, Math.max(1, craftN.get(r.id) || 1)); return `<div class="craft-qty" data-cq="${esc(r.id)}" data-max="${maxN}">
+            <button type="button" class="btn small ghost" data-cq-do="reset">초기화</button>
+            <button type="button" class="btn small cq-step" data-cq-do="dec" aria-label="하나 덜">−</button>
+            <input type="number" class="cq-n" inputmode="numeric" min="1" max="${maxN}" value="${n}" aria-label="만들 횟수 (최대 ${maxN})">
+            <button type="button" class="btn small cq-step" data-cq-do="inc" aria-label="하나 더">+</button>
+            <button type="button" class="btn small ghost" data-cq-do="all" title="재료로 만들 수 있는 만큼 (${maxN}번${maxN >= CRAFT_MAX ? `, 한 번에 ${CRAFT_MAX}번까지` : ''})">전부</button>
+          </div>`; })() : ''}
+          <button class="btn small ${can ? 'primary' : ''} craft-go" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? craftLabel(Math.min(maxN, Math.max(1, craftN.get(r.id) || 1))) : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
+        </div>
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`, 'label.search');
   // 거르기·정렬을 바꾸면 목록을 다시 그리는데, 누른 칸이 화면의 같은 높이에 남게 한다(7.6.1, 사용자 제보 — 체크할 때마다 화면이 내려갔다)
@@ -339,7 +355,22 @@ async function craft(body, inv, stg) {
   $('#craft-unfocus', body)?.addEventListener('click', () => { matFocus = recipeFocus = null; craft(body, inv, stg); });
   // 제작법 이름·만드는 물품·재료·도구 이름을 누르면 물품 정보 창을 띄운다
   $$('.recipe [data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
-  $$('[data-craft]', body).forEach(b => b.onclick = () => guard(b, () => act('world_craft_item', { p_recipe_id: b.dataset.craft })));
+  // 횟수 칸: 다시 그리지 않고 그 칸과 제작 단추 글만 고친다
+  $$('.craft-qty', body).forEach(box => {
+    const id = box.dataset.cq, max = Number(box.dataset.max) || 1, inp = $('.cq-n', box);
+    const go = box.closest('.recipe')?.querySelector('[data-craft]');
+    const set = v => { const n = Math.min(max, Math.max(1, Math.floor(Number(v)) || 1)); craftN.set(id, n); inp.value = n; if (go) go.querySelector('span').textContent = craftLabel(n); };
+    box.onclick = e => { const d = e.target.closest('[data-cq-do]')?.dataset.cqDo; if (!d) return;
+      set(d === 'reset' ? 1 : d === 'all' ? max : (Number(inp.value) || 1) + (d === 'inc' ? 1 : -1)); };
+    inp.onchange = () => set(inp.value);
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); set(inp.value); inp.blur(); } };
+  });
+  $$('[data-craft]', body).forEach(b => b.onclick = () => {
+    const id = b.dataset.craft, max = Number(b.closest('.recipe')?.querySelector('.craft-qty')?.dataset.max) || 1;
+    const n = Math.min(max, Math.max(1, craftN.get(id) || 1));
+    craftN.delete(id); // 만든 뒤에는 1로 돌아간다
+    return guard(b, () => n > 1 ? act('world_craft_batch', { p_recipe_id: id, p_times: n }) : act('world_craft_item', { p_recipe_id: id }));
+  });
   $$('[data-fav]', body).forEach(b => b.onclick = () => guard(b, async () => {
     try { const r = await rpc('world_craft_fav_toggle', { p_recipe: b.dataset.fav }); favs = new Set(r?.favs || []); craft(body, inv, stg); }
     catch (e) { toast(friendlyError(e), 'error'); }
@@ -348,5 +379,7 @@ async function craft(body, inv, stg) {
 
 function bindActions(body) {
   $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b));
+  // 꼬마 동무 바구니·알: 물품 창에만 「열기」가 있어 가방 목록에서는 단추가 없던 것(7.7.1)
+  $$('[data-adopt]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_adopt', { p_item: b.dataset.adopt })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_equip_item', { p_item_id: b.dataset.equip })));
 }

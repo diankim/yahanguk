@@ -2610,3 +2610,16 @@ b.shadow { color: var(--sp); }
 .craft-filt .cf-foot { grid-template-columns: 1fr auto; align-items: center; }
 .craft-filt .cf-foot .craft-sort { margin-left: 0; }
 @media (max-width: 640px) { .craft-filt .cf-row { grid-template-columns: 1fr; gap: 2px; } .craft-filt .cf-h { padding-top: 0; } .craft-filt .cf-foot { grid-template-columns: 1fr; } }
+
+/* 제작 횟수(7.7.1, 사용자 요청): 예전 제작 단추 자리에 [초기화] − n + [전부], 제작 단추는 카드 오른쪽 아래 */
+.recipe .craft-act { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.recipe .craft-act .craft-go { margin-left: auto; }
+.recipe .craft-qty { display: flex; align-items: center; gap: 4px; }
+.recipe .craft-qty .btn { padding-inline: 8px; }
+.recipe .craft-qty .cq-step { min-width: 32px; padding-inline: 0; font-size: calc(16px * var(--fz, 1)); line-height: 1; }
+.recipe .craft-qty .cq-n { width: 3.4em; height: 32px; min-height: 32px; text-align: center; padding: 0 4px; -moz-appearance: textfield; }
+.recipe .craft-qty .cq-n::-webkit-outer-spin-button, .recipe .craft-qty .cq-n::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+@media (max-width: 640px) {
+  .recipe .craft-qty { flex: 1 1 100%; }
+  .recipe .craft-qty .cq-n { flex: 0 0 3.4em; }
+}
