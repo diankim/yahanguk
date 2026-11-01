@@ -2623,18 +2623,18 @@ b.shadow { color: var(--sp); }
 @media (max-width: 640px) { .craft-filt .cf-row { grid-template-columns: 1fr; gap: 2px; } .craft-filt .cf-h { padding-top: 0; } .craft-filt .cf-foot { grid-template-columns: 1fr; } }
 
 /* 제작 횟수(7.7.1, 사용자 요청): 예전 제작 단추 자리에 [초기화] − n + [전부], 제작 단추는 카드 오른쪽 아래.
-   7.7.3(사용자 요청): PC·휴대폰 모두 한 줄에 나란히 — 횟수 단추들은 작게, 제작 단추가 남는 폭을 다 써서 가장 크게 */
+   7.7.3(사용자 요청): PC·휴대폰 모두 한 줄에 나란히 — 횟수 단추들은 작게, 제작 단추는 가장 크게(높이 36px) 오른쪽 끝에, 남는 폭은 가운데 여백 */
 .recipe .craft-act { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; }
 .recipe .craft-qty { display: flex; align-items: center; gap: 2px; flex: none; min-width: 0; }
 .recipe .craft-qty .btn { height: 28px; min-height: 28px; padding: 0 4px; white-space: nowrap; flex: none; font-size: calc(11.5px * var(--fz, 1)); }
 .recipe .craft-qty .cq-step { min-width: 22px; padding: 0; font-size: calc(14px * var(--fz, 1)); line-height: 1; }
 .recipe .craft-qty input.cq-n { width: 2.4em; flex: none; height: 28px; min-height: 28px; text-align: center; padding: 0 2px; font-size: calc(13px * var(--fz, 1)); -moz-appearance: textfield; }
 .recipe .craft-qty .cq-n::-webkit-outer-spin-button, .recipe .craft-qty .cq-n::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.recipe .craft-act .craft-go { flex: 1 1 auto; margin-left: auto; min-width: 0; height: 36px; min-height: 36px; padding: 0 6px; gap: 4px; justify-content: center; white-space: nowrap; font-weight: 700; font-size: calc(14px * var(--fz, 1)); }
+.recipe .craft-act .craft-go { flex: 0 1 auto; margin-left: auto; min-width: 0; height: 36px; min-height: 36px; padding: 0 14px; gap: 4px; justify-content: center; white-space: nowrap; font-weight: 700; font-size: calc(14px * var(--fz, 1)); }
 @media (hover: none) and (pointer: coarse) { .recipe .craft-qty input.cq-n { font-size: 16px; } }
 /* 좁은 카드(PC 세 칸 격자 등)에서는 제작 단추의 망치 아이콘을 빼 「제작 ×12」까지 한 줄에 들어가게 */
 .recipe:has(.craft-act) { container-type: inline-size; }
-@container (max-width: 300px) { .recipe .craft-act .craft-go svg { display: none; } }
+@container (max-width: 300px) { .recipe .craft-act .craft-go { padding: 0 8px; } .recipe .craft-act .craft-go svg { display: none; } }
 
 /* 조사원 의뢰(7.7.2, journal.js userCommissions·openUcommPost) */
 .ucomm { display: grid; gap: 8px; margin-top: 16px; }
