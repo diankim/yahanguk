@@ -802,6 +802,27 @@ export const PETS = {
       step: ["...........k...k..", "..........khkkkhk.", "..........khaaahk.", ".........kaaaaaaak", "........kfaieaieak", ".......kffaeeaeeak", "..k....kffpacncapk", ".kok..kffaaacccawk", "krorkkffaaaccccwk.", ".krokkfaaaccccck..", ".kraffaaabccccak..", "..krfkaabbccccaak.", "..krkkabkaaccakk..", "..krabbakaakkaak..", "..kbbkkbbbk.kbbbk.", "...kk..kkk...kkk.."],
       sleep: ["...........k...k..", "..........khkkkhk.", "..........khaaahk.", ".........kaaaaaaak", "........kfakkakkak", "....k..kffpacncapk", "...kokkffaaacccawk", "..krorkfaaaccccwk.", ".kraffaaaacccccck.", ".krfkaaabbbccccaak", "..krabbaaaaaaaaak.", "...kkkkkkkkkkkkk.."]
     }
+  },
+  little_hawk: {
+    name: "꼬마 매",
+    grade: 2,
+    kind: "bird",
+    desc: "날카로운 눈매와 검은 뺨줄을 가진 어린 송골매입니다. 팔뚝에 앉혀 두면 사냥감이 지나는 쪽을 먼저 쳐다봅니다.",
+    likes: "treat_meat",
+    baby: {
+      pal: { a: "#55606e", b: "#3a424e", m: "#1e2228", w: "#f2ead8", s: "#8a7a62", y: "#e8b830", n: "#2a2e36", e: "#0c0806", i: "#ffffff", k: "#1a120e" },
+      idle: [".....kkkk...", "....kaaaak..", "...kaaaaaak.", "...kaieaaayk", "...kaeeaaynk", "...kamaaaknk", "..kbmwwwwkk.", ".kbbwwswwk..", "kbbbwwwswk..", ".kbkkykkyk..", "..k..k..k..."],
+      blink: [".....kkkk...", "....kaaaak..", "...kaaaaaak.", "...kaaaaaayk", "...kakkaaynk", "...kamaaaknk", "..kbmwwwwkk.", ".kbbwwswwk..", "kbbbwwwswk..", ".kbkkykkyk..", "..k..k..k..."],
+      step: [".....kkkk...", "....kaaaak..", "...kaaaaaak.", "...kaieaaayk", "...kaeeaaynk", "...kamaaaknk", "..kbmwwwwkk.", ".kbbwwswwk..", "kbbbwwwswk..", ".kbkkkykyk..", "..k...k.k..."],
+      sleep: [".....kkkk...", "....kaaaak..", "...kaaaaaak.", "...kakkaaayk", "...kamaaaynk", "..kbmwwwwknk", ".kbbwwswwkk.", "kbbbwwwswk..", ".kkkkkkkk..."]
+    },
+    adult: {
+      pal: { a: "#55606e", b: "#3a424e", m: "#1e2228", w: "#f2ead8", s: "#8a7a62", y: "#e8b830", n: "#2a2e36", e: "#0c0806", i: "#ffffff", k: "#1a120e" },
+      idle: ["........kkkk....", ".......kaaaak...", "......kaaaaaak..", ".....kaaieaaayk.", ".....kaaeeaayynk", ".....kamaaaaknnk", ".....kmmwwwwkkk.", "....kbbwswswk...", "...kbbbwwswsk...", "..kbbbbwswswk...", ".kbbbbbbwwswk...", "kbbbbbbbbwwwk...", "kbbkkbbkkykyk...", ".kk..kkkyykyyk..", "........kk.kk..."],
+      blink: ["........kkkk....", ".......kaaaak...", "......kaaaaaak..", ".....kaaaaaaayk.", ".....kaakkaayynk", ".....kamaaaaknnk", ".....kmmwwwwkkk.", "....kbbwswswk...", "...kbbbwwswsk...", "..kbbbbwswswk...", ".kbbbbbbwwswk...", "kbbbbbbbbwwwk...", "kbbkkbbkkykyk...", ".kk..kkkyykyyk..", "........kk.kk..."],
+      step: ["........kkkk....", ".......kaaaak...", "......kaaaaaak..", ".....kaaieaaayk.", ".....kaaeeaayynk", ".....kamaaaaknnk", ".....kmmwwwwkkk.", "....kbbwswswk...", "...kbbbwwswsk...", "..kbbbbwswswk...", ".kbbbbbbwwswk...", "kbbbbbbbbwwwk...", "kbbkkbbkkkykyk..", ".kk..kk.kyykyyk.", ".........kk.kk.."],
+      sleep: ["........kkkk....", ".......kaaaak...", "......kaaaaaak..", ".....kaakkaaayk.", ".....kamaaaayynk", ".....kmmwwwwknnk", "....kbbwswswkkk.", "...kbbbwwswsk...", "..kbbbbwswswk...", ".kbbbbbbwwswk...", "kbbbbbbbbwwwk...", ".kkkkkkkkkkk...."]
+    }
   }
 };
 
