@@ -85,10 +85,11 @@ function draw() {
       </div></section>
       ${s.status === 'fight' && me && !me.out ? actHtml(s, b, c) : ''}
       <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2></header><div class="panel-body">
-        <ul class="raid-mem">${(s.members || []).map(m => `<li class="${m.id === c.owner_id ? 'me' : ''} ${m.id === s.target_id ? 'tgt' : ''} ${m.out ? 'out' : ''}">
-          <div class="mem-pick"><b>${esc(m.name)}</b><small>${esc(JOB[m.job] || nameOf(m.job))}${m.out ? ` · ${OUT[m.out] || m.out}` : s.status === 'fight' ? (m.chosen ? ' · 골랐음' : ' · 고르는 중') : ''}</small></div>
-          <div class="bar ${m.health < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.health))}%"></span></div>
-          <small class="mem-num">체력 ${m.health} · 정신 ${m.mental} · 영력·기력 ${m.sp}</small></li>`).join('')}</ul>
+        <ul class="raid-mem pf-mem">${(s.members || []).map(m => `<li class="${m.id === c.owner_id ? 'me' : ''} ${m.id === s.target_id ? 'tgt' : ''} ${m.out ? 'out' : ''}">
+          <div class="mem-pick" title="${esc(`${m.name} · ${JOB[m.job] || nameOf(m.job)}`)}"><span class="mem-top"><b>${esc(m.name)}</b><small>${m.health}</small></span>
+          <span class="bar ${m.health < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.health))}%"></span></span>
+          <small class="mem-sub">${esc(JOB[m.job] || nameOf(m.job))}${m.out ? ` · ${OUT[m.out] || m.out}` : s.status === 'fight' ? (m.chosen ? ' · 골랐음' : ' · 고르는 중') : ''}</small>
+          <small class="mem-sub">정신 ${m.mental} · 영력·기력 ${m.sp}</small></div></li>`).join('')}</ul>
         <p class="muted small">요괴는 이목이 높은 이를 더 자주 노립니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
         <ol class="raid-log">${(s.log || []).map(l => `<li class="no-time${/^—/.test(l) ? ' k-round' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>

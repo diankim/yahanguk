@@ -188,7 +188,7 @@
 
 - 현장 토벌 중 world_pfight_call(동료 부르기) → 같은 곳 파티원에게 pfight_invite 알림 60초 → world_pfight_join(탐색력 1, 요괴 체력 +70%×기준 체력, 4명까지) → world_pfight_start 또는 모집 마감.
 - 10초 라운드: 참가자마다 행동 하나(world_pfight_act: attack·skill·guard·item·flee, 안 고르면 방어), 모두 고르거나 마감이 지나면 world_pfight_snapshot·act를 부른 쪽이 푼다(예약 작업 없음). 풀 때는 world_battle_action을 참가자마다 그 사람의 JWT sub로 부르고(yh.pf_resolve로 1초 간격 건너뜀), 요괴는 이목^1.3으로 고른 한 명에게만 반격한다(나머지는 yh.pf_skip). 파티 토벌 중에는 world_battle_action을 직접 못 부른다.
-- 보상은 혼자 토벌과 같고(전리품도 각자 굴림, 파티 분배 풀은 쓰지 않음) 경험치 +10%/명(3명까지). 화면 views/pfight.js(#/pfight/<id>).
+- 보상은 혼자 토벌과 같고(전리품도 각자 굴림, 파티 분배 풀은 쓰지 않음) 경험치 +10%/명(3명까지). 화면 views/pfight.js(#/pfight/<id>) — 함께 선 이는 봉연 토벌처럼 칸 격자(.raid-mem.pf-mem: PC 네 칸·휴대폰 두 칸, 이름·체력 막대·직업·상태·정신·영력, 7.7.3 사용자 요청).
 
 ### 전투불능과 구조
 
