@@ -2183,7 +2183,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-mem.pf-mem { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
 .raid-mem.pf-mem li { padding: 0; border: 0; display: block; min-width: 0; }
 .raid-mem.pf-mem li.tgt { box-shadow: none; }
-.raid-mem.pf-mem .mem-pick { cursor: default; }
+.raid-mem.pf-mem .mem-pick { cursor: pointer; }
 @media (max-width: 640px) { .raid-mem.pf-mem { grid-template-columns: repeat(2, minmax(0, 1fr)); } .raid-mem.pf-mem .mem-sub { display: block; } }
 /* 파티 토벌 속도순 차례(7.7.3): 봉연 토벌 칸 배치(.raid-wrap)를 그대로 쓰고 차례 표시만 더한다 */
 .pf-wrap .raid-mem.pf-mem { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }

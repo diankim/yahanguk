@@ -3,7 +3,7 @@
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip, itemDesc } from './common.js';
 import { mountMeter } from './meter.js';
-import { USABLE, fxHtml } from './item.js';
+import { fxIcons, fxChip, fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups } from './fightui.js';
 // 기여도 갈래(7.7.4, 서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
 // 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
@@ -18,40 +18,7 @@ const creditLine = c => {
 const SP_ITEMS = new Set(['spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew']);
 const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve', 'fish_porridge', 'herb_rice', 'moss_porridge', 'bark_stew', 'herb_fish_steam', 'spirit_gukbap', 'calm_brew',
   'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
-const BOSS_FX = { expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계' };
-const BUFF = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '호법', guard: '방어', bound: '사슬' };
-// 7.7.7c(사용자 요청): 북돋기·약화와 협동 기술마다 아이콘 — 참가자 이름 옆에 지금 걸린 것을 아이콘으로
-const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vital', evade: 'dodge', shield: 'bubble', cover: 'hand', gward: 'talisman', taunt: 'star', guard: 'shield', bound: 'chain',
-  expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward' };
-const SKILL_ICON = { art_mend: 'ward', art_supply: 'drop', art_shield: 'bubble', art_array: 'spark', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
-  exo_cover: 'hand', exo_mantra: 'talisman', exo_barrier: 'ward', exo_guardian: 'star', med_aid: 'heart', med_needle: 'needle', med_revive: 'refresh', med_pulse: 'heart',
-  sc_mark: 'crosshair', sc_path: 'dodge', sc_smoke: 'fog', sc_signal: 'flag', seal_ward: 'ward', seal_might: 'bolt', seal_chain: 'chain', seal_bagua: 'shield' };
-// 7.7.7e(사용자 요청): 아이콘·칩에 마우스를 올린 동안(휴대폰은 누르면 잠깐) 짧은 설명이 뜬다 — 창을 띄우지 않는 떠 있는 말풍선
-const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 동안).', might: '주는 피해가 늘어난다(정해진 횟수 동안).', crit: '치명타가 더 잘 터진다.', crit_next: '다음 공격이 반드시 치명타로 들어간다.',
-  evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음 큰 공격(광역·기운 터뜨림)의 피해를 크게 줄이고 정신을 지킨다.',
-  taunt: '요괴의 눈길을 끌어 대신 맞고, 받는 피해가 줄어든다.', guard: '방어 태세 — 다음 공격의 피해가 줄어든다.', bound: '사슬에 묶여 다음 공격의 피해가 절반이 된다.',
-  expose: '요괴가 받는 피해가 늘어난다.', stagger: '요괴가 휘청여 반격하지 못한다.', smoke: '연막 속에서 요괴의 공격이 빗나갈 수 있다.', break: '다음 광역·기운 터뜨림의 피해가 줄어든다.' };
-const tipOf = (k, map) => `${map[k]} — ${FX_TIP[k] || ''}`;
-const fxIcons = (keys, map = BUFF) => (keys || []).filter(k => map[k]).map(k => `<i class="fx-i ${k === 'bound' ? 'bad' : ''}" data-tip="${esc(tipOf(k, map))}" aria-label="${esc(map[k])}">${icon(FX_ICON[k] || 'spark', 12)}</i>`).join('');
-const fxChip = (k, map = BUFF, kind = 'ok') => `<span class="chip fx-chip ${k === 'bound' ? 'bad' : kind}" data-tip="${esc(tipOf(k, map))}">${icon(FX_ICON[k] || 'spark', 12)}${esc(map[k])}</span>`;
-let tipEl = null, tipTimer = 0;
-function showTip(t) {
-  if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'fx-tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
-  tipEl.textContent = t.dataset.tip; tipEl.hidden = false;
-  const r = t.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
-  const x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
-  const y = r.top - h - 6 >= 8 ? r.top - h - 6 : r.bottom + 6;
-  tipEl.style.left = `${x}px`; tipEl.style.top = `${y}px`;
-}
-function hideTip() { clearTimeout(tipTimer); if (tipEl) tipEl.hidden = true; }
-function bindTips(root) {
-  if (!root || root.dataset.tips) return; root.dataset.tips = '1';
-  root.addEventListener('mouseover', e => { const t = e.target.closest?.('[data-tip]'); if (t && root.contains(t)) showTip(t); });
-  root.addEventListener('mouseout', e => { const t = e.target.closest?.('[data-tip]'); if (t && !t.contains(e.relatedTarget)) hideTip(); });
-  // 휴대폰: 누르면 잠깐 보였다 사라짐(그 칸의 다른 동작은 하지 않음)
-  root.addEventListener('click', e => { const t = e.target.closest?.('[data-tip]'); if (!t) return; e.stopPropagation(); e.preventDefault(); showTip(t); clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 1800); }, true);
-  window.addEventListener('scroll', hideTip, { passive: true, capture: true });
-}
+const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
 let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
@@ -167,7 +134,7 @@ function patch() {
   // 요괴의 말·기운 모으기·약점: 높이가 정해진 칸 안에서만 바뀐다(줄이 없어도 자리는 남김)
   const sy = $('#raid-says', el);
   if (sy) {
-    const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => fxChip(k, BOSS_FX)).join('');
+    const fx = fxChips((r.boss_fx || []).filter(k => BOSS_FX.includes(k)));
     sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
       <div class="raid-charge ${r.charge ? 'on' : ''} ${r.charge?.secs != null ? 'timed' : ''}">${r.charge ? `${r.charge.secs != null ? '<i class="ch-time"></i>' : ''}<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.secs != null ? '<b class="ch-sec"></b>초' : `${r.charge.left}번`} 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
@@ -176,7 +143,7 @@ function patch() {
     chargeTick();
   }
   const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
-  const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members, me, r);
+  const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members);
   memDetail(members);
   mountMeter($('#raid-meter', el), members);
   patchActions(me, members);
@@ -284,11 +251,8 @@ function actionsShell(me) {
   </div></section>`;
 }
 function coopButtons(me) {
-  return (me.coop || []).map(k => {
-    const lock = !k.unlocked, cd = k.cd > 0, low = (me.sp || 0) < k.cost;
-    return `<button type="button" class="coop-btn ${lock ? 'locked' : ''}" data-act="coop" data-skill="${esc(k.id)}" data-tgt="${esc(k.target)}" ${lock || cd || low ? 'data-lock="1" disabled' : ''}
-      title="${esc(k.desc)}"><b>${icon(SKILL_ICON[k.id] || 'spark', 13)}${esc(k.name)}</b><small>${lock ? `전투 숙련 ${k.rank}단계` : cd ? `${k.cd}초` : `영력 ${k.cost}`}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
-  }).join('');
+  return (me.coop || []).map(k => coopBtn({ ...k, why: !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.cd > 0 ? `${k.cd}초` : (me.sp || 0) < k.cost ? `영력 ${k.cost}` : '' },
+    `data-act="coop" data-skill="${esc(k.id)}" data-tgt="${esc(k.target)}"`)).join('');
 }
 function patchActions(me, members) {
   const box = $('#raid-me', el); if (!box) return;
@@ -296,9 +260,8 @@ function patchActions(me, members) {
   const tName = members.find(m => m.id === tgt)?.name || '나';
   // 내 체력·영력은 막대로 크게, 내가 준 피해·기여도도 함께(제보 67)
   const mine = members.find(m => m.me), spName = spOf()[0];
-  box.innerHTML = `<div class="raid-vit hp ${me.hp < 35 ? 'low' : ''}"><span>체력</span><b>${me.hp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.hp))}%"></i></i></div>
-    <div class="raid-vit ${spOf()[1]}"><span>${esc(spName)}</span><b>${me.sp}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, me.sp))}%"></i></i></div>
-    <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${Object.keys(me.fx || {}).filter(k => BUFF[k]).map(k => fxChip(k)).join('')}</span></div>`;
+  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}
+    <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${fxChips(Object.keys(me.fx || {}))}</span></div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
   if (cb) {
@@ -328,15 +291,11 @@ function openItems() {
   fillItems();
   if (!itemDesc('tonic')) load('world_inventory_snapshot').then(fillItems).catch(() => {});
 }
-// 제보 86·사용자 요청(7.7.7i): 이름과 회복 수치만, 작은 칸 서너 개씩 한 줄
-const fxOf = k => fxHtml(String(USABLE[k.replace(/_hq$/, '')] || '').split(' · ').filter(x => /^(체력|정신|영력|침식)|치료|풀기/.test(x.trim())).join(' · ') || brief(itemDesc(k)) || '');
 function fillItems() {
   const box = itemLayer && $('#raid-items-body', itemLayer); if (!box) return;
   const inv = store.character?.inventory || {}, out = outUntil > Date.now() || away || resting;
-  const have = list => list.flatMap(k => [k, k + '_hq']).filter(k => Number(inv[k]) > 0);
-  // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67)
-  const hp = have(RAID_ITEMS.filter(k => !SP_ITEMS.has(k))), sp = have(RAID_ITEMS.filter(k => SP_ITEMS.has(k)));
-  const list = ks => ks.length ? `<ul class="raid-item-list">${ks.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}" title="${esc(brief(itemDesc(k)) || '')}"><b>${esc(nameOf(k))}</b><span>×${inv[k]}</span><small>${fxOf(k)}</small></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
+  // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67) — 목록 모양은 fightui.js(제보 86)
+  const [hp, sp] = itemGroups(RAID_ITEMS, inv), list = ks => itemListHtml(ks, inv);
   box.innerHTML = `<p class="muted small">${out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
     <h3 class="raid-item-h">체력·정신 회복</h3>${list(hp)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${list(sp)}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => {
@@ -345,32 +304,21 @@ function fillItems() {
     else run(b, () => rpc('world_raid_action', { p_raid: snap.raid.id, p_action: 'item', p_item: k }), true).then(fillItems);
   });
 }
-// 휴대폰: 협동 기술은 단추 하나로 접어 두고 누르면 펼친다(한 화면에 담기)
-function membersHtml(list, me, r) {
+// 7.7.7d(사용자 요청): 직업 색(이름·왼쪽 띠), 체력 숫자는 막대 안, 누르면 아래에 자세히(동료 선택은 싸우는 중에만) — 칸 모양은 fightui.js
+function membersHtml(list) {
   if (!(list || []).length) return '<li class="muted small raid-mem-empty">아직 참가자가 없습니다.</li>';
-  // 7.7.7d(사용자 요청): 직업 색(이름·왼쪽 띠), 체력 숫자는 막대 안, 누르면 아래에 자세히(동료 선택은 싸우는 중에만)
-  return list.map(m => `<li class="jb-${esc(m.job || '')} ${m.me ? 'me' : ''} ${m.id === target ? 'tgt' : ''} ${m.id === sel ? 'sel' : ''} ${m.out || m.away || m.resting ? 'out' : ''}">
-      <button type="button" class="mem-pick" data-pick="${esc(m.id)}" title="${esc(`${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`)}">
-        <span class="mem-top"><b>${esc(m.name)}<span class="fx-icons">${fxIcons(m.buffs)}</span></b>${m.away ? '<small>자리 비움</small>' : m.out ? `<small>쉼 ${m.out}초</small>` : m.resting ? '<small>쉬는 중</small>' : ''}</span>
-        <span class="bar mem-hp ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span><em>${m.hp}</em></span>
-        <small class="mem-sub">${esc(JOBS[m.job]?.name || nameOf(m.job))} · 기여 ${m.share}%${m.buffs?.length ? ` · ${m.buffs.filter(k => BUFF[k]).map(k => BUFF[k]).join('·')}` : ''}</small></button></li>`).join('');
+  return list.map(m => memberLi(m, { me: m.me, tgt: m.id === target, sel: m.id === sel, out: m.out || m.away || m.resting, fx: m.buffs,
+    state: m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : '',
+    title: `${m.name} · Lv${m.level} ${JOBS[m.job]?.name || nameOf(m.job)} · 기여 ${m.share}%`,
+    sub: `${esc(JOBS[m.job]?.name || nameOf(m.job))} · 기여 ${m.share}%${fxKeys(m.buffs).length ? ` · ${fxKeys(m.buffs).map(k => FX_NAME[k]).join('·')}` : ''}` })).join('');
 }
 // 고른 참가자 자세히(PC·휴대폰 모두 누르면 열림, 다시 누르거나 닫기로 접음)
 function memDetail(list) {
-  const box = el && $('#raid-memdetail', el); if (!box) return;
   const m = (list || []).find(x => x.id === sel);
-  if (!m) { box.hidden = true; box.innerHTML = ''; return; }
-  const st = m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : '싸우는 중';
-  const fx = (m.buffs || []).filter(k => BUFF[k]);
-  box.hidden = false;
-  box.className = `mem-detail jb-${m.job || ''}`;
-  box.innerHTML = `<div class="md-head"><b>${esc(m.name)}</b><span>Lv${m.level} ${esc(JOBS[m.job]?.name || nameOf(m.job))}</span><small>${st}</small>
-      <button type="button" class="md-x" data-md-close aria-label="닫기">${icon('close', 14)}</button></div>
-    <div class="bar mem-hp big ${m.hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, m.hp))}%"></span><em>체력 ${m.hp} / 100</em></div>
-    <div class="md-nums"><span>기여 <b>${m.share}%</b></span><span>준 피해 <b>${fmt.num(m.dmg || 0)}</b></span><span>받은 피해 <b>${fmt.num(m.taken || 0)}</b></span><span>회복 <b>${fmt.num(m.heal || 0)}</b></span></div>
-    <div class="md-fx">${fx.length ? fx.map(k => fxChip(k)).join('') : '<small class="muted">걸린 효과 없음</small>'}</div>
-    ${creditLine(m.credits)}`;
-  const x = $('[data-md-close]', box); if (x) x.onclick = () => { sel = null; patch(); };
+  showMemDetail(el && $('#raid-memdetail', el), m, m && {
+    state: m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : '싸우는 중',
+    nums: [['기여', `${m.share}%`], ['준 피해', fmt.num(m.dmg || 0)], ['받은 피해', fmt.num(m.taken || 0)], ['회복', fmt.num(m.heal || 0)]],
+    fx: m.buffs, extra: creditLine(m.credits) }, () => { sel = null; patch(); });
 }
 function locksHtml(locks) {
   if (!(locks || []).length) return '';
