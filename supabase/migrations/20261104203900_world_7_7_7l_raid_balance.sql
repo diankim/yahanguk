@@ -9,11 +9,12 @@ create or replace function public.world_solo_aid(p_job text)
 returns jsonb language sql immutable as $f$
   -- dmg: 주는 피해 %, falls: 귀허 쓰러짐 상한 +, guard: 받는 피해 −%(world_cb_mitigate가 stats.solo_guard로) — 혼자 도전 10판씩 복제 DB 시뮬레이션으로 맞춤
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 12, "solo_falls": 2, "solo_guard": 8}'
+    when 'exorcist'   then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 8}'
     when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12}'
     when 'medic'      then '{"solo_dmg": 20, "solo_falls": 3, "solo_guard": 8}'
     when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1}'
     when 'scout'      then '{"solo_dmg": 10, "solo_falls": 2}'
+    when 'analyst'    then '{"solo_dmg": 8}'
     else '{}' end::jsonb
 $f$;
 revoke all on function public.world_solo_aid(text) from public, anon, authenticated;
