@@ -52,6 +52,18 @@ export function throttle(fn, gap) {
   let last = 0, t = null;
   return () => { const wait = last + gap - Date.now(); if (wait <= 0) { last = Date.now(); fn(); } else if (!t) t = setTimeout(() => { t = null; last = Date.now(); fn(); }, wait); };
 }
+// 싸우는 중의 물품 쓰기(7.7.2b): 퀵슬롯·가방·상태 창에서 물품을 눌러도 떠 있는 전투 화면(현장 토벌 battle.js·파티 토벌 pfight.js·귀허의 주인 gw.js)이
+// 그 턴의 「물품」 행동으로 받는다(턴이 지나감). 받았으면 true — 부른 쪽은 world_use_item을 부르지 않는다. 전투 화면이 없으면 서버 world_use_item이 싸우는 중인지 다시 본다.
+export function battleItemRoute(id) {
+  const ev = new CustomEvent('yh-battle-item', { detail: { id, handled: false } });
+  window.dispatchEvent(ev);
+  return ev.detail.handled;
+}
+// 물품 쓰기의 공통 길: 전투 화면이 받으면 그쪽으로, 아니면 world_use_item
+export function useItemAct(id) {
+  if (battleItemRoute(id)) return Promise.resolve(null);
+  return act('world_use_item', { p_item_id: id });
+}
 // 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);

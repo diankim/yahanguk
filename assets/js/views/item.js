@@ -1,7 +1,7 @@
 // 물품 정보 창: 가방·상점·거래소에서 함께 쓴다.
 // 설명·효과·조건·거래 가능 여부·기준 시세와, 이 물품이 들어가는(또는 이 물품을 만드는) 제작법을 보여 준다.
 // 가방에서 열면 사용·장착·잠금·버리기도 할 수 있다(모두 서버가 다시 검사한다).
-import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON } from '../core.js';
+import { ask, db, store, act, rpc, nameOf, esc, josa, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip, zonesNow } from './common.js';
 
@@ -292,7 +292,7 @@ export async function useItem(id, btn) {
     return guard(btn, () => act('world_reset_stats'));
   }
   if (id === 'reset_identity') return openResetIdentity();
-  return guard(btn, () => act('world_use_item', { p_item_id: id }));
+  return guard(btn, () => useItemAct(id));
 }
 function openResetIdentity() {
   const c = store.character || {};

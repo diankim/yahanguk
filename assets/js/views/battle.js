@@ -66,6 +66,15 @@ export function renderBattle(box, snap, done) {
   draw();
 }
 export function stopBattle() { clearInterval(cdTimer); host = null; }
+// 퀵슬롯·가방에서 누른 물품도 이 전투의 「물품」 행동으로 쓴다(7.7.2b — 턴이 지나감, core.js battleItemRoute)
+window.addEventListener('yh-battle-item', e => {
+  if (!host?.isConnected || !data?.battle) return;
+  e.detail.handled = true;
+  const id = e.detail.id, base = String(id).replace(/_hq$/, '');
+  if (!ITEMS.some(([k]) => k === base)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 전투의 「물품」으로 씁니다.', 'warn'); return; }
+  if (busy || Date.now() < nextAt) { toast('아직 다음 행동을 할 수 없습니다.', 'warn'); return; }
+  send('item', id);
+});
 
 function draw(fresh = []) {
   if (!host || !data?.battle) return;

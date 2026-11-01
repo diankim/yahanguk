@@ -18,6 +18,16 @@ export async function render(root, sub) {
   await refresh();
 }
 export function destroy() { clearTimeout(timer); clearInterval(tick); el = null; }
+// 퀵슬롯·가방에서 누른 물품은 이 라운드의 「물품」 행동으로 고른다(대상은 고른 사람, 없으면 나 — 7.7.2b, core.js battleItemRoute)
+window.addEventListener('yh-battle-item', e => {
+  const f = snap?.fight;
+  if (!el?.isConnected || f?.status !== 'fight' || !snap?.joined) return;
+  e.detail.handled = true;
+  const id = e.detail.id, base = String(id).replace(/_hq$/, '');
+  if (!ITEMS.includes(base)) { toast('귀허의 주인과 싸우는 동안에는 이 물품을 쓸 수 없습니다.', 'warn'); return; }
+  picked = id;
+  run({ disabled: false, dataset: { gw: 'item' }, id: '' }, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'item', p_target: target || snap.me, p_item: id }));
+});
 
 async function refresh() {
   if (!el) return;

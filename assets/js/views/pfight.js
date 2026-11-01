@@ -19,6 +19,15 @@ export async function render(root, sub) {
   await refresh();
 }
 export function destroy() { clearTimeout(timer); clearInterval(tick); el = null; }
+// 퀵슬롯·가방에서 누른 물품은 이 라운드의 「물품」 행동으로 고른다(7.7.2b, core.js battleItemRoute)
+window.addEventListener('yh-battle-item', e => {
+  if (!el?.isConnected || !fid || snap?.status !== 'fight' || !snap?.me) return;
+  e.detail.handled = true;
+  const id = e.detail.id;
+  if (!trayList({ [id]: 1 }).some(([k]) => k === id)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 「물품」으로 고릅니다.', 'warn'); return; }
+  tray = false;
+  run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: id }));
+});
 
 const now = () => Date.now() + skew;
 const ended = () => ['won', 'lost', 'fled', 'cancelled'].includes(snap?.status);

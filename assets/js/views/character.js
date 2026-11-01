@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal } from '../core.js';
+import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned, YOHWA_STAGES } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -253,7 +253,7 @@ async function status(body) {
     const k = b.dataset.use, d = qsDesc(k);
     // 퀵슬롯은 묻지 않고 바로 쓴다(7.5.2, 제보 49 — 가방의 「사용」과 같게)
     if (!b.classList.contains('qs-cell') && !(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
-    guard(b, () => act('world_use_item', { p_item_id: k }));
+    guard(b, () => useItemAct(k));
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   $$('[data-eqi]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.eqi, { mode: 'bag' }));

@@ -1,6 +1,6 @@
 // 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
 // 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, h, guard, toast, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct } from './core.js';
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
@@ -94,7 +94,7 @@ export function openStatus(st) {
         ${(st.cure_items || []).length ? `<div class="btn-row">${st.cure_items.map(k => `<button class="btn small primary" data-cure="${esc(k)}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} 쓰기 <small>×${fmt.num(inv[k])}</small></button>`).join('')}</div>` : ''}`}
     </div>` });
   const t = setInterval(() => { const b = m.querySelector('[data-left]'); if (!b) return clearInterval(t); b.textContent = fmt.remain(Number(b.dataset.left) - Date.now()); }, 1000);
-  $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_use_item', { p_item_id: b.dataset.cure }); closeModal(); return r; }));
+  $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await useItemAct(b.dataset.cure); closeModal(); return r; }));
 }
 
 // 상태·탐색력 시간이 다 되면 1.5초 뒤 한 번 다시 읽는다. 읽기가 실패해(로그인 풀림·서버 오류) 시간이 그대로여도 30초에 한 번까지만 다시 묻는다
@@ -217,7 +217,7 @@ function render() {
       </div>`).join('')}
     </section>`;
   const ts = $('#hud-title-swap', body); if (ts) ts.onclick = () => openTitleSwap();
-  body.querySelectorAll('[data-hqs]').forEach(b => b.onclick = () => guard(b, () => act('world_use_item', { p_item_id: b.dataset.hqs })));
+  body.querySelectorAll('[data-hqs]').forEach(b => b.onclick = () => guard(b, () => useItemAct(b.dataset.hqs)));
   body.querySelectorAll('[data-act]').forEach(b => b.onclick = () => items[Number(b.dataset.act)].action[1](b));
   body.querySelectorAll('[data-act2]').forEach(b => b.onclick = () => { closeStrip(); items[Number(b.dataset.act2)].action2[1](b); });
   const sts = yohwaOf(state.hud?.statuses).rest;
