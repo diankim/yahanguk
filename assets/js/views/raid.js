@@ -280,7 +280,7 @@ function outBox(me = snap?.me || {}) {
     : `${icon('check', 14)} 쉬는 중 · 준비되면 행동해서 돌아가세요`;
   $('#raid-out-text', ob).innerHTML = away
     ? `지금은 물러난 것으로 셉니다. 요괴가 나를 노리지 않고 쌓은 기여도는 그대로입니다. 가방·퀵슬롯·거점 휴식으로 회복한 뒤 <b>${region}</b>(으)로 돌아오면 다시 합류하지 않고 바로 싸웁니다.`
-    : outNow ? `체력이 1이 되어 물러났습니다. 1분 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, 그사이 <b>「물품」·가방·퀵슬롯</b>으로 회복하거나 거점에 가서 쉬고 오세요(자리를 비운 동안도 물러난 것으로 셉니다).`
+    : outNow ? `체력이 1이 되어 물러났습니다. ${snap?.raid?.kind === 'final' ? '30초' : '1분'} 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, 그사이 <b>「물품」·가방·퀵슬롯</b>으로 회복하거나 거점에 가서 쉬고 오세요(자리를 비운 동안도 물러난 것으로 셉니다).`
     : `요괴가 나를 노리지 않습니다. 가방·퀵슬롯으로 마저 회복하고, 준비가 되면 <b>공격·방어·기술</b>을 눌러 돌아가세요(「물품」 창의 물품도 쉬는 동안은 행동이 되지 않습니다). 돌아가면 먼저 <b>방어</b>가 안전합니다.`;
 }
 // 물품 고르기: 겹쳐 뜨는 창(토벌 화면이 다시 그려져도 닫히지 않고, 닫기는 직접)
@@ -295,11 +295,13 @@ function fillItems() {
   const inv = store.character?.inventory || {}, out = outUntil > Date.now() || away || resting;
   // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67) — 목록 모양은 fightui.js(제보 86)
   const [hp, sp] = itemGroups(RAID_ITEMS, inv), list = ks => itemListHtml(ks, inv);
-  box.innerHTML = `<p class="muted small">${out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
+  // 결전(7.7.7l): 체력 회복품 한 싸움 네 개, 가방에서 바로 쓰지 않고 「물품」 행동으로만(쉬는 중에 쓰면 그대로 돌아감)
+  const fin = snap?.raid?.kind === 'final', left = snap?.me?.items_left;
+  box.innerHTML = `<p class="muted small">${fin ? `체력 회복품은 <b>한 싸움에 다섯 개까지</b> · 남은 횟수 <b>${left ?? 0}/5</b>. 물품을 쓰면 그 차례의 행동이 되고, 쉬는 중이면 체력 30으로 싸움에 돌아갑니다.` : out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
     <h3 class="raid-item-h">체력·정신 회복</h3>${list(hp)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${list(sp)}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => {
     const k = b.dataset.use;
-    if (outUntil > Date.now() || away || resting) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(fillItems);
+    if (!fin && (outUntil > Date.now() || away || resting)) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(fillItems);
     else run(b, () => rpc('world_raid_action', { p_raid: snap.raid.id, p_action: 'item', p_item: k }), true).then(fillItems);
   });
 }
