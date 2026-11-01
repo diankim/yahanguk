@@ -2,7 +2,7 @@
 import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, toast, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
 import { buildCells, centroid, factionColor, FACTION_COLORS } from '../geo.js';
-import { waterUnder, waterOver } from '../water.js';
+import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
@@ -71,7 +71,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -211,10 +211,11 @@ function paint() {
     if (zones.get(r.region_id)?.contested) hatch += `<path d="${pathOf(poly)}" class="cell-contest"/>`;
   }
   // ② 경계: 같은 세력 안은 옅은 선, 세력이 바뀌면 국경, 이웃이 없으면 해안선
-  let inner = '', border = '', coast = '';
+  // 바다낚시가 되는 지역의 해안은 물빛으로 조금 굵게(7.7.1, 1안)
+  let inner = '', border = '', coast = '', seaCoast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
-    if (!e.b) coast += d; else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
+    if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
   }
   // ③ 길
   const seen = new Set(); let roads = '';
@@ -293,7 +294,7 @@ function paint() {
     <rect width="${W}" height="${H}" class="sea"/><rect width="${W}" height="${H}" fill="url(#sea-wave)"/>
     ${waterUnder(g, X, Y, view.k)}
     <g class="land">${land}</g>${waterOver(g, id => byId.has(id), X, Y, view.k, zoom)}<g>${hatch}</g>
-    <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${border}" class="b-border"/>
+    <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
     <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
 }

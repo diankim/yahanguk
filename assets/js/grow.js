@@ -17,6 +17,10 @@ export function growInput(form) {
     ta.style.height = 'auto';
     const need = ta.scrollHeight + 2;
     ta.style.height = `${Math.max(MIN, Math.min(cap(), Math.max(manual, Math.min(need, AUTO))))}px`;
+    // 한 줄 높이를 알려 보내기 단추를 그 가운데에 둔다(7.7.1, 사용자 요청 — 휴대폰 16px 글자에서 입력칸이 단추보다 높아 단추가 아래로 치우쳐 보였다).
+    // 여러 줄로 늘어나도 단추는 마지막 줄 가운데에 남는다(.chat-send margin-bottom)
+    const cs = getComputedStyle(ta), one = Math.max(MIN, (parseFloat(cs.lineHeight) || 20) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + 2);
+    form.style.setProperty('--ta-one', `${Math.round(one)}px`);
   };
   const save = h => { manual = h; try { h ? localStorage.setItem(KEY, String(Math.round(h))) : localStorage.removeItem(KEY); } catch {} fit(); };
   let y0 = 0, h0 = 0;

@@ -57,11 +57,17 @@ function isles(cells) {
   return isleCache;
 }
 
-// 해안의 얕은 물 띠(땅보다 먼저 그려 바깥쪽 반만 보인다)
+// 바다낚시를 할 수 있는 지역(7.7.1, 사용자 결정 1안): 바다 물가 넷 + 바다 낚시터가 있는 다섯(7.4.0). 지도에서 이 지역의 해안만 물빛으로 짚는다.
+// 서버 world_fish_spot의 바다 낚시터가 바뀌면 여기도 고친다(화면만의 장식, 서버에 묻지 않는다)
+export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory']);
+const seg = (e, X, Y) => `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
+
+// 해안의 얕은 물 띠(땅보다 먼저 그려 바깥쪽 반만 보인다). 바다낚시 지역 앞바다는 띠를 조금 더 짙게(.sea)
 export function waterUnder(g, X, Y, k) {
-  let d = '';
-  for (const e of g.edges) if (!e.b) d += `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
-  return d ? `<path d="${d}" class="w-shallow" style="opacity:.45" stroke-width="${(34 * k).toFixed(1)}"/><path d="${d}" class="w-shallow" stroke-width="${(16 * k).toFixed(1)}"/>` : '';
+  let d = '', sea = '';
+  for (const e of g.edges) if (!e.b) { d += seg(e, X, Y); if (SEA_FISH.has(e.a)) sea += seg(e, X, Y); }
+  return (d ? `<path d="${d}" class="w-shallow" style="opacity:.45" stroke-width="${(34 * k).toFixed(1)}"/><path d="${d}" class="w-shallow" stroke-width="${(16 * k).toFixed(1)}"/>` : '')
+    + (sea ? `<path d="${sea}" class="w-shallow sea" stroke-width="${(22 * k).toFixed(1)}"/>` : '');
 }
 
 // 땅 위·국경 아래. zoom이 낮으면(멀리) 잔 물줄기·갈대·연꽃은 그리지 않는다.
