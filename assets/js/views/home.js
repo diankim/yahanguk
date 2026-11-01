@@ -137,11 +137,10 @@ function drawBattle(pty) {
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
   if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
   el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
-    ${near ? `<div class="notice pf-call">${icon('users', 18)}<div><b>같은 곳의 동료 ${near}명</b><span>불러서 함께 싸웁니다(10초 라운드). 합류한 사람마다 요괴 체력이 늘고, 이기면 경험치를 한 사람마다 10% 더 받습니다.</span></div><button class="btn small primary" id="pf-call">동료 부르기</button></div>` : ''}
     <div id="battle-box"></div>`;
-  renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); });
-  const b = $('#pf-call', el);
-  if (b) b.onclick = () => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
+  // 「동료 부르기」는 전투 행동 칸 여섯째(battle.js, 7.7.3)
+  const onCall = b => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
+  renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); }, near ? { call: near, onCall } : null);
   if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
 }
 

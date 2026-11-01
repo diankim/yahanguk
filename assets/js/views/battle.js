@@ -58,8 +58,10 @@ export function effectiveness(style, eff) {
 let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 
 // box: 그릴 곳, snap: world_field_snapshot, done: 전투가 끝나면 부를 함수
-export function renderBattle(box, snap, done) {
-  host = box; data = snap; onEnd = done;
+// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(7.7.3 — 행동 칸 여섯째로 옮김, 전에는 전투 위 안내 띠라 눈에 덜 띄었다)
+let callOpt = null;
+export function renderBattle(box, snap, done, opts) {
+  host = box; data = snap; onEnd = done; callOpt = opts?.call ? opts : null;
   // 서버 시각을 그대로 쓰면 기기 시계가 늦을 때 대기가 길어지므로, 남은 시간은 최대 1초로 자른다
   // 첫 수(아직 한 번도 행동하지 않은 전투)는 기다리지 않는다(서버도 전투를 열 때 바로 행동할 수 있게 둔다)
   nextAt = Number(snap.battle?.turn || 0) === 0 ? 0 : Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
@@ -112,12 +114,13 @@ function draw(fresh = []) {
       </div>
       ${b.sneak != null ? `<div class="hint accent sneak-ask" id="sneak-ask">${icon('eye', 16)}<span><b>기척을 숨기겠습니까?</b> 성공 ${b.sneak}% · 실패하면 요괴가 먼저 덤벼듭니다. 탐색력은 돌아오지 않습니다.</span>
         <span class="btn-row"><button class="btn small primary" data-sneak>기척 숨기기</button><button class="btn small" data-sneak-no>맞서기</button></span></div>` : ''}
-      <div class="actions" id="actions">
+      <div class="actions ${callOpt ? 'has-call' : ''}" id="actions">
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
         <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
         <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · ${spOf()[0]} +4</small><i class="cd"></i></button>
         <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력·기력</small><i class="cd"></i></button>
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>
+        ${callOpt ? `<button class="act call" id="act-call" title="같은 곳의 파티원에게 합류 알림(60초) · 합류한 사람마다 요괴 체력이 늘고, 이기면 경험치를 한 사람마다 10% 더 받습니다">${icon('users', 20)}<b>동료 부르기</b><small>같은 곳 ${callOpt.call}명 · 차례대로 함께</small></button>` : ''}
       </div>
       <div class="item-tray" id="item-tray" hidden>${trayList(inv, 4).map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
       <ol class="battle-log">${log.map((l, i) => `<li class="${i >= log.length - fresh.length ? 'new' : ''}">${esc(l)}</li>`).join('')}</ol>
@@ -131,6 +134,7 @@ function draw(fresh = []) {
     send(a);
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
+  const cb = $('#act-call', host); if (cb && callOpt?.onCall) cb.onclick = () => callOpt.onCall(cb);
   // 기척 숨기기(7.2.7): 마주친 직후 한 번만. 맞서기를 고르면 묻는 칸만 닫는다(첫 행동을 하면 서버도 더는 받지 않는다)
   $('[data-sneak]', host)?.addEventListener('click', () => send('sneak'));
   $('[data-sneak-no]', host)?.addEventListener('click', () => { $('#sneak-ask', host)?.remove(); });
