@@ -53,7 +53,7 @@ function bindTips(root) {
 }
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false, sel = null;
+let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
 
 export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0;
@@ -63,7 +63,7 @@ export async function render(root, sub) {
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { hideTip(); if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; itemLayer?.close?.(); itemLayer = null; }
+export function destroy() { hideTip(); clearTimeout(chargeT); if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; itemLayer?.close?.(); itemLayer = null; }
 
 async function refresh() {
   if (!el) return;
@@ -168,8 +168,11 @@ function patch() {
   if (sy) {
     const fx = (r.boss_fx || []).filter(k => BOSS_FX[k]).map(k => fxChip(k, BOSS_FX)).join('');
     sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
-      <div class="raid-charge ${r.charge ? 'on' : ''}">${r.charge ? `<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.kind === 'world' ? `약 ${r.charge.left * 2}초` : `${r.charge.left}번`} 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
+      <div class="raid-charge ${r.charge ? 'on' : ''} ${r.charge?.secs != null ? 'timed' : ''}">${r.charge ? `${r.charge.secs != null ? '<i class="ch-time"></i>' : ''}<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.secs != null ? '<b class="ch-sec"></b>초' : `${r.charge.left}번`} 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
+    // 7.7.7h: 기운 모으기는 실제 8초 — 서버가 준 남은 초(서버 시계)로 이 기기에서 초를 세고 게이지를 줄인다
+    chargeEnd = r.charge?.secs != null ? Date.now() + r.charge.secs * 1000 : 0; chargeDur = (r.charge?.dur || 8) * 1000;
+    chargeTick();
   }
   const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
   const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members, me, r);
@@ -196,6 +199,16 @@ function patch() {
     fitLog();
   }
   if (itemLayer?.isConnected) fillItems();
+}
+// 기운 모으기 남은 초·시간 게이지(0.1초마다, 모으는 동안만)
+function chargeTick() {
+  clearTimeout(chargeT);
+  const box = el && $('#raid-says .raid-charge.timed', el); if (!box || !chargeEnd) return;
+  const ms = Math.max(0, chargeEnd - Date.now());
+  const sec = $('.ch-sec', box); if (sec) sec.textContent = (ms / 1000).toFixed(1);
+  const bar = $('.ch-time', box); if (bar) bar.style.width = `${Math.min(100, ms / chargeDur * 100)}%`;
+  box.classList.toggle('urgent', ms < 3000);
+  if (ms > 0) chargeT = setTimeout(chargeTick, 100);
 }
 const mobileLog = () => window.matchMedia('(max-width: 640px)').matches;
 // 휴대폰: 전투 기록 칸을 화면 아래(떠 있는 탭 막대 위)까지 늘린다

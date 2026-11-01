@@ -3,7 +3,7 @@ import { db, store, on, act, rpc, toast, openModal, closeModal, friendlyError, n
 import { load, invalidate, panel, chip, loading, errorBox, safeZones } from './common.js';
 import { equipRowLi, eqMini, bindRepair, enhancedTraits, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText } from './item.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS } from './item.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -11,6 +11,7 @@ const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
 const atPlace = (loc, here) => !!loc && (loc === here || (LOC_ALIAS[loc] || []).includes(here));
+let fxPick = new Set(); // 7.7.7h(제보 85): 회복 종류로 거르기(체력·정신·영력…, 여럿 고르면 하나라도 맞으면)
 let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '', cq = '';
 // 제작 분야(서버 world_crafting_recipes.craft_field). 아무것도 고르지 않으면 모든 분야를 보인다.
 const FIELDS = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
@@ -110,7 +111,7 @@ function stayFit(box) {
 // 효과만 이어 붙이면 제작할 때 받는 효과처럼 읽혀서(7.6.3, 사용자 요청). 이름이 설명에 없으면 끝에 붙인다.
 function descFx(desc, name, fx) {
   const d = esc(desc); if (!fx) return d; // esc가 「을(를)」을 이름 받침에 맞춰 먼저 고른 뒤에 끼운다
-  const tag = `<span class="desc-fx">(효과: ${esc(fx)})</span>`, n = name ? esc(name) : '', i = n ? d.indexOf(n) : -1;
+  const tag = `<span class="desc-fx">(효과: ${fxHtml(fx)})</span>`, n = name ? esc(name) : '', i = n ? d.indexOf(n) : -1;
   return i < 0 ? `${d} ${tag}` : d.slice(0, i + n.length) + tag + d.slice(i + n.length);
 }
 // 제작법 카드의 완성품 효과(7.6.2, 사용자 요청): 장비·제작 공구만, 효과가 없으면 비운다. 부위 이름(관모 등)은 카드 칩에 있으니 앞에서 뗀다.
@@ -177,6 +178,7 @@ async function items(body, inv, stg) {
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
     .map(([id, n]) => ({ id, n: Number(n), it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
+    .filter(r => !fxPick.size || [...fxKindsOf(r.id)].some(k => fxPick.has(k)))
     .filter(r => !q.trim() || nameOf(r.id).toLowerCase().includes(q.trim().toLowerCase())) // 이름만(7.6.2, 사용자 요청 — 설명에 든 다른 물품 이름까지 걸렸다)
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
@@ -184,6 +186,7 @@ async function items(body, inv, stg) {
       <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비 1개 · 소모품 3~20개 · 재료 5~20개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
+    ${cat === 'all' || cat === 'consumable' ? `<div class="chips fx-pick" role="group" aria-label="회복 종류로 거르기"><span class="muted small">효과</span>${FX_KINDS.map(([k, n]) => `<button type="button" class="chip fxk-${k} ${fxPick.has(k) ? 'on' : ''}" data-fxk="${k}" aria-pressed="${fxPick.has(k)}">${n}</button>`).join('')}</div>` : ''}
     <div class="bag-sort"><label><span>정렬</span><select id="bag-sort">${Object.entries(SORTS).map(([k, [n]]) => `<option value="${k}" ${k === sortKey ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <button class="btn small" id="bag-dir" aria-label="정렬 방향 바꾸기">${icon('back', 14)}<span>${SORTS[sortKey][sortRev ? 2 : 1]}</span></button>
       <label class="check" title="같은 물품을 묶음 크기만큼 한 칸씩 나눠 보입니다"><input type="checkbox" id="bag-split" ${splitView ? 'checked' : ''}><span>칸대로 나눠 보기</span></label></div>
@@ -202,7 +205,7 @@ async function items(body, inv, stg) {
       const showQty = part ? part.q : n, showUse = !!USABLE[id];
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} ${esc(USABLE[id])}</small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length ? `<small>${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${showUse ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}
@@ -211,6 +214,7 @@ async function items(body, inv, stg) {
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
+  body.querySelectorAll('[data-fxk]').forEach(b => b.onclick = () => { const k = b.dataset.fxk; fxPick.has(k) ? fxPick.delete(k) : fxPick.add(k); items(body, inv, stg); });
   $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
   $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };
   $('#bag-split', body).onchange = e => { splitView = e.target.checked; try { localStorage.setItem('yh-bag-split', splitView ? '1' : '0'); } catch {} items(body, inv); };

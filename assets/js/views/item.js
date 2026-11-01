@@ -38,6 +38,14 @@ export const USABLE = new Proxy(USABLE_BASE, { get(t, k) {
   if (typeof k !== 'string' || k in t) return t[k];
   return k.endsWith('_hq') && t[k.slice(0, -3)] ? `${t[k.slice(0, -3)]} · 우수품 효과 더 큼` : undefined;
 } });
+// 7.7.7h(제보 85): 효과 문구를 회복 종류마다 색으로 — 「체력 35 · 정신 10 · 침식 -8」을 마디(·)로 나눠 체력 붉게·정신 푸르게·영력 보라·침식·치료·탐색력
+export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
+const FX_ORDER = ['cure', 'hp', 'mind', 'sp', 'er', 'stam'].map(k => FX_KINDS.find(x => x[0] === k)); // 「사념 침식 치료」는 침식이 아니라 치료
+const fxKindOf = seg => (FX_ORDER.find(([, , re]) => re.test(seg)) || [])[0] || '';
+export function fxHtml(text) {
+  return String(text || '').split(' · ').map(seg => { const k = fxKindOf(seg.trim()); return k ? `<span class="fxk fxk-${k}">${esc(seg)}</span>` : esc(seg); }).join(' · ');
+}
+export const fxKindsOf = id => { const t = USABLE[id]; return t ? new Set(String(t).split(' · ').map(x => fxKindOf(x.trim())).filter(Boolean)) : new Set(); };
 export const GEAR = new Set(['tool', 'weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'accessory', 'equipment']);
 // 분해할 수 있는 장비와 필요한 제작 숙련(서버 world_dismantle_need와 같다)
 const DISMANTLABLE = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool']);

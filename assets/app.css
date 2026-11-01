@@ -808,7 +808,12 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .town-st small { min-width: 6em; text-align: right; }
 @media (max-width: 520px) { .town-st { grid-template-columns: auto 1fr auto; } .town-st small { grid-column: 1 / -1; text-align: left; } }
 .recipe .use-fx, .inv-name .use-fx { margin: 0; color: var(--ok, var(--accent)); display: flex; gap: 4px; align-items: center; }
-.recipe .desc-fx { color: var(--ok, var(--accent)); } /* 제작법 설명 뒤에 이어 붙인 완성품 효과(7.6.3) */
+.recipe .desc-fx { color: var(--ok, var(--accent)); }
+/* 7.7.7h(제보 85): 회복 종류마다 색 — 체력 붉게·정신 푸르게·영력 보라·침식·치료 초록·탐색력 금빛 */
+.fxk-hp { color: var(--hp); } .fxk-mind { color: var(--mp); } .fxk-sp { color: var(--sp); } .fxk-er { color: var(--er); } .fxk-cure { color: var(--ok); } .fxk-stam { color: var(--gold); }
+.fx-pick { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 4px 0; }
+.fx-pick .chip { cursor: pointer; font: inherit; font-size: calc(12px * var(--fz, 1)); background: transparent; }
+.fx-pick .chip.on { background: color-mix(in srgb, currentColor 16%, transparent); border-color: currentColor; } /* 제작법 설명 뒤에 이어 붙인 완성품 효과(7.6.3) */
 .big-act { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; justify-items: start; text-align: left; min-height: 72px; padding: 12px 18px; font-size: calc(16px * var(--fz, 1)); }
 .big-act .ico { grid-row: span 2; } .big-act small { font-size: calc(12px * var(--fz, 1)); opacity: .85; font-weight: 500; }
 .big-act.searching .ico { animation: spin .8s linear infinite; }
@@ -2126,6 +2131,12 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-says .raid-charge > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .raid-says .raid-charge > span .ico { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 .raid-says .raid-charge.on { border-color: color-mix(in srgb, var(--warn) 50%, var(--line)); color: var(--warn); }
+/* 7.7.7h: 기운 모으기 남은 시간 — 칸 바탕이 왼쪽으로 줄어드는 게이지, 3초 아래면 붉게 */
+.raid-says .raid-charge.timed { position: relative; overflow: hidden; }
+.raid-charge .ch-time { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: color-mix(in srgb, var(--warn) 22%, transparent); pointer-events: none; transition: width .1s linear; }
+.raid-charge.timed > span, .raid-charge.timed > .bar { position: relative; }
+.raid-charge .ch-sec { font-variant-numeric: tabular-nums; display: inline-block; min-width: 2.6em; text-align: right; }
+.raid-says .raid-charge.urgent { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); } .raid-charge.urgent .ch-time { background: color-mix(in srgb, var(--bad) 25%, transparent); }
 .raid-bfx { display: flex; gap: 4px; overflow: hidden; flex-wrap: nowrap; }
 .raid-act .panel-body { display: grid; gap: 8px; }
 .raid-wrap .raid-me { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 10px; align-items: center; }
