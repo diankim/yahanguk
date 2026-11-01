@@ -2,6 +2,8 @@
 -- 둘이 했을 때 돌아가며 버티다 겹쳐 쓰러져 실패했는데, 넷이면 손아귀(한 라운드 한 명)가 넷에게 나뉘고 넷이 한꺼번에 빠질 일이 거의 없어 너무 쉬웠다.
 -- ① 물러남: 혼자 1·둘 2(전에는 3)·셋 4·넷 5라운드. 혼자는 「모두 물러남」으로 끝나지 않는다(15분이 지나면 실패).
 -- ② 손아귀: 1·2명 하나, 3명 하나·둘 번갈아(짝수 라운드 둘), 4명 둘 — 같은 사람을 두 번 노리지 않고, 연막은 라운드에 한 번만 줄어든다.
+-- ③ 인원 배율(주인 체력·받는 피해): 1명 1 · 2명 0.75 · 3명 0.8 · 4명 0.85. 혼자는 쓰러짐 8번까지(아홉 번째면 실패).
+--    정석 플레이(수법 정답·기술 사용) 시뮬레이션: 둘 12판 중 6판, 넷 6판 중 6판 이김(되돌리는 시험, 2026-11-01).
 do $p$
 declare r record; d text; n int; own text; inh boolean;
 begin
@@ -17,7 +19,7 @@ $B$    -- 물러남 길이는 인원에 맞춘다(7.7.4): 혼자 한 라운드·
     select count(*) into v_n from public.world_gw_members where fight_id = p_fight;
     v_out := case when v_n <= 1 then 2 when v_n = 2 then 3 when v_n = 3 then 5 else 6 end;
     update public.world_gw_members set hp = 0, out_rounds = v_out, falls = falls + 1, nameless = false where fight_id = p_fight and owner_id = p_uid;
-    perform public.world_gw_say(p_fight, p_round, 'fall', m.name || ' — ' || p_why || ' ' || d || '의 피해를 입고 물러났습니다(' || (v_out - 1) || '라운드 뒤 돌아옴).');$B$),
+    perform public.world_gw_say(p_fight, p_round, 'fall', m.name || ' — ' || p_why || ' ' || d || '의 피해를 입고 물러났습니다(' || (v_out - 1) || '라운드 뒤 돌아옴' || case when v_n = 1 then ' · 더 쓰러질 수 있는 횟수 ' || greatest(0, 8 - (m.falls + 1)) || '번' else '' end || ').');$B$),
       ('public.world_gw_resolve(uuid)'::regprocedure,
 $A$  delayed boolean := false; sealed boolean := false; broke boolean := false; cover_by uuid; hit_who uuid;$A$,
 $B$  delayed boolean := false; sealed boolean := false; broke boolean := false; cover_by uuid; hit_who uuid; v_n int; v_hands int; v_h int; v_hit uuid[] := '{}'; v_miss numeric;$B$),
@@ -66,10 +68,23 @@ $B$      -- 손아귀 수는 인원에 맞춘다(7.7.4): 1·2명 하나, 3명 �
         end if;
       end loop;
       if n > 0 and coalesce(array_length(v_hit, 1), 0) > 0 then vbfx := case when n > 1 then jsonb_set(vbfx, '{smoke,n}', to_jsonb(n - 1)) else vbfx - 'smoke' end; end if;$B$),
+      ('public.world_gw_start(uuid)'::regprocedure,
+$A$max_hp = greatest(6000, round(sa * 40)), hp = greatest(6000, round(sa * 40)),$A$,
+$B$max_hp = round(greatest(6000, sa * 40) * case n when 1 then 1 when 2 then 0.75 when 3 then 0.8 else 0.85 end),
+         hp = round(greatest(6000, sa * 40) * case n when 1 then 1 when 2 then 0.75 when 3 then 0.8 else 0.85 end),$B$),
+      ('public.world_gw_resolve(uuid)'::regprocedure,
+$A$    raw := (35 + 4 * f.phase) * (1 + 0.15 * f.enrage);$A$,
+$B$    -- 인원 배율(7.7.4, 정석 플레이 시뮬레이션으로 맞춤: 넷 거의 다 이김 · 둘 절반 · 혼자 드물게): 1명 1 · 2명 0.75 · 3명 0.8 · 4명 0.85(주인 체력도 같은 배율, world_gw_start)
+    raw := (35 + 4 * f.phase) * (1 + 0.15 * f.enrage)
+           * (select case count(*) when 1 then 1 when 2 then 0.75 when 3 then 0.8 else 0.85 end from public.world_gw_members where fight_id = p_fight);$B$),
       ('public.world_gw_resolve(uuid)'::regprocedure,
 $A$  if alive = 0 then
     perform public.world_gw_say(p_fight, r, 'bad', '모두가 물러났습니다.$A$,
-$B$  -- 혼자면 쓰러져도 한 라운드 쉬고 돌아오므로 「모두 물러남」으로 끝내지 않는다(7.7.4, 시간이 다 되면 실패)
+$B$  -- 혼자면 쓰러져도 한 라운드 쉬고 돌아오므로 「모두 물러남」으로 끝내지 않는다(7.7.4). 대신 아홉 번째로 쓰러지면 끝(쓰러짐 8번까지)
+  if (select count(*) from public.world_gw_members where fight_id = p_fight) = 1 and (select max(falls) from public.world_gw_members where fight_id = p_fight) > 8 then
+    perform public.world_gw_say(p_fight, r, 'bad', '아홉 번째로 쓰러졌습니다. 홀로 선 이의 넋이 더는 버티지 못합니다.');
+    perform public.world_gw_settle(p_fight, false); return;
+  end if;
   if alive = 0 and (select count(*) from public.world_gw_members where fight_id = p_fight) > 1 then
     perform public.world_gw_say(p_fight, r, 'bad', '모두가 물러났습니다.$B$)
     ) x(fn, a, b)

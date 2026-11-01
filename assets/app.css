@@ -1136,7 +1136,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
    평면 도형만 쓰고(그라데이션·그림자·흐림 없음) 장소 색(--sc)을 바탕에 옅게 섞는다. 글자보다 뒤에 깔린다. */
 .scene-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .scene > :not(.scene-fx) { position: relative; z-index: 1; }
-.scene-art { position: absolute; right: 0; bottom: 0; width: min(100%, 720px); height: 100%; }
+.scene-art { position: absolute; right: 0; bottom: 0; width: 100%; height: 100%; } /* 7.7.4: 넓은 화면은 그림을 되풀이(scenery.js REPEAT) */
 /* 겹마다 장소 색을 다른 농도로: 먼 산(옅게) → 상징물 → 앞쪽 땅(가장 짙게). 가장 짙은 겹에는 글자색을 조금 섞어 또렷하게 한다. */
 .scene-art { --s1: color-mix(in srgb, var(--sc, var(--accent)) 20%, var(--surface)); --s15: color-mix(in srgb, var(--sc, var(--accent)) 26%, var(--surface)); --s2: color-mix(in srgb, var(--sc, var(--accent)) 34%, var(--surface));
   --s3: color-mix(in srgb, color-mix(in srgb, var(--sc, var(--accent)) 44%, var(--surface)) 90%, var(--text)); }
@@ -2790,12 +2790,12 @@ b.shadow { color: var(--sp); }
 .bar.gw-gauge { position: relative; flex: 1; min-width: 0; height: calc(17px * var(--fz, 1)); border-radius: 4px; }
 .bar.gw-gauge > span { position: absolute; inset: 0 auto 0 0; }
 .bar.gw-gauge > b { position: relative; display: block; text-align: right; padding-right: 5px; font-size: calc(11.5px * var(--fz, 1)); line-height: calc(17px * var(--fz, 1)); color: var(--text); font-variant-numeric: tabular-nums; }
-.gw-skills-h { margin: 6px 0 0; display: flex; align-items: center; gap: 5px; font-size: calc(12px * var(--fz, 1)); font-weight: 700; }
-.gw-skills-h small { font-weight: 500; }
 .gw-wrap .mem-top { justify-content: flex-start; }
 .gw-wrap .mem-top .mem-job { font-size: calc(10.5px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .gw-wrap .mem-top .mem-hp { margin-left: auto; }
-.gw-gim > p b { display: inline-flex; align-items: center; gap: 4px; }
+.gw-gim { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.gw-gim .btn { flex: 1 1 0; min-width: 0; min-height: 34px; padding-inline: 6px; }
+.gw-gim-h { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: calc(11.5px * var(--fz, 1)); color: var(--bad); }
 .gw-pick-hint { font-size: calc(11px * var(--fz, 1)); text-align: right; }
 @media (max-width: 640px) {
   .gw-wrap .raid-act > .panel-head { display: none; }
@@ -2805,6 +2805,5 @@ b.shadow { color: var(--sp); }
   .gw-vits { gap: 6px; margin-bottom: 4px; }
   .gw-vit { gap: 3px; font-size: calc(11px * var(--fz, 1)); }
   .gw-wrap .raid-buttons.pf-btns.gw-btns .btn { min-height: 36px; flex-direction: row; gap: 4px; }
-  .gw-skills-h { margin-top: 4px; }
   .gw-wrap .raid-members .panel-head { padding-block: 6px; }
 }
