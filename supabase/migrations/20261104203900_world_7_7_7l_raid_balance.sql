@@ -1,5 +1,5 @@
 -- 7.7.7l — 파티 전투 균형(사용자 결정 2026-11-01, 복제 DB 시뮬레이션 결과):
---  ① 구중 봉주 결전도 귀허처럼 체력 회복품을 한 싸움에 네 개까지(아래 단계 토벌이라 귀허 둘보다 둘 더), 쉬다 돌아오면 체력 30, 혼자면 회복 기술 절반. 결전 중에는 가방·퀵슬롯에서 바로 못 쓰고 결전 화면 「물품」으로만.
+--  ① 구중 봉주 결전도 귀허처럼 체력 회복품을 한 싸움에 다섯 개까지(아래 단계 토벌이라 귀허 둘보다 많이), 쉬다 돌아오면 체력 30, 혼자면 회복 기술 절반. 결전 중에는 가방·퀵슬롯에서 바로 못 쓰고 결전 화면 「물품」으로만.
 --     영력·기력 회복품(체력이 오르지 않는 것)은 세지 않는다.
 --  ② 혼자 싸울 때만 직업 보정(world_solo_aid): 혼자 귀허 승률이 백공 67%·호위 무사 42%·조사원 17%·퇴마관·봉인술사·의무관 0%로 갈려서
 --     주는 피해 +%와(귀허) 쓰러짐 상한 +n번. 둘 이상은 그대로.
@@ -87,7 +87,7 @@ begin
     d := pg_temp.yh_sub(d, '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;',
       '    sp := c.spiritual_power; inv := coalesce(c.inventory, ''{}''::jsonb); h1 := c.health;
     if rd.kind = ''final'' and h1 > h0 then
-      if mb.items_used >= 4 then raise exception ''결전에서는 체력 회복품을 한 싸움에 네 개까지만 쓸 수 있습니다.''; end if;
+      if mb.items_used >= 5 then raise exception ''결전에서는 체력 회복품을 한 싸움에 다섯 개까지만 쓸 수 있습니다.''; end if;
       mb.items_used := mb.items_used + 1;
     end if;', 'raid_action item');
     d := pg_temp.yh_sub(d, 'contrib = mb.contrib, last_action_at = mb.last_action_at, out_until = mb.out_until, stats = st where raid_id = p_raid and owner_id = uid;',
@@ -99,7 +99,7 @@ begin
   if position('items_left' in d) = 0 then
     d := pg_temp.yh_sub(d, '''resting'', me.out_until is not null and me.out_until <= now(),',
       '''resting'', me.out_until is not null and me.out_until <= now(),
-      ''items_left'', case when rd.kind = ''final'' and me.owner_id is not null then greatest(0, 4 - me.items_used) end,
+      ''items_left'', case when rd.kind = ''final'' and me.owner_id is not null then greatest(0, 5 - me.items_used) end,
       ''solo'', case when rd.kind = ''final'' and me.owner_id is not null and (select count(*) from public.world_raid_members x where x.raid_id = rd.raid_id) = 1 then public.world_solo_aid(me.job_key) end,', 'raid_snapshot');
     execute d;
   end if;
@@ -111,7 +111,7 @@ begin
       '  IF coalesce(current_setting(''yh.raid_item'', true), '''') <> ''1'' AND EXISTS (
        SELECT 1 FROM public.world_raid_members m JOIN public.world_raids rd ON rd.raid_id = m.raid_id
         WHERE m.owner_id = uid AND rd.status = ''fight'' AND rd.kind = ''final'') THEN
-    RAISE EXCEPTION ''결전 중에는 가방의 물품을 바로 쓸 수 없습니다. 결전 화면의 「물품」으로 쓰세요(체력 회복품은 한 싸움에 네 개까지).'';
+    RAISE EXCEPTION ''결전 중에는 가방의 물품을 바로 쓸 수 없습니다. 결전 화면의 「물품」으로 쓰세요(체력 회복품은 한 싸움에 다섯 개까지).'';
   END IF;
   IF coalesce(c.is_dead, false) THEN RAISE EXCEPTION', 'use_item');
     execute d;
@@ -123,12 +123,27 @@ begin
       '  d := d * (1 - red / 100.0) * (1 + coalesce((p_stats ->> ''inc'')::numeric, 0) / 100.0) * (1 - coalesce((p_stats ->> ''solo_guard'')::numeric, 0) / 100.0);', 'cb_mitigate solo');
     execute d;
   end if;
+  -- 결전: 모두 물러났을 때 보스가 되찾는 체력 8% → 3%(회복 직업 없는 조합이 회복품을 다 쓴 뒤 되풀이해 차올라 0%이던 것)
+  d := replace(pg_get_functiondef('public.world_raid_action(uuid,text,text,uuid,text)'::regprocedure), E'\r\n', E'\n');
+  if position('round(rd.max_hp * 0.08)' in d) > 0 then
+    d := pg_temp.yh_sub(d, 'rd.hp := least(rd.max_hp, rd.hp + round(rd.max_hp * 0.08));', 'rd.hp := least(rd.max_hp, rd.hp + round(rd.max_hp * 0.03));', 'final wipe heal');
+    d := pg_temp.yh_sub(d, '기운을 되찾습니다(체력 +8%).', '기운을 되찾습니다(체력 +3%).', 'final wipe msg');
+    execute d;
+  end if;
+  -- 귀허: 혼자면 주인 체력 ×1.1(혼자 보정 뒤 평균을 3/10 근처로)
+  d := replace(pg_get_functiondef('public.world_gw_start(uuid)'::regprocedure), E'\r\n', E'\n');
+  if position('when 1 then 1.1 when 2' in d) = 0 then
+    if (length(d) - length(replace(d, 'case n when 1 then 1 when 2', ''))) / length('case n when 1 then 1 when 2') <> 2 then raise exception '7.7.7l anchor gw solo hp'; end if;
+    d := replace(d, 'case n when 1 then 1 when 2', 'case n when 1 then 1.1 when 2');
+    execute d;
+  end if;
 end $p$;
 
 update public.world_patch_notes set body = body || $N$
 ## 7.7.7l
-- 구중 봉주 결전에서도 체력 회복품을 한 싸움에 네 개까지만 쓸 수 있습니다(귀허의 주인은 두 개). 혼자 싸우면 회복 기술의 회복량은 절반입니다. 결전 중에는 가방·퀵슬롯에서 바로 쓰지 않고 결전 화면의 「물품」으로 씁니다. 영력·기력 회복품은 세지 않습니다. 결전에서 물러났다가 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
-- 혼자 도전할 때만 직업 보정이 붙습니다(둘 이상이면 그대로): 퇴마관 주는 피해 +20%·받는 피해 −25% · 봉인술사 +20%·−20% · 의무관 +10%·−5% · 호위 무사 +10%·−10% · 현장 조사원 +5% · 백공 주는 피해 −10%. 귀허의 주인에서는 쓰러질 수 있는 횟수도 퇴마관·봉인술사 +3번·의무관 +2번·호위 무사 +1번.
+- 구중 봉주 결전에서도 체력 회복품을 한 싸움에 다섯 개까지만 쓸 수 있습니다(귀허의 주인은 두 개). 모두 물러났을 때 결전 보스가 되찾는 체력은 8%에서 3%로 줄였습니다. 혼자 싸우면 회복 기술의 회복량은 절반입니다. 결전 중에는 가방·퀵슬롯에서 바로 쓰지 않고 결전 화면의 「물품」으로 씁니다. 영력·기력 회복품은 세지 않습니다. 결전에서 물러났다가 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
+- 귀허의 주인에 혼자 도전하면 주인 체력이 1.1배입니다.
+- 혼자 도전할 때만 직업 보정이 붙습니다(둘 이상이면 그대로): 의무관 주는 피해 +15%·받는 피해 −8% · 퇴마관·봉인술사 +12%·−8% · 호위 무사·현장 조사원 +5% · 백공 주는 피해 −5%. 귀허의 주인에서는 쓰러질 수 있는 횟수도 의무관 +3번·퇴마관·봉인술사 +2번·호위 무사·조사원 +1번.
 $N$ where note_id = '7.7.0' and position('## 7.7.7l' in body) = 0;
 
 update public.world_app_meta set value = '20261104203900' where key = 'db_version';

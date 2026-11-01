@@ -297,7 +297,7 @@ function fillItems() {
   const [hp, sp] = itemGroups(RAID_ITEMS, inv), list = ks => itemListHtml(ks, inv);
   // 결전(7.7.7l): 체력 회복품 한 싸움 네 개, 가방에서 바로 쓰지 않고 「물품」 행동으로만(쉬는 중에 쓰면 그대로 돌아감)
   const fin = snap?.raid?.kind === 'final', left = snap?.me?.items_left;
-  box.innerHTML = `<p class="muted small">${fin ? `체력 회복품은 <b>한 싸움에 네 개까지</b> · 남은 횟수 <b>${left ?? 0}/4</b>. 물품을 쓰면 그 차례의 행동이 되고, 쉬는 중이면 체력 30으로 싸움에 돌아갑니다.` : out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
+  box.innerHTML = `<p class="muted small">${fin ? `체력 회복품은 <b>한 싸움에 다섯 개까지</b> · 남은 횟수 <b>${left ?? 0}/5</b>. 물품을 쓰면 그 차례의 행동이 되고, 쉬는 중이면 체력 30으로 싸움에 돌아갑니다.` : out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
     <h3 class="raid-item-h">체력·정신 회복</h3>${list(hp)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${list(sp)}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => {
     const k = b.dataset.use;
