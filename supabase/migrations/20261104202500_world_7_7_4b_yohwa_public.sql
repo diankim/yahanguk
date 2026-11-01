@@ -1,4 +1,4 @@
--- 7.7.5 — 요화 3단계·요괴화를 남에게도 보인다(사용자 요청 2026-11-01).
+-- 7.7.4b — 요화 3단계·요괴화를 남에게도 보인다(사용자 요청 2026-11-01).
 -- 요화 1·2단계는 지금처럼 본인만 안다. 3단계(반요)는 조사원 카드의 「지금」 칸에, 요괴화(마지막 1시간)는
 -- 조사원 카드 이름 옆과 채팅 이름 옆(전체·지역·세력·귓속말·모임)에 붉게 보인다 — 「동네방네 소문이 나게」.
 -- world_yohwa_public(uid): 'frenzy'(요괴화 중) · '3'(요화 3단계) · null.
@@ -40,7 +40,7 @@ $B$'owner_id', c.owner_id, 'character_name', c.character_name, 'level', c.level,
     d := replace(pg_get_functiondef(r.fn), E'\r\n', E'\n');
     if position(r.b in d) > 0 then continue; end if;
     n := (length(d) - length(replace(d, r.a, ''))) / length(r.a);
-    if n <> 1 then raise exception '7.7.5 yohwa public anchor in % (% of 1): %', r.fn, n, left(r.a, 70); end if;
+    if n <> 1 then raise exception '7.7.4b yohwa public anchor in % (% of 1): %', r.fn, n, left(r.a, 70); end if;
     select p.proowner::regrole::text into own from pg_proc p where p.oid = r.fn;
     if own <> 'postgres' then
       if not pg_has_role('postgres', own, 'USAGE') then execute format('grant %I to postgres with inherit true', own); end if;

@@ -447,7 +447,7 @@ export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 
 export function richText(t) {
   return esc(t).replace(/#패치노트(?::([0-9][0-9.-]{2,11}))?/g, (_, id) => `<a class="patch-link" href="#/patch${id ? `/${id}` : ''}">${icon('scroll', 12)}패치노트${id ? ` ${id}` : ''}</a>`);
 }
-// 요괴화(요화 마지막 1시간) 중에 보낸 말: 이름 옆 붉은 표식(7.7.5, 서버가 보낼 때 sender_mark를 찍음)
+// 요괴화(요화 마지막 1시간) 중에 보낸 말: 이름 옆 붉은 표식(7.7.4b, 서버가 보낼 때 sender_mark를 찍음)
 const YOHWA_MARK = '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>';
 function msgRow(r, prev) {
   // 시스템 알림 줄(서버가 「구조 알림」 이름으로 남긴 쓰러짐·다시 일어남 소식 등). 다시 일어남(up)은 차분한 색으로 구조가 끝났음을 알린다

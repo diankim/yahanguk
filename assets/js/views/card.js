@@ -30,7 +30,7 @@ async function draw(box, id) {
     const p = profileOf(c.owner_id, c.profile);
     const state = c.is_dead ? chip('숨을 거둠', 'bad') : c.downed ? chip('전투불능', 'bad') : c.in_combat ? chip('전투 중', 'warn')
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
-    // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(7.7.5, 서버 world_yohwa_public — 1·2단계는 본인만)
+    // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(7.7.4b, 서버 world_yohwa_public — 1·2단계는 본인만)
     const yoChip = c.yohwa === 'frenzy' ? chip('요괴화', 'bad') : c.yohwa === '3' ? chip('반요 · 요화 3단계', 'warn') : '';
     const rel = c.relation || 'none', safe = !!(store.snaps?.['world_field_snapshotnull'] || store.snaps?.world_field_snapshot)?.region?.safe;
     // 파티 초대: 상대가 파티가 없고, 내가 파티장이거나 아직 파티가 없을 때(없으면 만들고 초대)
