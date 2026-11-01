@@ -3,9 +3,15 @@
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { mountMeter } from './meter.js';
-// 기여도 갈래(7.7.4, 서버 world_raid_members.credits): 직접 피해·늘려 준 피해·막아 준 피해·회복·받아 낸 피해
+// 기여도 갈래(7.7.4, 서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
+// 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
-const creditLine = c => { const parts = CREDIT.filter(([k]) => Number(c?.[k]) > 0).map(([k, n]) => `${n} ${fmt.num(c[k])}`); return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : ''; };
+const creditLine = c => {
+  const v = { ...(c || {}), heal: (Number(c?.heal) || 0) + (Number(c?.heal_self) || 0) };
+  const parts = CREDIT.filter(([k]) => Number(v[k]) > 0).map(([k, n]) => `${n} ${fmt.num(Math.round(v[k]))}`);
+  if (Number(c?.skill) > 0) parts.push(`기술 ${c.skill}번`);
+  return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : '';
+};
 
 // 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
 const SP_ITEMS = new Set(['spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew']);
