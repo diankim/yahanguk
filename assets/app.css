@@ -2655,3 +2655,8 @@ b.shadow { color: var(--sp); }
 
 /* 거래소 가격(7.7.3): 개당·합계 금액을 굵게, 본문 색으로 */
 .mk-price b { font-weight: 700; color: var(--text); }
+
+/* 채집 도감 채집터(7.7.3): 꼬리표 대신 줄글 */
+.gx-line { margin: 0; font-size: calc(12px * var(--fz, 1)); line-height: 1.55; }
+.gx-line .q-link { display: inline; min-height: 0; padding: 0; font-weight: 600; }
+.gx-line .gx-f { color: var(--text); }
