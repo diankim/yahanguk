@@ -1,7 +1,7 @@
 // 성장 알림: 레벨·기능 숙련 단계·가방 칸처럼 캐릭터가 자랄 때마다 화면 위에 잠깐 떴다 사라지는 알림을 띄운다.
 // 서버에서 다시 읽은 캐릭터(world_characters)를 지난 값과 비교한다. 지난 값은 이 기기에 캐릭터별로 남겨,
 // 접속하지 않은 사이(원정·자율 활동 보상 등) 자란 것도 다음 접속 때 알린다.
-import { on, store, esc, icon, fmt, xpNeed, LEVEL_CAP } from './core.js';
+import { on, esc, icon, fmt, xpNeed, LEVEL_CAP } from './core.js';
 
 const RANKS = [['combat_rank', '전투 숙련'], ['investigation_rank', '조사 숙련'], ['gathering_rank', '채집 숙련'], ['crafting_rank', '제작 숙련']];
 const keyOf = id => `yh-growth:${id}`;

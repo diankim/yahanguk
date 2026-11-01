@@ -2,7 +2,7 @@
 // 대화는 게임 안 팝업에서 한 줄씩 넘겨 보인다(지문은 기울임, 대사는 인물 이름표).
 import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf } from './core.js';
 import { openItemInfo } from './views/item.js';
-import { panel, chip, invalidate } from './views/common.js';
+import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';

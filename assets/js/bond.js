@@ -1,7 +1,7 @@
 // 연리(連理): 조사원끼리 맺는 연인 관계. 상대는 「정인」이라 부른다(서버 world_bond_*).
 // 정표는 가방과 별개로 「정표 칸」에 착용·벗기를 하고, 둘 다 착용하고 같은 곳·같은 파티이면 연리의 기운(회복량 +5% · 침식 -5%)을 받는다.
 // 동료 화면의 연리 칸, 조사원 카드의 [연리 맺기], 장비 목록의 정표 칸, 마음 전하기·선물·파기 창을 맡는다.
-import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, toast, MARKET_ONLY } from './core.js';
+import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
 import { load } from './views/common.js';
 
@@ -15,7 +15,6 @@ export const TOKENS = {
   mirror: ['달 거울 조각', '한 거울을 둘로 나눈 달빛 조각', 'M12 3a8 8 0 108 8 6 6 0 01-8-8zM12 19v3'],
 };
 export const tokenSvg = (k, size = 22) => `<svg class="ico token-ico" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${TOKENS[k]?.[2] || TOKENS.knot[2]}"/></svg>`;
-const STAGES = ['', '정을 나눔', '마음이 이어짐', '연리', '백년해로'];
 
 let snap = null, loading = null;
 export const bond = () => snap?.bond || null;
@@ -96,10 +95,10 @@ export function bondPanelHtml(s) {
     ${br ? `<div class="bond-card broken"><div class="bond-token">${tokenSvg(br.token_key, 34)}</div><div class="bond-main"><b>깨진 정표 · ${esc(br.token_name)}</b>
       <small>${esc(br.partner_name || '정인')}님이 정표를 파기해 연리가 끝났습니다 (${fmt.time(br.ended_at)}, 함께한 날 ${fmt.num(br.days + 1)}일).</small></div>
       <button class="btn small" data-bond="clear">정리하기</button></div>` : ''}
-    ${inc.length ? `<h3 class="sub-h">받은 마음 ${inc.length}</h3><ul class="spot-list">${inc.map(r => `<li><div class="bond-req">${tokenSvg(r.token_key, 26)}<div><b>${cardName(r.from_id, r.from_name)}님이 「${esc(r.token_name)}」을(를) 건넸습니다</b>
+    ${inc.length ? `<h3 class="sub-h">받은 마음 ${inc.length}</h3><ul class="spot-list">${inc.map(r => `<li><div class="bond-req">${tokenSvg(r.token_key, 26)}<div><b>${cardName(r.from_id, r.from_name)}님이 ${esc(`「${r.token_name}」을(를)`)} 건넸습니다</b>
       <small>${r.message ? `“${esc(r.message)}” · ` : ''}${fmt.remain(new Date(r.expires_at) - Date.now())} 남음</small></div></div>
       <div class="btn-row"><button class="btn small primary" data-bond-acc="${esc(r.request_id)}">받기</button><button class="btn small" data-bond-dec="${esc(r.request_id)}">돌려보내기</button></div></li>`).join('')}</ul>` : ''}
-    ${out ? `<p class="hint">${tokenSvg(out.token_key, 18)} ${esc(out.to_name || '상대')}님에게 「${esc(out.token_name)}」을(를) 건네고 답을 기다립니다 · ${fmt.remain(new Date(out.expires_at) - Date.now())} 남음 <button class="btn small ghost" data-bond="cancel">거두기</button></p>` : ''}
+    ${out ? `<p class="hint">${tokenSvg(out.token_key, 18)} ${esc(out.to_name || '상대')}님에게 ${esc(`「${out.token_name}」을(를)`)} 건네고 답을 기다립니다 · ${fmt.remain(new Date(out.expires_at) - Date.now())} 남음 <button class="btn small ghost" data-bond="cancel">거두기</button></p>` : ''}
     ${!inc.length && !out ? `<p class="muted small">아직 정인이 없습니다. 친구의 조사원 카드에서 [연리 맺기]로 정표를 건네 마음을 전할 수 있습니다(둘 다 Lv.5 이상, 정표 짓는 값 300전 · 거절되거나 24시간이 지나면 돌려받음).</p>` : ''}
     ${s?.cooldown_until && new Date(s.cooldown_until) > new Date() ? `<p class="muted small">연리가 끝난 지 3일이 지나지 않아 ${fmt.remain(new Date(s.cooldown_until) - Date.now())} 뒤부터 새로 맺을 수 있습니다.</p>` : ''}`;
 }

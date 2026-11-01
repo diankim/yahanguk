@@ -1,6 +1,6 @@
 import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
-import { ask, loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
+import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
@@ -8,7 +8,7 @@ import { mountWhisper, mountWhisperPage } from './whisper.js';
 import { mountGrowth } from './growth.js';
 import { mountVersionCheck } from './version.js';
 import { mountBug } from './bug.js';
-import { applySavedTheme, openProfile, initSound, mountNotifications } from './settings.js';
+import { applySavedTheme, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { installColorPicker } from './colorpick.js';
 installColorPicker(); // 휴대폰 기본 색 선택 창 대신 게임 안 색 고르기 창(7.6.1)

@@ -177,7 +177,6 @@ function playDrum(t, vel, kind = 'big') {
 // 오음 고집을 풀고 3~6도 도약을 섞어 음 폭을 넓혔다. ③ 큰북(playDrum) — 영역마다 장단 셋(기본·변형·몰아치기)을 두어 마디마다 바꾸고 프레이즈 끝에서 몰아친다.
 // ④ 전투는 영역마다 따로 편성한다(PROFILES[].bt: 북령은 현악·첼로·종의 진혼곡, 해금·가야금 잔걸음을 뺌).
 const MODES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], phryg: [0, 1, 3, 5, 7, 8, 10] };
-const PENT = { minor: [0, 2, 3, 4, 6], major: [0, 1, 2, 4, 5], phryg: [0, 1, 3, 4, 5] }; // 오음(음계 칸 번호)
 const PROG = {
   minor: { ante: [[0, 5, 3, 4], [0, 3, 5, 6], [0, 6, 5, 4], [5, 6, 0, 4], [0, 2, 3, 6]], cons: [[5, 6, 0, 0], [3, 4, 0, 0], [0, 5, 6, 0], [5, 3, 4, 0], [2, 5, 6, 0]],
            bA: [[5, 6, 2, 5], [3, 4, 5, 6], [5, 3, 6, 2]], bC: [[3, 6, 2, 4], [5, 3, 4, 4], [3, 5, 6, 6]] },
@@ -321,14 +320,13 @@ const insOf = p => [...new Set([p.lead, p.lead2, p.counter, p.arp, p.accIns, p.b
 function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909); h >>>= 0; return h / 4294967296; }; }
 
 function makeSong(p, key, loop) {
-  const M = MODES[p.mode], pent = PENT[p.mode], prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
+  const M = MODES[p.mode], prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
   // 프리지안의 V(감화음)는 거칠어 ♭II(프리지안 맺음)로 바꾼다
   const prog = p.mode === 'phryg' ? Object.fromEntries(Object.entries(prog0).map(([k, v]) => [k, v.map(c => c.map(x => (x === 4 ? 1 : x)))])) : prog0;
   const theme = seeded(key), vary = seeded(`${key}:${loop}`);
   const pick = (r, a) => a[Math.floor(r() * a.length)];
   const mod7 = d => ((d % 7) + 7) % 7;
   const midi = (d, base = p.tonic) => base + 12 * Math.floor(d / 7) + M[mod7(d)];
-  const isPent = d => pent.includes(mod7(d));
   const chordTones = c => [mod7(c), mod7(c + 2), mod7(c + 4)];
   const LO = 2, HI = 13, RS = RHY[p.rhy] || RHY.calm, beats = p.meter;
   // 프레이즈(4마디): 마디마다 [[박, 음계 칸, 길이, 꾸밈]]
@@ -537,7 +535,6 @@ function setLayer(name, level, build) {
   const L = loopLayer(name, build);
   L.g.gain.setTargetAtTime(Math.max(0.0001, level), now(), 1.5);
 }
-const noiseSrc = (buf) => { const n = ctx.createBufferSource(); n.buffer = buf; n.loop = true; n.start(); return n; };
 // 환경음 층은 ambience.js(7.5.9i 다듬기)가 만든다 — 비는 빗방울을 버퍼에 흩뿌린 결, 바람은 숨 쉬듯, 물은 일렁이게
 const ambMat = {};
 const BUILD = Object.fromEntries(Object.keys(AMB).map(k => [k, g => { ambMat.noise = noiseBuf; ambMat.brown = brownBuf; return AMB[k](ctx, g, ambMat); }]));
