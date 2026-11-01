@@ -14,7 +14,7 @@ returns jsonb language sql immutable as $f$
     when 'medic'      then '{"solo_dmg": 20, "solo_falls": 3, "solo_guard": 8}'
     when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1}'
     when 'scout'      then '{"solo_dmg": 10, "solo_falls": 2}'
-    when 'analyst'    then '{"solo_dmg": 8}'
+    when 'analyst'    then '{"solo_dmg": 4}'
     else '{}' end::jsonb
 $f$;
 revoke all on function public.world_solo_aid(text) from public, anon, authenticated;
