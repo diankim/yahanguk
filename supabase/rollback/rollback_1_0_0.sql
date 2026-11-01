@@ -267,7 +267,7 @@ update public.world_quest_steps s
 -- ════════ p6_pets.src.sql ════════
 -- 대기 파일: 꼬마 동무 1.0.0(롤백 패치) — 새 동무 8종(조사원 제보) · 동무 두 자리(프로필 동무 / 별채 동무)
 -- 1.0.0 묶음에 합칠 것(db_version 줄은 넣지 않았다 — 묶음 마지막에 한 번). migrations 폴더 밖에 두어 실수로 돌지 않게 했다.
--- 화면: assets/js/housing/pets.js(45종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
+-- 화면: assets/js/housing/pets.js(44종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
 -- 그림(pets.js)이 먼저 배포돼 있어도 world_pet_species에 없으면 도감에 나오지 않는다.
 --
 -- ① 새 동무 9종(제보한 조사원 → 동무, 꼬마 매는 2026-11-01 제보 76 아도니스 · 양품 얼룩무늬 알)
@@ -314,9 +314,8 @@ select x.pet_id, x.pet_name, x.grade, x.kind, x.likes, x.how, x.sort, x.egg
     ('onehorn_goat',     '외뿔 팔족염소',     4, 'giant',   'treat_herb',  '외전 「거꾸로 선 기도」를 마친다', 36, false),
     ('little_hongryong', '꼬마 홍룡',         4, 'breaker', 'treat_meat',  '이야기 8장 「재의 바다」를 마친다', 37, false),
     ('little_hawk',      '꼬마 매',           2, 'bird',    'treat_meat',  '탐색 중 「얼룩무늬 알」', 38, true),
-    -- 사용자 요청 6종(2026-10-31 그림, 11-01 넣기로): 범품 다섯은 바구니, 부리너구리는 얼룩무늬 알
+    -- 사용자 요청 6종(2026-10-31 그림, 11-01 넣기로): 범품 넷은 바구니, 부리너구리는 얼룩무늬 알
     ('cheese_cat',       '누렁 줄고양이',     1, 'shadow',  'treat_fish',  '안전지대 상점의 바구니', 39, false),
-    ('gray_longhair',    '잿빛 솜털 고양이',  1, 'shadow',  'treat_fish',  '안전지대 상점의 바구니', 40, false),
     ('tuxedo_cat',       '까치 고양이',       1, 'shadow',  'treat_fish',  '안전지대 상점의 바구니', 41, false),
     ('ddonggae',         '똥개',              1, 'ward',    'treat_meat',  '안전지대 상점의 바구니', 42, false),
     ('hare',             '산토끼',            1, 'wood',    'treat_herb',  '안전지대 상점의 바구니', 43, false),
@@ -339,8 +338,6 @@ values
    false, '{}'::jsonb, 1, '{"pet": "white_puppy"}'::jsonb, true, 300, 1),
   ('pt_cheese_cat', '누렁 줄고양이 바구니', 'pet', 1, '노란 털에 주황 줄무늬가 진 고양이입니다. 밥그릇 소리만 나면 어디서든 달려옵니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
    false, '{}'::jsonb, 1, '{"pet": "cheese_cat"}'::jsonb, true, 300, 1),
-  ('pt_gray_longhair', '잿빛 솜털 고양이 바구니', 'pet', 1, '잿빛 털이 솜뭉치처럼 부푼 고양이입니다. 앞머리에 눈이 반쯤 가려도 밥그릇만큼은 용케 찾아갑니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
-   false, '{}'::jsonb, 1, '{"pet": "gray_longhair"}'::jsonb, true, 300, 1),
   ('pt_tuxedo_cat', '까치 고양이 바구니', 'pet', 1, '까치처럼 검은 등에 흰 앞섶을 받쳐 입은 고양이입니다. 늘 차려입은 얼굴로 손님을 맞습니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
    false, '{}'::jsonb, 1, '{"pet": "tuxedo_cat"}'::jsonb, true, 300, 1),
   ('pt_ddonggae', '똥개 바구니', 'pet', 1, '주둥이·귀·발이 까무잡잡한 동네 개입니다. 늘 머리에 무언가를 이고 다니며 모자인 줄 알고 뿌듯해합니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
@@ -352,7 +349,7 @@ on conflict (item_id) do update set item_name = excluded.item_name, category = e
 insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max, daily_cap)
 select s.shop_id, x.item_id, 300, 0, 10, null
   from (select distinct shop_id from public.world_shop_catalog where shop_id not in ('smithy', 'banyo_shop')) s
-  cross join (values ('pt_neun_puppy'), ('pt_white_puppy'), ('pt_cheese_cat'), ('pt_gray_longhair'), ('pt_tuxedo_cat'), ('pt_ddonggae'), ('pt_hare')) as x(item_id)
+  cross join (values ('pt_neun_puppy'), ('pt_white_puppy'), ('pt_cheese_cat'), ('pt_tuxedo_cat'), ('pt_ddonggae'), ('pt_hare')) as x(item_id)
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
 
 -- 「모든 동무의 벗」 칭호 글: 서른 → 지금 종 수(판정 n은 30 그대로 — 이미 받은 사람을 지키고, 새 종은 덤)
@@ -572,7 +569,7 @@ insert into public.world_patch_notes(note_id, title, body) values ('1.0.0', '1.0
 
 ## 꼬마 동무
 - 새 동무 9종: 네눈박이 강아지·흰둥이 강아지·잿빛 장모 고양이·점박이 하늘다람쥐·꼬마 족제비·꼬마 매·금빛 날개늑대·외뿔 팔족염소·꼬마 홍룡(조사원 제보로 태어났습니다).
-- 상점 바구니 동무 다섯(누렁 줄고양이·잿빛 솜털 고양이·까치 고양이·똥개·산토끼)과 얼룩무늬 알에서 나오는 부리너구리가 더해졌습니다(모두 45종).
+- 상점 바구니 동무 넷(누렁 줄고양이·까치 고양이·똥개·산토끼)과 얼룩무늬 알에서 나오는 부리너구리가 더해졌고, 「잿빛 장모 고양이」 그림을 새로 그렸습니다(모두 44종).
 - **동무 두 자리**: 데리고 다니는 동무(조사원 카드에 보임, 별채가 없어도 됨)와 별채에 머무는 동무를 따로 정합니다.
 
 ## 초대권
