@@ -3,6 +3,7 @@
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, brief, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip, itemDesc } from './common.js';
 import { mountMeter } from './meter.js';
+import { USABLE, fxHtml } from './item.js';
 // 기여도 갈래(7.7.4, 서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
 // 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
@@ -327,13 +328,15 @@ function openItems() {
   fillItems();
   if (!itemDesc('tonic')) load('world_inventory_snapshot').then(fillItems).catch(() => {});
 }
+// 제보 86·사용자 요청(7.7.7i): 이름과 회복 수치만, 작은 칸 서너 개씩 한 줄
+const fxOf = k => fxHtml(String(USABLE[k.replace(/_hq$/, '')] || '').split(' · ').filter(x => /^(체력|정신|영력|침식)|치료|풀기/.test(x.trim())).join(' · ') || brief(itemDesc(k)) || '');
 function fillItems() {
   const box = itemLayer && $('#raid-items-body', itemLayer); if (!box) return;
   const inv = store.character?.inventory || {}, out = outUntil > Date.now() || away || resting;
   const have = list => list.flatMap(k => [k, k + '_hq']).filter(k => Number(inv[k]) > 0);
   // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67)
   const hp = have(RAID_ITEMS.filter(k => !SP_ITEMS.has(k))), sp = have(RAID_ITEMS.filter(k => SP_ITEMS.has(k)));
-  const list = ks => ks.length ? `<ul class="raid-item-list">${ks.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}"><b>${esc(nameOf(k))}</b><small>${esc(brief(itemDesc(k)) || '')}</small><span>×${inv[k]}</span></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
+  const list = ks => ks.length ? `<ul class="raid-item-list">${ks.map(k => `<li><button type="button" class="raid-item" data-use="${esc(k)}" title="${esc(brief(itemDesc(k)) || '')}"><b>${esc(nameOf(k))}</b><span>×${inv[k]}</span><small>${fxOf(k)}</small></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
   box.innerHTML = `<p class="muted small">${out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
     <h3 class="raid-item-h">체력·정신 회복</h3>${list(hp)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${list(sp)}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => {
