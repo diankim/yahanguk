@@ -2174,8 +2174,13 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-act.my-turn { border-color: var(--accent); }
 .raid-wrap .raid-buttons.pf-btns { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .raid-wrap .raid-buttons.pf-btns .btn { padding-inline: 4px; }
+/* 귀허의 주인(7.7.3): 같은 칸 배치, 단추 넷, 고른 대상(물품·정화)은 포인트색 테두리 */
+.raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.raid-mem.pf-mem li.pick .mem-pick { outline: 2px solid var(--accent); outline-offset: -1px; }
+.gw-wrap .raid-mem.pf-mem .mem-pick:not(:disabled) { cursor: pointer; }
 @media (max-width: 640px) {
   .pf-wrap .raid-mem.pf-mem { max-height: none; }
+  .raid-wrap .raid-buttons.pf-btns.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .raid-wrap .raid-buttons.pf-btns { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .pf-wrap .raid-log { height: 140px; }
 }
