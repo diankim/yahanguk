@@ -10,10 +10,10 @@ returns jsonb language sql immutable as $f$
   -- dmg: 주는 피해 %, falls: 귀허 쓰러짐 상한 +, guard: 받는 피해 −%(world_cb_mitigate가 stats.solo_guard로) — 혼자 도전 10판씩 복제 DB 시뮬레이션으로 맞춤
   select case p_job
     when 'exorcist'   then '{"solo_dmg": 12, "solo_falls": 2, "solo_guard": 8}'
-    when 'sealmaster' then '{"solo_dmg": 12, "solo_falls": 2, "solo_guard": 8}'
+    when 'sealmaster' then '{"solo_dmg": 12, "solo_falls": 2, "solo_guard": 12}'
     when 'medic'      then '{"solo_dmg": 15, "solo_falls": 3, "solo_guard": 8}'
     when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1}'
-    when 'scout'      then '{"solo_dmg": 5, "solo_falls": 1}'
+    when 'scout'      then '{"solo_dmg": 8, "solo_falls": 2}'
     when 'analyst'    then '{"solo_dmg": -5}'
     else '{}' end::jsonb
 $f$;
@@ -137,13 +137,19 @@ begin
     d := replace(d, 'case n when 1 then 1 when 2', 'case n when 1 then 1.1 when 2');
     execute d;
   end if;
+  -- 결전: 혼자면 보스 체력 ×1.5(회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
+  d := replace(pg_get_functiondef('public.world_raid_begin_fight(uuid)'::regprocedure), E'\r\n', E'\n');
+  if position('when 1 then 1.5 when 2 then 1.7' in d) = 0 then
+    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.5 when 2 then 1.7', 'final solo hp');
+    execute d;
+  end if;
 end $p$;
 
 update public.world_patch_notes set body = body || $N$
 ## 7.7.7l
 - 구중 봉주 결전에서도 체력 회복품을 한 싸움에 다섯 개까지만 쓸 수 있습니다(귀허의 주인은 두 개). 모두 물러났을 때 결전 보스가 되찾는 체력은 8%에서 3%로 줄였습니다. 혼자 싸우면 회복 기술의 회복량은 절반입니다. 결전 중에는 가방·퀵슬롯에서 바로 쓰지 않고 결전 화면의 「물품」으로 씁니다. 영력·기력 회복품은 세지 않습니다. 결전에서 물러났다가 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
-- 귀허의 주인에 혼자 도전하면 주인 체력이 1.1배입니다.
-- 혼자 도전할 때만 직업 보정이 붙습니다(둘 이상이면 그대로): 의무관 주는 피해 +15%·받는 피해 −8% · 퇴마관·봉인술사 +12%·−8% · 호위 무사·현장 조사원 +5% · 백공 주는 피해 −5%. 귀허의 주인에서는 쓰러질 수 있는 횟수도 의무관 +3번·퇴마관·봉인술사 +2번·호위 무사·조사원 +1번.
+- 혼자 도전하면 귀허의 주인 체력이 1.1배, 구중 봉주 체력이 1.5배입니다.
+- 혼자 도전할 때만 직업 보정이 붙습니다(둘 이상이면 그대로): 의무관 주는 피해 +15%·받는 피해 −8% · 퇴마관 +12%·−8% · 봉인술사 +12%·−12% · 현장 조사원 +8% · 호위 무사 +5% · 백공 주는 피해 −5%. 귀허의 주인에서는 쓰러질 수 있는 횟수도 의무관 +3번·퇴마관·봉인술사·조사원 +2번·호위 무사 +1번.
 $N$ where note_id = '7.7.0' and position('## 7.7.7l' in body) = 0;
 
 update public.world_app_meta set value = '20261104203900' where key = 'db_version';
