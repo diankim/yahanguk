@@ -22,7 +22,7 @@ create trigger trg_world_yohwa_down_guard before update of downed_at on public.w
 
 -- 7.7.7f-2 — 봉연의 그림자 「기운 모으기」를 끊는 데 필요한 피해를 지금 싸우는 사람 수(공격력 합)에 맞춘다(사용자 요청).
 -- 전에는 최대 체력의 4%(최대 체력은 합류한 모든 사람의 공격력으로 정해져 자리를 비운 사람 몫까지 들어감) — 첫 회차 156번 중 한 번도 못 끊었다.
--- 이제 지난 2분 안에 행동한, 물러나지 않은 참가자 공격력 합 × 4(한 사람이 8초 동안 고르게 공격하면 낼 몫의 절반쯤), 최소 500. 결전은 그대로 4%.
+-- 이제 지난 2분 안에 행동한, 물러나지 않은 참가자 공격력 합 × 3(사용자 결정 — 모두가 8초 안에 평균 세 방), 최소 500. 결전은 그대로 4%.
 create or replace function public.world_raid_charge_need(p_raid uuid, p_kind text, p_max_hp int)
 returns int language plpgsql security definer set search_path to 'pg_catalog', 'public' as $function$
 declare reg text; s numeric;
@@ -33,7 +33,7 @@ begin
     from public.world_raid_members x join public.world_characters ch on ch.owner_id = x.owner_id
    where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, reg)
      and x.last_action_at > now() - interval '120 seconds' and ch.health > 1;
-  return greatest(500, round(s * 4))::int;
+  return greatest(500, round(s * 3))::int;
 end $function$;
 revoke all on function public.world_raid_charge_need(uuid, text, int) from public, anon, authenticated;
 grant execute on function public.world_raid_charge_need(uuid, text, int) to fn_owner_field;
