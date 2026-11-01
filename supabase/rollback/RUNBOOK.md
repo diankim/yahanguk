@@ -14,33 +14,36 @@
 | 11/2 00:00 | `yh-rollback-close` 마지막 토벌 실패 정리 · 봉연 소식 · 게임 문 닫음(anon·authenticated의 public 사용 거둠) |
 
 ## 일요일 밤(문 닫은 뒤, 롤백 SQL 전에): 휴면 계정 정리
-- 사용자가 명단을 요청하면 뽑는다: 일요일 기준 3일 동안 접속하지 않은 계정(마지막 캐릭터 활동 updated_at·world_active_sessions·auth.users last_sign_in_at 가운데 가장 늦은 때).
+- 사용자가 명단을 요청하면 뽑는다: 일요일 기준 3일(목·금·토~일, 10/30 00:00 KST부터) 동안 접속하지 않은 계정. 운영진·고창덕(zjaqorgha)은 빼고 본다.
 - 계정 삭제는 되돌릴 수 없으니 명단을 보여 드리고 승인을 받은 뒤 지운다(auth.users를 지우면 딸린 표는 외래 키로 함께 지워진다). 지운 계정은 레거시 명단·정청 기록고에서도 빠진다.
+- 판정은 캐릭터 updated_at을 쓰지 않는다: 안전지대 회복(yh-safe-regen)·일괄 패치가 행을 고쳐 접속하지 않아도 늦게 찍힌다. 마지막 행동(world_events actor_id)·world_active_sessions.claimed_at·auth.users.last_sign_in_at 가운데 가장 늦은 때로 본다.
+- world_invites에는 외래 키가 없다. 지운 계정에 나눠 준 안 쓴 초대권은 issued_to가 없는 사람을 가리킨 채 정원(60)을 차지하므로, 승인을 받아 비축(issued_to null)으로 돌린다.
 
 ## 점검 중에 할 일(11/2 00:00 뒤)
 1. **문이 닫혔는지 확인**: `select has_schema_privilege('authenticated','public','USAGE');` → false
 2. **서버 사양**: 대시보드에서 Small로 올림(사용자, 하루 뒤 Micro로 — 할 일 #117).
-3. **롤백 SQL 올리기**: `rollback_1_0_0.sql`을 `yh_deploy.buf`에 올리고 md5를 저장소 파일과 맞춘다(CLAUDE.md 11-1).
-4. **되돌리는 시험**: `do $$ begin execute (select string_agg(body,'' order by n) from yh_deploy.buf); raise exception 'ROLLBACK_TEST ok'; end $$;`
-5. **적용**: raise 줄 없이 실행. 끝의 확인 블록이 다음을 검사하고, 어긋나면 모두 되돌린다.
+3. **7.7.7i~n 먼저**: migrations의 7i→7j→7k→7l→7m→7n을 한 묶음으로 올려 되돌리는 시험 뒤 적용(db_version 20261104204100). 롤백 SQL이 db_version을 20261105000000으로 올리므로 순서를 바꾸지 않는다. 복제 DB(운영 7h와 함수 md5가 같은 복제본)에서 이 순서로 끝까지 돌려 확인했다(2026-11-02).
+4. **롤백 SQL 올리기**: `rollback_1_0_0.sql`을 `yh_deploy.buf`에 올리고 md5를 저장소 파일과 맞춘다(CLAUDE.md 11-1).
+5. **되돌리는 시험**: `do $$ begin execute (select string_agg(body,'' order by n) from yh_deploy.buf); raise exception 'ROLLBACK_TEST ok'; end $$;`
+6. **적용**: raise 줄 없이 실행. 끝의 확인 블록이 다음을 검사하고, 어긋나면 모두 되돌린다.
    - 캐릭터 0
    - 운영진 명단과 레거시 명단이 남음
    - 11/5 장야 단계 0
-6. **적용 뒤 확인**
+7. **적용 뒤 확인**
    - 아래 값이 맞는지 본다.
      - `world_characters` 0
      - `world_legacy_marks` = 롤백 전 캐릭터 수
      - `world_staff` 1
      - `world_pet_species` 44
-     - 패치노트 `1.0.0`과 `0-…` 13개
+     - 패치노트 `1.0.0` 하나와 시험 기간 기록 `0-…` 14개
      - `db_version` 20261105000000
    - 예약 작업에서 `yh-long-night`·`yh-last-night-wipe`·`yh-rollback-close`·`yh-invite-day`가 없어야 한다.
    - `world_raids`에 다음 봉연의 그림자 회차가 하나 잡혀야 한다.
-7. **화면 배포**: 브랜치 `rollback-1.0.0`을 작업 브랜치에 합쳐 push한다. 들어 있는 것은 동무 44종, 동무 두 자리, 시험 기간 기록, maintenance.json(scene 없음), version 1.0.0이다.
-8. **문 열기**: `supabase/maintenance/end.sql`(public 사용 돌려줌, 결과 둘 다 true).
-9. **확인**: GM 계정으로 로그인한다. 「아침」 컷씬이 보이고, 캐릭터를 만들면 레거시 세트와 GM 표식이 붙는지 본다.
-10. **알림**: GM 전체 채팅에 「두 번째 밤이 열렸습니다 · #패치노트:1.0.0」을 남긴다.
-11. **임시 칸 정리**: `drop schema yh_deploy cascade;`
+8. **화면 배포**: 브랜치 `rollback-1.0.0`을 작업 브랜치에 합쳐 push한다. 들어 있는 것은 동무 44종, 동무 두 자리, 시험 기간 기록, maintenance.json(scene 없음), version 1.0.0이다.
+9. **문 열기**: `supabase/maintenance/end.sql`(public 사용 돌려줌, 결과 둘 다 true).
+10. **확인**: GM 계정으로 로그인한다. 「아침」 컷씬이 보이고, 캐릭터를 만들면 레거시 세트와 GM 표식이 붙는지 본다.
+11. **알림**: GM 전체 채팅에 「두 번째 밤이 열렸습니다 · #패치노트:1.0.0」을 남긴다.
+12. **임시 칸 정리**: `drop schema yh_deploy cascade;`
 
 ## 다시 연 뒤
 - 일주일은 큰 업데이트 없이 1.0.x만 한다(CLAUDE.md 12-1).
