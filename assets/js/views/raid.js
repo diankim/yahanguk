@@ -25,8 +25,32 @@ const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vi
 const SKILL_ICON = { art_mend: 'ward', art_supply: 'drop', art_shield: 'bubble', art_array: 'spark', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
   exo_cover: 'hand', exo_mantra: 'talisman', exo_barrier: 'ward', exo_guardian: 'star', med_aid: 'heart', med_needle: 'needle', med_revive: 'refresh', med_pulse: 'heart',
   sc_mark: 'crosshair', sc_path: 'dodge', sc_smoke: 'fog', sc_signal: 'flag', seal_ward: 'ward', seal_might: 'bolt', seal_chain: 'chain', seal_bagua: 'shield' };
-const fxIcons = (keys, map = BUFF) => (keys || []).filter(k => map[k]).map(k => `<i class="fx-i ${k === 'bound' ? 'bad' : ''}" title="${esc(map[k])}">${icon(FX_ICON[k] || 'spark', 12)}</i>`).join('');
-const fxChip = (k, map = BUFF, kind = 'ok') => `<span class="chip fx-chip ${k === 'bound' ? 'bad' : kind}">${icon(FX_ICON[k] || 'spark', 12)}${esc(map[k])}</span>`;
+// 7.7.7e(사용자 요청): 아이콘·칩에 마우스를 올린 동안(휴대폰은 누르면 잠깐) 짧은 설명이 뜬다 — 창을 띄우지 않는 떠 있는 말풍선
+const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 동안).', might: '주는 피해가 늘어난다(정해진 횟수 동안).', crit: '치명타가 더 잘 터진다.', crit_next: '다음 공격이 반드시 치명타로 들어간다.',
+  evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음 큰 공격(광역·기운 터뜨림)의 피해를 크게 줄이고 정신을 지킨다.',
+  taunt: '요괴의 눈길을 끌어 대신 맞고, 받는 피해가 줄어든다.', guard: '방어 태세 — 다음 공격의 피해가 줄어든다.', bound: '사슬에 묶여 다음 공격의 피해가 절반이 된다.',
+  expose: '요괴가 받는 피해가 늘어난다.', stagger: '요괴가 휘청여 반격하지 못한다.', smoke: '연막 속에서 요괴의 공격이 빗나갈 수 있다.', break: '다음 광역·기운 터뜨림의 피해가 줄어든다.' };
+const tipOf = (k, map) => `${map[k]} — ${FX_TIP[k] || ''}`;
+const fxIcons = (keys, map = BUFF) => (keys || []).filter(k => map[k]).map(k => `<i class="fx-i ${k === 'bound' ? 'bad' : ''}" data-tip="${esc(tipOf(k, map))}" aria-label="${esc(map[k])}">${icon(FX_ICON[k] || 'spark', 12)}</i>`).join('');
+const fxChip = (k, map = BUFF, kind = 'ok') => `<span class="chip fx-chip ${k === 'bound' ? 'bad' : kind}" data-tip="${esc(tipOf(k, map))}">${icon(FX_ICON[k] || 'spark', 12)}${esc(map[k])}</span>`;
+let tipEl = null, tipTimer = 0;
+function showTip(t) {
+  if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'fx-tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
+  tipEl.textContent = t.dataset.tip; tipEl.hidden = false;
+  const r = t.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  const x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+  const y = r.top - h - 6 >= 8 ? r.top - h - 6 : r.bottom + 6;
+  tipEl.style.left = `${x}px`; tipEl.style.top = `${y}px`;
+}
+function hideTip() { clearTimeout(tipTimer); if (tipEl) tipEl.hidden = true; }
+function bindTips(root) {
+  if (!root || root.dataset.tips) return; root.dataset.tips = '1';
+  root.addEventListener('mouseover', e => { const t = e.target.closest?.('[data-tip]'); if (t && root.contains(t)) showTip(t); });
+  root.addEventListener('mouseout', e => { const t = e.target.closest?.('[data-tip]'); if (t && !t.contains(e.relatedTarget)) hideTip(); });
+  // 휴대폰: 누르면 잠깐 보였다 사라짐(그 칸의 다른 동작은 하지 않음)
+  root.addEventListener('click', e => { const t = e.target.closest?.('[data-tip]'); if (!t) return; e.stopPropagation(); e.preventDefault(); showTip(t); clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 1800); }, true);
+  window.addEventListener('scroll', hideTip, { passive: true, capture: true });
+}
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
 let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, itemLayer = null, away = false, resting = false, sel = null;
@@ -35,10 +59,11 @@ export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>${loading()}`;
   await refresh();
+  bindTips(el);
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; itemLayer?.close?.(); itemLayer = null; }
+export function destroy() { hideTip(); if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; itemLayer?.close?.(); itemLayer = null; }
 
 async function refresh() {
   if (!el) return;
