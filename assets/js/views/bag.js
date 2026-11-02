@@ -294,7 +294,9 @@ async function craft(body, inv, stg) {
   const lvOf = x => Number(x.r.minimum_level) || 1, tierOf = x => Number(cmap.get(x.r.output)?.tier) || 0;
   const byLv = (a, b) => lvOf(a) - lvOf(b) || tierOf(a) - tierOf(b) || (a.r.difficulty || 0) - (b.r.difficulty || 0) || String(a.r.name).localeCompare(String(b.r.name), 'ko');
   const SORTS = { can: (a, b) => b.can - a.can || b.atLoc - a.atLoc || byLv(a, b), lv: byLv, lvd: (a, b) => byLv(b, a) };
-  const favFirst = (f => (a, b) => favs.has(b.r.id) - favs.has(a.r.id) || f(a, b))(SORTS[craftSort] || SORTS.can);
+  // 즐겨찾기 먼저, 별채 가구는 거르지 않았을 때 맨 뒤(새 캐릭터 목록 맨 위가 가구이던 것)
+  const furnLast = (a, b) => craftKinds.has('furniture') ? 0 : (a.kind === 'furniture') - (b.kind === 'furniture');
+  const favFirst = (f => (a, b) => favs.has(b.r.id) - favs.has(a.r.id) || furnLast(a, b) || f(a, b))(SORTS[craftSort] || SORTS.can);
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));

@@ -91,7 +91,8 @@ export function mountNotifications(btn) {
   const soon = throttle(read, 15000);
   on('changed', ev => {
     // 원정 결과를 다른 길(현장·상태판)로 받았으면 떠 있던 「원정 귀환」 알림을 거둔다
-    if (/expedition_complete/.test(ev.name || '')) document.querySelectorAll('.note-pop[data-kind="expedition_done"]').forEach(x => { const n = byId(x.dataset.id); x.remove(); if (n) markRead(n); });
+    const done = /expedition_complete/.test(ev.name || '') ? 'expedition_done' : /trade_direct_respond/.test(ev.name || '') ? 'trade_offer' : '';
+    if (done) document.querySelectorAll(`.note-pop[data-kind="${done}"]`).forEach(x => { const n = byId(x.dataset.id); x.remove(); if (n) markRead(n); });
     if (!midBattle(ev) && !notesLive) setTimeout(soon, 600);
   });
   document.addEventListener('visibilitychange', () => {

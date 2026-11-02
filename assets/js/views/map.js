@@ -303,6 +303,11 @@ function select(id, center) {
   selected = id;
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
+  // 지도를 연 뒤 동료가 파티에 들어왔으면 동승 단추가 보이게(5초 캐시, 바뀌었을 때만 다시 그림)
+  load('world_party_overview', undefined, { maxAge: 5000 }).then(p => {
+    const k = x => JSON.stringify((x?.members || []).map(m => [m.owner_id, m.location, !!m.in_combat, !!m.downed]).concat([x?.party?.leader_id]));
+    if (selected === id && k(p) !== k(partyData)) { partyData = p; drawDetail(); }
+  }).catch(() => {});
   // 좁은 화면에서는 저절로 스크롤하지 않는다. 대신 지도 위 띠에 예상 시간과 출발 단추를 바로 보여 준다.
   const peek = $('#map-peek', el), r = mapData.regions.find(x => x.region_id === id);
   if (peek && r && matchMedia('(max-width: 1099px)').matches) {

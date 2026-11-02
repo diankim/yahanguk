@@ -30,14 +30,14 @@ const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false, peopleTimer = null, peopleKey = '';
 // 여기 있는 이들·파티 칸: 남이 오가거나 파티에 들어와도 1분 안에 보이게(화면이 보이고 창·전투가 없을 때만, 바뀌었을 때만 다시 그림)
+const peopleKeyOf = (r, p) => JSON.stringify([(r || []).map(x => x.owner_id || x.character_name).sort(), (p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
 async function peopleCheck() {
   if (!el?.isConnected || document.hidden || busy || snap?.battle || document.querySelector('.modal-backdrop')) return;
   invalidate('world_region_roster'); invalidate('world_party_overview');
   try {
     const [r, p] = await Promise.all([load('world_region_roster').catch(() => []), load('world_party_overview').catch(() => null)]);
-    const key = JSON.stringify([(r || []).map(x => x.owner_id || x.character_name).sort(),(p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
-    if (peopleKey && key !== peopleKey) draw();
-    peopleKey = key;
+    const key = peopleKeyOf(r, p);
+    if (key !== peopleKey) draw(); else peopleKey = key;
   } catch {}
 }
 // 알림의 "결과 보기": 현장 화면이 그려진 뒤 원정 창을 연다.
@@ -83,6 +83,7 @@ async function draw() {
       // 파티 칸: 자리·파티가 바뀌는 행동 뒤에만 새로 읽는다(common.js ROSTER_CHANGERS)
       load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null)]);
     snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;
+    peopleKey = peopleKeyOf(roster, pty); // 그린 값이 비교 기준(처음 1분 안의 변화도 놓치지 않게)
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
