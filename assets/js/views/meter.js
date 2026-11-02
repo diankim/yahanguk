@@ -1,9 +1,10 @@
-// 피해 기록판(7.7.4, 사용자 요청): 합동 토벌·파티 토벌·귀허의 주인에서 파티원마다 준 피해·받은 피해·회복·기여를 수치와 게이지로.
+// 피해 기록판: 합동 토벌·파티 토벌·귀허의 주인에서 파티원마다 준 피해·받은 피해·회복·기여를 수치와 게이지로.
 // 기여(share, %)는 세 전투가 같은 공식(서버 world_contrib_score)으로 계산해 스냅샷에 넣어 준다.
 // 값은 각 전투 스냅샷의 참가자 줄(dmg·taken·heal, 서버가 셈)을 그대로 쓴다 — 따로 서버에 묻지 않는다.
 // 휴대폰(899px 아래)은 화면 오른쪽 끝의 손잡이를 누르면 펼쳐지는 반투명 창, PC는 참가자 칸 아래에 늘 펼쳐 둔다.
 // 펼침·고른 갈래는 이 기기에 남긴다(yh-meter-open · yh-meter-tab).
-import { esc, icon, fmt, nameOf, JOBS } from '../core.js';
+import { esc, icon, fmt } from '../core.js';
+import { jobName } from './fightui.js';
 
 const TABS = [['dmg', '준 피해'], ['taken', '받은 피해'], ['heal', '회복'], ['share', '기여']];
 const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
@@ -20,7 +21,7 @@ export function meterHtml(rows, secs = 0) {
   const healCol = list.some(r => r.heal > 0);
   const rowsHtml = sorted.map(r => {
     const v = r[tab], pct = tab === 'share' ? v : sum > 0 ? v / sum * 100 : 0;
-    return `<li class="dm-row jb-${esc(r.job || '')} ${r.me ? 'me' : ''}" title="${esc(`${r.name} · ${JOBS[r.job]?.name || nameOf(r.job) || ''} — 준 피해 ${fmt.num(r.dmg)} · 받은 피해 ${fmt.num(r.taken)} · 회복 ${fmt.num(r.heal)} · 기여 ${r.share.toFixed(1)}%`)}">
+    return `<li class="dm-row jb-${esc(r.job || '')} ${r.me ? 'me' : ''}" title="${esc(`${r.name} · ${jobName(r.job) || ''} — 준 피해 ${fmt.num(r.dmg)} · 받은 피해 ${fmt.num(r.taken)} · 회복 ${fmt.num(r.heal)} · 기여 ${r.share.toFixed(1)}%`)}">
       <i class="dm-fill" style="width:${(v / top * 100).toFixed(1)}%"></i>
       <span class="dm-name">${esc(r.name)}</span>
       <b class="dm-val">${tab === 'share' ? `${v.toFixed(1)}%` : fmt.num(v)}</b><span class="dm-pct">${tab === 'share' ? '' : `${pct.toFixed(1)}%`}</span>

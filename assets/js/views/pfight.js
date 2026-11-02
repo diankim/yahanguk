@@ -1,15 +1,19 @@
-// 파티 현장 토벌(7.1 → 7.7.3 속도순 차례): 라운드마다 빠른 사람부터 차례로, 내 차례에 고른 행동이 바로 풀린다(서버 world_pfight_*).
+// 파티 현장 토벌(속도순 차례): 라운드마다 빠른 사람부터 차례로, 내 차례에 고른 행동이 바로 풀린다(서버 world_pfight_*).
 // 실시간 구독 없이 world_pfight_snapshot을 읽는다(plan 참고). 차례를 30초 비우면 서버가 방어로 넘긴다(초는 세어 보이지 않음).
-import { rpc, emit, esc, icon, fmt, $, $$, toast, nameOf, loadCharacter, store, spOf, openLayer } from '../core.js';
-import { loading, errorBox, chip, itemDesc, load } from './common.js';
-import { bindTips, hideTip, memberLi, showMemDetail, vitHtml, itemListHtml, isSpItem } from './fightui.js';
-import { INTENT, SKILL, JOB, trayList, weakNote } from './battle.js';
+import { rpc, esc, icon, fmt, $, $$, toast, store, spOf } from '../core.js';
+import { loading, errorBox, chip } from './common.js';
+import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSectionsHtml, itemTray, resultBox, settleFight, tickUntil, serverClock,
+  mobileLog, newestFirst, keepLogScroll, logRow, jobName } from './fightui.js';
+import { INTENT, SKILL, trayList, weakNote } from './battle.js';
 import { mountMeter } from './meter.js';
 
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
+// 물품 창에 보일 물품: 현장 토벌 물품 칸과 같은 목록(battle.js — 서버 world_battle_action이 받는 것)
+const trayIds = () => trayList({}, Infinity).map(([k]) => k);
 
-let seenLog = -1, seenFid = null; // 탄·기력·영력 부족 알림(7.5.9): 처음 그릴 때의 지난 기록은 건너뛰고 새로 붙은 내 줄만 본다
-let el = null, fid = null, snap = null, timer = null, tick = null, skew = 0, sending = false, sel = null, itemLayer = null;
+let seenLog = -1, seenFid = null; // 탄·기력·영력 부족 알림: 처음 그릴 때의 지난 기록은 건너뛰고 새로 붙은 내 줄만 본다
+let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, sel = null;
+const clock = serverClock();
 
 export async function render(root, sub) {
   el = root; fid = sub || null; snap = null; sel = null; bindTips(el);
@@ -19,8 +23,8 @@ export async function render(root, sub) {
   clearInterval(tick); tick = setInterval(countdown, 250);
   await refresh();
 }
-export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); itemLayer?.close?.(); itemLayer = null; el = null; }
-// 퀵슬롯·가방에서 누른 물품은 이 라운드의 「물품」 행동으로 고른다(7.7.2b, core.js battleItemRoute)
+export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
+// 퀵슬롯·가방에서 누른 물품은 이 라운드의 「물품」 행동으로 고른다(core.js battleItemRoute)
 window.addEventListener('yh-battle-item', e => {
   if (!el?.isConnected || !fid || snap?.status !== 'fight' || !snap?.me) return;
   e.detail.handled = true;
@@ -30,7 +34,7 @@ window.addEventListener('yh-battle-item', e => {
   run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: id }));
 });
 
-const now = () => Date.now() + skew;
+const now = clock.now;
 const ended = () => ['won', 'lost', 'fled', 'cancelled'].includes(snap?.status);
 async function refresh() {
   if (!el) return;
@@ -38,14 +42,14 @@ async function refresh() {
   try {
     const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id;
     snap = await rpc('world_pfight_snapshot', { p_fight: fid });
-    if (snap?.now) skew = new Date(snap.now).getTime() - Date.now();
+    clock.sync(snap);
     if ((prev && prev !== snap.status && ended()) || (prevRound && prevRound !== snap.round) || (prevTurn && prevTurn !== snap.turn_id)) await settle();
     draw(); plan();
   } catch (e) { if (el) el.innerHTML = errorBox(e.message); }
 }
-async function settle() { try { await loadCharacter(); } catch {} emit('changed', { name: 'world_pfight_act' }); }
+const settle = () => settleFight('world_pfight_act');
 
-// 다시 읽기(7.7.3 속도순 차례): 모이는 중 3초 · 남의 차례 2초(앞 사람이 고르면 바로 내 차례가 보이게) · 내 차례 10초(비운 차례 넘김 등만)
+// 다시 읽기: 모이는 중 3초 · 남의 차례 2초(앞 사람이 고르면 바로 내 차례가 보이게) · 내 차례 10초(비운 차례 넘김 등만)
 function plan() {
   if (!snap || ended() || document.hidden || !el) return;
   const wait = snap.status === 'gather' ? Math.min(3000, Math.max(400, new Date(snap.gather_ends) - now() + 300)) : snap.my_turn ? 10000 : 2000;
@@ -55,7 +59,7 @@ document.addEventListener('visibilitychange', () => { if (el && !document.hidden
 
 function countdown() {
   if (!el || !snap) return;
-  $$('[data-until]', el).forEach(x => { const ms = new Date(x.dataset.until) - now(); x.textContent = ms > 0 ? `${Math.ceil(ms / 1000)}초` : '곧'; });
+  tickUntil(el, now(), true);
 }
 
 // 참가자 상황(쓰러짐·달아남 / 차례·행동함·기다림)
@@ -64,9 +68,8 @@ function stateOf(m) {
   return m.out ? (OUT[m.out] || m.out) : s.status !== 'fight' ? '' : m.id === s.turn_id ? '차례' : oi >= 0 && oi < curIdx ? '행동함' : '기다림';
 }
 function memDetail() {
-  const m = (snap?.members || []).find(x => x.id === sel);
-  showMemDetail(el && $('#pf-memdetail', el), m && { ...m, hp: m.health }, m && {
-    state: stateOf(m) || '', nums: [['정신', m.mental], ['영력·기력', m.sp], ['속도', m.spd ?? '-'], ['준 피해', fmt.num(m.dmg || 0)], ['받은 피해', fmt.num(m.taken || 0)], ['회복', fmt.num(m.heal || 0)]] },
+  showSelected(el && $('#pf-memdetail', el), (snap?.members || []).map(m => ({ ...m, hp: m.health })), sel, m => ({
+    state: stateOf(m) || '', nums: [['정신', m.mental], ['영력·기력', m.sp], ['속도', m.spd ?? '-'], ...fightNums(m)] }),
     () => { sel = null; draw(); });
 }
 
@@ -81,9 +84,7 @@ function draw() {
   const members = s.members || [], byId = Object.fromEntries(members.map(m => [m.id, m]));
   const tgt = byId[s.target_id], cur = byId[s.turn_id];
   const fight = s.status === 'fight', playing = fight && me && !me.out;
-  // 7.7.7g(사용자 요청): 휴대폰(640px 아래)은 최근 기록이 맨 위 — 봉연 토벌과 같게
-  const top = window.matchMedia('(max-width: 640px)').matches;
-  const oldLog = $('.raid-log', el), atBottom = !oldLog || (top ? oldLog.scrollTop < 24 : oldLog.scrollHeight - oldLog.scrollTop - oldLog.clientHeight < 24), oldTop = oldLog?.scrollTop || 0;
+  const top = mobileLog(), restoreLog = keepLogScroll(el, top);
   const head = s.status === 'gather' ? '동료를 기다리는 중' : fight ? `${s.round}라운드` : s.status === 'won' ? '쓰러뜨림' : s.status === 'cancelled' ? '혼자 싸우기로' : '싸움이 끝남';
   // 차례 줄: 순서대로 이름, 요괴는 노린 사람 뒤에(이번 라운드에 이미 쳤으면 흐리게)
   const order = (s.order || []).filter(id => byId[id]);
@@ -107,17 +108,17 @@ function draw() {
       <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${members.length}명</h2></header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="pf-mem">${members.map(m => { const oi = order.indexOf(m.id);
           return memberLi({ ...m, hp: m.health }, { me: m.id === c.owner_id, turn: m.id === s.turn_id, tgt: m.id === s.target_id && fight, sel: m.id === sel, out: !!m.out,
-            pre: oi >= 0 && fight ? `<i class="pf-no">${oi + 1}</i>` : '', state: stateOf(m), title: `${m.name} · ${JOB[m.job] || nameOf(m.job)}${m.spd != null ? ` · 속도 ${m.spd}` : ''}`,
-            sub: `${esc(JOB[m.job] || nameOf(m.job))}${m.id === s.target_id && fight ? ' · <b class="bad">노림받음</b>' : ''}` }); }).join('')}</ul>
+            pre: oi >= 0 && fight ? `<i class="pf-no">${oi + 1}</i>` : '', state: stateOf(m), title: `${m.name} · ${jobName(m.job)}${m.spd != null ? ` · 속도 ${m.spd}` : ''}`,
+            sub: `${esc(jobName(m.job))}${m.id === s.target_id && fight ? ' · <b class="bad">노림받음</b>' : ''}` }); }).join('')}</ul>
         <div class="mem-detail" id="pf-memdetail" hidden></div>
         <div class="dm-host" id="pf-meter"></div>
         <p class="muted small">빠른 사람(민첩 + 감각÷2)부터 차례로 움직입니다. 요괴는 라운드마다 이목이 높은 이를 더 자주 노리고, 그 사람의 차례 바로 뒤에 반격합니다(그 차례에 방어하면 막습니다). 30초 동안 고르지 않으면 방어로 넘어갑니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
-        <ol class="raid-log">${(top ? [...lg].reverse() : lg).map(l => `<li class="no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}"><span>${esc(l)}</span></li>`).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
+        <ol class="raid-log">${newestFirst(lg, top).map(l => logRow(`no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}`, esc(l))).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
     </div>`;
-  const log = $('.raid-log', el); if (log) log.scrollTop = atBottom ? (top ? 0 : log.scrollHeight) : oldTop;
+  restoreLog();
   if (s.status !== 'gather') mountMeter($('#pf-meter', el), members.map(m => ({ ...m, me: m.id === c.owner_id })));
-  memDetail(); if (itemLayer?.isConnected) fillItems();
+  memDetail(); tray.redraw();
   bind(); countdown();
 }
 
@@ -139,33 +140,26 @@ function actHtml(s, b, c) {
     <p class="muted small">${esc(skill[0])}: ${esc(skill[1])} 달아나면 이 싸움에서 빠집니다.</p>
   </div></section>`;
 }
-// 물품 창(봉연과 같은 겹쳐 뜨는 창): 전투에 쓸 수 있는 물품(battle.js trayList)을 체력·정신 / 영력으로 나눠 이름·회복 수치만
-function openItems() {
-  if (itemLayer?.isConnected) return;
-  itemLayer = openLayer({ title: '토벌에서 쓸 물품', body: '<div id="pf-items-body"></div>' });
-  fillItems();
-  if (!itemDesc('tonic')) load('world_inventory_snapshot').then(fillItems).catch(() => {});
-}
-function fillItems() {
-  const box = itemLayer && $('#pf-items-body', itemLayer); if (!box) return;
-  const inv = store.character?.inventory || {}, ids = trayList(inv).map(([k]) => k);
-  const sp = ids.filter(k => isSpItem(k)), hp = ids.filter(k => !sp.includes(k));
+// 물품 창: 전투에 쓸 수 있는 물품을 체력·정신(치료 포함) / 영력으로 나눠 이름·회복 수치만. 고르면 창을 닫고 내 차례의 행동으로
+const tray = itemTray({ title: '토벌에서 쓸 물품', bodyId: 'pf-items-body', fill: fillItems });
+function fillItems(box) {
+  const inv = store.character?.inventory || {};
   box.innerHTML = `<p class="muted small">${snap?.my_turn ? '물품을 고르면 내 차례의 행동이 됩니다.' : '내 차례가 오면 쓸 수 있습니다.'}</p>
-    <h3 class="raid-item-h">체력·정신 회복·치료</h3>${itemListHtml(hp, inv)}<h3 class="raid-item-h">${esc(spOf()[0])} 회복</h3>${itemListHtml(sp, inv)}`;
-  $$('[data-use]', box).forEach(x => { x.disabled = !snap?.my_turn; x.onclick = () => { itemLayer?.close?.(); itemLayer = null; run(x, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: x.dataset.use })); }; });
+    ${itemSectionsHtml(trayIds(), inv, '체력·정신 회복·치료')}`;
+  $$('[data-use]', box).forEach(x => { x.disabled = !snap?.my_turn; x.onclick = () => { tray.close(); run(x, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: x.dataset.use })); }; });
 }
 
 function resultHtml(s) {
   const ok = s.status === 'won';
-  return `<div class="raid-result ${ok ? 'ok' : 'bad'}"><b>${ok ? `${esc((s.monster || '요괴') + "을(를)")} 함께 쓰러뜨렸습니다` : s.status === 'cancelled' ? '합류한 동료가 없어 혼자 싸웁니다' : '싸움이 끝났습니다'}</b>
-    <p class="small">${ok ? '보상은 각자 받았습니다(기록에 적힘).' : ''}</p><a class="btn small" href="#/home">현장으로</a></div>`;
+  return resultBox(ok, ok ? `${esc((s.monster || '요괴') + "을(를)")} 함께 쓰러뜨렸습니다` : s.status === 'cancelled' ? '합류한 동료가 없어 혼자 싸웁니다' : '싸움이 끝났습니다',
+    `<p class="small">${ok ? '보상은 각자 받았습니다(기록에 적힘).' : ''}</p><a class="btn small" href="#/home">현장으로</a>`);
 }
 
 function bind() {
   const b = $('#pf-begin', el); if (b) b.onclick = () => run(b, () => rpc('world_pfight_begin', { p_fight: fid }));
   const j = $('#pf-join', el); if (j) j.onclick = () => run(j, async () => { await rpc('world_pfight_join', { p_fight: fid }); return rpc('world_pfight_snapshot', { p_fight: fid }); });
   $$('[data-pf]', el).forEach(x => x.onclick = () => run(x, () => rpc('world_pfight_act', { p_fight: fid, p_action: x.dataset.pf, p_item: null })));
-  const ib = $('#pf-items', el); if (ib) ib.onclick = openItems;
+  const ib = $('#pf-items', el); if (ib) ib.onclick = tray.open;
   // 참가자를 누르면 자세히(다시 누르면 닫힘)
   $$('[data-pick]', el).forEach(x => x.onclick = () => { const id = x.dataset.pick; sel = sel === id ? null : id; draw(); });
 }
@@ -176,7 +170,7 @@ async function run(btn, fn) {
   try {
     const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id;
     const out = await fn();
-    if (out) { snap = out; if (out.now) skew = new Date(out.now).getTime() - Date.now(); }
+    if (out) { snap = out; clock.sync(out); }
     if ((ended() && prev !== snap.status) || prevRound !== snap.round || prevTurn !== snap.turn_id || btn.id === 'pf-join') await settle();
     draw(); plan();
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
