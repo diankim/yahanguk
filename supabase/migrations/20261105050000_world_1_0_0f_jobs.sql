@@ -576,7 +576,7 @@ begin
   foreach a in array array['public.world_yohwa_onset()', 'public.world_yohwa_overflow(uuid,numeric)'] loop
     d := replace(pg_get_functiondef(a::regprocedure), E'\r\n', E'\n');
     if position('귀령초로만 풀 수 있습니다.' in d) = 0 then raise exception '1.0.0f anchor yohwa cure %', a; end if;
-    execute replace(d, '귀령초로만 풀 수 있습니다.', '귀령초나 「안전지대 봉인」(24시간)으로 풀 수 있습니다.');
+    execute replace(d, '귀령초로만 풀 수 있습니다.', '귀령초로 풀 수 있고, 요화로 쓰러지면 「안전지대 봉인」(24시간)으로 풀립니다.');
   end loop;
 
   d := replace(pg_get_functiondef('public.world_pet_grant(uuid,text,text,boolean)'::regprocedure), E'\r\n', E'\n');
@@ -585,7 +585,7 @@ begin
   d := replace(d, a, $b$' || public.world_josa(nm, '이라', '라') || ' 대신$b$);
   execute d;
 end $p$;
-update public.world_status_catalog set cure = '귀령초를 쓰거나 「안전지대 봉인」(24시간)을 고르면 풀립니다.' where status_key = 'yohwa';
+update public.world_status_catalog set cure = '귀령초로 풀 수 있습니다. 요화로 쓰러지면 「안전지대 봉인」(24시간)으로 풀립니다.' where status_key = 'yohwa';
 update public.world_item_catalog set description = description || ' (요화로 쓰러졌을 때는 쓸 수 없음)'
  where item_id in ('revival_charm', 'revival_charm_hq') and description not like '%요화%';
 update public.world_region_monsters set mechanic_description =

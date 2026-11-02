@@ -118,7 +118,7 @@ function statusItems(c) {
   if (c.is_dead) items.push({ kind: 'danger', icon: 'flame', title: '영구 사망', text: c.death_reason || '이 캐릭터는 더 이상 행동할 수 없습니다.' });
   else if (c.downed_at || c.health <= 0) {
     const yo = yohwaOf(state.hud?.statuses);
-    if (yohwaDowned(c, yo)) items.push({ kind: 'danger', icon: 'mask', title: '요화로 쓰러짐', text: '목숨은 잃지 않습니다. 안전지대 봉인(24시간 해독)이나 구조·회생 부적을 고르세요.', action: ['대처하기', () => window.yahangGo('char', 'status')] });
+    if (yohwaDowned(c, yo)) items.push({ kind: 'danger', icon: 'mask', title: '요화로 쓰러짐', text: '목숨은 잃지 않습니다. 구조·회생 부적으로는 일어날 수 없고, 안전지대 봉인(24시간 해독)을 골라야 합니다.', action: ['대처하기', () => window.yahangGo('char', 'status')] });
     else items.push({ kind: 'danger', icon: 'heart', title: '전투불능', timer: new Date(c.downed_at || Date.now()).getTime() + 4 * 3600e3, text: '구조를 기다리거나 회생 부적·구조대를 쓰세요.', action: ['대처하기', () => window.yahangGo('char', 'status')] });
   }
   { const yo = yohwaOf(state.hud?.statuses); if (yo.seal) items.push({ kind: 'busy', icon: 'shield', title: '봉인 해독 중', timer: new Date(yo.seal.expires_at).getTime(), text: '끝날 때까지 채팅만 할 수 있습니다.' }); }

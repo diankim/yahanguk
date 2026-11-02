@@ -190,7 +190,7 @@ function actHtml(s, me) {
       <button class="btn primary ${on('attack')}" data-gw="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>
       <button class="btn ${on('guard')}" data-gw="guard" ${off}>${icon('shield', 16)}<span>방어</span></button>
       <button class="btn ${on('brace')}" data-gw="brace" ${off} title="몸을 낮춰 막기만 합니다. 쏟아지는 물살·소용돌이에 방어보다 강합니다">${icon('down', 16)}<span>버티기</span></button>
-      <button class="btn ${on('item')}" id="gw-items" type="button" ${off} title="체력 회복품을 한 싸움에 두 개까지 씁니다(나 또는 고른 동료)">${icon('heart', 16)}<span>물품 ${left}/2</span></button>
+      <button class="btn ${on('item')}" id="gw-items" type="button" ${off} title="체력 회복품을 한 싸움에 두 개까지 씁니다(나 또는 고른 동료)">${icon('heart', 16)}<span>물품 ${left}</span></button>
     </div>
     <div class="raid-coopbox"><div class="coop-grid gw-skills">${skills.map(k => coopBtn({ ...k, on: a?.a === 'coop' && a?.s === k.id,
         why: me.out ? '물러남' : !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `${spOf()[0]} ${k.cost}` : '',
