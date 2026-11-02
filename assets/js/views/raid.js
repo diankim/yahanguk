@@ -116,7 +116,7 @@ function build() {
   const playing = me.joined && !me.left && fight;
   el.innerHTML = `<div class="view-head raid-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'}${r.region ? ` · ${esc(r.region)}` : ''}</p>
       <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
-      <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${me.joined && !me.left && r.kind === 'world' && (fight || r.status === 'signup') ? `<button class="btn small" id="raid-leave">${icon('back', 15)}<span>${fight ? '퇴장' : '신청 거두기'}</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
+      <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${me.joined && !me.left && r.kind === 'world' && (fight || r.status === 'signup') ? `<button class="btn small keep-label" id="raid-leave" title="${fight ? '토벌에서 나가기(기여도는 남음)' : '참가 신청 거두기'}" aria-label="${fight ? '토벌에서 퇴장' : '신청 거두기'}">${icon('back', 15)}<span>${fight ? '퇴장' : '신청 거두기'}</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
     <div class="raid-wrap ${playing ? 'playing' : ''}">
       <section class="panel raid-boss"><div class="panel-body">
         <p class="raid-time">${timeLine}</p>
@@ -366,7 +366,7 @@ function bind() {
     const ok = await ask(fighting ? '토벌에서 나옵니다.\n지금까지 쌓은 기여도는 그대로 남아, 토벌이 끝나면 그 몫만큼 보상을 받습니다(기여 1% 이상).\n나간 동안은 요괴가 노리지 않고 가방 물품도 쓸 수 있습니다. 다시 참가하면 이어서 싸웁니다.'
       : '참가 신청을 거둡니다. 모집이 끝나기 전이면 다시 신청할 수 있습니다.', { title: fighting ? '토벌에서 나갈까요?' : '신청을 거둘까요?', ok: fighting ? '퇴장' : '거두기', cancel: '그대로 있기' });
     if (!ok) return;
-    await run(lb, () => rpc('world_raid_leave', { p_raid: r.id }));
+    await run(lb, async () => { const o = await rpc('world_raid_leave', { p_raid: r.id }); if (o?.content) toast(o.content, 'info'); return o; });
   };
   askVote(r);
   const bb = $('#raid-begin', el);

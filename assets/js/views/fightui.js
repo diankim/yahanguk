@@ -131,7 +131,8 @@ export const resultBox = (ok, title, body = '') => `<div class="raid-result ${ok
 // 끝난 싸움으로 바뀌면 결과 칸이 화면 위로 밀려 있지 않게 그 칸을 머리 아래로 보인다(창이 떠 있으면 닫을 때)
 export function showResult(root) {
   const box = root && $('.raid-result', root); if (!box) return;
-  const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 56;
+  // 위에 붙어 있는 머리·상태 띠(휴대폰은 상태판 띠까지)의 아래 끝만큼 비킨다
+  const head = Math.max(56, ...[...document.querySelectorAll('header, aside.hud, .app-header')].filter(x => /sticky|fixed/.test(getComputedStyle(x).position) && x.getBoundingClientRect().top <= 1).map(x => x.getBoundingClientRect().bottom));
   scrollAfterModal(Math.max(0, Math.round(window.scrollY + box.getBoundingClientRect().top - head - 8)), true);
 }
 // 혼자 도전 보정 한 줄(서버 world_solo_aid — 귀허 snapshot.solo {dmg, guard, falls} · 결전 me.solo {solo_dmg|final_dmg, solo_guard, solo_falls})

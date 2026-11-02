@@ -215,7 +215,7 @@ function fillItems(box) {
 function resultHtml(f, s) {
   const mine = (s.members || []).find(m => m.id === s.me);
   const won = f.status === 'won';
-  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? '귀허의 주인을 쓰러뜨렸습니다' : '소용돌이에 밀려났습니다', `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${mine.falls}` : ''}</p>
+  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? '귀허의 주인을 쓰러뜨렸습니다' : '소용돌이에 밀려났습니다', `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 ? Math.min(mine.falls || 0, s.falls_cap || 10) : mine.falls}` : ''}</p>
     <p class="small">${won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : '장착 장비가 10% 닳고 침식이 10 올랐습니다. 30분 뒤 다시 도전할 수 있습니다.'} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw">처음으로</a>`)}</div></section>`;
 }

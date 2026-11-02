@@ -114,12 +114,12 @@ async function loadNotes(first) {
     fresh.forEach(n => shown.add(n.id));
     notes = fresh; drawDot();
     // 접속하지 않은 사이 온 초대·원정 완료도 들어오면 바로 띄운다.
-    // 싸움 초대·포기 제안은 60~90초짜리라 15분 넘게 지난 것은 띄우지 않는다(목록에는 남음 — 끝난 싸움의 초대가 접속마다 다시 뜨던 것)
+    // 싸움 초대·포기 제안은 60~90초짜리라 3분 넘게 지난 것은 띄우지 않는다(목록에는 남음 — 끝난 싸움의 초대가 접속마다 다시 뜨던 것)
     if (first) notes.filter(n => POP_KINDS.has(n.kind) && !staleFight(n)).slice(0, 2).forEach(notePop);
   } catch {}
 }
 const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'pfight_invite']);
-const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 15 * 60000;
+const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000;
 // 싸움 화면이 「이미 들었음·끝남·답함」을 확인하면 그 싸움의 초대·제안 알림을 읽음으로 하고 떠 있는 것을 거둔다
 // kinds: 알림 종류들, key: payload 열쇠(raid_id·fight_id), id: 그 싸움
 export function clearFightNotes(kinds, key, id) {
@@ -219,8 +219,10 @@ async function runAct(btn) {
   // 초대의 「합류」는 화면의 합류 단추와 같은 요청까지 보낸다(이미 들었거나 끝났어도 그 화면으로는 간다)
   if (btn.dataset.raid || btn.dataset.gw) {
     const raid = !!btn.dataset.raid, id = raid ? n.payload.raid_id : n.payload.fight_id;
-    if (btn.dataset.join) { btn.disabled = true; try { await act(raid ? 'world_raid_join' : 'world_gw_join', raid ? { p_raid: id } : { p_fight: id }); } catch (e) { toast(e.message || String(e), 'warn'); } }
-    await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo(raid ? 'raid' : 'gw', id); return true; }
+    let go = true;
+    // 합류가 안 되면(시간이 지났거나 끝난 싸움) 알림만 거두고 그 화면으로는 가지 않는다(남의 끝난 싸움은 볼 수 없음). 이미 들었으면 간다
+    if (btn.dataset.join) { btn.disabled = true; try { await act(raid ? 'world_raid_join' : 'world_gw_join', raid ? { p_raid: id } : { p_fight: id }); } catch (e) { const m = e.message || String(e); go = /이미/.test(m); if (!go) toast(m, 'warn'); } }
+    await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); if (go) window.yahangGo(raid ? 'raid' : 'gw', id); return true; }
   if (btn.dataset.wed) {
     let ok = false;
     await guard(btn, async () => { try { const r = await act('world_wedding_respond', { p_wed: n.payload.wed_id, p_accept: btn.dataset.acc === '1' }); ok = btn.dataset.acc === '1'; return r; } finally { await markRead(n); } });

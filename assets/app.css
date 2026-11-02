@@ -2246,7 +2246,7 @@ b.contest { color: var(--warn); font-weight: 600; }
   .view-head.raid-head { flex-wrap: nowrap; align-items: center; gap: 8px; margin: 0 0 6px; padding: 6px 12px; }
   .raid-head .eyebrow { display: none; } .raid-head h1 { margin: 0; }
   .view-head.raid-head > div:first-child { flex: 1 1 auto; min-width: 0; } .raid-head h1 { font-size: calc(18px * var(--fz, 1)); } .raid-head .eyebrow { margin: 0; }
-  .raid-head .head-actions .btn span { display: none; } .view-head.raid-head .head-actions { flex: none; width: auto; margin: 0; }
+  .raid-head .head-actions .btn:not(.keep-label) span { display: none; } .view-head.raid-head .head-actions { flex: none; width: auto; margin: 0; }
   .raid-wrap { gap: 6px; }
   .raid-wrap .panel-body { padding: 8px 10px; }
   .raid-wrap .panel-head { padding: 6px 10px; } .raid-wrap .panel-head h2 { font-size: calc(13px * var(--fz, 1)); }
