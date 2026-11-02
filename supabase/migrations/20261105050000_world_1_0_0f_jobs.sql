@@ -536,6 +536,28 @@ update public.world_status_catalog set description = case status_key
     when 'exhausted' then '기력이 다해 행동할 때 기혈이 줄고 제작 품질이 크게 떨어진다.' end
  where status_key in ('well_rested', 'fatigue', 'burned', 'exhausted');
 
+-- 화면 점검(실제 화면 띄워 보기)
+--  ㉟ 지금 서 있는 곳이 지도에서 「미답사 지역」으로 나오던 것(새 캐릭터는 출발지 방문 기록이 없음) → 지금 있는 지역은 방문한 것으로
+--  ㊱ 싸울 수 없는 안전지대 9곳에 걸린 요괴 27마리가 도감 칸으로 잡혀 영영 못 채우던 것 → 도감 목록·전체 수에서 뺌(자료는 그대로)
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_map_snapshot()'::regprocedure), E'\r\n', E'\n');
+  a := $a$v.n>0$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 4 then raise exception '1.0.0f anchor mapvisit'; end if;
+  d := replace(d, a, $b$(v.n>0 OR r.region_id=current_region)$b$);
+  execute d;
+
+  d := replace(pg_get_functiondef('public.world_monster_codex_snapshot()'::regprocedure), E'\r\n', E'\n');
+  a := $a$'total', (select count(*) from public.world_region_monsters m where m.kind = k.kind_key),$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor codextotal'; end if;
+  d := replace(d, a, $b$'total', (select count(*) from public.world_region_monsters m join public.world_map_regions sr on sr.region_id = m.region_id where m.kind = k.kind_key and not coalesce(sr.is_safe_zone, false)),$b$);
+  a := $a$from public.world_region_monsters m join public.world_map_regions r on r.region_id = m.region_id join$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor codexlist'; end if;
+  d := replace(d, a, $b$from public.world_region_monsters m join public.world_map_regions r on r.region_id = m.region_id and not coalesce(r.is_safe_zone, false) join$b$);
+  execute d;
+end $p$;
+
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 
