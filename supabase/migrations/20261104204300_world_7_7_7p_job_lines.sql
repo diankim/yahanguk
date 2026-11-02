@@ -12,13 +12,13 @@
 --  롤백(캐릭터 모두 지움) 바로 앞에 올리므로 옛 진행을 옮기지 않는다.
 lock table public.world_characters in access exclusive mode;
 
-create function pg_temp.rep(d text, a text, b text, n int default 1) returns text language plpgsql as $r$
+create or replace function pg_temp.rep(d text, a text, b text, n int default 1) returns text language plpgsql as $r$
 declare k int := (length(d) - length(replace(d, a, ''))) / length(a);
 begin
   if k <> n then raise exception '7.7.7p anchor (% / %): %', k, n, left(a, 90); end if;
   return replace(d, a, b);
 end $r$;
-create function pg_temp.fdef(p_name text) returns text language plpgsql as $r$
+create or replace function pg_temp.fdef(p_name text) returns text language plpgsql as $r$
 declare d text; k int;
 begin
   select count(*), max(replace(pg_get_functiondef(oid), E'\r\n', E'\n')) into k, d from pg_proc where proname = p_name and pronamespace = 'public'::regnamespace;
