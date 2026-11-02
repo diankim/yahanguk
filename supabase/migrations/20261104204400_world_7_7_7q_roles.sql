@@ -118,6 +118,64 @@ update public.world_coop_skills set sort = 3 where skill_id = 'an_break';
 update public.world_coop_skills set sort = 2 where skill_id = 'exo_mantra';
 update public.world_coop_skills set sort = 3 where skill_id = 'exo_barrier';
 
+-- ── 4. 백공 기술관: 생활 특화를 빼고 전투만(사용자 결정 2026-11-02 「직업 효과는 전부 전투 관련으로」) ─────
+--  빼는 것: 채집량 +15%·희귀품 +3%(직업 효과), 제작 품질 +15, 다른 직업 전용 제작법, 강화 확률 +10%p, 원정 「현장 가공」·원정 희귀품 +5%p, 탐색 채집터·덤 발견 보너스
+--  더하는 것: 근접 피해 +8%(위 1), 근접 무기를 들면 치명타 +5, 원정 기술 「급소 찌르기」(싸움마다 25% 확률로 승률 +10%p)
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_job_effect');
+  if position($a$'gather_qty_pct' then 15$a$ in d) > 0 then
+    execute pg_temp.rep(d, $a$when 'analyst'    then case p_key when 'melee_pct' then 8 when 'gather_qty_pct' then 15 when 'rare_loot_pct' then 3 else 0 end$a$,
+      $a$when 'analyst'    then case p_key when 'melee_pct' then 8 else 0 end$a$);
+  end if;
+  d := pg_temp.fdef('world_combat_stats');
+  if position($a$c.job_key = 'analyst' AND style = 'melee' THEN 5$a$ in d) = 0 then
+    execute pg_temp.rep(d, $a$CASE WHEN style = 'ranged' THEN 8 ELSE 0 END + skill_crit$a$,
+      $a$CASE WHEN style = 'ranged' THEN 8 ELSE 0 END + CASE WHEN c.job_key = 'analyst' AND style = 'melee' THEN 5 ELSE 0 END + skill_crit$a$);
+  end if;
+  d := pg_temp.fdef('world_craft_item');
+  if position($a$c.job_key <> 'analyst'$a$ in d) > 0 then
+    d := pg_temp.rep(d, $a$ and c.job_key <> r.required_job and c.job_key <> 'analyst' then$a$, $a$ and c.job_key <> r.required_job then$a$);
+    d := pg_temp.rep(d, E'    + case when c.job_key = ''analyst'' then 15 else 0 end\n', '');
+    execute d;
+  end if;
+  d := pg_temp.fdef('world_enhance_quote');
+  if position($a$c.job_key = 'analyst' then 10$a$ in d) > 0 then execute pg_temp.rep(d, $a$ + case when c.job_key = 'analyst' then 10 else 0 end$a$, ''); end if;
+  d := pg_temp.fdef('world_weapon_enhance');
+  if position($a$c.job_key = 'analyst' then 10$a$ in d) > 0 then execute pg_temp.rep(d, $a$ + case when c.job_key = 'analyst' then 10 else 0 end$a$, ''); end if;
+  d := pg_temp.fdef('world_field_search');
+  if position($a$c.job_key IN ('analyst', 'scout')$a$ in d) > 0 then
+    d := pg_temp.rep(d, $a$CASE WHEN c.job_key IN ('analyst', 'scout') THEN 4$a$, $a$CASE WHEN c.job_key = 'scout' THEN 4$a$);
+    d := pg_temp.rep(d, $a$ + CASE WHEN c.job_key = 'analyst' THEN 8 ELSE 0 END + depth * 3$a$, $a$ + depth * 3$a$);
+    execute d;
+  end if;
+  d := pg_temp.fdef('world_expedition_settle');
+  if position('[현장 가공]' in d) > 0 then
+    d := pg_temp.rep(d, $a$        if c.job_key = 'analyst' and qty > 0 and random() < 0.25 then
+          loot := public.world_inv_add(loot, item, 1); jobn := jobn + 1;
+          seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'skill', 'who', me, 'owner', e.owner_id, 'text', '[현장 가공] 캔 재료를 손질해 쓸 만한 것을 하나 더 건졌습니다.');
+        end if;
+$a$, '');
+    d := pg_temp.rep(d, $a$ + (case when c.job_key = 'analyst' then 0.05 else 0 end)$a$, '');
+    d := pg_temp.rep(d, $a$        if weak_bonus > 0 then
+          win_p := win_p + weak_bonus; weak_bonus := 0; jobn := jobn + 1;$a$,
+      $a$        if c.job_key = 'analyst' and random() < 0.25 then
+          win_p := win_p + 0.1; jobn := jobn + 1;
+          seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'skill', 'who', me, 'owner', e.owner_id, 'text', '[급소 찌르기] 요괴의 급소를 짚어 단번에 파고듭니다.');
+        end if;
+        if weak_bonus > 0 then
+          win_p := win_p + weak_bonus; weak_bonus := 0; jobn := jobn + 1;$a$);
+    execute d;
+  end if;
+  d := pg_temp.fdef('world_expedition_complete');
+  if position($a$'analyst' then '현장 가공'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'analyst' then '현장 가공'$a$, $a$'analyst' then '급소 찌르기'$a$); end if;
+  d := pg_temp.fdef('world_expedition_progress');
+  if position($a$'analyst' then '현장 가공'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'analyst' then '현장 가공'$a$, $a$'analyst' then '급소 찌르기'$a$); end if;
+  d := pg_temp.fdef('world_exp_fight_story');
+  if position('[현장 기지]' in d) > 0 then execute pg_temp.rep(d, $a$'[현장 기지] 주변 지형을 이용해 {f}의 발을 묶었습니다'$a$, $a$'[급소 찌르기] {f}의 급소를 정확히 찔렀습니다'$a$); end if;
+end $p$;
+
 do $c$
 begin
   if (select count(*) from public.world_coop_skills where job_key = 'artificer') <> 4 or (select count(*) from public.world_coop_skills where job_key = 'exorcist') <> 4 then raise exception '7.7.7q: 협동 기술 수'; end if;

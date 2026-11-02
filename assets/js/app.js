@@ -232,7 +232,7 @@ function renderCreateForm() {
       <section class="card"><h2 class="step"><b>1</b>이름</h2>
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
       </section>
-      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 역할(근접·원거리 물리·술법·생활 특화·치유·보조)과 기본 능력치·시작 장비를 정합니다. 무기는 어느 직업이나 들 수 있지만 직업 효과는 그 역할의 무기에서 가장 잘 살아납니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div><div class="lore-detail" id="job-detail"></div></section>
+      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투 역할(호위 무사 방패·수호 · 현장 조사원 원거리 공격 · 퇴마관 술법 공격 · 백공 기술관 근접 공격 · 의무관 치유 · 봉인술사 보조)과 기본 능력치·시작 장비를 정합니다. 무기는 직업에 맞는 것만 들 수 있습니다(근접: 호위 무사·백공, 원거리: 조사원, 술법: 퇴마관·봉인술사·의무관). 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div><div class="lore-detail" id="job-detail"></div></section>
       <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 처음 배속되는 야행국 안의 부서로, 늘 붙는 소속 효과와 일일 보급·전용 임무를 정합니다. ${esc(AFFIL_VS_FACTION.split('. ').slice(1).join('. '))}</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div><div class="lore-detail" id="faction-detail"></div></section>
       <section class="card confirm-card">
         <div class="confirm-row"><span>이름</span><b id="sum-name">—</b></div>

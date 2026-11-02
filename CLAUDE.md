@@ -56,7 +56,7 @@
 - 파티 합동 전투: 동료 한 명마다 같은 지역 일반 요괴가 하나 더, 위협 +45%, 이기면 더 나온 요괴마다 경험치 5+위험도·전리품 35% 굴림. 동료 전투력 60%가 승률에, 요괴는 이목^1.3로 표적(동료가 대신 맞은 피해는 world_expedition_hits로 동료 정산 때 반영, 쓰러뜨리지는 않음).
 - 보급품 고르기: world_expedition_start(p_node_id, p_minutes, p_stance, p_supplies jsonb)가 보급품마다 0~20(0 = 안 씀)을 yh.exp_sup으로 3인자 함수에 넘기고 3인자는 읽은 뒤 비움. 고르지 않은 것은 가진 만큼(20까지). 파티 원정(world_pexp_resolve)은 3인자 기본값. 화면 expedition.js supPick.
 - 짐 보따리(world_overflow_items): 원정 귀환(world_expedition_complete가 yh.overflow_to=expedition) 중 가방이 넘치면 world_enforce_bag_capacity가 넘친 몫을 담고 bag_overflow 알림. world_overflow_snapshot·world_overflow_take(들어가는 만큼)·world_overflow_discard. 비기 전에는 world_guard_action_context(explore·gather·fish·combat·encounter·expedition_start·travel 출발)·world_field_move가 막음. 현장 안내 world_field_snapshot.overflow(overflow.js). 원정 밖의 얻기는 넘친 만큼 버림.
-- 직업별 원정 기술: 퇴마관 파사 부적·조사원 흔적 추적·의무관 야전 처치·봉인술사 결계 야영·호위 무사 반격 태세·백공 현장 가공(결과에 발동 횟수). 기술 고유 효과는 §6.
+- 직업별 원정 기술: 퇴마관 파사 부적·조사원 흔적 추적·의무관 야전 처치·봉인술사 결계 야영·호위 무사 반격 태세·백공 급소 찌르기(싸움마다 25% 승률 +10%p, 7.7.7q — 옛 현장 가공 없앰)(결과에 발동 횟수). 기술 고유 효과는 §6.
 - 의무관 [야전 처치]: 체력이 회복 기준(heal_at) 아래면 보급품보다 먼저 체력 +25(회복 보정), 원정 한 번에 세 번(jobn). 원정 중 쓰러짐 기록(downed)은 world_guard_action_context가 허용(정산이 쓰러짐에서 되돌려지지 않게).
 - 화면: 지금 서 있는 답사 지점(world_characters.current_exploration_node_id)을 먼저 고르고 맨 위 「지금 있는 곳」(expedition.js preferHere), 같은 설정으로 다시 보내기(yh-exp-last), 탐색력 0이면 현장에 원정 권유. PC 두 칸(왼쪽 보낼 곳·기간·태세 / 오른쪽 보급품·기술·안내·출발), 모바일 한 칸.
 
@@ -191,7 +191,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 소속 효과(world_affil_effect → world_status_effect_total, 경제 world_affil_cap·world_affil_tax): 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·주는 피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·주는 피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%. 하루 소속 보급·소속 임무도 소속마다. 화면 core.js FACTIONS.
 - 직업(내부 키 / 이름 world_job_label·world_job_name / 화면 core.js JOBS): 호위 무사 artificer 방패·수호 · 현장 조사원 scout 원거리 공격·정찰 · 퇴마관 exorcist 술법 공격 · 의무관 medic 치유 · 봉인술사 sealmaster 보조(북돋기·약화) · 백공 기술관 analyst 근접 공격·생활(7.7.7q 역할, 직업 설명 core.js JOBS desc 앞 【역할】·lore.js JOB_LORE fight).
 - 기본 능력치 world_job_base(합 30): 호위 무사 힘9·체질7·민첩5 / 조사원 민첩8·감각8 / 퇴마관 영기9·의지7 / 의무관 의지8·영기7·체질6 / 봉인술사 의지8·영기7·체질5 / 백공 감각7·민첩6·체질6·힘5, 나머지 3~4.
-- 직업 효과 world_job_effect(피해 %는 그 역할 무기를 들었을 때만): 호위 무사 받는 피해 −12(이목 +50은 world_combat_stats) / 조사원 원거리 +8·회피 +6·도주 +15 / 퇴마관 술법 +8 / 의무관 회복 +10(물품 ×1.15, world_party_use_item ×1.4) / 봉인술사 정신 손실 −10·침식 −5 / 백공 근접 +8·채집 +15·희귀품 +3(제작 품질 +15·강화 +10%p·현장 가공·채집터 찾기). 호위 무사 현장 기술 파갑참(근접 ×1.7·방어·결계 무시). 백공은 다른 직업 전용 제작법(required_job)도 만든다(world_craft_item·bag.js jobOk, 장착 조건은 그대로).
+- 직업 효과 world_job_effect(피해 %는 그 역할 무기를 들었을 때만): 호위 무사 받는 피해 −12(이목 +50은 world_combat_stats) / 조사원 원거리 +8·회피 +6·도주 +15 / 퇴마관 술법 +8 / 의무관 회복 +10(물품 ×1.15, world_party_use_item ×1.4) / 봉인술사 정신 손실 −10·침식 −5 / 백공 근접 +8·근접 무기 치명타 +5(world_combat_stats). 직업 효과는 모두 전투 쪽(7.7.7q, 사용자 결정 — 백공의 채집·희귀품·제작 품질·강화·다른 직업 제작법·원정 현장 가공·탐색 발견 덤은 없앰). 호위 무사 현장 기술 파갑참(근접 ×1.7·방어·결계 무시). 직업 전용 제작법(required_job)은 그 직업만(world_craft_item·bag.js jobOk).
 - 의무관 응급 처방(현장): 한 전투 한 번(world_active_encounters.pfx med_used)·기력/영력 25·체력 least(40, 15+체질/2+의지/2). 의무관 회복품 ×1.15(world_battle_action 두 곳·world_use_item·world_expedition_settle).
 - 시작 장비(world_create_character_v2): 호위 무사 월철 환도·쇠미늘 갑옷·무명 두건·주사 호신부 / 조사원 매눈 활·화살 100·무명 철릭·미투리 / 퇴마관 영령 방울·삼베 도포·무명 부적낭 / 의무관 먹 부채·삼베 도포·쑥 향낭(+약초·탕약) / 봉인술사 무쇠 금강령·누비 전포·유건(+봉인 부적) / 백공 날선 단도·누비 전포·술 노리개·짚신(+낚싯대), 모두 현장 채집도 장착·월철 곡괭이.
 - 세계관 안내 assets/js/lore.js: WORLD_PRIMER·JOB_LORE(한자 이름·한 줄 말·내력·전투·원정·무기·유리한/덜 듣는 갈래·어울리는 사람·조심할 점·인연)·AFFIL_LORE를 생성 화면(고르면 카드 아래 펼침)과 도움말이 함께 쓴다. 도움말 세력 이야기 guide.js FACTION_LORE(이름·소개 common.js MAJOR_FACTIONS). 수치 원본은 core.js JOBS·FACTIONS.
@@ -275,7 +275,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 재료·조건·결과는 서버가 검증하고 차감과 지급은 한 처리로, 중복 요청에 이중 차감·지급 없음. 제작 아이템은 전투·탐사·생존·생활에 실제로 쓰인다.
 - 어디서나 제작, 지정 장소면 품질 +12.
 - 분야 world_crafting_recipes.craft_field: 단조·목공·법구 공예·봉인 공예·직조·가죽 공예·연금·요리, 분야별 제작법 수는 고르게.
-- 품질 = 10 + 계열 단계 + 계열 기본 기술(world_line_base ≤40) + 생활 전문화 분야 일치 12 + 백공 15 + 장비 crafting_specialization 10 + 제작 공구 + 상태·칭호(craft_quality, cq_<계열>) + 장소 12 − 8×난이도 + 0~19(world_craft_item). 개수는 안 바뀌고 85 이상(30단계 추가 기술이 있으면 80)이면 우수품.
+- 품질 = 10 + 계열 단계 + 계열 기본 기술(world_line_base ≤40) + 생활 전문화 분야 일치 12 + 장비 crafting_specialization 10 + 제작 공구 + 상태·칭호(craft_quality, cq_<계열>) + 장소 12 − 8×난이도 + 0~19(world_craft_item). 개수는 안 바뀌고 85 이상(30단계 추가 기술이 있으면 80)이면 우수품.
 - 우수품 <id>_hq(「… (우수)」, base_item_id·quality_grade 1, 시세 ×1.3, trg_world_item_hq_sync, world_item_base(id)): 제작법 있는 장비(수치 ×1.05 최소 +1·최대 내구도 ×1.1 world_item_max_durability)와 수치 효과 소모품(회복 ×1.15 올림·요리 기운 지속 ×1.2·수리 도구 60%, 탄·노정 건량·말린 생선포 제외)에만. 쓰는 곳은 world_item_base로 기본 효과를 찾음(world_use_item·world_battle_action·world_party_use_item·world_gw_act/resolve·world_tourney_*). 제작 재료·납품(world_quest_report·world_commission_claim)은 보통 먼저, 원정 보급은 우수품 먼저.
 - 많이 쓰는 소모품·재료 기본 개수는 실제 평균에 맞춤(응축 영핵 3·청심환 2). 가구는 언제나 1개(덤·하나 더·칭호 cx_ 없음).
 - 생활 전문화(world_set_life_profession_v2): 제작 분야 여덟 중 하나(기본 smithing, check 제약), 채집 fieldwork·mining·fishing.
@@ -460,7 +460,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 장비도 판매 가능(임무 물품만 불가, 잠금·장착 마지막 하나는 서버가 막음). 판매 수익 24시간 2,000전(world_shop_sell_status), 팔기 칸에 받은 돈·한도·남은 한도.
 - 화면: 사기·팔기 칸에서 항목마다 수량, 아래 구매하기/판매하기 → 확인 팝업 → 한꺼번에. 「이름 ×수량」, 단추는 오른쪽 끝. 시설 창(상점·대장간·거래소·창고·마구간)은 다시 그려도 스크롤 유지(services.js keepScroll — home.js·openStorage·openMarket).
 - 대장간(모든 안전지대, world_smithy_snapshot): 제작·강화 재료(흔함·보통)·수리 도구(회차마다, 월철 주괴·정련 숯 상시). 수리(world_repair_quote, world_equipment_repair 'gil'·world_equipment_repair_all)·강화·분해.
-- 무기 강화 world_weapon_enhance·world_gear_enhance: 장착 무기 +10까지, 단계마다 위력 +5%. +3까지 100%, 이후 90→30%(백공 +10%p), 실패 시 유지. 비용 전 30×단계×(n+1)·월철 주괴 2+n·정련 숯 1+n/2·+4부터 강철 주괴·+7부터 응축 영핵. 재료는 가방 먼저, 모자라면 창고(반요촌 제외, world_enhance_quote have = 가방+창고·stored = 창고 몫, services.js 「(창고 n)」). 그 무기를 모두 내주면 강화도 지움.
+- 무기 강화 world_weapon_enhance·world_gear_enhance: 장착 무기 +10까지, 단계마다 위력 +5%. +3까지 100%, 이후 90→30%, 실패 시 유지. 비용 전 30×단계×(n+1)·월철 주괴 2+n·정련 숯 1+n/2·+4부터 강철 주괴·+7부터 응축 영핵. 재료는 가방 먼저, 모자라면 창고(반요촌 제외, world_enhance_quote have = 가방+창고·stored = 창고 몫, services.js 「(창고 n)」). 그 무기를 모두 내주면 강화도 지움.
 - 구매는 화폐·물품을 원자적으로, 중복 요청 부정 거래 방지.
 
 ### 플레이어 간 거래

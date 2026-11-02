@@ -88,7 +88,7 @@ export async function loadCharacter() {
 export const JOB_LINE = { artificer: 'melee', scout: 'ranged', sealmaster: 'sealing', exorcist: 'exorcism', analyst: 'dagger', medic: 'medicine' };
 export const COMBAT_LINES = ['melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine'];
 export const JOBS = {
-  // 역할 6가지(7.7.7q): 방패·수호 / 원거리 공격·정찰 / 술법 공격 / 근접 공격·생활 / 치유 / 보조(북돋기·약화). base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
+  // 역할 6가지(7.7.7q): 방패·수호 / 원거리 공격·정찰 / 술법 공격 / 근접 공격 / 치유 / 보조(북돋기·약화). base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
   exorcist: { name: '퇴마관', trait: '술법 공격', desc: '【술법 공격】 부적과 방울로 요괴를 치는 술법 공격수. 술법 피해 +8%, 퇴마진(술법 ×2.0, 결계 깨기). 협동 기술은 약점 진언·멸마 진격 같은 공격 쪽.',
     base: { strength: 3, agility: 3, vitality: 4, perception: 4, willpower: 7, spirit_affinity: 9 }, kit: '영령 방울 · 삼베 도포 · 무명 부적낭' },
   scout: { name: '현장 조사원', trait: '원거리 공격·정찰', desc: '【원거리 공격·정찰】 활로 먼 곳에서 노리는 원거리 공격수. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
@@ -99,7 +99,7 @@ export const JOBS = {
     base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
   sealmaster: { name: '봉인술사', trait: '보조(북돋기·약화)', desc: '【보조·북돋기·약화】 요괴를 묶고 동료를 북돋는 북돋기·약화 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
-  analyst: { name: '백공 기술관', trait: '근접 공격·생활', desc: '【근접 공격·생활】 단도로 급소를 찌르는 근접 공격수이자 캐고 만드는 생활 전문가. 근접 피해 +8%·채집량 +15%·희귀품 +3%·제작 품질 +15·강화 확률 +10%p.',
+  analyst: { name: '백공 기술관', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는 근접 공격수. 근접 피해 +8%·근접 치명타 +5, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
     base: { strength: 5, agility: 6, vitality: 6, perception: 7, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
 };
 // 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
