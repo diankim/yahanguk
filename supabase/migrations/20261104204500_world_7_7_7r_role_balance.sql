@@ -161,7 +161,7 @@ end $p$;
 do $p$
 declare d text; f text;
 begin
-  foreach f in array array['world_job_label', 'world_job_name', 'world_gimmick_tip'] loop
+  foreach f in array array['world_job_label', 'world_job_name', 'world_gimmick_tip', 'world_craft_item'] loop
     d := pg_temp.fdef(f);
     if position($a$'백공 기술관'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'백공 기술관'$a$, $a$'암영 검객'$a$); end if;
   end loop;
@@ -187,7 +187,7 @@ update public.world_item_lore set lore = v.l from (values
 do $p$
 declare d text; f text;
 begin
-  foreach f in array array['world_job_label', 'world_job_name', 'world_gimmick_tip'] loop
+  foreach f in array array['world_job_label', 'world_job_name', 'world_gimmick_tip', 'world_craft_item'] loop
     d := pg_temp.fdef(f);
     if position($a$'현장 조사원'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'현장 조사원'$a$, $a$'월궁 사수'$a$); end if;
   end loop;
@@ -322,6 +322,7 @@ begin
   if (select sum(v::int) from jsonb_each_text(public.world_job_base('analyst')) t(k, v)) <> 30 then raise exception '7.7.7r: 백공 능력치 합'; end if;
   if public.world_job_label('analyst') <> '암영 검객' then raise exception '7.7.7r: 직업 이름'; end if;
   if public.world_job_label('scout') <> '월궁 사수' then raise exception '7.7.7r: 월궁 사수 이름'; end if;
+  if exists (select 1 from pg_proc where pronamespace = 'public'::regnamespace and (prosrc like '%''백공 기술관''%' or prosrc like '%''현장 조사원''%')) then raise exception '7.7.7r: 함수 안 옛 직업 이름'; end if;
   if exists (select 1 from public.world_skill_catalog where skill_name in ('손재주 덫', '장인의 눈') or description like '%택일 기술(재주)%') then raise exception '7.7.7r: 단도 ② 이름'; end if;
   if (select count(*) from public.world_coop_skills where job_key = 'analyst' and skill_name in ('그림자 찌르기', '급소 드러내기', '그림자 숨기', '암영 난무')) <> 4 then raise exception '7.7.7r: 암영 검객 협동 기술'; end if;
   if exists (select 1 from public.world_quest_steps where lines::text like '%백공%') or exists (select 1 from public.world_item_lore where lore like '%백공%') then raise exception '7.7.7r: 백공 문구 남음'; end if;
