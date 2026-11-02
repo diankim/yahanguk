@@ -69,10 +69,12 @@ export const atLine = q => {
   const at = q.at_names || [], here = store.character?.location;
   const left = (q.tasks || []).filter(t => t.cur < t.n);
   const where = [...new Set(left.flatMap(t => (t.regions || []).map(r => nameOf(r))))];
-  const doLine = where.length ? `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 할 곳: ${esc(where.slice(0, 3).join('·'))}${where.length > 3 ? ` 외 ${where.length - 3}곳` : ''}${where.includes(here) ? ' (지금 여기)' : ''}</p>` : '';
+  // 지역 이름을 누르면 지도에서 그곳을 짚는다(지금 있는 곳은 글자로만)
+  const links = names => names.map(n => n === here ? esc(n) : `<button type="button" class="q-link" data-q-map="${esc(n)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(n)}</span></button>`).join('·');
+  const doLine = where.length ? `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 할 곳: ${links(where.slice(0, 3))}${where.length > 3 ? ` 외 ${where.length - 3}곳` : ''}${where.includes(here) ? ' (지금 여기)' : ''}</p>` : '';
   if (!at.length) return doLine;
   const done = !left.length;
-  return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${esc(at.join('·'))}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
+  return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${links(at)}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
 };
 const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${chip(q.cat || '')}<b>${esc(q.title)}</b></header>`;
 
