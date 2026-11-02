@@ -285,6 +285,8 @@ textarea { resize: none; }
 .hs-bars .hp { --c: var(--hp); } .hs-bars .mp { --c: var(--mp); } .hs-bars .sp { --c: var(--sp); } .hs-bars .ki { --c: var(--ki); }
 .hs-status { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .hs-status em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 아주 좁은 휴대폰: 접힌 띠에서 시간대·날씨를 빼 상황 글이 잘리지 않게(펼친 상태판에는 그대로) */
+@media (max-width: 380px) { .hs-env { display: none; } }
 .hs-caret { color: var(--muted); transform: rotate(90deg); transition: transform .2s; }
 .hud.open .hs-caret { transform: rotate(-90deg); }
 .hud-body { display: none; padding: 0 16px 14px; gap: 10px; max-height: calc(100dvh - var(--top-h) - 48px - var(--tab-h)); overflow-y: auto; }
@@ -1020,7 +1022,7 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .terr-weather.w-bloodmist { fill: var(--bad); }
 .map-peek { position: absolute; left: 10px; right: 68px; top: 10px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--gold); }
 .map-peek .peek-txt { min-width: 0; display: grid; gap: 1px; } .map-peek .peek-txt b { font-size: calc(13px * var(--fz, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.map-peek .peek-txt small { font-size: calc(12px * var(--fz, 1)); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-peek .peek-txt small { font-size: calc(12px * var(--fz, 1)); color: var(--muted); overflow-wrap: anywhere; line-height: 1.35; }
 .map-peek .peek-act { display: flex; gap: 6px; flex: none; } .map-peek .peek-act .btn { min-height: 40px; }
 .map-peek[hidden] { display: none; }
 @media (min-width: 1100px) { .map-peek { display: none !important; } }
@@ -1593,7 +1595,7 @@ small.reqs { display: flex; margin-top: 2px; color: var(--muted); }
 .sk-node.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
 .sk-detail { margin-top: 4px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); font-size: calc(13px * var(--fz, 1)); }
 .sk-detail p { margin: 4px 0 0; }
-@media (max-width: 420px) { .sk-node { width: 24px; height: 24px; font-size: calc(10px * var(--fz, 1)); } }
+@media (max-width: 420px) { .sk-node { width: 26px; height: 28px; font-size: calc(10px * var(--fz, 1)); } }
 /* 채팅: 위쪽 손잡이로 시트 높이 조절(좁은 화면), 위를 읽는 중 새 메시지 알림 단추 */
 .chat-grip { display: none; }
 body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
