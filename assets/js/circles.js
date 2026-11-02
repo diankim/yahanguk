@@ -31,6 +31,7 @@ export function circlesPanelHtml(s) {
         ${list.length > 1 ? `<span class="circle-ord"><button class="btn small ghost" data-circle-up="${esc(c.circle_id)}" ${i === 0 ? 'disabled' : ''} aria-label="위로">${icon('up', 14)}</button><button class="btn small ghost" data-circle-down="${esc(c.circle_id)}" ${i === list.length - 1 ? 'disabled' : ''} aria-label="아래로">${icon('down', 14)}</button></span>` : ''}
         <button class="btn small" data-circle-open="${esc(c.circle_id)}">관리</button></li>`).join('')}</ul>`
       : '<p class="muted small">아직 든 모임이 없습니다. 모임을 만들거나, 다른 조사원의 초대를 받아 보세요.</p>'}
+    ${canMake ? '' : `<p class="hint">${icon('pin', 14)} ${(store.character?.level || 1) < lim.level ? `모임은 Lv.${lim.level}부터 만들 수 있습니다(지금 Lv.${store.character?.level || 1}).` : (s?.leading || 0) >= lim.lead ? `모임장인 모임은 ${lim.lead}개까지입니다.` : `든 모임은 ${lim.join}개까지입니다.`}</p>`}
     <form class="circle-new" autocomplete="off">
       <input name="name" maxlength="12" placeholder="새 모임 이름 (2~12자)" ${canMake ? '' : 'disabled'} aria-label="새 모임 이름">
       <input name="intro" maxlength="60" placeholder="한 줄 소개 (없어도 됩니다)" ${canMake ? '' : 'disabled'} aria-label="한 줄 소개">
@@ -50,7 +51,7 @@ export function bindCirclesPanel(root) {
     await rpc('world_circle_reorder', { p_ids: ids }); await refresh(); return null;
   }));
   const f = $('.circle-new', root);
-  if (f) f.onsubmit = e => { e.preventDefault(); const b = f.querySelector('button'); run(b, 'world_circle_create', { p_name: f.name.value.trim(), p_intro: f.intro.value.trim() }); };
+  if (f) f.onsubmit = e => { e.preventDefault(); const b = f.querySelector('button'), nm = f.name.value.trim(); if (nm.length < 2) { toast('모임 이름을 2~12자로 적어 주세요.', 'warn'); f.name.focus(); return; } run(b, 'world_circle_create', { p_name: nm, p_intro: f.intro.value.trim() }); };
 }
 
 /* ── 모임 관리 창 ─────────────────────────────────────── */

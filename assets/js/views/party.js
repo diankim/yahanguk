@@ -78,7 +78,7 @@ async function draw(heavy = false, tick = false) {
           ${loot?.claimable_count ? `<button class="btn primary" id="loot-claim">${icon('check', 16)}<span>내 몫 받기</span></button>` : ''}
           <p class="muted small">지정순은 파티원 목록 순서(파티장 먼저)대로 우선권을 줍니다.</p>`, { ico: 'bag' })}
       </div>` : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
-        <button class="btn primary" id="party-make">${icon('plus', 16)}<span>동료 모임 만들기</span></button>
+        <button class="btn primary" id="party-make">${icon('plus', 16)}<span>파티 만들기</span></button>
         <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
       ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
