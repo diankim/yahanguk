@@ -193,4 +193,28 @@ begin
   if p_region is null or$b$);
 end $p$;
 
+-- ⑦ Lv21~29 빈 구간 채우기(사용자 결정 2026-11-02): 깊은 지역 넷의 레벨을 올림
+--    적월 제단터 19→22 · 봉인고 19→24 · 흑조 균열 20→26 · 백옥 천문탑 20→28(10장 Lv30으로 가는 길).
+--    지역·답사 지점·채집터·원정지·요괴(레벨·체력·공격력)·그 지역 보조 퀘스트(레벨·경험치·전)를 같은 차이만큼.
+--    요괴 실제 레벨은 답사 지점 min_level에서 나오므로(world_battle_open) 체력·공격 칸은 같은 식 비율로 맞춤.
+create temp table yh_lvshift(region_id text primary key, d int) on commit drop;
+insert into yh_lvshift values ('crimson_altar', 3), ('seal_vault', 5), ('black_tide_rift', 6), ('white_tower', 8);
+update public.world_map_regions r set min_level = r.min_level + x.d from yh_lvshift x where x.region_id = r.region_id;
+update public.world_exploration_nodes n set min_level = least(40, n.min_level + x.d) from yh_lvshift x where x.region_id = n.region_id;
+update public.world_gathering_spots g set min_level = least(40, g.min_level + x.d)
+  from public.world_exploration_nodes n, yh_lvshift x where n.node_id = g.node_id and x.region_id = n.region_id;
+update public.world_expedition_grounds e set min_level = least(40, e.min_level + x.d) from yh_lvshift x where x.region_id = e.region_id;
+update public.world_region_monsters m set
+    hp = round(m.hp * (70 + (m.min_level + x.d) * 14.0) / (70 + m.min_level * 14.0)),
+    attack_power = round(m.attack_power * (8 + (m.min_level + x.d) * 1.1) / (8 + m.min_level * 1.1)),
+    min_level = m.min_level + x.d, max_level = m.max_level + x.d
+  from yh_lvshift x where x.region_id = m.region_id;
+-- 보조 퀘스트: 경험치는 필요 경험치 비율(100L+12L²), 전은 (5+4L) 비율로
+update public.world_quest_steps s set reward = s.reward
+      || case when s.reward ? 'xp' then jsonb_build_object('xp', round((s.reward ->> 'xp')::numeric * (100 * (q.min_level + x.d) + 12 * (q.min_level + x.d) ^ 2) / (100 * q.min_level + 12 * q.min_level ^ 2))::int) else '{}'::jsonb end
+      || case when s.reward ? 'gil' then jsonb_build_object('gil', round((s.reward ->> 'gil')::numeric * (5 + 4 * (q.min_level + x.d)) / (5 + 4 * q.min_level))::int) else '{}'::jsonb end
+  from public.world_quests q, yh_lvshift x
+ where q.quest_id = s.quest_id and q.region_id = x.region_id and q.kind = 'side' and s.reward is not null and s.reward <> '{}'::jsonb;
+update public.world_quests q set min_level = least(40, q.min_level + x.d) from yh_lvshift x where x.region_id = q.region_id and q.kind = 'side';
+
 update public.world_app_meta set value = '20261105030000' where key = 'db_version';
