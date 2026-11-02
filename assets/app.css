@@ -2045,6 +2045,16 @@ b.contest { color: var(--warn); font-weight: 600; }
 .coop-btn b { font-size: calc(13px * var(--fz, 1)); } .coop-btn small { font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); }
 /* 협동 기술·북돋기 아이콘 */
 .coop-btn b { display: flex; align-items: center; gap: 4px; min-width: 0; } .coop-btn b .ico { flex: none; color: var(--accent-ink, var(--accent)); }
+.coop-btn .cb-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 귀허: 공격·방어·버티기·물품 넷과 협동 기술 넷을 PC·휴대폰 모두 한 줄 네 칸으로 */
+.raid-wrap.gw-wrap .raid-buttons.gw-btns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.raid-wrap.gw-wrap .raid-buttons.gw-btns .btn { min-width: 0; }
+.raid-wrap.gw-wrap .raid-buttons.gw-btns .btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.raid-wrap.gw-wrap .coop-grid.gw-skills { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.raid-wrap.gw-wrap .coop-grid.gw-skills > * { min-width: 0; }
+.coop-btn small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 혼자 도전 보정 한 줄 */
+.solo-aid { grid-column: 1 / -1; margin: 0; font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fx-icons { display: inline-flex; gap: 1px; margin-left: 3px; vertical-align: -1px; }
 .fx-i { display: inline-flex; color: var(--ok); font-style: normal; } .fx-i.bad { color: var(--bad); } .fx-i .ico { width: 12px; height: 12px; }
 .mem-top b { display: inline-flex; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
@@ -2265,6 +2275,8 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-wrap .raid-buttons .btn { flex-direction: column; gap: 1px; height: 46px; padding: 2px; font-size: calc(12px * var(--fz, 1)); }
   .raid-wrap .raid-buttons:not(.pf-btns) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .raid-wrap .raid-buttons:not(.pf-btns) .btn { flex-direction: row; gap: 4px; height: 40px; padding: 2px 4px; font-size: calc(13px * var(--fz, 1)); }
+  .raid-wrap.gw-wrap .raid-buttons.gw-btns { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .raid-wrap.gw-wrap .raid-buttons.gw-btns .btn { gap: 3px; font-size: calc(12.5px * var(--fz, 1)); }
   .raid-wrap .raid-coop-open { display: none; }
   .raid-act .raid-coopbox { display: grid; gap: 3px; }
   .raid-act .raid-coopbox .raid-tgt { margin: 0; font-size: calc(10.5px * var(--fz, 1)); line-height: 1.3; }
@@ -2277,8 +2289,9 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-log li { grid-template-columns: 38px minmax(0, 1fr); gap: 4px; }
   .raid-legend { font-size: calc(10.5px * var(--fz, 1)); }
   .raid-act .raid-coopbox .coop-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .raid-act .raid-coopbox .coop-btn { padding: 4px 4px; gap: 0; text-align: center; min-width: 0; min-height: 40px; align-content: center; }
-  .raid-act .raid-coopbox .coop-btn b { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: center; gap: 2px; }
+  .raid-act .raid-coopbox .coop-btn { padding: 4px 4px; gap: 0; text-align: left; min-width: 0; min-height: 40px; align-content: center; }
+  /* 긴 이름은 아이콘·앞 글자를 남기고 끝을 줄인다 */
+  .raid-act .raid-coopbox .coop-btn b { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.25; white-space: nowrap; overflow: hidden; justify-content: flex-start; gap: 2px; }
   .raid-act .raid-coopbox .coop-btn b .ico { width: 12px; height: 12px; }
   .raid-act .raid-coopbox .coop-btn small { font-size: calc(10px * var(--fz, 1)); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .raid-wrap.playing ~ .raid-locks { display: none; }

@@ -110,12 +110,26 @@ async function loadNotes(first) {
     const seen = new Set(notes.map(n => n.id));
     const fresh = (data || []).filter(n => n?.id != null);
     // 실시간으로 받지 못한 새 알림은 지금 알린다(처음 읽을 때는 아래에서 따로)
-    if (!first) fresh.filter(n => !seen.has(n.id) && !shown.has(n.id)).slice(0, 3).forEach(n => { shown.add(n.id); if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info'); });
+    if (!first) fresh.filter(n => !seen.has(n.id) && !shown.has(n.id)).slice(0, 3).forEach(n => { shown.add(n.id); if (POP_KINDS.has(n.kind)) { if (!staleFight(n)) notePop(n); } else toast(n.title || '새 알림', 'info'); });
     fresh.forEach(n => shown.add(n.id));
     notes = fresh; drawDot();
     // 접속하지 않은 사이 온 초대·원정 완료도 들어오면 바로 띄운다.
-    if (first) notes.filter(n => POP_KINDS.has(n.kind)).slice(0, 2).forEach(notePop);
+    // 싸움 초대·포기 제안은 60~90초짜리라 15분 넘게 지난 것은 띄우지 않는다(목록에는 남음 — 끝난 싸움의 초대가 접속마다 다시 뜨던 것)
+    if (first) notes.filter(n => POP_KINDS.has(n.kind) && !staleFight(n)).slice(0, 2).forEach(notePop);
   } catch {}
+}
+const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'pfight_invite']);
+const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 15 * 60000;
+// 싸움 화면이 「이미 들었음·끝남·답함」을 확인하면 그 싸움의 초대·제안 알림을 읽음으로 하고 떠 있는 것을 거둔다
+// kinds: 알림 종류들, key: payload 열쇠(raid_id·fight_id), id: 그 싸움
+export function clearFightNotes(kinds, key, id) {
+  if (id == null) return;
+  const ks = new Set(kinds), hit = notes.filter(n => ks.has(n.kind) && String(n.payload?.[key]) === String(id));
+  if (!hit.length) return;
+  const ids = new Set(hit.map(n => String(n.id)));
+  notes = notes.filter(n => !ids.has(String(n.id))); drawDot();
+  document.querySelectorAll('.note-pop').forEach(x => { if (ids.has(x.dataset.id)) x.remove(); });
+  hit.forEach(n => rpc('world_mark_notification_read', { p_id: n.id }).catch(() => {}));
 }
 function drawDot() { const d = bell?.querySelector('.dot'); if (d) { d.hidden = !notes.length; d.textContent = notes.length > 9 ? '9+' : String(notes.length || ''); } }
 const byId = id => notes.find(n => String(n.id) === String(id));
@@ -139,7 +153,7 @@ function noteActs(n) {
   if (n.kind === 'bag_overflow') return `<button class="btn primary small" data-ov="${esc(n.id)}">정리하기</button>`;
   if (n.kind === 'party_exp_offer' && n.payload?.offer_id) return `<button class="btn primary small" data-pexo="${esc(n.id)}" data-acc="1">함께 가기</button><button class="btn small" data-pexo="${esc(n.id)}" data-acc="0">빠지기</button>`;
   if (n.kind === 'party_expedition' && n.payload?.node_id) return `<button class="btn primary small" data-pexp="${esc(n.id)}">함께 가기</button>`;
-  if (n.kind === 'gw_invite' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}">합류</button>`;
+  if (n.kind === 'gw_invite' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}" data-join="1">합류</button>`;
   if (n.kind === 'bond_wedding_ask' && n.payload?.wed_id) return `<button class="btn primary small" data-wed="${esc(n.id)}" data-acc="1">혼례 받기</button><button class="btn small" data-wed="${esc(n.id)}" data-acc="0">다음에</button>`;
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">비무 방</button>`;
@@ -147,7 +161,7 @@ function noteActs(n) {
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
   if (n.kind === 'letter' && n.payload?.letter_id) return `<button class="btn primary small" data-letter="${esc(n.id)}">서신함</button>`;
   if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
-  if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">합류</button>`;
+  if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}" data-join="1">합류</button>`;
   if ((n.kind === 'raid_notice' || n.kind === 'raid_result') && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">보기</button>`;
   if (n.kind === 'raid_vote' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">결전 화면에서 답하기</button>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
@@ -202,8 +216,11 @@ async function runAct(btn) {
   if (btn.dataset.pexp) { await markRead(n); const p = n.payload || {};
     if (store.character?.location !== p.location) { toast(`${p.location || '그곳'}에 있어야 같은 곳으로 원정을 보낼 수 있습니다.`, 'warn'); return true; }
     window.dispatchEvent(new CustomEvent('yh-open-expedition', { detail: { node: p.node_id, minutes: p.minutes, stance: p.stance } })); return true; }
-  if (btn.dataset.raid) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('raid', n.payload.raid_id); return true; }
-  if (btn.dataset.gw) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('gw', n.payload.fight_id); return true; }
+  // 초대의 「합류」는 화면의 합류 단추와 같은 요청까지 보낸다(이미 들었거나 끝났어도 그 화면으로는 간다)
+  if (btn.dataset.raid || btn.dataset.gw) {
+    const raid = !!btn.dataset.raid, id = raid ? n.payload.raid_id : n.payload.fight_id;
+    if (btn.dataset.join) { btn.disabled = true; try { await act(raid ? 'world_raid_join' : 'world_gw_join', raid ? { p_raid: id } : { p_fight: id }); } catch (e) { toast(e.message || String(e), 'warn'); } }
+    await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo(raid ? 'raid' : 'gw', id); return true; }
   if (btn.dataset.wed) {
     let ok = false;
     await guard(btn, async () => { try { const r = await act('world_wedding_respond', { p_wed: n.payload.wed_id, p_accept: btn.dataset.acc === '1' }); ok = btn.dataset.acc === '1'; return r; } finally { await markRead(n); } });

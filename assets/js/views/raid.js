@@ -4,7 +4,9 @@ import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, R
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { mountMeter } from './meter.js';
 import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
-  resultBox, reloadCharacter, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName } from './fightui.js';
+  resultBox, reloadCharacter, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName, showResult, soloAidHtml } from './fightui.js';
+import { catItem } from './common.js';
+import { clearFightNotes } from '../settings.js';
 // 기여도 갈래(서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
 // 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
@@ -18,10 +20,10 @@ const creditLine = c => {
 const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
+let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
 
 export async function render(root, sub) {
-  el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0;
+  el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0; shownStatus = '';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>${loading()}`;
   await refresh();
   bindTips(el);
@@ -69,6 +71,11 @@ function countdown() {
   const out = outUntil > Date.now() || away;
   $$('[data-act]', el).forEach(b => { if (!b.dataset.lock) b.disabled = cd > 0 || sending || out; });
   const os = $('#raid-out-sec', el); if (os) os.textContent = Math.max(0, Math.ceil((outUntil - Date.now()) / 1000));
+  // 참가자 칸의 「쉼 n초」도 내 칸과 같은 스냅샷·같은 시계로 센다
+  for (const [id, end] of Object.entries(outEnds)) {
+    const st = $(`#raid-mem [data-pick="${CSS.escape(id)}"] .mem-top small`, el); if (!st) continue;
+    const sec = Math.ceil((end - Date.now()) / 1000); st.textContent = sec > 0 ? `쉼 ${sec}초` : '쉬는 중';
+  }
   // 물러남 시간이 이 기기에서 끝났으면 다시 읽기 전에도 「쉬는 중」으로 바꿔 보인다(저절로 싸움에 돌아가지 않음)
   if (outUntil && outUntil <= Date.now() && !resting && !away) { outUntil = 0; resting = true; outBox(); }
 }
@@ -84,13 +91,20 @@ function draw() {
       <div class="panel"><div class="panel-body"><p class="desc">지금은 드러난 봉연의 그림자가 없습니다. 출현 하루 전부터 전체 채팅 「봉연 소식」과 알림으로 후보 지역을 알려 드립니다.</p>${locksHtml(s.locks)}</div></div>`;
     return;
   }
-  const me = s.me || {};
-  outUntil = me.out ? Date.now() + me.out * 1000 : 0;
+  const me = s.me || {}, ended = settled(s);
+  // 이미 들었거나 끝난 싸움, 답했거나 끝난 포기 제안의 알림은 거둔다(접속마다 다시 뜨지 않게)
+  if (me.joined || ended) clearFightNotes(['raid_invite'], 'raid_id', r.id);
+  if (!s.vote || s.vote.mine || ended) clearFightNotes(['raid_vote'], 'raid_id', r.id);
+  const t0 = Date.now();
+  outEnds = r.status === 'fight' ? Object.fromEntries((s.members || []).filter(m => m.out && !m.away).map(m => [m.id, t0 + m.out * 1000])) : {};
+  outUntil = me.out ? t0 + me.out * 1000 : 0;
   away = !!(me.joined && me.away && r.status === 'fight');
   resting = !!(me.joined && me.resting && !me.out && !away && r.status === 'fight');
   const key = `${r.id}:${r.status}:${!!me.joined}:${me.can_join ? 1 : 0}:${s.vote ? s.vote.until : ''}`;
   if (key !== built) { build(); built = key; } else patch();
   countdown();
+  const was = shownStatus; shownStatus = r.status;
+  if (was && was !== r.status && ended) showResult(el);
 }
 function build() {
   const s = snap, r = s.raid, me = s.me || {}, fight = r.status === 'fight', ended = r.status === 'won' || r.status === 'failed';
@@ -126,14 +140,15 @@ function patch() {
   const s = snap, r = s.raid, me = s.me || {}, members = s.members || [];
   const pct = r.max_hp ? Math.max(0, Math.min(100, r.hp / r.max_hp * 100)) : 100;
   const hb = $('#raid-hpbar', el); if (hb) hb.style.width = pct + '%';
-  const hn = $('#raid-hpnum', el); if (hn) hn.textContent = `${fmt.num(r.hp)} / ${fmt.num(r.max_hp)}`;
+  const hn = $('#raid-hpnum', el); if (hn) hn.textContent = r.max_hp ? `${fmt.num(r.hp)} / ${fmt.num(r.max_hp)}` : '모이는 중';
+  $('.raid-hp .bar', el)?.toggleAttribute('hidden', !r.max_hp);
   const ph = $('#raid-phase', el); if (ph) ph.innerHTML = r.phase > 1 ? chip(`${r.phase}단계`, 'bad') : '';
   // 요괴의 말·기운 모으기·약점: 높이가 정해진 칸 안에서만 바뀐다(줄이 없어도 자리는 남김)
   const sy = $('#raid-says', el);
   if (sy) {
     const fx = fxChips((r.boss_fx || []).filter(k => BOSS_FX.includes(k)));
-    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
-      <div class="raid-charge ${r.charge ? 'on' : ''} ${r.charge?.secs != null ? 'timed' : ''}">${r.charge ? `${r.charge.secs != null ? '<i class="ch-time"></i>' : ''}<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.secs != null ? '<b class="ch-sec"></b>초' : `${r.charge.left}번`} 남음 · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
+    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.charge?.secs != null ? String(r.intent).replace(/(약\s*)?\d+(\.\d+)?초\s*안에\s*/, '') : r.intent) : '요괴가 숨을 고르는 중'}</span></p>
+      <div class="raid-charge ${r.charge ? 'on' : ''} ${r.charge?.secs != null ? 'timed' : ''}">${r.charge ? `${r.charge.secs != null ? '<i class="ch-time"></i>' : ''}<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.secs != null ? '<span class="ch-left"><b class="ch-sec"></b>초 남음</span>' : `${r.charge.left}번 남음`} · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
     // 서버 보스의 기운 모으기는 실제 시간(기본 8초) — 서버가 준 남은 초로 이 기기에서 초를 세고 게이지를 줄인다
     chargeEnd = r.charge?.secs != null ? Date.now() + r.charge.secs * 1000 : 0; chargeDur = (r.charge?.dur || 8) * 1000;
@@ -171,6 +186,7 @@ function chargeTick() {
   const box = el && $('#raid-says .raid-charge.timed', el); if (!box || !chargeEnd) return;
   const ms = Math.max(0, chargeEnd - Date.now());
   const sec = $('.ch-sec', box); if (sec) sec.textContent = (ms / 1000).toFixed(1);
+  if (ms <= 0) { const lf = $('.ch-left', box); if (lf) lf.textContent = '곧 터짐'; }
   const bar = $('.ch-time', box); if (bar) bar.style.width = `${Math.min(100, ms / chargeDur * 100)}%`;
   box.classList.toggle('urgent', ms < 3000);
   if (ms > 0) chargeT = setTimeout(chargeTick, 100);
@@ -234,7 +250,7 @@ function actionsShell(me) {
   </div></section>`;
 }
 function coopButtons(me) {
-  return (me.coop || []).map(k => coopBtn({ ...k, why: !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.cd > 0 ? `${k.cd}초` : (me.sp || 0) < k.cost ? `영력 ${k.cost}` : '' },
+  return (me.coop || []).map(k => coopBtn({ ...k, why: !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.cd > 0 ? `${k.cd}초` : (me.sp || 0) < k.cost ? `${spOf()[0]} ${k.cost}` : '' },
     `data-act="coop" data-skill="${esc(k.id)}" data-tgt="${esc(k.target)}"`)).join('');
 }
 function patchActions(me, members) {
@@ -243,7 +259,8 @@ function patchActions(me, members) {
   const tName = members.find(m => m.id === tgt)?.name || '나';
   // 내 체력·영력은 막대로 크게, 내가 준 피해·기여도도 함께
   const mine = members.find(m => m.me), spName = spOf()[0];
-  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}
+  const so = me.solo;
+  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}${so ? soloAidHtml(so.final_dmg ?? so.solo_dmg, so.solo_guard, so.solo_falls) : ''}
     <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${fxChips(Object.keys(me.fx || {}))}</span></div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
@@ -264,7 +281,9 @@ function outBox(me = snap?.me || {}) {
     : `${icon('check', 14)} 쉬는 중 · 준비되면 행동해서 돌아가세요`;
   $('#raid-out-text', ob).innerHTML = away
     ? `지금은 물러난 것으로 셉니다. 요괴가 나를 노리지 않고 쌓은 기여도는 그대로입니다. 가방·퀵슬롯·거점 휴식으로 회복한 뒤 <b>${region}</b>${particle(snap?.raid?.region || '토벌 자리', '(으)로')} 돌아오면 다시 합류하지 않고 바로 싸웁니다.`
-    : outNow ? `체력이 1이 되어 물러났습니다. ${snap?.raid?.kind === 'final' ? '30초' : '1분'} 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, 그사이 <b>「물품」·가방·퀵슬롯</b>으로 회복하거나 거점에 가서 쉬고 오세요(자리를 비운 동안도 물러난 것으로 셉니다).`
+    : snap.raid.kind === 'final' ? (outNow ? `체력이 1이 되어 물러났습니다. 30초 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, <b>결전 화면의 「물품」</b>으로 회복하세요(결전 중에는 가방·퀵슬롯에서 바로 쓸 수 없습니다).`
+      : `요괴가 나를 노리지 않습니다. 준비가 되면 <b>결전 화면의 「물품」</b>으로 회복하거나(쉬는 중에 쓰면 체력 30으로 돌아갑니다) <b>공격·방어·기술</b>을 눌러 돌아가세요. 돌아가면 먼저 <b>방어</b>가 안전합니다.`)
+    : outNow ? `체력이 1이 되어 물러났습니다. 1분 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, 그사이 <b>「물품」·가방·퀵슬롯</b>으로 회복하거나 거점에 가서 쉬고 오세요(자리를 비운 동안도 물러난 것으로 셉니다).`
     : `요괴가 나를 노리지 않습니다. 가방·퀵슬롯으로 마저 회복하고, 준비가 되면 <b>공격·방어·기술</b>을 눌러 돌아가세요(「물품」 창의 물품도 쉬는 동안은 행동이 되지 않습니다). 돌아가면 먼저 <b>방어</b>가 안전합니다.`;
 }
 // 물품 창: 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(물품은 체력·정신·영력을 채우는 모든 소모품)
@@ -274,8 +293,11 @@ function fillItems(box) {
   // 결전: 체력 회복품은 한 싸움 다섯 개, 가방에서 바로 쓰지 않고 「물품」 행동으로만(쉬는 중에 쓰면 체력 30으로 돌아감)
   const fin = snap?.raid?.kind === 'final', left = snap?.me?.items_left;
   box.innerHTML = `<p class="muted small">${fin ? `체력 회복품은 <b>한 싸움에 다섯 개까지</b> · 남은 횟수 <b>${left ?? 0}/5</b>. 물품을 쓰면 그 차례의 행동이 되고, 쉬는 중이면 체력 30으로 싸움에 돌아갑니다.` : out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
+    ${fin && !left ? '<p class="hint warn">이 결전에서 쓸 수 있는 체력 회복품을 다 썼습니다.</p>' : ''}
     ${itemSectionsHtml(battleItems(), inv)}`;
-  $$('[data-use]', box).forEach(b => b.onclick = () => {
+  // 결전에서 다섯 개를 다 쓰면 체력을 채우는 물품은 막는다(서버도 거절)
+  if (fin && !left) $$('[data-use]', box).forEach(b => { if (catItem(b.dataset.use.replace(/_hq$/, ''))?.fx?.hp > 0) { b.disabled = true; b.title = '다 썼습니다'; } });
+  $$('[data-use]:not(:disabled)', box).forEach(b => b.onclick = () => {
     const k = b.dataset.use;
     if (!fin && (outUntil > Date.now() || away || resting)) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(tray.refill);
     else run(b, () => rpc('world_raid_action', { p_raid: snap.raid.id, p_action: 'item', p_item: k }), true).then(tray.refill);
@@ -285,14 +307,14 @@ function fillItems(box) {
 function membersHtml(list) {
   if (!(list || []).length) return '<li class="muted small raid-mem-empty">아직 참가자가 없습니다.</li>';
   return list.map(m => memberLi(m, { me: m.me, tgt: m.id === target, sel: m.id === sel, out: m.out || m.away || m.resting, fx: m.buffs,
-    state: m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : '',
+    state: settled(snap) ? '' : m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : '',
     title: `${m.name} · Lv${m.level} ${jobName(m.job)} · 기여 ${m.share}%`,
     sub: `${esc(jobName(m.job))} · 기여 ${m.share}%${fxKeys(m.buffs).length ? ` · ${fxKeys(m.buffs).map(k => FX_NAME[k]).join('·')}` : ''}` })).join('');
 }
 // 고른 참가자 자세히(PC·휴대폰 모두 누르면 열림, 다시 누르거나 닫기로 접음)
 function memDetail(list) {
   showSelected(el && $('#raid-memdetail', el), list, sel, m => ({
-    state: m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : '싸우는 중',
+    state: settled(snap) ? '' : m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : snap.raid.status === 'fight' ? '싸우는 중' : '',
     nums: [['기여', `${m.share}%`], ...fightNums(m)],
     fx: m.buffs, extra: creditLine(m.credits) }), () => { sel = null; patch(); });
 }
@@ -306,7 +328,16 @@ function bindActs(scope) {
   $$('[data-act]', scope).forEach(b => b.onclick = () => {
     const a = b.dataset.act;
     const args = { p_raid: r.id, p_action: a };
-    if (a === 'coop') { args.p_skill = b.dataset.skill; if (b.dataset.tgt === 'ally') args.p_target = target || (snap.members || []).find(m => m.me)?.id; }
+    if (a === 'coop') {
+      args.p_skill = b.dataset.skill;
+      if (b.dataset.tgt === 'ally') {
+        // 동료 대상 기술: 고른 동료가 없으면(또는 나를 골랐으면) 싸우고 있는 첫 동료에게
+        const ms = snap.members || [], picked = ms.find(m => m.id === target && !m.me);
+        const ally = picked || ms.find(m => !m.me && !m.out && !m.away && !m.resting) || ms.find(m => !m.me && !m.away);
+        if (!ally) { toast('이 기술을 받을 동료가 없습니다.', 'warn'); return; }
+        args.p_target = ally.id;
+      }
+    }
     run(b, () => rpc('world_raid_action', args), true);
   });
 }

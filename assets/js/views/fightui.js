@@ -2,7 +2,7 @@
 // 북돋기·약화 아이콘과 떠 있는 짧은 설명, 직업 색 참가자 칸·자세히 칸, 내 체력·영력 막대, 협동 기술 아이콘,
 // 물품 창(겹쳐 뜨는 창·목록), 결과 칸, 전투 기록 줄·스크롤, 남은 시간 글, 정산 뒤 캐릭터 다시 읽기.
 // 새 효과·기술을 넣으면 FX_NAME·FX_ICON·FX_TIP·SKILL_ICON에 함께 더한다.
-import { esc, icon, fmt, nameOf, JOBS, brief, $, $$, emit, loadCharacter, openLayer, spOf } from '../core.js';
+import { esc, icon, fmt, nameOf, JOBS, brief, $, $$, emit, loadCharacter, openLayer, spOf, scrollAfterModal } from '../core.js';
 import { itemDesc, catItem, catalogList, load } from './common.js';
 import { USABLE, fxHtml } from './item.js';
 
@@ -84,7 +84,7 @@ export const vitHtml = (label, v, kind, low = false) => `<div class="raid-vit ${
 
 // 협동 기술 단추(봉연 모양). k: { id, name, desc, cost, target, unlocked, rank, why(못 쓰는 까닭, 있으면 막음), on }
 export const coopBtn = (k, data = '') => `<button type="button" class="coop-btn ${!k.unlocked ? 'locked' : ''} ${k.on ? 'on' : ''}" ${data} ${k.why ? 'data-lock="1" disabled' : ''} title="${esc(k.desc || '')}">
-  <b>${icon(SKILL_ICON[k.id] || 'spark', 13)}${esc(k.name)}</b><small>${esc(k.why || `영력 ${k.cost}`)}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
+  <b>${icon(SKILL_ICON[k.id] || 'spark', 13)}<span class="cb-n">${esc(k.name)}</span></b><small>${esc(k.why || `${spOf()[0]} ${k.cost}`)}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
 
 /* ── 물품 창 ─────────────────────────────────────────────── */
 // 목록은 이름·남은 수·회복 수치만, 짧은 설명은 title.
@@ -128,6 +128,20 @@ export function itemTray({ title, bodyId, fill }) {
 // 끝난 싸움의 결과 칸: 제목(html)과 아래 줄(html)
 export const resultBox = (ok, title, body = '') => `<div class="raid-result ${ok ? 'ok' : 'bad'}"><b>${title}</b>
     ${body}</div>`;
+// 끝난 싸움으로 바뀌면 결과 칸이 화면 위로 밀려 있지 않게 그 칸을 머리 아래로 보인다(창이 떠 있으면 닫을 때)
+export function showResult(root) {
+  const box = root && $('.raid-result', root); if (!box) return;
+  const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 56;
+  scrollAfterModal(Math.max(0, Math.round(window.scrollY + box.getBoundingClientRect().top - head - 8)), true);
+}
+// 혼자 도전 보정 한 줄(서버 world_solo_aid — 귀허 snapshot.solo {dmg, guard, falls} · 결전 me.solo {solo_dmg|final_dmg, solo_guard, solo_falls})
+export function soloAidHtml(dmg, guard, falls) {
+  const pct = v => `${v > 0 ? '+' : '−'}${Math.abs(v)}%`, parts = [];
+  if (Number(dmg)) parts.push(`주는 피해 ${pct(Number(dmg))}`);
+  if (Number(guard)) parts.push(`받는 피해 ${pct(-Number(guard))}`);
+  if (Number(falls)) parts.push(`쓰러짐 ${Number(falls) > 0 ? '+' : '−'}${Math.abs(Number(falls))}`);
+  return parts.length ? `<p class="solo-aid" title="혼자 도전할 때만 붙는 직업 보정">혼자 도전 보정 · ${parts.join(' · ')}</p>` : '';
+}
 export async function reloadCharacter() { try { await loadCharacter(); } catch {} }
 // 싸움이 끝나면(다른 사람의 마지막 한 방이어도) 내 전·경험치·가방을 다시 읽고 관련 화면에 알린다. before는 알리기 전에 할 일(캐시 버리기 등)
 export async function settleFight(name, before) { await reloadCharacter(); before?.(); emit('changed', { name }); }

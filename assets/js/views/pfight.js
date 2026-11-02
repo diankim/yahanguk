@@ -6,6 +6,7 @@ import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSect
   mobileLog, newestFirst, keepLogScroll, logRow, jobName } from './fightui.js';
 import { INTENT, SKILL, trayList, weakNote } from './battle.js';
 import { mountMeter } from './meter.js';
+import { clearFightNotes } from '../settings.js';
 
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
 // 물품 창에 보일 물품: 현장 토벌 물품 칸과 같은 목록(battle.js — 서버 world_battle_action이 받는 것)
@@ -76,6 +77,7 @@ function memDetail() {
 function draw() {
   if (!el || !snap) return;
   const s = snap, b = s.battle || {}, me = s.me, c = store.character || {};
+  if (me || ended()) clearFightNotes(['pfight_invite'], 'fight_id', fid); // 이미 들었거나 끝난 싸움의 부름은 거둔다
   const lg = s.log || [];
   if (seenFid !== fid) { seenFid = fid; seenLog = lg.length; }
   else if (lg.length > seenLog) { const mine = `${c.character_name} · `; weakNote(lg.slice(seenLog).filter(l => l.startsWith(mine))); seenLog = lg.length; }
