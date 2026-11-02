@@ -2,7 +2,7 @@
 --  · 퇴마진: ×1.7 → ×1.4 + 반드시 치명타(×1.5, 숙달 「멸마」면 ×2.0) — 한 방 2.1배(멸마 2.8배). 부적 퇴마진 ×2.1 → ×1.7(2.55배).
 --  · 급소 사격: ×1.8 → ×1.4, 반드시 치명타 표시 없앰(원래 배율도 안 붙었음), 표식 2 → 3번(맞을 때마다 +25%) — 표식이 늘 걸려 꾸준히.
 --  · 치명타: 퇴마관 술법 +6 없앰, 월궁 사수 원거리 +4.
---  · 퇴마관 회피 +4·달아나기 +8(월궁 사수 6·15보다 낮게).
+--  · 퇴마관 기본 회피 4+레벨×0.3(영기·의지에는 회피가 안 붙어, 봉인술사 기본 방어처럼 — Lv5 약 10·Lv15 13·Lv35 19, 민첩을 찍는 월궁 사수 14·19·29의 2/3쯤)·달아나기 +8.
 --  세 턴 한 바퀴(기술+평타 둘) 기대 피해: 퇴마관 약 +3%, 월궁 사수 약 ±0(표식이 다음 기술까지 이어짐).
 lock table public.world_characters in access exclusive mode;
 
@@ -30,7 +30,7 @@ begin
   d := replace(d, a, $b$WHEN c.job_key = 'scout' AND style = 'ranged' THEN 4 ELSE 0 END$b$);
   a := $a$CASE WHEN c.job_key = 'scout' THEN 6 WHEN c.job_key = 'sealmaster' THEN 12 ELSE 0 END$a$;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor cs eva'; end if;
-  d := replace(d, a, $b$CASE WHEN c.job_key = 'scout' THEN 6 WHEN c.job_key = 'sealmaster' THEN 12 WHEN c.job_key = 'exorcist' THEN 4 ELSE 0 END$b$);
+  d := replace(d, a, $b$CASE WHEN c.job_key = 'scout' THEN 6 WHEN c.job_key = 'sealmaster' THEN 12 WHEN c.job_key = 'exorcist' THEN 4 + c.level * 0.3 ELSE 0 END$b$);
   a := $a$CASE WHEN c.job_key = 'scout' THEN 15 ELSE 0 END$a$;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor cs flee'; end if;
   d := replace(d, a, $b$CASE WHEN c.job_key = 'scout' THEN 15 WHEN c.job_key = 'exorcist' THEN 8 ELSE 0 END$b$);
