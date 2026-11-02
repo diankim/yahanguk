@@ -168,17 +168,6 @@ function renderAuth(mode = 'login', notice = '') {
   const scr = $('.auth-screen'), rise = () => scr?.classList.replace('auth-wait', 'auth-up');
   const late = setTimeout(rise, 5000);
   import('./cutscene.js').then(m => { if (scr?.isConnected) m.loginBackdrop(app, { onReady: () => { clearTimeout(late); rise(); } }); }).catch(rise);
-  // 휴대폰: 입력칸을 누르면(키패드가 올라오면) 머리글·안내를 접어 로그인 창을 위로 올리고, 고른 칸이 보이게 한다
-  if (scr && matchMedia('(max-width: 640px)').matches) {
-    let kbOff = 0;
-    scr.addEventListener('focusin', e => {
-      if (!e.target.matches('input')) return;
-      clearTimeout(kbOff); scr.classList.add('kb');
-      const show = () => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      requestAnimationFrame(show); setTimeout(show, 350);
-    });
-    scr.addEventListener('focusout', () => { kbOff = setTimeout(() => { if (!scr.contains(document.activeElement) || !document.activeElement.matches('input')) scr.classList.remove('kb'); }, 150); });
-  }
   const tipBox = $('#auth-tip'); let tipN = Math.floor(Math.random() * TIPS.length);
   const showTip = () => { tipBox.querySelector('span').textContent = TIPS[tipN % TIPS.length]; tipN++; };
   showTip(); tipBox.onclick = showTip;
