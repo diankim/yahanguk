@@ -310,7 +310,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 꼬마 동무
 
-- 46종(1.0.0, 조사원 제보 11종 포함 — 은빛 아프간 하운드·분홍 포메라니안 2026-11-02, 원본 supabase/rollback/p6_pets.src.sql) world_pet_species(grade·kind·likes·how·egg), world_pets(affinity 0~300, 100 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩 +1), 출처 world_pet_sources(quest:·title:·gw_first).
+- 47종(1.0.0, 조사원 제보 12종 포함 — 은빛 아프간 하운드·분홍 포메라니안·오목눈이 2026-11-02, 원본 supabase/rollback/p6_pets.src.sql) world_pet_species(grade·kind·likes·how·egg), world_pets(affinity 0~300, 100 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩 +1), 출처 world_pet_sources(quest:·title:·gw_first).
 - 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때)마다 world_event_char_apply 희귀 전리품 길로 0.5%·0.06%.
 - world_pet_adopt: 알은 그 등급 egg 종 중 고르게, 이미 있으면 친밀도 +30(최대 300), 친밀도 가득이면 「동무 정표」 pet_token(거래 불가, 가방이 차면 창고). 정표 5 → 빛나는 알 world_pet_token_trade(어디서나, 가방 「알로 바꾸기」·물품 정보·별채 동무 창). 조건 보상 world_pet_grant(이미 있으면 pet_food 3을 창고로).
 - 두 자리(1.0.0): 데리고 다니는 동무 world_pet_profile(조사원 카드 pet = world_pet_profile_of, 별채 없어도 world_pet_profile_set)·별채 동무 world_housing.pet_id(world_pet_place), 같은 동무는 한 자리에만(서로 빼고 계정마다 advisory 잠금, pet_out은 안 씀, world_pet_walk는 옛 화면 호환), 별명 8자 world_pet_nickname, world_pet_act(pat·play·feed, pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음.

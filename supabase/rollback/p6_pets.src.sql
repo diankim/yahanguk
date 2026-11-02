@@ -1,6 +1,6 @@
 -- 대기 파일: 꼬마 동무 1.0.0(롤백 패치) — 새 동무 8종(조사원 제보) · 동무 두 자리(프로필 동무 / 별채 동무)
 -- 1.0.0 묶음에 합칠 것(db_version 줄은 넣지 않았다 — 묶음 마지막에 한 번). migrations 폴더 밖에 두어 실수로 돌지 않게 했다.
--- 화면: assets/js/housing/pets.js(46종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
+-- 화면: assets/js/housing/pets.js(47종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
 -- 그림(pets.js)이 먼저 배포돼 있어도 world_pet_species에 없으면 도감에 나오지 않는다.
 --
 -- ① 새 동무 9종(제보한 조사원 → 동무, 꼬마 매는 2026-11-01 제보 76 아도니스 · 양품 얼룩무늬 알)
@@ -54,9 +54,10 @@ select x.pet_id, x.pet_name, x.grade, x.kind, x.likes, x.how, x.sort, x.egg
     ('ddonggae',         '똥개',              1, 'ward',    'treat_meat',  '안전지대 상점의 바구니', 42, false),
     ('hare',             '산토끼',            1, 'wood',    'treat_herb',  '안전지대 상점의 바구니', 43, false),
     ('platypus',         '부리너구리',        2, 'water',   'treat_fish',  '탐색 중 「얼룩무늬 알」', 44, true),
-    -- 조사원 제보 2종(2026-11-02, 두 조사원 몫 그림): 아프간 하운드는 얼룩무늬 알, 포메라니안은 바구니
+    -- 조사원 제보 3종(2026-11-02): 아프간 하운드·오목눈이는 얼룩무늬 알, 포메라니안은 바구니
     ('silver_afghan',    '은빛 아프간 하운드', 2, 'sky',    'treat_meat',  '탐색 중 「얼룩무늬 알」', 45, true),
-    ('pink_pomeranian',  '분홍 포메라니안',   1, 'ward',    'treat_rice',  '안전지대 상점의 바구니', 46, false)
+    ('pink_pomeranian',  '분홍 포메라니안',   1, 'ward',    'treat_rice',  '안전지대 상점의 바구니', 46, false),
+    ('snow_tit',         '오목눈이',          2, 'bird',    'treat_rice',  '탐색 중 「얼룩무늬 알」', 47, true)
   ) as x(pet_id, pet_name, grade, kind, likes, how, sort, egg)
 on conflict (pet_id) do update set pet_name = excluded.pet_name, grade = excluded.grade, kind = excluded.kind, likes = excluded.likes, how = excluded.how, sort = excluded.sort, egg = excluded.egg;
 

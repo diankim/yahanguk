@@ -1,4 +1,4 @@
-# 제보 동무 2종(2026-11-02, 두 조사원 몫 — 사용자 전달 그림): 은빛 아프간 하운드 · 분홍 포메라니안
+# 제보 동무 3종(2026-11-02): 은빛 아프간 하운드 · 분홍 포메라니안(두 조사원 몫 그림) · 오목눈이
 # ── 아프간 하운드: 은빛 긴 털이 머리부터 다리까지 늘어지고, 꼬리 끝이 고리처럼 말린다 ──
 AFG = {'a': '#c4c9d5', 'h': '#eef0f5', 's': '#9aa1b3', 't': '#aab0c0', 'n': '#2a2830', 'p': PK, 'e': E, 'i': I}
 pet(id='silver_afghan', name='은빛 아프간 하운드', grade=2, kind='sky', likes='treat_meat',
@@ -93,3 +93,44 @@ lldll.aakkakka
 aaaaaaaaaallla
 aaaaaaaaaaaaaa
 .aaaaaaaaaaaa.'''))
+
+# ── 오목눈이: 새하얀 솜뭉치 몸에 콩알 같은 부리, 길고 까만 꼬리, 장밋빛이 도는 날개 ──
+TIT = {'w': '#fbfbf8', 'g': '#dfe1e6', 'b': '#1d1d22', 'd': '#3c3638', 'r': '#d6a3a3', 'e': E, 'i': I, 'p': PK}
+pet(id='snow_tit', name='오목눈이', grade=2, kind='bird', likes='treat_rice',
+    desc='눈송이처럼 새하얗고 동글동글한 작은 새입니다. 콩알만 한 부리와 제 몸보다 긴 까만 꼬리를 달고, 여럿이 한 줄로 붙어 앉아 서로 몸을 데웁니다.',
+    baby=dict(pal=TIT, lid='w', idle='''
+.....wwww...
+....wwwwww..
+...wwwwwewb.
+bb.wwwwwpww.
+.bbdrwwwwww.
+..bddrwwgww.
+...wwwwwgg..
+....b...b...''', step_tail='''
+...b...b....''', sleep='''
+.....wwww...
+....wwwwww..
+...wwwwwkwb.
+bbbdrwwwwww.
+..bddrwwgww.
+...wwwwwgg..'''),
+    adult=dict(pal=TIT, lid='w', idle='''
+........wwww....
+.......wwwwww...
+......wwwwwwww..
+......wwwwwiewb.
+......wwwwwwpw..
+bbb..dddrwwwwww.
+..bbbdddrrwwwgw.
+....bddrrwwwggw.
+.....wwwwwwwgg..
+.......b...b....''', step_tail='''
+......b...b.....''', sleep='''
+........wwww....
+.......wwwwww...
+......wwwwwwww..
+......wwwwwkkwb.
+bbb..dddrwwwwww.
+..bbbdddrrwwwgw.
+....bddrrwwwggw.
+.....wwwwwwwgg..'''))

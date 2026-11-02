@@ -36,12 +36,12 @@
      - `world_characters` 0
      - `world_legacy_marks` = 롤백 전 캐릭터 수
      - `world_staff` 1
-     - `world_pet_species` 46
+     - `world_pet_species` 47
      - 패치노트 `1.0.0` 하나와 시험 기간 기록 `0-…` 14개
      - `db_version` 20261105000000
    - 예약 작업에서 `yh-long-night`·`yh-last-night-wipe`·`yh-rollback-close`·`yh-invite-day`가 없어야 한다.
    - `world_raids`에 다음 봉연의 그림자 회차가 하나 잡혀야 한다.
-8. **화면 배포**: 브랜치 `rollback-1.0.0`을 작업 브랜치에 합쳐 push한다. 들어 있는 것은 동무 46종, 동무 두 자리, 시험 기간 기록, maintenance.json(scene 없음), version 1.0.0이다.
+8. **화면 배포**: 브랜치 `rollback-1.0.0`을 작업 브랜치에 합쳐 push한다. 들어 있는 것은 동무 47종, 동무 두 자리, 시험 기간 기록, maintenance.json(scene 없음), version 1.0.0이다.
 9. **문 열기**: `supabase/maintenance/end.sql`(public 사용 돌려줌, 결과 둘 다 true).
 10. **확인**: GM 계정으로 로그인한다. 「아침」 컷씬이 보이고, 캐릭터를 만들면 레거시 세트와 GM 표식이 붙는지 본다.
 11. **임시 칸 정리**: `drop schema yh_deploy cascade;`
