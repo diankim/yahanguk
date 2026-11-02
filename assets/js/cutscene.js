@@ -91,6 +91,15 @@ const CSS = `
 .cs-btn { min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid #3a3440; background: transparent; color: #d8d0c2; font: 600 14px "Noto Sans KR", sans-serif; cursor: pointer; }
 .cs-btn.main { border-color: #e0a64a; color: #f2e6cc; }
 .cs-btn:focus-visible { outline: 2px solid #e0a64a; outline-offset: 2px; }
+/* 로그인 배경(loginBackdrop): 화면 뒤에 깔고 글 상자·제목은 없다. 빠르게(fast) 그릴 때는 바뀜 효과 없이 */
+.cs.cs-bg { z-index: 0; grid-template-rows: 1fr; pointer-events: none; }
+.cs.cs-bg .cs-bg-in { position: relative; overflow: hidden; height: 100%; }
+.cs.cs-bg svg.cs-stage { position: absolute; inset: 0; }
+.cs.cs-bg .cs-title { display: none; }
+.cs.cs-bg .cs-rope { display: none; }
+.cs.cs-bg .cs-sky { transition-duration: 1.6s; }
+.cs.cs-bg .cs-sun { transition-duration: 2s, 3.2s; }
+.cs.cs-bg[data-fast] .cs-sky, .cs.cs-bg[data-fast] .cs-sun { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .cs .cs-lantern, .cs .cs-flame, .cs .cs-glow, .cs .cs-star, .cs .cs-flow-a, .cs .cs-flow-b { animation: none !important; }
   .cs-embers { display: none; }
@@ -351,6 +360,35 @@ export function loginMusic() {
 //       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때), fixed — 마지막 장면에 고정(다시 보기 없음)
 // 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(처음부터 늘 보임)
 // logout — 마지막 장면에 「로그아웃」 단추(문 열기 전 대기 화면: 로그인한 일반 조사원)
+// 로그인 화면 배경: 「아침」 장면(글 없이). 처음엔 밤 → 등불이 살아나고 날이 밝은 뒤 onReady(로그인 창이 떠오름).
+// 같은 탭에서 다시 그리면(로그인↔회원가입 전환 등) 밝은 아침에서 바로 시작한다. 움직임 줄이기면 곧바로 아침.
+let bgSeen = false;
+export function loginBackdrop(host, { onReady } = {}) {
+  if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
+  const root = document.createElement('div');
+  root.className = 'cs cs-bg'; root.setAttribute('aria-hidden', 'true');
+  // 지붕이 화면 아래에 닿게(가로가 넘치면 양옆을 자름)
+  root.innerHTML = `<div class="cs-bg-in">${scene('morning').replace('preserveAspectRatio="xMidYMid meet"', 'preserveAspectRatio="xMidYMax slice"')}</div>`;
+  host.prepend(root);
+  const fast = bgSeen || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  bgSeen = true;
+  const lamp = root.querySelector('[data-lamp="9"] .cs-lantern');
+  const timers = [];
+  const at = (ms, f) => timers.push(setTimeout(f, ms));
+  if (fast) {
+    root.dataset.fast = '1';
+    root.classList.add('dawn', 'dawn2', 'dawn3');
+    onReady?.();
+  } else {
+    lamp?.classList.add('out');
+    at(700, () => { lamp?.classList.remove('out'); lamp?.classList.add('waking'); root.classList.add('dawn'); });
+    at(2300, () => root.classList.add('dawn2'));
+    at(3600, () => root.classList.add('dawn3'));
+    at(4300, () => onReady?.());
+  }
+  return () => { timers.forEach(clearTimeout); root.remove(); };
+}
+
 export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false, fixed = false, logout = null } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;

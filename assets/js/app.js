@@ -143,7 +143,7 @@ function renderAuth(mode = 'login', notice = '') {
   loginMusicOn();
   document.title = '야행국 · 입국';
   app.replaceChildren(h(`
-  <div class="auth-screen">
+  <div class="auth-screen auth-wait">
     <div class="auth-hero">
       <div class="seal seal-lg">夜</div>
       <h1>야행국</h1>
@@ -164,6 +164,10 @@ function renderAuth(mode = 'login', notice = '') {
     </form>
     <button type="button" class="auth-tip" id="auth-tip" title="누르면 다음 안내">${icon('scroll', 14)}<span></span></button>
   </div>`));
+  // 배경: 「아침」 장면 — 날이 밝으면 그 위로 로그인 창이 떠오른다(cutscene.js loginBackdrop). 늦거나 실패해도 5초 안에 창은 뜬다.
+  const scr = $('.auth-screen'), rise = () => scr?.classList.replace('auth-wait', 'auth-up');
+  const late = setTimeout(rise, 5000);
+  import('./cutscene.js').then(m => { if (scr?.isConnected) m.loginBackdrop(app, { onReady: () => { clearTimeout(late); rise(); } }); }).catch(rise);
   const tipBox = $('#auth-tip'); let tipN = Math.floor(Math.random() * TIPS.length);
   const showTip = () => { tipBox.querySelector('span').textContent = TIPS[tipN % TIPS.length]; tipN++; };
   showTip(); tipBox.onclick = showTip;

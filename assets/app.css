@@ -183,6 +183,17 @@ textarea { resize: none; }
 .auth-hero p { color: var(--muted); max-width: 440px; }
 .auth-card { display: grid; gap: 14px; }
 .auth-card .segmented { margin: 0; }
+/* 로그인 배경 「아침」(cutscene.js loginBackdrop) 위에 떠오르는 창 */
+.auth-screen { position: relative; z-index: 1; }
+/* 머리글은 밝아 온 하늘 위에 먹빛 글씨로(배경이 늘 아침이라 테마와 무관하게 고정 색), 안내 한 줄은 테마 바탕 */
+.auth-screen .auth-hero h1 { color: #2b1d12; }
+.auth-screen .auth-hero p { color: #4a3826; }
+.auth-screen .auth-tip { background: color-mix(in srgb, var(--bg) 88%, transparent); }
+.auth-screen > * { transition: opacity .9s ease, transform 1.1s cubic-bezier(.2,.7,.2,1); }
+.auth-screen.auth-wait > * { opacity: 0; transform: translateY(28px); }
+.auth-screen.auth-up > .auth-card { transition-delay: .15s; }
+.auth-screen.auth-up > .auth-tip { transition-delay: .35s; }
+@media (prefers-reduced-motion: reduce) { .auth-screen > * { transition: none; } }
 .fine { font-size: calc(12px * var(--fz, 1)); color: var(--muted); text-align: center; }
 @media (min-width: 820px) { .auth-screen { grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; } .auth-hero h1 { font-size: calc(56px * var(--fz, 1)); } }
 
