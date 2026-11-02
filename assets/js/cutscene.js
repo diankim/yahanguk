@@ -393,7 +393,10 @@ export function loginBackdrop(host, { onReady } = {}) {
   return () => { timers.forEach(clearTimeout); root.remove(); };
 }
 
+// 컷씬은 한 번에 하나만: 같은 화면이 다시 그려져(로그인 사건이 두 번 오는 등) 또 부르면 앞의 것과 그 음악을 바로 걷는다(곡이 두 겹으로 들리던 것)
+let activeCs = null;
 export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false, fixed = false, logout = null } = {}) {
+  activeCs?.(); activeCs = null;
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
@@ -422,8 +425,9 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
     btn.hidden = false; btn.classList.add('ask');
     music.resume();
   }
+  activeCs = () => { if (done) return; done = true; clearTimeout(timer); music?.stop(0.2); root.remove(); };
   const finish = () => {
-    if (done) return; done = true; clearTimeout(timer); music?.stop(1); window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: false }));
+    if (done) return; done = true; if (activeCs) activeCs = null; clearTimeout(timer); music?.stop(1); window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: false }));
     root.style.transition = 'opacity 1s'; root.style.opacity = '0';
     setTimeout(() => { root.remove(); onEnd?.(); }, 1000);
   };
