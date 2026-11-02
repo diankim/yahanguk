@@ -200,7 +200,13 @@ function renderAuth(mode = 'login', notice = '') {
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
 // 다시 연 뒤(롤백 뒤) 처음 캐릭터를 만들 때 한 번 「아침」 컷씬을 보인다(계정마다, 이 기기에 남김)
-function renderCreate() {
+// 다시 연 날 문 여는 때: 그 전에는 운영진(world_staff)만 캐릭터를 만든다(서버 world_open_gate가 다시 막음). 다른 조사원은 기다림 안내
+const OPEN_AT = Date.parse('2026-11-03T10:00:00+09:00');
+async function renderCreate() {
+  if (Date.now() < OPEN_AT) {
+    await loadStaff();
+    if (!store.staff.has(store.user?.id)) return renderWaitOpen();
+  }
   const mk = `yh-morning:${store.user?.id || ''}`;
   let seen = true; try { seen = !!localStorage.getItem(mk); } catch {}
   if (!seen && Date.now() >= REOPEN_AT) {
@@ -209,6 +215,15 @@ function renderCreate() {
     return;
   }
   renderCreateForm();
+}
+function renderWaitOpen() {
+  document.title = '야행국 · 곧 문을 엽니다';
+  const left = () => { const ms = Math.max(0, OPEN_AT - Date.now()), m = Math.ceil(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
+  app.replaceChildren(h(`<div class="create-screen"><header class="create-head"><div class="seal">夜</div><div><h1>곧 문을 엽니다</h1>
+    <p class="muted">야행국은 <b>11월 3일 오전 10시</b>에 문을 엽니다. 그때 새 조사원을 만들 수 있습니다.</p><p class="muted small" id="wait-left">남은 시간 ${left()}</p></div>
+    <button class="btn ghost small" id="wait-logout">${icon('logout', 16)}<span>로그아웃</span></button></header></div>`));
+  $('#wait-logout')?.addEventListener('click', () => logout());
+  const t = setInterval(() => { const el = document.getElementById('wait-left'); if (!el) return clearInterval(t); if (Date.now() >= OPEN_AT) { clearInterval(t); location.reload(); } else el.textContent = `남은 시간 ${left()}`; }, 30000);
 }
 function renderCreateForm() {
   document.title = '야행국 · 캐릭터 생성';
