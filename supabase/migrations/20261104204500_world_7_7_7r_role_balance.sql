@@ -255,19 +255,19 @@ begin
   end if;
 end $p$;
 
--- ── 퇴마관: 현장 「퇴마진」에만 몰려 있던 힘을 기본 공격으로 나눔(현장은 그대로, 귀허·결전·봉연에서 덜 약하게) ─────
---  · 퇴마관 술법 공격력 ×1.12(피해 상한과 따로) · 퇴마진 ×2.0 → ×1.8(조합 ×2.4 → ×2.15)
+-- ── 퇴마관: 보스 싸움(체력·피해가 참가자 공격력에 맞춰지는 귀허·결전)에서 덜 약하게 — 공격력이 아니라 치명타·영력 씀씀이로 ─────
+--  · 퇴마관 술법 치명타 +6(암영 검객 근접 치명타 +5와 짝) · 합동 토벌·결전 술법 영력 3 → 2(근접 기력 2와 같게, 긴 싸움에서 영력이 바닥나 피해가 절반이 되는 일을 줄임)
 do $p$
 declare d text;
 begin
   d := pg_temp.fdef('world_combat_stats');
-  if position($a$WHEN c.job_key = 'exorcist' AND style = 'magic' THEN 1.12$a$ in d) = 0 then
-    execute pg_temp.rep(d, $a$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18$a$,
-      $a$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'exorcist' AND style = 'magic' THEN 1.12$a$);
+  if position($a$WHEN c.job_key = 'exorcist' AND style = 'magic' THEN 6$a$ in d) = 0 then
+    execute pg_temp.rep(d, $a$CASE WHEN c.job_key = 'analyst' AND style = 'melee' THEN 5 ELSE 0 END$a$,
+      $a$CASE WHEN c.job_key = 'analyst' AND style = 'melee' THEN 5 WHEN c.job_key = 'exorcist' AND style = 'magic' THEN 6 ELSE 0 END$a$);
   end if;
-  d := pg_temp.fdef('world_battle_action');
-  if position($a$'combo_exorcism_wardcraft' = ANY (sk) THEN 2.4 ELSE 2.0 END$a$ in d) > 0 then
-    execute pg_temp.rep(d, $a$'combo_exorcism_wardcraft' = ANY (sk) THEN 2.4 ELSE 2.0 END$a$, $a$'combo_exorcism_wardcraft' = ANY (sk) THEN 2.15 ELSE 1.8 END$a$);
+  d := pg_temp.fdef('world_raid_action');
+  if position($a$if st ->> 'style' = 'magic' then if sp >= 3 then sp := sp - 3;$a$ in d) > 0 then
+    execute pg_temp.rep(d, $a$if st ->> 'style' = 'magic' then if sp >= 3 then sp := sp - 3;$a$, $a$if st ->> 'style' = 'magic' then if sp >= 2 then sp := sp - 2;$a$);
   end if;
 end $p$;
 
