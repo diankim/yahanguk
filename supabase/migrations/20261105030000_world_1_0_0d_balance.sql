@@ -196,10 +196,13 @@ end $p$;
 -- ⑦ Lv21~29 빈 구간 채우기(사용자 결정 2026-11-02): 고렙 지역이 없는 세력마다, 이야기·세력 퀘스트·다른 퀘스트가 쓰지 않는 가장 깊은 곳을 올림
 --    지맥의 뿌리(흑련) 17→21 · 적월 제단터(적월) 19→22 · 만조의 갑문(수향) 18→24 · 봉인고(직할령) 19→26 · 흑조 균열(남명, 10장 Lv30만 지남) 20→28.
 --    천명원은 무극 관성대 25가 있고 백옥 천문탑은 세력·보조 퀘스트가 써서 그대로, 북령은 뇌명봉이 6장 무대라 그대로.
+--    그러면 16~20이 셋으로 얇아져, 퀘스트가 안 쓰는 낮은 곳을 한 칸씩 올림: 물시계 터 9→13 · 혜성 낙하지 13→17 · 옛 의금부 옥사 15→19
+--    (6~10 열 곳·11~15 아홉 곳·16~20 다섯 곳·21~28 여섯 곳).
 --    지역·답사 지점·채집터·원정지·요괴(레벨·체력·공격력)·그 지역 보조 퀘스트(레벨·경험치·전)를 같은 차이만큼.
 --    요괴 실제 레벨은 답사 지점 min_level에서 나오므로(world_battle_open) 체력·공격 칸은 같은 식 비율로 맞춤.
 create temp table yh_lvshift(region_id text primary key, d int) on commit drop;
-insert into yh_lvshift values ('under_root', 4), ('crimson_altar', 3), ('tide_gate', 6), ('seal_vault', 7), ('black_tide_rift', 8);
+insert into yh_lvshift values ('under_root', 4), ('crimson_altar', 3), ('tide_gate', 6), ('seal_vault', 7), ('black_tide_rift', 8),
+  ('water_clock', 4), ('comet_crater', 4), ('old_prison', 4);
 update public.world_map_regions r set min_level = r.min_level + x.d from yh_lvshift x where x.region_id = r.region_id;
 update public.world_exploration_nodes n set min_level = least(40, n.min_level + x.d) from yh_lvshift x where x.region_id = n.region_id;
 update public.world_gathering_spots g set min_level = least(40, g.min_level + x.d)
