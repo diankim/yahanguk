@@ -1,6 +1,6 @@
 -- 대기 파일: 꼬마 동무 1.0.0(롤백 패치) — 새 동무 8종(조사원 제보) · 동무 두 자리(프로필 동무 / 별채 동무)
 -- 1.0.0 묶음에 합칠 것(db_version 줄은 넣지 않았다 — 묶음 마지막에 한 번). migrations 폴더 밖에 두어 실수로 돌지 않게 했다.
--- 화면: assets/js/housing/pets.js(44종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
+-- 화면: assets/js/housing/pets.js(47종, tools/pet_art/art4.py → gen.py) · views/housing.js(동무 창·별채 없을 때 동무 칸) · views/guide.js.
 -- 그림(pets.js)이 먼저 배포돼 있어도 world_pet_species에 없으면 도감에 나오지 않는다.
 --
 -- ① 새 동무 9종(제보한 조사원 → 동무, 꼬마 매는 2026-11-01 제보 76 아도니스 · 양품 얼룩무늬 알)
@@ -53,7 +53,11 @@ select x.pet_id, x.pet_name, x.grade, x.kind, x.likes, x.how, x.sort, x.egg
     ('tuxedo_cat',       '까치 고양이',       1, 'shadow',  'treat_fish',  '안전지대 상점의 바구니', 41, false),
     ('ddonggae',         '똥개',              1, 'ward',    'treat_meat',  '안전지대 상점의 바구니', 42, false),
     ('hare',             '산토끼',            1, 'wood',    'treat_herb',  '안전지대 상점의 바구니', 43, false),
-    ('platypus',         '부리너구리',        2, 'water',   'treat_fish',  '탐색 중 「얼룩무늬 알」', 44, true)
+    ('platypus',         '부리너구리',        2, 'water',   'treat_fish',  '탐색 중 「얼룩무늬 알」', 44, true),
+    -- 조사원 제보 3종(2026-11-02): 아프간 하운드·오목눈이는 얼룩무늬 알, 포메라니안은 바구니
+    ('silver_afghan',    '은빛 아프간 하운드', 2, 'sky',    'treat_meat',  '탐색 중 「얼룩무늬 알」', 45, true),
+    ('pink_pomeranian',  '분홍 포메라니안',   1, 'ward',    'treat_rice',  '안전지대 상점의 바구니', 46, false),
+    ('snow_tit',         '오목눈이',          2, 'bird',    'treat_rice',  '탐색 중 「얼룩무늬 알」', 47, true)
   ) as x(pet_id, pet_name, grade, kind, likes, how, sort, egg)
 on conflict (pet_id) do update set pet_name = excluded.pet_name, grade = excluded.grade, kind = excluded.kind, likes = excluded.likes, how = excluded.how, sort = excluded.sort, egg = excluded.egg;
 
@@ -77,13 +81,15 @@ values
   ('pt_ddonggae', '똥개 바구니', 'pet', 1, '주둥이·귀·발이 까무잡잡한 동네 개입니다. 늘 머리에 무언가를 이고 다니며 모자인 줄 알고 뿌듯해합니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
    false, '{}'::jsonb, 1, '{"pet": "ddonggae"}'::jsonb, true, 300, 1),
   ('pt_hare', '산토끼 바구니', 'pet', 1, '산기슭에서 내려온 갈색 토끼입니다. 귀 끝이 까맣고, 놀라면 한달음에 언덕 너머까지 뛰어갑니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
-   false, '{}'::jsonb, 1, '{"pet": "hare"}'::jsonb, true, 300, 1)
+   false, '{}'::jsonb, 1, '{"pet": "hare"}'::jsonb, true, 300, 1),
+  ('pt_pink_pomeranian', '분홍 포메라니안 바구니', 'pet', 1, '솜사탕처럼 부푼 분홍 털뭉치 강아지입니다. 등 위에 깃털 같은 꼬리를 얹고 다니며, 저보다 열 배는 큰 개 앞에서도 물러서지 않습니다. 쓰면 꼬마 동무가 된다(한 종은 한 번만).',
+   false, '{}'::jsonb, 1, '{"pet": "pink_pomeranian"}'::jsonb, true, 300, 1)
 on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description,
   equipment_traits = excluded.equipment_traits, tradeable = excluded.tradeable, reference_price = excluded.reference_price, stack_size = excluded.stack_size;
 insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max, daily_cap)
 select s.shop_id, x.item_id, 300, 0, 10, null
   from (select distinct shop_id from public.world_shop_catalog where shop_id not in ('smithy', 'banyo_shop')) s
-  cross join (values ('pt_neun_puppy'), ('pt_white_puppy'), ('pt_cheese_cat'), ('pt_tuxedo_cat'), ('pt_ddonggae'), ('pt_hare')) as x(item_id)
+  cross join (values ('pt_neun_puppy'), ('pt_white_puppy'), ('pt_cheese_cat'), ('pt_tuxedo_cat'), ('pt_ddonggae'), ('pt_hare'), ('pt_pink_pomeranian')) as x(item_id)
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
 
 -- 「모든 동무의 벗」 칭호 글: 서른 → 지금 종 수(판정 n은 30 그대로 — 이미 받은 사람을 지키고, 새 종은 덤)

@@ -7,11 +7,15 @@ SOURCE_BY_NAME = [
     ('구슬 이무기', 'quest:sq_sunken_palace_1'), ('아기 산군', 'quest:sq_thunder_peak_1'), ('달토끼', 'quest:sq_red_moon_fort_2'), ('목각 인형', 'quest:sq_nine_lighthouse_1'),
     ('아기 불가사리', 'title:craft_200'), ('삼족오', 'quest:sq_star_observatory_2'), ('아기 기린', 'quest:sq_white_tower_2'), ('꼬마 청룡', 'quest:sq_black_tide_rift_2'),
     ('꼬마 장승', 'quest:sq_sealed_abyss_1'), ('아기 백택', 'title:codex_100'), ('귀허 나비', 'gw_first'),
+    # 1.0.0(롤백) 조사원 제보 동무 — 실제 반영은 supabase/pending/pets_rollback.sql
+    ('금빛 날개늑대', 'quest:sq_thunder_peak_2'), ('외뿔 팔족염소', 'quest:gq_3'), ('꼬마 홍룡', 'quest:mq_ash_sea'),
 ]
+HOW_TEXT = {'quest:gq_3': '외전 「거꾸로 선 기도」를 마친다', 'quest:mq_ash_sea': '이야기 8장 「재의 바다」를 마친다'}
 SRC_TEXT = {'quest': '퀘스트 「{}」을(를) 마친다', 'title': '칭호 「{}」을(를) 얻는다', 'gw_first': '귀허의 주인을 처음 쓰러뜨린다'}
 QUEST_TITLE = {'sq_black_sand_temple_2': '빈 명부의 마지막 줄', 'sq_red_forest_2': '지지 않는 단풍', 'sq_iron_monastery_1': '잔도 위의 목탁', 'sq_sunken_palace_1': '수궁 문지기 교대',
                'sq_thunder_peak_1': '벼락이 굳힌 핵', 'sq_red_moon_fort_2': '달빛 끓이는 밤', 'sq_nine_lighthouse_1': '꺼진 등대에 다시 불을', 'sq_star_observatory_2': '내려오지 않은 별지기',
-               'sq_white_tower_2': '마흔 해 깨어 있던 눈', 'sq_black_tide_rift_2': '거꾸로 떠도는 선원들', 'sq_sealed_abyss_1': '다시 감기는 사슬'}
+               'sq_white_tower_2': '마흔 해 깨어 있던 눈', 'sq_black_tide_rift_2': '거꾸로 떠도는 선원들', 'sq_sealed_abyss_1': '다시 감기는 사슬',
+               'sq_thunder_peak_2': '벼락을 부르는 문'}
 TITLE_NAME = {'craft_200': '공방의 주인', 'codex_100': '만귀보'}
 FOOD = [('pet_food', '동무 주먹밥', 10, '꼬마 동무가 먹는 작은 주먹밥. 별채에서 먹이면 친밀도가 오른다.'),
         ('treat_fish', '말린 생선포', 30, '꼬마 동무 별미. 생선을 좋아하는 동무가 반긴다.'),
@@ -47,7 +51,7 @@ const o = {}; let i = 0;
 for (const [k, v] of Object.entries(P.PETS)) o[k] = { name: v.name, grade: v.grade, kind: v.kind, likes: v.likes, desc: v.desc, sort: i++ };
 console.log(JSON.stringify(o));
 """)
-    assert len(P) == 30, f'꼬마 동무는 30종이어야 합니다(지금 {len(P)})'
+    assert len(P) == 38, f'꼬마 동무는 38종이어야 합니다(지금 {len(P)}, 1.0.0에서 8종 더함)'
     src = {}
     for pre, s in SOURCE_BY_NAME:
         hit = [k for k, v in P.items() if v['name'].startswith(pre)]
@@ -58,7 +62,7 @@ console.log(JSON.stringify(o));
         g = v['grade']
         if k in src:
             s = src[k]; kind = s.split(':')[0]
-            how = SRC_TEXT[kind].format(QUEST_TITLE.get(s.split(':')[-1]) or TITLE_NAME.get(s.split(':')[-1], '')) if ':' in s else SRC_TEXT[kind]
+            how = HOW_TEXT.get(s) or SRC_TEXT[kind].format(QUEST_TITLE.get(s.split(':')[-1]) or TITLE_NAME.get(s.split(':')[-1], '')) if ':' in s else SRC_TEXT[kind]
             if g == 3: how += ' · 빛나는 알'
             sources.append(dict(source=s, pet_id=k))
         elif g == 1:
