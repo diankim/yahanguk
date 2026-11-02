@@ -111,7 +111,7 @@ export function equipRowLi(inv, prof, here, slot) {
   const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
-    const mx = maxDur(it), d = durs[id]?.durability ?? mx;
+    const mx = durs[id]?.max ?? maxDur(it), d = durs[id]?.durability ?? mx;
     const cost = Math.max(5, Math.ceil((mx - d) * ((it?.tier || 1) + 1) / 2));
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
@@ -156,7 +156,7 @@ export function eqMini(inv, prof, pick = false) {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return pick ? `<li><button type="button" class="none" data-eqslot="${slot}">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></button></li>`
       : `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
-    const mx = maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
+    const mx = durs[id]?.max ?? maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
       ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
   }).join('')}</ul>`;
@@ -299,7 +299,7 @@ async function growth(body) {
     </div>
     <div class="grid-2">
       ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, best]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${esc(best)}</small></li>`).join('')}</ul>
-        <p class="muted small">숙련은 그 갈래 기술 가운데 가장 높은 단계입니다(최고 50, 요리는 따로 20단계). 전투 숙련은 단계마다 공격력 +0.6%입니다. 기술 탭에서 계열별 단계를 봅니다.</p>`, { ico: 'target' })}
+        <p class="muted small">숙련은 그 갈래 기술 가운데 가장 높은 단계입니다(최고 50). 전투 숙련은 단계마다 공격력 +0.6%입니다. 기술 탭에서 계열별 단계를 봅니다.</p>`, { ico: 'target' })}
       ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고(채집: 약초·목재·보급품·영기 / 채광: 광맥·유물 / 낚시: 물가), 고른 제작 분야의 제작법은 품질 +12이며 자율 「장비 정비」가 그 분야 계열을 올립니다. 제작 분야는 반드시 하나를 고릅니다(정하지 않았으면 단조).</p>
         <p class="${profWait(c) > 0 ? 'hint' : 'muted small'}">${profWait(c) > 0 ? `${icon('hourglass', 14)} 다음 변경까지 ${fmt.remain(profWait(c))}` : '한 번 바꾸면 3일 동안 다시 바꿀 수 없습니다.'}</p>
         <div class="form-grid">
@@ -533,7 +533,7 @@ async function titles(body) {
       <div class="t-checks"><label class="check"><input type="checkbox" id="t-owned" ${tOwned ? 'checked' : ''}><span>얻은 칭호만 보기</span></label>
         <label class="check"><input type="checkbox" id="t-eq" ${tEquipped ? 'checked' : ''}><span>장착 중만 보기</span></label>
         <label class="t-sort"><span>보기</span><select id="t-sort" aria-label="칭호 보기 순서">${[['cat', '분류별'], ['grade_desc', '등급 높은순'], ['grade_asc', '등급 낮은순']].map(([v, n]) => `<option value="${v}" ${tsort === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
-      <p class="muted small t-grades">등급: ${Object.entries(TGRADE).map(([g, n]) => `<span class="t-grade g${g}">${n}</span>`).join(' ')} — 범품(凡品)에서 신품(神品)으로 갈수록 얻기 어렵고, 효과가 크고 여러 갈래입니다.</p>
+      <p class="muted small t-grades">등급: ${TGRADE.map((n, g) => n ? `<span class="t-grade g${g}">${n}</span>` : '').join(' ')} — 범품(凡品)에서 신품(神品)으로 갈수록 얻기 어렵고, 효과가 크고 여러 갈래입니다.</p>
       <div class="cat-chips"><button class="chip ${tcat ? '' : 'accent'}" data-cat="">모든 분류</button>${cats.map(c => `<button class="chip ${tcat === c ? 'accent' : ''}" data-cat="${esc(c)}">${esc(c)} <small>${countIn(c)}</small></button>`).join('')}</div>
     </div>
     <div id="t-list"></div>`;

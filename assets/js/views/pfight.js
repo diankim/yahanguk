@@ -157,7 +157,7 @@ function fillItems() {
 
 function resultHtml(s) {
   const ok = s.status === 'won';
-  return `<div class="raid-result ${ok ? 'ok' : 'bad'}"><b>${ok ? `${esc(s.monster + "을(를)")} 함께 쓰러뜨렸습니다` : s.status === 'cancelled' ? '합류한 동료가 없어 혼자 싸웁니다' : '싸움이 끝났습니다'}</b>
+  return `<div class="raid-result ${ok ? 'ok' : 'bad'}"><b>${ok ? `${esc((s.monster || '요괴') + "을(를)")} 함께 쓰러뜨렸습니다` : s.status === 'cancelled' ? '합류한 동료가 없어 혼자 싸웁니다' : '싸움이 끝났습니다'}</b>
     <p class="small">${ok ? '보상은 각자 받았습니다(기록에 적힘).' : ''}</p><a class="btn small" href="#/home">현장으로</a></div>`;
 }
 

@@ -131,7 +131,7 @@ function draw() {
       ${fight && s.joined ? actHtml(s, me) : ''}
       <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
-          state: m.out ? `물러남 ${m.out}` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
+          state: m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
           sub: [esc(JOBS[m.job]?.name || nameOf(m.job)), m.nameless ? '<b class="bad">이름 잃음</b>' : '', (s.members || []).length === 1 ? `쓰러짐 ${m.falls || 0}/${s.falls_cap || 10}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>

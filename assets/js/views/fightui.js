@@ -80,7 +80,7 @@ export const coopBtn = (k, data = '') => `<button type="button" class="coop-btn 
 
 // 물품 창 목록: 이름·남은 수·회복 수치만(제보 86), 짧은 설명은 title
 // 영력·기력만 채우는 물품(7.7.7o: 물품 목록의 서버 효과로 가름 — 새 물품도 저절로 이 칸에)
-export const isSpItem = k => { const f = catItem(k)?.fx; return !!f && f.sp > 0 && !(f.hp > 0) && !(f.mn > 0); };
+export const isSpItem = k => { const f = catItem(String(k).replace(/_hq$/, ''))?.fx; return !!f && f.sp > 0 && !(f.hp > 0) && !(f.mn > 0); };
 // 토벌에서 쓸 수 있는 회복 물품: 체력·정신·영력을 채우는 모든 소모품(우수품은 itemGroups가 더함)
 export const battleItems = () => (catalogList() || []).filter(i => !String(i.id).endsWith('_hq') && i.fx && (i.fx.hp > 0 || i.fx.mn > 0 || i.fx.sp > 0)).map(i => i.id);
 export const fxOf = k => fxHtml(String(USABLE[k.replace(/_hq$/, '')] || '').split(' · ').filter(x => /^(체력|정신|영력|침식)|치료|풀기/.test(x.trim())).join(' · ') || brief(itemDesc(k)) || '');

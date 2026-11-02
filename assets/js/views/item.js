@@ -44,7 +44,7 @@ export const USABLE = new Proxy({}, {
   has(t, k) { return !!this.get(t, k); },
 });
 // 7.7.7h(제보 85): 효과 문구를 회복 종류마다 색으로 — 「체력 35 · 정신 10 · 침식 -8」을 마디(·)로 나눠 체력 붉게·정신 푸르게·영력 보라·침식·치료·탐색력
-export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
+export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /^침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
 const FX_ORDER = ['cure', 'hp', 'mind', 'sp', 'er', 'stam'].map(k => FX_KINDS.find(x => x[0] === k)); // 「사념 침식 치료」는 침식이 아니라 치료
 const fxKindOf = seg => (FX_ORDER.find(([, , re]) => re.test(seg)) || [])[0] || '';
 export function fxHtml(text) {

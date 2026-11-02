@@ -64,9 +64,9 @@ const STEPS = [
   { view: 'bag/equip', sel: ['.equip-list', '.panel'], title: '무기 확인하기', body: '무기 종류가 공격 방식을 정합니다. 칼·창은 근접, 활·쇠뇌는 원거리, 방울·부채·거울은 술법입니다. 가진 무기가 있다면 여기서 장착하세요. 장비는 쓸수록 닳으니 가끔 수리해야 합니다.' },
   { view: 'map', sel: ['#map-frame'], title: '지도에서 바깥으로', body: '지도를 끌고 확대해 지역을 고르면 아래에 경로와 이동 시간이 나옵니다. 처음에는 레벨 1부터 갈 수 있는 <b>잿빛 들녘</b>이나 <b>연무장·팔괘진</b>을 추천합니다. 빗금 친 곳은 아직 레벨이 모자란 곳입니다.' },
   { view: 'home', sel: ['#search', '.scene'], title: '탐색하기', body: '바깥 지역에 도착하면 현장에 <b>탐색하기</b> 버튼이 생깁니다. 탐색력 1을 써서 안쪽 길·채집터·단서·보급 꾸러미를 찾거나 요괴를 만납니다. 찾은 채집터에서는 재료를 캘 수 있습니다.' },
-  { title: '전투의 요령', body: '요괴는 다음 행동을 미리 보여 줍니다. <b>강타·기습</b>이 예고되면 <b>막기</b>로 크게 줄이세요. 체력이 낮으면 가방의 청심환을 쓰고, 불리하면 달아날 수도 있습니다. 쓰러지면 회생 부적이나 구조가 필요합니다.' },
+  { title: '전투의 요령', body: '요괴는 다음 행동을 미리 보여 줍니다. <b>강타·기습</b>이 예고되면 <b>방어</b>로 크게 줄이세요. 체력이 낮으면 가방의 청심환을 쓰고, 불리하면 달아날 수도 있습니다. 쓰러지면 회생 부적이나 구조가 필요합니다.' },
   { view: 'log/story', sel: ['.chapter-line', '.panel'], title: '이야기와 의뢰', body: '일지의 <b>이야기</b>에는 장마다 모을 단서가 있고, 단서가 있는 지역으로 바로 출발할 수 있습니다. 단서는 그 지역을 탐색하면 찾습니다. <b>의뢰</b>는 날마다 새로 붙는 소소한 일거리입니다.' },
-  { sel: ['.top-actions'], title: '위쪽 버튼', body: '알림 · 귓속말 · 동료(함께 이동하고 전리품을 나누는 모임) · 도움말 · 설정입니다. 프로필·테마·소리·로그아웃은 설정에, 제보·소감는 도움말과 설정에 있습니다.' },
+  { sel: ['.top-actions'], title: '위쪽 버튼', body: '알림 · 귓속말 · 동료(함께 이동하고 전리품을 나누는 모임) · 도움말 · 설정입니다. 프로필·테마·소리·로그아웃은 설정에, 제보·소감은 도움말과 설정에 있습니다.' },
   { sel: ['.chat-col .chat', '#chat-fab'], title: '채팅', body: '전체·지역·세력·귓속말·동료 채팅을 언제든 쓸 수 있습니다. 쓰러졌을 때 지역 채팅으로 도움을 청해 보세요.' },
   { view: 'home', title: '이제 떠나 볼까요', body: '현장 화면 위쪽의 <b>첫 걸음</b> 목록을 따라가면 기본을 모두 익힐 수 있습니다. 더 자세한 규칙과 수치는 위쪽 <b>도움말</b>에 모두 정리되어 있습니다. 이 안내는 도움말에서 다시 볼 수 있습니다.', last: true },
 ];
@@ -144,8 +144,8 @@ const TASKS = [
   ['outside', '바깥 지역으로 나가기', '지도에서 잿빛 들녘·연무장 추천', 'map'],
   ['search', '탐색 3번 해 보기', '현장 › 탐색하기', 'home'],
   ['gather', '채집 1번 하기', '탐색으로 찾은 채집터에서', 'home'],
-  ['victory', '요괴 1마리 물리치기', '예고를 보고 막기를 섞어 싸우기', 'home'],
-  ['clue', '이야기 단서 1개 찾기', '일지 › 이야기의 지역을 탐색', 'log/story'],
+  ['victory', '요괴 1마리 물리치기', '예고를 보고 방어를 섞어 싸우기', 'home'],
+  ['clue', '이야기 단서 1개 찾기', '1장 장면을 마친 뒤 일지 › 이야기의 지역을 탐색', 'log/story'],
 ];
 function progress() { return get('prog', {}); }
 function mark(k, n = 1) {
@@ -214,4 +214,11 @@ export async function maybeStartTutorial() {
   let pending = false; try { pending = localStorage.getItem('yh-tut-pending') === c.owner_id; } catch {}
   if (pending || (c.level || 1) <= 2) setTimeout(() => startTutorial(0), 900);
 }
-export function markPending(ownerId) { try { localStorage.setItem('yh-tut-pending', ownerId || ''); } catch {} }
+// 새 캐릭터를 만들 때 부른다. 계정 아이디(owner_id)는 롤백 뒤에도 같아서, 이 기기에 남은 옛 캐릭터의 안내 기록(마침·접기·닫기)을
+// 지우지 않으면 서버에 새 캐릭터 몫으로 다시 올라가 처음 안내와 「첫 걸음」이 뜨지 않는다(2026-11-02 점검).
+export function markPending(ownerId) {
+  try {
+    for (const k of [...FLAGS, 'prog']) localStorage.removeItem(`yh-tut-${k}-${ownerId || 'x'}`);
+    localStorage.setItem('yh-tut-pending', ownerId || '');
+  } catch {}
+}

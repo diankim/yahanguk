@@ -184,7 +184,7 @@ async function items(body, inv, stg) {
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
   renderKeep(body, `<div class="bag-cap ${used >= cap ? 'full' : ''}"><div class="cap-top"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span><button class="btn small" data-storage title="창고에 무엇이 있는지 봅니다. 맡기기·꺼내기는 안전지대에서만 됩니다.">${icon('chest', 14)}<span>창고 열기</span></button></div>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
-      <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비 1개 · 소모품 3~20개 · 재료 5~20개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
+      <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비 1개 · 화살 등 100개 · 진품 이상 소모품 20개 · 그 밖 40개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
     ${cat === 'all' || cat === 'consumable' ? `<div class="chips fx-pick" role="group" aria-label="회복 종류로 거르기"><span class="muted small">효과</span>${FX_KINDS.map(([k, n]) => `<button type="button" class="chip fxk-${k} ${fxPick.has(k) ? 'on' : ''}" data-fxk="${k}" aria-pressed="${fxPick.has(k)}">${n}</button>`).join('')}</div>` : ''}
@@ -214,14 +214,14 @@ async function items(body, inv, stg) {
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
-  bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv); });
+  bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv, stg); });
   body.querySelectorAll('[data-fxk]').forEach(b => b.onclick = () => { const k = b.dataset.fxk; fxPick.has(k) ? fxPick.delete(k) : fxPick.add(k); items(body, inv, stg); });
-  $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv); };
-  $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv); };
-  $('#bag-split', body).onchange = e => { splitView = e.target.checked; try { localStorage.setItem('yh-bag-split', splitView ? '1' : '0'); } catch {} items(body, inv); };
+  $('#bag-sort', body).onchange = e => { sortKey = e.target.value; sortRev = false; saveSort(); items(body, inv, stg); };
+  $('#bag-dir', body).onclick = () => { sortRev = !sortRev; saveSort(); items(body, inv, stg); };
+  $('#bag-split', body).onchange = e => { splitView = e.target.checked; try { localStorage.setItem('yh-bag-split', splitView ? '1' : '0'); } catch {} items(body, inv, stg); };
   const qi = $('#bag-q', body);
   // 목록과 함께 검색칸도 다시 그리므로, 한글 조합 중에는 그리지 않고 조합이 끝나면(compositionend) 거른다(조합 중 칸이 바뀌면 「ㅂㅜㅈ」처럼 낱자로 깨진다)
-  const redo = () => { q = qi.value; items(body, inv); };
+  const redo = () => { q = qi.value; items(body, inv, stg); };
   qi.oninput = e => { if (!e.isComposing) redo(); };
   if (!qi.dataset.bound) { qi.dataset.bound = '1'; qi.addEventListener('compositionend', () => qi.oninput({})); }
   $$('[data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));

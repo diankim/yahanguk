@@ -16,7 +16,7 @@ const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 export const JOB_SKILL = {
   exorcist: ['파사 부적', '원정마다 한 번, 영체·결계 요괴를 부적으로 단번에 퇴치합니다.'],
   scout: ['흔적 추적', '요괴와 마주치기 전에 흔적을 읽고 30% 확률로 피해 가며, 대신 무언가를 발견합니다.'],
-  medic: ['야전 처치', '보급품이 떨어졌을 때 원정마다 한 번 주변 약초로 체력을 30 되찾습니다.'],
+  medic: ['야전 처치', '체력이 회복 기준 아래로 떨어지면 보급품보다 먼저 주변 약초로 체력을 25 되찾습니다(원정마다 세 번, 회복 보정 적용).'],
   sealmaster: ['결계 야영', '스며드는 요기(침식·정신 손실)를 50% 확률로 결계로 막습니다.'],
   analyst: ['현장 가공', '채집할 때 25% 확률로 재료를 하나 더 손질해 챙깁니다.'],
   artificer: ['반격 태세', '싸움에서 밀리면 다음 싸움의 승률이 15% 오릅니다.'],
@@ -120,7 +120,7 @@ export function renderExpedition(box, ov) {
           <li id="exp-fare-row">${icon('route', 14)}<span id="exp-fare"></span></li>
           ${c.level <= 10 ? `<li>${icon('spark', 14)}<span><b>신입 원정 지원</b>Lv.10까지는 원정 경험치가 30% 더 붙습니다.</span></li>` : ''}
           <li>${icon('bag', 14)}<span><b>원정에서만 얻는 것</b>길잡이 등불·비경 지도·비약·봉인된 보따리·강화 재료·원정 장비. 2시간 넘게 끝까지 다녀오면 그 지역의 비경을 찾기도 합니다.</span></li>
-          <li>${icon('check', 14)}<span><b>끝까지 다녀오면</b>1시간 이상은 원정지 수준 장비 하나(1시간 50%, 2시간 이상 반드시), 2시간 이상은 경험치·전·숙련 경험 +20%(4시간 +30%·8시간 +40%). 일찍 귀환하면 받지 못합니다.</span></li>
+          <li>${icon('check', 14)}<span><b>끝까지 다녀오면</b>2시간 이상은 원정지 수준 장비 하나(2시간 50%, 4시간 이상 반드시), 2시간 이상은 경험치·전·숙련 경험 +20%(4시간 +30%·8시간 +40%). 일찍 귀환하면 받지 못합니다.</span></li>
           ${JOB_SKILL[c.job_key] ? `<li class="skill">${icon('spark', 14)}<span><b>${esc(nameOf(c.job_key))} 원정 기술 · ${esc(JOB_SKILL[c.job_key][0])}</b>${esc(JOB_SKILL[c.job_key][1])}</span></li>` : ''}
           <li id="exp-hint-row">${icon('bag', 14)}<span id="exp-hint"></span></li>
         </ul>
