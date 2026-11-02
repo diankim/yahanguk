@@ -193,12 +193,13 @@ begin
   if p_region is null or$b$);
 end $p$;
 
--- ⑦ Lv21~29 빈 구간 채우기(사용자 결정 2026-11-02): 깊은 지역 넷의 레벨을 올림
---    적월 제단터 19→22 · 봉인고 19→24 · 흑조 균열 20→26 · 백옥 천문탑 20→28(10장 Lv30으로 가는 길).
+-- ⑦ Lv21~29 빈 구간 채우기(사용자 결정 2026-11-02): 고렙 지역이 없는 세력마다, 이야기·세력 퀘스트·다른 퀘스트가 쓰지 않는 가장 깊은 곳을 올림
+--    지맥의 뿌리(흑련) 17→21 · 적월 제단터(적월) 19→22 · 만조의 갑문(수향) 18→24 · 봉인고(직할령) 19→26 · 흑조 균열(남명, 10장 Lv30만 지남) 20→28.
+--    천명원은 무극 관성대 25가 있고 백옥 천문탑은 세력·보조 퀘스트가 써서 그대로, 북령은 뇌명봉이 6장 무대라 그대로.
 --    지역·답사 지점·채집터·원정지·요괴(레벨·체력·공격력)·그 지역 보조 퀘스트(레벨·경험치·전)를 같은 차이만큼.
 --    요괴 실제 레벨은 답사 지점 min_level에서 나오므로(world_battle_open) 체력·공격 칸은 같은 식 비율로 맞춤.
 create temp table yh_lvshift(region_id text primary key, d int) on commit drop;
-insert into yh_lvshift values ('crimson_altar', 3), ('seal_vault', 5), ('black_tide_rift', 6), ('white_tower', 8);
+insert into yh_lvshift values ('under_root', 4), ('crimson_altar', 3), ('tide_gate', 6), ('seal_vault', 7), ('black_tide_rift', 8);
 update public.world_map_regions r set min_level = r.min_level + x.d from yh_lvshift x where x.region_id = r.region_id;
 update public.world_exploration_nodes n set min_level = least(40, n.min_level + x.d) from yh_lvshift x where x.region_id = n.region_id;
 update public.world_gathering_spots g set min_level = least(40, g.min_level + x.d)
