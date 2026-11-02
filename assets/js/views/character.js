@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES } from '../core.js';
+import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -27,7 +27,7 @@ const IDLE = [
 const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
 // 오르는 기술(서버 world_idle_skill_for와 같은 규칙): 수련은 든 무기 종류, 정비는 제작 분야
 let idleWeapon = 'melee';
-const trainSkill = () => ({ ranged: '원거리', magic: '봉인술' })[idleWeapon] || '근접';
+const trainSkill = () => SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameOf(JOB_LINE[store.character?.job_key] || 'melee'); // 자율 수련은 직업 계열(7.7.7p)
 const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing'); // 고른 제작 분야 계열(7.5.0)
 // early: 끝나기 전에 그만두면 지난 시간만큼만, 최소 1 보정 없이
 function idleReward(k, min, level, early = false) {
@@ -286,7 +286,7 @@ async function growth(body) {
   let pend = {}, room = pts;
   Object.entries(loadAlloc(c)).forEach(([k, v]) => { if (!STATS.some(x => x[0] === k)) return; const n = Math.max(0, Math.min(Number(v) || 0, room, statCap(c.level, k, c.job_key) - c[k])); if (n) { pend[k] = n; room -= n; } });
   const sp = c.skill_progress || {}, bestOf = cats => { const k = cats.reduce((a, x) => (sp[x]?.rank || 1) > (sp[a]?.rank || 1) ? x : a, cats[0]); return `가장 높은 기술: ${SKILL_NAME[k] || nameOf(k)}`; };
-  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(cats)])]; // 요리는 7.5.0부터 제작 계열 하나
+  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(mineOnly(cats, c))])]; // 요리는 7.5.0부터 제작 계열 하나
   body.innerHTML = `
     <div class="grid-2">
       ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent" id="al-left">${pts - allocSum(pend)}</b> / ${pts} · + / − 로 나눈 뒤 「확정」을 눌러야 반영됩니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
@@ -366,9 +366,12 @@ function profWait(c) { return c.life_changed_at ? new Date(c.life_changed_at).ge
 
 /* ── 기술 ─────────────────────────────────────────────── */
 const CAT_DESC = {
-  melee: '칼·창 같은 근접 무기로 싸울 때 오릅니다. 익히면 근접 피해가 늘어납니다.',
-  ranged: '활·쇠뇌로 싸울 때 오릅니다. 익히면 치명타와 원거리 피해가 늘어납니다.',
-  sealing: '방울·부채·거울 같은 술법 무기로 싸울 때 오릅니다. 익히면 술법 피해가 늘어납니다.',
+  melee: '호위 무사의 계열. 칼·창으로 싸우면 오릅니다. 근접 피해가 늘고, 택일은 공격 갈래와 방패(이목·도발) 갈래입니다.',
+  ranged: '현장 조사원의 계열. 활·쇠뇌로 싸우면 오릅니다. 치명타와 원거리 피해가 늘어납니다.',
+  sealing: '봉인술사의 계열. 술법으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 몰아치기와 북돋기·약화 갈래입니다.',
+  dagger: '백공 기술관의 계열. 단도·비수 같은 근접 무기로 싸우면 오릅니다. 근접 피해가 늘고, 택일은 공격 갈래와 재주(급소·독·덫) 갈래입니다.',
+  exorcism: '퇴마관의 계열. 술법으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 몰아치기와 정화(영귀 퇴치·결계 걷기) 갈래입니다.',
+  medicine: '의무관의 계열. 술법(침·약)으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 침술과 처방(회복·해독·버티기) 갈래입니다.',
   analysis: '요괴의 약점을 살피며 싸울 때 오릅니다. 익히면 치명타 확률이 오릅니다.',
   guarding: '막기 자세로 공격을 받아낼 때 오릅니다.',
   first_aid: '회복약을 쓰거나 동료를 구조할 때 오릅니다.',
@@ -382,17 +385,20 @@ const CAT_DESC = {
 // 행동 한 번에 오르는 기술 경험(서버 world_track_specialized_skill과 같은 값).
 // 단계 r → r+1에 80+8r 경험, 30단계부터 6×(r−29)²를 더함(누적 4r²+76r−80 + n(n+1)(2n+1), n=r−30, 서버 world_skill_line_xp), 최고 50단계.
 const SKILL_GAIN = {
-  melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
+  melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', dagger: '전투 행동 +10', exorcism: '전투 행동 +10', medicine: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
   foraging: '채집 +8', mining: '채집 +8', fishing: '던질 때 +8',
   smithing: '제작·분해 +12', carpentry: '제작·분해 +12', artifice: '제작·분해 +12', wardcraft: '제작·분해 +12', weaving: '제작·분해 +12', leatherwork: '제작·분해 +12',
   alchemy: '제작 +12', cooking: '요리 +12', tracking: '탐색 +5 · 이야기 +10 · 이동 +3',
 };
 const SKILL_CAP = 50;
 const lineXp = r => { if (r <= 1) return 0; const n = Math.max(0, r - 30); return 4 * r * r + 76 * r - 80 + n * (n + 1) * (2 * n + 1); };
-const SKILL_NAME = { sealing: '봉인술' }; // 제작 분야 「봉인 공예」와 이름이 겹치는 전투 계열
+const SKILL_NAME = { sealing: '봉인술', guarding: '막기' }; // 제작 분야 「봉인 공예」와 이름이 겹치는 전투 계열
+// 전투 계열은 지금 직업의 것만 쓴다(서버 world_skill_line_ok). 지난 직업(환골탈태 서첩)의 계열은 단계만 남고 효과가 없다
+const mineOnly = (cats, c) => cats.filter(x => !COMBAT_LINES.includes(x) || x === JOB_LINE[c?.job_key]);
+const foreignLine = (k, c) => COMBAT_LINES.includes(k) && k !== JOB_LINE[c?.job_key];
 // 숙련 네 갈래 = 그 갈래 기술 가운데 가장 높은 단계(서버 world_skill_sync)
 export const BRANCHES = [
-  ['combat', '전투', 'sword', ['melee', 'ranged', 'sealing', 'analysis', 'guarding', 'first_aid']],
+  ['combat', '전투', 'sword', [...COMBAT_LINES, 'analysis', 'guarding', 'first_aid']],
   ['gathering', '채집', 'leaf', ['foraging', 'mining', 'fishing']],
   ['crafting', '제작', 'hammer', ['smithing', 'carpentry', 'artifice', 'wardcraft', 'weaving', 'leatherwork', 'alchemy', 'cooking']],
   ['investigation', '조사', 'search', ['tracking']],
@@ -419,12 +425,15 @@ async function skills(body) {
     </div>`;
   };
   const c = store.character || {};
+  // 조합 기술 가운데 다른 직업 계열이 드는 것은 뺀다
+  const myCombos = combos.filter(x => !Object.keys(x.requires || {}).some(k => foreignLine(k, c)));
+  const oldLines = COMBAT_LINES.filter(k => foreignLine(k, c) && Number(groups[k]?.[0]?.rank || 1) > 1);
   const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
-  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(근접·봉인술은 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
+  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 전투 계열은 직업마다 하나(호위 무사 근접 · 조사원 사격 · 봉인술사 봉인술 · 퇴마관 퇴마술 · 백공 단도 · 의무관 의술)이고 분석·막기·응급 처치는 모두가 함께 씁니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(사격 말고는 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
     ${Object.keys(groups).length ? `<div class="skill-groups">${[['combat'], ['gathering', 'investigation'], ['crafting']].map(col => `<div class="sk-col">${col.map(key => BRANCHES.find(b => b[0] === key)).map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
-      `<div class="sk-lines">${cats.map(line).join('')}</div>`, { ico, cls: 'compact' })).join('')}</div>`).join('')}</div>`
+      `<div class="sk-lines">${mineOnly(cats, c).map(line).join('')}</div>${k === 'combat' && oldLines.length ? `<p class="muted small">지난 직업 계열(효과 없음): ${oldLines.map(x => `${esc(SKILL_NAME[x] || nameOf(x))} ${fmt.num(groups[x][0].rank)}단계`).join(' · ')}</p>` : ''}`, { ico, cls: 'compact' })).join('')}</div>`).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
-    ${combos.length ? panel('조합 기술', `<ul class="combo-list">${combos.map(x => {
+    ${myCombos.length ? panel('조합 기술', `<ul class="combo-list">${myCombos.map(x => {
       const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');
       return `<li class="${x.unlocked ? 'on' : ''}"><b>${esc(x.skill_name)}</b>${x.unlocked ? chip('익힘', 'ok') : ''}<small>${esc(String(x.description || '').replace(/^조합 기술\([^)]*\) · /, ''))}</small><small>${req}</small></li>`; }).join('')}</ul>
       <p class="muted small">두 계열이 모두 18단계에 닿으면 열립니다. 계열마다 조합은 하나씩입니다.</p>`, { ico: 'knot' }) : ''}
@@ -432,7 +441,7 @@ async function skills(body) {
         <b>${esc(x.name)}</b>${x.unlocked ? chip('익힘', 'ok') : chip(`전투 숙련 ${x.rank}단계`)}
         <small>${esc(x.desc || '')}</small><small>${x.target === 'ally' ? '동료 한 명' : x.target === 'all' ? '참가자 모두' : x.target === 'boss' ? '요괴' : '나'} · 영력 ${x.cost} · 다시 쓰기 ${x.cooldown}초</small></li>`).join('')}</ul>
       <p class="muted small">합동 토벌(10장 결전·봉연의 그림자)에서만 그 턴의 행동으로 고릅니다. 같은 지역 파티 원정의 합동 전투에서는 열린 기술이 확률로 저절로 나옵니다.</p>`, { ico: 'users' }) : ''}
-    <p class="muted small">전투 계열(근접·원거리·봉인술)의 피해 효과는 지금 든 무기의 공격 방식에 맞는 것만 적용됩니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
+    <p class="muted small">전투 기술 경험은 든 무기가 아니라 직업의 계열에 쌓이고, 무기는 직업에 맞는 것만 들 수 있습니다(근접 무기 호위 무사·백공, 원거리 무기 조사원, 술법 무기 퇴마관·봉인술사·의무관). 직업 계열의 피해·치명타는 공격에 늘 더해집니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
     $$('.sk-node', el).forEach(b => b.onclick = () => {
