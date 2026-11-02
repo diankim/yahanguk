@@ -600,6 +600,17 @@ update public.world_region_monsters set mechanic_description =
 update public.world_cosmetic_catalog set condition_text = '이야기 「붉은 인장의 실종」을 끝낸다' where cosmetic_key = 'fr_red_seal' and condition_text = '이야기 「붉은 인장」을 끝낸다';
 update public.world_major_factions set base_region_id = 'bone_market' where faction_id = 'red_moon_cult' and base_region_id = 'red_moon_fort';
 
+-- ㊸ 일지 › 답사 목록이 영역 id 알파벳순이라 새 캐릭터에게 Lv30 구중 금역이 맨 위에 나오던 것 → 영역 안 가장 낮은 레벨순
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef((select oid from pg_proc where proname = 'world_survey_overview' and pronamespace = 'public'::regnamespace limit 1)), E'\r\n', E'\n');
+  a := $a$ORDER BY r.territory_id, r.min_level, r.region_name$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor survey order'; end if;
+  d := replace(d, a, $b$ORDER BY (SELECT min(t.min_level) FROM public.world_map_regions t WHERE t.territory_id = r.territory_id), r.territory_id, r.min_level, r.region_name$b$);
+  execute d;
+end $p$;
+
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 

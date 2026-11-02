@@ -97,7 +97,7 @@
 - 꾸러미 2~3개·지역 특산물 50%+깊이×8%·전 3~(8+위험도×3). 대세력 조사원은 25%로 길에서 만난 이와 나눠(개수 −1·전 절반) payload.infl 1.5 → world_influence_tick이 탐색 0.3에 더함.
 - 조용히 살피기 world_field_search_quiet(yh.quiet): 조우 무게 ×(1−q)·꾸러미 ×(1−q/2), q = min(0.5, (민첩+감각)×0.008), payload.quiet_mode, home.js quietOn(yh-quiet-search).
 - 기척 숨기기 world_battle_action('sneak'): 마주친 직후(turn_count 0) 한 번, world_sneak_pct = 25+민첩×0.8+감각×0.5(+조사원 10)−(요괴Lv−내Lv)×3−우두머리 15, 10~75%. 성공 fled(battle_fled.sneak), 실패면 그 턴에 요괴가 침, 탐색력 반환 없음. battle.js sneak-ask(world_field_battle_view.sneak).
-- 채집 간격 12초(world_guard_repeat_farming, 채집터 무관 — 함수 맨 앞 world_rate_check('gather')가 잠그기 전에 먼저 돌려보냄). 화면은 성공 뒤 기기 시계로 12초 모든 채집 단추를 잠그고 남은 초 표시(home.js setGatherCd·paintGather, yh-gather-cd, 거절되면 3초).
+- 채집 간격 12초(world_guard_repeat_farming, 채집터 무관, 같은 채집터는 5분 — 길목 기억 4분·채광 숙달 절반 — 함수 맨 앞 world_rate_check('gather')가 잠그기 전에 먼저 돌려보냄). 화면은 성공 뒤 기기 시계로 12초 모든 채집 단추를 잠그고 남은 초 표시(home.js setGatherCd·paintGather, yh-gather-cd, 거절되면 3초).
 - 채집은 한국 시각 하루 처음 10번 탐색력 무료(payload.free_day, 응답 free_left). 채집터마다 하루 제한은 두지 않는다(찾은 채집터가 많아 재료가 넘침).
 - 바깥 지역마다 들머리(답사 첫 칸)에 「어귀의 …」 채집터를 두고 처음부터 찾은 것으로(새 캐릭터 trg_world_entry_spots).
 

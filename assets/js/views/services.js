@@ -45,7 +45,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
       <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[m][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
       <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button>${m === 'sell' && max > 1 ? `<button class="btn small ghost" data-all aria-label="가진 것 전부">전부</button>` : ''}</div>`;
   box.innerHTML = `
-    <div class="shop-head"><div><b>${esc(s.shop_name)}</b><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
+    <div class="shop-head"><div><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
       <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(c?.gil ?? s.gil)}</span></div>
     ${sell ? `<div class="seg-mini" role="tablist"><button class="${mode === 'buy' ? 'on' : ''}" data-mode="buy">사기</button><button class="${mode === 'sell' ? 'on' : ''}" data-mode="sell">팔기</button></div>` : ''}
     <section data-list="buy" ${mode === 'buy' ? '' : 'hidden'}>

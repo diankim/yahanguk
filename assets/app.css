@@ -1497,6 +1497,8 @@ body:has(.modal-backdrop) .growth-pop { pointer-events: none; top: auto; bottom:
 .deploy-notice { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 320; display: flex; gap: 10px; align-items: center;
   width: min(640px, calc(100vw - 24px)); padding: 8px 10px 8px 12px; border-radius: var(--r); background: var(--surface); border: 2px solid var(--warn); color: var(--text); font-size: calc(13px * var(--fz, 1)); }
 .deploy-notice .ico { color: var(--warn); flex: none; }
+/* 창·처음 안내가 열려 있는 동안은 띠를 숨겨 창 머리(제목·닫기)를 덮지 않게 */
+body:has(.modal-backdrop) .deploy-notice, body:has(.tut) .deploy-notice, body:has(.ask-layer) .deploy-notice { display: none; }
 .deploy-notice span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .deploy-notice .btn { flex: none; }
 /* 못 가는 길의 까닭 */
@@ -2902,3 +2904,9 @@ b.shadow { color: var(--sp); }
 @keyframes yohwa-pulse { 50% { background: color-mix(in srgb, var(--bad) 55%, #3a0008); } }
 @media (prefers-reduced-motion: reduce) { .yohwa-mark { animation: none; } }
 .q-at .q-link { min-height: 0; padding: 0; vertical-align: baseline; }
+
+/* 휴대폰: 거르기 칩·작은 체크박스도 손가락으로 누르기 쉽게(32px) */
+@media (pointer: coarse) {
+  button.chip, .chips button { min-height: 32px; }
+  input[type=checkbox] { width: 20px; height: 20px; }
+}

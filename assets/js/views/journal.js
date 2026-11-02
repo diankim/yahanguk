@@ -390,11 +390,11 @@ const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', dee
 let cxKind = '';
 const mul = v => { const n = Number(v); return `<span class="eff ${n >= 1.2 ? 'ok' : n <= 0.85 ? 'bad' : ''}">×${n}</span>`; };
 const codexTitles = list => (list || []).length ? panel('도감 칭호', `<ul class="spot-list">${list.map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}${t.need && !t.earned ? ` · ${fmt.num(t.progress ?? 0)}/${fmt.num(t.need)}` : ''}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>`, { ico: 'spark' }) : '';
-// 의뢰 갱신 때: 한국 시각 0시면 「11. 3. 자정」
+// 의뢰 갱신 때: 한국 시각 0시면 「11월 3일 0시」
 function resetWhen(t) {
   const d = new Date(t), o = { timeZone: 'Asia/Seoul' };
   const hm = d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit', hour12: false });
-  return `${d.toLocaleDateString('ko-KR', { ...o, month: 'numeric', day: 'numeric' })} ${/^(00|24):00$/.test(hm) ? '자정' : d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit' })}`;
+  return `${d.toLocaleDateString('ko-KR', { ...o, month: 'long', day: 'numeric' })} ${/^(00|24):00$/.test(hm) ? '0시' : d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit' })}`;
 }
 // 못 만난 요괴는 한 마리씩 카드로 그리지 않고 갈래마다 수만 한 줄로(휴대폰에서 화면이 끝없이 길어지지 않게)
 function unseenLine(list, kinds) {
