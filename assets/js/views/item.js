@@ -8,7 +8,7 @@ import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 // 쓸 수 있는 물품과 효과 문구: 원본은 서버 world_item_catalog.use_fx(world_item_fx와 같은 값) — 물품 목록의 fx와 효과 이름표로 여기서 만든다.
 // 새 소모품은 서버 use_fx만 채우면 사용 단추·효과 문구·색·거르기가 따른다. 아래는 회복·기운으로 적을 수 없는 특별한 물품만.
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
-  revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 -20',
+  revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
   trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나' };
 const useCache = new Map();
 function useText(id) {
@@ -20,7 +20,7 @@ function useText(id) {
   if (f.hp > 0) out.push(`체력 ${f.hp}`);
   if (f.mn > 0) out.push(`정신 ${f.mn}`);
   if (f.sp > 0) out.push(`영력·기력 ${f.sp}`);
-  if (f.er > 0) out.push(`침식 -${f.er}`);
+  if (f.er > 0) out.push(`침식 −${f.er}`);
   if (f.stam > 0) out.push(`탐색력 +${f.stam}`);
   if (f.cures?.length) out.push(`${f.cures.map(nm).join('·')} 치료`);
   for (const b of f.buffs || []) {

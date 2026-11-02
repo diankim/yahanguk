@@ -54,7 +54,7 @@ export async function render(root, sub) {
     <section id="sec-profile" class="set-sec">
       ${panel('프로필', `<div class="profile-edit">
         <div class="profile-card" id="pf-card"><span id="pf-pattern"></span><div class="pc-emblem" id="pf-preview">${emblem(c.owner_id, c.profile, 72)}</div>
-          <div><h3>${esc(c.character_name)}<span id="pf-seal"></span></h3><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p><p class="muted small">이름·직업·소속은 바꿀 수 없습니다.</p></div></div>
+          <div><h3>${esc(c.character_name)}<span id="pf-seal"></span></h3><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p><p class="muted small">이름은 바꿀 수 없고, 직업·소속은 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.</p></div></div>
         <h3 class="sub-h">사진</h3>
         <div class="avatar-edit">
           <div class="crop"><canvas width="240" height="240" id="crop-cv"></canvas></div>

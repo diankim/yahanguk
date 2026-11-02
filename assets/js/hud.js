@@ -331,7 +331,7 @@ async function openTitleSwap() {
     const ps = (snap?.presets || []).slice().sort((a, b) => a.slot - b.slot);
     box.innerHTML = ps.length ? `<ul class="spot-list">${ps.map(p => {
       const now = [...(p.titles || [])].sort().join(',') === eq && (p.display || null) === disp;
-      return `<li><div><b>${esc(p.name || `묶음 ${p.slot}`)}</b><small>${(p.titles || []).map(k => esc(nm[k] || '?')).join(' · ') || '장착 없음'}${p.display ? ` · 대표 ${esc(nm[p.display] || '?')}` : ''}</small></div>
+      return `<li><div><b>${esc(p.name || `묶음 ${p.slot}`)}</b><small>${(p.titles || []).filter(k => nm[k]).map(k => esc(nm[k])).join(' · ') || '장착 없음'}${p.display && nm[p.display] ? ` · 대표 ${esc(nm[p.display])}` : ''}</small></div>
         <button class="btn small ${now ? '' : 'primary'}" data-tsw="${p.slot}" ${now ? 'disabled' : ''}>${now ? '쓰는 중' : '바꿔 끼기'}</button></li>`; }).join('')}</ul>`
       : '<p class="muted small">저장한 칭호 묶음이 없습니다. 캐릭터 › 칭호 위의 묶음 칸에 지금 장착한 칭호를 저장해 두세요.</p>';
     box.insertAdjacentHTML('beforeend', '<p class="muted small"><a href="#/char/titles" data-tsw-go>칭호 화면에서 묶음 고치기</a></p>');

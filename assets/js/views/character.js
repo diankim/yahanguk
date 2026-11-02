@@ -88,7 +88,7 @@ export function combatRows(cur) {
   if (!cur) return '';
   const rows = [
     ['공격 방식', `${STYLE[cur.style] || '근접'}${cur.weapon ? ` · ${esc(cur.weapon.name)}` : ' · 맨손'}`],
-    ['공격력', fmt.num(cur.attack)], ['방어력', `${cur.defense} <small>(받는 피해 -${cur.reduction_pct}%)</small>`],
+    ['공격력', fmt.num(cur.attack)], ['방어력', `${cur.defense} <small>(받는 피해 −${cur.reduction_pct}%)</small>`],
     ['회피율', `${cur.evasion_pct}%`], ['치명타율', `${cur.crit_pct}% <small>(피해 ×${(cur.crit_mult / 100).toFixed(1)})</small>`],
     ['달아날 확률', `${cur.flee_pct}%`], ['주는 피해 보정', `${cur.damage_pct > 0 ? '+' : ''}${cur.damage_pct}%`],
     ['받는 피해 보정', `${cur.incoming_pct > 0 ? '+' : ''}${cur.incoming_pct}%`],
@@ -164,7 +164,7 @@ export function eqMini(inv, prof, pick = false) {
   }).join('')}</ul>`;
 }
 function combatMini(cur) {
-  return `<p class="combat-mini">${esc(STYLE[cur.style] || '근접')} · 공격 <b>${fmt.num(cur.attack)}</b> · 방어 <b>${fmt.num(cur.defense)}</b> <small>(−${cur.reduction_pct}%)</small> · 회피 <b>${cur.evasion_pct}%</b> · 치명 <b>${cur.crit_pct}%</b> · 달아나기 <b>${cur.flee_pct}%</b> · 이목 <b>${fmt.num(cur.presence)}</b> <a class="linkish" href="#/char/growth">자세히</a></p>`;
+  return `<p class="combat-mini">${esc(STYLE[cur.style] || '근접')} · <span>공격 <b>${fmt.num(cur.attack)}</b></span> · <span>방어 <b>${fmt.num(cur.defense)}</b> <small>(−${cur.reduction_pct}%)</small></span> · <span>회피 <b>${cur.evasion_pct}%</b></span> · <span>치명 <b>${cur.crit_pct}%</b></span> · <span>달아나기 <b>${cur.flee_pct}%</b></span> · <span>이목 <b>${fmt.num(cur.presence)}</b></span> <a class="linkish" href="#/char/growth">자세히</a></p>`;
 }
 // 칸 바꾸기: 칸마다 가방의 회복 물품 가운데 고른다(가진 것이 없는 물품도 기본 회복약은 고를 수 있음)
 function openQuickslots(cur, inv) {
@@ -227,8 +227,8 @@ async function status(body) {
         </div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0), ISLAND.has(c.location))}
         <div class="btn-row st-acts">
-          <button class="btn small" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · 침식 -18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
-          <button class="btn small" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="본부에서 · 정신 +18 · 침식 -10 · 15분마다">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
+          <button class="btn small" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · 침식 −18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
+          <button class="btn small" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="본부에서 · 정신 +18 · 침식 −10 · 15분마다">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
         </div>
         ${inv ? eqMini(inv, prof) : ''}
         ${prof?.current ? combatMini(prof.current) : ''}
@@ -261,7 +261,7 @@ async function status(body) {
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
     const d = $('#death-left', body); if (d && deathAt) d.textContent = `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}`;
     const g = $('#ground-note', body), gr = Number(g?.dataset.ready || 0);
-    if (g && gr) { if (gr > Date.now()) g.textContent = `${fmt.remain(gr - Date.now())} 뒤 다시`; else { g.dataset.ready = ''; g.textContent = '본부에서 · 정신 +18 · 침식 -10 · 15분마다'; if (atHq && !(mn0 >= 100 && er0 <= 0) && !downed) g.closest('button').disabled = false; } }
+    if (g && gr) { if (gr > Date.now()) g.textContent = `${fmt.remain(gr - Date.now())} 뒤 다시`; else { g.dataset.ready = ''; g.textContent = '본부에서 · 정신 +18 · 침식 −10 · 15분마다'; if (atHq && !(mn0 >= 100 && er0 <= 0) && !downed) g.closest('button').disabled = false; } }
   }, 1000);
 }
 
@@ -311,7 +311,7 @@ async function growth(body) {
     </div>
     ${panel('신원', `<dl class="kv"><div><dt>이름</dt><dd>${esc(c.character_name)}</dd></div><div><dt>직업</dt><dd>${esc(nameOf(c.job_key))} · ${esc(JOBS[c.job_key]?.trait || '')}</dd></div>
       <div><dt>소속</dt><dd>${esc(nameOf(c.faction_key))}</dd></div><div><dt>대세력</dt><dd>${c.major_faction_id ? `${esc(nameOf(c.major_faction_id))} · 평판 ${fmt.num(c.faction_reputation)}` : '미가입'}</dd></div></dl>
-      <p class="muted small">이름·직업·소속은 캐릭터 생성 시 정해지며 바꿀 수 없습니다.</p>`, { ico: 'idcard' })}`;
+      <p class="muted small">이름은 바꿀 수 없고, 직업·소속은 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.</p>`, { ico: 'idcard' })}`;
   // 나눈 점수는 화면을 옮겨도 남는다(sessionStorage, 캐릭터마다). 미리 보기는 누를 때 한 번만 서버에 묻는다
   const sync = () => {
     const left = pts - allocSum(pend);
@@ -760,7 +760,7 @@ async function faction(body) {
           const at = (JOIN_AT[k] || [BASE[k]]).includes(here?.region_id);
           return `<article class="faction">
           <header><b>${esc(f.name)}</b>${chip(f.type)}</header><p>${esc(f.desc)}</p><small class="accent">${esc(PERKS[k] || '')}</small><small class="muted">가입 조건: ${esc(f.entry)} · 거점 ${esc(nameOf(f.base))}</small>
-          <div class="join-row" id="jr-${k}"><button class="btn small ${at ? 'primary' : ''}" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
+          <div class="join-row" id="jr-${k}"><button class="btn small ${at && (c.level || 1) >= JOIN_LV ? 'primary' : 'ghost'}" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
     ${board ? boardPanel(board) : ''}`;
   $$('[data-fpop]', body).forEach(b => b.onclick = () => openPop(b.dataset.fpop));
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; if (r?.letter) showLetter(r.letter); return r; });

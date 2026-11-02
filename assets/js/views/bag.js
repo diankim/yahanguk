@@ -328,9 +328,9 @@ async function craft(body, inv, stg) {
   renderKeep(body, `
     ${stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
-    <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>레시피에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
+    <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>제작법에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="만들 물품 찾기 (제작법·완성품 이름)" value="${esc(cq)}"></label>
-    ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 보너스'], ['all', '전체']], craftFilter)}
+    ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 덤'], ['all', '전체']], craftFilter)}
     ${craftFilterBox(inv, kindCount)}
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
@@ -341,7 +341,7 @@ async function craft(body, inv, stg) {
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
-        <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}보너스 장소: ${esc(r.location || '없음')}</p>
+        <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}지정 장소: ${esc(r.location || '없음')}</p>
         <div class="craft-act">
           ${can ? (() => { const n = Math.min(maxN, Math.max(1, craftN.get(r.id) || 1)); return `<div class="craft-qty" data-cq="${esc(r.id)}" data-max="${maxN}">
             <button type="button" class="btn small ghost" data-cq-do="reset">초기화</button>
@@ -353,7 +353,7 @@ async function craft(body, inv, stg) {
           <button class="btn small ${can ? 'primary' : ''} craft-go" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? craftLabel(Math.min(maxN, Math.max(1, craftN.get(r.id) || 1))) : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
         </div>
       </article>`).join('')}</div>`
-      : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`, 'label.search');
+      : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 제작법이 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 제작법이 없습니다.', 'hammer')}`, 'label.search');
   // 거르기·정렬을 바꾸면 목록을 다시 그리는데, 누른 칸이 화면의 같은 높이에 남게 한다(체크할 때마다 화면이 내려갔다)
   const redraw = sel => stay(sel, () => craft(body, inv, stg));
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; redraw('[data-seg="craft-filter"]'); });

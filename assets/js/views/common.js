@@ -1,5 +1,5 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
-import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY } from '../core.js';
+import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY, friendlyError } from '../core.js';
 import { armAlarm } from '../sound.js';
 import { GAMEDATA } from '../gamedata.js';
 
@@ -147,7 +147,7 @@ export function danger(lv) {
   return chip(`위험 ${n}`, n >= 7 ? 'bad' : n >= 4 ? 'warn' : 'ok');
 }
 export function loading(text = '불러오는 중…') { return `<div class="loading"><span class="spinner"></span>${esc(text)}</div>`; }
-export function errorBox(msg) { return `<div class="empty error">${icon('close', 20)}<p>${esc(msg)}</p></div>`; }
+export function errorBox(msg) { return `<div class="empty error">${icon('close', 20)}<p>${esc(friendlyError(msg))}</p></div>`; }
 export function currentRegion(mapSnap) {
   const c = store.character; if (!mapSnap || !c) return null;
   return (mapSnap.regions || []).find(r => r.region_id === mapSnap.current_region_id) || (mapSnap.regions || []).find(r => r.region_name === c.location) || null;

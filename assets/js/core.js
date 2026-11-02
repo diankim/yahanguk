@@ -28,10 +28,19 @@ export function friendlyError(e) {
   if (/Invalid login credentials/i.test(msg)) return '아이디 또는 비밀번호가 올바르지 않습니다.';
   if (/Email not confirmed/i.test(msg)) return '이메일 인증을 완료한 뒤 로그인하세요.';
   if (/User already registered|already been registered/i.test(msg)) return '이미 쓰이는 아이디입니다. 다른 아이디를 정하세요.';
-  if (/Email signups are disabled|Signups not allowed/i.test(msg)) return '지금은 가입을 받지 않습니다. 관리자에게 Supabase의 Email 로그인 설정을 확인해 달라고 알려 주세요.';
+  if (/Email signups are disabled|Signups not allowed/i.test(msg)) return '지금은 가입을 받지 않습니다. 운영진에게 알려 주세요.';
   if (/Email address .* is invalid|invalid format/i.test(msg)) return '아이디는 영문 소문자와 숫자 4~16자로 정하세요.';
   if (/Password should be at least/i.test(msg)) return '비밀번호는 6자 이상이어야 합니다.';
-  return msg;
+  // 한글이 든 서버 문구는 그대로 두고, 영어 오류만 우리말로 바꾼다(화면에 영어를 보이지 않게).
+  if (/[가-힣]/.test(msg)) return msg;
+  if (/Database error saving new user/i.test(msg)) return '초대권을 쓸 수 없습니다. 번호를 다시 확인해 주세요.';
+  if (/security purposes|rate limit|too many requests/i.test(msg)) return '잠시 뒤 다시 시도하세요.';
+  if (/PGRST202|schema cache/i.test(msg)) return '서버가 새 버전으로 바뀌는 중입니다. 잠시 뒤 새로고침해 주세요.';
+  if (/invalid input syntax for type uuid/i.test(msg)) return '찾는 기록이 없습니다.';
+  if (/statement timeout|canceling statement/i.test(msg)) return '서버가 바쁩니다. 잠시 뒤 다시 시도하세요.';
+  if (/duplicate key|deadlock/i.test(msg)) return '다른 요청과 겹쳤습니다. 다시 시도하세요.';
+  if (e?.name === 'TypeError' || /TypeError|Cannot read|is not a function|undefined|null/.test(msg)) return '화면을 그리다 문제가 생겼습니다. 새로고침해 주세요.';
+  return '알 수 없는 오류가 생겼습니다. 잠시 뒤 다시 시도하세요.';
 }
 
 /* ── RPC ─────────────────────────────────────────────────── */

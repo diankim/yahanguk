@@ -209,7 +209,7 @@ async function commission(body) {
   const list = b?.items || [];
   body.innerHTML = `
     <p class="desc">의뢰는 날마다 세 가지씩 새로 붙습니다. 이야기를 다 마친 뒤에도 계속 받을 수 있는 소소한 일거리입니다.</p>
-    <p class="muted small">다음 갱신: ${b?.resets_at ? new Date(b.resets_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '자정'}</p>
+    <p class="muted small">다음 갱신: ${b?.resets_at ? resetWhen(b.resets_at) : '자정'}</p>
     <div class="commission-grid">${list.map(x => `<article class="commission ${x.claimed ? 'done' : x.progress >= x.need ? 'ready' : ''}">
       <header>${icon(x.kind === 'hunt' ? 'sword' : x.kind === 'gather' ? 'leaf' : x.kind === 'deliver' ? 'bag' : 'search', 18)}<b>${esc(x.title)}</b></header>
       <p>${esc(x.description)}</p>${bar(Math.min(x.progress, x.need), x.need, 'xp')}
@@ -390,6 +390,18 @@ const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', dee
 let cxKind = '';
 const mul = v => { const n = Number(v); return `<span class="eff ${n >= 1.2 ? 'ok' : n <= 0.85 ? 'bad' : ''}">×${n}</span>`; };
 const codexTitles = list => (list || []).length ? panel('도감 칭호', `<ul class="spot-list">${list.map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}${t.need && !t.earned ? ` · ${fmt.num(t.progress ?? 0)}/${fmt.num(t.need)}` : ''}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>`, { ico: 'spark' }) : '';
+// 의뢰 갱신 때: 한국 시각 0시면 「11. 3. 자정」
+function resetWhen(t) {
+  const d = new Date(t), o = { timeZone: 'Asia/Seoul' };
+  const hm = d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${d.toLocaleDateString('ko-KR', { ...o, month: 'numeric', day: 'numeric' })} ${/^(00|24):00$/.test(hm) ? '자정' : d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit' })}`;
+}
+// 못 만난 요괴는 한 마리씩 카드로 그리지 않고 갈래마다 수만 한 줄로(휴대폰에서 화면이 끝없이 길어지지 않게)
+function unseenLine(list, kinds) {
+  const n = {}; list.forEach(m => { if (!m.known) n[m.kind] = (n[m.kind] || 0) + 1; });
+  const rows = kinds.filter(k => n[k.key]).map(k => `<li><div><b>${esc(k.name)}</b><small>아직 만나지 못한 요괴 ${fmt.num(n[k.key])}</small></div></li>`);
+  return rows.length ? `<ul class="spot-list mon-unseen">${rows.join('')}</ul>` : '';
+}
 async function monsterCodex(box) {
   const o = await load('world_monster_codex_snapshot', undefined, { maxAge: 20000 });
   const kinds = o.kinds || [], all = o.monsters || [];
@@ -402,7 +414,7 @@ async function monsterCodex(box) {
       <div class="chips">${chip(`만남 ${seen}/${all.length}`, '')}${chip(`토벌 ${got}/${all.length}`, 'accent')}</div>${bar(got, all.length || 1, 'xp')}</div>
     <div class="chips kind-chips"><button class="chip ${cxKind ? '' : 'on'}" data-kind="">전체</button>${kinds.map(k => `<button class="chip ${cxKind === k.key ? 'on' : ''}" data-kind="${esc(k.key)}">${esc(k.name)} <small>${k.defeated}/${k.total}</small></button>`).join('')}</div>
     ${cxKind ? `<p class="muted small">${esc(kinds.find(k => k.key === cxKind)?.desc || '')}</p><div class="witness" data-witness></div>` : ''}
-    <ul class="mon-grid">${list.map(m => m.known ? `<li class="mon-card ${m.defeated > 0 ? 'done' : ''}">
+    <ul class="mon-grid">${list.filter(m => m.known).map(m => `<li class="mon-card ${m.defeated > 0 ? 'done' : ''}">
         <div class="mon-top"><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}</div>
         <small>${esc(kname[m.kind] || '')} · ${esc(m.region)} · Lv.${m.level}–${m.max_level}</small>
         ${m.desc ? `<small class="muted">${esc(m.desc)}</small>` : ''}
@@ -412,7 +424,8 @@ async function monsterCodex(box) {
           ${m.counter.habit ? `<p class="small muted">${esc(m.counter.habit)}</p>` : ''}
           <ul class="gim-list">${(m.counter.gimmicks || []).map(g => `<li><b>「${esc(g.name)}」</b><small>Lv.${g.from}부터 · ${esc(g.tell)}</small><small>${esc(g.tip)}</small></li>`).join('')}</ul>
           ${(m.counter.drops || []).length ? `<p class="small">전리품: ${m.counter.drops.map(d => esc(d.name)).join(', ')}</p>` : ''}</details>` : '<small class="muted">쓰러뜨리면 파훼법이 적힙니다</small>'}
-      </li>` : `<li class="mon-card unknown"><b>???</b><small>${esc(kname[m.kind] || '')} · ${esc(m.region)}${m.role === 'guardian' ? ' · 우두머리' : ''}</small><small>아직 만나지 못했습니다</small></li>`).join('')}</ul>
+      </li>`).join('')}</ul>
+    ${unseenLine(list, kinds)}
     ${codexTitles(o.titles)}`;
   $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
   // 목격담: 그 갈래를 1·10마리 쓰러뜨리면 이야기 속 인물의 한마디가 열린다

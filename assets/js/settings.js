@@ -19,7 +19,7 @@ export function openProfile() {
     <div class="btn-row"><a class="btn primary" href="#/settings/profile" data-close>${icon('gear', 16)}<span>프로필 수정</span></a>
       <a class="btn" href="#/char/titles" data-close>${icon('spark', 16)}<span>칭호 보기</span></a>
       <button class="btn ghost" id="pf-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>
-    <p class="muted small">이름·직업·소속은 캐릭터를 만들 때 정해지며 바꿀 수 없습니다.</p></div>` });
+    <p class="muted small">이름은 바꿀 수 없고, 직업·소속은 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.</p></div>` });
   document.getElementById('pf-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) { closeModal(); logout(); } };
 }
 
@@ -267,13 +267,16 @@ function notePop(n) {
   stack.append(card);
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'reward' }));
 }
+// 지난 알림은 날짜도(「11. 2. 14:22」, 한국 시각)
+const pastWhen = t => { const d = new Date(t), o = { timeZone: 'Asia/Seoul' };
+  return `${d.toLocaleDateString('ko-KR', { ...o, month: 'numeric', day: 'numeric' })} ${d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit', hour12: false })}`; };
 // 지난 알림: 확인한 알림 중 아직 지워지지 않은 것(14일 보관)을 열 때만 읽는다.
 async function drawPastNotes(box) {
   box.innerHTML = '<p class="muted small">불러오는 중…</p>';
   try {
     const { data, error } = await db.from('world_notifications').select('id,title,content,created_at,read_at').not('read_at', 'is', null).order('created_at', { ascending: false }).limit(60);
     if (error) throw error;
-    box.innerHTML = (data || []).length ? data.map(n => `<article class="note-item past"><div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${fmt.time(n.created_at)}</time></div></article>`).join('')
+    box.innerHTML = (data || []).length ? data.map(n => `<article class="note-item past"><div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${pastWhen(n.created_at)}</time></div></article>`).join('')
       + '<p class="muted small note-keep">확인한 알림은 14일 동안 남습니다.</p>' : '<p class="muted">지난 알림이 없습니다.</p>';
   } catch { box.innerHTML = '<p class="muted">지난 알림을 불러오지 못했습니다.</p>'; }
 }

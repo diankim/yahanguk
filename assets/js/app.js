@@ -206,7 +206,7 @@ function renderAuth(mode = 'login', notice = '') {
         const { data, error } = await db.auth.signUp({ email, password: pw, options: invite ? { data: { invite } } : undefined });
         if (error) throw error;
         if (data.session) await claimSession();
-        if (!data.session) return renderAuth('login', '가입은 되었지만 바로 로그인되지 않았습니다. 관리자에게 Supabase의 "Confirm email" 설정을 꺼 달라고 알려 주세요.');
+        if (!data.session) return renderAuth('login', '가입은 되었지만 바로 로그인되지 않았습니다. 운영진에게 알려 주세요.');
       }
     } catch (err) { loginFailed(); say(friendlyError(err)); }
     finally { btn.disabled = false; loginFailed(); }

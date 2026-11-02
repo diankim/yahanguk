@@ -443,6 +443,7 @@ body.chat-open .chat-fab { display: none; }
 .spot-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .spot-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: var(--r-sm); background: var(--surface-2); }
 .spot-list li > div:first-child { display: grid; min-width: 0; }
+.mon-unseen { margin-top: 8px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 .spot-list small { font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
 .mount-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .mount.on { border-color: var(--gold); }
@@ -1121,7 +1122,10 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .chip-x:hover { color: var(--bad); }
 .linkish.item-name { color: var(--text); text-decoration: underline dotted color-mix(in srgb, var(--muted) 70%, transparent); text-underline-offset: 3px; font-weight: inherit; text-align: left; }
 /* 모바일 지도: 고른 지역 띠가 떠 있는 동안 범례를 숨긴다 */
-@media (max-width: 799px) { .map-frame { height: min(64vh, 560px); min-height: 360px; } }
+@media (max-width: 799px) { .map-frame { height: min(64vh, 560px); min-height: 360px; }
+  .map-peek:not([hidden]) ~ .map-legend { display: none; }
+  .map-legend { left: 6px; bottom: 6px; gap: 2px 4px; font-size: calc(10px * var(--fz, 1)); }
+  .map-legend span { padding: 1px 4px; gap: 3px; background: color-mix(in srgb, var(--bg) 55%, transparent); } }
 /* 본문 영역의 블록 간격을 한 규칙으로 맞춘다(검색창·분류 탭·설명·버튼 묶음·패널 사이) */
 #bag-body, #char-body, #log-body, #map-body, #party-body, .mk-body, .fac-body { display: grid; gap: 14px; align-content: start; }
 :is(#bag-body, #char-body, #log-body, #map-body, #party-body, .mk-body, .fac-body) > * { min-width: 0; margin-top: 0; margin-bottom: 0; }
@@ -2635,6 +2639,7 @@ b.sealed { color: var(--bad); }
 .eq-mini .dur.broken { background: var(--bad); }
 .combat-mini { margin: 0; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); line-height: 1.7; }
 .combat-mini b { color: var(--text); }
+.combat-mini span { white-space: nowrap; }
 .qs-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
 .qs-cell { display: grid; gap: 2px; align-content: start; text-align: left; padding: 7px 8px; min-height: 64px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
 .qs-cell b { font-size: calc(12.5px * var(--fz, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

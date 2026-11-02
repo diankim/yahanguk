@@ -61,7 +61,7 @@ const FACTION_LORE = {
   mandate_court: { doctrine: '천명은 관측하고 관리해야 할 법칙이며, 예언은 권력이다.', homeNote: '본부 객사는 Lv25 전의 분소', land: '천명 상계', perk: '원정 답사도 상승 +20%', rank: '요괴 조우 −2%씩 · 날씨·시간대 불이익 10%씩 덜 받기', name2: '천문 허가' },
 };
 function factionLoreHtml() {
-  return `<p>대세력은 Lv5부터 하나만 들 수 있는 세계의 큰 세력입니다.</p><ul><li>처음에 고르는 <b>소속</b>과는 다릅니다. 소속은 본부 직속 등 6가지이고 바꿀 수 없지만, 대세력은 들고 나기를 고를 수 있습니다.</li><li>가입은 아래 「가입 받는 곳」에서 캐릭터 › 세력으로 합니다.</li></ul>` +
+  return `<p>대세력은 Lv5부터 하나만 들 수 있는 세계의 큰 세력입니다.</p><ul><li>처음에 고르는 <b>소속</b>과는 다릅니다. 소속은 본부 직속 등 6가지이고 「환골탈태 서첩」으로 한 번 다시 고를 때 말고는 바뀌지 않지만, 대세력은 들고 나기를 고를 수 있습니다.</li><li>가입은 아래 「가입 받는 곳」에서 캐릭터 › 세력으로 합니다.</li></ul>` +
     Object.entries(FACTION_LORE).map(([k, l]) => { const f = MAJOR_FACTIONS[k] || {}; return `<div class="lore-card"><p><b>${esc(f.name || k)}</b> <small class="muted">${esc(f.type || '')}</small></p>
       <p class="muted small">「${esc(l.doctrine)}」</p><p>${esc(f.desc || '')}</p>
       <ul><li><b>근거지</b> ${esc(l.land)}</li><li><b>안전지대</b> ${esc((GD.factionHome[k] || []).map(regionName).join('·'))}${l.homeNote ? `. ${esc(l.homeNote)}` : ''}</li><li><b>가입 받는 곳</b> ${esc((GD.factionJoin[k] || []).map(regionName).join('·'))}</li><li><b>가입 조건</b> ${esc(f.entry || '')}</li>

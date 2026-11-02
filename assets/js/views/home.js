@@ -398,7 +398,7 @@ async function doSearch(btn) {
     if (r.outcome === 'encounter') toast(r.content, 'warn');
     else showFind(o, r);
   } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
-  finally { btn.dataset.busy = ''; btn.classList.remove('searching'); }
+  finally { btn.dataset.busy = ''; btn.classList.remove('searching'); if (btn.isConnected) btn.disabled = false; }
 }
 async function doFish(btn) {
   if (btn.dataset.busy === '1' || Number(btn.dataset.ready) > Date.now()) return;
@@ -409,7 +409,7 @@ async function doFish(btn) {
     if (r.caught) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: ['rare', 'epic', 'legendary'].includes(r.rarity) || r.first ? 'find' : 'tick' })); showFind(['leaf', r.first ? '새 어종' : '낚시'], { outcome: r.first ? 'spot' : 'gather', content: r.content }); }
     else toast(r.content, 'info');
   } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
-  finally { btn.dataset.busy = ''; }
+  finally { btn.dataset.busy = ''; if (btn.isConnected) btn.disabled = false; }
 }
 // 발견은 화면 가운데 잠깐 떠오르는 쪽지로 보여 준다.
 function showFind([ic, label], r) {

@@ -76,7 +76,7 @@ export const atLine = q => {
   const done = !left.length;
   return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${links(at)}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
 };
-const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${chip(q.cat || '')}<b>${esc(q.title)}</b></header>`;
+const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${kind === 'main' ? '' : chip(q.cat || '')}<b>${esc(q.title)}</b></header>`;
 
 function activeItem(q) {
   if (q.phase === 'clues') {
