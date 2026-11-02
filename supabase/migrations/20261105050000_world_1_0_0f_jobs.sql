@@ -310,6 +310,26 @@ $b$ || a);
   execute d;
 end $p$;
 
+-- 효과 점검 4차(도움말·규칙)
+--  ㉑ 원정 일찍 돌아오기가 「지난 회차만큼」인데 반올림이라 아직 안 지난 회차까지 셈 → 내림
+--  ㉒ 반요촌 판매 칸이 한도 전체를 남은 한도로 보이던 것 → 반요촌에선 절반
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure), E'\r\n', E'\n');
+  a := $a$else round(total_rounds * extract(epoch from now() - e.started_at) / (e.minutes * 60.0))::int end;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor early'; end if;
+  d := replace(d, a, $b$else floor(total_rounds * extract(epoch from now() - e.started_at) / (e.minutes * 60.0))::int end;$b$);
+  execute d;
+
+  d := replace(pg_get_functiondef('public.world_shop_sell_status()'::regprocedure), E'\r\n', E'\n');
+  a := $a$  cap := 2000 + public.world_affil_cap();$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor sellcap'; end if;
+  d := replace(d, a, a || $b$
+  if public.world_banyo_here(uid) then cap := cap / 2; end if;$b$);
+  execute d;
+end $p$;
+
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 
