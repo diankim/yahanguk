@@ -176,6 +176,57 @@ $a$, '');
   if position('[현장 기지]' in d) > 0 then execute pg_temp.rep(d, $a$'[현장 기지] 주변 지형을 이용해 {f}의 발을 묶었습니다'$a$, $a$'[급소 찌르기] {f}의 급소를 정확히 찔렀습니다'$a$); end if;
 end $p$;
 
+-- ── 5. 의무관: 의술 계열 기본 기술을 회복 중심으로(사용자 결정 2026-11-02) ─────────
+-- 50단계 합계 술법 피해 +36% → +17%, 회복량 +5% → +35%(기술 회복 상한 45), 치명타 3 → 0
+update public.world_skill_catalog s set skill_name = v.n, description = v.d, passive_effect = v.e::jsonb
+  from (values
+    ('medicine_t3',  '침 놓기',       '술법 피해 +4% · 회복량 +3%.', '{"damage_pct": 4, "healing_pct": 3}'),
+    ('medicine_t8',  '혈자리 찌르기', '술법 피해 +8%, 독충·수귀 요괴에게 +12% 더.', '{"damage_pct": 8}'),
+    ('medicine_t13', '오행 침법',     '회복량 +4%.', '{"healing_pct": 4}'),
+    ('medicine_t18', '정기 다스리기', '회복량 +3% · 침식 -5%.', '{"healing_pct": 3, "erosion_pct": -5}'),
+    ('medicine_t24', '뜸 기운',       '술법 피해 +2% · 회복량 +4%.', '{"damage_pct": 2, "healing_pct": 4}'),
+    ('medicine_t30', '맥 다스리기',   '회복량 +5%.', '{"healing_pct": 5}'),
+    ('medicine_t36', '백맥 순환',     '회복량 +4% · 침식 -5%.', '{"healing_pct": 4, "erosion_pct": -5}'),
+    ('medicine_t43', '약선 지혜',     '회복량 +6%.', '{"healing_pct": 6}'),
+    ('medicine_t50', '의성지경',      '술법 피해 +3% · 회복량 +6%.', '{"damage_pct": 3, "healing_pct": 6}')) v(id, n, d, e)
+ where s.skill_id = v.id;
+
+-- ── 6. 현장 조사원: 원거리 공격에 맞춤(탐사 덤을 빼고 원정 기술은 전투로) ─────────
+--  빼는 것: 원정 「흔적 추적」(싸움 피하기)·원정 발견 ×1.2·원정 채집 +15%·탐색 길 +8·채집터 +4
+--  더하는 것: 원정 기술 「선제 사격」(싸울 때마다 30% 확률로 먼저 쏘아 승률 +12%p)
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_expedition_settle');
+  if position('[흔적 추적]' in d) > 0 then
+    d := pg_temp.rep(d, $a$    if c.job_key = 'scout' and roll < p_fight and random() < 0.3 then
+      roll := p_fight + 0.36; jobn := jobn + 1;
+      seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'skill', 'who', me, 'owner', e.owner_id, 'text', '[흔적 추적] 요괴의 흔적을 먼저 읽고 길을 돌아 피했습니다.');
+    end if;
+$a$, '');
+    d := pg_temp.rep(d, $a$  if c.job_key = 'scout' then disc_mul := disc_mul * 1.2; end if;
+$a$, '');
+    d := pg_temp.rep(d, $a$ + case when c.job_key = 'scout' then 0.15 else 0 end + c.perception * 0.005$a$, $a$ + c.perception * 0.005$a$);
+    d := pg_temp.rep(d, $a$        if c.job_key = 'analyst' and random() < 0.25 then$a$,
+      $a$        if c.job_key = 'scout' and random() < 0.3 then
+          win_p := win_p + 0.12; jobn := jobn + 1;
+          seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'skill', 'who', me, 'owner', e.owner_id, 'text', '[선제 사격] 요괴가 다가오기 전에 먼저 쏘아 기세를 꺾었습니다.');
+        end if;
+        if c.job_key = 'analyst' and random() < 0.25 then$a$);
+    execute d;
+  end if;
+  d := pg_temp.fdef('world_field_search');
+  if position($a$CASE WHEN c.job_key = 'scout' THEN 8 ELSE 0 END$a$ in d) > 0 then
+    d := pg_temp.rep(d, $a$ + CASE WHEN c.job_key = 'scout' THEN 8 ELSE 0 END$a$, '');
+    d := pg_temp.rep(d, $a$w_spot := 18 + CASE WHEN c.job_key = 'scout' THEN 4 ELSE 0 END;$a$, $a$w_spot := 18;$a$);
+    execute d;
+  end if;
+  d := pg_temp.fdef('world_expedition_complete');
+  if position($a$'scout' then '흔적 추적'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'scout' then '흔적 추적'$a$, $a$'scout' then '선제 사격'$a$); end if;
+  d := pg_temp.fdef('world_expedition_progress');
+  if position($a$'scout' then '흔적 추적'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'scout' then '흔적 추적'$a$, $a$'scout' then '선제 사격'$a$); end if;
+end $p$;
+
 do $c$
 begin
   if (select count(*) from public.world_coop_skills where job_key = 'artificer') <> 4 or (select count(*) from public.world_coop_skills where job_key = 'exorcist') <> 4 then raise exception '7.7.7q: 협동 기술 수'; end if;
