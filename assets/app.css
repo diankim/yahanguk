@@ -1345,6 +1345,8 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px); }
 .t-card.legacy::before { content: ''; position: absolute; inset: 4px; border: 1px solid #8f7136; pointer-events: none; }
 .t-card.legacy > * { position: relative; }
+/* 대표 단추는 레거시 카드에서도 오른쪽 위에 작게(위 규칙이 absolute를 덮어 카드 너비로 늘어나던 것) */
+.t-card.legacy > .t-rep { position: absolute; }
 .t-card.legacy .lg-tag { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 24px; padding: 6px 0; background: #b0263a; color: #f6e7c6;
   font: 700 11px/1.15 var(--font-serif, serif); text-align: center; writing-mode: vertical-rl; letter-spacing: .12em; }
 .t-card.legacy .lg-hj { font: 700 10px var(--font-serif, serif); color: #8f7136; letter-spacing: .4em; }
@@ -1379,8 +1381,11 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
   .t-desc { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.45; }
   .t-cond, .t-bonus { font-size: calc(11px * var(--fz, 1)); line-height: 1.45; }
   .t-act .btn { min-height: 28px; padding: 0 8px; font-size: calc(11.5px * var(--fz, 1)); }
-  .t-card.legacy { padding: 10px 10px 10px 40px; }
-  .t-card.legacy .lg-tag { left: 9px; }
+  .t-card.legacy { padding: 9px 8px 9px 32px; }
+  .t-card.legacy .lg-tag { left: 8px; width: 18px; padding: 4px 0; font-size: 9.5px; }
+  .t-card.legacy .t-top b { font-size: calc(13.5px * var(--fz, 1)); letter-spacing: .02em; }
+  .t-card.legacy .lg-hj { font-size: 9px; letter-spacing: .25em; }
+  .t-card.legacy:has(.t-rep) .t-top { padding-top: 4px; } .t-card.legacy .lg-hj { display: block; min-height: 22px; line-height: 22px; }
 }
 
 /* 원정 일지: 이름과 행동별 색(절제된 톤) */
