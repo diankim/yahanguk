@@ -558,6 +558,48 @@ begin
   execute d;
 end $p$;
 
+-- 서버 문구 점검
+--  ㊲ 요화로 쓰러지면 「구조·회생 부적으로 일어나」라고 안내했지만 실제로는 막혀 있음 → 봉인만 안내
+--  ㊳ 요화 「귀령초로만 풀 수 있습니다」 → 귀령초나 안전지대 봉인(24시간)
+--  ㊴ 동무 이름 뒤 조사 「라」 박음(「새끼 거북라」) → world_josa
+--  ㊵ 요괴 도감 파훼법이 없는 행동 「봉인 제압」·「기믹」을 권하던 것 → 봉인술·술법·수법
+--  ㊶ 적월교 거점 행동이 월식성을 요구하던 것(거점은 백골 장터, world_faction_home과 같게)
+--  ㊷ 회생 부적 설명에 요화 예외, 꾸미기 「붉은 인장」 조건을 장 제목대로
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_yohwa_tick()'::regprocedure), E'\r\n', E'\n');
+  a := $a$「안전지대 봉인」으로 24시간 해독을 받거나, 구조·회생 부적으로 일어나 귀령초로 풀 수 있습니다.$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor yohwa down'; end if;
+  d := replace(d, a, $b$구조나 회생 부적으로는 일어날 수 없고, 「안전지대 봉인」(24시간)을 골라야 요화가 풀립니다.$b$);
+  execute d;
+  foreach a in array array['public.world_yohwa_onset()', 'public.world_yohwa_overflow(uuid,numeric)'] loop
+    d := replace(pg_get_functiondef(a::regprocedure), E'\r\n', E'\n');
+    if position('귀령초로만 풀 수 있습니다.' in d) = 0 then raise exception '1.0.0f anchor yohwa cure %', a; end if;
+    execute replace(d, '귀령초로만 풀 수 있습니다.', '귀령초나 「안전지대 봉인」(24시간)으로 풀 수 있습니다.');
+  end loop;
+
+  d := replace(pg_get_functiondef('public.world_pet_grant(uuid,text,text,boolean)'::regprocedure), E'\r\n', E'\n');
+  a := $a$' || nm || '라 대신$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor petjosa'; end if;
+  d := replace(d, a, $b$' || public.world_josa(nm, '이라', '라') || ' 대신$b$);
+  execute d;
+end $p$;
+update public.world_status_catalog set cure = '귀령초를 쓰거나 「안전지대 봉인」(24시간)을 고르면 풀립니다.' where status_key = 'yohwa';
+update public.world_item_catalog set description = description || ' (요화로 쓰러졌을 때는 쓸 수 없음)'
+ where item_id in ('revival_charm', 'revival_charm_hq') and description not like '%요화%';
+update public.world_region_monsters set mechanic_description =
+  replace(replace(replace(replace(replace(replace(mechanic_description,
+    '기믹 분석 후 제압·봉인을 사용하라', '수법을 살핀 뒤 봉인술이나 술법으로 맞서라'),
+    '봉인 제압은 방어를 무시하는 추가 피해를 준다', '술법과 봉인술은 방어에 덜 막힌다'),
+    '봉인 제압으로 결계를 무너뜨려라', '술법이나 봉인술로 결계를 무너뜨려라'),
+    '봉인 제압이 효과적이며', '술법·봉인술이 잘 들며'),
+    '봉인 제압', '봉인술·술법'),
+    '기믹', '수법')
+ where mechanic_description like '%봉인 제압%' or mechanic_description like '%기믹%';
+update public.world_cosmetic_catalog set condition_text = '이야기 「붉은 인장의 실종」을 끝낸다' where cosmetic_key = 'fr_red_seal' and condition_text = '이야기 「붉은 인장」을 끝낸다';
+update public.world_major_factions set base_region_id = 'bone_market' where faction_id = 'red_moon_cult' and base_region_id = 'red_moon_fort';
+
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 
