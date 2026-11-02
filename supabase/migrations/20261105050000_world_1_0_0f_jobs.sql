@@ -330,6 +330,212 @@ begin
   execute d;
 end $p$;
 
+-- 효과 점검 5차(남은 것)
+--  ㉓ 요괴화 「민첩 +15%」·근맥 손상(agility_pct)이 기척 숨기기·조용히 살피기에 안 들던 것 → 능력치 계산과 같게 민첩에 곱함
+--  ㉔ 닳은 채집 도구의 채집량·탐사 나침반·낚싯대가 1/4 아래 −20%·0이면 효과 없음을 안 따르던 것
+--  ㉕ 원정 보급품 아낌 줄이 짐틀·은호패로 아껴도 「야행 탈 덕에」라 적던 것 → 실제 든 장비 이름
+--  ㉖ 비경이 열려 있는 지역에서 비경 지도를 펼치면 늘지도 않고 지도만 사라지던 것 → 거절
+--  ㉗ 동료 돌보기 회복 보정이 쓰는 사람(침식 불이익 포함) 기준이던 것 → 받는 사람 기준, 의무관 ×1.4는 쓰는 사람
+--  ㉘ 세심단 뒤 능력치 조건이 안 맞는 장비가 그대로 장착돼 있던 것 → 벗김(가방에 남음), 원정 중엔 못 씀(환골탈태와 같게)
+--  ㉙ 가방 물품 사용이 손으로 적은 목록만 받던 것 → 물품 효과(use_fx)가 있으면 씀(지금 목록과 같음)
+--  ㉚ 자율 활동 수령이 기술 기록을 통째로 덮어쓰고 기술 경험 보정(training_xp_pct)을 안 받던 것 → 더해 넣고 보정
+--  ㉛ 가방에서 쓰는 약에 맥 짚기 ×1.2·응급 처치 3단계 +10·야전 약방(야령초 22)이 빠졌던 것 → 토벌과 같게
+--  ㉜ 잔향 추적 +10%가 올림이라 5→6·3→4가 되던 것 → 내림 + 나머지는 확률
+--  ㉝ 호령이 피하거나 철벽으로 막은 공격에도 쓰여 버리던 것 → 실제로 맞을 때만
+--  ㉞ 충분한 휴식·기력 저하·화상·탈진 설명의 「행동 효율」 → 실제(기술 경험·제작 품질)대로
+do $p$
+declare d text; a text;
+begin
+  -- ㉓
+  d := replace(pg_get_functiondef('public.world_sneak_pct(uuid,integer,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$round(25 + c.agility * 0.8$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor sneakagi'; end if;
+  d := replace(d, a, $b$round(25 + greatest(1, round(c.agility * (1 + public.world_status_self(c.owner_id, 'agility_pct') / 100.0))) * 0.8$b$);
+  execute d;
+
+  d := replace(pg_get_functiondef('public.world_field_search()'::regprocedure), E'\r\n', E'\n');
+  a := $a$q_mode := least(0.5, (coalesce(c.agility, 0) + coalesce(c.perception, 0)) * 0.008);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor quietagi'; end if;
+  d := replace(d, a, $b$q_mode := least(0.5, (greatest(1, round(coalesce(c.agility, 0) * (1 + public.world_status_self(uid, 'agility_pct') / 100.0))) + coalesce(c.perception, 0)) * 0.008);$b$);
+  execute d;
+
+  -- ㉔ 채집 도구
+  d := replace(pg_get_functiondef('public.world_field_gather(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$tool_ln text;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor gathdecl'; end if;
+  d := replace(d, a, $b$tool_ln text; tool_m numeric := 1;$b$);
+  a := $a$  select round(coalesce((i.equipment_traits ->> 'gathering_bonus_pct')::numeric, 0))::int, i.item_id into tool_bonus, tool_id from public.world_character_equipment e
+    join public.world_item_catalog i on i.item_id = e.item_id where e.owner_id = uid and e.slot = 'tool';$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor gathtool'; end if;
+  d := replace(d, a, $b$  select CASE WHEN x.mx IS NULL THEN 1 WHEN coalesce(dd.durability, x.mx) <= 0 THEN 0 WHEN coalesce(dd.durability, x.mx) * 4 < x.mx THEN 0.8 ELSE 1 END,
+         i.item_id into tool_m, tool_id from public.world_character_equipment e
+    join public.world_item_catalog i on i.item_id = e.item_id cross join lateral (select public.world_item_max_durability(e.item_id) as mx) x
+    left join public.world_item_durability dd on dd.owner_id = e.owner_id and dd.item_id = e.item_id
+   where e.owner_id = uid and e.slot = 'tool';
+  tool_m := coalesce(tool_m, 1);
+  tool_bonus := round(coalesce((select (i.equipment_traits ->> 'gathering_bonus_pct')::numeric from public.world_item_catalog i where i.item_id = tool_id), 0) * tool_m)::int;$b$);
+  a := $a$    tool_bonus := tool_bonus + 10;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor gathten'; end if;
+  d := replace(d, a, $b$    tool_bonus := tool_bonus + round(10 * tool_m)::int;$b$);
+  execute d;
+
+  -- ㉔ 탐사 나침반
+  d := replace(pg_get_functiondef('public.world_explore_find_pct(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$select coalesce(max((i.equipment_traits ->> 'search_find_pct')::numeric), 0)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor explfind'; end if;
+  d := replace(d, a, $b$select coalesce(max((i.equipment_traits ->> 'search_find_pct')::numeric
+      * case when public.world_item_max_durability(e.item_id) is null then 1
+             when coalesce(dd.durability, public.world_item_max_durability(e.item_id)) * 4 < public.world_item_max_durability(e.item_id) then 0.8 else 1 end), 0)$b$);
+  execute d;
+
+  -- ㉔ 낚싯대(단계 덤·입질·희귀·크기)
+  d := replace(pg_get_functiondef('public.world_fish()'::regprocedure), E'\r\n', E'\n');
+  a := $a$first boolean;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor fishdecl'; end if;
+  d := replace(d, a, $b$first boolean; rod_m numeric := 1;$b$);
+  a := $a$  sk := public.world_skill_procs(uid);
+  if 'fishing_c24a' = any (sk)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor fishrodm'; end if;
+  d := replace(d, a, $b$  rod_m := coalesce((select CASE WHEN x.mx IS NULL THEN 1 WHEN coalesce(dd.durability, x.mx) <= 0 THEN 0 WHEN coalesce(dd.durability, x.mx) * 4 < x.mx THEN 0.8 ELSE 1 END
+      from (select public.world_fish_rod(uid) as it) ri cross join lateral (select public.world_item_max_durability(ri.it) as mx) x
+      left join public.world_item_durability dd on dd.owner_id = uid and dd.item_id = ri.it), 1);
+$b$ || a);
+  a := $a$least(rod, case when 'combo_fishing_carpentry' = any (sk) then 3 else 2 end) * 0.06$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor fishbite'; end if;
+  d := replace(d, a, a || $b$ * rod_m$b$);
+  a := $a$least(rod, case when 'combo_fishing_carpentry' = any (sk) then 3 else 2 end) * 3$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor fishrare'; end if;
+  d := replace(d, a, a || $b$ * rod_m$b$);
+  a := $a$::numeric from public.world_item_catalog i where i.item_id = public.world_fish_rod(uid))$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 3 then raise exception '1.0.0f anchor fishtraits'; end if;
+  d := replace(d, a, $b$::numeric * rod_m from public.world_item_catalog i where i.item_id = public.world_fish_rod(uid))$b$);
+  execute d;
+
+  -- ㉕
+  d := replace(pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure), E'\r\n', E'\n');
+  a := $a$'야행 탈 덕에 보급품 ' || saved || '개를 아꼈습니다.'$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor supsave'; end if;
+  d := replace(d, a, $b$coalesce((select string_agg(i.item_name, '·' order by i.item_name) from public.world_character_equipment eq join public.world_item_catalog i on i.item_id = eq.item_id
+      where eq.owner_id = uid and (i.equipment_traits ->> 'supply_save_pct') ~ '^[0-9]+(\.[0-9]+)?$' and (i.equipment_traits ->> 'supply_save_pct')::numeric > 0), '장비')
+    || ' 덕에 보급품 ' || saved || '개를 아꼈습니다.'$b$);
+  execute d;
+
+  -- ㉖ ㉙ ㉛
+  d := replace(pg_get_functiondef('public.world_use_item(text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$IF rr.region_id IS NULL OR coalesce(rr.is_safe_zone, false) THEN RAISE EXCEPTION '비경 지도는 안전지대 밖의 지역에서 펼칠 수 있습니다.'; END IF;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor trailmap'; end if;
+  d := replace(d, a, a || $b$
+    IF EXISTS (SELECT 1 FROM public.world_hidden_trails ht WHERE ht.owner_id = uid AND ht.region_id = rr.region_id AND ht.expires_at > now()) THEN
+      RAISE EXCEPTION '%', format('%s의 비경이 아직 열려 있습니다(%s까지). 비경이 닫힌 뒤에 펼치세요.', rr.region_name,
+        (SELECT to_char(max(ht.expires_at) AT TIME ZONE 'Asia/Seoul', 'HH24:MI') FROM public.world_hidden_trails ht WHERE ht.owner_id = uid AND ht.region_id = rr.region_id AND ht.expires_at > now()));
+    END IF;$b$);
+  a := $a$'haeryong_feast') THEN RAISE EXCEPTION '쓸 수 없는 물품입니다.'; END IF;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor uselist'; end if;
+  d := replace(d, a, $b$'haeryong_feast')
+      AND NOT EXISTS (SELECT 1 FROM public.world_item_catalog ui WHERE ui.item_id = v_base AND ui.use_fx IS NOT NULL) THEN RAISE EXCEPTION '쓸 수 없는 물품입니다.'; END IF;$b$);
+  a := $a$bname text; cbfx jsonb;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor usedecl'; end if;
+  d := replace(d, a, $b$bname text; cbfx jsonb; v_sk text[];$b$);
+  a := $a$  hp := round(ceil(hp * v_hq) * mul); mn := round(ceil(mn * v_hq) * mul); spg := round(ceil(spg * v_hq) * mul); er := ceil(er * v_hq)::int;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor useheal'; end if;
+  d := replace(d, a, $b$  v_sk := public.world_skill_procs(uid);
+  IF v_base = 'herb' AND 'combo_first_aid_herbalism' = ANY (v_sk) THEN hp := 22; END IF; -- 야전 약방
+$b$ || a || $b$
+  -- 토벌의 약과 같게: 맥 짚기 ×1.2(체력·영력 약), 응급 처치 3단계 +10(체력 약)
+  IF v_base IN ('tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill') AND hp > 0 THEN
+    IF 'medicine_c13b' = ANY (v_sk) THEN hp := round(hp * 1.2); END IF;
+    IF coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) >= 3 THEN hp := hp + 10; END IF;
+  END IF;
+  IF v_base IN ('spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew') AND spg > 0 AND 'medicine_c13b' = ANY (v_sk) THEN spg := round(spg * 1.2); END IF;$b$);
+  execute d;
+
+  -- ㉗
+  d := replace(pg_get_functiondef('public.world_party_use_item(uuid,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$  mul := (case when c.job_key = 'medic' then 1.4 else 1 end) * (1 + public.world_status_effect_total('healing_pct') / 100.0);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor pheal'; end if;
+  d := replace(d, a, $b$  mul := (case when c.job_key = 'medic' then 1.4 else 1 end) * (1 + coalesce((public.world_raid_stats(p_target) ->> 'heal')::numeric, 0) / 100.0);$b$);
+  execute d;
+
+  -- ㉘
+  d := replace(pg_get_functiondef('public.world_reset_stats()'::regprocedure), E'\r\n', E'\n');
+  a := $a$c public.world_characters%rowtype; back int;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor rsdecl'; end if;
+  d := replace(d, a, $b$c public.world_characters%rowtype; back int; off_items text[];$b$);
+  a := $a$  if coalesce((c.inventory ->> 'reset_stats')::int, 0) < 1 then raise exception '세심단이 없습니다.'; end if;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor rsguard'; end if;
+  d := replace(d, a, a || $b$
+  if exists (select 1 from public.world_expeditions x where x.owner_id = uid and x.status = 'active') then raise exception '원정 중에는 세심단을 쓸 수 없습니다.'; end if;$b$);
+  a := $a$  return jsonb_build_object('ok', true, 'refunded', back, 'content', format('능력치를 처음으로 되돌렸습니다. 포인트 %s점을 돌려받았습니다(지금 %s점).', back, c.stat_points + back));$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor rsret'; end if;
+  d := replace(d, a, $b$  -- 되돌린 능력치로 조건이 안 맞는 장비는 벗는다(가방에 남음, world_equip_item과 같은 조건: 장신구는 가장 높은 능력치, 방어구는 짝 능력치)
+  select array_agg(e.item_id) into off_items from public.world_character_equipment e join public.world_item_catalog i on i.item_id = e.item_id
+    cross join (select to_jsonb(ch) as j, greatest(ch.strength, ch.agility, ch.vitality, ch.perception, ch.willpower, ch.spirit_affinity) as top
+                  from public.world_characters ch where ch.owner_id = uid) s
+   where e.owner_id = uid and exists (select 1 from jsonb_each(coalesce(i.required_stats, '{}'::jsonb)) rq
+     where (case when i.category in ('hat', 'shoes', 'norigae', 'amulet', 'mask') then s.top
+                 when i.category = 'armor' then greatest(coalesce((s.j ->> rq.key)::int, 0), coalesce((s.j ->> public.world_stat_pair(rq.key))::int, 0))
+                 else coalesce((s.j ->> rq.key)::int, 0) end) < (rq.value #>> '{}')::numeric);
+  if off_items is not null then
+    delete from public.world_character_equipment e where e.owner_id = uid and e.item_id = any (off_items);
+  end if;
+  return jsonb_build_object('ok', true, 'refunded', back, 'unequipped', coalesce(to_jsonb(off_items), '[]'::jsonb),
+    'content', format('능력치를 처음으로 되돌렸습니다. 포인트 %s점을 돌려받았습니다(지금 %s점).', back, c.stat_points + back)
+      || case when off_items is not null then ' 능력치 조건이 안 맞는 장비는 벗었습니다: '
+           || (select string_agg(i.item_name, '·') from public.world_item_catalog i where i.item_id = any (off_items)) || '.' else '' end);$b$);
+  execute d;
+
+  -- ㉚
+  d := replace(pg_get_functiondef('public.world_claim_idle_activity()'::regprocedure), E'\r\n', E'\n');
+  a := $a$   v_skill_xp:=v_gain;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor idlexp'; end if;
+  d := replace(d, a, $b$   v_skill_xp:=round(v_gain*greatest(0.5,1+public.world_status_self(c.owner_id,'training_xp_pct')/100.0))::integer;$b$);
+  a := $a$skill_progress=coalesce(skill_progress,'{}'::jsonb)||jsonb_build_object(v_skill,jsonb_build_object('xp',least(500000,v_old_skill_xp+v_skill_xp),'rank',least(50,1+floor(least(500000,v_old_skill_xp+v_skill_xp)/100.0)::integer)))$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 2 then raise exception '1.0.0f anchor idlesp5'; end if;
+  d := replace(d, a, $b$skill_progress=public.world_skill_add(skill_progress,v_skill,v_skill_xp)$b$);
+  a := $a$skill_progress=coalesce(skill_progress,'{}'::jsonb)||jsonb_build_object(v_skill,jsonb_build_object('xp',least(600000,v_old_skill_xp+v_skill_xp),'rank',least(50,1+floor(least(600000,v_old_skill_xp+v_skill_xp)/100.0)::integer)))$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor idlesp6'; end if;
+  d := replace(d, a, $b$skill_progress=public.world_skill_add(skill_progress,v_skill,v_skill_xp)$b$);
+  execute d;
+
+  -- ㉜
+  d := replace(pg_get_functiondef('public.world_event_char_apply()'::regprocedure), E'\r\n', E'\n');
+  a := $a$sk_xp := ceil(sk_xp * 1.1)::int;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor scent'; end if;
+  d := replace(d, a, $b$sk_xp := floor(sk_xp * 1.1)::int + case when random() < sk_xp * 1.1 - floor(sk_xp * 1.1) then 1 else 0 end;$b$);
+  execute d;
+
+  -- ㉝
+  d := replace(pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$        IF 'melee_c13b' = ANY (sk) AND NOT coalesce((v_pfx ->> 'cowed')::boolean, false) THEN mdmg := round(mdmg * 0.7); v_pfx := v_pfx || jsonb_build_object('cowed', true); lines := lines || jsonb_build_array('「호령」 기세에 눌린 첫 공격이 무뎌졌다.'); END IF;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor cowed'; end if;
+  d := replace(d, a, $b$        IF 'melee_c13b' = ANY (sk) AND mdmg > 0 AND NOT coalesce((v_pfx ->> 'cowed')::boolean, false) THEN mdmg := round(mdmg * 0.7); v_pfx := v_pfx || jsonb_build_object('cowed', true, 'cowed_now', true); END IF;$b$);
+  a := $a$        mdmg := greatest(0, mdmg);
+$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor cowed2'; end if;
+  d := replace(d, a, a || $b$        -- 호령은 실제로 맞은 첫 공격에만(피하거나 철벽으로 막으면 다음 공격으로 넘어감)
+        IF coalesce((v_pfx ->> 'cowed_now')::boolean, false) THEN
+          IF mdmg > 0 THEN lines := lines || jsonb_build_array('「호령」 기세에 눌린 첫 공격이 무뎌졌다.'); ELSE v_pfx := v_pfx - 'cowed'; END IF;
+          v_pfx := v_pfx - 'cowed_now';
+        END IF;
+$b$);
+  execute d;
+end $p$;
+
+-- ㉚ 자율 수령 함수 주인이 새로 부르는 도우미
+grant execute on function public.world_skill_add(jsonb, text, integer) to fn_owner_19181;
+grant execute on function public.world_status_self(uuid, text) to fn_owner_19181;
+
+-- ㉛ 설명: 맥 짚기는 가방에서 쓰는 약에도
+update public.world_skill_catalog set description = '택일 기술(처방) · 회복품(약)의 회복량 +20%(토벌·가방)'
+ where skill_id = 'medicine_c13b';
+-- ㉞
+update public.world_status_catalog set description = case status_key
+    when 'well_rested' then '휴식을 마쳐 기술 경험이 더 붙고 제작 품질이 오른다.'
+    when 'fatigue' then '기력이 부족해 기술 경험이 덜 붙고 제작 품질이 떨어진다.'
+    when 'burned' then '화상이 아물지 않아 행동할 때 기혈이 줄고 제작 품질이 떨어진다.'
+    when 'exhausted' then '기력이 다해 행동할 때 기혈이 줄고 제작 품질이 크게 떨어진다.' end
+ where status_key in ('well_rested', 'fatigue', 'burned', 'exhausted');
+
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 

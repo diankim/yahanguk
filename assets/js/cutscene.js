@@ -97,6 +97,10 @@ const CSS = `
 .cs.cs-bg svg.cs-stage { position: absolute; inset: 0; }
 .cs.cs-bg .cs-title { display: none; }
 .cs.cs-bg .cs-rope { display: none; }
+/* 휴대폰: 로그인 창이 떠오를 때 해·등불도 함께 올라와 머리글과 창 사이에 걸린다 */
+.cs.cs-bg svg.cs-stage { transition: transform 1.4s cubic-bezier(.2,.7,.2,1); }
+.cs.cs-bg[data-fast] svg.cs-stage { transition: none; }
+@media (max-width: 640px) { .cs.cs-bg.lift svg.cs-stage { transform: translateY(calc(-12.5svh - 38px)); } }
 .cs.cs-bg .cs-sky { transition-duration: 1.6s; }
 .cs.cs-bg .cs-sun { transition-duration: 2s, 3.2s; }
 .cs.cs-bg[data-fast] .cs-sky, .cs.cs-bg[data-fast] .cs-sun { transition: none; }
@@ -377,14 +381,14 @@ export function loginBackdrop(host, { onReady } = {}) {
   const at = (ms, f) => timers.push(setTimeout(f, ms));
   if (fast) {
     root.dataset.fast = '1';
-    root.classList.add('dawn', 'dawn2', 'dawn3');
+    root.classList.add('dawn', 'dawn2', 'dawn3', 'lift');
     onReady?.();
   } else {
     lamp?.classList.add('out');
     at(700, () => { lamp?.classList.remove('out'); lamp?.classList.add('waking'); root.classList.add('dawn'); });
     at(2300, () => root.classList.add('dawn2'));
     at(3600, () => root.classList.add('dawn3'));
-    at(4300, () => onReady?.());
+    at(4300, () => { root.classList.add('lift'); onReady?.(); });
   }
   return () => { timers.forEach(clearTimeout); root.remove(); };
 }
