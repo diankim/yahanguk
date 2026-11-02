@@ -149,10 +149,10 @@ function noteActs(n) {
   if (go) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="${esc(go)}">보러 가기</button>`;
   return '';
 }
-// 단추가 따로 없는 알림을 누르면 그 알림과 관련된 화면으로 보낸다(7.4.6, 제보)
+// 단추가 따로 없는 알림을 누르면 그 알림과 관련된 화면으로 보낸다
 const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney' };
-// 알림 단추(noteActs가 그리는 것) 모두. 여기 빠진 단추는 눌러도 아무 일이 없다(지도에서 보기·토벌·서신함 등이 빠져 있던 것, 7.2.9)
+// 알림 단추(noteActs가 그리는 것) 모두. 여기 빠진 단추는 눌러도 아무 일이 없다(지도에서 보기·토벌·서신함 등이 빠져 있던 것)
 const ACT_SEL = ['invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'fdown', 'letter', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
@@ -215,7 +215,7 @@ async function runAct(btn) {
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
   if (btn.dataset.goto) {
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');
-    // 칭호·꾸미기 알림은 얻은 그 칸으로 바로 데려간다(7.5.4): 받는 화면이 한 번 읽고 지운다
+    // 칭호·꾸미기 알림은 얻은 그 칸으로 바로 데려간다: 받는 화면이 한 번 읽고 지운다
     try {
       if (n.kind === 'title' && n.payload?.title_key) sessionStorage.setItem('yh-title-focus', n.payload.title_key);
       if (n.kind === 'cosmetic' && n.payload?.cosmetic_key) sessionStorage.setItem('yh-cos-focus', n.payload.cosmetic_key);

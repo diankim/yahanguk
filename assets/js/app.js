@@ -11,7 +11,7 @@ import { mountBug } from './bug.js';
 import { applySavedTheme, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { installColorPicker } from './colorpick.js';
-installColorPicker(); // 휴대폰 기본 색 선택 창 대신 게임 안 색 고르기 창(7.6.1)
+installColorPicker(); // 휴대폰 기본 색 선택 창 대신 게임 안 색 고르기 창
 import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';
@@ -300,7 +300,7 @@ function renderDeath(c) {
   $('#reborn').onclick = e => guard(e.currentTarget, async () => { await rpc('world_character_delete', { p_confirm: c.character_name }); await loadCharacter(); return { content: '새 조사원을 만드세요.' }; });
 }
 
-/* ── 새 창(7.5.4, 제보 54): 채팅·귓속말만 따로 띄운 창 ──────────── */
+/* ── 새 창: 채팅·귓속말만 따로 띄운 창 ──────────── */
 // 주소 ?pop=chat · ?pop=whisper. 같은 브라우저의 로그인을 그대로 쓰므로 한 곳 접속 규칙에 걸리지 않는다.
 // 게임 화면(상태판·알림·현장)은 꾸미지 않아 요청이 늘지 않는다. 화면 안 링크(#/…)는 본 창으로 보낸다.
 const POP = (p => ['chat', 'whisper'].includes(p) ? p : null)(new URLSearchParams(location.search).get('pop'));

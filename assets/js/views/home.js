@@ -78,10 +78,10 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(pty); return; }
     stopBattle();
     noteRegion(s.region);
-    // 지역 첫 방문 글(6.1.1): 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
+    // 지역 첫 방문 글: 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
     if (!traveling) regionIntro(s.region?.region_id);
-    // 다시 그릴 때 스크롤 자리를 지킨다(7.5.9h): 퀘스트 칸·토벌 띠는 늦게 채우므로 지난 내용을 옮겨 두고 채운 뒤에도 같은 자리로.
-    // 토벌에서 돌아올 때(7.7.3)는 들어가기 전 자리로 — 맨 위(0)여도, 전투 화면에서 내려가 있었어도 되돌린다(force).
+    // 다시 그릴 때 스크롤 자리를 지킨다: 퀘스트 칸·토벌 띠는 늦게 채우므로 지난 내용을 옮겨 두고 채운 뒤에도 같은 자리로.
+    // 토벌에서 돌아올 때는 들어가기 전 자리로 — 맨 위(0)여도, 전투 화면에서 내려가 있었어도 되돌린다(force).
     const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
@@ -137,7 +137,7 @@ function drawBattle(pty) {
   if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
   el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
     <div id="battle-box"></div>`;
-  // 「동료 부르기」는 전투 행동 칸 여섯째(battle.js, 7.7.3)
+  // 「동료 부르기」는 전투 행동 칸 여섯째(battle.js)
   const onCall = b => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
   renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); }, near ? { call: near, onCall } : null);
   if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
@@ -194,7 +194,7 @@ function town(s, roster) {
     r.region_id === 'hq_yard' ? ['records', 'scroll', '정청 기록고', '첫째 밤의 흔적이 남은 장부'] : null,
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
-  // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게, 제보 20)
+  // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게)
   return `
     ${s.stamina ? `<section class="panel town-st"><span class="ts-label">${icon('spark', 14)} 탐색력</span>${bar(s.stamina.now, s.stamina.max, 'st big')}<b>${s.stamina.now} / ${s.stamina.max}</b>
       <small class="muted" data-st-next="${s.stamina.next_at ? new Date(s.stamina.next_at).getTime() : ''}">${s.stamina.now >= s.stamina.max ? '가득' : ''}</small></section>` : ''}
@@ -367,7 +367,7 @@ function bind(s) {
   $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
 }
 
-// 조용히 살피기(7.2.7): 켜면 world_field_search_quiet로 탐색한다. 줄어드는 몫은 서버와 같은 식((민첩+감각)×0.8%, 최대 50%)
+// 조용히 살피기: 켜면 world_field_search_quiet로 탐색한다. 줄어드는 몫은 서버와 같은 식((민첩+감각)×0.8%, 최대 50%)
 const QUIET_KEY = 'yh-quiet-search';
 const quietOn = () => { try { return localStorage.getItem(QUIET_KEY) === '1'; } catch { return false; } };
 const quietPct = () => { const c = store.character || {}; return Math.min(50, Math.floor(((Number(c.agility) || 0) + (Number(c.perception) || 0)) * 0.8)); };
@@ -407,7 +407,7 @@ function showFind([ic, label], r) {
   setTimeout(() => n.classList.add('out'), 2600); setTimeout(() => n.remove(), 3100);
 }
 
-// 채집 간격(7.7.2c, 사용자 요청): 서버(world_guard_repeat_farming)가 채집터와 상관없이 12초마다 한 번만 받으므로,
+// 채집 간격: 서버(world_guard_repeat_farming)가 채집터와 상관없이 12초마다 한 번만 받으므로,
 // 채집에 성공하면 이 기기 시계로 12초 동안 모든 채집 단추를 잠그고 남은 초를 보인다(연타 요청을 보내지 않음).
 // 응답을 받은 때부터 세므로 서버보다 조금 늦게 풀린다. 새로 연 창이면 기기에 남긴 값을 쓰고, 그래도 거절되면 3초 기다린다.
 const GATHER_GAP = 12000, GATHER_KEY = 'yh-gather-cd';
@@ -454,7 +454,7 @@ function openFacility(k, s) {
   const box = $('.fac-body', m);
   const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : k === 'storage' ? renderStorage : renderShop)(box);
   fill();
-  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, fill); else offc(); }); // 사고팔고 맡긴 뒤에도 보던 자리 그대로(7.5.7)
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, fill); else offc(); }); // 사고팔고 맡긴 뒤에도 보던 자리 그대로
 }
 
 // 예상 회복량(서버 world_field_rest와 같은 식). 바깥 야영은 ⅔이고, 가득 찬 수치는 그만큼 덜 오른다.

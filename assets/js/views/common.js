@@ -1,6 +1,7 @@
 // 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
 import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY } from '../core.js';
 import { armAlarm } from '../sound.js';
+import { GAMEDATA } from '../gamedata.js';
 
 // 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
 const inflight = new Map();
@@ -21,7 +22,7 @@ let invStatic = null, invLite = true;
 // 받아 둔 제작법 목록(퀘스트의 「제작법」 단추가 쓴다, 아직 안 받았으면 빈 목록)
 export const knownRecipes = () => invStatic?.recipes || [];
 const INV_KEY = 'yh-inv-static-v1';
-// 물품 목록 한 원본(7.7.7o): 설명·사용 효과(fx = 서버 world_item_catalog.use_fx)·거래소 전용(mk)·도구 계열(tl)과 효과 이름표(fx_names)를
+// 물품 목록 한 원본: 설명·사용 효과(fx = 서버 world_item_catalog.use_fx)·거래소 전용(mk)·도구 계열(tl)과 효과 이름표(fx_names)를
 // 여기서만 읽는다. 아직 서버에서 안 받았으면 기기에 남긴 목록을 쓴다(버전이 달라도 — 받으면 바로 바꿔 끼움).
 let catMap = null, fxNameMap = {};
 function useCatalog(cat, names) {
@@ -34,7 +35,7 @@ function useCatalog(cat, names) {
 function catalogMap() {
   if (!catMap) {
     if (invStatic?.catalog) useCatalog(invStatic.catalog, invStatic.fxNames);
-    // 7.7.7o 전 사본(fxNames 없음)은 쓰지 않는다 — 효과·거래소 전용 칸이 비어 있어 「가방에 없음」처럼 보였다
+    // 옛 사본(fxNames 없음)은 쓰지 않는다 — 효과·거래소 전용 칸이 비어 있어 「가방에 없음」처럼 보였다
     else try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (c?.fxNames) useCatalog(c.catalog, c.fxNames); } catch {}
   }
   return catMap;
@@ -43,7 +44,7 @@ const baseId = id => String(id || '').replace(/_hq$/, '');
 export const catItem = id => catalogMap()?.get(id) || catMap?.get(baseId(id)) || null;
 export const fxNames = () => (catalogMap(), fxNameMap);
 export const catalogList = () => { const m = catalogMap(); return m ? [...m.values()] : null; };
-// 받아 둔 물품 설명(7.7.5: 토벌 물품 창). 아직 안 받았으면 빈 글
+// 받아 둔 물품 설명(토벌 물품 창). 아직 안 받았으면 빈 글
 export const itemDesc = id => catItem(id)?.description || '';
 catalogMap(); // 거래소 전용 목록(core.js MARKET_ONLY)을 접속하자마자 채운다
 // 물품 목록을 아직 한 번도 받지 않은 기기(처음 접속)는 로그인 뒤 한 번 받아 둔다 — 퀵슬롯·상태 창의 사용 효과가 가방을 열기 전에도 보이게
@@ -56,7 +57,7 @@ export async function ensureCatalog() {
 async function inventorySnap() {
   if (!invStatic) {
     const v = await dbVersion();
-    // fxNames가 없는 옛 기기 사본(7.7.7o 전)은 쓰지 않는다
+    // fxNames가 없는 옛 기기 사본은 쓰지 않는다
     try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length && c.fxNames) { invStatic = { catalog: c.catalog, recipes: c.recipes || [], fxNames: c.fxNames }; useCatalog(c.catalog, c.fxNames); } } catch {}
   }
   if (invStatic && invLite) {
@@ -121,13 +122,15 @@ export function preloadNames() {
 
 export const MAJOR_FACTIONS = {
   night_office: { name: '야행국 정통파', type: '관청·퇴마', desc: '관료제와 조사망을 장악한 공인 퇴마 조직. 자원·정보·법적 권한이 강하지만 규정이 엄격합니다.', entry: '기초 교육과 신원 심사 통과', base: 'hq_yard' },
-  red_moon_cult: { name: '적월교', type: '마교·주술', desc: '금단의 요기를 흡수하는 마교. 고위험 지역 접근과 강력한 주술을 얻지만 정통파와 적대합니다.', entry: '적월교 거점에서 입교 의식', base: 'red_moon_fort' },
+  red_moon_cult: { name: '적월교', type: '마교·주술', desc: '금단의 요기를 흡수하는 마교. 고위험 지역 접근과 강력한 주술을 얻지만 정통파와 적대합니다.', entry: '적월교 거점에서 입교 의식', base: 'bone_market' },
   black_lotus: { name: '흑련회', type: '사교·비밀결사', desc: '정보·암시장·기억술을 다루는 비밀 결사. 잠입과 거래에 강합니다.', entry: '암시장 계약 체결', base: 'hidden_bazaar' },
   north_league: { name: '북령맹', type: '무림 정파 연맹', desc: '산문과 무력 문파의 연맹. 방어·호송·수련에 강하고 적월교와 전쟁 중입니다.', entry: '북령맹 산문에서 맹약 체결', base: 'iron_monastery' },
   river_alliance: { name: '수향연맹', type: '상단·수로', desc: '나루·상단·수로를 통제합니다. 이동과 교역에 강합니다.', entry: '구름나루에서 보증인 확보', base: 'river_ferry' },
   southern_remnant: { name: '남명회', type: '망국 유민·저항', desc: '남부 망국의 유민 집단. 생존·채집·유적 탐사에 능합니다.', entry: '잔불촌의 수호 의뢰 완료', base: 'ember_village' },
   mandate_court: { name: '천명원', type: '황실·천문', desc: '천문과 운명을 관리하는 황실 기관. 고위험 사건 기록을 열람합니다.', entry: '천문대의 관측 시험 통과', base: 'star_observatory' },
 };
+// 거점(base)은 서버 세력 안전지대(world_faction_home) 첫째 — gamedata.js
+for (const [k, f] of Object.entries(MAJOR_FACTIONS)) f.base = GAMEDATA.factionHome?.[k]?.[0] || f.base;
 registerNames(Object.entries(MAJOR_FACTIONS).map(([k, v]) => [k, v.name]));
 
 /* ── 조각 ───────────────────────────────────────────────── */

@@ -48,7 +48,7 @@ function bindGo(body) {
 }
 
 /* ── 퀘스트 공통: 장면 목록·다시 보기·보고 ───────────────────── */
-// 일지 목록(6.1.0 서버 함수). 없으면(배포 전) 장면 없이 단서·가설만 보인다
+// 일지 목록(서버 함수). 없으면(배포 전) 장면 없이 단서·가설만 보인다
 const journal = () => load('world_quest_journal', undefined, { maxAge: 15000 }).catch(() => null);
 function sceneList(q, map) {
   const cur = q.cur, next = q.status === 'done' ? null : (q.scenes || []).find(x => !x.done);
@@ -183,7 +183,7 @@ async function side(body, keep) {
   $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
   bindQuests(body);
 }
-// 진행 중인 퀘스트는 접혀 있어도 지금 할 일과 장소가 보이게(7.4.6, 제보)
+// 진행 중인 퀘스트는 접혀 있어도 지금 할 일과 장소가 보이게
 function nowLine(q) {
   if (q.status !== 'active' || !q.cur) return '';
   const left = (q.cur.tasks || []).filter(t => t.cur < t.n), regs = [...new Set(left.flatMap(t => t.regions || []))].map(nameOf);
@@ -217,13 +217,13 @@ async function commission(body) {
       ${x.claimed ? chip('완료', 'ok') : `<button class="btn small ${x.progress >= x.need ? 'primary' : ''}" data-claim="${x.slot}" ${x.progress >= x.need ? '' : 'disabled'}>${x.kind === 'deliver' ? '납품하기' : '보상 받기'}</button>`}
     </article>`).join('') || empty('오늘의 의뢰가 없습니다.', 'scroll')}</div>`;
   $$('[data-claim]', body).forEach(x => x.onclick = () => guard(x, () => act('world_commission_claim', { p_slot: Number(x.dataset.claim) })));
-  // 조사원 의뢰(7.7.2): 상시 의뢰 아래에 붙인다. 따로 읽어 상시 의뢰가 먼저 보이게 한다
+  // 조사원 의뢰: 상시 의뢰 아래에 붙인다. 따로 읽어 상시 의뢰가 먼저 보이게 한다
   const ub = document.createElement('div'); ub.className = 'ucomm'; body.append(ub);
   ub.innerHTML = loading();
   userCommissions(ub).catch(e => { ub.innerHTML = errorBox(e.message); });
 }
 
-/* ── 조사원 의뢰(7.7.2): 조사원이 보수를 걸고 물품을 구한다 ─────────── */
+/* ── 조사원 의뢰: 조사원이 보수를 걸고 물품을 구한다 ─────────── */
 const leftText = t => { const ms = new Date(t).getTime() - Date.now(); if (ms <= 0) return '마감'; const h = Math.floor(ms / 3600e3); return h >= 24 ? `${Math.floor(h / 24)}일 ${h % 24}시간 남음` : h >= 1 ? `${h}시간 남음` : `${Math.max(1, Math.round(ms / 60e3))}분 남음`; };
 async function userCommissions(box) {
   const b = await rpc('world_ucomm_board');
@@ -362,7 +362,7 @@ async function survey(body) {
   bindGo(body);
 }
 
-/* ── 지역 기록(6.1.1): 처음 들어갈 때 본 지역의 내력 ─────────────────── */
+/* ── 지역 기록: 처음 들어갈 때 본 지역의 내력 ─────────────────── */
 async function regionLore(body) {
   const list = await load('world_region_lore_seen');
   const groups = {};
@@ -384,7 +384,7 @@ async function expHistory(body) {
 }
 
 /* ── 어종 도감 ─────────────────────────────────────────── */
-// 시간대·날씨·희귀도·직업 이름은 core.js 이름표(nameOf) 하나에서(7.7.7o)
+// 시간대·날씨·희귀도·직업 이름은 core.js 이름표(nameOf) 하나에서
 const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연' };
 // 도감: 요괴 · 채집 · 어종. 요괴는 만나면 기본 정보, 쓰러뜨리면 상성·수법 대처법·전리품이 열린다.
 let cxKind = '';
@@ -415,7 +415,7 @@ async function monsterCodex(box) {
       </li>` : `<li class="mon-card unknown"><b>???</b><small>${esc(kname[m.kind] || '')} · ${esc(m.region)}${m.role === 'guardian' ? ' · 우두머리' : ''}</small><small>아직 만나지 못했습니다</small></li>`).join('')}</ul>
     ${codexTitles(o.titles)}`;
   $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
-  // 목격담(6.1.1): 그 갈래를 1·10마리 쓰러뜨리면 이야기 속 인물의 한마디가 열린다
+  // 목격담: 그 갈래를 1·10마리 쓰러뜨리면 이야기 속 인물의 한마디가 열린다
   const wb = $('[data-witness]', box);
   // 열림은 서버가 정하고(그 갈래 토벌 수), 화면이 센 수가 넘었는데 아직 잠긴 줄이 있으면 한 번 다시 읽는다
   const n = all.filter(m => m.kind === cxKind).reduce((s, m) => s + (Number(m.defeated) || 0), 0);
@@ -424,7 +424,7 @@ async function monsterCodex(box) {
   if (wb) loreBundle().then(l => { if (paint(l).some(w => !w.open && n >= w.need)) refreshLore().then(l2 => wb.isConnected && paint(l2)); });
 }
 const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
-// 채집 도감의 세부 채집터(7.5.9, 7.7.3 사용자 요청으로 줄글로): 지역마다 한 줄 「지역(지도 바로 가기) Lv.n+ · 찾음 a/b — 채집터 둘 외 n곳」,
+// 채집 도감의 세부 채집터(줄글로): 지역마다 한 줄 「지역(지도 바로 가기) Lv.n+ · 찾음 a/b — 채집터 둘 외 n곳」,
 // 지역은 둘까지만 적고 나머지는 「외 지역 n곳」(꼬리표 단추를 쓰지 않는다)
 const spotRow = g => {
   const s = (g.s || []).slice(0, 2), more = g.c - s.length;

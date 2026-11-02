@@ -11,7 +11,7 @@ const LOC_BONUS = 12; // 서버 world_craft_item과 같은 값
 // 서버가 같은 장소로 인정하는 옛 지명
 const LOC_ALIAS = { '야행국 본부 정청': ['본부 로비', '야행국 본부 · 정청'], '연무장·팔괘진': ['훈련실', '야행국 본부 · 연무장'], '장서각 지하서고': ['기록 보관실', '야행국 본부 · 장서각'] };
 const atPlace = (loc, here) => !!loc && (loc === here || (LOC_ALIAS[loc] || []).includes(here));
-let fxPick = new Set(); // 7.7.7h(제보 85): 회복 종류로 거르기(체력·정신·영력…, 여럿 고르면 하나라도 맞으면)
+let fxPick = new Set(); // 회복 종류로 거르기(체력·정신·영력…, 여럿 고르면 하나라도 맞으면)
 let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '', cq = '';
 // 제작 분야(서버 world_crafting_recipes.craft_field). 아무것도 고르지 않으면 모든 분야를 보인다.
 const FIELDS = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
@@ -19,12 +19,12 @@ const craftFields = new Set();
 // 만드는 것(장착 부위·소모품·재료)으로 거르기, 제작법 정렬(가능 먼저 · 레벨 낮은순 · 레벨 높은순)
 const craftKinds = new Set();
 let craftSort = 'can';
-// 즐겨찾는 제작법(서버 world_craft_favorites, 30개까지): 접속 동안 한 번 읽고, 별을 누르면 서버가 돌려준 목록으로 바꾼다(7.4.1)
+// 즐겨찾는 제작법(서버 world_craft_favorites, 30개까지): 접속 동안 한 번 읽고, 별을 누르면 서버가 돌려준 목록으로 바꾼다
 const FAV_MAX = 30;
-// 별 하나(빈 별 = 즐겨찾기 아님, 채운 별 = 즐겨찾기). 공용 아이콘의 별은 선만 그려 꽃처럼 보여 따로 그린다(7.4.2)
+// 별 하나(빈 별 = 즐겨찾기 아님, 채운 별 = 즐겨찾기). 공용 아이콘의 별은 선만 그려 꽃처럼 보여 따로 그린다
 const STAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
 let favs = null;
-// 한 번에 여러 개 만들기(7.7.1, 사용자 요청): 제작법마다 고른 횟수(이 접속 동안). 서버 world_craft_batch가 한 요청으로 차례로 만든다
+// 한 번에 여러 개 만들기: 제작법마다 고른 횟수(이 접속 동안). 서버 world_craft_batch가 한 요청으로 차례로 만든다
 const CRAFT_MAX = 50; // 서버 world_craft_batch 상한과 같다
 const craftN = new Map();
 const craftLabel = n => n > 1 ? `제작 ×${n}` : '제작';
@@ -36,7 +36,7 @@ const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 
 const RARITY = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
 let sortKey = 'tier', sortRev = false;
 try { const v = JSON.parse(localStorage.getItem('yh-bag-sort') || 'null'); if (v && SORTS[v.k]) { sortKey = v.k; sortRev = !!v.r; } } catch {}
-// 칸대로 나눠 보기(7.5.9, 제보 63): 같은 물품을 묶음 크기만큼 한 줄(한 칸)씩 나눠 보인다. 기본 켬, 기기에 남김
+// 칸대로 나눠 보기: 같은 물품을 묶음 크기만큼 한 줄(한 칸)씩 나눠 보인다. 기본 켬, 기기에 남김
 let splitView = true; try { splitView = localStorage.getItem('yh-bag-split') !== '0'; } catch {}
 const saveSort = () => { try { localStorage.setItem('yh-bag-sort', JSON.stringify({ k: sortKey, r: sortRev })); } catch {} };
 // 물품별 마지막으로 얻은 시각(서버 world_item_acquired). 기록이 없는 물품은 오래전에 얻은 것으로 본다.
@@ -55,9 +55,9 @@ function sorter(acq) {
   return sortRev ? (a, b) => base(b, a) : base;
 }
 let matFocus = null, recipeFocus = null; // 물품 정보에서 넘어온 제작 거르기
-// 물품 정보에서 제작법·재료로 넘어오면 검색어를 비운다(7.7.2, 제보 74 — 처음 검색한 말이 남아 넘어온 제작법이 걸러졌다)
+// 물품 정보에서 제작법·재료로 넘어오면 검색어를 비운다(처음 검색한 말이 남아 넘어온 제작법이 걸러졌다)
 window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material || null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) { craftFilter = 'all'; cq = ''; }
-  // 퀘스트에서 넘어온 「○○ 만들기」: 검색칸에 그 이름을 넣어 둔다(7.4.6)
+  // 퀘스트에서 넘어온 「○○ 만들기」: 검색칸에 그 이름을 넣어 둔다
   if (e.detail?.search) cq = e.detail.search; });
 
 export async function render(root, s) {
@@ -79,7 +79,7 @@ async function draw(soft) {
     const inv = await load('world_inventory_snapshot');
     const head = $('.view-head .eyebrow', el); if (head) head.innerHTML = `${icon('bag', 14)} 소지금 ${fmt.jeon(store.character.gil)}`;
     // 제작: 안전지대에서는 창고 재료도 쓴다(서버 world_craft_item). 창고 수량은 30초 동안 다시 쓰고, 제작·창고·이동 뒤에는 새로 읽는다.
-    // 소지품: 물품마다 창고에 든 수도 작게 보인다(7.7.4, 제보 79 — 밖에서 버릴지 들고 갈지 정할 때). 창고는 어디서나 볼 수 있고, 창고 행동 뒤에만 새로 읽는다(5분 캐시).
+    // 소지품: 물품마다 창고에 든 수도 작게 보인다(밖에서 버릴지 들고 갈지 정할 때). 창고는 어디서나 볼 수 있고, 창고 행동 뒤에만 새로 읽는다(5분 캐시).
     const stg = sub === 'craft' ? await load('world_storage_snapshot', undefined, { maxAge: 30000 }).catch(() => null)
       : sub === 'items' ? await load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null) : null;
     await ({ items, equip, craft })[sub](body, inv, stg);
@@ -90,18 +90,18 @@ function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i]
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
 // 같은 계열의 더 높은 단계 도구는 낮은 단계 도구가 필요한 제작법도 만든다(서버 world_tool_covers와 같은 셈).
-// 도구 계열은 물품 목록의 tl(서버 world_tool_lines, 7.7.7o)·단계는 tier — 새 계열·도구는 서버 표만 고친다.
-// 우수품(…_hq)은 기본 물품과 같은 도구로 본다(제보 83 — 「귀허 각인도 (우수)」가 각인 공구로 취급되지 않았다)
+// 도구 계열은 물품 목록의 tl(서버 world_tool_lines)·단계는 tier — 새 계열·도구는 서버 표만 고친다.
+// 우수품(…_hq)은 기본 물품과 같은 도구로 본다(「귀허 각인도 (우수)」가 각인 공구로 취급되지 않았다)
 const toolCovers = (have, need) => { const h = String(have || '').replace(/_hq$/, '');
   if (h === need) return true;
   const a = catItem(h), b = catItem(need);
   return !!(a?.tl && b?.tl && a.tl === b.tl && Number(a.tier) >= Number(b.tier)); };
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 
-// 검색칸은 그대로 두고 나머지만 새로 그린다(7.5.0, 제보: 아이폰에서 한 글자 칠 때마다 칸을 새로 만들어 키보드가 내려가던 것)
+// 검색칸은 그대로 두고 나머지만 새로 그린다(아이폰에서 한 글자 칠 때마다 칸을 새로 만들어 키보드가 내려가던 것)
 // 다시 그리기 전후로 같은 요소(sel)의 화면 속 높이를 맞춘다
 // 목록이 크게 줄면 페이지가 짧아져 브라우저가 스크롤을 끌어올리므로, 다시 그리는 동안 칸 높이를 붙잡아 둔다.
-// 다 그린 뒤에는 지금 보는 자리를 지킬 만큼(화면 아래 끝까지)만 남기고, 위로 올리면 그만큼 더 줄여 아래 빈칸을 남기지 않는다(7.6.1)
+// 다 그린 뒤에는 지금 보는 자리를 지킬 만큼(화면 아래 끝까지)만 남기고, 위로 올리면 그만큼 더 줄여 아래 빈칸을 남기지 않는다
 function stayFit(box) {
   if (!box.style.minHeight) return;
   const need = window.scrollY + window.innerHeight - (box.getBoundingClientRect().top + window.scrollY);
@@ -109,18 +109,18 @@ function stayFit(box) {
   if (need < cur) box.style.minHeight = need > 0 ? need + 'px' : '';
 }
 // 설명 안의 완성품 이름 바로 뒤에 「(효과: …)」를 넣는다 — 「오색 술 노리개(효과: 제작 품질 +2 · 채집량 +6%)를 만든다.」
-// 효과만 이어 붙이면 제작할 때 받는 효과처럼 읽혀서(7.6.3, 사용자 요청). 이름이 설명에 없으면 끝에 붙인다.
+// 효과만 이어 붙이면 제작할 때 받는 효과처럼 읽혀서. 이름이 설명에 없으면 끝에 붙인다.
 function descFx(desc, name, fx) {
   const d = esc(desc); if (!fx) return d; // esc가 「을(를)」을 이름 받침에 맞춰 먼저 고른 뒤에 끼운다
   const tag = `<span class="desc-fx">(효과: ${fxHtml(fx)})</span>`, n = name ? esc(name) : '', i = n ? d.indexOf(n) : -1;
   return i < 0 ? `${d} ${tag}` : d.slice(0, i + n.length) + tag + d.slice(i + n.length);
 }
-// 제작법 카드의 완성품 효과(7.6.2, 사용자 요청): 장비·제작 공구만, 효과가 없으면 비운다. 부위 이름(관모 등)은 카드 칩에 있으니 앞에서 뗀다.
+// 제작법 카드의 완성품 효과: 장비·제작 공구만, 효과가 없으면 비운다. 부위 이름(관모 등)은 카드 칩에 있으니 앞에서 뗀다.
 function gearFx(it, kind) {
   const t = traitText(it), head = SLOTS[kind]?.[0];
   return head && t.startsWith(head + ' · ') ? t.slice(head.length + 3) : t === head ? '' : t;
 }
-// 제작 거르기(7.6.3, 사용자 요청 — 체크박스가 너무 많았다): 분야·만드는 것·정렬을 접는 칸 하나에 넣고,
+// 제작 거르기(체크박스가 너무 많았다): 분야·만드는 것·정렬을 접는 칸 하나에 넣고,
 // 닫혀 있을 때는 지금 고른 것을 한 줄로 요약한다. 체크박스 대신 누르면 켜지는 작은 칩, 만드는 것은 장비·생활 도구·그 밖으로 묶는다.
 let craftFiltOpen = (() => { try { return localStorage.getItem('yh-craft-filt') === '1'; } catch { return false; } })();
 const KIND_GROUPS = [['장비', ['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask']], ['생활 도구', ['tool', 'explore', 'fishing', 'craft']], ['그 밖', ['consumable', 'material', 'furniture', 'etc']]];
@@ -180,7 +180,7 @@ async function items(body, inv, stg) {
     .map(([id, n]) => ({ id, n: Number(n), it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
     .filter(r => !fxPick.size || [...fxKindsOf(r.id)].some(k => fxPick.has(k)))
-    .filter(r => !q.trim() || nameOf(r.id).toLowerCase().includes(q.trim().toLowerCase())) // 이름만(7.6.2, 사용자 요청 — 설명에 든 다른 물품 이름까지 걸렸다)
+    .filter(r => !q.trim() || nameOf(r.id).toLowerCase().includes(q.trim().toLowerCase())) // 이름만(설명에 든 다른 물품 이름까지 걸렸다)
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
   renderKeep(body, `<div class="bag-cap ${used >= cap ? 'full' : ''}"><div class="cap-top"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span><button class="btn small" data-storage title="창고에 무엇이 있는지 봅니다. 맡기기·꺼내기는 안전지대에서만 됩니다.">${icon('chest', 14)}<span>창고 열기</span></button></div>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
@@ -199,7 +199,7 @@ async function items(body, inv, stg) {
       while (left > 0) { const q = Math.min(st, left); out.push({ ...r, part: { q, st, first: !out.length } }); left -= q; }
       return out;
     }).map(({ id, n, it, part }) => {
-      // 차지하는 칸(장착한 하나는 칸을 쓰지 않음) · 묶음 크기(제보 23)
+      // 차지하는 칸(장착한 하나는 칸을 쓰지 않음) · 묶음 크기
       const st = stackOf(id), cells = Math.ceil(Math.max(0, n - (equipped.has(id) ? 1 : 0)) / st);
       const cellTag = part ? (part.eq ? '' : st > 1 ? `한 칸 ${part.q}/${st}` : '') : `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`;
       const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', (!part || part.first) && stored[id] ? `창고 ${fmt.num(stored[id])}` : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
@@ -242,8 +242,8 @@ async function equip(body, inv) {
       return `<li><div><b>${esc(o.name)}</b><small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${reqs ? `<small class="reqs">장착 조건 ${reqs}</small>` : ''}</div>
         <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">바꿔 낄 수 있는 물품이 없습니다.</p>`;
   };
-  // 장비 화면(7.5.4): 왼쪽에 장착 칸(작은 칸), 오른쪽에 고른 부위의 지금 장비·수리·벗기·바꿔 낄 장비를 나란히(넓은 화면).
-  // 좁은 화면(모바일, 제보 53)은 오른쪽 칸 없이 칸을 누르면 부위 창을 띄운다
+  // 장비 화면: 왼쪽에 장착 칸(작은 칸), 오른쪽에 고른 부위의 지금 장비·수리·벗기·바꿔 낄 장비를 나란히(넓은 화면).
+  // 좁은 화면(모바일)은 오른쪽 칸 없이 칸을 누르면 부위 창을 띄운다
   const token = tokenRowHtml();
   body.innerHTML = `<div class="eq-split">
       <div class="eq-left">${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield' })}</div>
@@ -283,9 +283,9 @@ async function craft(body, inv, stg) {
   await loadFavs();
   const bagHave = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   // 안전지대면 창고 수량을 더해 보인다
-  // 반요촌 제작은 창고 재료를 쓰지 않는다(서버 world_craft_item과 같게, 7.7.3 — 화면이 창고 몫을 더해 「만들 수 있음」·「전부」를 잘못 보였다)
+  // 반요촌 제작은 창고 재료를 쓰지 않는다(서버 world_craft_item과 같게 — 화면이 창고 몫을 더해 「만들 수 있음」·「전부」를 잘못 보였다)
   const stHave = stg?.in_safe && store.character?.location !== '반요촌' ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
-  // 우수품(<id>_hq)도 같은 재료로 쓴다(7.5.0, 서버는 보통을 먼저 쓴다)
+  // 우수품(<id>_hq)도 같은 재료로 쓴다(서버는 보통을 먼저 쓴다)
   const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[k + '_hq']) || 0) + (stHave[k + '_hq'] || 0) });
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id)); // 요리·손질 결과물
@@ -298,12 +298,12 @@ async function craft(body, inv, stg) {
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));
-    // 직업 전용 제작법은 그 직업만(서버 world_craft_item, 7.7.7q에서 암영 검객(옛 백공) 예외를 뺌)
+    // 직업 전용 제작법은 없다(서버가 required_job을 비워 보냄). 값이 오면 그 직업만 — 서버 world_craft_item과 같은 검사
     const jobOk = !r.required_job || r.required_job === c.job_key;
     const lvOk = !r.minimum_level || c.level >= r.minimum_level;
     const skRank = r.required_skill ? Number(c.skill_progress?.[r.required_skill]?.rank || 1) : 0;
     const skOk = !r.required_skill || skRank >= (r.required_skill_rank || 1);
-    // 제작 조건(레벨·직업·기술 숙련): 채운 것은 초록, 못 채운 것은 빨강으로 카드에 바로 보인다
+    // 제작 조건(레벨·기술 숙련, 직업 값이 오면 직업도): 채운 것은 초록, 못 채운 것은 빨강으로 카드에 바로 보인다
     const reqs = [
       r.minimum_level > 1 && [`Lv.${r.minimum_level} 이상${lvOk ? '' : ` (지금 Lv.${c.level})`}`, lvOk],
       r.required_job && [`${nameOf(r.required_job)} 제작`, jobOk],
@@ -313,7 +313,7 @@ async function craft(body, inv, stg) {
     // 재료로 만들 수 있는 최대 횟수(가방·창고·우수품 합). 가방 자리는 서버가 한 번씩 보며 모자라면 거기서 멈춘다
     const maxN = Math.min(CRAFT_MAX, ...Object.entries(r.ingredients || {}).map(([k, n]) => Math.floor(Number(have[k] || 0) / Math.max(1, n))));
     return { r, lacks, toolOk, jobOk, lvOk, reqs, can, maxN: can ? Math.max(1, maxN) : 0, atLoc: atPlace(r.location, c.location), kind: kindOf(r), tier: cmap.get(r.output)?.tier };
-  // 검색: 제작법 이름·완성품 이름으로만 찾는다(7.6.2, 사용자 요청 — 재료까지 찾으면 「응축 영핵」을 쳤을 때 그것이 들어가는 제작법이 섞였다.
+  // 검색: 제작법 이름·완성품 이름으로만 찾는다(재료까지 찾으면 「응축 영핵」을 쳤을 때 그것이 들어가는 제작법이 섞였다.
   // 재료로 쓰는 곳은 물품 정보 창의 「들어가는 제작법」이 맡는다). 검색하는 동안에는 위 거르기와 상관없이 모든 제작법에서 찾는다.
   }).filter(x => { const t = cq.trim().toLowerCase(); if (!t) return true;
     return [x.r.name, x.r.output_name || nameOf(x.r.output)].join(' ').toLowerCase().includes(t); })
@@ -334,7 +334,7 @@ async function craft(body, inv, stg) {
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, maxN, atLoc, kind, tier }) => `
       <article class="recipe ${can ? 'can' : ''}">
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
-        ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); /* 소모품 효과도 같은 자리에(7.6.3b) */ return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
+        ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); /* 소모품 효과도 같은 자리에 */ return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
@@ -351,7 +351,7 @@ async function craft(body, inv, stg) {
         </div>
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 레시피가 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 레시피가 없습니다.', 'hammer')}`, 'label.search');
-  // 거르기·정렬을 바꾸면 목록을 다시 그리는데, 누른 칸이 화면의 같은 높이에 남게 한다(7.6.1, 사용자 제보 — 체크할 때마다 화면이 내려갔다)
+  // 거르기·정렬을 바꾸면 목록을 다시 그리는데, 누른 칸이 화면의 같은 높이에 남게 한다(체크할 때마다 화면이 내려갔다)
   const redraw = sel => stay(sel, () => craft(body, inv, stg));
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; redraw('[data-seg="craft-filter"]'); });
   $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); redraw(`[data-field="${b.dataset.field}"]`); });
@@ -391,7 +391,7 @@ async function craft(body, inv, stg) {
 
 function bindActions(body) {
   $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b));
-  // 꼬마 동무 바구니·알: 물품 창에만 「열기」가 있어 가방 목록에서는 단추가 없던 것(7.7.1)
+  // 꼬마 동무 바구니·알: 물품 창에만 「열기」가 있어 가방 목록에서는 단추가 없던 것
   $$('[data-adopt]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_adopt', { p_item: b.dataset.adopt })));
   $$('[data-token-trade]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_token_trade')));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_equip_item', { p_item_id: b.dataset.equip })));

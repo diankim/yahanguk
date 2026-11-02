@@ -21,9 +21,9 @@ export async function render(root, s) {
   window.addEventListener('yahang:arrived', onArrive);
   // 봉연에 잠긴 곳(서버 토벌 실패): 따로 읽어 지도에 표시한다(1분 동안 다시 씀)
   raidLocks().then(l => { sealed = new Set(l.map(x => x.region_id)); if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
-  // 봉연의 그림자가 나올 곳(출현지가 확정된 뒤·모이는 중·토벌 중, 7.5.9): 같은 값(world_raid_brief, 1분 캐시)을 쓰고 다른 표시와 겹치지 않는 보라 마름모 별로 짚는다
+  // 봉연의 그림자가 나올 곳(출현지가 확정된 뒤·모이는 중·토벌 중): 같은 값(world_raid_brief, 1분 캐시)을 쓰고 다른 표시와 겹치지 않는 보라 마름모 별로 짚는다
   raidShadow().then(w => { shadow = w; if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
-  // 완전 답사한 지역(나에게만, 7.5.9c): 점 바로 바깥 금빛 테. 10분 캐시, 탐색·채집·원정 뒤에만 새로 읽는다
+  // 완전 답사한 지역(나에게만): 점 바로 바깥 금빛 테. 10분 캐시, 탐색·채집·원정 뒤에만 새로 읽는다
   loadSurveyed();
   await draw();
 }
@@ -98,7 +98,7 @@ function setupMap(here) {
   const b = bounds();
   const fitK = () => Math.min(frame.clientWidth / b.w, frame.clientHeight / b.h);
   if (!view) {
-    // 다른 화면에서 지역을 짚어 열었으면(focusRegion) 그 지역을 가운데에 더 크게(7.5.7, 구조 요청 「지도에서 보기」)
+    // 다른 화면에서 지역을 짚어 열었으면(focusRegion) 그 지역을 가운데에 더 크게(구조 요청 「지도에서 보기」)
     const tgt = focusPending ? mapData.regions.find(r => r.region_id === selected && r.world_x != null) : null; focusPending = false;
     const k = fitK() * (frame.clientWidth < 520 ? (tgt ? 3.4 : 2.4) : (tgt ? 2.8 : 1.8));
     const at = tgt || here;
@@ -207,11 +207,11 @@ function paint() {
     const cls = r.region_id === here?.region_id ? ' here' : r.region_id === selected ? ' sel' : '';
     land += `<path d="${pathOf(poly)}" class="cell${cls}" style="--fc:${factionColor(factionOf(r.region_id))}" data-region="${esc(r.region_id)}"/>`;
     if (r.level_locked) hatch += `<path d="${pathOf(poly)}" class="cell-lock" data-region="${esc(r.region_id)}"/>`;
-    // 분쟁 중(7.3.5): 붉은 빗금과 굵은 점선 테두리로 땅 전체를 표시한다
+    // 분쟁 중: 붉은 빗금과 굵은 점선 테두리로 땅 전체를 표시한다
     if (zones.get(r.region_id)?.contested) hatch += `<path d="${pathOf(poly)}" class="cell-contest"/>`;
   }
   // ② 경계: 같은 세력 안은 옅은 선, 세력이 바뀌면 국경, 이웃이 없으면 해안선
-  // 바다낚시가 되는 지역의 해안은 물빛으로 조금 굵게(7.7.1, 1안)
+  // 바다낚시가 되는 지역의 해안은 물빛으로 조금 굵게
   let inner = '', border = '', coast = '', seaCoast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
@@ -452,7 +452,7 @@ async function drawTravel(body) {
   if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 취소하면 3분 동안 다시 출발할 수 없습니다. 출발할 때 낸 운임은 돌려받지 못합니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
-  // 탈것에서 내리기(6.1.1): 걸어 다니기 — 서버 world_mount_unequip
+  // 탈것에서 내리기: 걸어 다니기 — 서버 world_mount_unequip
   const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
   $$('[data-goto]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.goto); switchTo('world'); });
   const span = $('[data-arrive]', body);

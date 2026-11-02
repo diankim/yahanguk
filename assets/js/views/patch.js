@@ -36,7 +36,7 @@ export async function render(el, sub) {
     const list = await notes();
     if (!list.length) { box.innerHTML = '<p class="muted">아직 올라온 패치노트가 없습니다.</p>'; return; }
     // 공지(note_id 0.0.0)는 늘 맨 위에 펼쳐 둔다. 내용은 그 한 줄만 고쳐 바꾼다
-    // 「0-」로 시작하는 노트는 롤백 전(시험 기간) 기록 — 맨 아래 접힌 칸에 모은다(1.0.0)
+    // 「0-」로 시작하는 노트는 롤백 전(시험 기간) 기록 — 맨 아래 접힌 칸에 모은다
     const notice = list.find(n => n.note_id === NOTICE), rest = list.filter(n => n.note_id !== NOTICE && !n.note_id.startsWith('0-'));
     const archive = list.filter(n => n.note_id.startsWith('0-'));
     const shownId = id => id.replace(/^0-/, '');

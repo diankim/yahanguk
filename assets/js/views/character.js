@@ -10,6 +10,7 @@ import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
+import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot'], ['house', '별채', 'home']];
 const STATS = [
@@ -27,8 +28,8 @@ const IDLE = [
 const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
 // 오르는 기술(서버 world_idle_skill_for와 같은 규칙): 수련은 든 무기 종류, 정비는 제작 분야
 let idleWeapon = 'melee';
-const trainSkill = () => SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameOf(JOB_LINE[store.character?.job_key] || 'melee'); // 자율 수련은 직업 계열(7.7.7p)
-const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing'); // 고른 제작 분야 계열(7.5.0)
+const trainSkill = () => SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameOf(JOB_LINE[store.character?.job_key] || 'melee'); // 자율 수련은 직업 계열
+const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing'); // 고른 제작 분야 계열
 // early: 끝나기 전에 그만두면 지난 시간만큼만, 최소 1 보정 없이
 function idleReward(k, min, level, early = false) {
   const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, Math.floor(h * IDLE_RATE[k] * 0.35));
@@ -43,7 +44,7 @@ function idleReward(k, min, level, early = false) {
 const DURATIONS = [[30, '30분'], [60, '1시간'], [240, '4시간'], [480, '8시간']];
 const EROSION = ['안정', '경미', '주의', '위험', '붕괴 직전', '붕괴'];
 // 침식 단계 효과(서버 world_erosion_effect·world_combat_stats·world_apply_activity_status와 같은 값)
-// 귀허도(서버 world_on_island): 침식이 늘 높을 수밖에 없어 불이익이 절반이고, 위험(55)부터는 주는 피해가 오른다(7.4.1, world_erosion_effect)
+// 귀허도(서버 world_on_island): 침식이 늘 높을 수밖에 없어 불이익이 절반이고, 위험(55)부터는 주는 피해가 오른다(world_erosion_effect)
 const ISLAND = new Set(['반요촌', '잿빛 갈대숲', '거꾸로 선 사당', '달 없는 저잣거리', '귀허']);
 function erosionNote(e, isl) {
   const [bad, good] = isl
@@ -75,7 +76,7 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#char-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
-  const y = window.scrollY; // 행동 뒤 다시 그릴 때(soft) 보던 자리를 지킨다(7.5.9h — 다시 그리는 사이 칸이 잠깐 비어 위로 튀던 것)
+  const y = window.scrollY; // 행동 뒤 다시 그릴 때(soft) 보던 자리를 지킨다(다시 그리는 사이 칸이 잠깐 비어 위로 튀던 것)
   try { await ({ status, growth, faction, skills, idle, titles })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
   if (soft && y > 0 && body.isConnected) scrollAfterModal(y);
@@ -104,10 +105,10 @@ function durBar(d, max) { return `<div class="durab ${d <= 0 ? 'broken' : d * 4 
 const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : ['tool', 'hat', 'shoes'].includes(it.category) ? 40 + (it.tier || 1) * 20 : 0) : 0;
 // 강화한 무기의 위력(서버 world_combat_stats: 단계마다 +5%)
 export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
-// 장착 칸 한 줄(내구도·수리·벗기). 모바일 가방 › 장비의 부위 창(bag.js)도 쓴다(7.5.4)
+// 장착 칸 한 줄(내구도·수리·벗기). 모바일 가방 › 장비의 부위 창(bag.js)도 쓴다
 export function equipRowLi(inv, prof, here, slot) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
-  const kits = Number(have.repair_kit || 0) + Number(have.repair_kit_hq || 0); // 우수 수리 도구도 센다(7.5.9, 제보 64 — 서버는 둘 다 받는데 화면이 보통만 세어 단추가 잠겼다)
+  const kits = Number(have.repair_kit || 0) + Number(have.repair_kit_hq || 0); // 우수 수리 도구도 센다(서버는 둘 다 받는데 화면이 보통만 세어 단추가 잠겼다)
   const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
@@ -130,7 +131,7 @@ export function bindRepair(root) {
 // 빈 칸에 무엇을 끼우면 좋은지
 const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
   norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집량·채집터 덤', explore: '나침반: 숨은 길·채집터를 더 잘 찾음', fishing: '낚싯대: 비워 두면 가방의 가장 좋은 것을 씀' };
-// ── 상태 화면 칸들(7.5.0): 장비·전투 능력은 작게, 회복 물품은 퀵슬롯으로 ──
+// ── 상태 화면 칸들: 장비·전투 능력은 작게, 회복 물품은 퀵슬롯으로 ──
 export const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
 const QS_N = 8;
 const baseOf = k => String(k || '').replace(/_hq$/, '');
@@ -143,7 +144,7 @@ function qsSlots(snap) {
 }
 function qsCell(k, i, inv, downed) {
   if (!k) return `<button class="qs-cell empty" type="button" data-qs-empty="${i}">${icon('plus', 16)}<small>빈 칸</small></button>`;
-  // 이동 중에는 쓸 수 없다(7.5.2, 서버 world_use_item도 막음)
+  // 이동 중에는 쓸 수 없다(서버 world_use_item도 막음)
   const moving = !!store.character?.travel_destination;
   const n = Number(inv[k] || 0), off = !n || ((downed || moving) && baseOf(k) !== 'revival_charm');
   return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
@@ -195,7 +196,7 @@ async function status(body) {
   const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
   const deathAt = c.downed_at && !byYohwa ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
   // 부적 정화: 정화 부적이 있고 침식이 있어야 한다. 마음 다잡기: 본부에서 15분마다, 정신이 가득하고 침식이 없으면 쓸 수 없다(서버가 다시 검사).
-  // 우수 정화 부적도 센다(7.7.0, 제보 73 — 서버 world_survival_action도 둘 다 받고, 보통을 먼저 쓴다)
+  // 우수 정화 부적도 센다(서버 world_survival_action도 둘 다 받고, 보통을 먼저 쓴다)
   const wards = Number(invItems.ward_talisman || 0) + Number(invItems.ward_talisman_hq || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location); // 서버 world_survival_action과 같은 곳
@@ -241,7 +242,7 @@ async function status(body) {
   $$('[data-surv]', body).forEach(b => b.onclick = () => guard(b, () => act('world_survival_action', { p_action: b.dataset.surv })));
   $$('[data-use]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.use, d = qsDesc(k);
-    // 퀵슬롯은 묻지 않고 바로 쓴다(7.5.2, 제보 49 — 가방의 「사용」과 같게)
+    // 퀵슬롯은 묻지 않고 바로 쓴다(가방의 「사용」과 같게)
     if (!b.classList.contains('qs-cell') && !(await ask(`${nameOf(k)} 1개를 쓸까요?${d ? ` (${d})` : ''} 남은 수량 ${fmt.num(invItems[k] || 0)}개`, { title: '물품 사용', ok: '사용', cancel: '그만두기' }))) return;
     guard(b, () => useItemAct(k));
   });
@@ -286,7 +287,7 @@ async function growth(body) {
   let pend = {}, room = pts;
   Object.entries(loadAlloc(c)).forEach(([k, v]) => { if (!STATS.some(x => x[0] === k)) return; const n = Math.max(0, Math.min(Number(v) || 0, room, statCap(c.level, k, c.job_key) - c[k])); if (n) { pend[k] = n; room -= n; } });
   const sp = c.skill_progress || {}, bestOf = cats => { const k = cats.reduce((a, x) => (sp[x]?.rank || 1) > (sp[a]?.rank || 1) ? x : a, cats[0]); return `가장 높은 기술: ${SKILL_NAME[k] || nameOf(k)}`; };
-  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(mineOnly(cats, c))])]; // 요리는 7.5.0부터 제작 계열 하나
+  const ranks = [...BRANCHES.map(([k, n, , cats]) => [n, c[k + '_rank'], bestOf(mineOnly(cats, c))])]; // 요리는 제작 계열 하나
   body.innerHTML = `
     <div class="grid-2">
       ${panel('능력치', `<p class="muted small">레벨이 오르면 능력치 포인트를 얻습니다. 남은 포인트: <b class="accent" id="al-left">${pts - allocSum(pend)}</b> / ${pts} · + / − 로 나눈 뒤 「확정」을 눌러야 반영됩니다. 한 능력치는 <b>직업 기본값 + ${Math.floor(Math.max(1, Number(c.level) || 1) * 1.5)}</b>까지 올릴 수 있습니다(레벨×1.5, 능력치마다 오른쪽 숫자).</p>
@@ -382,7 +383,7 @@ const CAT_DESC = {
   weaving: '직조 제작법(옷·관모·노리개)으로 만들 때 오릅니다.', leatherwork: '가죽 공예 제작법(신·가죽 갑옷)으로 만들 때 오릅니다.',
   alchemy: '연금 제작법(약·영약)으로 만들 때 오릅니다.', cooking: '요리를 만들 때 오릅니다.',
 };
-// 행동 한 번에 오르는 기술 경험(서버 world_track_specialized_skill과 같은 값).
+// 행동 한 번에 오르는 기술 경험(서버 world_event_char_apply가 기록마다 더하는 값, 토벌 행동 기술은 world_skill_add).
 // 단계 r → r+1에 80+8r 경험, 30단계부터 6×(r−29)²를 더함(누적 4r²+76r−80 + n(n+1)(2n+1), n=r−30, 서버 world_skill_line_xp), 최고 50단계.
 const SKILL_GAIN = {
   melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', dagger: '전투 행동 +10', exorcism: '전투 행동 +10', medicine: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
@@ -459,7 +460,7 @@ async function skills(body) {
       box.hidden = false;
       $$('[data-pick]', box).forEach(pb => pb.onclick = async () => {
         const other = here.find(x => x.slot !== pb.dataset.pick && (x.slot === 'a' || x.slot === 'b'));
-        const free = here.some(x => x.free_repick); // 7.5.0: 효과가 바뀐 택일은 한 번 무료로 다시 고른다
+        const free = here.some(x => x.free_repick); // 효과가 바뀐 택일은 한 번 무료로 다시 고른다
         const fee = other?.picked && !free ? ({ 13: 1000, 24: 2000, 30: 3000 })[t] || 5000 : 0;
         const pick = here.find(x => x.slot === pb.dataset.pick);
         if (!(await ask(`「${pick.skill_name}」을(를) 고를까요?${other ? ` 「${other.skill_name}」은(는) 쓸 수 없게 됩니다.` : ''}${fee ? `\n바꾸는 값 ${fmt.jeon(fee)}이 듭니다.` : free && other?.picked ? '\n효과가 바뀐 기술이라 이번 한 번은 무료로 바꿉니다.' : ' 처음 고르기는 무료이고, 나중에 바꾸려면 전이 듭니다.'}`, { title: `${t}단계 택일 기술`, ok: '고르기' }))) return;
@@ -519,7 +520,7 @@ async function idle(body) {
 // 분류별로 묶어 카드 격자로 한꺼번에 보여 준다(더 보기 없음). 분류 칩을 누르면 그 분류만 남는다.
 const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
 let tq = '', tcat = '', tOwned = false, tEquipped = false;
-// 칭호 보기 순서(6.1.1): 분류별 · 등급 높은순 · 등급 낮은순(기기에 기억)
+// 칭호 보기 순서: 분류별 · 등급 높은순 · 등급 낮은순(기기에 기억)
 let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 // 칭호 등급(서버 world_title_catalog.grade)
 const TGRADE = GRADES; // 凡品·良品·珍品·名品·神品 — 이름은 core.js GRADES
@@ -530,7 +531,7 @@ async function titles(body) {
   const order = c => { const i = TCAT_ORDER.indexOf(c); return i < 0 ? 99 : i; };
   const cats = [...new Set(list.map(t => t.category))].sort((a, b) => order(a) - order(b));
   const countIn = c => { const l = list.filter(t => t.category === c); return `${l.filter(t => t.earned).length}/${l.length}`; };
-  // 칭호 알림의 「보러 가기」로 왔으면(7.5.4) 거르기를 풀고 그 칭호 칸으로 데려간다
+  // 칭호 알림의 「보러 가기」로 왔으면 거르기를 풀고 그 칭호 칸으로 데려간다
   let focus = null; try { focus = sessionStorage.getItem('yh-title-focus'); sessionStorage.removeItem('yh-title-focus'); } catch {}
   if (focus && list.some(t => t.key === focus)) { tq = ''; tcat = ''; tOwned = false; tEquipped = false; } else focus = null;
   body.innerHTML = `
@@ -547,7 +548,7 @@ async function titles(body) {
     </div>
     <div id="t-list"></div>`;
   // 레거시(야행의 흔적) 칭호는 등급 칩 대신 옻칠 현판: 세로 낙관 「흔적」과 한자 이름을 단다
-  // 모바일(좁은 화면)은 카드를 두 칸으로 줄여 이름·등급만 보이고, 누르면 그 카드만 펼쳐 설명·조건·효과·단추를 보인다(7.5.4)
+  // 모바일(640px 아래)도 두 칸 카드에 설명·조건·효과를 모두 적고, 대표 칭호 단추는 카드 오른쪽 위(.t-rep)
   const card = t => { const lg = t.category === '레거시'; return `<li class="t-card ${lg ? 'legacy' : ''} ${t.earned ? 'earned' : ''} ${t.equipped ? 'on' : ''} ${t.hidden && !t.earned ? 'secret' : ''}" data-tkey="${esc(t.key)}">
       ${t.earned ? `<button class="t-rep ${t.display ? 'on' : ''}" data-disp="${t.display ? '' : esc(t.key)}" title="${t.display ? '대표 칭호에서 내립니다' : '채팅·프로필에 보이는 대표 칭호로 정합니다'}" aria-pressed="${t.display ? 'true' : 'false'}">${t.display ? '대표 중' : '대표로'}</button>` : ''}
       ${lg ? `<span class="lg-tag" aria-hidden="true">흔적</span>${LEGACY_HANJA[t.key] ? `<span class="lg-hj">${LEGACY_HANJA[t.key]}</span>` : ''}` : ''}
@@ -583,7 +584,7 @@ async function titles(body) {
       return { content: r?.equipped ? '칭호를 장착했습니다. (3개를 넘으면 가장 오래된 칭호가 내려갑니다)' : '칭호를 내렸습니다.' };
     }));
     $$('[data-disp]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_set_display', { p_title_key: b.dataset.disp || null })));
-    // 숨김 칭호 유래(6.1.1): 그 칭호를 두고 이야기 속 인물이 하는 말
+    // 숨김 칭호 유래: 그 칭호를 두고 이야기 속 인물이 하는 말
     $$('[data-story]', body).forEach(b => b.onclick = () => guard(b, async () => {
       const r = await rpc('world_title_story', { p_title: b.dataset.story });
       if (!r?.lines?.length) { toast('이 칭호의 유래는 아직 전해지지 않았습니다.'); return null; }
@@ -639,14 +640,12 @@ const PERKS = {
   black_lotus: '정보망: 희귀품 발견 +5%. 암시장 줄: 상점 하루 판매 한도 +500전.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +6칸. 교역과 운송에 강합니다.',
   southern_remnant: '원정 채집량 +15%.', mandate_court: '원정 답사도 상승 +20%.',
 };
-const HOSTILE = { night_office: ['red_moon_cult', 'black_lotus'], red_moon_cult: ['night_office', 'north_league'], black_lotus: ['night_office', 'mandate_court'],
-  north_league: ['red_moon_cult'], river_alliance: [], southern_remnant: ['mandate_court'], mandate_court: ['black_lotus'] };
-// 가입을 받는 곳(서버 world_faction_join_regions와 같음): 거점 · 본부 정청 · 그 세력의 들머리 지역. 가입은 레벨 5부터
-const JOIN_AT = { night_office: ['hq_yard', 'hq_dorm', 'ghost_bamboo'], red_moon_cult: ['red_moon_fort', 'hq_yard', 'bone_market', 'red_plain'], black_lotus: ['hidden_bazaar', 'hq_yard', 'lamp_alley'],
-  north_league: ['iron_monastery', 'hq_yard', 'snow_hollow'], river_alliance: ['river_ferry', 'hq_yard', 'salt_village'], southern_remnant: ['ember_village', 'hq_yard', 'ember_pass'],
-  mandate_court: ['star_observatory', 'hq_yard', 'hq_dorm', 'star_hill'] };
+// 적대(관계 기준값 −40 이하)·가입 받는 곳(world_faction_join_regions: 거점 · 본부 정청 · 들머리 지역)·거점(world_faction_home 첫째)은
+// 서버 값을 gamedata.js로 받는다. 가입은 레벨 5부터
+const HOSTILE = GAMEDATA.factionHostile;
+const JOIN_AT = GAMEDATA.factionJoin;
 const JOIN_LV = 5;
-const BASE = { night_office: 'hq_yard', red_moon_cult: 'red_moon_fort', black_lotus: 'hidden_bazaar', north_league: 'iron_monastery', river_alliance: 'river_ferry', southern_remnant: 'ember_village', mandate_court: 'star_observatory' };
+const BASE = Object.fromEntries(Object.entries(GAMEDATA.factionHome).map(([k, v]) => [k, v[0]]));
 
 async function openFactionGuide(id) {
   const f = MAJOR_FACTIONS[id]; if (!f) return;

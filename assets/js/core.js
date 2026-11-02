@@ -1,5 +1,6 @@
 // 야행국 공통 계층: Supabase 연결, RPC 호출, 상태 저장소, 이름 사전, UI 도우미.
 import { framed, framedInner } from './cosmetics.js';
+import { GAMEDATA } from './gamedata.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
 import { SUPABASE_URL, SUPABASE_KEY, isMaintenanceError, goMaintenance } from './config.js';
@@ -52,7 +53,7 @@ export function throttle(fn, gap) {
   let last = 0, t = null;
   return () => { const wait = last + gap - Date.now(); if (wait <= 0) { last = Date.now(); fn(); } else if (!t) t = setTimeout(() => { t = null; last = Date.now(); fn(); }, wait); };
 }
-// 싸우는 중의 물품 쓰기(7.7.2b): 퀵슬롯·가방·상태 창에서 물품을 눌러도 떠 있는 전투 화면(현장 토벌 battle.js·파티 토벌 pfight.js·귀허의 주인 gw.js)이
+// 싸우는 중의 물품 쓰기: 퀵슬롯·가방·상태 창에서 물품을 눌러도 떠 있는 전투 화면(현장 토벌 battle.js·파티 토벌 pfight.js·귀허의 주인 gw.js)이
 // 그 턴의 「물품」 행동으로 받는다(턴이 지나감). 받았으면 true — 부른 쪽은 world_use_item을 부르지 않는다. 전투 화면이 없으면 서버 world_use_item이 싸우는 중인지 다시 본다.
 export function battleItemRoute(id) {
   const ev = new CustomEvent('yh-battle-item', { detail: { id, handled: false } });
@@ -84,28 +85,37 @@ export async function loadCharacter() {
 }
 
 /* ── 이름 사전 (내부 코드를 화면에 그대로 노출하지 않는다) ───────────── */
-// 직업마다 전투 기술 경험이 쌓이는 계열(서버 world_job_line, 7.7.7p). 분석·막기·응급 처치는 공통
+// 직업마다 전투 기술 경험이 쌓이는 계열(서버 world_job_line). 분석·막기·응급 처치는 공통
 export const JOB_LINE = { artificer: 'melee', scout: 'ranged', sealmaster: 'sealing', exorcist: 'exorcism', analyst: 'dagger', medic: 'medicine' };
 export const COMBAT_LINES = ['melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine'];
 export const JOBS = {
-  // 역할 6가지(7.7.7q): 방패·수호 / 원거리 공격 / 술법 공격 / 근접 공격 / 치유 / 보조(북돋기·약화). base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
+  // 역할 6가지: 방패·수호 / 원거리 공격 / 술법 공격 / 근접 공격 / 치유 / 보조(북돋기·약화). kit은 시작 장비
   exorcist: { name: '퇴마관', trait: '술법 공격', desc: '【술법 공격】 부적과 방울로 요괴를 치는 술법 공격수. 몸은 약하지만 이목이 낮아(−15) 뒷줄에서 술법을 쏟습니다. 술법 피해 +8%·술법 치명타 +6·받는 피해 −6%, 퇴마진(술법 ×2.0, 결계 깨기). 협동 기술은 약점 진언·멸마 진격 같은 공격 쪽.',
-    base: { strength: 3, agility: 3, vitality: 4, perception: 4, willpower: 7, spirit_affinity: 9 }, kit: '영령 방울 · 삼베 도포 · 무명 부적낭' },
+    kit: '영령 방울 · 삼베 도포 · 무명 부적낭',
+    fx: ['술법 피해 +8%', '술법 치명타 +6', '받는 피해 −6%', '이목 −15(몸은 약하지만 요괴 눈에 덜 띔)', '퇴마진: 술법 ×2.0, 결계 깨기', '원정 기술: 파사 부적'] },
   scout: { name: '월궁 사수', trait: '원거리 공격', desc: '【원거리 공격】 뒷줄에서 활로 꾸준히 쏘는 원거리 공격수. 가장 잘 피하고 잘 빠져나옵니다. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
-    base: { strength: 4, agility: 8, vitality: 4, perception: 8, willpower: 3, spirit_affinity: 3 }, kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리' },
+    kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리',
+    fx: ['원거리 피해 +8%', '회피 +6', '도주 +15', '급소 사격: 반드시 치명타 · 표식', '원정 기술: 선제 사격'] },
   artificer: { name: '호위 무사', trait: '방패·수호', desc: '【방패·수호】 앞에 서서 요괴의 시선을 끌고 동료를 지키는 방패. 받는 피해 −12%·이목 +80(요괴가 먼저 노림)·방패를 든 만큼 공격력 ×0.85, 파갑참(근접 ×1.7, 방어·결계 무시). 대신 막기·철벽 수호로 동료를 감쌉니다.',
-    base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
+    kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부',
+    fx: ['받는 피해 −12%', '이목 +80(요괴가 먼저 노림)', '공격력 ×0.85(방패를 든 만큼)', '파갑참: 근접 ×1.7, 방어·결계 무시', '원정 기술: 반격 태세'] },
   medic: { name: '의무관', trait: '치유', desc: '【치유】 다치고 쓰러진 동료를 살리는 치유사. 회복품 ×1.15(파티원에게 쓰면 ×1.4)·회복 +10%(의술 기술로 더 늘어남), 응급 처방(한 전투에 한 번, 체력 회복·나쁜 상태 걷기).',
-    base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
+    kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약',
+    fx: ['회복품 ×1.15, 파티원에게 쓰면 ×1.4', '회복 +10%(의술 계열 기본 기술로 50단계까지 +35% 더)', '응급 처방: 한 전투에 한 번, 25 소모. 체력 15 + 체질÷2 + 의지÷2 회복, 최대 40. 나쁜 상태도 걷어 냅니다.', '원정 기술: 야전 처치'] },
   sealmaster: { name: '봉인술사', trait: '보조·버팀', desc: '【보조·버팀】 요괴를 묶고 동료를 북돋는 술사이자, 앞줄이 비면 받쳐 내는 두 번째 방패. 이목·방어는 호위 무사 다음, 회피는 월궁 사수 다음(이목 +60·방어 +30·회피 +12)·정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
-    base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
+    sub: '북돋기·약화', kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적',
+    fx: ['이목 +60 · 방어 +30 · 회피 +12(이목·방어는 호위 무사 다음, 회피는 월궁 사수 다음)', '정신 손실 −10%', '침식 −5%', '봉인술: 묶기', '원정 기술: 결계 야영'] },
   analyst: { name: '암영 검객', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는, 근접에서 가장 빨리 쓰러뜨리는 공격수. 근접 공격력 ×1.18(피해 상한과 따로)·근접 치명타 +5·단도 기술로 이목이 낮아짐, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
-    base: { strength: 8, agility: 6, vitality: 5, perception: 5, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 은방울 노리개 · 짚신 · 청심환 2' },
+    kit: '날선 단도 · 누비 전포 · 은방울 노리개 · 짚신 · 청심환 2',
+    fx: ['근접 공격력 ×1.18(피해 상한과 따로)', '단도 기술: 이목 −45%까지', '근접 무기를 들면 치명타 +5', '약점 간파: 다음 세 번 공격 강화', '원정 기술: 급소 찌르기'] },
 };
-// 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
+// 기본 능력치(base)는 서버 world_job_base를 gamedata.js로 받아 채운다(합 30). fx는 도움말 「직업과 역할」 표의 직업 효과 줄
+const STAT_KEYS = ['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'];
+for (const [k, j] of Object.entries(JOBS)) j.base = Object.fromEntries(STAT_KEYS.map(s => [s, GAMEDATA.jobBase?.[k]?.[s] ?? 3]));
+// 합동 토벌·협동 기술과 함께 들어온 화면(결전 단추·지역 글·세계관 묶음·탈것 내리기 등)을 켤지. 서버에 모두 들어가 있어 늘 true
 export const RAID_ON = true;
 // 거래소에서만 사고파는 희귀 재료(직접 거래·정인 선물 불가, 기준 시세 70% 이상, 24시간 20개, 거래세 10%)
-// 원본은 서버 world_item_catalog.market_only(7.7.7o) — 물품 목록을 받으면 views/common.js가 채운다.
+// 원본은 서버 world_item_catalog.market_only — 물품 목록을 받으면 views/common.js가 채운다.
 export const MARKET_ONLY = new Set();
 // 등급 이름(물품 희귀도·칭호·가구·동무가 함께 씀): 1 범품 … 5 신품 — 희귀도 키(common…legendary)는 nameOf가 같은 이름을 준다
 export const GRADES = ['', '범품', '양품', '진품', '명품', '신품'];
@@ -157,7 +167,7 @@ const FIXED = {
 // 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
 const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
-// 계열별 효과 키(7.5.0 기술 칭호): cq_<계열> 제작 품질 · cs_ 재료 아낌 · cx_ 하나 더 · gq_ 채집량 · gr_ 희귀품
+// 계열별 효과 키(기술 칭호): cq_<계열> 제작 품질 · cs_ 재료 아낌 · cx_ 하나 더 · gq_ 채집량 · gr_ 희귀품
 const LINE_FX = { cq: '제작 품질', cs: '재료 아낄 확률', cx: '하나 더 만들 확률', gq: '채집량', gr: '희귀품 발견' };
 function fxLabel(k) {
   if (FIXED[k]) return FIXED[k];
@@ -248,7 +258,7 @@ const ICONS = {
   mask: 'M5 5c4-1 10-1 14 0 0 8-3 14-7 14S5 13 5 5zM8 10h3M13 10h3M10 15h4',
   letter: 'M3 6h18v12H3zM3 7l9 6 9-6', flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
   wrench: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
-  // 7.7.7c: 토벌 협동 기술·북돋기 표식
+  // 토벌 협동 기술·북돋기 표식
   crosshair: 'M12 20a8 8 0 100-16 8 8 0 000 16zM12 2v5M12 17v5M2 12h5M17 12h5', vital: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 12h.01M12 3v3M12 18v3M3 12h3M18 12h3',
   bolt: 'M13 2L4 14h7l-1 8 9-12h-7z', dodge: 'M4 19c4 0 5-7 9-7s4-6 7-6M16 4l4 2-2 4',
   bubble: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 10a5 5 0 015-3', ward: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
@@ -363,7 +373,7 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
   });
 }
 
-// 창을 여닫는 동안 바탕 화면의 스크롤 자리를 지킨다(7.5.9h, 사용자 요청): 첫 창이 열릴 때 자리를 적어 두고,
+// 창을 여닫는 동안 바탕 화면의 스크롤 자리를 지킨다: 첫 창이 열릴 때 자리를 적어 두고,
 // 마지막 창이 닫히면 같은 화면(주소)일 때만 그 자리로 되돌린다. 창이 떠 있는 사이 바탕이 다시 그려져 높이가 잠깐 줄었다가
 // 늘어나도(현장 토벌·세력 팝업·칭호 유래 등) 위로 튀지 않게, 다시 그려질 틈을 두고 한 번 더 맞춘다.
 let modalY = null, modalHash = '';
@@ -379,7 +389,7 @@ function unlockPage() {
   requestAnimationFrame(fix); setTimeout(fix, 250); setTimeout(fix, 700);
 }
 // 창이 떠 있는 사이 바탕 화면이 새 자리를 정했으면(현장 토벌이 끝나 현장으로 돌아옴 등) 창을 닫을 때 그 자리로 간다
-// force: 아래로 내려가 있어도 그 자리로(토벌에서 현장으로 돌아올 때, 7.7.3)
+// force: 아래로 내려가 있어도 그 자리로(토벌에서 현장으로 돌아올 때)
 export function scrollAfterModal(y, force = false) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2 || (force && Math.abs(window.scrollY - y) > 2)) window.scrollTo(0, y); }
 const focusIn = (el) => { try { el?.focus({ preventScroll: true }); } catch { el?.focus(); } };
 export function openModal({ title, body, wide = false, onClose } = {}) {
@@ -389,7 +399,7 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
     <div class="modal-body"></div></div></div>`);
   const content = typeof body === 'string' ? h(`<div>${body}</div>`) : body;
   $('.modal-body', el).append(content);
-  // 바탕에서 누르기 시작한 때만 닫는다(입력칸 글자를 끌어 고르다 바깥에서 놓으면 창이 꺼지던 것, 제보 12)
+  // 바탕에서 누르기 시작한 때만 닫는다(입력칸 글자를 끌어 고르다 바깥에서 놓으면 창이 꺼지던 것)
   let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
   el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]')) closeModal(); });
   document.addEventListener('keydown', escClose);

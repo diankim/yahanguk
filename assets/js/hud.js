@@ -47,7 +47,7 @@ function bumpStamina() {
   const t = new Date(st.next_at).getTime(); if (t > Date.now()) return false;
   const was = st.now || 0;
   st.now = Math.min(st.max, (st.now || 0) + 1);
-  // 탐색력이 가득 차면 띠로링(7.5.6, 제보 59 — 다른 일을 하다가 듣고 돌아오게). 같은 때를 여러 창이 함께 울리지 않게 key
+  // 탐색력이 가득 차면 띠로링(다른 일을 하다가 듣고 돌아오게). 같은 때를 여러 창이 함께 울리지 않게 key
   if (was < st.max && st.now >= st.max) playAlarm('stamina', 'st:' + t);
   st.next_at = st.now >= st.max ? null : new Date(t + (st.per_seconds || 900) * 1000).toISOString();
   return true;
@@ -70,7 +70,7 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
     { const was = state.hud?.stamina, st = hud?.stamina; // 다시 읽은 값으로 가득 찼어도 띠로링(화면에서 올리기 전에 읽힌 때)
       if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
     state = { idle, hud, exp: hud?.expedition || null };
-    armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at); // 끝나는 때 띠로링(7.5.6)
+    armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at); // 끝나는 때 띠로링
     store.expedition = state.exp;
     store.hud = hud;
     render();
@@ -147,8 +147,8 @@ function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEve
 function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 // 화면을 옮기면 「현장 보기」 단추가 생기거나 사라지도록 다시 그린다
-window.addEventListener('hashchange', () => { closeStrip(); render(); }); // 휴대폰: 펼친 상태 띠는 화면을 옮기면 접는다(7.6.1, 화면점검 — 새 화면을 덮고 있었다)
-// 상태판 퀵슬롯(7.5.7, 제보 61): 캐릭터 › 상태의 퀵슬롯 8칸을 작게. 칸 목록은 접속 동안 한 번(10분 캐시) 읽고, 칸을 바꾸면 다시 읽는다.
+window.addEventListener('hashchange', () => { closeStrip(); render(); }); // 휴대폰: 펼친 상태 띠는 화면을 옮기면 접는다(새 화면을 덮고 있었다)
+// 상태판 퀵슬롯: 캐릭터 › 상태의 퀵슬롯 8칸을 작게. 칸 목록은 접속 동안 한 번(10분 캐시) 읽고, 칸을 바꾸면 다시 읽는다.
 let qsList = null, qsBusy = false;
 async function loadQs() {
   if (qsBusy) return; qsBusy = true;
@@ -157,7 +157,7 @@ async function loadQs() {
   qsBusy = false; render();
 }
 window.addEventListener('yh-qs-changed', () => { qsList = null; loadQs(); });
-on('catalog', () => render()); // 물품 목록을 막 받으면 퀵슬롯 효과 문구를 다시 그린다(7.7.7o)
+on('catalog', () => render()); // 물품 목록을 막 받으면 퀵슬롯 효과 문구를 다시 그린다
 function qsCard(c) {
   if (!qsList) { loadQs(); return ''; }
   const inv = c.inventory || {}, moving = !!c.travel_destination, downed = c.health <= 0 || !!c.downed_at;
@@ -173,7 +173,7 @@ function render() {
   const items = statusItems(c);
   const need = xpNeed(c.level);
   const first = items[0];
-  // 상태 칸 10개를 접힌 띠 오른쪽에 작은 점으로(나쁜 상태는 깜빡이는 빨강·이로운 상태 초록·빈칸, 제보 17)
+  // 상태 칸 10개를 접힌 띠 오른쪽에 작은 점으로(나쁜 상태는 깜빡이는 빨강·이로운 상태 초록·빈칸)
   const rest = yohwaOf(state.hud?.statuses).rest;
   const badN = rest.filter(x => x.polarity !== 'positive').length, goodN = Math.min(10 - Math.min(10, badN), rest.length - badN);
   const slots = Array.from({ length: 10 }, (_, i) => i < badN ? 'bad' : i < badN + goodN ? 'good' : '');
@@ -226,7 +226,7 @@ function render() {
 }
 function stamina(c) {
   const st = state.hud?.stamina; if (!st) return '';
-  // 「n분 뒤 +1」은 그릴 때 바로 적는다(7.7.0, 제보 71 — 다음 초 틱까지 비어 있어 토벌처럼 매초 다시 그리는 동안 깜빡이고 칸 높이가 흔들렸다)
+  // 「n분 뒤 +1」은 그릴 때 바로 적는다(다음 초 틱까지 비어 있어 토벌처럼 매초 다시 그리는 동안 깜빡이고 칸 높이가 흔들렸다)
   const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
   return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
 }
@@ -242,7 +242,7 @@ export const PINNED = new Set(['yohwa', 'yohwa_seal', 'yohwa_frenzy']);
 export function yohwaOf(statuses) {
   const now = new Date(), live = (statuses || []).filter(s => new Date(s.expires_at) > now || s.key === 'yohwa');
   const y = live.find(s => s.key === 'yohwa'), seal = live.find(s => s.key === 'yohwa_seal');
-  const fr = y ? live.find(s => s.key === 'yohwa_frenzy' && new Date(s.expires_at) > now) : null; // 3단계 끝 1시간: 요괴화(7.6.2)
+  const fr = y ? live.find(s => s.key === 'yohwa_frenzy' && new Date(s.expires_at) > now) : null; // 3단계 끝 1시간: 요괴화
   return { y, seal, fr, stage: y ? Math.max(1, Math.min(3, Number(y.potency || 1))) : 0, rest: live.filter(s => !PINNED.has(s.key) && new Date(s.expires_at) > now) };
 }
 // 요화 3단계 끝에 쓰러진 것인지(서버가 적어 둔 쓰러진 시각과 같으면 목숨을 잃지 않는다)
@@ -319,7 +319,7 @@ async function claimIdle(btn) {
   });
 }
 
-// 칭호 묶음 바꿔 끼기(제보 19): 누를 때만 칭호 목록을 읽는다(상태판이 따로 다시 읽지 않음)
+// 칭호 묶음 바꿔 끼기: 누를 때만 칭호 목록을 읽는다(상태판이 따로 다시 읽지 않음)
 async function openTitleSwap() {
   const m = openModal({ title: '칭호 바꾸기', body: '<div class="t-swap"><p class="muted small">읽는 중…</p></div>' });
   const box = $('.t-swap', m);

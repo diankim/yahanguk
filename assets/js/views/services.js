@@ -4,7 +4,7 @@ import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 
 // 물품 이름을 누르면 정보 창(설명·효과·제작법)을 연다.
-// 이름 앞에 물품 갈래(무기·방어구·소모품·재료…)를 작게 붙인다(6.1.1)
+// 이름 앞에 물품 갈래(무기·방어구·소모품·재료…)를 작게 붙인다
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
 
@@ -86,7 +86,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const [m, id] = st.dataset.step.split(':'), inp = st.querySelector('input'), max = Number(inp.max) || 0;
     const set = v => { v = Math.max(0, Math.min(max, Math.floor(Number(v) || 0))); inp.value = v; if (v) cart[m][id] = v; else delete cart[m][id]; st.closest('li').classList.toggle('picked', v > 0); foot(); };
     st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
-    // 팔기 「전부」(7.5.1, 제보 47): 누를 때마다 전부 ↔ 0
+    // 팔기 「전부」: 누를 때마다 전부 ↔ 0
     st.querySelector('[data-all]')?.addEventListener('click', () => set(Number(inp.value) === max ? 0 : max));
     inp.oninput = () => set(inp.value);
     if (cart[m][id]) st.closest('li').classList.add('picked');
@@ -142,7 +142,7 @@ async function enhancePane(body) {
   const q = await rpc('world_enhance_quote');
   if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword'); return; }
   registerNames(Object.entries(q.names || {}));
-  const have = q.have || {}, stored = q.stored || {}, items = Object.entries(q.items || {}); // have = 가방 + 창고(안전지대, 반요촌 제외 — 7.7.3)
+  const have = q.have || {}, stored = q.stored || {}, items = Object.entries(q.items || {}); // have = 가방 + 창고(안전지대, 반요촌 제외)
   const short = items.filter(([k, n]) => (have[k] || 0) < n);
   const maxed = q.level >= q.max;
   body.innerHTML = `
@@ -197,7 +197,7 @@ async function repairPane(body) {
 }
 
 async function dismantlePane(body) {
-  // 7.5.0: 분해는 언제나 된다. 그 장비를 맡는 계열 단계가 모자라면 재료 없이 그 계열 경험 12만(서버 world_dismantle_info가 계열·단계를 알려 줌)
+  // 분해는 언제나 된다. 그 장비를 맡는 계열 단계가 모자라면 재료 없이 그 계열 경험 12만(서버 world_dismantle_info가 계열·단계를 알려 줌)
   const [inv, di] = await Promise.all([load('world_inventory_snapshot'), rpc('world_dismantle_info').catch(() => ({}))]);
   const cat = new Map((inv.catalog || []).map(i => [i.id, i])), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([k, n]) => n > 0 && GEAR_CATS.has(cat.get(k)?.category))
@@ -229,7 +229,7 @@ async function dismantlePane(body) {
 const PICK_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
 const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
 const pickCat = c => !c ? 'etc' : PICK_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
-// 폼 안 입력칸에서 엔터를 눌러도 보내지 않는다 — 등록·제안은 단추로만(7.7.3)
+// 폼 안 입력칸에서 엔터를 눌러도 보내지 않는다 — 등록·제안은 단추로만
 function noEnterSubmit(form) {
   form.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input') && !e.isComposing) { e.preventDefault(); e.target.blur(); } });
 }
@@ -252,7 +252,7 @@ function bindPicker(root, name, opts, onPick) {
     if (sel.value !== keep) onPick?.();
   };
   qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
-  // 찾기 칸의 엔터·키패드 「검색」은 폼을 보내지 않고 키패드만 내린다(7.7.3 — 거래소 등록·거래 제안이 바로 되던 것)
+  // 찾기 칸의 엔터·키패드 「검색」은 폼을 보내지 않고 키패드만 내린다(거래소 등록·거래 제안이 바로 되던 것)
   qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
   qi.addEventListener('compositionend', apply);
   box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
@@ -275,7 +275,7 @@ function untradeNote(have, ref, direct = false) {
 /* ── 거래소 ───────────────────────────────────────────── */
 // 거래소(누구나 사 가는 등록 판매)와 직접 거래(같은 안전지대의 조사원과 주고받기) 두 칸
 let marketMode = 'board', boardTab = 'buy', buyCat = 'all', buyQ = '';
-// 팔기 칸에서 마지막으로 올린 물품·수량·가격(7.5.5, 사용자 요청: 하나씩 여러 번 올릴 때 다시 고르지 않게)
+// 팔기 칸에서 마지막으로 올린 물품·수량·가격(하나씩 여러 번 올릴 때 다시 고르지 않게)
 let lastSell = null;
 export async function renderMarket(box) {
   const mm = marketMode === 'direct' ? 'direct' : boardTab;
@@ -292,7 +292,7 @@ export async function renderMarket(box) {
       load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
     ]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
-    // 등급(범품~신품): 사기 목록·내 등록·올릴 물품 고르기에 함께 적는다(7.5.6, 사용자 요청)
+    // 등급(범품~신품): 사기 목록·내 등록·올릴 물품 고르기에 함께 적는다
     const rarMap = new Map((inv?.catalog || []).map(i => [i.id, i.rarity || 'common']));
     const mkDesc = new Map((inv?.catalog || []).map(i => [i.id, i.description || '']));
     const rarOf = id => rarMap.get(id) || 'common', rarTag = id => `<span class="rar-tag r-${esc(rarOf(id))}">${esc(nameOf(rarOf(id)))}</span>`;
@@ -347,7 +347,7 @@ export async function renderMarket(box) {
       // 등록 가격 범위(서버 world_trade_offer_create와 같은 값): 1전 ~ 기준 시세 10배, 거래소 전용 희귀 재료는 기준 시세 70%부터
       const bounds = () => { const p = Number(ref.get(form.item.value)?.reference_price) || 0; return { p, min: MARKET_ONLY.has(form.item.value) && p ? Math.ceil(p * 0.7) : 1, max: p ? p * 10 : Infinity }; };
       const hint = () => { const { p, min, max } = bounds(); $('#trade-hint', body).textContent = p ? `기준 시세 ${fmt.jeon(p)}${min > 1 ? ` · 최소 ${fmt.jeon(min)}` : ''} · 최대 ${fmt.jeon(max)}` : ''; };
-      // 범위를 벗어난 가격은 알리고 가장 가까운 값으로 고친다(7.5.5, 사용자 요청). 고쳤으면 true
+      // 범위를 벗어난 가격은 알리고 가장 가까운 값으로 고친다. 고쳤으면 true
       const fixPrice = () => {
         const { min, max } = bounds(), v = Math.floor(Number(form.price.value));
         if (v >= min && v <= max) return false;
@@ -396,7 +396,7 @@ async function renderDirect(body) {
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
-    // 직접 거래는 같은 곳에 있는 조사원과(5.0.0부터 안전지대 밖에서도)
+    // 직접 거래는 같은 곳에 있는 조사원과(안전지대 밖에서도)
     const people = (roster || []).filter(p => !p.is_dead);
     const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k));
     const anyTradeable = (prices || []).filter(p => p.tradeable !== false && !MARKET_ONLY.has(p.item_id)).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
@@ -480,7 +480,7 @@ export async function renderStorage(box) {
   box.innerHTML = loading();
   try {
     const [s, , inv] = await Promise.all([load('world_storage_snapshot'), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
-    // 분류는 거래소와 같은 장비·소모품·재료·기타(제보 18)
+    // 분류는 거래소와 같은 장비·소모품·재료·기타
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c?.inventory || {};
     const src = s.sources || {}, steps = Number(src.bought_steps || 0);
@@ -495,7 +495,7 @@ export async function renderStorage(box) {
     const putMax = k => Math.min(canGive(k), roomOf(k));
     const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
-    // 차지하는 칸과 묶음 크기(제보 23): 꺼내기 칸은 창고에서, 맡기기 칸은 가방에서 차지하는 칸
+    // 차지하는 칸과 묶음 크기: 꺼내기 칸은 창고에서, 맡기기 칸은 가방에서 차지하는 칸
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
     const row = (id, label, n, max, m, note) => `<li data-mk-cat="${esc(catMap.get(id) || 'etc')}" data-mk-name="${esc((label || nameOf(id)).toLowerCase())}">
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
@@ -554,7 +554,7 @@ export async function renderStorage(box) {
     });
     $$('[data-put]', box).forEach(b => b.onclick = () => move(b, 'world_storage_put', b.dataset.put));
     $$('[data-take]', box).forEach(b => b.onclick = () => move(b, 'world_storage_take', b.dataset.take));
-    // 창고에서 바로 버리기(7.3.4): 꺼내지 않고 어디서나, 확인 창을 거친다
+    // 창고에서 바로 버리기: 꺼내지 않고 어디서나, 확인 창을 거친다
     $$('[data-toss]', box).forEach(b => b.onclick = async () => {
       const q = Math.floor(Number(b.closest('li').querySelector('input')?.value) || 0);
       if (q <= 0) return;
@@ -567,7 +567,7 @@ export async function renderStorage(box) {
 }
 
 // 가방 화면 등 어디서나 여는 창고 창(안전지대 밖에서는 보기만)
-// 맡기기·꺼내기·사기 뒤 창을 다시 그려도 보던 자리를 지킨다(7.5.7)
+// 맡기기·꺼내기·사기 뒤 창을 다시 그려도 보던 자리를 지킨다
 function scrollerOf(el) {
   for (let p = el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p; }
   return document.scrollingElement;

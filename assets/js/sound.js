@@ -3,16 +3,16 @@
 import { on, toast } from './core.js';
 import { LAYERS as AMB, bird, cricket, owl, drip } from './ambience.js';
 
-// vol = 전체 음량(7.3.4, 설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
+// vol = 전체 음량(설정 › 소리 맨 위): 배경음악·환경음·효과음을 함께 올리고 내린다
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
 let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
 const scene = { territory: 'capital', safe: false, battle: false, exp: false };
-// 전투 음악: 원정대가 길에 나가 있는 동안(exp, 7.4.1 — 원정은 회차마다 싸우므로). 현장 토벌(battle)은 곡을 바꾸지 않는다(7.5.6, 사용자 요청 — 탐색 중 마주칠 때마다 곡이 끊겼다)
+// 전투 음악: 원정대가 길에 나가 있는 동안(exp — 원정은 회차마다 싸우므로). 현장 토벌(battle)은 곡을 바꾸지 않는다(탐색 중 마주칠 때마다 곡이 끊겼다)
 const inBattle = () => scene.exp;
 // 모바일(터치 화면)에서는 화면을 내리거나 다른 앱·다른 탭으로 가면 소리를 멈춘다. PC는 계속 들린다.
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
 let away = false;
-// 배경음악·환경음이 창마다 겹치지 않게(7.5.5): 채팅·귓속말 새 창(?pop=)은 소리를 전혀 내지 않고,
+// 배경음악·환경음이 창마다 겹치지 않게: 채팅·귓속말 새 창(?pop=)은 소리를 전혀 내지 않고,
 // 게임 창이 여럿이면 가장 최근에 누르거나 고른 창 하나만 배경음악·환경음을 낸다(나머지는 yielded — 브라우저 안 신호 BroadcastChannel 'yh-sound')
 const POPWIN = (() => { try { return !!new URLSearchParams(location.search).get('pop'); } catch { return false; } })();
 let yielded = POPWIN;
@@ -28,7 +28,7 @@ export function applyVolumes() {
   if (!away) master.gain.setTargetAtTime(masterLevel(), t, 0.1);
   bgmBus.gain.setTargetAtTime(musicOk() ? sound.bgm * 0.8 : 0, t, 0.3);
   ambBus.gain.setTargetAtTime(sound.ambOn && !yielded ? sound.amb * 0.5 : 0, t, 0.4);
-  sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.95 : 0, t, 0.05); // 7.5.9i: 배경음악·빗소리에 묻혀 0.5에서 올림
+  sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.95 : 0, t, 0.05); // 배경음악·빗소리에 묻혀 0.5에서 올림
 }
 
 function ensureCtx() {
@@ -65,7 +65,7 @@ function toBgm(node, send = 0.5) { node.connect(bgmBus); if (send > 0) { const s
 /* ── 악기(녹음 조각) ───────────────────────────────────── */
 // FluidR3 GM 사운드폰트(CC BY 3.0)에서 악기마다 몇 음을 잘라 한 파일(assets/audio/*.mp3)에 3.2초 칸으로 이어 붙였다.
 // 가장 가까운 음을 골라 빠르기를 바꿔 원하는 높이로 낸다(최대 1.5~2반음). 길게 끄는 악기는 가운데를 겹쳐 이어 늘린다.
-// 가야금 → 고토, 대금 → 샤쿠하치·플루트, 해금 → 피들로 대신하고, 첼로·현악·하프·종·북을 받침으로 쓴다. 피아노(7.3.2)는 북령·지하·천문·심연에 쓴다(tools/bgm_samples/build.py).
+// 가야금 → 고토, 대금 → 샤쿠하치·플루트, 해금 → 피들로 대신하고, 첼로·현악·하프·종·북을 받침으로 쓴다. 피아노는 북령·지하·천문·심연에 쓴다(tools/bgm_samples/build.py).
 const SLOT = 3.2;
 const INS = {
   piano:      { notes: [33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85], len: 3.1, sus: false, gain: 0.45, att: 0.004, rel: 0.7, pan: 0.08, send: 0.5 },
@@ -169,10 +169,10 @@ function playDrum(t, vel, kind = 'big') {
 }
 
 /* ── 곡조 ─────────────────────────────────────────────── */
-// 7.3.0 편성 개편: 영역마다 선율만이 아니라 빠르기·박자(4박·3박)·쓰는 악기·반주 꼴·저음·북 장단·곡 구성(form)이 다르다.
+// 편성 개편: 영역마다 선율만이 아니라 빠르기·박자(4박·3박)·쓰는 악기·반주 꼴·저음·북 장단·곡 구성(form)이 다르다.
 // 곡은 form에 적은 단락을 차례로 연주하고 끝나면 도입 뒤로 돌아가 되풀이한다. 주제(A)는 영역마다 고정, 나머지(A2·B·C)는 되풀이마다 새로 짓는다.
 // 단락에 echo(받는 악기가 한 박 늦게 주선율을 낮게 따라 부름)·duet(다른 악기가 화음 음으로 아래에서 겹침)·trem(가야금 떨림)을 붙여 소리를 풍성하게 한다.
-// 7.3.0 다듬기(사용자 검토): ① 강약 — 프레이즈 안에서 마디마다 세기가 오르내리고(dynOf), 길게 끄는 관·현악은 한 음 안에서도 숨결·떨림이 있고, 바닥 화음은 천천히 부풀었다 잦아든다.
+// 다듬기: ① 강약 — 프레이즈 안에서 마디마다 세기가 오르내리고(dynOf), 길게 끄는 관·현악은 한 음 안에서도 숨결·떨림이 있고, 바닥 화음은 천천히 부풀었다 잦아든다.
 // ② 어울림 — 1박 넘는 선율 음과 겹침·메아리·받아치는 음은 그 마디 화음 음으로 맞추고, 단조의 딸림화음(V)은 이끎음을 올리며, 프리지안의 어두운 V는 ♭II로 바꾼다.
 // 오음 고집을 풀고 3~6도 도약을 섞어 음 폭을 넓혔다. ③ 큰북(playDrum) — 영역마다 장단 셋(기본·변형·몰아치기)을 두어 마디마다 바꾸고 프레이즈 끝에서 몰아친다.
 // ④ 전투는 영역마다 따로 편성한다(PROFILES[].bt: 북령은 현악·첼로·종의 진혼곡, 해금·가야금 잔걸음을 뺌).
@@ -535,7 +535,7 @@ function setLayer(name, level, build) {
   const L = loopLayer(name, build);
   L.g.gain.setTargetAtTime(Math.max(0.0001, level), now(), 1.5);
 }
-// 환경음 층은 ambience.js(7.5.9i 다듬기)가 만든다 — 비는 빗방울을 버퍼에 흩뿌린 결, 바람은 숨 쉬듯, 물은 일렁이게
+// 환경음 층은 ambience.js가 만든다 — 비는 빗방울을 버퍼에 흩뿌린 결, 바람은 숨 쉬듯, 물은 일렁이게
 const ambMat = {};
 const BUILD = Object.fromEntries(Object.keys(AMB).map(k => [k, g => { ambMat.noise = noiseBuf; ambMat.brown = brownBuf; return AMB[k](ctx, g, ambMat); }]));
 let critterTimer = null;
@@ -564,7 +564,7 @@ function updateAmbience() {
   const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   setLayer('rain', w === 'rain' ? 0.38 : 0, BUILD.rain);
   setLayer('drizzle', w === 'drizzle' ? (under ? 0.3 : 0.55) : 0, BUILD.drizzle);
-  // 바람은 삭풍(wind) 날씨에만(7.5.9k, 사용자 요청 — 다른 날씨에 늘 깔리던 바람결을 뺐다)
+  // 바람은 삭풍(wind) 날씨에만(다른 날씨에 늘 깔리던 바람결을 뺐다)
   setLayer('wind', w === 'wind' ? 0.5 * (under ? 0.4 : 1) : 0, BUILD.wind);
   setLayer('water', w === 'fog' || under ? 0.14 : w === 'rain' ? 0.06 : w === 'drizzle' ? 0.01 : 0, BUILD.water);
   setLayer('hiss', w === 'snow' ? 0.006 : 0, BUILD.hiss);
@@ -580,7 +580,7 @@ function tone(freq, dur, vol = 0.1, type = 'sine', at = 0, glide) {
 }
 const seq = (notes, step, dur, vol, type = 'sine') => notes.forEach((f, i) => tone(f, dur, vol, type, i * step));
 const SFX = {
-  // 누름 소리(7.5.9i): 귀에 거슬리지 않는 짧고 둥근 「톡」(높은 삑 대신 아래로 살짝 내려앉는 소리)
+  // 누름 소리: 귀에 거슬리지 않는 짧고 둥근 「톡」(높은 삑 대신 아래로 살짝 내려앉는 소리)
   tap: () => { tone(880, 0.045, 0.07, 'sine', 0, 660); tone(1760, 0.02, 0.012, 'triangle'); }, tick: () => tone(980, 0.03, 0.05), nav: () => { tone(620, 0.07, 0.07, 'sine', 0, 720); tone(1240, 0.03, 0.01, 'triangle'); },
   step: () => tone(420, 0.06, 0.06, 'sine', 0, 360), confirm: () => seq([660, 880], 0.06, 0.08, 0.06),
   coin: () => seq([1250, 1660], 0.06, 0.09, 0.05, 'triangle'),
@@ -600,7 +600,7 @@ export function playSfx(kind) {
   if (POPWIN || !sound.sfxOn || away || !ensureCtx()) return;
   try { (SFX[kind] || SFX.tap)(); } catch {}
 }
-// 알림음 「띠로링」(7.5.6): 귓속말·채팅의 @내 이름·탐색력 가득·휴식 쿨타임 끝·원정 귀환·자율 활동 끝.
+// 알림음 「띠로링」: 귓속말·채팅의 @내 이름·탐색력 가득·휴식 쿨타임 끝·원정 귀환·자율 활동 끝.
 // 종류마다 설정 › 소리에서 켜고 끈다(sound.alarm, 이 기기에 저장). 효과음을 꺼도 울리고, 크기는 효과음 음량을 따른다(너무 작으면 25%).
 // 채팅·귓속말 새 창에서도 울린다(그 창이 말을 받는 동안 본 창은 받지 않으므로). 같은 일로 창 여럿이 함께 울리지 않게 key를 기기에 1분 남긴다.
 export const ALARMS = [['whisper', '귓속말', '귓속말이 오면'], ['mention', '내 이름 부르기', '채팅에서 누가 @내 이름을 쓰면'], ['stamina', '탐색력 가득', '탐색력이 가득 차면'],
@@ -615,7 +615,7 @@ export function playAlarm(kind, key) {
   // 잠깐·푹 쉬기가 거의 같이 끝나면 한 번만(둘 다 켰을 때 10초 안에 겹친 것은 건너뜀)
   if (/^rest_/.test(kind || '')) { let l = 0; try { l = Number(localStorage.getItem('yh-alarm:rest-any') || 0); } catch {} if (Date.now() - l < 10000) return; try { localStorage.setItem('yh-alarm:rest-any', String(Date.now())); } catch {} }
   if (key) try { const k = 'yh-alarm:' + key; if (localStorage.getItem(k)) return; localStorage.setItem(k, String(Date.now())); setTimeout(() => { try { localStorage.removeItem(k); } catch {} }, 60000); } catch {}
-  // 시간이 다 된 알림은 소리와 함께 화면 아래에도 글로 띄운다(7.5.9b, 사용자 요청 — 소리를 꺼 두었거나 못 들으면 몰랐다).
+  // 시간이 다 된 알림은 소리와 함께 화면 아래에도 글로 띄운다(소리를 꺼 두었거나 못 들으면 몰랐다).
   // 귓속말·이름 부르기는 저마다 창·빨간 점이 있고, 원정 귀환은 귀환 창이 따로 뜨므로 뺀다
   if (ALARM_TEXT[kind] && !POPWIN) toast(ALARM_TEXT[kind], 'ok');
   if (away || !ensureCtx()) return;
@@ -681,7 +681,7 @@ function soundLink() {
   window.addEventListener('focus', claim);
 }
 export function initSound() {
-  // 채팅·귓속말 새 창은 배경음악·환경음·효과음을 내지 않는다(7.5.5, 사용자 요청). 알림음(playAlarm)만 울리므로 처음 누를 때 소리 장치를 깨워 둔다
+  // 채팅·귓속말 새 창은 배경음악·환경음·효과음을 내지 않는다. 알림음(playAlarm)만 울리므로 처음 누를 때 소리 장치를 깨워 둔다
   if (POPWIN) { document.addEventListener('pointerdown', () => { if (!alarmReady) { alarmReady = true; loadSound(); } if (ensureCtx()) { ctx.resume?.(); applyVolumes(); } }, { once: true }); return; }
   loadSound();
   on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
@@ -694,7 +694,7 @@ export function initSound() {
   // 컷씬이 제 곡을 트는 동안 배경음악을 쉰다(cutscene.js가 알림)
   window.addEventListener('yh-cutscene', e => { held = !!e.detail; });
   document.addEventListener('click', e => {
-    // 7.5.9i: 정해진 소리가 없는 단추·칩·링크·접는 칸도 모두 누름 소리를 낸다(전투 칸·탐색은 결과 소리를 따로 냄, data-nosfx는 뺌)
+    // 정해진 소리가 없는 단추·칩·링크·접는 칸도 모두 누름 소리를 낸다(전투 칸·탐색은 결과 소리를 따로 냄, data-nosfx는 뺌)
     const b = e.target.closest('button, [role="button"], a[href], summary, .chip, .facility, .path, .act, input[type="checkbox"], input[type="radio"]');
     if (!b || b.disabled || b.closest('[data-nosfx]')) return;
     if (b.closest('.battle') || b.id === 'search') return;

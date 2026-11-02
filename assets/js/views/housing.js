@@ -363,14 +363,14 @@ async function openStore() {
 }
 
 // ─── 꼬마 동무 ───
-// 동무 정표(7.7.4): 친밀도를 다 채운 동무가 알에서 다시 나오면 하나, 다섯 개로 「빛나는 알」 하나(world_pet_token_trade, 어디서나)
+// 동무 정표: 친밀도를 다 채운 동무가 알에서 다시 나오면 하나, 다섯 개로 「빛나는 알」 하나(world_pet_token_trade, 어디서나)
 const tokenRow = inv => { const n = Number(inv.pet_token || 0); return n ? `<div class="hs-token"><span>${icon('heart', 14)} 동무 정표 ×${n} <small class="muted">다섯 개 = 빛나는 알 하나</small></span><button class="btn small ${n >= 5 ? 'primary' : ''}" data-token ${n >= 5 ? '' : 'disabled'}>빛나는 알로 바꾸기</button></div>` : ''; };
 async function openPets() {
   let ps;
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
   const inv = store.character?.inventory || {};
   const items = Object.entries(inv).filter(([k, n]) => n > 0 && (k.startsWith('pt_') || k.startsWith('pet_egg_')));
-  // 두 자리(1.0.0): 데리고 다니는 동무(world_pet_profile, 조사원 카드) · 별채 동무(world_housing.pet_id). 같은 동무는 한 자리에만.
+  // 두 자리: 데리고 다니는 동무(world_pet_profile, 조사원 카드) · 별채 동무(world_housing.pet_id). 같은 동무는 한 자리에만.
   const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null, petId = room_?.pet_id || null;
   const nm = id => mine.get(id)?.nick || PETS[id]?.name || '';
   const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2 })}" alt="">` : '<span class="ps-empty"></span>';

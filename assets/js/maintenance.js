@@ -24,7 +24,7 @@ function rollbackScene(info) {
   const t = info.until ? new Date(info.until) : null;
   const when = t && !isNaN(t) ? t.toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' }) + ' 무렵 다시 엽니다.' : '끝나는 대로 다시 엽니다.';
   const note = `${info.message || '서버 점검 중입니다.'}\n${when} 열리면 이 화면이 저절로 게임으로 돌아갑니다.\n받은 초대권 번호는 다시 연 뒤 설정 › 계정에서 볼 수 있습니다.`;
-  // 1.0.0 오픈 대기(사용자 요청 2026-11-02): 처음부터 틀지 않고 마지막 장면에 고정한다(다시 보기 없음)
+  // 오픈 대기: 처음부터 틀지 않고 마지막 장면에 고정한다(다시 보기 없음)
   playCutscene('rollback', { stay: true, note, atEnd: true, fixed: true });
 }
 function show(s) {

@@ -62,7 +62,7 @@ const donateHtml = (s, open) => {
     <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
 
-// 단위(7.5.9d): quests.js unitOf와 같은 규칙(서로 불러오면 순환이 생겨 따로 둠)
+// 단위: quests.js unitOf와 같은 규칙(서로 불러오면 순환이 생겨 따로 둠)
 const unitOf = t => { const it = Array.isArray(t.items) ? t.items : Object.keys(t.items || {}); return t.t === 'gather' ? (it.length ? '개' : '회') : t.t === 'craft' && it.length ? '개' : ''; };
 const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}${unitOf(t)}</small></li>`).join('');
 
@@ -150,7 +150,7 @@ export function bindFaction(body, s) {
   $$('[data-fq-buy]', body).forEach(b => b.onclick = async () => {
     const id = b.dataset.fqBuy, qty = Math.max(1, Math.min(99, Number($(`#fqq-${id}`, body)?.value) || 1));
     const v = (s.vault || []).find(x => x.item_id === id), one = v && v.kind !== 'item';
-    if (!(await ask(one ? `${v.name}을(를) 공훈 ${fmt.num(v.price)}으로 받을까요?` : `${v?.name || id} ×${qty}을(를) 공훈 ${fmt.num((v?.price || 0) * qty)}으로 살까요?`, { title: '비고', ok: one ? '받기' : '사기' }))) return;
+    if (!(await ask(one ? `${v.name}을(를) 공훈 ${fmt.num(v.price)}(으)로 받을까요?` : `${v?.name || id} ×${qty}을(를) 공훈 ${fmt.num((v?.price || 0) * qty)}(으)로 살까요?`, { title: '비고', ok: one ? '받기' : '사기' }))) return;
     guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); done(); return r; });
   });
   $$('[data-fq-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.fqInfo));
@@ -191,7 +191,7 @@ function bindDonate(body, s, done) {
     const gain = Math.max(0, Math.min(cap, Math.floor(((d.value || 0) + val) / rate)) - (d.merit || 0));
     const over = Math.floor(((d.value || 0) + val) / rate) > cap;
     const el = $('#fq-don-sum', box), btn = $('#fq-donate', box);
-    if (el) el.innerHTML = n ? `${fmt.num(n)}개 · 시세 ${fmt.num(val)}전 → 공훈 <b>+${gain}</b>${over ? ` <span class="warn">(오늘 상한 ${cap}을 넘는 몫은 공훈이 되지 않습니다)</span>` : ''}` : '';
+    if (el) el.innerHTML = n ? `${fmt.num(n)}개 · 시세 ${fmt.num(val)}전 → 공훈 <b>+${gain}</b>${over ? ` <span class="warn">(오늘 상한 ${esc(`${cap}을(를)`)} 넘는 몫은 공훈이 되지 않습니다)</span>` : ''}` : '';
     if (btn) btn.disabled = !n;
   };
   const bind = () => {
