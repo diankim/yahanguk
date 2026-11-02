@@ -93,14 +93,14 @@ export const JOBS = {
     base: { strength: 3, agility: 3, vitality: 4, perception: 4, willpower: 7, spirit_affinity: 9 }, kit: '영령 방울 · 삼베 도포 · 무명 부적낭' },
   scout: { name: '현장 조사원', trait: '원거리 공격', desc: '【원거리 공격】 활로 먼 곳에서 노리는 원거리 공격수. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
     base: { strength: 4, agility: 8, vitality: 4, perception: 8, willpower: 3, spirit_affinity: 3 }, kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리' },
-  artificer: { name: '호위 무사', trait: '방패·수호', desc: '【방패·수호】 앞에 서서 요괴의 시선을 끌고 동료를 지키는 방패. 받는 피해 −12%·이목 +50(요괴가 먼저 노림), 파갑참(근접 ×1.7, 방어·결계 무시). 대신 막기·철벽 수호로 동료를 감쌉니다.',
+  artificer: { name: '호위 무사', trait: '방패·수호', desc: '【방패·수호】 앞에 서서 요괴의 시선을 끌고 동료를 지키는 방패. 받는 피해 −12%·이목 +80(요괴가 먼저 노림)·방패를 든 만큼 공격력 ×0.85, 파갑참(근접 ×1.7, 방어·결계 무시). 대신 막기·철벽 수호로 동료를 감쌉니다.',
     base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
   medic: { name: '의무관', trait: '치유', desc: '【치유】 다치고 쓰러진 동료를 살리는 치유사. 회복품 ×1.15(파티원에게 쓰면 ×1.4)·회복 +10%(의술 기술로 더 늘어남), 응급 처방(한 전투에 한 번, 체력 회복·나쁜 상태 걷기).',
     base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
   sealmaster: { name: '봉인술사', trait: '보조(북돋기·약화)', desc: '【보조·북돋기·약화】 요괴를 묶고 동료를 북돋는 북돋기·약화 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
-  analyst: { name: '백공 기술관', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는 근접 공격수. 근접 피해 +8%·근접 치명타 +5, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
-    base: { strength: 5, agility: 6, vitality: 6, perception: 7, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
+  analyst: { name: '백공 기술관', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는 근접 공격수. 근접 공격력 ×1.10(피해 상한과 따로)·근접 치명타 +5·단도 기술로 이목이 낮아짐, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
+    base: { strength: 8, agility: 6, vitality: 5, perception: 5, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
 };
 // 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
 export const RAID_ON = true;
