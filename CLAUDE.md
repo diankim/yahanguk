@@ -227,6 +227,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 트리거 world_normalize_item_rarity가 단계(1~6)로 희귀도(1 범품…5·6 신품)·acquisition_difficulty(최대 5)·drop_rate_modifier를 덮어쓴다(검사 world_item_catalog_tier_check 1~6) — 새 물품은 단계만 정하면 된다.
 - 잠금(world_item_locks)은 팔기·버리기·거래를 막음(사용·재료는 됨). 장착 중인 장비의 마지막 한 개도 내줄 수 없다.
 - 물품 정보 창: 들어가는 제작법과 제작 화면 바로 가기. 분해·버리기(·창고에 모두 넣기) 성공하면 닫힘(item.js run — 반환값이 아니라 성공 여부로 판단, world_item_discard는 값을 안 돌려줌). 「얻는 곳」 world_item_sources: 채집터·조사 지점·요괴·낚시터 지역을 낮은 레벨부터 갈래마다 두 곳까지 한 줄(「외 n곳」을 누르면 world_item_sources_all 겹친 창), 제작·대장간 smithy·상점 shop·세력 비고 vault. 지역 이름을 누르면 지도에서 짚음(item.js src-go). 바로 맡기기 item.js stash(zonesNow로 안전지대·반요촌 아님·이동 중 아님일 때만, 서버 world_storage_put이 재검사).
+- 물품 한 원본(7.7.7o): 사용 효과는 world_item_catalog.use_fx 한 칸(world_item_fx가 읽음) — 가방 정보(world_inventory_snapshot)의 물품 목록 fx·mk·tl과 fx_names(상태 이름·지속·효과)로 화면 item.js USABLE(효과 문구·사용 단추·색·거르기)·토벌 물품 칸(fightui.js battleItems·isSpItem)·동료 돌보기·퀵슬롯이 따른다. 새 소모품은 use_fx만 채우고, 회복·기운으로 못 적는 특별 물품만 item.js USE_SPECIAL. 물품 목록은 로그인 때 views/common.js ensureCatalog(같은 db_version이면 기기 것). 등급 이름은 core.js GRADES, 직업 이름은 JOBS, 날씨·시간대·희귀도 이름은 nameOf.
 - 소지품: 정렬 기본(단계)·획득순·이름순·희귀도순 × 정/역순, 획득순은 world_item_acquired(수량이 늘 때 트리거가 기록, 기록 전 물품은 오래된 것). 「칸대로 나눠 보기」(기본 켬·yh-bag-split): 묶음 크기만큼 한 줄씩(가득 찬 칸 먼저, 장착 중인 하나는 따로), 「사용」·「열기」는 줄마다. 물품마다 「창고 n」(world_storage_snapshot 5분 캐시, 창고 행동 뒤 새로). 「효과」 칩 회복 종류 거르기(bag.js fxPick, 하나라도 맞으면). 이름 아래 짧은 설명 core.js brief.
 
 ### 개인 창고(world_storage)
@@ -245,7 +246,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 이목 = 30 + 체질×0.8 − 민첩×0.4 + 방어구 방어력×0.6 + 장비 이목(5~300). 원정 합동 전투·파티 토벌·보스가 이목^1.3로 표적.
 - 주 능력치 조건(레벨당 3점 기준): 무기·방어구 5+0.35×3×(장착 레벨−1), 관모·신·노리개·호신부·탈·채집 도구 5+0.25×3×(장착 레벨−1). 주 능력치는 무기 종류·장비 갈래로. 새 장비도 같은 식.
 - 생활 도구(g_tools.sql·b_life.sql·data_life.py): 능력치 조건 없이 equipment_traits.req_line(gathering_rank·crafting_rank·investigation_rank)·req_rank(world_equip_item, item.js statReqs). 제작 공구 조건은 craft_fields 계열 중 최고 단계. 효과(world_field_gather): 곡괭이(world_tool_lines pick)는 ore·relics, 채집도(knife)는 herbs·wood·supplies·water에서 채집량 +10%p, 낫·등은 sig_pct·sig_where로 지역 signature_items(영맥 낫 herbs·spirit 3%·영등 relics 또는 어두운 region_type 5%). 영맥 나침반은 길·채집터 무게 ×1.2. 낚싯대 단계 덤은 2단계까지, 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 생활 장비 32가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대 6단계·제작 공구 15, 제작법 r_lt_*). 새 도구도 이 규칙.
-- 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, bag.js TOOL_LINE — 새 계열은 둘 다). 채집은 도구를 조건으로 보지 않는다.
+- 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, 화면 bag.js toolCovers는 물품 목록 tl·tier — world_tool_lines 한 곳만 고침). 채집은 도구를 조건으로 보지 않는다.
 - 장착 조건(레벨·직업·소속·능력치)은 world_equip_item이 검사, 가방 › 장비·물품 정보에 「장착 조건」 초록/빨강. 여러 직업 제작법에 쓰는 도구는 한 직업 전용으로 두지 않는다(각인 공구·강화 채집도 무제한, 영맥 낫은 조사원 전용).
 - 드롭(world_gear_drops, world_gear_roll): 한 번에 하나, 일반 최대 1%·정예 5%·우두머리 15%(희귀품 보정), 3단계 이상은 우두머리만, 원정 60% 수준. 2~4단계 제작법, 5단계 일부 무극 관성대 제작, 1·2단계 일부 상점.
 - 가방 › 장비: 900px 이상 왼쪽 장착 칸(eqMini pick)·오른쪽 고른 부위(#eq-detail: equipRowLi + 바꿔 낄 장비, bag.js eqSel 유지) 나란히(.eq-split), 좁은 화면은 칸을 누르면 부위 창(성공하면 닫힘).
@@ -292,7 +293,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 낚싯대를 가방에 두고 탐색력 1로 20초마다. 원정·전투·이동 중 불가.
 - 어종 37종(서식지·희귀도·시간대·날씨). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
 - 낚시 칭호 11(바다 sea_angler·tide_reader·nine_harbors·sea_dragon 포함): 입질·희귀 어종·크기 효과.
-- 요리: 손질한 생선으로(바다 요리 9 포함, world_use_item·item.js 같은 값). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩, item.js·raid.js에도). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
+- 요리: 손질한 생선으로(바다 요리 9 포함). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
 
 ### 별채
 
@@ -334,7 +335,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 시간대 한국 시각 6시간마다(해돋이 6~12·한낮 12~18·땅거미 18~24·삼경 0~6), 날씨 12시간마다(0·12시) 영역별(청명·담운·장우·세우·농무·삭풍·설한·혈무). 효과는 world_status_effect_total로 채집·제작·이동·회복·전투·조우·침식에. 모든 world_events에 시간대·날씨가 남음. world_env_total은 날씨·시간대 키를 한 번만(with … as materialized).
 - 세우(細雨, drizzle): 채집 +6%·회복 +5%·침식 −5%·단서 +4%·원거리 −5%·낚시 입질 +5%p(world_fish), 땅 밑·심연 영역엔 없음(world_weather_climate). 날씨 이름은 두 글자 한자어. 새 날씨마다 core.js ENV·journal.js WEATHER·world_expedition_walk_lines를 함께 고친다.
-- 장야(롤백 전 연출): world_long_night_stage(날짜, 한국 시각 자정) 1 = 10/30 밤이 일찍(땅거미 15시·삼경 20시) · 2 = 10/31 해가 거의 안 뜸(9~10 해돋이·10~11 한낮·11~15 땅거미, 조우 +15·침식 +20·희귀품/단서 +5) · 3 = 11/1 늘 삼경(조우 +50·침식 +30·정신 손실 +10·희귀품/단서 +10) · 4 = 11/2 0시 롤백. world_time_phase가 따르고 world_long_night_fx를 world_env_total이 더함, world_time_phase_end·world_environment_snapshot.long_night(env.js). pg_cron yh-long-night(매시, world_long_night_tick)이 「봉연 소식」 한 줄(world_app_meta long_night_announced). 2단계부터 붉은 안개 env.js fog #ln-fog(SVG 잡음, 2단계 옅게·3단계 짙게, 두 겹이 48·31초에 흐르고 14·21초 주기로 짙어졌다 옅어짐, 「동작 줄이기」 무관, 누르기 안 막음, 날씨 창에서 끄기 yh-fog-off) — 평면 원칙의 예외(사용자 요청).
+- 장야(롤백 전 연출, 끝남): world_long_night_stage는 11/2부터 늘 0이라 효과 없음(시간대·날씨 함수가 부르므로 남김). 알림 예약·붉은 안개 화면·롤백 문 닫기·마지막 토벌 함수는 롤백 때 지움(2026-11-02).
 
 ### 침식
 
@@ -411,7 +412,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 기여도(합동 토벌·결전·귀허·파티 토벌 공통) world_contrib_score(갈래 원값, 공격력, K) = 준 피해 + 0.75×늘려 준 동료 피해 + 0.4×공격력×협동 기술 횟수 + K×(막아 준 피해 + 동료 회복 + ½자기 회복 + ½받아 낸 피해). K = 1.5×평균 공격력÷요괴 한 대(world_raid_k: world_raid_boss_base · world_gw_k: (35+4×단계)×인원 배율 · 파티 토벌 4+0.7×(요괴Lv+3)). 계수는 6직업 넷·둘 모든 조합 정석 모형(넷 24~26%·둘 46~54%) 기준. 행동마다 원값만 credits(dmg·boost·guard·heal·heal_self·taken·skill)에 쌓고(world_raid_credit·world_gw_credit·world_gw_credit_hit, 효과 json의 건 사람 by·shield_by·critnext/crit_next uid·gward uid·block_by·break_by·stagger_by), 점수는 스냅샷이 계산(world_raid_score·world_gw_shares·world_pfight_shares), 합동 토벌 정산 첫머리 world_raid_recontrib가 contrib에 적음(서버 보스 L/30). 막아 준 피해에 드는 것: 퇴마 결계(꺾은 광역)·호법 신장(끌어와 맞은 전부 + 줄인 몫)·휘청임/묶은 손길(놓친 반격 기대 피해)·영력 보급(채운 영력×공격력×0.05를 북돋움으로). 화면 raid.js creditLine, 기록판 「기여」.
 - 협동 기술 world_coop_skills 24개(직업마다 4, 전투 숙련 3·8·18·36): 합동 토벌·귀허에서 그 턴 행동으로(영력·다시 쓰기). 호위 무사 패턴 공유·급소 지시·흐름 끊기·파진 돌격(제 공격 세 번 +30%, target self), 백공 현장 수선·영력 보급·방호 법구·공명 법진. 파티 원정 합동 전투는 world_coop_exp_procs가 기술마다 10%, 한 싸움 두 번까지(win_p 뒤).
 - 받는 피해 공용 world_cb_mitigate(원값, 능력치, 효과, 나, 광역, 터뜨림, 태세, 피하기): 능력치 → 방어·버티기 → 진언(봉연 {by,pct}·귀허 건 사람 id 50%) → 결계 → 호법 → 보호막 순, 효과를 닳게 하고 막아 준 credits를 돌려주면 world_raid_hit·world_gw_hit가 기여·체력·기록에 적음(대신 막기는 world_raid_hit). 새 보스 전투도 이 함수를 쓴다. 엔진마다 따로: 물품(봉연 world_use_item, 귀허 world_gw_resolve 안), 쓰러짐/쉬는 중(봉연 초·out_until, 귀허 라운드·out_rounds·rest), 협동 기술 효과 걸기.
-- 파티 전투 공용 함수(7.7.7n — 새 전투도 이것을 쓴다): 물품 효과 world_item_fx(기본 물품 → hp·mn·sp·er·stam·cures·buffs, world_use_item·world_party_use_item·귀허·원정 보급), 공격 굴림 world_cb_attack(능력치, fx, bfx, 하한, 폭 → d·crit·fx·bfx·src: 기세·사슬·약점 드러내기·약점·급소 crit_next), 늘려 준 몫 world_cb_boost_credits(→ [[사람, 몫, boost]…, [나, 남은 몫, dmg]]), 기운 걸기 world_cb_buff(종류, 효과, 건 사람 → fx 조각), 표적 order by world_cb_pick_key(이목) limit 1(무게 world_cb_aggro = max(5,이목)^1.3).
+- 파티 전투 공용 함수(7.7.7n — 새 전투도 이것을 쓴다): 물품 효과 world_item_fx(원본 world_item_catalog.use_fx, 기본 물품 → hp·mn·sp·er·stam·cures·buffs, world_use_item·world_party_use_item·귀허·원정 보급), 공격 굴림 world_cb_attack(능력치, fx, bfx, 하한, 폭 → d·crit·fx·bfx·src: 기세·사슬·약점 드러내기·약점·급소 crit_next), 늘려 준 몫 world_cb_boost_credits(→ [[사람, 몫, boost]…, [나, 남은 몫, dmg]]), 기운 걸기 world_cb_buff(종류, 효과, 건 사람 → fx 조각), 표적 order by world_cb_pick_key(이목) limit 1(무게 world_cb_aggro = max(5,이목)^1.3).
 - 칭호 13(분류 '토벌', 규칙 'raid' → world_raid_rule_count, world_title_award_check는 이벤트 'raid'일 때만).
 - 피해 기록판 views/meter.js mountMeter(합동·파티 토벌·귀허): 파티원마다 준 피해·받은 피해·회복의 수치·몫·게이지, 갈래 단추 정렬. 받은 피해 world_raid_members.taken(world_raid_hit)·world_gw_members.taken(world_gw_hurt), 파티 토벌 world_pfight_members.dmg·taken·heal(world_pfight_resolve가 차례 앞뒤 체력 차, yh.pf_hb). 스냅샷 members로 — 따로 안 묻는다. 휴대폰(899px↓) 오른쪽 손잡이 반투명 창(yh-meter-open·yh-meter-tab), PC 참가자 칸 아래.
 
@@ -471,7 +472,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 거래 가능 여부
 
 - 희귀 성장 아이템 거래 불가, 사망 관련 아이템 거래 가능. 거래 가능 여부는 서버가 검증한다.
-- 거래소 전용(world_market_only·core.js MARKET_ONLY — 함께 고친다): 비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽. 직접 거래·정인 선물(world_bond_gift) 불가, 등록가 시세 70% 이상·24시간 20개(world_trade_offer_create), 거래세 10%(world_trade_offer_buy, 수향 감면 적용). 응축 영핵은 거래 불가(+7 강화 핵심).
+- 거래소 전용(원본 world_item_catalog.market_only 한 칸 → world_market_only·화면 core.js MARKET_ONLY는 물품 목록 mk로 채움): 비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽. 직접 거래·정인 선물(world_bond_gift) 불가, 등록가 시세 70% 이상·24시간 20개(world_trade_offer_create), 거래세 10%(world_trade_offer_buy, 수향 감면 적용). 응축 영핵은 거래 불가(+7 강화 핵심).
 
 ### 경제 균형
 
@@ -530,7 +531,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 현대적인 다크 판타지: 어두운 배경·절제된 포인트 색·야간 도시의 은은함·읽기 편한 글꼴과 명확한 위계·일관된 패널·버튼·상태 표시·장식보다 편의.
 
 - 이모지를 장식으로 쓰지 않는다(아이콘과 글).
-- 평면 디자인(그라데이션·그림자·흐림 없음). 예외(사용자 요청): 장야 붉은 안개(§8), 색 고르기 판·막대.
+- 평면 디자인(그라데이션·그림자·흐림 없음). 예외(사용자 요청): 컷씬, 색 고르기 판·막대.
 - 테마 theme.js THEMES 32가지: 프리셋(야행·한지·청자·단청·쪽빛·황토·월하·홍매·송연·나전 등)과 흑·백 버전, 모서리·글꼴(고딕·명조)·선 굵기, deco {tex(tile·brush·dot·bamboo·wave·lattice·star·grain·hanji), frame(bracket·dot·round·double·line·none), head(plain·band·under)} → :root data-tex·data-frame·data-head(또렷한 선·점만). 새 테마도 deco를 단다. 바탕·강조·포인트 색 직접 고르기.
 - 색 고르기 colorpick.js: app.js installColorPicker가 모든 input[type=color] 누름을 가로채 openColorPicker → 「설정」하면 value를 바꿔 input·change. 사각형 판(가로 채도·세로 밝기)·색조 막대·Hex·추천색 24(PICKS: 바탕 8·강조 16).
 - 글자 크기 다섯 단계(theme.js FONT_SIZES, --fz 0.85~1.22, yh-fz), CSS는 calc(Npx * var(--fz, 1)), 터치 입력칸은 16px 아래로 안 내려감.
@@ -589,7 +590,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 롤백·초대·점검
 
-- 롤백 연출 cutscene.js: pg_cron yh-rollback-close가 11/2 00:00 KST에 world_rollback_close(마지막 토벌 실패 마무리·봉연 소식·anon·authenticated의 public 스키마 사용 거둠 = maintenance/start.sql, 끝나면 예약 삭제). 점검 페이지 maintenance.js는 maintenance.json scene 'rollback'이면 「첫째 밤의 끝」을 창마다 한 번(sessionStorage yh-cs-rollback), 「다시 보기」. 다시 연 뒤 생성 화면(app.js renderCreate)은 계정마다 한 번(yh-morning:<uid>) 「아침」(REOPEN_AT 이후만). 롤백 뒤 maintenance.json의 scene을 지운다.
+- 컷씬 cutscene.js: 다시 연 뒤 생성 화면(app.js renderCreate)이 계정마다 한 번(yh-morning:<uid>) 「아침」(REOPEN_AT 이후만), 로그인 화면 「아침」 되풀이 음악(loginMusic). 롤백 순간의 「첫째 밤의 끝」·점검 페이지 컷씬·cutscene.mp3는 롤백을 마쳐 지움(2026-11-02, 점검 문 닫기·열기는 supabase/maintenance/start.sql·end.sql).
 - 점검 중 도움말 help.html: 대기 화면 단추·컷씬 오른쪽 위 「도움말」(.cs-tr .cs-help, stay면 늘 보임), guide.js render(el, {standalone:true})가 서버 필요한 단추(패치노트·처음 안내·첫 걸음·제보)를 빼고 그림(DB 요청 없음).
 - 점검 차단: public 사용을 거두면 authenticated RPC·표 읽기와 anon 표 읽기가 42501, 가입 훅은 supabase_auth_admin이 public 사용 권한을 따로 가져 돌고 invite_open_at이 없으면 403. 롤백 SQL은 world_app_meta invite_required를 지우면 안 된다(지우면 초대권 없이 가입). Edge Function·Storage 버킷 없음. 1장 첫 장면 대사 덧붙임 supabase/pending/rollback_intro.sql.
 - 계정 zjaqorgha(캐릭터 「고창덕」)는 GM 배부 초대권으로 운영진이 만든 정식 계정 — 계정(auth.users·초대권 사용 기록)은 보존, 캐릭터는 똑같이 롤백 대상(사용자 결정, 휴면 정리 대상 아님).

@@ -1,10 +1,12 @@
 // 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
 // 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
-import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, spOf } from '../core.js';
+import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, spOf, JOBS } from '../core.js';
 import { chip } from './common.js';
+import { USABLE } from './item.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-export const JOB = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '백공 기술관', medic: '의무관', artificer: '호위 무사' };
+// 직업 이름은 core.js JOBS 하나에서(7.7.7o)
+export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
 export const INTENT = {
   strike: ['공격', '평범한 공격입니다.', 0], heavy: ['강타 준비', '큰 피해가 옵니다. 방어하면 4분의 1로 줄이고, 근접 무기면 받아칩니다.', 2],
   soar: ['날아오름', '하늘로 솟구칩니다. 다음 턴에 급강하합니다.', 1], dive: ['급강하', '높은 곳에서 내리꽂습니다. 방어하세요.', 2],
@@ -26,13 +28,12 @@ export const SKILL = {
 };
 const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비', weak: '공격 약화' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
-// 현장 토벌에서 쓸 수 있는 물품(서버 world_battle_action이 받는 11가지와 같다 — 음식·반요 고약은 토벌 중에 못 씀). 파티 토벌(pfight.js)도 이 목록을 쓴다
-export const ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22'], ['herb', '체력 12'], ['ward_talisman', '정신 8 · 정화'], ['rejuv_pill', '체력 60'], ['grand_pill', '체력 100'],
-  ['spirit_tea', '영력·기력 10'], ['clear_spirit_pill', '영력·기력 20'], ['spirit_qi_pill', '영력·기력 35'], ['moonlight_essence', '영력·기력 55'], ['heavenly_dew', '영력·기력 80']];
+// 현장 토벌에서 쓸 수 있는 물품(서버 world_battle_action이 받는 11가지와 같다 — 음식·반요 고약은 토벌 중에 못 씀). 파티 토벌(pfight.js)도 이 목록을 쓴다. 효과 문구는 item.js USABLE(서버 use_fx)에서
+const ITEM_IDS = ['tonic', 'herbal_extract', 'herb', 'ward_talisman', 'rejuv_pill', 'grand_pill', 'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 // 물품 칸에 보일 것: 보통 물품과 우수품(<id>_hq)을 함께(7.7.1 — 보통 id만 보아 우수품만 가진 사람에게는 단추가 뜨지 않았다. 서버는 world_item_base로 받는다)
 // always: 앞에서 몇 가지는 없어도 잠긴 단추로 보인다
 export function trayList(inv, always = 0) {
-  return ITEMS.flatMap(([k, d], i) => [[k, d, i < always], [`${k}_hq`, `${d} · 우수품 +15%`, false]])
+  return ITEM_IDS.flatMap((k, i) => { const d = USABLE[k] || ''; return [[k, d, i < always], [`${k}_hq`, `${d} · 우수품 +15%`, false]]; })
     .filter(([k, , show]) => show || Number(inv[k]) > 0);
 }
 
@@ -60,7 +61,7 @@ window.addEventListener('yh-battle-item', e => {
   if (!host?.isConnected || !data?.battle) return;
   e.detail.handled = true;
   const id = e.detail.id, base = String(id).replace(/_hq$/, '');
-  if (!ITEMS.some(([k]) => k === base)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 전투의 「물품」으로 씁니다.', 'warn'); return; }
+  if (!ITEM_IDS.includes(base)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 전투의 「물품」으로 씁니다.', 'warn'); return; }
   if (busy || Date.now() < nextAt) { toast('아직 다음 행동을 할 수 없습니다.', 'warn'); return; }
   send('item', id);
 });

@@ -2,7 +2,6 @@
 // 안내 문구·예상 종료·작업 목록은 maintenance.json(message·until·notes)에서 읽는다.
 import { applySavedTheme } from './theme.js';
 import { serverState } from './config.js';
-import { playCutscene } from './cutscene.js';
 
 applySavedTheme();
 const EVERY = 30000;
@@ -14,22 +13,8 @@ const clock = d => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-d
 let nextAt = 0, busy = false;
 const LOADED = Date.now();
 
-// 롤백 점검(maintenance.json scene 'rollback'): 점검 동안 이 페이지는 「첫째 밤의 끝」 컷씬만 보인다.
-// 마지막 장면에서 닫을 수 없고(다시 보기만), 아래 글 칸에 다시 여는 때와 안내를 둔다. 서버가 열리면 아래 확인이 게임으로 보낸다.
-// 페이지는 5분마다 새로 읽으므로 이 창에서 한 번 본 뒤에는 처음부터 틀지 않고 마지막 장면으로 바로 연다.
-let played = false;
-function rollbackScene(info) {
-  if (info.scene !== 'rollback' || played) return;
-  played = true;
-  const t = info.until ? new Date(info.until) : null;
-  const when = t && !isNaN(t) ? t.toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' 무렵 다시 엽니다.' : '끝나는 대로 다시 엽니다.';
-  const note = `${info.message || '서버 점검 중입니다.'}\n${when} 열리면 이 화면이 저절로 게임으로 돌아갑니다.\n받은 초대권 번호는 다시 연 뒤 설정 › 계정에서 볼 수 있습니다.`;
-  let seen = false; try { seen = !!sessionStorage.getItem('yh-cs-rollback'); sessionStorage.setItem('yh-cs-rollback', '1'); } catch {}
-  playCutscene('rollback', { stay: true, note, atEnd: seen });
-}
 function show(s) {
   const info = s.info || {};
-  if (s.state === 'maintenance') rollbackScene(info);
   const off = s.state === 'offline';
   state?.classList.toggle('offline', off);
   state?.classList.toggle('open', s.state === 'open');

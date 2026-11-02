@@ -16,6 +16,7 @@ import { checklistHtml, noteRegion } from '../tutorial.js';
 import { questBox, fillQuests } from '../quests.js';
 import { raidBand, fillRaidBand } from './raid.js';
 import { regionIntro } from '../lore.js';
+import { USABLE } from './item.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -117,11 +118,11 @@ function partyHtml(p, s) {
 }
 
 // 파티원에게 회복품 쓰기(world_party_use_item): 같은 곳의 동료에게 약·부적을 쓴다. 의무관이 쓰면 효과 ×1.4(서버가 정함, 여기 수치는 안내).
-const AID_ITEMS = [['tonic', '체력 35'], ['herbal_extract', '체력 22·출혈·화상·삠'], ['herb', '체력 12·중독'], ['rejuv_pill', '체력 60·출혈·화상·삠·중독'], ['grand_pill', '체력 100·정신 20'],
-  ['medicine_base', '정신 12·피로·감기'], ['calm_brew', '정신 30·심신 동요'], ['ward_talisman', '정신 8·침식 −12·사념 침식'], ['purify_water', '정신 5·침식 −20']];
+// 서버 world_party_use_item이 받는 아홉 가지 — 효과 문구는 물품 목록(item.js USABLE, 서버 use_fx)에서
+const AID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'medicine_base', 'calm_brew', 'ward_talisman', 'purify_water'];
 function openAid(target, name) {
   const inv = store.character.inventory || {}, medic = store.character.job_key === 'medic';
-  const have = AID_ITEMS.filter(([k]) => Number(inv[k] || 0) > 0);
+  const have = AID_ITEMS.filter(k => Number(inv[k] || 0) > 0).map(k => [k, USABLE[k] || '']);
   const m = openModal({ title: `${name} 돌보기`, body: `<p class="muted small">같은 곳에 있는 동료에게 약·부적을 씁니다.${medic ? ' 의무관이 쓰면 효과가 1.4배입니다.' : ''} 쓰러진 동료는 구조해야 합니다.</p>
     ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
       : empty('가방에 동료에게 쓸 약·부적이 없습니다.')}` });

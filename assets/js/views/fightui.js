@@ -2,7 +2,7 @@
 // 북돋기·약화 아이콘과 떠 있는 짧은 설명, 직업 색 참가자 칸·자세히 칸, 내 체력·영력 막대, 협동 기술 아이콘, 물품 창 목록(이름·회복 수치).
 // 새 효과·기술을 넣으면 FX_NAME·FX_ICON·FX_TIP·SKILL_ICON에 함께 더한다.
 import { esc, icon, fmt, nameOf, JOBS, brief } from '../core.js';
-import { itemDesc } from './common.js';
+import { itemDesc, catItem, catalogList } from './common.js';
 import { USABLE, fxHtml } from './item.js';
 
 // 효과 이름: 봉연(world_raid_members.fx)과 귀허(world_gw_members.fx·world_gw_fights.bfx)의 키를 한 표로
@@ -79,11 +79,14 @@ export const coopBtn = (k, data = '') => `<button type="button" class="coop-btn 
   <b>${icon(SKILL_ICON[k.id] || 'spark', 13)}${esc(k.name)}</b><small>${esc(k.why || `영력 ${k.cost}`)}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
 
 // 물품 창 목록: 이름·남은 수·회복 수치만(제보 86), 짧은 설명은 title
-export const SP_ITEMS = new Set(['spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew']);
+// 영력·기력만 채우는 물품(7.7.7o: 물품 목록의 서버 효과로 가름 — 새 물품도 저절로 이 칸에)
+export const isSpItem = k => { const f = catItem(k)?.fx; return !!f && f.sp > 0 && !(f.hp > 0) && !(f.mn > 0); };
+// 토벌에서 쓸 수 있는 회복 물품: 체력·정신·영력을 채우는 모든 소모품(우수품은 itemGroups가 더함)
+export const battleItems = () => (catalogList() || []).filter(i => !String(i.id).endsWith('_hq') && i.fx && (i.fx.hp > 0 || i.fx.mn > 0 || i.fx.sp > 0)).map(i => i.id);
 export const fxOf = k => fxHtml(String(USABLE[k.replace(/_hq$/, '')] || '').split(' · ').filter(x => /^(체력|정신|영력|침식)|치료|풀기/.test(x.trim())).join(' · ') || brief(itemDesc(k)) || '');
 export const itemListHtml = (ids, inv, on = '') => ids.length ? `<ul class="raid-item-list">${ids.map(k => `<li><button type="button" class="raid-item ${on === k ? 'on' : ''}" data-use="${esc(k)}" title="${esc(brief(itemDesc(k)) || '')}"><b>${esc(nameOf(k))}</b><span>×${fmt.num(inv[k] || 0)}</span><small>${fxOf(k)}</small></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
 // 가방에 있는 것만(우수품 포함), 체력·정신 / 영력 둘로 나눔
 export function itemGroups(list, inv) {
   const have = l => l.flatMap(k => [k, `${k}_hq`]).filter(k => Number(inv[k]) > 0);
-  return [have(list.filter(k => !SP_ITEMS.has(k))), have(list.filter(k => SP_ITEMS.has(k)))];
+  return [have(list.filter(k => !isSpItem(k))), have(list.filter(k => isSpItem(k)))];
 }

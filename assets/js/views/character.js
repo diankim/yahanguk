@@ -1,6 +1,6 @@
 // 캐릭터: 상태(생존·전투 능력·장비·상태이상) · 성장(능력치·생활 전문화·숙련) · 세력 · 기술 · 자율 활동 · 칭호.
 // 이름·직업·소속은 생성 시 고정되며 여기서 바꿀 수 없다.
-import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct } from '../core.js';
+import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -82,8 +82,6 @@ async function draw(soft) {
 }
 
 /* ── 상태 ─────────────────────────────────────────────── */
-const USE = [['tonic', '체력 35 · 마음 진정'], ['herbal_extract', '체력 22 · 출혈·화상·근맥 치료'], ['herb', '체력 12 · 중독·소화 불량 치료'],
-  ['medicine_base', '정신 12 · 기력 저하·한기·탈진 치료'], ['ward_talisman', '정신 8 · 침식 완화 · 사념·동요·중독 치료'], ['travel_ration', '탐색력 +2']];
 export function combatRows(cur) {
   if (!cur) return '';
   const rows = [
@@ -136,9 +134,9 @@ const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', ar
 export const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
 const QS_N = 8;
 const baseOf = k => String(k || '').replace(/_hq$/, '');
-export const qsDesc = k => { const d = USABLE[baseOf(k)] || USE.find(([x]) => x === k)?.[1] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
+export const qsDesc = k => { const d = USABLE[baseOf(k)] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
 // 회복·치료 효과가 있는 물품(음식·약초 같은 재료 포함): 서버 world_use_item이 받는 것 가운데 몸·정신·영력·침식·탐색력이 오르는 것
-const QS_OK = k => /체력|정신|영력|기력|침식|탐색력|전투불능/.test(USABLE[baseOf(k)] || '') || USE.some(([x]) => x === baseOf(k));
+const QS_OK = k => /체력|정신|영력|기력|침식|탐색력|전투불능/.test(USABLE[baseOf(k)] || '') ;
 function qsSlots(snap) {
   const s = Array.isArray(snap?.slots) ? snap.slots : QS_DEFAULT;
   return Array.from({ length: QS_N }, (_, i) => s[i] || '');
@@ -515,7 +513,7 @@ let tq = '', tcat = '', tOwned = false, tEquipped = false;
 // 칭호 보기 순서(6.1.1): 분류별 · 등급 높은순 · 등급 낮은순(기기에 기억)
 let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 // 칭호 등급(서버 world_title_catalog.grade)
-const TGRADE = { 1: '범품', 2: '양품', 3: '진품', 4: '명품', 5: '신품' }; // 凡品·良品·珍品·名品·神品
+const TGRADE = GRADES; // 凡品·良品·珍品·名品·神品 — 이름은 core.js GRADES
 const LEGACY_HANJA = { legacy_first_night: '第一夜', legacy_unfinished_road: '未完', legacy_ember: '殘火' };
 async function titles(body) {
   const snap = await load('world_title_snapshot');

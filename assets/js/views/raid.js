@@ -3,7 +3,7 @@
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, spOf } from '../core.js';
 import { load, invalidate, loading, errorBox, chip, itemDesc } from './common.js';
 import { mountMeter } from './meter.js';
-import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups } from './fightui.js';
+import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups, battleItems } from './fightui.js';
 // 기여도 갈래(7.7.4, 서버 world_raid_members.credits 원값 — 점수는 서버 world_contrib_score):
 // 준 피해·늘려 준 동료 피해·막아 준 피해·회복(동료 + 자기)·받아 낸 피해·협동 기술 횟수
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
@@ -14,9 +14,6 @@ const creditLine = c => {
   return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : '';
 };
 
-// 토벌에서 쓸 수 있는 회복·영력 물품(가방에 있는 것만 보인다)
-const RAID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve', 'fish_porridge', 'herb_rice', 'moss_porridge', 'bark_stew', 'herb_fish_steam', 'spirit_gukbap', 'calm_brew',
-  'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
@@ -294,7 +291,7 @@ function fillItems() {
   const box = itemLayer && $('#raid-items-body', itemLayer); if (!box) return;
   const inv = store.character?.inventory || {}, out = outUntil > Date.now() || away || resting;
   // 체력·정신 회복과 영력(기력) 회복을 나눠 보인다(제보 67) — 목록 모양은 fightui.js(제보 86)
-  const [hp, sp] = itemGroups(RAID_ITEMS, inv), list = ks => itemListHtml(ks, inv);
+  const [hp, sp] = itemGroups(battleItems(), inv), list = ks => itemListHtml(ks, inv);
   // 결전(7.7.7l): 체력 회복품 한 싸움 네 개, 가방에서 바로 쓰지 않고 「물품」 행동으로만(쉬는 중에 쓰면 그대로 돌아감)
   const fin = snap?.raid?.kind === 'final', left = snap?.me?.items_left;
   box.innerHTML = `<p class="muted small">${fin ? `체력 회복품은 <b>한 싸움에 다섯 개까지</b> · 남은 횟수 <b>${left ?? 0}/5</b>. 물품을 쓰면 그 차례의 행동이 되고, 쉬는 중이면 체력 30으로 싸움에 돌아갑니다.` : out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>

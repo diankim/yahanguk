@@ -969,8 +969,6 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 
 /* 날씨·시간대 */
 .env-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); font-size: calc(12px * var(--fz, 1)); font-weight: 600; cursor: pointer; justify-self: start; }
-.env-chip.long-night { border-color: var(--bad); }
-.env-detail .long-night { border-left: 3px solid var(--bad); padding-left: 10px; }
 /* 7.7.7k(사용자 요청): 시간대와 날씨 사이 세로줄·빈칸을 빼고 바로 잇는다 */
 .env-chip > span + .ico { margin-left: 3px; }
 .env-chip small { color: var(--muted); font-weight: 500; margin-left: 4px; font-variant-numeric: tabular-nums; }
@@ -2531,26 +2529,6 @@ b.sealed { color: var(--bad); }
 .invite-list code { font-size: calc(17px * var(--fz, 1)); font-weight: 700; letter-spacing: .12em; user-select: all; }
 .invite-list li.muted code { text-decoration: line-through; }
 
-/* 장야의 붉은 안개(env.js fog): 화면 아래에서 차오르는 옅은 안개. 누르기를 막지 않고 채팅 시트·창 아래에 깔린다.
-   게임 화면은 평면이 원칙이지만 이 연출만 사용자 요청으로 흐림을 쓴다. */
-#ln-fog { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none; overflow: hidden; filter: blur(6px);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, rgb(0 0 0 / .75) 30%, rgb(0 0 0 / .35) 60%, rgb(0 0 0 / .1) 82%, transparent 100%); mask-image: linear-gradient(to top, #000 0%, rgb(0 0 0 / .75) 30%, rgb(0 0 0 / .35) 60%, rgb(0 0 0 / .1) 82%, transparent 100%);
-  height: 30vh; opacity: .38; transition: height 4s ease, opacity 4s ease; }
-#ln-fog[data-stage="3"] { height: 48vh; opacity: .55; }
-#ln-fog .fog-a, #ln-fog .fog-b { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; display: flex; will-change: transform; }
-/* 7.4.4: 가로로 흐르는 게 보이게 빠르기를 올리고, 두 겹이 서로 다른 빠르기로 아주 느리게 짙어졌다 옅어진다 */
-#ln-fog .fog-a { animation: ln-fog-flow 48s linear infinite, ln-fog-breath-a 14s ease-in-out infinite alternate; }
-#ln-fog .fog-b { height: 80%; opacity: .8; animation: ln-fog-flow 31s linear infinite reverse, ln-fog-breath-b 21s ease-in-out -7s infinite alternate; }
-#ln-fog svg { width: 50%; height: 100%; display: block; }
-@keyframes ln-fog-flow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes ln-fog-breath-a { 0% { opacity: 1; } 55% { opacity: .5; } 100% { opacity: .8; } }
-@keyframes ln-fog-breath-b { 0% { opacity: .35; } 60% { opacity: .9; } 100% { opacity: .55; } }
-/* 안개는 날씨 창에서 따로 끌 수 있으니 기기의 「동작 줄이기」와 상관없이 흐른다(7.4.4, 사용자 결정 — 창 움직임은 끄고 안개만 보고 싶은 사람). 전역 animation: none !important보다 앞서도록 id로 !important */
-@media (prefers-reduced-motion: reduce) {
-  #ln-fog .fog-a { animation: ln-fog-flow 48s linear infinite, ln-fog-breath-a 14s ease-in-out infinite alternate !important; }
-  #ln-fog .fog-b { animation: ln-fog-flow 31s linear infinite reverse, ln-fog-breath-b 21s ease-in-out -7s infinite alternate !important; }
-  #ln-fog { transition: height 4s ease, opacity 4s ease !important; }
-}
 /* 제작법 즐겨찾기 별(7.4.1) */
 .recipe header { justify-content: flex-start; }
 .recipe header .recipe-name { flex: 1 1 auto; min-width: 0; }

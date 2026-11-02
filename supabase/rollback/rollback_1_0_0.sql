@@ -158,6 +158,15 @@ end $c$;
 -- 봉연의 그림자 다음 회차를 새로 잡는다(지난 회차는 2에서 비웠다)
 select public.world_raid_schedule_next();
 
+-- 롤백 연출이 끝나 더 쓰지 않는 함수(2026-11-02 사용자 결정): 장야 알림·문 닫기·마지막 토벌 쓰러뜨림·마지막 토벌 기운.
+-- 부르는 곳이 없고(예약 작업도 위에서 지움) 모두 postgres 주인. 장야 단계(world_long_night_stage)는 위에서 11/2부터 늘 0으로 바꿨고,
+-- 날씨·시간대 함수 여러 곳이 부르므로 남긴다(효과 없음).
+drop function if exists public.world_long_night_tick();
+drop function if exists public.world_rollback_close();
+drop function if exists public.world_last_night_wipe();
+drop trigger if exists trg_world_last_night_raid on public.world_raids;  -- 마지막 합동 토벌(반드시 실패) 기운을 걸던 트리거
+drop function if exists public.world_last_night_raid_fx();
+
 -- ════════ p4_legacy_grant.src.sql ════════
 -- ── 2단계(롤백 직후) ─────────────────────────────
 

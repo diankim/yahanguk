@@ -384,13 +384,10 @@ async function expHistory(body) {
 }
 
 /* ── 어종 도감 ─────────────────────────────────────────── */
+// 시간대·날씨·희귀도·직업 이름은 core.js 이름표(nameOf) 하나에서(7.7.7o)
 const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연' };
-const PHASE = { dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경' };
-const WEATHER = { clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무' };
-const RAR = { common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품' };
 // 도감: 요괴 · 채집 · 어종. 요괴는 만나면 기본 정보, 쓰러뜨리면 상성·수법 대처법·전리품이 열린다.
 let cxKind = '';
-const JOBN = { exorcist: '퇴마관', sealmaster: '봉인술사', scout: '현장 조사원', analyst: '백공 기술관', medic: '의무관', artificer: '호위 무사' };
 const mul = v => { const n = Number(v); return `<span class="eff ${n >= 1.2 ? 'ok' : n <= 0.85 ? 'bad' : ''}">×${n}</span>`; };
 const codexTitles = list => (list || []).length ? panel('도감 칭호', `<ul class="spot-list">${list.map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}${t.need && !t.earned ? ` · ${fmt.num(t.progress ?? 0)}/${fmt.num(t.need)}` : ''}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>`, { ico: 'spark' }) : '';
 async function monsterCodex(box) {
@@ -411,7 +408,7 @@ async function monsterCodex(box) {
         ${m.desc ? `<small class="muted">${esc(m.desc)}</small>` : ''}
         <small class="best">만남 ${fmt.num(m.seen)} · 토벌 ${fmt.num(m.defeated)}</small>
         ${m.counter ? `<details class="mon-counter"><summary>${icon('scroll', 12)} 파훼법</summary>
-          <p class="small">상성: 근접 ${mul(m.counter.melee)} · 원거리 ${mul(m.counter.ranged)} · 술법 ${mul(m.counter.magic)}${m.counter.job ? ` · ${esc(JOBN[m.counter.job] || '')} +20%` : ''}</p>
+          <p class="small">상성: 근접 ${mul(m.counter.melee)} · 원거리 ${mul(m.counter.ranged)} · 술법 ${mul(m.counter.magic)}${m.counter.job ? ` · ${esc(nameOf(m.counter.job))} +20%` : ''}</p>
           ${m.counter.habit ? `<p class="small muted">${esc(m.counter.habit)}</p>` : ''}
           <ul class="gim-list">${(m.counter.gimmicks || []).map(g => `<li><b>「${esc(g.name)}」</b><small>Lv.${g.from}부터 · ${esc(g.tell)}</small><small>${esc(g.tip)}</small></li>`).join('')}</ul>
           ${(m.counter.drops || []).length ? `<p class="small">전리품: ${m.counter.drops.map(d => esc(d.name)).join(', ')}</p>` : ''}</details>` : '<small class="muted">쓰러뜨리면 파훼법이 적힙니다</small>'}
@@ -454,7 +451,7 @@ async function fishCodex(body) {
   const [o, map] = await Promise.all([load('world_fish_codex'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
   const sp = o.species || [], got = sp.filter(x => x.caught).length;
   const grounds = o.grounds || [];
-  const when = x => [x.phase ? PHASE[x.phase] : '', x.weather ? WEATHER[x.weather] : ''].filter(Boolean).join('·');
+  const when = x => [x.phase ? nameOf(x.phase) : '', x.weather ? nameOf(x.weather) : ''].filter(Boolean).join('·');
   body.innerHTML = `
     <div class="codex-head"><p class="desc">강·늪·바다·호수·깊은 물에서 낚은 물고기가 여기에 기록됩니다. 아직 낚지 못한 어종은 이름이 가려져 있고, 사는 곳과 잘 무는 때만 알려 줍니다. 낚싯대를 가방에 넣고 물가 지역의 현장에서 낚으세요.</p>
       <div class="chips">${chip(`도감 ${got}/${sp.length}`, 'accent')}${chip(`낚은 물고기 ${fmt.num(o.total_caught)}마리`)}</div>
@@ -466,7 +463,7 @@ async function fishCodex(body) {
         <p class="muted small">낚시터: ${gs.map(g => `${esc(g.region_name)}(${esc(g.ground_name)}${g.safe ? ' · 안전지대' : ''} · Lv.${g.min_level}+)`).join(', ') || '없음'}</p>
         <div class="btn-row">${gs.map(g => goButton(g.region_id, map)).join('')}</div>
         <ul class="fish-grid">${list.map(x => `<li class="fish-card r-${esc(x.rarity)} ${x.caught ? '' : 'unknown'}">
-          <b>${esc(x.name)}</b><small>${esc(RAR[x.rarity] || '')}${when(x) ? ` · ${esc(when(x))}에 잘 뭄` : ''}${x.min_level > 1 ? ` · Lv.${x.min_level}+` : ''}</small>
+          <b>${esc(x.name)}</b><small>${esc(x.rarity ? nameOf(x.rarity) : '')}${when(x) ? ` · ${esc(when(x))}에 잘 뭄` : ''}${x.min_level > 1 ? ` · Lv.${x.min_level}+` : ''}</small>
           ${x.where?.length ? `<small class="muted">${esc(x.where.join('·'))}에서만</small>` : ''}
           ${x.caught ? `<small>${esc(x.description || '')}</small><small class="best">${fmt.num(x.count)}마리 · 가장 큰 것 ${x.best_size}cm</small>` : '<small>아직 낚지 못했습니다</small>'}</li>`).join('')}</ul>`, { ico: 'leaf', cls: 'compact' });
     }).join('')}
