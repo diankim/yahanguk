@@ -233,6 +233,28 @@ begin
   end if;
 end $p$;
 
+-- ── 다섯 곳(현장·원정·귀허·결전·봉연) 함께 본 균형(7.7.7r 2차, 사용자 결정 「한 곳만 떼어 맞추지 말 것」) ─────
+--  · 암영 검객 근접 공격력 ×1.10 → ×1.18(근접 공격수가 원거리·술법 공격수만큼 빨리 잡게)
+--  · 호위 무사 수호 「버팀 기세」 다음 공격 +35% → +20%(방패가 공격수보다 빨리 잡지 않게)
+--  · 퇴마관 받는 피해 −6%(방어·이목은 그대로, 오래 버티는 싸움에서 너무 쉽게 쓰러지지 않게)
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_combat_stats');
+  if position($a$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.10$a$ in d) > 0 then
+    execute pg_temp.rep(d, $a$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.10$a$, $a$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18$a$);
+  end if;
+  d := pg_temp.fdef('world_battle_action');
+  if position($a$THEN mul := mul * 1.35; v_pfx := v_pfx - 'brace';$a$ in d) > 0 then
+    execute pg_temp.rep(d, $a$THEN mul := mul * 1.35; v_pfx := v_pfx - 'brace';$a$, $a$THEN mul := mul * 1.20; v_pfx := v_pfx - 'brace';$a$);
+  end if;
+  d := pg_temp.fdef('world_job_effect');
+  if position($a$when 'exorcist'   then case p_key when 'magic_pct' then 8 else 0 end$a$ in d) > 0 then
+    execute pg_temp.rep(d, $a$when 'exorcist'   then case p_key when 'magic_pct' then 8 else 0 end$a$,
+      $a$when 'exorcist'   then case p_key when 'magic_pct' then 8 when 'incoming_damage_pct' then -6 else 0 end$a$);
+  end if;
+end $p$;
+
 do $c$
 begin
   if (select passive_effect ->> 'presence_pct' from public.world_skill_catalog where skill_id = 'dagger_t43') <> '-15' then raise exception '7.7.7r: 단도 이목'; end if;
