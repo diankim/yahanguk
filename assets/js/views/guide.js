@@ -30,7 +30,9 @@ function coopTableHtml() {
 const coopRanks = () => [...new Set(GD.coop.map(c => c.rank))].sort((a, b) => a - b).join('·');
 // 혼자 도전할 때의 직업 보정(서버 world_solo_aid): 귀허 solo_dmg · 결전 final_dmg · 받는 피해 solo_guard
 function soloAidHtml() {
-  const cell = (a, key) => pctTxt(a[key] || 0) + (a.solo_guard ? ` · 받는 피해 −${a.solo_guard}%` : '');
+  // 받는 피해 보정: 귀허는 solo_guard, 결전은 final_guard(양수 = 덜 받음, 음수 = 더 받음)
+  const guardTxt = g => g ? ` · 받는 피해 ${g > 0 ? '−' : '+'}${Math.abs(g)}%` : '';
+  const cell = (a, key) => pctTxt(a[key] || 0) + guardTxt(Number(key === 'final_dmg' ? a.final_guard : a.solo_guard) || 0);
   return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
     ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
       return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;

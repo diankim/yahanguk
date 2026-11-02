@@ -263,7 +263,7 @@ function patchActions(me, members) {
   // 내 체력·영력은 막대로 크게, 내가 준 피해·기여도도 함께
   const mine = members.find(m => m.me), spName = spOf()[0];
   const so = me.solo;
-  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}${so ? soloAidHtml(so.final_dmg ?? so.solo_dmg, so.solo_guard, so.solo_falls) : ''}
+  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}${so ? soloAidHtml(so.final_dmg ?? so.solo_dmg, so.final_guard ?? 0, so.solo_falls) : ''}
     <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${fxChips(Object.keys(me.fx || {}))}</span></div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
