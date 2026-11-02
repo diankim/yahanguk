@@ -272,7 +272,7 @@ function previewText(cur, next) {
   const parts = PREVIEW.filter(([k]) => Number(next[k]) !== Number(cur[k])).map(([k, n, u]) => `${n} ${cur[k]}${u} → <b>${next[k]}${u}</b>`);
   return parts.length ? parts.join(' · ') : '전투 수치 변화 없음 (지금 무기로는 영향이 적습니다)';
 }
-// 능력치 하나의 상한(서버 world_stat_cap과 같은 식)
+// 능력치 하나의 상한(서버 world_stat_cap_of와 같은 식)
 // 직업마다 기본 능력치가 달라 상한도 능력치마다 다르다(world_stat_cap_of = 직업 기본값 + 레벨×1.5)
 const statCap = (lv, k, job) => (JOBS[job]?.base?.[k] ?? 5) + Math.floor(Math.max(1, Number(lv) || 1) * 1.5);
 // 화면에서 나눈 점수(확정 전): 캐릭터마다 sessionStorage에 남긴다

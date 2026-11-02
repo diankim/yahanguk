@@ -3,7 +3,7 @@
 // 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
-import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal } from '../core.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
 import { load, chip, danger, loading, errorBox, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
@@ -463,7 +463,7 @@ function restGain(r, full) {
   const q = r.rest_quality ?? 1;
   return { hp: half((full ? 65 : 25) + q * 5), mn: half(full ? 50 : 20), sp: half(full ? 35 : 12), er: half(full ? 18 : 6) };
 }
-const gainText = g => `체력 +${g.hp} · 정신 +${g.mn} · 영력 +${g.sp} · 침식 -${g.er}`;
+const gainText = g => `체력 +${g.hp} · 정신 +${g.mn} · ${spOf()[0]} +${g.sp} · 침식 -${g.er}`;
 
 function openRest(r) {
   const safe = r.safe;
