@@ -426,6 +426,13 @@ begin
       $a$where s.slot = 'a' and s.category <> 'combo'
        and (s.category not in ('melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine') or s.category = public.world_job_line((select x.job_key from public.world_characters x where x.owner_id = uid)))$a$);
   end if;
+  -- 지난 직업의 전투 계열 택일은 고를 수 없다(효과가 없으므로 전만 날리지 않게)
+  d := pg_temp.fdef('world_skill_choose');
+  if position('world_skill_line_ok' in d) = 0 then
+    execute pg_temp.rep(d, $a$  if coalesce((c.skill_progress -> p_line ->> 'rank')::int, 1) < p_tier then$a$,
+      $a$  if not public.world_skill_line_ok(p_line, null, c.job_key) then raise exception '지금 직업의 전투 계열이 아니라 고를 수 없습니다.'; end if;
+  if coalesce((c.skill_progress -> p_line ->> 'rank')::int, 1) < p_tier then$a$);
+  end if;
   -- 봉인술 3단계 「부적 정련」의 봉인 공예 품질 +5는 봉인술사에게만
   d := pg_temp.fdef('world_craft_item');
   if position($a$c.job_key = 'sealmaster' and coalesce((c.skill_progress -> 'sealing'$a$ in d) = 0 then
@@ -460,6 +467,20 @@ insert into public.world_title_catalog(title_key, title_name, icon, description,
  ('rain_healer', '빗속의 의원', 'moon', '빗소리 속에서도 맥은 흔들리지 않는다.', '장우 속에서 의술 계열로 10마리 토벌', '{"magic_pct": 2, "healing_pct": 3}', true, '{"n": 10, "p": {"line": "medicine", "env_weather": "rain"}, "ev": "combat"}', 61, '비밀', 3)
 on conflict (title_key) do update set title_name = excluded.title_name, description = excluded.description, condition_text = excluded.condition_text,
   bonus = excluded.bonus, hidden = excluded.hidden, rule = excluded.rule, category = excluded.category, grade = excluded.grade;
+
+-- ── 6. 가방·창고 기본 10칸씩 더(직업을 바꿔 키우면 직업 전용 무기·장비를 여러 벌 챙기므로) ─────
+-- 가방 기본 24 → 34(새 캐릭터 기본값, 롤백 뒤 모두 새로 만든다), 창고 기본 60 → 70(최대 98 → 108)
+alter table public.world_characters alter column bag_capacity set default 34;
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_storage_capacity');
+  if position($a$'base', 70$a$ in d) = 0 then
+    d := pg_temp.rep(d, $a$'base', 60$a$, $a$'base', 70$a$);
+    d := pg_temp.rep(d, $a$'total', 60 + $a$, $a$'total', 70 + $a$);
+    execute d;
+  end if;
+end $p$;
 
 -- 확인: 모든 무기에 직업 태그, 새 계열 18개씩
 do $c$

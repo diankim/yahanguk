@@ -492,7 +492,7 @@ function emblemBase(ownerId, profile, size) {
 // 다음 레벨까지 경험치(서버 world_xp_need와 같다). 최고 레벨은 40(7.0).
 export const LEVEL_CAP = 40;
 export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 1) ** 2;
-export function bagLimit(c) { return (c?.bag_capacity || 24) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
+export function bagLimit(c) { return (c?.bag_capacity || 34) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
 // 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
 // 못 읽으면 기기에 남긴 지난 값을 쓰고 다음 캐릭터 읽기 때 다시 읽는다(전에는 실패하면 모두 1로 보고 다시 읽지 않아 물품 개수가 칸 수로 보였다).
 // 물품 묶음 크기와 분류(갈래)를 함께 기억한다: { id: [묶음, 분류] }
