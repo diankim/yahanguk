@@ -303,8 +303,9 @@ function select(id, center) {
   selected = id;
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
-  // 지도를 연 뒤 동료가 파티에 들어왔으면 동승 단추가 보이게(5초 캐시, 바뀌었을 때만 다시 그림)
-  load('world_party_overview', undefined, { maxAge: 5000 }).then(p => {
+  // 지도를 연 뒤 동료가 파티에 들어왔으면 동승 단추가 보이게(파티장·두 사람 이상 타는 탈것일 때만, 30초 캐시, 바뀌었을 때만 다시 그림)
+  const seats = Number(((mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id) || {}).passenger_capacity || 1);
+  if (partyData?.party?.leader_id === store.character?.owner_id && seats >= 2) load('world_party_overview', undefined, { maxAge: 30000 }).then(p => {
     const k = x => JSON.stringify((x?.members || []).map(m => [m.owner_id, m.location, !!m.in_combat, !!m.downed]).concat([x?.party?.leader_id]));
     if (selected === id && k(p) !== k(partyData)) { partyData = p; drawDetail(); }
   }).catch(() => {});

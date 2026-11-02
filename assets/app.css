@@ -1433,7 +1433,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
   border-radius: var(--r); background: var(--surface); border: 1px solid var(--gold); color: var(--text); text-decoration: none; }
 .growth-pop.in { opacity: 1; transform: translate(-50%, 0); }
 /* 창이 열려 있으면 창 닫기 단추를 가리지 않게 아래로, 누름은 아래로 흘려보냄 */
-.growth-pop { pointer-events: none; } body:has(.modal-backdrop) .growth-pop { top: auto; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+body:has(.modal-backdrop) .growth-pop { pointer-events: none; top: auto; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 .growth-pop .ico { color: var(--gold); flex: none; }
 .growth-pop div { display: grid; gap: 2px; min-width: 0; } .growth-pop b { font-size: calc(15px * var(--fz, 1)); color: var(--gold); } .growth-pop span { font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .growth-pop.g-level { border-width: 2px; } .growth-pop.g-level b { font-size: calc(16px * var(--fz, 1)); }

@@ -221,7 +221,7 @@ async function runAct(btn) {
     const raid = !!btn.dataset.raid, id = raid ? n.payload.raid_id : n.payload.fight_id;
     let go = true;
     // 합류가 안 되면(시간이 지났거나 끝난 싸움) 알림만 거두고 그 화면으로는 가지 않는다(남의 끝난 싸움은 볼 수 없음). 이미 들었으면 간다
-    if (btn.dataset.join) { btn.disabled = true; try { await act(raid ? 'world_raid_join' : 'world_gw_join', raid ? { p_raid: id } : { p_fight: id }); } catch (e) { const m = e.message || String(e); go = /이미/.test(m); if (!go) toast(m, 'warn'); } }
+    if (btn.dataset.join) { btn.disabled = true; try { await act(raid ? 'world_raid_join' : 'world_gw_join', raid ? { p_raid: id } : { p_fight: id }); } catch (e) { const m = e.message || String(e); go = /이미|관전/.test(m); if (!go) toast(m, 'warn'); } }
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); if (go) window.yahangGo(raid ? 'raid' : 'gw', id); return true; }
   if (btn.dataset.wed) {
     let ok = false;

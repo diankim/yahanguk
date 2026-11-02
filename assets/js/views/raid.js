@@ -94,7 +94,7 @@ function draw() {
   const me = s.me || {}, ended = settled(s);
   // 이미 들었거나 끝난 싸움, 답했거나 끝난 포기 제안의 알림은 거둔다(접속마다 다시 뜨지 않게)
   if (me.joined || ended) clearFightNotes(['raid_invite'], 'raid_id', r.id);
-  if (!s.vote || s.vote.mine || ended) clearFightNotes(['raid_vote'], 'raid_id', r.id);
+  if (s.vote?.mine || ended) clearFightNotes(['raid_vote'], 'raid_id', r.id);
   const t0 = Date.now();
   outEnds = r.status === 'fight' ? Object.fromEntries((s.members || []).filter(m => m.out && !m.away).map(m => [m.id, t0 + m.out * 1000])) : {};
   outUntil = me.out ? t0 + me.out * 1000 : 0;
@@ -347,7 +347,7 @@ function bindActs(scope) {
 function bind() {
   const r = snap?.raid; if (!r) return;
   const jb = $('#raid-join', el);
-  if (jb) jb.onclick = () => run(jb, () => rpc('world_raid_join', { p_raid: r.id }));
+  if (jb) jb.onclick = () => run(jb, async () => { const o = await rpc('world_raid_join', { p_raid: r.id }); if (o?.content) toast(o.content, 'info'); return rpc('world_raid_snapshot', { p_raid: r.id }); });
   // 결전 포기: 혼자면 바로 실패, 함께면 동료에게 제안하고 모두 동의하면 다 함께 물러난다(서버 world_raid_forfeit)
   const fb = $('#raid-forfeit', el);
   if (fb) fb.onclick = async () => {
@@ -366,7 +366,7 @@ function bind() {
     const ok = await ask(fighting ? '토벌에서 나옵니다.\n지금까지 쌓은 기여도는 그대로 남아, 토벌이 끝나면 그 몫만큼 보상을 받습니다(기여 1% 이상).\n나간 동안은 요괴가 노리지 않고 가방 물품도 쓸 수 있습니다. 다시 참가하면 이어서 싸웁니다.'
       : '참가 신청을 거둡니다. 모집이 끝나기 전이면 다시 신청할 수 있습니다.', { title: fighting ? '토벌에서 나갈까요?' : '신청을 거둘까요?', ok: fighting ? '퇴장' : '거두기', cancel: '그대로 있기' });
     if (!ok) return;
-    await run(lb, async () => { const o = await rpc('world_raid_leave', { p_raid: r.id }); if (o?.content) toast(o.content, 'info'); return o; });
+    await run(lb, async () => { const o = await rpc('world_raid_leave', { p_raid: r.id }); if (o?.content) toast(o.content, 'info'); return rpc('world_raid_snapshot', { p_raid: r.id }); });
   };
   askVote(r);
   const bb = $('#raid-begin', el);
