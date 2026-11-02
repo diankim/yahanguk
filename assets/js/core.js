@@ -97,7 +97,7 @@ export const JOBS = {
     base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
   medic: { name: '의무관', trait: '치유', desc: '【치유】 다치고 쓰러진 동료를 살리는 치유사. 회복품 ×1.15(파티원에게 쓰면 ×1.4)·회복 +10%(의술 기술로 더 늘어남), 응급 처방(한 전투에 한 번, 체력 회복·나쁜 상태 걷기).',
     base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
-  sealmaster: { name: '봉인술사', trait: '보조·버팀', desc: '【보조·버팀】 요괴를 묶고 동료를 북돋는 술사이자, 앞줄이 비면 받쳐 내는 두 번째 방패. 이목·방어는 호위 무사 다음, 회피는 조사원 다음(이목 +60·방어 +30·회피 +12)·정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
+  sealmaster: { name: '봉인술사', trait: '보조·버팀', desc: '【보조·버팀】 요괴를 묶고 동료를 북돋는 술사이자, 앞줄이 비면 받쳐 내는 두 번째 방패. 이목·방어는 호위 무사 다음, 회피는 월궁 사수 다음(이목 +60·방어 +30·회피 +12)·정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
   analyst: { name: '암영 검객', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는, 근접에서 가장 빨리 쓰러뜨리는 공격수. 근접 공격력 ×1.18(피해 상한과 따로)·근접 치명타 +5·단도 기술로 이목이 낮아짐, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
     base: { strength: 8, agility: 6, vitality: 5, perception: 5, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 은방울 노리개 · 짚신 · 청심환 2' },
