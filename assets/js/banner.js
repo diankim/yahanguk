@@ -21,6 +21,10 @@ function draw() {
       <div class="tb-bar"><i style="width:0%"></i></div><a class="btn small ghost" href="#/map/travel">자세히</a>`;
     el.dataset.start = el.dataset.start && Number(el.dataset.until) === t ? el.dataset.start : Date.now();
     document.body.classList.add('has-banner');
+  } else if (el.classList.contains('moving') && !c.travel_destination) {
+    // 이동을 취소했다(목적지가 비었다): 띠를 거둔다
+    el.hidden = true; el.className = 'travel-banner'; delete el.dataset.until; delete el.dataset.start;
+    document.body.classList.remove('has-banner');
   } else if (el.classList.contains('moving')) {
     // 도착 처리는 상태판(hud)이 서버에 확인한 뒤 yahang:arrived로 알려 준다.
     $('#tb-left', el) && ($('#tb-left', el).textContent = '도착 처리 중…');

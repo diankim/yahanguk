@@ -539,6 +539,8 @@ export function spOf() { return weaponStyle === 'melee' ? ['기력', 'ki'] : ['�
 // 목록에 붙이는 짧은 설명: 첫 문장만, 길면 줄인다
 export function brief(t, n = 42) { const s = String(t || '').split(/(?<=[.!?。])\s|\n/)[0].trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
 export function equippedIds() { return equipped || []; }
+// 장착 목록을 다음 캐릭터 읽기 때 새로 읽게 한다(캐릭터를 막 만든 뒤 등)
+export function forgetEquipped() { equipped = null; }
 export function bagUsed(c) {
   const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;
   return Object.entries(inv).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0) - eq;

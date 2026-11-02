@@ -20,7 +20,8 @@ export function mountHud(el) {
   on('env', render);
   // 행동 직후에는 캐릭터를 이미 다시 읽었으니(act) 상태판 요약만 읽는다. 전투 턴 중에는 그리기만 한다. 자율 활동 상태는 자율 행동 뒤에만.
   on('changed', ev => {
-    if (midBattle(ev)) return render();
+    // 전투 턴 중: 응답에 실린 전투 상태로 진행 중 칸의 적 체력만 맞춘다(따로 읽지 않음)
+    if (midBattle(ev)) { const b = ev.data?.battle; if (b && state.hud?.battle) Object.assign(state.hud.battle, { hp: b.hp ?? state.hud.battle.hp, max_hp: b.max_hp ?? state.hud.battle.max_hp }); return render(); }
     const idle = /idle/.test(ev.name || '');
     // 다른 화면(캐릭터 › 상태)이 방금 같은 요약을 읽었으면 그것을 같이 쓴다(1초 안)
     clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle, hudAge: 1000 }), 350);

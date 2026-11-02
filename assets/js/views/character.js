@@ -20,7 +20,7 @@ const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 const GATHER = ['fieldwork', 'mining', 'fishing'];
 const CRAFT = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
 const IDLE = [
-  ['training', '자율 수련', '경험치와 전투 숙련, 든 무기에 맞는 전투 기술(근접·원거리·봉인술)을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 탐사 기술을 올립니다.', 'search'],
+  ['training', '자율 수련', '경험치와 전투 숙련, 직업의 전투 기술 계열을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 탐사 기술을 올립니다.', 'search'],
   ['maintenance', '장비 정비', '경험치와 제작 숙련, 고른 제작 분야의 기술 계열을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
 ];
 // 자율 활동 보상(서버 world_claim_idle_activity와 같은 식): 시간 h에 대해 숙련·회복 floor(h×12×0.35), 경험치 floor(h×비율×0.35)(최소 1, 최고 레벨이면 0)
@@ -60,6 +60,7 @@ let el, sub = 'status', off = [];
 
 export async function render(root, s) {
   if (!store.character) return;
+  if (s === 'house') return window.yahangGo?.('house');
   el = root; sub = SUBS.some(x => x[0] === s) ? s : 'status';
   const c = store.character;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('user', 14)} ${esc(JOBS[c.job_key]?.name || nameOf(c.job_key))} · ${esc(FACTIONS[c.faction_key]?.name || nameOf(c.faction_key))}</p><h1>${esc(c.character_name)}${gmBadge(c.owner_id)} <small>Lv.${c.level}</small></h1></div></div>

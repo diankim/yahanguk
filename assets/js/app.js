@@ -1,6 +1,6 @@
 import { ID_RULE, idToEmail } from './config.js';
 // 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
-import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard } from './core.js';
+import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
@@ -277,6 +277,7 @@ function renderCreateForm() {
     const btn = $('#create-btn'); btn.disabled = true;
     try {
       await rpc('world_create_character_v2', { p_name: name, p_job: pick.job, p_faction: pick.faction });
+      forgetEquipped();
       const made = await loadCharacter();
       if (!made) throw new Error('캐릭터 정보를 불러오지 못했습니다. 새로고침해 주세요.');
       markPending(made.owner_id);
