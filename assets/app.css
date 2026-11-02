@@ -645,6 +645,7 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .guide-table { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fz, 1)); }
 .guide-table th, .guide-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .guide-table th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fz, 1)); }
+.guide-table tr.g-band th { color: var(--accent); font-size: calc(13px * var(--fz, 1)); padding-top: 12px; border-bottom-color: var(--accent); }
 
 .custom-theme { display: grid; gap: 10px; padding: 12px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); }
 .custom-theme.on { border-color: var(--gold); }
