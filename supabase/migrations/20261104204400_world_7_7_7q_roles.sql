@@ -113,6 +113,12 @@ update public.world_coop_skills set job_key = 'exorcist', unlock_rank = 3, sort 
   exp_text = '진언으로 요괴의 약점을 짚어 주었습니다' where skill_id = 'an_point';
 update public.world_coop_skills set job_key = 'exorcist', unlock_rank = 36, sort = 4, skill_name = '멸마 진격',
   exp_text = '진언을 몰아 앞장서 몰아쳤습니다' where skill_id = 'an_command';
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_gw_tips');
+  if position('「호법 신장」' in d) > 0 then execute replace(d, '「호법 신장」', '「철벽 수호」(호위 무사)'); end if;
+end $p$;
 update public.world_coop_skills set sort = 1 where skill_id = 'an_share';
 update public.world_coop_skills set sort = 3 where skill_id = 'an_break';
 update public.world_coop_skills set sort = 2 where skill_id = 'exo_mantra';
