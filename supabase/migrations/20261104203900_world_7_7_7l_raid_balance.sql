@@ -11,8 +11,8 @@ returns jsonb language sql immutable as $f$
   -- final_dmg: 구중 봉주 결전 혼자일 때만 solo_dmg 대신(회복품이 다섯이라 회복 기술·회피가 있는 직업이 크게 유리해서 따로 맞춤)
   -- final_all: 결전에서 인원과 상관없이(혼자면 final_dmg가 대신)
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 22, "final_all": 15}'
-    when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12, "final_dmg": 30, "final_all": 15}'
+    when 'exorcist'   then '{"solo_dmg": 17, "solo_falls": 2, "solo_guard": 8, "final_dmg": 22, "final_all": 25}'
+    when 'sealmaster' then '{"solo_dmg": 15, "solo_falls": 2, "solo_guard": 12, "final_dmg": 30, "final_all": 25}'
     when 'medic'      then '{"solo_dmg": 5, "solo_falls": 2, "final_dmg": -6}'
     when 'artificer'  then '{"solo_dmg": 5, "solo_falls": 1, "final_dmg": -2}'
     when 'scout'      then '{"solo_dmg": 7, "solo_falls": 2, "final_dmg": -18}'
@@ -143,7 +143,7 @@ begin
   -- 결전: 혼자면 보스 체력 ×1.6·둘이면 ×2.3(전 1·1.7) (회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
   d := replace(pg_get_functiondef('public.world_raid_begin_fight(uuid)'::regprocedure), E'\r\n', E'\n');
   if position('when 1 then 1.6 when 2 then 2.3' in d) = 0 then
-    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.6 when 2 then 2.3', 'final solo hp');
+    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.6 when 2 then 2.4', 'final solo hp');
     execute d;
   end if;
   -- 협동 기술(사용자 결정 2026-11-01, 파티 효율 점검): 퇴마관 파사 진언은 광역뿐 아니라 다음에 받는 공격 한 번에
@@ -194,8 +194,8 @@ update public.world_patch_notes set body = body || $N$
 - 결전에서 회복 기술의 회복량은 절반입니다.
 - 쓰러진 뒤 쉬는 시간은 1분에서 **30초**로 줄었고, 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
 - 모두 물러났을 때 보스가 되찾는 체력은 8%에서 3%로 줄었습니다.
-- 보스 체력 배율: 혼자 1 → **1.6**, 둘 1.7 → **2.5**(셋 2.3·넷 2.8 그대로).
-- 퇴마관·봉인술사는 결전에서 인원과 상관없이 주는 피해 +15%.
+- 보스 체력 배율: 혼자 1 → **1.6**, 둘 1.7 → **2.4**(셋 2.3·넷 2.8 그대로).
+- 퇴마관·봉인술사는 결전에서 인원과 상관없이 주는 피해 +25%(혼자일 때는 아래 혼자 보정이 대신).
 
 ### 귀허의 주인
 - 혼자 도전하면 주인 체력 1.12배.
