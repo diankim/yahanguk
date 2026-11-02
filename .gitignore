@@ -1,1 +1,4 @@
 __pycache__/
+
+# 작업 공간(에이전트 worktree)
+.claude/
