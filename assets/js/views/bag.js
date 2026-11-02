@@ -298,7 +298,7 @@ async function craft(body, inv, stg) {
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));
-    // 직업 전용 제작법은 그 직업만(서버 world_craft_item, 7.7.7q에서 백공 예외를 뺌)
+    // 직업 전용 제작법은 그 직업만(서버 world_craft_item, 7.7.7q에서 암영 검객(옛 백공) 예외를 뺌)
     const jobOk = !r.required_job || r.required_job === c.job_key;
     const lvOk = !r.minimum_level || c.level >= r.minimum_level;
     const skRank = r.required_skill ? Number(c.skill_progress?.[r.required_skill]?.rank || 1) : 0;

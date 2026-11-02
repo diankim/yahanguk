@@ -367,9 +367,9 @@ function profWait(c) { return c.life_changed_at ? new Date(c.life_changed_at).ge
 /* ── 기술 ─────────────────────────────────────────────── */
 const CAT_DESC = {
   melee: '호위 무사(방패·수호)의 계열. 칼·창으로 싸우면 오릅니다. 받는 피해가 줄고, 택일은 방패(이목·도발) 갈래와 수호(반격·버티기) 갈래입니다.',
-  ranged: '현장 조사원의 계열. 활·쇠뇌로 싸우면 오릅니다. 치명타와 원거리 피해가 늘어납니다.',
+  ranged: '월궁 사수의 계열. 활·쇠뇌로 싸우면 오릅니다. 치명타와 원거리 피해가 늘어납니다.',
   sealing: '봉인술사의 계열. 술법으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 몰아치기와 북돋기·약화 갈래입니다.',
-  dagger: '백공 기술관(근접 공격)의 계열. 단도·비수 같은 근접 무기로 싸우면 오릅니다. 근접 피해·치명타가 늘고, 택일은 공격 갈래와 재주(급소·독·덫) 갈래입니다.',
+  dagger: '암영 검객(근접 공격)의 계열. 단도·비수 같은 근접 무기로 싸우면 오릅니다. 근접 피해·치명타가 늘고, 택일은 공격 갈래와 암습(급소·독·덫) 갈래입니다.',
   exorcism: '퇴마관의 계열. 술법으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 몰아치기와 정화(영귀 퇴치·결계 걷기) 갈래입니다.',
   medicine: '의무관(치유)의 계열. 술법(침·약)으로 싸우면 오릅니다. 회복량이 크게 늘고, 택일은 침술과 처방(회복·해독·버티기) 갈래입니다.',
   analysis: '요괴의 약점을 살피며 싸울 때 오릅니다. 익히면 치명타 확률이 오릅니다.',
@@ -429,7 +429,7 @@ async function skills(body) {
   const myCombos = combos.filter(x => !Object.keys(x.requires || {}).some(k => foreignLine(k, c)));
   const oldLines = COMBAT_LINES.filter(k => foreignLine(k, c) && Number(groups[k]?.[0]?.rank || 1) > 1);
   const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
-  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 전투 계열은 직업마다 하나(호위 무사 근접 · 조사원 사격 · 봉인술사 봉인술 · 퇴마관 퇴마술 · 백공 단도 · 의무관 의술)이고 분석·막기·응급 처치는 모두가 함께 씁니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(사격 말고는 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
+  body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 전투 계열은 직업마다 하나(호위 무사 근접 · 조사원 사격 · 봉인술사 봉인술 · 퇴마관 퇴마술 · 암영 검객 단도 · 의무관 의술)이고 분석·막기·응급 처치는 모두가 함께 씁니다. 단계마다 기술을 익히고, 13·30단계에는 추가 기술(사격 말고는 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
     ${Object.keys(groups).length ? `<div class="skill-groups">${[['combat'], ['gathering', 'investigation'], ['crafting']].map(col => `<div class="sk-col">${col.map(key => BRANCHES.find(b => b[0] === key)).map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
       `<div class="sk-lines">${mineOnly(cats, c).map(line).join('')}</div>${k === 'combat' && oldLines.length ? `<p class="muted small">지난 직업 계열(효과 없음): ${oldLines.map(x => `${esc(SKILL_NAME[x] || nameOf(x))} ${fmt.num(groups[x][0].rank)}단계`).join(' · ')}</p>` : ''}`, { ico, cls: 'compact' })).join('')}</div>`).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
@@ -441,7 +441,7 @@ async function skills(body) {
         <b>${esc(x.name)}</b>${x.unlocked ? chip('익힘', 'ok') : chip(`전투 숙련 ${x.rank}단계`)}
         <small>${esc(x.desc || '')}</small><small>${x.target === 'ally' ? '동료 한 명' : x.target === 'all' ? '참가자 모두' : x.target === 'boss' ? '요괴' : '나'} · 영력 ${x.cost} · 다시 쓰기 ${x.cooldown}초</small></li>`).join('')}</ul>
       <p class="muted small">합동 토벌(10장 결전·봉연의 그림자)에서만 그 턴의 행동으로 고릅니다. 같은 지역 파티 원정의 합동 전투에서는 열린 기술이 확률로 저절로 나옵니다.</p>`, { ico: 'users' }) : ''}
-    <p class="muted small">전투 기술 경험은 든 무기가 아니라 직업의 계열에 쌓이고, 무기는 직업에 맞는 것만 들 수 있습니다(근접 무기 호위 무사·백공, 원거리 무기 조사원, 술법 무기 퇴마관·봉인술사·의무관). 직업 계열의 피해·치명타는 공격에 늘 더해집니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
+    <p class="muted small">전투 기술 경험은 든 무기가 아니라 직업의 계열에 쌓이고, 무기는 직업에 맞는 것만 들 수 있습니다(근접 무기 호위 무사·암영 검객, 원거리 무기 조사원, 술법 무기 퇴마관·봉인술사·의무관). 직업 계열의 피해·치명타는 공격에 늘 더해집니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
     $$('.sk-node', el).forEach(b => b.onclick = () => {

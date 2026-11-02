@@ -14,7 +14,7 @@ export const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 �
   evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음에 받는 공격 한 번의 피해를 절반으로 줄이고 정신을 지킨다.',
   taunt: '요괴의 눈길을 끌어 대신 맞고, 받는 피해가 줄어든다.', guard: '방어 태세 — 다음 공격의 피해가 줄어든다.', bound: '사슬에 묶여 다음 공격의 피해가 절반이 된다.',
   expose: '요괴가 받는 피해가 늘어난다.', stagger: '요괴가 휘청여 반격하지 못한다.', smoke: '연막 속에서 요괴의 공격이 빗나갈 수 있다.', break: '다음 광역·기운 터뜨림의 피해가 줄어든다.', block: '손길이 묶여 반격하지 못한다.' };
-export const SKILL_ICON = { art_mend: 'ward', art_supply: 'drop', art_shield: 'bubble', art_array: 'spark', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
+export const SKILL_ICON = { art_mend: 'vital', art_supply: 'crosshair', art_shield: 'dodge', art_array: 'bolt', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
   exo_cover: 'hand', exo_mantra: 'talisman', exo_barrier: 'ward', exo_guardian: 'star', med_aid: 'heart', med_needle: 'needle', med_revive: 'refresh', med_pulse: 'heart',
   sc_mark: 'crosshair', sc_path: 'dodge', sc_smoke: 'fog', sc_signal: 'flag', seal_ward: 'ward', seal_might: 'bolt', seal_chain: 'chain', seal_bagua: 'shield' };
 
