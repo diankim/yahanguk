@@ -614,4 +614,711 @@ end $p$;
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 
+
+-- ===== 혼자 도전 보정(supabase/pending/solo_aid_1_0_0f.sql) =====
+-- solo_aid_1_0_0f.sql — 혼자 도전 보정(world_solo_aid) 다시 맞춤 + 결전 받는 피해를 귀허와 떼어 냄 (제안, 배포 안 함)
+-- 기준 DB: 복제본 yh_fx6(운영 + 1.0.0e + 1.0.0f 후보). world_raid_action 본문은 그 1.0.0f 후보 본문에 한 줄만 바꾼 것 —
+-- 운영에 1.0.0f 후보가 먼저 들어가지 않으면 이 본문을 그대로 쓰지 말고 같은 한 줄만 옮길 것.
+-- 배포는 §17 11-1(버퍼 + owner_inherit_begin/end; world_raid_action 주인 fn_owner_field).
+--
+-- 시뮬 조건(로컬 복제 PostgreSQL 16, 정석 플레이):
+--   빌드: 귀허 Lv38 · 결전 Lv36(협동 기술 넷이 모두 열리는 첫 레벨 — Lv35면 36단계 기술이 잠김), 소속 본부 직속,
+--         능력치 3×(L−1)을 주 능력치 상한(직업 기본+1.5L) → 체질 → 나머지, 직업 계열·전투 숙련 = 레벨, 분석·막기·응급 처치 L/3,
+--         6단계 장비 한 벌(무기 *_keen · 갑옷 갈래 · 관모·신·노리개·호신부·탈), 회복품 반요 고약(체력 70).
+--   행동: 수법 정석(제 사슬·이름 부르기(혼자 30%)·의무관 해독 침·얼굴에 맞는 공격·물살 예고에 버티기·결전 휘두르기 예고에 방어·
+--         끊지 못할 기운 모으기는 마지막 차례에 방어·사슬에 묶이면 공격 대신 기술), 협동 기술은 다시 쓰기·영력이 되면 우선순위대로,
+--         체력 50↓ 회복 기술·40↓ 회복품(귀허 2·결전 5). 일부러 하는 실수 0%, 엔진 난수는 그대로.
+--   시간: 귀허 고른 라운드 3초(수법 5초)·물러난 라운드 마감까지, 결전 행동 2초·쓰러지면 30초 — 시각 칸을 그만큼 당겨 엔진이 직접 15·20분 판정.
+--
+-- 결과(승/판, 진 판의 보스 남은 체력 평균)
+--   직업      | 지금 값(7.7.7r) 귀허 · 결전             | 제안 값 귀허 · 결전 (조정 마지막 20판 + 확인 20판 = 40판)
+--   호위 무사 | 10/10(쓰러짐 6.6)·0/10(남은 29%)        | 9/40(2.3/10, 남은 4~6%) · 10/40(2.5/10, 남은 4~6%)
+--   월궁 사수 | 10/10(4.5)·10/10(10분)                 | 5/20(2.5/10, solo −25/−46 확인판) · 8/40(2.0/10, 남은 7%)
+--   퇴마관    | 10/10(4.0)·10/10(12.5분)               | 9/40(2.3/10, 남은 8~10%) · 14/40(3.5/10, 남은 6%)
+--   의무관    | 10/10(2.6)·0/10(남은 39%)              | 10/40(2.5/10, 남은 11%) · 8/40(2.0/10, 남은 9~10%)
+--   봉인술사  | 10/10(7.1)·8/10                        | 13/40(3.3/10, 남은 9~11%) · 12/40(3.0/10, 남은 5%)
+--   암영 검객 | 10/10(5.2)·0/10(남은 31%)              | 13/40(3.3/10, 남은 6~11%) · 8/20(4.0/10, final 34 확인판; 36에서 16/40)
+--   (n=20이면 95% 구간 대략 ±20%p, n=40이면 ±15%p)
+-- 2·4인 귀허(같은 값, 보정은 혼자만 붙음 — world_gw_start n=1 · world_raid_action count=1): 호위+퇴마 10/10·암영+의무 10/10·넷 10/10, 쓰러짐 0
+--   → 넷 10/10은 맞지만 둘 5/10 목표보다 훨씬 쉬움(혼자 보정과 무관한 별도 과제).
+
+-- ① 결전은 solo_guard 대신 final_guard(없으면 0)를 쓴다: 귀허에서 맞춘 받는 피해 보정이 결전으로 새지 않게
+CREATE OR REPLACE FUNCTION public.world_raid_action(p_raid uuid, p_action text, p_skill text DEFAULT NULL::text, p_target uuid DEFAULT NULL::uuid, p_item text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; rd public.world_raids%rowtype; mb public.world_raid_members%rowtype;
+  tm public.world_raid_members%rowtype; sk public.world_coop_skills%rowtype; st jsonb; f jsonb; rfx jsonb; act text := lower(coalesce(p_action, ''));
+  here text; sp int; inv jsonb; ammo text; mul numeric := 1; dmg int := 0; crit boolean := false; credit numeric := 0; h0 int; h1 int; amt int;
+  n_act int; pick uuid; lv int; raw numeric; ph_mul numeric; k text; v jsonb; tgt uuid; nm text; newp int; tot numeric; acc numeric; rnd numeric; m record;
+  bm text; bp numeric := 0; be text; bep numeric := 0; bc text; bcp numeric := 0; bcn text; ex numeric;
+  bt int; tick boolean := true; bnow numeric; cbr jsonb; cbc jsonb;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  if act not in ('attack', 'guard', 'item', 'coop') then raise exception '알 수 없는 행동입니다.'; end if;
+  -- 7.7.7m: 내 1초 간격을 토벌 행(모두가 함께 씀)을 잠그기 전에 — 연타가 다른 참가자의 행동을 줄 세우지 않게
+  perform public.world_rate_check('raid', uid, p_raid);
+  select * into rd from public.world_raids where raid_id = p_raid for update;
+  if not found then raise exception '알 수 없는 토벌입니다.'; end if;
+  if rd.status <> 'fight' then raise exception '지금은 싸울 수 없습니다.'; end if;
+  if rd.ends_at <= now() then perform public.world_raid_settle(p_raid, false); return public.world_raid_snapshot(p_raid); end if;
+  select * into mb from public.world_raid_members where raid_id = p_raid and owner_id = uid for update;
+  if not found then raise exception '참가 신청한 조사원만 싸울 수 있습니다. 진행은 관전으로 볼 수 있습니다.'; end if;
+  if mb.last_action_at is not null and mb.last_action_at > now() - interval '1 second' then raise exception '숨을 고르는 중입니다. 잠시 후 다시 행동하세요.'; end if;
+  if mb.left_at is not null then raise exception '토벌에서 나왔습니다. 「다시 참가」하면 이어서 싸울 수 있습니다.'; end if;
+  if mb.out_until is not null and mb.out_until > now() then
+    raise exception '물러나 숨을 고르는 중입니다(%초 뒤 돌아옴).', ceil(extract(epoch from mb.out_until - now())); end if;
+  select * into c from public.world_characters where owner_id = uid for update;
+  if c.downed_at is not null or c.health <= 0 then raise exception '전투불능 상태입니다.'; end if;
+  select region_id into here from public.world_map_regions where region_name = c.location;
+  if here is distinct from rd.region_id then raise exception '토벌이 벌어진 곳에 있어야 합니다.'; end if;
+  if exists (select 1 from public.world_expeditions where owner_id = uid and status = 'active') then raise exception '원정 중에는 싸울 수 없습니다.'; end if;
+  -- 토벌 보강 6.1.1
+  if c.travel_destination is not null then raise exception '이동 중에는 싸울 수 없습니다.'; end if;
+  if exists (select 1 from public.world_idle_activities where owner_id = uid and status = 'active') then raise exception '자율 활동 중에는 싸울 수 없습니다.'; end if;
+  if exists (select 1 from public.world_active_encounters a where a.owner_id = uid and not a.defeated and not coalesce(a.fled, false) and a.mlevel is not null) then
+    raise exception '진행 중인 요괴 전투를 먼저 끝내세요.'; end if;
+
+  st := public.world_raid_stats(uid);
+  f := mb.fx; rfx := rd.fx; sp := c.spiritual_power; inv := coalesce(c.inventory, '{}'::jsonb);
+  if mb.out_until is not null then mb.out_until := null;
+    -- 결전: 쉬다가 돌아오면 체력 30(귀허와 같게 — 회복품이 셋뿐이라 체력 1로 돌아오면 곧바로 다시 쓰러진다)
+    if rd.kind = 'final' and c.health < 30 then c.health := 30; update public.world_characters set health = 30, updated_at = now() where owner_id = uid; end if;
+  end if;
+
+  if act = 'attack' then
+    -- 무기 소모: 근접 기력 2·술법 영력 3·원거리 한 발, 없으면 피해 절반
+    if st ->> 'style' = 'magic' then if sp >= 2 then sp := sp - 2; else mul := mul * 0.5; end if;
+    elsif st ->> 'style' = 'ranged' then
+      ammo := public.world_ammo_of(uid);
+      if ammo is not null and coalesce((inv ->> ammo)::int, 0) >= 1 then inv := public.world_inv_add(inv, ammo, -1); if (inv ->> ammo)::int <= 0 then inv := inv - ammo; end if;
+      else mul := mul * 0.5; end if;
+    else if sp >= 2 then sp := sp - 2; else mul := mul * 0.5; end if; end if;
+    cbr := public.world_cb_attack(st, f, rfx, 0.85, 0.3);
+    f := cbr -> 'fx'; rfx := cbr -> 'bfx'; crit := (cbr ->> 'crit')::boolean;
+    if rd.kind = 'final' and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then
+      mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> 'final_dmg')::numeric, (public.world_solo_aid(c.job_key) ->> 'solo_dmg')::numeric, 0) / 100.0);
+    elsif rd.kind = 'final' then mul := mul * (1 + coalesce((public.world_solo_aid(c.job_key) ->> 'final_all')::numeric, 0) / 100.0); end if;
+    dmg := greatest(1, round((cbr ->> 'd')::numeric * mul))::int;
+    rd.hp := greatest(case when rd.fx ? 'last_night' then ceil(rd.max_hp * 0.03)::int else 0 end, rd.hp - dmg); mb.dmg := mb.dmg + dmg; credit := 0;
+    -- 늘려 준 몫은 건 사람에게(공용 world_cb_boost_credits), 남은 몫이 내 기여
+    for cbc in select * from jsonb_array_elements(public.world_cb_boost_credits(dmg, crit, cbr -> 'src', uid, (st ->> 'crit')::numeric)) loop
+      if cbc ->> 2 = 'dmg' then credit := (cbc ->> 1)::numeric; else perform public.world_raid_credit(p_raid, (cbc ->> 0)::uuid, (cbc ->> 1)::numeric, 'boost'); end if;
+    end loop;
+    if rfx ? 'charge' then rfx := jsonb_set(rfx, '{charge,got}', to_jsonb((rfx -> 'charge' ->> 'got')::int + dmg)); end if;
+    perform public.world_raid_say(p_raid, case when crit then 'crit' else 'atk' end, mb.name || ' — ' || dmg || '의 피해' || case when crit then '(치명타)' else '' end || '.');
+  elsif act = 'guard' then
+    f := f || jsonb_build_object('guard', 1); mb.guarded := mb.guarded + 1;
+    perform public.world_raid_say(p_raid, 'guard', mb.name || ' — 방어 태세를 갖췄습니다.');
+  elsif act = 'item' then
+    -- 물품은 평소 쓰는 길(world_use_item)을 그대로 거친다
+    update public.world_characters set spiritual_power = sp where owner_id = uid;
+    h0 := c.health;
+    perform set_config('yh.raid_item', '1', true);
+    perform public.world_use_item(p_item);
+    perform set_config('yh.raid_item', '', true);
+    select * into c from public.world_characters where owner_id = uid;
+    sp := c.spiritual_power; inv := coalesce(c.inventory, '{}'::jsonb); h1 := c.health;
+    if rd.kind = 'final' and h1 > h0 then
+      if mb.items_used >= 5 then raise exception '결전에서는 체력 회복품을 한 싸움에 다섯 개까지만 쓸 수 있습니다.'; end if;
+      mb.items_used := mb.items_used + 1;
+    end if;
+    mb.heal := mb.heal + greatest(0, h1 - h0); credit := greatest(0, h1 - h0);
+    perform public.world_raid_say(p_raid, 'item', mb.name || ' — ' || coalesce((select item_name from public.world_item_catalog where item_id = p_item), '물품') || '을(를) 썼습니다' || case when h1 > h0 then '(체력 +' || (h1 - h0) || ')' else '' end || '.');
+  else
+    select * into sk from public.world_coop_skills where skill_id = p_skill;
+    if not found or sk.job_key <> c.job_key then raise exception '쓸 수 없는 협동 기술입니다.'; end if;
+    if coalesce(c.combat_rank, 1) < sk.unlock_rank then raise exception '전투 숙련 %단계에 열리는 기술입니다.', sk.unlock_rank; end if;
+    if mb.cd ? sk.skill_id and (mb.cd ->> sk.skill_id)::timestamptz > now() then
+      raise exception '%은(는) %초 뒤에 다시 쓸 수 있습니다.', sk.skill_name, ceil(extract(epoch from (mb.cd ->> sk.skill_id)::timestamptz - now())); end if;
+    if sp < sk.cost then raise exception '영력이 모자랍니다(필요 %).', sk.cost; end if;
+    tgt := case when sk.target = 'self' then uid else coalesce(p_target, uid) end;
+    if sk.target = 'ally' then
+      select * into tm from public.world_raid_members where raid_id = p_raid and owner_id = tgt for update;
+      if not found then raise exception '이 토벌에 참가한 동료에게만 쓸 수 있습니다.'; end if;
+      if sk.effect ->> 'type' = 'revive' then
+        if tm.out_until is null then raise exception '물러난 동료에게만 쓸 수 있습니다.'; end if;
+        if tm.left_at is not null then raise exception '토벌에서 나간 동료입니다.'; end if;
+      elsif tm.out_until is not null and tm.out_until > now() then raise exception '물러난 동료에게는 쓸 수 없습니다.'; end if;
+    end if;
+    sp := sp - sk.cost;
+    mb.cd := mb.cd || jsonb_build_object(sk.skill_id, now() + make_interval(secs => sk.cooldown_s));
+    mb.coop := mb.coop + 1; credit := 0;
+    k := sk.effect ->> 'type'; v := sk.effect;
+    -- 자신에게 거는 효과는 아래에서 mb.fx(f)에 바로 쓴다
+    if sk.target in ('ally', 'self') and tgt = uid then
+      if k in ('ward', 'might', 'evade', 'gward', 'crit_next') then f := f || public.world_cb_buff(k, v, uid);
+      elsif k = 'shield' then f := f || jsonb_build_object('shield', coalesce((f ->> 'shield')::int, 0) + (v ->> 'amt')::int, 'shield_by', uid);
+      elsif k = 'cleanse_heal' then f := f - 'bound';
+      elsif k = 'cover' then raise exception '자기 자신은 대신 막을 수 없습니다.';
+      end if;
+    elsif sk.target = 'ally' then
+      update public.world_raid_members set fx = case
+          when k in ('ward', 'might', 'evade', 'gward', 'crit_next') then fx || public.world_cb_buff(k, v, uid)
+          when k = 'shield' then fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (v ->> 'amt')::int, 'shield_by', uid)
+          when k = 'cleanse_heal' then fx - 'bound'
+          when k = 'cover' then fx || jsonb_build_object('cover', jsonb_build_object('by', uid, 'until', now() + make_interval(secs => (v ->> 'secs')::int)))
+          else fx end,
+        out_until = case when k = 'revive' then least(out_until, now()) else out_until end
+       where raid_id = p_raid and owner_id = tgt;
+    end if;
+    if k in ('heal', 'cleanse_heal', 'revive', 'sp', 'gward') then
+      amt := case k when 'revive' then (v ->> 'hp')::int when 'sp' then 0 when 'gward' then 0
+             else round((v ->> 'amt')::int * (1 + coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) / 100.0)) end;
+      -- 결전: 회복 기술은 절반(회복품을 다섯으로 묶어 회복 기술이 승패를 혼자 정하던 것 — 회복 직업 없는 조가 해볼 만하게)
+      if rd.kind = 'final' and k in ('heal', 'cleanse_heal') then amt := ceil(amt * 0.5); end if;
+      if k = 'revive' then
+        select health into h1 from public.world_characters where owner_id = tgt;
+        update public.world_characters set health = greatest(health, amt), updated_at = now() where owner_id = tgt;
+        amt := greatest(0, amt - coalesce(h1, 0));
+      elsif k = 'sp' then
+        if tgt <> uid then perform public.world_raid_credit(p_raid, uid, (select greatest(0, least((v ->> 'amt')::int, 100 - x.spiritual_power)) from public.world_characters x where x.owner_id = tgt) * coalesce((st ->> 'attack')::numeric, 0) * 0.05, 'boost'); end if;
+        update public.world_characters set spiritual_power = least(100, spiritual_power + (v ->> 'amt')::int), updated_at = now() where owner_id = tgt and owner_id <> uid;
+        if tgt = uid then sp := least(100, sp + (v ->> 'amt')::int); end if;
+      elsif k = 'gward' then
+        update public.world_characters set mental = least(100, mental + coalesce((v ->> 'mind')::int, 0)), updated_at = now() where owner_id = tgt;
+      else
+        if tgt = uid then
+          select health into h0 from public.world_characters where owner_id = uid;
+        end if;
+        select health into h1 from public.world_characters where owner_id = tgt;
+        update public.world_characters set health = least(100, health + amt), updated_at = now() where owner_id = tgt and health > 0;
+        amt := case when coalesce(h1, 0) > 0 then greatest(0, least(100, h1 + amt) - h1) else 0 end;
+      end if;
+      if amt > 0 then mb.heal := mb.heal + amt; perform public.world_raid_credit(p_raid, uid, amt, case when tgt = uid then 'heal_self' else 'heal' end); end if;
+    end if;
+    if k = 'heal_all' then
+      amt := round((v ->> 'amt')::int * (1 + coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) / 100.0));
+      if rd.kind = 'final' then amt := ceil(amt * 0.5); end if; -- heal_all final half
+      select sum(greatest(0, least(100, ch.health + amt) - ch.health)) into acc from public.world_characters ch join public.world_raid_members x on x.owner_id = ch.owner_id
+       where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and ch.health > 0;
+      update public.world_characters ch set health = least(100, ch.health + amt), updated_at = now()
+        from public.world_raid_members x where x.raid_id = p_raid and x.owner_id = ch.owner_id and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and ch.health > 0;
+      get diagnostics n_act = row_count;
+      mb.heal := mb.heal + coalesce(acc, 0)::int; perform public.world_raid_credit(p_raid, uid, coalesce(acc, 0), 'heal');
+    elsif k in ('ward_all', 'might_all', 'crit_all', 'rally', 'resonance') then
+      update public.world_raid_members x set fx = x.fx || public.world_cb_buff(k, v, uid)
+       where x.raid_id = p_raid and x.owner_id <> uid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id);
+      f := f || public.world_cb_buff(k, v, uid);
+    elsif k = 'taunt' then
+      f := f || public.world_cb_buff('taunt', v, uid);
+    elsif k = 'expose' then
+      rfx := rfx || jsonb_build_object('expose', jsonb_build_object('pct', v -> 'pct', 'n', v -> 'n', 'by', uid), 'stagger', coalesce((rfx ->> 'stagger')::int, 0) + coalesce((v ->> 'stagger')::int, 0), 'stagger_by', uid);
+    elsif k = 'delay' then
+      rfx := rfx || jsonb_build_object('stagger', coalesce((rfx ->> 'stagger')::int, 0) + (v ->> 'n')::int, 'stagger_by', uid);
+      if rfx ? 'charge' then rfx := jsonb_set(rfx, '{charge,left}', to_jsonb((rfx -> 'charge' ->> 'left')::int + 3));
+        if (rfx -> 'charge' ->> 'until') is not null then rfx := jsonb_set(rfx, '{charge,until}', to_jsonb((rfx -> 'charge' ->> 'until')::numeric + 6)); end if; end if;
+    elsif k = 'smoke' then
+      rfx := rfx || jsonb_build_object('smoke', jsonb_build_object('miss', v -> 'miss', 'n', v -> 'n', 'by', uid));
+    elsif k = 'break' then
+      rfx := rfx || jsonb_build_object('break', v -> 'pct', 'break_by', uid);
+    end if;
+    select name into nm from public.world_raid_members where raid_id = p_raid and owner_id = tgt;
+    perform public.world_raid_say(p_raid, 'coop', mb.name || ' — [' || sk.skill_name || '] ' ||
+      case when sk.target = 'ally' and tgt <> uid then nm || '에게 · ' else '' end || sk.exp_text || '.');
+  end if;
+
+  -- 내 행동을 먼저 적고(체력·영력·가방), 보스의 반격은 그 뒤에 실제 캐릭터에 쓴다
+  update public.world_characters set spiritual_power = sp, inventory = inv, updated_at = now() where owner_id = uid;
+  mb.acts := mb.acts + 1; mb.last_action_at := now();
+  mb.contrib := mb.contrib + credit * case when rd.kind = 'world' then least(1, mb.level / 30.0) else 1 end;
+  update public.world_raid_members set fx = f, cd = mb.cd, dmg = mb.dmg, heal = mb.heal, coop = mb.coop, guarded = mb.guarded, acts = mb.acts,
+    contrib = mb.contrib, last_action_at = mb.last_action_at, out_until = mb.out_until, stats = case when rd.kind = 'final' and (select count(*) from public.world_raid_members where raid_id = p_raid) = 1 then st || (public.world_solo_aid(c.job_key) - 'solo_guard' - 'final_guard') || jsonb_build_object('solo_guard', coalesce(public.world_solo_aid(c.job_key) -> 'final_guard', '0'::jsonb)) else st end, items_used = mb.items_used where raid_id = p_raid and owner_id = uid;
+  perform public.world_raid_credit(p_raid, uid, credit, case act when 'attack' then 'dmg' when 'item' then 'heal_self' end);
+  if act = 'coop' then perform public.world_raid_credit(p_raid, uid, 1, 'skill'); end if;
+
+  rd.turn := rd.turn + 1;
+  if rd.hp <= 0 then
+    update public.world_raids set hp = 0, turn = rd.turn, fx = rfx, updated_at = now() where raid_id = p_raid;
+    perform public.world_raid_say(p_raid, 'win', mb.name || '의 일격에 ' || rd.boss_name || '이(가) 무너졌습니다.');
+    perform public.world_raid_settle(p_raid, true);
+    return public.world_raid_snapshot(p_raid);
+  end if;
+  newp := case when rd.hp * 100 <= rd.max_hp * 40 then 3 when rd.hp * 100 <= rd.max_hp * 70 then 2 else 1 end;
+  if newp > rd.phase then
+    rd.phase := newp;
+    perform public.world_raid_say(p_raid, 'phase', case newp when 2 then rd.boss_name || '의 사슬이 풀리며 움직임이 사나워집니다(2단계).'
+                                                    else rd.boss_name || '이(가) 봉연의 기운을 끌어모으기 시작합니다(3단계).' end);
+  end if;
+  ph_mul := case rd.phase when 1 then 1 when 2 then 1.15 else 1.3 end * case when rd.kind = 'final' then 1.1 else 1 end;
+  select count(*) into n_act from public.world_raid_members x join public.world_characters ch on ch.owner_id = x.owner_id
+   where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and x.last_action_at > now() - interval '120 seconds' and ch.health > 1;
+
+  -- 7.7.6: 서버 보스는 큰 수법을 2초 박자로 센다(결전은 차례 그대로)
+  if rd.kind = 'world' then
+    bnow := extract(epoch from now()); tick := false;
+    if not (rfx ? 'beat_at') then rfx := rfx || jsonb_build_object('beat', 0, 'beat_at', bnow);
+    elsif bnow >= (rfx ->> 'beat_at')::numeric + 2 then
+      rfx := rfx || jsonb_build_object('beat', (rfx ->> 'beat')::int + 1, 'beat_at', bnow); tick := true;
+    end if;
+    bt := (rfx ->> 'beat')::int;
+  else bt := rd.turn; end if;
+
+  if coalesce((rfx ->> 'stagger')::int, 0) > 0 then
+    rfx := case when (rfx ->> 'stagger')::int <= 1 then rfx - 'stagger' else jsonb_set(rfx, '{stagger}', to_jsonb((rfx ->> 'stagger')::int - 1)) end;
+    if rfx ? 'stagger_by' then perform public.world_raid_credit(p_raid, (rfx ->> 'stagger_by')::uuid, public.world_raid_boss_base(p_raid, rd.kind, c.level) * ph_mul * 0.7 * (least(0.4, 0.8 / greatest(1, n_act)) + 0.8 * greatest(1, n_act) / 7.0), 'guard'); end if;
+    perform public.world_raid_say(p_raid, 'boss', rd.boss_name || '이(가) 휘청여 반격하지 못합니다.');
+  elsif rfx ? 'charge' then
+    rfx := jsonb_set(rfx, '{charge,left}', to_jsonb((rfx -> 'charge' ->> 'left')::int - case when tick then 1 else 0 end));
+    if (rfx -> 'charge' ->> 'got')::int >= (rfx -> 'charge' ->> 'need')::int then
+      rfx := rfx - 'charge';
+      perform public.world_raid_say(p_raid, 'boss', '몰아친 공격에 ' || rd.boss_name || '의 기운 모으기가 끊겼습니다.');
+    elsif (case when (rfx -> 'charge' ->> 'until') is not null then extract(epoch from now()) >= (rfx -> 'charge' ->> 'until')::numeric else (rfx -> 'charge' ->> 'left')::int <= 0 end) then
+      rfx := rfx - 'charge';
+      perform public.world_raid_say(p_raid, 'boss', rd.boss_name || '이(가) 모은 봉연의 기운을 터뜨립니다!');
+      for m in select x.owner_id, x.level from public.world_raid_members x where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and x.last_action_at > now() - interval '120 seconds' loop
+        raw := public.world_raid_boss_base(p_raid, rd.kind, m.level) * ph_mul * 2.2 * case when rfx ? 'break' then (1 - (rfx ->> 'break')::numeric / 100.0) else 1 end;
+        perform public.world_raid_hit(p_raid, m.owner_id, raw, 'burst');
+      end loop;
+      if rfx ? 'break_by' then perform public.world_raid_credit(p_raid, (rfx ->> 'break_by')::uuid, public.world_raid_boss_base(p_raid, rd.kind, c.level) * ph_mul * 2.2 * (rfx ->> 'break')::numeric / 100.0 * 0.7 * greatest(1, n_act), 'guard'); end if;
+      rfx := rfx - 'break' - 'break_by';
+    end if;
+  elsif tick and rd.phase = 3 and bt % 11 = 0 then
+    rfx := rfx || jsonb_build_object('charge', jsonb_build_object('left', case when rd.kind = 'world' then 4 else 5 + greatest(1, n_act) end, 'until', case when rd.kind = 'world' then round(extract(epoch from now())::numeric + 8, 2) end, 'need', public.world_raid_charge_need(p_raid, rd.kind, rd.max_hp), 'got', 0));
+    perform public.world_raid_say(p_raid, 'boss', rd.boss_name || '이(가) 기운을 모읍니다. ' || public.world_raid_charge_need(p_raid, rd.kind, rd.max_hp) || ' 넘게 몰아쳐 끊거나, 방어하세요!');
+  elsif tick and bt % 7 = 0 then
+    perform public.world_raid_say(p_raid, 'boss', rd.boss_name || '이(가) 크게 휘둘러 모두를 덮칩니다.');
+    for m in select x.owner_id, x.level from public.world_raid_members x where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and x.last_action_at > now() - interval '120 seconds' loop
+      raw := public.world_raid_boss_base(p_raid, rd.kind, m.level) * ph_mul * 0.8 * case when rfx ? 'break' then (1 - (rfx ->> 'break')::numeric / 100.0) else 1 end;
+      perform public.world_raid_hit(p_raid, m.owner_id, raw, 'slam');
+    end loop;
+    if rfx ? 'break_by' then perform public.world_raid_credit(p_raid, (rfx ->> 'break_by')::uuid, public.world_raid_boss_base(p_raid, rd.kind, c.level) * ph_mul * 0.8 * (rfx ->> 'break')::numeric / 100.0 * 0.7 * greatest(1, n_act), 'guard'); end if;
+    rfx := rfx - 'break' - 'break_by';
+  elsif tick and rd.phase >= 2 and bt % 5 = 0 then
+    select x.owner_id, x.name into pick, nm from public.world_raid_members x where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) order by random() limit 1;
+    if pick is not null then
+      update public.world_raid_members set fx = fx || '{"bound":1}'::jsonb where raid_id = p_raid and owner_id = pick;
+      perform public.world_raid_say(p_raid, 'boss', '봉연의 사슬이 ' || nm || '을(를) 휘감습니다(다음 공격 절반).');
+    end if;
+  elsif random() < least(0.4, 0.8 / greatest(1, n_act)) then
+    -- 표적: 이목^1.3에 비례(호법 신장은 이목을 더한다)
+    select x.owner_id, x.level into pick, lv from public.world_raid_members x
+     where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and x.last_action_at > now() - interval '120 seconds'
+     order by public.world_cb_pick_key((x.stats ->> 'pres')::numeric + coalesce((x.fx -> 'taunt' ->> 'pres')::numeric, 0)) limit 1;
+    if pick is not null then
+      if rfx ? 'smoke' and random() * 100 < (rfx -> 'smoke' ->> 'miss')::numeric then
+        perform public.world_raid_credit(p_raid, nullif(rfx -> 'smoke' ->> 'by', '')::uuid, public.world_raid_boss_base(p_raid, rd.kind, lv) * ph_mul * 0.7, 'guard');
+        perform public.world_raid_say(p_raid, 'miss', '연막 속에서 ' || rd.boss_name || '의 공격이 빗나갔습니다.');
+      else
+        perform public.world_raid_hit(p_raid, pick, public.world_raid_boss_base(p_raid, rd.kind, lv) * ph_mul, 'single');
+      end if;
+      if rfx ? 'smoke' then rfx := case when (rfx -> 'smoke' ->> 'n')::int <= 1 then rfx - 'smoke' else jsonb_set(rfx, '{smoke,n}', to_jsonb((rfx -> 'smoke' ->> 'n')::int - 1)) end; end if;
+    end if;
+  end if;
+
+  -- 결전에서 모두 물러나면 보스가 기운을 되찾는다
+  if rd.kind = 'final' and not exists (select 1 from public.world_raid_members x where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id)) then
+    rd.hp := least(rd.max_hp, rd.hp + round(rd.max_hp * 0.015));
+    perform public.world_raid_say(p_raid, 'boss', '모두 물러난 사이 ' || rd.boss_name || '이(가) 기운을 되찾습니다(체력 +1.5%).');
+  end if;
+  rd.intent := case when rfx ? 'charge' then '기운을 모으는 중 — ' || case when rd.kind = 'world' then greatest(0, ceil(coalesce((rfx -> 'charge' ->> 'until')::numeric, extract(epoch from now()) + (rfx -> 'charge' ->> 'left')::int * 2) - extract(epoch from now())))::int || '초' else '남은 ' || (rfx -> 'charge' ->> 'left') || '번' end || ' 안에 ' || greatest(0, (rfx -> 'charge' ->> 'need')::int - (rfx -> 'charge' ->> 'got')::int) || ' 더 몰아치면 끊긴다'
+                    when (bt + 1) % 7 = 0 then '크게 휘두를 낌새가 보인다 — 방어하라'
+                    when rd.phase >= 2 and (bt + 1) % 5 = 0 then '사슬이 꿈틀거린다'
+                    else null end;
+  update public.world_raids set hp = rd.hp, turn = rd.turn, phase = rd.phase, fx = rfx, intent = rd.intent, updated_at = now() where raid_id = p_raid;
+  return public.world_raid_snapshot(p_raid);
+end $function$
+
+;
+
+-- ② 혼자 도전 보정 값
+create or replace function public.world_solo_aid(p_job text)
+ returns jsonb language sql immutable as $function$
+  -- 혼자 도전 보정(1.0.0f): 협동 기술·6단계 장비 한 벌로 정석 플레이 시뮬(직업마다 귀허·결전 20~40판) → 혼자 2~3/10
+  -- solo_dmg·solo_guard는 귀허, final_dmg·final_guard는 결전(final_guard 없으면 0 — world_raid_action)
+  select case p_job
+    when 'artificer'  then '{"solo_dmg": -38, "solo_guard": -22, "final_dmg": -2}'
+    when 'scout'      then '{"solo_dmg": -25, "solo_guard": -46, "final_dmg": -47}'
+    when 'exorcist'   then '{"solo_dmg": -42, "solo_guard": -17, "final_dmg": 13}'
+    when 'medic'      then '{"solo_dmg": -21, "solo_guard": -46, "final_dmg": 18}'
+    when 'sealmaster' then '{"solo_dmg": -42, "solo_guard": -32, "final_dmg": 5}'
+    when 'analyst'    then '{"solo_dmg": -17, "solo_guard": -28, "final_dmg": 34}'
+    else '{}' end::jsonb
+$function$;
+
+-- ===== 둘이 하는 귀허 배율(supabase/pending/duo_1_0_0f.sql) =====
+-- duo_1_0_0f.sql — 귀허의 주인 「둘」 난이도 다시 맞춤 (제안, 배포 안 함)
+-- 기준 DB: 복제본 yh_fx9(운영 + 1.0.0e + 1.0.0f 후보) + supabase/pending/solo_aid_1_0_0f.sql. 세 함수 본문은 yh_fx9 본문에서
+-- 「when 2 then 0.95」만 바꾼 것 — 운영 본문이 다르면 같은 자리만 옮길 것. 혼자(n=1)·셋·넷 값은 그대로.
+-- 바꾸는 곳
+--   world_gw_start   주인 체력 인원 배율 둘 0.95 → 1.7 (max_hp·hp 두 곳)
+--   world_gw_resolve 주인 손길·물살 피해(raw) 인원 배율 둘 0.95 → 1.4
+--   world_gw_k       기여 K의 요괴 한 대(같은 배율) 둘 0.95 → 1.4 (피해 배율과 맞춤, 승패와 무관)
+--   10장 결전(world_raid_begin_fight {2.4,3.3,2.9,3.3})은 바꾸지 않음 — 아래 결과.
+-- 함께 고칠 것(이 파일 밖): assets/js/views/guide.js 1500줄 「둘 0.95배」 → 체력 1.7배·공격 1.4배, CLAUDE.md §3.5 인원 배율 문장,
+--   마이그레이션에 넣을 때 끝에 world_app_meta db_version 줄. 배포는 §17 11-1(버퍼 + owner_inherit_begin/end;
+--   world_gw_start·world_gw_resolve 주인 fn_owner_field, world_gw_k 주인 postgres).
+--
+-- 시뮬(로컬 복제 PostgreSQL 16, 이전 혼자 시뮬과 같은 빌드·정석 플레이: 귀허 Lv38 · 결전 Lv36, 6단계 장비, 반요 고약)
+--   둘 정석 행동 보강: 이름을 잃었는데 불러 줄 동료가 없으면(동료 물러남) 스스로 부르기(30%)·의무관은 해독 침,
+--   소용돌이에 퇴마관은 퇴마 결계. 결전 둘: 2초마다 둘 다 행동, 의무관 야전 소생·낮은 쪽 회복, 호위 무사 대신 막기,
+--   휘두르기 예고에 방어·끊지 못할 기운 모으기는 마지막 차례에 방어·사슬에 묶이면 기술.
+--
+-- 귀허 둘 걸음(15조 전부, 승/판 · 진 판 주인 남은 체력 평균)
+--   체력·피해 0.95·0.95(지금)  45/45  (평균 3분, 쓰러짐 0)                       → 너무 쉬움
+--   3.5·0.95                     4/45   (진 판 23~46%)                           → 너무 어려움
+--   2.0·0.95                    44/60 (7.3/10)  의무·봉인 조 4/4, 물리 둘(호위+사수 등)·암영 조 1~2/4
+--   2.4·0.95                    47/90 (5.2/10)  사수+암영 0/6·호위+사수 1/6 ~ 봉인 조 5/6 — 체력만 올리면 같은 얼굴 조가 오래 끌려 크게 벌어짐
+--   3.0·0.8                     43/90 (4.8/10)  퇴마+암영 0/6 ~ 사수+의무 6/6
+--   1.6·1.4                     59/90 (6.6/10)  봉인 조 6/6, 물리 둘 3~4/6 — 싸움이 짧아져 조 차이가 줄어듦
+--   1.8·1.5                     32/90 (3.6/10)
+--   1.7·1.4 (제안)             181/368 (4.9/10)  아래 표
+--
+-- 귀허 둘 조별(지금 0.95·0.95 → 제안 1.7·1.4; 제안은 8판 + 확인 12~20판)
+--   조              | 지금      | 제안 승/판  (/10) | 진 판 남은 체력 평균
+--   호위+사수       | 3/3       | 10/20  5.0         | 14%
+--   호위+퇴마       | 3/3       | 14/28  5.0         | 25%
+--   호위+의무       | 3/3       | 10/20  5.0         | 15~21%
+--   호위+봉인       | 3/3       | 15/20  7.5         | 2~23%
+--   호위+암영       | 3/3       |  7/28  2.5         | 26~31%
+--   사수+퇴마       | 3/3       | 12/28  4.3         | 19~31%
+--   사수+의무       | 3/3       | 15/20  7.5         | 17~22%
+--   사수+봉인       | 3/3       | 16/28  5.7         | 14~24%
+--   사수+암영       | 3/3       |  8/28  2.9         | 25~36%
+--   퇴마+의무       | 3/3       | 17/28  6.1         | 8~26%
+--   퇴마+봉인       | 3/3       | 12/20  6.0         | 7~8%
+--   퇴마+암영       | 3/3       |  5/20  2.5         | 21~26%
+--   의무+봉인       | 3/3       | 23/28  8.2         | 15~21%
+--   의무+암영       | 3/3       | 10/28  3.6         | 16%
+--   봉인+암영       | 3/3       |  7/20  3.5         | 11~17%
+--   (n=20이면 95% 구간 대략 ±20%p, n=28이면 ±18%p) 암영 검객이 든 조가 2.5~3.6으로 낮고 의무+봉인이 8.2로 높음 —
+--   인원 배율 하나로는 못 좁힘(암영은 혼자 보정도 +11/+20이 필요했던 직업: 둘에서도 약한 직업 쪽 문제).
+-- 넷(제안 값, 넷 배율은 그대로): 호위+퇴마+의무+암영 10/10 · 사수+봉인+의무+호위 10/10 · 사수+퇴마+봉인+암영 10/10, 쓰러짐 0
+-- 혼자: n=1 갈래(체력 1.2·피해 1·world_solo_aid)는 손대지 않음 — solo_aid_1_0_0f.sql 결과 그대로.
+--
+-- 10장 결전 둘(바꾸지 않음, 체력 배율 3.3; 승/판)
+--   조              | 3.3          | 3.5   | 3.7
+--   호위+사수       | 4/4          | 6/6   | 4/4
+--   호위+퇴마       | 12/12        | 6/6   | 4/4
+--   호위+의무       | 4/4          | 6/6   | 3/4
+--   호위+봉인       | 4/4          | 6/6   | 4/4
+--   호위+암영       | 12/12        | 5/6   | 2/4
+--   사수+퇴마       | 12/12        | 6/6   | 4/4
+--   사수+의무       | 4/4          | 6/6   | 4/4
+--   사수+봉인       | 12/12        | 6/6   | 4/4
+--   사수+암영       | 4/4          | 6/6   | 4/4
+--   퇴마+의무       | 10/12        | 2/6   | 0/4
+--   퇴마+봉인       | 4/4          | 5/6   | 2/4
+--   퇴마+암영       | 1/4 (진 판 2~9%) | 1/6 | 0/4
+--   의무+봉인       | 12/12        | 2/6   | 1/4
+--   의무+암영       | 2/12 (진 판 3~16%, 20분 시간 끝) | 0/6 | 0/4
+--   봉인+암영       | 5/12 (진 판 1~6%) | 1/6 | 0/4
+--   합계            | 약 8.5/10    | 7.1   | 6.3
+--   사수 조는 8~10분에 쓰러짐 1~8로 늘 이기고(사수는 혼자 결전 final_dmg −46이 필요했던 직업), 암영·의무가 든 조는 20분이 모자라 짐.
+--   체력 배율을 올리면 이미 아슬아슬한 암영·의무 조만 0으로 떨어지고 사수 조는 그대로 10/10 → 인원 배율로는 5~8에 못 넣음.
+--   3.3을 그대로 둠(조별 차이는 직업 쪽 — 사수 결전 화력·암영 결전 화력 — 으로 따로 다룰 일).
+
+CREATE OR REPLACE FUNCTION public.world_gw_start(p_fight uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare f public.world_gw_fights%rowtype; x record; s jsonb; sa numeric := 0; n int := 0;
+begin
+  select * into f from public.world_gw_fights where fight_id = p_fight for update;
+  if f.status <> 'wait' then return; end if;
+  for x in select m.owner_id, c.inventory, c.health from public.world_gw_members m join public.world_characters c using (owner_id) where m.fight_id = p_fight for update of c loop
+    if coalesce((x.inventory ->> 'gwiheo_charm')::int, 0) < 1 or x.health <= 0 then
+      delete from public.world_gw_members where fight_id = p_fight and owner_id = x.owner_id;
+      continue;
+    end if;
+    update public.world_characters set inventory = public.world_inv_add(inventory, 'gwiheo_charm', -1), updated_at = now() where owner_id = x.owner_id;
+    s := public.world_raid_stats(x.owner_id);
+    update public.world_gw_members set stats = s, hp = greatest(30, least(100, x.health)) where fight_id = p_fight and owner_id = x.owner_id;
+    insert into public.world_gw_records(owner_id, tries) values (x.owner_id, 1) on conflict (owner_id) do update set tries = world_gw_records.tries + 1;
+    sa := sa + coalesce((s ->> 'attack')::numeric, 50); n := n + 1;
+  end loop;
+  if n = 0 then
+    update public.world_gw_fights set status = 'failed', ended_at = now(), updated_at = now() where fight_id = p_fight;
+    return;
+  end if;
+  update public.world_gw_fights set status = 'fight', max_hp = round(greatest(6000, sa * 40) * case n when 1 then 1.2 when 2 then 1.7 when 3 then 0.8 else 0.85 end),
+         hp = round(greatest(6000, sa * 40) * case n when 1 then 1.2 when 2 then 1.7 when 3 then 0.8 else 0.85 end), phase = 1, round = 0, cycle = 0,
+         ends_at = now() + interval '15 minutes', updated_at = now() where fight_id = p_fight;
+  if n = 1 then update public.world_gw_members m set stats = m.stats || public.world_solo_aid(m.job_key) where fight_id = p_fight; end if;
+  perform public.world_gw_say(p_fight, 0, 'phase', '빈 왕좌 위로 물이 솟아 사람 꼴이 된다. 귀허의 주인이 두 얼굴을 번갈아 든다. 「사람의 얼굴에는 사람의 칼을, 요괴의 얼굴에는…」 말끝이 물에 녹는다.');
+  perform public.world_gw_next_round(p_fight);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.world_gw_resolve(p_fight uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare cbr jsonb; f public.world_gw_fights%rowtype; m record; a jsonb; av text; d numeric; boss_dmg numeric := 0; boss_heal numeric := 0; physical boolean;
+  k text; vsum numeric := 0; tank_ok boolean := false; freed uuid[] := '{}'; tgt uuid; raw numeric; r int; alive int; cr boolean;
+  sk public.world_coop_skills%rowtype; csp int; vbfx jsonb; vfx jsonb; tn text; e jsonb; aoe boolean; mul numeric; n int; need numeric;
+  delayed boolean := false; sealed boolean := false; broke boolean := false; cover_by uuid; hit_who uuid; v_n int; v_hands int; v_h int; v_hit uuid[] := '{}'; v_miss numeric;
+  v_mb text; v_mp numeric; v_eb text; v_ep numeric; v_cb text; v_cp numeric; v_cn text; v_brk uuid;
+begin
+  select * into f from public.world_gw_fights where fight_id = p_fight for update;
+  if f.status <> 'fight' then return; end if;
+  if now() < f.round_ends_at and exists (select 1 from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest and act is null) then return; end if;
+  r := f.round; k := f.mech ->> 'k'; aoe := coalesce((f.mech ->> 'aoe')::boolean, false); vbfx := coalesce(f.bfx, '{}'::jsonb);
+  for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest and act ->> 'a' = 'coop' order by joined_at loop
+    select * into sk from public.world_coop_skills where skill_id = m.act ->> 's';
+    if sk.skill_id is null then continue; end if;
+    select spiritual_power into csp from public.world_characters where owner_id = m.owner_id for update;
+    if coalesce(csp, 0) < sk.cost then perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 영력이 모자라 「' || sk.skill_name || '」이(가) 흩어졌습니다.'); continue; end if;
+    update public.world_characters set spiritual_power = spiritual_power - sk.cost, updated_at = now() where owner_id = m.owner_id;
+    update public.world_gw_members set acts = acts + 1, cds = jsonb_set(cds, array[sk.skill_id], to_jsonb(r + greatest(1, ceil(sk.cooldown_s / 5.0)::int)))
+     where fight_id = p_fight and owner_id = m.owner_id;
+    perform public.world_gw_credit(p_fight, m.owner_id, 1, 'skill');
+    tgt := case when sk.target = 'self' then m.owner_id else coalesce(nullif(m.act ->> 't', '')::uuid, m.owner_id) end;
+    select name into tn from public.world_gw_members where fight_id = p_fight and owner_id = tgt;
+    e := sk.effect;
+    if e ? 'amt' then
+      e := e || jsonb_build_object('amt', round((e ->> 'amt')::int * (1 + coalesce((select (x.skill_progress -> 'first_aid' ->> 'rank')::int from public.world_characters x where x.owner_id = m.owner_id), 0) / 100.0)));
+    end if;
+    case e ->> 'type'
+      when 'ward' then update public.world_gw_members set fx = fx || public.world_cb_buff('ward', e, m.owner_id) where fight_id = p_fight and owner_id = tgt;
+      when 'ward_all' then update public.world_gw_members set fx = fx || public.world_cb_buff('ward_all', e, m.owner_id) where fight_id = p_fight and out_rounds = 0 and not rest;
+      when 'might' then update public.world_gw_members set fx = fx || public.world_cb_buff('might', e, m.owner_id) where fight_id = p_fight and owner_id = tgt;
+      when 'might_all' then update public.world_gw_members set fx = fx || public.world_cb_buff('might_all', e, m.owner_id) where fight_id = p_fight and out_rounds = 0 and not rest;
+      when 'rally' then update public.world_gw_members set fx = fx || public.world_cb_buff('rally', e, m.owner_id) where fight_id = p_fight and out_rounds = 0 and not rest;
+      when 'resonance' then update public.world_gw_members set fx = fx || public.world_cb_buff('resonance', e, m.owner_id) where fight_id = p_fight and out_rounds = 0 and not rest;
+      when 'expose' then vbfx := vbfx || jsonb_build_object('expose', jsonb_build_object('n', (e ->> 'n')::int, 'pct', (e ->> 'pct')::int, 'by', m.owner_id));
+        if e ? 'stagger' then vbfx := vbfx || jsonb_build_object('block', coalesce((vbfx ->> 'block')::int, 0) + 1, 'block_by', m.owner_id); sealed := true; end if;
+      when 'heal' then
+        select least(round((e ->> 'amt')::int * 0.65), 100 - x.hp) into d from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt and x.out_rounds = 0;
+        perform public.world_gw_credit(p_fight, m.owner_id, d, case when tgt = m.owner_id then 'heal_self' else 'heal' end);
+        update public.world_gw_members set heal = heal + greatest(0, coalesce(d, 0))::int where fight_id = p_fight and owner_id = m.owner_id;
+        update public.world_gw_members set hp = least(100, hp + round((e ->> 'amt')::int * 0.65)::int) where fight_id = p_fight and owner_id = tgt and out_rounds = 0;
+      when 'heal_all' then
+        select sum(least(round((e ->> 'amt')::int * 0.65), 100 - x.hp)) into d from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not rest;
+        perform public.world_gw_credit(p_fight, m.owner_id, d, 'heal');
+        update public.world_gw_members set heal = heal + greatest(0, coalesce(d, 0))::int where fight_id = p_fight and owner_id = m.owner_id;
+        update public.world_gw_members set hp = least(100, hp + round((e ->> 'amt')::int * 0.65)::int) where fight_id = p_fight and out_rounds = 0 and not rest;
+      when 'cleanse_heal' then
+        select least(round((e ->> 'amt')::int * 0.65), 100 - x.hp) into d from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt and x.out_rounds = 0;
+        perform public.world_gw_credit(p_fight, m.owner_id, d, case when tgt = m.owner_id then 'heal_self' else 'heal' end);
+        update public.world_gw_members set heal = heal + greatest(0, coalesce(d, 0))::int where fight_id = p_fight and owner_id = m.owner_id;
+        update public.world_gw_members set hp = least(100, hp + round((e ->> 'amt')::int * 0.65)::int), nameless = false where fight_id = p_fight and owner_id = tgt and out_rounds = 0;
+        freed := freed || tgt;
+      when 'revive' then
+        if exists (select 1 from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt and x.out_rounds > 0) then
+          perform public.world_gw_credit(p_fight, m.owner_id, (e ->> 'hp')::int, 'heal'); end if;
+        update public.world_gw_members set out_rounds = 0, rest = true, hp = (e ->> 'hp')::int where fight_id = p_fight and owner_id = tgt and out_rounds > 0;
+      when 'cover' then update public.world_gw_members set fx = fx || jsonb_build_object('cover', tgt) where fight_id = p_fight and owner_id = m.owner_id;
+      when 'gward' then update public.world_gw_members set fx = fx || public.world_cb_buff('gward', e, m.owner_id) where fight_id = p_fight and owner_id = tgt;
+        if coalesce((e ->> 'mind')::int, 0) > 0 then
+          update public.world_characters set mental = least(100, mental + (e ->> 'mind')::int), updated_at = now() where owner_id = tgt;
+        end if;
+      when 'break' then broke := true; v_brk := m.owner_id;
+      when 'taunt' then update public.world_gw_members set fx = fx || public.world_cb_buff('taunt', e, m.owner_id) where fight_id = p_fight and owner_id = m.owner_id;
+      when 'crit_all' then update public.world_gw_members set fx = fx || public.world_cb_buff('crit_all', e, m.owner_id) where fight_id = p_fight and out_rounds = 0 and not rest;
+      when 'evade' then update public.world_gw_members set fx = fx || public.world_cb_buff('evade', e, m.owner_id) where fight_id = p_fight and owner_id = tgt;
+      when 'smoke' then vbfx := vbfx || jsonb_build_object('smoke', jsonb_build_object('n', (e ->> 'n')::int, 'miss', (e ->> 'miss')::int, 'by', m.owner_id));
+      when 'crit_next' then update public.world_gw_members set fx = fx || public.world_cb_buff('crit_next', e, m.owner_id) where fight_id = p_fight and owner_id = tgt;
+      when 'delay' then vbfx := vbfx || jsonb_build_object('block', coalesce((vbfx ->> 'block')::int, 0) + (e ->> 'n')::int, 'block_by', m.owner_id); delayed := true;
+      when 'shield' then update public.world_gw_members set fx = fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (e ->> 'amt')::int, 'shield_by', m.owner_id) where fight_id = p_fight and owner_id = tgt;
+      when 'sp' then
+        if tgt <> m.owner_id then perform public.world_gw_credit(p_fight, m.owner_id, (select greatest(0, least((e ->> 'amt')::int, 100 - x.spiritual_power)) from public.world_characters x where x.owner_id = tgt)
+          * coalesce((m.stats ->> 'attack')::numeric, 0) * 0.05, 'boost'); end if;
+        update public.world_characters set spiritual_power = least(100, spiritual_power + (e ->> 'amt')::int), updated_at = now() where owner_id = tgt;
+      else null;
+    end case;
+    perform public.world_gw_say(p_fight, r, 'skill', m.name || ' — 「' || sk.skill_name || '」' || case when sk.target = 'ally' and tgt <> m.owner_id then ' → ' || coalesce(tn, '') else '' end || ' · ' || sk.exp_text
+      || case e ->> 'type' when 'cleanse_heal' then case when k = 'chain' then ' (사슬이 느슨해집니다)' when k = 'name' then ' (흐려진 이름이 또렷해집니다)' else '' end
+                           when 'delay' then case when k = 'vortex' then ' (물살이 잠시 멎습니다)' else '' end
+                           when 'expose' then case when k = 'face' then ' (주인의 입이 사슬에 묶입니다)' else '' end
+                           when 'break' then ' (물의 기세가 꺾입니다)' else '' end || '.');
+  end loop;
+  for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest order by joined_at loop
+    a := coalesce(m.act, '{"a":"guard"}'::jsonb); av := a ->> 'a';
+    if av = 'coop' then continue; end if;
+    if m.act is not null then update public.world_gw_members set acts = acts + 1 where fight_id = p_fight and owner_id = m.owner_id; end if;
+    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
+    if av = 'attack' then
+      cbr := public.world_cb_attack(m.stats, vfx, vbfx, 0.9, 0.2);
+      vfx := cbr -> 'fx'; vbfx := cbr -> 'bfx'; cr := (cbr ->> 'crit')::boolean;
+      v_mb := cbr -> 'src' ->> 'mb'; v_mp := (cbr -> 'src' ->> 'mp')::numeric; v_eb := cbr -> 'src' ->> 'eb'; v_ep := (cbr -> 'src' ->> 'ep')::numeric;
+      v_cb := cbr -> 'src' ->> 'cb'; v_cp := (cbr -> 'src' ->> 'cp')::numeric; v_cn := cbr -> 'src' ->> 'cn';
+      update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
+      d := (cbr ->> 'd')::numeric * (1 + coalesce((m.stats ->> 'solo_dmg')::numeric, 0) / 100.0);
+      physical := coalesce(m.stats ->> 'style', 'melee') in ('melee', 'ranged');
+      if m.nameless then
+        perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 이름을 잃어 칼끝이 주인에게 닿지 않습니다.');
+      elsif k = 'face' and ((f.mech ->> 'face' = 'human') <> physical) then
+        if sealed then
+          d := d * 0.5; boss_dmg := boss_dmg + d;
+          update public.world_gw_members set dmg = dmg + round(d)::int where fight_id = p_fight and owner_id = m.owner_id;
+          perform public.world_gw_credit_hit(p_fight, m.owner_id, d, cr, v_mb, v_mp, v_eb, v_ep, v_cb, v_cp, v_cn, coalesce((m.stats ->> 'crit')::numeric, 5));
+          perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — 사슬에 묶인 주인이 힘을 삼키지 못합니다. ' || round(d) || '의 피해.');
+        else
+          boss_heal := boss_heal + round(d * 0.5);
+          perform public.world_gw_say(p_fight, r, 'bad', m.name || ' — ' || case when physical then '요괴의 얼굴에 칼을 대자' else '사람의 얼굴에 술법을 쓰자' end || ' 주인이 그 힘을 삼켜 ' || round(d * 0.5) || ' 회복합니다.');
+        end if;
+      else
+        if k = 'vortex' and m.owner_id::text <> f.mech ->> 'tank' then vsum := vsum + d; end if;
+        boss_dmg := boss_dmg + d;
+        update public.world_gw_members set dmg = dmg + round(d)::int where fight_id = p_fight and owner_id = m.owner_id;
+          perform public.world_gw_credit_hit(p_fight, m.owner_id, d, cr, v_mb, v_mp, v_eb, v_ep, v_cb, v_cp, v_cn, coalesce((m.stats ->> 'crit')::numeric, 5));
+        perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — ' || round(d) || case when cr then '의 치명타.' else '의 피해.' end);
+      end if;
+    elsif av in ('guard', 'brace') then
+      if k = 'vortex' and (m.owner_id::text = f.mech ->> 'tank' or (av = 'brace' and vfx ? 'taunt')) then tank_ok := true;
+        perform public.world_gw_say(p_fight, r, 'good', m.name || ' — ' || case when av = 'brace' then '몸을 낮춰 소용돌이를 정면으로 받아 냅니다.' else '방패를 세우고 물살을 버팁니다.' end);
+      elsif av = 'brace' and m.act is not null then
+        perform public.world_gw_say(p_fight, r, 'guard', m.name || ' — 몸을 낮추고 버팁니다.');
+      end if;
+    elsif av = 'item' then
+      tgt := coalesce(nullif(a ->> 't', '')::uuid, m.owner_id);
+      if coalesce(m.items_used, 0) >= 2 then
+        perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 이 싸움에서는 회복품을 더 꺼낼 수 없습니다.');
+      elsif coalesce(((select x.inventory from public.world_characters x where x.owner_id = m.owner_id) ->> (a ->> 'i'))::int, 0) < 1 then
+        perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 꺼낼 회복품이 없습니다.');
+      else
+        d := coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'hp')::numeric, 0)
+             * case when (a ->> 'i') like '%\_hq' then 1.15 else 1 end * case when m.job_key = 'medic' then case when tgt = m.owner_id then 1.15 else 1.4 end else 1 end
+             * (1 + coalesce((m.stats ->> 'heal')::numeric, 0) / 100.0);
+        update public.world_characters set inventory = public.world_inv_add(inventory, a ->> 'i', -1), updated_at = now() where owner_id = m.owner_id;
+        perform public.world_gw_credit(p_fight, m.owner_id, (select least(round(d), 100 - x.hp) from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt and x.out_rounds = 0),
+          case when tgt = m.owner_id then 'heal_self' else 'heal' end);
+        update public.world_gw_members set hp = least(100, hp + round(d)::int) where fight_id = p_fight and owner_id = tgt and out_rounds = 0;
+        update public.world_characters set mental = least(100, mental + ceil(coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) * case when (a ->> 'i') like '%\_hq' then 1.15 else 1 end)::int)
+         where owner_id = tgt and coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) > 0;
+        update public.world_gw_members set heal = heal + round(d)::int, items_used = items_used + 1 where fight_id = p_fight and owner_id = m.owner_id;
+        perform public.world_gw_say(p_fight, r, 'good', m.name || ' — ' || coalesce((select x.name from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt), '') || '의 체력 +' || round(d)
+          || ' (회복품 ' || (coalesce(m.items_used, 0) + 1) || '/2).');
+      end if;
+    elsif av = 'call' then
+      tgt := nullif(a ->> 't', '')::uuid;
+      select name into tn from public.world_gw_members where fight_id = p_fight and owner_id = tgt;
+      if k <> 'name' or not exists (select 1 from public.world_gw_members where fight_id = p_fight and owner_id = tgt and nameless) then
+        perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — ' || coalesce(tn, '') || '을(를) 불렀지만 메아리만 돌아옵니다.');
+      elsif tgt <> m.owner_id or random() < 0.3 then
+        update public.world_gw_members set nameless = false where fight_id = p_fight and owner_id = tgt;
+        perform public.world_gw_say(p_fight, r, 'good', m.name || ' — 「' || tn || '!」 부르는 소리에 물에 녹던 이름이 되돌아옵니다.');
+      else
+        perform public.world_gw_say(p_fight, r, 'bad', m.name || ' — 제 이름을 스스로 부르려 했지만 목소리가 물에 녹았습니다.');
+      end if;
+    elsif av = 'chain' then
+      if k <> 'chain' then
+        perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 끊을 사슬이 없습니다.');
+      elsif a ->> 'c' = f.mech -> 'colors' ->> m.owner_id::text then
+        freed := freed || m.owner_id;
+        perform public.world_gw_say(p_fight, r, 'good', m.name || ' — 자기 사슬(' || (a ->> 'c') || ')을 끊었습니다.');
+      else
+        perform public.world_gw_hurt(p_fight, m.owner_id, 20, r, '남의 사슬(' || coalesce(a ->> 'c', '?') || ')을 쳐 되튕긴 사슬에');
+      end if;
+    end if;
+  end loop;
+  if k = 'chain' then
+    for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest and not (owner_id = any (freed)) and (f.mech -> 'colors') ? owner_id::text loop
+      perform public.world_gw_hurt(p_fight, m.owner_id, 999, r, '끊지 못한 사슬에 끌려가');
+    end loop;
+    if exists (select 1 from public.world_gw_members where fight_id = p_fight and not (owner_id = any (freed)) and (f.mech -> 'colors') ? owner_id::text) then
+      for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest loop
+        if broke then perform public.world_gw_credit(p_fight, v_brk, 30 * 0.7, 'guard'); end if;
+        perform public.world_gw_hit(p_fight, m.owner_id, 60 * case when broke then 0.5 else 1 end, r, '사슬이 끌어당긴 물살에', true);
+      end loop;
+    end if;
+  elsif k = 'name' then
+    for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest and nameless loop
+      perform public.world_gw_hurt(p_fight, m.owner_id, 999, r, '이름을 끝내 찾지 못해');
+    end loop;
+  elsif k = 'vortex' then
+    need := coalesce((f.mech ->> 'need')::numeric, 0) * case when delayed then 0.5 else 1 end;
+    if tank_ok and vsum >= need then
+      boss_dmg := boss_dmg + round(vsum * 0.5);
+      perform public.world_gw_say(p_fight, r, 'good', '소용돌이를 끊었습니다! 흩어진 물살이 주인에게 되돌아가 ' || round(vsum * 0.5) || '의 피해를 더 줍니다.');
+    else
+      perform public.world_gw_say(p_fight, r, 'bad', case when not tank_ok then '쏠린 물살을 받아 낸 사람이 없었습니다. ' else '왕좌를 몰아친 힘이 모자랐습니다. ' end
+        || '소용돌이가 모두를 삼키고 주인이 더 사나워집니다.' || case when broke then ' (퇴마 결계가 물살을 절반으로 꺾었습니다)' else '' end);
+      if broke then perform public.world_gw_credit(p_fight, v_brk, (select sum(x.hp * 0.25) from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not rest), 'guard'); end if;
+      update public.world_gw_members x set hp = greatest(1, (x.hp * case when broke or x.fx ? 'gward' then 0.75 else 0.5 end)::int), fx = x.fx - 'gward'
+       where x.fight_id = p_fight and x.out_rounds = 0 and not rest;
+      update public.world_gw_fights set enrage = enrage + 1 where fight_id = p_fight;
+      f.enrage := f.enrage + 1;
+    end if;
+  end if;
+  update public.world_gw_fights set hp = least(max_hp, greatest(0, hp - round(boss_dmg)::int + round(boss_heal)::int)), updated_at = now() where fight_id = p_fight returning * into f;
+  if f.hp <= 0 then update public.world_gw_fights set bfx = vbfx where fight_id = p_fight; perform public.world_gw_settle(p_fight, true); return; end if;
+  if k in ('face', 'normal') then
+    -- 인원 배율(7.7.4, 1.0.0f 둘 다시 맞춤 — 정석 플레이 시뮬: 넷 거의 다 이김 · 둘 절반 · 혼자 드물게): 1명 1 · 2명 1.4 · 3명 0.8 · 4명 0.85(주인 체력 1.2 · 1.7 · 0.8 · 0.85, world_gw_start)
+    raw := (35 + 4 * f.phase) * (1 + 0.15 * f.enrage)
+           * (select case count(*) when 1 then 1 when 2 then 1.4 when 3 then 0.8 else 0.85 end from public.world_gw_members where fight_id = p_fight);
+    if aoe then
+      perform public.world_gw_say(p_fight, r, 'boss', '모아 둔 기운이 터집니다. 왕좌 아래의 물이 한꺼번에 쏟아집니다!' || case when broke then ' (퇴마 결계가 물살을 절반으로 꺾었습니다)' else '' end);
+      if broke then perform public.world_gw_credit(p_fight, v_brk, raw * 0.9 * 0.5 * 0.7 * (select count(*) from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not rest), 'guard'); end if;
+      for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest loop
+        perform public.world_gw_hit(p_fight, m.owner_id, raw * 0.9 * case when broke then 0.5 else 1 end, r, '쏟아지는 물살에', true);
+      end loop;
+    elsif coalesce((vbfx ->> 'block')::int, 0) > 0 then
+      vbfx := case when (vbfx ->> 'block')::int > 1 then jsonb_set(vbfx, '{block}', to_jsonb((vbfx ->> 'block')::int - 1)) else vbfx - 'block' end;
+      perform public.world_gw_credit(p_fight, nullif(vbfx ->> 'block_by', '')::uuid, raw * 0.7 * (select case when count(*) >= 4 then 2 when count(*) = 3 then 1.5 else 1 end from public.world_gw_members x where x.fight_id = p_fight), 'guard');
+      perform public.world_gw_say(p_fight, r, 'good', '주인의 손길이 묶여 허공을 가릅니다.');
+    else
+      -- 손아귀 수는 인원에 맞춘다(7.7.4): 1·2명 하나, 3명 하나·둘 번갈아, 4명 둘 — 같은 사람을 두 번 노리지 않음
+      select count(*) into v_n from public.world_gw_members where fight_id = p_fight;
+      v_hands := case when v_n >= 4 then 2 when v_n = 3 then 1 + (r % 2) else 1 end;
+      n := coalesce((vbfx -> 'smoke' ->> 'n')::int, 0);
+      v_miss := coalesce((vbfx -> 'smoke' ->> 'miss')::numeric, 45);
+      for v_h in 1 .. v_hands loop
+        select * into m from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not rest and not (x.owner_id = any (v_hit))
+         order by public.world_cb_pick_key(coalesce((x.stats ->> 'pres')::numeric, 30) + coalesce((x.fx -> 'taunt' ->> 'pres')::numeric, 0)) limit 1;
+        exit when m.owner_id is null;
+        v_hit := v_hit || m.owner_id;
+        hit_who := m.owner_id; cover_by := null;
+        select owner_id into cover_by from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest and fx ->> 'cover' = m.owner_id::text and owner_id <> m.owner_id limit 1;
+        select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
+        if n > 0 and random() * 100 < v_miss then
+          perform public.world_gw_credit(p_fight, nullif(vbfx -> 'smoke' ->> 'by', '')::uuid, raw * 0.7, 'guard');
+          perform public.world_gw_say(p_fight, r, 'miss', '연막 속에서 주인의 손길이 ' || m.name || '을(를) 비껴갑니다.');
+        elsif random() * 100 < coalesce((m.stats ->> 'eva')::numeric, 0) + coalesce((vfx -> 'evade' ->> 'pct')::numeric, 0) + (case when m.stats ->> 'style' = 'magic' then 15 else 0 end) then
+          if vfx -> 'evade' ->> 'by' is not null and vfx -> 'evade' ->> 'by' <> m.owner_id::text then
+            perform public.world_gw_credit(p_fight, (vfx -> 'evade' ->> 'by')::uuid, raw * (1 - least(80, coalesce((m.stats ->> 'red')::numeric, 0)) / 100.0)
+              * (vfx -> 'evade' ->> 'pct')::numeric / greatest(1, coalesce((m.stats ->> 'eva')::numeric, 0) + (vfx -> 'evade' ->> 'pct')::numeric), 'guard'); end if;
+          if vfx ? 'evade' then update public.world_gw_members x set fx = case when (x.fx -> 'evade' ->> 'n')::int > 1 then jsonb_set(x.fx, '{evade,n}', to_jsonb((x.fx -> 'evade' ->> 'n')::int - 1)) else x.fx - 'evade' end where x.fight_id = p_fight and x.owner_id = m.owner_id; end if;
+          perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 주인의 손길을 피했습니다.');
+        elsif cover_by is not null then
+          perform public.world_gw_credit(p_fight, cover_by, raw * 0.5 * (1 - least(80, coalesce((m.stats ->> 'red')::numeric, 0)) / 100.0), 'guard');
+          perform public.world_gw_hit(p_fight, cover_by, raw * 0.5, r, (select name from public.world_gw_members where fight_id = p_fight and owner_id = cover_by) || '이(가) ' || m.name || ' 앞을 막아서 주인의 ' || case when v_h > 1 then '다른 ' else '' end || '손아귀를', false);
+        else
+          perform public.world_gw_hit(p_fight, hit_who, raw, r, case when v_h > 1 then '주인의 다른 손아귀에' else '주인의 손아귀에' end, false);
+        end if;
+      end loop;
+      if n > 0 and coalesce(array_length(v_hit, 1), 0) > 0 then vbfx := case when n > 1 then jsonb_set(vbfx, '{smoke,n}', to_jsonb(n - 1)) else vbfx - 'smoke' end; end if;
+    end if;
+  end if;
+  update public.world_gw_members set out_rounds = out_rounds - 1, rest = rest or out_rounds = 1, hp = case when out_rounds = 1 then 30 else hp end where fight_id = p_fight and out_rounds > 0;
+  update public.world_gw_members set fx = fx - 'cover' where fight_id = p_fight and fx ? 'cover';
+  update public.world_gw_fights set bfx = vbfx where fight_id = p_fight;
+  select count(*) into alive from public.world_gw_members where fight_id = p_fight and out_rounds = 0;
+  -- 혼자면 쓰러져도 한 라운드 쉬고 돌아오므로 「모두 물러남」으로 끝내지 않는다(7.7.4). 대신 열한 번째로 쓰러지면 끝(쓰러짐 10번까지)
+  if (select count(*) from public.world_gw_members where fight_id = p_fight) = 1 and (select max(falls) - coalesce(max((stats ->> 'solo_falls')::int), 0) from public.world_gw_members where fight_id = p_fight) > 10 then
+    perform public.world_gw_say(p_fight, r, 'bad', '쓰러질 수 있는 횟수를 넘겼습니다. 홀로 선 이의 넋이 더는 버티지 못합니다.');
+    perform public.world_gw_settle(p_fight, false); return;
+  end if;
+  if alive = 0 and (select count(*) from public.world_gw_members where fight_id = p_fight) > 1 then
+    perform public.world_gw_say(p_fight, r, 'bad', '모두가 물러났습니다. 소용돌이가 왕좌를 덮습니다.');
+    perform public.world_gw_settle(p_fight, false); return;
+  end if;
+  if now() >= f.ends_at then
+    perform public.world_gw_say(p_fight, r, 'bad', '시간이 다 되었습니다. 귀허의 주인이 바다 밑으로 가라앉습니다.');
+    perform public.world_gw_settle(p_fight, false); return;
+  end if;
+  perform public.world_gw_next_round(p_fight);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.world_gw_k(p_fight uuid)
+ RETURNS numeric
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare aa numeric; n int; ph int;
+begin
+  select avg((stats ->> 'attack')::numeric), count(*) into aa, n from public.world_gw_members where fight_id = p_fight;
+  select phase into ph from public.world_gw_fights where fight_id = p_fight;
+  if aa is null then return 1; end if;
+  return 1.5 * aa / ((35 + 4 * coalesce(ph, 1)) * case n when 1 then 1 when 2 then 1.4 when 3 then 0.8 else 0.85 end);
+end $function$;
+
 update public.world_app_meta set value = '20261105050000' where key = 'db_version';
