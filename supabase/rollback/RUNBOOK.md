@@ -19,6 +19,8 @@
 - 판정은 캐릭터 updated_at을 쓰지 않는다: 안전지대 회복(yh-safe-regen)·일괄 패치가 행을 고쳐 접속하지 않아도 늦게 찍힌다. 마지막 행동(world_events actor_id)·world_active_sessions.claimed_at·auth.users.last_sign_in_at 가운데 가장 늦은 때로 본다.
 - world_invites에는 외래 키가 없다. 지운 계정에 나눠 준 안 쓴 초대권은 issued_to가 없는 사람을 가리킨 채 정원(60)을 차지하므로, 승인을 받아 비축(issued_to null)으로 돌린다.
 
+- **끝남(2026-11-02)**: 심나윤·한유성·기미르·서희 4계정 삭제, 그 초대권 4장 비축으로(계정 27·캐릭터 27·운영진 1·비축 4·나눠 준 것 25). 백업은 11/1 15:13 UTC(문 닫은 뒤) 자동 백업이 마지막 상태.
+
 ## 점검 중에 할 일(11/2 00:00 뒤)
 1. **문이 닫혔는지 확인**: `select has_schema_privilege('authenticated','public','USAGE');` → false
 2. **서버 사양**: 대시보드에서 Small로 올림(사용자, 하루 뒤 Micro로 — 할 일 #117).
