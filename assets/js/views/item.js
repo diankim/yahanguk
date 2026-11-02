@@ -112,18 +112,20 @@ export function suitedJobs(o) {
   let jobs = req.length ? STAT_JOBS[req[0][0]] || [] : [];
   // 방어구는 짝 능력치로도 입으므로(world_stat_pair) 짝 능력치의 직업도 넣는다(7.5.4, 제보 52 — 법의에 퇴마관이 빠졌다)
   if (o.category === 'armor' && req.length) jobs = [...new Set([...jobs, ...(STAT_JOBS[STAT_PAIR[req[0][0]]] || [])])];
-  if (o.category === 'weapon') {
-    if (wt === 'melee') jobs = ['artificer'];
-    else if (wt === 'ranged') jobs = ['scout'];
-    else if (wt === 'magic') jobs = jobs.filter(j => ['exorcist', 'medic', 'sealmaster'].includes(j)).length ? jobs : ['exorcist', 'medic', 'sealmaster'];
-  }
+  if (o.category === 'weapon') jobs = weaponJobs(o);
   return o.required_job ? [o.required_job] : jobs;
 }
+// 무기를 들 수 있는 직업(서버 equipment_traits.jobs, 없으면 공격 방식 기본값 — world_weapon_jobs_of, 7.7.7p)
+const WEAPON_JOBS = { melee: ['artificer', 'analyst'], ranged: ['scout'], magic: ['exorcist', 'sealmaster', 'medic'] };
+export const weaponJobs = o => Array.isArray(o?.equipment_traits?.jobs) ? o.equipment_traits.jobs : WEAPON_JOBS[o?.equipment_traits?.weapon_type || 'melee'] || [];
+const weaponOk = (o, c) => o?.category !== 'weapon' || !c?.job_key || weaponJobs(o).includes(c.job_key);
+const weaponJobText = o => `${weaponJobs(o).map(nameOf).join('·')} 무기`;
 // 장착 조건(서버 world_equip_item과 같은 순서): 레벨 → 직업 → 소속 → 능력치
 export const gearBlock = (o, c) => {
   if (!o) return '';
   if (o.minimum_level > (c?.level || 1)) return `Lv.${o.minimum_level} 필요`;
   if (o.required_job && o.required_job !== c?.job_key) return `${nameOf(o.required_job)} 전용`;
+  if (!weaponOk(o, c)) return weaponJobText(o);
   if (o.required_faction && o.required_faction !== c?.faction_key) return `${nameOf(o.required_faction)} 전용`;
   const miss = statReqs(o, c).find(r => !r[1]);
   return miss ? miss[2] : '';
@@ -134,6 +136,7 @@ export function gearReqs(o, c) {
   const out = [];
   if (o.minimum_level > 1) out.push([`Lv.${o.minimum_level} 이상`, (c?.level || 1) >= o.minimum_level]);
   if (o.required_job) out.push([`${nameOf(o.required_job)} 전용`, o.required_job === c?.job_key]);
+  else if (o.category === 'weapon') out.push([weaponJobText(o), weaponOk(o, c)]);
   if (o.required_faction) out.push([`${nameOf(o.required_faction)} 전용`, o.required_faction === c?.faction_key]);
   for (const [t, ok] of statReqs(o, c)) out.push([t, ok]);
   return out;
@@ -325,7 +328,7 @@ export async function useItem(id, btn) {
 function openResetIdentity() {
   const c = store.character || {};
   const m = openModal({ title: '환골탈태 서첩', body: `
-    <p class="muted small">직업과 소속을 다시 고릅니다. 대세력에서 나오고(평판 0) 능력치는 새 직업의 기본값으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·물품·전·칭호·기술은 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다.</p>
+    <p class="muted small">직업과 소속을 다시 고릅니다. 능력치는 새 직업의 기본값으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·기술 단계·대세력·물품·전·칭호는 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다.</p>
     <h3 class="sub-h">직업</h3>
     <div class="choice-grid ri-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
     <h3 class="sub-h">소속</h3>

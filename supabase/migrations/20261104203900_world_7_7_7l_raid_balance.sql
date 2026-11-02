@@ -140,10 +140,10 @@ begin
     d := replace(d, 'case n when 1 then 1 when 2', 'case n when 1 then 1.12 when 2');
     execute d;
   end if;
-  -- 결전: 혼자면 보스 체력 ×1.6·둘이면 ×2.3(전 1·1.7) (회복품 다섯·물러남 회복 3%로 둘이 해볼 만해진 대신 혼자는 쉬워져서)
+  -- 결전 보스 체력 배율: 혼자 ×1.6·둘 ×2.4·셋 ×2.9·넷 ×3.3(전 1·1.7·2.3·2.8) — 회복품 다섯·물러남 회복으로 쉬워진 만큼(10판 시뮬, 셋·넷은 30판 모두 승)
   d := replace(pg_get_functiondef('public.world_raid_begin_fight(uuid)'::regprocedure), E'\r\n', E'\n');
-  if position('when 1 then 1.6 when 2 then 2.3' in d) = 0 then
-    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7', 'case least(n, 4) when 1 then 1.6 when 2 then 2.4', 'final solo hp');
+  if position('when 1 then 1.6 when 2 then 2.4' in d) = 0 then
+    d := pg_temp.yh_sub(d, 'case least(n, 4) when 1 then 1 when 2 then 1.7 when 3 then 2.3 else 2.8', 'case least(n, 4) when 1 then 1.6 when 2 then 2.4 when 3 then 2.9 else 3.3', 'final hp scale');
     execute d;
   end if;
   -- 협동 기술(사용자 결정 2026-11-01, 파티 효율 점검): 퇴마관 파사 진언은 광역뿐 아니라 다음에 받는 공격 한 번에
@@ -194,7 +194,7 @@ update public.world_patch_notes set body = body || $N$
 - 결전에서 회복 기술의 회복량은 절반입니다.
 - 쓰러진 뒤 쉬는 시간은 1분에서 **30초**로 줄었고, 쉬는 중에 행동해 돌아오면 귀허처럼 체력 30으로 돌아옵니다.
 - 모두 물러났을 때 보스가 되찾는 체력은 8%에서 3%로 줄었습니다.
-- 보스 체력 배율: 혼자 1 → **1.6**, 둘 1.7 → **2.4**(셋 2.3·넷 2.8 그대로).
+- 보스 체력 배율: 혼자 1 → **1.6**, 둘 1.7 → **2.4** · 셋 2.3 → **2.9** · 넷 2.8 → **3.3**.
 - 퇴마관·봉인술사는 결전에서 인원과 상관없이 주는 피해 +25%(혼자일 때는 아래 혼자 보정이 대신).
 
 ### 귀허의 주인

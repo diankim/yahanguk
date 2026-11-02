@@ -50,7 +50,7 @@
 - 정산 효과: 정산 동안 JWT를 원정 주인으로 바꿔 world_status_effect_total·world_title_bonus를 읽는다(주는 피해(무기 갈래 % 포함, 합 35%)·치명타 절반·방어·받는 피해(−60%까지)·회피·정신 손실·침식·희귀품·채집량·회복량). 퇴마관 전투력 ×1.12·백공 채집 +15%는 따로 붙이지 않음(직업 효과와 겹침).
 - 일지(world_expedition_progress): 모든 줄에 캐릭터 이름, 걸음마다 지역 종류·태세·직업·날씨에 맞는 풍경·흔적·기척 줄(world_expedition_walk_lines), 회차, 전투(행동별 절제된 색)를 시간순으로 위→아래. 같은 지역으로 원정 중인 파티원 일지만 섞는다. 처음 열면 맨 아래. 전리품 이름·수량은 귀환 때 공개. 전투는 마주침~승패를 테 두른 칸으로 묶어 결과 한 줄만 보이고 누르면 펼침, 끼어든 다른 줄이 칸을 끊지 않음(expedition.js battleGroups).
 - 보상: 보낸 시간 10분 ≈ 탐색 1번이 되게 회차로 나눔. Lv10까지 경험치 +30%, 원정지마다 첫 완주 길잡이 등불. 회차마다 원정 전용 물품(world_expedition_bonus_item: 길잡이 등불·비경 지도·철벽/맹호/청명 비약·봉인된 보따리·강화 재료, 모두 거래 가능). 경험치는 완주했을 때만 (60+지역Lv×15)×시간^0.8×깊이(1·1.2·1.4)×레벨 차 배율. 2시간 이상 완주 경험치·전·숙련 +20%(4시간 +30%·8시간 +40%). 완주 장비(world_expedition_gear): 2시간 50%·4시간 이상 반드시, 심부·핵심 덤 4%·8%. 2시간 이상 완주 시 비경(world_hidden_trails, 3시간: 그 지역 채집량 +50%·희귀품·단서 +10%, 파티원 공유, world_trail_effect).
-- 원정 전투에는 같은 영역 이웃 지역(수준 ±3) 일반 요괴도 30% 무게로 섞인다. 전투·채집·조사 경험의 절반은 든 무기 계열·채집·탐사 기술에.
+- 원정 전투에는 같은 영역 이웃 지역(수준 ±3) 일반 요괴도 30% 무게로 섞인다. 전투·채집·조사 경험의 절반은 직업 계열(world_idle_skill_for training)·채집·탐사 기술에.
 - 원정 장비(행군 노리개·비경 호신부·야행 탈, exg_*_2→_1→_0)는 원정 두 번에 부서지고 부서진 것은 효과 없이 싸게 팔린다.
 - 전투 묘사(world_exp_fight_story): 승패·피해 합은 settle이 정하고 이 함수가 무기 갈래별 공격·치명타·직업 기술(한 번)·요괴 수법(kind foe)·회피·막기(kind guard: guarding 단계로 6%+단계×0.6%·최대 35%, 그 공격 피해 절반)를 여러 합으로 적는다. 승패는 win_p로 굴리되 밀린 싸움도 체력 70 이상이면 (체력−50)/100(최대 50%)로 버텨 이김(피해 두 배, [버팀]).
 - 파티 합동 전투: 동료 한 명마다 같은 지역 일반 요괴가 하나 더, 위협 +45%, 이기면 더 나온 요괴마다 경험치 5+위험도·전리품 35% 굴림. 동료 전투력 60%가 승률에, 요괴는 이목^1.3로 표적(동료가 대신 맞은 피해는 world_expedition_hits로 동료 정산 때 반영, 쓰러뜨리지는 않음).
@@ -162,11 +162,12 @@
 ### 기술 계열과 숙련
 
 - skill_progress에 경험: 단계 r→r+1에 80+8r, 30단계부터 6×(r−29)²를 더함(누적 40단계 11,670·50단계 30,940), 최고 50(world_skill_line_xp·world_skill_line_rank). 탐색 한 번 탐사 경험 5.
-- 계열: 전투 근접·원거리·봉인술·분석·막기(guarding)·응급 처치(first_aid) / 조사 탐사(tracking) / 채집 foraging(herbs·wood·supplies·water·spirit)·mining(ore·relics)·fishing(던질 때마다 8) / 제작 smithing 단조·carpentry 목공·artifice 법구 공예·wardcraft 봉인 공예(분야 키 sealing)·weaving 직조·leatherwork 가죽 공예·alchemy 연금·cooking 요리(world_craft_line_of(분야)·world_line_name). 옛 herbalism·spirit_gathering 키와 요리 숙련(cooking_rank·cooking_xp)은 남아 있어도 쓰지 않는다.
+- 직업 계열(7.7.7p): 전투 기술 경험은 든 무기가 아니라 직업 계열에(world_job_line: 호위 무사 melee 근접·조사원 ranged 사격·봉인술사 sealing 봉인술·퇴마관 exorcism 퇴마술·백공 dagger 단도·의무관 medicine 의술, 화면 core.js JOB_LINE). 토벌 기록 payload.line → world_event_char_apply. 분석·막기·응급 처치는 공통. 새 계열 기본 기술 수치는 그 직업이 전에 쓰던 계열과 같음(백공 = 근접, 퇴마관·의무관 = 봉인술 — 시뮬 불변). 택일 ① 은 옛 동작을 빌림(world_skill_catalog.proc_as → world_skill_procs가 함께 돌려줌, 기록 줄 이름은 world_skill_alias_lines가 바꿈, 원정 효과는 world_skill_owned), ② 는 직업 고유(단도 재주 급소 해부·독 바른 날·손재주 덫·장인의 눈 / 퇴마술 정화 파사안·퇴마 진언·정화의 불·금강 결계(청정결계 동작) / 의술 처방 맥 짚기·보신 처방·해독 처방·회춘), 숙달 천수비도(검신 동작)·멸마(술법 치명타 200%)·화타의 손(응급 처방 ×1.5). 방패(이목·도발)는 호위 무사만. 지금 직업 계열이 아닌 전투 계열과 그 계열이 드는 조합 기술은 효과·고유 동작·전투 숙련에서 빠짐(world_skill_line_ok — world_skill_procs·owned·effect·combat_stats·skill_pending, world_skill_sync는 new.job_key로, 8단계 갈래 덤·부적 정련 품질은 그 직업만). 화면 character.js mineOnly(지난 직업 계열은 「효과 없음」 한 줄).
+- 계열: 전투 근접·사격(ranged)·봉인술·단도·퇴마술·의술·분석·막기(guarding)·응급 처치(first_aid) / 조사 탐사(tracking) / 채집 foraging(herbs·wood·supplies·water·spirit)·mining(ore·relics)·fishing(던질 때마다 8) / 제작 smithing 단조·carpentry 목공·artifice 법구 공예·wardcraft 봉인 공예(분야 키 sealing)·weaving 직조·leatherwork 가죽 공예·alchemy 연금·cooking 요리(world_craft_line_of(분야)·world_line_name). 옛 herbalism·spirit_gathering 키와 요리 숙련(cooking_rank·cooking_xp)은 남아 있어도 쓰지 않는다.
 - 숙련 4갈래(combat/gathering/crafting/investigation_rank) = 그 갈래 계열의 최고 단계(trg_world_skill_sync·world_skill_sync). 제작으로 오르는 계열 = world_craft_line_of(제작법 craft_field)(world_event_char_apply).
 - 토벌 행동 기술: world_battle_action이 승리 기록 payload.acts(analysis·guarding·first_aid: 집중·방어·회복품/처치 횟수), world_skill_add가 종류마다 least(3,n)×8.
 - 단계 보상(3·8·13·18·24·30·36·43·50단계): 기본(slot base), 13·30 추가(extra), 24·43 택일(a·b, world_skill_choose, world_skill_picks — 처음 무료, 바꾸기 24단계 2,000·43단계 5,000전), 50 숙달(master). 근접은 13·24·30·43 모두 택일(A 공격 발도·일격·유수검·파천 / B 방패 호령·도발·철갑 강기·사자후, 이목은 world_combat_stats). 봉인술도 13·24·30·43 모두 택일(A 몰아치기 연쇄부·폭렬부·연환부·천뢰부 / B 북돋기·약화 부적 접기·호체부·겹술식·청정결계; 바꾸기 13단계 1,000·24 2,000·30 3,000·43 5,000전). 무료 다시 고르기 world_skill_picks.free_repick(기한 없음, 롤백 때 사라짐). 무기 강화 택일은 근접 단조·원거리 목공·술법 법구 공예 43a.
-- 조합 기술 12(category combo, requires 두 계열 18단계, 원본 world_skill_catalog): 대장장이 검객·사냥꾼의 눈·영맥 판독(분석·채집)·야전 약방(응급 처치·채집)·현장 조제(채집·연금)·바위 몸(막기·채광)·영맥 세공(채광·법구 공예)·짐꾼의 요령(채광·가죽 공예)·그물 짓기(낚시·직조)·갯가 주방(낚시·요리)·낚싯대 깎는 손(낚시·목공)·겹봉인(봉인술·봉인 공예).
+- 조합 기술 15(category combo, requires 두 계열 18단계, 원본 world_skill_catalog): 대장장이 검객·사냥꾼의 눈·영맥 판독(분석·채집)·야전 약방(응급 처치·채집)·현장 조제(채집·연금)·바위 몸(막기·채광)·영맥 세공(채광·법구 공예)·짐꾼의 요령(채광·가죽 공예)·그물 짓기(낚시·직조)·갯가 주방(낚시·요리)·낚싯대 깎는 손(낚시·목공)·겹봉인(봉인술·봉인 공예)·칼집 손질(단도·가죽 공예, 대장장이 검객 동작)·부적 퇴마진(퇴마술·봉인 공예, 퇴마진 ×2.4)·약선 처방(의술·연금, 응급 처방 +10).
 - 보유 판정 world_skill_has 하나(world_skill_effect·world_combat_stats·world_skill_snapshot 공용). 전투 피해·치명타는 world_combat_stats, 그 밖은 world_skill_effect(상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·조우 −15) → world_status_effect_total. 숙련 효과는 50단계 기준(전투 숙련 공격력 단계마다 +0.6% 등). 기본 기술 효과는 그 계열 분야에서만.
 - 고유 효과: 이름 있는 기술(추가·택일·숙달·조합)은 passive_effect가 비고 행동을 바꾼다. world_skill_procs(uid)가 skill_id 목록을 주고 world_battle_action·world_field_gather·world_craft_item·world_field_search·world_travel_route·world_field_rest·world_weapon_enhance·world_enhance_quote·world_equipment_repair·world_repair_quote·world_rescue_character·world_combat_stats(도발 이목 +60)가 처리. 원정은 world_exp_skill_def(atk·guard·win·loot·find·heal·ward·일지 줄)를 world_exp_skill_fx가 합쳐(상한 전투력 25·피해 30·승률 0.08·채집 30·발견 35·회복 4·침식 35) settle에 보정과 「[기술] …」 줄로. 새 고유 효과를 넣으면 이 함수들과 skill_catalog.description을 함께 고친다.
 - 기술 칭호 32(ct_<계열>_15·35·50, gt_<계열>_25·50, ct_all_50·gt_all_50, 규칙 'skill'·'skill_all'). 함수 주인 역할은 기술표를 못 읽으므로 이름은 world_skill_name. 생성기 supabase/gen750(skills_draft.json(사용자 확정 시안 5, decisions_5) + f_*.sql·m_*.sql → gen.py).
@@ -185,7 +186,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 캐릭터 신원
 
-- 가입 후 최초 1회 생성 화면에서 이름·직업·소속, 이후 로그인은 바로 게임. 이름·직업·소속은 바꿀 수 없고 설정에도 변경 선택지가 없다. 예외 귀속 소모품(거래 불가·창고 가능, 모두에게 하나씩): 환골탈태 서첩(reset_identity, world_reset_identity: 직업·소속 다시 고르기·대세력 탈퇴·전용 장비 해제·포인트 반환), 세심단(reset_stats, world_reset_stats: 능력치만). 이름은 불변. 창 item.js openResetIdentity(모바일 .ri-grid·.sticky-actions).
+- 가입 후 최초 1회 생성 화면에서 이름·직업·소속, 이후 로그인은 바로 게임. 이름·직업·소속은 바꿀 수 없고 설정에도 변경 선택지가 없다. 예외 귀속 소모품(거래 불가·창고 가능, 모두에게 하나씩): 환골탈태 서첩(reset_identity, world_reset_identity: 직업·소속 다시 고르기·전용 장비와 못 드는 무기 해제·포인트 반환, 레벨·기술 단계·대세력은 그대로 — 7.7.7p, 대세력 비고 world_faction_vault 2등급 공훈 300), 세심단(reset_stats, world_reset_stats: 능력치만). 이름은 불변. 창 item.js openResetIdentity(모바일 .ri-grid·.sticky-actions).
 - 이름 중복은 서버가 막는다(대소문자·앞뒤 공백 무시).
 - 소속 효과(world_affil_effect → world_status_effect_total, 경제 world_affil_cap·world_affil_tax): 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·주는 피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·주는 피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%. 하루 소속 보급·소속 임무도 소속마다. 화면 core.js FACTIONS.
 - 직업(내부 키 / 이름 world_job_label·world_job_name / 화면 core.js JOBS): 호위 무사 artificer 근접 · 현장 조사원 scout 원거리 · 퇴마관 exorcist 술법 · 의무관 medic 치유 · 봉인술사 sealmaster 보조(북돋기·약화) · 백공 기술관 analyst 생활.
@@ -206,7 +207,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 칭호
 
-- 249개(공개 179): 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
+- 258개(공개 185, 7.7.7p 비수·퇴마·의술의 길과 숨김 그믐밤 비수·안개 속 퇴마사·빗속의 의원 — 「…의 길」은 payload.line으로 셈): 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
 - 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만, 남의 목록에 안 나옴.
 - 등급 world_title_catalog.grade 1 범품·2 양품·3 진품·4 명품·5 신품(색 회색·초록·파랑·보라 칠·주홍 칠), 어려울수록 높고 효과도 큼(첫 효과 그 등급, 둘째·셋째 한·두 등급 아래). 효과 키: 주는/받는 피해·근접/원거리/술법·치명타·회피·달아나기·방어·이목(world_combat_stats가 world_title_bonus_of로)·회복·침식·정신 손실·조우(world_status_effect_total이 world_title_extra로)·단서·희귀품·채집·제작·이동·낚시.
 - 최대 3개 장착 + 대표 칭호 하나(채팅·프로필). 숨김 칭호는 얻기 전까지 이름·조건을 서버가 감춤.
@@ -244,6 +245,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 장비 1~6단계(6단계 귀허도 Lv32), 같은 단계도 갈래가 다름(무기 묵직·예리·소리 없음, 방어구 쇠미늘·철릭·도포·야행복). 5단계도 거래·되팔기·분해 가능.
 - 특성 합 world_gear_total(무기 위력·피해·방어구 방어·피해 감소·도구 채집·낚싯대 특성 제외) → world_status_effect_total, world_combat_stats가 방어·회피·치명타·달아나기·이목을 더함(상한 회피 40·치명타 60·달아나기 95).
 - 이목 = 30 + 체질×0.8 − 민첩×0.4 + 방어구 방어력×0.6 + 장비 이목(5~300). 원정 합동 전투·파티 토벌·보스가 이목^1.3로 표적.
+- 무기 직업 태그 equipment_traits.jobs(근접 호위 무사·백공 · 원거리 조사원 · 술법 퇴마관·봉인술사·의무관, 없으면 trg_world_weapon_jobs가 weapon_type으로 채움, world_weapon_job_ok — world_equip_item·world_reset_identity, 화면 item.js weaponJobs).
 - 주 능력치 조건(레벨당 3점 기준): 무기·방어구 5+0.35×3×(장착 레벨−1), 관모·신·노리개·호신부·탈·채집 도구 5+0.25×3×(장착 레벨−1). 주 능력치는 무기 종류·장비 갈래로. 새 장비도 같은 식.
 - 생활 도구(g_tools.sql·b_life.sql·data_life.py): 능력치 조건 없이 equipment_traits.req_line(gathering_rank·crafting_rank·investigation_rank)·req_rank(world_equip_item, item.js statReqs). 제작 공구 조건은 craft_fields 계열 중 최고 단계. 효과(world_field_gather): 곡괭이(world_tool_lines pick)는 ore·relics, 채집도(knife)는 herbs·wood·supplies·water에서 채집량 +10%p, 낫·등은 sig_pct·sig_where로 지역 signature_items(영맥 낫 herbs·spirit 3%·영등 relics 또는 어두운 region_type 5%). 영맥 나침반은 길·채집터 무게 ×1.2. 낚싯대 단계 덤은 2단계까지, 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 생활 장비 32가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대 6단계·제작 공구 15, 제작법 r_lt_*). 새 도구도 이 규칙.
 - 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, 화면 bag.js toolCovers는 물품 목록 tl·tier — world_tool_lines 한 곳만 고침). 채집은 도구를 조건으로 보지 않는다.
@@ -363,7 +365,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 자율 중에는 현장 행동(이동·탐색·전투·채집·낚시·휴식·제작·분해·강화·수리·상점·거래소·직접 거래·원정·구조·의뢰)을 world_guard_action_context·world_events 트리거가 막고, 성장·세력 임무·보급·단서 조합·이야기·전리품 분배·물품 사용·장비 바꾸기는 된다.
 - 끝나기 전 그만두기(캐릭터 › 자율, world_claim_idle_activity를 일찍 부르면 중단) = 지난 시간만큼, 최소 1 보정 없음.
-- 보상 world_claim_idle_activity(시간 h): 숙련·회복 floor(4.2h), 경험치 floor(h×비율×0.35)(수련 12·조사 10·정비 8·휴식 3, 최소 1, 최고 레벨이면 0). 수련 = 전투 숙련·든 무기 기술(근접·원거리·술법은 봉인술), 조사 = 조사 숙련·탐사, 정비 = 제작 숙련·world_craft_line_of(생활 전문화 제작 분야), 휴식 = 체력·정신·영력(world_idle_skill_for).
+- 보상 world_claim_idle_activity(시간 h): 숙련·회복 floor(4.2h), 경험치 floor(h×비율×0.35)(수련 12·조사 10·정비 8·휴식 3, 최소 1, 최고 레벨이면 0). 수련 = 전투 숙련·직업 계열(world_job_line), 조사 = 조사 숙련·탐사, 정비 = 제작 숙련·world_craft_line_of(생활 전문화 제작 분야), 휴식 = 체력·정신·영력(world_idle_skill_for).
 - 화면(캐릭터 › 자율)은 시간 단추마다 같은 식의 예상 보상, 누르면 확인 창. training·research·maintenance·rest 각 분기와 수령을 검증한다.
 
 이동 중 막는 행동:

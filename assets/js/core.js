@@ -84,6 +84,9 @@ export async function loadCharacter() {
 }
 
 /* ── 이름 사전 (내부 코드를 화면에 그대로 노출하지 않는다) ───────────── */
+// 직업마다 전투 기술 경험이 쌓이는 계열(서버 world_job_line, 7.7.7p). 분석·막기·응급 처치는 공통
+export const JOB_LINE = { artificer: 'melee', scout: 'ranged', sealmaster: 'sealing', exorcist: 'exorcism', analyst: 'dagger', medic: 'medicine' };
+export const COMBAT_LINES = ['melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine'];
 export const JOBS = {
   // 역할 6가지(6.0.0): 근접·원거리 물리·술법·생활 특화·치유·보조. base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
   exorcist: { name: '퇴마관', trait: '술법', desc: '부적과 방울로 요괴를 치는 술법 공격수. 술법 피해 +8%, 퇴마진(술법 ×2.0, 결계 깨기).',
@@ -119,7 +122,7 @@ const FIXED = {
   fieldwork: '채집', mining: '채광', fishing: '낚시',
   smithing: '단조', cooking: '요리', carpentry: '목공', alchemy: '연금', sealing: '봉인 공예', weaving: '직조', leatherwork: '가죽 공예', artifice: '법구 공예',
   // 기술 계열
-  melee: '근접', ranged: '원거리', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
+  melee: '근접', ranged: '사격', dagger: '단도', exorcism: '퇴마술', medicine: '의술', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
   // 분류
   tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비', furniture: '별채 가구', pet: '꼬마 동무',
   common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품',
