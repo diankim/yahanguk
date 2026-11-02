@@ -1,5 +1,6 @@
 -- 7.7.7r — 직업 역할 균형(사용자 결정 2026-11-02, 7.7.7q 시뮬 검토 뒤)
---  · 직업 이름 「백공 기술관」 → 「암영 검객」(내부 키 analyst 그대로).
+--  · 직업 이름 「백공 기술관」 → 「암영 검객」, 「현장 조사원」 → 「월궁 사수」(내부 키 analyst·scout 그대로).
+--  · 암영 검객 협동 기술을 근접 공격 기술로: 그림자 찌르기·급소 드러내기·그림자 숨기·암영 난무.
 --  · 봉인술사 = 버티는 술사(이목 +60·방어 +30·회피 +12), 퇴마관 이목 −15.
 --  ② 기여도: 한 사람을 노린 공격을 맞으면 자기 방어(피해 감소·받는 피해)로 줄인 몫의 절반을 「막아 준 피해」로(봉연·결전·귀허).
 --  ③ 이목: 호위 무사 직업 이목 +50 → +80. 단도(백공) 기본 기술 넷에 이목 감소(합 −45%).
@@ -184,12 +185,42 @@ update public.world_item_lore set lore = v.l from (values
   ('wayfarer_pack_hq', '상인 짐틀. 수향 상단이 쓰던 것을 장인이 고쳐 만들었다.')) v(id, l)
  where world_item_lore.item_id = v.id and world_item_lore.lore like '%백공%';
 
+-- ── 직업 이름: 현장 조사원 → 월궁 사수(月弓射手, 사용자 결정 2026-11-02). 조사원 전체를 부르는 「조사원」은 그대로 ─────
+do $p$
+declare d text; f text;
+begin
+  foreach f in array array['world_job_label', 'world_job_name', 'world_gimmick_tip'] loop
+    d := pg_temp.fdef(f);
+    if position($a$'현장 조사원'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'현장 조사원'$a$, $a$'월궁 사수'$a$); end if;
+  end loop;
+end $p$;
+update public.world_characters set occupation = '월궁 사수' where occupation = '현장 조사원';
+update public.world_title_catalog set condition_text = replace(condition_text, '현장 조사원', '월궁 사수') where condition_text like '%현장 조사원%';
+update public.world_quests set cat = replace(cat, '현장 조사원', '월궁 사수') where quest_id = 'jq_scout';
+update public.world_quest_steps set lines = replace(lines::text, '현장 조사원이군요. 발이 빠르다고 들었어요.', '월궁 사수군요. 눈이 밝다고 들었어요.')::jsonb
+ where quest_id = 'mq_red_seal' and step = 1;
+update public.world_quest_steps set lines = replace(lines::text, '조사원이죠. 활 잡는 법은 봤어요.', '월궁 사수죠. 활 잡는 법은 봤어요.')::jsonb where quest_id = 'jq_scout' and step = 1;
+update public.world_quest_steps set lines = replace(lines::text, '조사원은 발로 쓰는 사람이니까.', '사수는 눈으로 먼저 쏘는 사람이니까.')::jsonb where quest_id = 'jq_scout' and step = 2;
+
+-- ── 암영 검객 협동 기술: 옛 백공의 장인 기술(수선·영력 보급·방호 법구·공명 법진)을 근접 공격수 기술로(사용자 지적 2026-11-02) ─────
+-- 기술 id(art_*)와 숙련 단계·순서는 그대로, 효과는 엔진에 이미 있는 갈래(crit_next·expose·evade·might)만 쓴다
+update public.world_coop_skills s set skill_name = v.n, description = v.d, target = v.t, effect = v.e::jsonb, cost = v.c, cooldown_s = v.cd,
+    exp_win = v.w, exp_heal = 0, exp_text = v.x
+  from (values
+    ('art_mend',   '그림자 찌르기', '그림자에서 급소를 노린다. 내 다음 공격이 반드시 치명타.', 'self', '{"type": "crit_next"}', 3, 8, 0.04, '그림자에서 급소를 노렸습니다'),
+    ('art_supply', '급소 드러내기', '요괴의 급소를 드러내 다음 세 번 받는 피해 +15%.', 'boss', '{"n": 3, "pct": 15, "type": "expose"}', 6, 15, 0.05, '요괴의 급소를 드러내 동료가 노리게 했습니다'),
+    ('art_shield', '그림자 숨기', '그림자에 몸을 숨겨 다음 두 번 회피 +40%.', 'self', '{"n": 2, "pct": 40, "type": "evade"}', 6, 18, 0.04, '그림자에 몸을 숨겨 공격을 흘렸습니다'),
+    ('art_array',  '암영 난무', '그림자처럼 몰아쳐 내 다음 세 번 공격 +40%.', 'self', '{"n": 3, "pct": 40, "type": "might"}', 14, 30, 0.07, '그림자처럼 몰아쳐 급소를 연달아 찔렀습니다')) v(id, n, d, t, e, c, cd, w, x)
+ where s.skill_id = v.id;
+
 do $c$
 begin
   if (select passive_effect ->> 'presence_pct' from public.world_skill_catalog where skill_id = 'dagger_t43') <> '-15' then raise exception '7.7.7r: 단도 이목'; end if;
   if (public.world_job_base('analyst') ->> 'strength') <> '8' then raise exception '7.7.7r: 백공 능력치'; end if;
   if (select sum(v::int) from jsonb_each_text(public.world_job_base('analyst')) t(k, v)) <> 30 then raise exception '7.7.7r: 백공 능력치 합'; end if;
   if public.world_job_label('analyst') <> '암영 검객' then raise exception '7.7.7r: 직업 이름'; end if;
+  if public.world_job_label('scout') <> '월궁 사수' then raise exception '7.7.7r: 월궁 사수 이름'; end if;
+  if (select count(*) from public.world_coop_skills where job_key = 'analyst' and skill_name in ('그림자 찌르기', '급소 드러내기', '그림자 숨기', '암영 난무')) <> 4 then raise exception '7.7.7r: 암영 검객 협동 기술'; end if;
   if exists (select 1 from public.world_quest_steps where lines::text like '%백공%') or exists (select 1 from public.world_item_lore where lore like '%백공%') then raise exception '7.7.7r: 백공 문구 남음'; end if;
 end $c$;
 
