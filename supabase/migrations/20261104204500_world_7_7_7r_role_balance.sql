@@ -59,6 +59,23 @@ begin
   end if;
 end $p$;
 
+-- 봉인술사 = 버티는 술사(호위 무사보다 낮고 다른 직업보다 높은 이목·방어, 조사원보다 낮고 다른 직업보다 높은 회피)
+-- 퇴마관 = 술법 공격수(방어는 낮게, 대신 이목도 낮게) — 사용자 결정 2026-11-02
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_combat_stats');
+  if position($a$WHEN c.job_key = 'sealmaster' THEN 60$a$ in d) = 0 then
+    d := pg_temp.rep(d, $a$WHEN c.job_key = 'artificer' THEN 80 ELSE 0 END$a$,
+      $a$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'sealmaster' THEN 60 WHEN c.job_key = 'exorcist' THEN -15 ELSE 0 END$a$);
+    d := pg_temp.rep(d, $a$  defense := greatest(0, s_vit * 0.8 + adef + g_def + c.level * 0.5);$a$,
+      $a$  defense := greatest(0, s_vit * 0.8 + adef + g_def + c.level * 0.5 + CASE WHEN c.job_key = 'sealmaster' THEN 30 ELSE 0 END);$a$);
+    d := pg_temp.rep(d, $a$CASE WHEN c.job_key = 'scout' THEN 6 ELSE 0 END + g_eva$a$,
+      $a$CASE WHEN c.job_key = 'scout' THEN 6 WHEN c.job_key = 'sealmaster' THEN 12 ELSE 0 END + g_eva$a$);
+    execute d;
+  end if;
+end $p$;
+
 update public.world_skill_catalog s set description = v.d, passive_effect = v.e::jsonb
   from (values
     ('dagger_t3',  '근접 피해 +5% · 이목 -10%.', '{"damage_pct": 5, "presence_pct": -10}'),
