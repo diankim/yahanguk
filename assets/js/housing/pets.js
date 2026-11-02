@@ -928,6 +928,48 @@ export const PETS = {
       step: ["........kk..kk..", ".......kxxkkxxk.", ".......kpakpak..", ".......kpakpak..", ".......kpakpak..", "......kaaaaaaak.", "......kaieaieak.", "..kk..kaeeaeeak.", ".kcckkkpaanaapk.", "kcccaaaaaaaaak..", ".kcaaaaaaaaaaak.", ".kkcaaaaaaaaak..", "kaaaakkkkkkaak..", ".kkkk......kk..."],
       sleep: ["....kkkkk.......", "...kxaaaakkkkk..", "....kapppaaaaak.", "..kk.kkakkakkak.", ".kcckkkpaanaapk.", "kcccaaaaaaaaaaak", ".kcaaaaaaaaaaak.", "..kaaaaaaaaaaak.", "...kkkkkkkkkkk.."]
     }
+  },
+  silver_afghan: {
+    name: "은빛 아프간 하운드",
+    grade: 2,
+    kind: "sky",
+    desc: "은빛 긴 털이 머리부터 발끝까지 비단처럼 늘어진 사냥개입니다. 걸을 때마다 털이 물결처럼 흔들리고, 꼬리 끝은 고리처럼 말려 있습니다. 늘 조금 졸린 눈을 하고 있지만 달리면 누구보다 빠릅니다.",
+    likes: "treat_meat",
+    baby: {
+      pal: { a: "#c4c9d5", h: "#eef0f5", s: "#9aa1b3", t: "#aab0c0", n: "#2a2830", p: "#f3a0a0", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
+      idle: ["......kkkkk....", ".....khhhhhkkk.", "....kshhhhhhhsk", "....ksaieaieask", "....ksaeeaeeask", "....ksspanapssk", "..k.ksssaaasssk", ".ktkksskaaakssk", "ktktaaaaaaakkk.", ".kaaaaaaaaaak..", ".khhhhhhhhhhkk.", ".khhkhhkkhhkhhk", ".kssksskksskssk", "..kk.kk..kk.kk."],
+      blink: ["......kkkkk....", ".....khhhhhkkk.", "....kshhhhhhhsk", "....ksaaaaaaask", "....ksakkakkask", "....ksspanapssk", "..k.ksssaaasssk", ".ktkksskaaakssk", "ktktaaaaaaakkk.", ".kaaaaaaaaaak..", ".khhhhhhhhhhkk.", ".khhkhhkkhhkhhk", ".kssksskksskssk", "..kk.kk..kk.kk."],
+      step: ["......kkkkk....", ".....khhhhhkkk.", "....kshhhhhhhsk", "....ksaieaieask", "....ksaeeaeeask", "....ksspanapssk", "..k.ksssaaasssk", ".ktkksskaaakssk", "ktktaaaaaaakkk.", ".kaaaaaaaaaak..", ".khhhhhhhhhhkk.", "..khhkhhkhhkhhk", "..ksskssksskssk", "...kk.kk.kk.kk."],
+      sleep: ["......kkkkk....", ".....khhhhhkkk.", "....kshhhhhhhsk", "..k.ksakkakkask", ".ktkksspanapssk", "ktktaaaaaaasssk", ".kaaaaaaaaaaak.", "khhhhhhhhhhhhk.", ".kkkkkkkkkkkk.."]
+    },
+    adult: {
+      pal: { a: "#c4c9d5", h: "#eef0f5", s: "#9aa1b3", t: "#aab0c0", n: "#2a2830", p: "#f3a0a0", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
+      idle: [".........kkkkk....", "........khhhhhk...", ".......khhhhhhhkk.", "......kshaieaiehsk", "......kshaeeaeehsk", "......ksshpanaphsk", "..kk..ksssaaaasssk", ".kttk.ksssaaaasssk", "ktkktkksskaaaakssk", ".ktkaaaaaaaaaakkk.", "..kaaaaaaaaaaaak..", "..khhhhhhhhhhhhk..", "..khhkhhkkkhhkhhk.", "..khhkhhk.khhkhhk.", "..khhkhhk.khhkhhk.", "..ksskssk.ksskssk.", "...kk.kk...kk.kk.."],
+      blink: [".........kkkkk....", "........khhhhhk...", ".......khhhhhhhkk.", "......kshaaaaaahsk", "......kshakkakkhsk", "......ksshpanaphsk", "..kk..ksssaaaasssk", ".kttk.ksssaaaasssk", "ktkktkksskaaaakssk", ".ktkaaaaaaaaaakkk.", "..kaaaaaaaaaaaak..", "..khhhhhhhhhhhhk..", "..khhkhhkkkhhkhhk.", "..khhkhhk.khhkhhk.", "..khhkhhk.khhkhhk.", "..ksskssk.ksskssk.", "...kk.kk...kk.kk.."],
+      step: [".........kkkkk....", "........khhhhhk...", ".......khhhhhhhkk.", "......kshaieaiehsk", "......kshaeeaeehsk", "......ksshpanaphsk", "..kk..ksssaaaasssk", ".kttk.ksssaaaasssk", "ktkktkksskaaaakssk", ".ktkaaaaaaaaaakkk.", "..kaaaaaaaaaaaak..", "..khhhhhhhhhhhhk..", "..khhkhhkkkhhkhhk.", "...khhkhhkhhkkhhk.", "...khhkhhkhhkkhhk.", "...ksskssksskkssk.", "....kk.kk.kk..kk.."],
+      sleep: [".........kkkkk....", "........khhhhhk...", ".......khhhhhhhkk.", "......kshakkakkhsk", "..kk..ksshpanaphsk", ".kttkkasssaaaasssk", "ktkktaaaaaaaaaaak.", ".ktaaaaaaaaaaaaak.", "khhhhhhhhhhhhhhhk.", ".kkkkkkkkkkkkkkk.."]
+    }
+  },
+  pink_pomeranian: {
+    name: "분홍 포메라니안",
+    grade: 1,
+    kind: "ward",
+    desc: "솜사탕처럼 부푼 분홍 털뭉치 강아지입니다. 등 위에 깃털 같은 꼬리를 얹고 다니며, 저보다 열 배는 큰 개 앞에서도 물러서지 않습니다.",
+    likes: "treat_rice",
+    baby: {
+      pal: { a: "#f6b3c8", l: "#fde0ea", d: "#e48aa8", p: "#e3668c", n: "#3a2028", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
+      idle: [".......k...k..", "..kk..kakkkak.", ".kllkkaaaaaaak", "kllllkaieaieak", ".klldaaeeaeeak", "..kldapanaapk.", ".kaaaaaaaaaak.", "kaaaaaaaaaaak.", ".kddkdkkkdkddk", "..kk.k...k.kk."],
+      blink: [".......k...k..", "..kk..kakkkak.", ".kllkkaaaaaaak", "kllllkaaaaaaak", ".klldaakkakkak", "..kldapanaapk.", ".kaaaaaaaaaak.", "kaaaaaaaaaaak.", ".kddkdkkkdkddk", "..kk.k...k.kk."],
+      step: [".......k...k..", "..kk..kakkkak.", ".kllkkaaaaaaak", "kllllkaieaieak", ".klldaaeeaeeak", "..kldapanaapk.", ".kaaaaaaaaaak.", "kaaaaaaaaaaak.", ".kkddkdkddkdk.", "...kk.k.kk.k.."],
+      sleep: ["..kk..k...k...", ".kllkkakkkakk.", "kllllkaaaaaaak", ".klldaakkakkak", "kaaaaapanaapk.", "kaaaaaaaaaaak.", ".kaaaaaaaaaak.", "..kkkkkkkkkk.."]
+    },
+    adult: {
+      pal: { a: "#f6b3c8", l: "#fde0ea", d: "#e48aa8", p: "#e3668c", n: "#3a2028", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
+      idle: [".........k...k..", "..kkk...kak.kak.", ".klllk.kaaakaaak", "klllllkkaaaaaaak", "klldllkaaieaieak", ".kllldaaaeeaeeak", "..klldaaapanapk.", ".kaaaaaaaaaaaaak", "kaaaaaaaaaalllak", "kaaaaaaaaaaaaaak", ".kaaaaaaaaaaaak.", "..kddkddkkddkddk", "...kk.kk..kk.kk."],
+      blink: [".........k...k..", "..kkk...kak.kak.", ".klllk.kaaakaaak", "klllllkkaaaaaaak", "klldllkaaaaaaaak", ".kllldaaakkakkak", "..klldaaapanapk.", ".kaaaaaaaaaaaaak", "kaaaaaaaaaalllak", "kaaaaaaaaaaaaaak", ".kaaaaaaaaaaaak.", "..kddkddkkddkddk", "...kk.kk..kk.kk."],
+      step: [".........k...k..", "..kkk...kak.kak.", ".klllk.kaaakaaak", "klllllkkaaaaaaak", "klldllkaaieaieak", ".kllldaaaeeaeeak", "..klldaaapanapk.", ".kaaaaaaaaaaaaak", "kaaaaaaaaaalllak", "kaaaaaaaaaaaaaak", ".kaaaaaaaaaaaak.", "..kkddkddkddkddk", "....kk.kk.kk.kk."],
+      sleep: ["..kkk...k...k...", ".klllk.kak.kak..", "klllllkaaakaaak.", "klldllkaakkakkak", ".kllldaaapanapk.", "kaaaaaaaaaalllak", "kaaaaaaaaaaaaaak", ".kaaaaaaaaaaaak.", "..kkkkkkkkkkkk.."]
+    }
   }
 };
 
