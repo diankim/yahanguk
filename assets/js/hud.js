@@ -179,7 +179,7 @@ function render() {
   const badN = rest.filter(x => x.polarity !== 'positive').length, goodN = Math.min(10 - Math.min(10, badN), rest.length - badN);
   const slots = Array.from({ length: 10 }, (_, i) => i < badN ? 'bad' : i < badN + goodN ? 'good' : '');
   $('#hud-strip', root).innerHTML = `
-    <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}</b><small>Lv.${c.level}</small></span>
+    <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}</b><small>Lv.${c.level}${c.profile?.title_name ? ` <span class="hs-ttl">「${esc(c.profile.title_name)}」</span>` : ''}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
