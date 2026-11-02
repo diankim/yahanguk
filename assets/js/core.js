@@ -100,7 +100,7 @@ export const JOBS = {
   sealmaster: { name: '봉인술사', trait: '보조·버팀', desc: '【보조·버팀】 요괴를 묶고 동료를 북돋는 술사이자, 앞줄이 비면 받쳐 내는 두 번째 방패. 이목·방어는 호위 무사 다음, 회피는 조사원 다음(이목 +60·방어 +30·회피 +12)·정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
   analyst: { name: '암영 검객', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는, 근접에서 가장 빨리 쓰러뜨리는 공격수. 근접 공격력 ×1.10(피해 상한과 따로)·근접 치명타 +5·단도 기술로 이목이 낮아짐, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
-    base: { strength: 8, agility: 6, vitality: 5, perception: 5, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
+    base: { strength: 8, agility: 6, vitality: 5, perception: 5, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 은방울 노리개 · 짚신 · 청심환 2' },
 };
 // 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다
 export const RAID_ON = true;

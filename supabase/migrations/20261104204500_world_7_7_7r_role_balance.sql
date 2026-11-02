@@ -213,6 +213,26 @@ update public.world_coop_skills s set skill_name = v.n, description = v.d, targe
     ('art_array',  '암영 난무', '그림자처럼 몰아쳐 내 다음 세 번 공격 +40%.', 'self', '{"n": 3, "pct": 40, "type": "might"}', 14, 30, 0.07, '그림자처럼 몰아쳐 급소를 연달아 찔렀습니다')) v(id, n, d, t, e, c, cd, w, x)
  where s.skill_id = v.id;
 
+-- ── 암영 검객: 장인 시절 이름이 남은 단도 ② 갈래와 시작 물품을 검객에 맞게 ─────
+update public.world_skill_catalog set skill_name = '그림자 덫', description = replace(description, '택일 기술(재주)', '택일 기술(암습)') where skill_id = 'dagger_c30b';
+update public.world_skill_catalog set skill_name = '꿰뚫는 눈', description = replace(description, '택일 기술(재주)', '택일 기술(암습)') where skill_id = 'dagger_c43b';
+update public.world_skill_catalog set description = replace(description, '택일 기술(재주)', '택일 기술(암습)') where category = 'dagger' and description like '%택일 기술(재주)%';
+update public.world_exp_skill_def set txt = '그림자에 놓은 덫이 요괴의 발을 묶습니다.' where skill_id = 'dagger_c30b';
+update public.world_exp_skill_def set txt = '꿰뚫는 눈으로 껍질의 틈을 찌릅니다.' where skill_id = 'dagger_c43b';
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_battle_action');
+  if position('「손재주 덫」' in d) > 0 then execute pg_temp.rep(d, '「손재주 덫」', '「그림자 덫」'); end if;
+  -- 시작 물품: 낚싯대(옛 생활 직업의 것) → 청심환 둘, 술 노리개(채집·제작) → 은방울 노리개(치명타)
+  d := pg_temp.fdef('world_create_character_v2');
+  if position($a$when 'analyst'    then '{"fishing_rod":1}'$a$ in d) > 0 then
+    d := pg_temp.rep(d, $a$when 'analyst'    then '{"fishing_rod":1}'$a$, $a$when 'analyst'    then '{"tonic":2}'$a$);
+    d := pg_temp.rep(d, $a$"norigae":"n1_plenty"$a$, $a$"norigae":"n1_keen"$a$);
+    execute d;
+  end if;
+end $p$;
+
 do $c$
 begin
   if (select passive_effect ->> 'presence_pct' from public.world_skill_catalog where skill_id = 'dagger_t43') <> '-15' then raise exception '7.7.7r: 단도 이목'; end if;
@@ -220,6 +240,7 @@ begin
   if (select sum(v::int) from jsonb_each_text(public.world_job_base('analyst')) t(k, v)) <> 30 then raise exception '7.7.7r: 백공 능력치 합'; end if;
   if public.world_job_label('analyst') <> '암영 검객' then raise exception '7.7.7r: 직업 이름'; end if;
   if public.world_job_label('scout') <> '월궁 사수' then raise exception '7.7.7r: 월궁 사수 이름'; end if;
+  if exists (select 1 from public.world_skill_catalog where skill_name in ('손재주 덫', '장인의 눈') or description like '%택일 기술(재주)%') then raise exception '7.7.7r: 단도 ② 이름'; end if;
   if (select count(*) from public.world_coop_skills where job_key = 'analyst' and skill_name in ('그림자 찌르기', '급소 드러내기', '그림자 숨기', '암영 난무')) <> 4 then raise exception '7.7.7r: 암영 검객 협동 기술'; end if;
   if exists (select 1 from public.world_quest_steps where lines::text like '%백공%') or exists (select 1 from public.world_item_lore where lore like '%백공%') then raise exception '7.7.7r: 백공 문구 남음'; end if;
 end $c$;
