@@ -59,7 +59,7 @@ async function drawWorld(body, soft) {
   // 다른 화면이 지역 이름으로 넘겨도(구조 요청 알림 등) 찾아 고른다
   if (selected && !mapData.regions.some(r => r.region_id === selected)) selected = mapData.regions.find(r => r.region_name === selected)?.region_id || null;
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
-  const keepScroll = soft && $('#region-q', body)?.value;
+  const keepScroll = soft && $('#region-q', body)?.value, focused = focusPending;
   body.innerHTML = `
     <div class="map-layout">
       <div class="map-frame" id="map-frame">
@@ -80,6 +80,8 @@ async function drawWorld(body, soft) {
     ${factionLegend()}`;
   setupMap(here);
   drawDetail();
+  // 다른 화면(퀘스트·알림)에서 지역을 짚어 왔으면 휴대폰 위 띠(예상 시간·출발)도 바로 보인다
+  if (focused) showPeek(selected);
   let filter = 'near';
   const list = () => drawList(filter, $('#region-q', body).value.trim());
   $('#region-q', body).oninput = list;
@@ -309,7 +311,10 @@ function select(id, center) {
     const k = x => JSON.stringify((x?.members || []).map(m => [m.owner_id, m.location, !!m.in_combat, !!m.downed]).concat([x?.party?.leader_id]));
     if (selected === id && k(p) !== k(partyData)) { partyData = p; drawDetail(); }
   }).catch(() => {});
-  // 좁은 화면에서는 저절로 스크롤하지 않는다. 대신 지도 위 띠에 예상 시간과 출발 단추를 바로 보여 준다.
+  showPeek(id);
+}
+// 좁은 화면에서는 저절로 스크롤하지 않는다. 대신 지도 위 띠에 예상 시간과 출발 단추를 바로 보여 준다.
+function showPeek(id) {
   const peek = $('#map-peek', el), r = mapData.regions.find(x => x.region_id === id);
   if (peek && r && matchMedia('(max-width: 1099px)').matches) {
     const go = $('#travel-go', el), field = $('#go-field', el);
