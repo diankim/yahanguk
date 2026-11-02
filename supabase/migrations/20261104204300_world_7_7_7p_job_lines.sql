@@ -426,6 +426,13 @@ begin
       $a$where s.slot = 'a' and s.category <> 'combo'
        and (s.category not in ('melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine') or s.category = public.world_job_line((select x.job_key from public.world_characters x where x.owner_id = uid)))$a$);
   end if;
+  -- 지난 직업의 전투 계열 택일은 고를 수 없다(효과가 없으므로 전만 날리지 않게)
+  d := pg_temp.fdef('world_skill_choose');
+  if position('world_skill_line_ok' in d) = 0 then
+    execute pg_temp.rep(d, $a$  if coalesce((c.skill_progress -> p_line ->> 'rank')::int, 1) < p_tier then$a$,
+      $a$  if not public.world_skill_line_ok(p_line, null, c.job_key) then raise exception '지금 직업의 전투 계열이 아니라 고를 수 없습니다.'; end if;
+  if coalesce((c.skill_progress -> p_line ->> 'rank')::int, 1) < p_tier then$a$);
+  end if;
   -- 봉인술 3단계 「부적 정련」의 봉인 공예 품질 +5는 봉인술사에게만
   d := pg_temp.fdef('world_craft_item');
   if position($a$c.job_key = 'sealmaster' and coalesce((c.skill_progress -> 'sealing'$a$ in d) = 0 then
