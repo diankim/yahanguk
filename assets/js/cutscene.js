@@ -350,7 +350,8 @@ export function loginMusic() {
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
 //       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때), fixed — 마지막 장면에 고정(다시 보기 없음)
 // 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(처음부터 늘 보임)
-export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false, fixed = false } = {}) {
+// logout — 마지막 장면에 「로그아웃」 단추(문 열기 전 대기 화면: 로그인한 일반 조사원)
+export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false, fixed = false, logout = null } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
@@ -417,9 +418,10 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
     ended = true; endedAt = performance.now(); skip.hidden = true;
     if (note) { who.textContent = ''; text.textContent = note; text.classList.add('nar', 'note'); text.classList.remove('cs-line-in'); void text.offsetWidth; text.classList.add('cs-line-in'); }
     const bar = document.createElement('div'); bar.className = 'cs-end';
-    bar.innerHTML = (fixed ? '' : '<button type="button" class="cs-btn" data-again>다시 보기</button>') + (stay ? '' : '<button type="button" class="cs-btn main" data-close>닫기</button>');
+    bar.innerHTML = (fixed ? '' : '<button type="button" class="cs-btn" data-again>다시 보기</button>') + (stay ? '' : '<button type="button" class="cs-btn main" data-close>닫기</button>') + (logout ? '<button type="button" class="cs-btn" data-logout>로그아웃</button>' : '');
     root.querySelector('.cs-box').append(bar);
     bar.querySelector('[data-close]')?.addEventListener('click', finish);
+    bar.querySelector('[data-logout]')?.addEventListener('click', () => { music?.stop(0.3); root.remove(); logout(); });
     bar.querySelector('[data-again]')?.addEventListener('click', () => { if (done) return; done = true; clearTimeout(timer); music?.stop(0.3); root.remove(); playCutscene(kind, { onEnd, stay, note }); });
   }
   if (atEnd) { i = -1; jumpToEnd(); return finish; }

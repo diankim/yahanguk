@@ -218,12 +218,12 @@ async function renderCreate() {
 }
 function renderWaitOpen() {
   document.title = '야행국 · 곧 문을 엽니다';
-  const left = () => { const ms = Math.max(0, OPEN_AT - Date.now()), m = Math.ceil(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
-  app.replaceChildren(h(`<div class="create-screen"><header class="create-head"><div class="seal">夜</div><div><h1>곧 문을 엽니다</h1>
-    <p class="muted">야행국은 <b>11월 3일 오전 10시</b>에 문을 엽니다. 그때 새 조사원을 만들 수 있습니다.</p><p class="muted small" id="wait-left">남은 시간 ${left()}</p></div>
-    <button class="btn ghost small" id="wait-logout">${icon('logout', 16)}<span>로그아웃</span></button></header></div>`));
-  $('#wait-logout')?.addEventListener('click', () => logout());
-  const t = setInterval(() => { const el = document.getElementById('wait-left'); if (!el) return clearInterval(t); if (Date.now() >= OPEN_AT) { clearInterval(t); location.reload(); } else el.textContent = `남은 시간 ${left()}`; }, 30000);
+  app.replaceChildren();
+  // 롤백 점검 때처럼 「첫째 밤의 끝」 마지막 장면에 고정, 아래에 안내·도움말(오른쪽 위)·로그아웃. 문 여는 때가 되면 새로고침
+  const when = new Date(OPEN_AT).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' });
+  const note = `야행국은 ${when}에 문을 엽니다. 그때 새 조사원을 만들어 두 번째 밤을 시작합니다.\n열리면 이 화면이 저절로 게임으로 넘어갑니다.`;
+  import('./cutscene.js').then(m => m.playCutscene('rollback', { stay: true, atEnd: true, fixed: true, note, logout: () => logout() })).catch(() => {});
+  const t = setInterval(() => { if (Date.now() >= OPEN_AT) { clearInterval(t); location.reload(); } }, 30000);
 }
 function renderCreateForm() {
   document.title = '야행국 · 캐릭터 생성';
