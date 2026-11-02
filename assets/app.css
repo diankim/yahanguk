@@ -1381,11 +1381,13 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
   .t-desc { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.45; }
   .t-cond, .t-bonus { font-size: calc(11px * var(--fz, 1)); line-height: 1.45; }
   .t-act .btn { min-height: 28px; padding: 0 8px; font-size: calc(11.5px * var(--fz, 1)); }
-  .t-card.legacy { padding: 9px 8px 9px 32px; }
-  .t-card.legacy .lg-tag { left: 8px; width: 18px; padding: 4px 0; font-size: 9.5px; }
+  /* 모바일: 세로 낙관 「흔적」을 위 줄(한자 이름 앞)의 작은 가로 도장으로 옮겨 왼쪽 띠 폭을 없앰 */
+  .t-card.legacy { padding: 9px 9px 9px 10px; }
+  .t-card.legacy .lg-tag { position: absolute; left: 10px; top: 9px; transform: none; width: auto; padding: 2px 5px; writing-mode: horizontal-tb; font-size: 9.5px; letter-spacing: .1em; }
+  .t-card.legacy .t-catl { display: none; }
   .t-card.legacy .t-top b { font-size: calc(13.5px * var(--fz, 1)); letter-spacing: .02em; }
   .t-card.legacy .lg-hj { font-size: 9px; letter-spacing: .25em; }
-  .t-card.legacy:has(.t-rep) .t-top { padding-top: 4px; } .t-card.legacy .lg-hj { display: block; min-height: 22px; line-height: 22px; }
+  .t-card.legacy:has(.t-rep) .t-top { padding-top: 4px; } .t-card.legacy .lg-hj { display: block; min-height: 22px; line-height: 22px; padding-left: 40px; }
 }
 
 /* 원정 일지: 이름과 행동별 색(절제된 톤) */
