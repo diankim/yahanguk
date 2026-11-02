@@ -168,3 +168,14 @@ begin
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor join msg'; end if;
   execute replace(d, a, $b$'%에 있어야 참가할 수 있습니다.'$b$);
 end $p$;
+
+-- ⑥ 내 레벨보다 높은 지역: 일반 요괴가 내 레벨 +3에서 멈춰 +5·+8 지역도 +3처럼 싸워지던 것(침식은 +5부터 두 배인데 싸움·경험치는 그대로).
+--    일반 요괴 상한 +3 → +5(정예·우두머리 +6 그대로). 레벨 차 경험치 1.5배도 +5에서 실제로 받는다.
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_battle_open(uuid,text,uuid,integer,integer)'::regprocedure), E'\r\n', E'\n');
+  a := $a$lv := least(lv, p_level + CASE rk WHEN 'normal' THEN 3 ELSE 6 END);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor lvcap'; end if;
+  execute replace(d, a, $b$lv := least(lv, p_level + CASE rk WHEN 'normal' THEN 5 ELSE 6 END);$b$);
+end $p$;
