@@ -148,3 +148,23 @@ $b$ || a);
   d := replace(d, a, $b$'out', case when me.left_at is null and me.out_until > now() then ceil(extract(epoch from me.out_until - now())) end, 'resting', me.left_at is null and me.out_until is not null and me.out_until <= now(), 'left', me.left_at is not null,$b$);
   execute d;
 end $p$;
+
+-- 퇴장 뒷마무리: 퇴장한 봉연은 결전 시작을 막지 않음(귀허와 같게), 현장 띠의 「참가 중」에서 빠짐, 지역 문구는 「참가」
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_raid_final_start()'::regprocedure), E'\r\n', E'\n');
+  a := $a$where m.owner_id = uid and x.status in ('signup', 'fight')) then$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor final busy'; end if;
+  execute replace(d, a, $b$where m.owner_id = uid and x.status in ('signup', 'fight') and m.left_at is null) then$b$);
+
+  d := replace(pg_get_functiondef('public.world_raid_brief()'::regprocedure), E'\r\n', E'\n');
+  a := $a$'joined', exists (select 1 from public.world_raid_members m where m.raid_id = rd.raid_id and m.owner_id = uid)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor brief'; end if;
+  execute replace(d, a, $b$'joined', exists (select 1 from public.world_raid_members m where m.raid_id = rd.raid_id and m.owner_id = uid and m.left_at is null)$b$);
+
+  d := replace(pg_get_functiondef('public.world_raid_join(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$'%에 있어야 신청할 수 있습니다.'$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor join msg'; end if;
+  execute replace(d, a, $b$'%에 있어야 참가할 수 있습니다.'$b$);
+end $p$;

@@ -393,7 +393,7 @@ async function run(btn, fn, isAct) {
     else if (store.character && snap?.me) { store.character = { ...store.character, health: snap.me.hp, spiritual_power: snap.me.sp }; emit('character', store.character); }
     invalidate('world_raid_brief');
     draw();
-  } catch (e) { toast(e.message || String(e), 'error'); }
+  } catch (e) { toast(e.message || String(e), 'error'); if (!btn.dataset.act) btn.disabled = false; }
   finally { sending = false; countdown(); }
   return null;
 }
