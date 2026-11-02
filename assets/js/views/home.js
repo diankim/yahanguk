@@ -1,3 +1,4 @@
+import { yohwaDownNow } from '../hud.js';
 // 현장: 지금 있는 곳에서 할 수 있는 일.
 // 안전지대 — 시설(상점·거래소·마구간·여관·게시판)을 눌러 창으로 연다.
 // 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
@@ -182,7 +183,9 @@ function scene(s, traveling, downed) {
           ? `<b>${esc(p.name)}</b>` : `<button data-move="${esc(p.node_id)}">${esc(p.name)}</button>${icon('chevron', 12)}`).join('')}</nav>` : ''}
     </div>
     ${s.overflow > 0 ? `<div class="notice warn">${icon('bag', 18)}<div><b>원정 짐 보따리 · ${fmt.num(s.overflow)}개</b><span>가방에 들어가지 못한 전리품입니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.</span></div><button class="btn small primary" id="ov-open">정리하기</button></div>` : ''}
-    ${downed ? `<div class="notice danger">${icon('heart', 18)}<div><b>전투불능</b><span>구조를 기다리거나 회생 부적·본부 구조대를 쓰세요. <em data-death></em></span></div><a class="btn small" href="#/char/status">대처하기</a></div>` : ''}
+    ${downed ? (yohwaDownNow(c)
+      ? `<div class="notice danger">${icon('mask', 18)}<div><b>요화로 쓰러짐</b><span>목숨은 잃지 않습니다. 구조·회생 부적으로는 일어날 수 없고, 「안전지대 봉인」(24시간 해독)을 골라야 합니다.</span></div><a class="btn small" href="#/char/status">대처하기</a></div>`
+      : `<div class="notice danger">${icon('heart', 18)}<div><b>전투불능</b><span>구조를 기다리거나 회생 부적·본부 구조대를 쓰세요. <em data-death></em></span></div><a class="btn small" href="#/char/status">대처하기</a></div>`) : ''}
     ${traveling ? `<div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(c.travel_destination) + '(으)로')} 이동 중</b><span>도착하면 그 지역에서 행동할 수 있습니다.</span></div></div>` : ''}
     ${store.expedition ? (new Date(store.expedition.ends_at) <= new Date()
       ? `<div class="notice ok">${icon('check', 18)}<div><b>원정 완료 · ${esc(store.expedition.place_name || '원정지')}</b><span>원정대가 돌아왔습니다. 결과를 받으면 다시 현장에서 행동할 수 있습니다.</span></div><button class="btn small primary" id="exp-open">결과 받기</button></div>`

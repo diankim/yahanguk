@@ -615,6 +615,27 @@ update public.world_skill_catalog set description = '택일 기술 · 내가 구
  where skill_id = 'first_aid_c43a';
 
 
+-- ㊹ 요화로 쓰러진 사람도 전체 채팅에 「근처에 있다면 구조를 도와주세요」가 나가 다른 조사원을 헛걸음시키던 것
+--    (요화 쓰러짐은 구조로 못 일으킴) → world_yohwa_tick이 쓰러뜨리기 직전에 yh.yohwa_down을 켜고 world_notify_downed가 문구를 바꿈
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_yohwa_tick()'::regprocedure), E'\r\n', E'\n');
+  a := $a$update public.world_characters set health = 0, downed_at = now(), updated_at = now()$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor yohwa down flag'; end if;
+  d := replace(d, a, $b$perform set_config('yh.yohwa_down', s.owner_id::text, true);
+  $b$ || a);
+  execute d;
+
+  d := replace(pg_get_functiondef('public.world_notify_downed()'::regprocedure), E'\r\n', E'\n');
+  a := $a$new.character_name||' 조사원이 '||coalesce(new.location,'어딘가')||'에서 쓰러졌습니다. 근처에 있다면 구조를 도와주세요.'$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor notify downed'; end if;
+  d := replace(d, a, $b$new.character_name||' 조사원이 '||coalesce(new.location,'어딘가')||case when coalesce(current_setting('yh.yohwa_down', true), '') = new.owner_id::text
+      then '에서 요기를 이기지 못해 쓰러졌습니다(요화 — 구조로는 일으킬 수 없고 본인이 안전지대 봉인을 골라야 합니다).'
+      else '에서 쓰러졌습니다. 근처에 있다면 구조를 도와주세요.' end$b$);
+  execute d;
+end $p$;
+
 -- ===== 혼자 도전 보정(supabase/pending/solo_aid_1_0_0f.sql) =====
 -- solo_aid_1_0_0f.sql — 혼자 도전 보정(world_solo_aid) 다시 맞춤 + 결전 받는 피해를 귀허와 떼어 냄 (제안, 배포 안 함)
 -- 기준 DB: 복제본 yh_fx6(운영 + 1.0.0e + 1.0.0f 후보). world_raid_action 본문은 그 1.0.0f 후보 본문에 한 줄만 바꾼 것 —

@@ -246,6 +246,8 @@ export function yohwaOf(statuses) {
   const fr = y ? live.find(s => s.key === 'yohwa_frenzy' && new Date(s.expires_at) > now) : null; // 3단계 끝 1시간: 요괴화
   return { y, seal, fr, stage: y ? Math.max(1, Math.min(3, Number(y.potency || 1))) : 0, rest: live.filter(s => !PINNED.has(s.key) && new Date(s.expires_at) > now) };
 }
+// 지금 상태판 상태로 본 「요화로 쓰러짐」(현장 화면 등에서)
+export const yohwaDownNow = c => yohwaDowned(c, yohwaOf(state.hud?.statuses));
 // 요화 3단계 끝에 쓰러진 것인지(서버가 적어 둔 쓰러진 시각과 같으면 목숨을 잃지 않는다)
 export function yohwaDowned(c, yo) {
   const e = Number(yo?.y?.metadata?.down_epoch || 0);
