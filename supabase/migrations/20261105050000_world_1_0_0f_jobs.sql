@@ -104,6 +104,212 @@ begin
   execute d;
 end $p$;
 
+-- 효과 점검 2차(기술 362개 · 칭호·소속·세력·환경)
+--  ⑥ 방어 무너짐(해체의 일격·필살 계산·부적 접기)이 「2턴」이라 적혀 있는데 같은 턴에 1을 빼 다음 공격 한 번만 들던 것 → 3으로 넣어 두 번
+--  ⑦ 수호신 보호막이 먼저 막으면 반격 자세·버팀 기세·반격 태세·바위 몸·받아치기가 안 나던 것 → 보호막에 막히기 전 피해로 판정
+--  ⑧ 분석 계열이 암영 검객만 오르던 것 → 요괴가 수법 낌새를 보인 턴에 행동하면 누구나 분석 경험(acts.analysis)
+--  ⑨ 제작 재료 돌려받기 덤 때문에 가방이 가득 차 있으면 제작 전체가 실패하던 것 → 자리가 없으면 그 덤만 건너뜀
+--  ⑩ 요괴화(+30)·요화(단계×4) 주는 피해와 침식 80 「주는 피해 −10%」가 피해 % 상한 35 안에 묻히던 것 → 상한 밖에서 더함
+--  ⑪ 북령맹 「원정 받는 피해 −20%」가 방어×1.2(실제 −6~−12%)이던 것 → 받는 피해 ×0.8
+--  ⑫ 회복 보정(침식·날씨·소속·연리·세력·요화)이 쉬기·야영에 안 들던 것 → 체력·정신·영력에 곱함
+--  ⑬ 야영 습격 확률에 요괴 조우 보정이 안 들던 것 → ×(1+조우%/100)
+--  ⑭ 낚시 희귀 어종에 칭호 희귀품이 빠졌던 것
+--  ⑮ 현장 토벌에서 침식이 100을 넘친 몫이 요화 판정(world_yohwa_overflow)에 안 들어가던 것
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure), E'\r\n', E'\n');
+  -- ⑥
+  a := $a$v_fx := v_fx || jsonb_build_object('broken', 2); lines := lines || jsonb_build_array(m.monster_name || '의 방어가 무너졌다(2턴 동안 받는 피해 +20%).');$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor broken1'; end if;
+  d := replace(d, a, $b$v_fx := v_fx || jsonb_build_object('broken', 3); lines := lines || jsonb_build_array(m.monster_name || '의 방어가 무너졌다(다음 두 번 받는 피해 +20%).');$b$);
+  a := $a$IF 'sealing_x13' = ANY (sk) THEN v_fx := v_fx || jsonb_build_object('broken', 2);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor broken2'; end if;
+  d := replace(d, a, $b$IF 'sealing_x13' = ANY (sk) THEN v_fx := v_fx || jsonb_build_object('broken', 3);$b$);
+  -- ⑦
+  a := $a$raw_m int; absorb int;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor decl'; end if;
+  d := replace(d, a, $b$raw_m int; absorb int; m_pre int;$b$);
+  a := $a$        -- 강기 보호막이 먼저 받는다
+        IF mdmg > 0 AND$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor pre'; end if;
+  d := replace(d, a, $b$        m_pre := mdmg;
+        -- 강기 보호막이 먼저 받는다
+        IF mdmg > 0 AND$b$);
+  a := $a$        hp := greatest(0, hp - mdmg);
+        IF mdmg > 0 THEN$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor hit'; end if;
+  d := replace(d, a, $b$        hp := greatest(0, hp - mdmg);
+        IF m_pre > 0 THEN$b$);
+  a := $a$dmg := round(mdmg * 1.2 + c.strength * 0.5);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor riposte'; end if;
+  d := replace(d, a, $b$dmg := round(m_pre * 1.2 + c.strength * 0.5);$b$);
+  a := $a$extra := greatest(1, round(mdmg * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); lines := lines || jsonb_build_array('「반격 태세」$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor c24b'; end if;
+  d := replace(d, a, $b$extra := greatest(1, round(m_pre * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); lines := lines || jsonb_build_array('「반격 태세」$b$);
+  a := $a$extra := greatest(1, round(mdmg * 0.3)); hp := least(100, hp + extra); lines := lines || jsonb_build_array('「바위 몸」$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor rock'; end if;
+  d := replace(d, a, $b$extra := greatest(1, round(m_pre * 0.3)); hp := least(100, hp + extra); lines := lines || jsonb_build_array('「바위 몸」$b$);
+  -- ⑧ 낌새를 본 턴에 행동하면 분석 경험
+  a := $a$  v_intent := coalesce(a.intent, 'strike');$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor intent'; end if;
+  d := replace(d, a, a || $b$
+  IF v_intent LIKE 'g%:%' AND act IN ('attack', 'guard', 'skill', 'item') THEN v_pfx := v_pfx || jsonb_build_object('u_an', coalesce((v_pfx ->> 'u_an')::int, 0) + 1); END IF;$b$);
+  -- ⑮ 넘친 침식
+  a := $a$IF v_intent = 'breach' THEN er := least(100, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor breach'; end if;
+  d := replace(d, a, $b$IF v_intent = 'breach' THEN PERFORM public.world_yohwa_overflow(uid, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int) - 100); er := least(100, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;$b$);
+  a := $a$IF g.erosion > 0 THEN er := least(100, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor gero'; end if;
+  d := replace(d, a, $b$IF g.erosion > 0 THEN PERFORM public.world_yohwa_overflow(uid, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int) - 100); er := least(100, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;$b$);
+  execute d;
+
+  -- ⑨
+  d := replace(pg_get_functiondef('public.world_craft_item(text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$if rf is not null then inv := jsonb_set(inv, array[rf], to_jsonb(coalesce((inv ->> rf)::int, 0) + 1), true);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 2 then raise exception '1.0.0f anchor refund'; end if;
+  d := replace(d, a, $b$if rf is not null and public.world_bag_room(inv, rf, public.world_bag_limit(uid)) >= 1 then inv := jsonb_set(inv, array[rf], to_jsonb(coalesce((inv ->> rf)::int, 0) + 1), true);$b$);
+  execute d;
+
+  -- ⑩
+  d := replace(pg_get_functiondef('public.world_combat_stats(uuid,jsonb)'::regprocedure), E'\r\n', E'\n');
+  a := $a$pct := least(35, pct);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor cap'; end if;
+  d := replace(d, a, $b$-- 요화·요괴화의 피해와 침식 불이익은 상한 밖(상한에 묻혀 효과가 사라지지 않게)
+  pct := least(35, pct - public.world_status_self(p_owner, 'combat_damage_pct') - public.world_erosion_effect('combat_damage_pct'))
+         + (SELECT coalesce(sum((cat.effects ->> 'combat_damage_pct')::numeric * coalesce(cs.potency, 1)), 0) FROM public.world_character_statuses cs JOIN public.world_status_catalog cat USING (status_key)
+             WHERE cs.owner_id = p_owner AND cs.expires_at > now() AND cs.status_key IN ('yohwa', 'yohwa_frenzy'))
+         + least(0, public.world_erosion_effect('combat_damage_pct'))
+         + public.world_status_self(p_owner, 'combat_damage_pct')
+         - (SELECT coalesce(sum((cat.effects ->> 'combat_damage_pct')::numeric * coalesce(cs.potency, 1)), 0) FROM public.world_character_statuses cs JOIN public.world_status_catalog cat USING (status_key)
+             WHERE cs.owner_id = p_owner AND cs.expires_at > now() AND cs.status_key IN ('yohwa', 'yohwa_frenzy'));$b$);
+  execute d;
+
+  -- ⑪
+  d := replace(pg_get_functiondef('public.world_expedition_settle(uuid,integer)'::regprocedure), E'\r\n', E'\n');
+  a := $a$  if c.major_faction_id = 'north_league' then defense := defense * 1.2; end if;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor north'; end if;
+  d := replace(d, a, '');
+  a := $a$* 100.0 / (100 + defense));$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 2 then raise exception '1.0.0f anchor north dmg'; end if;
+  d := replace(d, a, $b$* 100.0 / (100 + defense) * case when c.major_faction_id = 'north_league' then 0.8 else 1 end);$b$);
+  execute d;
+
+  -- ⑫ ⑬
+  d := replace(pg_get_functiondef('public.world_field_rest(text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$  IF NOT r.is_safe_zone THEN hp := hp * 2 / 3; mn := mn * 2 / 3; sp := sp * 2 / 3; er := er * 2 / 3; END IF;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor rest'; end if;
+  d := replace(d, a, a || $b$
+  -- 회복 보정(침식·날씨·소속·연리·세력 등)을 체력·정신·영력에
+  hp := greatest(0, round(hp * (1 + public.world_status_effect_total('healing_pct') / 100.0)))::int;
+  mn := greatest(0, round(mn * (1 + public.world_status_effect_total('healing_pct') / 100.0)))::int;
+  sp := greatest(0, round(sp * (1 + public.world_status_effect_total('healing_pct') / 100.0)))::int;$b$);
+  a := $a$random() < least(0.45, 0.05 + r.danger_level * 0.03)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor ambush'; end if;
+  d := replace(d, a, $b$random() < least(0.45, (0.05 + r.danger_level * 0.03) * greatest(0, 1 + public.world_status_effect_total('encounter_pct') / 100.0))$b$);
+  execute d;
+
+  -- ⑭
+  d := replace(pg_get_functiondef('public.world_fish()'::regprocedure), E'\r\n', E'\n');
+  a := $a$+ public.world_status_effect_total('rare_loot_pct')$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor fish'; end if;
+  d := replace(d, a, a || $b$ + public.world_title_bonus('rare_loot_pct')$b$);
+  execute d;
+end $p$;
+
+-- 기술 설명을 실제에 맞춤
+update public.world_skill_catalog set description = replace(description, '받은 피해의 40%', '막기 전 피해의 40%') where skill_id = 'melee_g13';
+update public.world_skill_catalog set description = description || ' (최대 +40)' where skill_id = 'guarding_c43b' and description not like '%최대 +40%';
+update public.world_skill_catalog set description = replace(description, '탐색하거나 조사 지점을 살필 때', '탐색할 때') where skill_id = 'tracking_x36';
+update public.world_skill_catalog set description = replace(replace(description, '확률 +5%', '확률 5% 더(비율)'), '확률이 +5%', '확률이 5% 더(비율)') where skill_id = 'analysis_hunter';
+update public.world_skill_catalog set description = replace(description, '치명타 확률 +3%', '원거리 피해 +3% · 치명타 확률 +3%') where skill_id = 'ranged_steady' and description not like '%피해 +3%%';
+update public.world_skill_catalog set description = replace(replace(description, '술법 공격마다', '술법이 적중할 때마다'), '술법 공격 때', '술법이 적중하면') where skill_id in ('medicine_c24b', 'exorcism_c30b');
+update public.world_skill_catalog set description = replace(description, '봉인 피해', '술법 피해') where skill_id in ('sealing_script', 'sealing_domain');
+update public.world_skill_catalog set skill_name = '숨죽인 걸음' where skill_id = 'tracking_x30' and skill_name = '기척 숨기기';
+
+-- 효과 점검 3차(물품·장비·상태)
+--  ⑯ 현장·파티 토벌에서 쓰는 물품이 물품 효과(use_fx)의 정신·침식·치료를 빠뜨리던 것(대환단 정신 20·심신 동요 치료 등) → world_item_fx로
+--     정화 부적은 가방·정화·토벌 모두 침식 −18·정신 +6(우수품 ×1.15)으로 하나로(원정은 따로 −15·+5)
+--  ⑰ 채집 도구의 희귀품이 상태 합에도 들어가 두 번 붙고 토벌·탐색·낚시까지 퍼지던 것, 부서진 도구도 덤이 붙던 것
+--  ⑱ 동료 돌보기(world_party_use_item)로 싸우는 중인 동료를 턴 없이 치료하던 것 → 대상도 싸우는 중이면 거절
+--  ⑲ 비경 호신부 마지막 원정에서 「비경 찾기」가 0이던 것(닳은 뒤에 굴림) → 닳기 전 값으로
+--  ⑳ 귀허에서 회복품의 정신 회복이 빠졌던 것(반요 고약·대환단)
+update public.world_item_catalog set use_fx = use_fx || '{"er": 18, "mn": 6}'::jsonb where item_id = 'ward_talisman';
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$raw_m int; absorb int; m_pre int;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor decl2'; end if;
+  d := replace(d, a, $b$raw_m int; absorb int; m_pre int; fxi jsonb; fxq numeric;$b$);
+  a := $a$      mn := least(100, mn + ceil(8 * (CASE WHEN it LIKE '%\_hq' THEN 1.15 ELSE 1 END))::int);$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor ward'; end if;
+  d := replace(d, a, '');
+  a := $a$      lines := lines || jsonb_build_array('정화 부적을 태워 사기를 걷어냈다. 정신 +8');$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor wardline'; end if;
+  d := replace(d, a, $b$      lines := lines || jsonb_build_array('정화 부적을 태워 사기를 걷어냈다.');$b$);
+  a := $a$    IF 'first_aid_x30' = ANY (sk) AND NOT coalesce((v_pfx ->> 'swift')::boolean, false) THEN$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor itemfx'; end if;
+  d := replace(d, a, $b$    -- 물품 효과의 정신·침식·치료(use_fx 한 원본, 체력·영력은 위에서 기술 보정과 함께)
+    fxi := public.world_item_fx(public.world_item_base(it)); fxq := CASE WHEN it LIKE '%\_hq' THEN 1.15 ELSE 1 END;
+    IF coalesce((fxi ->> 'mn')::numeric, 0) > 0 THEN mn := least(100, mn + ceil((fxi ->> 'mn')::numeric * fxq)::int); lines := lines || jsonb_build_array('정신 +' || ceil((fxi ->> 'mn')::numeric * fxq)::int); END IF;
+    IF coalesce((fxi ->> 'er')::numeric, 0) > 0 THEN er := greatest(0, er - ceil((fxi ->> 'er')::numeric * fxq)::int); lines := lines || jsonb_build_array('침식 −' || ceil((fxi ->> 'er')::numeric * fxq)::int); END IF;
+    IF jsonb_array_length(coalesce(fxi -> 'cures', '[]'::jsonb)) > 0 THEN
+      UPDATE public.world_character_statuses SET expires_at = now() WHERE owner_id = uid AND expires_at > now()
+        AND status_key IN (SELECT jsonb_array_elements_text(fxi -> 'cures')) AND status_key NOT IN ('yohwa', 'yohwa_seal');
+    END IF;
+$b$ || a);
+  execute d;
+
+  -- ⑰
+  d := replace(pg_get_functiondef('public.world_gear_total(uuid,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$    AND NOT (e.slot = 'tool' AND p_key = 'gathering_bonus_pct')$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor gtot'; end if;
+  d := replace(d, a, $b$    AND NOT (e.slot = 'tool' AND p_key IN ('gathering_bonus_pct', 'rare_loot_pct'))$b$);
+  execute d;
+  d := replace(pg_get_functiondef('public.world_field_gather(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$coalesce((select (i.equipment_traits ->> 'rare_loot_pct')::numeric from public.world_item_catalog i where i.item_id = tool_id), 0)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor grare'; end if;
+  d := replace(d, a, $b$coalesce((select (i.equipment_traits ->> 'rare_loot_pct')::numeric
+        * CASE WHEN x.mx IS NULL THEN 1 WHEN coalesce(dr.durability, x.mx) <= 0 THEN 0 WHEN coalesce(dr.durability, x.mx) * 4 < x.mx THEN 0.8 ELSE 1 END
+      from public.world_item_catalog i cross join lateral (select public.world_item_max_durability(i.item_id) as mx) x
+      left join public.world_item_durability dr on dr.owner_id = uid and dr.item_id = i.item_id where i.item_id = tool_id), 0)$b$);
+  execute d;
+
+  -- ⑱
+  d := replace(pg_get_functiondef('public.world_party_use_item(uuid,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$  if p_target is null or p_target = uid then raise exception '자기에게 쓸 때는 가방에서 쓰세요.'; end if;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor ptarget'; end if;
+  d := replace(d, a, a || $b$
+  IF EXISTS (SELECT 1 FROM public.world_active_encounters ae WHERE ae.owner_id = p_target AND ae.result IS NULL AND NOT ae.defeated AND NOT coalesce(ae.fled, false) AND ae.mlevel IS NOT NULL)
+     OR EXISTS (SELECT 1 FROM public.world_pfight_members pm JOIN public.world_pfights pf ON pf.fight_id = pm.fight_id WHERE pm.owner_id = p_target AND pm.out_reason IS NULL AND pf.status = 'fight')
+     OR EXISTS (SELECT 1 FROM public.world_gw_members gm JOIN public.world_gw_fights gf ON gf.fight_id = gm.fight_id WHERE gm.owner_id = p_target AND gf.status = 'fight')
+     OR EXISTS (SELECT 1 FROM public.world_raid_members rm JOIN public.world_raids rr ON rr.raid_id = rm.raid_id WHERE rm.owner_id = p_target AND rr.status = 'fight' AND rm.left_at IS NULL AND (rm.out_until IS NULL OR rm.out_until > now())) THEN
+    RAISE EXCEPTION '그 동료는 지금 싸우는 중입니다. 싸움이 끝난 뒤에 돌봐 주세요.';
+  END IF;$b$);
+  execute d;
+
+  -- ⑲
+  d := replace(pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure), E'\r\n', E'\n');
+  a := $a$for eqr in select q2.slot, q2.item_id from public.world_character_equipment q2 where q2.owner_id = uid and q2.item_id ~ '^exg_[a-z]+_[12]$' loop$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor exgwear'; end if;
+  d := replace(d, a, $b$perform set_config('yh.exg_trail', public.world_gear_total(uid, 'trail_find_pct')::text, true);
+    $b$ || a);
+  a := $a$(1 + public.world_gear_total(uid, 'trail_find_pct') / 100.0)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor exgtrail'; end if;
+  d := replace(d, a, $b$(1 + coalesce(nullif(current_setting('yh.exg_trail', true), '')::numeric, public.world_gear_total(uid, 'trail_find_pct')) / 100.0)$b$);
+  execute d;
+
+  -- ⑳
+  d := replace(pg_get_functiondef('public.world_gw_resolve(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$        update public.world_gw_members set hp = least(100, hp + round(d)::int) where fight_id = p_fight and owner_id = tgt and out_rounds = 0;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0f anchor gwmn'; end if;
+  d := replace(d, a, a || $b$
+        update public.world_characters set mental = least(100, mental + ceil(coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) * case when (a ->> 'i') like '%\_hq' then 1.15 else 1 end)::int)
+         where owner_id = tgt and coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) > 0;$b$);
+  execute d;
+end $p$;
+
 update public.world_skill_catalog set description = '택일 기술 · 내가 구조한 동료가 체력 80으로 깨어난다(응급 처치 8단계 덤 +10은 따로)'
  where skill_id = 'first_aid_c43a';
 
