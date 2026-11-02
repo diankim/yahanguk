@@ -27,6 +27,7 @@ let catMap = null, fxNameMap = {};
 function useCatalog(cat, names) {
   if (!cat?.length) return;
   catMap = new Map(cat.map(i => [i.id, i])); fxNameMap = names || {};
+  registerNames(cat.filter(i => i.id && i.name).map(i => [i.id, i.name])); // 이름표도 함께(퀵슬롯이 이름표보다 먼저 그려지면 「이름 미상」으로 남던 것, 2026-11-02 화면 점검)
   MARKET_ONLY.clear(); for (const i of cat) if (i.mk) MARKET_ONLY.add(i.id);
   emit('catalog'); // 효과 문구 캐시를 비우고 퀵슬롯 등을 다시 그린다
 }
