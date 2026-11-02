@@ -65,3 +65,13 @@ update public.world_skill_catalog set description = replace(description, '퇴마
 update public.world_skill_catalog set passive_effect = jsonb_set(passive_effect, '{damage_pct}', '16'),
   description = replace(description, '술법 피해 +8%,', '술법 피해 +16%,')
  where skill_id = 'medicine_t8' and (passive_effect ->> 'damage_pct')::int = 8;
+
+-- 꾸미기 알림 조사: 「귀허 소용돌이 테」을 → 「…」를(world_josa)
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_cosmetic_award_check(uuid,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$'「' || t.cosmetic_name || '」을 얻었습니다$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor cosm'; end if;
+  execute replace(d, a, $b$'「' || t.cosmetic_name || '」' || right(public.world_josa(t.cosmetic_name, '을', '를'), 1) || ' 얻었습니다$b$);
+end $p$;
