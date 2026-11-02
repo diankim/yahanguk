@@ -88,7 +88,7 @@ export const JOBS = {
   // 역할 6가지(7.7.7q): 방패·수호 / 원거리 공격 / 술법 공격 / 근접 공격 / 치유 / 보조(북돋기·약화). base는 서버 world_job_base와 같은 기본 능력치(합 30), kit은 시작 장비
   exorcist: { name: '퇴마관', trait: '술법 공격', desc: '【술법 공격】 부적과 방울로 요괴를 치는 술법 공격수. 몸은 약하지만 이목이 낮아(−15) 뒷줄에서 술법을 쏟습니다. 술법 피해 +8%, 퇴마진(술법 ×2.0, 결계 깨기). 협동 기술은 약점 진언·멸마 진격 같은 공격 쪽.',
     base: { strength: 3, agility: 3, vitality: 4, perception: 4, willpower: 7, spirit_affinity: 9 }, kit: '영령 방울 · 삼베 도포 · 무명 부적낭' },
-  scout: { name: '현장 조사원', trait: '원거리 공격', desc: '【원거리 공격】 뒷줄에서 활로 꾸준히 쏘는 원거리 공격수. 가장 잘 피하고 잘 빠져나옵니다. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
+  scout: { name: '월궁 사수', trait: '원거리 공격', desc: '【원거리 공격】 뒷줄에서 활로 꾸준히 쏘는 원거리 공격수. 가장 잘 피하고 잘 빠져나옵니다. 원거리 피해 +8%·회피 +6·도주 +15, 급소 사격(반드시 치명타·표식).',
     base: { strength: 4, agility: 8, vitality: 4, perception: 8, willpower: 3, spirit_affinity: 3 }, kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리' },
   artificer: { name: '호위 무사', trait: '방패·수호', desc: '【방패·수호】 앞에 서서 요괴의 시선을 끌고 동료를 지키는 방패. 받는 피해 −12%·이목 +80(요괴가 먼저 노림)·방패를 든 만큼 공격력 ×0.85, 파갑참(근접 ×1.7, 방어·결계 무시). 대신 막기·철벽 수호로 동료를 감쌉니다.',
     base: { strength: 9, agility: 5, vitality: 7, perception: 3, willpower: 3, spirit_affinity: 3 }, kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부' },
