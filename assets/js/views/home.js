@@ -35,7 +35,7 @@ async function peopleCheck() {
   invalidate('world_region_roster'); invalidate('world_party_overview');
   try {
     const [r, p] = await Promise.all([load('world_region_roster').catch(() => []), load('world_party_overview').catch(() => null)]);
-    const key = JSON.stringify([(r || []).map(x => x.owner_id || x.character_name), (p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
+    const key = JSON.stringify([(r || []).map(x => x.owner_id || x.character_name).sort(),(p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
     if (peopleKey && key !== peopleKey) draw();
     peopleKey = key;
   } catch {}
