@@ -335,7 +335,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 시간대 한국 시각 6시간마다(해돋이 6~12·한낮 12~18·땅거미 18~24·삼경 0~6), 날씨 12시간마다(0·12시) 영역별(청명·담운·장우·세우·농무·삭풍·설한·혈무). 효과는 world_status_effect_total로 채집·제작·이동·회복·전투·조우·침식에. 모든 world_events에 시간대·날씨가 남음. world_env_total은 날씨·시간대 키를 한 번만(with … as materialized).
 - 세우(細雨, drizzle): 채집 +6%·회복 +5%·침식 −5%·단서 +4%·원거리 −5%·낚시 입질 +5%p(world_fish), 땅 밑·심연 영역엔 없음(world_weather_climate). 날씨 이름은 두 글자 한자어. 새 날씨마다 core.js ENV·journal.js WEATHER·world_expedition_walk_lines를 함께 고친다.
-- 장야(롤백 전 연출): world_long_night_stage(날짜, 한국 시각 자정) 1 = 10/30 밤이 일찍(땅거미 15시·삼경 20시) · 2 = 10/31 해가 거의 안 뜸(9~10 해돋이·10~11 한낮·11~15 땅거미, 조우 +15·침식 +20·희귀품/단서 +5) · 3 = 11/1 늘 삼경(조우 +50·침식 +30·정신 손실 +10·희귀품/단서 +10) · 4 = 11/2 0시 롤백. world_time_phase가 따르고 world_long_night_fx를 world_env_total이 더함, world_time_phase_end·world_environment_snapshot.long_night(env.js). pg_cron yh-long-night(매시, world_long_night_tick)이 「봉연 소식」 한 줄(world_app_meta long_night_announced). 2단계부터 붉은 안개 env.js fog #ln-fog(SVG 잡음, 2단계 옅게·3단계 짙게, 두 겹이 48·31초에 흐르고 14·21초 주기로 짙어졌다 옅어짐, 「동작 줄이기」 무관, 누르기 안 막음, 날씨 창에서 끄기 yh-fog-off) — 평면 원칙의 예외(사용자 요청).
+- 장야(롤백 전 연출, 끝남): world_long_night_stage는 11/2부터 늘 0이라 효과 없음(시간대·날씨 함수가 부르므로 남김). 알림 예약·붉은 안개 화면·롤백 문 닫기·마지막 토벌 함수는 롤백 때 지움(2026-11-02).
 
 ### 침식
 
@@ -531,7 +531,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 현대적인 다크 판타지: 어두운 배경·절제된 포인트 색·야간 도시의 은은함·읽기 편한 글꼴과 명확한 위계·일관된 패널·버튼·상태 표시·장식보다 편의.
 
 - 이모지를 장식으로 쓰지 않는다(아이콘과 글).
-- 평면 디자인(그라데이션·그림자·흐림 없음). 예외(사용자 요청): 장야 붉은 안개(§8), 색 고르기 판·막대.
+- 평면 디자인(그라데이션·그림자·흐림 없음). 예외(사용자 요청): 컷씬, 색 고르기 판·막대.
 - 테마 theme.js THEMES 32가지: 프리셋(야행·한지·청자·단청·쪽빛·황토·월하·홍매·송연·나전 등)과 흑·백 버전, 모서리·글꼴(고딕·명조)·선 굵기, deco {tex(tile·brush·dot·bamboo·wave·lattice·star·grain·hanji), frame(bracket·dot·round·double·line·none), head(plain·band·under)} → :root data-tex·data-frame·data-head(또렷한 선·점만). 새 테마도 deco를 단다. 바탕·강조·포인트 색 직접 고르기.
 - 색 고르기 colorpick.js: app.js installColorPicker가 모든 input[type=color] 누름을 가로채 openColorPicker → 「설정」하면 value를 바꿔 input·change. 사각형 판(가로 채도·세로 밝기)·색조 막대·Hex·추천색 24(PICKS: 바탕 8·강조 16).
 - 글자 크기 다섯 단계(theme.js FONT_SIZES, --fz 0.85~1.22, yh-fz), CSS는 calc(Npx * var(--fz, 1)), 터치 입력칸은 16px 아래로 안 내려감.
@@ -590,7 +590,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 롤백·초대·점검
 
-- 롤백 연출 cutscene.js: pg_cron yh-rollback-close가 11/2 00:00 KST에 world_rollback_close(마지막 토벌 실패 마무리·봉연 소식·anon·authenticated의 public 스키마 사용 거둠 = maintenance/start.sql, 끝나면 예약 삭제). 점검 페이지 maintenance.js는 maintenance.json scene 'rollback'이면 「첫째 밤의 끝」을 창마다 한 번(sessionStorage yh-cs-rollback), 「다시 보기」. 다시 연 뒤 생성 화면(app.js renderCreate)은 계정마다 한 번(yh-morning:<uid>) 「아침」(REOPEN_AT 이후만). 롤백 뒤 maintenance.json의 scene을 지운다.
+- 컷씬 cutscene.js: 다시 연 뒤 생성 화면(app.js renderCreate)이 계정마다 한 번(yh-morning:<uid>) 「아침」(REOPEN_AT 이후만), 로그인 화면 「아침」 되풀이 음악(loginMusic). 롤백 순간의 「첫째 밤의 끝」·점검 페이지 컷씬·cutscene.mp3는 롤백을 마쳐 지움(2026-11-02, 점검 문 닫기·열기는 supabase/maintenance/start.sql·end.sql).
 - 점검 중 도움말 help.html: 대기 화면 단추·컷씬 오른쪽 위 「도움말」(.cs-tr .cs-help, stay면 늘 보임), guide.js render(el, {standalone:true})가 서버 필요한 단추(패치노트·처음 안내·첫 걸음·제보)를 빼고 그림(DB 요청 없음).
 - 점검 차단: public 사용을 거두면 authenticated RPC·표 읽기와 anon 표 읽기가 42501, 가입 훅은 supabase_auth_admin이 public 사용 권한을 따로 가져 돌고 invite_open_at이 없으면 403. 롤백 SQL은 world_app_meta invite_required를 지우면 안 된다(지우면 초대권 없이 가입). Edge Function·Storage 버킷 없음. 1장 첫 장면 대사 덧붙임 supabase/pending/rollback_intro.sql.
 - 계정 zjaqorgha(캐릭터 「고창덕」)는 GM 배부 초대권으로 운영진이 만든 정식 계정 — 계정(auth.users·초대권 사용 기록)은 보존, 캐릭터는 똑같이 롤백 대상(사용자 결정, 휴면 정리 대상 아님).

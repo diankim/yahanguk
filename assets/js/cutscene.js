@@ -1,11 +1,7 @@
-// 컷씬: 롤백 순간(점검 페이지, maintenance.json scene 'rollback')과 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞).
+// 컷씬: 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞). 롤백 순간의 「첫째 밤의 끝」은 롤백을 마쳐 지웠다(2026-11-02).
 // 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고, 「건너뛰기」는 마지막 장면으로 보내며, 마지막 장면의 [닫기]로만 닫는다(롤백 점검 중에는 닫기 없음).
 // 게임 화면은 평면이 원칙이지만 컷씬만은 사용자 요청으로 흐림·질감(SVG 잡음 필터)을 써 실감 나게 그린다.
 // 움직임 줄이기 설정이면 흔들림·흐름은 멈추고 장면 전환만 남는다.
-
-const ZONES = ['반요촌', '무극 관성대', '십삼문 암시장', '철벽 고찰', '잔불촌', '백골 장터', '구름나루', '백등 야시장', '본부 객사', '본부 정청'];
-// 장부 세로줄에 적힌 이름 자리(읽히지 않게 한자 낱자를 섞는다)
-const LEDGER_CH = '夜行局調査員名簿金李朴崔鄭姜趙尹張林韓吳徐申權黃安宋柳洪全高文孫梁裵白許南沈盧河';
 
 const CSS = `
 .cs { position: fixed; inset: 0; z-index: 9000; background: #07060a; color: #e9e2d4; display: grid; grid-template-rows: 1fr auto; font-family: "Noto Serif KR", var(--font-serif, serif); overflow: hidden; }
@@ -144,92 +140,23 @@ const DEFS = `<defs>
     <feMerge><feMergeNode in="soft"/><feMergeNode in="grain"/></feMerge></filter>
 </defs>`;
 
-function ledger() {
-  seed = 7;
-  // 가운데 놓인 장부 한 장(240×172). 오른쪽에서 왼쪽으로 세로줄, 첫 줄은 제목
-  const px = 120, py = 34, pw = 240, ph = 172;
-  const cols = [];
-  for (let c = 0; c < 9; c++) {
-    const x = px + pw - 22 - c * 22, n = c === 0 ? 5 : 4 + Math.floor(rnd() * 4);
-    const chars = c === 0 ? '夜行局名簿' : Array.from({ length: n }, () => LEDGER_CH[Math.floor(rnd() * LEDGER_CH.length)]).join('');
-    cols.push(`<text x="${x}" y="${py + 20}" font-size="${c === 0 ? 14 : 13}" fill="#1c1714" font-family="'Noto Serif KR', serif" style="writing-mode: vertical-rl; letter-spacing: 4px" opacity="${(c === 0 ? .95 : .9 - rnd() * .25).toFixed(2)}">${chars}</text>`);
-  }
-  // 낙관: 붉은 테 안에 네 글자(오른쪽 위부터 夜行·局印), 닳은 자국과 번진 가장자리, 조금 기울게 찍힌다
-  const sx = px + 50, sy = py + 104;
-  const ch = (t, x, y) => `<text x="${x}" y="${y}" font-size="15" font-weight="700" fill="#b0222c" text-anchor="middle" font-family="'Noto Serif KR', serif">${t}</text>`;
-  const seal = `<g class="cs-seal"><g filter="url(#cs-sealtex)">
-    <rect x="${sx}" y="${sy}" width="44" height="44" rx="3" fill="none" stroke="#b0222c" stroke-width="3.2"/>
-    <rect x="${sx + 4}" y="${sy + 4}" width="36" height="36" fill="none" stroke="#b0222c" stroke-width=".8"/>
-    ${ch('夜', sx + 31, sy + 20)}${ch('行', sx + 31, sy + 37)}${ch('局', sx + 13, sy + 20)}${ch('印', sx + 13, sy + 37)}</g></g>`;
-  // 먹: 낙관 언저리에서 세 덩이가 차례로 번져 장부를 덮는다(가장자리는 잡음으로 일그러지고 결이 남는다)
-  const ink = [[sx + 22, sy + 10, 120, ''], [px + 190, py + 56, 100, 'b'], [px + 36, py + 36, 110, 'c']]
-    .map(([cx, cy, r, k]) => `<circle class="cs-ink ${k}" cx="${cx}" cy="${cy}" r="${r}" fill="#060505" filter="url(#cs-inkf)"/>`).join('');
-  // 먹은 종이 안에서만 번진다(종이 밖은 어둠이라 먹이 보이지 않아야 한다)
-  return `<g class="cs-ledger"><clipPath id="cs-paperclip"><rect x="${px + 2}" y="${py + 2}" width="${pw - 4}" height="${ph - 4}"/></clipPath>
-    <rect x="-2000" y="-2000" width="4480" height="4240" fill="#07060a" opacity=".9"/>
-    <g class="cs-paper">
-      <rect x="${px}" y="${py}" width="${pw}" height="${ph}" fill="#e6dcc3" filter="url(#cs-hanji)"/>
-      <line x1="${px + pw - 34}" y1="${py + 10}" x2="${px + pw - 34}" y2="${py + ph - 10}" stroke="#8a2a24" stroke-width=".5" opacity=".5"/>
-      <g class="cs-writing" filter="url(#cs-brush)">${cols.join('')}</g>
-      ${seal}
-      <g clip-path="url(#cs-paperclip)">${ink}</g>
-    </g></g>`;
-}
-
 function scene(kind) {
   seed = 3;
-  const stars = Array.from({ length: 34 }, () => `<circle class="cs-star" cx="${(rnd() * 520 - 20).toFixed(1)}" cy="${(rnd() * 110).toFixed(1)}" r="${(0.4 + rnd() * 0.9).toFixed(2)}"/>`).join('');
-  const lamps = kind === 'rollback'
-    ? ZONES.map((z, i) => lantern(40 + i * 44, 150 - Math.abs(4.5 - i) * 3, i, z)).join('')
-    : lantern(240, 150, 9, '');
+  const lamps = lantern(240, 150, 9, '');
   const mist = (cls, y, op) => `<g class="${cls}"><g filter="url(#cs-blur)"><rect x="-480" y="${y}" width="2400" height="900" filter="url(#cs-turb)" opacity="${op}"/></g></g>`;
   return `<svg class="cs-stage" viewBox="0 0 480 240" preserveAspectRatio="xMidYMid meet" overflow="visible" aria-hidden="true">${DEFS}
     <rect class="cs-sky" x="-2000" y="-2000" width="4480" height="4240"/>
-    <g class="cs-stars">${kind === 'rollback' ? stars : ''}</g>
     <circle class="cs-sun" cx="240" cy="120" r="36"/>
     <path class="cs-roof" d="M-2000 2000V170H30L58 154L86 170H120V180H150L190 150L230 180H250L290 156L330 180H350V172H380L410 154L440 172H2480V2000Z"/>
     <path class="cs-rope" d="M10 118Q120 150 240 124T470 128"/>
     ${lamps}
     <g class="cs-mist" mask="url(#cs-mist-mask)">${mist('cs-flow-a', 150, .85)}${mist('cs-flow-b', 190, .7)}<rect x="-2000" y="300" width="4480" height="2000" fill="#5c121b" filter="url(#cs-blur)"/></g>
-    ${kind === 'rollback' ? ledger() : ''}
-    <text class="cs-title" x="240" y="62">${kind === 'rollback' ? '第一夜 終' : '아 침'}</text>
-    <text class="cs-title" x="240" y="90" style="font-size:13px;letter-spacing:.12em">${kind === 'rollback' ? '…그리고 두 번째 밤이 온다' : ''}</text>
+    <text class="cs-title" x="240" y="62">아 침</text>
   </svg>`;
 }
 
-// 등불 n개째까지 꺼진 상태로: 새로 꺼지는 것만 깜빡이다 꺼진다
-const lampsOut = n => root => {
-  for (let i = 0; i < n; i++) {
-    const g = root.querySelector(`[data-lamp="${i}"]`);
-    if (!g || g.dataset.state) continue;
-    g.dataset.state = 'out';
-    const l = g.querySelector('.cs-lantern');
-    if (root.dataset.fast) { l.classList.add('out'); g.querySelector('.cs-zone')?.classList.add('off'); continue; }
-    l.classList.add('dying');
-    setTimeout(() => { l.classList.remove('dying'); l.classList.add('out'); g.querySelector('.cs-zone')?.classList.add('off'); }, 1400);
-  }
-};
 const wake = root => { const l = root.querySelector('[data-lamp="9"] .cs-lantern'); l?.classList.remove('out'); l?.classList.add('waking'); };
 
-const ROLLBACK = [
-  [null, '끝나지 않는 밤, 사흘째 자정.'],
-  [null, '봉연 쪽에서 붉은 안개가 번져 온다. 별이 하나씩 묻힌다.', r => r.classList.add('mist')],
-  [null, '반요촌의 등불이 꺼졌다.', lampsOut(1)],
-  ['태사령 하후정', '별이 하나도 보이지 않는다. …이런 밤은 어느 기록에도 없다.', lampsOut(2)],
-  ['회주 무명(無名)', '장부에 없는 밤이로군. 값을 매길 수가 없어.', lampsOut(3)],
-  ['맹주 석진악', '얼음 인장이 녹는다. 버텨라. 아직, 아직은 버틸 수 있다.', lampsOut(4)],
-  ['노장 장무현', '나라를 한 번 잃어 봤지. 두 번째가… 이런 식일 줄은 몰랐다.', lampsOut(5)],
-  ['교주 월화(月華)', '달 없는 밤이구나. 우리 맹세도 이 어둠 앞에서는 숨을 죽인다.', lampsOut(6)],
-  ['도방 진소랑', '물길이 모두 끊겼소. 배를 띄울 곳이 없어.', r => { lampsOut(8)(r); r.classList.add('mist2'); }],
-  [null, '본부 객사의 등불마저 꺼졌다. 남은 것은 정청의 등불 하나.', lampsOut(9)],
-  ['도제조 백운서', '…정청 문을 닫지 마라. 마지막 하나는 여기서 지킨다.'],
-  [null, '정청 깊은 곳, 마지막 등불 아래. 사건 서기관 연서희가 장부를 펼친다.', r => r.classList.add('ledger')],
-  ['사건 서기관 연서희', '이름을 적어 둘게요. 이 밤을 걸었던 사람들의 이름을, 하나도 빠짐없이.'],
-  [null, '붉은 인장이 장부 위에 내려앉는다.', r => r.classList.add('cs-stamped')],
-  [null, '먹이 번진다. 글자가 흐려지고, 지난 밤의 모든 것이 지워져 간다.', r => r.classList.add('ink')],
-  ['사건 서기관 연서희', '괜찮아요. 이름만 남아 있으면… 아침은 다시 와요.'],
-  [null, '', r => { r.classList.remove('ledger', 'cs-stamped', 'ink', 'mist', 'mist2'); r.classList.add('fin'); }],
-];
 const MORNING = [
   [null, '긴 밤이 끝났다.', r => r.querySelector('[data-lamp="9"] .cs-lantern')?.classList.add('out')],
   [null, '정청의 등불 하나가 깜빡이며 다시 살아난다.', r => { wake(r); r.classList.add('dawn'); }],
@@ -238,27 +165,14 @@ const MORNING = [
   [null, '', r => r.classList.add('fin')],
 ];
 
-function embers(root) {
-  const box = root.querySelector('.cs-embers');
-  for (let i = 0; i < 22; i++) {
-    const e = document.createElement('i');
-    e.style.left = `${(i * 4.6 + Math.random() * 4) % 100}%`;
-    e.style.setProperty('--dx', `${Math.round(Math.random() * 80 - 40)}px`);
-    e.style.animationDuration = `${7 + Math.random() * 7}s`;
-    e.style.animationDelay = `${-Math.random() * 12}s`;
-    const s = 2 + Math.random() * 2.5; e.style.width = e.style.height = `${s}px`;
-    box.append(e);
-  }
-}
 
 
-// 롤백 컷씬 전용 곡(tools/cutscene_music: 게임 악기 조각으로 구운 음원). 컷씬 시간에 맞춰 있다:
+// 컷씬 곡(tools/cutscene_music: 게임 악기 조각으로 구운 음원). 컷씬 시간에 맞춰 있다:
 // 73초 무렵(resolve) 제목과 함께 버티는 화음, 87초(outro)부터 끝(end)까지는 마지막 장면에 머무는 동안 되풀이한다.
 // 소리는 사용자가 한 번 누른 뒤에야 나므로(브라우저 규칙) 저절로 안 나면 [소리 켜기] 단추를 보이고, 화면 어디든 처음 누를 때도 켠다.
 // 시각은 tools/cutscene_music/render.js가 찍은 값: resolve = 건너뛰면 옮겨 갈 자리, clamp = 컷씬이 끝나는 무렵(늦게 켜도 그 뒤로는 가지 않음),
 // outro = 마지막 장면에 오래 머문 뒤 켤 때 시작하는 자리, loopStart~loopEnd = 끊김 없이 되풀이하는 8마디
 const MUSIC = {
-  rollback: { url: new URL('../audio/cutscene.mp3', import.meta.url).href, resolve: 73.3336, clamp: 73.3336, outro: 86.6669, loopStart: 113.3336875, loopEnd: 140.0004375 },
   morning: { url: new URL('../audio/cutscene_morning.mp3', import.meta.url).href, resolve: 12.6316, clamp: 20, outro: 28.4212, loopStart: 53.6844063, loopEnd: 78.9476563 },
 };
 const musicBufs = {};
@@ -350,15 +264,14 @@ export function loginMusic() {
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
 //       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때)
 // 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(7.5.8, 처음부터 늘 보임)
-export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false } = {}) {
+export function playCutscene(kind = 'morning', { onEnd, stay = false, note = '', atEnd = false } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
-  const lines = kind === 'rollback' ? ROLLBACK : MORNING;
+  const lines = MORNING;
   const root = document.createElement('div');
-  root.className = 'cs'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', kind === 'rollback' ? '첫째 밤의 끝' : '아침');
-  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}${kind === 'rollback' ? '<div class="cs-embers"></div>' : ''}<button type="button" class="cs-snd" hidden>소리 켜기</button><div class="cs-tr"><button type="button" class="cs-skip">건너뛰기</button>${stay ? '<a class="cs-help" href="help.html">도움말</a>' : ''}</div></div>
+  root.className = 'cs'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', '아침');
+  root.innerHTML = `<div style="position:relative;overflow:hidden">${scene(kind)}<button type="button" class="cs-snd" hidden>소리 켜기</button><div class="cs-tr"><button type="button" class="cs-skip">건너뛰기</button>${stay ? '<a class="cs-help" href="help.html">도움말</a>' : ''}</div></div>
     <div class="cs-box" aria-live="polite"><div class="cs-who"></div><div class="cs-text"></div></div>`;
   document.body.append(root);
-  if (kind === 'rollback') embers(root);
   const who = root.querySelector('.cs-who'), text = root.querySelector('.cs-text');
   let i = -1, timer = 0, done = false;
   const t0 = performance.now();
@@ -366,7 +279,7 @@ export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = ''
   window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: true }));
   let ended = false, endedAt = 0, music = null;
   {
-    const M = MUSIC[kind] || MUSIC.rollback;
+    const M = MUSIC[kind] || MUSIC.morning;
     const btn = root.querySelector('.cs-snd');
     // 켜 두었는데 브라우저가 막고 있으면 단추를 깜빡여 눌러 달라고 한다
     music = cutsceneMusic(M, (on, want) => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', !!on); btn.classList.toggle('ask', !on && !!want); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
