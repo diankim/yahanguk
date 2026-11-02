@@ -98,9 +98,9 @@ function draw() {
   const t0 = Date.now();
   outEnds = r.status === 'fight' ? Object.fromEntries((s.members || []).filter(m => m.out && !m.away).map(m => [m.id, t0 + m.out * 1000])) : {};
   outUntil = me.out ? t0 + me.out * 1000 : 0;
-  away = !!(me.joined && me.away && r.status === 'fight');
-  resting = !!(me.joined && me.resting && !me.out && !away && r.status === 'fight');
-  const key = `${r.id}:${r.status}:${!!me.joined}:${me.can_join ? 1 : 0}:${s.vote ? s.vote.until : ''}`;
+  away = !!(me.joined && !me.left && me.away && r.status === 'fight');
+  resting = !!(me.joined && !me.left && me.resting && !me.out && !away && r.status === 'fight');
+  const key = `${r.id}:${r.status}:${!!me.joined}:${me.left ? 1 : 0}:${me.can_join ? 1 : 0}:${s.vote ? s.vote.until : ''}`;
   if (key !== built) { build(); built = key; } else patch();
   countdown();
   const was = shownStatus; shownStatus = r.status;
@@ -113,10 +113,10 @@ function build() {
     : r.status === 'signup' ? `${icon('hourglass', 14)} 참가 신청 · <span data-until="${esc(r.signup_until)}">${left(r.signup_until)}</span> 남음`
     : fight ? `${icon('hourglass', 14)} 남은 시간 · <span data-until="${esc(r.ends_at)}">${left(r.ends_at)}</span>`
     : `${icon('check', 14)} ${r.ended_at ? new Date(r.ended_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''} 끝남`;
-  const playing = me.joined && fight;
+  const playing = me.joined && !me.left && fight;
   el.innerHTML = `<div class="view-head raid-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'}${r.region ? ` · ${esc(r.region)}` : ''}</p>
       <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
-      <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
+      <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger" id="raid-forfeit">${icon('back', 15)}<span>포기하고 나오기</span></button>` : ''}${me.joined && !me.left && r.kind === 'world' && (fight || r.status === 'signup') ? `<button class="btn small" id="raid-leave">${icon('back', 15)}<span>${fight ? '퇴장' : '신청 거두기'}</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
     <div class="raid-wrap ${playing ? 'playing' : ''}">
       <section class="panel raid-boss"><div class="panel-body">
         <p class="raid-time">${timeLine}</p>
@@ -221,6 +221,9 @@ function joinHtml(r, me) {
   // 서버 보스는 토벌 중에도 그 지역에서 합류할 수 있다(늦게 와도 합류할 수 있고, 늦을수록 기여도는 덜 쌓인다)
   const late = r.kind === 'world' && r.status === 'fight';
   if (r.status !== 'signup' && !late) return '';
+  // 퇴장한 뒤: 쌓은 기여는 남고, 다시 참가하면 체력을 늘리지 않고 「쉬는 중」으로 돌아온다
+  if (late && me.joined && me.left) return `<p class="hint">${icon('back', 14)} 토벌에서 나왔습니다. 지금까지의 기여는 남아 토벌이 끝나면 그 몫만큼 보상을 받습니다.</p>
+    <button class="btn primary" id="raid-join">${icon('flag', 16)}<span>다시 참가</span></button><p class="muted small">토벌 지역에 있어야 다시 참가할 수 있습니다. 돌아오면 쉬는 중이니 준비되면 행동하세요.</p>`;
   if (late && me.joined) return '';
   if (me.joined) return `<p class="hint good">${icon('check', 14)} 참가를 신청했습니다. 신청이 끝나면 토벌이 시작됩니다.</p>
     ${r.kind === 'final' && r.leader ? `<button class="btn primary" id="raid-begin">${icon('sword', 16)}<span>지금 시작하기</span></button><p class="muted small">함께할 동료가 다 왔으면 바로 시작합니다. 90초가 지나면 저절로 시작합니다.</p>` : ''}`;
@@ -306,15 +309,15 @@ function fillItems(box) {
 // 참가자 칸: 직업 색(이름·왼쪽 띠), 체력 숫자는 막대 안, 누르면 아래에 자세히(동료 선택은 싸우는 중에만)
 function membersHtml(list) {
   if (!(list || []).length) return '<li class="muted small raid-mem-empty">아직 참가자가 없습니다.</li>';
-  return list.map(m => memberLi(m, { me: m.me, tgt: m.id === target, sel: m.id === sel, out: m.out || m.away || m.resting, fx: m.buffs,
-    state: settled(snap) ? '' : m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : '',
+  return list.map(m => memberLi(m, { me: m.me, tgt: m.id === target, sel: m.id === sel, out: m.out || m.away || m.resting || m.left, fx: m.buffs,
+    state: settled(snap) ? '' : m.left ? '퇴장' : m.away ? '자리 비움' : m.out ? `쉼 ${m.out}초` : m.resting ? '쉬는 중' : '',
     title: `${m.name} · Lv${m.level} ${jobName(m.job)} · 기여 ${m.share}%`,
     sub: `${esc(jobName(m.job))} · 기여 ${m.share}%${fxKeys(m.buffs).length ? ` · ${fxKeys(m.buffs).map(k => FX_NAME[k]).join('·')}` : ''}` })).join('');
 }
 // 고른 참가자 자세히(PC·휴대폰 모두 누르면 열림, 다시 누르거나 닫기로 접음)
 function memDetail(list) {
   showSelected(el && $('#raid-memdetail', el), list, sel, m => ({
-    state: settled(snap) ? '' : m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : snap.raid.status === 'fight' ? '싸우는 중' : '',
+    state: settled(snap) ? '' : m.left ? '퇴장(기여 남음)' : m.away ? '자리 비움' : m.out ? `물러남 · ${m.out}초` : m.resting ? '쉬는 중' : snap.raid.status === 'fight' ? '싸우는 중' : '',
     nums: [['기여', `${m.share}%`], ...fightNums(m)],
     fx: m.buffs, extra: creditLine(m.credits) }), () => { sel = null; patch(); });
 }
@@ -355,6 +358,15 @@ function bind() {
       { title: solo ? '결전을 포기합니까?' : '동료에게 포기를 제안합니까?', ok: solo ? '포기하고 나오기' : v ? '동의하기' : '포기 제안하기', cancel: '계속 싸우기', danger: true });
     if (!ok) return;
     await run(fb, () => rpc('world_raid_forfeit', { p_raid: r.id }));
+  };
+  // 봉연 퇴장: 모집 중이면 신청을 거두고, 싸우는 중이면 쌓은 기여를 남긴 채 나온다(서버 world_raid_leave)
+  const lb = $('#raid-leave', el);
+  if (lb) lb.onclick = async () => {
+    const fighting = r.status === 'fight';
+    const ok = await ask(fighting ? '토벌에서 나옵니다.\n지금까지 쌓은 기여도는 그대로 남아, 토벌이 끝나면 그 몫만큼 보상을 받습니다(기여 1% 이상).\n나간 동안은 요괴가 노리지 않고 가방 물품도 쓸 수 있습니다. 다시 참가하면 이어서 싸웁니다.'
+      : '참가 신청을 거둡니다. 모집이 끝나기 전이면 다시 신청할 수 있습니다.', { title: fighting ? '토벌에서 나갈까요?' : '신청을 거둘까요?', ok: fighting ? '퇴장' : '거두기', cancel: '그대로 있기' });
+    if (!ok) return;
+    await run(lb, () => rpc('world_raid_leave', { p_raid: r.id }));
   };
   askVote(r);
   const bb = $('#raid-begin', el);

@@ -75,3 +75,76 @@ begin
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor cosm'; end if;
   execute replace(d, a, $b$'「' || t.cosmetic_name || '」' || right(public.world_josa(t.cosmetic_name, '을', '를'), 1) || ' 얻었습니다$b$);
 end $p$;
+
+-- ⑤ 봉연의 그림자 퇴장(world_raid_leave)
+--  · 모집 중에 나가면 신청을 거둔다(기록 없음).
+--  · 싸우는 중에 나가면 그때까지 쌓은 기여도는 그대로 두고, 토벌이 끝날 때 그 몫만큼 보상(기여 1% 이상 조건 그대로).
+--    나간 동안은 요괴가 노리지 않고, 광역·「모두 물러남」·기운 끊기 인원에서 빠지며, 가방 물품도 그대로 쓴다(out_until을 먼 뒤로).
+--  · 다시 참가하면(world_raid_join) 보스 체력을 더 늘리지 않고 「쉬는 중」으로 돌아온다(나갔다 들어오기로 체력을 부풀리거나 줄이지 못하게).
+--  · 결전(final)은 포기 투표로만 끝낸다.
+alter table public.world_raid_members add column if not exists left_at timestamptz;
+
+create or replace function public.world_raid_leave(p_raid uuid)
+returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $f$
+declare uid uuid := public.fn_owner_auth_uid(); rd public.world_raids%rowtype; mb public.world_raid_members%rowtype;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into rd from public.world_raids where raid_id = p_raid for update;
+  if not found then raise exception '알 수 없는 토벌입니다.'; end if;
+  if rd.kind <> 'world' then raise exception '결전은 「포기하고 나오기」로만 끝낼 수 있습니다.'; end if;
+  select * into mb from public.world_raid_members where raid_id = p_raid and owner_id = uid for update;
+  if not found then raise exception '이 토벌에 참가하지 않았습니다.'; end if;
+  if rd.status = 'signup' then
+    delete from public.world_raid_members where raid_id = p_raid and owner_id = uid;
+    perform public.world_raid_say(p_raid, 'join', mb.name || ' — 신청을 거두었습니다.');
+    update public.world_raids set updated_at = now() where raid_id = p_raid;
+    return jsonb_build_object('ok', true, 'content', '참가 신청을 거두었습니다.');
+  end if;
+  if rd.status <> 'fight' then raise exception '이미 끝난 토벌입니다.'; end if;
+  if mb.left_at is not null then raise exception '이미 토벌에서 나왔습니다.'; end if;
+  update public.world_raid_members set left_at = now(), out_until = now() + interval '30 days', fx = '{}'::jsonb
+   where raid_id = p_raid and owner_id = uid;
+  perform public.world_raid_say(p_raid, 'join', mb.name || ' — 토벌에서 물러나 떠났습니다(쌓은 기여는 남음).');
+  update public.world_raids set updated_at = now() where raid_id = p_raid;
+  return jsonb_build_object('ok', true, 'content', '토벌에서 나왔습니다. 지금까지의 기여도는 남아, 토벌이 끝나면 그 몫만큼 보상을 받습니다. 다시 참가하면 이어서 싸울 수 있습니다.');
+end $f$;
+revoke all on function public.world_raid_leave(uuid) from public, anon;
+grant execute on function public.world_raid_leave(uuid) to authenticated;
+
+do $p$
+declare d text; a text;
+begin
+  -- 다시 참가: 나간 사람은 체력을 늘리지 않고 「쉬는 중」으로 돌아옴
+  d := replace(pg_get_functiondef('public.world_raid_join(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$  if exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id = uid) then raise exception '이미 신청했습니다.'; end if;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor rejoin'; end if;
+  execute replace(d, a, $b$  if exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id = uid and left_at is not null) then
+    update public.world_raid_members set left_at = null, out_until = now() where raid_id = p_raid and owner_id = uid;
+    perform public.world_raid_say(p_raid, 'join', c.character_name || ' — 토벌에 돌아왔습니다.');
+    update public.world_raids set updated_at = now() where raid_id = p_raid;
+    return jsonb_build_object('ok', true, 'content', '토벌에 돌아왔습니다. 쉬는 중이니 준비되면 행동하세요.');
+  end if;
+$b$ || a);
+
+  -- 행동: 나간 사람은 다시 참가해야 싸움, 나간 동료는 살릴 수 없음
+  d := replace(pg_get_functiondef('public.world_raid_action(uuid,text,text,uuid,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$  if mb.out_until is not null and mb.out_until > now() then$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor act'; end if;
+  d := replace(d, a, $b$  if mb.left_at is not null then raise exception '토벌에서 나왔습니다. 「다시 참가」하면 이어서 싸울 수 있습니다.'; end if;
+$b$ || a);
+  a := $a$        if tm.out_until is null then raise exception '물러난 동료에게만 쓸 수 있습니다.'; end if;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor revive'; end if;
+  d := replace(d, a, a || $b$
+        if tm.left_at is not null then raise exception '토벌에서 나간 동료입니다.'; end if;$b$);
+  execute d;
+
+  -- 스냅샷: 나간 사람은 left, 쉼·물러남 초를 세지 않음
+  d := replace(pg_get_functiondef('public.world_raid_snapshot_core(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$'out', case when x.out_until > now() then ceil(extract(epoch from x.out_until - now())) end, 'resting', x.out_until is not null and x.out_until <= now(),$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor snap m'; end if;
+  d := replace(d, a, $b$'out', case when x.left_at is null and x.out_until > now() then ceil(extract(epoch from x.out_until - now())) end, 'resting', x.left_at is null and x.out_until is not null and x.out_until <= now(), 'left', x.left_at is not null,$b$);
+  a := $a$'out', case when me.out_until > now() then ceil(extract(epoch from me.out_until - now())) end, 'resting', me.out_until is not null and me.out_until <= now(),$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor snap me'; end if;
+  d := replace(d, a, $b$'out', case when me.left_at is null and me.out_until > now() then ceil(extract(epoch from me.out_until - now())) end, 'resting', me.left_at is null and me.out_until is not null and me.out_until <= now(), 'left', me.left_at is not null,$b$);
+  execute d;
+end $p$;
