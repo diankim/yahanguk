@@ -99,7 +99,7 @@ export const JOBS = {
     base: { strength: 3, agility: 3, vitality: 6, perception: 3, willpower: 8, spirit_affinity: 7 }, kit: '먹 부채 · 삼베 도포 · 쑥 향낭 · 약초·탕약' },
   sealmaster: { name: '봉인술사', trait: '보조(북돋기·약화)', desc: '【보조·북돋기·약화】 요괴를 묶고 동료를 북돋는 북돋기·약화 담당. 정신 손실 −10%·침식 −5%, 봉인술(묶기)과 협동 기술.',
     base: { strength: 3, agility: 3, vitality: 5, perception: 4, willpower: 8, spirit_affinity: 7 }, kit: '무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적' },
-  analyst: { name: '백공 기술관', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는 근접 공격수. 근접 공격력 ×1.10(피해 상한과 따로)·근접 치명타 +5·단도 기술로 이목이 낮아짐, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
+  analyst: { name: '암영 검객', trait: '근접 공격', desc: '【근접 공격】 단도로 급소를 찌르는 근접 공격수. 근접 공격력 ×1.10(피해 상한과 따로)·근접 치명타 +5·단도 기술로 이목이 낮아짐, 약점 간파(다음 세 번 공격 +40%·치명타가 잘 남).',
     base: { strength: 8, agility: 6, vitality: 5, perception: 5, willpower: 3, spirit_affinity: 3 }, kit: '날선 단도 · 누비 전포 · 술 노리개 · 짚신 · 낚싯대' },
 };
 // 6.1.0(합동 토벌·협동 기술) 화면을 켤지: 서버에 6.1.0 SQL을 실행한 뒤 true로 바꿔 배포한다

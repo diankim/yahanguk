@@ -1,4 +1,6 @@
 -- 7.7.7r — 직업 역할 균형(사용자 결정 2026-11-02, 7.7.7q 시뮬 검토 뒤)
+--  · 직업 이름 「백공 기술관」 → 「암영 검객」(내부 키 analyst 그대로).
+--  · 봉인술사 = 버티는 술사(이목 +60·방어 +30·회피 +12), 퇴마관 이목 −15.
 --  ② 기여도: 한 사람을 노린 공격을 맞으면 자기 방어(피해 감소·받는 피해)로 줄인 몫의 절반을 「막아 준 피해」로(봉연·결전·귀허).
 --  ③ 이목: 호위 무사 직업 이목 +50 → +80. 단도(백공) 기본 기술 넷에 이목 감소(합 −45%).
 --  ④ 공격 역할: Lv30이면 누구나 피해 % 상한 35%에 닿아 백공의 덤이 잘렸다(호위 233 · 백공 226).
@@ -156,11 +158,39 @@ begin
   end if;
 end $p$;
 
+-- ── 직업 이름: 백공 기술관 → 암영 검객(暗影劍客, 사용자 결정 2026-11-02 「생활직 이름 같으니까」) ─────
+do $p$
+declare d text; f text;
+begin
+  foreach f in array array['world_job_label', 'world_job_name', 'world_gimmick_tip'] loop
+    d := pg_temp.fdef(f);
+    if position($a$'백공 기술관'$a$ in d) > 0 then execute pg_temp.rep(d, $a$'백공 기술관'$a$, $a$'암영 검객'$a$); end if;
+  end loop;
+end $p$;
+update public.world_characters set occupation = '암영 검객' where occupation = '백공 기술관';
+update public.world_skill_catalog set skill_name = '암영지경' where skill_id = 'dagger_t50' and skill_name = '백공지경';
+update public.world_title_catalog set condition_text = replace(condition_text, '백공 기술관', '암영 검객') where condition_text like '%백공 기술관%';
+update public.world_quests set cat = replace(cat, '백공 기술관', '암영 검객'),
+  summary = '야시장의 등을 모두 만든 마일수가 새로 온 암영 검객에게 이름을 걸 등의 뼈대를 맡긴다.' where quest_id = 'jq_analyst';
+update public.world_quest_steps set lines = replace(lines::text, '백공에서 왔다고? 손 좀 보여 줘 봐. …굳은살 자리가 좋군.', '암영에서 왔다고? 손 좀 보여 줘 봐. …칼자루 굳은살이군. 그래도 손끝은 섬세해.')::jsonb
+ where quest_id = 'jq_analyst' and step = 1;
+update public.world_quest_steps set lines = replace(lines::text, '백공에서 왔군요. 물건을 읽는 눈이 있다고요.', '암영에서 왔군요. 어둠 속에서 틈을 읽는 눈이 있다고요.')::jsonb
+ where quest_id = 'mq_red_seal' and step = 1;
+update public.world_item_lore set lore = v.l from (values
+  ('padded_coat', '솜을 누빈 전포. 암영 검객과 봉인술사가 겨울 현장에서 입는다.'),
+  ('w_melee1_keen', '날을 세운 단도. 암영 검객은 이 칼 한 자루로 그림자 속 급소를 노린다.'),
+  ('n1_plenty', '술을 단 노리개. 장인들은 거둔 것이 넉넉하라는 뜻으로 단다.'),
+  ('wayfarer_pack', '상인 짐틀. 수향 상단이 쓰던 것을 장인이 고쳐 만들었다.'),
+  ('wayfarer_pack_hq', '상인 짐틀. 수향 상단이 쓰던 것을 장인이 고쳐 만들었다.')) v(id, l)
+ where world_item_lore.item_id = v.id and world_item_lore.lore like '%백공%';
+
 do $c$
 begin
   if (select passive_effect ->> 'presence_pct' from public.world_skill_catalog where skill_id = 'dagger_t43') <> '-15' then raise exception '7.7.7r: 단도 이목'; end if;
   if (public.world_job_base('analyst') ->> 'strength') <> '8' then raise exception '7.7.7r: 백공 능력치'; end if;
   if (select sum(v::int) from jsonb_each_text(public.world_job_base('analyst')) t(k, v)) <> 30 then raise exception '7.7.7r: 백공 능력치 합'; end if;
+  if public.world_job_label('analyst') <> '암영 검객' then raise exception '7.7.7r: 직업 이름'; end if;
+  if exists (select 1 from public.world_quest_steps where lines::text like '%백공%') or exists (select 1 from public.world_item_lore where lore like '%백공%') then raise exception '7.7.7r: 백공 문구 남음'; end if;
 end $c$;
 
 update public.world_app_meta set value = '20261104204500' where key = 'db_version';
