@@ -292,14 +292,15 @@ begin
 end $p$;
 
 create or replace function public.world_solo_aid(p_job text) returns jsonb language sql immutable as $function$
-  -- 혼자 도전 보정(7.7.7r): 다섯 곳(현장·원정·귀허·결전·봉연)을 함께 본 뒤 남은 차이만. 퇴마관은 몸이 약해 혼자일 때만 받는 피해 −30%
+  -- 혼자 도전 보정(7.7.7r): 다섯 곳(현장·원정·귀허·결전·봉연)을 함께 맞춘 뒤 혼자 보스에서 남는 차이만(시뮬 기록을 모아 계산, 목표 혼자 3/10 안팎)
+  -- 퇴마관은 몸이 약해 혼자 긴 싸움에서 자주 쓰러지므로 혼자일 때만 받는 피해 −30%
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 5, "final_dmg": 30, "solo_guard": 30}'
-    when 'sealmaster' then '{"solo_dmg": -12, "final_dmg": 20}'
-    when 'medic'      then '{"solo_dmg": 20, "final_dmg": 0}'
-    when 'artificer'  then '{"solo_dmg": -18, "final_dmg": -15}'
-    when 'scout'      then '{"solo_dmg": 15, "final_dmg": -10}'
-    when 'analyst'    then '{"solo_dmg": 10, "final_dmg": 15}'
+    when 'exorcist'   then '{"solo_dmg": 4, "final_dmg": 28, "solo_guard": 30}'
+    when 'sealmaster' then '{"solo_dmg": -6, "final_dmg": 15}'
+    when 'medic'      then '{"solo_dmg": 29, "final_dmg": -1}'
+    when 'artificer'  then '{"solo_dmg": -13, "final_dmg": -23}'
+    when 'scout'      then '{"solo_dmg": 23, "final_dmg": -15}'
+    when 'analyst'    then '{"solo_dmg": 11, "final_dmg": 14}'
     else '{}' end::jsonb
 $function$;
 
