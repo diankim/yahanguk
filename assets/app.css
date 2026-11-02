@@ -826,6 +826,8 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .note-pop > div:not(.note-actions) { display: grid; gap: 2px; } .note-pop span { font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .note-pop .note-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 @media (max-width: 799px) { .note-pops { right: 16px; left: 16px; width: auto; } }
+/* 휴대폰: 창이 열려 있으면 알림 띠는 창 뒤로(창의 닫기 단추를 가리지 않게), 창을 닫으면 다시 보인다 */
+@media (max-width: 799px) { body:has(.modal-backdrop) .note-pops { z-index: 79; } }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, 10px) scale(.96); } }
 
 /* ── 전투 ─────────────────────────────── */
