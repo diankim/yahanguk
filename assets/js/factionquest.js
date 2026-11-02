@@ -101,7 +101,7 @@ export function fqPopHtml(key, s) {
         : `<p class="desc">${icon('check', 14)} 모든 등급 퀘스트를 마쳤습니다.</p>`;
     return `${ladder}
       <div class="chips">${chip(`평판 ${fmt.num(s.rep)}`, 'accent')}${chip(`공훈 ${fmt.num(s.merit)}`, 'ok')}${s.next ? chip(`다음 등급 · 평판 ${fmt.num(s.next.rep)} · Lv${s.next.level}`) : chip('최고 등급')}</div>
-      <p class="small">${perk ? `등급 효과 · 지금 ${esc(perk(rk))}${rk < 5 ? ` (최고 등급 ${esc(perk(5))})` : ''}` : ''} · 등급이 오를수록 비고 품목이 늘어납니다.</p>
+      <p class="small">${perk ? (rk > 1 ? `등급 효과 · 지금 ${esc(perk(rk))}${rk < 5 ? ` (최고 등급 ${esc(perk(5))})` : ''}` : `등급 효과는 2등급부터 붙습니다(최고 등급 ${esc(perk(5))})`) : ''} · 등급이 오를수록 비고 품목이 늘어납니다.</p>
       <label class="check"><input type="checkbox" id="fq-show" ${s.show_rank ? 'checked' : ''} ${s.join_done ? '' : 'disabled'}><span>프로필·조사원 카드에 세력 등급 보이기</span></label>
       <h3 class="sub-h">${s.join_done ? '등급 퀘스트' : '가입 퀘스트'}</h3>${questHtml}
       <p class="muted small">평판은 그 세력 일로 쌓이는 누적 값(등급 기준)이고, 공훈은 의뢰판·퀘스트로 모아 비고에서 쓰는 몫입니다. 공훈을 써도 평판은 줄지 않습니다.</p>`;

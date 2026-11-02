@@ -228,7 +228,7 @@ function showEnd(r, foe) {
   if (r.ended === 'victory') {
     const loot = Object.entries(x.loot || {});
     openModal({ title: '토벌 성공', body: `<div class="end-card win">
-      <p class="lead">${esc(`${x.monster}을(를)`)}${x.rank === 'guardian' ? ' (우두머리)' : x.rank === 'elite' ? ' (정예)' : ''} 쓰러뜨렸습니다.</p>
+      <p class="lead">${esc(`${x.monster || '요괴'}을(를)`)}${x.rank === 'guardian' ? ' (우두머리)' : x.rank === 'elite' ? ' (정예)' : ''} 쓰러뜨렸습니다.</p>
       <div class="stat-tiles"><div><span>경험치</span><b>+${fmt.num(x.xp)}</b></div><div><span>전</span><b>+${fmt.num(x.gil)}</b></div></div>
       <h3 class="sub-h">전리품</h3><ul class="loot">${loot.map(([k, n]) => `<li>${esc(nameOf(k))} <b>×${n}</b></li>`).join('') || '<li>없음</li>'}</ul>
       <p class="muted small">가방이 가득 차면 넘치는 전리품은 두고 옵니다.</p>

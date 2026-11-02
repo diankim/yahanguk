@@ -28,11 +28,13 @@ function useCatalog(cat, names) {
   if (!cat?.length) return;
   catMap = new Map(cat.map(i => [i.id, i])); fxNameMap = names || {};
   MARKET_ONLY.clear(); for (const i of cat) if (i.mk) MARKET_ONLY.add(i.id);
+  emit('catalog'); // 효과 문구 캐시를 비우고 퀵슬롯 등을 다시 그린다
 }
 function catalogMap() {
   if (!catMap) {
     if (invStatic?.catalog) useCatalog(invStatic.catalog, invStatic.fxNames);
-    else try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); useCatalog(c?.catalog, c?.fxNames); } catch {}
+    // 7.7.7o 전 사본(fxNames 없음)은 쓰지 않는다 — 효과·거래소 전용 칸이 비어 있어 「가방에 없음」처럼 보였다
+    else try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (c?.fxNames) useCatalog(c.catalog, c.fxNames); } catch {}
   }
   return catMap;
 }
@@ -48,7 +50,7 @@ export async function ensureCatalog() {
   if (invStatic) return;
   const v = await dbVersion();
   try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length && c.fxNames) { invStatic = { catalog: c.catalog, recipes: c.recipes || [], fxNames: c.fxNames }; useCatalog(c.catalog, c.fxNames); return; } } catch {}
-  try { await inventorySnap(); emit('catalog'); } catch {}
+  try { await load('world_inventory_snapshot'); } catch {} // 다른 화면이 같은 때 부르면 하나로 묶인다
 }
 async function inventorySnap() {
   if (!invStatic) {

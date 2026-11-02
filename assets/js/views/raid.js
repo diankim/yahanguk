@@ -1,6 +1,6 @@
 // 합동 토벌(10장 결전·봉연의 그림자): 참가자는 행동하고, 신청하지 않은 사람은 같은 화면에서 관전한다.
 // 판정은 모두 서버(world_raid_*)가 하고, 화면은 world_raids 실시간 변경을 받아 스냅샷을 다시 읽는다(관전 2초·참가 1초에 한 번까지).
-import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, spOf } from '../core.js';
+import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, JOBS, RAID_ON, loadCharacter, openLayer, spOf, particle } from '../core.js';
 import { load, invalidate, loading, errorBox, chip, itemDesc } from './common.js';
 import { mountMeter } from './meter.js';
 import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showMemDetail, vitHtml, coopBtn, itemListHtml, itemGroups, battleItems } from './fightui.js';
@@ -228,7 +228,7 @@ function joinHtml(r, me) {
 function resultHtml(r, members) {
   const mine = (members || []).find(m => m.me), rw = mine?.reward;
   const items = rw?.items ? Object.entries(rw.items).map(([k, v]) => `${esc(nameOf(k))} ×${v}`).join(', ') : '';
-  return `<div class="raid-result ${r.status === 'won' ? 'ok' : 'bad'}"><b>${esc(`${r.boss}을(를) ${r.status === 'won' ? '물리쳤습니다' : '막지 못했습니다'}`)}</b>
+  return `<div class="raid-result ${r.status === 'won' ? 'ok' : 'bad'}"><b>${esc(`${r.boss || '요괴'}을(를) ${r.status === 'won' ? '물리쳤습니다' : '막지 못했습니다'}`)}</b>
     ${rw ? `<p class="small">기여도 ${rw.share}%${rw.gil ? ` · ${fmt.num(rw.gil)}전` : ''}${rw.xp ? ` · 경험치 ${fmt.num(rw.xp)}` : ''}${items ? ` · ${items}` : ''}${rw.lost ? ` · 가방이 모자라 두고 옴: ${esc(rw.lost)}` : ''}</p>` : mine ? '' : '<p class="muted small">관전한 토벌입니다.</p>'}
     ${r.kind === 'world' && r.status === 'failed' ? '<p class="muted small">출현 지역이 다음 회차까지 봉연에 잠깁니다(그곳·이웃 침식과 요괴 조우 증가).</p>' : ''}</div>`;
 }
@@ -276,7 +276,7 @@ function outBox(me = snap?.me || {}) {
     : outNow ? `${icon('hourglass', 14)} 물러나 숨을 고르는 중 · <span id="raid-out-sec">${Math.ceil((outUntil - Date.now()) / 1000)}</span>초`
     : `${icon('check', 14)} 쉬는 중 · 준비되면 행동해서 돌아가세요`;
   $('#raid-out-text', ob).innerHTML = away
-    ? `지금은 물러난 것으로 셉니다. 요괴가 나를 노리지 않고 쌓은 기여도는 그대로입니다. 가방·퀵슬롯·거점 휴식으로 회복한 뒤 <b>${region}</b>(으)로 돌아오면 다시 합류하지 않고 바로 싸웁니다.`
+    ? `지금은 물러난 것으로 셉니다. 요괴가 나를 노리지 않고 쌓은 기여도는 그대로입니다. 가방·퀵슬롯·거점 휴식으로 회복한 뒤 <b>${region}</b>${particle(snap?.raid?.region || '토벌 자리', '(으)로')} 돌아오면 다시 합류하지 않고 바로 싸웁니다.`
     : outNow ? `체력이 1이 되어 물러났습니다. ${snap?.raid?.kind === 'final' ? '30초' : '1분'} 동안 숨을 고른 뒤에도 <b>저절로 돌아가지 않으니</b>, 그사이 <b>「물품」·가방·퀵슬롯</b>으로 회복하거나 거점에 가서 쉬고 오세요(자리를 비운 동안도 물러난 것으로 셉니다).`
     : `요괴가 나를 노리지 않습니다. 가방·퀵슬롯으로 마저 회복하고, 준비가 되면 <b>공격·방어·기술</b>을 눌러 돌아가세요(「물품」 창의 물품도 쉬는 동안은 행동이 되지 않습니다). 돌아가면 먼저 <b>방어</b>가 안전합니다.`;
 }

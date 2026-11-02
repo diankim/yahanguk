@@ -70,7 +70,7 @@ export async function render(root, sub) {
         <h3 class="sub-h">채팅 이름 색</h3>
         <div class="hue-grid">${`<button class="hue-pick auto" data-hue="" aria-label="자동">자동</button>`}${CHAT_HUES.map(h => `<button class="hue-pick" data-hue="${h}" style="--hu:${h}" aria-label="색 ${h}">가</button>`).join('')}</div>
         <div class="hue-grid">${Object.entries(NAME_STYLES).map(([v, [n, how]]) => `<button class="hue-pick ns-${v}" data-hue="${v}" ${styles?.[v] ? '' : `data-locked="${esc(`${n}: ${how} 쓸 수 있습니다.`)}"`} title="${esc(styles?.[v] ? `칭호 보상 이름 색 · ${n}` : `${how} 쓸 수 있습니다`)}">${esc(n)}</button>`).join('')}</div>
-        <p class="muted small">아래 15가지는 칭호로 여는 특별 이름 색입니다. 흐린 색은 아직 잠긴 것이고, 누르면 여는 조건이 보입니다. 채팅과 조사원 카드의 이름에 보입니다.</p>
+        <p class="muted small">위의 특별 이름 색은 칭호·세력 비고·비무회 등으로 엽니다. 흐린 색은 아직 잠긴 것이고, 누르면 여는 조건이 보입니다. 채팅과 조사원 카드의 이름에 보입니다.</p>
         <p class="hue-preview muted" id="hue-preview"></p>
         <label class="field"><span>한 줄 소개 (60자)</span><input id="pf-bio" maxlength="60" value="${esc(draft.bio)}" placeholder="예: 밤길을 걷는 조사원"></label>
         <label class="field"><span>대표 칭호 (채팅과 프로필에 보입니다)</span><select id="pf-title"><option value="">걸지 않음</option>${earned.map(t => `<option value="${esc(t.key)}" ${t.key === draft.title ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
@@ -101,7 +101,7 @@ export async function render(root, sub) {
         <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}<button class="btn small" type="button" data-try-alarm>알림</button></div>
         <div class="snd-block"><div class="snd-head"><span><b>알림음</b><small>게임 창을 내려 두고 다른 일을 하다가도 알 수 있게 울립니다. 효과음을 꺼도 울리고, 크기는 효과음 음량을 따릅니다. 소리는 위 「알림」 단추로 들어 볼 수 있습니다.</small></span></div>
           <div id="alarm-list">${ALARMS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-alarm="${k}" ${alarmOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>
-        <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 브라우저에서 직접 연주하므로 따로 내려받는 파일이 없습니다.</p>`, { ico: 'volume' })}
+        <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 지금 있는 지역의 악기 소리만 받아 브라우저에서 직접 연주합니다.</p>`, { ico: 'volume' })}
     </section>
     <section id="sec-notify" class="set-sec">
       ${panel('알림', `<p class="muted small">끈 알림은 화면 위에 뜨지 않고 알림 창의 「지난 알림」에만 남습니다. 운영 공지·제보 답장·원정 귀환·요화 같은 알림은 끌 수 없습니다. 바꾸면 바로 저장됩니다(어느 기기에서나 같음).</p>

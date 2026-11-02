@@ -80,7 +80,7 @@ function activeItem(q) {
   if (q.phase === 'clues') {
     const c = q.clues || {};
     return `<li class="q-item">${head(q.kind, q)}
-      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc((c.region_names || []).join('·') + '을(를)')} 탐색하고, 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>
+      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc(((c.region_names || []).join('·') || '이 장의 지역') + '을(를)')} 탐색하고, 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>
       <div class="btn-row"><a class="btn small" href="#/log/story">${icon('scroll', 14)}<span>일지 보기</span></a></div></li>`;
   }
   return `<li class="q-item ${q.ready ? 'ready' : ''}">${head(q.kind, q)}
@@ -129,7 +129,7 @@ async function askFinal() {
   const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
   const here = store.character?.location, me = store.user?.id;
   const n = 1 + Math.min(3, (p?.party ? p.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition).length);
-  const tail = '결전은 20분 동안 이어지고, 체력이 다하면 1분씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.';
+  const tail = '결전은 20분 동안 이어지고, 체력이 다하면 30초씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.';
   if (n === 1) return ask(`혼자서는 거의 이길 수 없습니다.\n구중 봉주는 넷이 함께 맞서도록 만든 최종 보스입니다. 같은 곳에 함께할 파티원이 없어 혼자 시작하게 됩니다.\n${tail}\n파티원을 모아 함께 오기를 강하게 권합니다.`,
     { title: '혼자서 결전을 엽니까?', ok: '그래도 혼자 시작', cancel: '돌아가기', alarm: true });
   const msg = { 2: '둘이서는 어렵지만 해볼 만한 싸움입니다. 회복품을 넉넉히 챙기고, 한 사람이 막는 동안 다른 사람이 몰아치세요.',
