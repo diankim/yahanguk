@@ -221,7 +221,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 가방 용량
 
 - 같은 물품은 묶음(world_item_catalog.stack_size)까지 한 칸: 장비·가구 1 · 탄 100 · 고급 소모품(진품 이상) 20 · 그 밖 재료·소모품·임무 물품 40(사용자 결정). 새 물품도 같은 기준. 희귀도 이름은 칭호 등급과 같음.
-- 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_inv_count·world_bag_room, core.js bagUsed). 기본 24칸, 넓히기: 이야기 1장(붉은 인장) +5·2~5장 +3씩·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
+- 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_inv_count·world_bag_room, core.js bagUsed). 기본 34칸(7.7.7p, bag_capacity 기본값), 넓히기: 이야기 1장(붉은 인장) +5·2~5장 +3씩·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
 - 완전 답사(+1칸)는 길·채집터를 찾을 때마다 판정(world_survey_award, world_exploration_discoveries·world_gathering_discoveries 삽입 트리거 trg_world_survey_award).
 - 장착 장비는 칸을 안 쓴다: inventory에 남으므로 서버는 장착 수만큼 용량을 더하고(world_bag_limit·world_enforce_bag_capacity·원정 귀환·보따리·직접 거래), core.js bagUsed는 뺀다. 장착 목록은 접속 때와 장착을 바꾸는 행동(장착·해제·원정 귀환·환골탈태·분해, core.js act) 뒤에만 다시 읽는다. 서버에서 가방 자리는 bag_capacity가 아니라 world_bag_limit으로 따진다.
 - 내주는 행동(구매·제작)은 가방이 넘치면 거절, 얻기만 하는 행동(전리품·채집)은 넘친 만큼 버리고 알림. 같은 갱신에서 물품이 줄기도 하면(마지막 한 방의 화살·회복품) world_enforce_bag_capacity가 맞바꾸기로 보고 거절하므로 얻기만 하는 함수는 yh.bag_drop을 켠다(world_battle_action).
@@ -233,8 +233,8 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 개인 창고(world_storage)
 
-- 어느 안전지대에서나 같은 창고, 기본 60칸(가방과 같은 묶음). world_storage_snapshot·world_storage_put·world_storage_take(들어가는 만큼)·world_storage_expand.
-- 넓히기(world_storage_capacity, 최대 98): 전 4번 +4씩(1,000·2,500·5,000·10,000전)·이야기 6~10장 +2씩·대세력 평판 300·600·1000 +2씩·완전 답사 10·20·30곳 +2씩. 줄어 넘쳐도 물품은 남고 맡기기만 막음.
+- 어느 안전지대에서나 같은 창고, 기본 70칸(가방과 같은 묶음). world_storage_snapshot·world_storage_put·world_storage_take(들어가는 만큼)·world_storage_expand.
+- 넓히기(world_storage_capacity, 최대 108): 전 4번 +4씩(1,000·2,500·5,000·10,000전)·이야기 6~10장 +2씩·대세력 평판 300·600·1000 +2씩·완전 답사 10·20·30곳 +2씩. 줄어 넘쳐도 물품은 남고 맡기기만 막음.
 - 보기는 어디서나(snapshot can_move·reason·in_safe, 가방 › 제작 「창고 보기」), 맡기기·꺼내기는 안전지대만. 버리기 world_storage_discard는 어디서나(잠금·귀속 소모품 거절). 장착 중·강화한 장비의 마지막 하나·임무 물품은 못 맡기고, 전투불능·이동·원정·자율 중엔 못 씀(world_storage_check, world_seal_guard). 행동 기록 없음.
 - 안전지대 제작은 world_craft_item이 모자란 재료를 창고에서 꺼내 씀(가방 먼저, 반요촌 제외), 제작 화면 재료 수에 창고 몫 표시. 결과가 가방에 안 들어가면 제작 전에 거절.
 - 창고 창 분류 칩·이름 찾기(services.js renderStorage, 줄만 숨김).

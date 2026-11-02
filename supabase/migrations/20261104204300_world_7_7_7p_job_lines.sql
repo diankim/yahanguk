@@ -468,6 +468,20 @@ insert into public.world_title_catalog(title_key, title_name, icon, description,
 on conflict (title_key) do update set title_name = excluded.title_name, description = excluded.description, condition_text = excluded.condition_text,
   bonus = excluded.bonus, hidden = excluded.hidden, rule = excluded.rule, category = excluded.category, grade = excluded.grade;
 
+-- ── 6. 가방·창고 기본 10칸씩 더(직업을 바꿔 키우면 직업 전용 무기·장비를 여러 벌 챙기므로) ─────
+-- 가방 기본 24 → 34(새 캐릭터 기본값, 롤백 뒤 모두 새로 만든다), 창고 기본 60 → 70(최대 98 → 108)
+alter table public.world_characters alter column bag_capacity set default 34;
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_storage_capacity');
+  if position($a$'base', 70$a$ in d) = 0 then
+    d := pg_temp.rep(d, $a$'base', 60$a$, $a$'base', 70$a$);
+    d := pg_temp.rep(d, $a$'total', 60 + $a$, $a$'total', 70 + $a$);
+    execute d;
+  end if;
+end $p$;
+
 -- 확인: 모든 무기에 직업 태그, 새 계열 18개씩
 do $c$
 begin
