@@ -21,7 +21,7 @@ export function mountWhisper(button) {
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 60000) refresh(); });
 }
 
-// ── 귓속말 새 창과 나눠 쓰기(7.5.4): 새 창이 떠 있으면 본 창은 목록을 읽지 않고, 귓속말 단추·[귓속말]은 그 창을 앞으로 가져온다 ──
+// ── 귓속말 새 창과 나눠 쓰기: 새 창이 떠 있으면 본 창은 목록을 읽지 않고, 귓속말 단추·[귓속말]은 그 창을 앞으로 가져온다 ──
 // 브라우저 안 신호(BroadcastChannel 'yh-pop'): 새 창 → wh-open(열릴 때·20초마다)·wh-closed·wh-unread(안 읽은 수), 본 창 → wh-ping·wh-target(열 상대)
 let whOut = false, whBeat = 0, wbc = null;
 const isPopWin = () => document.body.classList.contains('pop-win');
@@ -97,7 +97,7 @@ export function onWhisper(m) {
   } else if (m.sender_id !== me) {
     toast(`귓속말 · ${m.sender_name || '조사원'}: ${String(m.content || '').slice(0, 40)}`);
   }
-  // 띠로링(7.5.6): 받은 지 2분 안의 귓속말만(다시 잇기로 채운 지난 말은 울리지 않음), 보고 있는 대화에 온 말은 울리지 않음
+  // 띠로링: 받은 지 2분 안의 귓속말만(다시 잇기로 채운 지난 말은 울리지 않음), 보고 있는 대화에 온 말은 울리지 않음
   if (m.sender_id !== me && (!m.created_at || Date.now() - new Date(m.created_at) < 120000) && !(open && document.hasFocus())) playAlarm('whisper', 'w:' + m.id);
   if (!whOut || isPopWin()) refreshSoon();
 }
@@ -115,7 +115,7 @@ export function openWhisperWindow(target) {
   const m = openModal({ title: '귓속말', wide: true, onClose: () => { box = null; cur = null; }, body: '<div class="wh-host"></div>' });
   buildUI($('.wh-host', m), target);
 }
-// 새 창(7.5.4, 제보 54): ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
+// 새 창: ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
 export function mountWhisperPage(el) {
   pageHost = el;
   buildUI(el).then(() => { if (!cur && wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name }); });

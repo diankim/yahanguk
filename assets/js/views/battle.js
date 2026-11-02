@@ -5,7 +5,7 @@ import { chip } from './common.js';
 import { USABLE } from './item.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-// 직업 이름은 core.js JOBS 하나에서(7.7.7o)
+// 직업 이름은 core.js JOBS 하나에서
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
 export const INTENT = {
   strike: ['공격', '평범한 공격입니다.', 0], heavy: ['강타 준비', '큰 피해가 옵니다. 방어하면 4분의 1로 줄이고, 근접 무기면 받아칩니다.', 2],
@@ -30,7 +30,7 @@ const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '�
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 // 현장 토벌에서 쓸 수 있는 물품(서버 world_battle_action이 받는 11가지와 같다 — 음식·반요 고약은 토벌 중에 못 씀). 파티 토벌(pfight.js)도 이 목록을 쓴다. 효과 문구는 item.js USABLE(서버 use_fx)에서
 const ITEM_IDS = ['tonic', 'herbal_extract', 'herb', 'ward_talisman', 'rejuv_pill', 'grand_pill', 'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
-// 물품 칸에 보일 것: 보통 물품과 우수품(<id>_hq)을 함께(7.7.1 — 보통 id만 보아 우수품만 가진 사람에게는 단추가 뜨지 않았다. 서버는 world_item_base로 받는다)
+// 물품 칸에 보일 것: 보통 물품과 우수품(<id>_hq)을 함께(보통 id만 보아 우수품만 가진 사람에게는 단추가 뜨지 않았다. 서버는 world_item_base로 받는다)
 // always: 앞에서 몇 가지는 없어도 잠긴 단추로 보인다
 export function trayList(inv, always = 0) {
   return ITEM_IDS.flatMap((k, i) => { const d = USABLE[k] || ''; return [[k, d, i < always], [`${k}_hq`, `${d} · 우수품 +15%`, false]]; })
@@ -46,7 +46,7 @@ export function effectiveness(style, eff) {
 let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 
 // box: 그릴 곳, snap: world_field_snapshot, done: 전투가 끝나면 부를 함수
-// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(7.7.3, 행동 칸 여섯째)
+// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(행동 칸 여섯째)
 let callOpt = null;
 export function renderBattle(box, snap, done, opts) {
   host = box; data = snap; onEnd = done; callOpt = opts?.call ? opts : null;
@@ -56,7 +56,7 @@ export function renderBattle(box, snap, done, opts) {
   draw();
 }
 export function stopBattle() { clearInterval(cdTimer); host = null; }
-// 퀵슬롯·가방에서 누른 물품도 이 전투의 「물품」 행동으로 쓴다(7.7.2b — 턴이 지나감, core.js battleItemRoute)
+// 퀵슬롯·가방에서 누른 물품도 이 전투의 「물품」 행동으로 쓴다(턴이 지나감, core.js battleItemRoute)
 window.addEventListener('yh-battle-item', e => {
   if (!host?.isConnected || !data?.battle) return;
   e.detail.handled = true;
@@ -123,7 +123,7 @@ function draw(fresh = []) {
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
   const cb = $('#act-call', host); if (cb && callOpt?.onCall) cb.onclick = () => callOpt.onCall(cb);
-  // 기척 숨기기(7.2.7): 마주친 직후 한 번만. 맞서기를 고르면 묻는 칸만 닫는다(첫 행동을 하면 서버도 더는 받지 않는다)
+  // 기척 숨기기: 마주친 직후 한 번만. 맞서기를 고르면 묻는 칸만 닫는다(첫 행동을 하면 서버도 더는 받지 않는다)
   $('[data-sneak]', host)?.addEventListener('click', () => send('sneak'));
   $('[data-sneak-no]', host)?.addEventListener('click', () => { $('#sneak-ask', host)?.remove(); });
   clearInterval(cdTimer); cdTimer = setInterval(tickCooldown, 50); tickCooldown();
@@ -144,7 +144,7 @@ function tickCooldown() {
 }
 
 let busy = false;
-// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다(7.5.9).
+// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다.
 // 서버(world_battle_action)가 남기는 기록 문구로 알아보고, 같은 알림은 5초에 한 번만
 const WEAK = [[/쏠 것이 떨어져/, '화살(탄)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
 const weakAt = {};

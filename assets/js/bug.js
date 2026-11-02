@@ -69,7 +69,7 @@ async function send(body) {
         <p class="bug-text">${esc(x.body)}</p>${x.reply ? `<p class="bug-reply"><b>운영진 답</b> ${esc(x.reply)}</p>` : ''}
         <div class="btn-row bug-del-row"><button class="btn small ghost" data-del="${x.report_id}" type="button">지우기</button></div></li>`).join('')}</ul>`
       : '<p class="muted small">아직 보낸 제보가 없습니다.</p>';
-    // 보낸 제보 지우기(7.7.4): 내 목록에서만 감추고, 운영진에게는 「보낸 이가 지움」으로 남는다
+    // 보낸 제보 지우기: 내 목록에서만 감추고, 운영진에게는 「보낸 이가 지움」으로 남는다
     $$('[data-del]', body).forEach(b => b.onclick = async () => {
       if (!await ask('이 제보를 내 목록에서 지울까요? 운영진에게 이미 전달된 내용은 처리 기록으로 남습니다.', { ok: '지우기' })) return;
       guard(b, async () => { const res = await act('world_bug_report_hide', { p_report: Number(b.dataset.del) }); send(body); return res; });

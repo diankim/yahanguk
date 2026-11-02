@@ -1,11 +1,11 @@
-// 환경음 재료(7.5.9i 다듬기, 사용자 요청): 비·바람·물·새·풀벌레·부엉이·물방울.
+// 환경음 재료: 비·바람·물·새·풀벌레·부엉이·물방울.
 // sound.js가 실제 소리 장치(ctx)와 환경음 길(dest)을 넘겨 부르고, tools/ambience_preview가 같은 함수로 미리듣기를 굽는다.
 // 화면·서버와 상관없는 순수 함수만 둔다(다른 파일을 불러오지 않음).
 
 // 빗소리 바탕: 아주 짧은 빗방울 수천 개를 버퍼에 직접 흩뿌려 만든다(흰 잡음을 거르면 「촤아」 하는 쇳소리가 나서).
 // 버퍼 끝과 처음을 이어 붙이도록 방울을 길이로 감아 넣어 되풀이 이음매가 없다.
 // rate: 1초에 떨어지는 작은 방울 수, big: 1초에 떨어지는 굵은 「톡」 수, tone: 방울 울림(높을수록 잎·처마, 낮을수록 땅)
-// soft: 잔방울의 잡음 몫을 줄이고 첫소리를 무르게(세우가 「찌직」거리지 않게, 7.5.9k)
+// soft: 잔방울의 잡음 몫을 줄이고 첫소리를 무르게(세우가 「찌직」거리지 않게)
 export function rainBuffer(ctx, { seconds = 12, rate = 160, big = 6, tone = 1, bigAmp = 1, soft = 0 } = {}) {
   const sr = ctx.sampleRate, len = Math.floor(sr * seconds), buf = ctx.createBuffer(2, len, sr);
   for (let ch = 0; ch < 2; ch++) {
@@ -51,7 +51,7 @@ function loopBuf(ctx, dest, b, hp, lp) {
 }
 // 층마다 (ctx, dest, 재료) → 멈출 소리 목록
 export const LAYERS = {
-  // 세우(7.5.9k, 사용자 요청): 처마·잎에서 간헐적으로 떨어지는 「똑 · 또독」이 주인공이고,
+  // 세우: 처마·잎에서 간헐적으로 떨어지는 「똑 · 또독」이 주인공이고,
   // 장우와 같은 빗소리 결은 아주 작게 뒤에 깐다(잔방울만 겹치면 물 흐르는 소리처럼 들렸다).
   drizzle: (ctx, dest, m) => {
     const drops = m.drizzleBuf || (m.drizzleBuf = rainBuffer(ctx, { seconds: 17, rate: 0, big: 1.6, tone: 1.25, bigAmp: 1 }));
@@ -62,14 +62,14 @@ export const LAYERS = {
   },
   // 장우: 촘촘한 방울 두 겹(가까운 것·먼 것) + 낮은 바탕 — 같은 방울 결이라 세우보다 굵고 빽빽할 뿐 쇳소리가 없다
   rain: (ctx, dest, m) => {
-    // 7.5.9k: 땅·지붕을 고르게 적시는 빽빽한 빗소리(방울을 더 촘촘히, 높은 결은 4kHz에서 부드럽게 접음), 낮은 바탕은 줄임
+    // 땅·지붕을 고르게 적시는 빽빽한 빗소리(방울을 더 촘촘히, 높은 결은 4kHz에서 부드럽게 접음), 낮은 바탕은 줄임
     const b = m.rainBuf || (m.rainBuf = rainBuffer(ctx, { seconds: 12, rate: 1500, big: 10, tone: 0.8, bigAmp: 0.6 }));
     const g = ctx.createGain(); g.gain.value = 0.17; g.connect(dest);
     const far = ctx.createGain(); far.gain.value = 0.14; far.connect(dest);
     const lo = ctx.createGain(); lo.gain.value = 0.12; lo.connect(dest);
     return [loopBuf(ctx, g, b, 220, 4000), loopBuf(ctx, far, b, 160, 1500), bed(ctx, lo, m.brown, 380)];
   },
-  // 바람(7.5.9k, 사용자 요청 「휘이잉 휘이잉」): 좁은 띠로 거른 잡음이 휘파람처럼 울고, 돌풍마다 소리가 크게 일었다 잦아든다.
+  // 바람(「휘이잉 휘이잉」): 좁은 띠로 거른 잡음이 휘파람처럼 울고, 돌풍마다 소리가 크게 일었다 잦아든다.
   // 돌풍은 미리 그린 세기 곡선(2.5~5초짜리 돌풍 사이에 짧은 쉼)을 되풀이해 세기와 음 높이를 함께 흔들고,
   // 높이·곡선이 다른 바람 세 갈래가 엇갈려 여러 바람이 겹쳐 분다. 낮은 웅웅거림은 넣지 않는다.
   wind: (ctx, dest, m) => {

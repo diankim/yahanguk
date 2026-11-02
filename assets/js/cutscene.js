@@ -1,6 +1,6 @@
 // 컷씬: 롤백 순간(점검 페이지, maintenance.json scene 'rollback')과 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞).
 // 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고, 「건너뛰기」는 마지막 장면으로 보내며, 마지막 장면의 [닫기]로만 닫는다(롤백 점검 중에는 닫기 없음).
-// 게임 화면은 평면이 원칙이지만 컷씬만은 사용자 요청으로 흐림·질감(SVG 잡음 필터)을 써 실감 나게 그린다.
+// 게임 화면은 평면이 원칙이지만 컷씬만은 흐림·질감(SVG 잡음 필터)을 써 실감 나게 그린다.
 // 움직임 줄이기 설정이면 흔들림·흐름은 멈추고 장면 전환만 남는다.
 
 const ZONES = ['반요촌', '무극 관성대', '십삼문 암시장', '철벽 고찰', '잔불촌', '백골 장터', '구름나루', '백등 야시장', '본부 객사', '본부 정청'];
@@ -349,7 +349,7 @@ export function loginMusic() {
 
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
 //       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때), fixed — 마지막 장면에 고정(다시 보기 없음)
-// 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(7.5.8, 처음부터 늘 보임)
+// 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(처음부터 늘 보임)
 export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false, fixed = false } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;

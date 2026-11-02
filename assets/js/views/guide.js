@@ -4,23 +4,68 @@ import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
+import { GAMEDATA as GD } from '../gamedata.js';
 
-// 대세력 이야기(7.3.5): 교리·근거지·가입 받는 곳·적대·이점을 한 장씩. 이름·성격·소개는 common.js MAJOR_FACTIONS가 원본.
+/* ── 서버 수치로 그리는 표(gamedata.js — tools/gamedata/gen.py가 만든다) ── */
+const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
+const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
+const regionName = id => GD.regionNames[id] || id;
+const factionNames = ids => ids.map(x => MAJOR_FACTIONS[x]?.name || x).join('·') || '없음';
+// 직업과 역할: 이름·역할·효과는 core.js JOBS, 기본 능력치는 서버(5 이상만, 높은 순)
+function jobTableHtml() {
+  const row = k => { const j = JOBS[k];
+    const stats = Object.entries(j.base).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([s, v]) => `${STAT_KO[s]} ${v}`).join('<br>');
+    return `<tr><td><b>${esc(j.name)}</b><br>${esc(j.trait)}${j.sub ? `<br>${esc(j.sub)}` : ''}</td><td>${stats}</td><td>${(j.fx || []).map(esc).join('<br>')}</td></tr>`; };
+  return `<table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
+    ${['artificer', 'scout', 'exorcist', 'medic', 'sealmaster', 'analyst'].map(row).join('')}</table>`;
+}
+// 협동 기술(서버 world_coop_skills): 「직업과 역할」과 「합동 토벌」 두 곳이 같은 표를 쓴다
+function coopTableHtml() {
+  const band = k => `<tr class="g-band"><th colspan="4">${esc(JOBS[k].name)} · ${esc(JOBS[k].trait)}</th></tr>` +
+    GD.coop.filter(c => c.job === k).sort((a, b) => a.rank - b.rank)
+      .map(c => `<tr><td>${c.rank}</td><td><b>${esc(c.name)}</b></td><td>${esc(c.desc)}</td><td>${c.cost} · ${c.cd}초</td></tr>`).join('');
+  return `<table class="guide-table"><tr><th>숙련</th><th>협동 기술</th><th>효과</th><th>영력 · 다시 쓰기</th></tr>
+    ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(band).join('')}</table>`;
+}
+const coopRanks = () => [...new Set(GD.coop.map(c => c.rank))].sort((a, b) => a - b).join('·');
+// 혼자 도전할 때의 직업 보정(서버 world_solo_aid): 귀허 solo_dmg · 결전 final_dmg · 받는 피해 solo_guard
+function soloAidHtml() {
+  const cell = (a, key) => pctTxt(a[key] || 0) + (a.solo_guard ? ` · 받는 피해 −${a.solo_guard}%` : '');
+  return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
+    ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
+      return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;
+}
+// 세력 관계의 처음 값(서버 world_faction_relations.base): 동맹·우호·적대인 짝만
+function relStartHtml() {
+  const fn = k => MAJOR_FACTIONS[k]?.name || k;
+  const groups = [['동맹', v => v >= 40], ['우호', v => v >= 15 && v < 40], ['적대', v => v <= -40]]
+    .map(([n, f]) => [n, GD.factionRel.filter(r => f(r[2])).map(r => `${fn(r[0])}–${fn(r[1])}`)]).filter(g => g[1].length);
+  return groups.length ? `<li>처음 값: ${groups.map(([n, l]) => `<b>${n}</b> ${esc(l.join(' · '))}`).join(' / ')}. 나머지는 중립입니다.</li>` : '';
+}
+// 세력 안전지대(서버 world_faction_home): 비고·수련장·기부를 쓰는 곳
+function factionHomeTableHtml() {
+  return `<table class="guide-table"><tr><th>세력</th><th>안전지대</th></tr>
+    ${Object.entries(GD.factionHome).map(([k, ids]) => `<tr><td>${esc(MAJOR_FACTIONS[k]?.name || k)}</td><td>${esc(ids.map(regionName).join(' · '))}${FACTION_LORE[k]?.homeNote ? `. ${esc(FACTION_LORE[k].homeNote)}` : ''}</td></tr>`).join('')}</table>`;
+}
+const GRADE_KO = ['', '범품', '양품', '진품', '명품', '신품'];
+const petCount = g => `${GRADE_KO[g]} ${GD.pets.grades[g] || 0}종`;
+
+// 대세력 이야기: 교리·근거지·이점을 한 장씩. 이름·성격·소개는 common.js MAJOR_FACTIONS, 안전지대·가입 받는 곳·적대는 서버(gamedata.js)가 원본.
 const FACTION_LORE = {
-  night_office: { doctrine: '변칙을 기록하고 봉인하되, 인간 사회의 균형을 우선한다.', land: '야행국 직할령', home: '본부 정청·본부 객사', join: '본부 정청·본부 객사·귀죽림', foe: '적월교·흑련회', perk: '공인 조사 수당: 원정 귀환 경험치·숙련 경험·전 +15% · 법적 권한: 어디서든 본부 구조대가 반값이고, 경험치를 잃지 않으며, 체력 50으로 깨어남', rank: '단서 +2%씩', name2: '공훈' },
-  red_moon_cult: { doctrine: '강한 자만이 금기를 다룰 자격이 있으며, 요기의 흡수는 진화다.', land: '적월 교령', home: '백골 장터. 월식성은 안전지대가 아닙니다', join: '적월교 월식성·백골 장터·적사 황무지·본부 정청', foe: '야행국 정통파·북령맹', perk: '강행 태세 원정의 전리품 +15%', rank: '주는 피해 +1%씩', name2: '교도 위계' },
-  black_lotus: { doctrine: '진실은 기록되지 않은 곳에 있고, 이름과 기억은 거래될 수 있다.', land: '흑련 지하회랑', home: '십삼문 암시장', join: '십삼문 암시장·등잔골 뒷골목·본부 정청', foe: '야행국 정통파·천명원', perk: '정보망: 희귀품 발견 +5% · 암시장 줄: 상점 하루 판매 한도 +500전', rank: '희귀품 +1%씩 · 그림자 장부: 상점 판매 한도 +300전씩', name2: '인연채무' },
-  north_league: { doctrine: '무력은 약자를 지키고 산문과 맹약을 수호하기 위해 존재한다.', land: '북령 맹약지', home: '철벽 고찰', join: '철벽 고찰·설피골·본부 정청', foe: '적월교', perk: '원정 중 받는 피해 −20%', rank: '받는 피해 −1%씩', name2: '맹공' },
-  river_alliance: { doctrine: '강과 길은 누구의 소유도 아니며, 거래와 항행이 생존을 만든다.', land: '수향 연맹령', home: '구름나루', join: '구름나루·염등촌·본부 정청', foe: '없음', perk: '가방 +6칸 · 뱃길: 배를 타면 빠르고 운임이 없음', rank: '세금 −20%씩 · 이동 시간 −2%씩', name2: '신용' },
-  southern_remnant: { doctrine: '멸망한 나라의 기억을 지키고 빼앗긴 땅을 되찾는다.', land: '남명 망국령', home: '잔불촌', join: '잔불촌·불씨 고개·본부 정청', foe: '천명원', perk: '원정 채집량 +15%', rank: '채집량 +2%씩', name2: '잔불' },
-  mandate_court: { doctrine: '천명은 관측하고 관리해야 할 법칙이며, 예언은 권력이다.', land: '천명 상계', home: '무극 관성대. Lv25 전에는 본부 객사 분소', join: '무극 관성대·별바라기 언덕·본부 정청·본부 객사', foe: '흑련회', perk: '원정 답사도 상승 +20%', rank: '요괴 조우 −2%씩 · 날씨·시간대 불이익 10%씩 덜 받기', name2: '천문 허가' },
+  night_office: { doctrine: '변칙을 기록하고 봉인하되, 인간 사회의 균형을 우선한다.', land: '야행국 직할령', perk: '공인 조사 수당: 원정 귀환 경험치·숙련 경험·전 +15% · 법적 권한: 어디서든 본부 구조대가 반값이고, 경험치를 잃지 않으며, 체력 50으로 깨어남', rank: '단서 +2%씩', name2: '공훈' },
+  red_moon_cult: { doctrine: '강한 자만이 금기를 다룰 자격이 있으며, 요기의 흡수는 진화다.', homeNote: '월식성은 안전지대가 아닙니다', land: '적월 교령', perk: '강행 태세 원정의 전리품 +15%', rank: '주는 피해 +1%씩', name2: '교도 위계' },
+  black_lotus: { doctrine: '진실은 기록되지 않은 곳에 있고, 이름과 기억은 거래될 수 있다.', land: '흑련 지하회랑', perk: '정보망: 희귀품 발견 +5% · 암시장 줄: 상점 하루 판매 한도 +500전', rank: '희귀품 +1%씩 · 그림자 장부: 상점 판매 한도 +300전씩', name2: '인연채무' },
+  north_league: { doctrine: '무력은 약자를 지키고 산문과 맹약을 수호하기 위해 존재한다.', land: '북령 맹약지', perk: '원정 중 받는 피해 −20%', rank: '받는 피해 −1%씩', name2: '맹공' },
+  river_alliance: { doctrine: '강과 길은 누구의 소유도 아니며, 거래와 항행이 생존을 만든다.', land: '수향 연맹령', perk: '가방 +6칸 · 뱃길: 배를 타면 빠르고 운임이 없음', rank: '세금 −20%씩 · 이동 시간 −2%씩', name2: '신용' },
+  southern_remnant: { doctrine: '멸망한 나라의 기억을 지키고 빼앗긴 땅을 되찾는다.', land: '남명 망국령', perk: '원정 채집량 +15%', rank: '채집량 +2%씩', name2: '잔불' },
+  mandate_court: { doctrine: '천명은 관측하고 관리해야 할 법칙이며, 예언은 권력이다.', homeNote: '본부 객사는 Lv25 전의 분소', land: '천명 상계', perk: '원정 답사도 상승 +20%', rank: '요괴 조우 −2%씩 · 날씨·시간대 불이익 10%씩 덜 받기', name2: '천문 허가' },
 };
 function factionLoreHtml() {
   return `<p>대세력은 Lv5부터 하나만 들 수 있는 세계의 큰 세력입니다.</p><ul><li>처음에 고르는 <b>소속</b>과는 다릅니다. 소속은 본부 직속 등 6가지이고 바꿀 수 없지만, 대세력은 들고 나기를 고를 수 있습니다.</li><li>가입은 아래 「가입 받는 곳」에서 캐릭터 › 세력으로 합니다.</li></ul>` +
     Object.entries(FACTION_LORE).map(([k, l]) => { const f = MAJOR_FACTIONS[k] || {}; return `<div class="lore-card"><p><b>${esc(f.name || k)}</b> <small class="muted">${esc(f.type || '')}</small></p>
       <p class="muted small">「${esc(l.doctrine)}」</p><p>${esc(f.desc || '')}</p>
-      <ul><li><b>근거지</b> ${esc(l.land)}</li><li><b>안전지대</b> ${esc(l.home)}</li><li><b>가입 받는 곳</b> ${esc(l.join)}</li><li><b>가입 조건</b> ${esc(f.entry || '')}</li>
-        <li><b>이점</b> ${esc(l.perk)}</li><li><b>등급 효과</b> 2~5등급마다 ${esc(l.rank)}</li><li><b>적대</b> ${esc(l.foe)}</li><li><b>평판의 이름</b> ${esc(l.name2)}</li></ul></div>`; }).join('');
+      <ul><li><b>근거지</b> ${esc(l.land)}</li><li><b>안전지대</b> ${esc((GD.factionHome[k] || []).map(regionName).join('·'))}${l.homeNote ? `. ${esc(l.homeNote)}` : ''}</li><li><b>가입 받는 곳</b> ${esc((GD.factionJoin[k] || []).map(regionName).join('·'))}</li><li><b>가입 조건</b> ${esc(f.entry || '')}</li>
+        <li><b>이점</b> ${esc(l.perk)}</li><li><b>등급 효과</b> 2~5등급마다 ${esc(l.rank)}</li><li><b>적대</b> ${esc(factionNames(GD.factionHostile[k] || []))}</li><li><b>평판의 이름</b> ${esc(l.name2)}</li></ul></div>`; }).join('');
 }
 
 const S = [
@@ -34,7 +79,7 @@ const S = [
           <li><em>채집</em>·<em>탐사 지점 조사</em>: 재료와 단서를 모읍니다.</li></ul></li>
       <li><b>첫 원정</b> 같은 화면의 <em>원정</em>에서 「비젖은 돌길」을 골라 30분·신중 태세로 보내 보세요. 돌아오면 전투·채집·발견 결과와 함께 지역 답사도가 오릅니다.</li>
       <li><b>성장</b> 모은 재료로 가방 › 제작에서 도구나 장비를 만듭니다. 레벨이 오르면 캐릭터 › 성장에서 능력치를 나눕니다. 자세한 것은 「제작」 항목에 있습니다.</li>
-      <li><b>정리</b> 가방은 처음 34칸이고, 같은 물품은 묶음으로 쌓입니다. 가득 차면 안전지대로 돌아가 팔거나, 거래소에 올리거나, 창고에 맡기고 다시 떠나세요. 자세한 것은 「가방」 항목에 있습니다.</li>
+      <li><b>정리</b> 가방은 처음 ${GD.bag.base}칸이고, 같은 물품은 묶음으로 쌓입니다. 가득 차면 안전지대로 돌아가 팔거나, 거래소에 올리거나, 창고에 맡기고 다시 떠나세요. 자세한 것은 「가방」 항목에 있습니다.</li>
     </ol>
     <p>야행국의 기본 흐름은 이 순환입니다. <b>안전지대에서 준비 → 위험 지역에서 전투·채집·원정 → 돌아와 제작·판매·성장</b>.</p>`],
   ['screen', '화면 구성', `
@@ -155,13 +200,13 @@ const S = [
     </ul>
     <h4>창고</h4>
     <ul>
-      <li>어느 안전지대에서 열어도 <b>같은 개인 창고</b>입니다. 기본 70칸이고, 칸은 가방처럼 묶음으로 셉니다.</li>
+      <li>어느 안전지대에서 열어도 <b>같은 개인 창고</b>입니다. 기본 ${GD.storage.base}칸이고, 칸은 가방처럼 묶음으로 셉니다.</li>
       <li>꺼낼 때는 가방에 들어가는 만큼만 꺼냅니다.</li>
       <li><b>맡길 수 없는 것</b>: 장착 중인 마지막 하나 · 강화한 장비의 마지막 하나 · 임무 물품</li>
       <li>가방의 물품 정보에서 바로 맡길 수도 있습니다. 가방 목록에는 물품마다 창고에 든 수가 함께 적힙니다.</li>
       <li><b>안전지대 밖에서</b>: 가방 › 제작의 「창고 보기」로 <b>들어 있는 것을 보고 버릴 수 있습니다</b>. 맡기기·꺼내기는 안전지대에서만, 그리고 전투불능·이동·원정·자율 활동이 아닐 때만 됩니다.</li>
-      <li><b>넓히기</b>: 최대 108칸까지 넓힙니다.
-        <ul><li><b>전</b>: 4번, +4칸씩 · 1,000 → 2,500 → 5,000 → 10,000전</li>
+      <li><b>넓히기</b>: 최대 ${GD.storage.max}칸까지 넓힙니다.
+        <ul><li><b>전</b>: ${GD.storage.prices.length}번, +4칸씩 · ${GD.storage.prices.map(v => v.toLocaleString('ko-KR')).join(' → ')}전</li>
           <li><b>이야기 6~10장</b>: 해결마다 +2</li>
           <li><b>대세력 평판</b>: 300·600·1,000에서 +2씩. 세력을 떠나면 사라집니다.</li>
           <li><b>지역 완전 답사</b>: 10·20·30곳에서 +2씩</li></ul></li>
@@ -389,7 +434,7 @@ const S = [
     </ul>
     <h4>기술 칭호</h4>
     <ul>
-      <li>기술 칭호는 32개입니다.
+      <li>기술 칭호는 ${GD.titles.skill}개입니다.
         <ul><li>제작 계열마다 15·35·50단계</li>
           <li>채집 계열마다 25·50단계</li>
           <li>모든 제작 계열 50단계 · 모든 채집 계열 50단계</li></ul></li>
@@ -403,7 +448,7 @@ const S = [
       <li><b>장착 조건</b>: 채집 도구는 채집 숙련, 탐사 장비는 조사 숙련 단계를 봅니다. 능력치 조건은 없습니다.</li>
       <li>채집도·곡괭이·낚싯대·나침반·제작 공구가 Lv40 무렵까지 단계별로 있습니다.</li>
       <li><b>생활 도구 효과</b>
-        <ul><li>영맥 낫은 약초·영기 채집터에서 3% 확률로, 영등은 유물 채집터나 어두운 지역에서 5% 확률로 그 지역 희귀품을 함께 거둡니다. 영맥 낫은 월궁 사수 전용입니다.</li>
+        <ul><li>영맥 낫은 약초·영기 채집터에서 3% 확률로, 영등은 유물 채집터나 어두운 지역에서 5% 확률로 그 지역 희귀품을 함께 거둡니다. 생활 도구는 직업과 상관없이 누구나 씁니다.</li>
           <li>영맥 나침반은 탐색에서 길·채집터를 찾는 확률을 1.2배로 높입니다.</li>
           <li>낚싯대는 높은 단계일수록 입질·희귀 어종·큰 물고기가 좋아집니다.</li></ul></li>
       <li><b>제작 공구</b>: 망치 · 바늘집 · 증류기 · 각인도 · 식칼.
@@ -420,7 +465,7 @@ const S = [
         <ul><li>탐색력 1을 쓰고, 20초마다 던질 수 있습니다.</li>
           <li>원정·전투·이동 중에는 낚을 수 없습니다.</li></ul></li>
     </ul>
-    <h4>낚시터 24곳</h4>
+    <h4>낚시터 ${GD.fish.grounds}곳</h4>
     <table class="guide-table"><tr><th>물</th><th>낚시터</th></tr>
       <tr><td>강</td><td>백지교 · 구름나루</td></tr>
       <tr><td>늪</td><td>천엽 연화늪 · 폐쇄된 연화원 · 잿빛 갈대숲</td></tr>
@@ -432,7 +477,7 @@ const S = [
     <ul><li>일지 › 도감에서 낚시터마다 바로 갈 수 있습니다.</li></ul>
     <h4>어종</h4>
     <ul>
-      <li>어종은 37종입니다. 물가마다 사는 어종이 다릅니다.</li>
+      <li>어종은 ${GD.fish.species}종입니다. 물가마다 사는 어종이 다릅니다.</li>
       <li>어떤 어종은 특정 <b>시간대·날씨</b>에만 잘 뭅니다. 예를 들어 먹물 메기는 삼경, 용왕 참돔은 장우에 잘 뭅니다.</li>
       <li>바다 어종 가운데 몇은 <b>그 낚시터에서만</b> 나옵니다.
         <ul><li>먹빛 노래미: 십삼문</li>
@@ -448,7 +493,7 @@ const S = [
     <h4>도감과 칭호</h4>
     <ul>
       <li>일지 › 도감에서 잡은 어종·마릿수·가장 큰 크기를 확인합니다.</li>
-      <li><b>낚시 칭호</b> 11개에는 입질·희귀 어종·크기 효과가 있습니다. 도감을 채우거나, 큰 물고기를 낚거나, 바다 낚시터를 돌면 얻습니다.</li>
+      <li><b>낚시 칭호</b> ${GD.titles.cat['낚시']}개에는 입질·희귀 어종·크기 효과가 있습니다. 도감을 채우거나, 큰 물고기를 낚거나, 바다 낚시터를 돌면 얻습니다.</li>
     </ul>`],
   ['cooking', '요리', `
     <ul>
@@ -525,7 +570,7 @@ const S = [
     <h4>도구와 조건</h4>
     <ul>
       <li>필요한 도구를 장착해야 하는 제작법이 있습니다. 같은 계열의 높은 단계 도구로 대신할 수 있습니다. 「생활 장비와 공구」 항목을 보세요.</li>
-      <li>직업 전용 제작법은 그 직업만 만듭니다.</li>
+      <li>직업 전용 제작법은 없습니다. 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</li>
       <li>노정 건량은 누구나 만들 수 있습니다. 만든 장비는 원정과 전투 결과에 바로 반영됩니다.</li>
     </ul>
     <h4>제작 화면</h4>
@@ -533,7 +578,7 @@ const S = [
       <li><b>검색</b>: 위의 검색 칸은 제작법 이름·완성품 이름으로 찾습니다.</li>
       <li><b>거르기·정렬</b>: 칸을 펼쳐 분야 · 「만드는 것」 · 즐겨찾기로 거릅니다. 「만드는 것」은 장착 부위·제작 공구·소모품·재료·가구입니다. 정렬은 가능한 것 먼저 · 제작 레벨 낮은순 · 높은순입니다.</li>
       <li><b>즐겨찾기</b>: 제작법 이름 앞의 별을 누릅니다. 30개까지 되고, 어느 정렬에서도 먼저 보입니다.</li>
-      <li><b>카드</b>: 레벨·직업·기술 단계 같은 제작 조건이 보입니다. 채우면 초록, 못 채우면 빨강입니다. 장비에는 부위·단계와 효과가 적히고, 이름을 누르면 물품 정보가 뜹니다.</li>
+      <li><b>카드</b>: 레벨·기술 단계 같은 제작 조건이 보입니다. 채우면 초록, 못 채우면 빨강입니다. 장비에는 부위·단계와 효과가 적히고, 이름을 누르면 물품 정보가 뜹니다.</li>
       <li><b>여러 개 만들기</b>: 카드의 − n + 와 「전부」로 횟수를 정하고 「제작 ×n」을 누릅니다.
         <ul><li>「전부」는 가방·창고 재료로 만들 수 있는 만큼, 50번까지입니다.</li>
           <li>중간에 재료가 모자라면 거기서 멈추고 만든 만큼만 받습니다.</li></ul></li>
@@ -965,7 +1010,7 @@ const S = [
         <ul><li>현장 채집터에서 거둔 재료 32가지가 적힙니다.</li>
           <li>재료마다 나는 지역과 채집터가 한 줄로 보이고, 찾은 채집터 수와 출입 레벨도 적힙니다.</li>
           <li>아직 못 거둔 재료는 분류와 레벨만 보입니다.</li></ul></li>
-      <li><b>도감 칭호</b> 20개
+      <li><b>도감 칭호</b> ${GD.titles.cat['도감']}개
         <ul><li>갈래마다 하나. 예를 들어 비금 6종을 토벌하면 「매사냥꾼」입니다.</li>
           <li>요괴 20종·50종 토벌</li>
           <li>13갈래를 하나씩 토벌: 「백귀야행 기록관」</li>
@@ -990,47 +1035,11 @@ const S = [
       <li>한 능력치의 상한은 <b>직업 기본값 + 레벨×1.5</b>입니다.</li>
       <li>이름·직업·소속은 만든 뒤 바꿀 수 없습니다. 직업·소속은 귀속 물품 「환골탈태 서첩」으로만 다시 고릅니다.</li>
     </ul>
-    <table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
-      <tr><td><b>호위 무사</b><br>방패·수호</td><td>근력 9<br>체질 7<br>민첩 5</td><td>받는 피해 −12%<br>이목 +80(요괴가 먼저 노림)<br>공격력 ×0.85(방패를 든 만큼)<br>파갑참: 근접 ×1.7, 방어·결계 무시<br>원정 기술: 반격 태세</td></tr>
-      <tr><td><b>월궁 사수</b><br>원거리 공격</td><td>민첩 8<br>감각 8</td><td>원거리 피해 +8%<br>회피 +6<br>도주 +15<br>급소 사격: 반드시 치명타 · 표식<br>원정 기술: 선제 사격</td></tr>
-      <tr><td><b>퇴마관</b><br>술법 공격</td><td>영성 9<br>의지 7</td><td>술법 피해 +8%<br>술법 치명타 +6<br>받는 피해 −6%<br>이목 −15(몸은 약하지만 요괴 눈에 덜 띔)<br>퇴마진: 술법 ×2.0, 결계 깨기<br>원정 기술: 파사 부적</td></tr>
-      <tr><td><b>의무관</b><br>치유</td><td>의지 8<br>영성 7<br>체질 6</td><td>회복품 ×1.15, 파티원에게 쓰면 ×1.4<br>회복 +10%(의술 계열 기본 기술로 50단계까지 +35% 더)<br>응급 처방: 한 전투에 한 번, 25 소모. 체력 15 + 체질÷2 + 의지÷2 회복, 최대 40. 나쁜 상태도 걷어 냅니다.<br>원정 기술: 야전 처치</td></tr>
-      <tr><td><b>봉인술사</b><br>보조·버팀<br>북돋기·약화</td><td>의지 8<br>영성 7<br>체질 5</td><td>이목 +60 · 방어 +30 · 회피 +12(이목·방어는 호위 무사 다음, 회피는 월궁 사수 다음)<br>정신 손실 −10%<br>침식 −5%<br>봉인술: 묶기<br>원정 기술: 결계 야영</td></tr>
-      <tr><td><b>암영 검객</b><br>근접 공격</td><td>근력 8<br>민첩 6<br>체질 5<br>감각 5</td><td>근접 공격력 ×1.18(피해 상한과 따로)<br>단도 기술: 이목 −45%까지<br>근접 무기를 들면 치명타 +5<br>약점 간파: 다음 세 번 공격 강화<br>원정 기술: 급소 찌르기</td></tr></table>
+    ${jobTableHtml()}
     <p class="muted small">기본 능력치는 높은 순으로 적었고, 나머지 능력치는 3~4입니다. 원정 기술이 하는 일은 「직업별 원정 기술」에 있습니다.</p>
     <h4>직업별 협동 기술</h4>
     <p class="muted small">합동 토벌·10장 결전·귀허의 주인에서 그 턴의 행동으로 고릅니다. 전투 숙련 단계에 닿으면 열리고, 영력이 들며 다시 쓰기까지 시간이 있습니다.</p>
-    <table class="guide-table"><tr><th>숙련</th><th>협동 기술</th><th>효과</th><th>영력 · 다시 쓰기</th></tr>
-      <tr class="g-band"><th colspan="4">호위 무사 · 방패·수호</th></tr>
-      <tr><td>3</td><td><b>패턴 공유</b></td><td>보스의 다음 수를 알려 참가자 모두가 다음 한 번 받는 피해 −12%.</td><td>4 · 10초</td></tr>
-      <tr><td>8</td><td><b>대신 막기</b></td><td>12초 동안 그 동료를 노린 공격을 대신 맞는다(피해 절반).</td><td>4 · 8초</td></tr>
-      <tr><td>18</td><td><b>흐름 끊기</b></td><td>보스의 다음 반격 두 번을 막고, 기운을 모으는 중이면 더 늦춘다(봉연의 그림자 6초·그 밖 세 번).</td><td>9 · 22초</td></tr>
-      <tr><td>36</td><td><b>철벽 수호</b></td><td>세 번 동안 이목 +120으로 공격을 끌어오고 받는 피해 −30%.</td><td>12 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">암영 검객 · 근접 공격</th></tr>
-      <tr><td>3</td><td><b>그림자 찌르기</b></td><td>그림자에서 급소를 노린다. 내 다음 공격이 반드시 치명타.</td><td>3 · 8초</td></tr>
-      <tr><td>8</td><td><b>급소 드러내기</b></td><td>요괴의 급소를 드러내 다음 세 번 받는 피해 +15%.</td><td>6 · 15초</td></tr>
-      <tr><td>18</td><td><b>그림자 숨기</b></td><td>그림자에 몸을 숨겨 다음 두 번 회피 +40%.</td><td>6 · 18초</td></tr>
-      <tr><td>36</td><td><b>암영 난무</b></td><td>그림자처럼 몰아쳐 내 다음 세 번 공격 +40%.</td><td>14 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">월궁 사수 · 원거리 공격</th></tr>
-      <tr><td>3</td><td><b>약점 표시</b></td><td>참가자 모두의 다음 두 번 공격 치명타율 +15%.</td><td>4 · 10초</td></tr>
-      <tr><td>8</td><td><b>길 터주기</b></td><td>동료 한 명이 다음 두 번 공격을 피할 확률 +25%.</td><td>5 · 12초</td></tr>
-      <tr><td>18</td><td><b>연막</b></td><td>보스의 다음 두 번 단일 공격이 45% 확률로 빗나간다.</td><td>8 · 22초</td></tr>
-      <tr><td>36</td><td><b>추격 신호</b></td><td>참가자 모두의 다음 공격 피해 +25%.</td><td>10 · 25초</td></tr>
-      <tr class="g-band"><th colspan="4">퇴마관 · 술법 공격</th></tr>
-      <tr><td>3</td><td><b>약점 진언</b></td><td>동료 한 명의 다음 공격을 치명타로 만든다.</td><td>5 · 10초</td></tr>
-      <tr><td>8</td><td><b>파사 진언</b></td><td>동료 한 명이 다음에 받는 공격 한 번의 피해 −50%, 정신 +6.</td><td>6 · 15초</td></tr>
-      <tr><td>18</td><td><b>퇴마 결계</b></td><td>보스의 다음 광역 강타·터뜨림 피해를 절반으로 줄인다.</td><td>10 · 20초</td></tr>
-      <tr><td>36</td><td><b>멸마 진격</b></td><td>제 다음 세 번 공격 피해 +30%.</td><td>14 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">의무관 · 치유</th></tr>
-      <tr><td>3</td><td><b>응급 처치</b></td><td>동료 한 명의 체력을 20 회복한다(응급 처치 기술 단계만큼 더).</td><td>4 · 6초</td></tr>
-      <tr><td>8</td><td><b>해독 침</b></td><td>동료 한 명의 사슬 묶임을 풀고 체력을 10 회복한다.</td><td>6 · 12초</td></tr>
-      <tr><td>18</td><td><b>야전 소생</b></td><td>물러난 동료를 체력 35로 일으켜 숨 고르기를 끝낸다(봉연 토벌은 그 동료가 행동하면 싸움에 돌아가고, 귀허의 주인은 곧바로 돌아온다).</td><td>12 · 60초</td></tr>
-      <tr><td>36</td><td><b>회춘 진맥</b></td><td>참가자 모두의 체력을 15 회복한다.</td><td>14 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">봉인술사 · 보조·버팀</th></tr>
-      <tr><td>3</td><td><b>호신부 나누기</b></td><td>동료 한 명에게 호신부를 건넨다. 그 동료가 다음 세 번 받는 피해 −25%.</td><td>4 · 8초</td></tr>
-      <tr><td>8</td><td><b>기세 부적</b></td><td>동료 한 명의 다음 세 번 공격 피해 +20%.</td><td>6 · 12초</td></tr>
-      <tr><td>18</td><td><b>봉인 사슬</b></td><td>보스를 사슬로 묶는다. 다음 반격 한 번을 막고, 보스가 받는 피해가 여섯 번 동안 +15%.</td><td>10 · 20초</td></tr>
-      <tr><td>36</td><td><b>팔괘 결계</b></td><td>참가자 모두가 다음 두 번 받는 피해 −20%.</td><td>14 · 30초</td></tr></table>
+    ${coopTableHtml()}
     <h4>시작 장비</h4>
     <table class="guide-table"><tr><th>직업</th><th>시작 장비</th></tr>
       <tr><td>호위 무사</td><td>월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부</td></tr>
@@ -1097,14 +1106,7 @@ const S = [
           <li>이기면 공훈을 받습니다. 3·5등급 시련을 처음 넘으면 세력 칭호를, 5등급이면 세력 낙관도 받습니다.</li></ul></li>
     </ul>
     <h4>세력 안전지대</h4>
-    <table class="guide-table"><tr><th>세력</th><th>안전지대</th></tr>
-      <tr><td>정통파</td><td>본부 정청 · 객사</td></tr>
-      <tr><td>적월교</td><td>백골 장터</td></tr>
-      <tr><td>흑련회</td><td>십삼문 암시장</td></tr>
-      <tr><td>북령맹</td><td>철벽 고찰</td></tr>
-      <tr><td>수향연맹</td><td>구름나루</td></tr>
-      <tr><td>남명회</td><td>잔불촌</td></tr>
-      <tr><td>천명원</td><td>무극 관성대. Lv25 전에는 본부 객사 분소</td></tr></table>
+    ${factionHomeTableHtml()}
     <ul>
       <li>퀘스트에서 만난 인물은 「세력 인물」에 남습니다.</li>
       <li><b>세력 떠나기·옮기기</b>: 거점 칸의 「세력 떠나기」로 나옵니다.
@@ -1150,10 +1152,11 @@ const S = [
       <li>두 세력 조사원이 한 파티로 활동하면 한 시간에 최대 +1 움직입니다.</li>
       <li>같은 지역에서 둘 다 영향력을 쌓으면 최대 −1.5씩 움직입니다.</li>
       <li>그리고 천천히 처음 값으로 돌아갑니다.</li>
+      ${relStartHtml()}
     </ul>`],
   ['bag', '가방', `
     <ul>
-      <li>기본 <b>34칸</b>입니다. 같은 물품은 한 칸에 묶음으로 쌓입니다. 한 칸에 몇 개가 드는지는 물품 정보에 적혀 있습니다.
+      <li>기본 <b>${GD.bag.base}칸</b>입니다. 같은 물품은 한 칸에 묶음으로 쌓입니다. 한 칸에 몇 개가 드는지는 물품 정보에 적혀 있습니다.
         <ul><li>장비·가구: 1개</li>
           <li>화살·쇠뇌살·취관 침: 100개</li>
           <li>진품 이상 고급 소모품: 20개</li>
@@ -1384,13 +1387,7 @@ const S = [
     </ul>
     <h4>혼자 도전할 때의 직업 보정</h4>
     <p>귀허의 주인·구중 봉주 결전에 혼자 들어가면 직업마다 보정이 붙습니다. 둘 이상이면 없습니다. 혼자 이길 확률이 직업마다 비슷하게(대략 열에 셋~넷) 맞춘 값입니다. 귀허의 주인은 혼자면 체력이 1.2배입니다.</p>
-    <table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
-      <tr><td>호위 무사</td><td>−16%</td><td>−21%</td></tr>
-      <tr><td>암영 검객</td><td>+11%</td><td>+20%</td></tr>
-      <tr><td>월궁 사수</td><td>+21%</td><td>−17%</td></tr>
-      <tr><td>퇴마관</td><td>+5% · 받는 피해 −30%</td><td>+23% · 받는 피해 −30%</td></tr>
-      <tr><td>의무관</td><td>+25%</td><td>−6%</td></tr>
-      <tr><td>봉인술사</td><td>−10%</td><td>+15%</td></tr></table>
+    ${soloAidHtml()}
     <ul><li>직업의 힘(방어·공격·회복)은 현장·원정·보스 싸움 모두에서 같고, 혼자 보스와 싸울 때 남는 차이만 이 보정으로 메웁니다. 퇴마관은 몸이 약해 혼자 긴 싸움에서 자주 쓰러지므로 혼자일 때만 받는 피해를 줄였습니다.</li>
       <li>결전은 회복품을 다섯 개까지 쓰므로 회복·회피가 있는 직업이 혼자서도 강해, 귀허와 따로 맞췄습니다.</li></ul>
     <h4>서버 보스 「봉연의 그림자」</h4>
@@ -1432,45 +1429,15 @@ const S = [
       <tr><td>그 이웃</td><td>침식 +10% · 조우 +5%</td></tr></table>
     <h4>협동 기술</h4>
     <ul>
-      <li>캐릭터 › 기술 아래에 있습니다. 직업마다 네 가지가 전투 숙련 3·8·18·36단계에서 열립니다.</li>
+      <li>캐릭터 › 기술 아래에 있습니다. 직업마다 네 가지가 전투 숙련 ${coopRanks()}단계에서 열립니다.</li>
     </ul>
-    <table class="guide-table"><tr><th>숙련</th><th>협동 기술</th><th>효과</th><th>영력 · 다시 쓰기</th></tr>
-      <tr class="g-band"><th colspan="4">호위 무사 · 방패·수호</th></tr>
-      <tr><td>3</td><td><b>패턴 공유</b></td><td>보스의 다음 수를 알려 참가자 모두가 다음 한 번 받는 피해 −12%.</td><td>4 · 10초</td></tr>
-      <tr><td>8</td><td><b>대신 막기</b></td><td>12초 동안 그 동료를 노린 공격을 대신 맞는다(피해 절반).</td><td>4 · 8초</td></tr>
-      <tr><td>18</td><td><b>흐름 끊기</b></td><td>보스의 다음 반격 두 번을 막고, 기운을 모으는 중이면 더 늦춘다(봉연의 그림자 6초·그 밖 세 번).</td><td>9 · 22초</td></tr>
-      <tr><td>36</td><td><b>철벽 수호</b></td><td>세 번 동안 이목 +120으로 공격을 끌어오고 받는 피해 −30%.</td><td>12 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">암영 검객 · 근접 공격</th></tr>
-      <tr><td>3</td><td><b>그림자 찌르기</b></td><td>그림자에서 급소를 노린다. 내 다음 공격이 반드시 치명타.</td><td>3 · 8초</td></tr>
-      <tr><td>8</td><td><b>급소 드러내기</b></td><td>요괴의 급소를 드러내 다음 세 번 받는 피해 +15%.</td><td>6 · 15초</td></tr>
-      <tr><td>18</td><td><b>그림자 숨기</b></td><td>그림자에 몸을 숨겨 다음 두 번 회피 +40%.</td><td>6 · 18초</td></tr>
-      <tr><td>36</td><td><b>암영 난무</b></td><td>그림자처럼 몰아쳐 내 다음 세 번 공격 +40%.</td><td>14 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">월궁 사수 · 원거리 공격</th></tr>
-      <tr><td>3</td><td><b>약점 표시</b></td><td>참가자 모두의 다음 두 번 공격 치명타율 +15%.</td><td>4 · 10초</td></tr>
-      <tr><td>8</td><td><b>길 터주기</b></td><td>동료 한 명이 다음 두 번 공격을 피할 확률 +25%.</td><td>5 · 12초</td></tr>
-      <tr><td>18</td><td><b>연막</b></td><td>보스의 다음 두 번 단일 공격이 45% 확률로 빗나간다.</td><td>8 · 22초</td></tr>
-      <tr><td>36</td><td><b>추격 신호</b></td><td>참가자 모두의 다음 공격 피해 +25%.</td><td>10 · 25초</td></tr>
-      <tr class="g-band"><th colspan="4">퇴마관 · 술법 공격</th></tr>
-      <tr><td>3</td><td><b>약점 진언</b></td><td>동료 한 명의 다음 공격을 치명타로 만든다.</td><td>5 · 10초</td></tr>
-      <tr><td>8</td><td><b>파사 진언</b></td><td>동료 한 명이 다음에 받는 공격 한 번의 피해 −50%, 정신 +6.</td><td>6 · 15초</td></tr>
-      <tr><td>18</td><td><b>퇴마 결계</b></td><td>보스의 다음 광역 강타·터뜨림 피해를 절반으로 줄인다.</td><td>10 · 20초</td></tr>
-      <tr><td>36</td><td><b>멸마 진격</b></td><td>제 다음 세 번 공격 피해 +30%.</td><td>14 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">의무관 · 치유</th></tr>
-      <tr><td>3</td><td><b>응급 처치</b></td><td>동료 한 명의 체력을 20 회복한다(응급 처치 기술 단계만큼 더).</td><td>4 · 6초</td></tr>
-      <tr><td>8</td><td><b>해독 침</b></td><td>동료 한 명의 사슬 묶임을 풀고 체력을 10 회복한다.</td><td>6 · 12초</td></tr>
-      <tr><td>18</td><td><b>야전 소생</b></td><td>물러난 동료를 체력 35로 일으켜 숨 고르기를 끝낸다(봉연 토벌은 그 동료가 행동하면 싸움에 돌아가고, 귀허의 주인은 곧바로 돌아온다).</td><td>12 · 60초</td></tr>
-      <tr><td>36</td><td><b>회춘 진맥</b></td><td>참가자 모두의 체력을 15 회복한다.</td><td>14 · 30초</td></tr>
-      <tr class="g-band"><th colspan="4">봉인술사 · 보조·버팀</th></tr>
-      <tr><td>3</td><td><b>호신부 나누기</b></td><td>동료 한 명에게 호신부를 건넨다. 그 동료가 다음 세 번 받는 피해 −25%.</td><td>4 · 8초</td></tr>
-      <tr><td>8</td><td><b>기세 부적</b></td><td>동료 한 명의 다음 세 번 공격 피해 +20%.</td><td>6 · 12초</td></tr>
-      <tr><td>18</td><td><b>봉인 사슬</b></td><td>보스를 사슬로 묶는다. 다음 반격 한 번을 막고, 보스가 받는 피해가 여섯 번 동안 +15%.</td><td>10 · 20초</td></tr>
-      <tr><td>36</td><td><b>팔괘 결계</b></td><td>참가자 모두가 다음 두 번 받는 피해 −20%.</td><td>14 · 30초</td></tr></table>
+    ${coopTableHtml()}
     <ul>
       <li>합동 토벌·결전·귀허의 주인에서 행동으로 고릅니다. 영력이 들고, 다시 쓰기까지 시간이 있습니다.</li>
       <li>동료에게 거는 기술은 참가자 이름을 눌러 대상을 고릅니다.</li>
       <li>기술·효과 아이콘에 마우스를 올리거나 누르면 짧은 설명이 뜹니다.</li>
       <li>같은 지역 파티 원정의 합동 전투에서는 열린 기술이 확률로 저절로 나옵니다.</li>
-      <li>관련 칭호는 분류 「토벌」에 13가지 있습니다. 참가·승리 횟수·최다 기여·치료·협동·결전 등이고, 일부는 숨김입니다.</li>
+      <li>관련 칭호는 분류 「토벌」에 ${GD.titles.cat['토벌']}가지 있습니다. 참가·승리 횟수·최다 기여·치료·협동·결전 등이고, 일부는 숨김입니다.</li>
     </ul>`],
   ['gwiheo', '귀허도와 외전 「요인록」', `
     <p>10장 「구중 봉연」을 마치면 구중 봉연 아래 검은 물길 너머로 <b>귀허도</b>가 지도에 나타납니다. 그 전에는 지도에 보이지 않고 갈 수도 없습니다.</p>
@@ -1758,14 +1725,14 @@ const S = [
           <li>동무는 집주인의 동무만 머뭅니다.</li></ul></li>
     </ul>`],
   ['pets', '꼬마 동무', `
-    <p>별채에서 함께 살거나 데리고 다니는 작은 동무입니다. 능력치·보상 효과는 없고, 모으고 보여 주는 즐거움입니다. 47종이 있고, 그 가운데 열둘은 조사원 제보로 들어온 동무입니다.</p>
+    <p>별채에서 함께 살거나 데리고 다니는 작은 동무입니다. 능력치·보상 효과는 없고, 모으고 보여 주는 즐거움입니다. ${GD.pets.total}종이 있고, 그 가운데 열둘은 조사원 제보로 들어온 동무입니다.</p>
     <h4>얻는 곳</h4>
     <table class="guide-table"><tr><th>등급</th><th>얻는 곳</th></tr>
-      <tr><td>범품 15종</td><td>안전지대 상점의 바구니. 파는 상점은 별채 › 동무 도감에 적혀 있습니다.</td></tr>
-      <tr><td>양품 15종</td><td>탐색·채집·낚시 중 드물게 줍는 「얼룩무늬 알」</td></tr>
-      <tr><td>진품 8종</td><td>퀘스트 · 아주 드문 「빛나는 알」</td></tr>
-      <tr><td>명품 7종</td><td>어려운 퀘스트(외전 「거꾸로 선 기도」·이야기 8장 「재의 바다」 포함) · 칭호</td></tr>
-      <tr><td>신품 2종</td><td>아주 어려운 칭호 · 귀허의 주인 첫 처치</td></tr></table>
+      <tr><td>${petCount(1)}</td><td>안전지대 상점의 바구니. 파는 상점은 별채 › 동무 도감에 적혀 있습니다.</td></tr>
+      <tr><td>${petCount(2)}</td><td>탐색·채집·낚시 중 드물게 줍는 「얼룩무늬 알」</td></tr>
+      <tr><td>${petCount(3)}</td><td>퀘스트 · 아주 드문 「빛나는 알」</td></tr>
+      <tr><td>${petCount(4)}</td><td>어려운 퀘스트(외전 「거꾸로 선 기도」·이야기 8장 「재의 바다」 포함) · 칭호</td></tr>
+      <tr><td>${petCount(5)}</td><td>아주 어려운 칭호 · 귀허의 주인 첫 처치</td></tr></table>
     <ul>
       <li>바구니·알은 가방에서 「열기」로 엽니다. 바구니·알은 거래할 수 있습니다.</li>
       <li><b>겹친 동무</b>: 같은 동무는 한 마리씩입니다.

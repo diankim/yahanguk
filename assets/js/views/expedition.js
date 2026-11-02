@@ -12,7 +12,7 @@ const STANCES = [
 const SUPPLY_USE = { tonic: '체력이 떨어지면', herbal_extract: '체력이 떨어지면', herb: '체력이 떨어지면', ward_talisman: '침식이 50을 넘으면',
   seal_paper: '영체·결계 요괴를 만나면', revival_charm: '쓰러지기 직전', travel_ration: '한 시간마다' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
-// 직업별 원정 기술(서버 world_expedition_complete가 계산한다)
+// 직업별 원정 기술(서버 world_expedition_settle이 회차마다 계산한다)
 export const JOB_SKILL = {
   exorcist: ['파사 부적', '원정마다 한 번, 영체·결계 요괴를 부적으로 단번에 퇴치합니다.'],
   scout: ['선제 사격', '싸울 때마다 30% 확률로 먼저 쏘아 그 싸움의 승률 +12%p.'],
@@ -25,7 +25,7 @@ const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', s
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search', guard: 'shield', foe: 'flame' };
 let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
 let pick = { node: null, minutes: 60, stance: 'balanced' };
-// 창을 열 때 한 번, 지금 서 있는 답사 지점(current_exploration_node_id)을 보낼 곳으로 먼저 고른다(7.5.5, 제보)
+// 창을 열 때 한 번, 지금 서 있는 답사 지점(current_exploration_node_id)을 보낼 곳으로 먼저 고른다
 let preferHere = false;
 // 같은 설정으로 다시 보내기: 마지막으로 보낸 곳·기간·태세를 기기에 남긴다
 const LAST_KEY = 'yh-exp-last';
@@ -142,7 +142,7 @@ export function renderExpedition(box, ov) {
   };
   $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-pick=minutes] button', box).forEach(b => b.onclick = () => { pick.minutes = Number(b.dataset.v); $$('[data-pick=minutes] button', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
-  // 보급품 개수: [없음] − 수 + [전부](7.4.0 — 0~20을 모두 늘어놓던 드롭다운이 휴대폰에서 너무 길었다). 전부는 가진 만큼(20까지)
+  // 보급품 개수: [없음] − 수 + [전부](0~20을 모두 늘어놓던 드롭다운이 휴대폰에서 너무 길었다). 전부는 가진 만큼(20까지)
   $$('.sup-step', box).forEach(g => g.onclick = e => {
     const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return;
     const k = g.dataset.sup, max = Number(g.dataset.max), cur = supN(k);

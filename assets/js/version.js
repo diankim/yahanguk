@@ -57,7 +57,7 @@ function show(kind, key) {
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'confirm' }));
 }
 
-// 배포 예고 띠(7.4.6): version.json의 notice(글 한 줄, 비우면 내림)를 화면 맨 위에 띄운다.
+// 배포 예고 띠: version.json의 notice(글 한 줄, 비우면 내림)를 화면 맨 위에 띄운다.
 // version 값만 비교하므로 notice만 바꿔 올리면 새로고침 안내는 뜨지 않는다. 서버(DB) 요청 없이 정적 파일만 2분마다 읽는다.
 let noticeText = '', noticeHidden = '';
 function setNotice(t) {

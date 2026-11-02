@@ -30,7 +30,7 @@ const NOTIFY_GROUPS = [
 ];
 let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
 
-// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다(7.4.0)
+// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다
 const sndBlock = (k, name, desc, v, sw) => `<div class="snd-block">
   <div class="snd-head"><span><b>${name}</b><small>${desc}</small></span>${sw ? `<label class="snd-on"><input type="checkbox" data-sw="${sw}" ${sound[sw] ? 'checked' : ''}><span>켜기</span></label>` : ''}</div>
   <div class="snd-range"><input type="range" data-vol="${k}" min="0" max="1" step="0.05" value="${v}" aria-label="${name} 음량"><output data-vol-out="${k}">${Math.round(v * 100)}%</output></div></div>`;
@@ -180,7 +180,7 @@ export async function render(root, sub) {
   const crop = bindCrop(el, () => { draft.avatar = 'pending'; touch(); });
   drawProfile();
   $$('[data-cos-kind].on', el).forEach(cosInfo); // 지금 고른 것의 얻은 경로부터 보여 준다
-  // 꾸미기 알림의 「보러 가기」로 왔으면(7.5.4) 얻은 그 꾸미기 칸을 짚어 준다
+  // 꾸미기 알림의 「보러 가기」로 왔으면 얻은 그 꾸미기 칸을 짚어 준다
   let cf = null; try { cf = sessionStorage.getItem('yh-cos-focus'); sessionStorage.removeItem('yh-cos-focus'); } catch {}
   const cb = cf && $(`[data-cos-kind][data-cos-key="${CSS.escape(cf)}"]`, el);
   if (cb) { cosInfo(cb); cb.classList.add('focus'); cb.closest('details')?.setAttribute('open', ''); requestAnimationFrame(() => cb.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => cb.classList.remove('focus'), 2600); }

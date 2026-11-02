@@ -1,0 +1,82 @@
+// 자동 생성 파일 — 손으로 고치지 않는다.
+// 서버 DB의 수치(동무 수·직업 기본 능력치·혼자 도전 보정·협동 기술·세력 가입 장소·칭호/어종 수 등)를
+// 화면·도움말이 한곳에서 읽는다. 다시 만들기: python3 tools/gamedata/gen.py (기본은 로컬 복제 DB, --dsn으로 바꿈)
+export const GAMEDATA = {
+  "pets": {"total":47,"grades":{"1":15,"2":15,"3":8,"4":7,"5":2}},
+  "jobBase": {
+    "artificer": {"agility":5,"strength":9,"vitality":7,"willpower":3,"perception":3,"spirit_affinity":3},
+    "scout": {"agility":8,"strength":4,"vitality":4,"willpower":3,"perception":8,"spirit_affinity":3},
+    "exorcist": {"agility":3,"strength":3,"vitality":4,"willpower":7,"perception":4,"spirit_affinity":9},
+    "medic": {"agility":3,"strength":3,"vitality":6,"willpower":8,"perception":3,"spirit_affinity":7},
+    "sealmaster": {"agility":3,"strength":3,"vitality":5,"willpower":8,"perception":4,"spirit_affinity":7},
+    "analyst": {"agility":6,"strength":8,"vitality":5,"willpower":3,"perception":5,"spirit_affinity":3}
+  },
+  "soloAid": {
+    "artificer": {"solo_dmg":-16,"final_dmg":-21},
+    "scout": {"solo_dmg":21,"final_dmg":-17},
+    "exorcist": {"solo_dmg":5,"final_dmg":23,"solo_guard":30},
+    "medic": {"solo_dmg":25,"final_dmg":-6},
+    "sealmaster": {"solo_dmg":-10,"final_dmg":15},
+    "analyst": {"solo_dmg":11,"final_dmg":20}
+  },
+  "coop": [
+    {"id":"art_mend","job":"analyst","rank":3,"name":"그림자 찌르기","desc":"그림자에서 급소를 노린다. 내 다음 공격이 반드시 치명타.","target":"self","cost":3,"cd":8},
+    {"id":"art_supply","job":"analyst","rank":8,"name":"급소 드러내기","desc":"요괴의 급소를 드러내 다음 세 번 받는 피해 +15%.","target":"boss","cost":6,"cd":15},
+    {"id":"art_shield","job":"analyst","rank":18,"name":"그림자 숨기","desc":"그림자에 몸을 숨겨 다음 두 번 회피 +40%.","target":"self","cost":6,"cd":18},
+    {"id":"art_array","job":"analyst","rank":36,"name":"암영 난무","desc":"그림자처럼 몰아쳐 내 다음 세 번 공격 +40%.","target":"self","cost":14,"cd":30},
+    {"id":"an_share","job":"artificer","rank":3,"name":"패턴 공유","desc":"보스의 다음 수를 알려 참가자 모두가 다음 한 번 받는 피해 −12%.","target":"all","cost":4,"cd":10},
+    {"id":"exo_cover","job":"artificer","rank":8,"name":"대신 막기","desc":"12초 동안 그 동료를 노린 공격을 대신 맞는다(피해 절반).","target":"ally","cost":4,"cd":8},
+    {"id":"an_break","job":"artificer","rank":18,"name":"흐름 끊기","desc":"보스의 다음 반격 두 번을 막고, 기운을 모으는 중이면 더 늦춘다(봉연의 그림자 6초·그 밖 세 번).","target":"boss","cost":9,"cd":22},
+    {"id":"exo_guardian","job":"artificer","rank":36,"name":"철벽 수호","desc":"세 번 동안 이목 +120으로 공격을 끌어오고 받는 피해 −30%.","target":"self","cost":12,"cd":30},
+    {"id":"an_point","job":"exorcist","rank":3,"name":"약점 진언","desc":"동료 한 명의 다음 공격을 치명타로 만든다.","target":"ally","cost":5,"cd":10},
+    {"id":"exo_mantra","job":"exorcist","rank":8,"name":"파사 진언","desc":"동료 한 명이 다음에 받는 공격 한 번의 피해 −50%, 정신 +6.","target":"ally","cost":6,"cd":15},
+    {"id":"exo_barrier","job":"exorcist","rank":18,"name":"퇴마 결계","desc":"보스의 다음 광역 강타·터뜨림 피해를 절반으로 줄인다.","target":"all","cost":10,"cd":20},
+    {"id":"an_command","job":"exorcist","rank":36,"name":"멸마 진격","desc":"제 다음 세 번 공격 피해 +30%.","target":"self","cost":14,"cd":30},
+    {"id":"med_aid","job":"medic","rank":3,"name":"응급 처치","desc":"동료 한 명의 체력을 20 회복한다(응급 처치 기술 단계만큼 더).","target":"ally","cost":4,"cd":6},
+    {"id":"med_needle","job":"medic","rank":8,"name":"해독 침","desc":"동료 한 명의 사슬 묶임을 풀고 체력을 10 회복한다.","target":"ally","cost":6,"cd":12},
+    {"id":"med_revive","job":"medic","rank":18,"name":"야전 소생","desc":"물러난 동료를 체력 35로 일으켜 숨 고르기를 끝낸다(봉연 토벌은 그 동료가 행동하면 싸움에 돌아가고, 귀허의 주인은 곧바로 돌아온다).","target":"ally","cost":12,"cd":60},
+    {"id":"med_pulse","job":"medic","rank":36,"name":"회춘 진맥","desc":"참가자 모두의 체력을 15 회복한다.","target":"all","cost":14,"cd":30},
+    {"id":"sc_mark","job":"scout","rank":3,"name":"약점 표시","desc":"참가자 모두의 다음 두 번 공격 치명타율 +15%.","target":"boss","cost":4,"cd":10},
+    {"id":"sc_path","job":"scout","rank":8,"name":"길 터주기","desc":"동료 한 명이 다음 두 번 공격을 피할 확률 +25%.","target":"ally","cost":5,"cd":12},
+    {"id":"sc_smoke","job":"scout","rank":18,"name":"연막","desc":"보스의 다음 두 번 단일 공격이 45% 확률로 빗나간다.","target":"all","cost":8,"cd":22},
+    {"id":"sc_signal","job":"scout","rank":36,"name":"추격 신호","desc":"참가자 모두의 다음 공격 피해 +25%.","target":"all","cost":10,"cd":25},
+    {"id":"seal_ward","job":"sealmaster","rank":3,"name":"호신부 나누기","desc":"동료 한 명에게 호신부를 건넨다. 그 동료가 다음 세 번 받는 피해 −25%.","target":"ally","cost":4,"cd":8},
+    {"id":"seal_might","job":"sealmaster","rank":8,"name":"기세 부적","desc":"동료 한 명의 다음 세 번 공격 피해 +20%.","target":"ally","cost":6,"cd":12},
+    {"id":"seal_chain","job":"sealmaster","rank":18,"name":"봉인 사슬","desc":"보스를 사슬로 묶는다. 다음 반격 한 번을 막고, 보스가 받는 피해가 여섯 번 동안 +15%.","target":"boss","cost":10,"cd":20},
+    {"id":"seal_bagua","job":"sealmaster","rank":36,"name":"팔괘 결계","desc":"참가자 모두가 다음 두 번 받는 피해 −20%.","target":"all","cost":14,"cd":30}
+  ],
+  "factionJoin": {
+    "night_office": ["hq_yard","hq_dorm","ghost_bamboo"],
+    "red_moon_cult": ["red_moon_fort","hq_yard","bone_market","red_plain"],
+    "black_lotus": ["hidden_bazaar","hq_yard","lamp_alley"],
+    "north_league": ["iron_monastery","hq_yard","snow_hollow"],
+    "river_alliance": ["river_ferry","hq_yard","salt_village"],
+    "southern_remnant": ["ember_village","hq_yard","ember_pass"],
+    "mandate_court": ["star_observatory","hq_yard","hq_dorm","star_hill"]
+  },
+  "factionHome": {
+    "night_office": ["hq_yard","hq_dorm"],
+    "red_moon_cult": ["bone_market"],
+    "black_lotus": ["hidden_bazaar"],
+    "north_league": ["iron_monastery"],
+    "river_alliance": ["river_ferry"],
+    "southern_remnant": ["ember_village"],
+    "mandate_court": ["star_observatory","hq_dorm"]
+  },
+  "factionRel": [["black_lotus","mandate_court",-60.0],["black_lotus","night_office",-60.0],["black_lotus","north_league",0.0],["black_lotus","red_moon_cult",15.0],["black_lotus","river_alliance",10.0],["black_lotus","southern_remnant",10.0],["mandate_court","night_office",25.0],["mandate_court","north_league",10.0],["mandate_court","red_moon_cult",0.0],["mandate_court","river_alliance",10.0],["mandate_court","southern_remnant",-60.0],["night_office","north_league",40.0],["night_office","red_moon_cult",-60.0],["night_office","river_alliance",10.0],["night_office","southern_remnant",0.0],["north_league","red_moon_cult",-60.0],["north_league","river_alliance",10.0],["north_league","southern_remnant",0.0],["red_moon_cult","river_alliance",10.0],["red_moon_cult","southern_remnant",0.0],["river_alliance","southern_remnant",10.0]],
+  "factionHostile": {
+    "night_office": ["red_moon_cult","black_lotus"],
+    "red_moon_cult": ["night_office","north_league"],
+    "black_lotus": ["night_office","mandate_court"],
+    "north_league": ["red_moon_cult"],
+    "river_alliance": [],
+    "southern_remnant": ["mandate_court"],
+    "mandate_court": ["black_lotus","southern_remnant"]
+  },
+  "regionNames": {"hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","salt_village":"염등촌","red_moon_fort":"적월교 월식성","iron_monastery":"철벽 고찰","ember_village":"잔불촌","hidden_bazaar":"십삼문 암시장","star_observatory":"무극 관성대","snow_hollow":"설피골","ember_pass":"불씨 고개","lamp_alley":"등잔골 뒷골목","star_hill":"별바라기 언덕"},
+  "bag": {"base":34},
+  "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
+  "titles": {"total":258,"public":185,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"교류":3,"토벌":13,"도감":20,"외전":6,"세력":21,"별채":14,"비밀":57}},
+  "fish": {"species":50,"grounds":24}
+};
+export default GAMEDATA;

@@ -30,7 +30,7 @@ async function draw(box, id) {
     const p = profileOf(c.owner_id, c.profile);
     const state = c.is_dead ? chip('숨을 거둠', 'bad') : c.downed ? chip('전투불능', 'bad') : c.in_combat ? chip('전투 중', 'warn')
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
-    // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(7.7.4b, 서버 world_yohwa_public — 1·2단계는 본인만)
+    // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(서버 world_yohwa_public — 1·2단계는 본인만)
     const yoChip = c.yohwa === 'frenzy' ? chip('요괴화', 'bad') : c.yohwa === '3' ? chip('반요 · 요화 3단계', 'warn') : '';
     const rel = c.relation || 'none';
     // 파티 초대: 상대가 파티가 없고, 내가 파티장이거나 아직 파티가 없을 때(없으면 만들고 초대)
@@ -97,7 +97,7 @@ async function run(b, c, box) {
   if (k === 'bond') return openPropose(id, c.character_name);
   if (k === 'trade') { close(); const { openDirectTrade } = await import('./services.js'); return openDirectTrade(id); }
   if (k === 'spar') return guard(b, () => act('world_spar_challenge', { p_target: id }));
-  // 남의 별채는 먼저 들어갈 수 있는지 물어 보고, 막혀 있으면(대문 닫힘·벗에게만·차단) 화면을 옮기지 않고 알림만(7.5.6, 사용자 요청)
+  // 남의 별채는 먼저 들어갈 수 있는지 물어 보고, 막혀 있으면(대문 닫힘·벗에게만·차단) 화면을 옮기지 않고 알림만
   // 받은 별채는 별채 화면이 다시 묻지 않게 잠깐 넘겨 둔다(store.houseSnap)
   if (k === 'house') {
     if (c.mine) { close(); return window.yahangGo?.('house', ''); }

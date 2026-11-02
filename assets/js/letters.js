@@ -90,7 +90,7 @@ export async function openCompose(to, toName, done, title = '') {
           ${untradeNote(have, ref, true)}</fieldset>
         <button class="btn primary block" type="submit">${icon('letter', 16)}<span>부치기</span></button></form>`;
       const f = $('#lt-form', box);
-      // 물품 찾기·수량·제목 칸에서 엔터를 눌러도 부치지 않는다(키패드의 「검색」이 서신을 바로 부치던 것, 7.3.6). 부치기는 단추로만.
+      // 물품 찾기·수량·제목 칸에서 엔터를 눌러도 부치지 않는다(키패드의 「검색」이 서신을 바로 부치던 것). 부치기는 단추로만.
       f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault(); });
       if (!placeOk) $$('[data-add]', f).forEach(b => b.disabled = true);
       bindPicker(f, 'ltItem', opts);

@@ -19,14 +19,14 @@ function noteReady(b) {
   if (fresh) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' })); try { sessionStorage.setItem('yh-q-ready', JSON.stringify([...seen].slice(-200))); } catch {} }
 }
 
-// 할 일 줄 끝의 바로 가기(7.4.6): 할 일 지역 → 지도에서 짚기, 만들기·넘길 물품 → 제작 화면(검색칸에 이름)
+// 할 일 줄 끝의 바로 가기: 할 일 지역 → 지도에서 짚기, 만들기·넘길 물품 → 제작 화면(검색칸에 이름)
 const mapBtns = (regs, n = 3) => (regs || []).slice(0, n).map(r => `<button type="button" class="q-link" data-q-map="${esc(r)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(nameOf(r))}</span></button>`).join('');
 const craftBtn = id => `<button type="button" class="q-link" data-q-craft="${esc(nameOf(id))}" title="제작법 찾기">${icon('hammer', 12)}<span>제작법</span></button>`;
-// 얻는 곳(7.5.9, 사용자 요청): 지역을 정하지 않은 채집 할 일·넘길 물품은 그 물품이 나오는 지역을 5곳까지(물품 정보의 「얻는 곳」과 같은 world_item_sources).
+// 얻는 곳: 지역을 정하지 않은 채집 할 일·넘길 물품은 그 물품이 나오는 지역을 5곳까지(물품 정보의 「얻는 곳」과 같은 world_item_sources).
 // 줄을 그린 뒤 비어 있는 칸만 채운다(물품마다 이 접속 동안 한 번 읽음).
 const srcSlot = id => `<span class="q-src" data-q-src="${esc(id)}"></span>`;
 const itemsOf = t => Array.isArray(t.items) ? t.items : Object.keys(t.items || {});
-// 단위(7.5.9d, 사용자 요청): 물품을 정한 채집·제작은 「야령초 모으기 0/3개」, 물품을 정하지 않은 채집은 「채집하기 0/3회」
+// 단위: 물품을 정한 채집·제작은 「야령초 모으기 0/3개」, 물품을 정하지 않은 채집은 「채집하기 0/3회」
 const unitOf = t => t.t === 'gather' ? (itemsOf(t).length ? '개' : '회') : t.t === 'craft' && itemsOf(t).length ? '개' : '';
 export const taskLine = t => { const done = t.cur >= t.n, items = t.t === 'craft' ? itemsOf(t) : [];
   const src = !done && t.t === 'gather' && !(t.regions || []).length ? itemsOf(t).slice(0, 1).map(srcSlot).join('') : '';
@@ -63,7 +63,7 @@ document.addEventListener('click', e => {
   if (m) import('./views/map.js').then(x => { x.focusRegion(m.dataset.qMap); window.yahangGo('map', 'world'); });
   else { window.dispatchEvent(new CustomEvent('yh-craft-focus', { detail: { search: c.dataset.qCraft } })); window.yahangGo('bag', 'craft'); }
 });
-// 보고 장소 줄(7.6.1, 사용자 제보): 할 일이 남았으면 그 할 일을 하는 곳을 먼저 적고, 보고 장소는 「다 하면 보고」로 낮춰 적는다
+// 보고 장소 줄: 할 일이 남았으면 그 할 일을 하는 곳을 먼저 적고, 보고 장소는 「다 하면 보고」로 낮춰 적는다
 // (전에는 할 일이 주혈 광산에 남았는데도 「보고: 잔불촌 (지금 여기)」만 보여 그곳에서 끝내는 것처럼 읽혔다).
 export const atLine = q => {
   const at = q.at_names || [], here = store.character?.location;
@@ -92,7 +92,7 @@ function activeItem(q) {
 }
 function factionItem(f) {
   if (!f) return '';
-  // 등급 퀘스트가 아직 잠겨 있으면(평판·레벨) 할 일을 보이지 않고 언제 열리는지만 적는다(7.5.7 — 다시 가입한 뒤 잠긴 2등급이 진행 중처럼 보이던 것)
+  // 등급 퀘스트가 아직 잠겨 있으면(평판·레벨) 할 일을 보이지 않고 언제 열리는지만 적는다(다시 가입한 뒤 잠긴 2등급이 진행 중처럼 보이던 것)
   if (f.locked) return `<li class="q-item locked">${head('faction', { cat: nameOf(f.faction_id), title: f.title })}
     <p class="muted small">아직 열리지 않았습니다 · ${esc(f.locked)}</p>
     <div class="btn-row"><button class="btn small ghost" data-go-faction>세력 화면</button></div></li>`;
@@ -123,7 +123,7 @@ function hereNote(b) {
   return `<p class="hint accent q-here">${icon('flag', 14)}<span><b>퀘스트 지역</b> · ${hits.length ? `「${esc(hits.slice(0, 3).join('」·「'))}」의 할 일이 이곳에 있습니다.` : ''}${givers ? ` 이곳에서 받을 수 있는 퀘스트 ${givers}개.` : ''}</span></p>`;
 }
 
-// 결전을 열기 전에 인원에 맞춰 묻는다(7.4.3). 체력은 인원마다 늘지만(1·1.7·2.3·2.8배) 혼자서는 거의 이길 수 없고, 둘은 어렵지만 해볼 만하다.
+// 결전을 열기 전에 인원에 맞춰 묻는다. 체력은 인원마다 늘지만(1·1.7·2.3·2.8배) 혼자서는 거의 이길 수 없고, 둘은 어렵지만 해볼 만하다.
 // 셈은 같은 곳에 있는 파티원 가운데 쓰러짐·원정이 아닌 사람(초대 알림이 가는 사람)이고, 실제로 오는지는 90초 안에 정해진다.
 async function askFinal() {
   const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
@@ -138,7 +138,7 @@ async function askFinal() {
   return ask(`같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(90초 안에 합류, 함께 ${n}명).\n${msg}\n${tail}`, { title: `${n}명이 함께 결전을 엽니까?`, ok: '결전 시작', cancel: '돌아가기' });
 }
 
-// 진행 중인 퀘스트 묶어 보기(7.4.6): 분야(주 이야기·전투·채집…) 또는 장소(아직 남은 할 일의 지역, 다 했으면 보고 장소)
+// 진행 중인 퀘스트 묶어 보기: 분야(주 이야기·전투·채집…) 또는 장소(아직 남은 할 일의 지역, 다 했으면 보고 장소)
 const GKEY = 'yh-q-group';
 const GROUPS = [['', '순서대로'], ['field', '분야별'], ['place', '장소별']];
 const grp = () => { try { return localStorage.getItem(GKEY) || ''; } catch { return ''; } };
@@ -155,14 +155,14 @@ function grouped(list, b) {
       <summary class="sub-h">${esc(k)}${k === here ? ' <small class="ok">· 지금 여기</small>' : ''} <small class="muted">${map.get(k).length}</small></summary>
       <ul class="q-list">${map.get(k).map(activeItem).join('')}</ul></details>`).join('')}`;
 }
-// 세력 퀘스트 칸(7.5.7): 다른 묶음처럼 접을 수 있다. 처음엔 펼친 채, 접은 것만 '!fac'으로 남긴다
+// 세력 퀘스트 칸: 다른 묶음처럼 접을 수 있다. 처음엔 펼친 채, 접은 것만 '!fac'으로 남긴다
 function facBox(f) {
   if (!f) return '';
   return `<details class="q-grp" data-q-fac ${opened().includes('!fac') ? '' : 'open'}>
     <summary class="sub-h">세력 <small class="muted">${esc(nameOf(f.faction_id))}${f.locked ? ' · 잠김' : f.ready ? ' · <b class="ok">보고 가능</b>' : ''}</small></summary>
     <ul class="q-list">${factionItem(f)}</ul></details>`;
 }
-// 묶음마다 접기(7.5.1, 제보 44): 처음엔 모두 접힌 채로, 펼친 묶음만 기기에 남긴다(7.5.3)
+// 묶음마다 접기: 처음엔 모두 접힌 채로, 펼친 묶음만 기기에 남긴다
 const OKEY = 'yh-q-open';
 const opened = () => { try { return JSON.parse(localStorage.getItem(OKEY) || '[]'); } catch { return []; } };
 function setOpen(k, open) {
