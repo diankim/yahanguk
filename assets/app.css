@@ -1064,6 +1064,8 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .inv-name b { font-size: calc(13px * var(--fz, 1)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inv-name small { display: flex; flex-wrap: wrap; gap: 4px; font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
 .inv-name small i { font-style: normal; } .inv-name small i + i::before { content: '·'; margin-right: 4px; color: var(--line); }
+.inv-name small i.boss { display: inline-flex; align-items: center; gap: 2px; padding: 0 5px; border: 1px solid currentColor; border-radius: 3px; line-height: 15px; color: var(--hp, var(--bad)); font-weight: 600; }
+.inv-name small i.boss + i::before { content: none; }
 .inv-name small i.eq { color: var(--gold); } .inv-name small i.st { color: var(--accent); } .inv-name small i.lk { color: var(--warn); } .inv-name small i.bad { color: var(--bad); }
 .inv-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .inv-qty { flex: none; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); }

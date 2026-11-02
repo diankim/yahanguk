@@ -8,6 +8,7 @@ import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName } from './fightui.js';
 import { mountMeter } from './meter.js';
+import { GW_HEAL } from './item.js';
 
 const PHASE = { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' };
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
@@ -25,7 +26,7 @@ export async function render(root, sub) {
 }
 export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
 // 체력 회복품만 한 싸움에 두 개까지(서버 world_gw_act item) — 퀵슬롯·가방에서 눌러도 이번 라운드의 「회복품」 행동으로 보낸다
-const HEAL_ITEMS = ['tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
+const HEAL_ITEMS = GW_HEAL;
 window.addEventListener('yh-battle-item', e => {
   const f = snap?.fight;
   if (!el?.isConnected || f?.status !== 'fight' || !snap?.joined) return;

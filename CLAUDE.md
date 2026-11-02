@@ -260,7 +260,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 싸우는 중의 물품
 
-현장 토벌(world_active_encounters result null·defeated·fled 아님)·파티 토벌(status fight·out_reason null)·귀허의 주인(status fight) 중에는 world_use_item·world_party_use_item 거절. 화면은 퀵슬롯·가방·상태 창의 물품을 core.js useItemAct → battleItemRoute(yh-battle-item)로 전투 화면(battle.js·pfight.js·gw.js)의 「물품」 행동으로 보낸다(턴·라운드를 씀). 새 물품 단추는 useItemAct를 쓴다. 현장·파티 물품 칸 battle.js trayList는 보통·우수품(_hq)을 함께, 귀허는 world_gw_snapshot.items가 _hq 수도. 합동 토벌은 §10. 꼬마 동무 바구니·알은 「열기」(world_pet_adopt).
+현장 토벌(world_active_encounters result null·defeated·fled 아님)·파티 토벌(status fight·out_reason null)·귀허의 주인(status fight) 중에는 world_use_item·world_party_use_item 거절. 화면은 퀵슬롯·가방·상태 창의 물품을 core.js useItemAct → battleItemRoute(yh-battle-item)로 전투 화면(battle.js·pfight.js·gw.js)의 「물품」 행동으로 보낸다(턴·라운드를 씀). 새 물품 단추는 useItemAct를 쓴다. 현장·파티 물품 칸 battle.js trayList는 보통·우수품(_hq)을 함께, 귀허는 world_gw_snapshot.items가 _hq 수도. 합동 토벌은 §10. 꼬마 동무 바구니·알은 「열기」(world_pet_adopt). 보스 싸움에 쓰는 회복품은 가방 줄 맨 앞 테 두른 칩(「토벌」·「귀허」·「토벌·귀허」)과 물품 정보 「보스 싸움」 줄로 보임(item.js bossUse — 봉연·결전 = 체력·정신·영력 물품, 귀허 = GW_HEAL 다섯, gw.js도 같은 표).
 
 ### 장비 내구도
 

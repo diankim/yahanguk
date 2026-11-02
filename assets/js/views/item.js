@@ -43,6 +43,15 @@ export const USABLE = new Proxy({}, {
   },
   has(t, k) { return !!this.get(t, k); },
 });
+// 보스 싸움에서 쓸 수 있는 회복품(서버와 같은 규칙): 봉연·결전 = 체력·정신·영력을 채우는 소모품(world_raid_action item),
+// 귀허의 주인 = 체력 회복품 다섯(world_gw_act). 우수품도 같은 물품으로 본다.
+export const GW_HEAL = ['tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
+export function bossUse(id) {
+  const b = String(id || '').replace(/_hq$/, ''), f = catItem(b)?.fx;
+  const raid = !!f && (f.hp > 0 || f.mn > 0 || f.sp > 0), gw = GW_HEAL.includes(b);
+  return raid || gw ? { raid, gw, label: raid && gw ? '토벌·귀허' : raid ? '토벌' : '귀허',
+    tip: [raid && '봉연의 그림자·10장 결전에서 「물품」으로 사용(결전은 체력 회복품 한 싸움 다섯 개)', gw && '귀허의 주인과 싸울 때 사용(한 싸움 두 개)'].filter(Boolean).join(' / ') } : null;
+}
 // 효과 문구를 회복 종류마다 색으로 — 「체력 35 · 정신 10 · 침식 -8」을 마디(·)로 나눠 체력 붉게·정신 푸르게·영력 보라·침식·치료·탐색력
 export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /^침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
 const FX_ORDER = ['cure', 'hp', 'mind', 'sp', 'er', 'stam'].map(k => FX_KINDS.find(x => x[0] === k)); // 「사념 침식 치료」는 침식이 아니라 치료
@@ -226,6 +235,7 @@ function draw(box, id, inv, prices, mode) {
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${suitedJobs(it).length ? `<div><dt>어울리는 직업</dt><dd>${esc(suitedJobs(it).map(nameOf).join(' · '))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
+      ${bossUse(id) ? `<div><dt>보스 싸움</dt><dd>${esc(bossUse(id).tip)}</dd></div>` : ''}
       ${/\d+분|든든함|속이 따뜻함|기운 충천|바다의 복/.test(USABLE[id] || '') ? `<div><dt>다시 쓰면</dt><dd>같은 기운이 남아 있으면 그 시간에 더해집니다(두 번 몫까지)</dd></div>` : ''}
       <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>
       ${it && GEAR.has(it.category) ? `<div><dt>${slotOf(it) === 'craft' ? '쓰는 조건(가방에 두면)' : '장착 조건'}</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
