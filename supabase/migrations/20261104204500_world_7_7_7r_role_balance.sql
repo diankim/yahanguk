@@ -271,7 +271,7 @@ end $p$;
 
 -- ── 결전(구중 봉주) 난이도: 다섯 곳 비교 뒤(사용자 기준 넷 10/10·둘 5~6/10·혼자 3~4/10) ─────
 --  · 모두 물러나 있을 때 보스가 되찾는 체력 3% → 1.5%(약한 짝이 한 번 밀리면 끝없이 되돌려지는 것을 막음)
---  · 결전 보스가 주는 피해 ×0.8, 체력 배율 혼자 1.6 → 2.3 · 둘 2.4 → 3.5(셋·넷 그대로)
+--  · 결전 보스가 주는 피해 ×0.8, 체력 배율 혼자 1.6 → 2.4 · 둘 2.4 → 3.3(셋·넷 그대로)
 do $p$
 declare d text;
 begin
@@ -287,21 +287,32 @@ begin
   end if;
   d := pg_temp.fdef('world_raid_begin_fight');
   if position('when 1 then 1.6 when 2 then 2.4 when 3' in d) > 0 then
-    execute pg_temp.rep(d, 'when 1 then 1.6 when 2 then 2.4 when 3', 'when 1 then 2.3 when 2 then 3.5 when 3');
+    execute pg_temp.rep(d, 'when 1 then 1.6 when 2 then 2.4 when 3', 'when 1 then 2.4 when 2 then 3.3 when 3');
   end if;
 end $p$;
 
 create or replace function public.world_solo_aid(p_job text) returns jsonb language sql immutable as $function$
   -- 혼자 도전 보정(7.7.7r): 다섯 곳(현장·원정·귀허·결전·봉연)을 함께 본 뒤 남은 차이만. 퇴마관은 몸이 약해 혼자일 때만 받는 피해 −30%
   select case p_job
-    when 'exorcist'   then '{"solo_dmg": 5, "final_dmg": 20, "solo_guard": 30}'
-    when 'sealmaster' then '{"solo_dmg": -15, "final_dmg": 20}'
-    when 'medic'      then '{"solo_dmg": 30, "final_dmg": -10}'
-    when 'artificer'  then '{"solo_dmg": -22, "final_dmg": -20}'
-    when 'scout'      then '{"solo_dmg": 10, "final_dmg": -25}'
-    when 'analyst'    then '{"solo_dmg": 8, "final_dmg": 20}'
+    when 'exorcist'   then '{"solo_dmg": 5, "final_dmg": 30, "solo_guard": 30}'
+    when 'sealmaster' then '{"solo_dmg": -12, "final_dmg": 20}'
+    when 'medic'      then '{"solo_dmg": 20, "final_dmg": 0}'
+    when 'artificer'  then '{"solo_dmg": -18, "final_dmg": -15}'
+    when 'scout'      then '{"solo_dmg": 15, "final_dmg": -10}'
+    when 'analyst'    then '{"solo_dmg": 10, "final_dmg": 15}'
     else '{}' end::jsonb
 $function$;
+
+-- 귀허의 주인 혼자: 주인 체력 ×1.12 → ×1.2(모든 직업 같게, 남는 차이만 위 보정으로)
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_gw_start');
+  if position('case n when 1 then 1.12 when 2 then 0.95' in d) > 0 then
+    execute pg_temp.rep(d, 'case n when 1 then 1.12 when 2 then 0.95', 'case n when 1 then 1.2 when 2 then 0.95', 2);
+  end if;
+end $p$;
+
 
 do $c$
 begin
