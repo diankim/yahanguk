@@ -9,7 +9,6 @@
 --      백공 기본 능력치 힘 5·민첩 6·체질 6·감각 7 → 힘 8·민첩 6·체질 5·감각 5.
 --      퇴마관 ② 정화 갈래 강화: 파사안 +20% → +26%(그 밖의 요괴에게도 +8%), 퇴마 진언 30 → 40%·걷어 내면 요괴 다음 공격 약화,
 --      정화의 불 40 → 50%·25% 확률로 요기를 사르는 불(2턴 매턴 요괴 최대 체력 4%), 금강 결계 받는 피해 −20 → −26%.
---  ⑤ 결전(구중 봉주)에서는 피해 감소를 65%까지로 묶는다(갑옷 76%·도포 57% → 받는 피해 1.8배 차이가 1.2배로).
 lock table public.world_characters in access exclusive mode;
 
 create or replace function pg_temp.rep(d text, a text, b text, n int default 1) returns text language plpgsql as $r$
@@ -131,8 +130,7 @@ begin
     d := pg_temp.rep(d, $a$  nm := m.name;
   r := public.world_cb_mitigate(p_raw, m.stats, m.fx, who, p_kind in ('slam', 'burst'), p_kind = 'burst', null, p_kind = 'single');$a$,
       $a$  nm := m.name;
-  -- 결전은 피해 감소를 65%까지(갑옷과 도포의 차이를 줄인다, 7.7.7r)
-  st := case when rk = 'final' then m.stats || jsonb_build_object('red', least(65, coalesce((m.stats ->> 'red')::numeric, 0))) else m.stats end;
+  st := m.stats;
   r := public.world_cb_mitigate(p_raw, st, m.fx, who, p_kind in ('slam', 'burst'), p_kind = 'burst', null, p_kind = 'single');$a$);
     d := pg_temp.rep(d, $a$  perform public.world_raid_credit(p_raid, who, d, case when (r ->> 'taunt')::boolean then 'guard' else 'taken' end);$a$,
       $a$  perform public.world_raid_credit(p_raid, who, d, case when (r ->> 'taunt')::boolean then 'guard' else 'taken' end);
@@ -270,6 +268,40 @@ begin
     execute pg_temp.rep(d, $a$if st ->> 'style' = 'magic' then if sp >= 3 then sp := sp - 3;$a$, $a$if st ->> 'style' = 'magic' then if sp >= 2 then sp := sp - 2;$a$);
   end if;
 end $p$;
+
+-- ── 결전(구중 봉주) 난이도: 다섯 곳 비교 뒤(사용자 기준 넷 10/10·둘 5~6/10·혼자 3~4/10) ─────
+--  · 모두 물러나 있을 때 보스가 되찾는 체력 3% → 1.5%(약한 짝이 한 번 밀리면 끝없이 되돌려지는 것을 막음)
+--  · 결전 보스가 주는 피해 ×0.8, 체력 배율 혼자 1.6 → 2.16 · 둘 2.4 → 3.5(셋·넷 그대로)
+do $p$
+declare d text;
+begin
+  d := pg_temp.fdef('world_raid_action');
+  if position('rd.hp + round(rd.max_hp * 0.03)' in d) > 0 then
+    d := pg_temp.rep(d, 'rd.hp + round(rd.max_hp * 0.03)', 'rd.hp + round(rd.max_hp * 0.015)');
+    d := pg_temp.rep(d, '기운을 되찾습니다(체력 +3%).', '기운을 되찾습니다(체력 +1.5%).');
+    execute d;
+  end if;
+  d := pg_temp.fdef('world_raid_boss_base');
+  if position('return (4 + 0.7 * (al + 3)) * least(1.5' in d) > 0 then
+    execute pg_temp.rep(d, 'return (4 + 0.7 * (al + 3)) * least(1.5', 'return 0.8 * (4 + 0.7 * (al + 3)) * least(1.5');
+  end if;
+  d := pg_temp.fdef('world_raid_begin_fight');
+  if position('when 1 then 1.6 when 2 then 2.4 when 3' in d) > 0 then
+    execute pg_temp.rep(d, 'when 1 then 1.6 when 2 then 2.4 when 3', 'when 1 then 2.16 when 2 then 3.5 when 3');
+  end if;
+end $p$;
+
+create or replace function public.world_solo_aid(p_job text) returns jsonb language sql immutable as $function$
+  -- 혼자 도전 보정(7.7.7r): 다섯 곳 비교 뒤 남은 차이만 작게. 혼자 결전 보스 체력은 모두 같게 올림
+  select case p_job
+    when 'exorcist'   then '{"solo_dmg": 20, "final_dmg": 35}'
+    when 'sealmaster' then '{"solo_dmg": -5, "final_dmg": 12}'
+    when 'medic'      then '{"solo_dmg": 0, "final_dmg": 0}'
+    when 'artificer'  then '{"solo_dmg": -12, "final_dmg": -5}'
+    when 'scout'      then '{"solo_dmg": 5, "final_dmg": -20}'
+    when 'analyst'    then '{"solo_dmg": -5, "final_dmg": 10}'
+    else '{}' end::jsonb
+$function$;
 
 do $c$
 begin
