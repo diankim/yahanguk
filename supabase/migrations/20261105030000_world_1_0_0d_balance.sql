@@ -5,7 +5,7 @@
 --  ④ 직업 균형(Lv5·15·25·35 여섯 직업 실측): 껍질 가시 되돌림 최대 15·체력 1 아래로 안 깎음(거울막과 같게, 암영 검객 쓰러짐 15/15가 이것),
 --     퇴마진 ×2.0→×1.7(부적 퇴마진 ×2.4→×2.1, 현장에서 퇴마관이 다른 직업의 두 배 빠르던 것),
 --     원정 전투력에 술법 능력치(영기×0.75+의지×0.4가 힘보다 크면 그것) — 술법 직업이 힘만 보던 계산에서 약 30% 낮던 것,
---     원정 위험 사건이 위험도 6↑(균형·강행)에서 한 번도 안 나던 것: 위험 몫 (3%+위험도×1%)×태세(강행 1.3·신중 0.7)를 먼저 떼어 둠
+--     원정 위험 사건이 위험도 6↑(균형·강행)에서 한 번도 안 나던 것: 위험 몫 (3%+위험도×1%)×태세(강행 1.3·신중 0.7)를 먼저 떼고 싸움·채집·발견은 그 나머지에서 비율대로
 lock table public.world_characters in access exclusive mode;
 
 do $p$
@@ -50,10 +50,10 @@ begin
   a := $a$power := 12 + c.level * 5 + c.strength * 2.5 + c.agility * 1.5$a$;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor power'; end if;
   d := replace(d, a, $b$power := 12 + c.level * 5 + greatest(c.strength, c.spirit_affinity * 0.75 + c.willpower * 0.4) * 2.5 + c.agility * 1.5$b$);
-  -- 위험 몫을 먼저 떼어 둠: (3% + 위험도×1%) × 태세(강행 1.3·신중 0.7), 나머지 싸움·채집·발견은 그 아래에서
+  -- 위험 몫을 먼저 떼어 둠: (3% + 위험도×1%) × 태세(강행 1.3·신중 0.7), 싸움·채집·발견 경계는 남은 몫에 비율대로 줄임
   foreach a in array array[$a$if roll < p_fight then$a$, $a$elsif roll < p_fight + 0.35 then$a$, $a$elsif roll < p_fight + 0.35 + 0.22 + c.perception * 0.002 then$a$] loop
     if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor hazard %', a; end if;
-    d := replace(d, a, regexp_replace(a, 'roll < (.*) then$', $r$roll < least(\1, (1 - (0.03 + danger * 0.01) * case e.stance when 'bold' then 1.3 when 'cautious' then 0.7 else 1 end)) then$r$));
+    d := replace(d, a, regexp_replace(a, 'roll < (.*) then$', $r$roll < least(\1, 1) * (1 - (0.03 + danger * 0.01) * case e.stance when 'bold' then 1.3 when 'cautious' then 0.7 else 1 end) then$r$));
   end loop;
   execute d;
 end $p$;
@@ -119,7 +119,7 @@ begin
   a := $a$  if exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id = uid) then raise exception '이미 신청했습니다.'; end if;$a$;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor rejoin'; end if;
   execute replace(d, a, $b$  if exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id = uid and left_at is not null) then
-    update public.world_raid_members set left_at = null, out_until = now() where raid_id = p_raid and owner_id = uid;
+    update public.world_raid_members set left_at = null, out_until = greatest(now(), left_at + interval '60 seconds') where raid_id = p_raid and owner_id = uid;
     perform public.world_raid_say(p_raid, 'join', c.character_name || ' — 토벌에 돌아왔습니다.');
     update public.world_raids set updated_at = now() where raid_id = p_raid;
     return jsonb_build_object('ok', true, 'content', '토벌에 돌아왔습니다. 쉬는 중이니 준비되면 행동하세요.');
@@ -179,3 +179,18 @@ begin
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor lvcap'; end if;
   execute replace(d, a, $b$lv := least(lv, p_level + CASE rk WHEN 'normal' THEN 5 ELSE 6 END);$b$);
 end $p$;
+
+-- 완전 답사가 새로 판정되면 같은 트랜잭션의 답사 완료 수 캐시를 비움(world_survey_full_count)
+do $p$
+declare d text; a text;
+begin
+  d := replace(pg_get_functiondef('public.world_survey_award(uuid,text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$begin
+  if p_region is null or$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.0d anchor survey'; end if;
+  execute replace(d, a, $b$begin
+  perform set_config('yh.svf', '', true);
+  if p_region is null or$b$);
+end $p$;
+
+update public.world_app_meta set value = '20261105030000' where key = 'db_version';
