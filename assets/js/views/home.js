@@ -288,7 +288,7 @@ function field(s, roster, blocked) {
               <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${esc((p.items || []).map(nameOf).join(', '))}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
-          <p class="muted small">채집은 12초마다 한 번 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).</p>
+          <p class="muted small">채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).</p>
         </div>
       </section>
 
@@ -486,7 +486,7 @@ function openRest(r) {
       <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${gainText(restGain(r, false))}</small><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3 · 10분마다</small><small class="rest-cd" data-rest-cd></small></button>
       <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${gainText(restGain(r, true))}</small><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'} · 30분마다</small><small class="rest-cd" data-rest-cd></small></button>
     </div>
-    <p class="muted small">이미 가득 찬 수치는 그만큼 덜 오릅니다. 쉬고 나면 실제로 오른 만큼을 알려 드립니다. 같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.</p>` });
+    <p class="muted small">이미 가득 찬 수치는 그만큼 덜 오릅니다. 회복량 보정(침식·날씨·소속 등)에 따라 실제 회복은 달라질 수 있습니다. 쉬고 나면 실제로 오른 만큼을 알려 드립니다. 같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.</p>` });
   tick();
   $$('[data-rest]', m).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_field_rest', { p_style: b.dataset.rest }); closeModal(); return out; }));
 }

@@ -201,7 +201,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 탐색력 1 회복 15분(world_stamina_now·world_stamina_change /900), 노정 건량 +2.
 - 피해 계수: 근접 힘 1.0 · 술법 영기 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
-- 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 내 레벨보다 3·5 높은 바깥 지역은 침식 +50%·+100%(world_level_gap_effect). 퀘스트·이야기 전 ×0.4.
+- 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 퀘스트·이야기 전 ×0.4.
 - 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
 - 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
 - 공격·방어·회피·치명타·도주 확률은 world_combat_stats 하나로 계산해 엔진과 화면이 같은 값을 쓰고, 올리기 전에 바뀔 값을 미리 보인다.
@@ -229,7 +229,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 트리거 world_normalize_item_rarity가 단계(1~6)로 희귀도(1 범품…5·6 신품)·acquisition_difficulty(최대 5)·drop_rate_modifier를 덮어쓴다(검사 world_item_catalog_tier_check 1~6) — 새 물품은 단계만 정하면 된다.
 - 잠금(world_item_locks)은 팔기·버리기·거래를 막음(사용·재료는 됨). 장착 중인 장비의 마지막 한 개도 내줄 수 없다.
 - 물품 정보 창: 들어가는 제작법과 제작 화면 바로 가기. 분해·버리기(·창고에 모두 넣기) 성공하면 닫힘(item.js run — 반환값이 아니라 성공 여부로 판단, world_item_discard는 값을 안 돌려줌). 「얻는 곳」 world_item_sources: 채집터·조사 지점·요괴·낚시터 지역을 낮은 레벨부터 갈래마다 두 곳까지 한 줄(「외 n곳」을 누르면 world_item_sources_all 겹친 창), 제작·대장간 smithy·상점 shop·세력 비고 vault. 지역 이름을 누르면 지도에서 짚음(item.js src-go). 바로 맡기기 item.js stash(zonesNow로 안전지대·반요촌 아님·이동 중 아님일 때만, 서버 world_storage_put이 재검사).
-- 물품 한 원본(7.7.7o): 사용 효과는 world_item_catalog.use_fx 한 칸(world_item_fx가 읽음) — 가방 정보(world_inventory_snapshot)의 물품 목록 fx·mk·tl과 fx_names(상태 이름·지속·효과)로 화면 item.js USABLE(효과 문구·사용 단추·색·거르기)·토벌 물품 칸(fightui.js battleItems·isSpItem)·동료 돌보기·퀵슬롯이 따른다. 새 소모품은 use_fx만 채우고, 회복·기운으로 못 적는 특별 물품만 item.js USE_SPECIAL. 물품 목록은 로그인 때 views/common.js ensureCatalog(같은 db_version이면 기기 것). 등급 이름은 core.js GRADES, 직업 이름은 JOBS, 날씨·시간대·희귀도 이름은 nameOf.
+- 물품 한 원본(7.7.7o): 사용 효과는 world_item_catalog.use_fx 한 칸(world_item_fx가 읽음) — 가방 정보(world_inventory_snapshot)의 물품 목록 fx·mk·tl과 fx_names(상태 이름·지속·효과)로 화면 item.js USABLE(효과 문구·사용 단추·색·거르기)·토벌 물품 칸(fightui.js battleItems·isSpItem)·동료 돌보기·퀵슬롯이 따른다. 현장·파티 토벌 물품도 world_item_fx로 정신·침식·치료까지(정화 부적 침식 −18·정신 +6, 우수품 ×1.15). 새 소모품은 use_fx만 채우고, 회복·기운으로 못 적는 특별 물품만 item.js USE_SPECIAL. 물품 목록은 로그인 때 views/common.js ensureCatalog(같은 db_version이면 기기 것). 등급 이름은 core.js GRADES, 직업 이름은 JOBS, 날씨·시간대·희귀도 이름은 nameOf.
 - 소지품: 정렬 기본(단계)·획득순·이름순·희귀도순 × 정/역순, 획득순은 world_item_acquired(수량이 늘 때 트리거가 기록, 기록 전 물품은 오래된 것). 「칸대로 나눠 보기」(기본 켬·yh-bag-split): 묶음 크기만큼 한 줄씩(가득 찬 칸 먼저, 장착 중인 하나는 따로), 「사용」·「열기」는 줄마다. 물품마다 「창고 n」(world_storage_snapshot 5분 캐시, 창고 행동 뒤 새로). 「효과」 칩 회복 종류 거르기(bag.js fxPick, 하나라도 맞으면). 이름 아래 짧은 설명 core.js brief.
 
 ### 개인 창고(world_storage)
@@ -312,7 +312,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 꼬마 동무
 
 - 47종(1.0.0, 조사원 제보 12종 포함 — 은빛 아프간 하운드·분홍 포메라니안·오목눈이 2026-11-02, 원본 supabase/rollback/p6_pets.src.sql) world_pet_species(grade·kind·likes·how·egg), world_pets(affinity 0~300, 100 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩 +1), 출처 world_pet_sources(quest:·title:·gw_first).
-- 범품 8: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 8: pet_egg_2 「얼룩무늬 알」 · 진품 7: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 5: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때)마다 world_event_char_apply 희귀 전리품 길로 0.5%·0.06%.
+- 범품 15: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 15: pet_egg_2 「얼룩무늬 알」 · 진품 8: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 7: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때)마다 world_event_char_apply 희귀 전리품 길로 0.5%·0.06%.
 - world_pet_adopt: 알은 그 등급 egg 종 중 고르게, 이미 있으면 친밀도 +30(최대 300), 친밀도 가득이면 「동무 정표」 pet_token(거래 불가, 가방이 차면 창고). 정표 5 → 빛나는 알 world_pet_token_trade(어디서나, 가방 「알로 바꾸기」·물품 정보·별채 동무 창). 조건 보상 world_pet_grant(이미 있으면 pet_food 3을 창고로).
 - 두 자리(1.0.0): 데리고 다니는 동무 world_pet_profile(조사원 카드 pet = world_pet_profile_of, 별채 없어도 world_pet_profile_set)·별채 동무 world_housing.pet_id(world_pet_place), 같은 동무는 한 자리에만(서로 빼고 계정마다 advisory 잠금, pet_out은 안 씀, world_pet_walk는 옛 화면 호환), 별명 8자 world_pet_nickname, world_pet_act(pat·play·feed, pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음.
 - 규칙 'home'(world_home_rule_count: open·size·visits·guest·furn·pets·adult·pet_grade·eggdup — 알에서 잇달아 겹친 최장 횟수 world_pet_streak), 칭호 14 분류 '별채'(pet_dup3 「또 너니?」·숨김 pet_dup5 「끊어지지 않는 인연」, 효과 없음), 꾸미기 fr_home·pt_home·sl_dong.
@@ -324,7 +324,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 휴식과 회복
 
-- 잠깐 쉬기 10분·푹 쉬기 30분 쿨타임(본부 무료 휴식 포함) 서버 강제. 바깥 야영은 숙소 회복의 ⅔(home.js 예상치도). 단추에 예상량, 쉰 뒤 실제 오른 값(world_field_rest의 recovered). 근접 무기(또는 맨손)면 영력을 「기력」으로 적는다(서버 문구·home.js gainText, core.js spOf).
+- 잠깐 쉬기 10분·푹 쉬기 30분 쿨타임(본부 무료 휴식 포함) 서버 강제. 바깥 야영은 숙소 회복의 ⅔(home.js 예상치도). 단추에 예상량, 쉰 뒤 실제 오른 값(world_field_rest의 recovered). 근접 무기(또는 맨손)면 영력을 「기력」으로 적는다(서버 문구·home.js gainText, core.js spOf). 쉬기·야영 회복(체력·정신·영력)에 회복량 보정(healing_pct)을 곱함(home.js 예상치는 보정 없이, 창에 안내), 야영 습격 확률에 조우 보정. 안전지대 체류 회복은 고정.
 - 안전지대 체류 pg_cron yh-safe-regen(10분, world_safe_regen) 체력 +12·정신 +6(전투불능·이동·원정 제외).
 - 마음 다잡기(본부 정청·객사·연무장, 정신 +18·침식 −10) 15분 쿨타임, 정신 가득·침식 0이면 불가.
 - 부적 정화(world_survival_action cleanse): 정화 부적 1(보통 먼저, 없으면 우수품 침식 −21·정신 +7)로 침식 −18·정신 +6, cure_items에 ward_talisman인 상태이상(중독·심신 동요·사념 침식)도 푼다. 둘 다 없으면 불가.
@@ -345,7 +345,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 방침: 보통 속도 · 모든 직업에 불이익 · 고위험 보상.
 
 - 오르는 곳: 탐색(world_field_search) 위험도 1~2 반쯤 +1·3~4 +1·5↑ +2, 삼경 +0.5, 어두운 곳(사당·폐단·묘역·지하·심연·균열·고도·수궁·흉가 정원·혈림) +0.5, 침식 보정(world_status_effect_total('erosion_pct'))을 곱하고 소수는 확률로 올림. 토벌(world_event_char_apply): 위험도 3↑ 승리 +1·패배(battle_lost) +3, 영체·독성·반사·매복·정예·우두머리 +2(world_erosion_pct_self). 원정은 위험도·깊이별 회차마다.
-- 단계 효과(world_erosion_effect): 주의 30 회복 −15%·희귀품·단서 +5% / 위험 55 회복 −25%·받는 피해 +10%·행동마다 정신 −1·희귀품·단서 +10% / 붕괴 직전 80 회복 −35%·받는 피해 +20%·주는 피해 −10%·조우 +20%·희귀품·단서 +15%. 공격력 −10/−20/−30%(world_combat_stats mind, 무기 갈래 무관; 정신 40↓ ×0.85·20↓ ×0.7도 같은 곳). 100이면 정신 0(trg_world_erosion_overflow). 캐릭터 › 상태에 지금 단계 효과.
+- 단계 효과(world_erosion_effect): 주의 30 회복 −15%·희귀품·단서 +5% / 위험 55 회복 −25%·받는 피해 +10%·행동마다 정신 −1·희귀품·단서 +10% / 붕괴 직전 80 회복 −35%·받는 피해 +20%·주는 피해 −10%·조우 +20%·희귀품·단서 +15%. 공격력 −10/−20/−30%(world_combat_stats mind, 무기 갈래 무관; 정신 40↓ ×0.85·20↓ ×0.7도 같은 곳). 100이면 정신 0(trg_world_erosion_overflow). 요화·요괴화의 주는 피해와 침식 불이익은 world_combat_stats 피해 % 상한 35 밖. 캐릭터 › 상태에 지금 단계 효과.
 - 수치를 바꾸면 위 함수들과 character.js erosionNote·guide.js를 함께.
 
 ### 요화(妖化)
@@ -432,10 +432,10 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 대본 표 world_faction_npcs·world_faction_scenes(join 3·rejoin·rank 2~5·vault·hall), 진행 world_faction_progress(join_step·rank·merit·npcs_met·rejoin_pending·show_rank·hall_day/best). world_characters에 열을 더하지 않는다. 등급 이름 world_faction_ranks. 원본 작업 공간 faction_script(gen.py).
 - 가입 퀘스트(처음 들 때만, 다시 들면 rejoin 대사 한 번·등급 1): world_faction_sync가 마지막 가입 기록(world_events faction)으로 맞춤. 할 일 need.tasks(search·clue·win·gather·travel·expedition·sell·trade·craft, r·rank·phase·weather·safe·distinct)는 world_faction_task_count가 step_started_at부터 셈. need.at·erosion·cost. world_faction_report가 대사·보상(가방 확인)·다음 장면을 한 번에. 정청 연락관도 보고를 받음.
-- 가입만으로 받는 혜택: 정통파 원정 귀환 경험치·숙련·전 +15%(world_expedition_complete)·어디서든 소속 세력 구조대(world_call_rescue own: 반값·경험치 손실 없음·체력 50) / 적월교 강행 원정 전리품 +15% / 흑련회 희귀품 +5%(world_faction_rank_effect, 가입 퀘스트 무관)·판매 한도 +500전(world_affil_cap) / 북령맹 원정 받는 피해 −20% / 수향연맹 가방 +6칸 / 남명회 원정 채집 +15% / 천명원 원정 답사도 +20%(world_expedition_settle). 화면 character.js PERKS·guide.js.
+- 가입만으로 받는 혜택: 정통파 원정 귀환 경험치·숙련·전 +15%(world_expedition_complete)·어디서든 소속 세력 구조대(world_call_rescue own: 반값·경험치 손실 없음·체력 50) / 적월교 강행 원정 전리품 +15% / 흑련회 희귀품 +5%(world_faction_rank_effect, 가입 퀘스트 무관)·판매 한도 +500전(world_affil_cap) / 북령맹 원정 받는 피해 −20%(world_expedition_settle 받는 피해 ×0.8) / 수향연맹 가방 +6칸 / 남명회 원정 채집 +15% / 천명원 원정 답사도 +20%(world_expedition_settle). 화면 character.js PERKS·guide.js.
 - 등급 퀘스트: 평판(누적, 상한 5000) 300·800·1,600·3,000과 레벨 조건. 등급 효과 world_faction_rank_effect(가입 퀘스트를 마친 지금 세력, (등급−1)×값). 천명원 등급은 예언(조우 −2%씩)과 날씨·시간대 불이익 10%씩 되돌림(world_env_total).
 - 공훈(merit): 의뢰판(world_faction_request_claim, 하루 셋 md5(키·세력·날짜) 순, 그날 한 일, 평판·공훈)·퀘스트·수련장·기부로 얻고 비고(world_faction_vault_buy, 세력 안전지대·등급 조건, 팔기 없음)에서만 씀. 비고 world_faction_vault.kind item·title·frame·name_style('ns:1021'~'ns:1027', world_faction_unlocks → world_name_styles)·mount(acquire_method 'faction', 마구간 world_mount_acquire 거절), 물품 아닌 것은 하나만(world_faction_vault_owned). 세력마다 칭호 fv_<세력>(2등급 150)·테두리 fr_f_*(3등급 250)·장비 fv_*(3등급 300, 4단계·거래 불가)·이름 색(4등급 350)·탈것 fm_<세력>(5등급 600, 운임 1, 수향 화방선 ×2.3·나머지 ×1.9 — 수향 나룻배 ×2.1보다 느리게).
-- 수향연맹 뱃길(world_river_boat_rank·speed·member): 가입 퀘스트를 마친 수향 조사원이 배(river_skiff·fm_river_alliance)를 타면 속도 ×(1.05+0.05×등급)·운임 없음(world_travel_route·world_charge_mount_fare·world_mount_snapshot river_speed/river_free, map.js). 동승(world_ride_respond) 속도에는 아직 안 넣음.
+- 수향연맹 뱃길(world_river_boat_rank·speed·member): 가입 퀘스트를 마친 수향 조사원이 배(river_skiff·fm_river_alliance)를 타면 속도 ×(1.05+0.05×등급)·운임 없음(world_travel_route·world_charge_mount_fare·world_mount_snapshot river_speed/river_free, map.js). 동승(world_ride_respond)은 파티장의 뱃길 속도를 곱함.
 - 기부 world_faction_donate(세력 안전지대, world_faction_donations): 거래 불가 포함, 기준 시세 50전마다 공훈 1, 하루 30. 장착 마지막 하나·잠금·강화 장비·임무 물품·시세 0 불가(world_faction_donate_info). 진품 이상이 섞이면 한 번 더 묻는다(factionquest.js bindDonate).
 - 수련장 world_faction_trial(하루 한 번): world_combat_stats로 등급별 시련 상대(Lv 3·7·12·18·24, 기세 100+8×Lv, 공격 10+2.6×Lv)와 12합까지, log를 replay.js로 한 줄씩(건너뛰기). 3·5등급 첫 통과 칭호 fac_<세력>_t3/_t5, t5는 낙관 sl_f_*.
 - 세력 안전지대 world_faction_home: 정통파 정청·객사, 적월교 백골 장터(월식성 아님), 흑련회 십삼문, 북령맹 철벽 고찰, 수향 구름나루, 남명 잔불촌, 천명원 무극 관성대·본부 객사(Lv25 전 분소).

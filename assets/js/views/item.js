@@ -181,7 +181,8 @@ async function openAllSources(id) {
   catch (e) { toast(e.message, 'error'); return; }
   const sec = (label, all) => (all || []).length ? `<h3 class="sub-h">${label} <small class="muted">${all.length}곳 · 낮은 레벨부터</small></h3>
     <div class="src-all">${all.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '';
-  const body = [sec('채집', s.gather), sec('조사', s.sites), sec('요괴', s.monsters), sec('낚시', s.fish)].join('') || '<p class="muted">-</p>';
+  // 조사 지점은 더 이상 조사할 수 없어 보이지 않는다
+  const body = [sec('채집', s.gather), sec('요괴', s.monsters), sec('낚시', s.fish)].join('') || '<p class="muted">-</p>';
   const m = openLayer({ title: `${nameOf(id)} · 얻는 곳`, body: `<p class="muted small">지역 이름을 누르면 지도에서 짚어 줍니다.</p>${body}` });
   $$('[data-src-go]', m).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
 }
@@ -194,7 +195,8 @@ async function fillSources(box, id) {
     // 갈래마다 낮은 레벨부터 두 곳까지만(길어지면 아래 단추가 밀려 내려갔다), 나머지는 「외 n곳」
     const part = (label, all, n) => { const list = (all || []).slice(0, 2), tot = Math.max(n || 0, (all || []).length);
       return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join(' · ')}${tot > list.length ? ` <button type="button" class="q-link src-more" data-src-more>외 ${tot - list.length}곳</button>` : ''}</span>` : ''; };
-    const html = [part('채집', s.gather, s.gather_n), part('조사', s.sites, s.sites_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
+    // 조사 지점(s.sites)은 더 이상 조사할 수 없어 빼고 보인다
+    const html = [part('채집', s.gather, s.gather_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
     // 사는 곳: 대장간(모든 안전지대)·안전지대 상점(회차마다 품목이 바뀜)·세력 비고(공훈)
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
     const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`].filter(Boolean).join('');
