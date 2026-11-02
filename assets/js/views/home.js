@@ -4,7 +4,7 @@
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
-import { load, chip, danger, loading, errorBox, safeZones, zonesNow } from './common.js';
+import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -28,7 +28,18 @@ const OUTCOME = {
 const CAT = { herbs: '약초', ore: '광맥', wood: '목재', water: '물가', spirit: '영기', relics: '유물', supplies: '보급' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
-let el, off = [], snap = null, timer = null, busy = false;
+let el, off = [], snap = null, timer = null, busy = false, peopleTimer = null, peopleKey = '';
+// 여기 있는 이들·파티 칸: 남이 오가거나 파티에 들어와도 1분 안에 보이게(화면이 보이고 창·전투가 없을 때만, 바뀌었을 때만 다시 그림)
+async function peopleCheck() {
+  if (!el?.isConnected || document.hidden || busy || snap?.battle || document.querySelector('.modal-backdrop')) return;
+  invalidate('world_region_roster'); invalidate('world_party_overview');
+  try {
+    const [r, p] = await Promise.all([load('world_region_roster').catch(() => []), load('world_party_overview').catch(() => null)]);
+    const key = JSON.stringify([(r || []).map(x => x.owner_id || x.character_name), (p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
+    if (peopleKey && key !== peopleKey) draw();
+    peopleKey = key;
+  } catch {}
+}
 // 알림의 "결과 보기": 현장 화면이 그려진 뒤 원정 창을 연다.
 // 상태판·알림의 「원정 보기」: 현장 화면이면 바로 열고, 다른 화면이면 현장으로 옮긴 뒤 연다.
 
@@ -43,9 +54,10 @@ export async function render(root) {
     draw();
   }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
+  clearInterval(peopleTimer); peopleKey = ''; peopleTimer = setInterval(peopleCheck, 60000);
   await draw();
 }
-export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); stopBattle(); }
+export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); clearInterval(peopleTimer); stopBattle(); }
 
 let again = false, fishSpot = null, restSt = null, idleSt = null;
 const restAt = k => { const t = restSt?.[k + '_ready_at']; return t ? new Date(t).getTime() : 0; };

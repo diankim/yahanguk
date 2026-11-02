@@ -52,7 +52,7 @@ async function drawWorld(body, soft) {
   [mapData, mountData, partyData, zones] = await Promise.all([
     load('world_map_snapshot', undefined, { maxAge: 30000 }),
     load('world_mount_snapshot', undefined, { maxAge: 60000 }).catch(() => null),
-    load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null),
+    load('world_party_overview', undefined, { maxAge: 5000 }).catch(() => null),  // 동료가 막 파티에 들어와도 동승 단추가 바로 보이게
     safeZones().catch(() => new Map()),
   ]);
   const here = currentRegion(mapData);

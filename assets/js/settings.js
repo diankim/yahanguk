@@ -89,7 +89,11 @@ export function mountNotifications(btn) {
   let first = true, hiddenAt = 0, lastRead = Date.now();
   const read = () => { lastRead = Date.now(); return loadNotes(); };
   const soon = throttle(read, 15000);
-  on('changed', ev => { if (!midBattle(ev) && !notesLive) setTimeout(soon, 600); });
+  on('changed', ev => {
+    // 원정 결과를 다른 길(현장·상태판)로 받았으면 떠 있던 「원정 귀환」 알림을 거둔다
+    if (/expedition_complete/.test(ev.name || '')) document.querySelectorAll('.note-pop[data-kind="expedition_done"]').forEach(x => { const n = byId(x.dataset.id); x.remove(); if (n) markRead(n); });
+    if (!midBattle(ev) && !notesLive) setTimeout(soon, 600);
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { hiddenAt = Date.now(); return; }
     if (!notesLive || Date.now() - hiddenAt > 60000) read();
@@ -232,7 +236,7 @@ function notePop(n) {
   if (document.querySelector(`.note-pop[data-id="${n.id}"]`)) return;
   let stack = document.querySelector('.note-pops');
   if (!stack) { stack = document.createElement('div'); stack.className = 'note-pops'; stack.setAttribute('aria-live', 'polite'); document.body.append(stack); }
-  const card = h(`<div class="note-pop" data-id="${esc(n.id)}" role="alertdialog" aria-label="${esc(n.title || '알림')}">
+  const card = h(`<div class="note-pop" data-id="${esc(n.id)}" data-kind="${esc(n.kind)}" role="alertdialog" aria-label="${esc(n.title || '알림')}">
     ${icon(/^bond_/.test(n.kind) ? 'heart' : n.kind === 'circle_invite' ? 'chat' : /^party_/.test(n.kind) ? 'users' : n.kind === 'friend_request' ? 'heart' : n.kind === 'trade_offer' ? 'coin' : n.kind === 'letter' ? 'letter' : /^spar_|^raid_/.test(n.kind) ? 'sword' : 'flame', 20)}<div><b>${esc(n.title || '알림')}</b><span>${esc(n.content || '')}</span></div>
     <div class="note-actions">${noteActs(n)}<button class="btn ghost small" data-pop-close aria-label="나중에">나중에</button></div></div>`);
   card.addEventListener('click', async e => {
