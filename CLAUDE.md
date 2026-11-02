@@ -114,7 +114,7 @@
 
 ### 파티 동승 규칙
 
-- 파티원에게만, 탑승 정원과 탈것 조건 검증. 수락하면 검증 뒤 출발.
+- 파티원에게만, 탑승 정원과 탈것 조건 검증. 수락하면 검증 뒤 출발. 요청은 받는 사람에게 알림 ride_request(화면 위에 바로 떠 「함께 타기」·「사양」, 갈래 party).
 - 전투 중·자율 활동 중인 캐릭터는 이동·동승 불가.
 - 동승 요청이 취소되어도 상대의 독립 이동은 계속되고, 제안자도 자기 이동을 독립적으로 취소할 수 있다.
 - 출발·도착·운임 차감은 서버에서 일관되게, 동승 수락 시 운임 이중 차감 없음, 양측 위치·이동 상태 일치.
@@ -162,13 +162,13 @@
 ### 기술 계열과 숙련
 
 - skill_progress에 경험: 단계 r→r+1에 80+8r, 30단계부터 6×(r−29)²를 더함(누적 40단계 11,670·50단계 30,940), 최고 50(world_skill_line_xp·world_skill_line_rank). 탐색 한 번 탐사 경험 5.
-- 직업 계열(7.7.7p): 전투 기술 경험은 든 무기가 아니라 직업 계열에(world_job_line: 호위 무사 melee 근접·조사원 ranged 사격·봉인술사 sealing 봉인술·퇴마관 exorcism 퇴마술·암영 검객 dagger 단도·의무관 medicine 의술, 화면 core.js JOB_LINE). 토벌 기록 payload.line → world_event_char_apply. 분석·막기·응급 처치는 공통. 새 계열 기본 기술 수치: 단도 = 옛 근접 공격 수치, 퇴마술 = 봉인술, 의술 = 회복 중심(50단계 회복 +35%·술법 피해 +17%, 7.7.7q). 근접(호위 무사)은 받는 피해 감소 중심(7.7.7q). 택일 ① 은 옛 동작을 빌림(world_skill_catalog.proc_as → world_skill_procs가 함께 돌려줌, 기록 줄 이름은 world_skill_alias_lines가 바꿈, 원정 효과는 world_skill_owned), ② 는 직업 고유(단도 암습 급소 해부·독 바른 날·그림자 덫·꿰뚫는 눈(7.7.7r 이름) / 퇴마술 정화 파사안·퇴마 진언·정화의 불·금강 결계(청정결계 동작) / 의술 처방 맥 짚기·보신 처방·해독 처방·회춘), 숙달 천수비도(검신 동작)·멸마(술법 치명타 200%)·화타의 손(응급 처방 ×1.5). 방패(이목·도발)는 호위 무사만. 단도 기본 기술 넷은 이목 감소(passive_effect.presence_pct, 손목 놀림·잔칼질·일점 −10·무음 찌르기 −15, world_combat_stats가 곱함). 퇴마술 ② 정화 수치(7.7.7r): 파사안 +26%(그 밖 +8%)·퇴마 진언 40%+약화·정화의 불 50%+불(pierce 2)·금강 결계 −26%. 지금 직업 계열이 아닌 전투 계열과 그 계열이 드는 조합 기술은 효과·고유 동작·전투 숙련에서 빠짐(world_skill_line_ok — world_skill_procs·owned·effect·combat_stats·skill_pending, world_skill_sync는 new.job_key로, 8단계 갈래 덤·부적 정련 품질은 그 직업만). 화면 character.js mineOnly(지난 직업 계열은 「효과 없음」 한 줄).
+- 직업 계열(7.7.7p): 전투 기술 경험은 든 무기가 아니라 직업 계열에(world_job_line: 호위 무사 melee 근접·월궁 사수 ranged 사격·봉인술사 sealing 봉인술·퇴마관 exorcism 퇴마술·암영 검객 dagger 단도·의무관 medicine 의술, 화면 core.js JOB_LINE). 토벌 기록 payload.line → world_event_char_apply. 분석·막기·응급 처치는 공통. 새 계열 기본 기술 수치: 단도 = 옛 근접 공격 수치, 퇴마술 = 봉인술, 의술 = 회복 중심(50단계 회복 +35%·술법 피해 +17%, 7.7.7q). 근접(호위 무사)은 받는 피해 감소 중심(7.7.7q). 택일 ① 은 옛 동작을 빌림(world_skill_catalog.proc_as → world_skill_procs가 함께 돌려줌, 기록 줄 이름은 world_skill_alias_lines가 바꿈, 원정 효과는 world_skill_owned), ② 는 직업 고유(단도 암습 급소 해부·독 바른 날·그림자 덫·꿰뚫는 눈(7.7.7r 이름) / 퇴마술 정화 파사안·퇴마 진언·정화의 불·금강 결계(청정결계 동작) / 의술 처방 맥 짚기·보신 처방·해독 처방·회춘), 숙달 천수비도(검신 동작)·멸마(술법 치명타 200%)·화타의 손(응급 처방 ×1.5). 방패(이목·도발)는 호위 무사만. 단도 기본 기술 넷은 이목 감소(passive_effect.presence_pct, 손목 놀림·잔칼질·일점 −10·무음 찌르기 −15, world_combat_stats가 곱함). 퇴마술 ② 정화 수치(7.7.7r): 파사안 +26%(그 밖 +8%)·퇴마 진언 40%+약화·정화의 불 50%+불(pierce 2)·금강 결계 −26%. 지금 직업 계열이 아닌 전투 계열과 그 계열이 드는 조합 기술은 효과·고유 동작·전투 숙련에서 빠짐(world_skill_line_ok — world_skill_procs·owned·effect·combat_stats·skill_pending, world_skill_sync는 new.job_key로, 8단계 갈래 덤은 그 직업만). 화면 character.js mineOnly(지난 직업 계열은 「효과 없음」 한 줄).
 - 계열: 전투 근접·사격(ranged)·봉인술·단도·퇴마술·의술·분석·막기(guarding)·응급 처치(first_aid) / 조사 탐사(tracking) / 채집 foraging(herbs·wood·supplies·water·spirit)·mining(ore·relics)·fishing(던질 때마다 8) / 제작 smithing 단조·carpentry 목공·artifice 법구 공예·wardcraft 봉인 공예(분야 키 sealing)·weaving 직조·leatherwork 가죽 공예·alchemy 연금·cooking 요리(world_craft_line_of(분야)·world_line_name). 옛 herbalism·spirit_gathering 키와 요리 숙련(cooking_rank·cooking_xp)은 남아 있어도 쓰지 않는다.
 - 숙련 4갈래(combat/gathering/crafting/investigation_rank) = 그 갈래 계열의 최고 단계(trg_world_skill_sync·world_skill_sync). 제작으로 오르는 계열 = world_craft_line_of(제작법 craft_field)(world_event_char_apply).
 - 토벌 행동 기술: world_battle_action이 승리 기록 payload.acts(analysis·guarding·first_aid: 집중·방어·회복품/처치 횟수), world_skill_add가 종류마다 least(3,n)×8.
 - 단계 보상(3·8·13·18·24·30·36·43·50단계): 기본(slot base), 13·30 추가(extra), 24·43 택일(a·b, world_skill_choose, world_skill_picks — 처음 무료, 바꾸기 24단계 2,000·43단계 5,000전), 50 숙달(master). 근접(호위 무사)은 13·24·30·43 모두 택일(① 방패 호령·도발·철갑 강기·사자후, 이목은 world_combat_stats / ② 수호 melee_g13 반격 자세·g24 버팀 기세·g30 불굴·g43 수호신, 숙달 melee_g50 금강 수호 — 7.7.7q, 기본 기술은 받는 피해 감소 중심; 옛 공격 갈래 발도·일격·유수검·파천·검신은 category 'proc_src'로 단도가 빌려 쓰는 동작만 남음). 봉인술도 13·24·30·43 모두 택일(A 몰아치기 연쇄부·폭렬부·연환부·천뢰부 / B 북돋기·약화 부적 접기·호체부·겹술식·청정결계; 바꾸기 13단계 1,000·24 2,000·30 3,000·43 5,000전). 무료 다시 고르기 world_skill_picks.free_repick(기한 없음, 롤백 때 사라짐). 무기 강화 택일은 근접 단조·원거리 목공·술법 법구 공예 43a.
 - 조합 기술 15(category combo, requires 두 계열 18단계, 원본 world_skill_catalog): 대장장이 검객·사냥꾼의 눈·영맥 판독(분석·채집)·야전 약방(응급 처치·채집)·현장 조제(채집·연금)·바위 몸(막기·채광)·영맥 세공(채광·법구 공예)·짐꾼의 요령(채광·가죽 공예)·그물 짓기(낚시·직조)·갯가 주방(낚시·요리)·낚싯대 깎는 손(낚시·목공)·겹봉인(봉인술·봉인 공예)·칼집 손질(단도·가죽 공예, 대장장이 검객 동작)·부적 퇴마진(퇴마술·봉인 공예, 퇴마진 ×2.4)·약선 처방(의술·연금, 응급 처방 +10).
-- 보유 판정 world_skill_has 하나(world_skill_effect·world_combat_stats·world_skill_snapshot 공용). 전투 피해·치명타는 world_combat_stats, 그 밖은 world_skill_effect(상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·조우 −15) → world_status_effect_total. 숙련 효과는 50단계 기준(전투 숙련 공격력 단계마다 +0.6% 등). 기본 기술 효과는 그 계열 분야에서만.
+- 보유 판정 world_skill_has 하나(인라인되는 SQL — 조합 기술만 world_skill_combo_ok, world_skill_line_ok도 SQL)(world_skill_effect·world_combat_stats·world_skill_snapshot 공용). 전투 피해·치명타는 world_combat_stats, 그 밖은 world_skill_effect(상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·조우 −15) → world_status_effect_total. 숙련 효과는 50단계 기준(전투 숙련 공격력 단계마다 +0.6% 등). 기본 기술 효과는 그 계열 분야에서만.
 - 고유 효과: 이름 있는 기술(추가·택일·숙달·조합)은 passive_effect가 비고 행동을 바꾼다. world_skill_procs(uid)가 skill_id 목록을 주고 world_battle_action·world_field_gather·world_craft_item·world_field_search·world_travel_route·world_field_rest·world_weapon_enhance·world_enhance_quote·world_equipment_repair·world_repair_quote·world_rescue_character·world_combat_stats(도발 이목 +60)가 처리. 원정은 world_exp_skill_def(atk·guard·win·loot·find·heal·ward·일지 줄)를 world_exp_skill_fx가 합쳐(상한 전투력 25·피해 30·승률 0.08·채집 30·발견 35·회복 4·침식 35) settle에 보정과 「[기술] …」 줄로. 새 고유 효과를 넣으면 이 함수들과 skill_catalog.description을 함께 고친다.
 - 기술 칭호 32(ct_<계열>_15·35·50, gt_<계열>_25·50, ct_all_50·gt_all_50, 규칙 'skill'·'skill_all'). 함수 주인 역할은 기술표를 못 읽으므로 이름은 world_skill_name. 생성기 supabase/gen750(skills_draft.json(사용자 확정 시안 5, decisions_5) + f_*.sql·m_*.sql → gen.py).
 - 분해 world_dismantle_item: 언제나, 그 장비 계열(world_gear_line: 제작법 분야 → world_gear_line_map(제작법 없는 장비, 새 장비마다 한 줄) → 부위) 경험 12. 계열 단계가 world_dismantle_need(1·3·6·9·12·15)보다 낮으면 경험만(하루 제한 없음), 아니면 제작법 재료 절반 반환. 미리 알림 world_dismantle_info.
@@ -180,7 +180,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 능력치(a_basic.sql)
 
-- + / − 로 쌓고 다 누른 뒤 600ms에 world_combat_preview(p_alloc) 한 번, world_allocate_stats(p_alloc jsonb)로 한 트랜잭션 반영(포인트 합·상한 검사, 캐릭터 행 갱신 한 번·progression 한 줄). 옛 world_allocate_stat은 남아 있음.
+- + / − 로 쌓고 다 누른 뒤 600ms에 world_combat_preview(p_alloc) 한 번, world_allocate_stats(p_alloc jsonb)로 한 트랜잭션 반영(포인트 합·상한 검사, 캐릭터 행 갱신 한 번·progression 한 줄).
 - 한 능력치 상한 world_stat_cap_of = 직업 기본값 + floor(1.5×레벨)(character.js statCap). 세심단·환골탈태·world_reset_points도 직업 기본값 기준.
 - 방어구 조건은 적힌 능력치와 짝(world_stat_pair: 체질↔힘·민첩↔감각·의지↔영기) 중 높은 것(world_equip_item·item.js STAT_PAIR), 장신구(관모·신·노리개·호신부·탈)는 가장 높은 능력치, 무기·도구는 그대로.
 
@@ -191,7 +191,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 소속 효과(world_affil_effect → world_status_effect_total, 경제 world_affil_cap·world_affil_tax): 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·주는 피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·주는 피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%. 하루 소속 보급·소속 임무도 소속마다. 화면 core.js FACTIONS.
 - 직업(내부 키 / 이름 world_job_label·world_job_name / 화면 core.js JOBS): 호위 무사 artificer 방패·수호 · 월궁 사수 scout 원거리 공격(옛 이름 현장 조사원 — 7.7.7r, 조사원 전체를 부르는 「조사원」은 그대로) · 퇴마관 exorcist 술법 공격 · 의무관 medic 치유 · 봉인술사 sealmaster 보조(북돋기·약화)·버티는 술사(이목 +60·방어 +30·회피 +12, 퇴마관 이목 −15 — world_combat_stats, 7.7.7r) · 암영 검객 analyst 근접 공격(7.7.7q 역할, 옛 이름 백공 기술관 — 7.7.7r에서 바꿈, 직업 설명 core.js JOBS desc 앞 【역할】·lore.js JOB_LORE fight).
 - 기본 능력치 world_job_base(합 30): 호위 무사 힘9·체질7·민첩5 / 조사원 민첩8·감각8 / 퇴마관 영기9·의지7 / 의무관 의지8·영기7·체질6 / 봉인술사 의지8·영기7·체질5 / 암영 검객 힘8·민첩6·체질5·감각5(7.7.7r), 나머지 3~4.
-- 직업 효과 world_job_effect(피해 %는 그 역할 무기를 들었을 때만): 호위 무사 받는 피해 −12(이목 +80·공격력 ×0.85는 world_combat_stats) / 조사원 원거리 +8·회피 +6·도주 +15 / 퇴마관 술법 +8·받는 피해 −6(술법 치명타 +6은 world_combat_stats, 7.7.7r) / 의무관 회복 +10(물품 ×1.15, world_party_use_item ×1.4) / 봉인술사 정신 손실 −10·침식 −5 / 암영 검객 근접 공격력 ×1.18·근접 무기 치명타 +5(world_combat_stats, 피해 % 상한 35 밖에서 곱함 — 7.7.7r). 직업 효과는 모두 전투 쪽(7.7.7q, 사용자 결정 — 옛 백공의 채집·희귀품·제작 품질·강화·다른 직업 제작법·원정 현장 가공·탐색 발견 덤은 없앰). 호위 무사 현장 기술 파갑참(근접 ×1.7·방어·결계 무시). 직업 전용 제작법(required_job)은 그 직업만(world_craft_item·bag.js jobOk).
+- 직업 효과 world_job_effect(피해 %는 그 역할 무기를 들었을 때만): 호위 무사 받는 피해 −12(이목 +80·공격력 ×0.85는 world_combat_stats) / 조사원 원거리 +8·회피 +6·도주 +15 / 퇴마관 술법 +8·받는 피해 −6(술법 치명타 +6은 world_combat_stats, 7.7.7r) / 의무관 회복 +10(물품 ×1.15, world_party_use_item ×1.4) / 봉인술사 정신 손실 −10·침식 −5 / 암영 검객 근접 공격력 ×1.18·근접 무기 치명타 +5(world_combat_stats, 피해 % 상한 35 밖에서 곱함 — 7.7.7r). 직업 효과는 모두 전투 쪽(7.7.7q, 사용자 결정 — 옛 백공의 채집·희귀품·제작 품질·강화·다른 직업 제작법·원정 현장 가공·탐색 발견 덤은 없앰). 호위 무사 현장 기술 파갑참(근접 ×1.7·방어·결계 무시). 직업 전용 제작법·도구는 없다(채집·제작은 누구나, 1.0.0b — 영맥 낫·봉인술사 봉인 공예 +5도 없앰).
 - 의무관 응급 처방(현장): 한 전투 한 번(world_active_encounters.pfx med_used)·기력/영력 25·체력 least(40, 15+체질/2+의지/2). 의무관 회복품 ×1.15(world_battle_action 두 곳·world_use_item·world_expedition_settle).
 - 시작 장비(world_create_character_v2): 호위 무사 월철 환도·쇠미늘 갑옷·무명 두건·주사 호신부 / 조사원 매눈 활·화살 100·무명 철릭·미투리 / 퇴마관 영령 방울·삼베 도포·무명 부적낭 / 의무관 먹 부채·삼베 도포·쑥 향낭(+약초·탕약) / 봉인술사 무쇠 금강령·누비 전포·유건(+봉인 부적) / 암영 검객 날선 단도·누비 전포·은방울 노리개·짚신(+청심환 2, 7.7.7r), 모두 현장 채집도 장착·월철 곡괭이.
 - 세계관 안내 assets/js/lore.js: WORLD_PRIMER·JOB_LORE(한자 이름·한 줄 말·내력·전투·원정·무기·유리한/덜 듣는 갈래·어울리는 사람·조심할 점·인연)·AFFIL_LORE를 생성 화면(고르면 카드 아래 펼침)과 도움말이 함께 쓴다. 도움말 세력 이야기 guide.js FACTION_LORE(이름·소개 common.js MAJOR_FACTIONS). 수치 원본은 core.js JOBS·FACTIONS.
@@ -208,7 +208,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 칭호
 
 - 258개(공개 185, 7.7.7p 비수·퇴마·의술의 길과 숨김 그믐밤 비수·안개 속 퇴마사·빗속의 의원 — 「…의 길」은 payload.line으로 셈): 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
-- 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만, 남의 목록에 안 나옴.
+- 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만(캐릭터를 만들거나 명단에 오르면 trg_world_staff_title이 저절로 줌), 남의 목록에 안 나옴.
 - 등급 world_title_catalog.grade 1 범품·2 양품·3 진품·4 명품·5 신품(색 회색·초록·파랑·보라 칠·주홍 칠), 어려울수록 높고 효과도 큼(첫 효과 그 등급, 둘째·셋째 한·두 등급 아래). 효과 키: 주는/받는 피해·근접/원거리/술법·치명타·회피·달아나기·방어·이목(world_combat_stats가 world_title_bonus_of로)·회복·침식·정신 손실·조우(world_status_effect_total이 world_title_extra로)·단서·희귀품·채집·제작·이동·낚시.
 - 최대 3개 장착 + 대표 칭호 하나(채팅·프로필). 숨김 칭호는 얻기 전까지 이름·조건을 서버가 감춤.
 - 칭호 묶음 world_title_presets(world_title_preset_save·apply·clear, world_title_snapshot.presets·preset_slots·preset_unlocks): 처음 3칸, 「믿음직한 해결사」(의뢰 50)·「대지의 손」(채집 500)·「공방의 주인」(제작 200)마다 한 칸(최대 6, world_title_preset_slots). 상태판 「칭호 바꾸기」 hud.js openTitleSwap(누를 때만 world_title_snapshot).
@@ -221,7 +221,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 가방 용량
 
 - 같은 물품은 묶음(world_item_catalog.stack_size)까지 한 칸: 장비·가구 1 · 탄 100 · 고급 소모품(진품 이상) 20 · 그 밖 재료·소모품·임무 물품 40(사용자 결정). 새 물품도 같은 기준. 희귀도 이름은 칭호 등급과 같음.
-- 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_inv_count·world_bag_room, core.js bagUsed). 기본 34칸(7.7.7p, bag_capacity 기본값), 넓히기: 이야기 1장(붉은 인장) +5·2~5장 +3씩·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
+- 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_bag_room, core.js bagUsed). 기본 34칸(7.7.7p, bag_capacity 기본값), 넓히기: 이야기 1장(붉은 인장) +5·2~5장 +3씩·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
 - 완전 답사(+1칸)는 길·채집터를 찾을 때마다 판정(world_survey_award, world_exploration_discoveries·world_gathering_discoveries 삽입 트리거 trg_world_survey_award).
 - 장착 장비는 칸을 안 쓴다: inventory에 남으므로 서버는 장착 수만큼 용량을 더하고(world_bag_limit·world_enforce_bag_capacity·원정 귀환·보따리·직접 거래), core.js bagUsed는 뺀다. 장착 목록은 접속 때와 장착을 바꾸는 행동(장착·해제·원정 귀환·환골탈태·분해, core.js act) 뒤에만 다시 읽는다. 서버에서 가방 자리는 bag_capacity가 아니라 world_bag_limit으로 따진다.
 - 내주는 행동(구매·제작)은 가방이 넘치면 거절, 얻기만 하는 행동(전리품·채집)은 넘친 만큼 버리고 알림. 같은 갱신에서 물품이 줄기도 하면(마지막 한 방의 화살·회복품) world_enforce_bag_capacity가 맞바꾸기로 보고 거절하므로 얻기만 하는 함수는 yh.bag_drop을 켠다(world_battle_action).
@@ -249,7 +249,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 주 능력치 조건(레벨당 3점 기준): 무기·방어구 5+0.35×3×(장착 레벨−1), 관모·신·노리개·호신부·탈·채집 도구 5+0.25×3×(장착 레벨−1). 주 능력치는 무기 종류·장비 갈래로. 새 장비도 같은 식.
 - 생활 도구(g_tools.sql·b_life.sql·data_life.py): 능력치 조건 없이 equipment_traits.req_line(gathering_rank·crafting_rank·investigation_rank)·req_rank(world_equip_item, item.js statReqs). 제작 공구 조건은 craft_fields 계열 중 최고 단계. 효과(world_field_gather): 곡괭이(world_tool_lines pick)는 ore·relics, 채집도(knife)는 herbs·wood·supplies·water에서 채집량 +10%p, 낫·등은 sig_pct·sig_where로 지역 signature_items(영맥 낫 herbs·spirit 3%·영등 relics 또는 어두운 region_type 5%). 영맥 나침반은 길·채집터 무게 ×1.2. 낚싯대 단계 덤은 2단계까지, 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 생활 장비 32가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대 6단계·제작 공구 15, 제작법 r_lt_*). 새 도구도 이 규칙.
 - 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, 화면 bag.js toolCovers는 물품 목록 tl·tier — world_tool_lines 한 곳만 고침). 채집은 도구를 조건으로 보지 않는다.
-- 장착 조건(레벨·직업·소속·능력치)은 world_equip_item이 검사, 가방 › 장비·물품 정보에 「장착 조건」 초록/빨강. 여러 직업 제작법에 쓰는 도구는 한 직업 전용으로 두지 않는다(각인 공구·강화 채집도 무제한, 영맥 낫은 조사원 전용).
+- 장착 조건(레벨·직업·소속·능력치)은 world_equip_item이 검사, 가방 › 장비·물품 정보에 「장착 조건」 초록/빨강. 생활 도구·제작 공구에는 직업 조건을 두지 않는다(무기만 직업 태그).
 - 드롭(world_gear_drops, world_gear_roll): 한 번에 하나, 일반 최대 1%·정예 5%·우두머리 15%(희귀품 보정), 3단계 이상은 우두머리만, 원정 60% 수준. 2~4단계 제작법, 5단계 일부 무극 관성대 제작, 1·2단계 일부 상점.
 - 가방 › 장비: 900px 이상 왼쪽 장착 칸(eqMini pick)·오른쪽 고른 부위(#eq-detail: equipRowLi + 바꿔 낄 장비, bag.js eqSel 유지) 나란히(.eq-split), 좁은 화면은 칸을 누르면 부위 창(성공하면 닫힘).
 
@@ -293,7 +293,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 낚시터 24곳: 강(백지교·구름나루)/늪(천엽 연화늪·폐쇄된 연화원·잿빛 갈대숲)/바다(재의 해안·구등대 군도·염등촌·만조의 갑문)/호수(천경호·수경루·설피골·유리협곡 월영 유리못)/깊은 물(용잠 수궁)/수로(구룡 폐수로·침수된 구시가지)/심연(흑조 균열·구중 봉연·귀허) + 바다 낚시터 다섯(십삼문 밀수 부두·빙혼곡 얼음 해안·주혈 광산 폐선창·월식성 바위 해안·관성대 별빛 벼랑). 풍경이 물가(water)인 지역에는 낚시터를 둔다.
 - 낚싯대를 가방에 두고 탐색력 1로 20초마다. 원정·전투·이동 중 불가.
-- 어종 37종(서식지·희귀도·시간대·날씨). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
+- 어종 50종(서식지·희귀도·시간대·날씨). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
 - 낚시 칭호 11(바다 sea_angler·tide_reader·nine_harbors·sea_dragon 포함): 입질·희귀 어종·크기 효과.
 - 요리: 손질한 생선으로(바다 요리 9 포함). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
 
@@ -323,7 +323,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 휴식과 회복
 
-- 잠깐 쉬기 10분·푹 쉬기 30분 쿨타임(본부 무료 휴식 포함) 서버 강제. 바깥 야영은 숙소 회복의 ⅔(home.js 예상치도). 단추에 예상량, 쉰 뒤 실제 오른 값(world_field_rest의 recovered).
+- 잠깐 쉬기 10분·푹 쉬기 30분 쿨타임(본부 무료 휴식 포함) 서버 강제. 바깥 야영은 숙소 회복의 ⅔(home.js 예상치도). 단추에 예상량, 쉰 뒤 실제 오른 값(world_field_rest의 recovered). 근접 무기(또는 맨손)면 영력을 「기력」으로 적는다(서버 문구·home.js gainText, core.js spOf).
 - 안전지대 체류 pg_cron yh-safe-regen(10분, world_safe_regen) 체력 +12·정신 +6(전투불능·이동·원정 제외).
 - 마음 다잡기(본부 정청·객사·연무장, 정신 +18·침식 −10) 15분 쿨타임, 정신 가득·침식 0이면 불가.
 - 부적 정화(world_survival_action cleanse): 정화 부적 1(보통 먼저, 없으면 우수품 침식 −21·정신 +7)로 침식 −18·정신 +6, cure_items에 ward_talisman인 상태이상(중독·심신 동요·사념 침식)도 푼다. 둘 다 없으면 불가.
@@ -355,7 +355,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 요화로 쓰러진 사람은 구조·본부 구조대·회생 부적으로 못 일으킨다(trg_world_yohwa_down_guard: downed_at이 풀리는 순간, 요화 줄 down_epoch가 그 쓰러짐과 같으면 거절 — 본인이 world_yohwa_seal을 골라야 함, 사용자 결정). 요화 쓰러짐(metadata.down_epoch = downed_at)은 world_death_sweep이 사망 처리하지 않음(요화 사망 OFF).
 - 봉인 world_yohwa_seal: 가까운 안전지대로 옮겨 24시간 'yohwa_seal' 뒤 요화가 풀리고 침식 40 아래. 봉인 중엔 채팅만 — 행동 기록을 남기는 것은 world_guard_action_context, 안 남기는 것(현장 이동·조사 지점·자율 시작/수령·보따리·파티 전리품·직접 거래 제안·동승 요청·연리 선물/신청)은 함수 첫머리 world_seal_guard(), 비무도 막음. 채팅·귓속말·친구·파티 맺기·프로필·칭호·꾸미기는 됨. 새 행동 함수는 행동 기록을 남기거나 world_seal_guard()를 부른다.
 - 요화·봉인은 상태 칸 10칸에 안 세고(world_status_roll) 상태판·띠에 따로 늘 보임(hud.js yohwaOf).
-- 요화 줄 지우기 금지: 만료 정리 함수(world_status_snapshot·world_apply_activity_status·world_hud_snapshot·world_field_status)는 모두 status_key <> 'yohwa'. 새 만료 정리도 같게.
+- 요화 줄 지우기 금지: 만료 정리 함수(world_apply_activity_status·world_hud_snapshot·world_field_status)는 모두 status_key <> 'yohwa'. 새 만료 정리도 같게.
 - 귀령초(gwiryeong_cho, 명품·거래 가능) world_use_item → 풀림·침식 −20. 얻는 곳(world_gwiryeong_chance·world_gwiryeong_give): 위험도 7↑ 채집 0.02%·토벌 일반 0.02%·정예 0.08%·우두머리 0.3%·구중 봉연 우두머리 1%·원정 완주 0.15%, 위험도 10은 ×1.5, 합동 토벌·결전 승리(trg_world_gwiryeong_raid, 싸운 사람마다)·귀허의 주인 처치 1%, 탐사 36단계 「영초 감별」(tracking_x36) 0.2%. 얻으면 72시간 다시 안 나옴(world_gwiryeong_log), 서버 7일 몫 = 지난 7일 요화 걸린 수의 절반(최소 1). 모든 길(새 길 포함)은 world_gwiryeong_reserve를 거친다. 전리품 표·조사 지점 world_region_sites.rare_bonus에는 넣지 않는다(trg_world_gwiryeong_roll, 맞을 때만 캐릭터 행·알림). 사망 위험이 없는 동안 다른 희귀품보다 낮게, 공급량은 그대로(사용자 결정: 봉인으로 풀어 남으면 그때 조정).
 - 구중 봉연 전리품: 구중 봉주 응축 영핵 3·천령 감로·성진사 2, 사슬 끊는 자 응축 영핵·월광 정수·결계 파편, 심연 사슬귀 응축 영핵·결계 파편·귀령 재, 토벌 22% 희귀 전리품도 응축 영핵.
 
@@ -420,7 +420,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 #### 파티 전투 화면(봉연 토벌 화면이 기준)
 
-- 공용 부품 views/fightui.js: 효과 이름·아이콘·설명 FX_NAME·FX_ICON·FX_TIP(봉연 fx·귀허 fx/bfx 한 표), 떠 있는 설명 bindTips(.fx-tip, 마우스 올린 동안·휴대폰 누르면 1.8초, 창 아님, 아이콘 누름은 참가자 고르기 아님), 참가자 칸 memberLi(직업 색 .raid-mem .jb-<직업> --jb, 체력 숫자는 막대 안 .bar.mem-hp em)·자세히 showMemDetail(#raid-memdetail: 직업·상태·체력·기여·준/받은 피해·회복·효과·기여 내역, 다시 누르거나 ×로 닫음, 싸우는 중이면 기술 대상도 그 사람), 내 막대 vitHtml(.raid-vit), 기술 단추 coopBtn(SKILL_ICON, 기술 id별), 물품 itemListHtml·itemGroups(이름·남은 수·회복 수치만 — item.js USABLE 체력·정신·영력·침식·치료 마디, fxHtml 색, 설명은 title; .raid-item-list minmax 92px — PC 넷·휴대폰 셋, 체력·정신/영력 두 칸 SP_ITEMS). raid.js·pfight.js·gw.js가 함께 쓰고 새 전투 화면도 이 파일을 쓴다. 새 기술·효과는 아이콘 표에 더한다.
+- 공용 부품 views/fightui.js(세 화면 raid·pfight·gw가 함께 씀 — 물품 창 itemTray·itemSectionsHtml(나누기는 itemGroups 하나, 화면마다 목록만: 봉연 battleItems·파티 토벌 battle.js trayList·귀허 HEAL_ITEMS+snap.items), 결과 resultBox·settleFight, 남은 시간 tickUntil·serverClock, 자세히 showSelected·fightNums, 기록 logRow·newestFirst·keepLogScroll·fitLog(지금은 raid만 높이 맞춤), jobName): 효과 이름·아이콘·설명 FX_NAME·FX_ICON·FX_TIP(봉연 fx·귀허 fx/bfx 한 표), 떠 있는 설명 bindTips(.fx-tip, 마우스 올린 동안·휴대폰 누르면 1.8초, 창 아님, 아이콘 누름은 참가자 고르기 아님), 참가자 칸 memberLi(직업 색 .raid-mem .jb-<직업> --jb, 체력 숫자는 막대 안 .bar.mem-hp em)·자세히 showMemDetail(#raid-memdetail: 직업·상태·체력·기여·준/받은 피해·회복·효과·기여 내역, 다시 누르거나 ×로 닫음, 싸우는 중이면 기술 대상도 그 사람), 내 막대 vitHtml(.raid-vit), 기술 단추 coopBtn(SKILL_ICON, 기술 id별), 물품 itemListHtml·itemGroups(이름·남은 수·회복 수치만 — item.js USABLE 체력·정신·영력·침식·치료 마디, fxHtml 색, 설명은 title; .raid-item-list minmax 92px — PC 넷·휴대폰 셋, 체력·정신/영력 두 칸 SP_ITEMS). raid.js·pfight.js·gw.js가 함께 쓰고 새 전투 화면도 이 파일을 쓴다. 새 기술·효과는 아이콘 표에 더한다.
 - 합동 토벌 #/raid/<id>(views/raid.js): world_raid_snapshot을 실시간 변경마다(참가 1초·관전 2초 간격, 내 행동 직후 같은 값은 건너뜀, 남의 마지막 한 방으로 끝나도 캐릭터 다시 읽음, 고른 물품·기록 자리 유지). 회차·상태·참가 여부가 바뀔 때만 build, 그 뒤 patch. 요괴의 말·기운 모으기는 높이 고정 #raid-says, 참가자 세 칸 #raid-mem(누르면 기술 대상, 물러남·쉬는 중·자리 비움은 흑백·점선·옅게 li.out, 휴대폰 스크롤 없이 모두), 북돋기·약화 아이콘은 이름 옆 .fx-icons(members[].buffs)·내 칩·요괴 칩(core.js ICONS), 내 피해·기여 .raid-mine(한 줄 말줄임 + 칩 한 줄, 높이 고정, 물품 창 설명 common.js itemDesc). 기록은 새 줄만 덧붙임(logLine: 「이름 — N의 피해」를 k-out 금빛 「이름 → 요괴 N 피해」, 받은 피해 k-in 빨강 「요괴 → 이름 −N 맞음」, 내 줄 .mine — 서버 문구를 바꾸면 여기도). 물품 창 openLayer(다시 읽어도 안 닫힘, 쉬는 중엔 world_use_item). 물러남 안내 #raid-out(쉬는 중 .rest 초록). PC(900px↑) 왼쪽 요괴·행동·기록·오른쪽 참가자, 휴대폰(640px↓) 한 화면: 공격·방어·물품 아래 협동 기술 넷 늘 한 줄, #raid-says 한 줄 18px(기운 모을 때만 그 자리에 막대, :has). 휴대폰 기록은 최근이 위·화면 아래까지(fitLog — 파티 토벌·귀허도 640px↓ 같게).
 
 ## 11. 세력과 거점
@@ -608,6 +608,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 기술 원칙
 
 - 게임 데이터는 서버에서 검증·저장. 클라이언트의 재화·보상·기여도·시간·소유권을 믿지 않는다.
+- 화면·도움말에 보이는 수치의 원본은 서버다. 서버 값을 뽑아 tools/gamedata/gen.py가 assets/js/gamedata.js를 만들고(동무 수·직업 기본 능력치·혼자 도전 보정·협동 기술 표·세력 가입 장소·안전지대·관계·가방/창고 칸·칭호 수·어종 수 등), guide.js·character.js·core.js JOBS가 그것만 읽는다. 서버 값을 바꾸거나 동무·어종·칭호·협동 기술을 넣으면 생성기를 다시 돌려 gamedata.js를 커밋한다(손으로 옮겨 적지 않는다). 직업 효과 줄은 core.js JOBS fx 한 곳.
 - RPC는 인증·권한 검증. RLS를 끄지 않는다. SECURITY DEFINER는 최소 권한·고정 search_path. 비밀 키·service_role 키를 프런트에 노출하지 않는다.
 - 반복 폴링 최소화, 지금 화면에 필요 없는 데이터는 갱신하지 않음. 중복 요청·동시성 충돌·거래/보상 중복 방지. 실제 테스트 결과와 추정을 구분.
 - world_characters는 열마다 권한이 걸려 새 열을 더하면 함수 주인 역할의 select *가 깨지므로 캐릭터별 새 값은 별도 표에.
@@ -617,13 +618,13 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 요청 줄이기
 
-- 행동(act)은 캐릭터를 한 번 읽고 changed를 보냄. 전투 중 끝나지 않은 턴(core.js midBattle)엔 다른 화면이 안 읽음. 행동 뒤 재요청은 캐릭터·상태판·현재 화면 정도(여기 있는 이들·동료는 자리·파티가 바뀔 때만 views/common.js ROSTER_CHANGERS, 첫 걸음 15초에 한 번). 새 기능도 changed마다 여러 요청을 보내지 않는다.
+- 행동(act)은 캐릭터를 한 번 읽고 changed를 보냄. 전투 중 끝나지 않은 턴(core.js midBattle)엔 다른 화면이 안 읽음. 행동 뒤 재요청은 캐릭터·상태판·현재 화면 정도(여기 있는 이들·동료는 자리·파티가 바뀔 때만 views/common.js ROSTER_CHANGERS, 현장에서는 남이 오가는 것을 home.js peopleCheck가 1분마다 — 화면이 보이고 창·전투가 없을 때, 바뀌었을 때만 다시 그림, 첫 걸음 15초에 한 번). 새 기능도 changed마다 여러 요청을 보내지 않는다.
 - 상태판 hud.js: world_hud_snapshot을 common.load로(다른 화면과 1초 안의 값 공유), 1분 읽기는 45초 안에 읽었으면 건너뜀, 캐릭터 3분, 화면 복귀는 30초 넘게 비웠을 때만, 탐색력 회복은 화면에서(bumpStamina), 자율 상태는 자율 행동 뒤에만.
 - 가방: 물품 목록·제작법은 접속 동안 한 번(common.js inventorySnap), 그 뒤 world_inventory_state만.
 - 캐시: 낚시터 30분·휴식·자율 10분(버리기 common.js FISH_CHANGERS 등), 캐릭터 › 상태 쉼·정인(관련 행동 뒤에만), 전투 능력치 1분(COMBAT_CHANGERS 뒤 버림). world_combat_profile은 미리보기(plus_one, world_combat_stats 7번)를 p_preview=true일 때만.
 - 칭호 점은 알림(title·cosmetic) 때와 행동 뒤 2분에 한 번. 알림·채팅·접속 확인·귓속말은 실시간이 살면 예비 5분(끊기면 예전 간격), 알림 구독 user_id 필터, 파티 채팅 party_id 필터. 동료 화면 45초·가벼운 읽기(모임·연리·서신·전리품은 관련 행동 뒤). 운영진 명단 6시간. 묶음 크기·무기 갈래(yh-stacks-v3)·가방 사전(yh-inv-static-v1)은 db_version(core.js dbVersion)이 같으면 기기 것. 버전 확인 2분.
 - 서버: world_survey_full_count(질의 하나, 하나라도 찾은 지역만), 꾸미기 답사 규칙은 탐색에서 길·채집터를 찾았을 때만, 지도는 답사 기록·지역 소개를 join으로 한 번씩.
-- 작은 SQL 함수: security definer이거나 search_path를 고정한 SQL 함수는 인라인되지 않아 매번 계획을 짠다. 자주 불리는 것은 plpgsql `#variable_conflict use_column` + `return (select * from (본문) yhq limit 1)`. 새 도우미도 definer·SET이 필요하면 plpgsql, 둘 다 필요 없으면 인라인되게 SQL.
+- 작은 SQL 함수: security definer이거나 search_path를 고정한 SQL 함수는 인라인되지 않아 매번 계획을 짠다. 자주 불리는 것은 plpgsql `#variable_conflict use_column` + `return (select * from (본문) yhq limit 1)`. 새 도우미도 definer·SET이 필요하면 plpgsql, 둘 다 필요 없으면 인라인되게 SQL(immutable SQL 안의 `text || int`는 stable이라 인라인을 막으므로 `::text`, 하위 질의도 인라인을 막으므로 따로 도우미로 — world_skill_has·world_skill_combo_ok).
 - 실시간(supabase_realtime)에는 화면이 구독하는 표만: world_active_sessions·world_chat_messages·world_circle_messages·world_notifications·world_raids·world_party_messages. 자주 고쳐지는 표(world_characters·world_events)는 넣지 않는다. 새로 구독하는 표가 생기면 그때 더한다.
 
 ### 디스크 I/O 방침
@@ -638,7 +639,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 새 함수는 기본 권한이 anon·authenticated에도 실행을 주므로, 공개용이 아니면 revoke all ... from public, anon, authenticated를 함께. 주인이 fn_owner_*인 함수의 권한은 그 역할이 준 것이라 postgres의 revoke가 조용히 무시된다 — `set role 주인` 뒤 revoke, `reset role`. postgres에 ADMIN만 있고 SET이 없으면(fn_owner_18664 등) `grant 역할 to postgres with set true` → set role → revoke → `with set false`. PUBLIC으로 열린 것을 거둘 땐 먼저 fn_owner_*·postgres·service_role에 직접 준다.
 - 화면·함수·예약 작업 어디서도 안 부르는 옛 행동 함수·안쪽 도우미·트리거 함수의 실행 권한은 거둬 두었다(함수는 남음). 점검: authenticated가 부를 수 있는 security definer 목록을 assets/js가 부르는 이름과 견준다. invoker 함수(world_economy_price_snapshot·world_mount_snapshot·world_map_snapshot)가 부르는 world_shop_sell_unit·world_river_boat_member·world_gwiheo_open은 남긴다. profiles는 handle_new_user가 쓰므로 남긴다.
-- security invoker 도우미(world_bag_room·world_bag_count·world_item_stack·world_inv_count 등)를 definer 함수에서 새로 부르면 그 주인 역할에 안쪽 함수까지 실행 권한이 필요하다. 되돌리는 시험은 postgres로 돌아 못 잡으므로 `set local role fn_owner_…`로도 불러 본다.
+- security invoker 도우미(world_bag_room·world_bag_count·world_item_stack 등)를 definer 함수에서 새로 부르면 그 주인 역할에 안쪽 함수까지 실행 권한이 필요하다. 되돌리는 시험은 postgres로 돌아 못 잡으므로 `set local role fn_owner_…`로도 불러 본다.
 - 주인 역할 점검: definer 본문이 부르는 public 함수를 주인이 실행할 수 있는지 pg_proc.prosrc의 `public.이름(`을 모아 has_function_privilege로 본다. 새 호출을 넣거나 권한을 거둔 뒤 다시 돌린다.
 
 ### 서버 전체 롤백 계획
@@ -662,7 +663,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 9. 실행하지 않은 테스트를 통과했다고 보고하지 않는다.
 10. 화면만 정상적으로 보이는 것을 게임 기능 전체가 정상이라는 근거로 삼지 않는다.
 11. 배포할 SQL을 사용자에게 줄 때는 실제 실행용과 함께 「begin; + 파일 + rollback;」으로 감싼 미리 돌려 보기용도 준다. 배포 승인: 건의·패치는 배포 직전(로컬 커밋, SQL 파일 준비·되돌리는 시험)까지만 하고 사용자가 승인하면 배포한다. 작업 브랜치에 올려도 Cloudflare가 배포하므로 승인 전에는 브랜치에도 push하지 않는다. 게임을 막는 오류·보안 문제도 고친 뒤 승인을 묻는다.
-11-1. 큰 SQL 배포: SQL Editor에 큰 파일을 붙이면 잘려 중간부터 실행된다. 그래서 Claude가 SQL을 조각내 운영 DB 임시 칸 yh_deploy.buf(n 순번, body; anon·authenticated는 스키마 접근 불가)에 올리고 md5를 저장소 파일과 맞춘다. 사용자는 SQL Editor(왼쪽 >_ 아이콘, Run as postgres)에서 ① `select md5(string_agg(body, '' order by n)) from yh_deploy.buf;` ② `do $$ begin execute (select string_agg(body, '' order by n) from yh_deploy.buf); raise exception 'ROLLBACK_TEST ok'; end $$;`(「ERROR: ROLLBACK_TEST ok」가 성공, 모두 되돌려짐). 승인 뒤 실제 실행은 raise 줄을 뺀 것. 끝나면 바로 `drop schema yh_deploy cascade;`, 작업마다 남긴 임시 표·시험 객체가 없는지 확인해 지운다(world_events는 지우지 않음).
+11-1. 큰 SQL 배포: SQL Editor에 큰 파일을 붙이면 잘려 중간부터 실행된다. 그래서 Claude가 SQL을 조각내 운영 DB 임시 칸 yh_deploy.buf(n 순번, body; anon·authenticated는 스키마 접근 불가)에 올리고 md5를 저장소 파일과 맞춘다. 사용자는 SQL Editor(왼쪽 >_ 아이콘, Run as postgres)에서 ① `select md5(string_agg(body, '' order by n)) from yh_deploy.buf;` ② `do $$ begin execute (select string_agg(body, '' order by n) from yh_deploy.buf); raise exception 'ROLLBACK_TEST ok'; end $$;`(「ERROR: ROLLBACK_TEST ok」가 성공, 모두 되돌려짐). 승인 뒤 실제 실행은 raise 줄을 뺀 것. 운영 postgres는 슈퍼유저가 아니어서 inherit 없는 fn_owner_* 주인의 함수를 고치지 못하므로, 버퍼 맨 앞(n=0)에 supabase/maintenance/owner_inherit_begin.sql, 맨 끝에 owner_inherit_end.sql을 붙여 그 트랜잭션 동안만 inherit을 켰다 끈다(복제 DB는 슈퍼유저라 이 차이를 못 잡는다). 끝나면 바로 `drop schema yh_deploy cascade;`, 작업마다 남긴 임시 표·시험 객체가 없는지 확인해 지운다(world_events는 지우지 않음).
 11-2. 되돌리는 시험은 예외를 삼키는 블록(exception when others then null 등)을 쓰지 말고 마지막 줄이 raise exception 'ROLLBACK_TEST …'인지 반드시 확인한다.
 11-3. 큰 DO 블록은 `lock table public.world_characters in access exclusive mode;`로 시작한다(pg_cron·접속자와 교착 방지 — share row exclusive는 더 센 잠금으로 올라가다 교착).
 12. 패치 번호: 패치노트(world_patch_notes.note_id)와 GM 전체 채팅 공지는 「대규모.소규모.버그」(채팅엔 「#패치노트:7.0.0」 링크). 윗자리를 올리면 아랫자리 0. 대규모·소규모 안의 버그 수정은 따로 세지 않는다. 버그 자리가 9까지 차면 7.2.9b·7.2.9c처럼 글자를 붙인다. 대규모 배포 뒤 자잘한 수정은 GM 채팅에 따로 안 올리고 그 대규모 패치노트 본문 끝에 번호 단 항목(「## 7.7.7b」 등)으로 덧붙인다. 7.7.0은 7.5.0 본문과 따로 한 줄(사용자 요청)이며 7.7.x 수정은 7.7.0 본문 끝에.
