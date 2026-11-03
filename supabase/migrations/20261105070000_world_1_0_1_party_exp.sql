@@ -427,12 +427,12 @@ begin
       end if;
     end if;
 
-                                                                                                                                                                                                                                                                                  item := public.world_expedition_bonus_item(depth, e.stance, (e.minutes / 10.0) / total);
-                                                                                                                                                                                                                                                                                      if item is not null then
-                                                                                                                                                                                                                                                                                            loot := public.world_inv_add(loot, item, 1);
-                                                                                                                                                                                                                                                                                                  seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'find', 'who', me, 'owner', e.owner_id, 'text', '원정길에서만 얻는 것을 챙겼습니다. (귀환 후 정리)');
-                                                                                                                                                                                                                                                                                                      end if;
-                                                                                                                                                                                                                                                                                                          if er >= 50 and coalesce((sup ->> 'ward_talisman_hq')::int, 0) > 0 then
+    item := public.world_expedition_bonus_item(depth, e.stance, (e.minutes / 10.0) / total);
+    if item is not null then
+    loot := public.world_inv_add(loot, item, 1);
+    seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'find', 'who', me, 'owner', e.owner_id, 'text', '원정길에서만 얻는 것을 챙겼습니다. (귀환 후 정리)');
+    end if;
+    if er >= 50 and coalesce((sup ->> 'ward_talisman_hq')::int, 0) > 0 then
       sup := jsonb_set(sup, '{ward_talisman_hq}', to_jsonb((sup ->> 'ward_talisman_hq')::int - 1)); er := er - 18; mn := mn + 6;
       seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'heal', 'who', me, 'owner', e.owner_id, 'text', '정화 부적 (우수)을 태웠습니다. 침식 -18 · 정신 +6');
     elsif er >= 50 and coalesce((sup ->> 'ward_talisman')::int, 0) > 0 then
