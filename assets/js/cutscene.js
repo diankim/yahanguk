@@ -352,7 +352,11 @@ function cutsceneMusic(M, onState) {
 
 // 로그인 화면 음악(다시 연 뒤): 「아침」 곡의 되풀이 여덟 마디를 조용히 튼다. 브라우저가 소리를 막으면 화면을 처음 누를 때 시작한다.
 // 게임 배경음악은 그동안 쉬고, 돌려준 함수를 부르면(로그인해 화면을 떠날 때) 1.5초 동안 잦아들며 멈춘다.
+let activeLogin = null;
 export function loginMusic() {
+  // 컷씬(밤 대기 화면·아침)이 떠 있으면 로그인 음악은 틀지 않는다(두 곡이 겹치던 것)
+  if (activeCs) return () => {};
+  activeLogin?.(0.2);
   const M = { ...MUSIC.morning, vol: 0.7 };
   window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: true }));
   const music = cutsceneMusic(M, () => {});
@@ -361,7 +365,9 @@ export function loginMusic() {
   document.addEventListener('pointerdown', kick);
   music.resume();
   let done = false;
-  return () => { if (done) return; done = true; document.removeEventListener('pointerdown', kick); music.stop(1.5); window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: false })); };
+  const stop = (fade = 1.5) => { if (done) return; done = true; if (activeLogin === stop) activeLogin = null; document.removeEventListener('pointerdown', kick); music.stop(fade); if (!activeCs) window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: false })); };
+  activeLogin = stop;
+  return () => stop();
 }
 
 // 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
@@ -404,6 +410,7 @@ export function loginBackdrop(host, { onReady, quick = false } = {}) {
 let activeCs = null;
 export function playCutscene(kind = 'rollback', { onEnd, stay = false, note = '', atEnd = false, fixed = false, logout = null } = {}) {
   activeCs?.(); activeCs = null;
+  activeLogin?.(0.2); // 로그인 화면 「아침」 음악이 남아 있으면 바로 걷는다
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = kind === 'rollback' ? ROLLBACK : MORNING;
   const root = document.createElement('div');
