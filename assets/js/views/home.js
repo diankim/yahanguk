@@ -130,7 +130,7 @@ function partyHtml(p, s) {
   return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명</h2>
       <div class="btn-row">${!s.region.safe ? `<button class="btn small primary" id="pt-exp" ${store.expedition ? 'disabled' : ''}>${icon('route', 14)}<span>파티 원정</span></button>` : ''}<a class="btn small ghost" href="#/party">동료 화면</a></div></header>
     <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul>
-      <p class="muted small">${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}같은 지역으로 원정을 보내면 합동 전투(동료 전투력 60%가 승률에 더해지고 요괴는 이목이 높은 쪽을 노림)를 하고, 함께 다녀온 동료 한 명마다 경험치·숙련 경험 +10%(세 명까지).</p></div></section>`;
+      <p class="muted small">${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}「파티 원정」으로 함께 떠나면 회차마다 한 싸움을 함께 치르고(요괴는 인원만큼, 승패는 함께), 함께 다녀온 동료 한 명마다 경험치·숙련 경험 +10%(세 명까지).</p></div></section>`;
 }
 
 // 파티원에게 회복품 쓰기(world_party_use_item): 같은 곳의 동료에게 약·부적을 쓴다. 의무관이 쓰면 효과 ×1.4(서버가 정함, 여기 수치는 안내).

@@ -765,4 +765,15 @@ begin
       when 'sealmaster' then '결계 야영' when 'analyst' then '급소 찌르기' when 'artificer' then '반격 태세' end);
 end $function$;
 
+-- 1.0.1 「동료와 함께 다녀온 원정」 경험치·숙련 +10%/명도 파티 원정으로 함께 떠난 동료만(사용자 결정; 전에는 같은 지역에 10분 이상 겹치면 누구나)
+do $c$ declare d text; a text; begin
+  d := replace(pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure), E'\r\n', E'\n');
+  a := $a$join public.world_expeditions px on px.owner_id = om.owner_id and px.region_id = e.region_id and px.status in ('active', 'done')$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_expedition_complete 기준 문구가 없습니다'; end if;
+  execute replace(d, a, a || $b$
+        and px.node_id = e.node_id and px.minutes = e.minutes and px.started_at = e.started_at
+        and exists (select 1 from public.world_party_exp_offers po where po.status = 'departed' and po.node_id = e.node_id and po.minutes = e.minutes
+                      and po.resolved_at = e.started_at and po.result -> 'started' ? e.owner_id::text and po.result -> 'started' ? om.owner_id::text)$b$);
+end $c$;
+
 update public.world_app_meta set value = '20261105070000' where key = 'db_version';

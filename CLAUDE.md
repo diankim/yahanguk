@@ -490,7 +490,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 현장 파티 칸 home.js partyHtml: 있는 곳·상황(원정 남은 시간·전투·전투불능)·체력·정신·침식·세력 색(world_party_overview mental·erosion·major_faction_id·expedition), 같은 곳 쓰러진 동료 구조, 「파티 원정」, 「돌보기」 openAid.
 - world_party_use_item(p_target, p_item_id): 같은 파티·같은 곳·쓰러짐/원정/이동 아님, 약·부적 9가지, 의무관 ×1.4·그 밖 ×1, owner_id 순서로 두 캐릭터 잠금, 받는 쪽 알림.
-- 파티 원정: world_party_expedition_propose(원정지·기간·태세) → 같은 곳·떠날 수 있는 동료(world_pexp_ready)에게 party_exp_offer(3분, world_party_exp_offers) → world_party_expedition_respond, 모두 답하면 world_pexp_resolve가 한 트랜잭션에서 파티장·수락자의 world_expedition_start를 차례로(그 사람 JWT sub로, 같은 now()라 시각이 같음). 2명은 수락해야 출발, 3명 이상은 거절·무응답 빼고 출발, 아무도 수락 안 하거나 파티장이 못 떠나면 아무도 안 떠남. world_party_expedition_depart(지금 출발·거두기), world_party_expedition_offer_status(제안 칸). 옛 world_party_expedition_call은 화면에서 뺐다. 같은 지역은 합동 전투(§3.4), 10분 이상 겹친 파티원 한 명마다 귀환 경험치·숙련 +10%(3명까지).
+- 파티 원정: world_party_expedition_propose(원정지·기간·태세) → 같은 곳·떠날 수 있는 동료(world_pexp_ready)에게 party_exp_offer(3분, world_party_exp_offers) → world_party_expedition_respond, 모두 답하면 world_pexp_resolve가 한 트랜잭션에서 파티장·수락자의 world_expedition_start를 차례로(그 사람 JWT sub로, 같은 now()라 시각이 같음). 2명은 수락해야 출발, 3명 이상은 거절·무응답 빼고 출발, 아무도 수락 안 하거나 파티장이 못 떠나면 아무도 안 떠남. world_party_expedition_depart(지금 출발·거두기), world_party_expedition_offer_status(제안 칸). 옛 world_party_expedition_call은 화면에서 뺐다. 같은 지역은 합동 전투(§3.4), 파티 원정으로 함께 떠나 10분 이상 겹친 동료 한 명마다 귀환 경험치·숙련 +10%(3명까지, 1.0.1 — 따로 떠난 원정은 없음, world_expedition_complete).
 - 동료 초대·거래 제안·원정 귀환은 화면 위에 바로 띄워 그 자리에서 답한다.
 
 ### 비무·비무회·혼례(e_tourney.sql·f_bond.sql)
