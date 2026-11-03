@@ -116,15 +116,17 @@ async function draw() {
 function partyHtml(p, s) {
   if (!p?.party || (p.members || []).length < 2) return '';
   const me = store.character.owner_id, here = store.character.location;
+  // 이동 중인 동료는 출발지에 남아 보이므로 「같은 곳」으로 치지 않는다(서버 world_party_overview.traveling = 가는 곳)
   const mates = p.members.filter(m => m.owner_id !== me);
-  const near = mates.filter(m => m.location === here && !m.downed).length;
-  const state = m => m.downed ? '<b class="bad">전투불능</b>' : m.expedition ? `원정 중 · ${fmt.remain(new Date(m.expedition.ends_at) - Date.now())} 남음` : m.in_combat ? '전투 중' : '';
-  const row = m => `<li class="${m.location === here ? 'near' : ''}"><span class="fdot" style="--fc:${factionColor(m.major_faction_id)}"></span>
+  const isNear = m => m.location === here && !m.traveling;
+  const near = mates.filter(m => isNear(m) && !m.downed).length;
+  const state = m => m.downed ? '<b class="bad">전투불능</b>' : m.expedition ? `원정 중 · ${fmt.remain(new Date(m.expedition.ends_at) - Date.now())} 남음` : m.traveling ? `${esc(m.traveling)}(으)로 이동 중` : m.in_combat ? '전투 중' : '';
+  const row = m => `<li class="${isNear(m) ? 'near' : ''}"><span class="fdot" style="--fc:${factionColor(m.major_faction_id)}"></span>
       <b>${cardName(m.owner_id, m.character_name)}</b>${m.role === 'leader' ? '<small class="accent">파티장</small>' : ''}
-      <small>${esc(m.location || '')}${m.location === here ? ' (같은 곳)' : ''}${state(m) ? ' · ' + state(m) : ''}</small>
+      <small>${esc(m.location || '')}${isNear(m) ? ' (같은 곳)' : ''}${state(m) ? ' · ' + state(m) : ''}</small>
       <small class="pt-stat">체력 ${m.health} · 정신 ${m.mental ?? '-'} · 침식 ${m.erosion ?? 0}</small>
       ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}
-      ${!m.downed && !m.expedition && m.location === here ? `<button class="btn small" data-aid="${esc(m.owner_id)}" data-aid-name="${esc(m.character_name)}">돌보기</button>` : ''}</li>`;
+      ${!m.downed && !m.expedition && isNear(m) ? `<button class="btn small" data-aid="${esc(m.owner_id)}" data-aid-name="${esc(m.character_name)}">돌보기</button>` : ''}</li>`;
   return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명</h2>
       <div class="btn-row">${!s.region.safe ? `<button class="btn small primary" id="pt-exp" ${store.expedition ? 'disabled' : ''}>${icon('route', 14)}<span>파티 원정</span></button>` : ''}<a class="btn small ghost" href="#/party">동료 화면</a></div></header>
     <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul>

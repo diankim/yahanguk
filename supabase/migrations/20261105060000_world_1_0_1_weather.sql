@@ -23,4 +23,20 @@ do $q$ declare d text; a text; begin
   execute replace(d, a, $b$'regions', coalesce(t -> 'r', case when t ->> 't' = 'win' and t ? 'm' then (select jsonb_agg(distinct rm.region_id) from public.world_region_monsters rm where rm.monster_id in (select jsonb_array_elements_text(t -> 'm'))) end, '[]'::jsonb)$b$);
 end $q$;
 
+-- 1.0.1 돌보기(제보: 같은 곳인데 「같은 곳에 있어야」): 동료가 이동을 시작해도 파티 칸 위치는 출발지라 「같은 곳」·돌보기 단추가 남던 것.
+-- 파티 정보에 이동 중(traveling: 가는 곳)을 넣고, 서버 거절 문구도 이동 중이면 그렇게 알린다.
+-- world_party_overview 주인(fn_owner_social, 함수 주인 역할 — 조사원 권한 아님)이 이동 중 칸 하나만 읽게
+grant select (travel_destination) on public.world_characters to fn_owner_social;
+do $p$ declare d text; a text; b text; begin
+  d := replace(pg_get_functiondef('public.world_party_overview()'::regprocedure), E'\r\n', E'\n');
+  a := $a$'downed', c.downed_at IS NOT NULL OR c.health <= 0,$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_party_overview 기준 문구가 없습니다'; end if;
+  execute replace(d, a, $x$'traveling', c.travel_destination, $x$ || a);
+  d := replace(pg_get_functiondef('public.world_party_use_item(uuid,text)'::regprocedure), E'\r\n', E'\n');
+  b := $a$if coalesce(c.location, '') <> coalesce(t.location, '') or t.travel_destination is not null then raise exception '같은 곳에 있는 동료에게만 쓸 수 있습니다.'; end if;$a$;
+  if (length(d) - length(replace(d, b, ''))) / length(b) <> 1 then raise exception '1.0.1 world_party_use_item 기준 문구가 없습니다'; end if;
+  execute replace(d, b, $x$if t.travel_destination is not null then raise exception '그 동료는 지금 이동 중입니다. 도착한 뒤에 돌봐 주세요.'; end if;
+  if coalesce(c.location, '') <> coalesce(t.location, '') then raise exception '같은 곳에 있는 동료에게만 쓸 수 있습니다.'; end if;$x$);
+end $p$;
+
 update public.world_app_meta set value = '20261105060000' where key = 'db_version';
