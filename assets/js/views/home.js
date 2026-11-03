@@ -8,6 +8,7 @@ import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow } from './common.js';
 import { factionColor } from '../geo.js';
 import { PARTY_EXP, AGILE, quietPctOf } from '../rules.js';
+import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
 import { renderBattle, stopBattle, STYLE } from './battle.js';
@@ -47,6 +48,7 @@ async function peopleCheck() {
 export async function render(root) {
   if (!store.character) return;
   el = root;
+  bindTips(el);
   el.innerHTML = loading();
   off.forEach(f => f());
   off = [on('changed', ({ name }) => {
@@ -127,10 +129,9 @@ function partyHtml(p, s) {
       <small class="pt-stat">체력 ${m.health} · 정신 ${m.mental ?? '-'} · 침식 ${m.erosion ?? 0}</small>
       ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}
       ${!m.downed && !m.expedition && isNear(m) ? `<button class="btn small" data-aid="${esc(m.owner_id)}" data-aid-name="${esc(m.character_name)}">돌보기</button>` : ''}</li>`;
-  return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명</h2>
+  return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명 <i class="help-q" role="img" aria-label="파티 안내" data-tip="${esc(`${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}${PARTY_EXP.who}와는 ${PARTY_EXP.fight}. 그리고 ${PARTY_EXP.bonus}.`)}">?</i></h2>
       <div class="btn-row">${!s.region.safe ? `<button class="btn small primary" id="pt-exp" ${store.expedition ? 'disabled' : ''}>${icon('route', 14)}<span>파티 원정</span></button>` : ''}<a class="btn small ghost" href="#/party">동료 화면</a></div></header>
-    <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul>
-      <p class="muted small">${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}${PARTY_EXP.who}와는 ${PARTY_EXP.fight}. 그리고 ${PARTY_EXP.bonus}.</p></div></section>`;
+    <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul></div></section>`;
 }
 
 // 파티원에게 회복품 쓰기(world_party_use_item): 같은 곳의 동료에게 약·부적을 쓴다. 의무관이 쓰면 효과 ×1.4(서버가 정함, 여기 수치는 안내).

@@ -2128,8 +2128,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-wrap .raid-mem li.out .mem-top small { color: var(--bad); font-weight: 700; filter: none; }
 .raid-wrap .raid-mem li.out .bar.mem-hp > span { background: var(--muted); }
 /* 북돋기·약화 짧은 설명(떠 있는 말풍선, 누르기 막지 않음) */
-.fx-tip { position: fixed; z-index: 400; max-width: min(260px, calc(100vw - 16px)); padding: 6px 9px; border-radius: var(--r-sm); background: var(--surface); color: var(--text); border: var(--bw, 1px) solid color-mix(in srgb, var(--accent) 45%, var(--line)); font-size: calc(12px * var(--fz, 1)); line-height: 1.45; pointer-events: none; }
+.fx-tip { position: fixed; z-index: 400; max-width: min(320px, calc(100vw - 16px)); padding: 6px 9px; border-radius: var(--r-sm); background: var(--surface); color: var(--text); border: var(--bw, 1px) solid color-mix(in srgb, var(--accent) 45%, var(--line)); font-size: calc(12px * var(--fz, 1)); line-height: 1.45; pointer-events: none; }
 [data-tip] { cursor: help; } .fx-tip[hidden] { display: none; }
+.help-q { display: inline-grid; place-items: center; width: calc(16px * var(--fz, 1)); height: calc(16px * var(--fz, 1)); margin-left: 4px; border-radius: 50%; border: var(--bw, 1px) solid var(--line); color: var(--muted); font-size: calc(11px * var(--fz, 1)); font-style: normal; font-weight: 600; line-height: 1; vertical-align: middle; }
 .raid-mem .bar > span { background: var(--hp); } .raid-mem .bar.low > span { background: var(--bad); }
 .mem-pick { all: unset; cursor: pointer; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
 .mem-pick:disabled { cursor: default; } .mem-pick small { color: var(--muted); font-size: calc(11.5px * var(--fz, 1)); }
