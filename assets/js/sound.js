@@ -27,7 +27,7 @@ export function applyVolumes() {
   const t = ctx.currentTime;
   if (!away) master.gain.setTargetAtTime(masterLevel(), t, 0.1);
   bgmBus.gain.setTargetAtTime(musicOk() ? sound.bgm * 0.8 : 0, t, 0.3);
-  ambBus.gain.setTargetAtTime(sound.ambOn && !yielded ? sound.amb * 0.5 : 0, t, 0.4);
+  ambBus.gain.setTargetAtTime(sound.ambOn && !yielded && !held ? sound.amb * 0.5 : 0, t, 0.4); // 컷씬·로그인 곡 동안은 환경음(새소리 등)도 쉰다
   sfxBus.gain.setTargetAtTime(sound.sfxOn ? sound.sfx * 0.95 : 0, t, 0.05); // 배경음악·빗소리에 묻혀 0.5에서 올림
 }
 
@@ -543,7 +543,7 @@ let critterTimer = null;
 function critters() {
   clearTimeout(critterTimer);
   if (away || yielded) return;
-  if (!ctx || !sound.ambOn) { critterTimer = setTimeout(critters, 4000); return; }
+  if (!ctx || !sound.ambOn || held) { critterTimer = setTimeout(critters, 4000); return; }
   const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
   const t = now() + 0.05, ph = env.phase, w = env.weather;
   const quiet = w === 'rain' || w === 'drizzle' || w === 'snow' || w === 'wind';
@@ -692,7 +692,7 @@ export function initSound() {
   on('env', e => { if (!e) return; env = { weather: e.weather?.key || 'clear', phase: e.phase?.key || 'noon' }; if (e.territory_id) scene.territory = e.territory_id; updateDrone(); updateAmbience(); });
   window.addEventListener('yh-sfx', e => playSfx(e.detail));
   // 컷씬이 제 곡을 트는 동안 배경음악을 쉰다(cutscene.js가 알림)
-  window.addEventListener('yh-cutscene', e => { held = !!e.detail; });
+  window.addEventListener('yh-cutscene', e => { held = !!e.detail; applyVolumes(); });
   document.addEventListener('click', e => {
     // 정해진 소리가 없는 단추·칩·링크·접는 칸도 모두 누름 소리를 낸다(전투 칸·탐색은 결과 소리를 따로 냄, data-nosfx는 뺌)
     const b = e.target.closest('button, [role="button"], a[href], summary, .chip, .facility, .path, .act, input[type="checkbox"], input[type="radio"]');

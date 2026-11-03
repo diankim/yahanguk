@@ -204,13 +204,9 @@ function renderAuth(mode = 'login', notice = '') {
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
 // 다시 연 뒤(롤백 뒤) 처음 캐릭터를 만들 때 한 번 「아침」 컷씬을 보인다(계정마다, 이 기기에 남김)
-// 다시 연 날 문 여는 때(로그인 화면의 아침도 이 뒤로는 빠르게): 그 전에는 운영진(world_staff)만 캐릭터를 만든다(서버 world_open_gate가 다시 막음). 다른 조사원은 기다림 안내
+// 다시 연 날 문 연 때: 이 뒤로는 로그인 화면의 아침을 빠르게 지나간다(문 열기 전 밤 대기 화면은 열고 나서 지웠다)
 const OPEN_AT = Date.parse('2026-11-03T10:00:00+09:00');
 async function renderCreate() {
-  if (Date.now() < OPEN_AT) {
-    await loadStaff();
-    if (!store.staff.has(store.user?.id)) return renderWaitOpen();
-  }
   const mk = `yh-morning:${store.user?.id || ''}`;
   let seen = true; try { seen = !!localStorage.getItem(mk); } catch {}
   if (!seen && Date.now() >= REOPEN_AT) {
@@ -220,17 +216,6 @@ async function renderCreate() {
   }
   renderCreateForm();
 }
-function renderWaitOpen() {
-  document.title = '야행국 · 곧 문을 엽니다';
-  app.replaceChildren();
-  // 롤백 점검 때처럼 「첫째 밤의 끝」 마지막 장면에 고정, 아래에 안내·도움말(오른쪽 위)·로그아웃. 문 여는 때가 되면 새로고침
-  const when = new Date(OPEN_AT).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Seoul' });
-  const note = `야행국은 ${when}에 문을 엽니다. 그때 새 조사원을 만들어 두 번째 밤을 시작합니다.\n열리면 이 화면이 저절로 게임으로 넘어갑니다.`;
-  import('./cutscene.js').then(m => m.playCutscene('rollback', { stay: true, atEnd: true, fixed: true, note, logout: () => logout() })).catch(() => {});
-  clearInterval(waitTimer);
-  waitTimer = setInterval(() => { if (Date.now() >= OPEN_AT) { clearInterval(waitTimer); location.reload(); } }, 30000);
-}
-let waitTimer = 0;
 function renderCreateForm() {
   document.title = '야행국 · 캐릭터 생성';
   // 쓰던 이름·고른 직업·소속을 이 기기에 잠시 남겨, 다른 앱에 다녀오거나 화면이 다시 그려져도 되살린다(입국하면 지운다).
