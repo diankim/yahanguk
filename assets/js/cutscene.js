@@ -104,6 +104,10 @@ const CSS = `
 .cs.cs-bg .cs-sky { transition-duration: 1.6s; }
 .cs.cs-bg .cs-sun { transition-duration: 2s, 3.2s; }
 .cs.cs-bg[data-fast] .cs-sky, .cs.cs-bg[data-fast] .cs-sun { transition: none; }
+.cs.cs-bg[data-quick] svg.cs-stage { transition-duration: .8s; }
+.cs.cs-bg[data-quick] .cs-sky { transition-duration: .8s; }
+.cs.cs-bg[data-quick] .cs-sun { transition-duration: 1s, 1.6s; }
+.cs.cs-bg[data-quick] .waking .cs-flame, .cs.cs-bg[data-quick] .waking .cs-glow { animation-duration: 1.1s; }
 @media (prefers-reduced-motion: reduce) {
   .cs .cs-lantern, .cs .cs-flame, .cs .cs-glow, .cs .cs-star, .cs .cs-flow-a, .cs .cs-flow-b { animation: none !important; }
   .cs-embers { display: none; }
@@ -367,7 +371,7 @@ export function loginMusic() {
 // 로그인 화면 배경: 「아침」 장면(글 없이). 처음엔 밤 → 등불이 살아나고 날이 밝은 뒤 onReady(로그인 창이 떠오름).
 // 같은 탭에서 다시 그리면(로그인↔회원가입 전환 등) 밝은 아침에서 바로 시작한다. 움직임 줄이기면 곧바로 아침.
 let bgSeen = false;
-export function loginBackdrop(host, { onReady } = {}) {
+export function loginBackdrop(host, { onReady, quick = false } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const root = document.createElement('div');
   root.className = 'cs cs-bg'; root.setAttribute('aria-hidden', 'true');
@@ -384,11 +388,14 @@ export function loginBackdrop(host, { onReady } = {}) {
     root.classList.add('dawn', 'dawn2', 'dawn3', 'lift');
     onReady?.();
   } else {
+    // quick: 문을 연 뒤에는 같은 아침을 절반쯤 빠르게(약 2.2초) — 기다림이 지루하지 않게
+    const k = quick ? 0.5 : 1;
+    if (quick) root.dataset.quick = '1';
     lamp?.classList.add('out');
-    at(700, () => { lamp?.classList.remove('out'); lamp?.classList.add('waking'); root.classList.add('dawn'); });
-    at(2300, () => root.classList.add('dawn2'));
-    at(3600, () => root.classList.add('dawn3'));
-    at(4300, () => { root.classList.add('lift'); onReady?.(); });
+    at(700 * k, () => { lamp?.classList.remove('out'); lamp?.classList.add('waking'); root.classList.add('dawn'); });
+    at(2300 * k, () => root.classList.add('dawn2'));
+    at(3600 * k, () => root.classList.add('dawn3'));
+    at(4300 * k, () => { root.classList.add('lift'); onReady?.(); });
   }
   return () => { timers.forEach(clearTimeout); root.remove(); };
 }

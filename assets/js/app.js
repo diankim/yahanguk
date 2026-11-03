@@ -166,8 +166,8 @@ function renderAuth(mode = 'login', notice = '') {
   </div>`));
   // 배경: 「아침」 장면 — 날이 밝으면 그 위로 로그인 창이 떠오른다(cutscene.js loginBackdrop). 늦거나 실패해도 5초 안에 창은 뜬다.
   const scr = $('.auth-screen'), rise = () => scr?.classList.replace('auth-wait', 'auth-up');
-  const late = setTimeout(rise, 5000);
-  import('./cutscene.js').then(m => { if (scr?.isConnected) m.loginBackdrop(app, { onReady: () => { clearTimeout(late); rise(); } }); }).catch(rise);
+  const late = setTimeout(rise, Date.now() >= OPEN_AT ? 3000 : 5000);
+  import('./cutscene.js').then(m => { if (scr?.isConnected) m.loginBackdrop(app, { quick: Date.now() >= OPEN_AT, onReady: () => { clearTimeout(late); rise(); } }); }).catch(rise);
   const tipBox = $('#auth-tip'); let tipN = Math.floor(Math.random() * TIPS.length);
   const showTip = () => { tipBox.querySelector('span').textContent = TIPS[tipN % TIPS.length]; tipN++; };
   showTip(); tipBox.onclick = showTip;
@@ -204,7 +204,7 @@ function renderAuth(mode = 'login', notice = '') {
 
 /* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
 // 다시 연 뒤(롤백 뒤) 처음 캐릭터를 만들 때 한 번 「아침」 컷씬을 보인다(계정마다, 이 기기에 남김)
-// 다시 연 날 문 여는 때: 그 전에는 운영진(world_staff)만 캐릭터를 만든다(서버 world_open_gate가 다시 막음). 다른 조사원은 기다림 안내
+// 다시 연 날 문 여는 때(로그인 화면의 아침도 이 뒤로는 빠르게): 그 전에는 운영진(world_staff)만 캐릭터를 만든다(서버 world_open_gate가 다시 막음). 다른 조사원은 기다림 안내
 const OPEN_AT = Date.parse('2026-11-03T10:00:00+09:00');
 async function renderCreate() {
   if (Date.now() < OPEN_AT) {
