@@ -44,6 +44,7 @@ export const GAMEDATA = {
   ],
   "partyExp": {"flee_hp":30,"bonus_cap":3,"bonus_pct":10,"threat_pct":45,"overlap_min":10},
   "agile": {"agi_k":2,"eva_k":0.175,"flee_k":0.5,"tank_k":0.5,"eva_cap":40,"quiet_k":0.8,"sneak_k":0.65,"eva_base":3,"flee_cap":95,"flee_min":10,"hazard_k":0.75,"flee_base":50,"quiet_cap":50,"scout_eva":6,"sneak_cap":75,"sneak_min":10,"hazard_cap":90,"hazard_w_k":0.05,"scout_flee":15,"sneak_base":25,"hazard_base":30,"scout_sneak":10},
+  "questXp": {"mid":6,"band":[[1,25],[6,40],[11,40],[16,75],[21,90],[26,75],[31,100]],"grace":3,"low_pct":20,"mid_pct":50},
   "factionJoin": {
     "night_office": ["hq_yard","hq_dorm","ghost_bamboo"],
     "red_moon_cult": ["red_moon_fort","hq_yard","bone_market","red_plain"],

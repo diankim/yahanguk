@@ -24,6 +24,8 @@ export const AGILE = {
   eva: `회피 ${AG.eva_base}% + 기민×${AG.eva_k}(월궁 사수 +${AG.scout_eva}, 최대 ${AG.eva_cap}%)`,
   hazard: `위험을 피할 확률 ${AG.hazard_base}% + 기민×${AG.hazard_k}(최대 ${AG.hazard_cap}%)`,
 };
+const QX = GD.questXp || { grace: 3, mid: 6, mid_pct: 50, low_pct: 20 };
+export const QUEST_XP = `퀘스트 경험치는 퀘스트 레벨에 맞춰 들어갑니다. 내 레벨이 퀘스트보다 ${QX.grace}까지 높으면 그대로, ${QX.grace + 1}~${QX.mid} 높으면 ${QX.mid_pct}%, ${QX.mid + 1} 이상 높으면 ${QX.low_pct}%만 받습니다(전·물품은 그대로)`;
 export const PARTY_EXP = {
   who: '「파티 원정」으로 함께 떠난 동료',
   apart: '각자 따로 떠난 원정은 같은 때·같은 곳이어도 각자 싸웁니다',

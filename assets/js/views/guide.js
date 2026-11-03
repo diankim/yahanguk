@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP } from '../rules.js';
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -1302,6 +1302,7 @@ const S = [
       <li><b>보고</b>: 넘길 물품은 보고할 때 가방에서 나갑니다. 잠근 물품·장착 중인 마지막 하나는 넘기지 않습니다. 보상 물품이 가방에 들어갈 자리가 없거나 이동 중이면 보고할 수 없습니다.</li>
       <li><b>포기하기</b>: 보조 퀘스트는 일지 › 보조 퀘스트의 진행 중 카드에서 「포기하기」로 처음부터 다시 받을 수 있습니다. 이미 보상을 받은 장면은 다시 보고해도 보상이 없습니다.</li>
       <li>경험치는 퀘스트가 중심입니다. 사냥은 경험치가 낮고, 레벨보다 쉬운 곳일수록 더 줄어듭니다.</li>
+      <li>${QUEST_XP}.</li>
     </ul>`],
   ['fights', '함께 싸우는 네 가지 방식', `
     <p>여럿이 함께 싸우는 전투는 네 가지이고, 저마다 노리는 재미가 다릅니다. 자세한 규칙은 아래 각 항목에 있습니다.</p>
