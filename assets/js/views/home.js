@@ -215,13 +215,25 @@ function town(s, roster) {
   ].filter(Boolean);
   // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게)
   return `
-    ${s.stamina ? `<section class="panel town-st"><span class="ts-label">${icon('spark', 14)} 탐색력</span>${bar(s.stamina.now, s.stamina.max, 'st big')}<b>${s.stamina.now} / ${s.stamina.max}</b>
-      <small class="muted" data-st-next="${s.stamina.next_at ? new Date(s.stamina.next_at).getTime() : ''}">${s.stamina.now >= s.stamina.max ? '가득' : ''}</small></section>` : ''}
+    ${s.stamina ? townStamina(s.stamina) : ''}
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
 }
 
+function townStamina(st) {
+  return `<section class="panel town-st"><span class="ts-label">${icon('spark', 14)} 탐색력</span>${bar(st.now, st.max, 'st big')}<b>${st.now} / ${st.max}</b>
+      <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득' : ''}</small></section>`;
+}
+// 탐색력 1이 차는 시각이 되면 서버에 묻지 않고 화면에서 1 올린다(상태판 hud.js bumpStamina와 같은 셈 — 전에는 현장 전체를 다시 읽었다)
+function bumpFieldStamina(now) {
+  const st = snap?.stamina; if (!st?.next_at) return;
+  const t = new Date(st.next_at).getTime(); if (t > now) return;
+  st.now = Math.min(st.max, (st.now || 0) + 1);
+  st.next_at = st.now >= st.max ? null : new Date(t + (st.per_seconds || 900) * 1000).toISOString();
+  $$('.stamina', el).forEach(b => { b.outerHTML = staminaBox(st); });
+  $$('.town-st', el).forEach(b => { b.outerHTML = townStamina(st); });
+}
 function staminaBox(st) {
   return `<div class="stamina">
           <div class="st-top"><span>${icon('spark', 14)} 탐색력</span><b>${st.now} / ${st.max}</b></div>
@@ -446,7 +458,7 @@ function paintGather(now) {
 function tick() {
   if (!el?.isConnected) return clearInterval(timer);
   const now = Date.now();
-  $$('[data-st-next]', el).forEach(s => { const t = Number(s.dataset.stNext); if (t) s.textContent = t > now ? `${fmt.remain(t - now)} 뒤 1 회복` : '곧 회복'; if (t && t <= now) { s.dataset.stNext = ''; draw(); } });
+  $$('[data-st-next]', el).forEach(s => { const t = Number(s.dataset.stNext); if (t) s.textContent = t > now ? `${fmt.remain(t - now)} 뒤 1 회복` : '곧 회복'; if (t && t <= now) { s.dataset.stNext = ''; bumpFieldStamina(now); } });
   $$('#fish-go', el).forEach(b => { const t = Number(b.dataset.ready); if (!t || b.dataset.busy === '1') return; if (t > now) { b.disabled = true; b.querySelector('span').textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.querySelector('span').textContent = '낚시하기'; } });
   paintGather(now);
   const line = restLine(now);

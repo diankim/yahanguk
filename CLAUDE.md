@@ -622,7 +622,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 요청 줄이기
 
 - 행동(act)은 캐릭터를 한 번 읽고 changed를 보냄. 전투 중 끝나지 않은 턴(core.js midBattle)엔 다른 화면이 안 읽음. 행동 뒤 재요청은 캐릭터·상태판·현재 화면 정도(여기 있는 이들·동료는 자리·파티가 바뀔 때만 views/common.js ROSTER_CHANGERS, 현장에서는 남이 오가는 것을 home.js peopleCheck가 1분마다 — 화면이 보이고 창·전투가 없을 때, 바뀌었을 때만 다시 그림, 첫 걸음 15초에 한 번). 새 기능도 changed마다 여러 요청을 보내지 않는다.
-- 상태판 hud.js: world_hud_snapshot을 common.load로(다른 화면과 1초 안의 값 공유), 1분 읽기는 45초 안에 읽었으면 건너뜀, 캐릭터 3분, 화면 복귀는 30초 넘게 비웠을 때만, 탐색력 회복은 화면에서(bumpStamina), 자율 상태는 자율 행동 뒤에만.
+- 상태판 hud.js: world_hud_snapshot을 common.load로(다른 화면과 1초 안의 값 공유), 1분 읽기는 45초 안에 읽었으면 건너뜀, 캐릭터 3분, 화면 복귀는 30초 넘게 비웠을 때만, 탐색력 회복은 화면에서(hud.js bumpStamina·현장 home.js bumpFieldStamina — 남은 시간·초 단위 표시는 시작·끝 시각만 받아 기기 시계로 그리고, 0이 되어도 서버를 다시 읽지 않는다), 자율 상태는 자율 행동 뒤에만.
 - 가방: 물품 목록·제작법은 접속 동안 한 번(common.js inventorySnap), 그 뒤 world_inventory_state만.
 - 캐시: 낚시터 30분·휴식·자율 10분(버리기 common.js FISH_CHANGERS 등), 캐릭터 › 상태 쉼·정인(관련 행동 뒤에만), 전투 능력치 1분(COMBAT_CHANGERS 뒤 버림). world_combat_profile은 미리보기(plus_one, world_combat_stats 7번)를 p_preview=true일 때만.
 - 칭호 점은 알림(title·cosmetic) 때와 행동 뒤 2분에 한 번. 알림·채팅·접속 확인·귓속말은 실시간이 살면 예비 5분(끊기면 예전 간격), 알림 구독 user_id 필터, 파티 채팅 party_id 필터. 동료 화면 45초·가벼운 읽기(모임·연리·서신·전리품은 관련 행동 뒤). 운영진 명단 6시간. 묶음 크기·무기 갈래(yh-stacks-v3)·가방 사전(yh-inv-static-v1)은 db_version(core.js dbVersion)이 같으면 기기 것. 버전 확인 2분.
