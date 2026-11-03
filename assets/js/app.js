@@ -1,4 +1,4 @@
-import { ID_RULE, idToEmail } from './config.js';
+import { ID_RULE, idToEmail, selfReload } from './config.js';
 import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
@@ -79,7 +79,7 @@ db.auth.onAuthStateChange((evt, session) => {
   if (evt === 'SIGNED_OUT') {
     const wasIn = !!routedFor;
     stopSessionGuard(); routedFor = null; store.user = null; store.character = null;
-    if (wasIn) { try { if (!sessionStorage.getItem('yh-kick-note')) sessionStorage.setItem('yh-kick-note', '로그인이 풀려 로그아웃되었습니다. 다시 로그인해 주세요.'); } catch {} location.replace(location.pathname + '#/home'); return location.reload(); }
+    if (wasIn) { try { if (!sessionStorage.getItem('yh-kick-note')) sessionStorage.setItem('yh-kick-note', '로그인이 풀려 로그아웃되었습니다. 다시 로그인해 주세요.'); } catch {} location.replace(location.pathname + '#/home'); return selfReload('signout'); }
     return renderAuth('login', takeKickNote());
   }
   if (evt === 'SIGNED_IN' || evt === 'INITIAL_SESSION') route(session);
@@ -87,7 +87,7 @@ db.auth.onAuthStateChange((evt, session) => {
 
 function renderError(msg) {
   app.replaceChildren(h(`<div class="center-screen"><div class="card narrow"><h1>연결 오류</h1><p class="muted">${esc(msg)}</p><button class="btn primary" id="retry">다시 시도</button></div></div>`));
-  $('#retry').onclick = () => location.reload();
+  $('#retry').onclick = () => selfReload('retry');
 }
 
 const TIPS = [
@@ -322,7 +322,7 @@ export const isPopWin = () => !!POP;
 let current = null;
 let gameMounted = false;
 function renderGame() {
-  if (gameMounted) { location.reload(); return; }
+  if (gameMounted) { selfReload('remount'); return; }
   gameMounted = true;
   window.dispatchEvent(new Event('yh-booted'));
   document.title = '야행국';

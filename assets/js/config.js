@@ -5,6 +5,10 @@ export const ID_DOMAIN = 'yahanguk.invalid';
 export const ID_RULE = /^[a-z0-9]{4,16}$/;
 export const idToEmail = id => `${String(id || '').trim().toLowerCase()}@${ID_DOMAIN}`;
 export const emailToId = email => { const [l, d] = String(email || '').split('@'); return d === ID_DOMAIN ? l : String(email || ''); };
+export function selfReload(why) {
+  try { sessionStorage.setItem('yh-life', `self-${why}`); } catch {}
+  location.reload();
+}
 export const isMaintenanceError = msg => /permission denied for schema public/i.test(String(msg || ''));
 export function goMaintenance() {
   if (/maintenance\.html$/.test(location.pathname)) return;

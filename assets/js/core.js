@@ -12,7 +12,7 @@ const BOOT_TAG = (() => {
     n = (+sessionStorage.getItem('yh-boots') || 0) + 1;
     sessionStorage.setItem('yh-boots', String(n));
     sessionStorage.setItem('yh-life', 'open');
-    addEventListener('pagehide', () => { try { sessionStorage.setItem('yh-life', 'hid'); } catch {} });
+    addEventListener('pagehide', () => { try { if (!/^self-/.test(sessionStorage.getItem('yh-life') || '')) sessionStorage.setItem('yh-life', 'hid'); } catch {} });
     addEventListener('pageshow', e => { if (e.persisted) try { sessionStorage.setItem('yh-life', 'open'); } catch {} });
   } catch {}
   return `nav=${nav};disc=${document.wasDiscarded ? 1 : 0};prev=${prev};n=${n}`;

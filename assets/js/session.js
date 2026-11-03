@@ -1,4 +1,5 @@
 import { db, store, rpc } from './core.js';
+import { selfReload } from './config.js';
 
 const NOTE = 'yh-kick-note';
 let channel = null, timer = null, mounted = null, kicking = false;
@@ -54,7 +55,7 @@ export async function logout(note = '') {
   const local = () => {
     try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch {}
     if (note) try { sessionStorage.setItem(NOTE, note); } catch {}
-    location.replace(location.pathname + '#/home'); location.reload();
+    location.replace(location.pathname + '#/home'); selfReload('logout');
   };
   const timer = setTimeout(local, 3000);
   try { await db.auth.signOut({ scope: 'local' }); } catch {}

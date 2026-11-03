@@ -1,5 +1,5 @@
 import { applySavedTheme } from './theme.js';
-import { serverState, goMaintenance } from './config.js';
+import { serverState, goMaintenance, selfReload } from './config.js';
 
 applySavedTheme();
 function slowNote(text) {
@@ -8,7 +8,7 @@ function slowNote(text) {
   if (!n) {
     n = document.createElement('div'); n.className = 'boot-note';
     n.innerHTML = '<p></p><button class="btn small" type="button">다시 시도</button>';
-    n.querySelector('button').onclick = () => location.reload();
+    n.querySelector('button').onclick = () => selfReload('boot');
     boot.append(n);
   }
   n.querySelector('p').textContent = text;
