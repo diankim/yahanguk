@@ -79,16 +79,29 @@ export async function act(name, args) {
   const data = await rpc(name, args);
   // 장착이 바뀌는 행동 뒤에는 다음 읽기에서 장착 목록도 다시 읽는다(장착·해제 말고도 원정 귀환은 원정 장비를, 환골탈태는 전용 장비를, 분해는 장비를 바꾼다)
   if (/equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
-  try { await loadCharacter(); } catch {}
+  // 캐릭터·상태판 요약(·현장을 보고 있으면 현장 요약)을 한 요청(world_me)으로 읽는다 — 상태판·현장 화면은 그 값을 캐시에서 받아 쓴다.
+  // 전투 턴 중에는 상태판·현장이 다시 읽지 않으므로 캐릭터만.
+  const mid = midBattle({ name, data });
+  // 싸우는 중의 한 턴: 응답에 실린 생존 수치·가방(me)으로 바로 맞춘다(다시 읽지 않음). 끝난 턴은 경험치·전리품까지 다시 읽는다
+  if (mid && data?.me && store.character) { Object.assign(store.character, data.me); store.charAt = Date.now(); emit('character', store.character); }
+  else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView() }); } catch {}
   emit('changed', { name, data });
   return data;
 }
-export async function loadCharacter() {
+const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
+const onFieldView = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
+// hud·field: 함께 받을 요약. 받은 요약은 'snaps' 알림으로 views/common.js 캐시에 넣는다(같은 이름으로 load하면 그대로 씀)
+export async function loadCharacter({ hud = false, field = false } = {}) {
   if (!store.user) return null;
-  const [, { data, error }] = await Promise.all([stacksFresh ? null : loadStacks(), db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle(),
+  const both = hud || field;
+  const [, res] = await Promise.all([stacksFresh ? null : loadStacks(),
+    // 합친 읽기가 안 되면(서버에 아직 없음 등) 캐릭터만 예전처럼 읽는다
+    both ? rpc('world_me', { p_hud: hud, p_field: field }).then(d => ({ data: d?.character ?? null, snaps: d }), () => readOwn()) : readOwn(),
     equipped ? null : loadEquipped()]);
-  if (error) throw new Error(friendlyError(error));
+  if (res.error) throw new Error(friendlyError(res.error));
+  const data = res.data;
   store.character = data; store.charAt = Date.now();
+  if (res.snaps) emit('snaps', { world_hud_snapshot: res.snaps.hud, world_field_snapshot: res.snaps.field });
   emit('character', data);
   return data;
 }

@@ -5,6 +5,7 @@ import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
 import { QS_DEFAULT, qsDesc } from './views/character.js';
+import { expRoundOf } from './rules.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -30,9 +31,12 @@ export function mountHud(el) {
   clearInterval(tick); tick = setInterval(onTick, 1000);
   // 1분 읽기: 방금(45초 안) 행동해 이미 읽었으면 건너뛴다. 자율 상태는 자율 활동 중일 때만, 캐릭터는 3분 넘게 안 읽었을 때만
   // (안전지대 회복은 10분마다라 늦게 보여도 괜찮고, 구조·쓰러짐은 알림으로 바로 온다)
+  // 주기 읽기: 내 행동으로만 바뀌는 값(탐색력·상태 만료·자율 끝)은 화면 시계로 그리고, 남이 바꾸는 일(구조·물품 받기·요화 등)은 알림이 오면 곧바로 읽는다(settings.js).
+  // 그래서 1분마다는 원정 회차가 바뀌었을 때만 묻고, 그 밖에는 5분 넘게 안 읽었을 때 캐릭터·상태판 한 번(world_me)만 — 안전지대 회복(10분마다)이 늦지 않게
   clearInterval(poll); poll = setInterval(() => {
     if (document.hidden) return;
-    refresh({ char: Date.now() - (store.charAt || 0) > 180000, idle: !!state.idle?.active, hudAge: 45000 });
+    const roundDue = store.expedition && expRoundOf(store.expedition) !== tickedRound;
+    if (roundDue || Date.now() - (store.charAt || 0) > 300000) refresh({ char: true, idle: !!state.idle?.active, hudAge: 45000 });
   }, 60000);
   // 화면 복귀: 30초 넘게 비웠을 때만 다시 읽는다. 캐릭터는 45초 넘게 안 읽었을 때만, 자율 상태는 자율 활동 중일 때만
   let hiddenAt = 0;
@@ -58,14 +62,18 @@ function bumpStamina() {
 function authLost(e) { if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) window.dispatchEvent(new Event('yh-auth-lost')); return null; }
 export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 } = {}) {
   try {
-    // 원정 중이면 지난 수색 회차를 먼저 정산해 체력·정신·침식이 바로 맞게 한다
-    if (store.expedition) await rpc('world_expedition_tick').catch(() => null);
+    // 원정 중이면 새 수색 회차가 지났을 때만 정산을 묻는다(체력·정신·침식은 회차마다만 바뀜 — 전에는 1분마다 물었다)
+    if (store.expedition) {
+      const r = expRoundOf(store.expedition), id = store.expedition.expedition_id;
+      if (r !== tickedRound || id !== tickedExp) { tickedRound = r; tickedExp = id; await rpc('world_expedition_tick').catch(() => null); }
+    }
     const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
+    // 캐릭터도 읽어야 하면 상태판 요약과 한 요청으로(world_me) — 아래 load는 그 값을 캐시에서 받는다
+    if (!(first || !char) || !store.character) { await loadCharacter({ hud: true }); hudAge = Math.max(hudAge, 1000); }
     const [idle, hud] = await Promise.all([
       // 현장 화면과 같은 캐시를 쓴다(자율 행동 뒤에는 common.js가 버린다)
       readIdle || first ? load('world_idle_activity_snapshot', undefined, { maxAge: first ? 0 : 10000 }).catch(authLost) : state.idle,
       load('world_hud_snapshot', undefined, { maxAge: hudAge }).catch(authLost),
-      (first || !char) && store.character ? null : loadCharacter(),
     ]);
     const was = !!store.expedition;
     { const was = state.hud?.stamina, st = hud?.stamina; // 다시 읽은 값으로 가득 찼어도 띠로링(화면에서 올리기 전에 읽힌 때)
@@ -99,12 +107,6 @@ export function openStatus(st) {
 }
 
 // 상태·탐색력 시간이 다 되면 1.5초 뒤 한 번 다시 읽는다. 읽기가 실패해(로그인 풀림·서버 오류) 시간이 그대로여도 30초에 한 번까지만 다시 묻는다
-let dirtyAt = 0, dirtyWait = false;
-function dirtyRefresh() {
-  if (dirtyWait || Date.now() - dirtyAt < 30000) return;
-  dirtyWait = true; dirtyAt = Date.now();
-  setTimeout(() => { dirtyWait = false; refresh(); }, 1500);
-}
 
 function idleReadyAt(idle) {
   if (!idle?.active) return null;
@@ -272,11 +274,13 @@ function vital(label, v, kind) {
 }
 
 let arriving = false, lastArriveTry = 0; // 도착 확인은 5초에 한 번까지만
-let staminaDue = false;
+let staminaDue = false, statusDue = false, tickedRound = -1, tickedExp = null;
 function onTick() {
   if (!root) return;
   const now = Date.now();
   if (staminaDue) { staminaDue = false; if (bumpStamina()) render(); }
+  // 상태이상이 끝나는 시각: 서버에 묻지 않고 다시 그린다(끝난 것은 그릴 때 빠진다)
+  if (statusDue) { statusDue = false; render(); }
   root.querySelectorAll('[data-timer]').forEach(el => {
     const t = Number(el.dataset.timer); if (!t) return;
     const left = t - now, kind = el.dataset.kind;
@@ -286,7 +290,7 @@ function onTick() {
     if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
     if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
     if (kind === 'danger') el.textContent = left > 0 ? `목숨이 다하기까지 ${fmt.remain(left)}` : '시간이 다했습니다';
-    if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0) dirtyRefresh(); }
+    if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0) statusDue = true; }
     if (kind === 'stamina') { el.textContent = left > 0 ? `${fmt.remain(left)} 뒤 +1` : ''; if (left <= 0) staminaDue = true; }
   });
   const c = store.character;

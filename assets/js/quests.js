@@ -1,7 +1,7 @@
 // 현장의 퀘스트 칸: 진행 중인 주 이야기·보조 퀘스트·세력 퀘스트와 여기서 받을 수 있는 퀘스트(접고 펼친다).
 // 진행과 판정은 서버(world_quest_board·world_quest_report, 세력은 world_faction_*)가 하고, 여기서는 그리고 부른다.
 // 할 일을 다 마치면 한 번 알리고(이 기기·접속 동안), 보고하면 장면 대사를 대화창으로 보인다.
-import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON } from './core.js';
+import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, on, midBattle } from './core.js';
 import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 
@@ -172,12 +172,38 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
+// 퀘스트 판(world_quest_board, 한 번에 약 55ms)은 길게 두고, 지금 걸린 할 일을 움직일 수 있는 행동 뒤에만 버린다.
+// 전에는 15초마다(사실상 행동마다) 다시 읽었다. 할 일 종류(t) → 그 수를 올리는 행동
+const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_(complete|settle)/, gather: /field_gather/, craft: /craft/, fish: /^world_fish$/,
+  clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
+// 넘길 물품이 있는 장면은 가방이 바뀌는 행동 뒤에(보고 단추가 켜지는지)
+const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
+let qbWatch = null; // 지난 판에서 뽑은 { re, level }
+function watchOf(b) {
+  const kinds = new Set(); let give = false, any = false;
+  for (const q of [...(b.active || []), ...(b.faction && !b.faction.locked ? [b.faction] : [])]) {
+    for (const t of q.tasks || []) if (t.cur < t.n) { kinds.add(t.t); any = true; }
+    if ((q.give || []).length) give = true;
+    if (q.clues) kinds.add('clue');
+  }
+  const res = [...kinds].map(k => TASK_ACTS[k] || /battle_action|field_|expedition|craft|fish|trade|market|shop/); // 모르는 종류는 넓게
+  return { res, give, any, level: b.level };
+}
+on('changed', ev => {
+  const name = ev?.name || '';
+  if (midBattle(ev) || !qbWatch) return;
+  const w = qbWatch;
+  if (/quest|story|faction|raid_final|level|reset_identity/.test(name) || (store.character && w.level != null && store.character.level !== w.level)
+    || w.res.some(re => re.test(name)) || (w.give && ITEM_ACTS.test(name))) invalidate('world_quest_board');
+});
+window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
+
 export const questBox = () => `<section class="panel quest-box" id="quest-box"></section>`;
 
 export async function fillQuests(box) {
   if (!box) return;
   let b;
-  try { b = await load('world_quest_board', undefined, { maxAge: 15000 }); } catch { box.remove(); return; }
+  try { b = await load('world_quest_board', undefined, { maxAge: 600000 }); qbWatch = watchOf(b); } catch { box.remove(); return; }
   if (!box.isConnected) return;
   // 진행 중인 퀘스트가 여럿이면 지금 있는 지역의 퀘스트를 위로(같은 무리 안에서는 원래 순서)
   const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));

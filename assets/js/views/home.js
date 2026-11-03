@@ -31,7 +31,7 @@ const CAT = { herbs: '약초', ore: '광맥', wood: '목재', water: '물가', s
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false, peopleTimer = null, peopleKey = '';
-// 여기 있는 이들·파티 칸: 남이 오가거나 파티에 들어와도 1분 안에 보이게(화면이 보이고 창·전투가 없을 때만, 바뀌었을 때만 다시 그림)
+// 여기 있는 이들·파티 칸: 남이 오가거나 파티에 들어와도 2분 안에 보이게(쓰러진 동료는 구조 알림이 바로 온다)(화면이 보이고 창·전투가 없을 때만, 바뀌었을 때만 다시 그림)
 const peopleKeyOf = (r, p) => JSON.stringify([(r || []).map(x => x.owner_id || x.character_name).sort(), (p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
 async function peopleCheck() {
   if (!el?.isConnected || document.hidden || busy || snap?.battle || document.querySelector('.modal-backdrop')) return;
@@ -56,7 +56,7 @@ export async function render(root) {
     draw();
   }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
-  clearInterval(peopleTimer); peopleKey = ''; peopleTimer = setInterval(peopleCheck, 60000);
+  clearInterval(peopleTimer); peopleKey = ''; peopleTimer = setInterval(peopleCheck, 120000);
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; window.removeEventListener('yahang:arrived', draw); clearInterval(timer); clearInterval(peopleTimer); stopBattle(); }
@@ -79,7 +79,9 @@ async function draw() {
   if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
   busy = true; again = false;
   try {
-    const [s, roster, fish, rest, idle, pty] = await Promise.all([load('world_field_snapshot'), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
+    const [s, roster, fish, rest, idle, pty] = await Promise.all([
+      // 현장 요약: 행동 직후에는 합친 읽기(world_me)가 넣어 둔 값을 쓴다(2초 안)
+      load('world_field_snapshot', undefined, { maxAge: 2000 }), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
       // 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(common.js FISH_CHANGERS 등)
       load('world_fish_spot', undefined, { maxAge: 1800000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 600000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }).catch(() => null),
       // 파티 칸: 자리·파티가 바뀌는 행동 뒤에만 새로 읽는다(common.js ROSTER_CHANGERS)

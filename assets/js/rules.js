@@ -4,6 +4,15 @@ import { GAMEDATA as GD } from './gamedata.js';
 
 const PX = GD.partyExp || { flee_hp: 30, threat_pct: 45, bonus_pct: 10, bonus_cap: 3, overlap_min: 10 };
 
+// 원정 수색 회차 수(서버 world_expedition_settle·progress의 case와 같은 표): 기간(분) → 회차
+export const EXP_ROUNDS = { 30: 3, 60: 6, 120: 10, 240: 16, 480: 24 };
+// 지금 몇 번째 회차까지 지났는지(기기 시계로). 회차가 바뀔 때만 서버에 정산을 묻는다
+export function expRoundOf(exp, now = Date.now()) {
+  if (!exp?.started_at || !exp?.ends_at) return 0;
+  const s = new Date(exp.started_at).getTime(), e = new Date(exp.ends_at).getTime(), total = EXP_ROUNDS[exp.minutes] || 24;
+  return Math.max(0, Math.min(total, Math.floor(total * (Math.min(now, e) - s) / (e - s))));
+}
+
 // 파티 원정(world_pexp_together · world_pexp_rules)
 export const PARTY_EXP = {
   // 누가 함께 싸우는지

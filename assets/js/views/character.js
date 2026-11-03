@@ -472,9 +472,10 @@ async function skills(body) {
 }
 
 /* ── 자율 활동 ───────────────────────────────────────── */
-async function idle(body) {
-  const [snap, prof] = await Promise.all([load('world_idle_activity_snapshot'), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
-  idleWeapon = prof?.current?.weapon?.type || 'melee';
+async function idle(body, given) {
+  // given: 끝나는 시각에 화면만 다시 그릴 때 받은 값을 그대로(서버를 다시 부르지 않는다 — 끝남은 ready_at과 기기 시계로 안다)
+  const [snap, prof] = given ? [given, null] : await Promise.all([load('world_idle_activity_snapshot'), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
+  if (prof) idleWeapon = prof?.current?.weapon?.type || 'melee';
   const active = snap?.active;
   const ready = active && (snap.ready || new Date(snap.ready_at) <= new Date());
   const name = IDLE.find(x => x[0] === snap?.activity_type)?.[1] || '자율 활동';
@@ -512,7 +513,7 @@ async function idle(body) {
     const t = setInterval(() => {
       const left = $('#idle-left', body); if (!left) return clearInterval(t);
       const ms = new Date(snap.ready_at) - Date.now();
-      if (ms <= 0) { clearInterval(t); draw(true); } else left.textContent = `${fmt.remain(ms)} 남음`;
+      if (ms <= 0) { clearInterval(t); idle(body, snap); } else left.textContent = `${fmt.remain(ms)} 남음`;
     }, 1000);
   }
 }

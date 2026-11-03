@@ -8,13 +8,16 @@ const inflight = new Map();
 const cacheAt = new Map();
 export async function load(name, args, { maxAge = 0 } = {}) {
   const key = name + JSON.stringify(args ?? null);
-  if (maxAge && store.snaps[key] && Date.now() - (cacheAt.get(key) || 0) < maxAge) return store.snaps[key];
+  // 빈 값(낚시터 없는 곳의 world_fish_spot 등)도 받은 값으로 친다 — 전에는 빈 값이면 그릴 때마다 다시 물었다
+  if (maxAge && cacheAt.has(key) && key in store.snaps && Date.now() - (cacheAt.get(key) || 0) < maxAge) return store.snaps[key];
   if (inflight.has(key)) return inflight.get(key);
   const p = (name === 'world_inventory_snapshot' ? inventorySnap() : rpc(name, args)).then(d => { store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); if (name === 'world_rest_status') { armAlarm('rest_short', 'end', d?.short_ready_at); armAlarm('rest_full', 'end', d?.full_ready_at); } return d; })
     .finally(() => inflight.delete(key));
   inflight.set(key, p);
   return p;
 }
+// 행동 뒤 합친 읽기(core.js loadCharacter → world_me)가 함께 받은 요약을 캐시에 넣는다 — 상태판·현장 화면이 같은 이름으로 load하면 다시 묻지 않는다
+on('snaps', snaps => { for (const [name, d] of Object.entries(snaps || {})) if (d != null) { const key = name + 'null'; store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); } });
 // 가방 정보: 물품 목록·제작법(약 220KB 가운데 218KB)은 배포 전까지 바뀌지 않으므로 접속 동안 한 번만 받고,
 // 그 뒤에는 캐릭터마다 바뀌는 몫만 받는다(world_inventory_state). 서버에 아직 없으면 전체를 받는다.
 // 물품 목록·제작법은 서버 규칙 버전(db_version)과 함께 기기에도 남겨, 새로고침해도 버전이 같으면 가벼운 몫만 받는다.
@@ -80,11 +83,13 @@ const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/
 // 여기 있는 이들·동료 목록은 자리나 파티가 바뀌는 행동 뒤에만 새로 읽는다(행동마다 읽으면 서버 부담, 2026-10-28)
 // 일지 퀘스트 목록은 15초 동안 다시 쓰고, 할 일이 진행될 수 있는 행동 뒤에만 버린다
 const QUEST_CHANGERS = /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/;
-const ROSTER_CHANGERS = /travel|field_move|rescue|party|expedition|downed|idle/;
+// (지역 안에서 칸만 옮기는 world_field_move는 지역이 그대로라 빼 둔다 — 여기 있는 이들·파티 칸은 지역 단위)
+const ROSTER_CHANGERS = /travel|rescue|party|expedition|downed|idle/;
 // 전투 능력치(world_combat_profile, 한 번 약 100ms)는 능력치·장비·상태·칭호가 바뀔 수 있는 행동 뒤에만 버린다(그 밖에는 1분 캐시)
 const COMBAT_CHANGERS = /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/;
 // 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 바뀔 수 있는 행동 뒤에는 어느 화면에서 했든 버린다
-const FISH_CHANGERS = /fish|travel|field_move|craft|shop|trade|discard|equip|storage|letter|use_item|market|dismantle|overflow|quest/;
+// 낚시터는 지역 단위·낚싯대는 가방/장착이라 칸 옮기기(field_move)·물품 쓰기(use_item)로는 안 바뀐다
+const FISH_CHANGERS = /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/;
 on('changed', ({ name = '' }) => {
   if (FISH_CHANGERS.test(name)) invalidate('world_fish_spot');
   if (/rest|survival|travel|idle/.test(name)) invalidate('world_rest_status');

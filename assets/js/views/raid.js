@@ -398,12 +398,21 @@ async function run(btn, fn, isAct) {
   return null;
 }
 
-// 현장 머리의 토벌 띠: 봉연의 그림자 예고·신청·토벌, 내 결전, 봉연에 잠긴 곳(1분 동안 다시 씀)
+// 소식 띠(world_raid_brief)를 얼마나 다시 쓸지: 모집·토벌 중이면 1분(체력·남은 시간), 예고만 있거나 없으면 10분.
+// 정해진 때(출현·확정 12시간 전·모집 끝·토벌 끝)가 지났으면 바로 새로 — 남은 시간은 화면 시계로 센다
+function briefAge() {
+  const w = store.snaps['world_raid_briefnull']?.world; if (!w) return 600000;
+  if (w.status === 'signup' || w.status === 'fight') return 60000;
+  const now = Date.now(), at = x => x ? new Date(x).getTime() : Infinity;
+  const due = Math.min(at(w.spawn_at), w.region ? Infinity : at(w.spawn_at) - 12 * 3600e3);
+  return now >= due ? 0 : 600000;
+}
+// 현장 머리의 토벌 띠: 봉연의 그림자 예고·신청·토벌, 내 결전, 봉연에 잠긴 곳(briefAge만큼 다시 씀)
 export const raidBand = () => '<div id="raid-band"></div>';
 export async function fillRaidBand(box) {
   if (!box) return;
   if (!RAID_ON) { box.remove(); return; }
-  let b; try { b = await load('world_raid_brief', undefined, { maxAge: 60000 }); } catch { box.remove(); return; }
+  let b; try { b = await load('world_raid_brief', undefined, { maxAge: briefAge() }); } catch { box.remove(); return; }
   if (!box.isConnected) return;
   const w = b?.world, rows = [];
   if (b?.final) rows.push(`<a class="raid-band-row hot" href="#/raid/${esc(b.final)}">${icon('sword', 14)}<span><b>구중 봉주와의 결전</b>이 열려 있습니다</span><small>들어가기</small></a>`);
@@ -428,5 +437,5 @@ function backPrompt(w) {
     { title: '토벌로 돌아가기', ok: '토벌 화면으로', cancel: '나중에' }).then(ok => { if (ok) location.hash = `#/raid/${w.id}`; });
 }
 // 봉연의 그림자가 나올 곳이 정해졌으면(world_raid_brief.world.region — 12시간 전 확정부터) 그 회차를, 아니면 null(지도 표시용)
-export const raidShadow = async () => { if (!RAID_ON) return null; try { const w = (await load('world_raid_brief', undefined, { maxAge: 60000 }))?.world; return w?.region ? w : null; } catch { return null; } };
-export const raidLocks = async () => { if (!RAID_ON) return []; try { return (await load('world_raid_brief', undefined, { maxAge: 60000 }))?.locks || []; } catch { return []; } };
+export const raidShadow = async () => { if (!RAID_ON) return null; try { const w = (await load('world_raid_brief', undefined, { maxAge: briefAge() }))?.world; return w?.region ? w : null; } catch { return null; } };
+export const raidLocks = async () => { if (!RAID_ON) return []; try { return (await load('world_raid_brief', undefined, { maxAge: briefAge() }))?.locks || []; } catch { return []; } };

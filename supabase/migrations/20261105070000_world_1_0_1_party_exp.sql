@@ -763,7 +763,7 @@ begin
   -- 1.0.1 공동 싸움 줄은 파티원 일지마다 같은 것이 들어 있으므로 한 번만, 퀘스트 셈용 줄(hide)은 빼고
   lines := (select coalesce(jsonb_agg(l order by (l ->> 'at')::timestamptz, n), '[]'::jsonb)
             from (select distinct on (l) l, n from jsonb_array_elements(lines) with ordinality as a(l, n)
-                  where (l ->> 'at')::timestamptz <= now() and not coalesce((l ->> 'hide')::boolean, false) order by l, n) q);
+                  where not coalesce((l ->> 'hide')::boolean, false) order by l, n) q);
   total := case e.minutes when 30 then 3 when 60 then 6 when 120 then 10 when 240 then 16 else 24 end;
   span_s := extract(epoch from e.ends_at - e.started_at);
   done := greatest(0, least(total, floor(total * extract(epoch from least(now(), e.ends_at) - e.started_at) / span_s)::int));
@@ -772,7 +772,7 @@ begin
   next_round := case when done < total then e.started_at + (e.ends_at - e.started_at) * (done + 1) / total end;
   next_beat := e.started_at + make_interval(secs => (beats + 1) * beat_s);
   if next_beat >= e.ends_at then next_beat := null; end if;
-  return jsonb_build_object('active', true, 'me', c.character_name, 'stance', e.stance, 'rounds_done', done, 'total_rounds', total,
+  return jsonb_build_object('active', true, 'server_now', now(), 'me', c.character_name, 'stance', e.stance, 'rounds_done', done, 'total_rounds', total,
     'started_at', e.started_at, 'ends_at', e.ends_at, 'stopped', e.state ->> 'ended' in ('downed', 'exhausted'),
     'health', c.health, 'mental', c.mental, 'erosion', c.erosion,
     'next_at', case when next_round is null then next_beat when next_beat is null then next_round else least(next_round, next_beat) end,
@@ -798,5 +798,55 @@ do $c$ declare d text; a text; begin
   d := replace(d, $a$|| (10 * pa) ||$a$, $a$|| ((public.world_pexp_rules() ->> 'bonus_pct')::int * pa) ||$a$);
   execute d;
 end $c$;
+
+-- 1.0.1 원정 일지: 걸음마다 풍경·기척 줄(해시로 정해지는 줄)을 다음 수색 회차 시각까지 미리 준다. 화면은 줄의 시각이 되면 기기 시계로 하나씩
+-- 보이고 다음 회차에만 다시 읽는다(전에는 1~2분마다 다시 읽어 2시간 원정에 약 48번 — 이제 회차 수만큼, 2시간이면 10번).
+do $w$ declare d text; a text; begin
+  d := replace(pg_get_functiondef('public.world_expedition_walk_lines(uuid)'::regprocedure), E'\r\n', E'\n');
+  a := $a$beats := floor(extract(epoch from least(now(), e.ends_at) - e.started_at) / beat_s)::int;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_expedition_walk_lines 기준 문구가 없습니다'; end if;
+  execute replace(d, a, $b$beats := floor(extract(epoch from least(greatest(now(), e.started_at + (e.ends_at - e.started_at) * least(total, done + 1) / total), e.ends_at) - e.started_at) / beat_s)::int;$b$);
+end $w$;
+
+-- 봉연의 그림자 일정: 문 연 시각(world_app_meta open_at)부터 사흘(72시간)을 센다(사용자 결정).
+-- 전에는 토벌 기록이 비면(롤백 뒤) 「첫 회차 30시간 뒤」였고 그 30시간도 점검 중(11/2)부터 세어 11/4 16:47에 잡혔다.
+do $w$
+declare d text; a text := $a$at := public.world_raid_evening(now() + case when cnt = 0 then interval '30 hours' else interval '72 hours' end);$a$;
+begin
+  d := replace(pg_get_functiondef('public.world_raid_schedule_next()'::regprocedure), E'\r\n', E'\n');
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_raid_schedule_next 기준 문구가 없습니다'; end if;
+  execute replace(d, a, $b$at := public.world_raid_evening(greatest(now(), coalesce((select m.value::timestamptz from public.world_app_meta m where m.key = 'open_at'), now())) + interval '72 hours');$b$);
+end $w$;
+-- 이미 잡힌 회차(모집 전)가 문 연 뒤 사흘보다 이르면 그때로 옮기고, 보낸 예고(24시간 전)는 새 시각에 맞춰 다시 보내게 비운다
+update public.world_raids r set spawn_at = public.world_raid_evening(o.t + interval '72 hours'), notices = '{}', updated_at = now()
+  from (select value::timestamptz t from public.world_app_meta where key = 'open_at') o
+ where r.kind = 'world' and r.status = 'announced' and r.spawn_at < o.t + interval '72 hours';
+
+-- 현장 토벌 한 턴의 응답에 내 생존 수치·가방을 함께 싣는다(me) — 싸우는 동안 턴마다 캐릭터를 다시 읽지 않게(core.js act)
+do $w$
+declare d text; a text := $a$'crit', crit, 'health', hp, 'battle', public.world_field_battle_view(uid), 'next_action_at', now() + interval '1 second');$a$;
+begin
+  d := replace(pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure), E'\r\n', E'\n');
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_battle_action 기준 문구가 없습니다'; end if;
+  execute replace(d, a, $b$'crit', crit, 'health', hp, 'battle', public.world_field_battle_view(uid), 'next_action_at', now() + interval '1 second',
+    'me', (select jsonb_build_object('health', x.health, 'mental', x.mental, 'spiritual_power', x.spiritual_power, 'erosion', x.erosion,
+      'inventory', x.inventory, 'downed_at', x.downed_at, 'updated_at', x.updated_at) from public.world_characters x where x.owner_id = uid));$b$);
+end $w$;
+
+-- 행동 뒤 다시 읽기를 한 번으로: 내 캐릭터 행 + 상태판 요약(+ 현장을 보고 있으면 현장 요약).
+-- 전에는 행동마다 캐릭터(표 읽기)·world_hud_snapshot·world_field_snapshot 세 요청이 따로 나갔다.
+-- invoker라 조사원 권한(열 권한·RLS) 그대로 읽는다. 요약 하나가 실패해도 캐릭터는 돌려준다.
+create or replace function public.world_me(p_hud boolean default true, p_field boolean default false)
+returns jsonb language plpgsql volatile security invoker set search_path = '' as $f$
+declare c jsonb; h jsonb; f jsonb;
+begin
+  select to_jsonb(x) into c from public.world_characters x where x.owner_id = auth.uid();
+  if c is null then return jsonb_build_object('character', null); end if;
+  if p_hud then begin h := public.world_hud_snapshot(); exception when others then h := null; end; end if;
+  if p_field then begin f := public.world_field_snapshot(); exception when others then f := null; end; end if;
+  return jsonb_build_object('character', c, 'hud', h, 'field', f);
+end $f$;
+revoke all on function public.world_me(boolean, boolean) from public, anon;
+grant execute on function public.world_me(boolean, boolean) to authenticated;
 
 update public.world_app_meta set value = '20261105070000' where key = 'db_version';
