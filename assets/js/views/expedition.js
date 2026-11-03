@@ -105,10 +105,11 @@ export function renderExpedition(box, ov) {
       <div class="exp-col">
         <h3 class="sub-h">보낼 곳</h3>
         <div class="ground-list">${[...opts.filter(o => o.node_id === hereId), ...opts.filter(o => o.node_id !== hereId)].map(o => `<button class="ground ${o.node_id === pick.node ? 'on' : ''}" data-node="${esc(o.node_id)}" ${o.locked ? 'disabled' : ''}>
-            <header><b>${esc(o.name)}</b>${o.node_id === hereId ? chip('지금 있는 곳', 'ok') : ''}${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}</header>
-            <small>${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+ · 운임 노정패 ${o.fare || 1}`}</small></button>`).join('')}</div>
+            <b class="g-name">${esc(o.name)}</b>
+            <small>${o.node_id === hereId ? chip('지금 있는 곳', 'ok') : ''}${chip(DEPTH[o.depth] || '', o.depth >= 3 ? 'bad' : o.depth === 2 ? 'warn' : '')}${o.locked ? `Lv.${o.min_level}부터` : `${danger(o.danger)} 권장 Lv.${o.min_level}+ · 노정패 ${o.fare || 1}`}</small></button>`).join('')}</div>
         <h3 class="sub-h">기간</h3><div class="chip-pick" data-pick="minutes">${DURATIONS.map(([m, l]) => `<button data-v="${m}" class="${m === pick.minutes ? 'on' : ''}">${l}</button>`).join('')}</div>
-        <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+        <h3 class="sub-h">태세</h3><div class="stance-pick">${STANCES.map(([k, n, d]) => `<button data-stance="${k}" class="${k === pick.stance ? 'on' : ''}" title="${esc(d)}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+        <p class="stance-desc muted small">${esc((STANCES.find(x => x[0] === pick.stance) || [])[2] || '')}</p>
       </div>
       <aside class="exp-col exp-side">
         <h3 class="sub-h">챙겨 갈 보급품 <small class="muted">기본은 가진 만큼(가지마다 20개까지) · 개수를 줄이거나 빼도 됩니다</small></h3>
@@ -150,7 +151,7 @@ export function renderExpedition(box, ov) {
     if (v === max) delete supPick[k]; else supPick[k] = v;
     $('b', g).textContent = v; g.closest('li')?.classList.toggle('off', v === 0); hint();
   });
-  $$('[data-stance]', box).forEach(b => b.onclick = () => { pick.stance = b.dataset.stance; $$('[data-stance]', box).forEach(x => x.classList.toggle('on', x === b)); });
+  $$('[data-stance]', box).forEach(b => b.onclick = () => { pick.stance = b.dataset.stance; $$('[data-stance]', box).forEach(x => x.classList.toggle('on', x === b)); const sd = $('.stance-desc', box); if (sd) sd.textContent = (STANCES.find(x => x[0] === pick.stance) || [])[2] || ''; });
   hint();
   bindRecent(box, ov.recent);
   $('#exp-go', box).onclick = e => guard(e.currentTarget, () => launch(pick));

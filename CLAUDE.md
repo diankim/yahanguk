@@ -337,6 +337,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 날씨와 시간대
 
 - 시간대 한국 시각 6시간마다(해돋이 6~12·한낮 12~18·땅거미 18~24·삼경 0~6), 날씨 12시간마다(0·12시) 영역별(청명·담운·장우·세우·농무·삭풍·설한·혈무). 효과는 world_status_effect_total로 채집·제작·이동·회복·전투·조우·침식에. 모든 world_events에 시간대·날씨가 남음. world_env_total은 날씨·시간대 키를 한 번만(with … as materialized).
+- 공격 갈래 균형(1.0.1, world_environment_catalog): 농무 원거리 −10·장우 원거리 −5·담운 술법 +3·삼경 술법 +5·해돋이·한낮 원거리 +5 — 영역 평균(날씨 확률 가중) 근접 −0.6~+1.8·원거리 −1.6~+1.8·술법 +1.1~+3.6%(혈무 영역). 값을 바꾸면 이 평균을 다시 잰다.
 - 세우(細雨, drizzle): 채집 +6%·회복 +5%·침식 −5%·단서 +4%·원거리 −5%·낚시 입질 +5%p(world_fish), 땅 밑·심연 영역엔 없음(world_weather_climate). 날씨 이름은 두 글자 한자어. 새 날씨마다 core.js ENV·journal.js WEATHER·world_expedition_walk_lines를 함께 고친다.
 - 장야(롤백 전 연출, 끝남): world_long_night_stage는 11/2부터 늘 0이라 효과 없음(시간대·날씨 함수가 부르므로 남김). 알림 예약·붉은 안개 화면·롤백 문 닫기·마지막 토벌 함수는 롤백 때 지움(2026-11-02).
 
