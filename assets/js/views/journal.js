@@ -1,5 +1,3 @@
-// 일지: 퀘스트를 보는 곳. 주 이야기(장마다 장면 → 단서 → 가설) · 보조 퀘스트(분야별) · 상시 의뢰 · 기록(답사·원정·도감).
-// 마친 장면과 장 결말은 다시 읽을 수 있다(world_quest_scene). 진행 판정은 서버(world_quest_journal·world_quest_report)가 한다.
 import { store, on, act, rpc, ask, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON, openModal, closeModal, MARKET_ONLY } from '../core.js';
 import { loreBundle, refreshLore } from '../lore.js';
 import { load, panel, chip, loading, errorBox, currentRegion } from './common.js';
@@ -14,7 +12,6 @@ let el, sub = 'story', rec = 'survey', off = [];
 export async function render(root, s) {
   if (!store.character) return;
   el = root;
-  // 옛 주소(#/log/survey·history·codex)와 기록 칸 주소(#/log/fish 등)는 기록 칸으로
   if (REC.some(x => x[0] === s)) { sub = 'record'; rec = s; }
   else if (s === 'codex') { sub = 'record'; rec = 'monster'; }
   else sub = SUBS.some(x => x[0] === s) ? s : 'story';
@@ -33,7 +30,6 @@ async function draw(soft) {
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
-// 지역 바로가기: 인접하면 바로 출발, 아니면 지도에서 경로를 보여 준다.
 function goButton(regionId, map) {
   const r = (map?.regions || []).find(x => x.region_id === regionId);
   const here = currentRegion(map);
@@ -47,8 +43,6 @@ function bindGo(body) {
   $$('[data-route]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.route); window.yahangGo('map', 'world'); });
 }
 
-/* ── 퀘스트 공통: 장면 목록·다시 보기·보고 ───────────────────── */
-// 일지 목록(서버 함수). 없으면(배포 전) 장면 없이 단서·가설만 보인다
 const journal = () => load('world_quest_journal', undefined, { maxAge: 15000 }).catch(() => null);
 function sceneList(q, map) {
   const cur = q.cur, next = q.status === 'done' ? null : (q.scenes || []).find(x => !x.done);
@@ -73,15 +67,12 @@ function bindQuests(body) {
   }));
   $$('[data-q-report]', body).forEach(x => x.onclick = () => report(x));
   bindGo(body);
-  // 보조 퀘스트 포기: 처음부터 다시 받을 수 있고, 포기 전에 보상을 받은 장면은 다시 보고해도 보상이 없다(서버 world_quest_abandon)
   $$('[data-q-abandon]', body).forEach(x => x.onclick = async () => {
     if (!(await ask(`「${x.dataset.qTitle}」을(를) 포기할까요?\n진행이 처음으로 돌아가고, 다시 받아 처음부터 할 수 있습니다.\n이미 보상을 받은 장면은 다시 보고해도 보상이 없습니다.`, { title: '퀘스트 포기', ok: '포기하기', danger: true }))) return;
     guard(x, () => act('world_quest_abandon', { p_quest: x.dataset.qAbandon }));
   });
 }
 
-/* ── 주 이야기: 위의 장 목록을 누르면 그 장(장면 → 단서 → 가설)이 아래에 펼쳐진다 ── */
-// 장·거르기만 바꿀 때는 서버를 다시 읽지 않고 지난 응답으로 다시 그린다
 let selCh = '', lastStory = null, lastSide = null;
 async function story(body, keep) {
   const [b, j, map] = keep && lastStory ? lastStory : (lastStory = await Promise.all([load('world_story_board'), journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
@@ -100,7 +91,6 @@ async function story(body, keep) {
     ${chapters.filter(c => c.status === 'locked').length ? `<p class="muted small">잠긴 장 ${chapters.filter(c => c.status === 'locked').length}개 — 앞 장을 마치고 레벨이 되면 열립니다.</p>` : ''}
     ${regional(b?.regional)}`;
   $$('[data-ch]', body).forEach(x => x.onclick = () => { selCh = x.dataset.ch; story(body, true); });
-  // 장을 마치면 장 결말(epilogue)을 대화창으로 보인다
   $$('[data-combo]', body).forEach(x => x.onclick = () => guard(x, async () => {
     const r = await act('world_story_combine', { p_combo_id: x.dataset.combo });
     if (r?.epilogue?.lines?.length) (await import('../factionquest.js')).playDialogue({ title: r.epilogue.title, lines: r.epilogue.lines, cast: r.epilogue.cast,
@@ -142,7 +132,6 @@ function regional(r) {
     ${r?.submitted ? '' : `<button class="btn ${n >= 3 ? 'primary' : ''}" id="reg-submit" ${n >= 3 ? '' : 'disabled'}>${icon('scroll', 16)}<span>보고서 제출</span></button>`}`, { ico: 'map' });
 }
 
-/* ── 보조 퀘스트: 분야별로 나눠 보고, 상태로 거르고, 정렬한다 ───────────── */
 const FIELDS = [['외전', 'scroll'], ['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye'], ['생활', 'home']];
 const STATUS = [['', '전체'], ['active', '진행 중'], ['available', '받을 수 있음'], ['done', '마침'], ['locked', '레벨 부족']];
 const STATUS_N = { active: ['진행 중', 'accent'], available: ['받을 수 있음', 'ok'], done: ['마침', ''], locked: ['레벨 부족', 'bad'] };
@@ -183,7 +172,6 @@ async function side(body, keep) {
   $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
   bindQuests(body);
 }
-// 진행 중인 퀘스트는 접혀 있어도 지금 할 일과 장소가 보이게
 function nowLine(q) {
   if (q.status !== 'active' || !q.cur) return '';
   const left = (q.cur.tasks || []).filter(t => t.cur < t.n), regs = [...new Set(left.flatMap(t => t.regions || []))].map(nameOf);
@@ -203,7 +191,6 @@ function sideItem(q, map) {
     ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
   </details></li>`;
 }
-/* ── 상시 의뢰: 날마다 바뀌는 세 가지 일 ─────────────────────── */
 async function commission(body) {
   const b = await load('world_commission_board');
   const list = b?.items || [];
@@ -217,13 +204,11 @@ async function commission(body) {
       ${x.claimed ? chip('완료', 'ok') : `<button class="btn small ${x.progress >= x.need ? 'primary' : ''}" data-claim="${x.slot}" ${x.progress >= x.need ? '' : 'disabled'}>${x.kind === 'deliver' ? '납품하기' : '보상 받기'}</button>`}
     </article>`).join('') || empty('오늘의 의뢰가 없습니다.', 'scroll')}</div>`;
   $$('[data-claim]', body).forEach(x => x.onclick = () => guard(x, () => act('world_commission_claim', { p_slot: Number(x.dataset.claim) })));
-  // 조사원 의뢰: 상시 의뢰 아래에 붙인다. 따로 읽어 상시 의뢰가 먼저 보이게 한다
   const ub = document.createElement('div'); ub.className = 'ucomm'; body.append(ub);
   ub.innerHTML = loading();
   userCommissions(ub).catch(e => { ub.innerHTML = errorBox(e.message); });
 }
 
-/* ── 조사원 의뢰: 조사원이 보수를 걸고 물품을 구한다 ─────────── */
 const leftText = t => { const ms = new Date(t).getTime() - Date.now(); if (ms <= 0) return '마감'; const h = Math.floor(ms / 3600e3); return h >= 24 ? `${Math.floor(h / 24)}일 ${h % 24}시간 남음` : h >= 1 ? `${h}시간 남음` : `${Math.max(1, Math.round(ms / 60e3))}분 남음`; };
 async function userCommissions(box) {
   const b = await rpc('world_ucomm_board');
@@ -257,7 +242,6 @@ async function userCommissions(box) {
     ${mine.length ? `<h4 class="sub-h small">내가 올린 의뢰</h4><div class="commission-grid">${mine.map(mineCard).join('')}</div>` : ''}
     <h4 class="sub-h small">들어온 의뢰 ${open.length}</h4>
     ${open.length ? `<div class="commission-grid">${open.map(openCard).join('')}</div>` : empty('지금 올라온 조사원 의뢰가 없습니다.', 'scroll')}`;
-  // act가 끝나면 'changed'로 일지가 다시 그려지므로(render의 on('changed')) 여기서 따로 읽지 않는다
   const doAct = (btn, fn, args) => guard(btn, () => act(fn, args));
   $$('[data-uc-info]', box).forEach(x => x.onclick = () => import('./item.js').then(m => m.openItemInfo(x.dataset.ucInfo)));
   $$('[data-uc-give]', box).forEach(x => x.onclick = async () => {
@@ -273,7 +257,6 @@ async function userCommissions(box) {
   $('#uc-post', box)?.addEventListener('click', () => openUcommPost(here, feePct));
 }
 
-// 의뢰 올리기 창: 물품 고르기(분류 칩·이름 찾기) → 수량·보수 → 올리기
 const UC_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
 const UC_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
 const ucCat = c => !c ? 'etc' : UC_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
@@ -284,7 +267,6 @@ async function openUcommPost(here, feePct) {
   try { [inv, prices] = await Promise.all([load('world_inventory_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 })]); }
   catch (e) { box.innerHTML = errorBox(e.message); return; }
   const pmap = new Map((prices || []).map(p => [p.item_id, p]));
-  // 구할 수 있는 물품: 보통 물품·거래 가능·거래소 전용 아님·임무 물품 아님(서버 world_ucomm_post가 다시 검사)
   const items = (inv.catalog || []).filter(i => !String(i.id).endsWith('_hq') && i.category !== 'quest' && pmap.get(i.id)?.tradeable !== false && !MARKET_ONLY.has(i.id))
     .map(i => ({ id: i.id, name: i.name || nameOf(i.id), cat: ucCat(i.category), ref: Number(pmap.get(i.id)?.reference_price || 0), tier: i.tier, rarity: i.rarity }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
@@ -337,7 +319,6 @@ async function openUcommPost(here, feePct) {
   });
 }
 
-/* ── 기록: 답사 · 원정 · 도감(요괴·채집·어종) ─────────────────── */
 async function record(body) {
   body.innerHTML = `${segmented('rec-sub', REC, rec)}<div id="rec-body">${loading()}</div>`;
   bindSegmented(body, 'rec-sub', k => { rec = k; window.history.replaceState(null, '', `#/log/${k}`); record(body); });
@@ -346,7 +327,6 @@ async function record(body) {
   catch (e) { box.innerHTML = errorBox(e.message); }
 }
 
-/* ── 답사: 지역별 답사도 ──────────────────────────────────── */
 async function survey(body) {
   const [o, map] = await Promise.all([load('world_survey_overview'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
   const groups = {};
@@ -362,7 +342,6 @@ async function survey(body) {
   bindGo(body);
 }
 
-/* ── 지역 기록: 처음 들어갈 때 본 지역의 내력 ─────────────────── */
 async function regionLore(body) {
   const list = await load('world_region_lore_seen');
   const groups = {};
@@ -372,7 +351,6 @@ async function regionLore(body) {
     : empty('아직 남긴 지역 기록이 없습니다. 새 지역에 들어가면 그곳의 내력이 적힙니다.', 'scroll');
 }
 
-/* ── 원정 기록 ─────────────────────────────────────────── */
 const ENDED = { complete: '무사 귀환', recalled: '조기 귀환', downed: '쓰러짐', exhausted: '탈진' };
 async function expHistory(body) {
   const o = await load('world_expedition_overview');
@@ -383,20 +361,15 @@ async function expHistory(body) {
   $$('[data-h]', body).forEach(b => b.onclick = () => { const h = list[Number(b.dataset.h)]; showResult({ place_name: h.place_name || h.ground_name, result: h.result }); });
 }
 
-/* ── 어종 도감 ─────────────────────────────────────────── */
-// 시간대·날씨·희귀도·직업 이름은 core.js 이름표(nameOf) 하나에서
 const HABITAT = { river: '강', marsh: '늪', sea: '바다', lake: '호수', deep: '깊은 물', canal: '수로', abyss: '심연' };
-// 도감: 요괴 · 채집 · 어종. 요괴는 만나면 기본 정보, 쓰러뜨리면 상성·수법 대처법·전리품이 열린다.
 let cxKind = '';
 const mul = v => { const n = Number(v); return `<span class="eff ${n >= 1.2 ? 'ok' : n <= 0.85 ? 'bad' : ''}">×${n}</span>`; };
 const codexTitles = list => (list || []).length ? panel('도감 칭호', `<ul class="spot-list">${list.map(t => `<li><div><b>${esc(t.name)}</b><small>${esc(t.condition)}${t.need && !t.earned ? ` · ${fmt.num(t.progress ?? 0)}/${fmt.num(t.need)}` : ''}</small></div>${t.earned ? chip('얻음', 'ok') : chip('아직', '')}</li>`).join('')}</ul>`, { ico: 'spark' }) : '';
-// 의뢰 갱신 때: 한국 시각 0시면 「11월 3일 0시」
 function resetWhen(t) {
   const d = new Date(t), o = { timeZone: 'Asia/Seoul' };
   const hm = d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit', hour12: false });
   return `${d.toLocaleDateString('ko-KR', { ...o, month: 'long', day: 'numeric' })} ${/^(00|24):00$/.test(hm) ? '0시' : d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit' })}`;
 }
-// 못 만난 요괴는 한 마리씩 카드로 그리지 않고 갈래마다 수만 한 줄로(휴대폰에서 화면이 끝없이 길어지지 않게)
 function unseenLine(list, kinds) {
   const n = {}; list.forEach(m => { if (!m.known) n[m.kind] = (n[m.kind] || 0) + 1; });
   const rows = kinds.filter(k => n[k.key]).map(k => `<li><div><b>${esc(k.name)}</b><small>아직 만나지 못한 요괴 ${fmt.num(n[k.key])}</small></div></li>`);
@@ -428,17 +401,13 @@ async function monsterCodex(box) {
     ${unseenLine(list, kinds)}
     ${codexTitles(o.titles)}`;
   $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
-  // 목격담: 그 갈래를 1·10마리 쓰러뜨리면 이야기 속 인물의 한마디가 열린다
   const wb = $('[data-witness]', box);
-  // 열림은 서버가 정하고(그 갈래 토벌 수), 화면이 센 수가 넘었는데 아직 잠긴 줄이 있으면 한 번 다시 읽는다
   const n = all.filter(m => m.kind === cxKind).reduce((s, m) => s + (Number(m.defeated) || 0), 0);
   const paint = l => { const arr = l.witness?.[cxKind] || [];
     wb.innerHTML = arr.map(w => w.open ? `<p class="w-line"><b>${esc(w.name)}</b> 「${esc(w.t)}」</p>` : `<p class="w-line locked">${icon('help', 12)} 이 갈래를 ${w.need}마리 쓰러뜨리면 열리는 목격담</p>`).join(''); return arr; };
   if (wb) loreBundle().then(l => { if (paint(l).some(w => !w.open && n >= w.need)) refreshLore().then(l2 => wb.isConnected && paint(l2)); });
 }
 const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
-// 채집 도감의 세부 채집터(줄글로): 지역마다 한 줄 「지역(지도 바로 가기) Lv.n+ · 찾음 a/b — 채집터 둘 외 n곳」,
-// 지역은 둘까지만 적고 나머지는 「외 지역 n곳」(꼬리표 단추를 쓰지 않는다)
 const spotRow = g => {
   const s = (g.s || []).slice(0, 2), more = g.c - s.length;
   return `<p class="gx-line"><button type="button" class="q-link" data-q-map="${esc(g.r)}" title="지도에서 보기">${esc(g.r)}</button> <span class="muted">Lv.${g.l}+ · 찾음 ${g.fc}/${g.c}</span>${s.length ? ` — ${s.map(t => `<span class="${t.f ? 'gx-f' : 'muted'}" title="${t.f ? '찾은 채집터' : '아직 찾지 못한 채집터'}">${esc(t.n)}(Lv.${t.lv})</span>`).join(', ')}${more > 0 ? ` <span class="muted">외 ${more}곳</span>` : ''}` : ''}</p>`;

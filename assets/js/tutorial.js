@@ -1,13 +1,9 @@
-// 처음 입국한 조사원을 위한 길잡이: 화면 요소를 하나씩 짚어 주는 단계별 안내와, 현장에 붙는 "첫 걸음" 체크리스트.
-// 진행은 서버의 행동 기록에서 세고, 표시 상태(안내 마침·접기·닫기·다시 열기)는 서버(world_tutorial_state)에 캐릭터별로 둔다.
-// 그래서 모바일에서 마치면 PC에서도 마친 상태다. 서버를 못 읽을 때만 이 기기의 기록으로 대신한다.
 import { store, on, esc, icon, $, h, toast, rpc } from './core.js';
 
 const key = k => `yh-tut-${k}-${store.character?.owner_id || 'x'}`;
 const localGet = (k, d = null) => { try { const v = localStorage.getItem(key(k)); return v == null ? d : JSON.parse(v); } catch { return d; } };
 const localSet = (k, v) => { try { localStorage.setItem(key(k), JSON.stringify(v)); } catch {} };
 const FLAGS = ['done', 'fold', 'closed', 'reopened'];
-// st.owner: 서버에서 읽어 온 캐릭터. 읽기 전에는 기기 기록을 쓴다.
 const st = { owner: null, flags: {}, prog: {}, failed: false };
 const ready = () => st.owner && st.owner === store.character?.owner_id;
 const get = (k, d = null) => {
@@ -20,7 +16,6 @@ const set = (k, v) => {
   localSet(k, v);
   if (ready()) { st.flags[k] = v; rpc('world_tutorial_set', { p_flags: { [k]: !!v } }).catch(() => {}); }
 };
-// 서버에서 진행·표시 상태를 읽는다. 서버에 아직 표시 상태가 없으면 이 기기에 남아 있던 것을 한 번 올린다.
 let loading = null;
 export function loadTutorial() {
   const c = store.character; if (!c) return Promise.resolve();
@@ -42,8 +37,6 @@ async function readTutorial(c) {
   } catch { st.failed = true; drawChecklist(); }
   finally { loading = null; }
 }
-// 행동 뒤에 서버 기록으로 진행을 다시 맞춘다(여러 번 눌러도 한 번만 읽는다)
-// 서버 부담을 줄이려 15초에 한 번까지만 읽는다(그 사이 행동은 마지막에 한 번 반영)
 let syncTimer = null, lastSync = 0;
 function syncSoon() { clearTimeout(syncTimer); syncTimer = setTimeout(async () => {
   if (!ready()) return;
@@ -53,8 +46,6 @@ function syncSoon() { clearTimeout(syncTimer); syncTimer = setTimeout(async () =
     drawChecklist(); } catch {}
 }, Math.max(1500, 15000 - (Date.now() - lastSync))); }
 
-/* ── 단계별 안내 ─────────────────────────────────────── */
-// sel: 짚어 줄 요소(보이는 첫 번째). view: 그 단계에서 열 화면.
 const STEPS = [
   { title: '야행국에 오신 것을 환영합니다', body: '밤의 요괴와 변칙을 조사하는 관청의 신입 조사원이 되었습니다. 화면 구성과 처음 할 일을 1분 정도로 짚어 드릴게요. 언제든 건너뛸 수 있습니다.' },
   { sel: ['.hud-body .hud-card', '.hud-strip'], title: '상태판', body: '체력·정신·영력·침식과 탐색력, 지금 진행 중인 일(이동·전투·원정·자율 활동)이 늘 여기 보입니다. 모바일에서는 위쪽 띠를 누르면 펼쳐집니다. 날씨·시간대 표시를 누르면 지금 받는 효과가 나옵니다.' },
@@ -92,7 +83,6 @@ export function startTutorial(from = 0) {
   window.addEventListener('resize', place);
   show(idx);
 }
-// 안내 중에는 화면이 손가락·휠로 움직이지 않게 한다(짚는 위치가 어긋나지 않도록). 안내가 짚을 곳으로 옮기는 것만 허용한다.
 const stopScroll = e => { if (!e.target.closest?.('.tut-card')) e.preventDefault(); };
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 const stopKeys = e => { if (SCROLL_KEYS.has(e.key) && !e.target.closest?.('input,textarea,select')) e.preventDefault(); };
@@ -138,7 +128,6 @@ function place() {
   card.style.cssText = `width:${cw}px;left:${left}px;${below ? `top:${r.bottom + 14}px` : `top:${Math.max(16, r.top - 14 - card.offsetHeight)}px`}`;
 }
 
-/* ── 첫 걸음 체크리스트 ───────────────────────────────── */
 const TASKS = [
   ['supply', '일일 보급 받기', '캐릭터 › 세력', 'char/faction'],
   ['outside', '바깥 지역으로 나가기', '지도에서 잿빛 들녘·연무장 추천', 'map'],
@@ -150,24 +139,22 @@ const TASKS = [
 function progress() { return get('prog', {}); }
 function mark(k, n = 1) {
   const p = progress(); const before = done(p, k);
-  // 이미 마친 항목이거나 목록이 보이지 않으면(닫음·Lv6 이상) 서버에 다시 묻지 않는다(탐색할 때마다 15초 간격으로 읽던 것)
   p[k] = (p[k] || 0) + n; set('prog', p);
   if (!before && !get('closed') && ((store.character?.level || 1) < 6 || get('reopened'))) syncSoon();
   if (!before && done(p, k)) {
     const t = TASKS.find(x => x[0] === k);
     const left = TASKS.filter(([x]) => !done(p, x)).length;
     if (t) toast(`첫 걸음 완료: ${t[1]}${left ? ` · 남은 일 ${left}개` : ' · 모두 마쳤습니다!'}`, 'ok');
-    set('closed', false); // 완료한 걸 확인할 수 있게 닫아 둔 목록도 다시 보인다(접힌 상태는 그대로)
+    set('closed', false);
     drawChecklist(true);
   }
 }
 const need = { search: 3 };
 const done = (p, k) => (p[k] || 0) >= (need[k] || 1);
 
-// 상태: 접기(fold) — 한 줄로 줄어들 뿐 사라지지 않는다. 닫기(closed) — 모두 마친 뒤에만 닫을 수 있고, 도움말에서 다시 연다.
 export function checklistHtml() {
   const c = store.character; if (!c) return '';
-  if (!ready() && !st.failed) return ''; // 서버 기록을 읽기 전에는 그리지 않는다(다른 기기에서 마친 목록이 잠깐 보이지 않게)
+  if (!ready() && !st.failed) return '';
   if (get('closed')) return '';
   const p = progress(); if (store.hud?.supply?.claimed_today) p.supply = Math.max(1, p.supply || 0);
   const n = TASKS.filter(([k]) => done(p, k)).length, all = n === TASKS.length;
@@ -187,7 +174,6 @@ function drawChecklist(celebrate) {
   box.outerHTML = html;
   if (celebrate) window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' }));
 }
-// 도움말의 "첫 걸음 다시 보기"
 export function reopenChecklist() { set('closed', false); set('fold', false); set('reopened', true); }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-fs]'); if (!b) return;
@@ -196,7 +182,6 @@ document.addEventListener('click', e => {
   if (b.dataset.fs === 'tour') startTutorial(0);
 });
 
-// 행동 결과로 체크리스트를 채운다.
 on('changed', ({ name, data }) => {
   if (!store.character) return;
   if (/world_claim_faction_supply/.test(name)) mark('supply');
@@ -207,15 +192,12 @@ on('changed', ({ name, data }) => {
 window.addEventListener('yahang:arrived', () => setTimeout(() => { if (store.snaps?.world_field_snapshot?.region && !store.snaps.world_field_snapshot.region.safe) mark('outside'); }, 1500));
 export function noteRegion(region) { if (region && !region.safe && !done(progress(), 'outside')) mark('outside'); }
 
-// 처음 만든 캐릭터(또는 아직 안내를 보지 않은 낮은 레벨 캐릭터)에게 한 번 띄운다.
 export async function maybeStartTutorial() {
   await loadTutorial();
   const c = store.character; if (!c || get('done')) return;
   let pending = false; try { pending = localStorage.getItem('yh-tut-pending') === c.owner_id; } catch {}
   if (pending || (c.level || 1) <= 2) setTimeout(() => startTutorial(0), 900);
 }
-// 새 캐릭터를 만들 때 부른다. 계정 아이디(owner_id)는 롤백 뒤에도 같아서, 이 기기에 남은 옛 캐릭터의 안내 기록(마침·접기·닫기)을
-// 지우지 않으면 서버에 새 캐릭터 몫으로 다시 올라가 처음 안내와 「첫 걸음」이 뜨지 않는다(2026-11-02 점검).
 export function markPending(ownerId) {
   try {
     for (const k of [...FLAGS, 'prog']) localStorage.removeItem(`yh-tut-${k}-${ownerId || 'x'}`);

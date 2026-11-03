@@ -1,5 +1,3 @@
-// 원정: 찾아낸 세부 지역 한 곳을 골라 기간·태세를 정해 보낸다. 보급품은 고른 만큼(고르지 않으면 가진 만큼) 챙겨 가서
-// 필요할 때 쓰고, 남은 것은 돌아오면 가방에 돌려놓는다. 결과는 서버가 능력치·장비·직업·대세력을 반영해 계산한다.
 import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { PARTY_EXP } from '../rules.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
@@ -13,7 +11,6 @@ const STANCES = [
 const SUPPLY_USE = { tonic: '체력이 떨어지면', herbal_extract: '체력이 떨어지면', herb: '체력이 떨어지면', ward_talisman: '침식이 50을 넘으면',
   seal_paper: '영체·결계 요괴를 만나면', revival_charm: '쓰러지기 직전', travel_ration: '한 시간마다' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
-// 직업별 원정 기술(서버 world_expedition_settle이 회차마다 계산한다)
 export const JOB_SKILL = {
   exorcist: ['파사 부적', '원정마다 한 번, 영체·결계 요괴를 부적으로 단번에 퇴치합니다.'],
   scout: ['선제 사격', '싸울 때마다 30% 확률로 먼저 쏘아 그 싸움의 승률 +12%p.'],
@@ -24,17 +21,14 @@ export const JOB_SKILL = {
 };
 const KIND_ICON = { start: 'flame', round: 'route', walk: 'pin', env: 'cloud', supply: 'bag', warn: 'heart', end: 'check',
   fight: 'sword', atk: 'sword', hurt: 'heart', heal: 'plus', skill: 'spark', win: 'check', lose: 'back', down: 'heart', gather: 'leaf', find: 'search', guard: 'shield', foe: 'flame' };
-let seenLines = 0; // 새로 붙은 줄만 살짝 강조한다
+let seenLines = 0;
 let pick = { node: null, minutes: 60, stance: 'balanced' };
-// 창을 열 때 한 번, 지금 서 있는 답사 지점(current_exploration_node_id)을 보낼 곳으로 먼저 고른다
 let preferHere = false;
-// 같은 설정으로 다시 보내기: 마지막으로 보낸 곳·기간·태세를 기기에 남긴다
 const LAST_KEY = 'yh-exp-last';
 const lastPick = () => { try { return JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch { return null; } };
 const saveLast = p => { try { localStorage.setItem(LAST_KEY, JSON.stringify(p)); } catch {} };
 const STANCE_NAME = { cautious: '신중', balanced: '균형', bold: '강행' };
 const DUR_NAME = Object.fromEntries(DURATIONS);
-// 보급품 고르기(7.1): 고른 개수만 보낸다(고르지 않은 것은 서버 기본값 = 가진 만큼, 가지마다 20개까지). 0은 사용 안 함
 let supPick = {};
 async function launch(p) {
   const sup = Object.fromEntries(Object.entries(supPick).filter(([, n]) => n >= 0));
@@ -43,7 +37,6 @@ async function launch(p) {
   saveLast({ node: p.node, minutes: p.minutes, stance: p.stance });
   return out;
 }
-// 파티 원정 함께 출발: 파티장이 제안하고 같은 곳의 동료가 답하면 서버가 한 번에 모두 출발시킨다(출발·귀환 시각이 같다)
 async function partyInfo() {
   const [p, offer] = await Promise.all([load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null), rpc('world_party_expedition_offer_status').catch(() => null)]);
   const me = store.character, members = p?.members || [];
@@ -68,7 +61,6 @@ function partyBox(info) {
   return '';
 }
 
-// 원정 창(팝업): 현장·상태판·알림 어디서든 이 창을 띄운다. 화면은 옮기지 않는다.
 export async function openExpeditionWindow(preset) {
   if (preset?.node) pick = { node: preset.node, minutes: Number(preset.minutes) || pick.minutes, stance: preset.stance || pick.stance };
   preferHere = !preset?.node;
@@ -88,7 +80,6 @@ export function renderExpedition(box, ov) {
   const hereId = c?.current_exploration_node_id;
   if (preferHere) { preferHere = false; if (opts.some(o => o.node_id === hereId && !o.locked)) pick.node = hereId; }
   if (!opts.some(o => o.node_id === pick.node && !o.locked)) pick.node = opts.find(o => !o.locked)?.node_id || null;
-  // 서버는 가지마다 20개까지만 챙긴다(world_expedition_start) — 고르는 칸과 건량 계산도 20을 넘지 않게
   const SUP_CAP = 20, capOf = k => Math.min(SUP_CAP, Number(ov.supplies?.[k] || 0));
   const sup = Object.entries(ov.supplies || {}).filter(([, n]) => n > 0).map(([k, n]) => [k, Math.min(SUP_CAP, n)]);
   const tokens = Number(ov.tokens ?? c.mount_tokens ?? 0);
@@ -97,7 +88,6 @@ export function renderExpedition(box, ov) {
   for (const k of Object.keys(supPick)) if (!(ov.supplies?.[k] > 0) || supPick[k] > capOf(k)) delete supPick[k];
   const supN = k => supPick[k] ?? capOf(k);
   const rations = () => supN('travel_ration');
-  // PC: 왼쪽에 보낼 곳·기간·태세, 오른쪽에 보급품·안내·출발. 모바일: 한 줄로 쌓는다.
   box.innerHTML = `
     <div class="exp-progress"><span>${esc(ov.region_name || '')} 답사</span><b>${ov.survey?.pct ?? 0}%</b>${bar(ov.survey?.pct ?? 0, 100, 'xp')}<small>원정에서 길과 채집터를 새로 찾으면 답사가 오릅니다. 깊은 곳일수록 위험하고 얻는 것이 많습니다.</small></div>
     ${lastOpt ? `<div class="exp-again"><span>${icon('route', 14)} 지난 설정 · <b>${esc(lastOpt.name)}</b> · ${esc(DUR_NAME[last.minutes] || '')} · ${esc(STANCE_NAME[last.stance] || '')} · 노정패 ${lastOpt.fare || 1}</span>
@@ -144,7 +134,6 @@ export function renderExpedition(box, ov) {
   };
   $$('[data-node]', box).forEach(b => b.onclick = () => { pick.node = b.dataset.node; $$('[data-node]', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
   $$('[data-pick=minutes] button', box).forEach(b => b.onclick = () => { pick.minutes = Number(b.dataset.v); $$('[data-pick=minutes] button', box).forEach(x => x.classList.toggle('on', x === b)); hint(); });
-  // 보급품 개수: [없음] − 수 + [전부](0~20을 모두 늘어놓던 드롭다운이 휴대폰에서 너무 길었다). 전부는 가진 만큼(20까지)
   $$('.sup-step', box).forEach(g => g.onclick = e => {
     const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return;
     const k = g.dataset.sup, max = Number(g.dataset.max), cur = supN(k);
@@ -197,7 +186,6 @@ function renderActive(box, a) {
   $('#exp-recall', box).onclick = async e => { const b = e.currentTarget; if (await ask('지금 귀환할까요? 지난 시간만큼의 성과만 얻습니다.', { title: '일찍 귀환', ok: '귀환하기' })) guard(b, async () => { const r = await act('world_expedition_complete', { p_recall: true }); showResult(r); return null; }); };
 }
 
-// 전투 줄(마주침부터 승패까지)은 한 덩어리로 묶어 결과 한 줄만 보이고, 누르면 주고받은 내용을 펼친다
 const BATTLE = new Set(['fight', 'atk', 'hurt', 'heal', 'skill', 'guard', 'foe', 'win', 'lose', 'down']);
 const openBattles = new Set();
 function battleGroups(ls) {
@@ -209,7 +197,6 @@ function battleGroups(ls) {
       if (['win', 'lose', 'down'].includes(l.kind)) open.delete(key);
       return;
     }
-    // 싸우는 중에 끼어든 다른 줄(보급품 먹기 등)은 전투를 끊지 않는다. 뒤따르는 전투 줄은 계속 그 칸에 담는다.
     if (l.kind === 'fight') { const ng = { lines: [[l, i]], key: l.fk || `${l.owner}|${l.at}` }; open.set(key, ng); out.push(ng); return; }
     out.push({ l, i });
   });
@@ -234,7 +221,6 @@ async function feed(box) {
   if (p?.active) {
     const skew = p.server_now ? Date.now() - new Date(p.server_now).getTime() : 0;
     paintFeed(box, p, skew);
-    // 회차 정산으로 바뀐 체력·정신·침식을 상태판에도 곧바로 반영한다
     const c0 = store.character;
     if (c0 && (c0.health !== p.health || c0.mental !== p.mental || c0.erosion !== p.erosion)) loadCharacter().catch(() => {});
     const party = p.party || [];

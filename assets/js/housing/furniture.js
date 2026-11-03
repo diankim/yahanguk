@@ -1,9 +1,3 @@
-// 별채 가구 자료(7.2): 바닥 가구(FUR)·벽 장식(WALL)·벽지(PAPER)·바닥재(GROUND)와 처음 받는 「단청 별채」 세트(DEFAULT_SET).
-// 그리기는 housing/render.js가 한다. 칸 단위 W×D 안에 부품(상자 {x,y,w,d,h,z,c} · 타원 {t:'ell',x,y,z,rx,ry,c})을 둔다(z·h는 칸 높이 ZU=20px, rx·ry는 픽셀).
-// 앞면은 +y 쪽(오른쪽 벽에 등을 대고 놓는 방향). 등급 1~5 = 범품·양품·진품·명품·신품. layer: floor 바닥 · rug 깔개(맨 아래) · surface 소품(top 있는 가구 윗면).
-// pet: bed 잠자리 · toy 놀잇감 · bowl 먹이 그릇 · perch 높은 곳. 벽 장식 rects는 [t0, z0, w, h, 색](벽을 따라 칸, 위로 px), text는 [글, 색].
-// 색은 평면색만 쓴다(그늘·외곽선은 그리개가 넣음).
-
 const C = {
   wood: '#8a5a32', dark: '#553420', deep: '#3e2616', pine: '#a8784a', lac: '#9a3326', lacD: '#6e2219', gold: '#d8b25a', brass: '#b08a40',
   paper: '#f1e8d4', paper2: '#e2d6bb', ink: '#2a2a2e', ind: '#33467a', ind2: '#4b63a0', red: '#b84a3a', jade: '#5f9a82', jade2: '#7fb59c',
@@ -12,7 +6,6 @@ const C = {
 };
 
 export const FUR = {
-  // ── 범품 ──────────────────────────────────────────────
   cushion_obang: { name: '오방색 방석', grade: 1, W: 1, D: 1, layer: 'floor', cat: '좌석·탁자', pet: 'bed', parts: [
     { x: .12, y: .12, w: .76, d: .76, h: .13, c: C.lac },
     { x: .2, y: .2, w: .6, d: .6, h: .03, z: .13, c: C.ind },
@@ -93,7 +86,6 @@ export const FUR = {
     { x: .42, y: .42, w: .16, d: .16, h: .04, z: .76, c: '#4a3424' },
     { x: .66, y: .46, w: .16, d: .06, h: .04, z: .66, c: '#4a3424' }] },
 
-  // ── 양품 ──────────────────────────────────────────────
   table_lacquer: { name: '주칠 좌식 탁자', grade: 2, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .55, parts: [
     { x: .14, y: .14, w: .12, d: .12, h: .4, c: C.lacD }, { x: 1.74, y: .14, w: .12, d: .12, h: .4, c: C.lacD },
     { x: .14, y: .74, w: .12, d: .12, h: .36, c: C.lacD }, { x: 1.74, y: .74, w: .12, d: .12, h: .36, c: C.lacD },
@@ -190,7 +182,6 @@ export const FUR = {
     { x: .3, y: .38, w: .4, d: .24, h: .06, z: .7, c: C.wood },
     { x: .32, y: .4, w: .36, d: .2, h: .04, z: .76, c: C.ind }] },
 
-  // ── 진품 ──────────────────────────────────────────────
   wardrobe_najeon: { name: '자개 장롱', grade: 3, W: 2, D: 1, layer: 'floor', cat: '수납', pet: 'perch', top: 2.36, parts: [
     { x: .08, y: .24, w: .14, d: .14, h: .12, c: C.deep }, { x: 1.78, y: .24, w: .14, d: .14, h: .12, c: C.deep },
     { x: .08, y: .8, w: .14, d: .14, h: .12, c: C.deep }, { x: 1.78, y: .8, w: .14, d: .14, h: .12, c: C.deep },
@@ -285,7 +276,6 @@ export const FUR = {
     { x: .48, y: .48, w: .03, d: .03, h: .3, z: .42, c: '#cfcac0' },
     { t: 'ell', x: .56, y: .44, z: .82, rx: 2, ry: 1, c: '#dcd8d0' }] },
 
-  // ── 명품 ──────────────────────────────────────────────
   screen_hwajo: { name: '화조 병풍', grade: 4, W: 3, D: 1, layer: 'floor', cat: '병풍', parts: [
     { x: .05, y: .08, w: 2.9, d: .24, h: .12, c: C.lacD },
     { x: 0.05, y: 0.1, w: 0.36, d: .08, h: 1.7, z: .12, c: C.paper }, { x: 0.41, y: 0.1, w: 0.36, d: .08, h: 1.7, z: .12, c: C.paper },
@@ -323,7 +313,6 @@ export const FUR = {
     { x: .9, y: .5, w: .34, d: .3, h: .36, z: .2, c: '#88857c' },
     { t: 'ell', x: 1.1, y: .66, z: .6, rx: 2, ry: 1, c: '#5a7a3e' }] },
 
-  // ── 신품 ──────────────────────────────────────────────
   screen_ilwol: { name: '일월오봉도 병풍', grade: 5, W: 3, D: 1, layer: 'floor', cat: '병풍', parts: [
     { x: .05, y: .1, w: 2.9, d: .3, h: .16, c: C.lacD },
     { x: .1, y: .16, w: 1, d: .1, h: 1.84, z: .16, c: '#2f5f8c' }, { x: 1.1, y: .16, w: .8, d: .1, h: 1.84, z: .16, c: '#2f5f8c' }, { x: 1.9, y: .16, w: 1, d: .1, h: 1.84, z: .16, c: '#2f5f8c' },
@@ -384,7 +373,6 @@ export const FUR = {
 };
 
 export const WALL = {
-  // ── 범품 ──
   window_sal: { name: '살창', grade: 1, kind: 'window', cat: '창문', w: 1.6, h: 30, rects: [
     [0, 0, 1.6, 30, C.dark], [.08, 2, 1.44, 26, '#f6ead0'],
     [.38, 2, .06, 26, C.dark], [.77, 2, .06, 26, C.dark], [1.16, 2, .06, 26, C.dark],
@@ -402,7 +390,6 @@ export const WALL = {
     [.14, 2, .72, 18, '#d4bf84'], [.18, 4, .32, 7, C.ind], [.5, 4, .32, 7, C.ind], [.18, 11, .32, 7, C.lac], [.5, 11, .32, 7, C.lac],
     [.34, 7, .16, 4, C.lac], [.5, 11, .16, 4, C.ind], [.44, -4, .12, 6, C.dark], [.47, -9, .06, 6, C.lac]] },
 
-  // ── 양품 ──
   beam_dancheong: { name: '단청 들보', grade: 2, kind: 'deco', cat: '들보', w: 3, h: 14, rects: [
     [0, 0, 3, 14, C.green], [0, 0, 3, 2, C.deep], [0, 12, 3, 2, C.deep],
     [0, 2, .4, 10, C.lac], [2.6, 2, .4, 10, C.lac], [.4, 2, .06, 10, C.gold], [2.54, 2, .06, 10, C.gold],
@@ -427,7 +414,6 @@ export const WALL = {
     [.2, 15, .2, 6, '#a2a29a'], [.6, 24, .12, 3, '#a2a29a'], [.62, 28, .16, 1, C.ink], [.2, 27, .1, 2, C.lac],
     [-.06, 35, 1.12, 3, C.dark], [-.06, -1, 1.12, 3, C.dark], [.46, 38, .08, 3, C.dark]] },
 
-  // ── 진품 ──
   mask_hahoe: { name: '하회탈', grade: 3, kind: 'deco', cat: '탈', w: 1.2, h: 26, rects: [
     [.2, 2, .8, 22, '#d9b98a'], [.14, 6, .92, 14, '#d9b98a'], [.3, 0, .6, 3, '#c9a878'],
     [.26, 15, .24, 2, C.ink], [.7, 15, .24, 2, C.ink], [.3, 17, .16, 1, C.ink], [.74, 17, .16, 1, C.ink],
@@ -441,7 +427,6 @@ export const WALL = {
     [.6, 10, .08, 2, C.lac], [1.0, 12, .08, 2, C.lac], [1.4, 16, .08, 2, C.lac], [1.9, 20, .08, 2, C.lac],
     [2.0, 23, .2, 4, C.lac], [-.08, -1, 2.56, 3, C.dark], [-.08, 28, 2.56, 3, C.dark]] },
 
-  // ── 명품 ──
   board_yahaeng: { name: '현판 「夜行」', grade: 4, kind: 'deco', cat: '현판', w: 2, h: 16, text: ['夜行', C.gold], rects: [
     [-.06, -1, 2.12, 18, C.gold], [0, 0, 2, 16, C.dark], [.08, 2, 1.84, 12, '#2c1a10']] },
   gayageum: { name: '가야금 걸이', grade: 4, kind: 'deco', cat: '악기', w: 3, h: 16, rects: [
@@ -469,7 +454,6 @@ export const WALL = {
     [.8, 20, .12, 10, '#6a4a2c'], [.5, 24, .8, 4, C.leaf], [.3, 26, .3, 2, C.ink], [.36, 25, .14, 2, C.white],
     [-.06, 35, 1.42, 3, C.dark], [-.06, -1, 1.42, 3, C.dark]] },
 
-  // ── 신품 ──
   board_cheonha: { name: '비무 장원 현판 「天下第一」', grade: 5, kind: 'deco', cat: '현판', w: 3.2, h: 18, text: ['天下第一', '#f4d488'], rects: [
     [-.14, -2, 3.48, 22, C.gold], [-.06, -1, 3.32, 20, C.lac], [0, 0, 3.2, 18, C.gold], [.08, 2, 3.04, 14, '#5e1a14'],
     [-.3, 6, .18, 6, C.green], [3.32, 6, .18, 6, C.green], [1.5, 18, .2, 3, C.lac]] },
@@ -495,7 +479,6 @@ export const GROUND = {
   ochre:    { name: '황토 장판',  grade: 2, a: '#b88458', b: '#a8764c', pat: 'grid' },
 };
 
-// 처음 받는 「단청 별채」 세트(6×6, 귀속)
 export const DEFAULT_SET = {
   paper: 'dancheong', ground: 'maru',
   items: [

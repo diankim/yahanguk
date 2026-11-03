@@ -1,7 +1,4 @@
-// 원정 짐 보따리: 원정에서 돌아올 때 가방에 다 들어가지 않은 전리품. 골라서 챙기거나 버린다.
-// 보따리가 비기 전에는 서버가 이동·탐색·채집·낚시·전투·원정 출발을 막는다(world_guard_action_context·world_field_move).
 import { rpc, act, esc, icon, h, $, $$, openModal, guard, ask, fmt, emit, nameOf } from './core.js';
-
 
 export async function openOverflow() {
   const body = h(`<div class="overflow-box"><p class="muted small">불러오는 중…</p></div>`);
@@ -32,7 +29,6 @@ async function draw(body) {
       <button class="btn small ghost" data-drop-all>모두 버리기</button>
     </div>
     <p class="muted small">가방에서 물품을 쓰거나 버리거나 팔아 자리를 만들면 더 챙길 수 있습니다. 버린 것은 되찾을 수 없습니다.</p>`;
-  // 이름을 누르면 물품 정보(보따리 창 위에 겹쳐 뜬다)
   $$('[data-info]', body).forEach(b => b.onclick = () => import('./views/item.js').then(m => m.openItemInfo(b.dataset.info)));
   $$('[data-take]', body).forEach(b => b.onclick = async () => { await guard(b, () => act('world_overflow_take', { p_item: b.dataset.take, p_qty: null })); draw(body); });
   $$('[data-drop]', body).forEach(b => b.onclick = async () => {

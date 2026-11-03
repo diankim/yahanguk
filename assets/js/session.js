@@ -1,15 +1,11 @@
-// 한 계정은 한 곳에서만: 새로 로그인한 브라우저가 현재 접속이 되고, 다른 브라우저는 알아채는 대로 스스로 로그아웃한다.
-// 알아채는 때: 접속 기록이 바뀌는 순간(실시간), 화면·창으로 돌아올 때, 그리고 화면을 보고 있는 동안 10초마다(실시간이 끊겨도 늦지 않게).
 import { db, store, rpc } from './core.js';
 
 const NOTE = 'yh-kick-note';
 let channel = null, timer = null, mounted = null, kicking = false;
 
-// 로그인 버튼을 누르기 직전에 부른다: 로그인이 끝나 현재 접속으로 정해질 때까지 확인을 미룬다(방금 로그인한 쪽이 스스로 밀려나지 않게).
 let pending = null, release = null;
 export function expectLogin() { pending = new Promise(r => { release = r; }); }
 export function loginFailed() { release?.(); pending = null; release = null; }
-// 로그인 직후 부른다: 이 브라우저를 현재 접속으로 정하고, 다른 곳의 로그인(갱신 토큰)을 끊는다.
 export async function claimSession() {
   try { await rpc('world_session_claim'); } catch {}
   try { await db.auth.signOut({ scope: 'others' }); } catch {}
@@ -17,7 +13,6 @@ export async function claimSession() {
 }
 export function takeKickNote() { try { const v = sessionStorage.getItem(NOTE) || ''; sessionStorage.removeItem(NOTE); return v; } catch { return ''; } }
 
-// 화면 복귀·창 선택·pageshow가 한꺼번에 와도 10초 안에는 한 번만 묻는다(실시간 신호·권한 거절 때는 바로)
 let lastCheck = 0, live = false;
 async function check(force = false) {
   if (pending) await pending;
@@ -26,7 +21,6 @@ async function check(force = false) {
   lastCheck = Date.now();
   try { const r = await rpc('world_session_check'); if (r && r.active === false) kick(); }
   catch (e) {
-    // 로그인 정보가 사라져 비로그인으로 요청이 나가면(권한 거부·토큰 없음) 이 탭도 로그아웃한다 — 그대로 두면 화면이 거절당한 요청을 계속 보낸다
     if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) kick();
   }
 }
@@ -43,7 +37,6 @@ export function mountSessionGuard() {
     channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check(true))
       .subscribe(status => { live = status === 'SUBSCRIBED'; });
   } catch {}
-  // 실시간 신호가 바로 알려 주므로, 실시간이 살아 있으면 5분마다·끊겼으면 1분마다 확인한다
   timer = setInterval(() => { if (!live || Date.now() - lastCheck > 300000) check(); }, 60000);
   check(true);
 }
@@ -56,17 +49,14 @@ window.addEventListener('focus', () => { if (mounted) check(); });
 window.addEventListener('pageshow', () => { if (mounted) check(); });
 window.addEventListener('yh-auth-lost', () => { if (mounted) check(true); });
 
-// 로그아웃: 서버에 알리되 응답이 늦거나 막혀도 3초 안에 이 기기의 로그인을 지우고 로그인 화면으로 간다.
 export async function logout(note = '') {
   stopSessionGuard();
   const local = () => {
     try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch {}
-    // 다시 연 로그인 화면에 까닭을 띄운다(로그아웃 신호로 잠깐 그린 화면이 쪽지를 먼저 가져가도 다시 남긴다)
     if (note) try { sessionStorage.setItem(NOTE, note); } catch {}
     location.replace(location.pathname + '#/home'); location.reload();
   };
   const timer = setTimeout(local, 3000);
-  // 서버가 이미 끊은 접속(다른 곳에서 로그인)은 로그아웃 요청이 거절(403)되고 화면이 그대로 남으므로, 응답과 상관없이 항상 지우고 다시 연다
   try { await db.auth.signOut({ scope: 'local' }); } catch {}
   clearTimeout(timer); local();
 }

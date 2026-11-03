@@ -1,13 +1,10 @@
-// 헤더 기능: 테마(프리셋·흑백·직접 설정) · 프로필 보기 · 알림. 고치는 화면은 설정 페이지(views/settings.js)에 있다.
 import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 export { initSound, playSfx } from './sound.js';
 
-// 테마는 의존성 없는 theme.js에 있다(점검 페이지도 같은 테마를 쓴다).
 export { THEMES, deriveCustom, readCustom, themeOf, applyTheme, savedThemeId, applySavedTheme, themeCard, FONT_SIZES, savedFontSize, applyFontSize } from './theme.js';
 
-/* ── 프로필 보기(고치기는 설정 페이지에서) ─────────────────── */
 export function openProfile() {
   const c = store.character || {}, p = profileOf(c.owner_id, c.profile);
   openModal({ title: '프로필', body: `<div class="profile-view">
@@ -23,7 +20,6 @@ export function openProfile() {
   document.getElementById('pf-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) { closeModal(); logout(); } };
 }
 
-// 사진 자르기: 정사각형 안에서 끌어 옮기고 확대해 128px WebP로 만든다. 저장은 부르는 쪽이 한다.
 export function bindCrop(root, onReady) {
   const cv = $('#crop-cv', root), g = cv.getContext('2d'), zoom = $('#av-zoom', root);
   let img = null, k = 1, ox = 0, oy = 0, drag = null;
@@ -60,39 +56,33 @@ export function bindCrop(root, onReady) {
   };
 }
 
-/* ── 알림 ────────────────────────────────────────────────── */
-// 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell, notesLive = false;
 const selfSoon = throttle(() => loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_notice' })), 5000);
-const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
+const shown = new Set();
 const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'raid_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
   loadNotes(true);
   try {
-    // 내 알림만 받는다(필터가 없으면 알림 한 줄마다 서버가 접속자 모두의 권한을 검사한다)
     const mine = store.user?.id ? { filter: `user_id=eq.${store.user.id}` } : {};
     db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications', ...mine }, p => {
       const n = p.new; if (!n?.id || n.user_id !== store.user?.id || notes.some(x => x.id === n.id)) return;
       shown.add(n.id); notes.unshift(n); drawDot();
-      window.dispatchEvent(new CustomEvent('yh-note', { detail: n })); // 칭호 빨간 점 등이 알림 종류를 보고 바로 다시 센다
+      window.dispatchEvent(new CustomEvent('yh-note', { detail: n }));
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     }).subscribe(status => {
       const was = notesLive; notesLive = status === 'SUBSCRIBED';
-      if (notesLive && !was && !first) loadNotes(); // 끊겼다 다시 붙으면 그 사이 알림을 채운다
+      if (notesLive && !was && !first) loadNotes();
       first = false;
     });
   } catch {}
-  // 실시간 연결이 놓쳐도 늦지 않게 다시 읽는다. 실시간이 살아 있으면 예비로만(행동 뒤는 건너뛰고, 화면 복귀는 1분 넘게 비웠을 때, 주기는 5분),
-  // 끊겼으면 지금처럼(행동 뒤 15초에 한 번까지·화면 복귀·1분마다).
   let first = true, hiddenAt = 0, lastRead = Date.now();
   const read = () => { lastRead = Date.now(); return loadNotes(); };
   const soon = throttle(read, 15000);
   on('changed', ev => {
-    // 원정 결과를 다른 길(현장·상태판)로 받았으면 떠 있던 「원정 귀환」 알림을 거둔다
     const done = /expedition_complete/.test(ev.name || '') ? 'expedition_done' : /trade_direct_respond/.test(ev.name || '') ? 'trade_offer' : '';
     if (done) document.querySelectorAll(`.note-pop[data-kind="${done}"]`).forEach(x => { const n = byId(x.dataset.id); x.remove(); if (n) markRead(n); });
     if (!midBattle(ev) && !notesLive) setTimeout(soon, 600);
@@ -102,7 +92,6 @@ export function mountNotifications(btn) {
     if (!notesLive || Date.now() - hiddenAt > 60000) read();
   });
   setInterval(() => { if (!document.hidden && (!notesLive || Date.now() - lastRead > 300000)) read(); }, 60000);
-  // 서버 알림이 아닌 화면 안 알림(원정 귀환 등)
   window.addEventListener('yh-local-note', e => { if (e.detail) notePop(e.detail); });
 }
 async function loadNotes(first) {
@@ -111,19 +100,14 @@ async function loadNotes(first) {
     if (error) throw error;
     const seen = new Set(notes.map(n => n.id));
     const fresh = (data || []).filter(n => n?.id != null);
-    // 실시간으로 받지 못한 새 알림은 지금 알린다(처음 읽을 때는 아래에서 따로)
     if (!first) fresh.filter(n => !seen.has(n.id) && !shown.has(n.id)).slice(0, 3).forEach(n => { shown.add(n.id); if (POP_KINDS.has(n.kind)) { if (!staleFight(n)) notePop(n); } else toast(n.title || '새 알림', 'info'); });
     fresh.forEach(n => shown.add(n.id));
     notes = fresh; drawDot();
-    // 접속하지 않은 사이 온 초대·원정 완료도 들어오면 바로 띄운다.
-    // 싸움 초대·포기 제안은 60~90초짜리라 3분 넘게 지난 것은 띄우지 않는다(목록에는 남음 — 끝난 싸움의 초대가 접속마다 다시 뜨던 것)
     if (first) notes.filter(n => POP_KINDS.has(n.kind) && !staleFight(n)).slice(0, 2).forEach(notePop);
   } catch {}
 }
 const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'pfight_invite']);
 const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000;
-// 싸움 화면이 「이미 들었음·끝남·답함」을 확인하면 그 싸움의 초대·제안 알림을 읽음으로 하고 떠 있는 것을 거둔다
-// kinds: 알림 종류들, key: payload 열쇠(raid_id·fight_id), id: 그 싸움
 export function clearFightNotes(kinds, key, id) {
   if (id == null) return;
   const ks = new Set(kinds), hit = notes.filter(n => ks.has(n.kind) && String(n.payload?.[key]) === String(id));
@@ -140,7 +124,6 @@ async function markRead(n) {
   try { await rpc('world_mark_notification_read', { p_id: n.id }); } catch {}
   notes = notes.filter(x => x.id !== n.id); drawDot();
 }
-// 알림 하나에 붙는 행동 단추
 function noteActs(n) {
   if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-rescue="${esc(n.id)}">구조</button>`;
   if (n.kind === 'party_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-invite="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-invite="${esc(n.id)}" data-acc="0">거절</button>`;
@@ -171,10 +154,8 @@ function noteActs(n) {
   if (go) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="${esc(go)}">보러 가기</button>`;
   return '';
 }
-// 단추가 따로 없는 알림을 누르면 그 알림과 관련된 화면으로 보낸다
 const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney' };
-// 알림 단추(noteActs가 그리는 것) 모두. 여기 빠진 단추는 눌러도 아무 일이 없다(지도에서 보기·토벌·서신함 등이 빠져 있던 것)
 const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'fdown', 'letter', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
@@ -218,11 +199,9 @@ async function runAct(btn) {
   if (btn.dataset.pexp) { await markRead(n); const p = n.payload || {};
     if (store.character?.location !== p.location) { toast(`${p.location || '그곳'}에 있어야 같은 곳으로 원정을 보낼 수 있습니다.`, 'warn'); return true; }
     window.dispatchEvent(new CustomEvent('yh-open-expedition', { detail: { node: p.node_id, minutes: p.minutes, stance: p.stance } })); return true; }
-  // 초대의 「합류」는 화면의 합류 단추와 같은 요청까지 보낸다(이미 들었거나 끝났어도 그 화면으로는 간다)
   if (btn.dataset.raid || btn.dataset.gw) {
     const raid = !!btn.dataset.raid, id = raid ? n.payload.raid_id : n.payload.fight_id;
     let go = true;
-    // 합류가 안 되면(시간이 지났거나 끝난 싸움) 알림만 거두고 그 화면으로는 가지 않는다(남의 끝난 싸움은 볼 수 없음). 이미 들었으면 간다
     if (btn.dataset.join) { btn.disabled = true; try { await act(raid ? 'world_raid_join' : 'world_gw_join', raid ? { p_raid: id } : { p_fight: id }); } catch (e) { const m = e.message || String(e); go = /이미|관전/.test(m); if (!go) toast(m, 'warn'); } }
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); if (go) window.yahangGo(raid ? 'raid' : 'gw', id); return true; }
   if (btn.dataset.wed) {
@@ -246,14 +225,12 @@ async function runAct(btn) {
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
   if (btn.dataset.goto) {
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');
-    // 칭호·꾸미기 알림은 얻은 그 칸으로 바로 데려간다: 받는 화면이 한 번 읽고 지운다
     try {
       if (n.kind === 'title' && n.payload?.title_key) sessionStorage.setItem('yh-title-focus', n.payload.title_key);
       if (n.kind === 'cosmetic' && n.payload?.cosmetic_key) sessionStorage.setItem('yh-cos-focus', n.payload.cosmetic_key);
     } catch {} window.yahangGo(v, sub || ''); return true; }
   return false;
 }
-// 초대·원정 완료처럼 바로 답해야 하는 알림은 화면 위에 띄운다(다른 창을 덮지 않는다).
 function notePop(n) {
   if (document.querySelector(`.note-pop[data-id="${n.id}"]`)) return;
   let stack = document.querySelector('.note-pops');
@@ -269,10 +246,8 @@ function notePop(n) {
   stack.append(card);
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'reward' }));
 }
-// 지난 알림은 날짜도(「11. 2. 14:22」, 한국 시각)
 const pastWhen = t => { const d = new Date(t), o = { timeZone: 'Asia/Seoul' };
   return `${d.toLocaleDateString('ko-KR', { ...o, month: 'numeric', day: 'numeric' })} ${d.toLocaleTimeString('ko-KR', { ...o, hour: '2-digit', minute: '2-digit', hour12: false })}`; };
-// 지난 알림: 확인한 알림 중 아직 지워지지 않은 것(14일 보관)을 열 때만 읽는다.
 async function drawPastNotes(box) {
   box.innerHTML = '<p class="muted small">불러오는 중…</p>';
   try {
@@ -295,7 +270,6 @@ function openNotifications() {
     if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>'; emptyNew(); }, { success: '알림을 모두 확인했습니다.' }); }
   });
   wrap.insertBefore(body, wrap.querySelector('.notes-past'));
-  // 확인한 알림은 지난 알림으로 옮겨 가므로 다음에 열 때 다시 읽는다
   function emptyNew() {
     const t = wrap.querySelector('[data-nt="new"]'); if (t) t.textContent = `새 알림${notes.length ? ` ${notes.length}` : ''}`;
     delete past.dataset.loaded;

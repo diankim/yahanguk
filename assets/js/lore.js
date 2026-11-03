@@ -1,6 +1,3 @@
-// 세계관 안내: 야행국 소개 · 직업 이야기 · 소속 이야기. 캐릭터 생성 화면(app.js)과 도움말(guide.js)이 함께 쓴다.
-// 수치(효과·능력치·시작 장비)는 core.js JOBS·FACTIONS가 원본이고, 여기는 이야기와 역할 설명만 둔다.
-// 유리한 요괴 갈래는 서버 world_monster_kinds.job_key, 덜 듣는 갈래는 그 무기 배율이 0.8 이하인 것을 적었다.
 import { JOBS, FACTIONS, esc, rpc, RAID_ON } from './core.js';
 
 export const WORLD_PRIMER = {
@@ -8,7 +5,6 @@ export const WORLD_PRIMER = {
   lines: [
     '해가 지면 이 땅의 주인은 바뀝니다. 혼백과 요괴가 길을 걷고, 오래된 봉인이 숨을 쉽니다. 야행국은 그 밤의 일을 맡는 관청입니다. 낮의 관아가 손대지 못하는 사건을 조사하고, 깨진 봉인을 다시 묶고, 다친 사람을 데려옵니다.',
     '야행국이 직접 다스리는 곳은 정청을 둘러싼 직할령뿐입니다. 그 밖은 산문을 지키는 북령맹, 물길을 쥔 수향연맹, 요기를 들이마시는 적월교, 이름을 사고파는 흑련회, 망국의 불씨를 지키는 남명회, 별을 읽는 천명원의 땅입니다. 조사원은 어디든 가지만, 어디서나 환영받지는 않습니다.',
-    // 「이름(名)」 설정(supabase/gen744/LORE_NAME.md)을 짧게. 명부 정리는 9장에서 처음 드러나므로 적지 않는다
     '이 땅에서 이름(名)은 넋을 세상에 묶어 두는 매듭, 명줄입니다. 스스로 아는 이름, 남이 불러 주는 이름, 장부에 적힌 이름 — 세 가닥 가운데 하나만 남아도 사람은 사람으로 남습니다. 몸의 목숨이 다해도 이름을 기억하는 이가 있으면 영(靈)으로 남고, 이름이 다 잊혀야 비로소 죽습니다. 요기에 오래 젖은 사람은 제 이름을 조금씩 잃어 가다(요화) 끝내 다 잃으면 요괴가 되어, 이름이 아니라 갈래로 불립니다. 정청이 장부를 신줏단지처럼 지키는 까닭입니다.',
     '당신은 오늘 정청에 이름을 올린 새 조사원입니다. 마침 지난 초하루, 정청 금고에서 봉인에 찍는 붉은 인장이 사라지고 부적 출납 장부 몇 쪽이 통째로 비었습니다. 첫 일은 그 빈 쪽에서 시작합니다.',
   ],
@@ -140,11 +136,8 @@ export const AFFIL_LORE = {
   },
 };
 
-// 소속은 야행국 안의 부서(생성 때 고정), 대세력은 나중에 맹세하는 바깥 세력(바꿀 수 있음)
 export const AFFIL_VS_FACTION = '소속은 야행국 안에서 처음 배속된 부서이고, 「환골탈태 서첩」으로 한 번 다시 고를 때 말고는 바뀌지 않습니다. 대세력(정통파·적월교·흑련회·북령맹·수향연맹·남명회·천명원)은 세계를 다니며 나중에 맹세하는 바깥 세력으로, 떠나고 옮길 수 있습니다. 둘의 효과는 함께 붙습니다.';
 
-/* ── 그리기: 생성 화면의 자세히 칸과 도움말이 같은 글을 쓴다 ─────────── */
-// 능력치 이름은 화면 다른 곳(core.js 이름표·성장 화면)과 같게
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 export const baseText = b => Object.entries(b).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${STAT_KO[k]} ${v}`).join(' · ');
 const row = (k, v) => v ? `<div class="lore-row"><b>${k}</b><span>${v}</span></div>` : '';
@@ -170,17 +163,13 @@ export function affilLoreHtml(key) {
 }
 export const primerHtml = () => `<div class="lore-primer">${WORLD_PRIMER.lines.map(p => `<p>${esc(p)}</p>`).join('')}</div>`;
 
-/* ── 서버 세계관 글: 물품 내력·요괴 목격담(접속 동안 한 번 읽음) · 지역 첫 방문 · 칭호 유래 ─────── */
 let bundleP = null;
-// 실패하면 빈 값을 기억해 물품 창을 열 때마다 다시 부르지 않는다. 목격담이 새로 열릴 때만 다시 읽는다(refreshLore)
 export const loreBundle = () => RAID_ON ? (bundleP ||= rpc('world_lore_bundle').catch(() => ({ items: {}, witness: {} }))) : Promise.resolve({ items: {}, witness: {} });
 export const refreshLore = () => { bundleP = null; return loreBundle(); };
-// 지역에 처음 들어가면 그곳의 내력을 대화창으로 한 번 보인다(서버가 다녀간 지역을 기억해 두 번 보이지 않는다)
 const asked = new Set();
 export async function regionIntro(regionId) {
   if (!RAID_ON || !regionId || asked.has(regionId)) return;
   asked.add(regionId);
-  // 처음 안내(900ms 뒤 뜸)나 다른 창을 덮지 않게 잠깐 기다렸다가, 무언가 떠 있으면 다음 그리기 때 다시 본다
   await new Promise(r => setTimeout(r, 1500));
   const busy = () => document.querySelector('.tut, #modal, .modal-backdrop.layer');
   if (busy()) { asked.delete(regionId); return; }
@@ -190,7 +179,6 @@ export async function regionIntro(regionId) {
       extra: `<p class="muted small">일지 › 기록 › 지역에 남겼습니다.</p>` }, null);
   } catch { asked.delete(regionId); }
 }
-// 소속 보급 편지 · 환골탈태 장면: 대화창으로 보인다
 export async function showLetter(letter) {
   if (!letter?.lines?.length) return;
   (await import('./factionquest.js')).playDialogue({ title: letter.title, lines: letter.lines, cast: {} }, null);

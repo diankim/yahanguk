@@ -1,10 +1,5 @@
-// 색 고르기 창: 휴대폰의 기본 색 선택 창(색조·채도·값 막대 셋, 엉성한 추천색, 열 때마다 검정으로 돌아감) 대신
-// 게임 안 겹친 창으로 고른다 — 사각형 판(채도·밝기) + 색조 막대 + Hex 코드 입력 + 고른 추천색, 지금 색으로 열린다.
-// 화면 어디의 <input type="color">든 누르면 이 창이 뜨고, 「설정」하면 그 칸의 value를 바꾸고 input·change 이벤트를 보낸다
-// (설정의 직접 테마·모임 채팅 색이 그대로 받는다).
 import { openLayer, $, esc } from './core.js';
 
-// 추천색: 바탕으로 쓰기 좋은 어두운·밝은 색 여덟 + 강조·포인트로 쓰기 좋은 색 열여섯
 export const PICKS = [
   ['#101014', '먹'], ['#16202c', '밤 쪽빛'], ['#1b2620', '송연'], ['#261a1d', '흑적'], ['#1f1b2e', '자흑'], ['#2b2a26', '숯'],
   ['#f3ead8', '한지'], ['#ece8df', '백자'],
@@ -32,7 +27,6 @@ function hsvToHex({ h, s, v }) {
   return '#' + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
 }
 
-// 지금 색으로 열고, 고른 색(#rrggbb)을 돌려준다(닫거나 취소하면 null)
 export function openColorPicker(start, { title = '색 고르기' } = {}) {
   return new Promise(resolve => {
     let hsv = hexToHsv(normHex(start) || '#c8432d'), done = false;
@@ -71,13 +65,11 @@ export function openColorPicker(start, { title = '색 고르기' } = {}) {
     const finish = v => { if (done) return; done = true; resolve(v); layer.close(); };
     $('[data-ok]', layer).onclick = () => finish(normHex(hex.value) || hsvToHex(hsv));
     $('[data-x]', layer).onclick = () => finish(null);
-    // 바깥을 누르거나 닫기 단추·Esc로 닫혀도 취소로 돌려준다
     new MutationObserver((_, ob) => { if (!layer.isConnected) { ob.disconnect(); if (!done) { done = true; resolve(null); } } }).observe(document.body, { childList: true });
     draw();
   });
 }
 
-// 화면의 모든 <input type="color">를 이 창으로(한 번만 건다)
 let installed = false;
 export function installColorPicker() {
   if (installed) return; installed = true;

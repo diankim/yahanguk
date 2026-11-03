@@ -1,4 +1,3 @@
-// 계정: 게임 캐릭터와 별개인 로그인 계정 정보. 아이디 확인·비밀번호 변경, 로그아웃.
 import { ask, db, store, rpc, esc, particle, icon, $, toast, friendlyError, loadCharacter } from '../core.js';
 import { logout } from '../session.js';
 import { panel } from './common.js';
@@ -52,7 +51,6 @@ export async function render(el) {
   });
 }
 
-// 내 초대권: 함께할 사람에게 건네는 번호(서버를 다시 연 때부터 7일 동안 회원가입에 씀). 없으면 칸을 그리지 않는다.
 export async function fillInvites(box) {
   if (!box) return;
   let r; try { r = await rpc('world_invite_mine'); } catch { return; }

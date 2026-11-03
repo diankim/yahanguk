@@ -1,5 +1,3 @@
-// 채팅·귓속말 입력칸: 글이 길어지면 저절로 늘어나고, 입력칸 위 손잡이를 위로 끌면 더 크게 쓸 수 있다.
-// 끌어 정한 높이는 이 기기에 남긴다(두 번 누르면 처음 크기로).
 const KEY = 'yh-input-h', AUTO = 160;
 
 export function growInput(form) {
@@ -9,7 +7,6 @@ export function growInput(form) {
   grip.innerHTML = '<i></i>';
   form.prepend(grip);
   const cap = () => Math.round((window.visualViewport?.height || innerHeight) * 0.45);
-  // 가장 낮은 높이는 입력칸 CSS의 min-height(한 줄 높이)를 따른다. 더 크게 잡으면 한 줄 글이 위로 치우쳐 보인다.
   let MIN = 34; const readMin = () => { MIN = Math.max(28, parseFloat(getComputedStyle(ta).minHeight) || 34); };
   let manual = 0; try { manual = Number(localStorage.getItem(KEY)) || 0; } catch {}
   const fit = () => {
@@ -17,8 +14,6 @@ export function growInput(form) {
     ta.style.height = 'auto';
     const need = ta.scrollHeight + 2;
     ta.style.height = `${Math.max(MIN, Math.min(cap(), Math.max(manual, Math.min(need, AUTO))))}px`;
-    // 한 줄 높이를 알려 보내기 단추를 그 가운데에 둔다(휴대폰 16px 글자에서 입력칸이 단추보다 높아 단추가 아래로 치우쳐 보였다).
-    // 여러 줄로 늘어나도 단추는 마지막 줄 가운데에 남는다(.chat-send margin-bottom)
     const cs = getComputedStyle(ta), one = Math.max(MIN, (parseFloat(cs.lineHeight) || 20) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + 2);
     form.style.setProperty('--ta-one', `${Math.round(one)}px`);
   };
@@ -39,14 +34,11 @@ export function growInput(form) {
   return fit;
 }
 
-// 보내기 단추를 눌러도 입력칸이 초점을 잃지 않게(모바일에서 보낸 뒤 키패드가 내려가던 것)
 export function keepKeyboard(form) {
   const b = form.querySelector('button[type=submit]'); if (!b) return;
   let had = false;
   b.addEventListener('pointerdown', () => { had = document.activeElement === form.text; });
   b.addEventListener('mousedown', e => e.preventDefault());
-  // 휴대폰: 손가락을 떼는 순간(touchend) 기본 동작을 막아야 입력칸에서 초점이 빠지지 않는다 —
-  // mousedown만 막으면 터치에서는 초점이 단추로 옮겨 가 키패드가 내려갔다. 기본 동작(click)이 막히므로 직접 보낸다.
   b.addEventListener('touchend', e => {
     if (document.activeElement !== form.text || b.disabled) return;
     e.preventDefault(); had = true;

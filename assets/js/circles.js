@@ -1,10 +1,7 @@
-// 모임: 유저가 직접 꾸리는 채팅방. 서버 world_circle_* 함수가 직위·한도·권한을 모두 검사한다.
-// 여기서는 소속 목록(채팅의 모임 탭이 쓴다)과, 동료 화면의 모임 칸·관리 창·조사원 카드의 [모임에 초대]를 맡는다.
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeLayers, closeModal, nameOf, toast } from './core.js';
 import { cardName } from './views/card.js';
 
 export const ROLE = { leader: '모임장', manager: '총무', member: '모임원' };
-// 채팅 색 견본(직접 고르는 색도 쓸 수 있다)
 export const SWATCH = ['#c8a25a', '#6fa8dc', '#8fbf7f', '#d78a8a', '#b08fd8', '#5fb3a8', '#d9a15f', '#9aa8b8', '#e07b5f', '#7fc4d8'];
 let snap = null, loading = null;
 
@@ -19,7 +16,6 @@ export async function loadCircles(force) {
 const refresh = () => loadCircles(true);
 const run = (b, fn, args) => guard(b, async () => { const r = await act(fn, args); await refresh(); return r; });
 
-/* ── 동료 화면의 모임 칸 ─────────────────────────────── */
 export function circlesPanelHtml(s) {
   const list = s?.circles || [], got = s?.received || [], lim = s?.limits || { lead: 2, join: 5, size: 20, level: 5 };
   const canMake = (store.character?.level || 1) >= lim.level && (s?.leading || 0) < lim.lead && (s?.joined || 0) < lim.join;
@@ -43,7 +39,6 @@ export function circlesPanelHtml(s) {
 export function bindCirclesPanel(root) {
   $$('[data-circle-acc],[data-circle-dec]', root).forEach(b => b.onclick = () => run(b, 'world_circle_respond', { p_invite: b.dataset.circleAcc || b.dataset.circleDec, p_accept: !!b.dataset.circleAcc }));
   $$('[data-circle-open]', root).forEach(b => b.onclick = () => openCircle(b.dataset.circleOpen));
-  // 순서: 내 화면의 모임 순서(채팅의 모임 단추 줄도 이 순서)를 서버에 저장한다
   $$('[data-circle-up],[data-circle-down]', root).forEach(b => b.onclick = () => guard(b, async () => {
     const ids = circles().map(c => c.circle_id), id = b.dataset.circleUp || b.dataset.circleDown, i = ids.indexOf(id), j = i + (b.dataset.circleUp ? -1 : 1);
     if (i < 0 || j < 0 || j >= ids.length) return null;
@@ -54,7 +49,6 @@ export function bindCirclesPanel(root) {
   if (f) f.onsubmit = e => { e.preventDefault(); const b = f.querySelector('button'), nm = f.name.value.trim(); if (nm.length < 2) { toast('모임 이름을 2~12자로 적어 주세요.', 'warn'); f.name.focus(); return; } run(b, 'world_circle_create', { p_name: nm, p_intro: f.intro.value.trim() }); };
 }
 
-/* ── 모임 관리 창 ─────────────────────────────────────── */
 export async function openCircle(id) {
   const m = openModal({ title: '모임', wide: true, body: '<div class="circle-box"></div>' });
   const box = $('.circle-box', m);
@@ -118,7 +112,6 @@ async function setColor(b, id, color, then) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-/* ── 조사원 카드의 [모임에 초대] ─────────────────────── */
 export async function inviteToCircle(targetId, targetName) {
   await loadCircles();
   const mine = circles().filter(c => (c.role === 'leader' || c.role === 'manager') && !c.members.some(x => x.owner_id === targetId));

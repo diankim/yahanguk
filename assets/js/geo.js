@@ -1,7 +1,3 @@
-// 세계 지도의 땅 모양: 지역 좌표마다 물결진 땅덩이를 만들고 이웃 지역과의 수직이등분선으로 잘라
-// 보로노이 영역을 얻는다. 영역 경계 중 다른 세력과 맞닿은 선은 국경, 이웃이 없는 선은 해안선이 된다.
-// 같은 좌표에서는 항상 같은 모양이 나오므로 서버와 따로 저장할 필요가 없다.
-
 const R = 95, STEPS = 40;
 
 function seedOf(id) {
@@ -18,7 +14,6 @@ function blob(id, x, y) {
   }
   return pts;
 }
-// a*x + b*y <= c 쪽만 남긴다(Sutherland–Hodgman, 볼록한 자르개라 바깥 모양은 오목해도 된다).
 function clip(poly, a, b, c) {
   const out = [];
   for (let k = 0; k < poly.length; k++) {
@@ -30,7 +25,6 @@ function clip(poly, a, b, c) {
   return out;
 }
 
-// regions: [{region_id, world_x, world_y}] → { cells: Map(id → poly), edges: [{a, b|null, p, q}] }
 export function buildCells(regions) {
   const cells = new Map();
   for (const r of regions) {
@@ -42,7 +36,6 @@ export function buildCells(regions) {
     }
     cells.set(r.region_id, poly);
   }
-  // 각 변이 어느 이웃과의 경계인지 찾는다. 같은 경계가 양쪽에서 나오므로 a<b 쪽만 남긴다.
   const edges = [];
   for (const r of regions) {
     const poly = cells.get(r.region_id);
@@ -72,7 +65,6 @@ export function centroid(poly) {
   return A ? [x / (3 * A), y / (3 * A)] : poly[0];
 }
 
-// 세력 색(어두운 바탕에서 구분되되 채도를 낮춘다)
 export const FACTION_COLORS = {
   night_office: '#3e5f9a', north_league: '#6f8193', mandate_court: '#a68a3c', river_alliance: '#2f8a80',
   red_moon_cult: '#9a3a3e', black_lotus: '#6a4c8c', southern_remnant: '#c2571f', null: '#4a4a4f',

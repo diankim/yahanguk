@@ -1,7 +1,3 @@
-// 새 칭호 빨간 점: 아직 확인하지 않은 칭호(world_character_titles.seen_at 없음)가 있으면 캐릭터 탭과 칭호 칸에 점을 찍는다.
-// 칭호 화면을 열면 서버에 확인 처리(world_title_mark_seen)해 다른 기기에서도 점이 사라진다.
-// 나누지 않은 능력치 포인트(stat_points)가 있어도 캐릭터 탭과 성장 칸에 점을 찍는다(캐릭터 정보만 보므로 따로 묻지 않는다).
-// 고를 택일 기술이 있으면 캐릭터 탭과 기술 칸에도(world_skill_pending, 칭호 수와 같은 때에 읽음).
 import { db, store, on, rpc, midBattle, throttle } from './core.js';
 
 let timer = null;
@@ -11,7 +7,6 @@ export async function refreshTitleDot() {
     const { count, error } = await db.from('world_character_titles').select('title_key', { count: 'exact', head: true }).is('seen_at', null);
     if (error) return;
     store.newTitles = count || 0;
-    // 고를 택일 기술: 숫자 하나만 받는 가벼운 함수
     try { store.skillPending = Number(await rpc('world_skill_pending')) || 0; } catch {}
   } catch { return; }
   paintTitleDot();
@@ -33,7 +28,6 @@ export async function markTitlesSeen() {
 }
 export function mountTitleDot() {
   refreshTitleDot();
-  // 칭호를 얻으면 알림(칭호·꾸미기)이 실시간으로 오므로 그때 바로 센다. 알림을 놓칠 때를 대비해 행동 뒤에는 2분에 한 번까지만 센다(전에는 20초).
   const soon = throttle(refreshTitleDot, 120000);
   on('character', () => paintTitleDot());
   on('changed', ev => { if (midBattle(ev)) return; if (ev?.name === 'world_skill_choose') { setTimeout(refreshTitleDot, 300); return; } clearTimeout(timer); timer = setTimeout(soon, 1500); });

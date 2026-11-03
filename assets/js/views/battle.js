@@ -1,11 +1,8 @@
-// 전투 화면: 요괴가 다음 행동을 미리 드러내고, 조사원은 장착 무기에 따라 정해진 방식으로 싸운다.
-// 공격·직업 기술·방어·물품·도주 중 하나를 고르면 서버가 한 턴을 계산해 돌려준다. 행동 사이에는 1초 간격이 있다.
 import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, spOf, JOBS } from '../core.js';
 import { chip } from './common.js';
 import { USABLE } from './item.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
-// 직업 이름은 core.js JOBS 하나에서
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
 export const INTENT = {
   strike: ['공격', '평범한 공격입니다.', 0], heavy: ['강타 준비', '큰 피해가 옵니다. 방어하면 4분의 1로 줄이고, 근접 무기면 받아칩니다.', 2],
@@ -28,16 +25,12 @@ export const SKILL = {
 };
 const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비', weak: '공격 약화' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
-// 현장 토벌에서 쓸 수 있는 물품(서버 world_battle_action이 받는 11가지와 같다 — 음식·반요 고약은 토벌 중에 못 씀). 파티 토벌(pfight.js)도 이 목록을 쓴다. 효과 문구는 item.js USABLE(서버 use_fx)에서
 const ITEM_IDS = ['tonic', 'herbal_extract', 'herb', 'ward_talisman', 'rejuv_pill', 'grand_pill', 'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
-// 물품 칸에 보일 것: 보통 물품과 우수품(<id>_hq)을 함께(보통 id만 보아 우수품만 가진 사람에게는 단추가 뜨지 않았다. 서버는 world_item_base로 받는다)
-// always: 앞에서 몇 가지는 없어도 잠긴 단추로 보인다
 export function trayList(inv, always = 0) {
   return ITEM_IDS.flatMap((k, i) => { const d = USABLE[k] || ''; return [[k, d, i < always], [`${k}_hq`, `${d} · 우수품 +15%`, false]]; })
     .filter(([k, , show]) => show || Number(inv[k]) > 0);
 }
 
-// 상성(갈래별 무기 배율 · 유리한 직업 +20%)은 그 요괴를 한 번 쓰러뜨려 도감에 적은 뒤에만 서버가 내보낸다(b.eff)
 export function effectiveness(style, eff) {
   const m = eff?.[style]; if (m == null) return null;
   return m >= 1.2 ? ['효과 좋음', 'ok'] : m <= 0.85 ? ['효과 약함', 'bad'] : ['보통', ''];
@@ -45,18 +38,13 @@ export function effectiveness(style, eff) {
 
 let host = null, data = null, onEnd = null, cdTimer = null, nextAt = 0;
 
-// box: 그릴 곳, snap: world_field_snapshot, done: 전투가 끝나면 부를 함수
-// opts.call: 같은 곳에서 부를 수 있는 동료 수, opts.onCall(btn): 「동료 부르기」(행동 칸 여섯째)
 let callOpt = null;
 export function renderBattle(box, snap, done, opts) {
   host = box; data = snap; onEnd = done; callOpt = opts?.call ? opts : null;
-  // 서버 시각을 그대로 쓰면 기기 시계가 늦을 때 대기가 길어지므로, 남은 시간은 최대 1초로 자른다
-  // 첫 수(아직 한 번도 행동하지 않은 전투)는 기다리지 않는다(서버도 전투를 열 때 바로 행동할 수 있게 둔다)
   nextAt = Number(snap.battle?.turn || 0) === 0 ? 0 : Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
   draw();
 }
 export function stopBattle() { clearInterval(cdTimer); host = null; }
-// 퀵슬롯·가방에서 누른 물품도 이 전투의 「물품」 행동으로 쓴다(턴이 지나감, core.js battleItemRoute)
 window.addEventListener('yh-battle-item', e => {
   if (!host?.isConnected || !data?.battle) return;
   e.detail.handled = true;
@@ -70,12 +58,10 @@ function draw(fresh = []) {
   if (!host || !data?.battle) return;
   const b = data.battle, c = store.character, w = data.weapon || { type: 'melee', name: '맨손' };
   const ef = effectiveness(w.type, b.eff);
-  // 요괴의 수법(g:키 · 터뜨리는 턴 g!:키)은 이름과 낌새만 보인다. 대처법은 도감에서 쓰러뜨린 뒤에 열린다.
   const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[b.intent] || INTENT.strike);
   const skill = SKILL[c.job_key] || ['기술', ''];
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
   const skillWait = Math.max(0, ready - turnNow);
-  // 의무관 응급 처방은 한 전투에 한 번·25(그 밖의 직업 기술은 3턴마다 12)
   const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = c.job_key === 'medic' ? 25 : 12;
   const inv = c.inventory || {};
   const log = (b.log || []).slice(-8);
@@ -123,13 +109,11 @@ function draw(fresh = []) {
   });
   $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
   const cb = $('#act-call', host); if (cb && callOpt?.onCall) cb.onclick = () => callOpt.onCall(cb);
-  // 기척 숨기기: 마주친 직후 한 번만. 맞서기를 고르면 묻는 칸만 닫는다(첫 행동을 하면 서버도 더는 받지 않는다)
   $('[data-sneak]', host)?.addEventListener('click', () => send('sneak'));
   $('[data-sneak-no]', host)?.addEventListener('click', () => { $('#sneak-ask', host)?.remove(); });
   clearInterval(cdTimer); cdTimer = setInterval(tickCooldown, 50); tickCooldown();
 }
 
-// 행동 간격(1초, 서버 world_battle_action과 같은 값)을 버튼 위에 옅게 보여 준다.
 const GAP = 1000;
 function tickCooldown() {
   if (!host?.isConnected) return clearInterval(cdTimer);
@@ -144,8 +128,6 @@ function tickCooldown() {
 }
 
 let busy = false;
-// 화살·기력·영력이 떨어져 피해가 절반이 된 공격은 아래쪽 알림으로 알린다.
-// 서버(world_battle_action)가 남기는 기록 문구로 알아보고, 같은 알림은 5초에 한 번만
 const WEAK = [[/쏠 것이 떨어져/, '무기에 맞는 탄(화살·쇠뇌살·취관 침)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
 const weakAt = {};
 export function weakNote(lines) {
@@ -156,9 +138,7 @@ async function send(action, item) {
   if (busy || Date.now() < nextAt) return;
   busy = true; tickCooldown();
   try {
-    // 공용 act는 캐릭터를 다시 읽을 때까지 기다리므로, 전투는 응답을 바로 쓰고 캐릭터·알림은 뒤에서 맞춘다
     const r = await rpc('world_battle_action', item ? { p_action: action, p_item: item } : { p_action: action });
-    // 응답을 받은 때부터 이 기기 시계로 1초(서버 검사는 서버 시각으로 1초라 요청 왕복만큼 늘 여유가 있다)
     nextAt = Date.now() + GAP;
     const c = store.character;
     if (c) c.health = r.health ?? c.health;
@@ -213,7 +193,6 @@ function sfx(r) {
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: k }));
 }
 
-// 도주 결과: 성공·실패 모두 게임 안 팝업으로 한눈에
 function fleeCard(ok, r, foe) {
   const c = store.character || {};
   const hp = Math.max(0, Math.round(r.health ?? c.health ?? 0));

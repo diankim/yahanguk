@@ -1,5 +1,3 @@
-// 대세력 퀘스트·등급·의뢰판·비고·수련장·인물(캐릭터 › 세력). 진행과 판정은 서버(world_faction_*)가 하고, 여기서는 그리고 부른다.
-// 대화는 게임 안 팝업에서 한 줄씩 넘겨 보인다(지문은 기울임, 대사는 인물 이름표).
 import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf } from './core.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate } from './views/common.js';
@@ -7,14 +5,12 @@ import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';
 
-// 등급 효과(서버 world_faction_rank_effect와 같은 값, 2~5등급)
 const RANK_PERK = {
   night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}% · 그림자 장부(상점 하루 판매 한도 +${(r - 1) * 300}전)`,
   north_league: r => `받는 피해 −${r - 1}%`, river_alliance: r => `이동 시간 −${(r - 1) * 2}% · 세금 −${(r - 1) * 20}% · 뱃길(배 탈것 속도 ×${(1.05 + 0.05 * r).toFixed(2)}·운임 없음)`, southern_remnant: r => `채집량 +${(r - 1) * 2}%`,
   mandate_court: r => `예언 · 요괴 조우 −${(r - 1) * 2}% · 날씨·시간대 불이익 −${(r - 1) * 10}%`,
 };
 
-// 대화 팝업: lines [{s: 인물 키 | null, t}] · cast {키: {name}}
 export function playDialogue(r, fid) {
   const lines = r?.lines || [];
   if (!lines.length) return;
@@ -39,10 +35,8 @@ export function playDialogue(r, fid) {
   show(); try { box.focus({ preventScroll: true }); } catch { box.focus(); }
 }
 
-// 비고 품목 종류 표시(물품이 아닌 것은 하나만 산다)
 const KIND = { title: ['칭호', 'flag'], frame: ['테두리', 'spark'], name_style: ['이름 색', 'chat'], mount: ['탈것', 'route'] };
 const kindChip = v => KIND[v.kind] ? chip(KIND[v.kind][0]) : v.slot && v.slot !== 'consumable' && v.slot !== 'material' && v.tier ? chip(`${nameOf(v.slot)} ${v.tier}단계`) : '';
-// 진품(rare) 이상은 기부 전에 한 번 더 묻는다
 const PRECIOUS = new Set(['rare', 'epic', 'legendary']);
 let donQ = '';
 const donateHtml = (s, open) => {
@@ -62,11 +56,9 @@ const donateHtml = (s, open) => {
     <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
 
-// 단위: quests.js unitOf와 같은 규칙(서로 불러오면 순환이 생겨 따로 둠)
 const unitOf = t => { const it = Array.isArray(t.items) ? t.items : Object.keys(t.items || {}); return t.t === 'gather' ? (it.length ? '개' : '회') : t.t === 'craft' && it.length ? '개' : ''; };
 const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}${unitOf(t)}</small></li>`).join('');
 
-// 세력 화면은 칸 단추만 두고, 누르면 그 칸을 팝업으로 연다(긴 스크롤을 줄임). 세력 판도만 화면에 그대로 둔다.
 export function fqPops(s) {
   const kp = s.keepers || {}, q = s.quest;
   const reqReady = (s.requests || []).filter(r => r.ready && !r.claimed).length;
@@ -140,7 +132,6 @@ export function fqPopHtml(key, s) {
 }
 
 export function bindFaction(body, s) {
-  // 행동(act)이 끝나면 화면 전체가 'changed'로 다시 그려지므로 여기서는 지난 값만 버린다(두 번 읽지 않게)
   const done = () => { invalidate('world_faction_snapshot'); };
   $$('[data-fq-report]', body).forEach(b => b.onclick = () => guard(b, async () => {
     const r = await act('world_faction_report');
@@ -158,15 +149,12 @@ export function bindFaction(body, s) {
   const tr = $('#fq-trial', body);
   if (tr) tr.onclick = () => guard(tr, async () => {
     const r = await act('world_faction_trial');
-    // 시련 전투를 한 줄씩 펼치고, 끝나면(또는 건너뛰면) 결과를 보인다
-    // 수련장 팝업 위에 겹쳐 띄워, 닫으면 수련장 칸(오늘 치름)이 그대로 남는다
     const m = openLayer({ title: `${s.keepers?.hall?.title || '수련장'} · ${r.tier}등급 시련`, body: `<div class="spar-result">
       <ol class="spar-log replay"></ol><button class="btn small ghost" data-skip>건너뛰기</button>
       <div class="spar-end" hidden><p class="lead ${r.won ? 'ok' : 'bad'}">${r.won ? '시련을 넘었습니다' : '시련에 졌습니다'}</p><p class="small">${esc(r.content || '')}</p></div></div>` });
     replayLog($('.spar-log', m), r.log || [], logRow, { skipBtn: $('[data-skip]', m), onDone: () => { $('.spar-end', m).hidden = false; } });
     done(); return null;
   });
-  // 세력 인물 기록: 한 줄 소개 대사와 자세한 서술
   $$('[data-npc]', body).forEach(b => b.onclick = () => {
     const n = (s.npcs || []).find(x => x.key === b.dataset.npc); if (!n) return;
     const cut = n.name.lastIndexOf(' '), title = cut > 0 ? n.name.slice(0, cut) : '', who = cut > 0 ? n.name.slice(cut + 1) : n.name;
@@ -180,7 +168,6 @@ export function bindFaction(body, s) {
   if (sh) sh.onchange = () => guard(sh, async () => { const r = await act('world_faction_show_rank', { p_show: sh.checked }); done(); return r; });
 }
 
-// 세력 기부: 수량을 고르면 받을 공훈을 미리 보이고, 진품 이상이 섞이면 한 번 더 묻는다
 function bindDonate(body, s, done) {
   const box = $('#fq-don-box', body); if (!box) return;
   const d = s.donate || {}, rate = d.rate || 50, cap = d.cap || 30, items = d.items || [];
@@ -202,7 +189,6 @@ function bindDonate(body, s, done) {
     $$('[data-don-all]', box).forEach(b => b.onclick = () => { const it = items.find(x => x.item_id === b.dataset.donAll); picks.set(b.dataset.donAll, it?.qty || 0); const i = $(`[data-don="${b.dataset.donAll}"]`, box); if (i) i.value = it?.qty || 0; sum(); });
     const q = $('#fq-don-q', box);
     if (q) {
-      // 한글 조합 중에는 다시 그리지 않는다
       const redo = () => { donQ = q.value.trim(); box.innerHTML = donateHtml(s, true); bind(); const n = $('#fq-don-q', box); n.focus({ preventScroll: true }); n.setSelectionRange(n.value.length, n.value.length); };
       q.oninput = e => { if (!e.isComposing) redo(); };
       q.addEventListener('compositionend', redo);

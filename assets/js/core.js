@@ -1,4 +1,3 @@
-// 야행국 공통 계층: Supabase 연결, RPC 호출, 상태 저장소, 이름 사전, UI 도우미.
 import { framed, framedInner } from './cosmetics.js';
 import { GAMEDATA } from './gamedata.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
@@ -9,18 +8,14 @@ export const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });
 
-/* ── 이벤트 버스 ─────────────────────────────────────────── */
 const listeners = new Map();
 export function on(evt, fn) { (listeners.get(evt) || listeners.set(evt, new Set()).get(evt)).add(fn); return () => listeners.get(evt)?.delete(fn); }
 export function emit(evt, data) { listeners.get(evt)?.forEach(fn => { try { fn(data); } catch (e) { console.error(e); } }); }
 
-/* ── 상태 저장소 ─────────────────────────────────────────── */
 export const store = { user: null, character: null, snaps: {} };
 
-/* ── 오류 문구 ───────────────────────────────────────────── */
 export function friendlyError(e) {
   const msg = String(e?.message || e || '알 수 없는 오류');
-  // 점검 중에는 서버가 데이터 영역을 닫는다. 그 응답을 받으면 점검 페이지로 옮긴다.
   if (isMaintenanceError(msg)) { goMaintenance(); return '서버 점검 중입니다.'; }
   if (/Auth session missing|JWT|not authenticated/i.test(msg)) return '로그인이 필요합니다.';
   if (/permission denied/i.test(msg)) return '이 작업을 할 권한이 없습니다.';
@@ -31,7 +26,6 @@ export function friendlyError(e) {
   if (/Email signups are disabled|Signups not allowed/i.test(msg)) return '지금은 가입을 받지 않습니다. 운영진에게 알려 주세요.';
   if (/Email address .* is invalid|invalid format/i.test(msg)) return '아이디는 영문 소문자와 숫자 4~16자로 정하세요.';
   if (/Password should be at least/i.test(msg)) return '비밀번호는 6자 이상이어야 합니다.';
-  // 한글이 든 서버 문구는 그대로 두고, 영어 오류만 우리말로 바꾼다(화면에 영어를 보이지 않게).
   if (/[가-힣]/.test(msg)) return msg;
   if (/Database error saving new user/i.test(msg)) return '초대권을 쓸 수 없습니다. 번호를 다시 확인해 주세요.';
   if (/security purposes|rate limit|too many requests/i.test(msg)) return '잠시 뒤 다시 시도하세요.';
@@ -43,8 +37,6 @@ export function friendlyError(e) {
   return '알 수 없는 오류가 생겼습니다. 잠시 뒤 다시 시도하세요.';
 }
 
-/* ── RPC ─────────────────────────────────────────────────── */
-// 조회(snapshot)는 캐시에 저장하고, 행동 RPC가 성공하면 'changed' 이벤트로 관련 화면이 다시 불러온다.
 export async function rpc(name, args) {
   const { data, error } = args === undefined ? await db.rpc(name) : await db.rpc(name, args);
   if (error) throw new Error(friendlyError(error));
@@ -55,58 +47,50 @@ export async function snap(name, args) {
   store.snaps[name] = data;
   return data;
 }
-// 전투 도중 한 턴(끝나지 않은 공격·방어)은 캐릭터만 다시 읽고, 상태판·알림 같은 다른 화면은 다시 읽지 않는다(서버 부담).
 export const midBattle = ({ name, data }) => name === 'world_battle_action' && !data?.ended;
-// 같은 일을 짧은 간격으로 여러 번 부르면 한 번만: 처음 부른 뒤 gap 안의 요청은 gap이 끝날 때 한 번으로 묶는다.
 export function throttle(fn, gap) {
   let last = 0, t = null;
   return () => { const wait = last + gap - Date.now(); if (wait <= 0) { last = Date.now(); fn(); } else if (!t) t = setTimeout(() => { t = null; last = Date.now(); fn(); }, wait); };
 }
-// 싸우는 중의 물품 쓰기: 퀵슬롯·가방·상태 창에서 물품을 눌러도 떠 있는 전투 화면(현장 토벌 battle.js·파티 토벌 pfight.js·귀허의 주인 gw.js)이
-// 그 턴의 「물품」 행동으로 받는다(턴이 지나감). 받았으면 true — 부른 쪽은 world_use_item을 부르지 않는다. 전투 화면이 없으면 서버 world_use_item이 싸우는 중인지 다시 본다.
 export function battleItemRoute(id) {
   const ev = new CustomEvent('yh-battle-item', { detail: { id, handled: false } });
   window.dispatchEvent(ev);
   return ev.detail.handled;
 }
-// 물품 쓰기의 공통 길: 전투 화면이 받으면 그쪽으로, 아니면 world_use_item
 export function useItemAct(id) {
   if (battleItemRoute(id)) return Promise.resolve(null);
   return act('world_use_item', { p_item_id: id });
 }
-// 행동 뒤에는 캐릭터를 먼저 다시 읽어 화면이 바로 새 값을 그리게 한다.
 export async function act(name, args) {
   const data = await rpc(name, args);
-  // 장착이 바뀌는 행동 뒤에는 다음 읽기에서 장착 목록도 다시 읽는다(장착·해제 말고도 원정 귀환은 원정 장비를, 환골탈태는 전용 장비를, 분해는 장비를 바꾼다)
   if (/equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
   const mid = midBattle({ name, data });
   if (mid && data?.me && store.character) { Object.assign(store.character, data.me); store.charAt = Date.now(); emit('character', store.character); }
-  else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView() }); } catch {}
+  else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView(), inv: !mid && onInvView() && !INV_QUIET.test(name) }); } catch {}
   emit('changed', { name, data });
   return data;
 }
+export const INV_QUIET = /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block/;
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
 const onFieldView = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
-export async function loadCharacter({ hud = false, field = false } = {}) {
+const onInvView = () => /^#\/(bag|char)(\/|$)/.test(location.hash);
+export async function loadCharacter({ hud = false, field = false, inv = false } = {}) {
   if (!store.user) return null;
-  const both = hud || field;
+  const both = hud || field || inv;
   const [, res] = await Promise.all([stacksFresh ? null : loadStacks(),
-    both ? rpc('world_me', { p_hud: hud, p_field: field }).then(d => ({ data: d?.character ?? null, snaps: d }), () => readOwn()) : readOwn(),
+    both ? rpc('world_me', { p_hud: hud, p_field: field, p_inv: inv }).then(d => ({ data: d?.character ?? null, snaps: d }), () => readOwn()) : readOwn(),
     equipped ? null : loadEquipped()]);
   if (res.error) throw new Error(friendlyError(res.error));
   const data = res.data;
   store.character = data; store.charAt = Date.now();
-  if (res.snaps) emit('snaps', { world_hud_snapshot: res.snaps.hud, world_field_snapshot: res.snaps.field });
+  if (res.snaps) emit('snaps', { world_hud_snapshot: res.snaps.hud, world_field_snapshot: res.snaps.field, world_inventory_state: res.snaps.inv });
   emit('character', data);
   return data;
 }
 
-/* ── 이름 사전 (내부 코드를 화면에 그대로 노출하지 않는다) ───────────── */
-// 직업마다 전투 기술 경험이 쌓이는 계열(서버 world_job_line). 분석·막기·응급 처치는 공통
 export const JOB_LINE = { artificer: 'melee', scout: 'ranged', sealmaster: 'sealing', exorcist: 'exorcism', analyst: 'dagger', medic: 'medicine' };
 export const COMBAT_LINES = ['melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine'];
 export const JOBS = {
-  // 역할 6가지: 방패·수호 / 원거리 공격 / 술법 공격 / 근접 공격 / 치유 / 보조(북돋기·약화). kit은 시작 장비
   exorcist: { name: '퇴마관', trait: '술법 공격', desc: '【술법 공격】 부적과 방울로 요괴를 치는 술법 공격수. 몸은 약하지만 이목이 낮아(−15) 뒷줄에서 술법을 쏟습니다. 술법 피해 +8%·받는 피해 −6%·의지·영성이 오르면 회피·도주도 함께, 퇴마진(반드시 치명타로 꽂히는 한 방, 결계 깨기). 협동 기술은 약점 진언·멸마 진격 같은 공격 쪽.',
     kit: '영령 방울 · 삼베 도포 · 무명 부적낭',
     fx: ['술법 피해 +8%', '받는 피해 −6%', '이목 −15(몸은 약하지만 요괴 눈에 덜 띔)', '퇴마진: 술법 ×1.4·반드시 치명타(한 방), 결계 깨기', '원정 기술: 파사 부적'] },
@@ -126,15 +110,10 @@ export const JOBS = {
     kit: '날선 단도 · 누비 전포 · 은방울 노리개 · 짚신 · 청심환 2',
     fx: ['근접 공격력 ×1.18(피해 상한과 따로)', '단도 기술: 이목 −45%까지', '근접 무기를 들면 치명타 +5', '약점 간파: 다음 세 번 공격 강화', '원정 기술: 급소 찌르기'] },
 };
-// 기본 능력치(base)는 서버 world_job_base를 gamedata.js로 받아 채운다(합 30). fx는 도움말 「직업과 역할」 표의 직업 효과 줄
 const STAT_KEYS = ['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'];
 for (const [k, j] of Object.entries(JOBS)) j.base = Object.fromEntries(STAT_KEYS.map(s => [s, GAMEDATA.jobBase?.[k]?.[s] ?? 3]));
-// 합동 토벌·협동 기술과 함께 들어온 화면(결전 단추·지역 글·세계관 묶음·탈것 내리기 등)을 켤지. 서버에 모두 들어가 있어 늘 true
 export const RAID_ON = true;
-// 거래소에서만 사고파는 희귀 재료(직접 거래·정인 선물 불가, 기준 시세 70% 이상, 24시간 20개, 거래세 10%)
-// 원본은 서버 world_item_catalog.market_only — 물품 목록을 받으면 views/common.js가 채운다.
 export const MARKET_ONLY = new Set();
-// 등급 이름(물품 희귀도·칭호·가구·동무가 함께 씀): 1 범품 … 5 신품 — 희귀도 키(common…legendary)는 nameOf가 같은 이름을 준다
 export const GRADES = ['', '범품', '양품', '진품', '명품', '신품'];
 export const FACTIONS = {
   headquarters: { name: '본부 직속', trait: '본부 보급', desc: '본부의 제작·정비에 익숙합니다. 제작 품질 +4 · 회복량 +5% · 상점 판매 한도 +500전.' },
@@ -145,30 +124,21 @@ export const FACTIONS = {
   independent: { name: '외부 협력자', trait: '자유 행동', desc: '정규 부서에 매이지 않습니다. 이동 시간 −5% · 희귀품 +2% · 상점 판매 수수료 3%(보통 5%).' },
 };
 const FIXED = {
-  // 생활 전문화
   fieldwork: '채집', mining: '채광', fishing: '낚시',
   smithing: '단조', cooking: '요리', carpentry: '목공', alchemy: '연금', sealing: '봉인 공예', weaving: '직조', leatherwork: '가죽 공예', artifice: '법구 공예',
-  // 기술 계열
   melee: '근접', ranged: '사격', dagger: '단도', exorcism: '퇴마술', medicine: '의술', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
-  // 분류
   tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비', furniture: '별채 가구', pet: '꼬마 동무',
   common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품',
-  // 지역 유형
   abyss: '심연', archive: '서고', blood_forest: '혈림', bridge: '다리', burial_ground: '묘역', canyon: '협곡', celestial_tower: '천문탑', coast: '해안', desert: '사막',
   faction_stronghold: '세력 거점', forest: '숲', frontier_gate: '변경 관문', haunted_garden: '흉가 정원', headquarters: '본부', ice_valley: '빙곡', islands: '군도', lake: '호수',
   lost_city: '잊힌 도시', market: '시장', mine: '광산', monastery: '사원', mountain_pass: '고갯길', mountain_peak: '산정', observatory: '관측소', pavilion: '정자',
   rift: '균열', river_port: '나루', ruined_temple: '폐사원', ruins: '폐허', safe_zone: '안전 지대', sealed_shrine: '봉인 사당', swamp: '늪', training: '수련장',
   underground: '지하', underwater_ruins: '수중 유적', underworld_market: '귀시', village: '마을', wilderness: '황야',
-  // 요괴 습성
   ambush: '매복', toxic: '독성', venom: '맹독', spectral: '영체', warded: '결계', seal_breaker: '봉인 파괴', tide: '수계', swarm: '떼',
   armored: '장갑', reflect: '반사', aerial: '비행', boss: '우두머리',
-  // 원정 태세
   cautious: '신중', balanced: '균형', bold: '강행',
-  // 지점 유형
   supply: '보급', relic: '유적', medical: '의료', combat: '전투', hidden: '은신처',
-  // 능력치
   strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성',
-  // 효과
   gather_qty_pct: '채집량', rare_loot_pct: '희귀품 발견', craft_quality: '제작 품질', combat_damage_pct: '주는 피해', incoming_damage_pct: '받는 피해',
   travel_time_pct: '이동 시간', clue_bonus_pct: '단서 발견', healing_pct: '회복량', erosion_pct: '침식 위험', melee_pct: '근접 피해', ranged_pct: '원거리 피해',
   magic_pct: '술법 피해', encounter_pct: '요괴 조우', mental_per_action: '행동마다 정신', health_per_action: '행동마다 체력', training_xp_pct: '기술 경험',
@@ -176,15 +146,11 @@ const FIXED = {
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
   supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',
   sig_pct: '지역 희귀품', presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
-  // 서식지
-  river: '강', marsh: '늪', sea: '바다', deep: '깊은 물', canal: '수로', // 호수·심연·낚시·요리는 위에 있다
-  // 날씨·시간대
+  river: '강', marsh: '늪', sea: '바다', deep: '깊은 물', canal: '수로',
   dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
-// 효과 수치를 "채집량 +5%"처럼 읽기 쉬운 문장으로 바꾼다. 값이 클수록 나쁜 효과는 부호를 그대로 보여 준다.
 const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
 const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
-// 계열별 효과 키(기술 칭호): cq_<계열> 제작 품질 · cs_ 재료 아낌 · cx_ 하나 더 · gq_ 채집량 · gr_ 희귀품
 const LINE_FX = { cq: '제작 품질', cs: '재료 아낄 확률', cx: '하나 더 만들 확률', gq: '채집량', gr: '희귀품 발견' };
 function fxLabel(k) {
   if (FIXED[k]) return FIXED[k];
@@ -201,7 +167,6 @@ export function effectText(effects, potency = 1) {
     return `${fxLabel(k)} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) || k.startsWith('cq_') ? '' : '%'}`;
   });
 }
-// 효과가 이로운지(받는 피해·이동 시간·침식은 줄어야 좋다)
 const LOWER_BETTER = new Set(['encounter_pct', 'incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_loss_pct', 'mental_per_action', 'health_per_action']);
 export function effectGood(k, v) { return LOWER_BETTER.has(k) ? Number(v) < 0 : Number(v) > 0; }
 const names = new Map(Object.entries(FIXED));
@@ -211,11 +176,9 @@ export function nameOf(code) {
   if (code == null) return '';
   if (JOBS[code]) return JOBS[code].name;
   if (FACTIONS[code]) return FACTIONS[code].name;
-  // 사전에 없는 영문 코드는 화면에 그대로 내보이지 않는다.
   return names.get(code) || (/^[a-z0-9_]+$/i.test(String(code)) ? '이름 미상' : String(code));
 }
 
-/* ── 포맷 ────────────────────────────────────────────────── */
 export const fmt = {
   num: n => Number(n || 0).toLocaleString('ko-KR'),
   jeon: n => Number(n || 0).toLocaleString('ko-KR') + '전',
@@ -227,7 +190,6 @@ export const fmt = {
   time: t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
 };
 
-/* ── 아이콘 (선형 SVG, 장식용 이모지 대신 사용) ───────────────────── */
 const ICONS = {
   home: 'M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z',
   popout: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
@@ -269,13 +231,11 @@ const ICONS = {
   snow: 'M12 2v20M4 7l16 10M20 7L4 17M9 4l3 2 3-2M9 20l3-2 3 2',
   mist: 'M12 3c3 4 6 7 6 11a6 6 0 01-12 0c0-4 3-7 6-11zM9 15h6',
   dawn: 'M4 18h16M7 18a5 5 0 0110 0M12 7v3M5.6 11.6l1.4 1.4M18.4 11.6L17 13M2 22h20',
-  // 장착 칸: 관모(갓)·신·노리개·호신부(부적)·탈
   hat: 'M3 16h18M8 16V9a4 4 0 018 0v7M6 19h12', shoe: 'M4 7v9h16v-2c0-2-2-3-5-3l-3-4H4zM4 19h16',
   knot: 'M12 3a3 3 0 100 6 3 3 0 000-6zM12 9v3M9 12h6M10 12l-2 9M12 12v9M14 12l2 9', talisman: 'M7 3h10v18H7zM10 7h4M10 11h4M10 15h4',
   mask: 'M5 5c4-1 10-1 14 0 0 8-3 14-7 14S5 13 5 5zM8 10h3M13 10h3M10 15h4',
   letter: 'M3 6h18v12H3zM3 7l9 6 9-6', flag: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
   wrench: 'M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
-  // 토벌 협동 기술·북돋기 표식
   crosshair: 'M12 20a8 8 0 100-16 8 8 0 000 16zM12 2v5M12 17v5M2 12h5M17 12h5', vital: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 12h.01M12 3v3M12 18v3M3 12h3M18 12h3',
   bolt: 'M13 2L4 14h7l-1 8 9-12h-7z', dodge: 'M4 19c4 0 5-7 9-7s4-6 7-6M16 4l4 2-2 4',
   bubble: 'M12 21a9 9 0 100-18 9 9 0 000 18zM8 10a5 5 0 015-3', ward: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
@@ -291,11 +251,8 @@ export function icon(name, size = 18) {
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg>`;
 }
 
-/* ── DOM 도우미 ──────────────────────────────────────────── */
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-// 받침에 맞는 조사: "생선구이을(를)" → "생선구이를", "백지교(으)로" → "백지교로". 서버 문구도 화면에 나갈 때 여기서 고른다.
-// 앞 글자가 한글이면 받침으로, 숫자면 읽는 소리로, 영문이면 끝소리로 정하고, 알 수 없으면 원래 표기를 둔다.
 const JOSA = { '을(를)': ['을', '를'], '를(을)': ['을', '를'], '이(가)': ['이', '가'], '가(이)': ['이', '가'], '은(는)': ['은', '는'], '는(은)': ['은', '는'],
   '과(와)': ['과', '와'], '와(과)': ['과', '와'], '(으)로': ['으로', '로'], '(이)': ['이', ''] };
 const JOSA_RE = /을\(를\)|를\(을\)|이\(가\)|가\(이\)|은\(는\)|는\(은\)|과\(와\)|와\(과\)|\(으\)로|\(이\)/g;
@@ -307,7 +264,7 @@ function finalSound(str, end) {
   const ch = str[i], code = ch.charCodeAt(0);
   if (code >= 0xac00 && code <= 0xd7a3) { const jong = (code - 0xac00) % 28; return { has: jong > 0, rieul: jong === 8 }; }
   if (/[0-9]/.test(ch)) return { has: '0136781'.includes(ch), rieul: '178'.includes(ch) };
-  if (/cm$/i.test(str.slice(0, i + 1))) return { has: false, rieul: false }; // 센티미터
+  if (/cm$/i.test(str.slice(0, i + 1))) return { has: false, rieul: false };
   if (/[a-z]/i.test(ch)) { const l = ch.toLowerCase(); return { has: 'lmn'.includes(l), rieul: l === 'l' }; }
   return null;
 }
@@ -321,12 +278,10 @@ export function josa(s) {
     return f.has ? withB : without;
   });
 }
-// 낱말 뒤에 붙일 조사만: particle('백지교', '(으)로') → '로'
 export const particle = (word, form) => josa(String(word ?? '') + form).slice(String(word ?? '').length);
 export function esc(s) { return josa(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 export function h(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 
-/* ── 토스트 ──────────────────────────────────────────────── */
 export function toast(message, kind = 'info') {
   const box = $('#toasts'); if (!box) return;
   const el = h(`<div class="toast toast-${kind}" role="status">${esc(message)}</div>`);
@@ -335,8 +290,6 @@ export function toast(message, kind = 'info') {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, kind === 'error' ? 4200 : 2800);
 }
 
-/* ── 중복 실행 방지 행동 버튼 ─────────────────────────────── */
-// 같은 버튼을 여러 번 눌러도 요청은 한 번만 보낸다. 서버 측 중복 방지와 별개로 UX 보호용이다.
 export async function guard(btn, fn, { success } = {}) {
   if (btn?.dataset.busy === '1') return;
   if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('is-busy'); }
@@ -352,9 +305,6 @@ export async function guard(btn, fn, { success } = {}) {
   }
 }
 
-/* ── 모달·시트 ───────────────────────────────────────────── */
-// 운영진(GM) 표식: 서버 명단(world_staff)에 있는 캐릭터만. 이름에 GM을 넣어도 붙지 않는다.
-// 명단은 잘 바뀌지 않아 기기에 6시간 남겨 두고 그동안은 다시 묻지 않는다
 store.staff = new Set();
 const STAFF_KEY = 'yh-staff-v1';
 export async function loadStaff() {
@@ -365,15 +315,11 @@ export async function loadStaff() {
   } catch {}
   return store.staff;
 }
-// 서버 규칙 버전(db_version, SQL 배포마다 올림): 접속 동안 한 번 읽어 기기에 남긴 사전(묶음 크기·가방 정보)이 아직 맞는지 본다
 let dbvP = null;
 export function dbVersion() { return dbvP ||= rpc('world_app_version').then(r => r?.db_version || null).catch(() => { dbvP = null; return null; }); }
 export const isGM = id => !!id && store.staff.has(id);
 export const gmBadge = id => isGM(id) ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : '';
 
-// 게임 안 확인 팝업(브라우저 confirm 대신). 열린 창 위에 겹쳐 뜨고, 고르면 true/false로 끝난다.
-// ask('도망칠까요?', { title: '도주', ok: '도망치기', danger: true })
-// alarm: 되돌리기 어려운 위험을 새빨갛게 경고하는 창(혼자 여는 결전 등)
 export function ask(message, { title = '확인', ok = '확인', cancel = '그만두기', danger = false, alarm = false } = {}) {
   return new Promise(resolve => {
     const lines = String(message ?? '').split('\n').map(l => `<p>${esc(l)}</p>`).join('');
@@ -381,7 +327,6 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
       <h3>${alarm ? icon('flame', 18) : ''}${esc(title)}</h3><div class="ask-body">${lines}</div>
       <div class="ask-act"><button class="btn" data-ask="0">${esc(cancel)}</button><button class="btn ${danger || alarm ? 'danger' : 'primary'}" data-ask="1">${esc(ok)}</button></div></div></div>`);
     const done = v => { el.remove(); document.removeEventListener('keydown', key, true); resolve(v); };
-    // Enter는 포커스가 있는 단추를 따른다(「그만두기」에 두고 Enter를 누르면 그만둔다 — 전에는 늘 확인으로 처리됨)
     const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } if (e.key === 'Enter') { e.preventDefault(); done(!document.activeElement?.closest?.('[data-ask="0"]')); } };
     el.addEventListener('click', e => { const b = e.target.closest('[data-ask]'); if (b) done(b.dataset.ask === '1'); else if (e.target === el) done(false); });
     document.addEventListener('keydown', key, true);
@@ -390,9 +335,6 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
   });
 }
 
-// 창을 여닫는 동안 바탕 화면의 스크롤 자리를 지킨다: 첫 창이 열릴 때 자리를 적어 두고,
-// 마지막 창이 닫히면 같은 화면(주소)일 때만 그 자리로 되돌린다. 창이 떠 있는 사이 바탕이 다시 그려져 높이가 잠깐 줄었다가
-// 늘어나도(현장 토벌·세력 팝업·칭호 유래 등) 위로 튀지 않게, 다시 그려질 틈을 두고 한 번 더 맞춘다.
 let modalY = null, modalHash = '';
 function lockPage() {
   if (!document.body.classList.contains('has-modal')) { modalY = window.scrollY; modalHash = location.hash; }
@@ -405,8 +347,6 @@ function unlockPage() {
   const fix = () => { if (location.hash === modalHash && Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); };
   requestAnimationFrame(fix); setTimeout(fix, 250); setTimeout(fix, 700);
 }
-// 창이 떠 있는 사이 바탕 화면이 새 자리를 정했으면(현장 토벌이 끝나 현장으로 돌아옴 등) 창을 닫을 때 그 자리로 간다
-// force: 아래로 내려가 있어도 그 자리로(토벌에서 현장으로 돌아올 때)
 export function scrollAfterModal(y, force = false) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2 || (force && Math.abs(window.scrollY - y) > 2)) window.scrollTo(0, y); }
 const focusIn = (el) => { try { el?.focus({ preventScroll: true }); } catch { el?.focus(); } };
 export function openModal({ title, body, wide = false, onClose } = {}) {
@@ -416,7 +356,6 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
     <div class="modal-body"></div></div></div>`);
   const content = typeof body === 'string' ? h(`<div>${body}</div>`) : body;
   $('.modal-body', el).append(content);
-  // 바탕에서 누르기 시작한 때만 닫는다(입력칸 글자를 끌어 고르다 바깥에서 놓으면 창이 꺼지던 것)
   let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
   el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]')) closeModal(); });
   document.addEventListener('keydown', escClose);
@@ -428,7 +367,6 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
 }
 function escClose(e) { if (e.key === 'Escape') closeModal(); }
 
-// 겹쳐 뜨는 창: 상점 같은 창 위에 물품 정보·조사원 카드를 띄우고, 닫으면 아래 창은 그대로 남는다.
 export function openLayer({ title, body, wide = false } = {}) {
   const el = h(`<div class="modal-backdrop layer"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="닫기">${icon('close')}</button></header>
@@ -457,7 +395,6 @@ export function closeModal() {
   if (!$('.modal-backdrop.layer')) unlockPage();
 }
 
-/* ── 공통 조각 ───────────────────────────────────────────── */
 export function bar(value, max = 100, kind = '') {
   const pct = Math.max(0, Math.min(100, (Number(value) || 0) / (max || 1) * 100));
   return `<div class="bar ${kind}" role="progressbar" aria-valuenow="${Math.round(value || 0)}" aria-valuemax="${max}"><span style="width:${pct}%"></span></div>`;
@@ -465,7 +402,6 @@ export function bar(value, max = 100, kind = '') {
 export function empty(text, iconName = 'moon') {
   return `<div class="empty">${icon(iconName, 22)}<p>${esc(text)}</p></div>`;
 }
-// items: [key, label, icon?] — 아이콘이 있으면 아이콘 위·이름 아래로 쌓는다
 export function segmented(id, items, active) {
   const withIco = items.some(x => x[2]);
   return `<div class="segmented ${withIco ? 'with-ico' : ''}" role="tablist" data-seg="${id}" style="--n:${items.length}">${items.map(([key, label, ic]) =>
@@ -480,7 +416,6 @@ export function bindSegmented(root, id, onChange) {
   });
 }
 
-/* ── 프로필 문장 (선택하지 않으면 캐릭터마다 고정된 무작위 문장) ─────────── */
 export const EMBLEMS = {
   moon: ['달', 'M17 4a8 8 0 1 0 3 13 7 7 0 0 1-3-13z'],
   lantern: ['등롱', 'M9 3h6M10 3v2M14 3v2M7 7h10l-1 10H8L7 7zM9 17v3h6v-3M12 10v4'],
@@ -499,13 +434,11 @@ export const EMBLEM_COLORS = {
   vermilion: ['주홍', '#d2553a'], gold: ['금빛', '#d1a65a'], jade: ['비취', '#3fae8a'], indigo: ['쪽빛', '#5a74d6'], violet: ['자주', '#9b5cd6'],
   ash: ['잿빛', '#8d8f96'], crimson: ['진홍', '#c8344c'], teal: ['청록', '#2fa3a3'], amber: ['호박', '#e0902c'], ivory: ['상아', '#d9cfb8'],
 };
-// 서버에 저장한 문장이 없으면 owner_id로 정해지는 고정 문장을 쓴다(누가 봐도 같은 모양).
 export function profileOf(ownerId, profile) {
   const e = Object.keys(EMBLEMS), c = Object.keys(EMBLEM_COLORS);
   const h = [...String(ownerId || '')].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   return { emblem: EMBLEMS[profile?.emblem] ? profile.emblem : e[h % e.length], color: EMBLEM_COLORS[profile?.color] ? profile.color : c[(h * 7) % c.length], bio: profile?.bio || '' };
 }
-// 문장: 사진 또는 고른 문양. 테두리(profile.frame)를 달았으면 둘레에 두른다.
 export function emblem(ownerId, profile, size = 40) {
   const fr = profile?.frame;
   return fr ? framed(emblemBase(ownerId, profile, framedInner(fr, size)), fr, size) : emblemBase(ownerId, profile, size);
@@ -516,19 +449,14 @@ function emblemBase(ownerId, profile, size) {
     return `<span class="emblem photo" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><img src="${profile.avatar}" alt="" width="${size}" height="${size}"></span>`;
   return `<span class="emblem" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" width="${Math.round(size * 0.58)}" height="${Math.round(size * 0.58)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${EMBLEMS[p.emblem][1]}"/></svg></span>`;
 }
-// 다음 레벨까지 경험치(서버 world_xp_need와 같다). 최고 레벨은 40(7.0).
 export const LEVEL_CAP = 40;
 export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 1) ** 2;
 export function bagLimit(c) { return (c?.bag_capacity || 34) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
-// 가방 칸: 물품마다 올림(수량 ÷ 묶음 크기)의 합(서버 world_bag_count와 같다). 묶음 크기는 접속할 때 한 번 읽는다.
-// 못 읽으면 기기에 남긴 지난 값을 쓰고 다음 캐릭터 읽기 때 다시 읽는다(전에는 실패하면 모두 1로 보고 다시 읽지 않아 물품 개수가 칸 수로 보였다).
-// 물품 묶음 크기와 분류(갈래)를 함께 기억한다: { id: [묶음, 분류] }
-// 기기에 남긴 표가 지금 서버 규칙 버전(db_version)의 것이면 다시 읽지 않는다(새로고침할 때마다 물품 사전을 받던 것)
 const STACK_KEY = 'yh-stacks-v3', STACK_VER = 'yh-stacks-ver';
 let stacks = null, cats = null, wtypes = null;
 (() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); if (o) { const e = Object.entries(o); stacks = new Map(e.map(([k, v]) => [k, v[0]])); cats = new Map(e.map(([k, v]) => [k, v[1]])); wtypes = new Map(e.filter(([, v]) => v[2]).map(([k, v]) => [k, v[2]])); } } catch {} })();
 let stacksP = null, stacksFresh = false;
-function loadStacks() { return stacksP ||= readStacks(); } // 동시에 불려도 한 번만 읽는다
+function loadStacks() { return stacksP ||= readStacks(); }
 async function readStacks() {
   try {
     const v = await dbVersion();
@@ -539,21 +467,17 @@ async function readStacks() {
     stacks = new Map(data.map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)]));
     cats = new Map(data.map(r => [r.item_id, r.category || ''])); wtypes = new Map(data.filter(r => r.wt).map(r => [r.item_id, r.wt])); stacksFresh = true;
     try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(data.map(r => [r.item_id, [stacks.get(r.item_id), r.category || '', r.wt || '']])))); if (v) localStorage.setItem(STACK_VER, v); } catch {}
-  } catch { stacksP = null; } // 다음에 다시 시도
+  } catch { stacksP = null; }
 }
 export const stackOf = id => stacks?.get(id) || 1;
-// 물품 갈래(무기·방어구·관모… 소모품·재료) 표: 상점·대장간·거래소·직접 거래 목록의 이름 옆에 붙인다
 export const catOf = id => cats?.get(id) || '';
 export const kindChip = (id, cat) => { const c = cat || catOf(id); return c ? `<span class="kind-chip k-${esc(c)}">${esc(nameOf(c))}</span>` : ''; };
-// 장착한 장비는 가방 칸을 차지하지 않는다(서버 world_bag_limit은 장착한 수만큼 용량을 더하고, 화면은 쓴 칸에서 뺀다)
 let equipped = null, weaponStyle = 'melee';
 async function loadEquipped() {
   try {
     const { data } = await db.from('world_character_equipment').select('item_id,slot').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id);
     const w = (data || []).find(r => r.slot === 'weapon');
-    // 무기 갈래(근접이면 영력 게이지를 「기력」으로 보인다). 무기가 없으면 서버도 근접으로 친다
     weaponStyle = 'melee';
-    // 무기 갈래는 물품 사전(묶음 크기와 함께 읽음)에서 찾고, 없을 때만 따로 묻는다
     if (w) {
       if (!stacksFresh) await loadStacks();
       if (wtypes) weaponStyle = wtypes.get(w.item_id) || 'melee';
@@ -561,12 +485,9 @@ async function loadEquipped() {
     }
   } catch { equipped = null; }
 }
-// 근접 무기를 들면 영력 수치를 기력으로 쓴다(같은 spiritual_power, 노란 게이지). [이름, 게이지 갈래]
 export function spOf() { return weaponStyle === 'melee' ? ['기력', 'ki'] : ['영력', 'sp']; }
-// 목록에 붙이는 짧은 설명: 첫 문장만, 길면 줄인다
 export function brief(t, n = 42) { const s = String(t || '').split(/(?<=[.!?。])\s|\n/)[0].trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
 export function equippedIds() { return equipped || []; }
-// 장착 목록을 다음 캐릭터 읽기 때 새로 읽게 한다(캐릭터를 막 만든 뒤 등)
 export function forgetEquipped() { equipped = null; }
 export function bagUsed(c) {
   const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;

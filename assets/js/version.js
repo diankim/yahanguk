@@ -1,7 +1,3 @@
-// 새 버전 알림: 화면 파일(배포)이나 서버(SQL 적용)가 바뀌면 접속 중인 화면 위에 「새로고침」 안내를 띄운다.
-// - 화면: version.json(배포마다 값을 올린다)과 주요 파일(index.html·app.js·app.css)의 ETag를 함께 본다.
-// - 서버: world_app_version()의 db_version(SQL 마이그레이션 끝에서 올린다).
-// 처음 읽은 값을 기준으로, 화면으로 돌아올 때와 보고 있는 동안 5분마다 비교한다(가벼운 HEAD·RPC 한 번씩).
 import { rpc, esc, icon, dbVersion } from './core.js';
 
 const FILES = ['version.json', 'index.html', 'assets/js/app.js', 'assets/app.css'];
@@ -17,9 +13,7 @@ async function fingerprint() {
     } catch { return null; }
   }));
   let db = null;
-  // 처음에는 접속하며 읽은 값을 같이 쓴다(묶음 크기·가방 사전 확인과 같은 요청)
   try { db = base ? (await rpc('world_app_version'))?.db_version || '' : await dbVersion(); } catch { db = null; }
-  // 네트워크가 끊겨 읽지 못한 값(null)은 비교에서 뺀다
   return { web: parts, db };
 }
 const changed = (a, b) => {
@@ -29,7 +23,6 @@ const changed = (a, b) => {
   return false;
 };
 
-// 화면 복귀와 창 선택이 겹쳐도 2분 안에는 다시 확인하지 않는다(5분 주기는 그대로)
 let lastAt = 0;
 async function check() {
   if (checking || document.hidden || Date.now() - lastAt < 120000) return;
@@ -57,8 +50,6 @@ function show(kind, key) {
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'confirm' }));
 }
 
-// 배포 예고 띠: version.json의 notice(글 한 줄, 비우면 내림)를 화면 맨 위에 띄운다.
-// version 값만 비교하므로 notice만 바꿔 올리면 새로고침 안내는 뜨지 않는다. 서버(DB) 요청 없이 정적 파일만 2분마다 읽는다.
 let noticeText = '', noticeHidden = '';
 function setNotice(t) {
   t = typeof t === 'string' ? t.trim() : '';
@@ -73,7 +64,7 @@ function setNotice(t) {
 }
 async function readNotice() {
   if (document.hidden) return;
-  try { const r = await fetch(`version.json?vc=${Date.now()}`, { cache: 'no-store' }); if (r.ok) setNotice((await r.json())?.notice); } catch { /* 다음에 다시 */ }
+  try { const r = await fetch(`version.json?vc=${Date.now()}`, { cache: 'no-store' }); if (r.ok) setNotice((await r.json())?.notice); } catch { }
 }
 
 export function mountVersionCheck() {

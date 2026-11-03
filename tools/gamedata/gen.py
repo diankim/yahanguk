@@ -104,9 +104,6 @@ def write(d):
         return f'  {dump(k)}: {dump(v)}'
     body = '{\n' + ',\n'.join(entry(k, v) for k, v in d.items()) + '\n}'
     OUT.write_text(
-        '// 자동 생성 파일 — 손으로 고치지 않는다.\n'
-        '// 서버 DB의 수치(동무 수·직업 기본 능력치·혼자 도전 보정·협동 기술·세력 가입 장소·칭호/어종 수 등)를\n'
-        '// 화면·도움말이 한곳에서 읽는다. 다시 만들기: python3 tools/gamedata/gen.py (기본은 로컬 복제 DB, --dsn으로 바꿈)\n'
         f'export const GAMEDATA = {body};\n'
         'export default GAMEDATA;\n', encoding='utf-8')
     print(f'{OUT.relative_to(ROOT)} 씀: 동무 {d["pets"]["total"]}종 · 협동 기술 {len(d["coop"])} · 칭호 {d["titles"]["total"]} · 어종 {d["fish"]["species"]}')

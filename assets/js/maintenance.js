@@ -1,5 +1,3 @@
-// 점검 페이지 동작: 저장된 테마를 적용하고, 30초마다 서버를 확인해 점검이 끝나면 원래 보던 화면으로 돌아간다.
-// 안내 문구·예상 종료·작업 목록은 maintenance.json(message·until·notes)에서 읽는다.
 import { applySavedTheme } from './theme.js';
 import { serverState } from './config.js';
 
@@ -44,14 +42,12 @@ async function check() {
       setTimeout(() => location.replace('index.html' + back), 600);
       return;
     }
-    // 점검 중 배포가 바뀌면(서버 주소 변경 등) 이 화면이 읽어 둔 옛 설정으로만 확인하게 되므로, 5분마다 페이지를 새로 읽는다
-    if (Date.now() - LOADED > 5 * 60000 && !document.querySelector('.help-ov')) { location.reload(); return; }  // 도움말 창을 보는 동안은 미룬다
+    if (Date.now() - LOADED > 5 * 60000 && !document.querySelector('.help-ov')) { location.reload(); return; }
   } finally {
     busy = false; nextAt = Date.now() + EVERY;
     if (retry) { retry.disabled = false; retry.textContent = '지금 다시 확인'; }
   }
 }
-// 다음 확인까지 남은 시간
 setInterval(() => {
   if (!next || !nextAt) return;
   const left = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000));
@@ -63,8 +59,6 @@ window.addEventListener('online', check);
 retry?.addEventListener('click', check);
 check();
 
-// 도움말은 페이지를 넘기지 않고 겹친 창(iframe)으로 연다 — 대기 화면 배경음악(컷씬 곡)이 끊기지 않게.
-// help.html?embed=1 안의 「대기 화면으로」는 이 창을 닫는다(yh-help-close).
 let helpOv = null;
 function closeHelp() { if (!helpOv) return; helpOv.remove(); helpOv = null; document.documentElement.style.overflow = ''; }
 function openHelp() {

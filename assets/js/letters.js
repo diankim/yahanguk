@@ -1,5 +1,3 @@
-// 서신(書信): 친구에게 부치는 우편. 하루 10통·물품 다섯 가지·받은 서신함 10통(고정 5통)·받은 지 3일 뒤 지움.
-// 한도·친구 여부·물품 조건·안전지대 조건은 모두 서버 world_letter_* 함수가 다시 검사한다(화면은 길잡이일 뿐).
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, nameOf, toast } from './core.js';
 import { load } from './views/common.js';
 import { cardName } from './views/card.js';
@@ -8,7 +6,6 @@ import { loadLocks, isLocked } from './views/item.js';
 import { MARKET_ONLY } from './core.js';
 
 let snap = null, at = 0;
-// 동료 화면은 20초마다·행동마다 다시 그리므로, 서신함은 1분 안에 읽었으면 다시 묻지 않는다(서신 행동 뒤에는 force)
 export async function loadLetters(force) {
   if (snap && !force && Date.now() - at < 60000) return snap;
   at = Date.now();
@@ -51,25 +48,22 @@ function openLetter(l, again) {
         ${l.from ? `<button class="btn" data-l="reply">${icon('letter', 14)}<span>답장</span></button>` : ''}
         <button class="btn" data-l="${l.pinned ? 'unpin' : 'pin'}">${l.pinned ? '고정 풀기' : '고정'}</button>
         <button class="btn ghost danger-text" data-l="delete">지우기</button></div></div>` });
-  // 읽음·고정·지우기는 캐릭터에 영향이 없어 rpc로 보낸다(act는 캐릭터를 다시 읽고 모든 화면을 다시 그린다). 물품 받기만 act.
   if (!l.read) rpc('world_letter_mark', { p_id: l.id, p_op: 'read' }).then(() => { l.read = true; again(); }).catch(() => {});
   $$('[data-l]', m).forEach(b => b.onclick = async () => {
     const k = b.dataset.l;
     if (k === 'reply') { closeModal(); return openCompose(l.from, l.from_name, again, `답: ${l.title}`.slice(0, 24)); }
-    if (k === 'claim') return guard(b, async () => { const r = await act('world_letter_claim', { p_id: l.id }); closeModal(); again(); return r; });  // 가방 자리만큼 받고 남은 몫은 서신에 남는다
+    if (k === 'claim') return guard(b, async () => { const r = await act('world_letter_claim', { p_id: l.id }); closeModal(); again(); return r; });
     if (k === 'delete' && !(await ask('이 서신을 지울까요?', { title: '서신 지우기', ok: '지우기', danger: true }))) return;
     guard(b, async () => { const r = await rpc('world_letter_mark', { p_id: l.id, p_op: k }); closeModal(); again(); return r; });
   });
 }
 
-// 서신 쓰기: to가 비면 친구 목록에서 고른다
 export async function openCompose(to, toName, done, title = '') {
   const m = openModal({ title: '서신 쓰기', wide: true, body: '<div class="lt-compose"><p class="muted">불러오는 중…</p></div>' });
   const box = $('.lt-compose', m);
   try {
     const [fr, prices, inv, , stg] = await Promise.all([load('world_friend_overview').catch(() => null), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
       load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks(), load('world_storage_snapshot', undefined, { maxAge: 15000 }).catch(() => null)]);
-    // 물품을 붙일 수 있는 곳인지(서버 world_letter_place_check와 창고 조건이 같다: 안전지대·반요촌 아님·이동/원정/자율/전투불능 아님)
     const placeOk = !stg || stg.can_move !== false, placeWhy = store.character?.travel_destination ? '이동 중에는 물품을 붙일 수 없습니다.' : '물품이 든 서신은 안전지대(반요촌 제외)에서, 이동·원정·자율 활동 중이 아닐 때만 부칩니다.';
     const friends = (fr?.friends || []).filter(f => !f.is_dead);
     if (!friends.length) { box.innerHTML = '<p class="muted">서신은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.</p>'; return; }
@@ -90,7 +84,6 @@ export async function openCompose(to, toName, done, title = '') {
           ${untradeNote(have, ref, true)}</fieldset>
         <button class="btn primary block" type="submit">${icon('letter', 16)}<span>부치기</span></button></form>`;
       const f = $('#lt-form', box);
-      // 물품 찾기·수량·제목 칸에서 엔터를 눌러도 부치지 않는다(키패드의 「검색」이 서신을 바로 부치던 것). 부치기는 단추로만.
       f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault(); });
       if (!placeOk) $$('[data-add]', f).forEach(b => b.disabled = true);
       bindPicker(f, 'ltItem', opts);

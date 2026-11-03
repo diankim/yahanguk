@@ -1,16 +1,13 @@
-// 게임 설정: 프로필(사진·문장·색·소개·대표 칭호) · 테마 · 소리 · 계정. 프로필과 테마는 한 번에 저장한다.
 import { ask, store, act, rpc, esc, icon, $, $$, toast, guard, emblem, profileOf, EMBLEMS, EMBLEM_COLORS, loadCharacter, nameOf, segmented, bindSegmented } from '../core.js';
 import { THEMES, themeCard, applyTheme, savedThemeId, readCustom, bindCrop, openProfile, FONT_SIZES, savedFontSize, applyFontSize } from '../settings.js';
 import { sound, setEnabled, setVolume, playSfx, SFX_SAMPLES, ALARMS, alarmOn, setAlarm, playAlarm } from '../sound.js';
 import { load, panel } from './common.js';
 import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
 import { hue as autoHue, NAME_STYLES } from '../chat.js';
-// 채팅 이름 색: 색상환 각도. 밝기는 테마(어두움·밝음)에 맞춰 화면이 정한다.
 const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
 
 const SUBS = [['profile', '프로필', 'idcard'], ['theme', '테마', 'palette'], ['sound', '소리', 'volume'], ['notify', '알림', 'bell'], ['account', '계정', 'shield']];
-// 알림 갈래(서버 world_notify_group과 같은 키). 끈 갈래는 들어올 때 읽음 처리되어 화면에 뜨지 않고 지난 알림에만 남는다.
 const NOTIFY_GROUPS = [
   ['rescue', '같은 곳의 구조 요청', '같은 지역에서 누가 쓰러졌을 때'],
   ['friend_rescue', '친구 구조', '친구가 다른 곳에서 쓰러졌을 때'],
@@ -28,9 +25,8 @@ const NOTIFY_GROUPS = [
   ['faction', '세력', '세력 소식'],
   ['housing', '별채', '발걸음·방명록·새 가구·손님이 동무와 놀아 줌'],
 ];
-let el, onClick = null, dirty = false, draft = null, kept = null; // kept: 저장하지 않고 나간 내용(다시 들어오면 이어서 고친다)
+let el, onClick = null, dirty = false, draft = null, kept = null;
 
-// 소리 한 갈래: 이름·설명(켜기)을 위에, 음량 게이지와 %를 바로 아래에 둔다
 const sndBlock = (k, name, desc, v, sw) => `<div class="snd-block">
   <div class="snd-head"><span><b>${name}</b><small>${desc}</small></span>${sw ? `<label class="snd-on"><input type="checkbox" data-sw="${sw}" ${sound[sw] ? 'checked' : ''}><span>켜기</span></label>` : ''}</div>
   <div class="snd-range"><input type="range" data-vol="${k}" min="0" max="1" step="0.05" value="${v}" aria-label="${name} 음량"><output data-vol-out="${k}">${Math.round(v * 100)}%</output></div></div>`;
@@ -119,7 +115,6 @@ export async function render(root, sub) {
   const save = $('#set-save', el);
   const touch = () => { dirty = true; save.disabled = false; };
   if (resumed) { save.disabled = false; toast('저장하지 않은 설정을 이어서 고칩니다.', 'info'); }
-  // 알림 칸: 처음 열 때 한 번만 읽고, 바꾸면 그 자리에서 저장한다
   let ntLoaded = false;
   const loadNotify = async () => {
     if (ntLoaded) return; ntLoaded = true;
@@ -141,13 +136,11 @@ export async function render(root, sub) {
   bindSegmented(el, 'set-sub', k => { history.replaceState(null, '', `#/settings/${k}`); window.dispatchEvent(new Event('yh-subpage')); showSub(k); });
   showSub(SUBS.some(x => x[0] === sub) ? sub : 'profile');
 
-  // 꾸미기를 누르면(모바일은 마우스를 올릴 수 없으므로) 그 아래 줄에 얻은 경로·얻는 방법을 보여 준다
   const cosInfo = b => {
     const kind = b.dataset.cosKind || b.dataset.cosLock, box = $(`[data-cos-info="${kind}"]`, el); if (!box) return;
     if (!b.dataset.cosName) { box.innerHTML = ''; return; }
     box.innerHTML = `<b>${esc(b.dataset.cosName)}</b> · ${b.dataset.cosLock ? '얻는 방법' : '얻은 경로'}: ${esc(b.dataset.cosHint || '-')}`;
   };
-  // 프로필
   const drawProfile = () => {
     $('#pf-preview', el).innerHTML = emblem(c.owner_id, { ...c.profile, emblem: draft.emblem, color: draft.color, frame: draft.frame || null, avatar: $('#av-clear', el)?.checked ? null : c.profile?.avatar }, 72);
     $('#pf-pattern', el).innerHTML = patternLayer(draft.pattern);
@@ -160,7 +153,6 @@ export async function render(root, sub) {
     pv.className = `hue-preview muted${sp ? ` ns-${draft.chatHue}` : ''}`; pv.style.setProperty('--hu', sp || draft.chatHue == null ? autoHue(c.owner_id) : draft.chatHue);
     pv.innerHTML = `<b>${esc(c.character_name)}</b> 채팅에 이렇게 보입니다.${draft.chatHue == null ? ' (자동: 이름마다 정해진 색)' : ''} 저장한 뒤 보내는 말부터 바뀝니다.`;
   };
-  // 화면 틀(root)은 다른 화면과 같이 쓰므로 들어올 때마다 붙이면 처리가 겹친다(잠긴 이름 색 안내가 두 번 뜨던 문제). 하나만 붙이고 나갈 때 뗀다.
   if (onClick) el.removeEventListener('click', onClick);
   el.addEventListener('click', onClick = e => {
     const em = e.target.closest('[data-em]'), col = e.target.closest('[data-col]'), th = e.target.closest('[data-theme-id]'), tr = e.target.closest('[data-try]'), cs = e.target.closest('[data-cos-kind]');
@@ -179,20 +171,17 @@ export async function render(root, sub) {
   $('#av-clear', el)?.addEventListener('change', () => { touch(); drawProfile(); });
   const crop = bindCrop(el, () => { draft.avatar = 'pending'; touch(); });
   drawProfile();
-  $$('[data-cos-kind].on', el).forEach(cosInfo); // 지금 고른 것의 얻은 경로부터 보여 준다
-  // 꾸미기 알림의 「보러 가기」로 왔으면 얻은 그 꾸미기 칸을 짚어 준다
+  $$('[data-cos-kind].on', el).forEach(cosInfo);
   let cf = null; try { cf = sessionStorage.getItem('yh-cos-focus'); sessionStorage.removeItem('yh-cos-focus'); } catch {}
   const cb = cf && $(`[data-cos-kind][data-cos-key="${CSS.escape(cf)}"]`, el);
   if (cb) { cosInfo(cb); cb.classList.add('focus'); cb.closest('details')?.setAttribute('open', ''); requestAnimationFrame(() => cb.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => cb.classList.remove('focus'), 2600); }
 
-  // 테마
   const markTheme = () => { $$('.theme-card', el).forEach(x => x.classList.toggle('on', x.dataset.themeId === draft.theme)); $('.custom-theme', el).classList.toggle('on', draft.theme === 'custom'); };
   $$('[data-cu]', el).forEach(i => i.oninput = () => {
     const k = i.dataset.cu; draft.custom[k] = k === 'r' ? Number(i.value) : i.value; draft.theme = 'custom';
     applyTheme('custom', false, draft.custom); markTheme(); touch();
   });
 
-  // 소리(바로 적용)
   $$('[data-sw]', el).forEach(i => i.onchange = () => setEnabled(i.dataset.sw, i.checked));
   $$('[data-alarm]', el).forEach(i => i.onchange = () => setAlarm(i.dataset.alarm, i.checked));
   $('[data-try-alarm]', el)?.addEventListener('click', () => playAlarm(null));
@@ -214,7 +203,6 @@ export async function render(root, sub) {
     return { content: '설정을 저장했습니다.' };
   });
 }
-// 꾸미기: 테두리·바탕 무늬·낙관. 얻은 것만 고를 수 있고, 잠긴 것은 얻는 방법을 보여 준다(숨김은 서버가 가린다).
 const KINDS = [['frame', '테두리'], ['pattern', '바탕 무늬'], ['seal', '낙관']];
 const TIER = { common: '', rare: '희귀', legend: '전설', legacy: '흔적' };
 function cosmeticsHtml(cos) {
@@ -231,7 +219,6 @@ function cosmeticsHtml(cos) {
         <p class="cos-info" data-cos-info="${kind}" aria-live="polite"></p>`;
     }).join('')}`;
 }
-// 저장하지 않고 나가면 테마 미리보기는 되돌리되, 고치던 내용은 기억해 두었다가 다시 들어오면 이어서 고친다.
 export function destroy() {
   if (onClick && el) el.removeEventListener('click', onClick);
   onClick = null;

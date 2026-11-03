@@ -1,8 +1,3 @@
-// 프로필 꾸미기 그림: 테두리(문장 둘레) · 바탕 무늬(프로필 카드 바탕) · 낙관(이름 옆 도장).
-// 이름·얻는 조건·소유는 서버(world_cosmetic_*)가 정하고, 여기에는 키별 그림만 둔다.
-// 모두 평면 선 그림(그라데이션·그림자·흐림 없음)이며 색은 테마 색을 따른다. 움직임은 아직 넣지 않는다.
-
-// 테두리: 등급(tier)과 모서리에 놓는 문양(motif, 가운데가 0,0인 약 16×16 선 그림)
 const M = {
   lantern: 'M-4-7h8M-5-5h10v9h-10zM0 4v3M-2 7h4',
   path: 'M-8 0h4M-2 0h4M4 0h4',
@@ -27,10 +22,8 @@ const M = {
   lamp: 'M-4-7h8M-5-5h10v9h-10zM0 4v3M-9 0h-2M9 0h2M-8-7l-1-1M8-7l1-1',
   drop: 'M0-7c3 4 5 6 5 8a5 5 0 01-10 0c0-2 2-4 5-8z',
   branch: 'M-6 8C-6 1 0-1 0-8M6 8C6 1 0-1 0-8M-3 3h6M-5-2l-2-2M5-2l2-2',
-  // 야행(夜行)의 흔적(레거시): 그믐달 품에 든 등롱, 가장자리에는 별
   nightwalk: 'M3-8a8 8 0 100 16 6.3 6.3 0 010-16zM-4-3h4v6h-4zM-2-5v2M-2 3v3M-6 0h-1M2 0h1',
   star: 'M0-6l1.6 4.4L6 0 1.6 1.6 0 6-1.6 1.6-6 0-1.6-1.6z',
-  // 세력 테두리(비고): 장부 · 월식 · 흑련 · 설산 · 나룻배 · 불씨 · 별자리
   ledger: 'M-6-7h12v14h-12zM-3-3h6M-3 0h6M-3 3h4',
   eclipse: 'M0-7a7 7 0 110 14 7 7 0 110-14zM3-6a6.5 6.5 0 010 12',
   lotus: 'M0 6C-6 2-7-3-4-6-1-3 0 2 0 6zM0 6C6 2 7-3 4-6 1-3 0 2 0 6zM0 6C-2 0-1-5 0-8 1-5 2 0 0 6zM-7 7h14',
@@ -39,11 +32,8 @@ const M = {
   flame: 'M0-8c3 4 5 6 5 9a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-5 1-8z',
   stars: 'M-7 4L-2-3 3 1 7-6M-8 4a1 1 0 102 0 1 1 0 10-2 0M-3-3a1 1 0 102 0 1 1 0 10-2 0M2 1a1 1 0 102 0 1 1 0 10-2 0M6-6a1 1 0 102 0 1 1 0 10-2 0',
   vortex: 'M0 0a1.5 1.5 0 013 0 3 3 0 01-6 0 4.5 4.5 0 019 0 6 6 0 01-12 0',
-  // 비무회(7.1): 장원 금테는 교차한 두 칼과 술, 쌍룡 테는 마주 보는 두 고리
   crossed: 'M-7-7L7 7M7-7L-7 7M-8-5l3-3M5 8l3-3M5-8l3 3M-8 5l3 3M0 3v5',
   twin: 'M-7 0a4 4 0 108 0 4 4 0 10-8 0M-1 0a4 4 0 108 0 4 4 0 10-8 0M-3-6l2 2M3-6l-2 2',
-  // 혼례(7.1): 청실홍실로 맺은 동심결
-  // 별채(7.2): 처마 끝 기와지붕
   eave: 'M-8 1L0-6 8 1M-9 1h18M-6 1v6h12V1M-2 7V3h4v4',
   wedknot: 'M-6-2a3 3 0 106 0 3 3 0 10-6 0M0-2a3 3 0 106 0 3 3 0 10-6 0M0 1v6M-3 7h6M-2-8l2 3 2-3',
 };
@@ -56,18 +46,16 @@ export const FRAMES = {
   fr_coin: ['common', 'coin'], fr_moon: ['rare', 'moon'], fr_night_lamp: ['legend', 'lamp'], fr_bloodmist: ['rare', 'drop'],
   fr_yeonri: ['legend', 'branch'],
   fr_f_night: ['rare', 'ledger'], fr_f_redmoon: ['rare', 'eclipse'], fr_f_lotus: ['rare', 'lotus'], fr_f_north: ['rare', 'peak'],
-  fr_f_river: ['rare', 'boat'], fr_f_south: ['rare', 'flame'], fr_f_mandate: ['rare', 'stars'], // 세력 비고에서 공훈으로
-  fr_gwiheo: ['legend', 'vortex'], // 외전: 귀허의 주인 처치
-  fr_wed: ['legend', 'wedknot'], // 연리 혼례
-  fr_home: ['legend', 'eave'], // 별채: 가구 20가지
-  fr_tn_solo: ['legend', 'crossed'], fr_tn_team: ['legend', 'twin'], // 야행 비무회 우승(1:1·팀전)
-  fr_yahaeng: ['legacy', 'nightwalk'], // 레거시: 롤백 전 첫 시대를 함께한 이만(얻는 길 없음)
+  fr_f_river: ['rare', 'boat'], fr_f_south: ['rare', 'flame'], fr_f_mandate: ['rare', 'stars'],
+  fr_gwiheo: ['legend', 'vortex'],
+  fr_wed: ['legend', 'wedknot'],
+  fr_home: ['legend', 'eave'],
+  fr_tn_solo: ['legend', 'crossed'], fr_tn_team: ['legend', 'twin'],
+  fr_yahaeng: ['legacy', 'nightwalk'],
 };
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
 const MIDS = [[50, 4, 0], [96, 50, 90], [50, 96, 180], [4, 50, 270]];
 
-// 테두리 선은 CSS 테두리로 그려(안쪽 문장과 같은 픽셀 격자에 맞아 화면 배율이 달라도 가운데가 어긋나지 않는다),
-// 모서리 문양만 SVG로 얹는다. 작은 크기(목록·상태판)에서는 문양 없이 선만 그린다.
 function glyphSvg(key) {
   const [tier, motif] = FRAMES[key] || ['common', 'lantern'];
   const d = M[motif];
@@ -78,9 +66,7 @@ function glyphSvg(key) {
   if (tier === 'legacy') body += MIDS.map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.6)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
   return `<svg class="fr-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${body}</svg>`;
 }
-// 레거시 테두리: 팔각 패(牌). 끊긴 자리는 오른쪽 위 빗변 가운데(둘레의 15~23%)다. 핏빛 굵은 테와 금빛 가는 테가 오른쪽 위에서 끊기고, 끊긴 자리에 여덟 갈래 별(✷)이 앉는다(「미완」).
-// 네 변 가운데의 작은 별은 첫 시안의 문양을 이어받았다. 작은 크기에서는 테만 그린다.
-const HEX_STAR = 'M0.00 -7.00L0.99 -2.40L4.95 -4.95L2.40 -0.99L7.00 0.00L2.40 0.99L4.95 4.95L0.99 2.40L0.00 7.00L-0.99 2.40L-4.95 4.95L-2.40 0.99L-7.00 0.00L-2.40 -0.99L-4.95 -4.95L-0.99 -2.40Z'; // ✷ 여덟 갈래 별
+const HEX_STAR = 'M0.00 -7.00L0.99 -2.40L4.95 -4.95L2.40 -0.99L7.00 0.00L2.40 0.99L4.95 4.95L0.99 2.40L0.00 7.00L-0.99 2.40L-4.95 4.95L-2.40 0.99L-7.00 0.00L-2.40 -0.99L-4.95 -4.95L-0.99 -2.40Z';
 function legacySvg(small) {
   const oct = i => { const a = 2 + i, b = 29 + i * .4; return `M${b} ${a}L${100 - b} ${a}L${100 - a} ${b}L${100 - a} ${100 - b}L${100 - b} ${100 - a}L${b} ${100 - a}L${a} ${100 - b}L${a} ${b}Z`; };
   const mids = small ? '' : [[50, 3, 0], [97, 50, 90], [50, 97, 180], [3, 50, 270]].map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.5)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
@@ -90,13 +76,11 @@ function legacySvg(small) {
     ${mids}<g class="lg-star" transform="translate(84 16) scale(${small ? 1.7 : 1.75})"><circle r="5.5" class="fr-bg"/><path d="${HEX_STAR}"/></g></svg>`;
 }
 export const frameTier = key => FRAMES[key]?.[0] || 'common';
-// 테두리 두께(px)와 안쪽 여백: 정수로 잡아 위아래·좌우 간격이 똑같게 한다.
 const frameBox = (key, size) => {
   const small = size < 56, tier = frameTier(key);
   const bw = tier === 'common' ? (small ? 2 : 3) : (small ? 3 : 5), gap = small ? 2 : 4;
   return { small, bw, gap, inner: size - 2 * (bw + gap) };
 };
-// 문장(emblem) 둘레에 테두리를 두른다.
 export function framed(inner, key, size) {
   if (!FRAMES[key]) return inner;
   const f = frameBox(key, size);
@@ -104,7 +88,6 @@ export function framed(inner, key, size) {
   return `<span class="fr-wrap t-${frameTier(key)} ${f.small ? 'small' : ''}" style="width:${size}px;height:${size}px;--fbw:${f.bw}px">${inner}${legacy ? legacySvg(f.small) : f.small ? '' : glyphSvg(key)}</span>`;
 }
 export const framedInner = (key, size) => FRAMES[key] ? frameBox(key, size).inner : size;
-// 바탕 무늬: 프로필 카드 뒤에 아주 옅게 깐다(20×20 반복)
 const P = {
   pt_mapline: '<path d="M0 10h20M10 0v20" stroke-dasharray="2 3"/><path d="M2 16c4-6 10-6 16-12"/>',
   pt_ripple: '<path d="M0 10a5 5 0 0110 0 5 5 0 0110 0M-5 20a5 5 0 0110 0 5 5 0 0110 0 5 5 0 0110 0"/>',
@@ -119,7 +102,6 @@ const P = {
   pt_yahaeng: '<path d="M15 2a4 4 0 100 8 3.2 3.2 0 010-8z"/><path d="M1 18c0-2 2-3 4-2 1-2 4-2 5 0 1-.5 3 0 3 2z"/><path d="M5 6h2v3H5zM6 5v1"/><circle cx="18" cy="15" r=".6"/><circle cx="2" cy="10" r=".5"/>',
 };
 let pid = 0;
-// 레거시 바탕 무늬는 되풀이하는 타일이 아니라 한 폭의 장면(그믐달·구름 두 줄·올라가는 불티, 위쪽 핏빛 줄)이다
 const SCENE = {
   pt_yahaeng: `<svg class="pt-layer pt-scene" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
     <path class="sc-moon" d="M352 22a26 26 0 1 0 0 52a20 20 0 0 1 0-52z"/>
@@ -133,13 +115,10 @@ export function patternLayer(key) {
   const id = `ptn${++pid}`;
   return `<svg class="pt-layer" aria-hidden="true" focusable="false"><defs><pattern id="${id}" width="20" height="20" patternUnits="userSpaceOnUse">${P[key]}</pattern></defs><rect width="100%" height="100%" fill="url(#${id})"/></svg>`;
 }
-// 무늬 하나만 보여 주는 작은 견본(설정 화면)
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
-// 낙관: 이름 옆 작은 도장
 export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同',
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星' };
 const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend' };
-// 글자는 SVG의 가운데 기준선(central)에 둔다. 글꼴마다 위아래 여백이 달라 글자 상자 가운데에 두면 한쪽으로 쏠린다.
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

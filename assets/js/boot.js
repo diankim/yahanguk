@@ -1,10 +1,7 @@
-// 진입점: 저장된 테마를 바로 입히고, 서버가 점검 중이면 게임을 띄우지 않고 점검 페이지로 보낸다.
 import { applySavedTheme } from './theme.js';
 import { serverState, goMaintenance } from './config.js';
 
 applySavedTheme();
-// 접속이 오래 걸리면(서버가 바쁘거나 처리량 한도에 걸렸을 때) 「접속 중」 화면에 까닭과 다시 시도 단추를 보인다.
-// 게임 화면이 그려지면 .boot가 사라지므로 이 안내도 함께 사라진다.
 function slowNote(text) {
   const boot = document.querySelector('#app .boot'); if (!boot) return;
   let n = boot.querySelector('.boot-note');
@@ -24,7 +21,6 @@ try {
   if (s.state === 'maintenance') goMaintenance();
   else await import('./app.js');
 } catch (e) {
-  // 게임 파일(또는 외부 라이브러리)을 받지 못한 경우
   clearTimeout(slow1); clearTimeout(slow2);
   slowNote('게임 파일을 받지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
   console.error(e);

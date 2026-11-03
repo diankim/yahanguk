@@ -1,5 +1,3 @@
-// 패치노트: 서버 world_patch_notes(읽기 전용)를 최신순으로 보인다. #/patch/날짜 로 열면 그 노트를 펼치고 그 자리로 간다.
-// 채팅에 「#패치노트」나 「#패치노트:4.0.0」라고 쓰면 이 화면으로 가는 링크가 된다(chat.js richText).
 import { db, icon, esc, $, store, isGM, act, guard, openModal, closeModal } from '../core.js';
 import { loading, errorBox } from './common.js';
 
@@ -11,7 +9,6 @@ async function notes() {
   if (error) throw error;
   cache = data || []; cacheAt = Date.now(); return cache;
 }
-// 본문: 「## 」 제목, 「### 」 소제목, 「1. 」 번호 항목(묶음 안에서 이어지는 번호), 「· 」 항목, 빈 줄은 문단 나눔, 「**굵게**」
 const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
 function bodyHtml(t) {
   const out = []; let list = null, kind = 'ul', start = 1;
@@ -35,8 +32,6 @@ export async function render(el, sub) {
   try {
     const list = await notes();
     if (!list.length) { box.innerHTML = '<p class="muted">아직 올라온 패치노트가 없습니다.</p>'; return; }
-    // 공지(note_id 0.0.0)는 늘 맨 위에 펼쳐 둔다. 내용은 그 한 줄만 고쳐 바꾼다
-    // 「0-」로 시작하는 노트는 롤백 전(시험 기간) 기록 — 맨 아래 접힌 칸에 모은다
     const notice = list.find(n => n.note_id === NOTICE), rest = list.filter(n => n.note_id !== NOTICE && !n.note_id.startsWith('0-'));
     const archive = list.filter(n => n.note_id.startsWith('0-'));
     const shownId = id => id.replace(/^0-/, '');
@@ -61,7 +56,6 @@ export async function render(el, sub) {
     $('#notice-edit', box)?.addEventListener('click', () => editNotice(notice, () => render(el, sub)));
   } catch (e) { box.innerHTML = errorBox(e.message || '패치노트를 읽지 못했습니다.'); }
 }
-// 운영진만: 공지(0.0.0) 제목·본문 고치기. 서버 world_patch_notice_save가 world_staff인지 다시 검사한다
 function editNotice(n, done) {
   const m = openModal({ title: '공지 고치기', wide: true, body: `<form class="notice-form" id="notice-form">
       <label class="field"><span>제목 (80자)</span><input name="title" maxlength="80" required value="${esc(n?.title || '[공지] ')}"></label>

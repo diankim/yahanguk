@@ -1,7 +1,4 @@
 import { yohwaDownNow } from '../hud.js';
-// 현장: 지금 있는 곳에서 할 수 있는 일.
-// 안전지대 — 시설(상점·거래소·마구간·여관·게시판)을 눌러 창으로 연다.
-// 바깥 지역 — 탐색력을 써서 탐색하고, 찾아낸 길로 더 깊이 들어가며, 채집터에서 자원을 모은다.
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
@@ -27,7 +24,6 @@ const OUTCOME = {
   cache: ['bag', '보급'], hazard: ['flame', '위험'], omen: ['moon', '징조'], quiet: ['eye', '고요'], gather: ['leaf', '채집'],
   combat: ['sword', '토벌'], battle_lost: ['heart', '패배'], battle_fled: ['back', '도주'],
 };
-// 채집터 갈래 이름은 일지 › 도감(journal.js GCAT)과 같게 쓴다
 const CAT = { herbs: '약초', ore: '광맥', wood: '목재', water: '물가', spirit: '영기', relics: '유물', supplies: '보급' };
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
@@ -42,8 +38,6 @@ async function peopleCheck() {
     if (key !== peopleKey) draw(); else peopleKey = key;
   } catch {}
 }
-// 알림의 "결과 보기": 현장 화면이 그려진 뒤 원정 창을 연다.
-// 상태판·알림의 「원정 보기」: 현장 화면이면 바로 열고, 다른 화면이면 현장으로 옮긴 뒤 연다.
 
 export async function render(root) {
   if (!store.character) return;
@@ -53,7 +47,6 @@ export async function render(root) {
   off.forEach(f => f());
   off = [on('changed', ({ name }) => {
     if (/battle_action/.test(name)) return;
-    // 낚시터·휴식·자율 캐시는 common.js가 행동 종류를 보고 버린다
     draw();
   }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);
@@ -64,8 +57,6 @@ export function destroy() { off.forEach(f => f()); off = []; window.removeEventL
 
 let again = false, fishSpot = null, restSt = null, idleSt = null;
 const restAt = k => { const t = restSt?.[k + '_ready_at']; return t ? new Date(t).getTime() : 0; };
-// 다음 휴식까지 남은 시간(잠깐·푹). 둘 다 가능하면 빈 문자열
-// 야영 칸에는 잠깐·푹을 한 줄씩 나눠 보인다
 function restParts(now = Date.now()) {
   const a = restAt('short') - now, b = restAt('full') - now;
   return [a > 0 ? `잠깐 ${fmt.remain(a)}` : '', b > 0 ? `푹 ${fmt.remain(b)}` : ''].filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('');
@@ -77,17 +68,15 @@ function restLine(now = Date.now(), short = false) {
 }
 async function draw() {
   if (!el?.isConnected) return;
-  if (busy) { again = true; return; } // 그리는 중에 들어온 갱신은 끝난 뒤 한 번 더 그린다
+  if (busy) { again = true; return; }
   busy = true; again = false;
   try {
     const [s, roster, fish, rest, idle, pty] = await Promise.all([
-      load('world_field_snapshot', undefined, { maxAge: 2000 }), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
-      // 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(common.js FISH_CHANGERS 등)
+      load('world_field_snapshot', undefined, { maxAge: 2000 }), load('world_region_roster', undefined, { maxAge: 120000 }).catch(() => []),
       load('world_fish_spot', undefined, { maxAge: 1800000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 600000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }).catch(() => null),
-      // 파티 칸: 자리·파티가 바뀌는 행동 뒤에만 새로 읽는다(common.js ROSTER_CHANGERS)
-      load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null)]);
+      load('world_party_overview', undefined, { maxAge: 120000 }).catch(() => null)]);
     snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;
-    peopleKey = peopleKeyOf(roster, pty); // 그린 값이 비교 기준(처음 1분 안의 변화도 놓치지 않게)
+    peopleKey = peopleKeyOf(roster, pty);
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();
     const downed = c.downed_at || c.health <= 0;
@@ -95,10 +84,7 @@ async function draw() {
     if (s.battle && !downed) { drawBattle(pty); return; }
     stopBattle();
     noteRegion(s.region);
-    // 지역 첫 방문 글: 이동 중이 아니면 처음 들어온 지역의 내력을 한 번 보인다
     if (!traveling) regionIntro(s.region?.region_id);
-    // 다시 그릴 때 스크롤 자리를 지킨다: 퀘스트 칸·토벌 띠는 늦게 채우므로 지난 내용을 옮겨 두고 채운 뒤에도 같은 자리로.
-    // 토벌에서 돌아올 때는 들어가기 전 자리로 — 맨 위(0)여도, 전투 화면에서 내려가 있었어도 되돌린다(force).
     const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
@@ -107,7 +93,6 @@ async function draw() {
     const keepY = () => { if ((y > 0 || back) && el.isConnected) scrollAfterModal(y, back); };
     keepY();
     bind(s);
-    // 퀘스트 칸은 따로 읽어 채운다(15초 동안 다시 씀, 보고 뒤에는 새로 읽음)
     Promise.all([fillQuests($('#quest-box', el)), fillRaidBand($('#raid-band', el))]).then(keepY, keepY);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
   } catch (e) { el.innerHTML = errorBox(e.message); }
@@ -115,7 +100,6 @@ async function draw() {
   if (again) return draw();
 }
 
-// 파티 칸: 동료마다 있는 곳·상황·체력·정신·침식. 같은 곳의 동료와 원정을 같은 지역으로 보내면 합동 전투와 함께 다녀온 보너스.
 function partyHtml(p, s) {
   if (!p?.party || (p.members || []).length < 2) return '';
   const me = store.character.owner_id, here = store.character.location;
@@ -134,8 +118,6 @@ function partyHtml(p, s) {
     <div class="panel-body"><ul class="pt-list">${mates.map(row).join('')}</ul></div></section>`;
 }
 
-// 파티원에게 회복품 쓰기(world_party_use_item): 같은 곳의 동료에게 약·부적을 쓴다. 의무관이 쓰면 효과 ×1.4(서버가 정함, 여기 수치는 안내).
-// 서버 world_party_use_item이 받는 아홉 가지 — 효과 문구는 물품 목록(item.js USABLE, 서버 use_fx)에서
 const AID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'medicine_base', 'calm_brew', 'ward_talisman', 'purify_water'];
 function openAid(target, name) {
   const inv = store.character.inventory || {}, medic = store.character.job_key === 'medic';
@@ -146,28 +128,23 @@ function openAid(target, name) {
   $$('[data-aid-use]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_party_use_item', { p_target: target, p_item_id: b.dataset.aidUse }); closeModal(); return r; }));
 }
 
-// 파티 현장 토벌(7.1): 같은 곳에 합류할 수 있는 동료가 있으면 「동료 부르기」, 이미 든 파티 토벌이 있으면 그 화면으로 보낸다
-let fieldY = null; // 토벌에 들어가기 전 현장 스크롤 자리(끝나고 현장으로 돌아오면 되돌림)
+let fieldY = null;
 function drawBattle(pty) {
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
   if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
   el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
     <div id="battle-box"></div>`;
-  // 「동료 부르기」는 전투 행동 칸 여섯째(battle.js)
   const onCall = b => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
   renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); }, near ? { call: near, onCall } : null);
   if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
 }
 
-/* ── 장면 머리 ───────────────────────────────────────────── */
-// 날씨·시간대·장소에 맞춘 움직이는 배경(글자 뒤에 옅게 깔린다). 실제 효과 수치는 서버가 정한다.
 function sceneFx(r) {
   const e = store.env;
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
   return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
-// 침식 원형 게이지: 현장 머리 오른쪽 위. 단계(주의 30·위험 55·붕괴 직전 80)마다 색이 짙어지고, 누르면 캐릭터 › 상태로 간다.
 function scene(s, traveling, downed) {
   const r = s.region, c = store.character, z = zonesNow()?.get(r.region_id);
   if (!zonesNow()) safeZones().catch(() => {});
@@ -196,9 +173,8 @@ function scene(s, traveling, downed) {
     ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래를 할 수 없습니다. 물품 사용과 장비 바꾸기는 됩니다. 도중에 그만두면 지난 시간만큼만 받습니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
-/* ── 안전지대 ───────────────────────────────────────────── */
 function town(s, roster) {
-  const r = s.region, banyo = r.region_id === 'banyo_village'; // 반요촌: 거래소·창고·마구간 없음(서버도 막음)
+  const r = s.region, banyo = r.region_id === 'banyo_village';
   const tiles = [
     ['shop', 'shop', r.shop_name || '상점', banyo ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
     ['smithy', 'hammer', '대장간', banyo ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
@@ -213,7 +189,6 @@ function town(s, roster) {
     r.region_id === 'hq_yard' ? ['records', 'scroll', '정청 기록고', '첫째 밤의 흔적이 남은 장부'] : null,
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
   ].filter(Boolean);
-  // 안전지대에서도 탐색력이 얼마나 찼는지 보인다(쉬어서 채우고 떠날 때를 정하게)
   return `
     ${s.stamina ? townStamina(s.stamina) : ''}
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
@@ -241,14 +216,12 @@ function staminaBox(st) {
         </div>`;
 }
 
-/* ── 바깥 지역 ──────────────────────────────────────────── */
 function field(s, roster, blocked) {
   const st = s.stamina || { now: 0, max: 20 }, n = s.node;
   const kids = (s.nodes || []).filter(x => x.parent_id === n.node_id);
   const parent = (s.nodes || []).find(x => x.node_id === n.parent_id);
   const w = s.weapon || {};
   const kinds = [...new Set((s.monsters || []).map(m => m.kind_name).filter(Boolean))];
-  // 길을 못 가는 까닭(서버 world_field_move와 같은 순서): 전투불능 → 이동 중 → 원정 중 → 레벨
   const c = store.character;
   const stateWhy = !blocked ? '' : s.overflow > 0 ? '원정 짐 보따리를 먼저 정리하세요' : (c.downed_at || c.health <= 0) ? '전투불능 상태에서는 움직일 수 없습니다'
     : (c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date()) ? '다른 지역으로 이동 중에는 움직일 수 없습니다'
@@ -322,7 +295,6 @@ function field(s, roster, blocked) {
     ${people(roster, s.corpses)}`;
 }
 
-// 물가 지역의 낚시터: 낚싯대가 가방에 있으면 탐색력 1로 낚는다(20초 간격). 결과와 도감은 서버가 기록한다.
 function fishPanel(blocked) {
   const f = fishSpot; if (!f) return '';
   const recent = (f.recent || []).slice(0, 3);
@@ -337,11 +309,9 @@ function fishPanel(blocked) {
     </div></section>`;
 }
 
-// 접기 상태 기억(이 기기). 기본은 펼침.
 function foldOpen(k) { try { return localStorage.getItem('yh-fold-' + k) !== '0'; } catch { return true; } }
 document.addEventListener('toggle', e => { const d = e.target; if (d?.dataset?.fold) try { localStorage.setItem('yh-fold-' + d.dataset.fold, d.open ? '1' : '0'); } catch {} }, true);
 
-// 답사 지도: 찾은 장소는 이름과 「길 찾음/전체 · 채집터 찾음/전체」를 말로 적고, 다 찾은 곳은 표시, 못 찾은 길은 그 자리에 빈칸으로 보인다
 function tree(s) {
   const nodes = s.nodes || [], byParent = new Map();
   for (const n of nodes) { const k = n.parent_id || 'root'; (byParent.get(k) || byParent.set(k, []).get(k)).push(n); }
@@ -374,7 +344,6 @@ function people(roster, corpses) {
   </div></section>`;
 }
 
-/* ── 동작 ──────────────────────────────────────────────── */
 function bind(s) {
   $('#pt-exp', el)?.addEventListener('click', () => openExpeditionWindow());
   $('#search', el)?.addEventListener('click', e => doSearch(e.currentTarget));
@@ -402,7 +371,6 @@ const quietOn = () => { try { return localStorage.getItem(QUIET_KEY) === '1'; } 
 const quietPct = () => quietPctOf(store.character);
 async function doSearch(btn) {
   if (btn.dataset.busy === '1') return;
-  // 체력이 낮으면 요괴를 만났을 때 쓰러지기 쉽다: 한 번 묻는다
   const hp = Number(store.character?.health ?? 100);
   if (hp < 35 && !(await ask(`체력이 ${hp}입니다. 탐색하다 요괴를 만나면 쓰러질 수 있습니다. 쉬거나 회복약을 먼저 쓰는 것이 좋습니다.`, { title: '체력이 낮습니다', ok: '그래도 탐색', cancel: '그만두기' }))) return;
   btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('searching');
@@ -427,7 +395,6 @@ async function doFish(btn) {
   } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
   finally { btn.dataset.busy = ''; if (btn.isConnected) btn.disabled = false; }
 }
-// 발견은 화면 가운데 잠깐 떠오르는 쪽지로 보여 준다.
 function showFind([ic, label], r) {
   const n = document.createElement('div');
   n.className = `find-pop k-${r.outcome}`;
@@ -436,9 +403,6 @@ function showFind([ic, label], r) {
   setTimeout(() => n.classList.add('out'), 2600); setTimeout(() => n.remove(), 3100);
 }
 
-// 채집 간격: 서버(world_guard_repeat_farming)가 채집터와 상관없이 12초마다 한 번만 받으므로,
-// 채집에 성공하면 이 기기 시계로 12초 동안 모든 채집 단추를 잠그고 남은 초를 보인다(연타 요청을 보내지 않음).
-// 응답을 받은 때부터 세므로 서버보다 조금 늦게 풀린다. 새로 연 창이면 기기에 남긴 값을 쓰고, 그래도 거절되면 3초 기다린다.
 const GATHER_GAP = 12000, GATHER_KEY = 'yh-gather-cd';
 let gatherCd = 0;
 try { gatherCd = Number(localStorage.getItem(GATHER_KEY)) || 0; } catch {}
@@ -467,8 +431,6 @@ function tick() {
   $$('[data-death]', el).forEach(s => { const t = c?.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0; s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });
 }
 
-/* ── 창 ───────────────────────────────────────────────── */
-// 자율 활동 › 휴식으로 바로 보낸다(캐릭터 › 자율 화면이 휴식 칸을 짚어 준다)
 function goIdleRest() { try { sessionStorage.setItem('yh-idle-focus', 'rest'); } catch {} window.yahangGo('char', 'idle'); }
 function openFacility(k, s) {
   if (k === 'depart') return window.yahangGo('map');
@@ -483,10 +445,9 @@ function openFacility(k, s) {
   const box = $('.fac-body', m);
   const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : k === 'storage' ? renderStorage : renderShop)(box);
   fill();
-  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, fill); else offc(); }); // 사고팔고 맡긴 뒤에도 보던 자리 그대로
+  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, fill); else offc(); });
 }
 
-// 예상 회복량(서버 world_field_rest와 같은 식). 바깥 야영은 ⅔이고, 가득 찬 수치는 그만큼 덜 오른다.
 function restGain(r, full) {
   const half = v => r.safe ? v : Math.floor(v * 2 / 3);
   const q = r.rest_quality ?? 1;
@@ -509,7 +470,6 @@ function openRest(r) {
 
 const openExpedition = () => openExpeditionWindow();
 
-// 이 지역에서 얻는 것: 답사도 30% 채집 재료 → 70% 요괴 전리품 → 100% 희귀품(서버 world_field_snapshot.lore가 가린다)
 function loreHtml(l) {
   if (!l) return '';
   const row = (label, need, list) => `<li class="${list ? '' : 'locked'}"><b>${label}</b>${list ? `<small>${list.map(k => esc(nameOf(k))).join(', ') || '없음'}</small>` : `<small>답사도 ${need}%에 드러납니다</small>`}</li>`;

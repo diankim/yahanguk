@@ -1,25 +1,18 @@
-// 세계 지도의 물길: 낚시터가 있는 물가 지역을 이은 강·호수·늪·수로·심연과 해안의 얕은 물.
-// 화면에만 그리는 장식이라 서버에 없다. 지역 좌표(world_x·world_y) 위에 손으로 그렸으므로
-// 지역 좌표를 옮기면 이 파일도 함께 고친다. 물 하나마다 in: 그 지역이 지도에 있을 때만 그린다(귀허도는 열린 뒤).
-
-// 강: [x, y, 폭] 점을 매끄럽게 잇고 내려갈수록 넓어진다. ice: 앞에서 몇 구간이 얼음물인지.
 const RIVERS = [
-  { in: 'sky_lake', ice: 4, pts: [[480,122,3],[472,150,3.4],[458,182,3.8],[446,212,4.2],[449,242,4.8],[458,272,5.2],[470,298,5.8],[500,312,6.2],[540,306,6.8],[585,313,7.2],[625,318,7.8],[655,314,8.2],[695,322,8.8],[722,336,9.2],[770,323,10],[805,306,10.8],[838,302,11.6],[864,324,12.6],[886,352,14],[918,372,15],[938,381,15.5]] },   // 끝은 만조의 갑문 해안(약 942) 안쪽에서 멈춘다(968까지 그려 땅 밖 바다로 삐져나왔다)
+  { in: 'sky_lake', ice: 4, pts: [[480,122,3],[472,150,3.4],[458,182,3.8],[446,212,4.2],[449,242,4.8],[458,272,5.2],[470,298,5.8],[500,312,6.2],[540,306,6.8],[585,313,7.2],[625,318,7.8],[655,314,8.2],[695,322,8.8],[722,336,9.2],[770,323,10],[805,306,10.8],[838,302,11.6],[864,324,12.6],[886,352,14],[918,372,15],[938,381,15.5]] },
   { in: 'mirror_pavilion', small: 1, pts: [[762,244,2.4],[765,272,2.8],[767,300,3.2],[770,322,3.6]] },
   { in: 'salt_village', small: 1, pts: [[640,318,2.6],[650,340,2.8],[662,360,3],[676,380,3.1],[690,404,3.3],[704,428,3.5]] },
 ];
-// 수로: 꺾인 직선, under는 땅 밑(점선)
 const CANALS = [
   { in: 'old_canal', pts: [[468,300],[444,294],[422,290]], w: 3.6 },
   { in: 'old_canal', pts: [[422,290],[408,286],[400,302],[388,322],[380,340]], w: 3.2, under: 1 },
 ];
-// 못: [x, y, 반지름, 가로, 세로]
 const POOLS = [
   { in: 'sky_lake', at: [490,98,30,1.25,0.7], ice: 1, ripple: 1 },
   { in: 'mirror_pavilion', at: [760,230,18,1.25,0.75], ripple: 1 },
   { in: 'sunken_district', at: [370,362,20,1.1,0.85] },
   { in: 'sealed_garden', at: [553,416,12,1.2,0.8], lotus: 5, small: 1 },
-  { in: 'glass_canyon', at: [138,260,17,1.3,0.8], ripple: 1 },   // 월영 유리못
+  { in: 'glass_canyon', at: [138,260,17,1.3,0.8], ripple: 1 },
   { in: 'lotus_marsh', at: [726,352,15,1.4,0.75] }, { in: 'lotus_marsh', at: [756,348,12,1.3,0.85] },
   { in: 'lotus_marsh', at: [750,312,9,1.4,0.8], small: 1 }, { in: 'lotus_marsh', at: [708,330,9,1.3,0.85], small: 1 }, { in: 'lotus_marsh', at: [772,340,7,1.2,0.9], small: 1 },
   { in: 'ash_reeds', at: [418,888,9,1.3,0.8] }, { in: 'ash_reeds', at: [444,920,8,1.2,0.8] }, { in: 'ash_reeds', at: [412,925,6,1.3,0.8], small: 1 },
@@ -28,10 +21,9 @@ const REEDS = { lotus_marsh: [[720,358],[742,334],[766,338],[735,306],[704,340],
 const ABYSS = [{ in: 'sealed_abyss', at: [530,642,24] }];
 const RIFTS = [{ in: 'black_tide_rift', pts: [[702,424],[712,436],[704,448],[720,456],[712,470],[730,476],[748,494],[740,476],[754,468],[734,454],[738,440],[722,436],[716,424]] }];
 const WHIRLS = [{ in: 'gwiheo_core', at: [630,1078,20] }];
-// 구등대 군도 바깥 작은 섬(땅에 닿는 자리는 뺀다). 남는 섬 가운데 가장 큰 섬 하나에 등대(전에는 큰 섬마다 금빛 점 하나라 빨간 점처럼 보였다)
 const ISLES = { in: 'nine_lighthouse', at: [[968,690,13],[996,646,8],[948,742,10],[1012,712,6],[930,770,7],[985,760,5]] };
 
-function smooth(pts) { // Catmull-Rom → 구간마다 베지어 하나
+function smooth(pts) {
   const segs = [];
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
@@ -49,7 +41,6 @@ function inside(pt, poly) {
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) c = !c; }
   return c;
 }
-// 등대: 섬 위에 선 탑(아래가 넓은 사다리꼴 · 가운데 띠 · 불빛 방 · 지붕)과 가까이 볼 때만 양옆으로 퍼지는 불빛
 function lighthouse(cx, by, s, near) {
   const f = v => v.toFixed(1), h = 13 * s, bw = 3.2 * s, tw = 2 * s, top = by - h;
   const body = `M${f(cx - bw)},${f(by)}L${f(cx - tw)},${f(top + 3 * s)}L${f(cx + tw)},${f(top + 3 * s)}L${f(cx + bw)},${f(by)}Z`;
@@ -69,12 +60,9 @@ function isles(cells) {
   return isleCache;
 }
 
-// 바다낚시를 할 수 있는 지역: 바다 물가 넷 + 바다 낚시터가 있는 다섯. 지도에서 이 지역의 해안만 물빛으로 짚는다.
-// 서버 world_fish_spot의 바다 낚시터가 바뀌면 여기도 고친다(화면만의 장식, 서버에 묻지 않는다)
 export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory']);
 const seg = (e, X, Y) => `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
 
-// 해안의 얕은 물 띠(땅보다 먼저 그려 바깥쪽 반만 보인다). 바다낚시 지역 앞바다는 띠를 조금 더 짙게(.sea)
 export function waterUnder(g, X, Y, k) {
   let d = '', sea = '';
   for (const e of g.edges) if (!e.b) { d += seg(e, X, Y); if (SEA_FISH.has(e.a)) sea += seg(e, X, Y); }
@@ -82,7 +70,6 @@ export function waterUnder(g, X, Y, k) {
     + (sea ? `<path d="${sea}" class="w-shallow sea" stroke-width="${(22 * k).toFixed(1)}"/>` : '');
 }
 
-// 땅 위·국경 아래. zoom이 낮으면(멀리) 잔 물줄기·갈대·연꽃은 그리지 않는다.
 export function waterOver(g, has, X, Y, k, zoom) {
   const near = zoom >= 1.35, f = v => v.toFixed(1), P = p => `${f(X(p[0]))},${f(Y(p[1]))}`;
   const ringPath = (at, seed) => 'M' + ring(at, seed).map(P).join('L') + 'Z';

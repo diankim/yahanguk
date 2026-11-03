@@ -1,6 +1,3 @@
-// 조사원 카드: 채팅·여기 있는 이들·동료에서 이름을 누르면 공개 정보와 교류 단추를 보여 준다(서버 world_character_card).
-// 화면 어디서든 data-card="owner_id"가 붙은 요소를 누르면 열린다. 다른 창 위에 겹쳐 떠서 닫아도 아래 창은 남는다.
-// 친구·귓속말·파티 초대·거래 제안·구조·차단은 모두 서버가 다시 검사한다(단추는 길잡이일 뿐).
 import { petImage } from '../housing/petsprite.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
@@ -25,16 +22,12 @@ async function draw(box, id) {
   try {
     const [c, pub] = await Promise.all([rpc('world_character_card', { p_owner: id }), rpc('world_bond_public', { p_owner: id }).catch(() => null), loadBond()]);
     const mine = bond(), isPartner = mine?.partner_id === id;
-    // 연리 맺기: 친구이고, 나에게 정인·보낸 마음이 없고, 상대에게도 보이는 정인이 없을 때(나머지 조건은 서버가 검사)
     const canBond = !c.mine && !c.is_dead && c.relation === 'friends' && !mine && !bondSnap()?.outgoing && !pub;
     const p = profileOf(c.owner_id, c.profile);
     const state = c.is_dead ? chip('숨을 거둠', 'bad') : c.downed ? chip('전투불능', 'bad') : c.in_combat ? chip('전투 중', 'warn')
       : c.away ? chip('원정 중', 'accent') : c.traveling ? chip('이동 중', 'accent') : chip('활동 중', 'ok');
-    // 요화 3단계(반요)·요괴화(마지막 1시간)는 남에게도 보인다(서버 world_yohwa_public — 1·2단계는 본인만)
     const yoChip = c.yohwa === 'frenzy' ? chip('요괴화', 'bad') : c.yohwa === '3' ? chip('반요 · 요화 3단계', 'warn') : '';
     const rel = c.relation || 'none';
-    // 파티 초대: 상대가 파티가 없고, 내가 파티장이거나 아직 파티가 없을 때(없으면 만들고 초대)
-    // 비무: 같은 곳(안전지대 포함)이면 신청할 수 있다. 못 하면 단추를 숨기지 않고 까닭을 적는다(서버 world_spar_challenge가 다시 검사)
     const me = store.character || {};
     const sparWhy = !c.same_place ? '같은 곳에 있어야 함' : c.downed ? '상대 전투불능' : c.away ? '상대 원정 중' : c.traveling ? '상대 이동 중' : c.in_combat ? '상대 전투 중'
       : me.downed_at ? '내가 전투불능' : me.travel_destination ? '내가 이동 중' : '';
@@ -97,8 +90,6 @@ async function run(b, c, box) {
   if (k === 'bond') return openPropose(id, c.character_name);
   if (k === 'trade') { close(); const { openDirectTrade } = await import('./services.js'); return openDirectTrade(id); }
   if (k === 'spar') return guard(b, () => act('world_spar_challenge', { p_target: id }));
-  // 남의 별채는 먼저 들어갈 수 있는지 물어 보고, 막혀 있으면(대문 닫힘·벗에게만·차단) 화면을 옮기지 않고 알림만
-  // 받은 별채는 별채 화면이 다시 묻지 않게 잠깐 넘겨 둔다(store.houseSnap)
   if (k === 'house') {
     if (c.mine) { close(); return window.yahangGo?.('house', ''); }
     return guard(b, async () => {
@@ -115,7 +106,6 @@ async function run(b, c, box) {
   if (k === 'unblock') return guard(b, async () => { const r = await act('world_block_set', { p_target: id, p_blocked: false }); again(); return r; });
 }
 
-// 이름 단추: 누르면 카드가 열린다
 export const cardName = (id, name) => id ? `<button type="button" class="name-link" data-card="${esc(id)}">${esc(name || '조사원')}</button>` : esc(name || '조사원');
 
 export function mountCards() {

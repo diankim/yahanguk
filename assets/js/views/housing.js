@@ -1,6 +1,3 @@
-// 별채(7.2, #/house · #/house/<주인>): 도트 방 구경·꾸미기·곳간·넓히기·대문·방명록·꼬마 동무.
-// 서버는 world_housing_*·world_pet_*가 검사하고(겹침·칸·설치 상한·소유·안전지대), 화면은 같은 규칙으로 미리 막아 준다.
-// 다시 읽는 때: 화면을 열 때 · 저장·곳간·넓히기·방명록·동무 행동 뒤(실시간 구독·주기 읽기 없음). 동무 창은 별채가 없어도 연다(데리고 다니는 동무). 방 그림은 동무가 있을 때만 1초 8번 다시 그린다.
 import { rpc, act, store, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf, GRADES } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH } from '../housing/render.js';
@@ -10,7 +7,7 @@ import { cardName } from './card.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = GRADES;
-const KIND_CAP = [0, 4, 3, 2, 1, 1]; // 한 지붕(혼례 정인과 함께 쓰는 별채)이면 서버가 두 배로 내려 준다(snap.kind_caps)
+const KIND_CAP = [0, 4, 3, 2, 1, 1];
 const kindCap = g => snap?.kind_caps?.[g - 1] ?? KIND_CAP[g];
 const GATE = [['open', '활짝 엶', '누구나 구경'], ['friends', '벗에게만', '친구만 구경'], ['closed', '닫음', '나만 구경']];
 const FOODS = ['pet_food', 'treat_fish', 'treat_rice', 'treat_honey', 'treat_herb', 'treat_meat'];
@@ -33,7 +30,7 @@ export function destroy() { cancelAnimationFrame(raf); raf = null; el = null; cv
 async function reload() {
   if (!el) return;
   try {
-    const pre = store.houseSnap; store.houseSnap = null; // 조사원 카드가 막 받아 둔 것이면 다시 묻지 않는다
+    const pre = store.houseSnap; store.houseSnap = null;
     snap = pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
     if (!el) return;
     if (!snap.open) return drawClosed();
@@ -48,7 +45,6 @@ function resetState() {
   setupPet();
 }
 
-// ─── 아직 별채가 없을 때 ───
 function drawClosed() {
   const q = snap.quest || {}, c = store.character || {};
   const store_ = Object.entries(snap.store || {}).filter(([, n]) => n > 0);
@@ -63,7 +59,6 @@ function drawClosed() {
   $('#hs-pets')?.addEventListener('click', openPets);
 }
 
-// ─── 수 세기·검사(서버 world_housing_save와 같은 규칙) ───
 function counts(st) {
   const m = {};
   const add = id => { m[id] = (m[id] || 0) + 1; };
@@ -110,7 +105,6 @@ function tryChange(fn) {
   dirty = true; return true;
 }
 
-// ─── 그리기 ───
 function draw() {
   if (!el || !snap) return;
   const me = snap.role === 'owner', can = !!snap.role, edBlock = snap.edit_block;
@@ -135,7 +129,6 @@ function fit() {
   if (!cv || !room) return;
   cv.width = room.W; cv.height = room.H;
   const box = cv.parentElement.getBoundingClientRect().width || room.W * 2;
-  // 2배 넘게 키울 수 있으면 정수 배율(도트가 고르게), 좁은 화면은 폭에 맞춘다. 높이는 화면의 72%까지.
   const raw = Math.min((box - 4) / room.W, (window.innerHeight * 0.72) / room.H);
   const s = raw >= 2 ? Math.min(4, Math.floor(raw)) : Math.max(1, raw);
   cv.style.width = `${room.W * s}px`; cv.style.height = `${room.H * s}px`;
@@ -150,7 +143,6 @@ function paint() {
 }
 let hover = null;
 function ghost(g) {
-  // 놓을 자리 미리 보기: 칸 테두리만
   if (pick.type === 'fur') {
     const f = FUR[pick.k]; const [w, d] = (pick.r || 0) % 2 ? [f.D, f.W] : [f.W, f.D];
     const q = [room.iso(hover.x, hover.y), room.iso(hover.x + w, hover.y), room.iso(hover.x + w, hover.y + d), room.iso(hover.x, hover.y + d)];
@@ -203,7 +195,6 @@ function ownerPanel() {
       <p class="muted small">Lv${nx.level} · ${nx.gil.toLocaleString()}전 · ${Object.entries(nx.items).map(([i, n]) => `${esc(nameOf(i))} ×${n}`).join(' · ')}</p><button class="btn small" id="hs-expand">넓히기</button>`
       : '<p class="muted small">가장 넓은 9×9 별채입니다.</p>', { ico: 'up' })}</div>`;
 }
-// 한 지붕(7.3): 혼례를 올린 정인과 별채 하나를 함께 쓴다 — 제안·받기·미루기·거두기·각자 별채로
 function mergePanel() {
   const m = snap.merge; if (!m) return '';
   let body;
@@ -241,7 +232,6 @@ function guestbook() {
     <p class="muted small">별채마다 최근 20개를 남깁니다.</p>`, { ico: 'letter' });
 }
 
-// ─── 누르기 ───
 function bind() {
   $('#hs-edit')?.addEventListener('click', () => { if (editing && dirty) return; editing = !editing; pick = null; sel = null; draw(); });
   $('#hs-done')?.addEventListener('click', async () => {
@@ -337,7 +327,6 @@ async function save() {
   return { content: '별채를 저장했습니다.' };
 }
 
-// ─── 곳간 ───
 async function openStore() {
   const drawStore = () => {
     const st = Object.entries(snap.store || {}).filter(([, n]) => n > 0), bag = Object.entries(snap.bag || {}).filter(([, n]) => n > 0);
@@ -362,15 +351,12 @@ async function openStore() {
   return m;
 }
 
-// ─── 꼬마 동무 ───
-// 동무 정표: 친밀도를 다 채운 동무가 알에서 다시 나오면 하나, 다섯 개로 「빛나는 알」 하나(world_pet_token_trade, 어디서나)
 const tokenRow = inv => { const n = Number(inv.pet_token || 0); return n ? `<div class="hs-token"><span>${icon('heart', 14)} 동무 정표 ×${n} <small class="muted">다섯 개 = 빛나는 알 하나</small></span><button class="btn small ${n >= 5 ? 'primary' : ''}" data-token ${n >= 5 ? '' : 'disabled'}>빛나는 알로 바꾸기</button></div>` : ''; };
 async function openPets() {
   let ps;
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
   const inv = store.character?.inventory || {};
   const items = Object.entries(inv).filter(([k, n]) => n > 0 && (k.startsWith('pt_') || k.startsWith('pet_egg_')));
-  // 두 자리: 데리고 다니는 동무(world_pet_profile, 조사원 카드) · 별채 동무(world_housing.pet_id). 같은 동무는 한 자리에만.
   const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null, petId = room_?.pet_id || null;
   const nm = id => mine.get(id)?.nick || PETS[id]?.name || '';
   const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2 })}" alt="">` : '<span class="ps-empty"></span>';
@@ -442,7 +428,6 @@ function afterPet(r, kind) {
   if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }
 }
 
-// ─── 동무 움직임: 빈 칸을 거닐다 잠자리에서 자고, 그릇·놀잇감에 들른다 ───
 function walkable() {
   const N = snap.size, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [] };
   for (const it of state.items) {

@@ -1,6 +1,3 @@
-// 야행 비무회(7.1, #/tourney): 비무 방(신청·작전·이번 주 대회·지난 결과)과 대진표·경기 다시 보기.
-// 판정은 서버(world_tourney_*, 1분마다 예약 작업)가 하고, 경기 기록은 합마다 2초씩 서버 시각에 맞춰 펼친다.
-// 다시 읽는 때: 화면을 열 때 · 신청·작전 뒤 · 대회가 진행 중이면 다음 회차 시각에 한 번(실시간 구독 없음).
 import { rpc, store, esc, icon, fmt, $, $$, nameOf, guard, ask } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
 
@@ -9,7 +6,7 @@ const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시�
 const STANCE = [['attack', '공격', '주는 피해 +15% · 받는 피해 +10%'], ['balanced', '균형', '보정 없음'], ['defense', '수비', '주는 피해 −15% · 받는 피해 −20% · 회피 +5']];
 const SKILL_AT = [['open', '처음에'], ['mid', '몰릴 때(기세 60% 아래)'], ['finish', '마무리(상대 35% 아래)']];
 const HEALS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
-const GAP = 2000; // 합마다 2초
+const GAP = 2000;
 
 let el = null, board = null, view = null, timer = null, tick = null, skew = 0, sub = '', busy = false;
 
@@ -33,7 +30,6 @@ async function refresh() {
   } catch (e) { if (el) el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
 }
-// 진행 중인 대회는 다음 회차 시각에 맞춰 한 번 더 읽는다
 function plan() {
   const t = sub ? view : null;
   if (!t || document.hidden) return;
@@ -98,7 +94,6 @@ function bindBoard() {
   $$('[data-view]', el).forEach(b => b.onclick = () => window.yahangGo('tourney', b.dataset.view));
 }
 
-/* ── 대진표·관람 ── */
 const nameOfEntry = (v, id) => id ? (v.entries?.[id]?.names || []).join('·') : '부전승';
 function drawView() {
   const v = view || {};
@@ -131,7 +126,6 @@ function openWatch(id) {
   $('#tn-watch-title', el).textContent = `${nameOfEntry(view, m.a)} 대 ${nameOfEntry(view, m.b)}`;
   paintLog();
 }
-// 합마다 2초: 서버가 정한 경기 시작 시각부터 지난 만큼만 보여 준다
 function paintLog() {
   if (!el || !watching) return;
   const m = (view?.matches || []).find(x => x.id === watching); const box = $('.tn-log', el); if (!m || !box) return;

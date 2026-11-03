@@ -1,4 +1,3 @@
-// 지도: 세계 지도(확대·축소·이동, 겹침 없는 이름표) · 세부 탐사 · 이동과 원정.
 import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
 import { buildCells, centroid, factionColor } from '../geo.js';
@@ -19,11 +18,8 @@ export async function render(root, s) {
   off.forEach(f => f());
   off = [on('changed', ({ name } = {}) => { if (/field_|gather|expedition/.test(name || '')) loadSurveyed(true); draw(true); }), on('env', () => draw(true))];
   window.addEventListener('yahang:arrived', onArrive);
-  // 봉연에 잠긴 곳(서버 토벌 실패): 따로 읽어 지도에 표시한다(1분 동안 다시 씀)
   raidLocks().then(l => { sealed = new Set(l.map(x => x.region_id)); if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
-  // 봉연의 그림자가 나올 곳(출현지가 확정된 뒤·모이는 중·토벌 중): 같은 값(world_raid_brief, 1분 캐시)을 쓰고 다른 표시와 겹치지 않는 보라 마름모 별로 짚는다
   raidShadow().then(w => { shadow = w; if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
-  // 완전 답사한 지역(나에게만): 점 바로 바깥 금빛 테. 10분 캐시, 탐색·채집·원정 뒤에만 새로 읽는다
   loadSurveyed();
   await draw();
 }
@@ -47,16 +43,14 @@ async function draw(soft = false) {
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
-/* ── 세계 지도 ───────────────────────────────────────────── */
 async function drawWorld(body, soft) {
   [mapData, mountData, partyData, zones] = await Promise.all([
     load('world_map_snapshot', undefined, { maxAge: 30000 }),
     load('world_mount_snapshot', undefined, { maxAge: 60000 }).catch(() => null),
-    load('world_party_overview', undefined, { maxAge: 5000 }).catch(() => null),  // 동료가 막 파티에 들어와도 동승 단추가 바로 보이게
+    load('world_party_overview', undefined, { maxAge: 5000 }).catch(() => null),
     safeZones().catch(() => new Map()),
   ]);
   const here = currentRegion(mapData);
-  // 다른 화면이 지역 이름으로 넘겨도(구조 요청 알림 등) 찾아 고른다
   if (selected && !mapData.regions.some(r => r.region_id === selected)) selected = mapData.regions.find(r => r.region_name === selected)?.region_id || null;
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
   const keepScroll = soft && $('#region-q', body)?.value, focused = focusPending;
@@ -80,7 +74,6 @@ async function drawWorld(body, soft) {
     ${factionLegend()}`;
   setupMap(here);
   drawDetail();
-  // 다른 화면(퀘스트·알림)에서 지역을 짚어 왔으면 휴대폰 위 띠(예상 시간·출발)도 바로 보인다
   if (focused) showPeek(selected);
   let filter = 'near';
   const list = () => drawList(filter, $('#region-q', body).value.trim());
@@ -94,13 +87,11 @@ function bounds() {
   const pad = 40;
   return { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, w: Math.max(...xs) - Math.min(...xs) + pad * 2, h: Math.max(...ys) - Math.min(...ys) + pad * 2 };
 }
-// view: 월드 좌표의 보이는 영역 중심(cx, cy)과 배율(k, 화면 px / 월드 단위)
 function setupMap(here) {
   const frame = $('#map-frame', el), svg = $('#map-svg', el);
   const b = bounds();
   const fitK = () => Math.min(frame.clientWidth / b.w, frame.clientHeight / b.h);
   if (!view) {
-    // 다른 화면에서 지역을 짚어 열었으면(focusRegion) 그 지역을 가운데에 더 크게(구조 요청 「지도에서 보기」)
     const tgt = focusPending ? mapData.regions.find(r => r.region_id === selected && r.world_x != null) : null; focusPending = false;
     const k = fitK() * (frame.clientWidth < 520 ? (tgt ? 3.4 : 2.4) : (tgt ? 2.8 : 1.8));
     const at = tgt || here;
@@ -128,7 +119,6 @@ function setupMap(here) {
   });
   frame.addEventListener('wheel', e => { e.preventDefault(); const r = frame.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
 
-  // 드래그 이동과 두 손가락 확대
   const pts = new Map(); let pinch = null, moved = 0, gesture = false;
   svg.addEventListener('pointerdown', e => { svg.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 1) { moved = 0; gesture = false; } if (pts.size >= 2) { pinch = dist(); gesture = true; } });
   svg.addEventListener('pointermove', e => {
@@ -144,7 +134,6 @@ function setupMap(here) {
   });
   const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; };
   svg.addEventListener('pointerup', e => {
-    // 두 손가락 확대가 끝날 때 마지막 손가락을 떼는 것은 누르기로 치지 않는다.
     const wasTap = moved < 6 && pts.size === 1 && !gesture; up(e);
     if (!wasTap) return;
     const node = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.dataset?.region);
@@ -158,7 +147,6 @@ function setupMap(here) {
 }
 function onResize() { if ($('#map-svg', el)) paint(); }
 
-// 땅 모양은 좌표가 바뀌지 않는 한 한 번만 계산한다.
 let geom = null, geomKey = '';
 function geometry() {
   const key = mapData.regions.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
@@ -167,7 +155,6 @@ function geometry() {
 }
 function factionOf(id) { return zones.get(id)?.control_faction_id ?? null; }
 
-// 지금 위치에서 목적지까지 이어진 길(경과 지역 목록). 레벨이 모자란 지역은 지나가지 않는다.
 export function routeTo(target) {
   const here = currentRegion(mapData); if (!here || !mapData) return null;
   const byId = new Map(mapData.regions.map(r => [r.region_id, r]));
@@ -202,24 +189,19 @@ function paint() {
   const here = currentRegion(mapData), dest = store.character?.travel_destination;
   const g = geometry(), b = bounds(), fitK = Math.min(W / b.w, H / b.h), zoom = view.k / fitK;
 
-  // ① 땅: 세력 색으로 칠한다
   let land = '', hatch = '';
   for (const r of regions) {
     const poly = g.cells.get(r.region_id); if (!poly?.length) continue;
     const cls = r.region_id === here?.region_id ? ' here' : r.region_id === selected ? ' sel' : '';
     land += `<path d="${pathOf(poly)}" class="cell${cls}" style="--fc:${factionColor(factionOf(r.region_id))}" data-region="${esc(r.region_id)}"/>`;
     if (r.level_locked) hatch += `<path d="${pathOf(poly)}" class="cell-lock" data-region="${esc(r.region_id)}"/>`;
-    // 분쟁 중: 붉은 빗금과 굵은 점선 테두리로 땅 전체를 표시한다
     if (zones.get(r.region_id)?.contested) hatch += `<path d="${pathOf(poly)}" class="cell-contest"/>`;
   }
-  // ② 경계: 같은 세력 안은 옅은 선, 세력이 바뀌면 국경, 이웃이 없으면 해안선
-  // 바다낚시가 되는 지역의 해안은 물빛으로 조금 굵게
   let inner = '', border = '', coast = '', seaCoast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
     if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
   }
-  // ③ 길
   const seen = new Set(); let roads = '';
   for (const r of regions) for (const f of r.travel_from || []) {
     const o = byId.get(f); if (!o) continue;
@@ -227,11 +209,9 @@ function paint() {
     const [x1, y1] = P(r), [x2, y2] = P(o);
     roads += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="road"/>`;
   }
-  // ④ 고른 곳까지의 경로
   let route = '';
   const rt = selected && here && selected !== here.region_id ? routeTo(selected) : null;
   if (rt && rt.length > 1) route = `<polyline class="route-line" points="${rt.map(r => P(r).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
-  // ⑤ 영역(세력령) 이름: 멀리서 볼 때 크게
   const terr = new Map();
   for (const r of regions) {
     const t = r.territory_id || 'none', c = centroid(g.cells.get(r.region_id) || [[r.world_x, r.world_y]]);
@@ -244,10 +224,8 @@ function paint() {
     if (!t.name) continue;
     const fs = Math.max(13, Math.min(22, 15 * Math.sqrt(zoom)));
     tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${Y(t.y / t.n).toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${fs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
-    // 영역마다 지금 날씨
     if (wx[tid]) tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${(Y(t.y / t.n) + fs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${Math.max(11, fs * 0.6)}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
   }
-  // ⑥ 지역 표식과 이름표(겹치지 않게; 멀리서는 중요한 곳만)
   const fs = W < 520 ? 12 : 13;
   const rank = r => r.region_id === selected ? 0 : r.region_id === here?.region_id ? 1 : r.region_id === dest ? 2 : r.reachable ? 3 : r.level_locked ? 6 : 4;
   const order = [...regions].sort((a, c) => rank(a) - rank(c) || (c.visits || 0) - (a.visits || 0));
@@ -305,7 +283,6 @@ function select(id, center) {
   selected = id;
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
-  // 지도를 연 뒤 동료가 파티에 들어왔으면 동승 단추가 보이게(파티장·두 사람 이상 타는 탈것일 때만, 30초 캐시, 바뀌었을 때만 다시 그림)
   const seats = Number(((mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id) || {}).passenger_capacity || 1);
   if (partyData?.party?.leader_id === store.character?.owner_id && seats >= 2) load('world_party_overview', undefined, { maxAge: 30000 }).then(p => {
     const k = x => JSON.stringify((x?.members || []).map(m => [m.owner_id, m.location, !!m.in_combat, !!m.downed]).concat([x?.party?.leader_id]));
@@ -313,7 +290,6 @@ function select(id, center) {
   }).catch(() => {});
   showPeek(id);
 }
-// 좁은 화면에서는 저절로 스크롤하지 않는다. 대신 지도 위 띠에 예상 시간과 출발 단추를 바로 보여 준다.
 function showPeek(id) {
   const peek = $('#map-peek', el), r = mapData.regions.find(x => x.region_id === id);
   if (peek && r && matchMedia('(max-width: 1099px)').matches) {
@@ -339,17 +315,14 @@ function hopSeconds(from, to, speed) {
   const cross = from.territory_id && to.territory_id && from.territory_id !== to.territory_id ? 1.2 : 1;
   return Math.max(12, Math.round((d * 1.4 + Math.abs((to.elevation || 0) - (from.elevation || 0)) * 6 + 12) * terr * cross / speed));
 }
-// 표시용 예상치. 실제 도착 시각과 운임은 서버가 정한다.
 function routeEstimate(route) {
   const m = (mountData?.mounts || []).find(x => x.equipped) || (mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id);
-  // 수향연맹 뱃길(서버 world_river_boat_speed): 수향연맹 조사원이 배를 타면 더 빠르고 운임이 없다
   const speed = (Number(m?.speed_multiplier) || 1) * (Number(m?.river_speed) || 1);
   let secs = 0;
   for (let i = 1; i < route.length; i++) secs += hopSeconds(route[i - 1], route[i], speed);
   if (route.length > 2) secs = Math.round(secs * 0.9);
   return { secs, mount: m, hops: route.length - 1 };
 }
-// 노정패: 구간마다 탈것 운임. 모자라면 서버가 탈것에서 내려 걸어가게 한다.
 function fareLine(est) {
   const m = est.mount; if (!m || m.fare_free) return '';
   if (m.river_free) return ' · 수향연맹 뱃길: 운임 없음';
@@ -358,7 +331,6 @@ function fareLine(est) {
 }
 
 function factionLegend() {
-  // 세력이 없는 곳(중립 직할령·무주 금역)은 한 칸으로 적는다
   const seen = new Map();
   for (const r of mapData.regions) { const f = factionOf(r.region_id); if (!seen.has(f)) seen.set(f, f == null ? '중립' : r.faction_control); }
   return `<div class="faction-legend">${[...seen].map(([f, n]) => `<span><i style="background:${factionColor(f)}"></i>${esc(n)}</span>`).join('')}</div>`;
@@ -421,7 +393,6 @@ function drawList(filter, q) {
   ul.onclick = e => { const b = e.target.closest('[data-pick]'); if (!b) return; select(b.dataset.pick, true); $$('button', ul).forEach(x => x.classList.toggle('on', x === b)); $('#map-frame', el)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
 }
 
-/* ── 이동 · 탈것 · 동승 ───────────────────────────────── */
 async function drawTravel(body) {
   const [status, mounts, ride] = await Promise.all([
     load('world_travel_status'), load('world_mount_snapshot'), load('world_travel_party_snapshot').catch(() => null),
@@ -463,12 +434,10 @@ async function drawTravel(body) {
   if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 취소하면 3분 동안 다시 출발할 수 없습니다. 출발할 때 낸 운임은 돌려받지 못합니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' })));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
-  // 탈것에서 내리기: 걸어 다니기 — 서버 world_mount_unequip
   const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
   $$('[data-goto]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.goto); switchTo('world'); });
   const span = $('[data-arrive]', body);
   if (span) { const t = setInterval(() => { if (!span.isConnected) return clearInterval(t); span.textContent = `${fmt.remain(Number(span.dataset.arrive) - Date.now())} 후 도착`; }, 1000); }
 }
 function switchTo(k) { sub = k; history.replaceState(null, '', `#/map/${k}`); render(el, k); }
-// 다른 화면(사건 바로가기 등)에서 특정 지역을 골라 지도를 열 때 쓴다.
 export function focusRegion(id) { selected = id; view = null; focusPending = true; }

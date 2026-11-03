@@ -1,9 +1,7 @@
-// 화면 모듈 공용 도우미: 이름 등록을 겸한 스냅샷 로더와 카드·목록 조각.
-import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY, friendlyError } from '../core.js';
+import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY, friendlyError, INV_QUIET } from '../core.js';
 import { armAlarm } from '../sound.js';
 import { GAMEDATA } from '../gamedata.js';
 
-// 같은 스냅샷을 짧은 시간에 여러 화면이 요청하면 한 번만 호출한다.
 const inflight = new Map();
 const cacheAt = new Map();
 export async function load(name, args, { maxAge = 0 } = {}) {
@@ -15,28 +13,33 @@ export async function load(name, args, { maxAge = 0 } = {}) {
   inflight.set(key, p);
   return p;
 }
-on('snaps', snaps => { for (const [name, d] of Object.entries(snaps || {})) if (d != null) { const key = name + 'null'; store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d); } });
-// 가방 정보: 물품 목록·제작법(약 220KB 가운데 218KB)은 배포 전까지 바뀌지 않으므로 접속 동안 한 번만 받고,
-// 그 뒤에는 캐릭터마다 바뀌는 몫만 받는다(world_inventory_state). 서버에 아직 없으면 전체를 받는다.
-// 물품 목록·제작법은 서버 규칙 버전(db_version)과 함께 기기에도 남겨, 새로고침해도 버전이 같으면 가벼운 몫만 받는다.
+let invFreshAt = 0;
+on('snaps', snaps => {
+  for (const [name, d] of Object.entries(snaps || {})) {
+    if (d == null) continue;
+    if (name === 'world_inventory_state') {
+      if (!invStatic) continue;
+      const key = 'world_inventory_snapshotnull';
+      store.snaps[key] = { ...d, catalog: invStatic.catalog, recipes: invStatic.recipes }; cacheAt.set(key, Date.now()); invFreshAt = Date.now();
+      continue;
+    }
+    const key = name + 'null'; store.snaps[key] = d; cacheAt.set(key, Date.now()); register(name, d);
+  }
+});
 let invStatic = null, invLite = true;
-// 받아 둔 제작법 목록(퀘스트의 「제작법」 단추가 쓴다, 아직 안 받았으면 빈 목록)
 export const knownRecipes = () => invStatic?.recipes || [];
 const INV_KEY = 'yh-inv-static-v1';
-// 물품 목록 한 원본: 설명·사용 효과(fx = 서버 world_item_catalog.use_fx)·거래소 전용(mk)·도구 계열(tl)과 효과 이름표(fx_names)를
-// 여기서만 읽는다. 아직 서버에서 안 받았으면 기기에 남긴 목록을 쓴다(버전이 달라도 — 받으면 바로 바꿔 끼움).
 let catMap = null, fxNameMap = {};
 function useCatalog(cat, names) {
   if (!cat?.length) return;
   catMap = new Map(cat.map(i => [i.id, i])); fxNameMap = names || {};
-  registerNames(cat.filter(i => i.id && i.name).map(i => [i.id, i.name])); // 이름표도 함께(퀵슬롯이 이름표보다 먼저 그려지면 「이름 미상」으로 남던 것, 2026-11-02 화면 점검)
+  registerNames(cat.filter(i => i.id && i.name).map(i => [i.id, i.name]));
   MARKET_ONLY.clear(); for (const i of cat) if (i.mk) MARKET_ONLY.add(i.id);
-  emit('catalog'); // 효과 문구 캐시를 비우고 퀵슬롯 등을 다시 그린다
+  emit('catalog');
 }
 function catalogMap() {
   if (!catMap) {
     if (invStatic?.catalog) useCatalog(invStatic.catalog, invStatic.fxNames);
-    // 옛 사본(fxNames 없음)은 쓰지 않는다 — 효과·거래소 전용 칸이 비어 있어 「가방에 없음」처럼 보였다
     else try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (c?.fxNames) useCatalog(c.catalog, c.fxNames); } catch {}
   }
   return catMap;
@@ -45,25 +48,21 @@ const baseId = id => String(id || '').replace(/_hq$/, '');
 export const catItem = id => catalogMap()?.get(id) || catMap?.get(baseId(id)) || null;
 export const fxNames = () => (catalogMap(), fxNameMap);
 export const catalogList = () => { const m = catalogMap(); return m ? [...m.values()] : null; };
-// 받아 둔 물품 설명(토벌 물품 창). 아직 안 받았으면 빈 글
 export const itemDesc = id => catItem(id)?.description || '';
-catalogMap(); // 거래소 전용 목록(core.js MARKET_ONLY)을 접속하자마자 채운다
-// 물품 목록을 아직 한 번도 받지 않은 기기(처음 접속)는 로그인 뒤 한 번 받아 둔다 — 퀵슬롯·상태 창의 사용 효과가 가방을 열기 전에도 보이게
+catalogMap();
 export async function ensureCatalog() {
   if (invStatic) return;
   const v = await dbVersion();
   try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length && c.fxNames) { invStatic = { catalog: c.catalog, recipes: c.recipes || [], fxNames: c.fxNames }; useCatalog(c.catalog, c.fxNames); return; } } catch {}
-  try { await load('world_inventory_snapshot'); } catch {} // 다른 화면이 같은 때 부르면 하나로 묶인다
+  try { await load('world_inventory_snapshot'); } catch {}
 }
 async function inventorySnap() {
   if (!invStatic) {
     const v = await dbVersion();
-    // fxNames가 없는 옛 기기 사본은 쓰지 않는다
     try { const c = JSON.parse(localStorage.getItem(INV_KEY) || 'null'); if (v && c?.v === v && c.catalog?.length && c.fxNames) { invStatic = { catalog: c.catalog, recipes: c.recipes || [], fxNames: c.fxNames }; useCatalog(c.catalog, c.fxNames); } } catch {}
   }
   if (invStatic && invLite) {
     try { const d = await rpc('world_inventory_state'); return { ...d, catalog: invStatic.catalog, recipes: invStatic.recipes }; }
-    // 서버에 함수가 없을 때만 가벼운 길을 끈다(잠깐 난 오류 한 번에 접속 내내 220KB를 받던 것)
     catch (e) { const m = String(e?.message || '') + ' ' + String(e?.code || ''); if (/로그인|권한/.test(m)) throw e; if (/PGRST202|does not exist|Could not find/.test(m)) invLite = false; }
   }
   const d = await rpc('world_inventory_snapshot');
@@ -76,25 +75,20 @@ async function inventorySnap() {
   return d;
 }
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
-// 위치·소속이 바뀌는 행동 뒤에는 지도 캐시를 버린다.
 const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/;
-// 여기 있는 이들·동료 목록은 자리나 파티가 바뀌는 행동 뒤에만 새로 읽는다(행동마다 읽으면 서버 부담, 2026-10-28)
-// 일지 퀘스트 목록은 15초 동안 다시 쓰고, 할 일이 진행될 수 있는 행동 뒤에만 버린다
 const QUEST_CHANGERS = /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/;
 const ROSTER_CHANGERS = /travel|rescue|party|expedition|downed|idle/;
-// 전투 능력치(world_combat_profile, 한 번 약 100ms)는 능력치·장비·상태·칭호가 바뀔 수 있는 행동 뒤에만 버린다(그 밖에는 1분 캐시)
 const COMBAT_CHANGERS = /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/;
-// 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 바뀔 수 있는 행동 뒤에는 어느 화면에서 했든 버린다
 const FISH_CHANGERS = /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/;
 on('changed', ({ name = '' }) => {
-  if (FISH_CHANGERS.test(name)) invalidate('world_fish_spot');
+  if (!INV_QUIET.test(name) && Date.now() - invFreshAt > 1500) invalidate('world_inventory_snapshot');
+  if (/fish|travel/.test(name) || (store.snaps['world_fish_spotnull'] != null && FISH_CHANGERS.test(name))) invalidate('world_fish_spot');
   if (/rest|survival|travel|idle/.test(name)) invalidate('world_rest_status');
   if (/idle/.test(name)) invalidate('world_idle_activity_snapshot');
 });
 on('changed', ({ name }) => { if (COMBAT_CHANGERS.test(name || '')) invalidate('world_combat_profile'); if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
-// 응답에 들어 있는 이름을 사전에 등록해 내부 코드(hq_archive 등)가 화면에 노출되지 않게 한다.
 function register(name, d) {
   if (!d) return;
   if (name === 'world_inventory_snapshot') {
@@ -110,8 +104,6 @@ function register(name, d) {
   else if (name === 'world_region_site_snapshot') registerNames((d.sites || []).map(s => [s.site_id, s.site_name]));
 }
 
-// 지도·아이템 이름은 어느 화면에서든 필요하므로 게임 진입 시 미리 불러 둔다.
-// 이름 사전(지역·물품·제작법 코드 → 이름)은 기기에 남겨 두고, 다음 접속 때 서버 응답을 기다리지 않고 바로 화면을 그린다.
 const NAME_KEY = 'yh-names-v1';
 let nameCache = false;
 try { const c = JSON.parse(localStorage.getItem(NAME_KEY) || 'null'); if (Array.isArray(c) && c.length) { registerNames(c); nameCache = true; } } catch {}
@@ -130,11 +122,9 @@ export const MAJOR_FACTIONS = {
   southern_remnant: { name: '남명회', type: '망국 유민·저항', desc: '남부 망국의 유민 집단. 생존·채집·유적 탐사에 능합니다.', entry: '잔불촌의 수호 의뢰 완료', base: 'ember_village' },
   mandate_court: { name: '천명원', type: '황실·천문', desc: '천문과 운명을 관리하는 황실 기관. 고위험 사건 기록을 열람합니다.', entry: '천문대의 관측 시험 통과', base: 'star_observatory' },
 };
-// 거점(base)은 서버 세력 안전지대(world_faction_home) 첫째 — gamedata.js
 for (const [k, f] of Object.entries(MAJOR_FACTIONS)) f.base = GAMEDATA.factionHome?.[k]?.[0] || f.base;
 registerNames(Object.entries(MAJOR_FACTIONS).map(([k, v]) => [k, v.name]));
 
-/* ── 조각 ───────────────────────────────────────────────── */
 export function panel(title, body, { ico, extra = '', cls = '', id = '' } = {}) {
   return `<section class="panel ${cls}" ${id ? `id="${id}"` : ''}><header class="panel-head"><h2>${ico ? icon(ico, 16) : ''}${esc(title)}</h2>${extra}</header><div class="panel-body">${body}</div></section>`;
 }
@@ -155,8 +145,6 @@ export function currentRegion(mapSnap) {
 }
 export { fmt };
 
-// 안전지대·상점·마구간 정보(지역 테이블은 공개 읽기). 한 번 받아 두고 재사용한다.
-// 지배 세력·분쟁은 한 시간마다 바뀌므로 10분이 지나면 다시 읽는다.
 let zones = null, zonesAt = 0;
 export async function safeZones() {
   if (zones && Date.now() - zonesAt < 600000) return zones;

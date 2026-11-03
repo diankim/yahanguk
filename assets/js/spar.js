@@ -1,4 +1,3 @@
-// 비무(比武): 같은 곳의 조사원과 목숨을 걸지 않고 겨룬다. 겨루기는 서버(world_spar_respond)가 한 번에 계산하고, 화면은 그 기록을 한 줄씩 펼친다(건너뛰기 가능).
 import { rpc, esc, icon, openModal, store, $ } from './core.js';
 import { replayLog } from './replay.js';
 
@@ -6,7 +5,6 @@ const KIND_ICON = { start: 'flame', hit: 'sword', crit: 'spark', miss: 'wind', e
 export function openSparResult(x) {
   if (!x?.names) return;
   const me = store.character?.owner_id, mine = (x.ids || []).indexOf(me) + 1, won = mine && mine === x.winner;
-  // 겨루는 모습을 한 줄씩 펼치고, 다 펼치면(또는 건너뛰면) 승패와 기세를 보인다
   const m = openModal({ title: '비무', body: `
     <div class="spar-result">
       <p class="muted small">${esc(x.names[0])} 대 ${esc(x.names[1])}</p>

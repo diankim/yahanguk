@@ -1,4 +1,3 @@
-// 날씨·시간대: 서버가 정한 값을 받아 두고, 바뀌는 시각에만 다시 묻는다(반복 폴링 없음).
 import { store, on, emit, rpc, esc, icon, fmt, effectText, effectGood, ENV_ICON, openModal } from './core.js';
 
 let timer = null, loading = null;
@@ -21,12 +20,10 @@ function schedule(e) {
 }
 export function mountEnv() {
   loadEnv();
-  // 다른 영역으로 옮기면 날씨가 달라진다.
   window.addEventListener('yahang:arrived', () => loadEnv());
   on('changed', ({ name }) => { if (/travel|rescue|character_delete/.test(name)) setTimeout(loadEnv, 400); });
 }
 
-// 상태판·현장 머리에 붙는 작은 표시
 export function envChip(e = store.env, { compact = false } = {}) {
   if (!e?.phase || !e?.weather) return '';
   return `<button class="env-chip w-${esc(e.weather.key)} p-${esc(e.phase.key)}" data-env-open title="날씨와 시간대 효과 보기">

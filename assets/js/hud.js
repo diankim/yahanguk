@@ -1,5 +1,3 @@
-// 실시간 상태 HUD: PC는 좌측 고정 패널, 모바일은 상단 접이식 띠.
-// 이동·자율 활동·전투·원정·전투불능처럼 "지금 진행 중인 일"을 한눈에 보여 준다.
 import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, guard, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct } from './core.js';
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
@@ -19,24 +17,18 @@ export function mountHud(el) {
   };
   on('character', render);
   on('env', render);
-  // 행동 직후에는 캐릭터를 이미 다시 읽었으니(act) 상태판 요약만 읽는다. 전투 턴 중에는 그리기만 한다. 자율 활동 상태는 자율 행동 뒤에만.
   on('changed', ev => {
-    // 전투 턴 중: 응답에 실린 전투 상태로 진행 중 칸의 적 체력만 맞춘다(따로 읽지 않음)
     if (midBattle(ev)) { const b = ev.data?.battle; if (b && state.hud?.battle) Object.assign(state.hud.battle, { hp: b.hp ?? state.hud.battle.hp, max_hp: b.max_hp ?? state.hud.battle.max_hp }); return render(); }
     const idle = /idle/.test(ev.name || '');
-    // 다른 화면(캐릭터 › 상태)이 방금 같은 요약을 읽었으면 그것을 같이 쓴다(1초 안)
     clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle, hudAge: 3000 }), 350);
   });
   refresh();
   clearInterval(tick); tick = setInterval(onTick, 1000);
-  // 1분 읽기: 방금(45초 안) 행동해 이미 읽었으면 건너뛴다. 자율 상태는 자율 활동 중일 때만, 캐릭터는 3분 넘게 안 읽었을 때만
-  // (안전지대 회복은 10분마다라 늦게 보여도 괜찮고, 구조·쓰러짐은 알림으로 바로 온다)
   clearInterval(poll); poll = setInterval(() => {
     if (document.hidden) return;
     const roundDue = store.expedition && expRoundOf(store.expedition) !== tickedRound;
     if (roundDue || Date.now() - (store.charAt || 0) > 300000) refresh({ char: true, idle: !!state.idle?.active, hudAge: 45000 });
   }, 60000);
-  // 화면 복귀: 30초 넘게 비웠을 때만 다시 읽는다. 캐릭터는 45초 넘게 안 읽었을 때만, 자율 상태는 자율 활동 중일 때만
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { hiddenAt = Date.now(); return; }
@@ -44,19 +36,16 @@ export function mountHud(el) {
     refresh({ char: Date.now() - (store.charAt || 0) > 45000, idle: !!state.idle?.active });
   });
 }
-// 탐색력 1이 차는 시각이 되면 서버에 묻지 않고 화면에서 1 올린다(15분마다 요청 셋이 나가던 것)
 function bumpStamina() {
   const st = state.hud?.stamina; if (!st?.next_at) return false;
   const t = new Date(st.next_at).getTime(); if (t > Date.now()) return false;
   const was = st.now || 0;
   st.now = Math.min(st.max, (st.now || 0) + 1);
-  // 탐색력이 가득 차면 띠로링(다른 일을 하다가 듣고 돌아오게). 같은 때를 여러 창이 함께 울리지 않게 key
   if (was < st.max && st.now >= st.max) playAlarm('stamina', 'st:' + t);
   st.next_at = st.now >= st.max ? null : new Date(t + (st.per_seconds || 900) * 1000).toISOString();
   return true;
 }
 
-// 로그인이 풀려 거절되면(권한 없음) 바로 로그인 확인을 돌려 이 탭을 로그아웃시킨다(session.js) — 거절당한 요청을 되풀이하지 않게
 function authLost(e) { if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) window.dispatchEvent(new Event('yh-auth-lost')); return null; }
 export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 } = {}) {
   try {
@@ -64,23 +53,20 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
       const r = expRoundOf(store.expedition), id = store.expedition.expedition_id;
       if (r !== tickedRound || id !== tickedExp) { tickedRound = r; tickedExp = id; await rpc('world_expedition_tick').catch(() => null); }
     }
-    const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
+    const first = !state.hud;
     if (!(first || !char) || !store.character) { await loadCharacter({ hud: true }); hudAge = Math.max(hudAge, 1000); }
     const [idle, hud] = await Promise.all([
-      // 현장 화면과 같은 캐시를 쓴다(자율 행동 뒤에는 common.js가 버린다)
       readIdle || first ? load('world_idle_activity_snapshot', undefined, { maxAge: first ? 0 : 10000 }).catch(authLost) : state.idle,
       load('world_hud_snapshot', undefined, { maxAge: hudAge }).catch(authLost),
     ]);
     const was = !!store.expedition;
-    { const was = state.hud?.stamina, st = hud?.stamina; // 다시 읽은 값으로 가득 찼어도 띠로링(화면에서 올리기 전에 읽힌 때)
+    { const was = state.hud?.stamina, st = hud?.stamina;
       if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
     state = { idle, hud, exp: hud?.expedition || null };
-    armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at); // 끝나는 때 띠로링
+    armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at);
     store.expedition = state.exp;
     store.hud = hud;
     render();
-    // 원정을 보내거나 돌아오면 현장 화면이 곧바로 행동을 막거나 풀도록 알린다(새로고침 없이).
-    // 첫 읽기에서도 원정 중이면 알린다: 현장 화면은 이 응답보다 먼저 그려져 원정 칸·행동 막기를 놓친다
     if (was !== !!state.exp) emit('expedition', state.exp);
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
@@ -101,8 +87,6 @@ export function openStatus(st) {
   const t = setInterval(() => { const b = m.querySelector('[data-left]'); if (!b) return clearInterval(t); b.textContent = fmt.remain(Number(b.dataset.left) - Date.now()); }, 1000);
   $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await useItemAct(b.dataset.cure); closeModal(); return r; }));
 }
-
-// 상태·탐색력 시간이 다 되면 1.5초 뒤 한 번 다시 읽는다. 읽기가 실패해(로그인 풀림·서버 오류) 시간이 그대로여도 30초에 한 번까지만 다시 묻는다
 
 function idleReadyAt(idle) {
   if (!idle?.active) return null;
@@ -134,20 +118,16 @@ function statusItems(c) {
   if (state.exp) {
     const left = new Date(state.exp.ends_at).getTime() - Date.now();
     items.push({ kind: 'exp', icon: 'flame', title: `원정 · ${state.exp.place_name || ''}`, timer: state.exp.ends_at, text: left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능', action: ['원정 보기', openExpeditionView], ready: left <= 0,
-      // 현장 화면을 보고 있지 않을 때만 현장으로 가는 단추를 함께 둔다
       action2: onField() ? null : ['현장 보기', () => window.yahangGo('home')] });
   }
   if (!items.length) items.push({ kind: 'calm', icon: 'moon', title: '대기 중', text: '지도에서 이동하거나 현재 지역을 탐사하세요.' });
   return items;
 }
 
-// 원정 창(팝업)을 그 자리에서 연다. 모바일 상태 띠는 접는다.
 function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEvent('yh-open-expedition')); }
 function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
-// 화면을 옮기면 「현장 보기」 단추가 생기거나 사라지도록 다시 그린다
-window.addEventListener('hashchange', () => { closeStrip(); render(); }); // 휴대폰: 펼친 상태 띠는 화면을 옮기면 접는다(새 화면을 덮고 있었다)
-// 상태판 퀵슬롯: 캐릭터 › 상태의 퀵슬롯 8칸을 작게. 칸 목록은 접속 동안 한 번(10분 캐시) 읽고, 칸을 바꾸면 다시 읽는다.
+window.addEventListener('hashchange', () => { closeStrip(); render(); });
 let qsList = null, qsBusy = false;
 async function loadQs() {
   if (qsBusy) return; qsBusy = true;
@@ -156,7 +136,7 @@ async function loadQs() {
   qsBusy = false; render();
 }
 window.addEventListener('yh-qs-changed', () => { qsList = null; loadQs(); });
-on('catalog', () => render()); // 물품 목록을 막 받으면 퀵슬롯 효과 문구를 다시 그린다
+on('catalog', () => render());
 function qsCard(c) {
   if (!qsList) { loadQs(); return ''; }
   const inv = c.inventory || {}, moving = !!c.travel_destination, downed = c.health <= 0 || !!c.downed_at;
@@ -172,7 +152,6 @@ function render() {
   const items = statusItems(c);
   const need = xpNeed(c.level);
   const first = items[0];
-  // 상태 칸 10개를 접힌 띠 오른쪽에 작은 점으로(나쁜 상태는 깜빡이는 빨강·이로운 상태 초록·빈칸)
   const rest = yohwaOf(state.hud?.statuses).rest;
   const badN = rest.filter(x => x.polarity !== 'positive').length, goodN = Math.min(10 - Math.min(10, badN), rest.length - badN);
   const slots = Array.from({ length: 10 }, (_, i) => i < badN ? 'bad' : i < badN + goodN ? 'good' : '');
@@ -225,7 +204,6 @@ function render() {
 }
 function stamina(c) {
   const st = state.hud?.stamina; if (!st) return '';
-  // 「n분 뒤 +1」은 그릴 때 바로 적는다(다음 초 틱까지 비어 있어 토벌처럼 매초 다시 그리는 동안 깜빡이고 칸 높이가 흔들렸다)
   const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
   return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
 }
@@ -235,18 +213,15 @@ function statusCard() {
       <b>${esc(s.name)}${s.stacks > 1 ? `×${s.stacks}` : ''}</b><i data-timer="${new Date(s.expires_at).getTime()}" data-kind="status">${fmt.remain(new Date(s.expires_at) - Date.now())}</i></button>`).join('')}</div>`
     : ''}</div>`;
 }
-// 요화·봉인 해독은 상태 칸(10칸)에 세지 않고 따로 늘 보인다(서버 world_status_roll도 세지 않음)
 export const YOHWA_STAGES = ['', '요기 스밈', '요문 발현', '반요'];
 export const PINNED = new Set(['yohwa', 'yohwa_seal', 'yohwa_frenzy']);
 export function yohwaOf(statuses) {
   const now = new Date(), live = (statuses || []).filter(s => new Date(s.expires_at) > now || s.key === 'yohwa');
   const y = live.find(s => s.key === 'yohwa'), seal = live.find(s => s.key === 'yohwa_seal');
-  const fr = y ? live.find(s => s.key === 'yohwa_frenzy' && new Date(s.expires_at) > now) : null; // 3단계 끝 1시간: 요괴화
+  const fr = y ? live.find(s => s.key === 'yohwa_frenzy' && new Date(s.expires_at) > now) : null;
   return { y, seal, fr, stage: y ? Math.max(1, Math.min(3, Number(y.potency || 1))) : 0, rest: live.filter(s => !PINNED.has(s.key) && new Date(s.expires_at) > now) };
 }
-// 지금 상태판 상태로 본 「요화로 쓰러짐」(현장 화면 등에서)
 export const yohwaDownNow = c => yohwaDowned(c, yohwaOf(state.hud?.statuses));
-// 요화 3단계 끝에 쓰러진 것인지(서버가 적어 둔 쓰러진 시각과 같으면 목숨을 잃지 않는다)
 export function yohwaDowned(c, yo) {
   const e = Number(yo?.y?.metadata?.down_epoch || 0);
   return !!(e && c?.downed_at && Math.abs(new Date(c.downed_at).getTime() / 1000 - e) < 1);
@@ -257,11 +232,10 @@ export function yohwaLine(st) {
   if (st.y) return { cls: `s${st.stage}`, title: `요화: ${st.stage}단계 ${YOHWA_STAGES[st.stage]}`, text: st.stage < 3 ? '다음 단계까지' : '쓰러지기까지', until: st.y.expires_at };
   return null;
 }
-// 침식 원형 게이지(숫자·그림 없이 채움과 색으로): 상태판 이름 옆과 모바일 상태 띠에 둔다. 누르면 캐릭터 › 상태
 function erosionRing(c, cls = '') {
   const v = Math.max(0, Math.min(100, Math.round(Number(c?.erosion || 0))));
   const st = v >= 80 ? ['s3', '붕괴 직전'] : v >= 55 ? ['s2', '위험'] : v >= 30 ? ['s1', '주의'] : ['s0', '안정'];
-  const tag = cls === 'mini' ? 'span' : 'a'; // 모바일 띠는 단추 안이라 링크를 두지 않는다(띠를 누르면 펼쳐진다)
+  const tag = cls === 'mini' ? 'span' : 'a';
   return `<${tag} class="er-ring ${st[0]} ${cls}" ${tag === 'a' ? 'href="#/char/status"' : ''} title="침식 ${v} · ${st[1]}" aria-label="침식 ${v}, ${st[1]}">
     <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="t" cx="18" cy="18" r="15.9"/><circle class="v" cx="18" cy="18" r="15.9" stroke-dasharray="${v} 100" pathLength="100"/></svg></${tag}>`;
 }
@@ -269,7 +243,7 @@ function vital(label, v, kind) {
   return `<div class="vital"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
 }
 
-let arriving = false, lastArriveTry = 0; // 도착 확인은 5초에 한 번까지만
+let arriving = false, lastArriveTry = 0;
 let staminaDue = false, statusDue = false, tickedRound = -1, tickedExp = null;
 function onTick() {
   if (!root) return;
@@ -297,7 +271,6 @@ function onTick() {
   }
   const ready = idleReadyAt(state.idle);
   if (ready && ready <= now && !root.dataset.idleReady) { root.dataset.idleReady = '1'; render(); }
-  // 원정 귀환 시각이 되면 화면 위에 알리고(원정마다 한 번), 현장에 완료를 표시한다.
   const expEnd = state.exp?.ends_at ? new Date(state.exp.ends_at).getTime() : 0;
   if (expEnd && expEnd <= now && root.dataset.expDone !== String(expEnd)) {
     root.dataset.expDone = String(expEnd);
@@ -321,7 +294,6 @@ async function claimIdle(btn) {
   });
 }
 
-// 칭호 묶음 바꿔 끼기: 누를 때만 칭호 목록을 읽는다(상태판이 따로 다시 읽지 않음)
 async function openTitleSwap() {
   const m = openModal({ title: '칭호 바꾸기', body: '<div class="t-swap"><p class="muted small">읽는 중…</p></div>' });
   const box = $('.t-swap', m);

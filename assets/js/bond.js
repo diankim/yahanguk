@@ -1,11 +1,7 @@
-// 연리(連理): 조사원끼리 맺는 연인 관계. 상대는 「정인」이라 부른다(서버 world_bond_*).
-// 정표는 가방과 별개로 「정표 칸」에 착용·벗기를 하고, 둘 다 착용하고 같은 곳·같은 파티이면 연리의 기운(회복량 +5% · 침식 -5%)을 받는다.
-// 동료 화면의 연리 칸, 조사원 카드의 [연리 맺기], 장비 목록의 정표 칸, 마음 전하기·선물·파기 창을 맡는다.
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
 import { load } from './views/common.js';
 
-// 정표 종류: [이름, 뜻, 그림(24×24 선)]
 export const TOKENS = {
   knot: ['연리 매듭', '두 가닥을 엮어 풀리지 않게 맺은 매듭', 'M7 9a3 3 0 106 0 3 3 0 10-6 0M11 9a3 3 0 106 0 3 3 0 10-6 0M12 12v8M10 20h4'],
   jade: ['반쪽 옥패', '둘로 쪼개 하나씩 나눠 가진 옥패', 'M12 3a9 9 0 000 18zM12 8a4 4 0 000 8M12 3v18'],
@@ -27,7 +23,6 @@ export async function loadBond(force) {
   return loading;
 }
 const refresh = () => loadBond(true);
-// 혼례 창(7.1): 절차 줄은 시작부터 지난 만큼 서버가 내주고, 하객은 박수·꽃잎·축사로 자기 줄을 더한다. 진행 중에만 4초마다 읽는다
 export async function openWedding(wedId) {
   let v = null, t = null, skew = 0;
   const l = openLayer({ title: '혼례', body: '<div class="wed-box"><p class="muted">불러오는 중…</p></div>' });
@@ -37,10 +32,8 @@ export async function openWedding(wedId) {
     const live = ['ready', 'ceremony'].includes(v.status), me = v.me || {};
     const lines = [...(v.script || []), ...(v.lines || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
     const startIn = new Date(v.starts_at) - (Date.now() + skew);
-    // 조사는 앞 낱말과 한 문자열로 넘겨야 받침에 맞게 고쳐진다(esc가 고름)
     const desc = `<p class="desc">${esc(`${v.a}과(와) ${v.b}의 혼례`)} · ${esc(v.place)}${v.status === 'done' ? ' · 끝남' : startIn > 0 ? ` · ${fmt.remain(startIn)} 뒤 시작` : ''} · 하객 ${fmt.num(v.guests)}명</p>`;
     const logHtml = lines.map(x => `<li class="k-${esc(x.k)}"><span>${esc(x.t)}</span></li>`).join('') || '<li class="muted">곧 혼례가 시작됩니다.</li>';
-    // 축사를 쓰는 중이면 입력칸은 그대로 두고 기록·머리글만 고친다(4초마다 다시 그려 쓰던 글이 지워지던 것)
     const wish = $('#wed-wish', box);
     if (wish && document.activeElement === wish) {
       const d = $('.desc', box); if (d) d.outerHTML = desc;
@@ -61,12 +54,10 @@ export async function openWedding(wedId) {
   };
   const read = async () => { try { v = await rpc('world_wedding_view', { p_wed: wedId }); skew = new Date(v.now) - Date.now(); draw(); if (v.status === 'done' || v.status === 'cancelled') clearInterval(t); } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; clearInterval(t); } };
   await read();
-  // 진행 중인 혼례만 4초마다 읽는다(처음부터 끝난 혼례면 타이머를 걸지 않는다)
   if (v && !['done', 'cancelled'].includes(v.status)) t = setInterval(() => { if (!box.isConnected) return clearInterval(t); if (!document.hidden) read(); }, 4000);
 }
 const run = (b, fn, args, after) => guard(b, async () => { const r = await act(fn, args); await refresh(); after?.(); return r; });
 
-/* ── 동료 화면의 연리 칸 ─────────────────────────────── */
 export function bondPanelHtml(s) {
   const b = s?.bond, br = s?.broken, inc = s?.incoming || [], out = s?.outgoing;
   if (b) {
@@ -123,7 +114,6 @@ export function bindBondPanel(root, redraw) {
   });
 }
 
-/* ── 마음 전하기(조사원 카드) ───────────────────────── */
 export async function openPropose(targetId, targetName) {
   await loadBond();
   let pick = 'knot';
@@ -140,7 +130,6 @@ export async function openPropose(targetId, targetName) {
   });
 }
 
-/* ── 선물 ───────────────────────────────────────────── */
 async function openGift(after) {
   const b = bond(); if (!b) return;
   const inv = await load('world_inventory_snapshot', undefined, { maxAge: 10000 }).catch(() => null);
@@ -164,7 +153,6 @@ async function openGift(after) {
   };
 }
 
-/* ── 장비 목록의 정표 칸 ─────────────────────────────── */
 export function tokenRowHtml() {
   const b = bond();
   if (!b) return `<li class="empty-slot">${tokenSvg('knot', 18)}<div><b>정표</b><small>비어 있음 · 정인과 연리를 맺으면 정표를 지닙니다</small></div></li>`;

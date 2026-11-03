@@ -1,4 +1,3 @@
-// 도움말: 튜토리얼을 대신하는 안내서. 실제 서버 규칙과 같은 수치를 적는다.
 import { icon, esc, $, $$ } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
@@ -7,12 +6,10 @@ import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { PARTY_EXP, AGILE } from '../rules.js';
 
-/* ── 서버 수치로 그리는 표(gamedata.js — tools/gamedata/gen.py가 만든다) ── */
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
 const regionName = id => GD.regionNames[id] || id;
 const factionNames = ids => ids.map(x => MAJOR_FACTIONS[x]?.name || x).join('·') || '없음';
-// 직업과 역할: 이름·역할·효과는 core.js JOBS, 기본 능력치는 서버(5 이상만, 높은 순)
 function jobTableHtml() {
   const row = k => { const j = JOBS[k];
     const stats = Object.entries(j.base).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([s, v]) => `${STAT_KO[s]} ${v}`).join('<br>');
@@ -20,7 +17,6 @@ function jobTableHtml() {
   return `<table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
     ${['artificer', 'scout', 'exorcist', 'medic', 'sealmaster', 'analyst'].map(row).join('')}</table>`;
 }
-// 협동 기술(서버 world_coop_skills): 「직업과 역할」과 「합동 토벌」 두 곳이 같은 표를 쓴다
 function coopTableHtml() {
   const band = k => `<tr class="g-band"><th colspan="4">${esc(JOBS[k].name)} · ${esc(JOBS[k].trait)}</th></tr>` +
     GD.coop.filter(c => c.job === k).sort((a, b) => a.rank - b.rank)
@@ -29,23 +25,19 @@ function coopTableHtml() {
     ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(band).join('')}</table>`;
 }
 const coopRanks = () => [...new Set(GD.coop.map(c => c.rank))].sort((a, b) => a - b).join('·');
-// 혼자 도전할 때의 직업 보정(서버 world_solo_aid): 귀허 solo_dmg · 결전 final_dmg · 받는 피해 solo_guard
 function soloAidHtml() {
-  // 받는 피해 보정: 귀허는 solo_guard, 결전은 final_guard(양수 = 덜 받음, 음수 = 더 받음)
   const guardTxt = g => g ? ` · 받는 피해 ${g > 0 ? '−' : '+'}${Math.abs(g)}%` : '';
   const cell = (a, key) => pctTxt(a[key] || 0) + guardTxt(Number(key === 'final_dmg' ? a.final_guard : a.solo_guard) || 0);
   return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
     ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
       return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;
 }
-// 세력 관계의 처음 값(서버 world_faction_relations.base): 동맹·우호·적대인 짝만
 function relStartHtml() {
   const fn = k => MAJOR_FACTIONS[k]?.name || k;
   const groups = [['동맹', v => v >= 40], ['우호', v => v >= 15 && v < 40], ['적대', v => v <= -40]]
     .map(([n, f]) => [n, GD.factionRel.filter(r => f(r[2])).map(r => `${fn(r[0])}–${fn(r[1])}`)]).filter(g => g[1].length);
   return groups.length ? `<li>처음 값: ${groups.map(([n, l]) => `<b>${n}</b> ${esc(l.join(' · '))}`).join(' / ')}. 나머지는 중립입니다.</li>` : '';
 }
-// 세력 안전지대(서버 world_faction_home): 비고·수련장·기부를 쓰는 곳
 function factionHomeTableHtml() {
   return `<table class="guide-table"><tr><th>세력</th><th>안전지대</th></tr>
     ${Object.entries(GD.factionHome).map(([k, ids]) => `<tr><td>${esc(MAJOR_FACTIONS[k]?.name || k)}</td><td>${esc(ids.map(regionName).join(' · '))}${FACTION_LORE[k]?.homeNote ? `. ${esc(FACTION_LORE[k].homeNote)}` : ''}</td></tr>`).join('')}</table>`;
@@ -53,7 +45,6 @@ function factionHomeTableHtml() {
 const GRADE_KO = ['', '범품', '양품', '진품', '명품', '신품'];
 const petCount = g => `${GRADE_KO[g]} ${GD.pets.grades[g] || 0}종`;
 
-// 대세력 이야기: 교리·근거지·이점을 한 장씩. 이름·성격·소개는 common.js MAJOR_FACTIONS, 안전지대·가입 받는 곳·적대는 서버(gamedata.js)가 원본.
 const FACTION_LORE = {
   night_office: { doctrine: '변칙을 기록하고 봉인하되, 인간 사회의 균형을 우선한다.', land: '야행국 직할령', perk: '공인 조사 수당: 원정 귀환 경험치·숙련 경험·전 +15% · 법적 권한: 어디서든 본부 구조대가 반값이고, 경험치를 잃지 않으며, 체력 50으로 깨어남', rank: '단서 +2%씩', name2: '공훈' },
   red_moon_cult: { doctrine: '강한 자만이 금기를 다룰 자격이 있으며, 요기의 흡수는 진화다.', homeNote: '월식성은 안전지대가 아닙니다', land: '적월 교령', perk: '강행 태세 원정의 전리품 +15%', rank: '주는 피해 +1%씩', name2: '교도 위계' },
@@ -1768,7 +1759,6 @@ const S = [
     </ul>`],
 ];
 
-// 묶음: 도움말을 주제별로 나눠 한 번에 한 묶음만 펼친다. 검색하면 묶음과 상관없이 맞는 항목만 보인다.
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mount', 'safe', 'weather']],
@@ -1784,7 +1774,6 @@ const GROUPS = [
 let gsel = 'basic', gq = '';
 const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
-// standalone: 점검 대기 화면에서 여는 도움말(help.html) — 게임 서버가 필요한 단추(패치노트·처음 안내·첫 걸음·제보)는 뺀다
 export function render(el, { standalone = false } = {}) {
   if (!RAID_ON) { const i = S.findIndex(x => x[0] === 'raid'); if (i >= 0) S.splice(i, 1); GROUPS.forEach(g => { const j = g[3].indexOf('raid'); if (j >= 0) g[3].splice(j, 1); }); }
   const byId = Object.fromEntries(S.map(x => [x[0], x]));
@@ -1822,7 +1811,6 @@ export function render(el, { standalone = false } = {}) {
   $('#fs-again', el).onclick = () => { reopenChecklist(); toast('현장 화면에 첫 걸음 목록을 다시 띄웠습니다.', 'ok'); window.yahangGo?.('home'); };
   paint();
 }
-// 검색어를 글자 마디에서만 표시한다(태그는 건드리지 않는다)
 function mark(root, q) {
   const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
   while (walk.nextNode()) if (walk.currentNode.nodeValue.toLowerCase().includes(q)) nodes.push(walk.currentNode);

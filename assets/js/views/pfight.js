@@ -1,5 +1,3 @@
-// 파티 현장 토벌(속도순 차례): 라운드마다 빠른 사람부터 차례로, 내 차례에 고른 행동이 바로 풀린다(서버 world_pfight_*).
-// 실시간 구독 없이 world_pfight_snapshot을 읽는다(plan 참고). 차례를 30초 비우면 서버가 방어로 넘긴다(초는 세어 보이지 않음).
 import { rpc, esc, icon, fmt, $, $$, toast, store, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSectionsHtml, itemTray, resultBox, settleFight, tickUntil, serverClock,
@@ -9,10 +7,9 @@ import { mountMeter } from './meter.js';
 import { clearFightNotes } from '../settings.js';
 
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
-// 물품 창에 보일 물품: 현장 토벌 물품 칸과 같은 목록(battle.js — 서버 world_battle_action이 받는 것)
 const trayIds = () => trayList({}, Infinity).map(([k]) => k);
 
-let seenLog = -1, seenFid = null; // 탄·기력·영력 부족 알림: 처음 그릴 때의 지난 기록은 건너뛰고 새로 붙은 내 줄만 본다
+let seenLog = -1, seenFid = null;
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, sel = null;
 const clock = serverClock();
 
@@ -25,7 +22,6 @@ export async function render(root, sub) {
   await refresh();
 }
 export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
-// 퀵슬롯·가방에서 누른 물품은 이 라운드의 「물품」 행동으로 고른다(core.js battleItemRoute)
 window.addEventListener('yh-battle-item', e => {
   if (!el?.isConnected || !fid || snap?.status !== 'fight' || !snap?.me) return;
   e.detail.handled = true;
@@ -50,7 +46,6 @@ async function refresh() {
 }
 const settle = () => settleFight('world_pfight_act');
 
-// 다시 읽기: 모이는 중 3초 · 남의 차례 2초(앞 사람이 고르면 바로 내 차례가 보이게) · 내 차례 10초(비운 차례 넘김 등만)
 function plan() {
   if (!snap || ended() || document.hidden || !el) return;
   const wait = snap.status === 'gather' ? Math.min(3000, Math.max(400, new Date(snap.gather_ends) - now() + 300)) : snap.my_turn ? 10000 : 2000;
@@ -63,7 +58,6 @@ function countdown() {
   tickUntil(el, now(), true);
 }
 
-// 참가자 상황(쓰러짐·달아남 / 차례·행동함·기다림)
 function stateOf(m) {
   const s = snap, order = (s.order || []), curIdx = order.indexOf(s.turn_id), oi = order.indexOf(m.id);
   return m.out ? (OUT[m.out] || m.out) : s.status !== 'fight' ? '' : m.id === s.turn_id ? '차례' : oi >= 0 && oi < curIdx ? '행동함' : '기다림';
@@ -77,7 +71,7 @@ function memDetail() {
 function draw() {
   if (!el || !snap) return;
   const s = snap, b = s.battle || {}, me = s.me, c = store.character || {};
-  if (me || ended()) clearFightNotes(['pfight_invite'], 'fight_id', fid); // 이미 들었거나 끝난 싸움의 부름은 거둔다
+  if (me || ended()) clearFightNotes(['pfight_invite'], 'fight_id', fid);
   const lg = s.log || [];
   if (seenFid !== fid) { seenFid = fid; seenLog = lg.length; }
   else if (lg.length > seenLog) { const mine = `${c.character_name} · `; weakNote(lg.slice(seenLog).filter(l => l.startsWith(mine))); seenLog = lg.length; }
@@ -88,7 +82,6 @@ function draw() {
   const fight = s.status === 'fight', playing = fight && me && !me.out;
   const top = mobileLog(), restoreLog = keepLogScroll(el, top);
   const head = s.status === 'gather' ? '동료를 기다리는 중' : fight ? `${s.round}라운드` : s.status === 'won' ? '쓰러뜨림' : s.status === 'cancelled' ? '혼자 싸우기로' : '싸움이 끝남';
-  // 차례 줄: 순서대로 이름, 요괴는 노린 사람 뒤에(이번 라운드에 이미 쳤으면 흐리게)
   const order = (s.order || []).filter(id => byId[id]);
   const curIdx = order.indexOf(s.turn_id);
   const turnLine = fight ? `<ol class="pf-order">${order.map((id, i) => {
@@ -142,7 +135,6 @@ function actHtml(s, b, c) {
     <p class="muted small">${esc(skill[0])}: ${esc(skill[1])} 달아나면 이 싸움에서 빠집니다.</p>
   </div></section>`;
 }
-// 물품 창: 전투에 쓸 수 있는 물품을 체력·정신(치료 포함) / 영력으로 나눠 이름·회복 수치만. 고르면 창을 닫고 내 차례의 행동으로
 const tray = itemTray({ title: '토벌에서 쓸 물품', bodyId: 'pf-items-body', fill: fillItems });
 function fillItems(box) {
   const inv = store.character?.inventory || {};
@@ -162,7 +154,6 @@ function bind() {
   const j = $('#pf-join', el); if (j) j.onclick = () => run(j, async () => { await rpc('world_pfight_join', { p_fight: fid }); return rpc('world_pfight_snapshot', { p_fight: fid }); });
   $$('[data-pf]', el).forEach(x => x.onclick = () => run(x, () => rpc('world_pfight_act', { p_fight: fid, p_action: x.dataset.pf, p_item: null })));
   const ib = $('#pf-items', el); if (ib) ib.onclick = tray.open;
-  // 참가자를 누르면 자세히(다시 누르면 닫힘)
   $$('[data-pick]', el).forEach(x => x.onclick = () => { const id = x.dataset.pick; sel = sel === id ? null : id; draw(); });
 }
 

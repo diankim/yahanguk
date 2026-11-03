@@ -1,6 +1,3 @@
-// 별채 도트 그림(7.2): 작은 픽셀 버퍼에 번짐 없이 직접 찍고 캔버스를 정수 배율로 키운다(2026-10-29 시안 minihome_px를 옮김).
-// 방은 N×N 칸(6~9), 가구는 칸 단위 W×D와 부품(상자·타원)으로 정의한다(housing/furniture.js). 벽 장식은 왼쪽·오른쪽 벽에 건다.
-// 이 파일은 그리기만 한다. 놓기·겹침 검사는 화면(views/housing.js)과 서버(world_housing_save)가 함께 한다.
 export const TW = 32, TH = 16, ZU = 20, WALLH = 78, PAD = 10;
 const rgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 export const pack = (r, g, b) => (255 << 24 | b << 16 | g << 8 | r) >>> 0;
@@ -9,7 +6,6 @@ export const P = h => sh(h, 1);
 export const OUT = pack(26, 18, 14);
 const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
 
-// 방 하나를 그리는 그리개. defs = { FUR, WALL, PAPER, GROUND } (furniture.js)
 export function makeRoom(N, defs) {
   const O = { x: N * TW / 2 + PAD, y: WALLH + PAD + 4 };
   const W = N * TW + PAD * 2, H = O.y + N * TH + 12;
@@ -64,7 +60,6 @@ export function makeRoom(N, defs) {
     fillPoly(layer, top, P(p.c));
     if (h >= 3) { const hl = sh(p.c, 1.18); line(layer, top[0], top[1], hl); line(layer, top[0], top[3], hl); }
   }
-  // it.z0: 소품을 올린 가구의 윗면 높이(칸 높이 단위)
   function drawItem(it) {
     const z0 = (it.z0 || 0) * ZU;
     for (const p of rotParts(FUR[it.k], it.r || 0)) {
@@ -81,7 +76,6 @@ export function makeRoom(N, defs) {
     const d = g.getImageData(0, 0, 40, 14).data, out = []; for (let y = 0; y < 14; y++) for (let x = 0; x < 40; x++) if (d[(y * 40 + x) * 4 + 3] > 140) out.push([x, y]);
     return glyphCache[text] = out;
   }
-  // 벽 장식: 부품(rects: [t0, z0, w, h, 색])과 글자(text: [글, 색])로 그린다
   function drawWallItem(it) {
     const d = WALL[it.k]; if (!d) return;
     for (const [t0, z0, w0, h0, col] of d.rects || []) fillPoly(layer, wallPoly(it.side, it.t + t0, it.z + z0, w0, h0), P(col));
@@ -107,7 +101,6 @@ export function makeRoom(N, defs) {
       main[i] = BG;
     }
   }
-  // 바닥 무늬: pat(grid 장판 · plank 마루 · mat 자리 · stone 전돌 · check 바둑 · herring 엇결)
   function floorPix(gg, gx, gy, ga, gb, gd, gl, x, y) {
     const u = gx % 1, v = gy % 1, tx = Math.floor(gx), ty = Math.floor(gy);
     switch (gg.pat) {
@@ -119,7 +112,6 @@ export function makeRoom(N, defs) {
       default: if (u < .05 || v < .05) return gd; return (tx + ty) % 2 ? gb : (hash(x, y) < .06 ? gl : ga);
     }
   }
-  // 벽 무늬: pat(plain 한지 · stripe 대나무 · dan 먹빛 단청 · lattice 연지 · cloud 구름 · brick 벽돌)
   function wallPix(pp, side, t, z, wc, wl, wd, x, y, dark) {
     if (z < 4) return side ? sh(dark, .85) : P(dark);
     if (z > WALLH - 3) return side ? sh(dark, .7) : sh(dark, .85);
@@ -140,7 +132,6 @@ export function makeRoom(N, defs) {
       main[i] = pack(Math.round((c & 255) * (1 - k) + gr * k), Math.round((c >> 8 & 255) * (1 - k) + gg * k), Math.round((c >> 16 & 255) * (1 - k) + gb * k));
     }
   }
-  // 그리는 순서: 깔개 → 나머지(앞뒤 관계) · 소품은 올린 가구 바로 뒤
   function depthOrder(items) {
     const rugs = items.filter(i => FUR[i.k]?.layer === 'rug'), surf = items.filter(i => FUR[i.k]?.layer === 'surface'), rest = items.filter(i => FUR[i.k] && !['rug', 'surface'].includes(FUR[i.k].layer));
     const key = i => { const [w, d] = dims(i); return i.x + i.y + (w + d) / 2; };
@@ -152,7 +143,6 @@ export function makeRoom(N, defs) {
     for (const s of surf) if (!res.includes(s)) res.push(s);
     return res;
   }
-  // 소품이 올라앉은 가구와 높이를 찾는다
   function hostOf(items, s) {
     for (const o of items) {
       const f = FUR[o.k]; if (!f?.top || o === s) continue; const [w, d] = dims(o);
@@ -161,7 +151,6 @@ export function makeRoom(N, defs) {
     return null;
   }
 
-  // st = { paper, ground, items: [{k,x,y,r}], wall: [{k,side,t,z}] }, opts = { sel, bad, bg, pets: [{x,y,draw(put)}] }
   let drawn = [];
   function render(st, opts = {}) {
     background(st, opts.bg); drawn = [];
@@ -175,7 +164,6 @@ export function makeRoom(N, defs) {
     for (const it of order) if (FUR[it.k].glow) glow(it);
     const pets = (opts.pets || []).slice();
     for (const it of order) {
-      // 펫은 자기 칸보다 뒤(앞뒤 합이 작은) 가구를 다 그린 뒤에 그린다
       while (pets.length && pets[0].x + pets[0].y < it.x + it.y) { const p = pets.shift(); p.draw({ put: (x, y, c) => put(main, x, y, c), iso, main, W, H }); }
       if (opts.sel === it) { const [w, d] = dims(it), q = [iso(it.x, it.y), iso(it.x + w, it.y), iso(it.x + w, it.y + d), iso(it.x, it.y + d)], col = opts.bad ? P('#e05a4c') : P('#d8b25a'); for (let k = 0; k < 4; k++) line(main, q[k], q[(k + 1) % 4], col, true); }
       begin(); drawItem(it); drawn.push(it); commit(drawn.length - 1);
@@ -183,10 +171,8 @@ export function makeRoom(N, defs) {
     for (const p of pets) p.draw({ put: (x, y, c) => put(main, x, y, c), iso, main, W, H });
     return new ImageData(new Uint8ClampedArray(main.buffer.slice(0)), W, H);
   }
-  // 화면 좌표(버퍼 픽셀) → 그 자리에 그린 물체
   const hit = (bx, by) => { const i = Math.floor(by) * W + Math.floor(bx); return i >= 0 && i < W * H && ids[i] >= 0 ? drawn[ids[i]] : null; };
   const toGrid = (sx, sy) => { const a = (sx - O.x) / (TW / 2), b = (sy - O.y) / (TH / 2); return [(a + b) / 2, (b - a) / 2]; };
-  // 고르기 칸의 작은 그림
   const thumbs = {};
   function thumb(k) {
     if (thumbs[k]) return thumbs[k];
@@ -200,7 +186,6 @@ export function makeRoom(N, defs) {
   return { N, W, H, O, iso, dims, render, hit, toGrid, thumb, wallPoly };
 }
 
-// 펫 도트: rows(글자 격자) + pal(글자 → 색). '.'은 빈칸
 export function drawSprite(put, rows, pal, x0, y0, flip = false) {
   const w = rows[0].length;
   for (let y = 0; y < rows.length; y++) for (let x = 0; x < w; x++) { const ch = rows[y][flip ? w - 1 - x : x]; if (ch !== '.' && pal[ch] != null) put(x0 + x, y0 + y, pal[ch]); }

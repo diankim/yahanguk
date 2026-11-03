@@ -1,5 +1,4 @@
 import { ID_RULE, idToEmail } from './config.js';
-// 야행국 앱 진입점: 인증 → (최초 1회) 캐릭터 생성 → 게임 화면.
 import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { mountHud } from './hud.js';
@@ -11,7 +10,7 @@ import { mountBug } from './bug.js';
 import { applySavedTheme, initSound, mountNotifications } from './settings.js';
 import { mountEnv } from './env.js';
 import { installColorPicker } from './colorpick.js';
-installColorPicker(); // 휴대폰 기본 색 선택 창 대신 게임 안 색 고르기 창
+installColorPicker();
 import { maybeStartTutorial, markPending } from './tutorial.js';
 import { mountTravelBanner } from './banner.js';
 import { mountCards } from './views/card.js';
@@ -34,7 +33,7 @@ import * as tourneyPage from './views/tourney.js';
 import * as housePage from './views/housing.js';
 import { preloadNames, hasNameCache, ensureCatalog } from './views/common.js';
 
-mountCards(); // 이름을 누르면 조사원 카드(한 번만 건다)
+mountCards();
 
 applySavedTheme();
 initSound();
@@ -47,14 +46,10 @@ const VIEWS = {
   bag: { mod: bag, label: '가방', icon: 'bag' },
   log: { mod: journal, label: '일지', icon: 'scroll' },
 };
-// 탭에는 없지만 헤더에서 여는 화면
 const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' }, pfight: { mod: pfightPage, label: '파티 토벌' }, tourney: { mod: tourneyPage, label: '비무 방' }, house: { mod: housePage, label: '별채' } };
 
-// 서버를 다시 여는 때(롤백 뒤): 로그인 화면 음악·첫 캐릭터 만들기 앞 「아침」 컷씬
 const REOPEN_AT = Date.parse('2026-11-02T00:00:00+09:00');
-/* ── 인증 상태 흐름 ─────────────────────────────────────── */
 let routedFor = null, routing = null;
-// 로그인 이벤트가 연달아 두 번(INITIAL_SESSION·SIGNED_IN) 와도 같은 사람이면 한 번만 화면을 꾸린다
 function route(session) {
   const uid = session?.user?.id || null;
   if (uid && routing?.uid === uid) return routing.p;
@@ -64,7 +59,7 @@ function route(session) {
 }
 async function routeOnce(session) {
   const uid = session?.user?.id || null;
-  if (uid && routedFor === uid && $('.shell')) return; // 이미 게임 화면
+  if (uid && routedFor === uid && $('.shell')) return;
   store.user = session?.user || null;
   if (!store.user) { routedFor = null; return renderAuth('login', takeKickNote()); }
   loginMusicOff();
@@ -84,7 +79,6 @@ db.auth.onAuthStateChange((evt, session) => {
   if (evt === 'SIGNED_OUT') {
     const wasIn = !!routedFor;
     stopSessionGuard(); routedFor = null; store.user = null; store.character = null;
-    // 게임 화면이 걸어 둔 타이머(상태판·채팅·알림 읽기)가 로그인 없이 계속 요청을 보내지 않게, 게임 중에 로그인이 풀리면(갱신 거절 등) 페이지를 새로 연다
     if (wasIn) { try { if (!sessionStorage.getItem('yh-kick-note')) sessionStorage.setItem('yh-kick-note', '로그인이 풀려 로그아웃되었습니다. 다시 로그인해 주세요.'); } catch {} location.replace(location.pathname + '#/home'); return location.reload(); }
     return renderAuth('login', takeKickNote());
   }
@@ -96,8 +90,6 @@ function renderError(msg) {
   $('#retry').onclick = () => location.reload();
 }
 
-/* ── 로그인 / 회원가입 ──────────────────────────────────── */
-// 로그인 화면의 한 줄 안내: 놓치기 쉬운 규칙을 하나씩(누르면 다음 줄)
 const TIPS = [
   '탐색력은 15분에 1씩 찹니다. 바닥나면 원정을 보내 두면 시간을 버리지 않습니다.',
   '원정은 2시간 이상 끝까지 다녀오면 경험치·전·숙련 경험이 더 붙고, 비경을 찾기도 합니다.',
@@ -130,7 +122,6 @@ const TIPS = [
   '설정 › 알림에서 끄고 싶은 알림을 고를 수 있습니다. 끈 알림은 지난 알림에만 남습니다.',
   '버그·밸런스·제안은 도움말이나 설정의 「제보·소감」으로 바로 보낼 수 있습니다.',
 ];
-// 다시 연 뒤(롤백 뒤)에는 로그인 화면에 「아침」 곡의 되풀이 부분을 조용히 깐다(로그인하면 멈춤)
 let stopLoginMusic = null;
 function loginMusicOn() {
   if (stopLoginMusic || Date.now() < REOPEN_AT) return;
@@ -164,7 +155,6 @@ function renderAuth(mode = 'login', notice = '') {
     </form>
     <button type="button" class="auth-tip" id="auth-tip" title="누르면 다음 안내">${icon('scroll', 14)}<span></span></button>
   </div>`));
-  // 배경: 「아침」 장면 — 날이 밝으면 그 위로 로그인 창이 떠오른다(cutscene.js loginBackdrop). 늦거나 실패해도 5초 안에 창은 뜬다.
   const scr = $('.auth-screen'), rise = () => scr?.classList.replace('auth-wait', 'auth-up');
   const late = setTimeout(rise, Date.now() >= OPEN_AT ? 3000 : 5000);
   import('./cutscene.js').then(m => { if (scr?.isConnected) m.loginBackdrop(app, { quick: Date.now() >= OPEN_AT, onReady: () => { clearTimeout(late); rise(); } }); }).catch(rise);
@@ -175,7 +165,6 @@ function renderAuth(mode = 'login', notice = '') {
   $('#auth-form').onsubmit = async e => {
     e.preventDefault();
     const f = new FormData(e.target), raw = String(f.get('uid') || '').trim().toLowerCase(), pw = String(f.get('password') || '');
-    // 예전 이메일 계정도 로그인할 수 있게 @가 있으면 그대로 쓴다(가입은 아이디만)
     const email = raw.includes('@') ? raw : idToEmail(raw);
     const msg = $('#auth-msg'), btn = e.submitter || $('button[type=submit]', e.target);
     const say = (t, ok = false) => { msg.textContent = t; msg.className = 'form-msg show' + (ok ? ' ok' : ''); };
@@ -188,9 +177,8 @@ function renderAuth(mode = 'login', notice = '') {
       if (mode === 'login') {
         const { error } = await db.auth.signInWithPassword({ email, password: pw });
         if (error) throw error;
-        await claimSession(); // 이 브라우저가 현재 접속이 되고, 다른 곳의 접속은 로그아웃된다
+        await claimSession();
       } else {
-        // 초대권(롤백 뒤 가입): 번호는 서버 가입 훅이 확인하고 계정을 만들 때 쓴 것으로 남긴다
         const invite = String(f.get('invite') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
         const { data, error } = await db.auth.signUp({ email, password: pw, options: invite ? { data: { invite } } : undefined });
         if (error) throw error;
@@ -202,9 +190,6 @@ function renderAuth(mode = 'login', notice = '') {
   };
 }
 
-/* ── 캐릭터 생성 (최초 1회) ─────────────────────────────── */
-// 다시 연 뒤(롤백 뒤) 처음 캐릭터를 만들 때 한 번 「아침」 컷씬을 보인다(계정마다, 이 기기에 남김)
-// 다시 연 날 문 연 때: 이 뒤로는 로그인 화면의 아침을 빠르게 지나간다(문 열기 전 밤 대기 화면은 열고 나서 지웠다)
 const OPEN_AT = Date.parse('2026-11-03T10:00:00+09:00');
 async function renderCreate() {
   const mk = `yh-morning:${store.user?.id || ''}`;
@@ -218,7 +203,6 @@ async function renderCreate() {
 }
 function renderCreateForm() {
   document.title = '야행국 · 캐릭터 생성';
-  // 쓰던 이름·고른 직업·소속을 이 기기에 잠시 남겨, 다른 앱에 다녀오거나 화면이 다시 그려져도 되살린다(입국하면 지운다).
   const draftKey = `yh-create-draft:${store.user?.id || ''}`;
   let draft = {};
   try { draft = JSON.parse(localStorage.getItem(draftKey) || '{}') || {}; } catch {}
@@ -255,7 +239,6 @@ function renderCreateForm() {
     $('#sum-name').textContent = form.name.value.trim() || '—';
     $('#sum-job').textContent = pick.job ? JOBS[pick.job].name : '—';
     $('#sum-faction').textContent = pick.faction ? FACTIONS[pick.faction].name : '—';
-    // 고른 직업·소속의 이야기와 역할을 카드 아래에 펼친다
     $('#job-detail').innerHTML = pick.job ? jobLoreHtml(pick.job) : '<p class="muted small">직업을 고르면 이야기와 역할이 여기에 펼쳐집니다.</p>';
     $('#faction-detail').innerHTML = pick.faction ? affilLoreHtml(pick.faction) : '<p class="muted small">소속을 고르면 부서 이야기가 여기에 펼쳐집니다.</p>';
   };
@@ -271,7 +254,7 @@ function renderCreateForm() {
     sync(); saveDraft();
   });
   $('#create-logout').onclick = () => logout();
-  account.fillInvites($('#create-invites')); // 롤백 뒤 다시 만드는 조사원에게도 내 초대권을 보인다
+  account.fillInvites($('#create-invites'));
   form.onsubmit = async e => {
     e.preventDefault();
     const name = form.name.value.trim(), msg = $('#create-msg');
@@ -294,7 +277,6 @@ function renderCreateForm() {
   };
 }
 
-/* ── 사망 ────────────────────────────────────────────────── */
 function renderDeath(c) {
   document.title = '야행국 · 영면';
   app.replaceChildren(h(`<div class="center-screen"><div class="card narrow death-card">
@@ -307,9 +289,6 @@ function renderDeath(c) {
   $('#reborn').onclick = e => guard(e.currentTarget, async () => { await rpc('world_character_delete', { p_confirm: c.character_name }); await loadCharacter(); return { content: '새 조사원을 만드세요.' }; });
 }
 
-/* ── 새 창: 채팅·귓속말만 따로 띄운 창 ──────────── */
-// 주소 ?pop=chat · ?pop=whisper. 같은 브라우저의 로그인을 그대로 쓰므로 한 곳 접속 규칙에 걸리지 않는다.
-// 게임 화면(상태판·알림·현장)은 꾸미지 않아 요청이 늘지 않는다. 화면 안 링크(#/…)는 본 창으로 보낸다.
 const POP = (p => ['chat', 'whisper'].includes(p) ? p : null)(new URLSearchParams(location.search).get('pop'));
 let popMounted = false;
 function renderPop(kind) {
@@ -332,7 +311,6 @@ function renderPop(kind) {
     window.open(location.pathname + a.getAttribute('href'), 'yh-main');
   });
 }
-// 본 창에서 새 창 열기(채팅 머리·귓속말 창의 단추). 이미 열려 있으면 그 창을 앞으로 가져온다
 export function openPopWindow(kind) {
   const size = kind === 'whisper' ? 'width=800,height=640' : 'width=420,height=760';
   const w = window.open(`${location.pathname}?pop=${kind}`, `yh-pop-${kind}`, `popup,${size}`);
@@ -341,10 +319,7 @@ export function openPopWindow(kind) {
 window.yahangPop = openPopWindow;
 export const isPopWin = () => !!POP;
 
-/* ── 게임 화면 ──────────────────────────────────────────── */
 let current = null;
-// 게임 화면은 페이지마다 한 번만 꾸민다. 이미 꾸민 뒤(사망 → 새 캐릭터 등)에 다시 불리면 페이지를 새로 연다
-// (상태판·채팅·알림의 타이머와 처리기가 두 벌로 걸려 요청이 두 배가 되던 것)
 let gameMounted = false;
 function renderGame() {
   if (gameMounted) { location.reload(); return; }
@@ -380,12 +355,11 @@ function renderGame() {
   mountEnv();
   mountChat($('#chat-col'), $('#chat-fab'));
   mountWhisper($('#btn-whisper'));
-  mountVersionCheck(); // 배포·SQL 적용 뒤 새로고침 안내
-  mountBug(); // 제보 창은 도움말·설정 페이지의 단추와 알림에서 연다
+  mountVersionCheck();
+  mountBug();
   mountTitleDot();
-  ensureCatalog(); // 물품 목록(사용 효과·거래소 전용·도구 계열)을 처음 접속한 기기에서도 미리 받아 둔다(같은 버전이면 기기 것)
+  ensureCatalog();
   if (!location.hash.startsWith('#/')) location.replace('#/home');
-  // 지역·아이템 이름을 먼저 받아 두어 내부 코드가 화면에 보이지 않게 한다.
   const names = Promise.allSettled([preloadNames(), loadStaff()]);
   if (hasNameCache()) { onHash(); names.finally(maybeStartTutorial); }
   else names.finally(() => { onHash(); maybeStartTutorial(); });
@@ -404,8 +378,6 @@ async function onHash() {
   const el = $('#view');
   if (current?.mod?.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
   current = { name: view, mod: entry.mod };
-  // 화면마다 새 칸을 만들어 넘긴다: 응답을 기다리는 사이 다른 화면으로 가면 이전 화면의 칸이 문서에서 빠져(isConnected=false)
-  // 늦게 온 응답이 새 화면을 덮어쓰지 않는다(전에는 늘 붙어 있는 #view를 넘겨 검사가 소용없었다)
   const host = document.createElement('div');
   host.className = 'view-host';
   el.replaceChildren(host);
@@ -414,7 +386,6 @@ async function onHash() {
   try { await entry.mod.render(host, sub); }
   catch (e) { console.error(e); if (host.isConnected) host.replaceChildren(h(`<div class="card"><h2>화면을 불러오지 못했습니다</h2><p class="muted">${esc(friendlyError(e))}</p></div>`)); }
 }
-// 헤더 단추 강조: 테마(설정의 테마 칸)와 게임 설정(나머지 칸)이 함께 켜지지 않게 한다.
 function markHeader(view, sub) {
   $$('[data-page]').forEach(a => {
     const want = a.dataset.pageSub;
@@ -426,8 +397,7 @@ window.addEventListener('yh-subpage', () => { const { view, sub } = parseHash();
 window.addEventListener('hashchange', onHash);
 export function go(view, sub = '') { const target = `#/${view}${sub ? '/' + sub : ''}`; window.dispatchEvent(new Event('yh-nav')); if (location.hash === target) onHash(); else location.hash = target; }
 window.yahangGo = go;
-mountGrowth(); // 레벨·숙련이 오르면 화면 위에 잠깐 알린다
+mountGrowth();
 
-// 다른 계정으로 바뀌거나 캐릭터가 사라지면 처음 흐름으로 돌아간다.
 on('character', c => { if (!store.user) return; if (!c && ($('.shell') || $('.death-card'))) renderCreate(); else if (c?.is_dead && $('.shell')) renderDeath(c); });
 emit('boot');

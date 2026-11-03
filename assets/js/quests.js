@@ -1,6 +1,3 @@
-// 현장의 퀘스트 칸: 진행 중인 주 이야기·보조 퀘스트·세력 퀘스트와 여기서 받을 수 있는 퀘스트(접고 펼친다).
-// 진행과 판정은 서버(world_quest_board·world_quest_report, 세력은 world_faction_*)가 하고, 여기서는 그리고 부른다.
-// 할 일을 다 마치면 한 번 알리고(이 기기·접속 동안), 보고하면 장면 대사를 대화창으로 보인다.
 import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, on, midBattle } from './core.js';
 import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
@@ -9,7 +6,6 @@ const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
 const foldKey = 'yh-fold-quests';
 const isOpen = () => { try { return localStorage.getItem(foldKey) !== '0'; } catch { return true; } };
 
-// 할 일을 다 마친 퀘스트를 한 번만 알린다(퀘스트·장면마다)
 function noteReady(b) {
   let seen; try { seen = new Set(JSON.parse(sessionStorage.getItem('yh-q-ready') || '[]')); } catch { seen = new Set(); }
   const ready = [...(b.active || []).filter(q => q.phase === 'step' && q.ready).map(q => [`${q.quest_id}:${q.step}`, q.title]),
@@ -19,14 +15,10 @@ function noteReady(b) {
   if (fresh) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' })); try { sessionStorage.setItem('yh-q-ready', JSON.stringify([...seen].slice(-200))); } catch {} }
 }
 
-// 할 일 줄 끝의 바로 가기: 할 일 지역 → 지도에서 짚기, 만들기·넘길 물품 → 제작 화면(검색칸에 이름)
 const mapBtns = (regs, n = 3) => (regs || []).slice(0, n).map(r => `<button type="button" class="q-link" data-q-map="${esc(r)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(nameOf(r))}</span></button>`).join('');
 const craftBtn = id => `<button type="button" class="q-link" data-q-craft="${esc(nameOf(id))}" title="제작법 찾기">${icon('hammer', 12)}<span>제작법</span></button>`;
-// 얻는 곳: 지역을 정하지 않은 채집 할 일·넘길 물품은 그 물품이 나오는 지역을 5곳까지(물품 정보의 「얻는 곳」과 같은 world_item_sources).
-// 줄을 그린 뒤 비어 있는 칸만 채운다(물품마다 이 접속 동안 한 번 읽음).
 const srcSlot = id => `<span class="q-src" data-q-src="${esc(id)}"></span>`;
 const itemsOf = t => Array.isArray(t.items) ? t.items : Object.keys(t.items || {});
-// 단위: 물품을 정한 채집·제작은 「야령초 모으기 0/3개」, 물품을 정하지 않은 채집은 「채집하기 0/3회」
 const unitOf = t => t.t === 'gather' ? (itemsOf(t).length ? '개' : '회') : t.t === 'craft' && itemsOf(t).length ? '개' : '';
 export const taskLine = t => { const done = t.cur >= t.n, items = t.t === 'craft' ? itemsOf(t) : [];
   const src = !done && t.t === 'gather' && !(t.regions || []).length ? itemsOf(t).slice(0, 1).map(srcSlot).join('') : '';
@@ -49,13 +41,10 @@ async function fillSrc(root = document) {
     } catch { srcCache.delete(id); }
   }
 }
-// 퀘스트 칸·일지가 다시 그려질 때마다 빈 칸을 채운다(그리기 뒤 한 번 모아서)
 let srcTimer = 0;
 new MutationObserver(() => { clearTimeout(srcTimer); srcTimer = setTimeout(() => { if (document.querySelector('[data-q-src]:not([data-f])')) fillSrc(); }, 80); })
   .observe(document.body, { childList: true, subtree: true });
-// 넘길 물품에 제작법이 있는가(가방 정보를 이미 받았을 때만 — 없으면 단추를 달지 않음)
 const hasRecipe = id => knownRecipes().some(r => r.output === id);
-// 퀘스트 칸·일지 어디서든 바로 가기를 누르면
 document.addEventListener('click', e => {
   const m = e.target.closest?.('[data-q-map]'), c = e.target.closest?.('[data-q-craft]');
   if (!m && !c) return;
@@ -63,13 +52,10 @@ document.addEventListener('click', e => {
   if (m) import('./views/map.js').then(x => { x.focusRegion(m.dataset.qMap); window.yahangGo('map', 'world'); });
   else { window.dispatchEvent(new CustomEvent('yh-craft-focus', { detail: { search: c.dataset.qCraft } })); window.yahangGo('bag', 'craft'); }
 });
-// 보고 장소 줄: 할 일이 남았으면 그 할 일을 하는 곳을 먼저 적고, 보고 장소는 「다 하면 보고」로 낮춰 적는다
-// (전에는 할 일이 주혈 광산에 남았는데도 「보고: 잔불촌 (지금 여기)」만 보여 그곳에서 끝내는 것처럼 읽혔다).
 export const atLine = q => {
   const at = q.at_names || [], here = store.character?.location;
   const left = (q.tasks || []).filter(t => t.cur < t.n);
   const where = [...new Set(left.flatMap(t => (t.regions || []).map(r => nameOf(r))))];
-  // 지역 이름을 누르면 지도에서 그곳을 짚는다(지금 있는 곳은 글자로만)
   const links = names => names.map(n => n === here ? esc(n) : `<button type="button" class="q-link" data-q-map="${esc(n)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(n)}</span></button>`).join('·');
   const doLine = where.length ? `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 할 곳: ${links(where.slice(0, 3))}${where.length > 3 ? ` 외 ${where.length - 3}곳` : ''}${where.includes(here) ? ' (지금 여기)' : ''}</p>` : '';
   if (!at.length) return doLine;
@@ -94,7 +80,6 @@ function activeItem(q) {
 }
 function factionItem(f) {
   if (!f) return '';
-  // 등급 퀘스트가 아직 잠겨 있으면(평판·레벨) 할 일을 보이지 않고 언제 열리는지만 적는다(다시 가입한 뒤 잠긴 2등급이 진행 중처럼 보이던 것)
   if (f.locked) return `<li class="q-item locked">${head('faction', { cat: nameOf(f.faction_id), title: f.title })}
     <p class="muted small">아직 열리지 않았습니다 · ${esc(f.locked)}</p>
     <div class="btn-row"><button class="btn small ghost" data-go-faction>세력 화면</button></div></li>`;
@@ -112,9 +97,7 @@ function availItem(q) {
     ${q.here && !q.locked ? `<div class="btn-row"><button class="btn small primary" data-q-report="${esc(q.quest_id)}">${icon('scroll', 14)}<span>이야기 듣기</span></button></div>` : ''}</li>`;
 }
 
-// 진행 중인 퀘스트의 할 일·보고 장소·단서 지역에 지금 있는 곳이 들어 있는가
 const isHere = (q, here) => !!here && new Set([...(q.at || []), ...(q.tasks || []).flatMap(t => t.regions || []), ...(q.clues?.regions || [])]).has(here);
-// 이 지역이 퀘스트 지역인가(할 일·보고 장소·의뢰인이 여기)
 function hereNote(b) {
   const here = b.here_id; if (!here) return '';
   const hits = [];
@@ -125,8 +108,6 @@ function hereNote(b) {
   return `<p class="hint accent q-here">${icon('flag', 14)}<span><b>퀘스트 지역</b> · ${hits.length ? `「${esc(hits.slice(0, 3).join('」·「'))}」의 할 일이 이곳에 있습니다.` : ''}${givers ? ` 이곳에서 받을 수 있는 퀘스트 ${givers}개.` : ''}</span></p>`;
 }
 
-// 결전을 열기 전에 인원에 맞춰 묻는다. 체력은 인원마다 늘지만(1·1.7·2.3·2.8배) 혼자서는 거의 이길 수 없고, 둘은 어렵지만 해볼 만하다.
-// 셈은 같은 곳에 있는 파티원 가운데 쓰러짐·원정이 아닌 사람(초대 알림이 가는 사람)이고, 실제로 오는지는 90초 안에 정해진다.
 async function askFinal() {
   const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
   const here = store.character?.location, me = store.user?.id;
@@ -140,7 +121,6 @@ async function askFinal() {
   return ask(`같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(90초 안에 합류, 함께 ${n}명).\n${msg}\n${tail}`, { title: `${n}명이 함께 결전을 엽니까?`, ok: '결전 시작', cancel: '돌아가기' });
 }
 
-// 진행 중인 퀘스트 묶어 보기: 분야(주 이야기·전투·채집…) 또는 장소(아직 남은 할 일의 지역, 다 했으면 보고 장소)
 const GKEY = 'yh-q-group';
 const GROUPS = [['', '순서대로'], ['field', '분야별'], ['place', '장소별']];
 const grp = () => { try { return localStorage.getItem(GKEY) || ''; } catch { return ''; } };
@@ -157,14 +137,12 @@ function grouped(list, b) {
       <summary class="sub-h">${esc(k)}${k === here ? ' <small class="ok">· 지금 여기</small>' : ''} <small class="muted">${map.get(k).length}</small></summary>
       <ul class="q-list">${map.get(k).map(activeItem).join('')}</ul></details>`).join('')}`;
 }
-// 세력 퀘스트 칸: 다른 묶음처럼 접을 수 있다. 처음엔 펼친 채, 접은 것만 '!fac'으로 남긴다
 function facBox(f) {
   if (!f) return '';
   return `<details class="q-grp" data-q-fac ${opened().includes('!fac') ? '' : 'open'}>
     <summary class="sub-h">세력 <small class="muted">${esc(nameOf(f.faction_id))}${f.locked ? ' · 잠김' : f.ready ? ' · <b class="ok">보고 가능</b>' : ''}</small></summary>
     <ul class="q-list">${factionItem(f)}</ul></details>`;
 }
-// 묶음마다 접기: 처음엔 모두 접힌 채로, 펼친 묶음만 기기에 남긴다
 const OKEY = 'yh-q-open';
 const opened = () => { try { return JSON.parse(localStorage.getItem(OKEY) || '[]'); } catch { return []; } };
 function setOpen(k, open) {
@@ -176,22 +154,26 @@ const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_(complete|s
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
 let qbWatch = null;
+const HERE_KINDS = new Set(['win', 'gather', 'fish', 'search', 'clue']);
+const AWAY_ACTS = /expedition|raid_|pfight_|gw_/;
 function watchOf(b) {
-  const kinds = new Set(); let give = false, any = false;
+  const w = new Map(); let give = false;
+  const add = (k, regs) => { const cur = w.get(k); if (cur === null) return; w.set(k, regs && regs.length && HERE_KINDS.has(k) ? new Set([...(cur || []), ...regs]) : null); };
   for (const q of [...(b.active || []), ...(b.faction && !b.faction.locked ? [b.faction] : [])]) {
-    for (const t of q.tasks || []) if (t.cur < t.n) { kinds.add(t.t); any = true; }
+    for (const t of q.tasks || []) if (t.cur < t.n) add(t.t, t.regions);
     if ((q.give || []).length) give = true;
-    if (q.clues) kinds.add('clue');
+    if (q.clues) add('clue', q.clues.regions);
   }
-  const res = [...kinds].map(k => TASK_ACTS[k] || /battle_action|field_|expedition|craft|fish|trade|market|shop/);
-  return { res, give, any, level: b.level };
+  const res = [...w].map(([k, regs]) => ({ re: TASK_ACTS[k] || /battle_action|field_|expedition|craft|fish|trade|market|shop/, regs }));
+  return { res, give, level: b.level, here: b.here_id };
 }
+const hits = (w, name) => w.res.some(({ re, regs }) => re.test(name) && (!regs || regs.has(w.here) || AWAY_ACTS.test(name)));
 on('changed', ev => {
   const name = ev?.name || '';
   if (midBattle(ev) || !qbWatch) return;
   const w = qbWatch;
   if (/quest|story|faction|raid_final|level|reset_identity/.test(name) || (store.character && w.level != null && store.character.level !== w.level)
-    || w.res.some(re => re.test(name)) || (w.give && ITEM_ACTS.test(name))) invalidate('world_quest_board');
+    || hits(w, name) || (w.give && ITEM_ACTS.test(name))) invalidate('world_quest_board');
 });
 window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
 
@@ -202,7 +184,6 @@ export async function fillQuests(box) {
   let b;
   try { b = await load('world_quest_board', undefined, { maxAge: 600000 }); qbWatch = watchOf(b); } catch { box.remove(); return; }
   if (!box.isConnected) return;
-  // 진행 중인 퀘스트가 여럿이면 지금 있는 지역의 퀘스트를 위로(같은 무리 안에서는 원래 순서)
   const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));
   const here = (b.available || []).filter(q => q.here), other = (b.available || []).filter(q => !q.here);
   const nAct = act_.length + (b.faction && !b.faction.locked ? 1 : 0);
@@ -221,7 +202,6 @@ export async function fillQuests(box) {
   $('[data-q-fac]', box)?.addEventListener('toggle', e => setOpen('!fac', !e.target.open));
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
   $$('[data-q-group]', box).forEach(x => x.onclick = () => { try { localStorage.setItem(GKEY, x.dataset.qGroup); } catch {} fillQuests(box); });
-  // 10장 최종 결전: 혼자 또는 같은 곳의 파티원(4명까지)과 결전을 연다 — 판정은 world_raid_final_start
   $('[data-q-final]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
     if (!(await askFinal())) return null;
     const r = await rpc('world_raid_final_start'); window.yahangGo('raid', r?.raid_id || ''); return null;
@@ -230,7 +210,6 @@ export async function fillQuests(box) {
     const r = await act('world_faction_report'); invalidate('world_quest_board'); invalidate('world_faction_snapshot');
     playDialogue(r, store.character?.major_faction_id); return null;
   }));
-  // 세력 화면으로 넘어가 등급·퀘스트 팝업을 바로 연다
   $('[data-go-faction]', box)?.addEventListener('click', () => { try { sessionStorage.setItem('yh-fpop', 'rank'); } catch {} window.yahangGo('char', 'faction'); });
 }
 

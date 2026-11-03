@@ -1,12 +1,8 @@
-// 정청 기록고: 첫째 밤(시험 기간)을 지난 조사원들의 기록을 명부 정리로 반쯤 지워진 장부 조각처럼 보인다.
-// 서버 world_legacy_records(롤백 직전 world_legacy_marks에 찍어 둔 이름·레벨·직업·세력·있던 곳·마친 장·대표 칭호).
-// 글자 깨짐은 이름마다 같은 모양(씨앗)으로 정해 열 때마다 바뀌지 않는다.
 import { rpc, esc, icon, openModal } from '../core.js';
 
 const BLOCK = '█▓▒░';
 const JAMO = 'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎㅏㅓㅗㅜㅡㅣ';
 function seeded(seed) { let h = 2166136261; for (const ch of seed) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296; }
-// 글자 하나하나를 일정 확률로 깨뜨린다. 깨진 글자는 <i>로 감싸 화면이 아주 가끔 떨리게 한다
 function rot(text, seed, rate) {
   const r = seeded(seed + text);
   return [...String(text ?? '')].map(ch => {
@@ -15,7 +11,6 @@ function rot(text, seed, rate) {
     return `<i>${pool[Math.floor(r() * pool.length)]}</i>`;
   }).join('');
 }
-// 칸 하나가 통째로 지워진 줄
 const gone = (seed, n = 4) => `<i>${'▒'.repeat(2 + Math.floor(seeded(seed)() * n))}</i>`;
 
 export async function openLegacyRecords() {
@@ -29,7 +24,7 @@ export async function openLegacyRecords() {
       정청 서기는 이 묶음을 「끝나지 않은 밤의 기록」이라 부르고, 더 거두지 않았다.</p>
     <ol class="lr-list">${list.map((x, i) => {
       const s = x.name + i;
-      const rate = x.mine ? 0.12 : 0.34; // 내 기록은 조금 덜 지워져 있다
+      const rate = x.mine ? 0.12 : 0.34;
       return `<li class="lr-row ${x.mine ? 'mine' : ''}">
         <b class="lr-name">${rot(x.name, s, rate)}</b>
         <span>${x.level ? `Lv.${rot(String(x.level), s + 'l', rate)}` : gone(s + 'l')} · ${x.job ? rot(x.job, s + 'j', rate) : gone(s + 'j')}${x.faction ? ` · ${rot(x.faction, s + 'f', rate)}` : ''}</span>

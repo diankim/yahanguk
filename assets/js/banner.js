@@ -1,4 +1,3 @@
-// 이동 알림 띠: 출발하면 화면 위에 계속 떠서 남은 시간을 보여 주고, 도착하면 도착을 알린 뒤 사라진다.
 import { store, on, nameOf, esc, icon, fmt, $ } from './core.js';
 
 let el, timer, arrivedTimer;
@@ -22,11 +21,9 @@ function draw() {
     el.dataset.start = el.dataset.start && Number(el.dataset.until) === t ? el.dataset.start : Date.now();
     document.body.classList.add('has-banner');
   } else if (el.classList.contains('moving') && !c.travel_destination) {
-    // 이동을 취소했다(목적지가 비었다): 띠를 거둔다
     el.hidden = true; el.className = 'travel-banner'; delete el.dataset.until; delete el.dataset.start;
     document.body.classList.remove('has-banner');
   } else if (el.classList.contains('moving')) {
-    // 도착 처리는 상태판(hud)이 서버에 확인한 뒤 yahang:arrived로 알려 준다.
     $('#tb-left', el) && ($('#tb-left', el).textContent = '도착 처리 중…');
   }
 }

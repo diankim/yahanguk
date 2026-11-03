@@ -1,6 +1,3 @@
-// 전투 기록을 한 줄씩 보여 준다(비무·수련장 시련). 「건너뛰기」를 누르면 남은 줄을 한꺼번에 펼친다.
-// 결과는 서버가 이미 정했고, 화면은 그 기록을 차례로 보일 뿐이다.
-// 기기의 「움직임 줄이기」를 켜 두어도 한 줄씩 보인다(줄이 나타나는 움직임만 CSS가 끈다).
 export function replayLog(list, items, row, { step = 550, skipBtn, onDone } = {}) {
   let i = 0, timer = null, done = false;
   const finish = () => {

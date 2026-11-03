@@ -1,18 +1,12 @@
-// 피해 기록판: 합동 토벌·파티 토벌·귀허의 주인에서 파티원마다 준 피해·받은 피해·회복·기여를 수치와 게이지로.
-// 기여(share, %)는 세 전투가 같은 공식(서버 world_contrib_score)으로 계산해 스냅샷에 넣어 준다.
-// 값은 각 전투 스냅샷의 참가자 줄(dmg·taken·heal, 서버가 셈)을 그대로 쓴다 — 따로 서버에 묻지 않는다.
-// 휴대폰(899px 아래)은 화면 오른쪽 끝의 손잡이를 누르면 펼쳐지는 반투명 창, PC는 참가자 칸 아래에 늘 펼쳐 둔다.
-// 펼침·고른 갈래는 이 기기에 남긴다(yh-meter-open · yh-meter-tab).
 import { esc, icon, fmt } from '../core.js';
 import { jobName } from './fightui.js';
 
 const TABS = [['dmg', '준 피해'], ['taken', '받은 피해'], ['heal', '회복'], ['share', '기여']];
 const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
-const put = (k, v) => { try { localStorage.setItem(k, v); } catch { /* 저장이 막혀도 화면은 그대로 */ } };
+const put = (k, v) => { try { localStorage.setItem(k, v); } catch { } };
 let tab = get('yh-meter-tab', 'dmg'), open = get('yh-meter-open', '0') === '1';
 if (!TABS.some(([k]) => k === tab)) tab = 'dmg';
 
-// rows: [{ id, name, job, dmg, taken, heal, me }], secs: 싸운 시간(초, 모르면 0)
 export function meterHtml(rows, secs = 0) {
   const list = (rows || []).map(r => ({ ...r, dmg: Number(r.dmg) || 0, taken: Number(r.taken) || 0, heal: Number(r.heal) || 0, share: Number(r.share) || 0 }));
   const sum = list.reduce((a, r) => a + r[tab], 0);
@@ -38,7 +32,6 @@ export function meterHtml(rows, secs = 0) {
     </div></aside>`;
 }
 
-// box 안을 다시 그리고 단추를 잇는다(전투 화면이 다시 그릴 때마다 불러도 펼침·갈래는 그대로)
 export function mountMeter(box, rows, secs = 0) {
   if (!box) return;
   box.innerHTML = meterHtml(rows, secs);

@@ -1,6 +1,3 @@
-// 귓속말 창: 채팅과 따로, 상대별로 나눈 대화. 헤더 단추로 열고, 안 읽은 귓속말이 있으면 단추에 빨간 점을 찍는다.
-// 대화 목록·안 읽은 수는 서버(world_whisper_threads), 읽음 표시는 world_whisper_mark_read로 어느 기기에서든 같다.
-// 메시지는 world_chat_messages(channel_type = 'whisper')를 그대로 쓰고, 새 귓속말은 채팅의 실시간 연결(chat.js)이 넘겨준다.
 import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal, closeModal, isGM } from './core.js';
 import { cardName } from './views/card.js';
 import { growInput, keepKeyboard } from './grow.js';
@@ -16,13 +13,10 @@ export function mountWhisper(button) {
   btn.onclick = () => openWhisperWindow();
   whLink();
   refresh();
-  // 화면 복귀: 1분 넘게 비웠을 때만 목록을 다시 읽는다(새 귓속말은 채팅 실시간으로 바로 온다)
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 60000) refresh(); });
 }
 
-// ── 귓속말 새 창과 나눠 쓰기: 새 창이 떠 있으면 본 창은 목록을 읽지 않고, 귓속말 단추·[귓속말]은 그 창을 앞으로 가져온다 ──
-// 브라우저 안 신호(BroadcastChannel 'yh-pop'): 새 창 → wh-open(열릴 때·20초마다)·wh-closed·wh-unread(안 읽은 수), 본 창 → wh-ping·wh-target(열 상대)
 let whOut = false, whBeat = 0, wbc = null;
 const isPopWin = () => document.body.classList.contains('pop-win');
 export const whisperOut = () => whOut;
@@ -44,7 +38,6 @@ function whLink() {
   }
   const setOut = v => {
     if (whOut === v) return; whOut = v;
-    // 채팅이 새 창에 나가 있으면 본 창이 귓속말만 듣고 있었다 — 귓속말 새 창이 그 일을 맡으니 끄고, 닫히면 다시 켠다
     if (document.body.classList.contains('chat-out')) whisperFeed(!v);
     if (!v) refresh();
   };
@@ -57,7 +50,6 @@ function whLink() {
   try { wbc.postMessage({ t: 'wh-ping', uid: store.user?.id }); } catch {}
   setInterval(() => { if (whOut && Date.now() - whBeat > 60000) setOut(false); }, 15000);
 }
-// 떠 있는 귓속말 새 창을 앞으로(이름으로 같은 창을 찾는다 — 주소를 주지 않으면 그 창을 새로 읽지 않는다)
 function focusWhisperPop(target) {
   let w = null;
   try { w = window.open('', 'yh-pop-whisper'); } catch {}
@@ -69,7 +61,7 @@ function focusWhisperPop(target) {
 }
 
 export async function refresh() {
-  if (whOut && !isPopWin()) return; // 귓속말 새 창이 목록을 읽는다
+  if (whOut && !isPopWin()) return;
   try {
     const r = await rpc('world_whisper_threads');
     threads = r?.threads || []; unreadTotal = Number(r?.unread_total || 0);
@@ -86,7 +78,6 @@ function paintDot() {
   btn.setAttribute('aria-label', unreadTotal > 0 ? `귓속말 · 안 읽은 ${unreadTotal}개` : '귓속말');
 }
 
-// chat.js가 받은 귓속말(실시간·빠진 메시지 채우기)을 넘긴다. 차단한 상대의 것은 chat.js에서 이미 거른다.
 export function onWhisper(m) {
   const me = store.user?.id;
   const partner = m.sender_id === me ? m.recipient_id : m.sender_id;
@@ -97,15 +88,12 @@ export function onWhisper(m) {
   } else if (m.sender_id !== me) {
     toast(`귓속말 · ${m.sender_name || '조사원'}: ${String(m.content || '').slice(0, 40)}`);
   }
-  // 띠로링: 받은 지 2분 안의 귓속말만(다시 잇기로 채운 지난 말은 울리지 않음), 보고 있는 대화에 온 말은 울리지 않음
   if (m.sender_id !== me && (!m.created_at || Date.now() - new Date(m.created_at) < 120000) && !(open && document.hasFocus())) playAlarm('whisper', 'w:' + m.id);
   if (!whOut || isPopWin()) refreshSoon();
 }
 
-// 조사원 카드·친구 목록의 [귓속말]: 그 상대와의 대화를 바로 연다(이름만 알면 새 대화로 시작한다).
 let pageHost = null;
 export function openWhisperWindow(target) {
-  // 귓속말 새 창 안에서 조사원 카드의 [귓속말]을 누르면 창을 겹쳐 띄우지 않고 그 자리에서 연다
   if (pageHost?.isConnected) {
     box = $('.wh', pageHost);
     if (target?.id || target?.name) { const known = threads.find(t => (target.id && t.partner_id === target.id) || t.name === target.name); openThread(known ? { id: known.partner_id, name: known.name } : { id: target.id || null, name: target.name }); }
@@ -115,16 +103,14 @@ export function openWhisperWindow(target) {
   const m = openModal({ title: '귓속말', wide: true, onClose: () => { box = null; cur = null; }, body: '<div class="wh-host"></div>' });
   buildUI($('.wh-host', m), target);
 }
-// 새 창: ?pop=whisper. 게임 화면이 없으므로 받는 귓속말 실시간을 여기서 직접 듣는다
 export function mountWhisperPage(el) {
   pageHost = el;
   buildUI(el).then(() => { if (!cur && wide() && threads[0]) openThread({ id: threads[0].partner_id, name: threads[0].name }); });
-  whLink(); // 화면을 그린 뒤에 잇는다(되돌리기 단추에 처리를 건다)
+  whLink();
   whisperFeed(true);
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 30000) { refresh(); if (cur) reloadMsgs(cur); } });
 }
-// 받는 귓속말만 듣는 가벼운 실시간(나에게 온 줄만). 귓속말 새 창, 그리고 채팅을 새 창으로 뺀 본 창이 쓴다(채팅 실시간이 멈춰 있으므로)
 let feed = null;
 export function whisperFeed(on) {
   if (feed) { try { db.removeChannel(feed); } catch {} feed = null; }
@@ -183,7 +169,7 @@ async function openThread(t) {
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       if (cur !== t) return;
-      { const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)); msgs = got.concat(msgs.filter(m => !seen.has(m.id))); } // 읽는 사이 실시간으로 온 말은 남긴다
+      { const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)); msgs = got.concat(msgs.filter(m => !seen.has(m.id))); }
     } catch (e) { const l = cur === t && $('#wh-list', box); if (l) l.innerHTML = `<li class="chat-empty">${esc(friendlyError(e))}</li>`; return; }
     markRead(t.id);
   }
@@ -211,7 +197,6 @@ function drawThread(loading) {
   $('.wh-back', main).onclick = () => { box.classList.remove('thread-open'); };
   if (matchMedia('(pointer: fine)').matches) setTimeout(() => form.text.focus({ preventScroll: true }), 30);
 }
-// 대화 줄만 다시 그린다(쓰던 글과 키패드는 그대로 둔다)
 function drawMsgs() {
   const list = box && $('#wh-list', box); if (!list || !cur) return;
   const me = store.user?.id;

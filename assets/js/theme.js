@@ -1,9 +1,5 @@
-// 테마: 저장된 테마를 읽어 색·모서리·글꼴을 적용한다. 다른 모듈에 기대지 않아 점검 페이지에서도 쓴다.
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-/* ── 테마 ────────────────────────────────────────────────
-   색: 바탕 / 면 / 면2 / 선 / 글자 / 흐린 글자 / 강조 / 강조 위 글자 / 포인트
-   모양: 모서리(r), 글꼴(font: sans·serif·mixed), 선 굵기(bw) */
 export const THEMES = [
   { id: 'yahang', name: '야행', desc: '먹빛 밤거리에 주홍 등불', tone: 'dark', r: 10, font: 'sans', bw: 1,
     c: ['#0e0c10', '#18151b', '#221e26', '#332d38', '#efe7da', '#a2978a', '#c8432d', '#fff4ea', '#d1a65a'] },
@@ -29,7 +25,6 @@ export const THEMES = [
     c: ['#000000', '#0d0d0d', '#181818', '#333333', '#f2f2f2', '#9a9a9a', '#ffffff', '#000000', '#cfcfcf'] },
   { id: 'baekja', name: '백자', desc: '흰 바탕에 먹빛만 남긴 백자', tone: 'light', r: 0, font: 'sans', bw: 1,
     c: ['#f7f7f5', '#ffffff', '#efefec', '#d6d6d1', '#191919', '#6d6d6a', '#2a2a2a', '#ffffff', '#7d7d7a'] },
-  // 7.2: 바탕 무늬(tex)·모서리 장식(frame)·머리글(head)까지 다른 테마 20가지
   { id: 'giwa', name: '기와', desc: '먹빛 기왓골 위로 번진 황토', tone: 'dark', r: 4, font: 'serif', bw: 1, deco: { tex: 'tile', frame: 'bracket', head: 'under' },
     c: ['#17191c', '#202328', '#292d33', '#3d434b', '#ece6d8', '#a59f92', '#c2814a', '#1a0f06', '#d9b36c'] },
   { id: 'nokcha', name: '녹차', desc: '갓 우린 찻잎의 연두와 다기 빛', tone: 'light', r: 14, font: 'mixed', bw: 1, deco: { tex: 'brush', frame: 'round', head: 'plain' },
@@ -83,7 +78,6 @@ const hex = s => { const m = /^#?([0-9a-f]{6})$/i.exec(s || ''); if (!m) return 
 const toHex = rgb => '#' + rgb.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
 const mix = (a, b, t) => toHex(hex(a).map((v, i) => v + (hex(b)[i] - v) * t));
 const lum = c => { const [r, g, b] = hex(c).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
-// 직접 설정: 바탕·강조·포인트 세 가지 색과 모서리·글꼴만 고르면 나머지는 어울리게 만든다.
 export function deriveCustom({ bg, accent, gold, r = 10, font = 'sans' }) {
   const light = lum(bg) > 0.45, text = light ? '#1d1a17' : '#efeae2';
   return { id: 'custom', tone: light ? 'light' : 'dark', r: Number(r), font, bw: 1,
@@ -111,7 +105,6 @@ export function applyTheme(id, save = true, custom) {
 }
 export function savedThemeId() { try { return localStorage.getItem('yh-theme') || 'yahang'; } catch { return 'yahang'; } }
 export function applySavedTheme() { applyTheme(savedThemeId(), false); applyFontSize(savedFontSize(), false); }
-// 글자 크기 다섯 단계(기기에 남김): 글자만 키우고 줄이며 단추·칸 크기는 그대로다. 터치 화면 입력칸은 16px 아래로 내려가지 않는다
 export const FONT_SIZES = [['xs', '아주 작게', 0.85], ['s', '작게', 0.92], ['m', '보통', 1], ['l', '크게', 1.1], ['xl', '아주 크게', 1.22]];
 export function savedFontSize() { try { return localStorage.getItem('yh-fz') || 'm'; } catch { return 'm'; } }
 export function applyFontSize(k, save = true) {

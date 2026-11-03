@@ -1,9 +1,3 @@
-// 컷씬: 다시 연 뒤 첫 접속의 「아침」(캐릭터 만들기 앞)과 로그인 화면 배경. 롤백 순간의 「첫째 밤의 끝」은 정식으로 연 뒤(11/3 10시) 지웠다.
-// 다른 모듈에 기대지 않는다(점검 중에도 돈다). 글은 저절로 흘러가고, 「건너뛰기」는 마지막 장면으로 보내며, 마지막 장면의 [닫기]로만 닫는다(롤백 점검 중에는 닫기 없음).
-// 게임 화면은 평면이 원칙이지만 컷씬만은 흐림·질감(SVG 잡음 필터)을 써 실감 나게 그린다.
-// 움직임 줄이기 설정이면 흔들림·흐름은 멈추고 장면 전환만 남는다.
-
-// 장부 세로줄에 적힌 이름 자리(읽히지 않게 한자 낱자를 섞는다)
 const LEDGER_CH = '夜行局調査員名簿金李朴崔鄭姜趙尹張林韓吳徐申權黃安宋柳洪全高文孫梁裵白許南沈盧河';
 
 const CSS = `
@@ -109,7 +103,6 @@ const CSS = `
 let seed = 7;
 const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
 
-// 매단 등불 하나: 줄 → 몸통 → 불꽃 → 번지는 빛. 흔들림은 매단 자리(위)를 축으로.
 const lantern = (x, y, i, label) => `<g data-lamp="${i}">
   <g class="cs-lantern"><line x1="${x}" y1="${y - 14}" x2="${x}" y2="${y - 8}" stroke="#2a2530" stroke-width="1"/>
     <circle class="cs-glow" cx="${x}" cy="${y}" r="17"/>
@@ -118,7 +111,6 @@ const lantern = (x, y, i, label) => `<g data-lamp="${i}">
     <ellipse class="cs-flame" cx="${x}" cy="${y}" rx="2.6" ry="4"/></g>
   ${label ? `<text class="cs-zone" x="${x}" y="${i % 2 ? y - 20 : y + 28}">${label}</text>` : ''}</g>`;
 
-// 한지: 미색 바탕에 섬유 결(가는 잡음)과 얼룩(굵은 잡음), 찢긴 듯 울퉁불퉁한 가장자리 / 붓글씨 번짐 / 낙관의 닳은 자국 / 번지는 먹
 const DEFS = `<defs>
   <filter id="cs-soft" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6"/></filter>
   <filter id="cs-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
@@ -153,7 +145,6 @@ const DEFS = `<defs>
     <feMerge><feMergeNode in="soft"/><feMergeNode in="grain"/></feMerge></filter>
 </defs>`;
 
-
 function scene(kind) {
   seed = 3;
   const lamps = lantern(240, 150, 9, '');
@@ -180,13 +171,6 @@ const MORNING = [
   [null, '', r => r.classList.add('fin')],
 ];
 
-
-
-// 롤백 컷씬 전용 곡(tools/cutscene_music: 게임 악기 조각으로 구운 음원). 컷씬 시간에 맞춰 있다:
-// 73초 무렵(resolve) 제목과 함께 버티는 화음, 87초(outro)부터 끝(end)까지는 마지막 장면에 머무는 동안 되풀이한다.
-// 소리는 사용자가 한 번 누른 뒤에야 나므로(브라우저 규칙) 저절로 안 나면 [소리 켜기] 단추를 보이고, 화면 어디든 처음 누를 때도 켠다.
-// 시각은 tools/cutscene_music/render.js가 찍은 값: resolve = 건너뛰면 옮겨 갈 자리, clamp = 컷씬이 끝나는 무렵(늦게 켜도 그 뒤로는 가지 않음),
-// outro = 마지막 장면에 오래 머문 뒤 켤 때 시작하는 자리, loopStart~loopEnd = 끊김 없이 되풀이하는 8마디
 const MUSIC = {
   morning: { url: new URL('../audio/cutscene_morning.mp3', import.meta.url).href, resolve: 12.6316, clamp: 20, outro: 28.4212, loopStart: 53.6844063, loopEnd: 78.9476563 },
 };
@@ -203,7 +187,6 @@ function cutsceneMusic(M, onState) {
     if (ac) return ac;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
     ac = new AC(); gain = ac.createGain(); gain.gain.value = 0; gain.connect(ac.destination);
-    // 막혀 있던 소리가 나중에 풀리면(화면을 누름) 그때 이어 튼다
     ac.onstatechange = () => { if (ac.state === 'running' && want && !src && musicBuf && !dead) startAt(api.sceneTime()); onState(api.on, want); };
     return ac;
   };
@@ -219,12 +202,9 @@ function cutsceneMusic(M, onState) {
     src.start(t, Math.min(offset, musicBuf.duration - 0.1)); at0 = t; off0 = offset; since = performance.now();
   }
   const api = {
-    // 컷씬이 시작된 때부터 지난 초(마지막 장면이면 되풀이 부분)
     sceneTime: () => 0,
     get on() { return want && playing(); },
-    // 들린 지 조금 지났는지(같은 누름으로 막 풀린 소리는 「나고 있던 것」으로 치지 않는다)
     get heard() { return api.on && performance.now() - since > 500; },
-    // 단추를 누르기 시작한 때에 나고 있었으면 끄고, 아니면(막혀 있던 것 포함) 켠다
     async toggle(wasOn) {
       if (!wasOn && want) { await api.resume(); return; }
       want = !wasOn; try { localStorage.setItem('yh-cs-sound', want ? 'on' : 'off'); } catch {}
@@ -234,13 +214,11 @@ function cutsceneMusic(M, onState) {
     async resume() {
       if (!dead && !want) { onState(false, false); return; }
       if (dead || !ensure()) return;
-      // 휴대폰 브라우저는 누르기 전에는 resume()이 끝나지 않고 기다리므로 잠깐만 기다린다
       try { if (ac.state !== 'running') await Promise.race([ac.resume(), new Promise(r => setTimeout(r, 400))]); } catch {}
       if (!musicBuf) { try { const b = await load; musicBuf = musicBufs[M.url] = b instanceof AudioBuffer ? b : await ac.decodeAudioData(b); } catch { onState(null); return; } }
       if (ac.state === 'running' && !src && want) startAt(api.sceneTime());
       onState(api.on, want);
     },
-    // 건너뛰기: 버티는 화음 자리로 옮긴다(이미 지났으면 그대로)
     jumpToResolve() {
       if (!playing()) return;
       const pos = off0 + (ac.currentTime - at0);
@@ -255,18 +233,14 @@ function cutsceneMusic(M, onState) {
       setTimeout(() => { try { src?.stop(); } catch {} ac.close?.().catch(() => {}); }, fade * 1000 + 200);
     },
   };
-  // 모바일은 화면을 내리면 멈추고 돌아오면 다시 낸다(게임 배경음악과 같은 규칙)
   const vis = () => { if (!ac || !MOBILE) return; if (document.hidden) ac.suspend().catch(() => {}); else if (want) ac.resume().catch(() => {}); };
   document.addEventListener('visibilitychange', vis);
   load.catch(() => onState(null));
   return api;
 }
 
-// 로그인 화면 음악(다시 연 뒤): 「아침」 곡의 되풀이 여덟 마디를 조용히 튼다. 브라우저가 소리를 막으면 화면을 처음 누를 때 시작한다.
-// 게임 배경음악은 그동안 쉬고, 돌려준 함수를 부르면(로그인해 화면을 떠날 때) 1.5초 동안 잦아들며 멈춘다.
 let activeLogin = null;
 export function loginMusic() {
-  // 컷씬(밤 대기 화면·아침)이 떠 있으면 로그인 음악은 틀지 않는다(두 곡이 겹치던 것)
   if (activeCs) return () => {};
   activeLogin?.(0.2);
   const M = { ...MUSIC.morning, vol: 0.7 };
@@ -282,18 +256,11 @@ export function loginMusic() {
   return () => stop();
 }
 
-// 옵션: stay — 마지막 장면에서 닫지 못하게(롤백 점검 페이지: 이 화면만 남는다), note — 마지막 장면 아래 글 칸에 둘 안내,
-//       atEnd — 처음부터 틀지 않고 마지막 장면으로 바로 연다(점검 페이지가 다시 읽힐 때), fixed — 마지막 장면에 고정(다시 보기 없음)
-// 점검 대기(stay)에는 게임은 못 들어가도 도움말은 볼 수 있게 오른쪽 위 「도움말」로 help.html에 잇는다(처음부터 늘 보임)
-// logout — 마지막 장면에 「로그아웃」 단추(문 열기 전 대기 화면: 로그인한 일반 조사원)
-// 로그인 화면 배경: 「아침」 장면(글 없이). 처음엔 밤 → 등불이 살아나고 날이 밝은 뒤 onReady(로그인 창이 떠오름).
-// 같은 탭에서 다시 그리면(로그인↔회원가입 전환 등) 밝은 아침에서 바로 시작한다. 움직임 줄이기면 곧바로 아침.
 let bgSeen = false;
 export function loginBackdrop(host, { onReady, quick = false } = {}) {
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const root = document.createElement('div');
   root.className = 'cs cs-bg'; root.setAttribute('aria-hidden', 'true');
-  // 지붕이 화면 아래에 닿게(가로가 넘치면 양옆을 자름)
   root.innerHTML = `<div class="cs-bg-in">${scene('morning').replace('preserveAspectRatio="xMidYMid meet"', 'preserveAspectRatio="xMidYMax slice"')}</div>`;
   host.prepend(root);
   const fast = bgSeen || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -306,7 +273,6 @@ export function loginBackdrop(host, { onReady, quick = false } = {}) {
     root.classList.add('dawn', 'dawn2', 'dawn3', 'lift');
     onReady?.();
   } else {
-    // quick: 문을 연 뒤에는 같은 아침을 절반쯤 빠르게(약 2.2초) — 기다림이 지루하지 않게
     const k = quick ? 0.5 : 1;
     if (quick) root.dataset.quick = '1';
     lamp?.classList.add('out');
@@ -318,11 +284,10 @@ export function loginBackdrop(host, { onReady, quick = false } = {}) {
   return () => { timers.forEach(clearTimeout); root.remove(); };
 }
 
-// 컷씬은 한 번에 하나만: 같은 화면이 다시 그려져(로그인 사건이 두 번 오는 등) 또 부르면 앞의 것과 그 음악을 바로 걷는다(곡이 두 겹으로 들리던 것)
 let activeCs = null;
 export function playCutscene(kind = 'morning', { onEnd, stay = false, note = '', atEnd = false, fixed = false, logout = null } = {}) {
   activeCs?.(); activeCs = null;
-  activeLogin?.(0.2); // 로그인 화면 「아침」 음악이 남아 있으면 바로 걷는다
+  activeLogin?.(0.2);
   if (!document.getElementById('cs-style')) document.head.append(Object.assign(document.createElement('style'), { id: 'cs-style', textContent: CSS }));
   const lines = MORNING;
   const root = document.createElement('div');
@@ -333,15 +298,12 @@ export function playCutscene(kind = 'morning', { onEnd, stay = false, note = '',
   const who = root.querySelector('.cs-who'), text = root.querySelector('.cs-text');
   let i = -1, timer = 0, done = false;
   const t0 = performance.now();
-  // 게임 배경음악은 컷씬 동안 쉰다(sound.js)
   window.dispatchEvent(new CustomEvent('yh-cutscene', { detail: true }));
   let ended = false, endedAt = 0, music = null;
   {
     const M = MUSIC.morning;
     const btn = root.querySelector('.cs-snd');
-    // 켜 두었는데 브라우저가 막고 있으면 단추를 깜빡여 눌러 달라고 한다
     music = cutsceneMusic(M, (on, want) => { if (on === null) { btn.hidden = true; return; } btn.hidden = false; btn.classList.toggle('on', !!on); btn.classList.toggle('ask', !on && !!want); btn.textContent = on ? '소리 끄기' : '소리 켜기'; });
-    // 마지막 장면에 막 닿았으면(건너뛰기 포함) 버티는 화음부터, 오래 머문 뒤 켜면 되풀이 부분부터
     music.sceneTime = () => ended ? (performance.now() - endedAt < 15000 && !atEnd ? Math.max(M.resolve, Math.min((performance.now() - t0) / 1000, M.clamp)) : M.outro) : Math.min((performance.now() - t0) / 1000, M.clamp);
     let wasOn = null;
     btn.addEventListener('pointerdown', e => { e.stopPropagation(); wasOn = music.heard; });
@@ -366,13 +328,10 @@ export function playCutscene(kind = 'morning', { onEnd, stay = false, note = '',
     text.classList.toggle('nar', !s);
     for (const el of [who, text]) { el.classList.remove('cs-line-in'); void el.offsetWidth; el.classList.add('cs-line-in'); }
     fx?.(root);
-    // 마지막 장면(제목)에 닿으면 저절로 닫지 않고 [닫기]·[다시 보기]를 띄운다
     if (i === lines.length - 1) { timer = setTimeout(showEnd, 2600); return; }
-    // 글 길이에 맞춰 저절로 넘긴다
     timer = setTimeout(step, t ? 2200 + t.length * 75 : 6000);
   };
   const skip = root.querySelector('.cs-skip');
-  // 건너뛰기: 남은 장면 변화를 한꺼번에 적용해 마지막 장면으로 간다(닫기는 마지막 장면의 [닫기]로만)
   const jumpToEnd = () => {
     if (done || ended) return;
     clearTimeout(timer);
