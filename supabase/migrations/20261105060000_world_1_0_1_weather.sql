@@ -54,4 +54,3 @@ do $s$ declare d text; a text; begin
   execute replace(d, a, $x$sp := CASE WHEN is_full THEN 50 ELSE 27 END;$x$);
 end $s$;
 
-update public.world_app_meta set value = '20261105060000' where key = 'db_version';

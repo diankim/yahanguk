@@ -200,16 +200,17 @@ function renderActive(box, a) {
 const BATTLE = new Set(['fight', 'atk', 'hurt', 'heal', 'skill', 'guard', 'foe', 'win', 'lose', 'down']);
 const openBattles = new Set();
 function battleGroups(ls) {
-  const out = [], open = new Map(); // 사람마다 진행 중인 전투(파티원 일지가 섞여도 끊기지 않게)
+  // 싸움마다 열쇠(서버 fk: 1.0.1부터, 파티원이 함께 싸운 줄도 같은 열쇠) — 옛 기록은 사람마다
+  const out = [], open = new Map();
   ls.forEach((l, i) => {
-    const g = open.get(l.owner);
+    const key = l.fk || l.owner, g = open.get(key);
     if (g && BATTLE.has(l.kind)) {
       g.lines.push([l, i]);
-      if (['win', 'lose', 'down'].includes(l.kind)) open.delete(l.owner);
+      if (['win', 'lose', 'down'].includes(l.kind)) open.delete(key);
       return;
     }
     // 싸우는 중에 끼어든 다른 줄(보급품 먹기 등)은 전투를 끊지 않는다. 뒤따르는 전투 줄은 계속 그 칸에 담는다.
-    if (l.kind === 'fight') { const ng = { lines: [[l, i]], key: `${l.owner}|${l.at}` }; open.set(l.owner, ng); out.push(ng); return; }
+    if (l.kind === 'fight') { const ng = { lines: [[l, i]], key: l.fk || `${l.owner}|${l.at}` }; open.set(key, ng); out.push(ng); return; }
     out.push({ l, i });
   });
   return out;
@@ -217,7 +218,7 @@ function battleGroups(ls) {
 function battleBlock(g, row, me, myName) {
   const f = g.lines[0][0], end = g.lines[g.lines.length - 1][0], done = ['win', 'lose', 'down'].includes(end.kind) ? end.kind : '';
   const cnt = k => g.lines.filter(([l]) => l.kind === k).length;
-  const res = done === 'win' ? '<b class="ok">승리</b>' : done === 'lose' ? '<b class="bad">밀려남</b>' : done === 'down' ? '<b class="bad">쓰러짐</b>' : '<b class="muted">싸우는 중</b>';
+  const res = done === 'win' ? '<b class="ok">승리</b>' : done === 'lose' ? `<b class="bad">${/함께 물러났/.test(end.text || '') ? '함께 물러남' : '밀려남'}</b>` : done === 'down' ? '<b class="bad">쓰러짐</b>' : '<b class="muted">싸우는 중</b>';
   return `<li class="exp-battle ${done ? 'b-' + done : ''} ${f.owner && f.owner !== me ? 'other' : 'mine'} ${openBattles.has(g.key) ? 'open' : ''}">
     <button type="button" data-k="${esc(g.key)}">${icon('sword', 14)}<span class="eb-head"><b class="who">${esc(f.who || myName || '')}</b>${esc(f.text)}</span>
       <span class="eb-sum">${res} · 공격 ${cnt('atk')} · 반격 ${cnt('hurt')}${cnt('heal') ? ` · 회복 ${cnt('heal')}` : ''}${cnt('skill') ? ` · 기술 ${cnt('skill')}` : ''}${cnt('guard') ? ` · 막기·회피 ${cnt('guard')}` : ''}</span><time>${fmt.time(f.at)}</time></button>
