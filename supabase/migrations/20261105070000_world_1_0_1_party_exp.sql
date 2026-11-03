@@ -104,7 +104,13 @@ begin
       where q.owner_id = pm.owner_id and q.slot = 'weapon') w on true
     left join lateral (select ic.tier from public.world_character_equipment q join public.world_item_catalog ic on ic.item_id = q.item_id
       where q.owner_id = pm.owner_id and q.slot = 'armor') ar on true
-   where mp.owner_id = e.owner_id;
+   where mp.owner_id = e.owner_id
+     -- 1.0.1 함께 싸우는 것은 「파티 원정」으로 함께 떠난 사람들만: 같은 제안(world_party_exp_offers departed)의 출발자이고,
+     -- 그 제안이 처리된 순간(resolved_at = 같은 트랜잭션의 now())에 둘 다 떠났으며 같은 원정지·같은 기간. 우연히 같은 때 따로 떠난 원정은 각자 싸운다.
+     and pe.node_id = e.node_id and pe.minutes = e.minutes and pe.started_at = e.started_at
+     and exists (select 1 from public.world_party_exp_offers po
+                  where po.status = 'departed' and po.node_id = e.node_id and po.minutes = e.minutes and po.resolved_at = e.started_at
+                    and po.result -> 'started' ? e.owner_id::text and po.result -> 'started' ? pm.owner_id::text);
   if random() < 0.05 then delete from public.world_expedition_pfights where created_at < now() - interval '1 day'; end if;
   p_fight := case e.stance when 'cautious' then 0.22 when 'bold' then 0.5 else 0.35 end + danger * 0.012;
   dmg_mul := case e.stance when 'cautious' then 0.7 when 'bold' then 1.3 else 1.0 end;
@@ -721,13 +727,17 @@ begin
   lines := public.world_expedition_walk_lines(e.expedition_id);
   select party_id into pid from public.world_party_members where owner_id = uid;
   if pid is not null then
-    for x in select pe.expedition_id, pe.minutes, pe.started_at, pe.ends_at, pe.region_id, pe.settled_rounds, pc.character_name, pn.node_name, pr.region_name
+    for x in select pe.expedition_id, pe.minutes, pe.started_at, pe.ends_at, pe.region_id, pe.settled_rounds, pc.character_name, pn.node_name, pr.region_name,
+               -- 1.0.1 일지를 섞는 것도 파티 원정으로 함께 떠난 동료만(같은 제안·같은 순간 출발)
+               (pe.node_id = e.node_id and pe.minutes = e.minutes and pe.started_at = e.started_at and exists (select 1 from public.world_party_exp_offers po
+                  where po.status = 'departed' and po.node_id = e.node_id and po.minutes = e.minutes and po.resolved_at = e.started_at
+                    and po.result -> 'started' ? uid::text and po.result -> 'started' ? pm.owner_id::text)) as together
              from public.world_party_members pm join public.world_expeditions pe on pe.owner_id = pm.owner_id and pe.status = 'active'
              join public.world_characters pc on pc.owner_id = pm.owner_id left join public.world_exploration_nodes pn on pn.node_id = pe.node_id
              left join public.world_map_regions pr on pr.region_id = pe.region_id
              where pm.party_id = pid and pm.owner_id <> uid order by pc.character_name loop
       perform public.world_expedition_settle(x.expedition_id);
-      if x.region_id = e.region_id then lines := lines || public.world_expedition_walk_lines(x.expedition_id); end if;
+      if x.together then lines := lines || public.world_expedition_walk_lines(x.expedition_id); end if;
       party := party || jsonb_build_array(jsonb_build_object('name', x.character_name, 'place', x.node_name, 'region', x.region_name, 'same_region', x.region_id = e.region_id,
         'rounds_done', greatest(0, least(case x.minutes when 30 then 3 when 60 then 6 when 120 then 10 when 240 then 16 else 24 end,
           floor((case x.minutes when 30 then 3 when 60 then 6 when 120 then 10 when 240 then 16 else 24 end) * extract(epoch from least(now(), x.ends_at) - x.started_at) / (x.minutes * 60.0))::int)),
