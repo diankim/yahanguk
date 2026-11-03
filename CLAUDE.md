@@ -590,7 +590,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 미리듣기 tools/bgm_preview(render.js가 sound.js를 그대로 읽어 구움). 컷씬 곡(아침) tools/cutscene_music(compose.js·render.js → assets/audio/cutscene_morning.mp3): 마디 길이를 표본 수로 맞추고 되풀이 8마디를 세 번 구워 가운데를 loopStart~loopEnd로(시각 cutscene.js MUSIC). 로그인 화면은 다시 연 뒤(app.js REOPEN_AT) 「아침」 되풀이 여덟 마디를 조용히(cutscene.js loginMusic, 처음 누를 때 시작, 로그인하면 잦아듦).
 - 환경음(재료 assets/js/ambience.js, 세기·때는 sound.js updateAmbience·critters): 비·바람·물·풀벌레·새·부엉이·물방울. 비 rainBuffer = 짧은 빗방울을 흩뿌린 결(장우 1초 1500개 + 굵은 방울 10개, 이음매 없이 · 세우는 「똑 · 또독」 굵은 방울 1초 1.6번 위주 + 장우 결 아주 작게). 바람은 삭풍에만: 좁은 띠 잡음 세 갈래를 돌풍 곡선(2.5~5초)으로 세기·음 높이 함께. 미리듣기 tools/ambience_preview/render.html(OfflineAudioContext).
 - 음량: 배경음악·환경음·효과음 따로 + 전체 sound.vol(master 0.9×vol, 컷씬·로그인 곡도). 효과음은 행동 종류마다 다름.
-- 모바일(터치)은 화면을 내리거나 다른 앱·탭이면 멈추고 돌아오면 다시. PC는 다른 창이어도 계속. 배경음악·환경음은 한 창만(soundLink: 누르거나 고른 창이 BroadcastChannel 'yh-sound'로 맡고 나머지 yielded), 새 창(?pop=)은 소리 없음(initSound 즉시 반환, playSfx 막음).
+- 모바일(터치)은 화면을 내리거나 다른 앱·탭이면 멈추고 풀어 둔 악기 소리도 내려놓으며(sound.js leave → keepOnly([]), 메모리가 적은 폰이 앱을 덜 내리게), 돌아오면 다시 받아 이어 감. PC는 다른 창이어도 계속. 배경음악·환경음은 한 창만(soundLink: 누르거나 고른 창이 BroadcastChannel 'yh-sound'로 맡고 나머지 yielded), 새 창(?pop=)은 소리 없음(initSound 즉시 반환, playSfx 막음).
 - 알림음 「띠로링」(playAlarm·armAlarm·ALARMS): 귓속말(whisper.js onWhisper)·채팅 @캐릭터 이름(chat.js mentionAlarm: 전체·지역·세력·파티·모임, 받은 지 2분 안)·탐색력 가득(hud.js bumpStamina·다시 읽기)·잠깐/푹 쉬기 쿨타임 끝(rest_short·rest_full, 10초 안 겹치면 한 번, views/common.js가 world_rest_status를 읽을 때)·원정 귀환·자율 끝(hud.js). 설정 › 소리 「알림음」에서 종류마다(sound.alarm, 기기, 들어 보기는 효과음 견본 줄 끝 「알림」), 제 길(alarmBus), 크기는 효과음 음량(최소 25%), 새 창에서도 울림, 같은 일은 localStorage yh-alarm:<key>로 한 창만. 탐색력 가득·쉬기·자율 끝은 화면 아래 글도(ALARM_TEXT, 소리가 막혀도, 끈 종류·새 창 제외). 서버 요청을 늘리지 않는다.
 
 ### 롤백·초대·점검
@@ -620,6 +620,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - manifest.webmanifest(orientation 없음 — "any"면 안드로이드 설치 앱이 회전 잠금을 무시)와 assets/icons(192·512·maskable 512·apple-touch·svg)를 index.html·maintenance.html이 건다.
 - 접속 속도: index.html이 서버·esm.sh에 미리 연결하고 모듈을 modulepreload(새 JS 파일은 목록에 추가). 점검 확인 둘은 동시, 로그인 이벤트가 두 번 와도 한 번만 꾸림(app.js route). 캐릭터·묶음 크기 함께 읽기, 이름 사전은 기기 yh-names-v1. 「접속 중」 8초 늦음 안내·25초 바쁨 안내 + 「다시 시도」·파일 실패 까닭(boot.js).
 - 페이지가 어떻게 열렸는지 표식(1.0.2b2, 요청 추가 없음): core.js BOOT_TAG가 모든 요청의 X-Client-Info 끝에 `nav=(navigate·reload·back_forward)·disc=(크롬이 버린 탭이면 1)·prev=(new 처음·hid 지난 페이지가 정상으로 닫힘·open 닫힘 없이 끝남 = 탭이 죽음)·n=(이 탭에서 몇 번째로 연 것)`을 붙임(sessionStorage yh-life·yh-boots). 우리 코드가 새로고침할 때는 config.js selfReload(까닭)를 써서 prev=self-<까닭>(signout·retry·remount·boot·update·logout)으로 남김 — 새 새로고침도 location.reload 대신 이것을 쓴다. 서버 기록 edge_logs request.headers.x_client_info로 본다.
+- 설치 앱이 내려갔다 다시 떠 주소에 화면이 없으면 마지막으로 본 화면으로(app.js lastView, localStorage yh-last-view — 같은 계정·6시간 안).
 - 라우터는 화면마다 새 칸(.view-host)을 넘겨 늦은 응답이 다른 화면을 덮지 않게.
 
 ### 요청 줄이기

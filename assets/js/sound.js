@@ -604,6 +604,7 @@ export function initSound() {
     const leave = () => {
       if (away) return; away = true;
       clearTimeout(phraseTimer); clearTimeout(critterTimer);
+      keepOnly([]);
       if (ctx) { master.gain.setValueAtTime(0, ctx.currentTime); ctx.suspend?.().catch(() => {}); }
     };
     const back = () => {

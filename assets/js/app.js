@@ -359,7 +359,7 @@ function renderGame() {
   mountBug();
   mountTitleDot();
   ensureCatalog();
-  if (!location.hash.startsWith('#/')) location.replace('#/home');
+  if (!location.hash.startsWith('#/')) location.replace(lastView() || '#/home');
   const names = Promise.allSettled([preloadNames(), loadStaff()]);
   if (hasNameCache()) { onHash(); names.finally(maybeStartTutorial); }
   else names.finally(() => { onHash(); maybeStartTutorial(); });
@@ -369,9 +369,15 @@ function parseHash() {
   const [, view = 'home', sub = ''] = location.hash.match(/^#\/([a-z]+)\/?([a-z0-9.-]*)/) || [];
   return { view: VIEWS[view] || PAGES[view] ? view : 'home', sub };
 }
+const LAST_VIEW = 'yh-last-view';
+function lastView() {
+  try { const v = JSON.parse(localStorage.getItem(LAST_VIEW) || 'null'); if (v && v.uid === store.user?.id && Date.now() - v.t < 6 * 3600000 && /^#\/[a-z]+(\/[a-z0-9.-]*)?$/.test(v.h)) return v.h; } catch {}
+  return null;
+}
 async function onHash() {
   if (!$('.shell')) return;
   const { view, sub } = parseHash();
+  try { localStorage.setItem(LAST_VIEW, JSON.stringify({ h: `#/${view}${sub ? '/' + sub : ''}`, t: Date.now(), uid: store.user?.id })); } catch {}
   $$('[data-view]').forEach(a => a.classList.toggle('on', a.dataset.view === view));
   markHeader(view, sub);
   const entry = VIEWS[view] || PAGES[view];
