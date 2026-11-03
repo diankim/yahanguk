@@ -172,13 +172,10 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
-// 퀘스트 판(world_quest_board, 한 번에 약 55ms)은 길게 두고, 지금 걸린 할 일을 움직일 수 있는 행동 뒤에만 버린다.
-// 전에는 15초마다(사실상 행동마다) 다시 읽었다. 할 일 종류(t) → 그 수를 올리는 행동
 const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_(complete|settle)/, gather: /field_gather/, craft: /craft/, fish: /^world_fish$/,
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
-// 넘길 물품이 있는 장면은 가방이 바뀌는 행동 뒤에(보고 단추가 켜지는지)
 const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
-let qbWatch = null; // 지난 판에서 뽑은 { re, level }
+let qbWatch = null;
 function watchOf(b) {
   const kinds = new Set(); let give = false, any = false;
   for (const q of [...(b.active || []), ...(b.faction && !b.faction.locked ? [b.faction] : [])]) {
@@ -186,7 +183,7 @@ function watchOf(b) {
     if ((q.give || []).length) give = true;
     if (q.clues) kinds.add('clue');
   }
-  const res = [...kinds].map(k => TASK_ACTS[k] || /battle_action|field_|expedition|craft|fish|trade|market|shop/); // 모르는 종류는 넓게
+  const res = [...kinds].map(k => TASK_ACTS[k] || /battle_action|field_|expedition|craft|fish|trade|market|shop/);
   return { res, give, any, level: b.level };
 }
 on('changed', ev => {

@@ -473,7 +473,6 @@ async function skills(body) {
 
 /* ── 자율 활동 ───────────────────────────────────────── */
 async function idle(body, given) {
-  // given: 끝나는 시각에 화면만 다시 그릴 때 받은 값을 그대로(서버를 다시 부르지 않는다 — 끝남은 ready_at과 기기 시계로 안다)
   const [snap, prof] = given ? [given, null] : await Promise.all([load('world_idle_activity_snapshot'), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
   if (prof) idleWeapon = prof?.current?.weapon?.type || 'melee';
   const active = snap?.active;

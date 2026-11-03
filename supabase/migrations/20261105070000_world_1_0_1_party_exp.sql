@@ -1,8 +1,3 @@
--- 1.0.1 파티 원정 공동 전투(제보: 같이 갔는데 각자 따로 싸우고, 두 사람 기록이 서로 잘림)
--- 같은 원정지로 함께 떠난 파티원은 회차마다 한 싸움을 함께 치른다: 먼저 정산하는 사람이 파티 전체 싸움을 굴려
--- world_expedition_pfights에 남기고, 나머지는 같은 결과(승패·줄)를 받아 쓴다. 요괴 수 = 인원, 승률은 파티 평균 전투력·방어,
--- 요괴는 이목으로 표적, 기를 모아 터뜨리는·휩쓸리는 수법은 모두를 친다. 누구든 체력 30 아래면 그 싸움에서 모두 함께 물러난다.
--- 화면: 싸움 줄마다 fk(같은 싸움 열쇠) → 한 칸으로 묶음, 파티원 일지에 같은 줄이 들어 있어도 한 번만(world_expedition_progress).
 create table if not exists public.world_expedition_pfights (
   fkey text primary key,
   fight boolean not null,
@@ -13,9 +8,6 @@ alter table public.world_expedition_pfights enable row level security;
 revoke all on public.world_expedition_pfights from public, anon, authenticated;
 grant select, insert, delete on public.world_expedition_pfights to fn_owner_field;
 
--- 「파티 원정으로 함께 떠난 두 원정인가」 판정 원본(1.0.1). 같은 제안(world_party_exp_offers departed)의 출발자 명단에 둘 다 있고,
--- 그 제안이 처리된 순간(resolved_at = 같은 트랜잭션 now() = 출발 시각)에 같은 원정지·같은 기간으로 떠났어야 참.
--- 우연히 같은 때·같은 곳으로 따로 떠난 원정(파티원끼리든 아니든)은 거짓. 공동 전투(settle)·일지 섞기(progress)·함께 다녀온 덤(complete)이 이것만 쓴다.
 create or replace function public.world_pexp_together(p_e1 uuid, p_e2 uuid) returns boolean
 language sql stable set search_path = '' as $f$
   select coalesce((select a.node_id = b.node_id and a.minutes = b.minutes and a.started_at = b.started_at and a.owner_id <> b.owner_id
@@ -26,7 +18,6 @@ language sql stable set search_path = '' as $f$
 $f$;
 revoke all on function public.world_pexp_together(uuid, uuid) from public, anon, authenticated;
 
--- 파티 원정 규칙 수치 원본(1.0.1). 서버 함수와 화면·도움말(tools/gamedata/gen.py → gamedata.js partyExp → rules.js)이 이것만 읽는다.
 create or replace function public.world_pexp_rules() returns jsonb language sql immutable as $f$
   select jsonb_build_object('flee_hp', 30, 'threat_pct', 45, 'bonus_pct', 10, 'bonus_cap', 3, 'overlap_min', 10)
 $f$;
@@ -55,7 +46,6 @@ declare
   oc text := current_setting('request.jwt.claims', true); os text := current_setting('request.jwt.claim.sub', true); g_gq float8; g_heal float8; v_pct float8;
   g_inc float8; g_ml float8; g_er float8; g_rare float8; pres float8; allies jsonb := '[]'::jsonb; act jsonb; al jsonb;
   nal int; sum_ally float8; tot_w float8; pick float8; my_taken int; gear_item text; who_n text; who_o uuid; pend int; fx jsonb; wtype text; brank int; ammo_k text; ammo_have int := 0; ammo_used int := 0; cfx jsonb; cl jsonb; skf jsonb; skl jsonb;
-  -- 1.0.1 파티 원정 공동 전투: 회차마다 같은 원정의 파티원은 한 싸움(world_expedition_pfights)을 나눠 쓴다
   v_fkey text; fk text; pfd jsonb; fthr float8; joined boolean; j0 int; minhp int; lowp text; flee boolean; apow float8; adef float8; plines jsonb; pend_at timestamptz; k2 int;
 begin
   select * into e from public.world_expeditions where expedition_id = p_exp and status = 'active' for update;
@@ -70,10 +60,8 @@ begin
   if st ->> 'ended' in ('downed', 'exhausted') then return e.settled_rounds; end if;
 
   select * into c from public.world_characters where owner_id = e.owner_id for update;
-  -- 효과는 원정 주인 기준으로 잰다(7.5.2: 예약 작업·파티원이 불러도 같은 값)
   perform set_config('request.jwt.claim.sub', e.owner_id::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', e.owner_id, 'role', 'authenticated')::text, true);
-  -- 동료 원정의 합동 전투에서 이 캐릭터가 대신 맞은 피해(쓰러뜨리지는 않는다)
   delete from public.world_expedition_hits where owner_id = e.owner_id and created_at < e.started_at;
   with d as (delete from public.world_expedition_hits where owner_id = e.owner_id returning amount) select coalesce(sum(amount), 0) into pend from d;
   if pend > 0 then c.health := greatest(1, c.health - pend); end if;
@@ -91,8 +79,6 @@ begin
   power := 12 + c.level * 5 + greatest(c.strength, c.spirit_affinity * 0.75 + c.willpower * 0.4) * 2.5 + c.agility * 1.5 + c.perception + wt * 14 + coalesce(c.combat_rank, 1) * 1.2;
   defense := c.level * 2 + c.vitality * 3 + at_ * 12;
 
-  -- 장비 특성: 관모·신·노리개·호신부·탈과 무기·방어구의 덧붙은 성능
-  -- 장비·칭호·상태·날씨·소속·직업·침식·섬·레벨 차·봉연 잠김(7.5.2, 전에는 장비만)
   defense := defense + (public.world_status_effect_total('defense') + public.world_title_bonus('defense')) * 2;
   g_inc := greatest(-60, public.world_status_effect_total('incoming_damage_pct') + public.world_title_bonus('incoming_damage_pct')
     - (public.world_status_effect_total('evasion_pct') + public.world_title_bonus('evasion_pct')) * 0.5);
@@ -102,7 +88,6 @@ begin
   g_heal := greatest(-50, public.world_status_effect_total('healing_pct'));
   pres := coalesce((public.world_combat_stats(e.owner_id) ->> 'presence')::float8, 30);
  wtype := coalesce((select ic.equipment_traits ->> 'weapon_type' from public.world_character_equipment q join public.world_item_catalog ic on ic.item_id = q.item_id where q.owner_id = e.owner_id and q.slot = 'weapon' limit 1), 'melee');
-  -- 주는 피해(근접·원거리·술법 포함, 합 35%까지)와 치명타 절반(직업 피해 %는 그 역할 무기를 들었을 때만)
   v_pct := least(35, public.world_status_effect_total('combat_damage_pct') + public.world_title_bonus('combat_damage_pct')
     + public.world_status_effect_total(wtype || '_pct') + public.world_title_bonus(wtype || '_pct'));
   power := power * (1 + (v_pct + (public.world_status_effect_total('crit_pct') + public.world_title_bonus('crit_pct')) * 0.5) / 100.0);
@@ -111,7 +96,6 @@ begin
   IF ammo_k IS NOT NULL AND ammo_have < 1 THEN power := power * 0.6; END IF;
  brank := coalesce((c.skill_progress -> 'guarding' ->> 'rank')::int, 0);
   skf := public.world_exp_skill_fx(e.owner_id); power := power * (1 + coalesce((skf ->> 'atk')::float8, 0) / 100.0);
-  -- 같은 지역으로 원정 중인 파티원: 같은 시각에 있으면 함께 싸우고, 요괴는 이목이 높은 쪽을 먼저 노린다
   select coalesce(jsonb_agg(jsonb_build_object('owner', pc.owner_id, 'name', pc.character_name,
       'power', 12 + pc.level * 5 + greatest(pc.strength, pc.spirit_affinity * 0.75 + pc.willpower * 0.4) * 2.5 + pc.agility * 1.5 + pc.perception + coalesce(w.tier, 0) * 14 + coalesce(pc.combat_rank, 1) * 1.2,
       'def', pc.level * 2 + pc.vitality * 3 + coalesce(ar.tier, 0) * 12, 'hp', pc.health,
@@ -126,8 +110,6 @@ begin
     left join lateral (select ic.tier from public.world_character_equipment q join public.world_item_catalog ic on ic.item_id = q.item_id
       where q.owner_id = pm.owner_id and q.slot = 'armor') ar on true
    where mp.owner_id = e.owner_id
-     -- 1.0.1 함께 싸우는 것은 「파티 원정」으로 함께 떠난 사람들만: 같은 제안(world_party_exp_offers departed)의 출발자이고,
-     -- 그 제안이 처리된 순간(resolved_at = 같은 트랜잭션의 now())에 둘 다 떠났으며 같은 원정지·같은 기간. 우연히 같은 때 따로 떠난 원정은 각자 싸운다.
      and public.world_pexp_together(e.expedition_id, pe.expedition_id);
   if random() < 0.05 then delete from public.world_expedition_pfights where created_at < now() - interval '1 day'; end if;
   p_fight := case e.stance when 'cautious' then 0.22 when 'bold' then 0.5 else 0.35 end + danger * 0.012;
@@ -156,7 +138,6 @@ begin
     base_t := t - interval '60 seconds';
     seq := 0;
     last_i := i;
-    -- 한 시간마다 노정 건량
     h0 := floor(e.minutes * (i - 1) / total / 60.0)::int; h1 := floor(e.minutes * i / total / 60.0)::int;
     if h1 > h0 then
       if coalesce((sup ->> 'travel_ration')::int, 0) > 0 then sup := jsonb_set(sup, '{travel_ration}', to_jsonb((sup ->> 'travel_ration')::int - 1));
@@ -172,7 +153,6 @@ begin
     nal := jsonb_array_length(act); joined := false; pfd := null; v_fkey := null;
     fk := md5(e.expedition_id::text || '|' || i);
     if nal > 0 then
-      -- 같은 회차·같은 지역·같은 사람들 = 한 싸움. 먼저 정산하는 사람이 굴리고, 나머지는 그 결과를 받아 쓴다(회차 시각이 같아야 함 = 함께 떠난 원정)
       v_fkey := md5(r.region_id || '|' || t::text || '|' || (select string_agg(o, ',' order by o) from (select e.owner_id::text o union select x ->> 'owner' from jsonb_array_elements(act) x) q));
       perform pg_advisory_xact_lock(hashtext('yh_pexp:' || v_fkey));
       select jsonb_build_object('fight', pf.fight) || coalesce(pf.data, '{}'::jsonb) into pfd from public.world_expedition_pfights pf where pf.fkey = v_fkey;
@@ -192,7 +172,6 @@ begin
     end if;
 
     if joined then
-      -- 1.0.1 동료가 먼저 굴린 공동 싸움: 같은 줄을 일지에 받아 적고(화면은 중복을 걸러 한 번만), 승패·수는 함께, 전리품·경험은 각자
       plines := coalesce(pfd -> 'lines', '[]'::jsonb);
       jr := jr || plines;
       won := coalesce((pfd ->> 'won')::boolean, false); flee := coalesce((pfd ->> 'flee')::boolean, false); foe := pfd ->> 'foe';
@@ -225,7 +204,6 @@ begin
         if c.job_key = 'artificer' and not flee then weak_bonus := 0.15; end if;
         lg := lg || jsonb_build_array(case when flee then foe || '에게서 동료와 함께 물러났습니다.' else foe || '에게 동료와 함께 밀려 물러났습니다.' end);
       end if;
-      -- 일지 승리 줄(퀘스트 셈용, 화면에는 안 보임): 내 이름으로
       jr := jr || jsonb_build_object('at', pend_at, 'kind', case when won then 'win' else 'lose' end, 'who', me, 'owner', e.owner_id, 'mid', m.monster_id,
         'rank', case when m.role = 'guardian' then 'guardian' else 'normal' end, 'rg', r.region_id, 'fk', fk, 'hide', true, 'text', foe);
       mn := mn - round((case when spirit_mech then 3 else 1 end) * greatest(0, 1 + g_ml / 100.0))::int;
@@ -252,7 +230,6 @@ begin
         apow := (power + sum_ally) / (1 + nal);
         adef := (defense + coalesce((select sum((x ->> 'def')::float8) from jsonb_array_elements(act) x), 0)) / (1 + nal);
         win_p := (apow * (1 + 0.6 * nal)) / (apow * (1 + 0.6 * nal) + threat);
-    -- 협동 기술(6.1.0): 함께 싸우는 사람들의 열린 협동 기술이 확률로 저절로 나온다
     if nal > 0 then
       cfx := public.world_coop_exp_procs(e.owner_id, act);
       win_p := win_p + coalesce((cfx ->> 'win')::float8, 0);
@@ -326,14 +303,12 @@ begin
           lg := lg || jsonb_build_array(case when flee then lowp || '의 상처가 깊어 ' || foe || '에게서 동료와 함께 물러났습니다.' when nal > 0 then foe || '에게 동료와 함께 밀려 물러났습니다.' else foe || '에게 밀려 물러났습니다.' end);
           a_n := 1 + floor(random() * 2)::int; b_n := a_n + 1;
         end if;
-        -- 장비(호신부·회피)와 동료 수에 따른 피해. 동료가 있으면 요괴가 더 여러 번 공격하고, 이목에 따라 맞는 사람이 갈린다
         dmg := round(dmg * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - n.min_level - 1))) * greatest(0.3, 1 + g_inc / 100.0) * (1 + (public.world_pexp_rules() ->> 'threat_pct')::numeric / 100 * nal) * (1 - coalesce((skf ->> 'guard')::float8, 0) / 100.0));
         my_taken := 0;
    if flee then
      seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'foe', 'who', me, 'owner', e.owner_id,
        'text', lowp || '의 상처가 깊습니다(체력 ' || minhp || '). 혼자 남기지 않고 모두 함께 물러납니다.');
      fx := jsonb_build_object('lines', '[]'::jsonb, 'seq', seq, 'taken', 0, 'mn', 0, 'er', 0, 'ids', jsonb_build_array(m.monster_id));
-     -- 물러나는 동안 맞은 피해는 고르게 나눈다
      k := greatest(0, round(dmg / (1.0 + nal))::int);
      if k > 0 then
        my_taken := k;
@@ -362,7 +337,6 @@ begin
         jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', case when won then 'win' else 'lose' end, 'who', me, 'owner', e.owner_id, 'mid', m.monster_id, 'rank', case when m.role = 'guardian' then 'guardian' else 'normal' end, 'rg', r.region_id,
           'text', case when won and nal > 0 then foe || '을(를) 동료와 함께 물리쳤습니다.' when won then foe || '을(를) 물리쳤습니다.'
             when flee then foe || '에게서 동료와 함께 물러났습니다.' when nal > 0 then foe || '에게 동료와 함께 밀려 물러났습니다.' else foe || '에게 밀려 물러났습니다.' end);
-        -- 이 싸움의 줄을 한 칸으로 묶는 열쇠(fk). 함께 싸웠으면 동료가 받아 쓰도록 남긴다
         plines := (select coalesce(jsonb_agg(l || jsonb_build_object('fk', fk) order by o), '[]'::jsonb) from jsonb_array_elements(jr) with ordinality q(l, o) where o > j0);
         jr := (select coalesce(jsonb_agg(l order by o), '[]'::jsonb) from jsonb_array_elements(jr) with ordinality q(l, o) where o <= j0) || plines;
         if v_fkey is not null then
@@ -453,7 +427,6 @@ begin
       end if;
     end if;
 
-    -- 원정 전용 물품(20261028200000)
                                                                                                                                                                                                                                                                                   item := public.world_expedition_bonus_item(depth, e.stance, (e.minutes / 10.0) / total);
                                                                                                                                                                                                                                                                                       if item is not null then
                                                                                                                                                                                                                                                                                             loot := public.world_inv_add(loot, item, 1);
@@ -467,7 +440,6 @@ begin
       seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'heal', 'who', me, 'owner', e.owner_id, 'text', '정화 부적을 태웠습니다. 침식 -15 · 정신 +5');
     end if;
     while hp < heal_at loop
-      -- 7.7.7m 의무관 [야전 처치]: 보급품보다 먼저, 원정 한 번에 세 번까지(jobn은 의무관에게 이 기술만 센다)
       if c.job_key = 'medic' and jobn < 3 and hp > 0 then
         heal := greatest(1, round(25 * (1 + g_heal / 100.0))); hp := least(100, hp + heal); jobn := jobn + 1; job_once := true;
         lg := lg || jsonb_build_array('[야전 처치] 주변 약초로 상처를 동여맸습니다. 체력 +' || heal);
@@ -550,7 +522,6 @@ begin
       from (select monster_name, mechanic_key, role, monster_id, kind from public.world_region_monsters where region_id = p_region and role <> 'guardian' order by random() limit p_extra) x), '[]'::jsonb);
   end if;
   nf := jsonb_array_length(foes);
-  -- 요괴 도감: 만난 요괴(이기면 쓰러뜨린 요괴)로 적는다
   perform public.world_codex_mark(p_owner, x ->> 'id', 1, case when p_won then 1 else 0 end) from jsonb_array_elements(foes) x where x ? 'id';
   gt := public.world_monster_tier(mlv);
   fhp := array_fill(p_ehp / nf, array[nf]); fhp[nf] := fhp[nf] + p_ehp - (p_ehp / nf) * nf;
@@ -559,7 +530,6 @@ begin
       'text', (select string_agg(x ->> 'n', '·' order by o) from jsonb_array_elements(foes) with ordinality q(x, o) where o > 1) || '도 함께 덤벼듭니다. (요괴 ' || nf || ')');
   end if;
 
-  -- 무기 갈래별 묘사
   vm := case p_wtype
     when 'ranged' then array['{f}에게 화살을 날렸습니다', '숨을 고르고 {f}의 눈을 노려 쏘았습니다', '거리를 벌리며 {f}에게 연달아 쏘았습니다', '{f}의 다리를 꿰뚫었습니다', '바람을 읽고 {f}의 등 뒤를 쏘았습니다']
     when 'magic' then array['영령 방울을 흔들어 {f}의 요기를 흩었습니다', '부적을 날려 {f}을(를) 태웠습니다', '주문을 외워 {f}을(를) 옭아맸습니다', '방울 소리로 {f}의 혼을 뒤흔들었습니다', '먹물로 쓴 술식이 {f}에게 달라붙었습니다']
@@ -573,7 +543,6 @@ begin
     when 'scout' then '[연속 사격] 몸을 낮추고 {f}에게 연달아 쏘았습니다'
     when 'artificer' then '[호위 일격] 앞을 막아서며 {f}을(를) 베어 넘겼습니다' else null end;
 
-  -- 내 쪽 공격 횟수와 각 공격의 피해(합 = 요괴에게 준 피해. 이기면 요괴 체력 전부)
   a_n := least(16, case when p_won then 4 + floor(random() * 4)::int else 3 + floor(random() * 3)::int end + 2 * (nf - 1) + nal);
   dealt := case when p_won then p_ehp else greatest(1, round(p_ehp * (0.45 + random() * 0.35))::int) end;
   w := array[]::float8[]; for i in 1..a_n loop w := w || (0.6 + random()); end loop;
@@ -581,7 +550,6 @@ begin
   for i in 1..a_n loop
     if i = a_n then hits := hits || greatest(1, dealt - acc); else hits := hits || greatest(1, round(dealt * w[i] / wsum)::int); acc := acc + hits[i]; end if;
   end loop;
-  -- 요괴 쪽 행동: 이기면 내 마지막 공격보다 먼저 끝나고, 지면 한두 번 더 몰아친다. 회피한 공격은 피해가 없다.
   b_n := greatest(2, case when p_won then a_n - 1 else a_n + 1 end + (nf - 1));
   if p_won then b_n := least(b_n, a_n); end if;
   etype := array[]::text[];
@@ -598,7 +566,6 @@ begin
   skill_at := case when sk is not null then 2 + floor(random() * greatest(1, a_n - 2))::int else 0 end;
 
   for t in 1..greatest(a_n, b_n) loop
-    -- 요괴 기믹(Lv10부터): 두 번째 합에 한 번. 기술 단계·레벨 차·능력치로 대처하고, 상성 무기나 직업이면 더 잘 대처한다
     if t = 2 and gt >= 2 and p_foe ? 'kind' then
       select * into g from public.world_monster_gimmicks where kind_key = p_foe ->> 'kind' and tier between 2 and gt order by random() limit 1;
       if g.gimmick_key is not null and random() < (case gt when 2 then 0.55 else 0.75 end) then
@@ -634,12 +601,10 @@ begin
         end if;
       end if;
     end if;
-    -- 요괴의 차례
     if t <= b_n then
       ei := ei + 1;
       tgt := (select min(j) from generate_subscripts(fhp, 1) j where fhp[j] > 0);
       if tgt is null then tgt := nf; end if;
-      -- 살아 있는 요괴 가운데 하나
       tgt := coalesce((select j from generate_subscripts(fhp, 1) j where fhp[j] > 0 order by random() limit 1), tgt);
       nm := foes -> (tgt - 1) ->> 'n'; mech := coalesce(foes -> (tgt - 1) ->> 'mech', '');
       if not (nm = any (told)) and random() < 0.55 then
@@ -653,7 +618,6 @@ begin
           when 'boss' then '{f}의 포효에 땅이 울립니다' else '{f}이(가) 낮게 으르렁거리며 틈을 엿봅니다' end;
         seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'foe', 'who', p_me, 'owner', p_owner, 'text', replace(txt, '{f}', nm));
       end if;
-      -- 이목(어그로)을 따라 맞는 사람을 고른다: 무게 = 이목^1.3
       who_n := p_me; who_o := p_owner;
       if nal > 0 then
         tot_w := public.world_cb_aggro(p_pres::numeric)::float8 + coalesce((select sum(public.world_cb_aggro((x ->> 'pres')::numeric)::float8) from jsonb_array_elements(p_allies) x), 0);
@@ -681,7 +645,6 @@ begin
       end if;
       seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', kind_, 'who', who_n, 'owner', who_o, 'text', replace(txt, '{f}', nm), 'value', part);
     end if;
-    -- 내 쪽의 차례(동료는 전투력에 비례해 나선다)
     if t <= a_n then
       hi := hi + 1;
       tgt := coalesce((select min(j) from generate_subscripts(fhp, 1) j where fhp[j] > 0), nf);
@@ -706,7 +669,6 @@ begin
       if random() < 0.12 then txt := '급소를 찔렀습니다! ' || txt || ' · 치명타 ' || hits[hi] || ' 피해';
       else txt := txt || ' · ' || hits[hi] || ' 피해'; end if;
       seq := seq + 1; lines := lines || jsonb_build_object('at', p_base + make_interval(secs => seq * 2), 'kind', 'atk', 'who', who_n, 'owner', who_o, 'text', replace(txt, '{f}', nm), 'value', hits[hi]);
-      -- 피해를 앞 요괴부터 깎고, 넘친 만큼은 다음 요괴로 이어진다
       carry := hits[hi];
       while carry > 0 loop
         tgt := (select min(j) from generate_subscripts(fhp, 1) j where fhp[j] > 0);
@@ -746,7 +708,6 @@ begin
   select party_id into pid from public.world_party_members where owner_id = uid;
   if pid is not null then
     for x in select pe.expedition_id, pe.minutes, pe.started_at, pe.ends_at, pe.region_id, pe.settled_rounds, pc.character_name, pn.node_name, pr.region_name,
-               -- 1.0.1 일지를 섞는 것도 파티 원정으로 함께 떠난 동료만(같은 제안·같은 순간 출발)
                public.world_pexp_together(e.expedition_id, pe.expedition_id) as together
              from public.world_party_members pm join public.world_expeditions pe on pe.owner_id = pm.owner_id and pe.status = 'active'
              join public.world_characters pc on pc.owner_id = pm.owner_id left join public.world_exploration_nodes pn on pn.node_id = pe.node_id
@@ -760,7 +721,6 @@ begin
         'total_rounds', case x.minutes when 30 then 3 when 60 then 6 when 120 then 10 when 240 then 16 else 24 end, 'ends_at', x.ends_at));
     end loop;
   end if;
-  -- 1.0.1 공동 싸움 줄은 파티원 일지마다 같은 것이 들어 있으므로 한 번만, 퀘스트 셈용 줄(hide)은 빼고
   lines := (select coalesce(jsonb_agg(l order by (l ->> 'at')::timestamptz, n), '[]'::jsonb)
             from (select distinct on (l) l, n from jsonb_array_elements(lines) with ordinality as a(l, n)
                   where not coalesce((l ->> 'hide')::boolean, false) order by l, n) q);
@@ -781,13 +741,11 @@ begin
       when 'sealmaster' then '결계 야영' when 'analyst' then '급소 찌르기' when 'artificer' then '반격 태세' end);
 end $function$;
 
--- 1.0.1 「동료와 함께 다녀온 원정」 경험치·숙련 +10%/명도 파티 원정으로 함께 떠난 동료만(사용자 결정; 전에는 같은 지역에 10분 이상 겹치면 누구나)
 do $c$ declare d text; a text; begin
   d := replace(pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure), E'\r\n', E'\n');
   a := $a$join public.world_expeditions px on px.owner_id = om.owner_id and px.region_id = e.region_id and px.status in ('active', 'done')$a$;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_expedition_complete 기준 문구가 없습니다'; end if;
   d := replace(d, a, a || $b$ and public.world_pexp_together(e.expedition_id, px.expedition_id)$b$);
-  -- 수치도 규칙 함수에서(10분 겹침·세 명까지·한 명마다 10%)
   foreach a in array array[$a$e.started_at + interval '10 minutes'$a$, $a$pa := least(coalesce(pa, 0), 3);$a$, $a$|| (10 * pa) ||$a$] loop
     if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_expedition_complete 수치 문구가 없습니다: %', a; end if;
   end loop;
@@ -799,8 +757,6 @@ do $c$ declare d text; a text; begin
   execute d;
 end $c$;
 
--- 1.0.1 원정 일지: 걸음마다 풍경·기척 줄(해시로 정해지는 줄)을 다음 수색 회차 시각까지 미리 준다. 화면은 줄의 시각이 되면 기기 시계로 하나씩
--- 보이고 다음 회차에만 다시 읽는다(전에는 1~2분마다 다시 읽어 2시간 원정에 약 48번 — 이제 회차 수만큼, 2시간이면 10번).
 do $w$ declare d text; a text; begin
   d := replace(pg_get_functiondef('public.world_expedition_walk_lines(uuid)'::regprocedure), E'\r\n', E'\n');
   a := $a$beats := floor(extract(epoch from least(now(), e.ends_at) - e.started_at) / beat_s)::int;$a$;
@@ -808,8 +764,6 @@ do $w$ declare d text; a text; begin
   execute replace(d, a, $b$beats := floor(extract(epoch from least(greatest(now(), e.started_at + (e.ends_at - e.started_at) * least(total, done + 1) / total), e.ends_at) - e.started_at) / beat_s)::int;$b$);
 end $w$;
 
--- 봉연의 그림자 일정: 문 연 시각(world_app_meta open_at)부터 사흘(72시간)을 센다(사용자 결정).
--- 전에는 토벌 기록이 비면(롤백 뒤) 「첫 회차 30시간 뒤」였고 그 30시간도 점검 중(11/2)부터 세어 11/4 16:47에 잡혔다.
 do $w$
 declare d text; a text := $a$at := public.world_raid_evening(now() + case when cnt = 0 then interval '30 hours' else interval '72 hours' end);$a$;
 begin
@@ -817,12 +771,10 @@ begin
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_raid_schedule_next 기준 문구가 없습니다'; end if;
   execute replace(d, a, $b$at := public.world_raid_evening(greatest(now(), coalesce((select m.value::timestamptz from public.world_app_meta m where m.key = 'open_at'), now())) + interval '72 hours');$b$);
 end $w$;
--- 이미 잡힌 회차(모집 전)가 문 연 뒤 사흘보다 이르면 그때로 옮기고, 보낸 예고(24시간 전)는 새 시각에 맞춰 다시 보내게 비운다
 update public.world_raids r set spawn_at = public.world_raid_evening(o.t + interval '72 hours'), notices = '{}', updated_at = now()
   from (select value::timestamptz t from public.world_app_meta where key = 'open_at') o
  where r.kind = 'world' and r.status = 'announced' and r.spawn_at < o.t + interval '72 hours';
 
--- 현장 토벌 한 턴의 응답에 내 생존 수치·가방을 함께 싣는다(me) — 싸우는 동안 턴마다 캐릭터를 다시 읽지 않게(core.js act)
 do $w$
 declare d text; a text := $a$'crit', crit, 'health', hp, 'battle', public.world_field_battle_view(uid), 'next_action_at', now() + interval '1 second');$a$;
 begin
@@ -833,9 +785,6 @@ begin
       'inventory', x.inventory, 'downed_at', x.downed_at, 'updated_at', x.updated_at) from public.world_characters x where x.owner_id = uid));$b$);
 end $w$;
 
--- 행동 뒤 다시 읽기를 한 번으로: 내 캐릭터 행 + 상태판 요약(+ 현장을 보고 있으면 현장 요약).
--- 전에는 행동마다 캐릭터(표 읽기)·world_hud_snapshot·world_field_snapshot 세 요청이 따로 나갔다.
--- invoker라 조사원 권한(열 권한·RLS) 그대로 읽는다. 요약 하나가 실패해도 캐릭터는 돌려준다.
 create or replace function public.world_me(p_hud boolean default true, p_field boolean default false)
 returns jsonb language plpgsql volatile security invoker set search_path = '' as $f$
 declare c jsonb; h jsonb; f jsonb;

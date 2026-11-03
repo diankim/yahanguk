@@ -31,8 +31,6 @@ export function mountHud(el) {
   clearInterval(tick); tick = setInterval(onTick, 1000);
   // 1분 읽기: 방금(45초 안) 행동해 이미 읽었으면 건너뛴다. 자율 상태는 자율 활동 중일 때만, 캐릭터는 3분 넘게 안 읽었을 때만
   // (안전지대 회복은 10분마다라 늦게 보여도 괜찮고, 구조·쓰러짐은 알림으로 바로 온다)
-  // 주기 읽기: 내 행동으로만 바뀌는 값(탐색력·상태 만료·자율 끝)은 화면 시계로 그리고, 남이 바꾸는 일(구조·물품 받기·요화 등)은 알림이 오면 곧바로 읽는다(settings.js).
-  // 그래서 1분마다는 원정 회차가 바뀌었을 때만 묻고, 그 밖에는 5분 넘게 안 읽었을 때 캐릭터·상태판 한 번(world_me)만 — 안전지대 회복(10분마다)이 늦지 않게
   clearInterval(poll); poll = setInterval(() => {
     if (document.hidden) return;
     const roundDue = store.expedition && expRoundOf(store.expedition) !== tickedRound;
@@ -62,13 +60,11 @@ function bumpStamina() {
 function authLost(e) { if (/로그인이 필요합니다|권한이 없습니다/.test(String(e?.message || e || ''))) window.dispatchEvent(new Event('yh-auth-lost')); return null; }
 export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 } = {}) {
   try {
-    // 원정 중이면 새 수색 회차가 지났을 때만 정산을 묻는다(체력·정신·침식은 회차마다만 바뀜 — 전에는 1분마다 물었다)
     if (store.expedition) {
       const r = expRoundOf(store.expedition), id = store.expedition.expedition_id;
       if (r !== tickedRound || id !== tickedExp) { tickedRound = r; tickedExp = id; await rpc('world_expedition_tick').catch(() => null); }
     }
     const first = !state.hud; // 처음에는 게임 화면을 열면서 방금 캐릭터를 읽었으므로 다시 읽지 않는다
-    // 캐릭터도 읽어야 하면 상태판 요약과 한 요청으로(world_me) — 아래 load는 그 값을 캐시에서 받는다
     if (!(first || !char) || !store.character) { await loadCharacter({ hud: true }); hudAge = Math.max(hudAge, 1000); }
     const [idle, hud] = await Promise.all([
       // 현장 화면과 같은 캐시를 쓴다(자율 행동 뒤에는 common.js가 버린다)
@@ -279,7 +275,6 @@ function onTick() {
   if (!root) return;
   const now = Date.now();
   if (staminaDue) { staminaDue = false; if (bumpStamina()) render(); }
-  // 상태이상이 끝나는 시각: 서버에 묻지 않고 다시 그린다(끝난 것은 그릴 때 빠진다)
   if (statusDue) { statusDue = false; render(); }
   root.querySelectorAll('[data-timer]').forEach(el => {
     const t = Number(el.dataset.timer); if (!t) return;

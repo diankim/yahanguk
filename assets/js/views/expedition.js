@@ -201,7 +201,6 @@ function renderActive(box, a) {
 const BATTLE = new Set(['fight', 'atk', 'hurt', 'heal', 'skill', 'guard', 'foe', 'win', 'lose', 'down']);
 const openBattles = new Set();
 function battleGroups(ls) {
-  // 싸움마다 열쇠(서버 fk: 1.0.1부터, 파티원이 함께 싸운 줄도 같은 열쇠) — 옛 기록은 사람마다
   const out = [], open = new Map();
   ls.forEach((l, i) => {
     const key = l.fk || l.owner, g = open.get(key);
@@ -226,8 +225,6 @@ function battleBlock(g, row, me, myName) {
     <ul>${g.lines.slice(1).map(([l, i]) => row(l, i)).join('')}</ul></li>`;
 }
 
-// 진행 기록: 서버는 다음 수색 회차까지의 줄(걸음마다 풍경·기척 줄 포함)을 한 번에 준다. 화면은 줄마다 적힌 시각이 되면
-// 기기 시계로 하나씩 보이고(서버를 다시 부르지 않음), 다음 수색 회차 시각에만 다시 읽는다. 창이 닫히면 멈춘다.
 let feedT = null, paintT = null;
 async function feed(box) {
   const list = $('#exp-feed', box); if (!list?.isConnected) return;
@@ -235,7 +232,7 @@ async function feed(box) {
   let p = null;
   try { p = await load('world_expedition_progress'); } catch (e) { list.innerHTML = `<li class="muted">${esc(e.message)}</li>`; }
   if (p?.active) {
-    const skew = p.server_now ? Date.now() - new Date(p.server_now).getTime() : 0; // 기기 시계와 서버 시계의 차
+    const skew = p.server_now ? Date.now() - new Date(p.server_now).getTime() : 0;
     paintFeed(box, p, skew);
     // 회차 정산으로 바뀐 체력·정신·침식을 상태판에도 곧바로 반영한다
     const c0 = store.character;
@@ -244,7 +241,6 @@ async function feed(box) {
     $('#exp-party', box).innerHTML = party.length ? `<h3 class="sub-h">원정 중인 동료</h3><ul class="spot-list">${party.map(m => `<li><div><b>${esc(m.name)}</b>
         <small>${esc(m.region || '')} · ${esc(m.place || '')}${m.same_region ? ' · 같은 지역' : ''} · 수색 ${m.rounds_done}/${m.total_rounds}</small></div>${bar(m.rounds_done, m.total_rounds, 'xp')}</li>`).join('')}</ul>` : '';
   }
-  // 다시 읽기는 다음 수색 회차 시각에만(끝났거나 멈췄으면 더 읽지 않음). 오류면 1분 뒤.
   const nextRound = p?.active && !p.stopped && p.next_round_at ? new Date(p.next_round_at).getTime() : 0;
   const wait = !p ? 60000 : nextRound ? Math.max(5000, nextRound - Date.now() + 1500) : 0;
   if (wait) feedT = setTimeout(() => { if (!list.isConnected) return; if (!document.hidden) feed(box); else feedT = setTimeout(() => feed(box), 30000); }, Math.min(wait, 600000));
@@ -254,7 +250,6 @@ function paintFeed(box, p, skew) {
   const now = Date.now() - skew;
   const all = p.lines || [], ls = all.filter(l => new Date(l.at).getTime() <= now);
   $('#exp-rounds', box).textContent = `수색 ${p.rounds_done}/${p.total_rounds} · 기록 ${ls.length}줄${p.job_skill ? ` · 기술 ${p.job_skill}` : ''}`;
-  // 일지처럼 위에서 아래로 쌓고, 가장 새 줄이 보이게 아래로 내린다(직접 위로 올려 읽는 중이면 그대로 둔다)
   const first = !seenLines, atEnd = first || list.scrollHeight - list.scrollTop - list.clientHeight < 40;
   const fresh = seenLines && ls.length > seenLines ? ls.length - seenLines : 0;
   const me = store.character?.owner_id;
@@ -262,7 +257,6 @@ function paintFeed(box, p, skew) {
   list.innerHTML = battleGroups(ls).map(g => g.lines ? battleBlock(g, row, me, p.me) : row(g.l, g.i)).join('');
   $$('.exp-battle > button', list).forEach(b => b.onclick = () => { const k = b.dataset.k; openBattles.has(k) ? openBattles.delete(k) : openBattles.add(k); b.parentElement.classList.toggle('open'); });
   seenLines = ls.length || 1;
-  // 처음 열면 가장 아래(가장 새 줄)를 보여 준다. 그 뒤로는 아래를 보고 있을 때만 따라 내려간다.
   if (atEnd) { list.scrollTop = list.scrollHeight; requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; }); }
   const last = ls[ls.length - 1], nextLine = all.find(l => new Date(l.at).getTime() > now);
   const nextAt = nextLine ? new Date(nextLine.at).getTime() : (p.next_round_at ? new Date(p.next_round_at).getTime() : 0);
@@ -271,7 +265,6 @@ function paintFeed(box, p, skew) {
   $('#exp-now', box).innerHTML = p.stopped
     ? `${icon('heart', 14)}<span><b>멈춤</b> 더 나아갈 수 없어 원정이 멈췄습니다. 지금 결과를 받고 돌아올 수 있습니다.</span>`
     : `${icon('pin', 14)}<span><b>지금</b> ${esc(last?.who ? last.who + ' · ' : '')}${esc(last?.text || '')}${nextIn ? ` <small class="muted">· 다음 기록 약 ${Math.max(1, Math.round(nextIn / 60000))}분 뒤</small>` : ''}</span>`;
-  // 아직 시각이 안 된 줄은 그 시각에 화면에서만 보인다
   if (nextLine) paintT = setTimeout(() => paintFeed(box, p, skew), Math.max(500, new Date(nextLine.at).getTime() - now + 300));
 }
 

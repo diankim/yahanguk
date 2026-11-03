@@ -63,7 +63,6 @@ export function bindCrop(root, onReady) {
 /* ── 알림 ────────────────────────────────────────────────── */
 // 목록 단추는 알림 id로 찾는다(확인해 빠진 뒤 순번이 밀려 엉뚱한 알림을 찾던 문제).
 let notes = [], bell, notesLive = false;
-// 알림이 몰려 와도 5초에 한 번만
 const selfSoon = throttle(() => loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_notice' })), 5000);
 const shown = new Set(); // 이미 띄운 알림(실시간과 다시 읽기에서 두 번 띄우지 않게)
 const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'raid_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite']);
@@ -79,7 +78,6 @@ export function mountNotifications(btn) {
       shown.add(n.id); notes.unshift(n); drawDot();
       window.dispatchEvent(new CustomEvent('yh-note', { detail: n })); // 칭호 빨간 점 등이 알림 종류를 보고 바로 다시 센다
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
-      // 남이 내 상태를 바꿨을 수 있는 알림(구조·돌보기·물품·거래·요화·토벌 결과 등)이면 캐릭터·상태판을 한 번에(world_me) 다시 읽는다 — 상태판이 1분마다 묻지 않게 된 대신
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     }).subscribe(status => {

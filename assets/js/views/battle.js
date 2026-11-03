@@ -175,7 +175,6 @@ async function send(action, item) {
       data.battle = r.battle;
       draw(r.lines || []);
       if (r.damage) shake('#foe'); if (r.taken) shake('#me');
-      // 체력·정신·영력·물품은 응답(me)으로 생존 막대와 물품 칸만 고친다
       applyMe(r).then(() => { emit('changed', { name: 'world_battle_action', data: r }); if (data.battle && host?.isConnected) refreshVitals(); });
     }
   } catch (e) {
@@ -191,12 +190,10 @@ function refreshVitals() {
   const inv = c.inventory || {};
   $$('[data-item]', host).forEach(b => { const k = b.dataset.item, n = Number(inv[k] || 0); b.disabled = n <= 0; const t = b.firstChild; if (t?.nodeType === 3) t.textContent = `${nameOf(k)} ×${fmt.num(n)}`; });
 }
-// 끝난 턴: 경험치·전리품까지 캐릭터·상태판·현장을 한 요청(world_me)으로 다시 읽는다
 async function refreshCharacter() {
   const { loadCharacter } = await import('../core.js');
   await loadCharacter({ hud: true, field: true }).catch(() => {});
 }
-// 싸우는 중의 턴: 응답에 실린 생존 수치·가방(me)으로 맞춘다 — 다시 읽지 않는다(서버가 아직 me를 안 보내면 예전처럼 캐릭터만 읽음)
 function applyMe(r) {
   const c = store.character;
   if (!r?.me || !c) return import('../core.js').then(m => m.loadCharacter()).catch(() => {});

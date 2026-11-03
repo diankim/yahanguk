@@ -610,6 +610,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 기술 원칙
 
 - 게임 데이터는 서버에서 검증·저장. 클라이언트의 재화·보상·기여도·시간·소유권을 믿지 않는다.
+- 코드(JS·SQL)에 주석을 넣지 않는다(사용자 결정 — 같은 줄 뒤에 붙인 주석이 다음 코드를 덮어 버그가 난 적이 두 번). 설명은 이 문서와 커밋 메시지에.
 - 한 규칙은 한 곳에(사용자 결정, 수정할 때마다 말 없이도 당연히): 같은 판정·수치·문구가 둘 이상에 적혀 있으면 고치는 김에 모은다 — 판정은 서버 도우미 함수 하나(예 world_pexp_together), 수치는 서버 규칙 함수(world_*_rules → gen.py → gamedata.js), 화면 문구는 assets/js/rules.js(예 PARTY_EXP)에서 꺼내 쓴다. 물품 효과는 use_fx, 직업 효과는 core.js JOBS fx처럼 이미 있는 원본을 쓴다. 새 기능도 처음부터 이렇게 만든다.
 - 화면·도움말에 보이는 수치의 원본은 서버다. 서버 값을 뽑아 tools/gamedata/gen.py가 assets/js/gamedata.js를 만들고(동무 수·직업 기본 능력치·혼자 도전 보정·협동 기술 표·세력 가입 장소·안전지대·관계·가방/창고 칸·칭호 수·어종 수 등), guide.js·character.js·core.js JOBS가 그것만 읽는다. 서버 값을 바꾸거나 동무·어종·칭호·협동 기술을 넣으면 생성기를 다시 돌려 gamedata.js를 커밋한다(손으로 옮겨 적지 않는다). 직업 효과 줄은 core.js JOBS fx 한 곳.
 - RPC는 인증·권한 검증. RLS를 끄지 않는다. SECURITY DEFINER는 최소 권한·고정 search_path. 비밀 키·service_role 키를 프런트에 노출하지 않는다.

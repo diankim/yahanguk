@@ -31,7 +31,6 @@ const CAT = { herbs: '약초', ore: '광맥', wood: '목재', water: '물가', s
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false, peopleTimer = null, peopleKey = '';
-// 여기 있는 이들·파티 칸: 남이 오가거나 파티에 들어와도 2분 안에 보이게(쓰러진 동료는 구조 알림이 바로 온다)(화면이 보이고 창·전투가 없을 때만, 바뀌었을 때만 다시 그림)
 const peopleKeyOf = (r, p) => JSON.stringify([(r || []).map(x => x.owner_id || x.character_name).sort(), (p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
 async function peopleCheck() {
   if (!el?.isConnected || document.hidden || busy || snap?.battle || document.querySelector('.modal-backdrop')) return;
@@ -80,7 +79,6 @@ async function draw() {
   busy = true; again = false;
   try {
     const [s, roster, fish, rest, idle, pty] = await Promise.all([
-      // 현장 요약: 행동 직후에는 합친 읽기(world_me)가 넣어 둔 값을 쓴다(2초 안)
       load('world_field_snapshot', undefined, { maxAge: 2000 }), load('world_region_roster', undefined, { maxAge: 30000 }).catch(() => []),
       // 낚시터(30분)·휴식(10분)·자율(10분) 상태는 길게 다시 쓰고, 관련 행동 뒤에만 새로 읽는다(common.js FISH_CHANGERS 등)
       load('world_fish_spot', undefined, { maxAge: 1800000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 600000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }).catch(() => null),
@@ -119,7 +117,6 @@ async function draw() {
 function partyHtml(p, s) {
   if (!p?.party || (p.members || []).length < 2) return '';
   const me = store.character.owner_id, here = store.character.location;
-  // 이동 중인 동료는 출발지에 남아 보이므로 「같은 곳」으로 치지 않는다(서버 world_party_overview.traveling = 가는 곳)
   const mates = p.members.filter(m => m.owner_id !== me);
   const isNear = m => m.location === here && !m.traveling;
   const near = mates.filter(m => isNear(m) && !m.downed).length;
@@ -227,7 +224,6 @@ function townStamina(st) {
   return `<section class="panel town-st"><span class="ts-label">${icon('spark', 14)} 탐색력</span>${bar(st.now, st.max, 'st big')}<b>${st.now} / ${st.max}</b>
       <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득' : ''}</small></section>`;
 }
-// 탐색력 1이 차는 시각이 되면 서버에 묻지 않고 화면에서 1 올린다(상태판 hud.js bumpStamina와 같은 셈 — 전에는 현장 전체를 다시 읽었다)
 function bumpFieldStamina(now) {
   const st = snap?.stamina; if (!st?.next_at) return;
   const t = new Date(st.next_at).getTime(); if (t > now) return;

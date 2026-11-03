@@ -398,8 +398,6 @@ async function run(btn, fn, isAct) {
   return null;
 }
 
-// 소식 띠(world_raid_brief)를 얼마나 다시 쓸지: 모집·토벌 중이면 1분(체력·남은 시간), 예고만 있거나 없으면 10분.
-// 정해진 때(출현·확정 12시간 전·모집 끝·토벌 끝)가 지났으면 바로 새로 — 남은 시간은 화면 시계로 센다
 function briefAge() {
   const w = store.snaps['world_raid_briefnull']?.world; if (!w) return 600000;
   if (w.status === 'signup' || w.status === 'fight') return 60000;
@@ -407,7 +405,6 @@ function briefAge() {
   const due = Math.min(at(w.spawn_at), w.region ? Infinity : at(w.spawn_at) - 12 * 3600e3);
   return now >= due ? 0 : 600000;
 }
-// 현장 머리의 토벌 띠: 봉연의 그림자 예고·신청·토벌, 내 결전, 봉연에 잠긴 곳(briefAge만큼 다시 씀)
 export const raidBand = () => '<div id="raid-band"></div>';
 export async function fillRaidBand(box) {
   if (!box) return;
