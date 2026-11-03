@@ -479,7 +479,7 @@ function openFacility(k, s) {
 function restGain(r, full) {
   const half = v => r.safe ? v : Math.floor(v * 2 / 3);
   const q = r.rest_quality ?? 1;
-  return { hp: half((full ? 65 : 25) + q * 5), mn: half(full ? 50 : 20), sp: half(full ? 35 : 12), er: half(full ? 18 : 6) };
+  return { hp: half((full ? 65 : 25) + q * 5), mn: half(full ? 50 : 20), sp: half(full ? 50 : 27), er: half(full ? 18 : 6) };
 }
 const gainText = g => `체력 +${g.hp} · 정신 +${g.mn} · ${spOf()[0]} +${g.sp} · 침식 -${g.er}`;
 

@@ -39,4 +39,19 @@ do $p$ declare d text; a text; b text; begin
   if coalesce(c.location, '') <> coalesce(t.location, '') then raise exception '같은 곳에 있는 동료에게만 쓸 수 있습니다.'; end if;$x$);
 end $p$;
 
+-- 1.0.1 영력(기력) 회복(제보: 체력보다 소모가 커서 시간이 많이 듦): 안전지대 체류 10분마다 +15, 잠깐 쉬기 12→27·푹 쉬기 35→50
+do $s$ declare d text; a text; begin
+  d := replace(pg_get_functiondef('public.world_safe_regen()'::regprocedure), E'\r\n', E'\n');
+  a := $a$set health = least(100, c.health + 12), mental = least(100, c.mental + 6)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_safe_regen 기준 문구가 없습니다'; end if;
+  d := replace(d, a, a || $x$, spiritual_power = least(100, c.spiritual_power + 15)$x$);
+  a := $a$and (c.health < 100 or c.mental < 100)$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_safe_regen 조건 문구가 없습니다'; end if;
+  execute replace(d, a, $x$and (c.health < 100 or c.mental < 100 or c.spiritual_power < 100)$x$);
+  d := replace(pg_get_functiondef('public.world_field_rest(text)'::regprocedure), E'\r\n', E'\n');
+  a := $a$sp := CASE WHEN is_full THEN 35 ELSE 12 END;$a$;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_field_rest 기준 문구가 없습니다'; end if;
+  execute replace(d, a, $x$sp := CASE WHEN is_full THEN 50 ELSE 27 END;$x$);
+end $s$;
+
 update public.world_app_meta set value = '20261105060000' where key = 'db_version';
