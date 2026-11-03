@@ -13,6 +13,27 @@ alter table public.world_expedition_pfights enable row level security;
 revoke all on public.world_expedition_pfights from public, anon, authenticated;
 grant select, insert, delete on public.world_expedition_pfights to fn_owner_field;
 
+-- 「파티 원정으로 함께 떠난 두 원정인가」 판정 원본(1.0.1). 같은 제안(world_party_exp_offers departed)의 출발자 명단에 둘 다 있고,
+-- 그 제안이 처리된 순간(resolved_at = 같은 트랜잭션 now() = 출발 시각)에 같은 원정지·같은 기간으로 떠났어야 참.
+-- 우연히 같은 때·같은 곳으로 따로 떠난 원정(파티원끼리든 아니든)은 거짓. 공동 전투(settle)·일지 섞기(progress)·함께 다녀온 덤(complete)이 이것만 쓴다.
+create or replace function public.world_pexp_together(p_e1 uuid, p_e2 uuid) returns boolean
+language sql stable set search_path = '' as $f$
+  select coalesce((select a.node_id = b.node_id and a.minutes = b.minutes and a.started_at = b.started_at and a.owner_id <> b.owner_id
+      and exists (select 1 from public.world_party_exp_offers po
+                   where po.status = 'departed' and po.node_id = a.node_id and po.minutes = a.minutes and po.resolved_at = a.started_at
+                     and po.result -> 'started' ? a.owner_id::text and po.result -> 'started' ? b.owner_id::text)
+    from public.world_expeditions a, public.world_expeditions b where a.expedition_id = p_e1 and b.expedition_id = p_e2), false)
+$f$;
+revoke all on function public.world_pexp_together(uuid, uuid) from public, anon, authenticated;
+
+-- 파티 원정 규칙 수치 원본(1.0.1). 서버 함수와 화면·도움말(tools/gamedata/gen.py → gamedata.js partyExp → rules.js)이 이것만 읽는다.
+create or replace function public.world_pexp_rules() returns jsonb language sql immutable as $f$
+  select jsonb_build_object('flee_hp', 30, 'threat_pct', 45, 'bonus_pct', 10, 'bonus_cap', 3, 'overlap_min', 10)
+$f$;
+revoke all on function public.world_pexp_rules() from public, anon, authenticated;
+grant execute on function public.world_pexp_rules() to fn_owner_field;
+grant execute on function public.world_pexp_together(uuid, uuid) to fn_owner_field;
+
 CREATE OR REPLACE FUNCTION public.world_expedition_settle(p_exp uuid, p_upto integer DEFAULT NULL::integer)
  RETURNS integer
  LANGUAGE plpgsql
@@ -107,10 +128,7 @@ begin
    where mp.owner_id = e.owner_id
      -- 1.0.1 함께 싸우는 것은 「파티 원정」으로 함께 떠난 사람들만: 같은 제안(world_party_exp_offers departed)의 출발자이고,
      -- 그 제안이 처리된 순간(resolved_at = 같은 트랜잭션의 now())에 둘 다 떠났으며 같은 원정지·같은 기간. 우연히 같은 때 따로 떠난 원정은 각자 싸운다.
-     and pe.node_id = e.node_id and pe.minutes = e.minutes and pe.started_at = e.started_at
-     and exists (select 1 from public.world_party_exp_offers po
-                  where po.status = 'departed' and po.node_id = e.node_id and po.minutes = e.minutes and po.resolved_at = e.started_at
-                    and po.result -> 'started' ? e.owner_id::text and po.result -> 'started' ? pm.owner_id::text);
+     and public.world_pexp_together(e.expedition_id, pe.expedition_id);
   if random() < 0.05 then delete from public.world_expedition_pfights where created_at < now() - interval '1 day'; end if;
   p_fight := case e.stance when 'cautious' then 0.22 when 'bold' then 0.5 else 0.35 end + danger * 0.012;
   dmg_mul := case e.stance when 'cautious' then 0.7 when 'bold' then 1.3 else 1.0 end;
@@ -227,7 +245,7 @@ begin
           'text', foe || case when m.role = 'guardian' then '(우두머리)' else '' end || '와(과) 마주쳤습니다.');
         sum_ally := coalesce((select sum((x ->> 'power')::float8) from jsonb_array_elements(act) x), 0);
         if nal > 0 then
-          threat := threat * (1 + 0.45 * nal);
+          threat := threat * (1 + (public.world_pexp_rules() ->> 'threat_pct')::numeric / 100 * nal);
           seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'fight', 'who', me, 'owner', e.owner_id,
             'text', (select string_agg(x ->> 'name', '·') from jsonb_array_elements(act) x) || '와(과) 함께 맞섭니다.');
         end if;
@@ -278,7 +296,7 @@ begin
         if nal > 0 then
           select x ->> 'name', (x ->> 'hp')::int into lowp, minhp from jsonb_array_elements(act) x order by (x ->> 'hp')::int limit 1;
           if hp <= minhp then minhp := hp; lowp := me; end if;
-          flee := minhp < 30;
+          flee := minhp < (public.world_pexp_rules() ->> 'flee_hp')::int;
         end if;
         won := not flee and random() < win_p; grit := false;
         IF NOT won AND NOT flee AND nal = 0 AND hp >= 70 AND random() < least(0.5, (hp - 50) / 100.0) THEN
@@ -309,7 +327,7 @@ begin
           a_n := 1 + floor(random() * 2)::int; b_n := a_n + 1;
         end if;
         -- 장비(호신부·회피)와 동료 수에 따른 피해. 동료가 있으면 요괴가 더 여러 번 공격하고, 이목에 따라 맞는 사람이 갈린다
-        dmg := round(dmg * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - n.min_level - 1))) * greatest(0.3, 1 + g_inc / 100.0) * (1 + 0.45 * nal) * (1 - coalesce((skf ->> 'guard')::float8, 0) / 100.0));
+        dmg := round(dmg * greatest(0.7, least(1.3, 1 - 0.03 * (c.level - n.min_level - 1))) * greatest(0.3, 1 + g_inc / 100.0) * (1 + (public.world_pexp_rules() ->> 'threat_pct')::numeric / 100 * nal) * (1 - coalesce((skf ->> 'guard')::float8, 0) / 100.0));
         my_taken := 0;
    if flee then
      seq := seq + 1; jr := jr || jsonb_build_object('at', base_t + make_interval(secs => seq * 2), 'kind', 'foe', 'who', me, 'owner', e.owner_id,
@@ -729,9 +747,7 @@ begin
   if pid is not null then
     for x in select pe.expedition_id, pe.minutes, pe.started_at, pe.ends_at, pe.region_id, pe.settled_rounds, pc.character_name, pn.node_name, pr.region_name,
                -- 1.0.1 일지를 섞는 것도 파티 원정으로 함께 떠난 동료만(같은 제안·같은 순간 출발)
-               (pe.node_id = e.node_id and pe.minutes = e.minutes and pe.started_at = e.started_at and exists (select 1 from public.world_party_exp_offers po
-                  where po.status = 'departed' and po.node_id = e.node_id and po.minutes = e.minutes and po.resolved_at = e.started_at
-                    and po.result -> 'started' ? uid::text and po.result -> 'started' ? pm.owner_id::text)) as together
+               public.world_pexp_together(e.expedition_id, pe.expedition_id) as together
              from public.world_party_members pm join public.world_expeditions pe on pe.owner_id = pm.owner_id and pe.status = 'active'
              join public.world_characters pc on pc.owner_id = pm.owner_id left join public.world_exploration_nodes pn on pn.node_id = pe.node_id
              left join public.world_map_regions pr on pr.region_id = pe.region_id
@@ -770,10 +786,17 @@ do $c$ declare d text; a text; begin
   d := replace(pg_get_functiondef('public.world_expedition_complete(boolean)'::regprocedure), E'\r\n', E'\n');
   a := $a$join public.world_expeditions px on px.owner_id = om.owner_id and px.region_id = e.region_id and px.status in ('active', 'done')$a$;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_expedition_complete 기준 문구가 없습니다'; end if;
-  execute replace(d, a, a || $b$
-        and px.node_id = e.node_id and px.minutes = e.minutes and px.started_at = e.started_at
-        and exists (select 1 from public.world_party_exp_offers po where po.status = 'departed' and po.node_id = e.node_id and po.minutes = e.minutes
-                      and po.resolved_at = e.started_at and po.result -> 'started' ? e.owner_id::text and po.result -> 'started' ? om.owner_id::text)$b$);
+  d := replace(d, a, a || $b$ and public.world_pexp_together(e.expedition_id, px.expedition_id)$b$);
+  -- 수치도 규칙 함수에서(10분 겹침·세 명까지·한 명마다 10%)
+  foreach a in array array[$a$e.started_at + interval '10 minutes'$a$, $a$pa := least(coalesce(pa, 0), 3);$a$, $a$|| (10 * pa) ||$a$] loop
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.1 world_expedition_complete 수치 문구가 없습니다: %', a; end if;
+  end loop;
+  if (length(d) - length(replace(d, '(1 + 0.1 * pa)', ''))) / length('(1 + 0.1 * pa)') <> 4 then raise exception '1.0.1 world_expedition_complete 덤 배율 문구가 4개가 아닙니다'; end if;
+  d := replace(d, $a$e.started_at + interval '10 minutes'$a$, $a$e.started_at + make_interval(mins => (public.world_pexp_rules() ->> 'overlap_min')::int)$a$);
+  d := replace(d, $a$pa := least(coalesce(pa, 0), 3);$a$, $a$pa := least(coalesce(pa, 0), (public.world_pexp_rules() ->> 'bonus_cap')::int);$a$);
+  d := replace(d, '(1 + 0.1 * pa)', $a$(1 + (public.world_pexp_rules() ->> 'bonus_pct')::numeric / 100 * pa)$a$);
+  d := replace(d, $a$|| (10 * pa) ||$a$, $a$|| ((public.world_pexp_rules() ->> 'bonus_pct')::int * pa) ||$a$);
+  execute d;
 end $c$;
 
 update public.world_app_meta set value = '20261105070000' where key = 'db_version';

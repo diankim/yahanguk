@@ -45,6 +45,7 @@ export const GAMEDATA = {
     {"id":"seal_chain","job":"sealmaster","rank":18,"name":"봉인 사슬","desc":"보스를 사슬로 묶는다. 다음 반격 한 번을 막고, 보스가 받는 피해가 여섯 번 동안 +15%.","target":"boss","cost":10,"cd":20},
     {"id":"seal_bagua","job":"sealmaster","rank":36,"name":"팔괘 결계","desc":"참가자 모두가 다음 두 번 받는 피해 −20%.","target":"all","cost":14,"cd":30}
   ],
+  "partyExp": {"flee_hp":30,"bonus_cap":3,"bonus_pct":10,"threat_pct":45,"overlap_min":10},
   "factionJoin": {
     "night_office": ["hq_yard","hq_dorm","ghost_bamboo"],
     "red_moon_cult": ["red_moon_fort","hq_yard","bone_market","red_plain"],
