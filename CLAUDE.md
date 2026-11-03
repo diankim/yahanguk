@@ -619,6 +619,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - world_characters는 열마다 권한이 걸려 새 열을 더하면 함수 주인 역할의 select *가 깨지므로 캐릭터별 새 값은 별도 표에.
 - manifest.webmanifest(orientation 없음 — "any"면 안드로이드 설치 앱이 회전 잠금을 무시)와 assets/icons(192·512·maskable 512·apple-touch·svg)를 index.html·maintenance.html이 건다.
 - 접속 속도: index.html이 서버·esm.sh에 미리 연결하고 모듈을 modulepreload(새 JS 파일은 목록에 추가). 점검 확인 둘은 동시, 로그인 이벤트가 두 번 와도 한 번만 꾸림(app.js route). 캐릭터·묶음 크기 함께 읽기, 이름 사전은 기기 yh-names-v1. 「접속 중」 8초 늦음 안내·25초 바쁨 안내 + 「다시 시도」·파일 실패 까닭(boot.js).
+- 페이지가 어떻게 열렸는지 표식(1.0.2b2, 요청 추가 없음): core.js BOOT_TAG가 모든 요청의 X-Client-Info 끝에 `nav=(navigate·reload·back_forward)·disc=(크롬이 버린 탭이면 1)·prev=(new 처음·hid 지난 페이지가 정상으로 닫힘·open 닫힘 없이 끝남 = 탭이 죽음)·n=(이 탭에서 몇 번째로 연 것)`을 붙임(sessionStorage yh-life·yh-boots). 서버 기록 edge_logs request.headers.x_client_info로 본다.
 - 라우터는 화면마다 새 칸(.view-host)을 넘겨 늦은 응답이 다른 화면을 덮지 않게.
 
 ### 요청 줄이기

@@ -4,8 +4,22 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
 import { SUPABASE_URL, SUPABASE_KEY, isMaintenanceError, goMaintenance } from './config.js';
 export { SUPABASE_URL, SUPABASE_KEY };
+const BOOT_TAG = (() => {
+  let nav = 'na', prev = 'new', n = 0;
+  try { nav = performance.getEntriesByType('navigation')[0]?.type || 'na'; } catch {}
+  try {
+    prev = sessionStorage.getItem('yh-life') || 'new';
+    n = (+sessionStorage.getItem('yh-boots') || 0) + 1;
+    sessionStorage.setItem('yh-boots', String(n));
+    sessionStorage.setItem('yh-life', 'open');
+    addEventListener('pagehide', () => { try { sessionStorage.setItem('yh-life', 'hid'); } catch {} });
+    addEventListener('pageshow', e => { if (e.persisted) try { sessionStorage.setItem('yh-life', 'open'); } catch {} });
+  } catch {}
+  return `nav=${nav};disc=${document.wasDiscarded ? 1 : 0};prev=${prev};n=${n}`;
+})();
 export const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  global: { headers: { 'X-Client-Info': `supabase-js-web/2.57.0 ${BOOT_TAG}` } },
 });
 
 const listeners = new Map();
