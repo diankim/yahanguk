@@ -25,7 +25,7 @@ export function mountHud(el) {
     if (midBattle(ev)) { const b = ev.data?.battle; if (b && state.hud?.battle) Object.assign(state.hud.battle, { hp: b.hp ?? state.hud.battle.hp, max_hp: b.max_hp ?? state.hud.battle.max_hp }); return render(); }
     const idle = /idle/.test(ev.name || '');
     // 다른 화면(캐릭터 › 상태)이 방금 같은 요약을 읽었으면 그것을 같이 쓴다(1초 안)
-    clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle, hudAge: 1000 }), 350);
+    clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle, hudAge: 3000 }), 350);
   });
   refresh();
   clearInterval(tick); tick = setInterval(onTick, 1000);

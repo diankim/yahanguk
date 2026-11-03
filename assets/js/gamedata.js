@@ -12,12 +12,12 @@ export const GAMEDATA = {
     "analyst": {"agility":6,"strength":8,"vitality":5,"willpower":3,"perception":5,"spirit_affinity":3}
   },
   "soloAid": {
-    "artificer": {"solo_dmg":-38,"final_dmg":-2,"solo_guard":-22},
+    "artificer": {"solo_dmg":-40,"final_dmg":-2,"solo_guard":-24},
     "scout": {"solo_dmg":-25,"final_dmg":-47,"solo_guard":-46},
-    "exorcist": {"solo_dmg":-42,"final_dmg":13,"solo_guard":-17},
-    "medic": {"solo_dmg":-21,"final_dmg":18,"solo_guard":-46},
+    "exorcist": {"solo_dmg":-41,"final_dmg":13,"solo_guard":-16},
+    "medic": {"solo_dmg":-30,"final_dmg":18,"solo_guard":-55},
     "sealmaster": {"solo_dmg":-42,"final_dmg":5,"solo_guard":-32},
-    "analyst": {"solo_dmg":-17,"final_dmg":34,"solo_guard":-28}
+    "analyst": {"solo_dmg":-25,"final_dmg":34,"solo_guard":-36}
   },
   "coop": [
     {"id":"art_mend","job":"analyst","rank":3,"name":"그림자 찌르기","desc":"그림자에서 급소를 노린다. 내 다음 공격이 반드시 치명타.","target":"self","cost":3,"cd":8},
@@ -46,6 +46,7 @@ export const GAMEDATA = {
     {"id":"seal_bagua","job":"sealmaster","rank":36,"name":"팔괘 결계","desc":"참가자 모두가 다음 두 번 받는 피해 −20%.","target":"all","cost":14,"cd":30}
   ],
   "partyExp": {"flee_hp":30,"bonus_cap":3,"bonus_pct":10,"threat_pct":45,"overlap_min":10},
+  "agile": {"agi_k":2,"eva_k":0.175,"flee_k":0.5,"tank_k":0.5,"eva_cap":40,"quiet_k":0.8,"sneak_k":0.65,"eva_base":3,"flee_cap":95,"flee_min":10,"hazard_k":0.75,"flee_base":50,"quiet_cap":50,"scout_eva":6,"sneak_cap":75,"sneak_min":10,"hazard_cap":90,"hazard_w_k":0.05,"scout_flee":15,"sneak_base":25,"hazard_base":30,"scout_sneak":10},
   "factionJoin": {
     "night_office": ["hq_yard","hq_dorm","ghost_bamboo"],
     "red_moon_cult": ["red_moon_fort","hq_yard","bone_market","red_plain"],

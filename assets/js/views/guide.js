@@ -5,7 +5,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP } from '../rules.js';
+import { PARTY_EXP, AGILE } from '../rules.js';
 
 /* ── 서버 수치로 그리는 표(gamedata.js — tools/gamedata/gen.py가 만든다) ── */
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
@@ -238,12 +238,12 @@ const S = [
       <li><b>탐색력</b>은 15분에 1씩 찹니다. 노정 건량을 먹으면 +2입니다.</li>
       <li>아무것도 찾지 못한 탐색은 탐색력 1을 돌려받습니다. 「바람 소리만 들린다」 같은 결과가 그렇습니다.</li>
       <li><b>꾸러미</b>에는 재료 2~3개와 전 3~(8+위험도×3)이 들어 있습니다. 지역 특산물은 50% + 깊이마다 8% 확률로 섞입니다. 대세력 조사원은 가끔 길에서 만난 이와 꾸러미를 나눠, 소속 세력의 영향력을 그 지역에 더 쌓습니다.</li>
-      <li><b>조용히 살피기</b>: 탐색 단추 아래에서 켭니다. 요괴와 마주칠 확률이 (민첩+감각)×0.8%만큼 줄고, 최대 50%까지 줄어듭니다. 대신 꾸러미도 그 절반만큼 덜 나옵니다.</li>
+      <li><b>조용히 살피기</b>: 탐색 단추 아래에서 켭니다. ${AGILE.quiet}. ${AGILE.rule}입니다.</li>
       <li><b>기척 숨기기</b>: 요괴와 마주치면 첫 행동 전에 한 번 고를 수 있습니다.
         <ul><li>성공하면 싸우지 않고 지나갑니다. 보상은 없습니다.</li>
           <li>실패하면 요괴가 먼저 덤벼듭니다.</li>
-          <li>성공 확률은 25% + 민첩×0.8 + 감각×0.5이고, 월궁 사수는 +10입니다.</li>
-          <li>요괴 레벨이 내 레벨보다 높은 만큼 3%씩, 우두머리면 15%가 빠집니다. 확률은 10~75% 사이입니다.</li>
+          <li>${AGILE.sneak}.</li>
+          <li>요괴 레벨이 내 레벨보다 높은 만큼 3%씩, 우두머리면 15%가 빠집니다. 확률은 ${AGILE.sneakRange} 사이입니다.</li>
           <li>탐색력은 돌려받지 않습니다.</li></ul></li>
     </ul>
     <h4>무기와 공격</h4>
@@ -827,11 +827,12 @@ const S = [
     <h4>능력치</h4>
     <table class="guide-table"><tr><th>능력치</th><th>하는 일</th></tr>
       <tr><td>근력</td><td>근접 무기 위력</td></tr>
-      <tr><td>민첩</td><td>회피 · 달아나기 · 원거리 위력. 이목을 낮춥니다.</td></tr>
+      <tr><td>민첩</td><td>원거리 위력 · 기민. 이목을 낮춥니다.</td></tr>
       <tr><td>체질</td><td>방어력 · 응급 회복. 이목을 높입니다.</td></tr>
       <tr><td>감각</td><td>치명타 · 원거리 위력 · 단서 발견</td></tr>
-      <tr><td>의지</td><td>술법 위력 · 응급 회복</td></tr>
-      <tr><td>영성</td><td>술법 무기 위력</td></tr></table>
+      <tr><td>의지</td><td>술법 위력 · 응급 회복 · 기민</td></tr>
+      <tr><td>영성</td><td>술법 무기 위력 · 기민</td></tr></table>
+    <p class="muted small">${AGILE.rule}. ${AGILE.eva} · ${AGILE.flee} · ${AGILE.hazard}. 조용히 살피기·기척 숨기기도 기민을 봅니다.</p>
     <ul>
       <li><b>위력에 드는 몫</b>: 근접은 근력 ×1.0, 술법은 영성 ×0.75 + 의지 ×0.4, 원거리는 민첩 ×0.6 + 감각 ×0.45입니다.</li>
       <li>캐릭터 › 성장에서 + / − 로 쌓아 두고, 바뀔 전투 능력치를 본 뒤 「확정」을 누르면 한 번에 반영됩니다.</li>

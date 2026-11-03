@@ -58,6 +58,7 @@ def build(dsn):
         order by job_key, unlock_rank, sort) from world_coop_skills""")
     # 파티 원정 규칙 수치(world_pexp_rules: 함께 물러나는 체력·동료 한 명마다 위협·함께 다녀온 덤)
     d['partyExp'] = q(dsn, "select world_pexp_rules()")
+    d['agile'] = q(dsn, "select world_agile_rules()")
     # 대세력: 가입 받는 곳·세력 안전지대·관계 기준값
     d['factionJoin'] = q(dsn, f"select json_object_agg(f, world_faction_join_regions(f)) from unnest({jarr(FACTION_KEYS)}) f")
     d['factionHome'] = q(dsn, f"select json_object_agg(f, world_faction_home(f)) from unnest({jarr(FACTION_KEYS)}) f")
