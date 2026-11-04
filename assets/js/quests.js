@@ -150,7 +150,7 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
-const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_(complete|settle)/, gather: /field_gather/, craft: /craft/, fish: /^world_fish$/,
+const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_(complete|settle)/, gather: /field_gather/, craft: /craft/, fish: /^world_fish$/,
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
 let qbWatch = null;
@@ -176,6 +176,12 @@ on('changed', ev => {
     || hits(w, name) || (w.give && ITEM_ACTS.test(name))) invalidate('world_quest_board');
 });
 window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
+on('exp-round', () => {
+  if (!qbWatch?.res.some(({ re }) => re.test('world_expedition_settle'))) return;
+  invalidate('world_quest_board');
+  const box = document.getElementById('quest-box');
+  if (box?.isConnected) fillQuests(box);
+});
 
 export const questBox = () => `<section class="panel quest-box" id="quest-box"></section>`;
 

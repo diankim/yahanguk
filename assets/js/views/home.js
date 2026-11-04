@@ -1,8 +1,9 @@
 import { yohwaDownNow } from '../hud.js';
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
-import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, emblem, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
-import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow } from './common.js';
+import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
+import { face } from '../people.js';
+import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft } from './common.js';
 import { factionColor } from '../geo.js';
 import { PARTY_EXP, AGILE, quietPctOf } from '../rules.js';
 import { bindTips } from './fightui.js';
@@ -169,7 +170,7 @@ function scene(s, traveling, downed) {
     ${traveling ? `<div class="notice travel">${icon('route', 18)}<div><b>${esc(nameOf(c.travel_destination) + '(으)로')} 이동 중</b><span>도착하면 그 지역에서 행동할 수 있습니다.</span></div></div>` : ''}
     ${store.expedition ? (new Date(store.expedition.ends_at) <= new Date()
       ? `<div class="notice ok">${icon('check', 18)}<div><b>원정 완료 · ${esc(store.expedition.place_name || '원정지')}</b><span>원정대가 돌아왔습니다. 결과를 받으면 다시 현장에서 행동할 수 있습니다.</span></div><button class="btn small primary" id="exp-open">결과 받기</button></div>`
-      : `<div class="notice">${icon('flame', 18)}<div><b>원정 중</b><span>원정이 끝날 때까지 현장 행동을 할 수 없습니다.</span></div><button class="btn small" id="exp-open">원정 보기</button></div>`) : ''}
+      : `<div class="notice">${icon('flame', 18)}<div><b>원정 중 · ${esc(store.expedition.place_name || '원정지')}</b><span><em class="exp-left" data-exp-end="${new Date(store.expedition.ends_at).getTime()}">${fmt.remain(new Date(store.expedition.ends_at) - Date.now())} 뒤 귀환</em> · 끝날 때까지 현장 행동을 할 수 없습니다.</span></div><button class="btn small" id="exp-open">원정 보기</button></div>`) : ''}
     ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래를 할 수 없습니다. 물품 사용과 장비 바꾸기는 됩니다. 도중에 그만두면 지난 시간만큼만 받습니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
@@ -191,7 +192,7 @@ function town(s, roster) {
   ].filter(Boolean);
   return `
     ${s.stamina ? townStamina(s.stamina) : ''}
-    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : ''}>${esc(d)}</small></button>`).join('')}</div>
+    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : k === 'depart' ? 'data-tcd-home' : ''}>${esc(k === 'depart' && travelCdLeft() > 0 ? `다시 출발까지 ${fmt.remain(travelCdLeft())}` : d)}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
 }
@@ -337,7 +338,7 @@ function people(roster, corpses) {
   const list = Array.isArray(roster) ? roster : [];
   const dead = corpses || [];
   return `<section class="panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
-    ${list.length ? `<ul class="people">${list.map(p => `<li>${emblem(p.owner_id, p.profile, 34)}<div><b>${cardName(p.owner_id, p.character_name)}${sealMark(p.profile?.seal)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
+    ${list.length ? `<ul class="people">${list.map(p => `<li>${face(p.owner_id, p.profile, 34, p.character_name)}<div><b>${cardName(p.owner_id, p.character_name)}${sealMark(p.profile?.seal)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
       ${p.downed && !p.is_dead ? `<button class="btn small primary" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
     ${dead.length ? `<h3 class="sub-h">쓰러진 이의 자리</h3><ul class="people">${dead.map(d => `<li><span class="emblem corpse">${icon('flame', 18)}</span><div><b>${esc(d.character_name)}의 시신</b><small>${new Date(d.died_at).toLocaleDateString('ko-KR')} · ${esc(d.death_reason || '')}${d.items_left ? ` · 유품 ${d.items_left}점` : ''}</small></div>
       <div class="btn-row">${d.can_respect ? `<button class="btn small" data-respect="${esc(d.corpse_id)}">명복 빌기</button>` : ''}${d.items_left ? `<button class="btn small" data-loot="${esc(d.corpse_id)}">유품 수습</button>` : ''}</div></li>`).join('')}</ul>` : ''}
@@ -428,6 +429,8 @@ function tick() {
   $$('.modal [data-rest]').forEach(b => { const t = restAt(b.dataset.rest), sm = b.querySelector('[data-rest-cd]'); if (!sm) return;
     if (t > now) { b.disabled = true; sm.textContent = `다시 쉬기까지 ${fmt.remain(t - now)}`; } else if (sm.textContent) { b.disabled = false; sm.textContent = ''; } });
   const c = store.character;
+  $$('[data-tcd-home]', el).forEach(s => { const left = travelCdLeft(now); const t = left > 0 ? `다시 출발까지 ${fmt.remain(left)}` : '지도에서 목적지 고르기'; if (s.textContent !== t) s.textContent = t; });
+  $$('[data-exp-end]', el).forEach(s => { const t = Number(s.dataset.expEnd); if (!t) return; if (t > now) s.textContent = `${fmt.remain(t - now)} 뒤 귀환`; else { s.dataset.expEnd = ''; s.textContent = '돌아오는 중…'; setTimeout(draw, 1500); } });
   $$('[data-death]', el).forEach(s => { const t = c?.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0; s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });
 }
 

@@ -51,7 +51,7 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
   try {
     if (store.expedition) {
       const r = expRoundOf(store.expedition), id = store.expedition.expedition_id;
-      if (r !== tickedRound || id !== tickedExp) { tickedRound = r; tickedExp = id; await rpc('world_expedition_tick').catch(() => null); }
+      if (r !== tickedRound || id !== tickedExp) { const fresh = id === tickedExp; tickedRound = r; tickedExp = id; await rpc('world_expedition_tick').catch(() => null); if (fresh) emit('exp-round', r); }
     }
     const first = !state.hud;
     if (!(first || !char) || !store.character) { await loadCharacter({ hud: true }); hudAge = Math.max(hudAge, 1000); }

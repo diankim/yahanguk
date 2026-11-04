@@ -1,4 +1,4 @@
-import { cardName } from './card.js';
+import { cardName, openFriendNote } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { openWhisper } from '../chat.js';
 import { loadCircles, circlesPanelHtml, bindCirclesPanel } from '../circles.js';
@@ -6,7 +6,8 @@ import { loadBond, bondPanelHtml, bindBondPanel } from '../bond.js';
 import { loadLetters, lettersPanelHtml, bindLettersPanel, openCompose } from '../letters.js';
 
 const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
-import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, emblem } from '../core.js';
+import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty } from '../core.js';
+import { face, syncNotes } from '../people.js';
 import { load, panel, chip, loading, errorBox } from './common.js';
 
 const LOOT = [['contribution', '기여도순'], ['designated', '지정순'], ['equal', '균등 분배']];
@@ -30,19 +31,21 @@ async function draw(heavy = false, tick = false) {
     const fresh = tick ? 0 : 45000;
     const [p, loot, roster, fr, cs, bs, lt] = await Promise.all([load('world_party_overview', undefined, { maxAge: heavy ? 0 : fresh }), load('world_party_loot_snapshot', undefined, { maxAge: heavy ? 0 : 300000 }).catch(() => null),
       load('world_region_roster', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => []), load('world_friend_overview', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => null), loadCircles(heavy), loadBond(heavy), loadLetters(heavy)]);
+    if (fr) syncNotes(fr.friends);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
-    const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
+    const member = m => `<li>${face(m.owner_id, m.profile, 36, m.character_name)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
         <small>Lv.${m.level} · ${esc(nameOf(m.job_key))} · ${esc(m.location)} · 체력 ${m.health}${m.away ? ' · 원정 중' : ''}${m.in_combat ? ' · 전투 중' : ''}</small></div>
         ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
     const canInvite = !pt || isLeader, memberIds = new Set((p?.members || []).map(m => m.owner_id));
     const fState = f => f.is_dead ? '숨을 거둠' : f.downed ? '전투불능' : f.in_combat ? '전투 중' : f.away ? '원정 중' : f.traveling ? '이동 중' : '';
     const friendsPanel = fr ? panel(`친구 · ${(fr.friends || []).length}명`, `
-      ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people cards">${fr.incoming.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
+      ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people cards">${fr.incoming.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
           <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
-      ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${emblem(f.owner_id, f.profile, 34)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
-          <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small></div>
+      ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
+          <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small>${f.memo ? `<small class="f-memo">${esc(f.memo)}</small>` : ''}</div>
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
+            <button class="btn small" data-fr-note="${esc(f.owner_id)}" data-fr-name="${esc(f.character_name)}">별명·메모</button>
             ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
             ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
@@ -77,7 +80,7 @@ async function draw(heavy = false, tick = false) {
       </div>` : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
         <button class="btn primary" id="party-make">${icon('plus', 16)}<span>파티 만들기</span></button>
         <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
-      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)}</b>
+      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${face(m.owner_id, m.profile, 36, m.character_name)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
           ${m.downed && !m.is_dead ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
     const mk = $('#party-make', body);
@@ -91,6 +94,7 @@ async function draw(heavy = false, tick = false) {
     $$('[data-fr-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_friend_remove', { p_target: b.dataset.frCancel })));
     $$('[data-unblock]', body).forEach(b => b.onclick = () => guard(b, () => act('world_block_set', { p_target: b.dataset.unblock, p_blocked: false })));
     $$('[data-whisper]', body).forEach(b => b.onclick = () => openWhisper(b.dataset.whisper, b.dataset.whisperId));
+    $$('[data-fr-note]', body).forEach(b => b.onclick = () => openFriendNote(b.dataset.frNote, b.dataset.frName, () => draw(true)));
     $$('[data-fr-inv]', body).forEach(b => b.onclick = () => guard(b, async () => {
       if (!pt) await act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) });
       return act('world_party_invite', { p_invitee_id: b.dataset.frInv });
