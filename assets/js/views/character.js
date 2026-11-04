@@ -617,7 +617,7 @@ async function openFactionGuide(id) {
   $('[data-show]', m)?.addEventListener('click', () => { closeModal(); focusRegion(BASE[id]); window.yahangGo('map', 'world'); });
   $('[data-join-now]', m)?.addEventListener('click', e => guard(e.currentTarget, async () => { const r = await act('world_join_major_faction', { p_faction_id: id }); closeModal(); return r; }));
 }
-const FACTION_BOARD_TIP = '대세력 조사원이 안전지대 밖에서 토벌·탐색·채집·원정을 하면 그 지역에 세력 영향력이 쌓이고, 한 시간마다 정산해 지배 세력이 바뀝니다. 안전지대는 바뀌지 않습니다. 내 세력이 지배하는 곳에서는 채집 +8%·희귀품 +3%·회복량 +5%, 적대 세력이 지배하는 곳에서는 요괴 조우 +8%·정신 손실 +5%, 분쟁 중인 곳은 모두에게 희귀품 +3%·요괴 조우 +5%. 조사원이 적은 세력은 쌓는 영향력에 인원 보정(√(가장 많은 세력 인원 ÷ 우리 인원), 최대 ×2.5)이 붙습니다.';
+const FACTION_BOARD_TIP = '대세력 조사원이 안전지대 밖에서 토벌·탐색·채집·원정을 하면 그 지역에 세력 영향력이 쌓이고, 한 시간마다 정산해 지배 세력이 바뀝니다. 안전지대는 바뀌지 않습니다. 내 세력이 지배하는 곳에서는 채집 +8%·희귀품 +3%·회복량 +5%, 적대 세력이 지배하는 곳에서는 요괴 조우 +8%·정신 손실 +5%, 분쟁 중인 곳은 모두에게 희귀품 +3%·요괴 조우 +5%. 영향력이 적게 쌓인 세력은 약세 보정(최대 ×2.5), 남의 땅을 많이 차지하거나 앞서 있는 세력은 독식 보정을 받습니다. 자세한 수치는 도움말 › 세력.';
 const FACTION_REL_TIP = '다른 세력 조사원과 한 파티로 활동하면 관계가 오르고, 같은 지역에서 영향력을 다투면 내려갑니다. 동맹(40 이상) 세력 조사원과 같은 곳에 있으면 단서 +5%·희귀품 +2%, 적대(−40 이하)면 정신 손실 +5%.';
 function boardPanel(b) {
   const nm = id => b.factions.find(f => f.id === id)?.name || nameOf(id) || '무주';
@@ -626,7 +626,7 @@ function boardPanel(b) {
     .sort((x, y) => y.score - x.score);
   const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
   return panel('세력 판도', `
-    <ul class="fboard">${b.factions.map(f => `<li class="${f.id === b.mine ? 'mine' : ''}" style="--fc:${factionColor(f.id)}"><b>${esc(f.name)}${f.id === b.mine ? ' <small class="accent">내 세력</small>' : ''}</b>조사원 ${f.members} · 지배 ${f.regions}곳 · 영향력 ${fmt.num(f.influence)}${f.boost > 1 ? ` · 인원 보정 ×${f.boost}` : ''}</li>`).join('')}</ul>
+    <ul class="fboard">${b.factions.map(f => `<li class="${f.id === b.mine ? 'mine' : ''}" style="--fc:${factionColor(f.id)}"><b>${esc(f.name)}${f.id === b.mine ? ' <small class="accent">내 세력</small>' : ''}</b>조사원 ${f.members} · 지배 ${f.regions}곳 · 영향력 ${fmt.num(f.influence)}${f.boost > 1 ? ` · 약세 보정 ×${f.boost}` : ''}</li>`).join('')}</ul>
     <div class="grid-2" style="margin-top:8px">
       <div><h3 class="small">${b.mine ? `${esc(nm(b.mine))}의 관계` : '세력 관계'}${helpQ(FACTION_REL_TIP, '세력 관계 안내')}</h3>
         <ul class="frel">${rels.map(r => { const o = b.mine ? (r.a === b.mine ? r.b : r.a) : null;
@@ -646,7 +646,7 @@ const missionsHtml = mine => mine.length ? `<ul class="mission-list">${mine.map(
     ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-here="소속 임무" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.');
 const baseHtml = (c, base, board) => { const major = c.major_faction_id; return `
   <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
-  <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${(() => { const bst = board?.factions?.find(f => f.id === major)?.boost; return bst > 1 ? chip(`인원 보정 영향력 ×${bst}`, 'ok') : ''; })()}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
+  <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${(() => { const bst = board?.factions?.find(f => f.id === major)?.boost; return bst > 1 ? chip(`약세 보정 영향력 ×${bst}`, 'ok') : ''; })()}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
   ${(base?.contents || []).length ? `<ul class="mission-list">${base.contents.map(x => `<li><div><b>${esc(x.title)}</b><small>${esc(x.description || '')}</small><small class="muted">Lv.${x.min_level}+${x.reward ? ' · ' + esc(itemsText(x.reward.items || x.reward)) : ''}</small></div>
     ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
     ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}

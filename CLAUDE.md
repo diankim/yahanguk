@@ -89,7 +89,7 @@
 - 생성기 supabase/gen71/(data_regions.py·regions.py·d_faction.sql·gen.py → migrations/20261102000000_world_7_1_0.sql). 지역 11곳: 옛 의금부 옥사 19·봉인고 26(정통파)·만조의 갑문 24(수향)·적월 제단터 22(적월)·설피골 5(북령)·불씨 고개 5(남명)·등잔골 뒷골목 5(흑련)·별바라기 언덕 5·물시계 터 13·혜성 낙하지 17·구름 위 회랑 16(천명). 지역마다 답사 길·채집터(들머리 「어귀의 …」)·요괴 r71_*·원정지·조사 지점·처음 방문 글·보조 퀘스트 rq_*. 이름 겹침은 ref/existing_names.json으로 검사.
 - 직할령 Lv1~3 여덟 곳은 중립(home_faction_id null, 겨루기 제외, 지도 회색). 본래 주인 기준 지도에서 세력 땅·중립 직할령이 끊기지 않아야 하고, 세력마다 1~5·6~10 구간 지역이 하나 이상(11~15는 직할령 빼고), 16~20은 구름 위 회랑 16·뇌명봉 16·혜성 낙하지 17·옛 의금부 옥사 19·백옥 천문탑 20(1.0.0d에 물시계 터 9→13·혜성 낙하지 13→17·옥사 15→19). Lv21~29(1.0.0d): 지맥의 뿌리 21(흑련)·적월 제단터 22(적월)·만조의 갑문 24(수향)·관성대 25(천명원 쉼터)·봉인고 26(직할령)·흑조 균열 28(남명) — 이야기·세력 퀘스트가 안 쓰는 곳만, 지역·답사 지점·채집터·원정지·요괴·보조 퀘스트를 같은 차이만큼. 소속·좌표를 바꾸면 geo.js buildCells로 연결과 레벨 구간을 확인(좌표는 이동 시간에도 쓰임).
 - 세력마다 들머리 지역(world_faction_join_regions)에서 가입·가입 퀘스트 보고. 대세력 가입 Lv5부터(faction_open 알림 한 번).
-- 겨루기: A 방치 점령지(본래 주인 아닌 세력이 6시간 활동 없으면 감소 3%→8%/시간, 24시간이면 본래 주인에게) · B 독식 보정(본래 땅 밖에서 이미 차지한 수로 본래 땅 밖 새 영향력 1곳 75%·2곳 55%·3곳 40%·4곳↑ 25%, 1.0.3 — 수치 world_faction_spread_rules → world_faction_spread_mult·gamedata factionSpread → rules.js FACTION_SPREAD) · C 주간 정산(pg_cron yh-faction-week 월 04:00 KST: 지킨 지역마다 그 주 활동한 조사원 공훈 5, 그 뒤 영향력 절반, faction_week 알림).
+- 겨루기: A 방치 점령지(본래 주인 아닌 세력이 6시간 활동 없으면 감소 3%→8%/시간, 24시간이면 본래 주인에게) · B 독식 보정(본래 땅 밖에서 차지한 수 + 남의 땅에서 1위 도전자로 분쟁 중인 곳 수(1.0.4e)로 본래 땅 밖 새 영향력 1곳 75%·2곳 55%·3곳 40%·4곳↑ 25%, 1.0.3 — 수치 world_faction_spread_rules → world_faction_spread_mult·gamedata factionSpread → rules.js FACTION_SPREAD) · C 주간 정산(pg_cron yh-faction-week 월 04:00 KST: 지킨 지역마다 그 주 활동한 조사원 공훈 5, 그 뒤 영향력 절반, faction_week 알림).
 
 ### 3.7 탐사 방식
 
@@ -451,7 +451,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 영향력 world_region_influence: 대세력 조사원이 안전지대 밖에서 토벌 승리 1(정예 2·우두머리 4)·탐색 0.3·채집 0.3·원정 20분마다 1(최대 24)(한 사람·지역·정산 40까지). pg_cron yh-influence(매시 7분, world_influence_tick): ×0.97 후 지난 시간 활동을 더함.
 - 지배: 본래 주인(home_faction_id) 기본 150. 도전 세력이 max(150, 지배 점수×1.25) 이상이면 control_faction_id·faction_control 변경(world_faction_log·알림·전체 채팅 '세력 소식'), 60% 이상이면 contested. 안전지대는 안 바뀜.
-- 인원 보정 world_faction_boost: √(최다 세력 인원 ÷ 이 세력 인원)배(1~2.5).
+- 약세 보정 world_faction_boost(1.0.4e, 사용자 결정 — 옛 인원 보정): 세력마다 지금 쌓인 영향력 합(world_region_influence)으로 √(최다 합 ÷ 이 세력 합)배(1~boost_max 2.5, 가장 앞선 세력 ×1). 지키는 쪽: 본래 주인이 본래 땅에 쌓는 몫 ×1.5(home_pct, world_faction_spread_mult). 한 사람 상한: 정산 한 번에 지역마다 40(region_cap)·모든 지역 합 60(person_cap, world_influence_tick per2가 비례로 줄임). 수치는 모두 world_faction_spread_rules → gamedata factionSpread → rules.js FACTION_SPREAD·FACTION_BOOST·FACTION_HOME·FACTION_CAP.
 - 떠나기 world_leave_major_faction(원정 중 불가, 평판 0, 쌓은 영향력은 세력에 남음). world_join_major_faction은 떠난 지 12시간 뒤(payload.left).
 - 관계 world_faction_relations(−100~100, 동맹 40·우호 15·중립·경계 −15·적대 −40, world_faction_rel·world_faction_stance): 한 파티로 활동하면 +0.5(쌍마다 시간당 +1까지), 같은 지역에서 둘 다 3 이상 쌓으면 −0.5(−1.5까지), base로 1%씩 회귀.
 - 효과 world_social_effect: 내 세력 지배 채집 +8·희귀품 +3·회복 +5, 동맹 지배 채집 +4·회복 +3, 적대 지배(바깥) 조우 +8·정신 손실 +5, 분쟁 중 누구나 희귀품 +3·조우 +5. 같은 곳 파티원(전투불능 제외, 3명까지) 한 명마다 받는 피해 −3·있으면 회복 +4, 동맹 동료 단서 +5·희귀품 +2, 적대 동료 정신 손실 +5.

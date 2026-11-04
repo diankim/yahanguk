@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP } from '../rules.js';
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -1140,7 +1140,8 @@ const S = [
     <ul>
       <li><b>방치된 점령지</b>: 본래 주인이 아닌 세력이 차지한 곳에서 그 세력 활동이 6시간 없으면, 영향력이 시간당 8%로 빨리 줄어듭니다. 24시간이 지나면 본래 주인에게 돌아갑니다.</li>
       <li><b>독식 보정</b>: ${FACTION_SPREAD}</li>
-      <li><b>인원 보정</b>: 조사원이 적은 세력은 쌓는 영향력에 √(가장 많은 세력의 인원 ÷ 우리 인원)배가 붙습니다. 1~2.5배이고, 큰 세력과 겨룰 수 있게 해 줍니다. 가입 인원이 바뀌면 바로 달라집니다.</li>
+      <li><b>약세 보정</b>: ${FACTION_BOOST}.</li>
+      <li><b>지키는 쪽</b>: ${FACTION_HOME}. <b>한 사람 상한</b>: ${FACTION_CAP}.</li>
       <li><b>주간 정산</b>: 매주 월요일 04:00에 지킨 지역을 세력 소식으로 남깁니다. 지킨 지역 하나마다 그 주에 활동한 조사원에게 공훈 5를 주고, 모든 영향력이 절반이 됩니다.</li>
     </ul>
     <h4>세력 관계</h4>

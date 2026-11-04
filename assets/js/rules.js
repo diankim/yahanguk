@@ -26,8 +26,12 @@ export const AGILE = {
 };
 const QX = GD.questXp || { grace: 3, mid: 6, mid_pct: 50, low_pct: 20 };
 export const QUEST_XP = `퀘스트 경험치는 퀘스트 레벨에 맞춰 들어갑니다. 내 레벨이 퀘스트보다 ${QX.grace}까지 높으면 그대로, ${QX.grace + 1}~${QX.mid} 높으면 ${QX.mid_pct}%, ${QX.mid + 1} 이상 높으면 ${QX.low_pct}%만 받습니다(전·물품은 그대로)`;
-const FS = (GD.factionSpread?.steps || [[0, 100], [1, 75], [2, 55], [3, 40], [4, 25]]).filter(([n]) => n > 0);
-export const FACTION_SPREAD = `본래 땅 밖에서 이미 차지한 지역이 많을수록, 본래 땅 밖에 새로 쌓는 영향력이 줄어듭니다(본래 땅은 그대로). ${FS.map(([n, p], i) => `${n}곳${i === FS.length - 1 ? ' 이상' : ''} ${p}%`).join(' · ')}`;
+const FSR = GD.factionSpread || {};
+const FS = (FSR.steps || [[0, 100], [1, 75], [2, 55], [3, 40], [4, 25]]).filter(([n]) => n > 0);
+export const FACTION_SPREAD = `본래 땅 밖에서 차지한 곳과 1위로 분쟁 중인 곳이 많을수록, 본래 땅 밖에 새로 쌓는 영향력이 줄어듭니다. ${FS.map(([n, p], i) => `${n}곳${i === FS.length - 1 ? ' 이상' : ''} ${p}%`).join(' · ')}`;
+export const FACTION_HOME = `본래 주인 세력이 자기 본래 땅에서 쌓는 영향력은 ×${(FSR.home_pct || 150) / 100}`;
+export const FACTION_BOOST = `지금 쌓여 있는 영향력 합이 적은 세력일수록 새로 쌓는 영향력에 √(가장 많이 쌓은 세력의 합 ÷ 우리 합)배가 붙습니다(1~${FSR.boost_max || 2.5}배, 가장 앞선 세력은 보정 없음)`;
+export const FACTION_CAP = `한 사람이 한 시간 정산에 쌓는 영향력은 지역마다 ${FSR.region_cap || 40}, 모든 지역을 합쳐 ${FSR.person_cap || 60}까지`;
 export const PARTY_EXP = {
   who: '「파티 원정」으로 함께 떠난 동료',
   apart: '각자 따로 떠난 원정은 같은 때·같은 곳이어도 각자 싸웁니다',
