@@ -45,7 +45,7 @@ async function draw(heavy = false, tick = false) {
       ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small>${f.memo ? `<small class="f-memo">${esc(f.memo)}</small>` : ''}</div>
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
-            <button class="btn small" data-fr-note="${esc(f.owner_id)}" data-fr-name="${esc(f.character_name)}">별명·메모</button>
+            <button class="btn small nowrap" data-fr-note="${esc(f.owner_id)}" data-fr-name="${esc(f.character_name)}">별명·메모</button>
             ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
             ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`

@@ -3027,3 +3027,4 @@ b.shadow { color: var(--sp); }
 .pface.mini .mini-in { display: block; width: 72px; height: 72px; transform: scale(calc(var(--fn) / 72)); transform-origin: 0 0; }
 .f-nick { font-style: normal; margin-left: 4px; padding: 0 5px; border-radius: 6px; font-size: calc(11px * var(--fz, 1)); color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); white-space: nowrap; }
 .f-memo { font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.btn.nowrap { white-space: nowrap; flex-shrink: 0; }
