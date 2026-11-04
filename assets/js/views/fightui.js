@@ -21,23 +21,7 @@ export const fxIcons = keys => fxKeys(keys).map(k => `<i class="fx-i ${BAD.has(k
 export const fxChip = (k, kind = 'ok') => `<span class="chip fx-chip ${BAD.has(k) ? 'bad' : kind}" data-tip="${esc(tipOf(k))}">${icon(FX_ICON[k] || 'spark', 12)}${esc(FX_NAME[k])}</span>`;
 export const fxChips = (keys, kind) => fxKeys(keys).map(k => fxChip(k, kind)).join('');
 
-let tipEl = null, tipTimer = 0;
-function showTip(t) {
-  if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'fx-tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
-  tipEl.textContent = t.dataset.tip; tipEl.hidden = false;
-  const r = t.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
-  const x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
-  const y = r.top - h - 6 >= 8 ? r.top - h - 6 : r.bottom + 6;
-  tipEl.style.left = `${x}px`; tipEl.style.top = `${y}px`;
-}
-export function hideTip() { clearTimeout(tipTimer); if (tipEl) tipEl.hidden = true; }
-export function bindTips(root) {
-  if (!root || root.dataset.tips) return; root.dataset.tips = '1';
-  root.addEventListener('mouseover', e => { const t = e.target.closest?.('[data-tip]'); if (t && root.contains(t)) showTip(t); });
-  root.addEventListener('mouseout', e => { const t = e.target.closest?.('[data-tip]'); if (t && !t.contains(e.relatedTarget)) hideTip(); });
-  root.addEventListener('click', e => { const t = e.target.closest?.('[data-tip]'); if (!t) return; e.stopPropagation(); e.preventDefault(); showTip(t); clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 1800); }, true);
-  window.addEventListener('scroll', hideTip, { passive: true, capture: true });
-}
+export { bindTips, hideTip } from '../tips.js';
 
 export const jobName = j => JOBS[j]?.name || nameOf(j);
 const hpBar = (hp, label = hp, big = false) => `<span class="bar mem-hp ${big ? 'big' : ''} ${hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, Number(hp) || 0))}%"></span><em>${label}</em></span>`;

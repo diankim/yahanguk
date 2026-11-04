@@ -501,6 +501,7 @@ async function loadEquipped() {
 }
 export function spOf() { return weaponStyle === 'melee' ? ['기력', 'ki'] : ['영력', 'sp']; }
 export function brief(t, n = 42) { const s = String(t || '').split(/(?<=[.!?。])\s|\n/)[0].trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; }
+export const rarTag = r => `<span class="rar-tag r-${esc(r || 'common')}">${esc(nameOf(r || 'common'))}</span>`;
 export function equippedIds() { return equipped || []; }
 export function forgetEquipped() { equipped = null; }
 export function bagUsed(c) {

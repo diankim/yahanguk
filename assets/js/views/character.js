@@ -1,4 +1,4 @@
-import { midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
+import { rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -9,6 +9,7 @@ import { loadBond, bindTokenRow } from '../bond.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
+import { helpQ } from '../tips.js';
 
 const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot'], ['house', '별채', 'home']];
 const STATS = [
@@ -104,7 +105,7 @@ export function equipRowLi(inv, prof, here, slot) {
     const cost = Math.max(5, Math.ceil((mx - d) * ((it?.tier || 1) + 1) / 2));
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
-    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh}</b><small>${esc(effectText(enhancedTraits(it?.equipment_traits, n)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}(위력 +${n * 5}%)` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
+    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh} ${rarTag(it?.rarity)}</b><small>${esc(effectText(enhancedTraits(it?.equipment_traits, n)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}(위력 +${n * 5}%)` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
@@ -141,7 +142,7 @@ export function eqMini(inv, prof, pick = false) {
     if (!id) return pick ? `<li><button type="button" class="none" data-eqslot="${slot}">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></button></li>`
       : `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
     const mx = durs[id]?.max ?? maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
-    return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
+    return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label} ${rarTag(it?.rarity)}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
       ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
   }).join('')}</ul>`;
 }
@@ -616,6 +617,8 @@ async function openFactionGuide(id) {
   $('[data-show]', m)?.addEventListener('click', () => { closeModal(); focusRegion(BASE[id]); window.yahangGo('map', 'world'); });
   $('[data-join-now]', m)?.addEventListener('click', e => guard(e.currentTarget, async () => { const r = await act('world_join_major_faction', { p_faction_id: id }); closeModal(); return r; }));
 }
+const FACTION_BOARD_TIP = '대세력 조사원이 안전지대 밖에서 토벌·탐색·채집·원정을 하면 그 지역에 세력 영향력이 쌓이고, 한 시간마다 정산해 지배 세력이 바뀝니다. 안전지대는 바뀌지 않습니다. 내 세력이 지배하는 곳에서는 채집 +8%·희귀품 +3%·회복량 +5%, 적대 세력이 지배하는 곳에서는 요괴 조우 +8%·정신 손실 +5%, 분쟁 중인 곳은 모두에게 희귀품 +3%·요괴 조우 +5%. 조사원이 적은 세력은 쌓는 영향력에 인원 보정(√(가장 많은 세력 인원 ÷ 우리 인원), 최대 ×2.5)이 붙습니다.';
+const FACTION_REL_TIP = '다른 세력 조사원과 한 파티로 활동하면 관계가 오르고, 같은 지역에서 영향력을 다투면 내려갑니다. 동맹(40 이상) 세력 조사원과 같은 곳에 있으면 단서 +5%·희귀품 +2%, 적대(−40 이하)면 정신 손실 +5%.';
 function boardPanel(b) {
   const nm = id => b.factions.find(f => f.id === id)?.name || nameOf(id) || '무주';
   const dot = id => `<span class="fdot" style="--fc:${factionColor(id)}"></span>`;
@@ -623,17 +626,15 @@ function boardPanel(b) {
     .sort((x, y) => y.score - x.score);
   const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
   return panel('세력 판도', `
-    <p class="muted small">대세력 조사원이 안전지대 밖에서 토벌·탐색·채집·원정을 하면 그 지역에 세력 영향력이 쌓이고, 한 시간마다 정산해 지배 세력이 바뀝니다. 안전지대는 바뀌지 않습니다. 내 세력이 지배하는 곳에서는 채집 +8%·희귀품 +3%·회복량 +5%, 적대 세력이 지배하는 곳에서는 요괴 조우 +8%·정신 손실 +5%, 분쟁 중인 곳은 모두에게 희귀품 +3%·요괴 조우 +5%. 조사원이 적은 세력은 쌓는 영향력에 인원 보정(√(가장 많은 세력 인원 ÷ 우리 인원), 최대 ×2.5)이 붙습니다.</p>
     <ul class="fboard">${b.factions.map(f => `<li class="${f.id === b.mine ? 'mine' : ''}" style="--fc:${factionColor(f.id)}"><b>${esc(f.name)}${f.id === b.mine ? ' <small class="accent">내 세력</small>' : ''}</b>조사원 ${f.members} · 지배 ${f.regions}곳 · 영향력 ${fmt.num(f.influence)}${f.boost > 1 ? ` · 인원 보정 ×${f.boost}` : ''}</li>`).join('')}</ul>
     <div class="grid-2" style="margin-top:8px">
-      <div><h3 class="small">${b.mine ? `${esc(nm(b.mine))}의 관계` : '세력 관계'}</h3>
+      <div><h3 class="small">${b.mine ? `${esc(nm(b.mine))}의 관계` : '세력 관계'}${helpQ(FACTION_REL_TIP, '세력 관계 안내')}</h3>
         <ul class="frel">${rels.map(r => { const o = b.mine ? (r.a === b.mine ? r.b : r.a) : null;
-          return `<li><span>${o ? `${dot(o)}${esc(nm(o))}` : `${dot(r.a)}${esc(nm(r.a))} · ${dot(r.b)}${esc(nm(r.b))}`}</span><b class="stance-${esc(r.stance.split(' ')[0])}">${esc(r.stance)} ${r.score > 0 ? '+' : ''}${r.score}</b></li>`; }).join('') || '<li class="muted">두드러진 관계가 없습니다.</li>'}</ul>
-        <p class="muted small">다른 세력 조사원과 한 파티로 활동하면 관계가 오르고, 같은 지역에서 영향력을 다투면 내려갑니다. 동맹(40 이상) 세력 조사원과 같은 곳에 있으면 단서 +5%·희귀품 +2%, 적대(−40 이하)면 정신 손실 +5%.</p></div>
+          return `<li><span>${o ? `${dot(o)}${esc(nm(o))}` : `${dot(r.a)}${esc(nm(r.a))} · ${dot(r.b)}${esc(nm(r.b))}`}</span><b class="stance-${esc(r.stance.split(' ')[0])}">${esc(r.stance)} ${r.score > 0 ? '+' : ''}${r.score}</b></li>`; }).join('') || '<li class="muted">두드러진 관계가 없습니다.</li>'}</ul></div>
       <div><h3 class="small">다투는 지역</h3>
         <ul class="fregion">${b.regions.slice(0, 8).map(r => `<li><span>${dot(r.control)}${esc(r.name)}${r.contested ? ' <b class="contest">분쟁 중</b>' : ''}${r.control !== r.home ? ` <small class="muted">(본래 ${esc(nm(r.home))})</small>` : ''}</span><small>${r.top.map(t => `${esc(nm(t.f))} ${t.p}`).join(' · ')}</small></li>`).join('') || '<li class="muted">아직 영향력을 다투는 곳이 없습니다.</li>'}</ul>
         ${b.log.length ? `<h3 class="small" style="margin-top:8px">소식</h3><ul class="flog">${b.log.slice(0, 6).map(l => `<li><span>${esc(l.text)}</span><small>${ago(l.at)}</small></li>`).join('')}</ul>` : ''}</div>
-    </div>`, { ico: 'flag' });
+    </div>`, { ico: 'flag', extra: helpQ(FACTION_BOARD_TIP, '세력 판도 안내') });
 }
 
 let fx = null;

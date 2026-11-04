@@ -1125,8 +1125,6 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
 .dt-form { display: grid; gap: 12px; }
 .dt-side { margin: 0; padding: 10px 12px 12px; border: var(--bw) solid var(--line); border-radius: var(--r); display: grid; gap: 8px; }
 .dt-side legend { padding: 0 6px; font-weight: 600; font-size: calc(12.5px * var(--fz, 1)); color: var(--gold); }
-.dt-add { display: grid; grid-template-columns: 1fr 72px auto; gap: 6px; align-items: center; }
-.dt-add select, .dt-add input { min-width: 0; }
 .chip-x { display: inline-grid; place-items: center; margin-left: 4px; padding: 0; width: 18px; height: 18px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
 .chip-x:hover { color: var(--bad); }
 .linkish.item-name { color: var(--text); text-decoration: underline dotted color-mix(in srgb, var(--muted) 70%, transparent); text-underline-offset: 3px; font-weight: inherit; text-align: left; }
@@ -2013,10 +2011,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .dlg-foot { display: flex; justify-content: space-between; }
 .dlg-end { display: grid; gap: 8px; margin-top: 10px; } .dlg-end p { margin: 0; }
 /* 물품 고르기(거래소·직접 거래): 분류 칩 + 이름 검색 + 가나다 목록 */
-.pick { display: grid; gap: 6px; min-width: 0; }
 .pick-cats { display: flex; flex-wrap: wrap; gap: 4px; } .pick-cats .chip { cursor: pointer; }
-.pick select, .pick .pick-q { width: 100%; min-width: 0; }
-.pick-n { font-size: calc(11px * var(--fz, 1)); }
 
 /* 세력 인물 기록 */
 .fq-npc { display: grid; gap: 3px; width: 100%; text-align: left; background: none; border: 0; padding: 4px 0; color: var(--text); cursor: pointer; font: inherit; }
@@ -2043,8 +2038,6 @@ b.contest { color: var(--warn); font-weight: 600; }
 .fq-vault > li.owned { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .fq-vault b .chip { margin-left: 4px; vertical-align: 1px; }
 .fq-ns { color: var(--ns); font-weight: 750; }
-.fq-don { max-height: 340px; overflow-y: auto; }
-.fq-don b.r-rare { color: var(--info, #6aa6e8); } .fq-don b.r-epic { color: #b48ad8; } .fq-don b.r-legendary { color: var(--accent); }
 #fq-don-sum .warn { color: var(--warn, var(--gold)); }
 @media (max-width: 640px) { .fq-vault > li { flex-wrap: wrap; } }
 
@@ -2794,15 +2787,8 @@ b.shadow { color: var(--sp); }
 .commission.uc .uc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .commission.uc .linkish { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; text-align: left; }
 .uc-post { display: grid; gap: 8px; }
-.uc-post .pick-cats { display: flex; flex-wrap: wrap; gap: 4px; }
-.uc-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
-.uc-item { width: 100%; display: grid; gap: 2px; text-align: left; padding: 6px 9px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
-.uc-item.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--surface-2)); }
-.uc-item b { font-size: calc(13px * var(--fz, 1)); }
-.uc-more { grid-column: 1 / -1; padding: 4px 2px; }
 .uc-form { display: grid; gap: 6px; border-top: var(--bw) solid var(--line); padding-top: 8px; }
 .uc-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-@media (max-width: 640px) { .uc-items { grid-template-columns: 1fr 1fr; max-height: 36vh; } }
 
 /* 거래소 가격: 개당·합계 금액을 굵게, 본문 색으로 */
 .mk-price b { font-weight: 700; color: var(--text); }
@@ -2919,4 +2905,31 @@ b.shadow { color: var(--sp); }
 @media (pointer: coarse) {
   button.chip, .chips button { min-height: 32px; }
   input[type=checkbox] { width: 20px; height: 20px; }
+}
+
+.pick-field { min-width: 0; } .pick-btn { width: 100%; justify-content: flex-start; gap: 6px; min-width: 0; }
+.pick-btn .pick-label { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ipk { display: grid; gap: 8px; min-width: 0; }
+.ipk-top { display: grid; gap: 6px; position: sticky; top: -16px; z-index: 2; background: var(--surface); padding: 2px 0 6px; }
+.ipk-top .search { margin: 0; }
+.ipk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.ipk-list li.inv-item { display: flex; align-items: center; gap: 6px; padding: 2px 6px 2px 0; background: var(--surface-2); border: var(--bw) solid transparent; border-left: 3px solid var(--line); border-radius: var(--r-sm); min-width: 0; }
+.ipk-list li.r-uncommon { border-left-color: var(--ok); } .ipk-list li.r-rare { border-left-color: var(--mp); } .ipk-list li.r-epic { border-left-color: var(--sp); } .ipk-list li.r-legendary { border-left-color: #c8412f; }
+.ipk-list li.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--surface-2)); }
+.ipk-row { flex: 1; min-width: 0; display: grid; gap: 1px; text-align: left; padding: 6px 8px; background: transparent; border: 0; color: var(--text); cursor: pointer; }
+.ipk-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; } .ipk-name b { font-size: calc(13px * var(--fz, 1)); }
+.ipk-row .brief { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ipk-n { display: grid; grid-template-columns: 28px 52px 28px auto; gap: 3px; align-items: center; flex: none; }
+.ipk-n .btn { min-height: 28px; height: 28px; padding: 0 6px; } .ipk-n input { min-width: 0; height: 28px; padding: 0 4px; text-align: center; }
+.ipk-more { grid-column: 1 / -1; padding: 4px 2px; }
+.ipk-foot { position: sticky; bottom: -20px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0 2px; background: var(--surface); border-top: var(--bw) solid var(--line); }
+.dt-cols { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; align-items: start; }
+.dt-side .dt-pick { justify-self: start; } .dt-gil { margin: 0; }
+.fq-don-picked { min-height: 24px; }
+.eq-mini small .rar-tag { display: inline; font-size: calc(9.5px * var(--fz, 1)); padding: 0 3px; margin-left: 2px; }
+@media (max-width: 640px) {
+  .dt-cols { gap: 6px; } .dt-side { padding: 6px 8px 8px; gap: 6px; } .dt-side .chips .chip-x { min-height: 22px; min-width: 22px; } .dt-side .chips .chip { font-size: calc(11.5px * var(--fz, 1)); } .dt-side legend { font-size: calc(12px * var(--fz, 1)); }
+  .dt-side .dt-pick { justify-self: stretch; padding-inline: 6px; } .dt-gil > span { font-size: calc(11px * var(--fz, 1)); }
+  .ipk-list { grid-template-columns: 1fr; }
+  .ipk-n { grid-template-columns: 28px 44px 28px; } .ipk-n [data-ipk-all] { display: none; }
 }
