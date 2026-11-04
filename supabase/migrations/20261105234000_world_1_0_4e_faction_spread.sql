@@ -3,6 +3,7 @@ create or replace function public.world_faction_spread_rules() returns jsonb lan
                                                        jsonb_build_array(3, 40), jsonb_build_array(4, 25)),
     'boost_max', 2.5, 'home_pct', 150, 'person_cap', 60, 'region_cap', 40)
 $f$;
+grant execute on function public.world_faction_spread_rules() to fn_owner_field;
 
 create or replace function public.world_faction_boost(p text) returns numeric
 language sql stable set search_path to 'pg_catalog', 'public' as $f$
