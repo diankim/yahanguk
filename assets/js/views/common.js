@@ -93,6 +93,12 @@ on('changed', ({ name = '' }) => {
 on('changed', ({ name }) => { if (COMBAT_CHANGERS.test(name || '')) invalidate('world_combat_profile'); if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
+const tcdKey = () => `yh-travel-cd:${store.character?.owner_id || ''}`;
+export function travelCdLeft(now = Date.now()) { try { return Math.max(0, Number(localStorage.getItem(tcdKey()) || 0) - now); } catch { return 0; } }
+export function setTravelCd(secs) { try { const s = Number(secs) || 0; if (s > 0) localStorage.setItem(tcdKey(), String(Date.now() + s * 1000)); else localStorage.removeItem(tcdKey()); } catch {} }
+export const travelCdFromError = msg => { const m = /이동을 취소한 뒤 3분[^(]*\((\d+)초 남음\)/.exec(String(msg || '')); if (m) setTravelCd(m[1]); return !!m; };
+on('changed', ({ name, data }) => { if (name === 'world_travel_cancel') setTravelCd(data?.cooldown_seconds ?? 180); });
+
 function register(name, d) {
   if (!d) return;
   if (name === 'world_inventory_snapshot') {

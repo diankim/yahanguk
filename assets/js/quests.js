@@ -148,7 +148,7 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
-const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish$/,
+const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish$/,
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
 let qbWatch = null;

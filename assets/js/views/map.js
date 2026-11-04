@@ -1,5 +1,5 @@
 import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
-import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS } from './common.js';
+import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS, travelCdLeft, travelCdFromError } from './common.js';
 import { buildCells, centroid, factionColor } from '../geo.js';
 import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
@@ -348,6 +348,7 @@ function drawDetail() {
   let reason = '';
   if (isHere) reason = '';
   else if (traveling) reason = '이미 이동 중입니다. 도착하거나 취소한 뒤 출발할 수 있습니다.';
+  else if (travelCdLeft() > 0) reason = 'cd';
   else if (r.level_locked) reason = `Lv.${r.min_level} 이상부터 들어갈 수 있습니다.`;
   else if (!route) reason = '지금 갈 수 있는 길이 없습니다. 레벨이 모자란 지역이 길을 막고 있습니다.';
   const members = (partyData?.members || []).filter(m => m.owner_id !== c.owner_id && m.location === c.location && !m.in_combat && !m.downed);
@@ -365,7 +366,7 @@ function drawDetail() {
         ${route && route.length > 1 ? `<div class="route-box"><b>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}</b>
           <ol class="route-steps">${route.map((x, i) => `<li class="${i === 0 ? 'from' : i === route.length - 1 ? 'to' : ''}">${esc(x.region_name)}</li>`).join('')}</ol>
           <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${fareLine(est)}</p></div>` : ''}
-        ${reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
+        ${reason === 'cd' ? `<p class="hint">${icon('hourglass', 14)} 이동을 취소한 뒤라 <b data-tcd>${fmt.remain(travelCdLeft())}</b> 뒤에 다시 출발할 수 있습니다.</p>` : reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
         <div class="btn-row">
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
                    : `<button class="btn primary" id="travel-go" ${reason ? 'disabled' : ''}>${icon('route', 16)}<span>${route && route.length > 2 ? '경로 따라 출발' : '이곳으로 출발'}</span></button>`}
@@ -375,7 +376,9 @@ function drawDetail() {
       </div>
     </article>`;
   const go = $('#travel-go', box);
-  if (go) go.onclick = () => guard(go, async () => { const out = await act('world_travel_route', { p_region_id: r.region_id }); invalidate('world_map_snapshot'); return out; });
+  if (go) go.onclick = () => guard(go, async () => { try { const out = await act('world_travel_route', { p_region_id: r.region_id }); invalidate('world_map_snapshot'); return out; } catch (e) { if (travelCdFromError(e?.message)) { drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } throw e; } });
+  const cdEl = $('[data-tcd]', box);
+  if (cdEl) { const t = setInterval(() => { if (!cdEl.isConnected) return clearInterval(t); const left = travelCdLeft(); if (left > 0) cdEl.textContent = fmt.remain(left); else { clearInterval(t); drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } }, 1000); }
   $('#go-field', box)?.addEventListener('click', () => window.yahangGo('home'));
   $$('[data-ride]', box).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_invite_v2', { p_passenger_id: b.dataset.ride, p_region_id: r.region_id }), { success: '동승 요청을 보냈습니다. 상대가 수락하면 함께 출발합니다.' }));
 }

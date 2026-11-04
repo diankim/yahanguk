@@ -2,10 +2,11 @@ import { petImage } from '../housing/petsprite.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
-import { chip } from './common.js';
+import { chip, invalidate } from './common.js';
 import { factionColor } from '../geo.js';
 import { nameStyle } from '../chat.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
+import { nickTag, noteOf, setNote } from '../people.js';
 
 const RANKS = [['combat', '전투'], ['gathering', '채집'], ['crafting', '제작'], ['investigation', '조사']];
 
@@ -38,6 +39,7 @@ async function draw(box, id) {
         : rel === 'incoming' ? `<button class="btn small primary" data-do="accept">${icon('check', 14)}<span>친구 수락</span></button><button class="btn small" data-do="decline">거절</button>`
         : `<button class="btn small primary" data-do="friend">${icon('plus', 14)}<span>친구 신청</span></button>`}
       ${c.is_dead ? '' : `<button class="btn small" data-do="whisper">${icon('chat', 14)}<span>귓속말</span></button>`}
+      ${rel === 'friends' ? `<button class="btn small" data-do="note">${icon('scroll', 14)}<span>별명·메모</span></button>` : ''}
       ${rel === 'friends' && !c.is_dead ? `<button class="btn small" data-do="letter">${icon('letter', 14)}<span>서신 보내기</span></button>` : ''}
       ${c.is_dead ? '' : sparWhy ? `<button class="btn small" disabled title="${esc(sparWhy)}">${icon('sword', 14)}<span>비무 · ${esc(sparWhy)}</span></button>` : `<button class="btn small" data-do="spar" title="목숨을 걸지 않는 겨루기(체력·물품은 줄지 않음)">${icon('sword', 14)}<span>비무 신청</span></button>`}
       ${canInvite ? `<button class="btn small" data-do="invite">${icon('users', 14)}<span>파티 초대</span></button>` : ''}
@@ -55,6 +57,7 @@ async function draw(box, id) {
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div>
         ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div>
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
+      ${rel === 'friends' && noteOf(c.owner_id) ? `<p class="f-memo">${noteOf(c.owner_id).nick ? `<b>내가 붙인 별명</b> ${esc(noteOf(c.owner_id).nick)}` : ''}${noteOf(c.owner_id).nick && noteOf(c.owner_id).memo ? '<br>' : ''}${esc(noteOf(c.owner_id).memo || '')}</p>` : ''}
       <dl class="kv info">
         <div><dt>지금</dt><dd>${state}${yoChip}</dd></div>
         <div><dt>있는 곳</dt><dd>${esc(c.location || '알 수 없음')}${c.same_place && !c.mine ? ' <span class="muted small">(같은 곳)</span>' : ''}</dd></div>
@@ -80,6 +83,7 @@ async function run(b, c, box) {
     if (c.relation === 'friends' && !(await ask(`${c.character_name}님과 친구를 끊을까요?`, { title: '친구 끊기', ok: '끊기', danger: true }))) return;
     return guard(b, async () => { const r = await act('world_friend_remove', { p_target: id }); again(); return r; });
   }
+  if (k === 'note') return openFriendNote(id, c.character_name, again);
   if (k === 'letter') { close(); const { openCompose } = await import('../letters.js'); return openCompose(c.owner_id, c.character_name); }
   if (k === 'whisper') { close(); const { openWhisper } = await import('../chat.js'); return openWhisper(c.character_name, c.owner_id); }
   if (k === 'invite') return guard(b, async () => {
@@ -106,7 +110,22 @@ async function run(b, c, box) {
   if (k === 'unblock') return guard(b, async () => { const r = await act('world_block_set', { p_target: id, p_blocked: false }); again(); return r; });
 }
 
-export const cardName = (id, name) => id ? `<button type="button" class="name-link" data-card="${esc(id)}">${esc(name || '조사원')}</button>` : esc(name || '조사원');
+export function openFriendNote(id, name, done) {
+  const cur = noteOf(id) || {};
+  const m = openLayer({ title: `${name} · 별명과 메모`, body: `<form class="form-grid f-note-form">
+    <label class="field"><span>별명 <small class="muted">12자까지 · 나만 보입니다</small></span><input name="nick" maxlength="12" value="${esc(cur.nick || '')}" autocomplete="off"></label>
+    <label class="field"><span>메모 <small class="muted">200자까지 · 나만 보입니다</small></span><textarea name="memo" maxlength="200" rows="4">${esc(cur.memo || '')}</textarea></label>
+    <div class="btn-row"><button class="btn primary" type="submit">저장</button><button class="btn ghost" type="button" data-clear>지우기</button></div></form>` });
+  const f = m.querySelector('.f-note-form');
+  const save = (nick, memo) => guard(f.querySelector('[type=submit]'), async () => {
+    const r = await rpc('world_friend_note_set', { p_target: id, p_nick: nick, p_memo: memo });
+    setNote(id, r?.nick, r?.memo); invalidate('world_friend_overview'); m.close(); done?.();
+    return { content: r?.nick || r?.memo ? '별명과 메모를 저장했습니다.' : '별명과 메모를 지웠습니다.' };
+  });
+  f.onsubmit = e => { e.preventDefault(); save(f.nick.value, f.memo.value); };
+  f.querySelector('[data-clear]').onclick = () => save('', '');
+}
+export const cardName = (id, name) => id ? `<button type="button" class="name-link" data-card="${esc(id)}">${esc(name || '조사원')}</button>${nickTag(id)}` : esc(name || '조사원');
 
 export function mountCards() {
   document.addEventListener('click', e => {
