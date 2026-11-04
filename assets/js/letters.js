@@ -1,7 +1,8 @@
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, nameOf, toast } from './core.js';
 import { load } from './views/common.js';
 import { cardName } from './views/card.js';
-import { pickerHtml, bindPicker, pickCat, koSort, untradeNote } from './views/services.js';
+import { untradeNote } from './views/services.js';
+import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
 import { loadLocks, isLocked } from './views/item.js';
 import { MARKET_ONLY } from './core.js';
 
@@ -68,9 +69,8 @@ export async function openCompose(to, toName, done, title = '') {
     const friends = (fr?.friends || []).filter(f => !f.is_dead);
     if (!friends.length) { box.innerHTML = '<p class="muted">서신은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.</p>'; return; }
     const have = store.character?.inventory || {}, ref = new Map((prices || []).map(p => [p.item_id, p]));
-    const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
-    const opts = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k))
-      .map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' })).sort(koSort);
+    const opts = pickRows(Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k))
+      .map(([k, n]) => ({ id: k, have: n, max: Math.min(999, n) })), inv?.catalog);
     const st = { to: friends.some(f => f.owner_id === to) ? to : friends[0].owner_id, title, body: '', items: {} };
     const draw = () => {
       box.innerHTML = `<form class="form-grid" id="lt-form">
@@ -79,25 +79,18 @@ export async function openCompose(to, toName, done, title = '') {
         <label class="field"><span>본문 (400자)</span><textarea name="body" maxlength="400" rows="5">${esc(st.body)}</textarea></label>
         <fieldset class="dt-side"><legend>붙일 물품 (다섯 가지까지 · 안전지대에서)</legend>
           ${placeOk ? '<p class="muted small">물품은 안전지대(반요촌 제외)에서 이동·원정·자율 활동 중이 아닐 때만 붙여 부칠 수 있고, 받는 사람도 안전지대에서 받습니다. 글만 적은 서신은 어디서나 부칩니다.</p>' : `<p class="notice-line">${icon('letter', 14)} ${esc(placeWhy)} 글만 적은 서신은 지금도 부칠 수 있습니다.</p>`}
-          <div class="chips">${Object.entries(st.items).map(([k, n]) => `<span class="chip">${esc(nameOf(k))} ×${n}<button type="button" class="chip-x" data-rm="${esc(k)}" aria-label="빼기">${icon('close', 12)}</button></span>`).join('') || '<span class="muted small">없음</span>'}</div>
-          ${pickerHtml('ltItem', opts)}<div class="dt-add"><input name="qty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add ${opts.length ? '' : 'disabled'}>담기</button></div>
+          <div class="chips">${bundleChips(st.items)}</div>
+          <button class="btn small dt-pick" type="button" data-add ${opts.length ? '' : 'disabled'}>${icon('bag', 15)}<span>가방에서 붙이기</span></button>
           ${untradeNote(have, ref, true)}</fieldset>
         <button class="btn primary block" type="submit">${icon('letter', 16)}<span>부치기</span></button></form>`;
       const f = $('#lt-form', box);
       f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault(); });
       if (!placeOk) $$('[data-add]', f).forEach(b => b.disabled = true);
-      bindPicker(f, 'ltItem', opts);
       f.to.onchange = () => { st.to = f.to.value; };
       f.title.oninput = () => { st.title = f.title.value; };
       f.body.oninput = () => { st.body = f.body.value; };
-      $('[data-add]', f).onclick = () => {
-        const id = f.ltItem.value, q = Math.floor(Number(f.qty.value) || 0);
-        if (!id || q < 1) return toast('물품과 수량을 고르세요.', 'error');
-        if (!st.items[id] && Object.keys(st.items).length >= 5) return toast('물품은 다섯 가지까지 붙일 수 있습니다.', 'error');
-        const next = (st.items[id] || 0) + q;
-        if (next > Number(have[id] || 0)) return toast(`${nameOf(id)}은(는) ${have[id] || 0}개까지 붙일 수 있습니다.`, 'error');
-        st.items[id] = Math.min(999, next); draw();
-      };
+      $('[data-add]', f).onclick = () => openItemPick({ title: '서신에 붙일 물품', rows: opts, many: true, picked: st.items, kinds: 5, okText: '이대로 붙이기',
+        note: untradeNote(have, ref, true), onDone: picked => { st.items = picked; draw(); } });
       $$('[data-rm]', f).forEach(b => b.onclick = () => { delete st.items[b.dataset.rm]; draw(); });
       f.onsubmit = async e => {
         e.preventDefault();

@@ -4,6 +4,7 @@ import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';
+import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
 
 const RANK_PERK = {
   night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}% · 그림자 장부(상점 하루 판매 한도 +${(r - 1) * 300}전)`,
@@ -38,20 +39,17 @@ export function playDialogue(r, fid) {
 const KIND = { title: ['칭호', 'flag'], frame: ['테두리', 'spark'], name_style: ['이름 색', 'chat'], mount: ['탈것', 'route'] };
 const kindChip = v => KIND[v.kind] ? chip(KIND[v.kind][0]) : v.slot && v.slot !== 'consumable' && v.slot !== 'material' && v.tier ? chip(`${nameOf(v.slot)} ${v.tier}단계`) : '';
 const PRECIOUS = new Set(['rare', 'epic', 'legendary']);
-let donQ = '';
+let donPicks = {};
 const donateHtml = (s, open) => {
   const d = s.donate || {}, rate = d.rate || 50, cap = d.cap || 30, items = d.items || [];
   const full = (d.merit || 0) >= cap;
-  const list = items.filter(i => !donQ || i.name.includes(donQ));
   return `<p class="small">필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 ${rate}전마다 공훈 1을 받습니다. 하루 공훈 ${cap}까지.</p>
     <div class="chips">${chip(`오늘 ${fmt.num(d.merit || 0)}/${cap}`, full ? 'ok' : '')}${chip(`넘긴 시세 ${fmt.num(d.value || 0)}전`)}</div>
     ${!open ? '' : full ? `<p class="hint good">${icon('check', 14)} 오늘은 상한에 닿았습니다. 내일(한국 시각 0시) 다시 받습니다.</p>` : items.length ? `
-    <label class="search"><span>${icon('search', 16)}</span><input id="fq-don-q" type="search" placeholder="물품 이름" value="${esc(donQ)}"></label>
-    <ul class="fq-vault fq-don">${list.map(i => `<li><div><b class="${PRECIOUS.has(i.rarity) ? `r-${i.rarity}` : ''}">${esc(i.name)} <small class="muted">×${fmt.num(i.qty)}</small></b>
-      <small class="muted">${esc(nameOf(i.rarity))} · 시세 ${fmt.num(i.price)}전${i.tradeable ? '' : ' · 거래 불가'}</small></div>
-      <div class="fq-buy"><input type="number" min="0" max="${i.qty}" value="0" data-don="${esc(i.item_id)}" aria-label="넘길 수량"><button class="btn small ghost" data-don-all="${esc(i.item_id)}">모두</button></div></li>`).join('') || `<li class="muted small">「${esc(donQ)}」에 맞는 물품이 없습니다.</li>`}</ul>
-    <p class="small" id="fq-don-sum"></p>
-    <button class="btn primary" id="fq-donate" data-here="세력 기부" disabled>${icon('bag', 16)}<span>기부하기</span></button>`
+    <div class="chips fq-don-picked">${bundleChips(donPicks, 'data-don-rm')}</div>
+    <div class="btn-row"><button class="btn small" type="button" id="fq-don-pick" data-here="세력 기부">${icon('bag', 15)}<span>가방에서 고르기</span></button>
+      <button class="btn primary" id="fq-donate" data-here="세력 기부" disabled>${icon('bag', 16)}<span>기부하기</span></button></div>
+    <p class="small" id="fq-don-sum"></p>`
     : `<p class="muted small">넘길 수 있는 물품이 없습니다.</p>`}
     <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
@@ -171,7 +169,9 @@ export function bindFaction(body, s) {
 function bindDonate(body, s, done) {
   const box = $('#fq-don-box', body); if (!box) return;
   const d = s.donate || {}, rate = d.rate || 50, cap = d.cap || 30, items = d.items || [];
-  const picks = new Map();
+  for (const id of Object.keys(donPicks)) { const it = items.find(x => x.item_id === id); if (!it) delete donPicks[id]; else donPicks[id] = Math.min(donPicks[id], it.qty); }
+  const picks = new Map(Object.entries(donPicks));
+  const rows = pickRows(items.map(i => ({ id: i.item_id, name: i.name, have: i.qty, max: i.qty, rarity: i.rarity, sub: `시세 ${fmt.num(i.price)}전${i.tradeable ? '' : ' · 거래 불가'}` })), []);
   const sum = () => {
     let val = 0, n = 0;
     for (const [id, q] of picks) { const it = items.find(x => x.item_id === id); if (it && q > 0) { val += it.price * q; n += q; } }
@@ -181,18 +181,11 @@ function bindDonate(body, s, done) {
     if (el) el.innerHTML = n ? `${fmt.num(n)}개 · 시세 ${fmt.num(val)}전 → 공훈 <b>+${gain}</b>${over ? ` <span class="warn">(오늘 상한 ${esc(`${cap}을(를)`)} 넘는 몫은 공훈이 되지 않습니다)</span>` : ''}` : '';
     if (btn) btn.disabled = !n;
   };
+  const redraw = () => { box.innerHTML = donateHtml(s, true); bindDonate(body, s, done); };
   const bind = () => {
-    $$('[data-don]', box).forEach(inp => {
-      inp.value = picks.get(inp.dataset.don) || 0;
-      inp.oninput = () => { const it = items.find(x => x.item_id === inp.dataset.don); const q = Math.max(0, Math.min(it?.qty || 0, Math.floor(Number(inp.value) || 0))); picks.set(inp.dataset.don, q); sum(); };
-    });
-    $$('[data-don-all]', box).forEach(b => b.onclick = () => { const it = items.find(x => x.item_id === b.dataset.donAll); picks.set(b.dataset.donAll, it?.qty || 0); const i = $(`[data-don="${b.dataset.donAll}"]`, box); if (i) i.value = it?.qty || 0; sum(); });
-    const q = $('#fq-don-q', box);
-    if (q) {
-      const redo = () => { donQ = q.value.trim(); box.innerHTML = donateHtml(s, true); bind(); const n = $('#fq-don-q', box); n.focus({ preventScroll: true }); n.setSelectionRange(n.value.length, n.value.length); };
-      q.oninput = e => { if (!e.isComposing) redo(); };
-      q.addEventListener('compositionend', redo);
-    }
+    $('#fq-don-pick', box)?.addEventListener('click', () => openItemPick({ title: '세력에 넘길 물품', rows, many: true, picked: donPicks, okText: '이대로 담기',
+      onDone: p => { donPicks = p; redraw(); } }));
+    $$('[data-don-rm]', box).forEach(b => b.onclick = e => { e.preventDefault(); delete donPicks[b.getAttribute('data-don-rm')]; redraw(); });
     const btn = $('#fq-donate', box);
     if (btn) btn.onclick = async () => {
       const chosen = [...picks].filter(([, q]) => q > 0).map(([id, q]) => ({ it: items.find(x => x.item_id === id), q })).filter(x => x.it);
@@ -200,7 +193,7 @@ function bindDonate(body, s, done) {
       const rare = chosen.filter(x => PRECIOUS.has(x.it.rarity));
       if (rare.length && !(await ask(`희귀한 물품이 들어 있습니다. 넘기면 돌려받을 수 없습니다.\n${rare.map(x => `· ${x.it.name} ×${x.q} (${nameOf(x.it.rarity)})`).join('\n')}`, { title: '희귀품 기부 확인', ok: '그래도 기부' }))) return;
       if (!rare.length && !(await ask(`${chosen.map(x => `${x.it.name} ×${x.q}`).join(', ')}을(를) 기부할까요?`, { title: '세력 기부', ok: '기부' }))) return;
-      guard(btn, async () => { const r = await act('world_faction_donate', { p_items: Object.fromEntries(chosen.map(x => [x.it.item_id, x.q])) }); donQ = ''; done(); return r; });
+      guard(btn, async () => { const r = await act('world_faction_donate', { p_items: Object.fromEntries(chosen.map(x => [x.it.item_id, x.q])) }); donPicks = {}; done(); return r; });
     };
     sum();
   };

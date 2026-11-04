@@ -1,6 +1,8 @@
-import { openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
+import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
+import { helpQ } from '../tips.js';
+import { PICK_CATS, pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
@@ -213,36 +215,10 @@ async function dismantlePane(body) {
   });
 }
 
-const PICK_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
-const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
-const pickCat = c => !c ? 'etc' : PICK_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
 function noEnterSubmit(form) {
   form.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input') && !e.isComposing) { e.preventDefault(); e.target.blur(); } });
 }
-function pickerHtml(name, opts) {
-  return `<div class="pick" data-pick="${name}"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === 'all' ? 'accent' : ''}" data-pc="${k}">${t}</button>`).join('')}</div>
-    <input type="search" class="pick-q" placeholder="이름으로 찾기" aria-label="물품 찾기">
-    <select name="${name}" aria-label="물품">${opts.map(o => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('')}</select><small class="pick-n muted">${opts.length}가지</small></div>`;
-}
-function bindPicker(root, name, opts, onPick) {
-  const box = $(`[data-pick="${name}"]`, root); if (!box) return;
-  const sel = box.querySelector('select'), qi = box.querySelector('.pick-q'), n = box.querySelector('.pick-n');
-  let cat = 'all';
-  const apply = () => {
-    const q = qi.value.trim().toLowerCase(), keep = sel.value;
-    const list = opts.filter(o => (cat === 'all' || o.cat === cat) && (!q || o.label.toLowerCase().includes(q)));
-    sel.innerHTML = list.map(o => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('') || '<option value="">맞는 물품이 없습니다</option>';
-    if (list.some(o => o.id === keep)) sel.value = keep;
-    n.textContent = `${list.length}가지`;
-    if (sel.value !== keep) onPick?.();
-  };
-  qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
-  qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
-  qi.addEventListener('compositionend', apply);
-  box.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => { cat = b.dataset.pc; box.querySelectorAll('[data-pc]').forEach(x => x.classList.toggle('accent', x === b)); apply(); });
-}
-const koSort = (a, b) => a.label.localeCompare(b.label, 'ko');
-export { pickerHtml, bindPicker, pickCat, koSort, untradeNote };
+export { untradeNote };
 
 function untradeNote(have, ref, direct = false) {
   const own = Object.entries(have || {}).filter(([, n]) => Number(n) > 0).map(([k]) => k);
@@ -272,17 +248,17 @@ export async function renderMarket(box) {
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const rarMap = new Map((inv?.catalog || []).map(i => [i.id, i.rarity || 'common']));
     const mkDesc = new Map((inv?.catalog || []).map(i => [i.id, i.description || '']));
-    const rarOf = id => rarMap.get(id) || 'common', rarTag = id => `<span class="rar-tag r-${esc(rarOf(id))}">${esc(nameOf(rarOf(id)))}</span>`;
+    const rarOf = id => rarMap.get(id) || 'common', rTag = id => rarTag(rarOf(id));
     if (error || e2) throw new Error((error || e2).message);
     const offers = [...(myOpen || []), ...(openAll || []).filter(o => !(myOpen || []).some(m => m.offer_id === o.offer_id))];
     const c = store.character, me = c.owner_id, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k))
       .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
-    const sellOpts = tradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n}) · ${nameOf(rarOf(k))}`, cat: catMap.get(k) || 'etc' }));
+    const sellRows = pickRows(tradeable.map(([k, n]) => ({ id: k, have: n, sub: ref.get(k)?.reference_price ? `기준 시세 ${fmt.jeon(ref.get(k).reference_price)}` : '' })), inv?.catalog);
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
-    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rarTag(o.item_id)}<span class="qty">×${o.quantity}</span>
+    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
         <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
@@ -294,7 +270,7 @@ export async function renderMarket(box) {
       ${others.length ? `<ul class="item-list mk-list">${others.map(o => row(o, false)).join('')}</ul><p class="muted small mk-none" hidden>맞는 물품이 없습니다.</p>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
       ${rules}` : `
       ${tradeable.length ? `<form class="trade-form" id="trade-form">
-          <div class="field tf-item"><span>올릴 물품</span>${pickerHtml('item', sellOpts)}</div>
+          <div class="field tf-item"><span>올릴 물품</span>${pickerHtml('item', '가방에서 고르기')}</div>
           <label class="field"><span>수량</span><input name="qty" type="number" min="1" value="1" inputmode="numeric"></label>
           <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}" inputmode="numeric"></label>
           <p class="muted small tf-hint" id="trade-hint"></p>
@@ -332,9 +308,9 @@ export async function renderMarket(box) {
       };
       form.item.onchange = () => { const p = ref.get(form.item.value)?.reference_price; if (p) form.price.value = p; hint(); };
       form.price.addEventListener('change', fixPrice);
-      bindPicker(form, 'item', sellOpts, () => form.item.onchange());
-      if (lastSell && have[lastSell.item] > 0 && sellOpts.some(o => o.id === lastSell.item)) {
-        form.item.value = lastSell.item;
+      const pk = bindPicker(form, 'item', sellRows, () => form.item.onchange(), { title: '거래소에 올릴 물품', placeholder: '가방에서 고르기', note: hiddenNote });
+      if (lastSell && have[lastSell.item] > 0 && sellRows.some(o => o.id === lastSell.item)) {
+        pk.set(lastSell.item);
         form.qty.value = Math.min(lastSell.qty, have[lastSell.item]);
         form.price.value = lastSell.price;
       } else lastSell = null;
@@ -357,6 +333,7 @@ export async function renderMarket(box) {
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
+const DIRECT_TIP = '상대와 같은 곳에만 있으면 안전지대 밖에서도 거래할 수 있습니다. 상대가 수락하면 서버가 양쪽 가방과 전을 한 번에 맞바꿉니다. 전을 받는 쪽은 거래세 5%를 냅니다(수향연맹은 등급에 따라 덜 냄). 제안은 30분 동안 유효하고, 응답 대기는 3건까지입니다. 잠근 물품·장착 중인 마지막 한 개·거래 불가 물품은 줄 수 없습니다.';
 let dt = { to: '', give: {}, giveGil: 0, want: {}, wantGil: 0 };
 const bundle = (items, gil) => [...Object.entries(items || {}).map(([k, n]) => `${nameOf(k)} ×${n}`), gil > 0 ? fmt.jeon(gil) : ''].filter(Boolean).join(', ') || '없음';
 async function renderDirect(body) {
@@ -371,43 +348,41 @@ async function renderDirect(body) {
     const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k));
     const anyTradeable = (prices || []).filter(p => p.tradeable !== false && !MARKET_ONLY.has(p.item_id)).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
     const hiddenNote = untradeNote(have, ref, true);
-    const giveOpts = mineTradeable.map(([k, n]) => ({ id: k, label: `${nameOf(k)} (${n})`, cat: catMap.get(k) || 'etc' })).sort(koSort);
-    const wantOpts = anyTradeable.map(p => ({ id: p.item_id, label: p.item_name || nameOf(p.item_id), cat: catMap.get(p.item_id) || 'etc' }));
+    const giveRows = pickRows(mineTradeable.map(([k, n]) => ({ id: k, have: n, max: Math.min(999, n) })), inv?.catalog);
+    const wantRows = pickRows(anyTradeable.map(p => ({ id: p.item_id, name: p.item_name, max: 999, sub: p.reference_price ? `기준 시세 ${fmt.jeon(p.reference_price)}` : '' })), inv?.catalog);
     if (!people.some(p => p.owner_id === dt.to)) dt.to = people[0]?.owner_id || '';
-    const chipList = (items, side) => Object.entries(items).map(([k, n]) => `<span class="chip">${esc(nameOf(k))} ×${n}<button class="chip-x" data-rm="${side}:${esc(k)}" aria-label="빼기">${icon('close', 12)}</button></span>`).join('') || '<span class="muted small">없음</span>';
+    const chipList = (items, side) => bundleChips(items, `data-rm-${side}`);
     const inc = (pending || []).filter(t => t.incoming), out = (pending || []).filter(t => !t.incoming);
     body.innerHTML = `
       ${inc.length ? `<h3 class="sub-h">받은 제안 ${inc.length}</h3><ul class="spot-list">${inc.map(t => `<li><div><b>${esc(t.other_name)}님의 제안</b>
           <small>받을 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>줄 것: ${esc(bundle(t.want_items, t.want_gil))}</small><small class="muted">${fmt.remain(new Date(t.expires_at) - Date.now())} 뒤 사라짐</small></div>
         <div class="btn-row"><button class="btn small primary" data-here="직접 거래" data-dt-acc="${esc(t.trade_id)}">수락</button><button class="btn small" data-dt-dec="${esc(t.trade_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
       ${people.length ? `<form class="dt-form" id="dt-form">
-        <label class="field"><span>거래할 조사원 (같은 곳에 있는 사람)</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)} · Lv.${p.level}</option>`).join('')}</select></label>
+        <label class="field"><span>거래할 조사원 (같은 곳에 있는 사람)${helpQ(DIRECT_TIP, '직접 거래 안내')}</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)} · Lv.${p.level}</option>`).join('')}</select></label>
+        <div class="dt-cols">
         <fieldset class="dt-side"><legend>내가 줄 것</legend>
           <div class="chips">${chipList(dt.give, 'give')}</div>
-          ${pickerHtml('giveItem', giveOpts)}<div class="dt-add"><input name="giveQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="give" ${mineTradeable.length ? '' : 'disabled'}>담기</button></div>
-          ${hiddenNote}<label class="field"><span>줄 전 (가진 ${fmt.jeon(c.gil)})</span><input name="giveGil" type="number" min="0" value="${dt.giveGil}"></label></fieldset>
+          <button class="btn small dt-pick" type="button" data-pick-side="give" ${giveRows.length ? '' : 'disabled'}>${icon('bag', 15)}<span>가방에서 담기</span></button>
+          <label class="field dt-gil"><span>줄 전 <small class="muted">(가진 ${fmt.jeon(c.gil)})</small></span><input name="giveGil" type="number" min="0" value="${dt.giveGil}" inputmode="numeric"></label></fieldset>
         <fieldset class="dt-side"><legend>받을 것</legend>
           <div class="chips">${chipList(dt.want, 'want')}</div>
-          ${pickerHtml('wantItem', wantOpts)}<div class="dt-add"><input name="wantQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="want">담기</button></div>
-          <label class="field"><span>받을 전</span><input name="wantGil" type="number" min="0" value="${dt.wantGil}"></label></fieldset>
+          <button class="btn small dt-pick" type="button" data-pick-side="want">${icon('search', 15)}<span>받을 물품 담기</span></button>
+          <label class="field dt-gil"><span>받을 전</span><input name="wantGil" type="number" min="0" value="${dt.wantGil}" inputmode="numeric"></label></fieldset>
+        </div>
+        ${hiddenNote}
         <button class="btn primary block" type="submit" data-here="직접 거래">${icon('coin', 16)}<span>거래 제안 보내기</span></button>
       </form>` : empty('같은 곳에 거래할 조사원이 없습니다. 상대와 같은 곳에 있어야 합니다(안전지대가 아니어도 됩니다).', 'users')}
       ${out.length ? `<h3 class="sub-h">보낸 제안 ${out.length}</h3><ul class="spot-list">${out.map(t => `<li><div><b>${esc(t.other_name)}님에게</b><small>줄 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>받을 것: ${esc(bundle(t.want_items, t.want_gil))}</small></div>
-        <button class="btn small" data-dt-cancel="${esc(t.trade_id)}">거두기</button></li>`).join('')}</ul>` : ''}
-      <p class="muted small">상대와 같은 곳에만 있으면 안전지대 밖에서도 거래할 수 있습니다. 상대가 수락하면 서버가 양쪽 가방과 전을 한 번에 맞바꿉니다. 전을 받는 쪽은 거래세 5%를 냅니다(수향연맹은 등급에 따라 덜 냄). 제안은 30분 동안 유효하고, 응답 대기는 3건까지입니다. 잠근 물품·장착 중인 마지막 한 개·거래 불가 물품은 줄 수 없습니다.</p>`;
+        <button class="btn small" data-dt-cancel="${esc(t.trade_id)}">거두기</button></li>`).join('')}</ul>` : ''}`;
     const f = $('#dt-form', body);
     if (f) {
       f.to.onchange = () => { dt.to = f.to.value; };
-      bindPicker(f, 'giveItem', giveOpts); bindPicker(f, 'wantItem', wantOpts);
       f.giveGil.oninput = () => { dt.giveGil = Math.max(0, Math.floor(Number(f.giveGil.value) || 0)); };
       f.wantGil.oninput = () => { dt.wantGil = Math.max(0, Math.floor(Number(f.wantGil.value) || 0)); };
-      $$('[data-add]', f).forEach(b => b.onclick = () => {
-        const side = b.dataset.add, id = f[side + 'Item'].value, q = Math.floor(Number(f[side + 'Qty'].value) || 0);
-        if (!id || q < 1) return toast('물품과 수량을 고르세요.', 'error');
-        const box = dt[side]; if (!box[id] && Object.keys(box).length >= 8) return toast('한 번에 8가지까지 담을 수 있습니다.', 'error');
-        const next = (box[id] || 0) + q;
-        if (side === 'give' && next > Number(have[id] || 0)) return toast(`${nameOf(id)}은(는) ${have[id] || 0}개까지 줄 수 있습니다.`, 'error');
-        box[id] = Math.min(999, next); renderDirect(body);
+      $$('[data-pick-side]', f).forEach(b => b.onclick = () => {
+        const side = b.dataset.pickSide;
+        openItemPick({ title: side === 'give' ? '내가 줄 물품' : '받을 물품', rows: side === 'give' ? giveRows : wantRows, many: true, picked: dt[side], kinds: 8,
+          okText: '이대로 담기', note: side === 'give' ? hiddenNote : '', onDone: picked => { dt[side] = picked; renderDirect(body); } });
       });
       noEnterSubmit(f);
       f.onsubmit = async e => {
@@ -426,7 +401,7 @@ async function renderDirect(body) {
         });
       };
     }
-    $$('[data-rm]', body).forEach(b => b.onclick = e => { e.preventDefault(); const [side, id] = b.dataset.rm.split(':'); delete dt[side][id]; renderDirect(body); });
+    ['give', 'want'].forEach(side => $$(`[data-rm-${side}]`, body).forEach(b => b.onclick = e => { e.preventDefault(); delete dt[side][b.getAttribute(`data-rm-${side}`)]; renderDirect(body); }));
     $$('[data-dt-acc]', body).forEach(b => b.onclick = async () => { if (await ask('이 거래를 받아들일까요? 바로 맞바꿉니다.', { title: '거래 수락', ok: '받아들이기' })) guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtAcc, p_accept: true })); });
     $$('[data-dt-dec]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_respond', { p_trade_id: b.dataset.dtDec, p_accept: false })));
     $$('[data-dt-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_direct_cancel', { p_trade_id: b.dataset.dtCancel })));
