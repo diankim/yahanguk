@@ -6,8 +6,8 @@ declare ea public.world_expeditions%rowtype; eb public.world_expeditions%rowtype
     '%a이(가) 수상한 기척을 손짓으로 %b에게 알립니다.', '%b이(가) 찾은 흔적을 %a이(가) 지도에 옮겨 적습니다.', '%a이(가) 발을 헛디딘 %b을(를) 붙잡아 줍니다.',
     '%a과(와) %b이(가) 바위 그늘에서 잠깐 숨을 고릅니다.', '%a이(가) 마른 육포를 반으로 갈라 %b에게 나눠 줍니다.'];
 begin
-  select * into ea from public.world_expeditions where expedition_id = p_a;
-  select * into eb from public.world_expeditions where expedition_id = p_b;
+  select * into ea from public.world_expeditions where expedition_id = least(p_a, p_b);
+  select * into eb from public.world_expeditions where expedition_id = greatest(p_a, p_b);
   if ea.expedition_id is null or eb.expedition_id is null then return lines; end if;
   select character_name into na from public.world_characters where owner_id = ea.owner_id;
   select character_name into nb from public.world_characters where owner_id = eb.owner_id;
