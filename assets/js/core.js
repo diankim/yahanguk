@@ -366,7 +366,7 @@ export async function loadStaff() {
   return store.staff;
 }
 let dbvP = null;
-export function dbVersion() { return dbvP ||= rpc('world_app_version').then(r => r?.db_version || null).catch(() => { dbvP = null; return null; }); }
+export function dbVersion() { return dbvP ||= fetch(`version.json?vc=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => j?.db_version || null).catch(() => { dbvP = null; return null; }); }
 export const isGM = id => !!id && store.staff.has(id);
 export const gmBadge = id => isGM(id) ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : '';
 

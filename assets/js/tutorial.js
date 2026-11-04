@@ -1,4 +1,5 @@
 import { store, on, esc, icon, $, h, toast, rpc } from './core.js';
+import { syncPrefs } from './prefs.js';
 
 const key = k => `yh-tut-${k}-${store.character?.owner_id || 'x'}`;
 const localGet = (k, d = null) => { try { const v = localStorage.getItem(key(k)); return v == null ? d : JSON.parse(v); } catch { return d; } };
@@ -32,6 +33,7 @@ async function readTutorial(c) {
       const up = {}; FLAGS.forEach(k => { const v = localGet(k); if (v != null) up[k] = !!v; });
       if (Object.keys(up).length) { Object.assign(flags, up); rpc('world_tutorial_set', { p_flags: up }).catch(() => {}); }
     }
+    syncPrefs(r?.ui);
     st.owner = c.owner_id; st.flags = flags; st.prog = { ...(r?.progress || {}) };
     drawChecklist();
   } catch { st.failed = true; drawChecklist(); }

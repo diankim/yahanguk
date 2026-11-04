@@ -1,21 +1,20 @@
-import { rpc, esc, icon, dbVersion } from './core.js';
+import { esc, icon } from './core.js';
 import { selfReload } from './config.js';
 
 const FILES = ['version.json', 'index.html', 'assets/js/app.js', 'assets/app.css'];
 let base = null, dismissedAt = null, timer = null, checking = false;
 
 async function fingerprint() {
+  let dbv = null;
   const parts = await Promise.all(FILES.map(async f => {
     try {
       const r = await fetch(`${f}?vc=${Date.now()}`, { method: f === 'version.json' ? 'GET' : 'HEAD', cache: 'no-store' });
       if (!r.ok) return '';
-      if (f === 'version.json') { const j = await r.json().catch(() => null); if (j) setNotice(j.notice); return `v:${j?.version || ''}`; }
+      if (f === 'version.json') { const j = await r.json().catch(() => null); if (j) setNotice(j.notice); dbv = j ? j.db_version || '' : null; return `v:${j?.version || ''}`; }
       return r.headers.get('etag') || r.headers.get('last-modified') || '';
     } catch { return null; }
   }));
-  let db = null;
-  try { db = base ? (await rpc('world_app_version'))?.db_version || '' : await dbVersion(); } catch { db = null; }
-  return { web: parts, db };
+  return { web: parts, db: dbv };
 }
 const changed = (a, b) => {
   if (!a || !b) return false;

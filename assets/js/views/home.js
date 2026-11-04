@@ -30,11 +30,16 @@ const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false, peopleTimer = null, peopleKey = '';
 const peopleKeyOf = (r, p) => JSON.stringify([(r || []).map(x => x.owner_id || x.character_name).sort(), (p?.members || []).map(m => [m.owner_id, m.location, !!m.downed, !!m.in_combat, !!m.expedition])]);
+let noPartySeen = 0;
+function partyRead(maxAge) {
+  return load('world_party_overview', undefined, { maxAge }).catch(() => null).then(p => { noPartySeen = p?.party ? 0 : Date.now(); return p; });
+}
 async function peopleCheck() {
   if (!el?.isConnected || document.hidden || busy || snap?.battle || document.querySelector('.modal-backdrop')) return;
-  invalidate('world_region_roster'); invalidate('world_party_overview');
+  const skipParty = noPartySeen && Date.now() - noPartySeen < 600000;
+  invalidate('world_region_roster'); if (!skipParty) invalidate('world_party_overview');
   try {
-    const [r, p] = await Promise.all([load('world_region_roster').catch(() => []), load('world_party_overview').catch(() => null)]);
+    const [r, p] = await Promise.all([load('world_region_roster').catch(() => []), skipParty ? null : partyRead(0)]);
     const key = peopleKeyOf(r, p);
     if (key !== peopleKey) draw(); else peopleKey = key;
   } catch {}
@@ -72,11 +77,11 @@ async function draw() {
   if (busy) { again = true; return; }
   busy = true; again = false;
   try {
-    const [s, roster, fish, rest, idle, pty] = await Promise.all([
+    const [s, roster, fish, rest, pty] = await Promise.all([
       load('world_field_snapshot', undefined, { maxAge: 2000 }), load('world_region_roster', undefined, { maxAge: 120000 }).catch(() => []),
-      load('world_fish_spot', undefined, { maxAge: 1800000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 600000 }).catch(() => null), load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }).catch(() => null),
-      load('world_party_overview', undefined, { maxAge: 120000 }).catch(() => null)]);
-    snap = s; fishSpot = fish; restSt = rest; idleSt = idle?.active ? idle : null;
+      load('world_fish_spot', undefined, { maxAge: 1800000 }).catch(() => null), load('world_rest_status', undefined, { maxAge: 600000 }).catch(() => null),
+      partyRead(120000)]);
+    snap = s; fishSpot = fish; restSt = rest; idleSt = store.idle?.active ? store.idle : null;
     peopleKey = peopleKeyOf(roster, pty);
     const c = store.character;
     const traveling = c.travel_arrives_at && new Date(c.travel_arrives_at) > new Date();

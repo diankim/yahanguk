@@ -13,7 +13,7 @@ const musicOk = () => sound.bgmOn && !yielded;
 let env = { weather: 'clear', phase: 'noon' };
 
 export function loadSound() { try { Object.assign(sound, JSON.parse(localStorage.getItem('yh-sound') || '{}')); } catch {} }
-export function saveSound() { try { localStorage.setItem('yh-sound', JSON.stringify(sound)); } catch {} }
+export function saveSound() { try { localStorage.setItem('yh-sound', JSON.stringify(sound)); } catch {} if (!POPWIN) window.dispatchEvent(new Event('yh-prefs-changed')); }
 const masterLevel = () => 0.9 * Math.max(0, Math.min(1, sound.vol ?? 1));
 export function applyVolumes() {
   if (!ctx) return;

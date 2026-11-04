@@ -105,7 +105,7 @@ export function applyTheme(id, save = true, custom) {
   root.dataset.theme = t.id; root.dataset.tone = t.tone; root.style.colorScheme = t.tone;
   const d = t.deco || {}; root.dataset.tex = d.tex || 'none'; root.dataset.frame = d.frame || 'bracket'; root.dataset.head = d.head || 'plain';
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', t.c[0]);
-  if (save) try { localStorage.setItem('yh-theme', t.id); if (custom) localStorage.setItem('yh-theme-custom', JSON.stringify(custom)); } catch {}
+  if (save) { try { localStorage.setItem('yh-theme', t.id); if (custom) localStorage.setItem('yh-theme-custom', JSON.stringify(custom)); } catch {} window.dispatchEvent(new Event('yh-prefs-changed')); }
 }
 export function savedThemeId() { try { return localStorage.getItem('yh-theme') || 'yahang'; } catch { return 'yahang'; } }
 export function applySavedTheme() { applyTheme(savedThemeId(), false); applyFontSize(savedFontSize(), false); }
@@ -115,7 +115,7 @@ export function applyFontSize(k, save = true) {
   const f = FONT_SIZES.find(x => x[0] === k) || FONT_SIZES[2];
   document.documentElement.style.setProperty('--fz', String(f[2]));
   document.documentElement.dataset.fz = f[0];
-  if (save) try { localStorage.setItem('yh-fz', f[0]); } catch {}
+  if (save) { try { localStorage.setItem('yh-fz', f[0]); } catch {} window.dispatchEvent(new Event('yh-prefs-changed')); }
 }
 const TEX_NAME = { none: '민무늬', tile: '기왓골', brush: '붓결', dot: '점무늬', bamboo: '대나무 결', wave: '물결', lattice: '살창', star: '별밭', grain: '나뭇결', hanji: '한지 결', grid: '격자' };
 export function themeCard(t, on) {
