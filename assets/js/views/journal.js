@@ -4,6 +4,7 @@ import { load, panel, chip, loading, errorBox, currentRegion } from './common.js
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report } from '../quests.js';
+import { sourcesMore } from '../sources.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
 const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
@@ -415,7 +416,7 @@ const spotRow = g => {
 function spotsHtml(x) {
   const sp = x.spots || [];
   if (!sp.length) return `<small class="muted">${esc((x.regions || []).join(', '))}</small>`;
-  return `<div class="gx-spots">${sp.slice(0, 2).map(spotRow).join('')}${sp.length > 2 ? `<p class="gx-line muted">외 지역 ${sp.length - 2}곳</p>` : ''}</div>`;
+  return `<div class="gx-spots">${sp.slice(0, 2).map(spotRow).join('')}${sp.length > 2 ? `<p class="gx-line">${x.id ? sourcesMore(x.id, sp.length - 2) : `<span class="muted">외 지역 ${sp.length - 2}곳</span>`}</p>` : ''}</div>`;
 }
 async function gatherCodex(box) {
   const o = await load('world_gather_codex_snapshot', undefined, { maxAge: 20000 });

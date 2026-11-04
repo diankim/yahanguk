@@ -1,6 +1,7 @@
 import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip, zonesNow, catItem, fxNames } from './common.js';
+import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -144,34 +145,16 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
 
-const srcCache = new Map(), srcAllCache = new Map();
-async function goRegion(name) {
-  const { focusRegion } = await import('./map.js');
-  closeLayers(); closeModal(); focusRegion(name); window.yahangGo('map', 'world');
-}
-async function openAllSources(id) {
-  let s;
-  try { if (!srcAllCache.has(id)) srcAllCache.set(id, await rpc('world_item_sources_all', { p_item: id })); s = srcAllCache.get(id) || {}; }
-  catch (e) { toast(e.message, 'error'); return; }
-  const sec = (label, all) => (all || []).length ? `<h3 class="sub-h">${label} <small class="muted">${all.length}곳 · 낮은 레벨부터</small></h3>
-    <div class="src-all">${all.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join('')}</div>` : '';
-  const body = [sec('채집', s.gather), sec('요괴', s.monsters), sec('낚시', s.fish)].join('') || '<p class="muted">-</p>';
-  const m = openLayer({ title: `${nameOf(id)} · 얻는 곳`, body: `<p class="muted small">지역 이름을 누르면 지도에서 짚어 줍니다.</p>${body}` });
-  $$('[data-src-go]', m).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
-}
 async function fillSources(box, id) {
   const dd = $('[data-src]', box); if (!dd) return;
   try {
-    if (!srcCache.has(id)) srcCache.set(id, await load('world_item_sources', { p_item: id }));
-    const s = srcCache.get(id) || {};
+    const s = await itemSources(id) || {};
     const part = (label, all, n) => { const list = (all || []).slice(0, 2), tot = Math.max(n || 0, (all || []).length);
-      return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}">${esc(r)}</button>`).join(' · ')}${tot > list.length ? ` <button type="button" class="q-link src-more" data-src-more>외 ${tot - list.length}곳</button>` : ''}</span>` : ''; };
-    const html = [part('채집', s.gather, s.gather_n), part('요괴', s.monsters, s.monsters_n), part('낚시', s.fish, s.fish_n)].filter(Boolean).join('');
+      return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => regionBtn(r)).join(' · ')}${tot > list.length ? ` ${sourcesMore(id, tot - list.length)}` : ''}</span>` : ''; };
+    const html = SRC_KINDS.map(([k, label]) => part(label, s[k], s[`${k}_n`])).filter(Boolean).join('');
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
     const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`].filter(Boolean).join('');
     dd.innerHTML = (html + extra) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
-    $$('[data-src-go]', dd).forEach(btn => btn.onclick = () => goRegion(btn.dataset.srcGo));
-    $$('[data-src-more]', dd).forEach(btn => btn.onclick = () => openAllSources(id));
   } catch { dd.textContent = '-'; }
 }
 function draw(box, id, inv, prices, mode) {

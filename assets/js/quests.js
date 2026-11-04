@@ -1,6 +1,7 @@
 import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, on, midBattle } from './core.js';
 import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
+import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore } from './sources.js';
 
 const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
 const foldKey = 'yh-fold-quests';
@@ -25,20 +26,17 @@ export const taskLine = t => { const done = t.cur >= t.n, items = t.t === 'craft
   return `<li class="${done ? 'ok' : ''}">${icon(done ? 'check' : 'chevron', 12)}<span>${esc(t.label)}</span><b>${t.cur}/${t.n}${unitOf(t)}</b>${done ? '' : `<span class="q-links">${mapBtns(t.regions)}${items.slice(0, 1).map(craftBtn).join('')}${src}</span>`}</li>`; };
 export const giveLine = g => { const done = g.have >= g.n;
   return `<li class="${done ? 'ok' : ''}">${icon('bag', 12)}<span>${esc(g.name || nameOf(g.item_id))} 넘기기</span><b>${g.have}/${g.n}개</b>${done ? '' : `<span class="q-links">${hasRecipe(g.item_id) ? craftBtn(g.item_id) : ''}${srcSlot(g.item_id)}</span>`}</li>`; };
-const srcCache = new Map();
 async function fillSrc(root = document) {
   for (const el of root.querySelectorAll('[data-q-src]:not([data-f])')) {
     el.dataset.f = '1';
     const id = el.dataset.qSrc;
     try {
-      if (!srcCache.has(id)) srcCache.set(id, rpc('world_item_sources', { p_item: id }));
-      const s = await srcCache.get(id) || {};
-      const places = [...new Set([...(s.gather || []), ...(s.sites || []), ...(s.monsters || []), ...(s.fish || [])])];
-      const total = Math.max(places.length, (s.gather_n || 0), (s.sites_n || 0), (s.monsters_n || 0), (s.fish_n || 0));
+      const s = await itemSources(id) || {};
+      const places = sourcePlaces(s), total = sourceTotal(s);
       if (!el.isConnected) continue;
-      el.innerHTML = places.length ? `<small class="muted">얻는 곳</small>${mapBtns(places, 5)}${total > 5 ? `<small class="muted">외 ${total - 5}곳</small>` : ''}`
+      el.innerHTML = places.length ? `<small class="muted">얻는 곳</small>${places.slice(0, 5).map(r => regionBtn(r, true)).join('')}${sourcesMore(id, total - Math.min(5, places.length))}`
         : s.shop || s.smithy ? `<small class="muted">안전지대 ${s.smithy ? '대장간' : '상점'}에서 삽니다</small>` : '';
-    } catch { srcCache.delete(id); }
+    } catch {}
   }
 }
 let srcTimer = 0;
@@ -57,7 +55,7 @@ export const atLine = q => {
   const left = (q.tasks || []).filter(t => t.cur < t.n);
   const where = [...new Set(left.flatMap(t => (t.regions || []).map(r => nameOf(r))))];
   const links = names => names.map(n => n === here ? esc(n) : `<button type="button" class="q-link" data-q-map="${esc(n)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(n)}</span></button>`).join('·');
-  const doLine = where.length ? `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 할 곳: ${links(where.slice(0, 3))}${where.length > 3 ? ` 외 ${where.length - 3}곳` : ''}${where.includes(here) ? ' (지금 여기)' : ''}</p>` : '';
+  const doLine = where.length ? `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 할 곳: ${links(where.slice(0, 3))}${where.length > 3 ? ` ${regionsMore('할 곳', where, 3)}` : ''}${where.includes(here) ? ' (지금 여기)' : ''}</p>` : '';
   if (!at.length) return doLine;
   const done = !left.length;
   return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${links(at)}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
@@ -150,7 +148,7 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
-const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_(complete|settle)/, gather: /field_gather/, craft: /craft/, fish: /^world_fish$/,
+const TASK_ACTS = { win: /battle_action|raid_|pfight_|gw_|expedition_(complete|settle)/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish$/,
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
 let qbWatch = null;

@@ -79,6 +79,9 @@ const toolCovers = (have, need) => { const h = String(have || '').replace(/_hq$/
   if (h === need) return true;
   const a = catItem(h), b = catItem(need);
   return !!(a?.tl && b?.tl && a.tl === b.tl && Number(a.tier) >= Number(b.tier)); };
+const toolNote = (need, by) => { if (!by) return ' <span class="bad">(없음 · 같은 갈래의 더 높은 단계 도구도 됨)</span>';
+  const st = by.endsWith('@st'), id = st ? by.slice(0, -3) : by, base = id.replace(/_hq$/, '');
+  return base === need && !st ? '' : ` <small class="muted">(${esc(`${nameOf(id)}${st ? ' · 창고' : ''}(으)로 됨`)})</small>`; };
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 
 function stayFit(box) {
@@ -262,7 +265,9 @@ async function craft(body, inv, stg) {
   const favFirst = (f => (a, b) => favs.has(b.r.id) - favs.has(a.r.id) || furnLast(a, b) || f(a, b))(SORTS[craftSort] || SORTS.can);
   const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
-    const toolOk = !r.tool || [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].some(k => toolCovers(k, r.tool));
+    const toolBy = !r.tool ? null : [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].find(k => toolCovers(k, r.tool))
+      || Object.keys(stHave).filter(k => stHave[k] > 0).map(k => `${k}@st`).find(k => toolCovers(k.slice(0, -3), r.tool)) || null;
+    const toolOk = !r.tool || !!toolBy;
     const jobOk = !r.required_job || r.required_job === c.job_key;
     const lvOk = !r.minimum_level || c.level >= r.minimum_level;
     const skRank = r.required_skill ? Number(c.skill_progress?.[r.required_skill]?.rank || 1) : 0;
@@ -274,7 +279,7 @@ async function craft(body, inv, stg) {
     ].filter(Boolean);
     const can = !lacks.length && toolOk && jobOk && lvOk && skOk;
     const maxN = Math.min(CRAFT_MAX, ...Object.entries(r.ingredients || {}).map(([k, n]) => Math.floor(Number(have[k] || 0) / Math.max(1, n))));
-    return { r, lacks, toolOk, jobOk, lvOk, reqs, can, maxN: can ? Math.max(1, maxN) : 0, atLoc: atPlace(r.location, c.location), kind: kindOf(r), tier: cmap.get(r.output)?.tier };
+    return { r, lacks, toolOk, toolBy, jobOk, lvOk, reqs, can, maxN: can ? Math.max(1, maxN) : 0, atLoc: atPlace(r.location, c.location), kind: kindOf(r), tier: cmap.get(r.output)?.tier };
   }).filter(x => { const t = cq.trim().toLowerCase(); if (!t) return true;
     return [x.r.name, x.r.output_name || nameOf(x.r.output)].join(' ').toLowerCase().includes(t); })
     .filter(x => !craftFields.size || craftFields.has(x.r.field || (cookOut.has(x.r.output) ? 'cooking' : '')))
@@ -291,14 +296,14 @@ async function craft(body, inv, stg) {
     ${craftFilterBox(inv, kindCount)}
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
-    ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, reqs, can, maxN, atLoc, kind, tier }) => `
+    ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, toolBy, reqs, can, maxN, atLoc, kind, tier }) => `
       <article class="recipe ${can ? 'can' : ''}">
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
-        <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolOk ? '' : ' (없음)'} · ` : ''}지정 장소: ${esc(r.location || '없음')}</p>
+        <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolNote(r.tool, toolBy)} · ` : ''}지정 장소: ${esc(r.location || '없음')}</p>
         <div class="craft-act">
           ${can ? (() => { const n = Math.min(maxN, Math.max(1, craftN.get(r.id) || 1)); return `<div class="craft-qty" data-cq="${esc(r.id)}" data-max="${maxN}">
             <button type="button" class="btn small ghost" data-cq-do="reset">초기화</button>
