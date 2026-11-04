@@ -197,18 +197,18 @@ function draw(box, id, inv, prices, mode) {
     ${!uses.length && !makes.length ? '<p class="muted small">이 물품과 관련된 제작법이 없습니다.</p>' : ''}
     ${mode === 'bag' && have > 0 ? `<h3 class="sub-h">다루기</h3>
       <div class="btn-row">
-        ${USABLE[id] ? `<button class="btn small primary" data-do="use">${icon('heart', 14)}<span>사용</span></button>` : ''}
+        ${USABLE[id] ? `<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>${icon('heart', 14)}<span>사용</span></button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small primary" data-do="adopt">${icon('heart', 14)}<span>열기</span></button>` : ''}
         ${id === 'pet_token' ? `<button class="btn small ${have >= 5 ? 'primary' : ''}" data-do="token" ${have >= 5 ? '' : 'disabled'} title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">${icon('heart', 14)}<span>빛나는 알로 바꾸기</span></button>` : ''}
         ${it?.category === 'furniture' ? `<button class="btn small" data-do="house">${icon('home', 14)}<span>별채에서 놓기</span></button>` : ''}
         ${it && GEAR.has(it.category) && slotOf(it) !== 'craft' && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
-        ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
+        ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" data-here="분해" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
       ${stashOk && dcMax > 0 ? `<div class="discard-row">
         <label class="field"><span>창고에 넣을 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="${dcMax}" id="st-qty"></label>
         <button class="btn small ghost" data-do="st-max">최대</button>
-        <button class="btn small primary" data-do="stash">${icon('bag', 14)}<span>창고에 넣기</span></button>
+        <button class="btn small primary" data-do="stash" data-here="창고 이용">${icon('bag', 14)}<span>창고에 넣기</span></button>
       </div>` : ''}
       <div class="discard-row ${locked ? 'off' : ''}">
         <label class="field"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span><input type="number" min="1" max="${dcMax}" value="1" id="dc-qty" ${locked || dcMax < 1 ? 'disabled' : ''}></label>

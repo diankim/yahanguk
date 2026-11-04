@@ -51,7 +51,7 @@ const donateHtml = (s, open) => {
       <small class="muted">${esc(nameOf(i.rarity))} · 시세 ${fmt.num(i.price)}전${i.tradeable ? '' : ' · 거래 불가'}</small></div>
       <div class="fq-buy"><input type="number" min="0" max="${i.qty}" value="0" data-don="${esc(i.item_id)}" aria-label="넘길 수량"><button class="btn small ghost" data-don-all="${esc(i.item_id)}">모두</button></div></li>`).join('') || `<li class="muted small">「${esc(donQ)}」에 맞는 물품이 없습니다.</li>`}</ul>
     <p class="small" id="fq-don-sum"></p>
-    <button class="btn primary" id="fq-donate" disabled>${icon('bag', 16)}<span>기부하기</span></button>`
+    <button class="btn primary" id="fq-donate" data-here="세력 기부" disabled>${icon('bag', 16)}<span>기부하기</span></button>`
     : `<p class="muted small">넘길 수 있는 물품이 없습니다.</p>`}
     <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
@@ -80,7 +80,7 @@ export function fqPopHtml(key, s) {
     const ladder = `<ol class="rank-ladder" style="--fc:${factionColor(fid)}">${ranks.map((n, i) => `<li class="${i + 1 < rk ? 'past' : i + 1 === rk ? 'now' : ''}"><b>${i + 1}</b><span>${esc(n)}</span></li>`).join('')}</ol>`;
     const perk = RANK_PERK[fid];
     const questHtml = s.rejoin_pending
-      ? `<div class="fq-card"><b>${icon('scroll', 14)} 돌아온 이에게</b><p class="muted small">다시 돌아온 조사원을 세력 사람들이 맞이합니다.</p><button class="btn primary" data-fq-report>대화 보기</button></div>`
+      ? `<div class="fq-card"><b>${icon('scroll', 14)} 돌아온 이에게</b><p class="muted small">다시 돌아온 조사원을 세력 사람들이 맞이합니다.</p><button class="btn primary" data-here="세력 퀘스트 보고" data-fq-report>대화 보기</button></div>`
       : q ? `<div class="fq-card ${q.ready ? 'ready' : ''}">
           <p class="eyebrow">${q.kind === 'join' ? `가입 퀘스트 ${q.step}/3` : `등급 퀘스트 · ${esc(ranks[q.step - 1] || '')}`}</p>
           <b>${esc(q.title)}</b><p class="small">${esc(q.goal)}</p>
@@ -88,7 +88,7 @@ export function fqPopHtml(key, s) {
           ${q.locked ? `<p class="hint warn">${icon('shield', 14)} ${esc(q.locked)}</p>` : ''}
           ${!q.locked && (q.at_names || []).length && !q.here_ok ? `<p class="hint">${icon('pin', 14)} ${esc(q.at_names.join('·'))}에서 보고합니다.</p>` : ''}
           ${q.cost ? `<p class="hint">${icon('coin', 14)} ${fmt.num(q.cost)}전이 듭니다.</p>` : ''}
-          <button class="btn ${q.ready ? 'primary' : ''}" data-fq-report ${q.ready ? '' : 'disabled'}>${icon('scroll', 16)}<span>${q.ready ? (q.tasks?.length ? '보고하기' : '대화하기') : '아직 할 일이 남았습니다'}</span></button>
+          <button class="btn ${q.ready ? 'primary' : ''}" data-here="세력 퀘스트 보고" data-fq-report ${q.ready ? '' : 'disabled'}>${icon('scroll', 16)}<span>${q.ready ? (q.tasks?.length ? '보고하기' : '대화하기') : '아직 할 일이 남았습니다'}</span></button>
           ${q.tasks?.length ? `<p class="muted small">할 일은 이 장면이 열린 뒤부터 셉니다.</p>` : ''}</div>`
         : `<p class="desc">${icon('check', 14)} 모든 등급 퀘스트를 마쳤습니다.</p>`;
     return `${ladder}
@@ -101,7 +101,7 @@ export function fqPopHtml(key, s) {
   if (key === 'reqs') {
     return `<p class="muted small">매일(한국 시각 0시) 세 가지 의뢰가 바뀝니다. 오늘 한 일을 세고, 다 되면 받습니다.</p>
       <ul class="fq-reqs">${(s.requests || []).map(r => `<li><div><b>${esc(r.title)}</b><ul class="fq-tasks">${taskRows(r.tasks)}</ul><small class="muted">평판 +${r.rep} · 공훈 +${r.merit}</small></div>
-        ${r.claimed ? chip('받음', 'ok') : `<button class="btn small ${r.ready ? 'primary' : ''}" data-fq-req="${esc(r.key)}" ${r.ready ? '' : 'disabled'}>${r.ready ? '받기' : '진행 중'}</button>`}</li>`).join('')}</ul>`;
+        ${r.claimed ? chip('받음', 'ok') : `<button class="btn small ${r.ready ? 'primary' : ''}" data-here="세력 의뢰 보고" data-fq-req="${esc(r.key)}" ${r.ready ? '' : 'disabled'}>${r.ready ? '받기' : '진행 중'}</button>`}</li>`).join('')}</ul>`;
   }
   if (key === 'vault') {
     return `${kp.vault ? `<p class="fq-keeper"><b>${esc(kp.vault.who || '')}</b> “${esc(kp.vault.line || '')}”</p>` : ''}
@@ -110,8 +110,8 @@ export function fqPopHtml(key, s) {
       <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}"><div>
           <b>${v.kind === 'item' ? `<button type="button" class="linkish" data-fq-info="${esc(v.item_id)}">${esc(v.name)}</button>` : v.kind === 'name_style' ? `<span class="fq-ns ns-${esc(v.item_id.slice(3))}">${esc(v.name)}</span>` : esc(v.name)} ${kindChip(v)}</b>
           <small class="muted">공훈 ${fmt.num(v.price)}${v.locked ? ` · ${esc(ranks[v.rank_need - 1] || '')}부터` : ''}</small></div>
-        ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? `<div class="fq-buy"><input type="number" min="1" max="99" value="1" id="fqq-${esc(v.item_id)}" aria-label="수량" ${vaultOpen && !v.locked ? '' : 'disabled'}><button class="btn small" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button></div>`
-          : `<button class="btn small" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>받기</button>`}</li>`).join('')}</ul>
+        ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? `<div class="fq-buy"><input type="number" min="1" max="99" value="1" id="fqq-${esc(v.item_id)}" aria-label="수량" ${vaultOpen && !v.locked ? '' : 'disabled'}><button class="btn small" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button></div>`
+          : `<button class="btn small" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>받기</button>`}</li>`).join('')}</ul>
       <p class="muted small">공훈으로만 사고, 비고는 물건을 사들이지 않습니다. 칭호·테두리·이름 색·탈것은 하나만 받고, 세력을 떠나도 남습니다. 세력 장비는 거래할 수 없습니다.</p>`;
   }
   if (key === 'donate') {
@@ -122,7 +122,7 @@ export function fqPopHtml(key, s) {
     const hall = s.hall || {};
     return `${kp.hall ? `<p class="fq-keeper"><b>${esc(kp.hall.who || '')}</b> “${esc(kp.hall.line || '')}”</p>` : ''}
       <p class="small">지금 등급(${rk}등급) 시련 · 상대 Lv${hall.foe_level ?? '-'} · 하루 한 번 · 내 전투 능력치(공격력·방어·치명타·회피)로 12합까지 겨룹니다. 이기면 공훈 +${10 * rk}, 3·5등급 시련을 처음 넘으면 세력 칭호(5등급은 세력 낙관도)를 받습니다.</p>
-      <button class="btn ${hall.done_today ? '' : 'primary'}" id="fq-trial" ${s.join_done && s.at_home && !hall.done_today ? '' : 'disabled'}>${icon('sword', 16)}<span>${hall.done_today ? '오늘은 이미 치렀습니다' : !s.join_done ? '가입 퀘스트를 마치면 열립니다' : !s.at_home ? '세력 안전지대에서 열립니다' : '시련 치르기'}</span></button>`;
+      <button class="btn ${hall.done_today ? '' : 'primary'}" id="fq-trial" data-here="수련장 도전" ${s.join_done && s.at_home && !hall.done_today ? '' : 'disabled'}>${icon('sword', 16)}<span>${hall.done_today ? '오늘은 이미 치렀습니다' : !s.join_done ? '가입 퀘스트를 마치면 열립니다' : !s.at_home ? '세력 안전지대에서 열립니다' : '시련 치르기'}</span></button>`;
   }
   if (key === 'npcs') {
     return (s.npcs || []).length ? `<ul class="fq-npcs">${s.npcs.map(n => `<li><button type="button" class="fq-npc" data-npc="${esc(n.key)}"><b>${esc(n.name)}</b>${n.quote ? `<q>${esc(n.quote)}</q>` : ''}<small>${esc(n.bio)}</small></button></li>`).join('')}</ul>

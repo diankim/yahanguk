@@ -53,7 +53,7 @@ function sceneList(q, map) {
     if (x === next) return `<li class="now">${icon('chevron', 12)}<div><b>장면 ${x.step} · ${esc(x.title)}</b><small>${esc(x.goal || '')}</small>
       ${cur && ((cur.tasks || []).length || (cur.give || []).length) ? `<ul class="q-tasks">${(cur.tasks || []).map(taskLine).join('')}${(cur.give || []).map(giveLine).join('')}</ul>` : ''}
       ${cur ? atLine(cur) : ''}
-      ${q.status === 'locked' ? '' : `<div class="btn-row">${cur?.ready ? `<button class="btn small primary" data-q-report="${esc(q.quest_id)}">${icon('scroll', 14)}<span>${q.status === 'available' ? '이야기 듣기' : '보고하기'}</span></button>`
+      ${q.status === 'locked' ? '' : `<div class="btn-row">${cur?.ready ? `<button class="btn small primary" data-here="퀘스트 받기·보고" data-q-report="${esc(q.quest_id)}">${icon('scroll', 14)}<span>${q.status === 'available' ? '이야기 듣기' : '보고하기'}</span></button>`
         : (cur?.at || [])[0] && !cur.here_ok ? goButton(cur.at[0], map) : ''}</div>`}</div></li>`;
     return `<li class="later">${icon('help', 12)}<div><b>장면 ${x.step}</b><small>앞 장면을 마치면 열립니다</small></div></li>`;
   }).join('')}${q.has_epilogue ? `<li class="done">${icon('moon', 12)}<div><b>결말</b><small>단서를 맞춰 세운 결론</small></div>
@@ -123,14 +123,14 @@ function clueBlock(ch, map) {
       const ready = (x.needs || []).every(n => (ch.clues || []).find(k => k.clue_id === n)?.found);
       return `<article class="combo ${x.done ? 'on' : ''}"><b>${esc(x.name)}</b><p>${esc(x.done ? x.conclusion : x.description)}</p>
         <div class="combo-need">${(x.needs || []).map(n => { const k = (ch.clues || []).find(y => y.clue_id === n); return `<span class="${k?.found ? 'ok' : ''}">${k?.found ? esc(k.name) : '?'}</span>`; }).join(icon('plus', 12))}</div>
-        ${x.done ? chip('결론 확정', 'ok') : `<button class="btn small ${ready ? 'primary' : ''}" data-combo="${esc(x.combo_id)}" ${ready ? '' : 'disabled'}>${ready ? '가설 확정' : '단서 부족'}</button>`}</article>`; }).join('')}</div>`;
+        ${x.done ? chip('결론 확정', 'ok') : `<button class="btn small ${ready ? 'primary' : ''}" data-here="가설 확정" data-combo="${esc(x.combo_id)}" ${ready ? '' : 'disabled'}>${ready ? '가설 확정' : '단서 부족'}</button>`}</article>`; }).join('')}</div>`;
 }
 function regional(r) {
   const n = r?.regions || 0;
   return panel('지역 답사 보고서', `
     <p class="desc">탐색하다 보면 지역만의 흔적을 기록할 때가 있습니다. 서로 다른 3개 지역의 기록을 모아 보고서를 내면 보상과 함께 <b>가방 +4칸</b>을 받습니다.</p>
     <div class="chips">${chip(`기록 ${r?.clues || 0}개`)}${chip(`지역 ${Math.min(n, 3)}/3`, n >= 3 ? 'ok' : '')}${r?.submitted ? chip('제출 완료', 'ok') : ''}</div>
-    ${r?.submitted ? '' : `<button class="btn ${n >= 3 ? 'primary' : ''}" id="reg-submit" ${n >= 3 ? '' : 'disabled'}>${icon('scroll', 16)}<span>보고서 제출</span></button>`}`, { ico: 'map' });
+    ${r?.submitted ? '' : `<button class="btn ${n >= 3 ? 'primary' : ''}" id="reg-submit" data-here="사건 보고" ${n >= 3 ? '' : 'disabled'}>${icon('scroll', 16)}<span>보고서 제출</span></button>`}`, { ico: 'map' });
 }
 
 const FIELDS = [['외전', 'scroll'], ['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye'], ['생활', 'home']];
@@ -189,7 +189,7 @@ function sideItem(q, map) {
     <p class="q-goal">${esc(q.summary || '')}</p>
     ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`
       : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}
-    ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
+    ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-here="퀘스트 포기" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
   </details></li>`;
 }
 async function commission(body) {
@@ -202,7 +202,7 @@ async function commission(body) {
       <header>${icon(x.kind === 'hunt' ? 'sword' : x.kind === 'gather' ? 'leaf' : x.kind === 'deliver' ? 'bag' : 'search', 18)}<b>${esc(x.title)}</b></header>
       <p>${esc(x.description)}</p>${bar(Math.min(x.progress, x.need), x.need, 'xp')}
       <small class="muted">${Math.min(x.progress, x.need)}/${x.need} · 보상 ${fmt.jeon(x.reward_gil)} · 경험치 ${x.reward_xp}${x.reward_item ? ` · ${esc(nameOf(x.reward_item))}` : ''}</small>
-      ${x.claimed ? chip('완료', 'ok') : `<button class="btn small ${x.progress >= x.need ? 'primary' : ''}" data-claim="${x.slot}" ${x.progress >= x.need ? '' : 'disabled'}>${x.kind === 'deliver' ? '납품하기' : '보상 받기'}</button>`}
+      ${x.claimed ? chip('완료', 'ok') : `<button class="btn small ${x.progress >= x.need ? 'primary' : ''}" data-here="의뢰 보고" data-claim="${x.slot}" ${x.progress >= x.need ? '' : 'disabled'}>${x.kind === 'deliver' ? '납품하기' : '보상 받기'}</button>`}
     </article>`).join('') || empty('오늘의 의뢰가 없습니다.', 'scroll')}</div>`;
   $$('[data-claim]', body).forEach(x => x.onclick = () => guard(x, () => act('world_commission_claim', { p_slot: Number(x.dataset.claim) })));
   const ub = document.createElement('div'); ub.className = 'ucomm'; body.append(ub);
@@ -218,9 +218,9 @@ async function userCommissions(box) {
   const getLabel = id => esc(nameOf(id));
   const mineCard = m => {
     const st = m.status === 'done' ? (m.settled ? ['받음', ''] : ['완료 · 물품을 받으세요', 'ok']) : m.status === 'open' ? [leftText(m.expires_at), 'accent'] : m.status === 'expired' ? [m.settled ? '마감 · 돌려받음' : '마감 · 보수를 돌려받으세요', 'warn'] : ['거둠', ''];
-    const act2 = m.status === 'done' && !m.settled ? `<button class="btn small primary" data-uc-collect="${m.id}" ${here.safe ? '' : 'disabled title="안전지대에서 받습니다"'}>${icon('bag', 14)}<span>물품 받기</span></button>`
-      : m.status === 'open' ? `<button class="btn small ghost" data-uc-cancel="${m.id}">${icon('close', 14)}<span>거두기</span></button>`
-      : m.status === 'expired' && !m.settled ? `<button class="btn small primary" data-uc-cancel="${m.id}">${icon('coin', 14)}<span>보수 돌려받기</span></button>` : '';
+    const act2 = m.status === 'done' && !m.settled ? `<button class="btn small primary" data-here="조사원 의뢰" data-uc-collect="${m.id}" ${here.safe ? '' : 'disabled title="안전지대에서 받습니다"'}>${icon('bag', 14)}<span>물품 받기</span></button>`
+      : m.status === 'open' ? `<button class="btn small ghost" data-here="의뢰 거두기" data-uc-cancel="${m.id}">${icon('close', 14)}<span>거두기</span></button>`
+      : m.status === 'expired' && !m.settled ? `<button class="btn small primary" data-here="의뢰 거두기" data-uc-cancel="${m.id}">${icon('coin', 14)}<span>보수 돌려받기</span></button>` : '';
     return `<article class="commission uc mine ${m.status === 'done' && !m.settled ? 'ready' : m.settled || m.status === 'cancelled' ? 'done' : ''}">
       <header>${icon('scroll', 18)}<b><button class="linkish" data-uc-info="${esc(m.item)}">${getLabel(m.item)}</button> ×${m.qty}</b></header>
       <small class="muted">보수 ${fmt.jeon(m.reward)} · 등록처 ${esc(m.region || '-')}${m.faction ? `(${esc(m.faction)})` : ''}${m.fulfiller ? ` · 넘긴 이 ${esc(m.fulfiller)}` : ''}</small>
@@ -233,7 +233,7 @@ async function userCommissions(box) {
       <small class="muted">의뢰인 ${esc(o.owner)} · 등록처 ${esc(o.region || '-')}${o.faction ? `(${esc(o.faction)})` : ''} · ${leftText(o.expires_at)}</small>
       ${bar(Math.min(o.have, o.qty), o.qty, 'xp')}
       <small class="muted">가진 수 ${Math.min(o.have, o.qty)}/${o.qty} · 보수 ${fmt.jeon(o.reward)} → 받는 몫 약 ${fmt.jeon(pay)}${b.xp_left > 0 ? ` · 경험치 ${b.xp}` : ''}</small>
-      <button class="btn small ${enough ? 'primary' : ''}" data-uc-give="${o.id}" ${enough && here.safe ? '' : 'disabled'} title="${esc(!here.safe ? '안전지대에서 넘깁니다' : enough ? '' : '물품이 모자랍니다')}">${icon('check', 14)}<span>넘기기</span></button></article>`;
+      <button class="btn small ${enough ? 'primary' : ''}" data-here="조사원 의뢰" data-uc-give="${o.id}" ${enough && here.safe ? '' : 'disabled'} title="${esc(!here.safe ? '안전지대에서 넘깁니다' : enough ? '' : '물품이 모자랍니다')}">${icon('check', 14)}<span>넘기기</span></button></article>`;
   };
   const openMine = mine.filter(m => m.status === 'open').length;
   box.innerHTML = `<div class="sub-head"><h3 class="sub-h">${icon('scroll', 15)} 조사원 의뢰</h3>
@@ -284,7 +284,7 @@ async function openUcommPost(here, feePct) {
         <label class="field"><span>보수(전)</span><input type="number" id="uc-reward" min="10" value="" inputmode="numeric"></label>
       </div>
       <p class="muted small" id="uc-hint">보수는 지금 바로 게시판에 맡기고, 3일 안에 아무도 맡지 않으면 돌려받습니다. 수행한 사람은 보수의 ${100 - feePct}%를 받고 ${feePct}%는 등록처 ${esc(`${here.region || ''}${here.faction ? `(${here.faction})` : ''}이(가)`)} 수수료로 뗍니다.</p>
-      <div class="modal-actions"><button class="btn primary" id="uc-go" disabled>${icon('check', 15)}<span>등록</span></button></div>
+      <div class="modal-actions"><button class="btn primary" id="uc-go" data-here="조사원 의뢰" disabled>${icon('check', 15)}<span>등록</span></button></div>
     </div>`;
   const list = $('#uc-items', box), qtyI = $('#uc-qty', box), rewI = $('#uc-reward', box), go = $('#uc-go', box), picked = $('#uc-picked', box);
   const LIMIT = 150;

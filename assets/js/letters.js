@@ -44,7 +44,7 @@ function openLetter(l, again) {
       <div class="letter-body">${l.body ? esc(l.body) : '<span class="muted">(본문 없음)</span>'}</div>
       ${hasItems ? `<p class="small">${icon('bag', 14)} 함께 온 물품: <b>${esc(itemsText(l.items))}</b>${l.claimed ? ' <span class="muted">(받음)</span>' : ''}</p>` : ''}
       <div class="btn-row">
-        ${hasItems && !l.claimed ? `<button class="btn primary" data-l="claim">${icon('check', 14)}<span>물품 받기</span></button>` : ''}
+        ${hasItems && !l.claimed ? `<button class="btn primary" data-l="claim" data-here="서신 물품 받기">${icon('check', 14)}<span>물품 받기</span></button>` : ''}
         ${l.from ? `<button class="btn" data-l="reply">${icon('letter', 14)}<span>답장</span></button>` : ''}
         <button class="btn" data-l="${l.pinned ? 'unpin' : 'pin'}">${l.pinned ? '고정 풀기' : '고정'}</button>
         <button class="btn ghost danger-text" data-l="delete">지우기</button></div></div>` });

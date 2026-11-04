@@ -125,10 +125,10 @@ async function markRead(n) {
   notes = notes.filter(x => x.id !== n.id); drawDot();
 }
 function noteActs(n) {
-  if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-rescue="${esc(n.id)}">구조</button>`;
+  if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-here="구조" data-rescue="${esc(n.id)}">구조</button>`;
   if (n.kind === 'party_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-invite="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-invite="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'ride_request' && n.payload?.request_id) return `<button class="btn primary small" data-ride="${esc(n.id)}" data-acc="1">함께 타기</button><button class="btn small" data-ride="${esc(n.id)}" data-acc="0">사양</button>`;
-  if (n.kind === 'trade_offer' && n.payload?.trade_id) return `<button class="btn primary small" data-trade="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-trade="${esc(n.id)}" data-acc="0">거절</button>`;
+  if (n.kind === 'trade_offer' && n.payload?.trade_id) return `<button class="btn primary small" data-trade="${esc(n.id)}" data-acc="1" data-here="직접 거래">수락</button><button class="btn small" data-trade="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'friend_request' && n.payload?.from_id) return `<button class="btn primary small" data-friend="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-friend="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'circle_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-circle="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-circle="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'bond_request' && n.payload?.request_id) return `<button class="btn primary small" data-bondn="${esc(n.id)}" data-acc="1">받기</button><button class="btn small" data-bondn="${esc(n.id)}" data-acc="0">돌려보내기</button>`;
@@ -138,7 +138,7 @@ function noteActs(n) {
   if (n.kind === 'bag_overflow') return `<button class="btn primary small" data-ov="${esc(n.id)}">정리하기</button>`;
   if (n.kind === 'party_exp_offer' && n.payload?.offer_id) return `<button class="btn primary small" data-pexo="${esc(n.id)}" data-acc="1">함께 가기</button><button class="btn small" data-pexo="${esc(n.id)}" data-acc="0">빠지기</button>`;
   if (n.kind === 'party_expedition' && n.payload?.node_id) return `<button class="btn primary small" data-pexp="${esc(n.id)}">함께 가기</button>`;
-  if (n.kind === 'gw_invite' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}" data-join="1">합류</button>`;
+  if (n.kind === 'gw_invite' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}" data-join="1" data-here="합류">합류</button>`;
   if (n.kind === 'bond_wedding_ask' && n.payload?.wed_id) return `<button class="btn primary small" data-wed="${esc(n.id)}" data-acc="1">혼례 받기</button><button class="btn small" data-wed="${esc(n.id)}" data-acc="0">다음에</button>`;
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">비무 방</button>`;
@@ -146,7 +146,7 @@ function noteActs(n) {
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
   if (n.kind === 'letter' && n.payload?.letter_id) return `<button class="btn primary small" data-letter="${esc(n.id)}">서신함</button>`;
   if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
-  if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}" data-join="1">합류</button>`;
+  if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}" data-join="1" data-here="토벌 합류">합류</button>`;
   if ((n.kind === 'raid_notice' || n.kind === 'raid_result') && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">보기</button>`;
   if (n.kind === 'raid_vote' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">결전 화면에서 답하기</button>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;

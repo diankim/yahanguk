@@ -35,3 +35,10 @@ export const PARTY_EXP = {
   flee: `누구든 체력이 ${PX.flee_hp} 아래면 그 싸움에서는 모두 함께 물러납니다`,
   bonus: `「파티 원정」으로 함께 떠나 ${PX.overlap_min}분 넘게 같이 다닌 동료 한 명마다 귀환 때 경험치·숙련 경험 +${PX.bonus_pct}%(${PX.bonus_cap}명까지)`,
 };
+const BZ = GD.busy || { travel: { name: '이동', after: '도착한 뒤에 하세요.' }, expedition: { name: '원정', after: '원정에서 돌아온 뒤에 하세요.' },
+  idle: { name: '자율 활동', after: '자율 활동을 마치거나 그만둔 뒤에 하세요.' }, downed: { name: '전투불능', after: '구조를 받거나 구조대를 부른 뒤에 하세요.' },
+  self: '{name} 중에는 {what}을(를) 할 수 없습니다. {after}', other: '그 동료는 지금 {name} 중입니다.', what: '이 일' };
+export function busyText(kind, what, other = false) {
+  const k = BZ[kind]; if (!k) return '';
+  return (other ? BZ.other : BZ.self).replace('{name}', k.name).replace('{what}', what || BZ.what).replace('{after}', k.after);
+}

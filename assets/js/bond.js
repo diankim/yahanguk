@@ -77,7 +77,7 @@ export function bondPanelHtml(s) {
         <button class="btn small" data-bond="wear">${b.my_wear ? '정표 벗기' : '정표 착용'}</button>
         <button class="btn small" data-bond="hide">${b.my_hide ? '연리 보이기' : '연리 숨기기'}</button>
         <button class="btn small primary" data-bond="gift" ${b.gifted_today ? 'disabled' : ''}>${icon('plus', 14)}<span>${b.gifted_today ? '오늘 선물함' : '선물 보내기'}</span></button>
-        ${b.married ? '<span class="chip ok">백년가약</span>' : `<button class="btn small" data-bond="wed">${icon('knot', 14)}<span>혼례 올리기</span></button>`}
+        ${b.married ? '<span class="chip ok">백년가약</span>' : `<button class="btn small" data-bond="wed" data-here="혼례 청하기">${icon('knot', 14)}<span>혼례 올리기</span></button>`}
         <button class="btn small ghost danger-text" data-bond="break">정표 파기</button>
       </div>
       <p class="muted small">인연은 정인과 같은 곳·같은 파티로 함께 토벌(+2)·탐색·채집(+1), 하루 한 번 안부 귓속말(+5${b.greeted_today ? ', 오늘 함' : ''})·선물(+10), 함께 원정 완주(+20)·구조(+20)로 하루 100까지 오릅니다. 인연 300·둘 다 Lv.20·주 이야기 6장을 마치면 혼례를 올릴 수 있습니다. 마음이 이어짐(100)·연리(300)·백년해로(700)에 이르면 둘 다 꾸미기를 받습니다. 정인을 구조하면 체력 50으로 일어납니다.${b.partner_hide || b.my_hide ? ' 지금은 다른 조사원에게 연리가 보이지 않습니다.' : ''}</p>`;

@@ -66,6 +66,7 @@ p > .ico, summary > .ico { display: inline-block; vertical-align: -2px; margin-r
 .btn.block { width: 100%; }
 .btn small { font-weight: 500; color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
 .btn.primary small { color: color-mix(in srgb, var(--accent-ink) 75%, transparent); }
+.here-locked { opacity: .45; cursor: not-allowed; }
 .btn.is-busy { position: relative; color: transparent !important; }
 .btn.is-busy::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--muted); border-top-color: transparent; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -105,8 +105,8 @@ export function equipRowLi(inv, prof, here, slot) {
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
     return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh}</b><small>${esc(effectText(enhancedTraits(it?.equipment_traits, n)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}(위력 +${n * 5}%)` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
-      ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
-        <button class="btn small" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
+      ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
+        <button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
   }
 }
@@ -131,7 +131,7 @@ function qsCell(k, i, inv, downed) {
   if (!k) return `<button class="qs-cell empty" type="button" data-qs-empty="${i}">${icon('plus', 16)}<small>빈 칸</small></button>`;
   const moving = !!store.character?.travel_destination;
   const n = Number(inv[k] || 0), off = !n || ((downed || moving) && baseOf(k) !== 'revival_charm');
-  return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
+  return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-here="물품 사용" data-here-down data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
     <b>${esc(nameOf(k))}</b><span class="qs-n">×${fmt.num(n)}</span><small>${esc(qsDesc(k))}</small></button>`;
 }
 export function eqMini(inv, prof, pick = false) {
@@ -189,11 +189,11 @@ async function status(body) {
       <p class="bad"><b id="death-left">${deathAt ? `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}` : ''}</b></p>
       <div class="action-grid">
         ${yo.y ? `<button class="btn primary" id="yohwa-seal"><span>안전지대 봉인</span><small>가장 가까운 안전지대에서 봉인술사들이 24시간 요기를 해독합니다 · 그동안 채팅만 가능 · 끝나면 요화가 풀리고 침식 40 아래</small></button>` : ''}
-        ${byYohwa ? '' : `<button class="btn primary" data-use="revival_charm" ${invItems.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(invItems.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
+        ${byYohwa ? '' : `<button class="btn primary" data-here="물품 사용" data-here-down data-use="revival_charm" ${invItems.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(invItems.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
         <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>`}
       </div>
       <p class="muted small">${byYohwa ? '요화로 쓰러지면 구조·본부 구조대·회생 부적으로는 일어날 수 없습니다. 「안전지대 봉인」을 고르면 24시간 해독 뒤 요화가 풀립니다.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
-    ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>${yo.fr ? ' · 요화와 합친 효과: 주는 피해 +42%·받는 피해 −12%·정신 손실 −20%·민첩 +15%·침식 +24% · 끝나면 쓰러집니다. 귀령초를 쓰면 요화와 함께 풀립니다.' : ' · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 서 있을 때는 귀령초로 풀고, 요화로 쓰러지면 「안전지대 봉인」으로 풀립니다.'}`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
+    ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>${yo.fr ? ' · 요화와 합친 효과: 주는 피해 +42%·받는 피해 −12%·정신 손실 −20%·민첩 +15%·침식 +24% · 끝나면 쓰러집니다. 귀령초를 쓰면 요화와 함께 풀립니다.' : ' · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 서 있을 때는 귀령초로 풀고, 요화로 쓰러지면 「안전지대 봉인」으로 풀립니다.'}`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-here="물품 사용" data-here-down data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
       <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 바로 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 이동 중에는 쓸 수 없고, 전투불능일 때는 회생 부적만 쓸 수 있습니다(요화로 쓰러졌을 때는 회생 부적도 안 됨).</p>`,
       { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}
@@ -205,8 +205,8 @@ async function status(body) {
         </div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0), ISLAND.has(c.location))}
         <div class="btn-row st-acts">
-          <button class="btn small" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · 침식 −18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
-          <button class="btn small" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="본부에서 · 정신 +18 · 침식 −10 · 15분마다">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
+          <button class="btn small" data-here="" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · 침식 −18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
+          <button class="btn small" data-here="" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="본부에서 · 정신 +18 · 침식 −10 · 15분마다">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
         </div>
         ${inv ? eqMini(inv, prof) : ''}
         ${prof?.current ? combatMini(prof.current) : ''}
@@ -609,7 +609,7 @@ async function openFactionGuide(id) {
     <dl class="kv"><div><dt>혜택</dt><dd>${esc(PERKS[id] || '')}</dd></div><div><dt>적대</dt><dd>${(HOSTILE[id] || []).map(x => esc(MAJOR_FACTIONS[x]?.name)).join(', ') || '없음'}</dd></div>
       <div><dt>지금 위치</dt><dd>${esc(c.location)}${atBase ? ' (거점에 있음)' : ''}</dd></div></dl>
     <p class="muted small">가입하면 전용 거점 콘텐츠·임무·세력 채팅을 쓸 수 있고, 적대 세력 지역에서는 견제를 받을 수 있습니다.</p>
-    <div class="btn-row">${atBase && (c.level || 1) >= JOIN_LV ? `<button class="btn primary" data-join-now="${id}">가입 신청</button>` : atBase ? `<span class="hint">${icon('pin', 14)} 레벨 ${JOIN_LV}부터 가입할 수 있습니다.</span>`
+    <div class="btn-row">${atBase && (c.level || 1) >= JOIN_LV ? `<button class="btn primary" data-here="세력 가입" data-join-now="${id}">가입 신청</button>` : atBase ? `<span class="hint">${icon('pin', 14)} 레벨 ${JOIN_LV}부터 가입할 수 있습니다.</span>`
       : base && !base.level_locked ? `<button class="btn primary" data-go="${BASE[id]}">${icon('route', 16)}<span>거점으로 출발</span></button>` : ''}
       <button class="btn" data-show="${BASE[id]}">${icon('map', 16)}<span>지도에서 보기</span></button></div></div>` });
   $('[data-go]', m)?.addEventListener('click', e => guard(e.currentTarget, async () => { const r = await act('world_travel_route', { p_region_id: BASE[id] }); closeModal(); return r; }));
@@ -642,14 +642,14 @@ const missionsHtml = mine => mine.length ? `<ul class="mission-list">${mine.map(
   return `<li><div><b>${esc(m.title)}</b><small>${esc(m.description || '')}</small>
     <div class="mini-bar"><span style="width:${Math.min(100, m.progress / m.target_count * 100)}%"></span></div>
     <small class="muted">${Math.min(m.progress, m.target_count)}/${m.target_count} · 보상 경험치 ${m.reward_xp}${m.reward_items ? ' · ' + esc(itemsText(m.reward_items)) : ''}</small></div>
-    ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.');
+    ${m.claimed ? chip('완료', 'ok') : `<button class="btn small ${done ? 'primary' : ''}" data-here="소속 임무" data-mission="${esc(m.mission_id)}" ${done ? '' : 'disabled'}>${done ? '보상 받기' : '진행 중'}</button>`}</li>`; }).join('')}</ul>` : empty('진행할 수 있는 임무가 없습니다.');
 const baseHtml = (c, base, board) => { const major = c.major_faction_id; return `
   <p class="desc">${esc(MAJOR_FACTIONS[major]?.desc || '')}</p><p class="accent small">${esc(PERKS[major] || '')}</p>
   <div class="chips">${chip(`평판 ${fmt.num(c.faction_reputation)}`, 'accent')}${(() => { const bst = board?.factions?.find(f => f.id === major)?.boost; return bst > 1 ? chip(`인원 보정 영향력 ×${bst}`, 'ok') : ''; })()}${chip(`거점: ${base?.base_region_name || nameOf(base?.base_region_id)}`)}${base?.at_base ? chip('거점에 있음', 'ok') : chip('거점 밖')}</div>
   ${(base?.contents || []).length ? `<ul class="mission-list">${base.contents.map(x => `<li><div><b>${esc(x.title)}</b><small>${esc(x.description || '')}</small><small class="muted">Lv.${x.min_level}+${x.reward ? ' · ' + esc(itemsText(x.reward.items || x.reward)) : ''}</small></div>
     ${x.used_today ? chip('오늘 완료') : `<button class="btn small" data-base="${esc(x.content_id)}" ${base.at_base && c.level >= x.min_level ? '' : 'disabled'}>수행</button>`}</li>`).join('')}</ul>
     ${base.at_base ? '' : `<p class="hint">${icon('pin', 14)} 거점 콘텐츠는 ${esc(base.base_region_name || '거점')}에 있을 때 이용할 수 있습니다.</p>`}` : empty('이용할 수 있는 거점 콘텐츠가 없습니다.')}
-  <div class="btn-row" style="margin-top:8px"><button class="btn small ghost" id="leave-faction">세력 떠나기</button></div>`; };
+  <div class="btn-row" style="margin-top:8px"><button class="btn small ghost" id="leave-faction" data-here="세력 떠나기">세력 떠나기</button></div>`; };
 function popOf(key) {
   const { c, mine, base, board, fq } = fx;
   if (key === 'missions') return [`${nameOf(c.faction_key)} 임무`, missionsHtml(mine)];
@@ -688,7 +688,7 @@ async function faction(body) {
   const tile = (k, label, ico, dot, extra = '') => `<button class="tile" data-fpop="${k}" ${extra}>${icon(ico, 20)}<span>${esc(label)}</span>${dot ? '<i class="tile-dot" aria-label="할 일 있음"></i>' : ''}</button>`;
   const tiles = [
     tile('missions', '소속 임무', 'scroll', mine.some(m => !m.claimed && m.progress >= m.target_count)),
-    `<button class="tile ${supplied ? '' : 'primary'}" id="supply" ${supplied ? 'disabled' : ''} title="소속 부서에서 하루 한 번 보급품을 받습니다">${icon('bag', 20)}<span>${supplied ? '보급 받음' : '일일 보급'}</span></button>`,
+    `<button class="tile ${supplied ? '' : 'primary'}" id="supply" data-here="보급 수령" ${supplied ? 'disabled' : ''} title="소속 부서에서 하루 한 번 보급품을 받습니다">${icon('bag', 20)}<span>${supplied ? '보급 받음' : '일일 보급'}</span></button>`,
     ...(major ? [tile('base', '거점', 'shield', false)] : []),
     ...(major && fq?.faction_id ? fqPops(fq).map(([k, l, ico, dot]) => tile(k, l, ico, dot)) : []),
   ].join('');
@@ -702,7 +702,7 @@ async function faction(body) {
           const at = (JOIN_AT[k] || [BASE[k]]).includes(here?.region_id);
           return `<article class="faction">
           <header><b>${esc(f.name)}</b>${chip(f.type)}</header><p>${esc(f.desc)}</p><small class="accent">${esc(PERKS[k] || '')}</small><small class="muted">가입 조건: ${esc(f.entry)} · 거점 ${esc(nameOf(f.base))}</small>
-          <div class="join-row" id="jr-${k}"><button class="btn small ${at && (c.level || 1) >= JOIN_LV ? 'primary' : 'ghost'}" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
+          <div class="join-row" id="jr-${k}"><button class="btn small ${at && (c.level || 1) >= JOIN_LV ? 'primary' : 'ghost'}" data-here="세력 가입" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
     ${board ? boardPanel(board) : ''}`;
   $$('[data-fpop]', body).forEach(b => b.onclick = () => openPop(b.dataset.fpop));
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; if (r?.letter) showLetter(r.letter); return r; });

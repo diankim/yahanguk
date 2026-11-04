@@ -1,5 +1,6 @@
 import { framed, framedInner } from './cosmetics.js';
 import { GAMEDATA } from './gamedata.js';
+import { busyText } from './rules.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
 import { SUPABASE_URL, SUPABASE_KEY, isMaintenanceError, goMaintenance } from './config.js';
@@ -27,6 +28,41 @@ export function on(evt, fn) { (listeners.get(evt) || listeners.set(evt, new Set(
 export function emit(evt, data) { listeners.get(evt)?.forEach(fn => { try { fn(data); } catch (e) { console.error(e); } }); }
 
 export const store = { user: null, character: null, snaps: {} };
+export function busyOf(s = store) {
+  const c = s.character, now = Date.now(), at = c?.travel_arrives_at ? new Date(c.travel_arrives_at).getTime() : 0;
+  if (at > now) return { kind: 'travel', until: at };
+  if (s.expedition) return { kind: 'expedition', until: null };
+  if (s.idle?.active) return { kind: 'idle', until: null };
+  if (c && (c.downed_at || c.health <= 0)) return { kind: 'downed', until: null };
+  return null;
+}
+let hereFrame = 0, hereTimer = null;
+export function paintHere() {
+  const b = busyOf();
+  clearTimeout(hereTimer); hereTimer = b?.until ? setTimeout(hereSoon, Math.max(0, b.until - Date.now()) + 300) : null;
+  for (const el of document.querySelectorAll('[data-here]')) {
+    const lock = !!b && !(b.kind === 'downed' && el.hasAttribute('data-here-down'));
+    if (lock) {
+      if (!el.classList.contains('here-locked')) el.dataset.hereTitle = el.getAttribute('title') ?? '';
+      el.classList.add('here-locked'); el.setAttribute('aria-disabled', 'true'); el.title = josa(busyText(b.kind, el.dataset.here));
+    } else if (el.classList.contains('here-locked')) {
+      el.classList.remove('here-locked'); el.removeAttribute('aria-disabled');
+      if (el.dataset.hereTitle) el.title = el.dataset.hereTitle; else el.removeAttribute('title');
+      delete el.dataset.hereTitle;
+    }
+  }
+}
+function hereSoon() { if (!hereFrame) hereFrame = requestAnimationFrame(() => { hereFrame = 0; paintHere(); }); }
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', e => {
+    const el = e.target?.closest?.('.here-locked'); if (!el) return;
+    e.preventDefault(); e.stopImmediatePropagation(); toast(el.title, 'error');
+  }, true);
+  const watch = () => new MutationObserver(ms => { if (ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && (n.matches?.('[data-here]') || n.querySelector?.('[data-here]'))))) hereSoon(); })
+    .observe(document.body, { childList: true, subtree: true });
+  if (document.body) watch(); else document.addEventListener('DOMContentLoaded', watch, { once: true });
+  for (const ev of ['character', 'expedition', 'idle']) on(ev, hereSoon);
+}
 
 export function friendlyError(e) {
   const msg = String(e?.message || e || '알 수 없는 오류');

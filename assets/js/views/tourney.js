@@ -67,8 +67,8 @@ function tCard(t, b, c) {
       <p class="muted small">회복품은 기세가 40% 아래로 떨어지면 하나씩 씁니다(가방에서 줄지 않음). 정하지 않으면 균형·몰릴 때·회복품 없음.</p>
       <button class="btn small primary" data-tac="${t.mode}">작전 정하기</button></details>` : ''}
     <div class="btn-row">
-      ${open && !mine ? (b.here_safe ? (t.mode === 'solo' ? `<button class="btn primary" data-sign="solo">신청하기</button>`
-          : (b.party || []).length ? `<select id="tn-partner" aria-label="함께 나갈 파티원">${b.party.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><button class="btn primary" data-sign="team">함께 신청하기</button>`
+      ${open && !mine ? (b.here_safe ? (t.mode === 'solo' ? `<button class="btn primary" data-here="비무회 신청" data-sign="solo">신청하기</button>`
+          : (b.party || []).length ? `<select id="tn-partner" aria-label="함께 나갈 파티원">${b.party.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select><button class="btn primary" data-here="비무회 신청" data-sign="team">함께 신청하기</button>`
           : '<span class="hint">팀전은 파티원 한 명과 함께 나갑니다.</span>') : '<span class="hint">안전지대에서 신청할 수 있습니다.</span>') : ''}
       ${open && mine ? `<button class="btn ghost" data-unsign="${t.mode}">신청 물리기</button>` : ''}
       ${['locked', 'running', 'done'].includes(t.status) ? `<button class="btn" data-view="${esc(t.t_id)}">${icon('flag', 16)}<span>대진표·관람</span></button>` : ''}

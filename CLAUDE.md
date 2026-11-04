@@ -367,14 +367,15 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 자율수련·조사·정비·휴식을 현실 시간으로 진행한다. 시작·종료·수령은 서버가 관리하고 클라이언트 시간 조작을 막는다. 보조 시스템이며 직접 플레이의 가치를 없애지 않는다. 유형별 보상과 상태 변화는 서로 구분된다.
 
-- 자율 중에는 현장 행동(이동·탐색·전투·채집·낚시·휴식·제작·분해·강화·수리·상점·거래소·직접 거래·원정·구조·의뢰)을 world_guard_action_context·world_events 트리거가 막고, 성장·세력 임무·보급·단서 조합·이야기·전리품 분배·물품 사용·장비 바꾸기는 된다.
+- 자율 중에는 현장 행동(이동·탐색·전투·채집·낚시·휴식·제작·분해·강화·수리·상점·거래소·직접 거래·원정·구조·의뢰)을 world_guard_action_context·world_events 트리거가 막고, 「그 자리」 행동·물품 사용도 이동·원정 중과 똑같이 막는다(아래, 1.0.3d 사용자 결정 — 뭘 하는 중이긴 하니까). 되는 것은 능력치·칭호·꾸미기·채팅·장비 바꾸기·전리품 분배.
 - 끝나기 전 그만두기(캐릭터 › 자율, world_claim_idle_activity를 일찍 부르면 중단) = 지난 시간만큼, 최소 1 보정 없음.
 - 보상 world_claim_idle_activity(시간 h): 숙련·회복 floor(4.2h), 경험치 floor(h×비율×0.35)(수련 12·조사 10·정비 8·휴식 3, 최소 1, 최고 레벨이면 0). 수련 = 전투 숙련·직업 계열(world_job_line), 조사 = 조사 숙련·탐사, 정비 = 제작 숙련·world_craft_line_of(생활 전문화 제작 분야), 휴식 = 체력·정신·영력(world_idle_skill_for).
 - 화면(캐릭터 › 자율)은 시간 단추마다 같은 식의 예상 보상, 누르면 확인 창. training·research·maintenance·rest 각 분기와 수령을 검증한다.
 
-이동 중 막는 행동:
-- 이동 중(travel_arrives_at 남음) 제작·분해·강화·수리·상점·거래소는 world_guard_action_context, 물품 사용은 world_use_item(쓰러졌을 때 회생 부적 예외), 퀘스트 받기·보고(world_quest_report)·세력 퀘스트 보고(world_faction_report)도 막음.
-- 「그 자리」 행동 37가지(창고·곳간 정리·퀘스트 포기·의뢰/세력 의뢰 보고·기부·비고·수련장·보급·소속 임무·가입·떠나기·마구간·서신 물품(world_letter_place_check·claim)·시신·구조·수리·강화·분해·상점·거래소·직접 거래·비무회·혼례·토벌 합류·결전·동료 부르기·사건 보고·가설 확정·마음 다잡기)는 본문 첫머리 world_travel_guard(무엇)가 막는다. 새 「그 자리」 함수도 world_travel_guard를 부르고 주인 역할에 실행 권한을 준다.
+이동·원정·자율 중 막는 행동(셋 다 같게, 1.0.3d):
+- 판정은 world_busy_kind(uid)(travel_arrives_at 남음 → 원정 active → 자율 active 순) 하나, 문구는 world_busy_rules(이름·「…뒤에 하세요」·self/other 틀 → gamedata busy → rules.js busyText) 하나, world_busy_msg(uid, 무엇, 남)가 만든다. 제작·분해·강화·수리·상점·거래소는 world_guard_action_context도 막음.
+- 「그 자리」 행동 39가지(창고·곳간 정리·퀘스트 포기·의뢰/세력 의뢰 보고·기부·비고·수련장·보급·소속 임무·가입·떠나기·마구간·서신 물품(world_letter_place_check·claim)·시신·구조·수리·강화·분해·상점·거래소·직접 거래·비무회·혼례·토벌 합류·결전·동료 부르기·사건 보고·가설 확정·마음 다잡기·조사원 의뢰)와 퀘스트 받기·보고(world_quest_report)·세력 퀘스트 보고(world_faction_report)는 본문 첫머리 world_travel_guard(무엇)가 막는다. 물품 사용(world_use_item)도 같고 예외는 쓰러졌을 때 회생 부적 하나, 동료 돌보기(world_party_use_item)는 주는 쪽 world_travel_guard·받는 쪽 world_busy_msg(받는 이, 남). 새 「그 자리」 함수도 world_travel_guard를 부르고 주인 역할에 실행 권한을 준다.
+- 화면: 그 자리 단추에는 data-here="무엇"만 단다(쓰러져도 되는 물품 사용 단추는 data-here-down도). core.js busyOf(store)(이동 끝 시각·원정·자율(hud.js store.idle)·전투불능)와 paintHere가 그릴 때(MutationObserver)·character/expedition/idle 알림·이동 끝 시각(기기 시계)에 .here-locked로 흐리게 하고 title에 busyText, 누르면 그 까닭만 띄우고 요청을 보내지 않는다(서버 요청 추가 없음). 새 그 자리 단추도 data-here를 단다. 서버 막기를 대신하지 않는다.
 
 ## 10. 사건 조사와 단서 조합
 

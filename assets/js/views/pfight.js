@@ -93,7 +93,7 @@ function draw() {
       <section class="panel raid-boss"><div class="panel-body">
         ${s.status === 'gather' ? `<p class="raid-time">${icon('hourglass', 14)} <b data-until="${esc(s.gather_ends)}">…</b> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지 · 탐색력 1)</p>
             ${s.leader_id === c.owner_id ? `<button class="btn primary" id="pf-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : ''}` : ''}
-        ${s.can_join ? `<button class="btn primary" id="pf-join">${icon('flag', 16)}<span>합류하기 · 탐색력 1</span></button>` : ''}
+        ${s.can_join ? `<button class="btn primary" id="pf-join" data-here="함께 싸우기">${icon('flag', 16)}<span>합류하기 · 탐색력 1</span></button>` : ''}
         <div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(s.hp)} / ${fmt.num(s.max_hp)}</b></div>
         ${fight ? `<div class="pf-turn ${s.my_turn ? 'mine' : ''}">${s.my_turn ? `${icon('sword', 15)}<b>내 차례입니다</b><span>행동을 고르면 바로 풀립니다</span>` : `${icon('hourglass', 15)}<b>${esc(cur?.name || '…')}의 차례</b><span>고르기를 기다리는 중</span>`}</div>${turnLine}
           <div class="intent lvl-${intent[2]}">${icon(intent[2] >= 2 ? 'flame' : 'eye', 18)}<div><b>다음 행동 · ${esc(intent[0])}</b><span>${esc(intent[1])}${tgt ? ` · 노리는 사람: <b>${esc(tgt.name)}</b>${s.mon_done ? '(이번 라운드에 침)' : '(그 차례 뒤에 반격)'}` : ''}</span></div></div>` : ''}

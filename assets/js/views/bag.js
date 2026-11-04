@@ -184,7 +184,7 @@ async function items(body, inv, stg) {
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
-        ${showUse ? `<button class="btn small inv-quick" data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
+        ${showUse ? `<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}
         ${id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small inv-quick" data-token-trade title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
@@ -312,7 +312,7 @@ async function craft(body, inv, stg) {
             <button type="button" class="btn small cq-step" data-cq-do="inc" aria-label="하나 더">+</button>
             <button type="button" class="btn small ghost" data-cq-do="all" title="재료로 만들 수 있는 만큼 (${maxN}번${maxN >= CRAFT_MAX ? `, 한 번에 ${CRAFT_MAX}번까지` : ''})">전부</button>
           </div>`; })() : ''}
-          <button class="btn small ${can ? 'primary' : ''} craft-go" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? craftLabel(Math.min(maxN, Math.max(1, craftN.get(r.id) || 1))) : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
+          <button class="btn small ${can ? 'primary' : ''} craft-go" data-here="제작" data-craft="${esc(r.id)}" ${can ? '' : 'disabled'}>${icon('hammer', 14)}<span>${can ? craftLabel(Math.min(maxN, Math.max(1, craftN.get(r.id) || 1))) : lacks.length ? '재료 부족' : '조건 미충족'}</span></button>
         </div>
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 제작법이 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 제작법이 없습니다.', 'hammer')}`, 'label.search');

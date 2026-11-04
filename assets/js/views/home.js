@@ -111,7 +111,7 @@ function partyHtml(p, s) {
       <b>${cardName(m.owner_id, m.character_name)}</b>${m.role === 'leader' ? '<small class="accent">파티장</small>' : ''}
       <small>${esc(m.location || '')}${isNear(m) ? ' (같은 곳)' : ''}${state(m) ? ' · ' + state(m) : ''}</small>
       <small class="pt-stat">체력 ${m.health} · 정신 ${m.mental ?? '-'} · 침식 ${m.erosion ?? 0}</small>
-      ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}
+      ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}
       ${!m.downed && !m.expedition && isNear(m) ? `<button class="btn small" data-aid="${esc(m.owner_id)}" data-aid-name="${esc(m.character_name)}">돌보기</button>` : ''}</li>`;
   return `<section class="panel party-strip"><header class="panel-head"><h2>${icon('users', 16)} 파티 · ${p.members.length}명 <i class="help-q" role="img" aria-label="파티 안내" data-tip="${esc(`${near ? `같은 곳의 동료 ${near}명: 받는 피해 −${3 * Math.min(near, 3)}%·회복량 +4%. ` : '같은 곳에 있는 동료가 있으면 받는 피해가 줄고 회복량이 늘어납니다. '}${PARTY_EXP.who}와는 ${PARTY_EXP.fight}. 그리고 ${PARTY_EXP.bonus}.`)}">?</i></h2>
       <div class="btn-row">${!s.region.safe ? `<button class="btn small primary" id="pt-exp" ${store.expedition ? 'disabled' : ''}>${icon('route', 14)}<span>파티 원정</span></button>` : ''}<a class="btn small ghost" href="#/party">동료 화면</a></div></header>
@@ -123,7 +123,7 @@ function openAid(target, name) {
   const inv = store.character.inventory || {}, medic = store.character.job_key === 'medic';
   const have = AID_ITEMS.filter(k => Number(inv[k] || 0) > 0).map(k => [k, USABLE[k] || '']);
   const m = openModal({ title: `${name} 돌보기`, body: `<p class="muted small">같은 곳에 있는 동료에게 약·부적을 씁니다.${medic ? ' 의무관이 쓰면 효과가 1.4배입니다.' : ''} 쓰러진 동료는 구조해야 합니다.</p>
-    ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
+    ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-here="동료 돌보기" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
       : empty('가방에 동료에게 쓸 약·부적이 없습니다.')}` });
   $$('[data-aid-use]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_party_use_item', { p_target: target, p_item_id: b.dataset.aidUse }); closeModal(); return r; }));
 }
@@ -338,9 +338,9 @@ function people(roster, corpses) {
   const dead = corpses || [];
   return `<section class="panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
     ${list.length ? `<ul class="people">${list.map(p => `<li>${emblem(p.owner_id, p.profile, 34)}<div><b>${cardName(p.owner_id, p.character_name)}${sealMark(p.profile?.seal)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
-      ${p.downed && !p.is_dead ? `<button class="btn small primary" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
+      ${p.downed && !p.is_dead ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
     ${dead.length ? `<h3 class="sub-h">쓰러진 이의 자리</h3><ul class="people">${dead.map(d => `<li><span class="emblem corpse">${icon('flame', 18)}</span><div><b>${esc(d.character_name)}의 시신</b><small>${new Date(d.died_at).toLocaleDateString('ko-KR')} · ${esc(d.death_reason || '')}${d.items_left ? ` · 유품 ${d.items_left}점` : ''}</small></div>
-      <div class="btn-row">${d.can_respect ? `<button class="btn small" data-respect="${esc(d.corpse_id)}">명복 빌기</button>` : ''}${d.items_left ? `<button class="btn small" data-loot="${esc(d.corpse_id)}">유품 수습</button>` : ''}</div></li>`).join('')}</ul>` : ''}
+      <div class="btn-row">${d.can_respect ? `<button class="btn small" data-respect="${esc(d.corpse_id)}">명복 빌기</button>` : ''}${d.items_left ? `<button class="btn small" data-here="시신 수습" data-loot="${esc(d.corpse_id)}">유품 수습</button>` : ''}</div></li>`).join('')}</ul>` : ''}
   </div></section>`;
 }
 

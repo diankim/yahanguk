@@ -56,7 +56,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
         <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입${equipped.has(k) ? ' · 장착 중 하나는 남김' : ''}</small>${descOf.get(k) ? `<small class="brief">${esc(brief(descOf.get(k)))}</small>` : ''}</div>
         ${stepper('sell', k, sellMax(k))}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
     </section>` : ''}
-    <div class="shop-foot"><span id="shop-sum"></span><button class="btn primary" id="shop-go"></button></div>`;
+    <div class="shop-foot"><span id="shop-sum"></span><button class="btn primary" id="shop-go" data-here="상점 거래"></button></div>`;
   const cur = () => sell ? shopMode : 'buy';
   const total = m => Object.entries(cart[m]).reduce((t, [k, n]) => t + n * (m === 'buy' ? Number(stock.get(k)?.unit_price || 0) : sellPrice(k)), 0);
   const foot = () => {
@@ -142,7 +142,7 @@ async function enhancePane(body) {
         ${maxed ? '' : `<div><dt>성공 확률</dt><dd>${q.chance}%</dd></div><div><dt>비용</dt><dd>${fmt.jeon(q.gil)}${q.have_gil < q.gil ? ' <span class="bad">(모자람)</span>' : ''}</dd></div>`}
       </dl>
       ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}${stored[k] ? ` <small class="muted">(창고 ${fmt.num(stored[k])})</small>` : ''}</span></li>`).join('')}</ul>
-      <div class="btn-row"><button class="btn primary" id="enh-go" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
+      <div class="btn-row"><button class="btn primary" id="enh-go" data-here="강화" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
     <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(반요촌 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
@@ -167,9 +167,9 @@ async function repairPane(body) {
   body.innerHTML = items.length ? `
     <ul class="item-list">${items.map(i => `<li><div class="item-main"><b>${infoName(i.item_id, i.name)}</b><span class="qty">${fmt.jeon(i.cost)}</span>
       <small>내구도 ${fmt.num(i.durability)} / ${fmt.num(i.max)}${i.equipped ? ' · 장착 중' : ''}</small></div>
-      <div class="item-act"><button class="btn small" data-rep-one="${esc(i.item_id)}" ${store.character?.gil < i.cost ? 'disabled' : ''}>고치기</button></div></li>`).join('')}</ul>
+      <div class="item-act"><button class="btn small" data-here="수리" data-rep-one="${esc(i.item_id)}" ${store.character?.gil < i.cost ? 'disabled' : ''}>고치기</button></div></li>`).join('')}</ul>
     <div class="shop-foot"><span>${items.length}개 · 합계 <b>${fmt.jeon(q.total)}</b>${store.character?.gil < q.total ? ' <span class="bad">· 전이 모자랍니다</span>' : ''}</span>
-      <button class="btn primary" id="rep-all" ${store.character?.gil < q.total ? 'disabled' : ''}>모두 고치기</button></div>
+      <button class="btn primary" id="rep-all" data-here="수리" ${store.character?.gil < q.total ? 'disabled' : ''}>모두 고치기</button></div>
     <p class="muted small">하나씩 고치거나 한 번에 모두 새것처럼 고칩니다. 값은 어느 쪽이든 같습니다.</p>`
     : empty('고칠 장비가 없습니다. 모두 멀쩡합니다.', 'shield');
   bindInfo(body);
@@ -198,7 +198,7 @@ async function dismantlePane(body) {
       const what = !d.line ? '' : low ? `<span class="bad">재료 없음 · ${esc(d.line_name)} 경험 +12만(${esc(d.line_name)} ${d.need}단계부터 재료)</span>`
         : `돌려받는 재료: ${esc(yieldText(d.yield) || '—')} · ${esc(d.line_name)} 경험 +12`;
       return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
-        <div class="item-act"><button class="btn small" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
+        <div class="item-act"><button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
   body.innerHTML += `<p class="muted small">장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.</p>`;
   bindInfo(body);
@@ -284,7 +284,7 @@ export async function renderMarket(box) {
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rarTag(o.item_id)}<span class="qty">×${o.quantity}</span>
         <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
-        <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-take="${o.offer_id}">사기</button>`}</div></li>`;
+        <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
       <p class="muted small"><b>희귀 재료</b>(비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽)는 거래소에서만 사고팝니다: 기준 시세 70% 이상 · 한 사람 24시간 20개까지 · 거래세 10%.</p>
       <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다. 0전 등록은 불가하고 가격은 기준 시세의 10배까지입니다. 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p></details>`;
@@ -298,7 +298,7 @@ export async function renderMarket(box) {
           <label class="field"><span>수량</span><input name="qty" type="number" min="1" value="1" inputmode="numeric"></label>
           <label class="field"><span>개당 가격(전)</span><input name="price" type="number" min="1" value="${ref.get(tradeable[0][0])?.reference_price || 10}" inputmode="numeric"></label>
           <p class="muted small tf-hint" id="trade-hint"></p>
-          <button class="btn primary tf-go" type="submit" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록 (${mine.length}/10건)</span></button></form>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
+          <button class="btn primary tf-go" type="submit" data-here="거래소 등록" ${mine.length >= 10 ? 'disabled' : ''}>${icon('plus', 16)}<span>판매 등록 (${mine.length}/10건)</span></button></form>` : empty('거래할 수 있는 물품이 없습니다.', 'coin')}
       ${hiddenNote}
       <h3 class="sub-h">내 등록 ${mine.length}</h3>
       ${mine.length ? `<ul class="item-list mk-mine">${mine.map(o => row(o, true)).join('')}</ul>` : `<p class="muted small">등록한 물품이 없습니다.</p>`}
@@ -379,7 +379,7 @@ async function renderDirect(body) {
     body.innerHTML = `
       ${inc.length ? `<h3 class="sub-h">받은 제안 ${inc.length}</h3><ul class="spot-list">${inc.map(t => `<li><div><b>${esc(t.other_name)}님의 제안</b>
           <small>받을 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>줄 것: ${esc(bundle(t.want_items, t.want_gil))}</small><small class="muted">${fmt.remain(new Date(t.expires_at) - Date.now())} 뒤 사라짐</small></div>
-        <div class="btn-row"><button class="btn small primary" data-dt-acc="${esc(t.trade_id)}">수락</button><button class="btn small" data-dt-dec="${esc(t.trade_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
+        <div class="btn-row"><button class="btn small primary" data-here="직접 거래" data-dt-acc="${esc(t.trade_id)}">수락</button><button class="btn small" data-dt-dec="${esc(t.trade_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
       ${people.length ? `<form class="dt-form" id="dt-form">
         <label class="field"><span>거래할 조사원 (같은 곳에 있는 사람)</span><select name="to">${people.map(p => `<option value="${esc(p.owner_id)}" ${p.owner_id === dt.to ? 'selected' : ''}>${esc(p.character_name)} · Lv.${p.level}</option>`).join('')}</select></label>
         <fieldset class="dt-side"><legend>내가 줄 것</legend>
@@ -390,7 +390,7 @@ async function renderDirect(body) {
           <div class="chips">${chipList(dt.want, 'want')}</div>
           ${pickerHtml('wantItem', wantOpts)}<div class="dt-add"><input name="wantQty" type="number" min="1" value="1" aria-label="수량"><button class="btn small" type="button" data-add="want">담기</button></div>
           <label class="field"><span>받을 전</span><input name="wantGil" type="number" min="0" value="${dt.wantGil}"></label></fieldset>
-        <button class="btn primary block" type="submit">${icon('coin', 16)}<span>거래 제안 보내기</span></button>
+        <button class="btn primary block" type="submit" data-here="직접 거래">${icon('coin', 16)}<span>거래 제안 보내기</span></button>
       </form>` : empty('같은 곳에 거래할 조사원이 없습니다. 상대와 같은 곳에 있어야 합니다(안전지대가 아니어도 됩니다).', 'users')}
       ${out.length ? `<h3 class="sub-h">보낸 제안 ${out.length}</h3><ul class="spot-list">${out.map(t => `<li><div><b>${esc(t.other_name)}님에게</b><small>줄 것: ${esc(bundle(t.give_items, t.give_gil))}</small><small>받을 것: ${esc(bundle(t.want_items, t.want_gil))}</small></div>
         <button class="btn small" data-dt-cancel="${esc(t.trade_id)}">거두기</button></li>`).join('')}</ul>` : ''}
@@ -463,8 +463,8 @@ export async function renderStorage(box) {
     const row = (id, label, n, max, m, note) => `<li data-mk-cat="${esc(catMap.get(id) || 'etc')}" data-mk-name="${esc((label || nameOf(id)).toLowerCase())}">
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
         ${ro && m === 'put' ? '' : `<div class="row-act"><input type="number" inputmode="numeric" min="1" max="${m === 'take' ? n : max}" value="${max || n}" aria-label="수량">
-          ${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
-          ${m === 'take' ? `<button class="btn small ghost" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div>`}</li>`;
+          ${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-here="창고 이용" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
+          ${m === 'take' ? `<button class="btn small ghost" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div>`}</li>`;
     const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
     box.innerHTML = `
@@ -554,12 +554,12 @@ export async function renderStable(box) {
     const train = mine.length ? `<h3 class="sub-h">탈것 단련 <small class="muted">가진 노정패 ${tokens}개 · 단계마다 이동 속도 +4% (최고 5단계)</small></h3>
       <ul class="spot-list train-list">${mine.map(x => { const lv = Number(x.training || 0), cost = 20 * (lv + 1);
         return `<li><div><b>${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
-          ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; }).join('')}</ul>` : '';
+          ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-here="탈것 단련" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; }).join('')}</ul>` : '';
     box.innerHTML = train + (here.length ? `<h3 class="sub-h">들일 수 있는 탈것</h3>` : '') + (here.length ? `<div class="mount-grid">${here.map(x => `<article class="mount ${x.owned ? 'on' : ''}">
         <header><b>${esc(x.mount_name)}</b>${chip(x.tier)}</header><p>${esc(x.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${x.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${x.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${x.fare_free ? '없음' : `구간당 노정패 ${x.fare_tokens}`}</dd></div></dl>
         <small class="muted">${esc(conditions(x, c))}</small>
-        ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
+        ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-here="탈것 들이기" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
       : (mine.length ? '' : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route')));
     $$('[data-train]', box).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_mount_train', { p_mount_id: b.dataset.train }); renderStable(box); return out; }));
     $$('[data-buy]', box).forEach(b => b.onclick = async () => { if (await ask('이 탈것을 들일까요?', { title: '탈것 들이기', ok: '들이기' })) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });

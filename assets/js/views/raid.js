@@ -201,11 +201,11 @@ function joinHtml(r, me) {
   const late = r.kind === 'world' && r.status === 'fight';
   if (r.status !== 'signup' && !late) return '';
   if (late && me.joined && me.left) return `<p class="hint">${icon('back', 14)} 토벌에서 나왔습니다. 지금까지의 기여는 남아 토벌이 끝나면 그 몫만큼 보상을 받습니다.</p>
-    <button class="btn primary" id="raid-join">${icon('flag', 16)}<span>다시 참가</span></button><p class="muted small">토벌 지역에 있어야 다시 참가할 수 있습니다. 돌아오면 쉬는 중이니 준비되면 행동하세요.</p>`;
+    <button class="btn primary" id="raid-join" data-here="토벌 합류">${icon('flag', 16)}<span>다시 참가</span></button><p class="muted small">토벌 지역에 있어야 다시 참가할 수 있습니다. 돌아오면 쉬는 중이니 준비되면 행동하세요.</p>`;
   if (late && me.joined) return '';
   if (me.joined) return `<p class="hint good">${icon('check', 14)} 참가를 신청했습니다. 신청이 끝나면 토벌이 시작됩니다.</p>
     ${r.kind === 'final' && r.leader ? `<button class="btn primary" id="raid-begin">${icon('sword', 16)}<span>지금 시작하기</span></button><p class="muted small">함께할 동료가 다 왔으면 바로 시작합니다. 90초가 지나면 저절로 시작합니다.</p>` : ''}`;
-  return me.can_join ? `<button class="btn primary" id="raid-join">${icon('flag', 16)}<span>${r.kind === 'final' ? '결전에 합류' : late ? '지금 토벌에 합류' : '토벌 참가 신청'}</span></button>${late ? '<p class="muted small">지금 합류하면 남은 시간만큼 그림자의 체력이 늘고, 기여도는 합류한 뒤부터 쌓입니다.</p>' : ''}`
+  return me.can_join ? `<button class="btn primary" id="raid-join" data-here="토벌 합류">${icon('flag', 16)}<span>${r.kind === 'final' ? '결전에 합류' : late ? '지금 토벌에 합류' : '토벌 참가 신청'}</span></button>${late ? '<p class="muted small">지금 합류하면 남은 시간만큼 그림자의 체력이 늘고, 기여도는 합류한 뒤부터 쌓입니다.</p>' : ''}`
     : `<p class="hint">${icon('pin', 14)} ${esc(me.why || '신청할 수 없습니다.')}</p>`;
 }
 

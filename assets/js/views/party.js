@@ -34,7 +34,7 @@ async function draw(heavy = false, tick = false) {
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
     const member = m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)} ${m.role === 'leader' ? chip('파티장', 'accent') : ''}</b>
         <small>Lv.${m.level} · ${esc(nameOf(m.job_key))} · ${esc(m.location)} · 체력 ${m.health}${m.away ? ' · 원정 중' : ''}${m.in_combat ? ' · 전투 중' : ''}</small></div>
-        ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
+        ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
     const canInvite = !pt || isLeader, memberIds = new Set((p?.members || []).map(m => m.owner_id));
     const fState = f => f.is_dead ? '숨을 거둠' : f.downed ? '전투불능' : f.in_combat ? '전투 중' : f.away ? '원정 중' : f.traveling ? '이동 중' : '';
     const friendsPanel = fr ? panel(`친구 · ${(fr.friends || []).length}명`, `
@@ -45,7 +45,7 @@ async function draw(heavy = false, tick = false) {
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
             ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
-            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
+            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
         : empty('아직 친구가 없습니다. 채팅이나 같은 곳에 있는 조사원의 이름을 눌러 친구 신청을 보내 보세요.', 'users')}
       ${(fr.outgoing || []).length ? `<p class="muted small">응답을 기다리는 신청: ${fr.outgoing.map(f => `${esc(f.character_name)} <button class="linkish" data-fr-cancel="${esc(f.owner_id)}">취소</button>`).join(' · ')}</p>` : ''}
       ${(fr.blocked || []).length ? `<details class="fold"><summary>차단한 조사원 ${fr.blocked.length}</summary><ul class="spot-list">${fr.blocked.map(f => `<li><div><b>${esc(f.character_name)}</b></div><button class="btn small" data-unblock="${esc(f.owner_id)}">차단 풀기</button></li>`).join('')}</ul></details>` : ''}
@@ -79,7 +79,7 @@ async function draw(heavy = false, tick = false) {
         <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
       ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${emblem(m.owner_id, m.profile, 36)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
-          ${m.downed && !m.is_dead ? `<button class="btn small primary" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
+          ${m.downed && !m.is_dead ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
     const mk = $('#party-make', body);
     if (mk) mk.onclick = () => guard(mk, () => act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) }));
     $('#invite-form', body)?.addEventListener('submit', e => { e.preventDefault(); guard(e.target.querySelector('button'), () => act('world_party_invite', { p_invitee_id: e.target.who.value })); });
