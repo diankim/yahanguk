@@ -33,6 +33,7 @@ declare d text; a text;
 begin
   d := replace(pg_get_functiondef('public.world_expedition_progress()'::regprocedure), E'\r\n', E'\n');
   a := $a$if x.together then lines := lines || public.world_expedition_walk_lines(x.expedition_id); end if;$a$;
+  if position('world_expedition_duo_lines' in d) > 0 then return; end if;
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.0.3c world_expedition_progress 기준 문구가 없습니다'; end if;
   execute replace(d, a, $x$if x.together then lines := lines || public.world_expedition_walk_lines(x.expedition_id) || public.world_expedition_duo_lines(e.expedition_id, x.expedition_id); end if;$x$);
 end $w$;
