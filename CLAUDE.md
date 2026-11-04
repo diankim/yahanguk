@@ -539,7 +539,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 이모지를 장식으로 쓰지 않는다(아이콘과 글).
 - 평면 디자인(그라데이션·그림자·흐림 없음). 예외(사용자 요청): 컷씬, 색 고르기 판·막대.
-- 테마 theme.js THEMES 32가지: 프리셋(야행·한지·청자·단청·쪽빛·황토·월하·홍매·송연·나전 등)과 흑·백 버전, 모서리·글꼴(고딕·명조)·선 굵기, deco {tex(tile·brush·dot·bamboo·wave·lattice·star·grain·hanji), frame(bracket·dot·round·double·line·none), head(plain·band·under)} → :root data-tex·data-frame·data-head(또렷한 선·점만). 새 테마도 deco를 단다. 바탕·강조·포인트 색 직접 고르기.
+- 테마 theme.js THEMES 34가지: 프리셋(야행·한지·청자·단청·쪽빛·황토·월하·홍매·송연·나전 등)과 흑·백 버전, 모서리·글꼴(고딕·명조·셈판 font sheet = --font-sheet 맑은 고딕 계열)·선 굵기, deco {tex(tile·brush·dot·bamboo·wave·lattice·star·grain·hanji·grid), frame(bracket·dot·round·double·line·none), head(plain·band·under·sheet)} → :root data-tex·data-frame·data-head(또렷한 선·점만). 새 테마도 deco를 단다. 바탕·강조·포인트 색 직접 고르기. 셈판(sempan, 1.0.3c)·흑백셈판(heukbaek): 셈 장부 격자(tex grid)·초록(흑백은 먹색) 머리 띠·panel-head 있는 패널에 열 머리 A B C…·행 번호 1 2 3…(head sheet, app.css 끝)·고른 칸·초점 테두리, 상표 이름·로고는 쓰지 않음. 흑백셈판은 화면 전체 필터 없이 색 토큰을 회색조로 덮는다(--ok·--warn·--bad·--hp·--mp·--sp·--ki·--er·등급·이름 색·.scene --sc·.emblem --em·테두리·낙관·지도 물빛·바다낚시 변), 게이지는 진하기 + 무늬(정신 빗금·영력 점·침식 엇빗금·탐색력/기력 세로줄)로 가름, 세력 색은 geo.js factionColor가 FACTION_GRAYS로(테마 바꾼 뒤 다시 그릴 때), 사진·그림(img·canvas)만 grayscale.
 - 색 고르기 colorpick.js: app.js installColorPicker가 모든 input[type=color] 누름을 가로채 openColorPicker → 「설정」하면 value를 바꿔 input·change. 사각형 판(가로 채도·세로 밝기)·색조 막대·Hex·추천색 24(PICKS: 바탕 8·강조 16).
 - 글자 크기 다섯 단계(theme.js FONT_SIZES, --fz 0.85~1.22, yh-fz), CSS는 calc(Npx * var(--fz, 1)), 터치 입력칸은 16px 아래로 안 내려감.
 - 촘촘하게: 본문 14px·줄 간격 1.5·단추 38px/작은 단추 32px·입력 40px(터치 입력만 16px). 화면 글은 줄이고 설명은 작게(모바일 11.5px).

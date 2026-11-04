@@ -69,4 +69,9 @@ export const FACTION_COLORS = {
   night_office: '#3e5f9a', north_league: '#6f8193', mandate_court: '#a68a3c', river_alliance: '#2f8a80',
   red_moon_cult: '#9a3a3e', black_lotus: '#6a4c8c', southern_remnant: '#c2571f', null: '#4a4a4f',
 };
-export function factionColor(id) { return FACTION_COLORS[id] || FACTION_COLORS.null; }
+const FACTION_GRAYS = {
+  night_office: '#3a3a3a', north_league: '#8a8a8a', mandate_court: '#b4b4b4', river_alliance: '#5e5e5e',
+  red_moon_cult: '#262626', black_lotus: '#727272', southern_remnant: '#9e9e9e', null: '#d0d0d0',
+};
+const mono = () => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'heukbaek';
+export function factionColor(id) { const t = mono() ? FACTION_GRAYS : FACTION_COLORS; return t[id] || t.null; }
