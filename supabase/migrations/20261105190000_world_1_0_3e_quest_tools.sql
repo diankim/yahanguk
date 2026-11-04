@@ -167,11 +167,20 @@ begin
       where tc.active and tc.rule ->> 'codex' = 'gather'));
 end $function$;
 
-create or replace function public.world_exp_gather_count(p_uid uuid, p_task jsonb, p_since timestamptz) returns integer
+create or replace function public.world_exp_task_count(p_uid uuid, p_task jsonb, p_since timestamptz) returns integer
 language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $f$
 #variable_conflict use_column
 begin
   if p_uid is null or p_since is null then return 0; end if;
+  if p_task ->> 't' = 'win' then
+    return (select * from (select count(*)::int from public.world_expeditions x, jsonb_array_elements(coalesce(x.journal, '[]'::jsonb)) j
+      where x.owner_id = p_uid and x.status = 'done' and x.finished_at >= p_since
+        and j ->> 'kind' = 'win' and j ? 'mid' and j ->> 'owner' = p_uid::text
+        and (not p_task ? 'm' or j ->> 'mid' in (select jsonb_array_elements_text(p_task -> 'm')))
+        and (not p_task ? 'r' or j ->> 'rg' in (select jsonb_array_elements_text(p_task -> 'r')))
+        and (not p_task ? 'rank' or j ->> 'rank' = p_task ->> 'rank')) yhq limit 1);
+  end if;
+  if p_task ->> 't' <> 'gather' then return 0; end if;
   return (select * from (select coalesce(sum(case when p_task ? 'items'
       then (select coalesce(sum(x.value::text::int), 0) from jsonb_each(case when jsonb_typeof(e.payload -> 'gl') = 'object' then e.payload -> 'gl' else '{}'::jsonb end) x
              where jsonb_typeof(x.value) = 'number' and x.key in (select jsonb_array_elements_text(p_task -> 'items')))
@@ -183,8 +192,16 @@ begin
           in (select jsonb_array_elements_text(p_task -> 'r')))
 ) yhq limit 1);
 end $f$;
+revoke all on function public.world_exp_task_count(uuid, jsonb, timestamptz) from public, anon, authenticated;
+grant execute on function public.world_exp_task_count(uuid, jsonb, timestamptz) to fn_owner_field, postgres, service_role;
+
+create or replace function public.world_exp_gather_count(p_uid uuid, p_task jsonb, p_since timestamptz) returns integer
+language sql stable as $f$ select public.world_exp_task_count(p_uid, p_task || '{"t":"gather"}'::jsonb, p_since) $f$;
 revoke all on function public.world_exp_gather_count(uuid, jsonb, timestamptz) from public, anon, authenticated;
 grant execute on function public.world_exp_gather_count(uuid, jsonb, timestamptz) to fn_owner_field, postgres, service_role;
+
+create or replace function public.world_exp_win_count(p_uid uuid, p_task jsonb, p_since timestamptz) returns integer
+language sql stable as $f$ select public.world_exp_task_count(p_uid, p_task || '{"t":"win"}'::jsonb, p_since) $f$;
 
 CREATE OR REPLACE FUNCTION public.world_quest_task_count(p_uid uuid, p_task jsonb, p_since timestamp with time zone)
  RETURNS integer
