@@ -64,10 +64,10 @@ export const THEMES = [
   { id: 'jae', name: '재', desc: '남명의 잿빛 해안과 꺼진 불씨', tone: 'dark', r: 4, font: 'sans', bw: 1, deco: { tex: 'brush', frame: 'line', head: 'under' },
     c: ['#1b1917', '#24211e', '#2d2925', '#433d37', '#ebe5dc', '#a59c90', '#e06a3a', '#1f0d04', '#b8a27a'] },
   { id: 'bomnal', name: '봄날', desc: '개나리 핀 담장과 새싹', tone: 'light', r: 18, font: 'sans', bw: 1, deco: { tex: 'dot', frame: 'round', head: 'band' },
-    c: ['#f3f0d8', '#fcfaec', '#ebe6c4', '#d4cb98', '#2a2a14', '#6a6942', '#c79a10', '#1d1600', '#4f8a3a'] },  { id: 'sempan', name: '셈판', desc: '흰 칸 격자와 초록 머리 띠의 셈 장부', tone: 'light', r: 0, font: 'sheet', bw: 1, deco: { tex: 'grid', frame: 'none', head: 'sheet' },
-    c: ['#ffffff', '#ffffff', '#f3f3f3', '#d4d4d4', '#1f1f1f', '#5f5f5f', '#217346', '#ffffff', '#1a6b3c'] },
-  { id: 'heukbaek', name: '흑백셈판', desc: '셈판을 검정·흰색·회색만으로', tone: 'light', r: 0, font: 'sheet', bw: 1, deco: { tex: 'grid', frame: 'none', head: 'sheet' },
-    c: ['#ffffff', '#ffffff', '#f2f2f2', '#cfcfcf', '#111111', '#5c5c5c', '#2b2b2b', '#ffffff', '#3c3c3c'] },
+    c: ['#f3f0d8', '#fcfaec', '#ebe6c4', '#d4cb98', '#2a2a14', '#6a6942', '#c79a10', '#1d1600', '#4f8a3a'] },  { id: 'sempan', name: '셈판', desc: '창 전체가 표 계산 칸인 셈판', tone: 'light', r: 0, font: 'sheet', bw: 1, deco: { tex: 'none', frame: 'none', head: 'sheet' },
+    c: ['#ffffff', '#ffffff', '#ffffff', '#d4d4d4', '#1f1f1f', '#6b6b6b', '#217346', '#ffffff', '#217346'] },
+  { id: 'heukbaek', name: '흑백셈판', desc: '셈판과 같은 틀을 회색 단계로만', tone: 'light', r: 0, font: 'sheet', bw: 1, deco: { tex: 'none', frame: 'none', head: 'sheet' },
+    c: ['#ffffff', '#ffffff', '#ffffff', '#d4d4d4', '#1f1f1f', '#6b6b6b', '#3a3a3a', '#ffffff', '#3a3a3a'] },
 ];
 const OLD = { lantern: 'indigo', jade: 'celadon', palace: 'najeon', maple: 'ocher', moonwhite: 'moonlit', bloodmoon: 'yahang', ghostfire: 'pine', goldorchid: 'ocher', snownight: 'moonlit', paper: 'hanji' };
 const VARS = ['--bg', '--surface', '--surface-2', '--line', '--text', '--muted', '--accent', '--accent-ink', '--gold'];
