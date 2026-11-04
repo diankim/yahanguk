@@ -34,12 +34,21 @@ async function kick() {
 export function mountSessionGuard() {
   const uid = store.user?.id; if (!uid || mounted === uid) return;
   stopSessionGuard(); mounted = uid;
+  setTimeout(() => listen(uid), 0);
+  timer = setInterval(() => { if (!live || Date.now() - lastCheck > 300000) check(); }, 60000);
+  check(true);
+}
+async function listen(uid) {
+  try {
+    const t = (await db.auth.getSession()).data.session?.access_token;
+    if (!t || mounted !== uid) return;
+    await db.realtime.setAuth(t);
+  } catch { return; }
+  if (mounted !== uid || channel) return;
   try {
     channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check(true))
       .subscribe(status => { live = status === 'SUBSCRIBED'; });
   } catch {}
-  timer = setInterval(() => { if (!live || Date.now() - lastCheck > 300000) check(); }, 60000);
-  check(true);
 }
 export function stopSessionGuard() {
   mounted = null; live = false; clearInterval(timer); timer = null;

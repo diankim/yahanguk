@@ -1,13 +1,12 @@
-import { db, store, on, rpc, midBattle, throttle } from './core.js';
+import { store, on, rpc, midBattle, throttle } from './core.js';
 
 let timer = null;
 export async function refreshTitleDot() {
   if (!store.character) return;
   try {
-    const { count, error } = await db.from('world_character_titles').select('title_key', { count: 'exact', head: true }).is('seen_at', null);
-    if (error) return;
-    store.newTitles = count || 0;
-    try { store.skillPending = Number(await rpc('world_skill_pending')) || 0; } catch {}
+    const d = await rpc('world_dot_counts');
+    store.newTitles = Number(d?.titles) || 0;
+    store.skillPending = Number(d?.skills) || 0;
   } catch { return; }
   paintTitleDot();
 }
