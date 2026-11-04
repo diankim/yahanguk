@@ -220,14 +220,24 @@ function noEnterSubmit(form) {
 }
 export { untradeNote };
 
+const eqCount = () => equippedIds().reduce((m, id) => m.set(id, (m.get(id) || 0) + 1), new Map());
+export function giveable(have, ref, direct = false) {
+  const eq = eqCount();
+  return Object.entries(have || {}).map(([k, n]) => [k, Number(n) - (eq.get(k) || 0)])
+    .filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !(direct && MARKET_ONLY.has(k)))
+    .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
+}
+
 function untradeNote(have, ref, direct = false) {
   const own = Object.entries(have || {}).filter(([, n]) => Number(n) > 0).map(([k]) => k);
-  const market = direct ? own.filter(k => MARKET_ONLY.has(k) && ref.get(k)?.tradeable !== false).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko')) : [];
-  const bound = own.filter(k => ref.get(k)?.tradeable === false).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
-  const locked = own.filter(k => ref.get(k)?.tradeable !== false && isLocked(k)).map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
+  const eq = eqCount(), ko = l => l.map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
+  const market = direct ? ko(own.filter(k => MARKET_ONLY.has(k) && ref.get(k)?.tradeable !== false)) : [];
+  const bound = ko(own.filter(k => ref.get(k)?.tradeable === false));
+  const locked = ko(own.filter(k => ref.get(k)?.tradeable !== false && isLocked(k)));
+  const worn = ko(own.filter(k => ref.get(k)?.tradeable !== false && !isLocked(k) && Number(have[k]) <= (eq.get(k) || 0)));
   const part = (t, l) => l.length ? `<b>${t}</b> ${esc(l.slice(0, 8).join(' · '))}${l.length > 8 ? ` 외 ${l.length - 8}가지` : ''}` : '';
-  const txt = [part('거래 불가', bound), part('거래소 전용', market), part('잠금', locked)].filter(Boolean).join(' / ');
-  return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 거래소·직접 거래에 올릴 수 없고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다.</p>` : '';
+  const txt = [part('장착 중', worn), part('잠금', locked), part('거래 불가', bound), part('거래소 전용', market)].filter(Boolean).join(' / ');
+  return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 장착 중인 장비는 끼고 있는 한 벌을 빼고 세고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 내줄 수 없습니다.</p>` : '';
 }
 
 let marketMode = 'board', boardTab = 'buy', buyCat = 'all', buyQ = '';
@@ -253,8 +263,7 @@ export async function renderMarket(box) {
     const offers = [...(myOpen || []), ...(openAll || []).filter(o => !(myOpen || []).some(m => m.offer_id === o.offer_id))];
     const c = store.character, me = c.owner_id, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
-    const tradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k))
-      .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
+    const tradeable = giveable(have, ref);
     const sellRows = pickRows(tradeable.map(([k, n]) => ({ id: k, have: n, sub: ref.get(k)?.reference_price ? `기준 시세 ${fmt.jeon(ref.get(k).reference_price)}` : '' })), inv?.catalog);
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
@@ -345,7 +354,7 @@ async function renderDirect(body) {
     const c = store.character, have = c.inventory || {};
     const ref = new Map((prices || []).map(p => [p.item_id, p]));
     const people = (roster || []).filter(p => !p.is_dead);
-    const mineTradeable = Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k));
+    const mineTradeable = giveable(have, ref, true);
     const anyTradeable = (prices || []).filter(p => p.tradeable !== false && !MARKET_ONLY.has(p.item_id)).sort((a, b) => (a.item_name || '').localeCompare(b.item_name || '', 'ko'));
     const hiddenNote = untradeNote(have, ref, true);
     const giveRows = pickRows(mineTradeable.map(([k, n]) => ({ id: k, have: n, max: Math.min(999, n) })), inv?.catalog);

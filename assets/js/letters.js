@@ -1,10 +1,9 @@
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, nameOf, toast } from './core.js';
 import { load } from './views/common.js';
 import { cardName } from './views/card.js';
-import { untradeNote } from './views/services.js';
+import { untradeNote, giveable } from './views/services.js';
 import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
-import { loadLocks, isLocked } from './views/item.js';
-import { MARKET_ONLY } from './core.js';
+import { loadLocks } from './views/item.js';
 
 let snap = null, at = 0;
 export async function loadLetters(force) {
@@ -69,7 +68,7 @@ export async function openCompose(to, toName, done, title = '') {
     const friends = (fr?.friends || []).filter(f => !f.is_dead);
     if (!friends.length) { box.innerHTML = '<p class="muted">서신은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.</p>'; return; }
     const have = store.character?.inventory || {}, ref = new Map((prices || []).map(p => [p.item_id, p]));
-    const opts = pickRows(Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !MARKET_ONLY.has(k))
+    const opts = pickRows(giveable(have, ref, true)
       .map(([k, n]) => ({ id: k, have: n, max: Math.min(999, n) })), inv?.catalog);
     const st = { to: friends.some(f => f.owner_id === to) ? to : friends[0].owner_id, title, body: '', items: {} };
     const draw = () => {
