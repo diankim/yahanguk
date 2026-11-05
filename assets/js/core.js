@@ -504,6 +504,9 @@ function emblemBase(ownerId, profile, size) {
 }
 export const LEVEL_CAP = 40;
 export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 1) ** 2;
+export const xpPct = () => Math.max(0, Math.min(100, Number(store.hud?.xp_pct ?? 100)));
+export const xpGot = x => Math.round((Number(x) || 0) * xpPct() / 100);
+export const xpNote = () => xpPct() < 100 ? `성장 조절 ${xpPct()}% — 최근 활동한 조사원 평균보다 많이 앞서 있어 얻는 경험치가 줄어듭니다. 평균이 따라오면 저절로 풀립니다.` : '';
 export function bagLimit(c) { return (c?.bag_capacity || 34) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
 const STACK_KEY = 'yh-stacks-v3', STACK_VER = 'yh-stacks-ver';
 let stacks = null, cats = null, wtypes = null;

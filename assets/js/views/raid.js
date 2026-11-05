@@ -1,4 +1,4 @@
-import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle } from '../core.js';
+import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { mountMeter } from './meter.js';
 import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
@@ -213,7 +213,7 @@ function resultHtml(r, members) {
   const mine = (members || []).find(m => m.me), rw = mine?.reward;
   const items = rw?.items ? Object.entries(rw.items).map(([k, v]) => `${esc(nameOf(k))} ×${v}`).join(', ') : '';
   return resultBox(r.status === 'won', esc(`${r.boss || '요괴'}을(를) ${r.status === 'won' ? '물리쳤습니다' : '막지 못했습니다'}`),
-    `${rw ? `<p class="small">기여도 ${rw.share}%${rw.gil ? ` · ${fmt.num(rw.gil)}전` : ''}${rw.xp ? ` · 경험치 ${fmt.num(rw.xp)}` : ''}${items ? ` · ${items}` : ''}${rw.lost ? ` · 가방이 모자라 두고 옴: ${esc(rw.lost)}` : ''}</p>` : mine ? '' : '<p class="muted small">관전한 토벌입니다.</p>'}
+    `${rw ? `<p class="small">기여도 ${rw.share}%${rw.gil ? ` · ${fmt.num(rw.gil)}전` : ''}${rw.xp ? ` · 경험치 ${fmt.num(xpGot(rw.xp))}` : ''}${items ? ` · ${items}` : ''}${rw.lost ? ` · 가방이 모자라 두고 옴: ${esc(rw.lost)}` : ''}</p>` : mine ? '' : '<p class="muted small">관전한 토벌입니다.</p>'}
     ${r.kind === 'world' && r.status === 'failed' ? '<p class="muted small">출현 지역이 다음 회차까지 봉연에 잠깁니다(그곳·이웃 침식과 요괴 조우 증가).</p>' : ''}`);
 }
 

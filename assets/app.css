@@ -299,6 +299,7 @@ textarea { resize: none; }
 .hud-id p { font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
 .lv { font-weight: 700; color: var(--gold); font-size: calc(13px * var(--fz, 1)); }
 .xp { display: flex; justify-content: space-between; font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
+.xp .xp-damp { font-style: normal; margin-left: 4px; padding: 0 5px; border: 1px solid var(--warn); border-radius: 3px; color: var(--warn); font-size: calc(10.5px * var(--fz, 1)); line-height: 15px; }
 .vitals { grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .vital { display: grid; grid-template-columns: 1fr auto; gap: 3px 6px; font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
 .vital b { color: var(--text); font-size: calc(12.5px * var(--fz, 1)); }

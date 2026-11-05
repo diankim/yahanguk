@@ -1,4 +1,4 @@
-import { rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
+import { xpGot, rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -29,7 +29,7 @@ const trainSkill = () => SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameO
 const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing');
 function idleReward(k, min, level, early = false) {
   const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, Math.floor(h * IDLE_RATE[k] * 0.35));
-  const out = xp ? [`경험치 +${xp}`] : [];
+  const out = xp ? [`경험치 +${xpGot(xp)}`] : [];
   if (early && !gain && !xp) return ['받을 보상 없음'];
   if (k === 'training') out.push(`전투 숙련 +${gain}`, `${trainSkill()} 기술 +${gain}`);
   else if (k === 'research') out.push(`조사 숙련 +${gain}`, `탐사 기술 +${gain}`);
@@ -453,7 +453,7 @@ async function idle(body, given) {
       <div class="dur">${DURATIONS.map(([m, l]) => `<button class="btn small" data-idle="${k}" data-min="${m}" ${active ? 'disabled' : ''}><b>${l}</b><small>${esc(idleReward(k, m, store.character?.level || 1).join(' · '))}</small></button>`).join('')}</div></article>`).join('')}</div>
     <p class="muted small">자율 활동은 접속하지 않는 동안의 보조 성장입니다. 직접 탐사·전투·제작이 더 큰 보상을 줍니다.</p>`;
   const claim = $('#idle-claim', body);
-  if (claim) claim.onclick = () => guard(claim, async () => { const r = await act('world_claim_idle_activity'); return { content: `${r?.message || '보상을 받았습니다.'}${r?.experience ? ` · 경험치 +${r.experience}` : ''}` }; });
+  if (claim) claim.onclick = () => guard(claim, async () => { const r = await act('world_claim_idle_activity'); return { content: `${r?.message || '보상을 받았습니다.'}${r?.experience ? ` · 경험치 +${xpGot(r.experience)}` : ''}` }; });
   const stop = $('#idle-stop', body);
   if (stop) stop.onclick = async () => {
     const mins = Math.max(0, Math.floor((Date.now() - new Date(snap.started_at).getTime()) / 60000));
