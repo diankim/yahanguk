@@ -2,7 +2,7 @@ import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, es
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
-import { QS_DEFAULT, qsDesc } from './views/character.js';
+import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
 import { expRoundOf } from './rules.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
@@ -302,11 +302,10 @@ async function openTitleSwap() {
   try {
     invalidate('world_title_snapshot'); const snap = await load('world_title_snapshot');
     const list = snap?.titles || [], nm = Object.fromEntries(list.map(t => [t.key, t.name]));
-    const eq = list.filter(t => t.equipped).map(t => t.key).sort().join(','), disp = snap?.display || null;
     const ps = (snap?.presets || []).slice().sort((a, b) => a.slot - b.slot);
     box.innerHTML = ps.length ? `<ul class="spot-list">${ps.map(p => {
-      const now = [...(p.titles || [])].sort().join(',') === eq && (p.display || null) === disp;
-      return `<li><div><b>${esc(p.name || `묶음 ${p.slot}`)}</b><small>${(p.titles || []).filter(k => nm[k]).map(k => esc(nm[k])).join(' · ') || '장착 없음'}${p.display && nm[p.display] ? ` · 대표 ${esc(nm[p.display])}` : ''}</small></div>
+      const now = presetNow(p, list);
+      return `<li><div><b>${esc(p.name || `묶음 ${p.slot}`)}</b><small>${(p.titles || []).filter(k => nm[k]).map(k => esc(nm[k])).join(' · ') || '장착 없음'}</small></div>
         <button class="btn small ${now ? '' : 'primary'}" data-tsw="${p.slot}" ${now ? 'disabled' : ''}>${now ? '쓰는 중' : '바꿔 끼기'}</button></li>`; }).join('')}</ul>`
       : '<p class="muted small">저장한 칭호 묶음이 없습니다. 캐릭터 › 칭호 위의 묶음 칸에 지금 장착한 칭호를 저장해 두세요.</p>';
     box.insertAdjacentHTML('beforeend', '<p class="muted small"><a href="#/char/titles" data-tsw-go>칭호 화면에서 묶음 고치기</a></p>');

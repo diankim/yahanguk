@@ -216,7 +216,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만(캐릭터를 만들거나 명단에 오르면 trg_world_staff_title이 저절로 줌), 남의 목록에 안 나옴.
 - 등급 world_title_catalog.grade 1 범품·2 양품·3 진품·4 명품·5 신품(색 회색·초록·파랑·보라 칠·주홍 칠), 어려울수록 높고 효과도 큼(첫 효과 그 등급, 둘째·셋째 한·두 등급 아래). 효과 키: 주는/받는 피해·근접/원거리/술법·치명타·회피·달아나기·방어·이목(world_combat_stats가 world_title_bonus_of로)·회복·침식·정신 손실·조우(world_status_effect_total이 world_title_extra로)·단서·희귀품·채집·제작·이동·낚시.
 - 최대 3개 장착 + 대표 칭호 하나(채팅·프로필). 숨김 칭호는 얻기 전까지 이름·조건을 서버가 감춤.
-- 칭호 묶음 world_title_presets(world_title_preset_save·apply·clear, world_title_snapshot.presets·preset_slots·preset_unlocks): 처음 3칸, 「믿음직한 해결사」(의뢰 50)·「대지의 손」(채집 500)·「공방의 주인」(제작 200)마다 한 칸(최대 6, world_title_preset_slots). 상태판 「칭호 바꾸기」 hud.js openTitleSwap(누를 때만 world_title_snapshot).
+- 칭호 묶음 world_title_presets(world_title_preset_save·apply·clear, world_title_snapshot.presets·preset_slots·preset_unlocks): 장착 칭호만 담고 대표 칭호(profile.title)는 따로 — 저장은 display를 비우고 바꿔 끼기는 대표를 안 건드림, 화면 「쓰는 중」 판정 character.js presetNow 하나(1.0.4h). 처음 3칸, 「믿음직한 해결사」(의뢰 50)·「대지의 손」(채집 500)·「공방의 주인」(제작 200)마다 한 칸(최대 6, world_title_preset_slots). 상태판 「칭호 바꾸기」 hud.js openTitleSwap(누를 때만 world_title_snapshot).
 - 화면: 분류별 카드 격자(더 보기 없음)·분류 칩·「얻은 칭호만·장착 중만」·못 얻은 공개 칭호 진행 게이지(world_title_rule_progress)·장착/대표 단추는 카드 아래. 모바일(640px↓) 두 칸 카드에 설명·조건·효과 모두, 대표 단추는 카드 오른쪽 위(.t-rep). 새 칭호는 캐릭터 탭·칭호 줄 빨간 점, 화면을 열면 world_character_titles.seen_at으로 확인. 알림 「보러 가기」는 sessionStorage yh-title-focus·yh-cos-focus.
 
 직업·세력은 플레이 스타일을 나누는 수단이며 모두를 같은 경로로 강제하지 않는다. 성장 수치와 공식은 기존 구현을 조사한 뒤 조정하고, 확정되지 않은 수치를 임의로 새 규칙으로 만들지 않는다.

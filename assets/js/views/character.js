@@ -556,16 +556,16 @@ async function titles(body) {
   if (list.some(t => t.new)) markTitlesSeen();
 }
 
+export const presetNow = (p, list) => !!p && [...(p.titles || [])].sort().join(',') === list.filter(t => t.equipped).map(t => t.key).sort().join(',');
 function presetsHtml(snap, list) {
   const nm = Object.fromEntries(list.map(t => [t.key, t.name]));
-  const eq = list.filter(t => t.equipped).map(t => t.key).sort().join(','), disp = snap?.display || null;
   const open = Number(snap?.preset_slots || 3), locked = (snap?.preset_unlocks || []).filter(u => !u.earned);
   return `<div class="t-presets">${Array.from({ length: open }, (_, i) => i + 1).map(n => {
     const p = (snap?.presets || []).find(x => x.slot === n);
-    const now = p && [...(p.titles || [])].sort().join(',') === eq && (p.display || null) === disp;
+    const now = presetNow(p, list);
     return `<div class="t-preset ${p ? '' : 'empty'} ${now ? 'now' : ''}">
       <input class="t-pname" data-pname="${n}" maxlength="12" value="${esc(p?.name || '')}" placeholder="묶음 ${n}" aria-label="묶음 ${n} 이름">
-      <p class="t-pbody">${p ? `${(p.titles || []).map(k => esc(nm[k] || '?')).join(' · ') || '장착 없음'}${p.display ? `<small>대표 · ${esc(nm[p.display] || '?')}</small>` : ''}` : '<small>비어 있음 · 지금 장착한 칭호를 저장하세요</small>'}</p>
+      <p class="t-pbody">${p ? `${(p.titles || []).map(k => esc(nm[k] || '?')).join(' · ') || '장착 없음'}` : '<small>비어 있음 · 지금 장착한 칭호를 저장하세요</small>'}</p>
       <div class="t-pact">${p ? `<button class="btn small ${now ? '' : 'primary'}" data-papply="${n}" ${now ? 'disabled' : ''}>${now ? '쓰는 중' : '바꿔 끼기'}</button>` : ''}
         <button class="btn small ghost" data-psave="${n}">${p ? '덮어쓰기' : '저장'}</button>${p ? `<button class="chip-x" data-pclear="${n}" title="비우기" aria-label="묶음 비우기">×</button>` : ''}</div></div>`; }).join('')}
     ${locked.map(u => `<div class="t-preset locked">${icon('chest', 16)}<p class="t-pbody"><b>잠긴 칸</b><small>「${esc(u.name)}」 칭호를 얻으면 열립니다 · ${esc(u.condition)}</small></p></div>`).join('')}</div>`;
@@ -575,7 +575,7 @@ function bindPresets(body, snap) {
   $$('[data-papply]', body).forEach(b => b.onclick = () => guard(b, () => act('world_title_preset_apply', { p_slot: Number(b.dataset.papply) })));
   $$('[data-psave]', body).forEach(b => b.onclick = async () => {
     const n = Number(b.dataset.psave);
-    if (has(n) && !(await ask('지금 장착한 칭호와 대표 칭호로 이 묶음을 덮어씁니다.', { title: '묶음 덮어쓰기', ok: '덮어쓰기' }))) return;
+    if (has(n) && !(await ask('지금 장착한 칭호로 이 묶음을 덮어씁니다. 대표 칭호는 묶음과 따로입니다.', { title: '묶음 덮어쓰기', ok: '덮어쓰기' }))) return;
     guard(b, () => act('world_title_preset_save', { p_slot: n, p_name: $(`[data-pname="${n}"]`, body)?.value || '' }));
   });
   $$('[data-pclear]', body).forEach(b => b.onclick = async () => {

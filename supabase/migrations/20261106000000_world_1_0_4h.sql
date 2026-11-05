@@ -42,4 +42,33 @@ begin
   end if;
 end $w$;
 
+create or replace function public.world_title_preset_save(p_slot integer, p_name text)
+ returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $function$
+declare uid uuid := public.fn_owner_auth_uid(); nm text := left(btrim(coalesce(p_name, '')), 12); t text[];
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if p_slot < 1 or p_slot > public.world_title_preset_slots(uid) then raise exception '아직 열리지 않은 묶음 칸입니다.'; end if;
+  if nm = '' then nm := '묶음 ' || p_slot; end if;
+  perform 1 from public.world_characters where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select coalesce(array_agg(title_key order by earned_at, title_key), '{}') into t from public.world_character_titles where owner_id = uid and is_equipped;
+  if cardinality(t) = 0 then raise exception '장착한 칭호가 있어야 저장할 수 있습니다.'; end if;
+  insert into public.world_title_presets(owner_id, slot, name, titles, display) values (uid, p_slot, nm, t, null)
+  on conflict (owner_id, slot) do update set name = excluded.name, titles = excluded.titles, display = null, updated_at = now();
+  return jsonb_build_object('ok', true, 'content', '「' || nm || '」에 지금 장착한 칭호를 저장했습니다.');
+end $function$;
+
+create or replace function public.world_title_preset_apply(p_slot integer)
+ returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $function$
+declare uid uuid := public.fn_owner_auth_uid(); pr public.world_title_presets%rowtype;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform 1 from public.world_characters where owner_id = uid for update;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select * into pr from public.world_title_presets where owner_id = uid and slot = p_slot;
+  if not found then raise exception '저장된 묶음이 없습니다.'; end if;
+  update public.world_character_titles set is_equipped = (title_key = any (pr.titles[1:3])) where owner_id = uid and (is_equipped or title_key = any (pr.titles[1:3]));
+  return jsonb_build_object('ok', true, 'content', '「' || pr.name || '」 묶음으로 바꿨습니다. 대표 칭호는 그대로입니다.');
+end $function$;
+
 update public.world_app_meta set value = '20261106000000' where key = 'db_version';
