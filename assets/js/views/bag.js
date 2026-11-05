@@ -181,7 +181,7 @@ async function items(body, inv, stg) {
       const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', (!part || part.first) && stored[id] ? `창고 ${fmt.num(stored[id])}` : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
       const showQty = part ? part.q : n, showUse = !!USABLE[id];
       const boss = bossUse(id);
-      return `<li class="inv-item r-${esc(it?.rarity || 'common')}"><button class="inv-row" data-info="${esc(id)}">
+      return `<li class="inv-item r-${esc(it?.rarity || 'common')}${tags.includes('장착 중') ? ' is-eq' : ''}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
