@@ -2,7 +2,7 @@ import { db, store, rpc } from './core.js';
 import { selfReload } from './config.js';
 
 const NOTE = 'yh-kick-note';
-let channel = null, timer = null, mounted = null, kicking = false;
+let channel = null, bchannel = null, timer = null, mounted = null, kicking = false;
 
 let pending = null, release = null;
 export function expectLogin() { pending = new Promise(r => { release = r; }); }
@@ -14,7 +14,7 @@ export async function claimSession() {
 }
 export function takeKickNote() { try { const v = sessionStorage.getItem(NOTE) || ''; sessionStorage.removeItem(NOTE); return v; } catch { return ''; } }
 
-let lastCheck = 0, live = false, relistenAt = 0;
+let lastCheck = 0, live = false, blive = false, relistenAt = 0;
 async function check(force = false) {
   if (pending) await pending;
   if (kicking || !store.user || document.hidden) return;
@@ -35,7 +35,7 @@ export function mountSessionGuard() {
   const uid = store.user?.id; if (!uid || mounted === uid) return;
   stopSessionGuard(); mounted = uid;
   setTimeout(() => listen(uid), 0);
-  timer = setInterval(() => { if (!live || Date.now() - lastCheck > 300000) check(); }, 60000);
+  timer = setInterval(() => { if (!(live || blive) || Date.now() - lastCheck > 300000) check(); }, 60000);
   check(true);
 }
 async function listen(uid) {
@@ -55,10 +55,16 @@ async function listen(uid) {
         setTimeout(() => listen(uid), 3000);
       });
   } catch {}
+  if (bchannel) return;
+  try {
+    bchannel = db.channel(`session:${uid}`, { config: { private: true } }).on('broadcast', { event: 'claim' }, () => check(true))
+      .subscribe(status => { blive = status === 'SUBSCRIBED'; });
+  } catch {}
 }
 export function stopSessionGuard() {
-  mounted = null; live = false; clearInterval(timer); timer = null;
+  mounted = null; live = false; blive = false; clearInterval(timer); timer = null;
   if (channel) { try { db.removeChannel(channel); } catch {} channel = null; }
+  if (bchannel) { try { db.removeChannel(bchannel); } catch {} bchannel = null; }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && mounted) check(); });
 window.addEventListener('focus', () => { if (mounted) check(); });
