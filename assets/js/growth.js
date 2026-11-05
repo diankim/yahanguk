@@ -4,7 +4,7 @@ const RANKS = [['combat_rank', '전투 숙련'], ['investigation_rank', '조사 
 const keyOf = id => `yh-growth:${id}`;
 let last = null, lastId = null, queue = [], showing = false;
 
-const pick = c => ({ level: c.level || 1, stat_points: c.stat_points || 0, bag: c.bag_capacity || 0, ...Object.fromEntries(RANKS.map(([k]) => [k, c[k] || 1])) });
+const pick = c => ({ level: c.level || 1, stat_points: c.stat_points || 0, bag: c.bag_capacity || 0, er: c.erosion || 0, ...Object.fromEntries(RANKS.map(([k]) => [k, c[k] || 1])) });
 
 export function mountGrowth() {
   on('character', c => {
@@ -21,6 +21,8 @@ export function mountGrowth() {
     }
     for (const [k, label] of RANKS) if (now[k] > was[k]) notify('rank', `${label} ${now[k]}단계`, '해당 활동의 효율이 좋아졌습니다.', '#/char/growth');
     if (now.bag > was.bag && was.bag) notify('bag', `가방이 넓어졌습니다`, `${fmt.num(was.bag)}칸 → ${fmt.num(now.bag)}칸`, '#/bag/items');
+    if (now.er >= 90 && (was.er ?? now.er) < 90) window.dispatchEvent(new CustomEvent('yh-local-note', { detail: { id: `er90-${Date.now()}`, kind: 'erosion_warn', title: `침식 ${now.er}`,
+      content: '침식이 90을 넘었습니다. 100이 되면 정신이 0이 되고, 그 위로 넘치는 침식마다 요화에 걸릴 수 있습니다. 정화 부적이나 안전지대에서 마음 다잡기로 낮추세요.' } }));
     save(c);
   });
 }
