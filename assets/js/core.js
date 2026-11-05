@@ -109,7 +109,10 @@ export function battleItemRoute(id) {
 }
 export function useItemAct(id) {
   if (battleItemRoute(id)) return Promise.resolve(null);
-  return act('world_use_item', { p_item_id: id });
+  return act('world_use_item', { p_item_id: id }).catch(e => {
+    loadCharacter({ hud: true, field: onFieldView() }).catch(() => {});
+    throw e;
+  });
 }
 export async function act(name, args) {
   const data = await rpc(name, args);
