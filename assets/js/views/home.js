@@ -93,15 +93,17 @@ async function draw() {
     if (!traveling) regionIntro(s.region?.region_id);
     const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
-    el.innerHTML = `${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    if (el.offsetHeight) el.style.minHeight = `${el.offsetHeight}px`;
+    el.innerHTML =`${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     if (oldQ && $('#quest-box', el)) $('#quest-box', el).innerHTML = oldQ;
     if (oldR && $('#raid-band', el)) $('#raid-band', el).innerHTML = oldR;
     const keepY = () => { if ((y > 0 || back) && el.isConnected) scrollAfterModal(y, back); };
     keepY();
     bind(s);
-    Promise.all([fillQuests($('#quest-box', el)), fillRaidBand($('#raid-band', el))]).then(keepY, keepY);
+    const release = () => { keepY(); requestAnimationFrame(() => { if (el.isConnected) el.style.minHeight = ''; }); };
+    Promise.all([fillQuests($('#quest-box', el)), fillRaidBand($('#raid-band', el))]).then(release, release);
     clearInterval(timer); timer = setInterval(tick, 1000); tick();
-  } catch (e) { el.innerHTML = errorBox(e.message); }
+  } catch (e) { el.style.minHeight = ''; el.innerHTML = errorBox(e.message); }
   finally { busy = false; }
   if (again) return draw();
 }
