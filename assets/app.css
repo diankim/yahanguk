@@ -2433,6 +2433,9 @@ b.sealed { color: var(--bad); }
 .fz-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .fz-row .btn { display: grid; justify-items: center; gap: 0; padding: 6px 4px; min-height: 52px; }
 .fz-row .btn small { font-size: 11px; color: inherit; opacity: .85; }
+.pref-bar { display: grid; gap: 6px; }
+.pref-bar .row-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.pref-bar .row-btns .btn { flex: 1 1 auto; }
 
 /* 공지 고치기 창: 제목·본문을 위아래로 쌓는다(여러 칸으로 나뉘어 좁아지던 것) */
 .notice-form { display: grid; gap: 12px; }

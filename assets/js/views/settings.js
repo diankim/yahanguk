@@ -6,7 +6,12 @@ import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
 import { hue as autoHue, NAME_STYLES } from '../chat.js';
 const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
+import { prefMode, savePrefsDevice, savePrefsAccount, loadPrefsAccount } from '../prefs.js';
 
+const PREF_NAME = { look: '테마·글자 크기', sound: '소리' };
+const prefText = g => prefMode(g) === 'device' ? `이 기기 전용 — 다른 기기에서 ${PREF_NAME[g]}를 바꿔도 여기는 그대로입니다.` : '계정 설정을 따릅니다 — 바꾸면 계정에도 저장되어 다른 기기에서 접속할 때 같아집니다.';
+const prefBar = g => `<div class="pref-bar" data-pref-bar="${g}"><p class="muted small" data-pref-st="${g}">${prefText(g)}</p>
+  <div class="row-btns"><button class="btn small" type="button" data-pref-dev="${g}">이 기기에 저장</button><button class="btn small" type="button" data-pref-acc="${g}">계정에 저장</button><button class="btn small ghost" type="button" data-pref-load="${g}">계정 설정 불러오기</button></div></div>`;
 const SUBS = [['profile', '프로필', 'idcard'], ['theme', '테마', 'palette'], ['sound', '소리', 'volume'], ['notify', '알림', 'bell'], ['account', '계정', 'shield']];
 const NOTIFY_GROUPS = [
   ['rescue', '같은 곳의 구조 요청', '같은 지역에서 누가 쓰러졌을 때'],
@@ -74,7 +79,8 @@ export async function render(root, sub) {
       </div>`, { ico: 'idcard' })}
     </section>
     <section id="sec-theme" class="set-sec">
-      ${panel('글자 크기', `<p class="muted small">이 기기에만 남고 바로 바뀝니다(저장 단추와 상관없음).</p>
+      ${panel('저장', prefBar('look'), { ico: 'shield' })}
+      ${panel('글자 크기', `<p class="muted small">바로 바뀝니다(아래 저장 단추와 상관없음).</p>
         <div class="fz-row" role="radiogroup" aria-label="글자 크기">${FONT_SIZES.map(([k, n, z]) => `<button type="button" class="btn ${savedFontSize() === k ? 'primary' : ''}" data-fz="${k}" role="radio" aria-checked="${savedFontSize() === k}"><span style="font-size:${Math.round(14 * z * 10) / 10}px">가</span><small>${n}</small></button>`).join('')}</div>`, { ico: 'scroll' })}
       ${panel('테마', `<p class="muted small">고르면 바로 미리 보입니다. 저장해야 다음 접속에도 남습니다.</p>
         <div class="theme-grid">${THEMES.map(t => themeCard(t, t.id === draft.theme)).join('')}</div>
@@ -97,7 +103,8 @@ export async function render(root, sub) {
         <div class="sfx-preview">${SFX_SAMPLES.map(([k, n]) => `<button class="btn small" data-try="${k}">${n}</button>`).join('')}<button class="btn small" type="button" data-try-alarm>알림</button></div>
         <div class="snd-block"><div class="snd-head"><span><b>알림음</b><small>게임 창을 내려 두고 다른 일을 하다가도 알 수 있게 울립니다. 효과음을 꺼도 울리고, 크기는 효과음 음량을 따릅니다. 소리는 위 「알림」 단추로 들어 볼 수 있습니다.</small></span></div>
           <div id="alarm-list">${ALARMS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-alarm="${k}" ${alarmOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>
-        <p class="muted small">소리 설정은 바로 적용되고 이 기기에 저장됩니다. 음악은 지금 있는 지역의 악기 소리만 받아 브라우저에서 직접 연주합니다.</p>`, { ico: 'volume' })}
+        ${prefBar('sound')}
+        <p class="muted small">소리 설정은 바로 적용됩니다. 음악은 지금 있는 지역의 악기 소리만 받아 브라우저에서 직접 연주합니다.</p>`, { ico: 'volume' })}
     </section>
     <section id="sec-notify" class="set-sec">
       ${panel('알림', `<p class="muted small">끈 알림은 화면 위에 뜨지 않고 알림 창의 「지난 알림」에만 남습니다. 운영 공지·제보 답장·원정 귀환·요화 같은 알림은 끌 수 없습니다. 바꾸면 바로 저장됩니다(어느 기기에서나 같음).</p>
@@ -163,6 +170,8 @@ export async function render(root, sub) {
     if (col) { draft.color = col.dataset.col; touch(); drawProfile(); }
     if (th) { draft.theme = th.dataset.themeId; applyTheme(draft.theme, false); markTheme(); touch(); }
     if (tr) playSfx(tr.dataset.try);
+    const pd = e.target.closest('[data-pref-dev]'), pa = e.target.closest('[data-pref-acc]'), pl = e.target.closest('[data-pref-load]');
+    if (pd || pa || pl) { prefAct(pd, pa, pl); return; }
     const fz = e.target.closest('[data-fz]');
     if (fz) { applyFontSize(fz.dataset.fz); $$('[data-fz]', el).forEach(x => { const on = x === fz; x.classList.toggle('primary', on); x.setAttribute('aria-checked', String(on)); }); }
   });
@@ -182,6 +191,19 @@ export async function render(root, sub) {
     applyTheme('custom', false, draft.custom); markTheme(); touch();
   });
 
+  const prefSt = g => { const x = $(`[data-pref-st="${g}"]`, el); if (x) x.textContent = prefText(g); };
+  const commitLook = () => { if (draft.theme !== savedThemeId() || draft.theme === 'custom') applyTheme(draft.theme, true, draft.theme === 'custom' ? draft.custom : undefined); };
+  const prefAct = (pd, pa, pl) => {
+    const b = pd || pa || pl, g = b.dataset.prefDev || b.dataset.prefAcc || b.dataset.prefLoad;
+    if (pd) { savePrefsDevice(g); if (g === 'look') commitLook(); prefSt(g); toast(`${PREF_NAME[g]}를 이 기기에만 저장했습니다.`, 'ok'); return; }
+    if (pa) return guard(b, async () => { if (g === 'look') commitLook(); await savePrefsAccount(g); prefSt(g); return { content: `${PREF_NAME[g]}를 계정에 저장했습니다.` }; });
+    return guard(b, async () => {
+      if (!(await loadPrefsAccount(g))) return { content: `계정에 저장된 ${PREF_NAME[g]}가 없습니다.` };
+      if (g === 'look') { draft.theme = savedThemeId(); Object.assign(draft.custom, readCustom()); markTheme(); $$('[data-fz]', el).forEach(x => { const on = x.dataset.fz === savedFontSize(); x.classList.toggle('primary', on); x.setAttribute('aria-checked', String(on)); }); }
+      else { $$('[data-vol]', el).forEach(i => { const v = sound[i.dataset.vol]; if (v != null) { i.value = v; const o = $(`[data-vol-out="${i.dataset.vol}"]`, el); if (o) o.textContent = `${Math.round(v * 100)}%`; } }); $$('[data-sw]', el).forEach(i => { i.checked = !!sound[i.dataset.sw]; }); $$('[data-alarm]', el).forEach(i => { i.checked = alarmOn(i.dataset.alarm); }); }
+      return { content: `계정의 ${PREF_NAME[g]}를 불러왔습니다.` };
+    });
+  };
   $$('[data-sw]', el).forEach(i => i.onchange = () => setEnabled(i.dataset.sw, i.checked));
   $$('[data-alarm]', el).forEach(i => i.onchange = () => setAlarm(i.dataset.alarm, i.checked));
   $('[data-try-alarm]', el)?.addEventListener('click', () => playAlarm(null));
