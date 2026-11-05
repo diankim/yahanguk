@@ -113,10 +113,11 @@ function lockSheetPage(on) {
 function fitSheetToKeyboard() {
   const vv = window.visualViewport;
   if (!vv || !document.body.classList.contains('chat-open') || !matchMedia('(max-width: 1099px)').matches) { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); return; }
-  const kb = Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop));
+  const reset = vv.offsetTop > 0 && sheetLockY != null;
+  const kb = Math.max(0, Math.round(innerHeight - vv.height - (reset ? 0 : vv.offsetTop)));
   if (kb > 40) { col.style.setProperty('--kb', `${kb}px`); col.style.setProperty('--vvh', `${Math.round(vv.height)}px`); }
   else { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); }
-  if (vv.offsetTop > 0 && sheetLockY != null) window.scrollTo(0, 0);
+  if (reset) { window.scrollTo(0, 0); requestAnimationFrame(() => { if (window.visualViewport?.offsetTop > 0) window.scrollTo(0, 0); }); }
 }
 function toggleSheet(open) {
   document.body.classList.toggle('chat-open', open);
