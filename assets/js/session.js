@@ -14,7 +14,7 @@ export async function claimSession() {
 }
 export function takeKickNote() { try { const v = sessionStorage.getItem(NOTE) || ''; sessionStorage.removeItem(NOTE); return v; } catch { return ''; } }
 
-let lastCheck = 0, live = false;
+let lastCheck = 0, live = false, relistenAt = 0;
 async function check(force = false) {
   if (pending) await pending;
   if (kicking || !store.user || document.hidden) return;
@@ -47,7 +47,13 @@ async function listen(uid) {
   if (mounted !== uid || channel) return;
   try {
     channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check(true))
-      .subscribe(status => { live = status === 'SUBSCRIBED'; });
+      .subscribe(status => {
+        live = status === 'SUBSCRIBED';
+        if (status !== 'CHANNEL_ERROR' || mounted !== uid || Date.now() - relistenAt < 60000) return;
+        relistenAt = Date.now();
+        const old = channel; channel = null; try { db.removeChannel(old); } catch {}
+        setTimeout(() => listen(uid), 3000);
+      });
   } catch {}
 }
 export function stopSessionGuard() {
