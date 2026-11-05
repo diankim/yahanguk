@@ -2936,6 +2936,7 @@ b.shadow { color: var(--sp); }
 :root[data-head="sheet"] .hud, :root[data-head="sheet"] .chat-col, :root[data-head="sheet"] .travel-banner { background: var(--bg); }
 :root[data-head="sheet"] .card, :root[data-head="sheet"] .panel, :root[data-head="sheet"] .view-head, :root[data-head="sheet"] .scene, :root[data-head="sheet"] .notice { background: transparent; border-color: transparent; border-radius: 0; }
 :root[data-head="sheet"] .panel, :root[data-head="sheet"] .card { border: 0; }
+:root[data-head="sheet"] .auth-screen .auth-card { background: var(--bg); border: 1px solid var(--sh-headline); padding: 16px; }
 :root[data-head="sheet"] *, :root[data-head="sheet"] *::before, :root[data-head="sheet"] *::after { border-radius: 0 !important; }
 :root[data-head="sheet"] .hud-card { background: transparent; border: 0; }
 :root[data-head="sheet"] .hud-card h3 { font-weight: 700; }
