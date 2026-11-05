@@ -309,7 +309,7 @@ function fishPanel(blocked) {
       <p class="desc">${esc(f.description || '')}</p>
       <div class="fish-act">
         <button class="btn primary" id="fish-go" data-ready="${f.ready_at ? new Date(f.ready_at).getTime() : ''}" ${blocked || !f.rod ? 'disabled' : ''}>${icon('leaf', 16)}<span>낚시하기</span></button>
-        <small class="muted">${f.rod ? `${esc(f.rod_name)} · 탐색력 1 · 20초마다` : '낚싯대가 없습니다. 상점에서 사거나 가방 › 제작에서 만들 수 있습니다.'}</small>
+        <small class="muted">${f.rod ? `${esc(f.rod_name)} · 탐색력 1 · ${f.gap || 20}초마다` : '낚싯대가 없습니다. 상점에서 사거나 가방 › 제작에서 만들 수 있습니다.'}</small>
       </div>
       ${recent.length ? `<ol class="field-log">${recent.map(r => `<li>${icon('leaf', 14)}<span>${esc(r.text)}</span><time>${fmt.time(r.at)}</time></li>`).join('')}</ol>` : '<p class="muted small">시간대와 날씨에 따라 잘 무는 물고기가 다릅니다. 도감에서 힌트를 확인하세요.</p>'}
     </div></section>`;
