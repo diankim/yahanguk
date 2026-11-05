@@ -2,6 +2,7 @@ import { db, store, rpc, esc, fmt, icon, $, $$, toast, friendlyError, openModal,
 import { cardName } from './views/card.js';
 import { growInput, keepKeyboard } from './grow.js';
 import { playAlarm } from './sound.js';
+import { bgroup, bclear } from './rtb.js';
 
 const COLS = 'id,channel_type,sender_id,sender_name,sender_title,recipient_id,content,created_at';
 let btn = null, threads = [], unreadTotal = 0, box = null, cur = null, msgs = [], refreshTimer = null;
@@ -78,7 +79,9 @@ function paintDot() {
   btn.setAttribute('aria-label', unreadTotal > 0 ? `귓속말 · 안 읽은 ${unreadTotal}개` : '귓속말');
 }
 
+const whSeen = new Set();
 export function onWhisper(m) {
+  if (m?.id != null) { if (whSeen.has(m.id)) return; whSeen.add(m.id); if (whSeen.size > 300) whSeen.clear(); }
   const me = store.user?.id;
   const partner = m.sender_id === me ? m.recipient_id : m.sender_id;
   const open = box?.isConnected && cur?.id === partner;
@@ -114,6 +117,7 @@ export function mountWhisperPage(el) {
 let feed = null;
 export function whisperFeed(on) {
   if (feed) { try { db.removeChannel(feed); } catch {} feed = null; }
+  bgroup('whfeed', on && store.user?.id ? [`whisper:${store.user.id}`] : [], 'msg', p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); });
   if (!on || !store.user?.id) return;
   try {
     feed = db.channel('yh-wh-feed').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_chat_messages', filter: `recipient_id=eq.${store.user.id}` },

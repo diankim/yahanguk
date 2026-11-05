@@ -5,6 +5,7 @@ import { loadCircles, circles } from './circles.js';
 import { growInput, keepKeyboard } from './grow.js';
 import { playAlarm } from './sound.js';
 import { face } from './people.js';
+import { bgroup, bclear } from './rtb.js';
 import { load as loadSnap } from './views/common.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
@@ -71,6 +72,7 @@ export function mountChat(colEl, fabEl) {
   on('changed', ({ name }) => { if (away) return; if (/party/.test(name)) { partyLoaded = false; setTimeout(syncPartySub, 300); } if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
   subscribeCircles();
   syncPartySub();
+  on('character', () => { if (!away) subscribeB(); });
   window.addEventListener('yahang:arrived', () => { if (!away) load(); });
   popLink();
   let hiddenAt = 0;
@@ -155,6 +157,7 @@ function switchTab(t) {
 
 function syncCircles() {
   const list = circles();
+  bgroup('circle', circleTopics(), 'msg', p => onCircleMsg(p.new));
   for (const c of list) if (circleUnread[c.circle_id] == null || c.unread > circleUnread[c.circle_id]) circleUnread[c.circle_id] = c.unread || 0;
   if (circleId && !list.some(c => c.circle_id === circleId)) circleId = null;
   if (!circleId && list[0]) circleId = list[0].circle_id;
@@ -240,14 +243,17 @@ async function syncPartySub() {
   try { const p = await loadSnap('world_party_overview', undefined, { maxAge: 60000 }); pid = p?.party?.party_id || null; } catch { return; }
   if (pid === partySubId && (partyChannel || !pid)) return;
   partySubId = pid;
-  if (!pid) { if (partyChannel) db.removeChannel(partyChannel); partyChannel = null; partyLive = false; return; }
+  if (!pid) { bclear('party'); if (partyChannel) db.removeChannel(partyChannel); partyChannel = null; partyLive = false; return; }
   subscribeParty();
 }
+const partySeen = new Set();
+const partyOnce = m => { if (!m?.message_id || partySeen.has(m.message_id)) return; partySeen.add(m.message_id); if (partySeen.size > 300) partySeen.clear(); onPartyMsg(m); };
 function subscribeParty() {
+  bgroup('party', partySubId && !away ? [`party:${partySubId}`] : [], 'msg', p => partyOnce(p.new));
   try {
     if (partyChannel) db.removeChannel(partyChannel);
     if (!partySubId) { partyChannel = null; partyLive = false; return; }
-    const ch = db.channel('yh-party-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_party_messages', filter: `party_id=eq.${partySubId}` }, p => onPartyMsg(p.new));
+    const ch = db.channel('yh-party-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_party_messages', filter: `party_id=eq.${partySubId}` }, p => partyOnce(p.new));
     partyChannel = ch;
     ch.subscribe(status => {
       if (partyChannel !== ch) return;
@@ -267,7 +273,9 @@ function onPartyMsg(m) {
   if (sheetClosed) { unread++; badge(); }
 }
 function paintPartyDot() { $('.chat-tabs [data-tab="party"]', panel)?.classList.toggle('has-dot', partyNew && tab !== 'party'); }
+const circleTopics = () => away ? [] : circles().map(c => `circle:${c.circle_id}`);
 function subscribeCircles() {
+  bgroup('circle', circleTopics(), 'msg', p => onCircleMsg(p.new));
   try {
     if (circleChannel) db.removeChannel(circleChannel);
     const ch = db.channel('yh-circle-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_circle_messages' }, p => onCircleMsg(p.new));
@@ -501,6 +509,7 @@ function suspend() {
   away = true;
   for (const c of [channel, circleChannel, partyChannel]) if (c) try { db.removeChannel(c); } catch {}
   channel = circleChannel = partyChannel = null; live = circleLive = partyLive = false; partySubId = undefined;
+  bclear('chat'); bclear('party'); bclear('circle');
   toggleSheet(false);
   document.body.classList.add('chat-out');
   panel.hidden = true;
@@ -543,4 +552,10 @@ function subscribe() {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setTimeout(() => { if (channel === ch && !live) subscribe(); }, 15000);
     });
   } catch (e) { live = false; console.warn('실시간 채팅 연결 실패', e); }
+  subscribeB();
+}
+function subscribeB() {
+  if (away) { bclear('chat'); return; }
+  const c = store.character, me = store.user?.id;
+  bgroup('chat', ['chat:global', c?.location && `chat:region:${c.location}`, c?.major_faction_id && `chat:faction:${c.major_faction_id}`, me && `whisper:${me}`], 'msg', p => addMsg(p.new));
 }

@@ -1,6 +1,7 @@
 import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
+import { bgroup } from './rtb.js';
 export { initSound, playSfx } from './sound.js';
 
 export { THEMES, deriveCustom, readCustom, themeOf, applyTheme, savedThemeId, applySavedTheme, themeCard, FONT_SIZES, savedFontSize, applyFontSize } from './theme.js';
@@ -66,14 +67,16 @@ export function mountNotifications(btn) {
   loadNotes(true);
   try {
     const mine = store.user?.id ? { filter: `user_id=eq.${store.user.id}` } : {};
-    db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications', ...mine }, p => {
+    const onNote = p => {
       const n = p.new; if (!n?.id || n.user_id !== store.user?.id || notes.some(x => x.id === n.id)) return;
       shown.add(n.id); notes.unshift(n); drawDot();
       window.dispatchEvent(new CustomEvent('yh-note', { detail: n }));
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
-    }).subscribe(status => {
+    };
+    if (store.user?.id) bgroup('note', [`note:${store.user.id}`], 'note', onNote);
+    db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications', ...mine }, onNote).subscribe(status => {
       const was = notesLive; notesLive = status === 'SUBSCRIBED';
       if (notesLive && !was && !first) loadNotes();
       first = false;

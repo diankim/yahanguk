@@ -1,5 +1,6 @@
 import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
+import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
 import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
   resultBox, reloadCharacter, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName, showResult, soloAidHtml } from './fightui.js';
@@ -26,7 +27,7 @@ export async function render(root, sub) {
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { hideTip(); clearTimeout(chargeT); if (ch) db.removeChannel(ch); ch = null; clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
+export function destroy() { hideTip(); clearTimeout(chargeT); if (ch) db.removeChannel(ch); ch = null; bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
 
 async function refresh() {
   if (!el) return;
@@ -54,6 +55,7 @@ function soon() {
 function subscribe() {
   if (ch) db.removeChannel(ch);
   ch = db.channel(`yh-raid-${rid || 'any'}`).on('postgres_changes', { event: '*', schema: 'public', table: 'world_raids', ...(rid ? { filter: `raid_id=eq.${rid}` } : {}) }, onChange).subscribe();
+  bgroup('raid', [rid ? `raid:${rid}` : 'raid:any'], 'change', onChange);
 }
 
 const left = t => untilText(t);
