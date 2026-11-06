@@ -1,4 +1,4 @@
-import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf } from './core.js';
+import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa } from './core.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
@@ -25,7 +25,7 @@ export function playDialogue(r, fid) {
   const show = () => {
     const l = lines[i], who = l.s ? (r.cast?.[l.s]?.name || '') : '';
     plate.textContent = who; plate.hidden = !who;
-    text.textContent = l.t; text.classList.toggle('narr', !l.s);
+    text.textContent = josa(String(l.t || '').replaceAll('{이름}', store.character?.character_name || '조사원')); text.classList.toggle('narr', !l.s);
     cnt.textContent = `${i + 1} / ${lines.length}`;
     if (i === lines.length - 1) end.hidden = false;
   };
