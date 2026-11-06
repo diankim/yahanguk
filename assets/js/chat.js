@@ -116,11 +116,18 @@ function lockSheetPage(on) {
 function fitSheetToKeyboard() {
   const vv = window.visualViewport;
   if (!vv || !document.body.classList.contains('chat-open') || !matchMedia('(max-width: 1099px)').matches) { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); return; }
+  const put = pan => {
+    const v = window.visualViewport; if (!v || !document.body.classList.contains('chat-open')) return;
+    const kb = Math.max(0, Math.round(innerHeight - v.height - (pan ? v.offsetTop : 0)));
+    if (kb > 40) { col.style.setProperty('--kb', `${kb}px`); col.style.setProperty('--vvh', `${Math.round(v.height)}px`); }
+    else { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); }
+  };
   const reset = vv.offsetTop > 0 && sheetLockY != null;
-  const kb = Math.max(0, Math.round(innerHeight - vv.height - (reset ? 0 : vv.offsetTop)));
-  if (kb > 40) { col.style.setProperty('--kb', `${kb}px`); col.style.setProperty('--vvh', `${Math.round(vv.height)}px`); }
-  else { col.style.removeProperty('--kb'); col.style.removeProperty('--vvh'); }
-  if (reset) { window.scrollTo(0, 0); requestAnimationFrame(() => { if (window.visualViewport?.offsetTop > 0) window.scrollTo(0, 0); }); }
+  put(!reset);
+  if (!reset) return;
+  window.scrollTo(0, 0);
+  requestAnimationFrame(() => { if (window.visualViewport?.offsetTop > 0) window.scrollTo(0, 0); put(true); });
+  clearTimeout(fitSheetToKeyboard.t); fitSheetToKeyboard.t = setTimeout(() => put(true), 300);
 }
 function toggleSheet(open) {
   document.body.classList.toggle('chat-open', open);
