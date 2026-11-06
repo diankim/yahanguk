@@ -46,3 +46,26 @@ export function busyText(kind, what, other = false) {
   const k = BZ[kind]; if (!k) return '';
   return (other ? BZ.other : BZ.self).replace('{name}', k.name).replace('{what}', what || BZ.what).replace('{after}', k.after);
 }
+
+const CB = GD.contrib || { deal: 0.6, hold: 0.2, heal: 0.1, boost: 0.1, result: 0.2 };
+const SH = GD.shadow || { pow_lo: 0.75, pow_hi: 1.5, charge_mul: 5, stay_full: 0.5, gil_lv: 20 };
+const CR = GD.coopRules || { sure_crit: 2, all_full: 4, all_pow: 0.5, expose_per: 4 };
+const pc = v => Math.round(Number(v) * 100);
+const allAt = n => Math.round(100 * Math.min(1, Math.pow(CR.all_full / n, CR.all_pow)));
+export const CONTRIB = {
+  weights: `공격 약 ${pc(CB.deal)}% · 버팀 약 ${pc(CB.hold)}% · 치유 약 ${pc(CB.heal)}% · 북돋움 약 ${pc(CB.boost)}%`,
+  deal: `공격 갈래 안에서 실제로 깎은 피해는 약 ${pc(CB.result)}%, 내 공격력에 비해 얼마나 꾸준히 쳤나는 약 ${pc(1 - CB.result)}%로 셉니다`,
+};
+export const SHADOW = {
+  hp: '그림자의 체력은 모인 조사원들의 공격력 합에 맞춰져, 다 함께 쳐도 15~20분쯤 걸립니다',
+  hit: `그림자의 공격은 맞는 사람의 레벨과 공격력에 맞춰 세기가 바뀝니다(레벨에 비해 공격력이 높을수록 세게, 약 ${SH.pow_lo}~${SH.pow_hi}배)`,
+  charge: `기운 모으기를 끊는 데 드는 피해는 최근 2분 동안 싸운 조사원들 공격력 합의 ${SH.charge_mul}배입니다`,
+  stay: `토벌 시간의 ${pc(SH.stay_full)}% 넘게 함께했으면 기본 보상을 다 받고, 레벨 ${SH.gil_lv} 아래는 전을 레벨만큼 덜 받습니다`,
+};
+export const COOP_RULE = {
+  sure: `확정 치명타(그림자 찌르기·약점 진언)는 피해가 ${CR.sure_crit}배입니다`,
+  all: `참가자 모두에게 거는 기술(약점 표시·추격 신호)은 받는 사람이 ${CR.all_full}명을 넘으면 한 사람 몫이 줄어듭니다(${CR.all_full * 2}명이면 약 ${allAt(CR.all_full * 2)}%, ${CR.all_full * 3}명이면 약 ${allAt(CR.all_full * 3)}%)`,
+  expose: `봉연의 그림자에서 급소 드러내기·봉인 사슬은 최근 2분 동안 싸운 조사원 ${CR.expose_per}명마다 이어지는 횟수가 한 배씩 늘어납니다`,
+  strike: '그림자 찌르기는 쓰는 그 행동이 곧 공격 한 번입니다',
+};
+
