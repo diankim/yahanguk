@@ -1,5 +1,6 @@
 export const CHANGES = {
   invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block/,
+  equipped: /equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/,
   invAlways: /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
   map: /travel|mount|join_major_faction|field_|battle_|expedition/,
   survey: /field_|gather|expedition/,
@@ -20,6 +21,9 @@ export const CHANGES = {
   people: /party|circle|bond|letter|loot|friend|block|wedding|rescue/,
   env: /travel|rescue|character_delete/,
   expedition: /expedition/,
+  fieldQuiet: /battle_action/,
+  noteExpDone: /expedition_complete/,
+  noteTrade: /trade_direct_respond/,
   chatParty: /party/,
   chatRooms: /travel|major_faction|reset_identity/,
   chatBlocks: /block|friend/,

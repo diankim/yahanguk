@@ -129,11 +129,11 @@ function tickCooldown() {
 }
 
 let busy = false;
-const WEAK = [[/쏠 것이 떨어져/, '무기에 맞는 탄(화살·쇠뇌살·취관 침)이 없습니다 · 피해가 절반으로 줄었습니다'], [/기력이 바닥나/, '기력이 없습니다 · 피해가 절반으로 줄었습니다'], [/영력이 바닥나/, '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다']];
+const WEAK = { ammo: '무기에 맞는 탄(화살·쇠뇌살·취관 침)이 없습니다 · 피해가 절반으로 줄었습니다', sp: '기력이 없습니다 · 피해가 절반으로 줄었습니다', mp: '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다' };
 const weakAt = {};
-export function weakNote(lines) {
-  const text = (lines || []).join('\n');
-  for (const [re, msg] of WEAK) if (re.test(text) && Date.now() - (weakAt[msg] || 0) > 5000) { weakAt[msg] = Date.now(); toast(msg, 'warn'); }
+export function weakNote(code) {
+  const msg = WEAK[code];
+  if (msg && Date.now() - (weakAt[code] || 0) > 5000) { weakAt[code] = Date.now(); toast(msg, 'warn'); }
 }
 async function send(action, item) {
   if (busy || Date.now() < nextAt) return;
@@ -145,7 +145,7 @@ async function send(action, item) {
     if (c) c.health = r.health ?? c.health;
     sfx(r);
     floats(r);
-    weakNote(r.lines);
+    weakNote(r.weak);
     const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;

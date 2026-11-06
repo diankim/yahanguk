@@ -111,7 +111,7 @@
 - 운임: 구간마다 노정패 1~2개(world_travel_route가 출발 때 구간 수×운임 차감), 모자라면 걸어감(×1, 운임 없음). 내리기 world_mount_unequip(mount_id null이면 걸어서, fn_owner_field에 world_characters.mount_id 열 쓰기만 줌).
 - 노정패: 토벌 승리 1·탐색·채집 6번에 1번꼴 1·이야기 3·의뢰·임무 2(원정 귀환 없음). 쓰는 곳: 원정 운임(외곽 1·심부 2·핵심 3), 탈것 단련 world_mount_train(마구간, 20×다음 단계, 단계마다 속도 +4%, 최고 5, world_owned_mounts.training).
 - 이동 보상(경험치·탐사 기술·상태 굴림·세력 임무·이동 칭호/꾸미기)은 도착 기록(world_events travel + travel_history_id)에만. 상태 굴림은 안전지대 도착이면 없음, 바깥 도착은 1/3.
-- 취소 world_travel_cancel: 출발 60초 안, 위약금 없음, 뒤 3분 출발 불가(world_guard_action_context). 화면은 취소 응답 cooldown_seconds(또는 출발 거절 문구의 「n초 남음」)를 기기에 적어(views/common.js setTravelCd·travelCdLeft·travelCdFromError, localStorage yh-travel-cd:<uid>) 지도 출발 단추를 잠그고 남은 시간을 보이며(map.js [data-tcd]), 현장 「길 떠나기」에도 적는다(home.js data-tcd-home). 끝나면 기기 시계로 풀림, 서버 재요청 없음.
+- 취소 world_travel_cancel: 출발 60초 안, 위약금 없음, 뒤 3분 출발 불가(world_guard_action_context). 화면은 취소 응답 cooldown_seconds(또는 출발 거절 오류의 hint 「cd:초」 — world_guard_action_context가 RAISE … USING HINT, core.js rpc가 오류에 hint·code를 실음, 1.0.4n)를 기기에 적어(views/common.js setTravelCd·travelCdLeft·travelCdFromError, localStorage yh-travel-cd:<uid>) 지도 출발 단추를 잠그고 남은 시간을 보이며(map.js [data-tcd]), 현장 「길 떠나기」에도 적는다(home.js data-tcd-home). 끝나면 기기 시계로 풀림, 서버 재요청 없음.
 - 이동 중(travel_destination 남음) world_mount_equip 거절(map.js도 막음).
 - 이동을 시작하면 남은 시간이 화면 위에 계속 보이고 도착을 알린다.
 
@@ -193,7 +193,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 가입 후 최초 1회 생성 화면에서 이름·직업·소속, 이후 로그인은 바로 게임. 이름·직업·소속은 바꿀 수 없고 설정에도 변경 선택지가 없다. 예외 귀속 소모품(거래 불가·창고 가능, 모두에게 하나씩): 환골탈태 서첩(reset_identity, world_reset_identity: 직업·소속 다시 고르기·전용 장비와 못 드는 무기 해제·포인트 반환, 레벨·기술 단계·대세력은 그대로 — 7.7.7p, 대세력 비고 world_faction_vault 2등급 공훈 300), 세심단(reset_stats, world_reset_stats: 능력치만). 이름은 불변. 창 item.js openResetIdentity(모바일 .ri-grid·.sticky-actions).
 - 이름 중복은 서버가 막는다(대소문자·앞뒤 공백 무시).
-- 「캐릭터 정리」(계정 › 캐릭터 정리, world_character_delete)는 캐릭터 몫 표를 지운다. 나중에 생긴 표는 world_character_purge(postgres 주인, fn_owner_field만 실행) 한 곳에 모음 — 퀘스트·세력 진행·튜토리얼·창고·칭호 묶음·퀵슬롯·기술 택일·잠금·내구도·획득순·강화·보따리·도감·첫 방문·비경·꾸미기·즐겨찾기·동무·별채(한 지붕이면 별채는 둠). 계정 몫(친구·차단·모임·화면/알림 설정·제보·귓속말 읽음)과 하루 한 번 기록(소속 보급·의뢰판)·world_events는 남긴다(1.0.4j, 제보 38). 캐릭터별 새 표를 만들면 이 함수에도 더한다.
+- 「캐릭터 정리」(계정 › 캐릭터 정리, world_character_delete)는 캐릭터 몫 표를 지운다. 나중에 생긴 표는 world_character_purge(postgres 주인, fn_owner_field만 실행) 한 곳에 모음 — 퀘스트·세력 진행·튜토리얼·창고·칭호 묶음·퀵슬롯·기술 택일·잠금·내구도·획득순·강화·보따리·도감·첫 방문·비경·꾸미기·즐겨찾기·동무·별채(한 지붕이면 별채는 둠). 계정 몫(친구·차단·모임·화면/알림 설정·제보·귓속말 읽음)과 하루 한 번 기록(소속 보급·의뢰판)·world_events는 남긴다(1.0.4j, 제보 38). 1.0.4n에 개인 경험치 보정(world_xp_damp)·요화 기록(world_yohwa_log, 칭호 셈)·올린 조사원 의뢰(open)도 지움. 남기는 표 목록은 tools/check/precheck.py ACCOUNT_TABLES 한 곳 — 점검이 둘 다에 없는 새 표를 잡는다. 캐릭터별 새 표를 만들면 이 함수에도 더한다.
 - 소속 효과(world_affil_effect → world_status_effect_total, 경제 world_affil_cap·world_affil_tax): 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·주는 피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·주는 피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%. 하루 소속 보급·소속 임무도 소속마다. 화면 core.js FACTIONS.
 - 직업(내부 키 / 이름 world_job_label·world_job_name / 화면 core.js JOBS): 호위 무사 artificer 방패·수호 · 월궁 사수 scout 원거리 공격(옛 이름 현장 조사원 — 7.7.7r, 조사원 전체를 부르는 「조사원」은 그대로) · 퇴마관 exorcist 술법 공격 · 의무관 medic 치유 · 봉인술사 sealmaster 보조(북돋기·약화)·버티는 술사(이목 +60·방어 +30, 퇴마관 이목 −15 — world_combat_stats, 7.7.7r; 회피는 기민으로 1.0.1b) · 암영 검객 analyst 근접 공격(7.7.7q 역할, 옛 이름 백공 기술관 — 7.7.7r에서 바꿈, 직업 설명 core.js JOBS desc 앞 【역할】·lore.js JOB_LORE fight).
 - 기본 능력치 world_job_base(합 30): 호위 무사 힘9·체질7·민첩5 / 조사원 민첩8·감각8 / 퇴마관 영기9·의지7 / 의무관 의지8·영기7·체질6 / 봉인술사 의지8·영기7·체질5 / 암영 검객 힘8·민첩6·체질5·감각5(7.7.7r), 나머지 3~4.
@@ -263,7 +263,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 무기 소모
 
 - 근접 기력(spiritual_power, 근접 무기면 노란 「기력」 core.js spOf) 공격마다 2, 술법 영력 3(합동 토벌·결전 2, 7.7.7r), 원거리 equipment_traits.ammo(ammo_arrow·ammo_bolt·ammo_dart, 묶음 100, world_ammo_of) 한 발 하나. 없으면 피해 절반. 원정은 회차마다 둘, 떠날 때 없으면 원정 전투력 ×0.6. 새 원거리 무기에는 ammo를 단다.
-- 현장에서 그래서 피해가 절반이면 화면 아래 알림(battle.js weakNote: 서버 문구 「쏠 것이 떨어져」「기력이 바닥나」「영력이 바닥나」, 5초에 한 번; pfight.js는 「내 이름 · 」로 시작하는 새 줄만). 서버 문구를 바꾸면 여기도.
+- 현장에서 그래서 피해가 절반이면 화면 아래 알림(battle.js weakNote(갈래), 5초에 한 번). 서버 world_battle_action 응답 weak(ammo·sp·mp)를 읽고 문구는 읽지 않음, 파티 토벌은 world_pfight_resolve가 world_pfight_members.weak에 적어 스냅샷 members[].weak로(내 차례 줄이 새로 생겼을 때만, 1.0.4n).
 
 ### 싸우는 중의 물품
 
@@ -433,7 +433,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 #### 파티 전투 화면(봉연 토벌 화면이 기준)
 
 - 공용 부품 views/fightui.js(세 화면 raid·pfight·gw가 함께 씀 — 물품 창 itemTray·itemSectionsHtml(나누기는 itemGroups 하나, 화면마다 목록만: 봉연 battleItems·파티 토벌 battle.js trayList·귀허 HEAL_ITEMS+snap.items), 결과 resultBox·settleFight·showResult(끝나는 순간 결과 칸을 머리 아래로), 남은 시간 tickUntil·serverClock, 자세히 showSelected·fightNums, 기록 logRow·newestFirst·keepLogScroll·fitLog(지금은 raid만 높이 맞춤), jobName): 효과 이름·아이콘·설명 FX_NAME·FX_ICON·FX_TIP(봉연 fx·귀허 fx/bfx 한 표), 떠 있는 설명 bindTips(원본 assets/js/tips.js — 문서 전체에 한 번 걸림, data-tip이 있는 것은 어디서나 .fx-tip, 마우스 올린 동안·누르면 1.8초+글자 수만큼(7초까지), 창 아님, 아이콘 누름은 참가자 고르기 아님), 참가자 칸 memberLi(직업 색 .raid-mem .jb-<직업> --jb, 체력 숫자는 막대 안 .bar.mem-hp em)·자세히 showMemDetail(#raid-memdetail: 직업·상태·체력·기여·준/받은 피해·회복·효과·기여 내역, 다시 누르거나 ×로 닫음, 싸우는 중이면 기술 대상도 그 사람), 내 막대 vitHtml(.raid-vit), 기술 단추 coopBtn(SKILL_ICON, 기술 id별), 물품 itemListHtml·itemGroups(이름·남은 수·회복 수치만 — item.js USABLE 체력·정신·영력·침식·치료 마디, fxHtml 색, 설명은 title; .raid-item-list minmax 92px — PC 넷·휴대폰 셋, 체력·정신/영력 두 칸 SP_ITEMS). raid.js·pfight.js·gw.js가 함께 쓰고 새 전투 화면도 이 파일을 쓴다. 새 기술·효과는 아이콘 표에 더한다.
-- 합동 토벌 #/raid/<id>(views/raid.js): world_raid_snapshot을 실시간 변경마다(참가 1초·관전 2초 간격, 내 행동 직후 같은 값은 건너뜀, 남의 마지막 한 방으로 끝나도 캐릭터 다시 읽음, 고른 물품·기록 자리 유지). 회차·상태·참가 여부가 바뀔 때만 build, 그 뒤 patch. 요괴의 말·기운 모으기는 높이 고정 #raid-says, 참가자 세 칸 #raid-mem(누르면 기술 대상, 물러남·쉬는 중·자리 비움은 흑백·점선·옅게 li.out, 휴대폰 스크롤 없이 모두), 북돋기·약화 아이콘은 이름 옆 .fx-icons(members[].buffs)·내 칩·요괴 칩(core.js ICONS), 내 피해·기여 .raid-mine(한 줄 말줄임 + 칩 한 줄, 높이 고정, 물품 창 설명 common.js itemDesc). 기록은 새 줄만 덧붙임(logLine: 「이름 — N의 피해」를 k-out 금빛 「이름 → 요괴 N 피해」, 받은 피해 k-in 빨강 「요괴 → 이름 −N 맞음」, 내 줄 .mine — 서버 문구를 바꾸면 여기도). 물품 창 openLayer(다시 읽어도 안 닫힘, 쉬는 중엔 world_use_item). 물러남 안내 #raid-out(쉬는 중 .rest 초록). PC(900px↑) 왼쪽 요괴·행동·기록·오른쪽 참가자, 휴대폰(640px↓) 한 화면: 공격·방어·물품 아래 협동 기술 넷 늘 한 줄, #raid-says 한 줄 18px(기운 모을 때만 그 자리에 막대, :has). 휴대폰 기록은 최근이 위·화면 아래까지(fitLog — 파티 토벌·귀허도 640px↓ 같게).
+- 합동 토벌 #/raid/<id>(views/raid.js): world_raid_snapshot을 실시간 변경마다(참가 1초·관전 2초 간격, 내 행동 직후 같은 값은 건너뜀, 남의 마지막 한 방으로 끝나도 캐릭터 다시 읽음, 고른 물품·기록 자리 유지). 회차·상태·참가 여부가 바뀔 때만 build, 그 뒤 patch. 요괴의 말·기운 모으기는 높이 고정 #raid-says, 참가자 세 칸 #raid-mem(누르면 기술 대상, 물러남·쉬는 중·자리 비움은 흑백·점선·옅게 li.out, 휴대폰 스크롤 없이 모두), 북돋기·약화 아이콘은 이름 옆 .fx-icons(members[].buffs)·내 칩·요괴 칩(core.js ICONS), 내 피해·기여 .raid-mine(한 줄 말줄임 + 칩 한 줄, 높이 고정, 물품 창 설명 common.js itemDesc). 기록은 새 줄만 덧붙임(logLine: 준 피해 k-out 금빛 「이름 → 요괴 N 피해」, 받은 피해 k-in 빨강 「요괴 → 이름 −N 맞음」, 내 줄 .mine — 이름·수치는 world_raid_log.who·n(world_raid_say_n이 적음, 1.0.4n)에서 읽고 문구는 읽지 않음). 물품 창 openLayer(다시 읽어도 안 닫힘, 쉬는 중엔 world_use_item). 물러남 안내 #raid-out(쉬는 중 .rest 초록). PC(900px↑) 왼쪽 요괴·행동·기록·오른쪽 참가자, 휴대폰(640px↓) 한 화면: 공격·방어·물품 아래 협동 기술 넷 늘 한 줄, #raid-says 한 줄 18px(기운 모을 때만 그 자리에 막대, :has). 휴대폰 기록은 최근이 위·화면 아래까지(fitLog — 파티 토벌·귀허도 640px↓ 같게).
 
 ## 11. 세력과 거점
 
@@ -579,7 +579,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 입력할 때마다 다시 그리는 검색칸은 한글 조합 중(e.isComposing)엔 안 그리고 compositionend에(bag.js 가방·제작).
 - 화면을 옮겨도 쓰던 내용(채팅·귓속말·저장 전 프로필·생성 화면의 이름·직업·소속) 유지.
 - 성장 알림 growth.js: 레벨·숙련 단계·가방 칸이 늘면 잠깐 뜸(지난 값은 기기에 캐릭터별 — 접속 안 한 사이도).
-- 알림: 실시간 + 행동 뒤(15초에 한 번, 전투 턴 중 제외)·화면 복귀·1분마다 다시 읽기(settings.js loadNotes, 실시간이 살면 예비 5분). 설정 › 알림: world_notify_prefs(off 갈래), world_notify_group(kind→갈래: rescue·friend_rescue·party·friend·trade·raid·title·reward·bag·circle·spar·bond·faction·letter·housing, 나머지 못 끔), BEFORE INSERT trg_world_notify_prefs가 끈 갈래를 읽음으로. world_notify_prefs_get·set. 새 알림 종류는 world_notify_group에도. 싸움 초대·포기 제안(gw_invite·raid_invite·raid_vote·pfight_invite)은 3분 지난 것을 안 띄우고(직접 거래 제안 trade_offer·원정 귀환 expedition_done은 다른 길로 처리하면 거둠), 싸움 화면이 이미 들었음·끝남·답함을 보면 읽음으로 거둠(settings.js clearFightNotes), 알림 「합류」는 합류 요청(world_raid_join·world_gw_join)까지 보냄. 친구가 쓰러지면 다른 곳 친구에게 friend_down(같은 곳은 rescue_request), 「지도에서 보기」 map.js focusRegion(지역 이름도 받음, 다른 화면 지역 짚기도 같음). 확인한 알림은 「지난 알림」.
+- 알림: 실시간 + 행동 뒤(15초에 한 번, 전투 턴 중 제외)·화면 복귀·1분마다 다시 읽기(settings.js loadNotes, 실시간이 살면 예비 5분). 설정 › 알림: world_notify_prefs(off 갈래), world_notify_group(kind→갈래: rescue·friend_rescue·party·friend·trade·raid·title·reward·bag·circle·spar·bond·faction·letter·housing, 나머지 못 끔 — 일부러 못 끄게 둔 종류는 tools/check/precheck.py UNMUTABLE_NOTES), BEFORE INSERT trg_world_notify_prefs가 끈 갈래를 읽음으로. world_notify_prefs_get·set. 새 알림 종류는 world_notify_group에도. 싸움 초대·포기 제안(gw_invite·raid_invite·raid_vote·pfight_invite)은 3분 지난 것을 안 띄우고(직접 거래 제안 trade_offer·원정 귀환 expedition_done은 다른 길로 처리하면 거둠), 싸움 화면이 이미 들었음·끝남·답함을 보면 읽음으로 거둠(settings.js clearFightNotes), 알림 「합류」는 합류 요청(world_raid_join·world_gw_join)까지 보냄. 친구가 쓰러지면 다른 곳 친구에게 friend_down(같은 곳은 rescue_request), 「지도에서 보기」 map.js focusRegion(지역 이름도 받음, 다른 화면 지역 짚기도 같음). 확인한 알림은 「지난 알림」.
 - 처음 안내: 처음 만들면 단계별 안내(13단계, 진행 중 스크롤 고정)와 현장 「첫 걸음」(보급·바깥 이동·탐색·채집·토벌·단서; 접기, 항목마다 알림, 직접 닫기 전까지 남음), 도움말에서 다시 봄. 진행은 world_events, 상태는 world_tutorial_state(캐릭터별).
 - 도움말: 별도 페이지, 튜토리얼을 대신할 만큼 규칙·수치를 담음. 묶음(처음·세계·이동·탐색·전투·생활·원정·성장·세력·가방·경제·교류·사건) 카드, 항목은 접는 칸, 검색은 묶음 무관하게 펼치고 찾은 말 표시(views/guide.js GROUPS, 새 항목은 묶음에도). 소속 항목(6가지 보급·임무) 따로. 로그인 화면 한 줄 안내 app.js TIPS(누르면 다음 줄).
 - 지도: 확대·축소·이동, 이름표 겹침 없음. 모바일은 지역을 누르면 위 띠(확대 단추 왼편)에 예상 시간·자세히·출발(또는 현장). 완전 답사 바깥 지역(world_survey_full_regions, 나만·10분 캐시·탐색/채집/원정 뒤 새로)은 금빛 테 .survey-ring + 바탕색 테 .survey-edge, 범례 「답사 완료」. 세력 경계선 .b-border는 .b-coast와 같은 굵기 1.6.
@@ -693,6 +693,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 테스트 기준
 
+- 배포 전 점검 tools/check/precheck.py(1.0.4n): 화면(`_hq` 직접 처리·행동 이름 정규식이 changes.js 밖·서버 문구 읽기·modulepreload 빠짐)과 DB(--dsn=…: 캐릭터 정리 빠진 표·갈래 없는 알림·로그인 없이 부르는 definer·화면이 부르는데 권한 없는 함수·search_path 없는 definer). 복제 DB는 권한이 운영과 달라 권한 점검은 --sql로 뽑은 질의를 운영에서 읽기로 돌린다. 배포마다 0건 확인.
 - 큰 SQL은 먼저 로컬 복제 DB에서: 운영 DB를 읽기 전용 SELECT로만 받아(역할·표·열 권한·정책·함수·트리거·카탈로그 데이터, 큰 표는 최근 3천 줄) 로컬 PostgreSQL 16 `yh`로 만들고 `createdb -T yh yh_test`로 복사본, 마이그레이션을 `-1 -v ON_ERROR_STOP=1`로 돌린 뒤 `set role authenticated` + `request.jwt.claim.sub`로 조사원처럼 함수 호출. 운영은 PostgreSQL 17이라 17 전용 문법은 따로 본다. 복제 스크립트는 세션 작업 공간(scratchpad/replica)이라 세션이 끝나면 사라지므로 새 세션에서 같은 방법으로 다시 만든다(운영 데이터·이메일이 든 덤프는 저장소에 안 올림). 캐릭터 행을 오래 잠그는 시뮬레이션은 복제 DB에서만.
 - 연속 클릭과 중복 요청
 - 두 플레이어의 동시 행동

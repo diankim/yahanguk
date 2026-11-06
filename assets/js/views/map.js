@@ -377,7 +377,7 @@ function drawDetail() {
       </div>
     </article>`;
   const go = $('#travel-go', box);
-  if (go) go.onclick = () => guard(go, async () => { try { const out = await act('world_travel_route', { p_region_id: r.region_id }); invalidate('world_map_snapshot'); return out; } catch (e) { if (travelCdFromError(e?.message)) { drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } throw e; } });
+  if (go) go.onclick = () => guard(go, async () => { try { const out = await act('world_travel_route', { p_region_id: r.region_id }); invalidate('world_map_snapshot'); return out; } catch (e) { if (travelCdFromError(e)) { drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } throw e; } });
   const cdEl = $('[data-tcd]', box);
   if (cdEl) { const t = setInterval(() => { if (!cdEl.isConnected) return clearInterval(t); const left = travelCdLeft(); if (left > 0) cdEl.textContent = fmt.remain(left); else { clearInterval(t); drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } }, 1000); }
   $('#go-field', box)?.addEventListener('click', () => window.yahangGo('home'));

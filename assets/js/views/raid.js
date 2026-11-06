@@ -136,7 +136,7 @@ function patch() {
   const sy = $('#raid-says', el);
   if (sy) {
     const fx = fxChips((r.boss_fx || []).filter(k => BOSS_FX.includes(k)));
-    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.charge?.secs != null ? String(r.intent).replace(/(약\s*)?\d+(\.\d+)?초\s*안에\s*/, '') : r.intent) : '요괴가 숨을 고르는 중'}</span></p>
+    sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
       <div class="raid-charge ${r.charge ? 'on' : ''} ${r.charge?.secs != null ? 'timed' : ''}">${r.charge ? `${r.charge.secs != null ? '<i class="ch-time"></i>' : ''}<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.secs != null ? '<span class="ch-left"><b class="ch-sec"></b>초 남음</span>' : `${r.charge.left}번 남음`} · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
       <div class="chips raid-bfx">${fx}</div>`;
     chargeEnd = r.charge?.secs != null ? Date.now() + r.charge.secs * 1000 : 0; chargeDur = (r.charge?.dur || 8) * 1000;
@@ -179,13 +179,12 @@ function chargeTick() {
 let fitT = null;
 window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => { if (el && snap?.raid && built) { logCount = 0; patch(); } }, 150); });
 function logLine(l, boss, myName) {
-  const m = /^(.+?) — (\d+)의 피해(\(치명타\))?/.exec(l.text || ''), mine = m && m[1] === myName ? ' mine' : '';
+  const who = l.who, n = l.n, has = who != null && n != null, mine = who && who === myName ? ' mine' : '';
   const t = `<time>${fmt.time(l.at)}</time>`;
-  if (m && (l.kind === 'atk' || l.kind === 'crit')) return logRow(`k-out${mine}`, `<b>${esc(m[1])}</b> → ${esc(boss)} <em>${fmt.num(+m[2])}</em> 피해${m[3] ? ' <i class="crit">치명타</i>' : ''}`, t);
-  if (m && l.kind === 'hit') return logRow(`k-in${mine}`, `${esc(boss)} → <b>${esc(m[1])}</b> <em>−${fmt.num(+m[2])}</em> 맞음`, t);
-  if (m && l.kind === 'fall') return logRow(`k-in fall${mine}`, `${esc(boss)} → <b>${esc(m[1])}</b> <em>−${fmt.num(+m[2])}</em> 쓰러져 물러남`, t);
-  const who = /^(.+?) — /.exec(l.text || '')?.[1];
-  return logRow(`k-${esc(l.kind)}${who && who === myName ? ' mine' : ''}`, esc(l.text), t);
+  if (has && (l.kind === 'atk' || l.kind === 'crit')) return logRow(`k-out${mine}`, `<b>${esc(who)}</b> → ${esc(boss)} <em>${fmt.num(+n)}</em> 피해${l.kind === 'crit' ? ' <i class="crit">치명타</i>' : ''}`, t);
+  if (has && l.kind === 'hit') return logRow(`k-in${mine}`, `${esc(boss)} → <b>${esc(who)}</b> <em>−${fmt.num(+n)}</em> 맞음`, t);
+  if (has && l.kind === 'fall') return logRow(`k-in fall${mine}`, `${esc(boss)} → <b>${esc(who)}</b> <em>−${fmt.num(+n)}</em> 쓰러져 물러남`, t);
+  return logRow(`k-${esc(l.kind)}${mine || (myName && String(l.text || '').startsWith(`${myName} — `) ? ' mine' : '')}`, esc(l.text), t);
 }
 let votedFor = null;
 function askVote(r) {

@@ -18,6 +18,7 @@ import { questBox, fillQuests } from '../quests.js';
 import { raidBand, fillRaidBand } from './raid.js';
 import { regionIntro } from '../lore.js';
 import { USABLE } from './item.js';
+import { hit } from '../changes.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -52,7 +53,7 @@ export async function render(root) {
   el.innerHTML = loading();
   off.forEach(f => f());
   off = [on('changed', ({ name }) => {
-    if (/battle_action/.test(name)) return;
+    if (hit('fieldQuiet', name)) return;
     draw();
   }), on('env', () => { const x = $('.scene .env-slot', el); if (x) x.innerHTML = envChip(); const f = $('.scene .scene-fx', el); if (f) f.outerHTML = sceneFx(snap?.region); }), on('expedition', () => draw())];
   window.addEventListener('yahang:arrived', draw);

@@ -74,7 +74,7 @@ function draw() {
   if (me || ended()) clearFightNotes(['pfight_invite'], 'fight_id', fid);
   const lg = s.log || [];
   if (seenFid !== fid) { seenFid = fid; seenLog = lg.length; }
-  else if (lg.length > seenLog) { const mine = `${c.character_name} · `; weakNote(lg.slice(seenLog).filter(l => l.startsWith(mine))); seenLog = lg.length; }
+  else if (lg.length > seenLog) { const mine = `${c.character_name} · `; if (lg.slice(seenLog).some(l => l.startsWith(mine))) weakNote((s.members || []).find(m => m.id === c.owner_id)?.weak); seenLog = lg.length; }
   const pct = s.max_hp ? Math.max(0, Math.min(100, s.hp / s.max_hp * 100)) : 100;
   const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[s.intent] || INTENT.strike);
   const members = s.members || [], byId = Object.fromEntries(members.map(m => [m.id, m]));

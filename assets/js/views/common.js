@@ -91,7 +91,7 @@ window.addEventListener('yahang:arrived', () => invalidate());
 const tcdKey = () => `yh-travel-cd:${store.character?.owner_id || ''}`;
 export function travelCdLeft(now = Date.now()) { try { return Math.max(0, Number(localStorage.getItem(tcdKey()) || 0) - now); } catch { return 0; } }
 export function setTravelCd(secs) { try { const s = Number(secs) || 0; if (s > 0) localStorage.setItem(tcdKey(), String(Date.now() + s * 1000)); else localStorage.removeItem(tcdKey()); } catch {} }
-export const travelCdFromError = msg => { const m = /이동을 취소한 뒤 3분[^(]*\((\d+)초 남음\)/.exec(String(msg || '')); if (m) setTravelCd(m[1]); return !!m; };
+export const travelCdFromError = err => { const m = /^cd:(\d+)$/.exec(String(err?.hint || '')); if (m) setTravelCd(m[1]); return !!m; };
 on('changed', ({ name, data }) => { if (name === 'world_travel_cancel') setTravelCd(data?.cooldown_seconds ?? 180); });
 
 function register(name, d) {

@@ -2,6 +2,7 @@ import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, openModal, closeMod
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 import { bgroup } from './rtb.js';
+import { hit } from './changes.js';
 export { initSound, playSfx } from './sound.js';
 
 export { THEMES, deriveCustom, readCustom, themeOf, applyTheme, savedThemeId, applySavedTheme, themeCard, FONT_SIZES, savedFontSize, applyFontSize } from './theme.js';
@@ -86,7 +87,7 @@ export function mountNotifications(btn) {
   const read = () => { lastRead = Date.now(); return loadNotes(); };
   const soon = throttle(read, 15000);
   on('changed', ev => {
-    const done = /expedition_complete/.test(ev.name || '') ? 'expedition_done' : /trade_direct_respond/.test(ev.name || '') ? 'trade_offer' : '';
+    const done = hit('noteExpDone', ev.name) ? 'expedition_done' : hit('noteTrade', ev.name) ? 'trade_offer' : '';
     if (done) document.querySelectorAll(`.note-pop[data-kind="${done}"]`).forEach(x => { const n = byId(x.dataset.id); x.remove(); if (n) markRead(n); });
     if (!midBattle(ev) && !notesLive) setTimeout(soon, 600);
   });

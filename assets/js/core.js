@@ -90,7 +90,7 @@ export function friendlyError(e) {
 
 export async function rpc(name, args) {
   const { data, error } = args === undefined ? await db.rpc(name) : await db.rpc(name, args);
-  if (error) throw new Error(friendlyError(error));
+  if (error) throw Object.assign(new Error(friendlyError(error)), { hint: error.hint || '', code: error.code || '' });
   return data;
 }
 export async function snap(name, args) {
@@ -117,7 +117,7 @@ export function useItemAct(id) {
 }
 export async function act(name, args) {
   const data = await rpc(name, args);
-  if (/equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
+  if (hit('equipped', name)) equipped = null;
   const mid = midBattle({ name, data });
   if (mid && data?.me && store.character) { Object.assign(store.character, data.me); store.charAt = Date.now(); emit('character', store.character); }
   else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView(), inv: !mid && onInvView() && !hit('invQuiet', name) }); } catch {}
