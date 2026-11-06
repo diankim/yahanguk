@@ -1,4 +1,5 @@
 import { store, on, emit, rpc, esc, icon, fmt, effectText, effectGood, ENV_ICON, openModal } from './core.js';
+import { hit } from './changes.js';
 
 let timer = null, loading = null;
 
@@ -21,7 +22,7 @@ function schedule(e) {
 export function mountEnv() {
   loadEnv();
   window.addEventListener('yahang:arrived', () => loadEnv());
-  on('changed', ({ name }) => { if (/travel|rescue|character_delete/.test(name)) setTimeout(loadEnv, 400); });
+  on('changed', ({ name }) => { if (hit('env', name)) setTimeout(loadEnv, 400); });
 }
 
 export function envChip(e = store.env, { compact = false } = {}) {

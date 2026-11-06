@@ -5,6 +5,7 @@ import { playAlarm, armAlarm } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
 import { expRoundOf } from './rules.js';
 import { withHq, baseOf } from './hq.js';
+import { hit } from './changes.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -20,7 +21,7 @@ export function mountHud(el) {
   on('env', render);
   on('changed', ev => {
     if (midBattle(ev)) { const b = ev.data?.battle; if (b && state.hud?.battle) Object.assign(state.hud.battle, { hp: b.hp ?? state.hud.battle.hp, max_hp: b.max_hp ?? state.hud.battle.max_hp }); return render(); }
-    const idle = /idle/.test(ev.name || '');
+    const idle = hit('idle', ev.name);
     clearTimeout(refreshTimer); refreshTimer = setTimeout(() => refresh({ char: false, idle, hudAge: 3000 }), 350);
   });
   refresh();

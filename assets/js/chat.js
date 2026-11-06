@@ -7,6 +7,7 @@ import { playAlarm } from './sound.js';
 import { face } from './people.js';
 import { bgroup, bclear } from './rtb.js';
 import { load as loadSnap } from './views/common.js';
+import { hit } from './changes.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -69,7 +70,7 @@ export function mountChat(colEl, fabEl) {
   switchTab(tab);
   subscribe();
   loadBlocks();
-  on('changed', ({ name }) => { if (away) return; if (/party/.test(name)) { partyLoaded = false; setTimeout(syncPartySub, 300); } if (/travel|major_faction|reset_identity/.test(name)) load(); if (/block|friend/.test(name)) loadBlocks().then(draw); });
+  on('changed', ({ name }) => { if (away) return; if (hit('chatParty', name)) { partyLoaded = false; setTimeout(syncPartySub, 300); } if (hit('chatRooms', name)) load(); if (hit('chatBlocks', name)) loadBlocks().then(draw); });
   subscribeCircles();
   syncPartySub();
   on('character', () => { if (!away) subscribeB(); });

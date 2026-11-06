@@ -4,6 +4,7 @@ import { busyText } from './rules.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 
 import { SUPABASE_URL, SUPABASE_KEY, isMaintenanceError, goMaintenance } from './config.js';
+import { hit } from './changes.js';
 export { SUPABASE_URL, SUPABASE_KEY };
 const BOOT_TAG = (() => {
   let nav = 'na', prev = 'new', n = 0;
@@ -119,11 +120,10 @@ export async function act(name, args) {
   if (/equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/.test(name)) equipped = null;
   const mid = midBattle({ name, data });
   if (mid && data?.me && store.character) { Object.assign(store.character, data.me); store.charAt = Date.now(); emit('character', store.character); }
-  else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView(), inv: !mid && onInvView() && !INV_QUIET.test(name) }); } catch {}
+  else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView(), inv: !mid && onInvView() && !hit('invQuiet', name) }); } catch {}
   emit('changed', { name, data });
   return data;
 }
-export const INV_QUIET = /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block/;
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
 const onFieldView = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 const onInvView = () => /^#\/(bag|char)(\/|$)/.test(location.hash);

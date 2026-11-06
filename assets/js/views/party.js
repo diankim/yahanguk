@@ -9,6 +9,7 @@ const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); ret
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty } from '../core.js';
 import { face, syncNotes } from '../people.js';
 import { load, panel, chip, loading, errorBox } from './common.js';
+import { hit } from '../changes.js';
 
 const LOOT = [['contribution', '기여도순'], ['designated', '지정순'], ['equal', '균등 분배']];
 let el, off = [], poll = null;
@@ -18,7 +19,7 @@ export async function render(root) {
   el = root;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('users', 14)} 함께 걷는 이들</p><h1>동료</h1></div>
     <button class="btn small ghost" id="party-refresh">${icon('back', 14)}<span>새로 보기</span></button></div><div id="party-body">${loading()}</div>`;
-  off.forEach(f => f()); off = [on('changed', ({ name = '' }) => draw(/party|circle|bond|letter|loot|friend|block|wedding|rescue/.test(name)))];
+  off.forEach(f => f()); off = [on('changed', ({ name = '' }) => draw(hit('people', name)))];
   $('#party-refresh', el).onclick = e => guard(e.currentTarget, () => draw(true), { success: '' });
   clearInterval(poll); poll = setInterval(() => { if (!document.hidden && el?.isConnected && !el.contains(document.activeElement?.closest('select,input'))) draw(false, true); }, 45000);
   await draw(true);

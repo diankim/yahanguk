@@ -5,6 +5,7 @@ import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
+import { hit } from '../changes.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -57,7 +58,7 @@ export async function render(root, s) {
     ${segmented('bag-sub', SUBS, sub)}<div id="bag-body"></div>`;
   bindSegmented(el, 'bag-sub', k => { sub = k; window.history.replaceState(null, '', `#/bag/${k}`); draw(); });
   $('#open-storage', el).onclick = () => import('./services.js').then(m => m.openStorage());
-  off.forEach(f => f()); off = [on('changed', ({ name } = {}) => { if (/craft|storage|travel|field_move/.test(name || '')) invalidate('world_storage_snapshot'); draw(true); })];
+  off.forEach(f => f()); off = [on('changed', ({ name } = {}) => { if (hit('storage', name)) invalidate('world_storage_snapshot'); draw(true); })];
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; }

@@ -1,6 +1,7 @@
 import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { PARTY_EXP } from '../rules.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
+import { hit } from '../changes.js';
 
 const DURATIONS = [[30, '30분'], [60, '1시간'], [120, '2시간'], [240, '4시간'], [480, '8시간']];
 const STANCES = [
@@ -68,7 +69,7 @@ export async function openExpeditionWindow(preset) {
   const box = $('.exp-body', m);
   const fill = async () => { try { renderExpedition(box, await load('world_expedition_overview')); } catch (e) { box.innerHTML = errorBox(e.message); } };
   await fill();
-  const offc = on('changed', ({ name }) => { if (!box.isConnected) return offc(); if (/expedition/.test(name)) fill(); });
+  const offc = on('changed', ({ name }) => { if (!box.isConnected) return offc(); if (hit('expedition', name)) fill(); });
 }
 window.addEventListener('yh-open-expedition', e => openExpeditionWindow(e.detail));
 

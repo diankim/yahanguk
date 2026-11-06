@@ -3,6 +3,7 @@ import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate
 import { buildCells, centroid, factionColor } from '../geo.js';
 import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
+import { hit as touched } from '../changes.js';
 
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
 const shadowText = w => w.status === 'fight' ? '봉연의 그림자 토벌 중' : w.status === 'signup' ? '봉연의 그림자 · 모이는 중'
@@ -16,7 +17,7 @@ export async function render(root, s) {
     ${segmented('map-sub', SUBS, sub)}<div id="map-body"></div>`;
   bindSegmented(el, 'map-sub', k => { sub = k; history.replaceState(null, '', `#/map/${k}`); draw(); });
   off.forEach(f => f());
-  off = [on('changed', ({ name } = {}) => { if (/field_|gather|expedition/.test(name || '')) loadSurveyed(true); draw(true); }), on('env', () => draw(true))];
+  off = [on('changed', ({ name } = {}) => { if (touched('survey', name)) loadSurveyed(true); draw(true); }), on('env', () => draw(true))];
   window.addEventListener('yahang:arrived', onArrive);
   raidLocks().then(l => { sealed = new Set(l.map(x => x.region_id)); if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });
   raidShadow().then(w => { shadow = w; if (mapData && $('#map-body', el)) { try { paint(); } catch {} } });

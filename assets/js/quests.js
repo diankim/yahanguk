@@ -2,6 +2,7 @@ import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, 
 import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore } from './sources.js';
+import { TASK_ACTS, CHANGES, hit } from './changes.js';
 
 const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
 const foldKey = 'yh-fold-quests';
@@ -148,12 +149,8 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
-const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish$/,
-  clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
-const ITEM_ACTS = /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/;
 let qbWatch = null;
 const HERE_KINDS = new Set(['win', 'gather', 'fish', 'search', 'clue']);
-const AWAY_ACTS = /expedition|raid_|pfight_|gw_/;
 function watchOf(b) {
   const w = new Map(); let give = false;
   const add = (k, regs) => { const cur = w.get(k); if (cur === null) return; w.set(k, regs && regs.length && HERE_KINDS.has(k) ? new Set([...(cur || []), ...regs]) : null); };
@@ -162,16 +159,16 @@ function watchOf(b) {
     if ((q.give || []).length) give = true;
     if (q.clues) add('clue', q.clues.regions);
   }
-  const res = [...w].map(([k, regs]) => ({ re: TASK_ACTS[k] || /battle_action|field_|expedition|craft|fish|trade|market|shop/, regs }));
+  const res = [...w].map(([k, regs]) => ({ re: TASK_ACTS[k] || CHANGES.boardOther, regs }));
   return { res, give, level: b.level, here: b.here_id };
 }
-const hits = (w, name) => w.res.some(({ re, regs }) => re.test(name) && (!regs || regs.has(w.here) || AWAY_ACTS.test(name)));
+const hits = (w, name) => w.res.some(({ re, regs }) => re.test(name) && (!regs || regs.has(w.here) || hit('boardAway', name)));
 on('changed', ev => {
   const name = ev?.name || '';
   if (midBattle(ev) || !qbWatch) return;
   const w = qbWatch;
-  if (/quest|story|faction|raid_final|level|reset_identity/.test(name) || (store.character && w.level != null && store.character.level !== w.level)
-    || hits(w, name) || (w.give && ITEM_ACTS.test(name))) invalidate('world_quest_board');
+  if (hit('board', name) || (store.character && w.level != null && store.character.level !== w.level)
+    || hits(w, name) || (w.give && hit('boardItems', name))) invalidate('world_quest_board');
 });
 window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
 

@@ -1,7 +1,8 @@
-import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY, friendlyError, INV_QUIET } from '../core.js';
+import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY, friendlyError } from '../core.js';
 import { armAlarm } from '../sound.js';
 import { GAMEDATA } from '../gamedata.js';
 import { baseOf } from '../hq.js';
+import { hit } from '../changes.js';
 
 const inflight = new Map();
 const cacheAt = new Map();
@@ -75,22 +76,16 @@ async function inventorySnap() {
   return d;
 }
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
-const MAP_CHANGERS = /travel|mount|join_major_faction|field_|battle_|expedition/;
-const QUEST_CHANGERS = /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/;
-const ROSTER_CHANGERS = /travel|rescue|party|expedition|downed|idle/;
-const COMBAT_CHANGERS = /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/;
-const FISH_CHANGERS = /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/;
-const INV_ALWAYS = /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/;
 const invSigOf = c => c ? JSON.stringify([c.inventory, c.level, c.location, c.crafting_rank, c.gathering_rank, c.crafting_profession, c.gathering_profession]) : '';
 let invSig = '';
 on('changed', ({ name = '' }) => {
   const sig = invSigOf(store.character), moved = sig !== invSig; invSig = sig;
-  if (!INV_QUIET.test(name) && (moved || INV_ALWAYS.test(name)) && Date.now() - invFreshAt > 1500) invalidate('world_inventory_snapshot');
-  if (/fish|travel/.test(name) || (store.snaps['world_fish_spotnull'] != null && FISH_CHANGERS.test(name))) invalidate('world_fish_spot');
-  if (/rest|survival|travel|idle/.test(name)) invalidate('world_rest_status');
-  if (/idle/.test(name)) invalidate('world_idle_activity_snapshot');
+  if (!hit('invQuiet', name) && (moved || hit('invAlways', name)) && Date.now() - invFreshAt > 1500) invalidate('world_inventory_snapshot');
+  if (hit('fishSpot', name) || (store.snaps['world_fish_spotnull'] != null && hit('fishSpotNone', name))) invalidate('world_fish_spot');
+  if (hit('rest', name)) invalidate('world_rest_status');
+  if (hit('idle', name)) invalidate('world_idle_activity_snapshot');
 });
-on('changed', ({ name }) => { if (COMBAT_CHANGERS.test(name || '')) invalidate('world_combat_profile'); if (/skill/.test(name)) invalidate('world_skill_snapshot'); if (/battle|gather|expedition/.test(name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (ROSTER_CHANGERS.test(name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (MAP_CHANGERS.test(name)) invalidate('world_map_snapshot'); if (QUEST_CHANGERS.test(name)) invalidate('world_quest_journal'); });
+on('changed', ({ name }) => { if (hit('combat', name)) invalidate('world_combat_profile'); if (hit('skill', name)) invalidate('world_skill_snapshot'); if (hit('codex', name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (hit('roster', name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (hit('map', name)) invalidate('world_map_snapshot'); if (hit('journal', name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
 
 const tcdKey = () => `yh-travel-cd:${store.character?.owner_id || ''}`;
