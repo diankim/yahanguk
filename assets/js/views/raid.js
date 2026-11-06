@@ -7,11 +7,10 @@ import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fi
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
 import { baseOf } from '../hq.js';
-const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
+const CREDIT = [['dmg', '피해'], ['guard', '막아 줌'], ['hit1', '받아 냄'], ['heal', '회복'], ['boost', '북돋움']];
 const creditLine = c => {
-  const v = { ...(c || {}), heal: (Number(c?.heal) || 0) + (Number(c?.heal_self) || 0) };
+  const v = c || {};
   const parts = CREDIT.filter(([k]) => Number(v[k]) > 0).map(([k, n]) => `${n} ${fmt.num(Math.round(v[k]))}`);
-  if (Number(c?.skill) > 0) parts.push(`기술 ${c.skill}번`);
   return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : '';
 };
 
