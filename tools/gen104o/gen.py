@@ -16,6 +16,10 @@ PROD_MD5 = {
     'world_raid_settle': '1c936e49d6606c966f7098c863785061',
     'world_raid_boss_base': '402331494a0830740340807c58cccf59',
     'world_raid_charge_need': '62a80b2300467efc5913883766084a43',
+    'world_raid_action': 'baf07fe08b8aa81e8f46746f64c4a59b',
+    'world_gw_resolve': '0f6702aa3b0402b65122de4363cd84f4',
+    'world_cb_attack': '40ca594bd29691102f7a346966ed49bf',
+    'world_cb_boost_credits': '015be3c85e058e8f5a1ab831184441d1',
 }
 
 EDITS = {
@@ -30,6 +34,25 @@ EDITS = {
     ],
     'world_raid_charge_need': [
         ("return greatest(500, round(s * 3))::int;", "return greatest(500, round(s * (public.world_shadow_rules() ->> 'charge_mul')::numeric))::int;"),
+    ],
+    'world_raid_action': [
+        ("  if act = 'attack' then\n",
+         "  if act = 'coop' then\n    select * into sk from public.world_coop_skills where skill_id = p_skill;\n    if found and sk.job_key = c.job_key and coalesce((sk.effect ->> 'strike')::boolean, false) then\n      if coalesce(c.combat_rank, 1) < sk.unlock_rank then raise exception '전투 숙련 %단계에 열리는 기술입니다.', sk.unlock_rank; end if;\n      if mb.cd ? sk.skill_id and (mb.cd ->> sk.skill_id)::timestamptz > now() then\n        raise exception '%은(는) %초 뒤에 다시 쓸 수 있습니다.', sk.skill_name, ceil(extract(epoch from (mb.cd ->> sk.skill_id)::timestamptz - now())); end if;\n      if sp < sk.cost then raise exception '영력이 모자랍니다(필요 %).', sk.cost; end if;\n      sp := sp - sk.cost;\n      mb.cd := mb.cd || jsonb_build_object(sk.skill_id, now() + make_interval(secs => sk.cooldown_s));\n      mb.coop := mb.coop + 1;\n      f := f || public.world_cb_buff('crit_next', sk.effect, uid);\n      perform public.world_raid_say(p_raid, 'coop', mb.name || ' — [' || sk.skill_name || '] ' || sk.exp_text || '.');\n      act := 'attack';\n    end if;\n  end if;\n  if act = 'attack' then\n"),
+        ("    elsif k in ('ward_all', 'might_all', 'crit_all', 'rally', 'resonance') then\n",
+         "    elsif k in ('ward_all', 'might_all', 'crit_all', 'rally', 'resonance') then\n      if k in ('crit_all', 'rally') then\n        select count(*) + 1 into n_act from public.world_raid_members x where x.raid_id = p_raid and x.owner_id <> uid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id);\n        v := v || jsonb_build_object('pct', round((v ->> 'pct')::numeric * least(1, power((public.world_coop_rules() ->> 'all_full')::numeric / n_act, (public.world_coop_rules() ->> 'all_pow')::numeric)), 1));\n      end if;\n"),
+        ("jsonb_build_object('expose', jsonb_build_object('pct', v -> 'pct', 'n', v -> 'n', 'by', uid)",
+         "jsonb_build_object('expose', jsonb_build_object('pct', v -> 'pct', 'n', case when rd.kind = 'world' then ceil((v ->> 'n')::int * greatest(1, (select count(*) from public.world_raid_members x where x.raid_id = p_raid and x.out_until is null and x.last_action_at > now() - interval '120 seconds') / (public.world_coop_rules() ->> 'expose_per')::numeric))::int else (v ->> 'n')::int end, 'by', uid)"),
+        ("mb.contrib := mb.contrib + credit * case when rd.kind = 'world' then least(1, mb.level / 30.0) else 1 end;", "mb.contrib := mb.contrib + credit;"),
+    ],
+    'world_gw_resolve': [
+        ("    if av = 'coop' then continue; end if;\n    if m.act is not null then update public.world_gw_members set acts = acts + 1 where fight_id = p_fight and owner_id = m.owner_id; end if;\n",
+         "    if av = 'coop' then\n      if not coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = m.act ->> 's'), false) then continue; end if;\n      av := 'attack';\n    elsif m.act is not null then update public.world_gw_members set acts = acts + 1 where fight_id = p_fight and owner_id = m.owner_id; end if;\n"),
+    ],
+    'world_cb_attack': [
+        ("  if cr then mul := mul * 1.5; end if;", "  if cr then mul := mul * case when cn is not null then (public.world_coop_rules() ->> 'sure_crit')::numeric else 1.5 end; end if;"),
+    ],
+    'world_cb_boost_credits': [
+        ("ex := p_d - p_d / 1.5; out := out || jsonb_build_array(jsonb_build_array(cn, ex, 'boost'));", "ex := p_d - p_d / (public.world_coop_rules() ->> 'sure_crit')::numeric; out := out || jsonb_build_array(jsonb_build_array(cn, ex, 'boost'));"),
     ],
     'world_gw_hit': [
         ("  perform public.world_gw_credit(p_fight, p_uid, (r ->> 'd')::numeric, case when (r ->> 'taunt')::boolean then 'guard' else 'taken' end);\n",

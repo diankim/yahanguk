@@ -16,6 +16,17 @@ as $function$
   select '{"hp_mul": 350, "hp_min": 9000, "dmg_mul": 1.4, "pow_lo": 0.75, "pow_hi": 1.5, "charge_mul": 5, "stay_full": 0.5, "gil_lv": 20}'::jsonb
 $function$;
 
+create or replace function public.world_coop_rules()
+ returns jsonb
+ language sql
+ immutable
+ set search_path to 'pg_catalog'
+as $function$
+  select '{"sure_crit": 2, "all_full": 4, "all_pow": 0.5, "expose_per": 4}'::jsonb
+$function$;
+revoke all on function public.world_coop_rules() from public, anon, authenticated;
+grant execute on function public.world_coop_rules() to fn_owner_field, service_role;
+
 create or replace function public.world_contrib_shares(p_rows jsonb)
  returns jsonb
  language plpgsql

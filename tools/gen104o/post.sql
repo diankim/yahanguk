@@ -11,7 +11,22 @@ update public.world_patch_notes set body = body || $n$
 - 그림자의 공격도 맞서는 사람의 힘에 맞춰 거세집니다. 방어와 회복을 챙기지 않으면 물러나게 되고, 기운 모으기는 다 함께 몰아쳐야 아슬아슬하게 끊깁니다.
 - 결전·귀허의 주인·파티 토벌의 기록판에도 같은 셈법이 보입니다(보상은 그대로).
 - 토벌 결과 알림의 경험치가 실제로 받는 양으로 적힙니다.
+
+### 협동 기술 다듬기
+- 암영 검객 「그림자 찌르기」는 그 자리에서 바로 찌르는 공격이 됩니다. 반드시 치명타이고, 보통 치명타보다 훨씬 아픕니다.
+- 퇴마관 「약점 진언」으로 만든 치명타도 보통 치명타보다 크게 들어갑니다.
+- 「급소 드러내기」·「봉인 사슬」은 봉연의 그림자에서 사람이 많을수록 더 여러 번 이어집니다.
+- 월궁 사수 「약점 표시」·「추격 신호」는 함께 받는 사람이 많을수록 한 사람 몫이 조금씩 줄어듭니다. 넷까지는 그대로입니다.
 $n$
 where note_id = '1.0.0' and position('토벌 기여도 셈법을 바꿉니다' in body) = 0;
+
+update public.world_coop_skills set effect = effect || '{"strike": true}'::jsonb,
+  description = '그림자에서 급소를 찔러 곧바로 한 번 공격한다. 반드시 치명타이고 치명타 피해가 두 배.',
+  exp_text = '그림자에서 급소를 찔렀습니다' where skill_id = 'art_mend';
+update public.world_coop_skills set description = '동료 한 명의 다음 공격을 치명타로 만든다. 이 치명타는 피해가 두 배.' where skill_id = 'an_point';
+update public.world_coop_skills set description = '요괴의 급소를 드러내 다음 세 번 받는 피해 +15%(봉연의 그림자에서는 사람이 많을수록 더 여러 번).' where skill_id = 'art_supply';
+update public.world_coop_skills set description = '보스를 사슬로 묶는다. 다음 반격 한 번을 막고, 보스가 받는 피해가 여섯 번 동안 +15%(봉연의 그림자에서는 사람이 많을수록 더 여러 번).' where skill_id = 'seal_chain';
+update public.world_coop_skills set description = '참가자 모두의 다음 두 번 공격 치명타율 +15%(함께 받는 사람이 넷보다 많으면 한 사람 몫이 줄어든다).' where skill_id = 'sc_mark';
+update public.world_coop_skills set description = '참가자 모두의 다음 공격 피해 +25%(함께 받는 사람이 넷보다 많으면 한 사람 몫이 줄어든다).' where skill_id = 'sc_signal';
 
 update public.world_app_meta set value = '20261106080000' where key = 'db_version';
