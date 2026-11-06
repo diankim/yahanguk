@@ -52,7 +52,7 @@ export const GAMEDATA = {
   "contrib": {"deal":0.6,"heal":0.1,"hold":0.2,"boost":0.1,"press":1,"result":0.2,"eff_cap":2,"heal_need":0.25,"boost_need":0.1},
   "shadow": {"gil_lv":20,"hp_min":9000,"hp_mul":350,"pow_hi":1.5,"pow_lo":0.75,"dmg_mul":1.4,"stay_full":0.5,"charge_mul":5},
   "coopRules": {"all_pow":0.5,"all_full":4,"sure_crit":2,"expose_per":4},
-  "expXp": {"full":{"120":0.2,"240":0.3,"480":0.4},"near":0.85,"fight":0.42,"searches":30},
+  "expXp": {"full":{"120":0.2,"240":0.3,"480":0.4},"near":{"30":0.85,"60":0.85,"120":0.85,"240":0.8,"480":0.7},"fight":0.42,"searches":30},
   "jobSkills": {
     "medic": {"desc":"체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.","name":"응급 처방"},
     "scout": {"desc":"원거리 ×1.4로 쏘고 표식을 남겨 다음 세 번의 공격이 25%씩 강해집니다.","name":"급소 사격"},

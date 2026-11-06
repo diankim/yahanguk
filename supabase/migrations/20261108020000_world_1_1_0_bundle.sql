@@ -113,7 +113,7 @@ end $w$;
 
 create or replace function public.world_expedition_xp_rules()
 returns jsonb language sql immutable set search_path to '' as $f$
-  select jsonb_build_object('searches', 30, 'fight', 0.42, 'near', 0.85,
+  select jsonb_build_object('searches', 30, 'fight', 0.42, 'near', jsonb_build_object('30', 0.85, '60', 0.85, '120', 0.85, '240', 0.8, '480', 0.7),
     'full', jsonb_build_object('120', 0.2, '240', 0.3, '480', 0.4))
 $f$;
 revoke all on function public.world_expedition_xp_rules() from public, anon, authenticated;
@@ -129,7 +129,9 @@ grant execute on function public.world_expedition_full_bonus(int) to fn_owner_fi
 create or replace function public.world_expedition_base_xp(p_level int, p_minutes int)
 returns numeric language sql immutable set search_path to '' as $f$
   with r as (select public.world_expedition_xp_rules() j)
-  select (j ->> 'searches')::numeric * (j ->> 'near')::numeric * (8 + (j ->> 'fight')::numeric * (18 + 3 * greatest(1, p_level)))
+  select (j ->> 'searches')::numeric
+       * coalesce((select v::numeric from jsonb_each_text(j -> 'near') e(k, v) where k::int <= p_minutes order by k::int desc limit 1), 0.85)
+       * (8 + (j ->> 'fight')::numeric * (18 + 3 * greatest(1, p_level)))
        * p_minutes / 60.0 / (1 + public.world_expedition_full_bonus(p_minutes))
     from r
 $f$;
