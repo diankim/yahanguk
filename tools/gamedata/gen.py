@@ -49,6 +49,7 @@ def build(dsn):
     # 꼬마 동무: 등급별 종 수
     g = q(dsn, "select json_object_agg(grade, n) from (select grade, count(*) n from world_pet_species group by 1) x")
     d['pets'] = {'total': sum(g.values()), 'grades': {int(k): v for k, v in sorted(g.items())}}
+    d['kinds'] = q(dsn, "select json_object_agg(kind_key, kind_name order by sort) from world_monster_kinds")
     # 직업: 기본 능력치(world_job_base) · 혼자 도전 보정(world_solo_aid)
     d['jobBase'] = q(dsn, f"select json_object_agg(j, world_job_base(j)) from unnest({jarr(JOB_KEYS)}) j")
     d['soloAid'] = q(dsn, f"select json_object_agg(j, world_solo_aid(j)) from unnest({jarr(JOB_KEYS)}) j")

@@ -4,9 +4,12 @@ import { makeRoom, TW, TH, WALLH } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
 import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
 import { cardName } from './card.js';
+import { GAMEDATA } from '../gamedata.js';
+import { petLine } from '../housing/petlines.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = GRADES;
+const KINDS = GAMEDATA.kinds || {};
 const KIND_CAP = [0, 4, 3, 2, 1, 1];
 const kindCap = g => snap?.kind_caps?.[g - 1] ?? KIND_CAP[g];
 const GATE = [['open', '활짝 엶', '누구나 구경'], ['friends', '벗에게만', '친구만 구경'], ['closed', '닫음', '나만 구경']];
@@ -375,8 +378,8 @@ async function openPets() {
     ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
     <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
-    <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id); return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
-      <img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3 })}" alt=""><b>${esc(m?.nick || s.name)}</b><small>${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
+    <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id), kind = KINDS[PETS[s.id]?.kind] || ''; return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
+      <span class="pet-face" data-tip="${esc(`${s.name}${kind ? ` · ${kind}` : ''} — ${PETS[s.id]?.desc || ''}`)}"><img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3 })}" alt=""><b>${esc(m?.nick || s.name)}</b></span><small>${kind ? `<i class="pet-kind">${esc(kind)}</i>` : ''}${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
       ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button></span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
@@ -406,7 +409,7 @@ async function petAct(btn, kind) {
   if (kind === 'feed') return chooseFood(btn);
   return guard(btn, async () => {
     const r = await rpc('world_pet_act', { p_owner: snap.owner_id, p_act: kind });
-    afterPet(r, kind); return { content: kind === 'pat' ? '쓰다듬어 주었습니다.' : '놀아 주었습니다.' };
+    afterPet(r, kind); return { content: careLine(kind, r) };
   });
 }
 function chooseFood(btn) {
@@ -416,8 +419,12 @@ function chooseFood(btn) {
   openModal({ title: '먹이 주기', body: `<p class="muted small">하루 세 번까지 친밀도가 오릅니다. 좋아하는 별미를 주면 더 많이 오릅니다.</p><ul class="hs-list">${have.map(f => `<li><span>${esc(nameOf(f))} ×${inv[f]}${f === likes ? ' <b class="good-text">좋아함</b>' : ''}</span><button class="btn small primary" data-food="${f}">주기</button></li>`).join('')}</ul>` });
   $('#modal')?.addEventListener('click', e => {
     const b = e.target.closest('[data-food]'); if (!b) return;
-    guard(b, async () => { const r = await act('world_pet_act', { p_owner: snap.owner_id, p_act: 'feed', p_item: b.dataset.food }); closeModal(); afterPet(r, 'feed'); return { content: r.react === 'star' ? '아주 맛있게 먹었습니다!' : '냠냠 먹었습니다.' }; });
+    guard(b, async () => { const r = await act('world_pet_act', { p_owner: snap.owner_id, p_act: 'feed', p_item: b.dataset.food }); closeModal(); afterPet(r, 'feed'); return { content: careLine('feed', r) }; });
   });
+}
+function careLine(kind, r) {
+  const p = snap.pet || {};
+  return petLine(kind, { name: p.nick || p.name || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r?.affinity ?? p.affinity, liked: r?.react === 'star', guest: snap.role !== 'owner', gain: r?.gain ?? 1, count: r?.counts?.[kind] || 0 });
 }
 function afterPet(r, kind) {
   fx.push({ key: r.react || 'heart', until: Date.now() + 1600 });

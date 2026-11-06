@@ -2508,6 +2508,8 @@ b.sealed { color: var(--bad); }
 .pet-card b { font-size: calc(12.5px * var(--fz, 1)); }
 .pet-card small { font-size: calc(10.5px * var(--fz, 1)); }
 .pet-card.locked b { color: var(--muted); }
+.pet-card .pet-face { display: grid; justify-items: center; gap: 3px; cursor: help; }
+.pet-card .pet-kind { display: inline-block; margin-right: 4px; padding: 0 5px; border: var(--bw, 1px) solid var(--line); border-radius: 999px; font-style: normal; color: var(--muted); line-height: 1.5; }
 .pet-card.g2:not(.locked) b { color: var(--ok); } .pet-card.g3:not(.locked) b { color: #6fa3e0; } .pet-card.g4:not(.locked) b { color: #b58ae0; } .pet-card.g5:not(.locked) b { color: #e0874a; }
 .pet-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .pet-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }

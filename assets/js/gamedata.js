@@ -1,5 +1,6 @@
 export const GAMEDATA = {
-  "pets": {"total":47,"grades":{"1":15,"2":15,"3":8,"4":7,"5":2}},
+  "pets": {"total":58,"grades":{"1":21,"2":19,"3":9,"4":7,"5":2}},
+  "kinds": {"bird":"비금","shell":"갑각","ghost":"영귀","venom":"독충","wood":"목령","shadow":"은형","water":"수귀","swarm":"군충","ward":"금주","mirror":"경요","breaker":"파봉","sky":"천상","giant":"거괴"},
   "jobBase": {
     "artificer": {"agility":5,"strength":9,"vitality":7,"willpower":3,"perception":3,"spirit_affinity":3},
     "scout": {"agility":8,"strength":4,"vitality":4,"willpower":3,"perception":8,"spirit_affinity":3},
@@ -45,13 +46,7 @@ export const GAMEDATA = {
   "partyExp": {"flee_hp":30,"bonus_cap":3,"bonus_pct":10,"threat_pct":45,"overlap_min":10},
   "agile": {"agi_k":2,"eva_k":0.175,"flee_k":0.5,"tank_k":0.5,"eva_cap":40,"quiet_k":0.8,"sneak_k":0.65,"eva_base":3,"flee_cap":95,"flee_min":10,"hazard_k":0.75,"flee_base":50,"quiet_cap":50,"scout_eva":6,"sneak_cap":75,"sneak_min":10,"hazard_cap":90,"hazard_w_k":0.05,"scout_flee":15,"sneak_base":25,"hazard_base":30,"scout_sneak":10},
   "questXp": {"mid":6,"band":[[1,25],[6,40],[11,40],[16,75],[21,90],[26,75],[31,100]],"grace":3,"low_pct":20,"mid_pct":50},
-  "factionSpread": {
-    "steps": [[0,100],[1,75],[2,55],[3,40],[4,25]],
-    "home_pct": 150,
-    "boost_max": 2.5,
-    "person_cap": 60,
-    "region_cap": 40
-  },
+  "factionSpread": {"steps":[[0,100],[1,75],[2,55],[3,40],[4,25]],"home_pct":150,"boost_max":2.5,"person_cap":60,"region_cap":40},
   "busy": {"idle":{"name":"자율 활동","after":"자율 활동을 마치거나 그만둔 뒤에 하세요."},"self":"{name} 중에는 {what}을(를) 할 수 없습니다. {after}","what":"이 일","other":"그 동료는 지금 {name} 중입니다.","downed":{"name":"전투불능","after":"구조를 받거나 구조대를 부른 뒤에 하세요."},"travel":{"name":"이동","after":"도착한 뒤에 하세요."},"expedition":{"name":"원정","after":"원정에서 돌아온 뒤에 하세요."}},
   "gwiryeong": {"hold":1,"cap_div":2,"party_mul":2,"yohwa_mul":3,"cooldown_h":72,"window_days":3},
   "factionJoin": {
