@@ -125,5 +125,5 @@ for fn, edits in EDITS.items():
         src = src.replace(a, b)
     parts.append(f"{head}AS $function${src}$function$;\n")
 
-OUT.write_text('lock table public.world_characters in access exclusive mode;\n\n' + (HERE / 'pre.sql').read_text() + '\n' + '\n'.join(parts) + '\n' + (HERE / 'post.sql').read_text() + '\n' + (HERE / 'notice.sql').read_text())
+OUT.write_text(re.sub(r' {9,}', '        ', 'lock table public.world_characters in access exclusive mode;\n\n' + (HERE / 'pre.sql').read_text() + '\n' + '\n'.join(parts) + '\n' + (HERE / 'post.sql').read_text() + '\n' + (HERE / 'notice.sql').read_text()))
 print(OUT)

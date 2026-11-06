@@ -69,7 +69,7 @@ BEGIN
   SELECT * INTO a FROM public.world_active_encounters WHERE owner_id = uid FOR UPDATE;
   IF NOT FOUND OR a.defeated OR coalesce(a.fled, false) OR a.mlevel IS NULL THEN RAISE EXCEPTION '진행 중인 전투가 없습니다.'; END IF;
   IF NOT pf_on AND EXISTS (SELECT 1 FROM public.world_pfight_members pm JOIN public.world_pfights pf ON pf.fight_id = pm.fight_id
-             WHERE pm.owner_id = uid AND pm.out_reason IS NULL AND pf.status IN ('gather', 'fight')) THEN
+        WHERE pm.owner_id = uid AND pm.out_reason IS NULL AND pf.status IN ('gather', 'fight')) THEN
     RAISE EXCEPTION '파티 토벌 중입니다. 파티 토벌 화면에서 이번 라운드 행동을 고르세요.'; END IF;
   IF NOT pf_on AND a.last_action_at IS NOT NULL AND a.last_action_at > now() - interval '1 second' THEN
     RAISE EXCEPTION '숨을 고르는 중입니다. 잠시 후 다시 행동하세요.'; END IF;
@@ -158,7 +158,7 @@ BEGIN
       IF 'first_aid_c24b' = ANY (sk) THEN mn := least(100, mn + 6); lines := lines || jsonb_build_array('「안정 호흡」 정신 +6'); END IF;
       IF 'first_aid_c43b' = ANY (sk) THEN
         UPDATE public.world_character_statuses SET expires_at = now() WHERE status_id = (SELECT cs.status_id FROM public.world_character_statuses cs JOIN public.world_status_catalog sc USING (status_key)
-          WHERE cs.owner_id = uid AND cs.expires_at > now() AND sc.polarity = 'negative' AND cs.status_key NOT IN ('yohwa', 'yohwa_seal') ORDER BY cs.expires_at LIMIT 1);
+        WHERE cs.owner_id = uid AND cs.expires_at > now() AND sc.polarity = 'negative' AND cs.status_key NOT IN ('yohwa', 'yohwa_seal') ORDER BY cs.expires_at LIMIT 1);
         IF FOUND THEN lines := lines || jsonb_build_array('「해독술」 나쁜 상태 하나를 풀었다.'); END IF;
       END IF;
     END IF;
@@ -285,9 +285,9 @@ BEGIN
         extra := greatest(1, round(dmg * 0.6)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := extra;
         lines := lines || jsonb_build_array('「속사」 연사: ' || extra || ' 피해');
         IF 'ranged_c43b' = ANY (sk) AND random() < 0.5 AND a.current_hp > 0 AND (ammo_k IS NULL OR coalesce((inv ->> ammo_k)::int, 0) > 0) THEN
-          IF ammo_k IS NOT NULL THEN inv := public.world_inv_add(inv, ammo_k, -1); END IF;
-          a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
-          lines := lines || jsonb_build_array('「연환시」 세 번째 화살: ' || extra || ' 피해');
+        IF ammo_k IS NOT NULL THEN inv := public.world_inv_add(inv, ammo_k, -1); END IF;
+        a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
+        lines := lines || jsonb_build_array('「연환시」 세 번째 화살: ' || extra || ' 피해');
         END IF;
       END IF;
     END IF;
@@ -337,7 +337,7 @@ BEGIN
       END IF;
       IF 'medicine_c30b' = ANY (sk) AND random() < 0.35 THEN
         UPDATE public.world_character_statuses SET expires_at = now() WHERE status_id = (SELECT cs.status_id FROM public.world_character_statuses cs JOIN public.world_status_catalog sc USING (status_key)
-          WHERE cs.owner_id = uid AND cs.expires_at > now() AND sc.polarity = 'negative' AND cs.status_key NOT IN ('yohwa', 'yohwa_seal') ORDER BY cs.expires_at LIMIT 1);
+        WHERE cs.owner_id = uid AND cs.expires_at > now() AND sc.polarity = 'negative' AND cs.status_key NOT IN ('yohwa', 'yohwa_seal') ORDER BY cs.expires_at LIMIT 1);
         IF FOUND THEN lines := lines || jsonb_build_array('「해독 처방」 나쁜 상태 하나를 풀었다.'); END IF;
       END IF;
     END IF;
@@ -412,24 +412,24 @@ BEGIN
         gburst := v_intent LIKE 'g!:%';
         IF g.gimmick_key IS NULL THEN hit := a.atk * (0.9 + random() * 0.2);
         ELSIF g.gtype = 'charge' AND NOT gburst THEN
-          hit := 0;
-          IF dmg + ex_total + coalesce(nullif(current_setting('yh.pf_dmg', true), '')::int, 0) >= a.max_hp * brk THEN lines := lines || jsonb_build_array(m.monster_name || '의 기세가 흐트러져 「' || g.name || '」이(가) 끊겼다.');
-          ELSE next_intent := 'g!:' || g.gimmick_key; lines := lines || jsonb_build_array(m.monster_name || ': ' || g.tell); END IF;
+        hit := 0;
+        IF dmg + ex_total + coalesce(nullif(current_setting('yh.pf_dmg', true), '')::int, 0) >= a.max_hp * brk THEN lines := lines || jsonb_build_array(m.monster_name || '의 기세가 흐트러져 「' || g.name || '」이(가) 끊겼다.');
+        ELSE next_intent := 'g!:' || g.gimmick_key; lines := lines || jsonb_build_array(m.monster_name || ': ' || g.tell); END IF;
         ELSE
-          hit := a.atk * (0.9 + random() * 0.2) * g.power;
-          IF g.gtype = 'heal' THEN
-            mheal := round(a.max_hp * g.power2 * CASE WHEN act = 'skill' THEN 0.5 ELSE 1 END); a.current_hp := least(a.max_hp, a.current_hp + mheal);
-            lines := lines || jsonb_build_array(m.monster_name || '의 「' || g.name || '」: 체력 ' || mheal || ' 회복' || CASE WHEN act = 'skill' THEN ' (기술로 절반을 끊음)' ELSE '' END);
-          ELSIF g.gtype = 'summon' THEN
-            a.current_hp := least(a.max_hp, a.current_hp + round(a.max_hp * g.power2)); v_fx := v_fx || jsonb_build_object('swarm', 1);
-            lines := lines || jsonb_build_array(m.monster_name || '의 「' || g.name || '」: 무리가 몰려든다.');
-          ELSIF g.gtype = 'shield' THEN
-            v_fx := v_fx || jsonb_build_object('barrier', coalesce((v_fx ->> 'barrier')::int, 0) + round(a.max_hp * g.power2));
-            lines := lines || jsonb_build_array(m.monster_name || '의 「' || g.name || '」: 결계가 둘러졌다.');
-          ELSIF g.gtype = 'evade' THEN v_fx := v_fx || jsonb_build_object('evade', 1);
-          ELSIF g.gtype = 'thorns' THEN v_fx := v_fx || jsonb_build_object('thorns', 1);
-          ELSIF g.gtype = 'mirror' THEN v_fx := v_fx || jsonb_build_object('mirror', 1);
-          END IF;
+        hit := a.atk * (0.9 + random() * 0.2) * g.power;
+        IF g.gtype = 'heal' THEN
+        mheal := round(a.max_hp * g.power2 * CASE WHEN act = 'skill' THEN 0.5 ELSE 1 END); a.current_hp := least(a.max_hp, a.current_hp + mheal);
+        lines := lines || jsonb_build_array(m.monster_name || '의 「' || g.name || '」: 체력 ' || mheal || ' 회복' || CASE WHEN act = 'skill' THEN ' (기술로 절반을 끊음)' ELSE '' END);
+        ELSIF g.gtype = 'summon' THEN
+        a.current_hp := least(a.max_hp, a.current_hp + round(a.max_hp * g.power2)); v_fx := v_fx || jsonb_build_object('swarm', 1);
+        lines := lines || jsonb_build_array(m.monster_name || '의 「' || g.name || '」: 무리가 몰려든다.');
+        ELSIF g.gtype = 'shield' THEN
+        v_fx := v_fx || jsonb_build_object('barrier', coalesce((v_fx ->> 'barrier')::int, 0) + round(a.max_hp * g.power2));
+        lines := lines || jsonb_build_array(m.monster_name || '의 「' || g.name || '」: 결계가 둘러졌다.');
+        ELSIF g.gtype = 'evade' THEN v_fx := v_fx || jsonb_build_object('evade', 1);
+        ELSIF g.gtype = 'thorns' THEN v_fx := v_fx || jsonb_build_object('thorns', 1);
+        ELSIF g.gtype = 'mirror' THEN v_fx := v_fx || jsonb_build_object('mirror', 1);
+        END IF;
         END IF;
       END IF;
       v_fx := v_fx - 'airborne';
@@ -461,63 +461,63 @@ BEGIN
         IF hp < 30 AND 'melee_g30' = ANY (sk) THEN mdmg := round(mdmg * 0.75); END IF;
         eva_now := eva + CASE WHEN 'analysis_m50' = ANY (sk) AND coalesce((v_pfx ->> 'focus')::int, 0) > 0 THEN 15 ELSE 0 END;
         IF guarding AND 'guarding_c24a' = ANY (sk) AND coalesce((v_pfx ->> 'wall_cd')::int, 0) <= turn THEN
-          mdmg := 0; v_pfx := v_pfx || jsonb_build_object('wall_cd', turn + 3); lines := lines || jsonb_build_array('「철벽」 공격을 완전히 막아 냈다.');
+        mdmg := 0; v_pfx := v_pfx || jsonb_build_object('wall_cd', turn + 3); lines := lines || jsonb_build_array('「철벽」 공격을 완전히 막아 냈다.');
         ELSIF NOT guarding AND random() * 100 < eva_now * (CASE WHEN v_intent IN ('heavy', 'pounce', 'unleash') OR gburst THEN 0.6 ELSE 1 END) THEN
-          mdmg := 0; lines := lines || jsonb_build_array('몸을 틀어 공격을 피했다.');
-          IF 'melee_c30a' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
+        mdmg := 0; lines := lines || jsonb_build_array('몸을 틀어 공격을 피했다.');
+        IF 'melee_c30a' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
         END IF;
         mdmg := greatest(0, mdmg);
         -- 호령은 실제로 맞은 첫 공격에만(피하거나 철벽으로 막으면 다음 공격으로 넘어감)
         IF coalesce((v_pfx ->> 'cowed_now')::boolean, false) THEN
-          IF mdmg > 0 THEN lines := lines || jsonb_build_array('「호령」 기세에 눌린 첫 공격이 무뎌졌다.'); ELSE v_pfx := v_pfx - 'cowed'; END IF;
-          v_pfx := v_pfx - 'cowed_now';
+        IF mdmg > 0 THEN lines := lines || jsonb_build_array('「호령」 기세에 눌린 첫 공격이 무뎌졌다.'); ELSE v_pfx := v_pfx - 'cowed'; END IF;
+        v_pfx := v_pfx - 'cowed_now';
         END IF;
         IF guarding AND 'melee_c30a' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('flow', true); END IF;
         IF guarding AND 'guarding_c43b' = ANY (sk) AND raw_m > mdmg THEN v_pfx := v_pfx || jsonb_build_object('surge', least(40, raw_m - mdmg)); END IF;
         m_pre := mdmg;
         -- 강기 보호막이 먼저 받는다
         IF mdmg > 0 AND coalesce((v_pfx ->> 'pshield')::int, 0) > 0 THEN
-          absorb := least(mdmg, (v_pfx ->> 'pshield')::int); mdmg := mdmg - absorb;
-          v_pfx := v_pfx || jsonb_build_object('pshield', (v_pfx ->> 'pshield')::int - absorb);
-          lines := lines || jsonb_build_array('「강기」가 ' || absorb || ' 피해를 막았다.');
+        absorb := least(mdmg, (v_pfx ->> 'pshield')::int); mdmg := mdmg - absorb;
+        v_pfx := v_pfx || jsonb_build_object('pshield', (v_pfx ->> 'pshield')::int - absorb);
+        lines := lines || jsonb_build_array('「강기」가 ' || absorb || ' 피해를 막았다.');
         END IF;
         hp := greatest(0, hp - mdmg);
         IF m_pre > 0 THEN
-          lines := lines || jsonb_build_array(m.monster_name || CASE v_intent WHEN 'heavy' THEN '의 강타' WHEN 'dive' THEN '의 급강하' WHEN 'pounce' THEN '의 기습'
-            WHEN 'unleash' THEN '의 폭발' WHEN 'venom' THEN '의 독 분사' WHEN 'wail' THEN '의 곡성' WHEN 'tide' THEN '의 물살' WHEN 'breach' THEN '의 봉인 깨기' ELSE CASE WHEN g.gimmick_key IS NOT NULL THEN '의 「' || g.name || '」' ELSE '의 공격' END END
-            || ': ' || mdmg || ' 피해' || CASE WHEN guarding THEN ' (막음)' ELSE '' END);
-          wear := public.world_durability_wear(uid, 'hat', 1); IF coalesce((wear ->> 'broke')::boolean, false) THEN lines := lines || jsonb_build_array((wear ->> 'name') || '이(가) 부서졌다!'); END IF; wear := public.world_durability_wear(uid, 'armor', 1);
-          IF coalesce((wear ->> 'broke')::boolean, false) THEN lines := lines || jsonb_build_array((wear ->> 'name') || '이(가) 찢어졌다! 수리할 때까지 막아 주지 못한다.');
-          ELSIF coalesce((wear ->> 'worn')::boolean, false) THEN lines := lines || jsonb_build_array((wear ->> 'name') || '이(가) 해어졌다. 수리가 필요하다.'); END IF;
-          IF guarding AND (v_intent IN ('heavy', 'dive', 'pounce', 'unleash') OR gburst OR g.gtype IS NOT DISTINCT FROM 'big') AND style = 'melee' THEN
-            dmg := round(m_pre * 1.2 + c.strength * 0.5); a.current_hp := greatest(0, a.current_hp - dmg);
-            lines := lines || jsonb_build_array('받아치기: ' || dmg || ' 피해');
-          END IF;
-          IF guarding AND 'guarding_c24b' = ANY (sk) THEN
-            extra := greatest(1, round(m_pre * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); lines := lines || jsonb_build_array('「반격 태세」 ' || extra || ' 피해를 되돌렸다.');
-          END IF;
-          IF guarding AND 'melee_g13' = ANY (sk) AND a.current_hp > 0 THEN
-            extra := greatest(1, round(raw_m * 0.4 + c.strength * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); lines := lines || jsonb_build_array('「반격 자세」 ' || extra || ' 피해를 되받아쳤다.');
-          END IF;
-          IF guarding AND 'melee_g24' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('brace', true); END IF;
-          IF guarding AND 'combo_guarding_mining' = ANY (sk) THEN
-            extra := greatest(1, round(m_pre * 0.3)); hp := least(100, hp + extra); lines := lines || jsonb_build_array('「바위 몸」 체력 +' || extra);
-          END IF;
-          IF v_intent = 'wail' THEN mn := greatest(0, mn - greatest(0, round(6 * (1 + public.world_status_effect_total('mental_loss_pct') / 100.0))::int)); IF random() < 0.35 THEN statuses := array_append(statuses, 'shaken'); END IF; END IF;
-          IF v_intent = 'venom' AND random() < 0.45 THEN statuses := array_append(statuses, 'poisoned'); END IF;
-          IF v_intent = 'tide' AND random() < 0.3 THEN statuses := array_append(statuses, 'cold'); END IF;
-          IF v_intent = 'breach' THEN PERFORM public.world_yohwa_overflow(uid, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int) - 100); er := least(100, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;
-          IF v_intent IN ('heavy', 'pounce') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, 'bleeding'); END IF;
-          IF g.gimmick_key IS NOT NULL THEN
-            IF g.status IS NOT NULL AND random() < g.chance * (CASE WHEN guarding THEN 0.5 ELSE 1 END) THEN statuses := array_append(statuses, g.status); END IF;
-            IF g.mental > 0 THEN mn := greatest(0, mn - greatest(0, round(g.mental * (CASE WHEN guarding THEN 0.5 ELSE 1 END) * (1 + public.world_status_effect_total('mental_loss_pct') / 100.0))::int)); END IF;
-            IF g.erosion > 0 THEN PERFORM public.world_yohwa_overflow(uid, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int) - 100); er := least(100, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;
-            IF g.gtype = 'drain' THEN mheal := round(mdmg * g.power2); a.current_hp := least(a.max_hp, a.current_hp + mheal); lines := lines || jsonb_build_array(m.monster_name || '이(가) 기운을 빨아 체력 ' || mheal || ' 회복'); END IF;
-            IF g.gtype = 'grapple' THEN
-              IF 'guarding_x30' = ANY (sk) THEN lines := lines || jsonb_build_array('「부동」 붙잡히지 않았다.');
-              ELSE v_pfx := v_pfx || jsonb_build_object('bound', 1); lines := lines || jsonb_build_array('붙잡혔다. 다음 턴에는 달아날 수 없다.'); END IF;
-            END IF;
-          END IF;
+        lines := lines || jsonb_build_array(m.monster_name || CASE v_intent WHEN 'heavy' THEN '의 강타' WHEN 'dive' THEN '의 급강하' WHEN 'pounce' THEN '의 기습'
+        WHEN 'unleash' THEN '의 폭발' WHEN 'venom' THEN '의 독 분사' WHEN 'wail' THEN '의 곡성' WHEN 'tide' THEN '의 물살' WHEN 'breach' THEN '의 봉인 깨기' ELSE CASE WHEN g.gimmick_key IS NOT NULL THEN '의 「' || g.name || '」' ELSE '의 공격' END END
+        || ': ' || mdmg || ' 피해' || CASE WHEN guarding THEN ' (막음)' ELSE '' END);
+        wear := public.world_durability_wear(uid, 'hat', 1); IF coalesce((wear ->> 'broke')::boolean, false) THEN lines := lines || jsonb_build_array((wear ->> 'name') || '이(가) 부서졌다!'); END IF; wear := public.world_durability_wear(uid, 'armor', 1);
+        IF coalesce((wear ->> 'broke')::boolean, false) THEN lines := lines || jsonb_build_array((wear ->> 'name') || '이(가) 찢어졌다! 수리할 때까지 막아 주지 못한다.');
+        ELSIF coalesce((wear ->> 'worn')::boolean, false) THEN lines := lines || jsonb_build_array((wear ->> 'name') || '이(가) 해어졌다. 수리가 필요하다.'); END IF;
+        IF guarding AND (v_intent IN ('heavy', 'dive', 'pounce', 'unleash') OR gburst OR g.gtype IS NOT DISTINCT FROM 'big') AND style = 'melee' THEN
+        dmg := round(m_pre * 1.2 + c.strength * 0.5); a.current_hp := greatest(0, a.current_hp - dmg);
+        lines := lines || jsonb_build_array('받아치기: ' || dmg || ' 피해');
+        END IF;
+        IF guarding AND 'guarding_c24b' = ANY (sk) THEN
+        extra := greatest(1, round(m_pre * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); lines := lines || jsonb_build_array('「반격 태세」 ' || extra || ' 피해를 되돌렸다.');
+        END IF;
+        IF guarding AND 'melee_g13' = ANY (sk) AND a.current_hp > 0 THEN
+        extra := greatest(1, round(raw_m * 0.4 + c.strength * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); lines := lines || jsonb_build_array('「반격 자세」 ' || extra || ' 피해를 되받아쳤다.');
+        END IF;
+        IF guarding AND 'melee_g24' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('brace', true); END IF;
+        IF guarding AND 'combo_guarding_mining' = ANY (sk) THEN
+        extra := greatest(1, round(m_pre * 0.3)); hp := least(100, hp + extra); lines := lines || jsonb_build_array('「바위 몸」 체력 +' || extra);
+        END IF;
+        IF v_intent = 'wail' THEN mn := greatest(0, mn - greatest(0, round(6 * (1 + public.world_status_effect_total('mental_loss_pct') / 100.0))::int)); IF random() < 0.35 THEN statuses := array_append(statuses, 'shaken'); END IF; END IF;
+        IF v_intent = 'venom' AND random() < 0.45 THEN statuses := array_append(statuses, 'poisoned'); END IF;
+        IF v_intent = 'tide' AND random() < 0.3 THEN statuses := array_append(statuses, 'cold'); END IF;
+        IF v_intent = 'breach' THEN PERFORM public.world_yohwa_overflow(uid, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int) - 100); er := least(100, er + greatest(1, round(4 * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;
+        IF v_intent IN ('heavy', 'pounce') AND NOT guarding AND random() < 0.2 THEN statuses := array_append(statuses, 'bleeding'); END IF;
+        IF g.gimmick_key IS NOT NULL THEN
+        IF g.status IS NOT NULL AND random() < g.chance * (CASE WHEN guarding THEN 0.5 ELSE 1 END) THEN statuses := array_append(statuses, g.status); END IF;
+        IF g.mental > 0 THEN mn := greatest(0, mn - greatest(0, round(g.mental * (CASE WHEN guarding THEN 0.5 ELSE 1 END) * (1 + public.world_status_effect_total('mental_loss_pct') / 100.0))::int)); END IF;
+        IF g.erosion > 0 THEN PERFORM public.world_yohwa_overflow(uid, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int) - 100); er := least(100, er + greatest(1, round(g.erosion * (1 + public.world_status_effect_total('erosion_pct') / 100.0))::int)); END IF;
+        IF g.gtype = 'drain' THEN mheal := round(mdmg * g.power2); a.current_hp := least(a.max_hp, a.current_hp + mheal); lines := lines || jsonb_build_array(m.monster_name || '이(가) 기운을 빨아 체력 ' || mheal || ' 회복'); END IF;
+        IF g.gtype = 'grapple' THEN
+        IF 'guarding_x30' = ANY (sk) THEN lines := lines || jsonb_build_array('「부동」 붙잡히지 않았다.');
+        ELSE v_pfx := v_pfx || jsonb_build_object('bound', 1); lines := lines || jsonb_build_array('붙잡혔다. 다음 턴에는 달아날 수 없다.'); END IF;
+        END IF;
+        END IF;
         END IF;
       END IF;
       -- 만장성벽: 방어한 턴에는 상태이상이 붙지 않는다
@@ -643,7 +643,7 @@ BEGIN
   IF NOT FOUND THEN RETURN new; END IF;
   r := public.world_region_at(c.location);
   away := EXISTS (SELECT 1 FROM public.world_expeditions e WHERE e.owner_id = new.actor_id AND e.status = 'active');
-                  idling := EXISTS (SELECT 1 FROM public.world_idle_activities i WHERE i.owner_id = new.actor_id AND i.status = 'active');
+        idling := EXISTS (SELECT 1 FROM public.world_idle_activities i WHERE i.owner_id = new.actor_id AND i.status = 'active');
   IF k = 'travel' AND p ? 'passenger_id' THEN
     passenger := nullif(p ->> 'passenger_id', '')::uuid;
     IF EXISTS (SELECT 1 FROM public.world_expeditions e WHERE e.owner_id = passenger AND e.status = 'active') THEN
@@ -651,16 +651,16 @@ BEGIN
     END IF;
   END IF;
   IF k = 'travel' AND p ? 'passenger_id'
-                         AND EXISTS (SELECT 1 FROM public.world_idle_activities i WHERE i.owner_id = nullif(p ->> 'passenger_id', '')::uuid AND i.status = 'active') THEN
-                             RAISE EXCEPTION '동승자가 자율 활동 중이라 함께 출발할 수 없습니다.';
-                               END IF;
-                                 IF idling AND NOT (
-                                        k IN ('progression', 'mission', 'supply', 'case_combine', 'case_resolved', 'story', 'loot', 'use_item', 'equip', 'unequip')
-                                            OR (k = 'trade' AND NOT (p ? 'unit_price') AND NOT (p ? 'gil'))
-                                                OR (k = 'travel' AND p ? 'travel_history_id')) THEN
-                                                    RAISE EXCEPTION '자율 활동 중에는 할 수 없습니다. 활동이 끝나 보상을 받은 뒤 다시 시도하세요.';
-                                                      END IF;
-                                                        IF away AND NOT (
+        AND EXISTS (SELECT 1 FROM public.world_idle_activities i WHERE i.owner_id = nullif(p ->> 'passenger_id', '')::uuid AND i.status = 'active') THEN
+        RAISE EXCEPTION '동승자가 자율 활동 중이라 함께 출발할 수 없습니다.';
+        END IF;
+        IF idling AND NOT (
+        k IN ('progression', 'mission', 'supply', 'case_combine', 'case_resolved', 'story', 'loot', 'use_item', 'equip', 'unequip')
+        OR (k = 'trade' AND NOT (p ? 'unit_price') AND NOT (p ? 'gil'))
+        OR (k = 'travel' AND p ? 'travel_history_id')) THEN
+        RAISE EXCEPTION '자율 활동 중에는 할 수 없습니다. 활동이 끝나 보상을 받은 뒤 다시 시도하세요.';
+        END IF;
+        IF away AND NOT (
        k IN ('progression', 'mission', 'supply', 'case_combine', 'case_resolved', 'loot', 'downed')
     OR k LIKE 'expedition%'
     OR (k = 'trade' AND NOT (p ? 'unit_price') AND NOT (p ? 'gil'))
@@ -672,9 +672,9 @@ BEGIN
     RAISE EXCEPTION '원정 짐 보따리를 먼저 정리하세요. 챙기거나 버린 뒤 다시 할 수 있습니다.';
   END IF;
   IF k <> 'progression' AND EXISTS (SELECT 1 FROM public.world_character_statuses ys WHERE ys.owner_id = new.actor_id AND ys.status_key = 'yohwa_seal' AND ys.expires_at > now()) THEN
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              RAISE EXCEPTION '봉인 해독 중에는 채팅 말고는 할 수 없습니다. 해독이 끝나면 다시 움직일 수 있습니다.';
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                END IF;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  IF k = 'travel' AND NOT (p ? 'travel_history_id') THEN
+        RAISE EXCEPTION '봉인 해독 중에는 채팅 말고는 할 수 없습니다. 해독이 끝나면 다시 움직일 수 있습니다.';
+        END IF;
+        IF k = 'travel' AND NOT (p ? 'travel_history_id') THEN
     PERFORM 1 FROM public.world_travel_history h WHERE h.owner_id = new.actor_id AND h.cancelled_at > now() - interval '3 minutes';
     IF FOUND THEN
       cd_s := ceil(extract(epoch FROM (SELECT max(h.cancelled_at) FROM public.world_travel_history h WHERE h.owner_id = new.actor_id) + interval '3 minutes' - now()))::text;
@@ -744,27 +744,27 @@ begin
       else
         if auto then lines := lines || jsonb_build_array(mm.name || ' · 차례를 비워 방어했다.'); end if;
         begin
-          r := public.world_battle_action(act, mm.item);
+        r := public.world_battle_action(act, mm.item);
         exception when others then
-          lines := lines || jsonb_build_array(mm.name || ' · ' || sqlerrm || ' — 대신 방어했다.');
-          begin r := public.world_battle_action('guard', null);
-          exception when others then r := null; lines := lines || jsonb_build_array(mm.name || ' · 움직이지 못했다(' || sqlerrm || ').'); end;
+        lines := lines || jsonb_build_array(mm.name || ' · ' || sqlerrm || ' — 대신 방어했다.');
+        begin r := public.world_battle_action('guard', null);
+        exception when others then r := null; lines := lines || jsonb_build_array(mm.name || ' · 움직이지 못했다(' || sqlerrm || ').'); end;
         end;
         select * into e from public.world_active_encounters where owner_id = mm.owner_id;
         if r is not null then
-          for ln in select jsonb_array_elements_text(coalesce(r -> 'lines', '[]'::jsonb)) loop lines := lines || jsonb_build_array(mm.name || ' · ' || ln); end loop;
-          f.hp := e.current_hp; f.fx := coalesce(e.fx, '{}'::jsonb);
-          if hits then f.mon_done := true; if r ->> 'ended' is null then f.intent := e.intent; end if; end if;
-          if before > f.hp then f.round_dmg := f.round_dmg + (before - f.hp); end if;
-          update public.world_pfight_members pm set weak = r ->> 'weak', dmg = pm.dmg + greatest(0, before - f.hp),
-              taken = pm.taken + greatest(0, coalesce(nullif(current_setting('yh.pf_hb', true), '')::int, c.health) - c.health),
-              heal = pm.heal + greatest(0, c.health - coalesce(nullif(current_setting('yh.pf_hb', true), '')::int, c.health))
-            from public.world_characters c where c.owner_id = mm.owner_id and pm.fight_id = p_fight and pm.owner_id = mm.owner_id;
-          if r ->> 'ended' = 'victory' then won := true;
-            update public.world_pfight_members set out_reason = 'won' where fight_id = p_fight and owner_id = mm.owner_id;
-          elsif r ->> 'ended' = 'defeat' then update public.world_pfight_members set out_reason = 'down' where fight_id = p_fight and owner_id = mm.owner_id;
-          elsif r ->> 'ended' = 'fled' then update public.world_pfight_members set out_reason = 'fled' where fight_id = p_fight and owner_id = mm.owner_id;
-          end if;
+        for ln in select jsonb_array_elements_text(coalesce(r -> 'lines', '[]'::jsonb)) loop lines := lines || jsonb_build_array(mm.name || ' · ' || ln); end loop;
+        f.hp := e.current_hp; f.fx := coalesce(e.fx, '{}'::jsonb);
+        if hits then f.mon_done := true; if r ->> 'ended' is null then f.intent := e.intent; end if; end if;
+        if before > f.hp then f.round_dmg := f.round_dmg + (before - f.hp); end if;
+        update public.world_pfight_members pm set weak = r ->> 'weak', dmg = pm.dmg + greatest(0, before - f.hp),
+        taken = pm.taken + greatest(0, coalesce(nullif(current_setting('yh.pf_hb', true), '')::int, c.health) - c.health),
+        heal = pm.heal + greatest(0, c.health - coalesce(nullif(current_setting('yh.pf_hb', true), '')::int, c.health))
+        from public.world_characters c where c.owner_id = mm.owner_id and pm.fight_id = p_fight and pm.owner_id = mm.owner_id;
+        if r ->> 'ended' = 'victory' then won := true;
+        update public.world_pfight_members set out_reason = 'won' where fight_id = p_fight and owner_id = mm.owner_id;
+        elsif r ->> 'ended' = 'defeat' then update public.world_pfight_members set out_reason = 'down' where fight_id = p_fight and owner_id = mm.owner_id;
+        elsif r ->> 'ended' = 'fled' then update public.world_pfight_members set out_reason = 'fled' where fight_id = p_fight and owner_id = mm.owner_id;
+        end if;
         end if;
       end if;
       update public.world_pfight_members set action = null, item = null where fight_id = p_fight and owner_id = mm.owner_id;
@@ -777,9 +777,9 @@ begin
         perform set_config('yh.pf_skip', '1', true);
         update public.world_active_encounters set current_hp = 0, last_action_at = null where owner_id = mm.owner_id and not defeated and not coalesce(fled, false);
         begin
-          r := public.world_battle_action('guard', null);
-          for ln in select jsonb_array_elements_text(coalesce(r -> 'lines', '[]'::jsonb)) loop
-            if ln not like '자세를 낮추고%' then lines := lines || jsonb_build_array(mm.name || ' · ' || ln); end if; end loop;
+        r := public.world_battle_action('guard', null);
+        for ln in select jsonb_array_elements_text(coalesce(r -> 'lines', '[]'::jsonb)) loop
+        if ln not like '자세를 낮추고%' then lines := lines || jsonb_build_array(mm.name || ' · ' || ln); end if; end loop;
         exception when others then lines := lines || jsonb_build_array(mm.name || ' · 보상을 받지 못했다(' || sqlerrm || ').'); end;
         update public.world_pfight_members set out_reason = 'won' where fight_id = p_fight and owner_id = mm.owner_id;
       end loop;
@@ -855,7 +855,7 @@ begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   select * into c from public.world_characters where owner_id = uid;
   if exists (select 1 from public.world_raids where status in ('announced', 'signup', 'fight')
-              and ((status = 'announced' and spawn_at <= now()) or (status = 'signup' and signup_until <= now()) or (status = 'fight' and ends_at <= now()))) then
+        and ((status = 'announced' and spawn_at <= now()) or (status = 'signup' and signup_until <= now()) or (status = 'fight' and ends_at <= now()))) then
     perform public.world_raid_tick();
   end if;
   if rid is null then
@@ -912,7 +912,7 @@ begin
       'solo', case when rd.kind = 'final' and me.owner_id is not null and (select count(*) from public.world_raid_members x where x.raid_id = rd.raid_id) = 1 then public.world_solo_aid(me.job_key) end,
       'fx', me.fx, 'coop', coop, 'job', c.job_key, 'combat_rank', coalesce(c.combat_rank, 1)),
     'locks', (select coalesce(jsonb_agg(jsonb_build_object('region_id', l.region_id, 'region', x.region_name, 'until', l.until)), '[]'::jsonb)
-                from public.world_raid_locks l join public.world_map_regions x on x.region_id = l.region_id where l.until > now()));
+        from public.world_raid_locks l join public.world_map_regions x on x.region_id = l.region_id where l.until > now()));
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.world_raid_action(p_raid uuid, p_action text, p_skill text DEFAULT NULL::text, p_target uuid DEFAULT NULL::uuid, p_item text DEFAULT NULL::text)
@@ -1029,17 +1029,17 @@ begin
       end if;
     elsif sk.target = 'ally' then
       update public.world_raid_members set fx = case
-          when k in ('ward', 'might', 'evade', 'gward', 'crit_next') then fx || public.world_cb_buff(k, v, uid)
-          when k = 'shield' then fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (v ->> 'amt')::int, 'shield_by', uid)
-          when k = 'cleanse_heal' then fx - 'bound'
-          when k = 'cover' then fx || jsonb_build_object('cover', jsonb_build_object('by', uid, 'until', now() + make_interval(secs => (v ->> 'secs')::int)))
-          else fx end,
+        when k in ('ward', 'might', 'evade', 'gward', 'crit_next') then fx || public.world_cb_buff(k, v, uid)
+        when k = 'shield' then fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (v ->> 'amt')::int, 'shield_by', uid)
+        when k = 'cleanse_heal' then fx - 'bound'
+        when k = 'cover' then fx || jsonb_build_object('cover', jsonb_build_object('by', uid, 'until', now() + make_interval(secs => (v ->> 'secs')::int)))
+        else fx end,
         out_until = case when k = 'revive' then least(out_until, now()) else out_until end
        where raid_id = p_raid and owner_id = tgt;
     end if;
     if k in ('heal', 'cleanse_heal', 'revive', 'sp', 'gward') then
       amt := case k when 'revive' then (v ->> 'hp')::int when 'sp' then 0 when 'gward' then 0
-             else round((v ->> 'amt')::int * (1 + coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) / 100.0)) end;
+        else round((v ->> 'amt')::int * (1 + coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) / 100.0)) end;
       -- 결전: 회복 기술은 절반(회복품을 다섯으로 묶어 회복 기술이 승패를 혼자 정하던 것 — 회복 직업 없는 조가 해볼 만하게)
       if rd.kind = 'final' and k in ('heal', 'cleanse_heal') then amt := ceil(amt * 0.5); end if;
       if k = 'revive' then
@@ -1054,7 +1054,7 @@ begin
         update public.world_characters set mental = least(100, mental + coalesce((v ->> 'mind')::int, 0)), updated_at = now() where owner_id = tgt;
       else
         if tgt = uid then
-          select health into h0 from public.world_characters where owner_id = uid;
+        select health into h0 from public.world_characters where owner_id = uid;
         end if;
         select health into h1 from public.world_characters where owner_id = tgt;
         update public.world_characters set health = least(100, health + amt), updated_at = now() where owner_id = tgt and health > 0;
@@ -1113,7 +1113,7 @@ begin
   if newp > rd.phase then
     rd.phase := newp;
     perform public.world_raid_say(p_raid, 'phase', case newp when 2 then rd.boss_name || '의 사슬이 풀리며 움직임이 사나워집니다(2단계).'
-                                                    else rd.boss_name || '이(가) 봉연의 기운을 끌어모으기 시작합니다(3단계).' end);
+        else rd.boss_name || '이(가) 봉연의 기운을 끌어모으기 시작합니다(3단계).' end);
   end if;
   ph_mul := case rd.phase when 1 then 1 when 2 then 1.15 else 1.3 end * case when rd.kind = 'final' then 1.1 else 1 end;
   select count(*) into n_act from public.world_raid_members x join public.world_characters ch on ch.owner_id = x.owner_id
@@ -1187,9 +1187,9 @@ begin
     perform public.world_raid_say(p_raid, 'boss', '모두 물러난 사이 ' || rd.boss_name || '이(가) 기운을 되찾습니다(체력 +1.5%).');
   end if;
   rd.intent := case when rfx ? 'charge' then '기운을 모으는 중 — ' || case when rd.kind = 'world' then greatest(0, ceil(coalesce((rfx -> 'charge' ->> 'until')::numeric, extract(epoch from now()) + (rfx -> 'charge' ->> 'left')::int * 2) - extract(epoch from now())))::int || '초' else '남은 ' || (rfx -> 'charge' ->> 'left') || '번' end || ' 안에 ' || greatest(0, (rfx -> 'charge' ->> 'need')::int - (rfx -> 'charge' ->> 'got')::int) || ' 더 몰아치면 끊긴다'
-                    when (bt + 1) % 7 = 0 then '크게 휘두를 낌새가 보인다 — 방어하라'
-                    when rd.phase >= 2 and (bt + 1) % 5 = 0 then '사슬이 꿈틀거린다'
-                    else null end;
+        when (bt + 1) % 7 = 0 then '크게 휘두를 낌새가 보인다 — 방어하라'
+        when rd.phase >= 2 and (bt + 1) % 5 = 0 then '사슬이 꿈틀거린다'
+        else null end;
   update public.world_raids set hp = rd.hp, turn = rd.turn, phase = rd.phase, fx = rfx, intent = rd.intent, updated_at = now() where raid_id = p_raid;
   return public.world_raid_snapshot(p_raid);
 end $function$;

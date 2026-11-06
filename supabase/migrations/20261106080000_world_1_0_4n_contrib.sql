@@ -39,30 +39,30 @@ declare r jsonb := public.world_contrib_rules(); res jsonb;
 begin
   with m as (
     select x ->> 'id' id,
-           coalesce((x -> 'cr' ->> 'dmg')::numeric, 0) dmg,
-           coalesce((x -> 'cr' ->> 'boost')::numeric, 0) boost,
-           coalesce((x -> 'cr' ->> 'heal')::numeric, 0) heal,
-           coalesce((x -> 'cr' ->> 'taken')::numeric, 0) taken,
-           coalesce((x -> 'cr' ->> 'guard')::numeric, 0) guard,
-           coalesce((x -> 'cr' ->> 'guard')::numeric, 0) + coalesce((x -> 'cr' ->> 'hit1')::numeric, 0) hold,
-           nullif((x ->> 'atk')::numeric, 0) atk,
-           coalesce(x -> 'cr', '{}'::jsonb) <> '{}'::jsonb active
+        coalesce((x -> 'cr' ->> 'dmg')::numeric, 0) dmg,
+        coalesce((x -> 'cr' ->> 'boost')::numeric, 0) boost,
+        coalesce((x -> 'cr' ->> 'heal')::numeric, 0) heal,
+        coalesce((x -> 'cr' ->> 'taken')::numeric, 0) taken,
+        coalesce((x -> 'cr' ->> 'guard')::numeric, 0) guard,
+        coalesce((x -> 'cr' ->> 'guard')::numeric, 0) + coalesce((x -> 'cr' ->> 'hit1')::numeric, 0) hold,
+        nullif((x ->> 'atk')::numeric, 0) atk,
+        coalesce(x -> 'cr', '{}'::jsonb) <> '{}'::jsonb active
       from jsonb_array_elements(coalesce(p_rows, '[]'::jsonb)) x),
   a as (select coalesce(avg(atk), 1) aa, greatest(1, count(*) filter (where active)) n from m),
   e as (select m.*, m.dmg / greatest(coalesce(m.atk, a.aa), a.aa / (r ->> 'eff_cap')::numeric, 1) eff from m, a),
   t as (select sum(dmg) d, sum(eff) ef, sum(hold) h, sum(heal) hl, sum(boost) b, sum(taken) tk, sum(taken + guard) pr from e),
   w as (select (r ->> 'deal')::numeric * (t.d > 0)::int wd,
-               (r ->> 'hold')::numeric * (t.h > 0)::int * least(1, t.pr / (a.n * 100 * (r ->> 'press')::numeric)) wh,
-               (r ->> 'heal')::numeric * (t.hl > 0)::int * least(1, t.pr / (a.n * 100 * (r ->> 'press')::numeric))
-                 * least(1, t.hl / greatest(1, (r ->> 'heal_need')::numeric * t.tk)) whl,
-               (r ->> 'boost')::numeric * (t.b > 0)::int * least(1, t.b / greatest(1, (r ->> 'boost_need')::numeric * t.d)) wb
-          from t, a),
+        (r ->> 'hold')::numeric * (t.h > 0)::int * least(1, t.pr / (a.n * 100 * (r ->> 'press')::numeric)) wh,
+        (r ->> 'heal')::numeric * (t.hl > 0)::int * least(1, t.pr / (a.n * 100 * (r ->> 'press')::numeric))
+        * least(1, t.hl / greatest(1, (r ->> 'heal_need')::numeric * t.tk)) whl,
+        (r ->> 'boost')::numeric * (t.b > 0)::int * least(1, t.b / greatest(1, (r ->> 'boost_need')::numeric * t.d)) wb
+        from t, a),
   s as (select e.id,
-               w.wd * case when t.d > 0 then (r ->> 'result')::numeric * e.dmg / t.d + (1 - (r ->> 'result')::numeric) * e.eff / t.ef else 0 end
-             + w.wh * case when t.h > 0 then e.hold / t.h else 0 end
-             + w.whl * case when t.hl > 0 then e.heal / t.hl else 0 end
-             + w.wb * case when t.b > 0 then e.boost / t.b else 0 end v
-          from e, t, w)
+        w.wd * case when t.d > 0 then (r ->> 'result')::numeric * e.dmg / t.d + (1 - (r ->> 'result')::numeric) * e.eff / t.ef else 0 end
+        + w.wh * case when t.h > 0 then e.hold / t.h else 0 end
+        + w.whl * case when t.hl > 0 then e.heal / t.hl else 0 end
+        + w.wb * case when t.b > 0 then e.boost / t.b else 0 end v
+        from e, t, w)
   select coalesce(jsonb_object_agg(s.id, case when z.tot > 0 then round(s.v / z.tot * 100, 1) else 0 end), '{}'::jsonb) into res
     from s, (select sum(v) tot from s) z;
   return res;
@@ -115,8 +115,8 @@ create or replace function public.world_pfight_shares(p_fight uuid)
  set search_path to 'pg_catalog', 'public'
 as $function$
   select public.world_contrib_shares(coalesce(jsonb_agg(jsonb_build_object('id', pm.owner_id,
-           'cr', case when pm.dmg > 0 or pm.taken > 0 then jsonb_build_object('dmg', pm.dmg, 'taken', pm.taken, 'hit1', pm.taken) else '{}'::jsonb end,
-           'atk', (select (o ->> 'atk')::numeric from jsonb_array_elements(coalesce(f.turn_order, '[]'::jsonb)) o where (o ->> 'id')::uuid = pm.owner_id limit 1))), '[]'::jsonb))
+        'cr', case when pm.dmg > 0 or pm.taken > 0 then jsonb_build_object('dmg', pm.dmg, 'taken', pm.taken, 'hit1', pm.taken) else '{}'::jsonb end,
+        'atk', (select (o ->> 'atk')::numeric from jsonb_array_elements(coalesce(f.turn_order, '[]'::jsonb)) o where (o ->> 'id')::uuid = pm.owner_id limit 1))), '[]'::jsonb))
     from public.world_pfight_members pm join public.world_pfights f on f.fight_id = pm.fight_id where pm.fight_id = p_fight
 $function$;
 
@@ -323,17 +323,17 @@ begin
       end if;
     elsif sk.target = 'ally' then
       update public.world_raid_members set fx = case
-          when k in ('ward', 'might', 'evade', 'gward', 'crit_next') then fx || public.world_cb_buff(k, v, uid)
-          when k = 'shield' then fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (v ->> 'amt')::int, 'shield_by', uid)
-          when k = 'cleanse_heal' then fx - 'bound'
-          when k = 'cover' then fx || jsonb_build_object('cover', jsonb_build_object('by', uid, 'until', now() + make_interval(secs => (v ->> 'secs')::int)))
-          else fx end,
+        when k in ('ward', 'might', 'evade', 'gward', 'crit_next') then fx || public.world_cb_buff(k, v, uid)
+        when k = 'shield' then fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (v ->> 'amt')::int, 'shield_by', uid)
+        when k = 'cleanse_heal' then fx - 'bound'
+        when k = 'cover' then fx || jsonb_build_object('cover', jsonb_build_object('by', uid, 'until', now() + make_interval(secs => (v ->> 'secs')::int)))
+        else fx end,
         out_until = case when k = 'revive' then least(out_until, now()) else out_until end
        where raid_id = p_raid and owner_id = tgt;
     end if;
     if k in ('heal', 'cleanse_heal', 'revive', 'sp', 'gward') then
       amt := case k when 'revive' then (v ->> 'hp')::int when 'sp' then 0 when 'gward' then 0
-             else round((v ->> 'amt')::int * (1 + coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) / 100.0)) end;
+        else round((v ->> 'amt')::int * (1 + coalesce((c.skill_progress -> 'first_aid' ->> 'rank')::int, 0) / 100.0)) end;
       if rd.kind = 'final' and k in ('heal', 'cleanse_heal') then amt := ceil(amt * 0.5); end if;
       if k = 'revive' then
         select health into h1 from public.world_characters where owner_id = tgt;
@@ -347,7 +347,7 @@ begin
         update public.world_characters set mental = least(100, mental + coalesce((v ->> 'mind')::int, 0)), updated_at = now() where owner_id = tgt;
       else
         if tgt = uid then
-          select health into h0 from public.world_characters where owner_id = uid;
+        select health into h0 from public.world_characters where owner_id = uid;
         end if;
         select health into h1 from public.world_characters where owner_id = tgt;
         update public.world_characters set health = least(100, health + amt), updated_at = now() where owner_id = tgt and health > 0;
@@ -409,7 +409,7 @@ begin
   if newp > rd.phase then
     rd.phase := newp;
     perform public.world_raid_say(p_raid, 'phase', case newp when 2 then rd.boss_name || '의 사슬이 풀리며 움직임이 사나워집니다(2단계).'
-                                                    else rd.boss_name || '이(가) 봉연의 기운을 끌어모으기 시작합니다(3단계).' end);
+        else rd.boss_name || '이(가) 봉연의 기운을 끌어모으기 시작합니다(3단계).' end);
   end if;
   ph_mul := case rd.phase when 1 then 1 when 2 then 1.15 else 1.3 end * case when rd.kind = 'final' then 1.1 else 1 end;
   select count(*) into n_act from public.world_raid_members x join public.world_characters ch on ch.owner_id = x.owner_id
@@ -480,9 +480,9 @@ begin
     perform public.world_raid_say(p_raid, 'boss', '모두 물러난 사이 ' || rd.boss_name || '이(가) 기운을 되찾습니다(체력 +1.5%).');
   end if;
   rd.intent := case when rfx ? 'charge' then '기운을 모으는 중 — ' || case when rd.kind = 'world' then greatest(0, ceil(coalesce((rfx -> 'charge' ->> 'until')::numeric, extract(epoch from now()) + (rfx -> 'charge' ->> 'left')::int * 2) - extract(epoch from now())))::int || '초' else '남은 ' || (rfx -> 'charge' ->> 'left') || '번' end || ' 안에 ' || greatest(0, (rfx -> 'charge' ->> 'need')::int - (rfx -> 'charge' ->> 'got')::int) || ' 더 몰아치면 끊긴다'
-                    when (bt + 1) % 7 = 0 then '크게 휘두를 낌새가 보인다 — 방어하라'
-                    when rd.phase >= 2 and (bt + 1) % 5 = 0 then '사슬이 꿈틀거린다'
-                    else null end;
+        when (bt + 1) % 7 = 0 then '크게 휘두를 낌새가 보인다 — 방어하라'
+        when rd.phase >= 2 and (bt + 1) % 5 = 0 then '사슬이 꿈틀거린다'
+        else null end;
   update public.world_raids set hp = rd.hp, turn = rd.turn, phase = rd.phase, fx = rfx, intent = rd.intent, updated_at = now() where raid_id = p_raid;
   return public.world_raid_snapshot(p_raid);
 end $function$;
@@ -545,12 +545,12 @@ begin
         freed := freed || tgt;
       when 'revive' then
         if exists (select 1 from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt and x.out_rounds > 0) then
-          perform public.world_gw_credit(p_fight, m.owner_id, (e ->> 'hp')::int, 'heal'); end if;
+        perform public.world_gw_credit(p_fight, m.owner_id, (e ->> 'hp')::int, 'heal'); end if;
         update public.world_gw_members set out_rounds = 0, rest = true, hp = (e ->> 'hp')::int where fight_id = p_fight and owner_id = tgt and out_rounds > 0;
       when 'cover' then update public.world_gw_members set fx = fx || jsonb_build_object('cover', tgt) where fight_id = p_fight and owner_id = m.owner_id;
       when 'gward' then update public.world_gw_members set fx = fx || public.world_cb_buff('gward', e, m.owner_id) where fight_id = p_fight and owner_id = tgt;
         if coalesce((e ->> 'mind')::int, 0) > 0 then
-          update public.world_characters set mental = least(100, mental + (e ->> 'mind')::int), updated_at = now() where owner_id = tgt;
+        update public.world_characters set mental = least(100, mental + (e ->> 'mind')::int), updated_at = now() where owner_id = tgt;
         end if;
       when 'break' then broke := true; v_brk := m.owner_id;
       when 'taunt' then update public.world_gw_members set fx = fx || public.world_cb_buff('taunt', e, m.owner_id) where fight_id = p_fight and owner_id = m.owner_id;
@@ -562,15 +562,15 @@ begin
       when 'shield' then update public.world_gw_members set fx = fx || jsonb_build_object('shield', coalesce((fx ->> 'shield')::int, 0) + (e ->> 'amt')::int, 'shield_by', m.owner_id) where fight_id = p_fight and owner_id = tgt;
       when 'sp' then
         if tgt <> m.owner_id then perform public.world_gw_credit(p_fight, m.owner_id, (select greatest(0, least((e ->> 'amt')::int, 100 - x.spiritual_power)) from public.world_characters x where x.owner_id = tgt)
-          * coalesce((m.stats ->> 'attack')::numeric, 0) * 0.05, 'boost'); end if;
+        * coalesce((m.stats ->> 'attack')::numeric, 0) * 0.05, 'boost'); end if;
         update public.world_characters set spiritual_power = least(100, spiritual_power + (e ->> 'amt')::int), updated_at = now() where owner_id = tgt;
       else null;
     end case;
     perform public.world_gw_say(p_fight, r, 'skill', m.name || ' — 「' || sk.skill_name || '」' || case when sk.target = 'ally' and tgt <> m.owner_id then ' → ' || coalesce(tn, '') else '' end || ' · ' || sk.exp_text
       || case e ->> 'type' when 'cleanse_heal' then case when k = 'chain' then ' (사슬이 느슨해집니다)' when k = 'name' then ' (흐려진 이름이 또렷해집니다)' else '' end
-                           when 'delay' then case when k = 'vortex' then ' (물살이 잠시 멎습니다)' else '' end
-                           when 'expose' then case when k = 'face' then ' (주인의 입이 사슬에 묶입니다)' else '' end
-                           when 'break' then ' (물의 기세가 꺾입니다)' else '' end || '.');
+        when 'delay' then case when k = 'vortex' then ' (물살이 잠시 멎습니다)' else '' end
+        when 'expose' then case when k = 'face' then ' (주인의 입이 사슬에 묶입니다)' else '' end
+        when 'break' then ' (물의 기세가 꺾입니다)' else '' end || '.');
   end loop;
   for m in select * from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest order by joined_at loop
     a := coalesce(m.act, '{"a":"guard"}'::jsonb); av := a ->> 'a';
@@ -591,19 +591,19 @@ begin
         perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 이름을 잃어 칼끝이 주인에게 닿지 않습니다.');
       elsif k = 'face' and ((f.mech ->> 'face' = 'human') <> physical) then
         if sealed then
-          d := d * 0.5; boss_dmg := boss_dmg + d;
-          update public.world_gw_members set dmg = dmg + round(d)::int where fight_id = p_fight and owner_id = m.owner_id;
-          perform public.world_gw_credit_hit(p_fight, m.owner_id, d, cr, v_mb, v_mp, v_eb, v_ep, v_cb, v_cp, v_cn, coalesce((m.stats ->> 'crit')::numeric, 5));
-          perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — 사슬에 묶인 주인이 힘을 삼키지 못합니다. ' || round(d) || '의 피해.');
+        d := d * 0.5; boss_dmg := boss_dmg + d;
+        update public.world_gw_members set dmg = dmg + round(d)::int where fight_id = p_fight and owner_id = m.owner_id;
+        perform public.world_gw_credit_hit(p_fight, m.owner_id, d, cr, v_mb, v_mp, v_eb, v_ep, v_cb, v_cp, v_cn, coalesce((m.stats ->> 'crit')::numeric, 5));
+        perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — 사슬에 묶인 주인이 힘을 삼키지 못합니다. ' || round(d) || '의 피해.');
         else
-          boss_heal := boss_heal + round(d * 0.5);
-          perform public.world_gw_say(p_fight, r, 'bad', m.name || ' — ' || case when physical then '요괴의 얼굴에 칼을 대자' else '사람의 얼굴에 술법을 쓰자' end || ' 주인이 그 힘을 삼켜 ' || round(d * 0.5) || ' 회복합니다.');
+        boss_heal := boss_heal + round(d * 0.5);
+        perform public.world_gw_say(p_fight, r, 'bad', m.name || ' — ' || case when physical then '요괴의 얼굴에 칼을 대자' else '사람의 얼굴에 술법을 쓰자' end || ' 주인이 그 힘을 삼켜 ' || round(d * 0.5) || ' 회복합니다.');
         end if;
       else
         if k = 'vortex' and m.owner_id::text <> f.mech ->> 'tank' then vsum := vsum + d; end if;
         boss_dmg := boss_dmg + d;
         update public.world_gw_members set dmg = dmg + round(d)::int where fight_id = p_fight and owner_id = m.owner_id;
-          perform public.world_gw_credit_hit(p_fight, m.owner_id, d, cr, v_mb, v_mp, v_eb, v_ep, v_cb, v_cp, v_cn, coalesce((m.stats ->> 'crit')::numeric, 5));
+        perform public.world_gw_credit_hit(p_fight, m.owner_id, d, cr, v_mb, v_mp, v_eb, v_ep, v_cb, v_cp, v_cn, coalesce((m.stats ->> 'crit')::numeric, 5));
         perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — ' || round(d) || case when cr then '의 치명타.' else '의 피해.' end);
       end if;
     elsif av in ('guard', 'brace') then
@@ -620,17 +620,17 @@ begin
         perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 꺼낼 회복품이 없습니다.');
       else
         d := coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'hp')::numeric, 0)
-             * case when (a ->> 'i') like '%\_hq' then 1.15 else 1 end * case when m.job_key = 'medic' then case when tgt = m.owner_id then 1.15 else 1.4 end else 1 end
-             * (1 + coalesce((m.stats ->> 'heal')::numeric, 0) / 100.0);
+        * case when (a ->> 'i') like '%\_hq' then 1.15 else 1 end * case when m.job_key = 'medic' then case when tgt = m.owner_id then 1.15 else 1.4 end else 1 end
+        * (1 + coalesce((m.stats ->> 'heal')::numeric, 0) / 100.0);
         update public.world_characters set inventory = public.world_inv_add(inventory, a ->> 'i', -1), updated_at = now() where owner_id = m.owner_id;
         perform public.world_gw_credit(p_fight, m.owner_id, (select least(round(d), 100 - x.hp) from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt and x.out_rounds = 0),
-          case when tgt = m.owner_id then 'heal_self' else 'heal' end);
+        case when tgt = m.owner_id then 'heal_self' else 'heal' end);
         update public.world_gw_members set hp = least(100, hp + round(d)::int) where fight_id = p_fight and owner_id = tgt and out_rounds = 0;
         update public.world_characters set mental = least(100, mental + ceil(coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) * case when (a ->> 'i') like '%\_hq' then 1.15 else 1 end)::int)
-         where owner_id = tgt and coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) > 0;
+        where owner_id = tgt and coalesce((public.world_item_fx(public.world_item_base(a ->> 'i')) ->> 'mn')::numeric, 0) > 0;
         update public.world_gw_members set heal = heal + round(d)::int, items_used = items_used + 1 where fight_id = p_fight and owner_id = m.owner_id;
         perform public.world_gw_say(p_fight, r, 'good', m.name || ' — ' || coalesce((select x.name from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = tgt), '') || '의 체력 +' || round(d)
-          || ' (회복품 ' || (coalesce(m.items_used, 0) + 1) || '/2).');
+        || ' (회복품 ' || (coalesce(m.items_used, 0) + 1) || '/2).');
       end if;
     elsif av = 'call' then
       tgt := nullif(a ->> 't', '')::uuid;
@@ -687,7 +687,7 @@ begin
   if f.hp <= 0 then update public.world_gw_fights set bfx = vbfx where fight_id = p_fight; perform public.world_gw_settle(p_fight, true); return; end if;
   if k in ('face', 'normal') then
     raw := (35 + 4 * f.phase) * (1 + 0.15 * f.enrage)
-           * (select case count(*) when 1 then 1 when 2 then 1.4 when 3 then 0.8 else 0.85 end from public.world_gw_members where fight_id = p_fight);
+        * (select case count(*) when 1 then 1 when 2 then 1.4 when 3 then 0.8 else 0.85 end from public.world_gw_members where fight_id = p_fight);
     if aoe then
       perform public.world_gw_say(p_fight, r, 'boss', '모아 둔 기운이 터집니다. 왕좌 아래의 물이 한꺼번에 쏟아집니다!' || case when broke then ' (퇴마 결계가 물살을 절반으로 꺾었습니다)' else '' end);
       if broke then perform public.world_gw_credit(p_fight, v_brk, raw * 0.9 * 0.5 * 0.7 * (select count(*) from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not rest), 'guard'); end if;
@@ -705,26 +705,26 @@ begin
       v_miss := coalesce((vbfx -> 'smoke' ->> 'miss')::numeric, 45);
       for v_h in 1 .. v_hands loop
         select * into m from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not rest and not (x.owner_id = any (v_hit))
-         order by public.world_cb_pick_key(coalesce((x.stats ->> 'pres')::numeric, 30) + coalesce((x.fx -> 'taunt' ->> 'pres')::numeric, 0)) limit 1;
+        order by public.world_cb_pick_key(coalesce((x.stats ->> 'pres')::numeric, 30) + coalesce((x.fx -> 'taunt' ->> 'pres')::numeric, 0)) limit 1;
         exit when m.owner_id is null;
         v_hit := v_hit || m.owner_id;
         hit_who := m.owner_id; cover_by := null;
         select owner_id into cover_by from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest and fx ->> 'cover' = m.owner_id::text and owner_id <> m.owner_id limit 1;
         select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
         if n > 0 and random() * 100 < v_miss then
-          perform public.world_gw_credit(p_fight, nullif(vbfx -> 'smoke' ->> 'by', '')::uuid, raw * 0.7, 'guard');
-          perform public.world_gw_say(p_fight, r, 'miss', '연막 속에서 주인의 손길이 ' || m.name || '을(를) 비껴갑니다.');
+        perform public.world_gw_credit(p_fight, nullif(vbfx -> 'smoke' ->> 'by', '')::uuid, raw * 0.7, 'guard');
+        perform public.world_gw_say(p_fight, r, 'miss', '연막 속에서 주인의 손길이 ' || m.name || '을(를) 비껴갑니다.');
         elsif random() * 100 < coalesce((m.stats ->> 'eva')::numeric, 0) + coalesce((vfx -> 'evade' ->> 'pct')::numeric, 0) + (case when m.stats ->> 'style' = 'magic' then 15 else 0 end) then
-          if vfx -> 'evade' ->> 'by' is not null and vfx -> 'evade' ->> 'by' <> m.owner_id::text then
-            perform public.world_gw_credit(p_fight, (vfx -> 'evade' ->> 'by')::uuid, raw * (1 - least(80, coalesce((m.stats ->> 'red')::numeric, 0)) / 100.0)
-              * (vfx -> 'evade' ->> 'pct')::numeric / greatest(1, coalesce((m.stats ->> 'eva')::numeric, 0) + (vfx -> 'evade' ->> 'pct')::numeric), 'guard'); end if;
-          if vfx ? 'evade' then update public.world_gw_members x set fx = case when (x.fx -> 'evade' ->> 'n')::int > 1 then jsonb_set(x.fx, '{evade,n}', to_jsonb((x.fx -> 'evade' ->> 'n')::int - 1)) else x.fx - 'evade' end where x.fight_id = p_fight and x.owner_id = m.owner_id; end if;
-          perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 주인의 손길을 피했습니다.');
+        if vfx -> 'evade' ->> 'by' is not null and vfx -> 'evade' ->> 'by' <> m.owner_id::text then
+        perform public.world_gw_credit(p_fight, (vfx -> 'evade' ->> 'by')::uuid, raw * (1 - least(80, coalesce((m.stats ->> 'red')::numeric, 0)) / 100.0)
+        * (vfx -> 'evade' ->> 'pct')::numeric / greatest(1, coalesce((m.stats ->> 'eva')::numeric, 0) + (vfx -> 'evade' ->> 'pct')::numeric), 'guard'); end if;
+        if vfx ? 'evade' then update public.world_gw_members x set fx = case when (x.fx -> 'evade' ->> 'n')::int > 1 then jsonb_set(x.fx, '{evade,n}', to_jsonb((x.fx -> 'evade' ->> 'n')::int - 1)) else x.fx - 'evade' end where x.fight_id = p_fight and x.owner_id = m.owner_id; end if;
+        perform public.world_gw_say(p_fight, r, 'miss', m.name || ' — 주인의 손길을 피했습니다.');
         elsif cover_by is not null then
-          perform public.world_gw_credit(p_fight, cover_by, raw * 0.5 * (1 - least(80, coalesce((m.stats ->> 'red')::numeric, 0)) / 100.0), 'guard');
-          perform public.world_gw_hit(p_fight, cover_by, raw * 0.5, r, (select name from public.world_gw_members where fight_id = p_fight and owner_id = cover_by) || '이(가) ' || m.name || ' 앞을 막아서 주인의 ' || case when v_h > 1 then '다른 ' else '' end || '손아귀를', false);
+        perform public.world_gw_credit(p_fight, cover_by, raw * 0.5 * (1 - least(80, coalesce((m.stats ->> 'red')::numeric, 0)) / 100.0), 'guard');
+        perform public.world_gw_hit(p_fight, cover_by, raw * 0.5, r, (select name from public.world_gw_members where fight_id = p_fight and owner_id = cover_by) || '이(가) ' || m.name || ' 앞을 막아서 주인의 ' || case when v_h > 1 then '다른 ' else '' end || '손아귀를', false);
         else
-          perform public.world_gw_hit(p_fight, hit_who, raw, r, case when v_h > 1 then '주인의 다른 손아귀에' else '주인의 손아귀에' end, false);
+        perform public.world_gw_hit(p_fight, hit_who, raw, r, case when v_h > 1 then '주인의 다른 손아귀에' else '주인의 손아귀에' end, false);
         end if;
       end loop;
       if n > 0 and coalesce(array_length(v_hit, 1), 0) > 0 then vbfx := case when n > 1 then jsonb_set(vbfx, '{smoke,n}', to_jsonb(n - 1)) else vbfx - 'smoke' end; end if;
@@ -832,7 +832,7 @@ begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   select * into c from public.world_characters where owner_id = uid;
   if exists (select 1 from public.world_raids where status in ('announced', 'signup', 'fight')
-              and ((status = 'announced' and spawn_at <= now()) or (status = 'signup' and signup_until <= now()) or (status = 'fight' and ends_at <= now()))) then
+        and ((status = 'announced' and spawn_at <= now()) or (status = 'signup' and signup_until <= now()) or (status = 'fight' and ends_at <= now()))) then
     perform public.world_raid_tick();
   end if;
   if rid is null then
@@ -889,7 +889,7 @@ begin
       'solo', case when rd.kind = 'final' and me.owner_id is not null and (select count(*) from public.world_raid_members x where x.raid_id = rd.raid_id) = 1 then public.world_solo_aid(me.job_key) end,
       'fx', me.fx, 'coop', coop, 'job', c.job_key, 'combat_rank', coalesce(c.combat_rank, 1)),
     'locks', (select coalesce(jsonb_agg(jsonb_build_object('region_id', l.region_id, 'region', x.region_name, 'until', l.until)), '[]'::jsonb)
-                from public.world_raid_locks l join public.world_map_regions x on x.region_id = l.region_id where l.until > now()));
+        from public.world_raid_locks l join public.world_map_regions x on x.region_id = l.region_id where l.until > now()));
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.world_gw_snapshot(p_fight uuid DEFAULT NULL::uuid)
@@ -930,9 +930,9 @@ begin
   return jsonb_build_object('fight', jsonb_build_object('id', f.fight_id, 'status', f.status, 'hp', f.hp, 'max_hp', f.max_hp, 'phase', f.phase, 'round', f.round,
       'round_ends_at', f.round_ends_at, 'ends_at', f.ends_at, 'start_at', f.start_at, 'leader', f.leader_id, 'enrage', f.enrage,
       'mech', case f.mech ->> 'k' when 'chain' then jsonb_build_object('k', 'chain', 'colors', (select jsonb_agg(v order by v) from jsonb_each_text(f.mech -> 'colors') e(kk, v)), 'mine', f.mech -> 'colors' ->> uid::text,
-                                                                     'aoe', f.mech -> 'aoe', 'tell', f.mech -> 'tell')
-                              when 'vortex' then f.mech - 'need' || jsonb_build_object('need', (f.mech ->> 'need')::int)
-                              else f.mech end,
+        'aoe', f.mech -> 'aoe', 'tell', f.mech -> 'tell')
+        when 'vortex' then f.mech - 'need' || jsonb_build_object('need', (f.mech ->> 'need')::int)
+        else f.mech end,
       'bfx', (select coalesce(jsonb_agg(kk), '[]'::jsonb) from jsonb_object_keys(coalesce(f.bfx, '{}'::jsonb)) kk)),
     'now', now(), 'me', uid,
     'members', (select coalesce(jsonb_agg(jsonb_build_object('id', m.owner_id, 'name', m.name, 'job', m.job_key, 'level', m.level, 'hp', m.hp, 'out', m.out_rounds, 'resting', m.rest,
@@ -940,7 +940,7 @@ begin
         'fx', (select coalesce(jsonb_agg(kk), '[]'::jsonb) from jsonb_object_keys(coalesce(m.fx, '{}'::jsonb)) kk)) order by m.joined_at), '[]'::jsonb) from public.world_gw_members m where m.fight_id = fid),
     'my_act', me.act, 'joined', me.owner_id is not null, 'sp', c.spiritual_power,
     'items', (select coalesce(jsonb_object_agg(k, (c.inventory ->> k)::int), '{}'::jsonb) from unnest(array['tonic', 'tonic_hq', 'herbal_extract', 'rejuv_pill', 'rejuv_pill_hq', 'grand_pill', 'grand_pill_hq', 'banyo_salve']) k
-               where coalesce((c.inventory ->> k)::int, 0) > 0),
+        where coalesce((c.inventory ->> k)::int, 0) > 0),
     'items_left', greatest(0, 2 - coalesce(me.items_used, 0)),
     'falls_cap', 10 + coalesce((select max((x.stats ->> 'solo_falls')::int) from public.world_gw_members x where x.fight_id = fid), 0),
     'solo', case when (select count(*) from public.world_gw_members x where x.fight_id = fid) = 1 then jsonb_build_object('dmg', me.stats -> 'solo_dmg', 'falls', me.stats -> 'solo_falls', 'guard', me.stats -> 'solo_guard') end,
@@ -948,7 +948,7 @@ begin
         'rounds', greatest(1, ceil(s.cooldown_s / 5.0)::int), 'rank', s.unlock_rank, 'unlocked', coalesce(c.combat_rank, 1) >= s.unlock_rank,
         'wait', greatest(0, coalesce((me.cds ->> s.skill_id)::int, 0) - f.round)) order by s.sort), '[]'::jsonb) from public.world_coop_skills s where s.job_key = c.job_key) end,
     'log', (select coalesce(jsonb_agg(jsonb_build_object('id', l.id, 'round', l.round, 'kind', l.kind, 'text', l.text) order by l.id), '[]'::jsonb)
-              from (select * from public.world_gw_log where fight_id = fid order by id desc limit case when f.status in ('won', 'failed') then 200 else 60 end) l),
+        from (select * from public.world_gw_log where fight_id = fid order by id desc limit case when f.status in ('won', 'failed') then 200 else 60 end) l),
     'tips', case when coalesce(rec.kills, 0) > 0 then public.world_gw_tips() end);
 end $function$;
 
@@ -1000,7 +1000,7 @@ begin
     perform public.world_raid_settle(p_raid, false); return;
   end if;
   hpv := case when rd.kind = 'world' then greatest((public.world_shadow_rules() ->> 'hp_min')::numeric, round(s * (public.world_shadow_rules() ->> 'hp_mul')::numeric))
-              else round(greatest(4716, a * 100) * case least(n, 4) when 1 then 2.4 when 2 then 3.3 when 3 then 2.9 else 3.3 end) end;
+        else round(greatest(4716, a * 100) * case least(n, 4) when 1 then 2.4 when 2 then 3.3 when 3 then 2.9 else 3.3 end) end;
   update public.world_raids set status = 'fight', hp = hpv, max_hp = hpv, turn = 0, phase = 1,
     ends_at = now() + case when kind = 'world' then interval '2 hours' else interval '20 minutes' end, updated_at = now() where raid_id = p_raid;
   perform public.world_raid_say(p_raid, 'phase', rd.boss_name || '이(가) 모습을 드러냈습니다. 참가자 ' || n || '명 · 체력 ' || hpv || '.');
@@ -1032,7 +1032,7 @@ begin perform public.world_travel_guard('토벌 합류');
   if here is distinct from rd.region_id then
     raise exception '%에 있어야 참가할 수 있습니다.', (select region_name from public.world_map_regions where region_id = rd.region_id); end if;
   if rd.kind = 'final' and not exists (select 1 from public.world_party_members a join public.world_party_members b on b.party_id = a.party_id
-                                        where a.owner_id = uid and b.owner_id = rd.leader_id) then
+        where a.owner_id = uid and b.owner_id = rd.leader_id) then
     raise exception '결전은 시작한 조사원의 파티원만 합류할 수 있습니다.'; end if;
   if rd.kind = 'final' and (select count(*) from public.world_raid_members where raid_id = p_raid) >= 4 then raise exception '결전은 4명까지입니다.'; end if;
   if exists (select 1 from public.world_raid_members where raid_id = p_raid and owner_id = uid and left_at is not null) then
@@ -1081,18 +1081,18 @@ begin
     if rd.kind = 'world' then
       if share >= 0.01 and m.acts > 0 then
         if p_won then
-          rw_gil := round(least(1800, 300 * stay + 1700 * share) * lvm); xp := round(public.world_xp_need(m.clv) * least(0.35, 0.10 * stay + 0.6 * share));
-          items := jsonb_build_object('seal_shard', 3 + floor(12 * share)::int);
-          if random() < 0.45 then items := items || jsonb_build_object('spirit_core', 1 + (random() < 0.4)::int); end if;
-          if random() < 0.25 then items := items || jsonb_build_object('heavenly_dew', 1); end if;
-          if random() < 0.04 + 0.08 * share then items := items || jsonb_build_object((array['raid_norigae', 'raid_amulet', 'raid_mask'])[1 + floor(random() * 3)::int], 1); end if;
+        rw_gil := round(least(1800, 300 * stay + 1700 * share) * lvm); xp := round(public.world_xp_need(m.clv) * least(0.35, 0.10 * stay + 0.6 * share));
+        items := jsonb_build_object('seal_shard', 3 + floor(12 * share)::int);
+        if random() < 0.45 then items := items || jsonb_build_object('spirit_core', 1 + (random() < 0.4)::int); end if;
+        if random() < 0.25 then items := items || jsonb_build_object('heavenly_dew', 1); end if;
+        if random() < 0.04 + 0.08 * share then items := items || jsonb_build_object((array['raid_norigae', 'raid_amulet', 'raid_mask'])[1 + floor(random() * 3)::int], 1); end if;
         else
-          rw_gil := round((80 * stay + 300 * share) * lvm); xp := round(public.world_xp_need(m.clv) * 0.03 * stay); items := '{"seal_shard":1}'::jsonb;
+        rw_gil := round((80 * stay + 300 * share) * lvm); xp := round(public.world_xp_need(m.clv) * 0.03 * stay); items := '{"seal_shard":1}'::jsonb;
         end if;
       end if;
     else
       cleared := exists (select 1 from public.world_raid_members y join public.world_raids z on z.raid_id = y.raid_id
-                          where y.owner_id = m.owner_id and z.kind = 'final' and z.status = 'won' and z.raid_id <> p_raid);
+        where y.owner_id = m.owner_id and z.kind = 'final' and z.status = 'won' and z.raid_id <> p_raid);
       if p_won and m.acts > 0 then
         if cleared then rw_gil := 100; items := '{"seal_shard":2}'::jsonb;
         else rw_gil := 400; xp := round(public.world_xp_need(m.clv) * 0.5); items := '{"spirit_core":3,"heavenly_dew":2,"seal_shard":5}'::jsonb; end if;
