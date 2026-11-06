@@ -3,6 +3,7 @@ import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore } from './sources.js';
 import { TASK_ACTS, CHANGES, hit } from './changes.js';
+import { askPartySize, partyHere } from './views/fightui.js';
 
 const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
 const foldKey = 'yh-fold-quests';
@@ -108,16 +109,7 @@ function hereNote(b) {
 }
 
 async function askFinal() {
-  const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
-  const here = store.character?.location, me = store.user?.id;
-  const n = 1 + Math.min(3, (p?.party ? p.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition).length);
-  const tail = '결전은 20분 동안 이어지고, 체력이 다하면 30초씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.';
-  if (n === 1) return ask(`혼자서는 거의 이길 수 없습니다.\n구중 봉주는 넷이 함께 맞서도록 만든 최종 보스입니다. 같은 곳에 함께할 파티원이 없어 혼자 시작하게 됩니다.\n${tail}\n파티원을 모아 함께 오기를 강하게 권합니다.`,
-    { title: '혼자서 결전을 엽니까?', ok: '그래도 혼자 시작', cancel: '돌아가기', alarm: true });
-  const msg = { 2: '둘이서는 어렵지만 해볼 만한 싸움입니다. 회복품을 넉넉히 챙기고, 한 사람이 막는 동안 다른 사람이 몰아치세요.',
-    3: '셋이면 해볼 만한 싸움입니다. 막는 사람·치는 사람·돌보는 사람으로 나누면 한결 수월합니다.',
-    4: '넷이 함께하는 것이 이 결전에 가장 알맞은 인원입니다.' }[n];
-  return ask(`같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(90초 안에 합류, 함께 ${n}명).\n${msg}\n${tail}`, { title: `${n}명이 함께 결전을 엽니까?`, ok: '결전 시작', cancel: '돌아가기' });
+  return askPartySize('final', await partyHere());
 }
 
 const GKEY = 'yh-q-group';

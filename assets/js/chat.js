@@ -355,6 +355,7 @@ function wantFace(id) {
     catch { ids.forEach(x => faces.set(x, null)); setTimeout(() => { ids.forEach(x => { if (faces.get(x) === null) faces.delete(x); }); draw(); }, 30000); }
   }, 120);
 }
+const msgOf = (m, me) => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, mark: m.sender_mark, text: m.content, at: m.created_at, mine: m.sender_id === me });
 function draw() {
   const list = $('#chat-list', panel); if (!list) return;
   const me = store.user?.id;
@@ -366,15 +367,15 @@ function draw() {
     list.style.setProperty('--cc', c.color);
     const ms = (circleMsgs[c.circle_id] || []).filter(m => !blocked.has(m.sender_id));
     list.innerHTML = ms.length ? topNote('c:' + c.circle_id) + ms.map((m, i) => m.kind === 'notice' ? `<li class="chat-notice">${esc(m.content)}<time>${fmt.time(m.created_at)}</time></li>`
-      : msgRow({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, mark: m.sender_mark, text: m.content, at: m.created_at, mine: m.sender_id === me }, ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
+      : msgRow(msgOf(m, me), ms[i - 1]?.kind === 'notice' ? null : ms[i - 1] && { sid: ms[i - 1].sender_id, at: ms[i - 1].created_at })).join('')
       : `<li class="chat-empty">「${esc(c.name)}」에 아직 말이 없습니다.</li>`;
     scrollEnd(); return;
   }
   if (tab === 'party') {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
-    rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name || m.character_name, color: m.sender_color, text: m.content, at: m.created_at, mine: m.sender_id === me }));
+    rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ ...msgOf(m, me), who: m.sender_name || m.character_name }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다|일어났습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')) || m.sender_name === '봉연 소식', up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), seal: m.sender_name === '봉연 소식', sid: m.sender_id, gm: isGM(m.sender_id), who: m.sender_name, title: m.sender_title, color: m.sender_color, mark: m.sender_mark, text: m.content, at: m.created_at, mine: m.sender_id === me, to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다|일어났습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')) || m.sender_name === '봉연 소식', up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), seal: m.sender_name === '봉연 소식', ...msgOf(m, me), to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
   list.innerHTML = rows.length ? (tab in chanNew ? topNote(tab) : '') + rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;

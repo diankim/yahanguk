@@ -52,6 +52,15 @@ export const GAMEDATA = {
   "contrib": {"deal":0.6,"heal":0.1,"hold":0.2,"boost":0.1,"press":1,"result":0.2,"eff_cap":2,"heal_need":0.25,"boost_need":0.1},
   "shadow": {"gil_lv":20,"hp_min":9000,"hp_mul":350,"pow_hi":1.5,"pow_lo":0.75,"dmg_mul":1.4,"stay_full":0.5,"charge_mul":5},
   "coopRules": {"all_pow":0.5,"all_full":4,"sure_crit":2,"expose_per":4},
+  "expXp": {"near":0.85,"time":{"30":0.5,"60":1.0,"120":1.15,"240":1.4,"480":2.0},"fight":0.42,"searches":30},
+  "jobSkills": {
+    "medic": {"desc":"체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.","name":"응급 처방"},
+    "scout": {"desc":"원거리 ×1.4로 쏘고 표식을 남겨 다음 세 번의 공격이 25%씩 강해집니다.","name":"급소 사격"},
+    "analyst": {"desc":"다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.","name":"약점 간파"},
+    "exorcist": {"desc":"반드시 치명타로 꽂히는 술법 한 방(×1.4)으로 결계를 깨뜨립니다.","name":"퇴마진"},
+    "artificer": {"desc":"근접으로 방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.","name":"파갑참"},
+    "sealmaster": {"desc":"피해를 주고 요괴의 다음 행동을 묶습니다. 우두머리는 절반 확률.","name":"봉인술"}
+  },
   "factionJoin": {
     "night_office": ["hq_yard","hq_dorm","ghost_bamboo"],
     "red_moon_cult": ["red_moon_fort","hq_yard","bone_market","red_plain"],

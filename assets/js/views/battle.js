@@ -2,6 +2,7 @@ import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyEr
 import { chip } from './common.js';
 import { USABLE } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
+import { GAMEDATA } from '../gamedata.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
@@ -16,14 +17,7 @@ export const INTENT = {
   charge: ['기 모으기', '다음 턴에 폭발합니다. 방어하거나 봉인술로 끊으세요.', 1], unleash: ['기 폭발', '매우 큰 피해. 반드시 방어하세요.', 3],
   breach: ['봉인 깨기', '침식이 오릅니다.', 1], rest: ['숨 고르기', '조금 회복합니다. 몰아칠 기회입니다.', 0],
 };
-export const SKILL = {
-  exorcist: ['퇴마진', '반드시 치명타로 꽂히는 술법 한 방(×1.4)으로 결계를 깨뜨립니다.'],
-  sealmaster: ['봉인술', '피해를 주고 요괴의 다음 행동을 묶습니다. 우두머리는 절반 확률.'],
-  scout: ['급소 사격', '원거리 ×1.4로 쏘고 표식을 남겨 다음 세 번의 공격이 25%씩 강해집니다.'],
-  medic: ['응급 처방', '체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.'],
-  analyst: ['약점 간파', '다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.'],
-  artificer: ['파갑참', '근접으로 방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.'],
-};
+export const SKILL = Object.fromEntries(Object.entries(GAMEDATA.jobSkills || {}).map(([k, v]) => [k, [v.name, v.desc]]));
 const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '거울막', marked: '표식', stunned: '봉인됨', swarm: '무리', evade: '허상', thorns: '가시', broken: '방어 무너짐', pierce: '꿰뚫림', dazed: '무방비', weak: '공격 약화' };
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 const ITEM_IDS = ['tonic', 'herbal_extract', 'herb', 'ward_talisman', 'rejuv_pill', 'grand_pill', 'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];

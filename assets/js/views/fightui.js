@@ -1,4 +1,4 @@
-import { esc, icon, fmt, nameOf, JOBS, brief, $, $$, emit, loadCharacter, openLayer, spOf, scrollAfterModal } from '../core.js';
+import { esc, icon, fmt, nameOf, JOBS, brief, $, $$, emit, loadCharacter, openLayer, spOf, scrollAfterModal, ask, store } from '../core.js';
 import { itemDesc, catItem, catalogList, load } from './common.js';
 import { USABLE, fxHtml } from './item.js';
 import { baseOf, isHq, haveOf } from '../hq.js';
@@ -130,4 +130,33 @@ export function fitLog(log) {
   log.style.height = Math.max(92, Math.floor(stop - top - pad)) + 'px';
   const over = document.documentElement.scrollHeight - window.innerHeight;
   if (over > 0 && window.scrollY < 4) log.style.height = Math.max(92, log.offsetHeight - over) + 'px';
+}
+
+const BOSS_ASK = {
+  final: {
+    tail: '결전은 20분 동안 이어지고, 체력이 다하면 30초씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.',
+    1: ['혼자서 결전을 엽니까?', '혼자서는 거의 이길 수 없습니다.\n구중 봉주는 넷이 함께 맞서도록 만든 최종 보스입니다.', '그래도 혼자 시작'],
+    2: '둘이서는 어렵지만 해볼 만한 싸움입니다. 회복품을 넉넉히 챙기고, 한 사람이 막는 동안 다른 사람이 몰아치세요.',
+    3: '셋이면 해볼 만한 싸움입니다. 막는 사람·치는 사람·돌보는 사람으로 나누면 한결 수월합니다.',
+    4: '넷이 함께하는 것이 이 결전에 가장 알맞은 인원입니다.',
+    call: n => `같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(90초 안에 합류, 함께 ${n}명).`, ok: '결전 시작', name: '결전',
+  },
+  gw: {
+    tail: '싸움은 15분 동안 라운드마다 행동 하나를 고릅니다. 지면 장착 장비 내구도가 10% 깎이고 침식이 10 오르며, 30분 뒤에야 다시 도전할 수 있습니다. 모두 귀허 부적을 하나씩 씁니다.',
+    1: ['혼자서 귀허의 주인 앞에 섭니까?', '혼자서는 열 번에 두세 번 이기는 싸움입니다.\n직업에 맞춘 「혼자 도전 보정」이 붙고 쓰러져도 열 번까지 다시 일어나지만, 정석대로 싸워도 쉽지 않습니다.', '그래도 혼자 서기'],
+    2: '둘이서는 열 번에 다섯 번쯤 이기는 싸움입니다. 한 사람이 버티는 동안 다른 사람이 수법을 끊어 주세요.',
+    3: '셋이면 한결 수월합니다. 버티는 사람·치는 사람·돌보는 사람으로 나누세요.',
+    4: '넷이 함께하는 것이 귀허의 주인에게 가장 알맞은 인원입니다.',
+    call: n => `같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(60초 안에 합류, 함께 ${n}명).`, ok: '귀허의 주인 앞에 서기', name: '도전',
+  },
+};
+export async function partyHere() {
+  const p = await load('world_party_overview', undefined, { maxAge: 30000 }).catch(() => null);
+  const here = store.character?.location, me = store.user?.id;
+  return 1 + Math.min(3, (p?.party ? p.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition).length);
+}
+export function askPartySize(kind, n, begin = false) {
+  const b = BOSS_ASK[kind]; n = Math.max(1, Math.min(4, n));
+  if (n === 1) { const [title, head, ok] = b[1]; return ask(`${head}\n${b.tail}\n파티원을 모아 함께 오기를 강하게 권합니다.`, { title, ok, cancel: '돌아가기', alarm: true }); }
+  return ask(`${begin ? `지금 모인 ${n}명으로 시작합니다. 아직 오지 않은 파티원은 함께하지 못합니다.` : b.call(n)}\n${b[n]}\n${b.tail}`, { title: `${n}명이 함께 ${b.name}을 시작합니까?`, ok: b.ok, cancel: '돌아가기' });
 }

@@ -1,7 +1,7 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
-  reloadCharacter, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml } from './fightui.js';
+  reloadCharacter, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
@@ -217,13 +217,13 @@ function drawLobby(s) {
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}
       ${s.last ? `<a class="btn small ghost" href="#/gw/${esc(s.last)}">${icon('scroll', 15)}<span>지난 도전 기록 보기</span></a>` : ''}
     </div></section>${tipsHtml(s.tips)}`;
-  const o = $('#gw-open', el); if (o) o.onclick = () => run(o, () => rpc('world_gw_open'));
+  const o = $('#gw-open', el); if (o) o.onclick = async () => { if (!(await askPartySize('gw', await partyHere()))) return; run(o, () => rpc('world_gw_open')); };
   const j = $('#gw-join-inv', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: s.invite }));
 }
 
 function bind() {
   const f = snap?.fight; if (!f) return;
-  const b = $('#gw-begin', el); if (b) b.onclick = () => run(b, () => rpc('world_gw_begin', { p_fight: f.id }));
+  const b = $('#gw-begin', el); if (b) b.onclick = async () => { if (!(await askPartySize('gw', (snap?.members || []).length || 1, true))) return; run(b, () => rpc('world_gw_begin', { p_fight: f.id })); };
   const j = $('#gw-join', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: f.id }));
   $$('[data-pick]', el).forEach(x => x.onclick = () => { const id = x.dataset.pick; sel = sel === id ? null : id; if (f.status === 'fight' && snap.joined) target = id; draw(); });
   const ib = $('#gw-items', el); if (ib) ib.onclick = tray.open;

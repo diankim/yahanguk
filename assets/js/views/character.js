@@ -2,7 +2,7 @@ import { xpGot, rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JO
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
-import { paintTitleDot, markTitlesSeen } from '../titledot.js';
+import { paintTitleDot, markTitlesSeen, dotSeen } from '../titledot.js';
 import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
@@ -72,6 +72,7 @@ async function draw(soft) {
   const body = $('#char-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
   const y = window.scrollY;
+  dotSeen(sub);
   try { await ({ status, growth, faction, skills, idle, titles })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
   if (soft && y > 0 && body.isConnected) scrollAfterModal(y);
