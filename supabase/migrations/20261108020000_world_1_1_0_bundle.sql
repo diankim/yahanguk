@@ -114,17 +114,23 @@ end $w$;
 create or replace function public.world_expedition_xp_rules()
 returns jsonb language sql immutable set search_path to '' as $f$
   select jsonb_build_object('searches', 30, 'fight', 0.42, 'near', 0.85,
-    'time', jsonb_build_object('30', 0.5, '60', 1.0, '120', 1.15, '240', 1.4, '480', 2.0))
+    'full', jsonb_build_object('120', 0.2, '240', 0.3, '480', 0.4))
 $f$;
 revoke all on function public.world_expedition_xp_rules() from public, anon, authenticated;
 grant execute on function public.world_expedition_xp_rules() to fn_owner_field, service_role;
+
+create or replace function public.world_expedition_full_bonus(p_minutes int)
+returns numeric language sql immutable set search_path to '' as $f$
+  select coalesce((select v::numeric from jsonb_each_text(public.world_expedition_xp_rules() -> 'full') e(k, v) where k::int <= p_minutes order by k::int desc limit 1), 0)
+$f$;
+revoke all on function public.world_expedition_full_bonus(int) from public, anon, authenticated;
+grant execute on function public.world_expedition_full_bonus(int) to fn_owner_field, service_role;
 
 create or replace function public.world_expedition_base_xp(p_level int, p_minutes int)
 returns numeric language sql immutable set search_path to '' as $f$
   with r as (select public.world_expedition_xp_rules() j)
   select (j ->> 'searches')::numeric * (j ->> 'near')::numeric * (8 + (j ->> 'fight')::numeric * (18 + 3 * greatest(1, p_level)))
-       * coalesce((j -> 'time' ->> p_minutes::text)::numeric,
-                  case when p_minutes <= 60 then p_minutes / 60.0 else 1 + 1.0 * least(1, (p_minutes - 60) / 420.0) end)
+       * p_minutes / 60.0 / (1 + public.world_expedition_full_bonus(p_minutes))
     from r
 $f$;
 revoke all on function public.world_expedition_base_xp(int, int) from public, anon, authenticated;
@@ -136,10 +142,14 @@ begin
   select pg_get_userbyid(proowner) into own from pg_proc where oid = 'public.world_expedition_complete'::regproc;
   execute format('grant execute on function public.world_expedition_base_xp(int, int) to %I', own);
   execute format('grant execute on function public.world_expedition_xp_rules() to %I', own);
+  execute format('grant execute on function public.world_expedition_full_bonus(int) to %I', own);
   d := replace(pg_get_functiondef('public.world_expedition_complete'::regproc), E'\r\n', E'\n');
   if position('world_expedition_base_xp' in d) = 0 then
     a := $a$(60 + coalesce(n.min_level, r.min_level, c.level) * 15) * power(e.minutes / 60.0, 0.8)$a$;
     if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.1.0 world_expedition_complete 기준 문구가 없습니다'; end if;
-    execute replace(d, a, 'public.world_expedition_base_xp(coalesce(n.min_level, r.min_level, c.level), e.minutes)');
+    d := replace(d, a, 'public.world_expedition_base_xp(coalesce(n.min_level, r.min_level, c.level), e.minutes)');
+    a := $a$fb := case when e.minutes >= 480 then 0.4 when e.minutes >= 240 then 0.3 else 0.2 end;$a$;
+    if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '1.1.0 world_expedition_complete 완주 덤 문구가 없습니다'; end if;
+    execute replace(d, a, 'fb := public.world_expedition_full_bonus(e.minutes);');
   end if;
 end $w$;
