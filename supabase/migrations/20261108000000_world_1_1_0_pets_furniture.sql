@@ -118,6 +118,51 @@ values
   ('frontier_market', 'hf_frame_small', 80, 0, 10, null)
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
 
+insert into public.world_pet_species(pet_id, pet_name, grade, kind, likes, how, sort, egg)
+select x.pet_id, x.pet_name, x.grade, x.kind, x.likes, x.how, x.sort, x.egg
+  from (values
+    ('baby_crab', '아기 게', 1, 'shell', 'treat_fish', '안전지대 상점의 바구니', 59, false),
+    ('pill_bug', '아기 공벌레', 2, 'shell', 'treat_herb', '탐색 중 「얼룩무늬 알」', 60, true),
+    ('empty_helm', '빈 투구 정령', 3, 'shell', 'treat_rice', '탐색 중 「빛나는 알」', 61, true),
+    ('poison_mushroom', '꼬마 독버섯', 1, 'venom', 'treat_herb', '안전지대 상점의 바구니', 62, false),
+    ('baby_croc', '새끼 악어', 2, 'venom', 'treat_meat', '탐색 중 「얼룩무늬 알」', 63, true),
+    ('baby_scorpion', '아기 전갈', 3, 'venom', 'treat_meat', '탐색 중 「빛나는 알」', 64, true),
+    ('dragonfly', '잠자리', 1, 'swarm', 'treat_honey', '안전지대 상점의 바구니', 65, false),
+    ('mantis', '꼬마 사마귀', 2, 'swarm', 'treat_meat', '탐색 중 「얼룩무늬 알」', 66, true),
+    ('ladybug', '무당벌레', 1, 'swarm', 'treat_honey', '안전지대 상점의 바구니', 67, false),
+    ('little_dokkaebi', '꼬마 도깨비', 2, 'mirror', 'treat_rice', '탐색 중 「얼룩무늬 알」', 68, true),
+    ('mask_spirit', '꼬마 탈 정령', 3, 'mirror', 'treat_rice', '탐색 중 「빛나는 알」', 69, true),
+    ('ox_calf', '새끼 황소', 1, 'breaker', 'treat_herb', '안전지대 상점의 바구니', 70, false),
+    ('cracked_jar', '금 간 장독 정령', 1, 'breaker', 'treat_rice', '안전지대 상점의 바구니', 71, false),
+    ('thunder_cloud', '꼬마 벼락구름', 2, 'breaker', 'treat_honey', '탐색 중 「얼룩무늬 알」', 72, true),
+    ('egg_ghost', '아기 달걀귀신', 2, 'ghost', 'treat_rice', '탐색 중 「얼룩무늬 알」', 73, true),
+    ('lantern_spirit', '등롱 혼령', 3, 'ghost', 'treat_rice', '탐색 중 「빛나는 알」', 74, true),
+    ('roe_fawn', '아기 노루', 2, 'wood', 'treat_herb', '탐색 중 「얼룩무늬 알」', 75, true),
+    ('spotted_seal', '아기 점박이물범', 2, 'water', 'treat_fish', '탐색 중 「얼룩무늬 알」', 76, true),
+    ('baby_elephant', '아기 코끼리', 2, 'giant', 'treat_herb', '탐색 중 「얼룩무늬 알」', 77, true),
+    ('baby_whale', '아기 고래', 3, 'giant', 'treat_fish', '탐색 중 「빛나는 알」', 78, true)
+  ) as x(pet_id, pet_name, grade, kind, likes, how, sort, egg)
+on conflict (pet_id) do update set pet_name = excluded.pet_name, grade = excluded.grade, kind = excluded.kind, likes = excluded.likes, how = excluded.how, sort = excluded.sort, egg = excluded.egg;
+
+insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, required_stats, minimum_level, equipment_traits, tradeable, reference_price, stack_size)
+values
+  ('pt_baby_crab', '아기 게 바구니', 'pet', 1, '등딱지가 손바닥만 한 갯벌의 아기 게입니다. 집게발 두 개를 번쩍 들고 옆으로만 걸어가, 앞으로 오라고 부르면 늘 비스듬히 다가옵니다. 놀라면 집게를 딱딱 부딪쳐 제법 사나운 척을 합니다. 쓰면 꼬마 동무가 됩니다.', false, '{}'::jsonb, 1, '{"pet":"baby_crab"}'::jsonb, true, 300, 1),
+  ('pt_poison_mushroom', '꼬마 독버섯 바구니', 'pet', 1, '보랏빛 갓에 흰 점이 박힌, 먹으면 큰일 나는 버섯에 깃든 정령입니다. 저도 그걸 알아서 누가 다가오면 갓을 흔들며 먹지 말라고 손사래를 칩니다. 비 온 다음 날이면 키가 한 뼘쯤 자라 있습니다. 쓰면 꼬마 동무가 됩니다.', false, '{}'::jsonb, 1, '{"pet":"poison_mushroom"}'::jsonb, true, 300, 1),
+  ('pt_dragonfly', '잠자리 바구니', 'pet', 1, '가을 들판을 맴도는 빨간 고추잠자리입니다. 손가락을 세우고 가만히 있으면 슬그머니 내려앉아 커다란 눈으로 이리저리 살핍니다. 빙글빙글 원을 그리면 따라 돌다가 어지러운지 금세 날아가 버립니다. 쓰면 꼬마 동무가 됩니다.', false, '{}'::jsonb, 1, '{"pet":"dragonfly"}'::jsonb, true, 300, 1),
+  ('pt_ladybug', '무당벌레 바구니', 'pet', 1, '빨간 등에 까만 점이 일곱 개 박힌 벌레입니다. 손가락 끝까지 기어 올라가서야 날개를 펴고 날아오릅니다. 점을 세어 주면 좋아하는지 잠깐 멈춰 섭니다. 쓰면 꼬마 동무가 됩니다.', false, '{}'::jsonb, 1, '{"pet":"ladybug"}'::jsonb, true, 300, 1),
+  ('pt_ox_calf', '새끼 황소 바구니', 'pet', 1, '뿔이 이제 막 돋기 시작한 누런 송아지입니다. 머리를 앞으로 숙이고 무엇이든 들이받아 보는 게 요즘 제일 재미있는 일입니다. 쓰다듬어 주면 꼬리를 휙휙 내젓고 음매 하고 길게 웁니다. 쓰면 꼬마 동무가 됩니다.', false, '{}'::jsonb, 1, '{"pet":"ox_calf"}'::jsonb, true, 300, 1),
+  ('pt_cracked_jar', '금 간 장독 정령 바구니', 'pet', 1, '장독대 맨 끝자리를 지키던 오래된 장독에 깃든 정령입니다. 몸에 금이 갔어도 깨지지 않고 버티는 것이 자랑이라, 누가 두드려 보면 일부러 더 크게 둥 하고 울립니다. 뚜껑과 독 사이 틈으로 두 눈이 반짝 빛나며 바깥을 내다봅니다. 쓰면 꼬마 동무가 됩니다.', false, '{}'::jsonb, 1, '{"pet":"cracked_jar"}'::jsonb, true, 300, 1)
+on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description,
+  equipment_traits = excluded.equipment_traits, tradeable = excluded.tradeable, reference_price = excluded.reference_price, stack_size = excluded.stack_size;
+
+insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max, daily_cap)
+select s.shop_id, x.item_id, 300, 0, 10, null
+  from (select distinct shop_id from public.world_shop_catalog where shop_id not in ('smithy', 'banyo_shop')) s
+  cross join (values ('pt_baby_crab'), ('pt_poison_mushroom'), ('pt_dragonfly'), ('pt_ladybug'), ('pt_ox_calf'), ('pt_cracked_jar')) as x(item_id)
+on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
+
+update public.world_pet_species set kind = x.kind from (values ('neun_puppy', 'ghost'), ('little_jangseung', 'wood'), ('little_raccoon', 'mirror'), ('baby_girin', 'giant')) as x(pet_id, kind) where world_pet_species.pet_id = x.pet_id;
+
 do $g$
 declare r record;
 begin
@@ -126,5 +171,21 @@ begin
     perform public.world_housing_grant_once(r.owner_id, r.source, '새로 생긴 보상 가구');
   end loop;
 end $g$;
+
+insert into public.world_patch_notes(note_id, title, body) values ('1.1.0', '1.1.0 · 별채의 새 식구', $n$이번 주말, 별채와 꼬마 동무에 새 식구가 찾아옵니다.
+
+## 꼬마 동무
+- 새 동무가 많이 늘었습니다. 바닷가 아기 게와 아기 고래, 장독대를 지키던 장독 정령, 밤길을 밝히던 등롱 혼령, 굿판의 탈 정령까지 동물이 아닌 친구들도 함께 왔습니다.
+- 모든 갈래의 동무 수를 똑같이 맞췄습니다. 성격이 더 어울리는 갈래로 옮긴 동무도 몇 있습니다. 친밀도와 칭호는 그대로입니다.
+- 새 동무는 상점 바구니, 「얼룩무늬 알」, 「빛나는 알」에서 만날 수 있습니다.
+- 동무 도감에 갈래 표시가 붙고, 그림이나 이름을 누르면 소개 글을 볼 수 있습니다.
+- 쓰다듬고 놀아 주고 먹일 때 동무가 하는 말이 갈래와 친밀도에 따라 훨씬 다양해집니다.
+
+## 별채 가구
+- 새 가구가 들어옵니다. 깔개, 상 위에 올리는 작은 소품, 동무가 쓰는 둥지·물그릇·놀이 층대, 그림 액자, 원앙금침과 귀한 벽지·바닥재가 있습니다.
+- 흔한 가구는 상점과 제작으로, 귀한 가구는 토벌·원정·칭호 같은 큰 일을 해냈을 때 얻습니다.
+- 이미 그 조건을 채운 조사원에게는 새로 생긴 보상 가구를 곳간으로 보내 드립니다.
+$n$)
+on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
 update public.world_app_meta set value = '20261108000000' where key = 'db_version';

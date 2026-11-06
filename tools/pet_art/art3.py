@@ -531,7 +531,7 @@ ag..ggahhaaaaa..
 ...aaaaaaaaaa...'''))
 
 GIR = {'a': '#ecc462', 's': '#c8983a', 'm': '#4aa090', 'h': '#f6f0d8', 'c': '#f8ecc4', 'n': '#8a5a30', 'f': '#5a4030', 'e': E, 'i': I, 'p': PK}
-pet(id='baby_girin', name='아기 기린', grade=4, kind='sky', likes='treat_herb',
+pet(id='baby_girin', name='아기 기린', grade=4, kind='giant', likes='treat_herb',
     desc='사슴 몸에 외뿔과 비늘을 지닌 상서로운 기린의 새끼입니다. 풀 한 포기도 밟지 않으려 사뿐사뿐 걷습니다.',
     baby=dict(pal=GIR,
         idle='''
@@ -646,7 +646,7 @@ fab.aaabbbccccaa
 .fabbaaaaaaaaaa.'''))
 
 JANG = {'a': '#c89058', 'b': '#7a4a26', 'h': '#2a2630', 'g': '#4a4452', 'w': '#f6f0e0', 'e': E, 'i': I, 'p': '#e8705a', 'r': '#c83a2a'}
-pet(id='little_jangseung', name='꼬마 장승', grade=4, kind='ward', likes='treat_herb',
+pet(id='little_jangseung', name='꼬마 장승', grade=4, kind='wood', likes='treat_herb',
     desc='마을 어귀를 지키던 천하대장군이 아기만 하게 줄어들었습니다. 눈을 부라려도 하나도 무섭지 않습니다.',
     baby=dict(pal=JANG,
         idle='''

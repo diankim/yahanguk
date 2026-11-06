@@ -80,7 +80,7 @@ f..............
 ....fffffff....'''))
 
 RAC = {'a': '#9a8468', 'b': '#4e4034', 'c': '#f0e8d8', 't': '#6a5a48', 'n': '#2a1a14', 'l': '#5aa040', 'm': '#3a7a2a', 'e': '#120c08', 'i': I, 'p': PK}
-pet(id='little_raccoon', name='꼬마 너구리', grade=2, kind='shadow', likes='treat_fish',
+pet(id='little_raccoon', name='꼬마 너구리', grade=2, kind='mirror', likes='treat_fish',
     desc='눈가에 검은 탈을 쓴 듯한 꼬마 너구리입니다. 머리에 나뭇잎을 얹고 둔갑하는 흉내를 냅니다.',
     baby=dict(pal=RAC, line='c',
         idle='''

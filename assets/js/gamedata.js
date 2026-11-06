@@ -1,5 +1,5 @@
 export const GAMEDATA = {
-  "pets": {"total":47,"grades":{"1":15,"2":15,"3":8,"4":7,"5":2}},
+  "pets": {"total":78,"grades":{"1":27,"2":28,"3":14,"4":7,"5":2}},
   "kinds": {"bird":"비금","shell":"갑각","ghost":"영귀","venom":"독충","wood":"목령","shadow":"은형","water":"수귀","swarm":"군충","ward":"금주","mirror":"경요","breaker":"파봉","sky":"천상","giant":"거괴"},
   "jobBase": {
     "artificer": {"agility":5,"strength":9,"vitality":7,"willpower":3,"perception":3,"spirit_affinity":3},

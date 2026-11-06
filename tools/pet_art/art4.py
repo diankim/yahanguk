@@ -3,7 +3,7 @@
 
 # 1) 네눈박이 강아지(제보 박시현): 머리·등·꼬리 검정, 턱·가슴·배·다리 하양, 갈색 눈썹, 공놀이
 NEUN = {'a': '#3a3640', 't': '#c8803e', 'w': '#f6f2ea', 'n': '#120c0a', 'l': '#9a94a2', 'd': '#3a6ac0', 'y': '#f2c94c', 'e': '#0c0806', 'i': I, 'p': PK}
-pet(id='neun_puppy', name='네눈박이 강아지', grade=1, kind='ward', likes='treat_meat',
+pet(id='neun_puppy', name='네눈박이 강아지', grade=1, kind='ghost', likes='treat_meat',
     desc='눈 위의 갈색 점이 눈이 넷인 것처럼 보이는 검둥이 강아지입니다. 공을 던져 주면 지칠 때까지 물어 옵니다.',
     baby=dict(pal=NEUN, line='l',
         idle='''
