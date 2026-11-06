@@ -114,15 +114,8 @@ export function mountWhisperPage(el) {
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hiddenAt = Date.now(); return; } if (Date.now() - hiddenAt > 30000) { refresh(); if (cur) reloadMsgs(cur); } });
 }
-let feed = null;
 export function whisperFeed(on) {
-  if (feed) { try { db.removeChannel(feed); } catch {} feed = null; }
   bgroup('whfeed', on && store.user?.id ? [`whisper:${store.user.id}`] : [], 'msg', p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); });
-  if (!on || !store.user?.id) return;
-  try {
-    feed = db.channel('yh-wh-feed').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_chat_messages', filter: `recipient_id=eq.${store.user.id}` },
-      p => { if (p.new?.channel_type === 'whisper') onWhisper(p.new); }).subscribe();
-  } catch {}
 }
 const canPop = () => matchMedia('(pointer: fine)').matches && !document.body.classList.contains('pop-win');
 function buildUI(host, target) {

@@ -66,8 +66,8 @@ export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
   loadNotes(true);
+  let first = true, hiddenAt = 0, lastRead = Date.now();
   try {
-    const mine = store.user?.id ? { filter: `user_id=eq.${store.user.id}` } : {};
     const onNote = p => {
       const n = p.new; if (!n?.id || n.user_id !== store.user?.id || notes.some(x => x.id === n.id)) return;
       shown.add(n.id); notes.unshift(n); drawDot();
@@ -76,14 +76,11 @@ export function mountNotifications(btn) {
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     };
-    if (store.user?.id) bgroup('note', [`note:${store.user.id}`], 'note', onNote);
-    db.channel('yh-notes').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'world_notifications', ...mine }, onNote).subscribe(status => {
-      const was = notesLive; notesLive = status === 'SUBSCRIBED';
-      if (notesLive && !was && !first) loadNotes();
-      first = false;
+    if (store.user?.id) bgroup('note', [`note:${store.user.id}`], 'note', onNote, l => {
+      const was = notesLive; notesLive = l;
+      if (l && !was) { if (!first) loadNotes(); first = false; }
     });
   } catch {}
-  let first = true, hiddenAt = 0, lastRead = Date.now();
   const read = () => { lastRead = Date.now(); return loadNotes(); };
   const soon = throttle(read, 15000);
   on('changed', ev => {

@@ -1,4 +1,4 @@
-import { db, rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
+import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
@@ -17,7 +17,7 @@ const creditLine = c => {
 const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let el = null, rid = null, snap = null, ch = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
+let el = null, rid = null, snap = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
 
 export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0; shownStatus = '';
@@ -27,7 +27,7 @@ export async function render(root, sub) {
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { hideTip(); clearTimeout(chargeT); if (ch) db.removeChannel(ch); ch = null; bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
+export function destroy() { hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
 
 async function refresh() {
   if (!el) return;
@@ -53,9 +53,8 @@ function soon() {
   timer = setTimeout(refresh, Math.max(250, lastFetch + gap - Date.now()));
 }
 function subscribe() {
-  if (ch) db.removeChannel(ch);
-  ch = db.channel(`yh-raid-${rid || 'any'}`).on('postgres_changes', { event: '*', schema: 'public', table: 'world_raids', ...(rid ? { filter: `raid_id=eq.${rid}` } : {}) }, onChange).subscribe();
-  bgroup('raid', [rid ? `raid:${rid}` : 'raid:any'], 'change', onChange);
+  let ever = false, was = false;
+  bgroup('raid', [rid ? `raid:${rid}` : 'raid:any'], 'change', onChange, l => { if (l && !was && ever && el) soon(); if (l) ever = true; was = l; });
 }
 
 const left = t => untilText(t);

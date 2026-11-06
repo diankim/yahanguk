@@ -2,7 +2,7 @@ import { db, store, rpc } from './core.js';
 import { selfReload } from './config.js';
 
 const NOTE = 'yh-kick-note';
-let channel = null, bchannel = null, timer = null, mounted = null, kicking = false;
+let bchannel = null, timer = null, mounted = null, kicking = false;
 
 let pending = null, release = null;
 export function expectLogin() { pending = new Promise(r => { release = r; }); }
@@ -14,7 +14,7 @@ export async function claimSession() {
 }
 export function takeKickNote() { try { const v = sessionStorage.getItem(NOTE) || ''; sessionStorage.removeItem(NOTE); return v; } catch { return ''; } }
 
-let lastCheck = 0, live = false, blive = false, relistenAt = 0;
+let lastCheck = 0, blive = false, relistenAt = 0;
 async function check(force = false) {
   if (pending) await pending;
   if (kicking || !store.user || document.hidden) return;
@@ -35,7 +35,7 @@ export function mountSessionGuard() {
   const uid = store.user?.id; if (!uid || mounted === uid) return;
   stopSessionGuard(); mounted = uid;
   setTimeout(() => listen(uid), 0);
-  timer = setInterval(() => { if (!(live || blive) || Date.now() - lastCheck > 300000) check(); }, 60000);
+  timer = setInterval(() => { if (!blive || Date.now() - lastCheck > 300000) check(); }, 60000);
   check(true);
 }
 async function listen(uid) {
@@ -44,26 +44,23 @@ async function listen(uid) {
     if (!t || mounted !== uid) return;
     await db.realtime.setAuth(t);
   } catch { return; }
-  if (mounted !== uid || channel) return;
+  if (mounted !== uid || bchannel) return;
   try {
-    channel = db.channel('yh-session').on('postgres_changes', { event: '*', schema: 'public', table: 'world_active_sessions', filter: `owner_id=eq.${uid}` }, () => check(true))
-      .subscribe(status => {
-        live = status === 'SUBSCRIBED';
-        if (status !== 'CHANNEL_ERROR' || mounted !== uid || Date.now() - relistenAt < 60000) return;
-        relistenAt = Date.now();
-        const old = channel; channel = null; try { db.removeChannel(old); } catch {}
-        setTimeout(() => listen(uid), 3000);
-      });
-  } catch {}
-  if (bchannel) return;
-  try {
-    bchannel = db.channel(`session:${uid}`, { config: { private: true } }).on('broadcast', { event: 'claim' }, () => check(true))
-      .subscribe(status => { blive = status === 'SUBSCRIBED'; });
+    const ch = db.channel(`session:${uid}`, { config: { private: true } }).on('broadcast', { event: 'claim' }, () => check(true));
+    bchannel = ch;
+    ch.subscribe(status => {
+      if (bchannel !== ch) return;
+      blive = status === 'SUBSCRIBED';
+      if (blive || mounted !== uid || !/^(CHANNEL_ERROR|TIMED_OUT|CLOSED)$/.test(status)) return;
+      bchannel = null; try { db.removeChannel(ch); } catch {}
+      const wait = Math.max(3000, 60000 - (Date.now() - relistenAt));
+      relistenAt = Date.now() + wait;
+      setTimeout(() => { if (mounted === uid && !bchannel) listen(uid); }, wait);
+    });
   } catch {}
 }
 export function stopSessionGuard() {
-  mounted = null; live = false; blive = false; clearInterval(timer); timer = null;
-  if (channel) { try { db.removeChannel(channel); } catch {} channel = null; }
+  mounted = null; blive = false; clearInterval(timer); timer = null;
   if (bchannel) { try { db.removeChannel(bchannel); } catch {} bchannel = null; }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && mounted) check(); });
