@@ -709,7 +709,7 @@ async function faction(body) {
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; if (r?.letter) showLetter(r.letter); return r; });
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
   $$('[data-join]', body).forEach(b => b.onclick = async () => {
-    const k = b.dataset.join, row = $(`#jr-${k}`, body);
+    const k = b.dataset.join, row = $(`#jr-${CSS.escape(k)}`, body);
     if ((store.character?.level || 1) < JOIN_LV || !(JOIN_AT[k] || [BASE[k]]).includes(here?.region_id)) {
       row.querySelector('.join-msg')?.remove();
       row.insertAdjacentHTML('beforeend', `<p class="join-msg hint">${icon('pin', 14)} ${(store.character?.level || 1) < JOIN_LV ? `레벨 ${JOIN_LV}부터 가입할 수 있습니다.` : `${esc((JOIN_AT[k] || [BASE[k]]).map(r => nameOf(r)).join('·'))} 가운데 한 곳에서 가입할 수 있습니다.`}</p>`);

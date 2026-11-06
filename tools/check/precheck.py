@@ -47,6 +47,10 @@ def client_checks():
             for i, line in enumerate(src.split('\n'), 1):
                 if re.search(r"/[a-z_|^$]{3,}/\.test\((ev\.|e\.)?name\b", line):
                     out.append(('다시 읽기', f'{rel}:{i}', '행동 이름 정규식 → assets/js/changes.js'))
+        for i, line in enumerate(src.split('\n'), 1):
+            for m in re.finditer(r"(?:\$\$?|querySelector(?:All)?|closest|matches)\(`[^`]*#[\w-]*\$\{([^}]*)\}", line):
+                if not m.group(1).startswith('CSS.escape('):
+                    out.append(('선택자', f'{rel}:{i}', '# 선택자에 값을 그대로 넣음 → CSS.escape(값)'))
         for t in SERVER_TEXT:
             for i, line in enumerate(src.split('\n'), 1):
                 if t in line and re.search(r"/[^/\n<>]*" + re.escape(t) + r"[^/\n<>]*/[gimsuy]*\s*(\.test|\.exec|,)|\.(includes|startsWith|indexOf)\(['`][^'`]*" + re.escape(t), line):

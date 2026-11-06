@@ -75,7 +75,7 @@ export function itemSectionsHtml(list, inv, hpTitle = '체력·정신 회복') {
 }
 export function itemTray({ title, bodyId, fill }) {
   let layer = null;
-  const refill = () => { const box = layer && $(`#${bodyId}`, layer); if (box) fill(box); };
+  const refill = () => { const box = layer && $(`#${CSS.escape(bodyId)}`, layer); if (box) fill(box); };
   return {
     open() {
       if (layer?.isConnected) return;
