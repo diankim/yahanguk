@@ -1,70 +1,77 @@
-CRAB2 = {'a': '#e8553a', 'b': '#b03a24', 'c': '#f2805e', 'e': E, 'i': I, 'p': PK}
+CRAB2 = {'a': '#ec6a48', 'b': '#b8442a', 'c': '#f2885c', 'e': E, 'i': I, 'p': PK}
 pet(id='baby_crab', name='아기 게', grade=1, kind='shell', likes='treat_fish',
     desc='등딱지가 손바닥만 한 갯벌의 아기 게입니다. 집게발 두 개를 번쩍 들고 옆으로만 걸어가, 앞으로 오라고 부르면 늘 비스듬히 다가옵니다. 놀라면 집게를 딱딱 부딪쳐 제법 사나운 척을 합니다.',
     baby=dict(pal=CRAB2, idle='''
-..ie....ie..
-..aa....aa..
-cc.aaaaaa.cc
-cbaaaaaaaabc
-.capaaaapac.
-..aaaaaaaa..
-..b.b..b.b..''', step_tail='''
-...b.b..b.b.''', sleep='''
-..kk....kk..
-cc.aaaaaa.cc
-cbaaaaaaaabc
-.capaaaapac.
-.bbbbbbbbbb.'''),
+c.c........c.c
+ccc........ccc
+.c..aaaaaa..c.
+.c.aaaaaaaa.c.
+.caaieaaieaac.
+..aaeeaaeeaa..
+..apaaaaaapa..
+.b.b.b..b.b.b.''', step_tail='''
+..b.b.b.b.b.b.''', sleep='''
+....aaaaaa....
+cc.aaaaaaaa.cc
+ccakkaaaakkacc
+..apaaaaaapa..
+.bbbbbbbbbbbb.'''),
     adult=dict(pal=CRAB2, idle='''
-...ie......ie...
-...aa......aa...
-ccc.aaaaaaaa.ccc
-cbcaaaaaaaaaacbc
-.ccaaaaaaaaaacc.
-..apaaaaaaaapa..
-...aaaaaaaaaa...
-..b.b.b..b.b.b..
-.b..b......b..b.''', step_tail='''
-.b.b.b....b.b.b.
-..b..b....b..b..''', sleep='''
-...kk......kk...
-ccc.aaaaaaaa.ccc
-cbcaaaaaaaaaacbc
-.ccaaaaaaaaaacc.
-..apaaaaaaaapa..
-.bbbbbbbbbbbbbb.'''))
+.c..c........c..c.
+.cccc........cccc.
+..cc..aaaaaa..cc..
+..c..aaaaaaaa..c..
+..c.aaaaaaaaaa.c..
+..caaieaaaaieaac..
+...aaeeaaaaeeaa...
+...aapaaaaaapaa...
+....aaaaaaaaaa....
+..b.b.b....b.b.b..''', step_tail='''
+...b.b.b..b.b.b...''', sleep='''
+......aaaaaa......
+.cc..aaaaaaaa..cc.
+ccc.aaaaaaaaaa.ccc
+.c.aakkaaaakkaa.c.
+...aapaaaaaapaa...
+..bbbbbbbbbbbbbb..'''))
 
-PILL = {'a': '#8e939c', 'b': '#686d77', 'n': '#4a4e56', 'e': E, 'i': I, 'p': PK}
+PILL = {'a': '#a0a6b0', 'b': '#747a86', 'n': '#4a4e56', 'e': E, 'i': I, 'p': PK, 'k': '#1a120e'}
 pet(id='pill_bug', name='아기 공벌레', grade=2, kind='shell', likes='treat_herb',
     desc='돌 밑 축축한 그늘에 사는 작은 쥐며느리입니다. 손끝으로 살짝 건드리면 몸을 동그랗게 말아 구슬처럼 굴러가 버립니다. 한참 지나 아무도 없다 싶으면 슬그머니 몸을 펴고 더듬이부터 내밉니다.',
     baby=dict(pal=PILL, idle='''
-....ababa...n
-..abababab.n.
-.ababababaaa.
-abababababaie
-.ababababapa.
+..........nn.
+....abababaa.
+..ababababaaa
+.bababababaie
+abababababaee
+.bababababpa.
 ..n.n.n.n.n..''', step_tail='''
 .n.n.n.n.n...''', sleep='''
-...abab...
-.abababab.
-ababababab
-bababababa
-.bababab..'''),
+...aaaa...
+.aabbbbaa.
+abbaaaabba
+abakkakkba
+abpaaaapba
+.aabbbbaa.
+...aaaa...'''),
     adult=dict(pal=PILL, idle='''
-.......ababa....n
-....ababababab.n.
-..abababababaaa..
-.ababababababaaie
-abababababababpa.
-.ababababababaaa.
+..............nn.
+.....babababaaa..
+...bababababaaaa.
+..abababababaaaie
+.babababababaaaee
+.babababababaapa.
+..ababababababa..
 ..n.n.n.n.n.n.n..''', step_tail='''
 .n.n.n.n.n.n.n...''', sleep='''
-...ababab...
-.abababababa
-abababababab
-babababababa
-.bababababa.
-..bbbbbbbb..'''))
+....aaaa....
+..aabbbbaa..
+.abbaaaabba.
+abaabbbbaaba
+abakkaakkaba
+abpaaaaaapba
+.abbaaaabba.
+..aabbbbaa..'''))
 
 HELM = {'a': '#a3adb8', 'b': '#66707c', 'r': '#c8402e', 'd': '#26222c', 'e': '#ffd46a', 'i': '#fff6d0'}
 pet(id='empty_helm', name='빈 투구 정령', grade=3, kind='shell', likes='treat_rice',
@@ -186,72 +193,110 @@ bbbaaaaaaaaaaaaaaaaa
 ...accccccccccaaaaa.
 ...aaaaaaaaaaaaaaa..'''))
 
-SCORP = {'a': '#c88a3a', 'b': '#8e5a22', 'c': '#d89e54', 's': '#a63c9c', 'e': E, 'i': I, 'p': PK}
+SCORP = {'a': '#e0a050', 'b': '#a8682a', 'c': '#eab468', 's': '#b04aa8', 'e': E, 'i': I, 'p': PK}
 pet(id='baby_scorpion', name='아기 전갈', grade=3, kind='venom', likes='treat_meat',
     desc='모래빛 껍질을 두른 아기 전갈입니다. 꼬리 끝 독침을 늘 하늘 높이 치켜들고 다니지만, 아직 독이 차지 않아 찔려도 간지러울 뿐입니다. 집게로 무언가를 꼭 쥐고 있어야 마음을 놓습니다.',
     baby=dict(pal=SCORP, idle='''
-...bbbb........
-..b....s.......
-..a............
-..a............
-..a.......c.c..
-..aaaaaaa..cc..
-.aaaaaaaaaiea..
-..aaaaaaaapa...
-..b.b.b.b......''', step_tail='''
-...b.b.b.b.....''', sleep='''
-..........c.c..
-.saaaaaaa..cc..
-aaaaaaaaaakka..
-..aaaaaaaapa...
-..bbbbbbbb.....'''),
+......bbb.......
+.....s...b......
+.........b......
+c.c......b...c.c
+ccc.aaaaaaaa.ccc
+.c.aaaaaaaaaa.c.
+.caaieaaaaieaac.
+..aaeeaaaaeeaa..
+..aapaaaaaapaa..
+..b.b.b..b.b.b..''', step_tail='''
+...b.b.b.b.b.b..''', sleep='''
+c.c..........c.c
+ccc.aaaaaaaa.ccc
+.c.aaaaaaaaaa.c.
+.caakkaaaakkaac.
+..aapaaaaaapaabb
+..bbbbbbbbbbbb.s'''),
     adult=dict(pal=SCORP, idle='''
-....bbbbb........
-...b.....b.......
-..b.......s......
-..a..............
-..a..............
-..a.........c..c.
-..aaaaaaaaa..ccc.
-.aaaaaaaaaaaiea..
-.aaaaaaaaaaapa...
-..aaaaaaaaaa.....
-..b.b.b.b.b......''', step_tail='''
-...b.b.b.b.b.....''', sleep='''
-............c..c.
-..saaaaaaaa..ccc.
-.aaaaaaaaaaakka..
-.aaaaaaaaaaapa...
-..bbbbbbbbbb.....'''))
+........bbbb........
+.......s....b.......
+............b.......
+............b.......
+c..c........b...c..c
+cccc..aaaaaaaa..cccc
+.cc.aaaaaaaaaaaa.cc.
+..caaaieaaaaieaaac..
+...aaaeeaaaaeeaaa...
+...aapaaaaaaaapaa...
+....aaaaaaaaaaaa....
+...b.b.b....b.b.b...''', step_tail='''
+....b.b.b..b.b.b....''', sleep='''
+c..c............c..c
+cccc..aaaaaaaa..cccc
+.cc.aaaaaaaaaaaa.cc.
+..caaakkaaaakkaaac..
+...aapaaaaaaaapaabb.
+....bbbbbbbbbbbb..bs'''))
 
-DRAGON = {'a': '#d84a30', 'b': '#a83420', 'w': '#e2f0f8', 'v': '#b4d0e2', 'e': E, 'i': I}
+DRAGON = {'a': '#e0503a', 'b': '#a83420', 'w': '#e8f4fa', 'v': '#b8d6e8', 'e': E, 'i': I, 'p': PK}
 pet(id='dragonfly', name='잠자리', grade=1, kind='swarm', likes='treat_honey',
     desc='가을 들판을 맴도는 빨간 고추잠자리입니다. 손가락을 세우고 가만히 있으면 슬그머니 내려앉아 커다란 눈으로 이리저리 살핍니다. 빙글빙글 원을 그리면 따라 돌다가 어지러운지 금세 날아가 버립니다.',
     baby=dict(pal=DRAGON, idle='''
-....ww.ww.....
-...wwvwwvw....
-aaaaaaaaaaaie.
-...wwvwwvw.a..
-....ww.ww.....''', step_tail='''
-...wwvwwvw....
-..............''', sleep='''
-...wwwwww.....
-aaaaaaaaaaakk.
-...wwwwww.a...'''),
+.....ieaie.....
+....peeaeep....
+wwwww.aaa.wwwww
+wvvvwwaaawwvvvw
+.wwwww.a.wwwww.
+wvvvww.a.wwvvvw
+.wwww..a..wwww.
+.......a.......
+.......b.......''', step='''
+.....ieaie.....
+....peeaeep....
+.wwww.aaa.wwww.
+wwvvvwaaawvvvww
+wwwww..a..wwwww
+.wvvvw.a.wvvvw.
+..www..a..www..
+.......a.......
+.......b.......''', sleep='''
+......aaa......
+....pkkakkp....
+......aaa......
+....wwwawww....
+...wvvwawvvw...
+....wwwawww....
+.......a.......
+.......b.......'''),
     adult=dict(pal=DRAGON, idle='''
-.....www..www.....
-....wwvww.wwvww...
-...wwwvwwwwwvww...
-aaaaaaaaaaaaaaaie.
-...wwwvwwwwwvww.a.
-....wwvww.wwvww...
-.....www..www.....''', step_tail='''
-....wwvwwwwvww....
-..................
-..................''', sleep='''
-...wwwwwwwwww.....
-aaaaaaaaaaaaaaakk.
-...wwwwwwwwww.a...'''))
+.......ieaaaie.......
+......peeaaaeep......
+wwwwwww..aaa..wwwwwww
+wvvvvvwwwaaawwwvvvvvw
+.wwwwwww.aaa.wwwwwww.
+wvvvvvww..a..wwvvvvvw
+.wwwwww...a...wwwwww.
+..........a..........
+..........a..........
+..........a..........
+..........b..........''', step='''
+.......ieaaaie.......
+......peeaaaeep......
+.wwwwww..aaa..wwwwww.
+wwvvvvvwwaaawwvvvvvww
+wwwwwwww.aaa.wwwwwwww
+.wvvvvww..a..wwvvvvw.
+..wwwww...a...wwwww..
+..........a..........
+..........a..........
+..........a..........
+..........b..........''', sleep='''
+.........aaa.........
+......pkkaaakkp......
+.........aaa.........
+......wwwwawwww......
+....wvvvvwawvvvvw....
+......wwwwawwww......
+..........a..........
+..........a..........
+..........b..........'''))
 
 MANTIS = {'a': '#7ab848', 'b': '#5a9032', 'c': '#c4e08c', 'e': E, 'i': I}
 pet(id='mantis', name='꼬마 사마귀', grade=2, kind='swarm', likes='treat_meat',
@@ -377,56 +422,85 @@ pet(id='little_dokkaebi', name='꼬마 도깨비', grade=2, kind='mirror', likes
 ...b.aaaaa.bmnm
 .....bbbbb..mmm'''))
 
-MASK = {'a': '#efd9a8', 'b': '#c8a874', 'd': '#5a3a22', 'r': '#c8402e', 'o': '#e0a06a', 'e': '#3a2418', 'i': '#8a6040', 'p': '#f09a8a'}
+MASK = {'a': '#f3e0b8', 'h': '#3a2a24', 'e': '#5a3a22', 'p': '#f29a8a', 'o': '#d0503a', 'w': '#f4f0e6', 'r': '#c8402e'}
 pet(id='mask_spirit', name='꼬마 탈 정령', grade=3, kind='mirror', likes='treat_rice',
     desc='마을 굿판에서 쓰던 탈에 깃든 장난꾸러기 정령입니다. 웃는 탈로 웃다가도 눈 깜짝할 새 성난 얼굴, 우는 얼굴로 표정을 바꿔 가며 사람을 놀립니다. 풍물 소리가 들리면 턱을 덜컥거리며 어깨춤을 춥니다.',
-    lid='a', eyes='e',
     baby=dict(pal=MASK, idle='''
-...aaaaa...
-..aaaaaaa..
-.addaaadda.
-.aeeaaaeea.
-.apaaaaapa.
-.aaabbbaaa.
-..aaoooaa..
-...aaaaa...
-....rrr....
-...r.r.r...''', step_tail='''
-....r.r.r..''', sleep='''
-...aaaaa...
-..aaaaaaa..
-.addaaadda.
-.abbaaabba.
-.apaaaaapa.
-.aaaoooaaa.
-..aaaaaaa..
-...rrrrr...'''),
+.....hh.....
+....hhhh....
+..aaaaaaaa..
+.aaaaaaaaaa.
+.aaeaaaaeaa.
+.aeaeaaeaea.
+.apaaaaaapa.
+..aaaooaaa..
+...aaaaaa...
+..wwrrrrww..
+..wwwwwwww..
+...ww..ww...''', blink='''
+.....hh.....
+....hhhh....
+..aaaaaaaa..
+.aaaaaaaaaa.
+.aaeaaaaeaa.
+.aeaeaaeaea.
+.apaaaaaapa.
+..aaaooaaa..
+...aaaaaa...
+..wwrrrrww..
+..wwwwwwww..
+...ww..ww...''', step_tail='''
+..ww....ww..''', sleep='''
+.....hh.....
+....hhhh....
+..aaaaaaaa..
+.aaaaaaaaaa.
+.akkaaaakka.
+.apaaaaaapa.
+..aaaooaaa..
+...aaaaaa...
+.wwwwrrwwww.'''),
     adult=dict(pal=MASK, idle='''
-....aaaaaa....
+......hh......
+.....hhhh.....
+...aaaaaaaa...
 ..aaaaaaaaaa..
 .aaaaaaaaaaaa.
-.adddaaaaddda.
-.aaeeaaaaeeaa.
-.apaaaabaaapa.
-.aaaaaabaaaaa.
-.aaabbbbbbaaa.
-..aaaoooooaa..
+.aaaeaaaaeaaa.
+.aaeaeaaeaeaa.
+.apaaaaaaaapa.
+..aaaaooaaaa..
 ...aaaaaaaa...
-.....rrrr.....
-....r.rr.r....
-...r..r...r...''', step_tail='''
-....r..r..r...
-.....r..r.....''', sleep='''
-....aaaaaa....
+..wwwrrrrwww..
+.wwwwwrrwwwww.
+..wwwwwwwwww..
+...ww....ww...''', blink='''
+......hh......
+.....hhhh.....
+...aaaaaaaa...
 ..aaaaaaaaaa..
 .aaaaaaaaaaaa.
-.adddaaaaddda.
-.aabbaaaabbaa.
-.apaaaabaaapa.
-.aaaaaaaaaaaa.
-..aaaoooooaa..
+.aaaeaaaaeaaa.
+.aaeaeaaeaeaa.
+.apaaaaaaaapa.
+..aaaaooaaaa..
 ...aaaaaaaa...
-....rrrrrr....'''))
+..wwwrrrrwww..
+.wwwwwrrwwwww.
+..wwwwwwwwww..
+...ww....ww...''', step_tail='''
+..ww......ww..''', sleep='''
+......hh......
+.....hhhh.....
+...aaaaaaaa...
+..aaaaaaaaaa..
+.aaaaaaaaaaaa.
+.aakkaaaakkaa.
+.apaaaaaaaapa.
+..aaaaooaaaa..
+...aaaaaaaa...
+.wwwwwrrwwwww.
+.wwwwwwwwwwww.'''))
 
 OX = {'a': '#b87a3e', 'b': '#8a5428', 'c': '#e6c89a', 'h': '#f2e6c8', 'n': '#e8a0a0', 'e': E, 'i': I}
 pet(id='ox_calf', name='새끼 황소', grade=1, kind='breaker', likes='treat_herb',
@@ -653,79 +727,107 @@ pet(id='lantern_spirit', name='등롱 혼령', grade=3, kind='ghost', likes='tre
 ...aaaaaaa...
 ....ccccc....'''))
 
-ROE = {'a': '#c08a52', 'b': '#8e5e32', 'w': '#f6ead2', 'n': '#3a2418', 'e': E, 'i': I, 'p': PK}
+ROE = {'a': '#c8905a', 'b': '#8e5e32', 'c': '#f2dcb8', 'w': '#fff4e0', 'n': '#2a1a14', 'e': E, 'i': I, 'p': PK}
 pet(id='roe_fawn', name='아기 노루', grade=2, kind='wood', likes='treat_herb',
     desc='등에 흰 점무늬가 아직 남아 있는 아기 노루입니다. 귀가 밝아 풀잎 하나 스치는 소리에도 겅중 뛰어오르고, 엉덩이의 하얀 털을 깃발처럼 세웁니다. 겁이 많지만 한번 친해지면 졸졸 따라다닙니다.',
     baby=dict(pal=ROE, idle='''
-.........bb.
-.........aab
-.........aie
-w.aaaaaaaaan
-.awawawaaa..
-..aaaaaaa...
-..b.b..b.b..
-..b.b..b.b..''', step_tail='''
-...b.b.b.b..
-..b...b...b.''', sleep='''
-.........bb.
-.........aab
-w.aaaaaaaakn
-.awawawaaaa.
-.bbbbbbbbb..'''),
+.......bb.bb..
+.......bcbbc..
+........aaaa..
+.......aaaaaa.
+.......aieaaaa
+.......aeeaacn
+.......paaacc.
+.w.aaaaaaaa...
+..awawawaaa...
+..aaaaaaaa....
+..a.a...a.a...
+..a.a...a.a...
+..b.b...b.b...''', step_tail='''
+...a.a..a.a...
+...a.a..a.a...
+...b.b..b.b...''', sleep='''
+.......bb.bb..
+.......bcbbc..
+........aaaa..
+.......aaaaaa.
+.......akkaaaa
+.......paaaacn
+.w.aaaaaaaacc.
+..awawawaaaa..
+.bbbbbbbbbbb..'''),
     adult=dict(pal=ROE, idle='''
-............bb..
-............aab.
-...........aaaab
-...........aaiea
-w..aaaaaaaaaaaan
-.awawawawaaaa...
-..aaaaaaaaaa....
-..aaaaaaaaa.....
-..b.b....b.b....
-..b.b....b.b....
-..b.b....b.b....''', step_tail='''
-...b.b..b.b.....
-..b...b.b...b...
-..b....b....b...''', sleep='''
-............bb..
-............aab.
-...........aaaab
-w..aaaaaaaaaakkn
-.awawawawaaaaaa.
-..aaaaaaaaaaaa..
-.bbbbbbbbbbbb...'''))
+.........bb.bb...
+.........bcbbcb..
+..........aaaa...
+.........aaaaaa..
+.........aaaaaaa.
+.........aieaaaaa
+.........aeeaaacn
+.........paaaacc.
+.........aaaaa...
+.waaaaaaaaaaaa...
+..awawawawaaaa...
+..aaaaaaaaaaa....
+..a.a......a.a...
+..a.a......a.a...
+..b.b......b.b...''', step_tail='''
+...a.a....a.a....
+...a.a....a.a....
+...b.b....b.b....''', sleep='''
+.........bb.bb...
+.........bcbbcb..
+..........aaaa...
+.........aaaaaa..
+.........aaaaaaa.
+.........akkaaaaa
+.........paaaaacn
+.........aaaaacc.
+.waaaaaaaaaaaa...
+..awawawawaaaa...
+.bbbbbbbbbbbbb...'''))
 
-SEAL = {'a': '#b8bcc4', 'b': '#8a8e98', 'c': '#e2e4e8', 's': '#5a5e68', 'n': '#2a2420', 'e': E, 'i': I, 'p': PK}
+SEAL = {'a': '#c8ccd4', 's': '#8a8e98', 'w': '#f4f4f6', 'n': '#3a3a44', 'f': '#9aa0aa', 'e': E, 'i': I, 'p': PK}
 pet(id='spotted_seal', name='아기 점박이물범', grade=2, kind='water', likes='treat_fish',
     desc='서해 바위섬에서 태어난 아기 점박이물범입니다. 뭍에서는 배를 끌며 엉금엉금 기지만, 물에 들어가면 누구보다 날쌔게 헤엄칩니다. 까만 눈을 끔뻑이며 쳐다보면 아무도 생선을 안 줄 수가 없습니다.',
     baby=dict(pal=SEAL, idle='''
-........aaa.
-.......aaiea
-..aasaaaaapn
-.aaaaasaaaa.
-saaacccccaa.
-.b..b.....b.''', step_tail='''
-..b..b...b..''', sleep='''
-........aaa.
-..aasaaaakka
-.aaaaasaaapn
-saaacccccaa.
-.bbbbbbbbbb.'''),
+...aaaaaa...
+..aaaaaaaa..
+.aieaaaaiea.
+.aeeaaaaeea.
+.paaannaaap.
+faaaawwaaaaf
+.aasaaaasaa.
+..aaaaaaaa..''', step_tail='''
+.aaaaaaaaaa.''', sleep='''
+...aaaaaa...
+..aaaaaaaa..
+.akkaaaakka.
+.paaannaaap.
+faaaawwaaaaf
+.aasaaaasaa.
+..aaaaaaaa..'''),
     adult=dict(pal=SEAL, idle='''
-...........aaaa.
-..........aaaiea
-...aasaaaaaaapan
-..aaaaasaaasaan.
-.aasaaaaaaaaaa..
-saaaacccccccaa..
-.bb..b......bb..''', step_tail='''
-..bb...b...bb...''', sleep='''
-...........aaaa.
-...aasaaaaaakkaa
-..aaaaasaaasapan
-.aasaaaaaaaaaa..
-saaaacccccccaa..
-.bbbbbbbbbbbbb..'''))
+....aaaaaaa....
+...aaaaaaaaa...
+..aaaaaaaaaaa..
+..aieaaaaaiea..
+..aeeaaaaaeea..
+..paaaannaaaap.
+.faaaaawwaaaaf.
+ffaasaaaaasaaff
+..aaaaaaaaaaa..
+...aaaaaaaaa...''', step_tail='''
+....aaaaaaa....''', sleep='''
+....aaaaaaa....
+...aaaaaaaaa...
+..aaaaaaaaaaa..
+..akkaaaaakka..
+..paaaannaaaap.
+.faaaaawwaaaaf.
+ffaasaaaaasaaff
+..aaaaaaaaaaa..
+...aaaaaaaaa...'''))
 
 ELE = {'a': '#a8a4ac', 'b': '#7c7880', 'c': '#c8c4cc', 'w': '#f4f0e6', 'e': E, 'i': I, 'p': PK}
 pet(id='baby_elephant', name='아기 코끼리', grade=2, kind='giant', likes='treat_herb',
