@@ -15,7 +15,7 @@ create or replace function public.world_shadow_rules()
  immutable
  set search_path to 'pg_catalog'
 as $function$
-  select '{"hp_mul": 300, "hp_min": 7500, "stay_full": 0.5, "gil_lv": 20}'::jsonb
+  select '{"hp_mul": 350, "hp_min": 9000, "dmg_mul": 1.4, "pow_lo": 0.75, "pow_hi": 1.5, "charge_mul": 5, "stay_full": 0.5, "gil_lv": 20}'::jsonb
 $function$;
 
 create or replace function public.world_contrib_shares(p_rows jsonb)
@@ -131,6 +131,7 @@ begin
   end if;
   nm := m.name;
   st := m.stats;
+  if rk = 'world' then p_raw := p_raw * least((public.world_shadow_rules() ->> 'pow_hi')::numeric, greatest((public.world_shadow_rules() ->> 'pow_lo')::numeric, coalesce((st ->> 'attack')::numeric, 7.5 * m.level) / greatest(1, 7.5 * m.level))); end if;
   r := public.world_cb_mitigate(p_raw, st, m.fx, who, p_kind in ('slam', 'burst'), p_kind = 'burst', null, p_kind = 'single');
   for c in select * from jsonb_array_elements(r -> 'credits') loop
     perform public.world_raid_credit(p_raid, (c ->> 0)::uuid, (c ->> 1)::numeric, c ->> 2);
@@ -156,6 +157,37 @@ begin
     perform public.world_raid_say_n(p_raid, 'hit', nm || ' — ' || d || '의 피해' || '.', nm, d);
   end if;
   return d;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.world_raid_boss_base(p_raid uuid, p_kind text, p_lv integer)
+ RETURNS numeric
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare al numeric; aa numeric;
+begin
+  if p_kind is distinct from 'final' then return (4 + 0.7 * (coalesce(p_lv, 1) + 3)) * (public.world_shadow_rules() ->> 'dmg_mul')::numeric; end if;
+  select avg(level), avg(coalesce((stats ->> 'attack')::numeric, 50)) into al, aa from public.world_raid_members where raid_id = p_raid;
+  al := coalesce(al, p_lv, 30);
+  return 0.8 * (4 + 0.7 * (al + 3)) * least(1.5, greatest(0.75, coalesce(aa, 7.5 * al) / greatest(1, 7.5 * al)));
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.world_raid_charge_need(p_raid uuid, p_kind text, p_max_hp integer)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare reg text; s numeric;
+begin
+  if p_kind <> 'world' then return round(p_max_hp * 0.04)::int; end if;
+  select region_id into reg from public.world_raids where raid_id = p_raid;
+  select coalesce(sum(greatest(1, coalesce((x.stats ->> 'attack')::numeric, 0))), 0) into s
+    from public.world_raid_members x join public.world_characters ch on ch.owner_id = x.owner_id
+   where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, reg)
+     and x.last_action_at > now() - interval '120 seconds' and ch.health > 1;
+  return greatest(500, round(s * (public.world_shadow_rules() ->> 'charge_mul')::numeric))::int;
 end $function$;
 
 CREATE OR REPLACE FUNCTION public.world_gw_hit(p_fight uuid, p_uid uuid, p_raw numeric, p_round integer, p_why text, p_aoe boolean)
@@ -508,10 +540,38 @@ update public.world_patch_notes set body = body || $n$
 - 그림자가 거의 아프게 치지 않은 판에서는 버팀·치유가 작게, 거세게 친 판에서는 크게 셉니다.
 - 레벨이 낮다고 기여도를 깎던 규칙은 없앴습니다. 다만 전 보상은 낮은 레벨일수록 조금 덜 받습니다.
 - 토벌의 절반 넘게 함께했다면 기본 보상을 모두 받습니다. 끝무렵에 들어오면 기본 몫이 그만큼 줄어듭니다.
-- 그림자가 훨씬 단단해집니다. 지난 회차는 몇 분 만에 끝났지만, 이제 모두가 힘을 모아 십여 분은 싸워야 쓰러집니다.
+- 그림자가 훨씬 단단해집니다. 지난 회차는 몇 분 만에 끝났지만, 이제는 모두가 힘을 모아도 십오 분에서 이십 분쯤 싸워야 쓰러집니다.
+- 그림자의 공격도 맞서는 사람의 힘에 맞춰 거세집니다. 방어와 회복을 챙기지 않으면 물러나게 되고, 기운 모으기는 다 함께 몰아쳐야 아슬아슬하게 끊깁니다.
 - 결전·귀허의 주인·파티 토벌의 기록판에도 같은 셈법이 보입니다(보상은 그대로).
 - 토벌 결과 알림의 경험치가 실제로 받는 양으로 적힙니다.
 $n$
 where note_id = '1.0.0' and position('토벌 기여도 셈법을 바꿉니다' in body) = 0;
 
 update public.world_app_meta set value = '20261106080000' where key = 'db_version';
+
+update public.world_patch_notes set title = '[공지] 이번 주말, 별채에 새 식구가 옵니다', body = $n$두 번째 밤의 첫 주를 함께해 주셔서 고맙습니다. 이번 주말 업데이트와, 한두 주 뒤에 들어올 것들을 미리 알려 드립니다.
+
+## 오늘 밤 바뀐 것
+· **봉연의 그림자**가 더 단단하고 거세집니다. 기여도는 레벨이나 역할보다 **그 판에서 얼마나 성실하게 싸웠는지**를 크게 봅니다.
+· 자세한 내용은 아래 **1.0.0** 패치노트에 있습니다.
+
+## 이번 주말 · 별채와 꼬마 동무
+· **꼬마 동무 11종**이 새로 찾아옵니다. 모든 갈래에 동무가 셋 이상 생기고, 제보로 받은 **「아기 흰곰」**도 함께 옵니다.
+· 동무 도감에 **갈래 표시와 소개 글**이 붙습니다. 그림이나 이름을 누르면 어떤 동무인지 읽을 수 있습니다.
+· 쓰다듬기·놀기·먹이 주기 때 **동무마다, 친해진 만큼 다른 말**을 합니다.
+· **별채 가구 20가지**가 늘어납니다. 깔개, 상 위 소품, 동무 가구, 새 벽지·바닥재, 원앙금침, 그리고 **그림 액자**가 들어옵니다.
+
+## 한두 주 뒤 · 확장 예고
+아직 만드는 중이라 이름과 세부는 바뀔 수 있습니다.
+· **새 외전 「묵적록」** — 이름과 먹을 둘러싼 다섯 장의 이야기
+· **새 지역** — 지도 남서쪽 빈 땅에 높은 레벨의 땅이 열립니다
+· **최고 레벨 45** — 지금의 40에서 다섯 단계 더
+· **새 직업 「조련사」** — 꼬마 동무와 함께 싸우는 원거리 직업
+· **새 보스**와 **7단계 장비**, 새 칭호·테두리·낙관·이름 색
+
+## 늘 그렇듯
+· 고칠 점이나 하고 싶은 말은 도움말·설정의 **「제보·소감」**으로 보내 주세요. 하나하나 읽고 답합니다.
+· 스크린샷과 플레이 소감은 언제든 자유롭게 나눠 주세요.
+
+오늘 밤도 등불을 들고, 함께 걸어요.$n$
+where note_id = '0.0.0';

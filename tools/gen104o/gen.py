@@ -14,12 +14,22 @@ PROD_MD5 = {
     'world_raid_begin_fight': 'ecb5e9edac3febbcd8f53ac6a429f976',
     'world_raid_join': 'f9cba5c67d30baed8064d34602604f73',
     'world_raid_settle': '1c936e49d6606c966f7098c863785061',
+    'world_raid_boss_base': '402331494a0830740340807c58cccf59',
+    'world_raid_charge_need': '62a80b2300467efc5913883766084a43',
 }
 
 EDITS = {
     'world_raid_hit': [
+        ("  st := m.stats;\n", "  st := m.stats;\n  if rk = 'world' then p_raw := p_raw * least((public.world_shadow_rules() ->> 'pow_hi')::numeric, greatest((public.world_shadow_rules() ->> 'pow_lo')::numeric, coalesce((st ->> 'attack')::numeric, 7.5 * m.level) / greatest(1, 7.5 * m.level))); end if;\n"),
         ("  perform public.world_raid_credit(p_raid, who, d, case when (r ->> 'taunt')::boolean then 'guard' else 'taken' end);\n",
          "  perform public.world_raid_credit(p_raid, who, d, case when (r ->> 'taunt')::boolean then 'guard' else 'taken' end);\n  if p_kind = 'single' and not coalesce((r ->> 'taunt')::boolean, false) then perform public.world_raid_credit(p_raid, who, d, 'hit1'); end if;\n"),
+    ],
+    'world_raid_boss_base': [
+        ("if p_kind is distinct from 'final' then return 4 + 0.7 * (coalesce(p_lv, 1) + 3); end if;",
+         "if p_kind is distinct from 'final' then return (4 + 0.7 * (coalesce(p_lv, 1) + 3)) * (public.world_shadow_rules() ->> 'dmg_mul')::numeric; end if;"),
+    ],
+    'world_raid_charge_need': [
+        ("return greatest(500, round(s * 3))::int;", "return greatest(500, round(s * (public.world_shadow_rules() ->> 'charge_mul')::numeric))::int;"),
     ],
     'world_gw_hit': [
         ("  perform public.world_gw_credit(p_fight, p_uid, (r ->> 'd')::numeric, case when (r ->> 'taunt')::boolean then 'guard' else 'taken' end);\n",
@@ -92,5 +102,5 @@ for fn, edits in EDITS.items():
         src = src.replace(a, b)
     parts.append(f"{head}AS $function${src}$function$;\n")
 
-OUT.write_text('lock table public.world_characters in access exclusive mode;\n\n' + (HERE / 'pre.sql').read_text() + '\n' + '\n'.join(parts) + '\n' + (HERE / 'post.sql').read_text())
+OUT.write_text('lock table public.world_characters in access exclusive mode;\n\n' + (HERE / 'pre.sql').read_text() + '\n' + '\n'.join(parts) + '\n' + (HERE / 'post.sql').read_text() + '\n' + (HERE / 'notice.sql').read_text())
 print(OUT)

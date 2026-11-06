@@ -13,7 +13,7 @@ create or replace function public.world_shadow_rules()
  immutable
  set search_path to 'pg_catalog'
 as $function$
-  select '{"hp_mul": 300, "hp_min": 7500, "stay_full": 0.5, "gil_lv": 20}'::jsonb
+  select '{"hp_mul": 350, "hp_min": 9000, "dmg_mul": 1.4, "pow_lo": 0.75, "pow_hi": 1.5, "charge_mul": 5, "stay_full": 0.5, "gil_lv": 20}'::jsonb
 $function$;
 
 create or replace function public.world_contrib_shares(p_rows jsonb)
