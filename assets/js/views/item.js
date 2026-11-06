@@ -34,8 +34,8 @@ export const USABLE = new Proxy({}, {
     if (typeof k !== 'string') return undefined;
     const v = useText(k);
     if (v || !isHq(k)) return v;
-    const b = useText(baseOf(k));
-    return b ? `${b} · 우수품 효과 더 큼` : undefined;
+    const b = useText(baseOf(k)), f = catItem(baseOf(k))?.fx;
+    return b ? `${b} · 우수품 효과 더 큼${f?.stam > 0 ? '(탐색력은 같음)' : ''}` : undefined;
   },
   has(t, k) { return !!this.get(t, k); },
 });

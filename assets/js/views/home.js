@@ -383,17 +383,24 @@ async function doSearch(btn) {
   if (btn.dataset.busy === '1') return;
   const hp = Number(store.character?.health ?? 100);
   if (hp < 35 && !(await ask(`체력이 ${hp}입니다. 탐색하다 요괴를 만나면 쓰러질 수 있습니다. 쉬거나 회복약을 먼저 쓰는 것이 좋습니다.`, { title: '체력이 낮습니다', ok: '그래도 탐색', cancel: '그만두기' }))) return;
+  if (Date.now() < searchAt) return;
   btn.dataset.busy = '1'; btn.disabled = true; btn.classList.add('searching');
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'search' }));
+  const t0 = Date.now(); let hold = SEARCH_GAP;
   try {
     const r = await act(quietOn() ? 'world_field_search_quiet' : 'world_field_search');
     const o = OUTCOME[r.outcome] || OUTCOME.quiet;
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.outcome === 'encounter' ? 'encounter' : r.outcome === 'hazard' ? 'hurt' : ['path', 'spot', 'clue', 'cache', 'regional'].includes(r.outcome) ? 'find' : 'tick' }));
     if (r.outcome === 'encounter') toast(r.content, 'warn');
     else showFind(o, r);
-  } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
-  finally { btn.dataset.busy = ''; btn.classList.remove('searching'); if (btn.isConnected) btn.disabled = false; }
+  } catch (e) { if (/숨을 고르/.test(String(e?.message))) hold = SEARCH_GAP + 500; else { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); } }
+  finally {
+    searchAt = t0 + hold; btn.classList.remove('searching');
+    setTimeout(() => { btn.dataset.busy = ''; if (btn.isConnected) btn.disabled = false; }, Math.max(0, searchAt - Date.now()));
+  }
 }
+const SEARCH_GAP = 1000;
+let searchAt = 0;
 async function doFish(btn) {
   if (btn.dataset.busy === '1' || Number(btn.dataset.ready) > Date.now()) return;
   btn.dataset.busy = '1'; btn.disabled = true;

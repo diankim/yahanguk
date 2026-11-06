@@ -95,6 +95,7 @@
 
 텍스트 서술·발견·자원·조우를 조합하고 반복해도 결과가 다양하다. 결과는 서버에서 검증·저장한다.
 
+- 탐색 간격(1.0.4o, 사용자 결정 — 어죽 고리로 탐색력이 막지 못해 0.2초 연타가 서버를 누름): world_field_search 맨 앞(잠그기 전) world_rate_check('search') 0.9초, 화면은 누른 때부터 1초 단추 잠금(home.js SEARCH_GAP, 거절되면 1.5초·알림 없음).
 - 빈손(outcome quiet, 기척이 사라진 조우 포함)은 탐색력 1을 돌려줌(world_stamina_change +1, 그때만 캐릭터 행 갱신 한 번 더).
 - 꾸러미 2~3개·지역 특산물 50%+깊이×8%·전 3~(8+위험도×3). 대세력 조사원은 25%로 길에서 만난 이와 나눠(개수 −1·전 절반) payload.infl 1.5 → world_influence_tick이 탐색 0.3에 더함.
 - 기민(1.0.1b, 사용자 결정) world_agile_of(근력·민첩·체질·감각·의지·영성) = max(민첩+감각, 민첩×2, 의지+영성, (근력+체질)×½), 수치·상한 world_agile_rules(→ gamedata agile → rules.js AGILE·agileOf·quietPctOf). 모든 직업 같은 상한: 조용히 살피기 50·기척 숨기기 75·도주 95·위험 피하기 90·회피 40. 직업 덤은 월궁 사수만(숨기 +10·도주 +15·회피 +6).
@@ -208,7 +209,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 피해 계수: 근접 힘 1.0 · 술법 영기 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
 - 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 퀘스트·이야기 전 ×0.4.
 - 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
-- 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
+- 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid·search)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
 - 공격·방어·회피·치명타·도주 확률은 world_combat_stats 하나로 계산해 엔진과 화면이 같은 값을 쓰고, 올리기 전에 바뀔 값을 미리 보인다.
 
 ### 칭호
@@ -302,7 +303,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 낚싯대를 가방에 두고 탐색력 1로 20초마다(낚시 24단계 「재빠른 챔질」 15초 — 간격은 world_fish_gap 하나, world_fish·world_fish_spot.gap → home.js 「n초마다」, 1.0.4h 제보 30). 원정·전투·이동 중 불가.
 - 어종 50종(서식지·희귀도·시간대·날씨). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
 - 낚시 칭호 11(바다 sea_angler·tide_reader·nine_harbors·sea_dragon 포함): 입질·희귀 어종·크기 효과.
-- 요리: 손질한 생선으로(바다 요리 9 포함). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
+- 요리: 손질한 생선으로(바다 요리 9 포함). 어죽(건량 1 + 생선살 1 → 2그릇) 탐색력 2(1.0.4o, 옛 4 — 건량 하나가 탐색력 8이 되던 고리). 우수품은 탐색력을 늘리지 않음(world_use_item v_hq는 체력·정신·영력·침식만, 화면 item.js USABLE 「탐색력은 같음」). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
 
 ### 별채
 
