@@ -4,6 +4,7 @@ import { equipRowLi, eqMini, bindRepair, enhancedTraits, DUR_NOTE } from './char
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
+import { baseOf, hqOf } from '../hq.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -76,12 +77,12 @@ async function draw(soft) {
 function catalogMap(inv) { return new Map((inv.catalog || []).map(i => [i.id, i])); }
 const catOf = i => !i ? 'etc' : GEAR.has(i.category) ? 'gear' : i.category === 'consumable' ? 'consumable' : /material/.test(i.category) ? 'material' : 'etc';
 
-const toolCovers = (have, need) => { const h = String(have || '').replace(/_hq$/, '');
+const toolCovers = (have, need) => { const h = baseOf(have);
   if (h === need) return true;
   const a = catItem(h), b = catItem(need);
   return !!(a?.tl && b?.tl && a.tl === b.tl && Number(a.tier) >= Number(b.tier)); };
 const toolNote = (need, by) => { if (!by) return ' <span class="bad">(없음 · 같은 갈래의 더 높은 단계 도구도 됨)</span>';
-  const st = by.endsWith('@st'), id = st ? by.slice(0, -3) : by, base = id.replace(/_hq$/, '');
+  const st = by.endsWith('@st'), id = st ? by.slice(0, -3) : by, base = baseOf(id);
   return base === need && !st ? '' : ` <small class="muted">(${esc(`${nameOf(id)}${st ? ' · 창고' : ''}(으)로 됨`)})</small>`; };
 const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
 
@@ -255,7 +256,7 @@ async function craft(body, inv, stg) {
   await loadFavs();
   const bagHave = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
   const stHave = stg?.in_safe && store.character?.location !== '반요촌' ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
-  const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[k + '_hq']) || 0) + (stHave[k + '_hq'] || 0) });
+  const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[hqOf(k)]) || 0) + (stHave[hqOf(k)] || 0) });
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id));
   const cmap = catalogMap(inv);

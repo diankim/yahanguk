@@ -6,6 +6,7 @@ import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fi
   resultBox, reloadCharacter, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName, showResult, soloAidHtml } from './fightui.js';
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
+import { baseOf } from '../hq.js';
 const CREDIT = [['dmg', '피해'], ['boost', '북돋움'], ['guard', '막아 줌'], ['heal', '회복'], ['taken', '받아 냄']];
 const creditLine = c => {
   const v = { ...(c || {}), heal: (Number(c?.heal) || 0) + (Number(c?.heal_self) || 0) };
@@ -274,7 +275,7 @@ function fillItems(box) {
   box.innerHTML = `<p class="muted small">${fin ? `체력 회복품은 <b>한 싸움에 다섯 개까지</b> · 남은 횟수 <b>${left ?? 0}/5</b>. 물품을 쓰면 그 차례의 행동이 되고, 쉬는 중이면 체력 30으로 싸움에 돌아갑니다.` : out ? '물러나 있거나 쉬는 중·자리를 비운 동안에는 행동 간격 없이 쓰고, 써도 싸움에 돌아가지 않습니다.' : '물품을 쓰면 그 차례의 행동이 됩니다(1초 간격).'}</p>
     ${fin && !left ? '<p class="hint warn">이 결전에서 쓸 수 있는 체력 회복품을 다 썼습니다.</p>' : ''}
     ${itemSectionsHtml(battleItems(), inv)}`;
-  if (fin && !left) $$('[data-use]', box).forEach(b => { if (catItem(b.dataset.use.replace(/_hq$/, ''))?.fx?.hp > 0) { b.disabled = true; b.title = '다 썼습니다'; } });
+  if (fin && !left) $$('[data-use]', box).forEach(b => { if (catItem(baseOf(b.dataset.use))?.fx?.hp > 0) { b.disabled = true; b.title = '다 썼습니다'; } });
   $$('[data-use]:not(:disabled)', box).forEach(b => b.onclick = () => {
     const k = b.dataset.use;
     if (!fin && (outUntil > Date.now() || away || resting)) run(b, async () => { await act('world_use_item', { p_item_id: k }); return rpc('world_raid_snapshot', { p_raid: snap.raid.id }); }, false).then(tray.refill);

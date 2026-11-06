@@ -1,6 +1,7 @@
 import { db, rpc, store, on, emit, registerNames, namesDump, nameOf, esc, icon, fmt, dbVersion, MARKET_ONLY, friendlyError, INV_QUIET } from '../core.js';
 import { armAlarm } from '../sound.js';
 import { GAMEDATA } from '../gamedata.js';
+import { baseOf } from '../hq.js';
 
 const inflight = new Map();
 const cacheAt = new Map();
@@ -44,8 +45,7 @@ function catalogMap() {
   }
   return catMap;
 }
-const baseId = id => String(id || '').replace(/_hq$/, '');
-export const catItem = id => catalogMap()?.get(id) || catMap?.get(baseId(id)) || null;
+export const catItem = id => catalogMap()?.get(id) || catMap?.get(baseOf(id)) || null;
 export const fxNames = () => (catalogMap(), fxNameMap);
 export const catalogList = () => { const m = catalogMap(); return m ? [...m.values()] : null; };
 export const itemDesc = id => catItem(id)?.description || '';

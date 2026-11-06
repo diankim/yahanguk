@@ -4,6 +4,7 @@ import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
 import { expRoundOf } from './rules.js';
+import { withHq, baseOf } from './hq.js';
 
 const IDLE_LABEL = { training: '자율 수련', research: '자료 조사', maintenance: '장비 정비', rest: '휴식' };
 let root, tick, poll, refreshTimer, state = { idle: null, hud: null, exp: null };
@@ -84,7 +85,7 @@ export function openStatus(st) {
       <ul class="fx-list">${effectText(st.effects, st.potency).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <p class="muted small">남은 시간 <b data-left="${new Date(st.expires_at).getTime()}">${fmt.remain(left)}</b>${st.stacks > 1 ? ` · ${st.stacks}겹` : ''}</p>
       ${good ? '' : `<h3 class="sub-h">치료 방법</h3><p>${esc(st.cure || '시간이 지나면 사라집니다.')}</p>
-        ${(st.cure_items || []).length ? `<div class="btn-row">${st.cure_items.flatMap(k => inv[`${k}_hq`] > 0 ? [k, `${k}_hq`] : [k]).map(k => `<button class="btn small primary" data-here="물품 사용" data-here-down data-cure="${esc(k)}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} 쓰기 <small>×${fmt.num(inv[k])}</small></button>`).join('')}</div>` : ''}`}
+        ${(st.cure_items || []).length ? `<div class="btn-row">${withHq(st.cure_items, inv).map(k => `<button class="btn small primary" data-here="물품 사용" data-here-down data-cure="${esc(k)}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} 쓰기 <small>×${fmt.num(inv[k])}</small></button>`).join('')}</div>` : ''}`}
     </div>` });
   const t = setInterval(() => { const b = m.querySelector('[data-left]'); if (!b) return clearInterval(t); b.textContent = fmt.remain(Number(b.dataset.left) - Date.now()); }, 1000);
   $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await useItemAct(b.dataset.cure); closeModal(); return r; }));
@@ -144,7 +145,7 @@ function qsCard(c) {
   const inv = c.inventory || {}, moving = !!c.travel_destination, downed = c.health <= 0 || !!c.downed_at;
   const cells = Array.from({ length: 8 }, (_, i) => qsList[i] || '').map(k => {
     if (!k) return '<span class="hqs empty"></span>';
-    const n = Number(inv[k] || 0), off = !n || ((downed || moving) && k.replace(/_hq$/, '') !== 'revival_charm');
+    const n = Number(inv[k] || 0), off = !n || ((downed || moving) && baseOf(k) !== 'revival_charm');
     return `<button class="hqs ${n ? '' : 'none'}" data-here="물품 사용" data-here-down data-hqs="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(nameOf(k))}${qsDesc(k) ? ` · ${esc(qsDesc(k))}` : ''}"><b>${esc(nameOf(k))}</b><small>×${fmt.num(n)}</small></button>`;
   }).join('');
   return `<section class="hud-card hud-qs"><h3>퀵슬롯 <a class="linkish" href="#/char/status">바꾸기</a></h3><div class="hqs-grid">${cells}</div></section>`;

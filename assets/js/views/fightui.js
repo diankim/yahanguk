@@ -1,6 +1,7 @@
 import { esc, icon, fmt, nameOf, JOBS, brief, $, $$, emit, loadCharacter, openLayer, spOf, scrollAfterModal } from '../core.js';
 import { itemDesc, catItem, catalogList, load } from './common.js';
 import { USABLE, fxHtml } from './item.js';
+import { baseOf, isHq, haveOf } from '../hq.js';
 
 export const FX_NAME = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', critnext: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '철벽', guard: '방어', bound: '사슬',
   expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임' };
@@ -58,12 +59,12 @@ export const vitHtml = (label, v, kind, low = false) => `<div class="raid-vit ${
 export const coopBtn = (k, data = '') => `<button type="button" class="coop-btn ${!k.unlocked ? 'locked' : ''} ${k.on ? 'on' : ''}" ${data} ${k.why ? 'data-lock="1" disabled' : ''} title="${esc(k.desc || '')}">
   <b>${icon(SKILL_ICON[k.id] || 'spark', 13)}<span class="cb-n">${esc(k.name)}</span></b><small>${esc(k.why || `${spOf()[0]} ${k.cost}`)}${k.target === 'ally' ? ' · 동료' : k.target === 'all' ? ' · 모두' : k.target === 'boss' ? ' · 요괴' : ''}</small></button>`;
 
-export const isSpItem = k => { const f = catItem(String(k).replace(/_hq$/, ''))?.fx; return !!f && f.sp > 0 && !(f.hp > 0) && !(f.mn > 0); };
-export const battleItems = () => (catalogList() || []).filter(i => !String(i.id).endsWith('_hq') && i.fx && (i.fx.hp > 0 || i.fx.mn > 0 || i.fx.sp > 0)).map(i => i.id);
-export const fxOf = k => fxHtml(String(USABLE[k.replace(/_hq$/, '')] || '').split(' · ').filter(x => /^(체력|정신|영력|침식)|치료|풀기/.test(x.trim())).join(' · ') || brief(itemDesc(k)) || '');
+export const isSpItem = k => { const f = catItem(baseOf(k))?.fx; return !!f && f.sp > 0 && !(f.hp > 0) && !(f.mn > 0); };
+export const battleItems = () => (catalogList() || []).filter(i => !isHq(i.id) && i.fx && (i.fx.hp > 0 || i.fx.mn > 0 || i.fx.sp > 0)).map(i => i.id);
+export const fxOf = k => fxHtml(String(USABLE[baseOf(k)] || '').split(' · ').filter(x => /^(체력|정신|영력|침식)|치료|풀기/.test(x.trim())).join(' · ') || brief(itemDesc(k)) || '');
 export const itemListHtml = (ids, inv, on = '') => ids.length ? `<ul class="raid-item-list">${ids.map(k => `<li><button type="button" class="raid-item ${on === k ? 'on' : ''}" data-use="${esc(k)}" title="${esc(brief(itemDesc(k)) || '')}"><b>${esc(nameOf(k))}</b><span>×${fmt.num(inv[k] || 0)}</span><small>${fxOf(k)}</small></button></li>`).join('')}</ul>` : '<p class="muted small">가방에 없습니다.</p>';
 export function itemGroups(list, inv) {
-  const have = l => l.flatMap(k => [k, `${k}_hq`]).filter(k => Number(inv[k]) > 0);
+  const have = l => haveOf(l, inv);
   return [have(list.filter(k => !isSpItem(k))), have(list.filter(k => isSpItem(k)))];
 }
 export function itemSectionsHtml(list, inv, hpTitle = '체력·정신 회복') {

@@ -6,6 +6,7 @@ import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report } from '../quests.js';
 import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
+import { isHq } from '../hq.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
 const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
@@ -266,7 +267,7 @@ async function openUcommPost(here, feePct) {
   try { [inv, prices] = await Promise.all([load('world_inventory_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 })]); }
   catch (e) { box.innerHTML = errorBox(e.message); return; }
   const pmap = new Map((prices || []).map(p => [p.item_id, p]));
-  const items = pickRows((inv.catalog || []).filter(i => !String(i.id).endsWith('_hq') && i.category !== 'quest' && pmap.get(i.id)?.tradeable !== false && !MARKET_ONLY.has(i.id))
+  const items = pickRows((inv.catalog || []).filter(i => !isHq(i.id) && i.category !== 'quest' && pmap.get(i.id)?.tradeable !== false && !MARKET_ONLY.has(i.id))
     .map(i => { const ref = Number(pmap.get(i.id)?.reference_price || 0); return { id: i.id, ref, sub: `기준 ${fmt.jeon(ref)}` }; }), inv.catalog);
   let pick = null;
   const minOf = (it, n) => Math.max(10, Math.ceil((it?.ref || 0) * n * 0.5));

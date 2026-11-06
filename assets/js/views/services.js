@@ -66,9 +66,9 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const net = Math.round(sum * 0.95);
     $('#shop-sum', box).innerHTML = n ? `${n}가지 · ${m === 'buy' ? '합계' : '받을 돈 약'} <b>${fmt.jeon(m === 'sell' ? net : sum)}</b>` : '<span class="muted">수량을 고르세요</span>';
     const go = $('#shop-go', box); go.textContent = m === 'buy' ? '구매하기' : '판매하기';
-    go.disabled = !n || (m === 'buy' && sum > gil) || (m === 'sell' && sold && net > sold.left);
+    go.disabled = !n || (m === 'buy' && sum > gil) || (m === 'sell' && sold && sold.left <= 0);
     if (m === 'buy' && sum > gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
-    if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘습니다</span>`;
+    if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘는 몫은 값을 받지 못하고 버려집니다</span>`;
   };
   $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
     shopMode = b.dataset.mode;
@@ -88,18 +88,33 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const btn = e.currentTarget, m = cur(), items = Object.entries(cart[m]).filter(([, n]) => n > 0);
     if (!items.length || btn.dataset.busy === '1') return;
     const label = m === 'buy' ? '구매' : '판매', sum = total(m);
-    const ok = await ask(`${items.map(([k, n]) => `${m === 'buy' ? stock.get(k)?.item_name || nameOf(k) : nameOf(k)} ×${n}`).join('\n')}\n${m === 'buy' ? `합계 ${fmt.jeon(sum)}` : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
-      { title: `${label}할까요?`, ok: `${label}하기` });
+    let room = m === 'sell' && sold ? Number(sold.left) : Infinity;
+    const plan = new Map(items.map(([k, n]) => {
+      if (m !== 'sell' || room === Infinity) return [k, { n, cut: 0 }];
+      const u = Math.max(1, Math.round(sellPrice(k) * 0.95));
+      if (room <= 0) return [k, { n, skip: true }];
+      if (u * n <= room) { room -= u * n; return [k, { n, cut: 0 }]; }
+      const keep = Math.floor(room / u); room = 0; return [k, { n, cut: n - keep }];
+    }));
+    const over = [...plan.values()].some(p => p.cut > 0 || p.skip);
+    const lineOf = (k, n) => { const nm = m === 'buy' ? stock.get(k)?.item_name || nameOf(k) : nameOf(k), p = plan.get(k);
+      return p.skip ? `${nm} ×${n} — 오늘 한도가 차서 팔지 않습니다` : p.cut ? `${nm} ×${n} — 한도를 넘는 ${p.cut}개쯤은 값을 받지 못하고 버려집니다` : `${nm} ×${n}`; };
+    const ok = await ask(`${items.map(([k, n]) => lineOf(k, n)).join('\n')}\n${m === 'buy' ? `합계 ${fmt.jeon(sum)}` : over ? `받을 돈은 오늘 남은 한도 ${fmt.jeon(sold.left)}까지입니다` : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
+      { title: over ? '판매 한도를 넘습니다. 판매할까요?' : `${label}할까요?`, ok: `${label}하기`, alarm: over });
     if (!ok) return;
     btn.dataset.busy = '1'; btn.disabled = true;
     const fail = [];
-    let last = null;
+    let last = null, done = 0, dropped = 0, full = false;
     for (const [k, n] of items) {
-      try { last = await rpc(m === 'buy' ? 'world_shop_buy' : 'world_shop_sell', { p_item_id: k, p_qty: n }); delete cart[m][k]; }
-      catch (err) { fail.push(`${nameOf(k)}: ${friendlyError(err)}`); }
+      const p = plan.get(k);
+      if (m === 'sell' && (p.skip || full)) continue;
+      try {
+        last = await rpc(m === 'buy' ? 'world_shop_buy' : 'world_shop_sell', m === 'buy' ? { p_item_id: k, p_qty: n } : { p_item_id: k, p_qty: n, p_overflow: over });
+        delete cart[m][k]; done++; dropped += Number(last?.dropped || 0);
+        if (m === 'sell' && Number(last?.left) <= 0) full = true;
+      } catch (err) { fail.push(`${nameOf(k)}: ${friendlyError(err)}`); }
     }
-    const done = items.length - fail.length;
-    if (done) toast(`${label} 완료 ${done}가지${fail.length ? ` · 실패 ${fail.length}가지` : ''}${m === 'sell' && last?.cap ? ` · 오늘 판매 ${fmt.jeon(last.sold)} / ${fmt.jeon(last.cap)}` : ''}`, fail.length ? 'warn' : 'ok');
+    if (done) toast(`${label} 완료 ${done}가지${dropped ? ` · 한도를 넘은 ${dropped}개는 버려짐` : ''}${fail.length ? ` · 실패 ${fail.length}가지` : ''}${m === 'sell' && last?.cap ? ` · 오늘 판매 ${fmt.jeon(last.sold)} / ${fmt.jeon(last.cap)}` : ''}`, fail.length ? 'warn' : 'ok');
     if (fail.length) toast(fail.join(' / '), 'error');
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'trade' }));
     btn.dataset.busy = '';

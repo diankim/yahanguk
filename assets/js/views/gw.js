@@ -5,6 +5,7 @@ import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, 
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
+import { baseOf } from '../hq.js';
 
 const PHASE = { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' };
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
@@ -27,7 +28,7 @@ window.addEventListener('yh-battle-item', e => {
   if (!el?.isConnected || f?.status !== 'fight' || !snap?.joined) return;
   e.detail.handled = true;
   const id = e.detail.id || e.detail.item;
-  if (!HEAL_ITEMS.includes(String(id || '').replace(/_hq$/, ''))) { toast('귀허의 주인과 싸우는 동안에는 체력 회복품만 쓸 수 있습니다.', 'warn'); return; }
+  if (!HEAL_ITEMS.includes(baseOf(id))) { toast('귀허의 주인과 싸우는 동안에는 체력 회복품만 쓸 수 있습니다.', 'warn'); return; }
   run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'item', p_target: target || snap.me, p_item: id }));
 });
 

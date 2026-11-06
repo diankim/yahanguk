@@ -2,6 +2,7 @@ import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, ope
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
+import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -32,15 +33,15 @@ export const USABLE = new Proxy({}, {
   get(t, k) {
     if (typeof k !== 'string') return undefined;
     const v = useText(k);
-    if (v || !k.endsWith('_hq')) return v;
-    const b = useText(k.slice(0, -3));
+    if (v || !isHq(k)) return v;
+    const b = useText(baseOf(k));
     return b ? `${b} · 우수품 효과 더 큼` : undefined;
   },
   has(t, k) { return !!this.get(t, k); },
 });
 export const GW_HEAL = ['tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
 export function bossUse(id) {
-  const b = String(id || '').replace(/_hq$/, ''), f = catItem(b)?.fx;
+  const b = baseOf(id), f = catItem(b)?.fx;
   const raid = !!f && (f.hp > 0 || f.mn > 0 || f.sp > 0), gw = GW_HEAL.includes(b);
   return raid || gw ? { raid, gw, label: raid && gw ? '토벌·귀허' : raid ? '토벌' : '귀허',
     tip: [raid && '봉연의 그림자·10장 결전에서 「물품」으로 사용(결전은 체력 회복품 한 싸움 다섯 개)', gw && '귀허의 주인과 싸울 때 사용(한 싸움 두 개)'].filter(Boolean).join(' / ') } : null;
@@ -160,8 +161,8 @@ async function fillSources(box, id) {
 function draw(box, id, inv, prices, mode) {
   const c = store.character, it = (inv.catalog || []).find(x => x.id === id), pr = prices.get(id);
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
-  const pairId = id.endsWith('_hq') ? id.slice(0, -3) : `${id}_hq`, pairHave = Number(inv.inventory?.[pairId] || 0);
-  const both = k => Number(inv.inventory?.[k] || 0) + (k.endsWith('_hq') ? 0 : Number(inv.inventory?.[`${k}_hq`] || 0));
+  const pairId = pairOf(id), pairHave = Number(inv.inventory?.[pairId] || 0);
+  const both = k => Number(inv.inventory?.[k] || 0) + (isHq(k) ? 0 : Number(inv.inventory?.[hqOf(k)] || 0));
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
   const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
   const stashOk = !!here?.is_safe_zone && here.region_id !== 'banyo_village' && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
@@ -180,7 +181,7 @@ function draw(box, id, inv, prices, mode) {
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
-      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${id.endsWith('_hq') ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
+      <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${isHq(id) ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}

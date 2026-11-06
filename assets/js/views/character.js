@@ -10,6 +10,7 @@ import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
 import { helpQ } from '../tips.js';
+import { baseOf, isHq, hqCount, hqOf } from '../hq.js';
 
 const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot'], ['house', '별채', 'home']];
 const STATS = [
@@ -97,7 +98,7 @@ const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.
 export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
 export function equipRowLi(inv, prof, here, slot) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
-  const kits = Number(have.repair_kit || 0) + Number(have.repair_kit_hq || 0);
+  const kits = hqCount(have, 'repair_kit');
   const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
@@ -121,8 +122,7 @@ const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', ar
   norigae: '행운·치명타·채집량', amulet: '술법·받는 피해·정화', mask: '이목을 낮추거나 높입니다', tool: '채집량·채집터 덤', explore: '나침반: 숨은 길·채집터를 더 잘 찾음', fishing: '낚싯대: 비워 두면 가방의 가장 좋은 것을 씀' };
 export const QS_DEFAULT = ['tonic', 'herbal_extract', 'herb', 'medicine_base', 'ward_talisman', 'spirit_tea', 'clear_spirit_pill', 'travel_ration'];
 const QS_N = 8;
-const baseOf = k => String(k || '').replace(/_hq$/, '');
-export const qsDesc = k => { const d = USABLE[baseOf(k)] || ''; return k.endsWith('_hq') && d ? `${d} · 우수품 회복 +15%` : d; };
+export const qsDesc = k => { const d = USABLE[baseOf(k)] || ''; return isHq(k) && d ? `${d} · 우수품 회복 +15%` : d; };
 const QS_OK = k => /체력|정신|영력|기력|침식|탐색력|전투불능/.test(USABLE[baseOf(k)] || '') ;
 function qsSlots(snap) {
   const s = Array.isArray(snap?.slots) ? snap.slots : QS_DEFAULT;
@@ -132,7 +132,7 @@ function qsCell(k, i, inv, downed) {
   if (!k) return `<button class="qs-cell empty" type="button" data-qs-empty="${i}">${icon('plus', 16)}<small>빈 칸</small></button>`;
   const moving = !!store.character?.travel_destination;
   const n = Number(inv[k] || 0), off = !n || ((downed || moving) && baseOf(k) !== 'revival_charm');
-  return `<button class="qs-cell ${n ? '' : 'none'} ${k.endsWith('_hq') ? 'hq' : ''}" type="button" data-here="물품 사용" data-here-down data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
+  return `<button class="qs-cell ${n ? '' : 'none'} ${isHq(k) ? 'hq' : ''}" type="button" data-here="물품 사용" data-here-down data-use="${esc(k)}" ${off ? 'disabled' : ''} title="${esc(qsDesc(k))}">
     <b>${esc(nameOf(k))}</b><span class="qs-n">×${fmt.num(n)}</span><small>${esc(qsDesc(k))}</small></button>`;
 }
 export function eqMini(inv, prof, pick = false) {
@@ -178,7 +178,7 @@ async function status(body) {
   const yo = yohwaOf(hud?.statuses), statuses = yo.rest, yl = yohwaLine(yo);
   const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
   const deathAt = c.downed_at && !byYohwa ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
-  const wards = Number(invItems.ward_talisman || 0) + Number(invItems.ward_talisman_hq || 0), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
+  const wards = hqCount(invItems, 'ward_talisman'), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location);
   const wardCures = (statuses || []).filter(s => (s.cure_items || []).includes('ward_talisman')).length;
@@ -190,7 +190,7 @@ async function status(body) {
       <p class="bad"><b id="death-left">${deathAt ? `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}` : ''}</b></p>
       <div class="action-grid">
         ${yo.y ? `<button class="btn primary" id="yohwa-seal"><span>안전지대 봉인</span><small>가장 가까운 안전지대에서 봉인술사들이 24시간 요기를 해독합니다 · 그동안 채팅만 가능 · 끝나면 요화가 풀리고 침식 40 아래</small></button>` : ''}
-        ${byYohwa ? '' : `<button class="btn primary" data-here="물품 사용" data-here-down data-use="revival_charm" ${invItems.revival_charm > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(invItems.revival_charm)}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
+        ${byYohwa ? '' : `<button class="btn primary" data-here="물품 사용" data-here-down data-use="${Number(invItems.revival_charm || 0) > 0 ? 'revival_charm' : hqOf('revival_charm')}" ${hqCount(invItems, 'revival_charm') > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(hqCount(invItems, 'revival_charm'))}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
         <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>`}
       </div>
       <p class="muted small">${byYohwa ? '요화로 쓰러지면 구조·본부 구조대·회생 부적으로는 일어날 수 없습니다. 「안전지대 봉인」을 고르면 24시간 해독 뒤 요화가 풀립니다.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}

@@ -1,6 +1,7 @@
 import { store, rpc, emit, nameOf, esc, icon, bar, $, $$, fmt, toast, friendlyError, openModal, spOf, JOBS, xpPct, xpGot, xpNote } from '../core.js';
 import { chip } from './common.js';
 import { USABLE } from './item.js';
+import { baseOf, hqOf } from '../hq.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
@@ -27,7 +28,7 @@ const FX = { airborne: '공중', harden: '껍질', barrier: '결계', mirror: '�
 const RANK = { elite: ['정예', 'warn'], guardian: ['우두머리', 'bad'] };
 const ITEM_IDS = ['tonic', 'herbal_extract', 'herb', 'ward_talisman', 'rejuv_pill', 'grand_pill', 'spirit_tea', 'clear_spirit_pill', 'spirit_qi_pill', 'moonlight_essence', 'heavenly_dew'];
 export function trayList(inv, always = 0) {
-  return ITEM_IDS.flatMap((k, i) => { const d = USABLE[k] || ''; return [[k, d, i < always], [`${k}_hq`, `${d} · 우수품 +15%`, false]]; })
+  return ITEM_IDS.flatMap((k, i) => { const d = USABLE[k] || ''; return [[k, d, i < always], [hqOf(k), `${d} · 우수품 +15%`, false]]; })
     .filter(([k, , show]) => show || Number(inv[k]) > 0);
 }
 
@@ -48,7 +49,7 @@ export function stopBattle() { clearInterval(cdTimer); host = null; }
 window.addEventListener('yh-battle-item', e => {
   if (!host?.isConnected || !data?.battle) return;
   e.detail.handled = true;
-  const id = e.detail.id, base = String(id).replace(/_hq$/, '');
+  const id = e.detail.id, base = baseOf(id);
   if (!ITEM_IDS.includes(base)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 전투의 「물품」으로 씁니다.', 'warn'); return; }
   if (busy || Date.now() < nextAt) { toast('아직 다음 행동을 할 수 없습니다.', 'warn'); return; }
   send('item', id);
