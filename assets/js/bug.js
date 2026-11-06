@@ -1,6 +1,7 @@
 import { store, rpc, act, esc, icon, guard, $, $$, fmt, openModal, isGM, ask } from './core.js';
+import { picURL } from './housing/drawing.js';
 
-const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감 및 기타'], ['other', '기타']];
+const CATS = [['bug', '오류'], ['screen', '화면'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감 및 기타'], ['other', '기타'], ['drawing', '그림 제보']];
 const PICK = [['bug', '오류'], ['balance', '밸런스'], ['idea', '제안'], ['review', '소감 및 기타']];
 const STATUS = { open: '접수', checking: '확인 중', fixed: '고침', closed: '닫음' };
 const errors = [];
@@ -84,12 +85,18 @@ async function inbox(body) {
         <span class="chip ${x.status === 'fixed' ? 'ok' : x.status === 'checking' ? 'accent' : x.status === 'open' ? 'warn' : ''}">${esc(STATUS[x.status])}</span><time>${fmt.time(x.created_at)}</time></div>
         <p class="muted small">${esc(x.character_name || '조사원')}${x.context?.hash ? ` · ${esc(x.context.hash)}` : ''}${x.context?.screen ? ` · ${esc(x.context.screen)}` : ''}${x.context?.location ? ` · ${esc(x.context.location)}` : ''}</p>
         <p class="bug-text">${esc(x.body)}</p>
+        ${x.drawing ? `<div class="bug-drawing"><img class="dr-pic s${x.drawing.s}" src="${picURL(x.drawing, 4)}" alt=""><span>${esc(x.drawing.a)}${x.drawing.t ? ` 「${esc(x.drawing.t)}」` : ''} · 사본 ${x.drawing.copies}장${x.drawing.removed ? ' · <b>내림</b>' : ''}</span>${x.drawing.removed ? '' : `<button class="btn small danger" type="button" data-drop="${x.drawing.o}">그림 내리기</button>`}${x.context?.house ? `<a class="btn small ghost" href="#/house/${esc(x.context.house)}">별채 가 보기</a>` : ''}</div>` : ''}
         ${x.context && Object.keys(x.context).length ? `<details class="fold"><summary>기기·오류 기록</summary><pre class="bug-ctx">${esc(JSON.stringify(x.context, null, 2))}</pre></details>` : ''}
         ${x.reply ? `<p class="bug-reply"><b>보낸 답</b> ${esc(x.reply)}</p>` : ''}
         <form class="bug-answer"><textarea name="reply" rows="2" maxlength="2000" placeholder="답 (비워 두면 상태만 바꿉니다)"></textarea>
           <div class="btn-row"><select name="status" aria-label="처리 상태">${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${k === (x.status === 'open' ? 'checking' : x.status) ? 'selected' : ''}>${l}</option>`).join('')}</select>
           <button class="btn small primary" type="submit">처리</button></div></form></li>`).join('')}</ul>` : '<p class="muted">해당하는 제보가 없습니다.</p>'}`;
   $$('[data-f]', body).forEach(b => b.onclick = () => { filter = b.dataset.f; inbox(body); });
+  $$('[data-drop]', body).forEach(b => b.onclick = async () => {
+    const f = b.closest('[data-id]').querySelector('.bug-answer');
+    if (!await ask('이 그림과 모든 사본을 내릴까요? 그린 사람에게 알림이 가고, 아래 답 칸에 적은 글이 까닭으로 함께 갑니다.', { title: '그림 내리기', ok: '내리기', danger: true })) return;
+    guard(b, async () => { const r = await rpc('world_drawing_remove', { p_origin: Number(b.dataset.drop), p_reason: f?.reply.value.trim() || '' }); inbox(body); return r; });
+  });
   $$('.bug-answer', body).forEach(f => f.onsubmit = e => {
     e.preventDefault();
     const id = Number(f.closest('[data-id]').dataset.id);

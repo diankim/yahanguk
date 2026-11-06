@@ -561,12 +561,12 @@ export const WALL = {
     [-.14, -2, 3.48, 22, C.gold], [-.06, -1, 3.32, 20, C.lac], [0, 0, 3.2, 18, C.gold], [.08, 2, 3.04, 14, '#5e1a14'],
     [-.3, 6, .18, 6, C.green], [3.32, 6, .18, 6, C.green], [1.5, 18, .2, 3, C.lac]] },
 
-  frame_small: { name: '작은 그림 액자', grade: 1, kind: 'deco', cat: '액자', frame: true, w: 1, h: 20, rects: [
-    [0, 0, 1, 20, C.wood], [.08, 2, .84, 16, C.dark], [.12, 3, .76, 14, C.paper],
-    [.46, -3, .08, 3, C.dark]] },
-  frame_large: { name: '큰 그림 액자', grade: 2, kind: 'deco', cat: '액자', frame: true, w: 2, h: 30, rects: [
-    [-.06, -1, 2.12, 32, C.gold], [0, 0, 2, 30, C.lacD], [.1, 2, 1.8, 26, C.dark], [.16, 3, 1.68, 24, C.paper],
-    [.96, -4, .08, 3, C.gold]] },
+  frame_small: { name: '작은 그림 액자', grade: 1, kind: 'deco', cat: '액자', frame: 'S', w: 1.25, h: 22, paper: [.125, 3], rects: [
+    [0, 0, 1.25, 22, C.wood], [.06, 1, 1.13, 20, C.dark], [.125, 3, 1, 16, C.paper],
+    [.585, -3, .08, 3, C.dark]] },
+  frame_large: { name: '큰 그림 액자', grade: 2, kind: 'deco', cat: '액자', frame: 'L', w: 2.25, h: 30, paper: [.125, 3], rects: [
+    [-.06, -1, 2.37, 32, C.gold], [0, 0, 2.25, 30, C.lacD], [.08, 2, 2.09, 26, C.dark], [.125, 3, 2, 24, C.paper],
+    [1.085, -4, .08, 3, C.gold]] },
 };
 
 export const PAPER = {

@@ -1,3 +1,4 @@
+import { PAL, dimsOf } from './drawing.js';
 export const TW = 32, TH = 16, ZU = 20, WALLH = 78, PAD = 10;
 const rgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 export const pack = (r, g, b) => (255 << 24 | b << 16 | g << 8 | r) >>> 0;
@@ -13,6 +14,7 @@ export function makeRoom(N, defs) {
   const main = new Uint32Array(W * H), ids = new Int16Array(W * H), layer = new Uint32Array(W * H);
   let bb;
   const { FUR, WALL, PAPER, GROUND } = defs;
+  let pics = {};
   function put(buf, x, y, c) { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H) return; buf[y * W + x] = c; if (buf === layer) { if (x < bb[0]) bb[0] = x; if (y < bb[1]) bb[1] = y; if (x > bb[2]) bb[2] = x; if (y > bb[3]) bb[3] = y; } }
   function fillPoly(buf, pts, c) {
     const ys = pts.map(p => p[1]); const y0 = Math.max(0, Math.floor(Math.min(...ys))), y1 = Math.min(H - 1, Math.ceil(Math.max(...ys)));
@@ -79,6 +81,15 @@ export function makeRoom(N, defs) {
   function drawWallItem(it) {
     const d = WALL[it.k]; if (!d) return;
     for (const [t0, z0, w0, h0, col] of d.rects || []) fillPoly(layer, wallPoly(it.side, it.t + t0, it.z + z0, w0, h0), P(col));
+    const pic = d.frame && it.d != null ? pics[it.d] : null;
+    if (pic?.px && d.paper) {
+      const [pw, ph] = dimsOf(pic.s), top = it.z + d.paper[1] + ph;
+      for (let v = 0; v < ph; v++) for (let u = 0; u < pw; u++) {
+        const ch = pic.px[v * pw + u]; if (!ch || ch === '.') continue;
+        const t = it.t + d.paper[0] + (it.side === 'R' ? u : pw - 1 - u) / 16;
+        fillPoly(layer, wallPoly(it.side, t, top - v - 1, 1 / 16, 1), P(PAL[parseInt(ch, 16)] || '#000000'));
+      }
+    }
     if (d.text) {
       const [ox, oy] = it.side === 'R' ? iso(it.t + d.w / 2, 0, it.z + d.h / 2) : iso(0, it.t + d.w / 2, it.z + d.h / 2); const s = it.side === 'R' ? .5 : -.5;
       for (const [gx, gy] of glyphs(d.text[0])) { const u = gx - 20, v = gy - 7; put(layer, ox + u, oy + v + u * s, P(d.text[1] || '#d8b25a')); }
@@ -153,7 +164,7 @@ export function makeRoom(N, defs) {
 
   let drawn = [];
   function render(st, opts = {}) {
-    background(st, opts.bg); drawn = [];
+    background(st, opts.bg); drawn = []; pics = opts.drawings || {};
     for (const it of st.wall || []) {
       begin(); drawWallItem(it); drawn.push(it); commit(drawn.length - 1);
       if (opts.sel === it) { const d = WALL[it.k]; const p = wallPoly(it.side, it.t, it.z, d.w, d.h); const col = opts.bad ? P('#e05a4c') : P('#d8b25a'); for (let k = 0; k < 4; k++) line(main, p[k], p[(k + 1) % 4], col, true); }

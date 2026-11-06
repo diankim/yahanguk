@@ -6,6 +6,7 @@ import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
 import { cardName } from './card.js';
 import { GAMEDATA } from '../gamedata.js';
 import { petLine } from '../housing/petlines.js';
+import { openGallery, pickDrawing, openViewer } from './drawings.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = GRADES;
@@ -56,10 +57,12 @@ function drawClosed() {
     ${panel('지금 내 상태', `<ul class="hs-req"><li class="${c.level >= 15 ? 'ok' : 'no'}">레벨 15 이상 (지금 Lv.${c.level || 1})</li><li class="${q.step ? 'ok' : ''}">퀘스트 ${q.done ? '마침' : q.step ? `${q.step}장면까지 보고함` : '받지 않음'}</li></ul>
       <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>`, { ico: 'scroll' })}
     ${mergePanel()}
+    ${panel('그림첩', `<p class="muted small">별채가 없어도 도트 그림을 그려 모으고 친구에게 보낼 수 있습니다. 별채를 얻으면 그림 액자에 걸 수 있습니다.</p><button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button>`, { ico: 'palette' })}
     ${panel('꼬마 동무', `<p class="muted small">별채가 없어도 동무를 모으고 한 마리를 데리고 다닐 수 있습니다(조사원 카드에 함께 보입니다).</p><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무 도감</button>`, { ico: 'heart' })}
     ${store_.length ? panel('곳간에 쌓인 가구', `<p class="muted small">별채를 얻기 전에 받은 가구입니다. 별채를 얻으면 꺼내 놓을 수 있습니다.</p><ul class="hs-list">${store_.map(([id, n]) => `<li>${esc(furName(id))} ×${n}</li>`).join('')}</ul>`, { ico: 'chest' }) : ''}`;
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
+  $('#hs-book')?.addEventListener('click', () => openGallery());
 }
 
 function counts(st) {
@@ -115,7 +118,7 @@ function draw() {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${snap.size}×${snap.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
-      ${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
+      ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button>` : ''}${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
     ${can && edBlock && !editing ? `<p class="muted small hs-why">${esc(edBlock)}</p>` : ''}
     <div class="hs-wrap ${editing ? 'editing' : ''}">
       <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}</div>
@@ -140,7 +143,7 @@ function paint() {
   if (!cv || !room) return;
   const pets = pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : [];
   const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1b1d24';
-  const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets });
+  const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets, drawings: snap.drawings || {} });
   const g = cv.getContext('2d'); g.putImageData(img, 0, 0);
   if (pick && hover) ghost(g);
 }
@@ -168,6 +171,7 @@ function toolbar() {
   return `<div class="hs-tools"><span class="chip">${n}/${snap.cap}</span>
     <button class="btn small" id="hs-rot" ${sel && FUR[sel.k] || pick?.type === 'fur' ? '' : 'disabled'}>${icon('refresh', 14)} 돌리기</button>
     <button class="btn small" id="hs-take" ${sel ? '' : 'disabled'}>${icon('down', 14)} 거두기</button>
+    ${sel && WALL[sel.k]?.frame ? `<button class="btn small" id="hs-pic">${icon('palette', 14)} 그림 걸기</button>` : ''}
     <button class="btn small" id="hs-undo" ${dirty ? '' : 'disabled'}>되돌리기</button>
     <button class="btn small primary" id="hs-save" ${dirty ? '' : 'disabled'}>저장</button>
     <button class="btn small" id="hs-done">닫기</button></div>
@@ -264,6 +268,15 @@ function bind() {
     const r = await act('world_housing_expand'); await reload(); return r;
   }));
   $('#hs-store')?.addEventListener('click', openStore);
+  $('#hs-book')?.addEventListener('click', () => openGallery(() => { if (!editing) reload(); }));
+  $('#hs-pic')?.addEventListener('click', () => {
+    const s = sel; if (!s || !WALL[s.k]?.frame) return;
+    pickDrawing(WALL[s.k].frame, s.d, d => {
+      if (d) snap.drawings = { ...(snap.drawings || {}), [d.id]: d };
+      if (tryChange(() => { if (d) s.d = d.id; else delete s.d; })) sel = s;
+      redrawEdit();
+    });
+  });
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
   $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet)));
@@ -294,7 +307,9 @@ function onCanvas(e) {
   const [bx, by] = bufXY(e);
   const [gx, gy] = room.toGrid(bx, by), cx = Math.floor(gx), cy = Math.floor(gy), N = snap.size, onFloor = gx >= 0 && gy >= 0 && gx < N && gy < N;
   if (!editing) {
-    if (pet && onFloor && Math.abs(gx - pet.x - .5) < 1 && Math.abs(gy - pet.y - .5) < 1) { fx.push({ key: 'heart', until: Date.now() + 1200 }); paint(); }
+    if (pet && onFloor && Math.abs(gx - pet.x - .5) < 1 && Math.abs(gy - pet.y - .5) < 1) { fx.push({ key: 'heart', until: Date.now() + 1200 }); paint(); return; }
+    const hitW = room.hit(bx, by), pic = hitW && WALL[hitW.k]?.frame && hitW.d != null ? snap.drawings?.[hitW.d] : null;
+    if (pic) openViewer(pic, snap.owner_id, () => reload());
     return;
   }
   if (pick?.type === 'wall') {
@@ -324,7 +339,7 @@ function onCanvas(e) {
   sel = null; redrawEdit();
 }
 async function save() {
-  const body = { items: state.items.map(({ k, x, y, r }) => ({ k, x, y, r: r || 0 })), wall: state.wall.map(({ k, side, t, z }) => ({ k, side, t, z })), paper: state.paper, ground: state.ground };
+  const body = { items: state.items.map(({ k, x, y, r }) => ({ k, x, y, r: r || 0 })), wall: state.wall.map(({ k, side, t, z, d }) => (d != null ? { k, side, t, z, d } : { k, side, t, z })), paper: state.paper, ground: state.ground };
   snap = await act('world_housing_save', { p_owner: snap.owner_id, p_state: body });
   editing = false; resetState(); draw();
   return { content: '별채를 저장했습니다.' };
