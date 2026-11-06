@@ -1028,25 +1028,25 @@ export const PETS = {
       sleep: [".....kkkkkkk.......", "...kkbabababk......", "..kbababababk......", ".kbabababababk.....", "kbabababakbabak....", "kbababababbabak....", ".kbabababababk.....", "..kbbbbbbbbbk......", "...kkkkkkkkk......."]
     }
   },
-  ladybug: {
-    name: "무당벌레",
+  rhino_beetle: {
+    name: "장수풍뎅이",
     grade: 1,
     kind: "swarm",
-    desc: "빨간 등에 까만 점이 일곱 개 박힌 벌레입니다. 손가락 끝까지 기어 올라가서야 날개를 펴고 날아오릅니다. 점을 세어 주면 좋아하는지 잠깐 멈춰 섭니다.",
+    desc: "뿔 하나를 자랑스레 치켜든 갑옷 같은 풍뎅이입니다. 참나무 진 냄새를 맡으면 밤새 나무를 기어오르고, 힘겨루기에서 지면 한참을 뒤집힌 채 버둥거립니다. 등을 쓸어 주면 윤이 나는 게 좋은지 가만히 있습니다.",
     likes: "treat_honey",
     baby: {
-      pal: { a: "#d8342c", n: "#2a2420", w: "#f4f0e6", e: "#2a1a14", k: "#1a120e" },
-      idle: ["...kkkk......", "..kaaaakk....", ".kanaanankkk.", "kaaaanaaannnk", "kanaaaaanwewk", "kaaanaanannnk", ".kaaaaaankkk.", ".knknkknknk..", "..k.k..k.k..."],
-      blink: ["...kkkk......", "..kaaaakk....", ".kanaanankkk.", "kaaaanaaannnk", "kanaaaaanwkwk", "kaaanaanannnk", ".kaaaaaankkk.", ".knknkknknk..", "..k.k..k.k..."],
-      step: ["...kkkk......", "..kaaaakk....", ".kanaanankkk.", "kaaaanaaannnk", "kanaaaaanwewk", "kaaanaanannnk", ".kaaaaaankkk.", "..knknknknk..", "...k.k.k.k..."],
-      sleep: ["...kkkk......", "..kaaaakk....", ".kanaanankkk.", "kaaaanaaannnk", "kanaaaaankknk", "kaaanaanannnk", "knnnnnnnnkkk.", ".kkkkkkkk...."]
+      pal: { a: "#5a3220", h: "#9a6a40", n: "#2a1a14", i: "#f0e0c0", k: "#1a120e" },
+      idle: [".........kk...", "........knnk..", "...kkkkk.knnk.", "..kaaaaaknnk..", ".kaahhaaannnk.", "kaahaaaaanink.", "kaaaaaaaannnnk", ".kaaaaaaaknkk.", ".knknkknknk...", "..k.k..k.k...."],
+      blink: [".........kk...", "........knnk..", "...kkkkk.knnk.", "..kaaaaaknnk..", ".kaahhaaannnk.", "kaahaaaaanknk.", "kaaaaaaaannnnk", ".kaaaaaaaknkk.", ".knknkknknk...", "..k.k..k.k...."],
+      step: [".........kk...", "........knnk..", "...kkkkk.knnk.", "..kaaaaaknnk..", ".kaahhaaannnk.", "kaahaaaaanink.", "kaaaaaaaannnnk", ".kaaaaaaaknkk.", "..knknknkknk..", "...k.k.k..k..."],
+      sleep: [".........kk...", "........knnk..", "...kkkkk.knnk.", "..kaaaaaknnk..", ".kaahhaaannnk.", "kaahaaaaannnnk", "kaaaaaaaannnnk", "knnnnnnnnkkkk.", ".kkkkkkkk....."]
     },
     adult: {
-      pal: { a: "#d8342c", n: "#2a2420", w: "#f4f0e6", e: "#2a1a14", k: "#1a120e" },
-      idle: [".....kkkk........", "...kkaaaakkk.....", "..kaanaaanaak....", ".kaaaaaanaaaakkk.", "kanaaanaaaanannnk", "kaaaaaaanaaannnnk", "kaanaaaaaaananwek", "kaaaanaanaaannnnk", ".kaaaaaaaanaakkk.", "..kaaaaaaaaakk...", "..knknkknkknknk..", "...k.k..k..k.k..."],
-      blink: [".....kkkk........", "...kkaaaakkk.....", "..kaanaaanaak....", ".kaaaaaanaaaakkk.", "kanaaanaaaanannnk", "kaaaaaaanaaannnnk", "kaanaaaaaaananwk.", "kaaaanaanaaannnnk", ".kaaaaaaaanaakkk.", "..kaaaaaaaaakk...", "..knknkknkknknk..", "...k.k..k..k.k..."],
-      step: [".....kkkk........", "...kkaaaakkk.....", "..kaanaaanaak....", ".kaaaaaanaaaakkk.", "kanaaanaaaanannnk", "kaaaaaaanaaannnnk", "kaanaaaaaaananwek", "kaaaanaanaaannnnk", ".kaaaaaaaanaakkk.", "..kaaaaaaaaak.k..", "...knknknkknkknk.", "....k.k.k..k..k.."],
-      sleep: [".....kkkk........", "...kkaaaakkk.....", "..kaanaaanaak....", ".kaaaaaanaaaakkk.", "kanaaanaaaanannnk", "kaaaaaaanaaannnnk", "kaanaaaaaaankknnk", "kaaaanaanaaannnnk", "knnnnnnnnnnnnkkk.", ".kkkkkkkkkkkk...."]
+      pal: { a: "#5a3220", h: "#9a6a40", n: "#2a1a14", i: "#f0e0c0", k: "#1a120e" },
+      idle: ["............kk....", "...........knnk...", "............knnk..", "....kkkkkk..knnk..", "..kkaaaaaakknnnk..", ".kaaahhhaaaknnnnk.", "kaaahhaaaaaanninnk", "kaaaahaaaaaaannnnk", "kaaaaaaaaaaaannnk.", ".kaaaaaaaaaaknnk..", "..kaaaaaaaakkkk...", "..knknkkknkknk....", ".knkknk.knk.knk...", "..k..k...k...k...."],
+      blink: ["............kk....", "...........knnk...", "............knnk..", "....kkkkkk..knnk..", "..kkaaaaaakknnnk..", ".kaaahhhaaaknnnnk.", "kaaahhaaaaaannknnk", "kaaaahaaaaaaannnnk", "kaaaaaaaaaaaannnk.", ".kaaaaaaaaaaknnk..", "..kaaaaaaaakkkk...", "..knknkkknkknk....", ".knkknk.knk.knk...", "..k..k...k...k...."],
+      step: ["............kk....", "...........knnk...", "............knnk..", "....kkkkkk..knnk..", "..kkaaaaaakknnnk..", ".kaaahhhaaaknnnnk.", "kaaahhaaaaaanninnk", "kaaaahaaaaaaannnnk", "kaaaaaaaaaaaannnk.", ".kaaaaaaaaaaknnk..", "..kaaaaaaaak.kk...", "...knknkknknkk....", "..knk.knkknkknk...", "...k...k..k..k...."],
+      sleep: ["............kk....", "...........knnk...", "....kkkkkk..knnk..", "..kkaaaaaakknnnk..", ".kaaahhhaaaknnnnk.", "kaaahhaaaaaannnnnk", "kaaaahaaaaaaannnnk", "kaaaaaaaaaaaannnk.", "knnnnnnnnnnnnnkk..", ".kkkkkkkkkkkkk...."]
     }
   },
   bee_trio: {

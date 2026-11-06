@@ -72,44 +72,49 @@ bababababbaba
 .bababababab.
 ..bbbbbbbbb..'''))
 
-LADY = {'a': '#d8342c', 'b': '#a82420', 'n': '#2a2420', 'w': '#f4f0e6', 'e': E, 'i': I, 'p': PK}
-pet(id='ladybug', name='무당벌레', grade=1, kind='swarm', likes='treat_honey',
-    desc='빨간 등에 까만 점이 일곱 개 박힌 벌레입니다. 손가락 끝까지 기어 올라가서야 날개를 펴고 날아오릅니다. 점을 세어 주면 좋아하는지 잠깐 멈춰 섭니다.',
-    baby=dict(pal=LADY, idle='''
-...aaaa....
-..anaanan..
-.aaaanaaannn
-.anaaaaanwew
-.aaanaanannn
-..aaaaaan...
-..n.n..n.n..''', step_tail='''
-...n.n.n.n..''', sleep='''
-...aaaa....
-..anaanan..
-.aaaanaaannn
-.anaaaaankkn
-.aaanaanannn
-.nnnnnnnn...'''),
-    adult=dict(pal=LADY, idle='''
-.....aaaa.......
-...aanaaanaa....
-..aaaaaanaaaa...
-.anaaanaaaanannn
-.aaaaaaanaaannnn
-.aanaaaaaaananwe
-.aaaanaanaaannnn
-..aaaaaaaanaa...
-...aaaaaaaaa....
-...n.n..n..n.n..''', step_tail='''
-....n.n.n..n..n.''', sleep='''
-.....aaaa.......
-...aanaaanaa....
-..aaaaaanaaaa...
-.anaaanaaaanannn
-.aaaaaaanaaannnn
-.aanaaaaaaankknn
-.aaaanaanaaannnn
-.nnnnnnnnnnnn...'''))
+RHINO = {'a': '#5a3220', 'h': '#9a6a40', 'n': '#2a1a14', 'i': '#f0e0c0', 'e': E, 'p': PK}
+pet(id='rhino_beetle', name='장수풍뎅이', grade=1, kind='swarm', likes='treat_honey',
+    desc='뿔 하나를 자랑스레 치켜든 갑옷 같은 풍뎅이입니다. 참나무 진 냄새를 맡으면 밤새 나무를 기어오르고, 힘겨루기에서 지면 한참을 뒤집힌 채 버둥거립니다. 등을 쓸어 주면 윤이 나는 게 좋은지 가만히 있습니다.',
+    baby=dict(pal=RHINO, lid='n', idle='''
+.........nn..
+..........nn.
+...aaaaa.nn..
+..aahhaaannn.
+.aahaaaaanin.
+.aaaaaaaannnn
+..aaaaaaa.n..
+..n.n..n.n...''', step_tail='''
+...n.n.n..n..''', sleep='''
+.........nn..
+..........nn.
+...aaaaa.nn..
+..aahhaaannn.
+.aahaaaaannnn
+.aaaaaaaannnn
+.nnnnnnnn....'''),
+    adult=dict(pal=RHINO, lid='n', idle='''
+............nn...
+.............nn..
+.............nn..
+....aaaaaa..nnn..
+..aaahhhaaa.nnnn.
+.aaahhaaaaaanninn
+.aaaahaaaaaaannnn
+.aaaaaaaaaaaannn.
+..aaaaaaaaaa.nn..
+...aaaaaaaa......
+...n.n...n..n....
+..n..n...n...n...''', step_tail='''
+....n.n..n.n.....
+...n...n..n..n...''', sleep='''
+............nn...
+.............nn..
+....aaaaaa..nnn..
+..aaahhhaaa.nnnn.
+.aaahhaaaaaannnnn
+.aaaahaaaaaaannnn
+.aaaaaaaaaaaannn.
+.nnnnnnnnnnnnn...'''))
 
 BEE = {'a': '#f0c030', 'b': '#2a2018', 'w': '#dceef6', 'c': '#fff4c0', 'e': E, 'i': I, 'p': PK}
 pet(id='bee_trio', name='꿀벌 삼형제', grade=2, kind='swarm', likes='treat_honey',
