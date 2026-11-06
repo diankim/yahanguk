@@ -139,8 +139,8 @@ export function bindFaction(body, s) {
   }));
   $$('[data-fq-req]', body).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_faction_request_claim', { p_req: b.dataset.fqReq }); done(); return r; }));
   $$('[data-fq-buy]', body).forEach(b => b.onclick = async () => {
-    const id = b.dataset.fqBuy, qty = Math.max(1, Math.min(99, Number($(`#fqq-${id}`, body)?.value) || 1));
-    const v = (s.vault || []).find(x => x.item_id === id), one = v && v.kind !== 'item';
+    const id = b.dataset.fqBuy, v = (s.vault || []).find(x => x.item_id === id), one = v && v.kind !== 'item';
+    const qty = one ? 1 : Math.max(1, Math.min(99, Number($(`#fqq-${CSS.escape(id)}`, body)?.value) || 1));
     if (!(await ask(one ? `${v.name}을(를) 공훈 ${fmt.num(v.price)}(으)로 받을까요?` : `${v?.name || nameOf(id)} ×${qty}을(를) 공훈 ${fmt.num((v?.price || 0) * qty)}(으)로 살까요?`, { title: '비고', ok: one ? '받기' : '사기' }))) return;
     guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); done(); return r; });
   });
