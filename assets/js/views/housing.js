@@ -187,7 +187,7 @@ function palette() {
 }
 function petBar(p) {
   const me = snap.role === 'owner', today = snap.pet_today || {};
-  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b><span class="muted small">친밀도 ${p.affinity || 0}${p.adult ? ' · 다 자람' : ' / 100이면 자람'}</span>
+  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b><span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}</span>
     <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}</span></div>`;
 }
 function ownerPanel() {
@@ -380,11 +380,11 @@ async function openPets() {
     <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
     <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id), kind = KINDS[PETS[s.id]?.kind] || ''; return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
       <span class="pet-face" data-tip="${esc(`${s.name}${kind ? ` · ${kind}` : ''} — ${PETS[s.id]?.desc || ''}`)}"><img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3 })}" alt=""><b>${esc(m?.nick || s.name)}</b></span><small>${kind ? `<i class="pet-kind">${esc(kind)}</i>` : ''}${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
-      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button></span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
+      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button>${m.grown ? `<button class="linkish small" data-look="${s.id}" data-baby="${m.baby ? '' : '1'}" title="조사원 카드·별채에 보이는 모습">${m.baby ? '자란 모습으로' : '아기 모습으로'}</button>` : ''}</span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look]'); if (!b) return;
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
       openModal({ title: '별명 짓기', body: `<form id="pet-nick" class="hs-gb-form"><input name="nick" maxlength="8" value="${esc(cur)}" placeholder="${esc(PETS[id]?.name || '')}" autocomplete="off"><button class="btn small primary">짓기</button></form><p class="muted small">8자까지 · 한글·영문·숫자 · 비우면 원래 이름으로 돌아갑니다.</p>` });
@@ -396,7 +396,8 @@ async function openPets() {
     }
     guard(b, async () => {
       let r;
-      if (b.dataset.adopt) r = await act('world_pet_adopt', { p_item: b.dataset.adopt });
+      if (b.dataset.look) r = await rpc('world_pet_look', { p_pet: b.dataset.look, p_baby: !!b.dataset.baby });
+      else if (b.dataset.adopt) r = await act('world_pet_adopt', { p_item: b.dataset.adopt });
       else if (b.dataset.token != null) r = await act('world_pet_token_trade');
       else if (b.dataset.prof !== undefined) r = await rpc('world_pet_profile_set', { p_pet: b.dataset.prof || null });
       else r = await rpc('world_pet_place', { p_pet: b.dataset.place || null });
@@ -431,7 +432,8 @@ function afterPet(r, kind) {
   if (pet) { pet.state = kind === 'play' ? 'play' : 'idle'; pet.wait = 12; pet.path = []; }
   if (snap.pet) { snap.pet.affinity = r.affinity; snap.pet.adult = r.adult; }
   if (snap.role !== 'owner') { snap.pet_today = { ...(snap.pet_today || {}), [kind]: true }; }
-  if (r.grew) { toast('꼬마 동무가 훌쩍 자랐습니다!', 'ok'); if (pet) pet.adult = true; }
+  if (snap.pet) snap.pet.grown = r.grown;
+  if (r.grew) { toast('꼬마 동무가 훌쩍 자랐습니다!', 'ok'); if (pet) pet.adult = !!r.adult; }
   if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }
 }
 
