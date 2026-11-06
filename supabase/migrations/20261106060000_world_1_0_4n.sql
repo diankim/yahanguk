@@ -43,7 +43,9 @@ begin perform public.world_travel_guard('상점 거래');
   insert into public.world_events(actor_id, actor_name, event_type, content, payload) values (uid, c.character_name, 'shop_sell', msg, jsonb_build_object('item', p_item_id, 'qty', p_qty, 'gil', paid, 'tax', tax, 'dropped', dropped));
   return jsonb_build_object('content', msg, 'gil', c.gil + paid, 'inventory', inv, 'tax', tax, 'paid', paid, 'dropped', dropped, 'sold', earned + paid, 'cap', lim, 'left', greatest(0, lim - earned - paid));
 end $function$;
+grant create on schema public to fn_owner_18878;
 alter function public.world_shop_sell(text, integer, boolean) owner to fn_owner_18878;
+revoke create on schema public from fn_owner_18878;
 revoke all on function public.world_shop_sell(text, integer, boolean) from public, anon;
 grant execute on function public.world_shop_sell(text, integer, boolean) to authenticated, service_role;
 
