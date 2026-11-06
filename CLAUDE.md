@@ -308,6 +308,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 생성기 supabase/gen72/(h_housing.sql·p_pets.sql·pets_data.py·x_misc.sql·patch_note.sql·gen.py → migrations/20261103000000_world_7_2_0.sql). 그림 assets/js/housing/(render.js·furniture.js 가구·벽지·바닥재·기본 세트·pets.js·petsprite.js), 화면 views/housing.js(#/house·#/house/<주인>, 캐릭터 › 별채 탭은 이리로).
 - 표(RLS·직접 읽기 없음): world_housing(size 6~9·items [{k,x,y,r}]·wall [{k,side L|R,t,z}]·paper·ground·gate open|friends|closed·발걸음·pet_id·pet_out)·world_housing_store(곳간)·world_housing_guestbook(최근 20)·world_housing_visits(하루 한 번)·world_housing_rewards(한 번 주는 가구)·world_furniture_sources(drop_normal·drop_guardian·expedition·raid_world 확률 / title:·chapter:·raid_final·gw_first 한 번).
+- 가구 89(1.1.0에 20 — 깔개·상 위 소품·동무 가구(cat 「동무 가구」)·4·5단계 벽지/바닥재·원앙금침·그림 액자(WALL frame:true, 도트 그림용)). 1~3단계는 제작법(Lv1·8·15), 2단계 drop_normal·3단계 drop_guardian+expedition, 1단계는 상점, 4·5단계는 한 번 주는 보상(새로 더하면 이미 받은 사람에게도 world_housing_grant_once로 나머지를 줌). 물품 행은 furniture.js 정의에서 뽑아 SQL로(이름·크기·칸이 한 곳).
 - 가구 = 물품(category furniture, 단계=등급 1~5, 묶음 1, hf_<키>·벽지 hp_·바닥재 hg_, equipment_traits {hk, kind floor|rug|surface|wall|paper|ground, w, d, top, ww, wh, cat, pet bed|toy|bowl|perch}). 상점(범품, 상점마다 다섯)·제작·전리품 가구는 거래 가능, 조건 보상·기본 세트·비고 가구는 거래 불가(world_shop_sell도 막음, 기부는 됨). world_item_catalog_category_check에 furniture·pet.
 - world_housing_save(p_owner, p_state)가 배치 전체 재검사: 칸 안·겹침(바닥·깔개 따로)·소품은 top 있는 가구 위·벽 장식은 벽 안(t 0.1칸, z 4~75px)·같은 벽 겹침·설치 상한(6×6 15·7×7 20·8×8 26·9×9 32)·같은 가구 상한(범품 4·양품 3·진품 2·명품·신품 1). 늘어난 가구는 곳간 → 고치는 사람 가방, 줄어든 가구는 주인 곳간(30 + 넓힐 때마다 5).
 - 고치기·곳간 put·take(world_housing_store_move)·넓히기(world_housing_expand: 7×7 2,500전·가공 부적목 10 / 8×8 Lv20·6,000전·강화 부적목 4·칠액 6 / 9×9 Lv25·15,000전·강화 부적목 6·영맥 수피 4·비취 파편 2)는 world_housing_edit_block(창고와 같은 조건, 반요촌 불가)이 막고, 곳간 discard는 어디서나. 구경 world_housing_snapshot은 어디서나, 대문·차단 world_housing_can_view. 조사원 카드 「별채 구경」은 먼저 snapshot을 불러 막히면 알림만, 받은 값은 store.houseSnap으로. 혼례 정인(world_housing_married: bonds.marks.married)은 서로의 별채를 고친다.
@@ -317,12 +318,13 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 꼬마 동무
 
-- 47종(1.0.0, 조사원 제보 12종 포함 — 은빛 아프간 하운드·분홍 포메라니안·오목눈이 2026-11-02, 원본 supabase/rollback/p6_pets.src.sql) world_pet_species(grade·kind·likes·how·egg), world_pets(affinity 0~300, 100 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩 +1), 출처 world_pet_sources(quest:·title:·gw_first).
-- 범품 15: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 15: pet_egg_2 「얼룩무늬 알」 · 진품 8: 퀘스트 + pet_egg_3 「빛나는 알」 · 명품 7: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때)마다 world_event_char_apply 희귀 전리품 길로 0.5%·0.06%.
+- 58종(1.1.0에 갈래마다 3종 이상으로 11종 — 소라게·아기 천산갑·무당벌레·꿀벌 삼형제·청개구리·아기 도롱뇽·아기 맥·아기 장산범·종이 인형 혼령·아기 멧돼지·아기 흰곰(제보 28), 마이그레이션 20261108000000; 1.0.0 원본 supabase/rollback/p6_pets.src.sql) world_pet_species(grade·kind·likes·how·egg), world_pets(affinity 0~300, 100 다 자람, 하루 쓰다듬기 5·놀기 3·먹이 3), 손님 world_pet_guest(하루 쓰다듬기·놀기 한 번씩 +1), 출처 world_pet_sources(quest:·title:·gw_first).
+- 범품 21: 바구니 pt_<종>(상점마다 둘, 300전, 거래 가능) · 양품 19: pet_egg_2 「얼룩무늬 알」 · 진품 9: 퀘스트 + pet_egg_3 「빛나는 알」(아기 흰곰은 알만) · 명품 7: 어려운 퀘스트·칭호 공방의 주인 · 신품 2: 칭호 만귀보·귀허의 주인 첫 처치. 알은 탐색·채집·낚시(잡았을 때)마다 world_event_char_apply 희귀 전리품 길로 0.5%·0.06%.
 - world_pet_adopt: 알은 그 등급 egg 종 중 고르게, 이미 있으면 친밀도 +30(최대 300), 친밀도 가득이면 「동무 정표」 pet_token(거래 불가, 가방이 차면 창고). 정표 5 → 빛나는 알 world_pet_token_trade(어디서나, 가방 「알로 바꾸기」·물품 정보·별채 동무 창). 조건 보상 world_pet_grant(이미 있으면 pet_food 3을 창고로).
 - 두 자리(1.0.0): 데리고 다니는 동무 world_pet_profile(조사원 카드 pet = world_pet_profile_of, 별채 없어도 world_pet_profile_set)·별채 동무 world_housing.pet_id(world_pet_place), 같은 동무는 한 자리에만(서로 빼고 계정마다 advisory 잠금, pet_out은 안 씀, world_pet_walk는 옛 화면 호환), 별명 8자 world_pet_nickname, world_pet_act(pat·play·feed, pet_food 10전·별미 treat_* 30~50전, 좋아하는 별미 +12). 능력치 효과 없음.
 - 규칙 'home'(world_home_rule_count: open·size·visits·guest·furn·pets·adult·pet_grade·eggdup — 알에서 잇달아 겹친 최장 횟수 world_pet_streak), 칭호 14 분류 '별채'(pet_dup3 「또 너니?」·숨김 pet_dup5 「끊어지지 않는 인연」, 효과 없음), 꾸미기 fr_home·pt_home·sl_dong.
-- 그림 원본 tools/pet_art/(art*.py → gen.py가 테두리를 둘러 pets.js 생성).
+- 그림 원본 tools/pet_art/(art*.py → gen.py가 테두리를 둘러 pets.js 생성). 소개 글도 art*.py desc 한 곳(pets.js desc). 도감 카드는 유형 태그(갈래 이름 gamedata kinds, tools/gamedata/gen.py가 world_monster_kinds에서)만 두고 그림·이름을 누르면 tips.js로 소개(housing.js openPets .pet-face data-tip).
+- 돌보기 문구 assets/js/housing/petlines.js petLine(행동, {이름·갈래·친밀도·좋아하는 별미·손님·친밀도 올랐나(gain)·오늘 횟수(counts)}) 한 곳: 갈래 묶음(지키기 금주·갑각·거괴 / 물기 은형·파봉·목령 / 쪼기 비금·천상 / 홀리기 영귀·수귀·독충·군충·경요)·친밀도(아기·다 자람·300)·별미·손님·오늘 마지막(CAPS 5·3·3)·더 못 오름, 바로 앞 문구는 안 고름. 화면에서만(요청 없음).
 
 ## 8. 생존과 침식
 

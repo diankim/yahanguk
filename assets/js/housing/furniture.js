@@ -370,6 +370,109 @@ export const FUR = {
     { t: 'ell', x: 1.6, y: .6, z: 1.44, rx: 2, ry: 2, c: '#f0a8b0' },
     { t: 'ell', x: 1.0, y: .6, z: 1.9, rx: 2, ry: 2, c: '#f8d0d4' },
     { x: .9, y: .82, w: .2, d: .02, h: .1, z: .1, c: C.gold }] },
+
+  rug_hemp: { name: '삼베 깔개', grade: 1, W: 2, D: 1, layer: 'rug', cat: '깔개', pet: 'bed', parts: [
+    { x: .05, y: .08, w: 1.9, d: .84, h: .03, c: '#cdbd98' },
+    { x: .14, y: .16, w: 1.72, d: .68, h: .01, z: .03, c: '#ddcfae' },
+    { x: .14, y: .3, w: 1.72, d: .03, h: .01, z: .04, c: '#b8a680' }, { x: .14, y: .66, w: 1.72, d: .03, h: .01, z: .04, c: '#b8a680' },
+    { x: .05, y: .08, w: .06, d: .84, h: .01, z: .03, c: C.ind }, { x: 1.89, y: .08, w: .06, d: .84, h: .01, z: .03, c: C.ind }] },
+  surf_vase: { name: '백자 꽃병', grade: 1, W: 1, D: 1, layer: 'surface', cat: '소품', parts: [
+    { x: .4, y: .4, w: .2, d: .2, h: .04, c: '#d8d2c2' },
+    { t: 'ell', x: .5, y: .5, z: .2, rx: 4, ry: 4, c: C.white },
+    { x: .45, y: .45, w: .1, d: .1, h: .16, z: .3, c: C.white },
+    { x: .43, y: .43, w: .14, d: .14, h: .03, z: .46, c: '#d8d2c2' },
+    { x: .48, y: .5, w: .02, d: .02, h: .3, z: .48, c: C.leaf },
+    { t: 'ell', x: .42, y: .52, z: .78, rx: 2, ry: 2, c: C.pink },
+    { t: 'ell', x: .6, y: .46, z: .7, rx: 2, ry: 2, c: '#f0c8d0' },
+    { t: 'ell', x: .5, y: .5, z: .88, rx: 2, ry: 2, c: C.red }] },
+  surf_brush: { name: '붓꽂이', grade: 1, W: 1, D: 1, layer: 'surface', cat: '소품', parts: [
+    { x: .34, y: .34, w: .32, d: .32, h: .28, c: '#5a8a5a' },
+    { x: .36, y: .36, w: .28, d: .28, h: .02, z: .28, c: '#2a3a2a' },
+    { x: .4, y: .44, w: .03, d: .03, h: .34, z: .28, c: C.pine }, { x: .48, y: .4, w: .03, d: .03, h: .4, z: .28, c: C.dark },
+    { x: .56, y: .48, w: .03, d: .03, h: .3, z: .28, c: C.pine },
+    { x: .4, y: .44, w: .03, d: .03, h: .06, z: .62, c: C.ink }, { x: .48, y: .4, w: .03, d: .03, h: .06, z: .68, c: C.white }, { x: .56, y: .48, w: .03, d: .03, h: .06, z: .58, c: C.ink }] },
+  pet_nest: { name: '짚 둥지', grade: 1, W: 1, D: 1, layer: 'floor', cat: '동무 가구', pet: 'bed', parts: [
+    { t: 'ell', x: .5, y: .5, z: .06, rx: 11, ry: 6, c: '#c9a85a' },
+    { t: 'ell', x: .5, y: .5, z: .12, rx: 10, ry: 5, c: '#dcbc6a' },
+    { t: 'ell', x: .5, y: .5, z: .14, rx: 7, ry: 3, c: '#a8843e' },
+    { x: .16, y: .44, w: .2, d: .03, h: .02, z: .16, c: '#e8cc7a' }, { x: .66, y: .58, w: .2, d: .03, h: .02, z: .16, c: '#e8cc7a' }] },
+  pet_ball: { name: '오색 공', grade: 1, W: 1, D: 1, layer: 'floor', cat: '동무 가구', pet: 'toy', parts: [
+    { t: 'ell', x: .42, y: .56, z: .12, rx: 4, ry: 4, c: C.lac },
+    { t: 'ell', x: .42, y: .56, z: .12, rx: 4, ry: 1, c: C.yellow },
+    { t: 'ell', x: .42, y: .56, z: .12, rx: 1, ry: 4, c: C.ind2 },
+    { t: 'ell', x: .68, y: .36, z: .08, rx: 3, ry: 3, c: C.green },
+    { t: 'ell', x: .68, y: .36, z: .08, rx: 3, ry: 1, c: C.white }] },
+  pet_waterbowl: { name: '돌 물그릇', grade: 1, W: 1, D: 1, layer: 'floor', cat: '동무 가구', pet: 'bowl', parts: [
+    { x: .24, y: .24, w: .52, d: .52, h: .16, c: C.stone },
+    { x: .3, y: .3, w: .4, d: .4, h: .02, z: .16, c: C.water },
+    { t: 'ell', x: .44, y: .46, z: .19, rx: 2, ry: 1, c: C.water2 },
+    { x: .2, y: .2, w: .1, d: .1, h: .06, c: C.stone2 }] },
+  surf_lamp: { name: '사기 등잔', grade: 2, W: 1, D: 1, layer: 'surface', cat: '조명', glow: true, parts: [
+    { x: .36, y: .36, w: .28, d: .28, h: .04, c: C.dark },
+    { x: .46, y: .46, w: .08, d: .08, h: .26, z: .04, c: C.dark },
+    { t: 'ell', x: .5, y: .5, z: .34, rx: 4, ry: 2, c: C.white },
+    { x: .4, y: .4, w: .2, d: .2, h: .03, z: .34, c: '#d8d2c2' },
+    { x: .48, y: .48, w: .04, d: .04, h: .06, z: .37, c: C.cream },
+    { t: 'ell', x: .5, y: .5, z: .5, rx: 1, ry: 2, c: '#ffd27a' }] },
+  surf_suseok: { name: '수석 받침', grade: 2, W: 1, D: 1, layer: 'surface', cat: '소품', parts: [
+    { x: .2, y: .3, w: .6, d: .4, h: .06, c: C.dark },
+    { x: .24, y: .34, w: .52, d: .32, h: .02, z: .06, c: '#6a4430' },
+    { x: .32, y: .4, w: .34, d: .22, h: .2, z: .08, c: '#6e6b64' },
+    { x: .38, y: .42, w: .2, d: .16, h: .2, z: .28, c: '#86837a' },
+    { x: .44, y: .46, w: .1, d: .1, h: .12, z: .48, c: '#6e6b64' },
+    { t: 'ell', x: .36, y: .6, z: .24, rx: 2, ry: 1, c: '#5a7a3e' }] },
+  pet_quilt: { name: '누비 동무 이불', grade: 2, W: 1, D: 1, layer: 'floor', cat: '동무 가구', pet: 'bed', parts: [
+    { x: .1, y: .14, w: .8, d: .72, h: .1, c: C.cream },
+    { x: .12, y: .16, w: .76, d: .68, h: .06, z: .1, c: C.pink },
+    { x: .12, y: .38, w: .76, d: .03, h: .01, z: .16, c: '#c87080' }, { x: .12, y: .6, w: .76, d: .03, h: .01, z: .16, c: '#c87080' },
+    { x: .36, y: .16, w: .03, d: .68, h: .01, z: .16, c: '#c87080' }, { x: .6, y: .16, w: .03, d: .68, h: .01, z: .16, c: '#c87080' },
+    { x: .14, y: .18, w: .26, d: .2, h: .08, z: .16, c: C.white }] },
+  rug_mojeon: { name: '꽃수 모전', grade: 3, W: 3, D: 2, layer: 'rug', cat: '깔개', pet: 'bed', parts: [
+    { x: .05, y: .05, w: 2.9, d: 1.9, h: .05, c: '#7a2a2a' },
+    { x: .2, y: .2, w: 2.6, d: 1.6, h: .01, z: .05, c: '#a83a34' },
+    { x: .35, y: .35, w: 2.3, d: 1.3, h: .01, z: .06, c: '#c8a46a' },
+    { t: 'ell', x: 1.5, y: 1.0, z: .08, rx: 9, ry: 4, c: C.lac },
+    { t: 'ell', x: 1.5, y: 1.0, z: .09, rx: 5, ry: 2, c: '#f0c8d0' },
+    { t: 'ell', x: .7, y: .7, z: .08, rx: 4, ry: 2, c: C.green }, { t: 'ell', x: 2.3, y: 1.3, z: .08, rx: 4, ry: 2, c: C.green },
+    { t: 'ell', x: 2.3, y: .7, z: .08, rx: 3, ry: 1, c: C.ind2 }, { t: 'ell', x: .7, y: 1.3, z: .08, rx: 3, ry: 1, c: C.ind2 },
+    { x: .05, y: .05, w: .1, d: 1.9, h: .01, z: .05, c: C.gold }, { x: 2.85, y: .05, w: .1, d: 1.9, h: .01, z: .05, c: C.gold }] },
+  surf_najeon_box: { name: '자개 함', grade: 3, W: 1, D: 1, layer: 'surface', cat: '소품', parts: [
+    { x: .22, y: .3, w: .56, d: .4, h: .22, c: '#2a1a1c' },
+    { x: .2, y: .28, w: .6, d: .44, h: .05, z: .22, c: '#3a2224' },
+    { t: 'ell', x: .4, y: .5, z: .28, rx: 2, ry: 1, c: '#a8e0d8' },
+    { t: 'ell', x: .6, y: .44, z: .28, rx: 2, ry: 1, c: '#e0d2f4' },
+    { x: .46, y: .7, w: .08, d: .02, h: .08, z: .1, c: C.gold },
+    { t: 'ell', x: .36, y: .7, z: .12, rx: 1, ry: 1, c: '#bfe8e0' }] },
+  pet_tower: { name: '동무 놀이 층대', grade: 3, W: 1, D: 1, layer: 'floor', cat: '동무 가구', pet: 'perch', top: 1.6, parts: [
+    { x: .1, y: .1, w: .8, d: .8, h: .1, c: C.dark },
+    { x: .12, y: .12, w: .76, d: .76, h: .04, z: .1, c: '#c9b27a' },
+    { x: .16, y: .16, w: .1, d: .1, h: 1.5, z: .1, c: C.wood }, { x: .74, y: .74, w: .1, d: .1, h: 1.5, z: .1, c: C.wood },
+    { x: .14, y: .14, w: .72, d: .72, h: .06, z: .8, c: C.pine },
+    { x: .16, y: .16, w: .68, d: .68, h: .03, z: .86, c: '#c9b27a' },
+    { x: .1, y: .1, w: .8, d: .8, h: .06, z: 1.54, c: C.pine },
+    { x: .14, y: .14, w: .72, d: .72, h: .03, z: 1.6, c: '#c9b27a' },
+    { x: .7, y: .3, w: .03, d: .03, h: .4, z: .4, c: C.lac },
+    { t: 'ell', x: .72, y: .32, z: .38, rx: 2, ry: 2, c: C.gold }] },
+  bedding_wonang: { name: '원앙금침', grade: 4, W: 2, D: 1, layer: 'floor', cat: '침구', pet: 'bed', parts: [
+    { x: .05, y: .05, w: 1.9, d: .9, h: .22, c: C.cream },
+    { x: .5, y: .03, w: 1.47, d: .94, h: .12, z: .22, c: C.lac },
+    { x: .58, y: .1, w: 1.32, d: .8, h: .02, z: .34, c: '#c84a3a' },
+    { x: .5, y: .03, w: .08, d: .94, h: .12, z: .22, c: C.gold },
+    { t: 'ell', x: 1.05, y: .45, z: .37, rx: 3, ry: 2, c: C.ind2 }, { t: 'ell', x: 1.25, y: .55, z: .37, rx: 3, ry: 2, c: C.green },
+    { t: 'ell', x: 1.15, y: .5, z: .38, rx: 1, ry: 1, c: C.gold },
+    { x: .1, y: .18, w: .3, d: .3, h: .2, z: .22, c: C.ind }, { x: .1, y: .52, w: .3, d: .3, h: .2, z: .22, c: C.lac },
+    { x: .12, y: .2, w: .26, d: .26, h: .02, z: .42, c: C.gold }, { x: .12, y: .54, w: .26, d: .26, h: .02, z: .42, c: C.gold }] },
+  rug_manhwa: { name: '만화 융단', grade: 5, W: 3, D: 3, layer: 'rug', cat: '깔개', pet: 'bed', parts: [
+    { x: .05, y: .05, w: 2.9, d: 2.9, h: .05, c: C.gold },
+    { x: .18, y: .18, w: 2.64, d: 2.64, h: .01, z: .05, c: '#5e1a14' },
+    { x: .32, y: .32, w: 2.36, d: 2.36, h: .01, z: .06, c: '#8a2a22' },
+    { t: 'ell', x: 1.5, y: 1.5, z: .08, rx: 14, ry: 7, c: C.gold },
+    { t: 'ell', x: 1.5, y: 1.5, z: .09, rx: 9, ry: 4, c: '#e8c87a' },
+    { t: 'ell', x: 1.5, y: 1.5, z: .1, rx: 4, ry: 2, c: C.lac },
+    { t: 'ell', x: .7, y: .7, z: .08, rx: 4, ry: 2, c: '#f0c8d0' }, { t: 'ell', x: 2.3, y: 2.3, z: .08, rx: 4, ry: 2, c: '#f0c8d0' },
+    { t: 'ell', x: 2.3, y: .7, z: .08, rx: 4, ry: 2, c: C.jade2 }, { t: 'ell', x: .7, y: 2.3, z: .08, rx: 4, ry: 2, c: C.jade2 },
+    { t: 'ell', x: 1.5, y: .55, z: .08, rx: 3, ry: 1, c: C.white }, { t: 'ell', x: 1.5, y: 2.45, z: .08, rx: 3, ry: 1, c: C.white },
+    { t: 'ell', x: .55, y: 1.5, z: .08, rx: 3, ry: 1, c: C.white }, { t: 'ell', x: 2.45, y: 1.5, z: .08, rx: 3, ry: 1, c: C.white }] },
 };
 
 export const WALL = {
@@ -457,6 +560,13 @@ export const WALL = {
   board_cheonha: { name: '비무 장원 현판 「天下第一」', grade: 5, kind: 'deco', cat: '현판', w: 3.2, h: 18, text: ['天下第一', '#f4d488'], rects: [
     [-.14, -2, 3.48, 22, C.gold], [-.06, -1, 3.32, 20, C.lac], [0, 0, 3.2, 18, C.gold], [.08, 2, 3.04, 14, '#5e1a14'],
     [-.3, 6, .18, 6, C.green], [3.32, 6, .18, 6, C.green], [1.5, 18, .2, 3, C.lac]] },
+
+  frame_small: { name: '작은 그림 액자', grade: 1, kind: 'deco', cat: '액자', frame: true, w: 1, h: 20, rects: [
+    [0, 0, 1, 20, C.wood], [.08, 2, .84, 16, C.dark], [.12, 3, .76, 14, C.paper],
+    [.46, -3, .08, 3, C.dark]] },
+  frame_large: { name: '큰 그림 액자', grade: 2, kind: 'deco', cat: '액자', frame: true, w: 2, h: 30, rects: [
+    [-.06, -1, 2.12, 32, C.gold], [0, 0, 2, 30, C.lacD], [.1, 2, 1.8, 26, C.dark], [.16, 3, 1.68, 24, C.paper],
+    [.96, -4, .08, 3, C.gold]] },
 };
 
 export const PAPER = {
@@ -467,6 +577,8 @@ export const PAPER = {
   yeonji:      { name: '연지빛',     grade: 2, c: '#a8655d', l: '#bc786f', pat: 'lattice' },
   cloud:       { name: '구름무늬',   grade: 2, c: '#5a6e8a', l: '#7488a4', pat: 'cloud' },
   brick:       { name: '전벽돌',     grade: 2, c: '#8a6a58', l: '#a07e6a', pat: 'brick' },
+  celadon:     { name: '청자빛 구름', grade: 4, c: '#5f8f7e', l: '#82b0a0', pat: 'cloud' },
+  geumni:      { name: '금니 단청',  grade: 5, c: '#5a1e1a', l: '#7a3a2a', pat: 'dan' },
 };
 
 export const GROUND = {
@@ -477,6 +589,8 @@ export const GROUND = {
   baduk:    { name: '바둑판 마루', grade: 2, a: '#a8784a', b: '#946640', pat: 'check' },
   eotgyeol: { name: '엇결 마루',  grade: 3, a: '#7a4e30', b: '#6a4228', pat: 'herring' },
   ochre:    { name: '황토 장판',  grade: 2, a: '#b88458', b: '#a8764c', pat: 'grid' },
+  okdol:    { name: '옥돌 바닥',  grade: 4, a: '#7fa894', b: '#6c9682', pat: 'stone' },
+  geumbak:  { name: '금박 장판',  grade: 5, a: '#d8b25a', b: '#c49c46', pat: 'check' },
 };
 
 export const DEFAULT_SET = {
