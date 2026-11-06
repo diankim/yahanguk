@@ -1,4 +1,4 @@
-import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa } from './core.js';
+import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, JOBS } from './core.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
@@ -12,6 +12,8 @@ const RANK_PERK = {
   mandate_court: r => `예언 · 요괴 조우 −${(r - 1) * 2}% · 날씨·시간대 불이익 −${(r - 1) * 10}%`,
 };
 
+const jobWord = body => { const mine = (JOBS[store.character?.job_key]?.name || '').slice(0, 2), opts = Object.fromEntries(body.split('/').map(p => p.split('=')).filter(p => p.length === 2)); return opts[mine] ?? opts['*'] ?? Object.values(opts)[0] ?? ''; };
+const fillLine = t => josa(String(t || '').replaceAll('{이름}', store.character?.character_name || '조사원').replace(/\{직업:([^}]*)\}/g, (m, body) => jobWord(body)));
 export function playDialogue(r, fid) {
   const lines = r?.lines || [];
   if (!lines.length) return;
@@ -25,7 +27,7 @@ export function playDialogue(r, fid) {
   const show = () => {
     const l = lines[i], who = l.s ? (r.cast?.[l.s]?.name || '') : '';
     plate.textContent = who; plate.hidden = !who;
-    text.textContent = josa(String(l.t || '').replaceAll('{이름}', store.character?.character_name || '조사원')); text.classList.toggle('narr', !l.s);
+    text.textContent = fillLine(l.t); text.classList.toggle('narr', !l.s);
     cnt.textContent = `${i + 1} / ${lines.length}`;
     if (i === lines.length - 1) end.hidden = false;
   };
