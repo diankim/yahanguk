@@ -3,6 +3,7 @@ import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
 import { face } from '../people.js';
+import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft } from './common.js';
 import { factionColor } from '../geo.js';
 import { PARTY_EXP, AGILE, quietPctOf } from '../rules.js';
@@ -130,7 +131,7 @@ function partyHtml(p, s) {
 const AID_ITEMS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'medicine_base', 'calm_brew', 'ward_talisman', 'purify_water'];
 function openAid(target, name) {
   const inv = store.character.inventory || {}, medic = store.character.job_key === 'medic';
-  const have = AID_ITEMS.filter(k => Number(inv[k] || 0) > 0).map(k => [k, USABLE[k] || '']);
+  const have = haveOf(AID_ITEMS, inv).map(k => [k, USABLE[k] || USABLE[baseOf(k)] || '']);
   const m = openModal({ title: `${name} 돌보기`, body: `<p class="muted small">같은 곳에 있는 동료에게 약·부적을 씁니다.${medic ? ' 의무관이 쓰면 효과가 1.4배입니다.' : ''} 쓰러진 동료는 구조해야 합니다.</p>
     ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-here="동료 돌보기" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
       : empty('가방에 동료에게 쓸 약·부적이 없습니다.')}` });
