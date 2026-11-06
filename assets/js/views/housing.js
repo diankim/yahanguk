@@ -1,6 +1,6 @@
 import { rpc, act, store, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf, GRADES } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
-import { makeRoom, TW, TH, WALLH } from '../housing/render.js';
+import { makeRoom, TW, TH, WALLH, ZU } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
 import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
 import { cardName } from './card.js';
@@ -452,14 +452,16 @@ function afterPet(r, kind) {
   if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }
 }
 
+const PET_GO = { bed: 'sleep', bowl: 'eat', toy: 'play', perch: 'perch' };
 function walkable() {
-  const N = snap.size, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [] };
+  const N = snap.size, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [], fav: [] }, kind = PETS[pet?.id]?.kind;
   for (const it of state.items) {
     const f = FUR[it.k]; if (!f || f.layer !== 'floor') continue;
     const [w, d] = dimsOf(it);
     for (let x = it.x; x < it.x + w; x++) for (let y = it.y; y < it.y + d; y++) {
       if (f.pet === 'bed' || f.pet === 'bowl' || f.pet === 'toy') spots[f.pet].push([x, y]); else block.add(`${x},${y}`);
       if (f.pet === 'perch') spots.perch.push([x, y, f.top || 1]);
+      if (f.pet && kind && f.petKind === kind) spots.fav.push([x, y, f.pet, f.top || 0]);
     }
   }
   for (const it of state.items) { const f = FUR[it.k]; if (f?.layer === 'rug' && f.pet === 'bed') { const [w, d] = dimsOf(it); for (let x = it.x; x < it.x + w; x++) for (let y = it.y; y < it.y + d; y++) spots.bed.push([x, y]); } }
@@ -471,7 +473,7 @@ function setupPet() {
   const w = walkable(); const free = [];
   for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]);
   const [x, y] = free[Math.floor(Math.random() * free.length)] || [0, 0];
-  pet = { id: p.id, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10, flip: false, f: 0, z: 0 };
+  pet = { id: p.id, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10, flip: false, f: 0, z: 0, top: 0 };
 }
 function pathTo(w, sx, sy, tx, ty) {
   const key = (x, y) => `${x},${y}`, prev = new Map([[key(sx, sy), null]]), q = [[sx, sy]];
@@ -492,7 +494,7 @@ function tickPet() {
   pet.f++;
   if (pet.path.length) {
     const [tx, ty] = pet.path[0], dx = tx - pet.x, dy = ty - pet.y, sp = 0.14;
-    if (Math.abs(dx) + Math.abs(dy) <= sp) { pet.x = tx; pet.y = ty; pet.path.shift(); if (!pet.path.length) { pet.state = pet.next || 'idle'; pet.wait = pet.state === 'sleep' ? 60 : pet.state === 'idle' ? 10 + Math.random() * 30 : 24; } }
+    if (Math.abs(dx) + Math.abs(dy) <= sp) { pet.x = tx; pet.y = ty; pet.path.shift(); if (!pet.path.length) { pet.state = pet.next || 'idle'; if (pet.state === 'perch') pet.z = pet.top * ZU; pet.wait = pet.state === 'sleep' ? 60 : pet.state === 'perch' ? 40 : pet.state === 'idle' ? 10 + Math.random() * 30 : 24; } }
     else { pet.x += Math.sign(dx) * Math.min(sp, Math.abs(dx)); pet.y += Math.sign(dy) * Math.min(sp, Math.abs(dy)); pet.flip = (dx - dy) < 0; pet.state = 'walk'; }
     return;
   }
@@ -500,17 +502,20 @@ function tickPet() {
   const w = walkable(), r = Math.random(), sx = Math.round(pet.x), sy = Math.round(pet.y);
   let target = null, next = 'idle';
   const pickOf = list => list[Math.floor(Math.random() * list.length)];
-  if (r < 0.2 && w.spots.bed.length) { target = pickOf(w.spots.bed); next = 'sleep'; }
-  else if (r < 0.3 && w.spots.bowl.length) { target = pickOf(w.spots.bowl); next = 'eat'; }
-  else if (r < 0.4 && w.spots.toy.length) { target = pickOf(w.spots.toy); next = 'play'; }
+  pet.z = 0; pet.top = 0;
+  if (r < 0.3 && w.spots.fav.length) { target = pickOf(w.spots.fav); next = PET_GO[target[2]] || 'idle'; pet.top = target[3]; }
+  else if (r < 0.44 && w.spots.bed.length) { target = pickOf(w.spots.bed); next = 'sleep'; }
+  else if (r < 0.52 && w.spots.bowl.length) { target = pickOf(w.spots.bowl); next = 'eat'; }
+  else if (r < 0.6 && w.spots.toy.length) { target = pickOf(w.spots.toy); next = 'play'; }
+  else if (r < 0.68 && w.spots.perch.length) { target = pickOf(w.spots.perch); next = 'perch'; pet.top = target[2]; }
   else { const free = []; for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]); target = pickOf(free); }
   const path = target && pathTo(w, sx, sy, target[0], target[1]);
   pet.x = sx; pet.y = sy;
-  if (path && path.length) { pet.path = path; pet.next = next; } else { pet.state = next === 'sleep' && target && target[0] === sx && target[1] === sy ? 'sleep' : 'idle'; pet.wait = 20; }
+  if (path && path.length) { pet.path = path; pet.next = next; } else { const here = target && target[0] === sx && target[1] === sy; pet.state = here ? next : 'idle'; if (here && next === 'perch') pet.z = pet.top * ZU; pet.wait = 20; }
 }
 function drawPetIn(c) {
   if (!pet) return;
-  const [sx, sy] = c.iso(pet.x + .5, pet.y + .5, 0);
+  const [sx, sy] = c.iso(pet.x + .5, pet.y + .5, pet.z || 0);
   const st = pet.state, blink = st === 'idle' && pet.f % 28 < 2;
   const frame = st === 'sleep' ? 'sleep' : st === 'walk' || st === 'play' ? (pet.f % 4 < 2 ? 'step' : 'idle') : blink ? 'blink' : 'idle';
   const hop = st === 'play' && pet.f % 4 < 2 ? 2 : 0;

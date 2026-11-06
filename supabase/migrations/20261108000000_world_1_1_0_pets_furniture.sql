@@ -172,6 +172,70 @@ begin
   end loop;
 end $g$;
 
+insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, required_stats, minimum_level, equipment_traits, tradeable, reference_price, stack_size)
+values
+  ('hf_pet_birdhouse', '새집 횃대', 'furniture', 2, '별채 가구 · 동무 가구. 비금 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_birdhouse","cat":"동무 가구","top":1.44,"kind":"floor","grade":2,"pet":"perch","pet_kind":"bird"}'::jsonb, true, 150, 1),
+  ('hf_pet_tidepool', '조약돌 물웅덩이', 'furniture', 1, '별채 가구 · 동무 가구. 갑각 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_tidepool","cat":"동무 가구","top":0,"kind":"floor","grade":1,"pet":"bowl","pet_kind":"shell"}'::jsonb, true, 75, 1),
+  ('hf_pet_spirit_lamp', '혼불 초롱', 'furniture', 2, '별채 가구 · 동무 가구. 영귀 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_spirit_lamp","cat":"동무 가구","top":0,"kind":"floor","grade":2,"pet":"toy","pet_kind":"ghost"}'::jsonb, true, 160, 1),
+  ('hf_pet_mossbed', '이끼 바위 잠자리', 'furniture', 1, '별채 가구 · 동무 가구. 독충 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_mossbed","cat":"동무 가구","top":0,"kind":"floor","grade":1,"pet":"bed","pet_kind":"venom"}'::jsonb, true, 70, 1),
+  ('hf_pet_stump', '그루터기', 'furniture', 1, '별채 가구 · 동무 가구. 목령 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_stump","cat":"동무 가구","top":0.5,"kind":"floor","grade":1,"pet":"perch","pet_kind":"wood"}'::jsonb, true, 70, 1),
+  ('hf_pet_basket_cave', '대바구니 굴', 'furniture', 2, '별채 가구 · 동무 가구. 은형 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_basket_cave","cat":"동무 가구","top":0,"kind":"floor","grade":2,"pet":"bed","pet_kind":"shadow"}'::jsonb, true, 180, 1),
+  ('hf_pet_lotus_basin', '연꽃 수반', 'furniture', 2, '별채 가구 · 동무 가구. 수귀 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_lotus_basin","cat":"동무 가구","top":0,"kind":"floor","grade":2,"pet":"bowl","pet_kind":"water"}'::jsonb, true, 150, 1),
+  ('hf_pet_honeycomb', '벌집 놀이판', 'furniture', 1, '별채 가구 · 동무 가구. 군충 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_honeycomb","cat":"동무 가구","top":0,"kind":"floor","grade":1,"pet":"toy","pet_kind":"swarm"}'::jsonb, true, 65, 1),
+  ('hf_pet_talisman_cushion', '부적 방석', 'furniture', 1, '별채 가구 · 동무 가구. 금주 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_talisman_cushion","cat":"동무 가구","top":0,"kind":"floor","grade":1,"pet":"bed","pet_kind":"ward"}'::jsonb, true, 90, 1),
+  ('hf_pet_mirror_ball', '거울 구슬', 'furniture', 2, '별채 가구 · 동무 가구. 경요 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_mirror_ball","cat":"동무 가구","top":0,"kind":"floor","grade":2,"pet":"toy","pet_kind":"mirror"}'::jsonb, true, 185, 1),
+  ('hf_pet_log_scratch', '통나무 긁개', 'furniture', 1, '별채 가구 · 동무 가구. 파봉 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_log_scratch","cat":"동무 가구","top":0,"kind":"floor","grade":1,"pet":"toy","pet_kind":"breaker"}'::jsonb, true, 75, 1),
+  ('hf_pet_cloud_cushion', '구름 방석', 'furniture', 3, '별채 가구 · 동무 가구. 천상 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_cloud_cushion","cat":"동무 가구","top":0,"kind":"floor","grade":3,"pet":"bed","pet_kind":"sky"}'::jsonb, true, 540, 1),
+  ('hf_pet_stone_seat', '너럭바위', 'furniture', 2, '별채 가구 · 동무 가구. 거괴 갈래 동무가 특히 좋아해 자주 찾아갑니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.', false, '{}'::jsonb, 1, '{"d":1,"w":1,"hk":"pet_stone_seat","cat":"동무 가구","top":0.44,"kind":"floor","grade":2,"pet":"perch","pet_kind":"giant"}'::jsonb, true, 140, 1)
+on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description,
+  equipment_traits = excluded.equipment_traits, tradeable = excluded.tradeable, reference_price = excluded.reference_price, stack_size = excluded.stack_size;
+
+insert into public.world_crafting_recipes(recipe_id, recipe_name, output_item, output_qty, ingredients, description, minimum_level, recipe_difficulty, quality_bonus, required_skill_rank, craft_field)
+values
+  ('r_hf_pet_birdhouse', '새집 횃대 만들기', 'hf_pet_birdhouse', 1, '{"lumber":2,"seal_paper":1,"resin":1}'::jsonb, '별채에 놓을 새집 횃대을(를) 만든다.', 8, 2, 0, 1, 'carpentry'),
+  ('r_hf_pet_tidepool', '조약돌 물웅덩이 만들기', 'hf_pet_tidepool', 1, '{"ore":2,"river_reed":1}'::jsonb, '별채에 놓을 조약돌 물웅덩이을(를) 만든다.', 1, 1, 0, 1, 'artifice'),
+  ('r_hf_pet_spirit_lamp', '혼불 초롱 만들기', 'hf_pet_spirit_lamp', 1, '{"fine_paper":1,"lumber":1,"charcoal":1}'::jsonb, '별채에 놓을 혼불 초롱을(를) 만든다.', 8, 2, 0, 1, 'artifice'),
+  ('r_hf_pet_mossbed', '이끼 바위 잠자리 만들기', 'hf_pet_mossbed', 1, '{"ore":1,"herb":3}'::jsonb, '별채에 놓을 이끼 바위 잠자리을(를) 만든다.', 1, 1, 0, 1, 'weaving'),
+  ('r_hf_pet_stump', '그루터기 만들기', 'hf_pet_stump', 1, '{"wood":4}'::jsonb, '별채에 놓을 그루터기을(를) 만든다.', 1, 1, 0, 1, 'carpentry'),
+  ('r_hf_pet_basket_cave', '대바구니 굴 만들기', 'hf_pet_basket_cave', 1, '{"river_reed":4,"lumber":1,"lacquer":1}'::jsonb, '별채에 놓을 대바구니 굴을(를) 만든다.', 8, 2, 0, 1, 'weaving'),
+  ('r_hf_pet_lotus_basin', '연꽃 수반 만들기', 'hf_pet_lotus_basin', 1, '{"ore":3,"lacquer":1,"herb":2}'::jsonb, '별채에 놓을 연꽃 수반을(를) 만든다.', 8, 2, 0, 1, 'artifice'),
+  ('r_hf_pet_honeycomb', '벌집 놀이판 만들기', 'hf_pet_honeycomb', 1, '{"wood":2,"resin":1}'::jsonb, '별채에 놓을 벌집 놀이판을(를) 만든다.', 1, 1, 0, 1, 'carpentry'),
+  ('r_hf_pet_talisman_cushion', '부적 방석 만들기', 'hf_pet_talisman_cushion', 1, '{"seal_paper":2,"river_reed":2}'::jsonb, '별채에 놓을 부적 방석을(를) 만든다.', 1, 1, 0, 1, 'weaving'),
+  ('r_hf_pet_mirror_ball', '거울 구슬 만들기', 'hf_pet_mirror_ball', 1, '{"ore":2,"lacquer":1,"fine_paper":1}'::jsonb, '별채에 놓을 거울 구슬을(를) 만든다.', 8, 2, 0, 1, 'artifice'),
+  ('r_hf_pet_log_scratch', '통나무 긁개 만들기', 'hf_pet_log_scratch', 1, '{"wood":3,"river_reed":1}'::jsonb, '별채에 놓을 통나무 긁개을(를) 만든다.', 1, 1, 0, 1, 'carpentry'),
+  ('r_hf_pet_cloud_cushion', '구름 방석 만들기', 'hf_pet_cloud_cushion', 1, '{"cloud_cotton":3,"silk":2,"spirit_thread":1}'::jsonb, '별채에 놓을 구름 방석을(를) 만든다.', 15, 3, 0, 1, 'weaving'),
+  ('r_hf_pet_stone_seat', '너럭바위 만들기', 'hf_pet_stone_seat', 1, '{"ore":5,"herb":1}'::jsonb, '별채에 놓을 너럭바위을(를) 만든다.', 8, 2, 0, 1, 'artifice')
+on conflict (recipe_id) do update set recipe_name = excluded.recipe_name, output_item = excluded.output_item, ingredients = excluded.ingredients, description = excluded.description,
+  minimum_level = excluded.minimum_level, recipe_difficulty = excluded.recipe_difficulty, craft_field = excluded.craft_field;
+
+insert into public.world_furniture_sources(source, item_id, chance)
+values
+  ('drop_normal', 'hf_pet_birdhouse', 1),
+  ('drop_normal', 'hf_pet_spirit_lamp', 1),
+  ('drop_normal', 'hf_pet_basket_cave', 1),
+  ('drop_normal', 'hf_pet_lotus_basin', 1),
+  ('drop_normal', 'hf_pet_mirror_ball', 1),
+  ('drop_guardian', 'hf_pet_cloud_cushion', 1),
+  ('expedition', 'hf_pet_cloud_cushion', 1),
+  ('drop_normal', 'hf_pet_stone_seat', 1)
+on conflict do nothing;
+
+insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max, daily_cap)
+values
+  ('capital_market', 'hf_pet_tidepool', 75, 0, 10, null),
+  ('river_market', 'hf_pet_tidepool', 75, 0, 10, null),
+  ('south_market', 'hf_pet_mossbed', 70, 0, 10, null),
+  ('astral_market', 'hf_pet_mossbed', 70, 0, 10, null),
+  ('night_office_store', 'hf_pet_stump', 70, 0, 10, null),
+  ('north_market', 'hf_pet_stump', 70, 0, 10, null),
+  ('frontier_market', 'hf_pet_honeycomb', 65, 0, 10, null),
+  ('underworld_market', 'hf_pet_honeycomb', 65, 0, 10, null),
+  ('capital_market', 'hf_pet_talisman_cushion', 90, 0, 10, null),
+  ('river_market', 'hf_pet_talisman_cushion', 90, 0, 10, null),
+  ('south_market', 'hf_pet_log_scratch', 75, 0, 10, null),
+  ('astral_market', 'hf_pet_log_scratch', 75, 0, 10, null)
+on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
+
 insert into public.world_patch_notes(note_id, title, body) values ('1.1.0', '1.1.0 · 별채의 새 식구', $n$이번 주말, 별채와 꼬마 동무에 새 식구가 찾아옵니다.
 
 ## 꼬마 동무
