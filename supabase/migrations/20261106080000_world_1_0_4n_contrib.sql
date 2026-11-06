@@ -6,7 +6,7 @@ create or replace function public.world_contrib_rules()
  immutable
  set search_path to 'pg_catalog'
 as $function$
-  select '{"deal": 0.5, "hold": 0.3, "heal": 0.1, "boost": 0.1, "result": 0.2, "eff_cap": 2, "press": 1, "heal_need": 0.25, "boost_need": 0.1}'::jsonb
+  select '{"deal": 0.6, "hold": 0.2, "heal": 0.1, "boost": 0.1, "result": 0.2, "eff_cap": 2, "press": 1, "heal_need": 0.25, "boost_need": 0.1}'::jsonb
 $function$;
 
 create or replace function public.world_shadow_rules()
@@ -1181,7 +1181,6 @@ update public.world_patch_notes set title = '[공지] 이번 주말, 별채에 �
 · 별채 가구가 늘어납니다.
 
 ## 한두 주 뒤 · 확장 예고
-아직 만드는 중이라 세부는 바뀔 수 있습니다.
 · 새 외전
 · 새 지역과 최고 레벨 상향
 · 새 직업 **「조련사」**

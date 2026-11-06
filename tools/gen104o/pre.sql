@@ -4,7 +4,7 @@ create or replace function public.world_contrib_rules()
  immutable
  set search_path to 'pg_catalog'
 as $function$
-  select '{"deal": 0.5, "hold": 0.3, "heal": 0.1, "boost": 0.1, "result": 0.2, "eff_cap": 2, "press": 1, "heal_need": 0.25, "boost_need": 0.1}'::jsonb
+  select '{"deal": 0.6, "hold": 0.2, "heal": 0.1, "boost": 0.1, "result": 0.2, "eff_cap": 2, "press": 1, "heal_need": 0.25, "boost_need": 0.1}'::jsonb
 $function$;
 
 create or replace function public.world_shadow_rules()
