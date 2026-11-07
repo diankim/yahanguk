@@ -4,7 +4,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REF = json.load(open(os.path.join(HERE, 'ref.json')))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '..', 'migrations', '20261108040000_world_1_1_0_side_quests.sql')
 
-def xp_need(L): return 100 * L + 12 * L * L
+def xp_need(L): return REF['xp_need'][L]
+RULES = REF['reward_rules']['side']
 
 ISLAND = {'banyo_village', 'ash_reeds', 'inverted_shrine', 'moonless_market', 'gwiheo_core'}
 JOBS = {'호위 무사': 'artificer', '월궁 사수': 'scout', '퇴마관': 'exorcist', '의무관': 'medic', '봉인술사': 'sealmaster', '암영 검객': 'analyst'}
@@ -283,10 +284,7 @@ def goal_text(tasks, give):
 def T(s): return 'null' if s is None else "'" + str(s).replace("'", "''") + "'"
 def J(o): return T(json.dumps(o, ensure_ascii=False)) + '::jsonb'
 
-def reward_items(L):
-    if L < 20: return {ITEMS['청심환']: 2, ITEMS['노정 건량']: 1}
-    if L < 31: return {ITEMS['영기환']: 2, ITEMS['노정 건량']: 2}
-    return {ITEMS['월광 정수']: 2, ITEMS['노정 건량']: 2}
+def reward_items(L): return dict(next(it for top, it in RULES['items'] if L <= top))
 
 def build(quests):
     out = []; w = out.append
@@ -336,7 +334,7 @@ def build(quests):
                 pass
             steps.append([s['title'], goal, need, s['lines']])
         if sc[-1]['todo']: errors.append(f"{q['id']}: 마지막 장면에 할 일이 있음")
-        L = q['L']; tot = round(0.4 * xp_need(L))
+        L = q['L']; tot = round(RULES['xp'] * xp_need(L))
         task_steps = [k for k, st in enumerate(steps) if st[2].get('tasks') or st[2].get('give')]
         per = tot // max(1, len(task_steps))
         after = list(q.get('after', []))
@@ -352,7 +350,7 @@ on conflict (quest_id) do update set cat = excluded.cat, title = excluded.title,
             rw = {}
             if k in task_steps: rw['xp'] = per
             if k == len(steps) - 1:
-                rw['gil'] = 5 + 4 * L; rw['items'] = reward_items(L)
+                rw['gil'] = RULES['gil'][0] + RULES['gil'][1] * L; rw['items'] = reward_items(L)
             w(f"""insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ({T(q['id'])}, {k + 1}, {T(title)}, {T(goal)}, {J(need)}, {J(ls)}, {J(rw)})
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;""")
     w('select public.world_quest_label_refresh();')

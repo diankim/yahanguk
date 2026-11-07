@@ -12,6 +12,22 @@ $$;
 revoke all on function public.world_name_rules() from public, anon, authenticated;
 grant execute on function public.world_name_rules() to fn_owner_field, service_role;
 
+create or replace function public.world_quest_reward_rules()
+ returns jsonb
+ language sql
+ immutable
+as $$
+  select jsonb_build_object(
+    'side', jsonb_build_object('xp', 0.4, 'gil', jsonb_build_array(5, 4),
+      'items', jsonb_build_array(jsonb_build_array(19, jsonb_build_object('tonic', 2, 'travel_ration', 1)),
+                                 jsonb_build_array(30, jsonb_build_object('spirit_qi_pill', 2, 'travel_ration', 2)),
+                                 jsonb_build_array(40, jsonb_build_object('moonlight_essence', 2, 'travel_ration', 2)))),
+    'main', jsonb_build_object('xp', 0.15, 'gil', jsonb_build_array(5, 2)),
+    'gaiden', jsonb_build_object('xp', 0.6, 'gil', jsonb_build_array(20, 10)))
+$$;
+revoke all on function public.world_quest_reward_rules() from public, anon, authenticated;
+grant execute on function public.world_quest_reward_rules() to fn_owner_field, service_role;
+
 create or replace function public.world_quest_task_label(p_task jsonb)
  returns text
  language plpgsql
@@ -200,6 +216,96 @@ begin
   execute src;
 end $$;
 
+
+create or replace function public.world_quest_done_ids(p_uid uuid)
+ returns text[]
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+begin
+  return array(
+    select x.quest_id from public.world_quests x
+     where case when x.quest_id like 'mq\_%' then public.world_quest_chapter_done(p_uid, substr(x.quest_id, 4))
+                else exists (select 1 from public.world_quest_progress g where g.owner_id = p_uid and g.quest_id = x.quest_id and g.done_at is not null) end);
+end
+$function$;
+revoke all on function public.world_quest_done_ids(uuid) from public, anon, authenticated;
+grant execute on function public.world_quest_done_ids(uuid) to fn_owner_field, service_role;
+
+create or replace function public.world_reward_items(p_uid uuid, p_inv jsonb, p_items jsonb)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare inv jsonb := coalesce(p_inv, '{}'::jsonb); lim int := public.world_bag_limit(p_uid); k text; v int; names text[] := '{}';
+begin
+  for k, v in select key, value::int from jsonb_each_text(coalesce(p_items, '{}'::jsonb)) loop
+    if public.world_bag_room(inv, k, lim) < v then raise exception '가방 자리가 모자랍니다. 보상을 받을 자리를 비운 뒤 다시 보고하세요.'; end if;
+    inv := public.world_inv_add(inv, k, v);
+    names := names || ((select item_name from public.world_item_catalog where item_id = k) || ' ×' || v);
+  end loop;
+  return jsonb_build_object('inv', inv, 'names', to_jsonb(names));
+end
+$function$;
+revoke all on function public.world_reward_items(uuid, jsonb, jsonb) from public, anon, authenticated;
+grant execute on function public.world_reward_items(uuid, jsonb, jsonb) to fn_owner_field, service_role;
+
+create or replace function public.world_quest_done(p_uid uuid, p_quest text)
+ returns boolean
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+begin
+  return p_quest = any (public.world_quest_done_ids(p_uid));
+end
+$function$;
+
+do $$
+declare src text; o text; n text;
+begin
+  src := pg_get_functiondef('public.world_quest_board()'::regprocedure);
+  o := substring(src from '(  dn := array\(.*?\n  \);\n)');
+  if o is null or position('redseal_case_completed' in o) = 0 then raise exception 'world_quest_board: 바꿀 곳 없음'; end if;
+  execute replace(src, o, E'  dn := public.world_quest_done_ids(uid);\n');
+
+  src := pg_get_functiondef('public.world_quest_journal()'::regprocedure);
+  o := $o$    done := public.world_quest_done(uid, q.quest_id);$o$;
+  n := $n$    done := q.quest_id = any (dn);$n$;
+  if position(o in src) = 0 then raise exception 'world_quest_journal: done 없음'; end if;
+  src := replace(src, o, n);
+  o := $o$      ok := c.level >= q.min_level; after_ok := true;
+      foreach a in array q.after loop
+        if not public.world_quest_done(uid, a) then after_ok := false; end if;
+      end loop;$o$;
+  n := $n$      ok := c.level >= q.min_level; after_ok := q.after <@ dn;$n$;
+  if position(o in src) = 0 then raise exception 'world_quest_journal: after 없음'; end if;
+  src := replace(src, o, n);
+  src := replace(src, $o$hidden int := 0;$o$, $n$hidden int := 0; dn text[];$n$);
+  src := replace(src, $o$  select region_id into here_id from public.world_map_regions where region_name = c.location limit 1;$o$,
+                      $n$  select region_id into here_id from public.world_map_regions where region_name = c.location limit 1;
+  dn := public.world_quest_done_ids(uid);$n$);
+  if position('dn := public.world_quest_done_ids' in src) = 0 then raise exception 'world_quest_journal: dn 없음'; end if;
+  src := regexp_replace(src, '\n *--[^\n]*', '', 'g');
+  execute src;
+
+  src := pg_get_functiondef('public.world_quest_report(text)'::regprocedure);
+  o := $o$  lim := null;
+  lim := public.world_bag_limit(uid);
+  for k, v in select key, value::int from jsonb_each_text(coalesce(s.reward -> 'items', '{}'::jsonb)) loop
+    if public.world_bag_room(inv, k, lim) < v then raise exception '가방 자리가 모자랍니다. 보상을 받을 자리를 비운 뒤 다시 보고하세요.'; end if;
+    inv := public.world_inv_add(inv, k, v);
+    msg := msg || (select item_name from public.world_item_catalog where item_id = k) || ' ×' || v || ' · ';
+  end loop;$o$;
+  n := $n$  st := public.world_reward_items(uid, inv, s.reward -> 'items');
+  inv := st -> 'inv';
+  msg := msg || coalesce((select string_agg(x, ' · ') || ' · ' from jsonb_array_elements_text(st -> 'names') x), '');$n$;
+  if position(o in src) = 0 then raise exception 'world_quest_report: 보상 고리 없음'; end if;
+  execute replace(src, o, n);
+end $$;
+
 create or replace function public.world_faction_report()
  returns jsonb
  language plpgsql
@@ -207,7 +313,7 @@ create or replace function public.world_faction_report()
  set search_path to 'pg_catalog', 'public'
 as $function$
 declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; p public.world_faction_progress%rowtype; s public.world_faction_scenes%rowtype;
-  cur jsonb; inv jsonb; it record; lim int; spk text[]; msg text := ''; fee int := 0;
+  cur jsonb; inv jsonb; rw jsonb; spk text[]; msg text := ''; fee int := 0;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
@@ -229,12 +335,9 @@ begin
     fee := coalesce((cur ->> 'cost')::int, 0);
     perform public.world_quest_fee(uid, fee, c.gil, jsonb_build_object('faction_scene', s.scene_key));
     if fee > 0 then msg := msg || fee || '전을 냈습니다. '; end if;
-    inv := coalesce(c.inventory, '{}'::jsonb); lim := public.world_bag_limit(uid);
-    for it in select key, value::int q from jsonb_each_text(coalesce(s.reward -> 'items', '{}'::jsonb)) loop
-      if public.world_bag_room(inv, it.key, lim) < it.q then raise exception '가방 자리가 모자랍니다. 보상을 받을 자리를 비운 뒤 다시 보고하세요.'; end if;
-      inv := public.world_inv_add(inv, it.key, it.q);
-      msg := msg || (select item_name from public.world_item_catalog where item_id = it.key) || ' ×' || it.q || ' ';
-    end loop;
+    rw := public.world_reward_items(uid, c.inventory, s.reward -> 'items');
+    inv := rw -> 'inv';
+    msg := msg || coalesce((select string_agg(x, ' ') || ' ' from jsonb_array_elements_text(rw -> 'names') x), '');
     if fee > 0 or inv is distinct from coalesce(c.inventory, '{}'::jsonb) then
       update public.world_characters set inventory = inv, gil = gil - fee, updated_at = now() where owner_id = uid;
     end if;

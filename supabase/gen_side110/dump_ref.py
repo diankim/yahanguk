@@ -14,7 +14,9 @@ SQL = r"""select json_build_object(
  'recipes', (select json_object_agg(output_item, json_build_array(recipe_id, minimum_level, craft_field)) from (select distinct on (output_item) * from public.world_crafting_recipes order by output_item, minimum_level, recipe_id) x),
  'regions', (select json_object_agg(region_name, json_build_array(region_id, min_level, is_safe_zone)) from public.world_map_regions where active),
  'monsters', (select json_object_agg(monster_name, l) from (select monster_name, json_agg(json_build_array(monster_id, region_id, min_level, role) order by min_level, monster_id) l from public.world_region_monsters group by monster_name) x),
- 'quests', (select json_object_agg(quest_id, json_build_array(title, min_level, sort)) from public.world_quests))"""
+ 'quests', (select json_object_agg(quest_id, json_build_array(title, min_level, sort)) from public.world_quests),
+ 'xp_need', (select json_agg(public.world_xp_need(l) order by l) from generate_series(0, 40) l),
+ 'reward_rules', public.world_quest_reward_rules())"""
 
 out = subprocess.run(['psql', DSN, '-At', '-c', SQL], check=True, capture_output=True, text=True).stdout
 ref = json.loads(out)
