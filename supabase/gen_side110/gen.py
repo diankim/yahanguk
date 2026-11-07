@@ -290,6 +290,10 @@ def build(quests):
                         if not r: continue
                         if r[0] == 'task': tasks.append(r[1])
                         else: give[r[1][0]] = give.get(r[1][0], 0) + r[1][1]
+                    for t in tasks:
+                        if t['t'] == 'craft':
+                            for iid in t['items']:
+                                if iid not in give: give[iid] = t['n']
                     if tasks: need['tasks'] = tasks
                     if give: need['give'] = give
                     goal = goal_text(tasks, give)
