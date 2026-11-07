@@ -109,9 +109,9 @@ def parse_task(p, ctx_regions, qid):
     if not m:
         errors.append(f'{qid}: 할 일을 못 읽음 — {p}'); return None
     name, n, verb = m.group(1).strip(), int(m.group(2)), m.group(3)
-    if name not in ITEMS and verb not in ('처치', '쫓기'):
+    if (name not in ITEMS and verb not in ('처치', '쫓기')) or (name not in MONS and verb in ('처치', '쫓기')):
         full = re.sub(r'\s*\d+\s*(?:개|마리|줌|덩이|그릇|벌)?\s*(모으기|처치|만들기|넘기기|캐기|쫓기)$', '', re.sub(r'^.*?에서\s+', '', p)).strip()
-        if full in ITEMS: name = full
+        if full in ITEMS or full in MONS: name = full
     if verb in ('모으기', '캐기'):
         iid = item_id(name)
         rr = regs[:1]
@@ -177,7 +177,7 @@ def parse_files(paths):
             if who == '서술': scene['lines'].append({'s': None, 't': text}); continue
             key = None
             for name, (k, _) in cur['npcs'].items():
-                if who == name or name.endswith(' ' + who) or name.endswith(who): key = k; break
+                if who == name or name.endswith(who) or who in name.split(): key = k; break
             if not key: errors.append(f"{cur['id']}: 말하는 이 모름 — {who}")
             scene['lines'].append({'s': key, 't': text})
     return quests
