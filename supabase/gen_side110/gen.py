@@ -99,6 +99,39 @@ SEQUEL.update({
     '예언을 깨뜨린 별': ('sq110_f_mandate2', 32, 'white_tower', '세력', '천명원의 예언을 처음 깨뜨린 별', ['sq110_f_mandate']),
     '거두지 않은 이름': ('sq110_f_office2', 35, 'seal_vault', '세력', '정청이 끝내 거두지 않은 이름 하나', ['sq110_f_office']),
 })
+META.update({
+    '물수제비 할아범': ('sq111_skipping_stone', 13, 'sky_lake', '낚시', '천경호에서 물수제비로 물고기를 잡는다고 우기는 할아범'),
+    '등대지기의 저녁상': ('sq111_keeper_supper', 18, 'nine_lighthouse', '낚시', '혼자 남은 등대지기가 손님상을 차리고 싶어 한다'),
+    '뿌리 약초꾼의 마지막 약': ('sq111_root_herbalist', 22, 'under_root', '채집', '눈이 먼 약초꾼이 마지막으로 지을 약의 재료'),
+    '제단에 바칠 떡': ('sq111_altar_cake', 23, 'crimson_altar', '제작', '어린 교도가 처음 맡은 공물 떡을 망쳤다'),
+    '만조에 낚는 편지': ('sq111_tide_letter', 23, 'tide_gate', '낚시', '만조 때마다 병에 든 편지가 갑문으로 떠밀려 온다'),
+    '갑문 아래 조개 무덤': ('sq111_clam_grave', 25, 'tide_gate', '채집', '갑문 아래 조개들이 사람 소리로 운다'),
+    '관성대 망원경 닦개': ('sq111_lens_cloth', 26, 'star_observatory', '제작', '망원경 알을 닦다 별을 지워 버렸다는 견습 관측관'),
+    '봉인고 먼지 털이': ('sq111_vault_dust', 27, 'seal_vault', '채집', '봉인고 대청소 날, 먼지마다 요기가 붙어 있다'),
+    '균열 끝의 은갈치': ('sq111_rift_cutlass', 28, 'black_tide_rift', '낚시', '어부들의 몫을 가로채던 선주의 그물에 걸린 것'),
+    '반요촌 대장간의 첫 쇠': ('sq111_first_iron', 30, 'banyo_village', '제작', '반요촌에 처음 대장간을 연 반요 대장장이'),
+    '봉연 물밑 낚시꾼': ('sq111_abyss_angler', 30, 'sealed_abyss', '낚시', '봉연 물가에 앉아 사람 아닌 것을 낚는 낚시꾼'),
+    '사슬 매듭 풀기': ('sq111_chain_knot', 31, 'sealed_abyss', '제작', '봉연의 사슬에 묶인 채 굳은 매듭을 풀어 달라는 목소리'),
+    '봉연 이끼 따기': ('sq111_abyss_moss', 31, 'sealed_abyss', '채집', '봉연 벽 이끼로 약을 짓는 늙은 봉인관'),
+    '반요촌 아이들의 첫 물고기': ('sq111_first_fish', 31, 'ash_reeds', '낚시', '물고기를 한 번도 잡아 본 적 없는 반요 아이들'),
+    '갈대숲 사냥꾼의 빚': ('sq111_hunter_debt', 32, 'ash_reeds', '전투', '갈대숲에서 사라진 사냥꾼이 남긴 빚 문서'),
+    '갈대숲 혼례 상': ('sq111_reed_wedding', 32, 'ash_reeds', '제작', '반요촌에서 처음 올리는 혼례의 잔칫상'),
+    '거꾸로 짠 이불': ('sq111_inverted_quilt', 33, 'inverted_shrine', '제작', '거꾸로 매달린 동자들이 덮을 이불'),
+    '사당 지붕 기와': ('sq111_shrine_tiles', 33, 'inverted_shrine', '채집', '거꾸로 선 사당의 기와가 하늘로 떨어진다'),
+    '흑조 균열 만선 잔치': ('sq111_full_catch', 33, 'black_tide_rift', '낚시', '열 해 만에 만선을 꿈꾸는 늙은 어부들'),
+    '사당 종지기 원혼': ('sq111_bell_ringer', 34, 'inverted_shrine', '전투', '종을 거꾸로 쳐서 마을을 망친 종지기의 원혼'),
+    '사당의 마지막 신도': ('sq111_last_believer', 35, 'inverted_shrine', '전투', '아무도 오지 않는 사당을 홀로 지키는 신도'),
+    '저잣거리 향신료 도둑': ('sq111_spice_thief', 35, 'moonless_market', '채집', '향을 훔쳐 먹는 꼬마 요괴들'),
+    '갈대숲 물귀신 낚기': ('sq111_reed_drowned', 35, 'ash_reeds', '낚시', '갈대숲 물웅덩이에서 사람을 끌어당기는 것'),
+    '저잣거리 소매치기 그림자': ('sq111_shadow_pickpocket', 36, 'moonless_market', '전투', '사람의 그림자를 훔쳐 파는 소매치기'),
+    '달 없는 밤의 등롱 장인': ('sq111_lantern_maker', 36, 'moonless_market', '제작', '달이 없는 저잣거리에 달 대신 걸 등롱'),
+    '봉연 끝의 낚시 대회': ('sq111_abyss_contest', 36, 'sealed_abyss', '낚시', '봉인관들이 몰래 여는 낚시 대회'),
+    '망각 수정 캐는 노인': ('sq111_crystal_miner', 37, 'moonless_market', '채집', '잊고 싶은 것이 있어 망각 수정을 캐는 노인'),
+    '귀허 문턱의 파수꾼': ('sq111_threshold_guard', 38, 'gwiheo_core', '전투', '귀허 문턱을 혼자 지켜 온 옛 조사원의 넋'),
+    '귀허 갯벌의 진주조개': ('sq111_pearl_clams', 38, 'gwiheo_core', '채집', '귀허 갯벌의 조개는 잊힌 이름을 품는다'),
+    '귀허로 띄우는 배': ('sq111_paper_boat', 39, 'gwiheo_core', '제작', '돌아오지 못한 이들에게 띄우는 배'),
+    '귀허의 마지막 낚시꾼': ('sq111_last_angler', 39, 'gwiheo_core', '낚시', '귀허에서 무엇을 낚는지 아무도 모르는 낚시꾼'),
+})
 CHAIN_NAME = {'cq110_pack': '아버지의 등짐', 'cq110_bat': '도깨비 방망이 분실 사건', 'cq110_paint': '무명 화공의 그림'}
 JOB_META = {}
 for jn, jk in JOBS.items():
@@ -327,7 +360,7 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
     return '\n'.join(out) + '\n'
 
 if __name__ == '__main__':
-    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md', 'script_h.md', 'script_i.md', 'script_j.md', 'script_k.md', 'script_l.md') if os.path.exists(os.path.join(HERE, f))]
+    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md', 'script_h.md', 'script_i.md', 'script_j.md', 'script_k.md', 'script_l.md', 'script_m.md', 'script_n.md', 'script_o.md') if os.path.exists(os.path.join(HERE, f))]
     qs = parse_files(files)
     sql = build(qs)
     missing = [t for t in list(META) + list(CHAIN) + list(SEQUEL) if t not in {q['title'] for q in qs}]
