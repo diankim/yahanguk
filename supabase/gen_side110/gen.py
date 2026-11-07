@@ -90,6 +90,15 @@ SEQUEL.update({
     '칼 대신 바구니': ('sq110_s_yeonok', 22, 'white_tower', '전투', '바구니를 든 순찰 의원이 순찰대를 이끈다', ['sq_field_outskirts_2']),
     '섬까지 온 등잔 장수': ('sq110_s_soetdae', 35, 'inverted_shrine', '제작', '덤을 주던 등잔 장수가 귀허도까지 건너왔다', ['rq_lamp_alley', 'mq_nine_gates']),
 })
+SEQUEL.update({
+    '월식 아래 남은 사람들': ('sq110_f_redmoon2', 29, 'crimson_altar', '세력', '월식이 지나간 뒤 제단터에 남은 사람들', ['sq110_f_redmoon']),
+    '회주의 장부': ('sq110_f_lotus2', 28, 'under_root', '세력', '흑련회 회주가 따로 지키는 장부', ['sq110_f_lotus']),
+    '맹약지의 겨울잠': ('sq110_f_north2', 24, 'thunder_peak', '세력', '맹세를 이은 뒤 맞는 북령의 첫겨울', ['sq110_f_north']),
+    '빈칸에 이름을 쓰는 날': ('sq110_f_river2', 30, 'tide_gate', '세력', '뱃길 장부의 빈칸에 이름을 적는 날', ['sq110_f_river']),
+    '망국의 마지막 백성': ('sq110_f_south2', 29, 'black_tide_rift', '세력', '남명이 무너진 뒤에도 남아 있는 백성들', ['sq110_f_south']),
+    '예언을 깨뜨린 별': ('sq110_f_mandate2', 32, 'white_tower', '세력', '천명원의 예언을 처음 깨뜨린 별', ['sq110_f_mandate']),
+    '거두지 않은 이름': ('sq110_f_office2', 35, 'seal_vault', '세력', '정청이 끝내 거두지 않은 이름 하나', ['sq110_f_office']),
+})
 CHAIN_NAME = {'cq110_pack': '아버지의 등짐', 'cq110_bat': '도깨비 방망이 분실 사건', 'cq110_paint': '무명 화공의 그림'}
 JOB_META = {}
 for jn, jk in JOBS.items():
