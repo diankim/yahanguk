@@ -117,7 +117,6 @@ META.update({
     '반요촌 아이들의 첫 물고기': ('sq111_first_fish', 31, 'ash_reeds', '낚시', '물고기를 한 번도 잡아 본 적 없는 반요 아이들'),
     '갈대숲 사냥꾼의 빚': ('sq111_hunter_debt', 32, 'ash_reeds', '전투', '갈대숲에서 사라진 사냥꾼이 남긴 빚 문서'),
     '갈대숲 혼례 상': ('sq111_reed_wedding', 32, 'ash_reeds', '제작', '반요촌에서 처음 올리는 혼례의 잔칫상'),
-    '거꾸로 짠 이불': ('sq111_inverted_quilt', 33, 'inverted_shrine', '제작', '거꾸로 매달린 동자들이 덮을 이불'),
     '사당 지붕 기와': ('sq111_shrine_tiles', 33, 'inverted_shrine', '채집', '거꾸로 선 사당의 기와가 하늘로 떨어진다'),
     '흑조 균열 만선 잔치': ('sq111_full_catch', 33, 'black_tide_rift', '낚시', '열 해 만에 만선을 꿈꾸는 늙은 어부들'),
     '사당 종지기 원혼': ('sq111_bell_ringer', 34, 'inverted_shrine', '전투', '종을 거꾸로 쳐서 마을을 망친 종지기의 원혼'),
@@ -133,6 +132,7 @@ META.update({
     '귀허로 띄우는 배': ('sq111_paper_boat', 39, 'gwiheo_core', '제작', '돌아오지 못한 이들에게 띄우는 배'),
     '귀허의 마지막 낚시꾼': ('sq111_last_angler', 39, 'gwiheo_core', '낚시', '귀허에서 무엇을 낚는지 아무도 모르는 낚시꾼'),
 })
+SEQUEL['거꾸로 짠 이불'] = ('sq111_inverted_quilt', 33, 'inverted_shrine', '제작', '거꾸로 매달린 동자들이 덮을 이불', ['sq110_hanging_boys'])
 CHAIN_NAME = {'cq110_pack': '아버지의 등짐', 'cq110_bat': '도깨비 방망이 분실 사건', 'cq110_paint': '무명 화공의 그림'}
 JOB_META = {}
 for jn, jk in JOBS.items():

@@ -236,7 +236,7 @@ values
   ('astral_market', 'hf_pet_log_scratch', 75, 0, 10, null)
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price;
 
-insert into public.world_patch_notes(note_id, title, body) values ('1.1.0', '1.1.0 · 새 식구와 새 이야기', $n$이번 주말, 별채와 꼬마 동무에 새 식구가 찾아오고 보조 퀘스트가 아흔두 편 늘어납니다.
+insert into public.world_patch_notes(note_id, title, body) values ('1.1.0', '1.1.0 · 새 식구와 새 이야기', $n$이번 주말, 별채와 꼬마 동무에 새 식구가 찾아오고 보조 퀘스트가 백스물세 편 늘어납니다.
 
 ## 보조 퀘스트
 - 레벨 구간마다 전투·제작·채집·낚시 퀘스트가 늘었습니다. 높은 레벨일수록 더 많이 받을 수 있습니다.
