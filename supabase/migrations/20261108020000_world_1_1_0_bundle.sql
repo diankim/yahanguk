@@ -155,3 +155,30 @@ begin
     execute replace(d, a, 'fb := public.world_expedition_full_bonus(e.minutes);');
   end if;
 end $w$;
+
+create or replace function public.world_xp_lead_rules()
+ returns jsonb language sql immutable
+as $f$
+  select jsonb_build_object('lead', 3, 'active_days', 2, 'active_min', 60,
+    'steps', jsonb_build_array(jsonb_build_array(3, 80), jsonb_build_array(5, 60), jsonb_build_array(7, 45),
+                               jsonb_build_array(9, 30), jsonb_build_array(11, 20), jsonb_build_array(13, 12), jsonb_build_array(15, 6)))
+$f$;
+
+create or replace function public.world_xp_avg_refresh()
+ returns numeric language plpgsql security definer set search_path to ''
+as $f$
+declare v numeric; r jsonb := public.world_xp_lead_rules();
+begin
+  with act as (
+    select e.actor_id from public.world_events e
+     where e.created_at > now() - make_interval(days => (r ->> 'active_days')::int)
+     group by e.actor_id
+    having count(distinct floor(extract(epoch from e.created_at) / 600)) >= ceil(coalesce((r ->> 'active_min')::numeric, 10) / 10))
+  select round(avg(c.level), 2) into v from public.world_characters c
+    join act on act.actor_id = c.owner_id
+   where not exists (select 1 from public.world_staff s where s.owner_id = c.owner_id);
+  insert into public.world_app_meta(key, value) values ('xp_avg_level', coalesce(v, 1)::text)
+  on conflict (key) do update set value = excluded.value;
+  return v;
+end $f$;
+revoke all on function public.world_xp_avg_refresh() from public, anon, authenticated;
