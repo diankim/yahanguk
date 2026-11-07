@@ -25,6 +25,26 @@ export function bindListFilter(root, st, rows, onShown) {
   apply();
   return apply;
 }
+export const qtyHtml = ({ key, max = 99, value = 0, min = 0, all = false, label = '수량', off = false, small = false }) => {
+  const dis = off || !max ? 'disabled' : '';
+  return `<div class="stepper ${small ? 'sm' : ''}" data-qty="${esc(key)}" data-min="${min}">
+    <button type="button" class="icon-btn" data-d="-1" aria-label="하나 빼기" ${dis}>${icon('minus', small ? 14 : 16)}</button>
+    <input type="number" inputmode="numeric" min="${min}" max="${max}" value="${value}" aria-label="${esc(label)}" ${dis}>
+    <button type="button" class="icon-btn" data-d="1" aria-label="하나 더" ${dis}>${icon('plus', small ? 14 : 16)}</button>${all && max > 1 ? `<button type="button" class="btn small ghost" data-all aria-label="가진 것 전부" ${dis}>전부</button>` : ''}</div>`;
+};
+export const qtyClamp = (st, v) => { const inp = st.querySelector('input'), min = Number(st.dataset.min) || 0, max = Number(inp.max) || 0; return Math.max(min, Math.min(max, Math.floor(Number(v) || 0))); };
+export function bindQty(root, onChange) {
+  $$('[data-qty]', root).forEach(st => {
+    const inp = st.querySelector('input'), max = Number(inp.max) || 0, min = Number(st.dataset.min) || 0;
+    const set = v => { v = qtyClamp(st, v); inp.value = v; onChange?.(st.dataset.qty, v, st); };
+    st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
+    st.querySelector('[data-all]')?.addEventListener('click', () => set(Number(inp.value) === max ? min : max));
+    inp.oninput = () => { if (inp.value !== '') set(inp.value); };
+    inp.onchange = () => set(inp.value);
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } };
+  });
+}
+export const qtyOf = (root, key) => { const st = $(`[data-qty="${CSS.escape(key)}"]`, root); return st ? qtyClamp(st, st.querySelector('input').value) : 0; };
 export const koSort = (a, b) => a.name.localeCompare(b.name, 'ko');
 const LIMIT = 200;
 
@@ -51,7 +71,7 @@ export function openItemPick({ title = '물품 고르기', rows = [], many = fal
   const rowHtml = r => `<li class="inv-item r-${esc(r.rarity)} ${qty(r) ? 'on' : ''}" data-ipk="${esc(r.id)}">
       <button type="button" class="ipk-row" data-ipk-pick="${esc(r.id)}"><span class="ipk-name"><b>${esc(r.name)}</b>${rarTag(r.rarity)}${r.have != null ? `<span class="qty">×${fmt.num(r.have)}</span>` : ''}</span>
         <small class="muted">${r.tier ? `${r.tier}단계` : ''}${r.tier && r.sub ? ' · ' : ''}${r.sub ? esc(r.sub) : ''}</small>${r.desc ? `<small class="brief">${esc(brief(r.desc))}</small>` : ''}</button>
-      ${many ? `<div class="ipk-n"><button type="button" class="btn small ghost" data-ipk-d="-1" aria-label="하나 빼기">−</button><input type="number" min="0" max="${r.max ?? 999}" value="${qty(r)}" inputmode="numeric" aria-label="${esc(r.name)} 수량"><button type="button" class="btn small ghost" data-ipk-d="1" aria-label="하나 더">+</button><button type="button" class="btn small ghost" data-ipk-all>전부</button></div>` : ''}</li>`;
+      ${many ? qtyHtml({ key: r.id, max: r.max ?? 999, value: qty(r), all: true, small: true, label: `${r.name} 수량` }) : ''}</li>`;
   const sum = () => {
     const el = $('.ipk-sum', box); if (!el) return;
     const n = [...sel.values()].reduce((a, b) => a + b, 0);
@@ -84,9 +104,9 @@ export function openItemPick({ title = '물품 고르기', rows = [], many = fal
     const li = e.target.closest('[data-ipk]'); if (!li) return;
     const id = li.dataset.ipk, r = rows.find(x => x.id === id);
     if (!many) { if (e.target.closest('[data-ipk-pick]')) { layer.close(); onDone?.(id); } return; }
-    const d = e.target.closest('[data-ipk-d]'), all = e.target.closest('[data-ipk-all]');
-    if (d) setQty(id, qty(r) + Number(d.dataset.ipkD));
-    else if (all) setQty(id, r.max ?? 999);
+    const d = e.target.closest('[data-d]'), all = e.target.closest('[data-all]');
+    if (d) setQty(id, qty(r) + Number(d.dataset.d));
+    else if (all) setQty(id, qty(r) === (r.max ?? 999) ? 0 : r.max ?? 999);
     else if (e.target.closest('[data-ipk-pick]')) setQty(id, qty(r) ? 0 : 1);
   });
   list.addEventListener('change', e => { const i = e.target.closest('input'); if (i) setQty(i.closest('[data-ipk]').dataset.ipk, i.value); });

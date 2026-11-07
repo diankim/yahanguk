@@ -4,7 +4,7 @@ import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';
-import { pickRows, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter } from './views/itempick.js';
+import { pickRows, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf } from './views/itempick.js';
 
 const RANK_PERK = {
   night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}% · 그림자 장부(상점 하루 판매 한도 +${(r - 1) * 300}전)`,
@@ -113,7 +113,7 @@ export function fqPopHtml(key, s) {
       <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}" ${listRowAttrs(v.kind, v.name)}><div>
           <b>${v.kind === 'item' ? `<button type="button" class="linkish" data-fq-info="${esc(v.item_id)}">${esc(v.name)}</button>` : v.kind === 'name_style' ? `<span class="fq-ns ns-${esc(v.item_id.slice(3))}">${esc(v.name)}</span>` : esc(v.name)} ${kindChip(v)}</b>
           <small class="muted">공훈 ${fmt.num(v.price)}${v.locked ? ` · ${esc(ranks[v.rank_need - 1] || '')}부터` : ''}</small></div>
-        ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? `<div class="fq-buy"><input type="number" min="1" max="99" value="1" id="fqq-${esc(v.item_id)}" aria-label="수량" ${vaultOpen && !v.locked ? '' : 'disabled'}><button class="btn small" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button></div>`
+        ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? `<div class="fq-buy">${qtyHtml({ key: v.item_id, min: 1, max: 99, value: 1, small: true, off: !vaultOpen || v.locked })}<button class="btn small" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button></div>`
           : `<button class="btn small" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>받기</button>`}</li>`).join('')}</ul>
       <p class="muted small">공훈으로만 사고, 비고는 물건을 사들이지 않습니다. 칭호·테두리·이름 색·탈것은 하나만 받고, 세력을 떠나도 남습니다. 세력 장비는 거래할 수 없습니다.</p>`;
   }
@@ -143,12 +143,13 @@ export function bindFaction(body, s) {
   $$('[data-fq-req]', body).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_faction_request_claim', { p_req: b.dataset.fqReq }); done(); return r; }));
   $$('[data-fq-buy]', body).forEach(b => b.onclick = async () => {
     const id = b.dataset.fqBuy, v = (s.vault || []).find(x => x.item_id === id), one = v && v.kind !== 'item';
-    const qty = one ? 1 : Math.max(1, Math.min(99, Number($(`#fqq-${CSS.escape(id)}`, body)?.value) || 1));
+    const qty = one ? 1 : Math.max(1, qtyOf(body, id));
     if (!(await ask(one ? `${v.name}을(를) 공훈 ${fmt.num(v.price)}(으)로 받을까요?` : `${v?.name || nameOf(id)} ×${qty}을(를) 공훈 ${fmt.num((v?.price || 0) * qty)}(으)로 살까요?`, { title: '비고', ok: one ? '받기' : '사기' }))) return;
     guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); done(); return r; });
   });
   $$('[data-fq-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.fqInfo));
   if ($('.fq-vault', body)) bindListFilter(body, vaultFilt, () => $$('.fq-vault > li', body));
+  bindQty(body);
   bindDonate(body, s, done);
   const tr = $('#fq-trial', body);
   if (tr) tr.onclick = () => guard(tr, async () => {

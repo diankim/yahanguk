@@ -2,7 +2,7 @@ import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, f
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
-import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter } from './itempick.js';
+import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
@@ -37,10 +37,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
   const sold = s.sell;
   const catSet = new Set([...list.map(i => pickCat(i.category)), ...sellable.map(([k]) => pickCat(ref.get(k)?.category))]);
   const filt = catSet.size > 1 || list.length + sellable.length > 8 ? listFilterHtml(shopFilt, { have: catSet, cls: 'shop-filter' }) : '';
-  const stepper = (m, id, max) => `<div class="stepper" data-step="${m}:${esc(id)}">
-      <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
-      <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[m][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
-      <button class="icon-btn" data-d="1" aria-label="하나 더" ${max ? '' : 'disabled'}>${icon('plus', 16)}</button>${m === 'sell' && max > 1 ? `<button class="btn small ghost" data-all aria-label="가진 것 전부">전부</button>` : ''}</div>`;
+  const stepper = (m, id, max) => qtyHtml({ key: `${m}:${id}`, max, value: cart[m][id] || 0, all: m === 'sell' });
   box.innerHTML = `
     <div class="shop-head"><div><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
       <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(c?.gil ?? s.gil)}</span></div>
@@ -81,14 +78,12 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== b.dataset.mode);
     foot();
   });
-  $$('[data-step]', box).forEach(st => {
-    const [m, id] = st.dataset.step.split(':'), inp = st.querySelector('input'), max = Number(inp.max) || 0;
-    const set = v => { v = Math.max(0, Math.min(max, Math.floor(Number(v) || 0))); inp.value = v; if (v) cart[m][id] = v; else delete cart[m][id]; st.closest('li').classList.toggle('picked', v > 0); foot(); };
-    st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
-    st.querySelector('[data-all]')?.addEventListener('click', () => set(Number(inp.value) === max ? 0 : max));
-    inp.oninput = () => set(inp.value);
-    if (cart[m][id]) st.closest('li').classList.add('picked');
+  bindQty(box, (key, v, st) => {
+    const i = key.indexOf(':'), m = key.slice(0, i), id = key.slice(i + 1);
+    if (v) cart[m][id] = v; else delete cart[m][id];
+    st.closest('li').classList.toggle('picked', v > 0); foot();
   });
+  $$('[data-qty]', box).forEach(st => { const k = st.dataset.qty, i = k.indexOf(':'); if (cart[k.slice(0, i)]?.[k.slice(i + 1)]) st.closest('li').classList.add('picked'); });
   $('#shop-go', box).onclick = async e => {
     const btn = e.currentTarget, m = cur(), items = Object.entries(cart[m]).filter(([, n]) => n > 0);
     if (!items.length || btn.dataset.busy === '1') return;
@@ -453,7 +448,7 @@ export async function renderStorage(box) {
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
     const row = (id, label, n, max, m, note) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
-        ${ro && m === 'put' ? '' : `<div class="row-act"><input type="number" inputmode="numeric" min="1" max="${m === 'take' ? n : max}" value="${max || n}" aria-label="수량">
+        ${ro && m === 'put' ? '' : `<div class="row-act">${qtyHtml({ key: `${m}:${id}`, min: 1, max: m === 'take' ? n : max, value: max || n, all: true, small: true, off: m === 'put' && !max })}
           ${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-here="창고 이용" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
           ${m === 'take' ? `<button class="btn small ghost" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div>`}</li>`;
     const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
@@ -494,6 +489,7 @@ export async function renderStorage(box) {
       const q = Math.floor(Number(b.closest('li').querySelector('input')?.value) || 0);
       return act(fn, { p_item: id, p_qty: q > 0 ? q : null });
     });
+    bindQty(box);
     $$('[data-put]', box).forEach(b => b.onclick = () => move(b, 'world_storage_put', b.dataset.put));
     $$('[data-take]', box).forEach(b => b.onclick = () => move(b, 'world_storage_take', b.dataset.take));
     $$('[data-toss]', box).forEach(b => b.onclick = async () => {
