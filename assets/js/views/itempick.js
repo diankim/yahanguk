@@ -30,18 +30,21 @@ export const qtyHtml = ({ key, max = 99, value = 0, min = 0, all = false, label 
   return `<div class="stepper ${small ? 'sm' : ''}" data-qty="${esc(key)}" data-min="${min}">
     <button type="button" class="icon-btn" data-d="-1" aria-label="하나 빼기" ${dis}>${icon('minus', small ? 14 : 16)}</button>
     <input type="number" inputmode="numeric" min="${min}" max="${max}" value="${value}" aria-label="${esc(label)}" ${dis}>
-    <button type="button" class="icon-btn" data-d="1" aria-label="하나 더" ${dis}>${icon('plus', small ? 14 : 16)}</button>${all && max > 1 ? `<button type="button" class="btn small ghost" data-all aria-label="가진 것 전부" ${dis}>전부</button>` : ''}</div>`;
+    <button type="button" class="icon-btn" data-d="1" aria-label="하나 더" ${dis}>${icon('plus', small ? 14 : 16)}</button>${all && max > 1 ? `<button type="button" class="btn small ghost" data-all ${dis}>${allLabel(value >= max)}</button>` : ''}</div>`;
 };
+const allLabel = full => full ? '최소' : '전부';
+export const qtyMark = st => { const b = st?.querySelector('[data-all]'); if (!b) return; const inp = st.querySelector('input'); b.textContent = allLabel(Number(inp.value) >= (Number(inp.max) || 0)); b.setAttribute('aria-label', b.textContent === '최소' ? '가장 적게' : '가진 것 전부'); };
 export const qtyClamp = (st, v) => { const inp = st.querySelector('input'), min = Number(st.dataset.min) || 0, max = Number(inp.max) || 0; return Math.max(min, Math.min(max, Math.floor(Number(v) || 0))); };
 export function bindQty(root, onChange) {
   $$('[data-qty]', root).forEach(st => {
     const inp = st.querySelector('input'), max = Number(inp.max) || 0, min = Number(st.dataset.min) || 0;
-    const set = v => { v = qtyClamp(st, v); inp.value = v; onChange?.(st.dataset.qty, v, st); };
+    const set = v => { v = qtyClamp(st, v); inp.value = v; qtyMark(st); onChange?.(st.dataset.qty, v, st); };
     st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
     st.querySelector('[data-all]')?.addEventListener('click', () => set(Number(inp.value) === max ? min : max));
     inp.oninput = () => { if (inp.value !== '') set(inp.value); };
     inp.onchange = () => set(inp.value);
     inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } };
+    qtyMark(st);
   });
 }
 export const qtyOf = (root, key) => { const st = $(`[data-qty="${CSS.escape(key)}"]`, root); return st ? qtyClamp(st, st.querySelector('input').value) : 0; };
@@ -91,7 +94,7 @@ export function openItemPick({ title = '물품 고르기', rows = [], many = fal
     if (n && !sel.has(id) && sel.size >= kinds) { toast(`한 번에 ${kinds}가지까지 담을 수 있습니다.`, 'error'); return draw(); }
     if (n) sel.set(id, n); else sel.delete(id);
     const li = list.querySelector(`[data-ipk="${CSS.escape(id)}"]`);
-    if (li) { li.classList.toggle('on', n > 0); const i = li.querySelector('input'); if (i && Number(i.value) !== n) i.value = n; }
+    if (li) { li.classList.toggle('on', n > 0); const i = li.querySelector('input'); if (i && Number(i.value) !== n) i.value = n; qtyMark(li.querySelector('[data-qty]')); }
     sum();
   };
   draw();
