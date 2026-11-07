@@ -55,6 +55,22 @@ CHAIN = {
     '거꾸로 그린 얼굴': ('cq110_paint_4', 34, 'inverted_shrine', '사당에 거꾸로 걸린 화공의 자화상', ['cq110_paint_3', 'mq_nine_gates']),
     '값을 매길 수 없는 그림': ('cq110_paint_5', 38, 'moonless_market', '저잣거리에 화공의 마지막 그림이 매물로 나왔다', ['cq110_paint_4']),
 }
+SEQUEL = {
+    '내일 하려던 부탁': ('sq110_s_cheolbu', 19, 'comet_crater', '전투', '열두 해 미뤄 둔 대장장이 철부의 부탁', ['sq_ash_mountain_2']),
+    '돌아보지 않은 이름': ('sq110_s_maenggu', 21, 'under_root', '전투', '막장에서 돌아보지 않았던 부름이 더 깊은 갱에서 다시 들린다', ['sq_crimson_mine_2']),
+    '이름을 찾은 사환': ('sq110_s_sahwan', 22, 'crimson_altar', '전투', '흑사단 이름들이 팔려 간 장부를 쫓는다', ['sq_black_sand_temple_2']),
+    '돌아온 배': ('sq110_s_suchil', 24, 'tide_gate', '낚시', '수문지기가 기다리던 배가 만조에 떠밀려 온다', ['sq_old_canal_1']),
+    '흰 달의 제자': ('sq110_s_eunsil', 25, 'crimson_altar', '제작', '흰 달로 약을 달이는 노파가 제자를 찾는다', ['sq_red_moon_fort_2']),
+    '막내가 이끄는 호송대': ('sq110_s_chorong', 27, 'seal_vault', '전투', '막내 초롱이 처음으로 호송대장이 되었다', ['sq_jade_pass_2']),
+    '동생의 거울': ('sq110_s_yunpal', 28, 'seal_vault', '전투', '못 살린 동생의 얼굴이 압수 거울에 비친다', ['sq_ghost_bamboo_2']),
+    '대답한 등대': ('sq110_s_byeolsun', 28, 'black_tide_rift', '제작', '그날 대답하듯 깜빡인 다른 등대', ['sq_nine_lighthouse_1']),
+    '빚 갚는 배': ('sq110_s_chaeun', 31, 'black_tide_rift', '낚시', '흑련회가 정말 빚을 받으러 왔다', ['sq_black_tide_rift_2']),
+    '도망친 끝': ('sq110_s_somae', 32, 'ash_reeds', '전투', '적월교를 떠난 순례자가 도망친 끝', ['rq_crimson_altar']),
+    '명부의 나머지 줄': ('sq110_s_yeohwi', 33, 'inverted_shrine', '조사', '망국 사관이 남긴 줄의 나머지가 사당에 거꾸로 적혀 있다', ['sq_forgotten_city_1']),
+    '빌려준 얼굴': ('sq110_s_haerang', 36, 'moonless_market', '전투', '거울 속 또 하나의 얼굴이 저잣거리에서 팔리고 있다', ['sq_glass_canyon_2']),
+    '지팡이에 새긴 이름': ('sq110_s_sapyeong', 37, 'moonless_market', '채집', '순례자들의 지팡이가 좌판에 묶음으로 나왔다', ['sq_red_plain_1']),
+    '아들을 낚는 줄': ('sq110_s_eodu', 38, 'gwiheo_core', '낚시', '떠난 것이 돌아오는 바다에 늙은 낚시꾼이 마지막 줄을 드리운다', ['sq_black_tide_rift_1']),
+}
 CHAIN_NAME = {'cq110_pack': '아버지의 등짐', 'cq110_bat': '도깨비 방망이 분실 사건', 'cq110_paint': '무명 화공의 그림'}
 JOB_META = {}
 for jn, jk in JOBS.items():
@@ -150,6 +166,9 @@ def parse_files(paths):
                 elif title in CHAIN:
                     qid, L, reg, summ, aft = CHAIN[title]
                     cur = dict(id=qid, title=title, L=L, region=reg, cat='연계·' + CHAIN_NAME[qid[:-2]], job=None, summary=summ, npcs={}, scenes=[], after=aft)
+                elif title in SEQUEL:
+                    qid, L, reg, cat, summ, aft = SEQUEL[title]
+                    cur = dict(id=qid, title=title, L=L, region=reg, cat=f"{cat}·{REGION_NAME.get(reg, reg)}", job=None, summary=summ, npcs={}, scenes=[], after=aft)
                 elif title in META:
                     qid, L, reg, cat, summ = META[title]
                     cur = dict(id=qid, title=title, L=L, region=reg, cat=f"{cat}·{REGION_NAME.get(reg, reg)}", job=None, summary=summ, npcs={}, scenes=[])
@@ -270,10 +289,10 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
     return '\n'.join(out) + '\n'
 
 if __name__ == '__main__':
-    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md') if os.path.exists(os.path.join(HERE, f))]
+    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md', 'script_h.md', 'script_i.md') if os.path.exists(os.path.join(HERE, f))]
     qs = parse_files(files)
     sql = build(qs)
-    missing = [t for t in list(META) + list(CHAIN) if t not in {q['title'] for q in qs}]
+    missing = [t for t in list(META) + list(CHAIN) + list(SEQUEL) if t not in {q['title'] for q in qs}]
     if missing: print('대본 없음:', ', '.join(missing))
     if errors:
         print('\n'.join(errors)); sys.exit(1)
