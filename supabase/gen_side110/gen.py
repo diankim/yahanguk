@@ -71,6 +71,25 @@ SEQUEL = {
     '지팡이에 새긴 이름': ('sq110_s_sapyeong', 37, 'moonless_market', '채집', '순례자들의 지팡이가 좌판에 묶음으로 나왔다', ['sq_red_plain_1']),
     '아들을 낚는 줄': ('sq110_s_eodu', 38, 'gwiheo_core', '낚시', '떠난 것이 돌아오는 바다에 늙은 낚시꾼이 마지막 줄을 드리운다', ['sq_black_tide_rift_1']),
 }
+SEQUEL.update({
+    '대호법이 외운 이름': ('sq110_f_redmoon', 23, 'crimson_altar', '세력', '대호법이 외운 이름 하나가 제단에서 지워지려 한다', ['sq_red_moon_fort_1']),
+    '맡긴 이름의 이자': ('sq110_f_lotus', 22, 'under_root', '세력', '흑련회 장부에 맡긴 이름에도 이자가 붙는다', ['sq_under_root_1']),
+    '얼음 맹세를 잇는 사람': ('sq110_f_north', 18, 'thunder_peak', '세력', '북령 맹약을 처음 맺은 이들의 마지막 하나', ['sq_frost_valley_2']),
+    '뱃길 장부의 빈칸': ('sq110_f_river', 25, 'tide_gate', '세력', '수향 뱃길 장부에 일부러 비워 둔 칸', ['sq_sunken_palace_1']),
+    '바다로 옮긴 불씨': ('sq110_f_south', 20, 'nine_lighthouse', '세력', '고개의 봉화 불씨를 남명의 바다로 옮긴다', ['rq_ember_pass']),
+    '예언하지 않은 날': ('sq110_f_mandate', 26, 'star_observatory', '세력', '천명원이 예언하지 않기로 한 단 하루', ['rq_comet_crater']),
+    '서고 맨 끝 칸': ('sq110_f_office', 31, 'seal_vault', '세력', '서리 문수가 서고 맨 끝 칸의 목록을 본다', ['sq_hq_yard_1', 'mq_lamp_shadow']),
+    '먹을 사는 사람': ('sq110_e_ink', 37, 'moonless_market', '외전', '먹귀가 붙든 기억을 사들이는 흑련회 거둠꾼', ['mq_nine_gates']),
+    '지워지는 문패': ('sq110_e_doorplate', 39, 'ash_reeds', '외전', '문패 글자가 지워지는 나루에서 떠밀려 온 반요', ['mq_nine_gates']),
+    '봉연 물길의 표식': ('sq110_e_mark', 30, 'sealed_abyss', '외전', '봉연 물길로 떠내려온 옛 조사원의 표식', ['mq_lamp_shadow']),
+    '천 번째 학': ('sq110_s_bomi', 20, 'cloud_corridor', '채집', '다 접은 천 마리 학이 날아간 곳', ['sq_paper_bridge_1']),
+    '숲이 배운 노래': ('sq110_s_cheongun', 21, 'red_forest', '전투', '누이의 노래를 혈엽림에서 다시 듣는다', ['sq_ghost_bamboo_1']),
+    '삼십 년 계약의 끝': ('sq110_s_yeonsu', 20, 'lotus_marsh', '전투', '연근식귀와 맺은 삼십 년 계약의 마지막 해', ['sq_lotus_marsh_2']),
+    '수좌가 되던 날': ('sq110_s_doyun', 22, 'iron_monastery', '조사', '목탁 치던 행자가 수좌가 되는 시험', ['sq_iron_monastery_1']),
+    '술값으로 갚겠다던 빚': ('sq110_s_dalgu', 21, 'comet_crater', '채집', '술값으로 갚겠다던 빚을 진짜로 갚으러 왔다', ['sq_bone_market_2']),
+    '칼 대신 바구니': ('sq110_s_yeonok', 22, 'white_tower', '전투', '바구니를 든 순찰 의원이 순찰대를 이끈다', ['sq_field_outskirts_2']),
+    '섬까지 온 등잔 장수': ('sq110_s_soetdae', 35, 'inverted_shrine', '제작', '덤을 주던 등잔 장수가 귀허도까지 건너왔다', ['rq_lamp_alley', 'mq_nine_gates']),
+})
 CHAIN_NAME = {'cq110_pack': '아버지의 등짐', 'cq110_bat': '도깨비 방망이 분실 사건', 'cq110_paint': '무명 화공의 그림'}
 JOB_META = {}
 for jn, jk in JOBS.items():
@@ -289,7 +308,7 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
     return '\n'.join(out) + '\n'
 
 if __name__ == '__main__':
-    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md', 'script_h.md', 'script_i.md') if os.path.exists(os.path.join(HERE, f))]
+    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md', 'script_h.md', 'script_i.md', 'script_j.md', 'script_k.md', 'script_l.md') if os.path.exists(os.path.join(HERE, f))]
     qs = parse_files(files)
     sql = build(qs)
     missing = [t for t in list(META) + list(CHAIN) + list(SEQUEL) if t not in {q['title'] for q in qs}]
