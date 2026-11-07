@@ -212,6 +212,11 @@ def build(quests):
                 if name in NPC_OLD: errors.append(f'{q["id"]}: 기존 인물과 이름 겹침 {name}')
                 if k in npcs and npcs[k][0] != name: errors.append(f'인물 키 겹침 {k}')
                 npcs[k] = (name, bio or name)
+    seen_names = {}
+    for k, (name, bio) in npcs.items():
+        short = name.split()[-1]
+        if short in seen_names and seen_names[short] != k: errors.append(f'인물 이름 겹침: {name} ({k}, {seen_names[short]})')
+        seen_names[short] = k
     for k, (name, bio) in sorted(npcs.items()):
         w(f"insert into public.world_quest_npcs(npc_key, npc_name, bio) values ({T(k)}, {T(name)}, {T(bio)}) on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;")
     for i, q in enumerate(sorted(quests, key=lambda x: (x['L'], x['id']))):
