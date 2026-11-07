@@ -107,6 +107,7 @@ for jn, jk in JOBS.items():
 
 ITEMS = REF['items']; MONS = REF['monsters']; REGIONS = REF['regions']; RECIPES = REF['recipes']; SPOTS = REF['spots']; FISH = set(REF['fishing'])
 NPC_OLD = dict(REF['npcs'])
+SX_SEEN = {}
 for _k, _n in json.load(open(os.path.join(HERE, '..', 'gen744', 'data', 'speakers.json'), encoding='utf-8')).items():
     if not _k.startswith('q:'): NPC_OLD.setdefault(_n, _k)
 REGION_NAMES = sorted(REGIONS, key=len, reverse=True)
@@ -210,6 +211,9 @@ def parse_files(paths):
             if line.startswith('인물:'):
                 for key, name, bio in re.findall(r'`(sx_[a-z0-9_]+)`\s*([^(·`]+?)\s*\(([^)]*)\)', line):
                     cur['npcs'][name.strip()] = ('q:' + key, bio.strip())
+                    SX_SEEN[name.strip()] = ('q:' + key, bio.strip())
+                for name, v in SX_SEEN.items():
+                    if name in line and name not in cur['npcs']: cur['npcs'][name] = v
                 for name in NPC_OLD:
                     if name in line and name not in cur['npcs']: cur['npcs'][name] = (NPC_OLD[name], None)
                 continue
