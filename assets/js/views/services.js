@@ -448,9 +448,9 @@ export async function renderStorage(box) {
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
     const row = (id, label, n, max, m, note) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
-        ${ro && m === 'put' ? '' : `<div class="row-act">${qtyHtml({ key: `${m}:${id}`, min: 1, max: m === 'take' ? n : max, value: max || n, all: true, small: true, off: m === 'put' && !max })}
-          ${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-here="창고 이용" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
-          ${m === 'take' ? `<button class="btn small ghost" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div>`}</li>`;
+        ${ro && m === 'put' ? '' : `<div class="row-act st-act">${qtyHtml({ key: `${m}:${id}`, min: 1, max: m === 'take' ? n : max, value: max || n, all: true, small: true, off: m === 'put' && !max })}
+          <div class="st-btns">${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-here="창고 이용" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
+          ${m === 'take' ? `<button class="btn small ghost" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div></div>`}</li>`;
     const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
     box.innerHTML = `
