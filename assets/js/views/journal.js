@@ -7,6 +7,7 @@ import { taskLine, giveLine, atLine, report } from '../quests.js';
 import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
+import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
 const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
@@ -391,7 +392,7 @@ async function monsterCodex(box) {
     wb.innerHTML = arr.map(w => w.open ? `<p class="w-line"><b>${esc(w.name)}</b> 「${esc(w.t)}」</p>` : `<p class="w-line locked">${icon('help', 12)} 이 갈래를 ${w.need}마리 쓰러뜨리면 열리는 목격담</p>`).join(''); return arr; };
   if (wb) loreBundle().then(l => { if (paint(l).some(w => !w.open && n >= w.need)) refreshLore().then(l2 => wb.isConnected && paint(l2)); });
 }
-const GCAT = { herbs: '약초', ore: '광맥', spirit: '영기', relics: '유물', supplies: '보급', wood: '목재', water: '물가' };
+const GCAT = GAMEDATA.names.gather;
 const spotRow = g => {
   const s = (g.s || []).slice(0, 2), more = g.c - s.length;
   return `<p class="gx-line"><button type="button" class="q-link" data-q-map="${esc(g.r)}" title="지도에서 보기">${esc(g.r)}</button> <span class="muted">Lv.${g.l}+ · 찾음 ${g.fc}/${g.c}</span>${s.length ? ` — ${s.map(t => `<span class="${t.f ? 'gx-f' : 'muted'}" title="${t.f ? '찾은 채집터' : '아직 찾지 못한 채집터'}">${esc(t.n)}(Lv.${t.lv})</span>`).join(', ')}${more > 0 ? ` <span class="muted">외 ${more}곳</span>` : ''}` : ''}</p>`;

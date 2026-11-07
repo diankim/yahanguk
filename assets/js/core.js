@@ -178,7 +178,7 @@ export const FACTIONS = {
 };
 const FIXED = {
   fieldwork: '채집', mining: '채광', fishing: '낚시',
-  smithing: '단조', cooking: '요리', carpentry: '목공', alchemy: '연금', sealing: '봉인 공예', weaving: '직조', leatherwork: '가죽 공예', artifice: '법구 공예',
+  ...GAMEDATA.names.field,
   melee: '근접', ranged: '사격', dagger: '단도', exorcism: '퇴마술', medicine: '의술', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
   tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비', furniture: '별채 가구', pet: '꼬마 동무',
   common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품',

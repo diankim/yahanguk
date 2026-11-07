@@ -58,8 +58,7 @@ const donateHtml = (s, open) => {
     <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
 
-const unitOf = t => { const it = Array.isArray(t.items) ? t.items : Object.keys(t.items || {}); return t.t === 'gather' ? (it.length ? '개' : '회') : t.t === 'craft' && it.length ? '개' : ''; };
-const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}${unitOf(t)}</small></li>`).join('');
+const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}${t.unit || ''}</small></li>`).join('');
 
 export function fqPops(s) {
   const kp = s.keepers || {}, q = s.quest;

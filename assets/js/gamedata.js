@@ -53,6 +53,10 @@ export const GAMEDATA = {
   "shadow": {"gil_lv":20,"hp_min":9000,"hp_mul":350,"pow_hi":1.5,"pow_lo":0.75,"dmg_mul":1.4,"stay_full":0.5,"charge_mul":5},
   "coopRules": {"all_pow":0.5,"all_full":4,"sure_crit":2,"expose_per":4},
   "expXp": {"full":{"120":0.2,"240":0.3,"480":0.4},"near":{"30":0.85,"60":0.85,"120":0.85,"240":0.8,"480":0.7},"fight":0.42,"searches":30},
+  "names": {
+    "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
+    "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}
+  },
   "jobSkills": {
     "medic": {"desc":"체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.","name":"응급 처방"},
     "scout": {"desc":"원거리 ×1.4로 쏘고 표식을 남겨 다음 세 번의 공격이 25%씩 강해집니다.","name":"급소 사격"},
