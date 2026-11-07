@@ -39,12 +39,23 @@ META = {
     '돌아오는 파도': ('sq110_returning_wave', 39, 'gwiheo_core', '전투', '귀허에서는 떠난 것이 파도가 되어 돌아온다'),
 }
 CHAIN = {
-    '아버지의 등짐': ('cq110_pack_1', 14, 'nine_lighthouse', '외상 장부를 멘 등짐장수 오누이가 꺼진 등대를 찾아온다', []),
+    '아버지의 등짐': ('cq110_pack_1', 14, 'nine_lighthouse', '외상 장부를 멘 등짐장수 오누이가 꺼진 등대를 찾아온다', ['mq_frost_seal']),
     '옥에 갇힌 외상값': ('cq110_pack_2', 19, 'old_prison', '외상을 진 사람이 옥사에서 옥귀가 되어 있다', ['cq110_pack_1']),
     '받지 말 것': ('cq110_pack_3', 24, 'tide_gate', '장부 한 줄에 아버지 글씨로 「받지 말 것」', ['cq110_pack_2']),
     '아버지가 마지막으로 판 것': ('cq110_pack_4', 29, 'black_tide_rift', '아버지의 마지막 흔적이 균열로 이어진다', ['cq110_pack_3']),
     '이름을 사러 온 손님': ('cq110_pack_5', 33, 'ash_reeds', '반요촌에 이름을 잃어 가는 등짐장수가 있다', ['cq110_pack_4', 'mq_nine_gates']),
+    '뚝딱이 어디 갔나': ('cq110_bat_1', 6, 'red_plain', '꼬마 도깨비 방울이 할아버지의 방망이를 잃어버렸다', ['mq_drowned_ledger']),
+    '물에 비친 방망이': ('cq110_bat_2', 9, 'mirror_pavilion', '수경루 물거울에 방망이가 비친다', ['cq110_bat_1']),
+    '방망이 든 사슴': ('cq110_bat_3', 12, 'red_forest', '혈엽림 사슴귀가 방망이를 물고 달아났다', ['cq110_bat_2']),
+    '벼락 맞은 금 나와라': ('cq110_bat_4', 16, 'thunder_peak', '뇌명봉에 금이 비처럼 쏟아졌다는 소문', ['cq110_bat_3']),
+    '마지막 뚝딱': ('cq110_bat_5', 20, 'white_tower', '방망이로 빌 수 있는 소원은 하나뿐이다', ['cq110_bat_4']),
+    '그림 속 광부': ('cq110_paint_1', 23, 'under_root', '떠돌이 화공의 초상 속 광부가 밤마다 그림 밖을 내다본다', ['mq_eclipse_gate']),
+    '압수된 초상': ('cq110_paint_2', 26, 'seal_vault', '봉인고에 압수된 초상들이 서로를 부른다', ['cq110_paint_1']),
+    '물에 젖지 않는 그림': ('cq110_paint_3', 30, 'sealed_abyss', '봉연 물속에서도 젖지 않는 그림 한 장', ['cq110_paint_2']),
+    '거꾸로 그린 얼굴': ('cq110_paint_4', 34, 'inverted_shrine', '사당에 거꾸로 걸린 화공의 자화상', ['cq110_paint_3', 'mq_nine_gates']),
+    '값을 매길 수 없는 그림': ('cq110_paint_5', 38, 'moonless_market', '저잣거리에 화공의 마지막 그림이 매물로 나왔다', ['cq110_paint_4']),
 }
+CHAIN_NAME = {'cq110_pack': '아버지의 등짐', 'cq110_bat': '도깨비 방망이 분실 사건', 'cq110_paint': '무명 화공의 그림'}
 JOB_META = {}
 for jn, jk in JOBS.items():
     JOB_META[(jn, 18)] = f'jq2_{jk}'
@@ -98,6 +109,9 @@ def parse_task(p, ctx_regions, qid):
     if not m:
         errors.append(f'{qid}: 할 일을 못 읽음 — {p}'); return None
     name, n, verb = m.group(1).strip(), int(m.group(2)), m.group(3)
+    if name not in ITEMS and verb not in ('처치', '쫓기'):
+        full = re.sub(r'\s*\d+\s*(?:개|마리|줌|덩이|그릇|벌)?\s*(모으기|처치|만들기|넘기기|캐기|쫓기)$', '', re.sub(r'^.*?에서\s+', '', p)).strip()
+        if full in ITEMS: name = full
     if verb in ('모으기', '캐기'):
         iid = item_id(name)
         rr = regs[:1]
@@ -135,7 +149,7 @@ def parse_files(paths):
                     cur = dict(id=qid, title=title, L=L, region=reg, cat=f'직업·{job}', job=JOBS[job], summary='', npcs={}, scenes=[])
                 elif title in CHAIN:
                     qid, L, reg, summ, aft = CHAIN[title]
-                    cur = dict(id=qid, title=title, L=L, region=reg, cat='연계·아버지의 등짐', job=None, summary=summ, npcs={}, scenes=[], after=aft)
+                    cur = dict(id=qid, title=title, L=L, region=reg, cat='연계·' + CHAIN_NAME[qid[:-2]], job=None, summary=summ, npcs={}, scenes=[], after=aft)
                 elif title in META:
                     qid, L, reg, cat, summ = META[title]
                     cur = dict(id=qid, title=title, L=L, region=reg, cat=f"{cat}·{REGION_NAME.get(reg, reg)}", job=None, summary=summ, npcs={}, scenes=[])
@@ -251,7 +265,7 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
     return '\n'.join(out) + '\n'
 
 if __name__ == '__main__':
-    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md') if os.path.exists(os.path.join(HERE, f))]
+    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md', 'script_f.md', 'script_g.md') if os.path.exists(os.path.join(HERE, f))]
     qs = parse_files(files)
     sql = build(qs)
     missing = [t for t in list(META) + list(CHAIN) if t not in {q['title'] for q in qs}]
