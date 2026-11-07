@@ -214,7 +214,7 @@ def build(quests):
                 npcs[k] = (name, bio or name)
     seen_names = {}
     for k, (name, bio) in npcs.items():
-        short = name.split()[-1]
+        short = name
         if short in seen_names and seen_names[short] != k: errors.append(f'인물 이름 겹침: {name} ({k}, {seen_names[short]})')
         seen_names[short] = k
     for k, (name, bio) in sorted(npcs.items()):
