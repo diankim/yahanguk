@@ -163,12 +163,31 @@ on('changed', ev => {
 });
 window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
 
+export function neededItems(b) {
+  const need = new Map();
+  const add = (id, left, title) => { if (!id || left <= 0) return; const cur = need.get(id) || { left: 0, quests: [] }; cur.left += left; if (!cur.quests.includes(title)) cur.quests.push(title); need.set(id, cur); };
+  for (const q of [...(b?.active || []), ...(b?.faction && !b.faction.locked ? [b.faction] : [])]) {
+    for (const t of q.tasks || []) if (t.t === 'gather' && t.cur < t.n && (!(t.regions || []).length || t.regions.includes(b.here_id))) for (const id of itemsOf(t)) add(id, t.n - t.cur, q.title);
+    for (const g of q.give || []) add(g.item_id, g.n - g.have, q.title);
+  }
+  return need;
+}
+export function markNeeded(root, b) {
+  const need = neededItems(b);
+  $$('[data-need-item]', root).forEach(el => { const n = need.get(el.dataset.needItem); el.classList.toggle('q-need', !!n); if (n) el.title = `퀘스트: ${n.quests.join(', ')} · ${n.left}개 더`; else el.removeAttribute('title'); });
+  $$('[data-need-spot]', root).forEach(el => { const ids = (el.dataset.needSpot || '').split(','), hit_ = ids.filter(id => need.has(id));
+    let tag = el.querySelector('.q-need-tag'); if (!hit_.length) { tag?.remove(); return; }
+    if (!tag) { tag = document.createElement('span'); tag.className = 'q-need-tag'; el.querySelector('b')?.append(tag); }
+    tag.textContent = '퀘스트'; tag.title = [...new Set(hit_.flatMap(id => need.get(id).quests))].join(', '); });
+}
+
 export const questBox = () => `<section class="panel quest-box" id="quest-box"></section>`;
 
 export async function fillQuests(box) {
   if (!box) return;
   let b;
   try { b = await load('world_quest_board', undefined, { maxAge: 600000 }); qbWatch = watchOf(b); } catch { box.remove(); return; }
+  markNeeded(document, b);
   if (!box.isConnected) return;
   const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));
   const here = (b.available || []).filter(q => q.here), other = (b.available || []).filter(q => !q.here);

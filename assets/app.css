@@ -835,6 +835,8 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .path.back { background: transparent; } .path.unknown { border-style: dashed; color: var(--muted); cursor: default; }
 .spots li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r); background: var(--surface-2); border: var(--bw) solid var(--line); }
 .spots li div { display: grid; } .spots small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); } .spots .btn { min-width: 72px; }
+.spots li:has(.q-need-tag) { border-color: var(--gold); } .spots .q-need { color: var(--gold); font-weight: 600; }
+.q-need-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border: var(--bw) solid var(--gold); border-radius: 999px; color: var(--gold); font-size: calc(11px * var(--fz, 1)); font-weight: 600; line-height: 1.5; vertical-align: 1px; }
 .field-log li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; font-size: calc(13px * var(--fz, 1)); padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .field-log li:last-child { border-bottom: 0; } .field-log time { color: var(--muted); font-size: calc(11px * var(--fz, 1)); } .field-log .ico { margin-top: 3px; color: var(--muted); }
 .field-log .k-encounter .ico, .field-log .k-combat .ico { color: var(--accent); } .field-log .k-hazard .ico, .field-log .k-battle_lost .ico { color: var(--bad); }

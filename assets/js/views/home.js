@@ -15,6 +15,7 @@ import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
 import { sceneArt } from '../scenery.js';
 import { checklistHtml, noteRegion } from '../tutorial.js';
+import { GAMEDATA } from '../gamedata.js';
 import { questBox, fillQuests } from '../quests.js';
 import { raidBand, fillRaidBand } from './raid.js';
 import { regionIntro } from '../lore.js';
@@ -27,7 +28,7 @@ const OUTCOME = {
   cache: ['bag', '보급'], hazard: ['flame', '위험'], omen: ['moon', '징조'], quiet: ['eye', '고요'], gather: ['leaf', '채집'],
   combat: ['sword', '토벌'], battle_lost: ['heart', '패배'], battle_fled: ['back', '도주'],
 };
-const CAT = { herbs: '약초', ore: '광맥', wood: '목재', water: '물가', spirit: '영기', relics: '유물', supplies: '보급' };
+const CAT = GAMEDATA.names.gather;
 const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 
 let el, off = [], snap = null, timer = null, busy = false, peopleTimer = null, peopleKey = '';
@@ -284,8 +285,8 @@ function field(s, roster, blocked) {
       <section class="panel">
         <header class="panel-head"><h2>${icon('leaf', 16)}채집터</h2><span class="muted small">${s.hidden_spots ? `숨은 채집터 ${s.hidden_spots}` : ''}</span></header>
         <div class="panel-body">
-          ${(s.spots || []).length ? `<ul class="spots">${s.spots.map(p => `<li>
-              <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${esc((p.items || []).map(nameOf).join(', '))}</small></div>
+          ${(s.spots || []).length ? `<ul class="spots">${s.spots.map(p => `<li data-need-spot="${esc((p.items || []).join(','))}">
+              <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
           <p class="muted small">채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).</p>
