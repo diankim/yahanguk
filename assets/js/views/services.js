@@ -2,12 +2,13 @@ import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, f
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
-import { PICK_CATS, pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips } from './itempick.js';
+import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
 
-let shopMode = 'buy', shopCat = 'all', shopQ = '';
+let shopMode = 'buy';
+const shopFilt = { cat: 'all', q: '' }, buyFilt = { cat: 'all', q: '' }, storeFilt = { cat: 'all', q: '' };
 const carts = { shop: { buy: {}, sell: {} }, smithy: { buy: {}, sell: {} } };
 export async function renderShop(box) {
   box.innerHTML = loading();
@@ -35,9 +36,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
   const space = bagLimit(c) - bagUsed(c);
   const sold = s.sell;
   const catSet = new Set([...list.map(i => pickCat(i.category)), ...sellable.map(([k]) => pickCat(ref.get(k)?.category))]);
-  if (shopCat !== 'all' && !catSet.has(shopCat)) shopCat = 'all';
-  const filt = catSet.size > 1 || list.length + sellable.length > 8 ? `<div class="mk-filter shop-filter"><div class="pick-cats">${PICK_CATS.filter(([k]) => k === 'all' || catSet.has(k)).map(([k, t]) => `<button type="button" class="chip ${k === shopCat ? 'accent' : ''}" data-shc="${k}">${t}</button>`).join('')}</div>
-      <input type="search" class="mk-q shop-q" placeholder="이름으로 찾기" aria-label="물품 찾기" value="${esc(shopQ)}"></div>` : '';
+  const filt = catSet.size > 1 || list.length + sellable.length > 8 ? listFilterHtml(shopFilt, { have: catSet, cls: 'shop-filter' }) : '';
   const stepper = (m, id, max) => `<div class="stepper" data-step="${m}:${esc(id)}">
       <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
       <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[m][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
@@ -49,7 +48,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     ${filt}
     <section data-list="buy" ${mode === 'buy' ? '' : 'hidden'}>
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
-      <ul class="item-list shop-list">${list.map(i => `<li data-shop-cat="${pickCat(i.category)}" data-shop-name="${esc(i.item_name || nameOf(i.item_id))}">
+      <ul class="item-list shop-list">${list.map(i => `<li ${listRowAttrs(pickCat(i.category), i.item_name || nameOf(i.item_id))}>
         <div class="item-main"><b>${infoName(i.item_id, i.item_name, i.category)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
           <small>${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
         ${stepper('buy', i.item_id, 99)}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
@@ -59,7 +58,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
         <small>${sold.left > 0 ? `앞으로 ${fmt.jeon(sold.left)}까지 더 받을 수 있습니다` : '오늘 한도를 다 채웠습니다'}${sold.resets_at ? ` · ${fmt.time(sold.resets_at)}부터 차례로 풀립니다` : ''} · 한도는 24시간에 2,000전</small></div>`
         : '<p class="muted small">상점 판매 수익은 하루 한도가 있고 세금 5%가 붙습니다.</p>'}
       <p class="muted small">장비도 팔 수 있습니다. 잠근 물품·임무 물품·장착 중인 마지막 하나는 나오지 않습니다.</p>
-      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li data-shop-cat="${pickCat(ref.get(k)?.category)}" data-shop-name="${esc(nameOf(k))}">
+      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li ${listRowAttrs(pickCat(ref.get(k)?.category), nameOf(k))}>
         <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입${equipped.has(k) ? ' · 장착 중 하나는 남김' : ''}</small>${descOf.get(k) ? `<small class="brief">${esc(brief(descOf.get(k)))}</small>` : ''}</div>
         ${stepper('sell', k, sellMax(k))}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
     </section>` : ''}
@@ -75,14 +74,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     if (m === 'buy' && sum > gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
     if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘는 몫은 값을 받지 못하고 버려집니다</span>`;
   };
-  const applyFilt = () => {
-    const q = shopQ.trim();
-    $$('[data-shop-cat]', box).forEach(li => { li.hidden = !((shopCat === 'all' || li.dataset.shopCat === shopCat) && (!q || li.dataset.shopName.includes(q))); });
-  };
-  $$('[data-shc]', box).forEach(b => b.onclick = () => { shopCat = b.dataset.shc; $$('[data-shc]', box).forEach(x => x.classList.toggle('accent', x === b)); applyFilt(); });
-  const sq = $('.shop-q', box);
-  if (sq) { sq.addEventListener('input', e => { if (e.isComposing) return; shopQ = sq.value; applyFilt(); }); sq.addEventListener('compositionend', () => { shopQ = sq.value; applyFilt(); }); sq.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sq.blur(); } }); }
-  applyFilt();
+  bindListFilter(box, shopFilt, () => $$('li[data-mk-cat]', box));
   $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
     shopMode = b.dataset.mode;
     $$('.seg-mini button[data-mode]', box).forEach(x => x.classList.toggle('on', x === b));
@@ -268,7 +260,7 @@ function untradeNote(have, ref, direct = false) {
   return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 장착 중인 장비는 끼고 있는 한 벌을 빼고 세고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 내줄 수 없습니다.</p>` : '';
 }
 
-let marketMode = 'board', boardTab = 'buy', buyCat = 'all', buyQ = '';
+let marketMode = 'board', boardTab = 'buy';
 let lastSell = null;
 export async function renderMarket(box) {
   const mm = marketMode === 'direct' ? 'direct' : boardTab;
@@ -295,15 +287,14 @@ export async function renderMarket(box) {
     const sellRows = pickRows(tradeable.map(([k, n]) => ({ id: k, have: n, sub: ref.get(k)?.reference_price ? `기준 시세 ${fmt.jeon(ref.get(k).reference_price)}` : '' })), inv?.catalog);
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
-    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" data-mk-cat="${esc(catMap.get(o.item_id) || 'etc')}" data-mk-name="${esc(nameOf(o.item_id).toLowerCase())}"><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
+    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" ${listRowAttrs(catMap.get(o.item_id), nameOf(o.item_id))}><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
         <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
       <p class="muted small"><b>희귀 재료</b>(비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽)는 거래소에서만 사고팝니다: 기준 시세 70% 이상 · 한 사람 24시간 20개까지 · 거래세 10%.</p>
       <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다. 0전 등록은 불가하고 가격은 기준 시세의 10배까지입니다. 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p></details>`;
     body.innerHTML = (boardTab === 'buy' ? `<p class="muted small mk-count">판매 중 ${others.length}건</p>
-      <div class="mk-filter"><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === buyCat ? 'accent' : ''}" data-bc="${k}">${t}</button>`).join('')}</div>
-        <input type="search" class="mk-q" placeholder="이름으로 찾기" aria-label="판매 물품 찾기" value="${esc(buyQ)}"></div>
+      ${listFilterHtml(buyFilt, { label: '판매 물품 찾기' })}
       ${others.length ? `<ul class="item-list mk-list">${others.map(o => row(o, false)).join('')}</ul><p class="muted small mk-none" hidden>맞는 물품이 없습니다.</p>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
       ${rules}` : `
       ${tradeable.length ? `<form class="trade-form" id="trade-form">
@@ -317,19 +308,7 @@ export async function renderMarket(box) {
       ${mine.length ? `<ul class="item-list mk-mine">${mine.map(o => row(o, true)).join('')}</ul>` : `<p class="muted small">등록한 물품이 없습니다.</p>`}
       ${rules}`);
     const list = $('.mk-list', body);
-    if (list) {
-      const qi = $('.mk-q', body);
-      const apply = () => {
-        buyQ = qi.value; const q = buyQ.trim().toLowerCase(); let shown = 0;
-        $$('li', list).forEach(li => { const ok = (buyCat === 'all' || li.dataset.mkCat === buyCat) && (!q || li.dataset.mkName.includes(q)); li.hidden = !ok; if (ok) shown++; });
-        $('.mk-none', body).hidden = shown > 0;
-      };
-      qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
-      qi.addEventListener('compositionend', apply);
-      qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
-      $$('[data-bc]', body).forEach(b => b.onclick = () => { buyCat = b.dataset.bc; $$('[data-bc]', body).forEach(x => x.classList.toggle('accent', x === b)); apply(); });
-      apply();
-    }
+    if (list) bindListFilter(body, buyFilt, () => $$('li', list), n => { $('.mk-none', body).hidden = n > 0; });
     const form = $('#trade-form', body);
     if (form) {
       const bounds = () => { const p = Number(ref.get(form.item.value)?.reference_price) || 0; return { p, min: MARKET_ONLY.has(form.item.value) && p ? Math.ceil(p * 0.7) : 1, max: p ? p * 10 : Infinity }; };
@@ -453,7 +432,7 @@ export function openDirectTrade(to) {
   const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderMarket(box)); else offc(); });
 }
 
-let storeMode = 'put', storeCat = 'all', storeQ = '';
+let storeMode = 'put';
 const STORE_PRICES = [1000, 2500, 5000, 10000];
 export async function renderStorage(box) {
   box.innerHTML = loading();
@@ -472,7 +451,7 @@ export async function renderStorage(box) {
     const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
-    const row = (id, label, n, max, m, note) => `<li data-mk-cat="${esc(catMap.get(id) || 'etc')}" data-mk-name="${esc((label || nameOf(id)).toLowerCase())}">
+    const row = (id, label, n, max, m, note) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
         ${ro && m === 'put' ? '' : `<div class="row-act"><input type="number" inputmode="numeric" min="1" max="${m === 'take' ? n : max}" value="${max || n}" aria-label="수량">
           ${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-here="창고 이용" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
@@ -485,8 +464,7 @@ export async function renderStorage(box) {
       ${bar(s.used, s.capacity, s.used >= s.capacity ? 'enemy' : 'xp')}
       ${ro ? `<p class="notice-line">${icon('chest', 14)} 보기만 할 수 있습니다 · ${esc(s.reason || '넣고 꺼내기는 안전지대에서만 됩니다.')}</p>` : ''}
       <div class="seg-mini" role="tablist">${ro ? '' : `<button class="${mode === 'put' ? 'on' : ''}" data-mode="put">맡기기</button>`}<button class="${mode === 'take' ? 'on' : ''}" data-mode="take">${ro ? '보관 물품' : '꺼내기'}</button><button class="${mode === 'grow' ? 'on' : ''}" data-mode="grow">넓히기</button></div>
-      <div class="mk-filter st-filter" ${mode === 'grow' ? 'hidden' : ''}><div class="pick-cats">${PICK_CATS.map(([k, t]) => `<button type="button" class="chip ${k === storeCat ? 'accent' : ''}" data-sc="${k}">${t}</button>`).join('')}</div>
-        <input type="search" class="st-q" placeholder="이름으로 찾기" aria-label="창고 물품 찾기" value="${esc(storeQ)}"></div>
+      ${listFilterHtml(storeFilt, { label: '창고 물품 찾기', cls: 'st-filter', hidden: mode === 'grow' })}
       <section data-list="put" ${mode === 'put' ? '' : 'hidden'}>
         <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·강화한 장비의 마지막 하나·임무 물품은 맡길 수 없습니다.</p>
         <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', putMax(k) <= 0 ? '<span class="bad">창고에 자리가 없습니다</span>' : equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
@@ -511,17 +489,7 @@ export async function renderStorage(box) {
       $$('[data-list]', box).forEach(l => l.hidden = l.dataset.list !== storeMode);
       $('.st-filter', box).hidden = storeMode === 'grow';
     });
-    const sq = $('.st-q', box);
-    const applyStore = () => {
-      storeQ = sq.value; const q = storeQ.trim().toLowerCase();
-      $$('[data-list="put"] li[data-mk-cat], [data-list="take"] li[data-mk-cat]', box).forEach(li => {
-        li.hidden = !((storeCat === 'all' || li.dataset.mkCat === storeCat) && (!q || li.dataset.mkName.includes(q)));
-      });
-    };
-    sq.addEventListener('input', e => { if (!e.isComposing) applyStore(); });
-    sq.addEventListener('compositionend', applyStore);
-    $$('[data-sc]', box).forEach(b => b.onclick = () => { storeCat = b.dataset.sc; $$('[data-sc]', box).forEach(x => x.classList.toggle('accent', x === b)); applyStore(); });
-    applyStore();
+    bindListFilter(box, storeFilt, () => $$('[data-list="put"] li[data-mk-cat], [data-list="take"] li[data-mk-cat]', box));
     const move = (b, fn, id) => guard(b, () => {
       const q = Math.floor(Number(b.closest('li').querySelector('input')?.value) || 0);
       return act(fn, { p_item: id, p_qty: q > 0 ? q : null });

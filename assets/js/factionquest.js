@@ -4,7 +4,7 @@ import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';
-import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
+import { pickRows, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter } from './views/itempick.js';
 
 const RANK_PERK = {
   night_office: r => `단서 발견 +${(r - 1) * 2}%`, red_moon_cult: r => `주는 피해 +${r - 1}%`, black_lotus: r => `희귀품 +${r - 1}% · 그림자 장부(상점 하루 판매 한도 +${(r - 1) * 300}전)`,
@@ -39,6 +39,8 @@ export function playDialogue(r, fid) {
 }
 
 const KIND = { title: ['칭호', 'flag'], frame: ['테두리', 'spark'], name_style: ['이름 색', 'chat'], mount: ['탈것', 'route'] };
+const VAULT_CATS = [['all', '전체'], ['item', '물품'], ...Object.entries(KIND).map(([k, [t]]) => [k, t])];
+const vaultFilt = { cat: 'all', q: '' };
 const kindChip = v => KIND[v.kind] ? chip(KIND[v.kind][0]) : v.slot && v.slot !== 'consumable' && v.slot !== 'material' && v.tier ? chip(`${nameOf(v.slot)} ${v.tier}단계`) : '';
 const PRECIOUS = new Set(['rare', 'epic', 'legendary']);
 let donPicks = {};
@@ -107,7 +109,8 @@ export function fqPopHtml(key, s) {
     return `${kp.vault ? `<p class="fq-keeper"><b>${esc(kp.vault.who || '')}</b> “${esc(kp.vault.line || '')}”</p>` : ''}
       <div class="chips">${chip(`공훈 ${fmt.num(s.merit)}`, 'ok')}</div>
       ${!s.join_done ? `<p class="hint">${icon('shield', 14)} 가입 퀘스트를 마치면 열립니다.</p>` : !s.at_home ? `<p class="hint">${icon('pin', 14)} ${esc((s.home_names || []).join('·'))}에서 열 수 있습니다.</p>` : ''}
-      <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}"><div>
+      ${listFilterHtml(vaultFilt, { cats: VAULT_CATS, have: new Set((s.vault || []).map(v => v.kind)), label: '비고 물품 찾기' })}
+      <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}" ${listRowAttrs(v.kind, v.name)}><div>
           <b>${v.kind === 'item' ? `<button type="button" class="linkish" data-fq-info="${esc(v.item_id)}">${esc(v.name)}</button>` : v.kind === 'name_style' ? `<span class="fq-ns ns-${esc(v.item_id.slice(3))}">${esc(v.name)}</span>` : esc(v.name)} ${kindChip(v)}</b>
           <small class="muted">공훈 ${fmt.num(v.price)}${v.locked ? ` · ${esc(ranks[v.rank_need - 1] || '')}부터` : ''}</small></div>
         ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? `<div class="fq-buy"><input type="number" min="1" max="99" value="1" id="fqq-${esc(v.item_id)}" aria-label="수량" ${vaultOpen && !v.locked ? '' : 'disabled'}><button class="btn small" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button></div>`
@@ -145,6 +148,7 @@ export function bindFaction(body, s) {
     guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); done(); return r; });
   });
   $$('[data-fq-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.fqInfo));
+  if ($('.fq-vault', body)) bindListFilter(body, vaultFilt, () => $$('.fq-vault > li', body));
   bindDonate(body, s, done);
   const tr = $('#fq-trial', body);
   if (tr) tr.onclick = () => guard(tr, async () => {

@@ -3,6 +3,28 @@ import { $, $$, esc, icon, fmt, nameOf, brief, rarTag, openLayer, toast } from '
 const PICK_GEAR = new Set(['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool', 'accessory', 'equipment']);
 export const PICK_CATS = [['all', '전체'], ['gear', '장비'], ['consumable', '소모품'], ['material', '재료'], ['etc', '기타']];
 export const pickCat = c => !c ? 'etc' : PICK_GEAR.has(c) ? 'gear' : c === 'consumable' ? 'consumable' : /material/.test(c) ? 'material' : 'etc';
+export const listRowAttrs = (cat, name) => `data-mk-cat="${esc(cat || 'etc')}" data-mk-name="${esc(String(name || '').toLowerCase())}"`;
+export const listFilterHtml = (st, { cats = PICK_CATS, have = null, label = '물품 찾기', cls = '', hidden = false } = {}) => {
+  const list = have ? cats.filter(([k]) => k === 'all' || have.has(k)) : cats;
+  if (have && st.cat !== 'all' && !have.has(st.cat)) st.cat = 'all';
+  return `<div class="mk-filter ${cls}" data-lf ${hidden ? 'hidden' : ''}><div class="pick-cats">${list.map(([k, t]) => `<button type="button" class="chip ${k === st.cat ? 'accent' : ''}" data-lfc="${k}">${t}</button>`).join('')}</div>
+    <input type="search" class="mk-q" placeholder="이름으로 찾기" aria-label="${esc(label)}" value="${esc(st.q || '')}"></div>`;
+};
+export function bindListFilter(root, st, rows, onShown) {
+  const bar = $('[data-lf]', root); if (!bar) return () => {};
+  const qi = $('.mk-q', bar);
+  const apply = () => {
+    st.q = qi.value; const q = st.q.trim().toLowerCase(); let shown = 0;
+    rows().forEach(li => { const ok = (st.cat === 'all' || li.dataset.mkCat === st.cat) && (!q || (li.dataset.mkName || '').includes(q)); li.hidden = !ok; if (ok) shown++; });
+    onShown?.(shown);
+  };
+  qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
+  qi.addEventListener('compositionend', apply);
+  qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
+  $$('[data-lfc]', bar).forEach(b => b.onclick = () => { st.cat = b.dataset.lfc; $$('[data-lfc]', bar).forEach(x => x.classList.toggle('accent', x === b)); apply(); });
+  apply();
+  return apply;
+}
 export const koSort = (a, b) => a.name.localeCompare(b.name, 'ko');
 const LIMIT = 200;
 
