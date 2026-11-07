@@ -52,7 +52,13 @@ export function makeRoom(N, defs) {
     let Wd = f.W, ps = f.parts.map(p => Object.assign({ z: 0, t: 'box' }, p));
     for (let i = 0; i < r; i++) { ps = ps.map(p => p.t === 'ell' ? Object.assign({}, p, { x: p.y, y: Wd - p.x }) : Object.assign({}, p, { x: p.y, y: Wd - p.x - p.w, w: p.d, d: p.w })); Wd = i % 2 ? f.W : f.D; }
     const key = p => p.t === 'ell' ? p.x + p.y : p.x + p.w / 2 + p.y + p.d / 2;
-    return ps.sort((a, b) => (key(a) - key(b)) || (a.z - b.z));
+    const e = 1e-6, on = (hi, lo) => hi.t !== 'ell' && lo.t !== 'ell' && Math.abs(hi.z - lo.z - lo.h) < .02 && hi.x >= lo.x - e && hi.x + hi.w <= lo.x + lo.w + e && hi.y >= lo.y - e && hi.y + hi.d <= lo.y + lo.d + e;
+    const out = ps.sort((a, b) => (key(a) - key(b)) || (a.z - b.z));
+    for (let n = 0, moved = true; moved && n < 64; n++) {
+      moved = false;
+      for (let i = 0; i < out.length && !moved; i++) for (let j = i + 1; j < out.length; j++) if (on(out[i], out[j])) { out.splice(j, 0, out.splice(i, 1)[0]); moved = true; break; }
+    }
+    return out;
   }
   function drawBox(gx, gy, p, z0) {
     const x = gx + p.x, y = gy + p.y, z = p.z * ZU + z0, h = Math.max(1, p.h * ZU);
