@@ -106,7 +106,9 @@ for jn, jk in JOBS.items():
     JOB_META[(jn, 32)] = f'jq3_{jk}'
 
 ITEMS = REF['items']; MONS = REF['monsters']; REGIONS = REF['regions']; RECIPES = REF['recipes']; SPOTS = REF['spots']; FISH = set(REF['fishing'])
-NPC_OLD = REF['npcs']
+NPC_OLD = dict(REF['npcs'])
+for _k, _n in json.load(open(os.path.join(HERE, '..', 'gen744', 'data', 'speakers.json'), encoding='utf-8')).items():
+    if not _k.startswith('q:'): NPC_OLD.setdefault(_n, _k)
 REGION_NAMES = sorted(REGIONS, key=len, reverse=True)
 ITEM_NAME = {v: k for k, v in ITEMS.items()}
 MON_NAME = {m[0]: k for k, v in MONS.items() for m in v}
