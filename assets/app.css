@@ -1272,7 +1272,8 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .end-lines { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 
 /* 상점: 항목마다 수량, 아래 단추로 한꺼번에 */
-.shop-list li { gap: 8px; } .shop-list li.off { opacity: .55; } .shop-list li.picked { border-left-color: var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--surface-2)); }
+.shop-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); } .shop-list > li:only-child { grid-column: 1 / -1; }
+.shop-list li { gap: 8px; flex-wrap: wrap; } .shop-list .item-main { flex: 1 1 150px; } .shop-list li > .stepper, .shop-list li > .row-act { margin-left: auto; } .shop-list li.off { opacity: .55; } .shop-list li.picked { border-left-color: var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--surface-2)); }
 .stepper { flex: none; display: flex; align-items: center; gap: 2px; }
 .stepper input { width: 52px !important; min-height: 36px !important; padding: 4px 6px !important; text-align: center; font-variant-numeric: tabular-nums; }
 .stepper [data-all] { min-height: 32px; padding: 0 8px; margin-left: 2px; }
@@ -1281,7 +1282,7 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .shop-foot { position: sticky; bottom: -20px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px -4px -20px; padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
   background: var(--surface); border-top: var(--bw) solid var(--line); font-size: calc(13px * var(--fz, 1)); }
 .shop-foot .btn { min-width: 120px; justify-content: center; }
-@media (max-width: 480px) { .shop-list li { flex-wrap: nowrap; } .shop-list .item-act { width: auto; } .shop-list li:has(> .row-act) { flex-wrap: wrap; } .shop-list .row-act { width: 100%; justify-content: flex-end; } .shop-list .row-act.st-act { align-items: flex-end; } }
+@media (max-width: 480px) { .shop-list .item-act { width: auto; } }
 /* 창고: 항목마다 수량 + 맡기기·꺼내기 */
 .row-act { flex: none; display: flex; align-items: center; gap: 6px; }
 .row-act.st-act { flex-direction: column; align-items: flex-end; } .st-btns { display: flex; gap: 6px; justify-content: flex-end; }
