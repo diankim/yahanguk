@@ -7,7 +7,7 @@ import { PICK_CATS, pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bun
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
 
-let shopMode = 'buy';
+let shopMode = 'buy', shopCat = 'all', shopQ = '';
 const carts = { shop: { buy: {}, sell: {} }, smithy: { buy: {}, sell: {} } };
 export async function renderShop(box) {
   box.innerHTML = loading();
@@ -34,6 +34,10 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
   for (const k of Object.keys(cart.sell)) if (!sellMax(k)) delete cart.sell[k];
   const space = bagLimit(c) - bagUsed(c);
   const sold = s.sell;
+  const catSet = new Set([...list.map(i => pickCat(i.category)), ...sellable.map(([k]) => pickCat(ref.get(k)?.category))]);
+  if (shopCat !== 'all' && !catSet.has(shopCat)) shopCat = 'all';
+  const filt = catSet.size > 1 || list.length + sellable.length > 8 ? `<div class="mk-filter shop-filter"><div class="pick-cats">${PICK_CATS.filter(([k]) => k === 'all' || catSet.has(k)).map(([k, t]) => `<button type="button" class="chip ${k === shopCat ? 'accent' : ''}" data-shc="${k}">${t}</button>`).join('')}</div>
+      <input type="search" class="mk-q shop-q" placeholder="이름으로 찾기" aria-label="물품 찾기" value="${esc(shopQ)}"></div>` : '';
   const stepper = (m, id, max) => `<div class="stepper" data-step="${m}:${esc(id)}">
       <button class="icon-btn" data-d="-1" aria-label="하나 빼기" ${max ? '' : 'disabled'}>${icon('minus', 16)}</button>
       <input type="number" inputmode="numeric" min="0" max="${max}" value="${cart[m][id] || 0}" aria-label="수량" ${max ? '' : 'disabled'}>
@@ -42,9 +46,10 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     <div class="shop-head"><div><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
       <span class="chip accent">${icon('coin', 14)} ${fmt.jeon(c?.gil ?? s.gil)}</span></div>
     ${sell ? `<div class="seg-mini" role="tablist"><button class="${mode === 'buy' ? 'on' : ''}" data-mode="buy">사기</button><button class="${mode === 'sell' ? 'on' : ''}" data-mode="sell">팔기</button></div>` : ''}
+    ${filt}
     <section data-list="buy" ${mode === 'buy' ? '' : 'hidden'}>
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
-      <ul class="item-list shop-list">${list.map(i => `<li>
+      <ul class="item-list shop-list">${list.map(i => `<li data-shop-cat="${pickCat(i.category)}" data-shop-name="${esc(i.item_name || nameOf(i.item_id))}">
         <div class="item-main"><b>${infoName(i.item_id, i.item_name, i.category)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
           <small>${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
         ${stepper('buy', i.item_id, 99)}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
@@ -54,7 +59,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
         <small>${sold.left > 0 ? `앞으로 ${fmt.jeon(sold.left)}까지 더 받을 수 있습니다` : '오늘 한도를 다 채웠습니다'}${sold.resets_at ? ` · ${fmt.time(sold.resets_at)}부터 차례로 풀립니다` : ''} · 한도는 24시간에 2,000전</small></div>`
         : '<p class="muted small">상점 판매 수익은 하루 한도가 있고 세금 5%가 붙습니다.</p>'}
       <p class="muted small">장비도 팔 수 있습니다. 잠근 물품·임무 물품·장착 중인 마지막 하나는 나오지 않습니다.</p>
-      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li>
+      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li data-shop-cat="${pickCat(ref.get(k)?.category)}" data-shop-name="${esc(nameOf(k))}">
         <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입${equipped.has(k) ? ' · 장착 중 하나는 남김' : ''}</small>${descOf.get(k) ? `<small class="brief">${esc(brief(descOf.get(k)))}</small>` : ''}</div>
         ${stepper('sell', k, sellMax(k))}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
     </section>` : ''}
@@ -70,6 +75,14 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     if (m === 'buy' && sum > gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
     if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘는 몫은 값을 받지 못하고 버려집니다</span>`;
   };
+  const applyFilt = () => {
+    const q = shopQ.trim();
+    $$('[data-shop-cat]', box).forEach(li => { li.hidden = !((shopCat === 'all' || li.dataset.shopCat === shopCat) && (!q || li.dataset.shopName.includes(q))); });
+  };
+  $$('[data-shc]', box).forEach(b => b.onclick = () => { shopCat = b.dataset.shc; $$('[data-shc]', box).forEach(x => x.classList.toggle('accent', x === b)); applyFilt(); });
+  const sq = $('.shop-q', box);
+  if (sq) { sq.addEventListener('input', e => { if (e.isComposing) return; shopQ = sq.value; applyFilt(); }); sq.addEventListener('compositionend', () => { shopQ = sq.value; applyFilt(); }); sq.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sq.blur(); } }); }
+  applyFilt();
   $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
     shopMode = b.dataset.mode;
     $$('.seg-mini button[data-mode]', box).forEach(x => x.classList.toggle('on', x === b));

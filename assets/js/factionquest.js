@@ -19,10 +19,10 @@ export function playDialogue(r, fid) {
   if (!lines.length) return;
   const hue = factionColor(fid);
   let i = 0;
-  const m = openModal({ title: r.title || '세력', body: `<div class="dlg-box" tabindex="0" role="button" aria-label="다음 줄">
+  const m = openModal({ title: r.title || '세력', sticky: true, body: `<div class="dlg-box" tabindex="0" role="button" aria-label="다음 줄">
       <div class="dlg-plate" style="--fc:${hue}"></div><p class="dlg-text"></p>
       <div class="dlg-foot"><small class="dlg-count"></small><small class="muted">누르면 다음 줄</small></div></div>
-      <div class="dlg-end" hidden>${r.extra || ''}${r.rank_name ? `<p class="hint good">${icon('flag', 14)} 지금 등급 · <b>${esc(r.rank_name)}</b></p>` : ''}${r.reward ? `<p class="hint">${icon('bag', 14)} 받은 것 · ${esc(r.reward)}</p>` : ''}<button class="btn primary" data-dlg-close>닫기</button></div>` });
+      <div class="dlg-end" hidden>${r.extra || ''}${r.rank_name ? `<p class="hint good">${icon('flag', 14)} 지금 등급 · <b>${esc(r.rank_name)}</b></p>` : ''}${r.reward ? `<p class="hint">${icon('bag', 14)} 받은 것 · ${esc(r.reward)}</p>` : ''}${r.again ? `<p class="muted small">${esc(r.again)}</p>` : ''}<button class="btn primary" data-dlg-close>닫기</button></div>` });
   const box = $('.dlg-box', m), plate = $('.dlg-plate', m), text = $('.dlg-text', m), cnt = $('.dlg-count', m), end = $('.dlg-end', m);
   const show = () => {
     const l = lines[i], who = l.s ? (r.cast?.[l.s]?.name || '') : '';

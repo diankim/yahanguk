@@ -402,7 +402,7 @@ function unlockPage() {
 }
 export function scrollAfterModal(y, force = false) { if (modalY != null) modalY = y; else if (window.scrollY < y - 2 || (force && Math.abs(window.scrollY - y) > 2)) window.scrollTo(0, y); }
 const focusIn = (el) => { try { el?.focus({ preventScroll: true }); } catch { el?.focus(); } };
-export function openModal({ title, body, wide = false, onClose } = {}) {
+export function openModal({ title, body, wide = false, onClose, sticky = false } = {}) {
   closeModal();
   const el = h(`<div class="modal-backdrop" id="modal"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="닫기">${icon('close')}</button></header>
@@ -410,7 +410,7 @@ export function openModal({ title, body, wide = false, onClose } = {}) {
   const content = typeof body === 'string' ? h(`<div>${body}</div>`) : body;
   $('.modal-body', el).append(content);
   let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
-  el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]')) closeModal(); });
+  el.addEventListener('click', e => { if ((!sticky && e.target === el && downOn === el) || e.target.closest('[data-close]')) closeModal(); });
   document.addEventListener('keydown', escClose);
   el._onClose = onClose;
   document.body.append(el);
