@@ -19,7 +19,7 @@ META = {
     '잠꾸러기 천문관': ('sq110_sleepy_astronomer', 20, 'white_tower', '제작', '별을 세다 꼭 아흔아홉에서 잠드는 천문관'),
     '뿌리 아래 사는 사람들': ('sq110_root_folk', 21, 'under_root', '전투', '이름을 맡긴 광부 가족에게 지맥포식자가 다가온다'),
     '붉은 제단의 가짜 신탁': ('sq110_false_oracle', 22, 'crimson_altar', '전투', '신탁을 꾸며 공물을 거두던 사제 앞에 진짜 원령이 나타난다'),
-    '소금 갈매기 혼례': ('sq110_gull_wedding', 23, 'tide_gate', '채집', '갑문 꼭대기 갈매기 둥지 때문에 갑문이 안 닫힌다'),
+    '소금 갈매기 혼례': ('sq110_gull_wedding', 24, 'tide_gate', '채집', '갑문 꼭대기 갈매기 둥지 때문에 갑문이 안 닫힌다'),
     '밀물 도르래': ('sq110_tide_pulley', 24, 'tide_gate', '제작', '은퇴하는 갑문 목수와 그 자리를 이을 손녀'),
     '관성대 요리 겨루기': ('sq110_star_cookoff', 25, 'star_observatory', '제작', '별빛구이 원조를 두고 다투는 두 관측관'),
     '울음 새는 거울': ('sq110_weeping_mirror', 26, 'seal_vault', '전투', '밤마다 다른 봉인관의 얼굴로 우는 압수물 거울'),
@@ -37,6 +37,13 @@ META = {
     '전당포 거미의 장부': ('sq110_pawn_spider', 37, 'moonless_market', '제작', '맡은 물건을 돌려주기 싫은 전당포 거미'),
     '귀허 진주 낚싯대': ('sq110_pearl_rod', 38, 'gwiheo_core', '제작', '마지막으로 귀허에 줄을 드리우고 싶은 노인'),
     '돌아오는 파도': ('sq110_returning_wave', 39, 'gwiheo_core', '전투', '귀허에서는 떠난 것이 파도가 되어 돌아온다'),
+}
+CHAIN = {
+    '아버지의 등짐': ('cq110_pack_1', 14, 'nine_lighthouse', '외상 장부를 멘 등짐장수 오누이가 꺼진 등대를 찾아온다', []),
+    '옥에 갇힌 외상값': ('cq110_pack_2', 19, 'old_prison', '외상을 진 사람이 옥사에서 옥귀가 되어 있다', ['cq110_pack_1']),
+    '받지 말 것': ('cq110_pack_3', 24, 'tide_gate', '장부 한 줄에 아버지 글씨로 「받지 말 것」', ['cq110_pack_2']),
+    '아버지가 마지막으로 판 것': ('cq110_pack_4', 29, 'black_tide_rift', '아버지의 마지막 흔적이 균열로 이어진다', ['cq110_pack_3']),
+    '이름을 사러 온 손님': ('cq110_pack_5', 33, 'ash_reeds', '반요촌에 이름을 잃어 가는 등짐장수가 있다', ['cq110_pack_4', 'mq_nine_gates']),
 }
 JOB_META = {}
 for jn, jk in JOBS.items():
@@ -126,6 +133,9 @@ def parse_files(paths):
                     parts = [x.strip() for x in head.split('·')]
                     reg = region_of(head.split('」', 1)[1]) or None
                     cur = dict(id=qid, title=title, L=L, region=reg, cat=f'직업·{job}', job=JOBS[job], summary='', npcs={}, scenes=[])
+                elif title in CHAIN:
+                    qid, L, reg, summ, aft = CHAIN[title]
+                    cur = dict(id=qid, title=title, L=L, region=reg, cat='연계·아버지의 등짐', job=None, summary=summ, npcs={}, scenes=[], after=aft)
                 elif title in META:
                     qid, L, reg, cat, summ = META[title]
                     cur = dict(id=qid, title=title, L=L, region=reg, cat=f"{cat}·{REGION_NAME.get(reg, reg)}", job=None, summary=summ, npcs={}, scenes=[])
@@ -220,10 +230,10 @@ def build(quests):
         L = q['L']; tot = round(0.4 * xp_need(L))
         task_steps = [k for k, st in enumerate(steps) if st[2].get('tasks') or st[2].get('give')]
         per = tot // max(1, len(task_steps))
-        after = []
+        after = list(q.get('after', []))
         if q['job']:
             after = [f"jq_{q['job']}"] if L < 30 else [f"jq2_{q['job']}"]
-        if q['region'] in ISLAND or L >= 31: after.append('mq_nine_gates')
+        if (q['region'] in ISLAND or L >= 31) and 'mq_nine_gates' not in after: after.append('mq_nine_gates')
         if not q['summary']: q['summary'] = q['title']
         w(f"""insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
 values ({T(q['id'])}, 'side', {T(q['cat'])}, {T(q['title'])}, {T(q['summary'])}, {T(q['region'])}, {L}, {T('{' + ','.join(after) + '}')}::text[], null, {1100 + i}, '[]'::jsonb, true, {T(q['job'])}, null)
@@ -241,10 +251,10 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
     return '\n'.join(out) + '\n'
 
 if __name__ == '__main__':
-    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md') if os.path.exists(os.path.join(HERE, f))]
+    files = [os.path.join(HERE, f) for f in ('plan.md', 'script_a.md', 'script_b.md', 'script_c.md', 'script_d.md', 'script_e.md') if os.path.exists(os.path.join(HERE, f))]
     qs = parse_files(files)
     sql = build(qs)
-    missing = [t for t in META if t not in {q['title'] for q in qs}]
+    missing = [t for t in list(META) + list(CHAIN) if t not in {q['title'] for q in qs}]
     if missing: print('대본 없음:', ', '.join(missing))
     if errors:
         print('\n'.join(errors)); sys.exit(1)
