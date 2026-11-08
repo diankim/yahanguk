@@ -798,6 +798,7 @@ const S = [
       <li>${GWIRYEONG.hold}</li>
       <li>${GWIRYEONG.supply}</li>
       <li>${GWIRYEONG.trade}</li>
+      <li>${GWIRYEONG.wither}</li>
     </ul>
     <h4>휴식</h4>
     <ul>

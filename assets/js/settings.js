@@ -151,6 +151,7 @@ function noteActs(n) {
   if ((n.kind === 'raid_notice' || n.kind === 'raid_result') && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">보기</button>`;
   if (n.kind === 'raid_vote' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">결전 화면에서 답하기</button>`;
   if (n.kind === 'guide' && n.payload?.tip === 'ch1' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">정청 위치 보기</button>`;
+  if (n.kind === 'guide' && n.payload?.tip === 'gwiryeong') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="bag/items">가방 보기</button>`;
   if (n.kind === 'guide' && n.payload?.tip === 'erosion') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="char/status">상태 보기</button>`;
   if (n.kind === 'yohwa' || n.kind === 'erosion_warn') return `<a class="btn primary small" href="#/char" data-pop-close>상태 보기</a>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;

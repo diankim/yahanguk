@@ -48,7 +48,7 @@ export const GAMEDATA = {
   "questXp": {"mid":6,"band":[[1,25],[6,40],[11,40],[16,75],[21,90],[26,75],[31,100]],"grace":3,"low_pct":20,"mid_pct":50},
   "factionSpread": {"steps":[[0,100],[1,75],[2,55],[3,40],[4,25]],"home_pct":150,"boost_max":2.5,"person_cap":60,"region_cap":40},
   "busy": {"idle":{"name":"자율 활동","after":"자율 활동을 마치거나 그만둔 뒤에 하세요."},"self":"{name} 중에는 {what}을(를) 할 수 없습니다. {after}","what":"이 일","other":"그 동료는 지금 {name} 중입니다.","downed":{"name":"전투불능","after":"구조를 받거나 구조대를 부른 뒤에 하세요."},"travel":{"name":"이동","after":"도착한 뒤에 하세요."},"expedition":{"name":"원정","after":"원정에서 돌아온 뒤에 하세요."}},
-  "gwiryeong": {"hold":1,"cap_div":2,"party_mul":2,"yohwa_mul":3,"cooldown_h":72,"window_days":3},
+  "gwiryeong": {"hold":1,"warn_h":24,"cap_div":2,"wither_h":72,"party_mul":2,"yohwa_mul":3,"cooldown_h":72,"window_days":3},
   "contrib": {"deal":0.6,"heal":0.1,"hold":0.2,"boost":0.1,"press":1,"result":0.2,"eff_cap":2,"heal_need":0.25,"boost_need":0.1},
   "shadow": {"gil_lv":20,"hp_min":9000,"hp_mul":350,"pow_hi":1.5,"pow_lo":0.75,"dmg_mul":1.4,"stay_full":0.5,"charge_mul":5},
   "coopRules": {"all_pow":0.5,"all_full":4,"sure_crit":2,"expose_per":4},
