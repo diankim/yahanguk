@@ -11,6 +11,7 @@ ACCOUNT_TABLES = {
     'world_pfight_members', 'world_raid_members', 'world_report_rewards', 'world_shop_buy_caps', 'world_staff',
     'world_tourney_entrants', 'world_travel_history', 'world_ui_prefs', 'world_wedding_guests', 'world_whisper_reads',
 }
+UNUSED_OK = {'pet_token'}
 UNMUTABLE_NOTES = {'bug_reply', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'guide'}
 ANON_OK = {'world_app_version'}
 NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js'}
@@ -27,6 +28,12 @@ where public.world_notify_group(k) is null""",
 where prosecdef and has_function_privilege('anon', p.oid, 'execute')""",
     'callable': """select coalesce(json_agg(proname), '[]') from pg_proc p join pg_namespace n on n.oid = p.pronamespace and nspname = 'public'
 where proname like 'world\\_%' and has_function_privilege('authenticated', p.oid, 'execute')""",
+    'unused': """select coalesce(json_agg(i.item_id order by i.item_id), '[]') from public.world_item_catalog i
+where (i.category = 'material' or exists (select 1 from public.world_fish_species f where f.fish_id = i.item_id)) and i.base_item_id is null
+  and not exists (select 1 from public.world_crafting_recipes r where r.ingredients ? i.item_id)""",
+    'tool_gaps': """select coalesce(json_agg(line order by line), '[]') from (select l.line, min(c.tier) lo, max(c.tier) hi, count(distinct c.tier) n
+  from public.world_tool_lines l join public.world_item_catalog c on c.item_id = l.item_id group by l.line) x where n < hi - lo + 1""",
+    'bait': """select coalesce(json_agg(t order by t), '[]') from (select t from public.world_fish_species s, unnest(s.bait_for) t group by t having count(*) < 3) x""",
     'search_path': """select coalesce(json_agg(proname order by proname), '[]') from pg_proc p join pg_namespace n on n.oid = p.pronamespace and nspname = 'public'
 where prosecdef and proname like 'world\\_%' and not exists (select 1 from unnest(coalesce(proconfig, '{}')) c where c like 'search_path=%')""",
 }
@@ -82,6 +89,13 @@ def db_checks(run):
     callable_ = set(json.loads(run(SQL['callable'])))
     for f in sorted(rpc_names() - callable_):
         out.append(('권한', f, '화면이 부르는데 authenticated 실행 권한 없음(또는 함수 없음)'))
+    for i in json.loads(run(SQL['unused'])):
+        if i not in UNUSED_OK:
+            out.append(('제작 소모처', i, '재료·어종인데 어느 제작법에도 안 쓰임'))
+    for l in json.loads(run(SQL['tool_gaps'])):
+        out.append(('도구 사슬', l, 'world_tool_lines 단계가 중간에 빠짐'))
+    for t in json.loads(run(SQL['bait'])):
+        out.append(('명어 미끼', t, '미끼가 되는 물고기가 셋보다 적음'))
     for f in json.loads(run(SQL['search_path'])):
         out.append(('권한', f, 'security definer인데 search_path 고정 없음'))
     return out

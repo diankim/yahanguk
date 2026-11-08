@@ -178,6 +178,8 @@
 
 ## 구현 전에 묶을 것(관리할 때 두세 번 일하지 않게)
 
+진행(1.1.1g 묶음, 11/8): 1 빈약한 안전지대 = world_weak_safe_rules·world_weak_safe(화면 gamedata weakSafe) 끝 · 2 영역 열림 = world_domain_rules·world_domain_open·world_domain_shut 끝(묵적록은 규칙에 open_quest 'gq_5' 한 줄) · 3 영역 규칙 = 순응·희귀 전리품·그림자는 world_domain_rules 깃발로 끝, 이름 흐림 효과 키·상태판 이름은 묵적록 때 같은 규칙에 · 4 낚시 수치 = world_fish_rules 끝(명어 무게는 묵적록 때 weight에 한 칸) · 5 미끼 칸 world_fish_species.bait_for 만듦 · 6 점검 도구 셋 끝(첫 점검에서 제작법에 안 쓰이던 요수 송곳니를 찾아 3단계 요수 뼈 식칼 재료로).
+
 새 영역·안전지대·낚시를 하나 더 붙이기 전에, 지금 따로 적혀 있는 것들을 한 곳으로 모은다.
 
 1. 빈약한 안전지대: 반요촌이 이름(banyo_village)으로 박힌 곳 — 서버 world_guard_action_context·world_map_snapshot·world_tourney_ensure·world_ucomm_board(나머지는 world_banyo_here를 씀), 화면 home.js town·item.js stash. → 지역 표에 「빈약한 안전지대」 표시 한 칸(또는 규칙 함수 world_weak_safe_rules)과 도우미 world_weak_safe(지역) 하나로 바꾸고, 화면은 지도 정보의 그 표시를 읽는다. 그러면 묵창 나루는 표시만 켜면 된다.

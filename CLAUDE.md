@@ -36,7 +36,7 @@
 
 ### 3.3 안전지대
 
-10곳: 본부 정청·본부 객사·백등 야시장·구름나루·백골 장터·잔불촌·철벽 고찰·십삼문 암시장·무극 관성대·반요촌(빈약한 안전지대, §3.5). 서버가 강제한다:
+10곳: 본부 정청·본부 객사·백등 야시장·구름나루·백골 장터·잔불촌·철벽 고찰·십삼문 암시장·무극 관성대·반요촌(빈약한 안전지대, §3.5 — 목록은 world_weak_safe_rules 한 곳, 판정 world_weak_safe(지역)·world_banyo_here(uid), 화면 rules.js weakSafe ← gamedata weakSafe). 서버가 강제한다:
 - 안전지대에서는 요괴 수색·전투·원정 불가.
 - 상점과 거래소는 안전지대에만.
 - 현장 화면에는 전투 대신 상점·대장간·거래소·창고(·마구간).
@@ -65,7 +65,7 @@
 ### 3.5 귀허도
 
 - 영역 gwiheo: 반요촌(안전지대 Lv30, 상점 banyo_shop)·잿빛 갈대숲 Lv30·거꾸로 선 사당 Lv33·달 없는 저잣거리 Lv36·귀허 Lv38(위험도 10, 반요촌 8 — world_map_regions.danger_level 상한 10). 구중 봉연에서 이어진다. 생성기 supabase/gen70/(data_island.py·data_gaiden.py·funcs_island.sql·funcs_gw.sql·g_qol.sql·gen.py → migrations/20261101000000_world_7_0_0.sql).
-- 열림 world_gwiheo_open(uid) = 10장(nine_gates) 마침 또는 world_staff. 그 전에는 world_map_snapshot이 섬 지역과 그리로 가는 travel_from을 숨기고 world_travel_route·world_travel_region·동승(world_travel_party_invite_v2·respond_v2)이 막는다. 봉연의 그림자는 섬에 안 나온다.
+- 영역 규칙 world_domain_rules() 한 곳(1.1.1g, 영역 → 이름·열림 조건 open_chapter/open_quest·요기 순응 acclimate·봉연 그림자 안 나옴 no_shadow·토벌 희귀 전리품 rare): 열림 world_domain_open(uid, 영역)(world_staff는 늘, 규칙 없는 영역은 늘 열림, world_gwiheo_open은 이것을 부르는 한 줄), 지도는 world_domain_shut()(내게 닫힌 영역), 깃발 world_domain_flag(영역, 키), 희귀 전리품 world_domain_rare(지역). 귀허도 = 10장(nine_gates) 마침. 그 전에는 world_map_snapshot이 섬 지역과 그리로 가는 travel_from을 숨기고 world_travel_route·world_travel_region·동승(world_travel_party_invite_v2·respond_v2)이 막는다. 봉연의 그림자는 섬에 안 나온다.
 - 섬 규칙: world_island_effect 침식 보정 +60%, 섬에서는 world_yohwa_tick이 단계를 넘기지 않고 10분 미룸, 섬 토벌 희귀 전리품 반요 비늘(banyo_scale). 요기 순응: world_erosion_effect가 섬(침식 30 이상일 때만 world_region_at으로 판정)에서 침식 불이익을 절반(회복 −8/−12/−18·받는 피해 +5/+10·조우 +10)으로, 주는 피해를 위험 +4·붕괴 직전 +8로 바꾸고, world_combat_stats의 침식 공격력 불이익(mind)을 없앤다(world_on_island). 정신 40·20 아래 불이익·희귀품·단서 덤·정신 −1·100 정신 0·요화는 그대로. 화면 character.js erosionNote(ISLAND)·guide.js.
 - 반요촌: 거래소(world_guard_action_context)·창고(world_storage_check)·마구간 없음, 제작은 창고 재료를 안 씀(world_craft_item, bag.js 재료 수·「전부」도). 상점은 회차마다 4가지 이상·귀허 부적은 늘, 사람마다 품목별 하루 개수(world_shop_catalog.daily_cap·world_shop_buy_caps), 되팔기·판매 한도 절반, 대장간은 월철 주괴·정련 숯만, 수리비 ×3(world_repair_mult). home.js town이 거래소·창고 칸을 숨김.
 - 재료 8(갈대 영사·거꾸로 향목·망각 수정·무월 비단·귀허 흑철·반요 비늘·요인 혈정·귀허 진주), 소모품 귀허 부적(거래 불가, 보스 입장)·반요 고약·망각 향, 6단계 장비 33(Lv32, 반요촌 제작, world_gear_drops 31~40).
@@ -303,7 +303,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 낚시터 24곳: 강(백지교·구름나루)/늪(천엽 연화늪·폐쇄된 연화원·잿빛 갈대숲)/바다(재의 해안·구등대 군도·염등촌·만조의 갑문)/호수(천경호·수경루·설피골·유리협곡 월영 유리못)/깊은 물(용잠 수궁)/수로(구룡 폐수로·침수된 구시가지)/심연(흑조 균열·구중 봉연·귀허) + 바다 낚시터 다섯(십삼문 밀수 부두·빙혼곡 얼음 해안·주혈 광산 폐선창·월식성 바위 해안·관성대 별빛 벼랑). 풍경이 물가(water)인 지역에는 낚시터를 둔다.
 - 낚싯대를 가방에 두고 탐색력 1로 20초마다(낚시 24단계 「재빠른 챔질」 15초 — 간격은 world_fish_gap 하나, world_fish·world_fish_spot.gap → home.js 「n초마다」, 1.0.4h 제보 30). 원정·전투·이동 중 불가.
-- 어종 50종(서식지·희귀도·시간대·날씨). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
+- 어종 50종(서식지·희귀도·시간대·날씨). 희귀도 무게(범품 60·양품 25·진품 9·명품 3·신품 0.6, 진품 이상은 희귀 보정을 곱함)·시간대/날씨 맞음 ×3·어긋남 ×0.3(「물때 읽기」 0.6)은 world_fish_rules 한 곳(→ gamedata fishRules). 미끼 칸 world_fish_species.bait_for(그 물고기가 미끼가 되는 명어 목록, 묵적록부터). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
 - 낚시 칭호 11(바다 sea_angler·tide_reader·nine_harbors·sea_dragon 포함): 입질·희귀 어종·크기 효과.
 - 요리: 손질한 생선으로(바다 요리 9 포함). 어죽(건량 1 + 생선살 1 → 2그릇) 탐색력 2(1.0.4o, 옛 4 — 건량 하나가 탐색력 8이 되던 고리) · 노정 건량 제작 5→3개(재료값 129전 ÷ 3 × 1.1 = 47 ≤ 시세 50). 우수품은 탐색력을 늘리지 않음(world_use_item v_hq는 체력·정신·영력·침식만, 화면 item.js USABLE 「탐색력은 같음」). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
 
@@ -720,7 +720,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 테스트 기준
 
-- 배포 전 점검 tools/check/precheck.py(1.0.4n): 이름 검사(eslint no-undef 등 — 지운 변수를 다른 곳이 계속 쓰면 그 화면 단추가 모두 멈춤, 1.1.0d 제보 57)·가져오기 검사(import한 이름이 그 파일에서 export되는지 — 틀리면 화면 전체가 안 뜸, node --check는 둘 다 못 잡음)·화면(`_hq` 직접 처리·행동 이름 정규식이 changes.js 밖·서버 문구 읽기·modulepreload 빠짐·`#` 선택자에 값을 그대로 넣음 — 물품 id에 쌍점이 있어(ns:1027) 오류로 멈춘 적이 있어 늘 CSS.escape, 제보 44)과 DB(--dsn=…: 캐릭터 정리 빠진 표·갈래 없는 알림·로그인 없이 부르는 definer·화면이 부르는데 권한 없는 함수·search_path 없는 definer). 복제 DB는 권한이 운영과 달라 권한 점검은 --sql로 뽑은 질의를 운영에서 읽기로 돌린다. 배포마다 0건 확인.
+- 배포 전 점검 tools/check/precheck.py(1.0.4n, 1.1.1g에 DB 점검 셋 더함 — 제작법에 안 쓰이는 재료·어종(UNUSED_OK 빼고)·world_tool_lines 단계 빠짐·미끼 셋 아래 명어): 이름 검사(eslint no-undef 등 — 지운 변수를 다른 곳이 계속 쓰면 그 화면 단추가 모두 멈춤, 1.1.0d 제보 57)·가져오기 검사(import한 이름이 그 파일에서 export되는지 — 틀리면 화면 전체가 안 뜸, node --check는 둘 다 못 잡음)·화면(`_hq` 직접 처리·행동 이름 정규식이 changes.js 밖·서버 문구 읽기·modulepreload 빠짐·`#` 선택자에 값을 그대로 넣음 — 물품 id에 쌍점이 있어(ns:1027) 오류로 멈춘 적이 있어 늘 CSS.escape, 제보 44)과 DB(--dsn=…: 캐릭터 정리 빠진 표·갈래 없는 알림·로그인 없이 부르는 definer·화면이 부르는데 권한 없는 함수·search_path 없는 definer). 복제 DB는 권한이 운영과 달라 권한 점검은 --sql로 뽑은 질의를 운영에서 읽기로 돌린다. 배포마다 0건 확인.
 - 수정 전 조사(2026-11-08 사용자 결정, 누락 방지): 고칠 함수·파일을 찾으면 먼저 연결된 전체를 본다 — 화면(그 RPC를 부르는 모든 곳·호출 전후 처리·다시 그리기·캐시 저장과 버리기(changes.js·common.js)·중복 실행·오류와 대비책·로그인/계정 전환 때 초기화), DB(함수와 그 안에서 부르는 함수·표·FK·인덱스·RLS·권한·definer/invoker·주인 역할·잠금·반환 구조), 실시간(구독·해제·권한 world_rt_can·재연결·폴링 대비·중복 구독), 게임(연결된 다른 기능·다른 화면·다른 조사원에게 보이는 것·동시 요청·실패/취소 때 정합성). 고치기 전에 ① 대상 파일·함수 ② 호출 관계 ③ DB 객체 ④ 영향받는 기능 ⑤ 예상 변경 ⑥ 회귀 위험 ⑦ 항목별 검증 방법을 적고, 중간에 새 의존이 나오면 범위를 다시 정하고, 끝나면 처음 목록과 실제 바뀐 파일(git diff --stat)을 대조한다. 못 본 파일·DB 객체는 추측하지 말고 미확인으로 적는다. RPC 입력 이름·자료형, 반환 JSON 필드·자료형·NULL·오류 방식은 기존 화면이 쓰는 경로와 맞춰 수정 전후 응답을 비교하고, 화면이 쓰는 필드를 지우거나 이름을 바꾸지 않는다.
 - 실제 화면 검증은 모든 수정의 필수 절차(2026-11-08 사용자 결정). 브라우저는 운영 Supabase에 붙으므로:
   1. 수정 전 배포 화면을 tools/check/screens.js(<이름>)로 찍어 둔다 — 데스크톱 1440×900·모바일 iPhone 13 세로·가로, 현장·지도·캐릭터·가방·일지·별채·동료·도움말·설정·패치노트(YH_VIEWS로 바꿈), 화면마다 가로 넘침, 콘솔 오류·경고·페이지 오류·요청 실패·HTTP 오류·RPC 이름과 상태(4xx·5xx는 응답 앞부분)를 report.json에. 수정 뒤 같은 조건으로 다시 찍고 tools/check/screens_diff.py(전, 후)로 화소 차이와 나란히 놓은 그림을 본다. 로컬 판은 두 번째 인자로 http://localhost:8765/.

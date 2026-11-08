@@ -6,7 +6,7 @@ import { face } from '../people.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe } from '../rules.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -189,7 +189,7 @@ function scene(s, traveling, downed) {
 }
 
 function town(s, roster) {
-  const r = s.region, banyo = r.region_id === 'banyo_village';
+  const r = s.region, banyo = weakSafe(r.region_id);
   const tiles = [
     ['shop', 'shop', r.shop_name || '상점', banyo ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
     ['smithy', 'hammer', '대장간', banyo ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],

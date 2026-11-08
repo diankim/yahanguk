@@ -56,6 +56,8 @@ export const GAMEDATA = {
   "idle": {"eff":0.35,"gain":12,"rate":{"rest":3,"research":10,"training":12,"maintenance":8}},
   "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"per_lv_low":40},
   "rate": {"fish_s":15,"raid_ms":1000,"gather_s":12,"battle_ms":1000,"search_ms":900},
+  "weakSafe": ["banyo_village"],
+  "fishRules": {"miss":0.3,"match":3,"weight":{"epic":3,"rare":9,"common":60,"uncommon":25,"legendary":0.6},"boosted":["rare","epic","legendary"],"miss_skill":0.6},
   "names": {
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}

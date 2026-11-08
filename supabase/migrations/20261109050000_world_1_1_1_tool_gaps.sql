@@ -1,5 +1,5 @@
 do $c$ begin
-  if (select count(*) from public.world_item_catalog where item_id in ('thunder_ore','star_sand','sky_feather','spirit_bark','steel_ingot','spirit_thread','reinforced_leather','cinnabar','spirit_glass','herbal_extract','lumber','moon_moss','lantern_oil','lt_hammer_4','lt_needle_4','lt_carve_4','lt_still_4','lt_cook_4','lt_sickle_4','lt_lantern_4','iron_ingot','sealing_ink','beast_bone','silk')) <> 24 then
+  if (select count(*) from public.world_item_catalog where item_id in ('thunder_ore','star_sand','sky_feather','spirit_bark','steel_ingot','spirit_thread','reinforced_leather','cinnabar','spirit_glass','herbal_extract','lumber','moon_moss','lantern_oil','lt_hammer_4','lt_needle_4','lt_carve_4','lt_still_4','lt_cook_4','lt_sickle_4','lt_lantern_4','iron_ingot','sealing_ink','beast_bone','silk','beast_fang')) <> 25 then
     raise exception '3·5단계 도구: 없는 물품이 있습니다';
   end if;
   if exists (select 1 from public.world_item_catalog where item_id in ('lt_hammer_5','lt_needle_5','lt_carve_5','lt_still_5','lt_cook_5','lt_sickle_5','lt_lantern_5','lt_hammer_3','lt_needle_3','lt_carve_3','lt_still_3','lt_cook_3','lt_sickle_3','lt_lantern_3')) then
@@ -60,7 +60,7 @@ values
   ('r_lt_needle_3', '요수 뼈 바늘 만들기', 'lt_needle_3', 1, '{"beast_bone":2,"spirit_thread":1,"silk":2}', null, 1, '구름나루', '직조·가죽 공예 제작 공구.', 13, null, 3, 0, null, 1, 'leatherwork'),
   ('r_lt_carve_3', '주사 새김칼 만들기', 'lt_carve_3', 1, '{"cinnabar":2,"sealing_ink":2,"iron_ingot":2}', null, 1, '철벽 고찰', '봉인 공예 제작 공구.', 13, null, 3, 0, null, 1, 'sealing'),
   ('r_lt_still_3', '영유리 증류관 만들기', 'lt_still_3', 1, '{"spirit_glass":2,"iron_ingot":2,"herbal_extract":1}', null, 1, '백등 야시장', '연금 제작 공구.', 13, null, 3, 0, null, 1, 'alchemy'),
-  ('r_lt_cook_3', '요수 뼈 식칼 만들기', 'lt_cook_3', 1, '{"beast_bone":2,"iron_ingot":2,"lumber":1}', null, 1, '백등 야시장', '요리 공구.', 13, null, 3, 0, null, 1, 'smithing'),
+  ('r_lt_cook_3', '요수 뼈 식칼 만들기', 'lt_cook_3', 1, '{"beast_bone":1,"beast_fang":1,"iron_ingot":2,"lumber":1}', null, 1, '백등 야시장', '요리 공구.', 13, null, 3, 0, null, 1, 'smithing'),
   ('r_lt_sickle_3', '주사 낫 만들기', 'lt_sickle_3', 1, '{"iron_ingot":2,"cinnabar":2,"moon_moss":3}', null, 1, '구름나루', '주사 광물로 날을 붉게 벼린 낫.', 10, null, 3, 0, null, 1, 'smithing'),
   ('r_lt_lantern_3', '어유 등 만들기', 'lt_lantern_3', 1, '{"lantern_oil":2,"iron_ingot":2,"spirit_glass":1}', null, 1, '철벽 고찰', '등롱 어유를 태우는 등.', 10, null, 3, 0, null, 1, 'artifice');
 

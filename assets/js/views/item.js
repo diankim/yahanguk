@@ -4,7 +4,7 @@ import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture, myHomeCounts } from '../housing/count.js';
-import { GWIRYEONG } from '../rules.js';
+import { GWIRYEONG, weakSafe } from '../rules.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -167,7 +167,7 @@ function draw(box, id, inv, prices, mode) {
   const both = k => Number(inv.inventory?.[k] || 0) + (isHq(k) ? 0 : Number(inv.inventory?.[hqOf(k)] || 0));
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
   const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
-  const stashOk = !!here?.is_safe_zone && here.region_id !== 'banyo_village' && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
+  const stashOk = !!here?.is_safe_zone && !weakSafe(here.region_id) && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[id]);
   const makes = (inv.recipes || []).filter(r => r.output === id);
   const block = it && GEAR.has(it.category) ? gearBlock(it, c) : '';
