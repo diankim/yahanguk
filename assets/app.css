@@ -147,6 +147,7 @@ textarea { resize: none; }
 .notice > div { display: grid; flex: 1; min-width: 0; }
 .notice span { font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .notice > .ico { color: var(--gold); }
+.notice.item-note { align-items: flex-start; margin: 8px 0 12px; border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 7%, var(--surface)); } .notice.item-note span + span { margin-top: 4px; } .notice.item-note b { color: var(--gold); }
 .notice.travel { border-color: color-mix(in srgb, var(--mp) 45%, var(--line)); }
 .notice.travel > .ico { color: var(--mp); }
 .notice.ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); } .notice.ok > .ico { color: var(--ok); }

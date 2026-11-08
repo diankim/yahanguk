@@ -4,6 +4,7 @@ import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture, myHomeCounts } from '../housing/count.js';
+import { GWIRYEONG } from '../rules.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -181,6 +182,7 @@ function draw(box, id, inv, prices, mode) {
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${isFurniture(id) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
+    ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
       <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${isHq(id) ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>

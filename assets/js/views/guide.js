@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG } from '../rules.js';
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -795,9 +795,9 @@ const S = [
     <ul>
       <li>위험도 10 지역에서는 채집·토벌·원정 확률이 ×1.5입니다.</li>
       <li>요화에 걸린 조사원은 위 확률이 ×${GD.gwiryeong.yohwa_mul}, 그 파티원은 ×${GD.gwiryeong.party_mul}입니다.</li>
-      <li>한 번 얻으면 ${GD.gwiryeong.cooldown_h}시간 동안은 다시 나오지 않고, 가방·창고에 ${GD.gwiryeong.hold}포기를 갖고 있는 동안에도 나오지 않습니다(쓰거나 넘기면 다시 찾을 수 있습니다).</li>
-      <li>서버 전체로 나오는 수는 지난 ${GD.gwiryeong.window_days}일 동안 요화에 걸린 조사원 수에 맞춰 정해집니다. 요화는 침식을 관리하면 피할 수 있는 위험이라, 귀령초가 걸린 사람보다 많이 쌓이지 않게 해 둔 것입니다.</li>
-      <li>거래할 수 있게 만든 것은 주고받으라는 뜻입니다. 당장 쓸 일이 없으면 요화로 곤란한 동료에게 넘겨 주세요.</li>
+      <li>${GWIRYEONG.hold}</li>
+      <li>${GWIRYEONG.supply}</li>
+      <li>${GWIRYEONG.trade}</li>
     </ul>
     <h4>휴식</h4>
     <ul>
