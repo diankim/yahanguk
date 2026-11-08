@@ -238,6 +238,6 @@ end $r$;
 
 select public.world_gwiryeong_wither_tick();
 
-update public.world_patch_notes set body = body || E'\n- 귀령초는 처음 찾은 때부터 3일이 지나면 시들어 사라집니다(남에게 넘겨도 처음 찾은 때부터 셉니다). 시들기 하루 전에 알려 드립니다. 요화로 곤란한 동료가 있으면 넘겨 주세요.'
+update public.world_patch_notes set body = body || E'\n- 귀령초는 처음 찾은 때부터 3일이 지나면 시들어 사라집니다(남에게 넘겨도 처음 찾은 때부터 셉니다). 시들기 하루 전에 알려 드립니다. 귀령초는 한 사람이 한 포기까지만 지닐 수 있어, 이미 가진 사람은 거래·서신으로도 더 받을 수 없습니다. 요화로 곤란한 동료가 있으면 넘겨 주세요.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261108230000' where key = 'db_version';
