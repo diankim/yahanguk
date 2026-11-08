@@ -187,7 +187,7 @@ function palette() {
     <div class="hs-pal-grid">${rows || '<p class="muted small">놓을 수 있는 것이 없습니다. 가구는 상점·제작·토벌·원정·칭호 보상으로 얻습니다.</p>'}</div></div>`;
 }
 function petBar(p) {
-  const me = snap.role === 'owner' || snap.role === 'partner', today = snap.pet_today || {}, m = p.mess || {};
+  const me = keeper(), today = snap.pet_today || {}, m = p.mess || {};
   const messTip = `${m.every_h || 8}시간마다 한 번 자리를 어지릅니다(최대 ${m.max || 3}번). 가득 찬 채 하루가 지나면 배탈이 나서 쓰다듬기·놀아 주기로 친밀도가 오르지 않습니다. 자리를 치운 뒤 「동무 약」을 먹이면 낫습니다.`;
   return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b>${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
     <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}${m.n ? '<button class="btn small" data-care="clean">치우기</button>' : ''}${me && m.sick && !m.n ? '<button class="btn small primary" data-care="cure">약 먹이기</button>' : ''}</span></div>`;
@@ -429,6 +429,7 @@ function petCare(btn, kind) {
     return { content: r.content };
   });
 }
+const keeper = () => snap.role === 'owner' || snap.role === 'partner';
 async function petAct(btn, kind) {
   if (kind === 'feed') return chooseFood(btn);
   return guard(btn, async () => {
@@ -448,13 +449,13 @@ function chooseFood(btn) {
 }
 function careLine(kind, r) {
   const p = snap.pet || {};
-  return petLine(kind, { name: p.nick || p.name || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r?.affinity ?? p.affinity, liked: r?.react === 'star', guest: snap.role !== 'owner', gain: r?.gain ?? 1, count: r?.counts?.[kind] || 0 });
+  return petLine(kind, { name: p.nick || p.name || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r?.affinity ?? p.affinity, liked: r?.react === 'star', guest: !keeper(), gain: r?.gain ?? 1, count: r?.counts?.[kind] || 0 });
 }
 function afterPet(r, kind) {
   fx.push({ key: r.react || 'heart', until: Date.now() + 1600 });
   if (pet) { pet.state = kind === 'play' ? 'play' : 'idle'; pet.wait = 12; pet.path = []; }
   if (snap.pet) { snap.pet.affinity = r.affinity; snap.pet.adult = r.adult; }
-  if (snap.role !== 'owner') { snap.pet_today = { ...(snap.pet_today || {}), [kind]: true }; }
+  if (!keeper()) { snap.pet_today = { ...(snap.pet_today || {}), [kind]: true }; }
   if (snap.pet) snap.pet.grown = r.grown;
   if (r.grew) { toast('꼬마 동무가 훌쩍 자랐습니다!', 'ok'); if (pet) pet.adult = !!r.adult; }
   if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }

@@ -23,6 +23,7 @@ export const AGILE = {
   flee: `달아나기 ${AG.flee_base}% + 기민×${AG.flee_k}(월궁 사수 +${AG.scout_flee}, 최대 ${AG.flee_cap}%)`,
   eva: `회피 ${AG.eva_base}% + 기민×${AG.eva_k}(월궁 사수 +${AG.scout_eva}, 최대 ${AG.eva_cap}%)`,
   hazard: `위험을 피할 확률 ${AG.hazard_base}% + 기민×${AG.hazard_k}(최대 ${AG.hazard_cap}%)`,
+  caps: `치명타율 최대 ${AG.crit_cap}% · 회피율 최대 ${AG.eva_cap}% · 달아날 확률 최대 ${AG.flee_cap}%. 능력치·장비·칭호를 더해도 이 위로는 오르지 않습니다`,
 };
 const QX = GD.questXp || { grace: 3, mid: 6, mid_pct: 50, low_pct: 20 };
 export const QUEST_XP = `퀘스트 경험치는 퀘스트 레벨에 맞춰 들어갑니다. 내 레벨이 퀘스트보다 ${QX.grace}까지 높으면 그대로, ${QX.grace + 1}~${QX.mid} 높으면 ${QX.mid_pct}%, ${QX.mid + 1} 이상 높으면 ${QX.low_pct}%만 받습니다(전·물품은 그대로)`;

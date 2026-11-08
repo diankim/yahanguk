@@ -435,6 +435,7 @@ export function openDirectTrade(to) {
 
 let storeMode = 'put';
 const STORE_PRICES = [1000, 2500, 5000, 10000];
+const storeSplit = () => { try { return localStorage.getItem('yh-bag-split') !== '0'; } catch { return true; } };
 export async function renderStorage(box) {
   box.innerHTML = loading();
   try {
@@ -452,11 +453,16 @@ export async function renderStorage(box) {
     const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
-    const row = (id, label, n, max, m, note) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
-        <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
-        ${ro && m === 'put' ? '' : `<div class="row-act st-act">${qtyHtml({ key: `${m}:${id}`, min: 1, max: m === 'take' ? n : max, value: max || n, all: true, small: true, off: m === 'put' && !max })}
+    const row = (id, label, n, max, m, note, part) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
+        <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${part ? `${part}번째 칸 · 묶음 ${stackOf(id)}개` : cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
+        ${ro && m === 'put' ? '' : `<div class="row-act st-act">${qtyHtml({ key: `${m}:${id}${part ? `:${part}` : ''}`, min: 1, max: m === 'take' ? n : max, value: max || n, all: true, small: true, off: m === 'put' && !max })}
           <div class="st-btns">${ro ? '' : `<button class="btn small ${m === 'put' ? '' : 'primary'}" data-here="창고 이용" data-${m}="${esc(id)}" ${max ? '' : 'disabled'}>${m === 'put' ? '맡기기' : '꺼내기'}</button>`}
           ${m === 'take' ? `<button class="btn small ghost" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>` : ''}</div></div>`}</li>`;
+    const takeRows = i => {
+      const st = stackOf(i.item_id), n = Number(i.qty) || 0, full = !ro && i.room <= 0 ? '<span class="bad">가방에 자리가 없습니다</span>' : '';
+      if (!storeSplit() || st <= 1 || n <= st) return [row(i.item_id, i.name, n, Math.min(n, i.room), 'take', full)];
+      return Array.from({ length: Math.ceil(n / st) }, (_, k) => { const q = Math.min(st, n - k * st); return row(i.item_id, i.name, q, Math.min(q, i.room), 'take', full, k + 1); });
+    };
     const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
     box.innerHTML = `
@@ -472,7 +478,8 @@ export async function renderStorage(box) {
       </section>
       <section data-list="take" ${mode === 'take' ? '' : 'hidden'}>
         ${ro ? '' : `<p class="muted small">가방 여유 ${Math.max(0, bagSpace)}칸 · 가방에 들어가는 만큼만 꺼냅니다.</p>`}
-        <ul class="item-list shop-list">${(s.items || []).map(i => row(i.item_id, i.name, i.qty, Math.min(i.qty, i.room), 'take', !ro && i.room <= 0 ? '<span class="bad">가방에 자리가 없습니다</span>' : '')).join('') || `<li>${empty('창고가 비어 있습니다.', 'chest')}</li>`}</ul>
+        <label class="check st-split" title="같은 물품을 묶음 크기만큼 한 칸씩 나눠 보입니다"><input type="checkbox" id="st-split" ${storeSplit() ? 'checked' : ''}><span>칸대로 나눠 보기</span></label>
+        <ul class="item-list shop-list">${(s.items || []).flatMap(i => takeRows(i)).join('') || `<li>${empty('창고가 비어 있습니다.', 'chest')}</li>`}</ul>
       </section>
       <section data-list="grow" ${mode === 'grow' ? '' : 'hidden'}>
         <ul class="spot-list">
@@ -496,6 +503,8 @@ export async function renderStorage(box) {
       return act(fn, { p_item: id, p_qty: q > 0 ? q : null });
     });
     bindQty(box);
+    const sp = $('#st-split', box);
+    if (sp) sp.onchange = () => { try { localStorage.setItem('yh-bag-split', sp.checked ? '1' : '0'); } catch {} keepScroll(box, () => renderStorage(box)); };
     $$('[data-put]', box).forEach(b => b.onclick = () => move(b, 'world_storage_put', b.dataset.put));
     $$('[data-take]', box).forEach(b => b.onclick = () => move(b, 'world_storage_take', b.dataset.take));
     $$('[data-toss]', box).forEach(b => b.onclick = async () => {
