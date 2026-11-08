@@ -78,16 +78,24 @@ function bindQuests(body) {
   });
 }
 
-let selCh = '', lastStory = null, lastSide = null;
+let selCh = '', lastStory = null, lastSide = null, arc = '';
+const MAIN_ARC = '본편';
+const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.']];
+const arcOf = q => fieldOf(q) === '외전' ? ((q.cat || '').split('·')[1] || '') : '';
 async function story(body, keep) {
   const [b, j, map] = keep && lastStory ? lastStory : (lastStory = await Promise.all([load('world_story_board'), journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
+  const ext = (j?.quests || []).filter(q => q.kind === 'side' && arcOf(q));
+  const arcs = [...ARCS.map(([n]) => n), ...new Set(ext.map(arcOf).filter(n => !ARCS.some(([a]) => a === n)))];
+  if (arc && !arcs.includes(arc)) arc = '';
+  const arcBar = `<div class="chips kind-chips arc-chips" role="group" aria-label="이야기"><button class="chip ${arc ? '' : 'on'}" data-arc="">${MAIN_ARC}</button>${arcs.map(n => { const l = ext.filter(q => arcOf(q) === n); return `<button class="chip ${arc === n ? 'on' : ''}" data-arc="${esc(n)}">${esc(n)}${l.length ? ` <small>${l.filter(q => q.status === 'done').length}/${l.length}</small>` : ''}</button>`; }).join('')}</div>`;
+  if (arc) { arcView(body, arcBar, ext.filter(q => arcOf(q) === arc), map); return; }
   const chapters = b?.chapters || [];
   const mains = new Map((j?.quests || []).filter(q => q.kind === 'main').map(q => [q.chapter_id, q]));
   if (!chapters.some(c => c.chapter_id === selCh && c.status !== 'locked'))
     selCh = (chapters.find(c => c.status === 'active') || [...chapters].reverse().find(c => c.status === 'done') || chapters[0])?.chapter_id || '';
   const ch = chapters.find(c => c.chapter_id === selCh);
   const doneN = chapters.filter(c => c.status === 'done').length;
-  body.innerHTML = `
+  body.innerHTML = `${arcBar}
     ${b?.all_done ? `<div class="notice safe">${icon('moon', 18)}<div><b>지금까지의 이야기를 모두 마쳤습니다</b><span>장을 눌러 지난 장면과 결말을 다시 읽을 수 있습니다. 보조 퀘스트와 의뢰도 계속 받을 수 있습니다.</span></div><button class="btn small" data-sub="side">보조 퀘스트</button></div>` : ''}
     <div class="chips">${chip(`마친 장 ${doneN}/${chapters.length}`, 'accent')}<span class="muted small">장을 누르면 아래에 펼쳐집니다</span></div>
     <ol class="chapter-line">${chapters.map(c => `<li class="${c.status} ${c.chapter_id === selCh ? 'sel' : ''}"><button data-ch="${esc(c.chapter_id)}" ${c.status === 'locked' ? 'disabled' : ''} aria-pressed="${c.chapter_id === selCh}">
@@ -96,6 +104,7 @@ async function story(body, keep) {
     ${chapters.filter(c => c.status === 'locked').length ? `<p class="muted small">잠긴 장 ${chapters.filter(c => c.status === 'locked').length}개 — 앞 장을 마치고 레벨이 되면 열립니다.</p>` : ''}
     ${regional(b?.regional)}`;
   $$('[data-ch]', body).forEach(x => x.onclick = () => { selCh = x.dataset.ch; story(body, true); });
+  bindArcs(body);
   $$('[data-combo]', body).forEach(x => x.onclick = () => guard(x, async () => {
     const r = await act('world_story_combine', { p_combo_id: x.dataset.combo });
     if (r?.epilogue?.lines?.length) (await import('../factionquest.js')).playDialogue({ title: r.epilogue.title, lines: r.epilogue.lines, cast: r.epilogue.cast,
@@ -104,6 +113,16 @@ async function story(body, keep) {
   }));
   const rs = $('#reg-submit', body); if (rs) rs.onclick = () => guard(rs, () => act('world_case_combine_regional'));
   $$('[data-sub]', body).forEach(x => x.onclick = () => { sub = x.dataset.sub; window.yahangGo('log', sub); });
+  bindQuests(body);
+}
+function bindArcs(body) { $$('[data-arc]', body).forEach(x => x.onclick = () => { arc = x.dataset.arc; story(body, true); }); }
+function arcView(body, bar, list, map) {
+  const lock = (ARCS.find(([n]) => n === arc) || [])[1] || '';
+  const sorted = [...list].sort((a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'));
+  body.innerHTML = `${bar}
+    ${sorted.length ? `<div class="chips">${chip(`마침 ${sorted.filter(q => q.status === 'done').length}/${sorted.length}`, 'accent')}<span class="muted small">앞 이야기를 마치면 다음 이야기가 이어서 열립니다</span></div>
+      <ul class="q-list">${sorted.map(q => sideItem(q, map, true)).join('')}</ul>` : empty(lock || '아직 열린 이야기가 없습니다.', 'scroll')}`;
+  bindArcs(body);
   bindQuests(body);
 }
 function chapterView(ch, q, map) {
@@ -137,7 +156,7 @@ function regional(r) {
     ${r?.submitted ? '' : `<button class="btn ${n >= 3 ? 'primary' : ''}" id="reg-submit" data-here="사건 보고" ${n >= 3 ? '' : 'disabled'}>${icon('scroll', 16)}<span>보고서 제출</span></button>`}`, { ico: 'map' });
 }
 
-const FIELDS = [['외전', 'scroll'], ['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye'], ['생활', 'home']];
+const FIELDS = [['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye'], ['생활', 'home']];
 const STATUS = [['', '전체'], ['active', '진행 중'], ['available', '받을 수 있음'], ['done', '마침'], ['locked', '레벨 부족']];
 const STATUS_N = { active: ['진행 중', 'accent'], available: ['받을 수 있음', 'ok'], done: ['마침', ''], locked: ['레벨 부족', 'bad'] };
 const SORTS = { level: (a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'),
@@ -149,7 +168,7 @@ let sField = '', sStatus = '', sSort = 'level';
 async function side(body, keep) {
   const [j, map] = keep && lastSide ? lastSide : (lastSide = await Promise.all([journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
   if (!j) { body.innerHTML = empty('보조 퀘스트 목록은 다음 서버 갱신 뒤에 열립니다. 지금은 현장의 퀘스트 칸에서 볼 수 있습니다.', 'flag'); return; }
-  const all = (j.quests || []).filter(q => q.kind === 'side');
+  const all = (j.quests || []).filter(q => q.kind === 'side' && !arcOf(q));
   const fields = [...FIELDS.filter(([f]) => all.some(q => fieldOf(q) === f)), ...[...new Set(all.map(fieldOf))].filter(f => !FIELDS.some(x => x[0] === f)).map(f => [f, 'flag'])];
   if (sField && !fields.some(([f]) => f === sField)) sField = '';
   const pass = q => (!sField || fieldOf(q) === sField) && (!sStatus || q.status === sStatus);
@@ -183,9 +202,9 @@ function nowLine(q) {
   const where = q.cur.ready ? `보고: ${(q.cur.at_names || []).join('·') || '의뢰인에게'}` : regs.length ? `할 곳: ${regs.slice(0, 3).join('·')}` : (q.cur.at_names || []).length ? `보고: ${q.cur.at_names.join('·')}` : '';
   return `<p class="q-now">${icon('chevron', 12)}<span><b>${q.cur.ready ? '보고하면 끝' : `장면 ${q.cur.step}`}</b> · ${esc(q.cur.goal || q.cur.title || '')}${where ? ` <small class="muted">(${esc(where)})</small>` : ''}</span></p>`;
 }
-function sideItem(q, map) {
+function sideItem(q, map, inArc) {
   const [sn, tone] = STATUS_N[q.status] || ['', ''];
-  const subCat = (q.cat || '').split('·')[1] || '';
+  const subCat = inArc ? '' : (q.cat || '').split('·')[1] || '';
   const where = `${icon('pin', 12)} ${esc(q.region_name || '')} · Lv.${q.min_level}${q.here ? ' · 지금 여기' : ''}`;
   return `<li class="q-item ${q.status} ${q.cur?.ready ? 'ready' : ''}"><details ${q.status === 'active' ? 'open' : ''}>
     <summary><header>${chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
