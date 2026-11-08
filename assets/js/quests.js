@@ -3,6 +3,7 @@ import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore } from './sources.js';
 import { TASK_ACTS, CHANGES, hit } from './changes.js';
+import { baseOf } from './hq.js';
 import { askPartySize, partyHere } from './views/fightui.js';
 
 const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
@@ -142,24 +143,36 @@ function setOpen(k, open) {
 
 let qbWatch = null;
 const HERE_KINDS = new Set(['win', 'gather', 'fish', 'search', 'clue']);
+const setOf = a => (a || []).length ? new Set(a) : null;
 function watchOf(b) {
-  const w = new Map(); let give = false;
-  const add = (k, regs) => { const cur = w.get(k); if (cur === null) return; w.set(k, regs && regs.length && HERE_KINDS.has(k) ? new Set([...(cur || []), ...regs]) : null); };
+  const res = [], give = new Set();
+  const add = (k, regs, t) => res.push({ k, re: TASK_ACTS[k] || CHANGES.boardOther, regs: HERE_KINDS.has(k) ? setOf(regs) : null, mn: setOf(t?.mn), items: setOf(t?.items) });
   for (const q of [...(b.active || []), ...(b.faction && !b.faction.locked ? [b.faction] : [])]) {
-    for (const t of q.tasks || []) if (t.cur < t.n) add(t.t, t.regions);
-    if ((q.give || []).length) give = true;
+    for (const t of q.tasks || []) if (t.cur < t.n) add(t.t, t.regions, t);
+    for (const g of q.give || []) give.add(g.item_id);
     if (q.clues) add('clue', q.clues.regions);
   }
-  const res = [...w].map(([k, regs]) => ({ re: TASK_ACTS[k] || CHANGES.boardOther, regs }));
   return { res, give, level: b.level, here: b.here_id };
 }
-const hits = (w, name) => w.res.some(({ re, regs }) => re.test(name) && (!regs || regs.has(w.here) || hit('boardAway', name)));
+const won = (name, data) => name === 'world_battle_action' && data?.ended === 'victory';
+function counts(t, name, data) {
+  if (name === 'world_battle_action') return t.k !== 'win' || (won(name, data) && (!t.mn || t.mn.has(data?.result?.monster)));
+  if (name === 'world_field_gather' && t.k === 'gather' && t.items && data?.item_id) return t.items.has(baseOf(data.item_id));
+  return true;
+}
+function gains(w, name, data) {
+  if (!w.give.size || !hit('boardItems', name)) return false;
+  if (name === 'world_battle_action') return won(name, data) && Object.keys(data?.result?.loot || {}).some(id => w.give.has(baseOf(id)));
+  if (name === 'world_field_gather' && data?.item_id) return w.give.has(baseOf(data.item_id));
+  return true;
+}
+const hits = (w, name, data) => w.res.some(t => t.re.test(name) && (!t.regs || t.regs.has(w.here) || hit('boardAway', name)) && counts(t, name, data));
 on('changed', ev => {
   const name = ev?.name || '';
   if (midBattle(ev) || !qbWatch) return;
   const w = qbWatch;
   if (hit('board', name) || (store.character && w.level != null && store.character.level !== w.level)
-    || hits(w, name) || (w.give && hit('boardItems', name))) invalidate('world_quest_board');
+    || hits(w, name, ev?.data) || gains(w, name, ev?.data)) invalidate('world_quest_board');
 });
 window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
 

@@ -33,9 +33,15 @@ let sortKey = 'tier', sortRev = false;
 try { const v = JSON.parse(localStorage.getItem('yh-bag-sort') || 'null'); if (v && SORTS[v.k]) { sortKey = v.k; sortRev = !!v.r; } } catch {}
 let splitView = true; try { splitView = localStorage.getItem('yh-bag-split') !== '0'; } catch {}
 const saveSort = () => { try { localStorage.setItem('yh-bag-sort', JSON.stringify({ k: sortKey, r: sortRev })); } catch {} };
-async function acquiredMap() {
-  try { const { data, error } = await db.from('world_item_acquired').select('item_id,acquired_at'); if (error) return new Map(); return new Map((data || []).map(r => [r.item_id, Date.parse(r.acquired_at) || 0])); }
-  catch { return new Map(); }
+let acqCache = null, acqInv = null, acqAt = 0;
+async function acquiredMap(inv) {
+  const now = Object.fromEntries(Object.entries(inv || {}).map(([id, n]) => [id, Number(n) || 0]));
+  const grew = !acqCache || !acqInv || Date.now() - acqAt > 600000 || Object.entries(now).some(([id, n]) => n > (acqInv[id] || 0));
+  acqInv = now;
+  if (!grew) return acqCache;
+  try { const { data, error } = await db.from('world_item_acquired').select('item_id,acquired_at'); if (error) { acqInv = null; return acqCache || new Map(); }
+    acqCache = new Map((data || []).map(r => [r.item_id, Date.parse(r.acquired_at) || 0])); acqAt = Date.now(); return acqCache; }
+  catch { acqInv = null; return acqCache || new Map(); }
 }
 function sorter(acq) {
   const byName = (a, b) => nameOf(a.id).localeCompare(nameOf(b.id), 'ko');
@@ -154,7 +160,7 @@ function renderKeep(body, html, sel) {
 
 async function items(body, inv, stg) {
   const stored = Object.fromEntries((stg?.items || []).map(i => [i.item_id, Number(i.qty) || 0]));
-  const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap() : Promise.resolve(new Map())]);
+  const [, acq] = await Promise.all([loadLocks(), sortKey === 'acquired' ? acquiredMap(inv.inventory) : Promise.resolve(new Map())]);
   const cmap = catalogMap(inv), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
     .map(([id, n]) => ({ id, n: Number(n), it: cmap.get(id) }))
