@@ -7,6 +7,7 @@ import { cardName } from './card.js';
 import { GAMEDATA } from '../gamedata.js';
 import { petLine } from '../housing/petlines.js';
 import { openGallery, pickDrawing, openViewer } from './drawings.js';
+import { idOf, placedCounts, rememberHome } from '../housing/count.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = GRADES;
@@ -16,7 +17,6 @@ const kindCap = g => snap?.kind_caps?.[g - 1] ?? KIND_CAP[g];
 const GATE = [['open', '활짝 엶', '누구나 구경'], ['friends', '벗에게만', '친구만 구경'], ['closed', '닫음', '나만 구경']];
 const FOODS = ['pet_food', 'treat_fish', 'treat_rice', 'treat_honey', 'treat_herb', 'treat_meat'];
 const PAL_TABS = [['floor', '바닥'], ['wall', '벽'], ['paper', '벽지'], ['ground', '바닥재']];
-const idOf = (kind, k) => (kind === 'paper' ? 'hp_' : kind === 'ground' ? 'hg_' : 'hf_') + k;
 const gradeOf = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.grade || 1;
 const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.name || nameOf(id);
 
@@ -36,6 +36,7 @@ async function reload() {
   try {
     const pre = store.houseSnap; store.houseSnap = null;
     snap = pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
+    if (!ownerArg || snap.role === 'owner') rememberHome(snap);
     if (!el) return;
     if (!snap.open) return drawClosed();
     resetState(); draw();
@@ -45,6 +46,7 @@ function resetState() {
   const cl = o => JSON.parse(JSON.stringify(o || []));
   state = { items: cl(snap.items), wall: cl(snap.wall), paper: snap.paper, ground: snap.ground };
   orig = counts(state); dirty = false; sel = null; pick = null;
+  if (snap.role === 'owner') rememberHome(snap);
   room = makeRoom(snap.size, DEFS);
   setupPet();
 }
@@ -65,13 +67,7 @@ function drawClosed() {
   $('#hs-book')?.addEventListener('click', () => openGallery());
 }
 
-function counts(st) {
-  const m = {};
-  const add = id => { m[id] = (m[id] || 0) + 1; };
-  st.items.forEach(i => add(idOf('fur', i.k))); st.wall.forEach(w => add(idOf('wall', w.k)));
-  if (st.paper) add(idOf('paper', st.paper)); if (st.ground) add(idOf('ground', st.ground));
-  return m;
-}
+const counts = placedCounts;
 const haveAll = id => (snap.bag?.[id] || 0) + (snap.store?.[id] || 0) + (orig[id] || 0);
 const left = id => haveAll(id) - (counts(state)[id] || 0);
 const dimsOf = it => { const f = FUR[it.k]; return (it.r || 0) % 2 ? [f.D, f.W] : [f.W, f.D]; };

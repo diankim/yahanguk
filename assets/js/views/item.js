@@ -3,6 +3,7 @@ import { loreBundle, rebirthScene } from '../lore.js';
 import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
+import { isFurniture, myHomeCounts } from '../housing/count.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -182,6 +183,7 @@ function draw(box, id, inv, prices, mode) {
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
       <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${isHq(id) ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
+      ${isFurniture(id) ? `<div data-home-have hidden><dt>별채</dt><dd></dd></div>` : ''}
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
@@ -220,6 +222,12 @@ function draw(box, id, inv, prices, mode) {
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   fillSources(box, id);
+  if (isFurniture(id)) myHomeCounts(rpc).then(h => {
+    const row = $('[data-home-have]', box); if (!row) return;
+    const placed = h.placed[id] || 0, stored = h.stored[id] || 0; if (!placed && !stored) return;
+    $('dd', row).textContent = [placed ? `놓은 것 ${fmt.num(placed)}개` : '', stored ? `곳간 ${fmt.num(stored)}개` : ''].filter(Boolean).join(' · ');
+    row.hidden = false;
+  }).catch(() => {});
   loreBundle().then(l => { const p = $('[data-lore]', box); if (p && l.items?.[id]) { p.textContent = l.items[id]; p.hidden = false; } });
   box.onclick = async e => {
     const r = e.target.closest('[data-recipe]'), mat = e.target.closest('[data-mat]'), d = e.target.closest('[data-do]');
