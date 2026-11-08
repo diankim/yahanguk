@@ -2,3 +2,6 @@ __pycache__/
 
 # 작업 공간(에이전트 worktree)
 .claude/
+
+# 화면 점검 스크린샷
+shots/
