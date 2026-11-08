@@ -35,7 +35,7 @@ as $function$
   ) x where q > 0 group by o
 $function$;
 revoke all on function public.world_gwiryeong_held() from public, anon, authenticated;
-grant execute on function public.world_gwiryeong_held() to service_role;
+grant execute on function public.world_gwiryeong_held() to service_role, fn_owner_field;
 
 create or replace function public.world_gwiryeong_plant_on_log()
  returns trigger
