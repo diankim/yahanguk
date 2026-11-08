@@ -119,7 +119,8 @@ export function clearFightNotes(kinds, key, id) {
   hit.forEach(n => rpc('world_mark_notification_read', { p_id: n.id }).catch(() => {}));
 }
 function drawDot() { const d = bell?.querySelector('.dot'); if (d) { d.hidden = !notes.length; d.textContent = notes.length > 9 ? '9+' : String(notes.length || ''); } }
-const byId = id => notes.find(n => String(n.id) === String(id));
+let pastNotes = [];
+const byId = id => notes.find(n => String(n.id) === String(id)) || pastNotes.find(n => String(n.id) === String(id));
 async function markRead(n) {
   if (!n) return;
   try { await rpc('world_mark_notification_read', { p_id: n.id }); } catch {}
@@ -160,7 +161,9 @@ function noteActs(n) {
   return '';
 }
 const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
-  yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney' };
+  yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
+  drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission' };
+const pastActs = n => { const a = noteActs(n); return /data-(invite|ride|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
 const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'fdown', 'letter', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
@@ -256,9 +259,10 @@ const pastWhen = t => { const d = new Date(t), o = { timeZone: 'Asia/Seoul' };
 async function drawPastNotes(box) {
   box.innerHTML = '<p class="muted small">불러오는 중…</p>';
   try {
-    const { data, error } = await db.from('world_notifications').select('id,title,content,created_at,read_at').not('read_at', 'is', null).order('created_at', { ascending: false }).limit(60);
+    const { data, error } = await db.from('world_notifications').select('id,kind,title,content,payload,created_at,read_at').not('read_at', 'is', null).order('created_at', { ascending: false }).limit(60);
     if (error) throw error;
-    box.innerHTML = (data || []).length ? data.map(n => `<article class="note-item past"><div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${pastWhen(n.created_at)}</time></div></article>`).join('')
+    pastNotes = data || [];
+    box.innerHTML = pastNotes.length ? pastNotes.map(n => { const a = pastActs(n); return `<article class="note-item past"><div><b>${esc(n.title || '알림')}</b><p>${esc(n.content || '')}</p><time>${pastWhen(n.created_at)}</time></div>${a ? `<div class="note-actions">${a}</div>` : ''}</article>`; }).join('')
       + '<p class="muted small note-keep">확인한 알림은 14일 동안 남습니다.</p>' : '<p class="muted">지난 알림이 없습니다.</p>';
   } catch { box.innerHTML = '<p class="muted">지난 알림을 불러오지 못했습니다.</p>'; }
 }
@@ -281,6 +285,7 @@ function openNotifications() {
     if (!notes.length && !body.querySelector('.note-item')) body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>';
   }
   const past = wrap.querySelector('.notes-past');
+  past.addEventListener('click', async e => { const a = e.target.closest(ACT_SEL); if (a) await runAct(a); });
   wrap.querySelector('.seg-mini').addEventListener('click', e => {
     const t = e.target.closest('[data-nt]'); if (!t) return;
     wrap.querySelectorAll('[data-nt]').forEach(x => x.classList.toggle('on', x === t));
