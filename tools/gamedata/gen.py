@@ -68,6 +68,9 @@ def build(dsn):
     d['shadow'] = q(dsn, "select world_shadow_rules()")
     d['coopRules'] = q(dsn, "select world_coop_rules()")
     d['expXp'] = q(dsn, "select world_expedition_xp_rules()")
+    d['idle'] = q(dsn, "select world_idle_rules()")
+    d['rescue'] = q(dsn, "select world_rescue_rules()")
+    d['rate'] = q(dsn, "select world_rate_rules()")
     d['names'] = q(dsn, "select world_name_rules()")
     d['jobSkills'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'desc', v ->> 'desc')) from jsonb_each(world_job_skill_rules()) e(k, v)")
     # 대세력: 가입 받는 곳·세력 안전지대·관계 기준값

@@ -250,7 +250,7 @@ function draw(box, id, inv, prices, mode) {
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
     if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
     if (k === 'dismantle') {
-      const di = (await rpc('world_dismantle_info').catch(() => ({})))?.[id];
+      const di = (await load('world_dismantle_info', undefined, { maxAge: 600000 }).catch(() => ({})))?.[id];
       const low = di && di.rank < di.need;
       if (!(await ask(low ? `${di.line_name} 기술이 ${di.need}단계가 되지 않아(지금 ${di.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${di.line_name} 경험 12만 얻고 이 장비는 사라집니다.`
         : `${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요?${di ? ` ${di.line_name} 경험 +12.` : ''} 되돌릴 수 없습니다.`,

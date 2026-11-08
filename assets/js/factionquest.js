@@ -134,17 +134,16 @@ export function fqPopHtml(key, s) {
 }
 
 export function bindFaction(body, s) {
-  const done = () => { invalidate('world_faction_snapshot'); };
   $$('[data-fq-report]', body).forEach(b => b.onclick = () => guard(b, async () => {
     const r = await act('world_faction_report');
-    playDialogue(r, s.faction_id); done(); return null;
+    playDialogue(r, s.faction_id); return null;
   }));
-  $$('[data-fq-req]', body).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_faction_request_claim', { p_req: b.dataset.fqReq }); done(); return r; }));
+  $$('[data-fq-req]', body).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_faction_request_claim', { p_req: b.dataset.fqReq }); return r; }));
   $$('[data-fq-buy]', body).forEach(b => b.onclick = async () => {
     const id = b.dataset.fqBuy, v = (s.vault || []).find(x => x.item_id === id), one = v && v.kind !== 'item';
     const qty = one ? 1 : Math.max(1, qtyOf(body, id));
     if (!(await ask(one ? `${v.name}을(를) 공훈 ${fmt.num(v.price)}(으)로 받을까요?` : `${v?.name || nameOf(id)} ×${qty}을(를) 공훈 ${fmt.num((v?.price || 0) * qty)}(으)로 살까요?`, { title: '비고', ok: one ? '받기' : '사기' }))) return;
-    guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); done(); return r; });
+    guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); return r; });
   });
   $$('[data-fq-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.fqInfo));
   if ($('.fq-vault', body)) bindListFilter(body, vaultFilt, () => $$('.fq-vault > li', body));
@@ -157,7 +156,7 @@ export function bindFaction(body, s) {
       <ol class="spar-log replay"></ol><button class="btn small ghost" data-skip>건너뛰기</button>
       <div class="spar-end" hidden><p class="lead ${r.won ? 'ok' : 'bad'}">${r.won ? '시련을 넘었습니다' : '시련에 졌습니다'}</p><p class="small">${esc(r.content || '')}</p></div></div>` });
     replayLog($('.spar-log', m), r.log || [], logRow, { skipBtn: $('[data-skip]', m), onDone: () => { $('.spar-end', m).hidden = false; } });
-    done(); return null;
+    return null;
   });
   $$('[data-npc]', body).forEach(b => b.onclick = () => {
     const n = (s.npcs || []).find(x => x.key === b.dataset.npc); if (!n) return;
@@ -169,7 +168,7 @@ export function bindFaction(body, s) {
       ${n.detail ? n.detail.split(/(?<=다\.)\s+/).reduce((acc, t, i) => { const k = Math.floor(i / 2); (acc[k] = acc[k] || []).push(t); return acc; }, []).map(p => `<p>${esc(p.join(' '))}</p>`).join('') : ''}</article>` });
   });
   const sh = $('#fq-show', body);
-  if (sh) sh.onchange = () => guard(sh, async () => { const r = await act('world_faction_show_rank', { p_show: sh.checked }); done(); return r; });
+  if (sh) sh.onchange = () => guard(sh, async () => { const r = await act('world_faction_show_rank', { p_show: sh.checked }); return r; });
 }
 
 function bindDonate(body, s, done) {
@@ -199,7 +198,7 @@ function bindDonate(body, s, done) {
       const rare = chosen.filter(x => PRECIOUS.has(x.it.rarity));
       if (rare.length && !(await ask(`희귀한 물품이 들어 있습니다. 넘기면 돌려받을 수 없습니다.\n${rare.map(x => `· ${x.it.name} ×${x.q} (${nameOf(x.it.rarity)})`).join('\n')}`, { title: '희귀품 기부 확인', ok: '그래도 기부' }))) return;
       if (!rare.length && !(await ask(`${chosen.map(x => `${x.it.name} ×${x.q}`).join(', ')}을(를) 기부할까요?`, { title: '세력 기부', ok: '기부' }))) return;
-      guard(btn, async () => { const r = await act('world_faction_donate', { p_items: Object.fromEntries(chosen.map(x => [x.it.item_id, x.q])) }); donPicks = {}; done(); return r; });
+      guard(btn, async () => { const r = await act('world_faction_donate', { p_items: Object.fromEntries(chosen.map(x => [x.it.item_id, x.q])) }); donPicks = {}; return r; });
     };
     sum();
   };

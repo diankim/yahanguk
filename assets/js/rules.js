@@ -69,3 +69,18 @@ export const COOP_RULE = {
   strike: '그림자 찌르기는 쓰는 그 행동이 곧 공격 한 번입니다',
 };
 
+
+const ID = GD.idle || { rate: { training: 12, research: 10, maintenance: 8, rest: 3 }, gain: 12, eff: 0.35 };
+export const idleGain = h => Math.floor(h * ID.gain * ID.eff);
+export const idleXp = (k, h) => Math.floor(h * (ID.rate[k] ?? ID.rate.rest) * ID.eff);
+
+const RS = GD.rescue || { pct: 15, min: 30, per_lv: 80, per_lv_low: 40, low_lv: 15, xp_pct: 5 };
+export const RESCUE = {
+  fee: `소지금의 ${RS.pct}%. 최소 ${RS.min}전이고, 최대 레벨×${RS.per_lv}전입니다. Lv${RS.low_lv} 미만은 최대 레벨×${RS.per_lv_low}전입니다.`,
+  xp: `이번 레벨 경험치의 ${RS.xp_pct}%. 레벨은 내려가지 않습니다.`,
+  ask: `본부 구조대를 부를까요? 소지금의 ${RS.pct}%(최소 ${RS.min}전, 레벨×${RS.per_lv}전·레벨 ${RS.low_lv} 미만은 레벨×${RS.per_lv_low}전까지, 오늘 첫 구조 반값, 가까운 안전지대가 내 대세력 지배면 다시 반값)와 이번 레벨에 필요한 경험치의 ${RS.xp_pct}%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다). 그 안전지대가 내 대세력 지배면 경험치는 잃지 않고 체력 50으로 깨어납니다.`,
+};
+
+const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };
+export const GATHER_GAP = RT.gather_s * 1000;
+export const SEARCH_GAP = Math.ceil(RT.search_ms / 1000) * 1000;

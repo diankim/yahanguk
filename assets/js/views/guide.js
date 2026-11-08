@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, CONTRIB, SHADOW, COOP_RULE } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP } from '../rules.js';
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -300,8 +300,8 @@ const S = [
       <li>체력이 0이 되면 쓰러집니다. 회생 부적·동료의 구조·본부 구조대로 일어날 수 있습니다.</li>
       <li>4시간 안에 일어나지 못하면 목숨을 잃고 시신이 남습니다.</li>
       <li><b>본부 구조대</b>가 받는 것
-        <ul><li>소지금의 15%. 최소 30전이고, 최대 레벨×80전입니다. Lv15 미만은 최대 레벨×40전입니다.</li>
-          <li>이번 레벨 경험치의 5%. 레벨은 내려가지 않습니다.</li>
+        <ul><li>${RESCUE.fee}</li>
+          <li>${RESCUE.xp}</li>
           <li>한국 시각으로 하루 첫 구조는 반값입니다.</li>
           <li>옮겨 가는 가장 가까운 안전지대가 내 대세력의 지배 아래면 비용이 다시 반값이 됩니다. 경험치도 잃지 않고, 체력 50으로 깨어납니다.</li></ul></li>
       <li><b>요화로 쓰러졌다면</b> 구조·구조대·회생 부적으로 일으킬 수 없습니다. 「안전지대 봉인」을 골라야 합니다. 「생존과 침식」 항목을 보세요.</li>
@@ -381,7 +381,7 @@ const S = [
   ['gather', '채집', `
     <ul>
       <li>현장의 찾은 채집터에서 <b>채집</b>합니다.
-        <ul><li>12초에 한 번 할 수 있습니다. 채집터가 달라도 같은 간격입니다.</li>
+        <ul><li>${GATHER_GAP / 1000}초에 한 번 할 수 있습니다. 채집터가 달라도 같은 간격입니다.</li>
           <li>같은 채집터는 5분을 더 기다려야 다시 거둡니다. 「길목 기억」이 있으면 4분, 「채광 숙달」이 있으면 절반입니다.</li>
           <li>한국 시각으로 하루 처음 10번까지는 탐색력을 쓰지 않고, 그 뒤로는 1씩 씁니다. 채집터마다 따로 정한 하루 제한은 없습니다.</li>
           <li>도구가 없어도 채집은 되고, 장착한 도구는 채집량을 늘립니다.</li>

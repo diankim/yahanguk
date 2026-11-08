@@ -84,6 +84,12 @@ on('changed', ({ name = '' }) => {
   if (hit('fishSpot', name) || (store.snaps['world_fish_spotnull'] != null && hit('fishSpotNone', name))) invalidate('world_fish_spot');
   if (hit('rest', name)) invalidate('world_rest_status');
   if (hit('idle', name)) invalidate('world_idle_activity_snapshot');
+  if (hit('storage', name)) invalidate('world_storage_snapshot');
+  if (!hit('invQuiet', name)) for (const k of ['world_shop_snapshot', 'world_smithy_snapshot', 'world_enhance_quote', 'world_repair_quote']) invalidate(k);
+  if (hit('dismantle', name)) invalidate('world_dismantle_info');
+  if (hit('mounts', name)) invalidate('world_mount_snapshot');
+  if (hit('titles', name)) invalidate('world_title_snapshot');
+  if (hit('faction', name)) { invalidate('world_faction_snapshot'); invalidate('world_faction_mission_snapshot'); invalidate('world_faction_base_snapshot'); }
 });
 on('changed', ({ name }) => { if (hit('combat', name)) invalidate('world_combat_profile'); if (hit('skill', name)) invalidate('world_skill_snapshot'); if (hit('codex', name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (hit('roster', name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (hit('map', name)) invalidate('world_map_snapshot'); if (hit('journal', name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
@@ -92,7 +98,7 @@ const tcdKey = () => `yh-travel-cd:${store.character?.owner_id || ''}`;
 export function travelCdLeft(now = Date.now()) { try { return Math.max(0, Number(localStorage.getItem(tcdKey()) || 0) - now); } catch { return 0; } }
 export function setTravelCd(secs) { try { const s = Number(secs) || 0; if (s > 0) localStorage.setItem(tcdKey(), String(Date.now() + s * 1000)); else localStorage.removeItem(tcdKey()); } catch {} }
 export const travelCdFromError = err => { const m = /^cd:(\d+)$/.exec(String(err?.hint || '')); if (m) setTravelCd(m[1]); return !!m; };
-on('changed', ({ name, data }) => { if (name === 'world_travel_cancel') setTravelCd(data?.cooldown_seconds ?? 180); });
+on('changed', ({ name, data }) => { if (name === 'world_travel_cancel') setTravelCd(data?.cooldown_seconds); });
 
 function register(name, d) {
   if (!d) return;

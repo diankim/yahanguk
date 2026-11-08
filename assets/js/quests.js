@@ -225,7 +225,7 @@ export async function fillQuests(box) {
     const r = await rpc('world_raid_final_start'); window.yahangGo('raid', r?.raid_id || ''); return null;
   }));
   $('[data-f-report]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
-    const r = await act('world_faction_report'); invalidate('world_quest_board'); invalidate('world_faction_snapshot');
+    const r = await act('world_faction_report');
     playDialogue(r, store.character?.major_faction_id); return null;
   }));
   $('[data-go-faction]', box)?.addEventListener('click', () => { try { sessionStorage.setItem('yh-fpop', 'rank'); } catch {} window.yahangGo('char', 'faction'); });

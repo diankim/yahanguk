@@ -9,11 +9,17 @@ export const CHANGES = {
   combat: /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/,
   fishSpot: /fish|travel/,
   fishSpotNone: /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/,
-  rest: /rest|survival|travel|idle/,
+  rest: /rest|survival|travel|idle|field_move/,
+  bond: /bond|equip|travel|party|field_move/,
+  titles: /title|notice|cosmetic|reset_identity/,
+  faction: /faction|quest|level|reset_identity|notice/,
+  journalView: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|commission|ucomm|letter|notice/,
   idle: /idle/,
   skill: /skill/,
   codex: /battle|gather|expedition/,
   storage: /craft|storage|travel|field_move/,
+  dismantle: /dismantle|skill|craft|level|reset_identity/,
+  mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
   boardAway: /expedition|raid_|pfight_|gw_/,
@@ -28,6 +34,11 @@ export const CHANGES = {
   chatRooms: /travel|major_faction|reset_identity/,
   chatBlocks: /block|friend/,
 };
+export const SFX_ACTS = [
+  [/field_search|battle_action|field_gather/, null], [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'], [/repair/, 'repair'],
+  [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
+  [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
+];
 export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish$/,
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 export const hit = (key, name) => CHANGES[key].test(name || '');

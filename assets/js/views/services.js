@@ -1,4 +1,5 @@
 import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
+import { hit } from '../changes.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
@@ -13,8 +14,8 @@ const carts = { shop: { buy: {}, sell: {} }, smithy: { buy: {}, sell: {} } };
 export async function renderShop(box) {
   box.innerHTML = loading();
   try {
-    const [s, prices, inv] = await Promise.all([load('world_shop_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
-      load('world_inventory_snapshot').catch(() => null), loadLocks()]);
+    const [s, prices, inv] = await Promise.all([load('world_shop_snapshot', undefined, { maxAge: 120000 }), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
+      load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks()]);
     if (!s?.available) { box.innerHTML = empty('이곳에는 상점이 없습니다. 안전지대에서 이용하세요.', 'shop'); return; }
     tradePane(box, s, { kind: 'shop', sell: true, prices, equipment: inv?.equipment || {}, catalog: inv?.catalog || [] });
   } catch (e) { box.innerHTML = errorBox(e.message); }
@@ -134,7 +135,7 @@ export async function renderSmithy(box) {
   const body = $('.sm-body', box);
   try {
     if (smithyTab === 'buy') {
-      const s = await load('world_smithy_snapshot');
+      const s = await load('world_smithy_snapshot', undefined, { maxAge: 120000 });
       if (!s?.available) { body.innerHTML = empty(s?.content || '대장간은 안전지대에만 있습니다.', 'shop'); return; }
       return tradePane(body, s, { kind: 'smithy', sell: false });
     }
@@ -145,7 +146,7 @@ export async function renderSmithy(box) {
 }
 
 async function enhancePane(body) {
-  const q = await rpc('world_enhance_quote');
+  const q = await load('world_enhance_quote', undefined, { maxAge: 60000 });
   if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword'); return; }
   registerNames(Object.entries(q.names || {}));
   const have = q.have || {}, stored = q.stored || {}, items = Object.entries(q.items || {});
@@ -158,11 +159,11 @@ async function enhancePane(body) {
         <div><dt>위력</dt><dd>${q.power}${maxed ? '' : ` → <b>${q.next_power}</b>`}</dd></div>
         ${maxed ? '' : `<div><dt>성공 확률</dt><dd>${q.chance}%</dd></div><div><dt>비용</dt><dd>${fmt.jeon(q.gil)}${q.have_gil < q.gil ? ' <span class="bad">(모자람)</span>' : ''}</dd></div>`}
       </dl>
-      ${maxed ? '<p class="hint ok">+10까지 강화했습니다.</p>' : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}${stored[k] ? ` <small class="muted">(창고 ${fmt.num(stored[k])})</small>` : ''}</span></li>`).join('')}</ul>
+      ${maxed ? `<p class="hint ok">+${q.max}까지 강화했습니다.</p>` : `<ul class="enh-mats">${items.map(([k, n]) => `<li class="${(have[k] || 0) < n ? 'bad' : 'ok'}">${infoName(k)} <span>${fmt.num(have[k] || 0)} / ${n}${stored[k] ? ` <small class="muted">(창고 ${fmt.num(stored[k])})</small>` : ''}</span></li>`).join('')}</ul>
       <div class="btn-row"><button class="btn primary" id="enh-go" data-here="강화" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +10까지 강화합니다. 단계마다 위력 +5%. +3까지는 반드시 성공하고, 그 뒤로는 확률이 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(반요촌 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+    <p class="muted small">장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(반요촌 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
   bindInfo(body);
   const go = $('#enh-go', body);
   if (go) go.onclick = async () => {
@@ -179,7 +180,7 @@ async function enhancePane(body) {
 }
 
 async function repairPane(body) {
-  const q = await rpc('world_repair_quote');
+  const q = await load('world_repair_quote', undefined, { maxAge: 60000 });
   const items = q?.items || [];
   body.innerHTML = items.length ? `
     <ul class="item-list">${items.map(i => `<li><div class="item-main"><b>${infoName(i.item_id, i.name)}</b><span class="qty">${fmt.jeon(i.cost)}</span>
@@ -203,7 +204,7 @@ async function repairPane(body) {
 }
 
 async function dismantlePane(body) {
-  const [inv, di] = await Promise.all([load('world_inventory_snapshot'), rpc('world_dismantle_info').catch(() => ({}))]);
+  const [inv, di] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 30000 }), load('world_dismantle_info', undefined, { maxAge: 600000 }).catch(() => ({}))]);
   const cat = new Map((inv.catalog || []).map(i => [i.id, i])), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([k, n]) => n > 0 && GEAR_CATS.has(cat.get(k)?.category))
     .map(([k, n]) => ({ k, n, it: cat.get(k), free: n - (equipped.has(k) ? 1 : 0), d: di?.[k] || {} }))
@@ -424,7 +425,7 @@ export function openDirectTrade(to) {
   const m = openModal({ title: '거래소', wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
   renderMarket(box);
-  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderMarket(box)); else offc(); });
+  const offc = on('changed', ({ name } = {}) => { if (!box.isConnected) return offc(); if (!hit('invQuiet', name)) keepScroll(box, () => renderMarket(box)); });
 }
 
 let storeMode = 'put';
@@ -432,7 +433,7 @@ const STORE_PRICES = [1000, 2500, 5000, 10000];
 export async function renderStorage(box) {
   box.innerHTML = loading();
   try {
-    const [s, , inv] = await Promise.all([load('world_storage_snapshot'), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
+    const [s, , inv] = await Promise.all([load('world_storage_snapshot', undefined, { maxAge: 300000 }), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c?.inventory || {};
     const src = s.sources || {}, steps = Number(src.bought_steps || 0);
@@ -516,13 +517,13 @@ export function openStorage() {
   const m = openModal({ title: '창고', wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
   renderStorage(box);
-  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, () => renderStorage(box)); else offc(); });
+  const offc = on('changed', ({ name } = {}) => { if (!box.isConnected) return offc(); if (!hit('invQuiet', name)) keepScroll(box, () => renderStorage(box)); });
 }
 
 export async function renderStable(box) {
   box.innerHTML = loading();
   try {
-    const m = await load('world_mount_snapshot');
+    const m = await load('world_mount_snapshot', undefined, { maxAge: 600000 });
     const here = (m.mounts || []).filter(x => x.at_stable && x.acquire_method !== 'faction');
     const c = store.character;
     const mine = (m.mounts || []).filter(x => x.owned);

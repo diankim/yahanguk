@@ -118,7 +118,8 @@ function sky(phase, weather) {
   return { orb, out };
 }
 
-const REPEAT = 3;
+const TILE_X = 240, TILE_W = 640 - TILE_X, SPAN = 1920;
+let sceneSeq = 0;
 export function sceneArt(theme, phase, weather) {
   const L = (LAND[theme] || LAND.default)();
   const sk = sky(phase, weather);
@@ -130,10 +131,13 @@ export function sceneArt(theme, phase, weather) {
     ${L.line ? `<g class="ln-line">${L.line}</g>` : ''}
     ${L.near ? `<path class="ln-near" d="${L.near}"/>` : ''}
     ${L.gold ? `<g class="ln-gold">${L.gold}</g>` : ''}`;
-  const w = 640 * REPEAT;
-  return `<svg class="scene-art" viewBox="${-(w - 640)} 0 ${w} 150" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
+  const n = Math.ceil((SPAN - 640 + TILE_W) / TILE_W) + 1, id = `sc${++sceneSeq}`;
+  const tiles = Array.from({ length: n }, (_, i) => `<g mask="url(#${id}-${i})"><g transform="translate(${-i * (TILE_W - 2)} 0)${i % 2 ? ` translate(${TILE_X + 640} 0) scale(-1 1)` : ''}">${land}</g></g>`).join('');
+  const clips = Array.from({ length: n }, (_, i) => `<mask id="${id}-${i}" maskUnits="userSpaceOnUse" x="${TILE_X - i * (TILE_W - 2)}" y="0" width="${TILE_W}" height="150"><rect x="${TILE_X - i * (TILE_W - 2)}" y="0" width="${TILE_W}" height="150" fill="#fff"/></mask>`).join('');
+  return `<svg class="scene-art" viewBox="${640 - SPAN} 0 ${SPAN} 150" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
+    <defs>${clips}</defs>
     ${sk.orb}
-    ${Array.from({ length: REPEAT }, (_, i) => `<g transform="${i % 2 ? `translate(${-640 * (i - 1) + i * 0.8} 0) scale(-1 1)` : `translate(${-640 * i + i * 0.8} 0)`}">${land}</g>`).join('')}
-    <rect class="ln-near" x="${-(w - 640)}" y="145" width="${w}" height="5"/>
+    ${tiles}
+    <rect class="ln-near" x="${640 - SPAN}" y="145" width="${SPAN}" height="5"/>
   </svg>`;
 }

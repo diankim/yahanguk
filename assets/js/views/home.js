@@ -6,7 +6,7 @@ import { face } from '../people.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP } from '../rules.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -144,13 +144,17 @@ function drawBattle(pty) {
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
   if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
-  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}">${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
+  el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}"${sceneTint(snap.region)}>${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
     <div id="battle-box"></div>`;
   const onCall = b => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
-  renderBattle($('#battle-box', el), snap, () => { store.snaps = {}; draw(); }, near ? { call: near, onCall } : null);
+  renderBattle($('#battle-box', el), snap, r => { if (!r) invalidate('world_field_snapshot'); draw(); }, near ? { call: near, onCall } : null);
   if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
 }
 
+function sceneTint(r) {
+  const f = r?.faction_id ?? zonesNow()?.get(r?.region_id)?.control_faction_id;
+  return f ? ` style="--sc:${factionColor(f)}"` : '';
+}
 function sceneFx(r) {
   const e = store.env;
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
@@ -160,7 +164,7 @@ function scene(s, traveling, downed) {
   const r = s.region, c = store.character, z = zonesNow()?.get(r.region_id);
   if (!zonesNow()) safeZones().catch(() => {});
   return `
-    <div class="scene theme-${esc(r.theme || 'wild')} ${r.safe ? 'safe' : ''}">
+    <div class="scene theme-${esc(r.theme || 'wild')} ${r.safe ? 'safe' : ''}"${sceneTint(r)}>
       ${sceneFx(r)}
       <span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <div class="scene-top">
@@ -362,7 +366,7 @@ function bind(s) {
   $$('[data-move]', el).forEach(b => b.onclick = () => guard(b, () => act('world_field_move', { p_node_id: b.dataset.move }), { success: '' }));
   $$('[data-gather]', el).forEach(b => b.onclick = () => { if (gatherWait() > 0) return; guard(b, async () => {
     try { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); setGatherCd(GATHER_GAP); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }
-    catch (e) { if (/12초마다/.test(String(e?.message))) setGatherCd(3000); throw e; } }); });
+    catch (e) { if (e?.hint === 'rate') setGatherCd(3000); throw e; } }); });
   paintGather(Date.now());
   $$('[data-rescue]', el).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
   $$('[data-aid]', el).forEach(b => b.onclick = () => openAid(b.dataset.aid, b.dataset.aidName));
@@ -394,13 +398,12 @@ async function doSearch(btn) {
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.outcome === 'encounter' ? 'encounter' : r.outcome === 'hazard' ? 'hurt' : ['path', 'spot', 'clue', 'cache', 'regional'].includes(r.outcome) ? 'find' : 'tick' }));
     if (r.outcome === 'encounter') toast(r.content, 'warn');
     else showFind(o, r);
-  } catch (e) { if (/숨을 고르/.test(String(e?.message))) hold = SEARCH_GAP + 500; else { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); } }
+  } catch (e) { if (e?.hint === 'rate') hold = SEARCH_GAP + 500; else { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); } }
   finally {
     searchAt = t0 + hold; btn.classList.remove('searching');
     setTimeout(() => { btn.dataset.busy = ''; if (btn.isConnected) btn.disabled = false; }, Math.max(0, searchAt - Date.now()));
   }
 }
-const SEARCH_GAP = 1000;
 let searchAt = 0;
 async function doFish(btn) {
   if (btn.dataset.busy === '1' || Number(btn.dataset.ready) > Date.now()) return;
@@ -421,7 +424,7 @@ function showFind([ic, label], r) {
   setTimeout(() => n.classList.add('out'), 2600); setTimeout(() => n.remove(), 3100);
 }
 
-const GATHER_GAP = 12000, GATHER_KEY = 'yh-gather-cd';
+const GATHER_KEY = 'yh-gather-cd';
 let gatherCd = 0;
 try { gatherCd = Number(localStorage.getItem(GATHER_KEY)) || 0; } catch {}
 function setGatherCd(ms) { gatherCd = Date.now() + ms; try { localStorage.setItem(GATHER_KEY, String(gatherCd)); } catch {} paintGather(Date.now()); }
@@ -465,7 +468,7 @@ function openFacility(k, s) {
   const box = $('.fac-body', m);
   const fill = () => (k === 'market' ? renderMarket : k === 'stable' ? renderStable : k === 'smithy' ? renderSmithy : k === 'storage' ? renderStorage : renderShop)(box);
   fill();
-  const offc = on('changed', () => { if (box.isConnected) keepScroll(box, fill); else offc(); });
+  const offc = on('changed', ({ name } = {}) => { if (!box.isConnected) return offc(); if (!hit('invQuiet', name)) keepScroll(box, fill); });
 }
 
 function restGain(r, full) {

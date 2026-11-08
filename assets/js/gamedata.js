@@ -53,6 +53,9 @@ export const GAMEDATA = {
   "shadow": {"gil_lv":20,"hp_min":9000,"hp_mul":350,"pow_hi":1.5,"pow_lo":0.75,"dmg_mul":1.4,"stay_full":0.5,"charge_mul":5},
   "coopRules": {"all_pow":0.5,"all_full":4,"sure_crit":2,"expose_per":4},
   "expXp": {"full":{"120":0.2,"240":0.3,"480":0.4},"near":{"30":0.85,"60":0.85,"120":0.85,"240":0.8,"480":0.7},"fight":0.42,"searches":30},
+  "idle": {"eff":0.35,"gain":12,"rate":{"rest":3,"research":10,"training":12,"maintenance":8}},
+  "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"per_lv_low":40},
+  "rate": {"fish_s":15,"raid_ms":1000,"gather_s":12,"battle_ms":1000,"search_ms":900},
   "names": {
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}

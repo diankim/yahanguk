@@ -128,6 +128,130 @@ values
 ('ember_bison', '잔불 들소 수레', 2.3, 20, 0, null, 'ember_village', 'spirit_core', 12000, '뿔 끝에 불티가 이는 들소가 끄는 수레. 재 언덕을 넷이 함께 넘는다.', '영물', 4, 2, false, 'stable')
 on conflict (mount_id) do nothing;
 
+create or replace function public.world_rate_rules()
+ returns jsonb
+ language sql
+ immutable
+as $function$
+  select jsonb_build_object('gather_s', 12, 'fish_s', 15, 'search_ms', 900, 'battle_ms', 1000, 'raid_ms', 1000)
+$function$;
+revoke all on function public.world_rate_rules() from public, anon, authenticated;
+grant execute on function public.world_rate_rules() to service_role, fn_owner_19149;
+do $g$ declare r text; begin
+  for r in select distinct a.grantee::regrole::text from pg_proc p, aclexplode(p.proacl) a
+    where p.oid = 'public.world_rate_check(text,uuid,uuid)'::regprocedure and a.privilege_type = 'EXECUTE' and a.grantee <> 0
+      and a.grantee::regrole::text not in ('anon', 'authenticated') loop
+    execute format('grant execute on function public.world_rate_rules() to %I', r);
+  end loop;
+end $g$;
+
+create or replace function public.world_rate_check(p_kind text, p_uid uuid, p_ref uuid default null::uuid)
+ returns void
+ language plpgsql
+ stable
+ set search_path to 'pg_catalog', 'public'
+as $function$
+begin
+  if p_uid is null then return; end if;
+  if p_kind = 'gather' and exists (select 1 from public.world_events where actor_id = p_uid and event_type = 'gather' and created_at > now() - make_interval(secs => (public.world_rate_rules()->>'gather_s')::int)) then
+    raise exception '채집은 12초마다 가능합니다. 잠시 후 다시 시도하세요.' using hint = 'rate';
+  elsif p_kind = 'fish' and exists (select 1 from public.world_events where actor_id = p_uid and event_type = 'fish' and created_at > now() - make_interval(secs => (public.world_rate_rules()->>'fish_s')::int)) then
+    raise exception '찌를 다시 던지려면 조금 더 기다리세요.' using hint = 'rate';
+  elsif p_kind = 'search' and exists (select 1 from public.world_events where actor_id = p_uid and event_type = 'explore' and created_at > now() - (public.world_rate_rules()->>'search_ms')::int * interval '1 millisecond') then
+    raise exception '숨을 고르는 중입니다. 잠시 후 다시 탐색하세요.' using hint = 'rate';
+  elsif p_kind = 'battle' and exists (select 1 from public.world_active_encounters where owner_id = p_uid and last_action_at > now() - (public.world_rate_rules()->>'battle_ms')::int * interval '1 millisecond') then
+    raise exception '전투 행동 간격이 너무 짧습니다. 잠시 후 다시 시도하세요.' using hint = 'rate';
+  elsif p_kind = 'raid' and exists (select 1 from public.world_raid_members where raid_id = p_ref and owner_id = p_uid and last_action_at > now() - (public.world_rate_rules()->>'raid_ms')::int * interval '1 millisecond') then
+    raise exception '숨을 고르는 중입니다. 잠시 후 다시 행동하세요.' using hint = 'rate';
+  end if;
+end $function$;
+
+create or replace function public.world_guard_repeat_farming()
+ returns trigger
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+DECLARE
+  cooldown_seconds integer;
+  last_action timestamptz;
+BEGIN
+  IF new.actor_id IS NULL THEN RETURN new; END IF;
+  cooldown_seconds := CASE
+    WHEN new.event_type='gather' THEN (public.world_rate_rules()->>'gather_s')::int
+    WHEN new.event_type IN ('combat','encounter') THEN 1
+    ELSE 0
+  END;
+  IF cooldown_seconds=0 THEN RETURN new; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended(new.actor_id::text || ':' || new.event_type,0));
+  SELECT max(created_at) INTO last_action
+  FROM public.world_events
+  WHERE actor_id=new.actor_id AND event_type=new.event_type;
+
+  IF last_action IS NOT NULL AND last_action > now() - make_interval(secs=>cooldown_seconds) THEN
+    RAISE EXCEPTION USING errcode='P0001', hint='rate',
+      message=CASE WHEN new.event_type='gather'
+        THEN '채집은 12초마다 가능합니다. 잠시 후 다시 시도하세요.'
+        ELSE '전투 행동 간격이 너무 짧습니다. 잠시 후 다시 시도하세요.' END;
+  END IF;
+  RETURN new;
+END;
+$function$;
+
+do $r$
+declare src text := pg_get_functiondef('public.world_battle_action(text,text)'::regprocedure);
+  old text := $o$RAISE EXCEPTION '진행 중인 전투가 없습니다.';$o$;
+begin
+  if (length(src) - length(replace(src, old, ''))) / length(old) <> 1 then raise exception 'world_battle_action: 바꿀 곳이 하나가 아님'; end if;
+  execute replace(src, old, $n$RAISE EXCEPTION '진행 중인 전투가 없습니다.' USING HINT = 'no_battle';$n$);
+end $r$;
+
+create or replace function public.world_idle_rules()
+ returns jsonb
+ language sql
+ immutable
+as $function$
+  select jsonb_build_object('rate', jsonb_build_object('training', 12, 'research', 10, 'maintenance', 8, 'rest', 3), 'gain', 12, 'eff', 0.35)
+$function$;
+create or replace function public.world_rescue_rules()
+ returns jsonb
+ language sql
+ immutable
+as $function$
+  select jsonb_build_object('pct', 15, 'min', 30, 'per_lv', 80, 'per_lv_low', 40, 'low_lv', 15, 'xp_pct', 5)
+$function$;
+revoke all on function public.world_idle_rules() from public, anon, authenticated;
+revoke all on function public.world_rescue_rules() from public, anon, authenticated;
+grant execute on function public.world_idle_rules() to service_role, fn_owner_19181;
+grant execute on function public.world_rescue_rules() to service_role, fn_owner_field;
+
+do $r$
+declare src text := pg_get_functiondef('public.world_claim_idle_activity'::regproc);
+  o1 text := $o$floor(v_hours*12*0.35)::integer$o$;
+  n1 text := $n$floor(v_hours*(public.world_idle_rules()->>'gain')::numeric*(public.world_idle_rules()->>'eff')::numeric)::integer$n$;
+  o2 text := $o$(case v.activity_type when 'training' then 12 when 'research' then 10 when 'maintenance' then 8 else 3 end)*0.35$o$;
+  n2 text := $n$coalesce((public.world_idle_rules()->'rate'->>v.activity_type)::numeric, (public.world_idle_rules()->'rate'->>'rest')::numeric)*(public.world_idle_rules()->>'eff')::numeric$n$;
+begin
+  if (length(src) - length(replace(src, o1, ''))) / length(o1) <> 2 then raise exception 'world_claim_idle_activity: o1이 두 곳이 아님'; end if;
+  if (length(src) - length(replace(src, o2, ''))) / length(o2) <> 1 then raise exception 'world_claim_idle_activity: o2가 한 곳이 아님'; end if;
+  execute replace(replace(src, o1, n1), o2, n2);
+end $r$;
+
+do $r$
+declare src text := pg_get_functiondef('public.world_call_rescue'::regproc);
+  o1 text := $o$least(c.level * case when c.level < 15 then 40 else 80 end, greatest(30, c.gil * 15 / 100))$o$;
+  n1 text := $n$least(c.level * case when c.level < (public.world_rescue_rules()->>'low_lv')::int then (public.world_rescue_rules()->>'per_lv_low')::int else (public.world_rescue_rules()->>'per_lv')::int end, greatest((public.world_rescue_rules()->>'min')::int, c.gil * (public.world_rescue_rules()->>'pct')::int / 100))$n$;
+  o2 text := $o$round(public.world_xp_need(c.level) * 0.05)$o$;
+  n2 text := $n$round(public.world_xp_need(c.level) * (public.world_rescue_rules()->>'xp_pct')::numeric / 100)$n$;
+begin
+  if (length(src) - length(replace(src, o1, ''))) / length(o1) <> 1 then raise exception 'world_call_rescue: o1이 한 곳이 아님'; end if;
+  if (length(src) - length(replace(src, o2, ''))) / length(o2) <> 1 then raise exception 'world_call_rescue: o2가 한 곳이 아님'; end if;
+  execute replace(replace(src, o1, n1), o2, n2);
+end $r$;
+
 update public.world_patch_notes set body = body || E'\n\n## 1.1.0d\n- 현장 퀘스트 칸이 할 일과 상관없는 행동 뒤에도 매번 다시 읽히던 것을 줄였습니다. 보이는 내용은 같습니다.\n- 세력 비고 탈것 일곱 가지를 모두 같게 맞췄습니다. 속도 ×2.4(수향연맹 화방선 ×2.5), 넷이 함께 타고, 노정패 운임은 구간마다 2개입니다.\n- 월광록은 천명원 소속이 아니어도 무극 관성대 마구간에서 들일 수 있게 바꾸고, 속도를 ×2.3으로 낮췄습니다. 이미 가진 월광록도 같이 바뀝니다.\n- 다른 여섯 세력 거점 마구간에도 월광록과 같은 탈것을 하나씩 들였습니다(×2.3, 넷이 함께 탐, 레벨 20·응축 영핵·12,000전, 소속 조건 없음): 야행국 본부 정청 청사 쌍두마차 · 백골 장터 적월 쌍봉낙타 · 십삼문 암시장 먹빛 쌍마 수레 · 철벽 고찰 설원 개썰매 · 구름나루 물소 달구지 · 잔불촌 잔불 들소 수레. 백골 장터·십삼문 암시장·철벽 고찰에는 마구간을 새로 열었습니다.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261108180000' where key = 'db_version';
+update public.world_patch_notes set body = body || E'\n- 넓은 화면에서 현장 머리 그림 사이에 납작한 긴 선이 생기던 것을 고쳐, 그림이 끊김 없이 이어집니다.\n- 현장 머리 그림의 색을 지형이 아니라 그곳을 다스리는 세력 색으로 맞췄습니다(흑조 균열·주혈 광산이 흑련회 보라로 보이던 것 등).'
+ where note_id = '1.1.0';

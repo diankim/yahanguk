@@ -1149,7 +1149,7 @@ html.tut-lock, html.tut-lock body, html.tut-lock #main { overflow: hidden !impor
    평면 도형만 쓰고(그라데이션·그림자·흐림 없음) 장소 색(--sc)을 바탕에 옅게 섞는다. 글자보다 뒤에 깔린다. */
 .scene-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .scene > :not(.scene-fx) { position: relative; z-index: 1; }
-.scene-art { position: absolute; right: 0; bottom: 0; width: 100%; height: 100%; } /* 넓은 화면은 그림을 되풀이(scenery.js REPEAT) */
+.scene-art { position: absolute; right: 0; bottom: 0; width: 100%; height: 100%; } 
 /* 겹마다 장소 색을 다른 농도로: 먼 산(옅게) → 상징물 → 앞쪽 땅(가장 짙게). 가장 짙은 겹에는 글자색을 조금 섞어 또렷하게 한다. */
 .scene-art { --s1: color-mix(in srgb, var(--sc, var(--accent)) 20%, var(--surface)); --s15: color-mix(in srgb, var(--sc, var(--accent)) 26%, var(--surface)); --s2: color-mix(in srgb, var(--sc, var(--accent)) 34%, var(--surface));
   --s3: color-mix(in srgb, color-mix(in srgb, var(--sc, var(--accent)) 44%, var(--surface)) 90%, var(--text)); }

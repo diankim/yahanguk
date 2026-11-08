@@ -7,6 +7,7 @@ import { taskLine, giveLine, atLine, report } from '../quests.js';
 import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
+import { hit } from '../changes.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
@@ -22,7 +23,7 @@ export async function render(root, s) {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('scroll', 14)} 조사원 일지</p><h1>일지</h1></div></div>
     ${segmented('log-sub', SUBS, sub)}<div id="log-body"></div>`;
   bindSegmented(el, 'log-sub', k => { sub = k; window.history.replaceState(null, '', `#/log/${k}`); draw(); });
-  off.forEach(f => f()); off = [on('changed', () => draw(true))];
+  off.forEach(f => f()); off = [on('changed', ({ name } = {}) => { if (hit('journalView', name)) draw(true); })];
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; }

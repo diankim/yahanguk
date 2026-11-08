@@ -143,8 +143,9 @@ async function send(action, item) {
     const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;
-      refreshCharacter().then(() => emit('changed', { name: 'world_battle_action', data: r }));
-      setTimeout(() => { if (action === 'sneak') toast(`기척을 숨겨 ${foe}의 눈을 피했습니다.`, 'ok'); else showEnd(r, foe); onEnd?.(r); }, 650);
+      const fresh = refreshCharacter().then(() => emit('changed', { name: 'world_battle_action', data: r }));
+      setTimeout(() => { if (action === 'sneak') toast(`기척을 숨겨 ${foe}의 눈을 피했습니다.`, 'ok'); else showEnd(r, foe); }, 650);
+      Promise.all([fresh, new Promise(ok => setTimeout(ok, 650))]).then(() => onEnd?.(r));
     } else {
       if (action === 'flee') setTimeout(() => showFleeFail(r, foe), 400);
       data.battle = r.battle;
@@ -154,7 +155,7 @@ async function send(action, item) {
     }
   } catch (e) {
     toast(friendlyError(e), 'error');
-    if (/전투가 없습니다/.test(String(e.message))) onEnd?.(null);
+    if (e?.hint === 'no_battle') onEnd?.(null);
   } finally { busy = false; tickCooldown(); }
 }
 function refreshVitals() {

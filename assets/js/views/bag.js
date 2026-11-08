@@ -1,6 +1,6 @@
 import { rarTag, db, store, on, act, rpc, toast, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } from './common.js';
-import { equipRowLi, eqMini, bindRepair, enhancedTraits, DUR_NOTE } from './character.js';
+import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
@@ -64,7 +64,7 @@ export async function render(root, s) {
     ${segmented('bag-sub', SUBS, sub)}<div id="bag-body"></div>`;
   bindSegmented(el, 'bag-sub', k => { sub = k; window.history.replaceState(null, '', `#/bag/${k}`); draw(); });
   $('#open-storage', el).onclick = () => import('./services.js').then(m => m.openStorage());
-  off.forEach(f => f()); off = [on('changed', ({ name } = {}) => { if (hit('storage', name)) invalidate('world_storage_snapshot'); draw(true); })];
+  off.forEach(f => f()); off = [on('changed', () => draw(true))];
   await draw();
 }
 export function destroy() { off.forEach(f => f()); off = []; }
@@ -216,7 +216,7 @@ const EQUIP_TIP = '무기 종류가 공격 방식을 정합니다: 칼·창은 �
 async function equip(body, inv) {
   const eq = inv.equipment || {}, have = inv.inventory || {};
   const c = store.character;
-  const [prof, zones] = await Promise.all([load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), safeZones().catch(() => null), import('../bond.js').then(m => m.loadBond())]);
+  const [prof, zones, , rq] = await Promise.all([load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), safeZones().catch(() => null), import('../bond.js').then(m => m.loadBond()), load('world_repair_quote', undefined, { maxAge: 60000 }).catch(() => null)]);
   const here = zones ? [...zones.values()].find(r => r.region_name === c.location) : null;
   const optionsHtml = slot => {
     const cur = eq[slot], options = (inv.catalog || []).filter(i => slotOf(i) === slot && Number(have[i.id]) > 0 && i.id !== cur);
@@ -231,7 +231,7 @@ async function equip(body, inv) {
       <div class="eq-left">${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
       <div class="eq-right" id="eq-detail"></div>
     </div>`;
-  const slotBody = slot => `<ul class="equip-list">${equipRowLi(inv, prof, here, slot)}</ul><h3 class="sub-h">바꿔 낄 장비</h3>${optionsHtml(slot)}`;
+  const slotBody = slot => `<ul class="equip-list">${equipRowLi(inv, prof, here, slot, rq)}</ul><h3 class="sub-h">바꿔 낄 장비</h3>${optionsHtml(slot)}`;
   const drawDetail = slot => {
     eqSel = slot;
     $('#eq-detail', body).innerHTML = panel(SLOTS[slot][0], slotBody(slot), { ico: SLOTS[slot][1] });
@@ -252,8 +252,8 @@ async function equip(body, inv) {
 }
 let eqSel = 'weapon';
 const wideEq = () => matchMedia('(min-width: 900px)').matches;
-function traits(it, n = 0) {
-  const t = enhancedTraits(it?.equipment_traits, n); if (!it?.equipment_traits) return '';
+function traits(it) {
+  const t = it?.equipment_traits; if (!t) return '';
   const STY = { melee: '근접 공격', ranged: '원거리 공격', magic: '술법 공격' };
   const parts = effectText(t);
   return `<small class="muted">${esc([STY[t.weapon_type] || t.trait, ...parts].filter(Boolean).join(' · '))}</small>`;

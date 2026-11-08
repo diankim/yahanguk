@@ -6,6 +6,8 @@ import { paintTitleDot, markTitlesSeen, dotSeen } from '../titledot.js';
 import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
+import { hit } from '../changes.js';
+import { idleGain, idleXp, RESCUE } from '../rules.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
@@ -24,12 +26,11 @@ const IDLE = [
   ['training', '자율 수련', '경험치와 전투 숙련, 직업의 전투 기술 계열을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 탐사 기술을 올립니다.', 'search'],
   ['maintenance', '장비 정비', '경험치와 제작 숙련, 고른 제작 분야의 기술 계열을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
 ];
-const IDLE_RATE = { training: 12, research: 10, maintenance: 8, rest: 3 };
 let idleWeapon = 'melee';
 const trainSkill = () => SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameOf(JOB_LINE[store.character?.job_key] || 'melee');
 const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing');
 function idleReward(k, min, level, early = false) {
-  const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, Math.floor(h * 12 * 0.35)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, Math.floor(h * IDLE_RATE[k] * 0.35));
+  const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, idleGain(h)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, idleXp(k, h));
   const out = xp ? [`경험치 +${xpGot(xp)}`] : [];
   if (early && !gain && !xp) return ['받을 보상 없음'];
   if (k === 'training') out.push(`전투 숙련 +${gain}`, `${trainSkill()} 기술 +${gain}`);
@@ -95,21 +96,20 @@ export function combatRows(cur) {
 }
 const presenceWord = p => p >= 90 ? '요괴가 가장 먼저 노림' : p >= 55 ? '눈에 잘 띔' : p >= 25 ? '보통' : '잘 눈에 띄지 않음';
 function durBar(d, max) { return `<div class="durab ${d <= 0 ? 'broken' : d * 4 < max ? 'worn' : ''}"><span>내구도 ${d}/${max}</span>${bar(d, max, d <= 0 ? 'enemy' : d * 4 < max ? 'er' : 'xp')}</div>`; }
-const maxDur = it => it ? (['weapon', 'armor'].includes(it.category) ? 50 + (it.tier || 1) * 30 : ['tool', 'hat', 'shoes'].includes(it.category) ? 40 + (it.tier || 1) * 20 : 0) : 0;
-export const enhancedTraits = (t, n) => n && t?.power ? { ...t, power: Math.round(t.power * (1 + 0.05 * n) * 10) / 10 } : (t || {});
-export function equipRowLi(inv, prof, here, slot) {
+const withPower = (t, n, prof) => n && t?.power && prof?.current?.weapon?.power != null ? { ...t, power: prof.current.weapon.power } : (t || {});
+export function equipRowLi(inv, prof, here, slot, rq) {
   const cmap = new Map((inv?.catalog || []).map(i => [i.id, i])), eq = inv?.equipment || {}, have = inv?.inventory || {}, durs = prof?.durability || {};
   const kits = hqCount(have, 'repair_kit');
   const [label, ic] = SLOTS[slot]; {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return `<li class="empty-slot">${icon(ic, 18)}<div><b>${label}</b><small>비어 있음 · ${esc(SLOT_HINT[slot])}</small></div></li>`;
-    const mx = durs[id]?.max ?? maxDur(it), d = durs[id]?.durability ?? mx;
-    const cost = Math.max(5, Math.ceil((mx - d) * ((it?.tier || 1) + 1) / 2));
+    const mx = durs[id]?.max ?? 0, d = durs[id]?.durability ?? mx;
+    const cost = (rq?.items || []).find(x => x.item_id === id)?.cost;
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
-    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh} ${rarTag(it?.rarity)}</b><small>${esc(effectText(enhancedTraits(it?.equipment_traits, n)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}(위력 +${n * 5}%)` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
+    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
-        <button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기 <small>${fmt.jeon(cost)}</small></button></div>` : ''}
+        <button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기${cost != null ? ` <small>${fmt.jeon(cost)}</small>` : ''}</button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
   }
 }
@@ -142,7 +142,7 @@ export function eqMini(inv, prof, pick = false) {
     const id = eq[slot], it = cmap.get(id);
     if (!id) return pick ? `<li><button type="button" class="none" data-eqslot="${slot}">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></button></li>`
       : `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
-    const mx = durs[id]?.max ?? maxDur(it), d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
+    const mx = durs[id]?.max ?? 0, d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label} ${rarTag(it?.rarity)}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
       ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
   }).join('')}</ul>`;
@@ -168,10 +168,9 @@ function openQuickslots(cur, inv) {
 let lastChange = '';
 async function status(body) {
   const ch = lastChange; lastChange = '';
-  if (/rest|idle|travel|field_move/.test(ch)) invalidate('world_rest_status');
   const [sv, hud, prof, inv, , rs, , qsSnap] = await Promise.all([load('world_survival_snapshot'), load('world_hud_snapshot', undefined, { maxAge: 2000 }).catch(() => null),
     load('world_combat_profile', undefined, { maxAge: 60000 }).catch(() => null), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), safeZones().catch(() => null),
-    load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || /bond|equip|travel|party|field_move/.test(ch)),
+    load('world_rest_status', undefined, { maxAge: 60000 }).catch(() => null), loadBond(!ch || hit('bond', ch)),
     load('world_quickslots_get', undefined, { maxAge: 600000 }).catch(() => null)]);
   const c = store.character, invItems = c.inventory || {};
   const qs = qsSlots(qsSnap);
@@ -234,8 +233,9 @@ async function status(body) {
   const ys = $('#yohwa-seal', body);
   if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
   const cr = $('#call-rescue', body);
-  if (cr) cr.onclick = async () => { if (await ask('본부 구조대를 부를까요? 소지금의 15%(최소 30전, 레벨×80전·레벨 15 미만은 레벨×40전까지, 오늘 첫 구조 반값, 가까운 안전지대가 내 대세력 지배면 다시 반값)와 이번 레벨에 필요한 경험치의 5%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다). 그 안전지대가 내 대세력 지배면 경험치는 잃지 않고 체력 50으로 깨어납니다.', { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
-  const t = setInterval(() => {
+  if (cr) cr.onclick = async () => { if (await ask(RESCUE.ask, { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
+  clearInterval(statusTick);
+  const t = statusTick = setInterval(() => {
     if (!body.isConnected) return clearInterval(t);
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
     const d = $('#death-left', body); if (d && deathAt) d.textContent = `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}`;
@@ -436,7 +436,7 @@ async function skills(body) {
 }
 
 async function idle(body, given) {
-  const [snap, prof] = given ? [given, null] : await Promise.all([load('world_idle_activity_snapshot'), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
+  const [snap, prof] = given ? [given, null] : await Promise.all([load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
   if (prof) idleWeapon = prof?.current?.weapon?.type || 'melee';
   const active = snap?.active;
   const ready = active && (snap.ready || new Date(snap.ready_at) <= new Date());
@@ -470,8 +470,9 @@ async function idle(body, given) {
     const ok = await ask(`${n}을(를) ${l} 동안 할까요?\n받을 것: ${idleReward(k, m, store.character?.level || 1).join(' · ')}\n끝날 때까지 다른 자율 활동은 할 수 없고, 다 끝난 뒤에 보상을 받습니다.`, { title: '자율 활동 시작', ok: '시작', cancel: '그만두기' });
     if (ok) guard(b, () => act('world_start_idle_activity', { p_activity: k, p_duration_minutes: m }));
   });
+  clearInterval(idleTick);
   if (active && !ready) {
-    const t = setInterval(() => {
+    const t = idleTick = setInterval(() => {
       const left = $('#idle-left', body); if (!left) return clearInterval(t);
       const ms = new Date(snap.ready_at) - Date.now();
       if (ms <= 0) { clearInterval(t); idle(body, snap); } else left.textContent = `${fmt.remain(ms)} 남음`;
@@ -479,13 +480,14 @@ async function idle(body, given) {
   }
 }
 
+let statusTick = null, idleTick = null;
 const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
 let tq = '', tcat = '', tOwned = false, tEquipped = false;
 let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 const TGRADE = GRADES;
 const LEGACY_HANJA = { legacy_first_night: '第一夜', legacy_unfinished_road: '未完', legacy_ember: '殘火' };
 async function titles(body) {
-  const snap = await load('world_title_snapshot');
+  const snap = await load('world_title_snapshot', undefined, { maxAge: 600000 });
   const list = snap?.titles || [];
   const order = c => { const i = TCAT_ORDER.indexOf(c); return i < 0 ? 99 : i; };
   const cats = [...new Set(list.map(t => t.category))].sort((a, b) => order(a) - order(b));
@@ -680,8 +682,8 @@ function refreshPop() {
 }
 
 async function faction(body) {
-  const [missions, base, map, board, fq] = await Promise.all([load('world_faction_mission_snapshot'), load('world_faction_base_snapshot').catch(() => null), load('world_map_snapshot', undefined, { maxAge: 30000 }).catch(() => null), load('world_faction_board', undefined, { maxAge: 60000 }).catch(() => null),
-    store.character?.major_faction_id ? load('world_faction_snapshot').catch(() => null) : null]);
+  const [missions, base, map, board, fq] = await Promise.all([load('world_faction_mission_snapshot', undefined, { maxAge: 60000 }), load('world_faction_base_snapshot', undefined, { maxAge: 60000 }).catch(() => null), load('world_map_snapshot', undefined, { maxAge: 30000 }).catch(() => null), load('world_faction_board', undefined, { maxAge: 60000 }).catch(() => null),
+    store.character?.major_faction_id ? load('world_faction_snapshot', undefined, { maxAge: 60000 }).catch(() => null) : null]);
   const c = store.character, here = currentRegion(map);
   const mine = (missions || []).filter(m => m.faction_key === c.faction_key || m.eligible);
   const major = c.major_faction_id;

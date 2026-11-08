@@ -1,4 +1,5 @@
 import { on, toast } from './core.js';
+import { SFX_ACTS } from './changes.js';
 import { LAYERS as AMB, bird, cricket, owl, drip } from './ambience.js';
 
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
@@ -557,11 +558,6 @@ export function setEnabled(key, value) {
 }
 export function setVolume(key, value) { sound[key] = value; saveSound(); ensureCtx(); applyVolumes(); }
 
-const SFX_OF = [
-  [/field_search|battle_action|field_gather/, null], [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'], [/repair/, 'repair'],
-  [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
-  [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
-];
 function soundLink() {
   if (POPWIN || !('BroadcastChannel' in window)) return;
   const id = Math.random().toString(36).slice(2), bc = new BroadcastChannel('yh-sound');
@@ -583,7 +579,7 @@ function soundLink() {
 export function initSound() {
   if (POPWIN) { document.addEventListener('pointerdown', () => { if (!alarmReady) { alarmReady = true; loadSound(); } if (ensureCtx()) { ctx.resume?.(); applyVolumes(); } }, { once: true }); return; }
   loadSound();
-  on('changed', ({ name }) => { const m = SFX_OF.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
+  on('changed', ({ name }) => { const m = SFX_ACTS.find(([re]) => re.test(name)); const k = m ? m[1] : 'confirm'; if (k) playSfx(k); });
   let expTimer = null;
   const setExp = e => { clearTimeout(expTimer); const left = e?.ends_at ? new Date(e.ends_at) - Date.now() : 0; if (left > 0) expTimer = setTimeout(() => setExp(null), Math.min(left + 500, 2 ** 31 - 1)); setScene({ exp: left > 0 }); };
   on('expedition', setExp);
