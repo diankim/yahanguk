@@ -3067,3 +3067,16 @@ b.shadow { color: var(--sp); }
 .fpic { display: flex; justify-content: center; align-items: center; min-height: 72px; margin: 2px 0; padding: 6px; border: 1px dashed var(--line); border-radius: 6px; overflow: hidden; }
 .fpic .fpic-img { image-rendering: pixelated; width: auto; height: auto; max-width: 50%; transform: scale(2); transform-origin: center; margin: 16px 0; }
 .fpic .fpic-sw { width: 96px; height: 40px; }
+.wed-box { display: grid; gap: 10px; }
+.wed-box .desc { margin: 0; }
+.raid-log.wed-log { max-height: min(46vh, 360px); gap: 6px; padding: 2px 2px 2px 0; }
+.raid-log.wed-log li { display: block; padding: 4px 0 4px 10px; border-left: 3px solid transparent; line-height: 1.55; overflow-wrap: anywhere; }
+.raid-log.wed-log .k-rite span { color: color-mix(in srgb, var(--text) 82%, var(--muted)); }
+.raid-log.wed-log .k-host { border-left-color: var(--gold); }
+.raid-log.wed-log .k-host span { color: var(--gold); }
+.raid-log.wed-log .k-clap span, .raid-log.wed-log .k-petal span { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.raid-log.wed-log .k-wish { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); border-radius: 3px; padding-right: 8px; }
+.raid-log.wed-log .k-wish span { color: var(--text); font-weight: 600; }
+.wed-box .btn-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.wed-box .btn-row #wed-wish { flex: 1 1 160px; min-width: 0; }
+.wed-box .btn-row [data-cheer=wish] { flex: none; }
