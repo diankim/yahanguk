@@ -608,7 +608,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 상점·대장간·거래소는 안전지대 현장에서 연다.
 - 공지·패치노트 #/patch(views/patch.js, world_patch_notes note_id·title·body, 읽기 전용 RLS): note_id '0.0.0'이 맨 위 늘 펼친 공지(patch.js NOTICE), 운영진 「공지 고치기」 world_patch_notice_save(제목 80·본문 6,000자, 남은 서버가 거절), 링크 「#패치노트:0.0.0」. 도움말·설정·새로고침 안내에 단추.
 - 제보·소감(도움말·설정): 분류 오류·밸런스·제안·소감 및 기타(review)(옛 화면·기타는 표시만)·제목·내용, 원하면 화면 위치·크기·기기·최근 오류(world_bug_reports, 1시간 5건). GM 알림, GM은 「받은 제보」에서 상태(접수·확인 중·고침·닫음)·답(보낸 이 알림). 조사원은 자기 것만, 「지우기」 world_bug_report_hide(행은 남아 운영진 칸 「보낸 이가 지움」). 첫 의견 보상: 계정마다 한 번 노정 건량 2·청심환 2(world_report_reward_give, world_report_rewards, 운영진 제외, 넘치면 창고, world_bug_report_list.reward_done 안내).
-- 운영진은 world_staff 명단, GM 표식은 명단 캐릭터만(이름에 GM을 넣어도 안 붙음). 채팅·귓속말에서 GM은 이름 대신 표식만(누르면 카드). 현재 GM: 아이디 mu5ician(테스트용).
+- 운영진은 world_staff 명단, GM 표식은 명단 캐릭터만(이름에 GM을 넣어도 안 붙음). 채팅·귓속말에서 GM은 이름 대신 표식만(누르면 카드). 현재 GM: 아이디 mu5ician(테스트용)·mu5ician3(캐릭터 「정청 서리 윤해담」, 화면 검증용 시험 계정 — 2026-11-08 비축 초대권으로 만듦, 비밀번호는 저장소에 없음).
 - 꾸미기: 테두리 22·바탕 무늬 6·낙관 17(세력 낙관 7, world_cosmetic_catalog). 여러 활동으로 얻고 칭호 판정 때 함께 판정·알림. 장착 world_cosmetic_equip(소유 확인 → profile.frame/pattern/seal). 카드·내 프로필·여기 있는 이들·동료 목록에, 채팅엔 테두리만. 숨김은 얻기 전 이름·조건을 가림. 설정의 꾸미기 칸은 누르면 묶음 아래 줄에 얻은 경로(잠긴 것은 방법). 움직임 효과는 최종 콘텐츠 단계에서.
 - 로딩·오류·비활성·수령 가능 상태를 명확히, 연타해도 중복 요청 없음.
 
