@@ -61,6 +61,6 @@ begin
     'counts', case when uid = p_owner or public.world_housing_married(uid, p_owner) then jsonb_build_object('pat', pt.pat_n, 'play', pt.play_n, 'feed', pt.feed_n) end);
 end $function$;
 
-update public.world_patch_notes set body = body || E'\n- 혼례를 올린 정인은 서로의 별채 꼬마 동무를 주인처럼 돌볼 수 있습니다(쓰다듬기·놀기·먹이, 하루 횟수는 주인과 함께 씁니다).\n- 창고 꺼내기 목록도 가방처럼 「칸대로 나눠 보기」로 볼 수 있습니다.\n- 도움말 전투 항목에 치명타율(60%)·회피율(40%)·달아날 확률(95%) 상한을 적었습니다.'
+update public.world_patch_notes set body = body || E'\n- 혼례를 올린 정인은 서로의 별채 꼬마 동무를 주인처럼 돌볼 수 있습니다(쓰다듬기·놀기·먹이, 하루 횟수는 주인과 함께 씁니다).\n- 별채 곳간 창을 PC는 곳간·가방 두 칸으로, 휴대폰은 탭으로 나눠 가구가 많아도 덜 길게 보이게 했습니다.\n- 창고 꺼내기 목록도 가방처럼 「칸대로 나눠 보기」로 볼 수 있습니다.\n- 도움말 전투 항목에 치명타율(60%)·회피율(40%)·달아날 확률(95%) 상한을 적었습니다.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261109010000' where key = 'db_version';

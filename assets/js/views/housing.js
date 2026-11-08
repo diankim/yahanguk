@@ -344,17 +344,23 @@ async function save() {
   return { content: '별채를 저장했습니다.' };
 }
 
+let storeTab = 'store';
 async function openStore() {
   const drawStore = () => {
     const st = Object.entries(snap.store || {}).filter(([, n]) => n > 0), bag = Object.entries(snap.bag || {}).filter(([, n]) => n > 0);
     const used = st.reduce((a, [, n]) => a + n, 0);
     return `<p class="muted small">거둔 가구가 들어가는 곳입니다. 곳간 ${used}/${snap.store_cap}칸 · 꺼내면 가방으로 갑니다. 넣기·꺼내기는 안전지대에서, 버리기는 어디서나 됩니다. 곳간이 차면 새로 얻은 가구는 가방으로 갑니다.${snap.edit_block ? ` <b class="bad-text">넣기·꺼내기: ${esc(snap.edit_block)}</b>` : ''}</p>
-      <h4>곳간</h4><ul class="hs-list">${st.map(([id, n]) => `<li><span>${esc(furName(id))} ×${n} <small class="muted">${GRADE[gradeOf(id)]}</small></span><span><button class="btn small" data-here="곳간 정리" data-st="take:${id}">꺼내기</button><button class="btn small danger" data-here="곳간 정리" data-st="discard:${id}">버리기</button></span></li>`).join('') || '<li class="muted small">비어 있습니다.</li>'}</ul>
-      <h4>가방의 가구</h4><ul class="hs-list">${bag.map(([id, n]) => `<li><span>${esc(furName(id))} ×${n}</span><span><button class="btn small" data-here="곳간 정리" data-st="put:${id}">곳간에 넣기</button></span></li>`).join('') || '<li class="muted small">가방에 가구가 없습니다.</li>'}</ul>`;
+      <div class="seg-mini hs-st-tabs" role="tablist"><button class="${storeTab === 'store' ? 'on' : ''}" data-st-tab="store">곳간 ${st.length}</button><button class="${storeTab === 'bag' ? 'on' : ''}" data-st-tab="bag">가방 ${bag.length}</button></div>
+      <div class="hs-st-cols" data-tab="${storeTab}">
+        <section class="hs-st-col" data-col="store"><h4>곳간 <small class="muted">${used}/${snap.store_cap}칸</small></h4><ul class="hs-fgrid">${st.map(([id, n]) => `<li><p><b>${esc(furName(id))}</b> <small class="muted">×${n} · ${GRADE[gradeOf(id)]}</small></p><span><button class="btn small" data-here="곳간 정리" data-st="take:${id}">꺼내기</button><button class="btn small danger" data-here="곳간 정리" data-st="discard:${id}">버리기</button></span></li>`).join('') || '<li class="muted small empty">비어 있습니다.</li>'}</ul></section>
+        <section class="hs-st-col" data-col="bag"><h4>가방의 가구</h4><ul class="hs-fgrid">${bag.map(([id, n]) => `<li><p><b>${esc(furName(id))}</b> <small class="muted">×${n} · ${GRADE[gradeOf(id)]}</small></p><span><button class="btn small" data-here="곳간 정리" data-st="put:${id}">곳간에 넣기</button></span></li>`).join('') || '<li class="muted small empty">가방에 가구가 없습니다.</li>'}</ul></section>
+      </div>`;
   };
-  const m = openModal({ title: '곳간', body: drawStore() });
+  const m = openModal({ title: '곳간', wide: true, body: drawStore() });
   const root = $('#modal');
   root?.addEventListener('click', e => {
+    const t = e.target.closest('[data-st-tab]');
+    if (t) { storeTab = t.dataset.stTab; $$('[data-st-tab]', root).forEach(x => x.classList.toggle('on', x === t)); const c = $('.hs-st-cols', root); if (c) c.dataset.tab = storeTab; return; }
     const b = e.target.closest('[data-st]'); if (!b) return;
     const [dir, id] = b.dataset.st.split(':');
     guard(b, async () => {

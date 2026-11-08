@@ -3080,3 +3080,23 @@ b.shadow { color: var(--sp); }
 .wed-box .btn-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .wed-box .btn-row #wed-wish { flex: 1 1 160px; min-width: 0; }
 .wed-box .btn-row [data-cheer=wish] { flex: none; }
+.hs-st-tabs { display: none; margin-bottom: 8px; }
+.hs-st-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }
+.hs-st-col { min-width: 0; }
+.hs-st-col h4 { margin: 0 0 6px; }
+.hs-st-col .hs-fgrid { max-height: min(60vh, 520px); overflow-y: auto; }
+.hs-fgrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.hs-fgrid li { display: flex; flex-direction: column; gap: 4px; padding: 7px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); min-width: 0; }
+.hs-fgrid li p { margin: 0; line-height: 1.35; overflow-wrap: anywhere; }
+.hs-fgrid li b { font-size: calc(13px * var(--fz, 1)); }
+.hs-fgrid li > span { display: flex; gap: 4px; justify-content: flex-end; margin-top: auto; }
+.hs-fgrid li > span .btn { flex: 1; }
+.hs-fgrid li.empty { grid-column: 1 / -1; border: 0; padding: 4px 0; }
+@media (max-width: 639px) {
+  .hs-st-tabs { display: inline-flex; }
+  .hs-st-cols { grid-template-columns: 1fr; }
+  .hs-st-cols[data-tab="store"] [data-col="bag"], .hs-st-cols[data-tab="bag"] [data-col="store"] { display: none; }
+  .hs-st-col h4 { display: none; }
+  .hs-st-col .hs-fgrid { max-height: none; overflow: visible; }
+  .hs-fgrid { grid-template-columns: 1fr 1fr; }
+}
