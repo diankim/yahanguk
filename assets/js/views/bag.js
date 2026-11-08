@@ -5,6 +5,7 @@ import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
 import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
+import { GWIRYEONG } from '../rules.js';
 import { hit } from '../changes.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
@@ -191,7 +192,7 @@ async function items(body, inv, stg) {
       const boss = bossUse(id);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}${tags.includes('장착 중') ? ' is-eq' : ''}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" title="${esc(GWIRYEONG.supply)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${showUse ? `<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}

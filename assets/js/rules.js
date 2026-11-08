@@ -86,6 +86,7 @@ export const GATHER_GAP = RT.gather_s * 1000;
 export const SEARCH_GAP = Math.ceil(RT.search_ms / 1000) * 1000;
 const GW = GD.gwiryeong || { hold: 1, cooldown_h: 72, window_days: 3 };
 export const GWIRYEONG = {
+  short: '서버 전체에 몇 포기뿐 · 쓸 일이 없으면 요화로 곤란한 동료에게 넘겨 주세요',
   supply: `서버 전체로 나오는 수는 지난 ${GW.window_days}일 동안 요화에 걸린 조사원 수에 맞춰 정해집니다. 요화는 침식을 관리하면 피할 수 있는 위험이라, 귀령초가 걸린 사람보다 많이 쌓이지 않게 해 둔 것입니다.`,
   trade: '거래할 수 있게 만든 것은 주고받으라는 뜻입니다. 당장 쓸 일이 없으면 요화로 곤란한 동료에게 넘겨 주세요.',
   hold: `한 번 얻으면 ${GW.cooldown_h}시간 동안은 다시 나오지 않고, 가방·창고에 ${GW.hold}포기를 갖고 있는 동안에도 나오지 않습니다(쓰거나 넘기면 다시 찾을 수 있습니다).`
