@@ -179,6 +179,7 @@ function draw(box, id, inv, prices, mode) {
   box.innerHTML = `
     <div class="chips">${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${chip(nameOf(it?.rarity || 'common'), 'rar')}
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
+    ${isFurniture(id) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
@@ -222,6 +223,7 @@ function draw(box, id, inv, prices, mode) {
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   fillSources(box, id);
+  if (isFurniture(id)) import('../housing/thumbs.js').then(({ furnPic }) => { const x = $('[data-fpic]', box); if (x) { x.innerHTML = furnPic(id); if (!x.innerHTML) x.remove(); } }).catch(() => {});
   if (isFurniture(id)) myHomeCounts(rpc).then(h => {
     const row = $('[data-home-have]', box); if (!row) return;
     const placed = h.placed[id] || 0, stored = h.stored[id] || 0; if (!placed && !stored) return;

@@ -304,6 +304,7 @@ async function craft(body, inv, stg) {
       <article class="recipe ${can ? 'can' : ''}">
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${SLOTS[kind] ? `<span class="chip slot">${icon(SLOTS[kind][1], 12)}${esc(SLOTS[kind][0])}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
+        ${kind === 'furniture' ? `<button class="fpic" data-info="${esc(r.output)}" data-fpic="${esc(r.output)}" title="별채에 놓은 모습" aria-label="${esc(r.output_name || nameOf(r.output))} 미리보기"></button>` : ''}
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
@@ -333,6 +334,7 @@ async function craft(body, inv, stg) {
   if (!ci.dataset.bound) { ci.dataset.bound = '1'; ci.addEventListener('compositionend', () => ci.oninput({})); }
   $('#craft-unfocus', body)?.addEventListener('click', () => { matFocus = recipeFocus = null; craft(body, inv, stg); });
   $$('.recipe [data-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.info, { mode: 'bag' }));
+  if ($('[data-fpic]', body)) import('../housing/thumbs.js').then(({ furnPic }) => $$('[data-fpic]', body).forEach(x => { x.innerHTML = furnPic(x.dataset.fpic); if (!x.innerHTML) x.remove(); })).catch(() => {});
   $$('.craft-qty', body).forEach(box => {
     const id = box.dataset.cq, max = Number(box.dataset.max) || 1, inp = $('.cq-n', box);
     const go = box.closest('.recipe')?.querySelector('[data-craft]');

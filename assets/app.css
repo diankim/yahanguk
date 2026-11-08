@@ -3061,3 +3061,7 @@ b.shadow { color: var(--sp); }
 .f-nick { font-style: normal; margin-left: 4px; padding: 0 5px; border-radius: 6px; font-size: calc(11px * var(--fz, 1)); color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); white-space: nowrap; }
 .f-memo { font-size: calc(11.5px * var(--fz, 1)); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 .btn.nowrap { white-space: nowrap; flex-shrink: 0; }
+.fpic { display: flex; justify-content: center; align-items: center; min-height: 72px; margin: 2px 0; padding: 6px; border: 1px dashed var(--line); border-radius: 6px; background: transparent; cursor: pointer; width: 100%; overflow: hidden; }
+p.fpic { cursor: default; }
+.fpic .fpic-img { image-rendering: pixelated; width: auto; height: auto; max-width: 50%; transform: scale(2); transform-origin: center; margin: 16px 0; }
+.fpic .fpic-sw { width: 96px; height: 40px; }
