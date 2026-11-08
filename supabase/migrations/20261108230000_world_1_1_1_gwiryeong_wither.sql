@@ -236,8 +236,26 @@ begin
   execute replace(src, o, $n$  if coalesce((select h.n from public.world_gwiryeong_held() h where h.owner_id = p_uid), 0) >= (ru ->> 'hold')::int then return false; end if;$n$);
 end $r$;
 
+do $r$
+declare src text := pg_get_functiondef('public.world_trade_direct_offer(uuid,jsonb,bigint,jsonb,bigint)'::regprocedure);
+  o text := $o$p_want := coalesce(p_want, '{}'::jsonb);$o$;
+begin
+  if (length(src) - length(replace(src, o, ''))) / length(o) <> 1 then raise exception 'world_trade_direct_offer: 바꿀 곳이 하나가 아님'; end if;
+  execute replace(src, o, $n$p_want := coalesce(p_want, '{}'::jsonb);
+  if p_give ? 'gwiryeong_cho' and p_want ? 'gwiryeong_cho' then raise exception '귀령초는 서로 맞바꿀 수 없습니다.' using hint = 'gw_swap'; end if;$n$);
+end $r$;
+
+do $r$
+declare src text := pg_get_functiondef('public.world_trade_direct_respond(uuid,boolean)'::regprocedure);
+  o text := $o$if t.status <> 'pending' or t.expires_at <= now() then raise exception '이미 끝났거나 시간이 지난 거래 제안입니다.'; end if;$o$;
+begin
+  if (length(src) - length(replace(src, o, ''))) / length(o) <> 1 then raise exception 'world_trade_direct_respond: 바꿀 곳이 하나가 아님'; end if;
+  execute replace(src, o, o || $n$
+  if p_accept and coalesce(t.give_items, '{}'::jsonb) ? 'gwiryeong_cho' and coalesce(t.want_items, '{}'::jsonb) ? 'gwiryeong_cho' then raise exception '귀령초는 서로 맞바꿀 수 없습니다.' using hint = 'gw_swap'; end if;$n$);
+end $r$;
+
 select public.world_gwiryeong_wither_tick();
 
-update public.world_patch_notes set body = body || E'\n- 귀령초는 처음 찾은 때부터 3일이 지나면 시들어 사라집니다(남에게 넘겨도 처음 찾은 때부터 셉니다). 시들기 하루 전에 알려 드립니다. 귀령초는 한 사람이 한 포기까지만 지닐 수 있어, 이미 가진 사람은 거래·서신으로도 더 받을 수 없습니다. 요화로 곤란한 동료가 있으면 넘겨 주세요.'
+update public.world_patch_notes set body = body || E'\n- 귀령초는 처음 찾은 때부터 3일이 지나면 시들어 사라집니다(남에게 넘겨도 처음 찾은 때부터 셉니다). 시들기 하루 전에 알려 드립니다. 귀령초는 한 사람이 한 포기까지만 지닐 수 있어, 이미 가진 사람은 거래·서신으로도 더 받을 수 없습니다. 귀령초끼리 서로 맞바꿀 수도 없습니다. 요화로 곤란한 동료가 있으면 넘겨 주세요.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261108230000' where key = 'db_version';
