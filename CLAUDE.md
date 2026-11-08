@@ -526,7 +526,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 비무 world_spars: 같은 곳 조사원에게 카드에서 신청(world_spar_challenge, 한 번에 하나·5분·같은 상대 3분에 한 번) → world_spar_respond → world_combat_stats로 10합(기세 100+8×레벨, 결과 replay.js·spar.js openSparResult). 목숨·체력·물품·전·경험치 그대로, world_events 안 남김(토벌·칭호·기술로 안 셈). 둘 다 전투불능·원정·자율·이동·요괴 전투 아님, 차단 아님.
 - 비무회 world_tourneys·entries·entrants·matches, pg_cron yh-tourney(1분, world_tourney_tick). 신청 월 00:00~금 23:59 KST(안전지대 「비무 방」 views/tourney.js #/tourney), 토 21:00 1:1·일 21:00 팀전(같은 파티 2명), 개최지는 주마다 도는 안전지대(반요촌 제외), 1시간·30분 전 알림, 개최지에 없어도 출전(10분 전에 쓰러졌거나 숨졌으면 불참·부전승), 최소 4명(팀). 단판 토너먼트, 작전(태세·회복품 둘·기술 쓰는 때), 기세 100+8×평균 레벨, 레벨 차 1마다 2%(최대 20%), 능력치·장비 차 절반, 합마다 2초. world_events 없음, 규칙 'tourney'(world_tourney_rule_count). 탈것 tn_white_horse(3회 우승), 카드 tn_champ(7일).
-- 혼례 world_weddings·guests·lines: 인연도 300·둘 다 Lv20·6장 마침, 본부 정청 또는 한 사람의 세력 거점, 3,000전(1,500씩), 받은 5분 뒤 10분, 하객 박수 3·꽃잎 3·축사 1(40자, 15초 간격), 혼례 떡, 칭호 wed_vow·fr_wed·sl_hap·marks.married(한 지붕). 혼례 올린 연리가 끝나면 다시 맺기 7일. bond.js openWedding.
+- 혼례 world_weddings·guests·lines: 인연도 300·둘 다 Lv20·6장 마침, 본부 정청 또는 한 사람의 세력 거점, 3,000전(1,500씩), 받은 5분 뒤 10분, 하객 박수 3·꽃잎 3·축사 1(40자, 15초 간격), 혼례 떡, 칭호 wed_vow·fr_wed·sl_hap·marks.married(한 지붕). 혼례 올린 연리가 끝나면 다시 맺기 7일. bond.js openWedding. 입구는 알림(혼례 보기)과 현장 띠(raid.js fillRaidBand가 world_wedding_now — 30분 안에 시작하거나 진행 중인 혼례 중 내가 정인·초대받음·그 자리에 있음, 1분 캐시, 1.1.1d).
 
 ## 14. 인게임 채팅과 커뮤니케이션
 

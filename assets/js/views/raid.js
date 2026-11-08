@@ -373,10 +373,12 @@ function briefAge() {
 export const raidBand = () => '<div id="raid-band"></div>';
 export async function fillRaidBand(box) {
   if (!box) return;
-  if (!RAID_ON) { box.remove(); return; }
-  let b; try { b = await load('world_raid_brief', undefined, { maxAge: briefAge() }); } catch { box.remove(); return; }
+  const wedP = load('world_wedding_now', undefined, { maxAge: 60000 }).catch(() => null);
+  let b = null; if (RAID_ON) { try { b = await load('world_raid_brief', undefined, { maxAge: briefAge() }); } catch {} }
+  const wed = await wedP;
   if (!box.isConnected) return;
   const w = b?.world, rows = [];
+  if (wed?.wed_id) rows.push(`<a class="raid-band-row hot" href="#" data-wed-band="${esc(wed.wed_id)}">${icon('heart', 14)}<span><b>${esc(wed.a)}·${esc(wed.b)}</b>의 혼례 · ${esc(wed.place || '')} · ${wed.status === 'ceremony' || new Date(wed.starts_at) <= new Date() ? `${left(wed.ends_at)} 남음` : `${left(wed.starts_at)} 뒤 시작`}</span><small>혼례 보기</small></a>`);
   if (b?.final) rows.push(`<a class="raid-band-row hot" href="#/raid/${esc(b.final)}">${icon('sword', 14)}<span><b>구중 봉주와의 결전</b>이 열려 있습니다</span><small>들어가기</small></a>`);
   if (w) {
     const t = x => x ? left(x) : '';
@@ -387,6 +389,8 @@ export async function fillRaidBand(box) {
   }
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
+  const wb = $('[data-wed-band]', box);
+  if (wb) wb.onclick = async e => { e.preventDefault(); (await import('../bond.js')).openWedding(wb.dataset.wedBand); };
   backPrompt(w);
 }
 function backPrompt(w) {
