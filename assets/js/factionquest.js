@@ -148,7 +148,7 @@ export function bindFaction(body, s) {
   $$('[data-fq-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.fqInfo));
   if ($('.fq-vault', body)) bindListFilter(body, vaultFilt, () => $$('.fq-vault > li', body));
   bindQty(body);
-  bindDonate(body, s, done);
+  bindDonate(body, s);
   const tr = $('#fq-trial', body);
   if (tr) tr.onclick = () => guard(tr, async () => {
     const r = await act('world_faction_trial');
@@ -171,7 +171,7 @@ export function bindFaction(body, s) {
   if (sh) sh.onchange = () => guard(sh, async () => { const r = await act('world_faction_show_rank', { p_show: sh.checked }); return r; });
 }
 
-function bindDonate(body, s, done) {
+function bindDonate(body, s) {
   const box = $('#fq-don-box', body); if (!box) return;
   const d = s.donate || {}, rate = d.rate || 50, cap = d.cap || 30, items = d.items || [];
   for (const id of Object.keys(donPicks)) { const it = items.find(x => x.item_id === id); if (!it) delete donPicks[id]; else donPicks[id] = Math.min(donPicks[id], it.qty); }
@@ -186,7 +186,7 @@ function bindDonate(body, s, done) {
     if (el) el.innerHTML = n ? `${fmt.num(n)}개 · 시세 ${fmt.num(val)}전 → 공훈 <b>+${gain}</b>${over ? ` <span class="warn">(오늘 상한 ${esc(`${cap}을(를)`)} 넘는 몫은 공훈이 되지 않습니다)</span>` : ''}` : '';
     if (btn) btn.disabled = !n;
   };
-  const redraw = () => { box.innerHTML = donateHtml(s, true); bindDonate(body, s, done); };
+  const redraw = () => { box.innerHTML = donateHtml(s, true); bindDonate(body, s); };
   const bind = () => {
     $('#fq-don-pick', box)?.addEventListener('click', () => openItemPick({ title: '세력에 넘길 물품', rows, many: true, picked: donPicks, okText: '이대로 담기',
       onDone: p => { donPicks = p; redraw(); } }));
