@@ -3,7 +3,7 @@ import { hit } from '../changes.js';
 import { load, chip, loading, errorBox } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
-import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty } from './itempick.js';
+import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
 const bindInfo = box => $$('[data-info]', box).forEach(b => b.onclick = e => { e.preventDefault(); openItemInfo(b.dataset.info); });
@@ -285,10 +285,10 @@ export async function renderMarket(box) {
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" ${listRowAttrs(catMap.get(o.item_id), nameOf(o.item_id))}><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
         <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
-        <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`}</div></li>`;
+        <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `${o.quantity > 1 ? qtyHtml({ key: `take:${o.offer_id}`, min: 1, max: o.quantity, value: o.quantity, all: true, small: true }) : ''}<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
       <p class="muted small"><b>희귀 재료</b>(비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽)는 거래소에서만 사고팝니다: 기준 시세 70% 이상 · 한 사람 24시간 20개까지 · 거래세 10%.</p>
-      <p class="muted small">한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다. 0전 등록은 불가하고 가격은 기준 시세의 10배까지입니다. 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p></details>`;
+      <p class="muted small">여러 개를 묶어 올린 물품도 필요한 개수만 골라 살 수 있습니다. 한 사람이 동시에 <b>10건</b>까지 올려 둘 수 있습니다. 0전 등록은 불가하고 가격은 기준 시세의 10배까지입니다. 희귀 성장 물품·잠근 물품·장착 중인 마지막 한 개는 올릴 수 없습니다. 등록한 물품은 팔리거나 취소할 때까지 가방에서 빠집니다.</p></details>`;
     body.innerHTML = (boardTab === 'buy' ? `<p class="muted small mk-count">판매 중 ${others.length}건</p>
       ${listFilterHtml(buyFilt, { label: '판매 물품 찾기' })}
       ${others.length ? `<ul class="item-list mk-list">${others.map(o => row(o, false)).join('')}</ul><p class="muted small mk-none" hidden>맞는 물품이 없습니다.</p>` : empty('다른 조사원이 등록한 물품이 없습니다.', 'shop')}
@@ -339,7 +339,12 @@ export async function renderMarket(box) {
         guard(form.querySelector('[type=submit]'), () => act('world_trade_offer_create', { p_item_id: form.item.value, p_qty: qty, p_unit_price: price }));
       };
     }
-    $$('[data-take]', body).forEach(b => b.onclick = async () => { if (await ask('이 물품을 살까요?', { title: '거래소 구매', ok: '사기' })) guard(b, () => act('world_trade_offer_buy', { p_offer_id: b.dataset.take })); });
+    bindQty(body);
+    $$('[data-take]', body).forEach(b => b.onclick = async () => {
+      const o = others.find(x => x.offer_id === b.dataset.take); if (!o) return;
+      const q = o.quantity > 1 ? Math.min(o.quantity, Math.max(1, qtyOf(body, `take:${o.offer_id}`))) : 1;
+      if (await ask(`${nameOf(o.item_id)} ×${q}을(를) ${fmt.jeon(o.unit_price * q)}에 살까요?`, { title: '거래소 구매', ok: '사기' })) guard(b, () => act('world_trade_offer_buy', { p_offer_id: o.offer_id, p_qty: q }));
+    });
     $$('[data-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_trade_offer_cancel', { p_offer_id: b.dataset.cancel })));
     bindInfo(body);
   } catch (e) { body.innerHTML = errorBox(e.message); }
