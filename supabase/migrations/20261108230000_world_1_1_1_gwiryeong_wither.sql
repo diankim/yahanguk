@@ -92,7 +92,7 @@ create or replace function public.world_gwiryeong_reconcile()
  security definer
  set search_path to 'pg_catalog', 'public'
 as $function$
-declare wither interval := make_interval(hours => (public.world_gwiryeong_rules() ->> 'wither_h')::int); h record; pool bigint[] := '{}'; i int;
+declare wither interval := make_interval(hours => (public.world_gwiryeong_rules() ->> 'wither_h')::int); hold int := (public.world_gwiryeong_rules() ->> 'hold')::int; h record; pool bigint[] := '{}'; i int;
 begin
   perform pg_advisory_xact_lock(hashtext('yh-gwiryeong-plants'));
   for h in select a.holder, a.cnt - coalesce(x.n, 0) less
@@ -100,10 +100,13 @@ begin
              left join public.world_gwiryeong_held() x on x.owner_id = a.holder where a.cnt > coalesce(x.n, 0) loop
     pool := pool || array(select id from public.world_gwiryeong_plants where ended is null and holder = h.holder order by expires_at, id limit h.less);
   end loop;
-  for h in select x.owner_id, x.n - coalesce(a.cnt, 0) more
+  for h in select x.owner_id, x.n, x.n - coalesce(a.cnt, 0) more
              from public.world_gwiryeong_held() x
              left join (select holder, count(*)::int cnt from public.world_gwiryeong_plants where ended is null group by holder) a on a.holder = x.owner_id
             where x.n > coalesce(a.cnt, 0) loop
+    if h.n > hold then
+      raise exception '귀령초는 한 사람이 %포기까지만 지닐 수 있습니다(가방·창고·거래소 등록·받지 않은 서신을 합쳐). 이미 귀령초를 가진 사람은 더 받을 수 없습니다.', hold using hint = 'gw_hold';
+    end if;
     for i in 1..h.more loop
       if cardinality(pool) > 0 then
         update public.world_gwiryeong_plants set holder = h.owner_id where id = pool[1];
@@ -215,6 +218,22 @@ declare src text := pg_get_functiondef('public.world_yohwa_tick()'::regprocedure
 begin
   if (length(src) - length(replace(src, o, ''))) / length(o) <> 1 then raise exception 'world_yohwa_tick: 바꿀 곳이 하나가 아님'; end if;
   execute replace(src, o, $n$perform public.world_gwiryeong_wither_tick(); return n;$n$);
+end $r$;
+
+insert into public.world_gwiryeong_plants(holder, found_at, expires_at)
+select h.owner_id, g.got, g.got + make_interval(hours => (public.world_gwiryeong_rules() ->> 'wither_h')::int)
+  from public.world_gwiryeong_held() h
+  cross join lateral generate_series(1, h.n) k
+  cross join lateral (select coalesce((select max(l.got_at) from public.world_gwiryeong_log l where l.owner_id = h.owner_id), now()) got) g
+ where not exists (select 1 from public.world_gwiryeong_plants p where p.holder = h.owner_id and p.ended is null);
+
+do $r$
+declare src text := pg_get_functiondef('public.world_gwiryeong_reserve(uuid,text)'::regprocedure);
+  o text := $o$  if coalesce((select (c.inventory ->> 'gwiryeong_cho')::int from public.world_characters c where c.owner_id = p_uid), 0)
+     + coalesce((select (s.items ->> 'gwiryeong_cho')::int from public.world_storage s where s.owner_id = p_uid), 0) >= (ru ->> 'hold')::int then return false; end if;$o$;
+begin
+  if (length(src) - length(replace(src, o, ''))) / length(o) <> 1 then raise exception 'world_gwiryeong_reserve: 바꿀 곳이 하나가 아님'; end if;
+  execute replace(src, o, $n$  if coalesce((select h.n from public.world_gwiryeong_held() h where h.owner_id = p_uid), 0) >= (ru ->> 'hold')::int then return false; end if;$n$);
 end $r$;
 
 select public.world_gwiryeong_wither_tick();
