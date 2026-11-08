@@ -255,7 +255,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 이목 = 30 + 체질×0.8 − 민첩×0.4 + 방어구 방어력×0.6 + 장비 이목(5~300). 원정 합동 전투·파티 토벌·보스가 이목^1.3로 표적.
 - 무기 직업 태그 equipment_traits.jobs(근접 호위 무사·암영 검객 · 원거리 조사원 · 술법 퇴마관·봉인술사·의무관, 없으면 trg_world_weapon_jobs가 weapon_type으로 채움, world_weapon_job_ok — world_equip_item·world_reset_identity, 화면 item.js weaponJobs).
 - 주 능력치 조건(레벨당 3점 기준): 무기·방어구 5+0.35×3×(장착 레벨−1), 관모·신·노리개·호신부·탈·채집 도구 5+0.25×3×(장착 레벨−1). 주 능력치는 무기 종류·장비 갈래로. 새 장비도 같은 식.
-- 생활 도구(g_tools.sql·b_life.sql·data_life.py): 능력치 조건 없이 equipment_traits.req_line(gathering_rank·crafting_rank·investigation_rank)·req_rank(world_equip_item, item.js statReqs). 제작 공구 조건은 craft_fields 계열 중 최고 단계. 효과(world_field_gather): 곡괭이(world_tool_lines pick)는 ore·relics, 채집도(knife)는 herbs·wood·supplies·water에서 채집량 +10%p, 낫·등은 sig_pct·sig_where로 지역 signature_items(영맥 낫 herbs·spirit 3%·영등 relics 또는 어두운 region_type 5%). 영맥 나침반은 길·채집터 무게 ×1.2. 낚싯대 단계 덤은 2단계까지, 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 생활 장비 32가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대 6단계·제작 공구 15, 제작법 r_lt_*). 새 도구도 이 규칙.
+- 생활 도구(g_tools.sql·b_life.sql·data_life.py): 능력치 조건 없이 equipment_traits.req_line(gathering_rank·crafting_rank·investigation_rank)·req_rank(world_equip_item, item.js statReqs). 제작 공구 조건은 craft_fields 계열 중 최고 단계. 효과(world_field_gather): 곡괭이(world_tool_lines pick)는 ore·relics, 채집도(knife)는 herbs·wood·supplies·water에서 채집량 +10%p, 낫·등은 sig_pct·sig_where로 지역 signature_items(영맥 낫 herbs·spirit 3%·영등 relics 또는 어두운 region_type 5%). 영맥 나침반은 길·채집터 무게 ×1.2. 낚싯대 단계 덤은 2단계까지, 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 생활 장비 46가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대·제작 공구 다섯 모두 2~6단계가 빠짐없이 — 1.1.1g에 3·5단계 낫·등·제작 공구 14를 더함(마이그레이션 20261109050000), 제작법 r_lt_*). 새 도구도 이 규칙, 단계마다 칸이 빠지지 않게(world_tool_lines 사슬).
 - 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, 화면 bag.js toolCovers는 물품 목록 tl·tier — world_tool_lines 한 곳만 고침). 채집은 도구를 조건으로 보지 않는다.
 - 장착 조건(레벨·직업·소속·능력치)은 world_equip_item이 검사, 가방 › 장비·물품 정보에 「장착 조건」 초록/빨강. 생활 도구·제작 공구에는 직업 조건을 두지 않는다(무기만 직업 태그).
 - 드롭(world_gear_drops, world_gear_roll): 한 번에 하나, 일반 최대 1%·정예 5%·우두머리 15%(희귀품 보정), 3단계 이상은 우두머리만, 원정 60% 수준. 2~4단계 제작법, 5단계 일부 무극 관성대 제작, 1·2단계 일부 상점.
@@ -536,7 +536,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 갈래
 
-- 전체 하루 50회(world_chat_send) · 지역 무제한(도배 방지) · 세력 · 파티 · 모임 · 귓속말.
+- 전체·지역 횟수 제한 없음(도배 방지 2초 간격, world_chat_send — 전체 하루 50회는 1.1.1g에 없앰, 사용자 결정) · 세력 · 파티 · 모임 · 귓속말.
 - 시스템 줄: 쓰러지면 world_notify_downed가 전체 채팅에 sender_name '구조 알림', 다시 일어나면(downed_at이 비는 모든 길) 같은 트리거가 「다시 일어났습니다」(초록 chat-notice sys up). 지배 세력 변경은 world_influence_tick '세력 소식', 봉연 소식도 시스템 줄(chat-notice sys).
 - 캐릭터 탭·하위 탭 빨간 점은 titledot.js DOTS 한 표(새 칭호·능력치·고를 기술·대세력 열림 — once면 그 칸을 한 번 열면 꺼짐, localStorage yh-dot-seen) — 새 점도 이 표에 한 줄.
 - 탭 빨간 점: 전체·지역·세력은 다른 탭을 볼 때 실시간으로 받은 새 말(chat.js chanNew), 파티는 world_party_messages 구독(subscribeParty, 닫힌 시트 안 읽은 수), 모임은 모임마다. 점을 위해 따로 서버에 묻지 않는다.
