@@ -13,9 +13,9 @@ function open(topic, event, fn, onUp) {
         if (slot.ch !== ch || slot.dead) return;
         if (status === 'SUBSCRIBED') { onUp(true); return; }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          slot.ch = null;
           onUp(false);
           try { db.removeChannel(ch); } catch {}
-          slot.ch = null;
           setTimeout(join, status === 'CLOSED' ? 3000 : 20000);
         }
       });
