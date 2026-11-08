@@ -113,6 +113,10 @@ begin
 end
 $function$;
 
-update public.world_patch_notes set body = body || E'\n\n## 1.1.0d\n- 현장 퀘스트 칸이 할 일과 상관없는 행동 뒤에도 매번 다시 읽히던 것을 줄였습니다. 보이는 내용은 같습니다.'
+update public.world_mount_catalog set speed_multiplier = case when mount_id = 'fm_river_alliance' then 2.5 else 2.4 end, passenger_capacity = 4, fare_tokens = 2
+ where acquire_method = 'faction' and mount_id like 'fm\_%';
+update public.world_mount_catalog set unlock_faction = null, unlock_reputation = 0, speed_multiplier = 2.3 where mount_id = 'moon_elk';
+
+update public.world_patch_notes set body = body || E'\n\n## 1.1.0d\n- 현장 퀘스트 칸이 할 일과 상관없는 행동 뒤에도 매번 다시 읽히던 것을 줄였습니다. 보이는 내용은 같습니다.\n- 세력 비고 탈것 일곱 가지를 모두 같게 맞췄습니다. 속도 ×2.4(수향연맹 화방선 ×2.5), 넷이 함께 타고, 노정패 운임은 구간마다 2개입니다.\n- 월광록은 천명원 소속이 아니어도 무극 관성대 마구간에서 들일 수 있게 바꾸고, 속도를 ×2.3으로 낮췄습니다. 이미 가진 월광록도 같이 바뀝니다.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261108180000' where key = 'db_version';
