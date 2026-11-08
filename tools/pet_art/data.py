@@ -46,6 +46,20 @@ exec(open(__file__.replace('data.py', 'art7.py')).read())
 exec(open(__file__.replace('data.py', 'art8.py')).read())
 
 EFFECTS = {
+    'poop': {'pal': {'b': '#7a4e2a', 'd': '#5a3519', 'h': '#a8744a'}, 'rows': '''
+...k...
+..kbk..
+.kbhbk.
+.kdbbk.
+kbbhbdk
+kddbbdk
+.kkkkk.'''},
+    'sick': {'pal': {'g': '#8fbf6a', 'w': '#d8f0c0'}, 'rows': '''
+.ggg.
+gwgwg
+ggggg
+.g.g.
+..g..'''},
     'heart': {'pal': {'r': '#e2475a', 'w': '#ff9aa6'}, 'rows': '''
 .kk.kk.
 krwkrrk

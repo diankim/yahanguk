@@ -1640,6 +1640,14 @@ export const PETS = {
 };
 
 export const EFFECTS = {
+  poop: {
+    pal: { b: "#7a4e2a", d: "#5a3519", h: "#a8744a", k: "#1a120e" },
+    rows: ["...k...", "..kbk..", ".kbhbk.", ".kdbbk.", "kbbhbdk", "kddbbdk", ".kkkkk."]
+  },
+  sick: {
+    pal: { g: "#8fbf6a", w: "#d8f0c0" },
+    rows: [".ggg.", "gwgwg", "ggggg", ".g.g.", "..g.."]
+  },
   heart: {
     pal: { r: "#e2475a", w: "#ff9aa6", k: "#1a120e" },
     rows: [".kk.kk.", "krwkrrk", "krrrrrk", ".krrrk.", "..krk..", "...k..."]
