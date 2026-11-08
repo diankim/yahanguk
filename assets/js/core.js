@@ -91,6 +91,7 @@ export function friendlyError(e) {
 
 export async function rpc(name, args) {
   const { data, error } = args === undefined ? await db.rpc(name) : await db.rpc(name, args);
+  if (!hit('reads', name) || hit('settles', name)) charMut++;
   if (error) throw Object.assign(new Error(friendlyError(error)), { hint: error.hint || '', code: error.code || '' });
   return data;
 }
@@ -128,14 +129,27 @@ export async function act(name, args) {
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
 const onFieldView = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 const onInvView = () => /^#\/(bag|char)(\/|$)/.test(location.hash);
-export async function loadCharacter({ hud = false, field = false, inv = false } = {}) {
-  if (!store.user) return null;
+let charMut = 0, charSeq = 0, charShown = 0, charUser = null;
+const charFlight = new Map();
+export function loadCharacter(opts = {}) {
+  if (!store.user) return Promise.resolve(null);
+  const key = `${!!opts.hud}${!!opts.field}${!!opts.inv}`, f = charFlight.get(key);
+  if (f && f.mut === charMut && f.user === store.user.id) return f.p;
+  const p = readCharacter(opts).finally(() => { if (charFlight.get(key)?.p === p) charFlight.delete(key); });
+  charFlight.set(key, { p, mut: charMut, user: store.user.id });
+  return p;
+}
+async function readCharacter({ hud = false, field = false, inv = false } = {}) {
+  const seq = ++charSeq, user = store.user.id;
+  if (charUser !== user) { charUser = user; charShown = 0; }
   const both = hud || field || inv;
   const [, res] = await Promise.all([stacksFresh ? null : loadStacks(),
     both ? rpc('world_me', { p_hud: hud, p_field: field, p_inv: inv }).then(d => ({ data: d?.character ?? null, snaps: d }), () => readOwn()) : readOwn(),
     equipped ? null : loadEquipped()]);
   if (res.error) throw new Error(friendlyError(res.error));
   const data = res.data;
+  if (store.user?.id !== user || seq < charShown) return store.user?.id === user ? store.character : null;
+  charShown = seq;
   store.character = data; store.charAt = Date.now();
   if (res.snaps) emit('snaps', { world_hud_snapshot: res.snaps.hud, world_field_snapshot: res.snaps.field, world_inventory_state: res.snaps.inv });
   emit('character', data);

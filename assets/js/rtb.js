@@ -3,7 +3,7 @@ import { db } from './core.js';
 const groups = {};
 
 function open(topic, event, fn, onUp) {
-  const slot = { ch: null, dead: false };
+  const slot = { ch: null, dead: false, up: false, fails: 0 };
   const join = () => {
     if (slot.dead) return;
     try {
@@ -11,12 +11,13 @@ function open(topic, event, fn, onUp) {
       slot.ch = ch;
       ch.subscribe(status => {
         if (slot.ch !== ch || slot.dead) return;
-        if (status === 'SUBSCRIBED') { onUp(true); return; }
+        if (status === 'SUBSCRIBED') { slot.up = true; slot.fails = 0; onUp(true); return; }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          slot.ch = null;
+          const wait = slot.up && status === 'CLOSED' ? 3000 : Math.min(60000, 5000 * 2 ** slot.fails++);
+          slot.ch = null; slot.up = false;
           onUp(false);
           try { db.removeChannel(ch); } catch {}
-          setTimeout(join, status === 'CLOSED' ? 3000 : 20000);
+          setTimeout(join, wait);
         }
       });
     } catch { onUp(false); }

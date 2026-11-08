@@ -11,6 +11,8 @@ export const CHANGES = {
   fishSpotNone: /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/,
   rest: /rest|survival|travel|idle|field_move/,
   bond: /bond|equip|travel|party|field_move/,
+  reads: /^world_me$|snapshot|_state$|_board$|overview|roster|_status$|_brief$|_list$|_check$|_quote$|_info$|sources|counts|combat_profile|profile_of|journal|threads|faces|_card$|_rules$|_mine$|_get$|_favs$|_preview$|_spot$|_scene$|_codex|_lore|_bundle/,
+  settles: /travel_status|gw_snapshot|pfight_snapshot|raid_snapshot|hud_snapshot|field_snapshot|expedition_overview/,
   titles: /title|notice|cosmetic|reset_identity/,
   faction: /faction|quest|level|reset_identity|notice/,
   journalView: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|commission|ucomm|letter|notice/,
