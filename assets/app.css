@@ -2407,6 +2407,7 @@ b.sealed { color: var(--bad); }
 .mk-rules p { margin: 4px 0; }
 .trade-form .tf-go { width: 100%; justify-content: center; }
 @media (max-width: 720px) { .mk-list li, .mk-mine li { flex-wrap: nowrap; } .mk-list .item-act, .mk-mine .item-act { width: auto; } .mk-list .item-main, .mk-mine .item-main { min-width: 0; } }
+.mk-list li.mk-qty { flex-wrap: wrap; } .mk-list li.mk-qty .item-main { flex: 1 1 100%; } .mk-list li.mk-qty .item-act { margin-left: auto; } .mk-list li.mk-qty .stepper input { flex: none; width: 64px !important; }
 .bug-cat { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* 접힌 상태 띠: 상태 칸 10개를 5×2 작은 점으로(나쁜 상태 깜빡이는 빨강·이로운 상태 초록·빈칸은 투명) */
 .hs-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

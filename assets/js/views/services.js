@@ -283,7 +283,7 @@ export async function renderMarket(box) {
     const sellRows = pickRows(tradeable.map(([k, n]) => ({ id: k, have: n, sub: ref.get(k)?.reference_price ? `기준 시세 ${fmt.jeon(ref.get(k).reference_price)}` : '' })), inv?.catalog);
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
-    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" ${listRowAttrs(catMap.get(o.item_id), nameOf(o.item_id))}><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
+    const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}${!own && o.quantity > 1 ? ' mk-qty' : ''}" ${listRowAttrs(catMap.get(o.item_id), nameOf(o.item_id))}><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
         <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         <div class="item-act">${own ? `<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>` : `${o.quantity > 1 ? qtyHtml({ key: `take:${o.offer_id}`, min: 1, max: o.quantity, value: o.quantity, all: true, small: true }) : ''}<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`}</div></li>`;
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
