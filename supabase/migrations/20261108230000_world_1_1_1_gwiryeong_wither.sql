@@ -86,15 +86,14 @@ end $function$;
 revoke all on function public.world_gwiryeong_take_one(uuid) from public, anon, authenticated;
 grant execute on function public.world_gwiryeong_take_one(uuid) to service_role;
 
-create or replace function public.world_gwiryeong_wither_tick()
- returns integer
+create or replace function public.world_gwiryeong_reconcile()
+ returns void
  language plpgsql
  security definer
  set search_path to 'pg_catalog', 'public'
 as $function$
-declare ru jsonb := public.world_gwiryeong_rules(); wither interval; warn interval; h record; p record; pool bigint[] := '{}'; i int; n int := 0;
+declare wither interval := make_interval(hours => (public.world_gwiryeong_rules() ->> 'wither_h')::int); h record; pool bigint[] := '{}'; i int;
 begin
-  wither := make_interval(hours => (ru ->> 'wither_h')::int); warn := make_interval(hours => (ru ->> 'warn_h')::int);
   perform pg_advisory_xact_lock(hashtext('yh-gwiryeong-plants'));
   for h in select a.holder, a.cnt - coalesce(x.n, 0) less
              from (select holder, count(*)::int cnt from public.world_gwiryeong_plants where ended is null group by holder) a
@@ -115,6 +114,20 @@ begin
     end loop;
   end loop;
   update public.world_gwiryeong_plants set ended = 'used', ended_at = now() where id = any(pool);
+end $function$;
+revoke all on function public.world_gwiryeong_reconcile() from public, anon, authenticated;
+grant execute on function public.world_gwiryeong_reconcile() to service_role;
+
+create or replace function public.world_gwiryeong_wither_tick()
+ returns integer
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare ru jsonb := public.world_gwiryeong_rules(); warn interval; p record; n int := 0;
+begin
+  warn := make_interval(hours => (ru ->> 'warn_h')::int);
+  perform public.world_gwiryeong_reconcile();
   for p in select * from public.world_gwiryeong_plants where ended is null and not warned and expires_at > now() and expires_at - warn <= now() loop
     insert into public.world_notifications(user_id, kind, title, content, payload)
     values (p.holder, 'guide', '귀령초가 곧 시듭니다',
@@ -138,6 +151,63 @@ begin
 end $function$;
 revoke all on function public.world_gwiryeong_wither_tick() from public, anon, authenticated;
 grant execute on function public.world_gwiryeong_wither_tick() to service_role, fn_owner_field;
+
+create or replace function public.world_gwiryeong_on_move()
+ returns trigger
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+begin
+  perform public.world_gwiryeong_reconcile();
+  return null;
+end $function$;
+revoke all on function public.world_gwiryeong_on_move() from public, anon, authenticated;
+
+drop trigger if exists trg_world_gw_move_char on public.world_characters;
+create constraint trigger trg_world_gw_move_char after update of inventory on public.world_characters deferrable initially deferred for each row
+ when ((old.inventory -> 'gwiryeong_cho') is distinct from (new.inventory -> 'gwiryeong_cho')) execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_char_del on public.world_characters;
+create constraint trigger trg_world_gw_move_char_del after delete on public.world_characters deferrable initially deferred for each row
+ when (old.inventory ? 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_store_ins on public.world_storage;
+create constraint trigger trg_world_gw_move_store_ins after insert on public.world_storage deferrable initially deferred for each row
+ when (new.items ? 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_store_upd on public.world_storage;
+create constraint trigger trg_world_gw_move_store_upd after update on public.world_storage deferrable initially deferred for each row
+ when ((old.items -> 'gwiryeong_cho') is distinct from (new.items -> 'gwiryeong_cho')) execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_store_del on public.world_storage;
+create constraint trigger trg_world_gw_move_store_del after delete on public.world_storage deferrable initially deferred for each row
+ when (old.items ? 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_ov_ins on public.world_overflow_items;
+create constraint trigger trg_world_gw_move_ov_ins after insert on public.world_overflow_items deferrable initially deferred for each row
+ when (new.item_id = 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_ov_upd on public.world_overflow_items;
+create constraint trigger trg_world_gw_move_ov_upd after update on public.world_overflow_items deferrable initially deferred for each row
+ when (new.item_id = 'gwiryeong_cho' or old.item_id = 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_ov_del on public.world_overflow_items;
+create constraint trigger trg_world_gw_move_ov_del after delete on public.world_overflow_items deferrable initially deferred for each row
+ when (old.item_id = 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_offer_ins on public.world_trade_offers;
+create constraint trigger trg_world_gw_move_offer_ins after insert on public.world_trade_offers deferrable initially deferred for each row
+ when (new.item_id = 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_offer_upd on public.world_trade_offers;
+create constraint trigger trg_world_gw_move_offer_upd after update on public.world_trade_offers deferrable initially deferred for each row
+ when (new.item_id = 'gwiryeong_cho' or old.item_id = 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_offer_del on public.world_trade_offers;
+create constraint trigger trg_world_gw_move_offer_del after delete on public.world_trade_offers deferrable initially deferred for each row
+ when (old.item_id = 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_letter_ins on public.world_letters;
+create constraint trigger trg_world_gw_move_letter_ins after insert on public.world_letters deferrable initially deferred for each row
+ when (new.items ? 'gwiryeong_cho') execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_letter_upd on public.world_letters;
+create constraint trigger trg_world_gw_move_letter_upd after update on public.world_letters deferrable initially deferred for each row
+ when ((old.items -> 'gwiryeong_cho') is distinct from (new.items -> 'gwiryeong_cho') or (old.claimed_at is null) is distinct from (new.claimed_at is null) and (old.items ? 'gwiryeong_cho')) execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_letter_del on public.world_letters;
+create constraint trigger trg_world_gw_move_letter_del after delete on public.world_letters deferrable initially deferred for each row
+ when (old.items ? 'gwiryeong_cho' and old.claimed_at is null) execute function public.world_gwiryeong_on_move();
+drop trigger if exists trg_world_gw_move_log on public.world_gwiryeong_log;
+create constraint trigger trg_world_gw_move_log after insert on public.world_gwiryeong_log deferrable initially deferred for each row execute function public.world_gwiryeong_on_move();
 
 do $r$
 declare src text := pg_get_functiondef('public.world_yohwa_tick()'::regprocedure);
