@@ -715,7 +715,8 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 테스트 기준
 
-- 배포 전 점검 tools/check/precheck.py(1.0.4n): 화면(`_hq` 직접 처리·행동 이름 정규식이 changes.js 밖·서버 문구 읽기·modulepreload 빠짐·`#` 선택자에 값을 그대로 넣음 — 물품 id에 쌍점이 있어(ns:1027) 오류로 멈춘 적이 있어 늘 CSS.escape, 제보 44)과 DB(--dsn=…: 캐릭터 정리 빠진 표·갈래 없는 알림·로그인 없이 부르는 definer·화면이 부르는데 권한 없는 함수·search_path 없는 definer). 복제 DB는 권한이 운영과 달라 권한 점검은 --sql로 뽑은 질의를 운영에서 읽기로 돌린다. 배포마다 0건 확인.
+- 배포 전 점검 tools/check/precheck.py(1.0.4n): 이름 검사(eslint no-undef 등 — 지운 변수를 다른 곳이 계속 쓰면 그 화면 단추가 모두 멈춤, 1.1.0d 제보 57)·가져오기 검사(import한 이름이 그 파일에서 export되는지 — 틀리면 화면 전체가 안 뜸, node --check는 둘 다 못 잡음)·화면(`_hq` 직접 처리·행동 이름 정규식이 changes.js 밖·서버 문구 읽기·modulepreload 빠짐·`#` 선택자에 값을 그대로 넣음 — 물품 id에 쌍점이 있어(ns:1027) 오류로 멈춘 적이 있어 늘 CSS.escape, 제보 44)과 DB(--dsn=…: 캐릭터 정리 빠진 표·갈래 없는 알림·로그인 없이 부르는 definer·화면이 부르는데 권한 없는 함수·search_path 없는 definer). 복제 DB는 권한이 운영과 달라 권한 점검은 --sql로 뽑은 질의를 운영에서 읽기로 돌린다. 배포마다 0건 확인.
+- 화면을 실제로 열어 누르지 못한 배포(작업 환경 브라우저가 esm.sh를 못 받는 등)는 보고에 「화면 직접 확인 못 함」과 바뀐 단추·화면 목록을 반드시 적어 사용자가 배포 직후 눌러 보게 한다(1.1.0d 제보 57).
 - 큰 SQL은 먼저 로컬 복제 DB에서: 운영 DB를 읽기 전용 SELECT로만 받아(역할·표·열 권한·정책·함수·트리거·카탈로그 데이터, 큰 표는 최근 3천 줄) 로컬 PostgreSQL 16 `yh`로 만들고 `createdb -T yh yh_test`로 복사본, 마이그레이션을 `-1 -v ON_ERROR_STOP=1`로 돌린 뒤 `set role authenticated` + `request.jwt.claim.sub`로 조사원처럼 함수 호출. 운영은 PostgreSQL 17이라 17 전용 문법은 따로 본다. 복제 스크립트는 세션 작업 공간(scratchpad/replica)이라 세션이 끝나면 사라지므로 새 세션에서 같은 방법으로 다시 만든다(운영 데이터·이메일이 든 덤프는 저장소에 안 올림). 캐릭터 행을 오래 잠그는 시뮬레이션은 복제 DB에서만.
 - 연속 클릭과 중복 요청
 - 두 플레이어의 동시 행동

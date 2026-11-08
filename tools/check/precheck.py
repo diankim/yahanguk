@@ -86,6 +86,55 @@ def db_checks(run):
         out.append(('권한', f, 'security definer인데 search_path 고정 없음'))
     return out
 
+ESLINT = 'eslint@8.57.0'
+
+def undefined_names():
+    files = [p.relative_to(ROOT).as_posix() for p in js_files()]
+    cmd = ['npx', '--yes', ESLINT, '--no-eslintrc', '--env', 'browser,es2022', '--parser-options=sourceType:module',
+           '--parser-options=ecmaVersion:2022', '--rule', '{"no-undef":"error","no-dupe-keys":"error","no-const-assign":"error"}', '-f', 'json', *files]
+    try:
+        r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=600)
+        res = json.loads(r.stdout or '[]')
+    except Exception as e:
+        return [('이름 검사', 'eslint', f'돌리지 못함({e.__class__.__name__}) — 배포 전에 반드시 돌릴 것')]
+    out = []
+    for f in res:
+        rel = pathlib.Path(f['filePath']).resolve().relative_to(ROOT).as_posix()
+        for m in f['messages']:
+            out.append(('이름 검사', f"{rel}:{m.get('line')}", m.get('message', '')))
+    return out
+
+def import_names():
+    out = []
+    exp_re = re.compile(r'export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)')
+    cache = {}
+    def exports(path):
+        if path not in cache:
+            src = path.read_text() if path.exists() else ''
+            names = set(exp_re.findall(src))
+            for line in re.findall(r'^export\s+(?:const|let|var)\s+[^\n]*', src, re.M):
+                names.update(re.findall(r'(?:^export\s+(?:const|let|var)\s+|,\s*)([A-Za-z_$][\w$]*)\s*=(?!=)', line))
+            for grp in re.findall(r'export\s*\{([^}]*)\}', src):
+                for part in grp.split(','):
+                    part = part.strip()
+                    if part:
+                        names.add(part.split(' as ')[-1].strip())
+            if re.search(r'export\s+default', src):
+                names.add('default')
+            cache[path] = names
+        return cache[path]
+    for p in js_files():
+        src = p.read_text()
+        for m in re.finditer(r"import\s*\{([^}]*)\}\s*from\s*'(\.[^']+)'", src):
+            target = (p.parent / m.group(2)).resolve()
+            have = exports(target)
+            for part in m.group(1).split(','):
+                name = part.strip().split(' as ')[0].strip()
+                if name and name not in have:
+                    line = src[:m.start()].count('\n') + 1
+                    out.append(('가져오기', f'{p.relative_to(ROOT).as_posix()}:{line}', f'{name}은(는) {m.group(2)}에 없음'))
+    return out
+
 def main():
     args = sys.argv[1:]
     if args and args[0] == '--sql':
@@ -96,7 +145,7 @@ def main():
         print(f"-- rpc\nselect coalesce(json_agg(x order by x), '[]') from unnest(array[{names}]) x where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace and nspname = 'public' where p.proname = x and has_function_privilege('authenticated', p.oid, 'execute'));")
         return
     dsn = next((a.split('=', 1)[1] for a in args if a.startswith('--dsn=')), None)
-    found = client_checks()
+    found = client_checks() + import_names() + undefined_names()
     if dsn:
         run = lambda q: subprocess.run(['psql', *dsn.split(), '-At', '-c', q], check=True, capture_output=True, text=True).stdout.strip() or '[]'
         found += db_checks(run)
