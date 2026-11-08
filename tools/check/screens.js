@@ -8,7 +8,7 @@ const outRoot = process.env.YH_SHOTS || path.join(process.cwd(), 'shots');
 const out = path.join(outRoot, label);
 const id = process.env.YH_TEST_ID, pw = process.env.YH_TEST_PW;
 const VIEWS = (process.env.YH_VIEWS || 'home,map,char,bag,log,house,people,help,settings,patch').split(',').map(s => s.trim()).filter(Boolean);
-const LAYOUTS = [['desktop', { viewport: { width: 1440, height: 900 } }], ['mobile', { ...devices['iPhone 13'] }]];
+const LAYOUTS = [['desktop', { viewport: { width: 1440, height: 900 } }], ['mobile', { ...devices['iPhone 13'] }], ['mobile-land', { ...devices['iPhone 13 landscape'] }]];
 
 async function run(name, opts, browser) {
   const ctx = await browser.newContext(opts);
