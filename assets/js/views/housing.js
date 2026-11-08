@@ -8,6 +8,7 @@ import { GAMEDATA } from '../gamedata.js';
 import { petLine } from '../housing/petlines.js';
 import { openGallery, pickDrawing, openViewer } from './drawings.js';
 import { idOf, placedCounts, rememberHome } from '../housing/count.js';
+import { helpQ } from '../tips.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = GRADES;
@@ -22,7 +23,7 @@ const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith
 
 let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0;
 let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
-let pet = null, fx = [];
+let pet = null, fx = [], poops = [];
 
 export async function render(root, sub) {
   el = root; ownerArg = sub || null; editing = false; pick = null; sel = null; dirty = false; pet = null; fx = [];
@@ -137,7 +138,7 @@ function fit() {
 }
 function paint() {
   if (!cv || !room) return;
-  const pets = pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : [];
+  const pets = (pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : []).concat(poops.map(([x, y]) => ({ x, y, draw: c => { const [px, py] = c.iso(x + .5, y + .5, 0); drawEffect(c.put, 'poop', px, py + 3); } })));
   const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1b1d24';
   const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets, drawings: snap.drawings || {} });
   const g = cv.getContext('2d'); g.putImageData(img, 0, 0);
@@ -186,9 +187,10 @@ function palette() {
     <div class="hs-pal-grid">${rows || '<p class="muted small">놓을 수 있는 것이 없습니다. 가구는 상점·제작·토벌·원정·칭호 보상으로 얻습니다.</p>'}</div></div>`;
 }
 function petBar(p) {
-  const me = snap.role === 'owner', today = snap.pet_today || {};
-  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b><span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}</span>
-    <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}</span></div>`;
+  const me = snap.role === 'owner' || snap.role === 'partner', today = snap.pet_today || {}, m = p.mess || {};
+  const messTip = `${m.every_h || 8}시간마다 한 번 자리를 어지릅니다(최대 ${m.max || 3}번). 가득 찬 채 하루가 지나면 배탈이 나서 쓰다듬기·놀아 주기로 친밀도가 오르지 않습니다. 자리를 치운 뒤 「동무 약」을 먹이면 낫습니다.`;
+  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b>${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
+    <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}${m.n ? '<button class="btn small" data-care="clean">치우기</button>' : ''}${me && m.sick && !m.n ? '<button class="btn small primary" data-care="cure">약 먹이기</button>' : ''}</span></div>`;
 }
 function ownerPanel() {
   const nx = snap.next;
@@ -276,6 +278,7 @@ function bind() {
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
   $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet)));
+  $$('[data-care]', el).forEach(b => b.addEventListener('click', () => petCare(b, b.dataset.care)));
   $('#hs-gb')?.addEventListener('submit', e => {
     e.preventDefault(); const f = e.currentTarget, body = f.body.value.trim(); if (!body) return;
     guard(f.querySelector('button'), async () => { snap = await rpc('world_housing_guest_write', { p_owner: snap.owner_id, p_body: body }); resetKeepEdit(); return { content: '방명록에 남겼습니다.' }; });
@@ -417,6 +420,15 @@ async function openPets() {
     });
   });
 }
+function petCare(btn, kind) {
+  return guard(btn, async () => {
+    const r = kind === 'cure' ? await act('world_pet_care', { p_owner: snap.owner_id, p_act: kind }) : await rpc('world_pet_care', { p_owner: snap.owner_id, p_act: kind });
+    if (snap.pet) { snap.pet.mess = r.mess; if (r.affinity != null) snap.pet.affinity = r.affinity; }
+    setupPoops(); fx.push({ key: kind === 'cure' ? 'star' : 'heart', until: Date.now() + 1600 });
+    if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }
+    return { content: r.content };
+  });
+}
 async function petAct(btn, kind) {
   if (kind === 'feed') return chooseFood(btn);
   return guard(btn, async () => {
@@ -470,6 +482,15 @@ function setupPet() {
   for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]);
   const [x, y] = free[Math.floor(Math.random() * free.length)] || [0, 0];
   pet = { id: p.id, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10, flip: false, f: 0, z: 0, top: 0 };
+  setupPoops();
+}
+function setupPoops() {
+  poops = [];
+  const n = snap?.pet?.mess?.n || 0; if (!n || !state) return;
+  const w = walkable(), free = [];
+  for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]);
+  let h = 0; for (const ch of String(snap.owner_id || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  for (let i = 0; i < n && free.length; i++) { h = (h * 1103515245 + 12345) >>> 0; poops.push(free.splice(h % free.length, 1)[0]); }
 }
 function pathTo(w, sx, sy, tx, ty) {
   const key = (x, y) => `${x},${y}`, prev = new Map([[key(sx, sy), null]]), q = [[sx, sy]];
@@ -519,6 +540,7 @@ function drawPetIn(c) {
   const top = sy - 14 - (pet.adult ? 4 : 0);
   if (st === 'sleep' && pet.f % 16 < 10) drawEffect(c.put, 'zz', sx + 6, top);
   if (st === 'eat' && pet.f % 10 < 6) drawEffect(c.put, 'bowl', sx + 8, sy + 2);
+  if (snap?.pet?.mess?.sick && pet.f % 24 < 12) drawEffect(c.put, 'sick', sx - 7, top);
   for (const f of fx) drawEffect(c.put, f.key, sx, top - 2 - Math.floor((1600 - (f.until - Date.now())) / 300));
 }
 window.addEventListener('resize', () => { if (cv && room) { fit(); paint(); } });

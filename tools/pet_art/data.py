@@ -54,12 +54,13 @@ EFFECTS = {
 kbbhbdk
 kddbbdk
 .kkkkk.'''},
-    'sick': {'pal': {'g': '#8fbf6a', 'w': '#d8f0c0'}, 'rows': '''
-.ggg.
-gwgwg
-ggggg
-.g.g.
-..g..'''},
+    'sick': {'pal': {'b': '#7fb8e6', 'w': '#e6f4ff'}, 'rows': '''
+..k..
+.kbk.
+kbwbk
+kbwbk
+kbbbk
+.kkk.'''},
     'heart': {'pal': {'r': '#e2475a', 'w': '#ff9aa6'}, 'rows': '''
 .kk.kk.
 krwkrrk

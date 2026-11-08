@@ -59,7 +59,7 @@ begin
   if h.pet_out then raise exception '동무가 주인과 함께 나가 있습니다.'; end if;
   why := public.world_housing_can_view(uid, p_owner, h.gate);
   if why is not null then raise exception '%', why; end if;
-  own := uid = p_owner or uid = public.world_housing_mate(p_owner) or public.world_housing_married(uid, p_owner);
+  own := coalesce(uid = p_owner or uid = public.world_housing_mate(p_owner) or public.world_housing_married(uid, p_owner), false);
   select coalesce(p.nickname, s.pet_name) into nm from public.world_pet_species s left join public.world_pets p on p.owner_id = p_owner and p.pet_id = s.pet_id where s.pet_id = h.pet_id;
   insert into public.world_pet_mess(owner_id, pet_id, clean_at) values (p_owner, h.pet_id, now()) on conflict do nothing;
   select * into m from public.world_pet_mess where owner_id = p_owner and pet_id = h.pet_id for update;
