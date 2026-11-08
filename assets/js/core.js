@@ -77,6 +77,7 @@ export function friendlyError(e) {
   if (/Email signups are disabled|Signups not allowed/i.test(msg)) return '지금은 가입을 받지 않습니다. 운영진에게 알려 주세요.';
   if (/Email address .* is invalid|invalid format/i.test(msg)) return '아이디는 영문 소문자와 숫자 4~16자로 정하세요.';
   if (/Password should be at least/i.test(msg)) return '비밀번호는 6자 이상이어야 합니다.';
+  if (/known to be weak|weak_password|easy to guess/i.test(msg) || e?.code === 'weak_password') return '너무 흔해서 쓸 수 없는 비밀번호입니다(유출 목록에 있는 비밀번호). 다른 비밀번호로 정해 주세요.';
   if (/[가-힣]/.test(msg)) return msg;
   if (/Database error saving new user/i.test(msg)) return '초대권을 쓸 수 없습니다. 번호를 다시 확인해 주세요.';
   if (/security purposes|rate limit|too many requests/i.test(msg)) return '잠시 뒤 다시 시도하세요.';

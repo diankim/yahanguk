@@ -166,7 +166,7 @@ async function openThread(t) {
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       if (cur !== t) return;
-      { const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)); msgs = got.concat(msgs.filter(m => !seen.has(m.id))); }
+      msgs = mergeMsgs(data, msgs);
     } catch (e) { const l = cur === t && $('#wh-list', box); if (l) l.innerHTML = `<li class="chat-empty">${esc(friendlyError(e))}</li>`; return; }
     markRead(t.id);
   }
@@ -218,6 +218,10 @@ async function send(e) {
   finally { b.disabled = false; }
 }
 
+function mergeMsgs(data, old) {
+  const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)), last = got.length ? Date.parse(got[got.length - 1].created_at) : -Infinity;
+  return got.concat(old.filter(m => !seen.has(m.id) && Date.parse(m.created_at) > last));
+}
 async function reloadMsgs(t) {
   if (!t.id) return drawMsgs();
   const me = store.user?.id;
@@ -225,7 +229,7 @@ async function reloadMsgs(t) {
     const { data, error } = await db.from('world_chat_messages').select(COLS).eq('channel_type', 'whisper')
       .or(`and(sender_id.eq.${me},recipient_id.eq.${t.id}),and(sender_id.eq.${t.id},recipient_id.eq.${me})`)
       .order('created_at', { ascending: false }).limit(100);
-    if (!error && cur === t) { const got = (data || []).reverse(), seen = new Set(got.map(m => m.id)); msgs = got.concat(msgs.filter(m => !seen.has(m.id))); drawMsgs(); drawList(); }
+    if (!error && cur === t) { msgs = mergeMsgs(data, msgs); drawMsgs(); drawList(); }
   } catch {}
 }
 async function markRead(id) {
