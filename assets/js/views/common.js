@@ -93,6 +93,7 @@ on('changed', ({ name = '' }) => {
 });
 on('changed', ({ name }) => { if (hit('combat', name)) invalidate('world_combat_profile'); if (hit('skill', name)) invalidate('world_skill_snapshot'); if (hit('codex', name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (hit('roster', name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (hit('map', name)) invalidate('world_map_snapshot'); if (hit('journal', name)) invalidate('world_quest_journal'); });
 window.addEventListener('yahang:arrived', () => invalidate());
+window.addEventListener('yh-note', e => { const k = e.detail?.kind || ''; if (k === 'title') invalidate('world_title_snapshot'); if (k === 'cosmetic') { invalidate('world_title_snapshot'); invalidate('world_cosmetic_snapshot'); } });
 
 const tcdKey = () => `yh-travel-cd:${store.character?.owner_id || ''}`;
 export function travelCdLeft(now = Date.now()) { try { return Math.max(0, Number(localStorage.getItem(tcdKey()) || 0) - now); } catch { return 0; } }
