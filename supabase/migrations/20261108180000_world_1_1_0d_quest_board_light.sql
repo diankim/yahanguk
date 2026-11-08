@@ -117,6 +117,17 @@ update public.world_mount_catalog set speed_multiplier = case when mount_id = 'f
  where acquire_method = 'faction' and mount_id like 'fm\_%';
 update public.world_mount_catalog set unlock_faction = null, unlock_reputation = 0, speed_multiplier = 2.3 where mount_id = 'moon_elk';
 
-update public.world_patch_notes set body = body || E'\n\n## 1.1.0d\n- 현장 퀘스트 칸이 할 일과 상관없는 행동 뒤에도 매번 다시 읽히던 것을 줄였습니다. 보이는 내용은 같습니다.\n- 세력 비고 탈것 일곱 가지를 모두 같게 맞췄습니다. 속도 ×2.4(수향연맹 화방선 ×2.5), 넷이 함께 타고, 노정패 운임은 구간마다 2개입니다.\n- 월광록은 천명원 소속이 아니어도 무극 관성대 마구간에서 들일 수 있게 바꾸고, 속도를 ×2.3으로 낮췄습니다. 이미 가진 월광록도 같이 바뀝니다.'
+update public.world_map_regions set has_stable = true where region_id in ('bone_market', 'hidden_bazaar', 'iron_monastery');
+insert into public.world_mount_catalog (mount_id, mount_name, speed_multiplier, unlock_level, unlock_reputation, unlock_faction, unlock_region, unlock_item, price, description, tier, passenger_capacity, fare_tokens, fare_free, acquire_method)
+values
+('lantern_coach', '청사 쌍두마차', 2.3, 20, 0, null, 'hq_yard', 'spirit_core', 12000, '청사초롱을 앞뒤로 매단 정청의 쌍두마차. 넷이 마주 앉아 밤길을 간다.', '영물', 4, 2, false, 'stable'),
+('redmoon_camel', '적월 쌍봉낙타', 2.3, 20, 0, null, 'bone_market', 'spirit_core', 12000, '붉은 달이 뜨면 장터를 떠나는 큰 낙타. 두 혹 사이 안장에 넷이 앉는다.', '영물', 4, 2, false, 'stable'),
+('ink_cart', '먹빛 쌍마 수레', 2.3, 20, 0, null, 'hidden_bazaar', 'spirit_core', 12000, '십삼문 뒷길을 아는 검은 말 두 마리가 끄는 덮개 수레. 넷이 숨어 탄다.', '영물', 4, 2, false, 'stable'),
+('snow_sled', '설원 개썰매', 2.3, 20, 0, null, 'iron_monastery', 'spirit_core', 12000, '철벽 고찰의 썰매개 여섯이 끄는 큰 썰매. 눈길에서도 넷을 싣고 달린다.', '영물', 4, 2, false, 'stable'),
+('buffalo_cart', '물소 달구지', 2.3, 20, 0, null, 'river_ferry', 'spirit_core', 12000, '수향 논두렁을 오가는 물소가 끄는 달구지. 물길이 끊긴 곳에서도 넷을 태운다.', '영물', 4, 2, false, 'stable'),
+('ember_bison', '잔불 들소 수레', 2.3, 20, 0, null, 'ember_village', 'spirit_core', 12000, '뿔 끝에 불티가 이는 들소가 끄는 수레. 재 언덕을 넷이 함께 넘는다.', '영물', 4, 2, false, 'stable')
+on conflict (mount_id) do nothing;
+
+update public.world_patch_notes set body = body || E'\n\n## 1.1.0d\n- 현장 퀘스트 칸이 할 일과 상관없는 행동 뒤에도 매번 다시 읽히던 것을 줄였습니다. 보이는 내용은 같습니다.\n- 세력 비고 탈것 일곱 가지를 모두 같게 맞췄습니다. 속도 ×2.4(수향연맹 화방선 ×2.5), 넷이 함께 타고, 노정패 운임은 구간마다 2개입니다.\n- 월광록은 천명원 소속이 아니어도 무극 관성대 마구간에서 들일 수 있게 바꾸고, 속도를 ×2.3으로 낮췄습니다. 이미 가진 월광록도 같이 바뀝니다.\n- 다른 여섯 세력 거점 마구간에도 월광록과 같은 탈것을 하나씩 들였습니다(×2.3, 넷이 함께 탐, 레벨 20·응축 영핵·12,000전, 소속 조건 없음): 야행국 본부 정청 청사 쌍두마차 · 백골 장터 적월 쌍봉낙타 · 십삼문 암시장 먹빛 쌍마 수레 · 철벽 고찰 설원 개썰매 · 구름나루 물소 달구지 · 잔불촌 잔불 들소 수레. 백골 장터·십삼문 암시장·철벽 고찰에는 마구간을 새로 열었습니다.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261108180000' where key = 'db_version';
