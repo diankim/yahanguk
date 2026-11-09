@@ -1,5 +1,5 @@
 export const CHANGES = {
-  invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block/,
+  invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|avatar_set/,
   equipped: /equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/,
   invAlways: /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
   map: /travel|mount|join_major_faction|field_|battle_|expedition/,
@@ -21,6 +21,7 @@ export const CHANGES = {
   codex: /battle|gather|expedition/,
   storage: /craft|storage|travel|field_move/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
+  avatar: /avatar|outfit|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,

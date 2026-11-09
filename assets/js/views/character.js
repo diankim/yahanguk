@@ -13,8 +13,9 @@ import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
 import { helpQ } from '../tips.js';
 import { baseOf, isHq, hqCount, hqOf } from '../hq.js';
+import { lookTab } from './look.js';
 
-const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot'], ['house', '별채', 'home']];
+const SUBS = [['status', '상태', 'heart'], ['growth', '성장', 'spark'], ['faction', '세력', 'flag'], ['skills', '기술', 'target'], ['idle', '자율', 'hourglass'], ['titles', '칭호', 'knot'], ['look', '내 모습', 'hat'], ['house', '별채', 'home']];
 const STATS = [
   ['strength', '근력', '근접 무기의 위력'], ['agility', '민첩', '회피·달아나기·원거리 위력 · 이목 낮춤'], ['vitality', '체질', '방어력·응급 회복 · 이목 높임'],
   ['perception', '감각', '치명타·원거리 위력·단서 발견'], ['willpower', '의지', '술법 위력·응급 회복'], ['spirit_affinity', '영성', '술법 무기의 위력'],
@@ -74,7 +75,7 @@ async function draw(soft) {
   if (!soft) body.innerHTML = loading();
   const y = window.scrollY;
   dotSeen(sub);
-  try { await ({ status, growth, faction, skills, idle, titles })[sub](body); }
+  try { await ({ status, growth, faction, skills, idle, titles, look: lookTab })[sub](body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
   if (soft && y > 0 && body.isConnected) scrollAfterModal(y);
 }

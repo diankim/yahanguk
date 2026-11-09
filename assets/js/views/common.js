@@ -88,6 +88,7 @@ on('changed', ({ name = '' }) => {
   if (!hit('invQuiet', name)) for (const k of ['world_shop_snapshot', 'world_smithy_snapshot', 'world_enhance_quote', 'world_repair_quote']) invalidate(k);
   if (hit('dismantle', name)) invalidate('world_dismantle_info');
   if (hit('mounts', name)) invalidate('world_mount_snapshot');
+  if (hit('avatar', name)) invalidate('world_avatar_get');
   if (hit('titles', name)) invalidate('world_title_snapshot');
   if (hit('faction', name)) { invalidate('world_faction_snapshot'); invalidate('world_faction_mission_snapshot'); invalidate('world_faction_base_snapshot'); }
 });
