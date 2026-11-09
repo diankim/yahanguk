@@ -94,3 +94,10 @@ export const GWIRYEONG = {
   hold: `한 사람은 귀령초를 ${GW.hold}포기까지만 지닐 수 있습니다(가방·창고·거래소 등록·받지 않은 서신을 합쳐). 지닌 동안에는 새로 찾지도, 남에게 더 받지도 못합니다. 귀령초끼리 서로 맞바꿀 수도 없습니다. 한 번 얻으면 ${GW.cooldown_h}시간 동안은 다시 나오지 않습니다.`
 };
 export const weakSafe = id => (GD.weakSafe || ['banyo_village']).includes(id);
+export const SYS_CHAT = {
+  '구조 알림': { icon: 'heart', cls: '' },
+  '세력 소식': { icon: 'pin', cls: 'fnote' },
+  '봉연 소식': { icon: 'flame', cls: 'raidnote' },
+  '비무 소식': { icon: 'sword', cls: 'fnote' },
+  '연리 소식': { icon: 'knot', cls: 'bondnote' },
+};
