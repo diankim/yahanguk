@@ -2,15 +2,17 @@
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const OUT = process.argv[2] || 'bgm_out';
-const LIST = (process.argv[3] || 'capital,east,north,south,frontier,underworld,heavenward,abyss,gwiheo').split(',');
+const LIST = (process.argv[3] || 'capital,east,north,south,frontier,underworld,heavenward,abyss,gwiheo,mukjeok').split(',');
+const SEC = Number(process.argv[4]) || 0;
+const BASE = process.env.YH_BGM_BASE || 'http://127.0.0.1:8765';
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const b = await chromium.launch(), info = {};
   for (const t of LIST) for (const battle of [false, true]) {
     const p = await b.newPage();
-    await p.goto('http://127.0.0.1:8765/tools/bgm_preview/blank.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
-    await p.addScriptTag({ url: 'http://127.0.0.1:8765/tools/bgm_preview/harness.js' });
-    const r = await p.evaluate(([t, bt]) => window.renderRegion(t, bt, bt ? 40 : 95), [t, battle]);
+    await p.goto(BASE + '/tools/bgm_preview/blank.html', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await p.addScriptTag({ url: BASE + '/tools/bgm_preview/harness.js' });
+    const r = await p.evaluate(([t, bt, sec]) => window.renderRegion(t, bt, sec || (bt ? 40 : 95)), [t, battle, SEC]);
     await p.close();
     const name = `${t}${battle ? '_battle' : ''}`, wav = path.join(OUT, name + '.wav');
     fs.writeFileSync(wav, Buffer.from(r.wav, 'base64'));

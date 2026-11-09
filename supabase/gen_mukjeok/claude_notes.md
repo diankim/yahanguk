@@ -29,7 +29,6 @@
 ## 못 한 것·물어볼 것
 
 - 기존 귀허도 지역의 깊은 답사 지점은 4.0/7.0 때 최고 40으로 묶여 있음(Lv38 귀허 L5 = 40). 이번에 45로 풀면 Lv40 조사원이 들어가던 곳이 막혀 그대로 둠.
-- 묵적록 배경음악 편성(sound.js PROFILES)은 없어 직할령 곡으로 나옴.
 - 지도 물길(water.js): 나루 강·명부 탑 수로·벌판 늪·먹비 숲 못·뜰 우물을 대강 그림 — 화면에서 모양 확인 필요.
 
 ## 외전 「묵적록」 퀘스트(data_quests.py)
@@ -40,3 +39,8 @@
 - 새 할 일 갈래 rest(쉬기, world_events rest 기록, r = 지역): world_faction_task_count·world_faction_task_label에 한 줄, 화면 changes.js TASK_ACTS rest. 1장 장면 4 「묵창 나루 주막에서 쉬기」.
 - 5장 장면 2 할 일 {t:'mj', n:1} 자리만(보스 엔진이 셈·라벨을 채울 때까지 마칠 수 없음, 라벨도 빈 글). 싸움 중 기억 조각 줄은 ref/mj_fight_lines.json(보스 작업자 몫).
 - 결말은 5장 마지막 장면 대사 끝에 붙임(외전 틀). 보상: 할 일 장면에 0.6×xp_need(L) 나눔, 마지막 장면 전 20+10L·물품(외전 값). 결말 카드 표식 「먹 자국」은 보스·완주 몫으로 비워 둠.
+
+## 배경음악(§15 소리에 한 줄)
+
+- 묵적록 G단조 60(전투 76·4박): 대금(한 옥타브 낮게) 중심, 피아노·하프가 먹비 낙수처럼 성기게(ACC inkrain·전투 inkrain8), 저음 long(전투 half), 북 없음(전투 b_mukjeok), pad swell, 피아노 soft 0.9. 단락 intro·A·A2(피아노 메아리)·B(피아노+대금 이중)·A3(하프 메아리)·bridge, 전투 A·B·A2. sound.js PROFILES.mukjeok 한 칸.
+- tools/bgm_preview: harness.js가 import 여러 줄을 모두 빈 값으로 바꾸고(sound.js가 import 셋이 되면서 미리듣기가 멈춰 있었음) 전투 편성을 profile(battle)로 굽게 고침(전에는 전투도 현장 곡이 구워졌음). render.js 셋째 인자 = 초, YH_BGM_BASE로 서버 주소.

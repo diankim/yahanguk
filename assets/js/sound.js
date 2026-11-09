@@ -178,6 +178,8 @@ const ACC = {
   slow3: [[0, 0, 1], [1, 4, .7], [2, 7, .75]],
   battle: [[0, 0, 1], [0.5, 0, .7], [1, 2, .8], [1.5, 0, .7], [2, 4, .85], [2.5, 0, .7], [3, 2, .8], [3.5, 4, .75]],
   tango: [[0, 2, .6], [0, 4, .55], [1.5, 2, .5], [1.5, 4, .45], [3, 2, .55], [3, 4, .5]],
+  inkrain: [[0, 0, .75], [1.25, 7, .4], [2, 4, .5], [2.75, 9, .35], [3.5, 11, .3]],
+  inkrain8: [[0, 0, .8], [0.5, 7, .4], [1.25, 4, .5], [1.75, 9, .35], [2.5, 7, .45], [3, 11, .35], [3.5, 9, .3]],
   tango8: [[0, 2, .7], [0, 4, .6], [0.5, 7, .35], [1, 4, .4], [1.5, 2, .65], [1.5, 4, .55], [2, 7, .35], [2.5, 4, .4], [3, 2, .7], [3, 4, .6], [3.5, 7, .4]],
 };
 const roll = (from, to, step, v0, v1, k = 'small') => { const o = []; for (let x = from, i = 0, n = Math.round((to - from) / step); x < to - 1e-6; x += step, i++) o.push([x, v0 + (v1 - v0) * i / Math.max(1, n - 1), k]); return o; };
@@ -212,6 +214,7 @@ const DRUM = {
   b_abyss: { main: [[0, 1, 'big'], [0.5, 0.45, 'mid'], [1, 0.7, 'big'], [1.5, 0.45, 'mid'], [2, 1, 'big'], [2.5, 0.45, 'mid'], [3, 0.7, 'big'], [3.5, 0.55, 'mid']],
              alt: [[0, 1, 'big'], [0.75, 0.5, 'mid'], [1.5, 0.8, 'big'], [2, 0.9, 'big'], [3, 0.55, 'mid'], [3.25, 0.55, 'mid'], [3.5, 0.8, 'big']],
              fill: [[0, 1, 'big'], ...roll(1, 4, 0.25, 0.4, 1, 'mid')] },
+  b_mukjeok: { main: [[0, 0.9, 'big'], [2.5, 0.5, 'mid']], alt: [[0, 0.9, 'big'], [1.5, 0.4, 'small'], [3, 0.6, 'mid']], fill: [[0, 0.9, 'big'], [1.5, 0.5, 'mid'], [2.5, 0.65, 'mid'], [3, 0.8, 'big'], [3.5, 0.85, 'big']] },
   b_gwiheo: { main: [[0, 1, 'big'], [1.5, 0.5, 'mid'], [3, 0.7, 'big']], alt: [[0, 1, 'big'], [2, 0.6, 'big']], fill: [[0, 1, 'big'], [1, 0.6, 'mid'], [2, 0.8, 'big'], [2.5, 0.6, 'mid'], [3, 0.9, 'big'], [3.5, 0.9, 'big']] },
 };
 const F = (s, ins, v, o = {}) => ({ s, ins, v, ...o });
@@ -245,6 +248,10 @@ const PROFILES = {
     bt: { bpm: 70, rhy: 'oblivion2', lead: 'cello', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'tango8', bass: 'tango', pad: 'sustain', bell: 0,
       form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'cello' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'strings' })] },
     form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.6, { oct: -7 }), F('A2', 'lead', 0.66, { oct: -7, echo: 'strings' }), F('B', 'lead2', 0.8, { duet: 'cello' }), F('A3', 'lead', 0.55, { oct: -7 }), F('bridge', 0, 0.35, { n: 1 })] },
+  mukjeok: { tonic: 55, mode: 'minor', bpm: 60, meter: 4, rhy: 'lament', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'harp', acc: 'inkrain', bass: 'long', drum: null, pad: 'swell', bell: 0.1, soft: 0.9,
+    bt: { bpm: 76, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'harp', acc: 'inkrain8', bass: 'half', drum: 'b_mukjeok', pad: 'swell', bell: 0.1,
+      form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.92, { duet: 'shakuhachi' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'harp' })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5, { oct: -7 }), F('A2', 'lead', 0.58, { oct: -7, echo: 'piano' }), F('B', 'lead2', 0.66, { duet: 'shakuhachi' }), F('A3', 'lead', 0.5, { oct: -7, echo: 'harp' }), F('bridge', 0, 0.28, { n: 2 })] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = '';
