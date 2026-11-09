@@ -22,9 +22,9 @@ as $f$ select '{
     "again": {"gil": 150, "xp": 0.05, "item": "meokgwi_lump", "item_name": "먹귀 응어리", "qty": 1},
     "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 45,
     "board": {"strokes": 9, "lit_start": 7, "lit_base": 4, "lit_pct": 5, "lit_ward": 10, "center_pres": 60,
-      "line_raw": 45, "keep_mul": 1.3, "line_every": [6, 6, 5, 6], "line_off": [2, 0, 0, 3], "line_n": [1, 1, 2, 1], "aoe_every": 4, "aoe_mul": 0.9,
+      "line_raw": 45, "keep_mul": 1.3, "line_strokes": 2, "line_every": [6, 6, 5, 6], "line_off": [2, 0, 0, 3], "line_n": [1, 1, 2, 1], "aoe_every": 4, "aoe_mul": 0.9,
       "mimic_atk": 0.7, "mimic_stuck": 0.5, "mimic_raw": 12, "hesit_pct": 15, "bound_raw": 10,
-      "erase_every": 5, "erase_pct": 6, "erase_raw": 50, "erase_strokes": 3, "erase_sure_lit": 6, "recall_credit": 0.5, "low_pct": 10},
+      "erase_every": 5, "erase_pct": 6, "erase_raw": 50, "erase_strokes": 4, "erase_sure_lit": 6, "recall_credit": 0.5, "low_pct": 10},
     "solo": {"artificer": {"solo_dmg": -40, "solo_guard": -40}, "scout": {"solo_dmg": -25, "solo_guard": 18}, "exorcist": {"solo_dmg": -41, "solo_guard": 4},
       "medic": {"solo_dmg": -12, "solo_guard": 10}, "sealmaster": {"solo_dmg": -42, "solo_guard": -2}, "analyst": {"solo_dmg": -25, "solo_guard": 2}}}
 }'::jsonb $f$;
@@ -274,9 +274,9 @@ begin
         perform public.world_gw_hit(p_fight, keeper.owner_id, (rb ->> 'line_raw')::numeric * (rb ->> 'keep_mul')::numeric * half, p_round, '가운데 칸을 지키며 먹줄을 정면으로 받아', true);
         perform public.world_gw_say(p_fight, p_round, 'good', keeper.name || ' — 가운데 칸에서 버텨 이름을 지켰습니다.');
       else
-        st := st - 1;
-        b := b || jsonb_build_object('lost', coalesce((b ->> 'lost')::int, 0) + 1);
-        perform public.world_gw_say(p_fight, p_round, 'bad', '먹줄이 가운데 칸을 긋고 지나갑니다. 이름 획 하나가 지워졌습니다(남은 획 ' || greatest(0, st) || ').');
+        st := st - (rb ->> 'line_strokes')::int;
+        b := b || jsonb_build_object('lost', coalesce((b ->> 'lost')::int, 0) + (rb ->> 'line_strokes')::int);
+        perform public.world_gw_say(p_fight, p_round, 'bad', '먹줄이 가운데 칸을 긋고 지나갑니다. 이름 획 ' || (rb ->> 'line_strokes') || '개가 지워졌습니다(남은 획 ' || greatest(0, st) || ').');
       end if;
     end if;
     gone := (select count(*) from unnest(lit) z where z = any (cells));

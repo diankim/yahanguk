@@ -36,7 +36,7 @@ export async function render(root, sub) {
   clearInterval(tick); tick = setInterval(countdown, 250);
   await refresh();
 }
-export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
+export function destroy() { el?.classList.remove('mk-live'); clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
 const HEAL_ITEMS = GW_HEAL;
 window.addEventListener('yh-battle-item', e => {
   const f = snap?.fight;
@@ -132,13 +132,12 @@ function draw() {
       <h1>${B.name} <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
       <div class="head-actions">${mk && s.board && f.status !== 'wait' ? chip(`빛나는 칸 ${(s.board.lit || []).length}/8 · 이름 획 ${s.board.strokes}/${s.board.max}`, s.board.strokes <= 3 ? 'bad' : 'good') : ''}${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
     ${done ? resultHtml(f, s) : ''}
-    <div class="raid-wrap pf-wrap gw-wrap ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
+    <div class="raid-wrap pf-wrap gw-wrap ${mk ? 'mk' : ''} ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
       <section class="panel raid-boss"><div class="panel-body">
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
             ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기 · ${esc(itemName())} 1개</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
-        ${fight ? roundBand(s) : ''}
-        ${mk && f.status !== 'wait' ? boardHtml(s, fight && s.joined) : ''}
+        ${mk && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${boardHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
       </div></section>
       ${fight && s.joined ? actHtml(s, me) : ''}
       <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
@@ -151,6 +150,7 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
         ${logHtml(s, me, done)}</div></section>
     </div>
     ${tipsHtml(s.tips)}`;
+  el.classList.toggle('mk-live', mk && fight && !!s.joined);
   if (!done) restoreLog();
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   memDetail(s); tray.redraw();
