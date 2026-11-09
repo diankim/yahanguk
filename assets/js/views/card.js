@@ -1,5 +1,6 @@
 import { petImage } from '../housing/petsprite.js';
 import { avatarImage, registerDesigns } from '../housing/avatarsprite.js';
+import { openDesignReport, wornDesigns } from './outfitdesign.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
@@ -58,6 +59,7 @@ async function draw(box, id) {
           <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id ? `<p><span class="fchip" style="--fc:${factionColor(c.major_faction_id)}">${esc(nameOf(c.major_faction_id))}${c.faction_rank ? ` · ${esc(c.faction_rank)}` : ''}</span></p>` : ''}${c.tn_champ ? `<p><span class="chip tn-badge">${c.tn_champ === 'team' ? '비무 장원 · 팀전' : '비무 장원'}</span></p>` : ''}
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div>
         <div class="pc-side"><div class="pc-look" title="내 모습"><img src="${avatarImage(c.look, { scale: 3, job: c.job_key })}" alt=""></div>
+        ${c.mine ? '' : wornDesigns(c.look, c.look_designs).map(w => `<button class="btn small ghost pc-drep" data-drep="${w.id}" title="${w.name} 도안이 부적절하면 운영진에게 알립니다">${w.name} 도안 제보</button>`).join('')}
         ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div></div>
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
       ${rel === 'friends' && noteOf(c.owner_id) ? `<p class="f-memo">${noteOf(c.owner_id).nick ? `<b>내가 붙인 별명</b> ${esc(noteOf(c.owner_id).nick)}` : ''}${noteOf(c.owner_id).nick && noteOf(c.owner_id).memo ? '<br>' : ''}${esc(noteOf(c.owner_id).memo || '')}</p>` : ''}
@@ -73,7 +75,7 @@ async function draw(box, id) {
       ${acts.trim() ? `<div class="card-acts">${acts}</div>` : ''}
       ${c.mine ? '' : `<div class="card-foot">${c.blocked ? '<span class="muted small">차단한 조사원입니다. 귓속말·신청·초대·거래 제안을 받지 않고 채팅에서도 숨깁니다.</span>' : ''}
         <button class="btn small ghost ${c.blocked ? '' : 'danger-text'}" data-do="${c.blocked ? 'unblock' : 'block'}">${c.blocked ? '차단 풀기' : '차단하기'}</button></div>`}`;
-    box.onclick = e => { const b = e.target.closest('[data-do]'); if (b) run(b, c, box); };
+    box.onclick = e => { const r = e.target.closest('[data-drep]'); if (r) return openDesignReport(Number(r.dataset.drep), () => draw(box, id)); const b = e.target.closest('[data-do]'); if (b) run(b, c, box); };
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
 

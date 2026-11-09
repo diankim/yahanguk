@@ -2559,6 +2559,9 @@ b.sealed { color: var(--bad); }
 .pc-pet { display: grid; justify-items: center; align-self: end; }
 .pc-pet img { image-rendering: pixelated; height: 40px; }
 .pc-pet small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
+.pc-side { flex-wrap: wrap; justify-content: flex-end; }
+.pc-drep, .hs-drep .btn { min-height: 26px; padding: 2px 8px; font-size: calc(11px * var(--fz, 1)); }
+.hs-drep { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
 @media (max-width: 900px) { .hs-wrap.editing { grid-template-columns: minmax(0, 1fr); } .hs-pal { max-height: none; } }
 @media (max-width: 640px) { .hs-stage { padding: 6px; } .hs-pal-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); } .hs-petbtn { margin-left: 0; } }
 /* 7.2 테마 꾸밈: 바탕 무늬(data-tex)·모서리 장식(data-frame)·머리글(data-head). 무늬는 또렷한 선·점만 쓴다(번지는 그라데이션 없음). */

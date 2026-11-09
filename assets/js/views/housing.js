@@ -10,6 +10,7 @@ import { petLine } from '../housing/petlines.js';
 import { openGallery, pickDrawing, openViewer } from './drawings.js';
 import { idOf, placedCounts, rememberHome } from '../housing/count.js';
 import { helpQ } from '../tips.js';
+import { openDesignReport, wornDesigns } from './outfitdesign.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 const GRADE = GRADES;
@@ -124,11 +125,17 @@ function draw() {
       ${editing ? palette() : ''}
       ${p && !editing ? petBar(p) : ''}
     </div>
+    ${editing ? '' : designReports()}
     ${me && !editing ? ownerPanel() : ''}
     ${me && !editing ? mergePanel() : ''}
     ${guestbook()}`;
   cv = $('#hs-cv'); fit(); paint(true); loop();
   bind();
+}
+function designReports() {
+  const meId = store.character?.owner_id;
+  const rows = (snap?.avatars || []).filter(a => a.id !== meId).flatMap(a => wornDesigns(a.look, snap.avatar_designs).map(w => ({ ...w, who: a.name })));
+  return rows.length ? `<p class="hs-drep muted small">${rows.map(w => `<button class="btn small ghost" data-drep="${w.id}">${esc(w.who)}의 ${w.name} 도안 제보</button>`).join('')}</p>` : '';
 }
 function fit() {
   if (!cv || !room) return;
@@ -240,6 +247,7 @@ function guestbook() {
 }
 
 function bind() {
+  $$('[data-drep]', el).forEach(b => b.addEventListener('click', () => openDesignReport(Number(b.dataset.drep), reload)));
   $('#hs-edit')?.addEventListener('click', () => { if (editing && dirty) return; editing = !editing; pick = null; sel = null; draw(); });
   $('#hs-done')?.addEventListener('click', async () => {
     if (dirty && !(await ask('저장하지 않은 배치가 있습니다. 버리고 닫을까요?', { title: '꾸미기 닫기', ok: '버리고 닫기', danger: true }))) return;

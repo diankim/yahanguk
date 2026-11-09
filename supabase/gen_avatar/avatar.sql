@@ -537,28 +537,30 @@ begin
   return jsonb_build_object('ok', true, 'content', '이 도안을 내 화면에서 숨겼습니다.');
 end $f$;
 
-create or replace function public.world_outfit_design_report(p_grp bigint, p_reason text)
+create or replace function public.world_outfit_design_report(p_id bigint, p_reason text)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public'
 as $f$
-declare uid uuid := public.fn_owner_auth_uid(); d public.world_outfit_designs%rowtype; nm text; why text := btrim(regexp_replace(coalesce(p_reason, ''), '[\x01-\x09\x0b-\x1f\x7f]+', ' ', 'g')); rid bigint;
+declare uid uuid := public.fn_owner_auth_uid(); d public.world_outfit_designs%rowtype; v_grp bigint; nm text; why text := btrim(regexp_replace(coalesce(p_reason, ''), '[\x01-\x09\x0b-\x1f\x7f]+', ' ', 'g')); rid bigint;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
-  select * into d from public.world_outfit_designs x where coalesce(x.origin, x.id) = p_grp and x.removed_at is null order by x.id limit 1;
+  select * into d from public.world_outfit_designs x where x.id = p_id and x.removed_at is null
+     and (x.owner_id = uid or x.id::text in (public.world_avatar_look_of(x.owner_id) ->> 'top_d', public.world_avatar_look_of(x.owner_id) ->> 'bottom_d'));
   if not found then raise exception '도안을 찾을 수 없습니다.'; end if;
+  v_grp := coalesce(d.origin, d.id);
   if d.author_id = uid then raise exception '내가 그린 도안은 제보할 수 없습니다.'; end if;
   if char_length(why) > 200 then raise exception '까닭은 200자까지 적을 수 있습니다.'; end if;
-  if exists (select 1 from public.world_bug_reports where owner_id = uid and category = 'outfit' and context ->> 'outfit' = p_grp::text) then
+  if exists (select 1 from public.world_bug_reports where owner_id = uid and category = 'outfit' and context ->> 'outfit' = v_grp::text) then
     raise exception '이미 제보한 도안입니다. 운영진이 살펴보고 있습니다.'; end if;
   if (select count(*) from public.world_bug_reports where owner_id = uid and created_at > now() - interval '1 hour') >= 5 then
     raise exception '제보는 1시간에 5건까지 보낼 수 있습니다. 잠시 뒤에 보내 주세요.'; end if;
   select character_name into nm from public.world_characters where owner_id = uid;
   insert into public.world_bug_reports (owner_id, character_name, category, title, body, context)
   values (uid, nm, 'outfit', '도안 제보 · ' || d.author_name || case when d.title <> '' then ' 「' || d.title || '」' else '' end,
-    case when why = '' then '(까닭을 적지 않음)' else why end, jsonb_build_object('outfit', p_grp, 'author_id', d.author_id, 'author', d.author_name))
+    case when why = '' then '(까닭을 적지 않음)' else why end, jsonb_build_object('outfit', v_grp, 'author_id', d.author_id, 'author', d.author_name))
   returning report_id into rid;
   insert into public.world_notifications (user_id, kind, title, content, payload)
   select s.owner_id, 'bug_report', '새 제보', coalesce(nm, '조사원') || ': 도안 제보', jsonb_build_object('report_id', rid) from public.world_staff s where s.owner_id <> uid;
-  insert into public.world_outfit_design_hides (viewer_id, grp) values (uid, p_grp)
+  insert into public.world_outfit_design_hides (viewer_id, grp) values (uid, v_grp)
   on conflict (viewer_id, grp) do update set hidden = true, at = now();
   return jsonb_build_object('ok', true, 'content', '운영진에게 알렸습니다. 이 도안은 내 화면에서 숨깁니다.');
 end $f$;
