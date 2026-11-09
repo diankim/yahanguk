@@ -3254,9 +3254,15 @@ b.shadow { color: var(--sp); }
 .od-picks .chip-btn { grid-column: span 4; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .od-decos { display: flex; flex-wrap: wrap; gap: 8px; }
 .od-dk { display: flex; align-items: center; gap: 4px; }
+.od-why { align-self: center; }
 @media (max-width: 720px) {
-  .od-ed { grid-template-columns: 1fr; }
+  .od-ed { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .od-left, .od-right { display: contents; }
+  .od-slot, .od-bases, .od-canvas, .od-tools { align-self: center; }
+  .od-right > .od-prev { order: 1; }
+  .od-right > .od-deco, .od-right > .field, .od-right > p.muted, .od-right > .btn-row { order: 2; }
   .od-list { grid-template-columns: 1fr; }
+  body:has(.od-ed) .toasts { top: calc(var(--top-h, 56px) + 12px + env(safe-area-inset-top)); bottom: auto; z-index: 95; }
 }
 .carry-care { display: flex; gap: 14px; align-items: flex-start; } .carry-care img { image-rendering: pixelated; width: 96px; flex: none; } .carry-care .btn-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .pet-line { margin-top: 2px; }

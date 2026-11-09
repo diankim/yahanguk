@@ -95,21 +95,24 @@ function putDesign(px, p, pal, mask, d, map) {
   });
 }
 
-export function avatarPixels(look, frame = 'stand') {
+export function avatarPixels(look, frame = 'stand', { front } = {}) {
   const l = fixLook(look), W = AW, H = AH, px = new Array(W * H).fill(null);
   const base = { ...AV.fixed, ...AV.skins[l.skin], ...AV.hairColors[l.hair_color], ...AV.eyeColors[l.eye_color] };
   const step = frame === 'walk' ? 'walk' : 'stand', hair = AV.hair[l.hair], top = AV.top[l.top], bot = AV.bottom[l.bottom];
   put(px, hair.back, base);
   put(px, AV.body[step], base);
   const bd = designOf(l, 'bottom'), td = designOf(l, 'top');
-  if (bd) putDesign(px, bot[step], designPal({ ...base, ...bot.pal }, bot.mask, bd), bot.mask, bd, step === 'walk' ? bot.mask.walk : null);
-  else put(px, bot[step], { ...base, ...bot.pal });
-  if (td) putDesign(px, top.part, designPal({ ...base, ...top.pal }, top.mask, td), top.mask, td, null);
-  else put(px, top.part, { ...base, ...top.pal });
+  const wear = {
+    bottom: () => bd ? putDesign(px, bot[step], designPal({ ...base, ...bot.pal }, bot.mask, bd), bot.mask, bd, step === 'walk' ? bot.mask.walk : null) : put(px, bot[step], { ...base, ...bot.pal }),
+    top: () => td ? putDesign(px, top.part, designPal({ ...base, ...top.pal }, top.mask, td), top.mask, td, null) : put(px, top.part, { ...base, ...top.pal }),
+  };
+  wear.bottom();
+  wear.top();
   put(px, AV.eyes[l.eyes][frame === 'blink' ? 'closed' : 'open'], base);
   put(px, AV.mouth[l.mouth].part, base);
   put(px, hair.front, base);
   if (l.acc) put(px, AV.acc[l.acc].part, { ...base, ...AV.acc[l.acc].pal });
+  wear[front]?.();
   const out = px.slice();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (px[y * W + x]) continue;

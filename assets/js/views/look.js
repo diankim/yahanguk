@@ -19,6 +19,9 @@ const WEAR = ['top', 'bottom', 'acc'];
 const FACE_CROP = [2, 0, 26, 26];
 const faceNow = () => !!store.character?.profile?.avatar_px;
 const plain = l => { const { top_d, bottom_d, ...rest } = l || {}; return rest; };
+const LOOK_KEYS = ['skin', 'hair', 'hair_color', 'eyes', 'eye_color', 'mouth', 'top', 'bottom', 'acc'];
+const dnum = v => v == null || v === '' ? null : Number(v);
+const sameLook = (a, b) => LOOK_KEYS.every(k => (a?.[k] || '') === (b?.[k] || '')) && ['top_d', 'bottom_d'].every(k => dnum(a?.[k]) === dnum(b?.[k]));
 const wovenOf = (snap, slot) => (snap.owned || []).filter(k => k.startsWith(slot + ':@')).map(k => k.split('@')[1]).filter(id => snap.designs?.[id]?.base);
 
 function owns(snap, slot, key) {
@@ -43,7 +46,7 @@ export async function lookTab(body) {
   if (!snap) { body.innerHTML = errorBox('모습을 불러오지 못했습니다.'); return; }
   registerDesigns(snap.designs);
   if (!draft || draftOwner !== c.owner_id) { draft = fixLook(snap.look, snap.job); draftOwner = c.owner_id; homeOn = snap.home_on !== false; faceOn = faceNow(); }
-  const saved = JSON.stringify(fixLook(snap.look, snap.job)), dirty = saved !== JSON.stringify(draft) || homeOn !== (snap.home_on !== false) || faceOn !== faceNow();
+  const dirty = !sameLook(fixLook(snap.look, snap.job), draft) || homeOn !== (snap.home_on !== false) || faceOn !== faceNow();
   const cur = TABS.find(t => t[0] === tab) || TABS[1];
   const curName = cur[3].filter(x => !x[2]).map(([s, t]) => AV[t][draft[s]]?.name).concat(cur[3].filter(x => x[2]).map(([s, t]) => AV[t][draft[s]]?.name)).filter(Boolean).join(' · ');
   body.innerHTML = `<div class="lk-wrap">
@@ -64,13 +67,15 @@ export async function lookTab(body) {
   </div>`;
   $$('[data-lktab]', body).forEach(b => b.onclick = () => { tab = b.dataset.lktab; lookTab(body); });
   $$('[data-lk]', body).forEach(b => b.onclick = () => { const k = b.dataset.lk; draft = { ...draft, [k]: b.dataset.v }; delete draft[k + '_d']; lookTab(body); });
-  $$('[data-lkd]', body).forEach(b => b.onclick = () => { const k = b.dataset.lkd; draft = { ...draft, [k]: b.dataset.base, [k + '_d']: b.dataset.id }; lookTab(body); });
-  if (cur[0] === 'design') designBook($('.lk-design', body), snap, { onWear: (slot, base, id) => { draft = { ...draft, [slot]: base, [slot + '_d']: String(id) }; tab = slot; lookTab(body); } });
+  $$('[data-lkd]', body).forEach(b => b.onclick = () => { const k = b.dataset.lkd; draft = { ...draft, [k]: b.dataset.base, [k + '_d']: dnum(b.dataset.id) }; lookTab(body); });
+  if (cur[0] === 'design') designBook($('.lk-design', body), snap, { onWear: (slot, base, id) => { draft = { ...draft, [slot]: base, [slot + '_d']: dnum(id) }; tab = slot; lookTab(body); } });
   $('#lk-home', body).onchange = e => { homeOn = e.target.checked; lookTab(body); };
   $('#lk-face', body).onchange = e => { faceOn = e.target.checked; lookTab(body); };
   $('#lk-reset', body).onclick = () => { draft = fixLook(snap.look, snap.job); homeOn = snap.home_on !== false; faceOn = faceNow(); lookTab(body); };
   $('#lk-save', body).onclick = e => guard(e.currentTarget, async () => {
     const r = await act('world_avatar_set', { p_look: draft, p_home_on: homeOn });
+    if (r?.look) draft = fixLook(r.look, snap.job);
+    if (typeof r?.home_on === 'boolean') homeOn = r.home_on;
     if (faceOn) await act('world_set_avatar_px', { p_image: avatarImage(plain(draft), { scale: 4, crop: FACE_CROP, job: snap.job }) });
     else if (faceNow()) await act('world_set_avatar', { p_image: null });
     return r;

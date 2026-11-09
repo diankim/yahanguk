@@ -457,18 +457,24 @@ export function openModal({ title, body, wide = false, onClose, sticky = false }
 }
 function escClose(e) { if (e.key === 'Escape') closeModal(); }
 
-export function openLayer({ title, body, wide = false } = {}) {
+export function openLayer({ title, body, wide = false, confirmClose } = {}) {
   const el = h(`<div class="modal-backdrop layer"><div class="modal ${wide ? 'modal-wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="닫기">${icon('close')}</button></header>
     <div class="modal-body"></div></div></div>`);
   $('.modal-body', el).append(typeof body === 'string' ? h(`<div>${body}</div>`) : body);
-  const key = e => { if (e.key === 'Escape' && $$('.modal-backdrop.layer').pop() === el) { e.stopImmediatePropagation(); close(); } };
+  let asking = false;
+  const tryClose = async () => {
+    if (asking) return;
+    if (confirmClose) { asking = true; try { if (!(await confirmClose())) return; } finally { asking = false; } }
+    close();
+  };
+  const key = e => { if (e.key === 'Escape' && !$('.ask-layer') && $$('.modal-backdrop.layer').pop() === el) { e.stopImmediatePropagation(); tryClose(); } };
   const close = () => {
     document.removeEventListener('keydown', key, true); el.remove();
     if (!$('#modal') && !$('.modal-backdrop.layer')) unlockPage();
   };
   let downOn = null; el.addEventListener('pointerdown', e => { downOn = e.target; });
-  el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) close(); });
+  el.addEventListener('click', e => { if ((e.target === el && downOn === el) || e.target.closest('[data-close]') && e.target.closest('.modal-backdrop') === el) tryClose(); });
   document.addEventListener('keydown', key, true);
   el.close = close;
   document.body.append(el);

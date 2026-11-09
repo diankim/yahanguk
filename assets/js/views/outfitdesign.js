@@ -38,6 +38,12 @@ function startPal(slot, base) {
   for (const c of [p.a, p.b, p.c, p.d, p.e, p.z, '#f4efe2', '#1a1a1f', '#c8382e', '#3f6fb5', '#f2c94c', '#5b9a4b']) if (c && /^#[0-9a-f]{6}$/i.test(c) && !out.includes(c.toLowerCase())) out.push(c.toLowerCase());
   return out.slice(0, 8);
 }
+const rgbOf = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+function startCur(pal, a) {
+  if (!a) return 0;
+  const [r, g, b] = rgbOf(a.toLowerCase()), far = pal.findIndex(c => { const [x, y, z] = rgbOf(c); return Math.abs(x - r) + Math.abs(y - g) + Math.abs(z - b) > 150; });
+  return far >= 0 ? far : Math.max(0, pal.findIndex(c => c !== a.toLowerCase()));
+}
 
 export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
   let slot = s0 || 'top';
@@ -46,13 +52,15 @@ export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
   if (!base) return toast('도안 바탕으로 쓸 옷이 없습니다.', 'error');
   const me = fixLook(snap.look, snap.job), max = rules?.colors || 8;
   let pal = startPal(slot, base), deco = [], cells = [], lay = null, pad = null, cur = 0, flip = false, frame = 0, title = '', timer = null, look = null;
-  const reset = () => { lay = layout(slot, base); cells = Array(maskOf(slot, base).n).fill('.'); deco = (maskOf(slot, base).deco || []).map(() => ''); pal = startPal(slot, base); cur = 0; };
+  const reset = () => { lay = layout(slot, base); cells = Array(maskOf(slot, base).n).fill('.'); deco = (maskOf(slot, base).deco || []).map(() => ''); pal = startPal(slot, base); cur = startCur(pal, AV[slot][base].pal.a); };
   reset();
   const palStr = () => pal.map(c => c.slice(1)).join('');
   const decoStr = () => deco.map(c => c ? c.slice(1) : '......').join('');
   const draft = () => ({ slot, base, pal: palStr(), px: cells.join(''), deco: decoStr() });
   const sync = () => { const id = 'e' + (++seq); registerDesigns({ [id]: draft() }); look = { ...me, [slot]: base, [slot + '_d']: id }; };
-  const layer = openLayer({ title: '새 옷 도안', wide: true, body: `<div class="od-ed">
+  const touched = () => cells.some(c => c !== '.') || deco.some(Boolean) || !!$('[name=t]', layer)?.value.trim();
+  const confirmClose = async () => !touched() || ask('그리던 도안을 도안첩에 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '도안 닫기', ok: '닫기', cancel: '계속 그리기' });
+  const layer = openLayer({ title: '새 옷 도안', wide: true, confirmClose, body: `<div class="od-ed">
     <div class="od-left">
       <div class="seg od-slot">${['top', 'bottom'].map(k => `<button class="chip-btn" data-slot="${k}">${SLOT_NAME[k]}</button>`).join('')}</div>
       <div class="od-bases"></div>
@@ -73,7 +81,7 @@ export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
   const at = (x, y) => { const gx = x + lay.crop[0], gy = y + lay.crop[1]; return lay.pos.findIndex(([px, py]) => px === gx && py === gy); };
   const draw = () => {
     sync();
-    const [cx, cy, cw, ch] = lay.crop, px = avatarPixels(look, 'stand'), sc = cv.width / cw;
+    const [cx, cy, cw, ch] = lay.crop, px = avatarPixels(look, 'stand', { front: slot }), sc = cv.width / cw;
     g.fillStyle = '#efe6d2'; g.fillRect(0, 0, cv.width, cv.height);
     for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
       const v = px[(cy + y) * AW + cx + x];
@@ -137,11 +145,14 @@ export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
 
 function recipeLine(slot, rules, st) {
   const r = knownRecipes().find(x => x.id === rules?.weave?.[slot]);
-  if (!r) return '<p class="muted small">옷 짓는 재료를 불러오지 못했습니다. 가방을 한 번 연 뒤 다시 보세요.</p>';
+  if (!r) return { html: '<p class="muted small">옷 짓는 재료를 불러오지 못했습니다. 가방을 한 번 연 뒤 다시 보세요.</p>', why: '' };
   const inv = store.character?.inventory || {}, stored = new Map((st?.can_move ? st.items || [] : []).map(i => [i.item_id, Number(i.qty) || 0]));
   const has = k => hqCount(inv, k);
   const box = k => hqCount(Object.fromEntries(stored), k);
-  return `<p class="small od-mats">재료 ${Object.entries(r.ingredients || {}).map(([k, n]) => { const ok = has(k) + box(k) >= n; return `<span class="${ok ? 'ok' : 'bad'}">${esc(nameOf(k))} ${n}개 (가방 ${has(k)}${box(k) ? ` · 창고 ${box(k)}` : ''})</span>`; }).join(' · ')}${r.minimum_level > 1 ? ` · Lv.${r.minimum_level}부터` : ''}</p>`;
+  const lack = Object.entries(r.ingredients || {}).some(([k, n]) => has(k) + box(k) < n), lv = Number(store.character?.level) || 0;
+  const why = r.minimum_level > lv ? `Lv.${r.minimum_level}부터 지을 수 있습니다.` : lack ? '재료가 모자랍니다.' : '';
+  const html = `<p class="small od-mats">재료 ${Object.entries(r.ingredients || {}).map(([k, n]) => { const ok = has(k) + box(k) >= n; return `<span class="${ok ? 'ok' : 'bad'}">${esc(nameOf(k))} ${n}개 (가방 ${has(k)}${box(k) ? ` · 창고 ${box(k)}` : ''})</span>`; }).join(' · ')}${r.minimum_level > 1 ? ` · Lv.${r.minimum_level}부터` : ''}</p>`;
+  return { html, why };
 }
 
 export async function designBook(box, snap, { onWear } = {}) {
@@ -173,9 +184,10 @@ export async function designBook(box, snap, { onWear } = {}) {
   $$('[data-wear]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.wear); if (d) onWear(d.slot, d.base, d.id); });
   $$('[data-weave]', box).forEach(b => b.onclick = async () => {
     const d = find(b.dataset.weave); if (!d) return;
+    const rl = recipeLine(d.slot, rules, st);
     const l = openLayer({ title: '옷 짓기', body: `<div class="od-weave"><img class="od-pic" src="${designPic(d, { job: snap.job, look: snap.look })}" alt="">
-      <p>${esc(d.t || '이 도안')}으로 ${SLOT_NAME[d.slot]}을 지어 옷장에 넣습니다. 도안은 도안첩에 그대로 남습니다.</p>${recipeLine(d.slot, rules, st)}
-      <div class="btn-row"><button class="btn primary" data-go data-here="옷 짓기">짓기</button></div></div>` });
+      <p>${esc(d.t || '이 도안')}으로 ${SLOT_NAME[d.slot]}을 지어 옷장에 넣습니다. 도안은 도안첩에 그대로 남습니다.</p>${rl.html}
+      <div class="btn-row"><button class="btn primary" data-go data-here="옷 짓기" ${rl.why ? 'disabled' : ''}>짓기</button>${rl.why ? `<small class="od-why bad">${esc(rl.why)}</small>` : ''}</div></div>` });
     $('[data-go]', l).onclick = e => guard(e.currentTarget, async () => { const res = await act('world_outfit_design_weave', { p_id: d.id }); l.close(); again(); return res; });
   });
   $$('[data-give]', box).forEach(b => b.onclick = async () => {
