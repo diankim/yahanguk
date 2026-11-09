@@ -19,7 +19,7 @@ export const CHANGES = {
   idle: /idle/,
   skill: /skill/,
   codex: /battle|gather|expedition/,
-  storage: /craft|storage|travel|field_move/,
+  storage: /craft_(item|batch)|storage|travel|enhance/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,

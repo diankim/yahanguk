@@ -78,13 +78,13 @@ async function inventorySnap() {
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
 const invSigOf = c => c ? JSON.stringify([c.inventory, c.level, c.location, c.crafting_rank, c.gathering_rank, c.crafting_profession, c.gathering_profession]) : '';
 let invSig = '';
-on('changed', ({ name = '' }) => {
+on('changed', ({ name = '', data } = {}) => {
   const sig = invSigOf(store.character), moved = sig !== invSig; invSig = sig;
   if (!hit('invQuiet', name) && (moved || hit('invAlways', name)) && Date.now() - invFreshAt > 1500) invalidate('world_inventory_snapshot');
   if (hit('fishSpot', name) || (store.snaps['world_fish_spotnull'] != null && hit('fishSpotNone', name))) invalidate('world_fish_spot');
   if (hit('rest', name)) invalidate('world_rest_status');
   if (hit('idle', name)) invalidate('world_idle_activity_snapshot');
-  if (hit('storage', name)) invalidate('world_storage_snapshot');
+  if (hit('storage', name) && !(/craft_(item|batch)$/.test(name) && !Object.keys(data?.from_storage || {}).length)) invalidate('world_storage_snapshot');
   if (!hit('invQuiet', name)) for (const k of ['world_shop_snapshot', 'world_smithy_snapshot', 'world_enhance_quote', 'world_repair_quote']) invalidate(k);
   if (hit('dismantle', name)) invalidate('world_dismantle_info');
   if (hit('mounts', name)) invalidate('world_mount_snapshot');
