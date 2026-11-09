@@ -30,6 +30,7 @@ import hair_art as A
 for k, (n, fn) in A.ART.items():
     fr, bk = fn()
     out['hair'][k] = dict(name=n, back=part(bk), front=part(fr))
+out['hair'] = {k: out['hair'][k] for k in A.ORDER}
 out['eyes'] = {k: dict(name=n, open=part(D.eye(k, False)), closed=part(D.eye(k, True))) for k, n in D.EYES.items()}
 out['mouth'] = {k: dict(name=n, part=part(D.mouth(k))) for k, n in D.MOUTHS.items()}
 tops = {}

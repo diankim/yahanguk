@@ -8,7 +8,7 @@ const hex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
 
 export function defaultLook(job) {
   const d = AV.jobDefault[job] || AV.jobDefault.artificer;
-  return { skin: 'warm', hair: 'short', hair_color: 'brown', eyes: 'round', eye_color: 'brown', mouth: 'small', top: d.top, bottom: d.bottom, acc: '' };
+  return { skin: 'warm', hair: 'calm', hair_color: 'brown', eyes: 'round', eye_color: 'brown', mouth: 'small', top: d.top, bottom: d.bottom, acc: '' };
 }
 
 export function fixLook(look, job) {

@@ -485,3 +485,136 @@ ART['pony'] = ('한 갈래 묶음', pony2)
 ART['buns'] = ('쌍 쪽머리', buns2)
 ART['knot'] = ('상투', knot2)
 ART['braid'] = ('땋은 머리', braid2)
+
+
+def wv(y):
+    return (0, 1, 1, 0, -1, -1)[(y // 2) % 6]
+
+
+def fluffy2():
+    f = Grid()
+    cap(f, 10)
+    for st in ((7, 4, 3, 2, 3), (20, 4, 24, 2, 3), (14, 3, 15, 0, 3), (4, 8, 1, 8, 3), (23, 9, 26, 10, 3)):
+        strand(f, *st)
+    bangs(f, {6: 13, 7: 12, 8: 14, 9: 12, 10: 13, 11: 11, 12: 13, 13: 14, 14: 12, 15: 13, 16: 11, 17: 13, 18: 12, 19: 14, 20: 12, 21: 13})
+    sides(f, {11: (2, 5), 12: (2, 5), 13: (2, 5), 14: (2, 5), 15: (3, 5), 16: (3, 5)})
+    for x, y in ((1, 16), (2, 17), (26, 15), (25, 16), (25, 17)):
+        f.set(x, y, 'h')
+    shade_front(f)
+    marks(f, [(8, 4), (9, 5), (10, 6), (13, 3), (14, 4), (15, 5), (19, 4), (20, 5), (21, 6), (5, 8), (22, 8), (11, 9), (16, 9)])
+    return f, Grid()
+
+
+def curtain2():
+    f = Grid()
+    cap(f, 10)
+    tips = {6: 14, 7: 14, 8: 13, 9: 13, 10: 12, 11: 12, 12: 11}
+    tips.update({W - 1 - x: y for x, y in tips.items()})
+    bangs(f, tips)
+    sides(f, {y: (2, 5) for y in range(11, 19)})
+    sides(f, {19: (3, 6), 20: (5, 7)})
+    shade_front(f)
+    for y in range(3, 11):
+        f.p[(13, y)] = 'H'
+    marks(f, [(11, 5), (10, 6), (9, 7), (8, 8), (16, 5), (17, 6), (18, 7), (19, 8), (4, 13), (4, 15), (23, 13), (23, 15)])
+    return f, Grid()
+
+
+def halfup2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, {6: 14, 7: 14, 8: 13, 9: 13, 10: 13, 11: 12, 12: 12, 13: 12, 14: 11, 15: 11, 16: 11, 17: 11})
+    for y in range(11, 19):
+        span(f, y, 2, 5)
+    for y in range(11, 16):
+        span(f, y, 22, 25)
+    span(f, 16, 23, 24)
+    shade_front(f)
+    marks(f, [(18, 4), (17, 5), (16, 6), (15, 7), (14, 8), (13, 9), (21, 6), (20, 7), (19, 8), (4, 13), (4, 16)])
+    for y in range(1, 8):
+        for x in range(22, 28):
+            if ((x + .5 - 25) / 2.6) ** 2 + ((y + .5 - 4) / 2.8) ** 2 <= 1:
+                b.set(x, y, 'k')
+    form(b, 'k', 'h', 'q')
+    b.set(25, 2, 'i')
+    return f, b
+
+
+def cloud2():
+    f, b = longcurl()
+    for cx in (6, 21):
+        for y in range(0, 4):
+            for x in range(cx - 3, cx + 4):
+                if ((x + .5 - cx - .5) / 2.8) ** 2 + ((y + .5 - 2) / 2.2) ** 2 <= 1 and (x, y) not in f.p:
+                    f.set(x, y, 'h')
+        f.set(cx, 0, 'i')
+    for x in range(W):
+        for y in range(0, 4):
+            if f.p.get((x, y)) == 'h':
+                f.p[(x, y)] = 'g' if y < 2 else 'h'
+    return f, b
+
+
+def princess2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, {x: 13 for x in range(6, 22)})
+    sides(f, {y: (3, 5) for y in range(11, 23)})
+    shade_front(f)
+    for x in range(6, 22):
+        f.p[(x, 13)] = 'H'
+    marks(f, [(8, 5), (8, 6), (12, 4), (12, 5), (16, 4), (16, 5), (20, 6), (4, 14), (4, 17), (4, 20), (23, 14), (23, 17), (23, 20)])
+    for y in range(8, 31):
+        o = wv(y) if y > 14 else 0
+        span(b, y, 1 - min(0, o) + (1 if o > 0 else 0) - 1, W - 2 + (1 if o < 0 else 0) - (1 if o > 0 else 0), 'k')
+    for x in (2, 3, 5, 6, 8, 19, 21, 22, 24, 25):
+        b.set(x, 31, 'k')
+    form(b, 'k', 'h', 'q')
+    marks(b, [(2 - wv(y), y) for y in range(16, 30, 3)] + [(25 + wv(y), y) for y in range(17, 30, 3)], 'q')
+    return f, b
+
+
+def layered2():
+    f = Grid()
+    cap(f, 10)
+    for st in ((10, 3, 9, 0, 3), (16, 3, 18, 0, 3), (6, 4, 3, 2, 3), (21, 4, 24, 2, 3), (4, 7, 1, 6, 3), (23, 7, 26, 6, 3)):
+        strand(f, *st)
+    bangs(f, {6: 13, 7: 14, 8: 12, 9: 13, 10: 14, 11: 12, 12: 13, 13: 15, 14: 13, 15: 12, 16: 14, 17: 13, 18: 12, 19: 14, 20: 13, 21: 12})
+    sides(f, {11: (2, 5), 12: (1, 5), 13: (2, 5), 14: (1, 5), 15: (3, 5), 16: (4, 5)})
+    for st in ((2, 12, 0, 14, 2), (25, 12, 27, 14, 2)):
+        strand(f, *st)
+    shade_front(f)
+    marks(f, [(9, 4), (9, 5), (13, 3), (13, 4), (17, 4), (17, 5), (7, 8), (11, 8), (15, 8), (19, 8), (4, 9), (23, 9)])
+    return f, Grid()
+
+
+def twintail2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, {**{x: 13 for x in range(6, 22)}, 8: 12, 13: 14, 14: 14, 19: 12})
+    sides(f, {11: (3, 5), 12: (3, 5), 13: (4, 5)})
+    shade_front(f)
+    for x, y in ((2, 6), (3, 6), (2, 7), (3, 7), (24, 6), (25, 6), (24, 7), (25, 7)):
+        f.set(x, y, 'H')
+    marks(f, [(9, 5), (12, 4), (15, 4), (18, 5)])
+    for y in range(6, 29):
+        w = 2 if y < 9 or y > 25 else 3
+        x0 = 0 + (1 if y < 10 or y > 24 else 0)
+        span(b, y, x0, x0 + w - 1, 'k')
+        span(b, y, W - x0 - w, W - 1 - x0, 'k')
+    b.set(1, 29, 'k'); b.set(26, 29, 'k')
+    form(b, 'k', 'h', 'q')
+    marks(b, [(1, y) for y in range(11, 26, 3)] + [(26, y) for y in range(12, 26, 3)], 'q')
+    return f, b
+
+
+ART.update({
+    'fluffy': ('헝클어진 짧은 머리', fluffy2),
+    'curtain': ('가르마 짧은 머리', curtain2),
+    'halfup': ('옆으로 넘긴 반묶음', halfup2),
+    'cloud': ('구름 물결 긴 머리', cloud2),
+    'princess': ('일자 앞머리 물결 머리', princess2),
+    'layered': ('부스스 짧은 머리', layered2),
+    'twintail': ('양갈래', twintail2),
+})
+ORDER = ['calm', 'sports', 'curtain', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'longcurl', 'cloud']
