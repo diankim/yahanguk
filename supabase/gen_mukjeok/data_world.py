@@ -354,6 +354,11 @@ FURNITURE = {
     'shelf_register': dict(source='drop_guardian', mats={'meokbi_ebony': 2, 'register_slip': 2, 'lacquer': 2}, field='carpentry', lv=40),
     'lamp_nine_pillar': dict(source='title:mk_court_all', mats=None, field=None, lv=40),
     'rubbing_doorplate_carp': dict(source='named', mats={'doorplate_carp': 1, 'fine_paper': 2, 'mukchang_ink': 2}, field='sealing', lv=40),
+    'rubbing_blank_snakehead': dict(source='named', mats={'blank_snakehead': 1, 'fine_paper': 2, 'mukchang_ink': 2}, field='sealing', lv=40),
+    'rubbing_blind_dragon': dict(source='named', mats={'blind_dragon': 1, 'fine_paper': 2, 'mukchang_ink': 2}, field='sealing', lv=40),
+    'rubbing_inkscale_tuna': dict(source='named', mats={'inkscale_tuna': 1, 'fine_paper': 2, 'mukchang_ink': 2}, field='sealing', lv=40),
+    'rubbing_meokbi_salmon': dict(source='named', mats={'meokbi_salmon': 1, 'fine_paper': 2, 'mukchang_ink': 2}, field='sealing', lv=40),
+    'rubbing_bamboo_eel': dict(source='named', mats={'bamboo_eel': 1, 'fine_paper': 2, 'mukchang_ink': 2}, field='sealing', lv=40),
     'tank_bamboo_eel': dict(source='named', mats={'bamboo_eel': 1, 'spirit_glass': 2, 'meokbi_ebony': 2}, field='carpentry', lv=40),
 }
 
