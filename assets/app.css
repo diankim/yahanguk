@@ -2379,10 +2379,8 @@ b.sealed { color: var(--bad); }
 /* 봉연 소식 줄: 프로필 낙관 .seal(32px 정사각형)과 이름이 겹쳐 칸이 좁아지던 것 → raidnote */
 .chat-list .chat-notice.sys.raidnote { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: color-mix(in srgb, var(--warn) 8%, var(--surface-2)); }
 .chat-list .chat-notice.sys.raidnote svg { color: var(--warn); }
-.chat-list .chat-notice.sys.fnote { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface-2)); }
-.chat-list .chat-notice.sys.fnote svg { color: var(--accent); }
-.chat-list .chat-notice.sys.bondnote { border-color: color-mix(in srgb, var(--mp) 45%, var(--line)); background: color-mix(in srgb, var(--mp) 8%, var(--surface-2)); }
-.chat-list .chat-notice.sys.bondnote svg { color: var(--mp); }
+.chat-list .chat-notice.sys.note { border-color: var(--line); background: var(--surface-2); }
+.chat-list .chat-notice.sys.note svg { color: var(--muted); }
 .coop-list li small + small { margin-top: 2px; }
 /* 세계관 글: 물품 내력·지역 기록·요괴 목격담 */
 .item-lore { margin: 4px 0 8px; padding-left: 10px; border-left: 2px solid var(--gold); color: var(--muted); font-size: calc(12.5px * var(--fz, 1)); line-height: 1.55; font-family: var(--font-serif); }
