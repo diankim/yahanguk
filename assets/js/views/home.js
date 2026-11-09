@@ -259,6 +259,7 @@ function field(s, roster, blocked) {
           <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
+          ${s.region.region_id === GAMEDATA.boss?.mukjeok?.region ? `<a class="tile danger" href="#/gw/mukjeok" title="먹그림자 · Lv${GAMEDATA.boss.mukjeok.lv}부터, ${GAMEDATA.boss.mukjeok.item_name} 1개">${icon('flag', 22)}<span>먹그림자</span></a>` : ''}
         </div>
         <label class="quiet-toggle"><input type="checkbox" id="quiet-mode" ${quietOn() ? 'checked' : ''}><span><b>조용히 살피기</b> <small class="muted">요괴 조우 −${quietPct()}% · 꾸러미 −${Math.floor(quietPct() / 2)}% (기민, 최대 ${AGILE.quietCap}%)</small></span></label>
         ${(s.gear_warn || []).length ? `<p class="hint warn gear-warn">${icon('wrench', 14)} <span><b>닳은 장비</b> · ${s.gear_warn.map(g => `${esc(g.name)}(${g.dur > 0 ? `${g.dur}/${g.max}` : '부서짐'})`).join(', ')} — 부서진 장비는 효과가 없고, 4분의 1 아래면 성능이 20% 떨어집니다. 안전지대 대장간이나 수리 도구로 고치세요.</span></p>` : ''}
