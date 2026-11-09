@@ -10,19 +10,24 @@ ACCOUNT_TABLES = {
     'world_gwiryeong_log', 'world_legacy_marks', 'world_letter_sends', 'world_notify_prefs', 'world_party_loot_allocations',
     'world_pfight_members', 'world_raid_members', 'world_report_rewards', 'world_shop_buy_caps', 'world_staff',
     'world_tourney_entrants', 'world_travel_history', 'world_ui_prefs', 'world_wedding_guests', 'world_whisper_reads',
+    'world_events', 'world_chat_messages', 'world_party_messages', 'world_circles', 'world_circle_invites', 'world_letters',
+    'world_gwiryeong_plants', 'world_case_state', 'world_party_loot_pool',
 }
 UNUSED_OK = {'pet_token'}
-UNMUTABLE_NOTES = {'bug_reply', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'guide'}
+UNMUTABLE_NOTES = {'bug_reply', 'bug_report', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'guide'}
 ANON_OK = {'world_app_version'}
 NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js'}
 SERVER_TEXT = ['쏠 것이 떨어져', '기력이 바닥나', '영력이 바닥나', '초 남음', '의 피해']
 
 SQL = {
     'purge': """with t as (select distinct c.table_name from information_schema.columns c join information_schema.tables tb on tb.table_name = c.table_name and tb.table_schema = 'public' and tb.table_type = 'BASE TABLE'
-  where c.table_schema = 'public' and c.column_name in ('owner_id', 'character_id', 'user_id') and c.table_name like 'world\\_%'),
+  where c.table_schema = 'public' and c.column_name in ('owner_id', 'character_id', 'user_id') and c.table_name like 'world\\_%'
+  union select distinct r.relname from pg_constraint k join pg_class r on r.oid = k.conrelid join pg_namespace n on n.oid = r.relnamespace
+  where k.contype = 'f' and n.nspname = 'public' and r.relkind = 'r' and r.relname like 'world\\_%' and k.confrelid = 'auth.users'::regclass),
  s as (select string_agg(prosrc, ' ') src from pg_proc where proname in ('world_character_purge', 'world_character_delete'))
 select coalesce(json_agg(t.table_name order by t.table_name), '[]') from t, s where position(t.table_name in s.src) = 0""",
-    'notes': """select coalesce(json_agg(distinct k), '[]') from (select (regexp_matches(prosrc, 'world_notifications[^;]*?values\\s*\\([^,]*,\\s*''([a-z_0-9]+)''', 'gi'))[1] k from pg_proc) x
+    'notes': """select coalesce(json_agg(distinct k), '[]') from (select (regexp_matches(prosrc, 'world_notifications[^;]*?values\\s*\\([^,]*,\\s*''([a-z_0-9]+)''', 'gi'))[1] k from pg_proc
+  union all select (regexp_matches(prosrc, 'world_notifications\\s*\\([^)]*\\)\\s*select\\s+[^,]+?,\\s*''([a-z_0-9]+)''', 'gi'))[1] from pg_proc) x
 where public.world_notify_group(k) is null""",
     'anon': """select coalesce(json_agg(proname order by proname), '[]') from pg_proc p join pg_namespace n on n.oid = p.pronamespace and nspname = 'public'
 where prosecdef and has_function_privilege('anon', p.oid, 'execute')""",
