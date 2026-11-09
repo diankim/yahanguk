@@ -54,9 +54,18 @@ begin
     from public.world_bonds b where b.ended_at is null and (b.a_id = p_uid or b.b_id = p_uid);
   update public.world_bonds set ended_at = coalesce(ended_at, now()), ended_by = coalesce(ended_by, p_uid),
     a_cleared = a_cleared or a_id = p_uid, b_cleared = b_cleared or b_id = p_uid
-   where (a_id = p_uid or b_id = p_uid) and (ended_at is null or (a_id = p_uid and not a_cleared) or (b_id = p_uid and not b_cleared));$q$);
+   where (a_id = p_uid or b_id = p_uid) and (ended_at is null or (a_id = p_uid and not a_cleared) or (b_id = p_uid and not b_cleared));
+  perform public.world_letter_spill(l.sender_id, l.items) from public.world_letters l
+   where l.recipient_id = p_uid and l.claimed_at is null and l.items <> '{}'::jsonb and l.sender_id is not null
+     and exists (select 1 from public.world_characters s where s.owner_id = l.sender_id);
+  insert into public.world_notifications(user_id, kind, title, content, payload)
+  select l.sender_id, 'letter', '서신 물품이 돌아왔습니다', '「' || l.title || '」 서신을 받을 조사원이 떠나, 붙여 보낸 물품을 개인 창고에 돌려놓았습니다.', jsonb_build_object('storage', l.items)
+    from public.world_letters l
+   where l.recipient_id = p_uid and l.claimed_at is null and l.items <> '{}'::jsonb and l.sender_id is not null
+     and exists (select 1 from public.world_characters s where s.owner_id = l.sender_id);
+  delete from public.world_letters where recipient_id = p_uid;$q$);
 end $p$;
 
-update public.world_patch_notes set body = body || E'\n- 파티 원정 출발·결과 알림과 봉연 예고 알림도 설정 › 알림에서 끌 수 있습니다. 봉인 중에는 별채 동무를 돌볼 수 없습니다. 캐릭터를 정리하면 맺은 연리와 오가던 연리 신청도 함께 끝납니다(신청한 쪽에는 정표 값을 돌려줍니다).'
+update public.world_patch_notes set body = body || E'\n- 파티 원정 출발·결과 알림과 봉연 예고 알림도 설정 › 알림에서 끌 수 있습니다. 봉인 중에는 별채 동무를 돌볼 수 없습니다. 캐릭터를 정리하면 맺은 연리와 오가던 연리 신청도 함께 끝납니다(신청한 쪽에는 정표 값을 돌려줍니다). 그 캐릭터가 받은 서신도 지우고, 받지 않은 물품은 보낸 조사원의 개인 창고로 돌려보냅니다.'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261109130000' where key = 'db_version';
