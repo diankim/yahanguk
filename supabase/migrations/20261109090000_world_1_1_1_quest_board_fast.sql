@@ -55,4 +55,6 @@ begin
 end $function$;
 
 select public.world_quest_label_refresh();
+update public.world_patch_notes set body = body || E'\n- 서버 안쪽 정리: 퀘스트 판·탐색 뒤 다시 읽기·창고 정보·채팅 채널 다시 붙기를 가볍게 했습니다(바뀌는 규칙 없음).'
+ where note_id = '1.1.0';
 update public.world_app_meta set value = '20261109090000' where key = 'db_version';
