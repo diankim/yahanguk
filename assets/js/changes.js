@@ -1,5 +1,5 @@
 export const CHANGES = {
-  invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|avatar_set|set_avatar/,
+  invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|avatar_set|set_avatar|outfit_design_(save|delete|restore|give|hide|report|remove)/,
   equipped: /equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/,
   invAlways: /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
   map: /travel|mount|join_major_faction|field_|battle_|expedition/,
@@ -19,7 +19,8 @@ export const CHANGES = {
   idle: /idle/,
   skill: /skill/,
   codex: /battle|gather|expedition/,
-  storage: /craft_(item|batch)|storage|travel|enhance/,
+  storage: /craft_(item|batch)|storage|travel|enhance|outfit_design_weave/,
+  storageIfUsed: /craft_(item|batch)$|outfit_design_weave$/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
   avatar: /avatar|outfit|wardrobe|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,

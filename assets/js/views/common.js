@@ -84,11 +84,11 @@ on('changed', ({ name = '', data } = {}) => {
   if (hit('fishSpot', name) || (store.snaps['world_fish_spotnull'] != null && hit('fishSpotNone', name))) invalidate('world_fish_spot');
   if (hit('rest', name)) invalidate('world_rest_status');
   if (hit('idle', name)) invalidate('world_idle_activity_snapshot');
-  if (hit('storage', name) && !(/craft_(item|batch)$/.test(name) && !Object.keys(data?.from_storage || {}).length)) invalidate('world_storage_snapshot');
+  if (hit('storage', name) && !(hit('storageIfUsed', name) && !Object.keys(data?.from_storage || {}).length)) invalidate('world_storage_snapshot');
   if (!hit('invQuiet', name)) for (const k of ['world_shop_snapshot', 'world_smithy_snapshot', 'world_enhance_quote', 'world_repair_quote']) invalidate(k);
   if (hit('dismantle', name)) invalidate('world_dismantle_info');
   if (hit('mounts', name)) invalidate('world_mount_snapshot');
-  if (hit('avatar', name)) invalidate('world_avatar_get');
+  if (hit('avatar', name)) { invalidate('world_avatar_get'); invalidate('world_outfit_design_list'); }
   if (hit('titles', name)) invalidate('world_title_snapshot');
   if (hit('faction', name)) { invalidate('world_faction_snapshot'); invalidate('world_faction_mission_snapshot'); invalidate('world_faction_base_snapshot'); }
 });

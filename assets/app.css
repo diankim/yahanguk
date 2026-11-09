@@ -3115,7 +3115,7 @@ b.shadow { color: var(--sp); }
 .lk-face { width: 26px; height: 26px; image-rendering: pixelated; border-radius: 50%; background: var(--surface-2); border: var(--bw) solid var(--line); }
 .lk-act { display: flex; gap: 6px; justify-content: center; }
 .lk-pick { padding: 10px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.lk-tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.lk-tabs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
 .lk-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); cursor: pointer; min-width: 0; }
 .lk-tab img { image-rendering: pixelated; width: 40px; height: 40px; object-fit: contain; }
 .lk-tab span { font-size: calc(11px * var(--fz, 1)); }
@@ -3135,4 +3135,44 @@ b.shadow { color: var(--sp); }
   .lk-side { width: auto; }
   .lk-tab img { width: 30px; height: 30px; }
   .lk-grid { grid-template-columns: repeat(4, 1fr); }
+  .lk-tabs { grid-template-columns: repeat(4, 1fr); }
+}
+.od-book { display: flex; flex-direction: column; gap: 8px; }
+.od-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.od-head [data-new] { margin-left: auto; }
+.od-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; }
+.od-card { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px 8px; align-items: center; padding: 6px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.od-pic { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; background: var(--surface); border-radius: var(--r-sm); }
+.od-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.od-meta b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.od-meta .chip { align-self: flex-start; }
+.od-acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.od-weave { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.od-weave .od-pic { width: 96px; height: 96px; }
+.od-mats .ok { color: var(--ok); } .od-mats .bad { color: var(--bad); }
+.od-ed { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 12px; align-items: start; }
+.od-left, .od-right { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.od-left { align-items: center; }
+.od-slot { display: flex; gap: 4px; }
+.od-bases { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.od-bases .lk-opt { width: 56px; }
+.od-canvas { max-width: 100%; height: auto; image-rendering: pixelated; border: var(--bw) solid var(--line); border-radius: var(--r-sm); cursor: crosshair; }
+.od-tools .chip-btn.on, .od-slot .chip-btn.on { border-color: var(--accent); color: var(--text); outline: 2px solid var(--accent); outline-offset: -2px; }
+.od-prev { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.od-anim { width: 120px; height: auto; image-rendering: pixelated; background: var(--surface-2); border-radius: var(--r-sm); }
+.od-frames { display: flex; gap: 4px; }
+.od-frames img { width: 40px; height: auto; image-rendering: pixelated; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.od-h { margin: 0; font-weight: 600; }
+.od-pal { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.od-sw { width: 32px; height: 32px; border: 2px solid var(--line); border-radius: 4px; background: var(--c); cursor: pointer; padding: 0; position: relative; }
+.od-sw b { position: absolute; right: 1px; bottom: 0; font-size: calc(10px * var(--fz, 1)); color: #fff; text-shadow: 0 0 2px #000; }
+.od-sw.on { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
+.od-sw.sm { width: 26px; height: 26px; }
+.od-picks { grid-template-columns: repeat(8, 1fr); }
+.od-picks .chip-btn { grid-column: span 4; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.od-decos { display: flex; flex-wrap: wrap; gap: 8px; }
+.od-dk { display: flex; align-items: center; gap: 4px; }
+@media (max-width: 720px) {
+  .od-ed { grid-template-columns: 1fr; }
+  .od-list { grid-template-columns: 1fr; }
 }

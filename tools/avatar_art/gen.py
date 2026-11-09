@@ -25,12 +25,12 @@ out['skins'] = {k: dict(name=n, s=c, S=shade(c, .93), T=shade(c, .8)) for k, (n,
 out['hairColors'] = {k: dict(name=n, h=c, H=shade(c, .72), i=shade(c, 1.22), j=shade(c, 1.5), k=shade(c, .84), g=shade(c, 1.1), q=shade(c, .62)) for k, (n, c) in D.HAIR_COLORS.items()}
 out['eyeColors'] = {k: dict(name=n, e=c, E=shade(c, .55), f=shade(c, 1.45)) for k, (n, c) in D.EYE_COLORS.items()}
 out['body'] = {f: part(D.body(f)) for f in ('stand', 'walk')}
-out['hair'] = {k: dict(name=n, back=part(D.hair_back(b)), front=part(D.hair_front(fr, lk, b))) for k, (n, b, fr, lk) in D.HAIRS.items()}
 import hair_art as A
-for k, (n, fn) in A.ART.items():
+out['hair'] = {}
+for k in A.ORDER:
+    n, fn = A.ART[k]
     fr, bk = fn()
     out['hair'][k] = dict(name=n, back=part(bk), front=part(fr))
-out['hair'] = {k: out['hair'][k] for k in A.ORDER}
 out['eyes'] = {k: dict(name=n, open=part(D.eye(k, False)), closed=part(D.eye(k, True))) for k, n in D.EYES.items()}
 out['mouth'] = {k: dict(name=n, part=part(D.mouth(k))) for k, n in D.MOUTHS.items()}
 tops = {}

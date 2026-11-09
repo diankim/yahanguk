@@ -105,6 +105,9 @@ def build(dsn):
     d['titles'] = t
     # 낚시: 어종·낚시터
     d['fish'] = q(dsn, "select json_build_object('species', (select count(*) from world_fish_species where active), 'grounds', (select count(*) from world_fish_grounds))")
+    d['outfit'] = q(dsn, """select (world_outfit_rules() -> 'design') - 'weave' || jsonb_build_object('give_day', (world_drawing_rules() ->> 'give_day')::int,
+        'weave', (select jsonb_object_agg(e.key, jsonb_build_object('level', r.minimum_level, 'mats', (select jsonb_agg(jsonb_build_array(i.item_name, m.value::int) order by i.item_name) from jsonb_each_text(r.ingredients) m join world_item_catalog i on i.item_id = m.key)))
+          from jsonb_each_text(world_outfit_rules() -> 'design' -> 'weave') e join world_crafting_recipes r on r.recipe_id = e.value))""")
     return d
 
 

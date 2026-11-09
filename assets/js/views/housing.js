@@ -3,7 +3,7 @@ import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH, ZU } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
 import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
-import { drawAvatar } from '../housing/avatarsprite.js';
+import { drawAvatar, registerDesigns } from '../housing/avatarsprite.js';
 import { cardName } from './card.js';
 import { GAMEDATA } from '../gamedata.js';
 import { petLine } from '../housing/petlines.js';
@@ -559,6 +559,7 @@ function freeTiles(w, skip = []) {
 }
 function setupFolks() {
   folks = [];
+  registerDesigns(snap?.avatar_designs);
   const list = snap?.avatars || []; if (!list.length || !state) return;
   const w = walkable(), taken = pet ? [[Math.round(pet.x), Math.round(pet.y)]] : [];
   for (const a of list) {

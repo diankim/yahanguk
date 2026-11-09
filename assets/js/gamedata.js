@@ -102,6 +102,7 @@ export const GAMEDATA = {
   "bag": {"base":34},
   "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
   "titles": {"total":258,"public":185,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"교류":3,"토벌":13,"도감":20,"외전":6,"세력":21,"별채":14,"비밀":57}},
-  "fish": {"species":50,"grounds":24}
+  "fish": {"species":50,"grounds":24},
+  "outfit": {"keep":20,"weave":{"top":{"mats":[["영사",2],["운면",1]],"level":5},"bottom":{"mats":[["영사",2],["운면",2]],"level":5}},"colors":8,"per_day":2,"give_day":10,"title_max":12}
 };
 export default GAMEDATA;

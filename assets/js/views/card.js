@@ -1,5 +1,5 @@
 import { petImage } from '../housing/petsprite.js';
-import { avatarImage } from '../housing/avatarsprite.js';
+import { avatarImage, registerDesigns } from '../housing/avatarsprite.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
@@ -23,6 +23,7 @@ const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); ret
 async function draw(box, id) {
   try {
     const [c, pub] = await Promise.all([rpc('world_character_card', { p_owner: id }), rpc('world_bond_public', { p_owner: id }).catch(() => null), loadBond()]);
+    registerDesigns(c.look_designs);
     const mine = bond(), isPartner = mine?.partner_id === id;
     const canBond = !c.mine && !c.is_dead && c.relation === 'friends' && !mine && !bondSnap()?.outgoing && !pub;
     const p = profileOf(c.owner_id, c.profile);
