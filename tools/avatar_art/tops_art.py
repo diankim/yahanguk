@@ -57,8 +57,7 @@ TOPS = {
         "..bxabdabdbaby..",
         "...dddddddddd...",
         "...xabdbbdbab...",
-        "...xbadbbdabb...",
-        "...ebbdbbdbbe...",
+        "...ebadbbdabe...",
     ]),
     'shadow': ('먹빛 누비 전포', {'a': '#2e2a36', 'b': '#3e3848', 'c': '#e8e2dc', 'd': '#9a2a36', 'e': '#d6aa52'}, [
         ".......ee.......",
@@ -68,7 +67,6 @@ TOPS = {
         "..bxaaaeaaadby..",
         "...xaaaaaaadb...",
         "...xaaaeaaadb...",
-        "...xaaaaaaad....",
         "...ybbbbbbbdd...",
     ]),
     'jeogori': ('연분홍 저고리', {'a': '#f2b8c0', 'b': '#e09aa6', 'c': '#f8f2e6', 'd': '#b8324a', 'e': '#c7536a'}, [
@@ -81,7 +79,92 @@ TOPS = {
         "........d.......",
         "........e.......",
     ]),
+    'vest': ('무명 조끼', {'a': '#8a6a4a', 'b': '#6a4e34', 'c': '#efe7d2', 'd': '#3a5a7a', 'e': '#cfc6ae'}, [
+        "................",
+        "....xacccab.....",
+        "...xaaaccaaab...",
+        "..exaaaccaaabe..",
+        "..exaaaccaaabe..",
+        "...dddddddddd...",
+    ]),
+    'magoja': ('짧은 마고자', {'a': '#7a2e3a', 'b': '#5a1e2a', 'c': '#e8d9b0', 'd': '#d6aa52', 'e': '#4a1420'}, [
+        "................",
+        "....xaccccab....",
+        "...xaaaddaaab...",
+        "..bxaaaaaaaaby..",
+        "..bxaaaddaaaby..",
+        "...ybbbbbbbby...",
+    ]),
+    'jeoksam': ('짧은 적삼', {'a': '#bcd4e6', 'b': '#94b0c6', 'c': '#f8f2e6', 'd': '#3a5a8a', 'e': '#7a96ac'}, [
+        "................",
+        "....xacaaaab....",
+        "...xaaacaaaab...",
+        "..bxaaaacaaaby..",
+        "..bxaaaaadaaby..",
+        "...ybbbbbdbby...",
+    ]),
 }
+
+
+BOTTOM_SHAPES = {
+    'pants': [
+        "...xaaaabaaab...",
+        "...xaaaabaaab...",
+        "....xab..xab....",
+        "....xab..xab....",
+        "....zzu..zzu....",
+    ],
+    'baggy': [
+        "...xaaaabaaab...",
+        "..xaaaaabaaaab..",
+        "..xaab....xaab..",
+        "...dd......dd...",
+        "....zzu..zzu....",
+    ],
+    'boots': [
+        "...xaaaabaaab...",
+        "...xaaaabaaab...",
+        "....zzu..zzu....",
+        "....zzu..zzu....",
+        "...zzzu..zzzu...",
+    ],
+    'skirt': [
+        "....xaaaaaab....",
+        "...xaaaaaaaab...",
+        "...xaabaaaaab...",
+        "..xaaabaaaaabb..",
+        "..xaabaaaabaab..",
+        "..ybbbbbbbbbby..",
+        "....zz....zz....",
+    ],
+}
+
+BOTTOMS = {
+    'guard': ('검은 바지와 가죽 장화', 'boots', '#3a3030', '#2a2222', '#4a3020', '#c9a24a'),
+    'scout': ('고동 바지와 미투리', 'pants', '#6a4a32', '#55392a', '#c8a46a', '#c8a46a'),
+    'exorcist': ('쪽빛 대님 바지', 'baggy', '#363b48', '#2a2e38', '#2a2e40', '#e8e2dc'),
+    'medic': ('무명 대님 바지', 'baggy', '#e6dcc4', '#cbbfa4', '#6a4a32', '#8fa676'),
+    'seal': ('검은 바지', 'pants', '#2c2830', '#201c24', '#3a2c56', '#c9a24a'),
+    'shadow': ('먹빛 바지와 짚신', 'pants', '#24242a', '#18181d', '#c8a46a', '#9a2a36'),
+    'chima': ('남빛 치마', 'skirt', '#2f3f72', '#25325c', '#f8f2e6', '#b8324a'),
+}
+
+
+def bottom_grid(key, frame):
+    name, shape, a, b, z, d = BOTTOMS[key]
+    rows = BOTTOM_SHAPES[shape]
+    y0 = 32 - len(rows) + 1
+    g = Grid()
+    for y, r in enumerate(rows):
+        assert len(r) == 16, (key, y, len(r))
+        for x, ch in enumerate(r):
+            if ch == '.':
+                continue
+            yy = y0 + y
+            if frame == 'walk' and shape != 'skirt' and x < 8 and yy >= 30:
+                yy -= 1
+            g.set(OX + x, yy, ch)
+    return name, {'a': a, 'b': b, 'z': z, 'd': d}, g
 
 
 def top_grid(key):

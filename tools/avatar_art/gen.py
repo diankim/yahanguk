@@ -41,10 +41,11 @@ for k in T.TOPS:
     tops[k] = dict(name=n, pal=pal, part=part(g))
 out['top'] = tops
 bots = {}
-for k, (n, kind, a, b, z) in D.BOTTOMS.items():
-    make, pal = D.bottom_def(kind, a, b, z)
-    pal = dict(pal, x=shade(a, 1.12), y=shade(a, .78))
-    bots[k] = dict(name=n, pal=pal, stand=part(D.form(make('stand'), 'a', 'x', 'y')), walk=part(D.form(make('walk'), 'a', 'x', 'y')))
+for k in T.BOTTOMS:
+    n, pal, gs = T.bottom_grid(k, 'stand')
+    _, _, gw = T.bottom_grid(k, 'walk')
+    pal = dict(pal, x=shade(pal['a'], 1.14), y=shade(pal['a'], .74), u=shade(pal['z'], .7))
+    bots[k] = dict(name=n, pal=pal, stand=part(gs), walk=part(gw))
 out['bottom'] = bots
 out['acc'] = {}
 for k in T.ACC:
@@ -58,10 +59,10 @@ print(len(js))
 FREE = ('skins', 'hair', 'hairColors', 'eyes', 'eyeColors', 'mouth')
 parts = {k: sorted(out[k].keys()) for k in FREE}
 outfits = {}
-for k, (n, _) in D.TOPS.items():
-    outfits['top:' + k] = dict(slot='top', name=n, grade=1)
-for k, (n, *_r) in D.BOTTOMS.items():
-    outfits['bottom:' + k] = dict(slot='bottom', name=n, grade=1)
+for k in T.TOPS:
+    outfits['top:' + k] = dict(slot='top', name=T.TOPS[k][0], grade=1)
+for k in T.BOTTOMS:
+    outfits['bottom:' + k] = dict(slot='bottom', name=T.BOTTOMS[k][0], grade=1)
 for k in T.ACC:
     outfits['acc:' + k] = dict(slot='acc', name=T.ACC[k][0], grade=1)
 rules = dict(free=parts, outfits=outfits, job=out['jobDefault'])
