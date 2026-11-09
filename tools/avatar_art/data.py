@@ -210,7 +210,7 @@ EY, EX = 13, 8
 
 EYE_SHAPES = {
     'round': ['.lll.', 'lwwEl', 'lweEl', '.eef.', '.fff.', '.....'],
-    'droopy': ['..ll.', '.lEEl', 'lwEe.', 'leef.', '.ff..', '.....'],
+    'droopy': ['.lll.', 'lEEEl', 'lwEe.', 'leef.', '.ff..', '.....'],
     'sparkle': ['llll.', 'lwEEl', 'lEwel', '.eef.', '.fwf.', '..l..'],
     'cat': ['l....', '.llll', '.wEe.', '.eef.', '..ll.', '.....'],
     'sleepy': ['.....', '.....', 'lllll', '.wEe.', '.eef.', '.....'],
@@ -260,7 +260,7 @@ def mouth(kind):
     elif kind == 'open':
         g.rect(13, MY, 14, MY + 1, 'n'); g.rect(13, MY + 1, 14, MY + 1, 'm')
     elif kind == 'cat':
-        g.sym(12, MY, 'm'); g.sym(13, MY + 1, 'm'); g.sym(11, MY - 1, 'm')
+        g.sym(11, MY, 'm'); g.sym(13, MY, 'm'); g.sym(12, MY + 1, 'm')
     elif kind == 'grin':
         g.sym(12, MY, 'm'); g.rect(13, MY, 14, MY, 'w'); g.rect(13, MY + 1, 14, MY + 1, 'm')
     elif kind == 'pout':
@@ -270,7 +270,7 @@ def mouth(kind):
 
 MOUTHS = {
     'small': '작은 입', 'smile': '웃는 입', 'open': '벌린 입',
-    'cat': '고양이 입', 'grin': '이 보이는 입', 'pout': '삐죽 입',
+    'cat': 'w 입', 'grin': '이 보이는 입', 'pout': '삐죽 입',
 }
 
 
