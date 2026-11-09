@@ -50,7 +50,7 @@ FIX = {
 }
 
 PLAN = {
-    1: dict(id='mkq_1', L=40, region=FERRY, after=['gq_5', 'sq110_e_ink', 'sq110_e_doorplate'], items={'name_ink_charm': 2, 'erased_plate': 2},
+    1: dict(id='mkq_1', L=40, region=FERRY, after=['gq_5'], items={'name_ink_charm': 2, 'erased_plate': 2},
             summary='묵창 나루의 주민 명부에서 이름이 하나둘 흐려진다. 정청 서리 희수와 함께 먹빛 강가의 나루로 간다.',
             steps=[
                 ('정청 대청에서 출납 서리 희수를 만난다', {'at': [HQ]}),
