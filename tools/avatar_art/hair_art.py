@@ -268,3 +268,69 @@ def longcurl():
 
 ART['curly'] = ('복슬 곱슬 짧은 머리', curly)
 ART['longcurl'] = ('복슬 곱슬 긴 머리', longcurl)
+
+
+CALM_FRONT = [
+    "............................",
+    "............................",
+    "..........hhhhhhhh..........",
+    "......hhhhhhhhhhhhhhhh......",
+    ".....hhhhhhhhhhhhhhhhhh.....",
+    "....hhhhhhhhhhhhhhhhhhhh....",
+    "...hhhhhhhhhhhhhhhhhhhhhh...",
+    "...hhhhhhhhhhhhhhhhhhhhhh...",
+    "...hhhhhhhhhhhhhhhhhhhhhhh..",
+    "..hhhhhhhhhhhhhhhhhhhhhhhh..",
+    "..hhhhhhhhhhhhhhhhhhhhhhhh..",
+    "...hhhhh.hhhhhhhhhhhhhhhhh..",
+    "...hhhh....hhhhhhhhhhhhhhh..",
+    "...hhh.......hhhhhhhhhhhhh..",
+    "...hhh.............hh.hhh...",
+    "...hhh................hhh...",
+    "....hh................hh....",
+]
+
+SPORTS_FRONT = [
+    "............................",
+    "............................",
+    "............................",
+    "..........hhhhhhhh..........",
+    "........hhhhhhhhhhhh........",
+    ".......hhhhhhhhhhhhhh.......",
+    "......hhhhhhhhhhhhhhhh......",
+    ".....hhhhhhhhhhhhhhhhhh.....",
+    ".....hhhhhhhhhhhhhhhhhh.....",
+    "....hhhhhhhhhhhhhhhhhhhh....",
+    "....hhhhhhhhhhhhhhhhhhhh....",
+    "....hhhhh.hh.hh.hh.hhhhh....",
+    "....hhh..............hhh....",
+    ".....hh..............hh.....",
+    ".....h................h.....",
+]
+
+
+def calm():
+    f = ascii_grid(CALM_FRONT)
+    shade_front(f)
+    for y in range(3, 11):
+        if (9, y) in f.p:
+            f.p[(9, y)] = 'H'
+    for pts in ([(11, 5), (12, 6), (13, 7), (14, 8), (15, 9), (16, 10)], [(14, 4), (15, 5), (16, 6), (17, 7), (18, 8), (19, 9), (20, 10)],
+                [(7, 6), (6, 7), (5, 8), (5, 9)], [(18, 4), (19, 5), (20, 6), (21, 7), (22, 8)]):
+        for x, y in pts:
+            if f.p.get((x, y)) in ('h', 'g', 'k'):
+                f.p[(x, y)] = 'k'
+    return f, Grid()
+
+
+def sports():
+    f = ascii_grid(SPORTS_FRONT)
+    shade_front(f)
+    for x, y in ((9, 6), (12, 5), (15, 5), (18, 6), (7, 8), (20, 8), (10, 9), (13, 9), (16, 9), (19, 9)):
+        if f.p.get((x, y)) in ('h', 'g', 'k'):
+            f.p[(x, y)] = 'k'
+    return f, Grid()
+
+
+ART['calm'] = ('차분한 가르마 머리', calm)
+ART['sports'] = ('스포츠머리', sports)
