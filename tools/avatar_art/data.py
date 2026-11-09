@@ -129,10 +129,11 @@ def hair_front(fringe, locks, kind=''):
             g.sym(x - o, y, 'h' if x < 6 or y < 18 else 'H')
     g.sym(4, end + 1, 'H')
     if kind == 'curly':
-        for x, y in ((8, 3), (15, 2), (4, 7), (11, 6), (18, 6), (22, 9), (7, 10), (14, 9)):
-            for dx, dy, c in ((1, 0, 'H'), (2, 0, 'H'), (0, 1, 'H'), (1, 1, 'i'), (2, 1, 'i'), (3, 1, 'H'), (1, 2, 'H'), (2, 2, 'H')):
-                if g.p.get((x + dx, y + dy)) == 'h':
-                    g.set(x + dx, y + dy, c)
+        for x0 in (7, 14, 20):
+            for y in range(5, 12):
+                x = x0 + (0, 1, 1, 0, -1, -1)[(y - 5) % 6]
+                if g.p.get((x, y)) == 'h':
+                    g.set(x, y, 'k')
     if kind == 'wavy':
         for y in range(16, end + 1, 4):
             g.sym(5 - wave(y), y, 'i')
@@ -182,15 +183,18 @@ def hair_back(kind):
             g.rect(x, y, x + 1, y, 'h' if y % 3 else 'H')
         g.rect(22, 32, 23, 32, 'H')
     elif kind == 'curly':
-        for a in range(0, 360, 22):
+        for a in range(0, 360, 30):
             t = math.radians(a)
-            x = CX + (HEAD_RX + 1.0) * math.cos(t)
-            y = HEAD_CY + (HEAD_RY + 1.0) * math.sin(t)
-            if y < 21:
-                g.ell(x, y, 1.7, 1.7, 'k')
-        g.srect(1, 12, 4, 20, 'k')
-        for cx, cy in ((2.5, 20.5), (3.5, 22)):
-            g.ell(cx, cy, 1.8, 1.8, 'k'); g.ell(W - cx, cy, 1.8, 1.8, 'k')
+            x = CX + (HEAD_RX + 0.2) * math.cos(t)
+            y = HEAD_CY + (HEAD_RY + 0.2) * math.sin(t)
+            if y < 20:
+                g.ell(x, y, 1.4, 1.4, 'k')
+        for y in range(12, 21):
+            o = (0, 1, 1, 0, -1, -1)[y % 6]
+            g.srect(1 - o, y, 4 - o, y, 'k')
+        g.srect(0, 20, 3, 21, 'k')
+        g.sym(0, 19, 'k')
+        g.srect(0, 21, 2, 21, 'H')
     elif kind == 'wavy':
         for y in range(12, 32):
             o = wave(y)
@@ -214,7 +218,7 @@ HAIRS = {
     'knot': ('상투', 'knot', 'part', 0.6),
     'braid': ('땋은 머리', 'braid', 'part', 0.9),
     'spiky': ('뻗친 머리', 'spiky', 'jag', 0.7),
-    'curly': ('복슬 곱슬머리', 'curly', 'curl', 0.8),
+    'curly': ('물결 짧은 머리', 'curly', 'curl', 0.7),
     'wavy': ('물결 긴 머리', 'wavy', 'part', 1.1),
 }
 
