@@ -97,7 +97,7 @@ def body(frame):
     g = Grid()
     g.ell(CX, FACE_CY, FACE_RX, FACE_RY, 's', lambda x, y: y >= 11)
     form(g, 's', 's', 'S')
-    for x, y, c in ((5, 15, 's'), (4, 15, 's'), (4, 16, 's'), (5, 16, 'S'), (5, 17, 's')):
+    for x, y, c in ((5, 15, 's'), (4, 15, 's'), (4, 16, 's'), (5, 16, 'T'), (5, 17, 'S')):
         g.sym(x, y, c)
     g.rect(13, 22, 14, 23, 'S')
     g.sym(8, 27, 's')

@@ -334,3 +334,154 @@ def sports():
 
 ART['calm'] = ('차분한 가르마 머리', calm)
 ART['sports'] = ('스포츠머리', sports)
+
+
+CAP = {2: (10, 17), 3: (6, 21), 4: (5, 22), 5: (4, 23), 6: (3, 24), 7: (3, 24)}
+
+
+def span(g, y, x0, x1, c='h'):
+    for x in range(x0, x1 + 1):
+        g.set(x, y, c)
+
+
+def cap(g, bottom=12):
+    for y, (a, b) in CAP.items():
+        span(g, y, a, b)
+    for y in range(8, bottom + 1):
+        span(g, y, 2, 25)
+
+
+def bangs(g, tips):
+    for x, y in tips.items():
+        for yy in range(11, y + 1):
+            g.set(x, yy, 'h')
+
+
+def sides(g, rows):
+    for y, (a, b) in rows.items():
+        span(g, y, a, b)
+        span(g, y, W - 1 - b, W - 1 - a)
+
+
+def marks(g, pts, c='k'):
+    for x, y in pts:
+        if g.p.get((x, y)) in ('h', 'g', 'k'):
+            g.p[(x, y)] = c
+
+
+BLUNT = {x: 13 for x in range(6, 22)}
+BLUNT.update({7: 12, 12: 12, 18: 12, 13: 14, 14: 14})
+
+
+def bob2():
+    f = Grid()
+    cap(f, 10)
+    bangs(f, BLUNT)
+    sides(f, {11: (2, 5), 12: (2, 5), 13: (2, 5), 14: (2, 5), 15: (2, 5), 16: (2, 5), 17: (2, 5), 18: (2, 5), 19: (3, 5), 20: (3, 6), 21: (4, 7), 22: (6, 7)})
+    shade_front(f)
+    marks(f, [(8, 5), (8, 6), (9, 7), (13, 4), (13, 5), (13, 6), (18, 5), (18, 6), (17, 7), (4, 12), (4, 13), (4, 14), (23, 12), (23, 13), (23, 14)])
+    return f, Grid()
+
+
+def long2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, BLUNT)
+    sides(f, {y: (2, 5) for y in range(11, 25)})
+    sides(f, {25: (3, 5), 26: (4, 5)})
+    shade_front(f)
+    marks(f, [(8, 5), (8, 6), (13, 4), (13, 5), (18, 5), (18, 6)] + [(4, y) for y in range(13, 25, 2)] + [(23, y) for y in range(14, 25, 2)])
+    for y in range(8, 30):
+        a0 = 2 if y < 21 else 1
+        span(b, y, a0, W - 1 - a0, 'k')
+    span(b, 30, 2, 25, 'k')
+    for x in (2, 3, 5, 6, 8, 19, 21, 22, 24, 25):
+        b.set(x, 31, 'k')
+    form(b, 'k', 'h', 'q')
+    marks(b, [(6, y) for y in range(22, 31, 2)] + [(21, y) for y in range(23, 31, 2)], 'q')
+    return f, b
+
+
+def pony2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, {**BLUNT, 6: 12, 21: 12})
+    sides(f, {11: (3, 5), 12: (3, 5), 13: (4, 5)})
+    shade_front(f)
+    marks(f, [(9, 5), (9, 6), (13, 4), (13, 5), (17, 5), (17, 6)])
+    for y in range(3, 26):
+        x0 = 24 + (1 if 8 < y < 20 else 0)
+        span(b, y, x0, x0 + (2 if 6 < y < 22 else 1), 'k')
+    span(b, 26, 25, 25, 'k')
+    form(b, 'k', 'h', 'q')
+    for y in (4, 5):
+        b.set(24, y, 'H'); b.set(25, y, 'H')
+    marks(b, [(25, y) for y in range(9, 24, 3)], 'q')
+    return f, b
+
+
+def buns2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, BLUNT)
+    sides(f, {11: (3, 5), 12: (3, 5), 13: (4, 5)})
+    for cx in (4, 23):
+        for y in range(0, 6):
+            for x in range(cx - 3, cx + 4):
+                if ((x + .5 - cx - .5) / 3.2) ** 2 + ((y + .5 - 2.8) / 2.8) ** 2 <= 1:
+                    f.set(x, y, 'h')
+    shade_front(f)
+    for cx in (4, 23):
+        f.set(cx, 1, 'i'); f.set(cx + (1 if cx < 14 else -1), 1, 'i')
+        for x in range(cx - 1, cx + 3):
+            if f.p.get((x, 5)) in ('h', 'g', 'k'):
+                f.p[(x, 5)] = 'H'
+    marks(f, [(9, 6), (13, 5), (13, 6), (18, 6)])
+    return f, Grid()
+
+
+def knot2():
+    f, b = Grid(), Grid()
+    cap(f, 9)
+    span(f, 10, 3, 24)
+    sides(f, {11: (3, 7), 12: (3, 6), 13: (4, 5)})
+    for y, (a, c) in {0: (12, 15), 1: (11, 16), 2: (11, 16)}.items():
+        span(f, y, a, c)
+    shade_front(f)
+    span(f, 3, 11, 16, 'H')
+    for y in range(4, 10):
+        for x in (10, 17):
+            if f.p.get((x, y)) in ('h', 'g', 'k'):
+                f.p[(x, y)] = 'k'
+    marks(f, [(13, 5), (13, 6), (13, 7), (14, 8), (6, 7), (21, 7)])
+    return f, Grid()
+
+
+def braid2():
+    f, b = Grid(), Grid()
+    cap(f, 10)
+    bangs(f, {**{x: 12 for x in range(6, 22)}, 6: 13, 9: 13, 15: 14, 20: 13})
+    sides(f, {11: (3, 5), 12: (3, 5), 13: (3, 5), 14: (4, 5)})
+    for y in range(14, 30):
+        x = 3 + (y // 2) % 2
+        span(f, y, x, x + 2)
+    span(f, 30, 4, 5)
+    span(f, 31, 3, 6)
+    shade_front(f)
+    for y in range(15, 30, 2):
+        x = 3 + (y // 2) % 2
+        f.set(x + 1, y, 'H')
+    span(f, 29, 3, 6, 'H')
+    marks(f, [(9, 5), (9, 6), (12, 4), (16, 5), (19, 6)])
+    for y in range(11, 18):
+        span(f, y, 22, 24)
+    shade_front(f)
+    return f, b
+
+
+ART['bob'] = ('단발', bob2)
+ART['long'] = ('긴 생머리', long2)
+ART['pony'] = ('한 갈래 묶음', pony2)
+ART['buns'] = ('쌍 쪽머리', buns2)
+ART['knot'] = ('상투', knot2)
+ART['braid'] = ('땋은 머리', braid2)
