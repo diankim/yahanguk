@@ -170,29 +170,25 @@ def ascii_grid(rows, c='h'):
 
 
 CURLY_FRONT = [
-    "........hhh.....hhhh........",
-    ".....hhhhhhhh..hhhhhhhh.....",
-    "....hhhhhhhhhhhhhhhhhhhhh...",
-    "...hhhhhhhhhhhhhhhhhhhhhhh..",
+    "............................",
+    "............................",
+    ".........hhh....hhh.........",
+    "......hhhhhhhh.hhhhhhh......",
+    "....hhhhhhhhhhhhhhhhhhhh....",
+    "...hhhhhhhhhhhhhhhhhhhhhh...",
     "..hhhhhhhhhhhhhhhhhhhhhhhh..",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhh.",
     ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
-    ".hhhhhhhhhhhhhhhhhhhhhhhhhhh",
-    "hhhhhhhhhhhhhhhhhhhhhhhhhhhh",
-    "hhhhhhhhhhhhhhhhhhhhhhhhhhh.",
-    ".hhhhhhhhhhhhhhhhhhhhhhhhhhh",
-    ".hhhhhhhhhhhhhhhhhhhhhhhhhhh",
-    "hhhhhhhhhh..hhhhh..hhhhhhhh.",
-    "hhhhhhhhh....hhh....hhhhhhh.",
-    ".hhhhhhh......hh.....hhhhhhh",
-    ".hhhhhh.......h.......hhhhhh",
-    "hhhhh.................hhhhhh",
-    ".hhhhh................hhhhh.",
-    ".hhhhh................hhhhhh",
-    "hhhhh..................hhhh.",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhhh",
+    ".hhhhhhhhh..hhhhh..hhhhhhhh.",
+    ".hhhhhhhh....hhh....hhhhhhh.",
+    "..hhhhhh......hh.....hhhhhh.",
+    "..hhhhh.......h.......hhhhh.",
     ".hhhhh................hhhhh.",
     "..hhhhh..............hhhhh..",
-    "...hhhhh............hhhhh...",
-    ".....hhh............hhh.....",
+    "...hhhh..............hhhh...",
+    ".....hh..............hh.....",
 ]
 
 LONGCURL_FRONT = [
@@ -240,7 +236,7 @@ def curls(g, pts):
 def curly():
     f, b = ascii_grid(CURLY_FRONT), Grid()
     shade_front(f)
-    curls(f, ((3, 6, -1), (24, 6, 1), (2, 14, 1), (25, 15, -1), (9, 4, -1), (18, 4, 1), (4, 18, 1), (23, 18, -1)))
+    curls(f, ((3, 8, -1), (24, 8, 1), (2, 13, 1), (25, 13, -1), (9, 5, -1), (18, 5, 1)))
     return f, b
 
 
