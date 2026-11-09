@@ -12,7 +12,7 @@ ACCOUNT_TABLES = {
     'world_tourney_entrants', 'world_travel_history', 'world_ui_prefs', 'world_wedding_guests', 'world_whisper_reads',
 }
 UNUSED_OK = {'pet_token'}
-UNMUTABLE_NOTES = {'bug_reply', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'guide'}
+UNMUTABLE_NOTES = {'bug_reply', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'outfit_removed', 'guide'}
 ANON_OK = {'world_app_version'}
 NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js'}
 SERVER_TEXT = ['쏠 것이 떨어져', '기력이 바닥나', '영력이 바닥나', '초 남음', '의 피해']
