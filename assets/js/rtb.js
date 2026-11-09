@@ -2,18 +2,20 @@ import { db } from './core.js';
 
 const groups = {};
 
-function open(topic, event, fn, onUp) {
+function open(topic, event, fn, onUp, onDeny) {
   const slot = { ch: null, dead: false, up: false, fails: 0 };
   const join = () => {
     if (slot.dead) return;
     try {
       const ch = db.channel(topic, { config: { private: true } }).on('broadcast', { event }, m => { try { fn(m?.payload || {}); } catch {} });
       slot.ch = ch;
-      ch.subscribe(status => {
+      ch.subscribe((status, err) => {
         if (slot.ch !== ch || slot.dead) return;
         if (status === 'SUBSCRIBED') { slot.up = true; slot.fails = 0; onUp(true); return; }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          const wait = slot.up && status === 'CLOSED' ? 3000 : Math.min(60000, 5000 * 2 ** slot.fails++);
+          const deny = status === 'CHANNEL_ERROR' && /unauthori|permission/i.test(String(err?.message || err || ''));
+          const wait = deny ? 60000 : slot.up && status === 'CLOSED' ? 3000 : Math.min(60000, 5000 * 2 ** slot.fails++);
+          if (deny) try { onDeny?.(topic); } catch {}
           slot.ch = null; slot.up = false;
           onUp(false);
           try { db.removeChannel(ch); } catch {}
@@ -26,9 +28,9 @@ function open(topic, event, fn, onUp) {
   return () => { slot.dead = true; if (slot.ch) { const c = slot.ch; slot.ch = null; try { db.removeChannel(c); } catch {} } };
 }
 
-export function bgroup(key, topics, event, fn, onLive) {
+export function bgroup(key, topics, event, fn, onLive, onDeny) {
   const g = groups[key] || (groups[key] = { subs: new Map(), up: new Set(), live: null, onLive: null });
-  g.onLive = onLive || null;
+  g.onLive = onLive || null; g.onDeny = onDeny || null;
   const report = () => {
     const live = g.subs.size > 0 && [...g.subs.keys()].every(t => g.up.has(t));
     if (live === g.live) return;
@@ -41,7 +43,7 @@ export function bgroup(key, topics, event, fn, onLive) {
     if (!g.subs.has(t)) return;
     if (up) g.up.add(t); else g.up.delete(t);
     report();
-  }));
+  }, t2 => { if (g.subs.has(t2)) g.onDeny?.(t2); }));
   report();
 }
 

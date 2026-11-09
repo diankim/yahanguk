@@ -1,5 +1,5 @@
 import { cardName } from './views/card.js';
-import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError } from './core.js';
+import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError, loadCharacter } from './core.js';
 import { onWhisper, openWhisperWindow, whisperFeed, whisperOut } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
 import { growInput, keepKeyboard } from './grow.js';
@@ -528,5 +528,11 @@ function subscribe() {
   if (away) { bclear('chat'); return; }
   const c = store.character, me = store.user?.id;
   bgroup('chat', ['chat:global', c?.location && `chat:region:${c.location}`, c?.major_faction_id && `chat:faction:${c.major_faction_id}`, me && `whisper:${me}`], 'msg', p => addMsg(p.new),
-    l => { const was = live; live = l; if (l && !was) loadNew(); });
+    l => { const was = live; live = l; if (l && !was) loadNew(); }, chatDenied);
+}
+let deniedAt = 0;
+function chatDenied(topic) {
+  if (!/^chat:(region|faction):/.test(topic) || Date.now() - deniedAt < 60000) return;
+  deniedAt = Date.now();
+  loadCharacter().catch(() => {});
 }
