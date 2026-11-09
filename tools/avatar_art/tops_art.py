@@ -69,6 +69,17 @@ TOPS = {
         "...xaaaeaaadb...",
         "...ybbbbbbbdd...",
     ]),
+    'tamer': ('털깃 사냥 저고리', {'a': '#8a6a3a', 'b': '#6e5230', 'c': '#f0e6cc', 'd': '#4a3a2a', 'e': '#b8423a'}, [
+        "................",
+        "...cccccccccc...",
+        "..bxcaaaaaacby..",
+        "..bxaaaaabaaby..",
+        "..bxaaaaabaaby..",
+        "...dddddddeedd..",
+        "...xaaaabaeey...",
+        "..xaaaaabaaaay..",
+        "..ybbaabbaabby..",
+    ]),
     'jeogori': ('연분홍 저고리', {'a': '#f2b8c0', 'b': '#e09aa6', 'c': '#f8f2e6', 'd': '#b8324a', 'e': '#c7536a'}, [
         "................",
         "....xcccccb.....",
@@ -146,6 +157,7 @@ BOTTOMS = {
     'medic': ('무명 대님 바지', 'baggy', '#e6dcc4', '#cbbfa4', '#6a4a32', '#8fa676'),
     'seal': ('검은 바지', 'pants', '#2c2830', '#201c24', '#3a2c56', '#c9a24a'),
     'shadow': ('먹빛 바지와 짚신', 'pants', '#24242a', '#18181d', '#c8a46a', '#9a2a36'),
+    'tamer': ('각반 바지와 미투리', 'pants', '#5c5a3c', '#46442c', '#c8a46a', '#b8423a'),
     'chima': ('남빛 치마', 'skirt', '#2f3f72', '#25325c', '#f8f2e6', '#b8324a'),
 }
 

@@ -98,7 +98,7 @@ const statReqs = (o, c) => {
   return req.map(([k, v]) => [`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v), `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`]);
 };
 const FIELD_LINE = { sealing: 'wardcraft' };
-const STAT_JOBS = { strength: ['artificer'], vitality: ['artificer'], agility: ['scout', 'analyst'], perception: ['scout', 'analyst'], spirit_affinity: ['exorcist'], willpower: ['medic', 'sealmaster'] };
+const STAT_JOBS = { strength: ['artificer'], vitality: ['artificer'], agility: ['scout', 'tamer', 'analyst'], perception: ['scout', 'tamer', 'analyst'], spirit_affinity: ['exorcist'], willpower: ['medic', 'sealmaster'] };
 export function suitedJobs(o) {
   if (!o || !['weapon', 'armor'].includes(o.category)) return [];
   const req = Object.entries(o.required_stats || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
@@ -108,7 +108,7 @@ export function suitedJobs(o) {
   if (o.category === 'weapon') jobs = weaponJobs(o);
   return o.required_job ? [o.required_job] : jobs;
 }
-const WEAPON_JOBS = { melee: ['artificer', 'analyst'], ranged: ['scout'], magic: ['exorcist', 'sealmaster', 'medic'] };
+const WEAPON_JOBS = { melee: ['artificer', 'analyst'], ranged: ['scout', 'tamer'], magic: ['exorcist', 'sealmaster', 'medic'] };
 export const weaponJobs = o => Array.isArray(o?.equipment_traits?.jobs) ? o.equipment_traits.jobs : WEAPON_JOBS[o?.equipment_traits?.weapon_type || 'melee'] || [];
 const weaponOk = (o, c) => o?.category !== 'weapon' || !c?.job_key || weaponJobs(o).includes(c.job_key);
 const weaponJobText = o => `${weaponJobs(o).map(nameOf).join('·')} 무기`;
