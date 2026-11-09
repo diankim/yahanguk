@@ -42,5 +42,5 @@
 
 ## 배경음악(§15 소리에 한 줄)
 
-- 묵적록 G단조 60(전투 76·4박): 대금(한 옥타브 낮게) 중심, 피아노·하프가 먹비 낙수처럼 성기게(ACC inkrain·전투 inkrain8), 저음 long(전투 half), 북 없음(전투 b_mukjeok), pad swell, 피아노 soft 0.9. 단락 intro·A·A2(피아노 메아리)·B(피아노+대금 이중)·A3(하프 메아리)·bridge, 전투 A·B·A2. sound.js PROFILES.mukjeok 한 칸.
+- 묵적록 G단조(사용자 확인 11/9): 현장 76·4박 = 첫 시안의 전투 편성 그대로(대금 한 옥타브 낮게·피아노 주선율과 대금 이중·하프 메아리, 반주 inkrain8 낙수, 저음 half, 북 b_mukjeok, pad swell, 단락 A·B·A2) — 전투 꼴의 짜임은 프로필 bshape(sound.js bshape(p), 단락 B·되풀이 처음·응답 없음·pad·종·북 세기를 전투처럼). 안전지대(묵창 나루)에서는 기존 규칙대로 북이 빠지고 조금 느려짐. 전투 90: 피아노 16분 낙수 inkrain16(화음 음), 북 b_mukjeok2(더 촘촘), 같은 대금 주제·단락 A·B·A2. sound.js PROFILES.mukjeok 한 칸.
 - tools/bgm_preview: harness.js가 import 여러 줄을 모두 빈 값으로 바꾸고(sound.js가 import 셋이 되면서 미리듣기가 멈춰 있었음) 전투 편성을 profile(battle)로 굽게 고침(전에는 전투도 현장 곡이 구워졌음). render.js 셋째 인자 = 초, YH_BGM_BASE로 서버 주소.
