@@ -285,9 +285,9 @@ CALM_FRONT = [
     "...hhhhh.hhhhhhhhhhhhhhhhh..",
     "...hhhh....hhhhhhhhhhhhhhh..",
     "...hhh.......hhhhhhhhhhhhh..",
-    "...hhh.............hh.hhh...",
-    "...hhh................hhh...",
-    "....hh................hh....",
+    "...hh..............hh.hhh...",
+    "............................",
+    "............................",
 ]
 
 SPORTS_FRONT = [
