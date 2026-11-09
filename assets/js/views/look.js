@@ -11,8 +11,9 @@ const TABS = [
   ['mouth', '입', 'face', [['mouth', 'mouth']]],
   ['top', '윗옷', 'top', [['top', 'top']]],
   ['bottom', '아랫옷', 'legs', [['bottom', 'bottom']]],
+  ['acc', '장신구', 'all', [['acc', 'acc']]],
 ];
-const WEAR = ['top', 'bottom'];
+const WEAR = ['top', 'bottom', 'acc'];
 
 function owns(snap, slot, key) {
   return AV.jobDefault[snap.job]?.[slot] === key || (snap.owned || []).includes(`${slot}:${key}`);
@@ -20,11 +21,12 @@ function owns(snap, slot, key) {
 
 function pickBlock([slot, table, swatch], crop, snap) {
   const keys = Object.keys(AV[table]), cur = draft[slot];
-  const opts = WEAR.includes(slot) ? keys.filter(k => owns(snap, slot, k)) : keys;
-  const locked = keys.length - opts.length;
+  const owned = WEAR.includes(slot) ? keys.filter(k => owns(snap, slot, k)) : keys;
+  const opts = slot === 'acc' ? ['', ...owned] : owned;
+  const locked = keys.length - owned.length;
   if (swatch) return `<div class="lk-sws">${opts.map(k => { const n = esc(AV[table][k].name); return `<button class="lk-sw${k === cur ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}" style="--c:${AV[table][k][swatch]}"></button>`; }).join('')}</div>`;
-  return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k].name); return `<button class="lk-opt${k === cur ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage({ ...draft, [slot]: k }, { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
-    ${locked ? `<p class="muted small">아직 없는 옷 ${locked}벌 — 상점·제작·퀘스트로 얻습니다.</p>` : ''}`;
+  return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k]?.name || '없음'); return `<button class="lk-opt${k === cur ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage({ ...draft, [slot]: k }, { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
+    ${locked ? `<p class="muted small">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} ${locked}${slot === 'acc' ? '가지' : '벌'} — 상점·제작·퀘스트로 얻습니다.</p>` : ''}`;
 }
 
 export async function lookTab(body) {

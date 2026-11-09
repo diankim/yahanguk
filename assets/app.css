@@ -3109,7 +3109,7 @@ b.shadow { color: var(--sp); }
 .lk-home { display: flex; align-items: center; gap: 6px; font-size: calc(13px * var(--fz, 1)); }
 .lk-act { display: flex; gap: 6px; justify-content: center; }
 .lk-pick { padding: 10px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.lk-tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.lk-tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .lk-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); cursor: pointer; min-width: 0; }
 .lk-tab img { image-rendering: pixelated; width: 40px; height: 40px; object-fit: contain; }
 .lk-tab span { font-size: calc(11px * var(--fz, 1)); }
@@ -3127,6 +3127,6 @@ b.shadow { color: var(--sp); }
   .lk-stage { flex-direction: row; justify-content: center; align-items: center; padding: 8px; }
   .lk-big { width: 132px; }
   .lk-side { width: auto; }
-  .lk-tab img { width: 34px; height: 34px; }
+  .lk-tab img { width: 30px; height: 30px; }
   .lk-grid { grid-template-columns: repeat(4, 1fr); }
 }

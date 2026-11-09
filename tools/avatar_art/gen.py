@@ -34,10 +34,10 @@ out['hair'] = {k: out['hair'][k] for k in A.ORDER}
 out['eyes'] = {k: dict(name=n, open=part(D.eye(k, False)), closed=part(D.eye(k, True))) for k, n in D.EYES.items()}
 out['mouth'] = {k: dict(name=n, part=part(D.mouth(k))) for k, n in D.MOUTHS.items()}
 tops = {}
-for k, (n, fn) in D.TOPS.items():
-    g, pal = fn()
-    D.form(g, 'a', 'x', 'y')
-    pal = dict(pal, x=shade(pal['a'], 1.12), y=shade(pal['a'], .78))
+import tops_art as T
+for k in T.TOPS:
+    n, pal, g = T.top_grid(k)
+    pal = dict(pal, x=shade(pal['a'], 1.14), y=shade(pal['a'], .74))
     tops[k] = dict(name=n, pal=pal, part=part(g))
 out['top'] = tops
 bots = {}
@@ -47,6 +47,9 @@ for k, (n, kind, a, b, z) in D.BOTTOMS.items():
     bots[k] = dict(name=n, pal=pal, stand=part(D.form(make('stand'), 'a', 'x', 'y')), walk=part(D.form(make('walk'), 'a', 'x', 'y')))
 out['bottom'] = bots
 out['acc'] = {}
+for k in T.ACC:
+    n, pal, gg = T.acc_grid(k)
+    out['acc'][k] = dict(name=n, pal=pal, part=part(gg))
 out['jobDefault'] = {j: dict(top=t, bottom=b) for j, (t, b) in D.JOB_DEFAULT.items()}
 js = 'export const AV = ' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n'
 (ROOT / 'assets/js/housing/avatar.js').write_text(js)
@@ -59,6 +62,8 @@ for k, (n, _) in D.TOPS.items():
     outfits['top:' + k] = dict(slot='top', name=n, grade=1)
 for k, (n, *_r) in D.BOTTOMS.items():
     outfits['bottom:' + k] = dict(slot='bottom', name=n, grade=1)
+for k in T.ACC:
+    outfits['acc:' + k] = dict(slot='acc', name=T.ACC[k][0], grade=1)
 rules = dict(free=parts, outfits=outfits, job=out['jobDefault'])
 (ROOT / 'supabase/gen_avatar').mkdir(exist_ok=True)
 (ROOT / 'supabase/gen_avatar/parts.json').write_text(json.dumps(rules, ensure_ascii=False, separators=(',', ':')))
