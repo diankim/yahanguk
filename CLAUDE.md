@@ -20,7 +20,7 @@
 - **탐험과 발견 중심**: 메뉴에서 보상을 받는 게 아니라 이동·조사로 자원을 발견한다. 지역마다 환경·위험도·자원·몬스터·사건·보상이 다르고 탐사에 목적과 선택의 의미가 있다.
 - **활동이 서로 연결**: 전투만이 성장 수단이 아니다. 탐사 자원 → 제작, 제작 장비 → 전투·고위험 탐사, 조사 단서 → 사건 해결. 채집·제작·전투·조사·거래·세력 활동은 각각 성장 경로를 가지면서 서로 자원을 공급한다.
 - **협력은 유용하되 강제하지 않음**: 직업·역할에 따라 협력 효율이 오르지만 특정 직업이 없으면 핵심 콘텐츠를 못 하는 구조는 피한다. 파티 탐사·전투·이동·분배에서 협력 이점을 명확히 한다.
-- **장기 목표와 후발주자의 기회**: 성장 상한과 기능별 숙련 상한을 둔다. 최고 레벨 40(쌓아 둘 능력치 포인트 상한 117). 다음 레벨 경험치 world_xp_need = 100×레벨 + 12×레벨²(화면 core.js xpNeed). 같은 레벨 요괴 한 마리 = 사냥 (6+레벨×3) + 토벌 기록 12라 Lv10 약 46마리 → Lv20 87 → Lv29 124 → Lv39 170마리(실제로는 탐색·퀘스트가 섞여 더 빠름). 후발 플레이어가 효율적 경로와 전문화로 따라잡을 수 있어야 하고, 오래 했다는 이유만으로 모든 영역에서 영구 우위를 갖지 않는다.
+- **장기 목표와 후발주자의 기회**: 성장 상한과 기능별 숙련 상한을 둔다. 최고 레벨 45(쌓아 둘 능력치 포인트 상한 132, 2.0.0 — 수치 world_level_rules() 한 곳(cap·per_level·stat_points_cap) → world_level_cap()·world_stat_points_cap()을 world_event_char_apply·world_grant_xp·world_claim_idle_activity·world_xp_damp_apply·world_xp_damp_pct·world_expedition_gear가 부름 → gamedata level → core.js LEVEL_CAP·guide.js). 다음 레벨 경험치 world_xp_need = 100×레벨 + 12×레벨²(화면 core.js xpNeed). 같은 레벨 요괴 한 마리 = 사냥 (6+레벨×3) + 토벌 기록 12라 Lv10 약 46마리 → Lv20 87 → Lv29 124 → Lv39 170마리(실제로는 탐색·퀘스트가 섞여 더 빠름). 후발 플레이어가 효율적 경로와 전문화로 따라잡을 수 있어야 하고, 오래 했다는 이유만으로 모든 영역에서 영구 우위를 갖지 않는다.
 
 ## 3. 세계와 지역 탐사
 
@@ -32,11 +32,11 @@
 
 ### 3.2 지역별 차별화
 
-지역마다 환경·지형, 위험도·권장 수준, 출현 몬스터와 수법, 채집 자원, 회복·의료·제작 관련 자원, 사건·단서, 희귀 자원·고유 보상, 먼 지역을 찾을 동기를 둔다. 자원 분포는 세계관에 맞게(회복 자원은 의료 시설·약재 환경), 고위험 지역은 보상이 크지만 준비·생존 부담도 크다. 지역 수만 늘리지 말고 방문할 이유를 만든다. 답사 지점·채집터·원정지의 출입 레벨은 지역 레벨에 깊이마다 +2(최고 40).
+지역마다 환경·지형, 위험도·권장 수준, 출현 몬스터와 수법, 채집 자원, 회복·의료·제작 관련 자원, 사건·단서, 희귀 자원·고유 보상, 먼 지역을 찾을 동기를 둔다. 자원 분포는 세계관에 맞게(회복 자원은 의료 시설·약재 환경), 고위험 지역은 보상이 크지만 준비·생존 부담도 크다. 지역 수만 늘리지 말고 방문할 이유를 만든다. 답사 지점·채집터·원정지의 출입 레벨은 지역 레벨에 깊이마다 +2(최고 45 — 귀허도 깊은 곳은 40 그대로 둠).
 
 ### 3.3 안전지대
 
-10곳: 본부 정청·본부 객사·백등 야시장·구름나루·백골 장터·잔불촌·철벽 고찰·십삼문 암시장·무극 관성대·반요촌(빈약한 안전지대, §3.5 — 목록은 world_weak_safe_rules 한 곳, 판정 world_weak_safe(지역)·world_banyo_here(uid), 화면 rules.js weakSafe ← gamedata weakSafe). 서버가 강제한다:
+11곳: 본부 정청·본부 객사·백등 야시장·구름나루·백골 장터·잔불촌·철벽 고찰·십삼문 암시장·무극 관성대·반요촌·묵창 나루(빈약한 안전지대, §3.5·§3.5b — 목록은 world_weak_safe_rules 한 곳, 판정 world_weak_safe(지역)·world_banyo_here(uid), 화면 rules.js weakSafe ← gamedata weakSafe). 서버가 강제한다: 빈약한 안전지대의 상점 판정은 world_weak_shop(상점) 하나(world_shop_refresh·world_shop_buy·world_smithy_snapshot), 거절 문구의 장소 이름은 world_weak_name(uid), 하루 개수(daily_cap)는 상점마다.
 - 안전지대에서는 요괴 수색·전투·원정 불가.
 - 상점과 거래소는 안전지대에만.
 - 현장 화면에는 전투 대신 상점·대장간·거래소·창고(·마구간).
@@ -83,6 +83,13 @@
 - 기운: 참가자 world_gw_members.fx(ward·might·crit·critnext·evade·shield·gward·taunt·cover)·주인 world_gw_fights.bfx(expose·block·smoke). 받는 피해 world_gw_hit(world_cb_mitigate → world_gw_hurt, 수법 즉사 999는 hurt 바로). 수법 연계: 해독 침 = 사슬 풀기·이름 되찾기 / 야전 소생 = 물러난 동료를 쉬는 중으로 / 퇴마 결계 = 물살·사슬 물살·소용돌이 실패 피해 절반 / 파사 진언 = 그 동료만 / 흐름 끊기 = 반격 막기·소용돌이 끊을 힘 절반 / 봉인 사슬 = 반격 막기·받는 피해 +15%·두 얼굴이 힘을 못 삼킴(반대 공격도 절반 피해) / 호법 신장 = 버티기로 소용돌이 대신 받아 내기 / 대신 막기 = 그 동료를 노린 손길 절반.
 - 실패: 장착 장비 내구도 −10%·침식 +10·30분 뒤 재도전. 처치는 하루 한 번(처음 1,500전·경험치 0.5배·탈것 moonless_boat·이름 색 ns:1028, 뒤로는 120전·0.05배), 처치마다 world_events gw_win → 칭호 gw_kill1/3/10/25·gw_solo·gw_flawless(분류 '외전')·꾸미기 fr_gwiheo·pt_gwiheo·sl_gwi. 파훼법(world_gw_tips)은 처치한 사람만. 끝난 싸움 기록 200줄, 대기실 last로 지난 기록.
 - 화면 views/gw.js(#/gw/<id>, 공용 부품 fightui.js §10): .raid-wrap.pf-wrap.gw-wrap, PC 싸우는 중 grid-template-areas "boss mem" "boss log" "act log", 끝난 화면 참가자 네 칸 한 줄. 단계 사다리 .gw-ladder(휴대폰 한 줄 「1 두 얼굴」), 라운드 띠 .gw-band(라운드·마감·고른 수·낌새·내 행동, 긴 낌새는 tellSize), 게이지 안 숫자 .gw-vits, 단추 공격·방어·버티기 .gw-btns 아래 협동 기술 늘 펼침 .gw-skills(네 칸 한 줄, 설명·다시 쓰기는 title), 이번 라운드만의 행동 .gw-gim, 기록 .gw-log(갈래마다 색, 휴대폰은 최근이 위, 끝난 뒤는 처음부터). 참가자 .raid-mem.pf-mem(누르면 대상 .pick). 다시 읽기: 라운드 마감 직후·내가 고른 뒤 2초·모이는 중 3초.
+
+### 3.5b 묵적록(2.0.0)
+
+- 영역 mukjeok(world_domain_rules 한 줄 — open_quest gq_5·no_shadow·rare meokgwi_lump·fx). 묵창 나루 Lv40(빈약한 안전지대, 상점 mukchang_shop 「묵창 주막」)·빈칸 벌판 41·먹비 숲 42·명부 탑 44·아홉 칸 뜰 45, 지도 왼쪽 위, 들어가는 길은 빙혼곡 ↔ 묵창 나루 하나. 날씨 world_weather_climate mukjeok(혈무·설한 없음). 생성기 supabase/gen_mukjeok/(data_world.py·data_quests.py·a_level.sql·b_rules.sql·patch_note.sql·gen.py, 이름 사전 ref/existing_names.json ← dump_names.py를 마이그레이션 전 DB로) → migrations/20261116000000_world_2_0_0_mukjeok.sql(겹치는 이름이 있으면 멈춤). 요괴 레벨 상한 일반 min(45, L+3)·정예 min(46, L+6).
+- 영역 효과는 world_domain_rules().<영역>.fx 한 칸(effects 효과 키 → 값·name 늘 보이는 상태 이름·guard 막는 상태 키): world_domain_fx(uid)·world_domain_effect(키)(막는 상태가 있으면 0), world_island_effect는 이것을 부르는 한 줄(귀허도 침식 +60도 여기). world_hud_snapshot.domain → hud.js domainNow·domainChip·domainPin(요화처럼 늘 보임, 상태 칸에 안 셈), 문구 rules.js DOMAIN_FX. 묵적록 「이름 흐림」 정신 손실 +15%·받는 피해 +5%·조우 +5%, 막는 상태 clear_name 「또렷한 이름」(이름 새김 탕 120분)·name_ward 「이름 지킴」(이름 먹 부적 60분).
+- 외전 「묵적록」 mkq_1~mkq_5(cat 「외전·묵적록」, Lv40·41·42·44·45, mkq_1 after gq_5만). 대사는 gen.py가 script.md를 읽어 만들고 고친 자리는 FIX 표 한 곳. 할 일 갈래 rest(쉬기, world_events rest, r 지역 — world_faction_task_count·label, changes.js TASK_ACTS rest)와 mj(먹그림자, 보스 엔진이 셈).
+- 시세: 7단계 = max(재료값×1.2, 같은 칸 6단계 최고가×1.15), 소모품·가구 = max(기준가, 재료값÷개수×1.1).
 
 ### 3.6 새 지역·세력 배치
 
@@ -250,7 +257,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 장비 칸과 이목
 
 - 칸: 무기·방어구·관모(hat)·신(shoes)·노리개(norigae)·호신부(amulet)·탈(mask) + 생활 칸 채집(tool)·탐사(explore: 나침반, search_find_pct, world_explore_find_pct)·낚시(fishing: 낚싯대, world_fish_rod). 생활 칸은 equipment_traits.life_slot(없으면 채집). 'craft'(제작 공구)는 장착 안 하고 가방에 있으면 world_craft_tool_bonus가 그 분야(craft_fields) 품질 +craft_quality(가장 큰 것 하나). world_equip_item / world_unequip_item, 전투·원정 중 착탈 불가. 장비 category는 반드시 칸 이름 중 하나. 화면 item.js SLOTS·bag.js TOOL_LINE.
-- 장비 1~6단계(6단계 귀허도 Lv32), 같은 단계도 갈래가 다름(무기 묵직·예리·소리 없음, 방어구 쇠미늘·철릭·도포·야행복). 5단계도 거래·되팔기·분해 가능.
+- 장비 1~7단계(6단계 귀허도 Lv32·7단계 묵적록 Lv42 — tier_check 1~7, world_normalize_item_rarity 7단계 = 신품·drop_rate 0.03, 드롭 world_gear_drops Lv41~45, 7단계 생활 도구 12는 world_tool_lines 사슬에 이음, 모두 묵창 나루 제작), 같은 단계도 갈래가 다름(무기 묵직·예리·소리 없음, 방어구 쇠미늘·철릭·도포·야행복). 5단계도 거래·되팔기·분해 가능.
 - 특성 합 world_gear_total(무기 위력·피해·방어구 방어·피해 감소·도구 채집·낚싯대 특성 제외) → world_status_effect_total, world_combat_stats가 방어·회피·치명타·달아나기·이목을 더함(상한 회피 40·치명타 60·달아나기 95).
 - 이목 = 30 + 체질×0.8 − 민첩×0.4 + 방어구 방어력×0.6 + 장비 이목(5~300). 원정 합동 전투·파티 토벌·보스가 이목^1.3로 표적.
 - 무기 직업 태그 equipment_traits.jobs(근접 호위 무사·암영 검객 · 원거리 조사원 · 술법 퇴마관·봉인술사·의무관, 없으면 trg_world_weapon_jobs가 weapon_type으로 채움, world_weapon_job_ok — world_equip_item·world_reset_identity, 화면 item.js weaponJobs).
@@ -302,6 +309,8 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 낚시와 요리
 
 - 낚시터 24곳: 강(백지교·구름나루)/늪(천엽 연화늪·폐쇄된 연화원·잿빛 갈대숲)/바다(재의 해안·구등대 군도·염등촌·만조의 갑문)/호수(천경호·수경루·설피골·유리협곡 월영 유리못)/깊은 물(용잠 수궁)/수로(구룡 폐수로·침수된 구시가지)/심연(흑조 균열·구중 봉연·귀허) + 바다 낚시터 다섯(십삼문 밀수 부두·빙혼곡 얼음 해안·주혈 광산 폐선창·월식성 바위 해안·관성대 별빛 벼랑). 풍경이 물가(water)인 지역에는 낚시터를 둔다.
+- 낚시터는 지역마다 물 갈래 하나씩(world_fish_grounds 기본 키 (region_id, habitat) — 한 지역에 둘이면 고름). world_fish_at(p_habitat, p_bait)가 yh.fish_habitat·yh.fish_bait을 켜고 world_fish()를 부름(화면은 늘 이것, changes.js `^world_fish(_at)?$`), world_fish_spot.grounds = world_fish_ground_list(uid, 지역)(낚시터마다 이름·도감 수·named·baits). 화면 home.js fishPanel·bindFish·redrawFish(yh-fish-hab:<지역>·yh-fish-bait).
+- 명어(2.0.0): world_fish_species.named, 물 갈래마다 하나·그 낚시터에서만·시간대·날씨 둘 다 맞고 미끼(bait_for에 그 명어가 든 물고기)를 걸었을 때만 굴림에 듦. 무게 world_fish_rules.named.weight 0.3 + 낚싯대 named_wt, 희귀 보정 0.5배, 시간대·날씨 배수 없음, 미끼는 던질 때마다 named.bait 1마리. 미끼가 셋 아래인 명어가 있으면 마이그레이션이 멈춤. 명어와 명어로 만든 것은 거래 불가.
 - 낚싯대를 가방에 두고 탐색력 1로 20초마다(낚시 24단계 「재빠른 챔질」 15초 — 간격은 world_fish_gap 하나, world_fish·world_fish_spot.gap → home.js 「n초마다」, 1.0.4h 제보 30). 원정·전투·이동 중 불가.
 - 어종 50종(서식지·희귀도·시간대·날씨). 희귀도 무게(범품 60·양품 25·진품 9·명품 3·신품 0.6, 진품 이상은 희귀 보정을 곱함)·시간대/날씨 맞음 ×3·어긋남 ×0.3(「물때 읽기」 0.6)은 world_fish_rules 한 곳(→ gamedata fishRules). 미끼 칸 world_fish_species.bait_for(그 물고기가 미끼가 되는 명어 목록, 묵적록부터). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
 - 낚시 칭호 11(바다 sea_angler·tide_reader·nine_harbors·sea_dragon 포함): 입질·희귀 어종·크기 효과.
@@ -629,7 +638,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 소리
 
 - 배경음악 sound.js: FluidR3 GM 사운드폰트(CC BY 3.0, 도움말에 출처) 샘플 assets/audio/*.mp3(3.2초 칸: 고토=가야금·샤쿠하치·플루트=대금·피들=해금·첼로·현악·하프·종·북·피아노), 그 지역 악기만 받아 풀고 나머지는 내려놓음(AudioContext 32kHz). 조각은 tools/bgm_samples/build.py로 만들고 각각 최대 −1.5dB로 맞춤.
-- 편성 PROFILES: 빠르기·박자(meter 4·3)·rhy·acc(ACC)·bass(half·long·waltz·drive·march·pedal·tango)·drum(DRUM, drumIn)·pad(swell·sustain·light·cluster·open·none)·form(도입·A·A2·B·C·A3·잇는 마디·북 마디, 단락마다 악기·세기·echo·duet·trem·oct). 직할령 D단조 72 대금·가야금 / 수향 E장조 108 3박 춤곡 플루트·가야금 / 북령 A단조 54 피아노 애가·첼로 / 남명 C장조 124 대금·가야금 16분음 / 변경 E단조 88 해금·현악 8분음·북 행진(해금은 변경 중심, 심연 절정에만) / 지하 C#프리지안 48 대금·낮은 피아노·심장 북 / 천문 F장조 66 피아노·하프·종 / 심연 B단조 56(전투 72) 피아노만 탱고 애가(PROG.tango i–♭VII–VI–V·RHY oblivion·ACC tango 3+3+2·bass tango, bassIns piano, pad none) / 귀허도 D단조 54(전투 70) 같은 결을 첼로·현악·하프로. 주제(A)는 영역마다 고정, 나머지는 되풀이마다 새로. 전투 편성(battleOf) PROFILES[].bt(100~140·4박, pad 기본 light(B 단락만), 현악을 길게 까는 곳은 변경·북령 전투뿐), 안전지대는 조금 느리고 북 없이.
+- 편성 PROFILES: 빠르기·박자(meter 4·3)·rhy·acc(ACC)·bass(half·long·waltz·drive·march·pedal·tango)·drum(DRUM, drumIn)·pad(swell·sustain·light·cluster·open·none)·form(도입·A·A2·B·C·A3·잇는 마디·북 마디, 단락마다 악기·세기·echo·duet·trem·oct). 직할령 D단조 72 대금·가야금 / 수향 E장조 108 3박 춤곡 플루트·가야금 / 북령 A단조 54 피아노 애가·첼로 / 남명 C장조 124 대금·가야금 16분음 / 변경 E단조 88 해금·현악 8분음·북 행진(해금은 변경 중심, 심연 절정에만) / 지하 C#프리지안 48 대금·낮은 피아노·심장 북 / 천문 F장조 66 피아노·하프·종 / 심연 B단조 56(전투 72) 피아노만 탱고 애가(PROG.tango i–♭VII–VI–V·RHY oblivion·ACC tango 3+3+2·bass tango, bassIns piano, pad none) / 귀허도 D단조 54(전투 70) 같은 결을 첼로·현악·하프로. 주제(A)는 영역마다 고정, 나머지는 되풀이마다 새로. 전투 편성(battleOf) PROFILES[].bt(100~140·4박, pad 기본 light(B 단락만), 현악을 길게 까는 곳은 변경·북령 전투뿐), 안전지대는 조금 느리고 북 없이. / 묵적록 G단조 76(전투 90) 대금(한 옥타브 낮게)·피아노 이중·하프 메아리, 반주 inkrain8 낙수(전투 inkrain16), 북 b_mukjeok(전투 b_mukjeok2) — 현장도 전투 꼴 짜임(sound.js bshape(p)), 나루에서는 북이 빠지고 조금 느려짐(사용자 결정).
 - 음악 규칙: 마디 자리마다 세기 DYN·첫 박 강세, 긴 관·현악 playNote o.expr·o.vib, pad·첼로 긴 음 o.swell. 1박 넘는 선율 음은 그 마디 화음 음, duet은 화음 음 중 3~6도 아래, echo·받아치는 음도 화음 음, 단조 V는 이끎음 올림(hm), 프리지안 V는 ♭II, 어두운 곳 pad는 뿌리·5도·옥타브(open), 3~6도 도약 허용. 큰북 playDrum(녹음 북 + 사인파 몸통 + 걸러 낸 잡음, big·mid·small), DRUM 장단 main·alt(짝수 마디)·fill(프레이즈 끝).
 - 전투 음악은 원정대가 나가 있는 동안만('expedition' 알림의 귀환 시각까지 scene.exp), 현장 토벌(home.js setScene battle)은 곡을 안 바꿈(사용자 요청). 컷씬 곡 동안(yh-cutscene) 배경음악 쉼. 소리가 막혀 있으면 「소리 켜기」 깜빡임.
 - 미리듣기 tools/bgm_preview(render.js가 sound.js를 그대로 읽어 구움). 컷씬 곡(아침) tools/cutscene_music(compose.js·render.js → assets/audio/cutscene_morning.mp3): 마디 길이를 표본 수로 맞추고 되풀이 8마디를 세 번 구워 가운데를 loopStart~loopEnd로(시각 cutscene.js MUSIC). 로그인 화면은 다시 연 뒤(app.js REOPEN_AT) 「아침」 되풀이 여덟 마디를 조용히(cutscene.js loginMusic, 처음 누를 때 시작, 로그인하면 잦아듦).
