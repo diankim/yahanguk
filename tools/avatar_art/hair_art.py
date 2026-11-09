@@ -181,11 +181,11 @@ CURLY_FRONT = [
     ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
     ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
     "..hhhhhhhhhhhhhhhhhhhhhhhhhh",
-    ".hhhhhhhhh..hhhhh..hhhhhhhh.",
-    ".hhhhhhhh....hhh....hhhhhhh.",
-    "..hhhhhh......hh.....hhhhhh.",
-    "..hhhhh.......h.......hhhhh.",
-    ".hhhhh................hhhhh.",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhh.hhh.hhhh.hhh.hhhhh.",
+    "..hhhhh..hh...hh...hh..hhhh.",
+    ".hhhhh........h.......hhhhh.",
     "..hhhhh..............hhhhh..",
     "...hhhh..............hhhh...",
     ".....hh..............hh.....",
@@ -236,6 +236,9 @@ def curls(g, pts):
 def curly():
     f, b = ascii_grid(CURLY_FRONT), Grid()
     shade_front(f)
+    for x, y in ((8, 11), (8, 12), (12, 11), (12, 12), (16, 11), (16, 12), (20, 11), (20, 12), (10, 10), (14, 10), (18, 10)):
+        if (x, y) in f.p:
+            f.p[(x, y)] = 'k'
     curls(f, ((3, 8, -1), (24, 8, 1), (2, 13, 1), (25, 13, -1), (9, 5, -1), (18, 5, 1)))
     return f, b
 
