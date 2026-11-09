@@ -209,34 +209,43 @@ EY, EX = 13, 8
 
 
 EYE_SHAPES = {
-    'round': ['llll', 'EwEE', 'eeee', 'eefe', '.ff.'],
-    'sparkle': ['llll', 'wwEE', 'weee', 'eewe', '.ff.'],
-    'sleepy': ['....', 'llll', 'EwEE', 'eefe', '....'],
-    'sharp': ['l...', 'llll', 'EweE', 'eefe', '....'],
-    'dot': ['....', '.EE.', '.wE.', '.EE.', '....'],
-    'smile': ['....', '.ll.', 'l..l', '....', '....'],
+    'round': ['.lll.', 'lwwEl', 'lweEl', '.eef.', '.fff.', '.....'],
+    'droopy': ['..ll.', '.lEEl', 'lwEe.', 'leef.', '.ff..', '.....'],
+    'sparkle': ['llll.', 'lwEEl', 'lEwel', '.eef.', '.fwf.', '..l..'],
+    'cat': ['l....', '.llll', '.wEe.', '.eef.', '..ll.', '.....'],
+    'sleepy': ['.....', '.....', 'lllll', '.wEe.', '.eef.', '.....'],
+    'sharp': ['.....', 'lllll', 'vwEEv', '.lll.', '.....', '.....'],
+    'teary': ['.lll.', 'lwwEl', 'lwEel', '.eef.', '.vfv.', '..v..'],
+    'dot': ['.....', '..EE.', '..wE.', '..EE.', '.....', '.....'],
+    'smile': ['.....', '.lll.', 'l...l', '.....', '.....', '.....'],
+    'wink': None,
 }
-CLOSED = ['....', '....', 'l..l', '.ll.', '....']
+CLOSED = ['.....', '.....', '.....', 'l...l', '.lll.', '.....']
 
 
 def eye(kind, closed):
     g = Grid()
-    rows = CLOSED if closed and kind != 'smile' else EYE_SHAPES[kind]
-    for dy, r in enumerate(rows):
-        for dx, ch in enumerate(r):
-            if ch != '.':
-                g.set(EX + dx, EY - 1 + dy, ch)
-                g.set(W - 1 - EX - dx, EY - 1 + dy, ch)
-    if not closed and kind in ('round', 'sparkle', 'sharp'):
-        g.sym(EX - 1, EY - 1, 'l')
-    for x in range(EX - 1, EX + 2):
-        g.sym(x, EY + 4, 'p')
+    left = right = EYE_SHAPES['round'] if kind == 'wink' else EYE_SHAPES[kind]
+    if kind == 'wink':
+        right = EYE_SHAPES['smile']
+    if closed and kind not in ('smile',):
+        left = right = CLOSED if kind != 'wink' else None
+        if kind == 'wink':
+            left, right = CLOSED, EYE_SHAPES['smile']
+    for rows, side in ((left, 0), (right, 1)):
+        for dy, r in enumerate(rows):
+            for dx, ch in enumerate(r):
+                if ch != '.':
+                    x = EX - 1 + dx
+                    g.set(x if side == 0 else W - 1 - x, EY - 1 + dy, ch)
+    for x in range(EX - 2, EX + 1):
+        g.sym(x, EY + 5, 'p')
     return g
 
 
 EYES = {
-    'round': '동그란 눈', 'sparkle': '반짝이는 눈', 'sleepy': '졸린 눈',
-    'sharp': '또렷한 눈', 'dot': '콩알 눈', 'smile': '웃는 눈',
+    'round': '동그란 눈', 'droopy': '순한 눈', 'sparkle': '반짝이는 눈', 'cat': '고양이 눈', 'sleepy': '졸린 눈',
+    'sharp': '째진 눈', 'teary': '촉촉한 눈', 'dot': '콩알 눈', 'smile': '웃는 눈', 'wink': '윙크',
 }
 
 MY = 19
@@ -403,4 +412,4 @@ JOB_DEFAULT = {
     'analyst': ('shadow', 'shadow'),
 }
 
-FIXED = {'w': '#ffffff', 'l': '#3a2620', 'p': '#f7aea4', 'm': '#c8645e', 'n': '#7a2a2a'}
+FIXED = {'v': '#f6f1ea', 'w': '#ffffff', 'l': '#3a2620', 'p': '#f7aea4', 'm': '#c8645e', 'n': '#7a2a2a'}
