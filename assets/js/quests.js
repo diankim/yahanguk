@@ -210,6 +210,7 @@ export async function fillQuests(box) {
     <details class="fold" ${isOpen() ? 'open' : ''} data-q-fold>
       <summary class="panel-head"><h2>${icon('scroll', 16)}퀘스트 <small class="muted">진행 ${nAct} · 마침 ${b.done}/${b.total}</small></h2></summary>
       <div class="panel-body q-board">
+        ${RAID_ON && b.final_again && b.here_id === 'sealed_abyss' ? `<div class="btn-row q-again"><span class="muted small">구중 봉주와 다시 겨룰 수 있습니다</span><button class="btn small primary" data-here="결전" data-q-final>${icon('sword', 14)}<span>결전 다시 도전</span></button></div>` : ''}
         ${nAct > 1 ? `<div class="chips kind-chips q-group" role="group" aria-label="묶어 보기"><span class="muted small">묶어 보기</span>${GROUPS.map(([k, n]) => `<button class="chip ${grp() === k ? 'on' : ''}" data-q-group="${k}">${n}</button>`).join('')}</div>` : ''}
         ${grp() && act_.length > 1 ? grouped(act_, b) : `${facBox(b.faction)}${act_.length ? `<ul class="q-list">${act_.map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}`}
         ${here.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${here.map(availItem).join('')}</ul>` : ''}
