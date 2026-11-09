@@ -6,22 +6,37 @@ import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
 import { baseOf } from '../hq.js';
+import { GAMEDATA as GD } from '../gamedata.js';
 
-const PHASE = { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' };
+const BOSS = {
+  gwiheo: { name: '귀허의 주인', arc: '외전 · 요인록', place: '귀허', PHASE: { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' }, last: '소용돌이', mechs: ['chain', 'name', 'vortex'],
+    calm: '주인이 숨을 고른다.', tray: '귀허에서 쓸 물품', win: '귀허의 주인을 쓰러뜨렸습니다', lose: '소용돌이에 밀려났습니다', open: '귀허의 주인 앞에 서기',
+    desc: '소용돌이 한가운데 빈 왕좌. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다(4명을 권합니다). 모두 귀허 부적을 하나씩 씁니다.', ask: 'gw' },
+  mukjeok: { name: '먹그림자', arc: '외전 · 묵적록', place: '아홉 칸 뜰', PHASE: { 1: '지워지는 칸', 2: '따라 쓰는 붓', 3: '발자국', 4: '가운데 칸' }, last: '가운데 칸', mechs: ['line', 'erase'],
+    calm: '그림자가 붓에 먹을 다시 찍는다.', tray: '아홉 칸 뜰에서 쓸 물품', win: '먹그림자를 보냈습니다', lose: '명부가 먹으로 덮였습니다', open: '아홉 칸 명부 앞에 서기',
+    desc: '쓰러진 자리의 매듭 안쪽, 아홉 칸으로 나뉜 명부. 가운데 칸의 이름을 지키며 칸을 밟아 기억을 되찾습니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다. 모두 봉인 먹줄을 하나씩 씁니다.', ask: 'mk' },
+};
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
 const COLOR = { 청: 'c-blue', 적: 'c-red', 황: 'c-yellow', 백: 'c-white' };
-const KIND = { tell: 'k-tell', warn: 'k-warn', phase: 'k-phase', skill: 'k-skill', atk: 'k-out', hit: 'k-in', fall: 'k-fall', good: 'k-good', bad: 'k-bad', miss: 'k-miss', guard: 'k-guard', boss: 'k-boss' };
+const KIND = { tell: 'k-tell', warn: 'k-warn', phase: 'k-phase', skill: 'k-skill', atk: 'k-out', hit: 'k-in', fall: 'k-fall', good: 'k-good', bad: 'k-bad', miss: 'k-miss', guard: 'k-guard', boss: 'k-boss', mem: 'k-mem', shadow: 'k-mem k-shadow' };
+const GRID = [4, 9, 2, 3, 5, 7, 8, 1, 6];
+const CELL = { 4: '왼쪽 위', 9: '위', 2: '오른쪽 위', 3: '왼쪽', 5: '가운데', 7: '오른쪽', 8: '왼쪽 아래', 1: '아래', 6: '오른쪽 아래' };
+const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머뭇거림' };
 
-let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '';
+let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
 const clock = serverClock();
+const bossOf = () => BOSS[snap?.boss] || BOSS[lobbyBoss] || BOSS.gwiheo;
+const PHASE = new Proxy({}, { get: (_, k) => bossOf().PHASE[k] });
 
 export async function render(root, sub) {
-  el = root; fid = sub || null; snap = null; target = null; sel = null; shownStatus = ''; bindTips(el);
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 외전 · 요인록</p><h1>귀허의 주인</h1></div></div>${loading()}`;
+  lobbyBoss = BOSS[sub] ? sub : null;
+  el = root; fid = lobbyBoss ? null : sub || null; snap = null; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; bindTips(el);
+  const b = BOSS[lobbyBoss] || BOSS.gwiheo;
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${b.arc}</p><h1>${b.name}</h1></div></div>${loading()}`;
   clearInterval(tick); tick = setInterval(countdown, 250);
   await refresh();
 }
-export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
+export function destroy() { el?.classList.remove('mk-live'); clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
 const HEAL_ITEMS = GW_HEAL;
 window.addEventListener('yh-battle-item', e => {
   const f = snap?.fight;
@@ -29,16 +44,18 @@ window.addEventListener('yh-battle-item', e => {
   e.detail.handled = true;
   const id = e.detail.id || e.detail.item;
   if (!HEAL_ITEMS.includes(baseOf(id))) { toast('귀허의 주인과 싸우는 동안에는 체력 회복품만 쓸 수 있습니다.', 'warn'); return; }
-  run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'item', p_target: target || snap.me, p_item: id }));
+  run({ disabled: false, dataset: {}, id: '' }, () => act({ p_action: 'item', p_target: target || snap.me, p_item: id }));
 });
 
 async function refresh() {
   if (!el) return;
   clearTimeout(timer);
   try {
-    const prev = snap?.fight?.status;
-    snap = await rpc('world_gw_snapshot', { p_fight: fid });
+    const prev = snap?.fight?.status, r0 = snap?.fight?.round;
+    snap = await rpc('world_gw_snapshot', { p_fight: fid, p_boss: lobbyBoss });
     clock.sync(snap);
+    if (snap?.fight?.round !== r0) moveTo = null;
+    memToast();
     if (snap?.fight?.id && fid !== snap.fight.id) { fid = snap.fight.id; history.replaceState(null, '', `#/gw/${fid}`); }
     if (prev && prev !== snap?.fight?.status && ended()) await settle();
     draw();
@@ -67,25 +84,25 @@ function countdown() {
   tickUntil(el, now());
   const b = $('.gw-round-bar span', el);
   if (b && f.round_ends_at) {
-    const len = ['chain', 'name', 'vortex'].includes(f.mech?.k) ? 10000 : 5000;
+    const len = bossOf().mechs.includes(f.mech?.k) ? 10000 : 5000;
     b.style.width = `${Math.max(0, Math.min(100, (new Date(f.round_ends_at) - now()) / len * 100))}%`;
   }
 }
 
 const nameOfMember = (s, id) => (s.members || []).find(m => m.id === id)?.name || '';
-const ladder = ph => `<ol class="gw-ladder">${[1, 2, 3, 4].map(p => `<li class="${p === ph ? 'now' : p < ph ? 'done' : ''}" title="${PHASE_AT[p]}"><b>${p}</b><span>${p === 4 ? '소용돌이' : PHASE[p]}</span></li>`).join('')}</ol>`;
+const ladder = ph => `<ol class="gw-ladder">${[1, 2, 3, 4].map(p => `<li class="${p === ph ? 'now' : p < ph ? 'done' : ''}" title="${PHASE_AT[p]}"><b>${p}</b><span>${p === 4 ? bossOf().last : PHASE[p]}</span></li>`).join('')}</ol>`;
 const tellSize = t => { const n = String(t || '').length; return n > 110 ? 'xxl' : n > 80 ? 'xl' : n > 55 ? 'l' : ''; };
 
 function roundBand(s) {
-  const f = s.fight, mech = f.mech || {}, gim = ['chain', 'name', 'vortex'].includes(mech.k);
+  const f = s.fight, mech = f.mech || {}, gim = bossOf().mechs.includes(mech.k);
   const chosen = (s.members || []).filter(m => !m.out && !m.resting && m.acted).length, alive = (s.members || []).filter(m => !m.out && !m.resting).length;
   const myAct = s.my_act ? actName(s, s.my_act) : null;
   return `<div class="gw-band ${gim ? 'gim' : ''} ${mech.aoe ? 'aoe' : ''}">
-    <div class="gw-band-top"><span class="gw-round">${f.round}라운드</span>${gim ? chip('수법', 'bad') : mech.aoe ? chip('기를 모음', 'warn') : ''}
+    <div class="gw-band-top"><span class="gw-round">${f.round}라운드</span>${gim ? chip('수법', 'bad') : mech.aoe ? chip('기를 모음', 'warn') : ''}${mech.mimic ? chip(mech.stuck ? `${MIMIC[mech.mimic]} · 멈추지 않는 붓` : MIMIC[mech.mimic], mech.mimic === 'hesit' ? 'good' : 'warn') : ''}
       <span class="gw-band-time">${icon('hourglass', 13)}<b data-until="${esc(f.round_ends_at)}" data-sec="1">…</b></span>
       <span class="gw-chosen muted small">고른 사람 ${chosen}/${alive}</span></div>
     <div class="bar gw-round-bar"><span></span></div>
-    <p class="gw-tell ${tellSize(mech.tell)}">${esc(mech.tell || '주인이 숨을 고른다.')}</p>
+    <p class="gw-tell ${tellSize(mech.tell)}">${esc(mech.tell || bossOf().calm)}</p>
     ${mech.k === 'chain' ? `<p class="small">내 손목의 사슬 · <b class="${COLOR[mech.mine] || ''}">${esc(mech.mine || '없음')}</b></p>` : ''}
     ${fxKeys(f.bfx).length ? `<div class="chips raid-bfx">${fxChips(f.bfx)}</div>` : ''}
     <p class="gw-mine">${myAct ? `${icon('check', 13)} 이번 라운드: <b>${esc(myAct)}</b> · 마감 전에는 바꿀 수 있습니다` : `${icon('bell', 13)} 아직 고르지 않았습니다 — 고르지 않으면 방어합니다`}</p>
@@ -95,7 +112,8 @@ function actName(s, a) {
   const t = a.t ? nameOfMember(s, a.t) : '';
   if (a.a === 'coop') { const sk = (s.skills || []).find(x => x.id === a.s); return `기술 「${sk?.name || ''}」${t ? ` → ${t}` : ''}`; }
   if (a.a === 'item') return `회복품 「${nameOf(a.i)}」${t ? ` → ${t}` : ''}`;
-  return ({ attack: '공격', guard: '방어', brace: '버티기', call: `이름 부르기 → ${t}`, chain: `${a.c || ''} 사슬 끊기` })[a.a] || a.a;
+  const mv = a.m ? ` · 「${CELL[a.m]}」 칸으로` : '';
+  return (({ attack: '공격', guard: '방어', brace: '버티기', call: `이름 부르기 → ${t}`, chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기' })[a.a] || a.a) + mv;
 }
 
 function draw() {
@@ -109,28 +127,30 @@ function draw() {
   const cap = s.falls_cap || 10, solo = (s.members || []).length === 1;
   const endState = m => m.out || m.resting ? '쓰러짐' : '끝까지 버팀';
   const top = mobileLog() && !done, restoreLog = keepLogScroll(el, top);
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 외전 · 요인록 · 귀허</p>
-      <h1>귀허의 주인 <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
-      <div class="head-actions">${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
+  const B = bossOf(), mk = s.boss === 'mukjeok';
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p>
+      <h1>${B.name} <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
+      <div class="head-actions">${mk && s.board && f.status !== 'wait' ? chip(`빛나는 칸 ${(s.board.lit || []).length}/8 · 이름 획 ${s.board.strokes}/${s.board.max}`, s.board.strokes <= 3 ? 'bad' : 'good') : ''}${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
     ${done ? resultHtml(f, s) : ''}
-    <div class="raid-wrap pf-wrap gw-wrap ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
+    <div class="raid-wrap pf-wrap gw-wrap ${mk ? 'mk' : ''} ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
       <section class="panel raid-boss"><div class="panel-body">
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
-            ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기 · 귀허 부적 1개</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
+            ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기 · ${esc(itemName())} 1개</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
-        ${fight ? roundBand(s) : ''}
+        ${mk && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${boardHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
       </div></section>
       ${fight && s.joined ? actHtml(s, me) : ''}
       <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
-          sub: [esc(jobName(m.job)), m.nameless ? '<b class="bad">이름 잃음</b>' : '', solo ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
+          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', solo ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
         ${logHtml(s, me, done)}</div></section>
     </div>
     ${tipsHtml(s.tips)}`;
+  el.classList.toggle('mk-live', mk && fight && !!s.joined);
   if (!done) restoreLog();
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   memDetail(s); tray.redraw();
@@ -180,50 +200,53 @@ function actHtml(s, me) {
     <div class="raid-coopbox"><div class="coop-grid gw-skills">${skills.map(k => coopBtn({ ...k, on: a?.a === 'coop' && a?.s === k.id,
         why: me.out ? '물러남' : !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `${spOf()[0]} ${k.cost}` : '',
         desc: `${k.desc} (${spOf()[0]} ${k.cost} · ${k.rounds}라운드마다)` }, `data-gw-skill="${esc(k.id)}"`)).join('') || '<p class="muted small">쓸 수 있는 협동 기술이 없습니다.</p>'}</div></div>
+    ${mkGim(s, me, a, tName)}
     ${!me.out && (mech.k === 'name' || mech.k === 'chain') ? `<div class="gw-gim"><span class="gw-gim-h" title="이번 라운드에만 나오는 행동">${icon('bell', 13)}<b>이번만</b></span>
       ${mech.k === 'name' ? `<button class="btn ${on('call')}" data-gw="call">${icon('users', 16)}<span>${esc(tName)}의 이름 부르기</span></button>` : ''}
       ${mech.k === 'chain' ? (mech.colors || []).filter((v, i, x) => x.indexOf(v) === i).map(col => `<button class="btn ${COLOR[col] || ''} ${a?.a === 'chain' && a?.c === col ? 'on' : ''}" data-gw="chain" data-c="${esc(col)}">${esc(col)} 사슬</button>`).join('') : ''}
     </div>` : ''}
   </div></section>`;
 }
-const tray = itemTray({ title: '귀허에서 쓸 물품', bodyId: 'gw-items-body', fill: fillItems });
+const tray = itemTray({ title: () => bossOf().tray, bodyId: 'gw-items-body', fill: fillItems });
 function fillItems(box) {
   if (!snap?.fight) return;
   const inv = snap.items || {}, left = Number(snap.items_left ?? 0), tName = nameOfMember(snap, target || snap.me) || '나';
   const [hp] = itemGroups(HEAL_ITEMS, inv), a = snap.my_act;
   box.innerHTML = `<p class="muted small">체력 회복품만 <b>한 싸움에 두 개까지</b> 씁니다 · 남은 횟수 <b>${left}/2</b> · 대상 <b>${esc(tName)}</b>(참가자 이름을 눌러 바꿈). 고르면 이번 라운드의 행동이 됩니다.</p>
     ${left ? itemListHtml(hp, inv, a?.a === 'item' ? a.i : '') : '<p class="hint warn">이 싸움에서 쓸 수 있는 회복품을 다 썼습니다.</p>'}`;
-  $$('[data-use]', box).forEach(b => b.onclick = () => run(b, () => rpc('world_gw_act', { p_fight: snap.fight.id, p_action: 'item', p_target: target || snap.me, p_item: b.dataset.use })));
+  $$('[data-use]', box).forEach(b => b.onclick = () => run(b, () => act({ p_action: 'item', p_target: target || snap.me, p_item: b.dataset.use })));
 }
 
 function resultHtml(f, s) {
   const mine = (s.members || []).find(m => m.id === s.me);
   const won = f.status === 'won';
-  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? '귀허의 주인을 쓰러뜨렸습니다' : '소용돌이에 밀려났습니다', `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 ? Math.min(mine.falls || 0, s.falls_cap || 10) : mine.falls}` : ''}</p>
-    <p class="small">${won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : '장착 장비가 10% 닳고 침식이 10 올랐습니다. 30분 뒤 다시 도전할 수 있습니다.'} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
-    <a class="btn small" href="#/gw">처음으로</a>`)}</div></section>`;
+  const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
+  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 ? Math.min(mine.falls || 0, s.falls_cap || 10) : mine.falls}` : ''}</p>
+    <p class="small">${won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
+    <a class="btn small" href="#/gw${s.boss === 'mukjeok' ? '/mukjeok' : ''}">처음으로</a>`)}</div></section>`;
 }
 
 const tipsHtml = tips => (tips || []).length ? `<details class="panel fold"><summary class="panel-head"><h2>${icon('help', 16)} 파훼법 <small class="muted">쓰러뜨린 조사원만 봅니다</small></h2></summary>
   <div class="panel-body"><ul class="small">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>` : '';
 
 function drawLobby(s) {
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 외전 · 요인록 · 귀허</p><h1>귀허의 주인</h1></div></div>
+  const B = bossOf();
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p><h1>${B.name}</h1></div></div>
     <section class="panel"><div class="panel-body">
-      <p class="desc">소용돌이 한가운데 빈 왕좌. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다(4명을 권합니다). 모두 귀허 부적을 하나씩 씁니다.</p>
-      <p class="small">귀허 부적 ${s.charms}개 · 처치 ${s.kills}번</p>
+      <p class="desc">${B.desc}</p>
+      <p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p>
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
-      ${s.can_open ? `<button class="btn primary" id="gw-open">${icon('sword', 16)}<span>귀허의 주인 앞에 서기</span></button><p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>`
+      ${s.can_open ? `<button class="btn primary" id="gw-open">${icon('sword', 16)}<span>${B.open}</span></button><p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>`
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}
       ${s.last ? `<a class="btn small ghost" href="#/gw/${esc(s.last)}">${icon('scroll', 15)}<span>지난 도전 기록 보기</span></a>` : ''}
     </div></section>${tipsHtml(s.tips)}`;
-  const o = $('#gw-open', el); if (o) o.onclick = async () => { if (!(await askPartySize('gw', await partyHere()))) return; run(o, () => rpc('world_gw_open')); };
+  const o = $('#gw-open', el); if (o) o.onclick = async () => { if (!(await askPartySize(B.ask, await partyHere()))) return; run(o, () => rpc('world_gw_open', s.boss && s.boss !== 'gwiheo' ? { p_boss: s.boss } : {})); };
   const j = $('#gw-join-inv', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: s.invite }));
 }
 
 function bind() {
   const f = snap?.fight; if (!f) return;
-  const b = $('#gw-begin', el); if (b) b.onclick = async () => { if (!(await askPartySize('gw', (snap?.members || []).length || 1, true))) return; run(b, () => rpc('world_gw_begin', { p_fight: f.id })); };
+  const b = $('#gw-begin', el); if (b) b.onclick = async () => { if (!(await askPartySize(bossOf().ask, (snap?.members || []).length || 1, true))) return; run(b, () => rpc('world_gw_begin', { p_fight: f.id })); };
   const j = $('#gw-join', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: f.id }));
   $$('[data-pick]', el).forEach(x => x.onclick = () => { const id = x.dataset.pick; sel = sel === id ? null : id; if (f.status === 'fight' && snap.joined) target = id; draw(); });
   const ib = $('#gw-items', el); if (ib) ib.onclick = tray.open;
@@ -234,23 +257,83 @@ function bind() {
       if (!ally) { toast('이 기술을 받을 동료가 없습니다.', 'warn'); return; }
       tgt = ally.id;
     }
-    run(x, () => rpc('world_gw_act', { p_fight: f.id, p_action: 'coop', p_target: tgt, p_item: x.dataset.gwSkill }));
+    run(x, () => act({ p_action: 'coop', p_target: tgt, p_item: x.dataset.gwSkill }));
   });
   $$('[data-gw]', el).forEach(x => x.onclick = () => {
-    const a = x.dataset.gw, args = { p_fight: f.id, p_action: a, p_target: null, p_item: null };
-    if (a === 'call') args.p_target = target || snap.me;
+    const a = x.dataset.gw, args = { p_action: a, p_target: null, p_item: null };
+    if (a === 'call') args.p_target = x.dataset.t || target || snap.me;
     if (a === 'chain') args.p_item = x.dataset.c;
-    run(x, () => rpc('world_gw_act', args));
+    run(x, () => act(args));
   });
+  $$('[data-mk-step]', el).forEach(x => x.onclick = () => step(Number(x.dataset.mkStep)));
+}
+
+const BOSS_RULES = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo'];
+const itemName = () => BOSS_RULES()?.item_name || '귀허 부적';
+function act(args) {
+  const out = { p_fight: snap.fight.id, p_target: null, p_item: null, ...args };
+  if (snap.boss === 'mukjeok' && moveTo) out.p_move = moveTo;
+  return rpc('world_gw_act', out);
+}
+function step(cell) {
+  const s = snap, b = s?.board; if (!b || s.fight?.status !== 'fight' || !s.joined) return;
+  const here = b.my_pos;
+  if (cell === here || cell === moveTo) moveTo = null;
+  else if ((b.moves || []).includes(cell)) moveTo = cell;
+  else { toast(b.moves?.length ? '바로 옆(가로·세로) 칸으로만 옮겨 설 수 있습니다.' : '먹에 발이 묶여 이번 라운드에는 칸을 옮길 수 없습니다.', 'warn'); return; }
+  const a = s.my_act;
+  if (a?.a) {
+    const again = { p_action: a.a, p_target: a.t || null, p_item: a.s || a.i || a.c || null };
+    if (a.a === 'recall' && (moveTo || here) && ((b.lit || []).includes(moveTo || here) || (moveTo || here) === 5)) again.p_action = 'guard';
+    run({ disabled: false, dataset: {}, id: '' }, () => act(again));
+  } else draw();
+}
+function boardHtml(s, live) {
+  const b = s.board || {}, mech = s.fight.mech || {}, lit = new Set(b.lit || []), ink = new Set(b.ink || []), cells = new Set(mech.k === 'line' ? mech.cells || [] : []);
+  const moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
+  const who = {}; for (const m of s.members || []) if (m.pos) (who[m.pos] = who[m.pos] || []).push(m);
+  const ticks = Array.from({ length: b.max || 9 }, (_, i) => `<i class="${i < b.strokes ? 'on' : ''}"></i>`).join('');
+  return `<div class="mk-wrap"><div class="mk-board ${mech.k === 'erase' ? 'erase' : ''}" role="grid" aria-label="아홉 칸 명부">${GRID.map(n => {
+    const center = n === 5, st = center ? 'center' : lit.has(n) ? 'lit' : 'blank';
+    const cls = ['mk-cell', st, ink.has(n) ? 'ink' : '', cells.has(n) ? 'mk-line' : '', moves.has(n) ? 'mk-step' : '', n === dest ? 'dest' : '', n === here ? 'here' : ''].filter(Boolean).join(' ');
+    const ppl = (who[n] || []).slice(0, 4).map(m => `<span class="mk-who ${m.id === s.me ? 'me' : ''} ${m.out || m.resting ? 'out' : ''}" title="${esc(m.name)}">${esc(String(m.name || '').slice(0, 1))}</span>`).join('');
+    const tag = center ? `<span class="mk-strokes" title="이름 획 ${b.strokes}/${b.max}">${ticks}</span>` : `<small>${st === 'lit' ? '빛남' : '빈칸'}${ink.has(n) ? ' · 먹 자국' : ''}</small>`;
+    const label = `${CELL[n]} 칸${center ? ' · 이름' : st === 'lit' ? ' · 빛남' : ' · 빈칸'}${cells.has(n) ? ' · 먹줄' : ''}${moves.has(n) ? ' · 눌러서 옮겨 서기' : ''}`;
+    return `<button type="button" class="${cls}" ${moves.has(n) || (live && n === here) ? `data-mk-step="${n}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}">${tag}<span class="mk-ppl">${ppl}</span>${n === dest ? '<b class="mk-arrow">→</b>' : ''}</button>`;
+  }).join('')}</div>
+  <p class="mk-hint muted small">${live ? (moveTo ? `「${CELL[moveTo]}」 칸으로 옮겨 섭니다${s.my_act ? '' : ' — 행동을 고르면 함께 옮깁니다'} · 내 칸을 누르면 취소` : (b.moves || []).length ? '테 두른 이웃 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)' : '먹에 발이 묶여 이번 라운드에는 옮길 수 없습니다') : `기억 조각 ${b.mem || 0}/6`}</p></div>`;
+}
+function mkGim(s, me, a, tName) {
+  if (s.boss !== 'mukjeok' || me.out) return '';
+  const b = s.board || {}, mech = s.fight.mech || {}, dest = moveTo || b.my_pos, blank = dest && dest !== 5 && !(b.lit || []).includes(dest);
+  const erase = mech.k === 'erase', solo = (s.members || []).length === 1;
+  const keeper = (s.members || []).find(m => m.pos === 5 && !m.out && m.id !== s.me);
+  const callT = solo ? s.me : target && target !== s.me ? target : keeper?.id;
+  if (!blank && !erase) return '';
+  return `<div class="gw-gim"><span class="gw-gim-h" title="이번 라운드에만 나오는 행동">${icon('bell', 13)}<b>이번만</b></span>
+    ${blank ? `<button class="btn ${a?.a === 'recall' ? 'on' : ''}" data-gw="recall" title="지워진 빈칸에 서서 기억을 되찾습니다(공격 대신). 그 칸이 다시 빛나고 이름 획이 하나 돌아옵니다">${icon('scroll', 16)}<span>되찾기 · 「${CELL[dest]}」 칸</span></button>` : ''}
+    ${erase && callT ? `<button class="btn ${a?.a === 'call' ? 'on' : ''}" data-gw="call" data-t="${esc(callT)}">${icon('users', 16)}<span>${solo ? '제 이름 부르기' : `${esc(nameOfMember(s, callT))}의 이름 부르기`}</span></button>` : ''}
+    ${erase && !callT ? '<p class="small muted">가운데 칸에 선 동료를 눌러 이름을 불러 주세요.</p>' : ''}
+  </div>`;
+}
+function memToast() {
+  const rows = snap?.log || [], last = rows.length ? rows[rows.length - 1].id : 0;
+  if (!seenLog) { seenLog = last; return; }
+  if (['won', 'failed'].includes(snap?.fight?.status)) { seenLog = last; return; }
+  const fresh = rows.filter(l => l.id > seenLog && (l.kind === 'mem' || l.kind === 'shadow'));
+  seenLog = Math.max(seenLog, last);
+  if (!fresh.length) return;
+  toast(fresh.map(l => l.text).join(' / '), 'mem', 7000);
 }
 
 async function run(btn, fn) {
   if (sending) return;
   sending = true; btn.disabled = true;
   try {
-    const prev = snap?.fight?.status;
+    const prev = snap?.fight?.status, round0 = snap?.fight?.round;
     const out = await fn();
-    if (out) { snap = out; clock.sync(out); }
+    if (out) { snap = out; clock.sync(out); memToast(); }
+    if (snap?.fight?.round !== round0) moveTo = null;
     if (snap?.fight?.id && fid !== snap.fight.id) { fid = snap.fight.id; history.replaceState(null, '', `#/gw/${fid}`); }
     if (ended() && prev !== snap.fight.status) await settle();
     else if (btn.dataset.gwSkill || btn.dataset.use || btn.id === 'gw-open' || btn.id?.startsWith('gw-join')) await reloadCharacter();

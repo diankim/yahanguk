@@ -178,6 +178,9 @@ const ACC = {
   slow3: [[0, 0, 1], [1, 4, .7], [2, 7, .75]],
   battle: [[0, 0, 1], [0.5, 0, .7], [1, 2, .8], [1.5, 0, .7], [2, 4, .85], [2.5, 0, .7], [3, 2, .8], [3.5, 4, .75]],
   tango: [[0, 2, .6], [0, 4, .55], [1.5, 2, .5], [1.5, 4, .45], [3, 2, .55], [3, 4, .5]],
+  inkrain: [[0, 0, .75], [1.25, 7, .4], [2, 4, .5], [2.75, 9, .35], [3.5, 11, .3]],
+  inkrain16: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 4, 7, 9, 7, 4, 2, 4][k % 8] + (k >= 8 ? 2 : 0), k % 4 ? .32 + (k % 2 ? 0 : .08) : .6]),
+  inkrain8: [[0, 0, .8], [0.5, 7, .4], [1.25, 4, .5], [1.75, 9, .35], [2.5, 7, .45], [3, 11, .35], [3.5, 9, .3]],
   tango8: [[0, 2, .7], [0, 4, .6], [0.5, 7, .35], [1, 4, .4], [1.5, 2, .65], [1.5, 4, .55], [2, 7, .35], [2.5, 4, .4], [3, 2, .7], [3, 4, .6], [3.5, 7, .4]],
 };
 const roll = (from, to, step, v0, v1, k = 'small') => { const o = []; for (let x = from, i = 0, n = Math.round((to - from) / step); x < to - 1e-6; x += step, i++) o.push([x, v0 + (v1 - v0) * i / Math.max(1, n - 1), k]); return o; };
@@ -212,6 +215,10 @@ const DRUM = {
   b_abyss: { main: [[0, 1, 'big'], [0.5, 0.45, 'mid'], [1, 0.7, 'big'], [1.5, 0.45, 'mid'], [2, 1, 'big'], [2.5, 0.45, 'mid'], [3, 0.7, 'big'], [3.5, 0.55, 'mid']],
              alt: [[0, 1, 'big'], [0.75, 0.5, 'mid'], [1.5, 0.8, 'big'], [2, 0.9, 'big'], [3, 0.55, 'mid'], [3.25, 0.55, 'mid'], [3.5, 0.8, 'big']],
              fill: [[0, 1, 'big'], ...roll(1, 4, 0.25, 0.4, 1, 'mid')] },
+  b_mukjeok: { main: [[0, 0.9, 'big'], [2.5, 0.5, 'mid']], alt: [[0, 0.9, 'big'], [1.5, 0.4, 'small'], [3, 0.6, 'mid']], fill: [[0, 0.9, 'big'], [1.5, 0.5, 'mid'], [2.5, 0.65, 'mid'], [3, 0.8, 'big'], [3.5, 0.85, 'big']] },
+  b_mukjeok2: { main: [[0, 0.9, 'big'], [1, 0.4, 'small'], [1.5, 0.5, 'mid'], [2.5, 0.6, 'mid'], [3, 0.45, 'small'], [3.5, 0.55, 'mid']],
+    alt: [[0, 0.9, 'big'], [0.75, 0.35, 'small'], [1.5, 0.55, 'mid'], [2, 0.75, 'big'], [3, 0.5, 'mid'], [3.5, 0.6, 'mid']],
+    fill: [[0, 0.9, 'big'], [1, 0.55, 'mid'], [1.5, 0.6, 'mid'], [2, 0.8, 'big'], ...roll(2.5, 4, 0.25, 0.4, 0.85, 'mid')] },
   b_gwiheo: { main: [[0, 1, 'big'], [1.5, 0.5, 'mid'], [3, 0.7, 'big']], alt: [[0, 1, 'big'], [2, 0.6, 'big']], fill: [[0, 1, 'big'], [1, 0.6, 'mid'], [2, 0.8, 'big'], [2.5, 0.6, 'mid'], [3, 0.9, 'big'], [3.5, 0.9, 'big']] },
 };
 const F = (s, ins, v, o = {}) => ({ s, ins, v, ...o });
@@ -245,10 +252,15 @@ const PROFILES = {
     bt: { bpm: 70, rhy: 'oblivion2', lead: 'cello', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'tango8', bass: 'tango', pad: 'sustain', bell: 0,
       form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'cello' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'strings' })] },
     form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.6, { oct: -7 }), F('A2', 'lead', 0.66, { oct: -7, echo: 'strings' }), F('B', 'lead2', 0.8, { duet: 'cello' }), F('A3', 'lead', 0.55, { oct: -7 }), F('bridge', 0, 0.35, { n: 1 })] },
+  mukjeok: { tonic: 55, mode: 'minor', bpm: 76, meter: 4, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'harp', acc: 'inkrain8', bass: 'half', drum: 'b_mukjeok', drumIn: null, pad: 'swell', bell: 0.1, soft: 0.9, bshape: true,
+    bt: { bpm: 90, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'piano', acc: 'inkrain16', bass: 'half', drum: 'b_mukjeok2', pad: 'swell', bell: 0.1,
+      form: [F('A', 'lead', 0.88, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { oct: -7, echo: 'harp' })] },
+    form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.92, { duet: 'shakuhachi' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'harp' })] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = '';
 
+const bshape = p => !!(p.battle || p.bshape);
 function battleOf(p) {
   const b = p.bt || {};
   return { ...p, battle: true, meter: 4, rhy: 'battle', acc: 'battle', bass: 'battle', drumIn: null, pad: 'light', accIns: null, counter: p.counter, ...b,
@@ -321,7 +333,7 @@ function makeSong(p, key, loop) {
   const A = period(theme);
   const src = {
     A, A2: A.map(ph => variant(ph, vary)),
-    B: p.battle ? period(vary, { start: 9, peak: 3 }) : period(vary, { c1: pick(vary, prog.bA), c2: pick(vary, prog.bC), start: 9 + Math.floor(vary() * 2), peak: 3, end1: 6, end2: 4 }),
+    B: bshape(p) ? period(vary, { start: 9, peak: 3 }) : period(vary, { c1: pick(vary, prog.bA), c2: pick(vary, prog.bC), start: 9 + Math.floor(vary() * 2), peak: 3, end1: 6, end2: 4 }),
     C: period(vary, { c1: pick(vary, prog.bA), start: 3, peak: 2, end1: 4 }),
     A3: [A[0], variant(A[1], vary)],
   };
@@ -338,7 +350,7 @@ function makeSong(p, key, loop) {
     src[f.s].forEach((ph, pj) => ph.bars.forEach((b, i) => bars.push({ sec: f.s, chord: ph.chords[i], mel: b, lead, oct: f.oct || 0, inten: f.v, echo: f.echo, duet: f.duet, trem: f.trem, last: i === 3, pi: i, pj })));
   });
   if (loopStart === bars.length) loopStart = 0;
-  return { bars, loopStart: p.battle ? 0 : loopStart, midi, mod7, chordTones };
+  return { bars, loopStart: bshape(p) ? 0 : loopStart, midi, mod7, chordTones };
 }
 
 const DYN = [0.84, 0.95, 1.08, 0.86];
@@ -368,7 +380,7 @@ function playBar(p, S, bar, t, beat) {
     }
     if (bar.echo && pos + 1 < mb && tones.includes(mod7(d))) playNote(bar.echo, hm(d - 7), t + (pos + 1) * beat + human(), Math.min(len, 1.5) * beat, hv(0.36 * inten), { expr: true });
   });
-  const answer = !bar.echo && !p.battle && melEnd && melEnd[2] >= 1.5 && melEnd[0] <= mb - 1.5 && (bar.sec !== 'A' || (bar.last && Math.random() < 0.5));
+  const answer = !bar.echo && !bshape(p) && melEnd && melEnd[2] >= 1.5 && melEnd[0] <= mb - 1.5 && (bar.sec !== 'A' || (bar.last && Math.random() < 0.5));
   if (answer) {
     const src = (S.bars.find(b => b.sec === 'A')?.mel || []).slice(0, 3);
     let at = melEnd[0] + 0.5;
@@ -394,7 +406,7 @@ function playBar(p, S, bar, t, beat) {
       default: playNote(bI, bass, t, mb * beat, hv(bv), { swell: true });
     }
   }
-  const padOn = p.pad === 'none' ? false : p.pad === 'sustain' || p.pad === 'open' || p.battle ? true
+  const padOn = p.pad === 'none' ? false : p.pad === 'sustain' || p.pad === 'open' || bshape(p) ? true
     : p.pad === 'light' ? bar.sec === 'B' || bar.sec === 'C'
     : ['A2', 'B', 'C'].includes(bar.sec) || (bar.sec === 'A3' && !bar.last);
   if (padOn && bar.sec !== 'drop' && !(bar.lead === 'strings' && bar.mel.length)) {
@@ -402,11 +414,11 @@ function playBar(p, S, bar, t, beat) {
     const notes = p.pad === 'open' ? [root, root + 4, root + 7] : tri;
     notes.forEach(d => playNote('strings', hm(d - 7, p.tonic), t + 0.05, mb * beat, hv(pv), { swell: true }));
   }
-  if (p.bell > 0 && (bar.mel.length || bar.sec === 'intro') && Math.random() < p.bell * (bar.sec === 'B' ? 1.4 : 0.6) && (bar.sec === 'intro' || barNo % (p.battle ? 2 : 4) === 0)) playNote('bell', hm(root + 7, p.tonic), t + (p.battle ? 0 : Math.min(2, mb - 1) * beat), 2 * beat, 0.55);
+  if (p.bell > 0 && (bar.mel.length || bar.sec === 'intro') && Math.random() < p.bell * (bar.sec === 'B' ? 1.4 : 0.6) && (bar.sec === 'intro' || barNo % (bshape(p) ? 2 : 4) === 0)) playNote('bell', hm(root + 7, p.tonic), t + (bshape(p) ? 0 : Math.min(2, mb - 1) * beat), 2 * beat, 0.55);
   if (p.drum && (!p.drumIn || p.drumIn.includes(bar.sec) || bar.sec === 'drop')) {
     const set = DRUM[p.drum]; if (set) {
       const hits = (bar.last ? set.fill : barNo % 2 ? set.alt : set.main).filter(([pos]) => pos < mb);
-      const dv = p.battle ? 0.95 : 0.6 + 0.35 * inten;
+      const dv = bshape(p) ? 0.95 : 0.6 + 0.35 * inten;
       if (p.drum !== 'pulse' || barNo % 2 === 0 || bar.last) hits.forEach(([pos, v, k]) => playDrum(t + pos * beat + human() * 0.5, hv(v * dv), k));
     }
   }

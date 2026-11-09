@@ -126,6 +126,9 @@ export function makeRoom(N, defs) {
       case 'stone': if (u < .07 || v < .07) return sh(gg.a, .6); return hash(tx, ty) < .5 ? ga : gb;
       case 'check': if (u < .04 || v < .04) return gd; return ((Math.floor(gx * 2) + Math.floor(gy * 2)) % 2) ? gb : ga;
       case 'herring': { const k = Math.floor(gx * 2 + gy * 2) % 2; if (((gx * 2 - gy * 2) % 1 + 1) % 1 < .08) return gd; return k ? gb : ga; }
+      case 'slat': { const sv = (gx * 6) % 1; if (sv < .12) return gd; return Math.floor(gx * 6) % 2 ? gb : (hash(x, y >> 1) < .08 ? gl : ga); }
+      case 'cobble': { const cx = Math.floor(gx * 2 + (Math.floor(gy * 2) % 2) * .5), cy = Math.floor(gy * 2), cu = (gx * 2 + (cy % 2) * .5) % 1, cv = (gy * 2) % 1; if (cu < .08 || cv < .08) return sh(gg.a, .58); return hash(cx, cy) < .4 ? gb : hash(cx + 7, cy) < .2 ? gl : ga; }
+      case 'wanja': { const qx = Math.floor(gx * 4) % 4, qy = Math.floor(gy * 4) % 4, line = (qy === 0 && qx !== 3) || (qx === 0 && qy !== 0 && qy !== 3) || (qy === 2 && qx >= 1 && qx !== 3) || (qx === 2 && qy === 1); if (u < .04 || v < .04) return gd; return line ? gd : (tx + ty) % 2 ? gb : ga; }
       default: if (u < .05 || v < .05) return gd; return (tx + ty) % 2 ? gb : (hash(x, y) < .06 ? gl : ga);
     }
   }
@@ -138,6 +141,10 @@ export function makeRoom(N, defs) {
       case 'lattice': { const q = ((t * 3) + z / 10) % 2, r = ((t * 3) - z / 10 + 40) % 2; return (q < .08 || r < .08) ? wl[side] : wc[side]; }
       case 'cloud': { const c = Math.hypot(((t * 2) % 1 - .5) * 10, ((z / 14) % 1 - .5) * 6); return c < 1.6 || (c > 2.4 && c < 2.9) ? wl[side] : wc[side]; }
       case 'brick': { const row = Math.floor(z / 7), off = row % 2 ? .25 : 0; if (z % 7 < 1 || ((t * 2 + off) % 1) < .06) return wd[side]; return hash(Math.floor(t * 2 + off), row) < .3 ? wl[side] : wc[side]; }
+      case 'plaster': { if (z > WALLH - 8 && z <= WALLH - 6) return wd[side]; const h = hash(Math.floor(t * 9), Math.floor(z / 5)); if (hash(x, y) < .05) return wd[side]; return h < .3 ? wl[side] : wc[side]; }
+      case 'saekdong': { const band = Math.floor((z - 4) / 6) % 5, cols = ['#c8382e', '#e8a53a', '#3f8a5a', '#3f6fb5', '#e6d8bc']; if (z < WALLH - 34) return hash(x, y) < .04 ? wl[side] : wc[side]; return side ? sh(cols[band], .84) : P(cols[band]); }
+      case 'wave': { const wv = Math.sin(t * Math.PI * 4) * 2.2, r = ((z + wv) % 9 + 9) % 9; return r < 1.4 ? wl[side] : r < 2.2 ? wd[side] : wc[side]; }
+      case 'blossom': { const row = Math.floor(z / 14), off = row % 2 ? .5 : 0, fx = (t * 1.2 + off) % 1, fz = (z / 14) % 1, dx = (fx - .5) * 13, dz = (fz - .5) * 14, d = Math.hypot(dx, dz), a = Math.atan2(dz, dx); if (d < 1.3) return side ? sh('#f2d06a', .84) : P('#f2d06a'); if (d < 4.2 && (d < 2.4 || Math.cos(5 * a) > -.2)) return side ? sh('#e58fa8', .84) : P('#e58fa8'); if (Math.abs(dz - dx * .9 - 5) < .7 && d > 4.2 && d < 8) return wd[side]; return hash(x, y) < .03 ? wl[side] : wc[side]; }
       default: if ((z % 16) < 1) return wl[side]; return hash(x, y) < .05 ? wl[side] : wc[side];
     }
   }

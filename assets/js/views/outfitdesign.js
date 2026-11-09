@@ -158,7 +158,7 @@ export async function designBook(box, snap, { onWear } = {}) {
         <small class="muted">${d.mine ? '내가 그림' : `${esc(d.a)} 그림${d.gift ? ` · ${esc(d.gift)}님이 보냄` : ''}`}</small>
         ${d.woven ? '<span class="chip ok">옷장에 있음</span>' : ''}</div>
       <div class="od-acts">${d.woven ? (woven.has(String(d.id)) && onWear ? `<button class="btn small primary" data-wear="${d.id}">입기</button>` : '') : `<button class="btn small primary" data-weave="${d.id}" data-here="옷 짓기">${icon('palette', 14)} 옷 짓기</button>`}
-        ${d.mine ? `<button class="btn small" data-give="${d.id}">보내기</button>` : `<button class="btn small ghost" data-report="${d.grp}">제보</button>`}
+        ${d.mine ? `<button class="btn small" data-give="${d.id}">보내기</button>` : `<button class="btn small ghost" data-report="${d.id}">제보</button>`}
         <button class="btn small ghost" data-del="${d.id}">지우기</button></div></li>`;
   box.innerHTML = `<div class="od-book">
     <div class="od-head"><span class="chip">오늘 새 도안 ${r.made_today}/${rules.per_day}</span><span class="chip">도안첩 ${r.kept}/${rules.keep}</span><span class="chip">오늘 보낸 도안 ${r.given_today}/${rules.give_day}</span>
@@ -195,12 +195,18 @@ export async function designBook(box, snap, { onWear } = {}) {
     guard(b, async () => { const res = await act('world_outfit_design_delete', { p_id: d.id }); again(); return res; });
   });
   $$('[data-restore]', box).forEach(b => b.onclick = () => guard(b, async () => { const res = await act('world_outfit_design_restore', { p_id: Number(b.dataset.restore) }); again(); return res; }));
-  $$('[data-report]', box).forEach(b => b.onclick = () => {
-    const l = openLayer({ title: '도안 제보', body: `<div class="od-weave"><p class="small">이 도안이 부적절하면 운영진에게 알립니다. 제보한 도안은 내 화면에서 숨겨집니다.</p>
-      <label class="field"><span>까닭 (200자까지)</span><textarea name="why" rows="3" maxlength="200"></textarea></label>
-      <div class="btn-row"><button class="btn danger" data-rep>제보하기</button></div></div>` });
-    $('[data-rep]', l).onclick = e => guard(e.currentTarget, async () => { const res = await act('world_outfit_design_report', { p_grp: Number(b.dataset.report), p_reason: $('textarea', l).value.trim() }); l.close(); again(); return res; });
-  });
+  $$('[data-report]', box).forEach(b => b.onclick = () => openDesignReport(Number(b.dataset.report), again));
+}
+
+export function openDesignReport(id, done) {
+  const l = openLayer({ title: '도안 제보', body: `<div class="od-weave"><p class="small">이 도안이 부적절하면 운영진에게 알립니다. 제보한 도안은 내 화면에서 숨겨집니다.</p>
+    <label class="field"><span>까닭 (200자까지)</span><textarea name="why" rows="3" maxlength="200"></textarea></label>
+    <div class="btn-row"><button class="btn danger" data-rep>제보하기</button></div></div>` });
+  $('[data-rep]', l).onclick = e => guard(e.currentTarget, async () => { const res = await act('world_outfit_design_report', { p_id: id, p_reason: $('textarea', l).value.trim() }); l.close(); done?.(); return res; });
+}
+
+export function wornDesigns(look, designs) {
+  return ['top', 'bottom'].map(s => ({ slot: s, id: Number(look?.[`${s}_d`]) })).filter(x => x.id && designs?.[x.id]).map(x => ({ ...x, name: SLOT_NAME[x.slot] }));
 }
 
 export const fmtDesign = d => `${SLOT_NAME[d.slot] || ''} · ${esc(AV[d.slot]?.[d.base]?.name || '')}${d.copies != null ? ` · 사본 ${fmt.num(d.copies)}장` : ''}`;

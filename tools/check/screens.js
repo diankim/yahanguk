@@ -32,6 +32,17 @@ async function run(name, opts, browser) {
   await Promise.all([page.waitForLoadState('networkidle').catch(() => {}), page.click('#auth-form [type=submit]')]);
   await page.waitForFunction(() => !document.querySelector('#auth-form'), null, { timeout: 30000 }).catch(() => log.pageerror.push('login: 로그인 화면이 사라지지 않음'));
   await page.waitForTimeout(2500);
+  log.notes_read = await page.evaluate(async () => {
+    const { db, rpc } = await import(new URL('assets/js/core.js', location.href).href);
+    const { data } = await db.from('world_notifications').select('id').is('read_at', null).limit(200);
+    for (const n of data || []) await rpc('world_mark_notification_read', { p_id: n.id }).catch(() => {});
+    return (data || []).length;
+  }).catch(e => 'error ' + e.message);
+  if (log.notes_read) {
+    await page.reload({ waitUntil: 'networkidle' }).catch(() => {});
+    await page.waitForFunction(() => !document.querySelector('#auth-form'), null, { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(2500);
+  }
   const shots = [];
   for (const v of VIEWS) {
     await page.evaluate(h => { location.hash = h; }, `#/${v}`);
