@@ -3,6 +3,7 @@ import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH, ZU } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
 import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
+import { drawAvatar } from '../housing/avatarsprite.js';
 import { cardName } from './card.js';
 import { GAMEDATA } from '../gamedata.js';
 import { petLine } from '../housing/petlines.js';
@@ -23,7 +24,7 @@ const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith
 
 let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0;
 let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
-let pet = null, fx = [], poops = [];
+let pet = null, fx = [], poops = [], folks = [];
 
 export async function render(root, sub) {
   el = root; ownerArg = sub || null; editing = false; pick = null; sel = null; dirty = false; pet = null; fx = [];
@@ -50,6 +51,7 @@ function resetState() {
   if (snap.role === 'owner') rememberHome(snap);
   room = makeRoom(snap.size, DEFS);
   setupPet();
+  setupFolks();
 }
 
 function drawClosed() {
@@ -138,7 +140,7 @@ function fit() {
 }
 function paint() {
   if (!cv || !room) return;
-  const pets = (pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : []).concat(poops.map(([x, y]) => ({ x, y, draw: c => { const [px, py] = c.iso(x + .5, y + .5, 0); drawEffect(c.put, 'poop', px, py + 3); } })));
+  const pets = (pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : []).concat(folks.map(f => ({ x: f.x, y: f.y, draw: c => drawFolk(c, f) })), poops.map(([x, y]) => ({ x, y, draw: c => { const [px, py] = c.iso(x + .5, y + .5, 0); drawEffect(c.put, 'poop', px, py + 3); } })));
   const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1b1d24';
   const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets, drawings: snap.drawings || {} });
   const g = cv.getContext('2d'); g.putImageData(img, 0, 0);
@@ -157,9 +159,9 @@ function loop() {
   const step = t => {
     if (!el || !cv) return;
     raf = requestAnimationFrame(step);
-    if (!pet && !fx.length) return;
+    if (!pet && !fx.length && !folks.length) return;
     if (t - lastDraw < 125 || document.hidden) return;
-    lastDraw = t; tickPet(); fx = fx.filter(f => f.until > Date.now()); paint();
+    lastDraw = t; tickPet(); folks.forEach(tickFolk); fx = fx.filter(f => f.until > Date.now()); paint();
   };
   raf = requestAnimationFrame(step);
 }
@@ -549,5 +551,42 @@ function drawPetIn(c) {
   if (st === 'eat' && pet.f % 10 < 6) drawEffect(c.put, 'bowl', sx + 8, sy + 2);
   if (snap?.pet?.mess?.sick && pet.f % 24 < 12) drawEffect(c.put, 'sick', sx - 7, top);
   for (const f of fx) drawEffect(c.put, f.key, sx, top - 2 - Math.floor((1600 - (f.until - Date.now())) / 300));
+}
+function freeTiles(w, skip = []) {
+  const out = [];
+  for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y) && !skip.some(([a, b]) => a === x && b === y)) out.push([x, y]);
+  return out;
+}
+function setupFolks() {
+  folks = [];
+  const list = snap?.avatars || []; if (!list.length || !state) return;
+  const w = walkable(), taken = pet ? [[Math.round(pet.x), Math.round(pet.y)]] : [];
+  for (const a of list) {
+    const free = freeTiles(w, taken); if (!free.length) break;
+    const [x, y] = free[Math.floor(Math.random() * free.length)]; taken.push([x, y]);
+    folks.push({ id: a.id, name: a.name, look: { ...(a.look || {}) }, job: a.job, x, y, path: [], wait: 8 + Math.random() * 20, flip: Math.random() < .5, f: Math.floor(Math.random() * 40), walking: false });
+  }
+}
+function tickFolk(m) {
+  m.f++;
+  if (m.path.length) {
+    const [tx, ty] = m.path[0], dx = tx - m.x, dy = ty - m.y, sp = 0.1;
+    if (Math.abs(dx) + Math.abs(dy) <= sp) { m.x = tx; m.y = ty; m.path.shift(); if (!m.path.length) { m.walking = false; m.wait = 24 + Math.random() * 60; } }
+    else { m.x += Math.sign(dx) * Math.min(sp, Math.abs(dx)); m.y += Math.sign(dy) * Math.min(sp, Math.abs(dy)); m.flip = (dx - dy) < 0; m.walking = true; }
+    return;
+  }
+  if (--m.wait > 0) return;
+  const w = walkable(), sx = Math.round(m.x), sy = Math.round(m.y);
+  const others = folks.filter(o => o !== m).map(o => [Math.round(o.x), Math.round(o.y)]);
+  const near = freeTiles(w, others).filter(([x, y]) => Math.abs(x - sx) + Math.abs(y - sy) <= 4 && (x !== sx || y !== sy));
+  const target = near[Math.floor(Math.random() * near.length)];
+  const path = target && pathTo(w, sx, sy, target[0], target[1]);
+  m.x = sx; m.y = sy;
+  if (path && path.length) m.path = path; else m.wait = 30;
+}
+function drawFolk(c, m) {
+  const [sx, sy] = c.iso(m.x + .5, m.y + .5, 0);
+  const frame = m.walking ? (m.f % 4 < 2 ? 'walk' : 'stand') : m.f % 36 < 2 ? 'blink' : 'stand';
+  drawAvatar(c.put, m.look, frame, sx, sy + 4, m.flip, m.job);
 }
 window.addEventListener('resize', () => { if (cv && room) { fit(); paint(); } });

@@ -57,8 +57,11 @@ export function avatarPixels(look, frame = 'stand') {
   return out;
 }
 
-export function drawAvatar(putPx, look, frame, x0, y0, flip = false) {
-  const px = avatarPixels(look, frame), W = AW, H = AH, gx = Math.round(x0 - W / 2), gy = Math.round(y0 - H);
+const pxCache = new Map();
+export function drawAvatar(putPx, look, frame, x0, y0, flip = false, job) {
+  const l = fixLook(look, job), key = JSON.stringify([l, frame]);
+  if (!pxCache.has(key)) { if (pxCache.size > 64) pxCache.clear(); pxCache.set(key, avatarPixels(l, frame)); }
+  const px = pxCache.get(key), W = AW, H = AH, gx = Math.round(x0 - W / 2), gy = Math.round(y0 - H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const c = px[y * W + (flip ? W - 1 - x : x)];
     if (c) putPx(gx + x, gy + y, P(c));

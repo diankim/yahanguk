@@ -84,4 +84,24 @@ begin
   end if;
 end $p$;
 
+create or replace function public.world_avatar_room(p_owner uuid)
+ returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public'
+as $f$
+begin
+  return (select coalesce(jsonb_agg(jsonb_build_object('id', c.owner_id, 'name', c.character_name, 'job', c.job_key, 'look', a.look) order by c.owner_id = p_owner desc), '[]'::jsonb)
+    from public.world_characters c left join public.world_avatars a on a.owner_id = c.owner_id
+   where c.owner_id in (p_owner, public.world_housing_mate(p_owner)) and coalesce(a.home_on, true));
+end $f$;
+revoke all on function public.world_avatar_room(uuid) from public, anon, authenticated;
+grant execute on function public.world_avatar_room(uuid) to fn_owner_field;
+
+do $p$
+declare d text := pg_get_functiondef((select p.oid from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'world_housing_snapshot'));
+  a text := $q$'drawings', public.world_drawing_room(uid, h.wall),$q$;
+begin
+  if position('world_avatar_room' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '별채 정보 함수 모양이 예상과 다릅니다'; end if;
+  execute replace(d, a, a || $q$ 'avatars', public.world_avatar_room(own),$q$);
+end $p$;
+
 update public.world_app_meta set value = '20261110000000' where key = 'db_version';
