@@ -292,18 +292,18 @@ CALM_FRONT = [
 
 SPORTS_FRONT = [
     "............................",
-    "............................",
-    "............................",
-    "..........hhhhhhhh..........",
+    "...........h..h.h...........",
+    ".........hhh.hhhhh.h........",
     "........hhhhhhhhhhhh........",
+    ".......hhhhhhhhhhhhhh.......",
     ".......hhhhhhhhhhhhhh.......",
     "......hhhhhhhhhhhhhhhh......",
     ".....hhhhhhhhhhhhhhhhhh.....",
     ".....hhhhhhhhhhhhhhhhhh.....",
     "....hhhhhhhhhhhhhhhhhhhh....",
     "....hhhhhhhhhhhhhhhhhhhh....",
-    "....hhhhh.hh.hh.hh.hhhhh....",
-    "....hhh..............hhh....",
+    "....hhhhh..........hhhhh....",
+    "....hhhh............hhhh....",
     ".....hh..............hh.....",
     ".....h................h.....",
 ]
@@ -326,7 +326,7 @@ def calm():
 def sports():
     f = ascii_grid(SPORTS_FRONT)
     shade_front(f)
-    for x, y in ((9, 6), (12, 5), (15, 5), (18, 6), (7, 8), (20, 8), (10, 9), (13, 9), (16, 9), (19, 9)):
+    for x, y in ((10, 9), (10, 8), (11, 7), (11, 6), (12, 5), (14, 9), (14, 8), (14, 7), (14, 6), (14, 5), (14, 4), (18, 9), (18, 8), (17, 7), (17, 6), (16, 5), (7, 8), (20, 8)):
         if f.p.get((x, y)) in ('h', 'g', 'k'):
             f.p[(x, y)] = 'k'
     return f, Grid()
