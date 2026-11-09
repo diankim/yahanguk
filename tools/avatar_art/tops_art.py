@@ -90,7 +90,7 @@ def top_grid(key):
     for y, r in enumerate(rows):
         assert len(r) == 16, (key, y, len(r))
         for x, ch in enumerate(r):
-            if ch != '.' and not (y in (5, 6) and x in (2, 13)):
+            if ch != '.' and not (y in (5, 6) and x in (2, 13)) and not (y in (1, 2) and (x < 3 or x > 12)):
                 g.set(OX + x, OY + y, ch)
     return name, pal, g
 
@@ -101,12 +101,14 @@ ACC = {
         "aca",
         ".ab",
     ]),
-    'glasses': ('둥근 안경', {'a': '#6a5446', 'b': '#c9d6e0'}, 5, 13, [
-        ".aaaaa......aaaaa.",
-        "a.....aaaaaa.....a",
-        "a.....a....a.....a",
-        "a.....a....a.....a",
-        ".aaaaa......aaaaa.",
+    'glasses': ('둥근 안경', {'a': '#6a5446', 'b': '#c9d6e0'}, 4, 13, [
+        ".aaaaaa......aaaaaa.",
+        "a......a....a......a",
+        "a......a....a......a",
+        "a......aaaaaa......a",
+        "a......a....a......a",
+        "a......a....a......a",
+        ".aaaaaa......aaaaaa.",
     ]),
     'earring': ('구슬 귀걸이', {'a': '#d6aa52', 'b': '#e86a6a', 'c': '#fff4d0'}, 3, 18, [
         "a....................a",
