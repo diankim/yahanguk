@@ -3,7 +3,7 @@ import { load, errorBox } from './common.js';
 import { AV, avatarImage, fixLook } from '../housing/avatarsprite.js';
 
 let draft = null, draftOwner = '', homeOn = true, tab = 'hair';
-const CROP = { head: [1, 0, 28, 25], face: [5, 9, 20, 13], top: [5, 21, 20, 12], legs: [5, 24, 20, 12], all: null };
+const CROP = { head: [0, 0, 30, 25], face: [5, 11, 20, 12], top: [4, 22, 22, 12], legs: [5, 27, 20, 9], all: null };
 const TABS = [
   ['skin', '피부', 'face', [['skin', 'skins', 's']]],
   ['hair', '머리', 'head', [['hair_color', 'hairColors', 'h'], ['hair', 'hair']]],

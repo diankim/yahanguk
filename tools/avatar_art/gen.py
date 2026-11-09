@@ -22,7 +22,7 @@ def part(g):
 
 out = dict(w=D.W, h=D.H, fixed=D.FIXED)
 out['skins'] = {k: dict(name=n, s=c, S=shade(c, .9)) for k, (n, c) in D.SKINS.items()}
-out['hairColors'] = {k: dict(name=n, h=c, H=shade(c, .72), i=shade(c, 1.22), k=shade(c, .84)) for k, (n, c) in D.HAIR_COLORS.items()}
+out['hairColors'] = {k: dict(name=n, h=c, H=shade(c, .72), i=shade(c, 1.22), j=shade(c, 1.5), k=shade(c, .84)) for k, (n, c) in D.HAIR_COLORS.items()}
 out['eyeColors'] = {k: dict(name=n, e=c, E=shade(c, .55), f=shade(c, 1.45)) for k, (n, c) in D.EYE_COLORS.items()}
 out['body'] = {f: part(D.body(f)) for f in ('stand', 'walk')}
 out['hair'] = {k: dict(name=n, back=part(D.hair_back(b)), front=part(D.hair_front(fr, lk))) for k, (n, b, fr, lk) in D.HAIRS.items()}

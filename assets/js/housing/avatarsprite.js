@@ -49,7 +49,7 @@ export function avatarPixels(look, frame = 'stand') {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= W || ny >= H || !px[ny * W + nx]) continue;
-      const c = rgb(px[ny * W + nx]).map((v, i) => Math.round(v * 0.42 + OUT[i] * 0.58)), s = c[0] + c[1] + c[2];
+      const c = rgb(px[ny * W + nx]).map((v, i) => Math.round(v * 0.25 + OUT[i] * 0.75)), s = c[0] + c[1] + c[2];
       if (s < sum) { sum = s; best = c; }
     }
     if (best) out[y * W + x] = hex(best);
