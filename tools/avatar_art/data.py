@@ -84,8 +84,8 @@ def body(frame):
     g = Grid()
     g.ell(CX, FACE_CY, FACE_RX, FACE_RY, 's', lambda x, y: y >= 12)
     g.rect(13, 22, 14, 23, 'S')
-    g.sym(7, 27, 's')
-    g.sym(7, 28, 's')
+    g.sym(8, 27, 's')
+    g.sym(8, 28, 's')
     lift = 1 if frame == 'walk' else 0
     g.rect(11, 30, 12, 31 - lift, 's')
     g.rect(15, 30, 16, 31, 's')
@@ -98,12 +98,17 @@ FRINGES = {
     'side': [15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 11],
     'part': [14, 14, 13, 13, 12, 12, 11, 10, 10, 11, 12, 12, 13, 13, 14, 14],
     'soft': [13, 14, 13, 12, 13, 14, 13, 12, 12, 13, 14, 13, 12, 13, 14, 13],
+    'curl': [13, 14, 14, 13, 12, 13, 14, 14, 13, 12, 13, 14, 14, 13, 12, 13],
 }
 EYE_COLS = set(range(6, 11)) | set(range(17, 22))
 SPIKES = [(1, 7), (0, 10), (1, 14), (2, 18), (26, 7), (27, 10), (26, 14), (25, 18), (4, 4), (23, 4), (3, 5), (24, 5)]
 
 
-def hair_front(fringe, locks):
+def wave(y):
+    return (0, 1, 1, 0, -1, -1)[(y // 2) % 6]
+
+
+def hair_front(fringe, locks, kind=''):
     g = Grid()
     pat = FRINGES[fringe]
     for x in range(W):
@@ -119,9 +124,18 @@ def hair_front(fringe, locks):
         g.set(x, tip, 'H')
     end = int(12 + 10 * locks)
     for y in range(12, end + 1):
+        o = wave(y) if kind == 'wavy' and y > 15 else 0
         for x in (4, 5, 6):
-            g.sym(x, y, 'h' if x < 6 or y < 18 else 'H')
+            g.sym(x - o, y, 'h' if x < 6 or y < 18 else 'H')
     g.sym(4, end + 1, 'H')
+    if kind == 'curly':
+        for x, y in ((8, 3), (15, 2), (4, 7), (11, 6), (18, 6), (22, 9), (7, 10), (14, 9)):
+            for dx, dy, c in ((1, 0, 'H'), (2, 0, 'H'), (0, 1, 'H'), (1, 1, 'i'), (2, 1, 'i'), (3, 1, 'H'), (1, 2, 'H'), (2, 2, 'H')):
+                if g.p.get((x + dx, y + dy)) == 'h':
+                    g.set(x + dx, y + dy, c)
+    if kind == 'wavy':
+        for y in range(16, end + 1, 4):
+            g.sym(5 - wave(y), y, 'i')
     for pts in ([(7, 6), (6, 7), (6, 8), (5, 9), (5, 10)], [(11, 5), (11, 6), (10, 7), (10, 8), (9, 9)], [(13, 6), (13, 7), (13, 8), (13, 9)]):
         for x, y in pts:
             if g.p.get((x, y)) == 'h':
@@ -167,6 +181,23 @@ def hair_back(kind):
             x = 22 + (y % 2)
             g.rect(x, y, x + 1, y, 'h' if y % 3 else 'H')
         g.rect(22, 32, 23, 32, 'H')
+    elif kind == 'curly':
+        for a in range(0, 360, 22):
+            t = math.radians(a)
+            x = CX + (HEAD_RX + 1.0) * math.cos(t)
+            y = HEAD_CY + (HEAD_RY + 1.0) * math.sin(t)
+            if y < 21:
+                g.ell(x, y, 1.7, 1.7, 'k')
+        g.srect(1, 12, 4, 20, 'k')
+        for cx, cy in ((2.5, 20.5), (3.5, 22)):
+            g.ell(cx, cy, 1.8, 1.8, 'k'); g.ell(W - cx, cy, 1.8, 1.8, 'k')
+    elif kind == 'wavy':
+        for y in range(12, 32):
+            o = wave(y)
+            g.srect(2 - o, y, 6 - o, y, 'k')
+            g.sym(3 - o, y, 'H' if (y // 2) % 3 == 0 else 'k')
+        for y in (32, 33):
+            g.srect(3 - wave(y), y, 6 - wave(y), y, 'H' if y == 33 else 'k')
     elif kind == 'spiky':
         for bx, by, dx, dy in ((6, 3, -1, -1), (10, 1, -1, -1), (14, 0, 0, -1), (19, 1, 1, -1), (22, 3, 1, -1), (1, 9, -1, 0), (26, 9, 1, 0)):
             for t in range(2):
@@ -183,19 +214,21 @@ HAIRS = {
     'knot': ('상투', 'knot', 'part', 0.6),
     'braid': ('땋은 머리', 'braid', 'part', 0.9),
     'spiky': ('뻗친 머리', 'spiky', 'jag', 0.7),
+    'curly': ('복슬 곱슬머리', 'curly', 'curl', 0.8),
+    'wavy': ('물결 긴 머리', 'wavy', 'part', 1.1),
 }
 
 EX, EY = 6, 14
 
 EYE_SHAPES = {
-    'round': ['lllll', '.EEEw', '.EeeE', '.eeee', '..ff.'],
-    'droopy': ['..lll', '.lEEw', 'lEeeE', '.eeef', '..ff.'],
-    'sparkle': ['.llll', 'lEwEw', 'lEeeE', '.ewef', '..ff.'],
-    'cat': ['l....', '.llll', '.EEEw', '.eeeE', '..ff.'],
-    'sleepy': ['.....', 'lllll', '.EEEw', '.eeef', '.....'],
+    'round': ['lllll', '.wEEE', '.EeeE', '.eeee', '..ff.'],
+    'droopy': ['..lll', '.lwEE', 'lEeeE', '.eeef', '..ff.'],
+    'sparkle': ['.llll', 'lwEwE', 'lEeeE', '.feew', '..ff.'],
+    'cat': ['l....', '.llll', '.wEEE', '.eeeE', '..ff.'],
+    'sleepy': ['.....', 'lllll', '.wEEE', '.feee', '.....'],
     'sharp': ['l....', '.llll', '..EEE', '..lll', '.....'],
-    'teary': ['.llll', 'lEEEw', 'lEeeE', '.eeef', '.vvv.'],
-    'dot': ['.....', '..EE.', '..Ew.', '.....', '.....'],
+    'teary': ['.llll', 'lwEEE', 'lEeeE', '.feee', '.vvv.'],
+    'dot': ['.....', '..wE.', '..EE.', '.....', '.....'],
     'smile': ['.....', '.lll.', 'l...l', '.....', '.....'],
     'wink': None,
 }
@@ -209,13 +242,23 @@ def eye(kind, closed):
         right = EYE_SHAPES['smile']
     if closed and kind != 'smile':
         left, right = CLOSED, (EYE_SHAPES['smile'] if kind == 'wink' else CLOSED)
-    for rows, side in ((left, 0), (right, 1)):
-        for dy, r in enumerate(rows):
-            for dx, ch in enumerate(r):
-                if ch != '.':
-                    x = EX + dx
-                    g.set(x if side == 0 else W - 1 - x, EY + dy, ch)
-    for x in (6, 7):
+    for dy, r in enumerate(left):
+        for dx, ch in enumerate(r):
+            if ch != '.':
+                g.set(EX + dx, EY + dy, ch)
+    rx = W - EX - 5
+    for dy, r in enumerate(right):
+        m = list(r[::-1])
+        for c in range(5):
+            if m[c] == 'w':
+                m[c] = r[c] if r[c] != 'w' else 'E'
+        for c in range(5):
+            if r[c] == 'w':
+                m[c] = 'w'
+        for dx, ch in enumerate(m):
+            if ch != '.':
+                g.set(rx + dx, EY + dy, ch)
+    for x in (8, 9):
         g.sym(x, EY + 5, 'p')
     return g
 
@@ -253,8 +296,8 @@ MOUTHS = {
 
 def half(y, flare):
     if y == TOP + 1:
-        return 5
-    return 6 + (max(0, y - 27) // flare if flare else 0)
+        return 4
+    return 5 + (max(0, y - 27) // flare if flare else 0)
 
 
 def coat(g, length=29, flare=0, collar=True, belt=None):
@@ -263,8 +306,8 @@ def coat(g, length=29, flare=0, collar=True, belt=None):
         g.srect(14 - hw, y, 13, y, 'a')
         g.sym(14 - hw, y, 'b')
     for y in range(TOP + 2, 27):
-        g.sym(7, y, 'b')
-    g.sym(6, 24, 'b')
+        g.sym(8, y, 'b')
+    g.sym(7, 24, 'b')
     if collar:
         g.rect(12, TOP + 1, 15, TOP + 1, 'c')
         g.rect(13, TOP + 2, 14, TOP + 2, 'c')
@@ -277,10 +320,10 @@ def coat(g, length=29, flare=0, collar=True, belt=None):
 def pants(g, frame, shoe='z'):
     lift = 1 if frame == 'walk' else 0
     for y in range(28, 31):
-        g.srect(9, y, 13, y, 'a')
-    g.sym(9, 30, 'b')
-    g.rect(10, 31 - lift, 12, 31 - lift, 'a')
-    g.rect(15, 31, 17, 31, 'a')
+        g.srect(10, y, 13, y, 'a')
+    g.sym(10, 30, 'b')
+    g.rect(11, 31 - lift, 12, 31 - lift, 'a')
+    g.rect(15, 31, 16, 31, 'a')
     g.rect(10, 32 - lift, 12, 32 - lift, shoe)
     g.rect(15, 32, 17, 32, shoe)
 
@@ -288,7 +331,7 @@ def pants(g, frame, shoe='z'):
 def skirt(g, frame, shoe='z'):
     lift = 1 if frame == 'walk' else 0
     for y in range(26, 32):
-        hw = 6 + (y - 26) // 2
+        hw = 5 + (y - 26) // 2
         g.srect(14 - hw, y, 13, y, 'a')
         g.sym(14 - hw, y, 'b')
     for y in range(27, 32, 2):
@@ -301,10 +344,10 @@ def top_guard():
     g = Grid()
     coat(g, belt=27, collar=False)
     for y in range(TOP + 2, 30, 2):
-        for x in range(9, 14):
+        for x in range(10, 14):
             if (x + y) % 2 == 0:
                 g.sym(x, y, 'b')
-    g.srect(6, TOP + 1, 9, TOP + 2, 'd')
+    g.srect(7, TOP + 1, 9, TOP + 2, 'd')
     return g, {'a': '#5c6470', 'b': '#8a94a0', 'd': '#c9a24a'}
 
 
@@ -318,7 +361,7 @@ def top_exorcist():
     g = Grid()
     coat(g, length=31, flare=2)
     g.rect(13, TOP + 3, 14, 31, 'c')
-    g.srect(8, 26, 13, 26, 'd')
+    g.srect(9, 26, 13, 26, 'd')
     return g, {'a': '#eceae4', 'b': '#cfcbc0', 'c': '#55624f', 'd': '#a8452c'}
 
 
@@ -345,8 +388,8 @@ def top_shadow():
     g.rect(13, TOP, 14, TOP, 'e')
     g.rect(13, TOP + 2, 13, TOP + 2, 'e'); g.rect(13, TOP + 4, 13, TOP + 4, 'e')
     for y in range(TOP + 3, 31):
-        g.set(19, y, 'd')
-    g.set(20, 30, 'd')
+        g.set(18, y, 'd')
+    g.set(19, 30, 'd')
     return g, {'a': '#2e2a36', 'b': '#3e3848', 'c': '#e8e2dc', 'd': '#9a2a36', 'e': '#d6aa52'}
 
 
@@ -356,9 +399,9 @@ def top_jeogori():
         hw = half(y, 0)
         g.srect(14 - hw, y, 13, y, 'a')
     for y in range(TOP + 2, 27):
-        g.sym(7, y, 'b')
-    g.sym(6, 24, 'b')
-    g.sym(7, 26, 'c')
+        g.sym(8, y, 'b')
+    g.sym(7, 24, 'b')
+    g.sym(8, 26, 'c')
     g.rect(12, TOP + 1, 15, TOP + 1, 'c')
     g.rect(13, TOP, 14, TOP, 'c')
     g.rect(14, TOP + 2, 15, TOP + 6, 'd')
