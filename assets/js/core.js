@@ -533,7 +533,7 @@ export function emblem(ownerId, profile, size = 40) {
 function emblemBase(ownerId, profile, size) {
   const p = profileOf(ownerId, profile), col = EMBLEM_COLORS[p.color][1];
   if (typeof profile?.avatar === 'string' && /^data:image\/(webp|jpeg|png);base64,/.test(profile.avatar))
-    return `<span class="emblem photo" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><img src="${profile.avatar}" alt="" width="${size}" height="${size}"></span>`;
+    return `<span class="emblem photo${profile.avatar_px ? ' px' : ''}" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><img src="${profile.avatar}" alt="" width="${size}" height="${size}"></span>`;
   return `<span class="emblem" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" width="${Math.round(size * 0.58)}" height="${Math.round(size * 0.58)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${EMBLEMS[p.emblem][1]}"/></svg></span>`;
 }
 export const LEVEL_CAP = 40;

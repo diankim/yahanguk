@@ -1,4 +1,5 @@
 import { petImage } from '../housing/petsprite.js';
+import { avatarImage } from '../housing/avatarsprite.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
@@ -55,7 +56,8 @@ async function draw(box, id) {
           ${c.display_title ? `<p class="title-badge">「${esc(c.display_title)}」</p>` : ''}
           <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id ? `<p><span class="fchip" style="--fc:${factionColor(c.major_faction_id)}">${esc(nameOf(c.major_faction_id))}${c.faction_rank ? ` · ${esc(c.faction_rank)}` : ''}</span></p>` : ''}${c.tn_champ ? `<p><span class="chip tn-badge">${c.tn_champ === 'team' ? '비무 장원 · 팀전' : '비무 장원'}</span></p>` : ''}
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div>
-        ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div>
+        <div class="pc-side"><div class="pc-look" title="내 모습"><img src="${avatarImage(c.look, { scale: 3, job: c.job_key })}" alt=""></div>
+        ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div></div>
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
       ${rel === 'friends' && noteOf(c.owner_id) ? `<p class="f-memo">${noteOf(c.owner_id).nick ? `<b>내가 붙인 별명</b> ${esc(noteOf(c.owner_id).nick)}` : ''}${noteOf(c.owner_id).nick && noteOf(c.owner_id).memo ? '<br>' : ''}${esc(noteOf(c.owner_id).memo || '')}</p>` : ''}
       <dl class="kv info">

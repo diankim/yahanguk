@@ -1,10 +1,8 @@
 import { AV } from './avatar.js';
 import { P } from './render.js';
 
-const OUT = [40, 28, 24];
+const OUT = '#1a120e';
 const SLOTS = [['skin', 'skins'], ['hair', 'hair'], ['hair_color', 'hairColors'], ['eyes', 'eyes'], ['eye_color', 'eyeColors'], ['mouth', 'mouth'], ['top', 'top'], ['bottom', 'bottom']];
-const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-const hex = c => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
 
 export function defaultLook(job) {
   const d = AV.jobDefault[job] || AV.jobDefault.artificer;
@@ -45,14 +43,7 @@ export function avatarPixels(look, frame = 'stand') {
   const out = px.slice();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (px[y * W + x]) continue;
-    let best = null, sum = 1e9;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= W || ny >= H || !px[ny * W + nx]) continue;
-      const c = rgb(px[ny * W + nx]).map((v, i) => Math.round(v * 0.25 + OUT[i] * 0.75)), s = c[0] + c[1] + c[2];
-      if (s < sum) { sum = s; best = c; }
-    }
-    if (best) out[y * W + x] = hex(best);
+    if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const nx = x + dx, ny = y + dy; return nx >= 0 && ny >= 0 && nx < W && ny < H && px[ny * W + nx]; })) out[y * W + x] = OUT;
   }
   return out;
 }

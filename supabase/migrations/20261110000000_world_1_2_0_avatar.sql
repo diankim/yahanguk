@@ -104,4 +104,46 @@ begin
   execute replace(d, a, a || $q$ 'avatars', public.world_avatar_room(own),$q$);
 end $p$;
 
+create or replace function public.world_avatar_look_of(p_owner uuid)
+ returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public'
+as $f$
+begin
+  return (select a.look from public.world_avatars a where a.owner_id = p_owner);
+end $f$;
+revoke all on function public.world_avatar_look_of(uuid) from public, anon, authenticated;
+grant execute on function public.world_avatar_look_of(uuid) to fn_owner_field;
+
+do $p$
+declare d text := pg_get_functiondef((select p.oid from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'world_character_card'));
+  a text := $q$'pet', public.world_pet_profile_of(c.owner_id),$q$;
+begin
+  if position('world_avatar_look_of' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception '조사원 카드 함수 모양이 예상과 다릅니다'; end if;
+  execute replace(d, a, a || $q$ 'look', public.world_avatar_look_of(c.owner_id),$q$);
+end $p$;
+
+create or replace function public.world_set_avatar_px(p_image text)
+ returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public'
+as $f$
+declare uid uuid := public.fn_owner_auth_uid();
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if p_image is null or length(p_image) > 40000 or p_image !~ '^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$' then raise exception '얼굴 그림 형식이 올바르지 않습니다.'; end if;
+  update public.world_characters set profile = coalesce(profile, '{}'::jsonb) || jsonb_build_object('avatar', p_image, 'avatar_px', true), updated_at = now() where owner_id = uid;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  return jsonb_build_object('ok', true, 'content', '내 모습을 얼굴로 씁니다.');
+end $f$;
+revoke all on function public.world_set_avatar_px(text) from public, anon;
+grant execute on function public.world_set_avatar_px(text) to authenticated;
+
+do $p$
+declare d text := pg_get_functiondef((select p.oid from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'world_set_avatar'));
+  a text := $q$coalesce(profile, '{}'::jsonb) - 'avatar'$q$;
+  b text := $q$ELSE coalesce(profile, '{}'::jsonb) || jsonb_build_object('avatar', p_image)$q$;
+begin
+  if position('avatar_px' in d) > 0 then return; end if;
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 or (length(d) - length(replace(d, b, ''))) / length(b) <> 1 then raise exception '프로필 사진 함수 모양이 예상과 다릅니다'; end if;
+  execute replace(replace(d, a, a || $q$ - 'avatar_px'$q$), b, $q$ELSE (coalesce(profile, '{}'::jsonb) - 'avatar_px') || jsonb_build_object('avatar', p_image)$q$);
+end $p$;
+
 update public.world_app_meta set value = '20261110000000' where key = 'db_version';

@@ -862,6 +862,7 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .foe-list small { font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
 .emblem.corpse { background: color-mix(in srgb, var(--bad) 20%, var(--surface-2)); color: var(--bad); width: 34px; height: 34px; }
 .emblem.photo { overflow: hidden; padding: 0; } .emblem.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.emblem.photo.px img { image-rendering: pixelated; }
 .find-pop { position: fixed; z-index: 90; left: 50%; top: 22%; transform: translate(-50%, 0); display: flex; gap: 12px; align-items: center; max-width: min(440px, calc(100vw - 32px));
   padding: 14px 16px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--gold); box-shadow: var(--shadow); animation: pop .25s ease-out; }
 .find-pop div { display: grid; gap: 2px; } .find-pop span { font-size: calc(13px * var(--fz, 1)); } .find-pop .ico { color: var(--gold); }
@@ -2553,7 +2554,9 @@ b.sealed { color: var(--bad); }
 .pet-card em.on { color: var(--ok); font-style: normal; font-size: calc(11px * var(--fz, 1)); }
 @media (max-width: 560px) { .pet-slots { grid-template-columns: 1fr; } }
 .pet-act em { font-style: normal; font-size: calc(11px * var(--fz, 1)); color: var(--gold); }
-.pc-pet { display: grid; justify-items: center; align-self: end; margin-left: auto; }
+.pc-side { display: flex; align-items: flex-end; gap: 6px; align-self: end; margin-left: auto; }
+.pc-look img { image-rendering: pixelated; height: 72px; display: block; }
+.pc-pet { display: grid; justify-items: center; align-self: end; }
 .pc-pet img { image-rendering: pixelated; height: 40px; }
 .pc-pet small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
 @media (max-width: 900px) { .hs-wrap.editing { grid-template-columns: minmax(0, 1fr); } .hs-pal { max-height: none; } }
@@ -3109,6 +3112,7 @@ b.shadow { color: var(--sp); }
 .lk-frames { display: flex; gap: 6px; }
 .lk-frames img { image-rendering: pixelated; width: 44px; height: auto; border: 1px solid var(--line); border-radius: var(--r-sm); }
 .lk-home { display: flex; align-items: center; gap: 6px; font-size: calc(13px * var(--fz, 1)); }
+.lk-face { width: 26px; height: 26px; image-rendering: pixelated; border-radius: 50%; background: var(--surface-2); border: var(--bw) solid var(--line); }
 .lk-act { display: flex; gap: 6px; justify-content: center; }
 .lk-pick { padding: 10px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .lk-tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
