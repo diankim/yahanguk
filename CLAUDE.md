@@ -209,7 +209,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 탐색력 1 회복 15분(world_stamina_now·world_stamina_change /900), 노정 건량 +2.
 - 피해 계수: 근접 힘 1.0 · 술법 영기 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
 - 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 퀘스트·이야기 전 ×0.4.
-- 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
+- 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음, 진행은 trg_world_track_commissions — 토벌은 현장 승리 + 원정 귀환 기록 expedition_end의 wins(의뢰 지역이 있으면 그 지역 원정만, 1.1.1h)): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
 - 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 수치는 world_rate_rules 하나(gather_s·fish_s·search_ms·battle_ms·raid_ms → gamedata rate → rules.js GATHER_GAP·SEARCH_GAP, world_rate_check·world_guard_repeat_farming이 읽음), 간격 거절은 HINT 'rate', 끝난 전투 행동은 HINT 'no_battle' — 화면은 문구가 아니라 e.hint로 가름(1.1.0d). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid·search)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
 - 공격·방어·회피·치명타·도주 확률은 world_combat_stats 하나로 계산해 엔진과 화면이 같은 값을 쓰고, 올리기 전에 바뀔 값을 미리 보인다.
 
