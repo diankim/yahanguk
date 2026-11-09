@@ -245,6 +245,7 @@ def curly():
 
 def longcurl(low=False):
     rows = LONGCURL_FRONT if not low else ["." * 28] * 3 + ["......hhhhhhh..hhhhhhh......"] + LONGCURL_FRONT[4:]
+    rows = [r[:14] + r[:14][::-1] for r in rows]
     f, b = ascii_grid(rows), Grid()
     for y in range(0, 3):
         f.p.pop((13, y), None); f.p.pop((14, y), None)
@@ -255,10 +256,10 @@ def longcurl(low=False):
         b.p[(x, y)] = 'k'
     bumpy_back(b, 18, 32, 11, 3)
     for x in range(W):
-        if (x, 32) in b.p and x % 4 == 1:
+        if (x, 32) in b.p and min(x, W - 1 - x) % 4 == 1:
             b.p.pop((x, 32))
     for x, y in ((2, 31), (3, 30), (4, 31)):
-        b.set(x, y, 'q')
+        b.sym(x, y, 'q')
     form(b, 'k', 'h', 'q')
     for x, y, d in ((2, 21, 1), (25, 21, -1), (1, 26, 1), (26, 26, -1), (4, 24, 1), (23, 24, -1)):
         for dx, dy in ((0, 0), (d, 1), (d, 2), (0, 3)):
@@ -577,7 +578,10 @@ def layered2():
     bangs(f, {6: 13, 7: 14, 8: 12, 9: 13, 10: 14, 11: 12, 12: 13, 13: 15, 14: 13, 15: 12, 16: 14, 17: 13, 18: 12, 19: 14, 20: 13, 21: 12})
     sides(f, {11: (2, 5), 12: (2, 5), 13: (2, 5), 14: (2, 5), 15: (3, 5), 16: (4, 5)})
     shade_front(f)
-    marks(f, [(9, 4), (9, 5), (13, 3), (13, 4), (17, 4), (17, 5), (7, 8), (11, 8), (15, 8), (19, 8), (4, 9), (23, 9)])
+    for x, y0 in ((8, 6), (12, 5), (15, 5), (19, 6)):
+        for y in range(y0, 11):
+            if f.p.get((x, y)) in ('h', 'g', 'k'):
+                f.p[(x, y)] = 'k'
     return f, Grid()
 
 
