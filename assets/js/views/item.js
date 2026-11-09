@@ -204,6 +204,7 @@ function draw(box, id, inv, prices, mode) {
     ${mode === 'bag' && have > 0 ? `<h3 class="sub-h">다루기</h3>
       <div class="btn-row">
         ${USABLE[id] ? `<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>${icon('heart', 14)}<span>사용</span></button>` : ''}
+        ${it?.category === 'outfit' ? `<button class="btn small primary" data-do="wear">${icon('palette', 14)}<span>${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}</span></button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small primary" data-do="adopt">${icon('heart', 14)}<span>열기</span></button>` : ''}
         ${id === 'pet_token' ? `<button class="btn small ${have >= 5 ? 'primary' : ''}" data-do="token" ${have >= 5 ? '' : 'disabled'} title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">${icon('heart', 14)}<span>빛나는 알로 바꾸기</span></button>` : ''}
         ${it?.category === 'furniture' ? `<button class="btn small" data-do="house">${icon('home', 14)}<span>별채에서 놓기</span></button>` : ''}
@@ -247,6 +248,7 @@ function draw(box, id, inv, prices, mode) {
     const closeInfo = () => box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click();
     if (k === 'use') await useItem(id, d);
     if (k === 'adopt') await guard(d, () => act('world_pet_adopt', { p_item: id }));
+    if (k === 'wear') { if (await run(() => act('world_wardrobe_add', { p_item: id }))) closeInfo(); return; }
     if (k === 'token') await guard(d, () => act('world_pet_token_trade'));
     if (k === 'house') { closeLayers(); closeModal(); window.yahangGo?.('house'); return; }
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));

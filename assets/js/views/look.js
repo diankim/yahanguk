@@ -28,7 +28,7 @@ function pickBlock([slot, table, swatch], crop, snap) {
   const locked = keys.length - owned.length;
   if (swatch) return `<div class="lk-sws">${opts.map(k => { const n = esc(AV[table][k].name); return `<button class="lk-sw${k === cur ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}" style="--c:${AV[table][k][swatch]}"></button>`; }).join('')}</div>`;
   return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k]?.name || '없음'); return `<button class="lk-opt${k === cur ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage({ ...draft, [slot]: k }, { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
-    ${locked ? `<p class="muted small">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} ${locked}${slot === 'acc' ? '가지' : '벌'} — 상점·제작·퀘스트로 얻습니다.</p>` : ''}`;
+    ${locked ? `<p class="muted small">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} ${locked}${slot === 'acc' ? '가지' : '벌'} — 상점·제작·옷 꾸러미·퀘스트로 얻어 가방에서 「옷장에」를 누릅니다.</p>` : ''}`;
 }
 
 export async function lookTab(body) {

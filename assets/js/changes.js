@@ -21,7 +21,7 @@ export const CHANGES = {
   codex: /battle|gather|expedition/,
   storage: /craft_(item|batch)|storage|travel|enhance/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
-  avatar: /avatar|outfit|reset_identity/,
+  avatar: /avatar|outfit|wardrobe|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,

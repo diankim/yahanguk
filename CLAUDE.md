@@ -320,6 +320,13 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 개방: 보조 퀘스트 hs_byeolchae 「객사 별채」(본부 객사, Lv15, after mq_frost_seal, 인물 q:hs_bomi 「순덕」, 마지막 장면 need.gil 1,000) → trg_world_housing_quest가 world_housing_open으로 6×6과 기본 세트 「단청 별채」(world_housing_default_set). 기본 세트 여섯은 capital_market에서 늘 판다(재료값×1.5, 귀속).
 - 가구 보상: trg_world_housing_event(world_events combat·expedition_end·story·gw_win, 캐릭터 행은 안 고치고 곳간·알림만: 일반 0.4%·정예 1.2%·우두머리 3%·원정 완주 4%, 별채 있는 사람만, 곳간이 차면 가방(그때만 캐릭터 행) → 가방도 차면 버리고 알림, 한 번 주는 보상은 곳간을 넘어도)·trg_world_housing_title(칭호)·trg_world_housing_raid(봉연의 그림자 기여 1%↑ 6%+20%×몫, 10장 결전 첫 승리). 방명록 80자·한 별채 하루 3개. 알림 갈래 housing(housing_visit·housing_guest·housing_item·pet_play).
 
+### 내 모습(1.2.0)
+
+- 그림 원본 tools/avatar_art/(data.py 몸·얼굴·눈·입, hair_art.py 머리 13(ORDER), tops_art.py 윗옷·아랫옷·장신구 손그림) → gen.py가 assets/js/housing/avatar.js와 supabase/gen_avatar/parts.json을 만들고, supabase/gen_avatar/gen.py(avatar.sql + parts.json)가 마이그레이션 20261110000000을 만든다. 28×34 칸, 3단 명암, 바깥 윤곽은 꼬마 동무처럼 검은 한 겹(#1a120e, avatarsprite.js — 사용자 결정).
+- 표 world_avatars(look·home_on)·world_wardrobe(가진 옷 look_key 'top:…'·'bottom:…'·'acc:…'), RLS·직접 읽기 없음. world_avatar_get·world_avatar_set(직업 기본 옷과 옷장에 있는 옷만), 고를 수 있는 목록 world_avatar_parts 한 곳.
+- 보이는 곳: 「내 모습」 탭(views/look.js — 「별채에 세우기」·「얼굴로 쓰기」), 별채에서 걸어 다님(world_housing_snapshot.avatars = world_avatar_room, 집주인·한 지붕 정인, housing.js folks), 조사원 카드 온몸(world_character_card.look), 얼굴로 쓰기 = 머리 그림 PNG를 world_set_avatar_px로 profile.avatar·avatar_px에(사진을 새로 올리면 avatar_px가 지워짐, 화면 core.js emblem .px가 도트 그대로) — 채팅·목록·상태판이 같은 얼굴 경로를 탐.
+- 옷 얻기(사용자 결정): 옷·장신구는 물품(category outfit, 묶음 1, equipment_traits.look), 가방 「옷장에」(world_wardrobe_add — 이미 있으면 거절, 팔거나 넘기면 됨). 상점(무명 조끼·짧은 적삼·목도리)·직조/법구 공예 제작(저고리·치마·노리개·마고자·귀걸이·안경)·「객사 별채」 보상(꽃 머리핀, 이미 마친 사람은 옷장에 바로)·비무회 우승(여우 탈, 옷장에 바로)·「옷 꾸러미」 of_bundle(원정 완주 2%·우두머리 토벌 1%, 「풀기」 = 뽑기 목록에서 하나 — 다른 직업 기본 옷 포함). 확률·목록·꾸러미 id는 world_outfit_rules 한 곳.
+
 ### 도트 그림 액자(1.1.0)
 
 - 표 world_drawings(owner_id·origin(원본 id, 사본은 원본 번호)·author·title·size S 16×16|L 32×24·px 글자 하나가 한 칸(0~f 색, . 빈칸)·giver_id/gift_from·removed_at)·world_drawing_hides(viewer_id·origin), RLS·직접 읽기 없음. 수치 world_drawing_rules(하루 새 그림 5·그림첩 40·보내기 하루 10·이름 12자·크기) 한 곳, 화면은 world_drawing_list가 rules를 함께 줌.

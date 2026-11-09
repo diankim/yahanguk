@@ -214,7 +214,7 @@ const FIXED = {
   fieldwork: '채집', mining: '채광', fishing: '낚시',
   ...GAMEDATA.names.field,
   melee: '근접', ranged: '사격', dagger: '단도', exorcism: '퇴마술', medicine: '의술', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
-  tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비', furniture: '별채 가구', pet: '꼬마 동무',
+  tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비', furniture: '별채 가구', pet: '꼬마 동무', outfit: '옷',
   common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품',
   abyss: '심연', archive: '서고', blood_forest: '혈림', bridge: '다리', burial_ground: '묘역', canyon: '협곡', celestial_tower: '천문탑', coast: '해안', desert: '사막',
   faction_stronghold: '세력 거점', forest: '숲', frontier_gate: '변경 관문', haunted_garden: '흉가 정원', headquarters: '본부', ice_valley: '빙곡', islands: '군도', lake: '호수',

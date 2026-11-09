@@ -26,7 +26,7 @@ const CRAFT_MAX = 50;
 const craftN = new Map();
 const craftLabel = n => n > 1 ? `제작 ×${n}` : '제작';
 const loadFavs = () => favs ? Promise.resolve(favs) : rpc('world_craft_favs').then(r => (favs = new Set(r || []))).catch(() => (favs = new Set()));
-const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', craft: '제작 공구', consumable: '소모품', material: '재료', furniture: '가구', etc: '기타' };
+const KIND_LABEL = { weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', tool: '채집 도구', explore: '탐사 도구', fishing: '낚싯대', craft: '제작 공구', consumable: '소모품', material: '재료', furniture: '가구', outfit: '옷', etc: '기타' };
 const SORTS = { tier: ['기본(단계)', '낮은 단계 먼저', '높은 단계 먼저'], acquired: ['획득순', '최근 얻은 것 먼저', '오래전에 얻은 것 먼저'],
   name: ['이름순', '가나다순', '가나다 역순'], rarity: ['희귀도순', '신품 먼저', '범품 먼저'] };
 const RARITY = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
@@ -92,7 +92,7 @@ const toolCovers = (have, need) => { const h = baseOf(have);
 const toolNote = (need, by) => { if (!by) return ' <span class="bad">(없음 · 같은 갈래의 더 높은 단계 도구도 됨)</span>';
   const st = by.endsWith('@st'), id = st ? by.slice(0, -3) : by, base = baseOf(id);
   return base === need && !st ? '' : ` <small class="muted">(${esc(`${nameOf(id)}${st ? ' · 창고' : ''}(으)로 됨`)})</small>`; };
-const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역' };
+const CAT_SHORT = { consumable: '소모', material: '재료', craft_material: '재료', tool: '도구', weapon: '무기', armor: '방어', hat: '관모', shoes: '신', norigae: '노리', amulet: '호신', mask: '탈', accessory: '장신', equipment: '장비', quest: '임무', trade_goods: '교역', furniture: '가구', pet: '동무', outfit: '옷' };
 
 function stayFit(box) {
   if (!box.style.minHeight) return;
@@ -110,7 +110,7 @@ function gearFx(it, kind) {
   return head && t.startsWith(head + ' · ') ? t.slice(head.length + 3) : t === head ? '' : t;
 }
 let craftFiltOpen = (() => { try { return localStorage.getItem('yh-craft-filt') === '1'; } catch { return false; } })();
-const KIND_GROUPS = [['장비', ['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask']], ['생활 도구', ['tool', 'explore', 'fishing', 'craft']], ['그 밖', ['consumable', 'material', 'furniture', 'etc']]];
+const KIND_GROUPS = [['장비', ['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask']], ['생활 도구', ['tool', 'explore', 'fishing', 'craft']], ['그 밖', ['consumable', 'material', 'furniture', 'outfit', 'etc']]];
 const CRAFT_SORTS = [['can', '가능한 것 먼저'], ['lv', '제작 레벨 낮은순'], ['lvd', '제작 레벨 높은순']];
 function craftFilterBox(inv, kindCount) {
   const tog = (attr, k, on, label, n, cls = '') => `<label class="tg ${cls}"><input type="checkbox" ${attr}="${k}" ${on ? 'checked' : ''}><span>${esc(label)}${n != null ? ` <small>${n}</small>` : ''}</span></label>`;
@@ -195,6 +195,7 @@ async function items(body, inv, stg) {
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" title="${esc(GWIRYEONG.supply)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${showUse ? `<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
+        ${it?.category === 'outfit' ? `<button class="btn small inv-quick" data-wear="${esc(id)}" aria-label="${esc(nameOf(id))} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷이나 장신구 하나를 꺼냅니다' : '옷장에 넣으면 「내 모습」에서 고를 수 있습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}
         ${id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small inv-quick" data-token-trade title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>` : ''}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
@@ -268,7 +269,7 @@ async function craft(body, inv, stg) {
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id));
   const cmap = catalogMap(inv);
-  const kindOf = r => { const it = cmap.get(r.output); if (!it) return 'etc'; if (SLOTS[slotOf(it)]) return slotOf(it); if (slotOf(it) === 'craft') return 'craft'; if (it.category === 'furniture') return 'furniture'; const k = catOf(it); return k === 'consumable' || k === 'material' ? k : 'etc'; };
+  const kindOf = r => { const it = cmap.get(r.output); if (!it) return 'etc'; if (SLOTS[slotOf(it)]) return slotOf(it); if (slotOf(it) === 'craft') return 'craft'; if (it.category === 'furniture') return 'furniture'; if (it.category === 'outfit') return 'outfit'; const k = catOf(it); return k === 'consumable' || k === 'material' ? k : 'etc'; };
   const lvOf = x => Number(x.r.minimum_level) || 1, tierOf = x => Number(cmap.get(x.r.output)?.tier) || 0;
   const byLv = (a, b) => lvOf(a) - lvOf(b) || tierOf(a) - tierOf(b) || (a.r.difficulty || 0) - (b.r.difficulty || 0) || String(a.r.name).localeCompare(String(b.r.name), 'ko');
   const SORTS = { can: (a, b) => b.can - a.can || b.atLoc - a.atLoc || byLv(a, b), lv: byLv, lvd: (a, b) => byLv(b, a) };
@@ -364,6 +365,7 @@ async function craft(body, inv, stg) {
 function bindActions(body) {
   $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b));
   $$('[data-adopt]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_adopt', { p_item: b.dataset.adopt })));
+  $$('[data-wear]', body).forEach(b => b.onclick = () => guard(b, () => act('world_wardrobe_add', { p_item: b.dataset.wear })));
   $$('[data-token-trade]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_token_trade')));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_equip_item', { p_item_id: b.dataset.equip })));
 }
