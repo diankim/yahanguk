@@ -214,7 +214,7 @@ EYE_SHAPES = {
     'sparkle': ['llll.', 'lwEEl', 'lEwel', '.eef.', '.fwf.', '..l..'],
     'cat': ['l....', '.llll', '.wEe.', '.eef.', '..ll.', '.....'],
     'sleepy': ['.....', '.....', 'lllll', '.wEe.', '.eef.', '.....'],
-    'sharp': ['.....', 'lllll', 'vwEEv', '.lll.', '.....', '.....'],
+    'sharp': ['l....', '.llll', 'vEEev', '.lll.', '.....', '.....'],
     'teary': ['.lll.', 'lwwEl', 'lwEel', '.eef.', '.vfv.', '..v..'],
     'dot': ['.....', '..EE.', '..wE.', '..EE.', '.....', '.....'],
     'smile': ['.....', '.lll.', 'l...l', '.....', '.....', '.....'],
@@ -248,7 +248,7 @@ EYES = {
     'sharp': '째진 눈', 'teary': '촉촉한 눈', 'dot': '콩알 눈', 'smile': '웃는 눈', 'wink': '윙크',
 }
 
-MY = 19
+MY = 18
 
 
 def mouth(kind):
