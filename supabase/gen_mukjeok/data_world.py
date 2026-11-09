@@ -6,7 +6,7 @@ TOOL_LV = 40
 REGIONS = [
     dict(id='mukchang_ferry', name='묵창 나루', type='village', danger=9, lv=40, x=310, y=128, el=0, nb=['frost_valley', 'blank_field'],
          theme='water', safe=True, desc='먹빛 강을 건너는 나룻배가 닿는 작은 나루. 문패마다 글자가 반쯤 지워져 있고, 사람들은 서로를 사는 자리로 부른다.',
-         rest=('묵창 주막', 'inn', 160, 2), shop=('mukchang_shop', '묵창 주막')),
+         rest=('묵창 주막 객방', 'inn', 160, 2), shop=('mukchang_shop', '묵창 주막')),
     dict(id='blank_field', name='빈칸 벌판', type='wilderness', danger=10, lv=41, x=222, y=168, el=0, nb=['mukchang_ferry', 'meokbi_forest'],
          theme='wild', desc='이름이 거둬지고 정리되지 못한 먹귀들이 모여드는 벌판. 풀잎마다 지워진 글자의 얼룩이 묻어 있다.'),
     dict(id='meokbi_forest', name='먹비 숲', type='forest', danger=10, lv=42, x=148, y=222, el=1, nb=['blank_field', 'myeongbu_tower'],
