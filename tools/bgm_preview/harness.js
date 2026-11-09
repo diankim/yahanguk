@@ -1,14 +1,14 @@
 // 지역 배경음악 미리듣기용: sound.js를 그대로 읽어 OfflineAudioContext에서 영역 하나를 몇십 초 굽는다(render.js가 부름)
 window.renderRegion = async (territory, battle, seconds, sr = 32000) => {
   let code = await (await fetch('/assets/js/sound.js')).text();
-  code = code.replace(/^import .*$/m, 'const on = () => {};').replace(/^export /gm, '').replace('fetch(`assets/audio/', 'fetch(`/assets/audio/');
+  code = code.replace(/^import \{([^}]*)\} from .*$/gm, (_, names) => names.split(',').map(x => x.trim().split(/\s+as\s+/).pop()).filter(Boolean).map(n => `const ${n} = ${/^[A-Z_]+$/.test(n) ? '[]' : '() => {}'};`).join(' ')).replace(/^export /gm, '').replace('fetch(`assets/audio/', 'fetch(`/assets/audio/');
   code += `
 ;window.__render = async (territory, battle, seconds, sr) => {
   const off = new OfflineAudioContext(2, Math.ceil(seconds * sr), sr);
   window.AudioContext = function () { return off; };
   ctx = null; ensureCtx(); sound.bgm = 0.4; sound.bgmOn = true; applyVolumes(); bgmBus.gain.value = 0.32;
   scene.territory = territory; scene.battle = battle; scene.safe = false; env.phase = 'noon';
-  const p = profile(), key = territory + ':' + p.mode + ':' + (battle ? 'battle' : 'field');
+  const p = profile(battle), key = territory + ':' + p.mode + ':' + (battle ? 'battle' : 'field');
   await Promise.all(insOf(p).map(loadIns));
   song = makeSong(p, key, 0); barNo = 0; loopNo = 0;
   const beat = 60 / p.bpm, barDur = p.meter * beat; let t = 0.2;

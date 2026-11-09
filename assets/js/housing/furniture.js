@@ -544,6 +544,37 @@ export const FUR = {
     { t: 'ell', x: 1.15, y: .5, z: .38, rx: 1, ry: 1, c: C.gold },
     { x: .1, y: .18, w: .3, d: .3, h: .2, z: .22, c: C.ind }, { x: .1, y: .52, w: .3, d: .3, h: .2, z: .22, c: C.lac },
     { x: .12, y: .2, w: .26, d: .26, h: .02, z: .42, c: C.gold }, { x: .12, y: .54, w: .26, d: .26, h: .02, z: .42, c: C.gold }] },
+  rug_ink_pond: { name: '먹 연못 깔개', grade: 2, W: 2, D: 2, layer: 'rug', cat: '깔개', pet: 'bed', parts: [
+    { x: .06, y: .06, w: 1.88, d: 1.88, h: .04, c: '#3a3a44' },
+    { t: 'ell', x: 1, y: 1, z: .05, rx: 12, ry: 6, c: '#24242a' },
+    { t: 'ell', x: 1, y: 1, z: .06, rx: 8, ry: 4, c: '#33467a' },
+    { t: 'ell', x: .7, y: .8, z: .07, rx: 2, ry: 1, c: C.paper },
+    { t: 'ell', x: 1.3, y: 1.2, z: .07, rx: 3, ry: 1, c: C.paper2 },
+    { x: .14, y: .14, w: .12, d: .12, h: .02, z: .04, c: C.gold }, { x: 1.74, y: 1.74, w: .12, d: .12, h: .02, z: .04, c: C.gold }] },
+  shelf_register: { name: '명부 책장', grade: 3, W: 2, D: 1, layer: 'floor', cat: '수납', pet: 'perch', top: 1.86, parts: [
+    { x: .05, y: .12, w: 1.9, d: .48, h: 1.8, c: C.deep },
+    { x: .1, y: .58, w: 1.8, d: .06, h: .05, z: .6, c: C.dark }, { x: .1, y: .58, w: 1.8, d: .06, h: .05, z: 1.2, c: C.dark },
+    { x: .15, y: .58, w: .12, d: .08, h: .5, z: .08, c: '#c9b27a' }, { x: .3, y: .58, w: .12, d: .08, h: .5, z: .08, c: '#b89e64' }, { x: .45, y: .58, w: .12, d: .08, h: .46, z: .08, c: '#c9b27a' },
+    { x: 1.1, y: .58, w: .5, d: .08, h: .3, z: .08, c: C.paper2 },
+    { x: .2, y: .58, w: .14, d: .08, h: .48, z: .66, c: '#b89e64' }, { x: .38, y: .58, w: .14, d: .08, h: .48, z: .66, c: '#c9b27a' }, { x: 1.3, y: .58, w: .14, d: .08, h: .48, z: .66, c: '#b89e64' },
+    { x: .6, y: .58, w: .6, d: .08, h: .36, z: 1.26, c: C.paper }, { x: .66, y: .58, w: .48, d: .08, h: .04, z: 1.48, c: C.ink },
+    { x: 0, y: .08, w: 2, d: .56, h: .06, z: 1.8, c: C.dark }] },
+  lamp_nine_pillar: { name: '아홉 칸 주춧돌 등', grade: 4, W: 1, D: 1, layer: 'floor', cat: '조명', glow: true, parts: [
+    { x: .12, y: .12, w: .76, d: .76, h: .2, c: C.stone2 },
+    { x: .2, y: .2, w: .6, d: .6, h: .04, z: .2, c: C.stone },
+    { x: .38, y: .38, w: .24, d: .24, h: .5, z: .24, c: C.stone },
+    { x: .26, y: .26, w: .48, d: .48, h: .3, z: .74, c: C.paper },
+    { x: .36, y: .36, w: .28, d: .28, h: .2, z: .78, c: C.ember },
+    { x: .22, y: .22, w: .56, d: .56, h: .06, z: 1.04, c: C.ink },
+    { x: .4, y: .4, w: .2, d: .2, h: .08, z: 1.1, c: C.gold }] },
+  tank_bamboo_eel: { name: '장어 수조', grade: 5, W: 2, D: 1, layer: 'floor', cat: '어항', pet: 'bowl', petKind: 'water', parts: [
+    { x: .08, y: .12, w: 1.84, d: .76, h: .2, c: C.deep },
+    { x: .1, y: .14, w: 1.8, d: .72, h: .62, z: .2, c: '#3f6f86' },
+    { x: .14, y: .18, w: 1.72, d: .64, h: .02, z: .8, c: C.water2 },
+    { x: .3, y: .5, w: 1.2, d: .06, h: .06, z: .46, c: '#c9b27a' }, { x: .5, y: .44, w: .08, d: .08, h: .08, z: .52, c: '#c9b27a' },
+    { t: 'ell', x: 1.5, y: .6, z: .5, rx: 4, ry: 1, c: C.leaf },
+    { x: .06, y: .1, w: 1.88, d: .1, h: .08, z: .82, c: C.gold }, { x: .06, y: .8, w: 1.88, d: .1, h: .08, z: .82, c: C.gold },
+    { x: .06, y: .1, w: .1, d: .8, h: .08, z: .82, c: C.gold }, { x: 1.84, y: .1, w: .1, d: .8, h: .08, z: .82, c: C.gold }] },
   rug_manhwa: { name: '만화 융단', grade: 5, W: 3, D: 3, layer: 'rug', cat: '깔개', pet: 'bed', parts: [
     { x: .05, y: .05, w: 2.9, d: 2.9, h: .05, c: C.gold },
     { x: .18, y: .18, w: 2.64, d: 2.64, h: .01, z: .05, c: '#5e1a14' },
@@ -643,6 +674,18 @@ export const WALL = {
     [-.14, -2, 3.48, 22, C.gold], [-.06, -1, 3.32, 20, C.lac], [0, 0, 3.2, 18, C.gold], [.08, 2, 3.04, 14, '#5e1a14'],
     [-.3, 6, .18, 6, C.green], [3.32, 6, .18, 6, C.green], [1.5, 18, .2, 3, C.lac]] },
 
+  wall_doorplate: { name: '문패 장식', grade: 1, kind: 'deco', cat: '현판', w: 1.4, h: 12, rects: [
+    [0, 0, 1.4, 12, C.wood], [.08, 1.5, 1.24, 9, C.paper2], [.3, 4, .3, 1, C.stone2], [.7, 4, .4, 1, C.stone2], [.3, 7, .5, 1, C.stone2], [.65, -3, .1, 3, C.dark]] },
+  wall_bamboo_blind: { name: '죽간 발', grade: 1, kind: 'deco', cat: '족자', w: 1.6, h: 30, rects: [
+    [0, 0, 1.6, 2, C.dark], [.05, 2, .18, 26, '#c9b27a'], [.25, 2, .18, 26, '#b89e64'], [.45, 2, .18, 26, '#c9b27a'], [.65, 2, .18, 26, '#b89e64'],
+    [.85, 2, .18, 26, '#c9b27a'], [1.05, 2, .18, 26, '#b89e64'], [1.25, 2, .18, 26, '#c9b27a'], [0, 10, 1.6, .6, C.dark], [0, 20, 1.6, .6, C.dark], [.3, 6, .1, 2, C.ink], [.9, 14, .1, 2, C.ink]] },
+  window_meokbi: { name: '먹비 창호', grade: 2, kind: 'window', cat: '창문', w: 1.6, h: 32, rects: [
+    [0, 0, 1.6, 32, C.deep], [.1, 2, 1.4, 28, '#3b3e49'], [.1, 2, .04, 28, C.paper2], [.4, 2, .04, 28, C.paper2], [.75, 2, .04, 28, C.paper2], [1.1, 2, .04, 28, C.paper2],
+    [.1, 9, 1.4, .8, C.paper2], [.1, 16, 1.4, .8, C.paper2], [.1, 23, 1.4, .8, C.paper2], [.25, 5, .03, 3, C.ink], [.9, 12, .03, 4, C.ink], [.6, 20, .03, 3, C.ink], [1.3, 25, .03, 3, C.ink]] },
+  rubbing_doorplate_carp: { name: '문패 잉어 어탁', grade: 5, kind: 'deco', cat: '족자', w: 2.2, h: 30, rects: [
+    [-.06, -1, 2.32, 32, C.gold], [0, 0, 2.2, 30, C.dark], [.12, 2, 1.96, 26, C.paper],
+    [.4, 11, 1.2, 8, C.ink], [.3, 13, .2, 4, C.ink], [1.6, 12, .4, 6, C.ink], [1.9, 11, .1, 2, C.ink], [1.9, 17, .1, 2, C.ink],
+    [.6, 12, .5, 1, C.paper2], [.7, 15, .6, 1, C.paper2], [.45, 13, .08, 1, C.paper], [.3, 22, .2, 3, C.lac], [1.6, 4, .3, 4, C.lac], [1.05, -4, .1, 3, C.gold]] },
   frame_small: { name: '작은 그림 액자', grade: 1, kind: 'deco', cat: '액자', frame: 'S', w: 1.25, h: 22, paper: [.125, 3], rects: [
     [0, 0, 1.25, 22, C.wood], [.06, 1, 1.13, 20, C.dark], [.125, 3, 1, 16, C.paper],
     [.585, -3, .08, 3, C.dark]] },

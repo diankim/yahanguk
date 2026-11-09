@@ -1837,6 +1837,10 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .hs-yohwa.s1 { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
 .hs-yohwa.sealed { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); }
 /* 요괴화: 요화 3단계가 끝난 마지막 1시간 — 채운 빨강으로 다른 단계와 가른다 */
+.yohwa-pin.blur { background: color-mix(in srgb, var(--mp) 10%, var(--surface-2)); border-left-color: var(--mp); } .yohwa-pin.blur .ico { color: var(--mp); }
+.yohwa-pin.blur.off { background: var(--surface-2); border-left-color: var(--ok); } .yohwa-pin.blur.off .ico { color: var(--ok); }
+.hs-yohwa.blur { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); } .hs-yohwa.blur.off { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
+.ns-1031 { --ns: #c7b37a; } [data-tone=light] .ns-1031 { --ns: #5b4a22; }
 .yohwa-pin.frenzy { background: color-mix(in srgb, var(--bad) 26%, var(--surface-2)); border-left-width: 5px; }
 .hs-yohwa.frenzy { color: var(--bg); background: var(--bad); border-color: var(--bad); }
 .yohwa-note em { font-style: normal; font-weight: 650; }
@@ -3179,3 +3183,6 @@ b.shadow { color: var(--sp); }
   .od-ed { grid-template-columns: 1fr; }
   .od-list { grid-template-columns: 1fr; }
 }
+.fish-grounds { margin: 0 0 6px; } .fish-grounds .chip { cursor: pointer; }
+.fish-named { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 2px; font-size: calc(12px * var(--fz, 1)); color: var(--muted); } .fish-named li { display: flex; gap: 4px; align-items: baseline; } .fish-named b { color: var(--gold); }
+.fish-bait { display: grid; gap: 2px; margin: 0 0 8px; font-size: calc(12.5px * var(--fz, 1)); } .fish-bait select { max-width: 240px; }

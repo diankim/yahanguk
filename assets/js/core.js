@@ -536,7 +536,7 @@ function emblemBase(ownerId, profile, size) {
     return `<span class="emblem photo${profile.avatar_px ? ' px' : ''}" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><img src="${profile.avatar}" alt="" width="${size}" height="${size}"></span>`;
   return `<span class="emblem" style="--em:${col};width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" width="${Math.round(size * 0.58)}" height="${Math.round(size * 0.58)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${EMBLEMS[p.emblem][1]}"/></svg></span>`;
 }
-export const LEVEL_CAP = 40;
+export const LEVEL_CAP = GAMEDATA.level?.cap || 45;
 export const xpNeed = lv => 100 * Math.max(1, lv || 1) + 12 * Math.max(1, lv || 1) ** 2;
 export const xpPct = () => Math.max(0, Math.min(100, Number(store.hud?.xp_pct ?? 100)));
 export const xpGot = x => Math.round((Number(x) || 0) * xpPct() / 100);

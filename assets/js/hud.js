@@ -3,7 +3,7 @@ import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf } from './rules.js';
+import { expRoundOf, DOMAIN_FX } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -164,7 +164,7 @@ function render() {
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
-      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}${yo.fr ? ' frenzy' : ''}">${yo.fr ? '요괴화' : `요화${yo.stage}`}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}`; })()}
+      return `${yo.y ? `<span class="hs-yohwa s${yo.stage}${yo.fr ? ' frenzy' : ''}">${yo.fr ? '요괴화' : `요화${yo.stage}`}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}${domainChip()}`; })()}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
     <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개" title="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
@@ -211,9 +211,23 @@ function stamina(c) {
   const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
   return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
 }
+export function domainNow() {
+  const d = state.hud?.domain;
+  if (!d?.name) return null;
+  const until = d.guard_until ? new Date(d.guard_until).getTime() : 0;
+  return { name: d.name, guarded: until > Date.now(), until, text: fxText(d.effects).join(' · ') };
+}
+function domainChip() {
+  const d = domainNow();
+  return d ? `<span class="hs-yohwa blur${d.guarded ? ' off' : ''}" title="${esc(d.guarded ? DOMAIN_FX.guarded : d.text)}">${esc(d.name)}</span>` : '';
+}
+function domainPin() {
+  const d = domainNow(); if (!d) return '';
+  return `<a class="yohwa-pin blur${d.guarded ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}</b><small>${d.guarded ? `${esc(DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : esc(d.text)}</small></span></a>`;
+}
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);
-  return `<div class="statuses"><h3>상태 ${list.length}/10</h3>${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
+  return `<div class="statuses"><h3>상태 ${list.length}/10</h3>${domainPin()}${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
       <b>${esc(s.name)}${s.stacks > 1 ? `×${s.stacks}` : ''}</b><i data-timer="${new Date(s.expires_at).getTime()}" data-kind="status">${fmt.remain(new Date(s.expires_at) - Date.now())}</i></button>`).join('')}</div>`
     : ''}</div>`;
 }

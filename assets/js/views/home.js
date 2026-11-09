@@ -310,18 +310,47 @@ function field(s, roster, blocked) {
     ${people(roster, s.corpses)}`;
 }
 
+const FISH_HAB = 'yh-fish-hab:', FISH_BAIT = 'yh-fish-bait';
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+let fishBlocked = false;
+function fishGround(f) {
+  const gs = f.grounds || [];
+  return gs.find(g => g.habitat === lsGet(FISH_HAB + f.region_id)) || gs[0] || f;
+}
+function fishBait(g) {
+  const want = lsGet(FISH_BAIT);
+  return (g.baits || []).find(b => b.fish_id === want) ? want : '';
+}
 function fishPanel(blocked) {
   const f = fishSpot; if (!f) return '';
+  fishBlocked = blocked;
+  const g = fishGround(f), gs = f.grounds || [], bait = fishBait(g);
   const recent = (f.recent || []).slice(0, 3);
-  return `<section class="panel fish-panel"><header class="panel-head"><h2>${icon('leaf', 16)}낚시터 · ${esc(f.ground_name)}</h2><a class="btn small ghost" href="#/log/fish">도감 ${f.species_caught}/${f.species_total}</a></header>
+  const named = (g.named || []).map(n => `<li>${icon('spark', 12)}<span>${n.caught ? `<b>${esc(n.name)}</b> · ` : '<b>명어 ???</b> · '}${esc(n.hint || '')}</span></li>`).join('');
+  return `<section class="panel fish-panel"><header class="panel-head"><h2>${icon('leaf', 16)}낚시터 · ${esc(g.ground_name)}</h2><a class="btn small ghost" href="#/log/fish">도감 ${g.species_caught ?? f.species_caught}/${g.species_total ?? f.species_total}</a></header>
     <div class="panel-body">
-      <p class="desc">${esc(f.description || '')}</p>
+      ${gs.length > 1 ? `<div class="chips fish-grounds">${gs.map(x => `<button class="chip${x.habitat === g.habitat ? ' accent' : ''}" data-fish-hab="${esc(x.habitat)}">${esc(x.ground_name)}</button>`).join('')}</div>` : ''}
+      <p class="desc">${esc(g.description || '')}</p>
+      ${named ? `<ul class="fish-named">${named}</ul>` : ''}
+      ${(g.baits || []).length ? `<label class="fish-bait">미끼 <select id="fish-bait"><option value="">쓰지 않음</option>${g.baits.map(b => `<option value="${esc(b.fish_id)}"${b.fish_id === bait ? ' selected' : ''}>${esc(b.name)} (${b.n})</option>`).join('')}</select><small class="muted">걸면 던질 때마다 한 마리씩 씁니다. 명어는 미끼·시간대·날씨가 모두 맞을 때만 뭅니다.</small></label>` : ''}
       <div class="fish-act">
         <button class="btn primary" id="fish-go" data-ready="${f.ready_at ? new Date(f.ready_at).getTime() : ''}" ${blocked || !f.rod ? 'disabled' : ''}>${icon('leaf', 16)}<span>낚시하기</span></button>
         <small class="muted">${f.rod ? `${esc(f.rod_name)} · 탐색력 1 · ${f.gap || 20}초마다` : '낚싯대가 없습니다. 상점에서 사거나 가방 › 제작에서 만들 수 있습니다.'}</small>
       </div>
       ${recent.length ? `<ol class="field-log">${recent.map(r => `<li>${icon('leaf', 14)}<span>${esc(r.text)}</span><time>${fmt.time(r.at)}</time></li>`).join('')}</ol>` : '<p class="muted small">시간대와 날씨에 따라 잘 무는 물고기가 다릅니다. 도감에서 힌트를 확인하세요.</p>'}
     </div></section>`;
+}
+function bindFish() {
+  const box = $('.fish-panel', el); if (!box) return;
+  $$('[data-fish-hab]', box).forEach(b => b.onclick = () => { lsSet(FISH_HAB + fishSpot.region_id, b.dataset.fishHab); redrawFish(); });
+  $('#fish-bait', box)?.addEventListener('change', e => lsSet(FISH_BAIT, e.target.value));
+  $('#fish-go', box)?.addEventListener('click', e => doFish(e.currentTarget));
+}
+function redrawFish() {
+  const box = $('.fish-panel', el); if (!box || !fishSpot) return;
+  const t = document.createElement('div'); t.innerHTML = fishPanel(fishBlocked);
+  box.replaceWith(t.firstElementChild); bindFish();
 }
 
 function foldOpen(k) { try { return localStorage.getItem('yh-fold-' + k) !== '0'; } catch { return true; } }
@@ -378,7 +407,7 @@ function bind(s) {
   $('#idle-rest', el)?.addEventListener('click', goIdleRest);
   $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
-  $('#fish-go', el)?.addEventListener('click', e => doFish(e.currentTarget));
+  bindFish();
 }
 
 const QUIET_KEY = 'yh-quiet-search';
@@ -410,7 +439,8 @@ async function doFish(btn) {
   btn.dataset.busy = '1'; btn.disabled = true;
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' }));
   try {
-    const r = await act('world_fish');
+    const g = fishSpot ? fishGround(fishSpot) : null;
+    const r = await act('world_fish_at', { p_habitat: g?.habitat || null, p_bait: g ? fishBait(g) || null : null });
     if (r.caught) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: ['rare', 'epic', 'legendary'].includes(r.rarity) || r.first ? 'find' : 'tick' })); showFind(['leaf', r.first ? '새 어종' : '낚시'], { outcome: r.first ? 'spot' : 'gather', content: r.content }); }
     else toast(r.content, 'info');
   } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
