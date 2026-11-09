@@ -661,6 +661,10 @@ export const PAPER = {
   brick:       { name: '전벽돌',     grade: 2, c: '#8a6a58', l: '#a07e6a', pat: 'brick' },
   celadon:     { name: '청자빛 구름', grade: 4, c: '#5f8f7e', l: '#82b0a0', pat: 'cloud' },
   geumni:      { name: '금니 단청',  grade: 5, c: '#5a1e1a', l: '#7a3a2a', pat: 'dan' },
+  heukbyeok:   { name: '흙벽',       grade: 1, c: '#b08a5e', l: '#c29c70', pat: 'plaster' },
+  saekdong:    { name: '색동 벽지',  grade: 2, c: '#e6d8bc', l: '#efe4cc', pat: 'saekdong' },
+  mulgyeol:    { name: '물결무늬',   grade: 2, c: '#3f6478', l: '#58819a', pat: 'wave' },
+  maehwa:      { name: '매화 벽지',  grade: 3, c: '#3a2a30', l: '#4a3840', pat: 'blossom' },
 };
 
 export const GROUND = {
@@ -673,6 +677,10 @@ export const GROUND = {
   ochre:    { name: '황토 장판',  grade: 2, a: '#b88458', b: '#a8764c', pat: 'grid' },
   okdol:    { name: '옥돌 바닥',  grade: 4, a: '#7fa894', b: '#6c9682', pat: 'stone' },
   geumbak:  { name: '금박 장판',  grade: 5, a: '#d8b25a', b: '#c49c46', pat: 'check' },
+  daesal:   { name: '대살 마루',  grade: 1, a: '#b58a52', b: '#a47a46', pat: 'slat' },
+  hwamun:   { name: '쪽빛 화문석', grade: 2, a: '#5d7390', b: '#506582', pat: 'mat' },
+  bakseok:  { name: '박석 바닥',  grade: 2, a: '#8c8a80', b: '#7c7a72', pat: 'cobble' },
+  wanja:    { name: '완자 마루',  grade: 3, a: '#8a5a36', b: '#764a2c', pat: 'wanja' },
 };
 
 export const DEFAULT_SET = {

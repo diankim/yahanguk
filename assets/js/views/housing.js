@@ -465,7 +465,7 @@ function chooseFood(btn) {
 }
 function careLine(kind, r) {
   const p = snap.pet || {};
-  return petLine(kind, { name: p.nick || p.name || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r?.affinity ?? p.affinity, liked: r?.react === 'star', guest: !keeper(), gain: r?.gain ?? 1, count: r?.counts?.[kind] || 0 });
+  return petLine(kind, { id: p.id, name: p.nick || p.name || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r?.affinity ?? p.affinity, liked: r?.react === 'star', guest: !keeper(), gain: r?.gain ?? 1, count: r?.counts?.[kind] || 0 });
 }
 function afterPet(r, kind) {
   fx.push({ key: r.react || 'heart', until: Date.now() + 1600 });
