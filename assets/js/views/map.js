@@ -372,7 +372,7 @@ function drawDetail() {
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
                    : `<button class="btn primary" id="travel-go" ${reason ? 'disabled' : ''}>${icon('route', 16)}<span>${route && route.length > 2 ? '경로 따라 출발' : '이곳으로 출발'}</span></button>`}
         </div>
-        ${!reason && !isHere && route?.length === 2 && isLeader && members.length ? `<div class="ride"><p class="muted small">이웃 지역으로 갈 때는 파티원에게 동승을 요청할 수 있습니다. 운임은 파티장만 1회 부담합니다.</p>
+        ${!reason && !isHere && route?.length > 1 && isLeader && members.length ? `<div class="ride"><p class="muted small">파티원에게 동승을 요청하면 수락하는 순간 함께 출발해 같은 때 도착합니다${est.hops > 1 ? `(${est.hops}구간)` : ''}. 운임은 파티장만 한 번(구간 수만큼) 냅니다.</p>
           <div class="btn-row">${members.map(m => `<button class="btn small" data-ride="${esc(m.owner_id)}">${icon('users', 14)}<span>${esc(m.character_name)} 동승 요청</span></button>`).join('')}</div></div>` : ''}
       </div>
     </article>`;
@@ -415,7 +415,7 @@ async function drawTravel(body) {
         : `<p class="desc">현재 <b>${esc(status?.location || c.location)}</b>에 있습니다. 세계 지도에서 아무 지역이나 고르면 길을 따라 한 번에 이동합니다.</p>
            <button class="btn primary" id="tr-map">${icon('map', 16)}<span>세계 지도 열기</span></button>`, { ico: 'route' })}
       ${panel('동승 요청', `
-        ${incoming.length ? `<ul class="spot-list">${incoming.map(r => `<li><div><b>${esc(nameOf(r.to_region))}</b><small>파티장의 동승 제안 · 운임은 파티장이 냅니다</small></div>
+        ${incoming.length ? `<ul class="spot-list">${incoming.map(r => `<li><div><b>${esc(r.to_name || nameOf(r.to_region))}</b><small>파티장의 동승 제안${r.hops > 1 ? ` · ${r.hops}구간` : ''} · 운임은 파티장이 냅니다</small></div>
           <div class="btn-row"><button class="btn small primary" data-ride="${esc(r.request_id)}" data-accept="1">수락</button><button class="btn small" data-ride="${esc(r.request_id)}" data-accept="0">거절</button></div></li>`).join('')}</ul>` : ''}
         ${outgoing.length ? `<p class="muted small">보낸 요청 ${outgoing.length}건이 응답을 기다리는 중입니다.</p>` : ''}
         ${!incoming.length && !outgoing.length ? empty('대기 중인 동승 요청이 없습니다.', 'users') : ''}
