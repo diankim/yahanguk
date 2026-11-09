@@ -30,6 +30,6 @@ update public.world_crafting_recipes r set ingredients = v.ing::jsonb from (valu
   ('r_w_melee3_heavy', '{"steel_ingot": 2, "ember_crystal": 1, "reinforced_lumber": 1}')
 ) v(id, ing) where r.recipe_id = v.id;
 
-update public.world_patch_notes set body = body || E'\n- 덜 쓰이던 재료를 기존 제작법에 나눠 넣었습니다(재료값은 그대로이거나 조금 낮아짐): 요수 송곳니(두정갑·방상씨탈·사자탈·쌍날 대부·순찰 장창)·잠복귀 송곳니(야행 경의·소무탈·연막 단검)·독낭(무영 소도·무음 비궁)·수귀 비늘(수결 도포·행전 짚신·전립)·빙정염(은어 소금구이·굴비 엮기·홍어 삭히기)·생 월철(쇠징 신·각인 공구)·먹정(오색 부적낭)·등롱 어유(유령 등롱)·잔화 결정(파산 철편).'
+update public.world_patch_notes set body = body || E'\n- 덜 쓰이던 재료를 기존 제작법에 나눠 넣었습니다(제작품 값은 그대로): 요수 송곳니(두정갑·방상씨탈·사자탈·쌍날 대부·순찰 장창)·잠복귀 송곳니(야행 경의·소무탈·연막 단검)·독낭(무영 소도·무음 비궁)·수귀 비늘(수결 도포·행전 짚신·전립)·빙정염(은어 소금구이·굴비 엮기·홍어 삭히기)·생 월철(쇠징 신·각인 공구)·먹정(오색 부적낭)·등롱 어유(유령 등롱)·잔화 결정(파산 철편).'
  where note_id = '1.1.0';
 update public.world_app_meta set value = '20261109070000' where key = 'db_version';
