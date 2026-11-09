@@ -369,12 +369,12 @@ export const particle = (word, form) => josa(String(word ?? '') + form).slice(St
 export function esc(s) { return josa(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 export function h(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 
-export function toast(message, kind = 'info') {
+export function toast(message, kind = 'info', ms = 0) {
   const box = $('#toasts'); if (!box) return;
   const el = h(`<div class="toast toast-${kind}" role="status">${esc(message)}</div>`);
   if (kind === 'error') window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'error' }));
   box.append(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, kind === 'error' ? 4200 : 2800);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, ms || (kind === 'error' ? 4200 : 2800));
 }
 
 export async function guard(btn, fn, { success } = {}) {

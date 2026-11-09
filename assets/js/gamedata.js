@@ -62,6 +62,10 @@ export const GAMEDATA = {
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}
   },
+  "boss": {
+    "gwiheo": {"lv":38,"arc":"외전 · 요인록","min":15,"raw":[35,4],"fail":{"cd":30,"er":10,"dur":10},"hp_n":[1.2,1.7,0.8,0.85],"item":"gwiheo_charm","name":"귀허의 주인","again":{"xp":0.05,"gil":120},"falls":10,"fight":"귀허의 주인","first":{"xp":0.5,"gil":1500},"place":"귀허","quest":"gq_4","raw_n":[1,1.4,0.8,0.85],"enrage":0.15,"hp_atk":40,"hp_min":6000,"region":"gwiheo_core","item_name":"귀허 부적","shop_name":"반요촌 잡화","quest_name":"외전 4장 「달 없는 장」"},
+    "mukjeok": {"lv":44,"arc":"외전 · 묵적록","min":18,"raw":[38,4],"fail":{"cd":30,"er":10,"dur":10},"hp_n":[0.8,1.3,0.8,1.25],"item":"seal_inkline","name":"먹그림자","shop":"mukchang_shop","solo":{"medic":{"solo_dmg":-12,"solo_guard":10},"scout":{"solo_dmg":-25,"solo_guard":18},"analyst":{"solo_dmg":-25,"solo_guard":2},"exorcist":{"solo_dmg":-41,"solo_guard":4},"artificer":{"solo_dmg":-40,"solo_guard":-40},"sealmaster":{"solo_dmg":-42,"solo_guard":-2}},"again":{"xp":0.05,"gil":150,"qty":1,"item":"meokgwi_lump","item_name":"먹귀 응어리"},"board":{"line_n":[1,1,2,1],"aoe_mul":0.9,"lit_pct":5,"low_pct":10,"strokes":9,"keep_mul":1.3,"line_off":[2,0,0,3],"line_raw":45,"lit_base":4,"lit_ward":10,"aoe_every":4,"bound_raw":10,"erase_pct":6,"erase_raw":50,"hesit_pct":15,"lit_start":7,"mimic_atk":0.7,"mimic_raw":12,"line_every":[6,6,5,6],"center_pres":60,"erase_every":5,"mimic_stuck":0.5,"erase_strokes":3,"recall_credit":0.5,"erase_sure_lit":6},"falls":10,"fight":"아홉 칸 명부","first":{"xp":0.5,"gil":2000,"mount":"ink_crane","furniture":"mk_first","mount_name":"먹 그림 학","name_style":"ns:1032","name_style_name":"묵적"},"place":"아홉 칸 뜰","quest":"mkq_4","raw_n":[1,1.1,0.8,0.85],"enrage":0.15,"hp_atk":44,"hp_min":7500,"region":"nine_court","item_name":"봉인 먹줄","shop_name":"묵창 나루 주막","xp_cap_lv":45,"quest_name":"외전 「묵적록」 4장 「명부 탑」"}
+  },
   "jobSkills": {
     "medic": {"desc":"체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.","name":"응급 처방"},
     "scout": {"desc":"원거리 ×1.4로 쏘고 표식을 남겨 다음 세 번의 공격이 25%씩 강해집니다.","name":"급소 사격"},
@@ -101,7 +105,7 @@ export const GAMEDATA = {
   "regionNames": {"hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","salt_village":"염등촌","red_moon_fort":"적월교 월식성","iron_monastery":"철벽 고찰","ember_village":"잔불촌","hidden_bazaar":"십삼문 암시장","star_observatory":"무극 관성대","snow_hollow":"설피골","ember_pass":"불씨 고개","lamp_alley":"등잔골 뒷골목","star_hill":"별바라기 언덕"},
   "bag": {"base":34},
   "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
-  "titles": {"total":258,"public":185,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"교류":3,"토벌":13,"도감":20,"외전":6,"세력":21,"별채":14,"비밀":57}},
+  "titles": {"total":265,"public":191,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"교류":3,"토벌":13,"도감":20,"외전":13,"세력":21,"별채":14,"비밀":57}},
   "fish": {"species":50,"grounds":24}
 };
 export default GAMEDATA;
