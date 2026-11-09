@@ -8,6 +8,7 @@ import { face } from './people.js';
 import { bgroup, bclear } from './rtb.js';
 import { load as loadSnap } from './views/common.js';
 import { hit } from './changes.js';
+import { SYS_CHAT } from './rules.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -375,7 +376,7 @@ function draw() {
     if (!store.partyId) { list.innerHTML = `<li class="chat-empty">파티에 가입하면 파티 채팅을 쓸 수 있습니다.</li>`; return; }
     rows = partyMsgs.filter(m => !blocked.has(m.sender_id)).map(m => ({ ...msgOf(m, me), who: m.sender_name || m.character_name }));
   } else {
-    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: (m.sender_name === '구조 알림' && /쓰러졌습니다|일어났습니다/.test(m.content || '')) || (m.sender_name === '세력 소식' && /차지했습니다/.test(m.content || '')) || m.sender_name === '봉연 소식', up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), seal: m.sender_name === '봉연 소식', ...msgOf(m, me), to: m.channel_type === 'whisper' && m.sender_id === me }));
+    rows = msgs.filter(m => m.channel_type === tab && !blocked.has(m.sender_id)).map(m => ({ sys: SYS_CHAT[m.sender_name] || null, up: m.sender_name === '구조 알림' && /일어났습니다/.test(m.content || ''), ...msgOf(m, me), to: m.channel_type === 'whisper' && m.sender_id === me }));
   }
   list.innerHTML = rows.length ? (tab in chanNew ? topNote(tab) : '') + rows.map((r, i) => msgRow(r, rows[i - 1])).join('')
     : `<li class="chat-empty">아직 메시지가 없습니다.</li>`;
@@ -398,7 +399,7 @@ export function richText(t) {
 }
 const YOHWA_MARK = '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>';
 function msgRow(r, prev) {
-  if (r.sys) return `<li class="chat-notice sys${r.up ? ' up' : ''}${r.seal ? ' raidnote' : ''}">${icon(r.up ? 'check' : r.seal ? 'flame' : 'heart', 12)}<span>${richText(r.text)}</span><time>${r.at ? fmt.time(r.at) : ''}</time></li>`;
+  if (r.sys) return `<li class="chat-notice sys${r.up ? ' up' : r.sys.cls ? ' ' + r.sys.cls : ''}">${icon(r.up ? 'check' : r.sys.icon, 12)}<span>${richText(r.text)}</span><time>${r.at ? fmt.time(r.at) : ''}</time></li>`;
   const cont = prev && !prev.sys && prev.sid === r.sid && r.at && prev.at && new Date(r.at) - new Date(prev.at) < 300000;
   const cls = ['msg', r.mine ? 'mine' : '', r.gm ? 'gm' : '', cont ? 'cont' : ''].filter(Boolean).join(' ');
   if (cont) return `<li class="${cls}"><p>${richText(r.text)}</p></li>`;
