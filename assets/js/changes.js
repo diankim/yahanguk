@@ -24,7 +24,7 @@ export const CHANGES = {
   avatar: /avatar|outfit|wardrobe|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
-  boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
+  boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
   boardAway: /expedition|raid_|pfight_|gw_/,
   boardOther: /battle_action|field_|expedition|craft|fish|trade|market|shop/,
   people: /party|circle|bond|letter|loot|friend|block|wedding|rescue/,
@@ -42,6 +42,6 @@ export const SFX_ACTS = [
   [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
-export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish$/,
+export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish(_at)?$/,
   clue: /field_search/, search: /field_search/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 export const hit = (key, name) => CHANGES[key].test(name || '');

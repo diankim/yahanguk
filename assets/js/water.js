@@ -2,10 +2,12 @@ const RIVERS = [
   { in: 'sky_lake', ice: 4, pts: [[480,122,3],[472,150,3.4],[458,182,3.8],[446,212,4.2],[449,242,4.8],[458,272,5.2],[470,298,5.8],[500,312,6.2],[540,306,6.8],[585,313,7.2],[625,318,7.8],[655,314,8.2],[695,322,8.8],[722,336,9.2],[770,323,10],[805,306,10.8],[838,302,11.6],[864,324,12.6],[886,352,14],[918,372,15],[938,381,15.5]] },
   { in: 'mirror_pavilion', small: 1, pts: [[762,244,2.4],[765,272,2.8],[767,300,3.2],[770,322,3.6]] },
   { in: 'salt_village', small: 1, pts: [[640,318,2.6],[650,340,2.8],[662,360,3],[676,380,3.1],[690,404,3.3],[704,428,3.5]] },
+  { in: 'mukchang_ferry', pts: [[352,150,2.6],[334,140,3],[316,134,3.4],[298,124,3.8],[284,108,4.4],[272,88,5]] },
 ];
 const CANALS = [
   { in: 'old_canal', pts: [[468,300],[444,294],[422,290]], w: 3.6 },
   { in: 'old_canal', pts: [[422,290],[408,286],[400,302],[388,322],[380,340]], w: 3.2, under: 1 },
+  { in: 'myeongbu_tower', pts: [[132,134],[122,142],[110,138],[100,146]], w: 3 },
 ];
 const POOLS = [
   { in: 'sky_lake', at: [490,98,30,1.25,0.7], ice: 1, ripple: 1 },
@@ -13,11 +15,14 @@ const POOLS = [
   { in: 'sunken_district', at: [370,362,20,1.1,0.85] },
   { in: 'sealed_garden', at: [553,416,12,1.2,0.8], lotus: 5, small: 1 },
   { in: 'glass_canyon', at: [138,260,17,1.3,0.8], ripple: 1 },
-  { in: 'lotus_marsh', at: [726,352,15,1.4,0.75] }, { in: 'lotus_marsh', at: [756,348,12,1.3,0.85] },
+  { in: 'blank_field', at: [238,186,10,1.4,0.75] }, { in: 'blank_field', at: [214,192,7,1.3,0.8], small: 1 },
+  { in: 'meokbi_forest', at: [160,236,13,1.25,0.8], ripple: 1 },
+  { in: 'nine_court', at: [44,186,6,1,1] },
+    { in: 'lotus_marsh', at: [726,352,15,1.4,0.75] }, { in: 'lotus_marsh', at: [756,348,12,1.3,0.85] },
   { in: 'lotus_marsh', at: [750,312,9,1.4,0.8], small: 1 }, { in: 'lotus_marsh', at: [708,330,9,1.3,0.85], small: 1 }, { in: 'lotus_marsh', at: [772,340,7,1.2,0.9], small: 1 },
   { in: 'ash_reeds', at: [418,888,9,1.3,0.8] }, { in: 'ash_reeds', at: [444,920,8,1.2,0.8] }, { in: 'ash_reeds', at: [412,925,6,1.3,0.8], small: 1 },
 ];
-const REEDS = { lotus_marsh: [[720,358],[742,334],[766,338],[735,306],[704,340],[760,356]], ash_reeds: [[410,875],[450,905],[430,935],[400,910],[456,930]] };
+const REEDS = { blank_field: [[230,180],[246,192],[222,198]], lotus_marsh: [[720,358],[742,334],[766,338],[735,306],[704,340],[760,356]], ash_reeds: [[410,875],[450,905],[430,935],[400,910],[456,930]] };
 const ABYSS = [{ in: 'sealed_abyss', at: [530,642,24] }];
 const RIFTS = [{ in: 'black_tide_rift', pts: [[702,424],[712,436],[704,448],[720,456],[712,470],[730,476],[748,494],[740,476],[754,468],[734,454],[738,440],[722,436],[716,424]] }];
 const WHIRLS = [{ in: 'gwiheo_core', at: [630,1078,20] }];
@@ -60,7 +65,7 @@ function isles(cells) {
   return isleCache;
 }
 
-export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory']);
+export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory', 'mukchang_ferry']);
 const seg = (e, X, Y) => `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
 
 export function waterUnder(g, X, Y, k) {

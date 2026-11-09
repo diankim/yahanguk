@@ -56,8 +56,13 @@ export const GAMEDATA = {
   "idle": {"eff":0.35,"gain":12,"rate":{"rest":3,"research":10,"training":12,"maintenance":8}},
   "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"per_lv_low":40},
   "rate": {"fish_s":15,"raid_ms":1000,"gather_s":12,"battle_ms":1000,"search_ms":900},
-  "weakSafe": ["banyo_village"],
-  "fishRules": {"miss":0.3,"match":3,"weight":{"epic":3,"rare":9,"common":60,"uncommon":25,"legendary":0.6},"boosted":["rare","epic","legendary"],"miss_skill":0.6},
+  "weakSafe": ["banyo_village","mukchang_ferry"],
+  "fishRules": {"miss":0.3,"match":3,"named":{"bait":1,"boost":0.5,"weight":0.3},"weight":{"epic":3,"rare":9,"common":60,"uncommon":25,"legendary":0.6},"boosted":["rare","epic","legendary"],"miss_skill":0.6},
+  "level": {"cap":45,"per_level":3,"stat_points_cap":132},
+  "domains": {
+    "gwiheo": {"fx":{"effects":{"erosion_pct":60}},"name":"귀허도"},
+    "mukjeok": {"fx":{"name":"이름 흐림","guard":["clear_name","name_ward"],"effects":{"encounter_pct":5,"mental_loss_pct":15,"incoming_damage_pct":5}},"name":"묵적록"}
+  },
   "names": {
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}
@@ -98,10 +103,10 @@ export const GAMEDATA = {
     "southern_remnant": ["mandate_court"],
     "mandate_court": ["black_lotus","southern_remnant"]
   },
-  "regionNames": {"hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","salt_village":"염등촌","red_moon_fort":"적월교 월식성","iron_monastery":"철벽 고찰","ember_village":"잔불촌","hidden_bazaar":"십삼문 암시장","star_observatory":"무극 관성대","snow_hollow":"설피골","ember_pass":"불씨 고개","lamp_alley":"등잔골 뒷골목","star_hill":"별바라기 언덕"},
+  "regionNames": {"iron_monastery":"철벽 고찰","ember_pass":"불씨 고개","snow_hollow":"설피골","star_hill":"별바라기 언덕","lamp_alley":"등잔골 뒷골목","hidden_bazaar":"십삼문 암시장","ember_village":"잔불촌","hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","star_observatory":"무극 관성대","red_moon_fort":"적월교 월식성","salt_village":"염등촌"},
   "bag": {"base":34},
   "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
-  "titles": {"total":258,"public":185,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"교류":3,"토벌":13,"도감":20,"외전":6,"세력":21,"별채":14,"비밀":57}},
-  "fish": {"species":50,"grounds":24}
+  "titles": {"total":270,"public":190,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"묵적록":12,"교류":3,"토벌":13,"도감":20,"외전":6,"세력":21,"별채":14,"비밀":57}},
+  "fish": {"species":66,"grounds":30,"named":6}
 };
 export default GAMEDATA;

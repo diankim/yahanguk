@@ -1,10 +1,11 @@
-import { icon, esc, $, $$ } from '../core.js';
+import { icon, esc, $, $$, effectText } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG } from '../rules.js';
+const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -447,7 +448,7 @@ const S = [
           <li><b>탐사</b>: 지팡이 · 나침반. 탐색할 때 숨은 길·채집터를 찾을 확률이 오르고, 높은 단계는 단서를 찾을 확률도 오릅니다.</li>
           <li><b>낚시</b>: 낚싯대. 비워 두면 가방의 가장 좋은 낚싯대를 씁니다.</li></ul></li>
       <li><b>장착 조건</b>: 채집 도구는 채집 숙련, 탐사 장비는 조사 숙련 단계를 봅니다. 능력치 조건은 없습니다.</li>
-      <li>채집도·곡괭이·낚싯대·나침반·제작 공구가 Lv40 무렵까지 단계별로 있습니다.</li>
+      <li>채집도·곡괭이·낫·등·낚싯대·나침반·제작 공구가 1~7단계(7단계는 묵적록 Lv40)까지 단계마다 있습니다.</li>
       <li><b>생활 도구 효과</b>
         <ul><li>영맥 낫은 약초·영기 채집터에서 3% 확률로, 영등은 유물 채집터나 어두운 지역에서 5% 확률로 그 지역 희귀품을 함께 거둡니다. 생활 도구는 직업과 상관없이 누구나 씁니다.</li>
           <li>영맥 나침반은 탐색에서 길·채집터를 찾는 확률을 1.2배로 높입니다.</li>
@@ -816,13 +817,34 @@ const S = [
       <li>단추에 예상치와 남은 시간이 보이고, 쉬고 나면 실제로 오른 만큼이 뜹니다.</li>
       <li><b>안전지대에 머물면</b> 10분마다 체력 +12 · 정신 +6 · 영력(기력) +15가 저절로 오릅니다. 이 값은 보정 없이 고정입니다. 전투불능·이동·원정 중에는 오르지 않습니다.</li>
     </ul>`],
+  ['mukjeok', '묵적록', `
+    <p>귀허도 외전 「요인록」 다섯 장을 모두 마치면 지도 왼쪽 위, 빙혼곡 너머로 <b>묵적록</b>이 나타납니다. 그 전에는 지도에 보이지 않고 갈 수도 없습니다.</p>
+    <h4>지역</h4>
+    <ul>
+      <li>묵창 나루 안전지대 Lv40 · 빈칸 벌판 Lv41 · 먹비 숲 Lv42 · 명부 탑 Lv44 · 아홉 칸 뜰 Lv45</li>
+      <li>묵창 나루는 반요촌처럼 <b>빈약한 안전지대</b>입니다. 거래소·창고·마구간이 없고, 주막 상점은 품목이 적고 사람마다 하루 개수가 정해져 있습니다. 되팔기·판매 한도 절반, 수리비 세 배, 대장간은 월철 주괴·정련 숯만 팝니다.</li>
+      <li>7단계 장비(장착 Lv${GD.level.cap - 3})와 7단계 생활 도구는 묵적록 재료로 만들고, 묵창 나루에서 만들면 품질이 오릅니다.</li>
+    </ul>
+    <h4>이름 흐림</h4>
+    <p>묵적록(나루 포함)에 있는 동안 늘 걸리는 약화입니다. 상태 칸 10칸에 세지 않고, 떠나면 바로 사라집니다. 상태판에 따로 보입니다.</p>
+    <ul>
+      <li>효과: ${mukFx()}</li>
+      <li>막는 법: 이름 먹 부적(1시간 「이름 지킴」) · 명어 「문패 잉어」로 끓인 이름 새김 탕(2시간 「또렷한 이름」)</li>
+    </ul>
+    <h4>명어(名魚)와 미끼</h4>
+    <ul>
+      <li>묵적록 낚시터 여섯(먹물 여울·묵창 앞바다·번진 먹 늪·먹비 고인 못·탑 밑 먹 수로·아홉째 칸 우물)마다 이름을 지킨 물고기 <b>명어</b>가 하나씩 삽니다.</li>
+      <li>명어는 그 낚시터에서 정해진 <b>시간대·날씨</b>에 <b>미끼</b>를 걸었을 때만 뭅니다. 미끼는 그 물에 사는 범품~진품 물고기 서너 종 가운데 아무것이나 되고, 걸면 던질 때마다 한 마리씩 씁니다.</li>
+      <li>입질 뒤 명어 무게는 ${GD.fishRules.named.weight}(신품 어종 ${GD.fishRules.weight.legendary}보다 어렵게), 희귀 어종 보정은 절반만 붙습니다. 용비늘 낚싯대는 무게를 조금 더합니다.</li>
+      <li>명어와 명어로 만든 것은 모두 거래할 수 없습니다. 도감은 못 낚은 명어의 이름을 감추고 힌트만 보여 줍니다.</li>
+    </ul>`],
   ['growth', '성장과 캐릭터 빌드', `
     <h4>레벨</h4>
     <ul>
-      <li>최고 레벨은 <b>40</b>입니다.</li>
+      <li>최고 레벨은 <b>${GD.level.cap}</b>입니다. 쌓아 둘 수 있는 능력치 포인트는 ${GD.level.stat_points_cap}점까지입니다.</li>
       <li>다음 레벨까지 <b>100 × 레벨 + 12 × 레벨²</b> 경험치가 듭니다. 높은 레벨일수록 천천히 오릅니다.
-        <ul><li>Lv10 2,200 · Lv20 6,800 · Lv30 13,800 · Lv39 22,152</li></ul></li>
-      <li>레벨이 오르면 능력치 3점을 받습니다. 체력은 레벨과 상관없이 최대 100입니다.</li>
+        <ul><li>Lv10 2,200 · Lv20 6,800 · Lv30 13,800 · Lv40 23,200 · Lv44 27,632</li></ul></li>
+      <li>레벨이 오르면 능력치 ${GD.level.per_level}점을 받습니다. 체력은 레벨과 상관없이 최대 100입니다.</li>
     </ul>
     <h4>능력치</h4>
     <table class="guide-table"><tr><th>능력치</th><th>하는 일</th></tr>
@@ -836,7 +858,7 @@ const S = [
     <ul>
       <li><b>위력에 드는 몫</b>: 근접은 근력 ×1.0, 술법은 영성 ×0.75 + 의지 ×0.4, 원거리는 민첩 ×0.6 + 감각 ×0.45입니다.</li>
       <li>캐릭터 › 성장에서 + / − 로 쌓아 두고, 바뀔 전투 능력치를 본 뒤 「확정」을 누르면 한 번에 반영됩니다.</li>
-      <li><b>한 능력치의 상한</b>은 직업 기본값 + 레벨×1.5입니다. 기본값이 9인 능력치라면 Lv10 24 · Lv20 39 · Lv30 54 · Lv40 69입니다.</li>
+      <li><b>한 능력치의 상한</b>은 직업 기본값 + 레벨×1.5입니다. 기본값이 9인 능력치라면 Lv10 24 · Lv20 39 · Lv30 54 · Lv40 69 · Lv45 76입니다.</li>
       <li>주는 피해 %는 칭호·장비·기술을 모두 합쳐 +35%에서 멈춥니다. 칭호의 피해 %는 칭호에 적힌 값 그대로 붙습니다. 치명타는 1.5배입니다.</li>
     </ul>
     <h4>기술 계열</h4>
@@ -1774,7 +1796,7 @@ const S = [
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
-  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mount', 'safe', 'weather']],
+  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'raid', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets']],

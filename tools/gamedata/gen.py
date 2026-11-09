@@ -73,6 +73,8 @@ def build(dsn):
     d['rate'] = q(dsn, "select world_rate_rules()")
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")
     d['fishRules'] = q(dsn, "select world_fish_rules()")
+    d['level'] = q(dsn, "select world_level_rules()")
+    d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx')) from jsonb_each(world_domain_rules()) e(k, v)")
     d['names'] = q(dsn, "select world_name_rules()")
     d['jobSkills'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'desc', v ->> 'desc')) from jsonb_each(world_job_skill_rules()) e(k, v)")
     # 대세력: 가입 받는 곳·세력 안전지대·관계 기준값
@@ -104,7 +106,7 @@ def build(dsn):
                  where active and category is not null group by 1) c)) from world_title_catalog where active""")
     d['titles'] = t
     # 낚시: 어종·낚시터
-    d['fish'] = q(dsn, "select json_build_object('species', (select count(*) from world_fish_species where active), 'grounds', (select count(*) from world_fish_grounds))")
+    d['fish'] = q(dsn, "select json_build_object('species', (select count(*) from world_fish_species where active), 'grounds', (select count(*) from world_fish_grounds), 'named', (select count(*) from world_fish_species where active and named))")
     return d
 
 

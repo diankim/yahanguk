@@ -35,6 +35,7 @@ const M = {
   crossed: 'M-7-7L7 7M7-7L-7 7M-8-5l3-3M5 8l3-3M5-8l3 3M-8 5l3 3M0 3v5',
   twin: 'M-7 0a4 4 0 108 0 4 4 0 10-8 0M-1 0a4 4 0 108 0 4 4 0 10-8 0M-3-6l2 2M3-6l-2 2',
   eave: 'M-8 1L0-6 8 1M-9 1h18M-6 1v6h12V1M-2 7V3h4v4',
+  inkdrop: 'M0-8C2-4 5-1 5 2a5 5 0 01-10 0c0-3 3-6 5-10zM-6 7h12M-3 4l1 1',
   wedknot: 'M-6-2a3 3 0 106 0 3 3 0 10-6 0M0-2a3 3 0 106 0 3 3 0 10-6 0M0 1v6M-3 7h6M-2-8l2 3 2-3',
 };
 export const FRAMES = {
@@ -48,6 +49,7 @@ export const FRAMES = {
   fr_f_night: ['rare', 'ledger'], fr_f_redmoon: ['rare', 'eclipse'], fr_f_lotus: ['rare', 'lotus'], fr_f_north: ['rare', 'peak'],
   fr_f_river: ['rare', 'boat'], fr_f_south: ['rare', 'flame'], fr_f_mandate: ['rare', 'stars'],
   fr_gwiheo: ['legend', 'vortex'],
+  fr_mukjeok: ['legend', 'inkdrop'],
   fr_wed: ['legend', 'wedknot'],
   fr_home: ['legend', 'eave'],
   fr_tn_solo: ['legend', 'crossed'], fr_tn_team: ['legend', 'twin'],
@@ -117,8 +119,8 @@ export function patternLayer(key) {
 }
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
-export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同',
+export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_muk: '墨', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同',
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星' };
-const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare',
+const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_muk: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend' };
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';
