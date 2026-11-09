@@ -98,6 +98,9 @@ FRINGES = {
     'side': [15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 11],
     'part': [14, 14, 13, 13, 12, 12, 11, 10, 10, 11, 12, 12, 13, 13, 14, 14],
     'soft': [13, 14, 13, 12, 13, 14, 13, 12, 12, 13, 14, 13, 12, 13, 14, 13],
+    'messy': [13, 12, 14, 13, 11, 13, 14, 12, 13, 14, 12, 11, 13, 12, 14, 13],
+    'curtain': [15, 14, 14, 13, 12, 11, 10, 9, 9, 10, 11, 12, 13, 14, 14, 15],
+    'blunt': [14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 14],
     'curl': [13, 14, 14, 13, 12, 13, 14, 14, 13, 12, 13, 14, 14, 13, 12, 13],
 }
 EYE_COLS = set(range(6, 11)) | set(range(17, 22))
@@ -124,7 +127,7 @@ def hair_front(fringe, locks, kind=''):
         g.set(x, tip, 'H')
     end = int(12 + 10 * locks)
     for y in range(12, end + 1):
-        o = wave(y) if kind == 'wavy' and y > 15 else 0
+        o = wave(y) if kind in ('wavy', 'cloud') and y > 15 else 0
         for x in (4, 5, 6):
             g.sym(x - o, y, 'h' if x < 6 or y < 18 else 'H')
     g.sym(4, end + 1, 'H')
@@ -134,7 +137,25 @@ def hair_front(fringe, locks, kind=''):
                 x = x0 + (0, 1, 1, 0, -1, -1)[(y - 5) % 6]
                 if g.p.get((x, y)) == 'h':
                     g.set(x, y, 'k')
-    if kind == 'wavy':
+    if kind in ('curtain', 'cloud'):
+        for y in range(3, 10):
+            g.set(13, y, 'H')
+        g.set(14, 9, 'H')
+    if kind == 'fluffy':
+        for x0 in (8, 15, 20):
+            for y in range(4, 11):
+                x = x0 + (0, 1, 1, 2, 2, 1, 1)[y - 4]
+                if g.p.get((x, y)) == 'h':
+                    g.set(x, y, 'k')
+    if kind == 'curtain':
+        for y in range(18, end + 1):
+            g.sym(6, y, 'h')
+        g.sym(7, end, 'H')
+    if kind == 'princess':
+        for y in range(12, end + 1):
+            g.sym(7, y, 'h')
+        g.sym(7, end + 1, 'H'); g.sym(6, end + 1, 'H')
+    if kind in ('wavy', 'cloud', 'princess'):
         for y in range(16, end + 1, 4):
             g.sym(5 - wave(y), y, 'i')
     for pts in ([(7, 6), (6, 7), (6, 8), (5, 9), (5, 10)], [(11, 5), (11, 6), (10, 7), (10, 8), (9, 9)], [(13, 6), (13, 7), (13, 8), (13, 9)]):
@@ -202,6 +223,43 @@ def hair_back(kind):
             g.sym(3 - o, y, 'H' if (y // 2) % 3 == 0 else 'k')
         for y in (32, 33):
             g.srect(3 - wave(y), y, 6 - wave(y), y, 'H' if y == 33 else 'k')
+    elif kind == 'fluffy':
+        for x, y, rr in ((4.5, 4.5, 1.8), (17.5, 1.6, 1.6), (21, 2.6, 1.5), (25.8, 8.5, 1.6), (2, 13, 1.4), (26, 14, 1.4)):
+            g.ell(x, y, rr, rr, 'k')
+        for x, y in ((2, 3), (16, 0), (22, 1), (27, 8)):
+            g.set(x, y, 'k')
+        g.srect(1, 12, 4, 18, 'k')
+        g.sym(0, 18, 'k'); g.sym(1, 19, 'H')
+    elif kind == 'curtain':
+        g.srect(2, 12, 5, 19, 'k')
+        g.srect(3, 20, 6, 20, 'k')
+        g.srect(5, 21, 7, 21, 'H')
+    elif kind == 'halfup':
+        g.srect(2, 12, 4, 20, 'k')
+        g.ell(25.2, 4.6, 2.6, 2.6, 'h')
+        g.set(25, 3, 'i'); g.set(26, 3, 'i')
+        g.set(23, 6, 'H'); g.set(24, 7, 'H')
+        for y in range(7, 13):
+            g.rect(26, y, 27, y, 'h')
+        g.set(27, 13, 'H')
+    elif kind == 'cloud':
+        for y in range(10, 33):
+            o = wave(y) * 2 // 1
+            w = 7 if 14 < y < 30 else 6
+            g.srect(max(0, 1 - o), y, min(13, w - o), y, 'k')
+            if (y // 2) % 3 == 0:
+                g.sym(max(0, 2 - o), y, 'H')
+        for y in (33,):
+            g.srect(2, y, 6, y, 'H')
+        for cx in (6.5, 21.5):
+            g.ell(cx, 2.2, 2.6, 2.3, 'h')
+            g.set(int(cx) - 1, 1, 'i')
+    elif kind == 'princess':
+        for y in range(12, 32):
+            o = wave(y)
+            g.srect(1 - o, y, 5 - o, y, 'k')
+            g.sym(2 - o, y, 'H' if (y // 2) % 3 == 0 else 'k')
+        g.srect(2, 32, 5, 32, 'H')
     elif kind == 'spiky':
         for bx, by, dx, dy in ((6, 3, -1, -1), (10, 1, -1, -1), (14, 0, 0, -1), (19, 1, 1, -1), (22, 3, 1, -1), (1, 9, -1, 0), (26, 9, 1, 0)):
             for t in range(2):
@@ -220,6 +278,11 @@ HAIRS = {
     'spiky': ('뻗친 머리', 'spiky', 'jag', 0.7),
     'curly': ('물결 짧은 머리', 'curly', 'curl', 0.7),
     'wavy': ('물결 긴 머리', 'wavy', 'part', 1.1),
+    'fluffy': ('헝클어진 짧은 머리', 'fluffy', 'messy', 0.6),
+    'curtain': ('가르마 짧은 머리', 'curtain', 'curtain', 0.8),
+    'halfup': ('옆으로 넘긴 반묶음', 'halfup', 'side', 0.8),
+    'cloud': ('구름 물결 긴 머리', 'cloud', 'part', 1.1),
+    'princess': ('일자 앞머리 물결 머리', 'princess', 'blunt', 1.0),
 }
 
 EX, EY = 6, 14
