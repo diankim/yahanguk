@@ -26,6 +26,8 @@ export function trayList(inv, always = 0) {
     .filter(([k, , show]) => show || Number(inv[k]) > 0);
 }
 
+export const kindJobs = eff => eff?.jobs || (eff?.job ? [eff.job] : []);
+export const petPow = p => Math.round(Number(p?.pow || 0) * 100);
 export function effectiveness(style, eff) {
   const m = eff?.[style]; if (m == null) return null;
   return m >= 1.2 ? ['효과 좋음', 'ok'] : m <= 0.85 ? ['효과 약함', 'bad'] : ['보통', ''];
@@ -55,6 +57,7 @@ function draw(fresh = []) {
   const ef = effectiveness(w.type, b.eff);
   const intent = b.gimmick ? [b.gimmick.name, b.gimmick.burst ? '모은 기운이 터지려 한다.' : b.gimmick.tell, b.gimmick.burst ? 3 : 2] : (INTENT[b.intent] || INTENT.strike);
   const skill = SKILL[c.job_key] || ['기술', ''];
+  if (c.job_key === 'tamer' && !b.pet) weakNote('pet');
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
   const skillWait = Math.max(0, ready - turnNow);
   const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = c.job_key === 'medic' ? 25 : 12;
@@ -79,6 +82,7 @@ function draw(fresh = []) {
           <div class="vital"><span>${spOf()[0]}</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, spOf()[1])}</div>
         </div>
         <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${ef ? chip(ef[0], ef[1]) : ''}${(data.gear_warn || []).filter(g => g.slot === 'weapon' || g.slot === 'armor').map(g => chip(`${g.slot === 'weapon' ? '무기' : '방어구'} ${g.dur > 0 ? '닳음' : '부서짐'}`, 'bad')).join('')}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : (w.type || 'melee') === 'melee' ? ' <small class="muted">근접 공격은 기력 2를 씁니다</small>' : ''}</p>
+        ${c.job_key === 'tamer' ? `<p class="weapon-line pet-line">${icon('heart', 14)} ${b.pet ? `${esc(b.pet.name)} · ${esc(b.pet.grp_name || '')} · 힘 ${petPow(b.pet)}% <small class="muted">공격하는 차례마다 한 번 덧붙어 싸웁니다</small>` : '<span class="bad-text">데리고 다니는 동무가 없습니다</span> <small class="muted">별채 › 동무 도감에서 「데리고 다니기」</small>'}</p>` : ''}
         <div class="float-layer" id="me-float"></div>
       </div>
       ${b.sneak != null ? `<div class="hint accent sneak-ask" id="sneak-ask">${icon('eye', 16)}<span><b>기척을 숨기겠습니까?</b> 성공 ${b.sneak}% · 실패하면 요괴가 먼저 덤벼듭니다. 탐색력은 돌아오지 않습니다.</span>
@@ -96,7 +100,7 @@ function draw(fresh = []) {
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;
   $('#mech-info', host)?.addEventListener('click', () => openModal({ title: `갈래 · ${b.kind_name}`, body: `<p>${esc(b.kind_desc || '')}</p>
-    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${b.eff.job ? ` · ${esc(JOB[b.eff.job] || '')} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 수법 대처법이 적힙니다.</p>'}` }));
+    ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${kindJobs(b.eff).length ? ` · ${esc(kindJobs(b.eff).map(j => JOB[j] || '').join('·'))} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 수법 대처법이 적힙니다.</p>'}` }));
   $$('[data-a]', host).forEach(btn => btn.onclick = async () => {
     const a = btn.dataset.a;
     if (a === 'item') { $('#item-tray', host).hidden = !$('#item-tray', host).hidden; return; }
@@ -123,7 +127,7 @@ function tickCooldown() {
 }
 
 let busy = false;
-const WEAK = { ammo: '무기에 맞는 탄(화살·쇠뇌살·취관 침)이 없습니다 · 피해가 절반으로 줄었습니다', sp: '기력이 없습니다 · 피해가 절반으로 줄었습니다', mp: '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다' };
+const WEAK = { pet: '데리고 다니는 동무가 없어 혼자 싸웁니다 · 별채 › 동무 도감에서 「데리고 다니기」를 고르세요', ammo: '무기에 맞는 탄(화살·쇠뇌살·취관 침)이 없습니다 · 피해가 절반으로 줄었습니다', sp: '기력이 없습니다 · 피해가 절반으로 줄었습니다', mp: '영력이 없습니다 · 술법 피해가 절반으로 줄었습니다' };
 const weakAt = {};
 export function weakNote(code) {
   const msg = WEAK[code];

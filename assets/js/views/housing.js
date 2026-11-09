@@ -6,7 +6,7 @@ import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
 import { drawAvatar, registerDesigns } from '../housing/avatarsprite.js';
 import { cardName } from './card.js';
 import { GAMEDATA } from '../gamedata.js';
-import { petLine } from '../housing/petlines.js';
+import { petLine, CAPS } from '../housing/petlines.js';
 import { openGallery, pickDrawing, openViewer } from './drawings.js';
 import { idOf, placedCounts, rememberHome } from '../housing/count.js';
 import { helpQ } from '../tips.js';
@@ -395,7 +395,7 @@ async function openPets() {
   const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2 })}" alt="">` : '<span class="ps-empty"></span>';
   const houseNote = !ps.house ? '별채를 얻으면 한 마리를 둘 수 있습니다.' : ps.shared ? '함께 쓰는 별채에는 집주인의 동무가 머뭅니다.' : '도감에서 「별채에 두기」';
   const slots = `<div class="pet-slots">
-      <div class="pet-slot"><small class="eyebrow">데리고 다니는 동무 · 조사원 카드에 보임</small>${pic(prof)}<span class="ps-body">${prof ? `<b>${esc(nm(prof))}</b><button class="btn small" data-prof="">쉬게 하기</button>` : '<span class="muted small">도감에서 「데리고 다니기」</span>'}</span></div>
+      <div class="pet-slot"><small class="eyebrow">데리고 다니는 동무 · 조사원 카드에 보임</small>${pic(prof)}<span class="ps-body">${prof ? `<b>${esc(nm(prof))}</b><span class="muted small">친밀도 ${mine.get(prof)?.affinity || 0}</span><span class="btn-row"><button class="btn small primary" data-carry>돌보기</button><button class="btn small" data-prof="">쉬게 하기</button></span>` : '<span class="muted small">도감에서 「데리고 다니기」</span>'}</span></div>
       <div class="pet-slot"><small class="eyebrow">별채 동무 · 방 안을 돌아다님</small>${pic(petId)}<span class="ps-body">${petId ? `<b>${esc(nm(petId))}</b><button class="btn small" data-place="">별채에서 내보내기</button>` : `<span class="muted small">${esc(houseNote)}</span>`}</span></div>
     </div>`;
   const acts = s => {
@@ -403,7 +403,8 @@ async function openPets() {
     if (room_) out.push(petId === s.id ? '<em class="on">별채에 있음</em>' : `<button class="btn small" data-place="${s.id}">별채에 두기</button>`);
     return out.join('');
   };
-  const body = `<p class="muted small">꼬마 동무는 능력치 효과가 없습니다. 두 자리에 한 마리씩 둡니다. 데리고 다니는 동무는 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채 동무는 방 안을 돌아다니며 손님도 쓰다듬거나 놀아 줄 수 있습니다. 같은 동무를 두 자리에 함께 둘 수는 없어서, 다른 자리로 고르면 앞 자리에서 빠집니다.</p>
+  const tamer = store.character?.job_key === 'tamer';
+  const body = `<p class="muted small">${tamer ? '조련사는 데리고 다니는 동무와 함께 싸웁니다(동무의 힘은 친밀도로 정해집니다). 별채에 둔 동무는 싸우지 않습니다.' : '꼬마 동무는 능력치 효과가 없습니다.'} 두 자리에 한 마리씩 둡니다. 데리고 다니는 동무는 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채 동무는 방 안을 돌아다니며 손님도 쓰다듬거나 놀아 줄 수 있습니다. 같은 동무를 두 자리에 함께 둘 수는 없어서, 다른 자리로 고르면 앞 자리에서 빠집니다.</p>
     ${slots}
     ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
@@ -414,7 +415,8 @@ async function openPets() {
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry]'); if (!b) return;
+    if (b.dataset.carry != null) { openCarry(mine.get(prof), ps); return; }
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
       openModal({ title: '별명 짓기', body: `<form id="pet-nick" class="hs-gb-form"><input name="nick" maxlength="8" value="${esc(cur)}" placeholder="${esc(PETS[id]?.name || '')}" autocomplete="off"><button class="btn small primary">짓기</button></form><p class="muted small">8자까지 · 한글·영문·숫자 · 비우면 원래 이름으로 돌아갑니다.</p>` });
@@ -424,6 +426,7 @@ async function openPets() {
       });
       return;
     }
+    if (b.dataset.place && store.character?.job_key === 'tamer' && b.dataset.place === prof && !(await ask('조련사는 데리고 다니는 동무와 함께 싸웁니다. 별채에 두면 싸움에서 빠집니다.', { title: '별채에 두기', ok: '별채에 두기' }))) return;
     guard(b, async () => {
       let r;
       if (b.dataset.look) r = await rpc('world_pet_look', { p_pet: b.dataset.look, p_baby: !!b.dataset.baby });
@@ -434,6 +437,31 @@ async function openPets() {
       closeModal(); await reload(); openPets();
       return r?.content ? r : { content: '바꿨습니다.' };
     });
+  });
+}
+function openCarry(p, ps) {
+  if (!p) return;
+  const today = { pat: p.pat || 0, play: p.play || 0, feed: p.feed || 0 };
+  const draw = () => `<div class="carry-care"><img src="${petImage(p.id, p.adult, { scale: 4 })}" alt=""><div><b>${esc(p.nick || PETS[p.id]?.name || '')}</b>
+      <p class="muted small">친밀도 ${p.affinity || 0}${p.grown ? ' · 다 자람' : ' / 100이면 자람'} · 오늘 쓰다듬기 ${today.pat}/${CAPS.pat} · 놀기 ${today.play}/${CAPS.play} · 먹이 ${today.feed}/${CAPS.feed}</p>
+      <p class="small" id="carry-line"></p>
+      <span class="btn-row"><button class="btn small" data-c="pat">쓰다듬기</button><button class="btn small" data-c="play">놀아 주기</button><button class="btn small" data-c="feed">먹이 주기</button></span></div></div>`;
+  openModal({ title: '데리고 다니는 동무 돌보기', body: draw() });
+  const root = $('#modal');
+  const say = (kind, r) => { const box = $('#carry-line', root); if (box) box.innerHTML = esc(petLine(kind, { name: p.nick || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r.affinity, liked: r.react === 'star', gain: r.gain ?? 1, count: r.counts?.[kind] || 0 })); };
+  const done = (kind, r) => { p.affinity = r.affinity; p.adult = r.adult; p.grown = r.grown; if (r.counts) Object.assign(today, r.counts); const mb = $('.modal-body', root); if (mb) mb.innerHTML = draw(); say(kind, r); if (r.grew) toast('꼬마 동무가 훌쩍 자랐습니다!', 'ok'); };
+  root?.addEventListener('click', e => {
+    const b = e.target.closest('[data-c],[data-cf]'); if (!b) return;
+    if (b.dataset.cf) return guard(b, async () => { const r = await act('world_pet_act', { p_owner: null, p_act: 'feed', p_item: b.dataset.cf }); done('feed', r); return { content: null }; });
+    const kind = b.dataset.c;
+    if (kind === 'feed') {
+      const inv = store.character?.inventory || {}, likes = PETS[p.id]?.likes, have = FOODS.filter(f => (inv[f] || 0) > 0);
+      if (!have.length) return toast('가방에 동무 먹이가 없습니다. 안전지대 상점의 동무 주먹밥·별미를 사 오세요.', 'error');
+      const box = $('#carry-line', root);
+      if (box) box.innerHTML = `<span class="btn-row">${have.map(f => `<button class="btn small" data-cf="${f}">${esc(nameOf(f))} ×${inv[f]}${f === likes ? ' · 좋아함' : ''}</button>`).join('')}</span>`;
+      return;
+    }
+    guard(b, async () => { const r = await rpc('world_pet_act', { p_owner: null, p_act: kind }); done(kind, r); return { content: null }; });
   });
 }
 function petCare(btn, kind) {

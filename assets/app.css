@@ -228,6 +228,11 @@ textarea { resize: none; }
 .choice-card { display: grid; gap: 4px; text-align: left; padding: 14px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); cursor: pointer; color: var(--text); }
 .choice-card small { color: var(--muted); font-size: calc(12.5px * var(--fz, 1)); }
 .choice-card[aria-pressed=true] { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 9%, var(--surface-2)); box-shadow: 0 0 0 1px var(--gold); }
+.pet-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.pet-choice img { image-rendering: pixelated; width: 72px; height: auto; justify-self: center; }
+#pet-pick { margin-top: 12px; }
+#pet-pick .step-sub { font-size: calc(15px * var(--fz, 1)); margin: 0 0 4px; }
+@media (max-width: 640px) { .pet-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* 세계관 안내(lore.js): 생성 화면의 자세히 칸·도움말 */
 .lore-primer p { margin: 0 0 8px; font-size: calc(13.5px * var(--fz, 1)); line-height: 1.6; } .lore-primer p:last-child { margin: 0; color: var(--text); }
 .lore-detail { margin-top: 10px; } .lore-detail:empty { display: none; }
@@ -3253,6 +3258,8 @@ b.shadow { color: var(--sp); }
   .od-ed { grid-template-columns: 1fr; }
   .od-list { grid-template-columns: 1fr; }
 }
+.carry-care { display: flex; gap: 14px; align-items: flex-start; } .carry-care img { image-rendering: pixelated; width: 96px; flex: none; } .carry-care .btn-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pet-line { margin-top: 2px; }
 .fish-grounds { margin: 0 0 6px; } .fish-grounds .chip { cursor: pointer; }
 .fish-named { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 2px; font-size: calc(12px * var(--fz, 1)); color: var(--muted); } .fish-named li { display: flex; gap: 4px; align-items: baseline; } .fish-named b { color: var(--gold); }
 .fish-bait { display: grid; gap: 2px; margin: 0 0 8px; font-size: calc(12.5px * var(--fz, 1)); } .fish-bait select { max-width: 240px; }

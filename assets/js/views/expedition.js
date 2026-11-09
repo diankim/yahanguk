@@ -1,5 +1,6 @@
 import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
 import { PARTY_EXP } from '../rules.js';
+import { GAMEDATA } from '../gamedata.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
 import { hit } from '../changes.js';
 
@@ -15,6 +16,7 @@ const DEPTH = ['초입', '권역', '구역', '깊은 곳', '가장 깊은 곳'];
 export const JOB_SKILL = {
   exorcist: ['파사 부적', '원정마다 한 번, 영체·결계 요괴를 부적으로 단번에 퇴치합니다.'],
   scout: ['선제 사격', '싸울 때마다 30% 확률로 먼저 쏘아 그 싸움의 승률 +12%p.'],
+  tamer: ['동무의 코', `데리고 다니는 동무가 길·채집터·숨은 것을 더 잘 찾고(발견 최대 +${GAMEDATA.petPartner?.exp?.find}%), 원정 전투력이 최대 +${GAMEDATA.petPartner?.exp?.atk}%, 싸움마다 승률이 최대 +${Math.round((GAMEDATA.petPartner?.exp?.win || 0) * 100)}%p 오릅니다(동무의 힘만큼). 동무가 없으면 쓰지 못합니다.`],
   medic: ['야전 처치', '체력이 회복 기준 아래로 떨어지면 보급품보다 먼저 주변 약초로 체력을 25 되찾습니다(원정마다 세 번, 회복 보정 적용).'],
   sealmaster: ['결계 야영', '스며드는 요기(침식·정신 손실)를 50% 확률로 결계로 막습니다.'],
   analyst: ['급소 찌르기', '싸울 때마다 25% 확률로 급소를 짚어 그 싸움의 승률 +10%p.'],

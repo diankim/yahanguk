@@ -175,8 +175,8 @@ async function readCharacter({ hud = false, field = false, inv = false } = {}) {
   return data;
 }
 
-export const JOB_LINE = { artificer: 'melee', scout: 'ranged', sealmaster: 'sealing', exorcist: 'exorcism', analyst: 'dagger', medic: 'medicine' };
-export const COMBAT_LINES = ['melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine'];
+export const JOB_LINE = { artificer: 'melee', scout: 'ranged', sealmaster: 'sealing', exorcist: 'exorcism', analyst: 'dagger', medic: 'medicine', tamer: 'taming' };
+export const COMBAT_LINES = ['melee', 'ranged', 'sealing', 'dagger', 'exorcism', 'medicine', 'taming'];
 export const JOBS = {
   exorcist: { name: '퇴마관', trait: '술법 공격', desc: '【술법 공격】 부적과 방울로 요괴를 치는 술법 공격수. 몸은 약하지만 이목이 낮아(−15) 뒷줄에서 술법을 쏟습니다. 술법 피해 +8%·받는 피해 −6%·의지·영성이 오르면 회피·도주도 함께, 퇴마진(반드시 치명타로 꽂히는 한 방, 결계 깨기). 협동 기술은 약점 진언·멸마 진격 같은 공격 쪽.',
     kit: '영령 방울 · 삼베 도포 · 무명 부적낭',
@@ -184,6 +184,9 @@ export const JOBS = {
   scout: { name: '월궁 사수', trait: '원거리 공격', desc: '【원거리 공격】 뒷줄에서 활로 꾸준히 쏘는 원거리 공격수. 가장 잘 피하고 잘 빠져나옵니다. 원거리 피해 +8%·원거리 치명타 +4·회피 +6·도주 +15, 급소 사격(표식 세 번 — 맞힐 때마다 피해 +25%).',
     kit: '매눈 활 · 화살 100 · 무명 철릭 · 미투리',
     fx: ['원거리 피해 +8%', '원거리 치명타 +4', '회피 +6', '도주 +15', '급소 사격: ×1.4 · 표식 세 번(맞힐 때마다 +25%)', '원정 기술: 선제 사격'] },
+  tamer: { name: '조련사', trait: '짝 사냥', desc: '【짝 사냥】 활로 쏘는 원거리 공격수이자, 데리고 다니는 꼬마 동무와 함께 싸우는 사람. 공격하는 차례마다 동무가 한 번 덧붙어 물고·막아서고·쪼고·홀립니다. 동무의 힘은 등급이 아니라 친밀도로만 정해집니다. 휘파람(동무 동작이 반드시 터지고 동무 피해 두 배).',
+    kit: '대나무 단궁 · 화살 100 · 무명 철릭 · 미투리 · 첫 동무 · 동무 주먹밥 5',
+    fx: ['직업 효과 대신 동무 짝: 공격하는 차례마다 동무가 한 번 덧붙어 싸움', '동무의 힘은 친밀도로만(0이면 0.3 · 다 자라면 약 0.5 · 300이면 1.0)', '휘파람: 원거리 ×1.2 · 그 차례 동무 동작이 반드시 터지고 동무 피해 두 배', '데리고 다니는 동무를 돌보면 친밀도 ×1.5 · 함께 이긴 토벌마다 +1', '원정 기술: 동무의 코'] },
   artificer: { name: '호위 무사', trait: '방패·수호', desc: '【방패·수호】 앞에 서서 요괴의 시선을 끌고 동료를 지키는 방패. 받는 피해 −12%·이목 +80(요괴가 먼저 노림)·방패를 든 만큼 공격력 ×0.85, 파갑참(근접 ×1.7, 방어·결계 무시). 대신 막기·철벽 수호로 동료를 감쌉니다.',
     kit: '월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부',
     fx: ['받는 피해 −12%', '이목 +80(요괴가 먼저 노림)', '공격력 ×0.85(방패를 든 만큼)', '파갑참: 근접 ×1.7, 방어·결계 무시', '원정 기술: 반격 태세'] },
@@ -213,7 +216,7 @@ export const FACTIONS = {
 const FIXED = {
   fieldwork: '채집', mining: '채광', fishing: '낚시',
   ...GAMEDATA.names.field,
-  melee: '근접', ranged: '사격', dagger: '단도', exorcism: '퇴마술', medicine: '의술', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
+  melee: '근접', ranged: '사격', dagger: '단도', exorcism: '퇴마술', medicine: '의술', taming: '조련', analysis: '분석', first_aid: '응급 처치', guarding: '방어', wardcraft: '봉인 공예', tracking: '탐사', foraging: '채집',
   tool: '도구', weapon: '무기', armor: '방어구', hat: '관모', shoes: '신', norigae: '노리개', amulet: '호신부', mask: '탈', accessory: '장신구', consumable: '소모품', material: '재료', craft_material: '제작 재료', quest: '임무 물품', trade_goods: '교역품', mount: '탈것', equipment: '장비', furniture: '별채 가구', pet: '꼬마 동무', outfit: '옷',
   common: '범품', uncommon: '양품', rare: '진품', epic: '명품', legendary: '신품',
   abyss: '심연', archive: '서고', blood_forest: '혈림', bridge: '다리', burial_ground: '묘역', canyon: '협곡', celestial_tower: '천문탑', coast: '해안', desert: '사막',

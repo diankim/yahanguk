@@ -398,7 +398,7 @@ async function monsterCodex(box) {
         ${m.desc ? `<small class="muted">${esc(m.desc)}</small>` : ''}
         <small class="best">만남 ${fmt.num(m.seen)} · 토벌 ${fmt.num(m.defeated)}</small>
         ${m.counter ? `<details class="mon-counter"><summary>${icon('scroll', 12)} 파훼법</summary>
-          <p class="small">상성: 근접 ${mul(m.counter.melee)} · 원거리 ${mul(m.counter.ranged)} · 술법 ${mul(m.counter.magic)}${m.counter.job ? ` · ${esc(nameOf(m.counter.job))} +20%` : ''}</p>
+          <p class="small">상성: 근접 ${mul(m.counter.melee)} · 원거리 ${mul(m.counter.ranged)} · 술법 ${mul(m.counter.magic)}${(m.counter.jobs || (m.counter.job ? [m.counter.job] : [])).length ? ` · ${esc((m.counter.jobs || [m.counter.job]).map(j => nameOf(j)).join('·'))} +20%` : ''}</p>
           ${m.counter.habit ? `<p class="small muted">${esc(m.counter.habit)}</p>` : ''}
           <ul class="gim-list">${(m.counter.gimmicks || []).map(g => `<li><b>「${esc(g.name)}」</b><small>Lv.${g.from}부터 · ${esc(g.tell)}</small><small>${esc(g.tip)}</small></li>`).join('')}</ul>
           ${(m.counter.drops || []).length ? `<p class="small">전리품: ${m.counter.drops.map(d => esc(d.name)).join(', ')}</p>` : ''}</details>` : '<small class="muted">쓰러뜨리면 파훼법이 적힙니다</small>'}

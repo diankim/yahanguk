@@ -1,6 +1,8 @@
 import { ID_RULE, idToEmail, selfReload } from './config.js';
 import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
+import { PETS, petImage } from './housing/petsprite.js';
+import { GAMEDATA } from './gamedata.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { mountWhisper, mountWhisperPage } from './whisper.js';
@@ -206,8 +208,11 @@ function renderCreateForm() {
   const draftKey = `yh-create-draft:${store.user?.id || ''}`;
   let draft = {};
   try { draft = JSON.parse(localStorage.getItem(draftKey) || '{}') || {}; } catch {}
-  const pick = { job: JOBS[draft.job] ? draft.job : '', faction: FACTIONS[draft.faction] ? draft.faction : '' };
-  const saveDraft = () => { try { localStorage.setItem(draftKey, JSON.stringify({ name: form.name.value, job: pick.job, faction: pick.faction })); } catch {} };
+  const FIRST = GAMEDATA.petPartner?.first || [];
+  const pick = { job: JOBS[draft.job] ? draft.job : '', faction: FACTIONS[draft.faction] ? draft.faction : '', pet: FIRST.includes(draft.pet) ? draft.pet : '' };
+  const saveDraft = () => { try { localStorage.setItem(draftKey, JSON.stringify({ name: form.name.value, job: pick.job, faction: pick.faction, pet: pick.pet })); } catch {} };
+  const grpOf = id => Object.values(GAMEDATA.petPartner?.groups || {}).find(g => g.kinds.includes(PETS[id]?.kind));
+  const petCards = FIRST.map(id => { const g = grpOf(id); return `<button type="button" class="choice-card pet-choice" data-pet="${id}" aria-pressed="false"><img src="${petImage(id, false, { scale: 3 })}" alt=""><strong>${esc(PETS[id]?.name || id)}</strong><span class="tag">${esc(g?.name || '')}</span><small>${esc(g ? `${g.line} · ${g.fx_line}` : '')}</small></button>`; }).join('');
   const cards = (obj, kind) => Object.entries(obj).map(([k, v]) => `
     <button type="button" class="choice-card" data-${kind}="${k}" aria-pressed="false">
       <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(kind === 'job' ? `「${JOB_LORE[k]?.motto || ''}」` : AFFIL_LORE[k]?.work || '')}</small>
@@ -222,7 +227,8 @@ function renderCreateForm() {
       <section class="card"><h2 class="step"><b>1</b>이름</h2>
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
       </section>
-      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투 역할(호위 무사 방패·수호 · 월궁 사수 원거리 공격 · 퇴마관 술법 공격 · 암영 검객 근접 공격 · 의무관 치유 · 봉인술사 보조·버팀)과 기본 능력치·시작 장비를 정합니다. 무기는 직업에 맞는 것만 들 수 있습니다(근접: 호위 무사·암영 검객, 원거리: 월궁 사수, 술법: 퇴마관·봉인술사·의무관). 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div><div class="lore-detail" id="job-detail"></div></section>
+      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투 역할(호위 무사 방패·수호 · 월궁 사수 원거리 공격 · 조련사 짝 사냥 · 퇴마관 술법 공격 · 암영 검객 근접 공격 · 의무관 치유 · 봉인술사 보조·버팀)과 기본 능력치·시작 장비를 정합니다. 무기는 직업에 맞는 것만 들 수 있습니다(근접: 호위 무사·암영 검객, 원거리: 월궁 사수·조련사, 술법: 퇴마관·봉인술사·의무관). 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div><div class="lore-detail" id="job-detail"></div>
+        <div id="pet-pick" hidden><h3 class="step-sub">함께 시작할 꼬마 동무</h3><p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 무리마다 하는 일이 다르고, 힘은 등급이 아니라 친밀도로만 정해집니다(처음엔 약하고 돌볼수록 세집니다). 다른 동무도 나중에 상점 바구니·알·퀘스트로 얻을 수 있습니다.</p><div class="choice-grid pet-grid">${petCards}</div></div></section>
       <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 처음 배속되는 야행국 안의 부서로, 늘 붙는 소속 효과와 일일 보급·전용 임무를 정합니다. ${esc(AFFIL_VS_FACTION.split('. ').slice(1).join('. '))}</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div><div class="lore-detail" id="faction-detail"></div></section>
       <section class="card confirm-card">
         <div class="confirm-row"><span>이름</span><b id="sum-name">—</b></div>
@@ -237,18 +243,19 @@ function renderCreateForm() {
   const form = $('#create-form');
   const sync = () => {
     $('#sum-name').textContent = form.name.value.trim() || '—';
-    $('#sum-job').textContent = pick.job ? JOBS[pick.job].name : '—';
+    $('#sum-job').textContent = pick.job ? JOBS[pick.job].name + (pick.job === 'tamer' ? ` · ${pick.pet ? PETS[pick.pet]?.name : '동무를 고르세요'}` : '') : '—';
+    $('#pet-pick').hidden = pick.job !== 'tamer';
     $('#sum-faction').textContent = pick.faction ? FACTIONS[pick.faction].name : '—';
     $('#job-detail').innerHTML = pick.job ? jobLoreHtml(pick.job) : '<p class="muted small">직업을 고르면 이야기와 역할이 여기에 펼쳐집니다.</p>';
     $('#faction-detail').innerHTML = pick.faction ? affilLoreHtml(pick.faction) : '<p class="muted small">소속을 고르면 부서 이야기가 여기에 펼쳐집니다.</p>';
   };
   if (typeof draft.name === 'string') form.name.value = draft.name.slice(0, 12);
-  for (const kind of ['job', 'faction']) if (pick[kind]) $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x.dataset[kind] === pick[kind]));
+  for (const kind of ['job', 'faction', 'pet']) if (pick[kind]) $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x.dataset[kind] === pick[kind]));
   sync();
   form.addEventListener('input', () => { sync(); saveDraft(); });
   form.addEventListener('click', e => {
     const b = e.target.closest('.choice-card'); if (!b) return;
-    const kind = b.dataset.job ? 'job' : 'faction';
+    const kind = b.dataset.job ? 'job' : b.dataset.pet ? 'pet' : 'faction';
     pick[kind] = b.dataset[kind];
     $$(`[data-${kind}]`, form).forEach(x => x.setAttribute('aria-pressed', x === b));
     sync(); saveDraft();
@@ -262,10 +269,11 @@ function renderCreateForm() {
     if (name.length < 2 || name.length > 12) return say('이름은 2~12자로 입력하세요.');
     if (!/^[가-힣A-Za-z0-9 ]+$/.test(name)) return say('이름에는 한글·영문·숫자·공백만 사용할 수 있습니다.');
     if (!pick.job) return say('직업을 선택하세요.');
+    if (pick.job === 'tamer' && !pick.pet) return say('함께 시작할 꼬마 동무를 고르세요.');
     if (!pick.faction) return say('소속을 선택하세요.');
     const btn = $('#create-btn'); btn.disabled = true;
     try {
-      await rpc('world_create_character_v2', { p_name: name, p_job: pick.job, p_faction: pick.faction });
+      await rpc('world_create_character_v2', { p_name: name, p_job: pick.job, p_faction: pick.faction, p_pet: pick.job === 'tamer' ? pick.pet : null });
       forgetEquipped();
       const made = await loadCharacter();
       if (!made) throw new Error('캐릭터 정보를 불러오지 못했습니다. 새로고침해 주세요.');

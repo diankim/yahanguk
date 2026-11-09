@@ -16,21 +16,34 @@ function jobTableHtml() {
     const stats = Object.entries(j.base).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([s, v]) => `${STAT_KO[s]} ${v}`).join('<br>');
     return `<tr><td><b>${esc(j.name)}</b><br>${esc(j.trait)}${j.sub ? `<br>${esc(j.sub)}` : ''}</td><td>${stats}</td><td>${(j.fx || []).map(esc).join('<br>')}</td></tr>`; };
   return `<table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
-    ${['artificer', 'scout', 'exorcist', 'medic', 'sealmaster', 'analyst'].map(row).join('')}</table>`;
+    ${['artificer', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster', 'analyst'].map(row).join('')}</table>`;
 }
 function coopTableHtml() {
   const band = k => `<tr class="g-band"><th colspan="4">${esc(JOBS[k].name)} · ${esc(JOBS[k].trait)}</th></tr>` +
     GD.coop.filter(c => c.job === k).sort((a, b) => a.rank - b.rank)
       .map(c => `<tr><td>${c.rank}</td><td><b>${esc(c.name)}</b></td><td>${esc(c.desc)}</td><td>${c.cost} · ${c.cd}초</td></tr>`).join('');
   return `<table class="guide-table"><tr><th>숙련</th><th>협동 기술</th><th>효과</th><th>영력 · 다시 쓰기</th></tr>
-    ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(band).join('')}</table>`;
+    ${['artificer', 'analyst', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster'].map(band).join('')}</table>`;
+}
+const kindStyle = k => { const [a, b, c] = (GD.kindMul?.[k] || [1, 1, 1]).map(Number), top = Math.max(a, b, c);
+  return top <= 1 ? '고르게' : [['근접', a], ['원거리', b], ['술법', c]].filter(([, v]) => v === top).map(([n, v]) => `${n} ×${v}`).join('·'); };
+function kindJobsHtml() {
+  return `<table class="guide-table"><tr><th>갈래</th><th>잘 듣는 무기</th><th>유리한 직업(+20%)</th></tr>
+    ${Object.entries(GD.kinds).map(([k, n]) => `<tr><td>${esc(n)}</td><td>${esc(kindStyle(k))}</td><td>${esc((GD.kindJobs?.[k] || []).map(j => JOBS[j]?.name || j).join('·') || '없음')}</td></tr>`).join('')}</table>`;
+}
+function petPartnerHtml() {
+  const P = GD.petPartner || {}, G = P.groups || {};
+  const kinds = ks => ks.map(k => GD.kinds[k] || k).join('·');
+  const style = { melee: '근접', ranged: '원거리', magic: '술법' };
+  return `<table class="guide-table"><tr><th>무리</th><th>갈래</th><th>공격</th><th>하는 일</th></tr>
+    ${Object.values(G).map(g => `<tr><td><b>${esc(g.name)}</b></td><td>${esc(kinds(g.kinds))}</td><td>${style[g.style] || ''} · 화살의 ${Math.round(g.mul * 100)}%</td><td>${esc(g.line)}${g.p ? ` · ${esc(g.fx_line)}(힘에 따라 최대 ${g.p}%)` : ` · 다음 공격 피해 −${g.ward_base}~${g.ward_base + g.ward_k}%`}</td></tr>`).join('')}</table>`;
 }
 const coopRanks = () => [...new Set(GD.coop.map(c => c.rank))].sort((a, b) => a - b).join('·');
 function soloAidHtml() {
   const guardTxt = g => g ? ` · 받는 피해 ${g > 0 ? '−' : '+'}${Math.abs(g)}%` : '';
   const cell = (a, key) => pctTxt(a[key] || 0) + guardTxt(Number(key === 'final_dmg' ? a.final_guard : a.solo_guard) || 0);
   return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
-    ${['artificer', 'analyst', 'scout', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
+    ${['artificer', 'analyst', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
       return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;
 }
 function relStartHtml() {
@@ -1017,7 +1030,8 @@ const S = [
     <h4>갈래와 수법</h4>
     <ul>
       <li>요괴는 <b>열세 갈래</b>입니다: 비금 · 갑각 · 영귀 · 독충 · 목령 · 은형 · 수귀 · 군충 · 금주 · 경요 · 파봉 · 천상 · 거괴.</li>
-      <li>갈래마다 잘 듣는 무기가 근접·원거리·술법 가운데 있습니다. 갈래에 맞는 직업이면 피해가 20% 더 들어갑니다. 원정에서도 같은 상성이 승패에 반영됩니다.</li>
+      <li>갈래마다 잘 듣는 무기가 근접·원거리·술법 가운데 있습니다. 갈래에 맞는 직업이면 피해가 20% 더 들어갑니다(한 갈래에 유리한 직업이 둘인 곳도 있습니다). 원정에서도 같은 상성이 승패에 반영됩니다.
+        ${kindJobsHtml()}</li>
       <li>갈래마다 <b>수법</b>이 셋입니다. 정예·우두머리일수록 자주 씁니다.
         <ul><li>Lv1부터: 단순한 한 방이나 가벼운 상태이상</li>
           <li>Lv10부터: 붙잡기·결계·허상 같은 까다로운 수</li>
@@ -1057,9 +1071,9 @@ const S = [
   ['lore-jobs', '직업 이야기', `<p>직업마다 야행국 안에서 맡아 온 일과 이야기, 싸우는 방식, 어울리는 사람이 다릅니다. 수치는 「직업과 역할」 표가 기준입니다.</p>${Object.keys(JOBS).map(jobLoreHtml).join('')}`],
   ['lore-affil', '소속 이야기', `<p>${AFFIL_VS_FACTION}</p>${Object.keys(FACTIONS).map(affilLoreHtml).join('')}`],
   ['jobs', '직업과 역할 (생성 시 고정)', `
-    <p>직업은 여섯 역할로 나뉩니다.</p>
+    <p>직업은 일곱 역할로 나뉩니다.</p>
     <ul>
-      <li>무기는 직업에 맞는 것만 듭니다: 근접 무기 호위 무사·암영 검객 · 원거리 무기 월궁 사수 · 술법 무기 퇴마관·봉인술사·의무관.</li>
+      <li>무기는 직업에 맞는 것만 듭니다: 근접 무기 호위 무사·암영 검객 · 원거리 무기 월궁 사수·조련사 · 술법 무기 퇴마관·봉인술사·의무관.</li>
       <li>기본 능력치는 합이 모두 30이고, 직업마다 배분이 다릅니다.</li>
       <li>한 능력치의 상한은 <b>직업 기본값 + 레벨×1.5</b>입니다.</li>
       <li>이름은 만든 뒤 바꿀 수 없습니다. 직업·소속은 귀속 물품 「환골탈태 서첩」(모두에게 하나씩)으로 다시 고를 수 있습니다.</li>
@@ -1073,11 +1087,21 @@ const S = [
     <table class="guide-table"><tr><th>직업</th><th>시작 장비</th></tr>
       <tr><td>호위 무사</td><td>월철 환도 · 쇠미늘 갑옷 · 무명 두건 · 주사 호신부</td></tr>
       <tr><td>월궁 사수</td><td>매눈 활 · 화살 100 · 무명 철릭 · 미투리</td></tr>
+      <tr><td>조련사</td><td>대나무 단궁 · 화살 100 · 무명 철릭 · 미투리 · 첫 동무(누렁 강아지·얼룩 고양이·참새·무당벌레 가운데 하나) · 동무 주먹밥 5</td></tr>
       <tr><td>퇴마관</td><td>영령 방울 · 삼베 도포 · 무명 부적낭</td></tr>
       <tr><td>의무관</td><td>먹 부채 · 삼베 도포 · 쑥 향낭 · 약초</td></tr>
       <tr><td>봉인술사</td><td>무쇠 금강령 · 누비 전포 · 유건 · 봉인 부적</td></tr>
       <tr><td>암영 검객</td><td>날선 단도 · 누비 전포 · 은방울 노리개 · 짚신 · 청심환 2</td></tr></table>
-    <ul><li>모든 직업이 현장 채집도·월철 곡괭이를 가지고 시작합니다.</li></ul>`],
+    <ul><li>모든 직업이 현장 채집도·월철 곡괭이를 가지고 시작합니다.</li></ul>
+    <h4>조련사와 동무</h4>
+    <ul>
+      <li>조련사는 공격하는 차례(공격·휘파람·공격이 되는 협동 기술)마다 <b>데리고 다니는 동무</b>가 한 번 덧붙어 싸웁니다. 별채에 둔 동무는 싸우지 않습니다.</li>
+      <li>동무의 힘은 등급이 아니라 <b>친밀도</b>로만 정해집니다: 친밀도 0이면 ${Math.round((GD.petPartner?.pow_base || 0.3) * 100)}% · 300이면 100%. 동무 피해·동작이 터질 확률이 이 힘을 따릅니다.</li>
+      <li>동무는 탄·영력을 쓰지 않고, 요괴에게 노려지지 않으며, 치명타가 없습니다. 요괴의 방어는 화살보다 덜 받습니다.</li>
+      <li>협동 기술의 세기도 동무의 힘에 따라 ${Math.round((GD.petPartner?.coop_base || 0.6) * 100)}~100%입니다. 귀허의 주인·10장 결전·봉연의 그림자의 체력은 동무 몫까지 셈합니다.</li>
+      <li>조련사가 돌보면 친밀도가 ${GD.petPartner?.care_mul || 1.5}배로 오르고(손님으로 돌볼 때는 ${GD.petPartner?.guest_tamer || 2}), 동무와 함께 이긴 토벌마다 ${GD.petPartner?.win_aff || 1}씩 오릅니다(하루 ${GD.petPartner?.win_day || 10}까지).</li>
+    </ul>
+    ${petPartnerHtml()}`],
   ['lore-factions', '세력 이야기', factionLoreHtml()],
   ['factions', '대세력', `
     <p>대세력은 Lv5부터 캐릭터 › 세력에서 가입합니다. 가입은 그 세력 거점·본부 정청·그 세력의 들머리 지역에서 하고, Lv5가 되면 알림이 옵니다.</p>
@@ -1776,7 +1800,7 @@ const S = [
       <li><b>제보</b>: 부적절한 도안은 도안첩에서 「제보」로 운영진에게 알릴 수 있고, 그 도안은 내 화면에서 숨겨집니다. 운영진이 내린 도안은 사본과 지은 옷까지 모두 원래 옷으로 보입니다.</li>
     </ul>`],
   ['pets', '꼬마 동무', `
-    <p>별채에서 함께 살거나 데리고 다니는 작은 동무입니다. 능력치·보상 효과는 없고, 모으고 보여 주는 즐거움입니다. ${GD.pets.total}종이 있고, 그 가운데 열둘은 조사원 제보로 들어온 동무입니다.</p>
+    <p>별채에서 함께 살거나 데리고 다니는 작은 동무입니다. 능력치·보상 효과는 없고, 모으고 보여 주는 즐거움입니다(조련사만 데리고 다니는 동무와 함께 싸웁니다 — 「직업과 역할」의 「조련사와 동무」). ${GD.pets.total}종이 있고, 그 가운데 열둘은 조사원 제보로 들어온 동무입니다.</p>
     <h4>얻는 곳</h4>
     <table class="guide-table"><tr><th>등급</th><th>얻는 곳</th></tr>
       <tr><td>${petCount(1)}</td><td>안전지대 상점의 바구니. 파는 상점은 별채 › 동무 도감에 적혀 있습니다.</td></tr>
@@ -1801,6 +1825,7 @@ const S = [
           <li>혼례 정인과 한 지붕에 살면 별채 동무는 집주인의 동무이고, 데리고 다니는 동무는 저마다 정합니다.</li>
           <li>동무 도감은 별채 화면의 「동무」에서 엽니다.</li></ul></li>
       <li><b>놀기</b>: 별채 안에서 쓰다듬기 하루 5번 · 놀아 주기 3번 · 먹이 주기 3번으로 친밀도가 오릅니다.
+        <ul><li>데리고 다니는 동무도 별채 › 동무 도감의 「돌보기」로 똑같이 돌볼 수 있습니다(별채가 없어도 됩니다). 하루 횟수는 그 동무 몫으로 함께 셉니다.</li></ul>
         <ul><li>친밀도는 최대 300이고, 100이 되면 다 자란 모습이 됩니다.</li>
           <li>손님도 하루 한 번씩 쓰다듬고 놀아 줄 수 있습니다.</li></ul></li>
       <li><b>먹이</b>: 동무 주먹밥 10전은 상점에 늘 있습니다. 별미는 다섯 가지로 생선포 · 쌀 강정 · 꿀 약과 · 풀단 · 육포, 30~50전입니다.
