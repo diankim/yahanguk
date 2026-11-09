@@ -95,7 +95,7 @@ EYE_COLORS = {
 
 def body(frame):
     g = Grid()
-    g.ell(CX, FACE_CY, FACE_RX, FACE_RY, 's', lambda x, y: y >= 12)
+    g.ell(CX, FACE_CY, FACE_RX, FACE_RY, 's', lambda x, y: y >= 11)
     form(g, 's', 's', 'S')
     g.rect(13, 22, 14, 23, 'S')
     g.sym(8, 27, 's')

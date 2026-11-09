@@ -155,3 +155,117 @@ ART = {
     'twintail': ('양갈래', twintail),
     'wolf': ('뻗친 늑대머리', wolf),
 }
+
+
+def ascii_grid(rows, c='h'):
+    g = Grid()
+    for y, r in enumerate(rows):
+        assert len(r) == 28, (y, len(r), r)
+        for x, ch in enumerate(r):
+            if ch == 'h':
+                g.set(x, y, c)
+            elif ch == 'K':
+                g.set(x, y, 'H')
+    return g
+
+
+CURLY_FRONT = [
+    "........hhh.....hhhh........",
+    ".....hhhhhhhh..hhhhhhhh.....",
+    "....hhhhhhhhhhhhhhhhhhhhh...",
+    "...hhhhhhhhhhhhhhhhhhhhhhh..",
+    "..hhhhhhhhhhhhhhhhhhhhhhhh..",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhh.",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhhh",
+    "hhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+    "hhhhhhhhhhhhhhhhhhhhhhhhhhh.",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhhh",
+    ".hhhhhhhhhhhhhhhhhhhhhhhhhhh",
+    "hhhhhhhhhh..hhhhh..hhhhhhhh.",
+    "hhhhhhhhh....hhh....hhhhhhh.",
+    ".hhhhhhh......hh.....hhhhhhh",
+    ".hhhhhh.......h.......hhhhhh",
+    "hhhhh.................hhhhhh",
+    ".hhhhh................hhhhh.",
+    ".hhhhh................hhhhhh",
+    "hhhhh..................hhhh.",
+    ".hhhhh................hhhhh.",
+    "..hhhhh..............hhhhh..",
+    "...hhhhh............hhhhh...",
+    ".....hhh............hhh.....",
+]
+
+LONGCURL_FRONT = [
+    "........hhhhh..hhhhh........",
+    "......hhhhhhh..hhhhhhh......",
+    ".....hhhhhhhhhhhhhhhhhhh....",
+    "....hhhhhhhhhhhhhhhhhhhhhh..",
+    "...hhhhhhhhhhhhhhhhhhhhhhh..",
+    "...hhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhhhhhhhhhhhhhhhhhhhh.",
+    "..hhhhhhh....hh.....hhhhhhh.",
+    "..hhhhhh......h......hhhhh..",
+    "..hhhhh...............hhhh..",
+    "..hhhh................hhhh..",
+    ".hhhhhh..............hhhhhh.",
+    ".hhhhh................hhhhh.",
+    ".hhhh..................hhhh.",
+    ".hhhh..................hhhh.",
+    "..hhhh................hhhh..",
+    "..hhhh................hhhh..",
+    "..hhh..................hhh..",
+]
+
+
+def bumpy_back(g, y0, y1, base, grow):
+    bump = (0, 1, 1, 0, -1, 0, 1, 0)
+    for y in range(y0, y1 + 1):
+        hw = base + min(grow, (y - y0) // 3) + bump[y % 8]
+        for x in range(W):
+            if abs(x + .5 - 14) <= hw:
+                g.set(x, y, 'k')
+
+
+def curls(g, pts):
+    for x, y, d in pts:
+        for dx, dy in ((0, 0), (d, 1), (d, 2), (0, 3)):
+            if g.p.get((x + dx, y + dy)) in ('h', 'g', 'k'):
+                g.p[(x + dx, y + dy)] = 'H'
+
+
+def curly():
+    f, b = ascii_grid(CURLY_FRONT), Grid()
+    shade_front(f)
+    curls(f, ((3, 6, -1), (24, 6, 1), (2, 14, 1), (25, 15, -1), (9, 4, -1), (18, 4, 1), (4, 18, 1), (23, 18, -1)))
+    return f, b
+
+
+def longcurl():
+    f, b = ascii_grid(LONGCURL_FRONT), Grid()
+    for y in range(0, 3):
+        f.p.pop((13, y), None); f.p.pop((14, y), None)
+    shade_front(f)
+    curls(f, ((4, 6, -1), (23, 6, 1), (3, 13, 1), (24, 13, -1), (2, 17, 1), (25, 17, -1)))
+    dome(b, 2, 18, 18, 12.4)
+    for x, y in ((g, h) for g, h in list(b.p)):
+        b.p[(x, y)] = 'k'
+    bumpy_back(b, 18, 32, 11, 3)
+    for x in range(W):
+        if (x, 32) in b.p and x % 4 == 1:
+            b.p.pop((x, 32))
+    for x, y in ((2, 31), (3, 30), (4, 31)):
+        b.set(x, y, 'q')
+    form(b, 'k', 'h', 'q')
+    for x, y, d in ((2, 21, 1), (25, 21, -1), (1, 26, 1), (26, 26, -1), (4, 24, 1), (23, 24, -1)):
+        for dx, dy in ((0, 0), (d, 1), (d, 2), (0, 3)):
+            if b.p.get((x + dx, y + dy)) in ('k', 'h'):
+                b.p[(x + dx, y + dy)] = 'q'
+    return f, b
+
+
+ART['curly'] = ('복슬 곱슬 짧은 머리', curly)
+ART['longcurl'] = ('복슬 곱슬 긴 머리', longcurl)
