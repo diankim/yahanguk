@@ -91,6 +91,14 @@
 - 외전 「묵적록」 mkq_1~mkq_5(cat 「외전·묵적록」, Lv40·41·42·44·45, mkq_1 after gq_5만). 대사는 gen.py가 script.md를 읽어 만들고 고친 자리는 FIX 표 한 곳. 할 일 갈래 rest(쉬기, world_events rest, r 지역 — world_faction_task_count·label, changes.js TASK_ACTS rest)와 mj(먹그림자, 보스 엔진이 셈).
 - 시세: 7단계 = max(재료값×1.2, 같은 칸 6단계 최고가×1.15), 소모품·가구 = max(기준가, 재료값÷개수×1.1).
 
+#### 외전 5장 우두머리 「먹그림자」(아홉 칸 명부, 2.0.0)
+
+- 귀허 엔진(§3.5 world_gw_*)에 우두머리 갈래: world_gw_fights.boss_id('gwiheo'|'mukjeok')·board(칸 상태·이름 획·기억 조각·흉내·먹 자국 held), world_gw_members.pos(1~9 낙서 번호, 가운데 5)·prev, world_gw_records 기본 키 (owner_id, boss_id). 수치는 world_boss_rules() 한 곳(이름 획 line_strokes 2·erase_strokes 4·인원 배율·혼자 보정 mukjeok.solo → gamedata boss → guide.js·gw.js·home.js). 귀허 갈래의 박힌 숫자는 그대로(규칙 함수 gwiheo 칸은 안내용). 원본 supabase/gen_mukjeok/boss.sql(+ ref/mj_fight_lines.json) → gen_boss.py → migrations/20261116010000_world_2_0_0_boss.sql.
+- 묵적록 갈래 도우미 world_mk_*(lines·memories·begin·round·steps·on_attack·recall·mech·after·raw·held·settle), 묵적록 random()은 모두 boss_id='mukjeok' 갈래 안 — 귀허 판은 같은 씨앗이면 같게 돈다. 외전 4장·Lv44·입장 물품 봉인 먹줄 seal_inkline(묵창 주막 늘 팖), 혼자 또는 파티원 넷, 18분.
+- 처치 기록 world_events mk_win(gw_win과 따로), 칭호 7(분류 '외전', 규칙 ev mk_win)·꾸미기 fr_ninecourt·pt_ninecourt·sl_jeok「跡」·이름 색 ns:1032「묵적」·탈것·별채 가구 mk_first·귀령초 1%. 퀘스트 할 일 {t:'mj'}(또는 {t:'gw', boss}). RPC world_gw_open(p_boss)·world_gw_snapshot(p_fight, p_boss)·world_gw_act(…, p_move) — 새 인자는 기본값이라 귀허 화면 그대로, 행동 recall 추가, call은 이름 지우기 라운드만.
+- 화면 gw.js 보스 표 BOSS, #/gw/mukjeok 대기실, 진법 판 .mk-board(이웃 칸 .mk-step을 누르면 다음 행동에 p_move), 기억 조각 줄 kind mem/shadow는 토스트. 휴대폰(640px↓) 싸우는 중엔 판 180px(칸 57px)을 라운드 띠와 나란히 두고 사다리·머리 설명을 줄여 단추·협동 기술·이번만 행동이 탭 막대 위 한 화면에(iPhone 13·375×667 확인, 사용자 결정).
+- 난이도(시뮬 120판, 6단계 장비 한 벌): 넷 10/10·둘 평균 4.75·혼자 2~3/10, 이름 획 패배는 진 판의 약 12%(사용자 결정 「약간만 더 어렵게」). 7단계 장비가 퍼지면 다시 맞춘다.
+
 ### 3.6 새 지역·세력 배치
 
 - 생성기 supabase/gen71/(data_regions.py·regions.py·d_faction.sql·gen.py → migrations/20261102000000_world_7_1_0.sql). 지역 11곳: 옛 의금부 옥사 19·봉인고 26(정통파)·만조의 갑문 24(수향)·적월 제단터 22(적월)·설피골 5(북령)·불씨 고개 5(남명)·등잔골 뒷골목 5(흑련)·별바라기 언덕 5·물시계 터 13·혜성 낙하지 17·구름 위 회랑 16(천명). 지역마다 답사 길·채집터(들머리 「어귀의 …」)·요괴 r71_*·원정지·조사 지점·처음 방문 글·보조 퀘스트 rq_*. 이름 겹침은 ref/existing_names.json으로 검사.
@@ -210,6 +218,16 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 의무관 응급 처방(현장): 한 전투 한 번(world_active_encounters.pfx med_used)·기력/영력 25·체력 least(40, 15+체질/2+의지/2). 의무관 회복품 ×1.15(world_battle_action 두 곳·world_use_item·world_expedition_settle).
 - 시작 장비(world_create_character_v2): 호위 무사 월철 환도·쇠미늘 갑옷·무명 두건·주사 호신부 / 조사원 매눈 활·화살 100·무명 철릭·미투리 / 퇴마관 영령 방울·삼베 도포·무명 부적낭 / 의무관 먹 부채·삼베 도포·쑥 향낭(+약초·탕약) / 봉인술사 무쇠 금강령·누비 전포·유건(+봉인 부적) / 암영 검객 날선 단도·누비 전포·은방울 노리개·짚신(+청심환 2, 7.7.7r), 모두 현장 채집도 장착·월철 곡괭이.
 - 세계관 안내 assets/js/lore.js: WORLD_PRIMER·JOB_LORE(한자 이름·한 줄 말·내력·전투·원정·무기·유리한/덜 듣는 갈래·어울리는 사람·조심할 점·인연)·AFFIL_LORE를 생성 화면(고르면 카드 아래 펼침)과 도움말이 함께 쓴다. 도움말 세력 이야기 guide.js FACTION_LORE(이름·소개 common.js MAJOR_FACTIONS). 수치 원본은 core.js JOBS·FACTIONS.
+
+### 조련사와 동무 전투 짝(2.1.0)
+
+- 조련사 tamer 짝 사냥(원거리 무기, 기본 능력치 민첩7·감각8·체질5 — world_job_base, 직업 효과 world_job_effect 0 — 그 몫을 데리고 다니는 동무가 맡음). 원거리 무기 equipment_traits.jobs에 tamer. 시작 장비 대나무 단궁·화살 100·무명 철릭·미투리·동무 주먹밥 5 + 생성 화면에서 고른 첫 동무(world_create_character_v2 넷째 인자 p_pet, 목록 world_pet_partner_rules.first — 누렁 강아지·얼룩 고양이·참새·무당벌레, world_pet_start, 화면 app.js #pet-pick). 환골탈태로 조련사가 되면 첫 동무 고르기는 없고 가진 동무를 「데리고 다니기」로 정한다.
+- 기술 계열 taming 「조련」(world_job_line tamer → taming, 전투 계열 목록은 world_combat_lines() 한 곳 — world_skill_line_ok·world_skill_pending, 화면 core.js COMBAT_LINES·JOB_LINE), 기본 9(pet_pct는 world_pet_partner_of만 더함)·추가 x13·x30·택일 24·43·숙달 m50. 칭호·비무 전용 기술은 없음(사용자 결정). 현장 기술 「휘파람」(world_job_skill_rules: 원거리 ×1.2·그 차례 동무 동작 반드시·동무 피해 ×2, 비무 focus). 원정 기술 「동무의 코」(world_expedition_settle, 수치 world_pet_partner_rules.exp). 협동 기술 tm_fetch·tm_guard·tm_herd·tm_pack(pct ×(coop_base 0.6 + coop_k 0.4×동무 힘)). 혼자 도전 보정 world_solo_aid(text) tamer(귀허·결전)·world_boss_rules() mukjeok.solo tamer(먹그림자 −40/0), 시뮬 표 supabase/gen_tamer/sim_report.md(기존 직업과 상대 비교, 사용자 결정).
+- 갈래 상성: world_monster_kinds.job_keys(text[], 옛 job_key 대신) — 판정 `p_job = any(k.job_keys)`(world_kind_mult·world_exp_fight_story)·world_kind_job_ok, 이름 world_kind_jobs_label. 은형 = 월궁 사수·조련사, 군충 = 조련사. 화면 gamedata kindJobs·kindMul → lore.js goodKinds(「유리한 요괴」를 손으로 적지 않음)·guide.js kindJobsHtml.
+- 동무 전투 짝 수치는 world_pet_partner_rules() 한 곳(힘 = 0.3 + 0.7×친밀도/300, 무리 넷 guard·bite·peck·charm, 휘파람·승리 친밀도·돌보기 배수·협동 기술 세기·원정·첫 동무 → gamedata petPartner → guide.js petPartnerHtml·생성 화면). 데리고 다니는 동무(world_pet_profile)만 싸우고, world_pet_partner_of(uid)가 조련사일 때만 값을 줌 → world_combat_stats.pet·world_raid_stats.pet(+ hp_atk — 보스 체력·봉연 합류 체력 증가가 씀, 그래서 보스전 성적은 친밀도와 거의 무관: 사용자 결정 그대로)·world_field_battle_view.pet. 동무 공격은 공격하는 차례에만: 현장 world_battle_action(파티 토벌도 같은 길), 보스 world_cb_pet_strike 한 곳(world_raid_action·world_gw_resolve, 먹그림자 보정 world_mk_on_attack까지 같은 비율) — 새 전투도 이것을. 동무는 탄·영력을 안 쓰고 노려지지 않으며 치명타 없음. 이긴 토벌마다 친밀도 +1(하루 10, world_pets.win_day·win_n — 캐릭터 행 안 고침).
+- 돌보기 친밀도는 world_pet_care_gain 한 곳(조련사 ×1.5·손님 2), world_pet_act(p_owner null, …)이 데리고 다니는 동무 돌보기(모든 직업, 하루 횟수 그 동무 행으로, 배탈 없음, 화면 housing.js openPets 「돌보기」 → openCarry). 꼬마 족제비 little_ferret = 진품, jq2_tamer 보상(꼬미 — 대본 결말에서 조사원을 따라옴, canon.md).
+- 직업 퀘스트 jq_tamer(Lv3 본부 객사)·jq2_tamer(Lv18 옛 의금부 옥사)·jq3_tamer(Lv32 잿빛 갈대숲, 받기 반요촌) 대본 supabase/gen_tamer/script.md, 생성기 gen_tamer/quests.py(gen_side110 겹침 검사·보상 공식), 인물 q:dh_gomsil 곰실·q:sx_duseok 두석·q:sx_galdae 갈대지기, 설정 canon.md 「동무가 따르는 까닭」. 기본 옷 top:tamer·bottom:tamer(of_top_tamer·of_bottom_tamer, world_outfit_rules pool).
+- 생성기 supabase/gen_tamer/gen.py(a_*~l_*.sql·m_quests.sql·parts.json → migrations/20261116020000_world_2_1_0_tamer.sql). 함수 고치기 pg_temp.yh_fix(이름 또는 서명 'f(text)', [옛 조각, 새 조각…] — 조각마다 정확히 한 번, 겹친 이름은 서명으로), 실행 권한 pg_temp.yh_share, 주인 바꾸기 pg_temp.yh_own.
 
 ### 전투 능력치
 
