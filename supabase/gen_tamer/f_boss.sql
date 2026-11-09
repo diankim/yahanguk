@@ -64,7 +64,7 @@ $q$        perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — ' || r
         if pk is not null then
           vfx := pk -> 'fx'; vbfx := pk -> 'bfx';
           update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
-          pd := (pk ->> 'd')::numeric * (1 + coalesce((m.stats ->> 'solo_dmg')::numeric, 0) / 100.0);
+          pd := (pk ->> 'd')::numeric * d / greatest(1, (cbr ->> 'd')::numeric);
           if k = 'vortex' and m.owner_id::text <> f.mech ->> 'tank' then vsum := vsum + pd * case when (pk ->> 'charm')::boolean then 2 else 1 end; end if;
           boss_dmg := boss_dmg + pd;
           update public.world_gw_members set dmg = dmg + round(pd)::int where fight_id = p_fight and owner_id = m.owner_id;

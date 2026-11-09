@@ -10,7 +10,7 @@ CLAUDE.md는 이 작업에서 고치지 않았다. 아래를 해당 절에 옮�
 - 현장 기술 「휘파람」(world_job_skill_rules tamer: 원거리 ×1.2, 그 차례 동무 동작 반드시·동무 피해 ×2, 비무는 focus n1 ×1.3).
 - 원정 기술 「동무의 코」(world_expedition_settle, 수치 world_pet_partner_rules.exp: 전투력 +10%×힘·발견 +20%×(0.5+0.5×힘)·채집 +5%·승률 +0.04×힘(물기 +0.03×힘 더)·지키기 받는 피해 −5%×힘·쪼기 비금/천상 위협 −10%×힘·홀리기 정신 손실 −10×힘).
 - 협동 기술 넷 tm_fetch 물어 와(pet_strike, 공격 한 번으로 셈)·tm_guard 곁 지키기(ward)·tm_herd 몰이(expose+stagger)·tm_pack 한 몸 사냥(might + pet_x2). 조련사 협동 기술의 pct는 ×(coop_base 0.6 + coop_k 0.4×동무 힘)(world_raid_action·world_gw_resolve).
-- 혼자 도전 보정 world_solo_aid tamer(시뮬 결과 표는 supabase/gen_tamer/sim_report.md).
+- 혼자 도전 보정 world_solo_aid(text) tamer(귀허·결전), 먹그림자는 world_boss_rules() mukjeok.solo tamer(시뮬 결과 표는 supabase/gen_tamer/sim_report.md). 동무 공격은 world_gw_resolve 안에서 먹그림자 보정(world_mk_on_attack)까지 받은 공격 피해와 같은 비율로 줄거나 늚.
 
 ## §3·§5 요괴 갈래
 - world_monster_kinds.job_key(text)를 job_keys(text[])로 바꿨다. 판정은 `p_job = any(k.job_keys)`(world_kind_mult·world_exp_fight_story)와 world_kind_job_ok(갈래, 직업), 이름 잇기는 world_kind_jobs_label. 은형 = 월궁 사수·조련사, 군충 = 조련사. 화면은 battle view eff.jobs·도감 counter.jobs(옛 job 칸은 첫 값으로 함께 실음), gamedata kindJobs·kindMul → lore.js goodKinds(직업 소개의 「유리한 요괴」를 손으로 적지 않음)·guide.js kindJobsHtml.
@@ -30,4 +30,5 @@ CLAUDE.md는 이 작업에서 고치지 않았다. 아래를 해당 절에 옮�
 - 조련사 기본 옷 top:tamer 털깃 사냥 저고리·bottom:tamer 각반 바지와 미투리(tools/avatar_art/tops_art.py·data.py JOB_DEFAULT → parts.json·avatar.js, 물품 of_top_tamer·of_bottom_tamer, world_outfit_rules pool).
 
 ## 생성기
+- pg_temp.yh_fix는 이름에 괄호가 있으면 그 서명 하나(regprocedure)를, 없으면 그 이름의 유일한 함수를 고친다(겹친 이름은 서명으로).
 - supabase/gen_tamer/gen.py가 a_*.sql~l_*.sql·m_quests.sql(quests.py)·parts.json의 world_avatar_parts를 이어 migrations/20261116020000_world_2_1_0_tamer.sql을 만든다. 함수 고치기는 pg_temp.yh_fix(함수, [옛 조각, 새 조각, …]) — 조각마다 정확히 한 번 나와야 한다. 새 도우미 실행 권한은 pg_temp.yh_share(모든 fn_owner·service_role), 주인 바꾸기는 pg_temp.yh_own(public 만들기 권한을 그 동안만).

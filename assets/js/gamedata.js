@@ -1,13 +1,45 @@
 export const GAMEDATA = {
-  "pets": {"total":78,"grades":{"1":27,"2":28,"3":14,"4":7,"5":2}},
+  "pets": {"total":78,"grades":{"1":27,"2":27,"3":15,"4":7,"5":2}},
   "kinds": {"bird":"비금","shell":"갑각","ghost":"영귀","venom":"독충","wood":"목령","shadow":"은형","water":"수귀","swarm":"군충","ward":"금주","mirror":"경요","breaker":"파봉","sky":"천상","giant":"거괴"},
+  "kindJobs": {
+    "bird": ["scout"],
+    "shell": ["artificer"],
+    "ghost": ["exorcist"],
+    "venom": ["medic"],
+    "wood": ["artificer"],
+    "shadow": ["scout","tamer"],
+    "water": ["medic"],
+    "swarm": ["tamer"],
+    "ward": ["sealmaster"],
+    "mirror": ["analyst"],
+    "breaker": ["exorcist"],
+    "sky": ["analyst"],
+    "giant": ["sealmaster"]
+  },
+  "kindMul": {
+    "bird": [0.6,1.35,1.0],
+    "shell": [0.85,0.7,1.25],
+    "ghost": [0.6,0.8,1.4],
+    "venom": [0.9,1.15,1.0],
+    "wood": [1.25,0.9,1.1],
+    "shadow": [1.1,0.9,1.0],
+    "water": [1.0,0.9,1.15],
+    "swarm": [1.25,0.9,1.1],
+    "ward": [1.1,1.0,0.8],
+    "mirror": [1.0,1.15,0.7],
+    "breaker": [1.1,1.0,0.85],
+    "sky": [1.15,0.85,1.0],
+    "giant": [1.0,1.0,1.0]
+  },
+  "petPartner": {"exp":{"atk":5,"win":0.03,"find":20,"loot":5,"bite_win":0.02,"charm_ml":10,"guard_dmg":5,"peck_threat":10},"def_k":0.2,"first":["nureong_puppy","spotted_cat","sparrow","ladybug"],"pow_k":0.7,"coop_k":0.4,"groups":{"bite":{"n":2,"p":15,"fx":"pierce","mul":0.22,"line":"물어뜯었다","name":"물기","kinds":["shadow","breaker","wood"],"style":"melee","fx_line":"물린 상처가 벌어졌다"},"peck":{"n":2,"p":25,"fx":"broken","mul":0.22,"line":"쪼았다","name":"쪼기","kinds":["bird","sky"],"style":"ranged","fx_line":"틈이 벌어졌다(받는 피해 +20%)"},"charm":{"n":2,"p":20,"fx":"weak","mul":0.21,"line":"홀렸다","name":"홀리기","kinds":["ghost","water","venom","swarm","mirror"],"style":"magic","fx_line":"기세가 흐려졌다(공격 −20%)"},"guard":{"mul":0.24,"line":"앞을 막아섰다","name":"지키기","kinds":["ward","shell","giant"],"style":"melee","ward_k":8,"fx_line":"다음 공격을 막아 줍니다","ward_base":6}},"jitter":[0.85,0.3],"aff_cap":300,"c24b_hp":50,"c43a_hp":0.3,"whistle":{"mul":1.2,"pet":2},"win_aff":1,"win_day":10,"x30_pct":25,"c24b_pct":15,"c43a_mul":2,"care_mul":1.5,"melee_vs":["swarm"],"pow_base":0.3,"coop_base":0.6,"fav_kinds":["swarm","shadow"],"rank8_pct":8,"first_food":5,"master_min":0.8,"master_mul":1.2,"boss_expose":5,"guest_tamer":2},
   "jobBase": {
     "artificer": {"agility":5,"strength":9,"vitality":7,"willpower":3,"perception":3,"spirit_affinity":3},
     "scout": {"agility":8,"strength":4,"vitality":4,"willpower":3,"perception":8,"spirit_affinity":3},
     "exorcist": {"agility":3,"strength":3,"vitality":4,"willpower":7,"perception":4,"spirit_affinity":9},
     "medic": {"agility":3,"strength":3,"vitality":6,"willpower":8,"perception":3,"spirit_affinity":7},
     "sealmaster": {"agility":3,"strength":3,"vitality":5,"willpower":8,"perception":4,"spirit_affinity":7},
-    "analyst": {"agility":6,"strength":8,"vitality":5,"willpower":3,"perception":5,"spirit_affinity":3}
+    "analyst": {"agility":6,"strength":8,"vitality":5,"willpower":3,"perception":5,"spirit_affinity":3},
+    "tamer": {"agility":7,"strength":4,"vitality":5,"willpower":3,"perception":8,"spirit_affinity":3}
   },
   "soloAid": {
     "artificer": {"solo_dmg":-40,"final_dmg":-2,"solo_guard":-24},
@@ -15,7 +47,8 @@ export const GAMEDATA = {
     "exorcist": {"solo_dmg":-41,"final_dmg":13,"solo_guard":-16},
     "medic": {"solo_dmg":-30,"final_dmg":18,"solo_guard":-55},
     "sealmaster": {"solo_dmg":-42,"final_dmg":5,"solo_guard":-32},
-    "analyst": {"solo_dmg":-25,"final_dmg":34,"solo_guard":-36}
+    "analyst": {"solo_dmg":-25,"final_dmg":34,"solo_guard":-36},
+    "tamer": {"solo_dmg":-25,"final_dmg":-47,"solo_guard":-46}
   },
   "coop": [
     {"id":"art_mend","job":"analyst","rank":3,"name":"그림자 찌르기","desc":"그림자에서 급소를 찔러 곧바로 한 번 공격한다. 반드시 치명타이고 치명타 피해가 두 배.","target":"self","cost":3,"cd":8},
@@ -41,7 +74,11 @@ export const GAMEDATA = {
     {"id":"seal_ward","job":"sealmaster","rank":3,"name":"호신부 나누기","desc":"동료 한 명에게 호신부를 건넨다. 그 동료가 다음 세 번 받는 피해 −25%.","target":"ally","cost":4,"cd":8},
     {"id":"seal_might","job":"sealmaster","rank":8,"name":"기세 부적","desc":"동료 한 명의 다음 세 번 공격 피해 +20%.","target":"ally","cost":6,"cd":12},
     {"id":"seal_chain","job":"sealmaster","rank":18,"name":"봉인 사슬","desc":"보스를 사슬로 묶는다. 다음 반격 한 번을 막고, 보스가 받는 피해가 여섯 번 동안 +15%(봉연의 그림자에서는 사람이 많을수록 더 여러 번).","target":"boss","cost":10,"cd":20},
-    {"id":"seal_bagua","job":"sealmaster","rank":36,"name":"팔괘 결계","desc":"참가자 모두가 다음 두 번 받는 피해 −20%.","target":"all","cost":14,"cd":30}
+    {"id":"seal_bagua","job":"sealmaster","rank":36,"name":"팔괘 결계","desc":"참가자 모두가 다음 두 번 받는 피해 −20%.","target":"all","cost":14,"cd":30},
+    {"id":"tm_fetch","job":"tamer","rank":3,"name":"물어 와","desc":"동무를 보스에게 곧바로 보내 화살과 함께 한 번 공격한다. 이번 동무 공격은 두 배.","target":"self","cost":4,"cd":8},
+    {"id":"tm_guard","job":"tamer","rank":8,"name":"곁 지키기","desc":"동무를 동료 곁에 보낸다. 그 동료를 노린 다음 두 번 공격의 피해 −30%(동무의 힘에 따라 줄어든다).","target":"ally","cost":5,"cd":12},
+    {"id":"tm_herd","job":"tamer","rank":18,"name":"몰이","desc":"동무가 보스 둘레를 돌며 몬다. 다음 반격 한 번을 막고, 보스가 받는 피해가 네 번 동안 +10%(동무의 힘에 따라 줄어든다, 봉연의 그림자에서는 사람이 많을수록 더 여러 번).","target":"boss","cost":9,"cd":20},
+    {"id":"tm_pack","job":"tamer","rank":36,"name":"한 몸 사냥","desc":"내 다음 세 번 공격 +25%(동무의 힘에 따라 줄어든다), 그동안 동무 공격은 두 배.","target":"self","cost":14,"cd":30}
   ],
   "partyExp": {"flee_hp":30,"bonus_cap":3,"bonus_pct":10,"threat_pct":45,"overlap_min":10},
   "agile": {"agi_k":2,"eva_k":0.175,"flee_k":0.5,"tank_k":0.5,"eva_cap":40,"quiet_k":0.8,"sneak_k":0.65,"crit_cap":60,"eva_base":3,"flee_cap":95,"flee_min":10,"hazard_k":0.75,"flee_base":50,"quiet_cap":50,"scout_eva":6,"sneak_cap":75,"sneak_min":10,"hazard_cap":90,"hazard_w_k":0.05,"scout_flee":15,"sneak_base":25,"hazard_base":30,"scout_sneak":10},
@@ -67,9 +104,14 @@ export const GAMEDATA = {
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}
   },
+  "boss": {
+    "gwiheo": {"lv":38,"arc":"외전 · 요인록","min":15,"raw":[35,4],"fail":{"cd":30,"er":10,"dur":10},"hp_n":[1.2,1.7,0.8,0.85],"item":"gwiheo_charm","name":"귀허의 주인","again":{"xp":0.05,"gil":120},"falls":10,"fight":"귀허의 주인","first":{"xp":0.5,"gil":1500},"place":"귀허","quest":"gq_4","raw_n":[1,1.4,0.8,0.85],"enrage":0.15,"hp_atk":40,"hp_min":6000,"region":"gwiheo_core","item_name":"귀허 부적","shop_name":"반요촌 잡화","quest_name":"외전 4장 「달 없는 장」"},
+    "mukjeok": {"lv":44,"arc":"외전 · 묵적록","min":18,"raw":[38,4],"fail":{"cd":30,"er":10,"dur":10},"hp_n":[0.8,1.3,0.8,1.25],"item":"seal_inkline","name":"먹그림자","shop":"mukchang_shop","solo":{"medic":{"solo_dmg":-12,"solo_guard":10},"scout":{"solo_dmg":-25,"solo_guard":18},"tamer":{"solo_dmg":-40,"solo_guard":0},"analyst":{"solo_dmg":-25,"solo_guard":2},"exorcist":{"solo_dmg":-41,"solo_guard":4},"artificer":{"solo_dmg":-40,"solo_guard":-40},"sealmaster":{"solo_dmg":-42,"solo_guard":-2}},"again":{"xp":0.05,"gil":150,"qty":1,"item":"meokgwi_lump","item_name":"먹귀 응어리"},"board":{"line_n":[1,1,2,1],"aoe_mul":0.9,"lit_pct":5,"low_pct":10,"strokes":9,"keep_mul":1.3,"line_off":[2,0,0,3],"line_raw":45,"lit_base":4,"lit_ward":10,"aoe_every":4,"bound_raw":10,"erase_pct":6,"erase_raw":50,"hesit_pct":15,"lit_start":7,"mimic_atk":0.7,"mimic_raw":12,"line_every":[6,6,5,6],"center_pres":60,"erase_every":5,"mimic_stuck":0.5,"line_strokes":2,"erase_strokes":4,"recall_credit":0.5,"erase_sure_lit":6},"falls":10,"fight":"아홉 칸 명부","first":{"xp":0.5,"gil":2000,"mount":"ink_crane","furniture":"mk_first","mount_name":"먹 그림 학","name_style":"ns:1032","name_style_name":"묵적"},"place":"아홉 칸 뜰","quest":"mkq_4","raw_n":[1,1.1,0.8,0.85],"enrage":0.15,"hp_atk":44,"hp_min":7500,"region":"nine_court","item_name":"봉인 먹줄","shop_name":"묵창 나루 주막","xp_cap_lv":45,"quest_name":"외전 「묵적록」 4장 「명부 탑」"}
+  },
   "jobSkills": {
     "medic": {"desc":"체력을 회복하고 나쁜 상태 하나를 걷어냅니다. 한 전투에 한 번.","name":"응급 처방"},
     "scout": {"desc":"원거리 ×1.4로 쏘고 표식을 남겨 다음 세 번의 공격이 25%씩 강해집니다.","name":"급소 사격"},
+    "tamer": {"desc":"원거리 ×1.2로 쏘고, 이번 차례 동무의 동작이 반드시 터지며 동무 피해가 두 배가 됩니다.","name":"휘파람"},
     "analyst": {"desc":"다음 세 번의 공격이 40% 강해지고 치명타가 잘 납니다.","name":"약점 간파"},
     "exorcist": {"desc":"반드시 치명타로 꽂히는 술법 한 방(×1.4)으로 결계를 깨뜨립니다.","name":"퇴마진"},
     "artificer": {"desc":"근접으로 방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.","name":"파갑참"},

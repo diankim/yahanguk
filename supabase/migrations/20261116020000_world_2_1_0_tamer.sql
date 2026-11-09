@@ -3,7 +3,8 @@ lock table public.world_characters in access exclusive mode;
 create or replace function pg_temp.yh_fix(p_name text, p_pairs text[]) returns void language plpgsql as $f$
 declare d text; i int; n int;
 begin
-  select pg_get_functiondef(p.oid) into strict d from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = p_name;
+  if position('(' in p_name) > 0 then d := pg_get_functiondef(('public.' || p_name)::regprocedure);
+  else select pg_get_functiondef(p.oid) into strict d from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = p_name; end if;
   for i in 1 .. array_length(p_pairs, 1) / 2 loop
     n := (length(d) - length(replace(d, p_pairs[2 * i - 1], ''))) / length(p_pairs[2 * i - 1]);
     if n <> 1 then raise exception '함수 % 모양이 예상과 다릅니다(조각 %: % 곳)', p_name, i, n; end if;
@@ -64,7 +65,7 @@ grant execute on function public.world_combat_lines() to authenticated;
 select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「약점 간파」: 상대의 빈틈을 읽었다.'))$q$, $q$ 'line', '{me}의 「약점 간파」: 상대의 빈틈을 읽었다.'),
     'tamer', jsonb_build_object('name', '휘파람', 'desc', '원거리 ×1.2로 쏘고, 이번 차례 동무의 동작이 반드시 터지며 동무 피해가 두 배가 됩니다.', 'duel', jsonb_build_object('kind', 'focus', 'n', 1, 'mul', 1.3), 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'))$q$]);
 
-select pg_temp.yh_fix('world_solo_aid', array[$q$
+select pg_temp.yh_fix('world_solo_aid(text)', array[$q$
     when 'analyst'    then$q$, $q$
     when 'tamer'      then '{"solo_dmg": -25, "solo_guard": -46, "final_dmg": -47}'
     when 'analyst'    then$q$]);
@@ -93,6 +94,8 @@ select pg_temp.yh_fix('world_exp_fight_story', array[$q$
     when 'artificer' then '[호위 일격] 앞을 막아서며 {f}을(를) 베어 넘겼습니다' else null end;$q$, $q$
     when 'artificer' then '[호위 일격] 앞을 막아서며 {f}을(를) 베어 넘겼습니다'
     when 'tamer' then '[짝 사냥] 동무가 {f}에게 달려든 틈에 화살을 박아 넣었습니다' else null end;$q$]);
+
+select pg_temp.yh_fix('world_boss_rules', array[$q$"analyst": {"solo_dmg": -25, "solo_guard": 2}}}$q$, $q$"analyst": {"solo_dmg": -25, "solo_guard": 2}, "tamer": {"solo_dmg": -40, "solo_guard": 0}}}$q$]);
 
 alter table public.world_monster_kinds add column job_keys text[] not null default '{}';
 update public.world_monster_kinds set job_keys = case when job_key is null then '{}' else array[job_key] end;
@@ -376,7 +379,7 @@ $q$        perform public.world_gw_say(p_fight, r, 'atk', m.name || ' — ' || r
         if pk is not null then
           vfx := pk -> 'fx'; vbfx := pk -> 'bfx';
           update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
-          pd := (pk ->> 'd')::numeric * (1 + coalesce((m.stats ->> 'solo_dmg')::numeric, 0) / 100.0);
+          pd := (pk ->> 'd')::numeric * d / greatest(1, (cbr ->> 'd')::numeric);
           if k = 'vortex' and m.owner_id::text <> f.mech ->> 'tank' then vsum := vsum + pd * case when (pk ->> 'charm')::boolean then 2 else 1 end; end if;
           boss_dmg := boss_dmg + pd;
           update public.world_gw_members set dmg = dmg + round(pd)::int where fight_id = p_fight and owner_id = m.owner_id;
@@ -633,7 +636,7 @@ insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, r
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
 insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ('jq2_tamer', 3, '이름 대신 번호', '옥사 쥐 떼을(를) 물리친다', '{"at": ["old_prison"], "tasks": [{"t": "win", "m": ["r71_prison_2"], "n": 4}]}'::jsonb, '[{"s": null, "t": "쥐 떼가 흩어지자 족제비 한 마리가 홀로 감방 문 앞에 남았다. 족제비는 털이 듬성듬성 빠져 갈비뼈가 드러나 있었다."}, {"s": null, "t": "감방 안 어둠 속에는 머리를 짧게 깎은 소년의 영이 무릎을 안고 앉아 있었다. 소년은 족제비 쪽으로 손을 뻗은 채 입술만 달싹였다."}, {"s": "q:sx_duseok", "t": "꼬미야… 꼬미야."}, {"s": null, "t": "소년이 부를 때마다 복도 저편에서 쇠사슬 소리가 철컥철컥 울렸다. 쇠사슬 옥졸이 사슬을 흔들어 소년의 목소리를 덮고 있었다."}, {"s": null, "t": "소년의 영은 사슬 소리에 몸을 움츠리며 나를 올려다보았다."}, {"s": "q:sx_duseok", "t": "여기서는 이름을 부르면 안 돼요. 옥졸들이 저희를 번호로만 불렀어요. 저는 일흔세 번이었어요."}, {"s": "q:sx_duseok", "t": "제가 꼬미를 부를 때마다 저 사슬이 울어요. 그래서 제 목소리가 꼬미한테 안 닿아요."}, {"s": null, "t": "곰실이 감방 창살을 붙잡고 소년의 얼굴을 들여다보았다."}, {"s": "q:dh_gomsil", "t": "두석아, 너는 아직 네 이름을 기억하는구나. 벽에 새겨 둔 덕이다."}, {"s": null, "t": "곰실은 창살에서 손을 떼고 내 쪽으로 돌아섰다."}, {"s": "q:dh_gomsil", "t": "옥졸 두 놈만 쓰러뜨리면 사슬 소리가 그친다. 그리고 옥사에서 부적실을 세 타래 거둬 다오. 꼬미 목줄을 새로 매야겠다. 이렇게 닳은 패로는 이름이 붙어 있지 못해."}]'::jsonb, '{"xp": 758}'::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
-insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ('jq2_tamer', 4, '두 목소리', '쇠사슬 옥졸을(를) 물리친다, 부적실을(를) 모은다, 부적실을(를) 넘긴다', '{"at": ["old_prison"], "tasks": [{"t": "win", "m": ["r71_prison_4"], "n": 2}, {"t": "gather", "items": ["talisman_thread"], "r": ["old_prison"], "n": 3}], "give": {"talisman_thread": 3}}'::jsonb, '[{"s": null, "t": "마지막 옥졸이 쓰러지자 복도의 사슬 소리가 뚝 그쳤다. 옥사 안이 귀가 먹먹할 만큼 조용해졌다."}, {"s": null, "t": "곰실은 내가 건넨 부적실로 새 목줄을 매고, 새 나무패에 「꼬미」라고 또박또박 새겼다. 그러고는 창살 너머 소년에게 눈짓을 했다."}, {"s": "q:dh_gomsil", "t": "같이 부르자, 두석아. 하나, 둘."}, {"s": null, "t": "곰실과 소년의 영이 한목소리로 꼬미를 불렀다. 족제비가 반 박자 늦게 고개를 들더니, 곧바로 달려와 곰실의 무릎과 창살 사이를 오가며 두 사람의 손에 번갈아 코를 비볐다."}, {"s": null, "t": "소년의 영은 창살 사이로 손을 내밀어 꼬미의 등을 쓸었다. 소년의 손은 털을 스치지 못하고 그대로 지나갔다. 소년은 그래도 웃었다."}, {"s": "q:sx_duseok", "t": "저는 여기서 못 나가요. 제 이름이 이 벽에 있으니까요. 그래도 괜찮아요. 이름이 남아 있으면 잊힌 게 아니라고 들었어요."}, {"s": "q:sx_duseok", "t": "아주머니가 꼬미를 데려가서 날마다 불러 주세요. 저 대신요. 꼬미가 다시 쥐 떼가 되지 않게요."}, {"s": null, "t": "곰실은 목줄을 꼬미 목에 걸어 주고 창살 앞에 주먹밥 한 덩이를 놓았다."}, {"s": "q:dh_gomsil", "t": "그러마. 그리고 너도 부르러 오마. 철마다 한 번씩, 꼬미 데리고."}, {"s": null, "t": "옥사를 나서는 길에 곰실은 꼬미를 품에 안은 채 내 쪽을 돌아보았다."}, {"s": "q:dh_gomsil", "t": "오늘 봤지. 동무는 저를 부르는 목소리가 끊기면 길을 잃는다. 그런데 부르는 사람이 둘이면 하나가 끊겨도 버틴다."}, {"s": "q:dh_gomsil", "t": "내 옛 짝 무던도 그랬으면 좋았을 텐데. 그 사람은 요기를 너무 많이 입어서 서른 해 전에 바다 건너 섬으로 보내졌다. 내가 안겨 준 수달 한 마리를 끝까지 품에 안고 갔지."}, {"s": "q:dh_gomsil", "t": "네가 언젠가 그 섬까지 가게 되거든, 무던이라는 이름을 아는 사람이 있는지 물어봐 다오."}]'::jsonb, '{"xp": 758, "gil": 77, "items": {"tonic": 2, "travel_ration": 1}}'::jsonb)
+insert into public.world_quest_steps(quest_id, step, title, goal, need, lines, reward) values ('jq2_tamer', 4, '두 목소리', '쇠사슬 옥졸을(를) 물리친다, 부적실을(를) 모은다, 부적실을(를) 넘긴다', '{"at": ["old_prison"], "tasks": [{"t": "win", "m": ["r71_prison_4"], "n": 2}, {"t": "gather", "items": ["talisman_thread"], "r": ["old_prison"], "n": 3}], "give": {"talisman_thread": 3}}'::jsonb, '[{"s": null, "t": "마지막 옥졸이 쓰러지자 복도의 사슬 소리가 뚝 그쳤다. 옥사 안이 귀가 먹먹할 만큼 조용해졌다."}, {"s": null, "t": "곰실은 내가 건넨 부적실로 새 목줄을 매고, 새 나무패에 「꼬미」라고 또박또박 새겼다. 그러고는 창살 너머 소년에게 눈짓을 했다."}, {"s": "q:dh_gomsil", "t": "같이 부르자, 두석아. 하나, 둘."}, {"s": null, "t": "곰실과 소년의 영이 한목소리로 꼬미를 불렀다. 족제비가 반 박자 늦게 고개를 들더니, 곧바로 달려와 곰실의 무릎과 창살 사이를 오가며 두 사람의 손에 번갈아 코를 비볐다."}, {"s": null, "t": "소년의 영은 창살 사이로 손을 내밀어 꼬미의 등을 쓸었다. 소년의 손은 털을 스치지 못하고 그대로 지나갔다. 소년은 그래도 웃었다."}, {"s": "q:sx_duseok", "t": "저는 여기서 못 나가요. 제 이름이 이 벽에 있으니까요. 그래도 괜찮아요. 이름이 남아 있으면 잊힌 게 아니라고 들었어요."}, {"s": "q:sx_duseok", "t": "아주머니가 꼬미를 데려가서 날마다 불러 주세요. 저 대신요. 꼬미가 다시 쥐 떼가 되지 않게요."}, {"s": null, "t": "곰실은 목줄을 꼬미 목에 걸어 주고 창살 앞에 주먹밥 한 덩이를 놓았다."}, {"s": "q:dh_gomsil", "t": "그러마. 그리고 너도 부르러 오마. 철마다 한 번씩, 꼬미 데리고."}, {"s": null, "t": "옥사를 나서는 길에 꼬미는 곰실의 품에서 빠져나와 내 발치로 달려왔다. 꼬미는 내 소매 끝을 물고 놓지 않았다."}, {"s": null, "t": "곰실은 한참 동안 꼬미를 내려다보다가 새 목줄 끝을 내 손에 쥐여 주었다."}, {"s": "q:dh_gomsil", "t": "이 녀석이 너를 골랐구나. 쥐 떼를 걷어 내고 사슬 소리를 멈춘 게 너였으니, 꼬미도 네 기척을 기억한 거다."}, {"s": "q:dh_gomsil", "t": "오늘 봤지. 동무는 저를 부르는 목소리가 끊기면 길을 잃는다. 그런데 부르는 사람이 둘이면 하나가 끊겨도 버틴다."}, {"s": "q:dh_gomsil", "t": "꼬미는 네가 데리고 다녀라, {이름}. 나는 다리가 느려 이 녀석 걸음을 못 따라간다. 너는 날마다 이름을 불러 주고, 철마다 한 번은 꼬미를 데리고 객사 뒤뜰로 와라. 같이 두석이를 보러 가자."}, {"s": null, "t": "나는 꼬미의 이름을 불렀다. 꼬미는 이번에는 늦지 않고 곧바로 내 어깨 위로 뛰어올랐다."}, {"s": null, "t": "곰실은 그 모습을 보고 짧게 웃더니 지팡이를 고쳐 짚고 옥사 쪽을 한 번 돌아보았다."}, {"s": "q:dh_gomsil", "t": "내 옛 짝 무던도 그랬으면 좋았을 텐데. 그 사람은 요기를 너무 많이 입어서 서른 해 전에 바다 건너 섬으로 보내졌다. 내가 안겨 준 수달 한 마리를 끝까지 품에 안고 갔지."}, {"s": "q:dh_gomsil", "t": "네가 언젠가 그 섬까지 가게 되거든, 무던이라는 이름을 아는 사람이 있는지 물어봐 다오."}]'::jsonb, '{"xp": 758, "gil": 77, "items": {"tonic": 2, "travel_ration": 1}}'::jsonb)
 on conflict (quest_id, step) do update set title = excluded.title, goal = excluded.goal, need = excluded.need, lines = excluded.lines, reward = excluded.reward;
 insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
 values ('jq3_tamer', 'side', '직업·조련사', '서로 부르는 이름', '섬으로 보내진 곰실의 옛 짝과, 그 이름을 놓지 않은 수달', 'ash_reeds', 32, '{jq2_tamer,mq_nine_gates}'::text[], null, 1183, '[]'::jsonb, true, 'tamer', null)
@@ -667,7 +670,7 @@ insert into public.world_patch_notes(note_id, title, body) values ('2.1.0', '2.1
 - 군충·은형 요괴에 강합니다. 은형은 월궁 사수와 함께 유리한 갈래가 되었습니다.
 - 기술 계열 「조련」이 새로 생겼습니다. 화살 쪽은 사격보다 덜 오르고 동무 피해가 오릅니다. 24·43단계 택일은 「사냥」과 「돌봄」 갈래, 50단계 숙달은 「이름의 끈」입니다.
 - 협동 기술 넷(물어 와·곁 지키기·몰이·한 몸 사냥)은 모두 동무를 거칩니다.
-- 혼자 귀허의 주인·10장 결전에 도전할 때의 직업 보정이 조련사에게도 붙습니다. 보스 체력은 동무의 몫까지 함께 셈합니다.
+- 혼자 귀허의 주인·먹그림자·10장 결전에 도전할 때의 직업 보정이 조련사에게도 붙습니다. 보스 체력은 동무의 몫까지 함께 셈합니다.
 - 직업 퀘스트 세 편: 본부 객사 「이름 없는 불씨」(Lv3), 옛 의금부 옥사 「옥사에 남은 족제비」(Lv18), 잿빛 갈대숲 「서로 부르는 이름」(Lv32). 둘째 편을 마치면 꼬마 족제비가 동무가 됩니다.
 - 조련사 기본 옷 한 벌이 「내 모습」에 더해졌습니다.
 

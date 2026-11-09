@@ -33,7 +33,7 @@ grant execute on function public.world_combat_lines() to authenticated;
 select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「약점 간파」: 상대의 빈틈을 읽었다.'))$q$, $q$ 'line', '{me}의 「약점 간파」: 상대의 빈틈을 읽었다.'),
     'tamer', jsonb_build_object('name', '휘파람', 'desc', '원거리 ×1.2로 쏘고, 이번 차례 동무의 동작이 반드시 터지며 동무 피해가 두 배가 됩니다.', 'duel', jsonb_build_object('kind', 'focus', 'n', 1, 'mul', 1.3), 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'))$q$]);
 
-select pg_temp.yh_fix('world_solo_aid', array[$q$
+select pg_temp.yh_fix('world_solo_aid(text)', array[$q$
     when 'analyst'    then$q$, $q$
     when 'tamer'      then '{"solo_dmg": -25, "solo_guard": -46, "final_dmg": -47}'
     when 'analyst'    then$q$]);
@@ -62,3 +62,5 @@ select pg_temp.yh_fix('world_exp_fight_story', array[$q$
     when 'artificer' then '[호위 일격] 앞을 막아서며 {f}을(를) 베어 넘겼습니다' else null end;$q$, $q$
     when 'artificer' then '[호위 일격] 앞을 막아서며 {f}을(를) 베어 넘겼습니다'
     when 'tamer' then '[짝 사냥] 동무가 {f}에게 달려든 틈에 화살을 박아 넣었습니다' else null end;$q$]);
+
+select pg_temp.yh_fix('world_boss_rules', array[$q$"analyst": {"solo_dmg": -25, "solo_guard": 2}}}$q$, $q$"analyst": {"solo_dmg": -25, "solo_guard": 2}, "tamer": {"solo_dmg": -40, "solo_guard": 0}}}$q$]);
