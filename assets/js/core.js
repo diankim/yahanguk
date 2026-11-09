@@ -122,12 +122,31 @@ export async function act(name, args) {
   if (hit('equipped', name)) equipped = null;
   const mid = midBattle({ name, data });
   if (mid && data?.me && store.character) { Object.assign(store.character, data.me); store.charAt = Date.now(); emit('character', store.character); }
-  else try { await loadCharacter({ hud: !mid, field: !mid && onFieldView(), inv: !mid && onInvView() && !hit('invQuiet', name) }); } catch {}
+  else try {
+    const lvl = store.character?.level, light = fieldLight(name, data);
+    await loadCharacter({ hud: !mid, field: !mid && onFieldView() && !light, inv: !mid && onInvView() && !hit('invQuiet', name) });
+    if (light) await patchField(light, data, lvl);
+  } catch {}
   emit('changed', { name, data });
   return data;
 }
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
 const onFieldView = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
+const FIELD_LIGHT = new Set(['quiet', 'omen', 'cache', 'regional', 'hazard']);
+function fieldLight(name, data) {
+  if (!/^world_field_search(_quiet)?$/.test(name) || !FIELD_LIGHT.has(data?.outcome) || !onFieldView()) return null;
+  const f = store.snaps['world_field_snapshotnull'];
+  return f?.stamina && Array.isArray(f.recent) && !f.battle ? f : null;
+}
+async function patchField(f, data, lvl) {
+  const c = store.character;
+  if (!c || c.level !== lvl || !c.stamina_at || c.downed_at || c.health <= 0 || store.snaps['world_field_snapshotnull'] !== f) return loadCharacter({ field: true }).catch(() => {});
+  const per = 900, mx = f.stamina.max, at = new Date(c.stamina_at).getTime(), sec = Math.max(0, Date.now() - at) / 1000;
+  const now = Math.min(mx, Math.max(0, c.stamina) + Math.floor(sec / per));
+  const stamina = { ...f.stamina, now, next_at: now >= mx ? null : new Date(at + (Math.floor(sec / per) + 1) * per * 1000).toISOString() };
+  const recent = [{ content: data.content, kind: data.outcome, at: new Date().toISOString() }, ...f.recent].slice(0, 12);
+  emit('snaps', { world_field_snapshot: { ...f, stamina, recent } });
+}
 const onInvView = () => /^#\/(bag|char)(\/|$)/.test(location.hash);
 let charMut = 0, charSeq = 0, charShown = 0, charUser = null;
 const charFlight = new Map();
