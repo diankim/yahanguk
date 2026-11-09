@@ -46,6 +46,19 @@ class Grid:
         return dict(x=x0, y=y0, rows=out)
 
 
+def form(g, base, lite, dark):
+    out = {}
+    for (x, y), c in g.p.items():
+        if c != base:
+            continue
+        if (x + 1, y) not in g.p or (x, y + 1) not in g.p:
+            out[(x, y)] = dark
+        elif (x - 1, y) not in g.p or (x, y - 1) not in g.p:
+            out[(x, y)] = lite
+    g.p.update(out)
+    return g
+
+
 def in_head(x, y):
     return ((x + .5 - CX) / HEAD_RX) ** 2 + ((y + .5 - HEAD_CY) / HEAD_RY) ** 2 <= 1
 
@@ -83,6 +96,7 @@ EYE_COLORS = {
 def body(frame):
     g = Grid()
     g.ell(CX, FACE_CY, FACE_RX, FACE_RY, 's', lambda x, y: y >= 12)
+    form(g, 's', 's', 'S')
     g.rect(13, 22, 14, 23, 'S')
     g.sym(8, 27, 's')
     g.sym(8, 28, 's')
@@ -165,6 +179,21 @@ def hair_front(fringe, locks, kind=''):
     for x, y in ((7, 4), (8, 3), (9, 3), (10, 3), (11, 4)):
         g.sym(x, y, 'i')
     g.sym(9, 3, 'j')
+    tips = {}
+    for (x, y), c in g.p.items():
+        if 6 <= x <= 21 and y <= 16:
+            tips[x] = max(tips.get(x, -1), y)
+    form(g, 'h', 'g', 'k')
+    for (x, y), c in list(g.p.items()):
+        if c == 'h' and y <= 5:
+            g.p[(x, y)] = 'g'
+        elif c == 'h' and y >= 11 and 6 <= x <= 21:
+            g.p[(x, y)] = 'k'
+        elif c == 'h' and y >= 16:
+            g.p[(x, y)] = 'k'
+    for x, y in tips.items():
+        if in_face(x, y + 1) and (y + 1 < EY or x not in EYE_COLS):
+            g.set(x, y + 1, 'S')
     return g
 
 
@@ -264,6 +293,7 @@ def hair_back(kind):
         for bx, by, dx, dy in ((6, 3, -1, -1), (10, 1, -1, -1), (14, 0, 0, -1), (19, 1, 1, -1), (22, 3, 1, -1), (1, 9, -1, 0), (26, 9, 1, 0)):
             for t in range(2):
                 g.set(bx + dx * t, by + dy * t, 'k')
+    form(g, 'k', 'h', 'q')
     return g
 
 

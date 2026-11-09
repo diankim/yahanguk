@@ -21,8 +21,8 @@ def part(g):
 
 
 out = dict(w=D.W, h=D.H, fixed=D.FIXED)
-out['skins'] = {k: dict(name=n, s=c, S=shade(c, .9)) for k, (n, c) in D.SKINS.items()}
-out['hairColors'] = {k: dict(name=n, h=c, H=shade(c, .72), i=shade(c, 1.22), j=shade(c, 1.5), k=shade(c, .84)) for k, (n, c) in D.HAIR_COLORS.items()}
+out['skins'] = {k: dict(name=n, s=c, S=shade(c, .93)) for k, (n, c) in D.SKINS.items()}
+out['hairColors'] = {k: dict(name=n, h=c, H=shade(c, .72), i=shade(c, 1.22), j=shade(c, 1.5), k=shade(c, .84), g=shade(c, 1.1), q=shade(c, .62)) for k, (n, c) in D.HAIR_COLORS.items()}
 out['eyeColors'] = {k: dict(name=n, e=c, E=shade(c, .55), f=shade(c, 1.45)) for k, (n, c) in D.EYE_COLORS.items()}
 out['body'] = {f: part(D.body(f)) for f in ('stand', 'walk')}
 out['hair'] = {k: dict(name=n, back=part(D.hair_back(b)), front=part(D.hair_front(fr, lk, b))) for k, (n, b, fr, lk) in D.HAIRS.items()}
@@ -31,12 +31,15 @@ out['mouth'] = {k: dict(name=n, part=part(D.mouth(k))) for k, n in D.MOUTHS.item
 tops = {}
 for k, (n, fn) in D.TOPS.items():
     g, pal = fn()
+    D.form(g, 'a', 'x', 'y')
+    pal = dict(pal, x=shade(pal['a'], 1.12), y=shade(pal['a'], .78))
     tops[k] = dict(name=n, pal=pal, part=part(g))
 out['top'] = tops
 bots = {}
 for k, (n, kind, a, b, z) in D.BOTTOMS.items():
     make, pal = D.bottom_def(kind, a, b, z)
-    bots[k] = dict(name=n, pal=pal, stand=part(make('stand')), walk=part(make('walk')))
+    pal = dict(pal, x=shade(a, 1.12), y=shade(a, .78))
+    bots[k] = dict(name=n, pal=pal, stand=part(D.form(make('stand'), 'a', 'x', 'y')), walk=part(D.form(make('walk'), 'a', 'x', 'y')))
 out['bottom'] = bots
 out['acc'] = {}
 out['jobDefault'] = {j: dict(top=t, bottom=b) for j, (t, b) in D.JOB_DEFAULT.items()}
