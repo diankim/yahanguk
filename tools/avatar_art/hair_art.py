@@ -243,13 +243,14 @@ def curly():
     return f, b
 
 
-def longcurl():
-    f, b = ascii_grid(LONGCURL_FRONT), Grid()
+def longcurl(low=False):
+    rows = LONGCURL_FRONT if not low else ["." * 28] * 3 + ["......hhhhhhh..hhhhhhh......"] + LONGCURL_FRONT[4:]
+    f, b = ascii_grid(rows), Grid()
     for y in range(0, 3):
         f.p.pop((13, y), None); f.p.pop((14, y), None)
     shade_front(f)
     curls(f, ((4, 6, -1), (23, 6, 1), (3, 13, 1), (24, 13, -1), (2, 17, 1), (25, 17, -1)))
-    dome(b, 2, 18, 18, 12.4)
+    dome(b, 4 if low else 2, 18, 18, 12.0 if low else 12.4)
     for x, y in ((g, h) for g, h in list(b.p)):
         b.p[(x, y)] = 'k'
     bumpy_back(b, 18, 32, 11, 3)
@@ -494,7 +495,7 @@ def wv(y):
 def fluffy2():
     f = Grid()
     cap(f, 10)
-    for st in ((7, 4, 3, 2, 3), (20, 4, 24, 2, 3), (14, 3, 15, 0, 3), (4, 8, 1, 8, 3), (23, 9, 26, 10, 3)):
+    for st in ((6, 4, 4, 2, 2), (21, 4, 23, 2, 2), (14, 3, 15, 1, 2), (3, 8, 1, 8, 2), (24, 9, 26, 10, 2)):
         strand(f, *st)
     bangs(f, {6: 13, 7: 12, 8: 14, 9: 12, 10: 13, 11: 11, 12: 13, 13: 14, 14: 12, 15: 13, 16: 11, 17: 13, 18: 12, 19: 14, 20: 12, 21: 13})
     sides(f, {11: (2, 5), 12: (2, 5), 13: (2, 5), 14: (2, 5), 15: (3, 5), 16: (3, 5)})
@@ -541,17 +542,13 @@ def halfup2():
 
 
 def cloud2():
-    f, b = longcurl()
+    f, b = longcurl(True)
     for cx in (6, 21):
-        for y in range(0, 4):
+        for y in range(1, 6):
             for x in range(cx - 3, cx + 4):
-                if ((x + .5 - cx - .5) / 2.8) ** 2 + ((y + .5 - 2) / 2.2) ** 2 <= 1 and (x, y) not in f.p:
-                    f.set(x, y, 'h')
-        f.set(cx, 0, 'i')
-    for x in range(W):
-        for y in range(0, 4):
-            if f.p.get((x, y)) == 'h':
-                f.p[(x, y)] = 'g' if y < 2 else 'h'
+                if ((x + .5 - cx - .5) / 2.4) ** 2 + ((y + .5 - 3.4) / 1.9) ** 2 <= 1 and (x, y) not in f.p:
+                    f.set(x, y, 'g' if y < 3 else 'h')
+        f.set(cx, 2, 'i')
     return f, b
 
 
@@ -577,12 +574,8 @@ def princess2():
 def layered2():
     f = Grid()
     cap(f, 10)
-    for st in ((10, 3, 9, 0, 3), (16, 3, 18, 0, 3), (6, 4, 3, 2, 3), (21, 4, 24, 2, 3), (4, 7, 1, 6, 3), (23, 7, 26, 6, 3)):
-        strand(f, *st)
     bangs(f, {6: 13, 7: 14, 8: 12, 9: 13, 10: 14, 11: 12, 12: 13, 13: 15, 14: 13, 15: 12, 16: 14, 17: 13, 18: 12, 19: 14, 20: 13, 21: 12})
-    sides(f, {11: (2, 5), 12: (1, 5), 13: (2, 5), 14: (1, 5), 15: (3, 5), 16: (4, 5)})
-    for st in ((2, 12, 0, 14, 2), (25, 12, 27, 14, 2)):
-        strand(f, *st)
+    sides(f, {11: (2, 5), 12: (2, 5), 13: (2, 5), 14: (2, 5), 15: (3, 5), 16: (4, 5)})
     shade_front(f)
     marks(f, [(9, 4), (9, 5), (13, 3), (13, 4), (17, 4), (17, 5), (7, 8), (11, 8), (15, 8), (19, 8), (4, 9), (23, 9)])
     return f, Grid()
@@ -617,4 +610,4 @@ ART.update({
     'layered': ('부스스 짧은 머리', layered2),
     'twintail': ('양갈래', twintail2),
 })
-ORDER = ['calm', 'sports', 'curtain', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'longcurl', 'cloud']
+ORDER = ['calm', 'sports', 'curtain', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'cloud']
