@@ -66,15 +66,19 @@ export function drawAvatar(putPx, look, frame, x0, y0, flip = false) {
 }
 
 const cache = new Map();
-export function avatarImage(look, { frame = 'stand', scale = 4, job } = {}) {
-  const l = fixLook(look, job), key = JSON.stringify([l, frame, scale]);
+export function avatarImage(look, { frame = 'stand', scale = 4, job, crop = null } = {}) {
+  const l = fixLook(look, job), key = JSON.stringify([l, frame, scale, crop]);
   if (cache.has(key)) return cache.get(key);
+  const [cx, cy, cw, ch] = crop || [0, 0, AW, AH];
   const px = avatarPixels(l, frame), c = document.createElement('canvas');
-  c.width = AW * scale; c.height = AH * scale;
+  c.width = cw * scale; c.height = ch * scale;
   const g = c.getContext('2d');
-  px.forEach((v, i) => { if (v) { g.fillStyle = v; g.fillRect((i % AW) * scale, Math.floor(i / AW) * scale, scale, scale); } });
+  px.forEach((v, i) => {
+    const x = i % AW - cx, y = Math.floor(i / AW) - cy;
+    if (v && x >= 0 && y >= 0 && x < cw && y < ch) { g.fillStyle = v; g.fillRect(x * scale, y * scale, scale, scale); }
+  });
   const url = c.toDataURL();
-  if (cache.size > 200) cache.clear();
+  if (cache.size > 400) cache.clear();
   cache.set(key, url);
   return url;
 }

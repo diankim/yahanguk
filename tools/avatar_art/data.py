@@ -82,6 +82,15 @@ EYE_COLORS = {
 def body(frame):
     g = Grid()
     g.ell(W / 2, FACE_CY, FACE_RX, FACE_RY, 's')
+    for y in range(H):
+        xs = [x for x in range(W) if g.p.get((x, y)) == 's']
+        if xs and y > FACE_CY:
+            g.set(xs[0], y, 'S')
+            g.set(xs[-1], y, 'S')
+    for x in range(W):
+        ys = [y for y in range(H) if g.p.get((x, y)) in ('s', 'S')]
+        if ys:
+            g.set(x, ys[-1], 'S')
     g.rect(13, 20, 14, 22, 'S')
     g.srect(10, TOP, 13, BOT, 's')
     g.srect(8, BOT - 1, 9, BOT, 's')
@@ -103,11 +112,11 @@ FRINGES = {
 def hair_front(fringe, locks):
     g = Grid()
     pat = FRINGES[fringe]
-    fy = FACE_CY - FACE_RY * 0.55
+    fy = FACE_CY - FACE_RY * 0.72
     x0, x1 = int(W / 2 - FACE_RX - 1), int(W / 2 + FACE_RX + 1)
     for i, x in enumerate(range(x0, x1 + 1)):
         d = pat[i % len(pat)]
-        lim = int(fy + d * 0.8)
+        lim = int(fy + d * 0.6)
         for y in range(0, lim):
             if in_head(x, y):
                 g.set(x, y, 'h')
@@ -119,8 +128,10 @@ def hair_front(fringe, locks):
                 g.set(x, y, 'h')
     for x in range(x0, x1 + 1):
         for y in range(0, H):
-            if (x, y) in g.p and (x, y + 1) not in g.p and in_face(x, y + 1) and g.p[(x, y)] == 'h':
+            if (x, y) in g.p and (x, y + 1) not in g.p and in_face(x, y + 1) and g.p[(x, y)] in ('h', 'H'):
                 g.set(x, y, 'H')
+                g.set(x, y + 1, 'S')
+                break
     for side in (-1, 1):
         sx = int(W / 2 + side * (FACE_RX - 0.5)) - (1 if side > 0 else 0)
         for y in range(int(FACE_CY - 2), int(FACE_CY + FACE_RY * locks)):
@@ -144,7 +155,7 @@ def hair_front(fringe, locks):
 
 def hair_back(kind):
     g = Grid()
-    g.ell(W / 2, HEAD_CY, HEAD_RX, HEAD_RY, 'h')
+    g.ell(W / 2, HEAD_CY, HEAD_RX, HEAD_RY, 'k')
     if kind == 'short':
         for x in (12, 13, 15):
             g.set(x, 0, 'h')
@@ -194,50 +205,32 @@ HAIRS = {
     'spiky': ('뻗친 머리', 'spiky', 'jag', 0.8),
 }
 
-EY, EX = 13, 9
+EY, EX = 13, 8
+
+
+EYE_SHAPES = {
+    'round': ['llll', 'EwEE', 'eeee', 'eefe', '.ff.'],
+    'sparkle': ['llll', 'wwEE', 'weee', 'eewe', '.ff.'],
+    'sleepy': ['....', 'llll', 'EwEE', 'eefe', '....'],
+    'sharp': ['l...', 'llll', 'EweE', 'eefe', '....'],
+    'dot': ['....', '.EE.', '.wE.', '.EE.', '....'],
+    'smile': ['....', '.ll.', 'l..l', '....', '....'],
+}
+CLOSED = ['....', '....', 'l..l', '.ll.', '....']
 
 
 def eye(kind, closed):
     g = Grid()
-    if closed or kind == 'smile':
-        if kind == 'smile':
-            g.sym(EX, EY + 2, 'l')
-            g.sym(EX + 1, EY + 1, 'l')
-            g.sym(EX + 2, EY + 2, 'l')
-        else:
-            g.rect(EX, EY + 2, EX + 2, EY + 2, 'l')
-            g.rect(W - 1 - EX - 2, EY + 2, W - 1 - EX, EY + 2, 'l')
-            g.sym(EX - 1, EY + 1, 'l')
-    elif kind == 'round':
-        g.srect(EX, EY - 1, EX + 2, EY - 1, 'l')
+    rows = CLOSED if closed and kind != 'smile' else EYE_SHAPES[kind]
+    for dy, r in enumerate(rows):
+        for dx, ch in enumerate(r):
+            if ch != '.':
+                g.set(EX + dx, EY - 1 + dy, ch)
+                g.set(W - 1 - EX - dx, EY - 1 + dy, ch)
+    if not closed and kind in ('round', 'sparkle', 'sharp'):
         g.sym(EX - 1, EY - 1, 'l')
-        g.srect(EX, EY, EX + 2, EY + 3, 'e')
-        g.srect(EX, EY + 3, EX + 2, EY + 3, 'E')
-        g.set(EX, EY, 'w'); g.set(EX + 1, EY, 'w'); g.set(EX + 2, EY + 2, 'f')
-        g.set(W - 1 - EX - 2, EY, 'w'); g.set(W - 1 - EX - 1, EY, 'w'); g.set(W - 1 - EX, EY + 2, 'f')
-    elif kind == 'sparkle':
-        g.srect(EX - 1, EY - 1, EX + 2, EY - 1, 'l')
-        g.srect(EX, EY, EX + 2, EY + 3, 'e')
-        g.srect(EX, EY + 3, EX + 2, EY + 3, 'E')
-        for x0 in (EX, W - 1 - EX - 2):
-            g.set(x0, EY, 'w'); g.set(x0 + 1, EY, 'w'); g.set(x0, EY + 1, 'w')
-            g.set(x0 + 2, EY + 2, 'w')
-    elif kind == 'sleepy':
-        g.srect(EX - 1, EY + 1, EX + 2, EY + 1, 'l')
-        g.srect(EX, EY + 2, EX + 2, EY + 3, 'e')
-        g.srect(EX, EY + 3, EX + 2, EY + 3, 'E')
-        g.set(EX, EY + 2, 'w'); g.set(W - 1 - EX - 2, EY + 2, 'w')
-    elif kind == 'sharp':
-        g.srect(EX - 1, EY, EX + 2, EY, 'l')
-        g.sym(EX - 1, EY - 1, 'l')
-        g.srect(EX, EY + 1, EX + 2, EY + 2, 'e')
-        g.srect(EX, EY + 3, EX + 1, EY + 3, 'E')
-        g.set(EX + 1, EY + 1, 'w'); g.set(W - 1 - EX - 1, EY + 1, 'w')
-    elif kind == 'dot':
-        g.srect(EX + 1, EY + 1, EX + 2, EY + 2, 'E')
-        g.set(EX + 1, EY + 1, 'w'); g.set(W - 1 - EX - 2, EY + 1, 'w')
-    g.sym(EX - 1, EY + 4, 'p')
-    g.sym(EX, EY + 5, 'p')
+    for x in range(EX - 1, EX + 2):
+        g.sym(x, EY + 4, 'p')
     return g
 
 
@@ -246,7 +239,7 @@ EYES = {
     'sharp': '또렷한 눈', 'dot': '콩알 눈', 'smile': '웃는 눈',
 }
 
-MY = 18
+MY = 19
 
 
 def mouth(kind):
@@ -410,4 +403,4 @@ JOB_DEFAULT = {
     'analyst': ('shadow', 'shadow'),
 }
 
-FIXED = {'w': '#ffffff', 'l': '#3a2620', 'p': '#f0a49a', 'm': '#c8645e', 'n': '#7a2a2a'}
+FIXED = {'w': '#ffffff', 'l': '#3a2620', 'p': '#f7aea4', 'm': '#c8645e', 'n': '#7a2a2a'}
