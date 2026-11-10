@@ -706,29 +706,5 @@ select pg_temp.yh_fix('world_bug_report_list', array[
 $q$'drawing', case when (select is_gm from gm) and r.category = 'drawing' then public.world_drawing_brief((r.context ->> 'drawing')::bigint) end,$q$,
 $q$'drawing', case when (select is_gm from gm) and r.category = 'drawing' then public.world_drawing_brief((r.context ->> 'drawing')::bigint) end, 'outfit', case when (select is_gm from gm) and r.category = 'outfit' then public.world_outfit_design_brief((r.context ->> 'outfit')::bigint) end,$q$], 1);
 
-insert into public.world_patch_notes(note_id, title, body) values ('1.2.0', '1.2.0 · 내 모습', $N$조사원의 모습을 직접 꾸미고, 옷을 손수 그려 지어 입을 수 있습니다.
-
-## 내 모습
-- 캐릭터 › 「내 모습」 탭에서 머리·눈·입·윗옷·아랫옷·장신구를 고릅니다.
-- 「별채에 세우기」를 켜면 내 모습이 별채 안을 걸어 다닙니다. 한 지붕에 사는 정인의 모습도 함께 보입니다.
-- 다른 조사원이 내 카드를 열면 온몸 모습이 보입니다.
-- 「얼굴로 쓰기」를 누르면 머리 그림이 채팅·목록·카드·상태판 얼굴이 됩니다. 사진을 새로 올리면 사진으로 바뀝니다.
-
-## 옷 얻기
-- 옷과 장신구는 물품입니다. 가방에서 「옷장에」를 누르면 옷장에 들어가고, 그 뒤로는 언제든 골라 입을 수 있습니다.
-- 처음부터 직업 기본 옷을 입을 수 있고, 옷 스물세 가지를 상점·직조/법구 공예 제작·퀘스트 보상·비무회 우승·「옷 꾸러미」로 얻습니다.
-- 「옷 꾸러미」는 원정 완주와 우두머리 토벌에서 가끔 나오고, 풀면 옷 하나가 나옵니다. 다른 직업의 기본 옷도 들어 있습니다.
-
-## 내 도안
-- 옷장에 있는 윗옷이나 아랫옷 하나를 틀로 골라 그 안을 칸마다 직접 칠합니다. 명암은 칠한 색에 맞춰 저절로 들어갑니다.
-- 한 도안에 색 여덟 가지까지, 색판에서 고르거나 색 고르기 창으로 직접 정합니다. 단추·띠 같은 장식 색도 따로 바꿀 수 있습니다.
-- 아랫옷은 한 번 그리면 걷는 모습에도 그대로 옮겨집니다.
-- 새 도안은 하루 두 장까지, 도안첩에는 받은 사본까지 스무 장까지 둡니다. 지운 도안은 「지운 도안」에서 되살릴 수 있습니다.
-- 그린 도안은 직조로 지어야 입을 수 있습니다. 윗옷은 저고리, 아랫옷은 치마 제작법과 같은 재료(영사·운면)가 들고, 가방과 창고(안전지대)의 재료를 씁니다.
-- 내가 그린 도안은 친구에게 사본으로 보낼 수 있습니다(그림 액자와 같은 하루 횟수). 받은 사람도 직조로 지어 입습니다.
-- 도안은 사고팔 수 없습니다.
-- 부적절한 도안은 도안첩에서 제보할 수 있고, 운영진이 내린 도안은 모든 사본과 함께 사라집니다.
-$N$)
-on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
 update public.world_app_meta set value = '20261110000000' where key = 'db_version';

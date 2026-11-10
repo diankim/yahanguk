@@ -656,9 +656,12 @@ update public.world_pet_species set grade = 3, how = '퀘스트 「옥사에 남
 
 alter table public.world_monster_kinds drop column job_key;
 
-insert into public.world_patch_notes(note_id, title, body) values ('2.1.0', '2.1.0 · 새 직업 「조련사」', $n$새 직업 「조련사(調練師)」가 문을 엽니다. 활로 쏘는 원거리 공격수이면서, 데리고 다니는 꼬마 동무와 함께 싸우는 직업입니다.
+update public.world_patch_notes set body = rtrim(body) || $n$
 
-## 조련사
+## 새 직업 「조련사」
+새 직업 「조련사(調練師)」가 문을 엽니다. 활로 쏘는 원거리 공격수이면서, 데리고 다니는 꼬마 동무와 함께 싸우는 직업입니다.
+
+### 조련사
 - 조사원을 만들 때 고를 수 있고, 「환골탈태 서첩」으로 직업을 바꿀 때도 고를 수 있습니다.
 - 처음 만들 때 함께 시작할 꼬마 동무를 넷 가운데 하나 고릅니다(누렁 강아지·얼룩 고양이·참새·무당벌레). 동무 주먹밥 다섯 개도 함께 받습니다.
 - 기본 능력치는 월궁 사수에서 민첩 한 점을 체질로 옮긴 꼴(민첩 7·감각 8·체질 5)입니다. 무기는 활·쇠뇌·취관 같은 원거리 무기를 월궁 사수와 함께 씁니다.
@@ -674,11 +677,11 @@ insert into public.world_patch_notes(note_id, title, body) values ('2.1.0', '2.1
 - 직업 퀘스트 세 편: 본부 객사 「이름 없는 불씨」(Lv3), 옛 의금부 옥사 「옥사에 남은 족제비」(Lv18), 잿빛 갈대숲 「서로 부르는 이름」(Lv32). 둘째 편을 마치면 꼬마 족제비가 동무가 됩니다.
 - 조련사 기본 옷 한 벌이 「내 모습」에 더해졌습니다.
 
-## 꼬마 동무
+### 꼬마 동무
 - 데리고 다니는 동무도 별채 동무처럼 쓰다듬고 놀아 주고 먹이를 줄 수 있습니다(모든 직업, 별채가 없어도 됩니다). 별채 › 동무 도감의 「데리고 다니는 동무」 칸에서 「돌보기」를 누르세요. 하루 횟수는 그 동무 몫으로 함께 셉니다.
 - 조련사가 돌보면 친밀도가 1.5배로 오르고, 남의 별채 동무를 돌볼 때도 2씩 오릅니다. 함께 이긴 토벌마다 친밀도가 1 오릅니다(하루 10까지).
 - 꼬마 족제비는 진품이 되었습니다. 이제 「빛나는 알」에서 나오고, 「얼룩무늬 알」에서는 나오지 않습니다.
-$n$) on conflict (note_id) do update set title = excluded.title, body = excluded.body;
+$n$ where note_id = '2.0.0' and position('## 새 직업 「조련사」' in body) = 0;
 
 create or replace function public.world_avatar_parts()
  returns jsonb language sql immutable
