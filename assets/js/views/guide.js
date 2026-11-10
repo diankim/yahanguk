@@ -4,8 +4,9 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX } from '../rules.js';
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
+const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -840,10 +841,13 @@ const S = [
       <li>7단계 장비(장착 Lv${GD.level.cap - 3})와 7단계 생활 도구는 묵적록 재료로 만들고, 묵창 나루에서 만들면 품질이 오릅니다.</li>
     </ul>
     <h4>이름 흐림</h4>
-    <p>묵적록(나루 포함)에 있는 동안 늘 걸리는 약화입니다. 상태 칸 10칸에 세지 않고, 떠나면 바로 사라집니다. 상태판에 따로 보입니다.</p>
+    <p>묵적록(나루 포함)에 있는 동안 늘 걸리는 약화입니다. 상태 칸 10칸에 세지 않고, 떠나면 바로 사라집니다. 상태판에 단계와 남은 이름 획이 따로 보입니다.</p>
+    <p>${DOMAIN_FX.blur} 침식 단계의 원래 불이익과 함께 걸립니다.</p>
     <ul>
-      <li>효과: ${mukFx()}</li>
-      <li>막는 법: 이름 먹 부적(1시간 「이름 지킴」) · 명어 「문패 잉어」로 끓인 이름 새김 탕(2시간 「또렷한 이름」)</li>
+      <li>침식 ${mukStages()[0]?.er ?? 30} 아래 · ${esc(GD.domains?.mukjeok?.fx?.name || '이름 흐림')}: ${mukFx()}</li>
+      ${mukStages().map(s => `<li>침식 ${s.er}~ · ${esc(s.name)}: ${effectText(s.effects).join(' · ')}</li>`).join('')}
+      <li>가볍게 하는 법: 이름 먹 부적(1시간 「이름 지킴」) · 명어 「문패 잉어」로 끓인 이름 새김 탕(2시간 「또렷한 이름」) — 한 단계 가볍게, 침식 ${mukStages()[0]?.er ?? 30} 아래면 막음</li>
+      <li>먹그림자에게 가기 전에는 침식을 낮춰 두는 것이 좋습니다.</li>
     </ul>
     <h4>명어(名魚)와 미끼</h4>
     <ul>

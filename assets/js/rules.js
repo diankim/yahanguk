@@ -101,10 +101,14 @@ export const GWIRYEONG = {
   trade: '거래할 수 있게 만든 것은 주고받으라는 뜻입니다. 당장 쓸 일이 없으면 요화로 곤란한 동료에게 넘겨 주세요.',
   hold: `한 사람은 귀령초를 ${GW.hold}포기까지만 지닐 수 있습니다(가방·창고·거래소 등록·받지 않은 서신을 합쳐). 지닌 동안에는 새로 찾지도, 남에게 더 받지도 못합니다. 귀령초끼리 서로 맞바꿀 수도 없습니다. 한 번 얻으면 ${GW.cooldown_h}시간 동안은 다시 나오지 않습니다. 찾을 때 가방이 가득 차 있으면 개인 창고로 들어갑니다.`
 };
+const MUK_BLUR = GD.domains?.mukjeok?.fx?.blur || { strokes: 9, stages: [] };
+const MUK_ER = MUK_BLUR.stages.map(s => s.er);
 export const DOMAIN_FX = {
   note: '이 땅에 있는 동안 늘 걸리고, 떠나면 사라집니다. 상태 칸 10칸에 세지 않습니다.',
-  guarded: '지금은 막는 중',
-  guard: '이름 새김 탕(또렷한 이름 2시간)·이름 먹 부적(이름 지킴 1시간)으로 막을 수 있습니다.',
+  guarded: '부적·탕으로 한 단계 가볍게',
+  guardedOff: '부적·탕으로 막는 중',
+  guard: `이름 새김 탕(또렷한 이름 2시간)·이름 먹 부적(이름 지킴 1시간)은 한 단계 가볍게 하고, 침식 ${MUK_ER[0] ?? 30} 아래면 막습니다.`,
+  blur: `묵적록에서는 침식이 이름을 지웁니다. 침식 ${MUK_ER.join('·')}마다 이름 획 ${MUK_BLUR.strokes}개 가운데 ${Math.floor(MUK_BLUR.strokes / Math.max(1, MUK_ER.length))}개씩 지워지며 이름 흐림이 깊어지고, 침식을 낮추면 바로 돌아옵니다.`,
 };
 export const domainFxOf = territory => GD.domains?.[territory]?.fx || null;
 export const weakSafe = id => (GD.weakSafe || ['banyo_village']).includes(id);

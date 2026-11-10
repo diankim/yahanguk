@@ -178,14 +178,14 @@ ITEMS = [
     ('shad_oil', '샛비늘 기름', 'material', 3, 20, 110, True, 30, '잿빛 샛비늘치에서 짠 기름. 불을 붙이면 먹귀가 싫어하는 냄새가 난다.'),
     ('bitterling_ink', '납자루 먹물', 'material', 2, 40, 45, True, 24, '먹점 납자루가 뱉는 먹물을 모은 것. 봉인 먹과 부적에 섞는다.'),
     ('rainproof_oil', '먹비 막이 기름', 'material', 5, 20, 900, False, 40, '먹비 대산천어 기름으로 만든 방수 기름. 7단계 방어구 최상위 재료.'),
-    ('name_ink_charm', '이름 먹 부적', 'consumable', 4, 20, 520, True, 40, '묵창 갈대 먹으로 제 이름을 적어 품는 부적. 1시간 동안 이름 흐림을 막는다.'),
+    ('name_ink_charm', '이름 먹 부적', 'consumable', 4, 20, 520, True, 40, '묵창 갈대 먹으로 제 이름을 적어 품는 부적. 1시간 동안 이름 흐림을 한 단계 가볍게 한다(침식 30 아래면 막는다).'),
     ('meokgwi_incense', '먹귀 쫓는 향', 'consumable', 4, 20, 480, True, 40, '샛비늘 기름과 먹비 이끼를 섞어 빚은 향. 1시간 동안 요괴와 덜 마주친다.'),
     ('meokbi_umbrella', '먹비 우산', 'consumable', 4, 20, 460, True, 40, '먹비 흑단 살에 빈칸 한지를 바른 우산. 1시간 동안 받는 피해가 준다.'),
 ]
 
 STATUSES = [
-    ('clear_name', '또렷한 이름', 'positive', 120, {}, 'spark', '제 이름이 또렷이 새겨져 있습니다. 묵적록의 이름 흐림이 걸리지 않습니다.'),
-    ('name_ward', '이름 지킴', 'positive', 60, {}, 'shield', '이름 먹 부적이 이름을 지킵니다. 묵적록의 이름 흐림이 걸리지 않습니다.'),
+    ('clear_name', '또렷한 이름', 'positive', 120, {}, 'spark', '제 이름이 또렷이 새겨져 있습니다. 묵적록의 이름 흐림이 한 단계 가볍고, 침식 30 아래면 걸리지 않습니다.'),
+    ('name_ward', '이름 지킴', 'positive', 60, {}, 'shield', '이름 먹 부적이 이름을 지킵니다. 묵적록의 이름 흐림이 한 단계 가볍고, 침식 30 아래면 걸리지 않습니다.'),
     ('meokgwi_repel', '먹귀 쫓김', 'positive', 60, {'encounter_pct': -20, 'mental_loss_pct': -5}, 'flame', '먹귀 쫓는 향 냄새가 배어 요괴와 덜 마주칩니다.'),
     ('rain_shelter', '먹비 가림', 'positive', 60, {'incoming_damage_pct': -8}, 'shield', '먹비 우산이 먹비와 함께 날아드는 것을 막아 줍니다.'),
     ('dark_eye', '어둠 눈', 'positive', 60, {'clue_bonus_pct': 6}, 'spark', '어둠 속에서도 작은 흔적이 눈에 들어옵니다.'),
@@ -240,7 +240,7 @@ FISH_GOODS = [
     ('mist_crucian_steam', '각시붕어 찜', 'consumable', 2, 40, True, 70, {'mn': 30, 'buffs': ['warm_belly']}, '물안개 각시붕어를 약초와 쪘다. 정신을 채우고 속이 따뜻해진다.', 'cooking', {'mist_bitterling': 1, 'herb': 2}, 1, 24),
 ]
 NAMED_GOODS = [
-    ('name_carving_soup', '이름 새김 탕', 'consumable', 5, 20, False, 1400, {'hp': 40, 'mn': 30, 'buffs': ['clear_name']}, '문패 잉어를 고아 이름을 새기듯 끓인 탕. 2시간 동안 이름 흐림이 걸리지 않는다.', 'cooking', {'doorplate_carp': 1, 'medicine_base': 1}, 2, 40),
+    ('name_carving_soup', '이름 새김 탕', 'consumable', 5, 20, False, 1400, {'hp': 40, 'mn': 30, 'buffs': ['clear_name']}, '문패 잉어를 고아 이름을 새기듯 끓인 탕. 2시간 동안 이름 흐림을 한 단계 가볍게 한다(침식 30 아래면 막는다).', 'cooking', {'doorplate_carp': 1, 'medicine_base': 1}, 2, 40),
     ('blank_fill_pill', '빈칸 메움 환', 'consumable', 5, 20, False, 1400, {'er': 40, 'buffs': ['blank_fill']}, '빈칸 가물치로 빚은 환약. 침식 −40, 1시간 동안 오르는 침식이 준다.', 'alchemy', {'blank_snakehead': 1, 'herbal_extract': 1}, 2, 40),
     ('salmon_ink_grill', '산천어 먹구이', 'consumable', 5, 20, False, 1400, {'hp': 60, 'buffs': ['rain_clear']}, '먹비 대산천어를 먹소금에 구웠다. 2시간 동안 입질과 채집량이 는다.', 'cooking', {'meokbi_salmon': 1, 'charcoal': 1}, 2, 40),
     ('rainproof_oil', None, None, None, None, None, None, None, None, 'alchemy', {'meokbi_salmon': 1}, 2, 40),

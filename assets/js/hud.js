@@ -1,4 +1,4 @@
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, guard, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct, xpPct, xpGot, xpNote } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, guard, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct, xpPct, xpGot, xpNote, toast } from './core.js';
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
@@ -64,6 +64,8 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
     const was = !!store.expedition;
     { const was = state.hud?.stamina, st = hud?.stamina;
       if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
+    { const a = state.hud?.domain, d = hud?.domain;
+      if (a?.blur && d?.blur && a.territory === d.territory && (d.stage || 0) > (a.stage || 0) && d.stage_name) toast(`이름이 더 흐려졌습니다 · ${d.stage_name} (이름 획 ${d.strokes_left}/${d.blur.strokes})`, 'warn', 5000); }
     state = { idle, hud, exp: hud?.expedition || null };
     armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at);
     const wasIdle = !!store.idle?.active;
@@ -214,16 +216,17 @@ function stamina(c) {
 export function domainNow() {
   const d = state.hud?.domain;
   if (!d?.name) return null;
-  const until = d.guard_until ? new Date(d.guard_until).getTime() : 0;
-  return { name: d.name, guarded: until > Date.now(), until, text: fxText(d.effects).join(' · ') };
+  const until = d.guard_until ? new Date(d.guard_until).getTime() : 0, fx = fxText(d.effects);
+  const strokes = d.blur ? `이름 획 ${d.strokes_left ?? d.blur.strokes}/${d.blur.strokes}` : '';
+  return { name: d.stage_name || d.name, guarded: until > Date.now(), off: !fx.length, until, strokes, stage: d.stage || 0, text: fx.join(' · ') };
 }
 function domainChip() {
   const d = domainNow();
-  return d ? `<span class="hs-yohwa blur${d.guarded ? ' off' : ''}" title="${esc(d.guarded ? DOMAIN_FX.guarded : d.text)}">${esc(d.name)}</span>` : '';
+  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.strokes, d.off ? DOMAIN_FX.guardedOff : d.text].filter(Boolean).join(' · '))}">${esc(d.name)}</span>` : '';
 }
 function domainPin() {
   const d = domainNow(); if (!d) return '';
-  return `<a class="yohwa-pin blur${d.guarded ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}</b><small>${d.guarded ? `${esc(DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : esc(d.text)}</small></span></a>`;
+  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.strokes ? ` · ${esc(d.strokes)}` : ''}</b><small>${esc(d.off ? DOMAIN_FX.guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);

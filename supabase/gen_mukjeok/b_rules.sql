@@ -11,38 +11,30 @@ alter table public.world_fish_grounds drop constraint if exists world_fish_groun
 alter table public.world_fish_grounds add constraint world_fish_grounds_pkey primary key (region_id, habitat);
 
 create or replace function public.world_domain_rules() returns jsonb
-language sql immutable as $$ select '{"gwiheo": {"name": "귀허도", "open_chapter": "nine_gates", "acclimate": true, "no_shadow": true, "rare": "banyo_scale", "fx": {"effects": {"erosion_pct": 60}}}, "mukjeok": {"name": "묵적록", "open_quest": "gq_5", "no_shadow": true, "rare": "meokgwi_lump", "fx": {"name": "이름 흐림", "effects": {"mental_loss_pct": 15, "incoming_damage_pct": 5, "encounter_pct": 5}, "guard": ["clear_name", "name_ward"], "strokes": {"max": 9, "lose_pct": 6, "exp_round_pct": 25, "party_mul": 0.5, "guard_mul": 0.5, "regen_min": 40, "rest_at": "mukchang_ferry", "rest_back": 3, "soup": "name_carving_soup", "soup_back": 3, "warn": [6, 9], "stages": [{"at": 3, "name": "이름 번짐", "effects": {"mental_loss_pct": 25, "incoming_damage_pct": 10, "encounter_pct": 8, "healing_pct": -10, "rare_loot_pct": 3, "clue_bonus_pct": 3}}, {"at": 6, "name": "이름 바램", "effects": {"mental_loss_pct": 35, "incoming_damage_pct": 15, "combat_damage_pct": -8, "encounter_pct": 12, "healing_pct": -20, "rare_loot_pct": 6, "clue_bonus_pct": 6}}, {"at": 9, "name": "이름 잃음", "effects": {"mental_loss_pct": 50, "incoming_damage_pct": 25, "combat_damage_pct": -15, "encounter_pct": 15, "healing_pct": -30, "rare_loot_pct": 10, "clue_bonus_pct": 10}}]}}}}'::jsonb $$;
-
-create table if not exists public.world_name_strokes (
-  owner_id uuid primary key references public.world_characters(owner_id) on delete cascade,
-  lost smallint not null default 0,
-  at timestamptz not null default now()
-);
-alter table public.world_name_strokes enable row level security;
-revoke all on public.world_name_strokes from anon, authenticated;
-
-create or replace function public.world_name_lost(p_uid uuid, p_rule jsonb) returns integer
-language sql stable security definer set search_path to 'pg_catalog', 'public' as $$
-  select coalesce((select greatest(0, s.lost - floor(extract(epoch from now() - s.at) / 60 / greatest(1, (p_rule ->> 'regen_min')::numeric)))::int
-    from public.world_name_strokes s where s.owner_id = p_uid), 0)
-$$;
-revoke all on function public.world_name_lost(uuid, jsonb) from public, anon, authenticated;
+language sql immutable as $$ select '{"gwiheo": {"name": "귀허도", "open_chapter": "nine_gates", "acclimate": true, "no_shadow": true, "rare": "banyo_scale", "fx": {"effects": {"erosion_pct": 60}}}, "mukjeok": {"name": "묵적록", "open_quest": "gq_5", "no_shadow": true, "rare": "meokgwi_lump", "fx": {"name": "이름 흐림", "effects": {"mental_loss_pct": 15, "incoming_damage_pct": 5, "encounter_pct": 5}, "guard": ["clear_name", "name_ward"], "blur": {"strokes": 9, "guard_step": 1, "stages": [{"er": 30, "name": "이름 번짐", "effects": {"mental_loss_pct": 20, "incoming_damage_pct": 8, "encounter_pct": 8, "combat_damage_pct": -6, "rare_loot_pct": 3, "clue_bonus_pct": 3}}, {"er": 55, "name": "이름 바램", "effects": {"mental_loss_pct": 25, "incoming_damage_pct": 10, "encounter_pct": 10, "combat_damage_pct": -12, "healing_pct": -10, "rare_loot_pct": 5, "clue_bonus_pct": 5}}, {"er": 80, "name": "이름 잃음", "effects": {"mental_loss_pct": 30, "incoming_damage_pct": 12, "encounter_pct": 12, "combat_damage_pct": -20, "healing_pct": -12, "rare_loot_pct": 8, "clue_bonus_pct": 8}}]}}}}'::jsonb $$;
 
 create or replace function public.world_domain_fx(p_uid uuid) returns jsonb
 language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
 #variable_conflict use_column
-declare t text; d jsonb; g timestamptz; lost int; st jsonb;
+declare t text; d jsonb; g timestamptz; e int; b jsonb; k int; st jsonb;
 begin
-  select (public.world_region_at(c.location)).territory_id into t from public.world_characters c where c.owner_id = p_uid;
+  select (public.world_region_at(c.location)).territory_id, coalesce(c.erosion, 0) into t, e from public.world_characters c where c.owner_id = p_uid;
   d := public.world_domain_rules() -> t -> 'fx';
   if d is null then return null; end if;
   select max(s.expires_at) into g from public.world_character_statuses s
    where s.owner_id = p_uid and s.expires_at > now() and s.status_key in (select jsonb_array_elements_text(coalesce(d -> 'guard', '[]'::jsonb)));
-  if d ? 'strokes' then
-    lost := public.world_name_lost(p_uid, d -> 'strokes');
-    select x into st from jsonb_array_elements(d -> 'strokes' -> 'stages') x where (x ->> 'at')::int <= lost order by (x ->> 'at')::int desc limit 1;
-    if st is not null then d := d || jsonb_build_object('effects', st -> 'effects', 'stage_name', st ->> 'name'); end if;
-    d := d || jsonb_build_object('lost', lost);
+  b := d -> 'blur';
+  if b is not null then
+    k := (select count(*) from jsonb_array_elements(b -> 'stages') x where e >= (x ->> 'er')::int);
+    if g is not null then
+      if k = 0 then d := d || jsonb_build_object('effects', '{}'::jsonb); end if;
+      k := greatest(0, k - coalesce((b ->> 'guard_step')::int, 1));
+    end if;
+    if k > 0 then
+      st := b -> 'stages' -> (k - 1);
+      d := d || jsonb_build_object('effects', st -> 'effects', 'stage_name', st ->> 'name');
+    end if;
+    d := d || jsonb_build_object('stage', k, 'strokes_left', greatest(0, (b ->> 'strokes')::int - k * (b ->> 'strokes')::int / greatest(1, jsonb_array_length(b -> 'stages'))));
   end if;
   return d || jsonb_build_object('territory', t, 'guard_until', g);
 end $$;
