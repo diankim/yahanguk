@@ -226,7 +226,7 @@ function domainChip() {
 }
 function domainPin() {
   const d = domainNow(); if (!d) return '';
-  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.max ? `<i class="blur-strokes" aria-label="${esc(d.strokes)}">${Array.from({ length: d.max }, (_, i) => `<u class="${i < d.left ? 'on' : ''}"></u>`).join('')}</i>` : ''}</b><small>${esc(d.off ? DOMAIN_FX.guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
+  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.max ? ` <em class="nb-n">${esc(d.strokes)}</em>` : ''}</b><small>${esc(d.off ? DOMAIN_FX.guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);
@@ -256,9 +256,11 @@ export function yohwaLine(st) {
 function erosionRing(c, cls = '') {
   const v = Math.max(0, Math.min(100, Math.round(Number(c?.erosion || 0))));
   const st = v >= 80 ? ['s3', '붕괴 직전'] : v >= 55 ? ['s2', '위험'] : v >= 30 ? ['s1', '주의'] : ['s0', '안정'];
-  const tag = cls === 'mini' ? 'span' : 'a';
-  return `<${tag} class="er-ring ${st[0]} ${cls}" ${tag === 'a' ? 'href="#/char/status"' : ''} title="침식 ${v} · ${st[1]}" aria-label="침식 ${v}, ${st[1]}">
-    <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="t" cx="18" cy="18" r="15.9"/><circle class="v" cx="18" cy="18" r="15.9" stroke-dasharray="${v} 100" pathLength="100"/></svg></${tag}>`;
+  const tag = cls === 'mini' ? 'span' : 'a', d = domainNow();
+  const blur = d?.max ? `<g class="nb s${d.stage}">${Array.from({ length: d.max }, (_, i) => `<circle class="${i < d.left ? 'on' : ''}" cx="22" cy="22" r="20.4" pathLength="${d.max * 10}" stroke-dasharray="7.5 ${d.max * 10 - 7.5}" stroke-dashoffset="${-i * 10 - 1.25}"/>`).join('')}</g>` : '';
+  const tip = `침식 ${v} · ${st[1]}${d?.max ? ` · ${d.name} · ${d.strokes}` : ''}`;
+  return `<${tag} class="er-ring ${st[0]} ${cls}${blur ? ' has-nb' : ''}" ${tag === 'a' ? 'href="#/char/status"' : ''} title="${esc(tip)}" aria-label="${esc(tip)}">
+    <svg viewBox="${blur ? '0 0 44 44' : '0 0 36 36'}" aria-hidden="true"><g transform="translate(${blur ? 4 : 0} ${blur ? 4 : 0})"><circle class="t" cx="18" cy="18" r="15.9"/><circle class="v" cx="18" cy="18" r="15.9" stroke-dasharray="${v} 100" pathLength="100"/></g>${blur}</svg></${tag}>`;
 }
 function vital(label, v, kind) {
   return `<div class="vital"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
