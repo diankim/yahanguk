@@ -94,7 +94,7 @@ def build(dsn):
             hostile.setdefault(b, []).append(a)
     d['factionHostile'] = {f: sorted(set(v), key=FACTION_KEYS.index) for f, v in hostile.items()}
     ids = sorted({r for v in list(d['factionJoin'].values()) + list(d['factionHome'].values()) for r in v})
-    d['regionNames'] = q(dsn, f"select json_object_agg(region_id, region_name) from world_map_regions where region_id = any({jarr(ids)})")
+    d['regionNames'] = q(dsn, f"select json_object_agg(region_id, region_name order by region_id) from world_map_regions where region_id = any({jarr(ids)})")
     # 가방·창고 칸
     bag = q(dsn, "select to_json(column_default) from information_schema.columns where table_schema = 'public' and table_name = 'world_characters' and column_name = 'bag_capacity'")
     src = q(dsn, "select to_json(prosrc) from pg_proc where proname = 'world_storage_capacity'")
