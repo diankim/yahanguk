@@ -63,6 +63,8 @@ for k, n in enumerate(D.NAMED):
     titles.append(dict(title_key=tk, title_name=tn, grade=tg, bonus=tb, rule={'n': 1, 'p': {'fish': n['id']}, 'ev': 'fish'}, cond=n['name'] + '을(를) 낚는다', hidden=True, n=k + 1))
 tk, tn, tg, tb, tc = D.ALL_TITLE
 titles.append(dict(title_key=tk, title_name=tn, grade=tg, bonus=tb, rule={'all': [{'p': {'fish': n['id']}, 'ev': 'fish'} for n in D.NAMED]}, cond=tc, hidden=True, n=len(D.NAMED) + 1))
+tk, tn, tg, tb, tc = D.EVERY_TITLE
+titles.append(dict(title_key=tk, title_name=tn, grade=tg, bonus=tb, rule={'all': [{'p': {'fish': f}, 'ev': 'fish'} for f in D.MUKJEOK_NAMED + [n['id'] for n in D.NAMED]]}, cond=tc, hidden=True, n=len(D.NAMED) + 2))
 
 w("lock table public.world_characters in access exclusive mode;")
 w(f"""do $c$ declare d text; begin
