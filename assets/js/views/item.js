@@ -213,11 +213,11 @@ function draw(box, id, inv, prices, mode) {
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
         ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" data-here="분해" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
-      ${useQtyHtml(id, have, 'use') ? `<div class="qty-row"><span>쓸 수량 <small class="muted">· 가진 ${have}개${have > 50 ? ' · 한 번에 50개까지' : ''}</small></span>${useQtyHtml(id, have, 'use', false)}
+      ${useQtyHtml(id, have, 'use') ? `<div class="qty-row"><span>쓸 수량 <small class="muted">· 가진 ${have}개${have > 50 ? ' · 한 번에 50개까지' : ''}</small></span>${useQtyHtml(id, have, 'use')}
         <button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>${icon('heart', 14)}<span>사용</span></button></div>` : ''}
-      ${stashOk && dcMax > 0 ? `<div class="qty-row"><span>창고에 넣을 수량 <small class="muted">· 가진 ${have}개</small></span>${qtyHtml({ key: 'st', min: 1, max: dcMax, value: dcMax, all: true, label: '창고에 넣을 수량' })}
+      ${stashOk && dcMax > 0 ? `<div class="qty-row"><span>창고에 넣을 수량 <small class="muted">· 가진 ${have}개</small></span>${qtyHtml({ key: 'st', min: 1, max: dcMax, value: dcMax, all: true, small: true, label: '창고에 넣을 수량' })}
         <button class="btn small primary" data-do="stash" data-here="창고 이용">${icon('bag', 14)}<span>창고에 넣기</span></button></div>` : ''}
-      <div class="qty-row ${locked ? 'off' : ''}"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span>${qtyHtml({ key: 'dc', min: 1, max: dcMax, value: 1, all: true, off: locked || dcMax < 1, label: '버릴 수량' })}
+      <div class="qty-row ${locked ? 'off' : ''}"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span>${qtyHtml({ key: 'dc', min: 1, max: dcMax, value: 1, all: true, small: true, off: locked || dcMax < 1, label: '버릴 수량' })}
         <button class="btn small danger" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>${icon('close', 14)}<span>버리기</span></button></div>
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 

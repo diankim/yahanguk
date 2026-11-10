@@ -1,10 +1,10 @@
-import { rarTag, db, store, on, act, rpc, toast, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
+import { rarTag, db, store, on, act, rpc, toast, ask, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } from './common.js';
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
-import { bindQty, qtyOf } from './itempick.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, USE_ONE } from './item.js';
+import { bindQty, qtyOf, qtyHtml } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG } from '../rules.js';
 import { hit } from '../changes.js';
@@ -195,10 +195,7 @@ async function items(body, inv, stg) {
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" title="${esc(GWIRYEONG.supply)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
-        ${showUse ? (useQtyHtml(id, n, `use:${ri}`) ? `<div class="row-act inv-use">${useQtyHtml(id, n, `use:${ri}`)}<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" data-use-q="use:${ri}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button></div>`
-          : `<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>`) : ''}
-        ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}
-        ${id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small inv-quick" data-token-trade title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>` : ''}</li>`; }).join('')}</ul>`
+        ${actsHtml(id, n, it, part, ri, showUse, equipped)}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
@@ -363,9 +360,28 @@ async function craft(body, inv, stg) {
   }));
 }
 
+function actsHtml(id, n, it, part, ri, showUse, eqSet) {
+  if (part?.eq) return '';
+  const eq = eqSet.has(id), locked = isLocked(id), dcMax = Math.max(0, n - (eq ? 1 : 0)), key = `q:${ri}`;
+  const useMax = showUse ? (USE_ONE.has(baseOf(id)) ? 1 : Math.min(50, n)) : 0;
+  const qmax = Math.max(useMax, locked ? 0 : dcMax);
+  const name = esc(nameOf(id));
+  const right = showUse ? `<button class="btn small" data-here="물품 사용" data-here-down data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} 사용" title="${esc(USABLE[id])}">사용</button>`
+    : it?.category === 'pet' ? `<button class="btn small" data-adopt="${esc(id)}" aria-label="${name} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>`
+    : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`
+    : '<span class="inv-slot" aria-hidden="true"></span>';
+  return `<div class="inv-acts">${qmax >= 2 ? qtyHtml({ key, min: 1, max: qmax, value: 1, all: true, small: true, label: '수량' }) : ''}
+    <div class="inv-btns"><button class="btn small" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>${right}</div></div>`;
+}
 function bindActions(body) {
   bindQty(body);
-  $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b, b.dataset.useQ ? qtyOf(body, b.dataset.useQ) || 1 : 1));
+  $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b, Math.max(1, Math.min(Number(b.dataset.useMax) || 1, b.dataset.useQ ? qtyOf(body, b.dataset.useQ) || 1 : 1))));
+  $$('[data-discard]', body).forEach(b => b.onclick = async () => {
+    const id = b.dataset.discard, max = Number(b.dataset.max) || 0, q = qtyOf(body, b.dataset.q) || 1;
+    if (q > max) return toast(`${nameOf(id)}은(는) ${max}개까지 버릴 수 있습니다.`, 'error');
+    if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
+    guard(b, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
+  });
   $$('[data-adopt]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_adopt', { p_item: b.dataset.adopt })));
   $$('[data-token-trade]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_token_trade')));
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_equip_item', { p_item_id: b.dataset.equip })));
