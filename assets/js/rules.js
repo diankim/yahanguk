@@ -32,6 +32,14 @@ const FS = (FSR.steps || [[0, 100], [1, 75], [2, 55], [3, 40], [4, 25]]).filter(
 export const FACTION_SPREAD = `본래 땅 밖에서 차지한 곳과 1위로 분쟁 중인 곳이 많을수록, 본래 땅 밖에 새로 쌓는 영향력이 줄어듭니다. ${FS.map(([n, p], i) => `${n}곳${i === FS.length - 1 ? ' 이상' : ''} ${p}%`).join(' · ')}`;
 export const FACTION_HOME = `본래 주인 세력이 자기 본래 땅에서 쌓는 영향력은 ×${(FSR.home_pct || 150) / 100}`;
 export const FACTION_BOOST = `지금 쌓여 있는 영향력 합이 적은 세력일수록 새로 쌓는 영향력에 √(가장 많이 쌓은 세력의 합 ÷ 우리 합)배가 붙습니다(1~${FSR.boost_max || 2.5}배, 가장 앞선 세력은 보정 없음)`;
+const FPK = GD.factionPerk || {};
+const FPN = FPK.north_league || {}, FPO = FPK.night_office || {};
+export const FACTION_PERK = {
+  night_office: `공인 조사 수당: 원정 귀환 경험치 +${FPO.exp_xp_pct ?? 10}%`,
+  night_office2: '법적 권한: 본부 구조대가 어디서든 반값·경험치 손실 없음·체력 50으로 데려옵니다',
+  north_league: `원정 중 받는 피해 ${FPN.exp_hurt_pct ?? -20}% · 채집·채광 숙련 경험 +${FPN.gather_skill_pct ?? 10}%`,
+  north_rank: `받는 피해 ${FPN.rank_hurt_pct ?? -2}%씩`,
+};
 export const FACTION_CAP = `한 사람이 한 시간 정산에 쌓는 영향력은 지역마다 ${FSR.region_cap || 40}, 모든 지역을 합쳐 ${FSR.person_cap || 60}까지`;
 export const PARTY_EXP = {
   who: '「파티 원정」으로 함께 떠난 동료',

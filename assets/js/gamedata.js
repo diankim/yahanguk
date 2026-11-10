@@ -47,6 +47,10 @@ export const GAMEDATA = {
   "agile": {"agi_k":2,"eva_k":0.175,"flee_k":0.5,"tank_k":0.5,"eva_cap":40,"quiet_k":0.8,"sneak_k":0.65,"crit_cap":60,"eva_base":3,"flee_cap":95,"flee_min":10,"hazard_k":0.75,"flee_base":50,"quiet_cap":50,"scout_eva":6,"sneak_cap":75,"sneak_min":10,"hazard_cap":90,"hazard_w_k":0.05,"scout_flee":15,"sneak_base":25,"hazard_base":30,"scout_sneak":10},
   "questXp": {"mid":6,"band":[[1,25],[6,40],[11,40],[16,75],[21,90],[26,75],[31,100]],"grace":3,"low_pct":20,"mid_pct":50},
   "factionSpread": {"steps":[[0,100],[1,75],[2,55],[3,40],[4,25]],"home_pct":150,"boost_max":2.5,"person_cap":60,"region_cap":40},
+  "factionPerk": {
+    "night_office": {"exp_xp_pct":10},
+    "north_league": {"exp_hurt_pct":-20,"rank_hurt_pct":-2,"gather_skill_pct":10}
+  },
   "busy": {"idle":{"name":"자율 활동","after":"자율 활동을 마치거나 그만둔 뒤에 하세요."},"self":"{name} 중에는 {what}을(를) 할 수 없습니다. {after}","what":"이 일","other":"그 동료는 지금 {name} 중입니다.","downed":{"name":"전투불능","after":"구조를 받거나 구조대를 부른 뒤에 하세요."},"travel":{"name":"이동","after":"도착한 뒤에 하세요."},"expedition":{"name":"원정","after":"원정에서 돌아온 뒤에 하세요."}},
   "gwiryeong": {"hold":1,"warn_h":24,"cap_div":2,"wither_h":72,"party_mul":2,"yohwa_mul":3,"cooldown_h":72,"window_days":3},
   "contrib": {"deal":0.6,"heal":0.1,"hold":0.2,"boost":0.1,"press":1,"result":0.2,"eff_cap":2,"heal_need":0.25,"boost_need":0.1},
@@ -98,7 +102,7 @@ export const GAMEDATA = {
     "southern_remnant": ["mandate_court"],
     "mandate_court": ["black_lotus","southern_remnant"]
   },
-  "regionNames": {"hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","salt_village":"염등촌","red_moon_fort":"적월교 월식성","iron_monastery":"철벽 고찰","ember_village":"잔불촌","hidden_bazaar":"십삼문 암시장","star_observatory":"무극 관성대","snow_hollow":"설피골","ember_pass":"불씨 고개","lamp_alley":"등잔골 뒷골목","star_hill":"별바라기 언덕"},
+  "regionNames": {"iron_monastery":"철벽 고찰","ember_pass":"불씨 고개","snow_hollow":"설피골","star_hill":"별바라기 언덕","lamp_alley":"등잔골 뒷골목","hidden_bazaar":"십삼문 암시장","ember_village":"잔불촌","hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","star_observatory":"무극 관성대","red_moon_fort":"적월교 월식성","salt_village":"염등촌"},
   "bag": {"base":34},
   "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
   "titles": {"total":258,"public":185,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"교류":3,"토벌":13,"도감":20,"외전":6,"세력":21,"별채":14,"비밀":57}},
