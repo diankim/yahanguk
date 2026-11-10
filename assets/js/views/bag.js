@@ -167,7 +167,7 @@ async function items(body, inv, stg) {
   const rows = Object.entries(inv.inventory || {}).filter(([, n]) => Number(n) > 0)
     .map(([id, n]) => ({ id, n: Number(n), it: cmap.get(id) }))
     .filter(r => cat === 'all' || catOf(r.it) === cat)
-    .filter(r => !fxPick.size || [...fxKindsOf(r.id)].some(k => fxPick.has(k)))
+    .filter(r => !fxPick.size || !(cat === 'all' || cat === 'consumable') || [...fxKindsOf(r.id)].some(k => fxPick.has(k)))
     .filter(r => !q.trim() || nameOf(r.id).toLowerCase().includes(q.trim().toLowerCase()))
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
