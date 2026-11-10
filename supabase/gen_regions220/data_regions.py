@@ -1,0 +1,252 @@
+REGIONS = [
+    dict(id='lotus_sewer', name='연등 하수도', type='underground', danger=5, lv=7, x=515, y=478, el=-2, nb=['lamp_alley', 'burial_steps', 'under_root'],
+         theme='deep', terr='underworld', faction='black_lotus',
+         desc='도성 아래로 흐르는 큰 하수도. 흑련회 뱃사공들이 연꽃 등을 물에 띄워 밀수 뱃길을 표시한다.'),
+    dict(id='ledger_cellar', name='흑련 장부고', type='underground', danger=8, lv=18, x=440, y=600, el=-4, nb=['hidden_bazaar', 'under_root'],
+         theme='deep', terr='underworld', faction='black_lotus',
+         desc='흑련회가 맡아 둔 이름을 장부로 지키는 지하 서고. 장부에서 새어 나온 이름들이 서가 사이를 떠돈다.'),
+    dict(id='frost_pine_pass', name='서리솔 고개', type='mountain_pass', danger=5, lv=8, x=378, y=180, el=3, nb=['snow_hollow', 'frost_valley'],
+         theme='mountain', terr='north', faction='north_league',
+         desc='서리 앉은 소나무가 빽빽한 고개. 북령맹 나무꾼과 숯꾼들이 겨울 땔감을 지고 넘는다.'),
+    dict(id='old_glacier', name='천년 빙하', type='ice_valley', danger=9, lv=27, x=530, y=45, el=6, nb=['sky_lake', 'thunder_peak'],
+         theme='mountain', terr='north', faction='north_league',
+         desc='북녘 끝에 천 년 동안 녹지 않은 얼음 벌판. 얼음 속에 옛 넋과 짐승들이 그대로 갇혀 있다.'),
+    dict(id='patrol_office', name='옛 순라청', type='ruins', danger=7, lv=12, x=378, y=478, el=0, nb=['ghost_bamboo', 'old_prison', 'hidden_bazaar'],
+         theme='city', terr='capital', faction='night_office',
+         desc='도성의 밤 순라를 맡던 관청 터. 관청이 문을 닫았는데도 순라 등불을 든 넋들이 밤마다 골목을 돈다.'),
+    dict(id='blood_dunes', name='핏빛 모래바다', type='desert', danger=8, lv=17, x=70, y=295, el=0, nb=['glass_canyon', 'crimson_altar'],
+         theme='desert', terr='frontier', faction='red_moon_cult',
+         desc='붉은 모래언덕이 바다처럼 끝없이 이어진 서쪽 끝. 바람이 불 때마다 모래 밑에서 옛 대상의 짐이 드러난다.'),
+    dict(id='sleeping_port', name='잠든 포구', type='coast', danger=8, lv=19, x=925, y=240, el=0, nb=['sunken_palace', 'tide_gate'],
+         theme='water', terr='east', faction='river_alliance',
+         desc='수향연맹이 바다 무역을 하던 옛 포구. 물안개 속에 닻을 내린 배들이 주인 없이 잠들어 있다.'),
+]
+
+NODES = {
+    'lotus_sewer': [
+        ['하수도 들어가는 쇠문'],
+        ['연등 띄운 물길', '뱃사공 쉼터'],
+        ['기름 번진 둑길', '갈대 엮은 부표 더미', '밀수 거룻배 매는 곳', '물 떨어지는 천장 굴'],
+        ['연꽃 새긴 수문', '쥐구멍 뚫린 벽', '꺼진 연등 걸린 줄', '하수 갈림 물목', '장물 숨긴 웅덩이', '흑련 표식 새긴 기둥'],
+        ['늙은 자라 사는 깊은 물', '연등 만드는 뱃사공 굴', '기름 고인 막다른 물길', '밀수꾼 비밀 선착장', '물이 거꾸로 도는 굴', '썩은 부표 쌓인 곳', '연등 마지막 하나', '하수도 맨 아래 물웅덩이'],
+    ],
+    'ledger_cellar': [
+        ['장부고 돌계단'],
+        ['호칭 부르는 문간', '장부지기 등잔방'],
+        ['맡긴 이름 서가', '먹 냄새 짙은 회랑', '빗장 걸린 열람대', '장부 말리는 방'],
+        ['찢어진 장부 더미', '금줄 친 깊은 서가', '이름 우는 벽감', '먹물 번진 책상', '봉인 먹 항아리 줄', '흑련 연꽃 새긴 궤'],
+        ['가장 오래된 장부', '이름 새는 틈', '돌려받지 못한 장부 칸', '먹 거인이 지키는 문', '장부지기의 빈 자리', '맡긴 날짜 지워진 서가', '거울에 비친 장부', '장부고 맨 밑 금고'],
+    ],
+    'frost_pine_pass': [
+        ['고개 아래 숯막'],
+        ['서리솔 오솔길', '나뭇짐 쉬는 바위'],
+        ['송진 흐르는 비탈', '꺼진 숯가마', '눈 쌓인 벌목 터', '매 둥지 소나무'],
+        ['얼음 낀 솔가지 숲', '살쾡이 발자국 골', '오소리 굴 앞', '서리 앉은 장승', '숯꾼 무덤 언덕', '나무꾼 썰매 길'],
+        ['고갯마루 솔 정자', '천 년 묵은 서리솔', '눈보라 숨는 바위틈', '산군 발자국 마루', '숯꾼 버린 도끼', '서리꽃 핀 벼랑', '얼어붙은 송진 샘', '고개 너머 빙혼곡 길'],
+    ],
+    'old_glacier': [
+        ['빙하 끝자락 얼음 벽'],
+        ['갈라진 얼음 길', '순찰꾼 눈집'],
+        ['얼음 속 그림자 벽', '푸른 얼음 굴', '바람 우는 크레바스', '얼어붙은 학 둥지'],
+        ['녹은 물 흐르는 홈', '얼음에 갇힌 사냥꾼', '빙갑 거북 자리', '천 년 눈 쌓인 등성이', '얼음 밑 물소리 굴', '부서진 얼음 탑'],
+        ['얼음 거인 잠든 골', '빙하 한가운데 구멍', '얼음 속 옛 마을', '녹지 않는 푸른 못', '얼음에 새긴 경문', '하늘 비치는 얼음판', '북녘 끝 얼음 절벽', '천 년 전 발자국'],
+    ],
+    'patrol_office': [
+        ['순라청 무너진 대문'],
+        ['순라 등불 걸던 처마', '순라군 대기방'],
+        ['방울 달린 순라 길', '야간 통행패 보관소', '관청 뒷마당', '등불 기름 창고'],
+        ['순라 일지 쌓인 방', '금줄 둘린 옥문', '거울 걸린 점호 마당', '부서진 순라 대장 의자', '벌레 들끓는 담장', '통금 북 걸린 누각'],
+        ['순라 대장 집무실', '마지막 순라 일지', '등불 꺼지지 않는 골목', '이름 적힌 순라패 궤짝', '야경꾼 숙소', '빗장 내린 지하 창고', '관청 담 끝 망루', '순라청 우물'],
+    ],
+    'blood_dunes': [
+        ['모래바다 어귀 돌무덤'],
+        ['붉은 모래언덕 길', '길잡이 천막'],
+        ['낙타 뼈 묻힌 둔덕', '바람 패인 모래골', '말라붙은 오아시스', '대상 짐 묻힌 곳'],
+        ['전갈 굴 많은 비탈', '붉은 소금 갈라진 바닥', '신기루 서는 언덕', '매 떠도는 하늘 아래', '등딱지 게 모래밭', '반쯤 묻힌 대상 수레'],
+        ['모래바다 한가운데', '붉은 달 비치는 모래못', '사라진 대상의 마지막 천막', '모래 속 숨은 입', '모래에 잠긴 옛 망루', '바람이 멈춘 골', '붉은 신기루 서는 곳', '서쪽 끝 모래 절벽'],
+    ],
+    'sleeping_port': [
+        ['포구 들어가는 방파제'],
+        ['안개 낀 선창', '선주 사무소'],
+        ['닻 내린 무역선', '그물 말리던 마당', '부서진 등대 받침', '조개 덮인 계류장'],
+        ['따개비 뒤덮인 선체', '갈매기 떼 앉은 돛대', '물에 잠긴 창고', '거울 같은 물웅덩이', '선원 숙소 거리', '수향 깃발 꽂힌 선수'],
+        ['포구 맨 끝 등대', '잠든 배의 선장실', '안개가 시작되는 바다', '빈 배 늘어선 물목', '물귀 선장의 배', '닻줄 엉킨 바닥', '바다로 난 마지막 계단', '물 밑 무역 장부 궤'],
+    ],
+}
+
+SPOT_ADJ = {
+    'lotus_sewer': ['연등 흔들리는', '기름 번들거리는', '물 떨어지는', '쥐 들끓는', '이끼 낀', '밀수 배 지나는', '연꽃 새긴', '썩은 물내 나는', '부표 떠 있는', '물살 느린', '등잔 꺼진'],
+    'ledger_cellar': ['먹 냄새 짙은', '장부 쌓인', '금줄 둘린', '이름 우는', '촛농 굳은', '빗장 걸린', '먹물 번진', '호칭 적힌', '종이 바스락대는', '서늘한', '연꽃 새긴'],
+    'frost_pine_pass': ['서리 앉은', '송진 흐르는', '솔잎 쌓인', '눈 덮인', '숯내 나는', '바람 센', '나뭇짐 쉬어 간', '살쾡이 지나간', '고드름 달린', '솔방울 떨어진', '얼음 낀'],
+    'old_glacier': ['푸르게 언', '얼음 갈라진', '천 년 묵은', '바람 우는', '녹은 물 흐르는', '눈보라 치는', '하늘 비치는', '얼음 밑 물소리 나는', '서리꽃 핀', '빙갑 자국 난', '얼어붙은'],
+    'patrol_office': ['순라 등불 걸린', '방울 소리 나는', '통금 북 울리던', '관청 담 그늘진', '먹물 마른', '금줄 둘린', '벌레 들끓는', '무너진 처마 아래', '점호 마당 곁의', '빗장 내린', '순라패 흩어진'],
+    'blood_dunes': ['붉은 모래 쌓인', '바람 패인', '모래 날리는', '햇볕 달군', '전갈 숨은', '낙타 뼈 묻힌', '신기루 서는', '소금 갈라진', '대상 짐 묻힌', '매 떠도는', '붉은 달 비친'],
+    'sleeping_port': ['물안개 낀', '따개비 덮인', '갯내 짙은', '닻줄 엉킨', '갈매기 앉은', '썰물 빠진', '그물 걸린', '수향 깃발 날리는', '물에 잠긴', '등대 그늘진', '파도 부딪는'],
+}
+SPOT_NOUN = {
+    'water': ['물웅덩이', '물길 굽이', '샘물 고인 바위', '얕은 여울목', '물풀 자란 물가'],
+    'herbs': ['약초 비탈', '들풀 덤불', '이끼 바위', '풀숲 그늘', '약초 자란 틈'],
+    'wood': ['쓰러진 나무', '마른 가지 더미', '송진 흐르는 둥치', '부서진 들보 더미', '그루터기 밭'],
+    'supplies': ['짐 꾸러미', '빈 궤짝 더미', '무너진 광', '흩어진 봇짐', '주인 잃은 수레'],
+    'relics': ['깨진 함 조각', '부적 뭉치', '옛 문서 더미', '그을린 위패', '부서진 제기'],
+    'spirit': ['요기 서린 돌', '넋불 앉은 곳', '귀기 맺힌 틈', '푸른 기운 고인 곳', '혼 울음 바위'],
+    'ore': ['쇳돌 노두', '광석 박힌 비탈', '검은 돌 무더기', '쇠 부스러기 밭', '돌 부스러기 언덕'],
+}
+SPOT_LOOT = {
+    'lotus_sewer': {'water': ['river_reed', 'river_reed', 'drowned_scale', 'frost_salt'],
+                    'supplies': ['herb', 'travel_ration', 'tonic', 'silk'],
+                    'spirit': ['ghost_ash', 'spirit_dust', 'shadow_fang', 'lantern_oil']},
+    'ledger_cellar': {'relics': ['seal_paper', 'inkstone', 'sealing_ink', 'talisman_thread', 'fine_paper'],
+                      'spirit': ['ghost_ash', 'spirit_dust', 'ward_fragment', 'mirror_shard'],
+                      'supplies': ['herb', 'travel_ration', 'tonic', 'lantern_oil']},
+    'frost_pine_pass': {'wood': ['wood', 'wood', 'resin', 'charcoal'],
+                        'herbs': ['herb', 'herb', 'medicine_base', 'moon_moss'],
+                        'supplies': ['herb', 'travel_ration', 'beast_hide', 'frost_salt']},
+    'old_glacier': {'water': ['frost_salt', 'frost_salt', 'drowned_scale', 'jade_shard'],
+                    'ore': ['ore', 'raw_iron', 'frost_salt', 'thunder_ore'],
+                    'spirit': ['ghost_ash', 'spirit_dust', 'spirit_glass', 'monster_core']},
+    'patrol_office': {'relics': ['seal_paper', 'seal_paper', 'inkstone', 'sealing_ink', 'talisman_thread'],
+                      'supplies': ['herb', 'travel_ration', 'tonic', 'charcoal'],
+                      'ore': ['ore', 'raw_iron', 'raw_iron', 'steel_ingot']},
+    'blood_dunes': {'ore': ['ore', 'cinnabar', 'cinnabar', 'jade_shard'],
+                    'herbs': ['herb', 'medicine_base', 'herbal_extract'],
+                    'spirit': ['ghost_ash', 'spirit_dust', 'ward_fragment', 'ember_crystal']},
+    'sleeping_port': {'water': ['drowned_scale', 'drowned_scale', 'river_reed', 'jade_shard'],
+                      'wood': ['wood', 'resin', 'lumber', 'reinforced_lumber'],
+                      'supplies': ['herb', 'travel_ration', 'tonic', 'lantern_oil']},
+}
+ENTRY_SPOT = {
+    'lotus_sewer': ('어귀의 연등 걸린 물풀', 'water'),
+    'ledger_cellar': ('어귀의 먹 묻은 문서 더미', 'relics'),
+    'frost_pine_pass': ('어귀의 숯막 장작더미', 'wood'),
+    'old_glacier': ('어귀의 얼음 녹은 웅덩이', 'water'),
+    'patrol_office': ('어귀의 순라패 흩어진 궤짝', 'relics'),
+    'blood_dunes': ('어귀의 붉은 모래 광맥', 'ore'),
+    'sleeping_port': ('어귀의 방파제 물웅덩이', 'water'),
+}
+
+MONSTERS = {
+    'lotus_sewer': [
+        ('r220_sewer_1', '하수 쥐 떼', '무리 요괴', 'common', 'swarm', 'swarm', '연등 부표의 갈대를 갉아 먹는 쥐 떼. 물길을 따라 한꺼번에 몰려온다.', {'beast_fang': 1, 'beast_hide': 1}),
+        ('r220_sewer_2', '연등 물귀', '물귀신', 'common', 'water', 'tide', '꺼진 연등 아래에 고여 있던 물귀신. 지나가는 발목을 물속으로 끌어당긴다.', {'drowned_scale': 1, 'river_reed': 1}),
+        ('r220_sewer_3', '기름 먹은 지네', '독충 요괴', 'main', 'venom', 'toxic', '등잔 기름을 핥아 먹고 자란 지네. 기름 섞인 독을 뿜는다.', {'venom_gland': 2, 'lantern_oil': 1, 'spirit_dust': 2}),
+        ('r220_sewer_4', '등잔 그림자', '매복 요괴', 'main', 'shadow', 'ambush', '등잔이 꺼진 자리에 남은 그림자. 다음 등잔이 꺼지기를 기다렸다가 덮친다.', {'shadow_fang': 2, 'ghost_ash': 2, 'silk': 1}),
+        ('r220_sewer_5', '하수 늙은 자라', '지역 우두머리', 'guardian', 'shell', 'boss', '하수도 맨 아래 물웅덩이에 사는 늙은 자라. 숨을 내쉴 때마다 물길의 연등이 꺼진다.', {'drowned_scale': 3, 'lantern_oil': 1, 'ward_fragment': 1}),
+    ],
+    'ledger_cellar': [
+        ('r220_ledger_1', '장부에서 샌 이름', '원령', 'common', 'ghost', 'spectral', '장부 틈으로 새어 나온 이름의 넋. 제 주인을 찾아 서가 사이를 떠돈다.', {'ghost_ash': 1, 'fine_paper': 1}),
+        ('r220_ledger_2', '먹빛 거울 조각', '거울 요괴', 'common', 'mirror', 'reflect', '장부를 비추던 거울이 깨진 조각. 비친 사람의 공격을 되돌린다.', {'spirit_dust': 1, 'inkstone': 1}),
+        ('r220_ledger_3', '빗장 지키는 금줄귀', '결계 요괴', 'main', 'ward', 'warded', '깊은 서가의 빗장에 감긴 금줄이 깨어난 것. 금줄이 그대로 결계가 된다.', {'ward_fragment': 2, 'talisman_thread': 2, 'sealing_ink': 1}),
+        ('r220_ledger_4', '장부 찢는 손', '파봉 요괴', 'main', 'breaker', 'seal_breaker', '장부를 찢어 이름을 풀어 놓는 검은 손. 손이 지나간 서가마다 봉인이 헐거워진다.', {'fine_paper': 2, 'seal_paper': 3, 'ghost_ash': 2}),
+        ('r220_ledger_5', '장부고의 먹 거인', '지역 우두머리', 'guardian', 'giant', 'boss', '장부를 쓰고 남은 먹이 쌓여 사람 꼴이 된 거인. 장부고 맨 밑 금고 앞을 막고 선다.', {'sealing_ink': 3, 'fine_paper': 2, 'mirror_shard': 1}),
+    ],
+    'frost_pine_pass': [
+        ('r220_pine_1', '서리솔 정령', '나무 요괴', 'common', 'wood', 'armored', '서리 앉은 솔가지가 굳어 사람 꼴이 된 정령. 도끼날을 받아도 껍질만 벗겨진다.', {'wood': 1, 'resin': 1}),
+        ('r220_pine_2', '눈매', '날짐승 요괴', 'common', 'bird', 'aerial', '눈처럼 흰 깃을 가진 매. 눈보라에 섞여 내리꽂는다.', {'beast_bone': 1, 'beast_fang': 1}),
+        ('r220_pine_3', '서리 등껍질 오소리', '갑각 요괴', 'main', 'shell', 'armored', '등에 얼음 껍질을 두른 오소리. 굴 앞을 지나는 숯꾼을 들이받는다.', {'beast_hide': 3, 'frost_salt': 2}),
+        ('r220_pine_4', '솔숲 살쾡이', '매복 요괴', 'main', 'shadow', 'ambush', '솔숲 그늘에 엎드려 있다가 덮치는 살쾡이. 눈 위에 발자국을 남기지 않는다.', {'beast_fang': 2, 'shadow_fang': 1, 'beast_hide': 1}),
+        ('r220_pine_5', '서리 덮인 산군', '지역 우두머리', 'guardian', 'giant', 'boss', '고갯마루를 차지한 커다란 범. 서리를 뒤집어써 털이 바늘처럼 섰다.', {'beast_hide': 3, 'frost_salt': 2, 'resin': 2}),
+    ],
+    'old_glacier': [
+        ('r220_glacier_1', '얼음에 갇힌 넋', '원령', 'common', 'ghost', 'spectral', '천 년 전에 얼어붙은 사람의 넋. 얼음이 녹는 자리마다 빠져나와 떠돈다.', {'ghost_ash': 1, 'frost_salt': 1}),
+        ('r220_glacier_2', '빙하 밑 물귀', '물귀신', 'common', 'water', 'tide', '얼음 밑을 흐르는 녹은 물에 사는 물귀신. 얼음 틈으로 손을 뻗어 발목을 잡는다.', {'drowned_scale': 1, 'frost_salt': 1}),
+        ('r220_glacier_3', '얼음 깃 학', '천상 요괴', 'main', 'sky', 'aerial', '깃마다 얼음이 맺힌 커다란 학. 높이 날아올랐다가 얼음 깃을 쏟아붓는다.', {'sky_feather': 1, 'spirit_dust': 3, 'frost_salt': 2}),
+        ('r220_glacier_4', '빙갑 거북', '갑각 요괴', 'main', 'shell', 'armored', '얼음을 등딱지 삼은 거북. 천 년 동안 빙하를 따라 기어 다녔다.', {'thunder_ore': 1, 'frost_salt': 3, 'ore': 3}),
+        ('r220_glacier_5', '천년 얼음 거인', '지역 우두머리', 'guardian', 'giant', 'boss', '빙하 한가운데에서 잠들어 있던 얼음 거인. 얼음이 녹자 천 년 만에 몸을 일으켰다.', {'monster_core': 1, 'jade_shard': 1, 'frost_salt': 3}),
+    ],
+    'patrol_office': [
+        ('r220_patrol_1', '순라 등불 넋', '원령', 'common', 'ghost', 'spectral', '순라 등불을 든 채 죽은 순라군의 넋. 통금 시각이 되면 골목을 돈다.', {'ghost_ash': 1, 'seal_paper': 1}),
+        ('r220_patrol_2', '관청 담 벌레 떼', '무리 요괴', 'common', 'swarm', 'swarm', '무너진 관청 담 속에 둥지를 튼 벌레 떼. 한꺼번에 날아올라 앞을 가린다.', {'spirit_dust': 1, 'venom_gland': 1}),
+        ('r220_patrol_3', '방울 금줄귀', '결계 요괴', 'main', 'ward', 'warded', '순라 길에 둘러친 방울 금줄이 깨어난 것. 방울이 울릴 때마다 결계가 두꺼워진다.', {'ward_fragment': 2, 'talisman_thread': 1, 'seal_paper': 2}),
+        ('r220_patrol_4', '거울 든 순라꾼', '거울 요괴', 'main', 'mirror', 'reflect', '점호 마당 거울을 품에 안은 순라꾼의 넋. 거울에 비친 공격을 그대로 되돌린다.', {'spirit_glass': 1, 'ward_fragment': 2}),
+        ('r220_patrol_5', '순라 대장귀', '지역 우두머리', 'guardian', 'breaker', 'boss', '순라청을 맡던 대장이 요괴가 되었다. 통금을 어긴 자를 찾아 관청의 봉인을 하나씩 부순다.', {'raw_iron': 3, 'ward_fragment': 2, 'sealing_ink': 1}),
+    ],
+    'blood_dunes': [
+        ('r220_dune_1', '붉은 모래 전갈', '독충 요괴', 'common', 'venom', 'toxic', '붉은 모래 빛깔을 띤 전갈. 모래 위로 꼬리만 내밀고 기다린다.', {'venom_gland': 1, 'cinnabar': 1}),
+        ('r220_dune_2', '모래매', '날짐승 요괴', 'common', 'bird', 'aerial', '모래바다 하늘을 맴도는 매. 지친 길손을 노려 내리꽂는다.', {'beast_bone': 1, 'beast_fang': 1}),
+        ('r220_dune_3', '모래 속 숨은 입', '매복 요괴', 'main', 'shadow', 'ambush', '모래 밑에 입만 벌리고 숨은 요괴. 발밑의 모래가 꺼지면 이미 늦다.', {'shadow_fang': 2, 'cinnabar': 2, 'beast_bone': 2}),
+        ('r220_dune_4', '핏빛 등딱지 게', '갑각 요괴', 'main', 'shell', 'armored', '붉은 소금 바닥에 사는 커다란 게. 등딱지가 주사 광물처럼 붉고 단단하다.', {'cinnabar': 3, 'jade_shard': 1}),
+        ('r220_dune_5', '붉은 신기루', '지역 우두머리', 'guardian', 'sky', 'boss', '모래바다 한가운데 서는 붉은 신기루가 요괴가 되었다. 길손을 홀려 모래 속으로 데려간다.', {'ember_crystal': 1, 'cinnabar': 3, 'spirit_dust': 3}),
+    ],
+    'sleeping_port': [
+        ('r220_port_1', '잠든 배 물귀', '물귀신', 'common', 'water', 'tide', '닻 내린 배 밑에 매달린 물귀신. 배에 오르는 사람의 발목을 끌어내린다.', {'drowned_scale': 1, 'river_reed': 1}),
+        ('r220_port_2', '안개 갈매기 떼', '날짐승 요괴', 'common', 'bird', 'aerial', '물안개 속에서 한꺼번에 날아드는 갈매기 떼. 부리가 쇠처럼 단단하다.', {'beast_bone': 1, 'beast_fang': 1}),
+        ('r220_port_3', '따개비 집게귀', '갑각 요괴', 'main', 'shell', 'armored', '온몸에 따개비를 뒤집어쓴 커다란 집게 요괴. 무역선 밑창을 집게로 뜯는다.', {'drowned_scale': 3, 'jade_shard': 1, 'frost_salt': 2}),
+        ('r220_port_4', '물안개 거울', '거울 요괴', 'main', 'mirror', 'reflect', '물안개가 거울처럼 굳은 요괴. 비친 사람의 공격을 되돌린다.', {'spirit_glass': 1, 'mirror_shard': 1, 'drowned_scale': 2}),
+        ('r220_port_5', '포구를 삼킨 물귀 선장', '지역 우두머리', 'guardian', 'water', 'boss', '마지막 무역선과 함께 가라앉은 선장의 넋. 포구를 떠나려는 배를 모두 붙잡아 둔다.', {'lantern_oil': 2, 'drowned_scale': 3, 'jade_shard': 1}),
+    ],
+}
+
+GROUNDS = {
+    'lotus_sewer': [('연등 물길 둑', '연등이 줄지어 떠 있는 하수도 바깥 물길.'), ('밀수 거룻배 굴', '흑련회 거룻배가 오가는 갈림 물목.'), ('늙은 자라의 웅덩이', '연등이 모두 꺼지는 하수도 맨 아래.')],
+    'ledger_cellar': [('호칭 부르는 회랑', '장부고로 내려가는 바깥 회랑.'), ('맡긴 이름 서가 숲', '장부가 숲처럼 늘어선 깊은 서가.'), ('먹 거인의 금고 앞', '가장 오래된 장부를 둔 맨 밑 금고.')],
+    'frost_pine_pass': [('숯막 아래 솔길', '숯꾼들이 드나드는 고개 아래 솔길.'), ('서리솔 벌목 비탈', '얼음 낀 솔숲이 이어진 비탈.'), ('산군의 고갯마루', '서리 덮인 산군이 지키는 고갯마루.')],
+    'old_glacier': [('빙하 끝 얼음 벽', '빙하가 끝나는 얼음 벽 아래.'), ('푸른 얼음 굴 길', '얼음 굴이 얽힌 빙하 안쪽.'), ('얼음 거인의 골', '천년 얼음 거인이 잠든 빙하 한가운데.')],
+    'patrol_office': [('순라 등불 골목', '순라 등불 넋이 도는 관청 바깥 골목.'), ('점호 마당 안쪽', '거울과 방울이 걸린 관청 안마당.'), ('순라 대장 집무실', '순라 대장귀가 지키는 가장 깊은 방.')],
+    'blood_dunes': [('돌무덤 모래 둔덕', '모래바다로 들어서는 어귀 둔덕.'), ('신기루 모래골', '신기루가 자주 서는 깊은 모래골.'), ('모래바다 한가운데', '붉은 신기루가 서는 모래바다 한복판.')],
+    'sleeping_port': [('안개 낀 방파제', '포구로 들어서는 방파제 둘레.'), ('잠든 무역선 물목', '닻 내린 배가 늘어선 물목.'), ('물귀 선장의 배', '마지막 무역선이 가라앉은 포구 끝.')],
+}
+
+FISH = [
+    ('lotus_sewer', 'canal', '연등 하수 물길', '연등 불빛이 비치는 하수 물길입니다. 등 아래로 물고기가 모여듭니다.'),
+    ('old_glacier', 'lake', '빙하 얼음 틈', '빙하 녹은 물이 고인 얼음 틈입니다. 줄을 내리면 금세 서리가 앉습니다.'),
+    ('sleeping_port', 'sea', '잠든 포구 방파제', '물안개 낀 방파제 끝입니다. 잠든 배 사이로 바닷고기가 드나듭니다.'),
+]
+
+PROFILES = {
+    'lotus_sewer': ('지하·물길', '흑련회 뱃사공·하수의 짐승', '연등 하수도의 부표: 갈대로 엮은 부표마다 흑련회 연꽃이 새겨져 있다.', '연등 하수도 고유 사건: 꺼진 연등을 모두 다시 띄우면 흑련회 밀수 뱃길의 끝이 드러난다.', '익사·독·어둠', '물에 뜬 연꽃 등, 기름 번진 둑길, 거룻배'),
+    'ledger_cellar': ('지하·서고', '흑련회 장부지기·새어 나온 이름', '흑련 장부고의 장부: 이름 옆마다 맡긴 날짜와 부르는 호칭이 함께 적혀 있다.', '흑련 장부고 고유 사건: 찢긴 장부를 다시 묶으면 가장 오래된 장부에 누가 이름을 맡겼는지 드러난다.', '침식·결계·어둠', '끝없는 서가, 금줄 둘린 빗장, 먹 냄새'),
+    'frost_pine_pass': ('산악·솔숲', '북령맹 숯꾼·나무꾼', '서리솔 고개의 숯가마: 가마마다 숯을 구운 날과 숯꾼의 이름이 새겨져 있다.', '서리솔 고개 고유 사건: 꺼진 숯가마에 다시 불을 넣으면 고개를 넘다 사라진 숯꾼의 이야기가 드러난다.', '추위·매복·눈보라', '서리 앉은 소나무, 숯막, 눈 덮인 벌목 터'),
+    'old_glacier': ('산악·빙원', '북령맹 빙하 순찰꾼·얼음에 갇힌 넋', '천년 빙하의 얼음 경문: 얼음 벽에 누군가 천 년 전 글자로 경문을 새겨 두었다.', '천년 빙하 고유 사건: 얼음 거인을 다시 잠재우면 얼음 속 옛 마을이 왜 얼어붙었는지 드러난다.', '추위·낙빙·침식', '푸른 얼음 벽, 크레바스, 얼음에 갇힌 그림자'),
+    'patrol_office': ('도성·관청', '정통파 옛 순라군·순라 등불 넋', '옛 순라청의 순라 일지: 마지막 장에 순라를 마친 시각이 적혀 있지 않다.', '옛 순라청 고유 사건: 마지막 순라 일지를 채우면 순라청이 문을 닫은 밤의 일이 드러난다.', '침식·결계·매복', '무너진 관청 대문, 순라 등불, 방울 금줄'),
+    'blood_dunes': ('황무지·사막', '적월교를 떠난 길잡이·사라진 대상', '핏빛 모래바다의 돌무덤: 돌마다 모래에 묻힌 대상의 이름이 붉은 글씨로 적혀 있다.', '핏빛 모래바다 고유 사건: 붉은 신기루를 걷어 내면 사라진 대상이 마지막으로 향한 곳이 드러난다.', '갈증·독·신기루', '붉은 모래언덕, 낙타 뼈, 붉은 소금 바닥'),
+    'sleeping_port': ('물가·바다', '수향연맹 옛 선주·잠든 배의 넋', '잠든 포구의 무역 장부: 마지막 무역선이 떠난 날 옆에 「돌아오지 않음」이라고만 적혀 있다.', '잠든 포구 고유 사건: 물귀 선장을 풀어 주면 수향연맹의 옛 바닷길이 드러난다.', '익사·안개·밀물', '닻 내린 무역선, 물안개, 부서진 등대'),
+}
+
+LORE = {
+    'lotus_sewer': ['연등 하수도. 도성 아래를 흐르는 큰 하수도입니다. 흑련회 뱃사공들은 물 위에 연꽃 등을 띄워 길을 표시합니다.',
+                    '등 하나가 꺼지면 그 물길은 아무도 지나가지 않습니다. 뱃사공들은 꺼진 등 아래에 무엇이 있는지 묻지 않습니다.'],
+    'ledger_cellar': ['흑련 장부고. 흑련회가 맡아 둔 이름을 장부로 지키는 지하 서고입니다. 회원들은 이곳에 이름을 맡기고 호칭으로 불립니다.',
+                      '서가 사이에서 누군가 제 이름을 부르는 소리가 납니다. 장부 틈으로 새어 나온 이름들입니다.'],
+    'frost_pine_pass': ['서리솔 고개. 서리 앉은 소나무가 빽빽한 고개입니다. 북령맹 나무꾼과 숯꾼들이 겨울 땔감을 지고 이 길을 넘습니다.',
+                        '고개 아래 숯가마 몇 개가 차갑게 식어 있습니다. 숯꾼들은 요즘 고개에 오르기를 꺼립니다.'],
+    'old_glacier': ['천년 빙하. 북녘 끝에 천 년 동안 녹지 않은 얼음 벌판입니다. 푸른 얼음 속에 사람과 짐승의 그림자가 그대로 갇혀 있습니다.',
+                    '요즘 빙하 끝자락이 조금씩 녹고 있습니다. 북령맹 순찰꾼들은 얼음 속 그림자가 움직이는 것을 보았다고 합니다.'],
+    'patrol_office': ['옛 순라청. 도성의 밤 순라를 맡던 관청 터입니다. 관청이 문을 닫은 지 오래인데 처마 끝에 순라 등불이 아직 걸려 있습니다.',
+                      '통금 북이 울리던 시각이 되면 골목에 방울 소리가 납니다. 순라를 마치지 못한 이들이 아직 돌고 있습니다.'],
+    'blood_dunes': ['핏빛 모래바다. 붉은 모래언덕이 바다처럼 끝없이 이어진 서쪽 끝입니다. 바람이 불 때마다 모래 밑에서 옛 대상의 짐이 드러납니다.',
+                    '어귀의 돌무덤마다 이름이 적혀 있습니다. 모래바다를 건너다 돌아오지 못한 이들의 이름입니다.'],
+    'sleeping_port': ['잠든 포구. 수향연맹이 바다 무역을 하던 옛 포구입니다. 물안개 속에 닻을 내린 배들이 주인 없이 잠들어 있습니다.',
+                      '안개가 짙은 날에는 포구 끝 등대에 불이 켜집니다. 등대지기가 떠난 지 스무 해가 넘었는데도 그렇습니다.'],
+}
+
+SITES = {
+    'lotus_sewer': [('supply', '연등 하수도 · 뱃사공 창고', ['herb', 'travel_ration', 'tonic', 'river_reed', 'silk'], ['lantern_oil', 'silk', 'tonic']),
+                    ('medical', '연등 하수도 · 밀수 약재 궤', ['herb', 'medicine_base', 'tonic', 'herbal_extract'], ['herbal_extract', 'calm_brew', 'tonic']),
+                    ('relic', '연등 하수도 · 연꽃 수문', ['seal_paper', 'inkstone', 'ghost_ash', 'shadow_fang'], ['ward_fragment', 'lantern_oil', 'sealing_ink'])],
+    'ledger_cellar': [('relic', '흑련 장부고 · 찢긴 장부 더미', ['seal_paper', 'fine_paper', 'sealing_ink', 'inkstone'], ['mirror_shard', 'rune_plate', 'fine_paper']),
+                      ('supply', '흑련 장부고 · 장부지기 등잔방', ['herb', 'travel_ration', 'tonic', 'lantern_oil'], ['lantern_oil', 'tonic', 'sealing_ink']),
+                      ('abyss', '흑련 장부고 · 맨 밑 금고', ['ghost_ash', 'spirit_dust', 'ward_fragment', 'talisman_thread'], ['mirror_shard', 'spirit_glass', 'rune_plate'])],
+    'frost_pine_pass': [('supply', '서리솔 고개 · 숯꾼 숯막', ['charcoal', 'wood', 'resin', 'travel_ration'], ['charcoal', 'resin', 'beast_hide']),
+                        ('medical', '서리솔 고개 · 나무꾼 약상자', ['herb', 'medicine_base', 'tonic', 'moon_moss'], ['herbal_extract', 'moon_moss', 'tonic']),
+                        ('relic', '서리솔 고개 · 서리 앉은 장승', ['seal_paper', 'talisman_thread', 'ghost_ash', 'wood'], ['ward_fragment', 'frost_salt', 'resin'])],
+    'old_glacier': [('abyss', '천년 빙하 · 얼음 속 옛 마을', ['frost_salt', 'spirit_dust', 'ghost_ash', 'ore'], ['jade_shard', 'monster_core', 'thunder_ore']),
+                    ('relic', '천년 빙하 · 얼음 경문 벽', ['seal_paper', 'talisman_thread', 'sealing_ink', 'ghost_ash'], ['rune_plate', 'spirit_glass', 'sealing_ink']),
+                    ('supply', '천년 빙하 · 순찰꾼 눈집', ['herb', 'travel_ration', 'tonic', 'frost_salt'], ['spirit_qi_pill', 'tonic', 'frost_salt'])],
+    'patrol_office': [('relic', '옛 순라청 · 순라 일지 방', ['seal_paper', 'inkstone', 'sealing_ink', 'talisman_thread'], ['ward_fragment', 'fine_paper', 'sealing_ink']),
+                      ('supply', '옛 순라청 · 등불 기름 창고', ['herb', 'travel_ration', 'tonic', 'charcoal', 'raw_iron'], ['lantern_oil', 'steel_ingot', 'tonic']),
+                      ('medical', '옛 순라청 · 야경꾼 숙소', ['herb', 'medicine_base', 'tonic'], ['herbal_extract', 'calm_brew', 'tonic'])],
+    'blood_dunes': [('supply', '핏빛 모래바다 · 대상 짐 묻힌 곳', ['travel_ration', 'silk', 'herb', 'tonic', 'cinnabar'], ['silk', 'jade_shard', 'lantern_oil']),
+                    ('relic', '핏빛 모래바다 · 이름 적힌 돌무덤', ['seal_paper', 'cinnabar', 'ghost_ash', 'talisman_thread'], ['ember_crystal', 'ward_fragment', 'cinnabar']),
+                    ('medical', '핏빛 모래바다 · 말라붙은 오아시스', ['herb', 'medicine_base', 'herbal_extract'], ['herbal_extract', 'rejuv_pill', 'tonic'])],
+    'sleeping_port': [('supply', '잠든 포구 · 물에 잠긴 창고', ['travel_ration', 'lumber', 'resin', 'tonic', 'lantern_oil'], ['lantern_oil', 'reinforced_lumber', 'jade_shard']),
+                      ('relic', '잠든 포구 · 선주 사무소', ['seal_paper', 'inkstone', 'fine_paper', 'sealing_ink'], ['fine_paper', 'mirror_shard', 'sealing_ink']),
+                      ('abyss', '잠든 포구 · 물 밑 무역 장부 궤', ['drowned_scale', 'river_reed', 'spirit_dust', 'ghost_ash'], ['jade_shard', 'spirit_glass', 'mirror_shard'])],
+}
+
+MOVES = [
+    dict(region='white_tower', d=3, apply=False, why='주 이야기 mq_nine_gates·직업 퀘스트 jq2_scout(Lv18)·세력 등급 mandate_court:rank:4(min 20)가 씀'),
+    dict(region='red_plain', d=-1, apply=False, why='주 이야기 mq_red_moon_oath·세력 가입 red_moon_cult:join:1~3이 씀'),
+    dict(region='red_forest', d=6, apply=False, why='세력 등급 southern_remnant:rank:3(min 12)·연계 cq110_bat_3(Lv12)이 씀'),
+    dict(region='cloud_corridor', d=7, apply=False, why='대안: 천명원 21~29(보조 rq_cloud_corridor·sq110_s_bomi만 씀)'),
+]

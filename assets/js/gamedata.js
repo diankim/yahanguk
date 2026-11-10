@@ -145,11 +145,11 @@ export const GAMEDATA = {
     "southern_remnant": ["mandate_court"],
     "mandate_court": ["black_lotus","southern_remnant"]
   },
-  "regionNames": {"iron_monastery":"철벽 고찰","ember_pass":"불씨 고개","snow_hollow":"설피골","star_hill":"별바라기 언덕","lamp_alley":"등잔골 뒷골목","hidden_bazaar":"십삼문 암시장","ember_village":"잔불촌","hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","ghost_bamboo":"귀죽림","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","star_observatory":"무극 관성대","red_moon_fort":"적월교 월식성","salt_village":"염등촌"},
+  "regionNames": {"iron_monastery":"철벽 고찰","ember_pass":"불씨 고개","star_hill":"별바라기 언덕","ember_village":"잔불촌","hq_yard":"야행국 본부 정청","hq_dorm":"본부 객사","red_plain":"적사 황무지","bone_market":"백골 장터","river_ferry":"구름나루","star_observatory":"무극 관성대","red_moon_fort":"적월교 월식성","salt_village":"염등촌","lamp_alley":"등잔골 뒷골목","snow_hollow":"설피골","ghost_bamboo":"귀죽림","hidden_bazaar":"십삼문 암시장"},
   "bag": {"base":34},
   "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
   "titles": {"total":277,"public":196,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":11,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"묵적록":12,"교류":3,"토벌":13,"도감":20,"외전":13,"세력":21,"별채":14,"비밀":57}},
-  "fish": {"species":66,"grounds":30,"named":6},
+  "fish": {"species":66,"grounds":33,"named":6},
   "outfit": {"keep":20,"weave":{"top":{"mats":[["영사",2],["운면",1]],"level":5},"bottom":{"mats":[["영사",2],["운면",2]],"level":5}},"colors":8,"per_day":2,"give_day":10,"title_max":12}
 };
 export default GAMEDATA;
