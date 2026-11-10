@@ -6,7 +6,7 @@ import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture, myHomeCounts } from '../housing/count.js';
 import { GWIRYEONG, weakSafe } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { qtyHtml, bindQty, qtyOf } from './itempick.js';
+import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -213,10 +213,10 @@ function draw(box, id, inv, prices, mode) {
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
         ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" data-here="분해" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
-      ${(() => { const qm = Math.max(useMaxOf(id, have), locked ? 0 : dcMax); return `<div class="qa-box">${qm >= 2 ? qtyHtml({ key: 'q', min: 1, max: qm, value: 1, all: true, small: true, label: '수량' }) : ''}<div class="qa-btns">
-        <button class="btn small qa-dc" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>버리기</button>
-        ${stashOk && dcMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '<span aria-hidden="true"></span>'}
-        ${USABLE[id] ? '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>' : '<span aria-hidden="true"></span>'}</div></div>`; })()}
+      ${actBox({ key: 'q', max: Math.max(useMaxOf(id, have), locked ? 0 : dcMax), cls: 'act-end', btns: [
+        `<button class="btn small act-dc" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
+        stashOk && dcMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
+        USABLE[id] ? '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>' : ''] })}
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   bindQty(box);
