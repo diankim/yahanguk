@@ -205,7 +205,6 @@ function draw(box, id, inv, prices, mode) {
     ${!uses.length && !makes.length ? '<p class="muted small">이 물품과 관련된 제작법이 없습니다.</p>' : ''}
     ${mode === 'bag' && have > 0 ? `<h3 class="sub-h">다루기</h3>
       <div class="btn-row">
-        ${USABLE[id] && !useQtyHtml(id, have, 'use') ? `<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>${icon('heart', 14)}<span>사용</span></button>` : ''}
         ${it?.category === 'outfit' ? `<button class="btn small primary" data-do="wear">${icon('palette', 14)}<span>${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}</span></button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small primary" data-do="adopt">${icon('heart', 14)}<span>열기</span></button>` : ''}
         ${id === 'pet_token' ? `<button class="btn small ${have >= 5 ? 'primary' : ''}" data-do="token" ${have >= 5 ? '' : 'disabled'} title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">${icon('heart', 14)}<span>빛나는 알로 바꾸기</span></button>` : ''}
@@ -214,12 +213,10 @@ function draw(box, id, inv, prices, mode) {
         <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
         ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" data-here="분해" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
-      ${useQtyHtml(id, have, 'use') ? `<div class="qty-row"><span>쓸 수량 <small class="muted">· 가진 ${have}개${have > 50 ? ' · 한 번에 50개까지' : ''}</small></span>${useQtyHtml(id, have, 'use')}
-        <button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>${icon('heart', 14)}<span>사용</span></button></div>` : ''}
-      ${stashOk && dcMax > 0 ? `<div class="qty-row"><span>창고에 넣을 수량 <small class="muted">· 가진 ${have}개</small></span>${qtyHtml({ key: 'st', min: 1, max: dcMax, value: dcMax, all: true, small: true, label: '창고에 넣을 수량' })}
-        <button class="btn small primary" data-do="stash" data-here="창고 이용">${icon('bag', 14)}<span>창고에 넣기</span></button></div>` : ''}
-      <div class="qty-row ${locked ? 'off' : ''}"><span>버릴 수량 <small class="muted">· 가진 ${have}개</small></span>${qtyHtml({ key: 'dc', min: 1, max: dcMax, value: 1, all: true, small: true, off: locked || dcMax < 1, label: '버릴 수량' })}
-        <button class="btn small danger" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>${icon('close', 14)}<span>버리기</span></button></div>
+      ${(() => { const qm = Math.max(useMaxOf(id, have), locked ? 0 : dcMax); return `<div class="qa-box">${qm >= 2 ? qtyHtml({ key: 'q', min: 1, max: qm, value: 1, all: true, small: true, label: '수량' }) : ''}<div class="qa-btns">
+        <button class="btn small qa-dc" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>버리기</button>
+        ${stashOk && dcMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '<span aria-hidden="true"></span>'}
+        ${USABLE[id] ? '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>' : '<span aria-hidden="true"></span>'}</div></div>`; })()}
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   bindQty(box);
@@ -244,7 +241,7 @@ function draw(box, id, inv, prices, mode) {
     const k = d.dataset.do;
     const run = async fn => { let ok = false; await guard(d, async () => { const r = await fn(); ok = true; return r; }); return ok; };
     const closeInfo = () => box.closest('.modal-backdrop')?.querySelector('[data-close]')?.click();
-    if (k === 'use') await useItem(id, d, qtyOf(box, 'use') || 1);
+    if (k === 'use') await useItem(id, d, Math.max(1, Math.min(useMaxOf(id, have), qtyOf(box, 'q') || 1)));
     if (k === 'adopt') await guard(d, () => act('world_pet_adopt', { p_item: id }));
     if (k === 'wear') { if (await run(() => act('world_wardrobe_add', { p_item: id }))) closeInfo(); return; }
     if (k === 'token') await guard(d, () => act('world_pet_token_trade'));
@@ -261,13 +258,13 @@ function draw(box, id, inv, prices, mode) {
       return;
     }
     if (k === 'stash') {
-      const q = qtyOf(box, 'st');
+      const q = qtyOf(box, 'q') || 1;
       if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
       const ok = await run(() => act('world_storage_put', { p_item: id, p_qty: q }));
       if (ok && q >= have) { closeInfo(); return; }
     }
     if (k === 'discard') {
-      const q = qtyOf(box, 'dc');
+      const q = qtyOf(box, 'q') || 1;
       if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
       if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
       const ok = await run(() => act('world_item_discard', { p_item_id: id, p_qty: q }));
@@ -290,6 +287,7 @@ export async function useItem(id, btn, n = 1) {
   return guard(btn, () => useItemAct(id, n));
 }
 export const USE_ONE = new Set(['reset_stats', 'reset_identity']);
+export const useMaxOf = (id, have) => USABLE[id] ? (USE_ONE.has(baseOf(id)) ? 1 : Math.min(50, have)) : 0;
 export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ONE.has(baseOf(id)) && have > 1 ? qtyHtml({ key, min: 1, max: Math.min(50, have), value: 1, all: true, small, label: '쓸 수량' }) : '';
 function openResetIdentity() {
   const c = store.character || {};
