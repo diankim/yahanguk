@@ -109,6 +109,66 @@ end $function$;
 revoke all on function public.world_use_item_batch(text, integer) from public, anon, authenticated;
 grant execute on function public.world_use_item_batch(text, integer) to authenticated, service_role;
 
+create or replace function pg_temp.yh_share(p_fn text) returns void language plpgsql as $f$
+declare x text;
+begin
+  execute format('revoke all on function %s from public, anon, authenticated', p_fn);
+  for x in select rolname from pg_roles where rolname like 'fn\_owner%' or rolname = 'service_role' loop
+    execute format('grant execute on function %s to %I', p_fn, x);
+  end loop;
+end $f$;
+
+create or replace function public.world_battle_item_rules()
+ returns jsonb language sql immutable
+as $function$
+  select '{"tourney":{"items":["tonic","herbal_extract","herb","rejuv_pill","grand_pill","banyo_salve"],"heal":{"tonic":0.22,"herbal_extract":0.15,"herb":0.1,"rejuv_pill":0.32,"grand_pill":0.45,"banyo_salve":0.36},"pick":2,"hq_mul":1.15},"gw":{"items":["tonic","herbal_extract","rejuv_pill","grand_pill","banyo_salve"]}}'::jsonb
+$function$;
+select pg_temp.yh_share('public.world_battle_item_rules()');
+
+create or replace function public.world_battle_item_ids(p_kind text)
+ returns text[] language sql immutable
+as $function$
+  select array(select jsonb_array_elements_text(public.world_battle_item_rules() -> p_kind -> 'items'))
+$function$;
+select pg_temp.yh_share('public.world_battle_item_ids(text)');
+
+create or replace function public.world_battle_item_have(p_kind text)
+ returns text[] language sql stable
+ set search_path to 'pg_catalog', 'public'
+as $function$
+  select array(select i.item_id from public.world_item_catalog i where coalesce(i.base_item_id, i.item_id) = any (public.world_battle_item_ids(p_kind)) order by i.item_id)
+$function$;
+select pg_temp.yh_share('public.world_battle_item_have(text)');
+
+create or replace function public.world_battle_item_names(p_kind text)
+ returns text language sql stable
+ set search_path to 'pg_catalog', 'public'
+as $function$
+  select string_agg(coalesce(i.item_name, x.k), '·' order by x.n) from unnest(public.world_battle_item_ids(p_kind)) with ordinality x(k, n)
+    left join public.world_item_catalog i on i.item_id = x.k
+$function$;
+select pg_temp.yh_share('public.world_battle_item_names(text)');
+
+select pg_temp.yh_fix('world_tourney_tactic', array[
+  $q$ok_items text[] := array['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve'];$q$,
+  $q$ok_items text[] := public.world_battle_item_ids('tourney'); pick int := (public.world_battle_item_rules() #>> '{tourney,pick}')::int;$q$,
+  $q$if coalesce(cardinality(p_items), 0) > 2 or$q$, $q$if coalesce(cardinality(p_items), 0) > pick or$q$,
+  $q$raise exception '회복품은 두 가지까지 고를 수 있습니다.';$q$, $q$raise exception '회복품은 %가지까지 고를 수 있습니다.', pick;$q$]);
+
+select pg_temp.yh_fix('world_tourney_duel', array[
+  $q$heal := round(mx[i] * (case when it like '%\_hq' then 1.15 else 1 end) * case public.world_item_base(it) when 'grand_pill' then 0.45 when 'rejuv_pill' then 0.32 when 'banyo_salve' then 0.36 when 'tonic' then 0.22 when 'herbal_extract' then 0.15 else 0.1 end);$q$,
+  $q$heal := round(mx[i] * (case when public.world_item_base(it) <> it then (public.world_battle_item_rules() #>> '{tourney,hq_mul}')::numeric else 1 end) * coalesce((public.world_battle_item_rules() -> 'tourney' -> 'heal' ->> public.world_item_base(it))::numeric, 0.1));$q$]);
+
+select pg_temp.yh_fix('world_gw_act', array[
+  $q$if coalesce(public.world_item_base(coalesce(p_item, '')), '') not in ('tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve') then
+      raise exception '귀허의 주인과 싸우는 동안에는 체력 회복품(청심환·약초액·회춘단·대환단·반요 고약)만 쓸 수 있습니다.'; end if;$q$,
+  $q$if coalesce(public.world_item_base(coalesce(p_item, '')), '') <> all (public.world_battle_item_ids('gw')) then
+      raise exception '귀허의 주인과 싸우는 동안에는 체력 회복품(%)만 쓸 수 있습니다.', public.world_battle_item_names('gw'); end if;$q$]);
+
+select pg_temp.yh_fix('world_gw_snapshot', array[
+  $q$from unnest(array['tonic', 'tonic_hq', 'herbal_extract', 'rejuv_pill', 'rejuv_pill_hq', 'grand_pill', 'grand_pill_hq', 'banyo_salve']) k$q$,
+  $q$from unnest(public.world_battle_item_have('gw')) k$q$]);
+
 update public.world_patch_notes set body = body || E'\n- 귀령초: 찾을 때 가방이 가득 차 있으면 버려지지 않고 개인 창고로 들어갑니다(창고 칸이 넘쳐도 들어감).\n- 비무회 작전: 우수품 회복품(「… (우수)」)도 고를 수 있게 목록에 보입니다.\n- 가방: 쓸 수 있는 물품은 수량(−·+·전부)을 정해 한 번에 여러 개 쓸 수 있습니다(50개까지, 쓸 수 없게 되면 그 자리에서 멈춤). 물품 정보 창의 창고에 넣기·버리기 수량도 창고와 같은 수량 칸으로 바뀝니다.'
 where note_id = '1.1.0' and position('귀령초: 찾을 때 가방이 가득' in body) = 0;
 

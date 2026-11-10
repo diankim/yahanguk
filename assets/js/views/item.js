@@ -5,6 +5,7 @@ import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture, myHomeCounts } from '../housing/count.js';
 import { GWIRYEONG, weakSafe } from '../rules.js';
+import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf } from './itempick.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
@@ -42,7 +43,7 @@ export const USABLE = new Proxy({}, {
   },
   has(t, k) { return !!this.get(t, k); },
 });
-export const GW_HEAL = ['tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
+export const GW_HEAL = GD.battleItems?.gw?.items || [];
 export function bossUse(id) {
   const b = baseOf(id), f = catItem(b)?.fx;
   const raid = !!f && (f.hp > 0 || f.mn > 0 || f.sp > 0), gw = GW_HEAL.includes(b);

@@ -1,12 +1,14 @@
 import { rpc, store, esc, icon, fmt, $, $$, nameOf, guard, ask } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
 import { withHq, hqOf } from '../hq.js';
+import { GAMEDATA as GD } from '../gamedata.js';
 
 const MODE = { solo: '1:1', team: '팀전(2:2)' };
 const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시작', running: '진행 중', done: '끝남', cancelled: '열리지 않음' };
 const STANCE = [['attack', '공격', '주는 피해 +15% · 받는 피해 +10%'], ['balanced', '균형', '보정 없음'], ['defense', '수비', '주는 피해 −15% · 받는 피해 −20% · 회피 +5']];
 const SKILL_AT = [['open', '처음에'], ['mid', '몰릴 때(기세 60% 아래)'], ['finish', '마무리(상대 35% 아래)']];
-const HEALS = ['tonic', 'herbal_extract', 'herb', 'rejuv_pill', 'grand_pill', 'banyo_salve'];
+const TN = GD.battleItems?.tourney || {};
+const HEALS = TN.items || [], PICK = TN.pick || 2;
 const GAP = 2000;
 
 let el = null, board = null, view = null, timer = null, tick = null, skew = 0, sub = '', busy = false;
@@ -64,7 +66,7 @@ function tCard(t, b, c) {
     ${canTac ? `<details class="tn-tac" open><summary>${icon('target', 14)} 작전</summary>
       <div class="tn-row"><span>태세</span>${STANCE.map(([k, n, d]) => `<label class="chk" title="${esc(d)}"><input type="radio" name="st-${t.mode}" value="${k}" ${tac.stance === k ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
       <div class="tn-row"><span>직업 기술</span>${SKILL_AT.map(([k, n]) => `<label class="chk"><input type="radio" name="sk-${t.mode}" value="${k}" ${tac.skill === k ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
-      <div class="tn-row"><span>회복품 둘</span>${withHq(HEALS, { ...inv, ...Object.fromEntries((tac.items || []).map(x => [hqOf(x), 1])) }).map(k => `<label class="chk"><input type="checkbox" name="it-${t.mode}" value="${k}" ${(tac.items || []).includes(k) ? 'checked' : ''}><span>${esc(nameOf(k))}${inv[k] ? '' : ' <small class="muted">(없음)</small>'}</span></label>`).join('')}</div>
+      <div class="tn-row"><span>회복품 ${PICK}가지</span>${withHq(HEALS, { ...inv, ...Object.fromEntries((tac.items || []).map(x => [hqOf(x), 1])) }).map(k => `<label class="chk"><input type="checkbox" name="it-${t.mode}" value="${k}" ${(tac.items || []).includes(k) ? 'checked' : ''}><span>${esc(nameOf(k))}${inv[k] ? '' : ' <small class="muted">(없음)</small>'}</span></label>`).join('')}</div>
       <p class="muted small">회복품은 기세가 40% 아래로 떨어지면 하나씩 씁니다(가방에서 줄지 않음). 정하지 않으면 균형·몰릴 때·회복품 없음.</p>
       <button class="btn small primary" data-tac="${t.mode}">작전 정하기</button></details>` : ''}
     <div class="btn-row">
@@ -88,7 +90,7 @@ function bindBoard() {
   $$('[data-tac]', el).forEach(b => b.onclick = () => guard(b, async () => {
     const m = b.dataset.tac, box = b.closest('.tn-tac');
     const items = $$(`input[name="it-${m}"]:checked`, box).map(x => x.value);
-    if (items.length > 2) throw new Error('회복품은 두 가지까지 고를 수 있습니다.');
+    if (items.length > PICK) throw new Error(`회복품은 ${PICK}가지까지 고를 수 있습니다.`);
     const r = await rpc('world_tourney_tactic', { p_mode: m, p_stance: $(`input[name="st-${m}"]:checked`, box)?.value || 'balanced', p_items: items, p_skill: $(`input[name="sk-${m}"]:checked`, box)?.value || 'mid' });
     await refresh(); return r;
   }));
