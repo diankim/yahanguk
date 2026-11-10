@@ -47,6 +47,12 @@ export function bindQty(root, onChange) {
     qtyMark(st);
   });
 }
+export const actBox = ({ key, max = 0, value = 1, min = 1, all = true, off = false, label = '수량', qty = true, btns = [], cls = '' }) => {
+  const n = btns.length, w = Math.max(2, n);
+  const q = !qty || !key ? '' : max >= 2 ? qtyHtml({ key, min, max, value, all, off, small: true, label })
+    : `<div data-qty="${esc(key)}" data-min="${min}" hidden><input type="number" min="${min}" max="${Math.max(min, max)}" value="${Math.max(min, Math.min(value, Math.max(min, max)))}"></div>`;
+  return `<div class="act-box ${cls}" style="--w:${w};--c:${Math.max(1, n)}">${q}${n ? `<div class="act-btns">${btns.map(b => b || '<span aria-hidden="true"></span>').join('')}</div>` : ''}</div>`;
+};
 export const qtyOf = (root, key) => { const st = $(`[data-qty="${CSS.escape(key)}"]`, root); return st ? qtyClamp(st, st.querySelector('input').value) : 0; };
 export const koSort = (a, b) => a.name.localeCompare(b.name, 'ko');
 const LIMIT = 200;
