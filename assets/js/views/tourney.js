@@ -1,5 +1,6 @@
 import { rpc, store, esc, icon, fmt, $, $$, nameOf, guard, ask } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
+import { withHq, hqOf } from '../hq.js';
 
 const MODE = { solo: '1:1', team: '팀전(2:2)' };
 const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시작', running: '진행 중', done: '끝남', cancelled: '열리지 않음' };
@@ -63,7 +64,7 @@ function tCard(t, b, c) {
     ${canTac ? `<details class="tn-tac" open><summary>${icon('target', 14)} 작전</summary>
       <div class="tn-row"><span>태세</span>${STANCE.map(([k, n, d]) => `<label class="chk" title="${esc(d)}"><input type="radio" name="st-${t.mode}" value="${k}" ${tac.stance === k ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
       <div class="tn-row"><span>직업 기술</span>${SKILL_AT.map(([k, n]) => `<label class="chk"><input type="radio" name="sk-${t.mode}" value="${k}" ${tac.skill === k ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
-      <div class="tn-row"><span>회복품 둘</span>${HEALS.map(k => `<label class="chk"><input type="checkbox" name="it-${t.mode}" value="${k}" ${(tac.items || []).includes(k) ? 'checked' : ''}><span>${esc(nameOf(k))}${inv[k] ? '' : ' <small class="muted">(없음)</small>'}</span></label>`).join('')}</div>
+      <div class="tn-row"><span>회복품 둘</span>${withHq(HEALS, { ...inv, ...Object.fromEntries((tac.items || []).map(x => [hqOf(x), 1])) }).map(k => `<label class="chk"><input type="checkbox" name="it-${t.mode}" value="${k}" ${(tac.items || []).includes(k) ? 'checked' : ''}><span>${esc(nameOf(k))}${inv[k] ? '' : ' <small class="muted">(없음)</small>'}</span></label>`).join('')}</div>
       <p class="muted small">회복품은 기세가 40% 아래로 떨어지면 하나씩 씁니다(가방에서 줄지 않음). 정하지 않으면 균형·몰릴 때·회복품 없음.</p>
       <button class="btn small primary" data-tac="${t.mode}">작전 정하기</button></details>` : ''}
     <div class="btn-row">
