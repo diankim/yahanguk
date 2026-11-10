@@ -1840,8 +1840,11 @@ const S = [
       <li>별명은 8자까지 지을 수 있고, 비우면 원래 이름으로 돌아갑니다.</li>
       <li>별채 칭호 가운데에는 알에서 같은 동무가 잇달아 나올 때 얻는 것도 있습니다.</li>
     </ul>`],
-  ['mkboss', '먹그림자 · 외전 「묵적록」 5장', `${(() => { const B = GD.boss?.mukjeok || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}; return `
-    <p>외전 「묵적록」 4장을 마치면 Lv${B.lv}부터 ${B.place}의 현장에서 「먹그림자」 칸으로 들어갑니다. 혼자 또는 같은 곳의 파티원 4명까지 60초 동안 모이고, 모두 ${B.item_name}을 하나씩 씁니다(${B.shop_name}). 라운드·물품·협동 기술·물러남·쉬는 중은 귀허의 주인과 같고, ${B.min}분 안에 보내야 합니다.</p>
+  ['mkboss', '먹그림자 · 외전 「묵적록」 5장', `${(() => { const B = GD.boss?.mukjeok || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, sb = st.board || {}; return `
+    <p>외전 「묵적록」 4장을 마치면 Lv${B.lv}부터 ${B.place}의 현장에서 「먹그림자」 칸으로 들어갑니다. 혼자 또는 같은 곳의 파티원 4명까지 60초 동안 모입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>이야기판</td><td>외전 5장의 싸움. 라운드마다 모두 고르면 넘어갑니다(혼자면 마감 없음, 여럿이면 ${st.round_s}초 안에 안 고른 사람은 방어). 물품을 쓰지 않고, 밀려나도 잃는 것이 없으며 바로 다시 섭니다. 아래 수법은 같은 흐름이되 약하게(먹줄 획 −${sb.line_strokes}·이름 지우기 실패 획 −${sb.erase_strokes}) 옵니다. 처음 보내면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>깊은 명부</td><td>${esc(B.hard_quest_name || '')}을 마치면 열립니다(보조 퀘스트 「다시 쓰는 명부」). 모두 ${B.item_name}을 하나씩 씁니다(${B.shop_name}). 라운드·물품·협동 기술·물러남·쉬는 중은 귀허의 주인과 같고, ${B.min}분 안에 보내야 합니다. 아래 수치·보상은 깊은 명부 기준입니다.</td></tr></table>
     <h4>아홉 칸 명부</h4>
     <ul>
       <li>바닥이 3×3 진법 판입니다. <b>가운데 칸의 이름 획 ${b.strokes}개</b>가 다 지워지면 집니다. 머리에 「빛나는 칸 n/8 · 이름 획 n/${b.strokes}」이 보입니다.</li>

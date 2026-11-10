@@ -98,6 +98,7 @@
 - 처치 기록 world_events mk_win(gw_win과 따로), 칭호 7(분류 '외전', 규칙 ev mk_win)·꾸미기 fr_ninecourt·pt_ninecourt·sl_jeok「跡」·이름 색 ns:1032「묵적」·탈것·별채 가구 mk_first·귀령초 1%. 퀘스트 할 일 {t:'mj'}(또는 {t:'gw', boss}). RPC world_gw_open(p_boss)·world_gw_snapshot(p_fight, p_boss)·world_gw_act(…, p_move) — 새 인자는 기본값이라 귀허 화면 그대로, 행동 recall 추가, call은 이름 지우기 라운드만.
 - 화면 gw.js 보스 표 BOSS, #/gw/mukjeok 대기실, 진법 판 .mk-board(이웃 칸 .mk-step을 누르면 다음 행동에 p_move), 기억 조각 줄 kind mem/shadow는 토스트. 휴대폰(640px↓) 싸우는 중엔 판 180px(칸 57px)을 라운드 띠와 나란히 두고 사다리·머리 설명을 줄여 단추·협동 기술·이번만 행동이 탭 막대 위 한 화면에(iPhone 13·375×667 확인, 사용자 결정).
 - 난이도(시뮬 120판, 6단계 장비 한 벌): 넷 10/10·둘 평균 4.75·혼자 2~3/10, 이름 획 패배는 진 판의 약 12%(사용자 결정 「약간만 더 어렵게」). 7단계 장비가 퍼지면 다시 맞춘다.
+- 두 판(사용자 결정): 이야기판 story(외전 5장 mkq_5 할 일 {t:'mj', mode:'story'}) · 깊은 명부 hard(위 난이도, mkq_5를 마친 뒤 보조 퀘스트 mkq_x 「다시 쓰는 명부」 할 일 {t:'mj'}, 처치 보상·칭호·꾸미기·하루 처치는 여기만). world_gw_fights.mode, 수치 world_boss_rules().mukjeok.story(min·round_s·hp_min·hp_atk·raw·first·board — 싸움 안의 규칙 읽기는 모두 world_mk_rules(fight)가 story를 덮어 줌), 열기 world_gw_open(p_boss, p_mode)·world_gw_ready_check(uid, boss, mode)(hard는 hard_quest를 마쳐야). 이야기판: 라운드 마감 없음(혼자, 모두 고르면 넘어감)·여럿이면 round_s 60초, 물품 안 씀, 지면 잃는 것·재도전 대기 없음, 처음 보내면 first.gil만(world_mk_settle, 기록 boss_id 'mukjeok_story', mk_win 없음). 화면 gw.js 대기실 두 칸(.gw-mode — 스냅샷 story {can_open, why, kills})·싸움 스냅샷 mode로 마감 막대를 뺌. 시뮬(2.0.0): 정석 플레이 혼자·둘·넷 모두 10/10, 판 위에서 안 움직이는 서툰 플레이 혼자 약 80%.
 
 ### 3.6 새 지역·세력 배치
 

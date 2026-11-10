@@ -95,11 +95,36 @@ PLAN = {
             summary='매듭 안쪽, 아홉 칸 명부. 먹그림자와 마주하고 돌아오는 이름을 듣는다.',
             steps=[
                 ('아홉 칸 뜰에서 눈을 뜬다', {'at': [COURT]}),
-                ('아홉 칸 명부에서 먹그림자와 싸운다', {'at': [COURT], 'tasks': [{'t': 'mj', 'n': 1}]}),
+                ('아홉 칸 명부에서 먹그림자와 싸운다', {'at': [COURT], 'tasks': [{'t': 'mj', 'mode': 'story', 'n': 1}]}),
                 ('아홉 칸 뜰에서 이어진다', {'at': [COURT]}),
                 ('아홉 칸 뜰에서 이어진다', {'at': [COURT]}),
             ]),
 }
+
+
+EXTRA = dict(id='mkq_x', title='다시 쓰는 명부', L=45, region=FERRY, after=['mkq_5'], items={'meokgwi_lump': 2},
+    summary='아홉 칸 뜰 명부에 먹이 다시 번진다. 봉인 먹줄로 테두리를 묶고, 깊은 명부에서 먹그림자를 한 번 더 보낸다.',
+    steps=[
+        ('묵창 나루 주막에서 희수를 만난다', {'at': [FERRY]}, '번지는 먹', [
+            ('서술', '명부에서 돌아온 지 며칠이 지났다. 묵창 나루 주막 마루에서 희수가 장부를 펼쳐 놓은 채 붓을 내려놓지 못하고 있었다.'),
+            ('서술', '희수는 나를 보자 장부 한 귀퉁이를 손가락으로 짚었다.'),
+            ('희수', '아홉 칸 뜰 명부에 먹이 다시 번지고 있습니다. 보내신 그림자가 남긴 먹이 마르지 않은 채, 이번에는 더 진하게 고였어요.'),
+            ('서술', '마루 끝에 앉아 있던 다온이 공책을 꼭 끌어안고 고개를 들었다.'),
+            ('다온', '그럼 또 이름이 지워져요? 내 공책에 적어 둔 이름들도요?'),
+            ('서술', '희수가 다온의 머리를 쓰다듬은 뒤 나를 바라보았다.'),
+            ('희수', '지난번보다 깊은 곳까지 먹이 내려앉았습니다. 이번에는 봉인 먹줄로 명부 테두리를 묶고 들어가셔야 해요. 주막에서 먹줄을 챙겨 깊은 명부에서 먹그림자를 한 번 더 보내 주세요.'),
+            ('서술', '나는 주막에서 봉인 먹줄을 챙겨 아홉 칸 뜰로 가겠다고 했다.'),
+        ]),
+        ('깊은 명부에서 먹그림자를 보내고 묵창 나루로 돌아간다', {'at': [FERRY], 'tasks': [{'t': 'mj', 'n': 1}]}, '마른 먹', [
+            ('서술', '아홉 칸 뜰에서 돌아오자 나루의 문패 몇 개에 글자가 다시 또렷하게 떠올라 있었다.'),
+            ('서술', '다온이 문패를 하나하나 손끝으로 짚으며 소리 내어 읽고 있었다.'),
+            ('다온', '여기, 아까는 안 보였는데 이제 다 보여요. 이 집 할머니 이름도요!'),
+            ('서술', '희수는 장부의 번진 칸을 새 먹으로 덧쓰고 있었다. 붓을 내려놓은 희수가 나에게 고개를 숙였다.'),
+            ('희수', '명부 먹이 말랐습니다. 이번에는 깊은 데까지 다 말랐어요. 덕분에 나루 사람들 이름이 제자리에 앉았습니다.'),
+            ('서술', '다온이 공책을 펼쳐 맨 끝 장에 내 이름을 또박또박 적었다.'),
+            ('다온', '이건 안 지워지게 제일 진하게 썼어요.'),
+        ]),
+    ])
 
 
 def parse():
@@ -159,6 +184,9 @@ def build():
             goal, need = P['steps'][k]
             steps.append(dict(quest=P['id'], step=k + 1, title=s['title'], goal=goal, need=need,
                               lines=[{'s': SPEAK[sp], 't': t} for sp, t in lines]))
+    quests.append(dict(id=EXTRA['id'], title=EXTRA['title'], L=EXTRA['L'], region=EXTRA['region'], after=EXTRA['after'], summary=EXTRA['summary'], items=EXTRA['items'], side=True))
+    for k, (goal, need, title, lines) in enumerate(EXTRA['steps']):
+        steps.append(dict(quest=EXTRA['id'], step=k + 1, title=title, goal=goal, need=need, lines=[{'s': SPEAK[sp], 't': t} for sp, t in lines]))
     end = chapters['end']['scenes'][0]['lines']
     epi = [{'s': SPEAK[sp], 't': t} for sp, t in end]
     return quests, steps, epi, memories
@@ -194,7 +222,7 @@ end $$;""")
     qrows, srows = [], []
     for i, q in enumerate(quests):
         L = q['L']
-        tot = round(0.6 * xp_need(L))
+        tot = round((0.4 if q.get('side') else 0.6) * xp_need(L))
         mine = [s for s in steps if s['quest'] == q['id']]
         task_steps = [s['step'] for s in mine if s['need'].get('tasks') or s['need'].get('give')]
         per = tot // max(1, len(task_steps))
@@ -205,7 +233,7 @@ end $$;""")
                 rw['xp'] = per
             last = s['step'] == len(mine)
             if last:
-                rw['gil'] = 20 + 10 * L
+                rw['gil'] = (5 + 4 * L) if q.get('side') else 20 + 10 * L
                 rw['items'] = q['items']
             lines = s['lines'] + (epi if last and q['id'] == 'mkq_5' else [])
             srows.append(dict(quest_id=q['id'], step=s['step'], title=s['title'], goal=s['goal'], need=s['need'], lines=lines, reward=rw))

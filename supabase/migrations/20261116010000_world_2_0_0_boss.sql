@@ -21,6 +21,9 @@ as $f$ select '{
     "first": {"gil": 2000, "xp": 0.5, "mount": "ink_crane", "mount_name": "먹 그림 학", "name_style": "ns:1032", "name_style_name": "묵적", "furniture": "mk_first"},
     "again": {"gil": 150, "xp": 0.05, "item": "meokgwi_lump", "item_name": "먹귀 응어리", "qty": 1},
     "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 45,
+    "hard_quest": "mkq_5", "hard_quest_name": "외전 「묵적록」 5장",
+    "story": {"min": 120, "round_s": 60, "hp_min": 3600, "hp_atk": 20, "raw": [22, 3], "first": {"gil": 1000},
+      "board": {"line_strokes": 1, "erase_strokes": 2, "line_raw": 26, "erase_raw": 28, "mimic_raw": 7, "bound_raw": 6, "aoe_mul": 0.6}},
     "board": {"strokes": 9, "lit_start": 7, "lit_base": 4, "lit_pct": 5, "lit_ward": 10, "center_pres": 60,
       "line_raw": 45, "keep_mul": 1.3, "line_strokes": 2, "line_every": [6, 6, 5, 6], "line_off": [2, 0, 0, 3], "line_n": [1, 1, 2, 1], "aoe_every": 4, "aoe_mul": 0.9,
       "mimic_atk": 0.7, "mimic_stuck": 0.5, "mimic_raw": 12, "hesit_pct": 15, "bound_raw": 10,
@@ -28,6 +31,18 @@ as $f$ select '{
     "solo": {"artificer": {"solo_dmg": -40, "solo_guard": -40}, "scout": {"solo_dmg": -25, "solo_guard": 18}, "exorcist": {"solo_dmg": -41, "solo_guard": 4},
       "medic": {"solo_dmg": -12, "solo_guard": 10}, "sealmaster": {"solo_dmg": -42, "solo_guard": -2}, "analyst": {"solo_dmg": -25, "solo_guard": 2}}}
 }'::jsonb $f$;
+
+alter table public.world_gw_fights add column if not exists mode text not null default 'hard';
+alter table public.world_gw_fights drop constraint if exists world_gw_fights_mode_check;
+alter table public.world_gw_fights add constraint world_gw_fights_mode_check check (mode in ('hard', 'story'));
+
+create or replace function public.world_mk_rules(p_fight uuid)
+ returns jsonb language sql stable security definer set search_path = pg_catalog, public
+as $f$
+  select case when f.mode = 'story' then (x.r - 'story') || ((x.r -> 'story') - 'board') || jsonb_build_object('board', (x.r -> 'board') || coalesce(x.r -> 'story' -> 'board', '{}'::jsonb))
+    else x.r end
+  from (select public.world_boss_rules() -> 'mukjeok' as r) x left join public.world_gw_fights f on f.fight_id = p_fight
+$f$;
 
 create or replace function public.world_solo_aid(p_job text, p_boss text)
  returns jsonb language sql immutable set search_path = ''
@@ -68,7 +83,7 @@ end $f$;
 create or replace function public.world_mk_begin(p_fight uuid, p_n integer)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_rules() -> 'mukjeok' -> 'board'; outer_ int[] := array[1, 9, 3, 7, 8, 4, 2, 6]; e int; lit int[]; x record; i int := 0;
+declare rb jsonb := public.world_mk_rules(p_fight) -> 'board'; outer_ int[] := array[1, 9, 3, 7, 8, 4, 2, 6]; e int; lit int[]; x record; i int := 0;
 begin
   e := outer_[1 + floor(random() * 8)::int];
   lit := array(select o from unnest(outer_) o where o <> e);
@@ -86,7 +101,7 @@ end $f$;
 create or replace function public.world_mk_round(p_fight uuid)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare f public.world_gw_fights%rowtype; rb jsonb := public.world_boss_rules() -> 'mukjeok' -> 'board'; lm jsonb := public.world_mk_lines(); b jsonb;
+declare f public.world_gw_fights%rowtype; rb jsonb := public.world_mk_rules(p_fight) -> 'board'; lm jsonb := public.world_mk_lines(); b jsonb;
   nr int; ph int; m jsonb; len int := 5; tell text; aoe boolean := false; alive int; every int; off int; due boolean; nline int;
   ids text[] := array['r0', 'r1', 'r2', 'c0', 'c1', 'c2', 'd0', 'd1']; l1 text; l2 text; cells int[]; na int; ng int; mm text; stuck boolean := false; mem boolean := false;
 begin
@@ -155,7 +170,8 @@ begin
   end if;
   if aoe then tell := tell || ' — 먹구름이 뜰 위로 낮게 내려앉는다. 먹비가 한꺼번에 쏟아질 것 같다. 몰려올 것에 대비하라.'; end if;
   m := m || jsonb_build_object('aoe', aoe, 'tell', tell);
-  update public.world_gw_fights set phase = ph, round = nr, cycle = f.cycle + 1, mech = m, board = b, round_ends_at = now() + make_interval(secs => len), updated_at = now()
+  update public.world_gw_fights set phase = ph, round = nr, cycle = f.cycle + 1, mech = m, board = b, round_ends_at = now() + make_interval(secs => case when f.mode <> 'story' then len
+     when (select count(*) from public.world_gw_members x where x.fight_id = p_fight) = 1 then 86400 else (public.world_mk_rules(p_fight) ->> 'round_s')::int end), updated_at = now()
    where fight_id = p_fight;
   update public.world_gw_members set act = null where fight_id = p_fight;
   perform public.world_gw_say(p_fight, nr, case when aoe or m ->> 'k' in ('line', 'erase') then 'warn' else 'tell' end, tell);
@@ -188,7 +204,7 @@ end $f$;
 create or replace function public.world_mk_raw(p_fight uuid)
  returns numeric language plpgsql stable security definer set search_path = pg_catalog, public
 as $f$
-declare r jsonb := public.world_boss_rules() -> 'mukjeok'; f public.world_gw_fights%rowtype; n int;
+declare r jsonb := public.world_mk_rules(p_fight); f public.world_gw_fights%rowtype; n int;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight;
   select count(*) into n from public.world_gw_members where fight_id = p_fight;
@@ -199,7 +215,7 @@ end $f$;
 create or replace function public.world_mk_on_attack(p_fight uuid, p_uid uuid, p_round integer)
  returns numeric language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_rules() -> 'mukjeok' -> 'board'; f public.world_gw_fights%rowtype; mul numeric; lit int;
+declare rb jsonb := public.world_mk_rules(p_fight) -> 'board'; f public.world_gw_fights%rowtype; mul numeric; lit int;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight;
   lit := jsonb_array_length(coalesce(f.board -> 'lit', '[]'::jsonb));
@@ -208,7 +224,7 @@ begin
     mul := mul * (1 + (rb ->> 'hesit_pct')::numeric / 100.0);
   elsif f.mech ->> 'mimic' = 'attack' then
     mul := mul * case when coalesce((f.mech ->> 'stuck')::boolean, false) then (rb ->> 'mimic_stuck')::numeric else (rb ->> 'mimic_atk')::numeric end;
-    perform public.world_gw_hit(p_fight, p_uid, (rb ->> 'mimic_raw')::numeric * (1 + (public.world_boss_rules() -> 'mukjeok' ->> 'enrage')::numeric * f.enrage), p_round, '자세를 베낀 그림자가 먼저 휘두른 붓끝에', false);
+    perform public.world_gw_hit(p_fight, p_uid, (rb ->> 'mimic_raw')::numeric * (1 + (public.world_mk_rules(p_fight) ->> 'enrage')::numeric * f.enrage), p_round, '자세를 베낀 그림자가 먼저 휘두른 붓끝에', false);
   end if;
   return mul;
 end $f$;
@@ -216,7 +232,7 @@ end $f$;
 create or replace function public.world_mk_recall(p_fight uuid, p_uid uuid, p_round integer)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_rules() -> 'mukjeok' -> 'board'; f public.world_gw_fights%rowtype; me public.world_gw_members%rowtype; st int;
+declare rb jsonb := public.world_mk_rules(p_fight) -> 'board'; f public.world_gw_fights%rowtype; me public.world_gw_members%rowtype; st int;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   select * into me from public.world_gw_members where fight_id = p_fight and owner_id = p_uid;
@@ -236,7 +252,7 @@ end $f$;
 create or replace function public.world_mk_mech(p_fight uuid, p_round integer, p_broke boolean, p_delayed boolean, p_freed uuid[])
  returns numeric language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_rules() -> 'mukjeok' -> 'board'; lm jsonb := public.world_mk_lines(); f public.world_gw_fights%rowtype; b jsonb; k text;
+declare rb jsonb := public.world_mk_rules(p_fight) -> 'board'; lm jsonb := public.world_mk_lines(); f public.world_gw_fights%rowtype; b jsonb; k text;
   w record; cells int[]; keeper public.world_gw_members%rowtype; n int; callers int; need int; ok boolean; lit int[]; gone int; st int; extra numeric := 0;
   cover uuid; half numeric := case when p_broke then 0.5 else 1 end; held uuid[] := '{}';
 begin
@@ -337,7 +353,7 @@ end $f$;
 create or replace function public.world_mk_after(p_fight uuid, p_round integer)
  returns boolean language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_rules() -> 'mukjeok' -> 'board'; f public.world_gw_fights%rowtype;
+declare rb jsonb := public.world_mk_rules(p_fight) -> 'board'; f public.world_gw_fights%rowtype;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   if f.status <> 'fight' then return true; end if;
@@ -358,13 +374,42 @@ end $f$;
 create or replace function public.world_mk_settle(p_fight uuid, p_won boolean)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare r jsonb := public.world_boss_rules() -> 'mukjeok'; f public.world_gw_fights%rowtype; m record; today date := (now() at time zone 'Asia/Seoul')::date;
+declare r jsonb := public.world_mk_rules(p_fight); f public.world_gw_fights%rowtype; m record; today date := (now() at time zone 'Asia/Seoul')::date;
   rec public.world_gw_records%rowtype; n int; solo boolean; flawless boolean; alllit boolean; lost int; is_first boolean; xp int; msg text; lv int; v_gil int; drop_item text; drop_ok boolean;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   if f.status not in ('fight', 'wait') then return; end if;
   update public.world_gw_fights set status = case when p_won then 'won' else 'failed' end, ended_at = now(), updated_at = now(), hp = case when p_won then 0 else hp end where fight_id = p_fight;
   select count(*), coalesce(sum(falls), 0) = 0 into n, flawless from public.world_gw_members where fight_id = p_fight;
+  if f.mode = 'story' then
+    if p_won then
+      while public.world_mk_memory(p_fight, f.round, true) loop end loop;
+    end if;
+    for m in select * from public.world_gw_members where fight_id = p_fight loop
+      update public.world_characters set health = greatest(1, m.hp), updated_at = now() where owner_id = m.owner_id;
+      if p_won then
+        insert into public.world_gw_records(owner_id, boss_id) values (m.owner_id, 'mukjeok_story') on conflict do nothing;
+        select * into rec from public.world_gw_records where owner_id = m.owner_id and boss_id = 'mukjeok_story' for update;
+        is_first := coalesce(rec.kills, 0) = 0;
+        update public.world_gw_records set kills = kills + 1, last_kill_day = today, first_kill_at = coalesce(first_kill_at, now()) where owner_id = m.owner_id and boss_id = 'mukjeok_story';
+        if is_first then
+          v_gil := (r -> 'first' ->> 'gil')::int;
+          update public.world_characters set gil = gil + v_gil, updated_at = now() where owner_id = m.owner_id;
+        end if;
+        insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '먹그림자를 보냈습니다',
+          case when is_first then '아홉 칸 명부에서 먹그림자를 보냈습니다. ' || to_char(v_gil, 'FM999,999') || '전을 받았습니다. 묵창 나루로 돌아가 이야기를 이으세요.'
+            else '아홉 칸 명부에서 다시 한 번 먹그림자를 보냈습니다.' end,
+          jsonb_build_object('fight_id', p_fight, 'boss', 'mukjeok', 'mode', 'story', 'first', is_first));
+      else
+        insert into public.world_notifications(user_id, kind, title, content, payload)
+        values (m.owner_id, 'gw', '먹그림자 앞에서 밀려났습니다', '명부가 먹으로 덮여 밀려났습니다. 잃은 것은 없으니 숨을 고르고 다시 서세요.', jsonb_build_object('fight_id', p_fight, 'boss', 'mukjeok', 'mode', 'story'));
+      end if;
+    end loop;
+    perform public.world_gw_say(p_fight, f.round, case when p_won then 'win' else 'bad' end, case when p_won
+      then '먹그림자의 붓이 꺾였다. 먹이 흘러내리고, 가운데 칸의 이름이 검게, 또렷하게 돌아왔다.'
+      else '도전이 끝났습니다.' end);
+    return;
+  end if;
   solo := n = 1; lost := coalesce((f.board ->> 'lost')::int, 0);
   alllit := jsonb_array_length(coalesce(f.board -> 'lit', '[]'::jsonb)) >= 8;
   drop_item := r -> 'again' ->> 'item';
@@ -434,14 +479,17 @@ begin
   if f.status <> 'wait' then return; end if;
   v_item := case when f.boss_id = 'mukjeok' then public.world_boss_rules() -> 'mukjeok' ->> 'item' else 'gwiheo_charm' end;
   for x in select m.owner_id, c.inventory, c.health from public.world_gw_members m join public.world_characters c using (owner_id) where m.fight_id = p_fight for update of c loop
-    if coalesce((x.inventory ->> v_item)::int, 0) < 1 or x.health <= 0 then
+    if (f.mode <> 'story' and coalesce((x.inventory ->> v_item)::int, 0) < 1) or x.health <= 0 then
       delete from public.world_gw_members where fight_id = p_fight and owner_id = x.owner_id;
       continue;
     end if;
-    update public.world_characters set inventory = public.world_inv_add(inventory, v_item, -1), updated_at = now() where owner_id = x.owner_id;
+    if f.mode <> 'story' then
+      update public.world_characters set inventory = public.world_inv_add(inventory, v_item, -1), updated_at = now() where owner_id = x.owner_id;
+    end if;
     s := public.world_raid_stats(x.owner_id);
     update public.world_gw_members set stats = s, hp = greatest(30, least(100, x.health)) where fight_id = p_fight and owner_id = x.owner_id;
-    insert into public.world_gw_records(owner_id, boss_id, tries) values (x.owner_id, f.boss_id, 1) on conflict (owner_id, boss_id) do update set tries = world_gw_records.tries + 1;
+    insert into public.world_gw_records(owner_id, boss_id, tries) values (x.owner_id, f.boss_id || case when f.mode = 'story' then '_story' else '' end, 1)
+      on conflict (owner_id, boss_id) do update set tries = world_gw_records.tries + 1;
     sa := sa + coalesce((s ->> 'attack')::numeric, 50); n := n + 1;
   end loop;
   if n = 0 then
@@ -449,7 +497,7 @@ begin
     return;
   end if;
   if f.boss_id = 'mukjeok' then
-    br := public.world_boss_rules() -> 'mukjeok';
+    br := public.world_mk_rules(p_fight);
     update public.world_gw_fights set status = 'fight',
            max_hp = round(greatest((br ->> 'hp_min')::numeric, sa * (br ->> 'hp_atk')::numeric) * (br -> 'hp_n' ->> (least(4, n) - 1))::numeric),
            hp = round(greatest((br ->> 'hp_min')::numeric, sa * (br ->> 'hp_atk')::numeric) * (br -> 'hp_n' ->> (least(4, n) - 1))::numeric), phase = 1, round = 0, cycle = 0,
@@ -504,7 +552,7 @@ $q$  av := coalesce(m.act ->> 'a', 'guard');
   if m.pos is not null then
     select x.mech, x.board into v_mech, v_board from public.world_gw_fights x where x.fight_id = p_fight;
     if coalesce(v_board -> 'lit', '[]'::jsonb) @> to_jsonb(m.pos) then
-      p_raw := p_raw * (1 - (public.world_boss_rules() -> 'mukjeok' -> 'board' ->> 'lit_ward')::numeric / 100.0);
+      p_raw := p_raw * (1 - (public.world_mk_rules(p_fight) -> 'board' ->> 'lit_ward')::numeric / 100.0);
     end if;
     if v_mech ->> 'mimic' = 'guard' and av in ('guard', 'brace') then
       p_raw := p_raw * case when coalesce((v_mech ->> 'stuck')::boolean, false) then 1
@@ -572,7 +620,7 @@ $q$      v_hands := case when v_n >= 4 then 2 when v_n = 3 then 1 + (r % 2) else
       if f.boss_id = 'mukjeok' and f.mech ->> 'mimic' = 'guard' then v_hands := v_hands + 1; end if;$q$,
 $q$coalesce((x.fx -> 'taunt' ->> 'pres')::numeric, 0)) limit 1;$q$,
 $q$coalesce((x.fx -> 'taunt' ->> 'pres')::numeric, 0)
-          + case when x.pos = 5 then (public.world_boss_rules() -> 'mukjeok' -> 'board' ->> 'center_pres')::numeric else 0 end) limit 1;$q$,
+          + case when x.pos = 5 then (public.world_mk_rules(p_fight) -> 'board' ->> 'center_pres')::numeric else 0 end) limit 1;$q$,
 $q$'연막 속에서 주인의 손길이 '$q$,
 $q$'연막 속에서 ' || v_who || '의 손길이 '$q$,
 $q$' — 주인의 손길을 피했습니다.'$q$,
@@ -588,7 +636,7 @@ $q$case when f.boss_id = 'mukjeok' then '시간이 다 되었습니다. 먹그�
 
 select pg_temp.yh_fix('world_gw_join', array[
 $q$  c := public.world_gw_ready(uid);$q$,
-$q$  c := public.world_gw_ready(uid, f.boss_id);$q$,
+$q$  c := public.world_gw_ready(uid, f.boss_id, f.mode);$q$,
 $q$raise exception '귀허의 주인 앞에는 4명까지 설 수 있습니다.';$q$,
 $q$raise exception '% 앞에는 4명까지 설 수 있습니다.', public.world_boss_rules() -> f.boss_id ->> 'name';$q$], 1);
 
@@ -599,11 +647,12 @@ $q$    when p_task ->> 't' = 'gw' then (select count(*)::int$q$,
 $q$    when p_task ->> 't' in ('gw', 'mj') then (select count(*)::int$q$,
 $q$where m.owner_id = p_uid and x.status = 'won' and m.acts > 0 and x.ended_at >= p_since)$q$,
 $q$where m.owner_id = p_uid and x.status = 'won' and m.acts > 0 and x.ended_at >= p_since
-                  and x.boss_id = case when p_task ->> 't' = 'mj' then 'mukjeok' else coalesce(p_task ->> 'boss', 'gwiheo') end)$q$], 1);
+                  and x.boss_id = case when p_task ->> 't' = 'mj' then 'mukjeok' else coalesce(p_task ->> 'boss', 'gwiheo') end
+                  and x.mode = coalesce(p_task ->> 'mode', 'hard'))$q$], 1);
 
 select pg_temp.yh_fix('world_quest_task_label', array[
 $q$    when p_task ->> 't' = 'raid' then case$q$,
-$q$    when p_task ->> 't' = 'mj' then '아홉 칸 명부에서 먹그림자 보내기'
+$q$    when p_task ->> 't' = 'mj' then case when p_task ->> 'mode' = 'story' then '아홉 칸 명부에서 먹그림자 보내기' else '깊은 명부에서 먹그림자 보내기' end
     when p_task ->> 't' = 'raid' then case$q$], 1);
 
 select pg_temp.yh_fix('world_shop_refresh', array[
@@ -628,7 +677,8 @@ create trigger trg_world_housing_event after insert on public.world_events for e
   when (new.event_type = any (array['combat', 'expedition_end', 'story', 'gw_win', 'mk_win'])) execute function public.world_housing_event_trg();
 
 drop function if exists public.world_gw_ready(uuid);
-create or replace function public.world_gw_ready(p_uid uuid, p_boss text default 'gwiheo')
+drop function if exists public.world_gw_ready(uuid, text);
+create or replace function public.world_gw_ready(p_uid uuid, p_boss text default 'gwiheo', p_mode text default 'hard')
  returns public.world_characters language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare c public.world_characters%rowtype; rec public.world_gw_records%rowtype; today date := (now() at time zone 'Asia/Seoul')::date; br jsonb := public.world_boss_rules() -> p_boss;
@@ -642,6 +692,7 @@ begin
     if (public.world_region_at(c.location)).region_id is distinct from br ->> 'region' then raise exception '%에서만 %의 앞에 설 수 있습니다.', br ->> 'place', br ->> 'name'; end if;
     if c.level < (br ->> 'lv')::int then raise exception 'Lv%부터 도전할 수 있습니다.', br ->> 'lv'; end if;
     if br ->> 'quest' is not null and not public.world_quest_done(p_uid, br ->> 'quest') then raise exception '%을(를) 마쳐야 %의 앞에 설 수 있습니다.', br ->> 'quest_name', br ->> 'name'; end if;
+    if p_mode <> 'story' and not public.world_quest_done(p_uid, br ->> 'hard_quest') then raise exception '%을(를) 마친 뒤에 더 깊은 명부가 열립니다.', br ->> 'hard_quest_name'; end if;
   else
     if (public.world_region_at(c.location)).region_id is distinct from 'gwiheo_core' then raise exception '귀허에서만 귀허의 주인 앞에 설 수 있습니다.'; end if;
     if not public.world_gwiheo_open(p_uid) then raise exception '귀허도에 아직 건너오지 못했습니다.'; end if;
@@ -652,7 +703,9 @@ begin
   if exists (select 1 from public.world_expeditions e where e.owner_id = p_uid and e.status = 'active') then raise exception '원정 중에는 도전할 수 없습니다.'; end if;
   if exists (select 1 from public.world_idle_activities i where i.owner_id = p_uid and i.status = 'active') then raise exception '자율 활동 중에는 도전할 수 없습니다.'; end if;
   select * into rec from public.world_gw_records where owner_id = p_uid and boss_id = p_boss;
-  if p_boss = 'mukjeok' then
+  if p_boss = 'mukjeok' and p_mode = 'story' then
+    null;
+  elsif p_boss = 'mukjeok' then
     if rec.last_kill_day = today then raise exception '오늘은 이미 먹그림자를 보냈습니다. 내일(한국 시각 0시 뒤) 다시 도전할 수 있습니다.'; end if;
     if rec.last_fail_at > now() - make_interval(mins => (br -> 'fail' ->> 'cd')::int) then
       raise exception '명부의 먹이 아직 마르지 않았습니다. %분 뒤 다시 도전할 수 있습니다.', ceil(extract(epoch from rec.last_fail_at + make_interval(mins => (br -> 'fail' ->> 'cd')::int) - now()) / 60);
@@ -672,7 +725,8 @@ begin
 end $f$;
 
 drop function if exists public.world_gw_ready_check(uuid);
-create or replace function public.world_gw_ready_check(p_uid uuid, p_boss text default 'gwiheo')
+drop function if exists public.world_gw_ready_check(uuid, text);
+create or replace function public.world_gw_ready_check(p_uid uuid, p_boss text default 'gwiheo', p_mode text default 'hard')
  returns void language plpgsql stable security definer set search_path = pg_catalog, public
 as $f$
 declare c public.world_characters%rowtype; rec public.world_gw_records%rowtype; br jsonb := public.world_boss_rules() -> p_boss;
@@ -682,6 +736,8 @@ begin
   if (public.world_region_at(c.location)).region_id is distinct from br ->> 'region' then raise exception '%에서만 도전할 수 있습니다.', br ->> 'place'; end if;
   if c.level < (br ->> 'lv')::int then raise exception 'Lv%부터 도전할 수 있습니다.', br ->> 'lv'; end if;
   if br ->> 'quest' is not null and not public.world_quest_done(p_uid, br ->> 'quest') then raise exception '%을(를) 마쳐야 합니다.', br ->> 'quest_name'; end if;
+  if p_mode = 'story' then return; end if;
+  if br ->> 'hard_quest' is not null and not public.world_quest_done(p_uid, br ->> 'hard_quest') then raise exception '%을(를) 마쳐야 열립니다.', br ->> 'hard_quest_name'; end if;
   select * into rec from public.world_gw_records where owner_id = p_uid and boss_id = p_boss;
   if rec.last_kill_day = (now() at time zone 'Asia/Seoul')::date then raise exception '오늘은 이미 처치했습니다. 내일 다시 도전할 수 있습니다.'; end if;
   if rec.last_fail_at > now() - make_interval(mins => (br -> 'fail' ->> 'cd')::int) then
@@ -690,27 +746,29 @@ begin
 end $f$;
 
 drop function if exists public.world_gw_open();
-create or replace function public.world_gw_open(p_boss text default 'gwiheo')
+drop function if exists public.world_gw_open(text);
+create or replace function public.world_gw_open(p_boss text default 'gwiheo', p_mode text default 'hard')
  returns jsonb language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; fid uuid; x record; n int := 0; boss text := coalesce(p_boss, 'gwiheo'); br jsonb;
+  md text := case when coalesce(p_boss, 'gwiheo') = 'mukjeok' and p_mode = 'story' then 'story' else 'hard' end;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   br := public.world_boss_rules() -> boss;
   if br is null then raise exception '알 수 없는 우두머리입니다.'; end if;
   perform public.world_seal_guard();
-  c := public.world_gw_ready(uid, boss);
+  c := public.world_gw_ready(uid, boss, md);
   select count(*) into n from public.world_party_members a join public.world_party_members b on b.party_id = a.party_id and b.owner_id <> a.owner_id
     join public.world_characters o on o.owner_id = b.owner_id where a.owner_id = uid and o.location = c.location and o.downed_at is null;
-  insert into public.world_gw_fights(leader_id, status, start_at, boss_id) values (uid, 'wait', now() + case when n > 0 then interval '60 seconds' else interval '0' end, boss)
+  insert into public.world_gw_fights(leader_id, status, start_at, boss_id, mode) values (uid, 'wait', now() + case when n > 0 then interval '60 seconds' else interval '0' end, boss, md)
     returning fight_id into fid;
   insert into public.world_gw_members(fight_id, owner_id, name, job_key, level) values (fid, uid, c.character_name, c.job_key, c.level);
   for x in select b.owner_id from public.world_party_members a join public.world_party_members b on b.party_id = a.party_id and b.owner_id <> a.owner_id
              join public.world_characters o on o.owner_id = b.owner_id where a.owner_id = uid and o.location = c.location and o.downed_at is null limit 3 loop
     if boss = 'mukjeok' then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (x.owner_id, 'gw_invite', '먹그림자 · 함께 싸우기', c.character_name || '이(가) 아홉 칸 명부 앞에 섰습니다. 60초 안에 합류하세요(' || (br ->> 'item_name') || ' 1개).',
-        jsonb_build_object('fight_id', fid, 'boss', boss));
+      values (x.owner_id, 'gw_invite', '먹그림자 · 함께 싸우기', c.character_name || '이(가) 아홉 칸 명부 앞에 섰습니다. 60초 안에 합류하세요' || case when md = 'story' then '.' else '(' || (br ->> 'item_name') || ' 1개).' end,
+        jsonb_build_object('fight_id', fid, 'boss', boss, 'mode', md));
     else
       insert into public.world_notifications(user_id, kind, title, content, payload)
       values (x.owner_id, 'gw_invite', '귀허의 주인 · 함께 싸우기', c.character_name || '이(가) 귀허의 주인 앞에 섰습니다. 60초 안에 합류하세요(귀허 부적 1개).', jsonb_build_object('fight_id', fid));
@@ -802,7 +860,7 @@ create or replace function public.world_gw_snapshot(p_fight uuid default null, p
  returns jsonb language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare uid uuid := public.fn_owner_auth_uid(); f public.world_gw_fights%rowtype; me public.world_gw_members%rowtype; rec public.world_gw_records%rowtype; c public.world_characters%rowtype;
-  fid uuid := p_fight; why text; inv_f uuid; last_f uuid; gsh jsonb; boss text := coalesce(p_boss, 'gwiheo'); br jsonb;
+  fid uuid := p_fight; why text; swhy text; srec public.world_gw_records%rowtype; inv_f uuid; last_f uuid; gsh jsonb; boss text := coalesce(p_boss, 'gwiheo'); br jsonb;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   if public.world_boss_rules() -> boss is null then raise exception '알 수 없는 우두머리입니다.'; end if;
@@ -819,7 +877,11 @@ begin
     select m.fight_id into last_f from public.world_gw_members m join public.world_gw_fights x using (fight_id)
      where m.owner_id = uid and x.status in ('won', 'failed') and x.boss_id = boss and x.created_at > now() - interval '1 day' order by x.created_at desc limit 1;
     begin perform public.world_gw_ready_check(uid, boss); exception when others then why := sqlerrm; end;
-    return jsonb_build_object('none', true, 'boss', boss, 'invite', inv_f, 'last', last_f, 'can_open', why is null, 'why', why, 'charms', coalesce((c.inventory ->> (br ->> 'item'))::int, 0),
+    if boss = 'mukjeok' then
+      begin perform public.world_gw_ready_check(uid, boss, 'story'); exception when others then swhy := sqlerrm; end;
+      select * into srec from public.world_gw_records where owner_id = uid and boss_id = 'mukjeok_story';
+    end if;
+    return jsonb_build_object('none', true, 'boss', boss, 'story', case when boss = 'mukjeok' then jsonb_build_object('can_open', swhy is null, 'why', swhy, 'kills', coalesce(srec.kills, 0)) end, 'invite', inv_f, 'last', last_f, 'can_open', why is null, 'why', why, 'charms', coalesce((c.inventory ->> (br ->> 'item'))::int, 0),
       'kills', coalesce(rec.kills, 0), 'tips', case when coalesce(rec.kills, 0) > 0 then public.world_gw_tips(boss) end, 'here', (public.world_region_at(c.location)).region_id = br ->> 'region');
   end if;
   select * into f from public.world_gw_fights where fight_id = fid;
@@ -834,7 +896,7 @@ begin
   select * into me from public.world_gw_members where fight_id = fid and owner_id = uid;
   select * into rec from public.world_gw_records where owner_id = uid and boss_id = f.boss_id;
   gsh := public.world_gw_shares(fid);
-  return jsonb_build_object('boss', f.boss_id, 'fight', jsonb_build_object('id', f.fight_id, 'status', f.status, 'hp', f.hp, 'max_hp', f.max_hp, 'phase', f.phase, 'round', f.round,
+  return jsonb_build_object('boss', f.boss_id, 'mode', f.mode, 'fight', jsonb_build_object('id', f.fight_id, 'status', f.status, 'hp', f.hp, 'max_hp', f.max_hp, 'phase', f.phase, 'round', f.round,
       'round_ends_at', f.round_ends_at, 'ends_at', f.ends_at, 'start_at', f.start_at, 'leader', f.leader_id, 'enrage', f.enrage,
       'mech', case f.mech ->> 'k' when 'chain' then jsonb_build_object('k', 'chain', 'colors', (select jsonb_agg(v order by v) from jsonb_each_text(f.mech -> 'colors') e(kk, v)), 'mine', f.mech -> 'colors' ->> uid::text,
         'aoe', f.mech -> 'aoe', 'tell', f.mech -> 'tell')
@@ -869,7 +931,7 @@ grant create on schema public to fn_owner_field;
 do $g$
 declare fn text;
 begin
-  foreach fn in array array['world_gw_ready(uuid, text)', 'world_gw_ready_check(uuid, text)', 'world_gw_open(text)', 'world_gw_tips(text)',
+  foreach fn in array array['world_gw_ready(uuid, text, text)', 'world_gw_ready_check(uuid, text, text)', 'world_gw_open(text, text)', 'world_gw_tips(text)',
     'world_gw_act(uuid, text, uuid, text, smallint)', 'world_gw_snapshot(uuid, text)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', fn);
     execute format('alter function public.%s owner to fn_owner_field', fn);
@@ -877,23 +939,23 @@ begin
 end $g$;
 revoke create on schema public from fn_owner_field;
 set role fn_owner_field;
-revoke all on function public.world_gw_ready(uuid, text) from public, anon, authenticated;
-revoke all on function public.world_gw_ready_check(uuid, text) from public, anon, authenticated;
+revoke all on function public.world_gw_ready(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.world_gw_ready_check(uuid, text, text) from public, anon, authenticated;
 revoke all on function public.world_gw_tips(text) from public, anon, authenticated;
-revoke all on function public.world_gw_open(text) from public, anon;
+revoke all on function public.world_gw_open(text, text) from public, anon;
 revoke all on function public.world_gw_act(uuid, text, uuid, text, smallint) from public, anon;
 revoke all on function public.world_gw_snapshot(uuid, text) from public, anon;
-grant execute on function public.world_gw_ready(uuid, text) to service_role;
-grant execute on function public.world_gw_ready_check(uuid, text) to service_role;
+grant execute on function public.world_gw_ready(uuid, text, text) to service_role;
+grant execute on function public.world_gw_ready_check(uuid, text, text) to service_role;
 grant execute on function public.world_gw_tips(text) to service_role;
-grant execute on function public.world_gw_open(text) to service_role, authenticated;
+grant execute on function public.world_gw_open(text, text) to service_role, authenticated;
 grant execute on function public.world_gw_act(uuid, text, uuid, text, smallint) to service_role, authenticated;
 grant execute on function public.world_gw_snapshot(uuid, text) to service_role, authenticated;
 reset role;
 do $g$
 declare fn text;
 begin
-  foreach fn in array array['world_boss_rules()', 'world_solo_aid(text, text)', 'world_mk_lines()', 'world_mk_memories()', 'world_mk_memory(uuid, integer, boolean)',
+  foreach fn in array array['world_boss_rules()', 'world_mk_rules(uuid)', 'world_solo_aid(text, text)', 'world_mk_lines()', 'world_mk_memories()', 'world_mk_memory(uuid, integer, boolean)',
     'world_mk_begin(uuid, integer)', 'world_mk_round(uuid)', 'world_mk_steps(uuid, integer)', 'world_mk_held(uuid, uuid)', 'world_mk_raw(uuid)', 'world_mk_on_attack(uuid, uuid, integer)',
     'world_mk_recall(uuid, uuid, integer)', 'world_mk_mech(uuid, integer, boolean, boolean, uuid[])', 'world_mk_after(uuid, integer)', 'world_mk_settle(uuid, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', fn);
@@ -939,13 +1001,15 @@ select public.world_quest_label_refresh();
 
 update public.world_patch_notes set body = replace(body, E'\n### 칭호·꾸미기\n', $N$
 ### 외전 5장 · 먹그림자
-- 외전 「묵적록」 마지막 장, 아홉 칸 뜰에서 우두머리 「먹그림자」와 싸웁니다. 외전 4장을 마친 Lv44부터, 봉인 먹줄 하나(묵창 주막)를 들고 혼자 또는 같은 곳 파티원 넷까지 18분 동안 겨룹니다.
+- 외전 「묵적록」 마지막 장, 아홉 칸 뜰에서 우두머리 「먹그림자」와 싸웁니다. 외전 4장을 마친 Lv44부터 혼자 또는 같은 곳 파티원 넷까지 함께 섭니다.
+- 판이 둘입니다. 외전 5장은 「이야기판」으로 치릅니다. 라운드마다 모두 고르면 넘어가고 서두를 마감이 없으며, 물품을 쓰지 않고 밀려나도 잃는 것이 없습니다. 혼자서도 넉넉히 보낼 수 있게 맞췄습니다. 처음 보내면 1,000전을 받습니다.
+- 5장을 마치면 보조 퀘스트 「다시 쓰는 명부」가 열리고, 「깊은 명부」에 설 수 있습니다. 깊은 명부는 라운드 마감이 있고 수법이 거셉니다. 봉인 먹줄 하나(묵창 주막)를 들고 18분 동안 겨루며, 아래 보상·칭호·꾸미기는 깊은 명부에서 얻습니다.
 - 바닥은 아홉 칸 명부입니다. 가운데 칸의 이름 획 아홉이 모두 지워지면 집니다. 라운드마다 이웃 칸으로 한 칸 옮겨 설 수 있고, 지워진 칸에 서서 「되찾기」를 고르면 잃은 기억이 돌아옵니다. 빛나는 칸이 많을수록 그림자가 약해집니다.
 - 먹줄 긋기 · 따라 쓰는 붓 · 발자국 · 이름 지우기의 네 단계가 있습니다. 따라 쓰는 붓은 지난 라운드에 많이 고른 행동을 흉내 내고, 발자국 단계에서는 같은 칸에 두 번 서면 먹에 묶이며, 이름 지우기에서는 한 사람이 가운데를 지키는 동안 나머지가 이름을 불러 주어야 합니다.
 - 싸우는 동안 떠오르는 기억 조각은 화면 아래에 잠깐 떴다 사라지고, 끝난 뒤 전투 기록에서 모두 다시 볼 수 있습니다.
-- 처음 보내면 2,000전과 탈것 「먹 그림 학」, 이름 색 「묵적」, 별채 가구 「아홉 칸 명부 병풍」을 받습니다. 칭호 일곱(숨김 하나)과 테두리·바탕 무늬·낙관 「跡」도 있습니다.
+- 깊은 명부에서 처음 보내면 2,000전과 탈것 「먹 그림 학」, 이름 색 「묵적」, 별채 가구 「아홉 칸 명부 병풍」을 받습니다. 칭호 일곱(숨김 하나)과 테두리·바탕 무늬·낙관 「跡」도 있습니다.
 
 ### 칭호·꾸미기
-$N$) where note_id = '2.0.0' and position('먹그림자' in body) = 0;
+$N$) where note_id = '2.0.0' and position('### 외전 5장 · 먹그림자' in body) = 0;
 
 update public.world_app_meta set value = '20261116010000' where key = 'db_version';

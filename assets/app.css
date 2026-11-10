@@ -2264,6 +2264,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-ladder li.now { border: 2px solid var(--accent); color: var(--text); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
 .gw-ladder li.now span { font-weight: 700; color: var(--accent); }
 .gw-ladder li.done { opacity: .5; }
+.gw-mode { margin-top: 10px; padding: 10px 12px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); display: grid; gap: 6px; justify-items: start; }
+.gw-mode p { margin: 0; }
+.gw-calm { margin: 0; }
 .gw-band { margin-top: 8px; padding: 8px 10px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); display: grid; gap: 4px; }
 .gw-band.aoe { border: 2px solid var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--surface)); }
 .gw-band.gim { border: 2px solid var(--bad); background: color-mix(in srgb, var(--bad) 8%, var(--surface)); }

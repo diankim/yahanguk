@@ -14,7 +14,9 @@ const BOSS = {
     desc: '소용돌이 한가운데 빈 왕좌. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다(4명을 권합니다). 모두 귀허 부적을 하나씩 씁니다.', ask: 'gw' },
   mukjeok: { name: '먹그림자', arc: '외전 · 묵적록', place: '아홉 칸 뜰', PHASE: { 1: '지워지는 칸', 2: '따라 쓰는 붓', 3: '발자국', 4: '가운데 칸' }, last: '가운데 칸', mechs: ['line', 'erase'],
     calm: '그림자가 붓에 먹을 다시 찍는다.', tray: '아홉 칸 뜰에서 쓸 물품', win: '먹그림자를 보냈습니다', lose: '명부가 먹으로 덮였습니다', open: '아홉 칸 명부 앞에 서기',
-    desc: '쓰러진 자리의 매듭 안쪽, 아홉 칸으로 나뉜 명부. 가운데 칸의 이름을 지키며 칸을 밟아 기억을 되찾습니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다. 모두 봉인 먹줄을 하나씩 씁니다.', ask: 'mk' },
+    desc: '쓰러진 자리의 매듭 안쪽, 아홉 칸으로 나뉜 명부. 가운데 칸의 이름을 지키며 칸을 밟아 기억을 되찾습니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'mk',
+    story: '이야기판 · 차례마다 모두 고르면 넘어가고 서두를 마감이 없습니다. 혼자서도 넉넉히 보낼 수 있고, 물품을 쓰지 않으며 밀려나도 잃는 것이 없습니다.',
+    hard: '깊은 명부 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 봉인 먹줄을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
 };
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
 const COLOR = { 청: 'c-blue', 적: 'c-red', 황: 'c-yellow', 백: 'c-white' };
@@ -26,6 +28,7 @@ const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머�
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
 const clock = serverClock();
 const bossOf = () => BOSS[snap?.boss] || BOSS[lobbyBoss] || BOSS.gwiheo;
+const story = () => snap?.mode === 'story';
 const PHASE = new Proxy({}, { get: (_, k) => bossOf().PHASE[k] });
 
 export async function render(root, sub) {
@@ -72,7 +75,7 @@ function plan() {
   if (f.status === 'wait') wait = Math.min(3000, Math.max(400, new Date(f.start_at) - now() + 300));
   else {
     const toEnd = new Date(f.round_ends_at) - now() + 350;
-    wait = snap.my_act ? Math.min(2000, Math.max(400, toEnd)) : Math.max(400, toEnd);
+    wait = snap.my_act ? Math.min(2000, Math.max(400, toEnd)) : Math.max(400, story() ? Math.min(5000, toEnd) : toEnd);
   }
   timer = setTimeout(refresh, wait);
 }
@@ -99,13 +102,13 @@ function roundBand(s) {
   const myAct = s.my_act ? actName(s, s.my_act) : null;
   return `<div class="gw-band ${gim ? 'gim' : ''} ${mech.aoe ? 'aoe' : ''}">
     <div class="gw-band-top"><span class="gw-round">${f.round}라운드</span>${gim ? chip('수법', 'bad') : mech.aoe ? chip('기를 모음', 'warn') : ''}${mech.mimic ? chip(mech.stuck ? `${MIMIC[mech.mimic]} · 멈추지 않는 붓` : MIMIC[mech.mimic], mech.mimic === 'hesit' ? 'good' : 'warn') : ''}
-      <span class="gw-band-time">${icon('hourglass', 13)}<b data-until="${esc(f.round_ends_at)}" data-sec="1">…</b></span>
+      ${story() ? '' : `<span class="gw-band-time">${icon('hourglass', 13)}<b data-until="${esc(f.round_ends_at)}" data-sec="1">…</b></span>`}
       <span class="gw-chosen muted small">고른 사람 ${chosen}/${alive}</span></div>
-    <div class="bar gw-round-bar"><span></span></div>
+    ${story() ? `<p class="muted small gw-calm">${alive > 1 ? '모두 고르면 다음 라운드로 넘어갑니다 · 1분 안에 안 고르면 방어' : '고르면 다음 라운드로 넘어갑니다 · 마감 없음'}</p>` : '<div class="bar gw-round-bar"><span></span></div>'}
     <p class="gw-tell ${tellSize(mech.tell)}">${esc(mech.tell || bossOf().calm)}</p>
     ${mech.k === 'chain' ? `<p class="small">내 손목의 사슬 · <b class="${COLOR[mech.mine] || ''}">${esc(mech.mine || '없음')}</b></p>` : ''}
     ${fxKeys(f.bfx).length ? `<div class="chips raid-bfx">${fxChips(f.bfx)}</div>` : ''}
-    <p class="gw-mine">${myAct ? `${icon('check', 13)} 이번 라운드: <b>${esc(myAct)}</b> · 마감 전에는 바꿀 수 있습니다` : `${icon('bell', 13)} 아직 고르지 않았습니다 — 고르지 않으면 방어합니다`}</p>
+    <p class="gw-mine">${myAct ? `${icon('check', 13)} 이번 라운드: <b>${esc(myAct)}</b>${story() ? '' : ' · 마감 전에는 바꿀 수 있습니다'}` : `${icon('bell', 13)} 아직 고르지 않았습니다${story() && alive === 1 ? '' : ' — 고르지 않으면 방어합니다'}`}</p>
   </div>`;
 }
 function actName(s, a) {
@@ -129,13 +132,13 @@ function draw() {
   const top = mobileLog() && !done, restoreLog = keepLogScroll(el, top);
   const B = bossOf(), mk = s.boss === 'mukjeok';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p>
-      <h1>${B.name} <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
+      <h1>${B.name}${mk ? ` ${chip(story() ? '이야기판' : '깊은 명부', story() ? 'good' : 'bad')}` : ''} <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
       <div class="head-actions">${mk && s.board && f.status !== 'wait' ? chip(`빛나는 칸 ${(s.board.lit || []).length}/8 · 이름 획 ${s.board.strokes}/${s.board.max}`, s.board.strokes <= 3 ? 'bad' : 'good') : ''}${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
     ${done ? resultHtml(f, s) : ''}
     <div class="raid-wrap pf-wrap gw-wrap ${mk ? 'mk' : ''} ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
       <section class="panel raid-boss"><div class="panel-body">
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
-            ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기 · ${esc(itemName())} 1개</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
+            ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기${story() ? '' : ` · ${esc(itemName())} 1개`}</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
         ${mk && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${boardHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
       </div></section>
@@ -222,7 +225,7 @@ function resultHtml(f, s) {
   const won = f.status === 'won';
   const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
   return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 ? Math.min(mine.falls || 0, s.falls_cap || 10) : mine.falls}` : ''}</p>
-    <p class="small">${won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
+    <p class="small">${story() ? (won ? '보상은 알림으로 보냈습니다(처음 보낼 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw${s.boss === 'mukjeok' ? '/mukjeok' : ''}">처음으로</a>`)}</div></section>`;
 }
 
@@ -234,13 +237,17 @@ function drawLobby(s) {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p><h1>${B.name}</h1></div></div>
     <section class="panel"><div class="panel-body">
       <p class="desc">${B.desc}</p>
-      <p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p>
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
-      ${s.can_open ? `<button class="btn primary" id="gw-open">${icon('sword', 16)}<span>${B.open}</span></button><p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>`
-        : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}
+      ${s.story ? `<div class="gw-mode"><p class="small">${B.story}</p><p class="small muted">보낸 횟수 ${s.story.kills}번</p>
+        ${s.story.can_open ? `<button class="btn primary" id="gw-open-story">${icon('sword', 16)}<span>이야기판에 서기</span></button>` : `<p class="hint">${icon('pin', 14)} ${esc(s.story.why || '지금은 설 수 없습니다.')}</p>`}</div>` : ''}
+      <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p>
+      ${s.can_open ? `<button class="btn ${s.story ? '' : 'primary'}" id="gw-open">${icon('sword', 16)}<span>${s.story ? '깊은 명부에 서기' : B.open}</span></button>`
+        : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}</div>
+      <p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>
       ${s.last ? `<a class="btn small ghost" href="#/gw/${esc(s.last)}">${icon('scroll', 15)}<span>지난 도전 기록 보기</span></a>` : ''}
     </div></section>${tipsHtml(s.tips)}`;
   const o = $('#gw-open', el); if (o) o.onclick = async () => { if (!(await askPartySize(B.ask, await partyHere()))) return; run(o, () => rpc('world_gw_open', s.boss && s.boss !== 'gwiheo' ? { p_boss: s.boss } : {})); };
+  const so = $('#gw-open-story', el); if (so) so.onclick = () => run(so, () => rpc('world_gw_open', { p_boss: s.boss, p_mode: 'story' }));
   const j = $('#gw-join-inv', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: s.invite }));
 }
 
