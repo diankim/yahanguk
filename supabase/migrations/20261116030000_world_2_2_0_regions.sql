@@ -50,9 +50,9 @@ select c.owner_id, gs.spot_id from public.world_characters c
   cross join public.world_gathering_spots gs join public.world_exploration_nodes n on n.node_id = gs.node_id and n.hierarchy_level = 1 and n.region_id in ('lotus_sewer', 'ledger_cellar', 'frost_pine_pass', 'old_glacier', 'patrol_office', 'blood_dunes', 'sleeping_port')
 on conflict do nothing;
 create temp table yh_lvshift(region_id text primary key, d int) on commit drop;
-insert into yh_lvshift values ('cloud_corridor', 7), ('red_plain', -1);
+insert into yh_lvshift values ('cloud_corridor', 7), ('red_plain', -1), ('red_forest', 6);
 create temp table yh_lvkeep(quest_id text primary key) on commit drop;
-insert into yh_lvkeep select jsonb_array_elements_text($J$[]$J$::jsonb);
+insert into yh_lvkeep select jsonb_array_elements_text($J$["cq110_bat_3"]$J$::jsonb);
 update public.world_map_regions r set min_level = r.min_level + x.d from yh_lvshift x where x.region_id = r.region_id;
 update public.world_exploration_nodes n set min_level = greatest(1, least(45, n.min_level + x.d)) from yh_lvshift x where x.region_id = n.region_id;
 update public.world_gathering_spots g set min_level = greatest(1, least(45, g.min_level + x.d))
@@ -71,22 +71,77 @@ update public.world_quest_steps s set reward = s.reward
    and q.quest_id not in (select quest_id from yh_lvkeep);
 update public.world_quests q set min_level = greatest(1, least(45, q.min_level + x.d)) from yh_lvshift x where x.region_id = q.region_id and q.kind = 'side'
    and q.quest_id not in (select quest_id from yh_lvkeep);
+create or replace function pg_temp.yh_line_fix(p_kind text, p_key text, p_step int, p_old text, p_new text) returns void language plpgsql as $f$
+declare n int;
+begin
+  if p_kind = 'quest' then
+    update public.world_quest_steps s set lines = (select jsonb_agg(case when position(p_old in e->>'t') > 0 then jsonb_set(e, '{t}', to_jsonb(replace(e->>'t', p_old, p_new))) else e end order by o)
+      from jsonb_array_elements(s.lines) with ordinality t(e, o)) where s.quest_id = p_key and s.step = p_step and position(p_old in s.lines::text) > 0;
+  end if;
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 줄을 못 찾음: % % %', p_key, p_step, p_old; end if;
+end $f$;
+
+select pg_temp.yh_line_fix('quest', 'cq110_bat_2', 4, $T$웬 붉은 뿔 사슴이 와서 덥석 물고 혈엽림 쪽으로 뛰어가던데.$T$, $T$웬 잿빛 갈매기가 날아와서 덥석 물고 재의 해안 쪽으로 날아가던데.$T$);
+select pg_temp.yh_line_fix('quest', 'cq110_bat_2', 4, $T$사슴? 사슴이 뚝딱이로 뭐 하게!$T$, $T$갈매기? 갈매기가 뚝딱이로 뭐 하게!$T$);
+select pg_temp.yh_line_fix('quest', 'cq110_bat_2', 4, $T$나야 모르지. 사슴이 금이 필요하겠나$T$, $T$나야 모르지. 갈매기가 금이 필요하겠나$T$);
+select pg_temp.yh_line_fix('quest', 'cq110_bat_2', 4, $T$방울은 젖은 옷을 짜며 혈엽림 쪽을 노려보았다.$T$, $T$방울은 젖은 옷을 짜며 재의 해안 쪽을 노려보았다.$T$);
+select pg_temp.yh_line_fix('quest', 'cq110_bat_2', 4, $T$조사원, 혈엽림은 붉은 잎이 무성해서 길 잃기 쉬운 곳이야.$T$, $T$조사원, 재의 해안은 잿바람이 거세서 눈 뜨기 어려운 곳이야.$T$);
+select pg_temp.yh_line_fix('quest', 'cq110_bat_4', 1, $T$혈엽림에서 내가 서 푼에 넘긴 그 방망이$T$, $T$재의 해안에서 내가 서 푼에 넘긴 그 방망이$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 2, $T$남녘 종은 혈엽림 너머에 있었어요. 있었다고 하는 건, 지금은 없어서예요.$T$, $T$남녘 종은 주혈 광산 깊은 갱도에 매달려 있었어요. 있었다고 하는 건, 지금은 없어서예요.$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 2, $T$끌고 갔어요. 땅 밑으로. 혈엽림에 끌린 자국이 남았대요. 그 숲 귀신들이 종소리를 듣고 미쳐 버렸다고 해요.$T$, $T$끌고 갔어요. 더 깊은 땅 밑으로. 갱도 바닥에 끌린 자국이 남았대요. 그 갱도에서 죽은 광부들의 넋이 종소리를 듣고 미쳐 버렸다고 해요.$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 2, $T$혈엽림에 가서 미쳐 날뛰는 혈엽수인 셋만 잠재워 주세요. 그래야 끌린 자국을 따라가 볼 수 있어요. 저는 여기서 기다릴게요.$T$, $T$주혈 광산에 가서 미쳐 떠도는 갱도 원령 셋만 잠재워 주세요. 그래야 끌린 자국을 따라가 볼 수 있어요. 저는 여기서 기다릴게요.$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 3, $T$쓰러진 혈엽수인의 껍질 속은 텅 비어 있었다. 나뭇결에 새겨져 있던 이름자가 모두 긁혀 나갔다.$T$, $T$쓰러진 갱도 원령이 흩어진 자리에 녹슨 이름패 하나가 떨어졌다. 패에 새겨져 있던 이름자는 모두 긁혀 나가 있었다.$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 3, $T$그 나무들은 저희 조상 이름을 하나씩 달고 있던 나무예요. 이름이 붙어 있는 동안엔 조상 영이 깃든 신목이었죠. 종소리를 듣고 그 이름을 잃은 거예요.$T$, $T$그 넋들은 저희 조상이에요. 남명이 무너질 때 광산을 지키다 묻힌 분들이죠. 이름이 불리는 동안엔 갱도를 지키는 영이었어요. 종소리를 듣고 그 이름을 잃은 거예요.$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 3, $T$이름을 다 잃으면 사람이든 영이든 요괴가 돼요. 그때부턴 아무도 이름으로 안 불러요. 혈엽수인, 그렇게 갈래로만 부르죠.$T$, $T$이름을 다 잃으면 사람이든 영이든 요괴가 돼요. 그때부턴 아무도 이름으로 안 불러요. 갱도 원령, 그렇게 갈래로만 부르죠.$T$);
+select pg_temp.yh_line_fix('quest', 'mq_nameless_bell', 5, $T$「이제 만인장과 혈엽림, 무명 고도에서 단서를 찾아요.$T$, $T$「이제 만인장과 주혈 광산, 무명 고도에서 단서를 찾아요.$T$);
+do $c$ declare n int; begin
+  update public.world_quest_steps set need = $J${"at":["ember_village"],"tasks":[{"m":["x_crimson_mine_2"],"n":3,"t":"win"}]}$J$::jsonb where quest_id = 'mq_nameless_bell' and step = 3 and need::text like '%"m_21"%';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 할 일을 못 찾음: mq_nameless_bell 3'; end if;
+end $c$;
+do $c$ declare n int; begin
+  update public.world_story_chapters set summary = replace(summary, $T$혈엽림의 핏빛 단풍 아래에도 종을 매달았던 쇠사슬이$T$, $T$주혈 광산의 붉은 갱도 안에도 종을 매달았던 쇠사슬이$T$), intro = replace(intro, $T$혈엽림의 핏빛 단풍 아래에도 종을 매달았던 쇠사슬이$T$, $T$주혈 광산의 붉은 갱도 안에도 종을 매달았던 쇠사슬이$T$), outro = replace(outro, $T$혈엽림의 핏빛 단풍 아래에도 종을 매달았던 쇠사슬이$T$, $T$주혈 광산의 붉은 갱도 안에도 종을 매달았던 쇠사슬이$T$)
+   where chapter_id = 'nameless_bell' and position($T$혈엽림의 핏빛 단풍 아래에도 종을 매달았던 쇠사슬이$T$ in coalesce(summary, '') || coalesce(intro, '') || coalesce(outro, '')) > 0;
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 장 소개를 못 찾음: nameless_bell'; end if;
+end $c$;
+update public.world_story_clues set name = $T$갱도 속의 쇠사슬$T$, region_id = 'crimson_mine' where clue_id = 'bell_chain';
+update public.world_quests set region_id = 'ash_coast', title = $T$방망이 문 갈매기$T$, summary = $T$재의 해안 재갈매기가 방망이를 물고 달아났다$T$ where quest_id = 'cq110_bat_3';
+update public.world_quest_steps set title = $T$날개에 걸린 것$T$, goal = $T$날개에 걸린 것$T$, need = $J${"at":["ash_coast"]}$J$::jsonb, lines = $J$[{"s":null,"t":"재의 해안 모래톱 위, 난파선 그늘에 꽃님의 수레가 서 있었다. 방울은 꽃님의 치맛자락 뒤에 숨어 하늘을 힐끔거렸다."},{"s":null,"t":"꽃님이 잿바람에 날리는 머릿수건을 붙잡으며 나를 돌아보았다."},{"s":"q:sx_kkotnim","t":"수경루에서 고생했네. 광부 말대로 그 갈매기들이 이 해안에 둥지를 틀었더라. 어부들 말로는 요새 쇠테 두른 몽둥이를 물고 다니는 놈이 있대."},{"s":null,"t":"방울이 꽃님 뒤에서 고개를 쑥 내밀었다. 두 볼이 잔뜩 부풀어 있었다."},{"s":"q:sx_bangul","t":"뚝딱이를 물고 다닌다고? 내 뚝딱이가 갈매기 장난감이 됐다고?"},{"s":null,"t":"꽃님이 하늘을 가리켰다. 잿빛 날개가 해를 가릴 만큼 몰려 있었다."},{"s":"q:sx_kkotnim","t":"그놈이 방망이를 떨어뜨릴 때마다 「뚝딱」 소리가 나고, 그때마다 하늘에서 재가 쏟아진다더라. 「재 나와라」인 셈이지."},{"s":null,"t":"방울이 주먹을 꼭 쥐고 하늘을 노려보았다."},{"s":"q:sx_bangul","t":"흥, 갈매기 따위. 내가 부리 대 뿔로 붙어 줄게."},{"s":null,"t":"그때 갈매기 떼가 한꺼번에 울며 모래톱으로 내려앉았다. 방울은 다시 꽃님 뒤로 쏙 들어갔다."},{"s":"q:sx_bangul","t":"……저건 부리가 너무 많잖아. 반칙이야."},{"s":null,"t":"꽃님이 방울의 머리를 쓰다듬으며 나에게 고개를 끄덕였다."},{"s":"q:sx_kkotnim","t":"조사원, 재갈매기 떼부터 쫓아 주게. 그 무리 속에 방망이 문 놈이 있을 게다."}]$J$::jsonb where quest_id = 'cq110_bat_3' and step = 1;
+update public.world_quest_steps set title = $T$판자가 삼킨 방망이$T$, goal = $T$재갈매기 떼를 물리친다$T$, need = $J${"at":["ash_coast"],"tasks":[{"m":["g_ash_coast"],"n":3,"t":"win"}]}$J$::jsonb, lines = $J$[{"s":null,"t":"갈매기 떼가 흩어지는 사이, 부리에 무언가를 문 한 마리가 난파선 쪽으로 날아갔다. 쫓아가 보니 갈매기는 부서진 갑판 위에서 날개를 퍼덕이고 있었다."},{"s":null,"t":"갈매기가 달아난 뒤, 갑판 판자 틈에 쇠테 두른 방망이 끝이 조금 삐져나와 있었다. 방망이가 판자 사이에 단단히 끼어 있었다."},{"s":null,"t":"방울이 갑판 위로 기어 올라가 방망이 끝에 두 손을 뻗었다."},{"s":"q:sx_bangul","t":"뚝딱이! 뚝딱아! 내가 왔어!"},{"s":null,"t":"방울이 방망이 끝을 잡고 힘껏 당겼다. 방망이는 꿈쩍도 하지 않았고, 방울만 엉덩방아를 찧었다."},{"s":null,"t":"꽃님이 갑판 판자를 손가락으로 두드려 보더니 고개를 저었다."},{"s":"q:sx_kkotnim","t":"바닷물에 불은 판자라 방망이를 꽉 물고 있구먼. 억지로 빼다간 방망이가 부러져."},{"s":"q:sx_kkotnim","t":"판자 틈을 벌리면 저절로 빠질 게다. 조사원, 지렛대로 쓸 부적목 세 토막만 구해 주게. 해안 숲에 쓰러진 나무가 많더라."}]$J$::jsonb where quest_id = 'cq110_bat_3' and step = 2;
+update public.world_quest_steps set title = $T$너무 기뻐서 잠이 안 와$T$, goal = $T$부적목을 모은다$T$, need = $J${"at":["ash_coast"],"tasks":[{"n":3,"r":["ash_coast"],"t":"gather","items":["wood"]}]}$J$::jsonb, lines = $J$[{"s":null,"t":"나는 부적목을 판자 틈에 끼워 힘껏 눌렀다. 판자가 삐걱 벌어지자 방망이가 툭 떨어졌다. 방울은 방망이를 끌어안고 한참 동안 얼굴을 묻었다."},{"s":"q:sx_bangul","t":"안 울어. 이건…… 재가 눈에 들어간 거야."},{"s":null,"t":"꽃님이 웃음을 참으며 방울의 등을 토닥였다."},{"s":"q:sx_kkotnim","t":"그래그래. 재가 아주 콸콸 들어가는구나."},{"s":null,"t":"그날 밤, 방울은 방망이를 안고 누웠지만 잠들지 못했다. 파도 소리만 나도 벌떡 일어나 방망이를 휘둘렀다."},{"s":"q:sx_bangul","t":"누구야! 또 뚝딱이 가져가려는 거지!"},{"s":null,"t":"평상에 누운 꽃님이 이불을 머리끝까지 끌어올렸다."},{"s":"q:sx_kkotnim","t":"파도다, 이 녀석아. 벌써 열 번째야. 너 때문에 나도 한숨도 못 잤어."},{"s":"q:sx_kkotnim","t":"조사원, 안신탕 두 그릇만 끓여 주게. 하나는 이 녀석, 하나는 나. 이대로 가면 날이 새기 전에 내가 먼저 도깨비가 되겠어."}]$J$::jsonb where quest_id = 'cq110_bat_3' and step = 3;
+update public.world_quest_steps set title = $T$장작 값$T$, goal = $T$안신탕을(를) 만든다, 안신탕을(를) 넘긴다$T$, need = $J${"at":["ash_coast"],"give":{"calm_brew":2},"tasks":[{"n":2,"t":"craft","items":["calm_brew"]}]}$J$::jsonb, lines = $J$[{"s":null,"t":"안신탕을 마신 방울은 방망이를 꼭 안은 채 곯아떨어졌다. 꽃님도 평상에 기대어 꾸벅꾸벅 졸았다."},{"s":null,"t":"이튿날 아침, 방울의 비명이 해안을 울렸다. 품 안의 방망이가 사라지고 없었다."},{"s":"q:sx_bangul","t":"뚝딱이 또 없어! 이번엔 누구야!"},{"s":null,"t":"꽃님이 부스스 일어나 앉더니 머리를 긁적였다."},{"s":"q:sx_kkotnim","t":"……아이고. 그거 혹시 나 아닌가 모르겠다."},{"s":"q:sx_kkotnim","t":"새벽에 웬 장사치가 와서 「벼락 맞은 나무 사러 다닌다」면서 저 몽둥이 얼마냐고 묻길래, 졸린 김에 장작인 줄 알고 서 푼에 넘겼지 뭐야."},{"s":null,"t":"방울이 모래를 발로 차며 동동 굴렀다."},{"s":"q:sx_bangul","t":"서 푼? 할아버지 뚝딱이가 서 푼이라고?"},{"s":null,"t":"꽃님이 두 손을 모아 싹싹 빌었다."},{"s":"q:sx_kkotnim","t":"내가 잘못했다, 잘못했어. 그 장사치가 뇌명봉으로 간다더라. 벼락 맞은 나무가 거기서 제일 값나간다고."},{"s":null,"t":"방울은 입술을 삐죽 내밀고 꽃님을 노려보다가, 그래도 꽃님의 소매를 놓지 않았다. 나는 뇌명봉으로 가는 길을 짚어 보았다."}]$J$::jsonb where quest_id = 'cq110_bat_3' and step = 4;
+update public.world_faction_scenes f set lines = (select jsonb_agg(e order by o) from jsonb_array_elements(f.lines) with ordinality t(e, o) where position($T$다음은 혈엽림이야.$T$ in e->>'t') = 0)
+  || $J$[{"s":null,"t":"갈매가 화톳불 곁에 쪼그려 앉아 손가락으로 재 위에 갱도 그림을 그렸다."},{"s":"southern_remnant:galmae","t":"다음은 주혈 광산이야. 평판 팔백 되면 가. 옛날에 뭔가를 매달았던 쇠사슬이 갱도 어귀에 묻혀 있대. 지키는 놈들 다섯을 치우고, 두 번 채집해서 파내. 누가 파 가기 전에."}]$J$::jsonb where f.scene_key = 'southern_remnant:rank:2' and position($T$다음은 혈엽림이야.$T$ in f.lines::text) > 0;
+update public.world_faction_scenes set title = $T$주혈 광산의 쇠사슬$T$, goal = $T$주혈 광산에서 토벌 승리 5회 · 채집 2회$T$, need = $J${"tasks":[{"n":5,"r":["crimson_mine"],"t":"win"},{"n":2,"r":["crimson_mine"],"t":"gather"}]}$J$::jsonb, lines = $J$[{"s":null,"t":"갱도에서 돌아오자 갈매가 잔불촌 어귀까지 마중 나와 있었다. 갈매는 내 손에 묻은 붉은 돌가루부터 살폈다."},{"s":"southern_remnant:galmae","t":"사슬, 파냈어? …그래서, 끝에 뭐가 달려 있었는데."},{"s":null,"t":"사슬 끝에는 아무것도 없었다. 매달려 있던 것은 이미 누군가 가져갔다."},{"s":null,"t":"「횃불」로 올랐다."},{"s":null,"t":"갈매가 한동안 말없이 사슬을 내려다보다가 목소리를 낮추었다."},{"s":"southern_remnant:galmae","t":"장군님 부탁이야. 평판 천육백 되면 주혈 광산 원정을 끝까지 다녀와 줘. 이번엔 사슬이 묻혀 있던 데보다 훨씬 깊은 갱도야. 광산에서 망자들이 일어났대. 우리 병사들이래."}]$J$::jsonb where scene_key = 'southern_remnant:rank:3';
+do $c$ begin
+  if exists (select 1 from public.world_quest_steps where quest_id in ('cq110_bat_2', 'cq110_bat_3', 'cq110_bat_4') and (lines::text || need::text) ~ '(혈엽림|red_forest|사슴)')
+     or exists (select 1 from public.world_quest_steps where quest_id = 'mq_nameless_bell' and (lines::text || need::text) ~ '(혈엽림|혈엽수인|red_forest|"m_21")')
+     or exists (select 1 from public.world_story_chapters where chapter_id = 'nameless_bell' and (coalesce(summary, '') || coalesce(intro, '') || coalesce(outro, '')) ~ '혈엽림')
+     or exists (select 1 from public.world_story_clues where clue_id = 'bell_chain' and (region_id = 'red_forest' or name ~ '단풍'))
+     or exists (select 1 from public.world_quests where quest_id = 'cq110_bat_3' and (region_id || title || summary) ~ '(혈엽림|red_forest)')
+     or exists (select 1 from public.world_faction_scenes where scene_key in ('southern_remnant:rank:2', 'southern_remnant:rank:3') and (lines::text || title || goal || need::text) ~ '(혈엽림|red_forest)') then
+    raise exception '옮긴 퀘스트에 혈엽림이 남음';
+  end if;
+end $c$;
+
 do $c$ declare bad text; begin
   select string_agg(distinct x.k, ', ') into bad from (
     select 'quest ' || q.quest_id k from public.world_quests q join public.world_quest_steps s using (quest_id)
-      join public.world_map_regions r on r.region_id in (select jsonb_array_elements_text($J$["cloud_corridor"]$J$::jsonb))
+      join public.world_map_regions r on r.region_id in (select jsonb_array_elements_text($J$["cloud_corridor","red_forest"]$J$::jsonb))
      where (q.kind = 'main' or q.quest_id ~ '^(jq|aq)') and q.min_level < r.min_level
        and (s.need::text like '%"' || r.region_id || '"%'
             or exists (select 1 from public.world_region_monsters m where m.region_id = r.region_id and s.need::text like '%"' || m.monster_id || '"%'))
     union all
     select 'scene ' || f.scene_key from public.world_faction_scenes f
-      join public.world_map_regions r on r.region_id in (select jsonb_array_elements_text($J$["cloud_corridor"]$J$::jsonb))
+      join public.world_map_regions r on r.region_id in (select jsonb_array_elements_text($J$["cloud_corridor","red_forest"]$J$::jsonb))
      where f.min_level < r.min_level
        and (f.need::text like '%"' || r.region_id || '"%'
             or exists (select 1 from public.world_region_monsters m where m.region_id = r.region_id and f.need::text like '%"' || m.monster_id || '"%'))
     union all
     select 'clue ' || c.clue_id from public.world_story_clues c join public.world_story_chapters ch on ch.chapter_id = c.chapter_id
-     where c.region_id in (select jsonb_array_elements_text($J$["cloud_corridor"]$J$::jsonb)) and ch.min_level < (select r.min_level from public.world_map_regions r where r.region_id = c.region_id)) x;
+     where c.region_id in (select jsonb_array_elements_text($J$["cloud_corridor","red_forest"]$J$::jsonb)) and ch.min_level < (select r.min_level from public.world_map_regions r where r.region_id = c.region_id)) x;
   if bad is not null then raise exception '레벨을 올린 지역을 더 낮은 레벨의 주 이야기·직업·세력 장면이 씀: %', bad; end if;
 end $c$;
 
@@ -113,6 +168,8 @@ insert into public.world_patch_notes(note_id, title, body) values ('2.2.0', '2.2
 ## 레벨이 바뀐 지역
 - 「구름 위 회랑」(천명원) Lv16 → Lv23. 답사 지점·채집터·원정지·요괴와 그 지역 보조 퀘스트가 같은 만큼 오릅니다.
 - 「적사 황무지」(적월교) Lv6 → Lv5. 답사 지점·채집터·원정지·요괴와 그 지역 보조 퀘스트가 같은 만큼 내려갑니다.
+- 「혈엽림」(남명회) Lv12 → Lv18. 답사 지점·채집터·원정지·요괴와 그 지역 보조 퀘스트가 같은 만큼 오릅니다.
+- 그래서 주 이야기 5장 「이름 없는 종」의 무대 한 곳이 주혈 광산으로 바뀝니다(갱도 원령 셋 잠재우기, 단서 「갱도 속의 쇠사슬」). 남명회 3등급 퀘스트는 주혈 광산에서, 연계 「방망이 든 사슴」은 「방망이 문 갈매기」로 재의 해안에서 이어집니다. 레벨 조건은 그대로입니다.
 
 ## 지역마다
 - 답사 지점·채집터·요괴 다섯·원정지 셋·조사 지점 셋·처음 방문 글·보조 퀘스트 하나가 있습니다.

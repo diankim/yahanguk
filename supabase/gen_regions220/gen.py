@@ -237,6 +237,21 @@ def relocate():
     w(open(os.path.join(HERE, 'line_fix.sql')).read())
     for kind, key, step, old, new in RL.LINE_FIX:
         w(f"select pg_temp.yh_line_fix('{kind}', '{key}', {step}, {T(old)}, {T(new)});")
+    for qid, st, need in RL.STEP_NEED:
+        w(f"""do $c$ declare n int; begin
+  update public.world_quest_steps set need = {J(need)} where quest_id = '{qid}' and step = {st} and need::text like '%"m_21"%';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 할 일을 못 찾음: {qid} {st}'; end if;
+end $c$;""")
+    for cid, old, new in RL.CHAPTER_FIX:
+        w(f"""do $c$ declare n int; begin
+  update public.world_story_chapters set summary = replace(summary, {T(old)}, {T(new)}), intro = replace(intro, {T(old)}, {T(new)}), outro = replace(outro, {T(old)}, {T(new)})
+   where chapter_id = '{cid}' and position({T(old)} in coalesce(summary, '') || coalesce(intro, '') || coalesce(outro, '')) > 0;
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 장 소개를 못 찾음: {cid}'; end if;
+end $c$;""")
+    for cid, name, rid in RL.CLUE_FIX:
+        w(f"update public.world_story_clues set name = {T(name)}, region_id = '{rid}' where clue_id = '{cid}';")
     for qid, q in RL.QUESTS.items():
         w(f"update public.world_quests set region_id = '{q['region']}', title = {T(q['title'])}, summary = {T(q['summary'])} where quest_id = '{qid}';")
         for st, (title, goal, need, ls) in q['steps'].items():

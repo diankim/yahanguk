@@ -248,5 +248,5 @@ MOVES = [
     dict(region='white_tower', d=3, apply=False, keep=[], why='주 이야기 mq_nine_gates·직업 퀘스트 jq2_scout(Lv18)·세력 등급 mandate_court:rank:4(min 20)가 씀 — 사용자 결정: 그대로'),
     dict(region='cloud_corridor', d=7, apply=True, keep=[], why='천명원 21~29(보조 rq_cloud_corridor·sq110_s_bomi만 씀, 함께 옮김)'),
     dict(region='red_plain', d=-1, apply=True, keep=[], why='적월 1~5(내리는 쪽이라 주 이야기·가입 퀘스트를 막지 않음)'),
-    dict(region='red_forest', d=6, apply=False, keep=['cq110_bat_3'], relocate=True, why='남명 16~20 — 주 이야기 5장 mq_nameless_bell(Lv15) 3장면이 혈엽수인(m_21)을 잡고 단서 bell_chain이 혈엽림에 있어 보류'),
+    dict(region='red_forest', d=6, apply=True, keep=['cq110_bat_3'], relocate=True, why='남명 16~20 — 남명 3등급·cq110_bat_3·주 이야기 5장(mq_nameless_bell 갱도 원령·단서 bell_chain)을 주혈 광산·재의 해안으로 옮김(사용자 결정)'),
 ]
