@@ -781,8 +781,8 @@ begin
   end if;
   if p_action = 'call' and p_target is null then raise exception '이름을 부를 사람을 고르세요.'; end if;
   if p_action = 'item' then
-    if coalesce(public.world_item_base(coalesce(p_item, '')), '') not in ('tonic', 'herbal_extract', 'rejuv_pill', 'grand_pill', 'banyo_salve') then
-      raise exception '%과(와) 싸우는 동안에는 체력 회복품(청심환·약초액·회춘단·대환단·반요 고약)만 쓸 수 있습니다.', public.world_boss_rules() -> f.boss_id ->> 'name'; end if;
+    if coalesce(public.world_item_base(coalesce(p_item, '')), '') <> all (public.world_battle_item_ids('gw')) then
+      raise exception '%과(와) 싸우는 동안에는 체력 회복품(%)만 쓸 수 있습니다.', public.world_boss_rules() -> f.boss_id ->> 'name', public.world_battle_item_names('gw'); end if;
     if coalesce(me.items_used, 0) >= 2 then raise exception '이 싸움에서는 회복품을 두 개까지만 쓸 수 있습니다.'; end if;
     select * into c from public.world_characters where owner_id = uid;
     if coalesce((c.inventory ->> p_item)::int, 0) < 1 then raise exception '가방에 그 물품이 없습니다.'; end if;
@@ -852,7 +852,7 @@ begin
         'pos', m.pos, 'bound', f.boss_id = 'mukjeok' and public.world_mk_held(fid, m.owner_id),
         'fx', (select coalesce(jsonb_agg(kk), '[]'::jsonb) from jsonb_object_keys(coalesce(m.fx, '{}'::jsonb)) kk)) order by m.joined_at), '[]'::jsonb) from public.world_gw_members m where m.fight_id = fid),
     'my_act', me.act, 'joined', me.owner_id is not null, 'sp', c.spiritual_power,
-    'items', (select coalesce(jsonb_object_agg(k, (c.inventory ->> k)::int), '{}'::jsonb) from unnest(array['tonic', 'tonic_hq', 'herbal_extract', 'rejuv_pill', 'rejuv_pill_hq', 'grand_pill', 'grand_pill_hq', 'banyo_salve']) k
+    'items', (select coalesce(jsonb_object_agg(k, (c.inventory ->> k)::int), '{}'::jsonb) from unnest(public.world_battle_item_have('gw')) k
         where coalesce((c.inventory ->> k)::int, 0) > 0),
     'items_left', greatest(0, 2 - coalesce(me.items_used, 0)),
     'falls_cap', 10 + coalesce((select max((x.stats ->> 'solo_falls')::int) from public.world_gw_members x where x.fight_id = fid), 0),

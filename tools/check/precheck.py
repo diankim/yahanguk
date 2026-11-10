@@ -14,6 +14,9 @@ ACCOUNT_TABLES = {
     'world_gwiryeong_plants', 'world_case_state', 'world_party_loot_pool',
 }
 UNUSED_OK = {'pet_token'}
+HQ_OK_JS = {'QS_DEFAULT'}
+HQ_OK_FN = {'world_case_combine_regional'}
+HQ_HELPERS = re.compile(r'\b(withHq|haveOf|hqCount|bothOf|hqOf|baseOf|pairOf)\(')
 UNMUTABLE_NOTES = {'bug_reply', 'bug_report', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'outfit_removed', 'guide'}
 ANON_OK = {'world_app_version'}
 NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js'}
@@ -39,6 +42,11 @@ where (i.category = 'material' or exists (select 1 from public.world_fish_specie
     'tool_gaps': """select coalesce(json_agg(line order by line), '[]') from (select l.line, min(c.tier) lo, max(c.tier) hi, count(distinct c.tier) n
   from public.world_tool_lines l join public.world_item_catalog c on c.item_id = l.item_id group by l.line) x where n < hi - lo + 1""",
     'bait': """select coalesce(json_agg(t order by t), '[]') from (select t from public.world_fish_species s, unnest(s.bait_for) t group by t having count(*) < 3) x""",
+    'hq_ids': """select coalesce(json_agg(distinct base_item_id), '[]') from public.world_item_catalog where base_item_id is not null""",
+    'hq_read': """with hq as (select distinct base_item_id b from public.world_item_catalog where base_item_id is not null)
+select coalesce(json_agg(json_build_array(proname, ids) order by proname), '[]') from (select p.proname, string_agg(distinct hq.b, ',') ids from pg_proc p join pg_namespace n on n.oid = p.pronamespace and nspname = 'public'
+  join hq on p.prosrc ~ ('(->>|->|\\?)\\s*''' || hq.b || '''')
+  where p.proname like 'world\\_%' and p.prosrc not like '%world_item_base%' and p.prosrc not like '%\\_hq%' group by p.proname) x""",
     'search_path': """select coalesce(json_agg(proname order by proname), '[]') from pg_proc p join pg_namespace n on n.oid = p.pronamespace and nspname = 'public'
 where prosecdef and proname like 'world\\_%' and not exists (select 1 from unnest(coalesce(proconfig, '{}')) c where c like 'search_path=%')""",
 }
@@ -101,6 +109,24 @@ def db_checks(run):
         out.append(('도구 사슬', l, 'world_tool_lines 단계가 중간에 빠짐'))
     for t in json.loads(run(SQL['bait'])):
         out.append(('명어 미끼', t, '미끼가 되는 물고기가 셋보다 적음'))
+    for f, ids in json.loads(run(SQL['hq_read'])):
+        if f not in HQ_OK_FN:
+            out.append(('우수품', f, f'가방에서 {ids}을(를) 이름으로 읽는데 우수품 처리(world_item_base·_hq)가 없음'))
+    hq = set(json.loads(run(SQL['hq_ids'])))
+    for p in js_files():
+        rel = p.relative_to(ROOT).as_posix()
+        text = p.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            for m in re.finditer(r"\[([^\[\]]*)\]", line):
+                ids = re.findall(r"'([a-z][a-z0-9_]*)'", m.group(1))
+                if sum(1 for x in ids if x in hq) < 2:
+                    continue
+                name = re.search(r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*$', line[:m.start()])
+                if name and name.group(1) in HQ_OK_JS:
+                    continue
+                used = re.search(rf'\b{re.escape(name.group(1))}\b', '\n'.join(l for l in text.splitlines() if HQ_HELPERS.search(l))) if name else HQ_HELPERS.search(line)
+                if not used:
+                    out.append(('우수품', f'{rel}:{i}', '우수품이 있는 물품 목록인데 hq.js(withHq·haveOf·hqCount·baseOf …)를 거치지 않음'))
     for f in json.loads(run(SQL['search_path'])):
         out.append(('권한', f, 'security definer인데 search_path 고정 없음'))
     return out
