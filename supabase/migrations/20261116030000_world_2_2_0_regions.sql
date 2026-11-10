@@ -49,6 +49,47 @@ insert into public.world_gathering_discoveries(owner_id, spot_id)
 select c.owner_id, gs.spot_id from public.world_characters c
   cross join public.world_gathering_spots gs join public.world_exploration_nodes n on n.node_id = gs.node_id and n.hierarchy_level = 1 and n.region_id in ('lotus_sewer', 'ledger_cellar', 'frost_pine_pass', 'old_glacier', 'patrol_office', 'blood_dunes', 'sleeping_port')
 on conflict do nothing;
+create temp table yh_lvshift(region_id text primary key, d int) on commit drop;
+insert into yh_lvshift values ('cloud_corridor', 7), ('red_plain', -1);
+create temp table yh_lvkeep(quest_id text primary key) on commit drop;
+insert into yh_lvkeep select jsonb_array_elements_text($J$[]$J$::jsonb);
+update public.world_map_regions r set min_level = r.min_level + x.d from yh_lvshift x where x.region_id = r.region_id;
+update public.world_exploration_nodes n set min_level = greatest(1, least(45, n.min_level + x.d)) from yh_lvshift x where x.region_id = n.region_id;
+update public.world_gathering_spots g set min_level = greatest(1, least(45, g.min_level + x.d))
+  from public.world_exploration_nodes n, yh_lvshift x where n.node_id = g.node_id and x.region_id = n.region_id;
+update public.world_expedition_grounds e set min_level = greatest(1, least(45, e.min_level + x.d)) from yh_lvshift x where x.region_id = e.region_id;
+update public.world_region_monsters m set
+    hp = round(m.hp * (70 + (m.min_level + x.d) * 14.0) / (70 + m.min_level * 14.0)),
+    attack_power = round(m.attack_power * (8 + (m.min_level + x.d) * 1.1) / (8 + m.min_level * 1.1)),
+    min_level = m.min_level + x.d, max_level = m.max_level + x.d
+  from yh_lvshift x where x.region_id = m.region_id;
+update public.world_quest_steps s set reward = s.reward
+      || case when s.reward ? 'xp' then jsonb_build_object('xp', round((s.reward ->> 'xp')::numeric * (100 * (q.min_level + x.d) + 12 * (q.min_level + x.d) ^ 2) / (100 * q.min_level + 12 * q.min_level ^ 2))::int) else '{}'::jsonb end
+      || case when s.reward ? 'gil' then jsonb_build_object('gil', round((s.reward ->> 'gil')::numeric * (5 + 4 * (q.min_level + x.d)) / (5 + 4 * q.min_level))::int) else '{}'::jsonb end
+  from public.world_quests q, yh_lvshift x
+ where q.quest_id = s.quest_id and q.region_id = x.region_id and q.kind = 'side' and s.reward is not null and s.reward <> '{}'::jsonb
+   and q.quest_id not in (select quest_id from yh_lvkeep);
+update public.world_quests q set min_level = greatest(1, least(45, q.min_level + x.d)) from yh_lvshift x where x.region_id = q.region_id and q.kind = 'side'
+   and q.quest_id not in (select quest_id from yh_lvkeep);
+do $c$ declare bad text; begin
+  select string_agg(distinct x.k, ', ') into bad from (
+    select 'quest ' || q.quest_id k from public.world_quests q join public.world_quest_steps s using (quest_id)
+      join public.world_map_regions r on r.region_id in (select jsonb_array_elements_text($J$["cloud_corridor"]$J$::jsonb))
+     where (q.kind = 'main' or q.quest_id ~ '^(jq|aq)') and q.min_level < r.min_level
+       and (s.need::text like '%"' || r.region_id || '"%'
+            or exists (select 1 from public.world_region_monsters m where m.region_id = r.region_id and s.need::text like '%"' || m.monster_id || '"%'))
+    union all
+    select 'scene ' || f.scene_key from public.world_faction_scenes f
+      join public.world_map_regions r on r.region_id in (select jsonb_array_elements_text($J$["cloud_corridor"]$J$::jsonb))
+     where f.min_level < r.min_level
+       and (f.need::text like '%"' || r.region_id || '"%'
+            or exists (select 1 from public.world_region_monsters m where m.region_id = r.region_id and f.need::text like '%"' || m.monster_id || '"%'))
+    union all
+    select 'clue ' || c.clue_id from public.world_story_clues c join public.world_story_chapters ch on ch.chapter_id = c.chapter_id
+     where c.region_id in (select jsonb_array_elements_text($J$["cloud_corridor"]$J$::jsonb)) and ch.min_level < (select r.min_level from public.world_map_regions r where r.region_id = c.region_id)) x;
+  if bad is not null then raise exception '레벨을 올린 지역을 더 낮은 레벨의 주 이야기·직업·세력 장면이 씀: %', bad; end if;
+end $c$;
+
 insert into public.world_quest_npcs(npc_key, npc_name, bio)
 select x.npc_key, x.npc_name, x.bio from jsonb_to_recordset($J$[{"npc_key":"q:r220_nodeul","npc_name":"뱃사공 노들","bio":"연등 하수도에서 거룻배를 미는 흑련회 뱃사공. 물길마다 연등을 띄우고 거두는 일을 마흔 해 넘게 했다."},{"npc_key":"q:r220_sodam","npc_name":"장부지기 소담","bio":"흑련 장부고를 지키는 장부지기. 본명은 장부에 맡겨 두었고 「소담」은 회에서 부르는 호칭이다."},{"npc_key":"q:r220_deokbo","npc_name":"숯꾼 덕보","bio":"서리솔 고개 아래 숯막에서 숯을 굽는 북령맹 숯꾼. 고개를 넘는 나무꾼들에게 늘 숯불을 나눠 준다."},{"npc_key":"q:r220_hanseol","npc_name":"빙하지기 한설","bio":"천년 빙하를 도는 북령맹 순찰꾼. 얼음이 녹는 소리만 듣고도 어디가 갈라질지 안다."},{"npc_key":"q:r220_dolsoe","npc_name":"순라군 돌쇠","bio":"옛 순라청의 마지막 순라군. 관청이 문을 닫은 뒤에도 순라 등불을 손질하며 관청 터를 지킨다."},{"npc_key":"q:r220_barami","npc_name":"길잡이 바람이","bio":"적월교를 떠나 핏빛 모래바다의 길잡이가 된 여인. 모래 위 바람결만 보고 길을 찾는다."},{"npc_key":"q:r220_gyewol","npc_name":"선주 계월","bio":"잠든 포구에서 무역선을 부리던 수향연맹 선주 집안의 딸. 아버지의 배가 돌아오기를 기다리며 포구를 떠나지 않는다."}]$J$::jsonb) as x(npc_key text, npc_name text, bio text)
 on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;
@@ -68,6 +109,10 @@ insert into public.world_patch_notes(note_id, title, body) values ('2.2.0', '2.2
 - 「옛 순라청」 Lv12 · 야행국 정통파 — 귀죽림·옛 의금부 옥사·십삼문 암시장과 이어진 옛 관청 터.
 - 「핏빛 모래바다」 Lv17 · 적월교 — 유리협곡·적월 제단터와 이어진 서쪽 끝 모래언덕.
 - 「잠든 포구」 Lv19 · 수향연맹 — 용잠 수궁·만조의 갑문과 이어진 바다 포구. 바다 낚시터가 있습니다.
+
+## 레벨이 바뀐 지역
+- 「구름 위 회랑」(천명원) Lv16 → Lv23. 답사 지점·채집터·원정지·요괴와 그 지역 보조 퀘스트가 같은 만큼 오릅니다.
+- 「적사 황무지」(적월교) Lv6 → Lv5. 답사 지점·채집터·원정지·요괴와 그 지역 보조 퀘스트가 같은 만큼 내려갑니다.
 
 ## 지역마다
 - 답사 지점·채집터·요괴 다섯·원정지 셋·조사 지점 셋·처음 방문 글·보조 퀘스트 하나가 있습니다.

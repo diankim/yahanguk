@@ -9,6 +9,7 @@ import data_quests as Q
 
 J = lambda o: '$J$' + json.dumps(o, ensure_ascii=False, separators=(',', ':')) + '$J$::jsonb'
 U = lambda *k: 'r220/' + '/'.join(k)
+T = lambda s: '$T$' + s + '$T$'
 TA = lambda c: f"array(select jsonb_array_elements_text(x.{c}))"
 out = []
 w = out.append
@@ -228,10 +229,31 @@ select c.owner_id, gs.spot_id from public.world_characters c
 on conflict do nothing;""")
 
 moves = [m for m in D.MOVES if m['apply']]
+GUARD = open(os.path.join(HERE, 'move_guard.sql')).read()
+
+
+def relocate():
+    import data_relocate as RL
+    w(open(os.path.join(HERE, 'line_fix.sql')).read())
+    for kind, key, step, old, new in RL.LINE_FIX:
+        w(f"select pg_temp.yh_line_fix('{kind}', '{key}', {step}, {T(old)}, {T(new)});")
+    for qid, q in RL.QUESTS.items():
+        w(f"update public.world_quests set region_id = '{q['region']}', title = {T(q['title'])}, summary = {T(q['summary'])} where quest_id = '{qid}';")
+        for st, (title, goal, need, ls) in q['steps'].items():
+            w(f"update public.world_quest_steps set title = {T(title)}, goal = {T(goal)}, need = {J(need)}, lines = {J([{'s': a, 't': b} for a, b in ls])} where quest_id = '{qid}' and step = {st};")
+    for key, sc in RL.SCENES.items():
+        if 'drop_tail' in sc:
+            w(f"""update public.world_faction_scenes f set lines = (select jsonb_agg(e order by o) from jsonb_array_elements(f.lines) with ordinality t(e, o) where position({T(sc['drop_tail'])} in e->>'t') = 0)
+  || {J([{'s': a, 't': b} for a, b in sc['lines_tail']])} where f.scene_key = '{key}' and position({T(sc['drop_tail'])} in f.lines::text) > 0;""")
+        else:
+            w(f"update public.world_faction_scenes set title = {T(sc['title'])}, goal = {T(sc['goal'])}, need = {J(sc['need'])}, lines = {J([{'s': a, 't': b} for a, b in sc['lines']])} where scene_key = '{key}';")
+    w(open(os.path.join(HERE, 'relocate_check.sql')).read())
 if moves:
     vals = ', '.join(f"('{m['region']}', {m['d']})" for m in moves)
     w(f"""create temp table yh_lvshift(region_id text primary key, d int) on commit drop;
 insert into yh_lvshift values {vals};
+create temp table yh_lvkeep(quest_id text primary key) on commit drop;
+insert into yh_lvkeep select jsonb_array_elements_text({J([k for m in moves for k in m.get('keep', [])])});
 update public.world_map_regions r set min_level = r.min_level + x.d from yh_lvshift x where x.region_id = r.region_id;
 update public.world_exploration_nodes n set min_level = greatest(1, least({CAP}, n.min_level + x.d)) from yh_lvshift x where x.region_id = n.region_id;
 update public.world_gathering_spots g set min_level = greatest(1, least({CAP}, g.min_level + x.d))
@@ -246,8 +268,15 @@ update public.world_quest_steps s set reward = s.reward
       || case when s.reward ? 'xp' then jsonb_build_object('xp', round((s.reward ->> 'xp')::numeric * (100 * (q.min_level + x.d) + 12 * (q.min_level + x.d) ^ 2) / (100 * q.min_level + 12 * q.min_level ^ 2))::int) else '{{}}'::jsonb end
       || case when s.reward ? 'gil' then jsonb_build_object('gil', round((s.reward ->> 'gil')::numeric * (5 + 4 * (q.min_level + x.d)) / (5 + 4 * q.min_level))::int) else '{{}}'::jsonb end
   from public.world_quests q, yh_lvshift x
- where q.quest_id = s.quest_id and q.region_id = x.region_id and q.kind = 'side' and s.reward is not null and s.reward <> '{{}}'::jsonb;
-update public.world_quests q set min_level = greatest(1, least({CAP}, q.min_level + x.d)) from yh_lvshift x where x.region_id = q.region_id and q.kind = 'side';""")
+ where q.quest_id = s.quest_id and q.region_id = x.region_id and q.kind = 'side' and s.reward is not null and s.reward <> '{{}}'::jsonb
+   and q.quest_id not in (select quest_id from yh_lvkeep);
+update public.world_quests q set min_level = greatest(1, least({CAP}, q.min_level + x.d)) from yh_lvshift x where x.region_id = q.region_id and q.kind = 'side'
+   and q.quest_id not in (select quest_id from yh_lvkeep);""")
+    if any(m.get('relocate') for m in moves):
+        relocate()
+    up = [m['region'] for m in moves if m['d'] > 0]
+    if up:
+        w(GUARD.replace('@UP@', J(up)))
 
 fresh('npcs', [nm for nm, _ in Q.NPCS.values()], '인물')
 fresh('npc_keys', list(Q.NPCS), '인물 키')
