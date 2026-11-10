@@ -252,6 +252,20 @@ end $c$;""")
 end $c$;""")
     for cid, name, rid in RL.CLUE_FIX:
         w(f"update public.world_story_clues set name = {T(name)}, region_id = '{rid}' where clue_id = '{cid}';")
+    for qid, st, ot, nt, og, ng in RL.STEP_TEXT:
+        w(f"""do $c$ declare n int; begin
+  update public.world_quest_steps set title = {T(nt)}, goal = {T(ng)} where quest_id = '{qid}' and step = {st} and title = {T(ot)} and goal = {T(og)};
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 장면 제목·설명을 못 찾음: {qid} {st}'; end if;
+end $c$;""")
+    for case, cid, on, nn, orr, nr in RL.CASE_CLUE_FIX:
+        w(f"""do $c$ declare n int; begin
+  update public.world_case_progress p set clues = (select jsonb_agg(case when e->>'id' = '{cid}' then e || jsonb_build_object('title', case when e->>'title' = {T(on)} then {T(nn)} else e->>'title' end, 'region', case when e->>'region' = '{orr}' then '{nr}' else e->>'region' end) - case when e ? 'title' then '' else 'title' end - case when e ? 'region' then '' else 'region' end else e end order by o)
+    from jsonb_array_elements(p.clues) with ordinality t(e, o))
+   where p.case_id = '{case}' and jsonb_typeof(p.clues) = 'array' and exists (select 1 from jsonb_array_elements(p.clues) e where e->>'id' = '{cid}' and (e->>'title' = {T(on)} or e->>'region' = '{orr}'));
+  get diagnostics n = row_count;
+  raise notice '단서 기록 고침 {cid}: %', n;
+end $c$;""")
     for qid, q in RL.QUESTS.items():
         w(f"update public.world_quests set region_id = '{q['region']}', title = {T(q['title'])}, summary = {T(q['summary'])} where quest_id = '{qid}';")
         for st, (title, goal, need, ls) in q['steps'].items():

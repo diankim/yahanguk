@@ -71,6 +71,8 @@ LINE_FIX = [
 STEP_NEED = [('mq_nameless_bell', 3, {'at': ['ember_village'], 'tasks': [{'m': ['x_crimson_mine_2'], 'n': 3, 't': 'win'}]})]
 CHAPTER_FIX = [('nameless_bell', '혈엽림의 핏빛 단풍 아래에도 종을 매달았던 쇠사슬이', '주혈 광산의 붉은 갱도 안에도 종을 매달았던 쇠사슬이')]
 CLUE_FIX = [('bell_chain', '갱도 속의 쇠사슬', 'crimson_mine')]
+STEP_TEXT = [('mq_nameless_bell', 3, '미쳐 버린 숲', '미쳐 버린 갱도', '혈엽림의 혈엽수인을 세 마리 쓰러뜨린다', '주혈 광산의 갱도 원령을 세 마리 쓰러뜨린다')]
+CASE_CLUE_FIX = [('nameless_bell', 'bell_chain', '단풍 밑의 쇠사슬', '갱도 속의 쇠사슬', 'red_forest', 'crimson_mine')]
 
 SCENES = {
     'southern_remnant:rank:2': dict(lines_tail=[

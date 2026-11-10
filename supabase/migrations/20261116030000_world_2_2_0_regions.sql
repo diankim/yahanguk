@@ -107,6 +107,18 @@ do $c$ declare n int; begin
   if n <> 1 then raise exception '고칠 장 소개를 못 찾음: nameless_bell'; end if;
 end $c$;
 update public.world_story_clues set name = $T$갱도 속의 쇠사슬$T$, region_id = 'crimson_mine' where clue_id = 'bell_chain';
+do $c$ declare n int; begin
+  update public.world_quest_steps set title = $T$미쳐 버린 갱도$T$, goal = $T$주혈 광산의 갱도 원령을 세 마리 쓰러뜨린다$T$ where quest_id = 'mq_nameless_bell' and step = 3 and title = $T$미쳐 버린 숲$T$ and goal = $T$혈엽림의 혈엽수인을 세 마리 쓰러뜨린다$T$;
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception '고칠 장면 제목·설명을 못 찾음: mq_nameless_bell 3'; end if;
+end $c$;
+do $c$ declare n int; begin
+  update public.world_case_progress p set clues = (select jsonb_agg(case when e->>'id' = 'bell_chain' then e || jsonb_build_object('title', case when e->>'title' = $T$단풍 밑의 쇠사슬$T$ then $T$갱도 속의 쇠사슬$T$ else e->>'title' end, 'region', case when e->>'region' = 'red_forest' then 'crimson_mine' else e->>'region' end) - case when e ? 'title' then '' else 'title' end - case when e ? 'region' then '' else 'region' end else e end order by o)
+    from jsonb_array_elements(p.clues) with ordinality t(e, o))
+   where p.case_id = 'nameless_bell' and jsonb_typeof(p.clues) = 'array' and exists (select 1 from jsonb_array_elements(p.clues) e where e->>'id' = 'bell_chain' and (e->>'title' = $T$단풍 밑의 쇠사슬$T$ or e->>'region' = 'red_forest'));
+  get diagnostics n = row_count;
+  raise notice '단서 기록 고침 bell_chain: %', n;
+end $c$;
 update public.world_quests set region_id = 'ash_coast', title = $T$방망이 문 갈매기$T$, summary = $T$재의 해안 재갈매기가 방망이를 물고 달아났다$T$ where quest_id = 'cq110_bat_3';
 update public.world_quest_steps set title = $T$날개에 걸린 것$T$, goal = $T$날개에 걸린 것$T$, need = $J${"at":["ash_coast"]}$J$::jsonb, lines = $J$[{"s":null,"t":"재의 해안 모래톱 위, 난파선 그늘에 꽃님의 수레가 서 있었다. 방울은 꽃님의 치맛자락 뒤에 숨어 하늘을 힐끔거렸다."},{"s":null,"t":"꽃님이 잿바람에 날리는 머릿수건을 붙잡으며 나를 돌아보았다."},{"s":"q:sx_kkotnim","t":"수경루에서 고생했네. 광부 말대로 그 갈매기들이 이 해안에 둥지를 틀었더라. 어부들 말로는 요새 쇠테 두른 몽둥이를 물고 다니는 놈이 있대."},{"s":null,"t":"방울이 꽃님 뒤에서 고개를 쑥 내밀었다. 두 볼이 잔뜩 부풀어 있었다."},{"s":"q:sx_bangul","t":"뚝딱이를 물고 다닌다고? 내 뚝딱이가 갈매기 장난감이 됐다고?"},{"s":null,"t":"꽃님이 하늘을 가리켰다. 잿빛 날개가 해를 가릴 만큼 몰려 있었다."},{"s":"q:sx_kkotnim","t":"그놈이 방망이를 떨어뜨릴 때마다 「뚝딱」 소리가 나고, 그때마다 하늘에서 재가 쏟아진다더라. 「재 나와라」인 셈이지."},{"s":null,"t":"방울이 주먹을 꼭 쥐고 하늘을 노려보았다."},{"s":"q:sx_bangul","t":"흥, 갈매기 따위. 내가 부리 대 뿔로 붙어 줄게."},{"s":null,"t":"그때 갈매기 떼가 한꺼번에 울며 모래톱으로 내려앉았다. 방울은 다시 꽃님 뒤로 쏙 들어갔다."},{"s":"q:sx_bangul","t":"……저건 부리가 너무 많잖아. 반칙이야."},{"s":null,"t":"꽃님이 방울의 머리를 쓰다듬으며 나에게 고개를 끄덕였다."},{"s":"q:sx_kkotnim","t":"조사원, 재갈매기 떼부터 쫓아 주게. 그 무리 속에 방망이 문 놈이 있을 게다."}]$J$::jsonb where quest_id = 'cq110_bat_3' and step = 1;
 update public.world_quest_steps set title = $T$판자가 삼킨 방망이$T$, goal = $T$재갈매기 떼를 물리친다$T$, need = $J${"at":["ash_coast"],"tasks":[{"m":["g_ash_coast"],"n":3,"t":"win"}]}$J$::jsonb, lines = $J$[{"s":null,"t":"갈매기 떼가 흩어지는 사이, 부리에 무언가를 문 한 마리가 난파선 쪽으로 날아갔다. 쫓아가 보니 갈매기는 부서진 갑판 위에서 날개를 퍼덕이고 있었다."},{"s":null,"t":"갈매기가 달아난 뒤, 갑판 판자 틈에 쇠테 두른 방망이 끝이 조금 삐져나와 있었다. 방망이가 판자 사이에 단단히 끼어 있었다."},{"s":null,"t":"방울이 갑판 위로 기어 올라가 방망이 끝에 두 손을 뻗었다."},{"s":"q:sx_bangul","t":"뚝딱이! 뚝딱아! 내가 왔어!"},{"s":null,"t":"방울이 방망이 끝을 잡고 힘껏 당겼다. 방망이는 꿈쩍도 하지 않았고, 방울만 엉덩방아를 찧었다."},{"s":null,"t":"꽃님이 갑판 판자를 손가락으로 두드려 보더니 고개를 저었다."},{"s":"q:sx_kkotnim","t":"바닷물에 불은 판자라 방망이를 꽉 물고 있구먼. 억지로 빼다간 방망이가 부러져."},{"s":"q:sx_kkotnim","t":"판자 틈을 벌리면 저절로 빠질 게다. 조사원, 지렛대로 쓸 부적목 세 토막만 구해 주게. 해안 숲에 쓰러진 나무가 많더라."}]$J$::jsonb where quest_id = 'cq110_bat_3' and step = 2;
@@ -120,6 +132,9 @@ do $c$ begin
      or exists (select 1 from public.world_quest_steps where quest_id = 'mq_nameless_bell' and (lines::text || need::text) ~ '(혈엽림|혈엽수인|red_forest|"m_21")')
      or exists (select 1 from public.world_story_chapters where chapter_id = 'nameless_bell' and (coalesce(summary, '') || coalesce(intro, '') || coalesce(outro, '')) ~ '혈엽림')
      or exists (select 1 from public.world_story_clues where clue_id = 'bell_chain' and (region_id = 'red_forest' or name ~ '단풍'))
+     or exists (select 1 from public.world_quest_steps where (title || goal) ~ '(미쳐 버린 숲|혈엽림의 혈엽수인)')
+     or exists (select 1 from public.world_case_progress where clues::text like '%단풍 밑의 쇠사슬%')
+     or exists (select 1 from public.world_case_progress, jsonb_array_elements(case when jsonb_typeof(clues) = 'array' then clues else '[]'::jsonb end) e where e->>'id' = 'bell_chain' and e->>'region' = 'red_forest')
      or exists (select 1 from public.world_quests where quest_id = 'cq110_bat_3' and (region_id || title || summary) ~ '(혈엽림|red_forest)')
      or exists (select 1 from public.world_faction_scenes where scene_key in ('southern_remnant:rank:2', 'southern_remnant:rank:3') and (lines::text || title || goal || need::text) ~ '(혈엽림|red_forest)') then
     raise exception '옮긴 퀘스트에 혈엽림이 남음';
