@@ -56,7 +56,6 @@ export async function fillInvites(box) {
   let r; try { r = await rpc('world_invite_mine'); } catch { return; }
   if (!box.isConnected || !(r?.codes || []).length) return;
   const day = t => t ? new Date(t).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-  const when = r.open_at ? `${day(r.open_at)}부터 ${day(r.close_at)}까지 쓸 수 있습니다.` : '서버를 다시 연 때부터 7일 동안 쓸 수 있습니다.';
-  box.innerHTML = panel('내 초대권', `<p class="desc">함께할 사람에게 건네세요. 새로 가입하는 사람이 회원가입 화면에 이 번호를 적습니다. ${esc(when)} 한 장으로 한 사람만 가입합니다. 번호는 따로 적어 두세요.</p>
-    <ul class="invite-list">${r.codes.map(c => `<li class="${c.used || c.expired ? 'muted' : ''}"><code>${esc(c.code)}</code><span>${c.used ? '쓰임' : c.expired ? '기한 지남' : '쓸 수 있음'}</span></li>`).join('')}</ul>`, { ico: 'scroll' });
+  box.innerHTML = panel('내 초대권', `<p class="desc">함께할 사람에게 건네세요. 새로 가입하는 사람이 회원가입 화면에 이 번호를 적습니다. 초대권마다 쓸 수 있는 기한이 있고, 한 장으로 한 사람만 가입합니다. 번호는 따로 적어 두세요.</p>
+    <ul class="invite-list">${r.codes.map(c => `<li class="${c.used || c.expired ? 'muted' : ''}"><code>${esc(c.code)}</code><span>${c.used ? '쓰임' : c.expired ? '기한 지남' : `${esc(day(c.until || r.close_at))}까지`}</span></li>`).join('')}</ul>`, { ico: 'scroll' });
 }
