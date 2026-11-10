@@ -1,4 +1,5 @@
 import { cardName } from './views/card.js';
+import { brokenName, NAMELESS } from './rules.js';
 import { isGM, db, store, on, rpc, act, esc, fmt, icon, $, $$, h, toast, friendlyError, loadCharacter } from './core.js';
 import { onWhisper, openWhisperWindow, whisperFeed, whisperOut } from './whisper.js';
 import { loadCircles, circles } from './circles.js';
@@ -399,6 +400,7 @@ export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 
 export function richText(t) {
   return esc(t).replace(/#패치노트(?::([0-9][0-9.-]{2,11}))?/g, (_, id) => `<a class="patch-link" href="#/patch${id ? `/${id}` : ''}">${icon('scroll', 12)}패치노트${id ? ` ${id}` : ''}</a>`);
 }
+const hasMark = (r, k) => String(r.mark || '').split(' ').includes(k);
 const YOHWA_MARK = '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>';
 function msgRow(r, prev) {
   if (r.sys) return `<li class="chat-notice sys${r.up ? ' up' : r.sys.cls ? ' ' + r.sys.cls : ''}">${icon(r.up ? 'check' : r.sys.icon, 12)}<span>${richText(r.text)}</span><time>${r.at ? fmt.time(r.at) : ''}</time></li>`;
@@ -409,7 +411,7 @@ function msgRow(r, prev) {
   if (!faces.has(r.sid)) wantFace(r.sid);
   const av = face(r.sid, fc, 28, r.who);
   const ns = nameStyle(r.color, r.sid);
-  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta">${r.gm ? `<b><button type="button" class="name-link" data-card="${esc(r.sid)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b>${cardName(r.sid, r.who)}</b>`}${r.mark === 'frenzy' ? YOHWA_MARK : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
+  return `<li class="${cls}${ns.cls}" style="--hu:${ns.hu}">${av}<div class="meta">${r.gm ? `<b><button type="button" class="name-link" data-card="${esc(r.sid)}" title="운영진(GM)"><span class="gm-badge">GM</span></button></b>` : `<b${hasMark(r, 'nameless') ? ` class="name-broken" title="${esc(NAMELESS.other)}"` : ''}>${cardName(r.sid, hasMark(r, 'nameless') ? brokenName(r.who) : r.who)}</b>`}${hasMark(r, 'frenzy') ? YOHWA_MARK : ''}${r.title ? `<em class="c-title">${esc(r.title)}</em>` : ''}<time>${r.at ? fmt.time(r.at) : ''}</time></div><p>${richText(r.text)}</p></li>`;
 }
 function drawError(msg) { const list = $('#chat-list', panel); if (list) list.innerHTML = `<li class="chat-empty">${esc(msg)}</li>`; }
 function scrollEnd() {

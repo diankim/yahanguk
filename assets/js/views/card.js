@@ -6,6 +6,7 @@ import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
 import { chip, invalidate } from './common.js';
 import { factionColor } from '../geo.js';
+import { brokenName, NAMELESS } from '../rules.js';
 import { nameStyle } from '../chat.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
 import { nickTag, noteOf, setNote } from '../people.js';
@@ -54,7 +55,7 @@ async function draw(box, id) {
       ${c.same_place && c.downed && !c.is_dead ? `<button class="btn small primary" data-do="rescue" data-here="구조">${icon('heart', 14)}<span>구조</span></button>` : ''}`;
     box.innerHTML = `
       <div class="profile-card">${patternLayer(c.profile?.pattern)}<div class="pc-emblem">${emblem(c.owner_id, c.profile, 72)}</div>
-        <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}">${esc(c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${c.yohwa === 'frenzy' ? '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>' : ''}</h3>
+        <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}"${c.nameless ? ` title="${esc(c.owner_id === store.character?.owner_id ? NAMELESS.mine : NAMELESS.other)}"` : ''}>${esc(c.nameless ? brokenName(c.character_name) : c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${c.yohwa === 'frenzy' ? '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>' : ''}</h3>
           ${c.display_title ? `<p class="title-badge">「${esc(c.display_title)}」</p>` : ''}
           <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id ? `<p><span class="fchip" style="--fc:${factionColor(c.major_faction_id)}">${esc(nameOf(c.major_faction_id))}${c.faction_rank ? ` · ${esc(c.faction_rank)}` : ''}</span></p>` : ''}${c.tn_champ ? `<p><span class="chip tn-badge">${c.tn_champ === 'team' ? '비무 장원 · 팀전' : '비무 장원'}</span></p>` : ''}
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div>

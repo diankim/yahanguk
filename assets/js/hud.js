@@ -1,9 +1,9 @@
-import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, guard, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct, xpPct, xpGot, xpNote, toast } from './core.js';
+import { gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf, fmt, esc, icon, bar, $, $$, guard, emblem, bagLimit, bagUsed, spOf, openModal, closeModal, effectText as fxText, xpNeed, LEVEL_CAP, midBattle, useItemAct, xpPct, xpGot, xpNote } from './core.js';
 import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf, DOMAIN_FX } from './rules.js';
+import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -64,8 +64,6 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
     const was = !!store.expedition;
     { const was = state.hud?.stamina, st = hud?.stamina;
       if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
-    { const a = state.hud?.domain, d = hud?.domain;
-      if (a?.blur && d?.blur && a.territory === d.territory && (d.stage || 0) > (a.stage || 0) && d.stage_name) toast(`이름이 더 흐려졌습니다 · ${d.stage_name} (이름 획 ${d.strokes_left}/${d.blur.strokes})`, 'warn', 5000); }
     state = { idle, hud, exp: hud?.expedition || null };
     armAlarm('idle', 'end', idleReadyAt(idle)); armAlarm('exp', 'end', hud?.expedition?.ends_at);
     const wasIdle = !!store.idle?.active;
@@ -162,7 +160,7 @@ function render() {
   const badN = rest.filter(x => x.polarity !== 'positive').length, goodN = Math.min(10 - Math.min(10, badN), rest.length - badN);
   const slots = Array.from({ length: 10 }, (_, i) => i < badN ? 'bad' : i < badN + goodN ? 'good' : '');
   $('#hud-strip', root).innerHTML = `
-    <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}</b><small>Lv.${c.level}${c.profile?.title_name ? ` <span class="hs-ttl">「${esc(c.profile.title_name)}」</span>` : ''}</small></span>
+    <span class="hs-name"><b><span class="hs-nm">${myName(c)}</span>${gmBadge(c.owner_id)}</b><small>Lv.${c.level}${c.profile?.title_name ? ` <span class="hs-ttl">「${esc(c.profile.title_name)}」</span>` : ''}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
@@ -175,7 +173,7 @@ function render() {
   body.innerHTML = `
     <section class="hud-card">
       <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
-        <div><h2>${esc(c.character_name)}${gmBadge(c.owner_id)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
+        <div><h2>${myName(c)}${gmBadge(c.owner_id)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
         <span class="lv">Lv.${c.level}</span>${erosionRing(c)}</div>
       <div class="title-row">${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}<button class="btn small ghost" id="hud-title-swap" title="저장해 둔 칭호 묶음으로 바꿔 낍니다">${icon('refresh', 13)}<span>칭호 바꾸기</span></button></div>
       ${envChip()}
@@ -213,20 +211,22 @@ function stamina(c) {
   const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
   return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
 }
+const myName = c => domainNow()?.nameless ? `<span class="name-broken" title="${esc(NAMELESS.mine)}">${esc(brokenName(c.character_name))}</span>` : esc(c.character_name);
 export function domainNow() {
   const d = state.hud?.domain;
   if (!d?.name) return null;
   const until = d.guard_until ? new Date(d.guard_until).getTime() : 0, fx = fxText(d.effects);
-  const strokes = d.blur ? `이름 획 ${d.strokes_left ?? d.blur.strokes}/${d.blur.strokes}` : '';
-  return { name: d.stage_name || d.name, guarded: until > Date.now(), off: !fx.length, until, strokes, stage: d.stage || 0, text: fx.join(' · ') };
+  const max = d.blur?.strokes || 0, left = d.blur ? (d.strokes_left ?? max) : 0, stage = d.stage || 0;
+  return { name: d.stage_name || d.name, guarded: until > Date.now(), off: !fx.length, until, max, left, stage,
+    strokes: d.blur ? `이름 획 ${left}/${max}` : '', nameless: !!(stage && d.blur?.stages?.[stage - 1]?.nameless), text: fx.join(' · ') };
 }
 function domainChip() {
   const d = domainNow();
-  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.strokes, d.off ? DOMAIN_FX.guardedOff : d.text].filter(Boolean).join(' · '))}">${esc(d.name)}</span>` : '';
+  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.strokes, d.off ? DOMAIN_FX.guardedOff : d.text].filter(Boolean).join(' · '))}">${esc(d.name)}${d.max ? ` <b>${d.left}/${d.max}</b>` : ''}</span>` : '';
 }
 function domainPin() {
   const d = domainNow(); if (!d) return '';
-  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.strokes ? ` · ${esc(d.strokes)}` : ''}</b><small>${esc(d.off ? DOMAIN_FX.guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
+  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.max ? `<i class="blur-strokes" aria-label="${esc(d.strokes)}">${Array.from({ length: d.max }, (_, i) => `<u class="${i < d.left ? 'on' : ''}"></u>`).join('')}</i>` : ''}</b><small>${esc(d.off ? DOMAIN_FX.guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);

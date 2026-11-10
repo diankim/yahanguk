@@ -1851,6 +1851,9 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .yohwa-pin.blur { background: color-mix(in srgb, var(--mp) 10%, var(--surface-2)); border-left-color: var(--mp); } .yohwa-pin.blur .ico { color: var(--mp); }
 .yohwa-pin.blur.off { background: var(--surface-2); border-left-color: var(--ok); } .yohwa-pin.blur.off .ico { color: var(--ok); }
 .hs-yohwa.blur { color: var(--mp); border-color: color-mix(in srgb, var(--mp) 55%, transparent); } .hs-yohwa.blur.s2 { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 55%, transparent); } .hs-yohwa.blur.s3 { color: var(--hp); border-color: color-mix(in srgb, var(--hp) 55%, transparent); }
+.blur-strokes { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: middle; } .blur-strokes u { display: block; width: 3px; height: 10px; background: currentColor; opacity: .22; text-decoration: none; } .blur-strokes u.on { opacity: 1; }
+.hs-yohwa.blur b { font-variant-numeric: tabular-nums; margin-left: 2px; }
+.name-broken { letter-spacing: .05em; color: var(--muted); }
 .yohwa-pin.blur.s2 { background: color-mix(in srgb, var(--gold) 10%, var(--surface-2)); border-left-color: var(--gold); } .yohwa-pin.blur.s3 { background: color-mix(in srgb, var(--hp) 10%, var(--surface-2)); border-left-color: var(--hp); } .yohwa-pin.blur.s3 .ico { color: var(--hp); } .hs-yohwa.blur.off { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
 .ns-1031 { --ns: #c7b37a; } [data-tone=light] .ns-1031 { --ns: #5b4a22; }
 .yohwa-pin.frenzy { background: color-mix(in srgb, var(--bad) 26%, var(--surface-2)); border-left-width: 5px; }

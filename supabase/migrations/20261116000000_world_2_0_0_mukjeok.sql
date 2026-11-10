@@ -60,7 +60,14 @@ alter table public.world_fish_grounds drop constraint if exists world_fish_groun
 alter table public.world_fish_grounds add constraint world_fish_grounds_pkey primary key (region_id, habitat);
 
 create or replace function public.world_domain_rules() returns jsonb
-language sql immutable as $$ select '{"gwiheo": {"name": "귀허도", "open_chapter": "nine_gates", "acclimate": true, "no_shadow": true, "rare": "banyo_scale", "fx": {"effects": {"erosion_pct": 60}}}, "mukjeok": {"name": "묵적록", "open_quest": "gq_5", "no_shadow": true, "rare": "meokgwi_lump", "fx": {"name": "이름 흐림", "effects": {"mental_loss_pct": 15, "incoming_damage_pct": 5, "encounter_pct": 5}, "guard": ["clear_name", "name_ward"], "blur": {"strokes": 9, "guard_step": 1, "stages": [{"er": 30, "name": "이름 번짐", "effects": {"mental_loss_pct": 20, "incoming_damage_pct": 8, "encounter_pct": 8, "combat_damage_pct": -6, "rare_loot_pct": 3, "clue_bonus_pct": 3}}, {"er": 55, "name": "이름 바램", "effects": {"mental_loss_pct": 25, "incoming_damage_pct": 10, "encounter_pct": 10, "combat_damage_pct": -12, "healing_pct": -10, "rare_loot_pct": 5, "clue_bonus_pct": 5}}, {"er": 80, "name": "이름 잃음", "effects": {"mental_loss_pct": 30, "incoming_damage_pct": 12, "encounter_pct": 12, "combat_damage_pct": -20, "healing_pct": -12, "rare_loot_pct": 8, "clue_bonus_pct": 8}}]}}}}'::jsonb $$;
+language sql immutable as $$ select '{"gwiheo": {"name": "귀허도", "open_chapter": "nine_gates", "acclimate": true, "no_shadow": true, "rare": "banyo_scale", "fx": {"effects": {"erosion_pct": 60}}}, "mukjeok": {"name": "묵적록", "open_quest": "gq_5", "no_shadow": true, "rare": "meokgwi_lump", "fx": {"name": "이름 흐림", "effects": {"mental_loss_pct": 15, "incoming_damage_pct": 5, "encounter_pct": 5}, "guard": ["clear_name", "name_ward"], "blur": {"strokes": 9, "guard_step": 1, "stages": [{"er": 30, "name": "이름 번짐", "note": "먹이 이름 획 셋을 지웠습니다. 정신이 쉽게 흐트러지고 받는 피해와 마주침이 늘어납니다. 침식을 낮추면 지워진 획이 돌아옵니다.", "effects": {"mental_loss_pct": 20, "incoming_damage_pct": 8, "encounter_pct": 8, "rare_loot_pct": 3, "clue_bonus_pct": 3}}, {"er": 50, "name": "이름 바램", "note": "이름 획이 셋만 남았습니다. 손에 힘이 빠져 주는 피해가 줄고 회복이 더딥니다.", "effects": {"mental_loss_pct": 25, "incoming_damage_pct": 10, "encounter_pct": 10, "combat_damage_pct": -20, "healing_pct": -10, "rare_loot_pct": 5, "clue_bonus_pct": 5}}, {"er": 80, "name": "이름 잃음", "note": "이름 획이 모두 지워졌습니다. 다른 조사원에게 내 이름이 깨진 글자로 보이고, 주는 피해가 크게 줄어듭니다. 정화 부적으로 침식을 낮추거나 이름 먹 부적·이름 새김 탕으로 버티세요.", "nameless": true, "effects": {"mental_loss_pct": 30, "incoming_damage_pct": 12, "encounter_pct": 12, "combat_damage_pct": -35, "healing_pct": -15, "rare_loot_pct": 8, "clue_bonus_pct": 8}}]}}}}'::jsonb $$;
+
+create or replace function public.world_name_blur_k(p_er integer, p_blur jsonb, p_guard boolean) returns integer
+language sql immutable as $$
+  select greatest(0, (select count(*)::int from jsonb_array_elements(p_blur -> 'stages') x where coalesce(p_er, 0) >= (x ->> 'er')::int)
+    - case when p_guard then coalesce((p_blur ->> 'guard_step')::int, 1) else 0 end)
+$$;
+revoke all on function public.world_name_blur_k(integer, jsonb, boolean) from public, anon, authenticated;
 
 create or replace function public.world_domain_fx(p_uid uuid) returns jsonb
 language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
@@ -74,11 +81,8 @@ begin
    where s.owner_id = p_uid and s.expires_at > now() and s.status_key in (select jsonb_array_elements_text(coalesce(d -> 'guard', '[]'::jsonb)));
   b := d -> 'blur';
   if b is not null then
-    k := (select count(*) from jsonb_array_elements(b -> 'stages') x where e >= (x ->> 'er')::int);
-    if g is not null then
-      if k = 0 then d := d || jsonb_build_object('effects', '{}'::jsonb); end if;
-      k := greatest(0, k - coalesce((b ->> 'guard_step')::int, 1));
-    end if;
+    if g is not null and public.world_name_blur_k(e, b, false) = 0 then d := d || jsonb_build_object('effects', '{}'::jsonb); end if;
+    k := public.world_name_blur_k(e, b, g is not null);
     if k > 0 then
       st := b -> 'stages' -> (k - 1);
       d := d || jsonb_build_object('effects', st -> 'effects', 'stage_name', st ->> 'name');
@@ -119,6 +123,55 @@ declare o text := pg_get_userbyid((select proowner from pg_proc where oid = 'pub
 begin
   if o like 'fn_owner%' then execute format('grant execute on function public.world_domain_fx(uuid) to %I', o); end if;
 end $d$;
+
+create or replace function public.world_name_lost(p_uid uuid) returns boolean
+language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+declare fx jsonb := public.world_domain_fx(p_uid);
+begin
+  return fx ? 'blur' and coalesce((fx ->> 'stage')::int, 0) > 0
+    and coalesce((fx -> 'blur' -> 'stages' -> ((fx ->> 'stage')::int - 1) ->> 'nameless')::boolean, false);
+end $$;
+revoke all on function public.world_name_lost(uuid) from public, anon, authenticated;
+grant execute on function public.world_name_lost(uuid) to fn_owner_field;
+
+create or replace function public.world_chat_mark(p_uid uuid) returns text
+language sql stable security definer set search_path to '' as $$
+  select nullif(concat_ws(' ',
+    case when p_uid is not null and public.world_yohwa_public(p_uid) = 'frenzy' then 'frenzy' end,
+    case when p_uid is not null and public.world_name_lost(p_uid) then 'nameless' end), '')
+$$;
+
+select pg_temp.yh_patch('public.world_character_card(uuid)', $q$'yohwa', public.world_yohwa_public(c.owner_id)$q$, $q$'yohwa', public.world_yohwa_public(c.owner_id), 'nameless', public.world_name_lost(c.owner_id)$q$);
+
+select pg_temp.yh_patch('public.world_combat_stats(uuid,jsonb)', $q$- public.world_erosion_effect('combat_damage_pct'))$q$, $q$- public.world_erosion_effect('combat_damage_pct') - least(0, public.world_island_effect('combat_damage_pct')))$q$);
+select pg_temp.yh_patch('public.world_combat_stats(uuid,jsonb)', $q$+ least(0, public.world_erosion_effect('combat_damage_pct'))$q$, $q$+ least(0, public.world_erosion_effect('combat_damage_pct')) + least(0, public.world_island_effect('combat_damage_pct'))$q$);
+
+create or replace function public.world_name_blur_note() returns trigger
+language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
+declare tn text; t0 text; b jsonb; g boolean; kn int; ko int; st jsonb;
+begin
+  tn := (public.world_region_at(new.location)).territory_id;
+  b := public.world_domain_rules() -> tn -> 'fx' -> 'blur';
+  if b is null then return new; end if;
+  t0 := case when old.location is distinct from new.location then (public.world_region_at(old.location)).territory_id else tn end;
+  g := exists (select 1 from public.world_character_statuses s where s.owner_id = new.owner_id and s.expires_at > now()
+    and s.status_key in (select jsonb_array_elements_text(coalesce(public.world_domain_rules() -> tn -> 'fx' -> 'guard', '[]'::jsonb))));
+  kn := public.world_name_blur_k(new.erosion, b, g);
+  ko := case when t0 is distinct from tn then 0 else public.world_name_blur_k(old.erosion, b, g) end;
+  if kn <= ko then return new; end if;
+  st := b -> 'stages' -> (kn - 1);
+  if exists (select 1 from public.world_notifications n where n.user_id = new.owner_id and n.kind = 'yohwa'
+      and n.payload ->> 'blur' = kn::text and n.created_at > now() - interval '30 minutes') then return new; end if;
+  insert into public.world_notifications(user_id, kind, title, content, payload)
+  values (new.owner_id, 'yohwa', st ->> 'name', st ->> 'note',
+    jsonb_build_object('blur', kn, 'strokes', greatest(0, (b ->> 'strokes')::int - kn * (b ->> 'strokes')::int / greatest(1, jsonb_array_length(b -> 'stages')))));
+  return new;
+end $$;
+revoke all on function public.world_name_blur_note() from public, anon, authenticated;
+drop trigger if exists trg_world_name_blur_note on public.world_characters;
+create trigger trg_world_name_blur_note after update of erosion, location on public.world_characters for each row
+ when (new.erosion >= 30 and (new.erosion > old.erosion or new.location is distinct from old.location))
+ execute function public.world_name_blur_note();
 
 create or replace function public.world_weak_safe_rules() returns jsonb
 language sql immutable as $$ select '["banyo_village", "mukchang_ferry"]'::jsonb $$;
@@ -372,13 +425,14 @@ insert into public.world_patch_notes(note_id, title, body) values ('2.0.0', '2.0
 - 묵창 나루는 반요촌처럼 빈약한 안전지대입니다. 거래소·창고·마구간이 없고, 주막 상점은 사람마다 하루에 살 수 있는 개수가 정해져 있습니다. 되팔기와 판매 한도는 절반, 수리비는 세 배입니다.
 
 ### 이름 흐림
-- 묵적록(나루 포함)에 있는 동안 늘 걸리는 약화입니다. 상태 칸 10칸에 세지 않고 상태판에 따로 보이며, 떠나면 바로 사라집니다.
-- 묵적록에서는 침식이 이름을 지웁니다. 침식이 오를수록 이름 획 아홉이 셋씩 지워지며 이름 흐림이 깊어집니다.
+- 묵적록(나루 포함)에 있는 동안 늘 걸리는 약화입니다. 상태 칸 10칸에 세지 않고 상태판에 단계와 남은 이름 획이 따로 보이며, 떠나면 바로 사라집니다.
+- 묵적록에서는 침식이 이름을 지웁니다. 침식 30·50·80마다 이름 획 아홉이 셋씩 지워지며 이름 흐림이 깊어지고, 단계가 깊어질 때마다 알림이 뜹니다.
 - 침식 30 아래 「이름 흐림」(9획): 정신 손실 +15% · 받는 피해 +5% · 요괴 조우 +5%
-- 침식 30~ 「이름 번짐」(6획): 정신 손실 +20% · 받는 피해 +8% · 조우 +8% · 주는 피해 −6% · 희귀품·단서 +3%
-- 침식 55~ 「이름 바램」(3획): 정신 손실 +25% · 받는 피해 +10% · 조우 +10% · 주는 피해 −12% · 회복 −10% · 희귀품·단서 +5%
-- 침식 80~ 「이름 잃음」(0획): 정신 손실 +30% · 받는 피해 +12% · 조우 +12% · 주는 피해 −20% · 회복 −12% · 희귀품·단서 +8%
-- 침식 단계의 원래 불이익과 함께 걸립니다. 정화 부적·마음 다잡기로 침식을 낮추면 지워진 획도 바로 돌아옵니다.
+- 침식 30~ 「이름 번짐」(6획): 정신 손실 +20% · 받는 피해 +8% · 조우 +8% · 희귀품·단서 +3%
+- 침식 50~ 「이름 바램」(3획): 정신 손실 +25% · 받는 피해 +10% · 조우 +10% · 주는 피해 −20% · 회복 −10% · 희귀품·단서 +5%
+- 침식 80~ 「이름 잃음」(0획): 정신 손실 +30% · 받는 피해 +12% · 조우 +12% · 주는 피해 −35% · 회복 −15% · 희귀품·단서 +8%. 다른 조사원에게 내 이름이 깨진 글자로 보입니다.
+- 주는 피해 감소는 피해 % 상한(+35%)과 따로 빠지므로 딜이 높아도 그대로 줄어듭니다. 침식 단계의 원래 불이익과 함께 걸립니다.
+- 정화 부적으로 침식을 낮추면 지워진 획도 바로 돌아옵니다. 묵적록에는 날씨 말고 침식이 빨리 오르는 보정이 없습니다.
 - 이름 먹 부적(1시간)과 이름 새김 탕(2시간)은 이름 흐림을 한 단계 가볍게 하고, 침식 30 아래에서는 아예 막습니다.
 - 먹그림자에게 가기 전에는 침식을 낮춰 두는 것이 좋습니다.
 
