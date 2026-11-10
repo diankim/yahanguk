@@ -7,7 +7,7 @@ import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK } from '../rules.js';
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
@@ -590,8 +590,8 @@ function bindPresets(body, snap) {
 }
 
 const PERKS = {
-  night_office: '공인 조사 수당: 원정 귀환 경험치·숙련 경험·전 +15%. 법적 권한: 본부 구조대가 어디서든 반값·경험치 손실 없음·체력 50으로 데려옵니다.', red_moon_cult: '강행 태세 원정의 전리품 +15%. 위험한 지역에 강합니다.',
-  black_lotus: '정보망: 희귀품 발견 +5%. 암시장 줄: 상점 하루 판매 한도 +500전.', north_league: '원정 중 받는 피해 -20%.', river_alliance: '가방 +6칸. 교역과 운송에 강합니다.',
+  night_office: `${FACTION_PERK.night_office}. ${FACTION_PERK.night_office2}.`, red_moon_cult: '강행 태세 원정의 전리품 +15%. 위험한 지역에 강합니다.',
+  black_lotus: '정보망: 희귀품 발견 +5%. 암시장 줄: 상점 하루 판매 한도 +500전.', north_league: `${FACTION_PERK.north_league}.`, river_alliance: '가방 +6칸. 교역과 운송에 강합니다.',
   southern_remnant: '원정 채집량 +15%.', mandate_court: '원정 답사도 상승 +20%.',
 };
 const HOSTILE = GAMEDATA.factionHostile;

@@ -65,6 +65,7 @@ def build(dsn):
     d['agile'] = q(dsn, "select world_agile_rules()")
     d['questXp'] = q(dsn, "select world_quest_xp_rules()")
     d['factionSpread'] = q(dsn, "select world_faction_spread_rules()")
+    d['factionPerk'] = q(dsn, "select world_faction_perk_rules()")
     d['busy'] = q(dsn, "select world_busy_rules()")
     d['gwiryeong'] = q(dsn, "select world_gwiryeong_rules()")
     d['contrib'] = q(dsn, "select world_contrib_rules()")

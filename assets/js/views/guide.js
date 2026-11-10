@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG } from '../rules.js';
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
@@ -60,10 +60,10 @@ const GRADE_KO = ['', '범품', '양품', '진품', '명품', '신품'];
 const petCount = g => `${GRADE_KO[g]} ${GD.pets.grades[g] || 0}종`;
 
 const FACTION_LORE = {
-  night_office: { doctrine: '변칙을 기록하고 봉인하되, 인간 사회의 균형을 우선한다.', land: '야행국 직할령', perk: '공인 조사 수당: 원정 귀환 경험치·숙련 경험·전 +15% · 법적 권한: 어디서든 본부 구조대가 반값이고, 경험치를 잃지 않으며, 체력 50으로 깨어남', rank: '단서 +2%씩', name2: '공훈' },
+  night_office: { doctrine: '변칙을 기록하고 봉인하되, 인간 사회의 균형을 우선한다.', land: '야행국 직할령', perk: `${FACTION_PERK.night_office} · ${FACTION_PERK.night_office2}`, rank: '단서 +2%씩', name2: '공훈' },
   red_moon_cult: { doctrine: '강한 자만이 금기를 다룰 자격이 있으며, 요기의 흡수는 진화다.', homeNote: '월식성은 안전지대가 아닙니다', land: '적월 교령', perk: '강행 태세 원정의 전리품 +15%', rank: '주는 피해 +1%씩', name2: '교도 위계' },
   black_lotus: { doctrine: '진실은 기록되지 않은 곳에 있고, 이름과 기억은 거래될 수 있다.', land: '흑련 지하회랑', perk: '정보망: 희귀품 발견 +5% · 암시장 줄: 상점 하루 판매 한도 +500전', rank: '희귀품 +1%씩 · 그림자 장부: 상점 판매 한도 +300전씩', name2: '인연채무' },
-  north_league: { doctrine: '무력은 약자를 지키고 산문과 맹약을 수호하기 위해 존재한다.', land: '북령 맹약지', perk: '원정 중 받는 피해 −20%', rank: '받는 피해 −1%씩', name2: '맹공' },
+  north_league: { doctrine: '무력은 약자를 지키고 산문과 맹약을 수호하기 위해 존재한다.', land: '북령 맹약지', perk: FACTION_PERK.north_league, rank: FACTION_PERK.north_rank, name2: '맹공' },
   river_alliance: { doctrine: '강과 길은 누구의 소유도 아니며, 거래와 항행이 생존을 만든다.', land: '수향 연맹령', perk: '가방 +6칸 · 뱃길: 배를 타면 빠르고 운임이 없음', rank: '세금 −20%씩 · 이동 시간 −2%씩', name2: '신용' },
   southern_remnant: { doctrine: '멸망한 나라의 기억을 지키고 빼앗긴 땅을 되찾는다.', land: '남명 망국령', perk: '원정 채집량 +15%', rank: '채집량 +2%씩', name2: '잔불' },
   mandate_court: { doctrine: '천명은 관측하고 관리해야 할 법칙이며, 예언은 권력이다.', homeNote: '본부 객사는 Lv25 전의 분소', land: '천명 상계', perk: '원정 답사도 상승 +20%', rank: '요괴 조우 −2%씩 · 날씨·시간대 불이익 10%씩 덜 받기', name2: '천문 허가' },
