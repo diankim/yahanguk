@@ -8,7 +8,7 @@ import { loadLetters, lettersPanelHtml, bindLettersPanel, openCompose } from '..
 const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty } from '../core.js';
 import { face, syncNotes } from '../people.js';
-import { load, panel, chip, loading, errorBox } from './common.js';
+import { load, panel, chip, loading, errorBox, foldOpen } from './common.js';
 import { hit } from '../changes.js';
 
 const LOOT = [['contribution', '기여도순'], ['designated', '지정순'], ['equal', '균등 분배']];
@@ -43,13 +43,13 @@ async function draw(heavy = false, tick = false) {
     const friendsPanel = fr ? panel(`친구 · ${(fr.friends || []).length}명`, `
       ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people cards">${fr.incoming.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
           <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
-      ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
+      ${(fr.friends || []).length ? `<details class="fold f-fold" data-fold="friends" ${foldOpen('friends') ? 'open' : ''}><summary>친구 목록 ${fr.friends.length}명</summary><ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small>${f.memo ? `<small class="f-memo">${esc(f.memo)}</small>` : ''}</div>
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
             <button class="btn small nowrap" data-fr-note="${esc(f.owner_id)}" data-fr-name="${esc(f.character_name)}">별명·메모</button>
             ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
-            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
+            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul></details>`
         : empty('아직 친구가 없습니다. 채팅이나 같은 곳에 있는 조사원의 이름을 눌러 친구 신청을 보내 보세요.', 'users')}
       ${(fr.outgoing || []).length ? `<p class="muted small">응답을 기다리는 신청: ${fr.outgoing.map(f => `${esc(f.character_name)} <button class="linkish" data-fr-cancel="${esc(f.owner_id)}">취소</button>`).join(' · ')}</p>` : ''}
       ${(fr.blocked || []).length ? `<details class="fold"><summary>차단한 조사원 ${fr.blocked.length}</summary><ul class="spot-list">${fr.blocked.map(f => `<li><div><b>${esc(f.character_name)}</b></div><button class="btn small" data-unblock="${esc(f.owner_id)}">차단 풀기</button></li>`).join('')}</ul></details>` : ''}

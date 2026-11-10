@@ -1,7 +1,7 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
-  reloadCharacter, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
+  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
@@ -189,7 +189,7 @@ function actHtml(s, me) {
     : me.resting ? `<div class="raid-out rest"><b>${icon('check', 14)} 쉬는 중 · 준비되면 행동해서 돌아가세요</b><span>주인이 나를 노리지 않고 수법에서도 빠집니다. <b>공격·방어·버티기·기술·물품</b> 가운데 하나를 고르면 이번 라운드부터 다시 싸웁니다(먼저 <b>방어</b>나 <b>물품</b>이 안전합니다).</span></div>` : '';
   return `<section class="panel raid-act ${a ? '' : 'my-turn'}"><div class="panel-body">
     ${outBox}
-    <div class="raid-me">${vitHtml('체력', hp, 'hp', hp < 35)}${vitHtml(spOf()[0], sp, spOf()[1])}${vitHtml('정신', c.mental, 'mp')}${s.solo ? soloAidHtml(s.solo.dmg, s.solo.guard, s.solo.falls) : ''}
+    <div class="raid-me">${vitHtml('체력', hp, 'hp', hp < 35)}${vitHtml(spOf()[0], sp, spOf()[1])}${vitHtml('정신', c.mental, 'mp')}${ammoHtml(s.ammo)}${s.solo ? soloAidHtml(s.solo.dmg, s.solo.guard, s.solo.falls) : ''}
       <div class="raid-mine"><span class="rm-txt">대상 <b>${esc(tName)}</b>${a ? ` · 이번 라운드 <b>${esc(actName(s, a))}</b>` : ''}</span><span class="rm-fx">${fxChips(me.fx)}</span></div></div>
     <div class="raid-buttons gw-btns">
       <button class="btn primary ${on('attack')}" data-gw="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>
@@ -263,6 +263,7 @@ function bind() {
     const a = x.dataset.gw, args = { p_action: a, p_target: null, p_item: null };
     if (a === 'call') args.p_target = x.dataset.t || target || snap.me;
     if (a === 'chain') args.p_item = x.dataset.c;
+    if (a === 'attack') ammoWarn(snap?.ammo);
     run(x, () => act(args));
   });
   $$('[data-mk-step]', el).forEach(x => x.onclick = () => step(Number(x.dataset.mkStep)));

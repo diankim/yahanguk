@@ -4,7 +4,7 @@ import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
 import { face } from '../people.js';
 import { haveOf, baseOf } from '../hq.js';
-import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft } from './common.js';
+import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
 import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe } from '../rules.js';
 import { bindTips } from './fightui.js';
@@ -354,8 +354,6 @@ function redrawFish() {
   box.replaceWith(t.firstElementChild); bindFish();
 }
 
-function foldOpen(k) { try { return localStorage.getItem('yh-fold-' + k) !== '0'; } catch { return true; } }
-document.addEventListener('toggle', e => { const d = e.target; if (d?.dataset?.fold) try { localStorage.setItem('yh-fold-' + d.dataset.fold, d.open ? '1' : '0'); } catch {} }, true);
 
 function tree(s) {
   const nodes = s.nodes || [], byParent = new Map();

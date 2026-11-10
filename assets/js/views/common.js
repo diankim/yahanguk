@@ -138,6 +138,8 @@ export const MAJOR_FACTIONS = {
 for (const [k, f] of Object.entries(MAJOR_FACTIONS)) f.base = GAMEDATA.factionHome?.[k]?.[0] || f.base;
 registerNames(Object.entries(MAJOR_FACTIONS).map(([k, v]) => [k, v.name]));
 
+export function foldOpen(k) { try { return localStorage.getItem('yh-fold-' + k) !== '0'; } catch { return true; } }
+document.addEventListener('toggle', e => { const d = e.target; if (d?.dataset?.fold) try { localStorage.setItem('yh-fold-' + d.dataset.fold, d.open ? '1' : '0'); } catch {} }, true);
 export function panel(title, body, { ico, extra = '', cls = '', id = '' } = {}) {
   return `<section class="panel ${cls}" ${id ? `id="${id}"` : ''}><header class="panel-head"><h2>${ico ? icon(ico, 16) : ''}${esc(title)}</h2>${extra}</header><div class="panel-body">${body}</div></section>`;
 }

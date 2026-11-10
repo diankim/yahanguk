@@ -851,7 +851,7 @@ begin
         'nameless', m.nameless, 'acted', m.act is not null, 'dmg', m.dmg, 'heal', m.heal, 'taken', m.taken, 'falls', m.falls, 'credits', m.credits, 'share', coalesce((gsh ->> m.owner_id::text)::numeric, 0),
         'pos', m.pos, 'bound', f.boss_id = 'mukjeok' and public.world_mk_held(fid, m.owner_id),
         'fx', (select coalesce(jsonb_agg(kk), '[]'::jsonb) from jsonb_object_keys(coalesce(m.fx, '{}'::jsonb)) kk)) order by m.joined_at), '[]'::jsonb) from public.world_gw_members m where m.fight_id = fid),
-    'my_act', me.act, 'joined', me.owner_id is not null, 'sp', c.spiritual_power,
+    'my_act', me.act, 'joined', me.owner_id is not null, 'sp', c.spiritual_power, 'ammo', public.world_ammo_left(c.owner_id),
     'items', (select coalesce(jsonb_object_agg(k, (c.inventory ->> k)::int), '{}'::jsonb) from unnest(public.world_battle_item_have('gw')) k
         where coalesce((c.inventory ->> k)::int, 0) > 0),
     'items_left', greatest(0, 2 - coalesce(me.items_used, 0)),
