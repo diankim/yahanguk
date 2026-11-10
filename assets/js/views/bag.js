@@ -3,7 +3,8 @@ import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } 
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
+import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse } from './item.js';
+import { bindQty, qtyOf } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG } from '../rules.js';
 import { hit } from '../changes.js';
@@ -184,7 +185,7 @@ async function items(body, inv, stg) {
       if (equipped.has(r.id) && left > 0) { out.push({ ...r, part: { q: 1, eq: true, first: true } }); left -= 1; }
       while (left > 0) { const q = Math.min(st, left); out.push({ ...r, part: { q, st, first: !out.length } }); left -= q; }
       return out;
-    }).map(({ id, n, it, part }) => {
+    }).map(({ id, n, it, part }, ri) => {
       const st = stackOf(id), cells = Math.ceil(Math.max(0, n - (equipped.has(id) ? 1 : 0)) / st);
       const cellTag = part ? (part.eq ? '' : st > 1 ? `한 칸 ${part.q}/${st}` : '') : `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`;
       const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', (!part || part.first) && stored[id] ? `창고 ${fmt.num(stored[id])}` : '', USABLE[id] ? '사용 가능' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
@@ -194,7 +195,8 @@ async function items(body, inv, stg) {
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
         <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" title="${esc(GWIRYEONG.supply)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small>${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
-        ${showUse ? `<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>` : ''}
+        ${showUse ? (useQtyHtml(id, n, `use:${ri}`) ? `<div class="row-act inv-use">${useQtyHtml(id, n, `use:${ri}`)}<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" data-use-q="use:${ri}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button></div>`
+          : `<button class="btn small inv-quick" data-here="물품 사용" data-here-down data-use="${esc(id)}" aria-label="${esc(nameOf(id))} 사용" title="${esc(USABLE[id])}">사용</button>`) : ''}
         ${it?.category === 'outfit' ? `<button class="btn small inv-quick" data-wear="${esc(id)}" aria-label="${esc(nameOf(id))} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷이나 장신구 하나를 꺼냅니다' : '옷장에 넣으면 「내 모습」에서 고를 수 있습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>` : ''}
         ${it?.category === 'pet' ? `<button class="btn small inv-quick" data-adopt="${esc(id)}" aria-label="${esc(nameOf(id))} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>` : ''}
         ${id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small inv-quick" data-token-trade title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>` : ''}</li>`; }).join('')}</ul>`
@@ -363,7 +365,8 @@ async function craft(body, inv, stg) {
 }
 
 function bindActions(body) {
-  $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b));
+  bindQty(body);
+  $$('[data-use]', body).forEach(b => b.onclick = () => useItem(b.dataset.use, b, b.dataset.useQ ? qtyOf(body, b.dataset.useQ) || 1 : 1));
   $$('[data-adopt]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_adopt', { p_item: b.dataset.adopt })));
   $$('[data-wear]', body).forEach(b => b.onclick = () => guard(b, () => act('world_wardrobe_add', { p_item: b.dataset.wear })));
   $$('[data-token-trade]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_token_trade')));
