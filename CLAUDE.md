@@ -270,7 +270,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 싸우는 중의 물품
 
-현장 토벌(world_active_encounters result null·defeated·fled 아님)·파티 토벌(status fight·out_reason null)·귀허의 주인(status fight) 중에는 world_use_item·world_party_use_item 거절. 화면은 퀵슬롯·가방·상태 창의 물품을 core.js useItemAct → battleItemRoute(yh-battle-item)로 전투 화면(battle.js·pfight.js·gw.js)의 「물품」 행동으로 보낸다(턴·라운드를 씀). 새 물품 단추는 useItemAct를 쓴다. 현장·파티 물품 칸 battle.js trayList는 보통·우수품(_hq)을 함께, 귀허는 world_gw_snapshot.items가 _hq 수도. 합동 토벌은 §10. 꼬마 동무 바구니·알은 「열기」(world_pet_adopt). 보스 싸움에 쓰는 회복품은 가방 줄 맨 앞 테 두른 칩(「토벌」·「귀허」·「토벌·귀허」)과 물품 정보 「보스 싸움」 줄로 보임(item.js bossUse — 봉연·결전 = 체력·정신·영력 물품, 귀허 = GW_HEAL 다섯, gw.js도 같은 표).
+현장 토벌(world_active_encounters result null·defeated·fled 아님)·파티 토벌(status fight·out_reason null)·귀허의 주인(status fight) 중에는 world_use_item·world_party_use_item 거절. 화면은 퀵슬롯·가방·상태 창의 물품을 core.js useItemAct → battleItemRoute(yh-battle-item)로 전투 화면(battle.js·pfight.js·gw.js)의 「물품」 행동으로 보낸다(턴·라운드를 씀). 새 물품 단추는 useItemAct를 쓴다. 여러 개 쓰기(1.1.1n, 사용자 요청): useItemAct(id, n) — n>1이면 world_use_item_batch(p_item_id, p_times 1~50, world_use_item을 차례로·실패한 한 번만 되돌리고 멈춤, 2번째부터 그 물품의 기운이 모두 두 번 몫까지 찼고 채울 체력·정신·영력·침식·탐색력·치료가 없으면 멈춤, 세심단·환골탈태 서첩·귀령초는 하나씩만), 수량 칸은 item.js useQtyHtml(물품, 가진 수, 키) 하나 — 가방 줄(bag.js 사용 가능·2개 이상이면 수량 칸 + 사용)과 물품 정보 창(쓸 수량·창고에 넣을 수량·버릴 수량 모두 itempick.js qtyHtml)이 함께 씀. 현장·파티 물품 칸 battle.js trayList는 보통·우수품(_hq)을 함께, 귀허는 world_gw_snapshot.items가 _hq 수도. 합동 토벌은 §10. 꼬마 동무 바구니·알은 「열기」(world_pet_adopt). 보스 싸움에 쓰는 회복품은 가방 줄 맨 앞 테 두른 칩(「토벌」·「귀허」·「토벌·귀허」)과 물품 정보 「보스 싸움」 줄로 보임(item.js bossUse — 봉연·결전 = 체력·정신·영력 물품, 귀허 = GW_HEAL 다섯, gw.js도 같은 표).
 
 ### 장비 내구도
 

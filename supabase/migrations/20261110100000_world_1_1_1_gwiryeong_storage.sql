@@ -63,7 +63,53 @@ begin
   return true;
 end $function$;
 
-update public.world_patch_notes set body = body || E'\n- 귀령초: 찾을 때 가방이 가득 차 있으면 버려지지 않고 개인 창고로 들어갑니다(창고 칸이 넘쳐도 들어감).\n- 비무회 작전: 우수품 회복품(「… (우수)」)도 고를 수 있게 목록에 보입니다.'
+create or replace function public.world_use_item_batch(p_item_id text, p_times integer)
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); n int; i int; r jsonb; last jsonb; done int := 0; why text; outs jsonb := '{}'::jsonb; parts text[] := '{}'; k text; v text; nm text; fx jsonb; c public.world_characters%rowtype;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if public.world_item_base(p_item_id) in ('reset_stats', 'reset_identity', 'gwiryeong_cho') then raise exception '이 물품은 한 번에 하나씩만 쓸 수 있습니다.'; end if;
+  n := least(greatest(coalesce(p_times, 1), 1), 50);
+  fx := public.world_item_fx(public.world_item_base(p_item_id));
+  for i in 1 .. n loop
+    if i > 1 then
+      select * into c from public.world_characters where owner_id = uid;
+      if coalesce(jsonb_array_length(fx -> 'buffs'), 0) > 0
+        and not exists (select 1 from jsonb_array_elements_text(fx -> 'buffs') b(k) join public.world_status_catalog sc on sc.status_key = b.k
+          where not exists (select 1 from public.world_character_statuses s where s.owner_id = uid and s.status_key = b.k and s.expires_at >= now() + make_interval(mins => 2 * sc.duration_minutes)))
+        and (coalesce((fx ->> 'hp')::int, 0) = 0 or c.health >= 100) and (coalesce((fx ->> 'mn')::int, 0) = 0 or c.mental >= 100)
+        and (coalesce((fx ->> 'sp')::int, 0) = 0 or c.spiritual_power >= 100) and (coalesce((fx ->> 'er')::int, 0) = 0 or c.erosion <= 0)
+        and (coalesce((fx ->> 'stam')::int, 0) = 0 or public.world_stamina_now(c.stamina, c.stamina_at, c.level) >= public.world_stamina_max(c.level))
+        and not exists (select 1 from jsonb_array_elements_text(coalesce(fx -> 'cures', '[]'::jsonb)) x(k) join public.world_character_statuses s on s.owner_id = uid and s.status_key = x.k and s.expires_at > now()) then
+        why := '기운이 이미 두 번 몫까지 찼습니다'; exit;
+      end if;
+    end if;
+    begin
+      r := public.world_use_item(p_item_id);
+    exception when others then
+      why := sqlerrm; exit;
+    end;
+    done := done + 1; last := r;
+    outs := outs || jsonb_build_object(coalesce(r ->> 'content', ''), coalesce((outs ->> coalesce(r ->> 'content', ''))::int, 0) + 1);
+  end loop;
+  if done = 0 then raise exception '%', coalesce(why, '쓰지 못했습니다.'); end if;
+  select item_name into nm from public.world_item_catalog where item_id = p_item_id;
+  for k, v in select key, value::text from jsonb_each(outs) where key <> '' loop
+    parts := parts || (k || case when v::int > 1 then ' (×' || v || ')' else '' end);
+  end loop;
+  return (last - 'content') || jsonb_build_object(
+    'content', coalesce(nm, p_item_id) || ' ' || done || '번 사용: ' || array_to_string(parts, ' · ')
+      || case when done < n then ' · ' || n || '번 가운데 ' || done || '번에서 멈춤(' || coalesce(why, '') || ')' else '' end,
+    'done', done, 'asked', n, 'stopped', why);
+end $function$;
+revoke all on function public.world_use_item_batch(text, integer) from public, anon, authenticated;
+grant execute on function public.world_use_item_batch(text, integer) to authenticated, service_role;
+
+update public.world_patch_notes set body = body || E'\n- 귀령초: 찾을 때 가방이 가득 차 있으면 버려지지 않고 개인 창고로 들어갑니다(창고 칸이 넘쳐도 들어감).\n- 비무회 작전: 우수품 회복품(「… (우수)」)도 고를 수 있게 목록에 보입니다.\n- 가방: 쓸 수 있는 물품은 수량(−·+·전부)을 정해 한 번에 여러 개 쓸 수 있습니다(50개까지, 쓸 수 없게 되면 그 자리에서 멈춤). 물품 정보 창의 창고에 넣기·버리기 수량도 창고와 같은 수량 칸으로 바뀝니다.'
 where note_id = '1.1.0' and position('귀령초: 찾을 때 가방이 가득' in body) = 0;
 
 update public.world_app_meta set value = '20261110100000' where key = 'db_version';

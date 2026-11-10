@@ -110,9 +110,10 @@ export function battleItemRoute(id) {
   window.dispatchEvent(ev);
   return ev.detail.handled;
 }
-export function useItemAct(id) {
+export function useItemAct(id, n = 1) {
   if (battleItemRoute(id)) return Promise.resolve(null);
-  return act('world_use_item', { p_item_id: id }).catch(e => {
+  const many = Math.floor(Number(n) || 1) > 1;
+  return act(many ? 'world_use_item_batch' : 'world_use_item', many ? { p_item_id: id, p_times: Math.floor(Number(n)) } : { p_item_id: id }).catch(e => {
     loadCharacter({ hud: true, field: onFieldView() }).catch(() => {});
     throw e;
   });
