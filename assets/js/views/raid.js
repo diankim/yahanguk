@@ -3,7 +3,7 @@ import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
 import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
-  resultBox, reloadCharacter, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName, showResult, soloAidHtml } from './fightui.js';
+  resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName, showResult, soloAidHtml } from './fightui.js';
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
 import { baseOf } from '../hq.js';
@@ -240,7 +240,7 @@ function patchActions(me, members) {
   const tName = members.find(m => m.id === tgt)?.name || '나';
   const mine = members.find(m => m.me), spName = spOf()[0];
   const so = me.solo;
-  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}${so ? soloAidHtml(so.final_dmg ?? so.solo_dmg, so.final_guard ?? 0, so.solo_falls) : ''}
+  box.innerHTML = `${vitHtml('체력', me.hp, 'hp', me.hp < 35)}${vitHtml(spName, me.sp, spOf()[1])}${ammoHtml(me.ammo)}${so ? soloAidHtml(so.final_dmg ?? so.solo_dmg, so.final_guard ?? 0, so.solo_falls) : ''}
     <div class="raid-mine"><span class="rm-txt">${mine ? `내 피해 <b>${fmt.num(mine.dmg || 0)}</b> · 기여 <b>${mine.share}%</b>${creditLine(mine.credits)}` : ''}</span><span class="rm-fx">${fxChips(Object.keys(me.fx || {}))}</span></div>`;
   outBox(me);
   const cb = $('#raid-coopbox', el);
@@ -341,7 +341,7 @@ function bind() {
   if (bb) bb.onclick = () => run(bb, () => rpc('world_raid_begin', { p_raid: r.id }));
   const ml = $('#raid-mem', el);
   if (ml) ml.onclick = e => { const b = e.target.closest('[data-pick]'); if (!b) return; const id = b.dataset.pick; sel = sel === id ? null : id; if (snap?.me?.joined && snap?.raid?.status === 'fight') target = id; patch(); };
-  $$('.raid-buttons [data-act]', el).forEach(b => b.onclick = () => run(b, () => rpc('world_raid_action', { p_raid: r.id, p_action: b.dataset.act }), true));
+  $$('.raid-buttons [data-act]', el).forEach(b => b.onclick = () => { if (b.dataset.act === 'attack') ammoWarn(snap?.me?.ammo); return run(b, () => rpc('world_raid_action', { p_raid: r.id, p_action: b.dataset.act }), true); });
   const ib = $('#raid-items', el); if (ib) ib.onclick = tray.open;
   const co = $('#raid-coop-open', el); if (co) co.onclick = () => { const w = $('.raid-act', el); w?.classList.toggle('coop-open'); co.classList.toggle('on', !!w?.classList.contains('coop-open')); };
 }

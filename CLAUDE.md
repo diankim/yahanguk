@@ -266,7 +266,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 무기 소모
 
 - 근접 기력(spiritual_power, 근접 무기면 노란 「기력」 core.js spOf) 공격마다 2, 술법 영력 3(합동 토벌·결전 2, 7.7.7r), 원거리 equipment_traits.ammo(ammo_arrow·ammo_bolt·ammo_dart, 묶음 100, world_ammo_of) 한 발 하나. 없으면 피해 절반. 원정은 회차마다 둘, 떠날 때 없으면 원정 전투력 ×0.6. 새 원거리 무기에는 ammo를 단다.
-- 현장에서 그래서 피해가 절반이면 화면 아래 알림(battle.js weakNote(갈래), 5초에 한 번). 서버 world_battle_action 응답 weak(ammo·sp·mp)를 읽고 문구는 읽지 않음, 파티 토벌은 world_pfight_resolve가 world_pfight_members.weak에 적어 스냅샷 members[].weak로(내 차례 줄이 새로 생겼을 때만, 1.0.4n).
+- 현장에서 그래서 피해가 절반이면 화면 아래 알림(battle.js weakNote(갈래), 5초에 한 번). 서버 world_battle_action 응답 weak(ammo·sp·mp)를 읽고 문구는 읽지 않음, 파티 토벌은 world_pfight_resolve가 world_pfight_members.weak에 적어 스냅샷 members[].weak로(내 차례 줄이 새로 생겼을 때만, 1.0.4n). 봉연·결전·귀허·먹그림자(1.1.1n, 제보 67): 스냅샷이 남은 탄 world_ammo_left(uid) → {id, n}(원거리 무기만, 봉연 me.ammo·귀허 ammo)을 주고 화면 fightui.js ammoHtml이 내 막대 옆 칸(10발 아래 금빛·0 빨강), 공격 단추를 누를 때 탄이 없으면 ammoWarn → battle.js weakNote('ammo').
 
 ### 싸우는 중의 물품
 
@@ -559,7 +559,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 사람 사이
 
 - 이름을 누르면(채팅·여기 있는 이들·동료) 조사원 카드 world_character_card(레벨·직업·소속·대표/장착 칭호·숙련·지금 상황·있는 곳). 전·가방·능력치는 안 내보냄. 숨김 칭호도 내건 것은 이름을 보이되 못 얻은 사람에겐 설명을 가림.
-- 카드에서 친구 신청·수락·끊기·귓속말·파티 초대(없으면 만들고)·거래 제안(같은 곳)·구조(같은 곳·전투불능)·비무·차단. 친구 world_friends(50명·대기 20건)는 동료 화면 카드(.people.cards, 단추는 이름 아래)에서 위치·상황·최근 활동. 친구 별명·메모(1.0.3f, 나만 보임): 표 world_friend_notes(RLS·직접 읽기 없음), world_friend_note_set(p_target, p_nick ≤12자, p_memo ≤200자, 둘 다 비우면 지움, 친구만), world_friend_overview friends[].nick·memo로 실어 보냄(요청 추가 없음). 화면은 받은 값을 기기에 적어(people.js syncNotes·noteOf, localStorage yh-friend-notes:<uid>) cardName이 이름 뒤에 별명 칩(.f-nick)을 붙이므로 채팅·목록·카드 어디서나 보이고, 동료 화면 친구 카드·조사원 카드에 메모와 「별명·메모」(card.js openFriendNote). 차단 world_blocks: 친구 끊김, 상대의 귓속말·친구 신청·파티 초대·직접 거래를 서버가 막고 채팅에서도 숨김.
+- 카드에서 친구 신청·수락·끊기·귓속말·파티 초대(없으면 만들고)·거래 제안(같은 곳)·구조(같은 곳·전투불능)·비무·차단. 친구 world_friends(50명·대기 20건)는 동료 화면 카드(.people.cards, 단추는 이름 아래)에서 위치·상황·최근 활동. 친구 목록은 접는 칸(details data-fold friends, 1.1.1n 제보 69 — 접힘은 views/common.js foldOpen·yh-fold-<키> 한 곳, 현장 기록 칸과 같은 것). 친구 별명·메모(1.0.3f, 나만 보임): 표 world_friend_notes(RLS·직접 읽기 없음), world_friend_note_set(p_target, p_nick ≤12자, p_memo ≤200자, 둘 다 비우면 지움, 친구만), world_friend_overview friends[].nick·memo로 실어 보냄(요청 추가 없음). 화면은 받은 값을 기기에 적어(people.js syncNotes·noteOf, localStorage yh-friend-notes:<uid>) cardName이 이름 뒤에 별명 칩(.f-nick)을 붙이므로 채팅·목록·카드 어디서나 보이고, 동료 화면 친구 카드·조사원 카드에 메모와 「별명·메모」(card.js openFriendNote). 차단 world_blocks: 친구 끊김, 상대의 귓속말·친구 신청·파티 초대·직접 거래를 서버가 막고 채팅에서도 숨김.
 
 ## 15. UX/UI 디자인 방향
 

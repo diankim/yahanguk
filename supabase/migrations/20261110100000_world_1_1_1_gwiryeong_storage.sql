@@ -169,7 +169,22 @@ select pg_temp.yh_fix('world_gw_snapshot', array[
   $q$from unnest(array['tonic', 'tonic_hq', 'herbal_extract', 'rejuv_pill', 'rejuv_pill_hq', 'grand_pill', 'grand_pill_hq', 'banyo_salve']) k$q$,
   $q$from unnest(public.world_battle_item_have('gw')) k$q$]);
 
-update public.world_patch_notes set body = body || E'\n- 귀령초: 찾을 때 가방이 가득 차 있으면 버려지지 않고 개인 창고로 들어갑니다(창고 칸이 넘쳐도 들어감).\n- 비무회 작전: 우수품 회복품(「… (우수)」)도 고를 수 있게 목록에 보입니다.\n- 가방: 쓸 수 있는 물품은 수량(−·+·전부)을 정해 한 번에 여러 개 쓸 수 있습니다(50개까지, 쓸 수 없게 되면 그 자리에서 멈춤). 물품 정보 창의 창고에 넣기·버리기 수량도 창고와 같은 수량 칸으로 바뀝니다.'
+create or replace function public.world_ammo_left(p_uid uuid)
+ returns jsonb language sql stable
+ set search_path to 'pg_catalog', 'public'
+as $function$
+  select case when x.a is null then null else jsonb_build_object('id', x.a, 'n', coalesce((select (c.inventory ->> x.a)::int from public.world_characters c where c.owner_id = p_uid), 0)) end
+    from (select public.world_ammo_of(p_uid) a) x
+$function$;
+select pg_temp.yh_share('public.world_ammo_left(uuid)');
+
+select pg_temp.yh_fix('world_raid_snapshot_core', array[
+  $q$'hp', c.health, 'sp', c.spiritual_power, 'out',$q$, $q$'hp', c.health, 'sp', c.spiritual_power, 'ammo', public.world_ammo_left(c.owner_id), 'out',$q$]);
+
+select pg_temp.yh_fix('world_gw_snapshot', array[
+  $q$'joined', me.owner_id is not null, 'sp', c.spiritual_power,$q$, $q$'joined', me.owner_id is not null, 'sp', c.spiritual_power, 'ammo', public.world_ammo_left(c.owner_id),$q$]);
+
+update public.world_patch_notes set body = body || E'\n- 귀령초: 찾을 때 가방이 가득 차 있으면 버려지지 않고 개인 창고로 들어갑니다(창고 칸이 넘쳐도 들어감).\n- 비무회 작전: 우수품 회복품(「… (우수)」)도 고를 수 있게 목록에 보입니다.\n- 가방: 쓸 수 있는 물품은 수량(−·+·전부)을 정해 한 번에 여러 개 쓸 수 있습니다(50개까지, 쓸 수 없게 되면 그 자리에서 멈춤). 물품 정보 창의 창고에 넣기·버리기 수량도 창고와 같은 수량 칸으로 바뀝니다.\n- 봉연 토벌·결전·귀허·먹그림자: 내 막대 옆에 남은 화살(탄) 수가 보이고, 탄이 떨어진 채 공격하면 피해가 절반이라는 안내가 뜹니다.\n- 동료 화면: 친구 목록을 접어 둘 수 있습니다(기기에 기억).'
 where note_id = '1.1.0' and position('귀령초: 찾을 때 가방이 가득' in body) = 0;
 
 update public.world_app_meta set value = '20261110100000' where key = 'db_version';

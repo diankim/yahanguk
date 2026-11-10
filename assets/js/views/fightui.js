@@ -3,6 +3,7 @@ import { itemDesc, catItem, catalogList, load } from './common.js';
 import { USABLE, fxHtml } from './item.js';
 import { baseOf, isHq, haveOf } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
+import { weakNote } from './battle.js';
 const SURE = GD.coopRules?.sure_crit || 2;
 
 export const FX_NAME = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', critnext: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '철벽', guard: '방어', bound: '사슬',
@@ -56,6 +57,8 @@ export function showSelected(box, list, sel, opts, onClose) {
 }
 export const fightNums = m => [['준 피해', fmt.num(m.dmg || 0)], ['받은 피해', fmt.num(m.taken || 0)], ['회복', fmt.num(m.heal || 0)]];
 
+export const ammoHtml = a => a ? `<div class="raid-ammo ${Number(a.n) > 0 ? (Number(a.n) <= 10 ? 'low' : '') : 'out'}" title="남은 ${esc(nameOf(a.id))} · 다 떨어지면 공격 피해가 절반으로 줄어듭니다"><span>${esc(nameOf(a.id))}</span><b>${fmt.num(a.n ?? 0)}</b></div>` : '';
+export const ammoWarn = a => { if (a && !(Number(a.n) > 0)) weakNote('ammo'); };
 export const vitHtml = (label, v, kind, low = false) => `<div class="raid-vit ${kind} ${low ? 'low' : ''}"><span>${esc(label)}</span><b>${fmt.num(v ?? 0)}</b><i class="bar"><i style="width:${Math.max(0, Math.min(100, Number(v) || 0))}%"></i></i></div>`;
 
 export const coopBtn = (k, data = '') => `<button type="button" class="coop-btn ${!k.unlocked ? 'locked' : ''} ${k.on ? 'on' : ''}" ${data} ${k.why ? 'data-lock="1" disabled' : ''} title="${esc(k.desc || '')}">

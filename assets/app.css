@@ -1306,6 +1306,8 @@ details.fold.log-card > summary h2 small { margin-left: 4px; font-weight: 500; }
 .inv-item .inv-row:hover { border: 0; }
 .inv-item .inv-quick { width: auto; min-width: 52px; padding-inline: 12px; }
 .inv-item .inv-use { gap: 4px; }
+.raid-ammo { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: calc(12px * var(--fz, 1)); padding: 2px 8px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); color: var(--muted); } .raid-ammo b { color: var(--text); font-variant-numeric: tabular-nums; } .raid-ammo.low b { color: var(--gold); } .raid-ammo.out { border-color: var(--hp); } .raid-ammo.out b { color: var(--hp); }
+details.f-fold > summary { font-weight: 600; margin: 4px 0 8px; } details.f-fold > summary::before { content: "▸ "; } details.f-fold[open] > summary::before { content: "▾ "; }
 @media (max-width: 640px) { .inv-list li.inv-item:has(.inv-use) { flex-wrap: wrap; } .inv-item .inv-use { margin-left: auto; padding-bottom: 6px; } }
 .qty-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; } .qty-row > span { flex: 1 1 140px; min-width: 0; font-size: calc(13px * var(--fz, 1)); } .qty-row.off { opacity: .55; }
 
