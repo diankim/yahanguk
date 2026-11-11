@@ -25,12 +25,12 @@ export async function loadBond(force) {
 }
 const refresh = () => loadBond(true);
 const WED = GAMEDATA.wedding || { delays: [10, 60, 720, 1440], gap_s: 15, wish_max: 40, guest: { clap: 5, petal: 5, cup: 5 }, couple: { bow: 5, cake: 5 } };
-const CHEER_NAME = { clap: '박수 치기', petal: '꽃잎 뿌리기', cup: '술잔 올리기', bow: '절하기', cake: '떡 돌리기' };
+const CHEER_NAME = { clap: '박수 치기', petal: '꽃잎 뿌리기', cup: '술잔 올리기', bow: '절하기', cake: '떡 돌리기', pet: '동무 나서기' };
 const delayName = m => m < 60 ? `${m}분 뒤` : `${m / 60}시간 뒤`;
-function cheerRow(caps, me, wait) {
-  return `<div class="btn-row wed-cheers">${Object.entries(caps).map(([k, n]) => {
+function cheerRow(caps, me, wait, pet) {
+  return `<div class="btn-row wed-cheers">${Object.entries(caps).filter(([k]) => k !== 'pet' || pet).map(([k, n]) => {
     const used = me[k] || 0;
-    return `<button class="btn small" data-cheer="${k}" data-cap="${used >= n ? 1 : ''}" ${used >= n || wait ? 'disabled' : ''}>${CHEER_NAME[k] || k} ${used}/${n}</button>`;
+    return `<button class="btn small" data-cheer="${k}" data-cap="${used >= n ? 1 : ''}" ${used >= n || wait ? 'disabled' : ''}>${CHEER_NAME[k] || k}${k === 'pet' ? ` · ${esc(pet)}` : ''} ${used}/${n}</button>`;
   }).join('')}</div>`;
 }
 export async function openWedding(wedId) {
@@ -55,8 +55,8 @@ export async function openWedding(wedId) {
     const lastAt = me.last_at ? new Date(me.last_at).getTime() : 0, readyAt = lastAt ? lastAt + ru.gap_s * 1000 : 0;
     const wait = readyAt > Date.now() + skew;
     const acts = !open ? '' : v.couple
-      ? (v.here ? `${cheerRow(ru.couple, me, wait)}<p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span></p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 있어야 하객에게 절하고 떡을 돌릴 수 있습니다.</p>`)
-      : (v.here ? `${cheerRow(ru.guest, me, wait)}
+      ? (v.here ? `${cheerRow(ru.couple, me, wait, v.my_pet)}<p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span></p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 있어야 하객에게 절하고 떡을 돌릴 수 있습니다.</p>`)
+      : (v.here ? `${cheerRow(ru.guest, me, wait, v.my_pet)}
           ${me.wished ? '' : `<div class="wed-wish"><textarea id="wed-wish" rows="2" maxlength="${max}" placeholder="두 사람에게 건넬 축사 한마디 (한 번만 보낼 수 있습니다)"></textarea><div class="wed-wish-foot"><small class="muted" id="wed-wish-n">0 / ${max}자</small><button class="btn small primary" data-cheer="wish" ${wait ? 'disabled' : ''}>축사 보내기</button></div></div>`}
           <p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span> · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`);
     box.innerHTML = `${desc}

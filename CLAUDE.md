@@ -514,6 +514,12 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 세력 안전지대 world_faction_home: 정통파 정청·객사, 적월교 백골 장터(월식성 아님), 흑련회 십삼문, 북령맹 철벽 고찰, 수향 구름나루, 남명 잔불촌, 천명원 무극 관성대·본부 객사(Lv25 전 분소).
 - 화면 캐릭터 › 세력(factionquest.js: 등급 사다리·퀘스트 카드·playDialogue·의뢰판·비고·수련장·인물): 칸 단추(소속 임무·일일 보급·거점·등급·퀘스트·의뢰판·비고·기부·수련장·인물, 할 일이 있으면 빨간 점) → 팝업(character.js openPop, 행동 뒤 refreshPop), 세력 판도만 화면에. 「세력 떠나기」는 거점 팝업 안. replay.js는 550ms마다 한 줄(움직임 줄이기 무관). 안전지대 현장 「세력」 칸, 퀘스트 칸 「세력 화면」은 등급 팝업(sessionStorage yh-fpop). 인물 world_faction_npcs.quote·detail은 누르면 펼침. 조사원 카드 「세력 · 등급」(world_character_card.faction_rank, world_faction_rank_label).
 
+### 세력 행사(2.0.0)
+
+- 일곱 대세력이 요일마다 거점에서 행사(사용자 결정 — 이름·요일·낮 시각·8시간·끝날 때 기준): 월 봉등례(정통파·본부 정청)·화 적월제(백골 장터)·수 야장회(십삼문 암시장)·목 설등 공양(철벽 고찰)·금 유등회(구름나루)·토 잔불제(잔불촌)·일 관성제(무극 관성대). 수치·이름·기운은 world_feast_rules 한 곳(start 12:30·min 30·buff_h 8·gap_s 15·pet_max 3·notify_min 30·chat_min 10·feasts[dow·faction·region·key·name·hanja·desc·buff·icon·effects] → gamedata feast(장소 이름 place 덧붙임) → feast.js·guide.js), 기운 상태는 world_status_catalog(key = feast_*, 480분), 의식 문구 world_feast_script(key), 오늘 행사 world_feast_today(now).
+- 표 world_feasts(하루 한 줄, status soon·live·done, told 0~3)·world_feast_members(참여, 계정 몫 — 캐릭터 정리 안 함)·world_feast_lines, RLS·직접 읽기 없음. pg_cron yh-feast(1분, world_feast_tick): 30분 전 줄 만들고 그 세력 조사원 알림 feast(갈래 faction) → 10분 전·시작 때 전체 채팅 「세력 소식」 → 끝나면 함께하기를 누르고 그 순간 그곳에 있는(쓰러짐·사망 아님) 사람에게 기운 8시간·알림. RPC world_feast_view()·world_feast_act('join'|'pet')(world_travel_guard·world_seal_guard). 화면 assets/js/feast.js(openFeast 창, feastToday·feastBandRow — 현장 띠는 gamedata로 시작 1시간 전부터 끝날 때까지, 요청 없음, raid.js fillRaidBand), 알림 「행사 보기」 settings.js data-feastv.
+- 동무 나서기: 데리고 다니는 동무 재롱 줄은 world_pet_show(uid) 한 곳(갈래 묶음 지키기·물기·쪼기·홀리기마다 문구 셋) — 행사 world_feast_act('pet')와 혼례 world_wedding_cheer('pet')(world_wedding_rules guest·couple pet 3, world_wedding_guests.pets, 혼례 창 my_pet)가 함께 씀. 새 모임 행사도 이것을.
+
 ### 세력 판도
 
 - 영향력 world_region_influence: 대세력 조사원이 안전지대 밖에서 토벌 승리 1(정예 2·우두머리 4)·탐색 0.3·채집 0.3·원정 20분마다 1(최대 24)(한 사람·지역·정산 40까지). pg_cron yh-influence(매시 7분, world_influence_tick): ×0.97 후 지난 시간 활동을 더함.

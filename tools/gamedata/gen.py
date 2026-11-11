@@ -79,6 +79,7 @@ def build(dsn):
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")
     d['fishRules'] = q(dsn, "select world_fish_rules()")
     d['wedding'] = q(dsn, "select world_wedding_rules()")
+    d['feast'] = q(dsn, "select world_feast_rules() || jsonb_build_object('feasts', (select jsonb_agg(f || jsonb_build_object('place', g.region_name) order by (f ->> 'dow')::int) from jsonb_array_elements(world_feast_rules() -> 'feasts') f join world_map_regions g on g.region_id = f ->> 'region'))")
     d['level'] = q(dsn, "select world_level_rules()")
     d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx')) from jsonb_each(world_domain_rules()) e(k, v)")
     d['names'] = q(dsn, "select world_name_rules()")

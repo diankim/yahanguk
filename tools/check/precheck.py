@@ -9,7 +9,7 @@ ACCOUNT_TABLES = {
     'world_faction_supply_claims', 'world_friend_notes', 'world_friends', 'world_gw_members', 'world_gw_records',
     'world_gwiryeong_log', 'world_legacy_marks', 'world_letter_sends', 'world_notify_prefs', 'world_party_loot_allocations',
     'world_pfight_members', 'world_raid_members', 'world_report_rewards', 'world_shop_buy_caps', 'world_staff',
-    'world_tourney_entrants', 'world_travel_history', 'world_ui_prefs', 'world_wedding_guests', 'world_whisper_reads',
+    'world_tourney_entrants', 'world_travel_history', 'world_ui_prefs', 'world_wedding_guests', 'world_feast_members', 'world_whisper_reads',
     'world_events', 'world_chat_messages', 'world_party_messages', 'world_circles', 'world_circle_invites',
     'world_gwiryeong_plants', 'world_case_state', 'world_party_loot_pool',
 }

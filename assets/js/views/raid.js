@@ -1,4 +1,5 @@
 import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
+import { feastBandRow, bindFeastBand } from '../feast.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
@@ -378,6 +379,7 @@ export async function fillRaidBand(box) {
   const wed = await wedP;
   if (!box.isConnected) return;
   const w = b?.world, rows = [];
+  const fr = feastBandRow(); if (fr) rows.push(fr);
   if (wed?.wed_id) rows.push(`<a class="raid-band-row hot" href="#" data-wed-band="${esc(wed.wed_id)}">${icon('heart', 14)}<span><b>${esc(wed.a)}·${esc(wed.b)}</b>의 혼례 · ${esc(wed.place || '')} · ${wed.status === 'ceremony' || new Date(wed.starts_at) <= new Date() ? `${left(wed.ends_at)} 남음` : `${left(wed.starts_at)} 뒤 시작`}</span><small>혼례 보기</small></a>`);
   if (b?.final) rows.push(`<a class="raid-band-row hot" href="#/raid/${esc(b.final)}">${icon('sword', 14)}<span><b>구중 봉주와의 결전</b>이 열려 있습니다</span><small>들어가기</small></a>`);
   if (w) {
@@ -389,6 +391,7 @@ export async function fillRaidBand(box) {
   }
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
+  bindFeastBand(box);
   const wb = $('[data-wed-band]', box);
   if (wb) wb.onclick = async e => { e.preventDefault(); (await import('../bond.js')).openWedding(wb.dataset.wedBand); };
   backPrompt(w);

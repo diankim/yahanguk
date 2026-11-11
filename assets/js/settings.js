@@ -143,6 +143,7 @@ function noteActs(n) {
   if (n.kind === 'gw_invite' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}" data-join="1" data-here="합류">합류</button>`;
   if (n.kind === 'bond_wedding_ask' && n.payload?.wed_id) return `<button class="btn primary small" data-wed="${esc(n.id)}" data-acc="1">혼례 받기</button><button class="btn small" data-wed="${esc(n.id)}" data-acc="0">다음에</button>`;
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
+  if (n.kind === 'feast') return `<button class="btn primary small" data-feastv="${esc(n.id)}">행사 보기</button>`;
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">비무 방</button>`;
   if ((n.kind === 'pfight_invite' || n.kind === 'pfight_join') && n.payload?.fight_id) return `<button class="btn primary small" data-pfight="${esc(n.id)}" data-join="${n.kind === 'pfight_invite' ? 1 : ''}">${n.kind === 'pfight_invite' ? '합류 · 탐색력 1' : '보기'}</button>`;
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
@@ -164,10 +165,10 @@ const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
   drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look' };
 const pastActs = n => { const a = noteActs(n); return /data-(invite|ride|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
-const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'fdown', 'letter', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
+const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.ride || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
+  const n = byId(btn.dataset.ride || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.feastv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.ride) {
@@ -219,6 +220,7 @@ async function runAct(btn) {
     return true;
   }
   if (btn.dataset.wedv) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); (await import('./bond.js')).openWedding(n.payload.wed_id); return true; }
+  if (btn.dataset.feastv) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); (await import('./feast.js')).openFeast(); return true; }
   if (btn.dataset.tn) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('tourney', n.kind === 'tourney_result' ? n.payload.t_id : ''); return true; }
   if (btn.dataset.pfight) {
     let ok = true;
