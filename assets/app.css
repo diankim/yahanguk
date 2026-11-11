@@ -3182,6 +3182,9 @@ b.shadow { color: var(--sp); }
 .raid-log.wed-log .k-clap span, .raid-log.wed-log .k-petal span { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
 .raid-log.wed-log .k-wish { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); border-radius: 3px; padding-right: 8px; }
 .raid-log.wed-log .k-wish span { color: var(--text); font-weight: 600; }
+.wed-wish { display: grid; gap: 6px; margin-top: 8px; }
+.wed-wish textarea { width: 100%; min-height: 64px; resize: vertical; box-sizing: border-box; }
+.wed-wish-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .wed-box .btn-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .wed-box .btn-row #wed-wish { flex: 1 1 160px; min-width: 0; }
 .wed-box .btn-row [data-cheer=wish] { flex: none; }

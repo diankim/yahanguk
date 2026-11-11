@@ -23,6 +23,7 @@ export async function loadBond(force) {
   return loading;
 }
 const refresh = () => loadBond(true);
+const WISH_MAX = 40;
 export async function openWedding(wedId) {
   let v = null, t = null, skew = 0;
   const l = openLayer({ title: '혼례', body: '<div class="wed-box"><p class="muted">불러오는 중…</p></div>' });
@@ -44,10 +45,11 @@ export async function openWedding(wedId) {
     box.innerHTML = `${desc}
       <ol class="raid-log wed-log">${logHtml}</ol>
       ${live && !v.couple ? (v.here ? `<div class="btn-row"><button class="btn small" data-cheer="clap" ${me.claps >= 3 ? 'disabled' : ''}>박수 치기 ${me.claps}/3</button><button class="btn small" data-cheer="petal" ${me.petals >= 3 ? 'disabled' : ''}>꽃잎 뿌리기 ${me.petals}/3</button></div>
-          ${me.wished ? '' : '<div class="btn-row"><input id="wed-wish" maxlength="40" placeholder="축사 한마디(40자)"><button class="btn small primary" data-cheer="wish">축사</button></div>'}
+          ${me.wished ? '' : `<div class="wed-wish"><textarea id="wed-wish" rows="2" maxlength="${WISH_MAX}" placeholder="두 사람에게 건넬 축사 한마디 (한 번만 보낼 수 있습니다)"></textarea><div class="wed-wish-foot"><small class="muted" id="wed-wish-n">0 / ${WISH_MAX}자</small><button class="btn small primary" data-cheer="wish">축사 보내기</button></div></div>`}
           <p class="muted small">단추 사이 15초 · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`) : ''}`;
     const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
-    const w2 = $('#wed-wish', box); if (w2 && kept) w2.value = kept;
+    const w2 = $('#wed-wish', box);
+    if (w2) { const cnt = () => { const n = $('#wed-wish-n', box); if (n) n.textContent = `${w2.value.length} / ${WISH_MAX}자`; }; if (kept) w2.value = kept; cnt(); w2.addEventListener('input', cnt); }
     $$('[data-cheer]', box).forEach(b => b.onclick = () => guard(b, async () => {
       v = await rpc('world_wedding_cheer', { p_wed: wedId, p_kind: b.dataset.cheer, p_text: b.dataset.cheer === 'wish' ? $('#wed-wish', box)?.value : null }); draw(); return null;
     }));
