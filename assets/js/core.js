@@ -279,6 +279,7 @@ export const fmt = {
     return h ? `${h}시간 ${m}분` : m ? `${m}분 ${String(r).padStart(2, '0')}초` : `${r}초`;
   },
   time: t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+  when: t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${fmt.time(d)}`; },
 };
 
 const ICONS = {

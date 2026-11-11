@@ -1,6 +1,6 @@
 import { store, on, act, rpc, ask, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON, openModal, closeModal, MARKET_ONLY } from '../core.js';
 import { loreBundle, refreshLore } from '../lore.js';
-import { load, panel, chip, loading, errorBox, currentRegion } from './common.js';
+import { load, panel, chip, loading, errorBox, currentRegion, foldOpen } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report } from '../quests.js';
@@ -8,6 +8,7 @@ import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
+import { UCOMM_PAST } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
@@ -259,11 +260,13 @@ async function userCommissions(box) {
       <button class="btn small ${enough ? 'primary' : ''}" data-here="조사원 의뢰" data-uc-give="${o.id}" ${enough && here.safe ? '' : 'disabled'} title="${esc(!here.safe ? '안전지대에서 넘깁니다' : enough ? '' : '물품이 모자랍니다')}">${icon('check', 14)}<span>넘기기</span></button></article>`;
   };
   const openMine = mine.filter(m => m.status === 'open').length;
+  const isPast = m => m.status === 'cancelled' || m.settled, live = mine.filter(m => !isPast(m)), past = mine.filter(isPast);
   box.innerHTML = `<div class="sub-head"><h3 class="sub-h">${icon('scroll', 15)} 조사원 의뢰</h3>
       <button class="btn small primary" id="uc-post" ${here.safe && openMine < (b?.max_open || 5) ? '' : 'disabled'}>${icon('plus', 14)}<span>의뢰 올리기</span></button></div>
     <p class="muted small">조사원이 보수를 걸고 구하는 물품입니다. 안전지대에서 물품을 넘기면 보수(등록처 세력 수수료 ${feePct}% 뗌)와 경험치를 받습니다. 경험치는 하루 세 번까지(오늘 ${b?.xp_left ?? 0}번 남음).
       ${here.safe ? `지금 여기서 올리면 등록처는 <b>${esc(here.region)}</b>${here.faction ? `(${esc(here.faction)})` : ''}입니다.` : '의뢰를 올리고 넘기고 받는 일은 안전지대(반요촌 제외)에서 합니다.'}${openMine >= (b?.max_open || 5) ? ' 의뢰는 한 번에 다섯 건까지 올릴 수 있습니다.' : ''}</p>
-    ${mine.length ? `<h4 class="sub-h small">내가 올린 의뢰</h4><div class="commission-grid">${mine.map(mineCard).join('')}</div>` : ''}
+    ${live.length ? `<h4 class="sub-h small">내가 올린 의뢰</h4><div class="commission-grid">${live.map(mineCard).join('')}</div>` : ''}
+    ${past.length ? `<details class="fold f-fold uc-past" data-fold="ucomm-past" ${foldOpen('ucomm-past', false) ? 'open' : ''}><summary>지난 의뢰 ${past.length} <small class="muted">${esc(UCOMM_PAST)}</small></summary><div class="commission-grid">${past.map(mineCard).join('')}</div></details>` : ''}
     <h4 class="sub-h small">들어온 의뢰 ${open.length}</h4>
     ${open.length ? `<div class="commission-grid">${open.map(openCard).join('')}</div>` : empty('지금 올라온 조사원 의뢰가 없습니다.', 'scroll')}`;
   const doAct = (btn, fn, args) => guard(btn, () => act(fn, args));
