@@ -1,4 +1,5 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
+import { GW_DAILY } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
@@ -211,7 +212,7 @@ function drawLobby(s) {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 외전 · 요인록 · 귀허</p><h1>귀허의 주인</h1></div></div>
     <section class="panel"><div class="panel-body">
       <p class="desc">소용돌이 한가운데 빈 왕좌. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다(4명을 권합니다). 모두 귀허 부적을 하나씩 씁니다.</p>
-      <p class="small">귀허 부적 ${s.charms}개 · 처치 ${s.kills}번</p>
+      <p class="small">귀허 부적 ${s.charms}개 · 처치 ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
       ${s.can_open ? `<button class="btn primary" id="gw-open">${icon('sword', 16)}<span>귀허의 주인 앞에 서기</span></button><p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>`
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}

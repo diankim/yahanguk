@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, GW_DAILY } from '../rules.js';
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -1512,7 +1512,7 @@ const S = [
       <li><b>협동 기술</b>은 봉연 토벌과 같습니다. 영력이 들고, 다시 쓰기는 라운드로 셉니다. 주인의 수법과 맞물리는 기술이 있지만, 어떻게 막는지는 쓰러뜨린 사람만 볼 수 있습니다.</li>
       <li>끝난 싸움은 대기실의 「지난 도전 기록 보기」로 라운드별로 되짚어 볼 수 있습니다.</li>
       <li><b>지면</b>: 장착 장비가 10% 닳고 침식이 10 오르며, 30분 뒤 다시 도전할 수 있습니다. 경험치·물품은 잃지 않습니다.</li>
-      <li><b>이기면</b>: 처치는 하루 한 번 인정합니다.
+      <li><b>이기면</b>: ${esc(GW_DAILY)}
         <ul><li>처음: 1,500전 · 경험치 · 탈것 「달 없는 배」 · 이름 색 「귀허청」</li>
           <li>그 뒤: 120전과 적은 경험치</li>
           <li>처치 횟수에 따라 분류 「외전」 칭호 · 테두리 · 바탕 무늬 · 낙관을 받습니다.</li></ul></li>
