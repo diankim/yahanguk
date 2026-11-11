@@ -240,7 +240,7 @@ textarea { resize: none; }
 @media (max-width: 560px) { .lore-row { grid-template-columns: 1fr; gap: 0; } .lore-row b { font-size: calc(11.5px * var(--fz, 1)); } }
 .confirm-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .confirm-row span { color: var(--muted); }
-.warn { display: flex; gap: 8px; align-items: flex-start; color: var(--warn); font-size: calc(12.5px * var(--fz, 1)); }
+.warn:not(.chip) { display: flex; gap: 8px; align-items: flex-start; color: var(--warn); font-size: calc(12.5px * var(--fz, 1)); }
 .warn .ico { margin-top: 2px; }
 
 /* ── 게임 셸 ───────────────────────────── */
