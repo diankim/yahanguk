@@ -170,8 +170,9 @@ function draw(box, id, inv, prices, mode) {
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
   const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
   const stashOk = !!here?.is_safe_zone && !weakSafe(here.region_id) && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
-  const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[id]);
-  const makes = (inv.recipes || []).filter(r => r.output === id);
+  const bid = baseOf(id);
+  const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[bid]);
+  const makes = (inv.recipes || []).filter(r => r.output === bid);
   const block = it && GEAR.has(it.category) ? gearBlock(it, c) : '';
   const tradeable = pr ? pr.tradeable !== false : null;
   const recipeRow = r => {
@@ -200,8 +201,8 @@ function draw(box, id, inv, prices, mode) {
       ${it && GEAR.has(it.category) ? `<div><dt>${slotOf(it) === 'craft' ? '쓰는 조건(가방에 두면)' : '장착 조건'}</dt><dd class="reqs">${gearReqHtml(it, c) || '<span class="req ok">누구나</span>'}</dd></div>` : (it?.minimum_level > 1 ? `<div><dt>필요 레벨</dt><dd>Lv.${it.minimum_level}</dd></div>` : '')}
     </dl>
     ${uses.length ? `<details class="fold-recipes" ${uses.length <= 3 ? 'open' : ''}><summary class="sub-h">이 물품이 들어가는 제작법 ${uses.length}</summary><ul class="spot-list">${uses.map(recipeRow).join('')}</ul></details>
-      <button class="btn small ghost" data-mat="${esc(id)}">${icon('hammer', 14)}<span>이 재료로 만들 수 있는 것 모두 보기</span></button>` : ''}
-    ${makes.length ? `<h3 class="sub-h">이 물품을 만드는 제작법</h3><ul class="spot-list">${makes.map(recipeRow).join('')}</ul>` : ''}
+      <button class="btn small ghost" data-mat="${esc(bid)}">${icon('hammer', 14)}<span>이 재료로 만들 수 있는 것 모두 보기</span></button>` : ''}
+    ${makes.length ? `<h3 class="sub-h">이 물품을 만드는 제작법</h3>${isHq(id) ? '<p class="muted small">우수품은 따로 만드는 제작법이 없습니다. 아래 제작법으로 만들 때 품질이 높으면 우수품이 나옵니다.</p>' : ''}<ul class="spot-list">${makes.map(recipeRow).join('')}</ul>` : ''}
     ${!uses.length && !makes.length ? '<p class="muted small">이 물품과 관련된 제작법이 없습니다.</p>' : ''}
     ${mode === 'bag' && have > 0 ? `<h3 class="sub-h">다루기</h3>
       <div class="btn-row">
