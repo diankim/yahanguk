@@ -191,7 +191,7 @@ begin
   for f in select * from public.world_feasts where status <> 'done' order by starts_at for update skip locked loop
     if f.told < 1 and now() < f.starts_at then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      select c.owner_id, 'feast', nm, (ru ->> 'notify_min') || '분 뒤 ' || (t ->> 'place') || '에서 ' || nm || '이(가) 열립니다. 함께하고 끝날 때 그곳에 있으면 「' || (t ->> 'buff') || '」을(를) ' || (ru ->> 'buff_h') || '시간 동안 받습니다.', jsonb_build_object('feast', f.feast_id)
+      select c.owner_id, 'feast', nm, (ru ->> 'notify_min') || '분 뒤 ' || (t ->> 'place') || '에서 ' || nm || '이(가) 열립니다. 함께하고 끝날 때 그곳에 있으면 「' || (t ->> 'buff') || '」 기운을 ' || (ru ->> 'buff_h') || '시간 동안 받습니다.', jsonb_build_object('feast', f.feast_id)
         from public.world_characters c where c.major_faction_id = f.faction_key and f.faction_key = t ->> 'faction';
       update public.world_feasts set told = 1 where feast_id = f.feast_id;
     end if;
@@ -215,12 +215,12 @@ begin
         insert into public.world_character_statuses(owner_id, status_key, potency, source_activity, expires_at)
         select m.owner_id, e ->> 'key', 1, 'feast', now() + make_interval(hours => (ru ->> 'buff_h')::int) from jsonb_array_elements(ru -> 'feasts') e where e ->> 'faction' = f.faction_key;
         insert into public.world_notifications(user_id, kind, title, content, payload)
-        select m.owner_id, 'feast', e ->> 'name' || '이(가) 끝났습니다', '「' || (e ->> 'buff') || '」을(를) ' || (ru ->> 'buff_h') || '시간 동안 받았습니다.', jsonb_build_object('feast', f.feast_id)
+        select m.owner_id, 'feast', e ->> 'name' || '이(가) 끝났습니다', '「' || (e ->> 'buff') || '」 기운을 ' || (ru ->> 'buff_h') || '시간 동안 받았습니다.', jsonb_build_object('feast', f.feast_id)
           from jsonb_array_elements(ru -> 'feasts') e where e ->> 'faction' = f.faction_key;
         n := n + 1;
       end loop;
       insert into public.world_feast_lines(feast_id, kind, text)
-      select f.feast_id, 'end', (e ->> 'name') || '이(가) 끝났습니다. 끝까지 함께한 ' || n || '명이 「' || (e ->> 'buff') || '」을(를) 받았습니다.' from jsonb_array_elements(ru -> 'feasts') e where e ->> 'faction' = f.faction_key;
+      select f.feast_id, 'end', (e ->> 'name') || '이(가) 끝났습니다. 끝까지 함께한 ' || n || '명이 「' || (e ->> 'buff') || '」 기운을 받았습니다.' from jsonb_array_elements(ru -> 'feasts') e where e ->> 'faction' = f.faction_key;
       update public.world_feasts set status = 'done' where feast_id = f.feast_id;
       n := 0;
     end if;

@@ -38,7 +38,7 @@ export async function openFeast() {
       if (!v.here) acts = `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 함께할 수 있습니다.</p>`;
       else if (!me.joined) acts = `<div class="btn-row"><button class="btn primary" data-feast="join">${icon('flame', 16)}<span>함께하기</span></button></div>`;
       else acts = `<div class="btn-row">${v.pet ? `<button class="btn small" data-feast="pet" data-cap="${me.pets >= ru.pet_max ? 1 : ''}" ${me.pets >= ru.pet_max || wait ? 'disabled' : ''}>동무 나서기 · ${esc(v.pet.name)} ${me.pets}/${ru.pet_max}</button>` : '<span class="muted small">데리고 다니는 꼬마 동무가 있으면 「동무 나서기」를 할 수 있습니다.</span>'}</div>
-        <p class="muted small">함께하는 중 · 끝날 때 ${esc(v.place)}에 있으면 「${esc(v.buff)}」을(를) ${ru.buff_h}시간 받습니다.<span data-feast-wait></span></p>`;
+        <p class="muted small">함께하는 중 · 끝날 때 ${esc(v.place)}에 있으면 「${esc(v.buff)}」 기운을 ${ru.buff_h}시간 받습니다.<span data-feast-wait></span></p>`;
     }
     box.innerHTML = `<p class="desc"><b>${esc(v.name)}(${esc(v.hanja || '')})</b> · ${esc(v.place)} · ${when} · 함께하는 이 ${fmt.num(v.count || 0)}명</p>
       <p class="muted small">${esc(v.desc || '')} · 끝날 때 그곳에 있는 참여자는 「${esc(v.buff)}」(${fx}) ${ru.buff_h}시간</p>
