@@ -65,7 +65,7 @@ async function draw(box, id) {
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
       ${rel === 'friends' && noteOf(c.owner_id) ? `<p class="f-memo">${noteOf(c.owner_id).nick ? `<b>내가 붙인 별명</b> ${esc(noteOf(c.owner_id).nick)}` : ''}${noteOf(c.owner_id).nick && noteOf(c.owner_id).memo ? '<br>' : ''}${esc(noteOf(c.owner_id).memo || '')}</p>` : ''}
       <dl class="kv info">
-        <div><dt>지금</dt><dd>${state}${yoChip}</dd></div>
+        <div><dt>지금</dt><dd class="chips">${state}${yoChip}</dd></div>
         <div><dt>있는 곳</dt><dd>${esc(c.location || '알 수 없음')}${c.same_place && !c.mine ? ' <span class="muted small">(같은 곳)</span>' : ''}</dd></div>
         ${c.last_active && !c.mine ? `<div><dt>최근 활동</dt><dd>${ago(c.last_active)}</dd></div>` : ''}
         <div><dt>숙련</dt><dd title="갈래마다 가장 높은 기술 단계(최고 50)">${RANKS.map(([k, n]) => `${n} ${c.ranks?.[k] || 1}`).join(' · ')} <span class="muted small">/ 50</span></dd></div>
