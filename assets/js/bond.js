@@ -1,6 +1,7 @@
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
 import { load } from './views/common.js';
+import { GAMEDATA } from './gamedata.js';
 
 export const TOKENS = {
   knot: ['연리 매듭', '두 가닥을 엮어 풀리지 않게 맺은 매듭', 'M7 9a3 3 0 106 0 3 3 0 10-6 0M11 9a3 3 0 106 0 3 3 0 10-6 0M12 12v8M10 20h4'],
@@ -23,8 +24,17 @@ export async function loadBond(force) {
   return loading;
 }
 const refresh = () => loadBond(true);
+const WED = GAMEDATA.wedding || { delays: [10, 60, 720, 1440], gap_s: 15, wish_max: 40, guest: { clap: 5, petal: 5, cup: 5 }, couple: { bow: 5, cake: 5 } };
+const CHEER_NAME = { clap: '박수 치기', petal: '꽃잎 뿌리기', cup: '술잔 올리기', bow: '절하기', cake: '떡 돌리기' };
+const delayName = m => m < 60 ? `${m}분 뒤` : `${m / 60}시간 뒤`;
+function cheerRow(caps, me, wait) {
+  return `<div class="btn-row wed-cheers">${Object.entries(caps).map(([k, n]) => {
+    const used = me[k] || 0;
+    return `<button class="btn small" data-cheer="${k}" data-cap="${used >= n ? 1 : ''}" ${used >= n || wait ? 'disabled' : ''}>${CHEER_NAME[k] || k} ${used}/${n}</button>`;
+  }).join('')}</div>`;
+}
 export async function openWedding(wedId) {
-  let v = null, t = null, skew = 0;
+  let v = null, t = null, skew = 0, cd = null;
   const l = openLayer({ title: '혼례', body: '<div class="wed-box"><p class="muted">불러오는 중…</p></div>' });
   const box = $('.wed-box', l);
   const draw = () => {
@@ -41,13 +51,28 @@ export async function openWedding(wedId) {
       return;
     }
     const kept = wish?.value || '';
+    const ru = v.rules || WED, max = ru.wish_max, open = live && startIn <= 0;
+    const lastAt = me.last_at ? new Date(me.last_at).getTime() : 0, readyAt = lastAt ? lastAt + ru.gap_s * 1000 : 0;
+    const wait = readyAt > Date.now() + skew;
+    const acts = !open ? '' : v.couple
+      ? (v.here ? `${cheerRow(ru.couple, me, wait)}<p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span></p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 있어야 하객에게 절하고 떡을 돌릴 수 있습니다.</p>`)
+      : (v.here ? `${cheerRow(ru.guest, me, wait)}
+          ${me.wished ? '' : `<div class="wed-wish"><textarea id="wed-wish" rows="2" maxlength="${max}" placeholder="두 사람에게 건넬 축사 한마디 (한 번만 보낼 수 있습니다)"></textarea><div class="wed-wish-foot"><small class="muted" id="wed-wish-n">0 / ${max}자</small><button class="btn small primary" data-cheer="wish" ${wait ? 'disabled' : ''}>축사 보내기</button></div></div>`}
+          <p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span> · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`);
     box.innerHTML = `${desc}
       <ol class="raid-log wed-log">${logHtml}</ol>
-      ${live && !v.couple ? (v.here ? `<div class="btn-row"><button class="btn small" data-cheer="clap" ${me.claps >= 3 ? 'disabled' : ''}>박수 치기 ${me.claps}/3</button><button class="btn small" data-cheer="petal" ${me.petals >= 3 ? 'disabled' : ''}>꽃잎 뿌리기 ${me.petals}/3</button></div>
-          ${me.wished ? '' : '<div class="btn-row"><input id="wed-wish" maxlength="40" placeholder="축사 한마디(40자)"><button class="btn small primary" data-cheer="wish">축사</button></div>'}
-          <p class="muted small">단추 사이 15초 · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`) : ''}`;
+      ${acts}`;
     const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
-    const w2 = $('#wed-wish', box); if (w2 && kept) w2.value = kept;
+    const w2 = $('#wed-wish', box);
+    if (w2) { const cnt = () => { const n = $('#wed-wish-n', box); if (n) n.textContent = `${w2.value.length} / ${max}자`; }; if (kept) w2.value = kept; cnt(); w2.addEventListener('input', cnt); }
+    clearInterval(cd);
+    const paintWait = () => {
+      if (!box.isConnected) return clearInterval(cd);
+      const left = Math.ceil((readyAt - (Date.now() + skew)) / 1000), s = $('[data-wed-wait]', box);
+      if (s) s.textContent = left > 0 ? ` · ${left}초 뒤 다시` : '';
+      if (left <= 0) { clearInterval(cd); $$('[data-cheer]', box).forEach(b => { if (!b.dataset.cap) b.disabled = false; }); }
+    };
+    if (wait) { paintWait(); cd = setInterval(paintWait, 500); }
     $$('[data-cheer]', box).forEach(b => b.onclick = () => guard(b, async () => {
       v = await rpc('world_wedding_cheer', { p_wed: wedId, p_kind: b.dataset.cheer, p_text: b.dataset.cheer === 'wish' ? $('#wed-wish', box)?.value : null }); draw(); return null;
     }));
@@ -103,10 +128,7 @@ export function bindBondPanel(root, redraw) {
     if (k === 'cancel') return run(b, 'world_bond_cancel', {}, after);
     if (k === 'clear') return run(b, 'world_bond_clear', {}, after);
     if (k === 'gift') return openGift(after);
-    if (k === 'wed') {
-      if (!(await ask(`${cur?.partner_name || '정인'}님에게 혼례를 청할까요?\n본부 정청이나 두 사람 가운데 한 사람의 세력 거점에 둘이 함께 있어야 하고, 받으면 5분 뒤 시작해 10분 동안 이어집니다. 비용은 둘이 1,500전씩입니다.`, { title: '혼례 청하기', ok: '청하기' }))) return;
-      return guard(b, async () => { const r = await act('world_wedding_ask'); after(); return r; });
-    }
+    if (k === 'wed') return openWedAsk(cur, after);
     if (k === 'break') {
       if (!(await ask(`「${cur?.token_name || '정표'}」을(를) 파기할까요?\n연리가 끝나고, ${cur?.partner_name || '정인'}님에게는 정표가 파기되었다고 알려집니다. 3일 동안은 새 연리를 맺을 수 없습니다.`, { title: '정표 파기', ok: '파기하기', danger: true }))) return;
       return run(b, 'world_bond_break', { p_reason: 'break' }, after);
@@ -151,6 +173,19 @@ async function openGift(after) {
     const args = kind === 'item' ? { p_item: f.item.value || null, p_qty: Math.max(1, Number(f.qty.value || 1)), p_gil: 0 } : { p_item: null, p_qty: 1, p_gil: Math.max(0, Number(f.gil.value || 0)) };
     guard(f.querySelector('button[type=submit]'), async () => { const r = await act('world_bond_gift', args); closeModal(); await refresh(); after?.(); return r; });
   };
+}
+
+function openWedAsk(cur, after) {
+  const ds = WED.delays || [10];
+  const m = openModal({ title: '혼례 청하기', body: `<form class="wed-ask">
+    <p class="desc">${esc(cur?.partner_name || '정인')}님에게 혼례를 청합니다. 본부 정청이나 두 사람 가운데 한 사람의 세력 거점에 둘이 함께 있어야 하고, 비용은 둘이 1,500전씩입니다.</p>
+    <p><b>정인이 받은 뒤 언제 시작할까요?</b></p>
+    <div class="chips wed-delays">${ds.map((d, i) => `<button type="button" class="chip${i === 0 ? ' accent' : ''}" data-delay="${d}">${delayName(d)}</button>`).join('')}</div>
+    <p class="muted small">정해지면 두 사람의 친구·모임원에게 초대 알림이 가고 전체 채팅에 「연리 소식」이 올라갑니다. 1시간 이상 뒤로 정하면 시작 ${WED.remind_min || 10}분 전에 한 번 더 알립니다. 혼례는 ${WED.run_min || 10}분 동안 이어집니다.</p>
+    <button class="btn primary block" type="submit">${icon('knot', 16)}<span>혼례 청하기</span></button></form>` });
+  const f = $('.wed-ask', m); let delay = ds[0];
+  $$('[data-delay]', f).forEach(x => x.onclick = () => { delay = Number(x.dataset.delay); $$('[data-delay]', f).forEach(y => y.classList.toggle('accent', y === x)); });
+  f.onsubmit = e => { e.preventDefault(); guard(f.querySelector('button[type=submit]'), async () => { const r = await act('world_wedding_ask', { p_delay: delay }); closeModal(); after?.(); return r; }); };
 }
 
 export function tokenRowHtml() {

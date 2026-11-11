@@ -66,6 +66,7 @@ export const GAMEDATA = {
   "rate": {"fish_s":15,"raid_ms":1000,"gather_s":12,"battle_ms":1000,"search_ms":900},
   "weakSafe": ["banyo_village"],
   "fishRules": {"miss":0.3,"match":3,"weight":{"epic":3,"rare":9,"common":60,"uncommon":25,"legendary":0.6},"boosted":["rare","epic","legendary"],"miss_skill":0.6},
+  "wedding": {"gap_s":15,"guest":{"cup":5,"clap":5,"petal":5},"couple":{"bow":5,"cake":5},"delays":[10,60,720,1440],"run_min":10,"wish_max":40,"remind_min":10},
   "names": {
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}
