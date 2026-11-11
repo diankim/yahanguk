@@ -128,7 +128,7 @@ export async function act(name, args) {
     await loadCharacter({ hud: !mid, field: !mid && onFieldView() && !light, inv: !mid && onInvView() && !hit('invQuiet', name) });
     if (light) await patchField(light, data, lvl);
   } catch {}
-  emit('changed', { name, data });
+  emit('changed', { name, data, args });
   return data;
 }
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();

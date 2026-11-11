@@ -27,6 +27,8 @@ export const CHANGES = {
   board: /quest|story|faction|raid_final|level|reset_identity/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
   boardAway: /expedition|raid_|pfight_|gw_/,
+  boardSearch: /^world_field_search/,
+  boardPet: /pet_/,
   boardOther: /battle_action|field_|expedition|craft|fish|trade|market|shop/,
   people: /party|circle|bond|letter|loot|friend|block|wedding|rescue/,
   env: /travel|rescue|character_delete/,

@@ -141,12 +141,12 @@ function setOpen(k, open) {
   try { localStorage.setItem(OKEY, JSON.stringify([...s].slice(-40))); } catch {}
 }
 
-let qbWatch = null;
+let qbWatch = null, qbAt = 0, qbSeen = null;
 const HERE_KINDS = new Set(['win', 'gather', 'fish', 'search', 'clue']);
 const setOf = a => (a || []).length ? new Set(a) : null;
 function watchOf(b) {
   const res = [], give = new Set();
-  const add = (k, regs, t) => res.push({ k, re: TASK_ACTS[k] || CHANGES.boardOther, regs: HERE_KINDS.has(k) ? setOf(regs) : null, mn: setOf(t?.mn), items: setOf(t?.items) });
+  const add = (k, regs, t) => res.push({ k, re: TASK_ACTS[k] || CHANGES.boardOther, regs: HERE_KINDS.has(k) ? setOf(regs) : null, mn: setOf(t?.mn), items: setOf(t?.items), left: t ? t.n - t.cur : 0 });
   for (const q of [...(b.active || []), ...(b.faction && !b.faction.locked ? [b.faction] : [])]) {
     for (const t of q.tasks || []) if (t.cur < t.n) add(t.t, t.regions, t);
     for (const g of q.give || []) give.add(g.item_id);
@@ -157,22 +157,38 @@ function watchOf(b) {
 const won = (name, data) => name === 'world_battle_action' && data?.ended === 'victory';
 function counts(t, name, data) {
   if (name === 'world_battle_action') return t.k !== 'win' || (won(name, data) && (!t.mn || t.mn.has(data?.result?.monster)));
+  if (hit('boardSearch', name) && t.k === 'clue') return data?.outcome === 'clue';
   if (name === 'world_field_gather' && t.k === 'gather' && t.items && data?.item_id) return t.items.has(baseOf(data.item_id));
   return true;
 }
-function gains(w, name, data) {
+const ONE_STEP = (t, name) => (t.k === 'search' && hit('boardSearch', name)) || (t.k === 'win' && name === 'world_battle_action') || (t.k === 'gather' && !t.items && name === 'world_field_gather');
+const itemArg = a => a?.p_item_id || a?.p_item || null;
+function gains(w, name, data, args) {
   if (!w.give.size || !hit('boardItems', name)) return false;
   if (name === 'world_battle_action') return won(name, data) && Object.keys(data?.result?.loot || {}).some(id => w.give.has(baseOf(id)));
   if (name === 'world_field_gather' && data?.item_id) return w.give.has(baseOf(data.item_id));
+  const id = itemArg(args);
+  if (id) return w.give.has(baseOf(id));
+  if (hit('boardPet', name)) return [...w.give].some(g => /^(pet_|treat_)/.test(g));
   return true;
 }
-const hits = (w, name, data) => w.res.some(t => t.re.test(name) && (!t.regs || t.regs.has(w.here) || hit('boardAway', name)) && counts(t, name, data));
+function progress(w, name, data) {
+  let soon = false, now = false;
+  for (const t of w.res) {
+    if (!t.re.test(name) || (t.regs && !t.regs.has(w.here) && !hit('boardAway', name)) || !counts(t, name, data)) continue;
+    if (!ONE_STEP(t, name)) { now = true; break; }
+    t.left -= 1; if (t.left <= 0) { now = true; break; }
+    soon = true;
+  }
+  return now ? 'now' : soon ? 'soon' : '';
+}
 on('changed', ev => {
   const name = ev?.name || '';
   if (midBattle(ev) || !qbWatch) return;
   const w = qbWatch;
+  const p = progress(w, name, ev?.data);
   if (hit('board', name) || (store.character && w.level != null && store.character.level !== w.level)
-    || hits(w, name, ev?.data) || gains(w, name, ev?.data)) invalidate('world_quest_board');
+    || p === 'now' || (p === 'soon' && Date.now() - qbAt > 60000) || gains(w, name, ev?.data, ev?.args)) invalidate('world_quest_board');
 });
 window.addEventListener('yahang:arrived', () => invalidate('world_quest_board'));
 
@@ -199,7 +215,7 @@ export const questBox = () => `<section class="panel quest-box" id="quest-box"><
 export async function fillQuests(box) {
   if (!box) return;
   let b;
-  try { b = await load('world_quest_board', undefined, { maxAge: 600000 }); qbWatch = watchOf(b); } catch { box.remove(); return; }
+  try { b = await load('world_quest_board', undefined, { maxAge: 600000 }); if (b !== qbSeen) { qbSeen = b; qbAt = Date.now(); qbWatch = watchOf(b); } } catch { box.remove(); return; }
   markNeeded(document, b);
   if (!box.isConnected) return;
   const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));
