@@ -16,6 +16,7 @@ ACCOUNT_TABLES = {
 UNUSED_OK = {'pet_token'}
 HQ_OK_JS = {'QS_DEFAULT'}
 HQ_OK_FN = {'world_case_combine_regional'}
+BASE_KEYED = re.compile(r"\.output\s*===\s*([\w$.]+)|ingredients\??\.?\[([\w$.]+)\]|lore\.items\??\.?\[([\w$.]+)\]|l\.items\??\.?\[([\w$.]+)\]")
 HQ_HELPERS = re.compile(r'\b(withHq|haveOf|hqCount|bothOf|hqOf|baseOf|pairOf)\(')
 UNMUTABLE_NOTES = {'bug_reply', 'bug_report', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'guide'}
 ANON_OK = {'world_app_version'}
@@ -63,6 +64,11 @@ def client_checks():
             for i, line in enumerate(src.split('\n'), 1):
                 if re.search(r"_hq\b|'_hq'|endsWith\('_hq'\)", line):
                     out.append(('우수품', f'{rel}:{i}', '_hq를 직접 다룸 → assets/js/hq.js'))
+        for i, line in enumerate(src.split('\n'), 1):
+            for m in BASE_KEYED.finditer(line):
+                v = next(g for g in m.groups() if g)
+                if v != 'bid' and 'baseOf(' not in line:
+                    out.append(('우수품', f'{rel}:{i}', f'제작법·내력은 보통 물품 id로 적혀 있음 → {v}를 baseOf로'))
         if p.name != 'changes.js':
             for i, line in enumerate(src.split('\n'), 1):
                 if re.search(r"/[a-z_|^$]{3,}/\.test\((ev\.|e\.)?name\b", line):
