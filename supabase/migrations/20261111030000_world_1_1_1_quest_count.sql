@@ -55,5 +55,4 @@ begin
   execute s;
 end $m$;
 
-analyze public.world_events;
 update public.world_app_meta set value = '20261111030000' where key = 'db_version';
