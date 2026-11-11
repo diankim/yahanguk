@@ -50,17 +50,25 @@ function show(kind, key) {
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'confirm' }));
 }
 
-let noticeText = '', noticeHidden = '';
+let noticeText = '';
+const NOTICE_KEY = 'yh-notice-hidden';
+const kstDay = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+function noticeHidden(t) {
+  try { const v = JSON.parse(localStorage.getItem(NOTICE_KEY) || 'null'); return !!v && v.t === t && v.d === kstDay(); } catch { return false; }
+}
+function hideNotice(t) {
+  try { localStorage.setItem(NOTICE_KEY, JSON.stringify({ t, d: kstDay() })); } catch { }
+}
 function setNotice(t) {
   t = typeof t === 'string' ? t.trim() : '';
   if (t === noticeText) return;
   noticeText = t;
   let el = document.querySelector('.deploy-notice');
   if (!t) { el?.remove(); return; }
-  if (noticeHidden === t) return;
+  if (noticeHidden(t)) { el?.remove(); return; }
   if (!el) { el = document.createElement('div'); el.className = 'deploy-notice'; el.setAttribute('role', 'status'); document.body.prepend(el); }
   el.innerHTML = `${icon('bell', 16)}<span>${esc(t)}</span><button class="btn ghost small" type="button" aria-label="닫기">닫기</button>`;
-  el.querySelector('button').onclick = () => { noticeHidden = t; el.remove(); };
+  el.querySelector('button').onclick = () => { hideNotice(t); el.remove(); };
 }
 async function readNotice() {
   if (document.hidden) return;
