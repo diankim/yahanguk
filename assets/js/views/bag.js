@@ -77,8 +77,7 @@ async function draw(soft) {
   try {
     const inv = await load('world_inventory_snapshot', undefined, { maxAge: soft ? 600000 : 30000 });
     const head = $('.view-head .eyebrow', el); if (head) head.innerHTML = `${icon('bag', 14)} 소지금 ${fmt.jeon(store.character.gil)}`;
-    const stg = sub === 'craft' ? await load('world_storage_snapshot', undefined, { maxAge: 30000 }).catch(() => null)
-      : sub === 'items' ? await load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null) : null;
+    const stg = sub === 'craft' || sub === 'items' ? await load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null) : null;
     await ({ items, equip, craft })[sub](body, inv, stg);
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
