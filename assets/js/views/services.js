@@ -1,8 +1,9 @@
 import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { hit } from '../changes.js';
-import { load, chip, loading, errorBox } from './common.js';
+import { load, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
+import { MARKET_SOLD } from '../rules.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
@@ -256,6 +257,14 @@ function untradeNote(have, ref, direct = false) {
   return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 장착 중인 장비는 끼고 있는 한 벌을 빼고 세고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 내줄 수 없습니다.</p>` : '';
 }
 
+function soldHtml(sold) {
+  const list = sold || [], sum = list.reduce((a, x) => a + (Number(x.currency_delta) || 0), 0);
+  return `<details class="fold f-fold mk-sold" data-fold="mk-sold" ${foldOpen('mk-sold', false) ? 'open' : ''}><summary>판매 내역 <small class="muted">최근 ${MARKET_SOLD.days}일 ${list.length}건${list.length ? ` · 받은 돈 ${fmt.jeon(sum)}` : ''}</small></summary>
+    ${list.length ? `<ul class="item-list mk-sold-list">${list.map(x => `<li><div class="item-main"><b>${infoName(x.details?.item)}</b><span class="qty">×${Number(x.details?.qty) || 0}</span>
+      <small class="mk-price">받은 돈 <b>${fmt.jeon(x.currency_delta)}</b> · ${esc(fmt.when(x.created_at))}</small></div></li>`).join('')}</ul>
+      <p class="muted small">거래세를 뗀 금액입니다. 산 사람은 보이지 않습니다.</p>` : `<p class="muted small">최근 ${MARKET_SOLD.days}일 동안 팔린 물품이 없습니다.</p>`}</details>`;
+}
+
 let marketMode = 'board', boardTab = 'buy';
 let lastSell = null;
 export async function renderMarket(box) {
@@ -266,10 +275,12 @@ export async function renderMarket(box) {
   if (marketMode === 'direct') return renderDirect(body);
   try {
     const OCOLS = 'offer_id,seller_id,item_id,quantity,unit_price,status,created_at,expires_at';
-    const [{ data: openAll, error }, { data: myOpen, error: e2 }, prices, , inv] = await Promise.all([
+    const soldSince = new Date(Date.now() - MARKET_SOLD.days * 864e5).toISOString();
+    const [{ data: openAll, error }, { data: myOpen, error: e2 }, prices, , inv, sold] = await Promise.all([
       db.from('world_trade_offers').select(OCOLS).eq('status', 'open').order('created_at', { ascending: false }).limit(300),
       db.from('world_trade_offers').select(OCOLS).eq('status', 'open').eq('seller_id', store.character.owner_id).order('created_at', { ascending: false }),
       load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
+      boardTab === 'sell' ? db.from('world_economy_ledger').select('currency_delta,details,created_at').eq('owner_id', store.character.owner_id).eq('action', 'trade_sale').gte('created_at', soldSince).order('created_at', { ascending: false }).limit(MARKET_SOLD.max).then(r => r.data || [], () => []) : [],
     ]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const rarMap = new Map((inv?.catalog || []).map(i => [i.id, i.rarity || 'common']));
@@ -302,6 +313,7 @@ export async function renderMarket(box) {
       ${hiddenNote}
       <h3 class="sub-h">내 등록 ${mine.length}</h3>
       ${mine.length ? `<ul class="item-list mk-mine">${mine.map(o => row(o, true)).join('')}</ul>` : `<p class="muted small">등록한 물품이 없습니다.</p>`}
+      ${soldHtml(sold)}
       ${rules}`);
     const list = $('.mk-list', body);
     if (list) bindListFilter(body, buyFilt, () => $$('li', list), n => { $('.mk-none', body).hidden = n > 0; });

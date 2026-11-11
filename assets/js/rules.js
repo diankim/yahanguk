@@ -90,6 +90,9 @@ export const RESCUE = {
   ask: `본부 구조대를 부를까요? 소지금의 ${RS.pct}%(최소 ${RS.min}전, 레벨×${RS.per_lv}전·레벨 ${RS.low_lv} 미만은 레벨×${RS.per_lv_low}전까지, 오늘 첫 구조 반값, 가까운 안전지대가 내 대세력 지배면 다시 반값)와 이번 레벨에 필요한 경험치의 ${RS.xp_pct}%를 잃고 가장 가까운 안전지대로 옮겨집니다(레벨은 내려가지 않습니다). 그 안전지대가 내 대세력 지배면 경험치는 잃지 않고 체력 50으로 깨어납니다.`,
 };
 
+export const MARKET_SOLD = { days: 7, max: 30 };
+export const UCOMM_PAST = '받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
+
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };
 export const GATHER_GAP = RT.gather_s * 1000;
 export const SEARCH_GAP = Math.ceil(RT.search_ms / 1000) * 1000;
