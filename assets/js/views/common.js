@@ -78,7 +78,8 @@ async function inventorySnap() {
 export function invalidate(prefix) { for (const k of [...cacheAt.keys()]) if (!prefix || k.startsWith(prefix)) cacheAt.delete(k); }
 const invSigOf = c => c ? JSON.stringify([c.inventory, c.level, c.location, c.crafting_rank, c.gathering_rank, c.crafting_profession, c.gathering_profession]) : '';
 let invSig = '';
-on('changed', ({ name = '', data } = {}) => {
+on('changed', ({ name = '', data, field } = {}) => {
+  if (field === false && !hit('invQuiet', name)) invalidate('world_field_snapshot');
   const sig = invSigOf(store.character), moved = sig !== invSig; invSig = sig;
   if (!hit('invQuiet', name) && (moved || hit('invAlways', name)) && Date.now() - invFreshAt > 1500) invalidate('world_inventory_snapshot');
   if (hit('fishSpot', name) || (store.snaps['world_fish_spotnull'] != null && hit('fishSpotNone', name))) invalidate('world_fish_spot');

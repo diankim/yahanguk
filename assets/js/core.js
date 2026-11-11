@@ -121,14 +121,14 @@ export function useItemAct(id, n = 1) {
 export async function act(name, args) {
   const data = await rpc(name, args);
   if (hit('equipped', name)) equipped = null;
-  const mid = midBattle({ name, data });
+  const mid = midBattle({ name, data }), field = mid ? null : onFieldView();
   if (mid && data?.me && store.character) { Object.assign(store.character, data.me); store.charAt = Date.now(); emit('character', store.character); }
   else try {
     const lvl = store.character?.level, light = fieldLight(name, data);
     await loadCharacter({ hud: !mid, field: !mid && onFieldView() && !light, inv: !mid && onInvView() && !hit('invQuiet', name) });
     if (light) await patchField(light, data, lvl);
   } catch {}
-  emit('changed', { name, data, args });
+  emit('changed', { name, data, args, field });
   return data;
 }
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
