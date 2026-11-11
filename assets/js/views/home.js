@@ -314,7 +314,8 @@ function field(s, roster, blocked) {
 const FISH_HAB = 'yh-fish-hab:', FISH_BAIT = 'yh-fish-bait';
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
-let fishBlocked = false;
+let fishBlocked = false, fishAt = 0;
+const fishReady = f => fishAt > Date.now() ? fishAt : (f.ready_at ? new Date(f.ready_at).getTime() : 0);
 function fishGround(f) {
   const gs = f.grounds || [];
   return gs.find(g => g.habitat === lsGet(FISH_HAB + f.region_id)) || gs[0] || f;
@@ -336,7 +337,7 @@ function fishPanel(blocked) {
       ${named ? `<ul class="fish-named">${named}</ul>` : ''}
       ${(g.baits || []).length ? `<label class="fish-bait">미끼 <select id="fish-bait"><option value="">쓰지 않음</option>${g.baits.map(b => `<option value="${esc(b.fish_id)}"${b.fish_id === bait ? ' selected' : ''}>${esc(b.name)} (${b.n})</option>`).join('')}</select><small class="muted">걸면 던질 때마다 한 마리씩 씁니다. 명어는 미끼·시간대·날씨가 모두 맞을 때만 뭅니다.</small></label>` : ''}
       <div class="fish-act">
-        <button class="btn primary" id="fish-go" data-ready="${f.ready_at ? new Date(f.ready_at).getTime() : ''}" ${blocked || !f.rod ? 'disabled' : ''}>${icon('leaf', 16)}<span>낚시하기</span></button>
+        <button class="btn primary" id="fish-go" data-ready="${fishReady(f) || ''}" ${blocked || !f.rod ? 'disabled' : ''}>${icon('leaf', 16)}<span>낚시하기</span></button>
         <small class="muted">${f.rod ? `${esc(f.rod_name)} · 탐색력 1 · ${f.gap || 20}초마다` : '낚싯대가 없습니다. 상점에서 사거나 가방 › 제작에서 만들 수 있습니다.'}</small>
       </div>
       ${recent.length ? `<ol class="field-log">${recent.map(r => `<li>${icon('leaf', 14)}<span>${esc(r.text)}</span><time>${fmt.time(r.at)}</time></li>`).join('')}</ol>` : '<p class="muted small">시간대와 날씨에 따라 잘 무는 물고기가 다릅니다. 도감에서 힌트를 확인하세요.</p>'}
@@ -440,6 +441,8 @@ async function doFish(btn) {
   try {
     const g = fishSpot ? fishGround(fishSpot) : null;
     const r = await act('world_fish_at', { p_habitat: g?.habitat || null, p_bait: g ? fishBait(g) || null : null });
+    fishAt = Date.now() + (fishSpot?.gap || 20) * 1000;
+    [...$$('#fish-go', el), btn].forEach(b => { b.dataset.ready = String(fishAt); });
     if (r.caught) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: ['rare', 'epic', 'legendary'].includes(r.rarity) || r.first ? 'find' : 'tick' })); showFind(['leaf', r.first ? '새 어종' : '낚시'], { outcome: r.first ? 'spot' : 'gather', content: r.content }); }
     else toast(r.content, 'info');
   } catch (e) { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); }
