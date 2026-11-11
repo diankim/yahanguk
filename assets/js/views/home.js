@@ -6,7 +6,7 @@ import { face } from '../people.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine } from '../rules.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -160,6 +160,10 @@ function sceneFx(r) {
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
   return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
+function inflHtml(m) {
+  const v = inflMine(m);
+  return v ? ` · <span class="infl-mine${v.full ? ' full' : ''}" tabindex="0" data-tip="${esc(v.tip)}">${esc(v.text)}</span>` : '';
+}
 function scene(s, traveling, downed) {
   const r = s.region, c = store.character, z = zonesNow()?.get(r.region_id);
   if (!zonesNow()) safeZones().catch(() => {});
@@ -168,7 +172,7 @@ function scene(s, traveling, downed) {
       ${sceneFx(r)}
       <span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <div class="scene-top">
-        <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · <span class="fdot" style="--fc:${factionColor(r.faction_id ?? z?.control_faction_id)}"></span>${esc(r.faction_name || '무주 금역')}${z?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}</p>
+        <p class="eyebrow">${icon('pin', 14)} ${esc(r.territory_name || '')} · <span class="fdot" style="--fc:${factionColor(r.faction_id ?? z?.control_faction_id)}"></span>${esc(r.faction_name || '무주 금역')}${z?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${inflHtml(s.infl)}</p>
         <h1>${esc(r.region_name)}</h1>
         <div class="env-slot">${envChip()}</div>
         <div class="chips">${r.safe ? chip('안전지대', 'ok') : danger(r.danger)}${chip(THEME_SCENE[r.theme] || '야외')}${!r.safe ? chip(`답사 ${s.survey?.pct ?? 0}%`, 'accent') : ''}</div>

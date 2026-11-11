@@ -1917,6 +1917,8 @@ small.brief { display: block; font-size: calc(11px * var(--fz, 1)); line-height:
 .fchip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; font-size: calc(12px * var(--fz, 1)); border: 1px solid color-mix(in srgb, var(--fc) 70%, var(--line)); background: color-mix(in srgb, var(--fc) 22%, transparent); color: var(--text); }
 .fchip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--fc); }
 b.contest { color: var(--warn); font-weight: 600; }
+.infl-mine { cursor: help; }
+.infl-mine.full { color: var(--bad); font-weight: 600; }
 .fboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
 .fboard li { border: 1px solid var(--line); border-left: 3px solid var(--fc); border-radius: var(--r-sm, 6px); padding: 6px 8px; font-size: calc(12.5px * var(--fz, 1)); }
 .fboard li.mine { background: color-mix(in srgb, var(--fc) 12%, transparent); }

@@ -41,6 +41,12 @@ export const FACTION_PERK = {
   north_rank: `받는 피해 ${FPN.rank_hurt_pct ?? -2}%씩`,
 };
 export const FACTION_CAP = `한 사람이 한 시간 정산에 쌓는 영향력은 지역마다 ${FSR.region_cap || 40}, 모든 지역을 합쳐 ${FSR.person_cap || 60}까지`;
+export function inflMine(m) {
+  if (!m) return null;
+  const t = new Date(m.next_at), at = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  const full = m.n >= m.cap || m.all >= m.all_cap;
+  return { full, text: `이번 정산 몫 ${full ? "다 참 " : ""}${m.n}/${m.cap}`, tip: `이 지역에 이번 정산(${at})까지 쌓은 내 영향력 몫 ${m.n}/${m.cap} · 모든 지역 합 ${m.all}/${m.all_cap}. ${full ? `몫이 다 찼습니다. 더 해도 ${at} 정산에는 들어가지 않고, ${at}부터 다시 쌓입니다.` : '얻는 몫은 도움말 › 세력 › 영향력.'} ${FACTION_CAP}.` };
+}
 export const PARTY_EXP = {
   who: '「파티 원정」으로 함께 떠난 동료',
   apart: '각자 따로 떠난 원정은 같은 때·같은 곳이어도 각자 싸웁니다',
