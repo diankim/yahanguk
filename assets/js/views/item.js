@@ -229,7 +229,7 @@ function draw(box, id, inv, prices, mode) {
     $('dd', row).textContent = [placed ? `놓은 것 ${fmt.num(placed)}개` : '', stored ? `곳간 ${fmt.num(stored)}개` : ''].filter(Boolean).join(' · ');
     row.hidden = false;
   }).catch(() => {});
-  loreBundle().then(l => { const p = $('[data-lore]', box); if (p && l.items?.[id]) { p.textContent = l.items[id]; p.hidden = false; } });
+  loreBundle().then(l => { const p = $('[data-lore]', box); const t = l.items?.[baseOf(id)]; if (p && t) { p.textContent = t; p.hidden = false; } });
   box.onclick = async e => {
     const r = e.target.closest('[data-recipe]'), mat = e.target.closest('[data-mat]'), d = e.target.closest('[data-do]');
     if (r || mat) {

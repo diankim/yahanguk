@@ -56,7 +56,7 @@ function sorter(acq) {
   return sortRev ? (a, b) => base(b, a) : base;
 }
 let matFocus = null, recipeFocus = null;
-window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material || null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) { craftFilter = 'all'; cq = ''; }
+window.addEventListener('yh-craft-focus', e => { matFocus = e.detail?.material ? baseOf(e.detail.material) : null; recipeFocus = e.detail?.recipe || null; if (matFocus || recipeFocus) { craftFilter = 'all'; cq = ''; }
   if (e.detail?.search) cq = e.detail.search; });
 
 export async function render(root, s) {
@@ -272,7 +272,7 @@ async function craft(body, inv, stg) {
   const SORTS = { can: (a, b) => b.can - a.can || b.atLoc - a.atLoc || byLv(a, b), lv: byLv, lvd: (a, b) => byLv(b, a) };
   const furnLast = (a, b) => craftKinds.has('furniture') ? 0 : (a.kind === 'furniture') - (b.kind === 'furniture');
   const favFirst = (f => (a, b) => favs.has(b.r.id) - favs.has(a.r.id) || furnLast(a, b) || f(a, b))(SORTS[craftSort] || SORTS.can);
-  const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[matFocus]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
+  const rows = (inv.recipes || []).filter(r => (!matFocus || r.ingredients?.[baseOf(matFocus)]) && (!recipeFocus || r.id === recipeFocus)).map(r => {
     const lacks = Object.entries(r.ingredients || {}).filter(([k, n]) => Number(have[k] || 0) < n);
     const toolBy = !r.tool ? null : [...Object.keys(bagHave).filter(k => Number(bagHave[k]) > 0), ...eq].find(k => toolCovers(k, r.tool))
       || Object.keys(stHave).filter(k => stHave[k] > 0).map(k => `${k}@st`).find(k => toolCovers(k.slice(0, -3), r.tool)) || null;
@@ -310,7 +310,7 @@ async function craft(body, inv, stg) {
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${(SLOTS[kind] || kind === 'craft') ? `<span class="chip slot">${icon(SLOTS[kind]?.[1] || 'hammer', 12)}${esc(SLOTS[kind]?.[0] || KIND_LABEL.craft)}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
         <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
-        <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = stHave[k] || 0; return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num(Number(bagHave[k]) || 0)} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
+        <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = (stHave[k] || 0) + (stHave[hqOf(k)] || 0); return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num((Number(bagHave[k]) || 0) + (Number(bagHave[hqOf(k)]) || 0))} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolNote(r.tool, toolBy)} · ` : ''}지정 장소: ${esc(r.location || '없음')}</p>
         <div class="craft-act">

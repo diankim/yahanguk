@@ -44,7 +44,7 @@ async function fillSrc(root = document) {
 let srcTimer = 0;
 new MutationObserver(() => { clearTimeout(srcTimer); srcTimer = setTimeout(() => { if (document.querySelector('[data-q-src]:not([data-f])')) fillSrc(); }, 80); })
   .observe(document.body, { childList: true, subtree: true });
-const hasRecipe = id => knownRecipes().some(r => r.output === id);
+const hasRecipe = id => knownRecipes().some(r => r.output === baseOf(id));
 document.addEventListener('click', e => {
   const m = e.target.closest?.('[data-q-map]'), c = e.target.closest?.('[data-q-craft]');
   if (!m && !c) return;
