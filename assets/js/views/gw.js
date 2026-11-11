@@ -1,4 +1,5 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
+import { GW_DAILY } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
@@ -240,7 +241,7 @@ function drawLobby(s) {
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
       ${s.story ? `<div class="gw-mode"><p class="small">${B.story}</p><p class="small muted">보낸 횟수 ${s.story.kills}번</p>
         ${s.story.can_open ? `<button class="btn primary" id="gw-open-story">${icon('sword', 16)}<span>이야기판에 서기</span></button>` : `<p class="hint">${icon('pin', 14)} ${esc(s.story.why || '지금은 설 수 없습니다.')}</p>`}</div>` : ''}
-      <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p>
+      <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
       ${s.can_open ? `<button class="btn ${s.story ? '' : 'primary'}" id="gw-open">${icon('sword', 16)}<span>${s.story ? '깊은 명부에 서기' : B.open}</span></button>`
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}</div>
       <p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>
