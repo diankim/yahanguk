@@ -2295,6 +2295,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .mk-cell.center { border: 4px double var(--accent); background: var(--surface-2); color: var(--text); }
 .mk-cell.ink { background: color-mix(in srgb, var(--text) 26%, var(--surface)); }
 .mk-cell.mk-line { outline: 3px solid var(--bad); outline-offset: -3px; background: color-mix(in srgb, var(--bad) 16%, var(--surface)); }
+.mk-cell.mk-mark { outline: 3px dashed var(--gold); outline-offset: -3px; background: color-mix(in srgb, var(--gold) 14%, var(--surface)); }
 .mk-cell.mk-step { cursor: pointer; border-style: solid; border-color: var(--mp); }
 .mk-cell.mk-step:hover { background: color-mix(in srgb, var(--mp) 12%, var(--surface)); }
 .mk-cell.dest { outline: 2px dashed var(--mp); outline-offset: 2px; }
