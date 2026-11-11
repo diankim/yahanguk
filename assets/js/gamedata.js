@@ -103,6 +103,7 @@ export const GAMEDATA = {
   "rate": {"fish_s":15,"raid_ms":1000,"gather_s":12,"battle_ms":1000,"search_ms":900},
   "weakSafe": ["banyo_village","mukchang_ferry"],
   "fishRules": {"miss":0.3,"match":3,"named":{"bait":1,"boost":0.5,"weight":0.3},"weight":{"epic":3,"rare":9,"common":60,"uncommon":25,"legendary":0.6},"boosted":["rare","epic","legendary"],"miss_skill":0.6},
+  "wedding": {"gap_s":15,"guest":{"cup":5,"clap":5,"petal":5},"couple":{"bow":5,"cake":5},"delays":[10,60,720,1440],"run_min":10,"wish_max":40,"remind_min":10},
   "level": {"cap":45,"per_level":3,"stat_points_cap":132},
   "domains": {
     "gwiheo": {"fx":{"effects":{"erosion_pct":60}},"name":"귀허도"},

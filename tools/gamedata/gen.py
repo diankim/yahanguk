@@ -78,6 +78,7 @@ def build(dsn):
     d['rate'] = q(dsn, "select world_rate_rules()")
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")
     d['fishRules'] = q(dsn, "select world_fish_rules()")
+    d['wedding'] = q(dsn, "select world_wedding_rules()")
     d['level'] = q(dsn, "select world_level_rules()")
     d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx')) from jsonb_each(world_domain_rules()) e(k, v)")
     d['names'] = q(dsn, "select world_name_rules()")

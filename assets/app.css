@@ -3179,7 +3179,10 @@ b.shadow { color: var(--sp); }
 .raid-log.wed-log .k-rite span { color: color-mix(in srgb, var(--text) 82%, var(--muted)); }
 .raid-log.wed-log .k-host { border-left-color: var(--gold); }
 .raid-log.wed-log .k-host span { color: var(--gold); }
-.raid-log.wed-log .k-clap span, .raid-log.wed-log .k-petal span { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.raid-log.wed-log .k-bow, .raid-log.wed-log .k-cake { border-left-color: var(--gold); }
+.wed-ask { display: grid; gap: 10px; }
+.wed-cheers { flex-wrap: wrap; }
+.raid-log.wed-log .k-clap span, .raid-log.wed-log .k-petal span, .raid-log.wed-log .k-cup span { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
 .raid-log.wed-log .k-wish { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); border-radius: 3px; padding-right: 8px; }
 .raid-log.wed-log .k-wish span { color: var(--text); font-weight: 600; }
 .wed-wish { display: grid; gap: 6px; margin-top: 8px; }
