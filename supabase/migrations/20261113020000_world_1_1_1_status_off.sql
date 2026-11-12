@@ -14,7 +14,9 @@ begin
   return jsonb_build_object('ok', true, 'status', p_status, 'name', nm);
 end $function$;
 
+grant create on schema public to fn_owner_field;
 alter function public.world_status_dismiss(text) owner to fn_owner_field;
+revoke create on schema public from fn_owner_field;
 revoke all on function public.world_status_dismiss(text) from public, anon, authenticated;
 grant execute on function public.world_status_dismiss(text) to authenticated, service_role;
 
