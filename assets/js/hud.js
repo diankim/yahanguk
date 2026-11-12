@@ -85,10 +85,15 @@ export function openStatus(st) {
       <p>${esc(st.description || '')}</p>
       <ul class="fx-list">${effectText(st.effects, st.potency).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <p class="muted small">남은 시간 <b data-left="${new Date(st.expires_at).getTime()}">${fmt.remain(left)}</b>${st.stacks > 1 ? ` · ${st.stacks}겹` : ''}</p>
-      ${good ? '' : `<h3 class="sub-h">치료 방법</h3><p>${esc(st.cure || '시간이 지나면 사라집니다.')}</p>
+      ${good ? (String(st.key || '').startsWith('yohwa') ? '' : `<div class="btn-row"><button class="btn small" data-st-off>이 효과 끄기</button></div>`) : `<h3 class="sub-h">치료 방법</h3><p>${esc(st.cure || '시간이 지나면 사라집니다.')}</p>
         ${(st.cure_items || []).length ? `<div class="btn-row">${withHq(st.cure_items, inv).map(k => `<button class="btn small primary" data-here="물품 사용" data-here-down data-cure="${esc(k)}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} 쓰기 <small>×${fmt.num(inv[k])}</small></button>`).join('')}</div>` : ''}`}
     </div>` });
   const t = setInterval(() => { const b = m.querySelector('[data-left]'); if (!b) return clearInterval(t); b.textContent = fmt.remain(Number(b.dataset.left) - Date.now()); }, 1000);
+  const off = $('[data-st-off]', m);
+  if (off) off.onclick = () => guard(off, async () => {
+    if (!(await ask(`「${st.name}」 효과를 끌까요?\n끄면 남은 시간이 사라지고 되돌릴 수 없습니다. 상태 칸이 하나 비어 새 기운을 받을 수 있습니다.`, { title: '효과 끄기', ok: '끄기', danger: true }))) return;
+    const r = await act('world_status_dismiss', { p_status: st.key }); closeModal(); return r;
+  });
   $$('[data-cure]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await useItemAct(b.dataset.cure); closeModal(); return r; }));
 }
 
