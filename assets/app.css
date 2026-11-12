@@ -279,7 +279,7 @@ textarea { resize: none; }
 /* ── HUD ─────────────────────────────── */
 .hud { position: sticky; top: var(--top-h); z-index: 30; background: var(--bg); border-bottom: 1px solid var(--line); }
 .hud-strip { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 16px; min-height: 48px; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: left; }
-.hs-name { display: grid; line-height: 1.2; min-width: 64px; max-width: 34%; }
+.hs-name { display: grid; line-height: 1.2; min-width: 84px; max-width: 34%; }
 .hs-name b { font-size: calc(13px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hs-name small { font-size: calc(11px * var(--fz, 1)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hs-name small .hs-ttl { color: var(--gold); }
 .hs-bars { display: grid; gap: 3px; width: 56px; flex: none; }

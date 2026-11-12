@@ -218,22 +218,14 @@ function paint() {
     const t = r.territory_id || 'none', c = centroid(g.cells.get(r.region_id) || [[r.world_x, r.world_y]]);
     const o = terr.get(t) || { name: r.territory_name || '', x: 0, y: 0, n: 0 }; o.x += c[0]; o.y += c[1]; o.n++; terr.set(t, o);
   }
-  const terrSpot = (x, y, fs, pts) => {
-    const gap = (cx, cy) => Math.min(...pts.map(([px, py]) => Math.max(Math.abs(px - cx) / (fs * 2.2), Math.abs(py - cy - fs * 0.4) / (fs * 1.3))));
-    let best = [x, y], bd = gap(x, y);
-    if (bd >= 1) return best;
-    for (const k of [-1.6, 1.6, -3, 3, -4.5, 4.5]) { const d = gap(x, y + fs * k); if (d > bd) { bd = d; best = [x, y + fs * k]; } if (d >= 1) break; }
-    return best;
-  };
   const tOpacity = zoom < 1.5 ? 0.95 : zoom < 2.4 ? 0.45 : 0.18;
   let tnames = '';
   const wx = store.env?.territories || {};
   for (const [tid, t] of terr) {
     if (!t.name) continue;
     const fs = Math.max(13, Math.min(22, 15 * Math.sqrt(zoom)));
-    const [tx, ty] = terrSpot(X(t.x / t.n), Y(t.y / t.n), fs, regions.map(P));
-    tnames += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${fs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
-    if (wx[tid]) tnames += `<text x="${tx.toFixed(1)}" y="${(ty + fs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${Math.max(11, fs * 0.6)}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
+    tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${Y(t.y / t.n).toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${fs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
+    if (wx[tid]) tnames += `<text x="${X(t.x / t.n).toFixed(1)}" y="${(Y(t.y / t.n) + fs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${Math.max(11, fs * 0.6)}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
   }
   const fs = W < 520 ? 12 : 13;
   const rank = r => r.region_id === selected ? 0 : r.region_id === here?.region_id ? 1 : r.region_id === dest ? 2 : r.reachable ? 3 : r.level_locked ? 6 : 4;
