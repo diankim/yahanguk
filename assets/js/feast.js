@@ -42,7 +42,7 @@ export async function openFeast() {
     }
     box.innerHTML = `<p class="desc"><b>${esc(v.name)}(${esc(v.hanja || '')})</b> · ${esc(v.place)} · ${when} · 함께하는 이 ${fmt.num(v.count || 0)}명</p>
       <p class="muted small">${esc(v.desc || '')} · 끝날 때 그곳에 있는 참여자는 「${esc(v.buff)}」(${fx}) ${ru.buff_h}시간</p>
-      <ol class="raid-log wed-log">${logHtml}</ol>${acts}`;
+      <ol class="raid-log wed-log">${logHtml}</ol>${acts}${v.full && v.status !== 'done' ? `<p class="hint">${icon('flame', 14)} 상태 칸 ${v.cap}칸이 모두 차 있어 이대로 끝나면 「${esc(v.buff)}」 기운을 받지 못합니다. 이로운 상태를 상태 창에서 끄면 받을 수 있습니다.</p>` : ''}`;
     const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
     $$('[data-feast]', box).forEach(b => b.onclick = () => guard(b, async () => { v = await rpc('world_feast_act', { p_kind: b.dataset.feast }); draw(); return null; }));
     clearInterval(cd);

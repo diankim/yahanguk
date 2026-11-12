@@ -1117,7 +1117,7 @@ const S = [
       <li>일곱 대세력이 요일마다 거점에서 행사를 엽니다. 매일 ${GD.feast?.start}부터 ${GD.feast?.min}분 동안 열립니다(한국 시각).</li>
       <li><table class="guide-table"><tr><th>요일</th><th>행사</th><th>장소</th><th>기운</th></tr>${(GD.feast?.feasts || []).map(f => `<tr><td>${'월화수목금토일'[f.dow - 1]}</td><td>${f.name}(${f.hanja})</td><td>${f.place}</td><td>${f.buff} · ${effectText(f.effects).join(' · ')}</td></tr>`).join('')}</table></li>
       <li><b>함께하기</b>: 세력과 상관없이 누구나 행사 동안 그곳에서 「함께하기」를 누르면 참여자가 됩니다. 도중에 와도 됩니다.</li>
-      <li><b>받는 것</b>: 끝나는 순간 그곳에 있는 참여자는 그 행사의 기운을 ${GD.feast?.buff_h}시간 동안 받습니다. 끝나기 전에 자리를 뜨면 받지 못합니다.</li>
+      <li><b>받는 것</b>: 끝나는 순간 그곳에 있는 참여자는 그 행사의 기운을 ${GD.feast?.buff_h}시간 동안 받습니다. 끝나기 전에 자리를 뜨면 받지 못합니다. 상태 칸 10칸이 모두 차 있어도 받지 못하니(같은 기운은 이어짐) 이로운 상태를 꺼 칸을 비워 두세요.</li>
       <li><b>동무 나서기</b>: 데리고 다니는 꼬마 동무가 있으면 함께하는 동안 ${GD.feast?.pet_max}번까지 재롱을 보일 수 있습니다(혼례에서도).</li>
       <li>${GD.feast?.notify_min}분 전에 그 세력 조사원에게 알림이 가고, ${GD.feast?.chat_min}분 전과 시작할 때 전체 채팅 「세력 소식」에 올라갑니다. 현장 위 띠에서 오늘의 행사를 볼 수 있습니다.</li>
     </ul>`],
