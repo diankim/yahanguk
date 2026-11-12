@@ -222,7 +222,7 @@ export function domainNow() {
 }
 function domainChip() {
   const d = domainNow();
-  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.strokes, d.off ? DOMAIN_FX.guardedOff : d.text].filter(Boolean).join(' · '))}">${esc(d.name)}${d.max ? ` <b>${d.left}/${d.max}</b>` : ''}</span>` : '';
+  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.name, d.strokes, d.off ? DOMAIN_FX.guardedOff : d.text].filter(Boolean).join(' · '))}">${d.max ? `획 <b>${d.left}/${d.max}</b>` : esc(d.name)}</span>` : '';
 }
 function domainPin() {
   const d = domainNow(); if (!d) return '';
