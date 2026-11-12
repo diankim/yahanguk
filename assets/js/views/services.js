@@ -3,7 +3,7 @@ import { hit } from '../changes.js';
 import { load, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
-import { MARKET_SOLD } from '../rules.js';
+import { MARKET_SOLD, SHOP_CAP } from '../rules.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
@@ -39,6 +39,8 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
   const sold = s.sell;
   const catSet = new Set([...list.map(i => pickCat(i.category)), ...sellable.map(([k]) => pickCat(ref.get(k)?.category))]);
   const filt = catSet.size > 1 || list.length + sellable.length > 8 ? listFilterHtml(shopFilt, { have: catSet, cls: 'shop-filter' }) : '';
+  const capLeft = i => i.daily_cap == null ? 99 : Math.max(0, Math.min(99, i.daily_cap - (i.bought || 0)));
+  const capLine = i => i.daily_cap == null ? '' : ` · <span class="${capLeft(i) > 0 ? '' : 'bad'}">${esc(SHOP_CAP(i.daily_cap, i.bought || 0))}</span>`;
   const stepper = (m, id, max) => qtyHtml({ key: `${m}:${id}`, max, value: cart[m][id] || 0, all: m === 'sell' });
   box.innerHTML = `
     <div class="shop-head"><div><small>품목과 값은 하루 세 번(07·15·23시) 바뀝니다 · 다음 바뀜 ${s.next_refresh ? fmt.time(s.next_refresh) : '-'}</small></div>
@@ -49,8 +51,8 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
       <ul class="item-list shop-list">${list.map(i => `<li ${listRowAttrs(pickCat(i.category), i.item_name || nameOf(i.item_id))}>
         <div class="item-main"><b>${infoName(i.item_id, i.item_name, i.category)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
-          <small>${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
-        ${stepper('buy', i.item_id, 99)}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
+          <small>${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}${capLine(i)}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
+        ${capLeft(i) > 0 ? stepper('buy', i.item_id, capLeft(i)) : qtyHtml({ key: `buy:${i.item_id}`, max: 0, off: true })}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
     </section>
     ${sell ? `<section data-list="sell" ${mode === 'sell' ? '' : 'hidden'}>
       ${sold ? `<div class="sell-cap ${sold.left <= 0 ? 'full' : ''}"><span>오늘 판매 수익 <b>${fmt.jeon(sold.sold)}</b> / ${fmt.jeon(sold.cap)}</span>${bar(sold.sold, sold.cap, sold.left <= 0 ? 'enemy' : 'xp')}
