@@ -428,12 +428,28 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
 }
 
 let modalY = null, modalHash = '';
+function fitModalKeyboard() {
+  const v = window.visualViewport, root = document.documentElement;
+  const a = document.activeElement;
+  const on = !!v && document.body.classList.contains('has-modal') && v.scale < 1.01 && innerHeight - v.height > 80
+    && !!a?.closest?.('.modal-backdrop') && a.matches('input, textarea, [contenteditable]');
+  root.classList.toggle('kb-modal', on);
+  if (on) { root.style.setProperty('--mkb-top', `${Math.round(v.offsetTop)}px`); root.style.setProperty('--mkb-h', `${Math.round(v.height)}px`); }
+  else { root.style.removeProperty('--mkb-top'); root.style.removeProperty('--mkb-h'); }
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitModalKeyboard);
+  window.visualViewport.addEventListener('scroll', fitModalKeyboard);
+  document.addEventListener('focusin', () => setTimeout(fitModalKeyboard, 60));
+  document.addEventListener('focusout', () => setTimeout(fitModalKeyboard, 60));
+}
 function lockPage() {
   if (!document.body.classList.contains('has-modal')) { modalY = window.scrollY; modalHash = location.hash; }
   document.body.classList.add('has-modal');
 }
 function unlockPage() {
   document.body.classList.remove('has-modal');
+  fitModalKeyboard();
   const y = modalY; modalY = null;
   if (y == null || location.hash !== modalHash) return;
   const fix = () => { if (location.hash === modalHash && Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); };

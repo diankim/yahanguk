@@ -378,6 +378,11 @@ textarea { resize: none; }
   .wh.thread-open .wh-side { display: none; } .wh:not(.thread-open) .wh-main { display: none; }
   .wh-back { display: inline-grid; }
 }
+.kb-modal .modal-backdrop { top: var(--mkb-top, 0px); bottom: auto; height: var(--mkb-h, 100dvh); padding: 6px; align-items: start; }
+.kb-modal .modal { max-height: calc(var(--mkb-h, 100dvh) - 12px); }
+.kb-modal .modal-body { padding: 8px 10px 10px; }
+.kb-modal .modal-head { padding: 6px 8px 6px 14px; }
+.kb-modal .wh { height: calc(var(--mkb-h, 100dvh) - 12px - 46px - 20px); }
 body.chat-open .chat-col { display: block; position: fixed; z-index: 70; left: 0; right: 0; bottom: var(--kb, 0px); height: min(var(--chat-h, min(78dvh, 640px)), calc(var(--vvh, 100dvh) - 12px)); border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; overflow: hidden; animation: rise .2s ease-out; }
 body.chat-open::after { content: ''; position: fixed; inset: 0; z-index: 65; background: rgb(0 0 0 / .5); }
 body.chat-open .chat-fab { display: none; }
