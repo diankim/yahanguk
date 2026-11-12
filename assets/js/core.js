@@ -425,11 +425,14 @@ export function ask(message, { title = '확인', ok = '확인', cancel = '그만
 }
 
 let modalY = null, modalHash = '';
+let fullH = 0;
 function fitModalKeyboard() {
   const v = window.visualViewport, root = document.documentElement;
   const a = document.activeElement;
-  const on = !!v && document.body.classList.contains('has-modal') && v.scale < 1.01 && innerHeight - v.height > 80
-    && !!a?.closest?.('.modal-backdrop') && a.matches('input, textarea, [contenteditable]');
+  const typing = !!a?.matches?.('input, textarea, [contenteditable]');
+  if (!typing || innerHeight > fullH) fullH = Math.max(innerHeight, typing ? fullH : 0);
+  const on = !!v && document.body.classList.contains('has-modal') && v.scale < 1.01 && Math.max(fullH, innerHeight) - v.height > 80
+    && typing && !!a.closest('.modal-backdrop');
   root.classList.toggle('kb-modal', on);
   if (on) { root.style.setProperty('--mkb-top', `${Math.round(v.offsetTop)}px`); root.style.setProperty('--mkb-h', `${Math.round(v.height)}px`); }
   else { root.style.removeProperty('--mkb-top'); root.style.removeProperty('--mkb-h'); }

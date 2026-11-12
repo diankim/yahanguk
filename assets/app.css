@@ -369,7 +369,7 @@ textarea { resize: none; }
 .wh-main .chat-form { padding: 8px; }
 .wh-empty { align-self: center; justify-self: center; display: flex; gap: 8px; align-items: center; padding: 20px; grid-row: 1 / -1; }
 @media (max-width: 759px) {
-  .wh { grid-template-columns: minmax(0, 1fr); height: min(72vh, 620px); }
+  .wh { grid-template-columns: minmax(0, 1fr); height: min(72dvh, 620px); }
   .wh.thread-open .wh-side { display: none; } .wh:not(.thread-open) .wh-main { display: none; }
   .wh-back { display: inline-grid; }
 }
