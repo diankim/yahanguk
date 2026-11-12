@@ -56,7 +56,7 @@ export const GAMEDATA = {
     "tourney": {"heal":{"herb":0.1,"tonic":0.22,"grand_pill":0.45,"rejuv_pill":0.32,"banyo_salve":0.36,"herbal_extract":0.15},"pick":2,"items":["tonic","herbal_extract","herb","rejuv_pill","grand_pill","banyo_salve"],"hq_mul":1.15}
   },
   "busy": {"idle":{"name":"자율 활동","after":"자율 활동을 마치거나 그만둔 뒤에 하세요."},"self":"{name} 중에는 {what}을(를) 할 수 없습니다. {after}","what":"이 일","other":"그 동료는 지금 {name} 중입니다.","downed":{"name":"전투불능","after":"구조를 받거나 구조대를 부른 뒤에 하세요."},"travel":{"name":"이동","after":"도착한 뒤에 하세요."},"expedition":{"name":"원정","after":"원정에서 돌아온 뒤에 하세요."}},
-  "gwiryeong": {"hold":1,"warn_h":24,"cap_div":1,"cap_minus":1,"wither_h":72,"party_mul":2,"yohwa_mul":3,"cooldown_h":72,"window_days":3},
+  "gwiryeong": {"hold":1,"warn_h":24,"cap_div":1,"rate_mul":0.25,"wither_h":72,"party_mul":2,"yohwa_mul":3,"cooldown_h":72,"window_days":3},
   "contrib": {"deal":0.6,"heal":0.1,"hold":0.2,"boost":0.1,"press":1,"result":0.2,"eff_cap":2,"heal_need":0.25,"boost_need":0.1},
   "shadow": {"gil_lv":20,"hp_min":9000,"hp_mul":350,"pow_hi":1.5,"pow_lo":0.75,"dmg_mul":1.4,"stay_full":0.5,"charge_mul":5},
   "coopRules": {"all_pow":0.5,"all_full":4,"sure_crit":2,"expose_per":4},

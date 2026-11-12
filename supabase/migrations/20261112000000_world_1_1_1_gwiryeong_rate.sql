@@ -13,10 +13,17 @@ end $f$;
 
 select pg_temp.yh_fix('world_gwiryeong_rules', array[
   $a$'cap_div', 1,$a$,
-  $b$'cap_div', 1, 'cap_minus', 1,$b$]);
+  $b$'cap_div', 1, 'rate_mul', 0.25,$b$]);
 
-select pg_temp.yh_fix('world_gwiryeong_reserve', array[
-  $a$cap := greatest(1, (select count(distinct s.owner_id) from public.world_character_statuses s where s.status_key = 'yohwa')::int / (ru ->> 'cap_div')::int);$a$,
-  $b$cap := greatest(0, (select count(distinct s.owner_id) from public.world_character_statuses s where s.status_key = 'yohwa')::int / (ru ->> 'cap_div')::int - coalesce((ru ->> 'cap_minus')::int, 0));$b$]);
+select pg_temp.yh_fix('world_gwiryeong_chance', array[
+  $a$select case when p_type in ('gw_win', 'raid_win') then 0.01 else$a$,
+  $b$select (public.world_gwiryeong_rules() ->> 'rate_mul')::numeric * case when p_type in ('gw_win', 'raid_win') then 0.01 else$b$]);
+
+select pg_temp.yh_fix('world_field_search', array[
+  $a$random() < 0.002 AND public.world_gwiryeong_reserve(uid, 'skill_tracking')$a$,
+  $b$random() < 0.002 * (public.world_gwiryeong_rules() ->> 'rate_mul')::numeric AND public.world_gwiryeong_reserve(uid, 'skill_tracking')$b$]);
+
+update public.world_skill_catalog set description = '추가 기술 · 위험도 7 이상 지역에서 탐색할 때 드물게 귀령초 하나(한 번 얻으면 72시간 다시 나오지 않음)'
+ where skill_id = 'tracking_x36';
 
 update public.world_app_meta set value = '20261112000000' where key = 'db_version';
