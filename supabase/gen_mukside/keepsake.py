@@ -6,7 +6,7 @@ FURN = 'hf_'
 ITEMS = [
     ('hf_mk_brushstand', '서리의 붓꽂이', 'furniture', '별채 가구 · 소품. 희수가 명부를 쓰던 붓을 꽂아 두던 붓꽂이입니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.',
      {'d': 1, 'w': 1, 'hk': 'mk_brushstand', 'cat': '소품', 'top': 0, 'kind': 'surface', 'grade': 4}),
-    ('hf_mk_notedesk', '두 권째 공책 책상', 'furniture', '별채 가구 · 좌석·탁자. 다온이 두 권째 공책을 펴 두던 낮은 책상입니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.',
+    ('hf_mk_notedesk', '다온의 앉은뱅이책상', 'furniture', '별채 가구 · 좌석·탁자. 다온이 두 권째 공책을 펴 두던 낮은 책상입니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.',
      {'d': 1, 'w': 2, 'hk': 'mk_notedesk', 'cat': '좌석·탁자', 'top': 0.46, 'kind': 'floor', 'grade': 4}),
     ('hf_mk_coinblind', '연꽃 매듭 엽전 발', 'furniture', '별채 가구 · 발. 월하가 좌판에 걸어 두던 엽전 발입니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.',
      {'hk': 'mk_coinblind', 'wh': 30, 'ww': 1.6, 'cat': '발', 'kind': 'wall', 'wall': 'deco', 'grade': 4}),

@@ -400,7 +400,7 @@ export const FUR = {
     { x: .71, y: .4, w: .04, d: .04, h: .3, z: .33, c: C.pine },
     { x: .55, y: .33, w: .04, d: .04, h: .08, z: .67, c: C.ink }, { x: .64, y: .3, w: .04, d: .04, h: .08, z: .75, c: C.white },
     { x: .71, y: .4, w: .04, d: .04, h: .08, z: .63, c: C.ink }] },
-  mk_notedesk: { name: '두 권째 공책 책상', grade: 4, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .46, parts: [
+  mk_notedesk: { name: '다온의 앉은뱅이책상', grade: 4, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .46, parts: [
     { x: .14, y: .16, w: .08, d: .08, h: .36, c: C.dark }, { x: 1.78, y: .16, w: .08, d: .08, h: .36, c: C.dark },
     { x: .14, y: .76, w: .08, d: .08, h: .36, c: C.dark }, { x: 1.78, y: .76, w: .08, d: .08, h: .36, c: C.dark },
     { x: .08, y: .1, w: 1.84, d: .8, h: .1, z: .36, c: C.pine }, { x: .08, y: .1, w: 1.84, d: .8, h: .02, z: .44, c: '#b98a56' },
