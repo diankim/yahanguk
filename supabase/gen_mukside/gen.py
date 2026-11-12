@@ -60,6 +60,7 @@ MON_NAME = {m[0]: k for k, v in MONS.items() for m in v}
 REGION_NAME = {v[0]: k for k, v in REGIONS.items()}
 FISH_NAMES = sorted(FISH, key=len, reverse=True)
 errors = []
+SX_NAMES = {}
 PENDING_ITEMS = {i for v in KEEPSAKE.values() for i in v['items']}
 
 def item_id(name, q):
@@ -151,6 +152,9 @@ def parse_files(paths):
                     if key in seen_sx and seen_sx[key] != name: errors.append(f'인물 키 겹침 {key}: {seen_sx[key]} / {name}')
                     seen_sx[key] = name
                     cur['npcs'][name] = ('q:' + key, bio.strip())
+                    SX_NAMES[name] = ('q:' + key, bio.strip())
+                for name in sorted(SX_NAMES, key=len, reverse=True):
+                    if name in line and name not in cur['npcs']: cur['npcs'][name] = SX_NAMES[name]
                 for name in sorted(NPC_OLD, key=len, reverse=True):
                     if name in line and name not in cur['npcs'] and not any(name in x for x in cur['npcs']): cur['npcs'][name] = (NPC_OLD[name], None)
                 continue
