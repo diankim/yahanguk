@@ -949,7 +949,7 @@ const S = [
       <tr><td>첫 승리의 맛</td><td>1승</td></tr>
       <tr><td>연무장 단골</td><td>20번</td></tr>
       <tr><td>무명 고수</td><td>10승</td></tr>
-      <tr><td>일격필살</td><td>쓰러뜨려 10승</td></tr>
+      <tr><td>단숨의 승부</td><td>쓰러뜨려 10승</td></tr>
       <tr><td>천하 주유</td><td>서로 다른 상대 10명</td></tr>
       <tr><td>백전노장</td><td>100번</td></tr>
       <tr><td>무림 명숙</td><td>50승</td></tr></table>
