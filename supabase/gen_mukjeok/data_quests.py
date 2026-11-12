@@ -65,8 +65,8 @@ PLAN = {
             steps=[
                 ('빈칸 벌판 어귀에서 희수를 만난다', {'at': [FIELD]}),
                 ('빈칸 벌판에서 떠도는 먹귀를 3번 풀어 보낸다', {'at': [FIELD], 'tasks': [{'t': 'win', 'm': ['mk_field_1'], 'n': 3}]}),
-                ('빈칸 벌판 안쪽을 3번 탐색한다', {'at': [FIELD], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 3}]}),
-                ('월하가 몰아온 먹귀 가운데 남은 2마리를 풀어 보낸다', {'at': [FIELD], 'tasks': [{'t': 'win', 'r': [FIELD], 'n': 2}]}),
+                ('빈칸 벌판을 탐색해 먹귀가 우는 곳의 실마리를 찾는다', {'at': [FIELD], 'tasks': [{'t': 'clue', 'r': [FIELD], 'n': 1}]}),
+                ('억새 그늘에 숨은 문패 뜯는 손을 풀어 보낸다', {'at': [FIELD], 'tasks': [{'t': 'win', 'm': ['mk_field_3'], 'n': 1}]}),
                 ('다온을 따라 빈칸 벌판의 이름 없는 사당을 찾는다', {'at': [FIELD], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 2}]}),
                 ('묵창 나루로 돌아가 희수에게 손을 보인다', {'at': [FERRY], 'tasks': [{'t': 'travel', 'r': [FERRY], 'n': 1}]}),
             ]),
@@ -79,7 +79,7 @@ PLAN = {
                 ('밤에 묵창 나루 주막의 희수에게 팔을 보이고 창밖 목소리를 알린다', {'at': [FERRY]}),
                 ('묵창 나루에서 하룻밤 쉬고 이튿날 주막에서 희수에게 옛 보고서를 받는다', {'at': [FERRY], 'tasks': [{'t': 'rest', 'r': [FERRY], 'n': 1}]}),
                 ('먹비 숲으로 가서 원정을 한 번 끝까지 다녀와 옛 조사원 숙소를 찾는다', {'at': [FOREST], 'tasks': [{'t': 'travel', 'r': [FOREST], 'n': 1}, {'t': 'expedition', 'r': [FOREST], 'n': 1}]}),
-                ('숙소를 나와 먹비 숲을 한 번 더 탐색한다', {'at': [FOREST], 'tasks': [{'t': 'search', 'r': [FOREST], 'n': 1}]}),
+                ('숙소 앞에 몰려든 먹비 반딧불 떼를 풀어 보낸다', {'at': [FOREST], 'tasks': [{'t': 'win', 'm': ['mk_forest_3'], 'n': 1}]}),
                 ('묵창 나루로 돌아간다', {'at': [FERRY], 'tasks': [{'t': 'travel', 'r': [FERRY], 'n': 1}]}),
             ]),
     4: dict(id='mkq_4', L=44, region=FERRY, after=['mkq_3'], items={'name_ink_charm': 3, 'register_slip': 3},
@@ -250,6 +250,7 @@ begin
 end $$;""")
     w("select pg_temp.yh_patch('public.world_faction_task_count(uuid,jsonb,timestamp with time zone)', 'when ''craft'' then ''craft'' end', 'when ''craft'' then ''craft'' when ''rest'' then ''rest'' end');")
     w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'when ''craft'' then ''제작'' else', 'when ''craft'' then ''제작'' when ''rest'' then ''쉬기'' else');")
+    w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'when ''clue'' then ''탐색에서 단서 발견''', 'when ''clue'' then ''탐색해 실마리 찾기''');")
     w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'string_agg(m.region_name, ''·'') || ''에서 ''', 'string_agg(m.region_name, ''·'') || case when p_task ->> ''t'' = ''travel'' then ''에 '' else ''에서 '' end');")
     w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'when ''rest'' then ''쉬기'' else', 'when ''rest'' then ''쉬기'' when ''idle'' then ''자율 활동 끝까지 마치기'' || case when p_task ? ''min'' then ''('' || (p_task ->> ''min'') || ''분 넘게)'' else '''' end else');")
     w("select pg_temp.yh_patch('public.world_faction_task_count(uuid,jsonb,timestamp with time zone)', '+ case when p_task ->> ''t'' = ''win'' and not p_task ? ''phase''', '+ case when p_task ->> ''t'' = ''idle'' then (select count(*)::int from public.world_idle_activities a where a.owner_id = p_uid and a.status = ''claimed'' and a.claimed_at >= p_since and a.claimed_at >= a.started_at + make_interval(mins => a.duration_minutes) and a.duration_minutes >= coalesce((p_task ->> ''min'')::int, 0) and (not p_task ? ''k'' or a.activity_type = p_task ->> ''k'')) else 0 end + case when p_task ->> ''t'' = ''win'' and not p_task ? ''phase''');")
