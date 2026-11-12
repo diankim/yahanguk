@@ -30,14 +30,14 @@ FIX = {
         ('희수: 먹귀가 저 아이한테만 유독 자주 붙습니다. 그 집이 걸려요. 오늘 밤은 아이 집 근처에서 쉬어 주시겠습니까.',
          '희수: 먹귀가 저 아이한테만 유독 자주 붙습니다. 그 집이 걸려요. 오늘 밤은 주막에 묵으며 쉬어 주시겠습니까. 아이 집이 주막 바로 뒤예요.'),
     ],
-    (3, 3): [
+    (3, 4): [
         ('희수: 서율 조사원. 서고에 그분 보고서가 몇 장 남아 있어요. 내일 보여 드릴게요.',
          '희수: 서율 조사원. 서고에 그분 보고서가 몇 장 남아 있어요. 오늘 밤 사람을 보내 정청 서고에서 가져오게 할 테니, 내일 이 주막으로 와 주세요. 거기서 보여 드릴게요.'),
     ],
-    (3, 4): [
+    (3, 5): [
         ('희수가 가져온 보고서는 누렇게 바래 있었다.', '이튿날 주막으로 가자, 희수가 정청 서고에서 가져온 보고서를 펼쳐 놓고 있었다. 보고서는 누렇게 바래 있었다.'),
     ],
-    (3, 7): [
+    (3, 8): [
         ('희수: 조사원. 정청에서 연락이 왔어요. 나루 사정이 나빠지고 있습니다.',
          '희수: 조사원. 정청에서 연락이 왔어요. 나루 사정이 나빠지고 있습니다. 먹귀가 빈칸 벌판에서 나루로 들어오는 길목부터 살펴봐 주세요. 어디로 새어 드는지 봐야 해요.'),
     ],
@@ -54,10 +54,11 @@ PLAN = {
             summary='묵창 나루의 주민 명부에서 이름이 하나둘 흐려진다. 정청 서리 희수와 함께 먹빛 강가의 나루로 간다.',
             steps=[
                 ('정청 대청에서 출납 서리 희수를 만난다', {'at': [HQ]}),
-                ('묵창 나루로 간다', {'at': [FERRY]}),
+                ('묵창 나루로 간다', {'at': [FERRY], 'tasks': [{'t': 'travel', 'r': [FERRY], 'n': 1}]}),
                 ('빈칸 벌판 어귀를 3번 탐색한 뒤 묵창 나루로 돌아온다', {'at': [FERRY], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 3}]}),
                 ('묵창 나루 주막에서 쉰다', {'at': [FERRY], 'tasks': [{'t': 'rest', 'r': [FERRY], 'n': 1}]}),
-                ('묵창 나루 주막의 희수에게 돌아간다', {'at': [FERRY]}),
+                ('묵창 나루 선창에서 물고기를 1마리 낚아 주막의 희수에게 간다', {'at': [FERRY], 'tasks': [{'t': 'fish', 'r': [FERRY], 'n': 1}]}),
+                ('빈칸 벌판 어귀 물가에서 묵창 갈대 먹 2개를 걷어 묵창 나루 주막으로 가져온다', {'at': [FERRY], 'tasks': [{'t': 'gather', 'items': ['mukchang_ink'], 'r': [FIELD], 'n': 2}]}),
             ]),
     2: dict(id='mkq_2', L=41, region=FIELD, after=['mkq_1'], items={'meokgwi_incense': 2, 'blank_hanji': 3},
             summary='정청이 먹귀를 가둬 두던 빈칸 벌판의 테가 터졌다. 이름을 들을 수 있는 사람은 나 하나다.',
@@ -65,19 +66,21 @@ PLAN = {
                 ('빈칸 벌판 어귀에서 희수를 만난다', {'at': [FIELD]}),
                 ('빈칸 벌판에서 떠도는 먹귀를 3번 풀어 보낸다', {'at': [FIELD], 'tasks': [{'t': 'win', 'm': ['mk_field_1'], 'n': 3}]}),
                 ('빈칸 벌판 안쪽을 3번 탐색한다', {'at': [FIELD], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 3}]}),
+                ('월하가 몰아온 먹귀 가운데 남은 2마리를 풀어 보낸다', {'at': [FIELD], 'tasks': [{'t': 'win', 'r': [FIELD], 'n': 2}]}),
                 ('다온을 따라 빈칸 벌판의 이름 없는 사당을 찾는다', {'at': [FIELD], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 2}]}),
-                ('묵창 나루로 돌아가 희수에게 손을 보인다', {'at': [FERRY]}),
+                ('묵창 나루로 돌아가 희수에게 손을 보인다', {'at': [FERRY], 'tasks': [{'t': 'travel', 'r': [FERRY], 'n': 1}]}),
             ]),
     3: dict(id='mkq_3', L=42, region=FERRY, after=['mkq_2'], items={'meokbi_umbrella': 2, 'meokbi_moss': 3},
             summary='남의 꿈을 꾸고, 팔에 먹 무늬가 번진다. 먹비 숲에서 옛 조사원 서율의 흔적을 찾는다.',
             steps=[
                 ('묵창 나루에서 아침을 맞는다', {'at': [FERRY]}),
                 ('먹비 숲에서 먹비 이끼(먹비 맞은 잎) 3개를 거둬 묵창 나루로 가져온다', {'at': [FERRY], 'tasks': [{'t': 'gather', 'items': ['meokbi_moss'], 'r': [FOREST], 'n': 3}]}),
+                ('희수가 올 때까지 자율 활동을 한 번 끝까지 마친다', {'at': [FERRY], 'tasks': [{'t': 'idle', 'n': 1}]}),
                 ('밤에 묵창 나루 주막의 희수에게 팔을 보이고 창밖 목소리를 알린다', {'at': [FERRY]}),
-                ('이튿날 묵창 나루 주막에서 희수에게 옛 보고서를 받는다', {'at': [FERRY]}),
-                ('먹비 숲 안쪽을 3번 탐색해 옛 조사원 숙소를 찾는다', {'at': [FOREST], 'tasks': [{'t': 'search', 'r': [FOREST], 'n': 3}]}),
+                ('묵창 나루에서 하룻밤 쉬고 이튿날 주막에서 희수에게 옛 보고서를 받는다', {'at': [FERRY], 'tasks': [{'t': 'rest', 'r': [FERRY], 'n': 1}]}),
+                ('먹비 숲으로 가서 원정을 한 번 끝까지 다녀와 옛 조사원 숙소를 찾는다', {'at': [FOREST], 'tasks': [{'t': 'travel', 'r': [FOREST], 'n': 1}, {'t': 'expedition', 'r': [FOREST], 'n': 1}]}),
                 ('숙소를 나와 먹비 숲을 한 번 더 탐색한다', {'at': [FOREST], 'tasks': [{'t': 'search', 'r': [FOREST], 'n': 1}]}),
-                ('묵창 나루로 돌아간다', {'at': [FERRY]}),
+                ('묵창 나루로 돌아간다', {'at': [FERRY], 'tasks': [{'t': 'travel', 'r': [FERRY], 'n': 1}]}),
             ]),
     4: dict(id='mkq_4', L=44, region=FERRY, after=['mkq_3'], items={'name_ink_charm': 3, 'register_slip': 3},
             summary='나루에 엉킴이 번진다. 정청은 다온의 이름을 거두기로 한다. 마을 먹귀가 모인 명부 탑으로 오른다.',
@@ -85,7 +88,7 @@ PLAN = {
                 ('묵창 나루에서 희수를 만난다', {'at': [FERRY]}),
                 ('빈칸 벌판에서 나루로 들어오는 길목을 3번 탐색하고, 묵창 나루 안쪽 다온의 집에 간다', {'at': [FERRY], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 3}]}),
                 ('묵창 나루의 희수에게 간다', {'at': [FERRY]}),
-                ('명부 탑으로 간다', {'at': [TOWER]}),
+                ('이름 먹 부적 2장을 지어 명부 탑으로 간다', {'at': [TOWER], 'tasks': [{'t': 'craft', 'items': ['name_ink_charm'], 'n': 2}, {'t': 'travel', 'r': [TOWER], 'n': 1}]}),
                 ('명부 탑에서 먹귀를 5번 풀어 보낸다', {'at': [TOWER], 'tasks': [{'t': 'win', 'r': [TOWER], 'n': 5}]}),
                 ('명부 탑을 3번 탐색해 꼭대기로 오른다', {'at': [TOWER], 'tasks': [{'t': 'search', 'r': [TOWER], 'n': 3}]}),
                 ('탑 꼭대기의 엉킨 먹귀 무리를 풀어 보낸다', {'at': [TOWER], 'tasks': [{'t': 'win', 'm': ['mk_tower_5'], 'n': 1}]}),
@@ -247,6 +250,9 @@ begin
 end $$;""")
     w("select pg_temp.yh_patch('public.world_faction_task_count(uuid,jsonb,timestamp with time zone)', 'when ''craft'' then ''craft'' end', 'when ''craft'' then ''craft'' when ''rest'' then ''rest'' end');")
     w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'when ''craft'' then ''제작'' else', 'when ''craft'' then ''제작'' when ''rest'' then ''쉬기'' else');")
+    w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'string_agg(m.region_name, ''·'') || ''에서 ''', 'string_agg(m.region_name, ''·'') || case when p_task ->> ''t'' = ''travel'' then ''에 '' else ''에서 '' end');")
+    w("select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', 'when ''rest'' then ''쉬기'' else', 'when ''rest'' then ''쉬기'' when ''idle'' then ''자율 활동 끝까지 마치기'' || case when p_task ? ''min'' then ''('' || (p_task ->> ''min'') || ''분 넘게)'' else '''' end else');")
+    w("select pg_temp.yh_patch('public.world_faction_task_count(uuid,jsonb,timestamp with time zone)', '+ case when p_task ->> ''t'' = ''win'' and not p_task ? ''phase''', '+ case when p_task ->> ''t'' = ''idle'' then (select count(*)::int from public.world_idle_activities a where a.owner_id = p_uid and a.status = ''claimed'' and a.claimed_at >= p_since and a.claimed_at >= a.started_at + make_interval(mins => a.duration_minutes) and a.duration_minutes >= coalesce((p_task ->> ''min'')::int, 0) and (not p_task ? ''k'' or a.activity_type = p_task ->> ''k'')) else 0 end + case when p_task ->> ''t'' = ''win'' and not p_task ? ''phase''');")
     bulk('world_quest_npcs', [dict(npc_key=k, npc_name=nm, bio=bio) for k, (nm, bio) in NPCS.items()], [('npc_key', 'text'), ('npc_name', 'text'), ('bio', 'text')], 'npc_key', ['npc_name', 'bio'])
     qrows, srows = [], []
     for i, q in enumerate(quests):

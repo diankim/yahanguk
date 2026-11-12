@@ -46,5 +46,5 @@ export const SFX_ACTS = [
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
 export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish(_at)?$/,
-  clue: /field_search/, search: /field_search/, rest: /field_rest/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
+  clue: /field_search/, search: /field_search/, rest: /field_rest/, idle: /claim_idle/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 export const hit = (key, name) => CHANGES[key].test(name || '');
