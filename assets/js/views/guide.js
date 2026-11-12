@@ -6,6 +6,7 @@ import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, GW_DAILY } from '../rules.js';
 
+const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
 const regionName = id => GD.regionNames[id] || id;
@@ -423,7 +424,7 @@ const S = [
           <li><b>50단계</b>: 숙달 기술</li></ul></li>
       <li>무기 강화를 돕는 택일 기술은 무기 갈래마다 다른 계열에 있습니다: 근접은 단조, 원거리는 목공, 술법은 법구 공예.</li>
       <li><b>조합 기술</b>은 채집·채광·낚시와 제작 계열을 잇습니다. 두 계열이 모두 18단계에 닿으면 열립니다. 목록은 「성장과 캐릭터 빌드」 항목에 있습니다.</li>
-      <li>탐사 계열 36단계 「영초 감별」은 위험도 7 이상 지역에서 탐색할 때 드물게 귀령초를 찾게 해 줍니다.</li>
+      <li>탐사 계열 36단계 「영초 감별」은 위험도 7 이상 지역에서 탐색할 때 ${gwPct(0.2)} 확률로 귀령초를 찾게 해 줍니다.</li>
     </ul>
     <h4>생활 전문화</h4>
     <ul>
@@ -785,12 +786,18 @@ const S = [
     </ul>
     <h4>귀령초</h4>
     <p>거래할 수 있는 물품입니다. 위험도 7 이상 지역에서 드물게 나옵니다.</p>
+    <table class="guide-table"><tr><th>얻는 길</th><th>확률</th></tr>
+      <tr><td>채집</td><td>${gwPct(0.02)}</td></tr>
+      <tr><td>일반 요괴</td><td>${gwPct(0.02)}</td></tr>
+      <tr><td>정예</td><td>${gwPct(0.08)}</td></tr>
+      <tr><td>우두머리</td><td>${gwPct(0.3)}</td></tr>
+      <tr><td>구중 봉연 우두머리</td><td>${gwPct(1)}</td></tr>
+      <tr><td>원정 완주</td><td>${gwPct(0.15)}</td></tr>
+      <tr><td>합동 토벌·결전·귀허의 주인 승리</td><td>${gwPct(1)}</td></tr>
+      <tr><td>탐사 36단계 「영초 감별」</td><td>${gwPct(0.2)}</td></tr></table>
     <ul>
-      <li><b>얻는 길</b>: 채집 · 요괴 토벌(정예·우두머리일수록, 구중 봉연 우두머리는 더 잘) · 원정 완주 · 합동 토벌·결전·귀허의 주인 승리 · 탐사 36단계 「영초 감별」</li>
-    </ul>
-    <ul>
-      <li>위험도 10 지역에서 더 잘 나옵니다.</li>
-      <li>요화에 걸린 조사원은 ${GD.gwiryeong.yohwa_mul}배, 그 파티원은 ${GD.gwiryeong.party_mul}배 잘 나옵니다.</li>
+      <li>위험도 10 지역에서는 채집·토벌·원정 확률이 ×1.5입니다.</li>
+      <li>요화에 걸린 조사원은 위 확률이 ×${GD.gwiryeong.yohwa_mul}, 그 파티원은 ×${GD.gwiryeong.party_mul}입니다.</li>
       <li>${GWIRYEONG.hold}</li>
       <li>${GWIRYEONG.supply}</li>
       <li>${GWIRYEONG.trade}</li>
