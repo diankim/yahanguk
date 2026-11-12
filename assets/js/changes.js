@@ -1,5 +1,5 @@
 export const CHANGES = {
-  invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block/,
+  invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|status_dismiss/,
   equipped: /equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/,
   invAlways: /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
   map: /travel|mount|join_major_faction|field_|battle_|expedition/,
