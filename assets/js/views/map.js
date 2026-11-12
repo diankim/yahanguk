@@ -224,22 +224,6 @@ function paint() {
   const boxes = regions.map(r => { const [x, y] = P(r); return { x: x - 8, y: y - 8, w: 16, h: 16 }; });
   boxes.push({ x: W - 60, y: 0, w: 60, h: 190 }, { x: 0, y: H - (W < 520 ? 50 : 30), w: W, h: 50 });
   const hit = bx => bx.x < 0 || bx.y < 0 || bx.x + bx.w > W || bx.y + bx.h > H || boxes.some(o => bx.x < o.x + o.w && bx.x + bx.w > o.x && bx.y < o.y + o.h && bx.y + bx.h > o.y);
-  const tOpacity = zoom < 1.5 ? 0.95 : zoom < 2.4 ? 0.45 : 0.18;
-  let tnames = '';
-  const wx = store.env?.territories || {};
-  for (const [tid, t] of terr) {
-    if (!t.name) continue;
-    const tfs = Math.max(13, Math.min(22, 15 * Math.sqrt(zoom))), wfs = Math.max(11, tfs * 0.6);
-    const cx = X(t.x / t.n), cy = Y(t.y / t.n), w = [...t.name].length * tfs * 1.25 + 6, h = tfs + 4 + (wx[tid] ? wfs * 1.4 : 0);
-    let tx = cx, ty = cy;
-    for (const [dx, dy] of [[0, 0], [0, -1.2], [0, 1.2], [-0.7, 0], [0.7, 0], [0, -2.4], [0, 2.4], [-0.7, -1.2], [0.7, -1.2], [-0.7, 1.2], [0.7, 1.2]]) {
-      const bx = { x: cx + dx * w - w / 2, y: cy + dy * h - tfs / 2 - 2, w, h };
-      if (!hit(bx)) { tx = cx + dx * w; ty = cy + dy * h; break; }
-    }
-    if (zoom < 2.4) boxes.push({ x: tx - w / 2, y: ty - tfs / 2 - 2, w, h });
-    tnames += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${tfs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
-    if (wx[tid]) tnames += `<text x="${tx.toFixed(1)}" y="${(ty + tfs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${wfs}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
-  }
   const labels = new Map();
   for (const r of order) {
     const must = rank(r) <= 2;
@@ -251,6 +235,29 @@ function paint() {
     for (const [bx, by, anchor] of tries) { const box = { x: bx, y: by, w, h: hgt }; if (!hit(box)) { placed = { box, anchor }; break; } }
     if (!placed && must) placed = { box: { x: tries[0][0], y: tries[0][1], w, h: hgt }, anchor: 'start' };
     if (placed) { boxes.push(placed.box); labels.set(r.region_id, placed); }
+  }
+  const tOpacity = zoom < 1.5 ? 0.95 : zoom < 2.4 ? 0.45 : 0.18;
+  let tnames = '';
+  const wx = store.env?.territories || {};
+  const inPoly = (x, y, poly) => { let o = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) o = !o; } return o; };
+  const terrPolys = new Map();
+  for (const r of regions) { const t = r.territory_id || 'none', poly = g.cells.get(r.region_id); if (poly) (terrPolys.get(t) || terrPolys.set(t, []).get(t)).push(poly.map(([x, y]) => [X(x), Y(y)])); }
+  const TRY = [[0, 0]];
+  for (let k = 1; k <= 4; k++) for (const dx of [0, -0.5, 0.5, -1, 1]) for (const dy of [-k, k]) TRY.push([dx, dy * 0.7]);
+  for (const k of [-0.5, 0.5, -1, 1]) TRY.push([k, 0]);
+  for (const [tid, t] of terr) {
+    if (!t.name) continue;
+    const tfs = Math.max(13, Math.min(22, 15 * Math.sqrt(zoom))), wfs = Math.max(11, tfs * 0.6);
+    const cx = X(t.x / t.n), cy = Y(t.y / t.n), w = [...t.name].length * tfs * 1.25 + 6, h = tfs + 4 + (wx[tid] ? wfs * 1.4 : 0);
+    const polys = terrPolys.get(tid) || [], mine = (x, y) => !polys.length || polys.some(p => inPoly(x, y, p));
+    let tx = cx, ty = cy;
+    for (const [dx, dy] of TRY) {
+      const x = cx + dx * w, y = cy + dy * h, bx = { x: x - w / 2, y: y - tfs / 2 - 2, w, h };
+      if (mine(x, y) && mine(x, y + h / 2) && !hit(bx)) { tx = x; ty = y; break; }
+    }
+    boxes.push({ x: tx - w / 2, y: ty - tfs / 2 - 2, w, h });
+    tnames += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${tfs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
+    if (wx[tid]) tnames += `<text x="${tx.toFixed(1)}" y="${(ty + tfs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${wfs}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
   }
   let nodes = '', texts = '';
   for (const r of regions) {
