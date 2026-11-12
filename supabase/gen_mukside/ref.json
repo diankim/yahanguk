@@ -1,0 +1,10916 @@
+{
+"categories": {
+"a1_iron": "armor",
+"a1_light": "armor",
+"a1_robe": "armor",
+"a1_shade": "armor",
+"a2_iron": "armor",
+"a2_iron_hq": "armor",
+"a2_light": "armor",
+"a2_light_hq": "armor",
+"a2_robe": "armor",
+"a2_robe_hq": "armor",
+"a2_shade": "armor",
+"a2_shade_hq": "armor",
+"a3_iron": "armor",
+"a3_iron_hq": "armor",
+"a3_light": "armor",
+"a3_light_hq": "armor",
+"a3_robe": "armor",
+"a3_robe_hq": "armor",
+"a3_shade": "armor",
+"a3_shade_hq": "armor",
+"a4_iron": "armor",
+"a4_iron_hq": "armor",
+"a4_light": "armor",
+"a4_light_hq": "armor",
+"a4_robe": "armor",
+"a4_robe_hq": "armor",
+"a4_shade": "armor",
+"a4_shade_hq": "armor",
+"a5_iron": "armor",
+"a5_light": "armor",
+"a5_light_hq": "armor",
+"a5_robe": "armor",
+"a5_shade": "armor",
+"a6_iron": "armor",
+"a6_iron_hq": "armor",
+"a6_light": "armor",
+"a6_light_hq": "armor",
+"a6_robe": "armor",
+"a6_robe_hq": "armor",
+"a6_shade": "armor",
+"a6_shade_hq": "armor",
+"a7_iron": "armor",
+"a7_iron_hq": "armor",
+"a7_light": "armor",
+"a7_light_hq": "armor",
+"a7_robe": "armor",
+"a7_robe_hq": "armor",
+"a7_shade": "armor",
+"a7_shade_hq": "armor",
+"abyss_angler": "material",
+"abyss_dragonfish": "material",
+"alfonsino_salt_grill": "consumable",
+"alfonsino_salt_grill_hq": "consumable",
+"ammo_arrow": "consumable",
+"ammo_bolt": "consumable",
+"ammo_dart": "consumable",
+"angler_gall_pill": "consumable",
+"angler_gall_pill_hq": "consumable",
+"ash_lanternfish": "material",
+"ashwhisker_catfish": "material",
+"ashwhisker_herbal_soup": "consumable",
+"ashwhisker_herbal_soup_hq": "consumable",
+"bamboo_eel": "material",
+"banyo_salve": "consumable",
+"banyo_scale": "material",
+"bark_stew": "consumable",
+"bark_stew_hq": "consumable",
+"beast_bone": "material",
+"beast_fang": "material",
+"beast_hide": "material",
+"belltower_catfish": "material",
+"belltower_catfish_steam": "consumable",
+"belltower_catfish_steam_hq": "consumable",
+"bitterling_ink": "material",
+"black_rockfish": "material",
+"blank_fill_pill": "consumable",
+"blank_fill_pill_hq": "consumable",
+"blank_hanji": "material",
+"blank_snakehead": "material",
+"blind_dragon": "material",
+"bream_sashimi": "consumable",
+"bream_sashimi_hq": "consumable",
+"bronze_catfish": "material",
+"bronze_charm": "amulet",
+"bronze_charm_hq": "amulet",
+"bronze_scale_plate": "material",
+"bullhead": "material",
+"calm_brew": "consumable",
+"calm_brew_hq": "consumable",
+"canal_carp": "material",
+"canal_eel": "material",
+"carp_broth": "consumable",
+"carp_broth_hq": "consumable",
+"carp_glue": "material",
+"catfish_braise": "consumable",
+"catfish_braise_hq": "consumable",
+"char_grill": "consumable",
+"char_grill_hq": "consumable",
+"charcoal": "material",
+"cherry_salmon": "material",
+"cinnabar": "material",
+"clear_spirit_pill": "consumable",
+"clear_spirit_pill_hq": "consumable",
+"cloud_cotton": "material",
+"cod": "material",
+"cod_soup": "consumable",
+"cod_soup_hq": "consumable",
+"comet_dolphinfish": "material",
+"comet_dolphinfish_grill": "consumable",
+"comet_dolphinfish_grill_hq": "consumable",
+"courier_token": "quest",
+"croaker": "material",
+"croaker_soup": "consumable",
+"croaker_soup_hq": "consumable",
+"crucian_reed_porridge": "consumable",
+"crucian_reed_porridge_hq": "consumable",
+"dace": "material",
+"dark_eye_drops": "consumable",
+"dark_eye_drops_hq": "consumable",
+"doorplate_carp": "material",
+"dragon_bream": "material",
+"dragon_eye_essence": "consumable",
+"dragon_eye_essence_hq": "consumable",
+"dragon_feast": "consumable",
+"dragon_feast_hq": "consumable",
+"dragon_scale_koi": "material",
+"dried_croaker": "consumable",
+"dried_croaker_hq": "consumable",
+"drifting_name_thread": "material",
+"drowned_scale": "material",
+"eclipse_skate": "material",
+"eel_tonic": "consumable",
+"eel_tonic_hq": "consumable",
+"ember_crystal": "material",
+"ember_gall_pill": "consumable",
+"ember_gall_pill_hq": "consumable",
+"ember_lantern_angler": "material",
+"erased_plate": "material",
+"exg_march_0": "norigae",
+"exg_march_1": "norigae",
+"exg_march_2": "norigae",
+"exg_night_0": "mask",
+"exg_night_1": "mask",
+"exg_night_2": "mask",
+"exg_trail_0": "amulet",
+"exg_trail_1": "amulet",
+"exg_trail_2": "amulet",
+"exp_elixir_clear": "consumable",
+"exp_elixir_iron": "consumable",
+"exp_elixir_tiger": "consumable",
+"field_knife": "tool",
+"field_knife_2": "tool",
+"field_knife_2_hq": "tool",
+"filefish": "material",
+"fine_paper": "material",
+"fish_fillet": "material",
+"fish_oil_lamp": "consumable",
+"fish_oil_lamp_hq": "consumable",
+"fish_porridge": "consumable",
+"fish_porridge_hq": "consumable",
+"fishing_rod": "tool",
+"fishing_rod_hq": "tool",
+"flounder": "material",
+"flounder_sashimi": "consumable",
+"flounder_sashimi_hq": "consumable",
+"frost_salt": "material",
+"fv_amulet_ember": "amulet",
+"fv_amulet_river": "amulet",
+"fv_hat_mandate": "hat",
+"fv_hat_night": "hat",
+"fv_mask_redmoon": "mask",
+"fv_norigae_lotus": "norigae",
+"fv_shoes_north": "shoes",
+"ghost_ash": "material",
+"ghost_goby": "material",
+"gizzard_shad": "material",
+"goby_braise": "consumable",
+"goby_braise_hq": "consumable",
+"goby_soup": "consumable",
+"goby_soup_hq": "consumable",
+"golden_carp": "material",
+"grand_pill": "consumable",
+"grand_pill_hq": "consumable",
+"grilled_fish": "consumable",
+"grilled_fish_hq": "consumable",
+"grouper": "material",
+"grouper_steam": "consumable",
+"grouper_steam_hq": "consumable",
+"guard_spear": "weapon",
+"guard_spear_hq": "weapon",
+"guide_lantern": "consumable",
+"gwiheo_charm": "consumable",
+"gwiheo_iron": "material",
+"gwiheo_pearl": "material",
+"gwiryeong_cho": "consumable",
+"h1_calm": "hat",
+"h1_guard": "hat",
+"h1_wise": "hat",
+"h2_calm": "hat",
+"h2_calm_hq": "hat",
+"h2_guard": "hat",
+"h2_guard_hq": "hat",
+"h2_wise": "hat",
+"h2_wise_hq": "hat",
+"h3_calm": "hat",
+"h3_calm_hq": "hat",
+"h3_guard": "hat",
+"h3_guard_hq": "hat",
+"h3_wise": "hat",
+"h3_wise_hq": "hat",
+"h4_calm": "hat",
+"h4_calm_hq": "hat",
+"h4_guard": "hat",
+"h4_guard_hq": "hat",
+"h4_wise": "hat",
+"h4_wise_hq": "hat",
+"h5_calm": "hat",
+"h5_calm_hq": "hat",
+"h5_guard": "hat",
+"h5_wise": "hat",
+"h6_calm": "hat",
+"h6_calm_hq": "hat",
+"h6_guard": "hat",
+"h6_guard_hq": "hat",
+"h6_wise": "hat",
+"h6_wise_hq": "hat",
+"h7_calm": "hat",
+"h7_calm_hq": "hat",
+"h7_guard": "hat",
+"h7_guard_hq": "hat",
+"h7_wise": "hat",
+"h7_wise_hq": "hat",
+"haeryong_feast": "consumable",
+"haeryong_feast_hq": "consumable",
+"hagfish_grill": "consumable",
+"hagfish_grill_hq": "consumable",
+"hairtail_braise": "consumable",
+"hairtail_braise_hq": "consumable",
+"heavenly_dew": "consumable",
+"heavenly_dew_hq": "consumable",
+"herb": "material",
+"herb_fish_steam": "consumable",
+"herb_fish_steam_hq": "consumable",
+"herb_rice": "consumable",
+"herb_rice_hq": "consumable",
+"herbal_extract": "material",
+"hf_aquarium": "furniture",
+"hf_bandaji": "furniture",
+"hf_beam_dancheong": "furniture",
+"hf_bedding_cotton": "furniture",
+"hf_bedding_silk": "furniture",
+"hf_bedding_wonang": "furniture",
+"hf_board_cheonha": "furniture",
+"hf_board_yahaeng": "furniture",
+"hf_bonsai_pine": "furniture",
+"hf_bonsai_yeonri": "furniture",
+"hf_bookshelf": "furniture",
+"hf_brazier_brass": "furniture",
+"hf_celadon_maebyeong": "furniture",
+"hf_cushion_obang": "furniture",
+"hf_door_jangji": "furniture",
+"hf_door_yeodat": "furniture",
+"hf_fan_taegeuk": "furniture",
+"hf_frame_large": "furniture",
+"hf_frame_small": "furniture",
+"hf_garden_suban": "furniture",
+"hf_gayageum": "furniture",
+"hf_jar_moon": "furniture",
+"hf_lamp_jwadeung": "furniture",
+"hf_lamp_nine_pillar": "furniture",
+"hf_lantern_cheongsa": "furniture",
+"hf_lantern_pearl": "furniture",
+"hf_map_old": "furniture",
+"hf_mask_hahoe": "furniture",
+"hf_onggi": "furniture",
+"hf_pet_ball": "furniture",
+"hf_pet_basket_cave": "furniture",
+"hf_pet_bell": "furniture",
+"hf_pet_birdhouse": "furniture",
+"hf_pet_bowl": "furniture",
+"hf_pet_cloud_cushion": "furniture",
+"hf_pet_honeycomb": "furniture",
+"hf_pet_log_scratch": "furniture",
+"hf_pet_lotus_basin": "furniture",
+"hf_pet_mirror_ball": "furniture",
+"hf_pet_mossbed": "furniture",
+"hf_pet_nest": "furniture",
+"hf_pet_perch": "furniture",
+"hf_pet_quilt": "furniture",
+"hf_pet_spirit_lamp": "furniture",
+"hf_pet_stone_seat": "furniture",
+"hf_pet_stump": "furniture",
+"hf_pet_talisman_cushion": "furniture",
+"hf_pet_tidepool": "furniture",
+"hf_pet_tower": "furniture",
+"hf_pet_waterbowl": "furniture",
+"hf_pot_bamboo": "furniture",
+"hf_pot_orchid": "furniture",
+"hf_pungno": "furniture",
+"hf_rubbing_ashwhisker_catfish": "furniture",
+"hf_rubbing_bamboo_eel": "furniture",
+"hf_rubbing_belltower_catfish": "furniture",
+"hf_rubbing_blank_snakehead": "furniture",
+"hf_rubbing_blind_dragon": "furniture",
+"hf_rubbing_comet_dolphinfish": "furniture",
+"hf_rubbing_doorplate_carp": "furniture",
+"hf_rubbing_ember_lantern_angler": "furniture",
+"hf_rubbing_inkscale_tuna": "furniture",
+"hf_rubbing_meokbi_salmon": "furniture",
+"hf_rubbing_mirror_ice_char": "furniture",
+"hf_rubbing_moonglass_trout": "furniture",
+"hf_rubbing_paperboat_mandarin": "furniture",
+"hf_rubbing_sleeping_king_sturgeon": "furniture",
+"hf_rubbing_smuggler_alfonsino": "furniture",
+"hf_rug_hemp": "furniture",
+"hf_rug_hwamun": "furniture",
+"hf_rug_ink_pond": "furniture",
+"hf_rug_manhwa": "furniture",
+"hf_rug_mojeon": "furniture",
+"hf_rug_straw": "furniture",
+"hf_rug_unhak": "furniture",
+"hf_screen_hwajo": "furniture",
+"hf_screen_ilwol": "furniture",
+"hf_screen_ninefold": "furniture",
+"hf_screen_sansu": "furniture",
+"hf_scroll_magpie": "furniture",
+"hf_scroll_orchid": "furniture",
+"hf_scroll_sansu": "furniture",
+"hf_seoan": "furniture",
+"hf_shelf_register": "furniture",
+"hf_soban": "furniture",
+"hf_stone_lamp": "furniture",
+"hf_surf_books": "furniture",
+"hf_surf_brush": "furniture",
+"hf_surf_candle": "furniture",
+"hf_surf_incense": "furniture",
+"hf_surf_lamp": "furniture",
+"hf_surf_munbang": "furniture",
+"hf_surf_najeon_box": "furniture",
+"hf_surf_suseok": "furniture",
+"hf_surf_teaset": "furniture",
+"hf_surf_vase": "furniture",
+"hf_table_lacquer": "furniture",
+"hf_tank_bamboo_eel": "furniture",
+"hf_throne_dragon": "furniture",
+"hf_wall_bamboo_blind": "furniture",
+"hf_wall_doorplate": "furniture",
+"hf_wardrobe_najeon": "furniture",
+"hf_window_flower": "furniture",
+"hf_window_meokbi": "furniture",
+"hf_window_round": "furniture",
+"hf_window_sal": "furniture",
+"hf_window_shutter": "furniture",
+"hg_baduk": "furniture",
+"hg_bakseok": "furniture",
+"hg_daesal": "furniture",
+"hg_eotgyeol": "furniture",
+"hg_geumbak": "furniture",
+"hg_hwamun": "furniture",
+"hg_jangpan": "furniture",
+"hg_jeondol": "furniture",
+"hg_maru": "furniture",
+"hg_ochre": "furniture",
+"hg_okdol": "furniture",
+"hg_wanggol": "furniture",
+"hg_wanja": "furniture",
+"hp_bamboo": "furniture",
+"hp_brick": "furniture",
+"hp_celadon": "furniture",
+"hp_cloud": "furniture",
+"hp_dancheong": "furniture",
+"hp_geumni": "furniture",
+"hp_hanji": "furniture",
+"hp_heukbyeok": "furniture",
+"hp_ink_dan": "furniture",
+"hp_maehwa": "furniture",
+"hp_mulgyeol": "furniture",
+"hp_saekdong": "furniture",
+"hp_yeonji": "furniture",
+"ice_char": "material",
+"ice_char_broth": "consumable",
+"ice_char_broth_hq": "consumable",
+"ink_catfish": "material",
+"ink_greenling": "material",
+"inkdot_bitterling": "material",
+"inkline_eel": "material",
+"inkline_eel_grill": "consumable",
+"inkline_eel_grill_hq": "consumable",
+"inkscale_tuna": "material",
+"inkstone": "material",
+"inverted_incense": "material",
+"iron_ingot": "material",
+"iron_sword": "weapon",
+"jack_mackerel": "material",
+"jade_bronze_charm": "amulet",
+"jade_bronze_charm_hq": "amulet",
+"jade_shard": "material",
+"k1_awe": "mask",
+"k1_ghost": "mask",
+"k1_hide": "mask",
+"k2_awe": "mask",
+"k2_awe_hq": "mask",
+"k2_ghost": "mask",
+"k2_ghost_hq": "mask",
+"k2_hide": "mask",
+"k2_hide_hq": "mask",
+"k3_awe": "mask",
+"k3_awe_hq": "mask",
+"k3_ghost": "mask",
+"k3_ghost_hq": "mask",
+"k3_hide": "mask",
+"k3_hide_hq": "mask",
+"k4_awe": "mask",
+"k4_awe_hq": "mask",
+"k4_ghost": "mask",
+"k4_ghost_hq": "mask",
+"k4_hide": "mask",
+"k4_hide_hq": "mask",
+"k5_awe": "mask",
+"k5_ghost": "mask",
+"k5_hide": "mask",
+"k5_hide_hq": "mask",
+"k6_awe": "mask",
+"k6_awe_hq": "mask",
+"k6_ghost": "mask",
+"k6_ghost_hq": "mask",
+"k6_hide": "mask",
+"k6_hide_hq": "mask",
+"k7_awe": "mask",
+"k7_awe_hq": "mask",
+"k7_ghost": "mask",
+"k7_ghost_hq": "mask",
+"k7_hide": "mask",
+"k7_hide_hq": "mask",
+"koi_broth": "consumable",
+"koi_broth_hq": "consumable",
+"lacquer": "material",
+"lake_trout": "material",
+"lamp_hairtail": "material",
+"lantern_crucian": "material",
+"lantern_oil": "material",
+"lenok": "material",
+"loach": "material",
+"lt_carve_3": "tool",
+"lt_carve_3_hq": "tool",
+"lt_carve_4": "tool",
+"lt_carve_4_hq": "tool",
+"lt_carve_5": "tool",
+"lt_carve_5_hq": "tool",
+"lt_carve_6": "tool",
+"lt_carve_6_hq": "tool",
+"lt_carve_7": "tool",
+"lt_carve_7_hq": "tool",
+"lt_compass_4": "tool",
+"lt_compass_4_hq": "tool",
+"lt_compass_5": "tool",
+"lt_compass_5_hq": "tool",
+"lt_compass_6": "tool",
+"lt_compass_6_hq": "tool",
+"lt_compass_7": "tool",
+"lt_compass_7_hq": "tool",
+"lt_cook_2": "tool",
+"lt_cook_2_hq": "tool",
+"lt_cook_3": "tool",
+"lt_cook_3_hq": "tool",
+"lt_cook_4": "tool",
+"lt_cook_4_hq": "tool",
+"lt_cook_5": "tool",
+"lt_cook_5_hq": "tool",
+"lt_cook_6": "tool",
+"lt_cook_6_hq": "tool",
+"lt_cook_7": "tool",
+"lt_cook_7_hq": "tool",
+"lt_hammer_2": "tool",
+"lt_hammer_2_hq": "tool",
+"lt_hammer_3": "tool",
+"lt_hammer_3_hq": "tool",
+"lt_hammer_4": "tool",
+"lt_hammer_4_hq": "tool",
+"lt_hammer_5": "tool",
+"lt_hammer_5_hq": "tool",
+"lt_hammer_6": "tool",
+"lt_hammer_6_hq": "tool",
+"lt_hammer_7": "tool",
+"lt_hammer_7_hq": "tool",
+"lt_knife_4": "tool",
+"lt_knife_4_hq": "tool",
+"lt_knife_7": "tool",
+"lt_knife_7_hq": "tool",
+"lt_knife_8": "tool",
+"lt_knife_8_hq": "tool",
+"lt_lantern_3": "tool",
+"lt_lantern_3_hq": "tool",
+"lt_lantern_4": "tool",
+"lt_lantern_4_hq": "tool",
+"lt_lantern_5": "tool",
+"lt_lantern_5_hq": "tool",
+"lt_lantern_6": "tool",
+"lt_lantern_6_hq": "tool",
+"lt_lantern_7": "tool",
+"lt_lantern_7_hq": "tool",
+"lt_needle_2": "tool",
+"lt_needle_2_hq": "tool",
+"lt_needle_3": "tool",
+"lt_needle_3_hq": "tool",
+"lt_needle_4": "tool",
+"lt_needle_4_hq": "tool",
+"lt_needle_5": "tool",
+"lt_needle_5_hq": "tool",
+"lt_needle_6": "tool",
+"lt_needle_6_hq": "tool",
+"lt_needle_7": "tool",
+"lt_needle_7_hq": "tool",
+"lt_pick_2": "tool",
+"lt_pick_2_hq": "tool",
+"lt_pick_3": "tool",
+"lt_pick_3_hq": "tool",
+"lt_pick_5": "tool",
+"lt_pick_5_hq": "tool",
+"lt_pick_6": "tool",
+"lt_pick_6_hq": "tool",
+"lt_pick_7": "tool",
+"lt_pick_7_hq": "tool",
+"lt_rod_3": "tool",
+"lt_rod_3_hq": "tool",
+"lt_rod_4": "tool",
+"lt_rod_4_hq": "tool",
+"lt_rod_5": "tool",
+"lt_rod_5_hq": "tool",
+"lt_rod_6": "tool",
+"lt_rod_6_hq": "tool",
+"lt_rod_7": "tool",
+"lt_rod_7_hq": "tool",
+"lt_rod_7b": "tool",
+"lt_rod_7b_hq": "tool",
+"lt_sickle_3": "tool",
+"lt_sickle_3_hq": "tool",
+"lt_sickle_4": "tool",
+"lt_sickle_4_hq": "tool",
+"lt_sickle_5": "tool",
+"lt_sickle_5_hq": "tool",
+"lt_sickle_6": "tool",
+"lt_sickle_6_hq": "tool",
+"lt_sickle_7": "tool",
+"lt_sickle_7_hq": "tool",
+"lt_staff_2": "tool",
+"lt_staff_2_hq": "tool",
+"lt_still_2": "tool",
+"lt_still_2_hq": "tool",
+"lt_still_3": "tool",
+"lt_still_3_hq": "tool",
+"lt_still_4": "tool",
+"lt_still_4_hq": "tool",
+"lt_still_5": "tool",
+"lt_still_5_hq": "tool",
+"lt_still_6": "tool",
+"lt_still_6_hq": "tool",
+"lt_still_7": "tool",
+"lt_still_7_hq": "tool",
+"lumber": "material",
+"m1_purify": "amulet",
+"m1_spell": "amulet",
+"m1_ward": "amulet",
+"m2_purify": "amulet",
+"m2_purify_hq": "amulet",
+"m2_spell": "amulet",
+"m2_spell_hq": "amulet",
+"m2_ward": "amulet",
+"m2_ward_hq": "amulet",
+"m3_purify": "amulet",
+"m3_purify_hq": "amulet",
+"m3_spell": "amulet",
+"m3_spell_hq": "amulet",
+"m3_ward": "amulet",
+"m3_ward_hq": "amulet",
+"m4_purify": "amulet",
+"m4_purify_hq": "amulet",
+"m4_spell": "amulet",
+"m4_spell_hq": "amulet",
+"m4_ward": "amulet",
+"m4_ward_hq": "amulet",
+"m5_purify": "amulet",
+"m5_spell": "amulet",
+"m5_spell_hq": "amulet",
+"m5_ward": "amulet",
+"m6_purify": "amulet",
+"m6_purify_hq": "amulet",
+"m6_spell": "amulet",
+"m6_spell_hq": "amulet",
+"m6_ward": "amulet",
+"m6_ward_hq": "amulet",
+"m7_purify": "amulet",
+"m7_purify_hq": "amulet",
+"m7_spell": "amulet",
+"m7_spell_hq": "amulet",
+"m7_ward": "amulet",
+"m7_ward_hq": "amulet",
+"mackerel": "material",
+"mackerel_grill": "consumable",
+"mackerel_grill_hq": "consumable",
+"mandarin_fish": "material",
+"marlin_grill": "consumable",
+"marlin_grill_hq": "consumable",
+"marsh_wraithfish": "material",
+"medicine_base": "material",
+"meokbi_ebony": "material",
+"meokbi_moss": "material",
+"meokbi_salmon": "material",
+"meokbi_umbrella": "consumable",
+"meokbi_umbrella_hq": "consumable",
+"meokgwi_incense": "consumable",
+"meokgwi_incense_hq": "consumable",
+"meokgwi_lump": "material",
+"minnow": "material",
+"mirror_ice_char": "material",
+"mirror_shard": "material",
+"mirror_soup": "consumable",
+"mirror_soup_hq": "consumable",
+"mirror_whitefish": "material",
+"mist_bitterling": "material",
+"mist_crucian_steam": "consumable",
+"mist_crucian_steam_hq": "consumable",
+"monster_core": "material",
+"moon_blade": "weapon",
+"moon_blade_hq": "weapon",
+"moon_moss": "material",
+"moonglass_sashimi": "consumable",
+"moonglass_sashimi_hq": "consumable",
+"moonglass_trout": "material",
+"moonless_silk": "material",
+"moonlight_essence": "consumable",
+"moonlight_essence_hq": "consumable",
+"moss_porridge": "consumable",
+"moss_porridge_hq": "consumable",
+"mukchang_ink": "material",
+"n1_keen": "norigae",
+"n1_luck": "norigae",
+"n1_plenty": "norigae",
+"n2_keen": "norigae",
+"n2_keen_hq": "norigae",
+"n2_luck": "norigae",
+"n2_luck_hq": "norigae",
+"n2_plenty": "norigae",
+"n2_plenty_hq": "norigae",
+"n3_keen": "norigae",
+"n3_keen_hq": "norigae",
+"n3_luck": "norigae",
+"n3_luck_hq": "norigae",
+"n3_plenty": "norigae",
+"n3_plenty_hq": "norigae",
+"n4_keen": "norigae",
+"n4_keen_hq": "norigae",
+"n4_luck": "norigae",
+"n4_luck_hq": "norigae",
+"n4_plenty": "norigae",
+"n4_plenty_hq": "norigae",
+"n5_keen": "norigae",
+"n5_keen_hq": "norigae",
+"n5_lighthouse": "norigae",
+"n5_luck": "norigae",
+"n5_luck_hq": "norigae",
+"n5_plenty": "norigae",
+"n6_keen": "norigae",
+"n6_keen_hq": "norigae",
+"n6_luck": "norigae",
+"n6_luck_hq": "norigae",
+"n6_plenty": "norigae",
+"n6_plenty_hq": "norigae",
+"n7_keen": "norigae",
+"n7_keen_hq": "norigae",
+"n7_luck": "norigae",
+"n7_luck_hq": "norigae",
+"n7_plenty": "norigae",
+"n7_plenty_hq": "norigae",
+"name_carving_soup": "consumable",
+"name_carving_soup_hq": "consumable",
+"name_ink_charm": "consumable",
+"name_ink_charm_hq": "consumable",
+"nameless_angler": "material",
+"oblivion_crystal": "material",
+"oblivion_incense": "consumable",
+"of_acc_earring": "outfit",
+"of_acc_flowerpin": "outfit",
+"of_acc_glasses": "outfit",
+"of_acc_norigae": "outfit",
+"of_acc_scarf": "outfit",
+"of_bottom_chima": "outfit",
+"of_bottom_exorcist": "outfit",
+"of_bottom_guard": "outfit",
+"of_bottom_medic": "outfit",
+"of_bottom_scout": "outfit",
+"of_bottom_seal": "outfit",
+"of_bottom_shadow": "outfit",
+"of_bottom_tamer": "outfit",
+"of_bundle": "outfit",
+"of_top_exorcist": "outfit",
+"of_top_guard": "outfit",
+"of_top_jeogori": "outfit",
+"of_top_jeoksam": "outfit",
+"of_top_magoja": "outfit",
+"of_top_medic": "outfit",
+"of_top_scout": "outfit",
+"of_top_seal": "outfit",
+"of_top_shadow": "outfit",
+"of_top_tamer": "outfit",
+"of_top_vest": "outfit",
+"ore": "material",
+"ore_pick": "tool",
+"padded_coat": "armor",
+"palace_lanternfish": "material",
+"palace_puffer": "material",
+"paperboat_mandarin": "material",
+"paperboat_spicy_stew": "consumable",
+"paperboat_spicy_stew_hq": "consumable",
+"pet_egg_2": "pet",
+"pet_egg_3": "pet",
+"pet_food": "consumable",
+"pet_medicine": "consumable",
+"pet_token": "material",
+"pond_smelt": "material",
+"pt_baby_boar": "pet",
+"pt_baby_crab": "pet",
+"pt_baby_tapir": "pet",
+"pt_baby_turtle": "pet",
+"pt_cheese_cat": "pet",
+"pt_cracked_jar": "pet",
+"pt_ddonggae": "pet",
+"pt_dragonfly": "pet",
+"pt_goldfish": "pet",
+"pt_hare": "pet",
+"pt_hermit_crab": "pet",
+"pt_ladybug": "pet",
+"pt_magpie": "pet",
+"pt_neun_puppy": "pet",
+"pt_nureong_puppy": "pet",
+"pt_ox_calf": "pet",
+"pt_paper_doll": "pet",
+"pt_pink_pomeranian": "pet",
+"pt_poison_mushroom": "pet",
+"pt_rhino_beetle": "pet",
+"pt_sparrow": "pet",
+"pt_spotted_cat": "pet",
+"pt_squirrel": "pet",
+"pt_tree_frog": "pet",
+"pt_tuxedo_cat": "pet",
+"pt_white_puppy": "pet",
+"pt_white_rabbit": "pet",
+"purify_water": "consumable",
+"purify_water_hq": "consumable",
+"raid_amulet": "amulet",
+"raid_amulet_hq": "amulet",
+"raid_mask": "mask",
+"raid_mask_hq": "mask",
+"raid_norigae": "norigae",
+"raid_norigae_hq": "norigae",
+"rainproof_oil": "material",
+"raw_iron": "material",
+"ray_steam": "consumable",
+"ray_steam_hq": "consumable",
+"red_scorpionfish": "material",
+"reed_crossbow": "weapon",
+"reed_crossbow_hq": "weapon",
+"reed_crucian": "material",
+"reed_silk": "material",
+"register_eel_grill": "consumable",
+"register_eel_grill_hq": "consumable",
+"register_slip": "material",
+"reinforced_leather": "material",
+"reinforced_lumber": "material",
+"rejuv_pill": "consumable",
+"rejuv_pill_hq": "consumable",
+"repair_kit": "consumable",
+"repair_kit_hq": "consumable",
+"reset_identity": "consumable",
+"reset_stats": "consumable",
+"resin": "material",
+"revival_charm": "consumable",
+"revival_charm_hq": "consumable",
+"river_reed": "material",
+"rockfish": "material",
+"rockfish_stew": "consumable",
+"rockfish_stew_hq": "consumable",
+"rune_plate": "material",
+"s1_road": "shoes",
+"s1_sturdy": "shoes",
+"s1_swift": "shoes",
+"s2_road": "shoes",
+"s2_road_hq": "shoes",
+"s2_sturdy": "shoes",
+"s2_sturdy_hq": "shoes",
+"s2_swift": "shoes",
+"s2_swift_hq": "shoes",
+"s3_road": "shoes",
+"s3_road_hq": "shoes",
+"s3_sturdy": "shoes",
+"s3_sturdy_hq": "shoes",
+"s3_swift": "shoes",
+"s3_swift_hq": "shoes",
+"s4_road": "shoes",
+"s4_road_hq": "shoes",
+"s4_sturdy": "shoes",
+"s4_sturdy_hq": "shoes",
+"s4_swift": "shoes",
+"s4_swift_hq": "shoes",
+"s5_road": "shoes",
+"s5_sturdy": "shoes",
+"s5_swift": "shoes",
+"s5_swift_hq": "shoes",
+"s6_road": "shoes",
+"s6_road_hq": "shoes",
+"s6_sturdy": "shoes",
+"s6_sturdy_hq": "shoes",
+"s6_swift": "shoes",
+"s6_swift_hq": "shoes",
+"s7_road": "shoes",
+"s7_road_hq": "shoes",
+"s7_sturdy": "shoes",
+"s7_sturdy_hq": "shoes",
+"s7_swift": "shoes",
+"s7_swift_hq": "shoes",
+"salmon_grill": "consumable",
+"salmon_grill_hq": "consumable",
+"salmon_ink_grill": "consumable",
+"salmon_ink_grill_hq": "consumable",
+"scale_vest": "armor",
+"scale_vest_hq": "armor",
+"sea_dotdom": "material",
+"sea_eel": "material",
+"seal_incense": "consumable",
+"seal_incense_hq": "consumable",
+"seal_inkline": "consumable",
+"seal_knife": "tool",
+"seal_knife_hq": "tool",
+"seal_paper": "material",
+"seal_shard": "material",
+"sealed_bundle": "consumable",
+"sealing_ink": "material",
+"shad_lamp": "consumable",
+"shad_lamp_hq": "consumable",
+"shad_oil": "material",
+"shadow_fang": "material",
+"short_bow": "weapon",
+"silk": "material",
+"silver_scale": "material",
+"skate_ferment": "consumable",
+"skate_ferment_hq": "consumable",
+"sky_feather": "material",
+"sleeping_king_sturgeon": "material",
+"sluice_carp": "material",
+"smuggler_alfonsino": "material",
+"snakehead": "material",
+"snakehead_broth": "consumable",
+"snakehead_broth_hq": "consumable",
+"spanish_mackerel": "material",
+"spicy_stew": "consumable",
+"spicy_stew_hq": "consumable",
+"spirit_bark": "material",
+"spirit_bell": "weapon",
+"spirit_compass": "tool",
+"spirit_compass_hq": "tool",
+"spirit_core": "material",
+"spirit_dust": "material",
+"spirit_glass": "material",
+"spirit_gukbap": "consumable",
+"spirit_gukbap_hq": "consumable",
+"spirit_lantern": "tool",
+"spirit_mail": "armor",
+"spirit_mail_hq": "armor",
+"spirit_qi_pill": "consumable",
+"spirit_qi_pill_hq": "consumable",
+"spirit_rod": "tool",
+"spirit_rod_hq": "tool",
+"spirit_sickle": "tool",
+"spirit_sickle_hq": "tool",
+"spirit_tea": "consumable",
+"spirit_tea_hq": "consumable",
+"spirit_thread": "material",
+"star_bow": "weapon",
+"star_bow_hq": "weapon",
+"star_mirror": "weapon",
+"star_mirror_hq": "weapon",
+"star_sand": "material",
+"starless_ray": "material",
+"starlit_marlin": "material",
+"steel_ingot": "material",
+"stone_goby": "material",
+"sturgeon_scale_pill": "consumable",
+"sturgeon_scale_pill_hq": "consumable",
+"swamp_eel": "material",
+"sweetfish": "material",
+"sweetfish_grill": "consumable",
+"sweetfish_grill_hq": "consumable",
+"t2_gather": "tool",
+"t2_gather_hq": "tool",
+"t3_gather": "tool",
+"t3_gather_hq": "tool",
+"t4_gather": "tool",
+"t4_gather_hq": "tool",
+"t5_gather": "tool",
+"t5_gather_hq": "tool",
+"t6_gather": "tool",
+"t6_gather_hq": "tool",
+"talisman_thread": "material",
+"thunder_glaive": "weapon",
+"thunder_glaive_hq": "weapon",
+"thunder_ore": "material",
+"tonic": "consumable",
+"tonic_hq": "consumable",
+"trail_map": "consumable",
+"travel_ration": "consumable",
+"treat_fish": "consumable",
+"treat_herb": "consumable",
+"treat_honey": "consumable",
+"treat_meat": "consumable",
+"treat_rice": "consumable",
+"trout_sashimi": "consumable",
+"trout_sashimi_hq": "consumable",
+"tuna_ink_feast": "consumable",
+"tuna_ink_feast_hq": "consumable",
+"venom_gland": "material",
+"void_hagfish": "material",
+"w_magic1_heavy": "weapon",
+"w_magic1_keen": "weapon",
+"w_magic1_silent": "weapon",
+"w_magic2_heavy": "weapon",
+"w_magic2_heavy_hq": "weapon",
+"w_magic2_keen": "weapon",
+"w_magic2_keen_hq": "weapon",
+"w_magic2_silent": "weapon",
+"w_magic2_silent_hq": "weapon",
+"w_magic3_heavy": "weapon",
+"w_magic3_heavy_hq": "weapon",
+"w_magic3_keen": "weapon",
+"w_magic3_keen_hq": "weapon",
+"w_magic3_silent": "weapon",
+"w_magic3_silent_hq": "weapon",
+"w_magic4_base": "weapon",
+"w_magic4_base_hq": "weapon",
+"w_magic4_heavy": "weapon",
+"w_magic4_heavy_hq": "weapon",
+"w_magic4_keen": "weapon",
+"w_magic4_keen_hq": "weapon",
+"w_magic4_silent": "weapon",
+"w_magic4_silent_hq": "weapon",
+"w_magic5_base": "weapon",
+"w_magic5_base_hq": "weapon",
+"w_magic5_heavy": "weapon",
+"w_magic5_keen": "weapon",
+"w_magic5_keen_hq": "weapon",
+"w_magic5_silent": "weapon",
+"w_magic6_base": "weapon",
+"w_magic6_base_hq": "weapon",
+"w_magic6_heavy": "weapon",
+"w_magic6_heavy_hq": "weapon",
+"w_magic6_keen": "weapon",
+"w_magic6_keen_hq": "weapon",
+"w_magic6_silent": "weapon",
+"w_magic6_silent_hq": "weapon",
+"w_magic7_base": "weapon",
+"w_magic7_base_hq": "weapon",
+"w_magic7_heavy": "weapon",
+"w_magic7_heavy_hq": "weapon",
+"w_magic7_keen": "weapon",
+"w_magic7_keen_hq": "weapon",
+"w_magic7_silent": "weapon",
+"w_magic7_silent_hq": "weapon",
+"w_melee1_heavy": "weapon",
+"w_melee1_keen": "weapon",
+"w_melee1_silent": "weapon",
+"w_melee2_heavy": "weapon",
+"w_melee2_heavy_hq": "weapon",
+"w_melee2_keen": "weapon",
+"w_melee2_keen_hq": "weapon",
+"w_melee2_silent": "weapon",
+"w_melee2_silent_hq": "weapon",
+"w_melee3_heavy": "weapon",
+"w_melee3_heavy_hq": "weapon",
+"w_melee3_keen": "weapon",
+"w_melee3_keen_hq": "weapon",
+"w_melee3_silent": "weapon",
+"w_melee3_silent_hq": "weapon",
+"w_melee4_base": "weapon",
+"w_melee4_base_hq": "weapon",
+"w_melee4_heavy": "weapon",
+"w_melee4_heavy_hq": "weapon",
+"w_melee4_keen": "weapon",
+"w_melee4_keen_hq": "weapon",
+"w_melee4_silent": "weapon",
+"w_melee4_silent_hq": "weapon",
+"w_melee5_base": "weapon",
+"w_melee5_base_hq": "weapon",
+"w_melee5_heavy": "weapon",
+"w_melee5_keen": "weapon",
+"w_melee5_keen_hq": "weapon",
+"w_melee5_silent": "weapon",
+"w_melee6_base": "weapon",
+"w_melee6_base_hq": "weapon",
+"w_melee6_heavy": "weapon",
+"w_melee6_heavy_hq": "weapon",
+"w_melee6_keen": "weapon",
+"w_melee6_keen_hq": "weapon",
+"w_melee6_silent": "weapon",
+"w_melee6_silent_hq": "weapon",
+"w_melee7_base": "weapon",
+"w_melee7_base_hq": "weapon",
+"w_melee7_heavy": "weapon",
+"w_melee7_heavy_hq": "weapon",
+"w_melee7_keen": "weapon",
+"w_melee7_keen_hq": "weapon",
+"w_melee7_silent": "weapon",
+"w_melee7_silent_hq": "weapon",
+"w_ranged1_heavy": "weapon",
+"w_ranged1_keen": "weapon",
+"w_ranged1_silent": "weapon",
+"w_ranged2_heavy": "weapon",
+"w_ranged2_heavy_hq": "weapon",
+"w_ranged2_keen": "weapon",
+"w_ranged2_keen_hq": "weapon",
+"w_ranged2_silent": "weapon",
+"w_ranged2_silent_hq": "weapon",
+"w_ranged3_heavy": "weapon",
+"w_ranged3_heavy_hq": "weapon",
+"w_ranged3_keen": "weapon",
+"w_ranged3_keen_hq": "weapon",
+"w_ranged3_silent": "weapon",
+"w_ranged3_silent_hq": "weapon",
+"w_ranged4_base": "weapon",
+"w_ranged4_base_hq": "weapon",
+"w_ranged4_heavy": "weapon",
+"w_ranged4_heavy_hq": "weapon",
+"w_ranged4_keen": "weapon",
+"w_ranged4_keen_hq": "weapon",
+"w_ranged4_silent": "weapon",
+"w_ranged4_silent_hq": "weapon",
+"w_ranged5_base": "weapon",
+"w_ranged5_base_hq": "weapon",
+"w_ranged5_heavy": "weapon",
+"w_ranged5_keen": "weapon",
+"w_ranged5_keen_hq": "weapon",
+"w_ranged5_silent": "weapon",
+"w_ranged6_base": "weapon",
+"w_ranged6_base_hq": "weapon",
+"w_ranged6_heavy": "weapon",
+"w_ranged6_heavy_hq": "weapon",
+"w_ranged6_keen": "weapon",
+"w_ranged6_keen_hq": "weapon",
+"w_ranged6_silent": "weapon",
+"w_ranged6_silent_hq": "weapon",
+"w_ranged7_base": "weapon",
+"w_ranged7_base_hq": "weapon",
+"w_ranged7_heavy": "weapon",
+"w_ranged7_heavy_hq": "weapon",
+"w_ranged7_keen": "weapon",
+"w_ranged7_keen_hq": "weapon",
+"w_ranged7_silent": "weapon",
+"w_ranged7_silent_hq": "weapon",
+"ward_fan": "weapon",
+"ward_fan_hq": "weapon",
+"ward_fragment": "material",
+"ward_robe": "armor",
+"ward_robe_hq": "armor",
+"ward_talisman": "consumable",
+"ward_talisman_hq": "consumable",
+"wayfarer_pack": "norigae",
+"wayfarer_pack_hq": "norigae",
+"wedding_rice_cake": "consumable",
+"well_blindfish": "material",
+"wood": "material",
+"wraith_soul_pill": "consumable",
+"wraith_soul_pill_hq": "consumable",
+"yellow_croaker": "material",
+"yellowtail": "material",
+"yellowtail_sashimi": "consumable",
+"yellowtail_sashimi_hq": "consumable",
+"yoin_blood": "material"
+},
+"fish": {
+"가물치": [
+"snakehead",
+"marsh",
+[],
+false
+],
+"갈대 버들붕어": [
+"reed_crucian",
+"marsh",
+[],
+false
+],
+"갯장어": [
+"sea_eel",
+"sea",
+[],
+false
+],
+"거울 얼음 곤들매기": [
+"mirror_ice_char",
+"lake",
+[
+"sky_lake"
+],
+true
+],
+"고등어": [
+"mackerel",
+"sea",
+[],
+false
+],
+"광어": [
+"flounder",
+"sea",
+[],
+false
+],
+"금빛 잉어": [
+"golden_carp",
+"river",
+[],
+false
+],
+"눈먼 용": [
+"blind_dragon",
+"deep",
+[
+"nine_court"
+],
+true
+],
+"늪 귀어": [
+"marsh_wraithfish",
+"marsh",
+[],
+false
+],
+"다금바리": [
+"grouper",
+"sea",
+[],
+false
+],
+"대구": [
+"cod",
+"sea",
+[
+"frost_valley",
+"tide_gate"
+],
+false
+],
+"돌틈 망둥이": [
+"stone_goby",
+"canal",
+[],
+false
+],
+"동자개": [
+"bullhead",
+"river",
+[],
+false
+],
+"드렁허리": [
+"swamp_eel",
+"marsh",
+[],
+false
+],
+"먹물 메기": [
+"ink_catfish",
+"river",
+[],
+false
+],
+"먹비 대산천어": [
+"meokbi_salmon",
+"lake",
+[
+"meokbi_forest"
+],
+true
+],
+"먹비늘 다랑어": [
+"inkscale_tuna",
+"sea",
+[
+"mukchang_ferry"
+],
+true
+],
+"먹빛 노래미": [
+"ink_greenling",
+"sea",
+[
+"hidden_bazaar"
+],
+false
+],
+"먹점 납자루": [
+"inkdot_bitterling",
+"marsh",
+[],
+false
+],
+"먹줄 장어": [
+"inkline_eel",
+"canal",
+[],
+false
+],
+"무광 가오리": [
+"starless_ray",
+"abyss",
+[],
+false
+],
+"문패 잉어": [
+"doorplate_carp",
+"river",
+[
+"mukchang_ferry"
+],
+true
+],
+"물안개 각시붕어": [
+"mist_bitterling",
+"lake",
+[],
+false
+],
+"미꾸라지": [
+"loach",
+"marsh",
+[],
+false
+],
+"민어": [
+"croaker",
+"sea",
+[],
+false
+],
+"밀수꾼 금눈돔": [
+"smuggler_alfonsino",
+"sea",
+[
+"hidden_bazaar"
+],
+true
+],
+"방어": [
+"yellowtail",
+"sea",
+[],
+false
+],
+"백등 갈치": [
+"lamp_hairtail",
+"sea",
+[],
+false
+],
+"버들치": [
+"minnow",
+"river",
+[],
+false
+],
+"볼락": [
+"rockfish",
+"sea",
+[],
+false
+],
+"봉연 흑룡어": [
+"abyss_dragonfish",
+"abyss",
+[],
+false
+],
+"붉은 쏨뱅이": [
+"red_scorpionfish",
+"sea",
+[
+"crimson_mine",
+"ash_coast"
+],
+false
+],
+"빈칸 가물치": [
+"blank_snakehead",
+"marsh",
+[
+"blank_field"
+],
+true
+],
+"빙어": [
+"pond_smelt",
+"lake",
+[],
+false
+],
+"산천어": [
+"cherry_salmon",
+"lake",
+[],
+false
+],
+"삼치": [
+"spanish_mackerel",
+"sea",
+[],
+false
+],
+"성하 청새치": [
+"starlit_marlin",
+"sea",
+[
+"star_observatory"
+],
+false
+],
+"송어": [
+"lake_trout",
+"lake",
+[],
+false
+],
+"수궁 등롱어": [
+"palace_lanternfish",
+"deep",
+[],
+false
+],
+"수궁 복어": [
+"palace_puffer",
+"deep",
+[],
+false
+],
+"수로 뱀장어": [
+"canal_eel",
+"canal",
+[],
+false
+],
+"수문 잉어": [
+"sluice_carp",
+"canal",
+[],
+false
+],
+"심연 초롱아귀": [
+"abyss_angler",
+"abyss",
+[],
+false
+],
+"쏘가리": [
+"mandarin_fish",
+"river",
+[],
+false
+],
+"얼음 곤들매기": [
+"ice_char",
+"lake",
+[],
+false
+],
+"연등 붕어": [
+"lantern_crucian",
+"marsh",
+[],
+false
+],
+"열목어": [
+"lenok",
+"lake",
+[],
+false
+],
+"용궁 은린어": [
+"silver_scale",
+"deep",
+[],
+false
+],
+"용왕 참돔": [
+"dragon_bream",
+"sea",
+[],
+false
+],
+"용잠 비늘잉어": [
+"dragon_scale_koi",
+"deep",
+[],
+false
+],
+"우럭": [
+"black_rockfish",
+"sea",
+[],
+false
+],
+"우물 장님고기": [
+"well_blindfish",
+"deep",
+[],
+false
+],
+"원귀 망둥어": [
+"ghost_goby",
+"canal",
+[],
+false
+],
+"월식 홍어": [
+"eclipse_skate",
+"sea",
+[
+"red_moon_fort"
+],
+false
+],
+"월영 유리송어": [
+"moonglass_trout",
+"lake",
+[
+"glass_canyon"
+],
+true
+],
+"은어": [
+"sweetfish",
+"river",
+[],
+false
+],
+"이름 없는 아귀": [
+"nameless_angler",
+"abyss",
+[],
+false
+],
+"잔불 등불아귀": [
+"ember_lantern_angler",
+"abyss",
+[
+"black_tide_rift"
+],
+true
+],
+"잠긴 종루 메기": [
+"belltower_catfish",
+"canal",
+[
+"sunken_district"
+],
+true
+],
+"잠든 용왕 철갑상어": [
+"sleeping_king_sturgeon",
+"deep",
+[
+"sunken_palace"
+],
+true
+],
+"잿빛 샛비늘치": [
+"ash_lanternfish",
+"abyss",
+[],
+false
+],
+"잿빛 수염 메기": [
+"ashwhisker_catfish",
+"marsh",
+[
+"ash_reeds"
+],
+true
+],
+"전갱이": [
+"jack_mackerel",
+"sea",
+[],
+false
+],
+"전어": [
+"gizzard_shad",
+"sea",
+[],
+false
+],
+"조기": [
+"yellow_croaker",
+"sea",
+[],
+false
+],
+"종이배 쏘가리": [
+"paperboat_mandarin",
+"river",
+[
+"paper_bridge"
+],
+true
+],
+"죽간 대장어": [
+"bamboo_eel",
+"canal",
+[
+"myeongbu_tower"
+],
+true
+],
+"쥐치": [
+"filefish",
+"sea",
+[],
+false
+],
+"천경 백어": [
+"mirror_whitefish",
+"lake",
+[],
+false
+],
+"청동 메기": [
+"bronze_catfish",
+"deep",
+[],
+false
+],
+"피라미": [
+"dace",
+"river",
+[],
+false
+],
+"해룡 돗돔": [
+"sea_dotdom",
+"sea",
+[],
+false
+],
+"혜성꼬리 만새기": [
+"comet_dolphinfish",
+"sea",
+[
+"star_observatory"
+],
+true
+],
+"흑잉어": [
+"canal_carp",
+"canal",
+[],
+false
+],
+"흑조 먹장어": [
+"void_hagfish",
+"abyss",
+[],
+false
+]
+},
+"fishing": [
+"ash_coast",
+"ash_reeds",
+"black_tide_rift",
+"blank_field",
+"crimson_mine",
+"frost_valley",
+"glass_canyon",
+"gwiheo_core",
+"hidden_bazaar",
+"lotus_marsh",
+"lotus_sewer",
+"meokbi_forest",
+"mirror_pavilion",
+"mukchang_ferry",
+"myeongbu_tower",
+"nine_court",
+"nine_lighthouse",
+"old_canal",
+"old_glacier",
+"paper_bridge",
+"red_moon_fort",
+"river_ferry",
+"salt_village",
+"sealed_abyss",
+"sealed_garden",
+"sky_lake",
+"sleeping_port",
+"snow_hollow",
+"star_observatory",
+"sunken_district",
+"sunken_palace",
+"tide_gate"
+],
+"items": {
+"가공 부적목": "lumber",
+"가물치": "snakehead",
+"가물치 곰국": "snakehead_broth",
+"가물치 곰국 (우수)": "snakehead_broth_hq",
+"가야금 걸이": "hf_gayageum",
+"가죽 미투리": "s2_swift",
+"가죽 미투리 (우수)": "s2_swift_hq",
+"가죽 철릭": "a2_light",
+"가죽 철릭 (우수)": "a2_light_hq",
+"각반 바지와 미투리": "of_bottom_tamer",
+"각시붕어 찜": "mist_crucian_steam",
+"각시붕어 찜 (우수)": "mist_crucian_steam_hq",
+"각시탈": "k1_hide",
+"각인 공구": "seal_knife",
+"각인 공구 (우수)": "seal_knife_hq",
+"각인판": "rune_plate",
+"갈대 버들붕어": "reed_crucian",
+"갈대 영궁": "w_ranged6_base",
+"갈대 영궁 (우수)": "w_ranged6_base_hq",
+"갈대 영사": "reed_silk",
+"갈대 영사 경갑": "a6_light",
+"갈대 영사 경갑 (우수)": "a6_light_hq",
+"갈대 짚신": "s6_road",
+"갈대 짚신 (우수)": "s6_road_hq",
+"갈대 취관": "w_ranged2_silent",
+"갈대 취관 (우수)": "w_ranged2_silent_hq",
+"갈치조림": "hairtail_braise",
+"갈치조림 (우수)": "hairtail_braise_hq",
+"감로 향낭": "m5_purify",
+"감찰 사모": "fv_hat_night",
+"강철 곡괭이": "lt_pick_2",
+"강철 곡괭이 (우수)": "lt_pick_2_hq",
+"강철 단조 망치": "lt_hammer_3",
+"강철 단조 망치 (우수)": "lt_hammer_3_hq",
+"강철 주괴": "steel_ingot",
+"강화 부적목": "reinforced_lumber",
+"강화 요수 가죽": "reinforced_leather",
+"강화 채집도": "field_knife_2",
+"강화 채집도 (우수)": "field_knife_2_hq",
+"개다리소반": "hf_soban",
+"개천 신종": "w_magic5_heavy",
+"갯장어": "sea_eel",
+"거꾸로 법륜": "w_magic6_base",
+"거꾸로 법륜 (우수)": "w_magic6_base_hq",
+"거꾸로 법의": "a6_robe",
+"거꾸로 법의 (우수)": "a6_robe_hq",
+"거꾸로 익선관": "h6_wise",
+"거꾸로 익선관 (우수)": "h6_wise_hq",
+"거꾸로 향낭": "m6_purify",
+"거꾸로 향낭 (우수)": "m6_purify_hq",
+"거꾸로 향목": "inverted_incense",
+"거울 구슬": "hf_pet_mirror_ball",
+"거울 얼음 곤들매기": "mirror_ice_char",
+"거울 얼음 곤들매기 탁본": "hf_rubbing_mirror_ice_char",
+"검은 무명옷": "a1_shade",
+"검은 바지": "of_bottom_seal",
+"검은 바지와 가죽 장화": "of_bottom_guard",
+"결계 부채": "ward_fan",
+"결계 부채 (우수)": "ward_fan_hq",
+"결계 파편": "ward_fragment",
+"고동 바지와 미투리": "of_bottom_scout",
+"고등어": "mackerel",
+"곤들매기 구이": "char_grill",
+"곤들매기 구이 (우수)": "char_grill_hq",
+"관상감 사모": "fv_hat_mandate",
+"관일궁": "w_ranged4_keen",
+"관일궁 (우수)": "w_ranged4_keen_hq",
+"광어": "flounder",
+"광어회": "flounder_sashimi",
+"광어회 (우수)": "flounder_sashimi_hq",
+"구등대 등불 노리개": "n5_lighthouse",
+"구름 목화": "s3_road",
+"구름 목화 (우수)": "s3_road_hq",
+"구름 방석": "hf_pet_cloud_cushion",
+"구름무늬": "hp_cloud",
+"구리 증류기": "lt_still_2",
+"구리 증류기 (우수)": "lt_still_2_hq",
+"구슬 귀걸이": "of_acc_earring",
+"굴비": "dried_croaker",
+"굴비 (우수)": "dried_croaker_hq",
+"귀경 파편": "mirror_shard",
+"귀령초": "gwiryeong_cho",
+"귀어 환혼단": "wraith_soul_pill",
+"귀어 환혼단 (우수)": "wraith_soul_pill_hq",
+"귀허 각인도": "lt_carve_6",
+"귀허 각인도 (우수)": "lt_carve_6_hq",
+"귀허 등명 나침반": "lt_compass_6",
+"귀허 등명 나침반 (우수)": "lt_compass_6_hq",
+"귀허 문지기 호패": "m6_ward",
+"귀허 문지기 호패 (우수)": "m6_ward_hq",
+"귀허 범종": "w_magic6_heavy",
+"귀허 범종 (우수)": "w_magic6_heavy_hq",
+"귀허 부적": "gwiheo_charm",
+"귀허 식칼": "lt_cook_6",
+"귀허 식칼 (우수)": "lt_cook_6_hq",
+"귀허 진주": "gwiheo_pearl",
+"귀허 진주 낚싯대": "lt_rod_6",
+"귀허 진주 낚싯대 (우수)": "lt_rod_6_hq",
+"귀허 진주 노리개": "n6_luck",
+"귀허 진주 노리개 (우수)": "n6_luck_hq",
+"귀허 진주 등롱": "hf_lantern_pearl",
+"귀허 참월도": "w_melee6_base",
+"귀허 참월도 (우수)": "w_melee6_base_hq",
+"귀허 흑철": "gwiheo_iron",
+"귀허 흑철 곡괭이": "lt_pick_6",
+"귀허 흑철 곡괭이 (우수)": "lt_pick_6_hq",
+"귀허 흑철 망치": "lt_hammer_6",
+"귀허 흑철 망치 (우수)": "lt_hammer_6_hq",
+"귀허 흑철 채집도": "t6_gather",
+"귀허 흑철 채집도 (우수)": "t6_gather_hq",
+"그루터기": "hf_pet_stump",
+"그림자 비수": "w_melee1_silent",
+"그림자 탈": "raid_mask",
+"그림자 탈 (우수)": "raid_mask_hq",
+"금 간 장독 정령 바구니": "pt_cracked_jar",
+"금강 철찰갑": "a5_iron",
+"금강 투구": "h5_guard",
+"금강 호신부": "m4_ward",
+"금강 호신부 (우수)": "m4_ward_hq",
+"금눈돔 소금구이": "alfonsino_salt_grill",
+"금눈돔 소금구이 (우수)": "alfonsino_salt_grill_hq",
+"금니 단청": "hp_geumni",
+"금박 박쥐 노리개": "n4_luck",
+"금박 박쥐 노리개 (우수)": "n4_luck_hq",
+"금박 용상": "hf_throne_dragon",
+"금박 장판": "hg_geumbak",
+"금붕어 바구니": "pt_goldfish",
+"금빛 잉어": "golden_carp",
+"길잡이 등불": "guide_lantern",
+"까마귀 깃 신궁": "w_ranged7_keen",
+"까마귀 깃 신궁 (우수)": "w_ranged7_keen_hq",
+"까치 고양이 바구니": "pt_tuxedo_cat",
+"까치 바구니": "pt_magpie",
+"까치호랑이 족자": "hf_scroll_magpie",
+"꺼진 등롱 법등": "w_magic6_silent",
+"꺼진 등롱 법등 (우수)": "w_magic6_silent_hq",
+"꺼진 붓 법등": "w_magic7_silent",
+"꺼진 붓 법등 (우수)": "w_magic7_silent_hq",
+"꼬마 독버섯 바구니": "pt_poison_mushroom",
+"꽃 머리핀": "of_acc_flowerpin",
+"꽃수 모전": "hf_rug_mojeon",
+"꿀 약과": "treat_honey",
+"나루 풍년 노리개": "n7_plenty",
+"나루 풍년 노리개 (우수)": "n7_plenty_hq",
+"나막신": "s1_sturdy",
+"나찰탈": "k5_ghost",
+"난초 화분": "hf_pot_orchid",
+"날선 단도": "w_melee1_keen",
+"남빛 치마": "of_bottom_chima",
+"납자루 먹물": "bitterling_ink",
+"너럭바위": "hf_pet_stone_seat",
+"널 덧창": "hf_window_shutter",
+"네눈박이 강아지 바구니": "pt_neun_puppy",
+"노리개": "of_acc_norigae",
+"노장탈": "k4_ghost",
+"노장탈 (우수)": "k4_ghost_hq",
+"노정 건량": "travel_ration",
+"놋 먹이 그릇": "hf_pet_bowl",
+"놋 촛대": "hf_surf_candle",
+"놋쇠 화로": "hf_brazier_brass",
+"농축 약초액": "herbal_extract",
+"뇌문 법인": "w_magic3_heavy",
+"뇌문 법인 (우수)": "w_magic3_heavy_hq",
+"뇌철 곡괭이": "lt_pick_5",
+"뇌철 곡괭이 (우수)": "lt_pick_5_hq",
+"뇌철 광석": "thunder_ore",
+"뇌철 단조 망치": "lt_hammer_5",
+"뇌철 단조 망치 (우수)": "lt_hammer_5_hq",
+"뇌철 식칼": "lt_cook_5",
+"뇌철 식칼 (우수)": "lt_cook_5_hq",
+"뇌철 언월도": "thunder_glaive",
+"뇌철 언월도 (우수)": "thunder_glaive_hq",
+"누렁 강아지 바구니": "pt_nureong_puppy",
+"누렁 줄고양이 바구니": "pt_cheese_cat",
+"누비 동무 이불": "hf_pet_quilt",
+"누비 전포": "of_top_seal",
+"눈먼 용": "blind_dragon",
+"눈먼 용 탁본": "hf_rubbing_blind_dragon",
+"늪 귀어": "marsh_wraithfish",
+"다금바리": "grouper",
+"다금바리 찜": "grouper_steam",
+"다금바리 찜 (우수)": "grouper_steam_hq",
+"다기 세트": "hf_surf_teaset",
+"다람쥐 바구니": "pt_squirrel",
+"다랑어 먹회 한 상": "tuna_ink_feast",
+"다랑어 먹회 한 상 (우수)": "tuna_ink_feast_hq",
+"단청 들보": "hf_beam_dancheong",
+"단청 벽지": "hp_dancheong",
+"답사 지팡이": "lt_staff_2",
+"답사 지팡이 (우수)": "lt_staff_2_hq",
+"대구": "cod",
+"대구탕": "cod_soup",
+"대구탕 (우수)": "cod_soup_hq",
+"대나무": "hp_bamboo",
+"대나무 낚싯대": "fishing_rod",
+"대나무 낚싯대 (우수)": "fishing_rod_hq",
+"대나무 단궁": "short_bow",
+"대나무 화분": "hf_pot_bamboo",
+"대바구니 굴": "hf_pet_basket_cave",
+"대살 마루": "hg_daesal",
+"대청마루": "hg_maru",
+"대환단": "grand_pill",
+"대환단 (우수)": "grand_pill_hq",
+"독낭": "venom_gland",
+"돌 물그릇": "hf_pet_waterbowl",
+"돌틈 망둥이": "stone_goby",
+"돌확 어항": "hf_aquarium",
+"동무 놀이 층대": "hf_pet_tower",
+"동무 약": "pet_medicine",
+"동무 정표": "pet_token",
+"동무 주먹밥": "pet_food",
+"동자개": "bullhead",
+"동파관": "h3_wise",
+"동파관 (우수)": "h3_wise_hq",
+"동패 호신부": "m2_ward",
+"동패 호신부 (우수)": "m2_ward_hq",
+"두정갑": "a2_iron",
+"두정갑 (우수)": "a2_iron_hq",
+"둥근 달창": "hf_window_round",
+"둥근 안경": "of_acc_glasses",
+"드렁허리": "swamp_eel",
+"등롱 어유": "lantern_oil",
+"떠도는 이름 실": "drifting_name_thread",
+"똥개 바구니": "pt_ddonggae",
+"띠살 여닫이문": "hf_door_yeodat",
+"만화 융단": "hf_rug_manhwa",
+"말뚝이탈": "k1_ghost",
+"말린 생선포": "treat_fish",
+"망각 관모": "h6_calm",
+"망각 관모 (우수)": "h6_calm_hq",
+"망각 부적낭": "m6_spell",
+"망각 부적낭 (우수)": "m6_spell_hq",
+"망각 수정": "oblivion_crystal",
+"망각 수정 낫": "lt_sickle_6",
+"망각 수정 낫 (우수)": "lt_sickle_6_hq",
+"망각 수정 부채": "w_magic6_keen",
+"망각 수정 부채 (우수)": "w_magic6_keen_hq",
+"망각 수정 증류기": "lt_still_6",
+"망각 수정 증류기 (우수)": "lt_still_6_hq",
+"망각 향": "oblivion_incense",
+"망둥어 맑은국": "goby_soup",
+"망둥어 맑은국 (우수)": "goby_soup_hq",
+"망둥이 조림": "goby_braise",
+"망둥이 조림 (우수)": "goby_braise_hq",
+"매눈 활": "w_ranged1_keen",
+"매듭 노리개": "n1_luck",
+"매운탕": "spicy_stew",
+"매운탕 (우수)": "spicy_stew_hq",
+"매화 벽지": "hp_maehwa",
+"맹호 비약": "exp_elixir_tiger",
+"먹 번진 부채": "w_magic7_keen",
+"먹 번진 부채 (우수)": "w_magic7_keen_hq",
+"먹 부채": "w_magic1_silent",
+"먹 연못 깔개": "hf_rug_ink_pond",
+"먹귀 각인도": "lt_carve_7",
+"먹귀 각인도 (우수)": "lt_carve_7_hq",
+"먹귀 등": "lt_lantern_7",
+"먹귀 등 (우수)": "lt_lantern_7_hq",
+"먹귀 응어리": "meokgwi_lump",
+"먹귀 쫓는 향": "meokgwi_incense",
+"먹귀 쫓는 향 (우수)": "meokgwi_incense_hq",
+"먹귀 탈": "k7_ghost",
+"먹귀 탈 (우수)": "k7_ghost_hq",
+"먹물 메기": "ink_catfish",
+"먹비 단검": "w_melee7_silent",
+"먹비 단검 (우수)": "w_melee7_silent_hq",
+"먹비 대산천어": "meokbi_salmon",
+"먹비 대산천어 탁본": "hf_rubbing_meokbi_salmon",
+"먹비 막이 기름": "rainproof_oil",
+"먹비 법의": "a7_robe",
+"먹비 법의 (우수)": "a7_robe_hq",
+"먹비 비단신": "s7_swift",
+"먹비 비단신 (우수)": "s7_swift_hq",
+"먹비 우산": "meokbi_umbrella",
+"먹비 우산 (우수)": "meokbi_umbrella_hq",
+"먹비 이끼": "meokbi_moss",
+"먹비 증류기": "lt_still_7",
+"먹비 증류기 (우수)": "lt_still_7_hq",
+"먹비 창호": "hf_window_meokbi",
+"먹비 향낭": "m7_purify",
+"먹비 향낭 (우수)": "m7_purify_hq",
+"먹비 흑단": "meokbi_ebony",
+"먹비 흑단 채집도": "lt_knife_8",
+"먹비 흑단 채집도 (우수)": "lt_knife_8_hq",
+"먹비늘 다랑어": "inkscale_tuna",
+"먹비늘 다랑어 탁본": "hf_rubbing_inkscale_tuna",
+"먹빛 노래미": "ink_greenling",
+"먹빛 누비 전포": "of_top_shadow",
+"먹빛 단청": "hp_ink_dan",
+"먹빛 바지와 짚신": "of_bottom_shadow",
+"먹장어 구이": "hagfish_grill",
+"먹장어 구이 (우수)": "hagfish_grill_hq",
+"먹점 납자루": "inkdot_bitterling",
+"먹정": "inkstone",
+"먹줄 장어": "inkline_eel",
+"먹줄 장어 구이": "inkline_eel_grill",
+"먹줄 장어 구이 (우수)": "inkline_eel_grill_hq",
+"먹중탈": "k3_ghost",
+"먹중탈 (우수)": "k3_ghost_hq",
+"메기찜": "catfish_braise",
+"메기찜 (우수)": "catfish_braise_hq",
+"명부 나침반": "lt_compass_7",
+"명부 나침반 (우수)": "lt_compass_7_hq",
+"명부 법륜": "w_magic7_base",
+"명부 법륜 (우수)": "w_magic7_base_hq",
+"명부 장어 구이": "register_eel_grill",
+"명부 장어 구이 (우수)": "register_eel_grill_hq",
+"명부 죽간": "register_slip",
+"명부 죽간 노리개": "n7_luck",
+"명부 죽간 노리개 (우수)": "n7_luck_hq",
+"명부 책장": "hf_shelf_register",
+"명부 철 곡괭이": "lt_pick_7",
+"명부 철 곡괭이 (우수)": "lt_pick_7_hq",
+"명부 탑 쇠뇌": "w_ranged7_heavy",
+"명부 탑 쇠뇌 (우수)": "w_ranged7_heavy_hq",
+"목도리": "of_acc_scarf",
+"몽환 법선": "w_magic3_silent",
+"몽환 법선 (우수)": "w_magic3_silent_hq",
+"무광 가오리": "starless_ray",
+"무광 가오리찜": "ray_steam",
+"무광 가오리찜 (우수)": "ray_steam_hq",
+"무당벌레 바구니": "pt_ladybug",
+"무면탈": "k5_hide",
+"무면탈 (우수)": "k5_hide_hq",
+"무명 대님 바지": "of_bottom_medic",
+"무명 두건": "h1_guard",
+"무명 부적낭": "m1_spell",
+"무명 이부자리": "hf_bedding_cotton",
+"무명 조끼": "of_top_vest",
+"무명 철릭": "a1_light",
+"무쇠 금강령": "w_magic1_heavy",
+"무쇠 단조 망치": "lt_hammer_2",
+"무쇠 단조 망치 (우수)": "lt_hammer_2_hq",
+"무쇠 식칼": "lt_cook_2",
+"무쇠 식칼 (우수)": "lt_cook_2_hq",
+"무쇠 철퇴": "w_melee1_heavy",
+"무영 소도": "w_melee3_silent",
+"무영 소도 (우수)": "w_melee3_silent_hq",
+"무영 야행복": "a5_shade",
+"무월 귀도": "w_melee6_silent",
+"무월 귀도 (우수)": "w_melee6_silent_hq",
+"무월 비단": "moonless_silk",
+"무월 비단 바늘": "lt_needle_6",
+"무월 비단 바늘 (우수)": "lt_needle_6_hq",
+"무월 비단신": "s6_swift",
+"무월 비단신 (우수)": "s6_swift_hq",
+"무월 야행의": "a6_shade",
+"무월 야행의 (우수)": "a6_shade_hq",
+"무음 비궁": "w_ranged3_silent",
+"무음 비궁 (우수)": "w_ranged3_silent_hq",
+"무형 귀도": "w_melee5_silent",
+"묵란 족자": "hf_scroll_orchid",
+"묵영 야행복": "a3_shade",
+"묵영 야행복 (우수)": "a3_shade_hq",
+"묵창 갈대 먹": "mukchang_ink",
+"묵창 낚싯대": "lt_rod_7",
+"묵창 낚싯대 (우수)": "lt_rod_7_hq",
+"묵창 단조 망치": "lt_hammer_7",
+"묵창 단조 망치 (우수)": "lt_hammer_7_hq",
+"묵창 범종": "w_magic7_heavy",
+"묵창 범종 (우수)": "w_magic7_heavy_hq",
+"묵창 식칼": "lt_cook_7",
+"묵창 식칼 (우수)": "lt_cook_7_hq",
+"묵창 참명도": "w_melee7_base",
+"묵창 참명도 (우수)": "w_melee7_base_hq",
+"문방사우": "hf_surf_munbang",
+"문사 금관": "h4_wise",
+"문사 금관 (우수)": "h4_wise_hq",
+"문패 잉어": "doorplate_carp",
+"문패 잉어 어탁": "hf_rubbing_doorplate_carp",
+"문패 장식": "hf_wall_doorplate",
+"물결무늬": "hp_mulgyeol",
+"물안개 각시붕어": "mist_bitterling",
+"미꾸라지": "loach",
+"미투리": "s1_swift",
+"민어": "croaker",
+"민어탕": "croaker_soup",
+"민어탕 (우수)": "croaker_soup_hq",
+"밀수꾼 금눈돔": "smuggler_alfonsino",
+"밀수꾼 금눈돔 탁본": "hf_rubbing_smuggler_alfonsino",
+"바둑판 마루": "hg_baduk",
+"박달 강궁": "w_ranged1_heavy",
+"박석 바닥": "hg_bakseok",
+"반닫이": "hf_bandaji",
+"반요 고약": "banyo_salve",
+"반요 비늘": "banyo_scale",
+"반요 탈": "k6_awe",
+"반요 탈 (우수)": "k6_awe_hq",
+"반요촌 풍년 노리개": "n6_plenty",
+"반요촌 풍년 노리개 (우수)": "n6_plenty_hq",
+"방상씨탈": "k3_awe",
+"방상씨탈 (우수)": "k3_awe_hq",
+"방어": "yellowtail",
+"방어회": "yellowtail_sashimi",
+"방어회 (우수)": "yellowtail_sashimi_hq",
+"방울 놀잇감": "hf_pet_bell",
+"백단 향낭": "m2_purify",
+"백단 향낭 (우수)": "m2_purify_hq",
+"백등 갈치": "lamp_hairtail",
+"백로 깃 신궁": "w_ranged6_keen",
+"백로 깃 신궁 (우수)": "w_ranged6_keen_hq",
+"백옥 관모": "h4_calm",
+"백옥 관모 (우수)": "h4_calm_hq",
+"백옥 장도 노리개": "n4_keen",
+"백옥 장도 노리개 (우수)": "n4_keen_hq",
+"백자 꽃병": "hf_surf_vase",
+"백자 달항아리": "hf_jar_moon",
+"버들치": "minnow",
+"벌집 놀이판": "hf_pet_honeycomb",
+"별자리 나침반": "lt_compass_4",
+"별자리 나침반 (우수)": "lt_compass_4_hq",
+"복사 산가지": "w_magic1_keen",
+"볼락": "rockfish",
+"봉연 매듭": "raid_norigae",
+"봉연 매듭 (우수)": "raid_norigae_hq",
+"봉연 진정향": "seal_incense",
+"봉연 진정향 (우수)": "seal_incense_hq",
+"봉연 파편": "seal_shard",
+"봉연 호패": "raid_amulet",
+"봉연 호패 (우수)": "raid_amulet_hq",
+"봉연 흑룡어": "abyss_dragonfish",
+"봉인 먹": "sealing_ink",
+"봉인 먹줄": "seal_inkline",
+"봉인된 보따리": "sealed_bundle",
+"부네탈": "k2_hide",
+"부네탈 (우수)": "k2_hide_hq",
+"부서진 비경 호신부": "exg_trail_0",
+"부서진 야행 탈": "exg_night_0",
+"부서진 행군 노리개": "exg_march_0",
+"부적 방석": "hf_pet_talisman_cushion",
+"부적목": "wood",
+"부적목 수지": "resin",
+"부적실": "talisman_thread",
+"북두 칠성 법검": "w_magic3_keen",
+"북두 칠성 법검 (우수)": "w_magic3_keen_hq",
+"분홍 포메라니안 바구니": "pt_pink_pomeranian",
+"불씨 향낭": "fv_amulet_ember",
+"붉은 쏨뱅이": "red_scorpionfish",
+"붓꽂이": "hf_surf_brush",
+"붓끝 장도 노리개": "n7_keen",
+"붓끝 장도 노리개 (우수)": "n7_keen_hq",
+"붓대 취관": "w_ranged7_silent",
+"붓대 취관 (우수)": "w_ranged7_silent_hq",
+"붕산 금강저": "w_melee5_heavy",
+"붕어 갈대죽": "crucian_reed_porridge",
+"붕어 갈대죽 (우수)": "crucian_reed_porridge_hq",
+"비경 지도": "trail_map",
+"비경 호신부": "exg_trail_2",
+"비경 호신부 (닳음)": "exg_trail_1",
+"비늘 흉갑": "scale_vest",
+"비늘 흉갑 (우수)": "scale_vest_hq",
+"비단 부적낭": "m3_spell",
+"비단 부적낭 (우수)": "m3_spell_hq",
+"비단 이부자리": "hf_bedding_silk",
+"비무 장원 현판 「天下第一」": "hf_board_cheonha",
+"비연 경갑": "a4_light",
+"비연 경갑 (우수)": "a4_light_hq",
+"비연 청룡검": "w_melee4_keen",
+"비연 청룡검 (우수)": "w_melee4_keen_hq",
+"비연화": "s3_swift",
+"비연화 (우수)": "s3_swift_hq",
+"비천화": "s5_swift",
+"비천화 (우수)": "s5_swift_hq",
+"비취 노리개": "n3_luck",
+"비취 노리개 (우수)": "n3_luck_hq",
+"비취 청동패": "jade_bronze_charm",
+"비취 청동패 (우수)": "jade_bronze_charm_hq",
+"비취 파편": "jade_shard",
+"빈칸 가물치": "blank_snakehead",
+"빈칸 가물치 탁본": "hf_rubbing_blank_snakehead",
+"빈칸 메움 환": "blank_fill_pill",
+"빈칸 메움 환 (우수)": "blank_fill_pill_hq",
+"빈칸 야행의": "a7_shade",
+"빈칸 야행의 (우수)": "a7_shade_hq",
+"빈칸 탈": "k7_hide",
+"빈칸 탈 (우수)": "k7_hide_hq",
+"빈칸 한지": "blank_hanji",
+"빙어": "pond_smelt",
+"빙정염": "frost_salt",
+"빛나는 알": "pet_egg_3",
+"사공 탈": "k6_ghost",
+"사공 탈 (우수)": "k6_ghost_hq",
+"사기 등잔": "hf_surf_lamp",
+"사슬 장도 노리개": "n6_keen",
+"사슬 장도 노리개 (우수)": "n6_keen_hq",
+"사일궁": "w_ranged5_base",
+"사일궁 (우수)": "w_ranged5_base_hq",
+"사자탈": "k4_awe",
+"사자탈 (우수)": "k4_awe_hq",
+"사천왕 호신부": "m5_ward",
+"삭힌 홍어": "skate_ferment",
+"삭힌 홍어 (우수)": "skate_ferment_hq",
+"산수 병풍": "hf_screen_sansu",
+"산수 족자": "hf_scroll_sansu",
+"산천어": "cherry_salmon",
+"산천어 구이": "salmon_grill",
+"산천어 구이 (우수)": "salmon_grill_hq",
+"산천어 먹구이": "salmon_ink_grill",
+"산천어 먹구이 (우수)": "salmon_ink_grill_hq",
+"산토끼 바구니": "pt_hare",
+"산호 노리개": "n3_plenty",
+"산호 노리개 (우수)": "n3_plenty_hq",
+"살창": "hf_window_sal",
+"삼베 깔개": "hf_rug_hemp",
+"삼베 도포": "a1_robe",
+"삼작 노리개": "n5_luck",
+"삼작 노리개 (우수)": "n5_luck_hq",
+"삼치": "spanish_mackerel",
+"삼치구이": "mackerel_grill",
+"삼치구이 (우수)": "mackerel_grill_hq",
+"상단 은호패": "fv_amulet_river",
+"새끼 거북 바구니": "pt_baby_turtle",
+"새끼 황소 바구니": "pt_ox_calf",
+"새집 횃대": "hf_pet_birdhouse",
+"색동 벽지": "hp_saekdong",
+"샛비늘 기름": "shad_oil",
+"샛비늘 등잔": "shad_lamp",
+"샛비늘 등잔 (우수)": "shad_lamp_hq",
+"생 월철": "raw_iron",
+"생선구이": "grilled_fish",
+"생선구이 (우수)": "grilled_fish_hq",
+"서가": "hf_bookshelf",
+"서리 익선관": "h7_wise",
+"서리 익선관 (우수)": "h7_wise_hq",
+"서안": "hf_seoan",
+"설원 행전": "fv_shoes_north",
+"성시 신궁": "w_ranged5_keen",
+"성시 신궁 (우수)": "w_ranged5_keen_hq",
+"성진 각인도": "lt_carve_5",
+"성진 각인도 (우수)": "lt_carve_5_hq",
+"성진 장궁": "star_bow",
+"성진 장궁 (우수)": "star_bow_hq",
+"성진 증류기": "lt_still_5",
+"성진 증류기 (우수)": "lt_still_5_hq",
+"성진등": "lt_lantern_5",
+"성진등 (우수)": "lt_lantern_5_hq",
+"성진사": "star_sand",
+"성하 청새치": "starlit_marlin",
+"세심단": "reset_stats",
+"소나무 분재": "hf_bonsai_pine",
+"소라게 바구니": "pt_hermit_crab",
+"소리 없는 소궁": "w_ranged1_silent",
+"소무탈": "k3_hide",
+"소무탈 (우수)": "k3_hide_hq",
+"소용돌이 철퇴": "w_melee6_heavy",
+"소용돌이 철퇴 (우수)": "w_melee6_heavy_hq",
+"손질한 생선": "fish_fillet",
+"송어": "lake_trout",
+"송어회": "trout_sashimi",
+"송어회 (우수)": "trout_sashimi_hq",
+"쇠뇌살": "ammo_bolt",
+"쇠미늘 갑옷": "a1_iron",
+"쇠징 신": "s2_sturdy",
+"쇠징 신 (우수)": "s2_sturdy_hq",
+"수결 도포": "a2_robe",
+"수결 도포 (우수)": "a2_robe_hq",
+"수경 낚싯대": "lt_rod_4",
+"수경 낚싯대 (우수)": "lt_rod_4_hq",
+"수궁 등롱어": "palace_lanternfish",
+"수궁 복어": "palace_puffer",
+"수귀 비늘": "drowned_scale",
+"수로 뱀장어": "canal_eel",
+"수문 잉어": "sluice_carp",
+"수반 괴석": "hf_garden_suban",
+"수석 받침": "hf_surf_suseok",
+"수향 갈대": "river_reed",
+"수향 쇠뇌": "reed_crossbow",
+"수향 쇠뇌 (우수)": "reed_crossbow_hq",
+"순찰 장창": "guard_spear",
+"순찰 장창 (우수)": "guard_spear_hq",
+"술 노리개": "n1_plenty",
+"숨 죽인 취관": "w_ranged6_silent",
+"숨 죽인 취관 (우수)": "w_ranged6_silent_hq",
+"실내 석등": "hf_stone_lamp",
+"심연 초롱아귀": "abyss_angler",
+"쌀 강정": "treat_rice",
+"쌍날 대부": "w_melee2_heavy",
+"쌍날 대부 (우수)": "w_melee2_heavy_hq",
+"쏘가리": "mandarin_fish",
+"쑥 향낭": "m1_purify",
+"쑥빛 앞치마 도포": "of_top_medic",
+"아귀 쓸개 환": "angler_gall_pill",
+"아귀 쓸개 환 (우수)": "angler_gall_pill_hq",
+"아기 게 바구니": "pt_baby_crab",
+"아기 맥 바구니": "pt_baby_tapir",
+"아기 멧돼지 바구니": "pt_baby_boar",
+"아홉 칸 명부 병풍": "hf_screen_ninefold",
+"아홉 칸 주춧돌 등": "hf_lamp_nine_pillar",
+"아홉 칸 철퇴": "w_melee7_heavy",
+"아홉 칸 철퇴 (우수)": "w_melee7_heavy_hq",
+"아홉 칸 호패": "m7_ward",
+"아홉 칸 호패 (우수)": "m7_ward_hq",
+"안신탕": "calm_brew",
+"안신탕 (우수)": "calm_brew_hq",
+"야령초": "herb",
+"야령초 나물밥": "herb_rice",
+"야령초 나물밥 (우수)": "herb_rice_hq",
+"야음 비수": "w_melee4_silent",
+"야음 비수 (우수)": "w_melee4_silent_hq",
+"야차탈": "k5_awe",
+"야행 경의": "a2_shade",
+"야행 경의 (우수)": "a2_shade_hq",
+"야행 관모": "h5_calm",
+"야행 관모 (우수)": "h5_calm_hq",
+"야행 탈": "exg_night_2",
+"야행 탈 (닳음)": "exg_night_1",
+"야행국 옛 지도": "hf_map_old",
+"약제 바탕": "medicine_base",
+"약초 생선찜": "herb_fish_steam",
+"약초 생선찜 (우수)": "herb_fish_steam_hq",
+"약초꾼 망태": "t2_gather",
+"약초꾼 망태 (우수)": "t2_gather_hq",
+"양반탈": "k1_awe",
+"어둠 눈 약": "dark_eye_drops",
+"어둠 눈 약 (우수)": "dark_eye_drops_hq",
+"어유 등": "lt_lantern_3",
+"어유 등 (우수)": "lt_lantern_3_hq",
+"어유 등잔": "fish_oil_lamp",
+"어유 등잔 (우수)": "fish_oil_lamp_hq",
+"어죽": "fish_porridge",
+"어죽 (우수)": "fish_porridge_hq",
+"억새 짚신": "s7_road",
+"억새 짚신 (우수)": "s7_road_hq",
+"얼굴 지운 탈": "k6_hide",
+"얼굴 지운 탈 (우수)": "k6_hide_hq",
+"얼룩 고양이 바구니": "pt_spotted_cat",
+"얼룩무늬 알": "pet_egg_2",
+"얼음 곤들매기": "ice_char",
+"얼음 곤들매기 탕": "ice_char_broth",
+"얼음 곤들매기 탕 (우수)": "ice_char_broth_hq",
+"엇결 마루": "hg_eotgyeol",
+"역참 증표": "courier_token",
+"연기 향로": "w_magic2_silent",
+"연기 향로 (우수)": "w_magic2_silent_hq",
+"연꽃 수반": "hf_pet_lotus_basin",
+"연등 붕어": "lantern_crucian",
+"연리목 분재": "hf_bonsai_yeonri",
+"연막 단검": "w_melee2_silent",
+"연막 단검 (우수)": "w_melee2_silent_hq",
+"연발 쇠뇌": "w_ranged3_heavy",
+"연발 쇠뇌 (우수)": "w_ranged3_heavy_hq",
+"연분홍 저고리": "of_top_jeogori",
+"연지빛": "hp_yeonji",
+"열목어": "lenok",
+"영기 국밥": "spirit_gukbap",
+"영기 국밥 (우수)": "spirit_gukbap_hq",
+"영기환": "spirit_qi_pill",
+"영기환 (우수)": "spirit_qi_pill_hq",
+"영등": "spirit_lantern",
+"영령 방울": "spirit_bell",
+"영맥 곡괭이": "t4_gather",
+"영맥 곡괭이 (우수)": "t4_gather_hq",
+"영맥 나침반": "spirit_compass",
+"영맥 나침반 (우수)": "spirit_compass_hq",
+"영맥 낫": "spirit_sickle",
+"영맥 낫 (우수)": "spirit_sickle_hq",
+"영맥 수피": "spirit_bark",
+"영맥 약선탕": "bark_stew",
+"영맥 약선탕 (우수)": "bark_stew_hq",
+"영사": "silk",
+"영사 낚싯대": "spirit_rod",
+"영사 낚싯대 (우수)": "spirit_rod_hq",
+"영사 바늘집": "lt_needle_2",
+"영사 바늘집 (우수)": "lt_needle_2_hq",
+"영사 법의": "spirit_mail",
+"영사 법의 (우수)": "spirit_mail_hq",
+"영사 실타래": "spirit_thread",
+"영사 철릭": "a3_light",
+"영사 철릭 (우수)": "a3_light_hq",
+"영유리": "spirit_glass",
+"영유리 증류관": "lt_still_3",
+"영유리 증류관 (우수)": "lt_still_3_hq",
+"영유리 증류기": "lt_still_4",
+"영유리 증류기 (우수)": "lt_still_4_hq",
+"영초 차": "spirit_tea",
+"영초 차 (우수)": "spirit_tea_hq",
+"오방 꽃살창": "hf_window_flower",
+"오방색 방석": "hf_cushion_obang",
+"오색 공": "hf_pet_ball",
+"오색 부적낭": "m2_spell",
+"오색 부적낭 (우수)": "m2_spell_hq",
+"오색 술 노리개": "n2_plenty",
+"오색 술 노리개 (우수)": "n2_plenty_hq",
+"옥 부적낭": "m4_spell",
+"옥 부적낭 (우수)": "m4_spell_hq",
+"옥나비 노리개": "n4_plenty",
+"옥나비 노리개 (우수)": "n4_plenty_hq",
+"옥돌 바닥": "hg_okdol",
+"옷 꾸러미": "of_bundle",
+"옹기 항아리": "hf_onggi",
+"완자 마루": "hg_wanja",
+"왕골 돗자리": "hf_rug_straw",
+"왕골 자리": "hg_wanggol",
+"요기 결정": "spirit_dust",
+"요수 가죽": "beast_hide",
+"요수 뼈": "beast_bone",
+"요수 뼈 바늘": "lt_needle_3",
+"요수 뼈 바늘 (우수)": "lt_needle_3_hq",
+"요수 뼈 송곳": "lt_needle_4",
+"요수 뼈 송곳 (우수)": "lt_needle_4_hq",
+"요수 뼈 식칼": "lt_cook_3",
+"요수 뼈 식칼 (우수)": "lt_cook_3_hq",
+"요수 송곳니": "beast_fang",
+"요인 혈정": "yoin_blood",
+"요핵": "monster_core",
+"용각 장도 노리개": "n5_keen",
+"용각 장도 노리개 (우수)": "n5_keen_hq",
+"용궁 은린어": "silver_scale",
+"용린 대도": "w_melee4_base",
+"용린 대도 (우수)": "w_melee4_base_hq",
+"용린 잉어 고음": "koi_broth",
+"용린 잉어 고음 (우수)": "koi_broth_hq",
+"용비늘 낚싯대": "lt_rod_7b",
+"용비늘 낚싯대 (우수)": "lt_rod_7b_hq",
+"용안 정수": "dragon_eye_essence",
+"용안 정수 (우수)": "dragon_eye_essence_hq",
+"용연향 향낭": "m4_purify",
+"용연향 향낭 (우수)": "m4_purify_hq",
+"용왕 비늘 환": "sturgeon_scale_pill",
+"용왕 비늘 환 (우수)": "sturgeon_scale_pill_hq",
+"용왕 참돔": "dragon_bream",
+"용왕 참돔 회": "bream_sashimi",
+"용왕 참돔 회 (우수)": "bream_sashimi_hq",
+"용잠 낚싯대": "lt_rod_5",
+"용잠 낚싯대 (우수)": "lt_rod_5_hq",
+"용잠 비늘잉어": "dragon_scale_koi",
+"우럭": "black_rockfish",
+"우럭 매운탕": "rockfish_stew",
+"우럭 매운탕 (우수)": "rockfish_stew_hq",
+"우물 장님고기": "well_blindfish",
+"운면": "cloud_cotton",
+"운학 법의": "a3_robe",
+"운학 법의 (우수)": "a3_robe_hq",
+"운학 양탄자": "hf_rug_unhak",
+"운혜": "s4_road",
+"운혜 (우수)": "s4_road_hq",
+"원귀 망둥어": "ghost_goby",
+"원령재": "ghost_ash",
+"원앙금침": "hf_bedding_wonang",
+"월광 낫": "lt_sickle_4",
+"월광 낫 (우수)": "lt_sickle_4_hq",
+"월광 이끼": "moon_moss",
+"월광 이끼죽": "moss_porridge",
+"월광 이끼죽 (우수)": "moss_porridge_hq",
+"월광 정수": "moonlight_essence",
+"월광 정수 (우수)": "moonlight_essence_hq",
+"월광 채집도": "lt_knife_4",
+"월광 채집도 (우수)": "lt_knife_4_hq",
+"월백 채집도": "lt_knife_7",
+"월백 채집도 (우수)": "lt_knife_7_hq",
+"월식 무녀탈": "fv_mask_redmoon",
+"월식 홍어": "eclipse_skate",
+"월식도": "moon_blade",
+"월식도 (우수)": "moon_blade_hq",
+"월영 단궁": "w_ranged4_silent",
+"월영 단궁 (우수)": "w_ranged4_silent_hq",
+"월영 유리송어": "moonglass_trout",
+"월영 유리송어 탁본": "hf_rubbing_moonglass_trout",
+"월영 은신복": "a4_shade",
+"월영 은신복 (우수)": "a4_shade_hq",
+"월철 곡괭이": "ore_pick",
+"월철 광석": "ore",
+"월철 주괴": "iron_ingot",
+"월철 환도": "iron_sword",
+"유건": "h1_calm",
+"유령 등롱": "w_magic4_silent",
+"유령 등롱 (우수)": "w_magic4_silent_hq",
+"유리송어 회": "moonglass_sashimi",
+"유리송어 회 (우수)": "moonglass_sashimi_hq",
+"육포 조각": "treat_meat",
+"은방울 노리개": "n1_keen",
+"은어": "sweetfish",
+"은어 소금구이": "sweetfish_grill",
+"은어 소금구이 (우수)": "sweetfish_grill_hq",
+"은월 장검": "w_melee2_keen",
+"은월 장검 (우수)": "w_melee2_keen_hq",
+"은장도 노리개": "n2_keen",
+"은장도 노리개 (우수)": "n2_keen_hq",
+"응축 영핵": "spirit_core",
+"이끼 바위 잠자리": "hf_pet_mossbed",
+"이름 긋는 검": "w_melee7_keen",
+"이름 긋는 검 (우수)": "w_melee7_keen_hq",
+"이름 먹 부적": "name_ink_charm",
+"이름 먹 부적 (우수)": "name_ink_charm_hq",
+"이름 먹 부적낭": "m7_spell",
+"이름 먹 부적낭 (우수)": "m7_spell_hq",
+"이름 베는 검": "w_melee6_keen",
+"이름 베는 검 (우수)": "w_melee6_keen_hq",
+"이름 새김 탕": "name_carving_soup",
+"이름 새김 탕 (우수)": "name_carving_soup_hq",
+"이름 실 경갑": "a7_light",
+"이름 실 경갑 (우수)": "a7_light_hq",
+"이름 실 낫": "lt_sickle_7",
+"이름 실 낫 (우수)": "lt_sickle_7_hq",
+"이름 실 바늘": "lt_needle_7",
+"이름 실 바늘 (우수)": "lt_needle_7_hq",
+"이름 없는 아귀": "nameless_angler",
+"이름 지킴 관모": "h7_calm",
+"이름 지킴 관모 (우수)": "h7_calm_hq",
+"일섬 신검": "w_melee5_keen",
+"일섬 신검 (우수)": "w_melee5_keen_hq",
+"일월오봉도 병풍": "hf_screen_ilwol",
+"잉어 고음": "carp_broth",
+"잉어 고음 (우수)": "carp_broth_hq",
+"잉어 비늘 아교": "carp_glue",
+"자개 장롱": "hf_wardrobe_najeon",
+"자개 함": "hf_surf_najeon_box",
+"작은 그림 액자": "hf_frame_small",
+"잔불 등불아귀": "ember_lantern_angler",
+"잔불 등불아귀 탁본": "hf_rubbing_ember_lantern_angler",
+"잔불 쓸개 환": "ember_gall_pill",
+"잔불 쓸개 환 (우수)": "ember_gall_pill_hq",
+"잔화 결정": "ember_crystal",
+"잠긴 종루 메기": "belltower_catfish",
+"잠긴 종루 메기 탁본": "hf_rubbing_belltower_catfish",
+"잠든 용왕 철갑상어": "sleeping_king_sturgeon",
+"잠든 용왕 철갑상어 탁본": "hf_rubbing_sleeping_king_sturgeon",
+"잠복귀 송곳니": "shadow_fang",
+"잠자리 바구니": "pt_dragonfly",
+"장군탈": "k2_awe",
+"장군탈 (우수)": "k2_awe_hq",
+"장비 수리 도구": "repair_kit",
+"장비 수리 도구 (우수)": "repair_kit_hq",
+"장수풍뎅이 바구니": "pt_rhino_beetle",
+"장어 보양탕": "eel_tonic",
+"장어 보양탕 (우수)": "eel_tonic_hq",
+"장어 수조": "hf_tank_bamboo_eel",
+"장지문": "hf_door_jangji",
+"장판": "hg_jangpan",
+"잿빛 메기 약선": "ashwhisker_herbal_soup",
+"잿빛 메기 약선 (우수)": "ashwhisker_herbal_soup_hq",
+"잿빛 샛비늘치": "ash_lanternfish",
+"잿빛 수염 메기": "ashwhisker_catfish",
+"잿빛 수염 메기 탁본": "hf_rubbing_ashwhisker_catfish",
+"전갱이": "jack_mackerel",
+"전돌": "hg_jeondol",
+"전립": "h2_guard",
+"전립 (우수)": "h2_guard_hq",
+"전벽돌": "hp_brick",
+"전어": "gizzard_shad",
+"정련 숯": "charcoal",
+"정자관": "h2_wise",
+"정자관 (우수)": "h2_wise_hq",
+"정제 황지": "fine_paper",
+"정화 부적": "ward_talisman",
+"정화 부적 (우수)": "ward_talisman_hq",
+"조기": "yellow_croaker",
+"조약돌 물웅덩이": "hf_pet_tidepool",
+"종루 메기 찜": "belltower_catfish_steam",
+"종루 메기 찜 (우수)": "belltower_catfish_steam_hq",
+"종이 인형 혼령 바구니": "pt_paper_doll",
+"종이배 쏘가리": "paperboat_mandarin",
+"종이배 쏘가리 매운탕": "paperboat_spicy_stew",
+"종이배 쏘가리 매운탕 (우수)": "paperboat_spicy_stew_hq",
+"종이배 쏘가리 탁본": "hf_rubbing_paperboat_mandarin",
+"좌등": "hf_lamp_jwadeung",
+"주사 각인도": "lt_carve_4",
+"주사 각인도 (우수)": "lt_carve_4_hq",
+"주사 광물": "cinnabar",
+"주사 낫": "lt_sickle_3",
+"주사 낫 (우수)": "lt_sickle_3_hq",
+"주사 새김칼": "lt_carve_3",
+"주사 새김칼 (우수)": "lt_carve_3_hq",
+"주사 호신부": "m1_ward",
+"주작 투구": "h4_guard",
+"주작 투구 (우수)": "h4_guard_hq",
+"주칠 좌식 탁자": "hf_table_lacquer",
+"죽간 대장어": "bamboo_eel",
+"죽간 대장어 탁본": "hf_rubbing_bamboo_eel",
+"죽간 발": "hf_wall_bamboo_blind",
+"쥐치": "filefish",
+"지워진 문패 조각": "erased_plate",
+"진령 대종": "w_magic4_heavy",
+"진령 대종 (우수)": "w_magic4_heavy_hq",
+"진산 대철퇴": "w_melee4_heavy",
+"진산 대철퇴 (우수)": "w_melee4_heavy_hq",
+"짚 둥지": "hf_pet_nest",
+"짚신": "s1_road",
+"짧은 마고자": "of_top_magoja",
+"짧은 적삼": "of_top_jeoksam",
+"쪽빛 대님 바지": "of_bottom_exorcist",
+"쪽빛 화문석": "hg_hwamun",
+"참새 바구니": "pt_sparrow",
+"책갑": "hf_surf_books",
+"처용탈": "k4_hide",
+"처용탈 (우수)": "k4_hide_hq",
+"천경 맑은탕": "mirror_soup",
+"천경 맑은탕 (우수)": "mirror_soup_hq",
+"천경 백어": "mirror_whitefish",
+"천공 깃 낫": "lt_sickle_5",
+"천공 깃 낫 (우수)": "lt_sickle_5_hq",
+"천공 깃 바늘": "lt_needle_5",
+"천공 깃 바늘 (우수)": "lt_needle_5_hq",
+"천공 깃털": "sky_feather",
+"천공 채집도": "t5_gather",
+"천공 채집도 (우수)": "t5_gather_hq",
+"천균 신노": "w_ranged5_heavy",
+"천기 산반": "w_magic4_keen",
+"천기 산반 (우수)": "w_magic4_keen_hq",
+"천기 익선관": "h5_wise",
+"천도 노리개": "n5_plenty",
+"천령 감로": "heavenly_dew",
+"천령 감로 (우수)": "heavenly_dew_hq",
+"천뢰 언월도": "w_melee5_base",
+"천뢰 언월도 (우수)": "w_melee5_base_hq",
+"천리 각궁": "w_ranged3_keen",
+"천리 각궁 (우수)": "w_ranged3_keen_hq",
+"천명 신산": "w_magic5_keen",
+"천명 신산 (우수)": "w_magic5_keen_hq",
+"천문 법경": "star_mirror",
+"천문 법경 (우수)": "star_mirror_hq",
+"천문 혼천 나침반": "lt_compass_5",
+"천문 혼천 나침반 (우수)": "lt_compass_5_hq",
+"천사 부적낭": "m5_spell",
+"천사 부적낭 (우수)": "m5_spell_hq",
+"천의 경갑": "a5_light",
+"천의 경갑 (우수)": "a5_light_hq",
+"철목화": "s3_sturdy",
+"철목화 (우수)": "s3_sturdy_hq",
+"철벽 비약": "exp_elixir_iron",
+"철전립": "h3_guard",
+"철전립 (우수)": "h3_guard_hq",
+"철찰갑": "a3_iron",
+"철찰갑 (우수)": "a3_iron_hq",
+"철태 쇠뇌": "w_ranged2_heavy",
+"철태 쇠뇌 (우수)": "w_ranged2_heavy_hq",
+"철패 호신부": "m3_ward",
+"철패 호신부 (우수)": "m3_ward_hq",
+"청강 곡괭이": "lt_pick_3",
+"청강 곡괭이 (우수)": "lt_pick_3_hq",
+"청강 단조 망치": "lt_hammer_4",
+"청강 단조 망치 (우수)": "lt_hammer_4_hq",
+"청강 식칼": "lt_cook_4",
+"청강 식칼 (우수)": "lt_cook_4_hq",
+"청강 쌍검": "w_melee3_keen",
+"청강 쌍검 (우수)": "w_melee3_keen_hq",
+"청강 채집도": "t3_gather",
+"청강 채집도 (우수)": "t3_gather_hq",
+"청개구리 바구니": "pt_tree_frog",
+"청동 메기": "bronze_catfish",
+"청동 법륜": "w_magic2_heavy",
+"청동 법륜 (우수)": "w_magic2_heavy_hq",
+"청동 비늘 판": "bronze_scale_plate",
+"청동 비늘갑": "a7_iron",
+"청동 비늘갑 (우수)": "a7_iron_hq",
+"청동 장화": "s7_sturdy",
+"청동 장화 (우수)": "s7_sturdy_hq",
+"청동 투구": "h7_guard",
+"청동 투구 (우수)": "h7_guard_hq",
+"청동 향로": "hf_surf_incense",
+"청동 호신패": "bronze_charm",
+"청동 호신패 (우수)": "bronze_charm_hq",
+"청등": "lt_lantern_4",
+"청등 (우수)": "lt_lantern_4_hq",
+"청령단": "clear_spirit_pill",
+"청령단 (우수)": "clear_spirit_pill_hq",
+"청룡 법포": "a4_robe",
+"청룡 법포 (우수)": "a4_robe_hq",
+"청명 비약": "exp_elixir_clear",
+"청사초롱": "hf_lantern_cheongsa",
+"청새치 별빛구이": "marlin_grill",
+"청새치 별빛구이 (우수)": "marlin_grill_hq",
+"청심환": "tonic",
+"청심환 (우수)": "tonic_hq",
+"청자 매병": "hf_celadon_maebyeong",
+"청자빛 구름": "hp_celadon",
+"청정수": "purify_water",
+"청정수 (우수)": "purify_water_hq",
+"청죽 낚싯대": "lt_rod_3",
+"청죽 낚싯대 (우수)": "lt_rod_3_hq",
+"축지 당혜": "s5_road",
+"취관 침": "ammo_dart",
+"취발이탈": "k2_ghost",
+"취발이탈 (우수)": "k2_ghost_hq",
+"칠보 장도 노리개": "n3_keen",
+"칠보 장도 노리개 (우수)": "n3_keen_hq",
+"칠액": "lacquer",
+"침향 향낭": "m3_purify",
+"침향 향낭 (우수)": "m3_purify_hq",
+"큰 그림 액자": "hf_frame_large",
+"탕건": "h1_wise",
+"태극 법륜": "w_magic5_base",
+"태극 법륜 (우수)": "w_magic5_base_hq",
+"태극 부채": "hf_fan_taegeuk",
+"태산화": "s5_sturdy",
+"태을 법포": "a5_robe",
+"털깃 사냥 저고리": "of_top_tamer",
+"통나무 긁개": "hf_pet_log_scratch",
+"파산 철편": "w_melee3_heavy",
+"파산 철편 (우수)": "w_melee3_heavy_hq",
+"팔괘 나경": "w_magic2_keen",
+"팔괘 나경 (우수)": "w_magic2_keen_hq",
+"팔우 대노": "w_ranged4_heavy",
+"팔우 대노 (우수)": "w_ranged4_heavy_hq",
+"풍로": "hf_pungno",
+"풍운화": "s4_swift",
+"풍운화 (우수)": "s4_swift_hq",
+"피라미": "dace",
+"하회탈": "hf_mask_hahoe",
+"학익 각궁": "w_ranged2_keen",
+"학익 각궁 (우수)": "w_ranged2_keen_hq",
+"학창 관모": "h3_calm",
+"학창 관모 (우수)": "h3_calm_hq",
+"한지": "hp_hanji",
+"해룡 돗돔": "sea_dotdom",
+"해룡 어보찜": "haeryong_feast",
+"해룡 어보찜 (우수)": "haeryong_feast_hq",
+"해신 쇠뇌": "w_ranged6_heavy",
+"해신 쇠뇌 (우수)": "w_ranged6_heavy_hq",
+"행군 노리개": "exg_march_2",
+"행군 노리개 (닳음)": "exg_march_1",
+"행상인 짐틀": "wayfarer_pack",
+"행상인 짐틀 (우수)": "wayfarer_pack_hq",
+"행전 짚신": "s2_road",
+"행전 짚신 (우수)": "s2_road_hq",
+"향긋한 풀단": "treat_herb",
+"허공 비궁": "w_ranged5_silent",
+"허무 법등": "w_magic5_silent",
+"허수아비 탈": "k7_awe",
+"허수아비 탈 (우수)": "k7_awe_hq",
+"현무 법경": "w_magic4_base",
+"현무 법경 (우수)": "w_magic4_base_hq",
+"현장 채집도": "field_knife",
+"현판 「夜行」": "hf_board_yahaeng",
+"혜성 만새기 구이": "comet_dolphinfish_grill",
+"혜성 만새기 구이 (우수)": "comet_dolphinfish_grill_hq",
+"혜성꼬리 만새기": "comet_dolphinfish",
+"혜성꼬리 만새기 탁본": "hf_rubbing_comet_dolphinfish",
+"호박 노리개": "n2_luck",
+"호박 노리개 (우수)": "n2_luck_hq",
+"호신 도포": "ward_robe",
+"호신 도포 (우수)": "ward_robe_hq",
+"혼등": "lt_lantern_6",
+"혼등 (우수)": "lt_lantern_6_hq",
+"혼례 떡": "wedding_rice_cake",
+"혼불 초롱": "hf_pet_spirit_lamp",
+"화문석": "hf_rug_hwamun",
+"화살": "ammo_arrow",
+"화조 병풍": "hf_screen_hwajo",
+"환골탈태 서첩": "reset_identity",
+"황지": "seal_paper",
+"황토 장판": "hg_ochre",
+"횃대": "hf_pet_perch",
+"회생 부적": "revival_charm",
+"회생 부적 (우수)": "revival_charm_hq",
+"회춘단": "rejuv_pill",
+"회춘단 (우수)": "rejuv_pill_hq",
+"흑단 명궁": "w_ranged7_base",
+"흑단 명궁 (우수)": "w_ranged7_base_hq",
+"흑련 장도 노리개": "fv_norigae_lotus",
+"흑룡 어보탕": "dragon_feast",
+"흑룡 어보탕 (우수)": "dragon_feast_hq",
+"흑룡 장궁": "w_ranged4_base",
+"흑룡 장궁 (우수)": "w_ranged4_base_hq",
+"흑립": "h2_calm",
+"흑립 (우수)": "h2_calm_hq",
+"흑잉어": "canal_carp",
+"흑조 먹장어": "void_hagfish",
+"흑철 두정갑": "a4_iron",
+"흑철 두정갑 (우수)": "a4_iron_hq",
+"흑철 비늘갑": "a6_iron",
+"흑철 비늘갑 (우수)": "a6_iron_hq",
+"흑철 장화": "s6_sturdy",
+"흑철 장화 (우수)": "s6_sturdy_hq",
+"흑철 투구": "h6_guard",
+"흑철 투구 (우수)": "h6_guard_hq",
+"흑철화": "s4_sturdy",
+"흑철화 (우수)": "s4_sturdy_hq",
+"흙벽": "hp_heukbyeok",
+"흰 토끼 바구니": "pt_white_rabbit",
+"흰둥이 강아지 바구니": "pt_white_puppy"
+},
+"monsters": {
+"갈대 물귀신": [
+[
+"gw_reed_1",
+"ash_reeds",
+30,
+"common"
+]
+],
+"갈대 엮인 요인": [
+[
+"gw_reed_4",
+"ash_reeds",
+32,
+"main"
+]
+],
+"값 매기는 그림자": [
+[
+"gw_market_1",
+"moonless_market",
+36,
+"common"
+]
+],
+"객사 가위귀": [
+[
+"regional_hq_dorm_guardian",
+"hq_dorm",
+1,
+"guardian"
+]
+],
+"갯바위 집게": [
+[
+"x_nine_lighthouse_1",
+"nine_lighthouse",
+14,
+"common"
+]
+],
+"갱도 박쥐 떼": [
+[
+"g_crimson_mine",
+"crimson_mine",
+12,
+"common"
+]
+],
+"갱도 원령": [
+[
+"x_crimson_mine_2",
+"crimson_mine",
+13,
+"main"
+]
+],
+"거꾸로 매달린 동자": [
+[
+"gw_shrine_1",
+"inverted_shrine",
+33,
+"common"
+]
+],
+"거꾸로 선 범종귀": [
+[
+"gw_shrine_5",
+"inverted_shrine",
+33,
+"guardian"
+]
+],
+"거울 든 순라꾼": [
+[
+"r220_patrol_4",
+"patrol_office",
+14,
+"main"
+]
+],
+"거울 명부": [
+[
+"mk_tower_3",
+"myeongbu_tower",
+45,
+"main"
+]
+],
+"거울 속 무희장": [
+[
+"regional_mirror_pavilion_guardian",
+"mirror_pavilion",
+9,
+"guardian"
+]
+],
+"거울 속 주지": [
+[
+"gw_shrine_4",
+"inverted_shrine",
+35,
+"main"
+]
+],
+"검은 게 떼": [
+[
+"x_black_tide_rift_1",
+"black_tide_rift",
+28,
+"common"
+]
+],
+"검은 물결 촉수": [
+[
+"g_black_tide_rift",
+"black_tide_rift",
+28,
+"common"
+]
+],
+"경면쌍생": [
+[
+"m_10",
+"glass_canyon",
+9,
+"main"
+]
+],
+"고도 결계관": [
+[
+"x_forgotten_city_2",
+"forgotten_city",
+16,
+"main"
+]
+],
+"과녁 쥐떼": [
+[
+"x_hq_training_1",
+"hq_training",
+1,
+"common"
+]
+],
+"관청 담 벌레 떼": [
+[
+"r220_patrol_2",
+"patrol_office",
+12,
+"common"
+]
+],
+"광석 지네": [
+[
+"x_crimson_mine_1",
+"crimson_mine",
+12,
+"common"
+]
+],
+"구름 해파리": [
+[
+"r71_cloud_1",
+"cloud_corridor",
+23,
+"common"
+]
+],
+"구중 봉주": [
+[
+"m_28",
+"sealed_abyss",
+32,
+"main"
+]
+],
+"귀허의 문지기": [
+[
+"gw_core_5",
+"gwiheo_core",
+38,
+"guardian"
+]
+],
+"균열을 삼킨 자": [
+[
+"regional_black_tide_rift_guardian",
+"black_tide_rift",
+28,
+"guardian"
+]
+],
+"그림자 뱃사공": [
+[
+"x_old_canal_2",
+"old_canal",
+3,
+"main"
+]
+],
+"그림자 소매치기": [
+[
+"g_hidden_bazaar",
+"hidden_bazaar",
+9,
+"common"
+]
+],
+"그림자 탈주자": [
+[
+"m_ember",
+"ember_village",
+5,
+"main"
+]
+],
+"그을린 화전 덩굴": [
+[
+"r71_ember_3",
+"ember_pass",
+7,
+"main"
+]
+],
+"그을음 거미": [
+[
+"r71_lamp_3",
+"lamp_alley",
+7,
+"main"
+]
+],
+"금주 사제": [
+[
+"x_black_sand_temple_2",
+"black_sand_temple",
+11,
+"main"
+]
+],
+"금줄 감긴 요도": [
+[
+"r71_vault_4",
+"seal_vault",
+28,
+"main"
+]
+],
+"금줄 까마귀": [
+[
+"g_shrine_ruins",
+"shrine_ruins",
+1,
+"common"
+]
+],
+"금줄식귀": [
+[
+"m_shrine_1",
+"shrine_ruins",
+1,
+"main"
+]
+],
+"기름 먹은 지네": [
+[
+"r220_sewer_3",
+"lotus_sewer",
+9,
+"main"
+]
+],
+"기름 쥐 떼": [
+[
+"r71_lamp_1",
+"lamp_alley",
+5,
+"common"
+]
+],
+"기억 저울 장수": [
+[
+"gw_market_3",
+"moonless_market",
+38,
+"main"
+]
+],
+"기와 두꺼비": [
+[
+"g_sunken_district",
+"sunken_district",
+5,
+"common"
+]
+],
+"꺼진 등대지기": [
+[
+"regional_nine_lighthouse_guardian",
+"nine_lighthouse",
+14,
+"guardian"
+]
+],
+"꺼진 등롱 노파": [
+[
+"regional_lantern_market_guardian",
+"lantern_market",
+1,
+"guardian"
+]
+],
+"꺼진 봉화의 수호귀": [
+[
+"r71_ember_5",
+"ember_pass",
+5,
+"guardian"
+]
+],
+"꺾인 붓 고목": [
+[
+"mk_forest_5",
+"meokbi_forest",
+42,
+"guardian"
+]
+],
+"나루 물귀신": [
+[
+"regional_river_ferry_guardian",
+"river_ferry",
+3,
+"guardian"
+]
+],
+"나루 물뱀": [
+[
+"g_river_ferry",
+"river_ferry",
+3,
+"common"
+]
+],
+"낙엽 원령": [
+[
+"x_red_forest_2",
+"red_forest",
+19,
+"main"
+]
+],
+"난간 바람귀": [
+[
+"r71_cloud_2",
+"cloud_corridor",
+23,
+"common"
+]
+],
+"난파선 망령": [
+[
+"x_ash_coast_2",
+"ash_coast",
+11,
+"main"
+]
+],
+"날개 펼친 회랑 석상": [
+[
+"r71_cloud_3",
+"cloud_corridor",
+25,
+"main"
+]
+],
+"녹슨 구슬 떼": [
+[
+"r71_clock_2",
+"water_clock",
+13,
+"common"
+]
+],
+"녹슨 창귀": [
+[
+"x_west_gate_2",
+"west_gate",
+3,
+"main"
+]
+],
+"뇌각 산군": [
+[
+"m_thunder",
+"thunder_peak",
+18,
+"main"
+]
+],
+"뇌석 갑귀": [
+[
+"x_thunder_peak_2",
+"thunder_peak",
+18,
+"main"
+]
+],
+"뇌조": [
+[
+"g_thunder_peak",
+"thunder_peak",
+16,
+"common"
+]
+],
+"누각 밑 수귀": [
+[
+"x_mirror_pavilion_2",
+"mirror_pavilion",
+10,
+"main"
+]
+],
+"눈까마귀 떼": [
+[
+"r71_snow_2",
+"snow_hollow",
+5,
+"common"
+]
+],
+"눈매": [
+[
+"r220_pine_2",
+"frost_pine_pass",
+8,
+"common"
+]
+],
+"늪 거머리": [
+[
+"g_lotus_marsh",
+"lotus_marsh",
+7,
+"common"
+]
+],
+"단풍 독거미": [
+[
+"regional_red_forest_guardian",
+"red_forest",
+18,
+"guardian"
+]
+],
+"달그림자 학": [
+[
+"x_mirror_pavilion_1",
+"mirror_pavilion",
+9,
+"common"
+]
+],
+"달을 판 상주": [
+[
+"gw_market_5",
+"moonless_market",
+36,
+"guardian"
+]
+],
+"대나무 원숭이": [
+[
+"g_ghost_bamboo",
+"ghost_bamboo",
+4,
+"common"
+]
+],
+"대숲 독사녀": [
+[
+"regional_ghost_bamboo_guardian",
+"ghost_bamboo",
+4,
+"guardian"
+]
+],
+"댓잎 참새 떼": [
+[
+"x_ghost_bamboo_1",
+"ghost_bamboo",
+4,
+"common"
+]
+],
+"덩굴 손": [
+[
+"g_sealed_garden",
+"sealed_garden",
+3,
+"common"
+]
+],
+"도르래 집게": [
+[
+"r71_tide_3",
+"tide_gate",
+26,
+"main"
+]
+],
+"돌길잠복귀": [
+[
+"m_outskirts_2",
+"field_outskirts",
+1,
+"main"
+]
+],
+"돌아오는 파도귀": [
+[
+"gw_core_1",
+"gwiheo_core",
+38,
+"common"
+]
+],
+"뒤집힌 향로귀": [
+[
+"gw_shrine_2",
+"inverted_shrine",
+33,
+"common"
+]
+],
+"들녘 잠복왕": [
+[
+"regional_field_outskirts_guardian",
+"field_outskirts",
+1,
+"guardian"
+]
+],
+"들쥐 요괴 떼": [
+[
+"g_field_outskirts",
+"field_outskirts",
+1,
+"common"
+]
+],
+"등대식귀": [
+[
+"m_24",
+"nine_lighthouse",
+15,
+"main"
+]
+],
+"등롱 나방 떼": [
+[
+"g_lantern_market",
+"lantern_market",
+1,
+"common"
+]
+],
+"등롱객": [
+[
+"m_03",
+"lantern_market",
+1,
+"main"
+]
+],
+"등불 원령": [
+[
+"x_nine_lighthouse_2",
+"nine_lighthouse",
+15,
+"main"
+]
+],
+"등잔 그늘 소매치기귀": [
+[
+"r71_lamp_2",
+"lamp_alley",
+5,
+"common"
+]
+],
+"등잔 그림자": [
+[
+"r220_sewer_4",
+"lotus_sewer",
+9,
+"main"
+]
+],
+"등잔골 두꺼비 두목": [
+[
+"r71_lamp_5",
+"lamp_alley",
+5,
+"guardian"
+]
+],
+"따개비 집게귀": [
+[
+"r220_port_3",
+"sleeping_port",
+21,
+"main"
+]
+],
+"떠도는 먹귀": [
+[
+"mk_field_1",
+"blank_field",
+41,
+"common"
+]
+],
+"만인행군": [
+[
+"m_22",
+"burial_steps",
+11,
+"main"
+]
+],
+"만장 묘지기": [
+[
+"regional_burial_steps_guardian",
+"burial_steps",
+10,
+"guardian"
+]
+],
+"만조의 수문귀": [
+[
+"r71_tide_5",
+"tide_gate",
+24,
+"guardian"
+]
+],
+"망국 근위장": [
+[
+"regional_forgotten_city_guardian",
+"forgotten_city",
+15,
+"guardian"
+]
+],
+"맥동 광모": [
+[
+"m_23",
+"crimson_mine",
+13,
+"main"
+]
+],
+"먹 먹은 목장승": [
+[
+"mk_forest_4",
+"meokbi_forest",
+44,
+"main"
+]
+],
+"먹물 거미": [
+[
+"x_hq_archive_1",
+"hq_archive",
+1,
+"common"
+]
+],
+"먹물 두꺼비": [
+[
+"mk_field_4",
+"blank_field",
+43,
+"main"
+]
+],
+"먹물 잉어": [
+[
+"x_paper_bridge_1",
+"paper_bridge",
+3,
+"common"
+]
+],
+"먹비 넋": [
+[
+"mk_forest_1",
+"meokbi_forest",
+42,
+"common"
+]
+],
+"먹비 반딧불 떼": [
+[
+"mk_forest_3",
+"meokbi_forest",
+44,
+"main"
+]
+],
+"먹빛 거울 조각": [
+[
+"r220_ledger_2",
+"ledger_cellar",
+18,
+"common"
+]
+],
+"먹칠 두루마리": [
+[
+"m_hq_yard",
+"hq_yard",
+1,
+"main"
+]
+],
+"멈춘 시각의 그림자": [
+[
+"r71_clock_4",
+"water_clock",
+15,
+"main"
+]
+],
+"명부 갈피귀": [
+[
+"mk_tower_1",
+"myeongbu_tower",
+44,
+"common"
+]
+],
+"모래 매복귀": [
+[
+"regional_red_plain_guardian",
+"red_plain",
+5,
+"guardian"
+]
+],
+"모래 속 숨은 입": [
+[
+"r220_dune_3",
+"blood_dunes",
+19,
+"main"
+]
+],
+"모래매": [
+[
+"r220_dune_2",
+"blood_dunes",
+17,
+"common"
+]
+],
+"목 없는 나한": [
+[
+"gw_shrine_3",
+"inverted_shrine",
+35,
+"main"
+]
+],
+"목인귀": [
+[
+"m_01",
+"hq_training",
+1,
+"main"
+]
+],
+"몽침귀": [
+[
+"m_02",
+"hq_dorm",
+1,
+"main"
+]
+],
+"무덤 쥐떼": [
+[
+"x_burial_steps_1",
+"burial_steps",
+10,
+"common"
+]
+],
+"무명 황제": [
+[
+"m_20",
+"forgotten_city",
+16,
+"main"
+]
+],
+"문패 뜯는 손": [
+[
+"mk_field_3",
+"blank_field",
+43,
+"main"
+]
+],
+"물 먹은 상여귀": [
+[
+"x_sunken_district_2",
+"sunken_district",
+5,
+"main"
+]
+],
+"물거울 요정": [
+[
+"g_mirror_pavilion",
+"mirror_pavilion",
+9,
+"common"
+]
+],
+"물방울 도깨비": [
+[
+"r71_clock_1",
+"water_clock",
+13,
+"common"
+]
+],
+"물시계 태엽 거인": [
+[
+"r71_clock_5",
+"water_clock",
+13,
+"guardian"
+]
+],
+"물안개 거울": [
+[
+"r220_port_4",
+"sleeping_port",
+21,
+"main"
+]
+],
+"밀물 수귀": [
+[
+"r71_tide_1",
+"tide_gate",
+24,
+"common"
+]
+],
+"반딧불 넋": [
+[
+"r71_star_1",
+"star_hill",
+5,
+"common"
+]
+],
+"방울 금줄귀": [
+[
+"r220_patrol_3",
+"patrol_office",
+14,
+"main"
+]
+],
+"방울먹는 무녀귀": [
+[
+"m_shrine_2",
+"shrine_ruins",
+1,
+"main"
+]
+],
+"백골 갑사": [
+[
+"x_burial_steps_2",
+"burial_steps",
+11,
+"main"
+]
+],
+"백골 흥정꾼": [
+[
+"m_bone",
+"bone_market",
+5,
+"main"
+]
+],
+"백지 탈 무리": [
+[
+"regional_paper_bridge_guardian",
+"paper_bridge",
+3,
+"guardian"
+]
+],
+"백지면귀": [
+[
+"m_05",
+"paper_bridge",
+3,
+"main"
+]
+],
+"번개 머금은 학": [
+[
+"r71_cloud_4",
+"cloud_corridor",
+25,
+"main"
+]
+],
+"베갯속 좀벌레": [
+[
+"g_hq_dorm",
+"hq_dorm",
+1,
+"common"
+]
+],
+"벼락 산령": [
+[
+"regional_thunder_peak_guardian",
+"thunder_peak",
+16,
+"guardian"
+]
+],
+"벼락 지네": [
+[
+"x_thunder_peak_1",
+"thunder_peak",
+16,
+"common"
+]
+],
+"별 먹는 망령": [
+[
+"regional_star_observatory_guardian",
+"star_observatory",
+25,
+"guardian"
+]
+],
+"별똥 굴렁쇠": [
+[
+"r71_star_3",
+"star_hill",
+7,
+"main"
+]
+],
+"별빛 나비 떼": [
+[
+"g_white_tower",
+"white_tower",
+20,
+"common"
+]
+],
+"별빛 박쥐": [
+[
+"x_white_tower_1",
+"white_tower",
+20,
+"common"
+]
+],
+"별쇠 딱정벌레": [
+[
+"r71_comet_1",
+"comet_crater",
+17,
+"common"
+]
+],
+"별에서 내려온 흰 소": [
+[
+"r71_star_5",
+"star_hill",
+5,
+"guardian"
+]
+],
+"별자리 포식자": [
+[
+"m_observatory",
+"star_observatory",
+27,
+"main"
+]
+],
+"봉서 결계귀": [
+[
+"x_hq_archive_2",
+"hq_archive",
+1,
+"main"
+]
+],
+"봉연 거울귀": [
+[
+"x_sealed_abyss_2",
+"sealed_abyss",
+32,
+"main"
+]
+],
+"봉연 박쥐 떼": [
+[
+"x_sealed_abyss_1",
+"sealed_abyss",
+30,
+"common"
+]
+],
+"봉인 석등귀": [
+[
+"x_sealed_garden_2",
+"sealed_garden",
+3,
+"main"
+]
+],
+"봉인고의 첫 압수물": [
+[
+"r71_vault_5",
+"seal_vault",
+26,
+"guardian"
+]
+],
+"부적 허수": [
+[
+"x_paper_bridge_2",
+"paper_bridge",
+3,
+"main"
+]
+],
+"불티 도깨비": [
+[
+"r71_ember_1",
+"ember_pass",
+5,
+"common"
+]
+],
+"붉은 모래 전갈": [
+[
+"r220_dune_1",
+"blood_dunes",
+17,
+"common"
+]
+],
+"붉은 신기루": [
+[
+"r220_dune_5",
+"blood_dunes",
+17,
+"guardian"
+]
+],
+"붉은 전갈": [
+[
+"g_red_plain",
+"red_plain",
+5,
+"common"
+]
+],
+"비묻은 도깨비불": [
+[
+"m_outskirts_1",
+"field_outskirts",
+1,
+"main"
+]
+],
+"비석 까마귀": [
+[
+"g_burial_steps",
+"burial_steps",
+10,
+"common"
+]
+],
+"비취 수문장": [
+[
+"regional_jade_pass_guardian",
+"jade_pass",
+10,
+"guardian"
+]
+],
+"빈 배 사공": [
+[
+"m_ferry",
+"river_ferry",
+3,
+"main"
+]
+],
+"빈칸 까마귀 떼": [
+[
+"mk_field_2",
+"blank_field",
+41,
+"common"
+]
+],
+"빗장 지키는 금줄귀": [
+[
+"r220_ledger_3",
+"ledger_cellar",
+20,
+"main"
+]
+],
+"빙갑 거북": [
+[
+"r220_glacier_4",
+"old_glacier",
+29,
+"main"
+]
+],
+"빙벽 갑귀": [
+[
+"x_frost_valley_2",
+"frost_valley",
+12,
+"main"
+]
+],
+"빙의된 죄수": [
+[
+"r71_prison_3",
+"old_prison",
+21,
+"main"
+]
+],
+"빙하 밑 물귀": [
+[
+"r220_glacier_2",
+"old_glacier",
+27,
+"common"
+]
+],
+"빙혼 장수": [
+[
+"m_14",
+"frost_valley",
+12,
+"main"
+]
+],
+"뼈 수레꾼": [
+[
+"g_bone_market",
+"bone_market",
+5,
+"common"
+]
+],
+"뿌리 덩굴손": [
+[
+"x_under_root_1",
+"under_root",
+21,
+"common"
+]
+],
+"뿌리 속 매복자": [
+[
+"regional_under_root_guardian",
+"under_root",
+21,
+"guardian"
+]
+],
+"뿌리 지네": [
+[
+"g_under_root",
+"under_root",
+21,
+"common"
+]
+],
+"사구귀": [
+[
+"m_09",
+"red_plain",
+5,
+"main"
+]
+],
+"사슬 끊는 자": [
+[
+"regional_sealed_abyss_guardian",
+"sealed_abyss",
+30,
+"guardian"
+]
+],
+"사암 갑귀": [
+[
+"x_red_plain_2",
+"red_plain",
+5,
+"main"
+]
+],
+"산문 파쇄귀": [
+[
+"regional_shrine_ruins_guardian",
+"shrine_ruins",
+1,
+"guardian"
+]
+],
+"산호 갑각병": [
+[
+"g_sunken_palace",
+"sunken_palace",
+14,
+"common"
+]
+],
+"서가 그림자": [
+[
+"regional_hq_archive_guardian",
+"hq_archive",
+1,
+"guardian"
+]
+],
+"서리 굴의 설귀": [
+[
+"regional_frost_valley_guardian",
+"frost_valley",
+11,
+"guardian"
+]
+],
+"서리 까마귀": [
+[
+"x_frost_valley_1",
+"frost_valley",
+11,
+"common"
+]
+],
+"서리 나비 떼": [
+[
+"x_sky_lake_1",
+"sky_lake",
+13,
+"common"
+]
+],
+"서리 덮인 산군": [
+[
+"r220_pine_5",
+"frost_pine_pass",
+8,
+"guardian"
+]
+],
+"서리 등껍질 오소리": [
+[
+"r220_pine_3",
+"frost_pine_pass",
+10,
+"main"
+]
+],
+"서리 족제비": [
+[
+"r71_snow_1",
+"snow_hollow",
+5,
+"common"
+]
+],
+"서리솔 정령": [
+[
+"r220_pine_1",
+"frost_pine_pass",
+8,
+"common"
+]
+],
+"석상 수문병": [
+[
+"g_forgotten_city",
+"forgotten_city",
+15,
+"common"
+]
+],
+"설원 늑대": [
+[
+"g_frost_valley",
+"frost_valley",
+11,
+"common"
+]
+],
+"설피 신은 망령": [
+[
+"r71_snow_4",
+"snow_hollow",
+7,
+"main"
+]
+],
+"성도 물어 가는 부엉이": [
+[
+"r71_star_2",
+"star_hill",
+5,
+"common"
+]
+],
+"성루 매복병": [
+[
+"regional_west_gate_guardian",
+"west_gate",
+3,
+"guardian"
+]
+],
+"성문 파수망령": [
+[
+"m_west",
+"west_gate",
+3,
+"main"
+]
+],
+"성벽 박쥐 떼": [
+[
+"x_west_gate_1",
+"west_gate",
+3,
+"common"
+]
+],
+"소금 갈매기 떼": [
+[
+"r71_tide_2",
+"tide_gate",
+24,
+"common"
+]
+],
+"소금 게": [
+[
+"g_salt_village",
+"salt_village",
+5,
+"common"
+]
+],
+"소금 기둥귀": [
+[
+"x_salt_village_2",
+"salt_village",
+5,
+"main"
+]
+],
+"소금각시": [
+[
+"m_salt",
+"salt_village",
+5,
+"main"
+]
+],
+"소용돌이 천상귀": [
+[
+"gw_core_4",
+"gwiheo_core",
+40,
+"main"
+]
+],
+"솔숲 살쾡이": [
+[
+"r220_pine_4",
+"frost_pine_pass",
+10,
+"main"
+]
+],
+"쇠사슬 옥졸": [
+[
+"r71_prison_4",
+"old_prison",
+21,
+"main"
+]
+],
+"쇠종 동자": [
+[
+"g_iron_monastery",
+"iron_monastery",
+9,
+"common"
+]
+],
+"수경무희": [
+[
+"m_18",
+"mirror_pavilion",
+10,
+"main"
+]
+],
+"수궁 해일장": [
+[
+"regional_sunken_palace_guardian",
+"sunken_palace",
+14,
+"guardian"
+]
+],
+"수궁 해파리 떼": [
+[
+"x_sunken_palace_1",
+"sunken_palace",
+14,
+"common"
+]
+],
+"수로 독개구리": [
+[
+"x_old_canal_1",
+"old_canal",
+3,
+"common"
+]
+],
+"수문 거머리왕": [
+[
+"regional_old_canal_guardian",
+"old_canal",
+3,
+"guardian"
+]
+],
+"수문아귀": [
+[
+"m_04",
+"old_canal",
+3,
+"main"
+]
+],
+"순라 대장귀": [
+[
+"r220_patrol_5",
+"patrol_office",
+12,
+"guardian"
+]
+],
+"순라 등불 넋": [
+[
+"r220_patrol_1",
+"patrol_office",
+12,
+"common"
+]
+],
+"숨은 문지기": [
+[
+"regional_hidden_bazaar_guardian",
+"hidden_bazaar",
+9,
+"guardian"
+]
+],
+"숯검정 개미 떼": [
+[
+"r71_ember_2",
+"ember_pass",
+5,
+"common"
+]
+],
+"숯불 속 그림자": [
+[
+"regional_ember_village_guardian",
+"ember_village",
+5,
+"guardian"
+]
+],
+"신목 덩굴귀": [
+[
+"x_shrine_ruins_2",
+"shrine_ruins",
+1,
+"main"
+]
+],
+"심연 사슬귀": [
+[
+"g_sealed_abyss",
+"sealed_abyss",
+30,
+"common"
+]
+],
+"심해 원령": [
+[
+"x_black_tide_rift_2",
+"black_tide_rift",
+30,
+"main"
+]
+],
+"십삼문 상귀": [
+[
+"m_25",
+"hidden_bazaar",
+10,
+"main"
+]
+],
+"아홉째 칸의 먹귀": [
+[
+"mk_court_5",
+"nine_court",
+45,
+"guardian"
+]
+],
+"안개 갈매기": [
+[
+"g_nine_lighthouse",
+"nine_lighthouse",
+14,
+"common"
+]
+],
+"안개 갈매기 떼": [
+[
+"r220_port_2",
+"sleeping_port",
+19,
+"common"
+]
+],
+"얼굴 없는 손님 떼": [
+[
+"gw_market_2",
+"moonless_market",
+36,
+"common"
+]
+],
+"얼음 깃 학": [
+[
+"r220_glacier_3",
+"old_glacier",
+29,
+"main"
+]
+],
+"얼음 껍질 오소리": [
+[
+"r71_snow_3",
+"snow_hollow",
+7,
+"main"
+]
+],
+"얼음 학": [
+[
+"g_sky_lake",
+"sky_lake",
+13,
+"common"
+]
+],
+"얼음에 갇힌 넋": [
+[
+"r220_glacier_1",
+"old_glacier",
+27,
+"common"
+]
+],
+"엉킨 먹귀 무리": [
+[
+"mk_tower_5",
+"myeongbu_tower",
+44,
+"guardian"
+]
+],
+"역천 표류체": [
+[
+"m_rift",
+"black_tide_rift",
+30,
+"main"
+]
+],
+"연근식귀": [
+[
+"m_17",
+"lotus_marsh",
+7,
+"main"
+]
+],
+"연등 물귀": [
+[
+"r220_sewer_2",
+"lotus_sewer",
+7,
+"common"
+]
+],
+"연못 독두꺼비": [
+[
+"regional_lotus_marsh_guardian",
+"lotus_marsh",
+7,
+"guardian"
+]
+],
+"연밥 물새": [
+[
+"x_lotus_marsh_1",
+"lotus_marsh",
+7,
+"common"
+]
+],
+"연잎 두꺼비": [
+[
+"x_sealed_garden_1",
+"sealed_garden",
+3,
+"common"
+]
+],
+"연화 수귀": [
+[
+"x_lotus_marsh_2",
+"lotus_marsh",
+7,
+"main"
+]
+],
+"연화면": [
+[
+"m_06",
+"sealed_garden",
+3,
+"main"
+]
+],
+"연화원 봉인파쇄귀": [
+[
+"regional_sealed_garden_guardian",
+"sealed_garden",
+3,
+"guardian"
+]
+],
+"염전 갈매기": [
+[
+"x_salt_village_1",
+"salt_village",
+5,
+"common"
+]
+],
+"염전 매복귀": [
+[
+"regional_salt_village_guardian",
+"salt_village",
+5,
+"guardian"
+]
+],
+"옥빛 뱀": [
+[
+"x_jade_pass_1",
+"jade_pass",
+10,
+"common"
+]
+],
+"옥사 쥐 떼": [
+[
+"r71_prison_2",
+"old_prison",
+19,
+"common"
+]
+],
+"용궁 시녀귀": [
+[
+"x_sunken_palace_2",
+"sunken_palace",
+15,
+"main"
+]
+],
+"용암 원령": [
+[
+"x_ash_mountain_2",
+"ash_mountain",
+7,
+"main"
+]
+],
+"용잠 수위": [
+[
+"m_19",
+"sunken_palace",
+15,
+"main"
+]
+],
+"우물가 먹귀": [
+[
+"mk_court_3",
+"nine_court",
+45,
+"main"
+]
+],
+"울음 새는 거울": [
+[
+"r71_vault_3",
+"seal_vault",
+28,
+"main"
+]
+],
+"월식 교도": [
+[
+"g_red_moon_fort",
+"red_moon_fort",
+15,
+"common"
+]
+],
+"월식 박쥐 떼": [
+[
+"x_red_moon_fort_1",
+"red_moon_fort",
+15,
+"common"
+]
+],
+"월식 제사장귀": [
+[
+"r71_altar_5",
+"crimson_altar",
+22,
+"guardian"
+]
+],
+"월식 파계장": [
+[
+"regional_red_moon_fort_guardian",
+"red_moon_fort",
+15,
+"guardian"
+]
+],
+"유리 갑각수": [
+[
+"regional_glass_canyon_guardian",
+"glass_canyon",
+8,
+"guardian"
+]
+],
+"유리 매": [
+[
+"g_glass_canyon",
+"glass_canyon",
+8,
+"common"
+]
+],
+"유리 모래 전갈": [
+[
+"r71_comet_2",
+"comet_crater",
+17,
+"common"
+]
+],
+"유리 전갈": [
+[
+"x_glass_canyon_1",
+"glass_canyon",
+8,
+"common"
+]
+],
+"유성 파편귀": [
+[
+"g_star_observatory",
+"star_observatory",
+25,
+"common"
+]
+],
+"의금부 형리귀": [
+[
+"r71_prison_5",
+"old_prison",
+19,
+"guardian"
+]
+],
+"이끼 쥐떼": [
+[
+"x_sunken_district_1",
+"sunken_district",
+5,
+"common"
+]
+],
+"이름 걸린 허수아비": [
+[
+"mk_field_5",
+"blank_field",
+41,
+"guardian"
+]
+],
+"이름 잃은 사공": [
+[
+"gw_reed_3",
+"ash_reeds",
+32,
+"main"
+]
+],
+"이름 지우는 서리귀": [
+[
+"mk_tower_4",
+"myeongbu_tower",
+45,
+"main"
+]
+],
+"이삭 도깨비": [
+[
+"x_field_outskirts_2",
+"field_outskirts",
+1,
+"main"
+]
+],
+"이슬 먹는 풀벌레 떼": [
+[
+"r71_star_4",
+"star_hill",
+7,
+"main"
+]
+],
+"잔도 매복귀": [
+[
+"x_jade_pass_2",
+"jade_pass",
+11,
+"main"
+]
+],
+"잔도 바람귀": [
+[
+"g_jade_pass",
+"jade_pass",
+10,
+"common"
+]
+],
+"잠긴 장터 수귀": [
+[
+"regional_sunken_district_guardian",
+"sunken_district",
+5,
+"guardian"
+]
+],
+"잠든 배 물귀": [
+[
+"r220_port_1",
+"sleeping_port",
+19,
+"common"
+]
+],
+"장물 거울귀": [
+[
+"r71_lamp_4",
+"lamp_alley",
+7,
+"main"
+]
+],
+"장부 찢는 손": [
+[
+"r220_ledger_4",
+"ledger_cellar",
+20,
+"main"
+]
+],
+"장부고의 먹 거인": [
+[
+"r220_ledger_5",
+"ledger_cellar",
+18,
+"guardian"
+]
+],
+"장부에서 샌 이름": [
+[
+"r220_ledger_1",
+"ledger_cellar",
+18,
+"common"
+]
+],
+"재 묻은 독지네": [
+[
+"r71_ember_4",
+"ember_pass",
+7,
+"main"
+]
+],
+"재갈매기 떼": [
+[
+"g_ash_coast",
+"ash_coast",
+10,
+"common"
+]
+],
+"재비늘 해룡": [
+[
+"m_coast",
+"ash_coast",
+11,
+"main"
+]
+],
+"재화산귀": [
+[
+"m_13",
+"ash_mountain",
+7,
+"main"
+]
+],
+"잿더미 쥐떼": [
+[
+"x_ash_mountain_1",
+"ash_mountain",
+7,
+"common"
+]
+],
+"잿불 여우": [
+[
+"g_ember_village",
+"ember_village",
+5,
+"common"
+]
+],
+"잿비늘 해왕": [
+[
+"regional_ash_coast_guardian",
+"ash_coast",
+10,
+"guardian"
+]
+],
+"잿빛 갈대 어미": [
+[
+"gw_reed_5",
+"ash_reeds",
+30,
+"guardian"
+]
+],
+"잿빛 게 떼": [
+[
+"x_ash_coast_1",
+"ash_coast",
+10,
+"common"
+]
+],
+"잿빛 백로 떼": [
+[
+"gw_reed_2",
+"ash_reeds",
+30,
+"common"
+]
+],
+"저주 인형 무리": [
+[
+"r71_vault_2",
+"seal_vault",
+26,
+"common"
+]
+],
+"적사 독수리": [
+[
+"x_red_plain_1",
+"red_plain",
+5,
+"common"
+]
+],
+"적월 광신 요인": [
+[
+"r71_altar_3",
+"crimson_altar",
+24,
+"main"
+]
+],
+"적월 혈위": [
+[
+"m_12",
+"red_moon_fort",
+17,
+"main"
+]
+],
+"전당포 거미": [
+[
+"gw_market_4",
+"moonless_market",
+38,
+"main"
+]
+],
+"정청 먹귀신": [
+[
+"regional_hq_yard_guardian",
+"hq_yard",
+1,
+"guardian"
+]
+],
+"제물 원령": [
+[
+"r71_altar_2",
+"crimson_altar",
+22,
+"common"
+]
+],
+"종 치는 인형귀": [
+[
+"r71_clock_3",
+"water_clock",
+15,
+"main"
+]
+],
+"종루 파계승": [
+[
+"regional_iron_monastery_guardian",
+"iron_monastery",
+9,
+"guardian"
+]
+],
+"종이학 무리": [
+[
+"g_paper_bridge",
+"paper_bridge",
+3,
+"common"
+]
+],
+"주혈 광맥왕": [
+[
+"regional_crimson_mine_guardian",
+"crimson_mine",
+12,
+"guardian"
+]
+],
+"죽성객": [
+[
+"m_07",
+"ghost_bamboo",
+4,
+"main"
+]
+],
+"죽엽 은자": [
+[
+"x_ghost_bamboo_2",
+"ghost_bamboo",
+4,
+"main"
+]
+],
+"지맥포식자": [
+[
+"m_26",
+"under_root",
+23,
+"main"
+]
+],
+"지붕 까치귀": [
+[
+"g_hq_yard",
+"hq_yard",
+1,
+"common"
+]
+],
+"지워진 칸의 그림자": [
+[
+"mk_court_2",
+"nine_court",
+45,
+"common"
+]
+],
+"지하 수맥귀": [
+[
+"x_under_root_2",
+"under_root",
+23,
+"main"
+]
+],
+"진 그리는 손": [
+[
+"mk_court_4",
+"nine_court",
+45,
+"main"
+]
+],
+"진주 문 해괴": [
+[
+"gw_core_3",
+"gwiheo_core",
+40,
+"main"
+]
+],
+"책벌레 요괴": [
+[
+"g_hq_archive",
+"hq_archive",
+1,
+"common"
+]
+],
+"처마 박쥐": [
+[
+"x_forgotten_city_1",
+"forgotten_city",
+15,
+"common"
+]
+],
+"천경수": [
+[
+"m_16",
+"sky_lake",
+14,
+"main"
+]
+],
+"천년 얼음 거인": [
+[
+"r220_glacier_5",
+"old_glacier",
+27,
+"guardian"
+]
+],
+"천문 거울귀": [
+[
+"x_white_tower_2",
+"white_tower",
+22,
+"main"
+]
+],
+"천문식자": [
+[
+"m_27",
+"white_tower",
+22,
+"main"
+]
+],
+"철종수라": [
+[
+"m_15",
+"iron_monastery",
+10,
+"main"
+]
+],
+"청등 호송귀": [
+[
+"m_jade",
+"jade_pass",
+11,
+"main"
+]
+],
+"촛농 도깨비불": [
+[
+"x_shrine_ruins_1",
+"shrine_ruins",
+1,
+"common"
+]
+],
+"침수 장군": [
+[
+"m_08",
+"sunken_district",
+5,
+"main"
+]
+],
+"칸 지키는 돌거북": [
+[
+"mk_court_1",
+"nine_court",
+45,
+"common"
+]
+],
+"칼 쓴 옥귀": [
+[
+"r71_prison_1",
+"old_prison",
+19,
+"common"
+]
+],
+"탈명 죽간": [
+[
+"m_archive",
+"hq_archive",
+1,
+"main"
+]
+],
+"탑 꼭대기 번갯불": [
+[
+"mk_tower_2",
+"myeongbu_tower",
+44,
+"common"
+]
+],
+"탑 꼭대기 원령": [
+[
+"regional_white_tower_guardian",
+"white_tower",
+20,
+"guardian"
+]
+],
+"팔괘 거울귀": [
+[
+"x_hq_training_2",
+"hq_training",
+1,
+"main"
+]
+],
+"팔괘진 목인장": [
+[
+"regional_hq_training_guardian",
+"hq_training",
+1,
+"guardian"
+]
+],
+"포구를 삼킨 물귀 선장": [
+[
+"r220_port_5",
+"sleeping_port",
+19,
+"guardian"
+]
+],
+"핏달 박쥐": [
+[
+"r71_altar_1",
+"crimson_altar",
+22,
+"common"
+]
+],
+"핏빛 등딱지 게": [
+[
+"r220_dune_4",
+"blood_dunes",
+19,
+"main"
+]
+],
+"핏빛 모래 그림자": [
+[
+"r71_altar_4",
+"crimson_altar",
+24,
+"main"
+]
+],
+"핏빛 사슴귀": [
+[
+"g_red_forest",
+"red_forest",
+18,
+"common"
+]
+],
+"핏잎 나비 떼": [
+[
+"x_red_forest_1",
+"red_forest",
+18,
+"common"
+]
+],
+"하늘 거울귀": [
+[
+"x_sky_lake_2",
+"sky_lake",
+14,
+"main"
+]
+],
+"하늘 깃 매": [
+[
+"r71_comet_3",
+"comet_crater",
+19,
+"main"
+]
+],
+"하수 늙은 자라": [
+[
+"r220_sewer_5",
+"lotus_sewer",
+7,
+"guardian"
+]
+],
+"하수 쥐 떼": [
+[
+"r220_sewer_1",
+"lotus_sewer",
+7,
+"common"
+]
+],
+"하수 쥐왕": [
+[
+"g_old_canal",
+"old_canal",
+3,
+"common"
+]
+],
+"함에서 기어 나온 손": [
+[
+"r71_vault_1",
+"seal_vault",
+26,
+"common"
+]
+],
+"해골 장주": [
+[
+"regional_bone_market_guardian",
+"bone_market",
+5,
+"guardian"
+]
+],
+"해자 악어귀": [
+[
+"g_west_gate",
+"west_gate",
+3,
+"common"
+]
+],
+"해초 독해파리": [
+[
+"r71_tide_4",
+"tide_gate",
+26,
+"main"
+]
+],
+"허수 까마귀": [
+[
+"x_field_outskirts_1",
+"field_outskirts",
+1,
+"common"
+]
+],
+"허수아비 귀": [
+[
+"g_hq_training",
+"hq_training",
+1,
+"common"
+]
+],
+"혈엽수인": [
+[
+"m_21",
+"red_forest",
+19,
+"main"
+]
+],
+"혈월 무사": [
+[
+"x_red_moon_fort_2",
+"red_moon_fort",
+17,
+"main"
+]
+],
+"협곡 바람귀": [
+[
+"x_glass_canyon_2",
+"glass_canyon",
+9,
+"main"
+]
+],
+"혜성 꼬리 정령": [
+[
+"r71_comet_4",
+"comet_crater",
+19,
+"main"
+]
+],
+"혜성 심의 파수꾼": [
+[
+"r71_comet_5",
+"comet_crater",
+17,
+"guardian"
+]
+],
+"호수 거울귀": [
+[
+"regional_sky_lake_guardian",
+"sky_lake",
+13,
+"guardian"
+]
+],
+"화구의 철갑귀": [
+[
+"regional_ash_mountain_guardian",
+"ash_mountain",
+7,
+"guardian"
+]
+],
+"화산 박쥐": [
+[
+"g_ash_mountain",
+"ash_mountain",
+7,
+"common"
+]
+],
+"회랑 끝의 천문 거울": [
+[
+"r71_cloud_5",
+"cloud_corridor",
+23,
+"guardian"
+]
+],
+"흑단 덩굴귀": [
+[
+"mk_forest_2",
+"meokbi_forest",
+42,
+"common"
+]
+],
+"흑사 대법사": [
+[
+"regional_black_sand_temple_guardian",
+"black_sand_temple",
+10,
+"guardian"
+]
+],
+"흑사 박쥐": [
+[
+"x_black_sand_temple_1",
+"black_sand_temple",
+10,
+"common"
+]
+],
+"흑사 전갈": [
+[
+"g_black_sand_temple",
+"black_sand_temple",
+10,
+"common"
+]
+],
+"흑사 주술승": [
+[
+"m_11",
+"black_sand_temple",
+11,
+"main"
+]
+],
+"흰 갈기 늑대왕": [
+[
+"r71_snow_5",
+"snow_hollow",
+5,
+"guardian"
+]
+],
+"흰 사슬 망령": [
+[
+"gw_core_2",
+"gwiheo_core",
+38,
+"common"
+]
+]
+},
+"npcs": {
+"간석의 손녀 물새": "q:sx_mulsae",
+"갈대 베는 반요 아낙 새암": "q:sx_saeam",
+"갈대숲 어부 감실": "q:sx_gamsil",
+"갑문 아낙 연지": "q:sx_yeonji",
+"갑문지기 함복수": "q:sx_boksu",
+"갑술의 아들 보름": "q:sx_boreum",
+"객사 살림꾼 순덕": "q:hs_bomi",
+"객사 찬모 복례": "q:dh_bokrye",
+"객사지기 노철": "q:dh_cheol",
+"갯마을 어부 덕만": "q:sn_deokman",
+"갯벌 소녀 물비": "q:sx_mulbi",
+"갱부 아이 또리": "q:sx_ttori",
+"거울 속 주지": "q:g_juji",
+"견습 관측관 눈송": "q:sx_nunsong",
+"견습 관측생 별이": "q:r71_byeori",
+"견습 대장장이 불똥": "q:sx_bulttong",
+"견습 봉인관 소담": "q:sx_sodam",
+"곰배 영감": "q:r71_gombae",
+"공물 지고 온 아낙 점례": "q:sx_jeomrye",
+"관문 대장장이 철부": "q:rn_cheolbu",
+"관상감 수직 운해": "q:bl_unhae",
+"관측관 망성": "q:sx_mangseong",
+"관측관 유성": "q:sx_yuseong",
+"광부 반장 맹구": "q:sn_maenggu",
+"교를 떠난 아낙 춘화": "q:sx_chunhwa",
+"궁수 위소라": "q:dh_sora",
+"귀허 낚시꾼 무심 영감": "q:sx_musim",
+"귀허의 주인": "q:g_lord",
+"균열 어귀 노인 검쇠": "q:sx_geomsoe",
+"그림자 도둑 사뿐이": "q:sx_sappun",
+"기억 저울 장수": "q:sx_jeoul",
+"기억 조각": "q:g_memory",
+"기와장이 광돌": "q:sx_gwangdol",
+"길잡이 바람이": "q:r220_barami",
+"깃발지기 정심": "q:rn_jeongsim",
+"꼬마 교도 달비": "q:sx_dalbi",
+"꼬마 도깨비 방울": "q:sx_bangul",
+"꼬마 별": "q:sx_kkomabyeol",
+"꼬마 별의 어머니 화선": "q:sx_hwaseon",
+"꼬마 요괴 톡톡이": "q:sx_toktok",
+"꼬마 행자 몽돌": "q:sx_mongdol",
+"나루 주모 달래": "q:sn_dalrae",
+"나루터 반요 아낙 갈미": "q:sx_galmi",
+"나무꾼 하청운": "q:dh_cheongun",
+"낚시꾼 윤가": "q:rn_yunga",
+"남명 뱃사람 풍덕": "q:sx_pungdeok",
+"농부 곽만석": "q:dh_gwak",
+"누각 화공 은결": "q:sn_eungyeol",
+"누리": "q:r71_nuri",
+"누이 청아": "q:sx_cheonga",
+"눈먼 약초꾼 구암": "q:sx_guam",
+"늙은 거북 가온": "q:m_gaon",
+"늙은 관측생 갈현": "q:bl_galhyeon",
+"늙은 광부 덜수": "q:sx_deolsu",
+"늙은 내관 담무": "q:bl_damu",
+"늙은 등대지기 석구": "q:sx_seokgu",
+"늙은 맹우 서강": "q:sx_seogang",
+"늙은 문지기 재채": "q:sx_jaechae",
+"늙은 봉인관 허담": "q:sx_heodam",
+"늙은 어부 구만": "q:sx_guman",
+"늙은 어부 삼만": "q:sx_samman",
+"늙은 어부의 아내 복림": "q:sx_bongnim",
+"늙은 옥졸 마춘": "q:r71_machun",
+"늙은 천문관 운담": "q:r71_undam",
+"다온": "q:mk_daon",
+"단이": "q:g_dani",
+"달을 판 상주": "q:sx_sangju",
+"도장장이 허삼출": "q:sx_samchul",
+"동자 목소리": "q:sx_dongja",
+"등대지기 도화": "q:m_dohwa",
+"등대지기 반돌": "q:sx_bandol",
+"등대지기의 딸 별순": "q:sn_byeolsun",
+"등롱 장인 마일수": "q:dh_ilsu",
+"등잔 장수 쇳대": "q:r71_soetdae",
+"등짐장수 도담": "q:sx_dodam",
+"등짐장수 해솔": "q:sx_haesol",
+"떠돌이 약사 육윤팔": "q:dh_yunpal",
+"떠돌이 장사치 감돌이": "q:sx_gamdol",
+"떠돌이 화공 담채": "q:sx_damchae",
+"떠밀려 온 사내": "q:sx_tteomilin",
+"마중 할멈": "q:sx_majung",
+"막내 관측생 솔이": "q:sx_soli",
+"막내 광부 콩돌": "q:sx_kongdol",
+"막내 동자": "q:sx_mangnae",
+"말뚝지기 백무": "q:m_baekmu",
+"맛봉의 손자 돌복": "q:sx_dolbok",
+"망국 사관 여휘": "q:bl_yeohwi",
+"매듭 속 목소리": "q:sx_knot_voice",
+"먹귀": "q:mk_meok",
+"먹그림자": "q:mk_shadow",
+"무녀 사월": "q:m_sawol",
+"묵호": "q:g_mukho",
+"문턱 파수꾼": "q:sx_munteok",
+"물 밑 목소리": "q:sx_mulmit_voice",
+"물건지기 건짐이": "q:sx_geonjimi",
+"물길잡이 개똥이": "q:dh_gaetong",
+"물막이 일꾼 소금이": "q:sx_sogeumi",
+"물수제비 영감 팽돌": "q:sx_paengdol",
+"미식가 할아범 맛봉": "q:sx_matbong",
+"밀수선 선장 채운": "q:bl_chaeun",
+"반요 갈대지기": "q:sx_galdae",
+"반요 갖바치 오목": "q:sx_omok",
+"반요 낚시꾼 갯돌 영감": "q:sx_gaetdol",
+"반요 노파 끝예": "q:sx_kkeutye",
+"반요 노파 솥덕": "q:sx_sotdeok",
+"반요 대장장이 풀무": "q:sx_pulmu",
+"반요 등짐장수": "q:sx_banyo_deung",
+"반요 떡장수 곱단": "q:sx_gopdan",
+"반요 사내 망돌": "q:sx_mangdol",
+"반요 아낙 호정": "q:sx_hojeong",
+"반요 아이 가락": "q:sx_garak",
+"반요 아이 꼬리": "q:sx_kkori",
+"반요 아이 마루": "q:sx_maru",
+"반요 아이 방개": "q:sx_banggae",
+"반요 초롱장이 불미": "q:sx_bulmi",
+"반요촌 노인 솔부엉": "q:sx_solbueong",
+"반요촌 문지기 갈바람": "q:sx_galbaram",
+"반요촌 문패장이 솔뫼": "q:sx_solmoe",
+"반요촌 바느질 아낙 솔래": "q:sx_sollae",
+"뱃사공 노들": "q:r220_nodeul",
+"뱃집 할미 해비": "q:sx_haebi",
+"벼락 줍는 이 번개": "q:rn_beongae",
+"별자리 기록관 목담": "q:sx_mokdam",
+"보급선 사공 물개": "q:sx_mulgae",
+"보급소 노인 덕보": "q:sx_deokbo",
+"복수의 아내 매화": "q:sx_maehwa",
+"봉연 낚시꾼 두칠": "q:sx_duchil",
+"봉연 파수꾼 윤재음": "q:bl_jaeum",
+"봉인고 서고지기 노송": "q:sx_nosong",
+"봉인고 창고지기 무겸": "q:sx_mugyeom",
+"봉인관 결수": "q:sx_gyeolsu",
+"봉인관 고명": "q:sx_gomyeong",
+"봉인관 목연": "q:sx_mogyeon",
+"봉인관 봉순": "q:sx_bongsun",
+"봉인관 하윤재": "q:r71_hayunjae",
+"봉인장 엄근": "q:sx_eomgeun",
+"부반장 돌개": "q:sx_dolgae",
+"부엌 어멈 복례": "q:sn_bokrye",
+"부적 장수 갈필": "q:sx_galpil",
+"부적장이 금이": "q:sx_geumi",
+"북령 척후 강파": "q:rn_gangpa",
+"불씨지기 아랑": "q:r71_arang",
+"비석 닦는 아이 연옥": "q:bl_yeonok",
+"빙하지기 한설": "q:r220_hanseol",
+"빚 거간 모갑": "q:sx_mogap",
+"뼈 감정사 고분": "q:rn_gobun",
+"사건 서기관 연서희": "q:m_yeon",
+"사냥꾼의 아내 버들": "q:sx_beodeul",
+"사당 공양주 정녀": "q:sx_jeongnyeo",
+"사당 신도 염보": "q:sx_yeombo",
+"사당 향지기 이향": "q:sx_ihyang",
+"사당지기 혼백 가을": "q:dh_gaeul",
+"사막 길잡이 사평": "q:rn_sapyeong",
+"사환 여문": "q:sx_yeomun",
+"상단 행수 말순": "q:sx_malsun",
+"상단 호위 달구": "q:rn_dalgu",
+"상여꾼 화강": "q:bl_hwagang",
+"새 막내 바우": "q:sx_bau",
+"새 출납관 한비": "q:sx_hanbi",
+"새내기 순찰대원 길수": "q:sx_gilsu",
+"서율": "q:mk_seoyul",
+"서하": "q:mk_seoha",
+"선주 계월": "q:r220_gyewol",
+"선주 마흥": "q:sx_maheung",
+"성문 노병 탁대근": "q:dh_daegeun",
+"소매": "q:r71_somae",
+"손녀 분이": "q:sx_bunyi",
+"수맥 지기 은결": "q:bl_eungyeol",
+"수문지기 염수칠": "q:dh_suchil",
+"수문지기 조막심": "q:r71_jomaksim",
+"수정 캐는 노인 갑술": "q:sx_gapsul",
+"순라군 돌쇠": "q:r220_dolsoe",
+"순찰 교도 묵향": "q:rn_mukhyang",
+"순찰 의원 연옥이": "q:dh_yeonok",
+"숯꾼 덕보": "q:r220_deokbo",
+"시각지기 옥련": "q:sx_okryeon",
+"신랑 한결": "q:sx_hangyeol",
+"신부 꽃비": "q:sx_kkotbi",
+"심연 낚시꾼 어두": "q:bl_eodu",
+"암영 선배 서린": "q:sx_seorin",
+"약방 영감 만석": "q:sn_manseok",
+"약방 할멈 고분": "q:dh_gopun",
+"약초꾼 남선화": "q:dh_seonhwa",
+"어린 교도 홍단": "q:sx_hongdan",
+"어린 행자 도윤": "q:rn_doyun",
+"얼굴 좌판 주인 모전": "q:sx_mojeon",
+"얼음 깨는 할미 서덕": "q:sx_seodeok",
+"여덟째의 딸 다래": "q:sx_darae",
+"여울": "q:g_yeoul",
+"연맹 잠수꾼 청파": "q:sn_cheongpa",
+"연밭 처녀 연수": "q:sn_yeonsu",
+"연밭지기 봉구": "q:sn_bonggu",
+"염수돌": "q:sx_sudol",
+"염전 일꾼 옥분": "q:sn_okbun",
+"옛 관아 아전 홍월순": "q:dh_wolsun",
+"옥사의 영 두석": "q:sx_duseok",
+"외딴 등대지기 고막": "q:sx_gomak",
+"외상 옥귀": "q:sx_oesang_okgwi",
+"월식성 문지기 탁무": "q:rn_takmu",
+"월식성 약방 노파 은실": "q:rn_eunsil",
+"월하": "q:mk_wolha",
+"유리장이 해랑": "q:rn_haerang",
+"은퇴한 갑문 목수 간석": "q:sx_ganseok",
+"의금부 형리귀": "q:sx_hyeongri",
+"이름 없는 사환": "q:rn_sahwan",
+"이름 잃은 사공": "q:g_sagong",
+"인장 파수 설백": "q:rn_seolbaek",
+"잔불촌 대장장이 쇠불": "q:sn_soebul",
+"장날을 꾸리는 반요 상쇠": "q:sx_sangsoe",
+"장부지기 소담": "q:r220_sodam",
+"저잣거리 거간 어름": "q:sx_eoreum",
+"전당포 거미": "q:sx_geomi",
+"젊은 어부 너울": "q:sx_neoul",
+"젊은 파수꾼 무진": "q:sx_mujin",
+"정청 서리 문수": "q:dh_munsu",
+"정청 서리 희수": "q:mk_hisu",
+"제단 문지기 벽수": "q:sx_byeoksu",
+"제단 사제 구담": "q:sx_gudam",
+"제단 찬모 옥매": "q:sx_okmae",
+"제자 소림": "q:sx_sorim",
+"조개 목소리": "q:sx_jogae",
+"조개잡이 아낙 모래니": "q:sx_moraeni",
+"조련사 곰실": "q:dh_gomsil",
+"조수 오리": "q:sx_ori",
+"종 치는 인형귀": "q:sx_inhyeong",
+"종이배 접는 아낙 해옥": "q:sx_haeok",
+"종지기 원혼": "q:sx_jongjigi",
+"주막 주모 꽃님": "q:sx_kkotnim",
+"주사 광부 주술이": "q:sx_jusul",
+"주사 광부 차돌": "q:rn_chadol",
+"채취꾼 반장 억쇠": "q:sx_eoksoe",
+"천명원 관측관 서하람": "q:r71_seoharam",
+"천문관 자명": "q:sx_jamyeong",
+"청소 반장 단정": "q:sx_danjeong",
+"청파의 어머니 온덕": "q:sx_ondeok",
+"초롱지기 빛내": "q:sx_bitnae",
+"출납관 윤도한": "q:m_yun",
+"칼 쓴 옥귀": "q:sx_okgwi",
+"파도귀": "q:sx_padogwi",
+"팽돌의 아내 순임": "q:sx_sunim",
+"포목전 주인 대복": "q:sx_daebok",
+"학 접는 아이 보미": "q:dh_bomi",
+"향신료 장수 향분": "q:sx_hyangbun",
+"혈엽림 약초꾼 화옥": "q:sn_hwaok",
+"혈월 무사 경파": "q:sx_gyeongpa",
+"호송대 막내 초롱": "q:rn_chorong",
+"호정의 딸 규순": "q:sx_gyusun",
+"회랑 등지기 연분": "q:sx_yeonbun",
+"회를 떠난 갱부 득수": "q:sx_deuksu",
+"흑련회 거둠꾼 일곱째": "q:sx_ilgopjjae",
+"흑련회 굴꾼 여덟째": "q:sx_yeodeol",
+"흑련회 수금꾼 열한째": "q:sx_yeolhan",
+"흑련회 채굴 감독 반석": "q:bl_banseok"
+},
+"quests": {
+"aq_archivebureau": [
+"젖은 쪽의 먹",
+4,
+908
+],
+"aq_fieldbureau": [
+"귀죽림 순찰로",
+4,
+907
+],
+"aq_headquarters": [
+"서리의 하루",
+4,
+906
+],
+"aq_independent": [
+"명부 밖의 손님",
+4,
+911
+],
+"aq_medicalbureau": [
+"담 밖의 약초밭",
+4,
+910
+],
+"aq_sealbureau": [
+"닫힌 줄 모르는 수문",
+4,
+909
+],
+"cq110_bat_1": [
+"뚝딱이 어디 갔나",
+5,
+1100
+],
+"cq110_bat_2": [
+"물에 비친 방망이",
+9,
+1101
+],
+"cq110_bat_3": [
+"방망이 문 갈매기",
+12,
+1102
+],
+"cq110_bat_4": [
+"벼락 맞은 금 나와라",
+16,
+1108
+],
+"cq110_bat_5": [
+"마지막 뚝딱",
+20,
+1122
+],
+"cq110_pack_1": [
+"아버지의 등짐",
+14,
+1106
+],
+"cq110_pack_2": [
+"옥에 갇힌 외상값",
+19,
+1119
+],
+"cq110_pack_3": [
+"받지 말 것",
+24,
+1141
+],
+"cq110_pack_4": [
+"아버지가 마지막으로 판 것",
+29,
+1162
+],
+"cq110_pack_5": [
+"이름을 사러 온 손님",
+33,
+1189
+],
+"cq110_paint_1": [
+"그림 속 광부",
+23,
+1137
+],
+"cq110_paint_2": [
+"압수된 초상",
+26,
+1150
+],
+"cq110_paint_3": [
+"물에 젖지 않는 그림",
+30,
+1166
+],
+"cq110_paint_4": [
+"거꾸로 그린 얼굴",
+34,
+1195
+],
+"cq110_paint_5": [
+"값을 매길 수 없는 그림",
+38,
+1214
+],
+"fq_sealed_lord": [
+"구중 봉주",
+30,
+999
+],
+"gq_1": [
+"반요촌의 밤",
+30,
+1000
+],
+"gq_2": [
+"갈대 속의 이름",
+32,
+1001
+],
+"gq_3": [
+"거꾸로 선 기도",
+34,
+1002
+],
+"gq_4": [
+"달 없는 장",
+36,
+1003
+],
+"gq_5": [
+"귀허의 주인",
+38,
+1004
+],
+"hs_byeolchae": [
+"객사 별채",
+15,
+950
+],
+"jq2_analyst": [
+"그림자 값",
+18,
+1111
+],
+"jq2_artificer": [
+"물러서지 않는 발",
+18,
+1112
+],
+"jq2_exorcist": [
+"울지 않는 방울",
+18,
+1113
+],
+"jq2_medic": [
+"외상 장부 둘째 권",
+18,
+1114
+],
+"jq2_scout": [
+"달 없는 밤의 과녁",
+18,
+1115
+],
+"jq2_sealmaster": [
+"풀린 봉인 출납",
+18,
+1116
+],
+"jq2_tamer": [
+"옥사에 남은 족제비",
+18,
+1116
+],
+"jq3_analyst": [
+"이름 없는 칼",
+32,
+1178
+],
+"jq3_artificer": [
+"마지막 방패",
+32,
+1179
+],
+"jq3_exorcist": [
+"거꾸로 외는 진언",
+32,
+1180
+],
+"jq3_medic": [
+"반요촌 왕진",
+32,
+1181
+],
+"jq3_scout": [
+"바람을 읽는 깃",
+32,
+1182
+],
+"jq3_sealmaster": [
+"봉인고 열쇠",
+32,
+1183
+],
+"jq3_tamer": [
+"서로 부르는 이름",
+32,
+1183
+],
+"jq_analyst": [
+"이름 붙은 등",
+3,
+905
+],
+"jq_artificer": [
+"마지막 파수의 칼",
+3,
+900
+],
+"jq_exorcist": [
+"방울을 돌려주는 밤",
+3,
+902
+],
+"jq_medic": [
+"외상 장부의 약값",
+3,
+903
+],
+"jq_scout": [
+"빈 과녁의 주인",
+3,
+901
+],
+"jq_sealmaster": [
+"봉인 부적 출납부",
+3,
+904
+],
+"jq_tamer": [
+"이름 없는 불씨",
+3,
+907
+],
+"mkq_1": [
+"먹 거둔 땅",
+40,
+1300
+],
+"mkq_2": [
+"빈칸 벌판",
+41,
+1301
+],
+"mkq_3": [
+"먹비 숲",
+42,
+1302
+],
+"mkq_4": [
+"명부 탑",
+44,
+1303
+],
+"mkq_5": [
+"아홉 칸 뜰",
+45,
+1304
+],
+"mkq_x": [
+"다시 쓰는 명부",
+45,
+1305
+],
+"mq_ash_sea": [
+"재의 바다",
+24,
+7
+],
+"mq_drowned_ledger": [
+"물 밑의 장부",
+5,
+1
+],
+"mq_eclipse_gate": [
+"월식의 문",
+18,
+5
+],
+"mq_frost_seal": [
+"북령의 얼음 인장",
+12,
+3
+],
+"mq_lamp_shadow": [
+"등잔 밑",
+27,
+8
+],
+"mq_nameless_bell": [
+"이름 없는 종",
+15,
+4
+],
+"mq_nine_gates": [
+"구중 봉연",
+30,
+9
+],
+"mq_red_moon_oath": [
+"적월의 서약",
+8,
+2
+],
+"mq_red_seal": [
+"붉은 인장의 실종",
+1,
+0
+],
+"mq_sunken_lantern": [
+"물 밑의 등불",
+21,
+6
+],
+"rq_blood_dunes": [
+"모래에 묻힌 대상",
+17,
+1405
+],
+"rq_cloud_corridor": [
+"구름 위의 마지막 관측",
+23,
+910
+],
+"rq_comet_crater": [
+"하늘에서 떨어진 쇠",
+17,
+909
+],
+"rq_crimson_altar": [
+"붉은 달 아래 순례자",
+22,
+903
+],
+"rq_ember_pass": [
+"꺼지지 않는 불씨",
+5,
+905
+],
+"rq_frost_pine_pass": [
+"식어 버린 숯가마",
+8,
+1402
+],
+"rq_lamp_alley": [
+"등잔골 통행세",
+5,
+906
+],
+"rq_ledger_cellar": [
+"새어 나온 이름",
+18,
+1401
+],
+"rq_lotus_sewer": [
+"꺼지는 연등",
+7,
+1400
+],
+"rq_old_glacier": [
+"녹아내리는 얼음",
+27,
+1403
+],
+"rq_old_prison": [
+"빗장 풀린 옥사",
+19,
+900
+],
+"rq_patrol_office": [
+"끝나지 않은 순라",
+12,
+1404
+],
+"rq_seal_vault": [
+"목록에 없는 상자",
+26,
+901
+],
+"rq_sleeping_port": [
+"안개 속 무역선",
+19,
+1406
+],
+"rq_snow_hollow": [
+"설피 장인의 겨울 채비",
+5,
+904
+],
+"rq_star_hill": [
+"견습생의 잃어버린 성도",
+5,
+907
+],
+"rq_tide_gate": [
+"만조를 기다리는 사람",
+24,
+902
+],
+"rq_water_clock": [
+"멈춘 시각을 다시",
+13,
+908
+],
+"sq110_backward_clock": [
+"거꾸로 가는 물시계",
+14,
+1107
+],
+"sq110_black_tide_lamps": [
+"검은 물결 위의 등",
+28,
+1156
+],
+"sq110_cangue_ghost": [
+"칼 쓴 옥귀의 상소",
+19,
+1120
+],
+"sq110_dragon_soup": [
+"흑룡 어보탕",
+28,
+1157
+],
+"sq110_e_doorplate": [
+"지워지는 문패",
+39,
+1219
+],
+"sq110_e_ink": [
+"먹을 사는 사람",
+37,
+1209
+],
+"sq110_e_mark": [
+"봉연 물길의 표식",
+30,
+1167
+],
+"sq110_f_lotus": [
+"맡긴 이름의 이자",
+22,
+1131
+],
+"sq110_f_lotus2": [
+"회주의 장부",
+28,
+1158
+],
+"sq110_f_mandate": [
+"예언하지 않은 날",
+26,
+1151
+],
+"sq110_f_mandate2": [
+"예언을 깨뜨린 별",
+32,
+1184
+],
+"sq110_f_north": [
+"얼음 맹세를 잇는 사람",
+18,
+1117
+],
+"sq110_f_north2": [
+"맹약지의 겨울잠",
+24,
+1142
+],
+"sq110_f_office": [
+"서고 맨 끝 칸",
+31,
+1171
+],
+"sq110_f_office2": [
+"거두지 않은 이름",
+35,
+1198
+],
+"sq110_f_redmoon": [
+"대호법이 외운 이름",
+23,
+1138
+],
+"sq110_f_redmoon2": [
+"월식 아래 남은 사람들",
+29,
+1163
+],
+"sq110_f_river": [
+"뱃길 장부의 빈칸",
+25,
+1146
+],
+"sq110_f_river2": [
+"빈칸에 이름을 쓰는 날",
+30,
+1168
+],
+"sq110_f_south": [
+"바다로 옮긴 불씨",
+20,
+1123
+],
+"sq110_f_south2": [
+"망국의 마지막 백성",
+29,
+1164
+],
+"sq110_false_oracle": [
+"붉은 제단의 가짜 신탁",
+22,
+1132
+],
+"sq110_ferryman_mask": [
+"이름 잃은 사공의 탈",
+35,
+1199
+],
+"sq110_first_market": [
+"반요촌 첫 장날",
+31,
+1172
+],
+"sq110_gull_wedding": [
+"소금 갈매기 혼례",
+24,
+1143
+],
+"sq110_hanging_boys": [
+"거꾸로 매달린 동자",
+33,
+1190
+],
+"sq110_ice_letter": [
+"얼음 속 편지",
+12,
+1103
+],
+"sq110_inverted_incense": [
+"거꾸로 피우는 향",
+34,
+1196
+],
+"sq110_last_depot": [
+"봉연 앞 마지막 보급소",
+29,
+1165
+],
+"sq110_memory_scale": [
+"기억 저울 장수",
+36,
+1204
+],
+"sq110_moon_mourner": [
+"달을 판 상주",
+37,
+1210
+],
+"sq110_pawn_spider": [
+"전당포 거미의 장부",
+37,
+1211
+],
+"sq110_pearl_rod": [
+"귀허 진주 낚싯대",
+38,
+1215
+],
+"sq110_reed_name": [
+"갈대가 부르는 이름",
+31,
+1173
+],
+"sq110_returning_wave": [
+"돌아오는 파도",
+39,
+1220
+],
+"sq110_root_folk": [
+"뿌리 아래 사는 사람들",
+21,
+1127
+],
+"sq110_s_bomi": [
+"천 번째 학",
+27,
+1124
+],
+"sq110_s_byeolsun": [
+"대답한 등대",
+28,
+1159
+],
+"sq110_s_chaeun": [
+"빚 갚는 배",
+31,
+1174
+],
+"sq110_s_cheolbu": [
+"내일 하려던 부탁",
+19,
+1121
+],
+"sq110_s_cheongun": [
+"숲이 배운 노래",
+27,
+1128
+],
+"sq110_s_chorong": [
+"막내가 이끄는 호송대",
+27,
+1154
+],
+"sq110_s_dalgu": [
+"술값으로 갚겠다던 빚",
+21,
+1129
+],
+"sq110_s_doyun": [
+"수좌가 되던 날",
+22,
+1133
+],
+"sq110_s_eodu": [
+"아들을 낚는 줄",
+38,
+1216
+],
+"sq110_s_eunsil": [
+"흰 달의 제자",
+25,
+1147
+],
+"sq110_s_haerang": [
+"빌려준 얼굴",
+36,
+1205
+],
+"sq110_s_maenggu": [
+"돌아보지 않은 이름",
+21,
+1130
+],
+"sq110_s_sahwan": [
+"이름을 찾은 사환",
+22,
+1134
+],
+"sq110_s_sapyeong": [
+"지팡이에 새긴 이름",
+37,
+1212
+],
+"sq110_s_soetdae": [
+"섬까지 온 등잔 장수",
+35,
+1200
+],
+"sq110_s_somae": [
+"도망친 끝",
+32,
+1185
+],
+"sq110_s_suchil": [
+"돌아온 배",
+24,
+1144
+],
+"sq110_s_yeohwi": [
+"명부의 나머지 줄",
+33,
+1191
+],
+"sq110_s_yeonok": [
+"칼 대신 바구니",
+22,
+1135
+],
+"sq110_s_yeonsu": [
+"삼십 년 계약의 끝",
+20,
+1125
+],
+"sq110_s_yunpal": [
+"동생의 거울",
+28,
+1160
+],
+"sq110_singing_pick": [
+"노래하는 곡괭이",
+13,
+1104
+],
+"sq110_sleepy_astronomer": [
+"잠꾸러기 천문관",
+20,
+1126
+],
+"sq110_spinning_child": [
+"실 잣는 반요 아이",
+32,
+1186
+],
+"sq110_star_child": [
+"별똥 줍는 아이",
+17,
+1110
+],
+"sq110_star_cookoff": [
+"관성대 요리 겨루기",
+25,
+1148
+],
+"sq110_struck_jujube": [
+"벼락 맞은 대추나무",
+16,
+1109
+],
+"sq110_tide_pulley": [
+"밀물 도르래",
+24,
+1145
+],
+"sq110_weeping_mirror": [
+"울음 새는 거울",
+26,
+1152
+],
+"sq111_abyss_angler": [
+"봉연 물밑 낚시꾼",
+30,
+1169
+],
+"sq111_abyss_contest": [
+"봉연 끝의 낚시 대회",
+36,
+1206
+],
+"sq111_abyss_moss": [
+"봉연 이끼 따기",
+31,
+1175
+],
+"sq111_altar_cake": [
+"제단에 바칠 떡",
+23,
+1139
+],
+"sq111_bell_ringer": [
+"사당 종지기 원혼",
+34,
+1197
+],
+"sq111_chain_knot": [
+"사슬 매듭 풀기",
+31,
+1176
+],
+"sq111_clam_grave": [
+"갑문 아래 조개 무덤",
+25,
+1149
+],
+"sq111_crystal_miner": [
+"망각 수정 캐는 노인",
+37,
+1213
+],
+"sq111_first_fish": [
+"반요촌 아이들의 첫 물고기",
+31,
+1177
+],
+"sq111_first_iron": [
+"반요촌 대장간의 첫 쇠",
+30,
+1170
+],
+"sq111_full_catch": [
+"흑조 균열 만선 잔치",
+33,
+1192
+],
+"sq111_hunter_debt": [
+"갈대숲 사냥꾼의 빚",
+32,
+1187
+],
+"sq111_inverted_quilt": [
+"거꾸로 짠 이불",
+33,
+1193
+],
+"sq111_keeper_supper": [
+"등대지기의 저녁상",
+18,
+1118
+],
+"sq111_lantern_maker": [
+"달 없는 밤의 등롱 장인",
+36,
+1207
+],
+"sq111_last_angler": [
+"귀허의 마지막 낚시꾼",
+39,
+1221
+],
+"sq111_last_believer": [
+"사당의 마지막 신도",
+35,
+1201
+],
+"sq111_lens_cloth": [
+"관성대 천리경 닦개",
+26,
+1153
+],
+"sq111_paper_boat": [
+"귀허로 띄우는 배",
+39,
+1222
+],
+"sq111_pearl_clams": [
+"귀허 갯벌의 진주조개",
+38,
+1217
+],
+"sq111_reed_drowned": [
+"갈대숲 물귀신 낚기",
+35,
+1202
+],
+"sq111_reed_wedding": [
+"갈대숲 혼례 상",
+32,
+1188
+],
+"sq111_rift_cutlass": [
+"균열 끝의 초롱아귀",
+28,
+1161
+],
+"sq111_root_herbalist": [
+"뿌리 약초꾼의 마지막 약",
+22,
+1136
+],
+"sq111_shadow_pickpocket": [
+"저잣거리 소매치기 그림자",
+36,
+1208
+],
+"sq111_shrine_tiles": [
+"사당 지붕 기와",
+33,
+1194
+],
+"sq111_skipping_stone": [
+"물수제비 할아범",
+13,
+1105
+],
+"sq111_spice_thief": [
+"저잣거리 향신료 도둑",
+35,
+1203
+],
+"sq111_threshold_guard": [
+"귀허 문턱의 파수꾼",
+38,
+1218
+],
+"sq111_tide_letter": [
+"만조에 낚는 편지",
+23,
+1140
+],
+"sq111_vault_dust": [
+"봉인고 먼지 털이",
+27,
+1155
+],
+"sq_ash_coast_1": [
+"이름을 엮은 그물",
+10,
+48
+],
+"sq_ash_coast_2": [
+"난파한 관선의 항해일지",
+12,
+49
+],
+"sq_ash_mountain_1": [
+"화구 아래 쇠",
+7,
+66
+],
+"sq_ash_mountain_2": [
+"관문의 망치",
+8,
+67
+],
+"sq_black_sand_temple_1": [
+"새어 나오는 기도",
+10,
+62
+],
+"sq_black_sand_temple_2": [
+"빈 명부의 마지막 줄",
+12,
+63
+],
+"sq_black_tide_rift_1": [
+"검은 물에 드리운 낚싯줄",
+29,
+86
+],
+"sq_black_tide_rift_2": [
+"거꾸로 떠도는 선원들",
+30,
+87
+],
+"sq_bone_market_1": [
+"뼈에 새긴 빚",
+6,
+56
+],
+"sq_bone_market_2": [
+"화살 없는 호위",
+5,
+57
+],
+"sq_burial_steps_1": [
+"빈 관을 멘 행렬",
+11,
+80
+],
+"sq_burial_steps_2": [
+"비석에 앉은 재",
+10,
+81
+],
+"sq_crimson_mine_1": [
+"막장의 곡괭이 소리",
+12,
+50
+],
+"sq_crimson_mine_2": [
+"광부들의 마지막 몫",
+13,
+51
+],
+"sq_ember_village_1": [
+"꺼지지 않은 부뚜막",
+5,
+46
+],
+"sq_ember_village_2": [
+"한팔 장군의 칼",
+6,
+47
+],
+"sq_field_outskirts_1": [
+"이삭 도깨비의 품삯",
+1,
+10
+],
+"sq_field_outskirts_2": [
+"순찰길 구급 바구니",
+1,
+11
+],
+"sq_forgotten_city_1": [
+"종이 지나간 길",
+16,
+82
+],
+"sq_forgotten_city_2": [
+"무명 황제의 마지막 조회",
+16,
+83
+],
+"sq_frost_valley_1": [
+"녹지 않는 소금",
+12,
+72
+],
+"sq_frost_valley_2": [
+"얼음 밑의 두드림",
+13,
+73
+],
+"sq_ghost_bamboo_1": [
+"대숲 독사녀의 노래",
+4,
+32
+],
+"sq_ghost_bamboo_2": [
+"독 푸는 처방",
+4,
+33
+],
+"sq_glass_canyon_1": [
+"깨진 거울의 값",
+8,
+60
+],
+"sq_glass_canyon_2": [
+"같은 얼굴 둘",
+9,
+61
+],
+"sq_hidden_bazaar_1": [
+"빚진 이름의 행방",
+10,
+78
+],
+"sq_hidden_bazaar_2": [
+"잠 못 드는 주판",
+11,
+79
+],
+"sq_hq_archive_1": [
+"곰팡 핀 서가 수선",
+1,
+20
+],
+"sq_hq_archive_2": [
+"빈 서가 한 칸",
+1,
+21
+],
+"sq_hq_dorm_1": [
+"야간 당번의 도시락",
+1,
+12
+],
+"sq_hq_dorm_2": [
+"열두 번째 방의 손님",
+2,
+13
+],
+"sq_hq_training_1": [
+"목인을 다시 세워라",
+1,
+14
+],
+"sq_hq_training_2": [
+"과녁 앞의 화살 묶음",
+1,
+15
+],
+"sq_hq_yard_1": [
+"처마 밑 정화 부적",
+3,
+16
+],
+"sq_hq_yard_2": [
+"거꾸로 감긴 금줄",
+2,
+17
+],
+"sq_iron_monastery_1": [
+"잔도 위의 목탁",
+10,
+68
+],
+"sq_iron_monastery_2": [
+"찢어진 기도 깃발",
+9,
+69
+],
+"sq_jade_pass_1": [
+"호송대의 약 보따리",
+10,
+70
+],
+"sq_jade_pass_2": [
+"청등 호송대의 마지막 길",
+11,
+71
+],
+"sq_lantern_market_1": [
+"약방 할멈의 외상 장부",
+1,
+18
+],
+"sq_lantern_market_2": [
+"등롱 장인의 쇠살",
+1,
+19
+],
+"sq_lotus_marsh_1": [
+"연밥 따는 손",
+7,
+40
+],
+"sq_lotus_marsh_2": [
+"연밭을 갉는 것",
+8,
+41
+],
+"sq_mirror_pavilion_1": [
+"물거울에만 비치는 얼굴",
+9,
+42
+],
+"sq_mirror_pavilion_2": [
+"그림 속 무희를 재우는 부적",
+10,
+43
+],
+"sq_nine_lighthouse_1": [
+"꺼진 등대에 다시 불을",
+14,
+54
+],
+"sq_nine_lighthouse_2": [
+"아홉 불 아래 잠든 종",
+15,
+55
+],
+"sq_old_canal_1": [
+"수문지기의 저녁상",
+3,
+24
+],
+"sq_old_canal_2": [
+"수문아귀의 배 속",
+5,
+25
+],
+"sq_paper_bridge_1": [
+"천 마리 종이학",
+3,
+26
+],
+"sq_paper_bridge_2": [
+"먹물을 삼킨 메기",
+5,
+27
+],
+"sq_red_forest_1": [
+"핏잎 아래 약초꾼",
+18,
+52
+],
+"sq_red_forest_2": [
+"지지 않는 단풍",
+19,
+53
+],
+"sq_red_moon_fort_1": [
+"성벽 위의 시험",
+15,
+64
+],
+"sq_red_moon_fort_2": [
+"달빛 끓이는 밤",
+16,
+65
+],
+"sq_red_plain_1": [
+"모래가 삼킨 발자국",
+5,
+58
+],
+"sq_red_plain_2": [
+"주사로 쓴 서약",
+6,
+59
+],
+"sq_river_ferry_1": [
+"나루 주막의 빈 솥",
+3,
+36
+],
+"sq_river_ferry_2": [
+"지워진 뱃길 한 줄",
+5,
+37
+],
+"sq_salt_village_1": [
+"소금각시의 혼삿날",
+5,
+38
+],
+"sq_salt_village_2": [
+"짠 바람 약방",
+6,
+39
+],
+"sq_sealed_abyss_1": [
+"다시 감기는 사슬",
+30,
+92
+],
+"sq_sealed_abyss_2": [
+"봉연의 숨결",
+30,
+93
+],
+"sq_sealed_garden_1": [
+"연화원 약초밭",
+3,
+28
+],
+"sq_sealed_garden_2": [
+"물 주는 손",
+3,
+29
+],
+"sq_shrine_ruins_1": [
+"깨진 방울의 조각",
+1,
+22
+],
+"sq_shrine_ruins_2": [
+"방울 먹은 언니",
+2,
+23
+],
+"sq_sky_lake_1": [
+"하늘을 낚는 노인",
+13,
+74
+],
+"sq_sky_lake_2": [
+"호숫가의 죽 한 그릇",
+14,
+75
+],
+"sq_star_observatory_1": [
+"관성대의 등잔 밑",
+27,
+90
+],
+"sq_star_observatory_2": [
+"내려오지 않은 별지기",
+25,
+91
+],
+"sq_sunken_district_1": [
+"침수 장군의 장부함",
+5,
+34
+],
+"sq_sunken_district_2": [
+"물 밑을 비추는 등잔",
+5,
+35
+],
+"sq_sunken_palace_1": [
+"수궁 문지기 교대",
+14,
+44
+],
+"sq_sunken_palace_2": [
+"등롱어가 무는 밤",
+16,
+45
+],
+"sq_thunder_peak_1": [
+"벼락이 굳힌 핵",
+16,
+76
+],
+"sq_thunder_peak_2": [
+"벼락을 부르는 문",
+18,
+77
+],
+"sq_under_root_1": [
+"뿌리가 마시는 숨",
+21,
+84
+],
+"sq_under_root_2": [
+"종이 쉬어 간 자리",
+22,
+85
+],
+"sq_west_gate_1": [
+"끝나지 않는 순찰",
+3,
+30
+],
+"sq_west_gate_2": [
+"노병의 창날",
+3,
+31
+],
+"sq_white_tower_1": [
+"하나 모자란 별모래",
+20,
+88
+],
+"sq_white_tower_2": [
+"마흔 해 깨어 있던 눈",
+21,
+89
+]
+},
+"recipes": {
+"a2_iron": [
+"r_a2_iron",
+5,
+"smithing"
+],
+"a2_light": [
+"r_a2_light",
+5,
+"leatherwork"
+],
+"a2_robe": [
+"r_a2_robe",
+5,
+"weaving"
+],
+"a2_shade": [
+"r_a2_shade",
+5,
+"leatherwork"
+],
+"a3_iron": [
+"r_a3_iron",
+10,
+"smithing"
+],
+"a3_light": [
+"r_a3_light",
+10,
+"leatherwork"
+],
+"a3_robe": [
+"r_a3_robe",
+10,
+"weaving"
+],
+"a3_shade": [
+"r_a3_shade",
+10,
+"leatherwork"
+],
+"a4_iron": [
+"r_a4_iron",
+15,
+"smithing"
+],
+"a4_light": [
+"r_a4_light",
+15,
+"leatherwork"
+],
+"a4_robe": [
+"r_a4_robe",
+15,
+"weaving"
+],
+"a4_shade": [
+"r_a4_shade",
+15,
+"leatherwork"
+],
+"a5_light": [
+"r_a5_light",
+20,
+"leatherwork"
+],
+"a6_iron": [
+"r_a6_iron",
+32,
+"smithing"
+],
+"a6_light": [
+"r_a6_light",
+32,
+"leatherwork"
+],
+"a6_robe": [
+"r_a6_robe",
+32,
+"weaving"
+],
+"a6_shade": [
+"r_a6_shade",
+32,
+"leatherwork"
+],
+"a7_iron": [
+"r_a7_iron",
+42,
+"smithing"
+],
+"a7_light": [
+"r_a7_light",
+42,
+"leatherwork"
+],
+"a7_robe": [
+"r_a7_robe",
+42,
+"weaving"
+],
+"a7_shade": [
+"r_a7_shade",
+42,
+"leatherwork"
+],
+"alfonsino_salt_grill": [
+"r_alfonsino_salt_grill",
+9,
+"cooking"
+],
+"ammo_arrow": [
+"make_ammo_arrow",
+1,
+"carpentry"
+],
+"ammo_bolt": [
+"make_ammo_bolt",
+1,
+"carpentry"
+],
+"ammo_dart": [
+"make_ammo_dart",
+1,
+"carpentry"
+],
+"angler_gall_pill": [
+"r_angler_gall_pill",
+28,
+"alchemy"
+],
+"ashwhisker_herbal_soup": [
+"r_ashwhisker_herbal_soup",
+30,
+"cooking"
+],
+"bark_stew": [
+"cook_bark_stew",
+24,
+"cooking"
+],
+"belltower_catfish_steam": [
+"r_belltower_catfish_steam",
+5,
+"cooking"
+],
+"bitterling_ink": [
+"r_bitterling_ink",
+24,
+"sealing"
+],
+"blank_fill_pill": [
+"r_blank_fill_pill",
+40,
+"alchemy"
+],
+"bream_sashimi": [
+"cook_bream_sashimi",
+10,
+"cooking"
+],
+"bronze_charm": [
+"make_charm",
+3,
+"artifice"
+],
+"bronze_scale_plate": [
+"r_bronze_scale_plate",
+28,
+"smithing"
+],
+"calm_brew": [
+"brew_calm",
+3,
+"alchemy"
+],
+"carp_broth": [
+"cook_carp_broth",
+5,
+"cooking"
+],
+"carp_glue": [
+"r_carp_glue",
+24,
+"leatherwork"
+],
+"catfish_braise": [
+"cook_catfish",
+4,
+"cooking"
+],
+"char_grill": [
+"cook_char",
+15,
+"cooking"
+],
+"clear_spirit_pill": [
+"clear_spirit_pill_recipe",
+2,
+"alchemy"
+],
+"cod_soup": [
+"cook_cod_soup",
+11,
+"cooking"
+],
+"comet_dolphinfish_grill": [
+"r_comet_dolphinfish_grill",
+25,
+"cooking"
+],
+"croaker_soup": [
+"cook_croaker_soup",
+13,
+"cooking"
+],
+"crucian_reed_porridge": [
+"r_crucian_reed_porridge",
+20,
+"cooking"
+],
+"dark_eye_drops": [
+"r_dark_eye_drops",
+24,
+"alchemy"
+],
+"dragon_eye_essence": [
+"r_dragon_eye_essence",
+40,
+"alchemy"
+],
+"dragon_feast": [
+"cook_dragon_feast",
+28,
+"cooking"
+],
+"dried_croaker": [
+"cook_dried_croaker",
+11,
+"cooking"
+],
+"drowned_scale": [
+"strip_silver_scale",
+16,
+"leatherwork"
+],
+"eel_tonic": [
+"cook_eel_tonic",
+5,
+"cooking"
+],
+"ember_gall_pill": [
+"r_ember_gall_pill",
+28,
+"alchemy"
+],
+"field_knife_2": [
+"pick_upgrade",
+1,
+"smithing"
+],
+"fine_paper": [
+"make_fine_paper",
+1,
+"sealing"
+],
+"fish_fillet": [
+"fillet_ash_lanternfish",
+1,
+"cooking"
+],
+"fish_oil_lamp": [
+"make_oil_lamp",
+5,
+"artifice"
+],
+"fish_porridge": [
+"cook_fish_porridge",
+1,
+"cooking"
+],
+"fishing_rod": [
+"make_fishing_rod",
+1,
+"carpentry"
+],
+"flounder_sashimi": [
+"cook_flounder_sashimi",
+9,
+"cooking"
+],
+"goby_braise": [
+"r_goby_braise",
+20,
+"cooking"
+],
+"goby_soup": [
+"cook_goby",
+6,
+"cooking"
+],
+"grand_pill": [
+"brew_grand_pill",
+16,
+"alchemy"
+],
+"grilled_fish": [
+"cook_grilled_fish",
+1,
+"cooking"
+],
+"grouper_steam": [
+"cook_grouper_steam",
+20,
+"cooking"
+],
+"guard_spear": [
+"guard_spear_recipe",
+5,
+"smithing"
+],
+"h2_calm": [
+"r_h2_calm",
+5,
+"weaving"
+],
+"h2_guard": [
+"r_h2_guard",
+5,
+"weaving"
+],
+"h2_wise": [
+"r_h2_wise",
+5,
+"weaving"
+],
+"h3_calm": [
+"r_h3_calm",
+10,
+"weaving"
+],
+"h3_guard": [
+"r_h3_guard",
+10,
+"weaving"
+],
+"h3_wise": [
+"r_h3_wise",
+10,
+"weaving"
+],
+"h4_calm": [
+"r_h4_calm",
+15,
+"weaving"
+],
+"h4_guard": [
+"r_h4_guard",
+15,
+"weaving"
+],
+"h4_wise": [
+"r_h4_wise",
+15,
+"weaving"
+],
+"h5_calm": [
+"r_h5_calm",
+20,
+"weaving"
+],
+"h6_calm": [
+"r_h6_calm",
+32,
+"weaving"
+],
+"h6_guard": [
+"r_h6_guard",
+32,
+"smithing"
+],
+"h6_wise": [
+"r_h6_wise",
+32,
+"weaving"
+],
+"h7_calm": [
+"r_h7_calm",
+42,
+"weaving"
+],
+"h7_guard": [
+"r_h7_guard",
+42,
+"smithing"
+],
+"h7_wise": [
+"r_h7_wise",
+42,
+"weaving"
+],
+"haeryong_feast": [
+"cook_haeryong_feast",
+24,
+"cooking"
+],
+"hagfish_grill": [
+"cook_hagfish",
+20,
+"cooking"
+],
+"hairtail_braise": [
+"cook_hairtail",
+10,
+"cooking"
+],
+"heavenly_dew": [
+"heavenly_dew_recipe",
+12,
+"alchemy"
+],
+"herb_fish_steam": [
+"cook_herb_fish",
+3,
+"cooking"
+],
+"herb_rice": [
+"cook_herb_rice",
+1,
+"cooking"
+],
+"herbal_extract": [
+"extract_herb",
+1,
+"alchemy"
+],
+"hf_aquarium": [
+"r_hf_aquarium",
+15,
+"carpentry"
+],
+"hf_bandaji": [
+"r_hf_bandaji",
+8,
+"carpentry"
+],
+"hf_bedding_cotton": [
+"r_hf_bedding_cotton",
+8,
+"weaving"
+],
+"hf_bedding_silk": [
+"r_hf_bedding_silk",
+15,
+"weaving"
+],
+"hf_bonsai_pine": [
+"r_hf_bonsai_pine",
+15,
+"artifice"
+],
+"hf_bookshelf": [
+"r_hf_bookshelf",
+15,
+"carpentry"
+],
+"hf_brazier_brass": [
+"r_hf_brazier_brass",
+8,
+"smithing"
+],
+"hf_celadon_maebyeong": [
+"r_hf_celadon_maebyeong",
+15,
+"artifice"
+],
+"hf_cushion_obang": [
+"r_hf_cushion_obang",
+1,
+"carpentry"
+],
+"hf_door_jangji": [
+"r_hf_door_jangji",
+8,
+"carpentry"
+],
+"hf_fan_taegeuk": [
+"r_hf_fan_taegeuk",
+1,
+"sealing"
+],
+"hf_frame_large": [
+"r_hf_frame_large",
+8,
+"carpentry"
+],
+"hf_frame_small": [
+"r_hf_frame_small",
+1,
+"carpentry"
+],
+"hf_gayageum": [
+"r_hf_gayageum",
+20,
+"carpentry"
+],
+"hf_jar_moon": [
+"r_hf_jar_moon",
+15,
+"artifice"
+],
+"hf_lamp_jwadeung": [
+"r_hf_lamp_jwadeung",
+8,
+"artifice"
+],
+"hf_onggi": [
+"r_hf_onggi",
+1,
+"artifice"
+],
+"hf_pet_ball": [
+"r_hf_pet_ball",
+1,
+"weaving"
+],
+"hf_pet_basket_cave": [
+"r_hf_pet_basket_cave",
+8,
+"weaving"
+],
+"hf_pet_bell": [
+"r_hf_pet_bell",
+1,
+"smithing"
+],
+"hf_pet_birdhouse": [
+"r_hf_pet_birdhouse",
+8,
+"carpentry"
+],
+"hf_pet_bowl": [
+"r_hf_pet_bowl",
+1,
+"smithing"
+],
+"hf_pet_cloud_cushion": [
+"r_hf_pet_cloud_cushion",
+15,
+"weaving"
+],
+"hf_pet_honeycomb": [
+"r_hf_pet_honeycomb",
+1,
+"carpentry"
+],
+"hf_pet_log_scratch": [
+"r_hf_pet_log_scratch",
+1,
+"carpentry"
+],
+"hf_pet_lotus_basin": [
+"r_hf_pet_lotus_basin",
+8,
+"artifice"
+],
+"hf_pet_mirror_ball": [
+"r_hf_pet_mirror_ball",
+8,
+"artifice"
+],
+"hf_pet_mossbed": [
+"r_hf_pet_mossbed",
+1,
+"weaving"
+],
+"hf_pet_nest": [
+"r_hf_pet_nest",
+1,
+"weaving"
+],
+"hf_pet_perch": [
+"r_hf_pet_perch",
+8,
+"carpentry"
+],
+"hf_pet_quilt": [
+"r_hf_pet_quilt",
+8,
+"weaving"
+],
+"hf_pet_spirit_lamp": [
+"r_hf_pet_spirit_lamp",
+8,
+"artifice"
+],
+"hf_pet_stone_seat": [
+"r_hf_pet_stone_seat",
+8,
+"artifice"
+],
+"hf_pet_stump": [
+"r_hf_pet_stump",
+1,
+"carpentry"
+],
+"hf_pet_talisman_cushion": [
+"r_hf_pet_talisman_cushion",
+1,
+"weaving"
+],
+"hf_pet_tidepool": [
+"r_hf_pet_tidepool",
+1,
+"artifice"
+],
+"hf_pet_tower": [
+"r_hf_pet_tower",
+15,
+"carpentry"
+],
+"hf_pet_waterbowl": [
+"r_hf_pet_waterbowl",
+1,
+"artifice"
+],
+"hf_pot_bamboo": [
+"r_hf_pot_bamboo",
+8,
+"artifice"
+],
+"hf_pot_orchid": [
+"r_hf_pot_orchid",
+1,
+"artifice"
+],
+"hf_pungno": [
+"r_hf_pungno",
+1,
+"smithing"
+],
+"hf_rubbing_ashwhisker_catfish": [
+"r_hf_rubbing_ashwhisker_catfish",
+30,
+"sealing"
+],
+"hf_rubbing_bamboo_eel": [
+"r_hf_rubbing_bamboo_eel",
+40,
+"sealing"
+],
+"hf_rubbing_belltower_catfish": [
+"r_hf_rubbing_belltower_catfish",
+5,
+"sealing"
+],
+"hf_rubbing_blank_snakehead": [
+"r_hf_rubbing_blank_snakehead",
+40,
+"sealing"
+],
+"hf_rubbing_blind_dragon": [
+"r_hf_rubbing_blind_dragon",
+40,
+"sealing"
+],
+"hf_rubbing_comet_dolphinfish": [
+"r_hf_rubbing_comet_dolphinfish",
+25,
+"sealing"
+],
+"hf_rubbing_doorplate_carp": [
+"r_hf_rubbing_doorplate_carp",
+40,
+"sealing"
+],
+"hf_rubbing_ember_lantern_angler": [
+"r_hf_rubbing_ember_lantern_angler",
+28,
+"sealing"
+],
+"hf_rubbing_inkscale_tuna": [
+"r_hf_rubbing_inkscale_tuna",
+40,
+"sealing"
+],
+"hf_rubbing_meokbi_salmon": [
+"r_hf_rubbing_meokbi_salmon",
+40,
+"sealing"
+],
+"hf_rubbing_mirror_ice_char": [
+"r_hf_rubbing_mirror_ice_char",
+13,
+"sealing"
+],
+"hf_rubbing_moonglass_trout": [
+"r_hf_rubbing_moonglass_trout",
+10,
+"sealing"
+],
+"hf_rubbing_paperboat_mandarin": [
+"r_hf_rubbing_paperboat_mandarin",
+3,
+"sealing"
+],
+"hf_rubbing_sleeping_king_sturgeon": [
+"r_hf_rubbing_sleeping_king_sturgeon",
+14,
+"sealing"
+],
+"hf_rubbing_smuggler_alfonsino": [
+"r_hf_rubbing_smuggler_alfonsino",
+9,
+"sealing"
+],
+"hf_rug_hemp": [
+"r_hf_rug_hemp",
+1,
+"weaving"
+],
+"hf_rug_hwamun": [
+"r_hf_rug_hwamun",
+8,
+"weaving"
+],
+"hf_rug_ink_pond": [
+"r_hf_rug_ink_pond",
+40,
+"weaving"
+],
+"hf_rug_mojeon": [
+"r_hf_rug_mojeon",
+15,
+"weaving"
+],
+"hf_rug_straw": [
+"r_hf_rug_straw",
+1,
+"weaving"
+],
+"hf_rug_unhak": [
+"r_hf_rug_unhak",
+20,
+"weaving"
+],
+"hf_screen_sansu": [
+"r_hf_screen_sansu",
+15,
+"carpentry"
+],
+"hf_scroll_orchid": [
+"r_hf_scroll_orchid",
+1,
+"sealing"
+],
+"hf_scroll_sansu": [
+"r_hf_scroll_sansu",
+8,
+"sealing"
+],
+"hf_seoan": [
+"r_hf_seoan",
+8,
+"carpentry"
+],
+"hf_shelf_register": [
+"r_hf_shelf_register",
+40,
+"carpentry"
+],
+"hf_soban": [
+"r_hf_soban",
+1,
+"carpentry"
+],
+"hf_stone_lamp": [
+"r_hf_stone_lamp",
+15,
+"artifice"
+],
+"hf_surf_books": [
+"r_hf_surf_books",
+1,
+"sealing"
+],
+"hf_surf_brush": [
+"r_hf_surf_brush",
+1,
+"carpentry"
+],
+"hf_surf_candle": [
+"r_hf_surf_candle",
+1,
+"artifice"
+],
+"hf_surf_incense": [
+"r_hf_surf_incense",
+15,
+"smithing"
+],
+"hf_surf_lamp": [
+"r_hf_surf_lamp",
+8,
+"artifice"
+],
+"hf_surf_munbang": [
+"r_hf_surf_munbang",
+8,
+"sealing"
+],
+"hf_surf_najeon_box": [
+"r_hf_surf_najeon_box",
+15,
+"carpentry"
+],
+"hf_surf_suseok": [
+"r_hf_surf_suseok",
+8,
+"carpentry"
+],
+"hf_surf_teaset": [
+"r_hf_surf_teaset",
+8,
+"artifice"
+],
+"hf_surf_vase": [
+"r_hf_surf_vase",
+1,
+"artifice"
+],
+"hf_tank_bamboo_eel": [
+"r_hf_tank_bamboo_eel",
+40,
+"carpentry"
+],
+"hf_wall_bamboo_blind": [
+"r_hf_wall_bamboo_blind",
+40,
+"weaving"
+],
+"hf_wall_doorplate": [
+"r_hf_wall_doorplate",
+40,
+"carpentry"
+],
+"hf_wardrobe_najeon": [
+"r_hf_wardrobe_najeon",
+15,
+"carpentry"
+],
+"hf_window_meokbi": [
+"r_hf_window_meokbi",
+40,
+"carpentry"
+],
+"hf_window_sal": [
+"r_hf_window_sal",
+1,
+"carpentry"
+],
+"hf_window_shutter": [
+"r_hf_window_shutter",
+1,
+"carpentry"
+],
+"hg_baduk": [
+"r_hg_baduk",
+8,
+"carpentry"
+],
+"hg_bakseok": [
+"r_hg_bakseok",
+8,
+"carpentry"
+],
+"hg_daesal": [
+"r_hg_daesal",
+1,
+"carpentry"
+],
+"hg_eotgyeol": [
+"r_hg_eotgyeol",
+15,
+"carpentry"
+],
+"hg_hwamun": [
+"r_hg_hwamun",
+8,
+"carpentry"
+],
+"hg_jangpan": [
+"r_hg_jangpan",
+1,
+"carpentry"
+],
+"hg_jeondol": [
+"r_hg_jeondol",
+8,
+"carpentry"
+],
+"hg_ochre": [
+"r_hg_ochre",
+8,
+"carpentry"
+],
+"hg_okdol": [
+"r_hg_okdol",
+20,
+"carpentry"
+],
+"hg_wanggol": [
+"r_hg_wanggol",
+1,
+"carpentry"
+],
+"hg_wanja": [
+"r_hg_wanja",
+15,
+"carpentry"
+],
+"hp_bamboo": [
+"r_hp_bamboo",
+1,
+"sealing"
+],
+"hp_brick": [
+"r_hp_brick",
+8,
+"sealing"
+],
+"hp_celadon": [
+"r_hp_celadon",
+20,
+"sealing"
+],
+"hp_cloud": [
+"r_hp_cloud",
+8,
+"sealing"
+],
+"hp_hanji": [
+"r_hp_hanji",
+1,
+"sealing"
+],
+"hp_heukbyeok": [
+"r_hp_heukbyeok",
+1,
+"sealing"
+],
+"hp_ink_dan": [
+"r_hp_ink_dan",
+15,
+"sealing"
+],
+"hp_maehwa": [
+"r_hp_maehwa",
+15,
+"sealing"
+],
+"hp_mulgyeol": [
+"r_hp_mulgyeol",
+8,
+"sealing"
+],
+"hp_saekdong": [
+"r_hp_saekdong",
+8,
+"sealing"
+],
+"hp_yeonji": [
+"r_hp_yeonji",
+8,
+"sealing"
+],
+"ice_char_broth": [
+"r_ice_char_broth",
+13,
+"cooking"
+],
+"inkline_eel_grill": [
+"r_inkline_eel_grill",
+28,
+"cooking"
+],
+"iron_ingot": [
+"refine_iron",
+1,
+"smithing"
+],
+"jade_bronze_charm": [
+"make_bronze_charm_advanced",
+10,
+"artifice"
+],
+"k2_awe": [
+"r_k2_awe",
+5,
+"sealing"
+],
+"k2_ghost": [
+"r_k2_ghost",
+5,
+"sealing"
+],
+"k2_hide": [
+"r_k2_hide",
+5,
+"sealing"
+],
+"k3_awe": [
+"r_k3_awe",
+10,
+"sealing"
+],
+"k3_ghost": [
+"r_k3_ghost",
+10,
+"sealing"
+],
+"k3_hide": [
+"r_k3_hide",
+10,
+"sealing"
+],
+"k4_awe": [
+"r_k4_awe",
+15,
+"sealing"
+],
+"k4_ghost": [
+"r_k4_ghost",
+15,
+"sealing"
+],
+"k4_hide": [
+"r_k4_hide",
+15,
+"sealing"
+],
+"k5_hide": [
+"r_k5_hide",
+20,
+"sealing"
+],
+"k6_awe": [
+"r_k6_awe",
+32,
+"sealing"
+],
+"k6_ghost": [
+"r_k6_ghost",
+32,
+"sealing"
+],
+"k6_hide": [
+"r_k6_hide",
+32,
+"sealing"
+],
+"k7_awe": [
+"r_k7_awe",
+42,
+"sealing"
+],
+"k7_ghost": [
+"r_k7_ghost",
+42,
+"sealing"
+],
+"k7_hide": [
+"r_k7_hide",
+42,
+"sealing"
+],
+"koi_broth": [
+"cook_koi_broth",
+14,
+"cooking"
+],
+"lacquer": [
+"make_lacquer",
+1,
+"carpentry"
+],
+"lantern_oil": [
+"oil_crucian",
+5,
+"alchemy"
+],
+"lt_carve_3": [
+"r_lt_carve_3",
+13,
+"sealing"
+],
+"lt_carve_4": [
+"r_lt_carve_4",
+18,
+"sealing"
+],
+"lt_carve_5": [
+"r_lt_carve_5",
+26,
+"sealing"
+],
+"lt_carve_6": [
+"r_lt_carve_6",
+33,
+"sealing"
+],
+"lt_carve_7": [
+"r_lt_carve_7",
+40,
+"smithing"
+],
+"lt_compass_4": [
+"r_lt_compass_4",
+18,
+"artifice"
+],
+"lt_compass_5": [
+"r_lt_compass_5",
+26,
+"artifice"
+],
+"lt_compass_6": [
+"r_lt_compass_6",
+35,
+"artifice"
+],
+"lt_compass_7": [
+"r_lt_compass_7",
+40,
+"artifice"
+],
+"lt_cook_2": [
+"r_lt_cook_2",
+8,
+"smithing"
+],
+"lt_cook_3": [
+"r_lt_cook_3",
+13,
+"smithing"
+],
+"lt_cook_4": [
+"r_lt_cook_4",
+18,
+"smithing"
+],
+"lt_cook_5": [
+"r_lt_cook_5",
+26,
+"smithing"
+],
+"lt_cook_6": [
+"r_lt_cook_6",
+33,
+"smithing"
+],
+"lt_cook_7": [
+"r_lt_cook_7",
+40,
+"smithing"
+],
+"lt_hammer_2": [
+"r_lt_hammer_2",
+8,
+"smithing"
+],
+"lt_hammer_3": [
+"r_lt_hammer_3",
+13,
+"smithing"
+],
+"lt_hammer_4": [
+"r_lt_hammer_4",
+18,
+"smithing"
+],
+"lt_hammer_5": [
+"r_lt_hammer_5",
+26,
+"smithing"
+],
+"lt_hammer_6": [
+"r_lt_hammer_6",
+33,
+"smithing"
+],
+"lt_hammer_7": [
+"r_lt_hammer_7",
+40,
+"smithing"
+],
+"lt_knife_4": [
+"r_lt_knife_4",
+16,
+"smithing"
+],
+"lt_knife_7": [
+"r_lt_knife_7",
+38,
+"smithing"
+],
+"lt_knife_8": [
+"r_lt_knife_8",
+40,
+"smithing"
+],
+"lt_lantern_3": [
+"r_lt_lantern_3",
+10,
+"artifice"
+],
+"lt_lantern_4": [
+"r_lt_lantern_4",
+17,
+"artifice"
+],
+"lt_lantern_5": [
+"r_lt_lantern_5",
+26,
+"artifice"
+],
+"lt_lantern_6": [
+"r_lt_lantern_6",
+36,
+"artifice"
+],
+"lt_lantern_7": [
+"r_lt_lantern_7",
+40,
+"artifice"
+],
+"lt_needle_2": [
+"r_lt_needle_2",
+8,
+"weaving"
+],
+"lt_needle_3": [
+"r_lt_needle_3",
+13,
+"leatherwork"
+],
+"lt_needle_4": [
+"r_lt_needle_4",
+18,
+"leatherwork"
+],
+"lt_needle_5": [
+"r_lt_needle_5",
+26,
+"leatherwork"
+],
+"lt_needle_6": [
+"r_lt_needle_6",
+33,
+"weaving"
+],
+"lt_needle_7": [
+"r_lt_needle_7",
+40,
+"leatherwork"
+],
+"lt_pick_2": [
+"r_lt_pick_2",
+6,
+"smithing"
+],
+"lt_pick_3": [
+"r_lt_pick_3",
+11,
+"smithing"
+],
+"lt_pick_5": [
+"r_lt_pick_5",
+24,
+"smithing"
+],
+"lt_pick_6": [
+"r_lt_pick_6",
+34,
+"smithing"
+],
+"lt_pick_7": [
+"r_lt_pick_7",
+40,
+"smithing"
+],
+"lt_rod_3": [
+"r_lt_rod_3",
+12,
+"carpentry"
+],
+"lt_rod_4": [
+"r_lt_rod_4",
+17,
+"carpentry"
+],
+"lt_rod_5": [
+"r_lt_rod_5",
+24,
+"carpentry"
+],
+"lt_rod_6": [
+"r_lt_rod_6",
+34,
+"carpentry"
+],
+"lt_rod_7": [
+"r_lt_rod_7",
+40,
+"carpentry"
+],
+"lt_rod_7b": [
+"r_lt_rod_7b",
+40,
+"carpentry"
+],
+"lt_sickle_3": [
+"r_lt_sickle_3",
+10,
+"smithing"
+],
+"lt_sickle_4": [
+"r_lt_sickle_4",
+18,
+"smithing"
+],
+"lt_sickle_5": [
+"r_lt_sickle_5",
+26,
+"smithing"
+],
+"lt_sickle_6": [
+"r_lt_sickle_6",
+35,
+"smithing"
+],
+"lt_sickle_7": [
+"r_lt_sickle_7",
+40,
+"smithing"
+],
+"lt_staff_2": [
+"r_lt_staff_2",
+5,
+"carpentry"
+],
+"lt_still_2": [
+"r_lt_still_2",
+8,
+"alchemy"
+],
+"lt_still_3": [
+"r_lt_still_3",
+13,
+"alchemy"
+],
+"lt_still_4": [
+"r_lt_still_4",
+18,
+"alchemy"
+],
+"lt_still_5": [
+"r_lt_still_5",
+26,
+"alchemy"
+],
+"lt_still_6": [
+"r_lt_still_6",
+33,
+"alchemy"
+],
+"lt_still_7": [
+"r_lt_still_7",
+40,
+"artifice"
+],
+"lumber": [
+"make_lumber",
+1,
+"carpentry"
+],
+"m2_purify": [
+"r_m2_purify",
+5,
+"sealing"
+],
+"m2_spell": [
+"r_m2_spell",
+5,
+"sealing"
+],
+"m2_ward": [
+"r_m2_ward",
+5,
+"sealing"
+],
+"m3_purify": [
+"r_m3_purify",
+10,
+"sealing"
+],
+"m3_spell": [
+"r_m3_spell",
+10,
+"sealing"
+],
+"m3_ward": [
+"r_m3_ward",
+10,
+"sealing"
+],
+"m4_purify": [
+"r_m4_purify",
+15,
+"sealing"
+],
+"m4_spell": [
+"r_m4_spell",
+15,
+"sealing"
+],
+"m4_ward": [
+"r_m4_ward",
+15,
+"sealing"
+],
+"m5_spell": [
+"r_m5_spell",
+20,
+"sealing"
+],
+"m6_purify": [
+"r_m6_purify",
+32,
+"sealing"
+],
+"m6_spell": [
+"r_m6_spell",
+32,
+"sealing"
+],
+"m6_ward": [
+"r_m6_ward",
+32,
+"sealing"
+],
+"m7_purify": [
+"r_m7_purify",
+42,
+"sealing"
+],
+"m7_spell": [
+"r_m7_spell",
+42,
+"sealing"
+],
+"m7_ward": [
+"r_m7_ward",
+42,
+"sealing"
+],
+"mackerel_grill": [
+"cook_mackerel_grill",
+15,
+"cooking"
+],
+"marlin_grill": [
+"cook_marlin_grill",
+25,
+"cooking"
+],
+"medicine_base": [
+"make_medicine_base",
+1,
+"alchemy"
+],
+"meokbi_umbrella": [
+"r_meokbi_umbrella",
+40,
+"carpentry"
+],
+"meokgwi_incense": [
+"r_meokgwi_incense",
+40,
+"alchemy"
+],
+"mirror_soup": [
+"cook_mirror_soup",
+13,
+"cooking"
+],
+"mist_crucian_steam": [
+"r_mist_crucian_steam",
+24,
+"cooking"
+],
+"moon_blade": [
+"moon_blade_recipe",
+3,
+"smithing"
+],
+"moonglass_sashimi": [
+"r_moonglass_sashimi",
+10,
+"cooking"
+],
+"moonlight_essence": [
+"moonlight_essence_recipe",
+8,
+"alchemy"
+],
+"moss_porridge": [
+"cook_moss_porridge",
+12,
+"cooking"
+],
+"n2_keen": [
+"r_n2_keen",
+5,
+"weaving"
+],
+"n2_luck": [
+"r_n2_luck",
+5,
+"weaving"
+],
+"n2_plenty": [
+"r_n2_plenty",
+5,
+"weaving"
+],
+"n3_keen": [
+"r_n3_keen",
+10,
+"weaving"
+],
+"n3_luck": [
+"r_n3_luck",
+10,
+"weaving"
+],
+"n3_plenty": [
+"r_n3_plenty",
+10,
+"weaving"
+],
+"n4_keen": [
+"r_n4_keen",
+15,
+"weaving"
+],
+"n4_luck": [
+"r_n4_luck",
+15,
+"weaving"
+],
+"n4_plenty": [
+"r_n4_plenty",
+15,
+"weaving"
+],
+"n5_keen": [
+"r_n5_keen",
+20,
+"weaving"
+],
+"n5_luck": [
+"r_n5_luck",
+20,
+"weaving"
+],
+"n6_keen": [
+"r_n6_keen",
+32,
+"weaving"
+],
+"n6_luck": [
+"r_n6_luck",
+32,
+"weaving"
+],
+"n6_plenty": [
+"r_n6_plenty",
+32,
+"weaving"
+],
+"n7_keen": [
+"r_n7_keen",
+42,
+"weaving"
+],
+"n7_luck": [
+"r_n7_luck",
+42,
+"weaving"
+],
+"n7_plenty": [
+"r_n7_plenty",
+42,
+"weaving"
+],
+"name_carving_soup": [
+"r_name_carving_soup",
+40,
+"cooking"
+],
+"name_ink_charm": [
+"r_name_ink_charm",
+40,
+"sealing"
+],
+"of_acc_earring": [
+"r_of_earring",
+8,
+"artifice"
+],
+"of_acc_glasses": [
+"r_of_glasses",
+8,
+"artifice"
+],
+"of_acc_norigae": [
+"r_of_norigae",
+8,
+"weaving"
+],
+"of_bottom_chima": [
+"r_of_chima",
+5,
+"weaving"
+],
+"of_top_jeogori": [
+"r_of_jeogori",
+5,
+"weaving"
+],
+"of_top_magoja": [
+"r_of_magoja",
+10,
+"weaving"
+],
+"paperboat_spicy_stew": [
+"r_paperboat_spicy_stew",
+3,
+"cooking"
+],
+"purify_water": [
+"brew_purify_water",
+5,
+"alchemy"
+],
+"raid_amulet": [
+"r_raid_amulet",
+25,
+"sealing"
+],
+"raid_mask": [
+"r_raid_mask",
+25,
+"sealing"
+],
+"raid_norigae": [
+"r_raid_norigae",
+25,
+"weaving"
+],
+"rainproof_oil": [
+"r_rainproof_oil",
+40,
+"alchemy"
+],
+"ray_steam": [
+"cook_ray",
+24,
+"cooking"
+],
+"reed_crossbow": [
+"reed_crossbow_recipe",
+5,
+"carpentry"
+],
+"register_eel_grill": [
+"r_register_eel_grill",
+40,
+"cooking"
+],
+"reinforced_leather": [
+"make_reinforced_leather",
+3,
+"leatherwork"
+],
+"reinforced_lumber": [
+"reinforce_lumber",
+3,
+"carpentry"
+],
+"rejuv_pill": [
+"brew_rejuv_pill",
+8,
+"alchemy"
+],
+"repair_kit": [
+"repair_kit_recipe",
+3,
+"smithing"
+],
+"resin": [
+"make_resin",
+1,
+"carpentry"
+],
+"revival_charm": [
+"recipe_revival_charm",
+5,
+"sealing"
+],
+"rockfish_stew": [
+"cook_rockfish_stew",
+5,
+"cooking"
+],
+"rune_plate": [
+"make_rune_plate",
+3,
+"sealing"
+],
+"s2_road": [
+"r_s2_road",
+5,
+"leatherwork"
+],
+"s2_sturdy": [
+"r_s2_sturdy",
+5,
+"leatherwork"
+],
+"s2_swift": [
+"r_s2_swift",
+5,
+"leatherwork"
+],
+"s3_road": [
+"r_s3_road",
+10,
+"leatherwork"
+],
+"s3_sturdy": [
+"r_s3_sturdy",
+10,
+"leatherwork"
+],
+"s3_swift": [
+"r_s3_swift",
+10,
+"leatherwork"
+],
+"s4_road": [
+"r_s4_road",
+15,
+"leatherwork"
+],
+"s4_sturdy": [
+"r_s4_sturdy",
+15,
+"leatherwork"
+],
+"s4_swift": [
+"r_s4_swift",
+15,
+"leatherwork"
+],
+"s5_swift": [
+"r_s5_swift",
+20,
+"leatherwork"
+],
+"s6_road": [
+"r_s6_road",
+32,
+"leatherwork"
+],
+"s6_sturdy": [
+"r_s6_sturdy",
+32,
+"leatherwork"
+],
+"s6_swift": [
+"r_s6_swift",
+32,
+"leatherwork"
+],
+"s7_road": [
+"r_s7_road",
+42,
+"leatherwork"
+],
+"s7_sturdy": [
+"r_s7_sturdy",
+42,
+"leatherwork"
+],
+"s7_swift": [
+"r_s7_swift",
+42,
+"leatherwork"
+],
+"salmon_grill": [
+"cook_salmon",
+12,
+"cooking"
+],
+"salmon_ink_grill": [
+"r_salmon_ink_grill",
+40,
+"cooking"
+],
+"scale_vest": [
+"scale_vest_recipe",
+6,
+"leatherwork"
+],
+"seal_incense": [
+"r_seal_incense",
+20,
+"alchemy"
+],
+"seal_knife": [
+"seal_knife_recipe",
+1,
+"sealing"
+],
+"sealing_ink": [
+"make_sealing_ink",
+3,
+"sealing"
+],
+"shad_lamp": [
+"r_shad_lamp",
+24,
+"artifice"
+],
+"shad_oil": [
+"r_shad_oil",
+24,
+"alchemy"
+],
+"skate_ferment": [
+"cook_skate_ferment",
+15,
+"cooking"
+],
+"snakehead_broth": [
+"cook_snakehead",
+5,
+"cooking"
+],
+"spicy_stew": [
+"cook_spicy_stew",
+1,
+"cooking"
+],
+"spirit_compass": [
+"make_spirit_compass",
+3,
+"artifice"
+],
+"spirit_core": [
+"synth_spirit_core",
+12,
+"alchemy"
+],
+"spirit_glass": [
+"melt_spirit_glass",
+3,
+"alchemy"
+],
+"spirit_gukbap": [
+"cook_gukbap",
+5,
+"cooking"
+],
+"spirit_mail": [
+"spirit_mail_recipe",
+14,
+"weaving"
+],
+"spirit_qi_pill": [
+"spirit_qi_pill_recipe",
+4,
+"alchemy"
+],
+"spirit_rod": [
+"make_spirit_rod",
+6,
+"carpentry"
+],
+"spirit_sickle": [
+"spirit_sickle_recipe",
+3,
+"smithing"
+],
+"spirit_tea": [
+"spirit_tea_recipe",
+1,
+"alchemy"
+],
+"spirit_thread": [
+"spin_spirit_thread",
+3,
+"weaving"
+],
+"star_bow": [
+"star_bow_recipe",
+14,
+"carpentry"
+],
+"star_mirror": [
+"star_mirror_recipe",
+14,
+"artifice"
+],
+"steel_ingot": [
+"make_steel",
+1,
+"smithing"
+],
+"sturgeon_scale_pill": [
+"r_sturgeon_scale_pill",
+14,
+"alchemy"
+],
+"sweetfish_grill": [
+"cook_sweetfish",
+3,
+"cooking"
+],
+"t2_gather": [
+"r_t2_gather",
+5,
+"leatherwork"
+],
+"t3_gather": [
+"r_t3_gather",
+10,
+"smithing"
+],
+"t4_gather": [
+"r_t4_gather",
+15,
+"smithing"
+],
+"t5_gather": [
+"r_t5_gather",
+20,
+"smithing"
+],
+"t6_gather": [
+"r_t6_gather",
+32,
+"smithing"
+],
+"talisman_thread": [
+"make_talisman_thread",
+1,
+"weaving"
+],
+"thunder_glaive": [
+"thunder_glaive_recipe",
+14,
+"smithing"
+],
+"tonic": [
+"tonic_recipe",
+1,
+"alchemy"
+],
+"travel_ration": [
+"make_travel_ration",
+1,
+"cooking"
+],
+"treat_fish": [
+"r_treat_filefish",
+1,
+"cooking"
+],
+"trout_sashimi": [
+"cook_trout",
+10,
+"cooking"
+],
+"tuna_ink_feast": [
+"r_tuna_ink_feast",
+40,
+"cooking"
+],
+"venom_gland": [
+"scorpion_venom",
+12,
+"alchemy"
+],
+"w_magic2_heavy": [
+"r_w_magic2_heavy",
+5,
+"artifice"
+],
+"w_magic2_keen": [
+"r_w_magic2_keen",
+5,
+"artifice"
+],
+"w_magic2_silent": [
+"r_w_magic2_silent",
+5,
+"artifice"
+],
+"w_magic3_heavy": [
+"r_w_magic3_heavy",
+10,
+"artifice"
+],
+"w_magic3_keen": [
+"r_w_magic3_keen",
+10,
+"artifice"
+],
+"w_magic3_silent": [
+"r_w_magic3_silent",
+10,
+"artifice"
+],
+"w_magic4_base": [
+"r_w_magic4_base",
+15,
+"artifice"
+],
+"w_magic4_heavy": [
+"r_w_magic4_heavy",
+15,
+"artifice"
+],
+"w_magic4_keen": [
+"r_w_magic4_keen",
+15,
+"artifice"
+],
+"w_magic4_silent": [
+"r_w_magic4_silent",
+15,
+"artifice"
+],
+"w_magic5_base": [
+"r_w_magic5_base",
+20,
+"artifice"
+],
+"w_magic5_keen": [
+"r_w_magic5_keen",
+20,
+"artifice"
+],
+"w_magic6_base": [
+"r_w_magic6_base",
+32,
+"artifice"
+],
+"w_magic6_heavy": [
+"r_w_magic6_heavy",
+32,
+"artifice"
+],
+"w_magic6_keen": [
+"r_w_magic6_keen",
+32,
+"artifice"
+],
+"w_magic6_silent": [
+"r_w_magic6_silent",
+32,
+"artifice"
+],
+"w_magic7_base": [
+"r_w_magic7_base",
+42,
+"artifice"
+],
+"w_magic7_heavy": [
+"r_w_magic7_heavy",
+42,
+"artifice"
+],
+"w_magic7_keen": [
+"r_w_magic7_keen",
+42,
+"artifice"
+],
+"w_magic7_silent": [
+"r_w_magic7_silent",
+42,
+"artifice"
+],
+"w_melee2_heavy": [
+"r_w_melee2_heavy",
+5,
+"smithing"
+],
+"w_melee2_keen": [
+"r_w_melee2_keen",
+5,
+"smithing"
+],
+"w_melee2_silent": [
+"r_w_melee2_silent",
+5,
+"smithing"
+],
+"w_melee3_heavy": [
+"r_w_melee3_heavy",
+10,
+"smithing"
+],
+"w_melee3_keen": [
+"r_w_melee3_keen",
+10,
+"smithing"
+],
+"w_melee3_silent": [
+"r_w_melee3_silent",
+10,
+"smithing"
+],
+"w_melee4_base": [
+"r_w_melee4_base",
+15,
+"smithing"
+],
+"w_melee4_heavy": [
+"r_w_melee4_heavy",
+15,
+"smithing"
+],
+"w_melee4_keen": [
+"r_w_melee4_keen",
+15,
+"smithing"
+],
+"w_melee4_silent": [
+"r_w_melee4_silent",
+15,
+"smithing"
+],
+"w_melee5_base": [
+"r_w_melee5_base",
+20,
+"smithing"
+],
+"w_melee5_keen": [
+"r_w_melee5_keen",
+20,
+"smithing"
+],
+"w_melee6_base": [
+"r_w_melee6_base",
+32,
+"smithing"
+],
+"w_melee6_heavy": [
+"r_w_melee6_heavy",
+32,
+"smithing"
+],
+"w_melee6_keen": [
+"r_w_melee6_keen",
+32,
+"smithing"
+],
+"w_melee6_silent": [
+"r_w_melee6_silent",
+32,
+"smithing"
+],
+"w_melee7_base": [
+"r_w_melee7_base",
+42,
+"smithing"
+],
+"w_melee7_heavy": [
+"r_w_melee7_heavy",
+42,
+"smithing"
+],
+"w_melee7_keen": [
+"r_w_melee7_keen",
+42,
+"smithing"
+],
+"w_melee7_silent": [
+"r_w_melee7_silent",
+42,
+"smithing"
+],
+"w_ranged2_heavy": [
+"r_w_ranged2_heavy",
+5,
+"carpentry"
+],
+"w_ranged2_keen": [
+"r_w_ranged2_keen",
+5,
+"carpentry"
+],
+"w_ranged2_silent": [
+"r_w_ranged2_silent",
+5,
+"carpentry"
+],
+"w_ranged3_heavy": [
+"r_w_ranged3_heavy",
+10,
+"carpentry"
+],
+"w_ranged3_keen": [
+"r_w_ranged3_keen",
+10,
+"carpentry"
+],
+"w_ranged3_silent": [
+"r_w_ranged3_silent",
+10,
+"carpentry"
+],
+"w_ranged4_base": [
+"r_w_ranged4_base",
+15,
+"carpentry"
+],
+"w_ranged4_heavy": [
+"r_w_ranged4_heavy",
+15,
+"carpentry"
+],
+"w_ranged4_keen": [
+"r_w_ranged4_keen",
+15,
+"carpentry"
+],
+"w_ranged4_silent": [
+"r_w_ranged4_silent",
+15,
+"carpentry"
+],
+"w_ranged5_base": [
+"r_w_ranged5_base",
+20,
+"carpentry"
+],
+"w_ranged5_keen": [
+"r_w_ranged5_keen",
+20,
+"carpentry"
+],
+"w_ranged6_base": [
+"r_w_ranged6_base",
+32,
+"carpentry"
+],
+"w_ranged6_heavy": [
+"r_w_ranged6_heavy",
+32,
+"carpentry"
+],
+"w_ranged6_keen": [
+"r_w_ranged6_keen",
+32,
+"carpentry"
+],
+"w_ranged6_silent": [
+"r_w_ranged6_silent",
+32,
+"carpentry"
+],
+"w_ranged7_base": [
+"r_w_ranged7_base",
+42,
+"carpentry"
+],
+"w_ranged7_heavy": [
+"r_w_ranged7_heavy",
+42,
+"carpentry"
+],
+"w_ranged7_keen": [
+"r_w_ranged7_keen",
+42,
+"carpentry"
+],
+"w_ranged7_silent": [
+"r_w_ranged7_silent",
+42,
+"carpentry"
+],
+"ward_fan": [
+"ward_fan_recipe",
+5,
+"artifice"
+],
+"ward_robe": [
+"robe_recipe",
+1,
+"weaving"
+],
+"ward_talisman": [
+"ward_recipe",
+3,
+"sealing"
+],
+"wayfarer_pack": [
+"make_wayfarer_pack",
+15,
+"leatherwork"
+],
+"wraith_soul_pill": [
+"brew_wraith_pill",
+8,
+"alchemy"
+],
+"yellowtail_sashimi": [
+"cook_yellowtail_sashimi",
+18,
+"cooking"
+]
+},
+"regions": {
+"거꾸로 선 사당": [
+"inverted_shrine",
+33,
+false
+],
+"구등대 군도": [
+"nine_lighthouse",
+14,
+false
+],
+"구룡 폐수로": [
+"old_canal",
+3,
+false
+],
+"구름 위 회랑": [
+"cloud_corridor",
+23,
+false
+],
+"구름나루": [
+"river_ferry",
+3,
+true
+],
+"구중 봉연": [
+"sealed_abyss",
+30,
+false
+],
+"귀죽림": [
+"ghost_bamboo",
+4,
+false
+],
+"귀허": [
+"gwiheo_core",
+38,
+false
+],
+"뇌명봉": [
+"thunder_peak",
+16,
+false
+],
+"달 없는 저잣거리": [
+"moonless_market",
+36,
+false
+],
+"등잔골 뒷골목": [
+"lamp_alley",
+5,
+false
+],
+"만인장": [
+"burial_steps",
+10,
+false
+],
+"만조의 갑문": [
+"tide_gate",
+24,
+false
+],
+"먹비 숲": [
+"meokbi_forest",
+42,
+false
+],
+"명부 탑": [
+"myeongbu_tower",
+44,
+false
+],
+"무극 관성대": [
+"star_observatory",
+25,
+true
+],
+"무명 고도": [
+"forgotten_city",
+15,
+false
+],
+"묵창 나루": [
+"mukchang_ferry",
+40,
+true
+],
+"물시계 터": [
+"water_clock",
+13,
+false
+],
+"반요촌": [
+"banyo_village",
+30,
+true
+],
+"백골 장터": [
+"bone_market",
+5,
+true
+],
+"백등 야시장": [
+"lantern_market",
+1,
+true
+],
+"백옥 천문탑": [
+"white_tower",
+20,
+false
+],
+"백지교": [
+"paper_bridge",
+3,
+false
+],
+"별바라기 언덕": [
+"star_hill",
+5,
+false
+],
+"본부 객사": [
+"hq_dorm",
+1,
+true
+],
+"봉인고": [
+"seal_vault",
+26,
+false
+],
+"불씨 고개": [
+"ember_pass",
+5,
+false
+],
+"빈칸 벌판": [
+"blank_field",
+41,
+false
+],
+"빙혼곡": [
+"frost_valley",
+11,
+false
+],
+"서리솔 고개": [
+"frost_pine_pass",
+8,
+false
+],
+"서문 폐성벽": [
+"west_gate",
+3,
+false
+],
+"설피골": [
+"snow_hollow",
+5,
+false
+],
+"수경루": [
+"mirror_pavilion",
+9,
+false
+],
+"십삼문 암시장": [
+"hidden_bazaar",
+9,
+true
+],
+"아홉 칸 뜰": [
+"nine_court",
+45,
+false
+],
+"야행국 본부 정청": [
+"hq_yard",
+1,
+true
+],
+"연등 하수도": [
+"lotus_sewer",
+7,
+false
+],
+"연무장·팔괘진": [
+"hq_training",
+1,
+false
+],
+"염등촌": [
+"salt_village",
+5,
+false
+],
+"옛 순라청": [
+"patrol_office",
+12,
+false
+],
+"옛 의금부 옥사": [
+"old_prison",
+19,
+false
+],
+"옥문 협로": [
+"jade_pass",
+10,
+false
+],
+"용잠 수궁": [
+"sunken_palace",
+14,
+false
+],
+"유리협곡": [
+"glass_canyon",
+8,
+false
+],
+"잔불촌": [
+"ember_village",
+5,
+true
+],
+"잠든 포구": [
+"sleeping_port",
+19,
+false
+],
+"장서각 지하서고": [
+"hq_archive",
+1,
+false
+],
+"재의 해안": [
+"ash_coast",
+10,
+false
+],
+"잿빛 갈대숲": [
+"ash_reeds",
+30,
+false
+],
+"잿빛 들녘": [
+"field_outskirts",
+1,
+false
+],
+"적사 황무지": [
+"red_plain",
+5,
+false
+],
+"적월 제단터": [
+"crimson_altar",
+22,
+false
+],
+"적월교 월식성": [
+"red_moon_fort",
+15,
+false
+],
+"주혈 광산": [
+"crimson_mine",
+12,
+false
+],
+"지맥의 뿌리": [
+"under_root",
+21,
+false
+],
+"천경호": [
+"sky_lake",
+13,
+false
+],
+"천년 빙하": [
+"old_glacier",
+27,
+false
+],
+"천엽 연화늪": [
+"lotus_marsh",
+7,
+false
+],
+"철벽 고찰": [
+"iron_monastery",
+9,
+true
+],
+"침수된 구시가지": [
+"sunken_district",
+5,
+false
+],
+"폐쇄 사당": [
+"shrine_ruins",
+1,
+false
+],
+"폐쇄된 연화원": [
+"sealed_garden",
+3,
+false
+],
+"핏빛 모래바다": [
+"blood_dunes",
+17,
+false
+],
+"혈엽림": [
+"red_forest",
+18,
+false
+],
+"혜성 낙하지": [
+"comet_crater",
+17,
+false
+],
+"회산 관문": [
+"ash_mountain",
+7,
+false
+],
+"흑련 장부고": [
+"ledger_cellar",
+18,
+false
+],
+"흑사단 폐단": [
+"black_sand_temple",
+10,
+false
+],
+"흑조 균열": [
+"black_tide_rift",
+28,
+false
+]
+},
+"reward_rules": {
+"gaiden": {
+"gil": [
+20,
+10
+],
+"xp": 0.6
+},
+"main": {
+"gil": [
+5,
+2
+],
+"xp": 0.15
+},
+"side": {
+"gil": [
+5,
+4
+],
+"items": [
+[
+19,
+{
+"tonic": 2,
+"travel_ration": 1
+}
+],
+[
+30,
+{
+"spirit_qi_pill": 2,
+"travel_ration": 2
+}
+],
+[
+40,
+{
+"moonlight_essence": 2,
+"travel_ration": 2
+}
+]
+],
+"xp": 0.4
+}
+},
+"spots": {
+"ash_coast": [
+"drowned_scale",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"spirit_glass",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"ash_mountain": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_dust",
+"steel_ingot",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"ash_reeds": [
+"drowned_scale",
+"herb",
+"medicine_base",
+"moon_moss",
+"reed_silk",
+"resin",
+"river_reed",
+"tonic",
+"travel_ration",
+"wood"
+],
+"banyo_village": [
+"herb",
+"medicine_base",
+"tonic",
+"travel_ration"
+],
+"black_sand_temple": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"black_tide_rift": [
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"spirit_glass",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"blank_field": [
+"blank_hanji",
+"erased_plate",
+"herb",
+"inkstone",
+"medicine_base",
+"moon_moss",
+"mukchang_ink",
+"river_reed",
+"seal_paper",
+"travel_ration"
+],
+"blood_dunes": [
+"cinnabar",
+"ember_crystal",
+"ghost_ash",
+"herb",
+"herbal_extract",
+"jade_shard",
+"medicine_base",
+"ore",
+"spirit_dust",
+"ward_fragment"
+],
+"bone_market": [
+"beast_bone",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"burial_steps": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"cloud_corridor": [
+"cloud_cotton",
+"fine_paper",
+"herb",
+"jade_shard",
+"moon_moss",
+"seal_paper",
+"sky_feather",
+"spirit_bark",
+"spirit_dust",
+"star_sand",
+"talisman_thread"
+],
+"comet_crater": [
+"herb",
+"ore",
+"raw_iron",
+"sky_feather",
+"spirit_dust",
+"spirit_glass",
+"star_sand",
+"thunder_ore",
+"tonic",
+"travel_ration"
+],
+"crimson_altar": [
+"cinnabar",
+"ember_crystal",
+"ghost_ash",
+"monster_core",
+"ore",
+"raw_iron",
+"rune_plate",
+"seal_paper",
+"spirit_dust",
+"spirit_glass"
+],
+"crimson_mine": [
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"steel_ingot",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"ember_pass": [
+"charcoal",
+"cinnabar",
+"herb",
+"herbal_extract",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"tonic",
+"travel_ration",
+"wood"
+],
+"ember_village": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"field_outskirts": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"forgotten_city": [
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"frost_pine_pass": [
+"beast_hide",
+"charcoal",
+"frost_salt",
+"herb",
+"medicine_base",
+"moon_moss",
+"resin",
+"travel_ration",
+"wood"
+],
+"frost_valley": [
+"frost_salt",
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_core",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"ghost_bamboo": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_bark",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"venom_gland",
+"ward_fragment",
+"wood"
+],
+"glass_canyon": [
+"ghost_ash",
+"herb",
+"inkstone",
+"jade_shard",
+"medicine_base",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"spirit_glass",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"gwiheo_core": [
+"drowned_scale",
+"ghost_ash",
+"gwiheo_iron",
+"ore",
+"raw_iron",
+"river_reed",
+"seal_paper",
+"spirit_core",
+"spirit_dust",
+"ward_fragment"
+],
+"hidden_bazaar": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"hq_archive": [
+"fine_paper",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"hq_dorm": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"hq_training": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"hq_yard": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"ward_talisman",
+"wood"
+],
+"inverted_shrine": [
+"ghost_ash",
+"herb",
+"inkstone",
+"inverted_incense",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"iron_monastery": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"jade_pass": [
+"ghost_ash",
+"herb",
+"jade_shard",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_dust",
+"thunder_ore",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"lamp_alley": [
+"fine_paper",
+"ghost_ash",
+"herb",
+"inkstone",
+"seal_paper",
+"sealing_ink",
+"shadow_fang",
+"silk",
+"spirit_dust",
+"tonic",
+"travel_ration"
+],
+"lantern_market": [
+"ghost_ash",
+"herb",
+"herbal_extract",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"ledger_cellar": [
+"fine_paper",
+"ghost_ash",
+"herb",
+"inkstone",
+"lantern_oil",
+"mirror_shard",
+"seal_paper",
+"sealing_ink",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"lotus_marsh": [
+"drowned_scale",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"moon_moss",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"venom_gland",
+"ward_fragment",
+"wood"
+],
+"lotus_sewer": [
+"drowned_scale",
+"frost_salt",
+"ghost_ash",
+"herb",
+"lantern_oil",
+"river_reed",
+"shadow_fang",
+"silk",
+"spirit_dust",
+"tonic",
+"travel_ration"
+],
+"meokbi_forest": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"meokbi_ebony",
+"meokbi_moss",
+"resin",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"wood"
+],
+"mirror_pavilion": [
+"drowned_scale",
+"fine_paper",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"mirror_shard",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"moonless_market": [
+"ghost_ash",
+"herb",
+"inkstone",
+"moonless_silk",
+"oblivion_crystal",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"tonic",
+"travel_ration"
+],
+"mukchang_ferry": [
+"herb",
+"mukchang_ink",
+"river_reed",
+"tonic",
+"travel_ration"
+],
+"myeongbu_tower": [
+"blank_hanji",
+"erased_plate",
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"register_slip",
+"seal_paper",
+"spirit_dust",
+"travel_ration"
+],
+"nine_court": [
+"erased_plate",
+"meokbi_moss",
+"mukchang_ink",
+"ore",
+"raw_iron",
+"register_slip",
+"river_reed",
+"seal_paper",
+"spirit_core",
+"spirit_dust"
+],
+"nine_lighthouse": [
+"drowned_scale",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"mirror_shard",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"old_canal": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"old_glacier": [
+"drowned_scale",
+"frost_salt",
+"ghost_ash",
+"jade_shard",
+"monster_core",
+"ore",
+"raw_iron",
+"spirit_dust",
+"spirit_glass",
+"thunder_ore"
+],
+"old_prison": [
+"ghost_ash",
+"herb",
+"mirror_shard",
+"raw_iron",
+"seal_paper",
+"sealing_ink",
+"spirit_dust",
+"steel_ingot",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"paper_bridge": [
+"fine_paper",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"patrol_office": [
+"charcoal",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"sealing_ink",
+"steel_ingot",
+"talisman_thread",
+"tonic",
+"travel_ration"
+],
+"red_forest": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_bark",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"venom_gland",
+"ward_fragment",
+"wood"
+],
+"red_moon_fort": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"ward_talisman",
+"wood"
+],
+"red_plain": [
+"cinnabar",
+"ghost_ash",
+"herb",
+"inkstone",
+"jade_shard",
+"medicine_base",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"river_ferry": [
+"drowned_scale",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"salt_village": [
+"drowned_scale",
+"ghost_ash",
+"herb",
+"herbal_extract",
+"inkstone",
+"medicine_base",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"seal_vault": [
+"ghost_ash",
+"herb",
+"lantern_oil",
+"mirror_shard",
+"monster_core",
+"rune_plate",
+"seal_paper",
+"sealing_ink",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"sealed_abyss": [
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_core",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"sealed_garden": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"moon_moss",
+"ore",
+"raw_iron",
+"resin",
+"spirit_bark",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"shrine_ruins": [
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"sky_lake": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"mirror_shard",
+"ore",
+"raw_iron",
+"resin",
+"spirit_dust",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"sleeping_port": [
+"drowned_scale",
+"herb",
+"jade_shard",
+"lantern_oil",
+"lumber",
+"reinforced_lumber",
+"resin",
+"river_reed",
+"tonic",
+"travel_ration",
+"wood"
+],
+"snow_hollow": [
+"beast_hide",
+"charcoal",
+"drowned_scale",
+"frost_salt",
+"herb",
+"medicine_base",
+"moon_moss",
+"resin",
+"river_reed",
+"travel_ration",
+"wood"
+],
+"star_hill": [
+"cloud_cotton",
+"fine_paper",
+"herb",
+"moon_moss",
+"spirit_dust",
+"travel_ration"
+],
+"star_observatory": [
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"star_sand",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"sunken_district": [
+"ghost_ash",
+"herb",
+"herbal_extract",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"sunken_palace": [
+"drowned_scale",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"resin",
+"river_reed",
+"seal_paper",
+"spirit_dust",
+"spirit_glass",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"thunder_peak": [
+"ghost_ash",
+"herb",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"spirit_core",
+"spirit_dust",
+"thunder_ore",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"wood"
+],
+"tide_gate": [
+"drowned_scale",
+"frost_salt",
+"herb",
+"jade_shard",
+"lantern_oil",
+"lumber",
+"ore",
+"raw_iron",
+"reinforced_lumber",
+"resin",
+"river_reed",
+"thunder_ore",
+"tonic",
+"travel_ration",
+"wood"
+],
+"under_root": [
+"ghost_ash",
+"herb",
+"inkstone",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_core",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+],
+"water_clock": [
+"inkstone",
+"lumber",
+"moon_moss",
+"ore",
+"raw_iron",
+"reinforced_lumber",
+"river_reed",
+"seal_paper",
+"spirit_glass",
+"spirit_thread",
+"talisman_thread",
+"wood"
+],
+"west_gate": [
+"beast_bone",
+"ghost_ash",
+"herb",
+"inkstone",
+"medicine_base",
+"ore",
+"raw_iron",
+"resin",
+"seal_paper",
+"spirit_dust",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment",
+"ward_talisman",
+"wood"
+],
+"white_tower": [
+"ghost_ash",
+"herb",
+"inkstone",
+"mirror_shard",
+"ore",
+"raw_iron",
+"seal_paper",
+"spirit_dust",
+"star_sand",
+"talisman_thread",
+"tonic",
+"travel_ration",
+"ward_fragment"
+]
+},
+"titles": [
+"솜씨 입문",
+"백련 장인",
+"비무대에 오른 이",
+"사건 판독자",
+"정예 사냥",
+"첫 야행",
+"첫 승의 함성",
+"다재다능",
+"삼십육계",
+"비무대의 단골",
+"원정 고참",
+"대어 낚기",
+"스무 판의 칼끝",
+"보따리 사냥꾼",
+"붉은 인장 해결자",
+"수몰 장부 해독",
+"사강의 이름",
+"서리 봉인 수호",
+"이름 없는 종지기",
+"마지막 비무대",
+"재의 바다를 건넌 자",
+"비무 장원",
+"등잔 밑을 밝힌 자",
+"물 밑의 등불지기",
+"맑게 씻긴 영혼",
+"세 번의 장원",
+"천하제일 비무객",
+"쌍검의 장원",
+"흠 없는 장원",
+"백년가약",
+"쇠를 아는 손",
+"의뢰 해결사",
+"우두머리 격파",
+"명품 장인",
+"새벽 이슬",
+"심처 답파",
+"용잠의 비늘",
+"땅거미 탐정",
+"쓰러져도 다시",
+"칠전팔기",
+"첫 입질",
+"어보 편찬자",
+"안개 너머",
+"부지런한 손",
+"껍질 깨기",
+"함정 전문가",
+"보따리 장수",
+"불굴",
+"천리안",
+"끈질긴 싸움",
+"견습 딱지를 떼다",
+"산야의 눈",
+"부서의 일꾼",
+"활의 길",
+"조문객",
+"넋을 기리는 자",
+"삼경의 낚시꾼",
+"백련강의 대장장이",
+"삼경의 산책자",
+"한낮의 장인",
+"징조를 읽는 자",
+"천하제일 야장",
+"길잡이",
+"빈털터리",
+"전문 채집가",
+"고요한 밤",
+"빗속의 약초꾼",
+"완전 답사",
+"다섯 고을 답사",
+"사방 답사자",
+"손재주",
+"구조대원",
+"생명의 은인",
+"쉼표",
+"저승 문턱",
+"전대 가득",
+"말 탄 조사원",
+"강태공",
+"결을 읽는 목수",
+"지칠 줄 모르는 발",
+"발 빠른 탐색자",
+"도편수",
+"천년 목심의 주인",
+"별채 주인",
+"발걸음이 잦은 집",
+"스무 손님의 방명록",
+"채집터 발견자",
+"마구간 주인",
+"흔들림 없는 마음",
+"아홉 칸 별채",
+"보급 단골",
+"가구 수집가",
+"문턱이 닳은 집",
+"청심환 애호가",
+"철골",
+"거부",
+"물가의 사람",
+"별채의 장인",
+"혈무 속의 칼",
+"적월 맹약 파훼",
+"구문 돌파",
+"월식을 본 자",
+"정예 학살자",
+"사기에 물든 자",
+"혼백 퇴치",
+"수호자의 천적",
+"백귀 토벌",
+"동무 다섯",
+"잘 키운 동무들",
+"동무 열다섯",
+"설한 행군",
+"천 리 나그네",
+"야행자",
+"길에 밝은 자",
+"초출 무인",
+"첫 승리의 맛",
+"연무장 단골",
+"상서로운 짐승의 벗",
+"천하 주유",
+"백전노장",
+"영문 새기는 장인",
+"혼천의 설계자",
+"요기에 물든 자",
+"신기를 빚는 자",
+"봉인의 잠",
+"귀령의 손길",
+"요기를 다스리는 자",
+"칠전팔기",
+"야행의 전설",
+"노련한 조사원",
+"야행국의 기둥",
+"요괴 토벌자",
+"삼경의 우두머리 사냥",
+"삼경의 사냥꾼",
+"일격필살",
+"등잔 아래 서기",
+"고운 결 짓는 이",
+"빚을 셈하는 손",
+"산문의 방패",
+"나루의 신용",
+"불씨를 나르는 자",
+"백 리 행보",
+"비단 명장",
+"팔도 유람",
+"청명한 날",
+"하늘 사냥꾼",
+"요괴 사냥꾼",
+"천귀 퇴치",
+"사기 퇴치자",
+"영험한 그릇",
+"장사",
+"바람 같은 자",
+"칭호의 주인",
+"하늘 옷을 지은 자",
+"가죽 다루는 손",
+"경갑 명장",
+"야행 갖바치",
+"부적 그리는 이",
+"결계 설계자",
+"만법을 새긴 자",
+"달이는 손",
+"술의 길",
+"삭풍의 궁수",
+"무명 고수",
+"채집 도감 첫 장",
+"채집 도감 반권",
+"채집 도감 완성",
+"야행국 운영진",
+"믿음직한 해결사",
+"공방의 주인",
+"대지의 손",
+"일격필살",
+"무림 명숙",
+"하극상",
+"반요",
+"달을 섬기는 자",
+"매사냥꾼",
+"껍질 깨는 자",
+"원혼 달래는 자",
+"독벌레 잡이",
+"나무꾼 퇴마사",
+"그림자 사냥꾼",
+"별자리를 외는 자",
+"팔괘진을 깬 야행관",
+"연무청의 판관",
+"갯바위 낚시꾼",
+"물마루를 읽는 자",
+"장부에서 지워진 빚",
+"열세 번째 문의 주인",
+"철벽을 넘은 무사",
+"눈 속의 맹주감",
+"물길을 건넌 자",
+"강의 신용",
+"꺼지지 않는 횃불",
+"마지막 봉화",
+"혼천의를 읽은 자",
+"별을 말하지 않는 자",
+"물귀신 건지는 자",
+"떼 쫓는 자",
+"금줄 끊는 자",
+"거울 깨는 자",
+"봉인 지킴이",
+"하늘을 벤 자",
+"거괴 토벌자",
+"요괴 도감 기록관",
+"백귀 사냥꾼",
+"백귀야행 기록관",
+"만귀보",
+"수련굴의 생존자",
+"달을 삼킨 자",
+"귀허의 배웅꾼",
+"아홉 포구 나그네",
+"해룡을 낚은 자",
+"연단의 대가",
+"금단을 빚은 자",
+"간 보는 손",
+"수라간 숙수",
+"팔도 밥상의 주인",
+"산야를 아는 손",
+"산천을 거둔 자",
+"봉연을 마주한 자",
+"그림자를 걷은 자",
+"봉연 사냥꾼",
+"봉연을 지키는 등불",
+"선봉",
+"야전의 손",
+"함께 싸우는 법",
+"작은 불씨",
+"봉연을 되돌린 자",
+"일곱 번 넘어져도",
+"구중을 닫은 자",
+"홀로 선 등불",
+"네 개의 등불",
+"귀허를 닫은 자",
+"빈 왕좌의 손님",
+"이송 명부를 고쳐 쓴 자",
+"홀로 이름을 지킨 자",
+"한 사람도 잃지 않은 밤",
+"맥을 짚는 광부",
+"지맥의 주인",
+"찌를 읽는 낚시꾼",
+"용왕의 벗",
+"만공(萬工)의 주인",
+"천지를 거둔 자",
+"칭호 수집가",
+"또 너니?",
+"끊어지지 않는 인연",
+"검의 길",
+"퇴마의 길",
+"의술의 길",
+"그믐밤 비수",
+"안개 속 퇴마사",
+"빗속의 의원",
+"비수의 길",
+"제일야(第一夜)의 증인",
+"미완(未完)의 길을 연 자",
+"꺼지지 않은 불씨",
+"모든 동무의 벗",
+"먹그림자를 보낸 이",
+"명부 뜰의 손님",
+"아홉 칸을 지킨 이",
+"묵적을 거둔 이",
+"제 이름을 부른 이",
+"한 획도 잃지 않은 뜰",
+"아홉 칸을 밝힌 이",
+"먹빛 나루에 닿은 이",
+"흐린 이름의 길손",
+"지워진 문패를 읽는 이",
+"먹비 숲의 나무꾼",
+"아홉 칸을 지나온 이",
+"문패를 낚은 이",
+"빈칸을 낚은 이",
+"먹비를 낚은 이",
+"눈먼 용을 낚은 이",
+"죽간을 낚은 이",
+"먹비늘을 낚은 이",
+"이름을 낚은 이",
+"종이배를 낚은 이",
+"종루를 낚은 이",
+"달그림자를 낚은 이",
+"금눈을 낚은 이",
+"얼음 거울을 낚은 이",
+"용왕을 깨운 이",
+"혜성을 낚은 이",
+"잔불을 낚은 이",
+"잿빛 수염을 낚은 이",
+"온 나라의 명어를 낚은 이",
+"명어의 이름을 모두 부르는 이"
+],
+"xp_need": [
+112,
+112,
+248,
+408,
+592,
+800,
+1032,
+1288,
+1568,
+1872,
+2200,
+2552,
+2928,
+3328,
+3752,
+4200,
+4672,
+5168,
+5688,
+6232,
+6800,
+7392,
+8008,
+8648,
+9312,
+10000,
+10712,
+11448,
+12208,
+12992,
+13800,
+14632,
+15488,
+16368,
+17272,
+18200,
+19152,
+20128,
+21128,
+22152,
+23200,
+24272,
+25368,
+26488,
+27632,
+28800
+]
+}
