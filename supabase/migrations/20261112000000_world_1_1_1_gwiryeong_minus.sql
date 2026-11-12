@@ -19,7 +19,4 @@ select pg_temp.yh_fix('world_gwiryeong_reserve', array[
   $a$cap := greatest(1, (select count(distinct s.owner_id) from public.world_character_statuses s where s.status_key = 'yohwa')::int / (ru ->> 'cap_div')::int);$a$,
   $b$cap := greatest(0, (select count(distinct s.owner_id) from public.world_character_statuses s where s.status_key = 'yohwa')::int / (ru ->> 'cap_div')::int - coalesce((ru ->> 'cap_minus')::int, 0));$b$]);
 
-update public.world_patch_notes set body = body || E'\n- 귀령초가 서버 전체에 나오는 수를 「지금 요화에 걸려 있는 조사원 수보다 하나 적게」로 바꿨습니다(지난 3일 동안 나온 수 기준).'
-where note_id = '1.1.0' and position('요화에 걸려 있는 조사원 수보다 하나 적게' in body) = 0;
-
 update public.world_app_meta set value = '20261112000000' where key = 'db_version';
