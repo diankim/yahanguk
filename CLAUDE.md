@@ -274,7 +274,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 개인 창고(world_storage)
 
 - 어느 안전지대에서나 같은 창고, 기본 70칸(가방과 같은 묶음). world_storage_snapshot·world_storage_put·world_storage_take(들어가는 만큼)·world_storage_expand.
-- 넓히기(world_storage_capacity, 최대 108): 전 4번 +4씩(1,000·2,500·5,000·10,000전)·이야기 6~10장 +2씩·대세력 평판 300·600·1000 +2씩·완전 답사 10·20·30곳 +2씩. 줄어 넘쳐도 물품은 남고 맡기기만 막음.
+- 넓히기(world_storage_capacity, 최대 128): 전 4번 +4씩(1,000·2,500·5,000·10,000전)·이야기 6~10장 +2씩·외전 장 gq_1~5·mkq_1~5 마칠 때마다 +2(2.0.0, 사용자 결정 — 목록은 함수 안 배열 하나, gamedata storage.arc가 셈)·대세력 평판 300·600·1000 +2씩·완전 답사 10·20·30곳 +2씩. 줄어 넘쳐도 물품은 남고 맡기기만 막음.
 - 보기는 어디서나(snapshot can_move·reason·in_safe, 가방 › 제작 「창고 보기」), 맡기기·꺼내기는 안전지대만. 버리기 world_storage_discard는 어디서나(잠금·귀속 소모품 거절). 장착 중·강화한 장비의 마지막 하나·임무 물품은 못 맡기고, 전투불능·이동·원정·자율 중엔 못 씀(world_storage_check, world_seal_guard). 행동 기록 없음.
 - 안전지대 제작은 world_craft_item이 모자란 재료를 창고에서 꺼내 씀(가방 먼저, 반요촌 제외), 제작 화면 재료 수에 창고 몫 표시. 필요 도구도 같은 조건에서 창고에 있으면 됨(1.0.3e, 조건만 — 제작 공구 품질 덤 world_craft_tool_bonus는 가방에 든 것만), 화면 bag.js toolNote가 「(강화 채집도 · 창고로 됨)」처럼 대신 채운 도구를 적음. 결과가 가방에 안 들어가면 제작 전에 거절.
 - 창고 창 분류 칩·이름 찾기(services.js renderStorage, 줄만 숨김). 꺼내기 목록도 「칸대로 나눠 보기」(가방과 같은 설정 yh-bag-split, 묶음 크기만큼 한 줄씩, 1.1.1g 제보 59).

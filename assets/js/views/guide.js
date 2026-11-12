@@ -222,6 +222,7 @@ const S = [
       <li><b>넓히기</b>: 최대 ${GD.storage.max}칸까지 넓힙니다.
         <ul><li><b>전</b>: ${GD.storage.prices.length}번, +4칸씩 · ${GD.storage.prices.map(v => v.toLocaleString('ko-KR')).join(' → ')}전</li>
           <li><b>이야기 6~10장</b>: 해결마다 +2</li>
+          <li><b>외전 귀허도·묵적록</b>: 장(「요인록」·「묵적록」 다섯 장씩)을 마칠 때마다 +2</li>
           <li><b>대세력 평판</b>: 300·600·1,000에서 +2씩. 세력을 떠나면 사라집니다.</li>
           <li><b>지역 완전 답사</b>: 10·20·30곳에서 +2씩</li></ul></li>
       <li>용량이 줄어 넘쳐도 물품은 남고, 새로 맡기기만 막힙니다.</li>

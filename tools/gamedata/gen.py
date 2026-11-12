@@ -104,9 +104,9 @@ def build(dsn):
     base = int(re.search(r"'base',\s*(\d+)", src).group(1))
     prices = [int(x) for x in re.search(r"array\[([\d,\s]+)\]\)\[b\.n", src).group(1).split(',')]
     late = q(dsn, "select count(*) from world_story_chapters where seq between 6 and 10")
-    # 전 넓히기 단계마다 +4 · 이야기 6~10장 +2씩 · 평판 300/600/1000 +2씩 · 완전 답사 10/20/30곳 +2씩
+    arcs = re.findall(r"'([a-z]+_\d+)'", re.search(r"g\.quest_id = any \(array\[([^\]]+)\]", src).group(1))
     d['bag'] = {'base': int(re.match(r'\d+', bag).group(0))}
-    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + 6 + 6, 'prices': prices}
+    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + 2 * len(arcs) + 6 + 6, 'prices': prices, 'arc': len(arcs)}
     # 칭호 수
     t = q(dsn, """select json_build_object('total', count(*), 'public', count(*) filter (where not hidden),
         'skill', count(*) filter (where title_key ~ '^(ct|gt)_'),

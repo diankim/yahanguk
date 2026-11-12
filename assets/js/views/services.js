@@ -4,6 +4,7 @@ import { load, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP } from '../rules.js';
+import { GAMEDATA as GD } from '../gamedata.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
 const infoName = (id, label, cat) => `${kindChip(id, cat)}<button class="linkish item-name" data-info="${esc(id)}">${esc(label || nameOf(id))}</button>`;
@@ -477,7 +478,7 @@ export async function renderStorage(box) {
       if (!storeSplit() || st <= 1 || n <= st) return [row(i.item_id, i.name, n, Math.min(n, i.room), 'take', full)];
       return Array.from({ length: Math.ceil(n / st) }, (_, k) => { const q = Math.min(st, n - k * st); return row(i.item_id, i.name, q, Math.min(q, i.room), 'take', full, k + 1); });
     };
-    const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['세력 평판', src.faction], ['지역 답사', src.survey]]
+    const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['이야기', src.story], ['외전', src.arc], ['세력 평판', src.faction], ['지역 답사', src.survey]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
     box.innerHTML = `
       <div class="shop-head"><div><b>개인 창고</b><small>어느 안전지대에서 열어도 같은 창고입니다 · ${esc(parts)}</small></div>
@@ -500,6 +501,7 @@ export async function renderStorage(box) {
           <li><div><b>전으로 넓히기</b><small>4번까지 +4칸씩 · ${STORE_PRICES.map((p, i) => `<span class="${i < steps ? 'ok' : ''}">${fmt.num(p)}전</span>`).join(' → ')} · 넓힌 횟수 ${steps}/4</small></div>
             ${steps >= 4 ? chip('다 넓힘', 'ok') : `<button class="btn small primary" id="st-grow" ${ro || (c?.gil ?? s.gil) < src.next_price ? 'disabled' : ''}>+4칸 · ${fmt.jeon(src.next_price)}</button>`}</li>
           <li><div><b>이야기 6~10장</b><small>장을 해결할 때마다 +2칸 (최대 +10)</small></div>${chip(`+${src.story || 0}`, src.story ? 'ok' : '')}</li>
+          <li><div><b>외전 귀허도·묵적록</b><small>장을 마칠 때마다 +2칸 (최대 +${2 * GD.storage.arc})</small></div>${chip(`+${src.arc || 0}`, src.arc ? 'ok' : '')}</li>
           <li><div><b>대세력 평판</b><small>평판 300·600·1000에서 +2칸씩 (최대 +6) · 세력을 떠나면 사라집니다</small></div>${chip(`+${src.faction || 0}`, src.faction ? 'ok' : '')}</li>
           <li><div><b>지역 완전 답사</b><small>10·20·30곳에서 +2칸씩 (최대 +6) · 지금 ${src.surveyed || 0}곳</small></div>${chip(`+${src.survey || 0}`, src.survey ? 'ok' : '')}</li>
         </ul>
