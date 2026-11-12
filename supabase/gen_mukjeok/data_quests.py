@@ -91,7 +91,7 @@ PLAN = {
                 ('이름 먹 부적 2장을 지어 명부 탑으로 간다', {'at': [TOWER], 'tasks': [{'t': 'craft', 'items': ['name_ink_charm'], 'n': 2}, {'t': 'travel', 'r': [TOWER], 'n': 1}]}),
                 ('명부 탑에서 먹귀를 10번 풀어 보낸다', {'at': [TOWER], 'tasks': [{'t': 'win', 'r': [TOWER], 'n': 10}]}),
                 ('명부 탑을 3번 탐색해 꼭대기로 오른다', {'at': [TOWER], 'tasks': [{'t': 'search', 'r': [TOWER], 'n': 3}]}),
-                ('탑 꼭대기의 엉킨 먹귀 무리를 세 번 풀어 보낸다', {'at': [TOWER], 'tasks': [{'t': 'win', 'm': ['mk_tower_5'], 'n': 3}]}),
+                ('탑 꼭대기의 엉킨 먹귀 무리를 두 번 풀어 보낸다', {'at': [TOWER], 'tasks': [{'t': 'win', 'm': ['mk_tower_5'], 'n': 2}]}),
                 ('명부 탑 꼭대기에서 이어진다', {'at': [TOWER]}),
             ]),
     5: dict(id='mkq_5', L=45, region=COURT, after=['mkq_4'], items={'name_ink_charm': 3, 'drifting_name_thread': 3},
