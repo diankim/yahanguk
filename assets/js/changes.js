@@ -23,6 +23,7 @@ export const CHANGES = {
   dismantle: /dismantle|skill|craft|level|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
+  raidBrief: /raid_final_start/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
   boardAway: /expedition|raid_|pfight_|gw_/,
   boardSearch: /^world_field_search/,

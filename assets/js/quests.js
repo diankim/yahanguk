@@ -1,4 +1,4 @@
-import { store, act, rpc, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, on, midBattle } from './core.js';
+import { store, act, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, on, midBattle } from './core.js';
 import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
 import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore } from './sources.js';
@@ -239,7 +239,7 @@ export async function fillQuests(box) {
   $$('[data-q-group]', box).forEach(x => x.onclick = () => { try { localStorage.setItem(GKEY, x.dataset.qGroup); } catch {} fillQuests(box); });
   $('[data-q-final]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
     if (!(await askFinal())) return null;
-    const r = await rpc('world_raid_final_start'); window.yahangGo('raid', r?.raid_id || ''); return null;
+    const r = await act('world_raid_final_start'); window.yahangGo('raid', r?.raid_id || ''); return null;
   }));
   $('[data-f-report]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
     const r = await act('world_faction_report');
