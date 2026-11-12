@@ -1,4 +1,4 @@
-TERR = ('mukjeok', '묵적록')
+TERR = ('mukjeok', '묵적 봉쇄령')
 FERRY = 'mukchang_ferry'
 LV7 = 42
 TOOL_LV = 40
@@ -184,8 +184,8 @@ ITEMS = [
 ]
 
 STATUSES = [
-    ('clear_name', '또렷한 이름', 'positive', 120, {}, 'spark', '제 이름이 또렷이 새겨져 있습니다. 묵적록의 이름 흐림이 한 단계 가볍고, 침식 30 아래면 걸리지 않습니다.'),
-    ('name_ward', '이름 지킴', 'positive', 60, {}, 'shield', '이름 먹 부적이 이름을 지킵니다. 묵적록의 이름 흐림이 한 단계 가볍고, 침식 30 아래면 걸리지 않습니다.'),
+    ('clear_name', '또렷한 이름', 'positive', 120, {}, 'spark', '제 이름이 또렷이 새겨져 있습니다. 묵적 봉쇄령의 이름 흐림이 한 단계 가볍고, 침식 30 아래면 걸리지 않습니다.'),
+    ('name_ward', '이름 지킴', 'positive', 60, {}, 'shield', '이름 먹 부적이 이름을 지킵니다. 묵적 봉쇄령의 이름 흐림이 한 단계 가볍고, 침식 30 아래면 걸리지 않습니다.'),
     ('meokgwi_repel', '먹귀 쫓김', 'positive', 60, {'encounter_pct': -20, 'mental_loss_pct': -5}, 'flame', '먹귀 쫓는 향 냄새가 배어 요괴와 덜 마주칩니다.'),
     ('rain_shelter', '먹비 가림', 'positive', 60, {'incoming_damage_pct': -8}, 'shield', '먹비 우산이 먹비와 함께 날아드는 것을 막아 줍니다.'),
     ('dark_eye', '어둠 눈', 'positive', 60, {'clue_bonus_pct': 6}, 'spark', '어둠 속에서도 작은 흔적이 눈에 들어옵니다.'),
@@ -364,11 +364,11 @@ FURNITURE = {
 
 TITLES = [
     ('mk_arrive', '먹빛 나루에 닿은 이', 3, {'mental_loss_pct': -3}, {'n': 1, 'p': {'region_id': 'mukchang_ferry'}, 'ev': 'travel', 'has': 'travel_history_id'}, '묵창 나루에 닿는다', False),
-    ('mk_walker', '흐린 이름의 길손', 4, {'travel_time_pct': -4, 'encounter_pct': -3}, {'all': [{'p': {'region_id': r}, 'ev': 'travel', 'has': 'travel_history_id'} for r in ['mukchang_ferry', 'blank_field', 'meokbi_forest', 'myeongbu_tower', 'nine_court']]}, '묵적록의 다섯 곳에 모두 닿는다', False),
+    ('mk_walker', '흐린 이름의 길손', 4, {'travel_time_pct': -4, 'encounter_pct': -3}, {'all': [{'p': {'region_id': r}, 'ev': 'travel', 'has': 'travel_history_id'} for r in ['mukchang_ferry', 'blank_field', 'meokbi_forest', 'myeongbu_tower', 'nine_court']]}, '묵적 봉쇄령의 다섯 곳에 모두 닿는다', False),
     ('mk_plate_reader', '지워진 문패를 읽는 이', 3, {'clue_bonus_pct': 4}, {'n': 20, 'p': {'item_id': 'erased_plate'}, 'ev': 'gather'}, '지워진 문패 조각을 20번 거둔다', False),
     ('mk_ebony_hand', '먹비 숲의 나무꾼', 3, {'gather_qty_pct': 4}, {'n': 20, 'p': {'item_id': 'meokbi_ebony'}, 'ev': 'gather'}, '먹비 흑단을 20번 거둔다', False),
     ('mk_court_all', '아홉 칸을 지나온 이', 5, {'erosion_pct': -5, 'mental_loss_pct': -5, 'combat_damage_pct': 2},
-     {'all': [{'p': {'monster_id': m, 'defeated': True}, 'ev': 'combat'} for m in ['mk_field_5', 'mk_forest_5', 'mk_tower_5', 'mk_court_5']]}, '묵적록 네 곳의 우두머리를 모두 풀어 보낸다', False),
+     {'all': [{'p': {'monster_id': m, 'defeated': True}, 'ev': 'combat'} for m in ['mk_field_5', 'mk_forest_5', 'mk_tower_5', 'mk_court_5']]}, '묵적 봉쇄령 네 곳의 우두머리를 모두 풀어 보낸다', False),
     ('mk_fish_doorplate_carp', '문패를 낚은 이', 4, {'fish_bite_pct': 3}, {'n': 1, 'p': {'fish': 'doorplate_carp'}, 'ev': 'fish'}, '문패 잉어를 낚는다', True),
     ('mk_fish_blank_snakehead', '빈칸을 낚은 이', 4, {'fish_rare_pct': 3}, {'n': 1, 'p': {'fish': 'blank_snakehead'}, 'ev': 'fish'}, '빈칸 가물치를 낚는다', True),
     ('mk_fish_meokbi_salmon', '먹비를 낚은 이', 4, {'gather_qty_pct': 3}, {'n': 1, 'p': {'fish': 'meokbi_salmon'}, 'ev': 'fish'}, '먹비 대산천어를 낚는다', True),
@@ -381,6 +381,6 @@ TITLES = [
 TITLE_CAT = '묵적록'
 NAME_STYLE = (1031, '먹빛 금', 'cat', TITLE_CAT, 6)
 COSMETICS = [
-    ('fr_mukjeok', 'frame', 'legend', '먹비 테', '묵적록 다섯 곳에 모두 닿으면', {'title': 'mk_walker'}, 1500),
+    ('fr_mukjeok', 'frame', 'legend', '먹비 테', '묵적 봉쇄령 다섯 곳에 모두 닿으면', {'title': 'mk_walker'}, 1500),
     ('sl_muk', 'seal', 'legend', '낙관 「墨」', '명어 여섯을 모두 낚으면', {'title': 'mk_named_all'}, 1501),
 ]

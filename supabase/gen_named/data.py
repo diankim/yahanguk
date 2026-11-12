@@ -47,6 +47,6 @@ NAMED = [
 ]
 ALL_TITLE = ('nf_named_all', '온 나라의 명어를 낚은 이', 5, {'fish_bite_pct': 5, 'fish_rare_pct': 8, 'gather_qty_pct': 3}, '대세력 땅과 중립 땅의 명어 아홉을 모두 낚는다')
 MUKJEOK_NAMED = ['doorplate_carp', 'blank_snakehead', 'meokbi_salmon', 'blind_dragon', 'bamboo_eel', 'inkscale_tuna']
-EVERY_TITLE = ('nf_named_every', '명어의 이름을 모두 부르는 이', 5, {'fish_bite_pct': 6, 'fish_rare_pct': 10, 'fish_size_pct': 10, 'gather_qty_pct': 3}, '묵적록과 온 나라의 명어 열다섯을 모두 낚는다')
+EVERY_TITLE = ('nf_named_every', '명어의 이름을 모두 부르는 이', 5, {'fish_bite_pct': 6, 'fish_rare_pct': 10, 'fish_size_pct': 10, 'gather_qty_pct': 3}, '묵적 봉쇄령과 온 나라의 명어 열다섯을 모두 낚는다')
 TITLE_CAT = '낚시'
 RUBBING_MATS = {'fine_paper': 2, 'sealing_ink': 2}

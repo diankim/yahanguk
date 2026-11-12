@@ -108,9 +108,10 @@ export const GAMEDATA = {
   "level": {"cap":45,"per_level":3,"stat_points_cap":132},
   "domains": {
     "gwiheo": {"fx":{"effects":{"erosion_pct":60}},"name":"귀허도"},
-    "mukjeok": {"fx":{"blur":{"stages":[{"er":30,"name":"이름 번짐","note":"먹이 이름 획 셋을 지웠습니다. 정신이 쉽게 흐트러지고 받는 피해와 마주침이 늘어납니다. 침식을 낮추면 지워진 획이 돌아옵니다.","effects":{"encounter_pct":8,"rare_loot_pct":3,"clue_bonus_pct":3,"mental_loss_pct":20,"incoming_damage_pct":8}},{"er":50,"name":"이름 바램","note":"이름 획이 셋만 남았습니다. 손에 힘이 빠져 주는 피해가 줄고 회복이 더딥니다.","effects":{"healing_pct":-10,"encounter_pct":10,"rare_loot_pct":5,"clue_bonus_pct":5,"mental_loss_pct":25,"combat_damage_pct":-20,"incoming_damage_pct":10}},{"er":80,"name":"이름 잃음","note":"이름 획이 모두 지워졌습니다. 다른 조사원에게 내 이름이 깨진 글자로 보이고, 주는 피해가 크게 줄어듭니다. 정화 부적으로 침식을 낮추거나 이름 먹 부적·이름 새김 탕으로 버티세요.","effects":{"healing_pct":-15,"encounter_pct":12,"rare_loot_pct":8,"clue_bonus_pct":8,"mental_loss_pct":30,"combat_damage_pct":-35,"incoming_damage_pct":12},"nameless":true}],"strokes":9,"guard_step":1},"name":"이름 흐림","guard":["clear_name","name_ward"],"effects":{"encounter_pct":5,"mental_loss_pct":15,"incoming_damage_pct":5}},"name":"묵적록"}
+    "mukjeok": {"fx":{"blur":{"stages":[{"er":30,"name":"이름 번짐","note":"먹이 이름 획 셋을 지웠습니다. 정신이 쉽게 흐트러지고 받는 피해와 마주침이 늘어납니다. 침식을 낮추면 지워진 획이 돌아옵니다.","effects":{"encounter_pct":8,"rare_loot_pct":3,"clue_bonus_pct":3,"mental_loss_pct":20,"incoming_damage_pct":8}},{"er":50,"name":"이름 바램","note":"이름 획이 셋만 남았습니다. 손에 힘이 빠져 주는 피해가 줄고 회복이 더딥니다.","effects":{"healing_pct":-10,"encounter_pct":10,"rare_loot_pct":5,"clue_bonus_pct":5,"mental_loss_pct":25,"combat_damage_pct":-20,"incoming_damage_pct":10}},{"er":80,"name":"이름 잃음","note":"이름 획이 모두 지워졌습니다. 다른 조사원에게 내 이름이 깨진 글자로 보이고, 주는 피해가 크게 줄어듭니다. 정화 부적으로 침식을 낮추거나 이름 먹 부적·이름 새김 탕으로 버티세요.","effects":{"healing_pct":-15,"encounter_pct":12,"rare_loot_pct":8,"clue_bonus_pct":8,"mental_loss_pct":30,"combat_damage_pct":-35,"incoming_damage_pct":12},"nameless":true}],"strokes":9,"guard_step":1},"name":"이름 흐림","guard":["clear_name","name_ward"],"effects":{"encounter_pct":5,"mental_loss_pct":15,"incoming_damage_pct":5}},"name":"묵적 봉쇄령"}
   },
   "names": {
+    "idle": {"rest":"휴식","research":"자료 조사","training":"자율 수련","maintenance":"장비 정비"},
     "field": {"alchemy":"연금","cooking":"요리","sealing":"봉인 공예","weaving":"직조","artifice":"법구 공예","smithing":"단조","carpentry":"목공","leatherwork":"가죽 공예"},
     "gather": {"ore":"광맥","wood":"목재","herbs":"약초","water":"물가","relics":"유물","spirit":"영기","supplies":"보급품"}
   },
@@ -158,7 +159,7 @@ export const GAMEDATA = {
   "regionNames": {"bone_market":"백골 장터","ember_pass":"불씨 고개","ember_village":"잔불촌","ghost_bamboo":"귀죽림","hidden_bazaar":"십삼문 암시장","hq_dorm":"본부 객사","hq_yard":"야행국 본부 정청","iron_monastery":"철벽 고찰","lamp_alley":"등잔골 뒷골목","red_moon_fort":"적월교 월식성","red_plain":"적사 황무지","river_ferry":"구름나루","salt_village":"염등촌","snow_hollow":"설피골","star_hill":"별바라기 언덕","star_observatory":"무극 관성대"},
   "bag": {"base":34},
   "storage": {"base":70,"max":108,"prices":[1000,2500,5000,10000]},
-  "titles": {"total":288,"public":196,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":22,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"묵적록":12,"교류":3,"토벌":13,"도감":20,"외전":13,"세력":21,"별채":14,"비밀":57}},
+  "titles": {"total":291,"public":199,"skill":32,"cat":{"이동":6,"전투":13,"탐사":10,"제작":28,"이야기":13,"낚시":22,"레거시":3,"운영":1,"비무":10,"비무회":11,"성장":8,"채집":10,"묵적록":15,"교류":3,"토벌":13,"도감":20,"외전":13,"세력":21,"별채":14,"비밀":57}},
   "fish": {"species":75,"grounds":33,"named":15},
   "outfit": {"keep":20,"weave":{"top":{"mats":[["영사",2],["운면",1]],"level":5},"bottom":{"mats":[["영사",2],["운면",2]],"level":5}},"colors":8,"per_day":2,"give_day":10,"title_max":12}
 };
