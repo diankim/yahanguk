@@ -243,18 +243,26 @@ function paint() {
   const terrPolys = new Map();
   for (const r of regions) { const t = r.territory_id || 'none', poly = g.cells.get(r.region_id); if (poly) (terrPolys.get(t) || terrPolys.set(t, []).get(t)).push(poly.map(([x, y]) => [X(x), Y(y)])); }
   const TRY = [[0, 0]];
-  for (let k = 1; k <= 4; k++) for (const dx of [0, -0.5, 0.5, -1, 1]) for (const dy of [-k, k]) TRY.push([dx, dy * 0.7]);
-  for (const k of [-0.5, 0.5, -1, 1]) TRY.push([k, 0]);
+  for (let dy = -5; dy <= 5; dy++) for (let dx = -6; dx <= 6; dx++) if (dx || dy) TRY.push([dx * 0.25, dy * 0.6]);
+  TRY.sort((a, b) => Math.hypot(a[0] * 2, a[1]) - Math.hypot(b[0] * 2, b[1]));
+  const over = bx => bx.x < 0 || bx.y < 0 || bx.x + bx.w > W || bx.y + bx.h > H ? Infinity
+    : boxes.reduce((t, o) => t + Math.max(0, Math.min(bx.x + bx.w, o.x + o.w) - Math.max(bx.x, o.x)) * Math.max(0, Math.min(bx.y + bx.h, o.y + o.h) - Math.max(bx.y, o.y)), 0);
   for (const [tid, t] of terr) {
     if (!t.name) continue;
     const tfs = Math.max(13, Math.min(22, 15 * Math.sqrt(zoom))), wfs = Math.max(11, tfs * 0.6);
     const cx = X(t.x / t.n), cy = Y(t.y / t.n), w = [...t.name].length * tfs * 1.25 + 6, h = tfs + 4 + (wx[tid] ? wfs * 1.4 : 0);
     const polys = terrPolys.get(tid) || [], mine = (x, y) => !polys.length || polys.some(p => inPoly(x, y, p));
-    let tx = cx, ty = cy;
-    for (const [dx, dy] of TRY) {
-      const x = cx + dx * w, y = cy + dy * h, bx = { x: x - w / 2, y: y - tfs / 2 - 2, w, h };
-      if (mine(x, y) && mine(x, y + h / 2) && !hit(bx)) { tx = x; ty = y; break; }
+    let tx = cx, ty = cy, best = Infinity;
+    const ax = Math.min(W - w / 2, Math.max(w / 2, cx)), ay = Math.min(H - h, Math.max(h, cy));
+    const spots = [...TRY.map(([dx, dy]) => [cx + dx * w, cy + dy * h]),
+      ...polys.flatMap(p => { const [px, py] = centroid(p); return [[px, py], [px, py - h * 0.8], [px, py + h * 0.8]]; })
+        .sort((a, b) => Math.hypot(a[0] - ax, a[1] - ay) - Math.hypot(b[0] - ax, b[1] - ay))];
+    for (const [x, y] of spots) {
+      if (!mine(x, y)) continue;
+      const o = over({ x: x - w / 2 - 4, y: y - tfs / 2 - 6, w: w + 8, h: h + 8 });
+      if (o < best) { best = o; tx = x; ty = y; if (!o) break; }
     }
+    if (best > 0 && zoom >= 1.35) continue;
     boxes.push({ x: tx - w / 2, y: ty - tfs / 2 - 2, w, h });
     tnames += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="terr-name" style="opacity:${tOpacity};font-size:${tfs}px" text-anchor="middle" dominant-baseline="central">${esc(t.name)}</text>`;
     if (wx[tid]) tnames += `<text x="${tx.toFixed(1)}" y="${(ty + tfs * 0.95).toFixed(1)}" class="terr-weather w-${esc(wx[tid].key)}" style="opacity:${tOpacity};font-size:${wfs}px" text-anchor="middle" dominant-baseline="central">${esc(wx[tid].name)}</text>`;
