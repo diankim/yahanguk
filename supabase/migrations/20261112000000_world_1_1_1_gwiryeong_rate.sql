@@ -23,7 +23,7 @@ select pg_temp.yh_fix('world_field_search', array[
   $a$random() < 0.002 AND public.world_gwiryeong_reserve(uid, 'skill_tracking')$a$,
   $b$random() < 0.002 * (public.world_gwiryeong_rules() ->> 'rate_mul')::numeric AND public.world_gwiryeong_reserve(uid, 'skill_tracking')$b$]);
 
-update public.world_skill_catalog set description = '추가 기술 · 위험도 7 이상 지역에서 탐색할 때 드물게 귀령초 하나(한 번 얻으면 72시간 다시 나오지 않음)'
+update public.world_skill_catalog set description = '추가 기술 · 위험도 7 이상 지역에서 탐색할 때 0.05% 확률로 귀령초 하나(한 번 얻으면 72시간 다시 나오지 않음)'
  where skill_id = 'tracking_x36';
 
 update public.world_app_meta set value = '20261112000000' where key = 'db_version';
