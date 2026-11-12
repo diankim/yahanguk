@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1196,13 +1196,14 @@ const S = [
       <tr><td>채집</td><td>0.3</td></tr>
       <tr><td>원정</td><td>20분마다 1, 최대 24</td></tr></table>
     <ul>
-      <li>한 사람이 한 지역에 한 시간에 쌓는 몫은 40까지입니다. 현장 머리의 「이번 정산 몫 n/40」에서 얼마나 찼는지 봅니다. 다 차면 그 정산 동안은 더 쌓이지 않고, 매시 7분 정산 뒤 다시 쌓입니다.</li>
-      <li>한 시간마다 영향력이 3% 줄고 정산합니다.</li>
+      <li>${FACTION_CAP}. 현장 머리의 「이번 정산 몫 n/40」에서 얼마나 찼는지 보고, 눌러 보면 오늘 몫도 나옵니다. 매시 7분에 정산합니다.</li>
+      <li>${FACTION_SCORE.score}.</li>
     </ul>
     <h4>지배와 분쟁</h4>
     <ul>
-      <li>본래 주인 세력은 기본 150을 지닙니다.</li>
-      <li>다른 세력의 영향력이 150과 지배 세력 점수의 1.25배를 넘으면 <b>지배 세력이 바뀝니다</b>. 그 60%를 넘으면 <b>분쟁 중</b>이 됩니다.</li>
+      <li>${FACTION_SCORE.floor}.</li>
+      <li>${FACTION_SCORE.flip}.</li>
+      <li>${FACTION_SCORE.idle}.</li>
       <li>안전지대는 바뀌지 않습니다.</li>
       <li>지도와 현장 머리에 지배 세력 색과 분쟁 표시가 보이고, 세력 소식이 전체 채팅과 알림으로 갑니다.</li>
       <li>직할령의 Lv1~3 여덟 곳은 <b>중립</b>이라 겨루기에 들지 않습니다. 세력마다 낮은·중간·높은 지역이 고루 있습니다.</li>
@@ -1214,11 +1215,10 @@ const S = [
       <tr><td>분쟁 중</td><td>누구나 희귀품 +3% · 요괴 조우 +5%</td></tr></table>
     <h4>겨루기 규칙</h4>
     <ul>
-      <li><b>방치된 점령지</b>: 본래 주인이 아닌 세력이 차지한 곳에서 그 세력 활동이 6시간 없으면, 영향력이 시간당 8%로 빨리 줄어듭니다. 24시간이 지나면 본래 주인에게 돌아갑니다.</li>
       <li><b>독식 보정</b>: ${FACTION_SPREAD}</li>
       <li><b>약세 보정</b>: ${FACTION_BOOST}.</li>
-      <li><b>지키는 쪽</b>: ${FACTION_HOME}. <b>한 사람 상한</b>: ${FACTION_CAP}.</li>
-      <li><b>주간 정산</b>: 매주 월요일 04:00에 지킨 지역을 세력 소식으로 남깁니다. 지킨 지역 하나마다 그 주에 활동한 조사원에게 공훈 5를 주고, 모든 영향력이 절반이 됩니다.</li>
+      <li><b>지키는 쪽</b>: ${FACTION_HOME}.</li>
+      <li><b>주간 정산</b>: 매주 월요일 04:00에 지킨 지역을 세력 소식으로 남깁니다. 지킨 지역 하나마다 그 주에 활동한 조사원에게 공훈 5를 줍니다.</li>
     </ul>
     <h4>세력 관계</h4>
     <ul>

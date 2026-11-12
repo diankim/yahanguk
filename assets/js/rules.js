@@ -31,7 +31,15 @@ const FSR = GD.factionSpread || {};
 const FS = (FSR.steps || [[0, 100], [1, 75], [2, 55], [3, 40], [4, 25]]).filter(([n]) => n > 0);
 export const FACTION_SPREAD = `본래 땅 밖에서 차지한 곳과 1위로 분쟁 중인 곳이 많을수록, 본래 땅 밖에 새로 쌓는 영향력이 줄어듭니다. ${FS.map(([n, p], i) => `${n}곳${i === FS.length - 1 ? ' 이상' : ''} ${p}%`).join(' · ')}`;
 export const FACTION_HOME = `본래 주인 세력이 자기 본래 땅에서 쌓는 영향력은 ×${(FSR.home_pct || 150) / 100}`;
-export const FACTION_BOOST = `지금 쌓여 있는 영향력 합이 적은 세력일수록 새로 쌓는 영향력에 √(가장 많이 쌓은 세력의 합 ÷ 우리 합)배가 붙습니다(1~${FSR.boost_max || 2.5}배, 가장 앞선 세력은 보정 없음)`;
+export const FACTION_BOOST = `차지한 지역이 적은 세력일수록 새로 쌓는 영향력이 늘어납니다. 가장 적게 차지한 세력 ×${FSR.boost_max || 1.3}, 가장 많이 차지한 세력 ×1, 그 사이는 차지한 수에 따라`;
+const FW = (FSR.window_h || 72) / 24;
+export const FACTION_SCORE = {
+  score: `지역 점수는 최근 ${FW}일 동안 그 지역에 쌓은 영향력 합을 그 세력에서 최근 ${FW}일 동안 ${(FSR.active_min || 60) / 60}시간 넘게 움직인 조사원 수의 제곱근으로 나눈 값입니다. 오래된 몫은 ${FW}일이 지나면 빠집니다`,
+  floor: `본래 주인은 점수가 낮아도 ${FSR.floor ?? 60}으로 셉니다`,
+  flip: `다른 세력 점수가 지배 세력 점수의 ${FSR.flip_ratio || 1.25}배 이상이 되면 분쟁 중이 되고, ${FSR.hold_h || 24}시간 이어지면 지배 세력이 바뀝니다. 분쟁이 시작되면 지배 세력 조사원에게 알림이 갑니다`,
+  idle: `남의 땅을 차지한 세력이 그곳에 ${FSR.idle_h || 24}시간 새로 쌓지 않으면 본래 주인에게 돌아갑니다`,
+  hold: FSR.hold_h || 24,
+};
 const FPK = GD.factionPerk || {};
 const FPN = FPK.north_league || {}, FPO = FPK.night_office || {};
 export const FACTION_PERK = {
@@ -40,12 +48,16 @@ export const FACTION_PERK = {
   north_league: `원정 중 받는 피해 ${FPN.exp_hurt_pct ?? -20}% · 채집·채광 숙련 경험 +${FPN.gather_skill_pct ?? 10}%`,
   north_rank: `받는 피해 ${FPN.rank_hurt_pct ?? -2}%씩`,
 };
-export const FACTION_CAP = `한 사람이 한 시간 정산에 쌓는 영향력은 지역마다 ${FSR.region_cap || 40}, 모든 지역을 합쳐 ${FSR.person_cap || 60}까지`;
+export const FACTION_CAP = `한 사람이 한 시간 정산에 쌓는 영향력은 지역마다 ${FSR.region_cap || 40}, 모든 지역을 합쳐 ${FSR.person_cap || 60}까지, 하루(한국 시각)에는 지역마다 ${FSR.day_region_cap || 60}, 모든 지역을 합쳐 ${FSR.day_cap || 90}까지`;
 export function inflMine(m) {
   if (!m) return null;
   const t = new Date(m.next_at), at = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
-  const full = m.n >= m.cap || m.all >= m.all_cap;
-  return { full, text: `이번 정산 몫 ${full ? "다 참 " : ""}${m.n}/${m.cap}`, tip: `이 지역에 이번 정산(${at})까지 쌓은 내 영향력 몫 ${m.n}/${m.cap} · 모든 지역 합 ${m.all}/${m.all_cap}. ${full ? `몫이 다 찼습니다. 더 해도 ${at} 정산에는 들어가지 않고, ${at}부터 다시 쌓입니다.` : '얻는 몫은 도움말 › 세력 › 영향력.'} ${FACTION_CAP}.` };
+  const dayFull = m.day_cap != null && (m.day >= m.day_cap || m.day_all >= m.day_all_cap);
+  const full = dayFull || m.n >= m.cap || m.all >= m.all_cap;
+  const day = m.day_cap != null ? ` · 오늘 이 지역 ${m.day}/${m.day_cap} · 오늘 모든 지역 ${m.day_all}/${m.day_all_cap}` : '';
+  const why = dayFull ? '오늘 몫이 다 찼습니다. 더 해도 오늘은 쌓이지 않고, 한국 시각 자정부터 다시 쌓입니다.'
+    : full ? `몫이 다 찼습니다. 더 해도 ${at} 정산에는 들어가지 않고, ${at}부터 다시 쌓입니다.` : '얻는 몫은 도움말 › 세력 › 영향력.';
+  return { full, text: dayFull ? `오늘 몫 다 참 ${m.day}/${m.day_cap}` : `이번 정산 몫 ${full ? "다 참 " : ""}${m.n}/${m.cap}`, tip: `이 지역에 이번 정산(${at})까지 쌓은 내 영향력 몫 ${m.n}/${m.cap} · 모든 지역 합 ${m.all}/${m.all_cap}${day}. ${why} ${FACTION_CAP}.` };
 }
 export const PARTY_EXP = {
   who: '「파티 원정」으로 함께 떠난 동료',

@@ -83,7 +83,7 @@ export const GAMEDATA = {
   "partyExp": {"flee_hp":30,"bonus_cap":3,"bonus_pct":10,"threat_pct":45,"overlap_min":10},
   "agile": {"agi_k":2,"eva_k":0.175,"flee_k":0.5,"tank_k":0.5,"eva_cap":40,"quiet_k":0.8,"sneak_k":0.65,"crit_cap":60,"eva_base":3,"flee_cap":95,"flee_min":10,"hazard_k":0.75,"flee_base":50,"quiet_cap":50,"scout_eva":6,"sneak_cap":75,"sneak_min":10,"hazard_cap":90,"hazard_w_k":0.05,"scout_flee":15,"sneak_base":25,"hazard_base":30,"scout_sneak":10},
   "questXp": {"mid":6,"band":[[1,25],[6,40],[11,40],[16,75],[21,90],[26,75],[31,100]],"grace":3,"low_pct":20,"mid_pct":50},
-  "factionSpread": {"steps":[[0,100],[1,75],[2,55],[3,40],[4,25]],"home_pct":150,"boost_max":2.5,"person_cap":60,"region_cap":40},
+  "factionSpread": {"floor":60,"steps":[[0,100],[1,75],[2,55],[3,40],[4,25]],"hold_h":24,"idle_h":24,"day_cap":90,"home_pct":150,"window_h":72,"boost_max":1.3,"active_min":60,"flip_ratio":1.25,"person_cap":60,"region_cap":40,"day_region_cap":60},
   "factionPerk": {
     "night_office": {"exp_xp_pct":10},
     "north_league": {"exp_hurt_pct":-20,"rank_hurt_pct":-2,"gather_skill_pct":10}
