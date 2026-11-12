@@ -98,6 +98,12 @@ export const RESCUE = {
 
 export const MARKET_SOLD = { days: 7, max: 30 };
 export const GW_DAILY = '처치는 하루 한 번입니다. 이긴 날(한국 시각 자정까지)은 다시 도전할 수 없고, 지면 30분 뒤에 다시 도전할 수 있습니다.';
+export const FIGHT_KINDS = {
+  raid: { route: 'raid', label: '토벌' },
+  gw: { route: 'gw', label: '우두머리와 싸우는 중' },
+  pfight: { route: 'pfight', label: '파티 토벌' },
+};
+export const onFightRoute = (h = location.hash) => Object.values(FIGHT_KINDS).some(k => h.startsWith(`#/${k.route}`));
 export const UCOMM_PAST = '받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
 
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };

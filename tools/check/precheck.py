@@ -42,6 +42,7 @@ where (i.category = 'material' or exists (select 1 from public.world_fish_specie
   and not exists (select 1 from public.world_crafting_recipes r where r.ingredients ? i.item_id)""",
     'tool_gaps': """select coalesce(json_agg(line order by line), '[]') from (select l.line, min(c.tier) lo, max(c.tier) hi, count(distinct c.tier) n
   from public.world_tool_lines l join public.world_item_catalog c on c.item_id = l.item_id group by l.line) x where n < hi - lo + 1""",
+    'my_fight': """select coalesce(to_json(pg_get_functiondef('public.world_my_fight(uuid)'::regprocedure)), '\"\"')""",
     'bait': """select coalesce(json_agg(t order by t), '[]') from (select t from public.world_fish_species s, unnest(s.bait_for) t group by t having count(*) < 3) x""",
     'hq_ids': """select coalesce(json_agg(distinct base_item_id), '[]') from public.world_item_catalog where base_item_id is not null""",
     'hq_read': """with hq as (select distinct base_item_id b from public.world_item_catalog where base_item_id is not null)
@@ -55,8 +56,17 @@ where prosecdef and proname like 'world\\_%' and not exists (select 1 from unnes
 def js_files():
     return sorted(p for p in JS.rglob('*.js') if 'gamedata' not in p.name)
 
+def fight_kinds():
+    src = (JS / 'rules.js').read_text()
+    body = re.search(r"FIGHT_KINDS = \{(.*?)\n\};", src, re.S)
+    return dict(re.findall(r"(\w+): \{ route: '([\w-]+)'", body.group(1))) if body else {}
+
 def client_checks():
     out = []
+    routes = set(fight_kinds().values())
+    for p in sorted((JS / 'views').glob('*.js')):
+        if p.name != 'fightui.js' and re.search(r'\bsettleFight\b', p.read_text()) and p.stem not in routes:
+            out.append(('싸움 돌아가기', p.relative_to(ROOT).as_posix(), '싸움 화면인데 rules.js FIGHT_KINDS·world_my_fight에 없음 → 화면을 벗어나면 돌아올 길이 없음'))
     for p in js_files():
         rel = p.relative_to(ROOT).as_posix()
         src = p.read_text()
@@ -96,6 +106,10 @@ def rpc_names():
 
 def db_checks(run):
     out = []
+    my = json.loads(run(SQL['my_fight']))
+    for k in fight_kinds():
+        if f"'kind', '{k}'" not in my:
+            out.append(('싸움 돌아가기', k, 'rules.js FIGHT_KINDS에 있는데 world_my_fight가 이 싸움을 돌려주지 않음'))
     for t in json.loads(run(SQL['purge'])):
         if t not in ACCOUNT_TABLES:
             out.append(('캐릭터 정리', t, 'world_character_purge에 없고 계정 몫 목록(ACCOUNT_TABLES)에도 없음'))
