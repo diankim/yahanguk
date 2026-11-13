@@ -73,7 +73,7 @@
 
 #### 최종 보스 「귀허의 주인」
 
-- 표 world_gw_fights·members·log·records(실시간 목록 아님). 귀허에서 Lv38·외전 4장·귀허 부적, 혼자 또는 같은 곳 파티원 4명까지(world_gw_open 60초 모음·world_gw_join·world_gw_begin). 도전 조건은 world_gw_ready_check(uid, 보스, 판) 한 곳(world_gw_ready는 상태 검사 뒤 이것을 부르고 대기실 why도 같은 문구), 초대는 지금 합류할 수 있는 파티원에게만(world_gw_invitable — 오늘 처치·입장 물품 없음·바쁨이면 안 감, 없으면 60초 모음 없이 바로 시작).
+- 표 world_gw_fights·members·log·records(실시간 목록 아님). 귀허에서 Lv38·외전 4장·귀허 부적, 혼자 또는 같은 곳 파티원 4명까지(world_gw_open 60초 모음·world_gw_join·world_gw_begin). 도전 조건은 world_gw_ready_check(uid, 보스, 판) 한 곳(world_gw_ready는 상태 검사 뒤 이것을 부르고 대기실 why도 같은 문구), 초대는 지금 합류할 수 있는 파티원에게만(world_gw_invitable — 오늘 처치·입장 물품 없음·바쁨이면 안 감, 없으면 60초 모음 없이 바로 시작, 1.1.2b·2.0).
 - 라운드 5초(수법 라운드 10초), 참가자마다 행동 하나: attack·guard·brace(버티기: 받는 피해 물살 20%·손길 30%, 소용돌이 받아 내기)·item(체력 회복품, 한 싸움 두 개 world_gw_members.items_used)·coop(world_coop_skills, 영력, 다시 쓰기 ceil(초/5)라운드 world_gw_members.cds)·call(이름 부르기)·chain. 안 고르면 방어. 마감이 지났거나 모두 고르면 누군가 world_gw_snapshot·world_gw_act를 부를 때 world_gw_resolve가 푼다(예약 작업 없음).
 - 단계 4(두 얼굴·사슬 넷·이름 빼앗기·귀허의 소용돌이), 체력 max(6000, Σ공격×40), 15분. 주인 체력 인원 배율 1·1.7·0.8·0.85, 주인 공격(받는 피해) 1·1.4·0.8·0.85(혼자면 체력 ×1.2 더; 둘은 1.0.0f — 정석 시뮬 15조 평균 4.9/10, world_gw_start·world_gw_resolve·world_gw_k). 의무관 회복 기술 ×0.65·술법 회피 +15(world_gw_start·world_gw_resolve).
 - 쓰러지면 물러남(1·2·3·4명에 1·2·4·5라운드, world_gw_hurt), 체력 30. 물러남이 끝나거나 [야전 소생]을 받으면 「쉬는 중」(world_gw_members.rest — 주인이 안 노리고, 모두에게 거는 효과·수법·라운드 기다림에서 빠지며, 한 사람 회복은 받음, 「모두 물러남」은 물러난 사람만 셈, 아무 행동이나 고르면 풀림). 혼자는 쓰러짐 10까지(그다음 실패, 스냅샷 falls_cap).
@@ -172,14 +172,14 @@
 - 현장 토벌 중 world_pfight_call(전투 행동 칸 여섯째 battle.js renderBattle opts.call .act.call) → 같은 곳 파티원에게 pfight_invite 60초 → world_pfight_join(탐색력 1, 요괴 체력 +70%×기준, 4명까지) → world_pfight_start 또는 마감.
 - 속도순 차례: world_pfight_round가 라운드마다 속도(world_combat_stats.stats 민첩 + 감각×0.5) 순 turn_order와 노릴 사람(target_id, 이목^1.3)을 정함. world_pfight_act는 turn_id만 받고 world_pfight_resolve가 그 사람만 바로 푼 뒤 다음 차례(world_battle_action을 그 사람 JWT sub로, yh.pf_resolve로 1초 간격 건너뜀). 요괴는 노린 사람 차례에만 반격(yh.pf_skip 0, 빠졌으면 그 뒤 첫 차례, mon_done), 기운 모으기 끊기는 라운드 누적 피해 round_dmg. 차례를 30초(round_ends) 비우면 스냅샷 읽을 때 방어로(예약 작업 없음, 초를 세지 않음). 파티 토벌 중 world_battle_action 직접 호출 불가.
 - 쓰러짐은 실제 전투불능(구조 필요) — 물러남·쉬는 중 없음.
-- 보상은 혼자 토벌과 같음(전리품 각자 굴림, 분배 풀 안 씀) + 경험치 +10%/명(3명까지).
+- 보상은 혼자 토벌과 같음(전리품 각자 굴림, 분배 풀 안 씀) + 경험치 +10%/명(3명까지, 도중에 쓰러진 동료도 셈·달아나거나 빠진 사람은 뺌 — world_pfight_resolve yh.pf_n, 1.1.2b 사용자 결정). 마지막 한 방을 안 친 사람의 보상 받기(world_battle_action guard, 요괴 체력 0)는 막기 횟수에 안 셈.
 - 화면 views/pfight.js(#/pfight/<id>): .raid-wrap.pf-wrap(PC 왼쪽 요괴·행동·기록, 오른쪽 참가자), 「내 차례」 띠 .pf-turn, 차례 줄 .pf-order(요괴는 노린 사람 뒤), 단추는 내 차례에만, 참가자 .raid-mem.pf-mem 두 칸(순번·체력·직업·차례/행동함/기다림·노림받음). 다시 읽기: 남의 차례 2초·내 차례 10초·모이는 중 3초 world_pfight_snapshot(turn_id·my_turn·order·mon_done·members[].spd).
 
 ### 전투불능과 구조
 
 전투불능은 실제 영향을 주는 상태로, 다른 플레이어의 구조나 허용된 수단이 필요하다. 상태·구조 요청·구조 성공·복귀가 서버와 화면에서 일치해야 하고, 구조가 필요한 사람을 알아볼 알림·표시를 둔다(§14).
 
-- 본부 구조대 world_call_rescue: 소지금 15%(최소 30전·최대 레벨×80전, Lv15 미만 레벨×40전, 한국 시각 하루 첫 구조 반값) + 이번 레벨 필요 경험치 5%(레벨 하락 없음). 수치는 world_rescue_rules 하나(→ gamedata rescue → rules.js RESCUE, 1.1.0d). 옮겨 가는 가장 가까운 안전지대가 내 대세력 지배면 다시 반값·경험치 손실 없음·체력 50. 정통파는 어디서든 세력 구조대(§11).
+- 본부 구조대 world_call_rescue: 옮기는 곳은 world_safe_near(위치, 레벨) 한 곳 — 같은 영역(territory_id)의 안전지대를 먼저, 없으면 가장 가까운 곳(1.1.2b, 사용자 결정). 소지금 15%(최소 30전·최대 레벨×80전, Lv15 미만 레벨×40전, 한국 시각 하루 첫 구조 반값) + 이번 레벨 필요 경험치 5%(레벨 하락 없음). 수치는 world_rescue_rules 하나(→ gamedata rescue → rules.js RESCUE, 1.1.0d). 옮겨 가는 가장 가까운 안전지대가 내 대세력 지배면 다시 반값·경험치 손실 없음·체력 50. 정통파는 어디서든 세력 구조대(§11).
 - 요화로 쓰러진 사람은 구조할 수 없다(§8).
 - 남이 일으켜 주면(JWT sub ≠ 본인) world_notify_downed가 「다시 일어났습니다」 줄과 함께 본인에게 알림 rescued(끌 수 없음)를 남겨 화면이 다시 읽는다(1.0.4h, 제보 31 — 구조된 줄 모르고 회생 부적을 쓰다 거절됨). 화면 core.js useItemAct는 물품 사용이 거절되면 캐릭터를 한 번 다시 읽는다.
 
@@ -240,7 +240,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 탐색력 1 회복 15분(world_stamina_now·world_stamina_change /900), 노정 건량 +2.
 - 피해 계수: 근접 힘 1.0 · 술법 영성 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
-- 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 퀘스트·이야기 전 ×0.4.
+- 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12(결과 xp = 사냥 + 12). 보상 문구의 경험치는 실제 들어간 양 — world_grant_xp_got(uid, xp) → {levels, xp}(레벨 상한·경험치 조절 반영, 상한이면 0)를 퀘스트 보고·상시 의뢰·조사원 의뢰·봉연·귀허 정산이 씀(1.1.2b). 퀘스트·이야기 전 ×0.4.
 - 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음, 진행은 trg_world_track_commissions — 토벌은 현장 승리 + 원정 귀환 기록 expedition_end의 wins(의뢰 지역이 있으면 그 지역 원정만, 1.1.1h)): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
 - 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 수치는 world_rate_rules 하나(gather_s·fish_s·search_ms·battle_ms·raid_ms → gamedata rate → rules.js GATHER_GAP·SEARCH_GAP, world_rate_check·world_guard_repeat_farming이 읽음), 간격 거절은 HINT 'rate', 끝난 전투 행동은 HINT 'no_battle' — 화면은 문구가 아니라 e.hint로 가름(1.1.0d). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid·search)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.
 - 공격·방어·회피·치명타·도주 확률은 world_combat_stats 하나로 계산해 엔진과 화면이 같은 값을 쓰고, 올리기 전에 바뀔 값을 미리 보인다.
@@ -420,7 +420,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 진행 world_character_statuses 'yohwa'(세기 = 단계): 1 요기 스밈 3일 → 2 요문 발현 2일 → 3 반요 1일 → 요괴화 1시간('yohwa_frenzy': 주는 피해 +30·받는 피해 −30·회복 +30·정신 손실 −50·민첩 +15; 3단계와 합친 표기 주는 피해 +42·받는 피해 −12·정신 손실 −20·민첩 +15·침식 +24로 화면·알림에 적음; world_yohwa_tick이 metadata.frenzy_at으로 가름; 상태 칸에 안 셈 world_status_roll·hud.js PINNED; 요화 줄이 지워지면 trg_world_yohwa_frenzy_clear) → 전투불능(원정 중이면 1시간 미룸, 풀 때까지 하루마다 다시). pg_cron yh-yohwa(5분, world_yohwa_tick).
 - 남에게 보임: 1·2단계 본인만, 3단계 조사원 카드 「지금」 칸 칩, 요괴화는 조사원 카드·채팅 이름 옆(전체·지역·세력·귓속말·모임 — 표식은 world_chat_mark(uid) 하나 — world_chat_stamp_title·world_circle_send·world_party_chat_send(world_party_messages.sender_mark)가 부름, 화면은 chat.js msgOf 하나) 붉은 「요괴화」(.yohwa-mark). 판정 world_yohwa_public(uid) = 'frenzy'·'3'·null(world_character_card.yohwa).
 - 요화로 쓰러진 사람은 구조·본부 구조대·회생 부적으로 못 일으킨다(trg_world_yohwa_down_guard: downed_at이 풀리는 순간, 요화 줄 down_epoch가 그 쓰러짐과 같으면 거절 — 본인이 world_yohwa_seal을 골라야 함, 사용자 결정). 요화 쓰러짐(metadata.down_epoch = downed_at)은 world_death_sweep이 사망 처리하지 않음(요화 사망 OFF).
-- 봉인 world_yohwa_seal: 가까운 안전지대로 옮겨 24시간 'yohwa_seal' 뒤 요화가 풀리고 침식 40 아래. 봉인 중엔 채팅만 — 행동 기록을 남기는 것은 world_guard_action_context, 안 남기는 것(현장 이동·조사 지점·자율 시작/수령·보따리·파티 전리품·직접 거래 제안·동승 요청·연리 선물/신청)은 함수 첫머리 world_seal_guard(), 비무도 막음. 채팅·귓속말·친구·파티 맺기·프로필·칭호·꾸미기는 됨. 새 행동 함수는 행동 기록을 남기거나 world_seal_guard()를 부른다.
+- 봉인 world_yohwa_seal: 가까운 안전지대(world_safe_near — 구조대와 같음)로 옮겨 24시간 'yohwa_seal' 뒤 요화가 풀리고 침식 40 아래. 봉인 중엔 채팅만 — 행동 기록을 남기는 것은 world_guard_action_context, 안 남기는 것(현장 이동·조사 지점·자율 시작/수령·보따리·파티 전리품·직접 거래 제안·동승 요청·연리 선물/신청)은 함수 첫머리 world_seal_guard(), 비무도 막음. 채팅·귓속말·친구·파티 맺기·프로필·칭호·꾸미기는 됨. 새 행동 함수는 행동 기록을 남기거나 world_seal_guard()를 부른다.
 - 알림 yohwa(걸림·단계·「침식이 가득 찼습니다」)는 화면 위 팝업(settings.js POP_KINDS, 「상태 보기」 #/char). 침식이 90을 넘는 순간은 growth.js가 기기에서 팝업(erosion_warn, 서버 요청 없음, 1.0.4h 제보 27).
 - 요화·봉인은 상태 칸 10칸에 안 세고 상태판·띠에 따로 늘 보임(hud.js yohwaOf). 상태 칸 규칙은 world_status_rules(cap 10·outside 요화 셋) 한 곳, 새 상태를 붙여도 되는지는 world_status_room(uid, 상태) 하나 — 나쁜 상태(polarity negative)는 칸이 차도 붙고, 이로운 상태·음식/비약 기운은 칸이 차면 새로 안 붙음(이미 있는 것은 시간·중첩만, 1.1.1v 사용자 결정 — 이로운 상태로 칸을 채워 나쁜 상태를 막던 것). world_status_roll·world_field_status·world_use_item이 부름(기운만 주는 물품은 칸이 차면 「상태 칸이 가득 차 새 기운을 받을 수 없습니다」로 거절, 다른 효과가 있으면 쓰고 그 기운만 빠짐). 이로운 상태 끄기 world_status_dismiss(p_status): 이로운 상태(outside 빼고)만 지움, 화면 hud.js openStatus 「이 효과 끄기」(확인 창, 1.1.1v 사용자 결정 — 새 기운을 받을 칸 비우기).
 - 요화 줄 지우기 금지: 만료 정리 함수(world_apply_activity_status·world_hud_snapshot·world_field_status)는 모두 status_key <> 'yohwa'. 새 만료 정리도 같게.
