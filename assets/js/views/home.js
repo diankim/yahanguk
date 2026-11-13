@@ -247,6 +247,7 @@ function field(s, roster, blocked) {
     : store.expedition ? '원정 중에는 움직일 수 없습니다' : '지금은 움직일 수 없습니다';
   const whyNot = k => stateWhy || (c.level < k.min_level ? `Lv.${k.min_level}부터 들어갈 수 있습니다 · 지금 Lv.${c.level} (${k.min_level - c.level}레벨 더 필요)` : '');
   return `
+    <div class="field-wrap">
     <div class="field-grid">
       <div class="fg-col fg-a">
       <section class="panel explore-card">
@@ -304,14 +305,15 @@ function field(s, roster, blocked) {
       </div>
       ${fishPanel(blocked)}
     </div>
-    <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
+    <details class="panel fold fw-map"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
       <div class="panel-body">${tree(s)}</div></details>
-    <details class="panel fold"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
+    <details class="panel fold fw-foes"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
       <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => m.revealed === false
         ? `<li class="locked"><b>???</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.kind_name || '')} · 답사도 ${m.need}%에 드러납니다</small></li>`
         : `<li><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.type || '')}${m.kind_name ? ` · ${esc(m.kind_name)}` : ''} · Lv.${m.min_level}–${m.max_level}</small></li>`).join('')}</ul>
         ${loreHtml(s.lore)}</div></details>
-    ${people(roster, s.corpses)}`;
+    ${people(roster, s.corpses)}
+    </div>`;
 }
 
 let fishAt = 0;
@@ -355,7 +357,7 @@ function tree(s) {
 function people(roster, corpses) {
   const list = Array.isArray(roster) ? roster : [];
   const dead = corpses || [];
-  return `<section class="panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
+  return `<section class="panel people-panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
     ${list.length ? `<ul class="people">${list.map(p => `<li>${face(p.owner_id, p.profile, 34, p.character_name)}<div><b>${cardName(p.owner_id, p.character_name)}${sealMark(p.profile?.seal)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
       ${p.downed && !p.is_dead ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
     ${dead.length ? `<h3 class="sub-h">쓰러진 이의 자리</h3><ul class="people">${dead.map(d => `<li><span class="emblem corpse">${icon('flame', 18)}</span><div><b>${esc(d.character_name)}의 시신</b><small>${new Date(d.died_at).toLocaleDateString('ko-KR')} · ${esc(d.death_reason || '')}${d.items_left ? ` · 유품 ${d.items_left}점` : ''}</small></div>
