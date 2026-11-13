@@ -3403,3 +3403,5 @@ b.shadow { color: var(--sp); }
 .bj-gain li svg { color: var(--gold); flex: none; } .bj-gain li span { color: var(--muted); margin-left: auto; font-size: calc(12px * var(--fz, 1)); }
 .bj-gain li.bj-gain-pet b { color: var(--gold); }
 .bj-confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; }
+.ri-petc { align-items: center; }
+.ri-petc img { flex: none; width: 48px; height: auto; image-rendering: pixelated; }
