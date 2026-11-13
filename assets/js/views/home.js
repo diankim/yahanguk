@@ -144,11 +144,14 @@ let fieldY = null;
 function drawBattle(pty) {
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
-  if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
+  const entering = !$('#battle-box', el);
+  if (fieldY == null && entering) fieldY = window.scrollY;
+  el.style.minHeight = '';
   el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}"${sceneTint(snap.region)}>${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
     <div id="battle-box"></div>`;
   const onCall = b => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
   renderBattle($('#battle-box', el), snap, r => { if (!r) invalidate('world_field_snapshot'); draw(); }, near ? { call: near, onCall } : null);
+  if (entering) { window.scrollTo(0, 0); requestAnimationFrame(() => { if (el.isConnected && $('#battle-box', el)) window.scrollTo(0, 0); }); }
   if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
 }
 
