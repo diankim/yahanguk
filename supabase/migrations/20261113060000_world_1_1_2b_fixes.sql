@@ -17,7 +17,7 @@ create or replace function pg_temp.yh_share(p_fn text) returns void language plp
 declare x text;
 begin
   execute format('revoke all on function %s from public, anon, authenticated', p_fn);
-  for x in select rolname from pg_roles where rolname like 'fn\_owner%' or rolname = 'service_role' loop
+  for x in select rolname from pg_roles where rolname like 'fn\_owner%' or rolname in ('service_role', 'postgres') loop
     execute format('grant execute on function %s to %I', p_fn, x);
   end loop;
 end $f$;
