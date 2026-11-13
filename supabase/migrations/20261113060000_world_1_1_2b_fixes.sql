@@ -38,8 +38,8 @@ begin
    order by (x.territory_id is distinct from r.territory_id), (x.world_x - coalesce(r.world_x, 480)) ^ 2 + (x.world_y - coalesce(r.world_y, 360)) ^ 2 limit 1;
   return s;
 end $$;
-select pg_temp.yh_own('public.world_safe_near(text, int)', 'fn_owner_field');
 select pg_temp.yh_share('public.world_safe_near(text, int)');
+select pg_temp.yh_own('public.world_safe_near(text, int)', 'fn_owner_field');
 
 select pg_temp.yh_fix('world_call_rescue', array[
 $q$SELECT * INTO s FROM public.world_map_regions x WHERE x.is_safe_zone AND x.active AND x.min_level <= c.level$q$,
@@ -80,8 +80,8 @@ begin
   end if;
   return jsonb_build_object('levels', coalesce(ups, 0), 'xp', greatest(0, got));
 end $$;
-select pg_temp.yh_own('public.world_grant_xp_got(uuid, int)', 'fn_owner_field');
 select pg_temp.yh_share('public.world_grant_xp_got(uuid, int)');
+select pg_temp.yh_own('public.world_grant_xp_got(uuid, int)', 'fn_owner_field');
 
 select pg_temp.yh_fix('world_quest_report', array[
 $q$gained int := 0;$q$, $q$gained int := 0; gx jsonb;$q$,
@@ -151,8 +151,8 @@ begin
   return true;
 exception when others then return false;
 end $$;
-select pg_temp.yh_own('public.world_gw_invitable(uuid)', 'fn_owner_field');
 select pg_temp.yh_share('public.world_gw_invitable(uuid)');
+select pg_temp.yh_own('public.world_gw_invitable(uuid)', 'fn_owner_field');
 
 select pg_temp.yh_fix('world_gw_open', array[
 $q$join public.world_characters o on o.owner_id = b.owner_id where a.owner_id = uid and o.location = c.location and o.downed_at is null;$q$,
