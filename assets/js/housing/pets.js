@@ -715,7 +715,7 @@ export const PETS = {
   },
   little_ferret: {
     name: "꼬마 족제비",
-    grade: 2,
+    grade: 3,
     kind: "shadow",
     desc: "몸이 길쭉한 밝은 갈색 족제비입니다. 까만 눈을 반짝이며 좁은 틈만 보이면 쏙 들어가 봅니다.",
     likes: "treat_meat",
