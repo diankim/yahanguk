@@ -141,7 +141,7 @@ select i.item_id || '_hq', i.item_name || ' (우수)', i.category, i.tier, i.des
   case when i.category in ('weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool') then public.world_item_hq_traits(i.equipment_traits) else i.equipment_traits end,
   i.crafting_specialization, i.tradeable, ceil(coalesce(i.reference_price, 0) * 1.3), i.stack_size, i.item_id, 1, null
   from public.world_item_catalog i
- where i.item_id in (select jsonb_array_elements_text($J$["lt_pick_mz","lt_sickle_mz","n_mz_iron","lt_knife_mz","lt_rod_mz","k_mz_wood","lt_compass_mz","lt_lantern_mz","m_mz_stone","h_mz_herb","s_mz_herb","n_mz_herb","a_mz_robe","s_mz_stone","m_mz_wood","a_mz_shade","mz_pill","mz_elixir","mz_clear","mz_meal_herb","mz_meal_wood","mz_meal_feast"]$J$::jsonb))
+ where i.item_id in (select jsonb_array_elements_text($J$["lt_pick_mz","lt_sickle_mz","n_mz_iron","lt_knife_mz","lt_rod_mz","k_mz_wood","lt_compass_mz","lt_lantern_mz","m_mz_stone","h_mz_herb","s_mz_herb","n_mz_herb","a_mz_robe","s_mz_stone","m_mz_wood","a_mz_shade","mz_incense","mz_ward","mz_pill","mz_elixir","mz_clear","mz_meal_herb","mz_meal_wood","mz_meal_feast"]$J$::jsonb))
 on conflict (item_id) do nothing;
 create or replace function public.world_meisho_start(p_id text, p_phase text, p_day date)
  returns timestamptz
@@ -426,7 +426,8 @@ $q$public.world_source_region_ok('fish', r.is_safe_zone, r.active))
   select jsonb_build_object($q$,
 $q$public.world_source_region_ok('fish', r.is_safe_zone, r.active)),
        z as (select distinct r.region_name, r.min_level from public.world_meisho x join public.world_map_regions r using (region_id)
-               where x.active and public.world_item_base(p_item) in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'kinds' -> x.kind -> 'items')))
+               where x.active and (public.world_item_base(p_item) in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'kinds' -> x.kind -> 'items'))
+                 or public.world_bijang_tier_of(public.world_item_base(p_item)) = public.world_meisho_grade(x.min_level)))
   select jsonb_build_object(
     'meisho', (select coalesce(jsonb_agg(region_name order by min_level, region_name), '[]') from (select * from z order by min_level, region_name) x), 'meisho_n', (select count(*) from z),$q$]);
 

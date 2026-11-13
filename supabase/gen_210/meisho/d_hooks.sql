@@ -34,7 +34,8 @@ $q$public.world_source_region_ok('fish', r.is_safe_zone, r.active))
   select jsonb_build_object($q$,
 $q$public.world_source_region_ok('fish', r.is_safe_zone, r.active)),
        z as (select distinct r.region_name, r.min_level from public.world_meisho x join public.world_map_regions r using (region_id)
-               where x.active and public.world_item_base(p_item) in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'kinds' -> x.kind -> 'items')))
+               where x.active and (public.world_item_base(p_item) in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'kinds' -> x.kind -> 'items'))
+                 or public.world_bijang_tier_of(public.world_item_base(p_item)) = public.world_meisho_grade(x.min_level)))
   select jsonb_build_object(
     'meisho', (select coalesce(jsonb_agg(region_name order by min_level, region_name), '[]') from (select * from z order by min_level, region_name) x), 'meisho_n', (select count(*) from z),$q$]);
 

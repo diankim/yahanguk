@@ -86,8 +86,8 @@ GEAR = [
 ]
 
 FOOD = [
-    dict(id='mz_incense', name='명소 향', tier=6, fx={'buffs': ['mz_incense']}, desc='명초와 명목을 함께 사른 향. 피우면 하루 동안 다음에 열릴 명소가 언제·어디서 열리는지 보인다.', hq=False),
-    dict(id='mz_ward', name='명소 지킴 부적', tier=7, fx={'buffs': ['mz_ward']}, desc='이름 서린 명초를 넣어 접은 부적. 여섯 시간 침식과 정신 손실을 덜고 귀한 것이 잘 보인다.', hq=False),
+    dict(id='mz_incense', name='명소 향', tier=6, fx={'buffs': ['mz_incense']}, desc='명초와 명목을 함께 사른 향. 피우면 하루 동안 다음에 열릴 명소가 언제·어디서 열리는지 보인다.', hq=True),
+    dict(id='mz_ward', name='명소 지킴 부적', tier=7, fx={'buffs': ['mz_ward']}, desc='이름 서린 명초를 넣어 접은 부적. 여섯 시간 침식과 정신 손실을 덜고 귀한 것이 잘 보인다.', hq=True),
     dict(id='mz_pill', name='명초 정기환', tier=6, fx={'hp': 60, 'mn': 30, 'sp': 40}, desc='명초를 달여 빚은 환약. 체력·정신·영력을 한꺼번에 채운다.', hq=True),
     dict(id='mz_elixir', name='명초 정 영단', tier=6, fx={'mn': 20, 'buffs': ['mz_vigor']}, desc='명초의 정을 굳힌 영단. 여섯 시간 회복이 잘 되고 채집량이 늘어난다.', hq=True),
     dict(id='mz_clear', name='이름 서린 환', tier=7, fx={'er': -40, 'mn': 40, 'buffs': ['mz_clear']}, desc='이름 서린 명초로 빚은 환. 침식을 크게 덜고 여섯 시간 마음을 맑게 붙잡는다.', hq=True),
