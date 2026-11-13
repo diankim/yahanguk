@@ -132,7 +132,7 @@ function draw() {
   const pct = f.max_hp ? Math.max(0, Math.min(100, f.hp / f.max_hp * 100)) : 100;
   const done = ended(), fight = f.status === 'fight';
   if (s.joined || done) clearFightNotes(['gw_invite'], 'fight_id', f.id);
-  const cap = s.falls_cap || 10, solo = (s.members || []).length === 1;
+  const cap = s.falls_cap, solo = (s.members || []).length === 1;
   const endState = m => m.out || m.resting ? '쓰러짐' : '끝까지 버팀';
   const top = mobileLog() && !done, restoreLog = keepLogScroll(el, top);
   const B = bossOf(), mk = s.boss === 'mukjeok';
@@ -151,7 +151,7 @@ function draw() {
       <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
-          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
+          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
@@ -184,7 +184,7 @@ function logHtml(s, me, done) {
 function memDetail(s) {
   showSelected(el && $('#gw-memdetail', el), s.members, sel, m => ({
     state: ended() ? (m.out || m.resting ? '쓰러짐' : '끝까지 버팀') : m.out ? `물러남 · ${m.out}라운드` : m.resting ? '쉬는 중' : m.nameless ? '이름 잃음' : s.fight?.status === 'fight' ? '싸우는 중' : '',
-    nums: [['기여', `${m.share ?? 0}%`], ...fightNums(m), ['물러남', `${(s.members || []).length === 1 ? Math.min(m.falls || 0, s.falls_cap || 10) : m.falls || 0}번`]],
+    nums: [['기여', `${m.share ?? 0}%`], ...fightNums(m), ['물러남', `${(s.members || []).length === 1 && s.falls_cap ? Math.min(m.falls || 0, s.falls_cap) : m.falls || 0}번`]],
     fx: m.fx }), () => { sel = null; draw(); });
 }
 function actHtml(s, me) {
@@ -229,7 +229,7 @@ function resultHtml(f, s) {
   const mine = (s.members || []).find(m => m.id === s.me);
   const won = f.status === 'won';
   const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
-  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 ? Math.min(mine.falls || 0, s.falls_cap || 10) : mine.falls}` : ''}</p>
+  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 && s.falls_cap ? Math.min(mine.falls || 0, s.falls_cap) : mine.falls || 0}` : ''}</p>
     <p class="small">${story() ? (won ? '보상은 알림으로 보냈습니다(처음 보낼 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw${s.boss === 'mukjeok' ? '/mukjeok' : ''}">처음으로</a>`)}</div></section>`;
 }
