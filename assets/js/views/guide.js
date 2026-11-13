@@ -414,6 +414,39 @@ const S = [
           <li>높은 단계 도구는 능력치 대신 채집 숙련 단계가 있어야 낍니다.</li></ul></li>
       <li>맡은 퀘스트에서 모으라는 물품은 그 물품이 나오는 채집터에서 더 잘 나옵니다.</li>
     </ul>`],
+  ['meisho', '명소 채집과 명장 제작', (() => { const m = GD.meisho || {}, r = m.rank || {}, q = m.qty || {}, j = m.j_pct || {}, n = m.n_pct || {}, sl = m.soil || {};
+    const KIND = Object.fromEntries(Object.entries(m.kinds || {}).map(([k, v]) => [k, v.name]));
+    const GRADE = ['', '낡은', '귀한', '봉인된'];
+    return `
+    <p>Lv30부터 바깥 지역 몇 곳에 <b>명소(名所)</b>가 숨어 있습니다. 명초·명목(채집)·명석(채광)을 캐는 이름난 자리입니다.</p>
+    <h4>열리는 때</h4>
+    <ul>
+      <li>명소마다 <b>시간대 하나·날씨 하나</b>가 정해져 있고, 둘이 겹치는 동안 그 안의 <b>${(m.open_min || 60) / 60}시간</b>만 열립니다. 몇 시에 열지는 날짜와 명소마다 서버가 정합니다.</li>
+      <li>처음에는 열려 있을 때 그 답사 지점에서 <b>탐색</b>해야 찾습니다. 근처에 열린 명소가 있으면 채집터 칸에 기척이 보입니다.</li>
+      <li>찾은 명소는 닫혀 있어도 채집터 칸에 흐리게 남고, 열리는 조건과 다음 열리는 때를 보여 줍니다.</li>
+    </ul>
+    <h4>캐기</h4>
+    <ul>
+      <li>그 갈래 기술(명초·명목은 채집, 명석은 채광) <b>${r.base}단계</b>부터 캘 수 있습니다. 한 번 열릴 때 명소마다 <b>한 사람 한 번</b>, 탐색력을 ${m.stamina} 쓰고 채집 간격(${GATHER_GAP / 1000}초)을 함께 셉니다.</li>
+      <li>캐면 명초·명목·명석을 반드시 ${q.base}개 얻고, ${r.j}단계에 하나 더·${r.n}단계에 또 하나 더 얻습니다.</li>
+      <li>${r.j}단계부터 「…의 정」이 ${j.base}%(단계마다 +${j.per_rank}%, 최대 ${j.cap}%) 확률로, ${r.n}단계부터 「이름 서린 …」이 ${n.base}%(최대 ${n.cap}%) 확률로 함께 나옵니다.</li>
+      <li>가방에 자리가 없으면 캐지 않고 알려 줍니다. 명소가 닫히기 전이면 칸을 비우고 다시 캘 수 있습니다.</li>
+      <li>명소 재료는 모두 거래할 수 있습니다.</li>
+    </ul>
+    <h4>흙 살피기</h4>
+    <ul>
+      <li>기술 단계와 상관없이, 찾은 명소에서 <b>명소마다 하루 한 번</b>(한국 시각) 흙을 살필 수 있습니다. 닫혀 있어도 됩니다.</li>
+      <li>확률로 <b>비장도</b>가 묻혀 있습니다: ${(sl.grade_lv || []).slice().reverse().map(([lv, g]) => `Lv${lv}~ 명소 ${GRADE[g]} 비장도 ${sl.pct?.[g]}%`).join(' · ')} (최대 ${sl.cap}%). 같은 등급 비장도를 이미 지니고 있으면 덮어 둡니다.</li>
+    </ul>
+    <h4>명소가 있는 곳</h4>
+    <ul>${Object.entries(KIND).map(([k, nm]) => `<li>${nm}: ${(m.list || []).filter(x => x.kind === k).map(x => `${esc(x.region)}(Lv${x.level})`).join(' · ')}</li>`).join('')}</ul>
+    <h4>명장 제작</h4>
+    <ul>
+      <li>제작 분야 여덟마다 그 제작 기술 30·40·50단계에 열리는 명장 제작법이 있습니다. 명소 재료가 듭니다.</li>
+      ${(m.recipes || []).length ? `<li><table class="guide-table"><tr><th>분야</th><th>30단계</th><th>40단계</th><th>50단계</th></tr>${[...new Set(m.recipes.map(x => x[0]))].map(f => `<tr><td>${esc(nameOf(f))}</td>${[30, 40, 50].map(rk => `<td>${esc(m.recipes.filter(x => x[0] === f && x[1] === rk).map(x => x[2]).join(', '))}</td>`).join('')}</tr>`).join('')}</table></li>` : ''}
+      <li>명장 장비는 7단계 장비에 명소에만 듣는 효과가 한 줄 붙습니다: ${Object.entries(m.fx || {}).filter(([k]) => k !== 'mz_next').map(([, v]) => v).join(' · ')}.</li>
+      <li><b>명소 향</b>을 피우면 하루 동안 다음에 열릴 명소 셋이 언제·어디서 열리는지 채집터 칸에 보입니다. <b>명장 나침반</b>을 끼면 지금 지역에 열린 명소가 어느 답사 지점에 있는지 보입니다.</li>
+    </ul>`; })()],
   ['lifeskill', '생활 기술과 전문화', `
     <p>채집과 제작도 전투처럼 <b>기술 계열</b>로 자랍니다. 그 계열의 일을 할 때만 경험이 쌓이고, 단계가 오르면 효율이 좋아지고 새 기술이 열립니다.</p>
     <h4>채집 계열 셋</h4>
@@ -1895,7 +1928,7 @@ const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'raid', 'mkboss', 'gear', 'durability', 'survival']],
-  ['life', '생활', 'leaf', ['gather', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
+  ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],

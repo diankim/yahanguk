@@ -26,7 +26,7 @@ import { hit } from '../changes.js';
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
   path: ['route', '길'], spot: ['leaf', '채집터'], clue: ['scroll', '단서'], regional: ['map', '기록'], encounter: ['sword', '조우'],
-  cache: ['bag', '보급'], hazard: ['flame', '위험'], omen: ['moon', '징조'], quiet: ['eye', '고요'], gather: ['leaf', '채집'],
+  cache: ['bag', '보급'], hazard: ['flame', '위험'], omen: ['moon', '징조'], quiet: ['eye', '고요'], gather: ['leaf', '채집'], meisho: ['spark', '명소'],
   combat: ['sword', '토벌'], battle_lost: ['heart', '패배'], battle_fled: ['back', '도주'],
 };
 const CAT = GAMEDATA.names.gather;
@@ -303,6 +303,7 @@ function field(s, roster, blocked) {
               <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
+          ${meishoHtml(s.meisho, blocked)}
         </div>
       </section>
 
@@ -397,6 +398,37 @@ function people(roster, corpses) {
   </div></section>`;
 }
 
+const MZ = GAMEDATA.meisho || {};
+const mzName = x => x.name || `이름 모를 ${x.kind_name || ''} 명소`;
+function meishoHtml(m, blocked) {
+  if (!m) return '';
+  const next = (m.next || []).length ? `<p class="mz-line mz-next">${icon('eye', 14)}<span><b>명소 향</b> ${m.next.map(x => `${esc(mzName(x))}(${esc(x.region_name)}) ${x.open ? '지금 열려 있음' : `${fmt.when(x.at)}~${fmt.time(x.end)}`}`).join(' · ')}</span></p>` : '';
+  const sense = (m.sense || []).length ? `<p class="mz-line mz-sense">${icon('route', 14)}<span><b>명장 나침반</b> ${m.sense.map(x => `${esc(x.node_name)} 쪽에 ${esc(mzName(x))}의 기척 · <span data-mz-at="${new Date(x.close_at).getTime()}" data-mz-open="1"></span>`).join(' · ')}</span></p>` : '';
+  const near = m.near ? `<p class="mz-line mz-near">${icon('spark', 14)}<span>이 근처 어딘가 이름난 자리의 기척이 있습니다. 열려 있는 동안 탐색하면 찾을 수 있습니다.</span></p>` : '';
+  const row = x => {
+    const need = x.rank_need || MZ.rank?.base || 30, at = x.open ? x.close_at : x.next_at;
+    const digWhy = !x.open ? '지금은 닫혀 있습니다' : x.dug ? '이번에 열린 동안은 이미 캤습니다' : (x.rank || 1) < need ? `${nameOf(x.line)} 기술 ${need}단계부터 캘 수 있습니다(지금 ${x.rank}단계)` : '';
+    return `<li class="mz ${x.open ? 'open' : 'shut'}" data-need-spot="${esc((x.items || []).join(','))}">
+      <div><b>${esc(x.name)} ${chip('명소', x.open ? 'accent' : '')}</b>
+        <small>${esc(x.kind_name)} · ${(x.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small>
+        <small>${esc(nameOf(x.phase))}·${esc(nameOf(x.weather))}일 때 한 시간 · <span data-mz-at="${at ? new Date(at).getTime() : ''}" data-mz-open="${x.open ? 1 : 0}"></span></small>${digWhy && x.open ? `<small class="mz-why">${esc(digWhy)}</small>` : ''}</div>
+      <div class="btn-row mz-act"><button class="btn small primary" data-mz-dig="${esc(x.id)}" ${blocked || digWhy ? 'disabled data-blocked="1"' : ''} ${digWhy ? `title="${esc(digWhy)}"` : ''}>캐기</button>
+        <button class="btn small" data-mz-soil="${esc(x.id)}" data-here="흙 살피기" ${blocked || x.soil_done ? 'disabled' : ''} title="${esc(x.soil_done ? '오늘은 이미 살폈습니다' : '하루 한 번, 흙 속에 묻힌 비장도를 찾아봅니다')}">흙 살피기</button></div></li>`;
+  };
+  const here = (m.here || []).length ? `<ul class="spots mz-list">${m.here.map(row).join('')}</ul>` : '';
+  return next + sense + near + here;
+}
+function paintMeisho(now) {
+  let flip = false;
+  $$('[data-mz-at]', el).forEach(x => {
+    const t = Number(x.dataset.mzAt), open = x.dataset.mzOpen === '1';
+    const txt = !t ? '앞으로 3주 안에는 열리지 않습니다' : t > now ? (open ? `닫히기까지 ${fmt.remain(t - now)}` : `다음 열림 ${fmt.when(t)} (${fmt.remain(t - now)} 뒤)`) : open ? '닫혔습니다' : '열렸습니다';
+    if (x.textContent !== txt) x.textContent = txt;
+    if (t && t <= now && !x.dataset.mzDone) { x.dataset.mzDone = '1'; flip = true; }
+  });
+  if (flip) setTimeout(draw, 1500);
+}
+
 function bind(s) {
   $('#pt-exp', el)?.addEventListener('click', () => openExpeditionWindow());
   $('#search', el)?.addEventListener('click', e => doSearch(e.currentTarget));
@@ -406,6 +438,15 @@ function bind(s) {
     try { const r = await act('world_field_gather', { p_spot_id: b.dataset.gather }); setGatherCd(GATHER_GAP); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'gather' })); return r; }
     catch (e) { if (e?.hint === 'rate') setGatherCd(3000); throw e; } }); });
   paintGather(Date.now());
+  $$('[data-mz-dig]', el).forEach(b => b.onclick = () => { if (gatherWait() > 0) return toast(`채집은 ${Math.ceil(gatherWait() / 1000)}초 뒤에 할 수 있습니다.`, 'info'); guard(b, async () => {
+    try { const r = await act('world_meisho_dig', { p_meisho: b.dataset.mzDig }); setGatherCd(GATHER_GAP); window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' })); showFind(['leaf', '명소'], { outcome: 'spot', content: r.content }); return r; }
+    catch (e) { if (e?.hint === 'rate') setGatherCd(3000); throw e; } }, { success: '' }); });
+  $$('[data-mz-soil]', el).forEach(b => b.onclick = () => guard(b, async () => {
+    const r = await act('world_meisho_soil', { p_meisho: b.dataset.mzSoil });
+    window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.got ? 'find' : 'tick' }));
+    if (r.got) showFind(['map', '비장도'], { outcome: 'spot', content: r.content }); else toast(r.content, 'info');
+    return r; }, { success: '' }));
+  paintMeisho(Date.now());
   $$('[data-rescue]', el).forEach(b => b.onclick = () => guard(b, () => act('world_rescue_character', { p_target: b.dataset.rescue })));
   $$('[data-aid]', el).forEach(b => b.onclick = () => openAid(b.dataset.aid, b.dataset.aidName));
   $$('[data-respect]', el).forEach(b => b.onclick = () => guard(b, () => act('world_corpse_respect', { p_corpse_id: b.dataset.respect })));
@@ -433,7 +474,7 @@ async function doSearch(btn) {
   try {
     const r = await act(quietOn() ? 'world_field_search_quiet' : 'world_field_search');
     const o = OUTCOME[r.outcome] || OUTCOME.quiet;
-    window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.outcome === 'encounter' ? 'encounter' : r.outcome === 'hazard' ? 'hurt' : ['path', 'spot', 'clue', 'cache', 'regional'].includes(r.outcome) ? 'find' : 'tick' }));
+    window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.outcome === 'encounter' ? 'encounter' : r.outcome === 'hazard' ? 'hurt' : ['path', 'spot', 'meisho', 'clue', 'cache', 'regional'].includes(r.outcome) ? 'find' : 'tick' }));
     if (r.outcome === 'encounter') toast(r.content, 'warn');
     else showFind(o, r);
   } catch (e) { if (e?.hint === 'rate') hold = SEARCH_GAP + 500; else { const { friendlyError } = await import('../core.js'); toast(friendlyError(e), 'error'); } }
@@ -485,6 +526,7 @@ function tick() {
   $$('[data-st-next]', el).forEach(s => { const t = Number(s.dataset.stNext); if (t) s.textContent = t > now ? `${fmt.remain(t - now)} 뒤 1 회복` : '곧 회복'; if (t && t <= now) { s.dataset.stNext = ''; bumpFieldStamina(now); } });
   $$('#fish-go', el).forEach(b => { const t = Number(b.dataset.ready); if (!t || b.dataset.busy === '1') return; if (t > now) { b.disabled = true; b.querySelector('span').textContent = fmt.remain(t - now); } else { b.dataset.ready = ''; b.disabled = false; b.querySelector('span').textContent = '낚시하기'; } });
   paintGather(now);
+  paintMeisho(now);
   const line = restLine(now);
   $$('[data-rest-line]', el).forEach(x => { const fac = x.closest('.facility'); if (x.dataset.restLine === 'short') { const h = restParts(now); if (x.innerHTML !== h) x.innerHTML = h; } else x.textContent = line || (fac ? '쉬며 회복하고 탐색력 채우기' : ''); });
   $$('.modal [data-rest]').forEach(b => { const t = restAt(b.dataset.rest), sm = b.querySelector('[data-rest-cd]'); if (!sm) return;

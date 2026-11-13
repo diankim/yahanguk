@@ -1,6 +1,6 @@
 import { rpc, esc, icon, nameOf, toast, openLayer, closeLayers, closeModal } from './core.js';
 
-export const SRC_KINDS = [['gather', '채집'], ['sites', '조사'], ['monsters', '요괴'], ['fish', '낚시']];
+export const SRC_KINDS = [['gather', '채집'], ['meisho', '명소'], ['sites', '조사'], ['monsters', '요괴'], ['fish', '낚시']];
 const oneCache = new Map(), allCache = new Map();
 const cached = (m, fn, id) => { if (!m.has(id)) m.set(id, rpc(fn, { p_item: id }).catch(e => { m.delete(id); throw e; })); return m.get(id); };
 export const itemSources = id => cached(oneCache, 'world_item_sources', id);

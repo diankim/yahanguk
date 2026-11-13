@@ -435,7 +435,18 @@ async function gatherCodex(box) {
       return panel(`${cn} · ${list.filter(x => x.known).length}/${list.length}`, `<ul class="fish-grid">${list.map(x => x.known ? `<li class="fish-card">
         <b>${esc(x.name)}</b><small>Lv.${x.level}+ · ${fmt.num(x.count)}번 · ${fmt.num(x.qty)}개</small>${x.desc ? `<small>${esc(x.desc)}</small>` : ''}
         ${spotsHtml(x)}</li>` : `<li class="fish-card unknown"><b>???</b><small>${esc(cn)} · Lv.${x.level}+</small><small>아직 거두지 못했습니다</small></li>`).join('')}</ul>`, { ico: 'leaf', cls: 'compact' }); }).join('')}
+    ${meishoCodex(o)}
     ${codexTitles(o.titles)}`;
+}
+function meishoCodex(o) {
+  const list = o.meisho || [], items = o.meisho_items || [];
+  if (!list.length) return '';
+  const got = list.filter(x => x.found).length;
+  return panel(`명소 · ${got}/${list.length}`, `<p class="desc">명소는 정해진 시간대·날씨가 겹칠 때 한 시간만 열립니다. 열려 있는 동안 그 답사 지점에서 탐색하면 찾을 수 있습니다.</p>
+    <p class="gx-line">${items.map(i => `<span class="${i.got ? 'gx-f' : 'muted'}" title="${i.got ? '캐 본 재료' : '아직 캐지 못한 재료'}">${esc(i.got ? i.name : '???')}</span>`).join(' · ')}</p>
+    <ul class="fish-grid">${list.map(x => x.found ? `<li class="fish-card"><b>${esc(x.name)}</b><small>${esc(x.kind_name)} · Lv.${x.level}+ · ${esc(nameOf(x.phase))}·${esc(nameOf(x.weather))}</small>
+      <small><button type="button" class="q-link" data-q-map="${esc(x.region)}" title="지도에서 보기">${esc(x.region)}</button> · ${fmt.num(x.digs)}번 캠</small></li>`
+      : `<li class="fish-card unknown"><b>???</b><small>${esc(x.kind_name)} 명소 · ${esc(x.region)} · Lv.${x.level}+</small><small>아직 찾지 못했습니다</small></li>`).join('')}</ul>`, { ico: 'spark', cls: 'compact' });
 }
 async function fishCodex(body) {
   const [o, map] = await Promise.all([load('world_fish_codex'), load('world_map_snapshot', undefined, { maxAge: 30000 })]);

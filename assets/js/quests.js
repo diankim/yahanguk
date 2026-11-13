@@ -154,19 +154,21 @@ function watchOf(b) {
   }
   return { res, give, level: b.level, here: b.here_id };
 }
+const GATHERS = new Set(['world_field_gather', 'world_meisho_dig']);
+const gotIds = data => [data.item_id, ...Object.keys(data.extra || {})].map(baseOf);
 const won = (name, data) => name === 'world_battle_action' && data?.ended === 'victory';
 function counts(t, name, data) {
   if (name === 'world_battle_action') return t.k !== 'win' || (won(name, data) && (!t.mn || t.mn.has(data?.result?.monster)));
   if (hit('boardSearch', name) && t.k === 'clue') return data?.outcome === 'clue';
-  if (name === 'world_field_gather' && t.k === 'gather' && t.items && data?.item_id) return t.items.has(baseOf(data.item_id));
+  if (GATHERS.has(name) && t.k === 'gather' && t.items && data?.item_id) return gotIds(data).some(id => t.items.has(id));
   return true;
 }
-const ONE_STEP = (t, name) => (t.k === 'search' && hit('boardSearch', name)) || (t.k === 'win' && name === 'world_battle_action') || (t.k === 'gather' && !t.items && name === 'world_field_gather');
+const ONE_STEP = (t, name) => (t.k === 'search' && hit('boardSearch', name)) || (t.k === 'win' && name === 'world_battle_action') || (t.k === 'gather' && !t.items && GATHERS.has(name));
 const itemArg = a => a?.p_item_id || a?.p_item || null;
 function gains(w, name, data, args) {
   if (!w.give.size || !hit('boardItems', name)) return false;
   if (name === 'world_battle_action') return won(name, data) && Object.keys(data?.result?.loot || {}).some(id => w.give.has(baseOf(id)));
-  if (name === 'world_field_gather' && data?.item_id) return w.give.has(baseOf(data.item_id));
+  if (GATHERS.has(name) && data?.item_id) return gotIds(data).some(id => w.give.has(id));
   const id = itemArg(args);
   if (id) return w.give.has(baseOf(id));
   if (hit('boardPet', name)) return [...w.give].some(g => /^(pet_|treat_)/.test(g));

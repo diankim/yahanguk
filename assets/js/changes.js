@@ -4,9 +4,9 @@ export const CHANGES = {
   invAlways: /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
   map: /travel|mount|join_major_faction|field_|battle_|expedition/,
   survey: /field_|gather|expedition/,
-  journal: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/,
+  journal: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|meisho_dig/,
   roster: /travel|rescue|party|expedition|downed|idle/,
-  combat: /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish/,
+  combat: /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish|meisho_dig/,
   fishSpot: /fish|travel/,
   fishSpotNone: /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/,
   rest: /rest|survival|travel|idle|field_move/,
@@ -15,10 +15,10 @@ export const CHANGES = {
   settles: /travel_status|gw_snapshot|pfight_snapshot|raid_snapshot|hud_snapshot|field_snapshot|expedition_overview/,
   titles: /title|notice|cosmetic|reset_identity/,
   faction: /faction|quest|level|reset_identity|notice/,
-  journalView: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|commission|ucomm|letter|notice/,
+  journalView: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|commission|ucomm|letter|notice|meisho_dig/,
   idle: /idle/,
   skill: /skill/,
-  codex: /battle|gather|expedition/,
+  codex: /battle|gather|expedition|meisho_dig/,
   storage: /craft_(item|batch)|storage|travel|enhance|outfit_design_weave/,
   storageIfUsed: /craft_(item|batch)$|outfit_design_weave$/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
@@ -27,7 +27,7 @@ export const CHANGES = {
   board: /quest|story|faction|raid_final|level|reset_identity/,
   raidBrief: /raid_final_start|raid_join/,
   gwiryeong: /use_item|storage|letter|market|trade|discard|overflow|field_search|gather|battle_action|expedition_complete|raid_|gw_|ucomm/,
-  boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
+  boardItems: /gather|meisho_|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
   boardAway: /expedition|raid_|pfight_|gw_/,
   boardSearch: /^world_field_search/,
   boardPet: /pet_/,
@@ -43,10 +43,10 @@ export const CHANGES = {
   chatBlocks: /block|friend/,
 };
 export const SFX_ACTS = [
-  [/field_search|battle_action|field_gather/, null], [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'], [/repair/, 'repair'],
+  [/field_search|battle_action|field_gather|meisho_/, null], [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'], [/repair/, 'repair'],
   [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
-export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish(_at)?$/,
+export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|meisho_dig|expedition_complete/, craft: /craft/, fish: /^world_fish(_at)?$/,
   clue: /field_search/, search: /field_search/, rest: /field_rest/, idle: /claim_idle/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
 export const hit = (key, name) => CHANGES[key].test(name || '');

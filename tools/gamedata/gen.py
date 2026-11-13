@@ -118,6 +118,10 @@ def build(dsn):
     d['outfit'] = q(dsn, """select (world_outfit_rules() -> 'design') - 'weave' || jsonb_build_object('give_day', (world_drawing_rules() ->> 'give_day')::int,
         'weave', (select jsonb_object_agg(e.key, jsonb_build_object('level', r.minimum_level, 'mats', (select jsonb_agg(jsonb_build_array(i.item_name, m.value::int) order by i.item_name) from jsonb_each_text(r.ingredients) m join world_item_catalog i on i.item_id = m.key)))
           from jsonb_each_text(world_outfit_rules() -> 'design' -> 'weave') e join world_crafting_recipes r on r.recipe_id = e.value))""")
+    d['meisho'] = q(dsn, """select world_meisho_rules() || jsonb_build_object(
+        'list', (select jsonb_agg(jsonb_build_object('region', r.region_name, 'kind', m.kind, 'level', m.min_level) order by m.min_level, m.sort) from world_meisho m join world_map_regions r using (region_id) where m.active),
+        'recipes', (select jsonb_agg(jsonb_build_array(cr.craft_field, cr.required_skill_rank, i.item_name) order by cr.craft_field, cr.required_skill_rank)
+          from world_crafting_recipes cr join world_item_catalog i on i.item_id = cr.output_item where cr.required_skill_rank >= 30))""")
     return d
 
 
