@@ -47,7 +47,7 @@ for k, n in enumerate(D.NAMED):
     tier = 3 if n['lv'] < 20 else 4
     items.append(item(fid, fname, 'consumable', tier, fdesc, 20, round(price * 0.9 / 10) * 10, False, fx=fx))
     hq.append(fid)
-    recipes.append(recipe('r_' + fid, fname + ' 만들기', fid, 2, dict({n['id']: 1}, **extra), field, n['lv'], fname + '을(를) 만든다.', 3))
+    recipes.append(recipe('r_' + fid, fname + ' 만들기', fid, 2, dict({n['id']: 1}, **extra), field, n['lv'], fname + '을(를) 만든다.', min(4, 1 + n['lv'] // 10)))
     rk = 'rubbing_' + n['id']
     f = FUR[rk]
     tr = {'hk': rk, 'kind': 'wall', 'wall': f['kind'], 'ww': f['w'], 'wh': f['h'], 'cat': f['cat'], 'grade': f['grade']}
