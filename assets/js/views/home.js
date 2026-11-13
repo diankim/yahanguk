@@ -256,7 +256,6 @@ function field(s, roster, blocked) {
           <p class="desc">${esc(n.description || '')}</p>
         </div>
         ${staminaBox(st)}
-        <p class="find-left">${icon('route', 13)}<span>${s.hidden_paths ? `찾지 못한 길 <b>${s.hidden_paths}</b>` : '길은 모두 찾음'}</span>${icon('leaf', 13)}<span>${s.hidden_spots ? `숨은 채집터 <b>${s.hidden_spots}</b>` : (s.spots || []).length ? '채집터는 모두 찾음' : '채집터 없음'}</span></p>
         <div class="act-tiles">
           <button class="tile primary" id="search" title="탐색력 1 · 길·채집터·요괴·보급·단서" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색</span></button>
           <button class="tile" id="exp-open2" title="원정 보내기" ${blocked ? 'disabled' : ''}>${icon('flame', 22)}<span>원정</span></button>
@@ -303,8 +302,8 @@ function field(s, roster, blocked) {
       </section>
 
       </div>
+      ${fishPanel(blocked)}
     </div>
-    ${fishPanel(blocked)}
     <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
       <div class="panel-body">${tree(s)}</div></details>
     <details class="panel fold"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>

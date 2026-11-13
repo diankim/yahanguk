@@ -171,7 +171,6 @@ function render() {
     <span class="hs-name"><b><span class="hs-nm">${esc(c.character_name)}</span>${gmBadge(c.owner_id)}</b><small>Lv.${c.level}${c.profile?.title_name ? ` <span class="hs-ttl">「${esc(c.profile.title_name)}」</span>` : ''}</small></span>
     <span class="hs-bars"><i style="--v:${c.health}%" class="hp"></i><i style="--v:${c.mental}%" class="mp"></i><i style="--v:${c.spiritual_power}%" class="${spOf()[1]}"></i></span>
     ${erosionRing(c, 'mini')}
-    ${state.hud?.stamina ? `<span class="hs-st" title="탐색력 ${state.hud.stamina.now}/${state.hud.stamina.max}">${icon('spark', 12)}<b>${state.hud.stamina.now}</b><small>/${state.hud.stamina.max}</small></span>` : ''}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
       return `${yo.y ? `<span class="hs-yohwa s${yo.stage}${yo.fr ? ' frenzy' : ''}">${yo.fr ? '요괴화' : `요화${yo.stage}`}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}`; })()}
     ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
