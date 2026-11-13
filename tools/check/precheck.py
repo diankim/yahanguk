@@ -14,6 +14,8 @@ ACCOUNT_TABLES = {
     'world_gwiryeong_plants', 'world_case_state', 'world_party_loot_pool',
 }
 UNUSED_OK = {'pet_token'}
+HQ_SKIP = {'travel_ration'}
+NOSRC_OK = {'pet_token', 'seal_shard'}
 HQ_OK_JS = {'QS_DEFAULT'}
 HQ_OK_FN = {'world_case_combine_regional'}
 BASE_KEYED = re.compile(r"\.output\s*===\s*([\w$.]+)|ingredients\??\.?\[([\w$.]+)\]|lore\.items\??\.?\[([\w$.]+)\]|l\.items\??\.?\[([\w$.]+)\]")
@@ -40,6 +42,14 @@ where proname like 'world\\_%' and has_function_privilege('authenticated', p.oid
     'unused': """select coalesce(json_agg(i.item_id order by i.item_id), '[]') from public.world_item_catalog i
 where (i.category = 'material' or exists (select 1 from public.world_fish_species f where f.fish_id = i.item_id)) and i.base_item_id is null
   and not exists (select 1 from public.world_crafting_recipes r where r.ingredients ? i.item_id)""",
+    'hq_missing': """select coalesce(json_agg(i.item_id order by i.item_id), '[]') from public.world_item_catalog i
+where i.base_item_id is null and exists (select 1 from public.world_crafting_recipes r where r.output_item = i.item_id)
+  and not exists (select 1 from public.world_item_catalog h where h.base_item_id = i.item_id)
+  and (i.category in ('weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask', 'tool') or (i.category = 'consumable' and i.use_fx is not null and i.use_fx <> '{}'::jsonb))""",
+    'no_source': """select coalesce(json_agg(i.item_id order by i.item_id), '[]') from public.world_item_catalog i, lateral (select public.world_item_sources(i.item_id) s) x
+where i.base_item_id is null and i.category = 'material'
+  and coalesce((s->>'gather_n')::int, 0) + coalesce((s->>'meisho_n')::int, 0) + coalesce((s->>'sites_n')::int, 0) + coalesce((s->>'monsters_n')::int, 0) + coalesce((s->>'fish_n')::int, 0) = 0
+  and not coalesce((s->>'craft')::boolean, false) and not coalesce((s->>'shop')::boolean, false) and not coalesce((s->>'smithy')::boolean, false) and not coalesce((s->>'vault')::boolean, false)""",
     'tool_gaps': """select coalesce(json_agg(line order by line), '[]') from (select l.line, min(c.tier) lo, max(c.tier) hi, count(distinct c.tier) n
   from public.world_tool_lines l join public.world_item_catalog c on c.item_id = l.item_id group by l.line) x where n < hi - lo + 1""",
     'my_fight': """select coalesce(to_json(pg_get_functiondef('public.world_my_fight(uuid)'::regprocedure)), '\"\"')""",
@@ -125,6 +135,12 @@ def db_checks(run):
     for i in json.loads(run(SQL['unused'])):
         if i not in UNUSED_OK:
             out.append(('제작 소모처', i, '재료·어종인데 어느 제작법에도 안 쓰임'))
+    for i in json.loads(run(SQL['hq_missing'])):
+        if i not in HQ_SKIP:
+            out.append(('우수품', i, '제작법 있는 장비·효과 소모품인데 우수품(_hq)이 없음'))
+    for i in json.loads(run(SQL['no_source'])):
+        if i not in NOSRC_OK:
+            out.append(('얻는 곳', i, '재료인데 world_item_sources에 얻는 곳이 하나도 없음'))
     for l in json.loads(run(SQL['tool_gaps'])):
         out.append(('도구 사슬', l, 'world_tool_lines 단계가 중간에 빠짐'))
     for t in json.loads(run(SQL['bait'])):
