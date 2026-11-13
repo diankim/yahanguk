@@ -29,7 +29,7 @@ PLAN = {
                 ('나루 바깥 강둑을 따라 빈칸 벌판 어귀를 3번 탐색하고 묵창 나루로 돌아온다', {'at': [FERRY], 'tasks': [{'t': 'search', 'r': [FIELD], 'n': 3}]}),
                 ('묵창 나루 주막에서 쉰다', {'at': [FERRY], 'tasks': [{'t': 'rest', 'r': [FERRY], 'n': 1}]}),
                 ('묵창 나루 선창에서 물고기를 1마리 낚아 주막으로 간다', {'at': [FERRY], 'tasks': [{'t': 'fish', 'r': [FERRY], 'n': 1}]}),
-                ('빈칸 벌판 어귀 물가에서 묵창 갈대 먹 2개를 걷어 묵창 나루 주막으로 가져온다', {'at': [FERRY], 'tasks': [{'t': 'gather', 'items': ['mukchang_ink'], 'r': [FIELD], 'n': 2}]}),
+                ('빈칸 벌판 물가에서 묵창 갈대 먹 2개를 걷어 묵창 나루 주막으로 가져온다', {'at': [FERRY], 'tasks': [{'t': 'gather', 'items': ['mukchang_ink'], 'r': [FIELD], 'n': 2}]}),
             ]),
     2: dict(id='mkq_2', L=41, region=FIELD, after=['mkq_1'], items={'meokgwi_incense': 2, 'blank_hanji': 3},
             summary='정청이 먹귀를 가둬 두던 빈칸 벌판의 테가 터졌다. 이름을 들을 수 있는 사람은 나 하나다.',

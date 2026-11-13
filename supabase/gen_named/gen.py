@@ -42,7 +42,7 @@ items, recipes, hq, fish, titles = [], [], [], [], []
 baits = {}
 for k, n in enumerate(D.NAMED):
     price = max(300, round(1500 * n['lv'] / 40 / 10) * 10)
-    items.append(item(n['id'], n['name'], 'material', 5, '이름을 지킨 물고기, 명어(名魚). ' + n['desc'], 20, price, False))
+    items.append(item(n['id'], n['name'], 'material', 5, '이름을 지킨 물고기, 명어(名魚). ' + n['desc'], 40, price, False))
     fid, fname, field, extra, fx, fdesc = n['food']
     tier = 3 if n['lv'] < 20 else 4
     items.append(item(fid, fname, 'consumable', tier, fdesc, 20, round(price * 0.9 / 10) * 10, False, fx=fx))

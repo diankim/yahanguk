@@ -204,7 +204,7 @@ bbaaaaaaaaaaaaaccc
 
 # 6) 꼬마 족제비(제보 강산하): 약간 밝은 갈색 페럿, 까만 눈
 FER = {'a': '#d2a274', 'b': '#8e6038', 'c': '#f4e4c8', 'n': '#d8808a', 'e': '#0c0806', 'i': I, 'p': PK}
-pet(id='little_ferret', name='꼬마 족제비', grade=2, kind='shadow', likes='treat_meat',
+pet(id='little_ferret', name='꼬마 족제비', grade=3, kind='shadow', likes='treat_meat',
     desc='몸이 길쭉한 밝은 갈색 족제비입니다. 까만 눈을 반짝이며 좁은 틈만 보이면 쏙 들어가 봅니다.',
     baby=dict(pal=FER,
         idle='''
