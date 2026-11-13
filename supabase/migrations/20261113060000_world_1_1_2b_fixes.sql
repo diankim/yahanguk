@@ -161,5 +161,8 @@ $q$join public.world_characters o on o.owner_id = b.owner_id where a.owner_id = 
 $q$join public.world_characters o on o.owner_id = b.owner_id where a.owner_id = uid and o.location = c.location and o.downed_at is null limit 3 loop$q$,
 $q$join public.world_characters o on o.owner_id = b.owner_id where a.owner_id = uid and o.location = c.location and o.downed_at is null and public.world_gw_invitable(b.owner_id) limit 3 loop$q$]);
 
+update public.world_patch_notes set body = body || E'\n\n## 1.1.2b\n- 쓰러져 본부 구조대를 부르거나 요화로 봉인될 때, 지금 있는 영역의 안전지대로 옮겨집니다(그 영역에 안전지대가 없을 때만 가장 가까운 곳). 길이 이어지지 않은 다른 영역으로 옮겨지던 것을 고쳤습니다.\n- 현장 토벌 결과 창의 경험치가 실제로 받는 양보다 12 많게 보이던 것을 고쳤습니다.\n- 퀘스트 보고·상시 의뢰·조사원 의뢰·봉연의 그림자·귀허의 주인 보상 문구의 경험치를 실제로 들어간 양으로 적습니다. 최고 레벨이면 「경험치 0」으로 나옵니다.\n- 파티 토벌에서 마지막 한 방을 치지 않은 사람에게 막기 횟수가 붙던 것을 고쳤습니다.\n- 파티 토벌 경험치 동료 덤(한 명마다 +10%)에 도중에 쓰러진 동료도 셉니다. 달아나거나 자리를 떠난 사람만 빠집니다.\n- 귀허의 주인: 대기실 안내와 도전할 때의 거절 문구를 하나로 맞췄습니다. 오늘 이미 쓰러뜨렸거나 귀허 부적이 없는 등 지금 합류할 수 없는 파티원에게는 초대가 가지 않고, 초대받을 사람이 없으면 기다리지 않고 바로 시작합니다.'
+ where note_id = '1.1.0' and position('## 1.1.2b' in body) = 0;
+
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261113060000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
