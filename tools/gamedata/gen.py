@@ -118,6 +118,9 @@ def build(dsn):
     d['outfit'] = q(dsn, """select (world_outfit_rules() -> 'design') - 'weave' || jsonb_build_object('give_day', (world_drawing_rules() ->> 'give_day')::int,
         'weave', (select jsonb_object_agg(e.key, jsonb_build_object('level', r.minimum_level, 'mats', (select jsonb_agg(jsonb_build_array(i.item_name, m.value::int) order by i.item_name) from jsonb_each_text(r.ingredients) m join world_item_catalog i on i.item_id = m.key)))
           from jsonb_each_text(world_outfit_rules() -> 'design' -> 'weave') e join world_crafting_recipes r on r.recipe_id = e.value))""")
+    d['houseRooms'] = q(dsn, """select world_housing_room_rules() || jsonb_build_object('item_names', (select jsonb_object_agg(i.item_id, i.item_name) from world_item_catalog i
+        where i.item_id in (select m.key from jsonb_array_elements(world_housing_room_rules() -> 'rooms') r, jsonb_each(r -> 'steps') s, jsonb_each(s.value -> 'items') m)
+           or i.item_id = 'hf_' || (world_housing_room_rules() ->> 'stair')))""")
     return d
 
 

@@ -400,6 +400,12 @@ export const FUR = {
     { x: .71, y: .4, w: .04, d: .04, h: .3, z: .33, c: C.pine },
     { x: .55, y: .33, w: .04, d: .04, h: .08, z: .67, c: C.ink }, { x: .64, y: .3, w: .04, d: .04, h: .08, z: .75, c: C.white },
     { x: .71, y: .4, w: .04, d: .04, h: .08, z: .63, c: C.ink }] },
+  numaru_stair: { name: '누마루 계단', grade: 4, W: 1, D: 2, layer: 'floor', cat: '계단', parts: [
+    { x: .1, y: 1.5, w: .8, d: .5, h: .3, c: C.pine }, { x: .1, y: 1, w: .8, d: .5, h: .6, c: C.wood },
+    { x: .1, y: .5, w: .8, d: .5, h: .9, c: C.pine }, { x: .1, y: 0, w: .8, d: .5, h: 1.2, c: C.wood },
+    { x: .02, y: 0, w: .08, d: .08, h: 1.8, c: C.dark }, { x: .9, y: 0, w: .08, d: .08, h: 1.8, c: C.dark },
+    { x: .02, y: 1.9, w: .08, d: .08, h: .8, c: C.dark }, { x: .9, y: 1.9, w: .08, d: .08, h: .8, c: C.dark },
+    { x: .02, y: 0, w: .08, d: .08, h: .05, z: 1.8, c: C.lac }, { x: .9, y: 0, w: .08, d: .08, h: .05, z: 1.8, c: C.lac }] },
   mk_notedesk: { name: '다온의 앉은뱅이책상', grade: 4, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .46, parts: [
     { x: .14, y: .16, w: .08, d: .08, h: .36, c: C.dark }, { x: 1.78, y: .16, w: .08, d: .08, h: .36, c: C.dark },
     { x: .14, y: .76, w: .08, d: .08, h: .36, c: C.dark }, { x: 1.78, y: .76, w: .08, d: .08, h: .36, c: C.dark },
