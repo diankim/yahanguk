@@ -850,7 +850,9 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .spots li div { display: grid; } .spots small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); } .spots .btn { min-width: 72px; }
 .spots li:has(.q-need-tag) { border-color: var(--gold); } .spots .q-need { color: var(--gold); font-weight: 600; }
 .mz-list { margin-top: 8px; } .spots li.mz.open { border-color: var(--gold); } .spots li.mz.open b { color: var(--gold); } .spots li.mz.shut { opacity: .62; }
-.spots li.mz .mz-why { color: var(--warn, var(--muted)); } .mz-act { display: flex; flex-direction: column; gap: 4px; flex: none; }
+.spots li.mz .mz-why { color: var(--warn, var(--muted)); }
+.spots li.mz, .field-wrap .fg-b .spots li.mz { flex-direction: column; align-items: stretch; gap: 6px; } .spots li.mz > div:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.spots li.mz .mz-act { display: flex; flex-direction: row; gap: 6px; } .spots li.mz .mz-act .btn, .field-wrap .fg-b .spots li.mz .mz-act .btn { flex: 1 1 0; min-width: 0; white-space: nowrap; }
 .mz-line { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0 0; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .mz-line b { color: var(--gold); margin-right: 4px; } .mz-line svg { flex: none; margin-top: 2px; color: var(--gold); }
 .q-need-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border: var(--bw) solid var(--gold); border-radius: 999px; color: var(--gold); font-size: calc(11px * var(--fz, 1)); font-weight: 600; line-height: 1.5; vertical-align: 1px; }
