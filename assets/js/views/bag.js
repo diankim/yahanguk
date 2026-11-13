@@ -6,7 +6,7 @@ import { helpQ } from '../tips.js';
 import { openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
-import { GWIRYEONG } from '../rules.js';
+import { GWIRYEONG, BIJANG } from '../rules.js';
 import { hit } from '../changes.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
@@ -366,7 +366,8 @@ function actsHtml(id, n, it, part, ri, showUse, eqSet) {
   const useMax = showUse ? useMaxOf(id, n) : 0;
   const qmax = Math.max(useMax, locked ? 0 : dcMax);
   const name = esc(nameOf(id));
-  const right = showUse ? `<button class="btn small" data-here="물품 사용" data-here-down data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} 사용" title="${esc(USABLE[id])}">사용</button>`
+  const bj = BIJANG.maps.some(m => m.id === id);
+  const right = showUse ? `<button class="btn small" data-here="물품 사용" ${bj ? '' : 'data-here-down'} data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} ${bj ? '펼치기' : '사용'}" title="${esc(USABLE[id])}">${bj ? '펼치기' : '사용'}</button>`
     : it?.category === 'pet' ? `<button class="btn small" data-adopt="${esc(id)}" aria-label="${name} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>`
     : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`
     : '';

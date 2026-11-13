@@ -239,6 +239,13 @@ function staminaBox(st) {
         </div>`;
 }
 
+const bjHere = s => (store.hud?.bijang?.maps || []).find(m => m.status === 'open' && m.region_id === s.region?.region_id);
+async function digBijang(b, s) {
+  const m = bjHere(s); if (!m) return;
+  if (!(await ask(`${m.name}을(를) 따라 흙을 팝니다. 비장고를 지키던 파수꾼이 일어나고, 같은 곳의 파티원은 60초 안에 합류할 수 있습니다. 파수꾼을 쓰러뜨리면 함께 선 이 모두 상자를 열고, 숨은 문이 나오면 비장고로 들어갑니다. 첫 싸움에서 지면 비장도는 남습니다.`, { title: '비장도 따라 파기', ok: '파기' }))) return;
+  const r = await guard(b, () => act('world_bijang_dig'));
+  if (r?.fight_id) window.yahangGo('pfight', r.fight_id);
+}
 function field(s, roster, blocked) {
   const st = s.stamina || { now: 0, max: 20 }, n = s.node;
   const kids = (s.nodes || []).filter(x => x.parent_id === n.node_id);
@@ -268,6 +275,7 @@ function field(s, roster, blocked) {
           <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
+          ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${s.region.region_id === GAMEDATA.boss?.mukjeok?.region ? `<a class="tile danger" href="#/gw/mukjeok" title="먹그림자 · Lv${GAMEDATA.boss.mukjeok.lv}부터, ${GAMEDATA.boss.mukjeok.item_name} 1개">${icon('flag', 22)}<span>먹그림자</span></a>` : ''}
         </div>
         <label class="quiet-toggle"><input type="checkbox" id="quiet-mode" ${quietOn() ? 'checked' : ''}><span><b>조용히 살피기</b> <small class="muted">요괴 조우 −${quietPct()}% · 꾸러미 −${Math.floor(quietPct() / 2)}% (기민, 최대 ${AGILE.quietCap}%)</small></span></label>
@@ -414,6 +422,7 @@ function bind(s) {
   $('#exp-open', el)?.addEventListener('click', openExp); $('#exp-open2', el)?.addEventListener('click', openExp); $('#exp-open3', el)?.addEventListener('click', openExp);
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
   $('#idle-rest', el)?.addEventListener('click', goIdleRest);
+  $('#bj-dig', el)?.addEventListener('click', e => digBijang(e.currentTarget, s));
   $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
   bindFish();
