@@ -2111,7 +2111,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .q-now { display: flex; gap: 4px; align-items: flex-start; margin: 2px 0 0; font-size: calc(12.5px * var(--fz, 1)); }
 .q-now .ico { flex: none; margin-top: 3px; color: var(--accent); }
 .q-group { align-items: center; margin-bottom: 6px; }
-.q-at { margin: 0; font-size: calc(12px * var(--fz, 1)); color: var(--muted); display: flex; gap: 4px; align-items: center; }
+.q-at { margin: 0; font-size: calc(12px * var(--fz, 1)); color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; }
 .q-at.ok { color: var(--ok); }
 .q-item .btn-row { margin-top: 2px; }
 .q-more { margin-top: 8px; }
