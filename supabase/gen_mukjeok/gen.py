@@ -112,7 +112,7 @@ rows = []
 for r in R:
     rest = r.get('rest') or ('임시 야영지', 'field_camp', 2, 1)
     shop = r.get('shop') or (None, None)
-    rows.append(dict(region_id=r['id'], territory_id=D.TERR[0], territory_name=D.TERR[1], region_name=r['name'], region_type=r['type'], danger_level=r['danger'], min_level=r['lv'],
+    rows.append(dict(region_id=r['id'], territory_id=D.TERR[0], territory_name=D.TERR[1], region_name=r['name'], region_type=r['type'], danger_level=r['danger'], min_level=r.get('entry', r['lv']),
                      description=r['desc'], travel_from=r['nb'], faction_control='무주 금역', world_x=r['x'], world_y=r['y'], elevation=r['el'], terrain_cost=0.8 if r.get('safe') else 1,
                      rest_spot_type=rest[1], rest_spot_name=rest[0], rest_quality=rest[3], rest_fee=rest[2], rest_risk=0 if r.get('safe') else 30, is_safe_zone=bool(r.get('safe')),
                      shop_id=shop[0], shop_name=shop[1], theme=r['theme']))
@@ -160,6 +160,7 @@ def spot_name(rid, cat, k):
 nrows, srows = [], []
 for r in R:
     rid, lv = r['id'], r['lv']
+    ent = r.get('entry', lv)
     levels = D.NODES[rid]
     ids = [[U('node', rid, str(h), str(i)) for i in range(len(row))] for h, row in enumerate(levels)]
     parents = {}
@@ -180,13 +181,13 @@ for r in R:
     for h, row in enumerate(levels):
         for i, nm in enumerate(row):
             nid = ids[h][i]; hl = h + 1
-            nlv = min(CAP, lv + max(0, hl - 2) * 2)
+            nlv = ent if hl == 1 else min(CAP, lv + max(0, hl - 2) * 2)
             nrows.append(dict(node_id=nid, region_id=rid, parent_node_id=parents.get((h, i)), hierarchy_level=hl, node_name=nm, min_level=nlv, sort_order=i))
             if hl == 1:
                 en, ec = D.ENTRY_SPOT[rid]
                 if en in spot_names: errors.append('채집터 이름 겹침: ' + en)
                 spot_names.add(en)
-                srows.append(dict(spot_id=U('spot', rid, 'entry'), node_id=nid, spot_name=en, category=ec, r=rid, min_level=lv, yield_min=1, yield_max=2, difficulty=1))
+                srows.append(dict(spot_id=U('spot', rid, 'entry'), node_id=nid, spot_name=en, category=ec, r=rid, min_level=ent, yield_min=1, yield_max=2, difficulty=1))
                 continue
             for j in range(2):
                 cat = cats[(sk + j) % len(cats)]
@@ -208,10 +209,11 @@ fresh('monster_ids', [m[0] for m in mons], '요괴 id')
 rows = []
 for rid, ms in D.MONSTERS.items():
     L = next(r['lv'] for r in R if r['id'] == rid)
+    E = next(r.get('entry', r['lv']) for r in R if r['id'] == rid)
     for mid, nm, ty, role, kind, mech, desc, drops in ms:
-        if role == 'common': lo, hi, hp, atk, wt, dr = L, min(CAP, L + 3), 70 + 14 * L, round(8 + 1.1 * L), 14, 2
+        if role == 'common': lo, hi, hp, atk, wt, dr = E, min(CAP, L + 3), 70 + 14 * L, round(8 + 1.1 * L), 14, 2
         elif role == 'main': lo, hi, hp, atk, wt, dr = min(CAP, L + 2), min(CAP + 1, L + 6), 150 * L, round(7.5 * L), 15, 5
-        else: lo, hi, hp, atk, wt, dr = L, min(CAP, L + 2), round((70 + 14 * L) * 1.5), round((8 + 1.1 * L) * 1.4), 12, 10
+        else: lo, hi, hp, atk, wt, dr = E, min(CAP, L + 2), round((70 + 14 * L) * 1.5), round((8 + 1.1 * L) * 1.4), 12, 10
         rows.append(dict(monster_id=mid, region_id=rid, monster_name=nm, monster_type=ty, min_level=lo, max_level=hi, hp=hp, attack_power=atk, spawn_weight=wt, description=desc,
                          drops=drops, difficulty_rank=dr, mechanic_key=mech, mechanic_description=MECH_DESC[mech], role=role, kind=kind))
 bulk('world_region_monsters', rows, [('monster_id', 'text'), ('region_id', 'text'), ('monster_name', 'text'), ('monster_type', 'text'), ('min_level', 'int'), ('max_level', 'int'),

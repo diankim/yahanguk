@@ -7,7 +7,7 @@ REGIONS = [
     dict(id='mukchang_ferry', name='묵창 나루', type='village', danger=9, lv=40, x=310, y=128, el=0, nb=['frost_valley', 'blank_field'],
          theme='water', safe=True, desc='먹빛 강을 건너는 나룻배가 닿는 작은 나루. 문패마다 글자가 반쯤 지워져 있고, 사람들은 서로를 사는 자리로 부른다.',
          rest=('묵창 주막 객방', 'inn', 160, 2), shop=('mukchang_shop', '묵창 주막')),
-    dict(id='blank_field', name='빈칸 벌판', type='wilderness', danger=10, lv=41, x=222, y=168, el=0, nb=['mukchang_ferry', 'meokbi_forest'],
+    dict(id='blank_field', name='빈칸 벌판', type='wilderness', danger=10, lv=41, entry=40, x=222, y=168, el=0, nb=['mukchang_ferry', 'meokbi_forest'],
          theme='wild', desc='이름이 거둬지고 정리되지 못한 먹귀들이 모여드는 벌판. 풀잎마다 지워진 글자의 얼룩이 묻어 있다.'),
     dict(id='meokbi_forest', name='먹비 숲', type='forest', danger=10, lv=42, x=148, y=222, el=1, nb=['blank_field', 'myeongbu_tower'],
          theme='wild', desc='먹물 같은 비가 그치지 않는 숲. 잎에 맺힌 빗방울을 손등에 받으면 남의 꿈이 비친다.'),
@@ -76,7 +76,7 @@ SPOT_LOOT = {
     'nine_court': {'ore': ['ore', 'raw_iron', 'erased_plate'], 'spirit': ['spirit_dust', 'spirit_core', 'register_slip'],
                    'relics': ['seal_paper', 'register_slip', 'erased_plate'], 'water': ['river_reed', 'mukchang_ink', 'meokbi_moss']},
 }
-ENTRY_SPOT = {'mukchang_ferry': ('어귀의 먹빛 갈대밭', 'water'), 'blank_field': ('어귀의 흰 억새 둔덕', 'herbs'),
+ENTRY_SPOT = {'mukchang_ferry': ('어귀의 먹빛 갈대밭', 'water'), 'blank_field': ('어귀의 흰 억새 물가', 'water'),
               'meokbi_forest': ('어귀의 흑단 비가림', 'wood'), 'myeongbu_tower': ('어귀의 무너진 죽간 더미', 'relics'),
               'nine_court': ('어귀의 돌문 밑 쇳돌', 'ore')}
 
