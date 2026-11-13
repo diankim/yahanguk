@@ -230,7 +230,7 @@ function bumpFieldStamina(now) {
 function staminaBox(st) {
   return `<div class="stamina">
           <div class="st-top"><span>${icon('spark', 14)} 탐색력</span><b>${st.now} / ${st.max}</b></div>
-          <div class="st-pips">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
+          <div class="st-pips" style="--n:${st.max}">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
           <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득 찼습니다' : ''}</small>
         </div>`;
 }
@@ -256,6 +256,7 @@ function field(s, roster, blocked) {
           <p class="desc">${esc(n.description || '')}</p>
         </div>
         ${staminaBox(st)}
+        <p class="find-left">${icon('route', 13)}<span>${s.hidden_paths ? `찾지 못한 길 <b>${s.hidden_paths}</b>` : '길은 모두 찾음'}</span>${icon('leaf', 13)}<span>${s.hidden_spots ? `숨은 채집터 <b>${s.hidden_spots}</b>` : (s.spots || []).length ? '채집터는 모두 찾음' : '채집터 없음'}</span></p>
         <div class="act-tiles">
           <button class="tile primary" id="search" title="탐색력 1 · 길·채집터·요괴·보급·단서" ${blocked || st.now <= 0 ? 'disabled' : ''}>${icon('search', 22)}<span>탐색</span></button>
           <button class="tile" id="exp-open2" title="원정 보내기" ${blocked ? 'disabled' : ''}>${icon('flame', 22)}<span>원정</span></button>
