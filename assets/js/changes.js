@@ -24,6 +24,7 @@ export const CHANGES = {
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
   raidBrief: /raid_final_start|raid_join/,
+  gwiryeong: /use_item|storage|letter|market|trade|discard|overflow|field_search|gather|battle_action|expedition_complete|raid_|gw_|ucomm/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
   boardAway: /expedition|raid_|pfight_|gw_/,
   boardSearch: /^world_field_search/,

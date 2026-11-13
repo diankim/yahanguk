@@ -90,6 +90,7 @@ on('changed', ({ name = '', data, field } = {}) => {
   if (hit('dismantle', name)) invalidate('world_dismantle_info');
   if (hit('mounts', name)) invalidate('world_mount_snapshot');
   if (hit('raidBrief', name)) invalidate('world_raid_brief');
+  if (hit('gwiryeong', name)) invalidate('world_gwiryeong_mine');
   if (hit('titles', name)) invalidate('world_title_snapshot');
   if (hit('faction', name)) { invalidate('world_faction_snapshot'); invalidate('world_faction_mission_snapshot'); invalidate('world_faction_base_snapshot'); }
 });

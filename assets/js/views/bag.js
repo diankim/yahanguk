@@ -3,7 +3,7 @@ import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } 
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { openItemInfo, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf } from './item.js';
+import { openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG } from '../rules.js';
@@ -192,11 +192,12 @@ async function items(body, inv, stg) {
       const boss = bossUse(id);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}${tags.includes('장착 중') ? ' is-eq' : ''}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief one" title="${esc(it.description)}">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" title="${esc(GWIRYEONG.supply)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx one" title="${esc(USABLE[id])}">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small class="inv-tags">${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span></span>${it?.description ? `<small class="brief one" title="${esc(it.description)}">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" data-gw-when data-gw-keep title="${esc(`${GWIRYEONG.short}. ${GWIRYEONG.supply}`)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx one" title="${esc(USABLE[id])}">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small class="inv-tags">${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /^창고 /.test(t) ? 'st' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${actsHtml(id, n, it, part, ri, showUse, equipped)}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}
     <p class="muted small">물품을 누르면 정보·제작법·잠금·버리기가 나옵니다. 판매와 거래는 안전지대의 현장 화면(상점·거래소)에서 할 수 있습니다.</p>`, 'label.search');
+  fillGwWhen(body);
   $('[data-storage]', body).onclick = () => import('./services.js').then(m => m.openStorage());
   bindSegmented(body, 'bag-cat', k => { cat = k; items(body, inv, stg); });
   body.querySelectorAll('[data-fxk]').forEach(b => b.onclick = () => { const k = b.dataset.fxk; fxPick.has(k) ? fxPick.delete(k) : fxPick.add(k); items(body, inv, stg); });

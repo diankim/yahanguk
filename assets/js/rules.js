@@ -117,6 +117,12 @@ export const GWIRYEONG = {
   trade: '거래할 수 있게 만든 것은 주고받으라는 뜻입니다. 당장 쓸 일이 없으면 요화로 곤란한 동료에게 넘겨 주세요.',
   hold: `한 사람은 귀령초를 ${GW.hold}포기까지만 지닐 수 있습니다(가방·창고·거래소 등록·받지 않은 서신을 합쳐). 지닌 동안에는 새로 찾지도, 남에게 더 받지도 못합니다. 귀령초끼리 서로 맞바꿀 수도 없습니다. 한 번 얻으면 ${GW.cooldown_h}시간 동안은 다시 나오지 않습니다. 찾을 때 가방이 가득 차 있으면 개인 창고로 들어갑니다.`
 };
+export const gwWhen = (until, warnH = GW.warn_h) => {
+  const t = new Date(until), left = Math.max(0, t - Date.now()), h = Math.floor(left / 3600000), m = Math.floor(left / 60000) % 60;
+  const hm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  return { text: `${t.getMonth() + 1}월 ${t.getDate()}일 ${hm}에 시듦 · ${h ? `${h}시간 ` : ''}${m}분 남음`,
+    short: `${t.getMonth() + 1}/${t.getDate()} ${hm} 시듦 · ${h ? `${h}시간` : `${m}분`} 남음`, soon: left < warnH * 3600000 };
+};
 export const weakSafe = id => (GD.weakSafe || ['banyo_village']).includes(id);
 export const SYS_CHAT = {
   '구조 알림': { icon: 'heart', cls: '' },
