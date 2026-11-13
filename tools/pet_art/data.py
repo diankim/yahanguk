@@ -44,6 +44,7 @@ exec(open(__file__.replace('data.py', 'art5.py')).read())
 exec(open(__file__.replace('data.py', 'art6.py')).read())
 exec(open(__file__.replace('data.py', 'art7.py')).read())
 exec(open(__file__.replace('data.py', 'art8.py')).read())
+exec(open(__file__.replace('data.py', 'art9.py')).read())
 
 EFFECTS = {
     'poop': {'pal': {'b': '#7a4e2a', 'd': '#5a3519', 'h': '#a8744a'}, 'rows': '''
