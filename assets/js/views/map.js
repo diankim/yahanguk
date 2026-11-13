@@ -5,6 +5,8 @@ import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
 
+const bjMaps = () => store.hud?.bijang?.maps || [];
+const bjAt = id => bjMaps().filter(m => m.region_id === id);
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
 const shadowText = w => w.status === 'fight' ? '봉연의 그림자 토벌 중' : w.status === 'signup' ? '봉연의 그림자 · 모이는 중'
   : `봉연의 그림자 출현 예정${w.spawn_at ? ` · ${new Date(w.spawn_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`;
@@ -66,7 +68,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${bjMaps().length ? '<span><i class="lg bj"></i>펼친 비장도</span>' : ''}${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>
@@ -282,6 +284,7 @@ function paint() {
       ${zones.get(r.region_id)?.contested ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="10" class="contest-ring late"/>` : ''}
       ${sealed.has(r.region_id) ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9.5" class="seal-ring"/>` : ''}
       ${shadow && shadow.region === r.region_name ? `<g class="shadow-mark ${shadow.status}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><rect x="-11" y="-11" width="22" height="22" class="sh-sq"/><path d="M0 -24 L2.6 -19.4 L7 -17 L2.6 -14.6 L0 -10 L-2.6 -14.6 L-7 -17 L-2.6 -19.4 Z" class="sh-star"/></g>` : ''}
+      ${bjAt(r.region_id).length ? `<g class="bj-mark" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path d="M-5 -19 L5 -9 M5 -19 L-5 -9" class="bj-x"/></g>` : ''}
       <title>${esc(r.region_name)}</title></g>`;
     const l = labels.get(r.region_id);
     if (l) {
@@ -382,6 +385,7 @@ function drawDetail() {
       <header class="panel-head"><h2>${esc(r.region_name)}</h2>${isHere ? chip('현재 위치', 'accent') : ''}</header>
       <div class="panel-body">
         <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${sealed.has(r.region_id) ? ' · <b class="sealed">봉연에 잠김</b>' : ''}${shadow && shadow.region === r.region_name ? ` · <b class="shadow">${esc(shadowText(shadow))}</b>` : ''}</p>
+        ${bjAt(r.region_id).map(m => `<p class="hint accent">${icon('chest', 14)} 펼친 ${esc(m.name)}이(가) 이곳을 가리킵니다 · 와서 「비장도 따라 파기」</p>`).join('')}
         <div class="chips">${zone?.is_safe_zone ? chip('안전지대', 'ok') : danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}</div>
         ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')} · 거래소${zone.has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>

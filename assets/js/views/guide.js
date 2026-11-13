@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1414,6 +1414,17 @@ const S = [
       <li><b>보상</b>: 이기면 각자 혼자 토벌과 같은 보상을 받고, 전리품은 저마다 굴립니다. 경험치는 함께한 사람 한 명마다 +10%, 3명까지입니다.</li>
       <li>피해 기록판에 각자 준 피해·받은 피해·회복이 보입니다.</li>
     </ul>`],
+  ['bijang', '비장도와 비장고', `${(() => { const B = GD.bijang || {}, maps = B.maps || [], f = B.final || {}, t = B.titles || [1, 5, 20]; return `
+    <p>명부 정리 전에 사람들이 이름을 지키려 재물과 함께 흙에 묻은 곳간을 비장고(祕藏庫), 그 자리를 그린 옛 그림을 비장도(祕藏圖)라 합니다.</p>
+    <ul>
+      <li><b>비장도</b>: ${maps.map(m => `${esc(m.name)}(Lv${m.lv}~)`).join(' · ')}. 거래할 수 있습니다. ${esc(BIJANG.hold)}</li>
+      <li><b>펼치기</b>: 가방에서 펼치면 그 등급 레벨대의 바깥 지역 하나가 정해지고, 펼친 사람의 지도에만 금빛 ✕로 드러납니다. 펼친 지도는 거래할 수 없습니다. 펼치기·파기는 횟수 제한이 없습니다.</li>
+      <li><b>따라 파기</b>: 그 지역 현장의 「비장도 따라 파기」(탐색력 ${B.stamina ?? 1}). 비장고를 지키던 파수꾼이 일어나고, 같은 곳의 파티원은 ${B.gather_s ?? 60}초 안에 합류할 수 있습니다(${B.party_max ?? 4}명까지, 혼자도 됩니다). 싸움은 파티 현장 토벌과 같습니다. 첫 파수꾼에게 지면 비장도는 남아 다시 팔 수 있습니다.</li>
+      <li><b>상자</b>: 파수꾼을 쓰러뜨리면 함께 선 이 모두가 저마다 상자를 엽니다(전과 재료 한 가지 1~2개, 드물게 빛나는 알).</li>
+      <li><b>숨은 문</b>: 상자 밑에서 숨은 문이 나올 수 있습니다(등급이 높을수록 잘 나옴). ${esc(BIJANG.rule)}</li>
+      <li><b>방과 문</b>: 비장고는 방 ${B.rooms ?? 5}칸입니다. 방마다 문 셋 가운데 맞는 문 하나를 길잡이(비장도를 펼친 사람, 들지 못했으면 함께 든 사람)가 고릅니다. 맞으면 다음 방으로 가 상자를 열고(가끔 파수꾼이 먼저 막습니다), 틀리면 비장고가 무너져 끝나지만 얻은 것은 모두 가집니다. 방에 들어서면 드물게 맞는 문 틈으로 먹빛 이름이 비칩니다.</li>
+      <li><b>마지막 방</b>: 맨 끝 방에 닿으면 함께 든 이 모두가 큰 몫을 받습니다(${(f.gil || []).map((g, i) => `${esc(maps[i]?.name || '')} ${g}전`).join(' · ')} · 「이름 서린」 재료나 빛나는 알 같은 귀한 물건). 마지막 방에 ${t.join('·')}번 닿으면 칭호(분류 「비장고」), 다섯 번이면 낙관 「藏」을 얻습니다.</li>
+    </ul>`; })()}`],
   ['raid', '합동 토벌 · 결전 · 협동 기술', `
     <p><b>합동 토벌</b>은 여러 조사원이 요괴 하나의 체력을 함께 깎는 큰 싸움입니다.</p>
     <ul>
@@ -1901,7 +1912,7 @@ const S = [
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'raid', 'mkboss', 'gear', 'durability', 'survival']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],

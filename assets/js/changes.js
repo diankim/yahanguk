@@ -2,7 +2,7 @@ export const CHANGES = {
   invQuiet: /field_move|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|status_dismiss|avatar_set|set_avatar|outfit_design_(save|delete|restore|give|hide|report|remove)/,
   equipped: /equip_item|equipment_repair|expedition_complete|reset_identity|dismantle/,
   invAlways: /equip|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
-  map: /travel|mount|join_major_faction|field_|battle_|expedition/,
+  map: /travel|mount|join_major_faction|field_|battle_|expedition|bijang/,
   survey: /field_|gather|expedition/,
   journal: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop/,
   roster: /travel|rescue|party|expedition|downed|idle/,
@@ -12,7 +12,7 @@ export const CHANGES = {
   rest: /rest|survival|travel|idle|field_move/,
   bond: /bond|equip|travel|party|field_move/,
   reads: /^world_me$|snapshot|_state$|_board$|overview|roster|_status$|_brief$|_list$|_check$|_quote$|_info$|sources|counts|combat_profile|profile_of|journal|threads|faces|_card$|_rules$|_mine$|_get$|_favs$|_preview$|_spot$|_scene$|_codex|_lore|_bundle/,
-  settles: /travel_status|gw_snapshot|pfight_snapshot|raid_snapshot|hud_snapshot|field_snapshot|expedition_overview/,
+  settles: /travel_status|gw_snapshot|pfight_snapshot|bijang_snapshot|raid_snapshot|hud_snapshot|field_snapshot|expedition_overview/,
   titles: /title|notice|cosmetic|reset_identity/,
   faction: /faction|quest|level|reset_identity|notice/,
   journalView: /quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|commission|ucomm|letter|notice/,
@@ -28,7 +28,7 @@ export const CHANGES = {
   raidBrief: /raid_final_start|raid_join/,
   gwiryeong: /use_item|storage|letter|market|trade|discard|overflow|field_search|gather|battle_action|expedition_complete|raid_|gw_|ucomm/,
   boardItems: /gather|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_/,
-  boardAway: /expedition|raid_|pfight_|gw_/,
+  boardAway: /expedition|raid_|pfight_|gw_|bijang_/,
   boardSearch: /^world_field_search/,
   boardPet: /pet_/,
   boardOther: /battle_action|field_|expedition|craft|fish|trade|market|shop/,
@@ -44,7 +44,7 @@ export const CHANGES = {
 };
 export const SFX_ACTS = [
   [/field_search|battle_action|field_gather/, null], [/shop_buy|shop_sell|trade_offer|mount_acquire/, 'coin'], [/craft/, 'craft'], [/repair/, 'repair'],
-  [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply/, 'reward'],
+  [/travel/, 'travel'], [/expedition_start/, 'depart'], [/expedition_complete|claim|story_combine|commission|mission_action|faction_supply|bijang_pick/, 'reward'],
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
 export const TASK_ACTS = { gw: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|expedition_complete/, craft: /craft/, fish: /^world_fish(_at)?$/,

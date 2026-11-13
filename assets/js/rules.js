@@ -115,8 +115,20 @@ export const FIGHT_KINDS = {
   raid: { route: 'raid', label: '토벌' },
   gw: { route: 'gw', label: '우두머리와 싸우는 중' },
   pfight: { route: 'pfight', label: '파티 토벌' },
+  bijang: { route: 'bijang', label: '비장고' },
 };
 export const onFightRoute = (h = location.hash) => Object.values(FIGHT_KINDS).some(k => h.startsWith(`#/${k.route}`));
+const BJ = GD.bijang || { entry_day: 3, rooms: 5, party_max: 4, hold: 1, maps: [] };
+export const BIJANG = {
+  rule: `비장도 한 장으로 함께 선 이(${BJ.party_max}명까지) 모두가 상자를 굴립니다. 비장고 들어가기는 한 사람이 한국 시각 하루 ${BJ.entry_day}번까지(내 지도·남의 지도·혼자 모두 합쳐)이고, 다 쓴 사람은 숨은 문이 열려도 들지 못합니다(파수꾼 싸움·첫 상자는 받음).`,
+  how: '비장도는 가방에서 「펼치기」로 그 등급 레벨대의 바깥 지역 하나를 드러냅니다. 그 지역에서 「비장도 따라 파기」를 하면 파수꾼이 일어납니다.',
+  hold: `비장도는 등급마다 한 사람이 ${BJ.hold}장만 지닐 수 있습니다(가방·창고·보따리·거래소 등록·받지 않은 서신·펼친 지도를 합쳐).`,
+  result: { final: '마지막 방에 닿았습니다', wrong: '문을 잘못 골랐습니다', lost: '파수꾼에게 밀렸습니다', nodoor: '숨은 문이 없었습니다', full: '오늘은 들어갈 수 없었습니다' },
+  end: { final: '이름을 적은 함과 재물을 함께 간 이들이 나눠 가졌습니다.', wrong: '비장고가 무너졌지만 그때까지 얻은 것은 모두 가졌습니다.',
+    lost: '파수꾼과의 첫 싸움에서 졌다면 비장도는 그대로 남아 다시 팔 수 있습니다.', nodoor: '상자만 얻고 끝났습니다. 비장도는 다 썼습니다.',
+    full: '함께 선 이 모두 오늘 비장고 들어가기를 다 써서 숨은 문을 다시 덮었습니다.' },
+  maps: BJ.maps || [],
+};
 export const UCOMM_PAST = '받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
 
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };

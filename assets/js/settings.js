@@ -157,6 +157,7 @@ function noteActs(n) {
   if (n.kind === 'guide' && n.payload?.tip === 'erosion') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="char/status">상태 보기</button>`;
   if (n.kind === 'yohwa' || n.kind === 'erosion_warn') return `<a class="btn primary small" href="#/char" data-pop-close>상태 보기</a>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
+  if (n.kind === 'bijang' && n.payload?.run_id) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="bijang/${esc(n.payload.run_id)}">비장고 보기</button>`;
   const go = GO_KIND[n.kind] || (/^bond_/.test(n.kind) ? 'party' : /^faction/.test(n.kind) ? 'char/faction' : /^(housing_|pet_)/.test(n.kind) ? 'house' : '');
   if (go) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="${esc(go)}">보러 가기</button>`;
   return '';

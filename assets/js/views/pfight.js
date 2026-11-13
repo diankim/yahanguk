@@ -146,7 +146,7 @@ function fillItems(box) {
 function resultHtml(s) {
   const ok = s.status === 'won';
   return resultBox(ok, ok ? `${esc((s.monster || '요괴') + "을(를)")} 함께 쓰러뜨렸습니다` : s.status === 'cancelled' ? '합류한 동료가 없어 혼자 싸웁니다' : '싸움이 끝났습니다',
-    `<p class="small">${ok ? '보상은 각자 받았습니다(기록에 적힘).' : ''}</p><a class="btn small" href="#/home">현장으로</a>`);
+    `<p class="small">${ok ? '보상은 각자 받았습니다(기록에 적힘).' : ''}</p>${s.bijang ? `<a class="btn small primary" href="#/bijang/${esc(s.bijang)}">${icon('chest', 14)}<span>비장고로</span></a> ` : ''}<a class="btn small" href="#/home">현장으로</a>`);
 }
 
 function bind() {

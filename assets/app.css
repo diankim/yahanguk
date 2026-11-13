@@ -3349,3 +3349,43 @@ b.shadow { color: var(--sp); }
   .field-wrap .fg-b .spots li > div { min-width: 0; }
   .field-wrap .fg-b .spots .btn { min-width: 0; min-height: 0; height: 26px; padding: 0 9px; font-size: calc(12px * var(--fz, 1)); flex: none; }
 }
+.bj-wrap { display: grid; gap: 12px; }
+@media (min-width: 900px) { .bj-wrap { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; } .bj-main { grid-row: span 2; } }
+.bj-ladder { display: flex; gap: 4px; list-style: none; margin: 0 0 12px; padding: 0; }
+.bj-ladder li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
+.bj-ladder li b { font-family: var(--font-serif); font-size: calc(15px * var(--fz, 1)); }
+.bj-ladder li.done { color: var(--text); border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
+.bj-ladder li.now { color: var(--accent-ink, var(--bg)); background: var(--accent); border-color: var(--accent); }
+.bj-ladder li.last { color: var(--gold); }
+.bj-doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 8px; }
+.bj-door { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px 8px; background: var(--surface-2); border: var(--bw, 1px) solid var(--line); border-radius: var(--r); color: var(--text); cursor: pointer; }
+.bj-door:not(:disabled):hover { border-color: var(--gold); }
+.bj-door:disabled { cursor: default; opacity: .85; }
+.bj-door .bj-arch { position: relative; display: flex; gap: 3px; width: 64%; max-width: 90px; aspect-ratio: 3 / 4; padding: 5px; border: 2px solid color-mix(in srgb, var(--gold) 55%, var(--line)); border-radius: 50% 50% 4px 4px / 34% 34% 4px 4px; background: var(--surface); }
+.bj-door .bj-arch i { flex: 1; border: 1.5px solid color-mix(in srgb, var(--gold) 35%, var(--line)); border-radius: 40% 40% 2px 2px / 20% 20% 2px 2px; }
+.bj-door b { font-family: var(--font-serif); font-size: calc(20px * var(--fz, 1)); color: var(--gold); line-height: 1; }
+.bj-door small { color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
+.bj-door.lit { border-color: var(--gold); }
+.bj-door.lit .bj-arch { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, var(--surface)); }
+.bj-door.lit small { color: var(--gold); }
+.bj-turn { margin: 4px 0 0; }
+.bj-guard { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: var(--bw, 1px) solid color-mix(in srgb, var(--bad) 40%, var(--line)); border-radius: var(--r-sm); margin-bottom: 8px; }
+.bj-guard > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.bj-guard span { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.bj-entry { margin: 10px 0 0; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.bj-entry b { color: var(--gold); }
+.bj-entry.none b { color: var(--bad); }
+.bj-mem { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.bj-mem li { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); }
+.bj-mem li.me { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.bj-mem li.out { opacity: .7; }
+.bj-mn { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.bj-mn small { color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
+.bj-got { font-size: calc(12px * var(--fz, 1)); color: var(--gold); overflow-wrap: anywhere; }
+.bj-log { max-height: 340px; overflow-y: auto; }
+.bj-mark { pointer-events: none; }
+.bj-mark .bj-x { stroke: var(--gold); stroke-width: 2.6; stroke-linecap: round; fill: none; }
+.lg.bj { background: none; border-radius: 0; width: 10px; height: 10px; position: relative; }
+.lg.bj::before, .lg.bj::after { content: ''; position: absolute; left: 4px; top: -1px; width: 2.4px; height: 12px; background: var(--gold); transform: rotate(45deg); }
+.lg.bj::after { transform: rotate(-45deg); }
+@media (max-width: 640px) { .bj-doors { gap: 6px; } .bj-door { padding: 8px 4px 6px; } }
