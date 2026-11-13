@@ -48,9 +48,9 @@ begin
   end if;
   return out;
 end $$;
-select pg_temp.yh_own('public.world_reset_identity(text, text, text)', 'fn_owner_field');
 revoke all on function public.world_reset_identity(text, text, text) from public, anon;
 grant execute on function public.world_reset_identity(text, text, text) to authenticated, service_role;
+select pg_temp.yh_own('public.world_reset_identity(text, text, text)', 'fn_owner_field');
 grant execute on function public.world_reset_identity(text, text) to fn_owner_field;
 set role fn_owner_18475;
 revoke all on function public.world_reset_identity(text, text) from public, anon, authenticated;
