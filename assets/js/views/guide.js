@@ -1,4 +1,4 @@
-import { icon, esc, $, $$, effectText, nameOf } from '../core.js';
+import { icon, esc, $, $$, effectText, nameOf, josa } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
@@ -8,6 +8,10 @@ import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
+const HR = GD.houseRooms || {};
+const hrN = i => HR.names?.[i] || '';
+const hrCost = s => [`${s.level ? `Lv${s.level} · ` : ''}${s.gil.toLocaleString()}전`, ...Object.entries(s.items || {}).map(([id, n]) => `${HR.item_names?.[id] || nameOf(id)} ${n}`)].join(' · ');
+const houseRoomsHtml = () => `<table class="guide-table"><tr><th>방</th><th>크기</th><th>놓는 가구</th><th>여는·넓히는 값</th></tr>${(HR.rooms || []).map((r, i) => [6, 7, 8, 9].map(n => `<tr><td>${n === 6 ? hrN(i) : ''}</td><td>${n}×${n}</td><td>${HR.cap?.[n] ?? ''}</td><td>${r.steps?.[n] ? `${n === 6 ? '열기 · ' : ''}${hrCost(r.steps[n])}` : '처음 크기'}</td></tr>`).join('')).join('')}</table>`;
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 const pctTxt = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}%`;
@@ -1766,19 +1770,22 @@ const S = [
         <ul><li>부적목 6 · 황지 4를 채집합니다.</li>
           <li>오방색 방석을 만듭니다.</li>
           <li>수리비 1,000전을 치르면 6×6 별채와 기본 세트 「단청 별채」를 받습니다.</li></ul></li>
+      <li><b>${hrN(0)}·${hrN(1)}·${hrN(2)}</b>: ${josa(`처음 받는 방이 ${hrN(0)}입니다. ${hrN(0)}을(를) 9×9로 넓히면 ${hrN(1)}을(를), ${hrN(1)}을(를) 열면 ${hrN(2)}을(를) 열 수 있습니다.`)}
+        <ul><li>별채 화면 머리의 방 단추로 한 방씩 보고 꾸밉니다. 아직 열지 않은 방은 단추를 누르면 여는 값이 나옵니다.</li>
+          <li>방마다 크기·벽지·바닥재가 따로이고, 놓을 수 있는 가구 수와 같은 가구 한도도 방마다 셉니다.</li>
+          <li>방을 열 때마다 곳간이 ${HR.store?.per_room ?? 10}칸 늘어납니다.</li>
+          <li>${josa(`${hrN(2)}을(를) 열면 「${HR.item_names?.['hf_' + HR.stair] || ''}」이(가) 곳간에 들어옵니다.`)} ${hrN(0)} 바닥에 놓아야 ${hrN(2)}에 오를 수 있고, 다른 방에는 놓을 수 없습니다. 버릴 수 없으며, 잃어도 별채를 열면 곳간에 다시 들어옵니다.</li>
+          <li>넓히는 재료는 가방에서 먼저, 모자라면 창고에서 꺼내 씁니다.</li>
+          <li>별채 동무와 내 모습은 「방 쓰임」에서 고른 방에서 지냅니다.</li></ul></li>
     </ul>
-    <table class="guide-table"><tr><th>크기</th><th>놓는 가구</th><th>넓히는 값</th></tr>
-      <tr><td>6×6</td><td>15</td><td>처음 크기</td></tr>
-      <tr><td>7×7</td><td>20</td><td>2,500전 · 가공 부적목 10</td></tr>
-      <tr><td>8×8</td><td>26</td><td>Lv20 · 6,000전 · 강화 부적목 4 · 칠액 6</td></tr>
-      <tr><td>9×9</td><td>32</td><td>Lv25 · 15,000전 · 강화 부적목 6 · 영맥 수피 4 · 비취 파편 2</td></tr></table>
+    ${houseRoomsHtml()}
     <h4>꾸미기</h4>
     <ul>
       <li><b>놓기</b>: 가구는 가방에 들어오는 물품이고, 만들면 언제나 1개입니다. 꾸미기에서 고르고 칸을 누르면 놓이고 가방에서 빠집니다.</li>
       <li>소품은 탁자·서안·서가처럼 윗면이 있는 가구 위에만 올라갑니다. 깔개는 다른 가구 밑에 깔립니다.</li>
-      <li><b>같은 가구 한도</b>: 범품 4 · 양품 3 · 진품 2 · 명품·신품 1개</li>
-      <li>벽지·바닥재는 하나만 바릅니다. 바꾸면 전에 바른 것은 곳간으로 갑니다.</li>
-      <li><b>곳간</b>: 거둔 가구가 들어가는 곳입니다. 30칸이고, 넓힐 때마다 +5칸입니다.
+      <li><b>같은 가구 한도</b>(방마다): 범품 4 · 양품 3 · 진품 2 · 명품·신품 1개</li>
+      <li>벽지·바닥재는 방마다 하나만 바릅니다. 바꾸면 전에 바른 것은 곳간으로 갑니다.</li>
+      <li><b>곳간</b>: 거둔 가구가 들어가는 곳이고 방이 여럿이어도 하나입니다. ${HR.store?.base ?? 30}칸이고, ${josa(`${hrN(0)}을(를)`)} 넓힐 때마다 +${HR.store?.per_size ?? 5}칸, 방을 열 때마다 +${HR.store?.per_room ?? 10}칸입니다.
         <ul><li>곳간에서 꺼내면 가방으로 갑니다.</li>
           <li>칭호·이야기·토벌로 받은 가구도 곳간으로 들어옵니다.</li>
           <li><b>버리기는 어디서나</b> 됩니다.</li>
@@ -1805,7 +1812,7 @@ const S = [
         <ul><li>둘 중 한 별채를 골라 함께 살자고 청하고, 24시간 안에 받으면 함께 삽니다.</li>
           <li>함께 사는 집은 놓을 수 있는 가구 수·곳간·같은 가구 한도가 두 사람 몫이 됩니다.</li>
           <li>들어온 정인의 별채는 그대로 남습니다.</li>
-          <li>갈라서면 들어온 정인이 들여온 가구만큼 그 사람 곳간으로 돌아갑니다.</li>
+          <li>갈라서면 들어온 정인이 들여온 가구만큼 그 사람 곳간으로 돌아갑니다. 곳간 → ${hrN(1)} → ${hrN(2)} → ${hrN(0)} 순서로 거둡니다.</li>
           <li>동무는 집주인의 동무만 머뭅니다.</li></ul></li>
     </ul>`],
   ['look', '내 모습', `

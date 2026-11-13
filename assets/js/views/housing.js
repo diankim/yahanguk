@@ -23,12 +23,12 @@ const PAL_TABS = [['floor', '바닥'], ['wall', '벽'], ['paper', '벽지'], ['g
 const gradeOf = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.grade || 1;
 const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.name || nameOf(id);
 
-let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0;
+let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0, cur = 0;
 let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
 let pet = null, fx = [], poops = [], folks = [];
 
 export async function render(root, sub) {
-  el = root; ownerArg = sub || null; editing = false; pick = null; sel = null; dirty = false; pet = null; fx = [];
+  el = root; ownerArg = sub || null; cur = 0; editing = false; pick = null; sel = null; dirty = false; pet = null; fx = [];
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>별채</h1></div></div>${loading()}`;
   await reload();
 }
@@ -47,10 +47,12 @@ async function reload() {
 }
 function resetState() {
   const cl = o => JSON.parse(JSON.stringify(o || []));
-  state = { items: cl(snap.items), wall: cl(snap.wall), paper: snap.paper, ground: snap.ground };
+  const rs = roomsOf(); if (!rs[cur]?.open || rs[cur]?.why) cur = 0;
+  const cr = curRoom();
+  state = { items: cl(snap.items).filter(inRoom), wall: cl(snap.wall).filter(inRoom), paper: cr.paper, ground: cr.ground };
   orig = counts(state); dirty = false; sel = null; pick = null;
   if (snap.role === 'owner') rememberHome(snap);
-  room = makeRoom(snap.size, DEFS);
+  room = makeRoom(cr.size || snap.size, DEFS);
   setupPet();
   setupFolks();
 }
@@ -72,13 +74,21 @@ function drawClosed() {
 }
 
 const counts = placedCounts;
+const HR = GAMEDATA.houseRooms || {};
+const STAIR = HR.stair;
+const roomsOf = () => snap?.rooms || [{ room: 0, name: '안채', open: true, size: snap?.size, cap: snap?.cap, paper: snap?.paper, ground: snap?.ground, next: snap?.next }];
+const curRoom = () => roomsOf()[cur] || roomsOf()[0];
+const inRoom = x => (x?.m || 0) === cur;
+const capOfSize = n => HR.cap?.[n] || 0;
+const roomMul = () => (cur ? (snap?.kind_caps?.[0] || 4) / 4 : 1);
 const haveAll = id => (snap.bag?.[id] || 0) + (snap.store?.[id] || 0) + (orig[id] || 0);
 const left = id => haveAll(id) - (counts(state)[id] || 0);
 const dimsOf = it => { const f = FUR[it.k]; return (it.r || 0) % 2 ? [f.D, f.W] : [f.W, f.D]; };
 function validate(st) {
-  const N = snap.size, occ = new Set(), tops = new Set(), surf = new Set();
+  const N = room.N, occ = new Set(), tops = new Set(), surf = new Set(), cap = curRoom().cap;
   for (const it of st.items) {
     const f = FUR[it.k]; if (!f) return '알 수 없는 가구가 있습니다.';
+    if (it.k === STAIR && cur) return `${f.name}은(는) 안채에만 놓을 수 있습니다.`;
     const [w, d] = dimsOf(it);
     if (it.x < 0 || it.y < 0 || it.x + w > N || it.y + d > N) return '방 밖으로 나갑니다.';
     for (let x = it.x; x < it.x + w; x++) for (let y = it.y; y < it.y + d; y++) {
@@ -95,10 +105,10 @@ function validate(st) {
     for (const o of ws) if (o.side === w.side && w.t < o.t + o.w && o.t < w.t + d.w && w.z < o.z + o.h && o.z < w.z + d.h) return '벽 장식이 서로 겹칩니다.';
     ws.push({ side: w.side, t: w.t, z: w.z, w: d.w, h: d.h });
   }
-  if (st.items.length + st.wall.length > snap.cap) return `이 별채에는 가구를 ${snap.cap}개까지 놓을 수 있습니다.`;
+  if (st.items.length + st.wall.length > cap) return `이 방에는 가구를 ${cap}개까지 놓을 수 있습니다.`;
   const c = counts(st);
   for (const [id, n] of Object.entries(c)) {
-    if (id.startsWith('hf_') && n > kindCap(gradeOf(id))) return `${furName(id)}은(는) 한 별채에 ${kindCap(gradeOf(id))}개까지 놓을 수 있습니다.`;
+    if (id.startsWith('hf_') && n > kindCap(gradeOf(id))) return `${furName(id)}은(는) 한 방에 ${kindCap(gradeOf(id))}개까지 놓을 수 있습니다.`;
     if (n > haveAll(id)) return `${furName(id)}이(가) 모자랍니다.`;
   }
   return null;
@@ -114,11 +124,12 @@ function tryChange(fn) {
 function draw() {
   if (!el || !snap) return;
   const me = snap.role === 'owner', can = !!snap.role, edBlock = snap.edit_block;
-  const p = snap.pet;
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${snap.size}×${snap.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
+  const p = snap.pet, cr = curRoom();
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${esc(cr.name || '안채')} ${cr.size}×${cr.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
       ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button>` : ''}${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
+    ${roomBar()}
     ${can && edBlock && !editing ? `<p class="muted small hs-why">${esc(edBlock)}</p>` : ''}
     <div class="hs-wrap ${editing ? 'editing' : ''}">
       <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}</div>
@@ -131,6 +142,35 @@ function draw() {
     ${guestbook()}`;
   cv = $('#hs-cv'); fit(); paint(true); loop();
   bind();
+}
+function roomBar() {
+  const rs = roomsOf(), me = snap.role === 'owner';
+  const shown = rs.filter(r => r.open && (!r.why || me));
+  const lock = me ? rs.find(r => !r.open && r.next) : null;
+  if (shown.length < 2 && !lock) return '';
+  return `<div class="chips hs-rooms">${shown.map(r => `<button class="chip-btn ${r.room === cur ? 'on' : ''}" data-room="${r.room}" title="${esc(r.why || `${r.name} ${r.size}×${r.size}`)}">${esc(r.name)} <small>${r.size}×${r.size}</small></button>`).join('')}${lock ? `<button class="chip-btn" data-roominfo="${lock.room}" title="${esc(lock.name)} 여는 값">${icon('plus', 13)} ${esc(lock.name)}</button>` : ''}</div>`;
+}
+function openRoomInfo(i) {
+  const r = roomsOf()[i], nx = r?.next; if (!r || !nx) return;
+  const c = store.character || {}, lvOk = (c.level || 0) >= nx.level, mul = (snap?.kind_caps?.[0] || 4) / 4;
+  const mats = Object.entries(nx.items || {}).map(([id, n]) => `${esc(nameOf(id))} ×${n}`).join(' · ');
+  const why = nx.why || (!lvOk ? `Lv${nx.level}부터 열 수 있습니다.` : '') || snap.edit_block || '';
+  openModal({ title: `${r.name} 열기`, body: `<p><b>${esc(r.name)}</b> ${nx.size}×${nx.size} · 놓을 수 있는 가구 ${capOfSize(nx.size) * mul} · 곳간 +${HR.store?.per_room || 0}칸</p>
+    <p class="muted small">Lv${nx.level} · ${nx.gil.toLocaleString()}전 · ${mats}</p>
+    ${HR.rooms?.[i]?.stair ? `<p class="muted small">${esc(`열면 「${FUR[STAIR]?.name || ''}」이(가) 곳간에 들어옵니다.`)} ${esc(roomsOf()[0]?.name || '')} 바닥에 놓아야 ${esc(r.name)}에 오를 수 있습니다.</p>` : ''}
+    <p class="muted small">재료는 가방에서 먼저, 모자라면 창고에서 씁니다. 놓을 수 있는 가구 수·같은 가구 한도는 방마다 따로입니다.</p>
+    ${why ? `<p class="bad-text small">${esc(why)}</p>` : ''}
+    <div class="btn-row"><button class="btn small primary" id="hs-open" ${why ? 'disabled' : ''}>${esc(r.name)} 열기</button></div>` });
+  $('#hs-open')?.addEventListener('click', e => guard(e.currentTarget, async () => {
+    if (!(await ask(`${r.name}을(를) 열까요?\n${nx.gil.toLocaleString()}전과 ${Object.entries(nx.items || {}).map(([id, n]) => `${nameOf(id)} ×${n}`).join(', ')}이(가) 들어갑니다.`, { title: `${r.name} 열기`, ok: '열기' }))) return;
+    const res = await act('world_housing_expand', { p_room: i }); closeModal(); cur = i; await reload(); return res;
+  }));
+}
+async function goRoom(i) {
+  const r = roomsOf()[i]; if (!r || i === cur) return;
+  if (r.why) return toast(r.why, 'error');
+  if (editing && dirty && !(await ask('저장하지 않은 배치가 있습니다. 버리고 다른 방으로 갈까요?', { title: '방 옮기기', ok: '버리고 옮기기', danger: true }))) return;
+  cur = i; resetState(); draw();
 }
 function designReports() {
   const meId = store.character?.owner_id;
@@ -174,7 +214,7 @@ function loop() {
 }
 function toolbar() {
   const n = state.items.length + state.wall.length;
-  return `<div class="hs-tools"><span class="chip">${n}/${snap.cap}</span>
+  return `<div class="hs-tools"><span class="chip">${n}/${curRoom().cap}</span>
     <button class="btn small" id="hs-rot" ${sel && FUR[sel.k] || pick?.type === 'fur' ? '' : 'disabled'}>${icon('refresh', 14)} 돌리기</button>
     <button class="btn small" id="hs-take" ${sel ? '' : 'disabled'}>${icon('down', 14)} 거두기</button>
     ${sel && WALL[sel.k]?.frame ? `<button class="btn small" id="hs-pic">${icon('palette', 14)} 그림 걸기</button>` : ''}
@@ -187,6 +227,7 @@ function palette() {
   const list = palTab === 'paper' ? Object.entries(PAPER).map(([k, v]) => ['paper', k, v]) : palTab === 'ground' ? Object.entries(GROUND).map(([k, v]) => ['ground', k, v])
     : palTab === 'wall' ? Object.entries(WALL).map(([k, v]) => ['wall', k, v]) : Object.entries(FUR).map(([k, v]) => ['fur', k, v]);
   const rows = list.map(([type, k, v]) => {
+    if (type === 'fur' && k === STAIR && cur) return '';
     const id = idOf(type, k), n = left(id), on = (type === 'paper' && state.paper === k) || (type === 'ground' && state.ground === k) || (pick && pick.k === k && pick.type === type);
     if (n <= 0 && !on) return '';
     const pic = type === 'paper' ? `<span class="hs-sw" style="--a:${v.c};--b:${v.l}"></span>` : type === 'ground' ? `<span class="hs-sw" style="--a:${v.a};--b:${v.b}"></span>` : `<img src="${room.thumb(k)}" alt="">`;
@@ -198,23 +239,27 @@ function palette() {
 function petBar(p) {
   const me = keeper(), today = snap.pet_today || {}, m = p.mess || {};
   const messTip = `${m.every_h || 8}시간마다 한 번 자리를 어지릅니다(최대 ${m.max || 3}번). 가득 찬 채 하루가 지나면 배탈이 나서 쓰다듬기·놀아 주기로 친밀도가 오르지 않습니다. 자리를 치운 뒤 「동무 약」을 먹이면 낫습니다.`;
-  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b>${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
+  const away = (snap.pet_room || 0) !== cur ? roomsOf()[snap.pet_room || 0]?.name : '';
+  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
     <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}${m.n ? '<button class="btn small" data-care="clean">치우기</button>' : ''}${me && m.sick && !m.n ? '<button class="btn small primary" data-care="cure">약 먹이기</button>' : ''}</span></div>`;
 }
 function ownerPanel() {
-  const nx = snap.next;
+  const cr = curRoom(), nx = cr.next && !cr.next.open ? cr.next : null, rs = roomsOf(), many = rs.filter(r => r.open).length > 1;
+  const nm = r => esc(rs[r || 0]?.name || '안채');
   return `<div class="grid-2">${panel('대문', `<div class="chips">${GATE.map(([k, l, d]) => `<button class="chip-btn ${snap.gate === k ? 'on' : ''}" data-gate="${k}" title="${esc(d)}">${esc(l)}</button>`).join('')}</div>
       <p class="muted small">닫아 두면 나(와 혼례를 올린 정인)만 들어옵니다. 차단한 사람은 늘 들어오지 못합니다.</p>`, { ico: 'home' })}
-    ${panel('넓히기', nx ? `<p>${snap.size}×${snap.size} → <b>${nx.size}×${nx.size}</b> · 놓을 수 있는 가구 ${snap.cap} → ${{ 7: 20, 8: 26, 9: 32 }[nx.size]} · 곳간 +5칸</p>
+    ${panel(`넓히기 · ${esc(cr.name || '안채')}`, nx ? `<p>${cr.size}×${cr.size} → <b>${nx.size}×${nx.size}</b> · 놓을 수 있는 가구 ${cr.cap} → ${cr.cap + (capOfSize(nx.size) - capOfSize(cr.size)) * roomMul()} · 곳간 +${HR.store?.per_size || 0}칸</p>
       <p class="muted small">Lv${nx.level} · ${nx.gil.toLocaleString()}전 · ${Object.entries(nx.items).map(([i, n]) => `${esc(nameOf(i))} ×${n}`).join(' · ')}</p><button class="btn small" id="hs-expand">넓히기</button>`
-      : '<p class="muted small">가장 넓은 9×9 별채입니다.</p>', { ico: 'up' })}</div>`;
+      : `<p class="muted small">가장 넓은 9×9 ${esc(cr.name || '안채')}입니다.</p>`, { ico: 'up' })}
+    ${many ? panel('방 쓰임', `<p class="muted small">별채 동무는 ${nm(snap.pet_room)}, 내 모습은 ${nm(snap.look_room)}에 머뭅니다.</p>
+      <div class="btn-row"><button class="btn small" data-roomset="pet" ${!snap.pet || (snap.pet_room || 0) === cur ? 'disabled' : ''}>동무를 이 방에</button><button class="btn small" data-roomset="look" ${(snap.look_room || 0) === cur ? 'disabled' : ''}>내 모습을 이 방에</button></div>`, { ico: 'home' }) : ''}</div>`;
 }
 function mergePanel() {
   const m = snap.merge; if (!m) return '';
   let body;
   if (m.shared) {
     const s = m.shared;
-    body = `<p><b>${esc(s.home_name)}</b>님의 별채를 <b>${esc(s.mate_name)}</b>님과 함께 씁니다${snap.cap ? ` · 가구 ${snap.cap}개 · 곳간 ${snap.store_cap}칸 · 같은 가구 두 배` : ''}.</p>
+    body = `<p><b>${esc(s.home_name)}</b>님의 별채를 <b>${esc(s.mate_name)}</b>님과 함께 씁니다${snap.cap ? ` · 안채 가구 ${snap.cap}개 · 곳간 ${snap.store_cap}칸 · 같은 가구 두 배` : ''}.</p>
       <p class="muted small">${esc(s.mate_name)}님의 별채는 그대로 보관합니다. 각자 별채로 돌아가면 ${esc(s.mate_name)}님이 들여온 가구${s.mate_items ? `(지금 ${s.mate_items}점)` : ''}는 ${esc(s.mate_name)}님의 곳간으로 돌아갑니다. 연리가 끝나도 저절로 돌아갑니다.</p>
       <button class="btn small danger" data-merge="split">각자 별채로 돌아가기</button>`;
   } else if (m.ask_in) {
@@ -271,10 +316,17 @@ function bind() {
   }));
   $$('[data-gate]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => { const r = await rpc('world_housing_gate', { p_gate: b.dataset.gate }); snap.gate = r.gate; draw(); return { content: '대문을 바꿨습니다.' }; })));
   $('#hs-expand')?.addEventListener('click', e => guard(e.currentTarget, async () => {
-    const nx = snap.next;
-    if (!(await ask(`별채를 ${nx.size}×${nx.size}로 넓힐까요?\n${nx.gil.toLocaleString()}전과 ${Object.entries(nx.items).map(([i, n]) => `${nameOf(i)} ×${n}`).join(', ')}이(가) 들어갑니다.`, { title: '별채 넓히기', ok: '넓히기' }))) return;
-    const r = await act('world_housing_expand'); await reload(); return r;
+    const cr = curRoom(), nx = cr.next; if (!nx) return;
+    if (!(await ask(`${cur ? cr.name : '별채'}을(를) ${nx.size}×${nx.size}로 넓힐까요?\n${nx.gil.toLocaleString()}전과 ${Object.entries(nx.items).map(([i, n]) => `${nameOf(i)} ×${n}`).join(', ')}이(가) 들어갑니다. 재료는 가방에서 먼저, 모자라면 창고에서 씁니다.`, { title: `${cr.name || '별채'} 넓히기`, ok: '넓히기' }))) return;
+    const r = await act('world_housing_expand', { p_room: cur }); await reload(); return r;
   }));
+  $$('[data-room]', el).forEach(b => b.addEventListener('click', () => goRoom(Number(b.dataset.room))));
+  $$('[data-roominfo]', el).forEach(b => b.addEventListener('click', () => openRoomInfo(Number(b.dataset.roominfo))));
+  $$('[data-roomset]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => {
+    const what = b.dataset.roomset, r = await rpc('world_housing_room_set', { p_what: what, p_room: cur });
+    if (what === 'pet') { snap.pet_room = r.room; if (snap.pet) snap.pet.room = r.room; } else { snap.look_room = r.room; (snap.avatars || []).forEach(a => { a.room = r.room; }); }
+    setupPet(); setupFolks(); draw(); return r;
+  })));
   $('#hs-store')?.addEventListener('click', openStore);
   $('#hs-book')?.addEventListener('click', () => openGallery(() => { if (!editing) reload(); }));
   $('#hs-pic')?.addEventListener('click', () => {
@@ -307,14 +359,14 @@ function resetKeepEdit() { if (!editing) { resetState(); } draw(); }
 function redrawEdit() { const y = window.scrollY; draw(); window.scrollTo(0, y); }
 const bufXY = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * room.W / r.width, (e.clientY - r.top) * room.H / r.height]; };
 function wallAt(bx, by) {
-  const O = room.O, N = snap.size; let side, t;
+  const O = room.O, N = room.N; let side, t;
   if (bx < O.x) { side = 'L'; t = (O.x - bx) / (TW / 2); } else { side = 'R'; t = (bx - O.x) / (TW / 2); }
   const z = O.y + t * TH / 2 - by;
   return t >= 0 && t <= N && z >= 0 && z <= WALLH ? { side, t, z } : null;
 }
 function onCanvas(e) {
   const [bx, by] = bufXY(e);
-  const [gx, gy] = room.toGrid(bx, by), cx = Math.floor(gx), cy = Math.floor(gy), N = snap.size, onFloor = gx >= 0 && gy >= 0 && gx < N && gy < N;
+  const [gx, gy] = room.toGrid(bx, by), cx = Math.floor(gx), cy = Math.floor(gy), N = room.N, onFloor = gx >= 0 && gy >= 0 && gx < N && gy < N;
   if (!editing) {
     if (pet && onFloor && Math.abs(gx - pet.x - .5) < 1 && Math.abs(gy - pet.y - .5) < 1) { fx.push({ key: 'heart', until: Date.now() + 1200 }); paint(); return; }
     const hitW = room.hit(bx, by), pic = hitW && WALL[hitW.k]?.frame && hitW.d != null ? snap.drawings?.[hitW.d] : null;
@@ -348,7 +400,7 @@ function onCanvas(e) {
   sel = null; redrawEdit();
 }
 async function save() {
-  const body = { items: state.items.map(({ k, x, y, r }) => ({ k, x, y, r: r || 0 })), wall: state.wall.map(({ k, side, t, z, d }) => (d != null ? { k, side, t, z, d } : { k, side, t, z })), paper: state.paper, ground: state.ground };
+  const body = { room: cur, items: state.items.map(({ k, x, y, r }) => ({ k, x, y, r: r || 0 })), wall: state.wall.map(({ k, side, t, z, d }) => (d != null ? { k, side, t, z, d } : { k, side, t, z })), paper: state.paper, ground: state.ground };
   snap = await act('world_housing_save', { p_owner: snap.owner_id, p_state: body });
   editing = false; resetState(); draw();
   return { content: '별채를 저장했습니다.' };
@@ -507,7 +559,7 @@ function afterPet(r, kind) {
 
 const PET_GO = { bed: 'sleep', bowl: 'eat', toy: 'play', perch: 'perch' };
 function walkable() {
-  const N = snap.size, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [], fav: [] }, kind = PETS[pet?.id]?.kind;
+  const N = room.N, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [], fav: [] }, kind = PETS[pet?.id]?.kind;
   for (const it of state.items) {
     const f = FUR[it.k]; if (!f || f.layer !== 'floor') continue;
     const [w, d] = dimsOf(it);
@@ -521,8 +573,8 @@ function walkable() {
   return { N, ok: (x, y) => x >= 0 && y >= 0 && x < N && y < N && !block.has(`${x},${y}`), spots };
 }
 function setupPet() {
-  pet = null;
-  const p = snap.pet; if (!p || p.out || !PETS[p.id]) return;
+  pet = null; poops = [];
+  const p = snap.pet; if (!p || p.out || !PETS[p.id] || (snap.pet_room || 0) !== cur) return;
   const w = walkable(); const free = [];
   for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]);
   const [x, y] = free[Math.floor(Math.random() * free.length)] || [0, 0];
@@ -596,7 +648,7 @@ function freeTiles(w, skip = []) {
 function setupFolks() {
   folks = [];
   registerDesigns(snap?.avatar_designs);
-  const list = snap?.avatars || []; if (!list.length || !state) return;
+  const list = snap?.avatars || []; if (!list.length || !state || (snap.look_room || 0) !== cur) return;
   const w = walkable(), taken = pet ? [[Math.round(pet.x), Math.round(pet.y)]] : [];
   for (const a of list) {
     const free = freeTiles(w, taken); if (!free.length) break;

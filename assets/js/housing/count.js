@@ -8,6 +8,7 @@ export function placedCounts(st) {
   (st?.wall || []).forEach(w => add(idOf('wall', w.k)));
   if (st?.paper) add(idOf('paper', st.paper));
   if (st?.ground) add(idOf('ground', st.ground));
+  (st?.rooms || []).forEach(r => { if (!r.room || !r.open) return; if (r.paper) add(idOf('paper', r.paper)); if (r.ground) add(idOf('ground', r.ground)); });
   return m;
 }
 

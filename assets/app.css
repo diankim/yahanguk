@@ -2579,6 +2579,8 @@ b.sealed { color: var(--bad); }
 .chip-btn { min-height: 32px; padding: 4px 12px; border-radius: 999px; border: var(--bw, 1px) solid var(--line); background: var(--surface-2); color: var(--text); font-weight: 600; cursor: pointer; font-size: calc(13px * var(--fz, 1)); }
 .chip-btn.on { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--surface-2)); }
 .hs-why { margin: -6px 0 10px; }
+.hs-rooms { margin: -4px 0 10px; }
+.hs-rooms .chip-btn small { opacity: .7; margin-left: 2px; }
 .hs-wrap { display: grid; gap: 10px; margin-bottom: 12px; }
 .hs-wrap.editing { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
 .hs-stage { position: relative; display: grid; justify-items: center; gap: 8px; padding: 10px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r); background: var(--surface); }
