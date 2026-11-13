@@ -4,7 +4,7 @@ import { load, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture, myHomeCounts } from '../housing/count.js';
-import { GWIRYEONG, weakSafe } from '../rules.js';
+import { GWIRYEONG, weakSafe, gwWhen } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
@@ -150,6 +150,19 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
 
+export function fillGwWhen(root) {
+  const els = $$('[data-gw-when]', root); if (!els.length) return;
+  load('world_gwiryeong_mine', undefined, { maxAge: 60000 }).then(r => {
+    const p = r?.plants || [];
+    for (const el of els) {
+      if (!p.length) { if (el.dataset.gwKeep == null) el.hidden = true; continue; }
+      const w = p.map(x => gwWhen(x.until, r.warn_h)), many = p.length > 1;
+      const bag = el.dataset.gwKeep != null;
+      el.textContent = w.map((x, i) => `${many ? `${i + 1}. ` : bag ? '' : '내 귀령초 · '}${bag ? x.short : x.text}`).join(' / ');
+      el.classList.toggle('soon', w.some(x => x.soon)); el.hidden = false;
+    }
+  }).catch(() => {});
+}
 async function fillSources(box, id) {
   const dd = $('[data-src]', box); if (!dd) return;
   try {
@@ -185,7 +198,7 @@ function draw(box, id, inv, prices, mode) {
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${isFurniture(id) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
-    ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.wither)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
+    ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b class="gw-when" data-gw-when hidden></b><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.wither)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
       <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${isHq(id) ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
@@ -229,6 +242,7 @@ function draw(box, id, inv, prices, mode) {
     $('dd', row).textContent = [placed ? `놓은 것 ${fmt.num(placed)}개` : '', stored ? `곳간 ${fmt.num(stored)}개` : ''].filter(Boolean).join(' · ');
     row.hidden = false;
   }).catch(() => {});
+  fillGwWhen(box);
   loreBundle().then(l => { const p = $('[data-lore]', box); const t = l.items?.[baseOf(id)]; if (p && t) { p.textContent = t; p.hidden = false; } });
   box.onclick = async e => {
     const r = e.target.closest('[data-recipe]'), mat = e.target.closest('[data-mat]'), d = e.target.closest('[data-do]');

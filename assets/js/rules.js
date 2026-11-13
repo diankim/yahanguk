@@ -111,6 +111,12 @@ export const RESCUE = {
 export const MARKET_SOLD = { days: 7, max: 30 };
 export const SHOP_CAP = (cap, bought) => `하루 ${cap}개 · 오늘 ${bought}개 삼`;
 export const GW_DAILY = '처치는 하루 한 번입니다. 이긴 날(한국 시각 자정까지)은 다시 도전할 수 없고, 지면 30분 뒤에 다시 도전할 수 있습니다.';
+export const FIGHT_KINDS = {
+  raid: { route: 'raid', label: '토벌' },
+  gw: { route: 'gw', label: '우두머리와 싸우는 중' },
+  pfight: { route: 'pfight', label: '파티 토벌' },
+};
+export const onFightRoute = (h = location.hash) => Object.values(FIGHT_KINDS).some(k => h.startsWith(`#/${k.route}`));
 export const UCOMM_PAST = '받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
 
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };
@@ -137,6 +143,12 @@ const BROKEN = '▓▒░▚▞▙▟';
 export const brokenName = name => [...String(name || '')].map((ch, i) => BROKEN[(ch.codePointAt(0) + i) % BROKEN.length] + '\u0336').join('');
 export const NAMELESS = { mine: '이름을 잃었습니다 — 묵적 봉쇄령의 침식을 낮추면 돌아옵니다', other: '이름이 지워져 읽을 수 없습니다' };
 export const domainFxOf = territory => GD.domains?.[territory]?.fx || null;
+export const gwWhen = (until, warnH = GW.warn_h) => {
+  const t = new Date(until), left = Math.max(0, t - Date.now()), h = Math.floor(left / 3600000), m = Math.floor(left / 60000) % 60;
+  const hm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  return { text: `${t.getMonth() + 1}월 ${t.getDate()}일 ${hm}에 시듦 · ${h ? `${h}시간 ` : ''}${m}분 남음`,
+    short: `${t.getMonth() + 1}/${t.getDate()} ${hm} 시듦 · ${h ? `${h}시간` : `${m}분`} 남음`, soon: left < warnH * 3600000 };
+};
 export const weakSafe = id => (GD.weakSafe || ['banyo_village']).includes(id);
 export const SYS_CHAT = {
   '구조 알림': { icon: 'heart', cls: '' },

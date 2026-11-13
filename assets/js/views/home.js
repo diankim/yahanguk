@@ -3,6 +3,7 @@ import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
 import { face } from '../people.js';
+import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
@@ -143,11 +144,14 @@ let fieldY = null;
 function drawBattle(pty) {
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
-  if (fieldY == null && !$('#battle-box', el)) fieldY = window.scrollY;
+  const entering = !$('#battle-box', el);
+  if (fieldY == null && entering) fieldY = window.scrollY;
+  el.style.minHeight = '';
   el.innerHTML = `<div class="scene battle-scene theme-${esc(snap.region.theme || 'wild')}"${sceneTint(snap.region)}>${sceneFx(snap.region)}<span class="frame-c" aria-hidden="true"><i></i><i></i><i></i><i></i></span><p class="eyebrow">${icon('pin', 14)} ${esc(snap.region.region_name)} · ${esc(snap.node.name)}</p></div>
     <div id="battle-box"></div>`;
   const onCall = b => guard(b, async () => { const r = await act('world_pfight_call'); if (r?.fight_id) window.yahangGo('pfight', r.fight_id); return r; });
   renderBattle($('#battle-box', el), snap, r => { if (!r) invalidate('world_field_snapshot'); draw(); }, near ? { call: near, onCall } : null);
+  if (entering) { window.scrollTo(0, 0); requestAnimationFrame(() => { if (el.isConnected && $('#battle-box', el)) window.scrollTo(0, 0); }); }
   if (pty?.party) rpc('world_pfight_mine').then(id => { if (id && el?.isConnected) window.yahangGo('pfight', id); }).catch(() => {});
 }
 
@@ -230,7 +234,7 @@ function bumpFieldStamina(now) {
 function staminaBox(st) {
   return `<div class="stamina">
           <div class="st-top"><span>${icon('spark', 14)} 탐색력</span><b>${st.now} / ${st.max}</b></div>
-          <div class="st-pips">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
+          <div class="st-pips" style="--n:${st.max}">${Array.from({ length: st.max }, (_, i) => `<i class="${i < st.now ? 'on' : ''}"></i>`).join('')}</div>
           <small class="muted" data-st-next="${st.next_at ? new Date(st.next_at).getTime() : ''}">${st.now >= st.max ? '가득 찼습니다' : ''}</small>
         </div>`;
 }
@@ -247,6 +251,7 @@ function field(s, roster, blocked) {
     : store.expedition ? '원정 중에는 움직일 수 없습니다' : '지금은 움직일 수 없습니다';
   const whyNot = k => stateWhy || (c.level < k.min_level ? `Lv.${k.min_level}부터 들어갈 수 있습니다 · 지금 Lv.${c.level} (${k.min_level - c.level}레벨 더 필요)` : '');
   return `
+    <div class="field-wrap">
     <div class="field-grid">
       <div class="fg-col fg-a">
       <section class="panel explore-card">
@@ -292,27 +297,27 @@ function field(s, roster, blocked) {
       </section>
 
       <section class="panel">
-        <header class="panel-head"><h2>${icon('leaf', 16)}채집터</h2><span class="muted small">${s.hidden_spots ? `숨은 채집터 ${s.hidden_spots}` : ''}</span></header>
+        <header class="panel-head"><h2>${icon('leaf', 16)}채집터${helpQ('채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).', '채집 안내')}</h2><span class="muted small">${s.hidden_spots ? `숨은 채집터 ${s.hidden_spots}` : ''}</span></header>
         <div class="panel-body">
           ${(s.spots || []).length ? `<ul class="spots">${s.spots.map(p => `<li data-need-spot="${esc((p.items || []).join(','))}">
               <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
-          <p class="muted small">채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).</p>
         </div>
       </section>
 
       </div>
+      ${fishPanel(blocked)}
     </div>
-    ${fishPanel(blocked)}
-    <details class="panel fold"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
+    <details class="panel fold fw-map"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
       <div class="panel-body">${tree(s)}</div></details>
-    <details class="panel fold"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
+    <details class="panel fold fw-foes"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
       <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => m.revealed === false
         ? `<li class="locked"><b>???</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.kind_name || '')} · 답사도 ${m.need}%에 드러납니다</small></li>`
         : `<li><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.type || '')}${m.kind_name ? ` · ${esc(m.kind_name)}` : ''} · Lv.${m.min_level}–${m.max_level}</small></li>`).join('')}</ul>
         ${loreHtml(s.lore)}</div></details>
-    ${people(roster, s.corpses)}`;
+    ${people(roster, s.corpses)}
+    </div>`;
 }
 
 const FISH_HAB = 'yh-fish-hab:', FISH_BAIT = 'yh-fish-bait';
@@ -384,7 +389,7 @@ function tree(s) {
 function people(roster, corpses) {
   const list = Array.isArray(roster) ? roster : [];
   const dead = corpses || [];
-  return `<section class="panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
+  return `<section class="panel people-panel"><header class="panel-head"><h2>${icon('users', 16)}여기 있는 이들</h2><a class="btn small ghost" href="#/party">동료</a></header><div class="panel-body">
     ${list.length ? `<ul class="people">${list.map(p => `<li>${face(p.owner_id, p.profile, 34, p.character_name)}<div><b>${cardName(p.owner_id, p.character_name)}${sealMark(p.profile?.seal)}${gmBadge(p.owner_id)}</b><small>Lv.${p.level} · ${esc(nameOf(p.job_key))}${p.away ? ' · 원정 중' : ''}${p.in_combat ? ' · 전투 중' : ''}${p.downed ? ' · 전투불능' : ''}</small></div>
       ${p.downed && !p.is_dead ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(p.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : `<p class="muted small">같은 곳에 다른 조사원이 없습니다.</p>`}
     ${dead.length ? `<h3 class="sub-h">쓰러진 이의 자리</h3><ul class="people">${dead.map(d => `<li><span class="emblem corpse">${icon('flame', 18)}</span><div><b>${esc(d.character_name)}의 시신</b><small>${new Date(d.died_at).toLocaleDateString('ko-KR')} · ${esc(d.death_reason || '')}${d.items_left ? ` · 유품 ${d.items_left}점` : ''}</small></div>

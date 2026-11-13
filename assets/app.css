@@ -149,6 +149,7 @@ textarea { resize: none; }
 .notice > .ico { color: var(--gold); }
 .notice.item-note { align-items: flex-start; margin: 8px 0 12px; border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); background: color-mix(in srgb, var(--gold) 7%, var(--surface)); } .notice.item-note span + span { margin-top: 4px; } .notice.item-note b { color: var(--gold); }
 .inv-name .gw-note { color: var(--gold); }
+.notice.item-note .gw-when { display: block; color: var(--text); } .notice.item-note .gw-when.soon, .inv-name .gw-note.soon { color: var(--bad); }
 .notice.travel { border-color: color-mix(in srgb, var(--mp) 45%, var(--line)); }
 .notice.travel > .ico { color: var(--mp); }
 .notice.ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); } .notice.ok > .ico { color: var(--ok); }
@@ -816,8 +817,8 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .facility small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
 .field-grid { display: grid; gap: 14px; margin-bottom: 14px; } .field-grid > .panel { margin: 0; }
 /* 좁은 화면은 한 줄(탐색 → 길 → 채집터 → 기록), 넓은 화면은 왼쪽(탐색·기록)·오른쪽(길·채집터) 두 칸을 따로 쌓아 빈칸이 생기지 않게 */
-.fg-col { display: contents; } .field-grid .panel { margin: 0; } .fg-a > .explore-card { order: 1; } .fg-b > .panel:first-child { order: 2; } .fg-b > .panel:nth-child(2) { order: 3; } .fg-a > .log-card { order: 4; }
-@media (min-width: 900px) { .field-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; } .fg-col { display: grid; gap: 14px; align-content: start; } .fg-col > * { order: 0 !important; } }
+.fg-col { display: contents; } .field-grid .panel { margin: 0; } .fg-a > .explore-card { order: 1; } .fg-b > .panel:first-child { order: 2; } .fg-b > .panel:nth-child(2) { order: 3; } .field-grid > .fish-panel { order: 4; } .fg-a > .log-card { order: 5; }
+@media (min-width: 900px) { .field-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; } .fg-col { display: grid; gap: 14px; align-content: start; } .fg-col > * { order: 0 !important; } .field-grid > .fish-panel { grid-column: 1 / -1; order: 9; } }
 .explore-card { padding: 16px; display: grid; gap: 14px; align-content: start; }
 .place h2 { font-size: calc(18px * var(--fz, 1)); margin: 2px 0 4px; }
 .stamina { display: grid; gap: 6px; }
@@ -3314,3 +3315,35 @@ b.shadow { color: var(--sp); }
 .act-box .stepper [data-all] { min-height: 24px; height: 24px; padding: 0 5px; margin: 0; font-size: calc(12px * var(--fz, 1)); }
 .item-list li:has(> .act-box), .fq-vault li:has(> .act-box) { flex-wrap: wrap; } .item-list li:has(> .act-box) > .item-main, .fq-vault li:has(> .act-box) > div:first-child { flex: 1 1 170px; min-width: 0; }
 @media (min-width: 1100px) { .modal-wide:has(.fac-body) { width: min(880px, 100%); } }
+
+@media (max-width: 640px) {
+  .explore-card .st-pips { grid-template-columns: repeat(var(--n, 20), minmax(0, 1fr)); gap: 2px; } .explore-card .st-pips i { height: 6px; border-radius: 2px; }
+  .field-grid .spots li { padding: 7px 10px; }
+}
+
+@media (max-width: 899px) {
+  .field-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-bottom: 14px; }
+  .field-wrap > .field-grid { display: contents; }
+  .field-wrap > *, .field-wrap .fg-col > * { grid-column: 1 / -1; margin: 0; }
+  .field-wrap .fg-a > .explore-card { order: 1; }
+  .field-wrap .fg-b > .panel:first-child { order: 2; grid-column: 1; }
+  .field-wrap .fg-b > .panel:nth-child(2) { order: 3; grid-column: 2; }
+  .field-wrap .field-grid > .fish-panel { order: 4; grid-column: 1 / -1; }
+  .field-wrap .fg-b > .panel { align-self: start; }
+  .field-wrap > .fw-map { order: 5; } .field-wrap > .fw-foes { order: 6; }
+  .field-wrap .fg-a > .log-card { order: 7; }
+  .field-wrap > .people-panel { order: 8; }
+  .field-wrap .fg-b > .panel .panel-head { padding: 8px 10px; gap: 4px; }
+  .field-wrap .fg-b > .panel .panel-head h2 { font-size: calc(13px * var(--fz, 1)); gap: 5px; white-space: nowrap; }
+  .field-wrap .fg-b > .panel .panel-head > .muted { font-size: calc(10.5px * var(--fz, 1)); white-space: nowrap; }
+  .field-wrap .fg-b > .panel .panel-body { padding: 6px; }
+  .field-wrap .fg-b .paths, .field-wrap .fg-b .spots { gap: 4px; }
+  .field-wrap .fg-b .path { padding: 6px 7px; gap: 5px; min-height: 0; }
+  .field-wrap .fg-b .path svg { width: 12px; height: 12px; flex: none; }
+  .field-wrap .fg-b .path span { display: grid; min-width: 0; }
+  .field-wrap .fg-b .path b, .field-wrap .fg-b .spots b { font-size: calc(12px * var(--fz, 1)); line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; }
+  .field-wrap .fg-b .path small, .field-wrap .fg-b .spots small { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
+  .field-wrap .fg-b .spots li { gap: 6px; padding: 6px 7px; }
+  .field-wrap .fg-b .spots li > div { min-width: 0; }
+  .field-wrap .fg-b .spots .btn { min-width: 0; min-height: 0; height: 26px; padding: 0 9px; font-size: calc(12px * var(--fz, 1)); flex: none; }
+}

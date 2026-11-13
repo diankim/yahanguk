@@ -3,7 +3,7 @@ import { envChip } from './env.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS } from './rules.js';
+import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -117,7 +117,10 @@ function statusItems(c) {
     const left = new Date(c.travel_arrives_at).getTime() - Date.now();
     items.push({ kind: 'travel', icon: 'route', title: `이동 중 → ${nameOf(c.travel_destination) || '목적지'}`, timer: c.travel_arrives_at, text: left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…', action: left > 0 ? ['이동 취소', cancelTravel] : null });
   }
-  const e = state.hud?.battle;
+  const fg = state.hud?.fight, fk = fg && FIGHT_KINDS[fg.kind];
+  if (fk && !location.hash.startsWith(`#/${fk.route}`)) items.push({ kind: 'combat', icon: 'sword', title: `${fk.label}${fg.name ? ` · ${fg.name}` : ''}`,
+    text: ['signup', 'wait', 'gather'].includes(fg.status) ? '함께할 동료를 기다리는 중입니다.' : '싸움 화면을 벗어나 있습니다.', action: ['싸움으로', () => window.yahangGo(fk.route, fg.id)] });
+  const e = fg?.kind === 'pfight' ? null : state.hud?.battle;
   if (e) items.push({ kind: 'combat', icon: 'sword', title: `전투 중 · ${e.name}`, text: `적 체력 ${e.hp}/${e.max_hp}`, meter: [e.hp, e.max_hp], action: ['전투로', () => window.yahangGo('home')] });
   const ready = idleReadyAt(state.idle);
   if (ready) {
@@ -136,7 +139,7 @@ function statusItems(c) {
 function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEvent('yh-open-expedition')); }
 function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
-window.addEventListener('hashchange', () => { closeStrip(); render(); });
+window.addEventListener('hashchange', e => { closeStrip(); render(); if (store.character && onFightRoute(new URL(e.oldURL).hash) && !onFightRoute()) refresh({ char: false, idle: false }).catch(() => {}); });
 let qsList = null, qsBusy = false;
 async function loadQs() {
   if (qsBusy) return; qsBusy = true;
