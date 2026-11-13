@@ -59,7 +59,7 @@
 
 - 마이그레이션 순서: 20261117010000_world_2_1_0_bijang.sql(비장도 물품·비장고 엔진) → 20261117020000_world_2_1_0_meisho.sql(명소·명소 재료·흙 살피기·명장 제작법/장비/소모품) → 20261117030000_world_2_1_0_house_rooms.sql(별채 방). 각 파일 끝에 world_app_meta db_version을 그 파일 시각으로.
 - 물품 id(정함):
-  - 명소 재료: mz_herb 명초·mz_herb_j 명초의 정·mz_herb_n 이름 서린 명초 / mz_wood 명목·mz_wood_j 명목의 정·mz_wood_n 이름 서린 명목 / mz_stone 명석·mz_stone_j 명석의 정·mz_stone_n 이름 서린 명석. 단계 5·6·7, 묶음 40(정·이름 서린은 고급 20), 모두 거래 가능.
+  - 명소 재료: mz_herb 명초·mz_herb_j 명초의 정·mz_herb_n 이름 서린 명초 / mz_wood 명목·mz_wood_j 명목의 정·mz_wood_n 이름 서린 명목 / mz_stone 명석·mz_stone_j 명석의 정·mz_stone_n 이름 서린 명석. 단계 5·6·7, 묶음 40(정·이름 서린도 재료라 40(사용자 기준 — 재료 묶음 40)), 모두 거래 가능.
   - 비장도: bj_map_1 낡은 비장도(Lv30)·bj_map_2 귀한 비장도(Lv38)·bj_map_3 봉인된 비장도(Lv44). 거래 가능, 묶음 1, 등급마다 한 사람 하나.
 - 비장도를 주는 길은 비장고 쪽 도우미 world_bijang_grant(uid, 등급) 하나(지님 검사 포함, 이미 있으면 주지 않고 false). 명소 「흙 살피기」가 이것을 부름.
 - 비장고 마지막 방 보상은 규칙 함수 world_bijang_rules().final 한 곳(동무·장신구·가구는 그림 확인 뒤 다른 마이그레이션이 이 칸만 채움 — 처음엔 빈 목록이면 건너뜀).

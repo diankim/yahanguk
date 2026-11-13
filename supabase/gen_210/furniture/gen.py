@@ -52,7 +52,7 @@ items = [item(k, True, f"명장 가구 · {F[k]['cat']}. 명소 재료로 짓는
 items += [item(k, False, f"비장고 가구 · {F[k]['cat']}. 비장고 마지막 방에서만 나옵니다. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.") for k in BJ]
 recipes = [dict(recipe_id='r_hf_' + k, recipe_name=F[k]['name'] + ' 만들기', output_item='hf_' + k, output_qty=1, ingredients=m, required_tool_tier=1,
                 required_location=None, description=f"별채에 놓을 {F[k]['name']}을(를) 짓는다. 명장 제작법({RANK}단계).", minimum_level=LV, recipe_difficulty=5,
-                quality_bonus=0, required_skill=field, required_skill_rank=RANK, craft_field=field) for k, field, m in MZ]
+                quality_bonus=0, required_skill={'sealing': 'wardcraft'}.get(field, field), required_skill_rank=RANK, craft_field=field) for k, field, m in MZ]
 
 ICOLS = [('item_id', 'text'), ('item_name', 'text'), ('category', 'text'), ('tier', 'int'), ('description', 'text'), ('stackable', 'boolean'),
          ('required_stats', 'jsonb'), ('minimum_level', 'int'), ('rarity', 'text'), ('acquisition_difficulty', 'int'), ('drop_rate_modifier', 'numeric'),
