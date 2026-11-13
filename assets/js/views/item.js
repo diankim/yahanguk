@@ -172,7 +172,7 @@ async function fillSources(box, id) {
       return list.length ? `<span class="src"><b>${label}</b> ${list.map(r => regionBtn(r)).join(' · ')}${tot > list.length ? ` ${sourcesMore(id, tot - list.length)}` : ''}</span>` : ''; };
     const html = SRC_KINDS.map(([k, label]) => part(label, s[k], s[`${k}_n`])).filter(Boolean).join('');
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
-    const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`].filter(Boolean).join('');
+    const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`, s.bijang && `<span class="src"><b>비장고</b> ${s.bijang === 'final' ? '마지막 방' : '상자'}</span>`].filter(Boolean).join('');
     dd.innerHTML = (html + extra) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
   } catch { dd.textContent = '-'; }
 }

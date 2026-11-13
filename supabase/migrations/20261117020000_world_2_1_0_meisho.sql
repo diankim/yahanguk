@@ -457,4 +457,10 @@ $q$  delete from public.world_fish_log where owner_id = p_uid;$q$,
 $q$  delete from public.world_fish_log where owner_id = p_uid;
   delete from public.world_meisho_finds where owner_id = p_uid;$q$]);
 
+select pg_temp.yh_fix('world_item_sources_all', array[
+$q$    'vault', exists (select 1 from public.world_faction_vault where item_id = p_item))$q$,
+$q$    'vault', exists (select 1 from public.world_faction_vault where item_id = p_item),
+    'bijang', case when exists (select 1 from jsonb_array_elements(public.world_bijang_rules() -> 'final' -> 'items') v where v ->> 'id' = public.world_item_base(p_item)) then 'final'
+      when exists (select 1 from jsonb_each(public.world_bijang_rules() -> 'chest') c, jsonb_array_elements(c.value -> 'items') v where v ->> 'id' = public.world_item_base(p_item)) then 'chest' end)$q$]);
+
 update public.world_app_meta set value = '20261117020000' where key = 'db_version';
