@@ -3154,9 +3154,22 @@ b.shadow { color: var(--sp); }
   .field-wrap > .fw-map { order: 5; } .field-wrap > .fw-foes { order: 6; }
   .field-wrap .fg-a > .log-card { order: 7; }
   .field-wrap > .people-panel { order: 8; }
-  .field-wrap .fg-b > .panel .panel-head { padding-left: 10px; padding-right: 10px; flex-wrap: wrap; row-gap: 2px; }
-  .field-wrap .fg-b > .panel .panel-body { padding: 8px; }
-  .field-wrap .fg-b .path { padding: 7px 8px; gap: 6px; }
-  .field-wrap .fg-b .spots li { flex-direction: column; align-items: stretch; gap: 6px; padding: 7px 8px; }
-  .field-wrap .fg-b .spots .btn { min-width: 0; width: 100%; }
+  .field-wrap .fg-b > .panel .panel-head { padding: 8px 10px; gap: 4px; }
+  .field-wrap .fg-b > .panel .panel-head h2 { font-size: calc(13px * var(--fz, 1)); gap: 5px; white-space: nowrap; }
+  .field-wrap .fg-b > .panel .panel-head > .muted { font-size: calc(10.5px * var(--fz, 1)); white-space: nowrap; }
+  .field-wrap .fg-b > .panel .panel-body { padding: 6px; }
+  .field-wrap .fg-b .paths, .field-wrap .fg-b .spots { gap: 4px; }
+  .field-wrap .fg-b .path { padding: 6px 7px; gap: 5px; min-height: 0; }
+  .field-wrap .fg-b .path svg { width: 12px; height: 12px; flex: none; }
+  .field-wrap .fg-b .path span { display: grid; min-width: 0; }
+  .field-wrap .fg-b .path b, .field-wrap .fg-b .spots b { font-size: calc(12px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .field-wrap .fg-b .path small, .field-wrap .fg-b .spots small { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .field-wrap .fg-b .path .path-why { white-space: normal; }
+  .field-wrap .fg-b .spots li { gap: 6px; padding: 6px 7px; }
+  .field-wrap .fg-b .spots li > div { min-width: 0; }
+  .field-wrap .fg-b .spots .btn { min-width: 0; min-height: 0; height: 26px; padding: 0 9px; font-size: calc(12px * var(--fz, 1)); flex: none; }
+  .field-wrap .fg-b > .panel .panel-body > p.muted.small { font-size: calc(10.5px * var(--fz, 1)); margin: 6px 2px 0; }
 }
+
+.spot-rule-s { display: none; }
+@media (max-width: 899px) { .field-wrap .spot-rule { display: none; } .field-wrap .spot-rule-s { display: block; } }

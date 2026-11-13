@@ -298,7 +298,8 @@ function field(s, roster, blocked) {
               <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
-          <p class="muted small">채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).</p>
+          <p class="muted small spot-rule">채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).</p>
+          <p class="muted small spot-rule-s">12초마다 · 같은 곳 5분 · 하루 10번 무료</p>
         </div>
       </section>
 
