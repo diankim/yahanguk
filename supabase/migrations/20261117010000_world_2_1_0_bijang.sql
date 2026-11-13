@@ -440,7 +440,7 @@ begin
   select r.party_id, r.region_id, p_leader, a.monster_id, e ->> 'name', a.rank, a.mlevel, a.max_hp, a.max_hp, a.current_hp, a.intent, '{}'::jsonb,
          now() + make_interval(secs => (public.world_bijang_rules() ->> 'gather_s')::int),
          jsonb_build_array(case when p_room = 0 then nm || '이(가) 비장도를 따라 흙을 파자 ' || (e ->> 'name') || '이(가) 일어났다.'
-                                else (e ->> 'name') || '이(가) ' || p_room || '번째 방을 지키고 있다.' end)
+                                else (e ->> 'name') || '이(가) ' || p_room || '번 방을 지키고 있다.' end)
     from public.world_active_encounters a where a.owner_id = p_leader
   returning fight_id into fid;
   insert into public.world_pfight_members(fight_id, owner_id, name) values (fid, p_leader, nm);
@@ -491,7 +491,7 @@ declare d int := 1 + floor(random() * 3)::int; rv numeric := coalesce((public.wo
   sh int := case when random() * 100 < rv then d end;
 begin
   update public.world_bijang_runs set status = 'room', room = p_room, door = d, shown = sh, fight_id = null, updated_at = now() where run_id = p_run;
-  perform public.world_bijang_say(p_run, jsonb_build_array(p_room || '번째 방 · 문 셋이 나란히 서 있다.'
+  perform public.world_bijang_say(p_run, jsonb_build_array(p_room || '번 방 · 문 셋이 나란히 서 있다.'
     || case when sh is not null then ' 그중 ' || sh || '번 문틈으로 먹빛 이름 한 줄이 비친다.' else '' end));
 end $function$;
 select pg_temp.yh_share('public.world_bijang_room_open(uuid, integer)');
@@ -674,7 +674,7 @@ begin
   if fid is null then raise exception '이 지역에서는 파수꾼이 일어나지 않습니다.'; end if;
   perform public.world_bijang_say(rid, jsonb_build_array(c.character_name || '이(가) ' || (mr ->> 'name') || '을(를) 따라 ' || rg.region_name || '의 흙을 팠다.'));
   return jsonb_build_object('ok', true, 'run_id', rid, 'fight_id', fid,
-    'content', '흙 속에서 파수꾼이 일어났습니다. 같은 곳의 파티원은 60초 안에 합류할 수 있습니다.');
+    'content', case when pid is null then '흙 속에서 파수꾼이 일어났습니다.' else '흙 속에서 파수꾼이 일어났습니다. 같은 곳의 파티원은 60초 안에 합류할 수 있습니다.' end);
 end $function$;
 revoke all on function public.world_bijang_dig() from public, anon;
 grant execute on function public.world_bijang_dig() to authenticated, service_role;
@@ -752,12 +752,12 @@ begin
   if not public.world_bijang_here(uid, r.region_id) then raise exception '비장고가 있는 지역에 있어야 문을 고를 수 있습니다.'; end if;
   update public.world_bijang_runs set picks = picks || jsonb_build_array(jsonb_build_object('room', r.room, 'door', p_door, 'ok', p_door = r.door)), updated_at = now() where run_id = p_run;
   if p_door <> r.door then
-    perform public.world_bijang_say(p_run, jsonb_build_array(r.room || '번째 방 · ' || p_door || '번 문을 열자 흙이 무너져 내렸다. 맞는 문은 ' || r.door || '번이었다.'));
+    perform public.world_bijang_say(p_run, jsonb_build_array(r.room || '번 방 · ' || p_door || '번 문을 열자 흙이 무너져 내렸다. 맞는 문은 ' || r.door || '번이었다.'));
     perform public.world_bijang_finish(p_run, 'wrong', '문을 잘못 골라 비장고가 무너졌다. 얻은 것은 그대로 가지고 나왔다.');
     return public.world_bijang_snapshot(p_run);
   end if;
   k := r.room + 1;
-  perform public.world_bijang_say(p_run, jsonb_build_array(r.room || '번째 방 · ' || p_door || '번 문이 열렸다.'));
+  perform public.world_bijang_say(p_run, jsonb_build_array(r.room || '번 방 · ' || p_door || '번 문이 열렸다.'));
   if random() * 100 < (ru ->> 'room_guard_pct')::numeric then
     select array_agg(owner_id order by joined_at) into mates from public.world_bijang_members where run_id = p_run and entered;
     lead := case when public.world_pfight_ready(uid, r.region_id) then uid
@@ -766,7 +766,7 @@ begin
       update public.world_bijang_runs set room = k, door = null, shown = null where run_id = p_run;
       fid := public.world_bijang_spawn(p_run, k, lead, mates, false);
       if fid is not null then
-        perform public.world_bijang_say(p_run, jsonb_build_array(case when k >= (ru ->> 'rooms')::int then '마지막 방 · 이름 함을 지키던 파수꾼이 일어섰다.' else k || '번째 방 · 파수꾼이 길을 막았다.' end));
+        perform public.world_bijang_say(p_run, jsonb_build_array(case when k >= (ru ->> 'rooms')::int then '마지막 방 · 이름 함을 지키던 파수꾼이 일어섰다.' else k || '번 방 · 파수꾼이 길을 막았다.' end));
         return public.world_bijang_snapshot(p_run);
       end if;
     end if;

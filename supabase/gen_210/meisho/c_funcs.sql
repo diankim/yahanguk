@@ -133,7 +133,7 @@ create or replace function public.world_meisho_dig(p_meisho text)
 as $function$
 declare uid uuid := public.fn_owner_auth_uid(); ru jsonb := public.world_meisho_rules(); c public.world_characters%rowtype; m public.world_meisho%rowtype;
   f public.world_meisho_finds%rowtype; w jsonb; k jsonb; line text; rank int; base text; qty int; jp numeric; np numeric; ex int;
-  extra jsonb := '{}'::jsonb; inv jsonb; lim int; left_st int; notes text[] := '{}'; sk text[]; it text; v int; nm text;
+  extra jsonb := '{}'::jsonb; inv jsonb; lim int; left_st int; notes text[] := '{}'; xs text[] := '{}'; sk text[]; it text; v int; nm text;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_rate_check('gather', uid);
@@ -192,13 +192,13 @@ begin
   update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid;
   update public.world_meisho_finds set dug_at = (w ->> 'open_at')::timestamptz, dig_count = dig_count + 1 where owner_id = uid and meisho_id = m.meisho_id;
   select item_name into nm from public.world_item_catalog where item_id = base;
-  for it in select key from jsonb_each(extra) loop notes := notes || (select item_name from public.world_item_catalog where item_id = it); end loop;
+  for it in select key from jsonb_each(extra) loop xs := xs || (select item_name from public.world_item_catalog where item_id = it); end loop;
   insert into public.world_events(actor_id, actor_name, event_type, content, payload)
   values (uid, c.character_name, 'gather', m.meisho_name || '에서 ' || nm || ' ×' || qty || ' 캠',
     jsonb_build_object('meisho_id', m.meisho_id, 'meisho', m.meisho_name, 'category', k ->> 'cat', 'item_id', base, 'qty', qty, 'node_id', m.node_id,
       'region_id', m.region_id, 'line', line, 'node', case when line = 'mining' then 'ore' else 'herb' end, 'extra', extra, 'free_day', false, 'profession_match', false));
-  return jsonb_build_object('ok', true, 'content', m.meisho_name || '에서 ' || nm || ' ×' || qty || '을(를) 캤습니다.'
-      || case when cardinality(notes) > 0 then ' ' || array_to_string(notes, ' · ') || '.' else '' end,
+  return jsonb_build_object('ok', true, 'content', m.meisho_name || '에서 ' || nm || ' ×' || qty || case when cardinality(notes) > 0 then '(' || array_to_string(notes, ' · ') || ')' else '' end || '을(를) 캤습니다.'
+      || case when cardinality(xs) > 0 then ' ' || array_to_string(xs, ' · ') || '도 함께 나왔습니다.' else '' end,
     'item_id', base, 'qty', qty, 'extra', extra, 'line', line, 'stamina', left_st, 'meisho_id', m.meisho_id, 'close_at', w ->> 'close_at');
 end $function$;
 revoke all on function public.world_meisho_dig(text) from public, anon;

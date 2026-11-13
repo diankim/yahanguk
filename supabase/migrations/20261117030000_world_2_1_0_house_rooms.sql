@@ -422,7 +422,7 @@ begin
   if p_what = 'pet' then update public.world_housing set pet_room = p_room, updated_at = now() where owner_id = own;
   else update public.world_housing set look_room = p_room, updated_at = now() where owner_id = own; end if;
   return jsonb_build_object('ok', true, 'what', p_what, 'room', p_room,
-    'content', case when p_what = 'pet' then '별채 동무가 ' else '내 모습이 ' end || nm || '에 머뭅니다.');
+    'content', case when p_what = 'look' then '내 모습이 ' || nm || '에 머뭅니다.' when (select pet_id from public.world_housing where owner_id = own) is null then '별채 동무를 두면 ' || nm || '에 머뭅니다.' else '별채 동무가 ' || nm || '에 머뭅니다.' end);
 end $function$;
 select pg_temp.yh_share('public.world_housing_room_set(text, integer)');
 grant execute on function public.world_housing_room_set(text, integer) to authenticated;
