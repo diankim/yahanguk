@@ -1,4 +1,4 @@
-import { rpc, act, store, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf, GRADES } from '../core.js';
+import { rpc, act, store, on, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf, GRADES } from '../core.js';
 import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH, ZU } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
@@ -13,6 +13,7 @@ import { helpQ } from '../tips.js';
 import { openDesignReport, wornDesigns } from './outfitdesign.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
+on('env', () => { if (cv?.isConnected) paint(); });
 const GRADE = GRADES;
 const KINDS = GAMEDATA.kinds || {};
 const KIND_CAP = [0, 4, 3, 2, 1, 1];
@@ -189,7 +190,7 @@ function paint() {
   if (!cv || !room) return;
   const pets = (pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : []).concat(folks.map(f => ({ x: f.x, y: f.y, draw: c => drawFolk(c, f) })), poops.map(([x, y]) => ({ x, y, draw: c => { const [px, py] = c.iso(x + .5, y + .5, 0); drawEffect(c.put, 'poop', px, py + 3); } })));
   const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1b1d24';
-  const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets, drawings: snap.drawings || {} });
+  const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets, drawings: snap.drawings || {}, env: store.env ? { phase: store.env.phase?.key, weather: store.env.weather?.key } : null });
   const g = cv.getContext('2d'); g.putImageData(img, 0, 0);
   if (pick && hover) ghost(g);
 }

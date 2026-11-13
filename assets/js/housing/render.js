@@ -7,6 +7,52 @@ export const P = h => sh(h, 1);
 export const OUT = pack(26, 18, 14);
 const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
 
+const mix = (a, b, k) => { const x = rgb(a), y = rgb(b); return '#' + x.map((c, i) => Math.round(c + (y[i] - c) * k).toString(16).padStart(2, '0')).join(''); };
+const SKY = {
+  dawn: { sky: ['#5e5486', '#b77c92', '#efb486'], sun: '#fbe3a4', at: [.24, .5, 3.2], far: '#8a7290', near: '#4e3f5e', water: '#c79a98', glint: '#f6d6a6' },
+  noon: { sky: ['#5f9ccf', '#7fb4dc', '#a8d0e8'], sun: '#fff6d0', at: [.72, .84, 3.4], far: '#7f9fb4', near: '#4c7864', water: '#5a9cbc', glint: '#d8f0f8' },
+  dusk: { sky: ['#3e3266', '#a2506a', '#e98a4a'], sun: '#f4663a', at: [.76, .44, 3.6], far: '#6c4660', near: '#33263c', water: '#9a5a50', glint: '#f8a868' },
+  night: { sky: ['#10152e', '#18213f', '#22305a'], sun: '#f2ead0', at: [.7, .8, 3], moon: true, far: '#2c3860', near: '#161c34', water: '#1e2a52', glint: '#c8c8b0' },
+};
+function viewPix(u, v, X, Y, tw, th, e) {
+  const S = SKY[e?.phase] || SKY.night, w = e?.weather || 'clear', h1 = hash(X, Y), sx = (X + .5) / tw * 2.2, cloudy = w === 'cloudy' || w === 'rain' || w === 'fog';
+  const far = .5 + .13 * Math.sin(sx * 2.6 + 1.2) + .05 * Math.sin(sx * 7.1), near = .3 + .09 * Math.sin(sx * 1.9 + 3.4) + .04 * Math.sin(sx * 5.3 + 1);
+  let c;
+  if (v < .13) {
+    c = w === 'snow' ? '#c8d8e0' : S.water;
+    if ((Y === 1 || Y === 3) && (X + Y * 3) % 5 < 2) c = mix(c, '#ffffff', .25);
+    if (!cloudy && w !== 'snow' && Math.abs(u - S.at[0]) < .05 && (X + Y) % 2 === 0) c = S.glint;
+    if ((w === 'rain' || w === 'drizzle') && h1 < .12) c = mix(c, '#e8f0f4', .5);
+  } else if (v < near) {
+    c = S.near; if (v > near - .04 && w === 'snow') c = '#e8eef0';
+    if (v < .16) c = mix(S.near, '#000000', .25);
+  } else if (v < far) {
+    c = S.far; if (w === 'snow' && v > far - .07) c = '#f2f4f2';
+    if ((X + Y) % 2 === 0 && v > far - .02) c = mix(S.far, '#ffffff', .15);
+  } else {
+    const k = v > .78 ? 0 : v > .62 ? 1 : 2, dith = (X + Y) % 2 === 0;
+    const kk = (v > .76 && v < .8 && dith) ? 1 : (v > .6 && v < .64 && dith) ? 2 : k;
+    c = S.sky[kk];
+    const dx = (u - S.at[0]) * tw, dy = (v - S.at[1]) * th, d = Math.hypot(dx, dy), R = S.at[2];
+    if (!cloudy && d < R) c = (S.moon && Math.hypot(dx + 1.4, dy + .6) < R - .4) ? S.sky[kk] : (w === 'bloodmist' ? '#e05040' : S.sun);
+    else if (!cloudy && !S.moon && d < R + 1.2 && dith) c = mix(c, S.sun, .5);
+    if (S.moon && !cloudy && w !== 'bloodmist' && h1 > .985 && d > R + 2) c = '#e8e4d0';
+  }
+  if (w === 'cloudy' || w === 'rain') {
+    c = mix(c, '#7c8088', w === 'rain' ? .5 : .32);
+    const cl = Math.sin(sx * 3 + 2) * .06 + .86, cl2 = Math.sin(sx * 4.4) * .05 + .72;
+    if (v > cl - .05 && v < cl + .05 && Math.abs(Math.sin(sx * 2.1)) > .25) c = w === 'rain' ? '#9a9ea6' : '#c8ccd0';
+    else if (v > cl2 - .035 && v < cl2 + .035 && Math.abs(Math.sin(sx * 1.7 + 1)) > .4) c = w === 'rain' ? '#8a8e96' : '#b4b8c0';
+  }
+  if (w === 'rain' && (X * 2 + Y) % 6 === 0 && h1 < .7 && v > .13) c = mix(c, '#d8e4ec', .55);
+  if (w === 'drizzle') { c = mix(c, '#9aa2aa', .15); if (v > .13 && (X * 3 + Y * 2) % 11 === 0 && h1 < .5) c = '#dce6ec'; }
+  if (w === 'fog') { const fb = (v > .2 && v < .48) || (v > .58 && v < .66); if (fb && ((X + Y) % 2 === 0 || (v > .26 && v < .42))) c = mix(c, '#d4d4cc', .7); else c = mix(c, '#b8b8b0', .25); }
+  if (w === 'wind') { const ln = Math.round(th * (.68 + .05 * Math.sin(sx * 4))), ln2 = Math.round(th * (.84 + .04 * Math.sin(sx * 3 + 2))); if ((Y === ln && X % 9 < 5) || (Y === ln2 && (X + 4) % 11 < 6)) c = mix(c, '#ffffff', .45); if (v > .2 && h1 > .985) c = '#e0903a'; }
+  if (w === 'snow' && v > .13 && h1 > .93) c = '#ffffff';
+  if (w === 'bloodmist') { c = mix(c, '#7a1e22', .38); if (v > .2 && v < .44 && (X + Y) % 2 === 0) c = mix(c, '#c84a44', .4); }
+  return c;
+}
+
 export function makeRoom(N, defs) {
   const O = { x: N * TW / 2 + PAD, y: WALLH + PAD + 4 };
   const W = N * TW + PAD * 2, H = O.y + N * TH + 12;
@@ -14,7 +60,7 @@ export function makeRoom(N, defs) {
   const main = new Uint32Array(W * H), ids = new Int16Array(W * H), layer = new Uint32Array(W * H);
   let bb;
   const { FUR, WALL, PAPER, GROUND } = defs;
-  let pics = {};
+  let pics = {}, env = null;
   function put(buf, x, y, c) { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= W || y >= H) return; buf[y * W + x] = c; if (buf === layer) { if (x < bb[0]) bb[0] = x; if (y < bb[1]) bb[1] = y; if (x > bb[2]) bb[2] = x; if (y > bb[3]) bb[3] = y; } }
   function fillPoly(buf, pts, c) {
     const ys = pts.map(p => p[1]); const y0 = Math.max(0, Math.floor(Math.min(...ys))), y1 = Math.min(H - 1, Math.ceil(Math.max(...ys)));
@@ -72,7 +118,15 @@ export function makeRoom(N, defs) {
     const z0 = (it.z0 || 0) * ZU;
     for (const p of rotParts(FUR[it.k], it.r || 0)) {
       if (p.t === 'ell') { const [cx, cy] = iso(it.x + p.x, it.y + p.y, p.z * ZU + z0); fillEll(layer, cx, cy, p.rx, p.ry, P(p.c)); fillEll(layer, cx - p.rx * .3, cy - p.ry * .35, Math.max(1, p.rx * .35), Math.max(1, p.ry * .3), sh(p.c, 1.14)); }
-      else drawBox(it.x, it.y, p, z0);
+      else { drawBox(it.x, it.y, p, z0); if (p.view) drawView(it.x, it.y, p, z0); }
+    }
+  }
+  function drawView(gx, gy, p, z0) {
+    const x = gx + p.x, y = gy + p.y, z = p.z * ZU + z0, rows = Math.max(1, Math.round(p.h * ZU)), along = p.w >= p.d, cols = Math.max(1, Math.round((along ? p.w : p.d) * TW / 2));
+    const [u0, u1] = p.su || [0, 1], tw = Math.round(cols / Math.max(.01, u1 - u0));
+    for (let c = 0; c < cols; c++) {
+      const f = (c + .5) / cols, [bx, by] = along ? iso(x + f * p.w, y + p.d, z) : iso(x + p.w, y + (1 - f) * p.d, z), u = u0 + f * (u1 - u0);
+      for (let r = 0; r < rows; r++) { const col = viewPix(u, (r + .5) / rows, Math.floor(u * tw), r, tw, rows, env); if (col) put(layer, Math.round(bx - .5), Math.floor(by) - r - 1, along ? P(col) : sh(col, .86)); }
     }
   }
   const wallPoly = (side, t, z, w, h) => side === 'R' ? [iso(t, 0, z), iso(t + w, 0, z), iso(t + w, 0, z + h), iso(t, 0, z + h)] : [iso(0, t, z), iso(0, t + w, z), iso(0, t + w, z + h), iso(0, t, z + h)];
@@ -177,7 +231,7 @@ export function makeRoom(N, defs) {
 
   let drawn = [];
   function render(st, opts = {}) {
-    background(st, opts.bg); drawn = []; pics = opts.drawings || {};
+    background(st, opts.bg); drawn = []; pics = opts.drawings || {}; env = opts.env || null;
     for (const it of st.wall || []) {
       begin(); drawWallItem(it); drawn.push(it); commit(drawn.length - 1);
       if (opts.sel === it) { const d = WALL[it.k]; const p = wallPoly(it.side, it.t, it.z, d.w, d.h); const col = opts.bad ? P('#e05a4c') : P('#d8b25a'); for (let k = 0; k < 4; k++) line(main, p[k], p[(k + 1) % 4], col, true); }
@@ -200,11 +254,11 @@ export function makeRoom(N, defs) {
   const thumbs = {};
   function thumb(k) {
     if (thumbs[k]) return thumbs[k];
-    const keep = main.slice(), keepIds = ids.slice(); main.fill(0);
+    const keep = main.slice(), keepIds = ids.slice(), keepEnv = env; main.fill(0); env = null;
     begin(); if (FUR[k]) drawItem({ k, x: 1, y: 1, r: 0 }); else drawWallItem({ k, side: 'R', t: 2, z: 20 }); commit(0);
     const box = bb.slice(), w = box[2] - box[0] + 1, h = box[3] - box[1] + 1, c = document.createElement('canvas'); c.width = Math.max(1, w); c.height = Math.max(1, h);
     const img = new ImageData(c.width, c.height); const v = new Uint32Array(img.data.buffer); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) v[y * w + x] = main[(y + box[1]) * W + x + box[0]];
-    c.getContext('2d').putImageData(img, 0, 0); main.set(keep); ids.set(keepIds);
+    c.getContext('2d').putImageData(img, 0, 0); main.set(keep); ids.set(keepIds); env = keepEnv;
     return thumbs[k] = c.toDataURL();
   }
   return { N, W, H, O, iso, dims, render, hit, toGrid, thumb, wallPoly };
