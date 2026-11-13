@@ -72,7 +72,10 @@ as $function$
       jsonb_build_object('pet', 'bj_mirage_cat', 'w', 1),
       jsonb_build_object('pet', 'bj_black_goat', 'w', 1),
       jsonb_build_object('pet', 'bj_phoenix', 'w', 1),
-      jsonb_build_object('pet', 'bj_mountain_turtle', 'w', 1))),
+      jsonb_build_object('pet', 'bj_mountain_turtle', 'w', 1),
+      jsonb_build_object('id', 'hf_bj_name_chest', 'w', 2, 'n', 1),
+      jsonb_build_object('id', 'hf_bj_vault_gate', 'w', 2, 'n', 1),
+      jsonb_build_object('id', 'hf_bj_map_frame', 'w', 2, 'n', 1))),
     'titles', jsonb_build_array(1, 5, 20), 'seal', 'sl_bj')
 $function$;
 grant execute on function public.world_bijang_rules() to public;
