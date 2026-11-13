@@ -73,7 +73,7 @@
 
 #### 최종 보스 「귀허의 주인」
 
-- 표 world_gw_fights·members·log·records(실시간 목록 아님). 귀허에서 Lv38·외전 4장·귀허 부적, 혼자 또는 같은 곳 파티원 4명까지(world_gw_open 60초 모음·world_gw_join·world_gw_begin).
+- 표 world_gw_fights·members·log·records(실시간 목록 아님). 귀허에서 Lv38·외전 4장·귀허 부적, 혼자 또는 같은 곳 파티원 4명까지(world_gw_open 60초 모음·world_gw_join·world_gw_begin). 도전 조건은 world_gw_ready_check(uid, 보스, 판) 한 곳(world_gw_ready는 상태 검사 뒤 이것을 부르고 대기실 why도 같은 문구), 초대는 지금 합류할 수 있는 파티원에게만(world_gw_invitable — 오늘 처치·입장 물품 없음·바쁨이면 안 감, 없으면 60초 모음 없이 바로 시작).
 - 라운드 5초(수법 라운드 10초), 참가자마다 행동 하나: attack·guard·brace(버티기: 받는 피해 물살 20%·손길 30%, 소용돌이 받아 내기)·item(체력 회복품, 한 싸움 두 개 world_gw_members.items_used)·coop(world_coop_skills, 영력, 다시 쓰기 ceil(초/5)라운드 world_gw_members.cds)·call(이름 부르기)·chain. 안 고르면 방어. 마감이 지났거나 모두 고르면 누군가 world_gw_snapshot·world_gw_act를 부를 때 world_gw_resolve가 푼다(예약 작업 없음).
 - 단계 4(두 얼굴·사슬 넷·이름 빼앗기·귀허의 소용돌이), 체력 max(6000, Σ공격×40), 15분. 주인 체력 인원 배율 1·1.7·0.8·0.85, 주인 공격(받는 피해) 1·1.4·0.8·0.85(혼자면 체력 ×1.2 더; 둘은 1.0.0f — 정석 시뮬 15조 평균 4.9/10, world_gw_start·world_gw_resolve·world_gw_k). 의무관 회복 기술 ×0.65·술법 회피 +15(world_gw_start·world_gw_resolve).
 - 쓰러지면 물러남(1·2·3·4명에 1·2·4·5라운드, world_gw_hurt), 체력 30. 물러남이 끝나거나 [야전 소생]을 받으면 「쉬는 중」(world_gw_members.rest — 주인이 안 노리고, 모두에게 거는 효과·수법·라운드 기다림에서 빠지며, 한 사람 회복은 받음, 「모두 물러남」은 물러난 사람만 셈, 아무 행동이나 고르면 풀림). 혼자는 쓰러짐 10까지(그다음 실패, 스냅샷 falls_cap).
@@ -163,7 +163,7 @@
 
 ### 레벨 차와 장비 상태
 
-- 만나는 요괴 레벨 상한: 일반 내 레벨 +5·정예·우두머리 +6(world_battle_open, 1.0.0d). 가시(thorns) 되돌림은 근접 피해 30%·최대 15·체력 1 아래로 안 깎음(world_battle_action, 거울막과 같게).
+- 만나는 요괴 레벨: 답사 지점 레벨 +0~2, 그 요괴 표의 최저 레벨(min_level) 아래로는 안 내려가고 일반은 최고 레벨(world_level_cap)·정예·우두머리는 +1까지(2.0.0, 사용자 결정 — 명부 탑 Lv47이 나오던 것). 상한: 일반 내 레벨 +5·정예·우두머리 +6(world_battle_open, 1.0.0d). 가시(thorns) 되돌림은 근접 피해 30%·최대 15·체력 1 아래로 안 깎음(world_battle_action, 거울막과 같게).
 - 체력은 레벨 무관 100, 요괴 공격력은 레벨마다 오르므로 요괴보다 높으면 받는 피해 레벨마다 −3%(최대 30%), 낮으면 +3%(최대 30%). world_battle_action·world_expedition_settle(원정지 최소 레벨 + 1 기준) 같은 식.
 - world_field_snapshot.gear_warn(내구도 1/4 아래 장착 장비)을 현장·전투 화면에 띄움. 체력 35 아래에서 탐색하면 한 번 묻는다(home.js doSearch).
 
