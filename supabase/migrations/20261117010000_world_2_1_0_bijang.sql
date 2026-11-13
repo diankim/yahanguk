@@ -59,7 +59,20 @@ as $function$
     'egg', jsonb_build_object('id', 'pet_egg_3', 'pct', jsonb_build_array(0.5, 1, 2)),
     'final', jsonb_build_object('gil', jsonb_build_array(1000, 1800, 2800), 'picks', jsonb_build_array(1, 1, 2), 'items', jsonb_build_array(
       jsonb_build_object('id', 'mz_herb_n', 'w', 3, 'n', 1), jsonb_build_object('id', 'mz_wood_n', 'w', 3, 'n', 1), jsonb_build_object('id', 'mz_stone_n', 'w', 3, 'n', 1),
-      jsonb_build_object('id', 'pet_egg_3', 'w', 2, 'n', 1))),
+      jsonb_build_object('id', 'pet_egg_3', 'w', 2, 'n', 1),
+      jsonb_build_object('pet', 'bj_mandarin_duck', 'w', 1),
+      jsonb_build_object('pet', 'bj_horseshoe_crab', 'w', 1),
+      jsonb_build_object('pet', 'bj_moon_halo', 'w', 1),
+      jsonb_build_object('pet', 'bj_rainbow_lizard', 'w', 1),
+      jsonb_build_object('pet', 'bj_pink_marten', 'w', 1),
+      jsonb_build_object('pet', 'bj_rose_wolf', 'w', 1),
+      jsonb_build_object('pet', 'bj_seahorse', 'w', 1),
+      jsonb_build_object('pet', 'bj_silkmoth', 'w', 1),
+      jsonb_build_object('pet', 'bj_bukcheong_lion', 'w', 1),
+      jsonb_build_object('pet', 'bj_mirage_cat', 'w', 1),
+      jsonb_build_object('pet', 'bj_black_goat', 'w', 1),
+      jsonb_build_object('pet', 'bj_phoenix', 'w', 1),
+      jsonb_build_object('pet', 'bj_mountain_turtle', 'w', 1))),
     'titles', jsonb_build_array(1, 5, 20), 'seal', 'sl_bj')
 $function$;
 grant execute on function public.world_bijang_rules() to public;
