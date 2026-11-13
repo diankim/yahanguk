@@ -1,4 +1,4 @@
-import { rpc, act, esc, icon, fmt, $, $$, store, guard, ask, nameOf } from '../core.js';
+import { rpc, act, esc, icon, fmt, $, $$, store, guard, ask, nameOf, openModal } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { resultBox, settleFight, jobName, logRow } from './fightui.js';
 import { BIJANG } from '../rules.js';
@@ -28,7 +28,7 @@ async function refresh() {
     if (!snap) { el.innerHTML = `${head()}${errorBox('지금 도는 비장고가 없습니다.')}<p class="muted small">${esc(BIJANG.how)}</p><a class="btn" href="#/home">현장으로</a>`; return; }
     if (!rid) { rid = snap.run_id; history.replaceState(null, '', `#/bijang/${rid}`); }
     if (prev && prev !== snap.status) await settleFight('world_bijang_snapshot');
-    draw(); plan();
+    draw(); plan(); gainsPop();
   } catch (e) { if (el) el.innerHTML = `${head()}${errorBox(e.message)}`; }
 }
 function plan() {
@@ -105,6 +105,46 @@ async function run(btn, fn) {
   sending = true;
   try {
     const out = await guard(btn, fn, { success: '' });
-    if (out && el) { clearTimeout(timer); snap = out; draw(); plan(); }
+    if (out && el) { clearTimeout(timer); snap = out; draw(); plan(); gainsPop(); if (out.status === 'fight' && out.fight?.mine) window.yahangGo('pfight', out.fight.id); }
   } finally { sending = false; }
+}
+
+const seenKey = () => `yh-bj-seen:${snap?.run_id}`;
+function seenGet() { try { return Number(sessionStorage.getItem(seenKey()) || 0); } catch { return 0; } }
+function seenSet(n) { try { sessionStorage.setItem(seenKey(), String(n)); } catch { } }
+const gainTitle = g => g.final ? '마지막 방' : g.room ? `${g.room}번 방 상자` : '묻힌 상자';
+async function gainsPop() {
+  const gs = snap?.me?.gains || [], seen = seenGet();
+  if (!el || gs.length <= seen) return;
+  seenSet(gs.length);
+  const fresh = gs.slice(seen), final = fresh.some(g => g.final);
+  const pets = fresh.flatMap(g => g.pets || []);
+  const petNames = pets.length ? await import('../housing/pets.js').then(m => m.PETS).catch(() => ({})) : {};
+  const rows = fresh.map(g => {
+    const parts = [g.gil ? `<li class="bj-gain-gil">${icon('coin', 14)}<b>${fmt.num(g.gil)}전</b></li>` : '',
+      ...Object.entries(g.items || {}).map(([k, v]) => `<li>${icon('chest', 14)}<b>${esc(snap.names?.[k] || nameOf(k))}</b><span>×${v}</span></li>`),
+      ...(g.pets || []).map(id => `<li class="bj-gain-pet">${icon('star', 14)}<b>꼬마 동무 ${esc(petNames[id]?.name || nameOf(id))}</b><span>별채 동무 도감으로</span></li>`)].filter(Boolean).join('');
+    return `<section class="bj-gain${g.final ? ' final' : ''}"><h3>${esc(gainTitle(g))}</h3><ul>${parts || '<li class="muted">빈 상자였습니다.</li>'}</ul>${g.stored ? '<p class="muted small">가방이 차서 일부는 개인 창고로 갔습니다.</p>' : ''}</section>`;
+  }).join('');
+  openModal({ title: final ? '비장고 마지막 방' : '상자를 열었습니다', body: `<div class="bj-gains">${rows}</div><div class="btn-row end"><button class="btn primary" data-close>확인</button></div>` });
+  if (final) confetti();
+}
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = document.createElement('canvas'), dpr = Math.min(2, devicePixelRatio || 1);
+  cv.className = 'bj-confetti'; cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+  document.body.append(cv);
+  const g = cv.getContext('2d'), cs = getComputedStyle(document.documentElement);
+  const cols = ['--gold', '--accent', '--ok', '--hp', '--mp', '--sp'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+  const ps = Array.from({ length: 140 }, () => ({ x: cv.width * (0.2 + Math.random() * 0.6), y: cv.height * 0.35, vx: (Math.random() - 0.5) * 16 * dpr, vy: (-8 - Math.random() * 12) * dpr,
+    r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, w: (5 + Math.random() * 5) * dpr, h: (3 + Math.random() * 4) * dpr, c: cols[Math.floor(Math.random() * cols.length)] || '#d1a65a' }));
+  const t0 = performance.now();
+  const step = t => {
+    const k = (t - t0) / 2600;
+    g.clearRect(0, 0, cv.width, cv.height);
+    ps.forEach(p => { p.vy += 0.35 * dpr; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      g.save(); g.globalAlpha = Math.max(0, 1 - k); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); });
+    if (k < 1) requestAnimationFrame(step); else cv.remove();
+  };
+  requestAnimationFrame(step);
 }

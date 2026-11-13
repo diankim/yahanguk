@@ -41,8 +41,8 @@ as $function$
     'hold', 1, 'party_max', 4, 'gather_s', 60, 'stamina', 1, 'entry_day', 3, 'rooms', 5,
     'door_pct', jsonb_build_array(50, 60, 70),
     'reveal_pct', jsonb_build_array(25, 30, 35, 40),
-    'room_guard_pct', 35,
-    'guard', jsonb_build_object('lv_up', 3, 'hp_mul', 1.2, 'atk_mul', 1.0, 'room_rank', 'elite'),
+    'room_guard_pct', 100,
+    'guard', jsonb_build_object('lv_up', 3, 'hp_mul', 1.2, 'atk_mul', 1.0, 'room_rank', 'guardian'),
     'chest', jsonb_build_object(
       '1', jsonb_build_object('gil', jsonb_build_array(120, 280), 'n', jsonb_build_array(1, 2), 'items', jsonb_build_array(
         jsonb_build_object('id', 'steel_ingot', 'w', 3), jsonb_build_object('id', 'spirit_bark', 'w', 3), jsonb_build_object('id', 'reinforced_lumber', 'w', 3),
@@ -149,6 +149,7 @@ create table if not exists public.world_bijang_members (
   entered boolean not null default false,
   day date,
   got jsonb not null default '{}'::jsonb,
+  gains jsonb not null default '[]'::jsonb,
   joined_at timestamptz not null default now(),
   primary key (run_id, owner_id));
 create index if not exists world_bijang_members_owner on public.world_bijang_members(owner_id, day);
@@ -321,7 +322,9 @@ begin
   end loop;
   update public.world_characters set inventory = inv, gil = gil + greatest(0, coalesce(p_gil, 0)), updated_at = now() where owner_id = p_uid;
   perform public.world_letter_spill(p_uid, st);
-  update public.world_bijang_members m set got = jsonb_build_object('gil', coalesce((m.got ->> 'gil')::int, 0) + greatest(0, coalesce(p_gil, 0)),
+  update public.world_bijang_members m set gains = m.gains || jsonb_build_array(jsonb_build_object('n', jsonb_array_length(m.gains) + 1,
+      'room', (select x.room from public.world_bijang_runs x where x.run_id = p_run), 'gil', greatest(0, coalesce(p_gil, 0)), 'items', gain, 'stored', st <> '{}'::jsonb)),
+    got = jsonb_build_object('gil', coalesce((m.got ->> 'gil')::int, 0) + greatest(0, coalesce(p_gil, 0)),
       'items', (select coalesce(jsonb_object_agg(x.key, x.v), '{}'::jsonb) from (select key, sum(value::int) v from (select * from jsonb_each_text(coalesce(m.got -> 'items', '{}'::jsonb)) union all select * from jsonb_each_text(gain)) u group by key) x))
    where m.run_id = p_run and m.owner_id = p_uid;
   if coalesce(p_gil, 0) > 0 then names := (p_gil || '전') || names; end if;
@@ -360,7 +363,7 @@ create or replace function public.world_bijang_final_give(p_run uuid, p_uid uuid
  security definer
  set search_path to 'pg_catalog', 'public'
 as $function$
-declare r public.world_bijang_runs%rowtype; f jsonb := public.world_bijang_rules() -> 'final'; e jsonb; items jsonb := '{}'::jsonb; pets text[] := '{}'; out text; nm text;
+declare r public.world_bijang_runs%rowtype; f jsonb := public.world_bijang_rules() -> 'final'; e jsonb; items jsonb := '{}'::jsonb; pets text[] := '{}'; pet_ids text[] := '{}'; out text; nm text;
 begin
   select * into r from public.world_bijang_runs where run_id = p_run;
   for e in select x from jsonb_array_elements(coalesce(f -> 'items', '[]'::jsonb)) x
@@ -371,10 +374,13 @@ begin
     if e ? 'pet' then
       perform public.world_pet_grant(p_uid, e ->> 'pet', 'bijang');
       select pet_name into nm from public.world_pet_species where pet_id = e ->> 'pet';
-      pets := pets || ('꼬마 동무 ' || nm);
+      pets := pets || ('꼬마 동무 ' || nm); pet_ids := pet_ids || (e ->> 'pet');
     else items := public.world_inv_add(items, e ->> 'id', greatest(1, coalesce((e ->> 'n')::int, 1))); end if;
   end loop;
   out := public.world_bijang_give(p_run, p_uid, coalesce((f -> 'gil' ->> (r.tier - 1))::int, 0), items);
+  update public.world_bijang_members m set gains = jsonb_set(m.gains, array[(jsonb_array_length(m.gains) - 1)::text],
+      (m.gains -> (jsonb_array_length(m.gains) - 1)) || jsonb_build_object('final', true, 'pets', to_jsonb(coalesce(pet_ids, '{}'::text[]))))
+   where m.run_id = p_run and m.owner_id = p_uid and jsonb_array_length(m.gains) > 0;
   return array_to_string(array_remove(array[nullif(out, '')] || pets, null), ' · ');
 end $function$;
 select pg_temp.yh_share('public.world_bijang_final_give(uuid, uuid)');
@@ -512,6 +518,29 @@ begin
 end $function$;
 select pg_temp.yh_share('public.world_bijang_finish(uuid, text, text)');
 
+create or replace function public.world_bijang_final(p_run uuid)
+ returns void
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare r public.world_bijang_runs%rowtype; m record; lines jsonb := '[]'::jsonb; t text;
+begin
+  select * into r from public.world_bijang_runs where run_id = p_run;
+  for m in select * from public.world_bijang_members where run_id = p_run and entered order by joined_at loop
+    if not public.world_bijang_here(m.owner_id, r.region_id) then continue; end if;
+    t := public.world_bijang_final_give(p_run, m.owner_id);
+    lines := lines || jsonb_build_array(m.name || ' · 마지막 방 · ' || t);
+    if not exists (select 1 from public.world_character_statuses s where s.owner_id = m.owner_id and s.status_key = 'yohwa_seal' and s.expires_at > now()) then
+      insert into public.world_events(actor_id, actor_name, event_type, content, payload)
+      values (m.owner_id, m.name, 'bj_final', m.name || '이(가) 비장고 마지막 방에 닿았습니다.', jsonb_build_object('tier', r.tier, 'run_id', p_run, 'region_id', r.region_id));
+    end if;
+  end loop;
+  perform public.world_bijang_say(p_run, jsonb_build_array('마지막 방 · 이름을 적은 함과 재물이 고스란히 남아 있었다.') || lines);
+  perform public.world_bijang_finish(p_run, 'final', '비장고 마지막 방에 닿았다.');
+end $function$;
+select pg_temp.yh_share('public.world_bijang_final(uuid)');
+
 create or replace function public.world_bijang_advance(p_run uuid)
  returns void
  language plpgsql
@@ -563,6 +592,7 @@ begin
      where run_id = p_run;
     perform public.world_bijang_room_open(p_run, 1);
   else
+    if r.room >= (ru ->> 'rooms')::int then perform public.world_bijang_final(p_run); return; end if;
     for m in select * from public.world_bijang_members where run_id = p_run and entered order by joined_at loop
       if not public.world_bijang_here(m.owner_id, r.region_id) then continue; end if;
       lines := lines || jsonb_build_array(m.name || ' · 방의 상자 · ' || public.world_bijang_chest(p_run, m.owner_id));
@@ -687,7 +717,7 @@ begin
       'can_join', f.status in ('gather', 'fight') and now() <= f.gather_ends and not exists (select 1 from public.world_pfight_members pm where pm.fight_id = f.fight_id and pm.owner_id = uid)
         and public.world_pfight_ready(uid, f.region_id)) end,
     'me', jsonb_build_object('id', uid, 'member', me.owner_id is not null, 'entered', coalesce(me.entered, false), 'can_pick', r.status = 'room' and r.picker_id = uid,
-      'entries_left', public.world_bijang_entries_left(uid), 'entry_day', (ru ->> 'entry_day')::int),
+      'entries_left', public.world_bijang_entries_left(uid), 'entry_day', (ru ->> 'entry_day')::int, 'gains', coalesce(me.gains, '[]'::jsonb)),
     'members', (select coalesce(jsonb_agg(jsonb_build_object('id', m.owner_id, 'name', m.name, 'job', c.job_key, 'hp', c.health, 'owner', m.is_owner, 'entered', m.entered,
         'here', public.world_bijang_here(m.owner_id, r.region_id), 'got', m.got) order by m.is_owner desc, m.joined_at), '[]'::jsonb)
       from public.world_bijang_members m join public.world_characters c on c.owner_id = m.owner_id where m.run_id = p_run),
@@ -725,20 +755,6 @@ begin
   end if;
   k := r.room + 1;
   perform public.world_bijang_say(p_run, jsonb_build_array(r.room || '번째 방 · ' || p_door || '번 문이 열렸다.'));
-  if k >= (ru ->> 'rooms')::int then
-    for m in select * from public.world_bijang_members where run_id = p_run and entered order by joined_at loop
-      if not public.world_bijang_here(m.owner_id, r.region_id) then continue; end if;
-      t := public.world_bijang_final_give(p_run, m.owner_id);
-      lines := lines || jsonb_build_array(m.name || ' · 마지막 방 · ' || t);
-      if not exists (select 1 from public.world_character_statuses s where s.owner_id = m.owner_id and s.status_key = 'yohwa_seal' and s.expires_at > now()) then
-        insert into public.world_events(actor_id, actor_name, event_type, content, payload)
-        values (m.owner_id, m.name, 'bj_final', m.name || '이(가) 비장고 마지막 방에 닿았습니다.', jsonb_build_object('tier', r.tier, 'run_id', p_run, 'region_id', r.region_id));
-      end if;
-    end loop;
-    perform public.world_bijang_say(p_run, jsonb_build_array('마지막 방 · 이름을 적은 함과 재물이 고스란히 남아 있었다.') || lines);
-    perform public.world_bijang_finish(p_run, 'final', '비장고 마지막 방에 닿았다.');
-    return public.world_bijang_snapshot(p_run);
-  end if;
   if random() * 100 < (ru ->> 'room_guard_pct')::numeric then
     select array_agg(owner_id order by joined_at) into mates from public.world_bijang_members where run_id = p_run and entered;
     lead := case when public.world_pfight_ready(uid, r.region_id) then uid
@@ -747,11 +763,12 @@ begin
       update public.world_bijang_runs set room = k, door = null, shown = null where run_id = p_run;
       fid := public.world_bijang_spawn(p_run, k, lead, mates, false);
       if fid is not null then
-        perform public.world_bijang_say(p_run, jsonb_build_array(k || '번째 방 · 파수꾼이 길을 막았다.'));
+        perform public.world_bijang_say(p_run, jsonb_build_array(case when k >= (ru ->> 'rooms')::int then '마지막 방 · 이름 함을 지키던 파수꾼이 일어섰다.' else k || '번째 방 · 파수꾼이 길을 막았다.' end));
         return public.world_bijang_snapshot(p_run);
       end if;
     end if;
   end if;
+  if k >= (ru ->> 'rooms')::int then perform public.world_bijang_final(p_run); return public.world_bijang_snapshot(p_run); end if;
   for m in select * from public.world_bijang_members where run_id = p_run and entered order by joined_at loop
     if not public.world_bijang_here(m.owner_id, r.region_id) then continue; end if;
     lines := lines || jsonb_build_array(m.name || ' · 방의 상자 · ' || public.world_bijang_chest(p_run, m.owner_id));
