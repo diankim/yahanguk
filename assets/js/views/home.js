@@ -419,7 +419,7 @@ function meishoHtml(m, blocked) {
     return `<li class="mz ${x.open ? 'open' : 'shut'}" data-need-spot="${esc((x.items || []).join(','))}">
       <div><b>${esc(x.name)} ${chip('명소', x.open ? 'accent' : '')}</b>
         <small>${esc(x.kind_name)} · ${(x.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small>
-        <small>${esc(nameOf(x.phase))}·${esc(nameOf(x.weather))}일 때 한 시간 · <span data-mz-at="${at ? new Date(at).getTime() : ''}" data-mz-open="${x.open ? 1 : 0}"></span></small>${digWhy && x.open ? `<small class="mz-why">${esc(digWhy)}</small>` : ''}</div>
+        <small>${esc(nameOf(x.phase))} · ${[x.weather, x.weather2].filter(Boolean).map(w => esc(nameOf(w))).join('·')} 날씨에 한 시간 · <span data-mz-at="${at ? new Date(at).getTime() : ''}" data-mz-open="${x.open ? 1 : 0}"></span></small>${digWhy && x.open ? `<small class="mz-why">${esc(digWhy)}</small>` : ''}</div>
       <div class="btn-row mz-act"><button class="btn small primary" data-mz-dig="${esc(x.id)}" ${blocked || digWhy ? 'disabled data-blocked="1"' : ''} ${digWhy ? `title="${esc(digWhy)}"` : ''}>캐기</button>
         <button class="btn small" data-mz-soil="${esc(x.id)}" data-here="흙 살피기" ${blocked || x.soil_done ? 'disabled' : ''} title="${esc(x.soil_done ? '오늘은 이미 살폈습니다' : '하루 한 번, 흙 속에 묻힌 비장도를 찾아봅니다')}">흙 살피기</button></div></li>`;
   };

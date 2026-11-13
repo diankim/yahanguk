@@ -58,6 +58,7 @@ create table if not exists public.world_meisho (
   kind text not null check (kind in ('herb', 'wood', 'stone')),
   phase text not null check (phase in ('dawn', 'noon', 'dusk', 'night')),
   weather text not null,
+  weather2 text,
   min_level integer not null,
   description text not null default '',
   sort integer not null default 0,
@@ -98,17 +99,17 @@ select x.item_id, x.item_name, x.category, x.tier, x.description, x.stackable, x
 on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description, required_stats = excluded.required_stats,
   equipment_traits = excluded.equipment_traits, minimum_level = excluded.minimum_level, stack_size = excluded.stack_size, tradeable = excluded.tradeable, use_fx = excluded.use_fx;
 
-insert into public.world_meisho(meisho_id, meisho_name, region_id, node_id, kind, phase, weather, min_level, description, sort)
-select x.id, x.name, x.region, n.node_id, x.kind, x.phase, x.weather, n.min_level, x."desc", x.sort
-  from jsonb_to_recordset($J$[{"id":"mz_reed_dawn","name":"물안개 새벽 약초 섶","region":"ash_reeds","node":"잿빛 물길","kind":"herb","phase":"dawn","weather":"fog","desc":"잿빛 물길 가장자리, 새벽 물안개가 고일 때만 뿌리 끝이 젖어 드러나는 약초 섶이다.","sort":1},{"id":"mz_shrine_ceiling","name":"천장에 뿌리 내린 약초밭","region":"inverted_shrine","node":"천장 밟는 회랑","kind":"herb","phase":"night","weather":"clear","desc":"거꾸로 선 사당 회랑 천장에 거꾸로 뿌리 내린 약초밭이다. 맑은 삼경에만 잎이 아래로 늘어진다.","sort":2},{"id":"mz_meokbi_herb","name":"먹비 머금은 영초 덤불","region":"meokbi_forest","node":"빗물 고인 덤불","kind":"herb","phase":"noon","weather":"drizzle","desc":"가는 비가 내리는 한낮에만 먹빛을 벗고 푸른 잎을 내미는 영초 덤불이다.","sort":3},{"id":"mz_court_grass","name":"아홉 칸 뜰 이름풀 자리","region":"nine_court","node":"첫째 칸","kind":"herb","phase":"dusk","weather":"cloudy","desc":"흐린 땅거미에만 돋는 풀이다. 잎맥이 누군가의 이름 획을 닮았다.","sort":4},{"id":"mz_shrine_juniper","name":"거꾸로 자란 향나무","region":"inverted_shrine","node":"거꾸로 걸린 종루","kind":"wood","phase":"dusk","weather":"cloudy","desc":"종루 들보에서 땅을 향해 자란 향나무다. 흐린 땅거미에 결이 풀려 깎아 낼 수 있다.","sort":5},{"id":"mz_market_beam","name":"천 년 묵은 객주 대들보","region":"moonless_market","node":"빈 좌판 골목","kind":"wood","phase":"night","weather":"fog","desc":"달 없는 저잣거리가 생기기 전부터 서 있던 객주의 대들보다. 짙은 안개가 낀 삼경에만 나뭇결이 살아난다.","sort":6},{"id":"mz_field_locust","name":"벌판의 외톨이 회화나무","region":"blank_field","node":"흰 억새 들","kind":"wood","phase":"dawn","weather":"wind","desc":"빈칸 벌판에 홀로 선 회화나무다. 삭풍이 부는 새벽에만 마른 가지가 저절로 떨어진다.","sort":7},{"id":"mz_meokbi_ebony","name":"먹비 숲 흑단 고목","region":"meokbi_forest","node":"검은 잎 오솔길","kind":"wood","phase":"night","weather":"rain","desc":"먹비를 가장 오래 맞은 흑단 고목이다. 장대비가 쏟아지는 삼경에만 속살이 비친다.","sort":8},{"id":"mz_abyss_vein","name":"봉인 계단 밑 영석 맥","region":"sealed_abyss","node":"봉인 계단","kind":"stone","phase":"noon","weather":"cloudy","desc":"봉인 계단 아래로 흐르는 영석 맥이다. 흐린 한낮에만 맥이 떨며 틈을 연다.","sort":9},{"id":"mz_market_whetstone","name":"녹슨 대장간 숫돌 바닥","region":"moonless_market","node":"녹슨 대장간 터","kind":"stone","phase":"dusk","weather":"clear","desc":"수많은 칼을 갈아 낸 숫돌 바닥이다. 맑은 땅거미에 바닥 아래 단단한 돌이 드러난다.","sort":10},{"id":"mz_core_slab","name":"가라앉는 돌길 검은 반석","region":"gwiheo_core","node":"가라앉는 돌길","kind":"stone","phase":"dawn","weather":"cloudy","desc":"귀허로 가라앉아 가는 돌길 끝의 검은 반석이다. 흐린 새벽에만 물 위로 한 뼘 떠오른다.","sort":11},{"id":"mz_tower_plinth","name":"명부 탑 주춧돌 틈","region":"myeongbu_tower","node":"무너진 회랑","kind":"stone","phase":"night","weather":"fog","desc":"명부 탑을 떠받친 주춧돌 사이 틈이다. 안개 낀 삼경에만 틈 안쪽 돌이 빛을 낸다.","sort":12}]$J$::jsonb) as x(id text, name text, region text, node text, kind text, phase text, weather text, "desc" text, sort int)
+insert into public.world_meisho(meisho_id, meisho_name, region_id, node_id, kind, phase, weather, weather2, min_level, description, sort)
+select x.id, x.name, x.region, n.node_id, x.kind, x.phase, x.weather, x.weather2, n.min_level, x."desc", x.sort
+  from jsonb_to_recordset($J$[{"id":"mz_reed_dawn","name":"물안개 새벽 약초 섶","region":"ash_reeds","node":"잿빛 물길","kind":"herb","phase":"dawn","weather":"fog","weather2":"cloudy","desc":"잿빛 물길 가장자리, 새벽 물안개가 고일 때만 뿌리 끝이 젖어 드러나는 약초 섶이다.","sort":1},{"id":"mz_shrine_ceiling","name":"천장에 뿌리 내린 약초밭","region":"inverted_shrine","node":"천장 밟는 회랑","kind":"herb","phase":"night","weather":"clear","weather2":"fog","desc":"거꾸로 선 사당 회랑 천장에 거꾸로 뿌리 내린 약초밭이다. 맑은 삼경에만 잎이 아래로 늘어진다.","sort":2},{"id":"mz_meokbi_herb","name":"먹비 머금은 영초 덤불","region":"meokbi_forest","node":"빗물 고인 덤불","kind":"herb","phase":"noon","weather":"drizzle","weather2":"rain","desc":"가는 비가 내리는 한낮에만 먹빛을 벗고 푸른 잎을 내미는 영초 덤불이다.","sort":3},{"id":"mz_court_grass","name":"아홉 칸 뜰 이름풀 자리","region":"nine_court","node":"첫째 칸","kind":"herb","phase":"dusk","weather":"cloudy","weather2":"drizzle","desc":"흐린 땅거미에만 돋는 풀이다. 잎맥이 누군가의 이름 획을 닮았다.","sort":4},{"id":"mz_shrine_juniper","name":"거꾸로 자란 향나무","region":"inverted_shrine","node":"거꾸로 걸린 종루","kind":"wood","phase":"dusk","weather":"cloudy","weather2":"wind","desc":"종루 들보에서 땅을 향해 자란 향나무다. 흐린 땅거미에 결이 풀려 깎아 낼 수 있다.","sort":5},{"id":"mz_market_beam","name":"천 년 묵은 객주 대들보","region":"moonless_market","node":"빈 좌판 골목","kind":"wood","phase":"night","weather":"fog","weather2":"clear","desc":"달 없는 저잣거리가 생기기 전부터 서 있던 객주의 대들보다. 짙은 안개가 낀 삼경에만 나뭇결이 살아난다.","sort":6},{"id":"mz_field_locust","name":"벌판의 외톨이 회화나무","region":"blank_field","node":"흰 억새 들","kind":"wood","phase":"dawn","weather":"wind","weather2":"rain","desc":"빈칸 벌판에 홀로 선 회화나무다. 삭풍이 부는 새벽에만 마른 가지가 저절로 떨어진다.","sort":7},{"id":"mz_meokbi_ebony","name":"먹비 숲 흑단 고목","region":"meokbi_forest","node":"검은 잎 오솔길","kind":"wood","phase":"night","weather":"rain","weather2":"drizzle","desc":"먹비를 가장 오래 맞은 흑단 고목이다. 장대비가 쏟아지는 삼경에만 속살이 비친다.","sort":8},{"id":"mz_abyss_vein","name":"봉인 계단 밑 영석 맥","region":"sealed_abyss","node":"봉인 계단","kind":"stone","phase":"noon","weather":"cloudy","weather2":"fog","desc":"봉인 계단 아래로 흐르는 영석 맥이다. 흐린 한낮에만 맥이 떨며 틈을 연다.","sort":9},{"id":"mz_market_whetstone","name":"녹슨 대장간 숫돌 바닥","region":"moonless_market","node":"녹슨 대장간 터","kind":"stone","phase":"dusk","weather":"clear","weather2":"wind","desc":"수많은 칼을 갈아 낸 숫돌 바닥이다. 맑은 땅거미에 바닥 아래 단단한 돌이 드러난다.","sort":10},{"id":"mz_core_slab","name":"가라앉는 돌길 검은 반석","region":"gwiheo_core","node":"가라앉는 돌길","kind":"stone","phase":"dawn","weather":"cloudy","weather2":"fog","desc":"귀허로 가라앉아 가는 돌길 끝의 검은 반석이다. 흐린 새벽에만 물 위로 한 뼘 떠오른다.","sort":11},{"id":"mz_tower_plinth","name":"명부 탑 주춧돌 틈","region":"myeongbu_tower","node":"무너진 회랑","kind":"stone","phase":"night","weather":"fog","weather2":"wind","desc":"명부 탑을 떠받친 주춧돌 사이 틈이다. 안개 낀 삼경에만 틈 안쪽 돌이 빛을 낸다.","sort":12}]$J$::jsonb) as x(id text, name text, region text, node text, kind text, phase text, weather text, weather2 text, "desc" text, sort int)
   join lateral (select z.node_id, z.min_level from public.world_exploration_nodes z where z.region_id = x.region and z.node_name = x.node order by z.hierarchy_level limit 1) n on true
 on conflict (meisho_id) do update set meisho_name = excluded.meisho_name, region_id = excluded.region_id, node_id = excluded.node_id, kind = excluded.kind, phase = excluded.phase,
-  weather = excluded.weather, min_level = excluded.min_level, description = excluded.description, sort = excluded.sort;
+  weather = excluded.weather, weather2 = excluded.weather2, min_level = excluded.min_level, description = excluded.description, sort = excluded.sort;
 do $c$ begin
   if (select count(*) from public.world_meisho) <> 12 then raise exception '명소 답사 지점을 찾지 못했습니다'; end if;
   if exists (select 1 from public.world_meisho m join public.world_map_regions r using (region_id) where r.is_safe_zone or not r.active) then raise exception '명소는 바깥 지역에만'; end if;
   if exists (select 1 from public.world_meisho m join public.world_map_regions r using (region_id) join public.world_weather_climate cl on cl.territory_id = coalesce((select territory_id from public.world_weather_climate where territory_id = r.territory_id), 'capital')
-      where not cl.weights ? m.weather) then raise exception '그 땅에 오지 않는 날씨를 고른 명소가 있습니다'; end if;
+      where not cl.weights ? m.weather or (m.weather2 is not null and not cl.weights ? m.weather2)) then raise exception '그 땅에 오지 않는 날씨를 고른 명소가 있습니다'; end if;
 end $c$;
 
 insert into public.world_tool_lines(item_id, line) select x.key, x.value from jsonb_each_text($J${"lt_pick_mz":"pick","lt_sickle_mz":"sickle","lt_knife_mz":"knife","lt_rod_mz":"rod","lt_compass_mz":"explore","lt_lantern_mz":"lantern"}$J$::jsonb) x
@@ -169,7 +170,7 @@ begin
   for i in 0 .. (ru ->> 'look_days')::int loop
     s := public.world_meisho_start(m.meisho_id, m.phase, d + i);
     if s + make_interval(mins => mins) <= p_at then continue; end if;
-    if public.world_time_phase(s) <> m.phase or public.world_weather_key(terr, s) <> m.weather then continue; end if;
+    if public.world_time_phase(s) <> m.phase or public.world_weather_key(terr, s) not in (m.weather, coalesce(m.weather2, m.weather)) then continue; end if;
     if s <= p_at then o := s; else nx := s; exit; end if;
   end loop;
   return jsonb_build_object('open', o is not null, 'open_at', o, 'close_at', o + make_interval(mins => mins),
@@ -212,7 +213,7 @@ begin
   select * into f from public.world_meisho_finds where owner_id = p_uid and meisho_id = p_id;
   k := ru -> 'kinds' -> m.kind; w := public.world_meisho_when(m.meisho_id);
   return jsonb_build_object('id', m.meisho_id, 'name', m.meisho_name, 'kind', m.kind, 'kind_name', k ->> 'name', 'line', k ->> 'line',
-    'items', k -> 'items', 'phase', m.phase, 'weather', m.weather, 'level', m.min_level, 'desc', m.description, 'node_id', m.node_id,
+    'items', k -> 'items', 'phase', m.phase, 'weather', m.weather, 'weather2', m.weather2, 'level', m.min_level, 'desc', m.description, 'node_id', m.node_id,
     'node_name', (select n.node_name from public.world_exploration_nodes n where n.node_id = m.node_id), 'found', f.owner_id is not null,
     'rank', coalesce((p_skill -> (k ->> 'line') ->> 'rank')::int, 1), 'rank_need', (ru #>> '{rank,base}')::int,
     'grade', public.world_meisho_grade(m.min_level),
@@ -296,8 +297,9 @@ begin
   if c.level < m.min_level then raise exception '레벨 %부터 캘 수 있습니다.', m.min_level; end if;
   w := public.world_meisho_when(m.meisho_id);
   if not coalesce((w ->> 'open')::boolean, false) then
-    raise exception '%은(는) 지금 닫혀 있습니다. %·% 때 한 시간만 열립니다.', m.meisho_name,
-      (select env_name from public.world_environment_catalog where env_key = m.phase), (select env_name from public.world_environment_catalog where env_key = m.weather)
+    raise exception '%은(는) 지금 닫혀 있습니다. % · % 날씨에 한 시간만 열립니다.', m.meisho_name,
+      (select env_name from public.world_environment_catalog where env_key = m.phase),
+      (select string_agg(env_name, '·' order by env_key = m.weather desc) from public.world_environment_catalog where env_key in (m.weather, m.weather2))
       using hint = 'mz_closed';
   end if;
   if f.dug_at is not null and f.dug_at = (w ->> 'open_at')::timestamptz then
@@ -440,7 +442,7 @@ $q$  return jsonb_build_object(
     'meisho', (select coalesce(jsonb_agg(case when f.owner_id is null
         then jsonb_build_object('found', false, 'kind_name', public.world_meisho_rules() -> 'kinds' -> x.kind ->> 'name', 'region', r.region_name, 'level', x.min_level)
         else jsonb_build_object('found', true, 'id', x.meisho_id, 'name', x.meisho_name, 'kind_name', public.world_meisho_rules() -> 'kinds' -> x.kind ->> 'name', 'region', r.region_name,
-          'level', x.min_level, 'phase', x.phase, 'weather', x.weather, 'digs', f.dig_count) end order by x.min_level, x.sort), '[]'::jsonb)
+          'level', x.min_level, 'phase', x.phase, 'weather', x.weather, 'weather2', x.weather2, 'digs', f.dig_count) end order by x.min_level, x.sort), '[]'::jsonb)
       from public.world_meisho x join public.world_map_regions r on r.region_id = x.region_id
       left join public.world_meisho_finds f on f.owner_id = uid and f.meisho_id = x.meisho_id where x.active),
     'meisho_items', (select coalesce(jsonb_agg(jsonb_build_object('id', i.v, 'name', ic.item_name, 'got', exists (select 1 from public.world_events e

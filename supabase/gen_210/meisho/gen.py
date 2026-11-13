@@ -117,17 +117,17 @@ select x.item_id, x.item_name, x.category, x.tier, x.description, x.stackable, x
 on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description, required_stats = excluded.required_stats,
   equipment_traits = excluded.equipment_traits, minimum_level = excluded.minimum_level, stack_size = excluded.stack_size, tradeable = excluded.tradeable, use_fx = excluded.use_fx;
 
-insert into public.world_meisho(meisho_id, meisho_name, region_id, node_id, kind, phase, weather, min_level, description, sort)
-select x.id, x.name, x.region, n.node_id, x.kind, x.phase, x.weather, n.min_level, x."desc", x.sort
-  from jsonb_to_recordset({J(meisho)}) as x(id text, name text, region text, node text, kind text, phase text, weather text, "desc" text, sort int)
+insert into public.world_meisho(meisho_id, meisho_name, region_id, node_id, kind, phase, weather, weather2, min_level, description, sort)
+select x.id, x.name, x.region, n.node_id, x.kind, x.phase, x.weather, x.weather2, n.min_level, x."desc", x.sort
+  from jsonb_to_recordset({J(meisho)}) as x(id text, name text, region text, node text, kind text, phase text, weather text, weather2 text, "desc" text, sort int)
   join lateral (select z.node_id, z.min_level from public.world_exploration_nodes z where z.region_id = x.region and z.node_name = x.node order by z.hierarchy_level limit 1) n on true
 on conflict (meisho_id) do update set meisho_name = excluded.meisho_name, region_id = excluded.region_id, node_id = excluded.node_id, kind = excluded.kind, phase = excluded.phase,
-  weather = excluded.weather, min_level = excluded.min_level, description = excluded.description, sort = excluded.sort;
+  weather = excluded.weather, weather2 = excluded.weather2, min_level = excluded.min_level, description = excluded.description, sort = excluded.sort;
 do $c$ begin
   if (select count(*) from public.world_meisho) <> {len(meisho)} then raise exception '명소 답사 지점을 찾지 못했습니다'; end if;
   if exists (select 1 from public.world_meisho m join public.world_map_regions r using (region_id) where r.is_safe_zone or not r.active) then raise exception '명소는 바깥 지역에만'; end if;
   if exists (select 1 from public.world_meisho m join public.world_map_regions r using (region_id) join public.world_weather_climate cl on cl.territory_id = coalesce((select territory_id from public.world_weather_climate where territory_id = r.territory_id), 'capital')
-      where not cl.weights ? m.weather) then raise exception '그 땅에 오지 않는 날씨를 고른 명소가 있습니다'; end if;
+      where not cl.weights ? m.weather or (m.weather2 is not null and not cl.weights ? m.weather2)) then raise exception '그 땅에 오지 않는 날씨를 고른 명소가 있습니다'; end if;
 end $c$;
 
 insert into public.world_tool_lines(item_id, line) select x.key, x.value from jsonb_each_text({J(D.TOOL_LINES)}) x

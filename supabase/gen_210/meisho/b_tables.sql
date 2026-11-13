@@ -6,6 +6,7 @@ create table if not exists public.world_meisho (
   kind text not null check (kind in ('herb', 'wood', 'stone')),
   phase text not null check (phase in ('dawn', 'noon', 'dusk', 'night')),
   weather text not null,
+  weather2 text,
   min_level integer not null,
   description text not null default '',
   sort integer not null default 0,

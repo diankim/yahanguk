@@ -25,7 +25,7 @@ begin
   for i in 0 .. (ru ->> 'look_days')::int loop
     s := public.world_meisho_start(m.meisho_id, m.phase, d + i);
     if s + make_interval(mins => mins) <= p_at then continue; end if;
-    if public.world_time_phase(s) <> m.phase or public.world_weather_key(terr, s) <> m.weather then continue; end if;
+    if public.world_time_phase(s) <> m.phase or public.world_weather_key(terr, s) not in (m.weather, coalesce(m.weather2, m.weather)) then continue; end if;
     if s <= p_at then o := s; else nx := s; exit; end if;
   end loop;
   return jsonb_build_object('open', o is not null, 'open_at', o, 'close_at', o + make_interval(mins => mins),
@@ -68,7 +68,7 @@ begin
   select * into f from public.world_meisho_finds where owner_id = p_uid and meisho_id = p_id;
   k := ru -> 'kinds' -> m.kind; w := public.world_meisho_when(m.meisho_id);
   return jsonb_build_object('id', m.meisho_id, 'name', m.meisho_name, 'kind', m.kind, 'kind_name', k ->> 'name', 'line', k ->> 'line',
-    'items', k -> 'items', 'phase', m.phase, 'weather', m.weather, 'level', m.min_level, 'desc', m.description, 'node_id', m.node_id,
+    'items', k -> 'items', 'phase', m.phase, 'weather', m.weather, 'weather2', m.weather2, 'level', m.min_level, 'desc', m.description, 'node_id', m.node_id,
     'node_name', (select n.node_name from public.world_exploration_nodes n where n.node_id = m.node_id), 'found', f.owner_id is not null,
     'rank', coalesce((p_skill -> (k ->> 'line') ->> 'rank')::int, 1), 'rank_need', (ru #>> '{rank,base}')::int,
     'grade', public.world_meisho_grade(m.min_level),
@@ -152,8 +152,9 @@ begin
   if c.level < m.min_level then raise exception '레벨 %부터 캘 수 있습니다.', m.min_level; end if;
   w := public.world_meisho_when(m.meisho_id);
   if not coalesce((w ->> 'open')::boolean, false) then
-    raise exception '%은(는) 지금 닫혀 있습니다. %·% 때 한 시간만 열립니다.', m.meisho_name,
-      (select env_name from public.world_environment_catalog where env_key = m.phase), (select env_name from public.world_environment_catalog where env_key = m.weather)
+    raise exception '%은(는) 지금 닫혀 있습니다. % · % 날씨에 한 시간만 열립니다.', m.meisho_name,
+      (select env_name from public.world_environment_catalog where env_key = m.phase),
+      (select string_agg(env_name, '·' order by env_key = m.weather desc) from public.world_environment_catalog where env_key in (m.weather, m.weather2))
       using hint = 'mz_closed';
   end if;
   if f.dug_at is not null and f.dug_at = (w ->> 'open_at')::timestamptz then

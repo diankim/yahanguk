@@ -50,7 +50,7 @@ $q$  return jsonb_build_object(
     'meisho', (select coalesce(jsonb_agg(case when f.owner_id is null
         then jsonb_build_object('found', false, 'kind_name', public.world_meisho_rules() -> 'kinds' -> x.kind ->> 'name', 'region', r.region_name, 'level', x.min_level)
         else jsonb_build_object('found', true, 'id', x.meisho_id, 'name', x.meisho_name, 'kind_name', public.world_meisho_rules() -> 'kinds' -> x.kind ->> 'name', 'region', r.region_name,
-          'level', x.min_level, 'phase', x.phase, 'weather', x.weather, 'digs', f.dig_count) end order by x.min_level, x.sort), '[]'::jsonb)
+          'level', x.min_level, 'phase', x.phase, 'weather', x.weather, 'weather2', x.weather2, 'digs', f.dig_count) end order by x.min_level, x.sort), '[]'::jsonb)
       from public.world_meisho x join public.world_map_regions r on r.region_id = x.region_id
       left join public.world_meisho_finds f on f.owner_id = uid and f.meisho_id = x.meisho_id where x.active),
     'meisho_items', (select coalesce(jsonb_agg(jsonb_build_object('id', i.v, 'name', ic.item_name, 'got', exists (select 1 from public.world_events e
