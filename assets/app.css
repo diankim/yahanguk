@@ -3347,3 +3347,5 @@ b.shadow { color: var(--sp); }
   .field-wrap .fg-b .spots li > div { min-width: 0; }
   .field-wrap .fg-b .spots .btn { min-width: 0; min-height: 0; height: 26px; padding: 0 9px; font-size: calc(12px * var(--fz, 1)); flex: none; }
 }
+.ri-petc { align-items: center; }
+.ri-petc img { flex: none; width: 48px; height: auto; image-rendering: pixelated; }

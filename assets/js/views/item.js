@@ -7,6 +7,8 @@ import { isFurniture, myHomeCounts } from '../housing/count.js';
 import { GWIRYEONG, weakSafe, gwWhen } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
+import { PETS, petImage } from '../housing/petsprite.js';
+import { FIRST_PETS, petGroupOf, petGroupLine } from '../petpick.js';
 
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -312,11 +314,33 @@ function openResetIdentity() {
     <div class="choice-grid ri-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
     <h3 class="sub-h">소속</h3>
     <div class="choice-grid ri-grid">${Object.entries(FACTIONS).filter(([k]) => ['headquarters', 'fieldbureau', 'archivebureau', 'sealbureau', 'medicalbureau', 'independent'].includes(k)).map(([k, f]) => `<label class="choice"><input type="radio" name="rf" value="${k}" ${k === c.faction_key ? 'checked' : ''}><span><b>${esc(f.name)}</b><small>${esc(f.trait || '')}</small></span></label>`).join('')}</div>
+    <div id="ri-pet" hidden><h3 class="sub-h">데리고 다닐 꼬마 동무</h3><div class="ri-pet-body"></div></div>
     <div class="modal-actions sticky-actions"><button class="btn primary" id="ri-go">${icon('spark', 15)}<span>이대로 다시 시작</span></button></div>` });
+  let pets = null;
+  const petBox = $('#ri-pet', m);
+  const petCard = (id, sub, on) => { const g = petGroupOf(id); return `<label class="choice ri-petc"><input type="radio" name="rp" value="${esc(id)}" ${on ? 'checked' : ''}><img src="${petImage(id, sub.adult, { scale: 2 })}" alt=""><span><b>${esc(sub.name)}</b><small>${esc([g?.name, sub.note].filter(Boolean).join(' · '))}</small></span></label>`; };
+  const drawPets = () => {
+    const mine = pets?.mine || [];
+    $('.ri-pet-body', petBox).innerHTML = !pets ? '<p class="muted small">동무를 불러오는 중…</p>' : mine.length
+      ? `<p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 함께하는 동무 가운데 하나를 고르세요(힘은 친밀도로 정해집니다).</p><div class="choice-grid ri-grid">${[...mine].sort((a, b) => (b.id === pets.profile) - (a.id === pets.profile) || b.affinity - a.affinity).map((p, i) => petCard(p.id, { name: p.nick || PETS[p.id]?.name || p.id, adult: p.adult, note: `친밀도 ${p.affinity}` }, pets.profile ? p.id === pets.profile : i === 0)).join('')}</div>`
+      : `<p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 아직 함께하는 동무가 없으니 처음 동무 하나를 고르세요.</p><div class="choice-grid ri-grid">${FIRST_PETS.map(id => petCard(id, { name: PETS[id]?.name || id, adult: false, note: petGroupLine(petGroupOf(id)) }, false)).join('')}</div>`;
+  };
+  const showPets = async () => {
+    petBox.hidden = $('input[name=rj]:checked', m)?.value !== 'tamer';
+    if (petBox.hidden || pets) return;
+    drawPets();
+    try { pets = await rpc('world_pet_snapshot'); drawPets(); } catch (err) { $('.ri-pet-body', petBox).innerHTML = `<p class="muted small">${esc(err.message)}</p>`; }
+  };
+  $$('input[name=rj]', m).forEach(r => r.addEventListener('change', showPets));
+  showPets();
   $('#ri-go', m).onclick = async e => {
     const job = $('input[name=rj]:checked', m)?.value, fac = $('input[name=rf]:checked', m)?.value;
     if (!job || !fac) return toast('직업과 소속을 고르세요.', 'error');
-    if (!(await ask(`${JOBS[job]?.name} · ${FACTIONS[fac]?.name}(으)로 다시 시작할까요? 서첩 하나를 쓰고, 되돌릴 수 없습니다.`, { title: '환골탈태', ok: '다시 시작' }))) return;
-    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac }); closeModal(); if (RAID_ON) rebirthScene(job, fac); return out; });
+    const pet = job === 'tamer' ? $('input[name=rp]:checked', m)?.value || null : null;
+    if (job === 'tamer' && !pets) return toast('동무 목록을 불러오는 중입니다.', 'error');
+    if (job === 'tamer' && !pet) return toast('데리고 다닐 꼬마 동무를 고르세요.', 'error');
+    const petName = pet ? (pets.mine || []).find(p => p.id === pet)?.nick || PETS[pet]?.name || pet : '';
+    if (!(await ask(`${JOBS[job]?.name} · ${FACTIONS[fac]?.name}(으)로 다시 시작할까요?${petName ? ` ${petName}와(과) 함께 다닙니다.` : ''} 서첩 하나를 쓰고, 되돌릴 수 없습니다.`, { title: '환골탈태', ok: '다시 시작' }))) return;
+    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac, p_pet: pet }); closeModal(); if (RAID_ON) rebirthScene(job, fac); return out; });
   };
 }

@@ -2,7 +2,7 @@ import { ID_RULE, idToEmail, selfReload } from './config.js';
 import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { PETS, petImage } from './housing/petsprite.js';
-import { GAMEDATA } from './gamedata.js';
+import { FIRST_PETS, petGroupOf, petGroupLine } from './petpick.js';
 import { mountHud } from './hud.js';
 import { mountChat } from './chat.js';
 import { mountWhisper, mountWhisperPage } from './whisper.js';
@@ -208,11 +208,10 @@ function renderCreateForm() {
   const draftKey = `yh-create-draft:${store.user?.id || ''}`;
   let draft = {};
   try { draft = JSON.parse(localStorage.getItem(draftKey) || '{}') || {}; } catch {}
-  const FIRST = GAMEDATA.petPartner?.first || [];
+  const FIRST = FIRST_PETS;
   const pick = { job: JOBS[draft.job] ? draft.job : '', faction: FACTIONS[draft.faction] ? draft.faction : '', pet: FIRST.includes(draft.pet) ? draft.pet : '' };
   const saveDraft = () => { try { localStorage.setItem(draftKey, JSON.stringify({ name: form.name.value, job: pick.job, faction: pick.faction, pet: pick.pet })); } catch {} };
-  const grpOf = id => Object.values(GAMEDATA.petPartner?.groups || {}).find(g => g.kinds.includes(PETS[id]?.kind));
-  const petCards = FIRST.map(id => { const g = grpOf(id); return `<button type="button" class="choice-card pet-choice" data-pet="${id}" aria-pressed="false"><img src="${petImage(id, false, { scale: 3 })}" alt=""><strong>${esc(PETS[id]?.name || id)}</strong><span class="tag">${esc(g?.name || '')}</span><small>${esc(g ? `${g.line} · ${g.fx_line}` : '')}</small></button>`; }).join('');
+  const petCards = FIRST.map(id => { const g = petGroupOf(id); return `<button type="button" class="choice-card pet-choice" data-pet="${id}" aria-pressed="false"><img src="${petImage(id, false, { scale: 3 })}" alt=""><strong>${esc(PETS[id]?.name || id)}</strong><span class="tag">${esc(g?.name || '')}</span><small>${esc(petGroupLine(g))}</small></button>`; }).join('');
   const cards = (obj, kind) => Object.entries(obj).map(([k, v]) => `
     <button type="button" class="choice-card" data-${kind}="${k}" aria-pressed="false">
       <strong>${esc(v.name)}</strong><span class="tag">${esc(v.trait)}</span><small>${esc(kind === 'job' ? `「${JOB_LORE[k]?.motto || ''}」` : AFFIL_LORE[k]?.work || '')}</small>
