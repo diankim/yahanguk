@@ -210,7 +210,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - + / − 로 쌓고 다 누른 뒤 600ms에 world_combat_preview(p_alloc) 한 번, world_allocate_stats(p_alloc jsonb)로 한 트랜잭션 반영(포인트 합·상한 검사, 캐릭터 행 갱신 한 번·progression 한 줄).
 - 한 능력치 상한 world_stat_cap_of = 직업 기본값 + floor(1.5×레벨)(character.js statCap). 세심단·환골탈태·world_reset_points도 직업 기본값 기준.
-- 방어구 조건은 적힌 능력치와 짝(world_stat_pair: 체질↔힘·민첩↔감각·의지↔영기) 중 높은 것(world_equip_item·item.js STAT_PAIR), 장신구(관모·신·노리개·호신부·탈)는 가장 높은 능력치, 무기·도구는 그대로.
+- 방어구 조건은 적힌 능력치와 짝(world_stat_pair: 체질↔힘·민첩↔감각·의지↔영성) 중 높은 것(world_equip_item·item.js STAT_PAIR), 장신구(관모·신·노리개·호신부·탈)는 가장 높은 능력치, 무기·도구는 그대로.
 
 ### 캐릭터 신원
 
@@ -219,7 +219,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 「캐릭터 정리」(계정 › 캐릭터 정리, world_character_delete)는 캐릭터 몫 표를 지운다. 나중에 생긴 표는 world_character_purge(postgres 주인, fn_owner_field만 실행) 한 곳에 모음 — 퀘스트·세력 진행·튜토리얼·창고·칭호 묶음·퀵슬롯·기술 택일·잠금·내구도·획득순·강화·보따리·도감·첫 방문·비경·꾸미기·즐겨찾기·동무·별채(한 지붕이면 별채는 둠). 계정 몫(친구·차단·모임·화면/알림 설정·제보·귓속말 읽음)과 하루 한 번 기록(소속 보급·의뢰판)·world_events는 남긴다(1.0.4j, 제보 38). 1.0.4n에 개인 경험치 보정(world_xp_damp)·요화 기록(world_yohwa_log, 칭호 셈)·올린 조사원 의뢰(open)도 지움. 남기는 표 목록은 tools/check/precheck.py ACCOUNT_TABLES 한 곳 — 점검이 둘 다에 없는 새 표를 잡는다. 캐릭터별 새 표를 만들면 이 함수에도 더한다.
 - 소속 효과(world_affil_effect → world_status_effect_total, 경제 world_affil_cap·world_affil_tax): 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·주는 피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·주는 피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%. 하루 소속 보급·소속 임무도 소속마다. 화면 core.js FACTIONS.
 - 직업(내부 키 / 이름 world_job_label·world_job_name / 화면 core.js JOBS): 호위 무사 artificer 방패·수호 · 월궁 사수 scout 원거리 공격(옛 이름 현장 조사원 — 7.7.7r, 조사원 전체를 부르는 「조사원」은 그대로) · 퇴마관 exorcist 술법 공격 · 의무관 medic 치유 · 봉인술사 sealmaster 보조(북돋기·약화)·버티는 술사(이목 +60·방어 +30, 퇴마관 이목 −15 — world_combat_stats, 7.7.7r; 회피는 기민으로 1.0.1b) · 암영 검객 analyst 근접 공격(7.7.7q 역할, 옛 이름 백공 기술관 — 7.7.7r에서 바꿈, 직업 설명 core.js JOBS desc 앞 【역할】·lore.js JOB_LORE fight).
-- 기본 능력치 world_job_base(합 30): 호위 무사 힘9·체질7·민첩5 / 조사원 민첩8·감각8 / 퇴마관 영기9·의지7 / 의무관 의지8·영기7·체질6 / 봉인술사 의지8·영기7·체질5 / 암영 검객 힘8·민첩6·체질5·감각5(7.7.7r), 나머지 3~4.
+- 기본 능력치 world_job_base(합 30): 호위 무사 힘9·체질7·민첩5 / 조사원 민첩8·감각8 / 퇴마관 영성9·의지7 / 의무관 의지8·영성7·체질6 / 봉인술사 의지8·영성7·체질5 / 암영 검객 힘8·민첩6·체질5·감각5(7.7.7r), 나머지 3~4.
 - 직업 효과 world_job_effect(피해 %는 그 역할 무기를 들었을 때만): 호위 무사 받는 피해 −12(이목 +80·공격력 ×0.85는 world_combat_stats) / 조사원 원거리 +8·회피 +6·도주 +15·원거리 치명타 +4 / 퇴마관 술법 +8·받는 피해 −6(1.0.1b에 회피·도주 덤은 기민으로 — 옛 술법 치명타 +6은 월궁 사수 원거리 치명타 +4로 옮김) / 의무관 회복 +10(물품 ×1.15, world_party_use_item ×1.4) / 봉인술사 정신 손실 −10·침식 −5 / 암영 검객 근접 공격력 ×1.18·근접 무기 치명타 +5(world_combat_stats, 피해 % 상한 35 밖에서 곱함 — 7.7.7r). 직업 효과는 모두 전투 쪽(7.7.7q, 사용자 결정 — 옛 백공의 채집·희귀품·제작 품질·강화·다른 직업 제작법·원정 현장 가공·탐색 발견 덤은 없앰). 호위 무사 현장 기술 파갑참(근접 ×1.7·방어·결계 무시). 퇴마관 퇴마진 ×1.4·반드시 치명타(한 방, 멸마면 ×2.0)·결계 깨기, 월궁 사수 급소 사격 ×1.4·표식 세 번(맞힐 때마다 +25%, 꾸준히) — 1.0.0f 역할 맞바꿈(world_battle_action). 직업 전용 제작법·도구는 없다(채집·제작은 누구나, 1.0.0b — 영맥 낫·봉인술사 봉인 공예 +5도 없앰).
 - 직업 현장 기술 이름·설명·비무회 효과는 world_job_skill_rules 한 곳(1.1.0 — world_battle_action·world_pfight_act 이름, world_tourney_duel 효과 kind heal·focus·crit·pierce·burst·bind, gamedata jobSkills → battle.js SKILL). 새 직업은 여기에 한 줄.
 - 의무관 응급 처방(현장): 한 전투 한 번(world_active_encounters.pfx med_used)·기력/영력 25·체력 least(40, 15+체질/2+의지/2). 의무관 회복품 ×1.15(world_battle_action 두 곳·world_use_item·world_expedition_settle).
@@ -239,7 +239,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 전투 능력치
 
 - 탐색력 1 회복 15분(world_stamina_now·world_stamina_change /900), 노정 건량 +2.
-- 피해 계수: 근접 힘 1.0 · 술법 영기 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
+- 피해 계수: 근접 힘 1.0 · 술법 영성 0.75·의지 0.4 · 원거리 민첩 0.6·감각 0.45. 피해 % 합 상한 +35%, 칭호 피해 % 절반, 치명타 150%(world_combat_stats·world_battle_action).
 - 사냥 경험치 (6+요괴Lv×3)×world_xp_gap_mul(요괴Lv−내Lv: −6↓ 0.2·−3~−5 0.5·−1~−2 0.85·+1~+2 1.15·+3~+4 1.3·+5↑ 1.5), 토벌 기록 12. 퀘스트·이야기 전 ×0.4.
 - 상시 의뢰 world_commission_board(×0.4 없음, trg_world_commission_gil_v6는 남았지만 안 깎음, 진행은 trg_world_track_commissions — 토벌은 현장 승리 + 원정 귀환 기록 expedition_end의 wins(의뢰 지역이 있으면 그 지역 원정만, 1.1.1h)): 토벌 160+25L·채집/정찰 110+19L·납품 시세×수량×1.2+30+5L(하루 셋 합 Lv10 약 1,000·Lv30 약 2,000전).
 - 전투 행동 간격 1초(world_battle_action, 토벌 기록 world_guard_repeat_farming도 1초). 간격 수치는 world_rate_rules 하나(gather_s·fish_s·search_ms·battle_ms·raid_ms → gamedata rate → rules.js GATHER_GAP·SEARCH_GAP, world_rate_check·world_guard_repeat_farming이 읽음), 간격 거절은 HINT 'rate', 끝난 전투 행동은 HINT 'no_battle' — 화면은 문구가 아니라 e.hint로 가름(1.1.0d). 간격 검사는 잠그기 전에 공용 world_rate_check(kind gather·fish·battle·raid·search)로 먼저(연타가 처리 후 되돌림·공용 행 잠금을 만들지 않게). 새 연타 행동도 이 함수로. 화면은 응답 받은 때부터 기기 시계로 1초, 캐릭터는 단추를 잠그지 않고 뒤에서 다시 읽음.

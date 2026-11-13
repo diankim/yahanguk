@@ -280,7 +280,7 @@ begin
   select * into me from public.world_feast_members where feast_id = f.feast_id and owner_id = uid for update;
   if p_kind = 'join' then
     if found then raise exception '이미 함께하고 있습니다.'; end if;
-    insert into public.world_feast_members(feast_id, owner_id, name, last_at) values (f.feast_id, uid, c.character_name, now());
+    insert into public.world_feast_members(feast_id, owner_id, name) values (f.feast_id, uid, c.character_name);
     insert into public.world_feast_lines(feast_id, kind, text) values (f.feast_id, 'join', c.character_name || '이(가) ' || (t ->> 'name') || '에 함께한다.');
   else
     if not found then raise exception '먼저 행사에 함께해야 합니다.'; end if;
