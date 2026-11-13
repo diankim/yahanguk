@@ -151,6 +151,7 @@ begin
   return true;
 exception when others then return false;
 end $$;
+grant execute on function public.world_busy_kind(uuid) to fn_owner_field;
 select pg_temp.yh_share('public.world_gw_invitable(uuid)');
 select pg_temp.yh_own('public.world_gw_invitable(uuid)', 'fn_owner_field');
 
