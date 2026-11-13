@@ -236,11 +236,13 @@ const FIXED = {
   action_quality_pct: '행동 효율', agility_pct: '민첩', gathering_bonus_pct: '채집량', damage_reduction_pct: '피해 감소', defense: '방어', power: '위력',
   fish_bite_pct: '낚시 입질', fish_rare_pct: '희귀 어종', fish_size_pct: '물고기 크기',
   supply_save_pct: '원정 보급품 아낌', expedition_xp_pct: '원정 경험치', trail_find_pct: '비경 찾기', search_find_pct: '숨은 길·채집터 찾기',
+  ...GAMEDATA.meisho?.fx,
   sig_pct: '지역 희귀품', presence: '이목', crit_pct: '치명타', evasion_pct: '회피', flee_pct: '달아나기', mental_loss_pct: '정신 손실',
   river: '강', marsh: '늪', sea: '바다', deep: '깊은 물', canal: '수로',
   dawn: '해돋이', noon: '한낮', dusk: '땅거미', night: '삼경', clear: '청명', cloudy: '담운', rain: '장우', drizzle: '세우', fog: '농무', wind: '삭풍', snow: '설한', bloodmist: '혈무',
 };
-const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action']);
+const FLAT = new Set(['craft_quality', 'defense', 'power', 'presence', 'mental_per_action', 'health_per_action', ...(GAMEDATA.meisho?.flat || [])]);
+const FLAG = new Set(GAMEDATA.meisho?.flags || []);
 const PER_ACTION = new Set(['mental_per_action', 'health_per_action']);
 const LINE_FX = { cq: '제작 품질', cs: '재료 아낄 확률', cx: '하나 더 만들 확률', gq: '채집량', gr: '희귀품 발견' };
 function fxLabel(k) {
@@ -254,6 +256,7 @@ function fxLabel(k) {
 export function effectText(effects, potency = 1) {
   return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && k !== 'req_rank' && Number(v) && fxLabel(k) !== '기타 효과').map(([k, v]) => {
     const n = Math.round(Number(v) * (potency || 1) * 10) / 10;
+    if (FLAG.has(k)) return fxLabel(k);
     if (PER_ACTION.has(k)) return n < 0 ? `${FIXED[k]} 손실 ${Math.abs(n)} 줄임` : `${FIXED[k]} -${Math.abs(n)}`;
     return `${fxLabel(k)} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) || k.startsWith('cq_') ? '' : '%'}`;
   });

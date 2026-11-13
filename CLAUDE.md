@@ -311,6 +311,17 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 자원은 지역 환경과 채집터에 따라 다르고, 위험이 클수록 보상도 크지만 이동·생존 부담을 따진다. 대기시간과 서버 반복 방지를 둔다(§3.7).
 
+### 명소 채집과 명장 제작(2.1.0)
+
+- 생성기 supabase/gen_210/meisho/(data.py 명소·재료·장비·소모품·제작법·규칙 RULES 한 표 · a_head/a_hq/b_tables/c_funcs/d_hooks.sql · 이름 사전 ref/existing_names.json ← dump_names.py · gen.py가 이름·재료·분야 검사) → migrations/20261117020000_world_2_1_0_meisho.sql. 수치는 world_meisho_rules() 한 곳 → gamedata meisho(fx·flags·flat 이름표, list·recipes) → core.js FIXED·effectText·guide.js 「명소 채집과 명장 제작」. 기획 supabase/gen_210/plan.md §2·§3.
+- 명소 표 world_meisho(답사 지점 하나, 갈래 herb·wood·stone, 시간대 하나·날씨 하나, min_level = 그 지점 레벨)·찾은 기록 world_meisho_finds(dug_at = 캔 회차의 열린 시각, soil_day — 캐릭터 정리 대상). 12곳: 명초 잿빛 갈대숲·거꾸로 선 사당·먹비 숲·아홉 칸 뜰 / 명목 거꾸로 선 사당·달 없는 저잣거리·빈칸 벌판·먹비 숲 / 명석 구중 봉연·달 없는 저잣거리·귀허·명부 탑.
+- 열리는 때는 world_meisho_when(명소, 때) 하나: 날짜마다 world_meisho_start(명소, 시간대, 날짜)가 그 시간대 안의 한 시간을 결정적으로 고르고 그 시각 world_time_phase·world_weather_key(지역 영역)가 맞으면 열림 → {open, open_at, close_at, next_at(look_days 21일 안)}. 예약 작업 없음.
+- 찾기: world_field_search가 그 지점에 안 찾은·열린·레벨 맞는 명소가 있으면 outcome meisho(find_w, 나침반 찾기 % 곱함). 현장 world_field_snapshot.meisho = world_meisho_field(uid, 지역, 지점) {here 찾은 명소 카드(world_meisho_card), near 기척, sense 명장 나침반(mz_sense), next 명소 향(mz_next, 열린 영역만)} — 명소 없는 지역은 null.
+- 캐기 world_meisho_dig(p_meisho): world_rate_check('gather') 먼저, 그 지점·찾음·열림·회차마다 한 번(finds 행 잠금)·계열(world_meisho_rules kinds.line) 30단계, 탐색력 1, 확정 지급(기본 2 +40단계 1 +50단계 1 + 장비 mz_extra), 40단계부터 「…의 정」 확률(j_pct + mz_j_<갈래>·mz_j_all), 50단계부터 「이름 서린 …」(n_pct + mz_n_pct). 가방이 모자라면 캐지 않고 거절(hint bag — 회차가 남음). 기록 gather(payload meisho_id·extra·line, 퀘스트·도감·숙련이 일반 채집처럼 셈), 캐릭터 행 갱신 3번(탐색력·물품·기록 트리거, 채집과 같음).
+- 흙 살피기 world_meisho_soil(p_meisho): world_seal_guard·world_travel_guard, 숙련 무관·닫혀도 됨, 명소마다 한국 시각 하루 한 번, 등급 world_meisho_grade(명소 레벨 — soil.grade_lv), 확률 soil.pct × (1+mz_soil_pct)·상한 cap → world_bijang_grant(uid, 등급)(20261117010000, 지님 검사는 그쪽). 기록·캐릭터 행 갱신 없음.
+- 물품 mz_herb·mz_wood·mz_stone(5단계·40)·*_j(6단계·20)·*_n(7단계·20), 모두 거래 가능. 명장 제작법 r_<완성품> 24개(분야 여덟 × required_skill 30·40·50, 장비는 묵창 나루에서 품질 덤): 장비 16(7단계 높이 + 명소 효과 키 mz_j_herb/wood/stone/all·mz_n_pct·mz_extra·mz_soil_pct·mz_sense, 명목 낚싯대는 named_wt)·소모품 8(명소 향 mz_incense 하루 기운 mz_next·명소 지킴 부적·정기환·영단·이름 서린 환·요리 셋 6~12시간 기운). 효과 키는 장비 world_gear_total + 상태 world_status_self(world_meisho_gear)로 명소 함수에서만 읽음, 우수품 수치는 world_item_hq_traits가 mz_extra·mz_sense를 그대로 둠. 시세는 §12 규칙(장비 max(재료×1.2, 6단계 최고가×1.15), 소모품 재료÷개수×1.1).
+- 얻는 곳 world_item_sources(_all).meisho(sources.js SRC_KINDS 「명소」), 채집 도감 world_gather_codex_snapshot.meisho·meisho_items(journal.js meishoCodex, 도감 칭호 셈은 그대로 일반 채집터만). 화면 home.js meishoHtml·paintMeisho(채집터 칸 아래 — 열림 금빛·닫힘 흐리게, 남은 시간·다음 열림은 기기 시계, 바뀌는 순간 한 번 다시 읽음; 「캐기」는 채집 간격 공유, 「흙 살피기」 data-here), changes.js meisho_dig·meisho_ 줄, quests.js GATHERS.
+
 ### 제작
 
 - 재료·조건·결과는 서버가 검증하고 차감과 지급은 한 처리로, 중복 요청에 이중 차감·지급 없음. 제작 아이템은 전투·탐사·생존·생활에 실제로 쓰인다.

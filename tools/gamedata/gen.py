@@ -122,6 +122,10 @@ def build(dsn):
     d['houseRooms'] = q(dsn, """select world_housing_room_rules() || jsonb_build_object('item_names', (select jsonb_object_agg(i.item_id, i.item_name) from world_item_catalog i
         where i.item_id in (select m.key from jsonb_array_elements(world_housing_room_rules() -> 'rooms') r, jsonb_each(r -> 'steps') s, jsonb_each(s.value -> 'items') m)
            or i.item_id = 'hf_' || (world_housing_room_rules() ->> 'stair')))""")
+    d['meisho'] = q(dsn, """select world_meisho_rules() || jsonb_build_object(
+        'list', (select jsonb_agg(jsonb_build_object('region', r.region_name, 'kind', m.kind, 'level', m.min_level) order by m.min_level, m.sort) from world_meisho m join world_map_regions r using (region_id) where m.active),
+        'recipes', (select jsonb_agg(jsonb_build_array(cr.craft_field, cr.required_skill_rank, i.item_name) order by cr.craft_field, cr.required_skill_rank)
+          from world_crafting_recipes cr join world_item_catalog i on i.item_id = cr.output_item where cr.required_skill_rank >= 30))""")
     return d
 
 
