@@ -135,6 +135,14 @@ export function fitLog(log) {
   if (over > 0 && window.scrollY < 4) log.style.height = Math.max(92, log.offsetHeight - over) + 'px';
 }
 
+export function fitPcLog(log, min = 240) {
+  if (!log) return;
+  if (mobileLog() || !window.matchMedia('(min-width: 900px)').matches) { log.style.height = ''; return; }
+  const box = log.closest('.panel') || log, r = log.getBoundingClientRect();
+  const below = Math.max(0, box.getBoundingClientRect().bottom - r.bottom) + 16;
+  log.style.height = Math.max(min, Math.floor(window.innerHeight - (r.top + window.scrollY) - below)) + 'px';
+}
+
 const BOSS_ASK = {
   final: {
     tail: '결전은 20분 동안 이어지고, 체력이 다하면 30초씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.',

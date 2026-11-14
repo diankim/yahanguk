@@ -2857,7 +2857,7 @@ b.shadow { color: var(--sp); }
 /* 귀허의 주인 배치: PC는 기록을 오른쪽 참가자 칸 아래로, 끝난 화면은 참가자 네 칸 한 줄, 휴대폰은 한 화면에 */
 @media (min-width: 900px) {
   .raid-wrap.gw-wrap.playing { grid-template-areas: "boss mem" "boss log" "act log"; grid-template-rows: auto auto 1fr; }
-  .raid-wrap.gw-wrap.playing .raid-log { height: auto; max-height: 560px; min-height: 240px; }
+  .raid-wrap.gw-wrap.playing .raid-log { height: 420px; max-height: none; min-height: 240px; }
   .gw-wrap.ended .raid-mem.pf-mem { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {

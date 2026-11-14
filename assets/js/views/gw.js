@@ -2,7 +2,7 @@ import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.
 import { GW_DAILY } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
-  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
+  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fitPcLog, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
@@ -22,8 +22,18 @@ export async function render(root, sub) {
   clearInterval(tick); tick = setInterval(countdown, 250);
   await refresh();
 }
-export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
+export function destroy() { clearTimeout(timer); clearInterval(tick); clearTimeout(fitT); logRO?.disconnect(); logRO = null; hideTip(); tray.close(); el = null; }
 const HEAL_ITEMS = GW_HEAL;
+let fitT = null, logRO = null;
+const fitLogNow = () => { if (el?.isConnected) fitPcLog($('.gw-wrap.playing .raid-log', el)); };
+const fitSoon = () => { clearTimeout(fitT); fitT = setTimeout(fitLogNow, 120); };
+function watchLog() {
+  logRO?.disconnect();
+  const mem = el && $('.gw-wrap.playing .raid-members', el);
+  if (!mem || !window.ResizeObserver) return;
+  logRO = new ResizeObserver(fitSoon); logRO.observe(mem);
+}
+window.addEventListener('resize', fitSoon);
 window.addEventListener('yh-battle-item', e => {
   const f = snap?.fight;
   if (!el?.isConnected || f?.status !== 'fight' || !snap?.joined) return;
@@ -132,9 +142,9 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
         ${logHtml(s, me, done)}</div></section>
     </div>
     ${tipsHtml(s.tips)}`;
-  if (!done) restoreLog();
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   memDetail(s); tray.redraw();
+  if (!done) { fitLogNow(); restoreLog(); watchLog(); }
   bind(); countdown();
   const was = shownStatus; shownStatus = f.status;
   if (was && was !== f.status && done) showResult(el);
