@@ -67,6 +67,9 @@ def client_checks():
     for p in sorted((JS / 'views').glob('*.js')):
         if p.name != 'fightui.js' and re.search(r'\bsettleFight\b', p.read_text()) and p.stem not in routes:
             out.append(('싸움 돌아가기', p.relative_to(ROOT).as_posix(), '싸움 화면인데 rules.js FIGHT_KINDS·world_my_fight에 없음 → 화면을 벗어나면 돌아올 길이 없음'))
+        src = p.read_text()
+        if p.name != 'fightui.js' and re.search(r'\bsettleFight\b', src) and not (re.search(r'\bfightCol\(', src) and re.search(r'\bfitFight\(', src)):
+            out.append(('싸움 화면 틀', p.relative_to(ROOT).as_posix(), '싸움 화면인데 공용 틀(fightui.js fightCol·fitFight)을 안 씀 → PC에서 단추가 화면 밖으로 밀릴 수 있음'))
     for p in js_files():
         rel = p.relative_to(ROOT).as_posix()
         src = p.read_text()

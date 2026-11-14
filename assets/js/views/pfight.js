@@ -1,7 +1,7 @@
 import { rpc, esc, icon, fmt, $, $$, toast, store, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSectionsHtml, itemTray, resultBox, settleFight, tickUntil, serverClock,
-  mobileLog, newestFirst, keepLogScroll, logRow, jobName } from './fightui.js';
+  mobileLog, newestFirst, keepLogScroll, logRow, jobName, fightCol, fitFight, unfitFight } from './fightui.js';
 import { INTENT, SKILL, trayList, weakNote } from './battle.js';
 import { mountMeter } from './meter.js';
 import { clearFightNotes } from '../settings.js';
@@ -21,7 +21,7 @@ export async function render(root, sub) {
   clearInterval(tick); tick = setInterval(countdown, 250);
   await refresh();
 }
-export function destroy() { clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
+export function destroy() { unfitFight(); clearTimeout(timer); clearInterval(tick); hideTip(); tray.close(); el = null; }
 window.addEventListener('yh-battle-item', e => {
   if (!el?.isConnected || !fid || snap?.status !== 'fight' || !snap?.me) return;
   e.detail.handled = true;
@@ -90,7 +90,7 @@ function draw() {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('users', 14)} 파티 토벌 · Lv.${s.level}</p><h1>${esc(s.monster || '요괴')} <small>${esc(head)}</small></h1></div>
       <div class="head-actions">${s.rank && s.rank !== 'normal' ? chip(s.rank === 'guardian' ? '우두머리' : '정예', s.rank === 'guardian' ? 'bad' : 'warn') : ''}</div></div>
     <div class="raid-wrap pf-wrap ${playing ? 'playing' : ''}">
-      <section class="panel raid-boss"><div class="panel-body">
+      ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
         ${s.status === 'gather' ? `<p class="raid-time">${icon('hourglass', 14)} <b data-until="${esc(s.gather_ends)}">…</b> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지 · 탐색력 1)</p>
             ${s.leader_id === c.owner_id ? `<button class="btn primary" id="pf-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : ''}` : ''}
         ${s.can_join ? `<button class="btn primary" id="pf-join" data-here="함께 싸우기">${icon('flag', 16)}<span>합류하기 · 탐색력 1</span></button>` : ''}
@@ -99,8 +99,8 @@ function draw() {
           <div class="intent lvl-${intent[2]}">${icon(intent[2] >= 2 ? 'flame' : 'eye', 18)}<div><b>다음 행동 · ${esc(intent[0])}</b><span>${esc(intent[1])}${tgt ? ` · 노리는 사람: <b>${esc(tgt.name)}</b>${s.mon_done ? '(이번 라운드에 침)' : '(그 차례 뒤에 반격)'}` : ''}</span></div></div>` : ''}
         ${ended() ? resultHtml(s) : ''}
       </div></section>
-      ${playing ? actHtml(s, b, c) : ''}
-      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${members.length}명</h2></header><div class="panel-body">
+      ${playing ? actHtml(s, b, c) : ''}`)}
+      ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${members.length}명</h2></header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="pf-mem">${members.map(m => { const oi = order.indexOf(m.id);
           return memberLi({ ...m, hp: m.health }, { me: m.id === c.owner_id, turn: m.id === s.turn_id, tgt: m.id === s.target_id && fight, sel: m.id === sel, out: !!m.out,
             pre: oi >= 0 && fight ? `<i class="pf-no">${oi + 1}</i>` : '', state: stateOf(m), title: `${m.name} · ${jobName(m.job)}${m.spd != null ? ` · 속도 ${m.spd}` : ''}`,
@@ -109,11 +109,11 @@ function draw() {
         <div class="dm-host" id="pf-meter"></div>
         <p class="muted small">빠른 사람(민첩 + 감각÷2)부터 차례로 움직입니다. 요괴는 라운드마다 이목이 높은 이를 더 자주 노리고, 그 사람의 차례 바로 뒤에 반격합니다(그 차례에 방어하면 막습니다). 30초 동안 고르지 않으면 방어로 넘어갑니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
-        <ol class="raid-log">${newestFirst(lg, top).map(l => logRow(`no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}`, esc(l))).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>
+        <ol class="raid-log">${newestFirst(lg, top).map(l => logRow(`no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}`, esc(l))).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>`)}
     </div>`;
-  restoreLog();
   if (s.status !== 'gather') mountMeter($('#pf-meter', el), members.map(m => ({ ...m, me: m.id === c.owner_id })));
   memDetail(); tray.redraw();
+  fitFight(el); restoreLog();
   bind(); countdown();
 }
 

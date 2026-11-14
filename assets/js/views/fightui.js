@@ -135,12 +135,25 @@ export function fitLog(log) {
   if (over > 0 && window.scrollY < 4) log.style.height = Math.max(92, log.offsetHeight - over) + 'px';
 }
 
-export function fitPcCols(wrap, min = 360) {
+export const fightCol = (side, html) => `<div class="fight-col fight-col-${side}">${html}</div>`;
+let fitRoot = null, fitRO = null, fitT = null;
+function fitNow() {
+  const wrap = fitRoot?.isConnected && fitRoot.querySelector('.raid-wrap.playing');
   if (!wrap) return;
   if (mobileLog() || !window.matchMedia('(min-width: 900px)').matches) { wrap.style.removeProperty('--fit-h'); return; }
   const top = wrap.getBoundingClientRect().top + window.scrollY;
-  wrap.style.setProperty('--fit-h', Math.max(min, Math.floor(window.innerHeight - top - 12)) + 'px');
+  wrap.style.setProperty('--fit-h', Math.max(360, Math.floor(window.innerHeight - top - 12)) + 'px');
 }
+const fitSoon = () => { clearTimeout(fitT); fitT = setTimeout(fitNow, 120); };
+window.addEventListener('resize', fitSoon);
+export function fitFight(root) {
+  fitRoot = root; fitNow();
+  fitRO?.disconnect(); fitRO = null;
+  if (!root || !window.ResizeObserver) return;
+  fitRO = new ResizeObserver(fitSoon);
+  for (const e of root.querySelectorAll('.raid-wrap.playing > .fight-col > section:not(.raid-log-box), :scope > .view-head')) fitRO.observe(e);
+}
+export function unfitFight() { fitRO?.disconnect(); fitRO = null; fitRoot = null; clearTimeout(fitT); }
 
 const BOSS_ASK = {
   final: {

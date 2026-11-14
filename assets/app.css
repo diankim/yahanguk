@@ -2854,34 +2854,39 @@ b.shadow { color: var(--sp); }
 .gx-line .q-link { display: inline; min-height: 0; padding: 0; font-weight: 600; }
 .gx-line .gx-f { color: var(--text); }
 .gw-wrap.ended .raid-log-box, .gw-wrap.ended .raid-members { grid-column: 1 / -1; }
-/* 귀허의 주인 배치: PC는 기록을 오른쪽 참가자 칸 아래로, 끝난 화면은 참가자 네 칸 한 줄, 휴대폰은 한 화면에 */
+/* 싸움 화면 공용 틀(봉연·결전·파티 토벌·귀허·먹그림자): PC는 왼쪽 .fight-col-l(보스·행동)·오른쪽 .fight-col-r(참가자·기록)을 따로 쌓아 화면 한 장에, 휴대폰·끝난 화면은 .fight-col이 display: contents */
 @media (min-width: 900px) {
-  .raid-wrap.gw-wrap.playing { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-areas: none; grid-template-rows: none; align-items: start; }
+  .raid-wrap.playing:has(> .fight-col) { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-areas: none; grid-template-rows: none; align-items: start; gap: 8px; }
+  .raid-wrap.playing > .fight-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .raid-wrap.playing > .fight-col:has(> .raid-log-box) { height: var(--fit-h, auto); }
+  .raid-wrap.playing > .fight-col > section { flex: none; }
+  .raid-wrap.playing > .fight-col:has(> .raid-log-box) > .raid-members { flex: 0 1 auto; min-height: 120px; display: flex; flex-direction: column; }
+  .raid-wrap.playing > .fight-col:has(> .raid-log-box) > .raid-members > .panel-body { min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+  .raid-wrap.playing > .fight-col:has(> .raid-log-box) > .raid-members > .panel-body > * { flex: none; margin-top: 0; }
+  .raid-wrap.playing > .fight-col:has(> .raid-log-box) > .raid-members .raid-mem { flex: 0 1 auto; min-height: 110px; max-height: none; overflow-y: auto; }
+  .raid-wrap.playing > .fight-col:has(> .raid-log-box) > .raid-members .dm-host { flex: 0 1 auto; min-height: 90px; overflow-y: auto; }
+  .raid-wrap.playing > .fight-col > .raid-members > .panel-body > p.muted { display: none; }
+  .raid-wrap.playing > .fight-col > .raid-log-box { flex: 1 1 0; min-height: 140px; display: flex; flex-direction: column; }
+  .raid-wrap.playing > .fight-col > .raid-log-box > .panel-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .raid-wrap.playing > .fight-col .raid-log { flex: 1 1 auto; height: auto; min-height: 60px; max-height: none; }
+  .view-host:has(> .raid-wrap.playing) { padding-top: 0; }
+  .view-host:has(> .raid-wrap.playing) > .view-head { padding: 6px 12px; margin: 0 0 8px; }
+  .view-host:has(> .raid-wrap.playing) > .view-head .eyebrow { display: none; }
+  .view-host:has(> .raid-wrap.playing) > .view-head h1 { font-size: calc(17px * var(--fz, 1)); }
+  .raid-wrap.playing .panel-body { padding: 9px 12px 10px; }
+  .raid-wrap.playing .panel-head { padding-block: 7px; }
+  .raid-wrap.playing .raid-hp { margin-bottom: 4px; }
+  .raid-wrap.playing .raid-act .raid-me { margin-bottom: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 10px; }
+  .raid-wrap.playing .raid-act .raid-me > :not(.raid-vit) { grid-column: 1 / -1; }
+  .raid-wrap.playing .raid-act .raid-vit b { font-size: calc(15px * var(--fz, 1)); min-width: 1.8em; }
+  .raid-wrap.playing .raid-act .raid-mine { grid-template-rows: none; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
+  .raid-wrap.playing .dm-host { margin-top: 6px; }
   .gw-wrap.playing .gw-btns .btn { padding-inline: 6px; gap: 4px; }
-  .gw-wrap.playing > .gw-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-  .gw-wrap.playing > .gw-col-r { height: var(--fit-h, auto); }
-  .gw-wrap.playing > .gw-col-r > .raid-members { flex: none; }
-  .gw-wrap.playing > .gw-col-r > .raid-log-box { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  .gw-wrap.playing > .gw-col-r > .raid-log-box > .panel-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  .raid-wrap.gw-wrap.playing .raid-log { flex: 1 1 auto; height: auto; min-height: 60px; max-height: none; }
-  .view-host:has(> .gw-wrap.playing) { padding-top: 0; }
-  .view-host:has(> .gw-wrap.playing) > .view-head { padding: 6px 12px; margin: 0 0 8px; }
-  .view-host:has(> .gw-wrap.playing) > .view-head .eyebrow { display: none; }
-  .view-host:has(> .gw-wrap.playing) > .view-head h1 { font-size: calc(17px * var(--fz, 1)); }
-  .gw-wrap.playing .panel-body { padding: 9px 12px 10px; }
-  .gw-wrap.playing .panel-head { padding-block: 7px; }
   .gw-wrap.playing .gw-pick-hint, .gw-wrap.playing .gw-band .gw-mine { display: none; }
-  .gw-wrap.playing .raid-hp { margin-bottom: 4px; }
   .gw-wrap.playing .gw-ladder { margin: 4px 0 0; }
-  .gw-wrap.playing .gw-band { margin-top: 6px; padding: 6px 10px; gap: 3px; }
-  .gw-wrap.playing .raid-act .raid-me { margin-bottom: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 10px; }
-  .gw-wrap.playing .raid-act .raid-me > :not(.raid-vit) { grid-column: 1 / -1; }
-  .gw-wrap.playing .raid-act .raid-vit b { font-size: calc(15px * var(--fz, 1)); min-width: 1.8em; }
-  .gw-wrap.playing .raid-act .raid-mine { grid-template-rows: none; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
   .gw-wrap.playing .gw-ladder li { padding-block: 1px; }
-  .raid-wrap.gw-wrap.playing, .gw-wrap.playing > .gw-col { gap: 8px; }
+  .gw-wrap.playing .gw-band { margin-top: 6px; padding: 6px 10px; gap: 3px; }
   .gw-wrap.playing .raid-act .gw-btns { margin-top: 0; }
-  .gw-wrap.playing .dm-host { margin-top: 6px; }
   .gw-wrap.ended .raid-mem.pf-mem { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
@@ -3207,4 +3212,4 @@ b.shadow { color: var(--sp); }
   :root[data-fz="l"] .field-wrap .fg-b .spots li, :root[data-fz="xl"] .field-wrap .fg-b .spots li { flex-direction: column; align-items: stretch; }
   :root[data-fz="l"] .field-wrap .fg-b .spots .btn, :root[data-fz="xl"] .field-wrap .fg-b .spots .btn { width: 100%; }
 }
-.gw-col { display: contents; }
+.fight-col { display: contents; }

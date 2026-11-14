@@ -3,7 +3,7 @@ import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
 import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
-  resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, jobName, showResult, soloAidHtml } from './fightui.js';
+  resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml } from './fightui.js';
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
 import { baseOf } from '../hq.js';
@@ -27,7 +27,7 @@ export async function render(root, sub) {
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
+export function destroy() { unfitFight(); hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
 
 async function refresh() {
   if (!el) return;
@@ -107,7 +107,7 @@ function build() {
       <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
       <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger raid-forfeit keep-label" id="raid-forfeit">${icon('back', 15)}<span>포기</span></button>` : ''}${me.joined && !me.left && r.kind === 'world' && (fight || r.status === 'signup') ? `<button class="btn small keep-label" id="raid-leave" title="${fight ? '토벌에서 나가기(기여도는 남음)' : '참가 신청 거두기'}" aria-label="${fight ? '토벌에서 퇴장' : '신청 거두기'}">${icon('back', 15)}<span>${fight ? '퇴장' : '신청 거두기'}</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
     <div class="raid-wrap ${playing ? 'playing' : ''}">
-      <section class="panel raid-boss"><div class="panel-body">
+      ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
         <p class="raid-time">${timeLine}</p>
         ${r.status === 'announced' ? '' : `<div class="raid-hp"><div class="bar boss"><span id="raid-hpbar"></span></div><b id="raid-hpnum"></b><span id="raid-phase"></span></div>`}
         ${r.status === 'announced' || ended ? '' : '<div class="raid-says" id="raid-says" aria-live="polite"></div>'}
@@ -115,14 +115,15 @@ function build() {
         ${joinHtml(r, me)}
         ${ended ? resultHtml(r, s.members) : ''}
       </div></section>
-      ${playing ? actionsShell(me) : ''}
-      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul><div class="mem-detail" id="raid-memdetail" hidden></div>${r.status === 'announced' ? '' : '<div class="dm-host" id="raid-meter"></div>'}</div></section>
-      <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2><span class="raid-legend"><i class="lg-out"></i>내가 준 피해<i class="lg-in"></i>받은 피해</span></header><div class="panel-body"><ol class="raid-log" id="raid-log"></ol></div></section>
+      ${playing ? actionsShell(me) : ''}`)}
+      ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul><div class="mem-detail" id="raid-memdetail" hidden></div>${r.status === 'announced' ? '' : '<div class="dm-host" id="raid-meter"></div>'}</div></section>
+      <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2><span class="raid-legend"><i class="lg-out"></i>내가 준 피해<i class="lg-in"></i>받은 피해</span></header><div class="panel-body"><ol class="raid-log" id="raid-log"></ol></div></section>`)}
     </div>
     ${locksHtml(s.locks)}`;
   logCount = 0;
   patch();
   bind();
+  fitFight(el);
 }
 function patch() {
   const s = snap, r = s.raid, me = s.me || {}, members = s.members || [];
