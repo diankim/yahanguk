@@ -3168,3 +3168,13 @@ b.shadow { color: var(--sp); }
   .field-wrap .fg-b .spots li > div { min-width: 0; }
   .field-wrap .fg-b .spots .btn { min-width: 0; min-height: 0; height: 26px; padding: 0 9px; font-size: calc(12px * var(--fz, 1)); flex: none; }
 }
+.weapon-line { flex-wrap: nowrap; align-items: flex-start; }
+.weapon-line > .ico { margin-top: 2px; }
+.tile { font-size: calc(12.5px * min(var(--fz, 1), 1.1)); }
+.tile > span { max-width: 100%; text-align: center; line-height: 1.2; word-break: keep-all; overflow-wrap: anywhere; }
+.tile .rest-cd { font-size: calc(10.5px * min(var(--fz, 1), 1)); }
+.tile .rest-cd span { white-space: normal; word-break: keep-all; }
+@media (max-width: 380px) { .tile { font-size: calc(11.5px * min(var(--fz, 1), 1.1)); } }
+@media (max-width: 640px) {
+  :root[data-fz="l"] .field-wrap .fg-b > .panel, :root[data-fz="xl"] .field-wrap .fg-b > .panel { grid-column: 1 / -1; }
+}
