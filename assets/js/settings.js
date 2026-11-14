@@ -61,7 +61,7 @@ export function bindCrop(root, onReady) {
 let notes = [], bell, notesLive = false;
 const selfSoon = throttle(() => loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_notice' })), 5000);
 const shown = new Set();
-const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'raid_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite', 'yohwa', 'guide']);
+const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'raid_vote', 'gw_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite', 'yohwa', 'guide']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -107,7 +107,7 @@ async function loadNotes(first) {
     if (first) notes.filter(n => POP_KINDS.has(n.kind) && !staleFight(n)).slice(0, 2).forEach(notePop);
   } catch {}
 }
-const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'pfight_invite']);
+const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'gw_vote', 'pfight_invite']);
 const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000;
 export function clearFightNotes(kinds, key, id) {
   if (id == null) return;
@@ -150,6 +150,7 @@ function noteActs(n) {
   if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
   if (n.kind === 'raid_invite' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}" data-join="1" data-here="토벌 합류">합류</button>`;
   if ((n.kind === 'raid_notice' || n.kind === 'raid_result') && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">보기</button>`;
+  if (n.kind === 'gw_vote' && n.payload?.fight_id) return `<button class="btn primary small" data-gw="${esc(n.id)}">싸움 화면에서 답하기</button>`;
   if (n.kind === 'raid_vote' && n.payload?.raid_id) return `<button class="btn primary small" data-raid="${esc(n.id)}">결전 화면에서 답하기</button>`;
   if (n.kind === 'guide' && n.payload?.tip === 'ch1' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">정청 위치 보기</button>`;
   if (n.kind === 'guide' && n.payload?.tip === 'gwiryeong') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="bag/items">가방 보기</button>`;

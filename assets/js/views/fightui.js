@@ -117,6 +117,15 @@ export function serverClock() {
 }
 
 export const mobileLog = () => window.matchMedia('(max-width: 640px)').matches;
+export const forfeitVoteHtml = v => v ? `<p class="hint warn">${icon('flag', 14)}<span><b>${esc(v.by)}</b>의 포기 제안 · 동의 <b>${v.yes}/${v.need}</b> · <span data-until="${esc(v.until)}">${untilText(v.until)}</span> 남음${v.mine ? ' · 나는 동의함' : ''}</span></p>` : '';
+export function askForfeit(what, solo, v) {
+  return ask(solo ? `${what}을(를) 포기하면 지금 바로 실패로 끝납니다.\n보상은 없고, 실패한 것과 똑같이 셉니다.`
+    : v ? `${v.by}의 포기 제안에 동의합니다.\n모두 동의하면 다 함께 물러나고 실패로 끝납니다(보상 없음).`
+    : '함께 싸우는 동료들에게 포기를 제안합니다.\n60초 안에 모두 동의하면 다 함께 물러나고 실패로 끝납니다(보상 없음).\n한 사람이라도 반대하면 이어 갑니다.',
+    { title: solo ? `${what}을(를) 포기합니까?` : '동료에게 포기를 제안합니까?', ok: solo ? '포기하고 나오기' : v ? '동의하기' : '포기 제안하기', cancel: '계속 싸우기', danger: true });
+}
+export const askForfeitVote = (what, v) => ask(`${v.by}이(가) ${what}을(를) 포기하자고 합니다.\n모두 동의하면 다 함께 물러나고 실패로 끝납니다(보상 없음).\n한 사람이라도 반대하면 이어 갑니다.\n지금 동의 ${v.yes}/${v.need} · ${untilText(v.until)} 안에 답해 주세요.`,
+  { title: '포기 제안', ok: '동의하고 물러나기', cancel: '반대하고 계속 싸우기', danger: true });
 export const newestFirst = (list, top) => top ? [...list].reverse() : list;
 export const atLogEdge = (log, top) => top ? log.scrollTop < 24 : log.scrollHeight - log.scrollTop - log.clientHeight < 24;
 export function keepLogScroll(root, top) {

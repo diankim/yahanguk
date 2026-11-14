@@ -2,7 +2,7 @@ import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
-import { fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
+import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
   resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml } from './fightui.js';
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
@@ -111,7 +111,7 @@ function build() {
         <p class="raid-time">${timeLine}</p>
         ${r.status === 'announced' ? '' : `<div class="raid-hp"><div class="bar boss"><span id="raid-hpbar"></span></div><b id="raid-hpnum"></b><span id="raid-phase"></span></div>`}
         ${r.status === 'announced' || ended ? '' : '<div class="raid-says" id="raid-says" aria-live="polite"></div>'}
-        ${voteHtml(s.vote)}
+        ${forfeitVoteHtml(s.vote)}
         ${joinHtml(r, me)}
         ${ended ? resultHtml(r, s.members) : ''}
       </div></section>
@@ -190,13 +190,11 @@ function askVote(r) {
   const v = snap?.vote;
   if (!v || v.mine || votedFor === v.until || !snap.me?.joined) return;
   votedFor = v.until;
-  ask(`${v.by}이(가) 결전을 포기하자고 합니다.\n모두 동의하면 다 함께 물러나고 결전은 실패로 끝납니다(보상 없음).\n한 사람이라도 반대하면 결전을 이어 갑니다.\n지금 동의 ${v.yes}/${v.need} · ${left(v.until)} 안에 답해 주세요.`,
-    { title: '결전 포기 제안', ok: '동의하고 물러나기', cancel: '반대하고 계속 싸우기', danger: true })
+  askForfeitVote('결전', v)
     .then(agree => rpc('world_raid_forfeit_vote', { p_raid: r.id, p_agree: !!agree }))
     .then(out => { if (out?.raid) { snap = out; lastFetch = Date.now(); if (settled(snap)) settle(); draw(); } })
     .catch(e => toast(e.message || String(e), 'error'));
 }
-const voteHtml = v => v ? `<p class="hint warn">${icon('flag', 14)}<span><b>${esc(v.by)}</b>의 포기 제안 · 동의 <b>${v.yes}/${v.need}</b> · <span data-until="${esc(v.until)}">${left(v.until)}</span> 남음${v.mine ? ' · 나는 동의함' : ''}</span></p>` : '';
 
 function joinHtml(r, me) {
   const late = r.kind === 'world' && r.status === 'fight';
@@ -322,10 +320,7 @@ function bind() {
   const fb = $('#raid-forfeit', el);
   if (fb) fb.onclick = async () => {
     const solo = (snap.members || []).length <= 1, v = snap.vote;
-    const ok = await ask(solo ? '결전을 포기하면 지금 바로 실패로 끝납니다.\n보상은 없고, 다시 도전할 수 있습니다.'
-      : v ? `${v.by}의 포기 제안에 동의합니다.\n모두 동의하면 다 함께 물러나고 결전은 실패로 끝납니다(보상 없음).`
-      : '함께 싸우는 동료들에게 포기를 제안합니다.\n60초 안에 모두 동의하면 다 함께 물러나고 결전은 실패로 끝납니다(보상 없음).\n한 사람이라도 반대하면 결전을 이어 갑니다.',
-      { title: solo ? '결전을 포기합니까?' : '동료에게 포기를 제안합니까?', ok: solo ? '포기하고 나오기' : v ? '동의하기' : '포기 제안하기', cancel: '계속 싸우기', danger: true });
+    const ok = await askForfeit('결전', solo, v);
     if (!ok) return;
     await run(fb, () => rpc('world_raid_forfeit', { p_raid: r.id }));
   };

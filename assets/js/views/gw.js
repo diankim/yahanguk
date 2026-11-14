@@ -1,7 +1,7 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
 import { GW_DAILY } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
-import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
+import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
@@ -112,7 +112,8 @@ function draw() {
   const top = mobileLog() && !done, restoreLog = keepLogScroll(el, top);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 외전 · 요인록 · 귀허</p>
       <h1>귀허의 주인 <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
-      <div class="head-actions">${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
+      <div class="head-actions">${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}${s.joined && (fight || f.status === 'wait') ? `<button class="btn small danger keep-label" id="gw-forfeit">${icon('back', 15)}<span>포기</span></button>` : ''}</div></div>
+    ${!done ? forfeitVoteHtml(s.vote) : ''}
     ${done ? resultHtml(f, s) : ''}
     <div class="raid-wrap pf-wrap gw-wrap ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
       ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
@@ -226,6 +227,9 @@ function bind() {
   const f = snap?.fight; if (!f) return;
   const b = $('#gw-begin', el); if (b) b.onclick = async () => { if (!(await askPartySize('gw', (snap?.members || []).length || 1, true))) return; run(b, () => rpc('world_gw_begin', { p_fight: f.id })); };
   const j = $('#gw-join', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: f.id }));
+  const fb = $('#gw-forfeit', el);
+  if (fb) fb.onclick = async () => { if (await askForfeit('귀허의 주인과의 싸움', (snap.members || []).length <= 1, snap.vote)) run(fb, () => rpc('world_gw_forfeit', { p_fight: f.id })); };
+  askVote(f);
   $$('[data-pick]', el).forEach(x => x.onclick = () => { const id = x.dataset.pick; sel = sel === id ? null : id; if (f.status === 'fight' && snap.joined) target = id; draw(); });
   const ib = $('#gw-items', el); if (ib) ib.onclick = tray.open;
   $$('[data-gw-skill]', el).forEach(x => x.onclick = () => {
@@ -244,6 +248,14 @@ function bind() {
     if (a === 'attack') ammoWarn(snap?.ammo);
     run(x, () => rpc('world_gw_act', args));
   });
+}
+
+let votedFor = null;
+function askVote(f) {
+  const v = snap?.vote;
+  if (!v || v.mine || votedFor === v.until || !snap.joined) return;
+  votedFor = v.until;
+  askForfeitVote('귀허의 주인과의 싸움', v).then(agree => run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_gw_forfeit_vote', { p_fight: f.id, p_agree: !!agree })));
 }
 
 async function run(btn, fn) {
