@@ -42,7 +42,19 @@ $q$  if avg_lv is not null and r ? 'trail' and avg_lv - p_level >= (r #>> '{trai
     if p is not null then pct := greatest(pct, p); end if;
   end if;
   select * into d from public.world_xp_damp$q$]);
-select pg_temp.yh_fix('world_xp_damp_apply()', array[$q$if pct >= 100 then return new; end if;$q$, $q$if pct = 100 then return new; end if;$q$]);
+select pg_temp.yh_fix('world_xp_damp_apply()', array[$q$if pct >= 100 then return new; end if;$q$, $q$if pct = 100 then return new; end if;$q$,
+$q$  new.level := nl;$q$,
+$q$  if nl > new.level then
+    if new.downed_at is null then new.health := least(100, new.health + (nl - new.level) * 10); end if;
+    new.mental := least(100, new.mental + (nl - new.level) * 5);
+    new.spiritual_power := least(100, new.spiritual_power + (nl - new.level) * 5);
+  end if;
+  new.level := nl;$q$]);
+select pg_temp.yh_fix('world_grant_xp(uuid,integer)', array[
+$q$RETURN gained;$q$,
+$q$SELECT level - (lv - gained) INTO gained FROM public.world_characters WHERE owner_id = p_owner; RETURN greatest(0, gained);$q$]);
+drop trigger if exists trg_world_faction_open on public.world_characters;
+create trigger trg_world_faction_open after update on public.world_characters for each row when (old.level < 5 and new.level >= 5) execute function public.world_faction_open_note();
 
 create or replace function public.world_mentor_rules()
  returns jsonb
@@ -157,7 +169,8 @@ begin
        when 'pfight' then exists (select 1 from public.world_pfight_members x
           join public.world_pfight_members y on y.fight_id = x.fight_id and y.owner_id = c2.owner_id
           join public.world_pfights f on f.fight_id = x.fight_id
-          where x.owner_id = p_uid and f.status = 'fight' and coalesce(y.out_reason, '') not in ('fled', 'gone'))
+          where x.owner_id = p_uid and f.status = 'fight' and coalesce(y.out_reason, '') not in ('fled', 'gone')
+          and not exists (select 1 from public.world_bijang_fights bf where bf.fight_id = x.fight_id))
        when 'win' then c2.location = me.location and c2.travel_destination is null
           and exists (select 1 from public.world_events e where e.actor_id = c2.owner_id
             and e.created_at > now() - make_interval(mins => (r ->> 'near_min')::int))
@@ -202,7 +215,7 @@ begin
   if t > 0 and tot > t then b := round(p_xp * (tot / t - 1)); end if;
   lim := floor(public.world_xp_need(lv) * (r ->> 'xp_day')::numeric / 100);
   select coalesce(sum(l.xp), 0) into used from public.world_mentor_log l where l.day = d and l.mentee_id = p_uid;
-  b := greatest(0, least(b, lim - used));
+  b := greatest(0, least(b, floor((lim - used) * 100 / greatest(t, 1))::int));
   if jsonb_typeof(kr -> 'merit') = 'array' then
     mk := coalesce((select (s ->> 1)::int from jsonb_array_elements(kr -> 'merit') s
       where (s ->> 0)::int <= coalesce((p_ctx ->> 'minutes')::int, 0) order by (s ->> 0)::int desc limit 1), 0);
@@ -211,7 +224,8 @@ begin
   select coalesce(sum(l.merit), 0), coalesce(sum(l.merit) filter (where l.mentee_id = p_uid), 0) into mused, pused
     from public.world_mentor_log l where l.day = d and l.mentor_id = m;
   mk := greatest(0, least(mk, (r ->> 'day_cap')::int - mused, (r ->> 'pair_cap')::int - pused));
-  insert into public.world_mentor_log(day, mentor_id, mentee_id, kind, n, merit, xp) values (d, m, p_uid, p_kind, 1, mk, b)
+  if b <= 0 and mk <= 0 then return '{}'::jsonb; end if;
+  insert into public.world_mentor_log(day, mentor_id, mentee_id, kind, n, merit, xp) values (d, m, p_uid, p_kind, 1, mk, round(b * t / 100))
   on conflict (day, mentor_id, mentee_id, kind) do update set n = world_mentor_log.n + 1, merit = world_mentor_log.merit + excluded.merit, xp = world_mentor_log.xp + excluded.xp;
   new_pair := not exists (select 1 from public.world_mentor_pairs where mentor_id = m and mentee_id = p_uid);
   insert into public.world_mentor_pairs(mentor_id, mentee_id, n) values (m, p_uid, 1)
@@ -372,13 +386,13 @@ begin
         and not exists (select 1 from public.world_blocks b where (b.owner_id = uid and b.blocked_id = p.owner_id) or (b.owner_id = p.owner_id and b.blocked_id = uid))
         and abs(c.level - coalesce(lv, 0)) >= (r ->> 'gap')::int
         and ((p.kind = 'seek' and c.level < lv) or (p.kind = 'offer' and c.level > lv))), '[]'::jsonb),
-    'people', coalesce((select jsonb_agg(x order by x ->> 'last_at' desc) from (
+    'people', coalesce((select jsonb_agg(x order by x ->> 'last_at' desc) from (select x from (
       select jsonb_build_object('owner_id', c.owner_id, 'name', c.character_name, 'level', c.level, 'role', 'mentee', 'n', p.n, 'last_at', p.last_at) x
         from public.world_mentor_pairs p join public.world_characters c on c.owner_id = p.mentee_id where p.mentor_id = uid
       union all
       select jsonb_build_object('owner_id', c.owner_id, 'name', c.character_name, 'level', c.level, 'role', 'mentor', 'n', p.n, 'last_at', p.last_at)
-        from public.world_mentor_pairs p join public.world_characters c on c.owner_id = p.mentor_id where p.mentee_id = uid
-      order by 1 limit 20) s), '[]'::jsonb),
+        from public.world_mentor_pairs p join public.world_characters c on c.owner_id = p.mentor_id where p.mentee_id = uid) s0
+      order by x ->> 'last_at' desc limit 20) s), '[]'::jsonb),
     'owned', coalesce((select jsonb_agg(s ->> 'key') from jsonb_array_elements(r -> 'shop') s
       where public.world_mentor_owned(uid, s ->> 'kind', s ->> 'key')), '[]'::jsonb));
 end $function$;
@@ -432,7 +446,7 @@ begin
   return new;
 end $function$;
 drop trigger if exists trg_world_mentor_guide on public.world_characters;
-create trigger trg_world_mentor_guide after update of level on public.world_characters
+create trigger trg_world_mentor_guide after update on public.world_characters
   for each row when (new.level > old.level) execute function public.world_mentor_guide();
 
 select pg_temp.yh_fix('world_guide_note(uuid,text,integer)', array[

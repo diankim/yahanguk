@@ -1,4 +1,4 @@
-import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter } from '../core.js';
+import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, openModal, bar, bagLimit, bagUsed, loadCharacter, xpGot } from '../core.js';
 import { PARTY_EXP } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 import { chip, danger, load, loading, errorBox } from './common.js';
@@ -268,7 +268,7 @@ export function showResult(r) {
       <div class="stat-tiles">
         <div><span>전투</span><b>${x.wins}승 ${x.losses}패</b></div><div><span>채집</span><b>${x.gathers}회</b></div>
         <div><span>발견</span><b>${x.finds}회</b></div><div><span>답사</span><b>${x.progress_before}% → ${x.progress_after}%</b></div>
-        <div><span>경험치</span><b>+${x.experience}${x.levels ? ` · Lv +${x.levels}` : ''}</b></div><div><span>전</span><b>+${fmt.num(x.gil)}</b></div>
+        <div><span>경험치</span><b>+${fmt.num(xpGot(x.experience))}${x.levels ? ` · Lv +${x.levels}` : ''}</b></div><div><span>전</span><b>+${fmt.num(x.gil)}</b></div>
       </div>
       <h3 class="sub-h">챙겨 온 것</h3>
       <p>${items.length ? items.map(([k, n]) => `${esc(nameOf(k))} ×${n}`).join(', ') : '없음'}</p>

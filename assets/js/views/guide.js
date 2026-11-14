@@ -1716,7 +1716,7 @@ const S = [
     <h4>셈하는 것</h4>
     <ul>
       <li><b>함께 토벌</b>: 파티 현장 토벌에서 둘 다 끝까지 서서 이기면 새내기 경험치 +${MENTOR.kinds?.pfight?.pct ?? 25}%, 선배 챙김 ${MENTOR.kinds?.pfight?.merit ?? 2}.</li>
-      <li><b>곁에서 토벌</b>: 새내기가 혼자 토벌로 이기고, 같은 곳의 선배가 ${MENTOR.near_min}분 안에 그 지역에서 움직였으면 +${MENTOR.kinds?.win?.pct ?? 15}%, 챙김 ${MENTOR.kinds?.win?.merit ?? 1}.</li>
+      <li><b>곁에서 토벌</b>: 새내기가 혼자 토벌로 이기고, 같은 곳의 선배가 ${MENTOR.near_min}분 안에 무엇이든 움직였으면 +${MENTOR.kinds?.win?.pct ?? 15}%, 챙김 ${MENTOR.kinds?.win?.merit ?? 1}.</li>
       <li><b>파티 원정</b>: 「파티 원정」으로 함께 떠나 완주하면 완주 경험치 +${MENTOR.kinds?.exp?.pct ?? 25}%, 챙김은 보낸 시간에 따라 ${(MENTOR.kinds?.exp?.merit || []).map(([m, n]) => `${m >= 60 ? m / 60 + '시간' : m + '분'} ${n}`).join('·')}.</li>
       <li><b>퀘스트</b>: 할 일이 있는 장면을 보고할 때 같은 곳에 선배가 있으면 그 장면 경험치 +${MENTOR.kinds?.quest?.pct ?? 25}%, 챙김 ${MENTOR.kinds?.quest?.merit ?? 2}.</li>
       <li>셈하지 않는 것: ${(MENTOR.skip || []).join('·')}.</li>
