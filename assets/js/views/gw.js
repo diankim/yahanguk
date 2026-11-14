@@ -2,7 +2,7 @@ import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.
 import { GW_DAILY } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
-  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fitPcLog, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
+  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fitPcCols, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
@@ -25,7 +25,7 @@ export async function render(root, sub) {
 export function destroy() { clearTimeout(timer); clearInterval(tick); clearTimeout(fitT); logRO?.disconnect(); logRO = null; hideTip(); tray.close(); el = null; }
 const HEAL_ITEMS = GW_HEAL;
 let fitT = null, logRO = null;
-const fitLogNow = () => { if (el?.isConnected) fitPcLog($('.gw-wrap.playing .raid-log', el)); };
+const fitLogNow = () => { if (el?.isConnected) fitPcCols($('.gw-wrap.playing', el)); };
 const fitSoon = () => { clearTimeout(fitT); fitT = setTimeout(fitLogNow, 120); };
 function watchLog() {
   logRO?.disconnect();
@@ -125,21 +125,21 @@ function draw() {
       <div class="head-actions">${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}</div></div>
     ${done ? resultHtml(f, s) : ''}
     <div class="raid-wrap pf-wrap gw-wrap ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
-      <section class="panel raid-boss"><div class="panel-body">
+      <div class="gw-col gw-col-l"><section class="panel raid-boss"><div class="panel-body">
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
             ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기 · 귀허 부적 1개</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
         ${fight ? roundBand(s) : ''}
       </div></section>
-      ${fight && s.joined ? actHtml(s, me) : ''}
-      <section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
+      ${fight && s.joined ? actHtml(s, me) : ''}</div>
+      <div class="gw-col gw-col-r"><section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
           sub: [esc(jobName(m.job)), m.nameless ? '<b class="bad">이름 잃음</b>' : '', solo ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
-        ${logHtml(s, me, done)}</div></section>
+        ${logHtml(s, me, done)}</div></section></div>
     </div>
     ${tipsHtml(s.tips)}`;
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));

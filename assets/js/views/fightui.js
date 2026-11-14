@@ -135,12 +135,11 @@ export function fitLog(log) {
   if (over > 0 && window.scrollY < 4) log.style.height = Math.max(92, log.offsetHeight - over) + 'px';
 }
 
-export function fitPcLog(log, min = 240) {
-  if (!log) return;
-  if (mobileLog() || !window.matchMedia('(min-width: 900px)').matches) { log.style.height = ''; return; }
-  const box = log.closest('.panel') || log, r = log.getBoundingClientRect();
-  const below = Math.max(0, box.getBoundingClientRect().bottom - r.bottom) + 16;
-  log.style.height = Math.max(min, Math.floor(window.innerHeight - (r.top + window.scrollY) - below)) + 'px';
+export function fitPcCols(wrap, min = 360) {
+  if (!wrap) return;
+  if (mobileLog() || !window.matchMedia('(min-width: 900px)').matches) { wrap.style.removeProperty('--fit-h'); return; }
+  const top = wrap.getBoundingClientRect().top + window.scrollY;
+  wrap.style.setProperty('--fit-h', Math.max(min, Math.floor(window.innerHeight - top - 12)) + 'px');
 }
 
 const BOSS_ASK = {
