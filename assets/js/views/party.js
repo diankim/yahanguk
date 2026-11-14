@@ -4,6 +4,9 @@ import { openWhisper } from '../chat.js';
 import { loadCircles, circlesPanelHtml, bindCirclesPanel } from '../circles.js';
 import { loadBond, bondPanelHtml, bindBondPanel } from '../bond.js';
 import { loadLetters, lettersPanelHtml, bindLettersPanel, openCompose } from '../letters.js';
+import { loadMentor, mentorPanelHtml, bindMentorPanel, mentorSummary } from '../mentor.js';
+import { MENTOR } from '../rules.js';
+import { helpQ } from '../tips.js';
 
 const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty } from '../core.js';
@@ -12,6 +15,8 @@ import { load, panel, chip, loading, errorBox, foldOpen } from './common.js';
 import { hit } from '../changes.js';
 
 const LOOT = [['contribution', '기여도순'], ['designated', '지정순'], ['equal', '균등 분배']];
+const fpanel = (key, title, body, { ico, sum = '', dot = false, open = true, help = '', cls = '' } = {}) =>
+  `<details class="panel fold pt-fold ${cls}" data-fold="${key}" ${foldOpen(key, open) ? 'open' : ''}><summary class="panel-head"><h2>${ico ? icon(ico, 16) : ''}${esc(title)}${sum ? ` <small class="muted">${esc(sum)}</small>` : ''}${dot ? '<i class="pt-dot"></i>' : ''}${help ? helpQ(help, title + ' 안내') : ''}</h2></summary><div class="panel-body">${body}</div></details>`;
 let el, off = [], poll = null;
 
 export async function render(root) {
@@ -30,8 +35,8 @@ async function draw(heavy = false, tick = false) {
   const body = $('#party-body', el); if (!body) return;
   try {
     const fresh = tick ? 0 : 45000;
-    const [p, loot, roster, fr, cs, bs, lt] = await Promise.all([load('world_party_overview', undefined, { maxAge: heavy ? 0 : fresh }), load('world_party_loot_snapshot', undefined, { maxAge: heavy ? 0 : 300000 }).catch(() => null),
-      load('world_region_roster', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => []), load('world_friend_overview', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => null), loadCircles(heavy), loadBond(heavy), loadLetters(heavy)]);
+    const [p, loot, roster, fr, cs, bs, lt, ms] = await Promise.all([load('world_party_overview', undefined, { maxAge: heavy ? 0 : fresh }), load('world_party_loot_snapshot', undefined, { maxAge: heavy ? 0 : 300000 }).catch(() => null),
+      load('world_region_roster', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => []), load('world_friend_overview', undefined, { maxAge: heavy ? 0 : fresh }).catch(() => null), loadCircles(heavy), loadBond(heavy), loadLetters(heavy), loadMentor(heavy)]);
     if (fr) syncNotes(fr.friends);
     const me = store.character.owner_id, pt = p?.party, isLeader = pt?.leader_id === me;
     const incoming = (p?.invites || []).filter(i => i.incoming), outgoing = (p?.invites || []).filter(i => !i.incoming);
@@ -40,50 +45,56 @@ async function draw(heavy = false, tick = false) {
         ${m.downed ? (m.owner_id !== me ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : chip('전투불능', 'bad')) : ''}</li>`;
     const canInvite = !pt || isLeader, memberIds = new Set((p?.members || []).map(m => m.owner_id));
     const fState = f => f.is_dead ? '숨을 거둠' : f.downed ? '전투불능' : f.in_combat ? '전투 중' : f.away ? '원정 중' : f.traveling ? '이동 중' : '';
-    const friendsPanel = fr ? panel(`친구 · ${(fr.friends || []).length}명`, `
+    const friendsPanel = fr ? fpanel('pt-friends', '친구', `
       ${(fr.incoming || []).length ? `<h3 class="sub-h">받은 친구 신청 ${fr.incoming.length}</h3><ul class="people cards">${fr.incoming.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b><small>Lv.${f.level} · ${esc(nameOf(f.job_key))}</small></div>
           <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
-      ${(fr.friends || []).length ? `<details class="fold f-fold" data-fold="friends" ${foldOpen('friends') ? 'open' : ''}><summary>친구 목록 ${fr.friends.length}명</summary><ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
+      ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small>${f.memo ? `<small class="f-memo">${esc(f.memo)}</small>` : ''}</div>
           <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
             <button class="btn small nowrap" data-fr-note="${esc(f.owner_id)}" data-fr-name="${esc(f.character_name)}">별명·메모</button>
             ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
-            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul></details>`
+            ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
         : empty('아직 친구가 없습니다. 채팅이나 같은 곳에 있는 조사원의 이름을 눌러 친구 신청을 보내 보세요.', 'users')}
       ${(fr.outgoing || []).length ? `<p class="muted small">응답을 기다리는 신청: ${fr.outgoing.map(f => `${esc(f.character_name)} <button class="linkish" data-fr-cancel="${esc(f.owner_id)}">취소</button>`).join(' · ')}</p>` : ''}
       ${(fr.blocked || []).length ? `<details class="fold"><summary>차단한 조사원 ${fr.blocked.length}</summary><ul class="spot-list">${fr.blocked.map(f => `<li><div><b>${esc(f.character_name)}</b></div><button class="btn small" data-unblock="${esc(f.owner_id)}">차단 풀기</button></li>`).join('')}</ul></details>` : ''}
-      <p class="muted small">친구는 어디에 있든 위치와 상황을 볼 수 있고, 귓속말과 파티 초대를 바로 보낼 수 있습니다.</p>`, { ico: 'heart' }) : '';
-    const circlePanel = panel(`모임 · ${(cs?.circles || []).length}개`, circlesPanelHtml(cs), { ico: 'chat' });
-    const bondPanel = panel('연리', bondPanelHtml(bs), { ico: 'heart' });
+      `, { ico: 'heart', sum: `${(fr.friends || []).length}명${(fr.incoming || []).length ? ` · 신청 ${fr.incoming.length}` : ''}`, dot: (fr.incoming || []).length > 0, open: (fr.incoming || []).length > 0,
+        help: '친구는 어디에 있든 위치와 상황을 볼 수 있고, 귓속말과 파티 초대를 바로 보낼 수 있습니다. 별명·메모는 나만 봅니다.' }) : '';
+    const circlePanel = fpanel('pt-circle', '모임', circlesPanelHtml(cs), { ico: 'chat', sum: `${(cs?.circles || []).length}개${(cs?.received || []).length ? ` · 초대 ${cs.received.length}` : ''}`, dot: (cs?.received || []).length > 0, open: (cs?.received || []).length > 0 });
+    const bondPanel = fpanel('pt-bond', '연리', bondPanelHtml(bs), { ico: 'heart', open: false });
     const unreadLt = (lt?.letters || []).filter(l => !l.read).length;
-    const letterPanel = panel(`서신${unreadLt ? ` · 안 읽음 ${unreadLt}` : ''}`, lettersPanelHtml(lt), { ico: 'letter' });
-    body.innerHTML = `
-      ${bondPanel}
+    const letterPanel = fpanel('pt-letter', '서신', lettersPanelHtml(lt), { ico: 'letter', sum: unreadLt ? `안 읽음 ${unreadLt}` : `${(lt?.letters || []).length}통`, dot: unreadLt > 0, open: unreadLt > 0 });
+    const mentorPanel = fpanel('pt-mentor', '선배와 새내기', mentorPanelHtml(ms, { canInvite }), { ico: 'route', sum: mentorSummary(ms), cls: 'mt-panel', help: MENTOR.help() });
+    const lootMethod = LOOT.find(x => x[0] === (loot?.method || pt?.loot_distribution_method))?.[1] || '균등 분배';
+    body.innerHTML = `<div class="party-wrap"><div class="party-col party-col-l">
+      ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.inviter_name || '조사원')}의 동료 초대</b><small>수락하면 함께 이동하고 전리품을 나눕니다</small></div>
+        <div class="btn-row"><button class="btn small primary" data-inv="${esc(i.invite_id)}" data-acc="1">수락</button><button class="btn small" data-inv="${esc(i.invite_id)}" data-acc="0">거절</button></div></li>`).join('')}</ul>`, { ico: 'bell' }) : ''}
+      ${pt ? `
+        ${fpanel('pt-party', '우리 동료', `<ul class="people">${(p.members || []).map(member).join('')}</ul>
+          ${isLeader && (p.candidates || []).length ? `<form class="form-grid" id="invite-form"><label class="field"><span>초대할 조사원</span><select name="who">${p.candidates.map(x => `<option value="${esc(x.owner_id)}">${esc(x.character_name)} (Lv.${x.level} · ${esc(x.location)})</option>`).join('')}</select></label><button class="btn" type="submit">초대</button></form>` : ''}
+          ${outgoing.length ? `<p class="muted small">응답을 기다리는 초대: ${outgoing.map(i => esc(i.invitee_name)).join(', ')}</p>` : ''}
+          <button class="btn small ghost" id="party-leave">${icon('back', 14)}<span>${(p.members || []).length <= 1 ? '파티 해체' : isLeader ? '파티 나가기(파티장 넘김)' : '파티 나가기'}</span></button>`, { ico: 'users', sum: `${(p.members || []).length}명`, help: '파티장이 지도에서 목적지를 고르면 같은 지역의 파티원에게 동승을 요청할 수 있습니다. 운임은 파티장만 냅니다.' })}`
+      : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
+        <div class="btn-row"><button class="btn primary" id="party-make">${icon('plus', 16)}<span>파티 만들기</span></button></div>
+        <p class="muted small">만든 뒤 같은 지역의 조사원을 초대하거나, 아래 「선배 찾기」에서 함께할 사람을 찾을 수 있습니다.</p>`, { ico: 'users' })}
+      ${mentorPanel}
+      </div><div class="party-col party-col-r">
       ${friendsPanel}
       ${letterPanel}
       ${circlePanel}
-      ${incoming.length ? panel('받은 초대', `<ul class="spot-list">${incoming.map(i => `<li><div><b>${esc(i.inviter_name || '조사원')}의 동료 초대</b><small>수락하면 함께 이동하고 전리품을 나눕니다</small></div>
-        <div class="btn-row"><button class="btn small primary" data-inv="${esc(i.invite_id)}" data-acc="1">수락</button><button class="btn small" data-inv="${esc(i.invite_id)}" data-acc="0">거절</button></div></li>`).join('')}</ul>`, { ico: 'bell' }) : ''}
-      ${pt ? `<div class="grid-2">
-        ${panel(`우리 동료 · ${(p.members || []).length}명`, `<ul class="people">${(p.members || []).map(member).join('')}</ul>
-          ${isLeader && (p.candidates || []).length ? `<form class="form-grid" id="invite-form"><label class="field"><span>초대할 조사원</span><select name="who">${p.candidates.map(x => `<option value="${esc(x.owner_id)}">${esc(x.character_name)} (Lv.${x.level} · ${esc(x.location)})</option>`).join('')}</select></label><button class="btn" type="submit">초대</button></form>` : ''}
-          ${outgoing.length ? `<p class="muted small">응답을 기다리는 초대: ${outgoing.map(i => esc(i.invitee_name)).join(', ')}</p>` : ''}
-          <p class="muted small">파티장이 지도에서 목적지를 고르면 같은 지역의 파티원에게 동승을 요청할 수 있습니다. 운임은 파티장만 냅니다.</p>
-          <button class="btn small ghost" id="party-leave">${icon('back', 14)}<span>${(p.members || []).length <= 1 ? '파티 해체' : isLeader ? '파티 나가기(파티장 넘김)' : '파티 나가기'}</span></button>`, { ico: 'users' })}
-        ${panel('전리품 분배', `
-          <p class="muted small">현재 방식: <b>${esc(LOOT.find(x => x[0] === (loot?.method || pt.loot_distribution_method))?.[1] || '균등 분배')}</b> · 받을 몫 ${fmt.num(loot?.claimable_count)}건</p>
+      ${bondPanel}
+      ${pt ? fpanel('pt-loot', '전리품 분배', `
+          <p class="muted small">현재 방식: <b>${esc(lootMethod)}</b> · 받을 몫 ${fmt.num(loot?.claimable_count)}건</p>
           ${isLeader ? `<div class="btn-row">${LOOT.map(([k, n]) => `<button class="btn small ${k === (loot?.method || pt.loot_distribution_method) ? 'primary' : ''}" data-method="${k}">${n}</button>`).join('')}</div>` : ''}
           ${(loot?.loot || []).length ? `<ul class="spot-list">${loot.loot.map(l => `<li><div><b>${esc(nameOf(l.item_id))} ×${l.quantity}</b><small>${l.status === 'available' ? '분배 대기' : '분배 완료'}</small></div>
             ${isLeader && l.status === 'available' ? `<button class="btn small" data-dist="${esc(l.loot_id)}">분배</button>` : ''}</li>`).join('')}</ul>` : empty('공동 전리품이 없습니다.', 'bag')}
           ${loot?.claimable_count ? `<button class="btn primary" id="loot-claim">${icon('check', 16)}<span>내 몫 받기</span></button>` : ''}
-          <p class="muted small">지정순은 파티원 목록 순서(파티장 먼저)대로 우선권을 줍니다.</p>`, { ico: 'bag' })}
-      </div>` : panel('동료 맺기', `<p class="desc">동료를 맺으면 함께 이동(동승)하고, 동료 채팅과 전리품 분배를 쓸 수 있습니다. 혼자서도 모든 핵심 콘텐츠를 진행할 수 있습니다.</p>
-        <button class="btn primary" id="party-make">${icon('plus', 16)}<span>파티 만들기</span></button>
-        <p class="muted small">만든 뒤 같은 지역의 조사원을 초대할 수 있습니다.</p>`, { ico: 'users' })}
-      ${panel(`같은 지역의 조사원 · ${store.character.location}`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${face(m.owner_id, m.profile, 36, m.character_name)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)}</b>
+          `, { ico: 'bag', sum: `${lootMethod}${loot?.claimable_count ? ` · 받을 몫 ${loot.claimable_count}` : ''}`, dot: !!loot?.claimable_count, open: !!loot?.claimable_count || (loot?.loot || []).some(l => l.status === 'available'),
+            help: '지정순은 파티원 목록 순서(파티장 먼저)대로 우선권을 줍니다.' }) : ''}
+      ${fpanel('pt-here', `같은 지역의 조사원`, (roster || []).length ? `<ul class="people">${roster.map(m => `<li>${face(m.owner_id, m.profile, 36, m.character_name)}<div><b>${cardName(m.owner_id, m.character_name)}${sealMark(m.profile?.seal)}${gmBadge(m.owner_id)}</b>
           <small>Lv.${m.level} · ${esc(nameOf(m.job_key))}${m.major_faction_id ? ' · ' + esc(nameOf(m.major_faction_id)) : ''}${m.away ? ' · 원정 중' : ''}</small>${m.profile?.bio ? `<small class="muted">${esc(m.profile.bio)}</small>` : ''}</div>
-          ${m.downed && !m.is_dead ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin' })}`;
+          ${m.downed && !m.is_dead ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}</li>`).join('')}</ul>` : empty('같은 지역에 다른 조사원이 없습니다.', 'users'), { ico: 'pin', sum: `${store.character.location} · ${(roster || []).length}명` })}
+      </div></div>`;
     const mk = $('#party-make', body);
     if (mk) mk.onclick = () => guard(mk, () => act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) }));
     $('#invite-form', body)?.addEventListener('submit', e => { e.preventDefault(); guard(e.target.querySelector('button'), () => act('world_party_invite', { p_invitee_id: e.target.who.value })); });
@@ -109,6 +120,8 @@ async function draw(heavy = false, tick = false) {
     bindCirclesPanel(body);
     bindBondPanel(body, draw);
     bindLettersPanel(body, draw);
+    bindMentorPanel(body, { pt, redraw: () => draw() });
+    body.querySelectorAll('summary .help-q').forEach(q => q.addEventListener('click', e => e.preventDefault()));
     $$('[data-letter]', body).forEach(b => b.onclick = () => openCompose(b.dataset.letter, b.dataset.letterName, async () => { await loadLetters(true); draw(); }));
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }

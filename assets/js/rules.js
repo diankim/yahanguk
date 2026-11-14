@@ -169,4 +169,18 @@ export const SYS_CHAT = {
   '비무 소식': { icon: 'sword', cls: 'note' },
   '연리 소식': { icon: 'knot', cls: 'note' },
   '운영 공지': { icon: 'bell', cls: 'note' },
+  '선배 소식': { icon: 'users', cls: 'note' },
+};
+
+const MT = GD.mentor || { gap: 10, near_min: 10, day_cap: 60, pair_cap: 30, xp_day: 50, kinds: {}, skip: [], shop: [], post: { hours: 2, note: 30, wants: {} } };
+export const MENTOR = {
+  ...MT,
+  role: (me, other) => other - me >= MT.gap ? 'mentor' : me - other >= MT.gap ? 'mentee' : '',
+  canSeek: lv => lv <= (GD.level?.cap ?? 45) - MT.gap,
+  canOffer: lv => lv >= 1 + MT.gap,
+  help: () => `레벨이 ${MT.gap} 이상 차이 나는 파티원과 함께하면 새내기는 경험치 덤을 받고, 선배는 「챙김」을 쌓아 꾸미기·탈것·칭호로 바꿉니다(능력치 효과 없음).
+· 셈하는 것: 함께 토벌(파티 현장 토벌 +${MT.kinds.pfight?.pct ?? 25}%) · 곁에서 토벌(새내기 혼자 토벌, 같은 곳의 선배가 ${MT.near_min}분 안에 움직였을 때 +${MT.kinds.win?.pct ?? 15}%) · 파티 원정 완주(+${MT.kinds.exp?.pct ?? 25}%) · 할 일 있는 퀘스트 보고(+${MT.kinds.quest?.pct ?? 25}%, 같은 곳에 선배)
+· 셈하지 않는 것: ${(MT.skip || []).join('·')}
+· 같은 파티·같은 곳이어야 하고, 쓰러졌거나 이동 중이면 셈하지 않습니다. 다른 경험치 덤과 합쳐 상한이 있습니다.
+· 하루 챙김 ${MT.day_cap}(같은 새내기에게서 ${MT.pair_cap})까지, 새내기 덤은 하루 그 레벨 필요 경험치의 ${MT.xp_day}%까지입니다.`,
 };

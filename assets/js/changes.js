@@ -32,7 +32,7 @@ export const CHANGES = {
   boardSearch: /^world_field_search/,
   boardPet: /pet_/,
   boardOther: /battle_action|field_|expedition|craft|fish|trade|market|shop/,
-  people: /party|circle|bond|letter|loot|friend|block|wedding|rescue/,
+  people: /party|circle|bond|letter|loot|friend|block|wedding|rescue|mentor/,
   env: /travel|rescue|character_delete/,
   expedition: /expedition/,
   fieldQuiet: /battle_action/,

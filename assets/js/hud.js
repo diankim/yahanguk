@@ -185,7 +185,7 @@ function render() {
         <span class="lv">Lv.${c.level}</span>${erosionRing(c)}</div>
       <div class="title-row">${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}<button class="btn small ghost" id="hud-title-swap" title="저장해 둔 칭호 묶음으로 바꿔 낍니다">${icon('refresh', 13)}<span>칭호 바꾸기</span></button></div>
       ${envChip()}
-      <div class="xp"><span>경험치${xpPct() < 100 ? ` <i class="xp-damp" data-tip="${esc(xpNote())}">조절 ${xpPct()}%</i>` : ''}</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
+      <div class="xp"><span>경험치${xpPct() !== 100 ? ` <i class="xp-damp${xpPct() > 100 ? ' up' : ''}" data-tip="${esc(xpNote())}">${xpPct() > 100 ? '덤' : '조절'} ${xpPct()}%</i>` : ''}</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
     </section>
     <section class="hud-card vitals">
       ${vital('체력', c.health, 'hp')}${vital('정신', c.mental, 'mp')}${vital(spOf()[0], c.spiritual_power, spOf()[1])}${vital('침식', c.erosion || 0, 'er')}

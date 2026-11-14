@@ -7,7 +7,7 @@ import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR } from '../rules.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -112,6 +112,10 @@ async function draw() {
   if (again) return draw();
 }
 
+const mtChip = (m, near) => {
+  const r = near && !m.downed ? MENTOR.role(store.character.level || 1, m.level || 1) : '';
+  return r ? `<small class="pt-mt" title="${esc(r === 'mentor' ? '같은 곳의 선배와 함께하면 경험치 덤을 받습니다.' : '같은 곳의 새내기를 챙기면 챙김이 쌓입니다.')}">${r === 'mentor' ? '선배 덤' : '챙김'}</small>` : '';
+};
 function partyHtml(p, s) {
   if (!p?.party || (p.members || []).length < 2) return '';
   const me = store.character.owner_id, here = store.character.location;
@@ -120,7 +124,7 @@ function partyHtml(p, s) {
   const near = mates.filter(m => isNear(m) && !m.downed).length;
   const state = m => m.downed ? '<b class="bad">전투불능</b>' : m.expedition ? `원정 중 · ${fmt.remain(new Date(m.expedition.ends_at) - Date.now())} 남음` : m.traveling ? `${esc(m.traveling)}(으)로 이동 중` : m.in_combat ? '전투 중' : '';
   const row = m => `<li class="${isNear(m) ? 'near' : ''}"><span class="fdot" style="--fc:${factionColor(m.major_faction_id)}"></span>
-      <b>${cardName(m.owner_id, m.character_name)}</b>${m.role === 'leader' ? '<small class="accent">파티장</small>' : ''}
+      <b>${cardName(m.owner_id, m.character_name)}</b>${m.role === 'leader' ? '<small class="accent">파티장</small>' : ''}${mtChip(m, isNear(m))}
       <small>${esc(m.location || '')}${isNear(m) ? ' (같은 곳)' : ''}${state(m) ? ' · ' + state(m) : ''}</small>
       <small class="pt-stat">체력 ${m.health} · 정신 ${m.mental ?? '-'} · 침식 ${m.erosion ?? 0}</small>
       ${m.downed && m.location === here && m.owner_id !== me ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(m.owner_id)}">구조</button>` : ''}
