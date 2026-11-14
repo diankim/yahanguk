@@ -398,12 +398,15 @@ update public.world_quest_steps set need = jsonb_set(need, '{tasks}', '[{"n": 1,
 
 select public.world_quest_label_refresh();
 
-do $o$ declare o text := (select pg_get_userbyid(proowner) from pg_proc where proname = 'world_gw_resolve' and pronamespace = 'public'::regnamespace); begin
+do $o$ declare o text := (select pg_get_userbyid(proowner) from pg_proc where proname = 'world_gw_resolve' and pronamespace = 'public'::regnamespace); g boolean; begin
   if o <> 'postgres' then
+    g := not has_schema_privilege(o, 'public', 'CREATE');
+    if g then execute format('grant create on schema public to %I', o); end if;
     execute format('alter function public.world_story_round(uuid) owner to %I', o);
     execute format('alter function public.world_story_on_attack(uuid, uuid, integer) owner to %I', o);
     execute format('alter function public.world_story_mech(uuid, integer, boolean, boolean, uuid[]) owner to %I', o);
     execute format('alter function public.world_gw_story_settle(uuid, boolean) owner to %I', o);
+    if g then execute format('revoke create on schema public from %I', o); end if;
   end if;
   execute format('grant execute on function public.world_mk_cell_name(int) to %I', o);
   execute format('grant execute on function public.world_boss_fight_rules(uuid) to %I', o);
