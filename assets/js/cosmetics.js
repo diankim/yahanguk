@@ -37,6 +37,7 @@ const M = {
   twin: 'M-7 0a4 4 0 108 0 4 4 0 10-8 0M-1 0a4 4 0 108 0 4 4 0 10-8 0M-3-6l2 2M3-6l-2 2',
   eave: 'M-8 1L0-6 8 1M-9 1h18M-6 1v6h12V1M-2 7V3h4v4',
   inkdrop: 'M0-8C2-4 5-1 5 2a5 5 0 01-10 0c0-3 3-6 5-10zM-6 7h12M-3 4l1 1',
+  lampway: 'M-8 7L0-1 8 7M0-1v-4M-3-8h6v3h-6zM-6 3h1M5 3h1',
   wedknot: 'M-6-2a3 3 0 106 0 3 3 0 10-6 0M0-2a3 3 0 106 0 3 3 0 10-6 0M0 1v6M-3 7h6M-2-8l2 3 2-3',
 };
 export const FRAMES = {
@@ -53,6 +54,7 @@ export const FRAMES = {
   fr_mukjeok: ['legend', 'inkdrop'],
   fr_ninecourt: ['legend', 'ninegrid'],
   fr_wed: ['legend', 'wedknot'],
+  fr_mentor: ['rare', 'lampway'],
   fr_home: ['legend', 'eave'],
   fr_tn_solo: ['legend', 'crossed'], fr_tn_team: ['legend', 'twin'],
   fr_yahaeng: ['legacy', 'nightwalk'],
@@ -101,6 +103,7 @@ const P = {
   pt_bamboo: '<path d="M5 0v20M15 0v20M3 7h4M13 14h4M5 7c3-2 5-2 7-4"/>',
   pt_yeonri: '<path d="M3 19C3 12 10 11 10 3M17 19C17 12 10 11 10 3"/><circle cx="10" cy="3" r=".9"/>',
   pt_home: '<path d="M0 4h20M0 16h20M0 6h20M0 14h20"/><circle cx="5" cy="10" r="2.4"/><circle cx="15" cy="10" r="2.4"/><path d="M10 7v6"/>',
+  pt_mentor: '<path d="M10 20V10M10 10L3 2M10 10l7-8"/><path d="M8 4h4v3H8z"/><circle cx="3" cy="2" r=".9"/><circle cx="17" cy="2" r=".9"/>',
   pt_tn_join: '<path d="M4 18V3l8 3-8 3M14 18V8l5 2-5 2"/>',
   pt_ninecourt: '<path d="M2 2h16v16H2zM7.3 2v16M12.7 2v16M2 7.3h16M2 12.7h16"/><circle cx="10" cy="10" r="1.2"/>',
   pt_gwiheo: '<path d="M0 6c3-3 7-3 10 0s7 3 10 0M0 15c3-3 7-3 10 0s7 3 10 0"/><path d="M10 10.5a1.5 1.5 0 013 0 3 3 0 01-6 0"/>',
@@ -122,8 +125,8 @@ export function patternLayer(key) {
 }
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
-export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_muk: '墨', sl_jeok: '跡', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同', sl_bj: '藏',
+export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_muk: '墨', sl_jeok: '跡', sl_seon: '先', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同', sl_bj: '藏',
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星' };
-const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_muk: 'legend', sl_jeok: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare', sl_bj: 'legend',
+const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_muk: 'legend', sl_jeok: 'legend', sl_seon: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare', sl_bj: 'legend',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend' };
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

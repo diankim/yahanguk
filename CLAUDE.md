@@ -602,6 +602,14 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 파티 원정: world_party_expedition_propose(원정지·기간·태세) → 같은 곳·떠날 수 있는 동료(world_pexp_ready)에게 party_exp_offer(3분, world_party_exp_offers) → world_party_expedition_respond, 모두 답하면 world_pexp_resolve가 한 트랜잭션에서 파티장·수락자의 world_expedition_start를 차례로(그 사람 JWT sub로, 같은 now()라 시각이 같음). 2명은 수락해야 출발, 3명 이상은 거절·무응답 빼고 출발, 아무도 수락 안 하거나 파티장이 못 떠나면 아무도 안 떠남. world_party_expedition_depart(지금 출발·거두기), world_party_expedition_offer_status(제안 칸). 옛 world_party_expedition_call은 화면에서 뺐다. 같은 지역은 합동 전투(§3.4), 파티 원정으로 함께 떠나 10분 이상 겹친 동료 한 명마다 귀환 경험치·숙련 +10%(3명까지, 1.0.1 — 따로 떠난 원정은 없음, world_expedition_complete).
 - 동료 초대·거래 제안·원정 귀환은 화면 위에 바로 띄워 그 자리에서 답한다.
 
+### 선배와 새내기(2.2.0, 사용자 결정 11/14)
+
+- 레벨 차 gap 10 이상인 같은 파티·같은 곳(쓰러짐·이동 아님, 운영진 제외)의 높은 쪽이 선배, 낮은 쪽이 새내기. 판정 world_mentor_pair(새내기, 갈래, ctx) 하나 — 갈래 pfight(같은 파티 토벌에 둘 다 섬)·win(혼자 토벌, 선배가 near_min 10분 안에 행동 기록)·exp(world_pexp_together 파티 원정)·quest(할 일 있는 장면 보고). 봉연·결전·귀허·먹그림자·비장고는 셈 밖(동료 화면 「?」·도움말).
+- 덤·챙김 적기는 world_mentor_bonus(새내기, 갈래, 원래 xp, ctx) 하나를 world_battle_action·world_expedition_complete·world_quest_report가 부름(캐릭터 행 갱신을 늘리지 않음 — 덤은 같은 갱신에 실림). 후발 보정과 더해 cap_pct 225(덤 b = 원래 × (min(cap, t+m)/t − 1), 트리거가 t를 곱함). 하루 챙김 day_cap 60·같은 새내기 pair_cap 30·새내기 덤 xp_day 50%(필요 경험치 대비). 수치 world_mentor_rules() 한 곳 → gamedata mentor → rules.js MENTOR(문구·「?」) → mentor.js·guide.js·home.js 칩.
+- 표 world_mentor_merit(남은·누계 챙김)·world_mentor_pairs(짝마다 n)·world_mentor_log(하루 갈래별, 60일)·world_mentor_posts(게시판 2시간, chat_day) — RLS·직접 읽기 없음, world_character_purge 대상. RPC world_mentor_board·post·unpost·shop_buy(챙김 쓰기: 가구 hf_mentor_lantern·fr_mentor·pt_mentor·sl_seon「先」·ns:1033 등롱빛·탈것 lantern_donkey(acquire_method event)). 칭호 7(분류 「선배와 새내기」, 효과 없음, 규칙 mentor total·mentees·follows·grad — world_mentor_rule_count, 넘는 순간 world_title_award_check(…, 'mentor')). 글 올리기 하루 처음 전체 채팅 「선배 소식」. Lv5·Lv35 첫 도달 world_guide_note mentor_low·mentor_high(trg_world_mentor_guide).
+- 후발 보정: world_xp_lead_rules().trail(gap 5, 120/150/175/200%) — world_xp_damp_pct가 100 넘게 돌려주고 world_xp_damp_apply는 100이 아니면 적용, 상태판 「덤 n%」(core.js xpPct 500까지·xpNote). 패치노트·도움말엔 원리만.
+- 화면 assets/js/mentor.js(loadMentor 1분 캐시·mentorPanelHtml·bindMentorPanel·챙김 쓰기 창) — 동료 화면 views/party.js: PC(900px↑) 두 칸 .party-wrap(왼쪽 받은 초대·우리 동료·선배와 새내기 / 오른쪽 친구·서신·모임·연리·전리품·같은 지역 조사원), 휴대폰 한 칸, 패널마다 접기 fpanel(details data-fold pt-*, 머리 요약·빨간 점·「?」).
+
 ### 비무·비무회·혼례(e_tourney.sql·f_bond.sql)
 
 - 비무 world_spars: 같은 곳 조사원에게 카드에서 신청(world_spar_challenge, 한 번에 하나·5분·같은 상대 3분에 한 번) → world_spar_respond → world_combat_stats로 10합(기세 100+8×레벨, 결과 replay.js·spar.js openSparResult). 목숨·체력·물품·전·경험치 그대로, world_events 안 남김(토벌·칭호·기술로 안 셈). 둘 다 전투불능·원정·자율·이동·요괴 전투 아님, 차단 아님.

@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG } from '../rules.js';
+import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1711,6 +1711,29 @@ const S = [
       <li>채팅에서 내 캐릭터 이름이 @이름으로 불리면 알림음이 울립니다.</li>
       <li>채팅·귓속말·모임·파티 대화는 <b>2일</b> 동안 남고, 그 뒤에는 지워집니다.</li>
     </ul>`],
+  ['mentor', '선배와 새내기', `
+    <p>레벨이 ${MENTOR.gap} 이상 차이 나는 파티원과 같은 곳에서 함께하면 새내기는 경험치 덤을 받고, 선배는 「챙김」을 쌓습니다. 동료 화면 「선배와 새내기」에서 봅니다.</p>
+    <h4>셈하는 것</h4>
+    <ul>
+      <li><b>함께 토벌</b>: 파티 현장 토벌에서 둘 다 끝까지 서서 이기면 새내기 경험치 +${MENTOR.kinds?.pfight?.pct ?? 25}%, 선배 챙김 ${MENTOR.kinds?.pfight?.merit ?? 2}.</li>
+      <li><b>곁에서 토벌</b>: 새내기가 혼자 토벌로 이기고, 같은 곳의 선배가 ${MENTOR.near_min}분 안에 그 지역에서 움직였으면 +${MENTOR.kinds?.win?.pct ?? 15}%, 챙김 ${MENTOR.kinds?.win?.merit ?? 1}.</li>
+      <li><b>파티 원정</b>: 「파티 원정」으로 함께 떠나 완주하면 완주 경험치 +${MENTOR.kinds?.exp?.pct ?? 25}%, 챙김은 보낸 시간에 따라 ${(MENTOR.kinds?.exp?.merit || []).map(([m, n]) => `${m >= 60 ? m / 60 + '시간' : m + '분'} ${n}`).join('·')}.</li>
+      <li><b>퀘스트</b>: 할 일이 있는 장면을 보고할 때 같은 곳에 선배가 있으면 그 장면 경험치 +${MENTOR.kinds?.quest?.pct ?? 25}%, 챙김 ${MENTOR.kinds?.quest?.merit ?? 2}.</li>
+      <li>셈하지 않는 것: ${(MENTOR.skip || []).join('·')}.</li>
+      <li>같은 파티·같은 곳이어야 하고, 쓰러졌거나 이동 중이면 셈하지 않습니다. 운영진은 셈하지 않습니다.</li>
+      <li>하루 챙김은 ${MENTOR.day_cap}(같은 새내기에게서 ${MENTOR.pair_cap})까지, 새내기 덤은 하루 그 레벨 필요 경험치의 ${MENTOR.xp_day}%까지입니다. 덤은 아래 「성장 덤」과 더해지고 상한이 있습니다.</li>
+    </ul>
+    <h4>선배 찾기</h4>
+    <ul>
+      <li>「선배를 찾아요」(새내기)·「같이 가요」(선배) 글을 한 사람 하나, ${MENTOR.post?.hours || 2}시간 동안 올립니다. 나와 레벨이 ${MENTOR.gap} 이상 차이 나는 반대편 글만 보입니다.</li>
+      <li>하루 처음 올릴 때 전체 채팅 「선배 소식」에 한 줄 알립니다. 글에서 바로 파티 초대·귓속말을 보냅니다.</li>
+      <li>현장 파티 칸에서 같은 곳의 선배·새내기 옆에 「선배 덤」·「챙김」이 붙습니다.</li>
+    </ul>
+    <h4>챙김 쓰기</h4>
+    <ul>${(MENTOR.shop || []).map(x => `<li><b>${esc(x.name)}</b> ${x.price} — ${esc(x.desc || '')}</li>`).join('')}</ul>
+    <p class="muted small">모두 거래할 수 없고 능력치 효과가 없습니다. 칭호는 분류 「선배와 새내기」에 있습니다(챙김 누계·함께한 새내기 수·덤을 받은 횟수).</p>
+    <h4>성장 덤</h4>
+    <p>최근 활동한 조사원 평균 레벨보다 많이 뒤처진 조사원은 얻는 경험치를 더 받습니다. 차이가 클수록 더 받고, 평균에 가까워지면 저절로 줄어듭니다. 상태판 경험치 칸에 「덤 n%」로 보입니다.</p>`],
   ['letter', '서신(친구 우편)', `
     <ul>
       <li><b>서신</b>은 친구에게 부치는 우편입니다. 동료 화면의 「서신」 칸, 친구 목록의 「서신」, 조사원 카드의 「서신 보내기」로 씁니다.</li>
@@ -1952,7 +1975,7 @@ const GROUPS = [
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast']],
   ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission']],
-  ['social', '교류·사건', 'users', ['case', 'party', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
+  ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';
 const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
