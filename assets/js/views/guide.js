@@ -48,9 +48,9 @@ const coopRanks = () => [...new Set(GD.coop.map(c => c.rank))].sort((a, b) => a 
 function soloAidHtml() {
   const guardTxt = g => g ? ` · 받는 피해 ${g > 0 ? '−' : '+'}${Math.abs(g)}%` : '';
   const cell = (a, key) => pctTxt(a[key] || 0) + guardTxt(Number(key === 'final_dmg' ? a.final_guard : a.solo_guard) || 0);
-  return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
+  return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>먹그림자(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
     ${['artificer', 'analyst', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
-      return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;
+      return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(GD.boss?.mukjeok?.solo?.[k] || {}, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;
 }
 function relStartHtml() {
   const fn = k => MAJOR_FACTIONS[k]?.name || k;
@@ -1016,7 +1016,7 @@ const S = [
     </ul>`],
   ['titles', '칭호와 이름 색', `
     <ul>
-      <li><b>칭호</b>는 ${GD.titles?.total ?? 300}가지가 넘습니다. 탐사·전투·이동·이야기·채집·제작·낚시·교류·비무·성장·도감·토벌·세력·별채·외전 등으로 나뉩니다.</li>
+      <li><b>칭호</b>는 ${GD.titles?.total ?? 300}가지가 넘습니다. ${Object.keys(GD.titles?.cat || {}).filter(k => !['비밀', '운영', '레거시'].includes(k)).join('·')}으로 나뉩니다(얻기 전에는 감춰진 칭호도 있습니다).</li>
       <li><b>등급</b>: 범품 회색 · 양품 초록 · 진품 파랑 · 명품 보라 · 신품 주홍. 얻기 어려울수록 높고 효과도 큽니다.</li>
       <li><b>장착</b>: 최대 3개를 장착해 효과를 받습니다. 따로 대표 칭호 하나를 정하면 채팅과 프로필에 보입니다.</li>
       <li>숨김 칭호는 얻기 전까지 이름·조건이 가려져 있습니다. 못 얻은 칭호에는 진행 게이지가 보입니다.</li>
@@ -1131,7 +1131,7 @@ const S = [
     ${jobTableHtml()}
     <p class="muted small">기본 능력치는 높은 순으로 적었고, 나머지 능력치는 3~4입니다. 원정 기술이 하는 일은 「직업별 원정 기술」에 있습니다.</p>
     <h4>직업별 협동 기술</h4>
-    <p class="muted small">합동 토벌·10장 결전·귀허의 주인에서 그 턴의 행동으로 고릅니다. 전투 숙련 단계에 닿으면 열리고, 영력이 들며 다시 쓰기까지 시간이 있습니다.</p>
+    <p class="muted small">합동 토벌·10장 결전·귀허의 주인·먹그림자에서 그 턴의 행동으로 고릅니다. 전투 숙련 단계에 닿으면 열리고, 영력이 들며 다시 쓰기까지 시간이 있습니다.</p>
     ${coopTableHtml()}
     <h4>시작 장비</h4>
     <table class="guide-table"><tr><th>직업</th><th>시작 장비</th></tr>
@@ -1515,7 +1515,7 @@ const S = [
       <li><b>보상</b>: 처음 이기면 400전 · 필요 경험치 0.5배 · 응축 영핵 3 · 천령 감로 2 · 봉연 조각 5. 다시 이기면 100전 · 봉연 조각 2.</li>
     </ul>
     <h4>혼자 도전할 때의 직업 보정</h4>
-    <p>귀허의 주인·구중 봉주 결전에 혼자 들어가면 직업마다 보정이 붙습니다. 둘 이상이면 없습니다. 혼자 이길 확률이 직업마다 비슷하게(귀허의 주인 열에 둘~셋, 결전 열에 셋~넷) 맞춘 값입니다. 귀허의 주인은 혼자면 체력이 1.2배입니다.</p>
+    <p>귀허의 주인·먹그림자·구중 봉주 결전에 혼자 들어가면 직업마다 보정이 붙습니다. 둘 이상이면 없습니다. 혼자 이길 확률이 직업마다 비슷하게(귀허의 주인 열에 둘~셋, 결전 열에 셋~넷) 맞춘 값입니다. 귀허의 주인은 혼자면 체력이 1.2배입니다.</p>
     ${soloAidHtml()}
     <ul><li>직업의 힘(방어·공격·회복)은 현장·원정·보스 싸움 모두에서 같고, 혼자 보스와 싸울 때 남는 차이만 이 보정으로 메웁니다. 퇴마관은 몸이 약해 혼자 긴 싸움에서 자주 쓰러지므로 혼자일 때만 받는 피해를 줄였습니다.</li>
       <li>결전은 회복품을 다섯 개까지 쓰므로 회복·회피가 있는 직업이 혼자서도 강해, 귀허와 따로 맞췄습니다.</li></ul>
@@ -1562,7 +1562,7 @@ const S = [
     </ul>
     ${coopTableHtml()}
     <ul>
-      <li>합동 토벌·결전·귀허의 주인에서 행동으로 고릅니다. 영력이 들고, 다시 쓰기까지 시간이 있습니다.</li>
+      <li>합동 토벌·결전·귀허의 주인·먹그림자에서 행동으로 고릅니다. 영력이 들고, 다시 쓰기까지 시간이 있습니다.</li>
       <li>동료에게 거는 기술은 참가자 이름을 눌러 대상을 고릅니다.</li>
       <li>${COOP_RULE.strike}. ${COOP_RULE.sure}.</li>
       <li>${COOP_RULE.all}.</li>
