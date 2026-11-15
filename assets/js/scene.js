@@ -236,6 +236,10 @@ const grey = c => { const v = Math.round(((c & 255) + (c >> 8 & 255) + (c >> 16 
 const ease = t => t < 0 ? 0 : t > 1 ? 1 : Math.sin(t * Math.PI);
 const line = (put, x0, y0, x1, y1, c) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1); for (let i = 0; i <= n; i++) put(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), c); };
 const C = h => P(h);
+const JOB_HUE = { artificer: '#ffc83a', scout: '#7ac8ff', exorcist: '#ff7a3a', medic: '#6ae07a', sealmaster: '#c8c8ff', analyst: '#b46aff', tamer: '#ffb46a' };
+const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const a2 = s => s.px * (1 - (Date.now() - s.t0) / s.dur);
+const thick = put => (x, y, c) => { put(x, y, c); put(x + 1, y, c); put(x, y + 1, c); put(x + 1, y + 1, c); };
 const JOB_FX = {
   artificer(put, a, b, t) { const k = ease(t), cx = a.x + (a.flip ? -13 : 13); for (let i = -14; i <= 14; i++) { const y = a.y - 16 + i, dx = Math.round(5 * Math.cos(i / 14 * 1.4)); for (let w = 0; w < 3; w++) put(cx + (a.flip ? -dx - w : dx + w), y, C(w === 1 ? '#fff4c8' : k > .5 ? '#ffd86a' : '#d9a83a')); } },
   scout(put, a, b, t) { const d = a.flip ? -1 : 1, x = Math.round(a.x + d * 10 + (b.x - a.x - d * 20) * Math.min(1, t * 1.8)), y = a.y - 20; line(put, x - d * 16, y, x, y, C('#b08a5a')); line(put, x - d * 16, y - 1, x - d * 12, y - 1, C('#f4f4f4')); line(put, x - d * 16, y + 1, x - d * 12, y + 1, C('#f4f4f4')); for (let i = 0; i < 4; i++) { put(x + d * i, y, C('#e8e8f0')); put(x + d * (i - 3), y - (3 - i), C('#e8e8f0')); put(x + d * (i - 3), y + (3 - i), C('#e8e8f0')); } },
@@ -253,7 +257,7 @@ export function sceneHtml() {
 export function mountScene(box, key) {
   const cv = box.querySelector('.scene-cv'), tags = box.querySelector('.scene-tags'), g = cv.getContext('2d');
   const img = g.createImageData(W, H), buf = new Uint32Array(img.data.buffer);
-  let spots = [], more = 0, prev = null, fx = [], peek = null, timer = null, state = new Map(), duel = null, anims = [], floats = [], raf = 0;
+  let spots = [], more = 0, prev = null, fx = [], peek = null, timer = null, state = new Map(), duel = null, anims = [], floats = [], banners = [], raf = 0;
   const put = (x, y, c) => { if (x >= 0 && y >= 0 && x < W && y < H) buf[y * W + x] = c; };
   const paint = () => {
     if (!box.isConnected) { clearInterval(timer); return; }
@@ -263,6 +267,7 @@ export function mountScene(box, key) {
     fx = fx.filter(e => e.until > now);
     anims = anims.filter(a => a.t0 + a.dur > now);
     floats = floats.filter(f => f.t0 + 1100 > now);
+    banners = banners.filter(b => b.t0 + 1100 > now);
     const pose = s => {
       let dx = 0, dy = 0, tint = 0, frame = null;
       for (const a of anims) {
@@ -271,6 +276,7 @@ export function mountScene(box, key) {
         if (a.who === s && a.kind === 'lunge') { dx += dir * Math.round(7 * ease(t)); frame = 'walk'; }
         if (a.who === s && a.kind === 'hurt') { dx -= dir * Math.round((a.big ? 5 : 3) * ease(t)); tint = Math.max(tint, (1 - t) * (a.big ? .85 : .6)); }
         if (a.who === s && a.kind === 'dodge') { dx -= dir * Math.round(6 * ease(t)); dy -= Math.round(3 * ease(t)); }
+        if (a.who !== s) continue;
         if (a.who === s && a.kind === 'cheer') { dy -= Math.round(5 * Math.abs(Math.sin(t * Math.PI * 3))); frame = 'walk'; }
       }
       return { dx, dy, tint, frame };
@@ -291,12 +297,40 @@ export function mountScene(box, key) {
     }
     for (const a of anims) {
       const t = (now - a.t0) / a.dur; if (t < 0) continue;
-      if (a.kind === 'skill' && JOB_FX[a.job]) JOB_FX[a.job](put, a.who, a.to || a.who, t, a.who);
+      if (a.kind === 'skill' && JOB_FX[a.job]) JOB_FX[a.job](thick(put), a.who, a.to || a.who, t, a.who);
       if (a.kind === 'spark') drawEffect(put, 'star', a.who.x, a.who.y - 36 - Math.round(4 * t));
       if (a.kind === 'stun') for (let i = 0; i < 3; i++) { const ang = t * 9 + i * 2.1; drawEffect(put, 'star', Math.round(a.who.x + 8 * Math.cos(ang)), Math.round(a.who.y - 34 + 2 * Math.sin(ang))); }
       if (a.kind === 'heal') for (let i = 0; i < 12; i++) put(a.who.x - 9 + (i * 7) % 19, a.who.y - 2 - ((i * 11 + Math.floor(t * 40)) % 34), C(i % 2 ? '#7fe08a' : '#d8ffd0'));
-      if (a.kind === 'slash') for (let i = 0; i < 12; i++) { const u = i / 11; if (u > t * 2) break; put(Math.round(a.who.x - 7 + 14 * u), Math.round(a.who.y - 26 + 12 * u), C('#f4f4f4')); }
+      if (a.kind === 'slash') for (let i = 0; i < 18; i++) { const u = i / 17; if (u > t * 2.2) break; const x = Math.round(a.who.x - 11 + 22 * u), y = Math.round(a.who.y - 30 + 18 * u); thick(put)(x, y, C('#ffffff')); put(x - 1, y + 2, C('#9ad8ff')); }
+      if (a.kind === 'burst') {
+        const cx = a.who.x, cy = a.who.y - 17, r0 = 3 + (a.big ? 20 : 13) * Math.min(1, t * 1.6), n = a.big ? 14 : 10, fade = t > .6;
+        for (let i = 0; i < n; i++) {
+          const ang = i / n * Math.PI * 2 + (i % 2) * .2, len = (i % 2 ? .6 : 1) * r0;
+          for (let r = Math.max(2, len * .35); r <= len; r++) { const x = Math.round(cx + r * Math.cos(ang)), y = Math.round(cy + r * Math.sin(ang) * .85), tip = r > len * .7;
+            if (!fade || tip) (a.big ? thick(put) : put)(x, y, C(tip ? (a.big ? '#ff5a2a' : '#ffb43a') : a.big ? '#ffe86a' : '#ffffff')); }
+        }
+        if (t < .35) for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) if (x * x + y * y <= 16) put(cx + x, cy + y, C(a.big ? '#fff6c8' : '#ffffff'));
+        if (a.big) { const rr = Math.round(6 + 22 * t); for (let k = 0; k < 64; k++) { const g = k / 64 * Math.PI * 2; put(Math.round(cx + rr * Math.cos(g)), Math.round(cy + rr * .7 * Math.sin(g)), C(t < .5 ? '#ffe86a' : '#ff8a3a')); } }
+      }
+      if (a.kind === 'plus') for (let i = 0; i < 6; i++) { const px = a.who.x - 14 + (i * 11) % 29, py = a.who.y - 6 - Math.round(((i * 9) % 20) + t * 34); if (py < a.who.y - 52) continue; for (let k = -2; k <= 2; k++) { thick(put)(px + k, py, C('#6ae07a')); thick(put)(px, py + k, C('#6ae07a')); } put(px, py, C('#ffffff')); }
+      if (a.kind === 'dust') for (let i = 0; i < 10; i++) { const ang = Math.PI * (i / 9), r = 4 + 16 * t; const x = Math.round(a.who.x + r * Math.cos(ang) * (i % 2 ? 1 : -1)), y = Math.round(a.who.y - 2 - r * .3 * Math.sin(ang)); for (let k = 0; k < 3; k++) for (let j = 0; j < 3; j++) put(x + k, y + j, C(t < .5 ? '#d8cfc0' : '#a89f90')); }
+      if (a.kind === 'speed') for (let i = 0; i < 4; i++) { const y = a.who.y - 28 + i * 7, x0 = a.who.x + (a.who.flip ? 6 : -6); line(put, x0, y, x0 + (a.who.flip ? 1 : -1) * Math.round(14 * (1 - t)), y, C('#e8f4ff')); }
+      if (a.kind === 'confetti') for (let i = 0; i < 46; i++) { const col = ['#ff5a6a', '#ffd25a', '#6ae07a', '#7ac8ff', '#c87aff', '#ffffff'][i % 6], vx = ((i * 37) % 41 - 20) / 20, x = Math.round(a.who.x + vx * 40 * t), y = Math.round(a.who.y - 40 - 40 * Math.sin(Math.min(1, t * 1.8) * Math.PI / 2) + 70 * t * t + ((i * 13) % 9)); put(x, y, C(col)); put(x + 1, y, C(col)); }
     }
+    for (const a of anims) {
+      const t = (now - a.t0) / a.dur; if (t < 0 || t > 1) continue;
+      if (a.kind === 'aura') {
+        const [r, gg, b] = hexRgb(a.hue), cx = a.who.x, k0 = (1 - t) * .55;
+        for (let y = Math.max(0, a.who.y - 56); y < Math.min(H, a.who.y + 2); y++) for (let x = cx - 16; x <= cx + 16; x++) {
+          if (x < 0 || x >= W) continue; const k = k0 * (1 - Math.abs(x - cx) / 17) * (0.5 + 0.5 * ((y + Math.floor(now / 40)) % 6 < 3)); const i = y * W + x, c = buf[i];
+          buf[i] = (255 << 24 | Math.round((c >> 16 & 255) + (b - (c >> 16 & 255)) * k) << 16 | Math.round((c >> 8 & 255) + (gg - (c >> 8 & 255)) * k) << 8 | Math.round((c & 255) + (r - (c & 255)) * k)) >>> 0;
+        }
+        const rr = Math.round(5 + 18 * t); for (let q = 0; q < 72; q++) { const g2 = q / 72 * Math.PI * 2; put(Math.round(cx + rr * Math.cos(g2)), Math.round(a.who.y - 1 + rr * .28 * Math.sin(g2)), C(a.hue)); }
+      }
+      if (a.kind === 'flash') { const k = (1 - t) * a.k; for (let i = 0; i < buf.length; i++) buf[i] = lit(buf[i], k); }
+    }
+    const shake = anims.find(a => a.kind === 'shake' && now >= a.t0 && now < a.t0 + a.dur);
+    box.style.transform = shake ? `translate(${Math.round((Math.random() - .5) * a2(shake))}px, ${Math.round((Math.random() - .5) * a2(shake))}px)` : '';
     g.putImageData(img, 0, 0);
     const shown = new Set([...fx.map(e => e.id), ...(peek && peek.until > now ? [peek.id] : [])]);
     tags.innerHTML = spots.filter(s => s.f.me || s.f.role === 'couple' || s.f.role === 'fighter' || shown.has(s.f.id)).map(s => {
@@ -304,10 +338,13 @@ export function mountScene(box, key) {
       const cls = s.f.me ? ' me' : s.f.role === 'couple' || s.f.role === 'fighter' ? ' cp' : '';
       return `<span class="scene-nm${cls}" style="left:${(s.x / W * 100).toFixed(2)}%;top:${(s.y / H * 100).toFixed(2)}%">${s.f.me ? `나 · ${esc(s.f.name)}` : esc(s.f.name)}</span>`
         + (a ? `<span class="scene-bub" style="left:${(s.x / W * 100).toFixed(2)}%;top:${((s.y - 46) / H * 100).toFixed(2)}%">${esc(a.label)}</span>` : '');
-    }).join('') + floats.filter(f => f.t0 <= now).map(f => `<span class="scene-dmg ${f.cls}" style="left:${(f.who.x / W * 100).toFixed(2)}%;top:${((f.who.y - 40 - (f.row || 0) * 9 - (now - f.t0) / 90) / H * 100).toFixed(2)}%">${esc(f.txt)}</span>`).join('')
+    }).join('') + floats.filter(f => f.t0 <= now).map(f => { const age = now - f.t0, sc = 1 + 0.9 * Math.max(0, 1 - age / 160), op = age > 850 ? Math.max(0, 1 - (age - 850) / 250) : 1;
+        return `<span class="scene-dmg ${f.cls}" style="left:${(f.who.x / W * 100).toFixed(2)}%;top:${((f.who.y - 38 - (f.row || 0) * 12 - Math.min(age, 500) / 60) / H * 100).toFixed(2)}%;transform:translate(-50%,-100%) scale(${sc.toFixed(2)});opacity:${op.toFixed(2)}">${esc(f.txt)}</span>`; }).join('')
+      + banners.filter(b => b.t0 <= now && b.t0 + 1100 > now).map(b => { const age = now - b.t0, slide = Math.max(0, 1 - age / 140), op = age > 850 ? Math.max(0, 1 - (age - 850) / 250) : 1;
+        return `<span class="scene-banner" style="--bh:${b.hue};left:${b.left ? 4 : 96}%;transform:translateX(${b.left ? (-40 * slide) : (40 * slide - 100)}%);opacity:${op.toFixed(2)}"><small>${esc(b.who)}</small>「${esc(b.txt)}」</span>`; }).join('')
       + (more > 0 ? `<span class="scene-more">외 ${more}명</span>` : '');
   };
-  const loop = () => { raf = 0; paint(); if (box.isConnected && (anims.length || floats.length || duel)) raf = requestAnimationFrame(loop); };
+  const loop = () => { raf = 0; paint(); if (box.isConnected && (anims.length || floats.length || banners.length || duel)) raf = requestAnimationFrame(loop); };
   const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
   const actorOf = (side, text) => {
     const team = spots.filter(s => s.f.role === 'fighter' && +s.f.side === +side);
@@ -319,13 +356,19 @@ export function mountScene(box, key) {
     const fxk = DUEL_FX[l.k] || {};
     const add = (kind, who, dur, o = {}) => anims.push({ kind, who, t0, dur, ...o });
     const say = (who, txt, cls) => { if (who && txt) floats.push({ who, txt, cls, t0: t0 + 220, row: floats.filter(f => f.who === who && f.t0 + 1100 > t0).length }); };
-    if (l.k === 'hit' || l.k === 'crit') { add('lunge', me, 420); if (foe) { add('hurt', foe, 460, { big: l.k === 'crit', t0: t0 + 180 }); add('slash', foe, 300, { t0: t0 + 160 }); if (l.k === 'crit') add('spark', foe, 700, { t0: t0 + 200 }); } say(foe, l.d ? `${l.k === 'crit' ? '' : '−'}${l.d}${l.k === 'crit' ? '!' : ''}` : '', l.k); }
-    else if (l.k === 'miss') { add('lunge', me, 420); const tgt = actorOf(w === 1 ? 2 : 1, l.t); if (tgt) { add('dodge', tgt, 480, { t0: t0 + 120 }); say(tgt, fxk.label, 'miss'); } }
-    else if (l.k === 'skill') { add('lunge', me, 360); add('skill', me, 1100, { job: me.f.job, to: foe }); say(me, (l.t.match(/「([^」]+)」/) || [])[1], 'skill'); }
-    else if (l.k === 'heal') { add('heal', me, 900); const m = l.t.match(/기세 (\d+)/); say(me, m ? `+${m[1]}` : fxk.label, 'heal'); }
-    else if (l.k === 'stun') { add('stun', me, 1100); say(me, fxk.label, 'stun'); }
-    else if (l.k === 'down' && foe) { duel.down.add(foe.f.id); say(foe, fxk.label, 'down'); }
-    else if (l.k === 'end') { spots.filter(s => s.f.role === 'fighter' && +s.f.side === w).forEach(s => add('cheer', s, 1600)); say(me, fxk.label, 'end'); }
+    const crit = l.k === 'crit';
+    if (l.k === 'hit' || crit) {
+      add('lunge', me, 420);
+      if (foe) { add('hurt', foe, 480, { big: crit, t0: t0 + 180 }); add('slash', foe, 320, { t0: t0 + 150 }); add('burst', foe, crit ? 600 : 420, { big: crit, t0: t0 + 180 }); add('shake', null, crit ? 320 : 160, { px: crit ? 7 : 3, t0: t0 + 180 });
+        if (crit) { add('flash', null, 160, { k: .45, t0: t0 + 180 }); add('spark', foe, 800, { t0: t0 + 220 }); } }
+      say(foe, l.d ? `${crit ? '' : '−'}${l.d}${crit ? '!' : ''}` : '', l.k);
+    }
+    else if (l.k === 'miss') { add('lunge', me, 420); const tgt = actorOf(w === 1 ? 2 : 1, l.t); if (tgt) { add('dodge', tgt, 480, { t0: t0 + 120 }); add('speed', tgt, 420, { t0: t0 + 120 }); say(tgt, fxk.label, 'miss'); } }
+    else if (l.k === 'skill') { const hue = JOB_HUE[me.f.job] || '#ffffff'; add('aura', me, 900, { hue }); add('lunge', me, 360, { t0: t0 + 200 }); add('skill', me, 1100, { job: me.f.job, to: foe, t0: t0 + 200 }); add('flash', null, 140, { k: .25 }); banners.push({ who: me.f.name, txt: (l.t.match(/「([^」]+)」/) || [])[1] || '', hue, left: me.x < W / 2, t0 }); }
+    else if (l.k === 'heal') { add('heal', me, 900); add('plus', me, 1000); add('aura', me, 800, { hue: '#6ae07a' }); const m = l.t.match(/기세 (\d+)/); say(me, m ? `+${m[1]}` : fxk.label, 'heal'); }
+    else if (l.k === 'stun') { add('stun', me, 1300); add('shake', null, 160, { px: 3 }); say(me, fxk.label, 'stun'); }
+    else if (l.k === 'down' && foe) { duel.down.add(foe.f.id); add('dust', foe, 700); add('flash', null, 200, { k: .5 }); add('shake', null, 400, { px: 8 }); say(foe, fxk.label, 'down'); }
+    else if (l.k === 'end') { spots.filter(s => s.f.role === 'fighter' && +s.f.side === w).forEach(s => { add('cheer', s, 1800); add('confetti', s, 1800); add('aura', s, 1200, { hue: '#ffd25a' }); }); say(me, fxk.label, 'end'); }
   };
   const duelTick = () => {
     if (!duel) return;
