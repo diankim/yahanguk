@@ -17,7 +17,7 @@ select pg_temp.yh_setjson('public.world_avatar_parts()'::regprocedure, '@PARTS@'
 
 select pg_temp.yh_setjson('public.world_outfit_rules()'::regprocedure, public.world_outfit_rules() || jsonb_build_object(
   'pool', (public.world_outfit_rules() -> 'pool') || '["of_top_hoodie", "of_bottom_jeans"]'::jsonb,
-  'titles', '{"raid_win1": "top:shadowrobe", "mk_kill1": "bottom:inkpleat", "gw_kill1": "acc:gat", "river_angler": "top:fisher", "deep_walker": "bottom:haengjeon", "gather_100": "acc:paeraengi", "codex_50": "acc:horns", "wed_vow": "acc:jokduri", "tn_top4": "acc:shades"}'::jsonb,
+  'titles', '{"raid_win1": "top:shadowrobe", "mk_kill1": "bottom:inkpleat", "gw_kill1": "acc:gat", "river_angler": "top:fisher", "deep_walker": "bottom:haengjeon", "gather_100": "acc:paeraengi", "codex_50": "acc:horns", "wed_vow": "acc:jokduri", "tn_top4": "acc:shades", "ch5_done": "top:doroni", "ct_cooking_15": "top:apron", "hs_furn30": "bottom:flowerskirt", "ch1_done": "acc:flowercrown", "pet_5": "acc:catears", "spar_win1": "acc:ribbon"}'::jsonb,
   'feast', '{"n": 5, "look": "top:saekdong"}'::jsonb,
   'src', '{
     "top:guard": "호위 무사 기본 옷 · 옷 꾸러미", "top:scout": "월궁 사수 기본 옷 · 옷 꾸러미", "top:exorcist": "퇴마관 기본 옷 · 옷 꾸러미", "top:medic": "의무관 기본 옷 · 옷 꾸러미",
@@ -32,7 +32,9 @@ select pg_temp.yh_setjson('public.world_outfit_rules()'::regprocedure, public.wo
     "acc:flowerpin": "보조 퀘스트 「객사 별채」", "acc:glasses": "법구 공예 제작 · 옷 꾸러미", "acc:earring": "법구 공예 제작 · 옷 꾸러미", "acc:scarf": "상점(백등 야시장·철벽 고찰) · 옷 꾸러미", "acc:norigae": "직조 제작 · 옷 꾸러미",
     "acc:mk_hairpin": "묵적록 연작 「희수」 마지막 편", "acc:mk_nameplate": "묵적록 연작 「다온」 마지막 편", "acc:mk_lotus": "묵적록 연작 「월하」 마지막 편", "acc:foxmask": "비무회 우승",
     "acc:gat": "귀허의 주인 처치(칭호 「귀허를 닫은 자」)", "acc:jokduri": "혼례 올리기(칭호 「백년가약」)", "acc:lotushood": "흑련회 세력 비고", "acc:satgat": "수향연맹 세력 비고", "acc:starpin": "천명원 세력 비고",
-    "acc:paeraengi": "칭호 「부지런한 손」", "acc:horns": "칭호 「백귀 사냥꾼」", "acc:nambawi": "상점(철벽 고찰)", "acc:cap": "선배와 새내기 · 챙김 쓰기", "acc:headphone": "법구 공예 제작", "acc:shades": "비무회 4강(칭호 「사강의 이름」)"
+    "acc:paeraengi": "칭호 「부지런한 손」", "acc:horns": "칭호 「백귀 사냥꾼」", "acc:nambawi": "상점(철벽 고찰)", "acc:cap": "선배와 새내기 · 챙김 쓰기", "acc:headphone": "법구 공예 제작", "acc:shades": "비무회 4강(칭호 「사강의 이름」)",
+    "top:doroni": "주 이야기 5장 마치기(칭호 「이름 없는 종지기」)", "top:durumagi": "상점(본부 정청·본부 객사)", "top:apron": "칭호 「간 보는 손」(요리 15단계)", "bottom:shorts": "상점(십삼문 암시장)", "bottom:flowerskirt": "칭호 「가구 수집가」(별채 가구 30)",
+    "acc:flowercrown": "주 이야기 1장 마치기(칭호 「붉은 인장 해결자」)", "acc:catears": "칭호 「동무 다섯」(꼬마 동무 다섯)", "acc:ribbon": "비무 첫 승리(칭호 「첫 승리의 맛」)"
   }'::jsonb));
 
 insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, tradeable, reference_price, stack_size, equipment_traits) values
@@ -54,6 +56,8 @@ insert into public.world_item_catalog(item_id, item_name, category, tier, descri
 ('of_top_silkcheollik', '비단 철릭', 'outfit', 4, '붉은 비단에 금띠를 두른 무관의 철릭입니다. 「내 모습」 옷장에 넣으면 언제든 골라 입을 수 있습니다.', false, true, 1200, 1, '{"look": "top:silkcheollik"}'::jsonb),
 ('of_top_hoodie', '쓰개 달린 겉옷', 'outfit', 2, '머리에 쓰는 쓰개가 등에 달린 겉옷입니다. 「내 모습」 옷장에 넣으면 언제든 골라 입을 수 있습니다.', false, true, 400, 1, '{"look": "top:hoodie"}'::jsonb),
 ('of_bottom_jeans', '청바지와 운동화', 'outfit', 2, '푸른 물을 들인 질긴 바지와 흰 신입니다. 「내 모습」 옷장에 넣으면 언제든 골라 입을 수 있습니다.', false, true, 400, 1, '{"look": "bottom:jeans"}'::jsonb),
+('of_top_durumagi', '흰 두루마기', 'outfit', 2, '옷고름을 길게 맨 흰 겉옷입니다. 「내 모습」 옷장에 넣으면 언제든 골라 입을 수 있습니다.', false, true, 380, 1, '{"look": "top:durumagi"}'::jsonb),
+('of_bottom_shorts', '무릎 반바지', 'outfit', 2, '무릎 위까지 오는 짧은 바지와 흰 신입니다. 「내 모습」 옷장에 넣으면 언제든 골라 입을 수 있습니다.', false, true, 300, 1, '{"look": "bottom:shorts"}'::jsonb),
 ('of_acc_cap', '챙 모자', 'outfit', 3, '앞에 챙을 단 둥근 모자입니다. 「내 모습」 옷장에 넣으면 언제든 골라 입을 수 있습니다.', false, false, 100, 1, '{"look": "acc:cap"}'::jsonb)
 on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description,
   tradeable = excluded.tradeable, reference_price = excluded.reference_price, stack_size = 1, equipment_traits = excluded.equipment_traits;
@@ -70,7 +74,8 @@ on conflict do nothing;
 
 insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max) values
 ('south_market', 'of_top_galot', 350, 0, 5), ('river_market', 'of_bottom_okchima', 380, 0, 5),
-('north_market', 'of_acc_nambawi', 420, 0, 5), ('capital_market', 'of_top_knitvest', 400, 0, 5)
+('north_market', 'of_acc_nambawi', 420, 0, 5), ('capital_market', 'of_top_knitvest', 400, 0, 5),
+('night_office_store', 'of_top_durumagi', 380, 0, 5), ('underworld_market', 'of_bottom_shorts', 300, 0, 5)
 on conflict do nothing;
 
 insert into public.world_crafting_recipes(recipe_id, recipe_name, output_item, output_qty, ingredients, description, minimum_level, recipe_difficulty, craft_field) values
@@ -142,8 +147,8 @@ on conflict do nothing;
 update public.world_patch_notes set body = body || '
 
 ## 2.4.0
-- 「내 모습」 옷이 스물아홉 벌 늘었습니다(윗옷 9·아랫옷 9·장신구 11). 갓·두건·족두리·삿갓 같은 머리쓰개는 장신구 칸에 씁니다.
-- 옷마다 얻는 곳이 다릅니다: 세력 비고(세력마다 하나), 세력 행사에 다섯 번 함께하기, 봉연의 그림자·귀허의 주인·먹그림자, 비장고 마지막 방, 상점(백등 야시장·구름나루·철벽 고찰·잔불촌), 직조·가죽 공예·법구 공예 제작, 옷 꾸러미, 선배와 새내기 챙김, 그리고 몇몇 칭호와 혼례.
+- 「내 모습」 옷이 서른일곱 벌 늘었습니다(윗옷 12·아랫옷 11·장신구 14). 갓·두건·족두리·삿갓 같은 머리쓰개는 장신구 칸에 씁니다.
+- 옷마다 얻는 곳이 다릅니다: 세력 비고(세력마다 하나), 세력 행사에 다섯 번 함께하기, 봉연의 그림자·귀허의 주인·먹그림자, 비장고 마지막 방, 상점(본부 정청·백등 야시장·구름나루·철벽 고찰·잔불촌·십삼문 암시장), 직조·가죽 공예·법구 공예 제작, 옷 꾸러미, 선배와 새내기 챙김, 주 이야기 1·5장, 그리고 요리·채집·낚시·탐사·도감·별채·동무·비무 같은 활동 칭호와 혼례. 세력 비고 옷은 세력마다 하나라 한 사람에게는 한 벌이고, 나머지는 누구나 얻을 수 있습니다.
 - 칭호로 얻는 옷은 칭호를 얻는 순간 옷장에 바로 들어갑니다. 이미 그 칭호를 가진 조사원은 옷장에 넣어 두었습니다.
 - 「내 모습」에서 아직 없는 옷을 누르면 어디서 얻는지 보입니다.
 ' where note_id = '2.3.0' and body not like '%## 2.4.0%';

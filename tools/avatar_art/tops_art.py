@@ -205,6 +205,40 @@ TOPS = {
         "...xaaaaaaaab...",
         "...ybbbbbbbby...",
     ]),
+    'doroni': ('도롱이', {'a': '#b89a5a', 'b': '#957a40', 'c': '#d8c08a', 'd': '#6a5430', 'e': '#efe7d2'}, [
+        "................",
+        "....xeeeeeb.....",
+        "..bacacacacacb..",
+        "..bcacacacacab..",
+        "..bacacacacacb..",
+        "...cacacacaca...",
+        "...acacacacac...",
+        "..cacacacacaca..",
+        "..dadadadadada..",
+    ]),
+    'durumagi': ('흰 두루마기', {'a': '#eceae2', 'b': '#cfcabc', 'c': '#f8f6f0', 'd': '#3a5a8a', 'e': '#b8b2a2'}, [
+        "................",
+        "....xacccab.....",
+        "..bxaacacaaaby..",
+        "..bxaaadddaaby..",
+        "..bxaaaadaaaby..",
+        "...xaaaadaaab...",
+        "...xaaaacaaab...",
+        "..xaaaaacaaaab..",
+        "..xaaaaacaaaab..",
+        "..ybbbbbcbbbby..",
+    ]),
+    'apron': ('앞치마 저고리', {'a': '#f4efe2', 'b': '#d8d0bc', 'c': '#f8f2e6', 'd': '#a0482e', 'e': '#7a3220'}, [
+        "................",
+        "....xcccccb.....",
+        "..bxaaddddaaby..",
+        "..bxaaddddaaby..",
+        "..bxaaddddaaby..",
+        "...eeeeeeeeee...",
+        "....dddddddd....",
+        "....dddddddd....",
+        "....eeeeeeee....",
+    ]),
 }
 
 
@@ -269,9 +303,25 @@ BOTTOM_SHAPES = {
         "....dab..xad....",
         "....zzu..zzu....",
     ],
+    'short': [
+        "...xaaaabaaab...",
+        "...xaaaabaaab...",
+        ".....ss..ss.....",
+        ".....ss..ss.....",
+        "....zzu..zzu....",
+    ],
+    'bloom': [
+        "....xaaaaaab....",
+        "...xadaaadaab...",
+        "...xaaabaaaab...",
+        "..xaadaabaadab..",
+        "..xaaaaaadaaab..",
+        "..ybbbbbbbbbby..",
+        "....zz....zz....",
+    ],
 }
 
-SKIRTS = ('skirt', 'pleat')
+SKIRTS = ('skirt', 'pleat', 'bloom')
 
 BOTTOMS = {
     'guard': ('검은 바지와 가죽 장화', 'boots', '#3a3030', '#2a2222', '#4a3020', '#c9a24a'),
@@ -291,6 +341,8 @@ BOTTOMS = {
     'okchima': ('옥색 치마', 'skirt', '#9ad0c0', '#78b2a2', '#f8f2e6', '#3a7c6d'),
     'jeans': ('청바지와 운동화', 'pants', '#4a6a9a', '#3a5680', '#f4f4f4', '#c9a24a'),
     'jogger': ('줄무늬 운동 바지', 'stripe', '#2a2e3a', '#20232c', '#e8e8e8', '#efe7d2'),
+    'shorts': ('무릎 반바지', 'short', '#c8a46a', '#a8844a', '#f4f4f4', '#efe7d2'),
+    'flowerskirt': ('꽃무늬 치마', 'bloom', '#f2d06a', '#d8b04a', '#f8f2e6', '#e86a8a'),
 }
 
 
@@ -483,6 +535,26 @@ ACC = {
         "abbcbbba..abbcbbba",
         ".abbbba....abbbba.",
         "..aaaa......aaaa..",
+    ]),
+    'flowercrown': ('꽃 화관', {'a': '#e86a8a', 'b': '#f2d06a', 'c': '#fff4d0', 'd': '#4f8a4a'}, 5, 4, [
+        ".a...b...a...b...a",
+        "aca.bcb.aca.bcb.ac",
+        "dddddddddddddddddd",
+    ]),
+    'catears': ('고양이 귀 머리띠', {'a': '#3a3036', 'b': '#e8a0aa', 'c': '#3a3036'}, 5, 0, [
+        "..a............a..",
+        ".aba..........aba.",
+        "abbba........abbba",
+        "aaaaa........aaaaa",
+        "cccccccccccccccccc",
+    ]),
+    'ribbon': ('붉은 머리끈', {'a': '#c8382e', 'b': '#e86a6a', 'c': '#8a1e1e'}, 18, 2, [
+        "aa..aa",
+        "abaaba",
+        "aaccaa",
+        "abaaba",
+        "aa..aa",
+        "..a.a.",
     ]),
 }
 
