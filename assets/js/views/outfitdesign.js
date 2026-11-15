@@ -262,7 +262,7 @@ function recipeLine(slot, rules, st) {
   return { html, why };
 }
 
-export async function designBook(box, snap, { onWear } = {}) {
+export async function designBook(box, snap, { onWear, onDel } = {}) {
   box.innerHTML = '<p class="muted small">불러오는 중…</p>';
   let r, st;
   try { [r, st] = await Promise.all([load('world_outfit_design_list', undefined, { maxAge: 60000 }), load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null)]); }
@@ -303,7 +303,7 @@ export async function designBook(box, snap, { onWear } = {}) {
     ${list(hairs, '아직 그린 머리가 없습니다.')}
     ${trash.length ? `<details class="fold od-trash"><summary>지운 도안 ${trash.length}</summary><ul class="od-list">${trash.map(d => `<li class="od-card"><img class="od-pic" src="${designPic(d, { job: snap.job, look: snap.look })}" alt=""><div class="od-meta"><b>${esc(d.t || '이름 없는 도안')}</b><small class="muted">${SLOT_NAME[d.slot]}</small></div><div class="od-acts"><button class="btn small" data-restore="${d.id}">되살리기</button></div></li>`).join('')}</ul></details>` : ''}
   </div>`;
-  const again = () => designBook(box, snap, { onWear });
+  const again = () => designBook(box, snap, { onWear, onDel });
   const find = id => items.find(x => String(x.id) === String(id));
   $('[data-new]', box).onclick = () => openDesignEditor(snap, rules, again);
   $$('[data-newf]', box).forEach(b => b.onclick = () => openFreeEditor(b.dataset.newf, snap, res => { if (onWear && res?.saved) onWear(b.dataset.newf, null, res.saved); else again(); }));
@@ -329,9 +329,9 @@ export async function designBook(box, snap, { onWear } = {}) {
   });
   $$('[data-del]', box).forEach(b => b.onclick = async () => {
     const d = find(b.dataset.del); if (!d) return;
-    const tail = FREE.has(d.slot) ? `쓰던 ${SLOT_NAME[d.slot]}이라면 처음 고른 모양으로 돌아가고, 「지운 도안」에서 되살릴 수 있습니다.` : '이미 지은 옷은 그대로 입을 수 있고, 「지운 도안」에서 되살릴 수 있습니다. 오늘 그린 장수는 돌아오지 않습니다.';
+    const tail = FREE.has(d.slot) ? `쓰던 ${SLOT_NAME[d.slot]}이라면 처음 고른 모양으로 돌아가고, 「지운 도안」에서 되살릴 수 있습니다.${d.slot === 'face' ? ' 새 눈·입을 그리면 가장 먼저 지운 눈·입 자리에 덮어 담깁니다.' : ''}` : '이미 지은 옷은 그대로 입을 수 있고, 「지운 도안」에서 되살릴 수 있습니다. 오늘 그린 장수는 돌아오지 않습니다.';
     if (!(await ask(`도안 「${d.t || '이름 없는 도안'}」을(를) 지울까요? ${tail}`, { title: '도안 지우기', ok: '지우기' }))) return;
-    guard(b, async () => { const res = await act('world_outfit_design_delete', { p_id: d.id }); again(); return res; });
+    guard(b, async () => { const res = await act('world_outfit_design_delete', { p_id: d.id }); onDel?.(d); again(); return res; });
   });
   $$('[data-restore]', box).forEach(b => b.onclick = () => guard(b, async () => { const res = await act('world_outfit_design_restore', { p_id: Number(b.dataset.restore) }); again(); return res; }));
   $$('[data-report]', box).forEach(b => b.onclick = () => openDesignReport(Number(b.dataset.report), again));

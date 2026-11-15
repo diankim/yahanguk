@@ -15,6 +15,9 @@ create table if not exists public.world_meisho_alerts (
 alter table public.world_meisho_alerts enable row level security;
 revoke all on public.world_meisho_alerts from public, anon, authenticated;
 
+select pg_temp.yh_fix2('public.world_notify_prefs_set(text[])'::regprocedure,
+  $o$'raid', 'housing')$o$, $n$'raid', 'housing', 'meisho')$n$);
+
 create or replace function public.world_meisho_alert_rules()
  returns jsonb language sql immutable
 as $f$ select '{"active_days": 2, "near_min": 20, "keep_days": 3}'::jsonb $f$;

@@ -115,8 +115,17 @@ select pg_temp.yh_fix2('public.world_outfit_design_save(text,text,text,text,text
       update public.world_characters c set inventory = case when (c.inventory ->> (r -> 'hair' ->> 'item'))::int <= 1 then c.inventory - (r -> 'hair' ->> 'item')
         else jsonb_set(c.inventory, array[r -> 'hair' ->> 'item'], to_jsonb((c.inventory ->> (r -> 'hair' ->> 'item'))::int - 1)) end, updated_at = now() where c.owner_id = uid;
     end if;
-    insert into public.world_outfit_designs (owner_id, author_id, author_name, slot, base, title, pal, px, deco, woven_at)
-    values (uid, uid, nm, p_slot, p_slot, t, pal, px, '', now()) returning id into nid;
+    nid := null;
+    if p_slot = 'face' then
+      select x.id into nid from public.world_outfit_designs x where x.owner_id = uid and x.slot = 'face' and x.deleted_at is not null and x.removed_at is null
+       order by x.deleted_at limit 1 for update;
+    end if;
+    if nid is not null then
+      execute 'update public.world_outfit_designs set title = $1, pal = $2, px = $3, deleted_at = null, woven_at = now() where id = $4' using t, pal, px, nid;
+    else
+      insert into public.world_outfit_designs (owner_id, author_id, author_name, slot, base, title, pal, px, deco, woven_at)
+      values (uid, uid, nm, p_slot, p_slot, t, pal, px, '', now()) returning id into nid;
+    end if;
     return public.world_outfit_design_list() || jsonb_build_object('saved', nid, 'content', case p_slot when 'face' then '얼굴 도안을 담았습니다. 내 모습에서 바로 쓸 수 있습니다.' else '머리 도안을 담았습니다. 머리 그리기 도안 한 장을 썼고, 내 모습에서 바로 쓸 수 있습니다.' end);
   end if;
   if p_slot is null or p_slot not in ('top', 'bottom') then raise exception '도안을 그릴 옷을 고르세요.'; end if;$n$);
@@ -159,6 +168,10 @@ select pg_temp.yh_fix2('public.world_outfit_design_restore(bigint)'::regprocedur
       raise exception '% 도안은 %장까지 둘 수 있습니다. 다른 도안을 지운 뒤 되살려 주세요.', case d.slot when 'face' then '얼굴' else '머리' end, r -> d.slot ->> 'keep'; end if;
   elsif (select count(*) from public.world_outfit_designs x where x.owner_id = uid and x.slot in ('top', 'bottom') and x.deleted_at is null and x.removed_at is null) >= (r ->> 'keep')::int then$n$);
 
+select pg_temp.yh_fix2('public.world_outfit_design_give(bigint,uuid)'::regprocedure,
+  $o$deco, giver_id, gift_from)$o$, $n$deco, giver_id, gift_from, woven_at)$n$);
+select pg_temp.yh_fix2('public.world_outfit_design_give(bigint,uuid)'::regprocedure,
+  $o$d.deco, uid, nm)$o$, $n$d.deco, uid, nm, case when d.slot = 'hair' then now() end)$n$);
 select pg_temp.yh_fix2('public.world_outfit_design_give(bigint,uuid)'::regprocedure,
   $o$  if not found then raise exception '내가 그린 도안만 보낼 수 있습니다.'; end if;$o$,
   $n$  if not found then raise exception '내가 그린 도안만 보낼 수 있습니다.'; end if;
