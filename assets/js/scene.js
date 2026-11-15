@@ -183,7 +183,7 @@ const SCENES = {
     drum(64); drum(192);
     const bench = (x, y, w) => { p.rect(x, y, w, 2, '#6a4426'); p.rect(x + 1, y + 2, 1, 3, '#4a2a18'); p.rect(x + w - 2, y + 2, 1, 3, '#4a2a18'); };
     bench(6, 70, 56); bench(194, 70, 56);
-    return { back: [[20, 120], [44, 122], [68, 121], [316, 121], [340, 122], [364, 120]], front: [[28, 138], [76, 139], [124, 140], [260, 140], [308, 139], [356, 138]], fighter: [[142, 112, false], [242, 112, true]] };
+    return { back: [[20, 120], [44, 122], [68, 121], [316, 121], [340, 122], [364, 120]], front: [[28, 138], [76, 139], [124, 140], [260, 140], [308, 139], [356, 138]], fighter: { 1: [[142, 112, false], [120, 104, false]], 2: [[242, 112, true], [264, 104, true]] } };
   },
   raid(p, ph) {
     p.sky(ph, [24, 16, 10], { colors: ['#24162e', '#3a2040', '#4a2a4a'], orb: false, star: '#a890c0' });
@@ -213,13 +213,15 @@ function background(key, ph) {
 }
 
 function place(lay, list) {
-  const out = [], spots = { couple: [...(lay.couple || [])], fighter: [...(lay.fighter || [])] };
+  const fl = lay.fighter || {}, sides = Array.isArray(fl) ? { 1: fl } : Object.fromEntries(Object.entries(fl).map(([k, v]) => [k, [...v]]));
+  const fighterSpot = side => (sides[side]?.length ? sides[side] : Object.values(sides).find(v => v.length))?.shift() || null;
+  const out = [], spots = { couple: [...(lay.couple || [])] };
   const front = [...lay.front], back = [...lay.back];
   const meIdx = Math.min(1, front.length - 1);
   for (const f of list) {
     let s = null;
     if (f.role === 'couple' && spots.couple.length) s = spots.couple.shift();
-    else if (f.role === 'fighter' && spots.fighter.length) s = spots.fighter.shift();
+    else if (f.role === 'fighter') s = fighterSpot(f.side);
     else if (f.me && front[meIdx]) s = front.splice(meIdx, 1)[0];
     if (s) out.push({ f, x: s[0], y: s[1], flip: s[2] ?? s[0] > W / 2 });
   }
