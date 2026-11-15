@@ -210,11 +210,12 @@ export function makeRoom(N, defs) {
       main[i] = pack(Math.round((c & 255) * (1 - k) + gr * k), Math.round((c >> 8 & 255) * (1 - k) + gg * k), Math.round((c >> 16 & 255) * (1 - k) + gb * k));
     }
   }
-  function depthOrder(items) {
+  function depthOrder(items, folk = []) {
     const rugs = items.filter(i => FUR[i.k]?.layer === 'rug'), surf = items.filter(i => FUR[i.k]?.layer === 'surface'), rest = items.filter(i => FUR[i.k] && !['rug', 'surface'].includes(FUR[i.k].layer));
-    const key = i => { const [w, d] = dims(i); return i.x + i.y + (w + d) / 2; };
-    const behind = (a, b) => { const [aw, ad] = dims(a), [bw, bd] = dims(b); const fa = a.x + aw <= b.x || a.y + ad <= b.y, fb = b.x + bw <= a.x || b.y + bd <= a.y; if (fa && !fb) return true; if (fb && !fa) return false; return key(a) < key(b); };
-    const out = [], left = rest.slice().sort((a, b) => key(a) - key(b));
+    const box = i => i.draw ? [i.x + .2, i.y + .2, .6, .6] : [i.x, i.y, ...dims(i)];
+    const key = i => { const [x, y, w, d] = box(i); return x + y + (w + d) / 2; };
+    const behind = (a, b) => { const [ax, ay, aw, ad] = box(a), [bx, by, bw, bd] = box(b); const fa = ax + aw <= bx || ay + ad <= by, fb = bx + bw <= ax || by + bd <= ay; if (fa && !fb) return true; if (fb && !fa) return false; if (!a.draw !== !b.draw) return !a.draw; return key(a) < key(b); };
+    const out = [], left = rest.concat(folk).sort((a, b) => key(a) - key(b));
     while (left.length) { const i = left.findIndex(a => !left.some(b => b !== a && behind(b, a))); out.push(left.splice(i < 0 ? 0 : i, 1)[0]); }
     const res = rugs.slice();
     for (const it of out) { res.push(it); for (const s of surf) if (s.host === it) res.push(s); }
@@ -238,15 +239,14 @@ export function makeRoom(N, defs) {
     }
     const items = (st.items || []).filter(i => FUR[i.k]);
     for (const s of items) if (FUR[s.k].layer === 'surface') { s.host = hostOf(items, s); s.z0 = s.host ? FUR[s.host.k].top : 0; }
-    const order = depthOrder(items);
-    for (const it of order) if (FUR[it.k].glow) glow(it);
-    const pets = (opts.pets || []).slice();
+    const order = depthOrder(items, (opts.pets || []).filter(p => p.draw));
+    for (const it of order) if (!it.draw && FUR[it.k].glow) glow(it);
+    const ctx = { put: (x, y, c) => put(main, x, y, c), iso, main, W, H };
     for (const it of order) {
-      while (pets.length && pets[0].x + pets[0].y < it.x + it.y) { const p = pets.shift(); p.draw({ put: (x, y, c) => put(main, x, y, c), iso, main, W, H }); }
+      if (it.draw) { it.draw(ctx); continue; }
       if (opts.sel === it) { const [w, d] = dims(it), q = [iso(it.x, it.y), iso(it.x + w, it.y), iso(it.x + w, it.y + d), iso(it.x, it.y + d)], col = opts.bad ? P('#e05a4c') : P('#d8b25a'); for (let k = 0; k < 4; k++) line(main, q[k], q[(k + 1) % 4], col, true); }
       begin(); drawItem(it); drawn.push(it); commit(drawn.length - 1);
     }
-    for (const p of pets) p.draw({ put: (x, y, c) => put(main, x, y, c), iso, main, W, H });
     return new ImageData(new Uint8ClampedArray(main.buffer.slice(0)), W, H);
   }
   const hit = (bx, by) => { const i = Math.floor(by) * W + Math.floor(bx); return i >= 0 && i < W * H && ids[i] >= 0 ? drawn[ids[i]] : null; };
