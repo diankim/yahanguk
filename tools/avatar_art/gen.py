@@ -86,7 +86,7 @@ for k, bt in bots.items():
     shape = T.BOTTOMS[k][1]
     moved = {}
     for (x, y), ch in sorted(gs.p.items(), key=lambda it: (it[0][1], it[0][0])):
-        yy = y - 1 if shape != 'skirt' and x - T.OX < 8 and y >= 30 else y
+        yy = y - 1 if shape not in T.SKIRTS and x - T.OX < 8 and y >= 30 else y
         moved[(x, yy)] = (x, y)
     assert {pos: gs.p[src] for pos, src in moved.items()} == gw.p, k
     sidx = {(x, y): i for i, (x, y, _) in enumerate(cells(bt['stand']))}

@@ -114,6 +114,78 @@ TOPS = {
         "..bxaaaaadaaby..",
         "...ybbbbbdbby...",
     ]),
+    'dallyeong': ('청사 단령', {'a': '#2e4a7a', 'b': '#22385e', 'c': '#efe7d2', 'd': '#c9a24a', 'e': '#8a2a2a'}, [
+        "................",
+        "....xccccab.....",
+        "..bxaaccaaaaby..",
+        "..bxaaaddddaby..",
+        "..bxaaadeedaby..",
+        "...dddddddddd...",
+        "...xaaaaaaaab...",
+        "..xaaaaaaaaaab..",
+        "..xaaaaaaaaaab..",
+        "..ybbbbbbbbbby..",
+    ]),
+    'furvest': ('설원 털배자', {'a': '#d8dde4', 'b': '#b4bcc8', 'c': '#f4f6f8', 'd': '#4a6a8a', 'e': '#8a6a4a'}, [
+        "................",
+        "...cccccccccc...",
+        "..dxccaaaaccbd..",
+        "..dxaaaaaaaabd..",
+        "..dxaaaeaaaabd..",
+        "...xaaaeaaaab...",
+        "...cccccccccc...",
+    ]),
+    'saekdong': ('잔치 색동 저고리', {'a': '#f6efe0', 'b': '#ddd2bc', 'c': '#f8f2e6', 'd': '#c8382e', 'e': '#e8a53a', 'r': '#3f6fb5'}, [
+        "................",
+        "....xcccccb.....",
+        "..ddacaaddaadd..",
+        "..eeaacadaaaee..",
+        "..rraaaadaaarr..",
+        "...bbbbbdbbbb...",
+        "........d.......",
+        "........e.......",
+    ]),
+    'shadowrobe': ('봉연 그림자 도포', {'a': '#3a2c4a', 'b': '#2a1f38', 'c': '#d8c8ef', 'd': '#7a5ab0', 'e': '#b8a0e0'}, [
+        "................",
+        "....xacccab.....",
+        "..bxaaaccaaaby..",
+        "..bxaaaacaaaby..",
+        "..bxaaaacaaaby..",
+        "...dddddddddd...",
+        "...xaaaacaaab...",
+        "..xaaaaacaaaab..",
+        "..xadaaacaadab..",
+        "..ebebebebebeb..",
+    ]),
+    'fisher': ('어부 등거리', {'a': '#c8b48a', 'b': '#a8946a', 'c': '#efe7d2', 'd': '#6a8aa0', 'e': '#8a6a3a'}, [
+        "................",
+        "....xacccab.....",
+        "..sxaaacaaaabs..",
+        "..sxaaaacaaabs..",
+        "..sxaaaacaaabs..",
+        "...eeeeeeeeee...",
+        "...xaaaacaaab...",
+        "...ybbbbbbbby...",
+    ]),
+    'galot': ('갈옷 적삼', {'a': '#a0582e', 'b': '#7e4220', 'c': '#efe7d2', 'd': '#5a3020', 'e': '#c87a4a'}, [
+        "................",
+        "....xacaaaab....",
+        "...xaaacaaaab...",
+        "..bxaaaacaaaby..",
+        "..bxaaaaadaaby..",
+        "...ybbbbbdbby...",
+    ]),
+    'silkcheollik': ('비단 철릭', {'a': '#a02a3a', 'b': '#7e1e2c', 'c': '#f6e8c4', 'd': '#d6aa52', 'e': '#f2d06a'}, [
+        "................",
+        "....xacccab.....",
+        "..bxaaaccaaaby..",
+        "..bxaaaabaaaby..",
+        "..bxaaaabaaaby..",
+        "...dddddeddddd..",
+        "...xaaaabaaaay..",
+        "..xaaaaabaaaay..",
+        "..ybbaabbaabby..",
+    ]),
 }
 
 
@@ -148,7 +220,32 @@ BOTTOM_SHAPES = {
         "..ybbbbbbbbbby..",
         "....zz....zz....",
     ],
+    'wide': [
+        "...xaaaabaaab...",
+        "..xaaaaabaaaab..",
+        "..xaaaab.xaaab..",
+        ".xaaaab..xaaaab.",
+        "....zzu..zzu....",
+    ],
+    'wrap': [
+        "...xaaaabaaab...",
+        "...xaaaabaaab...",
+        "....dad..dad....",
+        "....ddd..ddd....",
+        "....zzu..zzu....",
+    ],
+    'pleat': [
+        "....xaaaaaab....",
+        "...xabababaab...",
+        "...xabababaab...",
+        "..xaabababaabb..",
+        "..xababababaab..",
+        "..ybbbbbbbbbby..",
+        "....zz....zz....",
+    ],
 }
+
+SKIRTS = ('skirt', 'pleat')
 
 BOTTOMS = {
     'guard': ('검은 바지와 가죽 장화', 'boots', '#3a3030', '#2a2222', '#4a3020', '#c9a24a'),
@@ -159,6 +256,13 @@ BOTTOMS = {
     'shadow': ('먹빛 바지와 짚신', 'pants', '#24242a', '#18181d', '#c8a46a', '#9a2a36'),
     'tamer': ('각반 바지와 미투리', 'pants', '#5c5a3c', '#46442c', '#c8a46a', '#b8423a'),
     'chima': ('남빛 치마', 'skirt', '#2f3f72', '#25325c', '#f8f2e6', '#b8324a'),
+    'redmoon': ('붉은 달 치마바지', 'wide', '#8a2030', '#6a1824', '#2a1c22', '#d8b25a'),
+    'emberwrap': ('잔불 각반 바지', 'wrap', '#5a3a2a', '#46301f', '#c8a46a', '#e07a3a'),
+    'inkpleat': ('먹빛 주름치마', 'pleat', '#2a2a30', '#1c1c22', '#efe7d2', '#9a2a36'),
+    'haengjeon': ('행전 두른 바지', 'wrap', '#7a7460', '#5e5a48', '#6a4a32', '#efe7d2'),
+    'jjokchima': ('쪽빛 홑치마', 'skirt', '#3a6a9a', '#2c5480', '#f8f2e6', '#efe7d2'),
+    'leatherboots': ('가죽 장화 바지', 'boots', '#6a5446', '#54402f', '#3a2418', '#c9a24a'),
+    'okchima': ('옥색 치마', 'skirt', '#9ad0c0', '#78b2a2', '#f8f2e6', '#3a7c6d'),
 }
 
 
@@ -173,7 +277,7 @@ def bottom_grid(key, frame):
             if ch == '.':
                 continue
             yy = y0 + y
-            if frame == 'walk' and shape != 'skirt' and x < 8 and yy >= 30:
+            if frame == 'walk' and shape not in SKIRTS and x < 8 and yy >= 30:
                 yy -= 1
             g.set(OX + x, yy, ch)
     return name, {'a': a, 'b': b, 'z': z, 'd': d}, g
@@ -256,6 +360,83 @@ ACC = {
         "acaacd",
         ".aaad.",
         "..ad..",
+    ]),
+    'gat': ('흑립 갓', {'a': '#1e1a1c', 'b': '#4a4448', 'c': '#8a6a3a'}, 0, 1, [
+        "..........abaaaaaa..........",
+        "..........abaaaaaa..........",
+        "..........abaaaaaa..........",
+        "..........abaaaaaa..........",
+        "..........cccccccc..........",
+        "...aaaaaaaaaaaaaaaaaaaaaa...",
+        "aaaabaaaaaaaaaaaaaaaaaabaaaa",
+        ".......................c....",
+        "........................c...",
+        "........................c...",
+    ]),
+    'jokduri': ('혼례 족두리', {'a': '#2a2230', 'b': '#3f6fb5', 'c': '#d8b25a', 'd': '#c8382e'}, 10, 0, [
+        "..c..c..",
+        "..dccd..",
+        ".aaaaaa.",
+        "aabaacaa",
+        "aaaaaaaa",
+    ]),
+    'lotushood': ('흑련 두건', {'a': '#26222c', 'b': '#3a3442', 'c': '#efe7d2', 'd': '#9a2a36'}, 3, 1, [
+        ".......abbbbaa........",
+        ".....aaabbaaaaaa......",
+        "...aaaaaaaaaaaaaaaa...",
+        "..aaaaaaaacdcaaaaaaa..",
+        ".aaaaaaaaaacaaaaaaaaa.",
+        "aaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbb",
+        "....................aa",
+        ".....................a",
+    ]),
+    'satgat': ('삿갓', {'a': '#d8b46a', 'b': '#b08a46', 'c': '#8a6a3a'}, 0, 0, [
+        ".............aa.............",
+        "...........aabaaa...........",
+        ".........aabaabaaba.........",
+        ".......abaabaabaabaab.......",
+        ".....aabaabaabaabaabaab.....",
+        "...abaabaabaabaabaabaabaa...",
+        ".aabaabaabaabaabaabaabaabaa.",
+        "cccccccccccccccccccccccccccc",
+    ]),
+    'starpin': ('별빛 떨잠', {'b': '#a68a3c', 'c': '#e8d48a', 'd': '#fff4d0'}, 16, 2, [
+        "..c..",
+        ".cdc.",
+        "ccdcc",
+        ".c.c.",
+        "..b..",
+        "..c..",
+    ]),
+    'paeraengi': ('밀짚 패랭이', {'a': '#e2c27a', 'b': '#c4a050', 'c': '#b8324a'}, 3, 0, [
+        "......aaaaaaaaaa......",
+        "......abaaaaaaba......",
+        "......abaaaaaaba......",
+        "......cccccccccc......",
+        "..aaaaaaaaaaaaaaaaaa..",
+        "abbbbbbbbbbbbbbbbbbbba",
+    ]),
+    'horns': ('도깨비 뿔 머리띠', {'a': '#f2ead8', 'b': '#d0c4a8', 'c': '#9a2a36'}, 5, 0, [
+        "..a............a..",
+        "..aa..........aa..",
+        "..ba..........ab..",
+        "..bb..........bb..",
+        "cccccccccccccccccc",
+    ]),
+    'nambawi': ('남바위', {'a': '#3a2c56', 'b': '#2a2040', 'c': '#7a5a3a', 'd': '#d8b25a'}, 3, 0, [
+        "..........dd..........",
+        ".......aaaaaaaa.......",
+        ".....aaaaabbaaaaaa....",
+        "...aaaaaaaaaaaaaaaaa..",
+        "..aaaaaaaaaaaaaaaaaaa.",
+        ".aaaaaaaaaaaaaaaaaaaa.",
+        "cccccccccccccccccccccc",
+        "ac..................ca",
+        "ac..................ca",
+        "ac..................ca",
+        "cc..................cc",
+        ".c..................c.",
     ]),
 }
 
