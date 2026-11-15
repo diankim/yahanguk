@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { WEAK_NAMES, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1786,7 +1786,7 @@ const S = [
       <li><b>정표 파기</b>: 어느 한쪽이 언제든 파기하면 연리가 끝납니다.
         <ul><li>상대에게는 파기되었다는 알림과 깨진 정표가 남습니다. 직접 정리할 때까지 남습니다.</li>
           <li>차단하면 자동으로 파기됩니다.</li>
-          <li>끝난 뒤 3일 동안은 새 연리를 맺을 수 없습니다. 혼례를 올렸다면 7일입니다.</li></ul></li>
+          <li>끝난 뒤 ${REBOND} 동안은 새 연리를 맺을 수 없습니다. 혼례를 올린 연리도 같습니다.</li></ul></li>
       <li>연리는 동료 화면의 「연리」 칸에서 다룹니다. [연리 숨기기]를 하면 다른 조사원의 카드에 보이지 않습니다.</li>
     </ul>`],
   ['wedding', '혼례', `
@@ -1802,7 +1802,7 @@ const S = [
         <ul><li>칭호 「백년가약」 · 테두리 「연리 매듭 테」 · 낙관 「合」 · 별채 가구 「연리목 분재」</li>
           <li>서로의 별채를 꾸밀 수 있는 권한</li>
           <li>한 별채로 모여 사는 <b>한 지붕</b>을 고를 수 있습니다. 「별채」 항목을 보세요.</li></ul></li>
-      <li>혼례를 올린 연리가 끝나면 7일 뒤에 다시 맺을 수 있습니다.</li>
+      <li>혼례를 올린 연리가 끝나도 ${REBOND} 뒤에 다시 맺을 수 있고, 새 연리로 인연도 300을 채우면 혼례를 다시 올릴 수 있습니다.</li>
     </ul>`],
   ['tourney', '야행 비무회', `
     <ul>

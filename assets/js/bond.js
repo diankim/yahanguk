@@ -1,4 +1,4 @@
-import { CHEER_NAME } from './rules.js';
+import { CHEER_NAME, REBOND } from './rules.js';
 import { openLiveEvent, eventLogHtml } from './liveevent.js';
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
@@ -108,7 +108,7 @@ export function bondPanelHtml(s) {
       <div class="btn-row"><button class="btn small primary" data-bond-acc="${esc(r.request_id)}">받기</button><button class="btn small" data-bond-dec="${esc(r.request_id)}">돌려보내기</button></div></li>`).join('')}</ul>` : ''}
     ${out ? `<p class="hint">${tokenSvg(out.token_key, 18)} ${esc(out.to_name || '상대')}님에게 ${esc(`「${out.token_name}」을(를)`)} 건네고 답을 기다립니다 · ${fmt.remain(new Date(out.expires_at) - Date.now())} 남음 <button class="btn small ghost" data-bond="cancel">거두기</button></p>` : ''}
     ${!inc.length && !out ? `<p class="muted small">아직 정인이 없습니다. 친구의 조사원 카드에서 [연리 맺기]로 정표를 건네 마음을 전할 수 있습니다(둘 다 Lv.5 이상, 정표 짓는 값 300전 · 거절되거나 24시간이 지나면 돌려받음).</p>` : ''}
-    ${s?.cooldown_until && new Date(s.cooldown_until) > new Date() ? `<p class="muted small">연리가 끝난 지 3일이 지나지 않아 ${fmt.remain(new Date(s.cooldown_until) - Date.now())} 뒤부터 새로 맺을 수 있습니다.</p>` : ''}`;
+    ${s?.cooldown_until && new Date(s.cooldown_until) > new Date() ? `<p class="muted small">연리가 끝난 지 ${REBOND}가 지나지 않아 ${fmt.remain(new Date(s.cooldown_until) - Date.now())} 뒤부터 새로 맺을 수 있습니다.</p>` : ''}`;
 }
 export function bindBondPanel(root, redraw) {
   const after = () => redraw?.();
@@ -122,7 +122,7 @@ export function bindBondPanel(root, redraw) {
     if (k === 'gift') return openGift(after);
     if (k === 'wed') return openWedAsk(cur, after);
     if (k === 'break') {
-      if (!(await ask(`「${cur?.token_name || '정표'}」을(를) 파기할까요?\n연리가 끝나고, ${cur?.partner_name || '정인'}님에게는 정표가 파기되었다고 알려집니다. 3일 동안은 새 연리를 맺을 수 없습니다.`, { title: '정표 파기', ok: '파기하기', danger: true }))) return;
+      if (!(await ask(`「${cur?.token_name || '정표'}」을(를) 파기할까요?\n연리가 끝나고, ${cur?.partner_name || '정인'}님에게는 정표가 파기되었다고 알려집니다. ${REBOND} 동안은 새 연리를 맺을 수 없습니다.`, { title: '정표 파기', ok: '파기하기', danger: true }))) return;
       return run(b, 'world_bond_break', { p_reason: 'break' }, after);
     }
   });

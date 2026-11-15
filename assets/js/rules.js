@@ -202,3 +202,5 @@ export const SURVIVAL = (() => {
   const g = GD.survival.ground, c = GD.survival.cleanse;
   return { ground: `정신 +${g.mn} · 침식 −${g.er}`, groundEvery: g.min, cleanse: `침식 −${c.er} · 정신 +${c.mn}`, cleanseHq: `침식 −${c.hq_er} · 정신 +${c.hq_mn}` };
 })();
+
+export const REBOND = (h => h % 24 ? `${h}시간` : h === 24 ? '하루' : `${h / 24}일`)(GD.wedding?.rebond_h ?? 24);
