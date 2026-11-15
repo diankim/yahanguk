@@ -420,16 +420,14 @@ select pg_temp.yh_fix2('public.world_storage_snapshot()'::regprocedure,
   $o$'in_safe', exists (select 1 from public.world_current_shop(uid)),$o$,
   $n$'in_safe', exists (select 1 from public.world_current_shop(uid)), 'use_here', exists (select 1 from public.world_current_shop(uid)) and not public.world_banyo_here(uid),$n$);
 
-insert into public.world_patch_notes (note_id, title, body)
-values ('2.4.0', '2.4.0 · 여러 동무가 머무는 별채',
-'## 2.4.0
+update public.world_patch_notes set body = body || '
+
 - 별채에 꼬마 동무를 여러 마리 둘 수 있습니다. 처음에는 한 사람에 한 자리이고, 동무 창에서 「동무 자리 늘리기」로 두 자리를 더 늘릴 수 있습니다(둘째 자리 3,000전과 동무 정표 1개, 셋째 자리 10,000전과 동무 정표 3개 — 별채를 고칠 수 있는 곳에서, 재료는 가방 먼저, 모자라면 창고에서).
 - 한 지붕에 사는 정인끼리는 서로 자기 동무를 둡니다. 두 사람의 자리를 더한 만큼 한 별채에 머물고, 갈라서면 각자의 동무는 각자의 별채로 돌아갑니다.
 - 동무마다 머무는 방을 따로 고르고, 어질러진 자리·배탈도 동무마다 따로 셉니다. 손님은 동무마다 하루 한 번씩 쓰다듬고 놀아 줄 수 있습니다.
 - 동무 창에서 별채에 있는 동무마다 「내보내기」를 누를 수 있습니다. 자리가 하나뿐이면 다른 동무를 「별채에 두기」로 바로 바꿔 둡니다.
 - 묵창 나루에서 가방 › 제작이 창고 재료까지 더해 「만들 수 있음」으로 보이던 것을 고쳤습니다. 묵창 나루도 반요촌처럼 창고 재료를 쓰지 않으며(서버는 원래 그랬습니다), 제작 화면·도움말·서신·조사원 의뢰·강화 안내가 빈약한 안전지대 두 곳을 함께 적습니다.
-')
-on conflict (note_id) do nothing;
+' where note_id = '2.3.0' and body not like '%여러 마리 둘 수 있습니다%';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261118140000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
