@@ -47,7 +47,9 @@ function pickBlock([slot, table, swatch], crop, snap) {
   const dkey = OVER[slot] || slot + '_d', woven = slot === 'top' || slot === 'bottom' ? wovenOf(snap, slot) : [];
   return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k]?.name || '없음'); return `<button class="lk-opt${k === cur && !draft[dkey] ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage(pickLook(slot, k), { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
     ${woven.length ? `<p class="lk-cur">지은 도안</p><div class="lk-grid">${woven.map(id => { const d = snap.designs[id]; return `<button class="lk-opt${String(draft[dkey]) === id ? ' on' : ''}" data-lkd="${slot}" data-id="${esc(id)}" data-base="${esc(d.base)}" title="도안 · ${esc(AV[slot][d.base]?.name || '')}"><img src="${avatarImage({ ...draft, [slot]: d.base, [dkey]: id }, { scale: 3, crop: cropOf(slot, d.base) || CROP[crop] })}" alt=""></button>`; }).join('')}</div>` : ''}
-    ${locked ? `<p class="muted small">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} ${locked}${slot === 'acc' ? '가지' : '벌'} — 상점·제작·옷 꾸러미·퀘스트로 얻어 가방에서 「옷장에」를 누릅니다.</p>` : ''}`;
+    ${locked ? `<p class="lk-cur">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} <small class="muted">${locked}${slot === 'acc' ? '가지' : '벌'} · 눌러 얻는 곳 보기</small></p>
+    <div class="lk-grid">${keys.filter(k => !owned.includes(k)).map(k => { const n = AV[table][k].name, src = GD.outfit?.src?.[`${slot}:${k}`] || ''; return `<span class="lk-opt lk-lock" tabindex="0" data-tip="${esc(n)}${src ? ' — ' + esc(src) : ''}" aria-label="${esc(n)}"><img src="${avatarImage(pickLook(slot, k), { scale: 3, crop: CROP[crop] })}" alt=""></span>`; }).join('')}</div>
+    <p class="muted small">물품으로 얻은 옷은 가방에서 「옷장에」를 누르고, 칭호·행사로 얻는 옷은 옷장에 바로 들어갑니다.</p>` : ''}`;
 }
 
 function freeBlock(slot, snap) {

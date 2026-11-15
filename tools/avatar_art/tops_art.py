@@ -466,14 +466,15 @@ ACC = {
         "cc..................cc",
         ".c..................c.",
     ]),
-    'cap': ('챙 모자', {'a': '#3a5a9a', 'b': '#2a4478', 'c': '#f4efe2'}, 4, 1, [
-        "......aaaaaaaa......",
-        "....aaaaacaaaaaa....",
-        "...aaaaaaaaaaaaaa...",
-        "..aaaaaaaaaaaaaaaa..",
-        ".aaaaaaaaaaaaaaaaaa.",
-        "bbbbbbbbbbbbbbbbbbbb",
-        ".bbbbbbbbbbbbbbbbbb.",
+    'cap': ('챙 모자', {'a': '#3a5a9a', 'b': '#2a4478', 'c': '#f4efe2'}, 3, 1, [
+        ".......aaaaaaaa.......",
+        ".....aaaaaaaaaaaa.....",
+        "...aaaaaaacaaaaaaaa...",
+        "..aaaaaaaaaaaaaaaaaa..",
+        ".aaaaaaaaaaaaaaaaaaaa.",
+        "aaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbb",
+        "...bbbbbbbbbbbbbbbb...",
     ]),
     'headphone': ('소리 귀덮개', {'a': '#2a2a30', 'b': '#c8382e', 'c': '#efe7d2'}, 0, 0, None),
     'shades': ('검은 색안경', {'a': '#1a1a1e', 'b': '#2e2e38', 'c': '#8a8aa0'}, 5, 14, [

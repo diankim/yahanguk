@@ -3300,6 +3300,8 @@ b.shadow { color: var(--sp); }
 .lk-sw.own { display: inline-flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); }
 .lk-opt.lk-new { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border-style: dashed; color: var(--muted); min-height: 56px; }
 .lk-opt.lk-new:disabled { opacity: .45; cursor: not-allowed; }
+.lk-opt.lk-lock { cursor: help; border-style: dashed; }
+.lk-opt.lk-lock img { opacity: .38; filter: grayscale(.7); }
 @media (max-width: 720px) {
   .lk-wrap { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .lk-stage { flex-direction: row; justify-content: center; align-items: center; padding: 8px; }
