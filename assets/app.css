@@ -3285,23 +3285,23 @@ b.shadow { color: var(--sp); }
 .lk-tab span { font-size: calc(11px * var(--fz, 1)); }
 .lk-tab.on { color: var(--text); border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -2px; }
 .lk-cur { margin: 0; font-weight: 600; }
-.lk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
-.lk-opt { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); cursor: pointer; }
-.lk-opt img { image-rendering: pixelated; width: 100%; height: 100%; object-fit: contain; }
+.lk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; min-width: 0; }
+.lk-opt { display: block; min-width: 0; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); cursor: pointer; overflow: hidden; }
+.lk-opt img { image-rendering: pixelated; display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
 .lk-opt.on { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -2px; }
 .lk-sws { display: flex; flex-wrap: wrap; gap: 8px; }
 .lk-sw { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--c); cursor: pointer; padding: 0; }
 .lk-sw.on { outline: 2px solid var(--accent); outline-offset: 2px; }
 .lk-sw.own { display: inline-flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); }
-.lk-opt.lk-new { display: flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); min-height: 56px; }
+.lk-opt.lk-new { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border-style: dashed; color: var(--muted); min-height: 56px; }
 .lk-opt.lk-new:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 720px) {
-  .lk-wrap { grid-template-columns: 1fr; gap: 8px; }
+  .lk-wrap { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .lk-stage { flex-direction: row; justify-content: center; align-items: center; padding: 8px; }
   .lk-big { width: 132px; }
   .lk-side { width: auto; }
   .lk-tab img { width: 30px; height: 30px; }
-  .lk-grid { grid-template-columns: repeat(4, 1fr); }
+  .lk-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .lk-tabs { grid-template-columns: repeat(4, 1fr); }
 }
 .od-book { display: flex; flex-direction: column; gap: 8px; }
