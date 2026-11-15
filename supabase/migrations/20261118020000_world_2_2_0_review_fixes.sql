@@ -85,6 +85,24 @@ update public.world_patch_notes set body = replace(body,
   '- 지워지는 칸 · 따라 쓰는 붓 · 발자국 · 가운데 칸의 네 단계가 있습니다. 그림자가 무엇을 하려는지는 라운드 띠의 낌새로 보이고, 어떻게 받아칠지는 직접 겪으며 찾아야 합니다.')
  where note_id = '2.0.0';
 
+select pg_temp.yh_fix2('public.world_battle_open(uuid,text,uuid,integer,integer)'::regprocedure,
+  $o$(v_gq AND p_depth < 3 AND random() < 0.04)$o$,
+  $n$(v_gq AND p_depth < 3 AND random() < CASE WHEN (SELECT c.level FROM public.world_characters c WHERE c.owner_id = p_owner) < coalesce((SELECT min(n.min_level) FROM public.world_exploration_nodes n WHERE n.region_id = p_region AND n.hierarchy_level >= 3), 0) THEN 0.35 ELSE 0.04 END)$n$);
+
+with lv as (select s.quest_id, max(r.min_level) m from public.world_quest_steps s
+  cross join lateral (
+    select jsonb_array_elements_text(case jsonb_typeof(s.need -> 'at') when 'array' then s.need -> 'at' when 'string' then jsonb_build_array(s.need -> 'at') else '[]'::jsonb end) rid
+    union select jsonb_array_elements_text(case jsonb_typeof(t -> 'r') when 'array' then t -> 'r' when 'string' then jsonb_build_array(t -> 'r') else '[]'::jsonb end)
+      from jsonb_array_elements(coalesce(s.need -> 'tasks', '[]'::jsonb)) t) x
+  join public.world_map_regions r on r.region_id = x.rid group by 1)
+update public.world_quests q set min_level = lv.m from lv where lv.quest_id = q.quest_id and lv.m > q.min_level;
+
+select pg_temp.yh_fix2('public.world_cosmetic_equip(text,text)'::regprocedure,
+  $o$'content', '「' || nm || '」을(를) 달았습니다.'$o$,
+  $n$'content', case when nm like '%「%' then nm else '「' || nm || '」' end || '을(를) 달았습니다.'$n$);
+
+update public.world_cosmetic_catalog set condition_text = '묵적록의 명어 여섯을 모두 낚는다' where cosmetic_key = 'sl_muk' and condition_text = '명어 여섯을 모두 낚으면';
+
 update public.world_crafting_recipes set required_location = '야행국 본부 정청' where recipe_id = 'make_oil_lamp' and required_location = '본부 정청';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261118020000', now())
