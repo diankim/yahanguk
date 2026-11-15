@@ -103,6 +103,7 @@ update public.world_patch_notes set body = body || '
 - 동료 화면 친구 카드에 「별채」 단추를 두어 조사원 카드를 열지 않고 바로 구경 갈 수 있습니다.
 - 쉬기·마음 다잡기 뒤 남은 시간이 바로 바뀝니다.
 - 행사·혼례·비무회 창을 다른 탭에 둔 동안에는 새로 읽지 않고, 돌아오면 한 번 읽습니다.
+- 조사원 카드의 도안 제보 단추를 카드 오른쪽 아래 구석의 작은 깃발로 옮겼습니다. 입은 도안이 여럿이면 누른 뒤 고릅니다.
 ' where note_id = '2.3.0' and body not like '%묶음 크기를 일부만 읽던%';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261118130000', now())
