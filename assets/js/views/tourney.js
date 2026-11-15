@@ -10,7 +10,7 @@ const STANCE = [['attack', '공격', '주는 피해 +15% · 받는 피해 +10%']
 const SKILL_AT = [['open', '처음에'], ['mid', '몰릴 때(기세 60% 아래)'], ['finish', '마무리(상대 35% 아래)']];
 const TN = GD.battleItems?.tourney || {};
 const HEALS = TN.items || [], PICK = TN.pick || 2;
-const GAP = 2000;
+const GAP = (GD.tourney?.exchange_s || 3) * 1000;
 
 let el = null, board = null, view = null, timer = null, tick = null, skew = 0, sub = '', busy = false, sceneNode = null, scene = null;
 
@@ -120,10 +120,11 @@ function drawView() {
   if (watching) openWatch(watching);
 }
 function matchCard(v, m) {
-  const live = m.starts_at && new Date(m.ends_at) > now();
+  const wait = m.starts_at && new Date(m.starts_at) > now();
+  const live = !wait && m.starts_at && new Date(m.ends_at) > now();
   const win = m.winner;
   const row = id => `<span class="${win && win === id ? 'won' : win ? 'lost' : ''} ${v.entries?.[id]?.mine ? 'mine' : ''}">${esc(nameOfEntry(v, id))}</span>`;
-  return `<button class="tn-match ${live ? 'live' : ''}" data-match="${esc(m.id)}" ${m.log ? '' : 'disabled'}>${row(m.a)}${row(m.b)}${live ? `<small>${icon('eye', 12)} 진행 중</small>` : ''}</button>`;
+  return `<button class="tn-match ${live ? 'live' : ''}" data-match="${esc(m.id)}" ${m.log ? '' : 'disabled'}>${row(m.a)}${row(m.b)}${live ? `<small>${icon('eye', 12)} 진행 중</small>` : wait ? '<small>다음 차례</small>' : ''}</button>`;
 }
 
 let watching = null;
@@ -146,6 +147,7 @@ function paintLog() {
 function liveTick() {
   if (!el || !sub) return;
   paintLog();
-  $$('.tn-match.live', el).forEach(x => { const m = (view?.matches || []).find(y => y.id === x.dataset.match); if (m && new Date(m.ends_at) <= now()) refresh(); });
+  const t = now();
+  if ((view?.matches || []).some(m => m.starts_at && m.a && m.b && ((new Date(m.starts_at) <= t && !m.log && view.can_watch) || (new Date(m.ends_at) <= t && !m.winner)))) refresh();
 }
 document.addEventListener('visibilitychange', () => { if (el && !document.hidden) refresh(); });
