@@ -3529,3 +3529,11 @@ details.pt-fold > summary h2 .help-q { margin-left: 2px; }
 .scene-nm.cp { color: #f3a6b4; font-weight: 700; }
 .scene-bub { position: absolute; transform: translate(-50%, -100%); font-size: calc(10px * var(--fz, 1)); line-height: 1.4; padding: 1px 6px; border-radius: 8px; background: #f4ecd9; color: #3a2a20; white-space: nowrap; }
 .scene-more { position: absolute; right: 6px; bottom: 4px; font-size: calc(10px * var(--fz, 1)); padding: 0 5px; border-radius: 3px; background: rgba(20, 16, 14, .74); color: #e9e2d4; }
+.scene-dmg { position: absolute; transform: translate(-50%, -100%); font-size: calc(11px * var(--fz, 1)); font-weight: 700; line-height: 1; padding: 1px 4px; border-radius: 3px; background: rgba(20, 16, 14, .7); color: #f0e8dc; white-space: nowrap; pointer-events: none; }
+.scene-dmg.hit { color: #ff8a7a; }
+.scene-dmg.crit { color: #ffd25a; font-size: calc(13px * var(--fz, 1)); }
+.scene-dmg.heal { color: #8fe89a; }
+.scene-dmg.skill { color: #e8c8ff; }
+.scene-dmg.miss, .scene-dmg.stun { color: #c8d8ff; }
+.scene-dmg.down { color: #b8b0a8; }
+.scene-dmg.end { color: #ffd25a; }

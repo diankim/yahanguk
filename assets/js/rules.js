@@ -191,3 +191,4 @@ export const SCENE_ACTS = {
   bows: { label: CHEER_NAME.bow, fx: 'heart' }, cakes: { label: CHEER_NAME.cake, fx: 'star' }, pets: { label: CHEER_NAME.pet, fx: 'pet' },
   wished: { label: '축사', fx: 'note' }, joined: { label: '함께하기', fx: 'star' }, join: { label: '신청', fx: 'star' },
 };
+export const DUEL_FX = { miss: { label: '피함' }, stun: { label: '묶임' }, down: { label: '무릎 꿇음' }, end: { label: '이겼다' } };

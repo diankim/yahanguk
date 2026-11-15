@@ -2,7 +2,7 @@ import { drawAvatar, AV, registerDesigns } from './housing/avatarsprite.js';
 import { drawPet, drawEffect } from './housing/petsprite.js';
 import { P } from './housing/render.js';
 import { esc } from './core.js';
-import { SCENE_ACTS } from './rules.js';
+import { SCENE_ACTS, DUEL_FX } from './rules.js';
 
 const W = 384, H = 144, K = 1.5;
 export const scenePhase = (now = Date.now()) => { const h = new Date(now + 9 * 3600e3).getUTCHours(); return h < 6 ? 'night' : h < 12 ? 'dawn' : h < 18 ? 'day' : 'dusk'; };
@@ -183,7 +183,7 @@ const SCENES = {
     drum(64); drum(192);
     const bench = (x, y, w) => { p.rect(x, y, w, 2, '#6a4426'); p.rect(x + 1, y + 2, 1, 3, '#4a2a18'); p.rect(x + w - 2, y + 2, 1, 3, '#4a2a18'); };
     bench(6, 70, 56); bench(194, 70, 56);
-    return { back: [[20, 120], [44, 122], [68, 121], [316, 121], [340, 122], [364, 120]], front: [[28, 138], [76, 139], [124, 140], [260, 140], [308, 139], [356, 138]], fighter: [[168, 112, false], [216, 112, true]] };
+    return { back: [[20, 120], [44, 122], [68, 121], [316, 121], [340, 122], [364, 120]], front: [[28, 138], [76, 139], [124, 140], [260, 140], [308, 139], [356, 138]], fighter: [[142, 112, false], [242, 112, true]] };
   },
   raid(p, ph) {
     p.sky(ph, [24, 16, 10], { colors: ['#24162e', '#3a2040', '#4a2a4a'], orb: false, star: '#a890c0' });
@@ -231,6 +231,21 @@ function place(lay, list) {
   return out.sort((a, b) => a.y - b.y);
 }
 
+const lit = (c, k) => { const r = c & 255, g = c >> 8 & 255, b = c >> 16 & 255, f = v => Math.min(255, Math.round(v + (255 - v) * k)); return (255 << 24 | f(b) << 16 | f(g) << 8 | f(r)) >>> 0; };
+const grey = c => { const v = Math.round(((c & 255) + (c >> 8 & 255) + (c >> 16 & 255)) / 3 * 0.8); return (255 << 24 | v << 16 | v << 8 | v) >>> 0; };
+const ease = t => t < 0 ? 0 : t > 1 ? 1 : Math.sin(t * Math.PI);
+const line = (put, x0, y0, x1, y1, c) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1); for (let i = 0; i <= n; i++) put(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), c); };
+const C = h => P(h);
+const JOB_FX = {
+  artificer(put, a, b, t) { const k = ease(t), cx = a.x + (a.flip ? -13 : 13); for (let i = -14; i <= 14; i++) { const y = a.y - 16 + i, dx = Math.round(5 * Math.cos(i / 14 * 1.4)); for (let w = 0; w < 3; w++) put(cx + (a.flip ? -dx - w : dx + w), y, C(w === 1 ? '#fff4c8' : k > .5 ? '#ffd86a' : '#d9a83a')); } },
+  scout(put, a, b, t) { const d = a.flip ? -1 : 1, x = Math.round(a.x + d * 10 + (b.x - a.x - d * 20) * Math.min(1, t * 1.8)), y = a.y - 20; line(put, x - d * 16, y, x, y, C('#b08a5a')); line(put, x - d * 16, y - 1, x - d * 12, y - 1, C('#f4f4f4')); line(put, x - d * 16, y + 1, x - d * 12, y + 1, C('#f4f4f4')); for (let i = 0; i < 4; i++) { put(x + d * i, y, C('#e8e8f0')); put(x + d * (i - 3), y - (3 - i), C('#e8e8f0')); put(x + d * (i - 3), y + (3 - i), C('#e8e8f0')); } },
+  exorcist(put, a, b, t) { const p = Math.min(1, t * 1.6), x = Math.round(a.x + (b.x - a.x) * p), y = Math.round(a.y - 26 - 12 * Math.sin(p * Math.PI)); for (let j = 0; j < 12; j++) for (let i = 0; i < 7; i++) put(x - 3 + i, y - 6 + j, C(i === 0 || i === 6 || j === 0 || j === 11 ? '#8a5a1a' : (i === 3 && j > 2 && j < 9) || (j === 5 && i > 1 && i < 5) ? '#c8302a' : '#f2d36a')); if (p >= 1) for (let i = 0; i < 40; i++) { const fx = b.x - 10 + (i * 7) % 21, fy = b.y - 4 - ((i * 13 + Math.floor(t * 50)) % 34); put(fx, fy, C(i % 3 === 0 ? '#ffe08a' : i % 3 === 1 ? '#ff9a3a' : '#e8502a')); put(fx + 1, fy, C('#ff9a3a')); } },
+  medic(put, a, b, t) { const k = ease(t), cx = a.x, cy = a.y - 42; for (let i = -5; i <= 5; i++) for (let w = -1; w <= 1; w++) { put(cx + i, cy + w, C('#5ac86a')); put(cx + w, cy + i, C('#5ac86a')); } for (let i = -4; i <= 4; i++) { put(cx + i, cy, C('#d8ffd0')); put(cx, cy + i, C('#d8ffd0')); } for (let i = 0; i < 24; i++) { const px = a.x - 12 + (i * 7) % 25, py = a.y - 2 - ((i * 9 + Math.floor(t * 34)) % 34); put(px, py, C(k > .4 ? '#b8f0a8' : '#5ac86a')); put(px, py - 1, C('#e8ffe0')); } },
+  sealmaster(put, a, b, t) { const p = Math.min(1, t * 1.4), x1 = Math.round(a.x + (b.x - a.x) * p); for (let x = Math.min(a.x, x1); x <= Math.max(a.x, x1); x++) { const y = a.y - 18 + ((x >> 2) % 2); put(x, y, C(x % 6 < 3 ? '#e0e0ea' : '#7a7a88')); put(x, y + 1, C(x % 6 < 3 ? '#9a9aa8' : '#5a5a68')); } if (p >= 1) for (let r = 0; r < 2; r++) for (let i = 0; i < 40; i++) { const ang = i / 40 * Math.PI * 2 + t * 5 * (r ? -1 : 1); put(Math.round(b.x + (13 - r * 3) * Math.cos(ang)), Math.round(b.y - 12 - r * 10 + 4 * Math.sin(ang)), C(i % 4 < 2 ? '#e0e0ea' : '#7a7a88')); } },
+  analyst(put, a, b, t) { if (t < .25) return; const k = (t - .25) / .75; for (let n = 0; n < 2; n++) for (let i = 0; i < 30; i++) { const u = i / 29; if (u > k * 1.3) break; const x = Math.round(b.x - 14 + 28 * u), y = Math.round(b.y - 36 + 30 * u + (n ? -6 + 12 * u : 0)) - (n ? 0 : 0); const xx = n ? Math.round(b.x + 14 - 28 * u) : x; put(xx, y, C('#b07ad8')); put(xx + 1, y, C('#e8d0ff')); put(xx, y + 1, C('#5a2a7a')); } },
+  tamer(put, a, b, t, s) { const p = Math.min(1, t * 1.5), x = Math.round(a.x + (b.x - a.x - (a.flip ? -12 : 12)) * p); if (s.f.pet) drawPet(put, s.f.pet.id, !!s.f.pet.adult, 'step', x, a.y - Math.round(8 * Math.sin(p * Math.PI)), !a.flip); else for (let i = 0; i < 4; i++) put(x + i, a.y - 4, C('#c8a070')); if (p >= 1) drawEffect(put, 'star', b.x, b.y - 30); },
+};
+
 export function sceneHtml() {
   return '<div class="scene-box"><canvas class="scene-cv" width="384" height="144" aria-label="함께하는 이들"></canvas><div class="scene-tags"></div></div>';
 }
@@ -238,7 +253,7 @@ export function sceneHtml() {
 export function mountScene(box, key) {
   const cv = box.querySelector('.scene-cv'), tags = box.querySelector('.scene-tags'), g = cv.getContext('2d');
   const img = g.createImageData(W, H), buf = new Uint32Array(img.data.buffer);
-  let spots = [], more = 0, prev = null, fx = [], peek = null, timer = null, state = new Map();
+  let spots = [], more = 0, prev = null, fx = [], peek = null, timer = null, state = new Map(), duel = null, anims = [], floats = [], raf = 0;
   const put = (x, y, c) => { if (x >= 0 && y >= 0 && x < W && y < H) buf[y * W + x] = c; };
   const paint = () => {
     if (!box.isConnected) { clearInterval(timer); return; }
@@ -246,10 +261,26 @@ export function mountScene(box, key) {
     const now = Date.now(), bg = background(key, scenePhase());
     buf.set(bg.buf);
     fx = fx.filter(e => e.until > now);
+    anims = anims.filter(a => a.t0 + a.dur > now);
+    floats = floats.filter(f => f.t0 + 1100 > now);
+    const pose = s => {
+      let dx = 0, dy = 0, tint = 0, frame = null;
+      for (const a of anims) {
+        const t = (now - a.t0) / a.dur; if (t < 0) continue;
+        const dir = s.flip ? -1 : 1;
+        if (a.who === s && a.kind === 'lunge') { dx += dir * Math.round(7 * ease(t)); frame = 'walk'; }
+        if (a.who === s && a.kind === 'hurt') { dx -= dir * Math.round((a.big ? 5 : 3) * ease(t)); tint = Math.max(tint, (1 - t) * (a.big ? .85 : .6)); }
+        if (a.who === s && a.kind === 'dodge') { dx -= dir * Math.round(6 * ease(t)); dy -= Math.round(3 * ease(t)); }
+        if (a.who === s && a.kind === 'cheer') { dy -= Math.round(5 * Math.abs(Math.sin(t * Math.PI * 3))); frame = 'walk'; }
+      }
+      return { dx, dy, tint, frame };
+    };
     for (const s of spots) {
       const st = state.get(s.f.id) || {};
-      const frame = st.until > now ? st.frame : 'stand';
-      drawAvatar(put, s.f.look, frame, s.x, s.y, s.flip, s.f.job);
+      const ps = pose(s), down = duel && duel.down?.has(s.f.id);
+      const frame = ps.frame || (st.until > now ? st.frame : 'stand');
+      const pp = down ? (x, y, c) => put(x, y, grey(c)) : ps.tint > 0 ? (x, y, c) => put(x, y, lit(c, ps.tint)) : put;
+      drawAvatar(pp, s.f.look, down ? 'blink' : frame, s.x + ps.dx, s.y + ps.dy + (down ? 3 : 0), s.flip, s.f.job);
       const e = fx.find(x => x.id === s.f.id);
       if (e) {
         const a = SCENE_ACTS[e.act] || {};
@@ -258,6 +289,14 @@ export function mountScene(box, key) {
         else if (a.fx) drawEffect(put, a.fx, s.x, s.y - 38);
       }
     }
+    for (const a of anims) {
+      const t = (now - a.t0) / a.dur; if (t < 0) continue;
+      if (a.kind === 'skill' && JOB_FX[a.job]) JOB_FX[a.job](put, a.who, a.to || a.who, t, a.who);
+      if (a.kind === 'spark') drawEffect(put, 'star', a.who.x, a.who.y - 36 - Math.round(4 * t));
+      if (a.kind === 'stun') for (let i = 0; i < 3; i++) { const ang = t * 9 + i * 2.1; drawEffect(put, 'star', Math.round(a.who.x + 8 * Math.cos(ang)), Math.round(a.who.y - 34 + 2 * Math.sin(ang))); }
+      if (a.kind === 'heal') for (let i = 0; i < 12; i++) put(a.who.x - 9 + (i * 7) % 19, a.who.y - 2 - ((i * 11 + Math.floor(t * 40)) % 34), C(i % 2 ? '#7fe08a' : '#d8ffd0'));
+      if (a.kind === 'slash') for (let i = 0; i < 12; i++) { const u = i / 11; if (u > t * 2) break; put(Math.round(a.who.x - 7 + 14 * u), Math.round(a.who.y - 26 + 12 * u), C('#f4f4f4')); }
+    }
     g.putImageData(img, 0, 0);
     const shown = new Set([...fx.map(e => e.id), ...(peek && peek.until > now ? [peek.id] : [])]);
     tags.innerHTML = spots.filter(s => s.f.me || s.f.role === 'couple' || s.f.role === 'fighter' || shown.has(s.f.id)).map(s => {
@@ -265,7 +304,40 @@ export function mountScene(box, key) {
       const cls = s.f.me ? ' me' : s.f.role === 'couple' || s.f.role === 'fighter' ? ' cp' : '';
       return `<span class="scene-nm${cls}" style="left:${(s.x / W * 100).toFixed(2)}%;top:${(s.y / H * 100).toFixed(2)}%">${s.f.me ? `나 · ${esc(s.f.name)}` : esc(s.f.name)}</span>`
         + (a ? `<span class="scene-bub" style="left:${(s.x / W * 100).toFixed(2)}%;top:${((s.y - 46) / H * 100).toFixed(2)}%">${esc(a.label)}</span>` : '');
-    }).join('') + (more > 0 ? `<span class="scene-more">외 ${more}명</span>` : '');
+    }).join('') + floats.filter(f => f.t0 <= now).map(f => `<span class="scene-dmg ${f.cls}" style="left:${(f.who.x / W * 100).toFixed(2)}%;top:${((f.who.y - 40 - (f.row || 0) * 9 - (now - f.t0) / 90) / H * 100).toFixed(2)}%">${esc(f.txt)}</span>`).join('')
+      + (more > 0 ? `<span class="scene-more">외 ${more}명</span>` : '');
+  };
+  const loop = () => { raf = 0; paint(); if (box.isConnected && (anims.length || floats.length || duel)) raf = requestAnimationFrame(loop); };
+  const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+  const actorOf = (side, text) => {
+    const team = spots.filter(s => s.f.role === 'fighter' && +s.f.side === +side);
+    return team.find(s => text && text.startsWith(s.f.name)) || team.find(s => text && text.includes(s.f.name)) || team[0];
+  };
+  const play = (l, t0) => {
+    const w = +l.w, me = actorOf(w, l.t), foe = actorOf(w === 1 ? 2 : 1, l.t?.slice((me?.f.name || '').length));
+    if (!me) return;
+    const fxk = DUEL_FX[l.k] || {};
+    const add = (kind, who, dur, o = {}) => anims.push({ kind, who, t0, dur, ...o });
+    const say = (who, txt, cls) => { if (who && txt) floats.push({ who, txt, cls, t0: t0 + 220, row: floats.filter(f => f.who === who && f.t0 + 1100 > t0).length }); };
+    if (l.k === 'hit' || l.k === 'crit') { add('lunge', me, 420); if (foe) { add('hurt', foe, 460, { big: l.k === 'crit', t0: t0 + 180 }); add('slash', foe, 300, { t0: t0 + 160 }); if (l.k === 'crit') add('spark', foe, 700, { t0: t0 + 200 }); } say(foe, l.d ? `${l.k === 'crit' ? '' : '−'}${l.d}${l.k === 'crit' ? '!' : ''}` : '', l.k); }
+    else if (l.k === 'miss') { add('lunge', me, 420); const tgt = actorOf(w === 1 ? 2 : 1, l.t); if (tgt) { add('dodge', tgt, 480, { t0: t0 + 120 }); say(tgt, fxk.label, 'miss'); } }
+    else if (l.k === 'skill') { add('lunge', me, 360); add('skill', me, 1100, { job: me.f.job, to: foe }); say(me, (l.t.match(/「([^」]+)」/) || [])[1], 'skill'); }
+    else if (l.k === 'heal') { add('heal', me, 900); const m = l.t.match(/기세 (\d+)/); say(me, m ? `+${m[1]}` : fxk.label, 'heal'); }
+    else if (l.k === 'stun') { add('stun', me, 1100); say(me, fxk.label, 'stun'); }
+    else if (l.k === 'down' && foe) { duel.down.add(foe.f.id); say(foe, fxk.label, 'down'); }
+    else if (l.k === 'end') { spots.filter(s => s.f.role === 'fighter' && +s.f.side === w).forEach(s => add('cheer', s, 1600)); say(me, fxk.label, 'end'); }
+  };
+  const duelTick = () => {
+    if (!duel) return;
+    const now = Date.now(), x = Math.floor((now - duel.start) / duel.gap);
+    while (duel.next <= x && duel.next <= duel.last) {
+      const xs = duel.next, group = duel.log.filter(l => (l.x || 0) === xs && l.w);
+      const step = Math.min(700, duel.gap / Math.max(1, group.length));
+      group.forEach((l, i) => { const t0 = duel.start + xs * duel.gap + i * step; if (t0 + 1200 > now) play(l, Math.max(t0, now - 60)); });
+      duel.next++;
+    }
+    if (now > duel.start + (duel.last + 3) * duel.gap) { duel = null; }
+    kick();
   };
   const tick = () => {
     const now = Date.now();
@@ -301,6 +373,14 @@ export function mountScene(box, key) {
     spots = place(background(key, scenePhase()).lay, list);
     paint();
   };
-  timer = setInterval(tick, 700);
-  return { update, stop: () => clearInterval(timer) };
+  const setDuel = m => {
+    if (!m || !m.log) { if (duel) { duel = null; kick(); } return; }
+    const start = new Date(m.starts_at).getTime(), key = m.id || start;
+    if (duel && duel.key === key) return;
+    duel = { key, start, gap: m.gap, log: m.log, next: 0, last: Math.max(0, ...m.log.map(l => l.x || 0)), down: new Set() };
+    duelTick();
+  };
+  timer = setInterval(() => { tick(); duelTick(); }, 700);
+  const dt = setInterval(duelTick, 150);
+  return { update, duel: setDuel, stop: () => { clearInterval(timer); clearInterval(dt); cancelAnimationFrame(raf); } };
 }
