@@ -37,7 +37,7 @@ as $function$
   select '{
     "names": ["안채", "옆방", "2층"],
     "cap": {"6": 15, "7": 20, "8": 26, "9": 32},
-    "store": {"base": 30, "per_size": 5, "per_room": 10},
+    "store": {"base": 50, "per_size": 10, "per_room": 20},
     "stair": "numaru_stair",
     "rooms": [
       {"steps": {
