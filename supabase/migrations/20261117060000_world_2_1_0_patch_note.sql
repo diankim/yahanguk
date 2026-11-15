@@ -42,6 +42,9 @@ insert into public.world_patch_notes(note_id, title, body) values ('2.1.0', '2.1
 
 ## 꼬마 동무
 - 동무가 91종이 되었습니다. 갈래마다 일곱 종씩입니다.
+
+## 편의
+- 현장 「답사 지도」·「출몰 요괴」 칸을 펼쳐 두면 길을 옮기거나 다른 화면에 다녀와도 펼친 채로 남습니다.
 $N$)
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

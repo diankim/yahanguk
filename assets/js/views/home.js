@@ -318,9 +318,9 @@ function field(s, roster, blocked) {
       </div>
       ${fishPanel(blocked)}
     </div>
-    <details class="panel fold fw-map"><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
+    <details class="panel fold fw-map" data-fold="field-map" ${foldOpen('field-map', false) ? 'open' : ''}><summary class="panel-head"><h2>${icon('map', 16)}${esc(s.region.region_name)} 답사 지도 · ${s.survey?.pct ?? 0}%</h2></summary>
       <div class="panel-body">${tree(s)}</div></details>
-    <details class="panel fold fw-foes"><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
+    <details class="panel fold fw-foes" data-fold="field-foes" ${foldOpen('field-foes', false) ? 'open' : ''}><summary class="panel-head"><h2>${icon('sword', 16)}출몰 요괴</h2></summary>
       <div class="panel-body"><ul class="foe-list">${(s.monsters || []).map(m => m.revealed === false
         ? `<li class="locked"><b>???</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.kind_name || '')} · 답사도 ${m.need}%에 드러납니다</small></li>`
         : `<li><b>${esc(m.name)}</b>${m.role === 'guardian' ? chip('우두머리', 'bad') : ''}<small>${esc(m.type || '')}${m.kind_name ? ` · ${esc(m.kind_name)}` : ''} · Lv.${m.min_level}–${m.max_level}</small></li>`).join('')}</ul>
