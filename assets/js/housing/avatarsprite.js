@@ -9,11 +9,25 @@ export function defaultLook(job) {
   return { skin: 'warm', hair: 'calm', hair_color: 'brown', eyes: 'round', eye_color: 'brown', mouth: 'small', top: d.top, bottom: d.bottom, acc: '' };
 }
 
+export const TONE_KEYS = { skin: ['skin_c', 'skins'], hair_color: ['hair_c', 'hairColors'], eye_color: ['eye_c', 'eyeColors'] };
+
 export function fixLook(look, job) {
   const d = defaultLook(job), l = { ...d, ...(look || {}) };
   for (const [k, t] of SLOTS) if (!AV[t][l[k]]) l[k] = d[k];
   if (l.acc && !AV.acc[l.acc]) l.acc = '';
+  for (const [c] of Object.values(TONE_KEYS)) if (l[c] != null && !/^[0-9a-f]{6}$/.test(String(l[c]))) delete l[c];
   return l;
+}
+
+export function toned(table, hex) {
+  const t = AV.tones[table], out = { [t.key]: hex };
+  for (const [k, f] of Object.entries(t.f)) out[k] = shade(hex, f);
+  return out;
+}
+
+function tonePal(l) {
+  const pick = (slot, cur) => { const [c, t] = TONE_KEYS[slot]; return l[c] ? toned(t, '#' + l[c]) : AV[t][cur]; };
+  return { ...pick('skin', l.skin), ...pick('hair_color', l.hair_color), ...pick('eye_color', l.eye_color) };
 }
 
 function put(px, p, pal) {
@@ -63,6 +77,53 @@ const designs = new Map();
 export function registerDesigns(map) {
   for (const [id, d] of Object.entries(map || {})) if (d && d.px) designs.set(String(id), d);
 }
+export function faceOf(look) {
+  const id = look?.face_d, d = id != null && designs.get(String(id));
+  return d && d.slot === 'face' && d.px?.length === AV.face.w * AV.face.h ? d : null;
+}
+function putFace(px, d) {
+  const F = AV.face;
+  for (let j = 0; j < F.h; j++) for (let i = 0; i < F.w; i++) {
+    const v = d.px[j * F.w + i];
+    if (v == null || v === '.') continue;
+    const c = d.pal.slice(+v * 6, +v * 6 + 6);
+    if (c.length === 6) px[(F.y + j + 1) * AW + F.x + i + 1] = '#' + c;
+  }
+}
+const HB = AV.hairBox, FB = AV.face;
+const HEAD = (() => { const b = AV.body.stand, set = new Set(); b.rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) if (r[x] !== '.' && b.y + y <= 23) set.add((b.y + y) * 100 + b.x + x); }); return set; })();
+export const hairBlocked = (i, j) => { const x = HB.x + i, y = HB.y + j; return x >= FB.x && x < FB.x + FB.w && y >= FB.y && y < FB.y + FB.h; };
+export function hairOf(look) {
+  const id = look?.hair_d, d = id != null && designs.get(String(id));
+  return d && d.slot === 'hair' && d.px?.length === HB.w * HB.h ? d : null;
+}
+function putHair(px, d, layer) {
+  for (let j = 0; j < HB.h; j++) for (let i = 0; i < HB.w; i++) {
+    const v = d.px[j * HB.w + i];
+    if (v == null || v === '.' || hairBlocked(i, j)) continue;
+    const x = HB.x + i, y = HB.y + j, front = HEAD.has(y * 100 + x);
+    if (layer !== 'all' && front !== (layer === 'front')) continue;
+    const n = parseInt(v, 16), c = d.pal.slice(n * 6, n * 6 + 6);
+    if (c.length === 6) px[(y + 1) * AW + x + 1] = '#' + c;
+  }
+}
+export function hairStart(look) {
+  const l = fixLook(look), base = { ...AV.fixed, ...tonePal(l) }, h = AV.hair[l.hair], cell = new Array(HB.w * HB.h).fill(null);
+  const lay = (p, back) => p && p.rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const c = r[x] === '.' ? null : base[r[x]], i = x + p.x - HB.x, j = y + p.y - HB.y; if (c && i >= 0 && j >= 0 && i < HB.w && j < HB.h && !hairBlocked(i, j) && !(back && HEAD.has((p.y + y) * 100 + p.x + x))) cell[j * HB.w + i] = c; } });
+  lay(h.back, true); lay(h.front, false);
+  const pal = [], rgb = c => [1, 3, 5].map(k => parseInt(c.slice(k, k + 2), 16));
+  for (const c of cell) if (c && !pal.includes(c) && pal.length < 16) pal.push(c);
+  const near = c => { if (pal.includes(c)) return pal.indexOf(c); const a = rgb(c); let b = 0, bd = 1e9; pal.forEach((p, k) => { const q = rgb(p), dd = Math.abs(q[0] - a[0]) + Math.abs(q[1] - a[1]) + Math.abs(q[2] - a[2]); if (dd < bd) { bd = dd; b = k; } }); return b; };
+  return { pal, px: cell.map(c => c ? near(c).toString(16) : '.') };
+}
+export function faceStart(look) {
+  const l = fixLook(look), base = { ...AV.fixed, ...tonePal(l) }, F = AV.face, cell = new Array(F.w * F.h).fill(null);
+  const lay = p => p && p.rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const c = r[x] === '.' ? null : base[r[x]], i = x + p.x - F.x, j = y + p.y - F.y; if (c && i >= 0 && j >= 0 && i < F.w && j < F.h) cell[j * F.w + i] = c; } });
+  lay(AV.eyes[l.eyes].open); lay(AV.mouth[l.mouth].part);
+  const pal = [];
+  for (const c of cell) if (c && !pal.includes(c) && pal.length < 8) pal.push(c);
+  return { pal, px: cell.map(c => c && pal.includes(c) ? String(pal.indexOf(c)) : '.') };
+}
 export function designOf(look, slot) {
   const id = look?.[slot + '_d'], d = id != null && designs.get(String(id));
   return d && d.slot === slot && d.base === look[slot] && AV[slot][d.base]?.mask ? d : null;
@@ -97,20 +158,23 @@ function putDesign(px, p, pal, mask, d, map) {
 
 export function avatarPixels(look, frame = 'stand', { front } = {}) {
   const l = fixLook(look), W = AW, H = AH, px = new Array(W * H).fill(null);
-  const base = { ...AV.fixed, ...AV.skins[l.skin], ...AV.hairColors[l.hair_color], ...AV.eyeColors[l.eye_color] };
+  const base = { ...AV.fixed, ...tonePal(l) };
   const step = frame === 'walk' ? 'walk' : 'stand', hair = AV.hair[l.hair], top = AV.top[l.top], bot = AV.bottom[l.bottom];
-  put(px, hair.back, base);
+  const hd = hairOf(l);
+  if (hd) putHair(px, hd, 'back'); else put(px, hair.back, base);
   put(px, AV.body[step], base);
-  const bd = designOf(l, 'bottom'), td = designOf(l, 'top');
+  const bd = designOf(l, 'bottom'), td = designOf(l, 'top'), fd = faceOf(l);
   const wear = {
+    hair: () => hd && putHair(px, hd, 'all'),
+    face: () => fd && putFace(px, fd),
     bottom: () => bd ? putDesign(px, bot[step], designPal({ ...base, ...bot.pal }, bot.mask, bd), bot.mask, bd, step === 'walk' ? bot.mask.walk : null) : put(px, bot[step], { ...base, ...bot.pal }),
     top: () => td ? putDesign(px, top.part, designPal({ ...base, ...top.pal }, top.mask, td), top.mask, td, null) : put(px, top.part, { ...base, ...top.pal }),
   };
   wear.bottom();
   wear.top();
-  put(px, AV.eyes[l.eyes][frame === 'blink' ? 'closed' : 'open'], base);
-  put(px, AV.mouth[l.mouth].part, base);
-  put(px, hair.front, base);
+  if (fd) { if (front !== 'face') wear.face(); }
+  else { put(px, AV.eyes[l.eyes][frame === 'blink' ? 'closed' : 'open'], base); put(px, AV.mouth[l.mouth].part, base); }
+  if (hd) putHair(px, hd, 'front'); else put(px, hair.front, base);
   if (l.acc) put(px, AV.acc[l.acc].part, { ...base, ...AV.acc[l.acc].pal });
   wear[front]?.();
   const out = px.slice();
@@ -123,7 +187,7 @@ export function avatarPixels(look, frame = 'stand', { front } = {}) {
 
 const pxCache = new Map();
 export function drawAvatar(putPx, look, frame, x0, y0, flip = false, job) {
-  const l = fixLook(look, job), key = JSON.stringify([l, frame, !!designOf(l, 'top'), !!designOf(l, 'bottom')]);
+  const l = fixLook(look, job), key = JSON.stringify([l, frame, !!designOf(l, 'top'), !!designOf(l, 'bottom'), !!faceOf(l), !!hairOf(l)]);
   if (!pxCache.has(key)) { if (pxCache.size > 64) pxCache.clear(); pxCache.set(key, avatarPixels(l, frame)); }
   const px = pxCache.get(key), W = AW, H = AH, gx = Math.round(x0 - W / 2), gy = Math.round(y0 - H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -134,7 +198,7 @@ export function drawAvatar(putPx, look, frame, x0, y0, flip = false, job) {
 
 const cache = new Map();
 export function avatarImage(look, { frame = 'stand', scale = 4, job, crop = null } = {}) {
-  const l = fixLook(look, job), key = JSON.stringify([l, frame, scale, crop, !!designOf(l, 'top'), !!designOf(l, 'bottom')]);
+  const l = fixLook(look, job), key = JSON.stringify([l, frame, scale, crop, !!designOf(l, 'top'), !!designOf(l, 'bottom'), !!faceOf(l), !!hairOf(l)]);
   if (cache.has(key)) return cache.get(key);
   const [cx, cy, cw, ch] = crop || [0, 0, AW, AH];
   const px = avatarPixels(l, frame), c = document.createElement('canvas');

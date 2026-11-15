@@ -21,9 +21,21 @@ def part(g):
 
 
 out = dict(w=D.W, h=D.H, fixed=D.FIXED)
-out['skins'] = {k: dict(name=n, s=c, S=shade(c, .93), T=shade(c, .8)) for k, (n, c) in D.SKINS.items()}
-out['hairColors'] = {k: dict(name=n, h=c, H=shade(c, .72), i=shade(c, 1.22), j=shade(c, 1.5), k=shade(c, .84), g=shade(c, 1.1), q=shade(c, .62)) for k, (n, c) in D.HAIR_COLORS.items()}
-out['eyeColors'] = {k: dict(name=n, e=c, E=shade(c, .55), f=shade(c, 1.45)) for k, (n, c) in D.EYE_COLORS.items()}
+TONES = {'skins': dict(key='s', f=dict(S=.93, T=.8)),
+         'hairColors': dict(key='h', f=dict(H=.72, i=1.22, j=1.5, k=.84, g=1.1, q=.62)),
+         'eyeColors': dict(key='e', f=dict(E=.55, f=1.45))}
+
+
+def toned(t, c):
+    return {TONES[t]['key']: c, **{k: shade(c, f) for k, f in TONES[t]['f'].items()}}
+
+
+out['skins'] = {k: dict(name=n, **toned('skins', c)) for k, (n, c) in D.SKINS.items()}
+out['hairColors'] = {k: dict(name=n, **toned('hairColors', c)) for k, (n, c) in D.HAIR_COLORS.items()}
+out['eyeColors'] = {k: dict(name=n, **toned('eyeColors', c)) for k, (n, c) in D.EYE_COLORS.items()}
+out['tones'] = TONES
+out['face'] = dict(x=6, y=14, w=16, h=7)
+out['hairBox'] = dict(x=0, y=0, w=28, h=34)
 out['body'] = {f: part(D.body(f)) for f in ('stand', 'walk')}
 import hair_art as A
 out['hair'] = {}
@@ -105,6 +117,7 @@ for k in T.ACC:
     outfits['acc:' + k] = dict(slot='acc', name=T.ACC[k][0], grade=1)
 masks = {'top:' + k: dict(n=t['mask']['n'], deco=len(t['mask']['deco'])) for k, t in tops.items()}
 masks.update({'bottom:' + k: dict(n=bt['mask']['n'], deco=len(bt['mask']['deco'])) for k, bt in bots.items()})
-rules = dict(free=parts, outfits=outfits, job=out['jobDefault'], masks=masks)
+rules = dict(free=parts, outfits=outfits, job=out['jobDefault'], masks=masks, face=dict(n=out['face']['w'] * out['face']['h']),
+             hair=dict(w=out['hairBox']['w'], n=out['hairBox']['w'] * out['hairBox']['h'], bx=out['face']['x'] - out['hairBox']['x'], by=out['face']['y'] - out['hairBox']['y'], bw=out['face']['w'], bh=out["face"]["h"]))
 (ROOT / 'supabase/gen_avatar').mkdir(exist_ok=True)
 (ROOT / 'supabase/gen_avatar/parts.json').write_text(json.dumps(rules, ensure_ascii=False, separators=(',', ':')))
