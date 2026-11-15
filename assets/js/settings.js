@@ -61,7 +61,7 @@ export function bindCrop(root, onReady) {
 let notes = [], bell, notesLive = false;
 const selfSoon = throttle(() => loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_notice' })), 5000);
 const shown = new Set();
-const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'raid_invite', 'raid_vote', 'gw_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite', 'yohwa', 'guide']);
+const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'tourney_start', 'raid_invite', 'raid_vote', 'gw_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite', 'yohwa', 'guide']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -144,7 +144,7 @@ function noteActs(n) {
   if (n.kind === 'bond_wedding_ask' && n.payload?.wed_id) return `<button class="btn primary small" data-wed="${esc(n.id)}" data-acc="1">혼례 받기</button><button class="btn small" data-wed="${esc(n.id)}" data-acc="0">다음에</button>`;
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
   if (n.kind === 'feast') return `<button class="btn primary small" data-feastv="${esc(n.id)}">행사 보기</button>`;
-  if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">비무 방</button>`;
+  if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">${n.kind === 'tourney_start' ? '대진표 보기' : '비무 방'}</button>`;
   if ((n.kind === 'pfight_invite' || n.kind === 'pfight_join') && n.payload?.fight_id) return `<button class="btn primary small" data-pfight="${esc(n.id)}" data-join="${n.kind === 'pfight_invite' ? 1 : ''}">${n.kind === 'pfight_invite' ? '합류 · 탐색력 1' : '보기'}</button>`;
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
   if (n.kind === 'letter' && n.payload?.removed?.length) return `<button class="btn primary small" data-lgone="${esc(n.id)}">지워진 서신 보기</button>`;
@@ -227,7 +227,7 @@ async function runAct(btn) {
   }
   if (btn.dataset.wedv) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); (await import('./bond.js')).openWedding(n.payload.wed_id); return true; }
   if (btn.dataset.feastv) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); (await import('./feast.js')).openFeast(); return true; }
-  if (btn.dataset.tn) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('tourney', n.kind === 'tourney_result' ? n.payload.t_id : ''); return true; }
+  if (btn.dataset.tn) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('tourney', (n.kind === 'tourney_result' || n.kind === 'tourney_start') ? n.payload.t_id : ''); return true; }
   if (btn.dataset.pfight) {
     let ok = true;
     if (btn.dataset.join) await guard(btn, async () => { try { return await act('world_pfight_join', { p_fight: n.payload.fight_id }); } catch (e) { ok = false; throw e; } finally { await markRead(n); } });

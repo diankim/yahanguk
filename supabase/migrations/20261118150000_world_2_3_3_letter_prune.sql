@@ -37,11 +37,32 @@ begin
   return n;
 end $function$;
 
+create or replace function pg_temp.yh_fix2(p_fn regprocedure, p_old text, p_new text) returns void language plpgsql as $f$
+declare src text := pg_get_functiondef(p_fn); n int;
+begin
+  n := (length(src) - length(replace(src, p_old, ''))) / greatest(length(p_old), 1);
+  if n <> 1 then raise exception 'yh_fix2 %: 조각이 % 번 있음', p_fn, n; end if;
+  execute replace(src, p_old, p_new);
+end $f$;
+
+select pg_temp.yh_fix2('public.world_tourney_tick()'::regprocedure,
+$o$      update public.world_tourneys set status = 'running', updated_at = now() where t_id = t.t_id;
+      perform public.world_tourney_play_round(t.t_id);$o$,
+$n$      update public.world_tourneys set status = 'running', updated_at = now() where t_id = t.t_id;
+      insert into public.world_notifications(user_id, kind, title, content, payload)
+      select en.owner_id, 'tourney_start', '비무회 시작', venue || '에서 ' || case when t.mode = 'solo' then '1:1' else '팀전' end || ' 비무회가 시작되었습니다. 대진표에서 겨루기를 지켜보세요.', jsonb_build_object('t_id', t.t_id)
+        from public.world_tourney_entrants en join public.world_tourney_entries e on e.entry_id = en.entry_id where en.t_id = t.t_id and e.status = 'in';
+      perform public.world_tourney_play_round(t.t_id);$n$);
+
+select pg_temp.yh_fix2('public.world_notify_group(text)'::regprocedure,
+$o$'tourney_alert', 'tourney_result'$o$, $n$'tourney_alert', 'tourney_start', 'tourney_result'$n$);
+
 update public.world_patch_notes set body = body || '
 
 - 서신함이 가득 차거나 받은 지 3일이 지나 서신이 지워지면 알림이 옵니다. 알림의 「지워진 서신 보기」로 지워진 서신의 글을 다시 읽을 수 있습니다.
 - 서신함이 넘칠 때는 읽은 서신부터, 그다음 오래된 서신부터 지웁니다. 아직 읽지 않은 서신이 먼저 지워지지 않습니다.
 - 서신함에 지금 몇 통이 있는지, 몇 통을 고정했는지, 가득 차면 어떤 서신이 지워지는지 서신 칸에 적었습니다.
+- 비무회가 시작하는 순간에도 나선 조사원에게 알림이 뜹니다. 알림의 「대진표」로 바로 겨루기를 볼 수 있습니다.
 - 비무회 팀전 장면에서 한 팀이 무대 양쪽을 다 차지하고 상대 팀이 구경꾼 줄에 서던 것을 고쳤습니다. 두 팀이 무대 양쪽에 마주 섭니다.
 ' where note_id = '2.3.0' and body not like '%지워진 서신 보기%';
 
