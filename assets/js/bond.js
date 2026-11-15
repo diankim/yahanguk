@@ -1,3 +1,5 @@
+import { CHEER_NAME } from './rules.js';
+import { sceneHtml, mountScene } from './scene.js';
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
 import { load } from './views/common.js';
@@ -25,7 +27,6 @@ export async function loadBond(force) {
 }
 const refresh = () => loadBond(true);
 const WED = GAMEDATA.wedding || { delays: [10, 60, 720, 1440], gap_s: 15, wish_max: 40, guest: { clap: 5, petal: 5, cup: 5 }, couple: { bow: 5, cake: 5 } };
-const CHEER_NAME = { clap: '박수 치기', petal: '꽃잎 뿌리기', cup: '술잔 올리기', bow: '절하기', cake: '떡 돌리기', pet: '동무 나서기' };
 const delayName = m => m < 60 ? `${m}분 뒤` : `${m / 60}시간 뒤`;
 function cheerRow(caps, me, wait, pet) {
   return `<div class="btn-row wed-cheers">${Object.entries(caps).filter(([k]) => k !== 'pet' || pet).map(([k, n]) => {
@@ -35,10 +36,11 @@ function cheerRow(caps, me, wait, pet) {
 }
 export async function openWedding(wedId) {
   let v = null, t = null, skew = 0, cd = null;
-  const l = openLayer({ title: '혼례', body: '<div class="wed-box"><p class="muted">불러오는 중…</p></div>' });
-  const box = $('.wed-box', l);
+  const l = openLayer({ title: '혼례', body: `${sceneHtml()}<div class="wed-box"><p class="muted">불러오는 중…</p></div>` });
+  const box = $('.wed-box', l), scene = mountScene($('.scene-box', l), 'wedding');
   const draw = () => {
     if (!box.isConnected) return clearInterval(t);
+    scene.update(v.folks);
     const live = ['ready', 'ceremony'].includes(v.status), me = v.me || {};
     const lines = [...(v.script || []), ...(v.lines || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
     const startIn = new Date(v.starts_at) - (Date.now() + skew);

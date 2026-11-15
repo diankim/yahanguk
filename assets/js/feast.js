@@ -1,5 +1,6 @@
 import { rpc, esc, icon, guard, $, $$, fmt, openLayer, effectText } from './core.js';
 import { GAMEDATA } from './gamedata.js';
+import { sceneHtml, mountScene } from './scene.js';
 
 const FEAST = GAMEDATA.feast || { start: '12:30', min: 30, feasts: [] };
 export function feastToday(now = Date.now()) {
@@ -21,11 +22,14 @@ export function bindFeastBand(box) {
 }
 export async function openFeast() {
   let v = null, t = null, cd = null, skew = 0;
-  const l = openLayer({ title: '세력 행사', body: '<div class="wed-box feast-box"><p class="muted">불러오는 중…</p></div>' });
-  const box = $('.feast-box', l);
+  const l = openLayer({ title: '세력 행사', body: `${sceneHtml()}<div class="wed-box feast-box"><p class="muted">불러오는 중…</p></div>` });
+  const box = $('.feast-box', l), sbox = $('.scene-box', l);
+  let scene = null;
   const draw = () => {
     if (!box.isConnected) { clearInterval(t); clearInterval(cd); return; }
-    if (!v) { box.innerHTML = '<p class="muted">오늘은 열리는 행사가 없습니다.</p>'; return; }
+    if (!v) { sbox.hidden = true; box.innerHTML = '<p class="muted">오늘은 열리는 행사가 없습니다.</p>'; return; }
+    if (!scene) scene = mountScene(sbox, v.key);
+    scene.update(v.folks);
     const now = Date.now() + skew, ru = v.rules || FEAST, me = v.me || {};
     const startIn = new Date(v.starts_at) - now, endIn = new Date(v.ends_at) - now;
     const when = v.status === 'done' ? '끝남' : startIn > 0 ? `${fmt.remain(startIn)} 뒤 시작` : `${fmt.remain(endIn)} 남음`;

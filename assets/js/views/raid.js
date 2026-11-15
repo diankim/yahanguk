@@ -1,4 +1,5 @@
 import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
+import { sceneHtml, mountScene } from '../scene.js';
 import { feastBandRow, bindFeastBand } from '../feast.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
@@ -30,6 +31,7 @@ export async function render(root, sub) {
 }
 export function destroy() { unfitFight(); hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
 
+let scene = null;
 async function refresh() {
   if (!el) return;
   lastFetch = Date.now();
@@ -110,6 +112,7 @@ function build() {
     <div class="raid-wrap ${playing ? 'playing' : ''}">
       ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
         <p class="raid-time">${timeLine}</p>
+        ${r.status === 'signup' && r.kind === 'world' ? sceneHtml() : ''}
         ${r.status === 'announced' ? '' : `<div class="raid-hp"><div class="bar boss"><span id="raid-hpbar"></span></div><b id="raid-hpnum"></b><span id="raid-phase"></span></div>`}
         ${r.status === 'announced' || ended ? '' : '<div class="raid-says" id="raid-says" aria-live="polite"></div>'}
         ${forfeitVoteHtml(s.vote)}
@@ -122,12 +125,15 @@ function build() {
     </div>
     ${locksHtml(s.locks)}`;
   logCount = 0;
+  scene?.stop(); scene = null;
+  const sb = $('.scene-box', el); if (sb) scene = mountScene(sb, 'raid');
   patch();
   bind();
   fitFight(el);
 }
 function patch() {
   const s = snap, r = s.raid, me = s.me || {}, members = s.members || [];
+  scene?.update(s.folks);
   const pct = r.max_hp ? Math.max(0, Math.min(100, r.hp / r.max_hp * 100)) : 100;
   const hb = $('#raid-hpbar', el); if (hb) hb.style.width = pct + '%';
   const hn = $('#raid-hpnum', el); if (hn) hn.textContent = r.max_hp ? `${fmt.num(r.hp)} / ${fmt.num(r.max_hp)}` : '모이는 중';

@@ -2,6 +2,7 @@ import { rpc, store, esc, icon, fmt, $, $$, nameOf, guard, ask } from '../core.j
 import { loading, errorBox, panel } from './common.js';
 import { withHq, isHq } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
+import { sceneHtml, mountScene } from '../scene.js';
 
 const MODE = { solo: '1:1', team: '팀전(2:2)' };
 const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시작', running: '진행 중', done: '끝남', cancelled: '열리지 않음' };
@@ -11,10 +12,10 @@ const TN = GD.battleItems?.tourney || {};
 const HEALS = TN.items || [], PICK = TN.pick || 2;
 const GAP = 2000;
 
-let el = null, board = null, view = null, timer = null, tick = null, skew = 0, sub = '', busy = false;
+let el = null, board = null, view = null, timer = null, tick = null, skew = 0, sub = '', busy = false, sceneNode = null, scene = null;
 
 export async function render(root, s) {
-  el = root; sub = s || ''; view = null;
+  el = root; sub = s || ''; view = null; scene?.stop(); scene = null; sceneNode = null;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('sword', 14)} 야행 비무회</p><h1>비무 방</h1></div></div>${loading()}`;
   clearInterval(tick); tick = setInterval(liveTick, 500);
   await refresh();
@@ -105,11 +106,15 @@ function drawView() {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('sword', 14)} 야행 비무회 · ${esc(MODE[v.mode] || '')}</p><h1>대진표 <small>${esc(STATUS[v.status] || '')}</small></h1></div>
       <div class="head-actions"><a class="btn small ghost" href="#/tourney">비무 방</a></div></div>
     <p class="muted small">${esc(v.venue_name || '')} · ${new Date(v.starts_at).toLocaleString('ko-KR', { weekday: 'short', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${v.can_watch ? '' : ' · 경기 기록은 개최지에서 볼 수 있습니다(대회가 끝나면 모두 볼 수 있음)'}</p>
+    <div class="scene-slot"></div>
     ${v.result?.champion_names ? `<div class="raid-result ok"><b>장원 ${esc(v.result.champion_names)}</b>${v.result.runner_up ? `<p class="small">준우승 ${esc(v.result.runner_up)}</p>` : ''}</div>` : ''}
     <div class="tn-bracket" style="--r:${rounds}">${Array.from({ length: rounds }, (_, i) => i + 1).map(r => `<div class="tn-col"><h3>${r === rounds ? '결승' : r === rounds - 1 ? '4강' : `${r}회전`}</h3>
       ${col(r).map(m => matchCard(v, m)).join('') || '<p class="muted small">아직</p>'}</div>`).join('')}</div>
     <section class="panel" id="tn-watch" hidden><header class="panel-head"><h2>${icon('eye', 16)} <span id="tn-watch-title"></span></h2><button class="btn small ghost" id="tn-watch-close">닫기</button></header>
       <div class="panel-body"><ol class="raid-log tn-log"></ol></div></section>`;
+  if (!sceneNode) { const d = document.createElement('div'); d.innerHTML = sceneHtml(); sceneNode = d.firstElementChild; scene = mountScene(sceneNode, 'tourney'); }
+  $('.scene-slot', el)?.replaceWith(sceneNode);
+  scene.update(v.folks);
   $$('[data-match]', el).forEach(b => b.onclick = () => openWatch(b.dataset.match));
   $('#tn-watch-close', el).onclick = () => { watching = null; $('#tn-watch', el).hidden = true; };
   if (watching) openWatch(watching);

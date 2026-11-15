@@ -185,3 +185,9 @@ export const MENTOR = {
 · 같은 파티·같은 곳이어야 하고, 쓰러졌거나 이동 중이면 셈하지 않습니다. 다른 경험치 덤과 합쳐 상한이 있습니다.
 · 하루 챙김 ${MT.day_cap}(같은 새내기에게서 ${MT.pair_cap})까지, 새내기 덤은 하루 그 레벨 필요 경험치의 ${MT.xp_day}%까지입니다.`,
 };
+export const CHEER_NAME = { clap: '박수 치기', petal: '꽃잎 뿌리기', cup: '술잔 올리기', bow: '절하기', cake: '떡 돌리기', pet: '동무 나서기' };
+export const SCENE_ACTS = {
+  claps: { label: CHEER_NAME.clap, fx: 'star' }, petals: { label: CHEER_NAME.petal, fx: 'petal' }, cups: { label: CHEER_NAME.cup, fx: 'note' },
+  bows: { label: CHEER_NAME.bow, fx: 'heart' }, cakes: { label: CHEER_NAME.cake, fx: 'star' }, pets: { label: CHEER_NAME.pet, fx: 'pet' },
+  wished: { label: '축사', fx: 'note' }, joined: { label: '함께하기', fx: 'star' }, join: { label: '신청', fx: 'star' },
+};
