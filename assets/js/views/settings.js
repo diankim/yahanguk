@@ -29,6 +29,7 @@ const NOTIFY_GROUPS = [
   ['bond', '연리', '정인 신청·선물·안부'],
   ['faction', '세력', '세력 소식'],
   ['housing', '별채', '발걸음·방명록·새 가구·손님이 동무와 놀아 줌'],
+  ['meisho', '명소', '채집·채광 숙련으로 캘 수 있는 명소가 열렸을 때'],
 ];
 let el, onClick = null, dirty = false, draft = null, kept = null;
 

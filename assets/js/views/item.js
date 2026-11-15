@@ -13,7 +13,10 @@ import { FIRST_PETS, petGroupOf, petGroupLine } from '../petpick.js';
 const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
   trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나',
+  hair_pattern: '머리 모양과 색을 마음대로 그려 도안첩에 담음 · 내 모습에서 바로 씀(한 장 씀)',
   ...Object.fromEntries(BIJANG.maps.map(m => [m.id, `펼치기 · Lv${m.lo}~${m.hi} 바깥 지역 하나에 묻힌 비장고가 지도에 드러남`])) };
+export const useLabel = id => BIJANG.maps.some(m => m.id === id) ? '펼치기' : id === 'hair_pattern' ? '그리기' : '사용';
+const hasPic = it => !!(it?.equipment_traits?.look || it?.equipment_traits?.hair_pattern);
 const useCache = new Map();
 function useText(id) {
   if (USE_SPECIAL[id]) return USE_SPECIAL[id];
@@ -199,7 +202,7 @@ function draw(box, id, inv, prices, mode) {
   box.innerHTML = `
     <div class="chips">${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${chip(nameOf(it?.rarity || 'common'), 'rar')}
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
-    ${isFurniture(id) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
+    ${isFurniture(id) || hasPic(it) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b class="gw-when" data-gw-when hidden></b><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.wither)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
     ${BIJANG.maps.some(m => m.id === id) ? `<div class="notice item-note">${icon('chest', 18)}<div><b>비장도</b><span>${esc(BIJANG.how)}</span><span>${esc(BIJANG.hold)}</span></div></div>` : ''}
@@ -234,12 +237,13 @@ function draw(box, id, inv, prices, mode) {
       ${actBox({ key: 'q', max: Math.max(useMaxOf(id, have), locked ? 0 : dcMax), cls: 'act-end', btns: [
         `<button class="btn small act-dc" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
         stashOk && dcMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
-        USABLE[id] ? (BIJANG.maps.some(m => m.id === id) ? '<button class="btn small primary" data-do="use" data-here="물품 사용">펼치기</button>' : '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>') : ''] })}
+        USABLE[id] ? (useLabel(id) !== '사용' ? `<button class="btn small primary" data-do="use" data-here="물품 사용">${useLabel(id)}</button>` : '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>') : ''] })}
       <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   bindQty(box);
   fillSources(box, id);
   if (isFurniture(id)) import('../housing/thumbs.js').then(({ furnPic }) => { const x = $('[data-fpic]', box); if (x) { x.innerHTML = furnPic(id); if (!x.innerHTML) x.remove(); } }).catch(() => {});
+  else if (hasPic(it)) import('./outfitdesign.js').then(({ itemPic }) => itemPic(id, it)).then(h => { const x = $('[data-fpic]', box); if (x) { x.innerHTML = h; if (!h) x.remove(); } }).catch(() => {});
   if (isFurniture(id)) myHomeCounts(rpc).then(h => {
     const row = $('[data-home-have]', box); if (!row) return;
     const placed = h.placed[id] || 0, stored = h.stored[id] || 0; if (!placed && !stored) return;
@@ -303,6 +307,11 @@ export async function useItem(id, btn, n = 1) {
     return guard(btn, () => act('world_reset_stats'));
   }
   if (id === 'reset_identity') return openResetIdentity();
+  if (id === 'hair_pattern') {
+    const [{ openFreeEditor }, snap] = await Promise.all([import('./outfitdesign.js'), load('world_avatar_get', undefined, { maxAge: 600000 })]);
+    if (snap) openFreeEditor('hair', snap, () => {});
+    return;
+  }
   const bj = BIJANG.maps.find(m => m.id === id);
   if (bj) {
     if (!(await ask(`${bj.name}을(를) 펼칩니다. Lv${bj.lo}~${bj.hi} 바깥 지역 하나가 지도에 드러나고, 그 지역에서 「비장도 따라 파기」를 할 수 있습니다. 펼친 지도는 거래할 수 없습니다.`, { title: '비장도 펼치기', ok: '펼치기' }))) return;
@@ -310,7 +319,7 @@ export async function useItem(id, btn, n = 1) {
   }
   return guard(btn, () => useItemAct(id, n));
 }
-export const USE_ONE = new Set(['reset_stats', 'reset_identity', ...BIJANG.maps.map(m => m.id)]);
+export const USE_ONE = new Set(['reset_stats', 'reset_identity', 'hair_pattern', ...BIJANG.maps.map(m => m.id)]);
 export const useMaxOf = (id, have) => USABLE[id] ? (USE_ONE.has(baseOf(id)) ? 1 : Math.min(50, have)) : 0;
 export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ONE.has(baseOf(id)) && have > 1 ? qtyHtml({ key, min: 1, max: Math.min(50, have), value: 1, all: true, small, label: '쓸 수량' }) : '';
 function openResetIdentity() {

@@ -1,7 +1,10 @@
 import { act, store, esc, icon, guard, $, $$ } from '../core.js';
-import { load, errorBox } from './common.js';
-import { AV, avatarImage, fixLook, registerDesigns } from '../housing/avatarsprite.js';
-import { designBook, cropOf } from './outfitdesign.js';
+import { load, errorBox, invalidate } from './common.js';
+import { AV, avatarImage, fixLook, registerDesigns, TONE_KEYS } from '../housing/avatarsprite.js';
+import { designBook, cropOf, designPic, openFreeEditor } from './outfitdesign.js';
+import { openColorPicker } from '../colorpick.js';
+import { hqCount } from '../hq.js';
+import { GAMEDATA as GD } from '../gamedata.js';
 
 let draft = null, draftOwner = '', homeOn = true, faceOn = false, tab = 'hair';
 const CROP = { head: [0, 0, 30, 25], face: [5, 11, 20, 12], top: [4, 22, 22, 12], legs: [5, 27, 20, 9], all: null };
@@ -19,9 +22,12 @@ const WEAR = ['top', 'bottom', 'acc'];
 const FACE_CROP = [2, 0, 26, 26];
 const faceNow = () => !!store.character?.profile?.avatar_px;
 const plain = l => { const { top_d, bottom_d, ...rest } = l || {}; return rest; };
-const LOOK_KEYS = ['skin', 'hair', 'hair_color', 'eyes', 'eye_color', 'mouth', 'top', 'bottom', 'acc'];
+const LOOK_KEYS = ['skin', 'hair', 'hair_color', 'eyes', 'eye_color', 'mouth', 'top', 'bottom', 'acc', 'skin_c', 'hair_c', 'eye_c'];
 const dnum = v => v == null || v === '' ? null : Number(v);
-const sameLook = (a, b) => LOOK_KEYS.every(k => (a?.[k] || '') === (b?.[k] || '')) && ['top_d', 'bottom_d'].every(k => dnum(a?.[k]) === dnum(b?.[k]));
+const sameLook = (a, b) => LOOK_KEYS.every(k => (a?.[k] || '') === (b?.[k] || '')) && ['top_d', 'bottom_d', 'face_d', 'hair_d'].every(k => dnum(a?.[k]) === dnum(b?.[k]));
+const OVER = { eyes: 'face_d', mouth: 'face_d', hair: 'hair_d' };
+const FREE_NAME = { face: '직접 그린 눈·입', hair: '직접 그린 머리' };
+const FREE_TAB = { face: 'eyes', hair: 'hair' };
 const wovenOf = (snap, slot) => (snap.owned || []).filter(k => k.startsWith(slot + ':@')).map(k => k.split('@')[1]).filter(id => snap.designs?.[id]?.base);
 
 function owns(snap, slot, key) {
@@ -33,11 +39,23 @@ function pickBlock([slot, table, swatch], crop, snap) {
   const owned = WEAR.includes(slot) ? keys.filter(k => owns(snap, slot, k)) : keys;
   const opts = slot === 'acc' ? ['', ...owned] : owned;
   const locked = keys.length - owned.length;
-  if (swatch) return `<div class="lk-sws">${opts.map(k => { const n = esc(AV[table][k].name); return `<button class="lk-sw${k === cur ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}" style="--c:${AV[table][k][swatch]}"></button>`; }).join('')}</div>`;
-  const dkey = slot + '_d', woven = slot === 'top' || slot === 'bottom' ? wovenOf(snap, slot) : [];
+  if (swatch) {
+    const ck = TONE_KEYS[slot]?.[0], own = ck && draft[ck];
+    return `<div class="lk-sws">${opts.map(k => { const n = esc(AV[table][k].name); return `<button class="lk-sw${k === cur && !own ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}" style="--c:${AV[table][k][swatch]}"></button>`; }).join('')}${ck ? `<button class="lk-sw own${own ? ' on' : ''}" data-lkc="${ck}" data-from="${esc(AV[table][cur]?.[swatch] || '#888888')}" title="직접 고르기" aria-label="직접 고르기" style="--c:${own ? '#' + own : 'transparent'}">${own ? '' : icon('palette', 14)}</button>` : ''}</div>`;
+  }
+  const dkey = OVER[slot] || slot + '_d', woven = slot === 'top' || slot === 'bottom' ? wovenOf(snap, slot) : [];
   return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k]?.name || '없음'); return `<button class="lk-opt${k === cur && !draft[dkey] ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage({ ...plain(draft), [slot]: k }, { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
     ${woven.length ? `<p class="lk-cur">지은 도안</p><div class="lk-grid">${woven.map(id => { const d = snap.designs[id]; return `<button class="lk-opt${String(draft[dkey]) === id ? ' on' : ''}" data-lkd="${slot}" data-id="${esc(id)}" data-base="${esc(d.base)}" title="도안 · ${esc(AV[slot][d.base]?.name || '')}"><img src="${avatarImage({ ...draft, [slot]: d.base, [dkey]: id }, { scale: 3, crop: cropOf(slot, d.base) || CROP[crop] })}" alt=""></button>`; }).join('')}</div>` : ''}
     ${locked ? `<p class="muted small">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} ${locked}${slot === 'acc' ? '가지' : '벌'} — 상점·제작·옷 꾸러미·퀘스트로 얻어 가방에서 「옷장에」를 누릅니다.</p>` : ''}`;
+}
+
+function freeBlock(slot, snap) {
+  const ds = Object.entries(snap.designs || {}).filter(([, d]) => d.slot === slot);
+  const keep = GD.outfit?.[slot]?.keep || (slot === 'face' ? 3 : 10), has = slot === 'hair' ? hqCount(store.character?.inventory || {}, 'hair_pattern') : 1;
+  const can = ds.length < keep && has > 0;
+  return `<p class="lk-cur">${FREE_NAME[slot]} <small class="muted">${ds.length}/${keep}${slot === 'hair' ? ` · 머리 그리기 도안 ${has}장` : ''}</small></p>
+    <div class="lk-grid">${ds.map(([id, d]) => `<button class="lk-opt${String(draft[slot + '_d'] ?? '') === id ? ' on' : ''}" data-lkf="${slot}" data-id="${esc(id)}" title="${FREE_NAME[slot]}"><img src="${designPic(d, { job: snap.job, look: draft })}" alt=""></button>`).join('')}<button class="lk-opt lk-new" data-lknew="${slot}" ${can ? '' : 'disabled'} title="${slot === 'face' ? '눈·입 그리기' : '머리 그리기'}" aria-label="${slot === 'face' ? '눈·입 그리기' : '머리 그리기'}">${icon('plus', 20)}</button></div>
+    ${slot === 'hair' && has < 1 ? '<p class="muted small">머리를 그리려면 「머리 그리기 도안」이 있어야 합니다. 비장고에서 나오고, 거래소에서 사고팔 수 있습니다.</p>' : ''}`;
 }
 
 export async function lookTab(body) {
@@ -62,13 +80,16 @@ export async function lookTab(body) {
     <div class="panel lk-pick">
       <div class="lk-tabs" role="tablist">${TABS.map(([k, l, crop]) => `<button role="tab" class="lk-tab${k === cur[0] ? ' on' : ''}" data-lktab="${k}" aria-selected="${k === cur[0]}" title="${l}"><img src="${avatarImage(draft, { scale: 2, crop: CROP[crop] })}" alt=""><span>${l}</span></button>`).join('')}</div>
       <p class="lk-cur">${esc(cur[1])} <small class="muted">${esc(curName)}</small></p>
-      ${cur[0] === 'design' ? '<div class="lk-design"></div>' : cur[3].map(b => pickBlock(b, cur[2], snap)).join('')}
+      ${cur[0] === 'design' ? '<div class="lk-design"></div>' : cur[3].map(b => pickBlock(b, cur[2], snap)).join('') + (cur[0] === 'eyes' || cur[0] === 'mouth' ? freeBlock('face', snap) : cur[0] === 'hair' ? freeBlock('hair', snap) : '')}
     </div>
   </div>`;
   $$('[data-lktab]', body).forEach(b => b.onclick = () => { tab = b.dataset.lktab; lookTab(body); });
-  $$('[data-lk]', body).forEach(b => b.onclick = () => { const k = b.dataset.lk; draft = { ...draft, [k]: b.dataset.v }; delete draft[k + '_d']; lookTab(body); });
+  $$('[data-lk]', body).forEach(b => b.onclick = () => { const k = b.dataset.lk; draft = { ...draft, [k]: b.dataset.v }; delete draft[OVER[k] || k + '_d']; if (TONE_KEYS[k]) delete draft[TONE_KEYS[k][0]]; lookTab(body); });
+  $$('[data-lkc]', body).forEach(b => b.onclick = async () => { const k = b.dataset.lkc, c = await openColorPicker(draft[k] ? '#' + draft[k] : b.dataset.from, { title: '직접 고르는 색' }); if (c) { draft = { ...draft, [k]: c.slice(1).toLowerCase() }; lookTab(body); } });
+  $$('[data-lkf]', body).forEach(b => b.onclick = () => { draft = { ...draft, [b.dataset.lkf + '_d']: dnum(b.dataset.id) }; lookTab(body); });
+  $$('[data-lknew]', body).forEach(b => b.onclick = () => openFreeEditor(b.dataset.lknew, { ...snap, look: draft }, r => { invalidate('world_avatar_get'); if (r?.saved) draft = { ...draft, [b.dataset.lknew + '_d']: r.saved }; lookTab(body); }));
   $$('[data-lkd]', body).forEach(b => b.onclick = () => { const k = b.dataset.lkd; draft = { ...draft, [k]: b.dataset.base, [k + '_d']: dnum(b.dataset.id) }; lookTab(body); });
-  if (cur[0] === 'design') designBook($('.lk-design', body), snap, { onWear: (slot, base, id) => { draft = { ...draft, [slot]: base, [slot + '_d']: dnum(id) }; tab = slot; lookTab(body); } });
+  if (cur[0] === 'design') designBook($('.lk-design', body), snap, { onWear: (slot, base, id) => { invalidate('world_avatar_get'); draft = FREE_TAB[slot] ? { ...draft, [slot + '_d']: dnum(id) } : { ...draft, [slot]: base, [slot + '_d']: dnum(id) }; tab = FREE_TAB[slot] || slot; lookTab(body); } });
   $('#lk-home', body).onchange = e => { homeOn = e.target.checked; lookTab(body); };
   $('#lk-face', body).onchange = e => { faceOn = e.target.checked; lookTab(body); };
   $('#lk-reset', body).onclick = () => { draft = fixLook(snap.look, snap.job); homeOn = snap.home_on !== false; faceOn = faceNow(); lookTab(body); };

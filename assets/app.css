@@ -3286,6 +3286,9 @@ b.shadow { color: var(--sp); }
 .lk-sws { display: flex; flex-wrap: wrap; gap: 8px; }
 .lk-sw { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--c); cursor: pointer; padding: 0; }
 .lk-sw.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lk-sw.own { display: inline-flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); }
+.lk-opt.lk-new { display: flex; align-items: center; justify-content: center; border-style: dashed; color: var(--muted); min-height: 56px; }
+.lk-opt.lk-new:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 720px) {
   .lk-wrap { grid-template-columns: 1fr; gap: 8px; }
   .lk-stage { flex-direction: row; justify-content: center; align-items: center; padding: 8px; }
