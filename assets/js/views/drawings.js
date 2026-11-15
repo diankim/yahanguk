@@ -1,5 +1,6 @@
 import { rpc, store, esc, icon, $, $$, toast, guard, ask, openLayer, isGM } from '../core.js';
 import { load } from './common.js';
+import { reportFlag } from '../reportflag.js';
 import { PAL, PAL_NAMES, SIZE_NAME, dimsOf, picURL } from '../housing/drawing.js';
 
 let book = null;
@@ -130,10 +131,10 @@ export async function pickDrawing(size, cur, onPick) {
 
 export function openViewer(d, house, after) {
   const gm = isGM(store.user?.id), me = store.user?.id, foreign = d.ai !== me && !d.mine;
-  const layer = openLayer({ title: d.t || '이름 없는 그림', body: `<div class="dr-view"><img class="dr-big s${d.s}" src="${picURL(d, 10)}" alt="${esc(d.t || '그림')}">
+  const layer = openLayer({ title: d.t || '이름 없는 그림', body: `<div class="dr-view">${foreign ? reportFlag('data-report', '그림 제보') : ''}<img class="dr-big s${d.s}" src="${picURL(d, 10)}" alt="${esc(d.t || '그림')}">
     <p>${esc(d.a)}님의 그림${d.gift ? ` · ${esc(d.gift)}님이 보낸 선물` : ''}</p>
-    ${foreign || gm ? `<div class="btn-row">${foreign ? '<button class="btn small" data-hide>내 화면에서 숨기기</button><button class="btn small" data-report>운영진에게 제보</button>' : ''}${gm ? '<button class="btn small danger" data-remove>운영진 · 그림 내리기</button>' : ''}</div>` : ''}
-    ${foreign ? '<p class="muted small">숨기면 이 그림이 나에게만 빈 액자로 보입니다. 불쾌한 그림은 제보해 주세요. 운영진이 확인해 내립니다.</p>' : ''}</div>` });
+    ${foreign || gm ? `<div class="btn-row">${foreign ? '<button class="btn small" data-hide>내 화면에서 숨기기</button>' : ''}${gm ? '<button class="btn small danger" data-remove>운영진 · 그림 내리기</button>' : ''}</div>` : ''}
+    ${foreign ? '<p class="muted small">숨기면 이 그림이 나에게만 빈 액자로 보입니다. 불쾌한 그림은 오른쪽 위 깃발로 제보해 주세요. 운영진이 확인해 내립니다.</p>' : ''}</div>` });
   layer.addEventListener('click', e => {
     const t = e.target.closest('[data-hide],[data-report],[data-remove]'); if (!t) return;
     if (t.dataset.report != null) {

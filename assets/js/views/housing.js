@@ -11,6 +11,7 @@ import { openGallery, pickDrawing, openViewer } from './drawings.js';
 import { idOf, placedCounts, rememberHome } from '../housing/count.js';
 import { helpQ } from '../tips.js';
 import { openDesignReport, wornDesigns } from './outfitdesign.js';
+import { reportFlag, pickReport } from '../reportflag.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -136,11 +137,10 @@ function draw() {
     ${roomBar()}
     ${can && edBlock && !editing ? `<p class="muted small hs-why">${esc(edBlock)}</p>` : ''}
     <div class="hs-wrap ${editing ? 'editing' : ''}">
-      <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}</div>
+      <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}${editing || !designRows().length ? '' : reportFlag('data-hrep', '입은 도안 제보')}</div>
       ${editing ? palette() : ''}
       ${!editing ? housePets().map(petBar).join('') : ''}
     </div>
-    ${editing ? '' : designReports()}
     ${me && !editing ? ownerPanel() : ''}
     ${me && !editing ? mergePanel() : ''}
     ${guestbook()}`;
@@ -176,10 +176,9 @@ async function goRoom(i) {
   if (editing && dirty && !(await ask('저장하지 않은 배치가 있습니다. 버리고 다른 방으로 갈까요?', { title: '방 옮기기', ok: '버리고 옮기기', danger: true }))) return;
   cur = i; resetState(); draw();
 }
-function designReports() {
+function designRows() {
   const meId = store.character?.owner_id;
-  const rows = (snap?.avatars || []).filter(a => a.id !== meId).flatMap(a => wornDesigns(a.look, snap.avatar_designs).map(w => ({ ...w, who: a.name })));
-  return rows.length ? `<p class="hs-drep muted small">${rows.map(w => `<button class="btn small ghost" data-drep="${w.id}">${esc(w.who)}의 ${w.name} 도안 제보</button>`).join('')}</p>` : '';
+  return (snap?.avatars || []).filter(a => a.id !== meId).flatMap(a => wornDesigns(a.look, snap.avatar_designs).map(w => ({ ...w, who: a.name })));
 }
 function fit() {
   if (!cv || !room) return;
@@ -298,7 +297,7 @@ function guestbook() {
 }
 
 function bind() {
-  $$('[data-drep]', el).forEach(b => b.addEventListener('click', () => openDesignReport(Number(b.dataset.drep), reload)));
+  $$('[data-hrep]', el).forEach(b => b.addEventListener('click', () => pickReport(designRows().map(w => ({ label: `${w.who}의 ${w.name} 도안`, run: () => openDesignReport(Number(w.id), reload) })))));
   $('#hs-edit')?.addEventListener('click', () => { if (editing && dirty) return; editing = !editing; pick = null; sel = null; draw(); });
   $('#hs-done')?.addEventListener('click', async () => {
     if (dirty && !(await ask('저장하지 않은 배치가 있습니다. 버리고 닫을까요?', { title: '꾸미기 닫기', ok: '버리고 닫기', danger: true }))) return;

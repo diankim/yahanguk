@@ -6,6 +6,7 @@ import { pixelPad } from '../housing/pixelpad.js';
 import { PAL, PAL_NAMES } from '../housing/drawing.js';
 import { openColorPicker } from '../colorpick.js';
 import { hqCount } from '../hq.js';
+import { reportFlag } from '../reportflag.js';
 
 const SLOT_NAME = { top: '윗옷', bottom: '아랫옷', face: '얼굴', hair: '머리' };
 const FREE = new Set(['face', 'hair']);
@@ -299,8 +300,8 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
     const free = FREE.has(d.slot);
     const wear = free ? (onWear ? `<button class="btn small primary" data-wear="${d.id}">${wornNow(d) ? '쓰는 중' : '쓰기'}</button>` : '')
       : d.woven ? (woven.has(String(d.id)) && onWear ? `<button class="btn small primary" data-wear="${d.id}">입기</button>` : '') : `<button class="btn small primary" data-weave="${d.id}" data-here="옷 짓기">${icon('palette', 14)} 옷 짓기</button>`;
-    const give = d.slot === 'face' ? '' : d.mine ? `<button class="btn small" data-give="${d.id}">보내기</button>` : `<button class="btn small ghost" data-report="${d.id}">제보</button>`;
-    return `<li class="od-card" data-id="${d.id}">
+    const give = d.slot === 'face' ? '' : d.mine ? `<button class="btn small" data-give="${d.id}">보내기</button>` : '';
+    return `<li class="od-card" data-id="${d.id}">${d.mine || d.slot === 'face' ? '' : reportFlag(`data-report="${d.id}"`, '도안 제보')}
       <img class="od-pic" src="${designPic(d, { job: snap.job, look: snap.look })}" alt="">
       <div class="od-meta"><b>${esc(d.t || '이름 없는 도안')}</b><small class="muted">${SLOT_NAME[d.slot]}${free ? '' : ` · ${esc(AV[d.slot][d.base]?.name || '')}`}</small>
         <small class="muted">${d.mine ? '내가 그림' : `${esc(d.a)} 그림${d.gift ? ` · ${esc(d.gift)}님이 보냄` : ''}`}</small>

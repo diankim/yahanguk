@@ -1,6 +1,7 @@
 import { petImage } from '../housing/petsprite.js';
 import { avatarImage, registerDesigns } from '../housing/avatarsprite.js';
 import { openDesignReport, wornDesigns } from './outfitdesign.js';
+import { reportFlag, pickReport } from '../reportflag.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, JOBS, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
@@ -61,7 +62,7 @@ async function draw(box, id) {
           <p class="muted small">${esc(JOBS[c.job_key]?.trait || '')}${rel === 'friends' ? ' · 친구' : ''}</p></div>
         <div class="pc-side"><div class="pc-look" title="내 모습"><img src="${avatarImage(c.look, { scale: 3, job: c.job_key })}" alt=""></div>
         ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div>
-      ${!c.mine && wornDesigns(c.look, c.look_designs).length ? `<button class="pc-drep" data-drep-pick title="입은 도안이 부적절하면 운영진에게 알립니다" aria-label="도안 제보">${icon('flag', 13)}</button>` : ''}</div>
+      ${!c.mine && wornDesigns(c.look, c.look_designs).length ? reportFlag('data-drep-pick', '입은 도안 제보') : ''}</div>
       <p class="bio">${p.bio ? esc(p.bio) : '<span class="muted">한 줄 소개가 없습니다.</span>'}</p>
       ${rel === 'friends' && noteOf(c.owner_id) ? `<p class="f-memo">${noteOf(c.owner_id).nick ? `<b>내가 붙인 별명</b> ${esc(noteOf(c.owner_id).nick)}` : ''}${noteOf(c.owner_id).nick && noteOf(c.owner_id).memo ? '<br>' : ''}${esc(noteOf(c.owner_id).memo || '')}</p>` : ''}
       <dl class="kv info">
@@ -78,13 +79,9 @@ async function draw(box, id) {
         <button class="btn small ghost ${c.blocked ? '' : 'danger-text'}" data-do="${c.blocked ? 'unblock' : 'block'}">${c.blocked ? '차단 풀기' : '차단하기'}</button></div>`}`;
     box.onclick = e => {
       if (e.target.closest('[data-drep-pick]')) {
-        const ws = wornDesigns(c.look, c.look_designs);
-        if (ws.length === 1) return openDesignReport(Number(ws[0].id), () => draw(box, id));
-        const l = openLayer({ title: '도안 제보', body: `<p class="small muted">제보할 도안을 고르세요.</p><div class="btn-row">${ws.map(w => `<button class="btn small" data-drep="${w.id}">${w.name} 도안</button>`).join('')}</div>` });
-        l.onclick = ev => { const r = ev.target.closest('[data-drep]'); if (r) { l.close(); openDesignReport(Number(r.dataset.drep), () => draw(box, id)); } };
-        return;
+        return pickReport(wornDesigns(c.look, c.look_designs).map(w => ({ label: `${w.name} 도안`, run: () => openDesignReport(Number(w.id), () => draw(box, id)) })));
       }
-      const r = e.target.closest('[data-drep]'); if (r) return openDesignReport(Number(r.dataset.drep), () => draw(box, id)); const b = e.target.closest('[data-do]'); if (b) run(b, c, box); };
+      const b = e.target.closest('[data-do]'); if (b) run(b, c, box); };
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
 

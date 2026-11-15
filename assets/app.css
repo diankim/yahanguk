@@ -2679,10 +2679,13 @@ b.sealed { color: var(--bad); }
   .pc-pet img { height: 30px; }
   .pc-side { gap: 4px; }
 }
-.hs-drep .btn { min-height: 26px; padding: 2px 8px; font-size: calc(11px * var(--fz, 1)); }
-.profile-card > .pc-drep:not(#pf-pattern) { position: absolute; right: 4px; bottom: 4px; z-index: 2; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); opacity: .55; cursor: pointer; }
-.pc-drep:hover, .pc-drep:focus-visible { opacity: 1; color: var(--hp); }
-.hs-drep { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+.rep-flag { width: 24px; height: 24px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); opacity: .55; cursor: pointer; }
+.rep-flag:hover, .rep-flag:focus-visible { opacity: 1; color: var(--hp); }
+.profile-card > .rep-flag:not(#pf-pattern) { position: absolute; right: 4px; bottom: 4px; z-index: 2; }
+.hs-stage > .rep-flag, .dr-view > .rep-flag, .od-card > .rep-flag { position: absolute; top: 4px; right: 4px; z-index: 2; }
+.dr-view, .od-card { position: relative; }
+.rep-pick { display: grid; gap: 6px; }
+.rep-pick .btn { justify-content: flex-start; }
 @media (max-width: 900px) { .hs-wrap.editing { grid-template-columns: minmax(0, 1fr); } .hs-pal { max-height: none; } }
 @media (max-width: 640px) { .hs-stage { padding: 6px; } .hs-pal-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); } .hs-petbtn { margin-left: 0; } }
 /* 7.2 테마 꾸밈: 바탕 무늬(data-tex)·모서리 장식(data-frame)·머리글(data-head). 무늬는 또렷한 선·점만 쓴다(번지는 그라데이션 없음). */
