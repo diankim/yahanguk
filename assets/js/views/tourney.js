@@ -115,9 +115,14 @@ function drawView() {
   if (!sceneNode) { const d = document.createElement('div'); d.innerHTML = sceneHtml(); sceneNode = d.firstElementChild; scene = mountScene(sceneNode, 'tourney'); }
   $('.scene-slot', el)?.replaceWith(sceneNode);
   scene.update(v.folks);
+  playLive();
   $$('[data-match]', el).forEach(b => b.onclick = () => openWatch(b.dataset.match));
   $('#tn-watch-close', el).onclick = () => { watching = null; $('#tn-watch', el).hidden = true; };
   if (watching) openWatch(watching);
+}
+function playLive() {
+  const t = now(), m = (view?.matches || []).find(x => x.log && x.a && x.b && new Date(x.starts_at) <= t && new Date(x.ends_at) > t);
+  scene?.duel(m ? { id: m.id, starts_at: new Date(new Date(m.starts_at).getTime() - skew).toISOString(), gap: GAP, log: m.log } : null);
 }
 function matchCard(v, m) {
   const wait = m.starts_at && new Date(m.starts_at) > now();

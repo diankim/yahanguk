@@ -339,7 +339,7 @@ export function mountScene(box, key) {
       return `<span class="scene-nm${cls}" style="left:${(s.x / W * 100).toFixed(2)}%;top:${(s.y / H * 100).toFixed(2)}%">${s.f.me ? `나 · ${esc(s.f.name)}` : esc(s.f.name)}</span>`
         + (a ? `<span class="scene-bub" style="left:${(s.x / W * 100).toFixed(2)}%;top:${((s.y - 46) / H * 100).toFixed(2)}%">${esc(a.label)}</span>` : '');
     }).join('') + floats.filter(f => f.t0 <= now).map(f => { const age = now - f.t0, sc = 1 + 0.9 * Math.max(0, 1 - age / 160), op = age > 850 ? Math.max(0, 1 - (age - 850) / 250) : 1;
-        return `<span class="scene-dmg ${f.cls}" style="left:${(f.who.x / W * 100).toFixed(2)}%;top:${((f.who.y - 38 - (f.row || 0) * 12 - Math.min(age, 500) / 60) / H * 100).toFixed(2)}%;transform:translate(-50%,-100%) scale(${sc.toFixed(2)});opacity:${op.toFixed(2)}">${esc(f.txt)}</span>`; }).join('')
+        return `<span class="scene-dmg ${f.cls}" style="left:${(f.who.x / W * 100).toFixed(2)}%;top:${((f.who.y - 38 - (f.row || 0) * 15 - Math.min(age, 500) / 90) / H * 100).toFixed(2)}%;transform:translate(-50%,-100%) scale(${sc.toFixed(2)});opacity:${op.toFixed(2)}">${esc(f.txt)}</span>`; }).join('')
       + banners.filter(b => b.t0 <= now && b.t0 + 1100 > now).map(b => { const age = now - b.t0, slide = Math.max(0, 1 - age / 140), op = age > 850 ? Math.max(0, 1 - (age - 850) / 250) : 1;
         return `<span class="scene-banner" style="--bh:${b.hue};left:${b.left ? 4 : 96}%;transform:translateX(${b.left ? (-40 * slide) : (40 * slide - 100)}%);opacity:${op.toFixed(2)}"><small>${esc(b.who)}</small>「${esc(b.txt)}」</span>`; }).join('')
       + (more > 0 ? `<span class="scene-more">외 ${more}명</span>` : '');
