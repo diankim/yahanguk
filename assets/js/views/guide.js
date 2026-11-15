@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
+import { SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -322,7 +322,7 @@ const S = [
     <h4>전투불능</h4>
     <ul>
       <li>체력이 0이 되면 쓰러집니다. 회생 부적·동료의 구조·본부 구조대로 일어날 수 있습니다.</li>
-      <li>4시간 안에 일어나지 못하면 목숨을 잃고 시신이 남습니다.</li>
+      <li>${GD.rescue.death_h}시간 안에 일어나지 못하면 목숨을 잃고 시신이 남습니다.</li>
       <li><b>본부 구조대</b>가 받는 것
         <ul><li>${RESCUE.fee}</li>
           <li>${RESCUE.xp}</li>
@@ -809,10 +809,10 @@ const S = [
     <h4>침식 낮추기</h4>
     <ul>
       <li><b>부적 정화</b>: 캐릭터 › 상태에서 합니다.
-        <ul><li>정화 부적 1개로 침식 −18 · 정신 +6. 가방에서 쓰거나 토벌 중 물품으로 써도 같습니다.</li>
+        <ul><li>정화 부적 1개로 ${SURVIVAL.cleanse}. 가방에서 쓰거나 토벌 중 물품으로 써도 같습니다.</li>
           <li>정화 부적으로 풀리는 상태이상인 중독·심신 동요·사념 침식도 함께 풉니다. 침식이 없어도 그런 상태이상이 있으면 쓸 수 있습니다.</li>
-          <li>보통 정화 부적을 먼저 쓰고, 없으면 우수품을 씁니다. 우수품은 침식 −21 · 정신 +7입니다.</li></ul></li>
-      <li><b>마음 다잡기</b>: 본부 정청·객사·연무장에서 정신 +18 · 침식 −10. 15분마다 할 수 있고, 정신이 가득하고 침식이 없으면 쓸 수 없습니다.</li>
+          <li>보통 정화 부적을 먼저 쓰고, 없으면 우수품을 씁니다. 우수품은 ${SURVIVAL.cleanseHq}입니다.</li></ul></li>
+      <li><b>마음 다잡기</b>: 본부 정청·객사·연무장에서 ${SURVIVAL.ground}. ${SURVIVAL.groundEvery}분마다 할 수 있고, 정신이 가득하고 침식이 없으면 쓸 수 없습니다.</li>
       <li>휴식·음식·망각 향으로도 내려갑니다.</li>
     </ul>
     <h4>요화(妖化)</h4>
@@ -1805,13 +1805,13 @@ const S = [
     </ul>`],
   ['tourney', '야행 비무회', `
     <ul>
-      <li><b>신청</b>: 매주 월요일 0시부터 금요일 23시 59분까지, 안전지대의 <b>비무 방</b>에서 합니다. 현장의 비무 방 칸으로 들어갑니다.</li>
-      <li><b>경기</b>: 토요일 21시 1:1, 일요일 21시 팀전. 팀은 같은 파티 2명입니다.</li>
+      <li><b>신청</b>: 매주 ${TOURNEY_WEEK.signup}, 안전지대의 <b>비무 방</b>에서 합니다. 현장의 비무 방 칸으로 들어갑니다.</li>
+      <li><b>경기</b>: ${TOURNEY_WEEK.solo} 1:1, ${TOURNEY_WEEK.team} 팀전. 팀은 같은 파티 2명입니다.</li>
       <li><b>개최지</b>: 주마다 바뀌는 안전지대 하나입니다. 반요촌은 빠집니다.
         <ul><li>1시간·30분 전에 알림이 옵니다.</li>
           <li>신청만 해 두면 <b>개최지에 없어도</b> 나섭니다.</li>
-          <li>시작 10분 전에 쓰러져 있거나 목숨을 잃었으면 불참이 되고, 상대가 부전승입니다.</li>
-          <li>4명, 팀전은 4팀 이상이어야 열립니다.</li></ul></li>
+          <li>시작 ${TOURNEY_WEEK.absent}분 전에 쓰러져 있거나 목숨을 잃었으면 불참이 되고, 상대가 부전승입니다.</li>
+          <li>${TOURNEY_WEEK.min}명, 팀전은 ${TOURNEY_WEEK.min}팀 이상이어야 열립니다.</li></ul></li>
       <li><b>방식</b>: 단판 토너먼트입니다. 겨루기는 서버가 자동으로 펼칩니다. 한 라운드의 겨루기는 하나씩 차례로 열리고, 합마다 ${GD.tourney?.exchange_s ?? 3}초, 겨루기 사이에 ${GD.tourney?.between_s ?? 8}초 쉽니다.</li>
       <li><b>작전</b>: 시작 전에 정해 둡니다. 태세는 공격·균형·수비 가운데 고르고, 회복품 ${GD.battleItems?.tourney?.pick || 2}가지와 직업 기술 쓰는 때를 정합니다. 고를 수 있는 회복품은 ${(GD.battleItems?.tourney?.items || []).map(nameOf).join(' · ')}(우수품도 됨)입니다.</li>
       <li><b>레벨 보정</b>: 기세는 경기 평균 레벨로 같게 둡니다. 레벨 차 1마다 2%만 유리하고, 최대 20%입니다. 능력치·장비 차이는 절반만 반영합니다.</li>

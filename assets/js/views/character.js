@@ -1,4 +1,4 @@
-import { xpGot, rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
+import { deathAt as deathTime, xpGot, rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
@@ -7,7 +7,8 @@ import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL } from '../rules.js';
+const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEvery}분마다`;
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
@@ -178,7 +179,7 @@ async function status(body) {
   const stage = Number(sv?.erosion_stage ?? c.erosion_stage ?? 0);
   const yo = yohwaOf(hud?.statuses), statuses = yo.rest, yl = yohwaLine(yo);
   const downed = c.downed_at || c.health <= 0, byYohwa = downed && yohwaDowned(c, yo);
-  const deathAt = c.downed_at && !byYohwa ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0;
+  const deathAt = !byYohwa ? deathTime(c) : 0;
   const wards = hqCount(invItems, 'ward_talisman'), er0 = Number(sv?.erosion ?? c.erosion ?? 0), mn0 = Number(sv?.mental ?? c.mental ?? 0);
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location);
@@ -207,8 +208,8 @@ async function status(body) {
         </div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0), ISLAND.has(c.location))}
         <div class="btn-row st-acts">
-          <button class="btn small" data-here="" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · 침식 −18 · 정신 +6${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
-          <button class="btn small" data-here="" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="본부에서 · 정신 +18 · 침식 −10 · 15분마다">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
+          <button class="btn small" data-here="" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · ${SURVIVAL.cleanse}${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
+          <button class="btn small" data-here="" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="${GROUND_NOTE}">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
         </div>
         ${inv ? eqMini(inv, prof) : ''}
         ${prof?.current ? combatMini(prof.current) : ''}
@@ -241,7 +242,7 @@ async function status(body) {
     $$('[data-left]', body).forEach(x => x.textContent = fmt.remain(Number(x.dataset.left) - Date.now()));
     const d = $('#death-left', body); if (d && deathAt) d.textContent = `목숨이 다하기까지 ${fmt.remain(deathAt - Date.now())}`;
     const g = $('#ground-note', body), gr = Number(g?.dataset.ready || 0);
-    if (g && gr) { if (gr > Date.now()) g.textContent = `${fmt.remain(gr - Date.now())} 뒤 다시`; else { g.dataset.ready = ''; g.textContent = '본부에서 · 정신 +18 · 침식 −10 · 15분마다'; if (atHq && !(mn0 >= 100 && er0 <= 0) && !downed) g.closest('button').disabled = false; } }
+    if (g && gr) { if (gr > Date.now()) g.textContent = `${fmt.remain(gr - Date.now())} 뒤 다시`; else { g.dataset.ready = ''; g.textContent = GROUND_NOTE; if (atHq && !(mn0 >= 100 && er0 <= 0) && !downed) g.closest('button').disabled = false; } }
   }, 1000);
 }
 
@@ -629,7 +630,7 @@ function boardPanel(b) {
   const dot = id => `<span class="fdot" style="--fc:${factionColor(id)}"></span>`;
   const rels = b.relations.filter(r => b.mine ? (r.a === b.mine || r.b === b.mine) : Math.abs(r.score) >= 15)
     .sort((x, y) => y.score - x.score);
-  const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+  const ago = t => fmt.ago(t);
   return panel('세력 판도', `
     <ul class="fboard">${b.factions.map(f => `<li class="${f.id === b.mine ? 'mine' : ''}" style="--fc:${factionColor(f.id)}"><b>${esc(f.name)}${f.id === b.mine ? ' <small class="accent">내 세력</small>' : ''}</b>조사원 ${f.members} · 지배 ${f.regions}곳 · 영향력 ${fmt.num(f.influence)}${f.boost > 1 ? ` · 약세 보정 ×${f.boost}` : ''}</li>`).join('')}</ul>
     <div class="grid-2" style="margin-top:8px">

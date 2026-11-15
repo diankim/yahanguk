@@ -9,7 +9,7 @@ export const CHANGES = {
   combat: /equip|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish|meisho_dig/,
   fishSpot: /fish|travel/,
   fishSpotNone: /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/,
-  rest: /rest|survival|travel|idle|field_move/,
+  rest: /field_rest|survival_action/,
   bond: /bond|equip|travel|party|field_move/,
   reads: /^world_me$|snapshot|_state$|_board$|overview|roster|_status$|_brief$|_list$|_check$|_quote$|_info$|sources|counts|combat_profile|profile_of|journal|threads|faces|_card$|_rules$|_mine$|_get$|_favs$|_preview$|_spot$|_scene$|_codex|_lore|_bundle/,
   settles: /travel_status|gw_snapshot|pfight_snapshot|bijang_snapshot|raid_snapshot|hud_snapshot|field_snapshot|expedition_overview/,

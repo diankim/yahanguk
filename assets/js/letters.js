@@ -12,7 +12,7 @@ export async function loadLetters(force) {
   snap = await rpc('world_letter_box').catch(() => snap || { letters: [], sent_today: 0, limits: { per_day: 10, kinds: 5, box: 10, pins: 5 } });
   return snap;
 }
-const when = t => { const d = new Date(t), s = (Date.now() - d) / 1000; return s < 3600 ? `${Math.max(1, Math.floor(s / 60))}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
+const when = t => fmt.ago(t);
 const itemsText = items => Object.entries(items || {}).map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ');
 
 export function lettersPanelHtml(b) {

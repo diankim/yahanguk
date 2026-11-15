@@ -1,4 +1,4 @@
-import { cardName, openFriendNote } from './card.js';
+import { cardName, openFriendNote, visitHouse } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { openWhisper } from '../chat.js';
 import { loadCircles, circlesPanelHtml, bindCirclesPanel } from '../circles.js';
@@ -8,7 +8,7 @@ import { loadMentor, mentorPanelHtml, bindMentorPanel, mentorSummary } from '../
 import { MENTOR } from '../rules.js';
 import { helpQ } from '../tips.js';
 
-const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '알 수 없음' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
+const ago = t => fmt.ago(t, '알 수 없음');
 import { gmBadge, ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty } from '../core.js';
 import { face, syncNotes } from '../people.js';
 import { load, panel, chip, loading, errorBox, foldOpen } from './common.js';
@@ -50,8 +50,9 @@ async function draw(heavy = false, tick = false) {
           <div class="btn-row"><button class="btn small primary" data-fr-acc="${esc(f.owner_id)}">수락</button><button class="btn small" data-fr-dec="${esc(f.owner_id)}">거절</button></div></li>`).join('')}</ul>` : ''}
       ${(fr.friends || []).length ? `<ul class="people cards">${fr.friends.map(f => `<li>${face(f.owner_id, f.profile, 34, f.character_name)}<div><b>${cardName(f.owner_id, f.character_name)}${sealMark(f.profile?.seal)}${gmBadge(f.owner_id)}</b>
           <small>Lv.${f.level} · ${esc(nameOf(f.job_key))} · ${esc(f.location || '')}${fState(f) ? ' · ' + fState(f) : ''}</small><small class="muted">최근 활동 ${esc(ago(f.last_active))}</small>${f.memo ? `<small class="f-memo">${esc(f.memo)}</small>` : ''}</div>
-          <div class="btn-row"><button class="btn small" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
+          <div class="btn-row"><button class="btn small nowrap" data-whisper="${esc(f.character_name)}" data-whisper-id="${esc(f.owner_id)}">귓속말</button>
             <button class="btn small nowrap" data-fr-note="${esc(f.owner_id)}" data-fr-name="${esc(f.character_name)}">별명·메모</button>
+            ${f.is_dead ? '' : `<button class="btn small nowrap" data-fr-house="${esc(f.owner_id)}">${icon('home', 14)}<span>별채</span></button>`}
             ${f.is_dead ? '' : `<button class="btn small" data-letter="${esc(f.owner_id)}" data-letter-name="${esc(f.character_name)}">서신</button>`}
             ${canInvite && !memberIds.has(f.owner_id) && !f.is_dead ? `<button class="btn small" data-fr-inv="${esc(f.owner_id)}">초대</button>` : ''}
             ${f.downed && !f.is_dead && f.location === store.character.location ? `<button class="btn small primary" data-here="구조" data-rescue="${esc(f.owner_id)}">구조</button>` : ''}</div></li>`).join('')}</ul>`
@@ -106,6 +107,7 @@ async function draw(heavy = false, tick = false) {
     $$('[data-fr-cancel]', body).forEach(b => b.onclick = () => guard(b, () => act('world_friend_remove', { p_target: b.dataset.frCancel })));
     $$('[data-unblock]', body).forEach(b => b.onclick = () => guard(b, () => act('world_block_set', { p_target: b.dataset.unblock, p_blocked: false })));
     $$('[data-whisper]', body).forEach(b => b.onclick = () => openWhisper(b.dataset.whisper, b.dataset.whisperId));
+    $$('[data-fr-house]', body).forEach(b => b.onclick = () => guard(b, () => visitHouse(b.dataset.frHouse)));
     $$('[data-fr-note]', body).forEach(b => b.onclick = () => openFriendNote(b.dataset.frNote, b.dataset.frName, () => draw(true)));
     $$('[data-fr-inv]', body).forEach(b => b.onclick = () => guard(b, async () => {
       if (!pt) await act('world_party_create', { p_party_name: `${store.character.character_name}의 동료`.slice(0, 20) });

@@ -1,7 +1,7 @@
 import { yohwaDownNow } from '../hud.js';
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
-import { gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
+import { deathAt, gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
 import { face } from '../people.js';
 import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
@@ -547,7 +547,7 @@ function tick() {
   const c = store.character;
   $$('[data-tcd-home]', el).forEach(s => { const left = travelCdLeft(now); const t = left > 0 ? `다시 출발까지 ${fmt.remain(left)}` : '지도에서 목적지 고르기'; if (s.textContent !== t) s.textContent = t; });
   $$('[data-exp-end]', el).forEach(s => { const t = Number(s.dataset.expEnd); if (!t) return; if (t > now) s.textContent = `${fmt.remain(t - now)} 뒤 귀환`; else { s.dataset.expEnd = ''; s.textContent = '돌아오는 중…'; setTimeout(draw, 1500); } });
-  $$('[data-death]', el).forEach(s => { const t = c?.downed_at ? new Date(c.downed_at).getTime() + 4 * 3600e3 : 0; s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });
+  $$('[data-death]', el).forEach(s => { const t = deathAt(c); s.textContent = t ? `목숨이 다하기까지 ${fmt.remain(t - now)}` : ''; });
 }
 
 function goIdleRest() { try { sessionStorage.setItem('yh-idle-focus', 'rest'); } catch {} window.yahangGo('char', 'idle'); }

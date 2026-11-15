@@ -3,11 +3,15 @@ import { loading, errorBox, panel } from './common.js';
 import { withHq, isHq } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { sceneHtml, mountScene } from '../scene.js';
+import { TOURNEY_WEEK } from '../rules.js';
 
 const MODE = { solo: '1:1', team: '팀전(2:2)' };
 const STATUS = { signup: '신청 받는 중', locked: '대진 확정 · 곧 시작', running: '진행 중', done: '끝남', cancelled: '열리지 않음' };
-const STANCE = [['attack', '공격', '주는 피해 +15% · 받는 피해 +10%'], ['balanced', '균형', '보정 없음'], ['defense', '수비', '주는 피해 −15% · 받는 피해 −20% · 회피 +5']];
-const SKILL_AT = [['open', '처음에'], ['mid', '몰릴 때(기세 60% 아래)'], ['finish', '마무리(상대 35% 아래)']];
+const TR = GD.tourney;
+const pctTxt = (k, m) => { const d = Math.round((m - 1) * 100); return d ? `${k} ${d > 0 ? '+' : '−'}${Math.abs(d)}%` : ''; };
+const stanceTxt = k => { const s = TR.stance[k]; return [pctTxt('주는 피해', s.dealt), pctTxt('받는 피해', s.taken), s.evade ? `회피 +${s.evade}` : ''].filter(Boolean).join(' · ') || '보정 없음'; };
+const STANCE = [['attack', '공격'], ['balanced', '균형'], ['defense', '수비']].map(([k, n]) => [k, n, stanceTxt(k)]);
+const SKILL_AT = [['open', '처음에'], ['mid', `몰릴 때(기세 ${Math.round(TR.skill_at.mid * 100)}% 아래)`], ['finish', `마무리(상대 ${Math.round(TR.skill_at.finish * 100)}% 아래)`]];
 const TN = GD.battleItems?.tourney || {};
 const HEALS = TN.items || [], PICK = TN.pick || 2;
 const GAP = (GD.tourney?.exchange_s || 3) * 1000;
@@ -20,7 +24,7 @@ export async function render(root, s) {
   clearInterval(tick); tick = setInterval(liveTick, 500);
   await refresh();
 }
-export function destroy() { clearTimeout(timer); clearInterval(tick); el = null; }
+export function destroy() { clearTimeout(timer); clearInterval(tick); scene?.stop(); scene = null; sceneNode = null; el = null; }
 
 const now = () => Date.now() + skew;
 async function refresh() {
@@ -47,7 +51,7 @@ function drawBoard() {
   const b = board || {}, c = store.character || {};
   const cur = b.current || [];
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('sword', 14)} 야행 비무회</p><h1>비무 방</h1></div></div>
-    <div class="notice">${icon('help', 18)}<div><b>한 주의 흐름</b><span>월요일 0시부터 금요일 23시 59분까지 안전지대의 비무 방에서 신청합니다. 토요일 21시 1:1, 일요일 21시 팀전(같은 파티 2명)이 개최지에서 열리고, 신청만 해 두면 어디에 있든 나섭니다(시작 10분 전에 쓰러져 있으면 불참). 목숨·체력·물품·전·경험치는 그대로이고, 능력치·장비 차이는 절반만 반영됩니다.</span></div></div>
+    <div class="notice">${icon('help', 18)}<div><b>한 주의 흐름</b><span>${TOURNEY_WEEK.signup} 안전지대의 비무 방에서 신청합니다. ${TOURNEY_WEEK.solo} 1:1, ${TOURNEY_WEEK.team} 팀전(같은 파티 2명)이 개최지에서 열리고, 신청만 해 두면 어디에 있든 나섭니다(시작 ${TOURNEY_WEEK.absent}분 전에 쓰러져 있으면 불참). 목숨·체력·물품·전·경험치는 그대로이고, 능력치·장비 차이는 절반만 반영됩니다.</span></div></div>
     <div class="grid-2">${cur.map(t => tCard(t, b, c)).join('') || panel('이번 주 대회', '<p class="muted">대회를 준비하는 중입니다.</p>')}</div>
     ${panel('지난 대회', (b.past || []).length ? `<ul class="tn-past">${b.past.map(p => `<li><button class="linkish" data-view="${esc(p.t_id)}"><b>${esc(MODE[p.mode])}</b> · ${fmt.date ? fmt.date(p.starts_at) : new Date(p.starts_at).toLocaleDateString('ko-KR')} · ${esc(p.venue_name || '')}</button>
         <small>${p.status === 'done' ? `장원 ${esc(p.result?.champion_names || '')}${p.result?.runner_up ? ` · 준우승 ${esc(p.result.runner_up)}` : ''}` : '열리지 않음'}</small></li>`).join('')}</ul>` : '<p class="muted small">지난 일주일 사이 열린 대회가 없습니다.</p>', { ico: 'scroll' })}`;
@@ -68,7 +72,7 @@ function tCard(t, b, c) {
       <div class="tn-row"><span>태세</span>${STANCE.map(([k, n, d]) => `<label class="chk" title="${esc(d)}"><input type="radio" name="st-${t.mode}" value="${k}" ${tac.stance === k ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
       <div class="tn-row"><span>직업 기술</span>${SKILL_AT.map(([k, n]) => `<label class="chk"><input type="radio" name="sk-${t.mode}" value="${k}" ${tac.skill === k ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
       <div class="tn-row"><span>회복품 ${PICK}가지</span>${withHq(HEALS, { ...inv, ...Object.fromEntries((tac.items || []).filter(isHq).map(x => [x, 1])) }).map(k => `<label class="chk"><input type="checkbox" name="it-${t.mode}" value="${k}" ${(tac.items || []).includes(k) ? 'checked' : ''}><span>${esc(nameOf(k))}${inv[k] ? '' : ' <small class="muted">(없음)</small>'}</span></label>`).join('')}</div>
-      <p class="muted small">회복품은 기세가 40% 아래로 떨어지면 하나씩 씁니다(가방에서 줄지 않음). 정하지 않으면 균형·몰릴 때·회복품 없음.</p>
+      <p class="muted small">회복품은 기세가 ${Math.round(TR.heal_at * 100)}% 아래로 떨어지면 하나씩 씁니다(가방에서 줄지 않음). 정하지 않으면 균형·몰릴 때·회복품 없음.</p>
       <button class="btn small primary" data-tac="${t.mode}">작전 정하기</button></details>` : ''}
     <div class="btn-row">
       ${open && !mine ? (b.here_safe ? (t.mode === 'solo' ? `<button class="btn primary" data-here="비무회 신청" data-sign="solo">신청하기</button>`
@@ -133,6 +137,7 @@ function matchCard(v, m) {
 }
 
 let watching = null;
+const asked = new Map(), askedN = new Map();
 function openWatch(id) {
   const m = (view?.matches || []).find(x => x.id === id); if (!m?.log) return;
   watching = id;
@@ -152,7 +157,11 @@ function paintLog() {
 function liveTick() {
   if (!el || !sub) return;
   paintLog();
-  const t = now();
-  if ((view?.matches || []).some(m => m.starts_at && m.a && m.b && ((new Date(m.starts_at) <= t && !m.log && view.can_watch) || (new Date(m.ends_at) <= t && !m.winner)))) refresh();
+  if (document.hidden) return;
+  const t = now(), due = (view?.matches || []).find(m => m.starts_at && m.a && m.b && ((new Date(m.starts_at) <= t && !m.log && view.can_watch) || (new Date(m.ends_at) <= t && !m.winner)));
+  if (!due) return;
+  const k = due.id + (due.log ? 'e' : 's'), at = asked.get(k) || 0, n = askedN.get(k) || 0;
+  if (Date.now() - at < Math.min(30000, 2000 * 2 ** n)) return;
+  asked.set(k, Date.now()); askedN.set(k, n + 1); refresh();
 }
 document.addEventListener('visibilitychange', () => { if (el && !document.hidden) refresh(); });

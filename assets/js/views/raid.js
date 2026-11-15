@@ -29,7 +29,7 @@ export async function render(root, sub) {
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { unfitFight(); hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
+export function destroy() { scene?.stop(); scene = null; unfitFight(); hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
 
 let scene = null;
 async function refresh() {
@@ -50,8 +50,11 @@ function onChange(p) {
   if (n && r && Date.now() - lastFetch < 1200 && n.hp === r.hp && n.phase === r.phase && n.status === r.status && (n.intent ?? null) === (r.intent ?? null)) return;
   soon();
 }
+let hiddenDirty = false;
+document.addEventListener('visibilitychange', () => { if (el && !document.hidden && hiddenDirty) { hiddenDirty = false; refresh(); } });
 function soon() {
   clearTimeout(timer);
+  if (document.hidden) { hiddenDirty = true; return; }
   const gap = snap?.me?.joined && snap?.raid?.status === 'fight' ? 1000 : 2000;
   timer = setTimeout(refresh, Math.max(250, lastFetch + gap - Date.now()));
 }
@@ -376,7 +379,7 @@ function briefAge() {
 export const raidBand = () => '<div id="raid-band"></div>';
 export async function fillRaidBand(box) {
   if (!box) return;
-  const wedP = load('world_wedding_now', undefined, { maxAge: 60000 }).catch(() => null);
+  const wedP = load('world_wedding_now', undefined, { maxAge: store.snaps['world_wedding_nownull'] ? 60000 : 300000 }).catch(() => null);
   let b = null; if (RAID_ON) { try { b = await load('world_raid_brief', undefined, { maxAge: briefAge() }); } catch {} }
   const wed = await wedP;
   if (!box.isConnected) return;

@@ -1,11 +1,11 @@
 import { drawAvatar, AV, registerDesigns } from './housing/avatarsprite.js';
 import { drawPet, drawEffect } from './housing/petsprite.js';
 import { P } from './housing/render.js';
-import { esc } from './core.js';
+import { esc, kstDate } from './core.js';
 import { SCENE_ACTS, DUEL_FX } from './rules.js';
 
 const W = 384, H = 144, K = 1.5;
-export const scenePhase = (now = Date.now()) => { const h = new Date(now + 9 * 3600e3).getUTCHours(); return h < 6 ? 'night' : h < 12 ? 'dawn' : h < 18 ? 'day' : 'dusk'; };
+export const scenePhase = (now = Date.now()) => { const h = kstDate(now).getUTCHours(); return h < 6 ? 'night' : h < 12 ? 'dawn' : h < 18 ? 'day' : 'dusk'; };
 const SKY = {
   dawn: ['#5a6e8e', '#8a98b4', '#d8b8a8'], day: ['#7fb0d6', '#a8c8e0', '#c8dcea'],
   dusk: ['#3b2f4f', '#57405e', '#6e4a5e'], night: ['#121a2c', '#1a2338', '#202a40'],
@@ -257,10 +257,10 @@ export function sceneHtml() {
 export function mountScene(box, key) {
   const cv = box.querySelector('.scene-cv'), tags = box.querySelector('.scene-tags'), g = cv.getContext('2d');
   const img = g.createImageData(W, H), buf = new Uint32Array(img.data.buffer);
-  let spots = [], more = 0, prev = null, fx = [], peek = null, timer = null, state = new Map(), duel = null, anims = [], floats = [], banners = [], raf = 0;
+  let spots = [], more = 0, prev = null, fx = [], peek = null, timer = null, state = new Map(), duel = null, anims = [], floats = [], banners = [], raf = 0, dead = () => !box.isConnected;
   const put = (x, y, c) => { if (x >= 0 && y >= 0 && x < W && y < H) buf[y * W + x] = c; };
   const paint = () => {
-    if (!box.isConnected) { clearInterval(timer); return; }
+    if (dead()) return;
     if (document.hidden) return;
     const now = Date.now(), bg = background(key, scenePhase());
     buf.set(bg.buf);
@@ -423,7 +423,10 @@ export function mountScene(box, key) {
     duel = { key, start, gap: m.gap, log: m.log, next: 0, last: Math.max(0, ...m.log.map(l => l.x || 0)), down: new Set() };
     duelTick();
   };
-  timer = setInterval(() => { tick(); duelTick(); }, 700);
-  const dt = setInterval(duelTick, 150);
-  return { update, duel: setDuel, stop: () => { clearInterval(timer); clearInterval(dt); cancelAnimationFrame(raf); } };
+  let dt = null;
+  const stop = () => { clearInterval(timer); clearInterval(dt); cancelAnimationFrame(raf); raf = 0; };
+  dead = () => { if (box.isConnected) return false; stop(); return true; };
+  timer = setInterval(() => { if (!dead()) { tick(); duelTick(); } }, 700);
+  dt = setInterval(() => { if (duel && !dead() && !document.hidden) duelTick(); }, 150);
+  return { update, duel: setDuel, stop };
 }

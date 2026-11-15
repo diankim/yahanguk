@@ -192,3 +192,12 @@ export const SCENE_ACTS = {
   wished: { label: '축사', fx: 'note' }, joined: { label: '함께하기', fx: 'star' }, join: { label: '신청', fx: 'star' },
 };
 export const DUEL_FX = { miss: { label: '피함' }, stun: { label: '묶임' }, down: { label: '무릎 꿇음' }, end: { label: '이겼다' } };
+const WEEKDAY = ['월', '화', '수', '목', '금', '토', '일'];
+export const TOURNEY_WEEK = (() => {
+  const t = GD.tourney;
+  return { signup: `${WEEKDAY[0]}요일 0시부터 ${WEEKDAY[t.signup_end_day - 1]}요일 23시 59분까지`, solo: `${WEEKDAY[t.solo_day]}요일 ${t.start_h}시`, team: `${WEEKDAY[t.team_day]}요일 ${t.start_h}시`, absent: t.absent_min, min: t.min_entries };
+})();
+export const SURVIVAL = (() => {
+  const g = GD.survival.ground, c = GD.survival.cleanse;
+  return { ground: `정신 +${g.mn} · 침식 −${g.er}`, groundEvery: g.min, cleanse: `침식 −${c.er} · 정신 +${c.mn}`, cleanseHq: `침식 −${c.hq_er} · 정신 +${c.hq_mn}` };
+})();

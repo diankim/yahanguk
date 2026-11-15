@@ -14,7 +14,7 @@ export async function loadMentor(force) {
   return loading;
 }
 
-const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return !t ? '' : s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
+const ago = t => fmt.ago(t);
 const wantChips = w => (w || []).map(k => `<span class="mt-want">${esc(MENTOR.post?.wants?.[k] || k)}</span>`).join('');
 const KIND = { seek: '선배를 찾아요', offer: '같이 가요' };
 

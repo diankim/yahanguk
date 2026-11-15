@@ -283,6 +283,7 @@ export const fmt = {
   },
   time: t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
   when: t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${fmt.time(d)}`; },
+  ago: (t, none = '') => { if (!t) return none; const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; },
 };
 
 const ICONS = {
@@ -575,7 +576,7 @@ export const xpPct = () => Math.max(0, Math.min(500, Number(store.hud?.xp_pct ??
 export const xpGot = x => Math.round((Number(x) || 0) * xpPct() / 100);
 export const xpNote = () => xpPct() < 100 ? `성장 조절 ${xpPct()}% — 최근 활동한 조사원 평균보다 많이 앞서 있어 얻는 경험치가 줄어듭니다. 평균이 따라오면 저절로 풀립니다.` : xpPct() > 100 ? `성장 덤 ${xpPct()}% — 최근 활동한 조사원 평균보다 뒤처져 있어 얻는 경험치를 더 받습니다. 평균에 가까워지면 저절로 줄어듭니다.` : '';
 export function bagLimit(c) { return (c?.bag_capacity || 34) + (c?.major_faction_id === 'river_alliance' ? 6 : 0); }
-const STACK_KEY = 'yh-stacks-v3', STACK_VER = 'yh-stacks-ver';
+const STACK_KEY = 'yh-stacks-v4', STACK_VER = 'yh-stacks-ver';
 let stacks = null, cats = null, wtypes = null;
 (() => { try { const o = JSON.parse(localStorage.getItem(STACK_KEY) || 'null'); if (o) { const e = Object.entries(o); stacks = new Map(e.map(([k, v]) => [k, v[0]])); cats = new Map(e.map(([k, v]) => [k, v[1]])); wtypes = new Map(e.filter(([, v]) => v[2]).map(([k, v]) => [k, v[2]])); } } catch {} })();
 let stacksP = null, stacksFresh = false;
@@ -585,8 +586,14 @@ async function readStacks() {
     const v = await dbVersion();
     let saved = null; try { saved = localStorage.getItem(STACK_VER); } catch {}
     if (v && stacks?.size && wtypes && saved === v) { stacksFresh = true; return; }
-    const { data, error } = await db.from('world_item_catalog').select('item_id,stack_size,category,wt:equipment_traits->>weapon_type');
-    if (error || !data?.length) throw new Error(error?.message || 'empty');
+    const data = [];
+    for (let at = 0; ; at += 1000) {
+      const { data: part, error } = await db.from('world_item_catalog').select('item_id,stack_size,category,wt:equipment_traits->>weapon_type').order('item_id').range(at, at + 999);
+      if (error) throw new Error(error.message);
+      data.push(...(part || []));
+      if (!part || part.length < 1000) break;
+    }
+    if (!data.length) throw new Error('empty');
     stacks = new Map(data.map(r => [r.item_id, Math.max(1, Number(r.stack_size) || 1)]));
     cats = new Map(data.map(r => [r.item_id, r.category || ''])); wtypes = new Map(data.filter(r => r.wt).map(r => [r.item_id, r.wt])); stacksFresh = true;
     try { localStorage.setItem(STACK_KEY, JSON.stringify(Object.fromEntries(data.map(r => [r.item_id, [stacks.get(r.item_id), r.category || '', r.wt || '']])))); if (v) localStorage.setItem(STACK_VER, v); } catch {}
@@ -617,3 +624,6 @@ export function bagUsed(c) {
   const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;
   return Object.entries(inv).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0) - eq;
 }
+export const deathAt = c => { const d = store.hud?.death_at; if (d && c?.downed_at) return new Date(d).getTime(); return c?.downed_at ? new Date(c.downed_at).getTime() + GAMEDATA.rescue.death_h * 3600e3 : 0; };
+export const KST_MS = 9 * 3600e3;
+export const kstDate = (t = Date.now()) => new Date(t + KST_MS);

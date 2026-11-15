@@ -1,5 +1,5 @@
 import { CHEER_NAME } from './rules.js';
-import { sceneHtml, mountScene } from './scene.js';
+import { openLiveEvent, eventLogHtml } from './liveevent.js';
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
 import { cardName } from './views/card.js';
 import { load } from './views/common.js';
@@ -26,7 +26,7 @@ export async function loadBond(force) {
   return loading;
 }
 const refresh = () => loadBond(true);
-const WED = GAMEDATA.wedding || { delays: [10, 60, 720, 1440], gap_s: 15, wish_max: 40, guest: { clap: 5, petal: 5, cup: 5 }, couple: { bow: 5, cake: 5 } };
+const WED = GAMEDATA.wedding;
 const delayName = m => m < 60 ? `${m}분 뒤` : `${m / 60}시간 뒤`;
 function cheerRow(caps, me, wait, pet) {
   return `<div class="btn-row wed-cheers">${Object.entries(caps).filter(([k]) => k !== 'pet' || pet).map(([k, n]) => {
@@ -34,54 +34,44 @@ function cheerRow(caps, me, wait, pet) {
     return `<button class="btn small" data-cheer="${k}" data-cap="${used >= n ? 1 : ''}" ${used >= n || wait ? 'disabled' : ''}>${CHEER_NAME[k] || k}${k === 'pet' ? ` · ${esc(pet)}` : ''} ${used}/${n}</button>`;
   }).join('')}</div>`;
 }
-export async function openWedding(wedId) {
-  let v = null, t = null, skew = 0, cd = null;
-  const l = openLayer({ title: '혼례', body: `${sceneHtml()}<div class="wed-box"><p class="muted">불러오는 중…</p></div>` });
-  const box = $('.wed-box', l), scene = mountScene($('.scene-box', l), 'wedding');
-  const draw = () => {
-    if (!box.isConnected) return clearInterval(t);
-    scene.update(v.folks);
-    const live = ['ready', 'ceremony'].includes(v.status), me = v.me || {};
-    const lines = [...(v.script || []), ...(v.lines || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
-    const startIn = new Date(v.starts_at) - (Date.now() + skew);
-    const desc = `<p class="desc">${esc(`${v.a}과(와) ${v.b}의 혼례`)} · ${esc(v.place)}${v.status === 'done' ? ' · 끝남' : startIn > 0 ? ` · ${fmt.remain(startIn)} 뒤 시작` : ''} · 하객 ${fmt.num(v.guests)}명</p>`;
-    const logHtml = lines.map(x => `<li class="k-${esc(x.k)}"><span>${esc(x.t)}</span></li>`).join('') || '<li class="muted">곧 혼례가 시작됩니다.</li>';
-    const wish = $('#wed-wish', box);
-    if (wish && document.activeElement === wish) {
-      const d = $('.desc', box); if (d) d.outerHTML = desc;
-      const lg = $('.wed-log', box); if (lg) { lg.innerHTML = logHtml; lg.scrollTop = lg.scrollHeight; }
-      return;
-    }
-    const kept = wish?.value || '';
-    const ru = v.rules || WED, max = ru.wish_max, open = live && startIn <= 0;
-    const lastAt = me.last_at ? new Date(me.last_at).getTime() : 0, readyAt = lastAt ? lastAt + ru.gap_s * 1000 : 0;
-    const wait = readyAt > Date.now() + skew;
-    const acts = !open ? '' : v.couple
-      ? (v.here ? `${cheerRow(ru.couple, me, wait, v.my_pet)}<p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span></p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 있어야 하객에게 절하고 떡을 돌릴 수 있습니다.</p>`)
-      : (v.here ? `${cheerRow(ru.guest, me, wait, v.my_pet)}
+export function openWedding(wedId) {
+  return openLiveEvent({
+    title: '혼례', every: 4000, scene: () => 'wedding',
+    read: () => rpc('world_wedding_view', { p_wed: wedId }), over: v => !v || ['done', 'cancelled'].includes(v.status),
+    draw: (ctx, v) => {
+      const box = ctx.box;
+      if (!v) return;
+      const live = ['ready', 'ceremony'].includes(v.status), me = v.me || {};
+      const startIn = new Date(v.starts_at) - ctx.now();
+      const desc = `<p class="desc">${esc(`${v.a}과(와) ${v.b}의 혼례`)} · ${esc(v.place)}${v.status === 'done' ? ' · 끝남' : startIn > 0 ? ` · ${fmt.remain(startIn)} 뒤 시작` : ''} · 하객 ${fmt.num(v.guests)}명</p>`;
+      const logHtml = eventLogHtml(v, '<li class="muted">곧 혼례가 시작됩니다.</li>');
+      const wish = $('#wed-wish', box);
+      if (wish && document.activeElement === wish) {
+        const d = $('.desc', box); if (d) d.outerHTML = desc;
+        const lg = $('.wed-log', box); if (lg) { lg.innerHTML = logHtml; lg.scrollTop = lg.scrollHeight; }
+        return;
+      }
+      const kept = wish?.value || '';
+      const ru = v.rules || WED, max = ru.wish_max, open = live && startIn <= 0;
+      const lastAt = me.last_at ? new Date(me.last_at).getTime() : 0, readyAt = lastAt ? lastAt + ru.gap_s * 1000 : 0;
+      const wait = readyAt > ctx.now();
+      const acts = !open ? '' : v.couple
+        ? (v.here ? `${cheerRow(ru.couple, me, wait, v.my_pet)}<p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span></p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 있어야 하객에게 절하고 떡을 돌릴 수 있습니다.</p>`)
+        : (v.here ? `${cheerRow(ru.guest, me, wait, v.my_pet)}
           ${me.wished ? '' : `<div class="wed-wish"><textarea id="wed-wish" rows="2" maxlength="${max}" placeholder="두 사람에게 건넬 축사 한마디 (한 번만 보낼 수 있습니다)"></textarea><div class="wed-wish-foot"><small class="muted" id="wed-wish-n">0 / ${max}자</small><button class="btn small primary" data-cheer="wish" ${wait ? 'disabled' : ''}>축사 보내기</button></div></div>`}
           <p class="muted small wed-gap">단추 사이 ${ru.gap_s}초<span data-wed-wait></span> · 끝날 때 그곳에 있으면 혼례 떡을 받습니다.</p>` : `<p class="hint">${icon('pin', 14)} ${esc(v.place)}에 가면 하객으로 축하할 수 있습니다.</p>`);
-    box.innerHTML = `${desc}
+      box.innerHTML = `${desc}
       <ol class="raid-log wed-log">${logHtml}</ol>
       ${acts}`;
-    const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
-    const w2 = $('#wed-wish', box);
-    if (w2) { const cnt = () => { const n = $('#wed-wish-n', box); if (n) n.textContent = `${w2.value.length} / ${max}자`; }; if (kept) w2.value = kept; cnt(); w2.addEventListener('input', cnt); }
-    clearInterval(cd);
-    const paintWait = () => {
-      if (!box.isConnected) return clearInterval(cd);
-      const left = Math.ceil((readyAt - (Date.now() + skew)) / 1000), s = $('[data-wed-wait]', box);
-      if (s) s.textContent = left > 0 ? ` · ${left}초 뒤 다시` : '';
-      if (left <= 0) { clearInterval(cd); $$('[data-cheer]', box).forEach(b => { if (!b.dataset.cap) b.disabled = false; }); }
-    };
-    if (wait) { paintWait(); cd = setInterval(paintWait, 500); }
-    $$('[data-cheer]', box).forEach(b => b.onclick = () => guard(b, async () => {
-      v = await rpc('world_wedding_cheer', { p_wed: wedId, p_kind: b.dataset.cheer, p_text: b.dataset.cheer === 'wish' ? $('#wed-wish', box)?.value : null }); draw(); return null;
-    }));
-  };
-  const read = async () => { try { v = await rpc('world_wedding_view', { p_wed: wedId }); skew = new Date(v.now) - Date.now(); draw(); if (v.status === 'done' || v.status === 'cancelled') clearInterval(t); } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; clearInterval(t); } };
-  await read();
-  if (v && !['done', 'cancelled'].includes(v.status)) t = setInterval(() => { if (!box.isConnected) return clearInterval(t); if (!document.hidden) read(); }, 4000);
+      const log = $('.wed-log', box); if (log) log.scrollTop = log.scrollHeight;
+      const w2 = $('#wed-wish', box);
+      if (w2) { const cnt = () => { const n = $('#wed-wish-n', box); if (n) n.textContent = `${w2.value.length} / ${max}자`; }; if (kept) w2.value = kept; cnt(); w2.addEventListener('input', cnt); }
+      ctx.wait(readyAt, '[data-wed-wait]', '[data-cheer]');
+      $$('[data-cheer]', box).forEach(b => b.onclick = () => guard(b, async () => {
+        ctx.set(await rpc('world_wedding_cheer', { p_wed: wedId, p_kind: b.dataset.cheer, p_text: b.dataset.cheer === 'wish' ? $('#wed-wish', box)?.value : null })); return null;
+      }));
+    },
+  });
 }
 const run = (b, fn, args, after) => guard(b, async () => { const r = await act(fn, args); await refresh(); after?.(); return r; });
 

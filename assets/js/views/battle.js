@@ -219,7 +219,7 @@ function showEnd(r, foe) {
       <button class="btn primary block" data-close>계속 탐색</button></div>` });
   } else if (r.ended === 'defeat') {
     openModal({ title: '쓰러졌습니다', body: `<div class="end-card lose"><p class="lead">${esc(x.monster)}에게 쓰러졌습니다.</p>
-      <p>전투불능 상태입니다. 같은 지역의 조사원이 구조하거나, 회생 부적을 쓰거나, 본부 구조대를 부를 수 있습니다. 4시간 안에 일어나지 못하면 목숨을 잃습니다.</p>
+      <p>전투불능 상태입니다. 같은 지역의 조사원이 구조하거나, 회생 부적을 쓰거나, 본부 구조대를 부를 수 있습니다. ${GAMEDATA.rescue.death_h}시간 안에 일어나지 못하면 목숨을 잃습니다.</p>
       <button class="btn primary block" data-close>확인</button></div>` });
   } else if (r.ended === 'fled') {
     fleeCard(true, r, x.monster || foe || '요괴');

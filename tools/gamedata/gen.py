@@ -75,6 +75,7 @@ def build(dsn):
     d['expXp'] = q(dsn, "select world_expedition_xp_rules()")
     d['idle'] = q(dsn, "select world_idle_rules()")
     d['rescue'] = q(dsn, "select world_rescue_rules()")
+    d['survival'] = q(dsn, "select world_survival_rules()")
     d['rate'] = q(dsn, "select world_rate_rules()")
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")
     d['fishRules'] = q(dsn, "select world_fish_rules()")

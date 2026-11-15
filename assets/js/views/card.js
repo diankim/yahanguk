@@ -20,7 +20,7 @@ export async function openCharacterCard(id) {
   await draw($('.char-card', m), id);
 }
 
-const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return s < 120 ? '방금' : s < 3600 ? `${Math.floor(s / 60)}분 전` : s < 86400 ? `${Math.floor(s / 3600)}시간 전` : `${Math.floor(s / 86400)}일 전`; };
+const ago = t => fmt.ago(t);
 
 async function draw(box, id) {
   try {
@@ -102,11 +102,7 @@ async function run(b, c, box) {
   if (k === 'spar') return guard(b, () => act('world_spar_challenge', { p_target: id }));
   if (k === 'house') {
     if (c.mine) { close(); return window.yahangGo?.('house', ''); }
-    return guard(b, async () => {
-      const snap = await rpc('world_housing_snapshot', { p_owner: id });
-      store.houseSnap = { owner: id, snap, at: Date.now() };
-      close(); window.yahangGo?.('house', id);
-    });
+    return guard(b, () => visitHouse(id, close));
   }
   if (k === 'rescue') return guard(b, async () => { const r = await act('world_rescue_character', { p_target: id }); again(); return r; });
   if (k === 'block') {
@@ -114,6 +110,12 @@ async function run(b, c, box) {
     return guard(b, async () => { const r = await act('world_block_set', { p_target: id, p_blocked: true }); again(); return r; });
   }
   if (k === 'unblock') return guard(b, async () => { const r = await act('world_block_set', { p_target: id, p_blocked: false }); again(); return r; });
+}
+
+export async function visitHouse(id, before) {
+  const snap = await rpc('world_housing_snapshot', { p_owner: id });
+  store.houseSnap = { owner: id, snap, at: Date.now() };
+  before?.(); window.yahangGo?.('house', id);
 }
 
 export function openFriendNote(id, name, done) {
