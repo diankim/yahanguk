@@ -67,7 +67,13 @@ begin
         r.t, r.col, r.col, 'lt_knife_7_hq', 'lt_knife_6_hq', 'lt_knife_7', 'lt_knife_6', 'r_lt_knife_7', 'r_lt_knife_6', r.col, '%lt_knife_7%');
     else
       for i in 1 .. array_length(pairs, 1) loop
-        execute format('update public.%I set %I = %L where %I = %L', r.t, r.col, pairs[i][2], r.col, pairs[i][1]);
+        for o in execute format('select ctid::text from public.%I where %I = %L', r.t, r.col, pairs[i][1]) loop
+          begin
+            execute format('update public.%I set %I = %L where ctid = %L::tid', r.t, r.col, pairs[i][2], o);
+          exception when unique_violation then
+            execute format('delete from public.%I where ctid = %L::tid', r.t, o);
+          end;
+        end loop;
       end loop;
     end if;
   end loop;
