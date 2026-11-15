@@ -239,6 +239,15 @@ TOPS = {
         "....dddddddd....",
         "....eeeeeeee....",
     ]),
+    'shirt': ('단추 셔츠', {'a': '#f4f4f0', 'b': '#d4d4cc', 'c': '#ffffff', 'd': '#8a8a90', 'e': '#d4d4cc'}, [
+        "................",
+        "....xccaccb.....",
+        "..bxaaadaaaaby..",
+        "..bxaaaaaaaaby..",
+        "..bxaaadaaaaby..",
+        "...xaaaaaaaab...",
+        "...ybbbdbbbby...",
+    ]),
 }
 
 
@@ -319,9 +328,16 @@ BOTTOM_SHAPES = {
         "..ybbbbbbbbbby..",
         "....zz....zz....",
     ],
+    'mini': [
+        "....xaaaaaab....",
+        "...xababababb...",
+        "...xababababb...",
+        ".....ss..ss.....",
+        "....zzu..zzu....",
+    ],
 }
 
-SKIRTS = ('skirt', 'pleat', 'bloom')
+SKIRTS = ('skirt', 'pleat', 'bloom', 'mini')
 
 BOTTOMS = {
     'guard': ('검은 바지와 가죽 장화', 'boots', '#3a3030', '#2a2222', '#4a3020', '#c9a24a'),
@@ -342,6 +358,7 @@ BOTTOMS = {
     'jeans': ('청바지와 운동화', 'pants', '#4a6a9a', '#3a5680', '#f4f4f4', '#c9a24a'),
     'jogger': ('줄무늬 운동 바지', 'stripe', '#2a2e3a', '#20232c', '#e8e8e8', '#efe7d2'),
     'shorts': ('무릎 반바지', 'short', '#c8a46a', '#a8844a', '#f4f4f4', '#efe7d2'),
+    'miniskirt': ('주름 짧은 치마', 'mini', '#3a4a6a', '#2c3a56', '#2a2228', '#efe7d2'),
     'flowerskirt': ('꽃무늬 치마', 'bloom', '#f2d06a', '#d8b04a', '#f8f2e6', '#e86a8a'),
 }
 
@@ -555,6 +572,16 @@ ACC = {
         "abaaba",
         "aa..aa",
         "..a.a.",
+    ]),
+    'beanie': ('털실 모자', {'a': '#c8505a', 'b': '#a83a46', 'c': '#f4efe2', 'd': '#e8d8c8'}, 3, 0, [
+        ".........cccc.........",
+        ".......aabaabaa.......",
+        ".....aabaabaabaab.....",
+        "...aabaabaabaabaaba...",
+        "..aabaabaabaabaabaab..",
+        ".aabaabaabaabaabaabaa.",
+        "aabaabaabaabaabaabaaba",
+        "dddddddddddddddddddddd",
     ]),
 }
 
