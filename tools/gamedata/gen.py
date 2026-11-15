@@ -78,6 +78,8 @@ def build(dsn):
     d['survival'] = q(dsn, "select world_survival_rules()")
     d['rate'] = q(dsn, "select world_rate_rules()")
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")
+    d['weakSafeNames'] = q(dsn, "select jsonb_agg(g.region_name order by w.o) from jsonb_array_elements_text(world_weak_safe_rules()) with ordinality w(id, o) join world_map_regions g on g.region_id = w.id")
+    d['petSlot'] = q(dsn, "select world_pet_slot_rules()")
     d['fishRules'] = q(dsn, "select world_fish_rules()")
     d['wedding'] = q(dsn, "select world_wedding_rules()")
     d['tourney'] = q(dsn, "select world_tourney_rules()")

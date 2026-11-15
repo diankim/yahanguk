@@ -3,7 +3,7 @@ import { hit } from '../changes.js';
 import { load, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
-import { MARKET_SOLD, SHOP_CAP } from '../rules.js';
+import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
@@ -167,7 +167,7 @@ async function enhancePane(body) {
       <div class="btn-row"><button class="btn primary" id="enh-go" data-here="강화" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(반요촌 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+    <p class="muted small">장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(${WEAK_NAMES} 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
   bindInfo(body);
   const go = $('#enh-go', body);
   if (go) go.onclick = async () => {

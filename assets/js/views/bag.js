@@ -6,7 +6,7 @@ import { helpQ } from '../tips.js';
 import { openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf, useLabel } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
-import { GWIRYEONG, BIJANG } from '../rules.js';
+import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
 import { hit } from '../changes.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
@@ -262,7 +262,8 @@ function traits(it) {
 async function craft(body, inv, stg) {
   await loadFavs();
   const bagHave = inv.inventory || {}, eq = new Set(Object.values(inv.equipment || {}));
-  const stHave = stg?.in_safe && store.character?.location !== '반요촌' ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
+  const stUse = !!(stg?.use_here ?? stg?.in_safe);
+  const stHave = stUse ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
   const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[hqOf(k)]) || 0) + (stHave[hqOf(k)] || 0) });
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id));
@@ -298,7 +299,7 @@ async function craft(body, inv, stg) {
     .sort(favFirst);
   const kindCount = {}; (inv.recipes || []).forEach(r => { const k = kindOf(r); kindCount[k] = (kindCount[k] || 0) + 1; });
   renderKeep(body, `
-    ${stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : ''}
+    ${stUse ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} ${esc(WEAK_NAMES)}에서는 창고 재료를 쓰지 않습니다. 가방에 든 재료만 셉니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>제작법에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="만들 물품 찾기 (제작법·완성품 이름)" value="${esc(cq)}"></label>

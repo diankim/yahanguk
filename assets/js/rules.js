@@ -163,6 +163,7 @@ export const gwWhen = (until, warnH = GW.warn_h) => {
     short: `${t.getMonth() + 1}/${t.getDate()} ${hm} 시듦 · ${h ? `${h}시간` : `${m}분`} 남음`, soon: left < warnH * 3600000 };
 };
 export const weakSafe = id => (GD.weakSafe || ['banyo_village']).includes(id);
+export const WEAK_NAMES = (GD.weakSafeNames || ['반요촌']).join('·');
 export const SYS_CHAT = {
   '구조 알림': { icon: 'heart', cls: '' },
   '세력 소식': { icon: 'pin', cls: 'note' },

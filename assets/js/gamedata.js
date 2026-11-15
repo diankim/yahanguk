@@ -106,6 +106,8 @@ export const GAMEDATA = {
   },
   "rate": {"fish_s":15,"raid_ms":1000,"gather_s":12,"battle_ms":1000,"search_ms":900},
   "weakSafe": ["banyo_village","mukchang_ferry"],
+  "weakSafeNames": ["반요촌","묵창 나루"],
+  "petSlot": {"buy":[{"gil":3000,"items":{"pet_token":1}},{"gil":10000,"items":{"pet_token":3}}],"base":1},
   "fishRules": {"miss":0.3,"match":3,"named":{"bait":1,"boost":0.5,"weight":0.3},"weight":{"epic":3,"rare":9,"common":60,"uncommon":25,"legendary":0.6},"boosted":["rare","epic","legendary"],"miss_skill":0.6},
   "wedding": {"gap_s":15,"guest":{"cup":5,"pet":3,"clap":5,"petal":5},"couple":{"bow":5,"pet":3,"cake":5},"delays":[10,60,720,1440],"run_min":10,"wish_max":40,"remind_min":10},
   "tourney": {"rest_s":20,"stance":{"attack":{"dealt":1.15,"evade":0,"taken":1.1},"defense":{"dealt":0.85,"evade":5,"taken":0.8},"balanced":{"dealt":1,"evade":0,"taken":1}},"heal_at":0.4,"start_h":21,"skill_at":{"mid":0.6,"finish":0.35},"solo_day":5,"team_day":6,"between_s":8,"absent_min":10,"exchange_s":3,"min_entries":4,"signup_end_day":5},

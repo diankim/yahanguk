@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
+import { WEAK_NAMES, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -241,7 +241,7 @@ const S = [
         <ul><li>+10까지, 단계마다 위력 +5%</li>
           <li>성공 확률: +3까지는 반드시 성공하고, 그 뒤 90·80·70·60·50·40·30%입니다.</li>
           <li>비용: 전 30×무기 단계×다음 단계 · 월철 주괴 · 정련 숯. +5 도전부터 강철 주괴, +8 도전부터 응축 영핵도 듭니다.</li>
-          <li>재료는 가방 것을 먼저 쓰고, 모자란 몫은 개인 창고에서 꺼내 씁니다. 반요촌에서는 창고 재료를 쓰지 않습니다.</li>
+          <li>재료는 가방 것을 먼저 쓰고, 모자란 몫은 개인 창고에서 꺼내 씁니다. ${esc(WEAK_NAMES)}에서는 창고 재료를 쓰지 않습니다.</li>
           <li>실패해도 단계는 내려가지 않고 재료와 전만 듭니다.</li>
           <li>강화는 그 무기에 붙습니다. 그 무기를 모두 팔거나 내주면 사라집니다.</li></ul></li>
       <li><b>분해</b>: 언제나 할 수 있고, 그 장비를 맡는 제작 계열 경험 12를 얻습니다.
@@ -600,7 +600,7 @@ const S = [
     <ul>
       <li>재료가 있으면 <b>어디서나</b> 만들 수 있습니다.
         <ul><li>제작법에 적힌 장소에서 만들면 품질 +12입니다.</li>
-          <li>안전지대에서 만들면 가방에 모자란 재료를 창고에서 꺼내 씁니다. 반요촌은 예외입니다.</li>
+          <li>안전지대에서 만들면 가방에 모자란 재료를 창고에서 꺼내 씁니다. ${esc(WEAK_NAMES)}은(는) 예외입니다.</li>
           <li>결과물이 가방에 들어가지 않으면 만들기 전에 거절됩니다.</li></ul></li>
       <li><b>분야</b>: 단조 · 목공 · 법구 공예 · 봉인 공예 · 직조 · 가죽 공예 · 연금 · 요리, 여덟 가지입니다. 만들면 그 분야 기술 계열이 오릅니다. 「생활 기술과 전문화」 항목을 보세요.</li>
       <li><b>만드는 개수</b>: 많이 쓰는 소모품·재료는 한 번에 여러 개를 만듭니다. 예를 들어 정화 부적 3 · 노정 건량 3 · 대부분의 요리 2 · 청심환 2 · 응축 영핵 3 · 화살 70개입니다. 가구는 언제나 하나만 만듭니다.</li>
@@ -1300,7 +1300,7 @@ const S = [
     </ul>`],
   ['economy', '경제와 거래', `
     <ul>
-      <li>화폐는 <b>전</b>입니다. 상점과 거래소는 안전지대에서만 열립니다. 반요촌에는 거래소가 없습니다.</li>
+      <li>화폐는 <b>전</b>입니다. 상점과 거래소는 안전지대에서만 열립니다. ${esc(WEAK_NAMES)}에는 거래소가 없습니다.</li>
     </ul>
     <h4>상점에 팔기</h4>
     <ul>
@@ -1354,7 +1354,7 @@ const S = [
     <h4>조사원 의뢰</h4>
     <p>상시 의뢰 아래에 있습니다. 조사원끼리 필요한 물품을 맡기고 구해 주는 의뢰입니다.</p>
     <ul>
-      <li><b>올리기</b>: 반요촌을 뺀 안전지대에서 물품·수량·보수를 정해 올리면, 보수를 바로 맡깁니다.
+      <li><b>올리기</b>: ${esc(WEAK_NAMES)}을(를) 뺀 안전지대에서 물품·수량·보수를 정해 올리면, 보수를 바로 맡깁니다.
         <ul><li>수량은 1~999입니다.</li>
           <li>보수는 기준 시세×수량의 절반 이상, 10전 이상입니다.</li>
           <li>한 사람이 동시에 5건, 3일 뒤 마감됩니다.</li>
@@ -1847,7 +1847,7 @@ const S = [
           <li>방을 열 때마다 곳간이 ${HR.store?.per_room ?? 20}칸 늘어납니다.</li>
           <li>${josa(`${hrN(2)}을(를) 열면 「${HR.item_names?.['hf_' + HR.stair] || ''}」이(가) 곳간에 들어옵니다.`)} ${hrN(0)} 바닥에 놓아야 ${hrN(2)}에 오를 수 있고, 다른 방에는 놓을 수 없습니다. 버릴 수 없으며, 잃어도 별채를 열면 곳간에 다시 들어옵니다.</li>
           <li>넓히는 재료는 가방에서 먼저, 모자라면 창고에서 꺼내 씁니다.</li>
-          <li>별채 동무와 내 모습은 「방 쓰임」에서 고른 방에서 지냅니다.</li></ul></li>
+          <li>내 모습은 「방 쓰임」에서 고른 방에서 지냅니다. 별채 동무는 동무마다 머무는 방이 따로이고, 다른 방에 있는 동무 칸의 「이 방으로」로 데려옵니다.</li></ul></li>
     </ul>
     ${houseRoomsHtml()}
     <h4>꾸미기</h4>
@@ -1925,16 +1925,20 @@ const S = [
     </ul>
     <h4>함께 지내기</h4>
     <ul>
-      <li><b>두 자리</b>: 동무는 두 자리에 한 마리씩 둡니다.
-        <ul><li><b>데리고 다니는 동무</b>: 조사원 카드에 함께 보입니다. 별채가 없어도 정할 수 있습니다.</li>
-          <li><b>별채 동무</b>: 방 안을 돌아다니며 방석·이부자리에서 자고, 먹이 그릇·놀잇감에 들릅니다.</li>
-          <li>같은 동무를 두 자리에 함께 둘 수는 없습니다. 다른 자리로 고르면 앞 자리에서 빠집니다.</li>
-          <li>혼례 정인과 한 지붕에 살면 별채 동무는 집주인의 동무이고, 데리고 다니는 동무는 저마다 정합니다.</li>
-          <li>동무 도감은 별채 화면의 「동무」에서 엽니다.</li></ul></li>
+      <li><b>두 곳</b>: 동무는 데리고 다니거나 별채에 둡니다.
+        <ul><li><b>데리고 다니는 동무</b>: 한 마리로, 조사원 카드에 함께 보입니다. 별채가 없어도 정할 수 있습니다.</li>
+          <li><b>별채 동무</b>: 동무 자리만큼 둡니다. 방 안을 돌아다니며 방석·이부자리에서 자고, 먹이 그릇·놀잇감에 들립니다. 어질러진 자리·배탈은 동무마다 따로입니다.</li>
+          <li>같은 동무를 두 곳에 함께 둘 수는 없습니다. 다른 곳으로 고르면 앞 자리에서 빠집니다.</li>
+          <li>혼례 정인과 한 지붕에 살면 두 사람이 저마다 자기 동무를 자기 자리만큼 둡니다. 갈라서면 각자의 동무는 각자의 별채로 돌아갑니다.</li></ul></li>
+      ${(() => { const PS = GD.petSlot || { base: 1, buy: [] }; return `<li><b>동무 자리</b>: 처음에는 한 사람에 ${PS.base}자리이고, 별채 › 동무 창의 「동무 자리 늘리기」로 ${(PS.buy || []).length}자리를 더 늘립니다(모두 ${PS.base + (PS.buy || []).length}자리).
+        <ul>${(PS.buy || []).map((b, i) => `<li>${PS.base + i + 1}째 자리: ${[b.gil ? `${Number(b.gil).toLocaleString()}전` : '', ...Object.entries(b.items || {}).map(([id, n]) => `${esc(nameOf(id))} ×${n}`)].filter(Boolean).join(' · ')}</li>`).join('')}
+          <li>별채를 고칠 수 있는 곳(안전지대, 빈약한 안전지대 제외)에서 늘리고, 재료는 가방 먼저, 모자라면 창고에서 씁니다.</li>
+          <li>자리가 하나뿐일 때 「별채에 두기」를 누르면 별채 동무를 바꿉니다.</li>
+          <li>동무 도감은 별채 화면의 「동무」에서 엽니다.</li></ul></li>`; })()}
       <li><b>놀기</b>: 별채 안에서 쓰다듬기 하루 5번 · 놀아 주기 3번 · 먹이 주기 3번으로 친밀도가 오릅니다.
         <ul><li>데리고 다니는 동무도 별채 › 동무 도감의 「돌보기」로 똑같이 돌볼 수 있습니다(별채가 없어도 됩니다). 하루 횟수는 그 동무 몫으로 함께 셉니다.</li></ul>
         <ul><li>친밀도는 최대 300이고, 100이 되면 다 자란 모습이 됩니다.</li>
-          <li>손님도 하루 한 번씩 쓰다듬고 놀아 줄 수 있습니다.</li></ul></li>
+          <li>손님도 동무마다 하루 한 번씩 쓰다듬고 놀아 줄 수 있습니다.</li></ul></li>
       <li><b>먹이</b>: 동무 주먹밥 10전은 상점에 늘 있습니다. 별미는 다섯 가지로 생선포 · 쌀 강정 · 꿀 약과 · 풀단 · 육포, 30~50전입니다.
         <ul><li>동무마다 좋아하는 별미를 주면 더 많이 오릅니다.</li>
           <li>안 먹여도 불이익은 없습니다.</li></ul></li>

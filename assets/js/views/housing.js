@@ -26,10 +26,13 @@ const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith
 
 let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0, cur = 0;
 let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
-let pet = null, fx = [], poops = [], folks = [];
+let pets = [], fx = [], poops = [], folks = [];
+const housePets = () => (snap?.pets || (snap?.pet ? [snap.pet] : [])).filter(p => PETS[p.id]);
+const petKey = p => `${p.keeper || ''}:${p.id}`;
+const findPet = k => housePets().find(p => petKey(p) === k);
 
 export async function render(root, sub) {
-  el = root; ownerArg = sub || null; cur = 0; editing = false; pick = null; sel = null; dirty = false; pet = null; fx = [];
+  el = root; ownerArg = sub || null; cur = 0; editing = false; pick = null; sel = null; dirty = false; pets = []; fx = [];
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>별채</h1></div></div>${loading()}`;
   await reload();
 }
@@ -125,7 +128,7 @@ function tryChange(fn) {
 function draw() {
   if (!el || !snap) return;
   const me = snap.role === 'owner', can = !!snap.role, edBlock = snap.edit_block;
-  const p = snap.pet, cr = curRoom();
+  const cr = curRoom();
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${esc(cr.name || '안채')} ${cr.size}×${cr.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
@@ -135,7 +138,7 @@ function draw() {
     <div class="hs-wrap ${editing ? 'editing' : ''}">
       <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}</div>
       ${editing ? palette() : ''}
-      ${p && !editing ? petBar(p) : ''}
+      ${!editing ? housePets().map(petBar).join('') : ''}
     </div>
     ${editing ? '' : designReports()}
     ${me && !editing ? ownerPanel() : ''}
@@ -188,9 +191,9 @@ function fit() {
 }
 function paint() {
   if (!cv || !room) return;
-  const pets = (pet ? [{ x: pet.x, y: pet.y, draw: c => drawPetIn(c) }] : []).concat(folks.map(f => ({ x: f.x, y: f.y, draw: c => drawFolk(c, f) })), poops.map(([x, y]) => ({ x, y, draw: c => { const [px, py] = c.iso(x + .5, y + .5, 0); drawEffect(c.put, 'poop', px, py + 3); } })));
+  const drawn = pets.map(pt => ({ x: pt.x, y: pt.y, draw: c => drawPetIn(c, pt) })).concat(folks.map(f => ({ x: f.x, y: f.y, draw: c => drawFolk(c, f) })), poops.map(([x, y]) => ({ x, y, draw: c => { const [px, py] = c.iso(x + .5, y + .5, 0); drawEffect(c.put, 'poop', px, py + 3); } })));
   const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1b1d24';
-  const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets, drawings: snap.drawings || {}, env: store.env ? { phase: store.env.phase?.key, weather: store.env.weather?.key } : null });
+  const img = room.render(state, { sel, bad: false, bg: /^#[0-9a-f]{6}$/i.test(bg) ? bg : '#1b1d24', pets: drawn, drawings: snap.drawings || {}, env: store.env ? { phase: store.env.phase?.key, weather: store.env.weather?.key } : null });
   const g = cv.getContext('2d'); g.putImageData(img, 0, 0);
   if (pick && hover) ghost(g);
 }
@@ -207,9 +210,9 @@ function loop() {
   const step = t => {
     if (!el || !cv) return;
     raf = requestAnimationFrame(step);
-    if (!pet && !fx.length && !folks.length) return;
+    if (!pets.length && !fx.length && !folks.length) return;
     if (t - lastDraw < 125 || document.hidden) return;
-    lastDraw = t; tickPet(); folks.forEach(tickFolk); fx = fx.filter(f => f.until > Date.now()); paint();
+    lastDraw = t; pets.forEach(tickPet); folks.forEach(tickFolk); fx = fx.filter(f => f.until > Date.now()); paint();
   };
   raf = requestAnimationFrame(step);
 }
@@ -238,11 +241,13 @@ function palette() {
     <div class="hs-pal-grid">${rows || '<p class="muted small">놓을 수 있는 것이 없습니다. 가구는 상점·제작·토벌·원정·칭호 보상으로 얻습니다.</p>'}</div></div>`;
 }
 function petBar(p) {
-  const me = keeper(), today = snap.pet_today || {}, m = p.mess || {};
+  const me = keeper(), today = p.today || {}, m = p.mess || {}, k = esc(petKey(p));
   const messTip = `${m.every_h || 8}시간마다 한 번 자리를 어지릅니다(최대 ${m.max || 3}번). 가득 찬 채 하루가 지나면 배탈이 나서 쓰다듬기·놀아 주기로 친밀도가 오르지 않습니다. 자리를 치운 뒤 「동무 약」을 먹이면 낫습니다.`;
-  const away = (snap.pet_room || 0) !== cur ? roomsOf()[snap.pet_room || 0]?.name : '';
-  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${esc(p.nick || p.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
-    <span class="hs-petbtn"><button class="btn small" data-pet="pat" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? '<button class="btn small" data-pet="feed">먹이 주기</button>' : ''}${m.n ? '<button class="btn small" data-care="clean">치우기</button>' : ''}${me && m.sick && !m.n ? '<button class="btn small primary" data-care="cure">약 먹이기</button>' : ''}</span></div>`;
+  const away = (p.room || 0) !== cur ? roomsOf()[p.room || 0]?.name : '';
+  const owner = p.keeper && p.keeper !== snap.owner_id && snap.mate_name ? `${snap.mate_name}의 ` : p.keeper && p.keeper === snap.owner_id && snap.mate_name ? `${snap.owner_name}의 ` : '';
+  const move = me && away && roomsOf().filter(r => r.open && !r.why).length > 1 ? `<button class="btn small" data-petroom="${k}">이 방으로</button>` : '';
+  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${owner ? `<small class="muted">${esc(owner)}</small>` : ''}${esc(p.nick || p.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
+    <span class="hs-petbtn">${move}<button class="btn small" data-pet="pat" data-pk="${k}" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" data-pk="${k}" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? `<button class="btn small" data-pet="feed" data-pk="${k}">먹이 주기</button>` : ''}${m.n ? `<button class="btn small" data-care="clean" data-pk="${k}">치우기</button>` : ''}${me && m.sick && !m.n ? `<button class="btn small primary" data-care="cure" data-pk="${k}">약 먹이기</button>` : ''}</span></div>`;
 }
 function ownerPanel() {
   const cr = curRoom(), nx = cr.next && !cr.next.open ? cr.next : null, rs = roomsOf(), many = rs.filter(r => r.open).length > 1;
@@ -252,8 +257,8 @@ function ownerPanel() {
     ${panel(`넓히기 · ${esc(cr.name || '안채')}`, nx ? `<p>${cr.size}×${cr.size} → <b>${nx.size}×${nx.size}</b> · 놓을 수 있는 가구 ${cr.cap} → ${cr.cap + (capOfSize(nx.size) - capOfSize(cr.size)) * roomMul()} · 곳간 +${HR.store?.per_size || 0}칸</p>
       <p class="muted small">Lv${nx.level} · ${nx.gil.toLocaleString()}전 · ${Object.entries(nx.items).map(([i, n]) => `${esc(nameOf(i))} ×${n}`).join(' · ')}</p><button class="btn small" id="hs-expand">넓히기</button>`
       : `<p class="muted small">가장 넓은 9×9 ${esc(cr.name || '안채')}입니다.</p>`, { ico: 'up' })}
-    ${many ? panel('방 쓰임', `<p class="muted small">별채 동무는 ${nm(snap.pet_room)}, 내 모습은 ${nm(snap.look_room)}에 머뭅니다.</p>
-      <div class="btn-row"><button class="btn small" data-roomset="pet" ${!snap.pet || (snap.pet_room || 0) === cur ? 'disabled' : ''}>동무를 이 방에</button><button class="btn small" data-roomset="look" ${(snap.look_room || 0) === cur ? 'disabled' : ''}>내 모습을 이 방에</button></div>`, { ico: 'home' }) : ''}</div>`;
+    ${many ? panel('방 쓰임', `<p class="muted small">내 모습은 ${nm(snap.look_room)}에 머뭅니다. 별채 동무는 동무마다 머무는 방이 따로이고, 다른 방에 있는 동무 칸의 「이 방으로」로 데려옵니다.</p>
+      <div class="btn-row"><button class="btn small" data-roomset="look" ${(snap.look_room || 0) === cur ? 'disabled' : ''}>내 모습을 이 방에</button></div>`, { ico: 'home' }) : ''}</div>`;
 }
 function mergePanel() {
   const m = snap.merge; if (!m) return '';
@@ -325,7 +330,7 @@ function bind() {
   $$('[data-roominfo]', el).forEach(b => b.addEventListener('click', () => openRoomInfo(Number(b.dataset.roominfo))));
   $$('[data-roomset]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => {
     const what = b.dataset.roomset, r = await rpc('world_housing_room_set', { p_what: what, p_room: cur });
-    if (what === 'pet') { snap.pet_room = r.room; if (snap.pet) snap.pet.room = r.room; } else { snap.look_room = r.room; (snap.avatars || []).forEach(a => { a.room = r.room; }); }
+    snap.look_room = r.room; (snap.avatars || []).forEach(a => { a.room = r.room; });
     setupPet(); setupFolks(); draw(); return r;
   })));
   $('#hs-store')?.addEventListener('click', openStore);
@@ -340,8 +345,13 @@ function bind() {
   });
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
-  $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet)));
-  $$('[data-care]', el).forEach(b => b.addEventListener('click', () => petCare(b, b.dataset.care)));
+  $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet, b.dataset.pk)));
+  $$('[data-care]', el).forEach(b => b.addEventListener('click', () => petCare(b, b.dataset.care, b.dataset.pk)));
+  $$('[data-petroom]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => {
+    const p = findPet(b.dataset.petroom); if (!p) return;
+    const r = await rpc('world_pet_room_set', { p_pet: p.id, p_room: cur, p_keeper: p.keeper || null });
+    p.room = r.room; setupPet(); setupFolks(); draw(); return r;
+  })));
   $('#hs-gb')?.addEventListener('submit', e => {
     e.preventDefault(); const f = e.currentTarget, body = f.body.value.trim(); if (!body) return;
     guard(f.querySelector('button'), async () => { snap = await rpc('world_housing_guest_write', { p_owner: snap.owner_id, p_body: body }); resetKeepEdit(); return { content: '방명록에 남겼습니다.' }; });
@@ -369,7 +379,8 @@ function onCanvas(e) {
   const [bx, by] = bufXY(e);
   const [gx, gy] = room.toGrid(bx, by), cx = Math.floor(gx), cy = Math.floor(gy), N = room.N, onFloor = gx >= 0 && gy >= 0 && gx < N && gy < N;
   if (!editing) {
-    if (pet && onFloor && Math.abs(gx - pet.x - .5) < 1 && Math.abs(gy - pet.y - .5) < 1) { fx.push({ key: 'heart', until: Date.now() + 1200 }); paint(); return; }
+    const hitPet = onFloor && pets.find(pt => Math.abs(gx - pt.x - .5) < 1 && Math.abs(gy - pt.y - .5) < 1);
+    if (hitPet) { fx.push({ key: 'heart', pk: hitPet.key, until: Date.now() + 1200 }); paint(); return; }
     const hitW = room.hit(bx, by), pic = hitW && WALL[hitW.k]?.frame && hitW.d != null ? snap.drawings?.[hitW.d] : null;
     if (pic) openViewer(pic, snap.owner_id, () => reload());
     return;
@@ -443,21 +454,26 @@ async function openPets() {
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
   const inv = store.character?.inventory || {};
   const items = Object.entries(inv).filter(([k, n]) => n > 0 && (k.startsWith('pt_') || k.startsWith('pet_egg_')));
-  const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null, petId = room_?.pet_id || null;
+  const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null;
+  const placed = ps.placed || (room_?.pet_id ? [room_.pet_id] : []), sl = ps.slots || { cap: 1, used: placed.length };
   const nm = id => mine.get(id)?.nick || PETS[id]?.name || '';
   const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2 })}" alt="">` : '<span class="ps-empty"></span>';
-  const houseNote = !ps.house ? '별채를 얻으면 한 마리를 둘 수 있습니다.' : ps.shared ? '함께 쓰는 별채에는 집주인의 동무가 머뭅니다.' : '도감에서 「별채에 두기」';
+  const nx = sl.next && typeof sl.next === 'object' ? sl.next : null;
+  const cost = nx ? [nx.gil ? `${Number(nx.gil).toLocaleString()}전` : '', ...Object.entries(nx.items || {}).map(([id, n]) => `${nameOf(id)} ×${n}`)].filter(Boolean).join(' · ') : '';
+  const buy = ps.house && nx ? `<span class="btn-row"><button class="btn small" data-slotbuy data-here="동무 자리 늘리기">${icon('plus', 13)} 동무 자리 늘리기</button><small class="muted">${esc(cost)}</small></span>` : '';
+  const housed = !ps.house ? '<span class="muted small">별채를 얻으면 동무를 둘 수 있습니다.</span>'
+    : `${placed.length ? `<span class="ps-many">${placed.map(id => `<span class="ps-one">${pic(id)}<b>${esc(nm(id))}</b><button class="btn small" data-unplace="${esc(id)}">내보내기</button></span>`).join('')}</span>` : '<span class="muted small">도감에서 「별채에 두기」</span>'}${buy}`;
   const slots = `<div class="pet-slots">
       <div class="pet-slot"><small class="eyebrow">데리고 다니는 동무 · 조사원 카드에 보임</small>${pic(prof)}<span class="ps-body">${prof ? `<b>${esc(nm(prof))}</b><span class="muted small">친밀도 ${mine.get(prof)?.affinity || 0}</span><span class="btn-row"><button class="btn small primary" data-carry>돌보기</button><button class="btn small" data-prof="">쉬게 하기</button></span>` : '<span class="muted small">도감에서 「데리고 다니기」</span>'}</span></div>
-      <div class="pet-slot"><small class="eyebrow">별채 동무 · 방 안을 돌아다님</small>${pic(petId)}<span class="ps-body">${petId ? `<b>${esc(nm(petId))}</b><button class="btn small" data-place="">별채에서 내보내기</button>` : `<span class="muted small">${esc(houseNote)}</span>`}</span></div>
+      <div class="pet-slot many"><small class="eyebrow">별채 동무 ${ps.house ? `${placed.length}/${sl.cap} ` : ''}· 방 안을 돌아다님</small><span class="ps-body">${housed}</span></div>
     </div>`;
   const acts = s => {
     const out = [prof === s.id ? '<em class="on">데리고 다님</em>' : `<button class="btn small" data-prof="${s.id}">데리고 다니기</button>`];
-    if (room_) out.push(petId === s.id ? '<em class="on">별채에 있음</em>' : `<button class="btn small" data-place="${s.id}">별채에 두기</button>`);
+    if (room_) out.push(placed.includes(s.id) ? '<em class="on">별채에 있음</em>' : `<button class="btn small" data-place="${s.id}">별채에 두기</button>`);
     return out.join('');
   };
   const tamer = store.character?.job_key === 'tamer';
-  const body = `<p class="muted small">${tamer ? '조련사는 데리고 다니는 동무와 함께 싸웁니다(동무의 힘은 친밀도로 정해집니다). 별채에 둔 동무는 싸우지 않습니다.' : '꼬마 동무는 능력치 효과가 없습니다.'} 두 자리에 한 마리씩 둡니다. 데리고 다니는 동무는 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채 동무는 방 안을 돌아다니며 손님도 쓰다듬거나 놀아 줄 수 있습니다. 같은 동무를 두 자리에 함께 둘 수는 없어서, 다른 자리로 고르면 앞 자리에서 빠집니다.</p>
+  const body = `<p class="muted small">${tamer ? '조련사는 데리고 다니는 동무와 함께 싸웁니다(동무의 힘은 친밀도로 정해집니다). 별채에 둔 동무는 싸우지 않습니다.' : '꼬마 동무는 능력치 효과가 없습니다.'} 데리고 다니는 동무는 한 마리로 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채에는 동무 자리만큼 두어 방 안을 돌아다니게 합니다. 한 지붕에 사는 정인은 서로 자기 동무를 둡니다. 같은 동무를 두 곳에 함께 둘 수는 없어서, 다른 곳으로 고르면 앞 자리에서 빠집니다.${ps.house && sl.cap === 1 ? ' 자리가 하나뿐이면 「별채에 두기」가 별채 동무를 바꿉니다.' : ''}</p>
     ${slots}
     ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
@@ -468,7 +484,7 @@ async function openPets() {
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry],[data-unplace],[data-slotbuy]'); if (!b) return;
     if (b.dataset.carry != null) { openCarry(mine.get(prof), ps); return; }
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
@@ -479,12 +495,15 @@ async function openPets() {
       });
       return;
     }
+    if (b.dataset.slotbuy != null && !(await ask(`동무 자리를 하나 늘릴까요?\n${cost}이(가) 들어갑니다. 재료는 가방에서 먼저, 모자라면 창고에서 씁니다.`, { title: '동무 자리 늘리기', ok: '늘리기' }))) return;
     if (b.dataset.place && store.character?.job_key === 'tamer' && b.dataset.place === prof && !(await ask('조련사는 데리고 다니는 동무와 함께 싸웁니다. 별채에 두면 싸움에서 빠집니다.', { title: '별채에 두기', ok: '별채에 두기' }))) return;
     guard(b, async () => {
       let r;
       if (b.dataset.look) r = await rpc('world_pet_look', { p_pet: b.dataset.look, p_baby: !!b.dataset.baby });
       else if (b.dataset.adopt) r = await act('world_pet_adopt', { p_item: b.dataset.adopt });
       else if (b.dataset.token != null) r = await act('world_pet_token_trade');
+      else if (b.dataset.slotbuy != null) r = await act('world_pet_slot_buy');
+      else if (b.dataset.unplace) r = await rpc('world_pet_unplace', { p_pet: b.dataset.unplace });
       else if (b.dataset.prof !== undefined) r = await rpc('world_pet_profile_set', { p_pet: b.dataset.prof || null });
       else r = await rpc('world_pet_place', { p_pet: b.dataset.place || null });
       closeModal(); await reload(); openPets();
@@ -517,50 +536,52 @@ function openCarry(p, ps) {
     guard(b, async () => { const r = await rpc('world_pet_act', { p_owner: null, p_act: kind }); done(kind, r); return { content: null }; });
   });
 }
-function petCare(btn, kind) {
+function petCare(btn, kind, pk) {
+  const p = findPet(pk); if (!p) return;
   return guard(btn, async () => {
-    const r = kind === 'cure' ? await act('world_pet_care', { p_owner: snap.owner_id, p_act: kind }) : await rpc('world_pet_care', { p_owner: snap.owner_id, p_act: kind });
-    if (snap.pet) { snap.pet.mess = r.mess; if (r.affinity != null) snap.pet.affinity = r.affinity; }
-    setupPoops(); fx.push({ key: kind === 'cure' ? 'star' : 'heart', until: Date.now() + 1600 });
+    const args = { p_owner: p.keeper || snap.owner_id, p_act: kind, p_pet: p.id };
+    const r = kind === 'cure' ? await act('world_pet_care', args) : await rpc('world_pet_care', args);
+    p.mess = r.mess; if (r.affinity != null) p.affinity = r.affinity;
+    setupPoops(); fx.push({ key: kind === 'cure' ? 'star' : 'heart', pk, until: Date.now() + 1600 });
     if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }
     return { content: r.content };
   });
 }
 const keeper = () => snap.role === 'owner' || snap.role === 'partner';
-async function petAct(btn, kind) {
-  if (kind === 'feed') return chooseFood(btn);
+async function petAct(btn, kind, pk) {
+  const p = findPet(pk); if (!p) return;
+  if (kind === 'feed') return chooseFood(btn, p);
   return guard(btn, async () => {
-    const r = await rpc('world_pet_act', { p_owner: snap.owner_id, p_act: kind });
-    afterPet(r, kind); return { content: careLine(kind, r) };
+    const r = await rpc('world_pet_act', { p_owner: p.keeper || snap.owner_id, p_act: kind, p_pet: p.id });
+    afterPet(r, kind, p); return { content: careLine(kind, r, p) };
   });
 }
-function chooseFood(btn) {
-  const inv = store.character?.inventory || {}, likes = PETS[snap.pet?.id]?.likes;
+function chooseFood(btn, p) {
+  const inv = store.character?.inventory || {}, likes = PETS[p.id]?.likes;
   const have = FOODS.filter(f => (inv[f] || 0) > 0);
   if (!have.length) return toast('가방에 동무 먹이가 없습니다. 안전지대 상점의 동무 주먹밥·별미를 사 오세요.', 'error');
   openModal({ title: '먹이 주기', body: `<p class="muted small">하루 세 번까지 친밀도가 오릅니다. 좋아하는 별미를 주면 더 많이 오릅니다.</p><ul class="hs-list">${have.map(f => `<li><span>${esc(nameOf(f))} ×${inv[f]}${f === likes ? ' <b class="good-text">좋아함</b>' : ''}</span><button class="btn small primary" data-food="${f}">주기</button></li>`).join('')}</ul>` });
   $('#modal')?.addEventListener('click', e => {
     const b = e.target.closest('[data-food]'); if (!b) return;
-    guard(b, async () => { const r = await act('world_pet_act', { p_owner: snap.owner_id, p_act: 'feed', p_item: b.dataset.food }); closeModal(); afterPet(r, 'feed'); return { content: careLine('feed', r) }; });
+    guard(b, async () => { const r = await act('world_pet_act', { p_owner: p.keeper || snap.owner_id, p_act: 'feed', p_item: b.dataset.food, p_pet: p.id }); closeModal(); afterPet(r, 'feed', p); return { content: careLine('feed', r, p) }; });
   });
 }
-function careLine(kind, r) {
-  const p = snap.pet || {};
+function careLine(kind, r, p) {
   return petLine(kind, { id: p.id, name: p.nick || p.name || PETS[p.id]?.name, kind: PETS[p.id]?.kind, affinity: r?.affinity ?? p.affinity, liked: r?.react === 'star', guest: !keeper(), gain: r?.gain ?? 1, count: r?.counts?.[kind] || 0 });
 }
-function afterPet(r, kind) {
-  fx.push({ key: r.react || 'heart', until: Date.now() + 1600 });
-  if (pet) { pet.state = kind === 'play' ? 'play' : 'idle'; pet.wait = 12; pet.path = []; }
-  if (snap.pet) { snap.pet.affinity = r.affinity; snap.pet.adult = r.adult; }
-  if (!keeper()) { snap.pet_today = { ...(snap.pet_today || {}), [kind]: true }; }
-  if (snap.pet) snap.pet.grown = r.grown;
-  if (r.grew) { toast('꼬마 동무가 훌쩍 자랐습니다!', 'ok'); if (pet) pet.adult = !!r.adult; }
+function afterPet(r, kind, p) {
+  const pk = petKey(p), sim = pets.find(s => s.key === pk);
+  fx.push({ key: r.react || 'heart', pk, until: Date.now() + 1600 });
+  if (sim) { sim.state = kind === 'play' ? 'play' : 'idle'; sim.wait = 12; sim.path = []; }
+  p.affinity = r.affinity; p.adult = r.adult; p.grown = r.grown;
+  if (!keeper()) p.today = { ...(p.today || {}), [kind]: true };
+  if (r.grew) { toast('꼬마 동무가 훌쩍 자랐습니다!', 'ok'); if (sim) sim.adult = !!r.adult; }
   if (!editing) { const y = window.scrollY; draw(); window.scrollTo(0, y); }
 }
 
 const PET_GO = { bed: 'sleep', bowl: 'eat', toy: 'play', perch: 'perch' };
-function walkable() {
-  const N = room.N, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [], fav: [] }, kind = PETS[pet?.id]?.kind;
+function walkable(kind) {
+  const N = room.N, block = new Set(), spots = { bed: [], bowl: [], toy: [], perch: [], fav: [] };
   for (const it of state.items) {
     const f = FUR[it.k]; if (!f || f.layer !== 'floor') continue;
     const [w, d] = dimsOf(it);
@@ -574,21 +595,25 @@ function walkable() {
   return { N, ok: (x, y) => x >= 0 && y >= 0 && x < N && y < N && !block.has(`${x},${y}`), spots };
 }
 function setupPet() {
-  pet = null; poops = [];
-  const p = snap.pet; if (!p || p.out || !PETS[p.id] || (snap.pet_room || 0) !== cur) return;
-  const w = walkable(); const free = [];
-  for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]);
-  const [x, y] = free[Math.floor(Math.random() * free.length)] || [0, 0];
-  pet = { id: p.id, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10, flip: false, f: 0, z: 0, top: 0 };
+  pets = []; poops = [];
+  const list = housePets().filter(p => !p.out && (p.room || 0) === cur); if (!list.length || !state) return;
+  const w = walkable(), taken = [];
+  for (const p of list) {
+    const free = freeTiles(w, taken); if (!free.length) break;
+    const [x, y] = free[Math.floor(Math.random() * free.length)]; taken.push([x, y]);
+    pets.push({ key: petKey(p), d: p, id: p.id, kind: PETS[p.id]?.kind, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10 + Math.random() * 20, flip: false, f: Math.floor(Math.random() * 28), z: 0, top: 0 });
+  }
   setupPoops();
 }
 function setupPoops() {
   poops = [];
-  const n = snap?.pet?.mess?.n || 0; if (!n || !state) return;
-  const w = walkable(), free = [];
-  for (let x = 0; x < w.N; x++) for (let y = 0; y < w.N; y++) if (w.ok(x, y)) free.push([x, y]);
-  let h = 0; for (const ch of String(snap.owner_id || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  for (let i = 0; i < n && free.length; i++) { h = (h * 1103515245 + 12345) >>> 0; poops.push(free.splice(h % free.length, 1)[0]); }
+  if (!state) return;
+  const w = walkable(), free = freeTiles(w);
+  for (const pt of pets) {
+    const n = pt.d?.mess?.n || 0;
+    let h = 0; for (const ch of `${snap.owner_id || ''}${pt.key}`) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    for (let i = 0; i < n && free.length; i++) { h = (h * 1103515245 + 12345) >>> 0; poops.push(free.splice(h % free.length, 1)[0]); }
+  }
 }
 function pathTo(w, sx, sy, tx, ty) {
   const key = (x, y) => `${x},${y}`, prev = new Map([[key(sx, sy), null]]), q = [[sx, sy]];
@@ -604,8 +629,7 @@ function pathTo(w, sx, sy, tx, ty) {
   }
   return null;
 }
-function tickPet() {
-  if (!pet) return;
+function tickPet(pet) {
   pet.f++;
   if (pet.path.length) {
     const [tx, ty] = pet.path[0], dx = tx - pet.x, dy = ty - pet.y, sp = 0.14;
@@ -614,7 +638,7 @@ function tickPet() {
     return;
   }
   if (--pet.wait > 0) return;
-  const w = walkable(), r = Math.random(), sx = Math.round(pet.x), sy = Math.round(pet.y);
+  const w = walkable(pet.kind), r = Math.random(), sx = Math.round(pet.x), sy = Math.round(pet.y);
   let target = null, next = 'idle';
   const pickOf = list => list[Math.floor(Math.random() * list.length)];
   pet.z = 0; pet.top = 0;
@@ -628,8 +652,7 @@ function tickPet() {
   pet.x = sx; pet.y = sy;
   if (path && path.length) { pet.path = path; pet.next = next; } else { const here = target && target[0] === sx && target[1] === sy; pet.state = here ? next : 'idle'; if (here && next === 'perch') pet.z = pet.top * ZU; pet.wait = 20; }
 }
-function drawPetIn(c) {
-  if (!pet) return;
+function drawPetIn(c, pet) {
   const [sx, sy] = c.iso(pet.x + .5, pet.y + .5, pet.z || 0);
   const st = pet.state, blink = st === 'idle' && pet.f % 28 < 2;
   const frame = st === 'sleep' ? 'sleep' : st === 'walk' || st === 'play' ? (pet.f % 4 < 2 ? 'step' : 'idle') : blink ? 'blink' : 'idle';
@@ -638,8 +661,8 @@ function drawPetIn(c) {
   const top = sy - 14 - (pet.adult ? 4 : 0);
   if (st === 'sleep' && pet.f % 16 < 10) drawEffect(c.put, 'zz', sx + 6, top);
   if (st === 'eat' && pet.f % 10 < 6) drawEffect(c.put, 'bowl', sx + 8, sy + 2);
-  if (snap?.pet?.mess?.sick && pet.f % 24 < 12) drawEffect(c.put, 'sick', sx - 7, top);
-  for (const f of fx) drawEffect(c.put, f.key, sx, top - 2 - Math.floor((1600 - (f.until - Date.now())) / 300));
+  if (pet.d?.mess?.sick && pet.f % 24 < 12) drawEffect(c.put, 'sick', sx - 7, top);
+  for (const f of fx) if (!f.pk || f.pk === pet.key) drawEffect(c.put, f.key, sx, top - 2 - Math.floor((1600 - (f.until - Date.now())) / 300));
 }
 function freeTiles(w, skip = []) {
   const out = [];
@@ -650,7 +673,7 @@ function setupFolks() {
   folks = [];
   registerDesigns(snap?.avatar_designs);
   const list = snap?.avatars || []; if (!list.length || !state || (snap.look_room || 0) !== cur) return;
-  const w = walkable(), taken = pet ? [[Math.round(pet.x), Math.round(pet.y)]] : [];
+  const w = walkable(), taken = pets.map(pt => [Math.round(pt.x), Math.round(pt.y)]);
   for (const a of list) {
     const free = freeTiles(w, taken); if (!free.length) break;
     const [x, y] = free[Math.floor(Math.random() * free.length)]; taken.push([x, y]);

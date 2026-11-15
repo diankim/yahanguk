@@ -2661,6 +2661,10 @@ b.sealed { color: var(--bad); }
 .pet-slot img { image-rendering: pixelated; height: 36px; }
 .pet-slot .ps-empty { width: 36px; height: 36px; border: var(--bw, 1px) dashed var(--line); border-radius: var(--r-sm); }
 .pet-slot .ps-body { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.pet-slot.many .ps-body { grid-column: 1 / -1; }
+.pet-slot .ps-many { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.pet-slot .ps-one { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.pet-slot .ps-one img { height: 28px; }
 .pet-card em.on { color: var(--ok); font-style: normal; font-size: calc(11px * var(--fz, 1)); }
 @media (max-width: 560px) { .pet-slots { grid-template-columns: 1fr; } }
 .pet-act em { font-style: normal; font-size: calc(11px * var(--fz, 1)); color: var(--gold); }

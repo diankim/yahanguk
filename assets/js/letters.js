@@ -1,4 +1,5 @@
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, nameOf, toast } from './core.js';
+import { WEAK_NAMES } from './rules.js';
 import { load } from './views/common.js';
 import { cardName } from './views/card.js';
 import { untradeNote, giveable } from './views/services.js';
@@ -25,7 +26,7 @@ export function lettersPanelHtml(b) {
         ${Object.keys(l.items || {}).length ? `<small class="${l.claimed ? 'muted' : 'ok'}">${icon('bag', 12)} ${esc(itemsText(l.items))}${l.claimed ? ' · 받음' : ''}</small>` : ''}</div>
       <button class="btn small" data-lt-open="${l.id}">읽기</button></li>`).join('')}</ul>`
       : '<p class="muted small">받은 서신이 없습니다.</p>'}
-    <p class="muted small">친구에게만 보낼 수 있습니다. 물품은 다섯 가지까지 붙이고, 물품이 든 서신은 안전지대(반요촌 제외)에서 부치고 받습니다. 고정하지 않은 서신은 받은 지 3일 뒤, 또는 10통을 넘으면 오래된 것부터 지워집니다(받지 않은 물품은 개인 창고로).</p>`;
+    <p class="muted small">친구에게만 보낼 수 있습니다. 물품은 다섯 가지까지 붙이고, 물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서 부치고 받습니다. 고정하지 않은 서신은 받은 지 3일 뒤, 또는 10통을 넘으면 오래된 것부터 지워집니다(받지 않은 물품은 개인 창고로).</p>`;
 }
 
 export function bindLettersPanel(root, redraw) {
@@ -64,7 +65,7 @@ export async function openCompose(to, toName, done, title = '') {
   try {
     const [fr, prices, inv, , stg] = await Promise.all([load('world_friend_overview').catch(() => null), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
       load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks(), load('world_storage_snapshot', undefined, { maxAge: 15000 }).catch(() => null)]);
-    const placeOk = !stg || stg.can_move !== false, placeWhy = store.character?.travel_destination ? '이동 중에는 물품을 붙일 수 없습니다.' : '물품이 든 서신은 안전지대(반요촌 제외)에서, 이동·원정·자율 활동 중이 아닐 때만 부칩니다.';
+    const placeOk = !stg || stg.can_move !== false, placeWhy = store.character?.travel_destination ? '이동 중에는 물품을 붙일 수 없습니다.' : `물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서, 이동·원정·자율 활동 중이 아닐 때만 부칩니다.`;
     const friends = (fr?.friends || []).filter(f => !f.is_dead);
     if (!friends.length) { box.innerHTML = '<p class="muted">서신은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.</p>'; return; }
     const have = store.character?.inventory || {}, ref = new Map((prices || []).map(p => [p.item_id, p]));
@@ -77,7 +78,7 @@ export async function openCompose(to, toName, done, title = '') {
         <label class="field"><span>제목 (24자)</span><input name="title" maxlength="24" value="${esc(st.title)}" required></label>
         <label class="field"><span>본문 (400자)</span><textarea name="body" maxlength="400" rows="5">${esc(st.body)}</textarea></label>
         <fieldset class="dt-side"><legend>붙일 물품 (다섯 가지까지 · 안전지대에서)</legend>
-          ${placeOk ? '<p class="muted small">물품은 안전지대(반요촌 제외)에서 이동·원정·자율 활동 중이 아닐 때만 붙여 부칠 수 있고, 받는 사람도 안전지대에서 받습니다. 글만 적은 서신은 어디서나 부칩니다.</p>' : `<p class="notice-line">${icon('letter', 14)} ${esc(placeWhy)} 글만 적은 서신은 지금도 부칠 수 있습니다.</p>`}
+          ${placeOk ? `<p class="muted small">물품은 안전지대(${WEAK_NAMES} 제외)에서 이동·원정·자율 활동 중이 아닐 때만 붙여 부칠 수 있고, 받는 사람도 안전지대에서 받습니다. 글만 적은 서신은 어디서나 부칩니다.</p>` : `<p class="notice-line">${icon('letter', 14)} ${esc(placeWhy)} 글만 적은 서신은 지금도 부칠 수 있습니다.</p>`}
           <div class="chips">${bundleChips(st.items)}</div>
           <button class="btn small dt-pick" type="button" data-add ${opts.length ? '' : 'disabled'}>${icon('bag', 15)}<span>가방에서 붙이기</span></button>
           ${untradeNote(have, ref, true)}</fieldset>
