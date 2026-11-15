@@ -129,6 +129,7 @@ export const BIJANG = {
     full: '함께 선 이 모두 오늘 비장고 들어가기를 다 써서 숨은 문을 다시 덮었습니다.' },
   maps: BJ.maps || [],
 };
+export const UCOMM_NOTE = { ph: '남길 글 (안 써도 됩니다)', hint: '게시판의 이 의뢰 아래에 보입니다. 다른 조사원이 읽는 글이니 알맞게 적어 주세요.', removed: '운영진이 이 의뢰의 글을 내렸습니다.', ask: '이 의뢰에 남긴 글을 내릴까요? 의뢰는 그대로 남고, 올린 사람에게 알림이 갑니다.' };
 export const UCOMM_PAST = '받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
 
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };

@@ -8,7 +8,7 @@ import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
-import { UCOMM_PAST } from '../rules.js';
+import { UCOMM_PAST, UCOMM_NOTE } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
@@ -240,6 +240,7 @@ async function userCommissions(box) {
   const here = b?.here || {}, feePct = b?.fee_pct ?? 10;
   const open = b?.open || [], mine = b?.mine || [];
   const getLabel = id => esc(nameOf(id));
+  const noteLine = x => x.note ? `<p class="uc-note">${esc(x.note)}</p>` : x.note_removed ? `<p class="uc-note gone">${esc(UCOMM_NOTE.removed)}</p>` : '';
   const mineCard = m => {
     const st = m.status === 'done' ? (m.settled ? ['받음', ''] : ['완료 · 물품을 받으세요', 'ok']) : m.status === 'open' ? [leftText(m.expires_at), 'accent'] : m.status === 'expired' ? [m.settled ? '마감 · 돌려받음' : '마감 · 보수를 돌려받으세요', 'warn'] : ['거둠', ''];
     const act2 = m.status === 'done' && !m.settled ? `<button class="btn small primary" data-here="조사원 의뢰" data-uc-collect="${m.id}" ${here.safe ? '' : 'disabled title="안전지대에서 받습니다"'}>${icon('bag', 14)}<span>물품 받기</span></button>`
@@ -247,7 +248,7 @@ async function userCommissions(box) {
       : m.status === 'expired' && !m.settled ? `<button class="btn small primary" data-here="의뢰 거두기" data-uc-cancel="${m.id}">${icon('coin', 14)}<span>보수 돌려받기</span></button>` : '';
     return `<article class="commission uc mine ${m.status === 'done' && !m.settled ? 'ready' : m.settled || m.status === 'cancelled' ? 'done' : ''}">
       <header>${icon('scroll', 18)}<b><button class="linkish" data-uc-info="${esc(m.item)}">${getLabel(m.item)}</button> ×${m.qty}</b></header>
-      <small class="muted">보수 ${fmt.jeon(m.reward)} · 등록처 ${esc(m.region || '-')}${m.faction ? `(${esc(m.faction)})` : ''}${m.fulfiller ? ` · 넘긴 이 ${esc(m.fulfiller)}` : ''}</small>
+      ${noteLine(m)}<small class="muted">보수 ${fmt.jeon(m.reward)} · 등록처 ${esc(m.region || '-')}${m.faction ? `(${esc(m.faction)})` : ''}${m.fulfiller ? ` · 넘긴 이 ${esc(m.fulfiller)}` : ''}</small>
       <div class="uc-foot">${chip(st[0], st[1])}${act2}</div></article>`;
   };
   const openCard = o => {
@@ -255,6 +256,7 @@ async function userCommissions(box) {
     return `<article class="commission uc ${enough ? 'ready' : ''}">
       <header>${icon('bag', 18)}<b><button class="linkish" data-uc-info="${esc(o.item)}">${getLabel(o.item)}</button> ×${o.qty}</b></header>
       <small class="muted">의뢰인 ${esc(o.owner)} · 등록처 ${esc(o.region || '-')}${o.faction ? `(${esc(o.faction)})` : ''} · ${leftText(o.expires_at)}</small>
+      ${noteLine(o)}${b.staff && o.note ? `<button class="btn small ghost" data-uc-unnote="${o.id}">${icon('close', 14)}<span>글 내리기</span></button>` : ''}
       ${bar(Math.min(o.have, o.qty), o.qty, 'xp')}
       <small class="muted">가진 수 ${Math.min(o.have, o.qty)}/${o.qty} · 보수 ${fmt.jeon(o.reward)} → 받는 몫 약 ${fmt.jeon(pay)}${b.xp_left > 0 ? ` · 경험치 ${b.xp}` : ''}</small>
       <button class="btn small ${enough ? 'primary' : ''}" data-here="조사원 의뢰" data-uc-give="${o.id}" ${enough && here.safe ? '' : 'disabled'} title="${esc(!here.safe ? '안전지대에서 넘깁니다' : enough ? '' : '물품이 모자랍니다')}">${icon('check', 14)}<span>넘기기</span></button></article>`;
@@ -280,11 +282,15 @@ async function userCommissions(box) {
     if (!(await ask('이 의뢰를 거두고 맡긴 보수를 돌려받을까요?', { title: '의뢰 거두기', ok: '거두기' }))) return;
     doAct(x, 'world_ucomm_cancel', { p_id: Number(x.dataset.ucCancel) });
   });
+  $$('[data-uc-unnote]', box).forEach(x => x.onclick = async () => {
+    if (!(await ask(UCOMM_NOTE.ask, { title: '의뢰 글 내리기', ok: '내리기' }))) return;
+    doAct(x, 'world_ucomm_note_remove', { p_id: Number(x.dataset.ucUnnote) });
+  });
   $$('[data-uc-collect]', box).forEach(x => x.onclick = () => doAct(x, 'world_ucomm_collect', { p_id: Number(x.dataset.ucCollect) }));
-  $('#uc-post', box)?.addEventListener('click', () => openUcommPost(here, feePct));
+  $('#uc-post', box)?.addEventListener('click', () => openUcommPost(here, feePct, b?.note_max || 60));
 }
 
-async function openUcommPost(here, feePct) {
+async function openUcommPost(here, feePct, noteMax) {
   const m = openModal({ title: '조사원 의뢰 올리기', wide: true, body: `<div class="uc-post">${loading()}</div>` });
   const box = $('.uc-post', m);
   let inv, prices;
@@ -303,6 +309,8 @@ async function openUcommPost(here, feePct) {
         <label class="field"><span>수량</span><input type="number" id="uc-qty" min="1" max="999" value="1" inputmode="numeric"></label>
         <label class="field"><span>보수(전)</span><input type="number" id="uc-reward" min="10" value="" inputmode="numeric"></label>
       </div>
+      <label class="field"><span>남길 글 <small class="muted" id="uc-note-n">0/${noteMax}</small></span><input type="text" id="uc-note" maxlength="${noteMax}" placeholder="${esc(UCOMM_NOTE.ph)}" enterkeyhint="done"></label>
+      <p class="muted small">${esc(UCOMM_NOTE.hint)}</p>
       <p class="muted small" id="uc-hint">보수는 지금 바로 게시판에 맡기고, 3일 안에 아무도 맡지 않으면 돌려받습니다. 수행한 사람은 보수의 ${100 - feePct}%를 받고 ${feePct}%는 등록처 ${esc(`${here.region || ''}${here.faction ? `(${here.faction})` : ''}이(가)`)} 수수료로 뗍니다.</p>
       <div class="modal-actions"><button class="btn primary" id="uc-go" data-here="조사원 의뢰" disabled>${icon('check', 15)}<span>등록</span></button></div>
     </div>`;
@@ -318,11 +326,14 @@ async function openUcommPost(here, feePct) {
     go.disabled = !(r >= min && r <= gil && r <= 1000000);
   };
   bindPicker(box, 'ucItem', items, id => { pick = items.find(i => i.id === id); delete rewI.dataset.touched; sync(); }, { title: '구할 물품', placeholder: '물품 고르기' });
+  const noteI = $('#uc-note', box), noteN = $('#uc-note-n', box);
+  noteI.addEventListener('input', () => { noteN.textContent = `${noteI.value.length}/${noteMax}`; });
+  noteI.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); noteI.blur(); } });
   qtyI.addEventListener('input', sync);
   rewI.addEventListener('input', () => { rewI.dataset.touched = '1'; sync(); });
   go.onclick = () => guard(go, async () => {
     const n = Math.max(1, Math.min(999, Math.floor(Number(qtyI.value) || 1))), r = Math.floor(Number(rewI.value) || 0);
-    const out = await act('world_ucomm_post', { p_item: pick.id, p_qty: n, p_reward: r });
+    const out = await act('world_ucomm_post', { p_item: pick.id, p_qty: n, p_reward: r, p_note: noteI.value.trim() || null });
     closeModal(); return out;
   });
 }

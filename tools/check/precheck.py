@@ -20,7 +20,7 @@ HQ_OK_JS = {'QS_DEFAULT'}
 HQ_OK_FN = {'world_case_combine_regional'}
 BASE_KEYED = re.compile(r"\.output\s*===\s*([\w$.]+)|ingredients\??\.?\[([\w$.]+)\]|lore\.items\??\.?\[([\w$.]+)\]|l\.items\??\.?\[([\w$.]+)\]")
 HQ_HELPERS = re.compile(r'\b(withHq|haveOf|hqCount|bothOf|hqOf|baseOf|pairOf)\(')
-UNMUTABLE_NOTES = {'bug_reply', 'bug_report', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'outfit_removed', 'guide'}
+UNMUTABLE_NOTES = {'bug_reply', 'bug_report', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'outfit_removed', 'ucomm_note_removed', 'guide'}
 ANON_OK = {'world_app_version'}
 NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js'}
 SERVER_TEXT = ['쏠 것이 떨어져', '기력이 바닥나', '영력이 바닥나', '초 남음', '의 피해']

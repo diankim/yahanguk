@@ -2941,6 +2941,8 @@ b.shadow { color: var(--sp); }
 .ucomm .sub-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .ucomm .sub-h.small { font-size: calc(13px * var(--fz, 1)); margin: 6px 0 0; color: var(--muted); }
 .commission.uc .uc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.commission.uc .uc-note { margin: 0; padding: 4px 8px; border-left: 2px solid var(--line); font-size: calc(12.5px * var(--fz, 1)); overflow-wrap: anywhere; }
+.commission.uc .uc-note.gone { color: var(--muted); font-style: italic; }
 .commission.uc .linkish { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; text-align: left; }
 .uc-post { display: grid; gap: 8px; }
 .uc-form { display: grid; gap: 6px; border-top: var(--bw) solid var(--line); padding-top: 8px; }
