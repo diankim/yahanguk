@@ -186,6 +186,25 @@ TOPS = {
         "..xaaaaabaaaay..",
         "..ybbaabbaabby..",
     ]),
+    'hoodie': ('쓰개 달린 겉옷', {'a': '#7a8290', 'b': '#5e6674', 'c': '#e4e6ea', 'd': '#687080', 'e': '#4a505c'}, [
+        "................",
+        "....baaaaab.....",
+        "..bxaacaacaaby..",
+        "..bxaacaacaaby..",
+        "..bxaaaaaaaaby..",
+        "...xaddddddab...",
+        "...xaaaaaaaab...",
+        "...ebbbbbbbbe...",
+    ]),
+    'knitvest': ('털실 조끼', {'a': '#6a8a5a', 'b': '#557046', 'c': '#f4efe2', 'd': '#c9a24a', 'e': '#e4dccb'}, [
+        "................",
+        "....xcccccb.....",
+        "..cxacaaacaabc..",
+        "..cxaadaadaabc..",
+        "..cxadaadaadbc..",
+        "...xaaaaaaaab...",
+        "...ybbbbbbbby...",
+    ]),
 }
 
 
@@ -243,6 +262,13 @@ BOTTOM_SHAPES = {
         "..ybbbbbbbbbby..",
         "....zz....zz....",
     ],
+    'stripe': [
+        "...daaaabaaad...",
+        "...daaaabaaad...",
+        "....dab..xad....",
+        "....dab..xad....",
+        "....zzu..zzu....",
+    ],
 }
 
 SKIRTS = ('skirt', 'pleat')
@@ -263,6 +289,8 @@ BOTTOMS = {
     'jjokchima': ('쪽빛 홑치마', 'skirt', '#3a6a9a', '#2c5480', '#f8f2e6', '#efe7d2'),
     'leatherboots': ('가죽 장화 바지', 'boots', '#6a5446', '#54402f', '#3a2418', '#c9a24a'),
     'okchima': ('옥색 치마', 'skirt', '#9ad0c0', '#78b2a2', '#f8f2e6', '#3a7c6d'),
+    'jeans': ('청바지와 운동화', 'pants', '#4a6a9a', '#3a5680', '#f4f4f4', '#c9a24a'),
+    'jogger': ('줄무늬 운동 바지', 'stripe', '#2a2e3a', '#20232c', '#e8e8e8', '#efe7d2'),
 }
 
 
@@ -438,7 +466,48 @@ ACC = {
         "cc..................cc",
         ".c..................c.",
     ]),
+    'cap': ('챙 모자', {'a': '#3a5a9a', 'b': '#2a4478', 'c': '#f4efe2'}, 4, 1, [
+        "......aaaaaaaa......",
+        "....aaaaacaaaaaa....",
+        "...aaaaaaaaaaaaaa...",
+        "..aaaaaaaaaaaaaaaa..",
+        ".aaaaaaaaaaaaaaaaaa.",
+        "bbbbbbbbbbbbbbbbbbbb",
+        ".bbbbbbbbbbbbbbbbbb.",
+    ]),
+    'headphone': ('소리 귀덮개', {'a': '#2a2a30', 'b': '#c8382e', 'c': '#efe7d2'}, 0, 0, None),
+    'shades': ('검은 색안경', {'a': '#1a1a1e', 'b': '#2e2e38', 'c': '#8a8aa0'}, 5, 14, [
+        "aaaaaaaaaaaaaaaaaa",
+        "abbbbbba..abbbbbba",
+        "abbcbbba..abbcbbba",
+        ".abbbba....abbbba.",
+        "..aaaa......aaaa..",
+    ]),
 }
+
+
+def headphone_rows():
+    W, cx, cy, rx, ry = 28, 13.5, 12.4, 13.6, 11.6
+    rows = [['.'] * W for _ in range(18)]
+    for y in range(0, 11):
+        dy = (y + .5 - cy) / ry
+        dx = rx * max(0, 1 - dy * dy) ** .5
+        for x in (round(cx - dx), round(cx + dx)):
+            if 0 <= x < W:
+                rows[y][x] = 'a'
+    for y in range(0, 2):
+        dy = (y + .5 - cy) / ry
+        dx = rx * max(0, 1 - dy * dy) ** .5
+        for x in range(round(cx - dx), round(cx + dx) + 1):
+            rows[y][x] = 'a'
+    for y in range(11, 17):
+        for x in (0, 1, 2, 25, 26, 27):
+            rows[y][x] = 'b' if x in (1, 26) and 12 <= y <= 15 else 'a'
+    rows[13][1] = rows[13][26] = 'c'
+    return [''.join(r) for r in rows]
+
+
+ACC['headphone'] = ACC['headphone'][:4] + (headphone_rows(),)
 
 
 def acc_grid(key):
