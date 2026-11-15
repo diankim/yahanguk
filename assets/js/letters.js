@@ -1,4 +1,4 @@
-import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, nameOf, toast } from './core.js';
+import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, nameOf, toast } from './core.js';
 import { WEAK_NAMES } from './rules.js';
 import { load } from './views/common.js';
 import { cardName } from './views/card.js';
@@ -18,15 +18,17 @@ const itemsText = items => Object.entries(items || {}).map(([k, n]) => `${nameOf
 
 export function lettersPanelHtml(b) {
   const L = b?.letters || [], lim = b?.limits || {}, unread = L.filter(l => !l.read).length;
+  const box = lim.box || 10, pins = lim.pins || 5, days = lim.days || 3, pinned = L.filter(l => l.pinned).length, near = L.length >= box - 1;
   return `<div class="btn-row lt-head"><button class="btn small primary" data-lt-new>${icon('letter', 14)}<span>서신 쓰기</span></button>
-      <span class="muted small">오늘 보낸 서신 ${b?.sent_today || 0}/${lim.per_day || 10}통 · 서신함 ${L.length}/${lim.box || 10}통${unread ? ` · 안 읽음 ${unread}` : ''}</span></div>
+      <span class="muted small">오늘 보낸 서신 ${b?.sent_today || 0}/${lim.per_day || 10}통 · 서신함 ${L.length}/${box}통 · 고정 ${pinned}/${pins}${unread ? ` · 안 읽음 ${unread}` : ''}</span></div>
+    ${near ? `<p class="warn">${icon('letter', 13)}<span>서신함이 ${L.length >= box ? '가득 찼습니다' : '거의 찼습니다'}. 서신이 더 오면 고정하지 않은 서신 중 읽은 것부터, 오래된 것부터 지워집니다. 남길 서신은 고정하세요.</span></p>` : ''}
     ${L.length ? `<ul class="spot-list lt-list">${L.map(l => `<li class="${l.read ? '' : 'unread'}"><div>
         <b>${l.read ? '' : '<span class="lt-dot" aria-label="안 읽음"></span>'}${l.pinned ? `<span class="chip accent">고정</span> ` : ''}「${esc(l.title)}」</b>
         <small>${cardName(l.from, l.from_name)} · ${when(l.created_at)}${l.pinned ? '' : ` · ${fmt.remain(new Date(l.expires_at) - Date.now())} 뒤 지워짐`}</small>
         ${Object.keys(l.items || {}).length ? `<small class="${l.claimed ? 'muted' : 'ok'}">${icon('bag', 12)} ${esc(itemsText(l.items))}${l.claimed ? ' · 받음' : ''}</small>` : ''}</div>
       <button class="btn small" data-lt-open="${l.id}">읽기</button></li>`).join('')}</ul>`
       : '<p class="muted small">받은 서신이 없습니다.</p>'}
-    <p class="muted small">친구에게만 보낼 수 있습니다. 물품은 다섯 가지까지 붙이고, 물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서 부치고 받습니다. 고정하지 않은 서신은 받은 지 3일 뒤, 또는 10통을 넘으면 오래된 것부터 지워집니다(받지 않은 물품은 개인 창고로).</p>`;
+    <p class="muted small">친구에게만 보낼 수 있습니다. 물품은 다섯 가지까지 붙이고, 물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서 부치고 받습니다. 고정하지 않은 서신은 받은 지 ${days}일 뒤 지워지고, ${box}통을 넘으면 읽은 것부터·오래된 것부터 지워집니다(고정은 ${pins}통까지, 받지 않은 물품은 개인 창고로). 지워지면 알림이 오고 알림에서 글을 다시 읽을 수 있습니다.</p>`;
 }
 
 export function bindLettersPanel(root, redraw) {
@@ -36,6 +38,15 @@ export function bindLettersPanel(root, redraw) {
     const l = (snap?.letters || []).find(x => String(x.id) === b.dataset.ltOpen);
     if (l) openLetter(l, again);
   });
+}
+
+export function openRemoved(list) {
+  const L = list || [];
+  openLayer({ title: '지워진 서신', body: `<p class="muted small">지워진 서신의 글입니다. 서신함으로 되돌릴 수는 없습니다.</p>
+    ${L.length ? L.map(l => `<div class="letter lt-gone"><h3>「${esc(l.title || '')}」</h3>
+      <p class="muted small">${esc(l.from_name || '')} · ${new Date(l.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${l.why === 'old' ? '오래되어 지워짐' : '서신함이 넘쳐 지워짐'}</p>
+      <div class="letter-body">${l.body ? esc(l.body) : '<span class="muted">(본문 없음)</span>'}</div>
+      ${Object.keys(l.items || {}).length ? `<p class="small">${icon('bag', 14)} 함께 온 물품: <b>${esc(itemsText(l.items))}</b></p>` : ''}</div>`).join('') : '<p class="muted small">글이 남아 있지 않습니다.</p>'}` });
 }
 
 function openLetter(l, again) {

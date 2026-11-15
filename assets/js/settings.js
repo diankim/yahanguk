@@ -147,6 +147,7 @@ function noteActs(n) {
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">비무 방</button>`;
   if ((n.kind === 'pfight_invite' || n.kind === 'pfight_join') && n.payload?.fight_id) return `<button class="btn primary small" data-pfight="${esc(n.id)}" data-join="${n.kind === 'pfight_invite' ? 1 : ''}">${n.kind === 'pfight_invite' ? '합류 · 탐색력 1' : '보기'}</button>`;
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
+  if (n.kind === 'letter' && n.payload?.removed?.length) return `<button class="btn primary small" data-lgone="${esc(n.id)}">지워진 서신 보기</button>`;
   if (n.kind === 'letter' && n.payload?.letter_id) return `<button class="btn primary small" data-letter="${esc(n.id)}">서신함</button>`;
   if (n.kind === 'meisho_open' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
   if (n.kind === 'friend_down' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">지도에서 보기</button>`;
@@ -169,8 +170,9 @@ const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
   drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look' };
 const pastActs = n => { const a = noteActs(n); return /data-(invite|ride|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
-const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
+const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
+  if (btn.dataset.lgone) { const o = byId(btn.dataset.lgone); if (!o) return false; await markRead(o); (await import('./letters.js')).openRemoved(o.payload.removed); return true; }
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
   const n = byId(btn.dataset.ride || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.feastv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
