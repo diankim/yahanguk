@@ -3526,6 +3526,7 @@ details.pt-fold > summary h2 .help-q { margin-left: 2px; }
 .scene-tags { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 6px; }
 .scene-nm { position: absolute; transform: translate(-50%, 1px); font-size: calc(10px * var(--fz, 1)); line-height: 1.4; padding: 0 4px; border-radius: 3px; background: rgba(20, 16, 14, .74); color: #e9e2d4; white-space: nowrap; }
 .scene-nm.me { color: #f1c75b; font-weight: 700; }
+.scene-nm.low { transform: translate(-50%, -100%); }
 .scene-nm.cp { color: #f3a6b4; font-weight: 700; }
 .scene-bub { position: absolute; transform: translate(-50%, -100%); font-size: calc(10px * var(--fz, 1)); line-height: 1.4; padding: 1px 6px; border-radius: 8px; background: #f4ecd9; color: #3a2a20; white-space: nowrap; }
 .scene-more { position: absolute; right: 6px; bottom: 4px; font-size: calc(10px * var(--fz, 1)); padding: 0 5px; border-radius: 3px; background: rgba(20, 16, 14, .74); color: #e9e2d4; }
