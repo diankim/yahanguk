@@ -80,6 +80,11 @@ begin
   if exists (select 1 from public.world_tool_lines where item_id like 'lt_knife_7%') then raise exception 'lt_knife_7 남음'; end if;
 end $rn$;
 
+update public.world_patch_notes set body = replace(body,
+  '- 먹줄 긋기 · 따라 쓰는 붓 · 발자국 · 이름 지우기의 네 단계가 있습니다. 따라 쓰는 붓은 지난 라운드에 많이 고른 행동을 흉내 내고, 발자국 단계에서는 같은 칸에 두 번 서면 먹에 묶이며, 이름 지우기에서는 한 사람이 가운데를 지키는 동안 나머지가 이름을 불러 주어야 합니다.',
+  '- 지워지는 칸 · 따라 쓰는 붓 · 발자국 · 가운데 칸의 네 단계가 있습니다. 그림자가 무엇을 하려는지는 라운드 띠의 낌새로 보이고, 어떻게 받아칠지는 직접 겪으며 찾아야 합니다.')
+ where note_id = '2.0.0';
+
 update public.world_crafting_recipes set required_location = '야행국 본부 정청' where recipe_id = 'make_oil_lamp' and required_location = '본부 정청';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261118020000', now())
