@@ -150,14 +150,12 @@ select y.owner_id, public.world_outfit_rules() -> 'feast' ->> 'look' from public
  group by y.owner_id having count(*) >= (public.world_outfit_rules() -> 'feast' ->> 'n')::int
 on conflict do nothing;
 
-update public.world_patch_notes set body = body || '
-
-## 2.4.0
-- 「내 모습」 옷이 마흔 벌 늘었습니다(윗옷 13·아랫옷 12·장신구 15). 갓·두건·족두리·삿갓 같은 머리쓰개는 장신구 칸에 씁니다.
+insert into public.world_patch_notes(note_id, title, body) values ('2.4.0', '2.4.0 · 옷장 넓히기', '- 「내 모습」 옷이 마흔 벌 늘었습니다(윗옷 13·아랫옷 12·장신구 15). 갓·두건·족두리·삿갓 같은 머리쓰개는 장신구 칸에 씁니다.
 - 옷마다 얻는 곳이 다릅니다: 세력 비고(세력마다 하나), 세력 행사에 다섯 번 함께하기, 봉연의 그림자·귀허의 주인·먹그림자, 비장고 마지막 방, 상점(본부 정청·백등 야시장·구름나루·철벽 고찰·잔불촌·십삼문 암시장·무극 관성대·백골 장터), 직조·가죽 공예·법구 공예 제작, 옷 꾸러미, 선배와 새내기 챙김, 주 이야기 1·5장, 그리고 요리·채집·낚시·탐사·도감·별채·동무·비무 같은 활동 칭호와 혼례. 세력 비고 옷은 세력마다 하나라 한 사람에게는 한 벌이고, 나머지는 누구나 얻을 수 있습니다.
 - 칭호로 얻는 옷은 칭호를 얻는 순간 옷장에 바로 들어갑니다. 이미 그 칭호를 가진 조사원은 옷장에 넣어 두었습니다.
 - 「내 모습」에서 아직 없는 옷을 누르면 어디서 얻는지 보입니다.
-' where note_id = '2.3.0' and body not like '%## 2.4.0%';
+')
+on conflict (note_id) do nothing;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261118180000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
