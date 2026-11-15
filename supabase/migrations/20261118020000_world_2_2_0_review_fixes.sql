@@ -18,6 +18,20 @@ select pg_temp.yh_fix2('public.world_ucomm_collect(bigint)'::regprocedure,
     from jsonb_each(u.delivered) e left join public.world_item_catalog i on i.item_id = e.key;
   return jsonb_build_object('ok', true, 'content', '의뢰한 ' || coalesce(nm, '') || '을(를) 받았습니다.');$n$);
 
+select pg_temp.yh_fix2('public.world_gw_open(text,text)'::regprocedure,
+  $o$  perform public.world_seal_guard();
+  c := public.world_gw_ready(uid, boss, md);$o$,
+  $n$  perform public.world_seal_guard();
+  select f.fight_id into fid from public.world_gw_members m join public.world_gw_fights f using (fight_id) where m.owner_id = uid and f.status in ('wait', 'fight') limit 1;
+  if fid is not null then
+    perform public.world_gw_snapshot(fid);
+    if exists (select 1 from public.world_gw_fights f where f.fight_id = fid and f.status in ('wait', 'fight')) then
+      return public.world_gw_snapshot(fid) || jsonb_build_object('again', true);
+    end if;
+    fid := null;
+  end if;
+  c := public.world_gw_ready(uid, boss, md);$n$);
+
 update public.world_crafting_recipes set required_location = '야행국 본부 정청' where recipe_id = 'make_oil_lamp' and required_location = '본부 정청';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261118020000', now())
