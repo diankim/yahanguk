@@ -1,4 +1,4 @@
-import { act, store, esc, icon, guard, $, $$ } from '../core.js';
+import { act, store, esc, icon, guard, $, $$, ask, toast } from '../core.js';
 import { load, errorBox, invalidate } from './common.js';
 import { AV, avatarImage, fixLook, registerDesigns, TONE_KEYS } from '../housing/avatarsprite.js';
 import { designBook, cropOf, designPic, openFreeEditor } from './outfitdesign.js';
@@ -56,6 +56,7 @@ function freeBlock(slot, snap) {
   const can = ds.length < keep && has > 0;
   return `<p class="lk-cur">${FREE_NAME[slot]} <small class="muted">${ds.length}/${keep}${slot === 'hair' ? ` · 머리 그리기 도안 ${has}장` : ''}</small></p>
     <div class="lk-grid">${ds.map(([id, d]) => `<button class="lk-opt${String(draft[slot + '_d'] ?? '') === id ? ' on' : ''}" data-lkf="${slot}" data-id="${esc(id)}" title="${FREE_NAME[slot]}"><img src="${designPic(d, { job: snap.job, look: draft })}" alt=""></button>`).join('')}<button class="lk-opt lk-new" data-lknew="${slot}" ${can ? '' : 'disabled'} title="${slot === 'face' ? '눈·입 그리기' : '머리 그리기'}" aria-label="${slot === 'face' ? '눈·입 그리기' : '머리 그리기'}">${icon('plus', 20)}</button></div>
+    ${ds.some(([id]) => String(draft[slot + '_d'] ?? '') === id) ? `<div class="btn-row lk-free-acts"><button class="btn small" data-lkedit="${slot}">${icon('palette', 14)} 이 ${slot === 'face' ? '눈·입' : '머리'} 고치기</button><button class="btn small ghost" data-lkdel="${slot}">지우기</button></div>` : ''}
     ${slot === 'hair' && has < 1 ? '<p class="muted small">머리를 그리려면 「머리 그리기 도안」이 있어야 합니다. 비장고에서 나오고, 거래소에서 사고팔 수 있습니다.</p>' : ''}`;
 }
 
@@ -88,6 +89,25 @@ export async function lookTab(body) {
   $$('[data-lk]', body).forEach(b => b.onclick = () => { const k = b.dataset.lk; draft = { ...draft, [k]: b.dataset.v }; delete draft[OVER[k] || k + '_d']; if (TONE_KEYS[k]) delete draft[TONE_KEYS[k][0]]; lookTab(body); });
   $$('[data-lkc]', body).forEach(b => b.onclick = async () => { const k = b.dataset.lkc, c = await openColorPicker(draft[k] ? '#' + draft[k] : b.dataset.from, { title: '직접 고르는 색' }); if (c) { draft = { ...draft, [k]: c.slice(1).toLowerCase() }; lookTab(body); } });
   $$('[data-lkf]', body).forEach(b => b.onclick = () => { draft = { ...draft, [b.dataset.lkf + '_d']: dnum(b.dataset.id) }; lookTab(body); });
+  $$('[data-lkedit]', body).forEach(b => b.onclick = async () => {
+    const sl = b.dataset.lkedit, id = String(draft[sl + '_d'] ?? '');
+    let list; try { list = await load('world_outfit_design_list', undefined, { maxAge: 60000 }); } catch (e) { return toast(e.message, 'error'); }
+    const d = (list?.items || []).find(x => String(x.id) === id);
+    if (!d) return toast('도안을 찾을 수 없습니다.', 'error');
+    if (!d.mine) return toast('받은 도안은 고칠 수 없습니다.', 'error');
+    openFreeEditor(sl, { ...snap, look: draft }, () => { invalidate('world_outfit_design_list'); lookTab(body); }, d);
+  });
+  $$('[data-lkdel]', body).forEach(b => b.onclick = async () => {
+    const sl = b.dataset.lkdel, id = dnum(draft[sl + '_d']), nm = sl === 'face' ? '눈·입' : '머리';
+    if (!(await ask(`쓰고 있는 ${nm} 도안을 지울까요? 처음 고른 모양으로 돌아가고, 「내 도안」의 「지운 도안」에서 되살릴 수 있습니다.`, { title: '도안 지우기', ok: '지우기' }))) return;
+    guard(b, async () => {
+      const res = await act('world_outfit_design_delete', { p_id: id });
+      invalidate('world_avatar_get'); invalidate('world_outfit_design_list');
+      draft = { ...draft }; delete draft[sl + '_d'];
+      if (snap.designs) delete snap.designs[String(id)];
+      lookTab(body); return res;
+    });
+  });
   $$('[data-lknew]', body).forEach(b => b.onclick = () => openFreeEditor(b.dataset.lknew, { ...snap, look: draft }, r => { invalidate('world_avatar_get'); if (r?.saved) draft = { ...draft, [b.dataset.lknew + '_d']: r.saved }; lookTab(body); }));
   $$('[data-lkd]', body).forEach(b => b.onclick = () => { const k = b.dataset.lkd; draft = { ...draft, [k]: b.dataset.base, [k + '_d']: dnum(b.dataset.id) }; lookTab(body); });
   if (cur[0] === 'design') designBook($('.lk-design', body), snap, { onDel: d => { invalidate('world_avatar_get'); const k = d.slot + '_d'; if (FREE_TAB[d.slot] && dnum(draft[k]) === dnum(d.id)) { draft = { ...draft }; delete draft[k]; } }, onWear: (slot, base, id) => { invalidate('world_avatar_get'); draft = FREE_TAB[slot] ? { ...draft, [slot + '_d']: dnum(id) } : { ...draft, [slot]: base, [slot + '_d']: dnum(id) }; tab = FREE_TAB[slot] || slot; lookTab(body); } });

@@ -1,5 +1,5 @@
 import { act, store, esc, icon, guard, $, $$, openLayer, ask, toast, nameOf, fmt } from '../core.js';
-import { load, knownRecipes, errorBox } from './common.js';
+import { load, knownRecipes, errorBox, invalidate } from './common.js';
 import { AV, AW, AH, avatarImage, avatarPixels, fixLook, defaultLook, registerDesigns, faceStart, hairStart, hairBlocked } from '../housing/avatarsprite.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pixelPad } from '../housing/pixelpad.js';
@@ -56,25 +56,41 @@ function startCur(pal, a) {
   return far >= 0 ? far : Math.max(0, pal.findIndex(c => c !== a.toLowerCase()));
 }
 
-export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
-  let slot = s0 || 'top';
-  let base = ownedBases(snap, slot)[0];
+const palOf = s => (s || '').match(/[0-9a-f]{6}/gi)?.map(c => '#' + c.toLowerCase()) || [];
+const edited = r => {
+  const d = (r?.items || []).find(x => String(x.id) === String(r?.saved));
+  if (d) registerDesigns({ [d.id]: { slot: d.slot, base: d.base, pal: d.pal, px: d.px, deco: d.deco } });
+  invalidate('world_avatar_get');
+};
+
+export function openDesignEditor(snap, rules, done, { slot: s0, edit } = {}) {
+  let slot = edit?.slot || s0 || 'top';
+  let base = edit?.base || ownedBases(snap, slot)[0];
   if (!base) { slot = slot === 'top' ? 'bottom' : 'top'; base = ownedBases(snap, slot)[0]; }
-  if (!base) return toast('도안 바탕으로 쓸 옷이 없습니다.', 'error');
+  if (!base || !AV[slot]?.[base]) return toast('도안 바탕으로 쓸 옷이 없습니다.', 'error');
   const me = fixLook(snap.look, snap.job), max = rules?.colors || 8;
   let pal = startPal(slot, base), deco = [], cells = [], lay = null, pad = null, cur = 0, flip = false, frame = 0, title = '', timer = null, look = null;
-  const reset = () => { lay = layout(slot, base); cells = Array(maskOf(slot, base).n).fill('.'); deco = (maskOf(slot, base).deco || []).map(() => ''); pal = startPal(slot, base); cur = startCur(pal, AV[slot][base].pal.a); };
+  const reset = () => {
+    lay = layout(slot, base); cells = Array(maskOf(slot, base).n).fill('.'); deco = (maskOf(slot, base).deco || []).map(() => ''); pal = startPal(slot, base); cur = startCur(pal, AV[slot][base].pal.a);
+    if (edit && edit.px?.length === cells.length) {
+      edit.px.split('').forEach((c, i) => { cells[i] = c; });
+      pal = palOf(edit.pal).slice(0, max); if (!pal.length) pal = startPal(slot, base); cur = 0;
+      deco = deco.map((_, j) => { const c = (edit.deco || '').slice(j * 6, j * 6 + 6); return /^[0-9a-f]{6}$/i.test(c) ? '#' + c.toLowerCase() : ''; });
+    }
+  };
   reset();
+  const first = edit ? JSON.stringify([cells.join(''), pal, deco]) : null;
   const palStr = () => pal.map(c => c.slice(1)).join('');
   const decoStr = () => deco.map(c => c ? c.slice(1) : '......').join('');
   const draft = () => ({ slot, base, pal: palStr(), px: cells.join(''), deco: decoStr() });
   const sync = () => { const id = 'e' + (++seq); registerDesigns({ [id]: draft() }); look = { ...me, [slot]: base, [slot + '_d']: id }; };
-  const touched = () => cells.some(c => c !== '.') || deco.some(Boolean) || !!$('[name=t]', layer)?.value.trim();
-  const confirmClose = async () => !touched() || ask('그리던 도안을 도안첩에 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '도안 닫기', ok: '닫기', cancel: '계속 그리기' });
-  const layer = openLayer({ title: '새 옷 도안', wide: true, confirmClose, body: `<div class="od-ed">
+  const touched = () => edit ? JSON.stringify([cells.join(''), pal, deco]) !== first || ($('[name=t]', layer)?.value.trim() || '') !== (edit.t || '')
+    : cells.some(c => c !== '.') || deco.some(Boolean) || !!$('[name=t]', layer)?.value.trim();
+  const confirmClose = async () => !touched() || ask(edit ? '고친 것을 담지 않고 닫을까요? 고친 칸은 사라집니다.' : '그리던 도안을 도안첩에 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '도안 닫기', ok: '닫기', cancel: '계속 그리기' });
+  const layer = openLayer({ title: edit ? '옷 도안 고치기' : '새 옷 도안', wide: true, confirmClose, body: `<div class="od-ed">
     <div class="od-left">
-      <div class="seg od-slot">${['top', 'bottom'].map(k => `<button class="chip-btn" data-slot="${k}">${SLOT_NAME[k]}</button>`).join('')}</div>
-      <div class="od-bases"></div>
+      <div class="seg od-slot"${edit ? ' hidden' : ''}>${['top', 'bottom'].map(k => `<button class="chip-btn" data-slot="${k}">${SLOT_NAME[k]}</button>`).join('')}</div>
+      <div class="od-bases"${edit ? ' hidden' : ''}></div>
       <canvas class="od-canvas" aria-label="도안 칸"></canvas>
       <div class="dr-tools od-tools">${[['pen', '붓'], ['fill', '채우기'], ['erase', '지우개']].map(([k, l]) => `<button class="chip-btn" data-tool="${k}">${l}</button>`).join('')}<button class="chip-btn" data-undo>되돌리기</button><button class="chip-btn" data-clear>모두 지우기</button></div>
     </div>
@@ -84,9 +100,9 @@ export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
       <div class="od-pal"></div>
       <div class="dr-pal od-picks">${PAL.map((c, i) => `<button class="dr-sw" data-pick="${c}" style="--c:${c}" title="${esc(PAL_NAMES[i])}" aria-label="${esc(PAL_NAMES[i])}"></button>`).join('')}<button class="chip-btn" data-own>${icon('palette', 14)} 직접 고르기</button></div>
       <div class="od-deco"></div>
-      <label class="field"><span>도안 이름</span><input maxlength="${rules?.title_max || 12}" name="t" placeholder="비워 두어도 됩니다"></label>
-      <p class="muted small">밝고 어두운 부분은 원래 옷의 명암을 따라 저절로 칠해집니다. 저장한 도안은 「옷 짓기」로 지어야 입을 수 있습니다.</p>
-      <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} 도안첩에 담기</button></div>
+      <label class="field"><span>도안 이름</span><input maxlength="${rules?.title_max || 12}" name="t" placeholder="비워 두어도 됩니다" value="${esc(edit?.t || '')}"></label>
+      <p class="muted small">밝고 어두운 부분은 원래 옷의 명암을 따라 저절로 칠해집니다. ${edit ? (edit.woven ? '이미 지은 옷도 고친 모습으로 바뀝니다. 친구에게 보낸 사본은 그대로입니다.' : '고쳐도 하루 새 도안 수에 들지 않습니다.') : '저장한 도안은 「옷 짓기」로 지어야 입을 수 있습니다.'}</p>
+      <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : '도안첩에 담기'}</button></div>
     </div></div>` });
   let cv = $('.od-canvas', layer), g = cv.getContext('2d');
   const at = (x, y) => { const gx = x + lay.crop[0], gy = y + lay.crop[1]; return lay.pos.findIndex(([px, py]) => px === gx && py === gy); };
@@ -147,16 +163,18 @@ export function openDesignEditor(snap, rules, done, { slot: s0 } = {}) {
   $('[data-own]', layer).onclick = async () => { const c = await openColorPicker(pal[cur], { title: `색 ${cur + 1}` }); if (c) { pal[cur] = c.toLowerCase(); paintPal(); draw(); } };
   $('[data-save]', layer).onclick = e => guard(e.currentTarget, async () => {
     if (!cells.some(c => c !== '.')) throw new Error('한 칸 이상 칠해 주세요.');
-    const r = await act('world_outfit_design_save', { p_slot: slot, p_base: base, p_title: $('[name=t]', layer).value.trim(), p_pal: palStr(), p_px: cells.join(''), p_deco: decoStr() });
+    const r = edit ? await act('world_outfit_design_edit', { p_id: Number(edit.id), p_title: $('[name=t]', layer).value.trim(), p_pal: palStr(), p_px: cells.join(''), p_deco: decoStr() })
+      : await act('world_outfit_design_save', { p_slot: slot, p_base: base, p_title: $('[name=t]', layer).value.trim(), p_pal: palStr(), p_px: cells.join(''), p_deco: decoStr() });
+    if (edit) edited(r);
     clearInterval(timer); layer.close(); done?.(r); return r;
   });
   build();
   return layer;
 }
 
-export function openFreeEditor(slot, snap, done) {
+export function openFreeEditor(slot, snap, done, edit = null) {
   const rule = freeRule(slot), max = rule.colors, crop = freeCrop(slot), me = fixLook(snap.look, snap.job);
-  const st = slot === 'face' ? faceStart(me) : hairStart(me);
+  const st = edit?.px ? { pal: palOf(edit.pal), px: edit.px.split('') } : slot === 'face' ? faceStart(me) : hairStart(me);
   let pal = st.pal.length ? st.pal.slice(0, max) : ['#2a1c22'], cur = 0, pad = null, look = null, frame = 0, flip = false;
   const cells = st.px.slice();
   const code = k => slot === 'face' ? String(k) : k.toString(16);
@@ -168,12 +186,13 @@ export function openFreeEditor(slot, snap, done) {
   };
   const palStr = () => pal.map(c => c.slice(1)).join('');
   const sync = () => { const id = 'e' + (++seq); registerDesigns({ [id]: { slot, base: slot, pal: palStr(), px: cells.join('') } }); look = { ...me, [slot + '_d']: id }; };
-  const first = cells.join('');
-  const confirmClose = async () => cells.join('') === first || ask('그리던 도안을 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '도안 닫기', ok: '닫기', cancel: '계속 그리기' });
-  const note = slot === 'face'
-    ? '눈·입 자리만 칠합니다. 지운 칸에는 피부가 보이고, 눈 감는 모습은 따로 없습니다. 담으면 바로 쓸 수 있습니다.'
-    : '눈·입 자리는 칠할 수 없습니다. 얼굴 위에 칠한 칸은 앞으로, 머리 밖으로 나간 칸은 몸 뒤로 그려집니다. 담으면 머리 그리기 도안 한 장을 쓰고, 바로 쓸 수 있습니다.';
-  const layer = openLayer({ title: slot === 'face' ? '눈·입 그리기' : '머리 그리기', wide: true, confirmClose, body: `<div class="od-ed">
+  const first = cells.join('') + palStr();
+  const confirmClose = async () => cells.join('') + palStr() === first || ask(edit ? '고친 것을 담지 않고 닫을까요? 고친 칸은 사라집니다.' : '그리던 도안을 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '도안 닫기', ok: '닫기', cancel: '계속 그리기' });
+  const note = (slot === 'face'
+    ? '눈·입 자리만 칠합니다. 지운 칸에는 피부가 보이고, 눈 감는 모습은 따로 없습니다.'
+    : '눈·입 자리는 칠할 수 없습니다. 얼굴 위에 칠한 칸은 앞으로, 머리 밖으로 나간 칸은 몸 뒤로 그려집니다.')
+    + (edit ? ' 고쳐 담으면 바로 바뀝니다.' + (slot === 'hair' ? ' 고칠 때는 머리 그리기 도안을 쓰지 않습니다.' : '') : slot === 'face' ? ' 담으면 바로 쓸 수 있습니다.' : ' 담으면 머리 그리기 도안 한 장을 쓰고, 바로 쓸 수 있습니다.');
+  const layer = openLayer({ title: (slot === 'face' ? '눈·입 ' : '머리 ') + (edit ? '고치기' : '그리기'), wide: true, confirmClose, body: `<div class="od-ed">
     <div class="od-left">
       <canvas class="od-canvas" aria-label="도안 칸"></canvas>
       <div class="dr-tools od-tools">${[['pen', '붓'], ['fill', '채우기'], ['erase', '지우개']].map(([k, l]) => `<button class="chip-btn" data-tool="${k}">${l}</button>`).join('')}<button class="chip-btn" data-undo>되돌리기</button><button class="chip-btn" data-clear>모두 지우기</button></div>
@@ -183,9 +202,9 @@ export function openFreeEditor(slot, snap, done) {
       <p class="od-h">내 색 <small class="muted">${max}칸까지 · 칸을 고르고 아래에서 색을 정합니다</small></p>
       <div class="od-pal"></div>
       <div class="dr-pal od-picks">${PAL.map((c, i) => `<button class="dr-sw" data-pick="${c}" style="--c:${c}" title="${esc(PAL_NAMES[i])}" aria-label="${esc(PAL_NAMES[i])}"></button>`).join('')}<button class="chip-btn" data-own>${icon('palette', 14)} 직접 고르기</button></div>
-      <label class="field"><span>도안 이름</span><input maxlength="${GD.outfit?.title_max || 12}" name="t" placeholder="비워 두어도 됩니다"></label>
+      <label class="field"><span>도안 이름</span><input maxlength="${GD.outfit?.title_max || 12}" name="t" placeholder="비워 두어도 됩니다" value="${esc(edit?.t || '')}"></label>
       <p class="muted small">${note}</p>
-      <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} 도안첩에 담기</button></div>
+      <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : '도안첩에 담기'}</button></div>
     </div></div>` });
   const cv = $('.od-canvas', layer), g = cv.getContext('2d');
   const anim = () => { const img = $('.od-anim', layer); if (img && look) { img.src = avatarImage(look, { frame: frame % 2 ? 'walk' : 'stand', scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
@@ -219,7 +238,10 @@ export function openFreeEditor(slot, snap, done) {
   $('[data-own]', layer).onclick = async () => { const c = await openColorPicker(pal[cur], { title: `색 ${cur + 1}` }); if (c) { pal[cur] = c.toLowerCase(); paintPal(); draw(); } };
   $('[data-save]', layer).onclick = e => guard(e.currentTarget, async () => {
     if (!cells.some(c => c !== '.')) throw new Error('한 칸 이상 칠해 주세요.');
-    const r = await act('world_outfit_design_save', { p_slot: slot, p_base: slot, p_title: $('[name=t]', layer).value.trim(), p_pal: palStr(), p_px: cells.join(''), p_deco: '' });
+    const tv = $('[name=t]', layer).value.trim();
+    const r = edit ? await act('world_outfit_design_edit', { p_id: Number(edit.id), p_title: edit.t == null && !tv ? null : tv, p_pal: palStr(), p_px: cells.join(''), p_deco: '' })
+      : await act('world_outfit_design_save', { p_slot: slot, p_base: slot, p_title: tv, p_pal: palStr(), p_px: cells.join(''), p_deco: '' });
+    if (edit) edited(r);
     clearInterval(timer); layer.close(); done?.(r); return r;
   });
   paintPal();
@@ -283,7 +305,7 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
       <div class="od-meta"><b>${esc(d.t || '이름 없는 도안')}</b><small class="muted">${SLOT_NAME[d.slot]}${free ? '' : ` · ${esc(AV[d.slot][d.base]?.name || '')}`}</small>
         <small class="muted">${d.mine ? '내가 그림' : `${esc(d.a)} 그림${d.gift ? ` · ${esc(d.gift)}님이 보냄` : ''}`}</small>
         ${!free && d.woven ? '<span class="chip ok">옷장에 있음</span>' : ''}</div>
-      <div class="od-acts">${wear}${give}<button class="btn small ghost" data-del="${d.id}">지우기</button></div></li>`;
+      <div class="od-acts">${wear}${d.mine ? `<button class="btn small" data-edit="${d.id}">고치기</button>` : ''}${give}<button class="btn small ghost" data-del="${d.id}">지우기</button></div></li>`;
   };
   const list = (arr, empty) => arr.length ? `<ul class="od-list">${arr.map(card).join('')}</ul>` : `<p class="muted small">${empty}</p>`;
   box.innerHTML = `<div class="od-book">
@@ -307,6 +329,11 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
   const find = id => items.find(x => String(x.id) === String(id));
   $('[data-new]', box).onclick = () => openDesignEditor(snap, rules, again);
   $$('[data-newf]', box).forEach(b => b.onclick = () => openFreeEditor(b.dataset.newf, snap, res => { if (onWear && res?.saved) onWear(b.dataset.newf, null, res.saved); else again(); }));
+  $$('[data-edit]', box).forEach(b => b.onclick = () => {
+    const d = find(b.dataset.edit); if (!d) return;
+    const back = res => { if (onWear && res?.saved && FREE.has(d.slot)) onWear(d.slot, null, d.id); else again(); };
+    if (FREE.has(d.slot)) openFreeEditor(d.slot, snap, back, d); else openDesignEditor(snap, rules, back, { edit: d });
+  });
   $$('[data-wear]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.wear); if (d) onWear(d.slot, FREE.has(d.slot) ? null : d.base, d.id); });
   $$('[data-weave]', box).forEach(b => b.onclick = async () => {
     const d = find(b.dataset.weave); if (!d) return;

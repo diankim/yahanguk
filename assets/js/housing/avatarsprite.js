@@ -74,8 +74,13 @@ export function shade(hex, f) {
 }
 
 const designs = new Map();
+let designVer = 0;
 export function registerDesigns(map) {
-  for (const [id, d] of Object.entries(map || {})) if (d && d.px) designs.set(String(id), d);
+  for (const [id, d] of Object.entries(map || {})) if (d && d.px) {
+    const k = String(id), o = designs.get(k);
+    if (o && (o.px !== d.px || o.pal !== d.pal || (o.deco || '') !== (d.deco || ''))) designVer++;
+    designs.set(k, d);
+  }
 }
 export function faceOf(look) {
   const id = look?.face_d, d = id != null && designs.get(String(id));
@@ -187,7 +192,7 @@ export function avatarPixels(look, frame = 'stand', { front } = {}) {
 
 const pxCache = new Map();
 export function drawAvatar(putPx, look, frame, x0, y0, flip = false, job) {
-  const l = fixLook(look, job), key = JSON.stringify([l, frame, !!designOf(l, 'top'), !!designOf(l, 'bottom'), !!faceOf(l), !!hairOf(l)]);
+  const l = fixLook(look, job), key = JSON.stringify([l, frame, !!designOf(l, 'top'), !!designOf(l, 'bottom'), !!faceOf(l), !!hairOf(l), designVer]);
   if (!pxCache.has(key)) { if (pxCache.size > 64) pxCache.clear(); pxCache.set(key, avatarPixels(l, frame)); }
   const px = pxCache.get(key), W = AW, H = AH, gx = Math.round(x0 - W / 2), gy = Math.round(y0 - H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -198,7 +203,7 @@ export function drawAvatar(putPx, look, frame, x0, y0, flip = false, job) {
 
 const cache = new Map();
 export function avatarImage(look, { frame = 'stand', scale = 4, job, crop = null } = {}) {
-  const l = fixLook(look, job), key = JSON.stringify([l, frame, scale, crop, !!designOf(l, 'top'), !!designOf(l, 'bottom'), !!faceOf(l), !!hairOf(l)]);
+  const l = fixLook(look, job), key = JSON.stringify([l, frame, scale, crop, !!designOf(l, 'top'), !!designOf(l, 'bottom'), !!faceOf(l), !!hairOf(l), designVer]);
   if (cache.has(key)) return cache.get(key);
   const [cx, cy, cw, ch] = crop || [0, 0, AW, AH];
   const px = avatarPixels(l, frame), c = document.createElement('canvas');
