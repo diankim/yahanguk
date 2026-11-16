@@ -636,6 +636,7 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .notice.safe { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .notice.safe > .ico { color: var(--ok); }
 .hint.ok { color: var(--ok); }
+.hint.warn { color: var(--warn); }
 .seg-mini { display: flex; gap: 4px; padding: 3px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); width: max-content; max-width: 100%; }
 .seg-mini button { min-height: 34px; padding: 4px 14px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-weight: 600; cursor: pointer; }
 .seg-mini button.on { background: var(--surface); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }

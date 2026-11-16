@@ -343,17 +343,22 @@ function hopSeconds(from, to, speed) {
 }
 function routeEstimate(route) {
   const m = (mountData?.mounts || []).find(x => x.equipped) || (mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id);
-  const speed = (Number(m?.speed_multiplier) || 1) * (Number(m?.river_speed) || 1);
-  let secs = 0;
-  for (let i = 1; i < route.length; i++) secs += hopSeconds(route[i - 1], route[i], speed);
-  if (route.length > 2) secs = Math.round(secs * 0.9);
-  return { secs, mount: m, hops: route.length - 1 };
+  const hops = route.length - 1;
+  const need = m && !m.fare_free && !m.river_free ? (Number(m.fare_tokens) || 0) * hops : 0;
+  const have = Number(mountData?.mount_tokens ?? store.character?.mount_tokens) || 0;
+  const walk = need > have;
+  const total = speed => { let s = 0; for (let i = 1; i < route.length; i++) s += hopSeconds(route[i - 1], route[i], speed); return route.length > 2 ? Math.round(s * 0.9) : s; };
+  const rideSecs = total((Number(m?.speed_multiplier) || 1) * (Number(m?.river_speed) || 1));
+  return { secs: walk ? total(1) : rideSecs, rideSecs, walk, need, have, mount: m, hops };
 }
 function fareLine(est) {
   const m = est.mount; if (!m || m.fare_free) return '';
   if (m.river_free) return ' · 수향연맹 뱃길: 운임 없음';
-  const need = (Number(m.fare_tokens) || 0) * est.hops, have = Number(mountData?.mount_tokens ?? store.character?.mount_tokens) || 0;
-  return need > have ? ` · 노정패 ${need}개가 필요하지만 ${have}개뿐이라 걸어갑니다` : ` · 노정패 ${need}개`;
+  return est.walk ? '' : ` · 노정패 ${est.need}개`;
+}
+function walkHint(est) {
+  if (!est?.walk) return '';
+  return `<p class="hint warn">${icon('route', 14)} 노정패가 <b>${est.need}개</b> 필요하지만 <b>${est.have}개</b>뿐이라 탈것에서 내려 <b>걸어갑니다</b>. 탈것을 타면 약 ${fmt.remain(est.rideSecs * 1000)}</p>`;
 }
 
 function factionLegend() {
@@ -390,9 +395,9 @@ function drawDetail() {
         ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')} · 거래소${zone.has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>
         ${!zone?.is_safe_zone ? `<dl class="kv"><div><dt>요괴</dt><dd>${monsters.length ? monsters.map(m => esc(m.monster_name)).join(', ') : '미확인'}</dd></div></dl>` : ''}
-        ${route && route.length > 1 ? `<div class="route-box"><b>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}</b>
+        ${route && route.length > 1 ? `<div class="route-box"><b>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}${est.walk ? ' · 걸어서' : ''}</b>
           <ol class="route-steps">${route.map((x, i) => `<li class="${i === 0 ? 'from' : i === route.length - 1 ? 'to' : ''}">${esc(x.region_name)}</li>`).join('')}</ol>
-          <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${fareLine(est)}</p></div>` : ''}
+          <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${fareLine(est)}</p>${walkHint(est)}</div>` : ''}
         ${reason === 'cd' ? `<p class="hint">${icon('hourglass', 14)} 이동을 취소한 뒤라 <b data-tcd>${fmt.remain(travelCdLeft())}</b> 뒤에 다시 출발할 수 있습니다.</p>` : reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
         <div class="btn-row">
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
