@@ -152,9 +152,8 @@ export const DOMAIN_FX = {
   guard: `이름 새김 탕(또렷한 이름 2시간)·이름 먹 부적(이름 지킴 1시간)은 한 단계 가볍게 하고, 침식 ${MUK_ER[0] ?? 30} 아래면 막습니다.`,
   blur: `묵적 봉쇄령에서는 침식이 이름을 지웁니다. 침식 ${MUK_ER.join('·')}마다 이름 획 ${MUK_BLUR.strokes}개 가운데 ${Math.floor(MUK_BLUR.strokes / Math.max(1, MUK_ER.length))}개씩 지워지며 이름 흐림이 깊어지고, 침식을 낮추면 바로 돌아옵니다.`,
 };
-const JAMO_L = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', JAMO_V = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ', JAMO_T = ' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
-const jamoOf = ch => { const c = ch.codePointAt(0) - 0xAC00; if (c < 0 || c > 11171) return [ch]; return [JAMO_L[Math.floor(c / 588)], JAMO_V[Math.floor((c % 588) / 28)], JAMO_T[c % 28]].filter(j => j && j !== ' '); };
-export const brokenName = name => [...String(name || '')].flatMap(jamoOf).map((j, i) => i % 2 && j !== ' ' ? 'ㆍ' : j).join('');
+const BROKEN = '▒▣▤▥▦▧▨▩◈■';
+export const brokenName = name => [...String(name || '')].map((ch, i) => ch === ' ' ? ' ' : BROKEN[(ch.codePointAt(0) + i) % BROKEN.length]).join('');
 export const NAMELESS = { mine: '이름을 잃었습니다 — 묵적 봉쇄령의 침식을 낮추면 돌아옵니다', other: '이름이 지워져 읽을 수 없습니다' };
 export const domainFxOf = territory => GD.domains?.[territory]?.fx || null;
 export const gwWhen = (until, warnH = GW.warn_h) => {

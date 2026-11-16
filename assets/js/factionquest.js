@@ -14,7 +14,7 @@ const RANK_PERK = {
 };
 
 const jobWord = body => { const mine = (JOBS[store.character?.job_key]?.name || '').slice(0, 2), opts = Object.fromEntries(body.split('/').map(p => p.split('=')).filter(p => p.length === 2)); return opts[mine] ?? opts['*'] ?? Object.values(opts)[0] ?? ''; };
-const fillLine = t => { const nm = store.character?.character_name || '조사원'; return josa(String(t || '').replace(/\{깨진이름\}(을\(를\)|이\(가\)|은\(는\)|과\(와\)|\(으\)로|\(이\))?/g, (m, form) => brokenName(nm) + (form ? particle(nm, form) : '')).replaceAll('{이름}', nm).replace(/\{직업:([^}]*)\}/g, (m, body) => jobWord(body))); };
+const fillLine = t => { const nm = store.character?.character_name || '조사원'; return josa(String(t || '').replace(/\{깨진이름\}(을\(를\)|이\(가\)|은\(는\)|과\(와\)|\(으\)로|\(이\))?/g, (m, form) => '\u0001' + brokenName(nm) + '\u0002' + (form ? particle(nm, form) : '')).replaceAll('{이름}', nm).replace(/\{직업:([^}]*)\}/g, (m, body) => jobWord(body))); };
 export function playDialogue(r, fid) {
   const lines = r?.lines || [];
   if (!lines.length) return;
@@ -28,7 +28,7 @@ export function playDialogue(r, fid) {
   const show = () => {
     const l = lines[i], who = l.s ? (r.cast?.[l.s]?.name || '') : '';
     plate.textContent = who; plate.hidden = !who;
-    text.textContent = fillLine(l.t); text.classList.toggle('narr', !l.s);
+    text.innerHTML = esc(fillLine(l.t)).replace(/\u0001([^\u0002]*)\u0002/g, '<s class="name-broken">$1</s>'); text.classList.toggle('narr', !l.s);
     cnt.textContent = `${i + 1} / ${lines.length}`;
     if (i === lines.length - 1) end.hidden = false;
   };
