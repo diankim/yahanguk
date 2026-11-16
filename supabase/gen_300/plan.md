@@ -105,3 +105,27 @@
 - 서버: 대사 줄 키 `fac`(대세력 키)·`fac_not`(그 세력이 아님)·`rank`([낮은, 높은]) 와 묶음 키 `g`(연이어 붙은 갈래 줄 한 묶음). world_quest_lines_for에 대세력·등급(world_faction_progress.rank — 가입 퀘스트를 마쳤을 때만, 아니면 밖)을 넘기는 판을 더하고, 묶음마다 가장 좁은 줄 하나만 남긴다(등급 범위 → 세력 → 다른 세력 → 밖). world_quest_report·world_quest_scene 두 곳이 부름.
 - 화면: factionquest.js fillLine에 `{등급}`(내 대세력 등급 이름, world_faction_ranks)을 더함 — 퀘스트 보고 응답에 등급 이름을 함께 실어 요청을 늘리지 않음.
 - 생성기(gen_300): 대본 `[…]` 표기를 위 키로 옮기고, 한 묶음에 「밖」 줄이 빠지면 멈춤(아무에게도 안 보이는 자리가 생기지 않게).
+
+## 퀘스트 다시하기 (사용자 결정 11/16)
+
+마친 퀘스트를 처음부터 다시 겪어 보는 기회. 경험치는 없고 소량의 전만 준다. 마친 기록은 그대로 남는다.
+
+### 동작
+- 일지 › 마친 퀘스트 카드(주 이야기 장·보조 퀘스트·외전·직업/소속 퀘스트)에 「다시하기」. 누르면 확인 창(「경험치·물품 보상 없이 처음부터 다시 합니다. 마치면 n전」) → 그 퀘스트가 「진행 중」에 첫 장면부터 들어간다(퀘스트 판·현장 퀘스트 칸·일지 모두, 「다시하기」 칩).
+- 진행·할 일 셈·장소·넘길 물품·대사는 처음 할 때와 같다(대사 갈래 {이름}·직업·소속·세력 줄도 그대로). 할 일은 다시하기를 누른 뒤의 기록만 센다.
+- 중간에 「포기하기」를 누르면 다시하기 진행만 지워지고, 처음 마친 기록(done_at)·칭호·보상은 그대로다. 다시하기 중에도 일지 「마친 장면 다시 보기」는 된다.
+- 다 마치면 전만 받고 다시 「마친 퀘스트」로 돌아간다. 다시 또 할 수 있다.
+
+### 보상과 막을 것
+- 경험치 0, 물품 보상 0(장면 reward.items·칭호 reward.title·가방/창고 칸·능력치 포인트·탈것·이야기 장비·꾸미기 모두 없음). 장면마다의 전도 없음.
+- 마칠 때 전 = 그 퀘스트 마지막 장면 전 × 20%(최소 5전), 같은 퀘스트는 한국 시각 하루 한 번만 전을 줌(그 밖엔 0전 — 체험만). 수치는 규칙 함수 world_quest_replay_rules() 한 곳(pct 20·min 5·daily 1·max_active 3) → gamedata → 일지 확인 창 문구.
+- 동시에 다시하기는 3편까지.
+- 넘길 물품(need.give)·치를 전(need.gil)은 처음처럼 다시 낸다(체험의 일부). 가방 자리 검사는 그대로.
+- 다시하기로 마쳐도 칭호 셈(퀘스트 수)·도감·세력 평판·이야기 단서·별채 열기 같은 「처음 마침」 트리거는 돌지 않는다 — 트리거가 world_quest_progress.done_at을 보므로, 다시하기는 따로 표에 적는다.
+- 주 이야기 장의 단서 찾기·가설 확정(world_story_combine)은 다시하지 않는다(장면만). 우두머리 할 일(귀허·먹그림자·백야)은 이야기판으로 다시 할 수 있고, 처음 쓰러뜨림 보상은 이미 받았으므로 없다.
+
+### 서버
+- 표 world_quest_replays(owner_id, quest_id, step, step_started_at, started_at, paid_day) — RLS·직접 읽기 없음, world_character_purge 대상. world_quest_progress는 건드리지 않는다.
+- RPC: world_quest_replay_start(p_quest)(마친 퀘스트만·world_travel_guard·동시 3편), world_quest_replay_abandon(p_quest). 보고는 world_quest_report가 그 퀘스트에 다시하기 행이 있으면 그 행으로 진행(보상 공식만 다름 — 다시하기 갈래), 셈은 world_task_row·world_quest_task_count에 since만 다시하기 행 것으로.
+- world_quest_board·world_quest_journal이 다시하기 행을 「진행 중」으로 실어 보냄(replay: true). 캐릭터 행 갱신은 마칠 때 전 한 번뿐.
+- 화면: journal.js 마친 카드 「다시하기」·진행 카드 「다시하기」 칩·「포기하기」, quests.js 퀘스트 칸 칩. changes.js에 quest_replay_ 행동(퀘스트 판·일지 캐시 버림). 도움말 「퀘스트 다시하기」.
