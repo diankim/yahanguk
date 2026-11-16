@@ -285,7 +285,14 @@ async function load() {
     draw();
   } catch (e) { drawError(friendlyError(e)); }
 }
-async function loadNew() {
+let newAt = 0, newFlight = null;
+function loadNew(force) {
+  if (newFlight) return force ? newFlight.then(() => loadNew(true)) : newFlight;
+  if (!force && Date.now() - newAt < 3000) return Promise.resolve();
+  newAt = Date.now();
+  return (newFlight = loadNewNow().finally(() => { newFlight = null; }));
+}
+async function loadNewNow() {
   const last = msgs[msgs.length - 1]?.created_at;
   if (!last) return load();
   try {
@@ -469,7 +476,7 @@ async function send(e) {
     else if (tab === 'circle') { if (!circleId) throw new Error('모임을 골라 주세요.'); await rpc('world_circle_send', { p_circle: circleId, p_content: text }); await loadCircleNew(); }
     else {
       await rpc('world_chat_send', { p_channel: tab, p_content: text, p_recipient_name: null });
-      await (live && msgs.length ? loadNew() : load());
+      await (live && msgs.length ? loadNew(true) : load());
     }
     form.text.value = ''; try { sessionStorage.removeItem('yh-chat-draft'); } catch {} form._fit?.();
   } catch (err) { toast(friendlyError(err), 'error'); }
