@@ -1,4 +1,5 @@
-import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, JOBS } from './core.js';
+import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, particle, JOBS } from './core.js';
+import { brokenName } from './rules.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate } from './views/common.js';
 import { factionColor } from './geo.js';
@@ -13,7 +14,7 @@ const RANK_PERK = {
 };
 
 const jobWord = body => { const mine = (JOBS[store.character?.job_key]?.name || '').slice(0, 2), opts = Object.fromEntries(body.split('/').map(p => p.split('=')).filter(p => p.length === 2)); return opts[mine] ?? opts['*'] ?? Object.values(opts)[0] ?? ''; };
-const fillLine = t => josa(String(t || '').replaceAll('{이름}', store.character?.character_name || '조사원').replace(/\{직업:([^}]*)\}/g, (m, body) => jobWord(body)));
+const fillLine = t => { const nm = store.character?.character_name || '조사원'; return josa(String(t || '').replace(/\{깨진이름\}(을\(를\)|이\(가\)|은\(는\)|과\(와\)|\(으\)로|\(이\))?/g, (m, form) => brokenName(nm) + (form ? particle(nm, form) : '')).replaceAll('{이름}', nm).replace(/\{직업:([^}]*)\}/g, (m, body) => jobWord(body))); };
 export function playDialogue(r, fid) {
   const lines = r?.lines || [];
   if (!lines.length) return;
