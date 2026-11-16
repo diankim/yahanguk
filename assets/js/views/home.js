@@ -7,7 +7,7 @@ import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR, FIGHT_KINDS } from '../rules.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -243,6 +243,7 @@ function staminaBox(st) {
         </div>`;
 }
 
+const fightBack = () => { const f = store.hud?.fight, k = f && FIGHT_KINDS[f.kind]; return k ? `<a class="tile danger" href="#/${k.route}/${esc(f.id)}" title="${esc(`${k.label}${f.name ? ` · ${f.name}` : ''}`)}">${icon(f.kind === 'bijang' ? 'chest' : 'sword', 22)}<span>${f.kind === 'bijang' ? '비장고로' : '싸움으로'}</span></a>` : ''; };
 const bjHere = s => (store.hud?.bijang?.maps || []).find(m => m.status === 'open' && m.region_id === s.region?.region_id);
 async function digBijang(b, s) {
   const m = bjHere(s); if (!m) return;
@@ -279,6 +280,7 @@ function field(s, roster, blocked) {
           <button class="tile" id="idle-rest" title="자율 휴식: 접속하지 않는 동안 쉬어 체력·정신·영력을 채웁니다">${icon('hourglass', 22)}<span>자율 휴식</span></button>
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
+          ${fightBack()}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${s.region.region_id === GAMEDATA.boss?.mukjeok?.region ? `<a class="tile danger" href="#/gw/mukjeok" title="먹그림자 · Lv${GAMEDATA.boss.mukjeok.lv}부터, ${GAMEDATA.boss.mukjeok.item_name} 1개">${icon('flag', 22)}<span>먹그림자</span></a>` : ''}
         </div>
