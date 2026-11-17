@@ -178,8 +178,8 @@ begin
   end if;
   due := exists (select 1 from jsonb_array_elements(hz) e where (e ->> 'left')::int <= 0);
   if act = 2 then
-    face := coalesce(b ->> 'face', case when random() < 0.5 then 'human' else 'yokai' end);
-    if ar % (hx ->> 'face_every')::int = 1 and ar > 1 then face := case when random() < 0.5 then 'human' else 'yokai' end; end if;
+    face := coalesce(b ->> 'face', (select case when bool_or(z.s) and bool_or(not z.s) then case when random() < 0.5 then 'human' else 'yokai' end when bool_or(z.s) then 'human' else 'yokai' end from (select coalesce(y.stats ->> 'style', 'melee') in ('melee', 'ranged') s from public.world_gw_members y where y.fight_id = p_fight) z));
+    if ar % (hx ->> 'face_every')::int = 1 and ar > 1 then face := (select case when bool_or(z.s) and bool_or(not z.s) then case when random() < 0.5 then 'human' else 'yokai' end when bool_or(z.s) then 'human' else 'yokai' end from (select coalesce(y.stats ->> 'style', 'melee') in ('melee', 'ranged') s from public.world_gw_members y where y.fight_id = p_fight) z); end if;
     b := b || jsonb_build_object('face', face);
     m := jsonb_build_object('k', 'face', 'face', face);
   else

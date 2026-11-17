@@ -498,3 +498,12 @@ select pg_temp.yh_patch('public.world_mk_after(uuid,integer)',
 select pg_temp.yh_patch('public.world_ug_raw(uuid)',
   $o$  return public.world_mk_raw(p_fight) * case when d then 2 else 1 end;$o$,
   $n$  return public.world_mk_raw(p_fight) * case when d then 2 else 1 end * case when public.world_ug_wm_on(p_fight) then coalesce((public.world_ug_wm_cfg(p_fight) ->> 'hand')::numeric, 1) else 1 end;$n$);
+
+select pg_temp.yh_patch('public.world_gw_hurt(uuid,uuid,integer,integer,text)',
+  $o$  if not found or m.out_rounds > 0 or m.rest or d = 0 then return 0; end if;$o$,
+  $n$  if not found or m.out_rounds > 0 or m.rest or d = 0 then return 0; end if;
+  if m.hp - d <= 0 and exists (select 1 from public.world_gw_fights g where g.fight_id = p_fight and g.mode = 'ultimate'
+      and g.board -> 'wm' ->> 'k' = 'sea' and g.board -> 'wm' ->> 'status' = 'on') then
+    d := m.hp - 1;
+    if d <= 0 then return 0; end if;
+  end if;$n$);

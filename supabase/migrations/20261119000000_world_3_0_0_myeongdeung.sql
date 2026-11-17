@@ -2275,7 +2275,7 @@ begin
   r := jsonb_set(r, '{gwiheo,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{mukjeok,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gapgwi,modes,ultimate}', '"무용담"');
-  r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [9, 17, 23], "name": "구중 봉주", "rounds": 26}, {"boss": "gwiheo", "cuts": [14, 24, 33], "name": "귀허의 주인", "rounds": 40}], "hp_n": [1, 0.57, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.45, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
+  r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [9, 17, 23], "name": "구중 봉주", "rounds": 26}, {"boss": "gwiheo", "cuts": [14, 24, 33], "name": "귀허의 주인", "rounds": 40}], "hp_n": [1, 0.40, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.25, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [28, 3], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [13, 24, 32], "name": "값귀", "rounds": 38}, {"boss": "baekya", "cuts": [12, 23, 33], "name": "백야", "rounds": 44}], "hp_n": [1, 1.1, 1.3, 1.2],
     "board": {"hide": true, "hand_mul": 0.6, "mech_mul": 1, "fail_party": {"raw": 15}, "budget": 300,
       "judge": {"every": 2, "off": 1, "left": 2, "raw": 45},
@@ -3030,8 +3030,8 @@ begin
   end if;
   due := exists (select 1 from jsonb_array_elements(hz) e where (e ->> 'left')::int <= 0);
   if act = 2 then
-    face := coalesce(b ->> 'face', case when random() < 0.5 then 'human' else 'yokai' end);
-    if ar % (hx ->> 'face_every')::int = 1 and ar > 1 then face := case when random() < 0.5 then 'human' else 'yokai' end; end if;
+    face := coalesce(b ->> 'face', (select case when bool_or(z.s) and bool_or(not z.s) then case when random() < 0.5 then 'human' else 'yokai' end when bool_or(z.s) then 'human' else 'yokai' end from (select coalesce(y.stats ->> 'style', 'melee') in ('melee', 'ranged') s from public.world_gw_members y where y.fight_id = p_fight) z));
+    if ar % (hx ->> 'face_every')::int = 1 and ar > 1 then face := (select case when bool_or(z.s) and bool_or(not z.s) then case when random() < 0.5 then 'human' else 'yokai' end when bool_or(z.s) then 'human' else 'yokai' end from (select coalesce(y.stats ->> 'style', 'melee') in ('melee', 'ranged') s from public.world_gw_members y where y.fight_id = p_fight) z); end if;
     b := b || jsonb_build_object('face', face);
     m := jsonb_build_object('k', 'face', 'face', face);
   else
@@ -5011,6 +5011,15 @@ select pg_temp.yh_patch('public.world_mk_after(uuid,integer)',
 select pg_temp.yh_patch('public.world_ug_raw(uuid)',
   $o$  return public.world_mk_raw(p_fight) * case when d then 2 else 1 end;$o$,
   $n$  return public.world_mk_raw(p_fight) * case when d then 2 else 1 end * case when public.world_ug_wm_on(p_fight) then coalesce((public.world_ug_wm_cfg(p_fight) ->> 'hand')::numeric, 1) else 1 end;$n$);
+
+select pg_temp.yh_patch('public.world_gw_hurt(uuid,uuid,integer,integer,text)',
+  $o$  if not found or m.out_rounds > 0 or m.rest or d = 0 then return 0; end if;$o$,
+  $n$  if not found or m.out_rounds > 0 or m.rest or d = 0 then return 0; end if;
+  if m.hp - d <= 0 and exists (select 1 from public.world_gw_fights g where g.fight_id = p_fight and g.mode = 'ultimate'
+      and g.board -> 'wm' ->> 'k' = 'sea' and g.board -> 'wm' ->> 'status' = 'on') then
+    d := m.hp - 1;
+    if d <= 0 then return 0; end if;
+  end if;$n$);
 
 select pg_temp.yh_patch('public.world_gwiryeong_chance(text,jsonb)',
   $q$p_type in ('gw_win', 'raid_win', 'mk_win')$q$,
