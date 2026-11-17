@@ -134,6 +134,7 @@ end $d$;
 grant execute on function public.world_meisho_rules() to public;""")
 part('d_meisho.sql')
 part('e_party.sql')
+part('f_titles.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
