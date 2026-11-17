@@ -501,7 +501,7 @@ export async function renderStorage(box) {
           <li><div><b>전으로 넓히기</b><small>4번까지 +4칸씩 · ${STORE_PRICES.map((p, i) => `<span class="${i < steps ? 'ok' : ''}">${fmt.num(p)}전</span>`).join(' → ')} · 넓힌 횟수 ${steps}/4</small></div>
             ${steps >= 4 ? chip('다 넓힘', 'ok') : `<button class="btn small primary" id="st-grow" ${ro || (c?.gil ?? s.gil) < src.next_price ? 'disabled' : ''}>+4칸 · ${fmt.jeon(src.next_price)}</button>`}</li>
           <li><div><b>이야기 6~10장</b><small>장을 해결할 때마다 +2칸 (최대 +10)</small></div>${chip(`+${src.story || 0}`, src.story ? 'ok' : '')}</li>
-          <li><div><b>외전 귀허도·묵적록</b><small>장을 마칠 때마다 +2칸 (최대 +${2 * GD.storage.arc})</small></div>${chip(`+${src.arc || 0}`, src.arc ? 'ok' : '')}</li>
+          <li><div><b>외전</b><small>요인록·묵적록 장마다 +2칸, 명등기 3·6·9·12·15장 +3칸 (최대 +${GD.storage.arc_n})</small></div>${chip(`+${src.arc || 0}`, src.arc ? 'ok' : '')}</li>
           <li><div><b>대세력 평판</b><small>평판 300·600·1000에서 +2칸씩 (최대 +6) · 세력을 떠나면 사라집니다</small></div>${chip(`+${src.faction || 0}`, src.faction ? 'ok' : '')}</li>
           <li><div><b>지역 완전 답사</b><small>10·20·30곳에서 +2칸씩 (최대 +6) · 지금 ${src.surveyed || 0}곳</small></div>${chip(`+${src.survey || 0}`, src.survey ? 'ok' : '')}</li>
         </ul>

@@ -115,7 +115,8 @@ def build(dsn):
     late = q(dsn, "select count(*) from world_story_chapters where seq between 6 and 10")
     arcs = re.findall(r"'([a-z]+_\d+)'", re.search(r"g\.quest_id = any \(array\[([^\]]+)\]", src).group(1))
     d['bag'] = {'base': int(re.match(r'\d+', bag).group(0))}
-    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + 2 * len(arcs) + 6 + 6, 'prices': prices, 'arc': len(arcs)}
+    arc_n = sum(3 if a.startswith('mdq_') else 2 for a in arcs)
+    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + arc_n + 6 + 6, 'prices': prices, 'arc': len(arcs), 'arc_n': arc_n}
     # 칭호 수
     t = q(dsn, """select json_build_object('total', count(*), 'public', count(*) filter (where not hidden),
         'skill', count(*) filter (where title_key ~ '^(ct|gt)_'),

@@ -141,6 +141,7 @@ part('g_lines.sql')
 part('h_replay.sql')
 part('i_borrow.sql')
 part('k_quest_fix.sql')
+part('l_storage.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')

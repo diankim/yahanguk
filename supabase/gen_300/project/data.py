@@ -9,12 +9,13 @@ F_BASE = [round(80000 * (1 + GOAL_STEP * i)) for i in range(5)]
 C_BASE = [round(300000 * (1 + GOAL_STEP * i)) for i in range(5)]
 F_SHOP = {'price_mul': 1.3, 'daily_cap': 5}
 C_SHOP = {'price_mul': 3.5, 'daily_cap': 5, 'cap_mul': 2}
-F_ROUTE_CUT = 0.2
+F_ROUTE_CUT = 0.12
+C_ROUTE_CUT = 0.15
 LIFT = {'shop': 1, 'route': 2, 'storage': 3, 'letter': 3, 'market': 4, 'stable': 4, 'ucomm': 4, 'repair': 5, 'sell': 5, 'smithy': 5, 'house': 5}
-C_PERK_TEXT = ['상점 품목이 여섯 가지로 늘고, 이야기를 마친 사람에게 새 품목 둘·하루 살 수 있는 개수 두 배', '지름길(이동 −30%·운임 없음)',
+C_PERK_TEXT = ['상점 품목이 여섯 가지로 늘고, 이야기를 마친 사람에게 새 품목 둘·하루 살 수 있는 개수 두 배', f'지름길(이동 −{round(C_ROUTE_CUT * 100)}%·운임 없음)',
                '창고가 열리고 제작·강화·옷 짓기에 창고 재료, 서신 물품 부치고 받기', '거래소·마구간·조사원 의뢰',
                '수리비·되팔기·판매 한도·대장간이 바깥과 같아지고 별채 고치기, 머리 그림']
-F_PERK_TEXT = ['거점 상점에 새 품목 둘(그 세력 조사원만)', '거점과 이웃 지역에서 효과(그 세력 조사원)', '거점 ↔ 본래 땅 지름길(이동 −20%·운임 없음)',
+F_PERK_TEXT = ['거점 상점에 새 품목 둘(그 세력 조사원만)', '거점과 이웃 지역에서 효과(그 세력 조사원)', f'거점 ↔ 본래 땅 지름길(이동 −{round(F_ROUTE_CUT * 100)}%·운임 없음)',
                '비고에 새 품목', '세력 바탕 무늬·거점 머리 그림']
 
 PROJECTS = {
@@ -101,21 +102,21 @@ PROJECTS = {
                 ['lt_sickle_6', 'lt_rod_6', 's6_swift', 'h6_calm', 'gwiheo_iron', 'spirit_core', 'yoin_blood', 'reed_silk'],
                 ['h6_guard', 'h6_wise', 'lt_pick_6', 't6_gather', 'gwiheo_pearl', 'oblivion_crystal', 'gwiheo_iron', 'inverted_incense'],
                 ['n6_plenty', 'k6_awe', 'm6_ward', 'k6_ghost', 'gwiheo_pearl', 'yoin_blood', 'banyo_scale', 'moonless_silk']],
-        shop=['rejuv_pill', 'moonlight_essence'], route={'hidden_bazaar': 0.3}),
+        shop=['rejuv_pill', 'moonlight_essence'], route={'hidden_bazaar': C_ROUTE_CUT}),
     'c:mukjeok': dict(kind='common', domain='mukjeok', name='묵창 나루 넓히기', story='mkq_5', hubs=['mukchang_ferry'],
         stages=[['meokgwi_incense', 'name_ink_charm', 'meokbi_umbrella', 'carp_glue', 'mukchang_ink', 'blank_hanji', 'erased_plate', 'meokgwi_lump'],
                 ['lt_cook_7', 'lt_carve_7', 'lt_still_7', 'rainproof_oil', 'meokbi_moss', 'meokbi_ebony', 'drifting_name_thread', 'mukchang_ink'],
                 ['lt_rod_7', 'lt_compass_7', 'register_eel_grill', 'salmon_ink_grill', 'register_slip', 'bamboo_eel', 'meokbi_salmon', 'blank_hanji'],
                 ['s7_road', 's7_swift', 'h7_calm', 'name_carving_soup', 'doorplate_carp', 'meokbi_ebony', 'erased_plate', 'spirit_core'],
                 ['n7_plenty', 'm7_purify', 'k7_ghost', 'tuna_ink_feast', 'inkscale_tuna', 'register_slip', 'drifting_name_thread', 'meokgwi_lump']],
-        shop=['grand_pill', 'heavenly_dew'], route={'iron_monastery': 0.3}),
+        shop=['grand_pill', 'heavenly_dew'], route={'iron_monastery': C_ROUTE_CUT}),
     'c:deungdo': dict(kind='common', domain='deungdo', name='흰 밤 나루 살리기', story='mdq_17', hubs=['deungdo_landing', 'lamp_rest'],
         stages=[['night_tea', 'ember_ash_pill', 'smelt_clear_soup', 'burrow_scale', 'century_form_scrap', 'white_night_frost', 'bleached_lantern_paper', 'frozen_arrow_shaft'],
                 ['myeongdeung_lamp', 'cheong_carp_steam', 'lt_cook_8', 'lt_needle_8', 'severed_lamp_oil', 'red_shrine_lacquer', 'frost_bell_iron', 'lamp_wick_core'],
                 ['lt_carve_8', 'lt_still_8', 'lt_hammer_8', 'lt_rod_8', 'waterlogged_plank', 'faded_star_glass', 'star_record_plate', 'white_night_frost'],
                 ['lt_sickle_8', 'lt_lantern_8', 'lt_compass_8', 'h8_calm', 'king_ember_ash', 'ledger_tab', 'balance_weight', 'severed_lamp_oil'],
                 ['lt_pick_8', 'lt_knife_9', 'a8_light', 'a8_robe', 'pact_stone_dust', 'lamp_wick_core', 'king_ember_ash', 'frost_bell_iron']],
-        shop=['grand_pill', 'heavenly_dew'], route={'hq_yard': 0.3, 'lamp_rest': 0}),
+        shop=['grand_pill', 'heavenly_dew'], route={'hq_yard': C_ROUTE_CUT, 'lamp_rest': 0}),
 }
 
 VAULT_COMMON = [
