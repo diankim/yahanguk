@@ -216,57 +216,104 @@ aaaaaaaaaabb'''),
 .aaaaaaaaaaab.
 aaaaaaaaaaaabb'''))
 
-RHINO = {'a': '#b4b0c4', 'b': '#8a869c', 'm': '#d8d4e4', 'h': '#f4ead2', 'c': '#d4dae4', 'd': '#7a8496', 'e': E, 'i': I, 'p': PK}
+RHINO = {'a': '#a6aabc', 'b': '#80849a', 'm': '#cdd0dc', 'u': '#8cd8ea', 'h': '#f6ecd4', 'c': '#eef2f8', 'd': '#9aa4b6', 'e': E, 'i': I, 'p': PK}
 pet(id='ug_chain_rhino', name='사슬 아기 코뿔소', grade=4, kind='breaker', likes='treat_herb',
     desc='귀허의 사슬 넷이 끊어지던 날, 끊긴 고리 하나를 목에 건 채 굴러 나온 아기 코뿔소입니다. 코끝의 작은 뿔로 무엇이든 톡톡 밀어 보는데, 아직 힘이 약해 밀리는 것은 늘 자기 쪽입니다. 목에 건 사슬 고리가 짤랑거리면 신이 나서 더 빨리 뛰어다닙니다.',
     baby=dict(pal=RHINO, idle='''
-..a.......a..
-.aaaaaaaaaaa.
-aaaaaaaaaaaaa
-aaieaahaaieaa
-aaeeahhhaeeaa
-apammmmmmmapa
-.aammmmmmmaa.
-.aaaaaaaaaaa.
-.ccdccdccdcc.
-.aaaaaaaaaad.
-.bb.bb.bb..d.''', step_tail='''
-..bb.bb.bb.d.''', sleep='''
-..a.......a..
-.aaaaaaaaaaa.
-aaaaaaaaaaaaa
-aakkaahaakkaa
-aaaaahhhaaaaa
-apammmmmmmapa
-.aammmmmmmaa.
-.ccdccdccdcc.
-.aaaaaaaaaaa.'''),
+..................h..
+.........a.......hh..
+.........aa.uuh..hh..
+..........uuaahuhhh..
+.........uaaaaaahhh..
+....uuuuuaaaaieaaa...
+..uuaaaaaaaaaeeaaau..
+.uaaaaaaaaaapaaaaaau.
+.aaaaaaaaccccaammmm..
+.bbaaaaaac..caaa.....
+...bbbbbbc..cb.bb....
+..bb.bb..ccccb.bb....
+..bb.bb...dd.........
+.........ccc.........
+.........c...........''', step='''
+..................h..
+.........a.......hh..
+.........aa.uuh..hh..
+..........uuaahuhhh..
+.........uaaaaaahhh..
+....uuuuuaaaaieaaa...
+..uuaaaaaaaaaeeaaau..
+.uaaaaaaaaaapaaaaaau.
+.aaaaaaaaccccaammmm..
+.bbaaaaaac..caaa.....
+...bbbbbbc..cb.bb....
+...bb.bb.ccccbb.bb...
+...bb.bb..dd.........
+.........ccc.........
+.........c...........''', sleep='''
+..................h..
+.........a.......hh..
+.........aa.uuh..hh..
+..........uuaahuhhh..
+.........uaaaaaahhh..
+....uuuuuaaaaaaaaa...
+..uuaaaaaaaaakkaaau..
+.uaaaaaaaaaapaaaaaau.
+.aaaaaaaaccccaammmm..
+.bbaaaaaac..caaa.....
+...bbbbbbc..c........
+.........cccc........'''),
     adult=dict(pal=RHINO, idle='''
-..aa.........aa..
-.aaaaaaaaaaaaaaa.
-aaaaaaaahaaaaaaaa
-aaaieaaahaaaieaaa
-aaaeeaahhhaaeeaaa
-aapaaahhhhhaaapaa
-aaaammmmmmmmmaaaa
-.aaammmmmmmmmaaa.
-..aaaaaaaaaaaaa..
-.ccdccdccdccdccd.
-.aaaaaaaaaaaaaad.
-.aaaaaaaaaaaaaac.
-.bb.bb...bb.bb.d.''', step_tail='''
-..bb.bb.bb.bb..d.''', sleep='''
-..aa.........aa..
-.aaaaaaaaaaaaaaa.
-aaaaaaaahaaaaaaaa
-aaakkaaahaaakkaaa
-aaaaaaahhhaaaaaaa
-aapaaahhhhhaaapaa
-aaaammmmmmmmmaaaa
-.aaammmmmmmmmaaa.
-..aaaaaaaaaaaaa..
-.ccdccdccdccdccd.
-.aaaaaaaaaaaaaaa.'''))
+........................h..
+.......................hh..
+.............a.........hh..
+.............aauuuuh..hhh..
+.............uuaaahhuuhhh..
+............uaaaaaaaahhhh..
+............aaaaaaieaaa....
+....uuuuuuuuaaaaaaeeaaau...
+..uuaaaaaaaaaaaaaaaaaaaau..
+.uaaaaaaaaaaaaaaapaaaaaaa..
+.aaaaaaaaaaacccccaaammmmm..
+.baaaaaaaaaac...caaaammm...
+..bbaaaaaaaac...caaa.......
+....bbbbbbbbc...cb..bb.....
+...bb.bb....cccccb..bb.....
+...bb.bb.....ddd...........
+............cccc...........
+............c..............''', step='''
+........................h..
+.......................hh..
+.............a.........hh..
+.............aauuuuh..hhh..
+.............uuaaahhuuhhh..
+............uaaaaaaaahhhh..
+............aaaaaaieaaa....
+....uuuuuuuuaaaaaaeeaaau...
+..uuaaaaaaaaaaaaaaaaaaaau..
+.uaaaaaaaaaaaaaaapaaaaaaa..
+.aaaaaaaaaaacccccaaammmmm..
+.baaaaaaaaaac...caaaammm...
+..bbaaaaaaaac...caaa.......
+....bbbbbbbbc...cb..bb.....
+....bb.bb...cccccbb..bb....
+....bb.bb....ddd...........
+............cccc...........
+............c..............''', sleep='''
+........................h..
+.......................hh..
+.............a.........hh..
+.............aauuuuh..hhh..
+.............uuaaahhuuhhh..
+............uaaaaaaaahhhh..
+............aaaaaaaaaaa....
+....uuuuuuuuaaaaaakkaaau...
+..uuaaaaaaaaaaaaaaaaaaaau..
+.uaaaaaaaaaaaaaaapaaaaaaa..
+.aaaaaaaaaaacccccaaammmmm..
+.baaaaaaaaaac...caaaammm...
+..bbaaaaaaaac...caaa.......
+....bbbbbbbbc...c..........
+............ccccc..........'''))
 
 MAMMO = {'a': '#b07e5a', 'b': '#86583a', 'f': '#d6a67c', 't': '#f8f0e0', 's': '#f4e2a6', 'r': '#cc3e3a', 'e': E, 'i': I, 'p': PK}
 pet(id='ug_seal_mammoth', name='봉연 아기 매머드', grade=4, kind='giant', likes='treat_herb',
