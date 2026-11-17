@@ -834,3 +834,51 @@ grant execute on function public.world_ug_nbm(text), public.world_ug_mask(int[])
   public.world_ug_gg_ok(uuid, jsonb, integer), public.world_ug_gg_round(uuid), public.world_ug_fail(uuid, integer, integer, numeric, boolean),
   public.world_ug_gg_mech(uuid, integer, boolean, boolean, uuid[]), public.world_ug_by_cons(uuid, jsonb, integer, jsonb), public.world_ug_by_ok(uuid, jsonb, integer, jsonb),
   public.world_ug_by_round(uuid), public.world_ug_by_mech(uuid, integer, boolean, boolean, uuid[]) to service_role, fn_owner_field;
+
+create or replace function public.world_ug_weak(p_fight uuid) returns jsonb
+language plpgsql stable security definer set search_path = pg_catalog, public
+as $f$
+declare f record; w jsonb; k int; strong boolean;
+begin
+  select g.mode, g.boss_id, g.enrage into f from public.world_gw_fights g where g.fight_id = p_fight;
+  if f.mode is distinct from 'ultimate' or f.boss_id not in ('gapgwi', 'baekya') or coalesce(f.enrage, 0) <= 0 then
+    return jsonb_build_object('n', 0, 'deal', 1, 'take', 1);
+  end if;
+  w := public.world_boss_fight_rules(p_fight) -> 'board' -> 'weak';
+  k := f.enrage; strong := k >= (w ->> 'strong_at')::int;
+  return jsonb_build_object('n', k, 'strong', strong,
+    'name', case when strong then w ->> 'strong_name' else w ->> 'name' end,
+    'deal', case when strong then 1 - (w ->> 'strong_deal')::numeric else greatest(0.1, 1 - (w ->> 'deal')::numeric * k) end,
+    'take', case when strong then 1 + (w ->> 'strong_take')::numeric + (w ->> 'more_take')::numeric * (k - (w ->> 'strong_at')::int) else 1 + (w ->> 'take')::numeric * k end);
+end $f$;
+
+select pg_temp.yh_patch('public.world_gw_hurt(uuid,uuid,integer,integer,text)',
+  $o$d int := greatest(0, p_dmg); v_n int; v_out int;
+begin$o$,
+  $n$d int := greatest(0, p_dmg); v_n int; v_out int;
+begin
+  if d > 0 and exists (select 1 from public.world_gw_fights wf where wf.fight_id = p_fight and wf.mode = 'ultimate' and wf.enrage > 0 and wf.boss_id in ('gapgwi', 'baekya')) then
+    d := round(d * (public.world_ug_weak(p_fight) ->> 'take')::numeric)::int;
+  end if;$n$);
+
+select pg_temp.yh_patch('public.world_gw_resolve(uuid)',
+  $o$      if f.boss_id = 'baekya' then d := d * public.world_by_on_attack(p_fight, m.owner_id, r); end if;$o$,
+  $n$      if f.boss_id = 'baekya' then d := d * public.world_by_on_attack(p_fight, m.owner_id, r); end if;
+      if f.mode = 'ultimate' and f.enrage > 0 then d := d * (public.world_ug_weak(p_fight) ->> 'deal')::numeric; end if;$n$);
+
+select pg_temp.yh_patch('public.world_ug_fail(uuid,integer,integer,numeric,boolean)',
+  $o$declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; x record; cap int := coalesce((rb ->> 'fail_cap')::int, 3); e int; b jsonb;$o$,
+  $n$declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; x record; e int; b jsonb; wk jsonb;$n$);
+select pg_temp.yh_patch('public.world_ug_fail(uuid,integer,integer,numeric,boolean)',
+  $o$  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 실수 ' || least(e, cap) || '/' || cap || case when e >= cap then ' — 이야기가 그 자리에서 끝장난다.' else '. 모두가 함께 다친다.' end);$o$,
+  $n$  wk := public.world_ug_weak(p_fight);
+  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 모두가 함께 다치고 「' || (wk ->> 'name') || '」 ' || e || '겹 — 주는 피해 ×' || round((wk ->> 'deal')::numeric, 2) || ' · 받는 피해 ×' || round((wk ->> 'take')::numeric, 2) || case when (wk ->> 'strong')::boolean then '. 이야기꾼이 고개를 젓는다.' else '.' end);$n$);
+
+do $d$
+declare o text;
+begin
+  for o in select distinct pg_get_userbyid(p.proowner) from pg_proc p where p.proname in ('world_gw_hurt', 'world_gw_resolve', 'world_ug_view', 'world_ug_fail', 'world_gw_snapshot') and pg_get_userbyid(p.proowner) like 'fn_owner%' loop
+    execute format('grant execute on function public.world_ug_weak(uuid) to %I', o);
+  end loop;
+end $d$;
+revoke all on function public.world_ug_weak(uuid) from public, anon, authenticated;
