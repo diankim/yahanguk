@@ -2299,6 +2299,15 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-band .gw-round-bar { margin: 0; }
 .gw-tell { margin: 2px 0; font-size: calc(14px * var(--fz, 1)); line-height: 1.55; font-family: var(--font-serif, inherit); }
 .gw-band.aoe .gw-tell, .gw-band.gim .gw-tell { font-weight: 600; }
+.gg-board { display: grid; gap: 4px; margin-top: 6px; }
+.gg-vals { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.gg-vals li { display: flex; gap: 6px; align-items: baseline; padding: 2px 8px; border: 1px solid var(--line); border-radius: var(--r, 8px); font-size: calc(12.5px * var(--fz, 1)); }
+.gg-vals li span { font-weight: 700; font-variant-numeric: tabular-nums; }
+.gg-vals li.me { border-color: var(--accent); }
+.gg-vals li.bad { border-color: var(--hp); color: var(--hp); }
+.gg-row { margin: 0; font-size: calc(12.5px * var(--fz, 1)); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.gg-row.warn { color: var(--gold); }
+.gg-row .bad, .gg-row span.bad { color: var(--hp); }
 .gw-mine { margin: 0; font-size: calc(12px * var(--fz, 1)); color: var(--muted); display: flex; gap: 4px; align-items: center; }
 .gw-mine b { color: var(--accent); }
 .gw-gim { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); border: 2px dashed color-mix(in srgb, var(--bad) 60%, var(--line)); display: grid; gap: 6px; }
