@@ -25,7 +25,7 @@ begin
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
   "phases": ["거둠", "소등", "긁힌 칸", "흰 밤"],
   "story": {"min": 30, "round_s": 60, "hp_min": 2400, "hp_atk": 26, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
-    "board": {"mark_steps": 5, "mark_gone": false, "solo_erase": 1, "dim_lead": 3, "scratch": false, "wn_need": 4, "wn_need_solo": 4, "wn_rounds": 0}},
+    "board": {"mark_steps": 5, "mark_gone": false, "solo_erase": 1, "dim_lead": 3, "scratch": false, "wn_need": 4, "wn_need_solo": 4, "wn_rounds": 0, "wn_free": true}},
   "board": {
     "seats": 7, "center_pres": 0, "dmg_lo": 0.55, "dmg_k": 0.45, "hurt_hi": 1.3, "hurt_k": 0.3,
     "mark_every": 4, "mark_every_solo": 6, "mark_steps": 3, "mark_hurt_pct": 20, "mark_mute": 2, "mark_gone": true, "solo_erase": 2,
@@ -111,7 +111,7 @@ begin
     b := b || jsonb_build_object('wn', jsonb_build_object('start', nr, 'hp', f.hp, 'need', need, 'lit', 0, 'at', case when rounds > 0 then nr + rounds - 1 end),
       'lamps', '[]'::jsonb, 'dims', '[]'::jsonb, 'kindle', '{}'::jsonb);
     perform public.world_gw_say(p_fight, nr, 'warn', '흰 밤 — 이웃 자리에 선 사람만 부를 수 있습니다. 불린 사람이 제 자리에서 「등 켜기」를 하면 등이 켜지며 백야의 몸에서 이름이 하나씩 떨어집니다. 등 '
-      || need || '개를 켜면 이깁니다' || case when rounds > 0 then '(' || rounds || '라운드 안에).' else '.' end);
+      || need || '개를 켜면 이깁니다' || case when coalesce((rb ->> 'wn_free')::boolean, false) then '(이야기판에서는 불리지 않아도 켤 수 있습니다)' else '' end || case when rounds > 0 then '(' || rounds || '라운드 안에).' else '.' end);
   end if;
   if ph >= 3 then
     if not coalesce(b -> 'scr', '{}'::jsonb) ? 'item' then
@@ -284,7 +284,7 @@ begin
     end if;
     if wn is not null then
       for w in select x.* from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = any (alive) and x.act ->> 'a' = 'light' and x.pos = seat order by x.joined_at loop
-        heard := coalesce((b -> 'called' ->> w.owner_id::text)::int, -99) >= p_round - (rb ->> 'wn_heard')::int;
+        heard := coalesce((rb ->> 'wn_free')::boolean, false) or coalesce((b -> 'called' ->> w.owner_id::text)::int, -99) >= p_round - (rb ->> 'wn_heard')::int;
         if seat = any (lamps) then exit; end if;
         if not heard then
           perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — 아무도 이름을 불러 주지 않아 손이 등롱에 닿지 않습니다.'); continue;
@@ -393,7 +393,8 @@ begin
     'block', coalesce(b -> 'block', '[]'::jsonb), 'unblock_left', greatest(0, (rb ->> 'unblock_max')::int - coalesce((b ->> 'unb')::int, 0)),
     'solo_calls', case when n = 1 then coalesce((b ->> 'solo_calls')::int, 0) end, 'solo_unblock', (rb ->> 'solo_unblock')::int,
     'wn', case when b ? 'wn' then (b -> 'wn') || jsonb_build_object('left', case when b -> 'wn' ->> 'at' is not null then (b -> 'wn' ->> 'at')::int - f.round end) end,
-    'heard', b ? 'wn' and coalesce((b -> 'called' ->> p_uid::text)::int, -99) >= f.round - (rb ->> 'wn_heard')::int,
+    'heard', b ? 'wn' and (coalesce((rb ->> 'wn_free')::boolean, false) or coalesce((b -> 'called' ->> p_uid::text)::int, -99) >= f.round - (rb ->> 'wn_heard')::int),
+    'wn_free', coalesce((rb ->> 'wn_free')::boolean, false),
     'wn_fail', coalesce((b ->> 'wn_fail')::int, 0), 'wn_fails', (rb ->> 'wn_fails')::int,
     'gone', (select coalesce(jsonb_agg(x.owner_id), '[]'::jsonb) from public.world_gw_members x where x.fight_id = p_fight and x.fx ? 'gone'));
 end $f$;

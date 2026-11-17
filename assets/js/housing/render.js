@@ -183,6 +183,7 @@ export function makeRoom(N, defs) {
       case 'slat': { const sv = (gx * 6) % 1; if (sv < .12) return gd; return Math.floor(gx * 6) % 2 ? gb : (hash(x, y >> 1) < .08 ? gl : ga); }
       case 'cobble': { const cx = Math.floor(gx * 2 + (Math.floor(gy * 2) % 2) * .5), cy = Math.floor(gy * 2), cu = (gx * 2 + (cy % 2) * .5) % 1, cv = (gy * 2) % 1; if (cu < .08 || cv < .08) return sh(gg.a, .58); return hash(cx, cy) < .4 ? gb : hash(cx + 7, cy) < .2 ? gl : ga; }
       case 'wanja': { const qx = Math.floor(gx * 4) % 4, qy = Math.floor(gy * 4) % 4, line = (qy === 0 && qx !== 3) || (qx === 0 && qy !== 0 && qy !== 3) || (qy === 2 && qx >= 1 && qx !== 3) || (qx === 2 && qy === 1); if (u < .04 || v < .04) return gd; return line ? gd : (tx + ty) % 2 ? gb : ga; }
+      case 'vortex': { const cx = (gx % 2) - 1, cy = (gy % 2) - 1, r = Math.hypot(cx, cy), f = ((Math.atan2(cy, cx) / (Math.PI * 2) + r * 1.5) % 1 + 1) % 1, ac = gg.c || '#4f9aa6'; if (r < .12) return sh(ac, 1.25); if (r < .86) { if (f < .17) return P(ac); if (f < .24) return sh(ac, .62); return f > .6 ? gb : ga; } if (r < .92) return sh(ac, .5); const pl = Math.floor(gy * 3); if ((gy * 3) % 1 < .1 || ((gx + pl * .73) % 2.5) < .05) return gd; return pl % 2 ? gb : (hash(x >> 1, y) < .08 ? gl : ga); }
       default: if (u < .05 || v < .05) return gd; return (tx + ty) % 2 ? gb : (hash(x, y) < .06 ? gl : ga);
     }
   }
@@ -199,6 +200,8 @@ export function makeRoom(N, defs) {
       case 'saekdong': { const band = Math.floor((z - 4) / 6) % 5, cols = ['#c8382e', '#e8a53a', '#3f8a5a', '#3f6fb5', '#e6d8bc']; if (z < WALLH - 34) return hash(x, y) < .04 ? wl[side] : wc[side]; return side ? sh(cols[band], .84) : P(cols[band]); }
       case 'wave': { const wv = Math.sin(t * Math.PI * 4) * 2.2, r = ((z + wv) % 9 + 9) % 9; return r < 1.4 ? wl[side] : r < 2.2 ? wd[side] : wc[side]; }
       case 'blossom': { const row = Math.floor(z / 14), off = row % 2 ? .5 : 0, fx = (t * 1.2 + off) % 1, fz = (z / 14) % 1, dx = (fx - .5) * 13, dz = (fz - .5) * 14, d = Math.hypot(dx, dz), a = Math.atan2(dz, dx); if (d < 1.3) return side ? sh('#f2d06a', .84) : P('#f2d06a'); if (d < 4.2 && (d < 2.4 || Math.cos(5 * a) > -.2)) return side ? sh('#e58fa8', .84) : P('#e58fa8'); if (Math.abs(dz - dx * .9 - 5) < .7 && d > 4.2 && d < 8) return wd[side]; return hash(x, y) < .03 ? wl[side] : wc[side]; }
+      case 'vortex': { if (z < 13) { const wv = Math.sin(t * Math.PI * 3) * 1.6, r = ((z + wv) % 6.5 + 6.5) % 6.5; return r < 1.1 ? wl[side] : r < 1.9 ? wd[side] : wc[side]; } const row = Math.floor((z - 13) / 22), off = row % 2 ? .5 : 0, lx = (((t + off) % 1) - .5) * 16, lz = ((z - 13) % 22) - 11, r = Math.hypot(lx, lz), f = ((Math.atan2(lz, lx) / (Math.PI * 2) + r / 4.6) % 1 + 1) % 1; if (r < 9) { if (r < 1.2) return side ? sh(pp.l, 1.05) : sh(pp.l, 1.25); if (f < .2) return wl[side]; if (f < .27) return wd[side]; } return hash(x, y) < .035 ? wl[side] : wc[side]; }
+      case 'changho': { const fc = pp.f || '#8a8274', fr = side ? sh(fc, .84) : P(fc); if ((t % 1) < .07 || ((z - 4) % 27) < 1.6) return side ? sh(fc, .7) : sh(fc, .85); if (((t * 3) % 1) < .09 || ((z - 4) % 9) < .9) return fr; return hash(Math.floor(t * 3), Math.floor((z - 4) / 9)) < .28 ? wl[side] : wc[side]; }
       default: if ((z % 16) < 1) return wl[side]; return hash(x, y) < .05 ? wl[side] : wc[side];
     }
   }
