@@ -25,3 +25,7 @@ select pg_temp.yh_patch('public.world_quest_task_label(jsonb)',
       (select string_agg$n$);
 
 select pg_temp.yh_patch('public.world_faction_task_label(jsonb)', $o$분 넘게)$o$, $n$분 이상)$n$);
+
+select pg_temp.yh_patch('public.world_battle_open(uuid,text,uuid,integer,integer)',
+  $o$lv := least(greatest(lv, m.min_level), public.world_level_cap()$o$,
+  $n$lv := least(greatest(lv, CASE WHEN m.region_id = p_region THEN m.min_level ELSE 1 END), public.world_level_cap()$n$);
