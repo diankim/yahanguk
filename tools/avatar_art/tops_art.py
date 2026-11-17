@@ -248,6 +248,41 @@ TOPS = {
         "...xaaaaaaaab...",
         "...ybbbdbbbby...",
     ]),
+    'ug_chain_robe': ('사슬 수 도포', {'a': '#2a3a56', 'b': '#1c2840', 'c': '#e2e8f0', 'd': '#8e9cb4', 'e': '#5ab8d0'}, [
+        "................",
+        "....xcdcdcb.....",
+        ".bxaaaacdaaaaby.",
+        ".bxaeaadcaaeaby.",
+        ".bbdddddcddddby.",
+        "..bxaaacdaaab...",
+        "...xaaadcaaab...",
+        "..xaaaacdaaaab..",
+        "..xaeaadcaaeab..",
+        "..ecdcdcdcdcde..",
+    ]),
+    'ug_ink_longcoat': ('먹빛 장포', {'a': '#2c2c36', 'b': '#1e1e26', 'c': '#ece6d8', 'd': '#6e6e80', 'e': '#b8324a'}, [
+        "................",
+        "....xacccab.....",
+        ".bxaaaaccaaaaby.",
+        ".dbaaaaacaaaabd.",
+        "cdbeeeeebeeeebdc",
+        ".dbxaaab.xaab.d.",
+        "...xaab..xaab...",
+        "..xaaab..xaaab..",
+        "..xaadb..xdaab..",
+        "..ydbdd..ddbdy..",
+    ]),
+    'ug_whitenight_cheollik': ('흰 밤 철릭', {'a': '#e6e3d8', 'b': '#c2bdae', 'c': '#fbf8ee', 'd': '#c9a24a', 'e': '#f2d06a'}, [
+        "................",
+        "....dacccad.....",
+        "..bxdaaccaadby..",
+        "..bxaadeedaaby..",
+        "..bxaaaddaaaby..",
+        "...dddddeddddd..",
+        "...xaabaeabaay..",
+        "..xaaabadabaay..",
+        "..ydbbdbbdbbdy..",
+    ]),
 }
 
 
@@ -335,9 +370,27 @@ BOTTOM_SHAPES = {
         ".....ss..ss.....",
         "....zzu..zzu....",
     ],
+    'tide': [
+        "....xaaaaaab....",
+        "...xaaaaaaaab...",
+        "...xdaadaadab...",
+        "..xddaddaddadb..",
+        "..bdbbbdbbbdbb..",
+        "..bbddbbddbbdb..",
+        "..ydbbdbbdbbdy..",
+        "....zz....zz....",
+    ],
+    'hakama': [
+        "...xadaadaadab..",
+        "..xaadaadaadaab.",
+        "..xaadab.xadaab.",
+        ".xaadab..xadaab.",
+        ".xaadab..xadaab.",
+        "....zzu..zzu....",
+    ],
 }
 
-SKIRTS = ('skirt', 'pleat', 'bloom', 'mini')
+SKIRTS = ('skirt', 'pleat', 'bloom', 'mini', 'tide')
 
 BOTTOMS = {
     'guard': ('검은 바지와 가죽 장화', 'boots', '#3a3030', '#2a2222', '#4a3020', '#c9a24a'),
@@ -360,6 +413,8 @@ BOTTOMS = {
     'shorts': ('무릎 반바지', 'short', '#c8a46a', '#a8844a', '#f4f4f4', '#efe7d2'),
     'miniskirt': ('주름 짧은 치마', 'mini', '#3a4a6a', '#2c3a56', '#2a2228', '#efe7d2'),
     'flowerskirt': ('꽃무늬 치마', 'bloom', '#f2d06a', '#d8b04a', '#f8f2e6', '#e86a8a'),
+    'ug_tide_skirt': ('물결 겹치마', 'tide', '#2e5a78', '#1e4058', '#1a1e28', '#cfeaf2'),
+    'ug_ink_hakama': ('먹줄 바지', 'hakama', '#d2cdbf', '#aca595', '#26222a', '#26262e'),
 }
 
 
@@ -582,6 +637,48 @@ ACC = {
         ".aabaabaabaabaabaabaa.",
         "aabaabaabaabaabaabaaba",
         "dddddddddddddddddddddd",
+    ]),
+    'ug_void_crown': ('빈 왕관', {'a': '#1e1e28', 'b': '#4a4e62', 'c': '#3aa8cc', 'd': '#bff0fa'}, 8, 0, [
+        "d....dd....d",
+        "c...acca...c",
+        "ab.ab..ba.ba",
+        "abab.cd.baba",
+        "babaabbaabab",
+    ]),
+    'ug_brush_hairpin': ('붓 비녀', {'a': '#e2cc96', 'b': '#1e1e24', 'c': '#d8a23a', 'd': '#f6f0e2', 'e': '#3f8a6a', 'r': '#b8324a'}, 2, 0, [
+        "b........",
+        "bb.......",
+        "dbb......",
+        ".ddc.....",
+        "..cca....",
+        "..r.aa...",
+        "..e..aa..",
+        ".rr...aa.",
+        ".r.r...ac",
+    ]),
+    'ug_counter_hat': ('셈꾼 갓', {'a': '#221c20', 'b': '#4a4044', 'c': '#efe2c4', 'd': '#b8324a', 'e': '#d8b25a'}, 4, 1, [
+        "................c.c.",
+        ".......aaaaaa..c.c..",
+        ".......abaaaa.c.c...",
+        ".......abaaaacdc....",
+        ".......dddddde......",
+        "...aaaaaaaaaaaaaa...",
+        "aaabaaaaaaaaaaaaabaa",
+        "..e..............e..",
+        "..d..............d..",
+        "..e..............e..",
+    ]),
+    'ug_wick_hairpin': ('등심 머리꽂이', {'a': '#7a5230', 'b': '#f2d06a', 'c': '#e8743a', 'd': '#fff6d8', 'e': '#b8323a'}, 17, 0, [
+        "...c..",
+        "..cbc.",
+        ".cbdbc",
+        ".bddb.",
+        ".cbdbc",
+        "..ebe.",
+        ".aaaaa",
+        "..aaa.",
+        "..a...",
+        ".a....",
     ]),
 }
 

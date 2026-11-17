@@ -562,6 +562,8 @@ ug_rules = dict(open_quest=U.OPEN_QUEST, shop_region=U.SHOP_REGION, level=U.LEVE
                 boards=U.BOARDS, shop=[dict(key=f'{b}:{i}', board=b, kind=k, id=i, name=n, price=pr) for b, k, i, n, pr in U.SHOP])
 w(f"""create or replace function public.world_ultimate_rules() returns jsonb language sql immutable set search_path = '' as $r$ select {J(ug_rules)}::jsonb $r$;""")
 part('../ultimate/shop.sql')
+for _f in ('outfits.sql', 'pets_cosmetics.sql'):
+    if os.path.exists(os.path.join(os.path.dirname(HERE), 'ultimate', _f)): part('../ultimate/' + _f)
 w(f"""do $c$ declare x jsonb; ok boolean; miss text[] := '{{}}';
 begin
   for x in select jsonb_array_elements(public.world_ultimate_rules() -> 'shop') loop
