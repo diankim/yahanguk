@@ -545,6 +545,7 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
 for bs in ('gapgwi', 'baekya'):
     bp = os.path.join(os.path.dirname(HERE), bs, 'boss.sql')
     if os.path.exists(bp): w(open(bp).read())
+part('j_boss_hooks.sql')
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
