@@ -44,3 +44,5 @@ except Exception:
     sys.exit(0)
 if readonly(q):
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": "읽기만 하는 SELECT"}}))
+else:
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "운영 DB를 바꿀 수 있는 조회"}}))
