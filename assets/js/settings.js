@@ -73,6 +73,7 @@ export function mountNotifications(btn) {
       shown.add(n.id); notes.unshift(n); drawDot();
       window.dispatchEvent(new CustomEvent('yh-note', { detail: n }));
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
+      else if (n.kind === 'ride_departed') loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_travel_party_notice' }));
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     };

@@ -124,6 +124,7 @@ begin
   execute format('create or replace function public.world_weak_safe_rules() returns jsonb language sql immutable as %L', format('select %L::jsonb', j::text));
 end $d$;""")
 part('b_rules.sql')
+part('c_ride.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
