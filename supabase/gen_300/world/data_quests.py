@@ -197,7 +197,7 @@ PLAN = {
     ]),
     5: dict(L=45, region=YAMEN, after=['mdq_4'], items={'century_form_scrap': 2, 'bleached_lantern_paper': 2}, steps=[
         ('봉인고에서 다섯이 함께 첫 밤을 쉬고 식은 찻잔을 앞에 둔다', nd(VAULT, rs(VAULT))),
-        ('봉인고에서 부적목 6개를 모아 가공 부적목 3개를 만들고 청파에게 넘긴다', nd(VAULT, ga(VAULT, 6, ['wood']), cr('lumber', 3))),
+        ('부적목 6개를 모아 가공 부적목 3개를 만들고 봉인고에서 청파에게 넘긴다', nd(VAULT, ga(None, 6, ['wood']), cr('lumber', 3))),
         ('꺼진 관아 터에 도착해 3번 탐색한다', nd(YAMEN, tv(YAMEN), sr(YAMEN, 3))),
         ('꺼진 관아 터에서 4번 채집하고 영맥 약선탕 1그릇을 끓여 첫 저녁으로 넘긴다', nd(YAMEN, ga(YAMEN, 4), cr('bark_stew', 1))),
         ('꺼진 관아 터에서 첫 야영으로 쉰다', nd(YAMEN, rs(YAMEN))),

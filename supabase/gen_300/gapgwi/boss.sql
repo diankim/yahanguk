@@ -20,10 +20,10 @@ begin
   execute format('create or replace function public.world_boss_rules() returns jsonb language sql immutable set search_path = '''' as $f$ select %L::jsonb $f$',
     (public.world_boss_rules() - 'gapgwi') || jsonb_build_object('gapgwi', $j${
   "name": "값귀", "fight": "값을 매기는 장부", "place": "붉은 사당 골목", "arc": "명등기", "region": "red_shrine_lane", "lv": 47,
-  "quest": "mdq_7", "quest_name": "명등기 7장", "item": "red_shrine_lacquer", "item_name": "붉은 사당 옻", "item_where": "붉은 사당 골목에서 채집해 얻습니다.",
+  "quest": "mdq_7", "quest_name": "외전 「명등기」 7장 「묻은 이름」", "item": "red_shrine_lacquer", "item_name": "붉은 사당 옻", "item_where": "붉은 사당 골목에서 채집해 얻습니다.",
   "min": 18, "hp_min": 8000, "hp_atk": 42, "hp_n": [1.2, 0.8, 0.65, 0.62], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [40, 4], "enrage": 0.15,
   "first": {"gil": 2000, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
-  "hard_quest": "mdq_8", "hard_quest_name": "명등기 8장 「끊긴 기름」",
+  "hard_quest": "mdq_8", "hard_quest_name": "외전 「명등기」 8장 「끊긴 기름」",
   "modes": {"story": "이야기판", "hard": "깊은 장부"},
   "phases": ["판결 망치", "바가지", "장부 맞추기", "장 닫힘"],
   "mech_names": {"judge": "판결 망치", "bargain": "바가지", "ledger": "장부 맞추기", "tether": "외상 줄", "close": "장 닫힘", "basket": "떨이 바구니", "tagm": "값표 맞추기"},

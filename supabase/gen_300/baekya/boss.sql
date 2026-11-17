@@ -18,10 +18,10 @@ begin
   execute format('create or replace function public.world_boss_rules() returns jsonb language sql immutable set search_path = '''' as $f$ select %L::jsonb $f$',
     (public.world_boss_rules() - 'baekya') || jsonb_build_object('baekya', $j${
   "name": "백야", "fight": "흰 밤의 맹약 마당", "place": "맹약 마당", "arc": "명등기", "region": "pact_court", "lv": 50,
-  "quest": "mdq_15", "quest_name": "명등기 15장", "item": "pact_stone_dust", "item_name": "맹약 돌가루", "item_where": "맹약 마당에서 채집해 얻습니다.",
+  "quest": "mdq_15", "quest_name": "외전 「명등기」 15장 「검은 끈의 장」", "item": "pact_stone_dust", "item_name": "맹약 돌가루", "item_where": "맹약 마당에서 채집해 얻습니다.",
   "min": 18, "hp_min": 9000, "hp_atk": 46, "hp_n": [0.8, 0.9, 0.8, 1.0], "raw_n": [0.6, 0.62, 0.8, 0.85], "raw": [44, 4], "enrage": 0.15,
   "first": {"gil": 2500, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
-  "hard_quest": "mdq_17", "hard_quest_name": "명등기 17장",
+  "hard_quest": "mdq_17", "hard_quest_name": "외전 「명등기」 17장 「명등」",
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
   "phases": ["화살비", "붉은 붓", "물방울과 가루", "흰 밤"],
   "mech_names": {"arrow": "화살비", "brush": "붉은 붓", "drop": "물방울·흰 가루", "tower": "등 기둥 탑", "clock": "멈춤 시계", "num": "차례 화살", "big": "굵은 화살", "gust": "꺼져 가는 등", "wn": "흰 밤", "sdrop": "멈춘 물방울", "flick": "흔들리는 등"},
