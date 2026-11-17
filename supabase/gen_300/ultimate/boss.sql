@@ -23,8 +23,8 @@ begin
   r := jsonb_set(r, '{gwiheo,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{mukjeok,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gapgwi,modes,ultimate}', '"무용담"');
-  r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [9, 17, 23], "name": "구중 봉주", "rounds": 26}, {"boss": "gwiheo", "cuts": [14, 24, 33], "name": "귀허의 주인", "rounds": 40}], "hp_n": [1, 0.40, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.25, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [28, 3], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [13, 24, 32], "name": "값귀", "rounds": 38}, {"boss": "baekya", "cuts": [12, 23, 33], "name": "백야", "rounds": 44}], "hp_n": [1, 1.1, 1.3, 1.2],
+  r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.", "acts": [{"boss": "sealed_lord", "cuts": [9, 17, 23], "name": "구중 봉주", "rounds": 26}, {"boss": "gwiheo", "cuts": [14, 24, 33], "name": "귀허의 주인", "rounds": 40}], "hp_n": [1, 0.40, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.25, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
+  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [28, 3], "tip": "역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.", "acts": [{"boss": "gapgwi", "cuts": [13, 24, 32], "name": "값귀", "rounds": 38}, {"boss": "baekya", "cuts": [12, 23, 33], "name": "백야", "rounds": 44}], "hp_n": [1, 1.1, 1.3, 1.2],
     "board": {"hide": true, "hand_mul": 0.6, "mech_mul": 1, "fail_party": {"raw": 15}, "budget": 300,
       "judge": {"every": 2, "off": 1, "left": 2, "raw": 45},
       "bargain": {"every": 3, "off": 0, "left": 2, "cap": 5, "raw": 40},
@@ -233,7 +233,7 @@ begin
       when act is null or act ->> 'a' in ('guard', 'brace') then 'guard' else coalesce(act ->> 'a', 'guard') end into c2 from public.world_gw_members where fight_id = p_fight and owner_id = p[2];
     select string_agg(name, '·') into names from public.world_gw_members where fight_id = p_fight and owner_id = any (p);
     if c1 = c2 then
-      perform public.world_gw_say(p_fight, p_round, 'good', names || ' — 사슬이 풀렸다.');
+      perform public.world_gw_say(p_fight, p_round, 'good', names || ' — 사슬이 풀렸습니다.');
     else
       perform public.world_gw_say(p_fight, p_round, 'bad', names || ' — 사슬이 조여들었다.');
       perform public.world_gw_hurt(p_fight, p[1], (rb ->> 'pair_raw')::int, p_round, '조여든 사슬에');
@@ -243,10 +243,10 @@ begin
   if lord ? 'charge' then
     lord := jsonb_set(lord, '{charge,dmg}', to_jsonb(coalesce((lord -> 'charge' ->> 'dmg')::numeric, 0) + p_dmg));
     if (lord -> 'charge' ->> 'dmg')::numeric >= (lord -> 'charge' ->> 'need')::numeric then
-      perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || ').');
+      perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌습니다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || ').');
       lord := lord - 'charge';
     elsif ar >= (lord -> 'charge' ->> 'end')::int then
-      perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || '). 모두가 겨우 숨만 붙어 있다.');
+      perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌습니다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || '). 모두가 겨우 숨만 붙어 있다.');
       update public.world_gw_members set hp = least(hp, 1) where fight_id = p_fight and out_rounds = 0 and not rest;
       lord := lord - 'charge';
     end if;
@@ -276,7 +276,7 @@ create or replace function public.world_ug_wipe(p_fight uuid, p_round integer, p
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 begin
-  perform public.world_gw_say(p_fight, p_round, 'bad', p_why || ' 모두가 쓰러졌다.');
+  perform public.world_gw_say(p_fight, p_round, 'bad', p_why || ' 모두가 쓰러졌습니다.');
   update public.world_gw_members set hp = 0, falls = falls + case when out_rounds = 0 then 1 else 0 end where fight_id = p_fight;
   perform public.world_gw_settle(p_fight, false);
 end $f$;
@@ -480,9 +480,9 @@ select pg_temp.yh_patch('public.world_gw_ready_check(uuid,text,text)',
     if c.level < public.world_level_cap() then raise exception '무용담은 Lv%만 들어갈 수 있습니다.', public.world_level_cap(); end if;
     if not public.world_quest_done(p_uid, public.world_ultimate_rules() -> 'boards' -> p_boss ->> 'open_quest') then raise exception '「%」을(를) 마쳐야 %이(가) 열립니다.', (select q.title from public.world_quests q where q.quest_id = public.world_ultimate_rules() -> 'boards' -> p_boss ->> 'open_quest'), public.world_ultimate_rules() -> 'boards' -> p_boss ->> 'name'; end if;
     if not exists (select 1 from public.world_gw_records r where r.owner_id = p_uid and r.boss_id = p_boss and r.kills > 0) then
-      raise exception '%을(를) 한 번 이상 깨야 무용담에 들어갈 수 있습니다.', br -> 'modes' ->> 'hard'; end if;
+      raise exception '% 「%」을(를) 한 번 이상 깨야 무용담에 들어갈 수 있습니다.', br ->> 'name', br -> 'modes' ->> 'hard'; end if;
     if p_boss = 'gapgwi' and not exists (select 1 from public.world_gw_records r where r.owner_id = p_uid and r.boss_id = 'baekya' and r.kills > 0) then
-      raise exception '%도 한 번 이상 깨야 %에 들어갈 수 있습니다.', public.world_boss_rules() -> 'baekya' -> 'modes' ->> 'hard', public.world_ultimate_rules() -> 'boards' -> 'gapgwi' ->> 'name'; end if;
+      raise exception '백야 「%」도 한 번 이상 깨야 %에 들어갈 수 있습니다.', public.world_boss_rules() -> 'baekya' -> 'modes' ->> 'hard', public.world_ultimate_rules() -> 'boards' -> 'gapgwi' ->> 'name'; end if;
     return;
   end if;$n$);
 

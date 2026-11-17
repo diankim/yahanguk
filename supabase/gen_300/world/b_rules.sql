@@ -120,7 +120,7 @@ begin
   if c.downed_at is null and c.health > 0 then raise exception '쓰러진 상태가 아닙니다.'; end if;
   fx := public.world_domain_fx(uid);
   rc := fx -> 'recall';
-  if rc is null or not coalesce((fx ->> 'no_rescue')::boolean, false) then raise exception '이곳에서는 본부 구조대를 부를 수 있습니다.'; end if;
+  if rc is null or not coalesce((fx ->> 'no_rescue')::boolean, false) then raise exception '「제 이름 외기」는 백야 속에서만 쓸 수 있습니다. 이곳에서는 본부 구조대를 부르세요.'; end if;
   used := (select count(*) from public.world_events e where e.actor_id = uid and e.event_type = 'rescue' and e.payload ->> 'recall' = 'true'
             and e.created_at >= (date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul'));
   if used >= (rc ->> 'per_day')::int then raise exception '제 이름 외기는 하루 %번입니다. 동료의 구조나 회생 부적으로 일어나세요.', (rc ->> 'per_day')::int; end if;

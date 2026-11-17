@@ -1,7 +1,7 @@
 do $$
 declare r jsonb := public.world_boss_rules();
 begin
-  r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [60, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.",
+  r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [60, 6], "tip": "역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.",
     "acts": [{"boss": "mukjeok", "cuts": [10, 20, 30], "name": "먹그림자", "rounds": 36}], "phases": ["먹줄", "따라 쓰는 붓", "가운데 칸", "먹비"],
     "hp_n": [1, 1.0, 1.35, 1.5], "items": 3, "raw_n": [1, 1.2, 1.3, 1.3], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2,
     "board": {"hand_mul": 1.6, "mech_mul": 1, "strokes": 9, "aoe_every": 6,

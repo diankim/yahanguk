@@ -120,7 +120,7 @@ begin
   update public.world_gw_fights set board = coalesce(board, '{}'::jsonb) || jsonb_build_object('hz', '[]'::jsonb, 'tags', tags, 'closed', '[]'::jsonb, 'seq', 0, 'hid', 0, 'broke', 0)
    where fight_id = p_fight;
   perform public.world_gw_say(p_fight, 0, 'phase', '사당 마룻바닥 밑에서 젖은 장부 더미가 기어 나와 골목 끝 저울 위에 앉는다. 위아래 좌판마다 값표가 붙어 있고, 저마다의 머리 위에도 값(섬)이 매겨진다.');
-  perform public.world_gw_say(p_fight, 0, 'phase', '값귀가 주판알을 튕긴다. 「한 줄에 쌀 두 섬. 휘두를수록 값이 오르지. 흥정을 하든가, 서로 값을 매겨 주든가.」');
+  perform public.world_gw_say(p_fight, 0, 'phase', case when (select g.mode from public.world_gw_fights g where g.fight_id = p_fight) = 'story' then '값귀가 주판알을 튕긴다. 「한 줄에 쌀 두 섬. 휘두를수록 값이 오르지. 흥정을 하든가, 서로 값을 매겨 주든가.」' else '값귀가 주판알을 튕긴다. 「한 줄에 쌀 두 섬. 휘두를수록 값이 오르지.」' end);
 end $f$;
 
 create or replace function public.world_gg_round(p_fight uuid)
@@ -282,7 +282,7 @@ begin
         perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'judge' ->> 'raw')::numeric * case when p_broke then 0.5 else 1 end, p_round, '판결 망치에', true);
       end loop;
     elsif h ->> 'k' = 'bargain' then
-      perform public.world_gw_say(p_fight, p_round, 'boss', '값귀가 바가지를 씌웁니다! 값이 비쌀수록 크게 거둡니다.');
+      perform public.world_gw_say(p_fight, p_round, 'boss', '값귀가 바가지를 씌운다!');
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
         perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'bargain' ->> 'raw')::numeric * ((rb -> 'bargain' ->> 'base')::numeric + (rb -> 'bargain' ->> 'k')::numeric * coalesce(x.gval, 0))
           * case when p_broke then 0.5 else 1 end, p_round, x.gval || '섬 바가지에', true);
@@ -314,7 +314,7 @@ begin
       end if;
     elsif h ->> 'k' = 'close' then
       closed := closed || (h ->> 'col')::int;
-      perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'col') || '번째 줄 좌판이 덧문을 내렸습니다. 그 줄에 서 있으면 라운드마다 다칩니다.');
+      perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'col') || '번째 줄 좌판이 덧문을 내렸습니다.');
     elsif h ->> 'k' = 'basket' then
       select string_agg(y.name, '·') into nm from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = (h ->> 'c')::int
         and coalesce(y.act ->> 'a', 'guard') in ('guard', 'brace');

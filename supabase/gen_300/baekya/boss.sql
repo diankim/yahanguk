@@ -409,7 +409,7 @@ begin
       perform public.world_gw_say(p_fight, p_round, 'voice', coalesce(rb -> 'voices' ->> (lit_n - 1), '누군가 부른다.'));
       if lit_n >= (wn ->> 'need')::int then
         extra := f.hp;
-        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌다. 하얀 몸에서 이름이 우수수 떨어진다.');
+        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌습니다. 하얀 몸에서 이름이 우수수 떨어집니다.');
       else
         extra := extra + round((wn ->> 'hp')::numeric / (wn ->> 'need')::int);
         perform public.world_gw_say(p_fight, p_round, 'good', '하얀 몸에서 이름 하나가 떨어져 금빛 가루로 흩어집니다.');
@@ -771,9 +771,9 @@ select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
     if p_move is not null and p_move = me.pos then p_move := null; end if;
     if p_move is not null and not (p_move::int = any (public.world_by_nb(me.pos))) then raise exception '바로 옆 칸으로만 옮겨 설 수 있습니다.'; end if;
     if p_action = 'move' and p_move is null then raise exception '옮겨 설 칸을 고르세요.'; end if;
-    if p_action = 'attack' and f.board ? 'wn' then raise exception '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.'; end if;
+    if p_action = 'attack' and f.board ? 'wn' then raise exception '%', case when f.mode = 'story' then '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.' else '흰 밤에는 칼끝이 닿지 않습니다.' end; end if;
     if p_action = 'coop' and f.board ? 'wn' and coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = p_item), false) then
-      raise exception '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.'; end if;
+      raise exception '%', case when f.mode = 'story' then '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.' else '흰 밤에는 칼끝이 닿지 않습니다.' end; end if;
     if p_action = 'sweep' and (p_item is null or p_item !~ '^[0-9]+$') then raise exception '걷어 낼 칸을 고르세요.'; end if;
   end if;
   if not mk and f.boss_id not in ('baekya', 'gapgwi') and (p_action = 'recall' or p_move is not null) then$n$);

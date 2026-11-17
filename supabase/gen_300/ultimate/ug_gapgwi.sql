@@ -404,7 +404,7 @@ declare x record; b jsonb;
 begin
   if p_fails <= 0 then return; end if;
   select board into b from public.world_gw_fights where fight_id = p_fight;
-  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 모두가 조금씩 다친다.');
+  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 모두가 조금씩 다칩니다.');
   for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
     perform public.world_gw_hurt(p_fight, x.owner_id, round(p_raw * p_fails)::int, p_round, '번진 실수에');
     if p_fade then b := public.world_by_fade(p_fight, b, x.owner_id, p_fails, p_round); end if;
@@ -724,7 +724,7 @@ begin
       perform public.world_gw_say(p_fight, p_round, 'voice', coalesce(rb -> 'voices' ->> (lit_n - 1), '누군가 부른다.'));
       if lit_n >= (wn ->> 'need')::int then
         extra := f.hp;
-        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌다. 하얀 몸에서 이름이 우수수 떨어진다.');
+        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌습니다. 하얀 몸에서 이름이 우수수 떨어집니다.');
       else
         extra := extra + round((wn ->> 'hp')::numeric / (wn ->> 'need')::int);
       end if;

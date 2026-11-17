@@ -156,7 +156,7 @@ begin
   if c.downed_at is null and c.health > 0 then raise exception '쓰러진 상태가 아닙니다.'; end if;
   fx := public.world_domain_fx(uid);
   rc := fx -> 'recall';
-  if rc is null or not coalesce((fx ->> 'no_rescue')::boolean, false) then raise exception '이곳에서는 본부 구조대를 부를 수 있습니다.'; end if;
+  if rc is null or not coalesce((fx ->> 'no_rescue')::boolean, false) then raise exception '「제 이름 외기」는 백야 속에서만 쓸 수 있습니다. 이곳에서는 본부 구조대를 부르세요.'; end if;
   used := (select count(*) from public.world_events e where e.actor_id = uid and e.event_type = 'rescue' and e.payload ->> 'recall' = 'true'
             and e.created_at >= (date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul'));
   if used >= (rc ->> 'per_day')::int then raise exception '제 이름 외기는 하루 %번입니다. 동료의 구조나 회생 부적으로 일어나세요.', (rc ->> 'per_day')::int; end if;
@@ -637,6 +637,9 @@ select pg_temp.yh_patch('public.world_gwiryeong_roll()',
 select pg_temp.yh_patch('public.world_housing_event_trg()',
   $o$  if new.actor_id is null then return new; end if;$o$,
   $n$  if new.actor_id is null or coalesce((p ->> 'borrowed')::boolean, false) then return new; end if;$n$);
+select pg_temp.yh_patch('public.world_battle_action(text,text)',
+  $o$'mentor_xp', coalesce((mt ->> 'xp')::int, 0), 'mentor', mt ->> 'name');$o$,
+  $n$'mentor_xp', coalesce((mt ->> 'xp')::int, 0), 'mentor', mt ->> 'name', 'borrowed', coalesce((a.pfx ->> 'borrowed')::boolean, false));$n$);
 
 insert into public.world_map_regions(region_id, territory_id, territory_name, region_name, region_type, danger_level, min_level, description, travel_from, gather_nodes, faction_control, is_starting_area, active, world_x, world_y, elevation, terrain_cost, rest_spot_type, rest_spot_name, rest_quality, rest_fee, rest_risk, is_safe_zone, shop_id, shop_name, has_stable, contested)
 select x.region_id, x.territory_id, x.territory_name, x.region_name, x.region_type, x.danger_level, x.min_level, x.description, array(select jsonb_array_elements_text(x.travel_from)), '{}'::text[], x.faction_control, false, true, x.world_x, x.world_y, x.elevation, x.terrain_cost, x.rest_spot_type, x.rest_spot_name, x.rest_quality, x.rest_fee, x.rest_risk, x.is_safe_zone, x.shop_id, x.shop_name, false, false from jsonb_to_recordset($J$[{"region_id":"deungdo_landing","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"남문 수로 선착","region_type":"village","danger_level":9,"min_level":45,"description":"옛 남문 물길이 닿는 돌계단이다. 흑련 장부지기와 수향 뱃사람이 임시 야영소를 차려 두었고, 거룻배 몇 척이 말뚝에 매여 있다.","travel_from":["seal_vault","dark_yamen"],"faction_control":"무주 금역","world_x":252,"world_y":528,"elevation":-1,"terrain_cost":0.8,"rest_spot_type":"inn","rest_spot_name":"선착 야영소 천막","rest_quality":2,"rest_fee":170,"rest_risk":0,"is_safe_zone":true,"shop_id":"deungdo_landing_shop","shop_name":"선착 야영소","theme":"water"},{"region_id":"dark_yamen","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"꺼진 관아 터","region_type":"ruins","danger_level":10,"min_level":45,"description":"흰 하늘 아래 쓰러진 대문과 현판 하나만 남은 옛 관아다. 안채 벽에는 백 년 전 서식이 그대로 붙어 있다.","travel_from":["deungdo_landing","martial_row","red_shrine_lane","old_ferry_market"],"faction_control":"무주 금역","world_x":226,"world_y":562,"elevation":1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"city"},{"region_id":"martial_row","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"무관 거리","region_type":"ruins","danger_level":10,"min_level":46,"description":"북령 무관들이 살던 거리다. 돌바닥 틈마다 녹지 않는 서리가 끼었고, 연무 마당에는 화살이 허공에 멈춰 있다.","travel_from":["dark_yamen","lamp_rest"],"faction_control":"무주 금역","world_x":172,"world_y":578,"elevation":1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"mountain"},{"region_id":"red_shrine_lane","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"붉은 사당 골목","region_type":"ruined_temple","danger_level":10,"min_level":47,"description":"적월 무리가 등을 거꾸로 걸어 둔 골목이다. 사당 벽은 기름때 낀 축문으로 덮였고, 담장 너머에 기름 곳간이 있다.","travel_from":["dark_yamen","lamp_rest"],"faction_control":"무주 금역","world_x":214,"world_y":612,"elevation":0,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"shrine"},{"region_id":"old_ferry_market","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"옛 나루 저자","region_type":"coast","danger_level":10,"min_level":48,"description":"물이 마른 물길 위에 배들이 얹혀 있는 수향 무리의 저자다. 돛대 셋이 만나는 자리의 우물 밑으로 물굴이 이어진다.","travel_from":["dark_yamen","lamp_rest"],"faction_control":"무주 금역","world_x":268,"world_y":602,"elevation":-1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"water"},{"region_id":"lamp_rest","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"등지기 쉼막","region_type":"village","danger_level":9,"min_level":48,"description":"명등지기가 등을 고치던 쉼막 터다. 수향 뱃사람들이 처마를 고쳐 거처를 차렸고, 늘 등 하나를 켜 둔다.","travel_from":["martial_row","red_shrine_lane","old_ferry_market","first_observatory","ash_palace"],"faction_control":"무주 금역","world_x":216,"world_y":650,"elevation":0,"terrain_cost":0.8,"rest_spot_type":"inn","rest_spot_name":"쉼막 등불 곁 자리","rest_quality":2,"rest_fee":180,"rest_risk":0,"is_safe_zone":true,"shop_id":"lamp_rest_shop","shop_name":"쉼막 등 가게","theme":"city"},{"region_id":"first_observatory","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"첫 관상대","region_type":"celestial_tower","danger_level":10,"min_level":49,"description":"천명 무리가 별을 재던 옛 관상대다. 녹슨 혼천의와 별 기록판이 남았지만 흰 하늘에는 별이 하나도 없다.","travel_from":["lamp_rest","pact_court"],"faction_control":"무주 금역","world_x":170,"world_y":690,"elevation":3,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"sky"},{"region_id":"ash_palace","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"잿빛 왕궁 터","region_type":"ruins","danger_level":10,"min_level":49,"description":"등도 남쪽 끝, 남명 무리의 옛 궁궐 터다. 하얗게 바랜 기둥 사이 돌 단 위에 빈 옥좌가 놓여 있다.","travel_from":["lamp_rest","pact_court"],"faction_control":"무주 금역","world_x":262,"world_y":692,"elevation":1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"desert"},{"region_id":"pact_court","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"맹약 마당","region_type":"sealed_shrine","danger_level":10,"min_level":50,"description":"흰 밤이 가장 짙은 등도 한가운데다. 일곱 홈이 원을 그린 돌상 둘레에 꺼진 등롱 일곱이 서 있고, 가장자리로 먹 도랑이 감돈다.","travel_from":["first_observatory","ash_palace"],"faction_control":"무주 금역","world_x":216,"world_y":732,"elevation":0,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"shrine"},{"region_id":"jeongni_vault","territory_id":"jeongni","territory_name":"정리소","region_name":"정리소","region_type":"underground","danger_level":10,"min_level":49,"description":"장서각 지하서고 맨 끝 우물로 내려가면 나오는 정청 밑 방들이다. 먹 도랑이 흐르고, 가늠 저울과 봉연 수위 표가 줄지어 있다.","travel_from":["hq_archive"],"faction_control":"무주 금역","world_x":492,"world_y":418,"elevation":-3,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"deep"}]$J$::jsonb) as x(region_id text, territory_id text, territory_name text, region_name text, region_type text, danger_level int, min_level int, description text, travel_from jsonb, gather_nodes jsonb, faction_control text, is_starting_area boolean, active boolean, world_x int, world_y int, elevation int, terrain_cost numeric, rest_spot_type text, rest_spot_name text, rest_quality int, rest_fee int, rest_risk int, is_safe_zone boolean, shop_id text, shop_name text, has_stable boolean, contested boolean)
@@ -899,7 +902,7 @@ begin
   update public.world_gw_fights set board = coalesce(board, '{}'::jsonb) || jsonb_build_object('hz', '[]'::jsonb, 'tags', tags, 'closed', '[]'::jsonb, 'seq', 0, 'hid', 0, 'broke', 0)
    where fight_id = p_fight;
   perform public.world_gw_say(p_fight, 0, 'phase', '사당 마룻바닥 밑에서 젖은 장부 더미가 기어 나와 골목 끝 저울 위에 앉는다. 위아래 좌판마다 값표가 붙어 있고, 저마다의 머리 위에도 값(섬)이 매겨진다.');
-  perform public.world_gw_say(p_fight, 0, 'phase', '값귀가 주판알을 튕긴다. 「한 줄에 쌀 두 섬. 휘두를수록 값이 오르지. 흥정을 하든가, 서로 값을 매겨 주든가.」');
+  perform public.world_gw_say(p_fight, 0, 'phase', case when (select g.mode from public.world_gw_fights g where g.fight_id = p_fight) = 'story' then '값귀가 주판알을 튕긴다. 「한 줄에 쌀 두 섬. 휘두를수록 값이 오르지. 흥정을 하든가, 서로 값을 매겨 주든가.」' else '값귀가 주판알을 튕긴다. 「한 줄에 쌀 두 섬. 휘두를수록 값이 오르지.」' end);
 end $f$;
 
 create or replace function public.world_gg_round(p_fight uuid)
@@ -1061,7 +1064,7 @@ begin
         perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'judge' ->> 'raw')::numeric * case when p_broke then 0.5 else 1 end, p_round, '판결 망치에', true);
       end loop;
     elsif h ->> 'k' = 'bargain' then
-      perform public.world_gw_say(p_fight, p_round, 'boss', '값귀가 바가지를 씌웁니다! 값이 비쌀수록 크게 거둡니다.');
+      perform public.world_gw_say(p_fight, p_round, 'boss', '값귀가 바가지를 씌운다!');
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
         perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'bargain' ->> 'raw')::numeric * ((rb -> 'bargain' ->> 'base')::numeric + (rb -> 'bargain' ->> 'k')::numeric * coalesce(x.gval, 0))
           * case when p_broke then 0.5 else 1 end, p_round, x.gval || '섬 바가지에', true);
@@ -1093,7 +1096,7 @@ begin
       end if;
     elsif h ->> 'k' = 'close' then
       closed := closed || (h ->> 'col')::int;
-      perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'col') || '번째 줄 좌판이 덧문을 내렸습니다. 그 줄에 서 있으면 라운드마다 다칩니다.');
+      perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'col') || '번째 줄 좌판이 덧문을 내렸습니다.');
     elsif h ->> 'k' = 'basket' then
       select string_agg(y.name, '·') into nm from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = (h ->> 'c')::int
         and coalesce(y.act ->> 'a', 'guard') in ('guard', 'brace');
@@ -1827,7 +1830,7 @@ begin
       perform public.world_gw_say(p_fight, p_round, 'voice', coalesce(rb -> 'voices' ->> (lit_n - 1), '누군가 부른다.'));
       if lit_n >= (wn ->> 'need')::int then
         extra := f.hp;
-        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌다. 하얀 몸에서 이름이 우수수 떨어진다.');
+        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌습니다. 하얀 몸에서 이름이 우수수 떨어집니다.');
       else
         extra := extra + round((wn ->> 'hp')::numeric / (wn ->> 'need')::int);
         perform public.world_gw_say(p_fight, p_round, 'good', '하얀 몸에서 이름 하나가 떨어져 금빛 가루로 흩어집니다.');
@@ -2189,9 +2192,9 @@ select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
     if p_move is not null and p_move = me.pos then p_move := null; end if;
     if p_move is not null and not (p_move::int = any (public.world_by_nb(me.pos))) then raise exception '바로 옆 칸으로만 옮겨 설 수 있습니다.'; end if;
     if p_action = 'move' and p_move is null then raise exception '옮겨 설 칸을 고르세요.'; end if;
-    if p_action = 'attack' and f.board ? 'wn' then raise exception '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.'; end if;
+    if p_action = 'attack' and f.board ? 'wn' then raise exception '%', case when f.mode = 'story' then '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.' else '흰 밤에는 칼끝이 닿지 않습니다.' end; end if;
     if p_action = 'coop' and f.board ? 'wn' and coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = p_item), false) then
-      raise exception '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.'; end if;
+      raise exception '%', case when f.mode = 'story' then '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.' else '흰 밤에는 칼끝이 닿지 않습니다.' end; end if;
     if p_action = 'sweep' and (p_item is null or p_item !~ '^[0-9]+$') then raise exception '걷어 낼 칸을 고르세요.'; end if;
   end if;
   if not mk and f.boss_id not in ('baekya', 'gapgwi') and (p_action = 'recall' or p_move is not null) then$n$);
@@ -2275,8 +2278,8 @@ begin
   r := jsonb_set(r, '{gwiheo,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{mukjeok,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gapgwi,modes,ultimate}', '"무용담"');
-  r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [9, 17, 23], "name": "구중 봉주", "rounds": 26}, {"boss": "gwiheo", "cuts": [14, 24, 33], "name": "귀허의 주인", "rounds": 40}], "hp_n": [1, 0.40, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.25, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [28, 3], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [13, 24, 32], "name": "값귀", "rounds": 38}, {"boss": "baekya", "cuts": [12, 23, 33], "name": "백야", "rounds": 44}], "hp_n": [1, 1.1, 1.3, 1.2],
+  r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.", "acts": [{"boss": "sealed_lord", "cuts": [9, 17, 23], "name": "구중 봉주", "rounds": 26}, {"boss": "gwiheo", "cuts": [14, 24, 33], "name": "귀허의 주인", "rounds": 40}], "hp_n": [1, 0.40, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.25, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
+  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [28, 3], "tip": "역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.", "acts": [{"boss": "gapgwi", "cuts": [13, 24, 32], "name": "값귀", "rounds": 38}, {"boss": "baekya", "cuts": [12, 23, 33], "name": "백야", "rounds": 44}], "hp_n": [1, 1.1, 1.3, 1.2],
     "board": {"hide": true, "hand_mul": 0.6, "mech_mul": 1, "fail_party": {"raw": 15}, "budget": 300,
       "judge": {"every": 2, "off": 1, "left": 2, "raw": 45},
       "bargain": {"every": 3, "off": 0, "left": 2, "cap": 5, "raw": 40},
@@ -2485,7 +2488,7 @@ begin
       when act is null or act ->> 'a' in ('guard', 'brace') then 'guard' else coalesce(act ->> 'a', 'guard') end into c2 from public.world_gw_members where fight_id = p_fight and owner_id = p[2];
     select string_agg(name, '·') into names from public.world_gw_members where fight_id = p_fight and owner_id = any (p);
     if c1 = c2 then
-      perform public.world_gw_say(p_fight, p_round, 'good', names || ' — 사슬이 풀렸다.');
+      perform public.world_gw_say(p_fight, p_round, 'good', names || ' — 사슬이 풀렸습니다.');
     else
       perform public.world_gw_say(p_fight, p_round, 'bad', names || ' — 사슬이 조여들었다.');
       perform public.world_gw_hurt(p_fight, p[1], (rb ->> 'pair_raw')::int, p_round, '조여든 사슬에');
@@ -2495,10 +2498,10 @@ begin
   if lord ? 'charge' then
     lord := jsonb_set(lord, '{charge,dmg}', to_jsonb(coalesce((lord -> 'charge' ->> 'dmg')::numeric, 0) + p_dmg));
     if (lord -> 'charge' ->> 'dmg')::numeric >= (lord -> 'charge' ->> 'need')::numeric then
-      perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || ').');
+      perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌습니다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || ').');
       lord := lord - 'charge';
     elsif ar >= (lord -> 'charge' ->> 'end')::int then
-      perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || '). 모두가 겨우 숨만 붙어 있다.');
+      perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌습니다(' || round((lord -> 'charge' ->> 'dmg')::numeric) || '). 모두가 겨우 숨만 붙어 있다.');
       update public.world_gw_members set hp = least(hp, 1) where fight_id = p_fight and out_rounds = 0 and not rest;
       lord := lord - 'charge';
     end if;
@@ -2528,7 +2531,7 @@ create or replace function public.world_ug_wipe(p_fight uuid, p_round integer, p
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 begin
-  perform public.world_gw_say(p_fight, p_round, 'bad', p_why || ' 모두가 쓰러졌다.');
+  perform public.world_gw_say(p_fight, p_round, 'bad', p_why || ' 모두가 쓰러졌습니다.');
   update public.world_gw_members set hp = 0, falls = falls + case when out_rounds = 0 then 1 else 0 end where fight_id = p_fight;
   perform public.world_gw_settle(p_fight, false);
 end $f$;
@@ -2732,9 +2735,9 @@ select pg_temp.yh_patch('public.world_gw_ready_check(uuid,text,text)',
     if c.level < public.world_level_cap() then raise exception '무용담은 Lv%만 들어갈 수 있습니다.', public.world_level_cap(); end if;
     if not public.world_quest_done(p_uid, public.world_ultimate_rules() -> 'boards' -> p_boss ->> 'open_quest') then raise exception '「%」을(를) 마쳐야 %이(가) 열립니다.', (select q.title from public.world_quests q where q.quest_id = public.world_ultimate_rules() -> 'boards' -> p_boss ->> 'open_quest'), public.world_ultimate_rules() -> 'boards' -> p_boss ->> 'name'; end if;
     if not exists (select 1 from public.world_gw_records r where r.owner_id = p_uid and r.boss_id = p_boss and r.kills > 0) then
-      raise exception '%을(를) 한 번 이상 깨야 무용담에 들어갈 수 있습니다.', br -> 'modes' ->> 'hard'; end if;
+      raise exception '% 「%」을(를) 한 번 이상 깨야 무용담에 들어갈 수 있습니다.', br ->> 'name', br -> 'modes' ->> 'hard'; end if;
     if p_boss = 'gapgwi' and not exists (select 1 from public.world_gw_records r where r.owner_id = p_uid and r.boss_id = 'baekya' and r.kills > 0) then
-      raise exception '%도 한 번 이상 깨야 %에 들어갈 수 있습니다.', public.world_boss_rules() -> 'baekya' -> 'modes' ->> 'hard', public.world_ultimate_rules() -> 'boards' -> 'gapgwi' ->> 'name'; end if;
+      raise exception '백야 「%」도 한 번 이상 깨야 %에 들어갈 수 있습니다.', public.world_boss_rules() -> 'baekya' -> 'modes' ->> 'hard', public.world_ultimate_rules() -> 'boards' -> 'gapgwi' ->> 'name'; end if;
     return;
   end if;$n$);
 
@@ -3067,7 +3070,7 @@ begin
   for w in select y.*, z.pos as tpos, z.name as tname, z.nameless as tnl from public.world_gw_members y left join public.world_gw_members z on z.fight_id = y.fight_id and z.owner_id = nullif(y.act ->> 't', '')::uuid
       where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'call' order by y.joined_at loop
     if (w.act ->> 't')::uuid = w.owner_id then
-      perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — 제 이름은 스스로 불러 되찾을 수 없습니다. 곁의 동료가 불러야 합니다.');
+      perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — 제 이름은 스스로 불러 되찾을 수 없습니다.');
     elsif not coalesce(w.tnl, false) or not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'name' and e ->> 't' = w.act ->> 't') then
       perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — ' || coalesce(w.tname, '') || '을(를) 불렀지만 메아리만 돌아옵니다.');
     elsif w.pos is null or w.tpos is null or public.world_ux_dist(w.pos, w.tpos) <> 1 then
@@ -3151,10 +3154,10 @@ begin
           perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — 기둥의 사슬을 끊어 봉주가 끌어모으던 기운의 절반을 흩었습니다.');
         end if;
         if (h ->> 'dmg')::numeric >= need then
-          perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌다(' || (h ->> 'dmg') || '/' || need || ').');
+          perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌습니다(' || (h ->> 'dmg') || '/' || need || ').');
         else
           hit := true;
-          perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌다(' || (h ->> 'dmg') || '/' || need || ').');
+          perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌습니다(' || (h ->> 'dmg') || '/' || need || ').');
           for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest order by y.joined_at loop
             perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'charge' ->> 'raw')::numeric, p_round, '터진 기운에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           end loop;
@@ -3258,7 +3261,7 @@ select pg_temp.yh_patch('public.world_gw_resolve(uuid)',
 do $$
 declare r jsonb := public.world_boss_rules();
 begin
-  r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [60, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.",
+  r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [60, 6], "tip": "역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.",
     "acts": [{"boss": "mukjeok", "cuts": [10, 20, 30], "name": "먹그림자", "rounds": 36}], "phases": ["먹줄", "따라 쓰는 붓", "가운데 칸", "먹비"],
     "hp_n": [1, 1.0, 1.35, 1.5], "items": 3, "raw_n": [1, 1.2, 1.3, 1.3], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2,
     "board": {"hand_mul": 1.6, "mech_mul": 1, "strokes": 9, "aoe_every": 6,
@@ -4015,7 +4018,7 @@ declare x record; b jsonb;
 begin
   if p_fails <= 0 then return; end if;
   select board into b from public.world_gw_fights where fight_id = p_fight;
-  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 모두가 조금씩 다친다.');
+  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 모두가 조금씩 다칩니다.');
   for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
     perform public.world_gw_hurt(p_fight, x.owner_id, round(p_raw * p_fails)::int, p_round, '번진 실수에');
     if p_fade then b := public.world_by_fade(p_fight, b, x.owner_id, p_fails, p_round); end if;
@@ -4335,7 +4338,7 @@ begin
       perform public.world_gw_say(p_fight, p_round, 'voice', coalesce(rb -> 'voices' ->> (lit_n - 1), '누군가 부른다.'));
       if lit_n >= (wn ->> 'need')::int then
         extra := f.hp;
-        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌다. 하얀 몸에서 이름이 우수수 떨어진다.');
+        perform public.world_gw_say(p_fight, p_round, 'good', '등이 모두 켜졌습니다. 하얀 몸에서 이름이 우수수 떨어집니다.');
       else
         extra := extra + round((wn ->> 'hp')::numeric / (wn ->> 'need')::int);
       end if;
@@ -6674,7 +6677,7 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.0.0', '3.0
 - **아무것도 알려 주지 않는 판입니다.** 이 패치노트에도, 도움말에도, 싸움 화면에도 수법을 받아치는 법은 적혀 있지 않고 글로 된 낌새도 뜨지 않습니다. 맵 위에 무엇이 떠오르는지 지켜보고, 쓰러지며 하나씩 알아내고, 동료와 역할을 나눠 파훼해 나가세요.
 - 수법을 놓치면 곁의 동료도 조금씩 다치고, 놓친 사람에게는 한동안 주는 피해가 줄고 받는 피해가 느는 약화가 쌓입니다.
 - 막마다 마지막에 예고 없이 전멸기가 한 번 옵니다. 하나라도 놓치면 전멸합니다.
-- 막마다 정해진 라운드 안에 쓰러뜨리지 못해도 전멸합니다. 역할을 나누지 않으면 깨기 어렵습니다.
+- 막마다 정해진 라운드 안에 쓰러뜨리지 못해도 전멸합니다. 역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다.
 - 횟수 제한이 없고 져도 잃는 것이 없습니다.
 - 깰 때마다 판마다 다른 토큰을 받습니다. 그 이야기를 들려준 사람의 「무용담 교환」에서 가구·옷·꾸미기·꼬마 동무로 바꿉니다(같은 것은 한 번만).
 - 꼬마 동무가 13종 늘어 갈래마다 8종이 됩니다.

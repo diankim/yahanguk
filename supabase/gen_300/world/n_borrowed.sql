@@ -29,3 +29,6 @@ select pg_temp.yh_patch('public.world_gwiryeong_roll()',
 select pg_temp.yh_patch('public.world_housing_event_trg()',
   $o$  if new.actor_id is null then return new; end if;$o$,
   $n$  if new.actor_id is null or coalesce((p ->> 'borrowed')::boolean, false) then return new; end if;$n$);
+select pg_temp.yh_patch('public.world_battle_action(text,text)',
+  $o$'mentor_xp', coalesce((mt ->> 'xp')::int, 0), 'mentor', mt ->> 'name');$o$,
+  $n$'mentor_xp', coalesce((mt ->> 'xp')::int, 0), 'mentor', mt ->> 'name', 'borrowed', coalesce((a.pfx ->> 'borrowed')::boolean, false));$n$);

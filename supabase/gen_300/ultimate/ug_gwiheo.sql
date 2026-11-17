@@ -215,7 +215,7 @@ begin
   for w in select y.*, z.pos as tpos, z.name as tname, z.nameless as tnl from public.world_gw_members y left join public.world_gw_members z on z.fight_id = y.fight_id and z.owner_id = nullif(y.act ->> 't', '')::uuid
       where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'call' order by y.joined_at loop
     if (w.act ->> 't')::uuid = w.owner_id then
-      perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — 제 이름은 스스로 불러 되찾을 수 없습니다. 곁의 동료가 불러야 합니다.');
+      perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — 제 이름은 스스로 불러 되찾을 수 없습니다.');
     elsif not coalesce(w.tnl, false) or not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'name' and e ->> 't' = w.act ->> 't') then
       perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — ' || coalesce(w.tname, '') || '을(를) 불렀지만 메아리만 돌아옵니다.');
     elsif w.pos is null or w.tpos is null or public.world_ux_dist(w.pos, w.tpos) <> 1 then
@@ -299,10 +299,10 @@ begin
           perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — 기둥의 사슬을 끊어 봉주가 끌어모으던 기운의 절반을 흩었습니다.');
         end if;
         if (h ->> 'dmg')::numeric >= need then
-          perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌다(' || (h ->> 'dmg') || '/' || need || ').');
+          perform public.world_gw_say(p_fight, p_round, 'good', '봉주가 모으던 기운이 흩어졌습니다(' || (h ->> 'dmg') || '/' || need || ').');
         else
           hit := true;
-          perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌다(' || (h ->> 'dmg') || '/' || need || ').');
+          perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌습니다(' || (h ->> 'dmg') || '/' || need || ').');
           for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest order by y.joined_at loop
             perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'charge' ->> 'raw')::numeric, p_round, '터진 기운에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           end loop;
