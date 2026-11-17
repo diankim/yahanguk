@@ -2045,12 +2045,30 @@ const S = [
       <li>칭호는 이긴 횟수·혼자·흠 없이로 얻습니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
+  ['ugboss', '무용담 · 가장 어려운 판', `${(() => { const U = GD.ultimate || {}, T = U.tokens || {}; return `
+    <p>명등기 17장을 마친 뒤 본부 객사에서 받는 퀘스트 「부풀린 무용담」을 마치면 열립니다. 객사 이야기꾼 춘보가 부풀린 이야기 속에서, 보낸 우두머리들이 더 사납게 다시 깨어납니다. 이야기판 → 깊은 판 다음의 셋째 판입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>순서</th><th>들어가는 곳</th></tr>
+      ${Object.values(U.boards || {}).map(b => `<tr><td>${esc(b.name)}(${esc(b.short || '')})</td><td>${b.boss === 'gwiheo' ? '구중 봉주 → 귀허의 주인' : b.boss === 'gapgwi' ? '값귀 → 백야' : '먹그림자'}</td><td>${b.boss === 'gwiheo' ? '귀허' : b.boss === 'gapgwi' ? '붉은 사당 골목' : '아홉 칸 뜰'}</td></tr>`).join('')}
+    </table>
+    <ul>
+      <li>Lv${U.level ?? 50}만, 같은 곳의 파티원 ${(U.party || [2, 4])[0]}~${(U.party || [2, 4])[1]}명이 함께 들어갑니다(혼자는 들어갈 수 없음). 그 보스의 깊은 판을 한 번 이상 깨야 합니다.</li>
+      <li>무엇을 할지 미리 내비치지 않습니다. 직접 겪고 기록을 되짚어 알아내야 합니다. 판마다 순서·대상이 조금씩 달라집니다.</li>
+      <li>막마다 정해진 라운드 안에 쓰러뜨리지 못하면 모두 쓰러지고, 체력 75·50·25%를 넘기는 데도 라운드 제한이 있습니다. 전멸하면 처음 막부터 다시 합니다.</li>
+      <li>역할을 나누지 않으면 깨기 어렵습니다. 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.</li>
+      <li>횟수 제한이 없고, 져도 잃는 것이 없습니다(장비·침식·재도전 대기 없음). 회복품은 한 사람 셋까지입니다.</li>
+    </ul>
+    <h4>보상 — 판마다 다른 토큰</h4>
+    <ul>
+      <li>깰 때마다 그 판의 토큰 ${T.clear ?? 3}개, 처음 깨면 ${T.first ?? 10}개 더(${Object.values(U.boards || {}).map(b => esc(b.token_name)).join(' · ')}). 경험치·전은 없습니다.</li>
+      <li>본부 객사의 「무용담 교환」에서 춘보에게 꾸미기 물품(가구·벽지·바닥재·옷·장신구·테두리·바탕 무늬·낙관·이름 색·꼬마 동무)으로 바꿉니다. 물품마다 값이 다르고, 같은 것은 한 번만 바꿀 수 있습니다. 모두 거래할 수 없습니다.</li>
+      <li>칭호는 판마다 처음 깸·10번 깸, 그리고 둘이서·흠 없이·셋 다로 얻습니다(능력치 효과 없음).</li>
+    </ul>`; })()}`],
 ];
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'gear', 'durability', 'survival']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
