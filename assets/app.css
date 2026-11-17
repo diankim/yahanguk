@@ -2326,6 +2326,8 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-gim { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); border: 2px dashed color-mix(in srgb, var(--bad) 60%, var(--line)); display: grid; gap: 6px; }
 .gw-gim p { margin: 0; }
 .mk-wrap { margin-top: 8px; display: grid; justify-items: center; gap: 4px; }
+.gw-ug { display: grid; gap: 4px; margin-top: 6px; }
+.gw-ug .chips { flex-wrap: wrap; }
 .by-wrap { display: grid; gap: 4px; justify-items: center; margin-top: 6px; }
 .by-board { position: relative; width: min(100%, 240px); aspect-ratio: 1 / 1; }
 .by-seat { position: absolute; transform: translate(-50%, -50%); width: 22%; aspect-ratio: 1 / 1; border-radius: 50%; border: var(--bw) solid var(--line); background: var(--panel-2, var(--bg)); display: grid; place-items: center; padding: 0; color: var(--text); }
