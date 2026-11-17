@@ -3788,3 +3788,4 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 .scene-art .ln-deco-pole { fill: var(--line); }
 .scene-art .ln-deco-lamp { fill: color-mix(in srgb, var(--gold) 80%, var(--sc, var(--accent))); }
 .scene-art .ln-deco-flag { fill: var(--sc, var(--accent)); }
+.qs-pick { display: flex; gap: 6px; align-items: center; min-width: 0 } .qs-pick .pick-field { flex: 1; min-width: 0 } .qs-pick .pick-btn { width: 100%; justify-content: flex-start }

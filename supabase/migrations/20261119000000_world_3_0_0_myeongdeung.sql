@@ -585,6 +585,27 @@ select pg_temp.yh_patch('public.world_storage_capacity(uuid)',
                    where g.owner_id = p_uid and g.done_at is not null
                      and g.quest_id = any (array['gq_1','gq_2','gq_3','gq_4','gq_5','mkq_1','mkq_2','mkq_3','mkq_4','mkq_5','mdq_3','mdq_6','mdq_9','mdq_12','mdq_15'])) ar,$n$);
 
+create or replace function public.world_travel_quote(p_region_id text) returns jsonb
+language plpgsql stable security definer set search_path = pg_catalog, public
+as $f$
+declare uid uuid := public.fn_owner_auth_uid(); lv int; pl jsonb;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select c.level into lv from public.world_characters c where c.owner_id = uid;
+  if lv is null then return null; end if;
+  begin
+    pl := public.world_travel_plan(uid, p_region_id, lv);
+  exception when others then return jsonb_build_object('error', sqlerrm);
+  end;
+  return jsonb_build_object('secs', round((pl ->> 'secs')::numeric), 'hops', (pl ->> 'hops')::int, 'fare', (pl ->> 'fare')::int, 'need', (pl ->> 'need')::int,
+    'walked', (pl ->> 'walked')::boolean, 'project', pl ->> 'project');
+end $f$;
+revoke all on function public.world_travel_quote(text) from public, anon;
+grant execute on function public.world_travel_quote(text) to authenticated, service_role;
+grant create on schema public to fn_owner_field;
+alter function public.world_travel_quote(text) owner to fn_owner_field;
+revoke create on schema public from fn_owner_field;
+
 insert into public.world_map_regions(region_id, territory_id, territory_name, region_name, region_type, danger_level, min_level, description, travel_from, gather_nodes, faction_control, is_starting_area, active, world_x, world_y, elevation, terrain_cost, rest_spot_type, rest_spot_name, rest_quality, rest_fee, rest_risk, is_safe_zone, shop_id, shop_name, has_stable, contested)
 select x.region_id, x.territory_id, x.territory_name, x.region_name, x.region_type, x.danger_level, x.min_level, x.description, array(select jsonb_array_elements_text(x.travel_from)), '{}'::text[], x.faction_control, false, true, x.world_x, x.world_y, x.elevation, x.terrain_cost, x.rest_spot_type, x.rest_spot_name, x.rest_quality, x.rest_fee, x.rest_risk, x.is_safe_zone, x.shop_id, x.shop_name, false, false from jsonb_to_recordset($J$[{"region_id":"deungdo_landing","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"남문 수로 선착","region_type":"village","danger_level":9,"min_level":45,"description":"옛 남문 물길이 닿는 돌계단이다. 흑련 장부지기와 수향 뱃사람이 임시 야영소를 차려 두었고, 거룻배 몇 척이 말뚝에 매여 있다.","travel_from":["seal_vault","dark_yamen"],"faction_control":"무주 금역","world_x":252,"world_y":528,"elevation":-1,"terrain_cost":0.8,"rest_spot_type":"inn","rest_spot_name":"선착 야영소 천막","rest_quality":2,"rest_fee":170,"rest_risk":0,"is_safe_zone":true,"shop_id":"deungdo_landing_shop","shop_name":"선착 야영소","theme":"water"},{"region_id":"dark_yamen","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"꺼진 관아 터","region_type":"ruins","danger_level":10,"min_level":45,"description":"흰 하늘 아래 쓰러진 대문과 현판 하나만 남은 옛 관아다. 안채 벽에는 백 년 전 서식이 그대로 붙어 있다.","travel_from":["deungdo_landing","martial_row","red_shrine_lane","old_ferry_market"],"faction_control":"무주 금역","world_x":226,"world_y":562,"elevation":1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"city"},{"region_id":"martial_row","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"무관 거리","region_type":"ruins","danger_level":10,"min_level":46,"description":"북령 무관들이 살던 거리다. 돌바닥 틈마다 녹지 않는 서리가 끼었고, 연무 마당에는 화살이 허공에 멈춰 있다.","travel_from":["dark_yamen","lamp_rest"],"faction_control":"무주 금역","world_x":172,"world_y":578,"elevation":1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"mountain"},{"region_id":"red_shrine_lane","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"붉은 사당 골목","region_type":"ruined_temple","danger_level":10,"min_level":47,"description":"적월 무리가 등을 거꾸로 걸어 둔 골목이다. 사당 벽은 기름때 낀 축문으로 덮였고, 담장 너머에 기름 곳간이 있다.","travel_from":["dark_yamen","lamp_rest"],"faction_control":"무주 금역","world_x":214,"world_y":612,"elevation":0,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"shrine"},{"region_id":"old_ferry_market","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"옛 나루 저자","region_type":"coast","danger_level":10,"min_level":48,"description":"물이 마른 물길 위에 배들이 얹혀 있는 수향 무리의 저자다. 돛대 셋이 만나는 자리의 우물 밑으로 물굴이 이어진다.","travel_from":["dark_yamen","lamp_rest"],"faction_control":"무주 금역","world_x":268,"world_y":602,"elevation":-1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"water"},{"region_id":"lamp_rest","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"등지기 쉼막","region_type":"village","danger_level":9,"min_level":48,"description":"명등지기가 등을 고치던 쉼막 터다. 수향 뱃사람들이 처마를 고쳐 거처를 차렸고, 늘 등 하나를 켜 둔다.","travel_from":["martial_row","red_shrine_lane","old_ferry_market","first_observatory","ash_palace"],"faction_control":"무주 금역","world_x":216,"world_y":650,"elevation":0,"terrain_cost":0.8,"rest_spot_type":"inn","rest_spot_name":"쉼막 등불 곁 자리","rest_quality":2,"rest_fee":180,"rest_risk":0,"is_safe_zone":true,"shop_id":"lamp_rest_shop","shop_name":"쉼막 등 가게","theme":"city"},{"region_id":"first_observatory","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"첫 관상대","region_type":"celestial_tower","danger_level":10,"min_level":49,"description":"천명 무리가 별을 재던 옛 관상대다. 녹슨 혼천의와 별 기록판이 남았지만 흰 하늘에는 별이 하나도 없다.","travel_from":["lamp_rest","pact_court"],"faction_control":"무주 금역","world_x":170,"world_y":690,"elevation":3,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"sky"},{"region_id":"ash_palace","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"잿빛 왕궁 터","region_type":"ruins","danger_level":10,"min_level":49,"description":"등도 남쪽 끝, 남명 무리의 옛 궁궐 터다. 하얗게 바랜 기둥 사이 돌 단 위에 빈 옥좌가 놓여 있다.","travel_from":["lamp_rest","pact_court"],"faction_control":"무주 금역","world_x":262,"world_y":692,"elevation":1,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"desert"},{"region_id":"pact_court","territory_id":"deungdo","territory_name":"등도 옛터","region_name":"맹약 마당","region_type":"sealed_shrine","danger_level":10,"min_level":50,"description":"흰 밤이 가장 짙은 등도 한가운데다. 일곱 홈이 원을 그린 돌상 둘레에 꺼진 등롱 일곱이 서 있고, 가장자리로 먹 도랑이 감돈다.","travel_from":["first_observatory","ash_palace"],"faction_control":"무주 금역","world_x":216,"world_y":732,"elevation":0,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"shrine"},{"region_id":"jeongni_vault","territory_id":"jeongni","territory_name":"정리소","region_name":"정리소","region_type":"underground","danger_level":10,"min_level":49,"description":"장서각 지하서고 맨 끝 우물로 내려가면 나오는 정청 밑 방들이다. 먹 도랑이 흐르고, 가늠 저울과 봉연 수위 표가 줄지어 있다.","travel_from":["hq_archive"],"faction_control":"무주 금역","world_x":492,"world_y":418,"elevation":-3,"terrain_cost":1,"rest_spot_type":"field_camp","rest_spot_name":"임시 야영지","rest_quality":1,"rest_fee":2,"rest_risk":30,"is_safe_zone":false,"shop_id":null,"shop_name":null,"theme":"deep"}]$J$::jsonb) as x(region_id text, territory_id text, territory_name text, region_name text, region_type text, danger_level int, min_level int, description text, travel_from jsonb, gather_nodes jsonb, faction_control text, is_starting_area boolean, active boolean, world_x int, world_y int, elevation int, terrain_cost numeric, rest_spot_type text, rest_spot_name text, rest_quality int, rest_fee int, rest_risk int, is_safe_zone boolean, shop_id text, shop_name text, has_stable boolean, contested boolean)
 on conflict (region_id) do update set travel_from = excluded.travel_from, description = excluded.description, min_level = excluded.min_level, danger_level = excluded.danger_level, world_x = excluded.world_x, world_y = excluded.world_y, rest_fee = excluded.rest_fee, shop_id = excluded.shop_id, shop_name = excluded.shop_name, active = excluded.active, territory_id = excluded.territory_id, territory_name = excluded.territory_name;
@@ -6045,14 +6066,14 @@ begin
   why := case when role is null then case when fac then '가입 퀘스트를 마친 뒤에 넘길 수 있습니다.' else '그 땅이 열린 조사원만 넘길 수 있습니다.' end
     when not (p -> 'hubs' ? coalesce(rid, '')) then (select string_agg(m.region_name, '·') from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))) || '에서 넘깁니다.'
     when c.downed_at is not null or c.health <= 0 then '전투불능 상태에서는 넘길 수 없습니다.'
-    when day_all >= cap then '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 ' || cap || '몫까지).'
+    when day_all >= cap then '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 ' || to_char(cap, 'FM999,999,990') || '몫까지).'
     else null end;
   if fac and pr.stage >= 5 and story and not exists (select 1 from public.world_character_cosmetics cc where cc.owner_id = uid and cc.cosmetic_key = p -> 'pattern' ->> 0) then
     insert into public.world_character_cosmetics(owner_id, cosmetic_key) values (uid, p -> 'pattern' ->> 0) on conflict do nothing;
   end if;
   return jsonb_build_object('key', k, 'kind', p ->> 'kind', 'name', p ->> 'name', 'stage', pr.stage, 'points', pr.points, 'goal', pr.goal, 'total', pr.total,
     'role', role, 'reward', rw, 'faction', p ->> 'faction',
-    'rel', case when rw = 'help' and c.major_faction_id is not null then jsonb_build_object('with', public.world_mf_name(c.major_faction_id),
+    'rel', case when rw = 'help' and c.major_faction_id is not null then jsonb_build_object('with', public.world_mf_name(p ->> 'faction'),
       'today', round(least((h ->> 'person_day')::numeric, (case when ct.day = today then ct.day_pts else 0 end) * (h ->> 'per_k')::numeric / 1000), 2), 'cap', (h ->> 'person_day')::numeric) end,
     'stage_at', to_jsonb(pr.stage_at), 'place', case when fac then public.world_mf_name(p ->> 'faction') else public.world_domain_rules() -> (p ->> 'domain') ->> 'name' end,
     'hubs', (select jsonb_agg(m.region_name) from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))),
@@ -6064,7 +6085,7 @@ begin
     'perks', (select jsonb_agg(jsonb_build_object('stage', g, 'done', pr.stage >= g, 'text', public.world_project_text(k, g))) from generate_series(1, 5) g),
     'can', jsonb_build_object('give', why is null, 'why', why),
     'benefit', jsonb_build_object('ok', story, 'why', case when story then null when fac then '단계 혜택(상점·지역 효과·지름길·비고·꾸미기)은 ' || public.world_mf_name(p ->> 'faction') || ' 조사원만 받습니다.'
-      else '혜택은 「' || coalesce((select q.title from public.world_quests q where q.quest_id = p ->> 'story'), p ->> 'story') || '」을(를) 마친 조사원만 받습니다.' end),
+      else '혜택은 외전 「' || coalesce((select split_part(q.cat, '·', 2) from public.world_quests q where q.quest_id = p ->> 'story'), p ->> 'story') || '」 마지막 장까지 마친 조사원만 받습니다.' end),
     'after', pr.stage >= 5);
 end $f$;
 
@@ -6107,7 +6128,7 @@ begin perform public.world_travel_guard('사업 납품');
   before_pts := public.world_project_day_pts(uid, today);
   before_total := ct.total;
   cap := (r -> 'pay' ->> 'day_cap')::int;
-  if before_pts >= cap then raise exception '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 %몫까지). 내일 다시 오세요.', cap; end if;
+  if before_pts >= cap then raise exception '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 %몫까지). 내일 다시 오세요.', to_char(cap, 'FM999,999,990'); end if;
   allowed := public.world_project_items(p_key, least(pr.stage, 4));
   urg := public.world_project_urgent(p_key, least(pr.stage, 4), today);
   inv := coalesce(c.inventory, '{}'::jsonb);
@@ -6169,10 +6190,10 @@ begin perform public.world_travel_guard('사업 납품');
   end loop;
   return jsonb_build_object('pts', pts, 'n', n_items, 'merit', case when rw = 'merit' then gain else 0 end, 'gil', case when rw = 'merit' then 0 else gain end, 'rel', round(rel, 2),
     'from_storage', st_take, 'left', left_over, 'today', before_pts + pts, 'cap', cap, 'stage_up', ups,
-    'content', n_items || '개를 넘겼습니다 · ' || pts || '몫 · ' || case when rw = 'merit' then '공훈 +' || gain else gain || '전' end ||
-      case when round(rel, 2) > 0 then ' · ' || public.world_josa(public.world_mf_name(p ->> 'faction'), '과', '와') || '의 관계 +' || round(rel, 2) else '' end ||
+    'content', to_char(n_items, 'FM999,999,990') || '개를 넘겼습니다 · ' || to_char(pts, 'FM999,999,990') || '몫 · ' || case when rw = 'merit' then '공훈 +' || to_char(gain, 'FM999,999,990') else to_char(gain, 'FM999,999,990') || '전' end ||
+      case when round(rel, 2) > 0 then ' · ' || public.world_josa(public.world_mf_name(p ->> 'faction'), '과', '와') || '의 관계 +' || rtrim(rtrim(round(rel, 2)::text, '0'), '.') else '' end ||
       case when left_over <> '{}'::jsonb then ' · 오늘 상한에 닿아 ' || (select sum((x.value)::text::int) from jsonb_each(left_over) x) || '개는 돌려받았습니다.'
-        when before_pts + pts >= cap then ' · 오늘 상한에 닿았습니다.' else ' · 오늘 ' || (before_pts + pts) || '/' || cap end ||
+        when before_pts + pts >= cap then ' · 오늘 상한에 닿았습니다.' else ' · 오늘 ' || to_char(before_pts + pts, 'FM999,999,990') || '/' || to_char(cap, 'FM999,999,990') end ||
       case when jsonb_array_length(ups) > 0 then ' · 사업이 ' || (ups -> -1 ->> 'stage') || '단계를 마쳤습니다!' else '' end,
     'view', public.world_project_view(p_key));
 end $f$;

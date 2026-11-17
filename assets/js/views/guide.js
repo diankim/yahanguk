@@ -1203,7 +1203,7 @@ const S = [
     <p class="muted small">사업 칭호 ${PROJECT.titles ?? 9}개(분류 「사업」)는 넘긴 몫의 누계로 얻습니다.</p>`],
   ['cproject', '공동 사업', `
     <p>빈약한 안전지대가 있는 먼 땅 셋에는 모든 조사원이 함께 채우는 공동 사업이 있습니다. 그 땅이 열린 조사원은 누구나 그 땅 안전지대에서 넘길 수 있고, 보상은 전입니다.</p>
-    <ul>${pjList('common', p => `「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 혜택은 「${esc(p.story_name || '')}」을(를) 마친 조사원만`)}</ul>
+    <ul>${pjList('common', p => `「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 혜택은 외전 「${esc(p.story_name || '')}」 마지막 장까지 마친 조사원만`)}</ul>
     <h4>단계마다 풀리는 것</h4>
     <ol>${(PROJECT.perk_text?.common || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
     <ul>

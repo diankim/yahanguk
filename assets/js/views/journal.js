@@ -96,7 +96,7 @@ async function story(body, keep) {
   const ext = (j?.quests || []).filter(q => q.kind === 'side' && arcOf(q));
   const arcs = [...ARCS.map(([n]) => n), ...new Set(ext.map(arcOf).filter(n => !ARCS.some(([a]) => a === n)))];
   if (arc && !arcs.includes(arc)) arc = '';
-  const arcBar = `<div class="chips kind-chips arc-chips" role="group" aria-label="이야기"><button class="chip ${arc ? '' : 'on'}" data-arc="">${MAIN_ARC}</button>${arcs.map(n => { const l = ext.filter(q => arcOf(q) === n); return `<button class="chip ${arc === n ? 'on' : ''}" data-arc="${esc(n)}">${esc(n)}${l.length ? ` <small>${l.filter(q => q.status === 'done').length}/${l.length}</small>` : ''}</button>`; }).join('')}</div>`;
+  const arcBar = `<div class="chips kind-chips arc-chips" role="group" aria-label="이야기"><button class="chip ${arc ? '' : 'on'}" data-arc="">${MAIN_ARC}</button>${arcs.map(n => { const l = ext.filter(q => arcOf(q) === n); return `<button class="chip ${arc === n ? 'on' : ''}" data-arc="${esc(n)}">${esc(n)}${l.length ? ` <small>마침 ${l.filter(q => q.status === 'done').length}</small>` : ''}</button>`; }).join('')}</div>`;
   if (arc) { arcView(body, arcBar, ext.filter(q => arcOf(q) === arc), map); return; }
   const chapters = b?.chapters || [];
   const mains = new Map((j?.quests || []).filter(q => q.kind === 'main').map(q => [q.chapter_id, q]));
@@ -209,14 +209,14 @@ function nowLine(q) {
   if (q.status !== 'active' || !q.cur) return '';
   const left = (q.cur.tasks || []).filter(t => t.cur < t.n), regs = [...new Set(left.flatMap(t => t.regions || []))].map(nameOf);
   const where = q.cur.ready ? `보고: ${(q.cur.at_names || []).join('·') || '의뢰인에게'}` : regs.length ? `할 곳: ${regs.slice(0, 3).join('·')}` : (q.cur.at_names || []).length ? `보고: ${q.cur.at_names.join('·')}` : '';
-  return `<p class="q-now">${icon('chevron', 12)}<span><b>${q.cur.ready ? '보고하면 끝' : `장면 ${q.cur.step}`}</b> · ${esc(q.cur.goal || q.cur.title || '')}${where ? ` <small class="muted">(${esc(where)})</small>` : ''}</span></p>`;
+  return `<p class="q-now">${icon('chevron', 12)}<span><b>${q.cur.ready ? `장면 ${q.cur.step} · 보고만 남음` : `장면 ${q.cur.step}`}</b> · ${esc(q.cur.goal || q.cur.title || '')}${where ? ` <small class="muted">(${esc(where)})</small>` : ''}</span></p>`;
 }
 function sideItem(q, map, inArc) {
   const [sn, tone] = STATUS_N[q.status] || ['', ''];
   const subCat = inArc ? '' : (q.cat || '').split('·')[1] || '';
   const where = `${icon('pin', 12)} ${esc(q.region_name || '')} · Lv.${q.min_level}${q.here ? ' · 지금 여기' : ''}`;
   return `<li class="q-item ${q.status} ${q.cur?.ready ? 'ready' : ''}"><details ${q.status === 'active' ? 'open' : ''}>
-    <summary><header>${chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
+    <summary><header>${q.replay ? chip('다시하는 중', 'ok') : chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
       <p class="q-at ${q.here ? 'ok' : ''}">${where}</p>${nowLine(q)}</summary>
     <p class="q-goal">${esc(q.summary || '')}</p>
     ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`

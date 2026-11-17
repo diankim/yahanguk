@@ -233,14 +233,14 @@ begin
   why := case when role is null then case when fac then '가입 퀘스트를 마친 뒤에 넘길 수 있습니다.' else '그 땅이 열린 조사원만 넘길 수 있습니다.' end
     when not (p -> 'hubs' ? coalesce(rid, '')) then (select string_agg(m.region_name, '·') from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))) || '에서 넘깁니다.'
     when c.downed_at is not null or c.health <= 0 then '전투불능 상태에서는 넘길 수 없습니다.'
-    when day_all >= cap then '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 ' || cap || '몫까지).'
+    when day_all >= cap then '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 ' || to_char(cap, 'FM999,999,990') || '몫까지).'
     else null end;
   if fac and pr.stage >= 5 and story and not exists (select 1 from public.world_character_cosmetics cc where cc.owner_id = uid and cc.cosmetic_key = p -> 'pattern' ->> 0) then
     insert into public.world_character_cosmetics(owner_id, cosmetic_key) values (uid, p -> 'pattern' ->> 0) on conflict do nothing;
   end if;
   return jsonb_build_object('key', k, 'kind', p ->> 'kind', 'name', p ->> 'name', 'stage', pr.stage, 'points', pr.points, 'goal', pr.goal, 'total', pr.total,
     'role', role, 'reward', rw, 'faction', p ->> 'faction',
-    'rel', case when rw = 'help' and c.major_faction_id is not null then jsonb_build_object('with', public.world_mf_name(c.major_faction_id),
+    'rel', case when rw = 'help' and c.major_faction_id is not null then jsonb_build_object('with', public.world_mf_name(p ->> 'faction'),
       'today', round(least((h ->> 'person_day')::numeric, (case when ct.day = today then ct.day_pts else 0 end) * (h ->> 'per_k')::numeric / 1000), 2), 'cap', (h ->> 'person_day')::numeric) end,
     'stage_at', to_jsonb(pr.stage_at), 'place', case when fac then public.world_mf_name(p ->> 'faction') else public.world_domain_rules() -> (p ->> 'domain') ->> 'name' end,
     'hubs', (select jsonb_agg(m.region_name) from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))),
@@ -252,7 +252,7 @@ begin
     'perks', (select jsonb_agg(jsonb_build_object('stage', g, 'done', pr.stage >= g, 'text', public.world_project_text(k, g))) from generate_series(1, 5) g),
     'can', jsonb_build_object('give', why is null, 'why', why),
     'benefit', jsonb_build_object('ok', story, 'why', case when story then null when fac then '단계 혜택(상점·지역 효과·지름길·비고·꾸미기)은 ' || public.world_mf_name(p ->> 'faction') || ' 조사원만 받습니다.'
-      else '혜택은 「' || coalesce((select q.title from public.world_quests q where q.quest_id = p ->> 'story'), p ->> 'story') || '」을(를) 마친 조사원만 받습니다.' end),
+      else '혜택은 외전 「' || coalesce((select split_part(q.cat, '·', 2) from public.world_quests q where q.quest_id = p ->> 'story'), p ->> 'story') || '」 마지막 장까지 마친 조사원만 받습니다.' end),
     'after', pr.stage >= 5);
 end $f$;
 
@@ -295,7 +295,7 @@ begin perform public.world_travel_guard('사업 납품');
   before_pts := public.world_project_day_pts(uid, today);
   before_total := ct.total;
   cap := (r -> 'pay' ->> 'day_cap')::int;
-  if before_pts >= cap then raise exception '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 %몫까지). 내일 다시 오세요.', cap; end if;
+  if before_pts >= cap then raise exception '오늘은 더 받지 않습니다(모든 사업을 합쳐 하루 %몫까지). 내일 다시 오세요.', to_char(cap, 'FM999,999,990'); end if;
   allowed := public.world_project_items(p_key, least(pr.stage, 4));
   urg := public.world_project_urgent(p_key, least(pr.stage, 4), today);
   inv := coalesce(c.inventory, '{}'::jsonb);
@@ -357,10 +357,10 @@ begin perform public.world_travel_guard('사업 납품');
   end loop;
   return jsonb_build_object('pts', pts, 'n', n_items, 'merit', case when rw = 'merit' then gain else 0 end, 'gil', case when rw = 'merit' then 0 else gain end, 'rel', round(rel, 2),
     'from_storage', st_take, 'left', left_over, 'today', before_pts + pts, 'cap', cap, 'stage_up', ups,
-    'content', n_items || '개를 넘겼습니다 · ' || pts || '몫 · ' || case when rw = 'merit' then '공훈 +' || gain else gain || '전' end ||
-      case when round(rel, 2) > 0 then ' · ' || public.world_josa(public.world_mf_name(p ->> 'faction'), '과', '와') || '의 관계 +' || round(rel, 2) else '' end ||
+    'content', to_char(n_items, 'FM999,999,990') || '개를 넘겼습니다 · ' || to_char(pts, 'FM999,999,990') || '몫 · ' || case when rw = 'merit' then '공훈 +' || to_char(gain, 'FM999,999,990') else to_char(gain, 'FM999,999,990') || '전' end ||
+      case when round(rel, 2) > 0 then ' · ' || public.world_josa(public.world_mf_name(p ->> 'faction'), '과', '와') || '의 관계 +' || rtrim(rtrim(round(rel, 2)::text, '0'), '.') else '' end ||
       case when left_over <> '{}'::jsonb then ' · 오늘 상한에 닿아 ' || (select sum((x.value)::text::int) from jsonb_each(left_over) x) || '개는 돌려받았습니다.'
-        when before_pts + pts >= cap then ' · 오늘 상한에 닿았습니다.' else ' · 오늘 ' || (before_pts + pts) || '/' || cap end ||
+        when before_pts + pts >= cap then ' · 오늘 상한에 닿았습니다.' else ' · 오늘 ' || to_char(before_pts + pts, 'FM999,999,990') || '/' || to_char(cap, 'FM999,999,990') end ||
       case when jsonb_array_length(ups) > 0 then ' · 사업이 ' || (ups -> -1 ->> 'stage') || '단계를 마쳤습니다!' else '' end,
     'view', public.world_project_view(p_key));
 end $f$;

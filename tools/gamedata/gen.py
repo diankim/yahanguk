@@ -141,7 +141,7 @@ def build(dsn):
           from jsonb_array_elements(world_project_rules() -> 'vault') v join world_item_catalog i on i.item_id = v ->> 'id'),
         'f_shop', world_project_rules() -> 'f_shop', 'c_shop', world_project_rules() -> 'c_shop',
         'projects', (select jsonb_object_agg(k, jsonb_build_object('kind', p ->> 'kind', 'name', p ->> 'name', 'faction', p ->> 'faction', 'domain', p ->> 'domain', 'story', p ->> 'story',
-            'story_name', (select q.title from world_quests q where q.quest_id = p ->> 'story'),
+            'story_name', (select split_part(q.cat, '·', 2) from world_quests q where q.quest_id = p ->> 'story'),
             'hubs', (select jsonb_agg(m.region_name order by m.region_name) from world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))),
             'hub_ids', p -> 'hubs', 'base', (select jsonb_agg((s ->> 'base')::int) from jsonb_array_elements(p -> 'stages') s),
             'area_fx', p -> 'area_fx', 'cut', (select max(value::text::numeric) from jsonb_each(p -> 'route')),

@@ -1,3 +1,4 @@
+import { pickRows, pickerHtml, bindPicker, openItemPick } from './itempick.js';
 import { deathAt as deathTime, xpGot, rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
@@ -152,16 +153,28 @@ export function eqMini(inv, prof, pick = false) {
 function combatMini(cur) {
   return `<p class="combat-mini">${esc(STYLE[cur.style] || '근접')} · <span>공격 <b>${fmt.num(cur.attack)}</b></span> · <span>방어 <b>${fmt.num(cur.defense)}</b> <small>(−${cur.reduction_pct}%)</small></span> · <span>회피 <b>${cur.evasion_pct}%</b></span> · <span>치명 <b>${cur.crit_pct}%</b></span> · <span>달아나기 <b>${cur.flee_pct}%</b></span> · <span>이목 <b>${fmt.num(cur.presence)}</b></span> <a class="linkish" href="#/char/growth">자세히</a></p>`;
 }
-function openQuickslots(cur, inv) {
+function openQuickslots(cur, inv, catalog) {
   const owned = Object.keys(inv).filter(k => Number(inv[k]) > 0 && QS_OK(k));
-  const pool = [...new Set([...owned, ...QS_DEFAULT, ...cur.filter(Boolean)])].sort((a, b) => (Number(inv[b] || 0) > 0) - (Number(inv[a] || 0) > 0) || nameOf(a).localeCompare(nameOf(b), 'ko'));
-  const opt = (sel) => `<option value="">비우기</option>${pool.map(k => `<option value="${esc(k)}" ${k === sel ? 'selected' : ''}>${esc(nameOf(k))} ×${fmt.num(inv[k] || 0)}</option>`).join('')}`;
+  const pool = [...new Set([...owned, ...QS_DEFAULT, ...cur.filter(Boolean)])];
+  const rows = pickRows(pool.map(k => ({ id: k, have: Number(inv[k] || 0) })), catalog);
   const m = openModal({ title: '퀵슬롯 칸 바꾸기', body: `<p class="muted small">칸마다 쓸 물품을 고릅니다. 가방에 없는 물품은 「×0」으로 남아 있다가 생기면 바로 쓸 수 있습니다.</p>
-    <div class="qs-edit">${cur.map((k, i) => `<label class="field"><span>${i + 1}번 칸</span><select data-qs="${i}">${opt(k)}</select></label>`).join('')}</div>
+    <div class="qs-edit">${cur.map((k, i) => `<div class="field"><span>${i + 1}번 칸</span><div class="qs-pick">${pickerHtml(`qs${i}`, '비어 있음')}<button type="button" class="btn small ghost" data-qs-clear="${i}" aria-label="${i + 1}번 칸 비우기">${icon('close', 13)}</button></div></div>`).join('')}</div>
     <div class="btn-row"><button class="btn ghost" id="qs-default">기본 칸으로</button><button class="btn primary" id="qs-save">${icon('check', 16)}<span>저장</span></button></div>` });
-  $('#qs-default', m).onclick = () => $$('[data-qs]', m).forEach((s, i) => { s.innerHTML = opt(QS_DEFAULT[i]); });
+  const pickers = cur.map((k, i) => bindPicker(m, `qs${i}`, rows, null, { title: `${i + 1}번 칸 물품`, placeholder: '비어 있음', value: k || '' }));
+  const slotVal = i => $(`[data-pick="qs${i}"] input`, m).value || '';
+  cur.forEach((_, i) => {
+    const btn = $(`[data-pick="qs${i}"] .pick-btn`, m);
+    btn.onclick = () => {
+      const at = new Map(); cur.forEach((__, j) => { const v = slotVal(j); if (v && j !== i && !at.has(v)) at.set(v, j + 1); });
+      const list = rows.map(r => at.has(r.id) ? { ...r, sub: `${at.get(r.id)}번 칸에 있음` } : r)
+        .sort((x, y) => (at.has(x.id) - at.has(y.id)));
+      openItemPick({ title: `${i + 1}번 칸 물품`, rows: list, onDone: id => pickers[i].set(id) });
+    };
+  });
+  $$('[data-qs-clear]', m).forEach(x => x.onclick = () => pickers[+x.dataset.qsClear].set(''));
+  $('#qs-default', m).onclick = () => pickers.forEach((p, i) => p.set(QS_DEFAULT[i] || ''));
   $('#qs-save', m).onclick = () => guard($('#qs-save', m), async () => {
-    const slots = $$('[data-qs]', m).map(s => s.value || '');
+    const slots = cur.map((_, i) => $(`[data-pick="qs${i}"] input`, m).value || '');
     await rpc('world_quickslots_set', { p_slots: slots });
     invalidate('world_quickslots_get'); closeModal(); draw(true); window.dispatchEvent(new Event('yh-qs-changed'));
     return { content: '퀵슬롯을 바꿨습니다.' };
@@ -231,8 +244,8 @@ async function status(body) {
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   $$('[data-eqi]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.eqi, { mode: 'bag' }));
-  $('#qs-edit', body)?.addEventListener('click', () => openQuickslots(qs, invItems));
-  $$('[data-qs-empty]', body).forEach(b => b.onclick = () => openQuickslots(qs, invItems));
+  $('#qs-edit', body)?.addEventListener('click', () => openQuickslots(qs, invItems, inv?.catalog));
+  $$('[data-qs-empty]', body).forEach(b => b.onclick = () => openQuickslots(qs, invItems, inv?.catalog));
   bindRepair(body);
   const ys = $('#yohwa-seal', body);
   if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
