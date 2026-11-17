@@ -125,6 +125,14 @@ begin
 end $d$;""")
 part('b_rules.sql')
 part('c_ride.sql')
+lamp = {'rank': D.MZ_RULES['rank'], 'pct': D.MZ_RULES['l_pct'], 'territory': [D.TERR[0]], 'items': {k: f'mz_{k}_l' for k in ('herb', 'wood', 'stone')}}
+w(f"""do $d$
+declare j jsonb := public.world_meisho_rules() || jsonb_build_object('lamp', {J(lamp)});
+begin
+  execute format('create or replace function public.world_meisho_rules() returns jsonb language sql immutable as %L', format('select %L::jsonb', j::text));
+end $d$;
+grant execute on function public.world_meisho_rules() to public;""")
+part('d_meisho.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
