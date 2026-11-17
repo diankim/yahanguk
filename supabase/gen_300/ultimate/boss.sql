@@ -405,6 +405,10 @@ as $f$
   insert into public.world_gw_log(fight_id, round, kind, text) select p_fight, p_round, p_kind, p_text where public.world_ug_say_ok(p_fight, p_kind)
 $f$;
 
+select pg_temp.yh_patch('public.world_gw_resolve(uuid)',
+  $o$|| case when f.mode = 'story' then '.' else ' (회복품 ' || (coalesce(m.items_used, 0) + 1) || '/2).' end);$o$,
+  $n$|| case when f.mode = 'story' then '.' else ' (회복품 ' || (coalesce(m.items_used, 0) + 1) || '/' || case when f.mode = 'ultimate' then coalesce((public.world_ug_cfg(p_fight) ->> 'items')::int, 3) else 2 end || ').' end);$n$);
+
 select pg_temp.yh_patch('public.world_gw_next_round(uuid)',
   $o$  if f.boss_id = 'baekya' then perform public.world_by_round(p_fight); return; end if;$o$,
   $n$  if f.mode = 'ultimate' then perform public.world_ug_round(p_fight); return; end if;

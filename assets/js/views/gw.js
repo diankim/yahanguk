@@ -242,7 +242,7 @@ function actHtml(s, me) {
       <button class="btn primary ${on('attack')}" data-gw="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>
       <button class="btn ${on('guard')}" data-gw="guard" ${off}>${icon('shield', 16)}<span>방어</span></button>
       <button class="btn ${on('brace')}" data-gw="brace" ${off} title="몸을 낮춰 막기만 합니다. 쏟아지는 물살·소용돌이에 방어보다 강합니다">${icon('down', 16)}<span>버티기</span></button>
-      <button class="btn ${on('item')}" id="gw-items" type="button" ${off} title="${free ? '체력 회복품을 마음껏 씁니다' : '체력 회복품을 한 싸움에 두 개까지 씁니다'}(나 또는 고른 동료)">${icon('heart', 16)}<span>물품${free ? '' : ` ${left}`}</span></button>
+      <button class="btn ${on('item')}" id="gw-items" type="button" ${off} title="${free ? '체력 회복품을 마음껏 씁니다' : `체력 회복품을 한 싸움에 ${ult() ? (GD.boss?.[s.board?.ug?.board || s.boss]?.ultimate?.items ?? 3) : 2}개까지 씁니다`}(나 또는 고른 동료)">${icon('heart', 16)}<span>물품${free ? '' : ` ${left}`}</span></button>
     </div>
     <div class="raid-coopbox"><div class="coop-grid gw-skills">${skills.map(k => coopBtn({ ...k, on: a?.a === 'coop' && a?.s === k.id,
         why: me.out ? '물러남' : resting ? '막 사이' : !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `${spOf()[0]} ${k.cost}` : '',
@@ -259,7 +259,8 @@ function fillItems(box) {
   if (!snap?.fight) return;
   const inv = snap.items || {}, free = snap.items_left == null, left = Number(snap.items_left ?? 0), tName = nameOfMember(snap, target || snap.me) || '나';
   const [hp] = itemGroups(HEAL_ITEMS, inv), a = snap.my_act;
-  box.innerHTML = `<p class="muted small">체력 회복품만 ${free ? '<b>마음껏</b> 씁니다' : `<b>한 싸움에 두 개까지</b> 씁니다 · 남은 횟수 <b>${left}/2</b>`} · 대상 <b>${esc(tName)}</b>(참가자 이름을 눌러 바꿈). 고르면 이번 라운드의 행동이 됩니다.</p>
+  const cap = ult() ? (GD.boss?.[snap.board?.ug?.board || snap.boss]?.ultimate?.items ?? 3) : 2;
+  box.innerHTML = `<p class="muted small">체력 회복품만 ${free ? '<b>마음껏</b> 씁니다' : `<b>한 싸움에 ${cap}개까지</b> 씁니다 · 남은 횟수 <b>${left}/${cap}</b>`} · 대상 <b>${esc(tName)}</b>(참가자 이름을 눌러 바꿈). 고르면 이번 라운드의 행동이 됩니다.</p>
     ${free || left ? itemListHtml(hp, inv, a?.a === 'item' ? a.i : '') : '<p class="hint warn">이 싸움에서 쓸 수 있는 회복품을 다 썼습니다.</p>'}`;
   $$('[data-use]', box).forEach(b => b.onclick = () => run(b, () => act({ p_action: 'item', p_target: target || snap.me, p_item: b.dataset.use })));
 }
