@@ -7,7 +7,7 @@ import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT } from '../rules.js';
 const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEvery}분마다`;
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
@@ -193,8 +193,10 @@ async function status(body) {
       <div class="action-grid">
         ${yo.y ? `<button class="btn primary" id="yohwa-seal"><span>안전지대 봉인</span><small>가장 가까운 안전지대에서 봉인술사들이 24시간 요기를 해독합니다 · 그동안 채팅만 가능 · 끝나면 요화가 풀리고 침식 40 아래</small></button>` : ''}
         ${byYohwa ? '' : `<button class="btn primary" data-here="물품 사용" data-here-down data-use="${Number(invItems.revival_charm || 0) > 0 ? 'revival_charm' : hqOf('revival_charm')}" ${hqCount(invItems, 'revival_charm') > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(hqCount(invItems, 'revival_charm'))}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
-        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>`}
+        ${store.hud?.domain?.no_rescue ? `<button class="btn" id="self-recall"><span>제 이름 외기</span><small>${esc(WHITE_NIGHT.recall)}</small></button>`
+          : `<button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>`}`}
       </div>
+      ${!byYohwa && store.hud?.domain?.no_rescue ? `<p class="hint warn">${icon('mask', 14)}<span>${esc(WHITE_NIGHT.downed)}</span></p>` : ''}
       <p class="muted small">${byYohwa ? '요화로 쓰러지면 구조·본부 구조대·회생 부적으로는 일어날 수 없습니다. 「안전지대 봉인」을 고르면 24시간 해독 뒤 요화가 풀립니다.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>${yo.fr ? ' · 요화와 합친 효과: 주는 피해 +42%·받는 피해 −12%·정신 손실 −20%·민첩 +15%·침식 +24% · 끝나면 쓰러집니다. 귀령초를 쓰면 요화와 함께 풀립니다.' : ' · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 서 있을 때는 귀령초로 풀고, 요화로 쓰러지면 「안전지대 봉인」으로 풀립니다.'}`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-here="물품 사용" data-here-down data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
@@ -236,6 +238,8 @@ async function status(body) {
   if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
   const cr = $('#call-rescue', body);
   if (cr) cr.onclick = async () => { if (await ask(RESCUE.ask, { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
+  const sr = $('#self-recall', body);
+  if (sr) sr.onclick = async () => { if (await ask(WHITE_NIGHT.ask, { title: '제 이름 외기', ok: '외기' })) guard(sr, () => act('world_self_recall')); };
   clearInterval(statusTick);
   const t = statusTick = setInterval(() => {
     if (!body.isConnected) return clearInterval(t);

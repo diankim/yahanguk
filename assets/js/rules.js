@@ -156,6 +156,13 @@ export const DOMAIN_FX = {
   guard: `이름 새김 탕(또렷한 이름 2시간)·이름 먹 부적(이름 지킴 1시간)은 한 단계 가볍게 하고, 침식 ${MUK_ER[0] ?? 30} 아래면 막습니다.`,
   blur: `묵적 봉쇄령에서는 침식이 이름을 지웁니다. 침식 ${MUK_ER.join('·')}마다 이름 획 ${MUK_BLUR.strokes}개 가운데 ${Math.floor(MUK_BLUR.strokes / Math.max(1, MUK_ER.length))}개씩 지워지며 이름 흐림이 깊어지고, 침식을 낮추면 바로 돌아옵니다.`,
 };
+const WN = GD.domains?.deungdo?.fx || {};
+export const WHITE_NIGHT = {
+  band: '흰 밤 — 여기서 쓰러지면 본부 구조대가 오지 못합니다. 동료와 함께 다니거나 회생 부적을 챙기세요.',
+  downed: '흰 밤 속이라 본부 구조대가 오지 못합니다. 같은 곳 조사원의 구조·회생 부적·「제 이름 외기」로 일어나세요.',
+  recall: `하루 ${WN.recall?.per_day ?? 1}번, 체력 ${WN.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어납니다 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」(주는 피해 −10%)`,
+  ask: '제 이름을 끝까지 외어 스스로 일어날까요? 가장 가까운 등도 안전지대에서 깨어나고, 1시간 동안 주는 피해가 줄어듭니다.',
+};
 const BROKEN = '▒▣▤▥▦▧▨▩◈■';
 export const brokenName = name => [...String(name || '')].map((ch, i) => ch === ' ' ? ' ' : BROKEN[(ch.codePointAt(0) + i) % BROKEN.length]).join('');
 export const NAMELESS = { mine: '이름을 잃었습니다 — 묵적 봉쇄령의 침식을 낮추면 돌아옵니다', other: '이름이 지워져 읽을 수 없습니다' };

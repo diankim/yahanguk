@@ -7,7 +7,7 @@ import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR, FIGHT_KINDS } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT } from '../rules.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -98,7 +98,7 @@ async function draw() {
     const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     if (el.offsetHeight) el.style.minHeight = `${el.offsetHeight}px`;
-    el.innerHTML =`${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    el.innerHTML =`${scene(s, traveling, downed)}${store.hud?.domain?.white_night ? `<p class="hint warn wn-band">${icon('mask', 14)}<span>${esc(WHITE_NIGHT.band)}</span></p>` : ''}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     if (oldQ && $('#quest-box', el)) $('#quest-box', el).innerHTML = oldQ;
     if (oldR && $('#raid-band', el)) $('#raid-band', el).innerHTML = oldR;
     const keepY = () => { if ((y > 0 || back) && el.isConnected) scrollAfterModal(y, back); };
