@@ -508,9 +508,18 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
     for k, (nm, _) in QN.items():
         if nm in have_npc: errors.append('인물 이름 겹침: ' + nm)
     bulk('world_quest_npcs', [dict(npc_key=k, npc_name=nm, bio=bio) for k, (nm, bio) in QN.items()], [('npc_key', 'text'), ('npc_name', 'text'), ('bio', 'text')], 'npc_key', ['npc_name', 'bio'])
+    qitems, qrecs = [], []
     for iid, nm, field, mats, qty, desc in getattr(Q, 'NEW_ITEMS', []):
-        pass
-    qrows, srows = [], []
+        if nm in set(REF['items']) or iid in set(REF['item_ids']): errors.append('퀘스트 물품 이름 겹침: ' + nm)
+        qitems.append(item(iid, nm, 'material', 3, desc, 40, 0, True, 1))
+        qrecs.append(recipe('r_' + iid, nm + ' 만들기', iid, qty, mats, field, 45, nm + '을(를) 만든다.', 3))
+    bulk('world_item_catalog', qitems, ICOLS, 'item_id', IUPD)
+    bulk('world_crafting_recipes', qrecs, RCOLS, 'recipe_id', RUPD)
+    if qitems:
+        w(f"""update public.world_item_catalog i set reference_price = ceil(1.1 * (select sum(m.reference_price * (x.value)::int * 1.0 / greatest(1, cr.output_qty)) from public.world_crafting_recipes cr, jsonb_each_text(cr.ingredients) x
+      join public.world_item_catalog m on m.item_id = x.key where cr.output_item = i.item_id))
+ where i.item_id in (select jsonb_array_elements_text({J([i['item_id'] for i in qitems])}));""")
+    qrows, qsrows = [], []
     for i, q in enumerate(quests):
         L = q['L']
         tot = round(0.6 * (100 * L + 12 * L * L))
@@ -523,13 +532,13 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
             if s['step'] == len(mine):
                 rw['gil'] = 20 + 10 * L
                 rw['items'] = q['items']
-            srows.append(dict(quest_id=q['id'], step=s['step'], title=s['title'], goal=s['goal'], need=s['need'], lines=s['lines'], reward=rw))
+            qsrows.append(dict(quest_id=q['id'], step=s['step'], title=s['title'], goal=s['goal'], need=s['need'], lines=s['lines'], reward=rw))
     bulk('world_quests', qrows, [('quest_id', 'text'), ('kind', 'text'), ('cat', 'text'), ('title', 'text'), ('summary', 'text'), ('region_id', 'text'), ('min_level', 'int'), ('after', 'jsonb'),
          ('sort', 'int'), ('epilogue', 'jsonb'), ('active', 'boolean')], 'quest_id', ['cat', 'title', 'summary', 'region_id', 'min_level', 'after', 'sort', 'epilogue', 'active'],
          {'kind': "'side'", 'after': TA('after'), 'active': 'true'})
-    bulk('world_quest_steps', srows, [('quest_id', 'text'), ('step', 'int'), ('title', 'text'), ('goal', 'text'), ('need', 'jsonb'), ('lines', 'jsonb'), ('reward', 'jsonb')],
+    bulk('world_quest_steps', qsrows, [('quest_id', 'text'), ('step', 'int'), ('title', 'text'), ('goal', 'text'), ('need', 'jsonb'), ('lines', 'jsonb'), ('reward', 'jsonb')],
          'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
-    sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(srows)} · 새 인물 {len(QN)}\n")
+    sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(qsrows)} · 새 인물 {len(QN)}\n")
 
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
