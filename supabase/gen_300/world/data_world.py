@@ -1,5 +1,7 @@
 TERR = ('deungdo', '등도 옛터')
 TERR_JEONGNI = ('jeongni', '정리소')
+QUESTS = ['mdq_' + str(n) for n in range(1, 18)]
+OPEN_QUEST = {'deungdo': 'mdq_3', 'jeongni': 'mdq_11'}
 FERRY = 'deungdo_landing'
 WEAK_SAFE = ['deungdo_landing', 'lamp_rest']
 CAP = 50
@@ -31,17 +33,17 @@ REGIONS = [
          theme='deep', desc='장서각 지하서고 맨 끝 우물로 내려가면 나오는 정청 밑 방들이다. 먹 도랑이 흐르고, 가늠 저울과 봉연 수위 표가 줄지어 있다.'),
 ]
 
-REGION_OPEN = {'deungdo_landing': 3, 'dark_yamen': 3, 'martial_row': 4, 'red_shrine_lane': 6, 'old_ferry_market': 8, 'lamp_rest': 9,
-               'first_observatory': 10, 'ash_palace': 12, 'pact_court': 14, 'jeongni_vault': 11}
-NIGHT_BACK = {'deungdo_landing': 4, 'dark_yamen': 4, 'martial_row': 6, 'red_shrine_lane': 8, 'old_ferry_market': 10, 'lamp_rest': 10,
-              'first_observatory': 11, 'ash_palace': 13, 'pact_court': 16}
+REGION_OPEN = {'deungdo_landing': 'mdq_3', 'dark_yamen': 'mdq_3', 'martial_row': 'mdq_4', 'red_shrine_lane': 'mdq_6', 'old_ferry_market': 'mdq_8', 'lamp_rest': 'mdq_8',
+               'first_observatory': 'mdq_10', 'ash_palace': 'mdq_12', 'pact_court': 'mdq_14'}
+NIGHT_BACK = {'deungdo_landing': 'mdq_4', 'dark_yamen': 'mdq_4', 'martial_row': 'mdq_6', 'red_shrine_lane': 'mdq_8', 'old_ferry_market': 'mdq_10', 'lamp_rest': 'mdq_10',
+              'first_observatory': 'mdq_11', 'ash_palace': 'mdq_13', 'pact_court': 'mdq_16'}
 DOMAIN_FX = {
     'name': '백야',
-    'effects': {'mental_loss_pct': 15, 'incoming_damage_pct': 5, 'encounter_pct': 5},
-    'shadowless': {'sneak_pct': 15, 'quiet_cap': 10, 'evasion_pct': 3},
+    'white_night': True,
     'no_rescue': True,
-    'self_recall': {'per_day': 1, 'hp': 1, 'status': 'faded_name'},
     'guard': ['beneath_lamp', 'undying_glow'],
+    'effects': {'mental_loss_pct': 15, 'incoming_damage_pct': 5, 'encounter_pct': 5, 'wn_sneak': 15, 'wn_quiet': 10, 'wn_eva': 3},
+    'recall': {'per_day': 1, 'hp': 1, 'status': 'faded_name'},
 }
 
 NODES = {
