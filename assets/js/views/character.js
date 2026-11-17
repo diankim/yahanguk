@@ -7,7 +7,7 @@ import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT, PROJECT } from '../rules.js';
 const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEvery}분마다`;
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
@@ -703,6 +703,8 @@ async function faction(body) {
     ...(major ? [tile('base', '거점', 'shield', false)] : []),
     ...(major && fq?.faction_id ? fqPops(fq).map(([k, l, ico, dot]) => tile(k, l, ico, dot)) : []),
     ...(major && fq?.faction_id ? [`<button class="tile" data-pj="f:${esc(major)}" title="정한 물품을 거점에 넘겨 함께 거점을 세웁니다">${icon('hammer', 20)}<span>거점 사업</span></button>`] : []),
+    ...Object.entries(PROJECT.projects || {}).filter(([k, p]) => p.kind === 'faction' && p.faction !== major && (p.hub_ids || []).includes(here?.region_id))
+      .map(([k, p]) => `<button class="tile" data-pj="${esc(k)}" title="${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 거점 사업을 돕습니다 · 몫은 전으로 받습니다">${icon('hammer', 20)}<span>${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 사업 돕기</span></button>`),
   ].join('');
   body.innerHTML = `
     ${panel(major ? `${nameOf(major)}${fq?.ranks ? ` · ${esc(fq.ranks[(fq.rank || 1) - 1] || '')}` : ''}` : `${nameOf(c.faction_key)}`, `

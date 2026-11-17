@@ -1,11 +1,12 @@
-PAY = {'faction': {'per_merit': 40, 'day_cap': 2400}, 'common': {'gil_rate': 0.8, 'day_cap': 6000}, 'after_mul': 0.5}
+PAY = {'day_cap': 8000, 'faction': {'per_merit': 100}, 'common': {'gil_rate': 0.6}, 'help': {'gil_rate': 0.6}, 'after_mul': 0.5}
+HELP_REL = {'per_k': 0.1, 'person_day': 0.5, 'pair_day': 2}
 URGENT = {'n': 2, 'mul': 1.5}
 HQ_MUL = 1.5
 MUL_CAP = 2
-GOAL = {'window_h': 72, 'active_min': 60}
 MEMENTO = {'pct': 1, 'faction_merit': 20, 'common_gil_pct': 0.5, 'cake': 'proj_rice_cake', 'cake_n': 3, 'plaque': 'hf_proj_plaque', 'seal': 'sl_tak'}
-F_BASE = [14000, 16000, 17000, 18000, 20000]
-C_BASE = [34000, 38000, 42000, 46000, 50000]
+GOAL_STEP = 0.1
+F_BASE = [round(80000 * (1 + GOAL_STEP * i)) for i in range(5)]
+C_BASE = [round(300000 * (1 + GOAL_STEP * i)) for i in range(5)]
 F_SHOP = {'price_mul': 1.3, 'daily_cap': 5}
 C_SHOP = {'price_mul': 3.5, 'daily_cap': 5, 'cap_mul': 2}
 F_ROUTE_CUT = 0.2

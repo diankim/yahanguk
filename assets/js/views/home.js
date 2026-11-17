@@ -208,7 +208,7 @@ function town(s, roster) {
     ['smithy', 'hammer', '대장간', wk?.repair ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
     wk?.market ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
     wk?.storage ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
-    pj ? ['project', 'hammer', pj.kind === 'faction' ? '거점 사업' : '공동 사업', `${pj.name} · ${pj.stage >= 5 ? '다섯 단계 마침' : `${pj.stage + 1}단계 ${pj.pct}%`}`] : null,
+    pj ? ['project', 'hammer', pj.kind !== 'faction' ? '공동 사업' : pj.help ? `${pj.place || ''} 사업 돕기` : '거점 사업', `${pj.name} · ${pj.stage >= 5 ? '다섯 단계 마침' : `${pj.stage + 1}단계 ${pj.pct}%`}`] : null,
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],

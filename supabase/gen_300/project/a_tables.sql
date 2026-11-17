@@ -42,8 +42,6 @@ create table if not exists public.world_projects (
   stage int not null default 0 check (stage between 0 and 5),
   points bigint not null default 0,
   goal bigint not null default 0,
-  goal_n int not null default 1,
-  goal_day date,
   total bigint not null default 0,
   stage_at timestamptz[] not null default '{}',
   updated_at timestamptz not null default now()

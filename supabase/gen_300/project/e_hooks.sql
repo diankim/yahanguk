@@ -31,11 +31,11 @@ do $g$
 declare f text;
 begin
   foreach f in array array['world_project_rules()', 'world_project_rule(text)', 'world_project_items(text, int)', 'world_project_urgent(text, int, date)',
-    'world_project_goal(text, int, int)', 'world_project_text(text, int)'] loop
+    'world_project_goal(text, int)', 'world_project_text(text, int)'] loop
     perform pg_temp.pj_share('public.' || f);
   end loop;
-  foreach f in array array['world_project_stage(text)', 'world_project_n(text, timestamptz)', 'world_project_member(uuid, text)', 'world_project_story(uuid, text)',
-    'world_project_at(uuid)', 'world_project_stage_up(text, uuid)', 'world_project_have(uuid, jsonb, jsonb, text)', 'world_project_st_ok(uuid)',
+  foreach f in array array['world_project_stage(text)', 'world_project_role(uuid, text)', 'world_project_day_pts(uuid, date)', 'world_project_member(uuid, text)', 'world_project_story(uuid, text)',
+    'world_project_at(uuid)', 'world_project_rel_up(uuid, text, int, bigint)', 'world_project_stage_up(text, uuid)', 'world_project_have(uuid, jsonb, jsonb, text)', 'world_project_st_ok(uuid)',
     'world_project_brief(uuid)', 'world_project_rule_count(uuid, jsonb)', 'world_project_view(text)', 'world_project_give(text, jsonb)'] loop
     perform pg_temp.pj_share('public.' || f);
     perform pg_temp.pj_own('public.' || f, 'fn_owner_field');
@@ -44,3 +44,6 @@ end $g$;
 grant execute on function public.world_project_view(text) to authenticated;
 grant execute on function public.world_project_give(text, jsonb) to authenticated;
 grant execute on function public.world_project_rules() to anon, authenticated;
+grant select, update on public.world_faction_relations to fn_owner_field;
+grant insert on public.world_faction_log to fn_owner_field;
+grant usage on sequence public.world_faction_log_id_seq to fn_owner_field;

@@ -43,7 +43,7 @@ def rules():
         else:
             q.update(domain=p['domain'], story=p['story'], route=p['route'])
         projects[k] = q
-    return dict(pay=D.PAY, urgent=D.URGENT, hq_mul=D.HQ_MUL, mul_cap=D.MUL_CAP, goal=D.GOAL, memento=D.MEMENTO, lift=D.LIFT,
+    return dict(pay=D.PAY, urgent=D.URGENT, hq_mul=D.HQ_MUL, mul_cap=D.MUL_CAP, help_rel=D.HELP_REL, memento=D.MEMENTO, lift=D.LIFT,
                 f_shop=D.F_SHOP, c_shop=D.C_SHOP, perk_text={'faction': D.F_PERK_TEXT, 'common': D.C_PERK_TEXT},
                 vault=[dict(id=i, price=pr, rank=rk, stage=sg) for i, pr, rk, sg in D.VAULT_COMMON],
                 vault_faction=dict(rank=D.VAULT_FACTION[0], prices=list(D.VAULT_FACTION[1:]), stage=4),

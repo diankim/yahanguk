@@ -1179,19 +1179,20 @@ const S = [
     ${petPartnerHtml()}`],
   ['lore-factions', '세력 이야기', factionLoreHtml()],
   ['fproject', '거점 사업', `
-    <p>대세력마다 거점을 함께 다시 세우는 사업이 있습니다. 그 세력에 들어 가입 퀘스트를 마친 조사원만, 세력 거점에서 정한 물품을 넘깁니다(캐릭터 › 세력 「거점 사업」 또는 거점 현장의 띠).</p>
+    <p>대세력마다 거점을 함께 다시 세우는 사업이 있습니다. 세력 거점에서 정한 물품을 넘깁니다(캐릭터 › 세력 「거점 사업」 또는 거점 현장의 띠). 그 세력 조사원(가입 퀘스트를 마친)은 공훈을, 다른 세력이나 대세력이 없는 조사원은 「돕기」로 전을 받습니다.</p>
     <h4>단계와 혜택</h4>
     <ol>${(PROJECT.perk_text?.faction || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
     <ul>
-      <li>단계는 한 번 차면 그대로 남습니다. 혜택은 그 세력 조사원만 받습니다.</li>
+      <li>단계는 한 번 차면 그대로 남습니다. 혜택(상점·지역 효과·지름길·비고·꾸미기)은 그 세력 조사원만 받습니다.</li>
       <li>단계마다 받는 물품은 제작품 넷과 채집 재료 넷, 모두 여덟 가지입니다. 날마다 그중 둘이 「급히 필요」(몫 ×${PROJECT.urgent?.mul ?? 1.5})로 바뀌고, 급히 필요한 채집 재료는 현장 채집터에 「사업」 칩이 붙습니다.</li>
-      <li>세력마다 단계 목표: ${pjBase('faction')}몫 × √(지난 ${Math.round((PROJECT.goal?.window_h ?? 72) / 24)}일 동안 ${PROJECT.goal?.active_min ?? 60}분 넘게 움직인 그 세력 조사원 수).</li>
+      <li>단계 목표는 모든 세력이 같습니다: ${pjBase('faction')}몫. 사람이 적은 세력은 다른 세력의 도움으로 채울 수 있습니다.</li>
     </ul>
     <h4>넘기기와 보상</h4>
     <ul>
-      <li>몫 ${PROJECT.pay?.faction?.per_merit ?? 40}마다 공훈 1. 한 사람이 하루에 넘길 수 있는 몫은 ${fmt.num(PROJECT.pay?.faction?.day_cap ?? 2400)}까지이고, 상한을 넘는 물품은 돌려받습니다.</li>
+      <li>내 세력 사업은 몫 ${PROJECT.pay?.faction?.per_merit ?? 100}마다 공훈 1. 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}까지이고, 상한을 넘는 물품은 돌려받습니다.</li>
+      <li>남의 세력 사업 돕기: 몫 1마다 ${PROJECT.pay?.help?.gil_rate ?? 0.6}전, 몫은 그 세력 단계에 쌓입니다. 단계가 찰 때 기여가 ${PROJECT.memento?.pct ?? 1}% 넘으면 낙성 떡을 받고, 누계는 사업 칭호에 셉니다. 내 세력이 있으면 몫 1,000마다 두 세력 관계가 +${PROJECT.help_rel?.per_k ?? 0.1} 오릅니다(한 사람 하루 +${PROJECT.help_rel?.person_day ?? 0.5}, 두 세력 사이 하루 +${PROJECT.help_rel?.pair_day ?? 2}까지).</li>
       <li>우수품은 몫 ×${PROJECT.hq_mul ?? 1.5}(급히와 겹쳐도 ×${PROJECT.mul_cap ?? 2}까지). 가방에 모자란 것은 창고에서 꺼내 넘깁니다. 장착 중·잠금·강화한 장비·임무 물품은 넘기지 않습니다.</li>
-      <li>단계가 차는 순간 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 공훈 +${PROJECT.memento?.faction_merit ?? 20}과 낙성 떡을 창고로 받고, 마지막 단계에는 「낙성 기념패」 가구도 받습니다.</li>
+      <li>단계가 차는 순간 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 낙성 떡(그 세력 조사원은 공훈 +${PROJECT.memento?.faction_merit ?? 20}도)을 창고로 받고, 마지막 단계에는 「낙성 기념패」 가구도 받습니다.</li>
       <li>다섯 단계를 다 마친 뒤에도 넘길 수 있고 기여·칭호에 셉니다. 보상은 ${(PROJECT.pay?.after_mul ?? 0.5) * 100}%입니다.</li>
     </ul>
     <h4>세력마다</h4>
@@ -1206,8 +1207,8 @@ const S = [
     <ol>${(PROJECT.perk_text?.common || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
     <ul>
       <li>상점 품목 수가 느는 것은 모두에게 보이고, 새 품목·하루 개수·지름길·창고·거래소·마구간·수리비·되팔기는 그 땅 이야기를 마친 사람에게만 풀립니다. 마치지 않은 사람에게는 빈약한 안전지대 그대로입니다.</li>
-      <li>단계 목표: ${pjBase('common')}몫 × √(지난 ${Math.round((PROJECT.goal?.window_h ?? 72) / 24)}일 동안 움직였고 그 땅이 열린 조사원 수).</li>
-      <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.8}전, 한 사람이 하루에 한 땅에 넘길 수 있는 몫은 ${fmt.num(PROJECT.pay?.common?.day_cap ?? 6000)}까지입니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
+      <li>단계 목표(세 땅 모두 같음): ${pjBase('common')}몫.</li>
+      <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
       <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
     </ul>`],
   ['feast', '세력 행사', `
