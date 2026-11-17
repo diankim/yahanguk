@@ -8,6 +8,7 @@ import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
 import { baseOf } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
+import { mkugCells, mkugMimic, mkugMemTag, mkugGim, mkugCue } from './gw_mkug.js';
 
 const BOSS = {
   gwiheo: { name: '귀허의 주인', arc: '외전 · 요인록', place: '귀허', PHASE: { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' }, last: '소용돌이', mechs: ['chain', 'name', 'vortex'],
@@ -118,17 +119,17 @@ function countdown() {
   tickUntil(el, now());
   const b = $('.gw-round-bar span', el);
   if (b && f.round_ends_at) {
-    const len = bossOf().mechs.includes(f.mech?.k) ? 10000 : 5000;
+    const len = bossOf().mechs.includes(f.mech?.k) || f.mech?.due ? 10000 : 5000;
     b.style.width = `${Math.max(0, Math.min(100, (new Date(f.round_ends_at) - now()) / len * 100))}%`;
   }
 }
 
 const nameOfMember = (s, id) => (s.members || []).find(m => m.id === id)?.name || '';
-const ladder = ph => `<ol class="gw-ladder">${[1, 2, 3, 4].map(p => `<li class="${p === ph ? 'now' : p < ph ? 'done' : ''}" title="${PHASE_AT[p]}"><b>${p}</b><span>${p === 4 && !story() ? bossOf().last : PHASE[p]}</span></li>`).join('')}</ol>`;
+const ladder = ph => `<ol class="gw-ladder">${[1, 2, 3, 4].map(p => `<li class="${p === ph ? 'now' : p < ph ? 'done' : ''}" title="${PHASE_AT[p]}"><b>${p}</b><span>${p === 4 && !story() && !ult() ? bossOf().last : PHASE[p]}</span></li>`).join('')}</ol>`;
 const tellSize = t => { const n = String(t || '').length; return n > 110 ? 'xxl' : n > 80 ? 'xl' : n > 55 ? 'l' : ''; };
 
 function roundBand(s) {
-  const f = s.fight, mech = f.mech || {}, gim = story() ? !!mech.s : bossOf().mechs.includes(mech.k);
+  const f = s.fight, mech = f.mech || {}, gim = story() ? !!mech.s : bossOf().mechs.includes(mech.k) || !!mech.due;
   const chosen = (s.members || []).filter(m => !m.out && !m.resting && m.acted).length, alive = (s.members || []).filter(m => !m.out && !m.resting).length;
   const myAct = s.my_act ? actName(s, s.my_act) : null;
   const me = (s.members || []).find(m => m.id === s.me), fresh = Date.now() < freshUntil;
@@ -138,7 +139,7 @@ function roundBand(s) {
       ${story() ? '' : `<span class="gw-band-time">${icon('hourglass', 13)}<b data-until="${esc(f.round_ends_at)}" data-sec="1">…</b></span>`}
       <span class="gw-chosen muted small">고른 사람 ${chosen}/${alive}</span></div>
     ${story() ? `<p class="muted small gw-calm">${alive > 1 ? '모두 고르면 다음 라운드로 넘어갑니다 · 1분 안에 안 고르면 방어' : '고르면 다음 라운드로 넘어갑니다 · 마감 없음'}</p>` : '<div class="bar gw-round-bar"><span></span></div>'}
-    <p class="gw-tell ${tellSize(mech.tell)}">${esc(mech.tell || bossOf().calm)}</p>
+    ${s.board?.ugmk ? mkugCue(s) || `<p class="gw-tell">${esc(bossOf().calm)}</p>` : `<p class="gw-tell ${tellSize(mech.tell)}">${esc(mech.tell || bossOf().calm)}</p>`}
     ${mech.k === 'chain' ? `<p class="small">내 손목의 사슬 · <b class="${COLOR[mech.mine] || ''}">${esc(mech.mine || '없음')}</b></p>` : ''}
     ${fxKeys(f.bfx).length ? `<div class="chips raid-bfx">${fxChips(f.bfx)}</div>` : ''}
     <p class="gw-mine">${myAct ? `${icon('check', 13)} 이번 라운드: <b>${esc(myAct)}</b>${story() ? '' : ' · 마감 전에는 바꿀 수 있습니다'}` : `${icon('bell', 13)} 아직 고르지 않았습니다${story() && alive === 1 ? '' : ' — 고르지 않으면 방어합니다'}`}</p>
@@ -149,7 +150,7 @@ function actName(s, a) {
   if (a.a === 'coop') { const sk = (s.skills || []).find(x => x.id === a.s); return `기술 「${sk?.name || ''}」${t ? ` → ${t}` : ''}`; }
   if (a.a === 'item') return `회복품 「${nameOf(a.i)}」${t ? ` → ${t}` : ''}`;
   const mv = a.m ? ` · 「${CELL[a.m]}」 칸으로` : '';
-  return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 맞바꾸기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', sweep: `${a.c || ''}번 칸 걷어 내기`, move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기', deal: '흥정 받기' })[a.a] || a.a) + mv;
+  return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 맞바꾸기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', sweep: `${a.c || ''}번 칸 걷어 내기`, move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: snap?.board?.ugmk ? '되새기기' : '되찾기', deal: '흥정 받기' })[a.a] || a.a) + mv;
 }
 
 function draw() {
@@ -185,7 +186,7 @@ function draw() {
       ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
-          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
+          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', s.board?.ugmk ? mkugMemTag(s, m) : '', by && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
@@ -242,7 +243,7 @@ function actHtml(s, me) {
     <div class="raid-coopbox"><div class="coop-grid gw-skills">${skills.map(k => coopBtn({ ...k, on: a?.a === 'coop' && a?.s === k.id,
         why: me.out ? '물러남' : resting ? '막 사이' : !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `${spOf()[0]} ${k.cost}` : '',
         desc: `${k.desc} (${spOf()[0]} ${k.cost} · ${k.rounds}라운드마다)` }, `data-gw-skill="${esc(k.id)}"`)).join('') || '<p class="muted small">쓸 수 있는 협동 기술이 없습니다.</p>'}</div></div>
-    ${mkGim(s, me, a, tName)}${ggGim(s, me, a)}${byGim(s, me, a)}${storyGim(s, me, a)}
+    ${s.board?.ugmk ? mkugGim(s, me, a, moveTo, nameOfMember, n => CELL[n]) : mkGim(s, me, a, tName)}${ggGim(s, me, a)}${byGim(s, me, a)}${storyGim(s, me, a)}
     ${!me.out && (mech.k === 'name' || mech.k === 'chain') ? `<div class="gw-gim"><span class="gw-gim-h" title="이번 라운드에만 나오는 행동">${icon('bell', 13)}<b>이번만</b></span>
       ${mech.k === 'name' ? `<button class="btn ${on('call')}" data-gw="call">${icon('users', 16)}<span>${esc(tName)}의 이름 부르기</span></button>` : ''}
       ${mech.k === 'chain' ? (mech.colors || []).filter((v, i, x) => x.indexOf(v) === i).map(col => `<button class="btn ${COLOR[col] || ''} ${a?.a === 'chain' && a?.c === col ? 'on' : ''}" data-gw="chain" data-c="${esc(col)}">${esc(col)} 사슬</button>`).join('') : ''}
@@ -339,7 +340,7 @@ function step(cell) {
   const a = s.my_act;
   if (a?.a) {
     const again = { p_action: a.a, p_target: a.t || null, p_item: a.s || a.i || a.c || null };
-    if (a.a === 'recall' && (moveTo || here) && ((b.lit || []).includes(moveTo || here) || (moveTo || here) === 5)) again.p_action = 'guard';
+    if (a.a === 'recall' && !b.ugmk && (moveTo || here) && ((b.lit || []).includes(moveTo || here) || (moveTo || here) === 5)) again.p_action = 'guard';
     run({ disabled: false, dataset: {}, id: '' }, () => act(again));
   } else draw();
 }
@@ -348,16 +349,17 @@ function boardHtml(s, live) {
   const cells = new Set(mech.k === 'line' || ['drop', 'pool'].includes(mech.s) ? mech.cells || [] : []), marked = new Set(mark ? mech.cells || [] : []);
   const moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
   const who = {}; for (const m of s.members || []) if (m.pos) (who[m.pos] = who[m.pos] || []).push(m);
+  const ug = b.ugmk ? mkugCells(s) : null;
   const ticks = Array.from({ length: b.max || 9 }, (_, i) => `<i class="${i < b.strokes ? 'on' : ''}"></i>`).join('');
   return `<div class="mk-wrap"><div class="mk-board ${mech.k === 'erase' || mech.s === 'keep' ? 'erase' : ''}" role="grid" aria-label="아홉 칸 명부">${GRID.map(n => {
     const center = n === 5, st = center ? 'center' : lit.has(n) ? 'lit' : 'blank';
-    const cls = ['mk-cell', st, ink.has(n) ? 'ink' : '', cells.has(n) ? 'mk-line' : '', marked.has(n) ? 'mk-mark' : '', moves.has(n) ? 'mk-step' : '', n === dest ? 'dest' : '', n === here ? 'here' : ''].filter(Boolean).join(' ');
-    const ppl = (who[n] || []).slice(0, 4).map(m => `<span class="mk-who ${m.id === s.me ? 'me' : ''} ${m.out || m.resting ? 'out' : ''}" title="${esc(m.name)}">${esc(String(m.name || '').slice(0, 1))}</span>`).join('');
+    const cls = ['mk-cell', st, ink.has(n) ? 'ink' : '', cells.has(n) ? 'mk-line' : '', marked.has(n) ? 'mk-mark' : '', moves.has(n) ? 'mk-step' : '', n === dest ? 'dest' : '', n === here ? 'here' : '', ...(ug?.[n]?.cls || [])].filter(Boolean).join(' ');
+    const ppl = (who[n] || []).slice(0, 4).map(m => { const mi = ug && mkugMimic(s, m.id); return `<span class="mk-who ${m.id === s.me ? 'me' : ''} ${m.out || m.resting ? 'out' : ''} ${mi ? `ug-mim${mi.due ? ' due' : ''}` : ''}" title="${esc(m.name)}${mi ? ` · 흉내 ${mi.n}` : ''}">${esc(String(m.name || '').slice(0, 1))}${mi ? `<i>${mi.n}</i>` : ''}</span>`; }).join('');
     const tag = center ? `<span class="mk-strokes" title="이름 획 ${b.strokes}/${b.max}">${ticks}</span>` : `<small>${st === 'lit' ? '빛남' : '빈칸'}${ink.has(n) ? (story() ? ' · 웅덩이' : ' · 먹 자국') : ''}${marked.has(n) ? ' · 점' : ''}</small>`;
-    const label = `${CELL[n]} 칸${center ? ' · 이름' : st === 'lit' ? ' · 빛남' : ' · 빈칸'}${cells.has(n) ? (story() ? ' · 먹이 떨어짐' : ' · 먹줄') : ''}${marked.has(n) ? ' · 지우려는 칸(서 있으면 막음)' : ''}${moves.has(n) ? ' · 눌러서 옮겨 서기' : ''}`;
-    return `<button type="button" class="${cls}" ${moves.has(n) || (live && n === here) ? `data-mk-step="${n}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}">${tag}<span class="mk-ppl">${ppl}</span>${n === dest ? '<b class="mk-arrow">→</b>' : ''}</button>`;
+    const label = `${CELL[n]} 칸${center ? ' · 이름' : st === 'lit' ? ' · 빛남' : ' · 빈칸'}${cells.has(n) ? (story() ? ' · 먹이 떨어짐' : ' · 먹줄') : ''}${marked.has(n) ? ' · 지우려는 칸(서 있으면 막음)' : ''}${ug?.[n] ? ` · ${ug[n].tips.join(' · ')}` : ''}${moves.has(n) ? ' · 눌러서 옮겨 서기' : ''}`;
+    return `<button type="button" class="${cls}" ${moves.has(n) || (live && n === here) ? `data-mk-step="${n}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}">${ug?.[n]?.tags.length ? `<span class="ug-tags">${center ? tag : ''}${ug[n].tags.join('')}</span>` : tag}<span class="mk-ppl">${ppl}</span>${n === dest ? '<b class="mk-arrow">→</b>' : ''}</button>`;
   }).join('')}</div>
-  <p class="mk-hint muted small">${live ? (moveTo ? `「${CELL[moveTo]}」 칸으로 옮겨 섭니다${s.my_act ? '' : ' — 행동을 고르면 함께 옮깁니다'} · 내 칸을 누르면 취소` : (b.moves || []).length ? '테 두른 이웃 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)' : '먹에 발이 묶여 이번 라운드에는 옮길 수 없습니다') : `기억 조각 ${b.mem || 0}/6`}</p></div>`;
+  <p class="mk-hint muted small">${b.ugmk ? `수법을 놓칠 때마다 이름 획 ${b.fail_strokes || 3}개 · 이름 획이 다 지워지면 전멸${live ? ' · 테 두른 이웃 칸을 누르면 옮겨 섭니다' : ''}` : live ? (moveTo ? `「${CELL[moveTo]}」 칸으로 옮겨 섭니다${s.my_act ? '' : ' — 행동을 고르면 함께 옮깁니다'} · 내 칸을 누르면 취소` : (b.moves || []).length ? '테 두른 이웃 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)' : '먹에 발이 묶여 이번 라운드에는 옮길 수 없습니다') : `기억 조각 ${b.mem || 0}/6`}</p></div>`;
 }
 function mkGim(s, me, a, tName) {
   if (s.boss !== 'mukjeok' || me.out) return '';
@@ -397,7 +399,7 @@ function ggGim(s, me, a) {
   </div>`;
 }
 function ugBar(s) {
-  const u = s.board?.ug || {}, acts = u.acts || [], cut = u.next_cut;
+  const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : ''), cut = u.next_cut;
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
     <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}`}</p></div>`;
 }

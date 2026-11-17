@@ -2414,6 +2414,29 @@ b.contest { color: var(--warn); font-weight: 600; }
 .mk-who.out { opacity: .45; border-style: dashed; }
 .mk-arrow { position: absolute; top: 2px; right: 4px; color: var(--mp); font-size: calc(12px * var(--fz, 1)); }
 .mk-hint { margin: 0; text-align: center; }
+.ug-tags { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px; max-width: 100%; pointer-events: none; }
+.ug-t { white-space: nowrap; font-size: calc(10px * var(--fz, 1)); line-height: 1; padding: 2px 3px; border-radius: 3px; font-weight: 800; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); }
+.ug-t.ug-line { color: var(--hp); border-color: var(--hp); }
+.ug-t.ug-step { color: var(--er); border-color: var(--er); }
+.ug-t.ug-mem { color: var(--gold); border-color: var(--gold); }
+.ug-t.ug-erase { color: var(--accent); border-color: var(--accent); }
+.ug-t.due { color: #fff; background: var(--hp); border-color: var(--hp); }
+.ug-t.ug-mem.due { color: #1a1410; background: var(--gold); border-color: var(--gold); }
+.mk-cell.ug-line { outline: 2px dashed var(--hp); outline-offset: -3px; }
+.mk-cell.ug-line.ug-due { outline: 3px solid var(--hp); background: color-mix(in srgb, var(--hp) 30%, var(--surface)); }
+.mk-cell.ug-line.ug-x2.ug-due { background: color-mix(in srgb, var(--hp) 52%, var(--surface)); }
+.mk-cell.ug-step:not(.ug-line) { outline: 2px dashed var(--er); outline-offset: -3px; }
+.mk-cell.ug-step.ug-due:not(.ug-line) { outline-style: solid; background: color-mix(in srgb, var(--er) 28%, var(--surface)); }
+.mk-cell.ug-mem { border-color: var(--gold); border-style: dashed; }
+.mk-cell.ug-mem.ug-due { border-style: solid; background: color-mix(in srgb, var(--gold) 26%, var(--surface)); }
+.mk-cell.center.ug-erase.ug-due { animation: mk-blink 1s steps(2, start) infinite; }
+.mk-who.ug-mim { position: relative; border: 2px dashed var(--warn); }
+.mk-who.ug-mim.due { border: 2px solid var(--hp); background: color-mix(in srgb, var(--hp) 40%, var(--surface)); }
+.mk-who.ug-mim i { position: absolute; top: -7px; right: -7px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 6px; font-style: normal; font-size: calc(9px * var(--fz, 1)); line-height: 12px; color: #fff; background: var(--hp); }
+.ug-cue { color: var(--warn); font-weight: 700; }
+.mkug-gim .btn { flex: 1 1 0; }
+.mk-cell.center .ug-tags { flex-wrap: nowrap; }
+@media (max-width: 640px) { .gw-wrap.mk .ug-t { padding: 1px 2px; font-size: calc(9px * var(--fz, 1)); } .gw-wrap.mk .mk-cell.center .mk-strokes { grid-template-columns: repeat(3, 4px); } .gw-wrap.mk .mk-cell.center .mk-strokes i { width: 4px; } }
 .gw-log li.k-mem { border-left-color: var(--gold); padding-left: 14px; } .gw-log li.k-mem span { font-family: var(--font-serif, inherit); color: color-mix(in srgb, var(--gold) 55%, var(--text)); }
 .gw-log li.k-shadow span { font-style: italic; }
 .toast-mem { border-color: color-mix(in srgb, var(--gold) 60%, var(--line)); font-family: var(--font-serif, inherit); max-width: min(92vw, 520px); }
