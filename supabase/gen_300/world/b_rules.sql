@@ -1,23 +1,3 @@
-do $d$
-declare j jsonb := public.world_domain_rules() || $J${
-  "deungdo": {"name": "등도 옛터", "open_quest": "mdq_3", "no_shadow": true, "rare": "lamp_wick_core",
-    "regions": {"deungdo_landing": "mdq_3", "dark_yamen": "mdq_3", "martial_row": "mdq_4", "red_shrine_lane": "mdq_6", "old_ferry_market": "mdq_8",
-                "lamp_rest": "mdq_8", "first_observatory": "mdq_10", "ash_palace": "mdq_12", "pact_court": "mdq_14"},
-    "night": {"deungdo_landing": "mdq_4", "dark_yamen": "mdq_4", "martial_row": "mdq_6", "red_shrine_lane": "mdq_8", "old_ferry_market": "mdq_10",
-              "lamp_rest": "mdq_10", "first_observatory": "mdq_11", "ash_palace": "mdq_13", "pact_court": "mdq_16"},
-    "fx": {"name": "백야", "white_night": true, "no_rescue": true, "guard": ["under_lamp"],
-           "effects": {"mental_loss_pct": 15, "incoming_damage_pct": 5, "encounter_pct": 5, "wn_sneak": 15, "wn_quiet": 10, "wn_eva": 3},
-           "recall": {"per_day": 1, "hp": 1, "status": "faded_name"}}},
-  "jeongni": {"name": "정리소", "open_quest": "mdq_11", "no_shadow": true, "rare": "lamp_wick_core"}
-}$J$::jsonb;
-begin
-  execute format('create or replace function public.world_domain_rules() returns jsonb language sql immutable as %L', format('select %L::jsonb', j::text));
-end $d$;
-grant execute on function public.world_domain_rules() to anon, authenticated;
-
-create or replace function public.world_weak_safe_rules() returns jsonb
-language sql immutable as $$ select '["banyo_village", "mukchang_ferry", "deungdo_landing", "lamp_rest"]'::jsonb $$;
-
 create or replace function public.world_region_open(p_uid uuid, p_region text) returns boolean
 language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
 #variable_conflict use_column
@@ -121,12 +101,6 @@ select pg_temp.yh_patch('public.world_call_rescue()',
   IF coalesce((public.world_domain_fx(uid) ->> ''no_rescue'')::boolean, false) THEN
     RAISE EXCEPTION ''본부 구조대가 오지 못하는 곳입니다. 동료의 구조·회생 부적·「제 이름 외기」로 일어나세요.'' USING HINT = ''no_rescue'';
   END IF;');
-
-insert into public.world_status_catalog(status_key, status_name, polarity, duration_minutes, effects, icon, description)
-values ('faded_name', '바랜 이름', 'negative', 60, '{"combat_damage_pct": -10}'::jsonb, 'spark', '스스로 제 이름을 외어 일어났습니다. 이름이 아직 바래 있어 주는 피해가 줄어듭니다.'),
-       ('under_lamp', '등불 아래', 'positive', 60, '{}'::jsonb, 'flame', '명등 등롱 불빛이 흰 밤을 밀어냅니다. 등도의 백야 효과를 받지 않습니다.')
-on conflict (status_key) do update set status_name = excluded.status_name, polarity = excluded.polarity, duration_minutes = excluded.duration_minutes,
-  effects = excluded.effects, icon = excluded.icon, description = excluded.description;
 
 create or replace function public.world_self_recall() returns jsonb
 language plpgsql security definer set search_path to 'pg_catalog', 'public' as $$
