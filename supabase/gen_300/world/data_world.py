@@ -35,7 +35,7 @@ REGIONS = [
 
 REGION_OPEN = {'deungdo_landing': 'mdq_3', 'dark_yamen': 'mdq_3', 'martial_row': 'mdq_4', 'red_shrine_lane': 'mdq_6', 'old_ferry_market': 'mdq_8', 'lamp_rest': 'mdq_8',
                'first_observatory': 'mdq_10', 'ash_palace': 'mdq_12', 'pact_court': 'mdq_14'}
-NIGHT_BACK = {'deungdo_landing': 'mdq_4', 'dark_yamen': 'mdq_4', 'martial_row': 'mdq_6', 'red_shrine_lane': 'mdq_8', 'old_ferry_market': 'mdq_10', 'lamp_rest': 'mdq_10',
+NIGHT_BACK = {'deungdo_landing': 'mdq_4', 'dark_yamen': 'mdq_16', 'martial_row': 'mdq_6', 'red_shrine_lane': 'mdq_8', 'old_ferry_market': 'mdq_10', 'lamp_rest': 'mdq_10',
               'first_observatory': 'mdq_11', 'ash_palace': 'mdq_13', 'pact_court': 'mdq_16'}
 DOMAIN_FX = {
     'name': '백야',
