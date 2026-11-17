@@ -41,10 +41,12 @@ const CELL = { 4: '왼쪽 위', 9: '위', 2: '오른쪽 위', 3: '왼쪽', 5: '�
 const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머뭇거림' };
 
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
-let queued = null, lastRound = null, freshUntil = 0;
+let queued = null, lastRound = null, freshUntil = 0, roundLen = 5000;
 const picked = new Set();
 function roundSeen() {
-  const f = snap?.fight; if (!f || f.status !== 'fight' || !snap.joined) return;
+  const f = snap?.fight; if (!f || f.status !== 'fight') return;
+  if (f.round !== lastRound) roundLen = new Date(f.round_ends_at) - now() > 6000 ? 10000 : 5000;
+  if (!snap.joined) { lastRound = f.round; return; }
   if (snap.my_act) picked.add(f.round);
   if (lastRound != null && f.round > lastRound) {
     freshUntil = Date.now() + 1600;
@@ -119,7 +121,7 @@ function countdown() {
   tickUntil(el, now());
   const b = $('.gw-round-bar span', el);
   if (b && f.round_ends_at) {
-    const len = bossOf().mechs.includes(f.mech?.k) ? 10000 : 5000;
+    const len = Math.max(roundLen, bossOf().mechs.includes(f.mech?.k) ? 10000 : 5000);
     b.style.width = `${Math.max(0, Math.min(100, (new Date(f.round_ends_at) - now()) / len * 100))}%`;
   }
 }

@@ -531,7 +531,8 @@ declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; f public.
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   if f.status <> 'fight' then return true; end if;
-  if f.board -> 'wn' ->> 'at' is not null and p_round >= (f.board -> 'wn' ->> 'at')::int and f.hp > 0 then
+  if f.board -> 'wn' ->> 'at' is not null and p_round >= (f.board -> 'wn' ->> 'at')::int and f.hp > 0
+     and coalesce((f.board -> 'wn' ->> 'lit')::int, 0) < coalesce((f.board -> 'wn' ->> 'need')::int, 7) then
     if coalesce((rb -> 'wn' ->> 'wipe')::boolean, false) and f.mode = 'ultimate' then
       perform public.world_ug_wipe(p_fight, p_round, '이야기꾼의 말로는 흰 밤이 끝내 걷히지 않았다고 한다 — 등을 다 켜지 못했다.');
       return true;
