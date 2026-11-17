@@ -73,6 +73,7 @@ export function mountNotifications(btn) {
       shown.add(n.id); notes.unshift(n); drawDot();
       window.dispatchEvent(new CustomEvent('yh-note', { detail: n }));
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
+      else if (n.kind === 'ride_departed') loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_travel_party_notice' }));
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
       if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
     };
@@ -168,7 +169,7 @@ function noteActs(n) {
 }
 const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
-  drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look' };
+  drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look', project_stage: 'home' };
 const pastActs = n => { const a = noteActs(n); return /data-(invite|ride|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
 const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {

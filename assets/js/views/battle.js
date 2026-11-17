@@ -215,7 +215,7 @@ function showEnd(r, foe) {
       <p class="lead">${esc(`${x.monster || '요괴'}을(를)`)}${x.rank === 'guardian' ? ' (우두머리)' : x.rank === 'elite' ? ' (정예)' : ''} 쓰러뜨렸습니다.</p>
       <div class="stat-tiles"><div title="${esc(xpNote())}"><span>경험치</span><b>+${fmt.num(xpGot(x.xp))}</b>${xpPct() !== 100 ? `<small class="muted">${xpPct() > 100 ? '덤' : '조절'} ${xpPct()}%</small>` : ''}${x.mentor_xp > 0 ? `<small class="mt-got">선배 덤 · ${esc(x.mentor)}</small>` : ''}</div><div><span>전</span><b>+${fmt.num(x.gil)}</b></div></div>
       <h3 class="sub-h">전리품</h3><ul class="loot">${loot.map(([k, n]) => `<li>${esc(nameOf(k))} <b>×${n}</b></li>`).join('') || '<li>없음</li>'}</ul>
-      <p class="muted small">가방이 가득 차면 넘치는 전리품은 두고 옵니다.</p>
+      <p class="muted small">${x.borrowed ? '이야기를 따라 흘러든 요괴라 거둘 것이 남지 않았습니다. 할 일에는 셉니다.' : '가방이 가득 차면 넘치는 전리품은 두고 옵니다.'}</p>
       <button class="btn primary block" data-close>계속 탐색</button></div>` });
   } else if (r.ended === 'defeat') {
     openModal({ title: '쓰러졌습니다', body: `<div class="end-card lose"><p class="lead">${esc(x.monster)}에게 쓰러졌습니다.</p>

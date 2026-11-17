@@ -7,7 +7,8 @@ import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR, FIGHT_KINDS } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT } from '../rules.js';
+import { openProject, projectBand, urgentSet } from './project.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -98,7 +99,7 @@ async function draw() {
     const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     if (el.offsetHeight) el.style.minHeight = `${el.offsetHeight}px`;
-    el.innerHTML =`${scene(s, traveling, downed)}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
+    el.innerHTML =`${scene(s, traveling, downed)}${store.hud?.domain?.white_night ? `<p class="hint warn wn-band">${icon('mask', 14)}<span>${esc(WHITE_NIGHT.band)}</span></p>` : ''}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     if (oldQ && $('#quest-box', el)) $('#quest-box', el).innerHTML = oldQ;
     if (oldR && $('#raid-band', el)) $('#raid-band', el).innerHTML = oldR;
     const keepY = () => { if ((y > 0 || back) && el.isConnected) scrollAfterModal(y, back); };
@@ -166,7 +167,7 @@ function sceneTint(r) {
 function sceneFx(r) {
   const e = store.env;
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
-  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
+  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w, r?.project?.here)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
 function inflHtml(m) {
   const v = inflMine(m);
@@ -200,13 +201,17 @@ function scene(s, traveling, downed) {
     ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래·물품 사용·퀘스트 보고를 할 수 없습니다. 장비 바꾸기는 됩니다. 도중에 그만두면 지난 시간만큼만 받습니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
+const ugBoards = s => Object.entries(GAMEDATA.ultimate?.boards || {}).filter(([, b]) => b.region === s.region?.region_id);
+const ugReq = () => `Lv${GAMEDATA.ultimate?.level ?? 50} · ${(GAMEDATA.ultimate?.party || [2, 4]).join('~')}명`;
+const ugShopTip = b => `${b.token_name}을(를) 꾸미기 물품으로 바꿉니다`;
 function town(s, roster) {
-  const r = s.region, banyo = weakSafe(r.region_id);
+  const r = s.region, wk = r.weak || null, pj = r.project?.here;
   const tiles = [
-    ['shop', 'shop', r.shop_name || '상점', banyo ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
-    ['smithy', 'hammer', '대장간', banyo ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
-    banyo ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
-    banyo ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
+    ['shop', 'shop', r.shop_name || '상점', wk?.shop ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
+    ['smithy', 'hammer', '대장간', wk?.repair ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
+    wk?.market ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
+    wk?.storage ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
+    pj ? ['project', 'hammer', pj.kind !== 'faction' ? '공동 사업' : pj.help ? `${pj.place || ''} 사업 돕기` : '거점 사업', `${pj.name} · ${pj.stage >= 5 ? '다섯 단계 마침' : `${pj.stage + 1}단계 ${pj.pct}%`}`] : null,
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
@@ -218,7 +223,8 @@ function town(s, roster) {
   ].filter(Boolean);
   return `
     ${s.stamina ? townStamina(s.stamina) : ''}
-    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : k === 'depart' ? 'data-tcd-home' : ''}>${esc(k === 'depart' && travelCdLeft() > 0 ? `다시 출발까지 ${fmt.remain(travelCdLeft())}` : d)}</small></button>`).join('')}</div>
+    ${projectBand(r.project)}
+    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : k === 'depart' ? 'data-tcd-home' : ''}>${esc(k === 'depart' && travelCdLeft() > 0 ? `다시 출발까지 ${fmt.remain(travelCdLeft())}` : d)}</small></button>`).join('')}${ugBoards(s).map(([k, b]) => `<a class="facility" href="#/gw/${esc(b.boss)}">${icon('flag', 26)}<b>${esc(b.name)}</b><small>${esc(ugReq())}</small></a><button class="facility" type="button" data-ug-shop="${esc(k)}">${icon('chest', 26)}<b>${esc(b.name)} 교환</b><small>${esc(ugShopTip(b))}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
 }
@@ -251,6 +257,8 @@ async function digBijang(b, s) {
   const r = await guard(b, () => act('world_bijang_dig'));
   if (r?.fight_id) window.yahangGo('pfight', r.fight_id);
 }
+const pjTag = (s, items) => { const u = urgentSet(s.region?.project), hit_ = (items || []).filter(id => u.has(id));
+  return hit_.length ? `<span class="q-need-tag pj-tag" title="${esc(`사업에 급히 필요: ${hit_.map(nameOf).join(', ')}`)}">사업</span>` : ''; };
 function field(s, roster, blocked) {
   const st = s.stamina || { now: 0, max: 20 }, n = s.node;
   const kids = (s.nodes || []).filter(x => x.parent_id === n.node_id);
@@ -281,8 +289,9 @@ function field(s, roster, blocked) {
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
           ${fightBack()}
+          ${ugBoards(s).map(([k, b]) => `<a class="tile danger" href="#/gw/${esc(b.boss)}" title="${esc(`${b.name} · ${ugReq()}`)}">${icon('flag', 22)}<span>${esc(b.name)}</span></a><button class="tile" type="button" data-ug-shop="${esc(k)}" title="${esc(ugShopTip(b))}">${icon('chest', 22)}<span>${esc(b.name)} 교환</span></button>`).join('')}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
-          ${s.region.region_id === GAMEDATA.boss?.mukjeok?.region ? `<a class="tile danger" href="#/gw/mukjeok" title="먹그림자 · Lv${GAMEDATA.boss.mukjeok.lv}부터, ${GAMEDATA.boss.mukjeok.item_name} 1개">${icon('flag', 22)}<span>먹그림자</span></a>` : ''}
+          ${['mukjeok', 'gapgwi', 'baekya'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
         </div>
         <label class="quiet-toggle"><input type="checkbox" id="quiet-mode" ${quietOn() ? 'checked' : ''}><span><b>조용히 살피기</b> <small class="muted">요괴 조우 −${quietPct()}% · 꾸러미 −${Math.floor(quietPct() / 2)}% (기민, 최대 ${AGILE.quietCap}%)</small></span></label>
         ${(s.gear_warn || []).length ? `<p class="hint warn gear-warn">${icon('wrench', 14)} <span><b>닳은 장비</b> · ${s.gear_warn.map(g => `${esc(g.name)}(${g.dur > 0 ? `${g.dur}/${g.max}` : '부서짐'})`).join(', ')} — 부서진 장비는 효과가 없고, 4분의 1 아래면 성능이 20% 떨어집니다. 안전지대 대장간이나 수리 도구로 고치세요.</span></p>` : ''}
@@ -314,7 +323,7 @@ function field(s, roster, blocked) {
         <header class="panel-head"><h2>${icon('leaf', 16)}채집터${helpQ('채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).', '채집 안내')}</h2><span class="muted small">${s.hidden_spots ? `숨은 채집터 ${s.hidden_spots}` : ''}</span></header>
         <div class="panel-body">
           ${(s.spots || []).length ? `<ul class="spots">${s.spots.map(p => `<li data-need-spot="${esc((p.items || []).join(','))}">
-              <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
+              <div><b>${esc(p.name)}${pjTag(s, p.items)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
           ${meishoHtml(s.meisho, blocked)}
@@ -470,8 +479,10 @@ function bind(s) {
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
   $('#idle-rest', el)?.addEventListener('click', goIdleRest);
   $('#bj-dig', el)?.addEventListener('click', e => digBijang(e.currentTarget, s));
+  el.querySelectorAll('[data-ug-shop]').forEach(b => b.addEventListener('click', () => import('../ultimate.js').then(m => m.openUltimateShop(b.dataset.ugShop))));
   $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
+  $$('[data-pj-open]', el).forEach(b => b.onclick = () => openProject(b.dataset.pjOpen));
   bindFish();
 }
 
@@ -561,6 +572,7 @@ function openFacility(k, s) {
   if (k === 'records') return import('./legacy.js').then(x => x.openLegacyRecords());
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
+  if (k === 'project') return openProject(s.region.project?.here?.key || null);
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];
   const m = openModal({ title, wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);

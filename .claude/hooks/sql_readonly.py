@@ -12,8 +12,10 @@ BAD_WORDS = r"\b(insert|update|delete|merge|drop|alter|create|grant|revoke|trunc
 BAD_CALLS = r"(\bworld_\w*|\bfn_\w*|\bhandle_\w*|\bset_config|\bdblink\w*|\blo_\w*|\bpg_(terminate|cancel|reload|read|ls|stat_file|notify|switch|rotate|advisory|promote|create|drop|replication|logical|sleep|file)\w*|\bcurrval|\bhttp\w*)\s*\("
 BAD_SCHEMAS = r"\b(net|cron|realtime|vault|supabase_functions|pgsodium|extensions|graphql|storage|auth)\s*\.\s*\w+\s*\("
 
+SAFE_CALLS = r"\bpublic\s*\.\s*world_\w+_rules\s*\(\s*\)|\bworld_\w+_rules\s*\(\s*\)"
+
 def readonly(q):
-    s = strip(q).strip()
+    s = re.sub(SAFE_CALLS, "0", strip(q)).strip()
     s = re.sub(r";\s*$", "", s)
     if not s or ";" in s:
         return False

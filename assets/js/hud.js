@@ -2,9 +2,9 @@ import { deathAt, gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf
 import { envChip } from './env.js';
 import { GAMEDATA } from './gamedata.js';
 import { load, invalidate } from './views/common.js';
-import { playAlarm, armAlarm } from './sound.js';
+import { playAlarm, armAlarm, setScene } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute } from './rules.js';
+import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -160,7 +160,17 @@ function qsCard(c) {
   }).join('');
   return `<section class="hud-card hud-qs"><h3>퀵슬롯 <a class="linkish" href="#/char/status">바꾸기</a></h3><div class="hqs-grid">${cells}</div></section>`;
 }
+export function wnSoft() { try { return localStorage.getItem('yh-whitenight-soft') === '1'; } catch { return false; } }
+export function setWnSoft(on) { try { localStorage.setItem('yh-whitenight-soft', on ? '1' : '0'); } catch {} document.body.classList.toggle('wn-soft', !!on && document.body.classList.contains('wn')); }
+function paintWhiteNight() {
+  const on = !!store.hud?.domain?.white_night;
+  document.body.classList.toggle('wn', on);
+  setScene({ wn: on });
+  const soft = wnSoft();
+  document.body.classList.toggle('wn-soft', on && soft);
+}
 function render() {
+  paintWhiteNight();
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);
   const need = xpNeed(c.level);
@@ -174,7 +184,7 @@ function render() {
     ${erosionRing(c, 'mini')}
     ${(() => { const yo = yohwaOf(state.hud?.statuses);
       return `${yo.y ? `<span class="hs-yohwa s${yo.stage}${yo.fr ? ' frenzy' : ''}">${yo.fr ? '요괴화' : `요화${yo.stage}`}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}${domainChip()}`; })()}
-    ${store.env ? `<span class="hs-env">${esc(store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
+    ${store.env ? `<span class="hs-env"${store.hud?.domain?.white_night ? ` title="${esc(WHITE_NIGHT.phaseTip)}"` : ''}>${esc(store.hud?.domain?.white_night ? WHITE_NIGHT.phase(store.env.phase?.name || '') : store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
     <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개" title="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
     <span class="hs-caret">${icon('chevron', 14)}</span>`;

@@ -1,3 +1,4 @@
+import { pickRows, pickerHtml, bindPicker, openItemPick } from './itempick.js';
 import { deathAt as deathTime, xpGot, rarTag, midBattle, gmBadge, ask, store, on, act, rpc, nameOf, JOBS, FACTIONS, esc, icon, bar, guard, $, $$, fmt, empty, segmented, bindSegmented, effectText, openModal, closeModal, toast, LEVEL_CAP, spOf, RAID_ON, scrollAfterModal, useItemAct, GRADES, JOB_LINE, COMBAT_LINES } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, itemsText, safeZones, currentRegion } from './common.js';
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
@@ -7,7 +8,7 @@ import { SLOTS, USABLE, openItemInfo } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT, PROJECT } from '../rules.js';
 const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEvery}분마다`;
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
@@ -152,16 +153,28 @@ export function eqMini(inv, prof, pick = false) {
 function combatMini(cur) {
   return `<p class="combat-mini">${esc(STYLE[cur.style] || '근접')} · <span>공격 <b>${fmt.num(cur.attack)}</b></span> · <span>방어 <b>${fmt.num(cur.defense)}</b> <small>(−${cur.reduction_pct}%)</small></span> · <span>회피 <b>${cur.evasion_pct}%</b></span> · <span>치명 <b>${cur.crit_pct}%</b></span> · <span>달아나기 <b>${cur.flee_pct}%</b></span> · <span>이목 <b>${fmt.num(cur.presence)}</b></span> <a class="linkish" href="#/char/growth">자세히</a></p>`;
 }
-function openQuickslots(cur, inv) {
+function openQuickslots(cur, inv, catalog) {
   const owned = Object.keys(inv).filter(k => Number(inv[k]) > 0 && QS_OK(k));
-  const pool = [...new Set([...owned, ...QS_DEFAULT, ...cur.filter(Boolean)])].sort((a, b) => (Number(inv[b] || 0) > 0) - (Number(inv[a] || 0) > 0) || nameOf(a).localeCompare(nameOf(b), 'ko'));
-  const opt = (sel) => `<option value="">비우기</option>${pool.map(k => `<option value="${esc(k)}" ${k === sel ? 'selected' : ''}>${esc(nameOf(k))} ×${fmt.num(inv[k] || 0)}</option>`).join('')}`;
+  const pool = [...new Set([...owned, ...QS_DEFAULT, ...cur.filter(Boolean)])];
+  const rows = pickRows(pool.map(k => ({ id: k, have: Number(inv[k] || 0) })), catalog);
   const m = openModal({ title: '퀵슬롯 칸 바꾸기', body: `<p class="muted small">칸마다 쓸 물품을 고릅니다. 가방에 없는 물품은 「×0」으로 남아 있다가 생기면 바로 쓸 수 있습니다.</p>
-    <div class="qs-edit">${cur.map((k, i) => `<label class="field"><span>${i + 1}번 칸</span><select data-qs="${i}">${opt(k)}</select></label>`).join('')}</div>
+    <div class="qs-edit">${cur.map((k, i) => `<div class="field"><span>${i + 1}번 칸</span><div class="qs-pick">${pickerHtml(`qs${i}`, '비어 있음')}<button type="button" class="btn small ghost" data-qs-clear="${i}" aria-label="${i + 1}번 칸 비우기">${icon('close', 13)}</button></div></div>`).join('')}</div>
     <div class="btn-row"><button class="btn ghost" id="qs-default">기본 칸으로</button><button class="btn primary" id="qs-save">${icon('check', 16)}<span>저장</span></button></div>` });
-  $('#qs-default', m).onclick = () => $$('[data-qs]', m).forEach((s, i) => { s.innerHTML = opt(QS_DEFAULT[i]); });
+  const pickers = cur.map((k, i) => bindPicker(m, `qs${i}`, rows, null, { title: `${i + 1}번 칸 물품`, placeholder: '비어 있음', value: k || '' }));
+  const slotVal = i => $(`[data-pick="qs${i}"] input`, m).value || '';
+  cur.forEach((_, i) => {
+    const btn = $(`[data-pick="qs${i}"] .pick-btn`, m);
+    btn.onclick = () => {
+      const at = new Map(); cur.forEach((__, j) => { const v = slotVal(j); if (v && j !== i && !at.has(v)) at.set(v, j + 1); });
+      const list = rows.map(r => at.has(r.id) ? { ...r, sub: `${at.get(r.id)}번 칸에 있음` } : r)
+        .sort((x, y) => (at.has(x.id) - at.has(y.id)));
+      openItemPick({ title: `${i + 1}번 칸 물품`, rows: list, onDone: id => pickers[i].set(id) });
+    };
+  });
+  $$('[data-qs-clear]', m).forEach(x => x.onclick = () => pickers[+x.dataset.qsClear].set(''));
+  $('#qs-default', m).onclick = () => pickers.forEach((p, i) => p.set(QS_DEFAULT[i] || ''));
   $('#qs-save', m).onclick = () => guard($('#qs-save', m), async () => {
-    const slots = $$('[data-qs]', m).map(s => s.value || '');
+    const slots = cur.map((_, i) => $(`[data-pick="qs${i}"] input`, m).value || '');
     await rpc('world_quickslots_set', { p_slots: slots });
     invalidate('world_quickslots_get'); closeModal(); draw(true); window.dispatchEvent(new Event('yh-qs-changed'));
     return { content: '퀵슬롯을 바꿨습니다.' };
@@ -193,8 +206,10 @@ async function status(body) {
       <div class="action-grid">
         ${yo.y ? `<button class="btn primary" id="yohwa-seal"><span>안전지대 봉인</span><small>가장 가까운 안전지대에서 봉인술사들이 24시간 요기를 해독합니다 · 그동안 채팅만 가능 · 끝나면 요화가 풀리고 침식 40 아래</small></button>` : ''}
         ${byYohwa ? '' : `<button class="btn primary" data-here="물품 사용" data-here-down data-use="${Number(invItems.revival_charm || 0) > 0 ? 'revival_charm' : hqOf('revival_charm')}" ${hqCount(invItems, 'revival_charm') > 0 ? '' : 'disabled'}><span>회생 부적 쓰기 <small>×${fmt.num(hqCount(invItems, 'revival_charm'))}</small></span><small>그 자리에서 체력 50으로 일어납니다</small></button>
-        <button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>`}
+        ${store.hud?.domain?.no_rescue ? `<button class="btn" id="self-recall"><span>제 이름 외기</span><small>${esc(WHITE_NIGHT.recall)}</small></button>`
+          : `<button class="btn" id="call-rescue"><span>본부 구조대 부르기</span><small>소지금 15%(오늘 첫 구조 반값)·이번 레벨 경험치 5% · 가장 가까운 안전지대로 옮겨집니다</small></button>`}`}
       </div>
+      ${!byYohwa && store.hud?.domain?.no_rescue ? `<p class="hint warn">${icon('mask', 14)}<span>${esc(WHITE_NIGHT.downed)}</span></p>` : ''}
       <p class="muted small">${byYohwa ? '요화로 쓰러지면 구조·본부 구조대·회생 부적으로는 일어날 수 없습니다. 「안전지대 봉인」을 고르면 24시간 해독 뒤 요화가 풀립니다.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>${yo.fr ? ' · 요화와 합친 효과: 주는 피해 +42%·받는 피해 −12%·정신 손실 −20%·민첩 +15%·침식 +24% · 끝나면 쓰러집니다. 귀령초를 쓰면 요화와 함께 풀립니다.' : ' · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 서 있을 때는 귀령초로 풀고, 요화로 쓰러지면 「안전지대 봉인」으로 풀립니다.'}`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-here="물품 사용" data-here-down data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
@@ -229,13 +244,15 @@ async function status(body) {
   });
   $$('[data-st]', body).forEach(b => b.onclick = () => openStatus(statuses[Number(b.dataset.st)]));
   $$('[data-eqi]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.eqi, { mode: 'bag' }));
-  $('#qs-edit', body)?.addEventListener('click', () => openQuickslots(qs, invItems));
-  $$('[data-qs-empty]', body).forEach(b => b.onclick = () => openQuickslots(qs, invItems));
+  $('#qs-edit', body)?.addEventListener('click', () => openQuickslots(qs, invItems, inv?.catalog));
+  $$('[data-qs-empty]', body).forEach(b => b.onclick = () => openQuickslots(qs, invItems, inv?.catalog));
   bindRepair(body);
   const ys = $('#yohwa-seal', body);
   if (ys) ys.onclick = async () => { if (await ask('안전지대 봉인을 받을까요? 가장 가까운 안전지대로 옮겨져 24시간 동안 요기를 해독합니다. 그동안은 채팅만 할 수 있고, 끝나면 요화가 풀린 채 원래대로 움직입니다.', { title: '안전지대 봉인', ok: '봉인 받기' })) guard(ys, () => act('world_yohwa_seal')); };
   const cr = $('#call-rescue', body);
   if (cr) cr.onclick = async () => { if (await ask(RESCUE.ask, { title: '구조대 부르기', ok: '부르기' })) guard(cr, () => act('world_call_rescue')); };
+  const sr = $('#self-recall', body);
+  if (sr) sr.onclick = async () => { if (await ask(WHITE_NIGHT.ask, { title: '제 이름 외기', ok: '외기' })) guard(sr, () => act('world_self_recall')); };
   clearInterval(statusTick);
   const t = statusTick = setInterval(() => {
     if (!body.isConnected) return clearInterval(t);
@@ -698,6 +715,9 @@ async function faction(body) {
     `<button class="tile ${supplied ? '' : 'primary'}" id="supply" data-here="보급 수령" ${supplied ? 'disabled' : ''} title="소속 부서에서 하루 한 번 보급품을 받습니다">${icon('bag', 20)}<span>${supplied ? '보급 받음' : '일일 보급'}</span></button>`,
     ...(major ? [tile('base', '거점', 'shield', false)] : []),
     ...(major && fq?.faction_id ? fqPops(fq).map(([k, l, ico, dot]) => tile(k, l, ico, dot)) : []),
+    ...(major && fq?.faction_id ? [`<button class="tile" data-pj="f:${esc(major)}" title="정한 물품을 거점에 넘겨 함께 거점을 세웁니다">${icon('hammer', 20)}<span>거점 사업</span></button>`] : []),
+    ...Object.entries(PROJECT.projects || {}).filter(([k, p]) => p.kind === 'faction' && p.faction !== major && (p.hub_ids || []).includes(here?.region_id))
+      .map(([k, p]) => `<button class="tile" data-pj="${esc(k)}" title="${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 거점 사업을 돕습니다 · 몫은 전으로 받습니다">${icon('hammer', 20)}<span>${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 사업 돕기</span></button>`),
   ].join('');
   body.innerHTML = `
     ${panel(major ? `${nameOf(major)}${fq?.ranks ? ` · ${esc(fq.ranks[(fq.rank || 1) - 1] || '')}` : ''}` : `${nameOf(c.faction_key)}`, `
@@ -712,6 +732,7 @@ async function faction(body) {
           <div class="join-row" id="jr-${k}"><button class="btn small ${at && (c.level || 1) >= JOIN_LV ? 'primary' : 'ghost'}" data-here="세력 가입" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
     ${board ? boardPanel(board) : ''}`;
   $$('[data-fpop]', body).forEach(b => b.onclick = () => openPop(b.dataset.fpop));
+  $$('[data-pj]', body).forEach(b => b.onclick = () => import('./project.js').then(x => x.openProject(b.dataset.pj)));
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; if (r?.letter) showLetter(r.letter); return r; });
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
   $$('[data-join]', body).forEach(b => b.onclick = async () => {

@@ -30,6 +30,22 @@ export { bindTips, hideTip } from '../tips.js';
 
 export const jobName = j => JOBS[j]?.name || nameOf(j);
 const hpBar = (hp, label = hp, big = false) => `<span class="bar mem-hp ${big ? 'big' : ''} ${hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, Number(hp) || 0))}%"></span><em>${label}</em></span>`;
+let pressing = false;
+const later = new Set();
+const release = () => {
+  if (!pressing) return;
+  pressing = false;
+  const fs = [...later]; later.clear();
+  if (fs.length) setTimeout(() => fs.forEach(f => f()), 0);
+};
+document.addEventListener('pointerdown', e => { if (e.button === 0 && e.target.closest?.('.raid-wrap, .fx-press')) pressing = true; }, true);
+document.addEventListener('pointerup', release, true);
+document.addEventListener('pointercancel', release, true);
+export function drawLater(fn) {
+  if (!pressing) return false;
+  later.add(fn);
+  return true;
+}
 export function memberLi(m, o = {}) {
   return `<li class="jb-${esc(m.job || '')} ${o.cls || ''} ${o.me ? 'me' : ''} ${o.tgt ? 'tgt' : ''} ${o.sel ? 'sel' : ''} ${o.out ? 'out' : ''} ${o.turn ? 'turn' : ''}">
     <button type="button" class="mem-pick" data-pick="${esc(m.id)}" title="${esc(o.title || `${m.name} · ${m.level ? `Lv${m.level} ` : ''}${jobName(m.job)}`)}">
@@ -181,6 +197,30 @@ const BOSS_ASK = {
     3: '셋이면 한결 수월합니다. 가운데를 지키는 사람·치는 사람·되찾는 사람으로 나누세요.',
     4: '넷이 함께하는 것이 먹그림자에게 가장 알맞은 인원입니다.',
     call: n => `같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(60초 안에 합류, 함께 ${n}명).`, ok: '아홉 칸 명부 앞에 서기', name: '도전',
+  },
+  ug: {
+    tail: '무용담은 둘에서 넷까지만 들어갑니다. 낌새를 미리 보여 주지 않고, 막마다 정해진 라운드 안에 쓰러뜨리지 못하면 모두 쓰러집니다. 져도 잃는 것은 없고, 전멸하면 처음부터 다시 합니다.\n역할을 나눠 둘 이상이 함께 가야 깰 수 있습니다 — 몰아칠 사람(공격)에 더해, 노림을 받아 버티거나 돕는 사람(방패·보조) 또는 돌볼 사람(치유)을 함께 꾸리세요.',
+    1: ['혼자서는 들어갈 수 없습니다', '무용담은 둘 이상이 함께해야 합니다.', '돌아가기'],
+    2: '둘이서라면 방패·보조나 치유를 맡을 사람과 공격을 맡을 사람으로 나누세요.',
+    3: '셋이면 한결 낫습니다. 노림을 받을 사람과 돌볼 사람을 정해 두세요.',
+    4: '넷이 함께하는 것이 가장 알맞습니다.',
+    call: n => `같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(60초 안에 합류, 함께 ${n}명).`, ok: '무용담에 서기', name: '도전',
+  },
+  by: {
+    tail: '싸움은 18분 동안 라운드마다 행동 하나를 고르고, 이웃 자리로 한 칸씩 옮겨 설 수 있습니다. 지면 장착 장비 내구도가 10% 깎이고 침식이 10 오르며, 30분 뒤에야 다시 도전할 수 있습니다. 모두 입장 물품을 하나씩 씁니다.',
+    1: ['혼자서 맹약 마당에 섭니까?', '혼자서는 열 번에 두세 번 이기는 싸움입니다.\n직업에 맞춘 「혼자 도전 보정」이 붙고 쓰러져도 열 번까지 다시 일어나지만, 제 이름을 스스로 외며 등을 혼자 켜야 합니다.', '그래도 혼자 서기'],
+    2: '둘이서는 열 번에 다섯 번쯤 이기는 싸움입니다. 서로의 이름을 번갈아 불러 붉은 줄을 막으세요.',
+    3: '셋이면 한결 수월합니다. 부르는 차례를 정해 아무도 오래 불리지 않은 채 두지 마세요.',
+    4: '넷이 함께하는 것이 백야에게 가장 알맞은 인원입니다.',
+    call: n => `같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(60초 안에 합류, 함께 ${n}명).`, ok: '맹약 마당에 서기', name: '도전',
+  },
+  gg: {
+    tail: '싸움은 15분 동안 라운드마다 행동 하나를 고르고, 행동마다 머리 위의 값(섬)이 바뀝니다. 지면 장착 장비 내구도가 10% 깎이고 침식이 10 오르며, 30분 뒤에야 다시 도전할 수 있습니다. 모두 붉은 사당 옻을 하나씩 씁니다.',
+    1: ['혼자서 값귀 앞에 섭니까?', '혼자서는 열 번에 두세 번 이기는 싸움입니다.\n직업에 맞춘 「혼자 도전 보정」이 붙고 쓰러져도 열 번까지 다시 일어나지만, 판결과 장부 맞추기를 혼자 다 셈해야 합니다.', '그래도 혼자 서기'],
+    2: '둘이서는 열 번에 다섯 번쯤 이기는 싸움입니다. 판결 전에 서로 값을 맞바꿔 거두는 값을 피하세요.',
+    3: '셋이면 한결 수월합니다. 치는 사람·값을 맞추는 사람·버티는 사람으로 나누세요.',
+    4: '넷이 함께하는 것이 값귀에게 가장 알맞은 인원입니다.',
+    call: n => `같은 곳의 파티원 ${n - 1}명에게 합류 알림이 갑니다(60초 안에 합류, 함께 ${n}명).`, ok: '값귀 앞에 서기', name: '도전',
   },
   gw: {
     tail: '싸움은 15분 동안 라운드마다 행동 하나를 고릅니다. 지면 장착 장비 내구도가 10% 깎이고 침식이 10 오르며, 30분 뒤에야 다시 도전할 수 있습니다. 모두 귀허 부적을 하나씩 씁니다.',

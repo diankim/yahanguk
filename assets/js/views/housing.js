@@ -20,7 +20,7 @@ const KINDS = GAMEDATA.kinds || {};
 const KIND_CAP = [0, 4, 3, 2, 1, 1];
 const kindCap = g => snap?.kind_caps?.[g - 1] ?? KIND_CAP[g];
 const GATE = [['open', '활짝 엶', '누구나 구경'], ['friends', '벗에게만', '친구만 구경'], ['closed', '닫음', '나만 구경']];
-const FOODS = ['pet_food', 'treat_fish', 'treat_rice', 'treat_honey', 'treat_herb', 'treat_meat'];
+const FOODS = ['pet_food', 'treat_fish', 'treat_rice', 'treat_honey', 'treat_herb', 'treat_meat', 'treat_box'];
 const PAL_TABS = [['floor', '바닥'], ['wall', '벽'], ['paper', '벽지'], ['ground', '바닥재']];
 const gradeOf = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.grade || 1;
 const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.name || nameOf(id);

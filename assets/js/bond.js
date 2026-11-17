@@ -1,9 +1,12 @@
 import { CHEER_NAME, REBOND } from './rules.js';
 import { openLiveEvent, eventLogHtml } from './liveevent.js';
-import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf, MARKET_ONLY } from './core.js';
+import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, nameOf } from './core.js';
 import { cardName } from './views/card.js';
 import { load } from './views/common.js';
 import { GAMEDATA } from './gamedata.js';
+import { untradeNote, giveable } from './views/services.js';
+import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
+import { loadLocks } from './views/item.js';
 
 export const TOKENS = {
   knot: ['연리 매듭', '두 가닥을 엮어 풀리지 않게 맺은 매듭', 'M7 9a3 3 0 106 0 3 3 0 10-6 0M11 9a3 3 0 106 0 3 3 0 10-6 0M12 12v8M10 20h4'],
@@ -146,23 +149,35 @@ export async function openPropose(targetId, targetName) {
 
 async function openGift(after) {
   const b = bond(); if (!b) return;
-  const inv = await load('world_inventory_snapshot', undefined, { maxAge: 10000 }).catch(() => null);
-  const have = inv?.inventory || {}, equipped = new Set(Object.values(inv?.equipment || {}));
-  const cmap = new Map((inv?.catalog || []).map(i => [i.id, i]));
-  const items = Object.entries(have).filter(([id, n]) => Number(n) - (equipped.has(id) ? 1 : 0) > 0 && cmap.get(id)?.tradeable !== false && !MARKET_ONLY.has(id))
-    .map(([id, n]) => ({ id, n: Number(n) - (equipped.has(id) ? 1 : 0), name: nameOf(id) })).sort((a, b2) => a.name.localeCompare(b2.name, 'ko'));
+  const [inv] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 10000 }).catch(() => null), loadLocks()]);
+  const have = inv?.inventory || store.character?.inventory || {};
+  const ref = new Map((inv?.catalog || []).map(i => [i.id, i]));
+  const rows = pickRows(giveable(have, ref, true).map(([k, n]) => ({ id: k, have: n, max: Math.min(999, n) })), inv?.catalog);
+  const note = untradeNote(have, ref, true);
+  let sel = {};
   const m = openModal({ title: `${b.partner_name}님에게 선물`, body: `<form class="bond-gift">
-    <p class="desc">하루에 한 번, 물품이나 전 가운데 하나를 보냅니다. 잠근 물품·거래할 수 없는 물품·장착 중인 마지막 한 개는 보낼 수 없습니다.</p>
+    <p class="desc">하루에 한 번, 물품이나 전 가운데 하나를 보냅니다.</p>
     <div class="segmented" style="--n:2"><button type="button" data-gk="item" class="on">물품</button><button type="button" data-gk="gil">전</button></div>
-    <div data-g="item"><label class="field"><span>물품</span><select name="item">${items.map(x => `<option value="${esc(x.id)}" data-max="${x.n}">${esc(x.name)} (×${fmt.num(x.n)})</option>`).join('') || '<option value="">보낼 물품이 없습니다</option>'}</select></label>
-      <label class="field"><span>수량</span><input name="qty" type="number" min="1" value="1"></label></div>
+    <fieldset class="dt-side" data-g="item"><legend>보낼 물품 (한 가지)</legend>
+      <div class="chips" data-gift-chips></div>
+      <button class="btn small dt-pick" type="button" data-gift-add ${rows.length ? '' : 'disabled'}>${icon('bag', 15)}<span>가방에서 고르기</span></button>
+      ${note}</fieldset>
     <div data-g="gil" hidden><label class="field"><span>보낼 전 (가진 전 ${fmt.jeon(store.character?.gil || 0)})</span><input name="gil" type="number" min="1" value="10"></label></div>
     <button class="btn primary block" type="submit">${icon('plus', 16)}<span>보내기</span></button></form>` });
   const f = $('.bond-gift', m); let kind = 'item';
+  const drawChips = () => {
+    const box = $('[data-gift-chips]', f); box.innerHTML = bundleChips(sel);
+    $$('[data-rm]', box).forEach(x => x.onclick = () => { sel = {}; drawChips(); });
+  };
+  drawChips();
+  $('[data-gift-add]', f).onclick = () => openItemPick({ title: '선물할 물품', rows, many: true, picked: sel, kinds: 1, okText: '이대로 고르기', note, onDone: picked => { sel = picked; drawChips(); } });
   $$('[data-gk]', f).forEach(x => x.onclick = () => { kind = x.dataset.gk; $$('[data-gk]', f).forEach(y => y.classList.toggle('on', y === x)); $$('[data-g]', f).forEach(y => y.hidden = y.dataset.g !== kind); });
+  f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault(); });
   f.onsubmit = e => {
     e.preventDefault();
-    const args = kind === 'item' ? { p_item: f.item.value || null, p_qty: Math.max(1, Number(f.qty.value || 1)), p_gil: 0 } : { p_item: null, p_qty: 1, p_gil: Math.max(0, Number(f.gil.value || 0)) };
+    const [id, n] = Object.entries(sel)[0] || [];
+    if (kind === 'item' && !id) return;
+    const args = kind === 'item' ? { p_item: id, p_qty: Math.max(1, Number(n || 1)), p_gil: 0 } : { p_item: null, p_qty: 1, p_gil: Math.max(0, Number(f.gil.value || 0)) };
     guard(f.querySelector('button[type=submit]'), async () => { const r = await act('world_bond_gift', args); closeModal(); await refresh(); after?.(); return r; });
   };
 }

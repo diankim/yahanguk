@@ -62,7 +62,7 @@ export const atLine = q => {
   const done = !left.length;
   return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${links(at)}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
 };
-const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${kind === 'main' ? '' : chip(q.cat || '')}<b>${esc(q.title)}</b></header>`;
+const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${kind === 'main' ? '' : chip(q.cat || '')}${q.replay ? chip('다시하기', 'ok') : ''}<b>${esc(q.title)}</b></header>`;
 
 function activeItem(q) {
   if (q.phase === 'clues') {
@@ -210,7 +210,7 @@ export function markNeeded(root, b) {
   const need = neededItems(b);
   $$('[data-need-item]', root).forEach(el => { const n = need.get(el.dataset.needItem); el.classList.toggle('q-need', !!n); if (n) el.title = `퀘스트: ${n.quests.join(', ')} · ${n.left}개 더`; else el.removeAttribute('title'); });
   $$('[data-need-spot]', root).forEach(el => { const ids = (el.dataset.needSpot || '').split(','), hit_ = ids.filter(id => need.has(id));
-    let tag = el.querySelector('.q-need-tag'); if (!hit_.length) { tag?.remove(); return; }
+    let tag = el.querySelector('.q-need-tag:not(.pj-tag)'); if (!hit_.length) { tag?.remove(); return; }
     if (!tag) { tag = document.createElement('span'); tag.className = 'q-need-tag'; el.querySelector('b')?.append(tag); }
     tag.textContent = '퀘스트'; tag.title = [...new Set(hit_.flatMap(id => need.get(id).quests))].join(', '); });
 }
@@ -258,9 +258,9 @@ export async function report(btn) {
     const r = await act('world_quest_report', { p_quest: btn.dataset.qReport });
     invalidate('world_quest_board');
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.done ? 'reward' : 'confirm' }));
-    const extra = r.done ? `<p class="hint good q-done">${icon('check', 14)} <b>퀘스트 완료</b> · 「${esc(r.quest_title)}」</p>`
-      : r.clues_open ? `<p class="hint accent">${icon('scroll', 14)} 이제 이 장의 단서를 탐색에서 찾을 수 있습니다. 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>`
-      : r.next ? `<p class="hint">${icon('chevron', 14)} 다음 · <b>${esc(r.next.title)}</b> — ${esc(r.next.goal)}</p>` : '';
+    const extra = r.done ? `<p class="hint good q-done">${icon('check', 14)}<span><b>퀘스트 완료</b> · 「${esc(r.quest_title)}」</span></p>`
+      : r.clues_open ? `<p class="hint accent">${icon('scroll', 14)}<span>이제 이 장의 단서를 탐색에서 찾을 수 있습니다. 모으면 일지 › 주 이야기에서 가설을 확정하세요.</span></p>`
+      : r.next ? `<p class="hint">${icon('chevron', 14)}<span>다음 · <b>${esc(r.next.title)}</b> — ${esc(r.next.goal)}</span></p>` : '';
     playDialogue({ title: `${r.quest_title} · ${r.title}`, lines: r.lines, cast: r.cast, reward: r.reward, extra, again: '마친 장면은 일지의 퀘스트 장면 목록에서 다시 볼 수 있습니다.' }, null);
     return null;
   });

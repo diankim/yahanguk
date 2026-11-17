@@ -120,7 +120,14 @@ function sky(phase, weather) {
 
 const TILE_X = 240, TILE_W = 640 - TILE_X, SPAN = 1920;
 let sceneSeq = 0;
-export function sceneArt(theme, phase, weather) {
+const decoArt = d => {
+  const n = Math.max(0, Math.min(5, Number(d?.stage) || 0)); if (!n) return '';
+  const lamps = Array.from({ length: n }, (_, i) => { const x = 628 - i * 22, y = 96 - (i % 2) * 6;
+    return `<rect class="ln-deco-pole" x="${x}" y="${y}" width="2" height="${145 - y}"/><rect class="ln-deco-lamp" x="${x - 4}" y="${y + 4}" width="10" height="12" rx="3"/>`; }).join('');
+  const flag = n >= 5 ? `<rect class="ln-deco-pole" x="512" y="58" width="2" height="87"/><path class="ln-deco-flag" d="M514 60 L540 64 L536 72 L540 80 L514 78 Z"/>` : '';
+  return `<g class="ln-deco">${flag}${lamps}</g>`;
+};
+export function sceneArt(theme, phase, weather, deco) {
   const L = (LAND[theme] || LAND.default)();
   const sk = sky(phase, weather);
   const land = `${sk.out}
@@ -139,5 +146,6 @@ export function sceneArt(theme, phase, weather) {
     ${sk.orb}
     ${tiles}
     <rect class="ln-near" x="${640 - SPAN}" y="145" width="${SPAN}" height="5"/>
+    ${decoArt(deco)}
   </svg>`;
 }

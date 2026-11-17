@@ -3,7 +3,7 @@ import { SFX_ACTS } from './changes.js';
 import { LAYERS as AMB, bird, cricket, owl, drip } from './ambience.js';
 
 export const sound = { vol: 1, bgm: 0.4, sfx: 0.55, amb: 0.35, bgmOn: true, sfxOn: true, ambOn: true };
-let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf;
+let ctx, master, bgmBus, ambBus, sfxBus, reverb, noiseBuf, brownBuf, wnLow, wnHigh;
 const scene = { territory: 'capital', safe: false, battle: false, exp: false };
 const inBattle = () => scene.exp;
 const MOBILE = (() => { try { return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent); } catch { return false; } })();
@@ -31,7 +31,12 @@ function ensureCtx() {
   try { ctx = new AC({ sampleRate: 32000 }); } catch { ctx = new AC(); }
   master = ctx.createGain(); master.gain.value = masterLevel(); master.connect(ctx.destination);
   bgmBus = ctx.createGain(); ambBus = ctx.createGain(); sfxBus = ctx.createGain();
-  [bgmBus, ambBus, sfxBus].forEach(g => { g.gain.value = 0; g.connect(master); });
+  wnLow = ctx.createBiquadFilter(); wnLow.type = 'lowpass'; wnLow.Q.value = 0.5; wnLow.frequency.value = 15000;
+  wnHigh = ctx.createBiquadFilter(); wnHigh.type = 'lowshelf'; wnHigh.frequency.value = 120; wnHigh.gain.value = 0;
+  wnLow.connect(wnHigh); wnHigh.connect(master);
+  [bgmBus, ambBus].forEach(g => { g.gain.value = 0; g.connect(wnLow); });
+  sfxBus.gain.value = 0; sfxBus.connect(master);
+  paintWn();
   reverb = ctx.createConvolver();
   const len = ctx.sampleRate * 3.4, ir = ctx.createBuffer(2, len, ctx.sampleRate);
   for (let ch = 0; ch < 2; ch++) {
@@ -252,12 +257,18 @@ const PROFILES = {
     bt: { bpm: 70, rhy: 'oblivion2', lead: 'cello', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'tango8', bass: 'tango', pad: 'sustain', bell: 0,
       form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'cello' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'strings' })] },
     form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.6, { oct: -7 }), F('A2', 'lead', 0.66, { oct: -7, echo: 'strings' }), F('B', 'lead2', 0.8, { duet: 'cello' }), F('A3', 'lead', 0.55, { oct: -7 }), F('bridge', 0, 0.35, { n: 1 })] },
+  deungdo: { tonic: 54, mode: 'minor', bpm: 58, meter: 3, rhy: 'slow3', lead: 'harp', lead2: 'piano', counter: 'bell', arp: 'harp', accIns: 'harp', acc: 'slow3', bass: 'long', drum: null, pad: 'open', bell: 0.5, soft: 0.8,
+    bt: { bpm: 96, rhy: 'battle', lead: 'piano', lead2: 'cello', counter: 'bell', arp: 'harp', accIns: 'harp', acc: 'battle', bass: 'battle', drum: 'b_heaven', pad: 'swell', bell: 0.4,
+      form: [F('A', 'lead', 0.85, { echo: 'bell' }), F('B', 'lead2', 0.95, { duet: 'piano' }), F('A2', 'lead', 0.9, { echo: 'harp' })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5, { echo: 'bell' }), F('drop', 0, 0.25, { n: 2 }), F('A2', 'lead2', 0.5), F('bridge', 0, 0.25, { n: 2 })],
+    lit: { bpm: 62, lead2: 'cello', counter: 'fiddle', arp: 'koto', accIns: 'koto', acc: 'dance3', bass: 'waltz', pad: 'sustain', bell: 0.3, soft: 0.9,
+      form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.55, { echo: 'bell' }), F('A2', 'lead2', 0.65, { oct: -7, duet: 'fiddle' }), F('B', 'fiddle', 0.75, { duet: 'cello' }), F('A3', 'lead', 0.6, { echo: 'koto' }), F('bridge', 0, 0.3, { n: 1 })] } },
   mukjeok: { tonic: 55, mode: 'minor', bpm: 76, meter: 4, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'harp', acc: 'inkrain8', bass: 'half', drum: 'b_mukjeok', drumIn: null, pad: 'swell', bell: 0.1, soft: 0.9, bshape: true,
     bt: { bpm: 90, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'piano', acc: 'inkrain16', bass: 'half', drum: 'b_mukjeok2', pad: 'swell', bell: 0.1,
       form: [F('A', 'lead', 0.88, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { oct: -7, echo: 'harp' })] },
     form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.92, { duet: 'shakuhachi' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'harp' })] },
 };
-let playing = false, phraseTimer = null, song = null, songKey = '', barNo = 0, nextAt = 0, loopNo = 0, held = false;
+let playing = false, phraseTimer = null, song = null, songKey = '', songLit = false, barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = '';
 
 const bshape = p => !!(p.battle || p.bshape);
@@ -268,6 +279,7 @@ function battleOf(p) {
 }
 function profile(battle = inBattle()) {
   let p = { ...(PROFILES[scene.territory] || PROFILES.capital) };
+  if (p.lit && !scene.wn && !scene.safe) p = { ...p, ...p.lit, isLit: true };
   if (battle) p = battleOf(p);
   if (scene.safe && !battle) { p.bpm *= 0.94; p.drum = null; p.safe = true; }
   if (env.phase === 'night') p.bpm *= 0.96;
@@ -429,7 +441,7 @@ function phrase() {
   if (held) { phraseTimer = setTimeout(phrase, 1000); return; }
   const p = profile(), need = insOf(p), key = `${scene.territory || 'capital'}:${p.mode}:${p.battle ? 'battle' : 'field'}`;
   if (need.some(k => !buffers[k])) { need.forEach(loadIns); phraseTimer = setTimeout(phrase, 400); return; }
-  if (key !== songKey || !song) { song = makeSong(p, key, 0); songKey = key; barNo = 0; loopNo = 0; }
+  if (key !== songKey || !song || !!p.isLit !== songLit) { song = makeSong(p, key, 0); songKey = key; songLit = !!p.isLit; barNo = 0; loopNo = 0; }
   if (barNo >= song.bars.length) { loopNo++; const s2 = makeSong(p, key, loopNo); song = s2; barNo = s2.loopStart; }
   const beat = 60 / p.bpm, barDur = p.meter * beat;
   if (nextAt < now() + 0.05) nextAt = now() + 0.15;
@@ -555,10 +567,17 @@ export function armAlarm(kind, name, at) {
 }
 export const SFX_SAMPLES = [['confirm', '확인'], ['find', '발견'], ['hit', '전투'], ['coin', '거래'], ['craft', '제작'], ['travel', '출발'], ['reward', '보상'], ['error', '오류']];
 
+function paintWn() {
+  if (!ctx || !wnLow) return;
+  const t = ctx.currentTime, on = !!scene.wn;
+  wnLow.frequency.setTargetAtTime(on ? 420 : 15000, t, 1.2);
+  wnHigh.gain.setTargetAtTime(on ? 5 : 0, t, 1.2);
+}
 export function setScene(part) {
-  const before = `${scene.territory}:${scene.safe}:${inBattle()}`;
+  const before = `${scene.territory}:${scene.safe}:${inBattle()}:${!!scene.wn}`;
   Object.assign(scene, part);
-  if (before === `${scene.territory}:${scene.safe}:${inBattle()}`) return;
+  if ('wn' in part) { scene.wn = !!part.wn; paintWn(); }
+  if (before === `${scene.territory}:${scene.safe}:${inBattle()}:${!!scene.wn}`) return;
   updateDrone(); updateAmbience();
 }
 export function setEnabled(key, value) {

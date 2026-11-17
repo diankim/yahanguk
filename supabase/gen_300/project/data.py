@@ -1,0 +1,172 @@
+PAY = {'day_cap': 8000, 'faction': {'per_merit': 100}, 'common': {'gil_rate': 0.3}, 'help': {'gil_rate': 0.3}, 'after_mul': 0.5}
+HELP_REL = {'per_k': 1, 'person_day': 3, 'pair_day': 10}
+URGENT = {'n': 2, 'mul': 1.5}
+HQ_MUL = 1.5
+MUL_CAP = 2
+MEMENTO = {'pct': 1, 'faction_merit': 20, 'common_gil_pct': 0.5, 'cake': 'proj_rice_cake', 'cake_n': 3, 'plaque': 'hf_proj_plaque', 'seal': 'sl_tak'}
+GOAL_STEP = 0.1
+F_BASE = [round(80000 * (1 + GOAL_STEP * i)) for i in range(5)]
+C_BASE = [round(300000 * (1 + GOAL_STEP * i)) for i in range(5)]
+F_SHOP = {'price_mul': 1.3, 'daily_cap': 5}
+C_SHOP = {'price_mul': 3.5, 'daily_cap': 5, 'cap_mul': 2}
+F_ROUTE_CUT = 0.12
+C_ROUTE_CUT = 0.15
+LIFT = {'shop': 1, 'route': 2, 'storage': 3, 'letter': 3, 'market': 4, 'stable': 4, 'ucomm': 4, 'repair': 5, 'sell': 5, 'smithy': 5, 'house': 5}
+C_PERK_TEXT = ['상점 품목이 여섯 가지로 늘고, 이야기를 마친 사람에게 새 품목 둘·하루 살 수 있는 개수 두 배', f'지름길(이동 −{round(C_ROUTE_CUT * 100)}%·운임 없음)',
+               '창고가 열리고 제작·강화·옷 짓기에 창고 재료, 서신 물품 부치고 받기', '거래소·마구간·조사원 의뢰',
+               '수리비·되팔기·판매 한도·대장간이 바깥과 같아지고 별채 고치기, 머리 그림']
+F_PERK_TEXT = ['거점 상점에 새 품목 둘(그 세력 조사원만)', '거점과 이웃 지역에서 효과(그 세력 조사원)', f'거점 ↔ 본래 땅 지름길(이동 −{round(F_ROUTE_CUT * 100)}%·운임 없음)',
+               '비고에 새 품목', '세력 바탕 무늬·거점 머리 그림']
+
+PROJECTS = {
+    'f:night_office': dict(kind='faction', faction='night_office', name='청사 다시 세우기', hubs=['hq_yard', 'hq_dorm'],
+        stages=[['ward_talisman', 'iron_ingot', 'tonic', 'fine_paper', 'seal_paper', 'raw_iron', 'ward_fragment', 'ghost_ash'],
+                ['sealing_ink', 'repair_kit', 'clear_spirit_pill', 'lumber', 'talisman_thread', 'medicine_base', 'spirit_dust', 'venom_gland'],
+                ['revival_charm', 'spirit_qi_pill', 'snakehead_broth', 'spirit_glass', 'herbal_extract', 'spirit_bark', 'steel_ingot', 'charcoal'],
+                ['rejuv_pill', 'spirit_core', 'carp_broth', 'm3_ward', 'lantern_oil', 'ghost_goby', 'canal_eel', 'sealing_ink'],
+                ['moonlight_essence', 'm4_ward', 'grand_pill', 't3_gather', 'steel_ingot', 'spirit_bark', 'lantern_oil', 'ghost_goby']],
+        shop=['rejuv_pill', 'calm_brew'],
+        area=['hq_yard', 'hq_dorm', 'hq_archive', 'paper_bridge', 'field_outskirts', 'lantern_market', 'hq_training', 'sunken_district', 'old_canal'],
+        area_fx={'healing_pct': 5, 'mental_loss_pct': -5},
+        route=['ghost_bamboo', 'sunken_district', 'ash_mountain', 'patrol_office', 'old_prison', 'seal_vault'],
+        vault=['hf_fp_night', 'of_acc_fp_night'], pattern=('pt_f_night', '청사 기와 무늬')),
+    'f:red_moon_cult': dict(kind='faction', faction='red_moon_cult', name='장터 제단 고치기', hubs=['bone_market'],
+        stages=[['iron_ingot', 'ward_talisman', 'lacquer', 'tonic', 'cinnabar', 'ore', 'raw_iron', 'ghost_ash'],
+                ['k3_ghost', 'sealing_ink', 'calm_brew', 'repair_kit', 'beast_bone', 'ward_fragment', 'spirit_dust', 'talisman_thread'],
+                ['bronze_charm', 'revival_charm', 'purify_water', 'spirit_qi_pill', 'spirit_glass', 'medicine_base', 'ward_talisman', 'cinnabar'],
+                ['skate_ferment', 'rejuv_pill', 'm3_purify', 'spirit_core', 'eclipse_skate', 'herbal_extract', 'beast_bone', 'spirit_glass'],
+                ['k4_ghost', 'm4_purify', 'grand_pill', 'moonlight_essence', 'cinnabar', 'raw_iron', 'spirit_glass', 'herbal_extract']],
+        shop=['exp_elixir_tiger', 'skate_ferment'],
+        area=['bone_market', 'west_gate', 'glass_canyon', 'ash_mountain', 'red_plain'],
+        area_fx={'healing_pct': 5, 'rare_loot_pct': 3},
+        route=['red_plain', 'glass_canyon', 'black_sand_temple', 'red_moon_fort', 'blood_dunes', 'crimson_altar'],
+        vault=['hf_fp_redmoon', 'of_bottom_fp_redmoon'], pattern=('pt_f_redmoon', '월식 무늬')),
+    'f:black_lotus': dict(kind='faction', faction='black_lotus', name='암시장 장부고 넓히기', hubs=['hidden_bazaar'],
+        stages=[['sealing_ink', 'fine_paper', 'ward_talisman', 'tonic', 'seal_paper', 'inkstone', 'ghost_ash', 'spirit_dust'],
+                ['spirit_thread', 'flounder_sashimi', 'lacquer', 'repair_kit', 'silk', 'shadow_fang', 'talisman_thread', 'drowned_scale'],
+                ['k3_hide', 'revival_charm', 'fish_oil_lamp', 'spirit_qi_pill', 'lantern_oil', 'ward_fragment', 'frost_salt', 'ink_greenling'],
+                ['m3_spell', 'rejuv_pill', 'spirit_core', 'goby_soup', 'lamp_hairtail', 'ghost_goby', 'medicine_base', 'shadow_fang'],
+                ['k4_hide', 'm4_spell', 'ray_steam', 'moonlight_essence', 'spirit_core', 'lantern_oil', 'ink_greenling', 'sealing_ink']],
+        shop=['dark_eye_drops', 'ray_steam'],
+        area=['hidden_bazaar', 'patrol_office', 'lamp_alley', 'under_root', 'ledger_cellar', 'old_canal'],
+        area_fx={'healing_pct': 5, 'clue_bonus_pct': 5},
+        route=['lamp_alley', 'lotus_sewer', 'burial_steps', 'forgotten_city', 'ledger_cellar', 'under_root'],
+        vault=['hf_fp_lotus', 'of_acc_fp_lotus'], pattern=('pt_f_lotus', '연잎 장부 무늬')),
+    'f:north_league': dict(kind='faction', faction='north_league', name='고찰 겨울채비', hubs=['iron_monastery'],
+        stages=[['iron_ingot', 'medicine_base', 'lumber', 'travel_ration', 'frost_salt', 'beast_hide', 'charcoal', 'resin'],
+                ['trout_sashimi', 'repair_kit', 'clear_spirit_pill', 'herbal_extract', 'moon_moss', 'drowned_scale', 'ore', 'lake_trout'],
+                ['salmon_grill', 'cod_soup', 'spirit_qi_pill', 'reinforced_lumber', 'spirit_core', 'ward_fragment', 'cherry_salmon', 'cod'],
+                ['char_grill', 'bark_stew', 'rejuv_pill', 'lt_hammer_3', 'ice_char', 'raw_iron', 'spirit_core', 'beast_hide'],
+                ['mirror_soup', 'steel_ingot', 'grand_pill', 'lt_pick_3', 'spirit_glass', 'mirror_whitefish', 'ice_char', 'spirit_core']],
+        shop=['exp_elixir_iron', 'cod_soup'],
+        area=['iron_monastery', 'sky_lake', 'jade_pass', 'paper_bridge', 'frost_valley', 'thunder_peak', 'snow_hollow'],
+        area_fx={'healing_pct': 5, 'gather_qty_pct': 5},
+        route=['snow_hollow', 'frost_pine_pass', 'frost_valley', 'sky_lake', 'thunder_peak', 'old_glacier'],
+        vault=['hf_fp_north', 'of_acc_fp_north'], pattern=('pt_f_north', '설산 능선 무늬')),
+    'f:river_alliance': dict(kind='faction', faction='river_alliance', name='나루 뱃길 고치기', hubs=['river_ferry'],
+        stages=[['spirit_tea', 'fish_porridge', 'tonic', 'lumber', 'river_reed', 'drowned_scale', 'medicine_base', 'seal_paper'],
+                ['sweetfish_grill', 'eel_tonic', 'purify_water', 'clear_spirit_pill', 'moon_moss', 'venom_gland', 'herbal_extract', 'golden_carp'],
+                ['catfish_braise', 'carp_broth', 'revival_charm', 'reinforced_lumber', 'fine_paper', 'spirit_glass', 'ink_catfish', 'palace_lanternfish'],
+                ['wraith_soul_pill', 'yellowtail_sashimi', 'lt_rod_3', 'lantern_oil', 'reinforced_lumber', 'marsh_wraithfish', 'croaker', 'lumber'],
+                ['koi_broth', 'bream_sashimi', 'moonlight_essence', 'grand_pill', 'dragon_bream', 'frost_salt', 'lantern_oil', 'spirit_glass']],
+        shop=['purify_water', 'eel_tonic'],
+        area=['river_ferry', 'jade_pass', 'salt_village', 'mirror_pavilion', 'field_outskirts', 'lotus_marsh', 'shrine_ruins'],
+        area_fx={'healing_pct': 5, 'encounter_pct': -5},
+        route=['salt_village', 'lotus_marsh', 'mirror_pavilion', 'sunken_palace', 'sleeping_port', 'tide_gate'],
+        vault=['hf_fp_river', 'of_top_fp_river'], pattern=('pt_f_river', '물길 무늬')),
+    'f:southern_remnant': dict(kind='faction', faction='southern_remnant', name='잔불 화덕 다시 피우기', hubs=['ember_village'],
+        stages=[['iron_ingot', 'lacquer', 'lumber', 'travel_ration', 'ore', 'raw_iron', 'resin', 'charcoal'],
+                ['dried_croaker', 'k3_ghost', 'repair_kit', 'ward_talisman', 'cinnabar', 'ward_fragment', 'drowned_scale', 'yellow_croaker'],
+                ['hairtail_braise', 'croaker_soup', 'revival_charm', 'spirit_qi_pill', 'spirit_glass', 'steel_ingot', 'lamp_hairtail', 'red_scorpionfish'],
+                ['grouper_steam', 'lt_cook_4', 'k4_hide', 'rejuv_pill', 'venom_gland', 'spirit_bark', 'croaker', 'void_hagfish'],
+                ['haeryong_feast', 'lt_still_4', 'ember_gall_pill', 'grand_pill', 'starless_ray', 'abyss_angler', 'steel_ingot', 'spirit_bark']],
+        shop=['fish_oil_lamp', 'hairtail_braise'],
+        area=['ember_village', 'ember_pass', 'black_tide_rift', 'forgotten_city', 'crimson_mine', 'ash_coast', 'red_forest'],
+        area_fx={'healing_pct': 5, 'incoming_damage_pct': -3},
+        route=['ember_pass', 'ash_coast', 'crimson_mine', 'nine_lighthouse', 'red_forest', 'black_tide_rift'],
+        vault=['hf_fp_south', 'of_acc_fp_south'], pattern=('pt_f_south', '불씨 무늬')),
+    'f:mandate_court': dict(kind='faction', faction='mandate_court', name='관성대 별 기록 잇기', hubs=['star_observatory', 'hq_dorm'],
+        stages=[['fine_paper', 'talisman_thread', 'spirit_tea', 'ward_talisman', 'cloud_cotton', 'moon_moss', 'spirit_dust', 'seal_paper'],
+                ['sealing_ink', 'spirit_thread', 'clear_spirit_pill', 'lumber', 'ghost_ash', 'ward_fragment', 'raw_iron', 'inkstone'],
+                ['spirit_glass', 'purify_water', 'spirit_qi_pill', 'reinforced_lumber', 'lumber', 'spirit_thread', 'fine_paper', 'talisman_thread'],
+                ['moonlight_essence', 'm4_spell', 'rejuv_pill', 'lt_lantern_3', 'reinforced_lumber', 'spirit_bark', 'spirit_glass', 'croaker'],
+                ['marlin_grill', 'dragon_feast', 'lt_lantern_4', 'grand_pill', 'starlit_marlin', 'spirit_bark', 'dragon_bream', 'cloud_cotton']],
+        shop=['exp_elixir_clear', 'marlin_grill'],
+        area=['star_observatory', 'cloud_corridor', 'mirror_pavilion', 'white_tower', 'thunder_peak'],
+        area_fx={'healing_pct': 5, 'rare_loot_pct': 2, 'clue_bonus_pct': 3},
+        route=['star_hill', 'jade_pass', 'water_clock', 'comet_crater', 'white_tower', 'cloud_corridor'],
+        vault=['hf_fp_mandate', 'of_top_fp_mandate'], pattern=('pt_f_mandate', '성도 무늬')),
+    'c:gwiheo': dict(kind='common', domain='gwiheo', name='반요촌 살림 일으키기', story='gq_5', hubs=['banyo_village'],
+        stages=[['ashwhisker_herbal_soup', 'lt_cook_6', 'lt_needle_6', 'lt_hammer_6', 'reed_silk', 'inverted_incense', 'banyo_scale', 'ashwhisker_catfish'],
+                ['lt_still_6', 'lt_carve_6', 's6_road', 's6_sturdy', 'moonless_silk', 'oblivion_crystal', 'ghost_ash', 'yoin_blood'],
+                ['lt_sickle_6', 'lt_rod_6', 's6_swift', 'h6_calm', 'gwiheo_iron', 'spirit_core', 'yoin_blood', 'reed_silk'],
+                ['h6_guard', 'h6_wise', 'lt_pick_6', 't6_gather', 'gwiheo_pearl', 'oblivion_crystal', 'gwiheo_iron', 'inverted_incense'],
+                ['n6_plenty', 'k6_awe', 'm6_ward', 'k6_ghost', 'gwiheo_pearl', 'yoin_blood', 'banyo_scale', 'moonless_silk']],
+        shop=['rejuv_pill', 'moonlight_essence'], route={'hidden_bazaar': C_ROUTE_CUT}),
+    'c:mukjeok': dict(kind='common', domain='mukjeok', name='묵창 나루 넓히기', story='mkq_5', hubs=['mukchang_ferry'],
+        stages=[['meokgwi_incense', 'name_ink_charm', 'meokbi_umbrella', 'carp_glue', 'mukchang_ink', 'blank_hanji', 'erased_plate', 'meokgwi_lump'],
+                ['lt_cook_7', 'lt_carve_7', 'lt_still_7', 'rainproof_oil', 'meokbi_moss', 'meokbi_ebony', 'drifting_name_thread', 'mukchang_ink'],
+                ['lt_rod_7', 'lt_compass_7', 'register_eel_grill', 'salmon_ink_grill', 'register_slip', 'bamboo_eel', 'meokbi_salmon', 'blank_hanji'],
+                ['s7_road', 's7_swift', 'h7_calm', 'name_carving_soup', 'doorplate_carp', 'meokbi_ebony', 'erased_plate', 'spirit_core'],
+                ['n7_plenty', 'm7_purify', 'k7_ghost', 'tuna_ink_feast', 'inkscale_tuna', 'register_slip', 'drifting_name_thread', 'meokgwi_lump']],
+        shop=['grand_pill', 'heavenly_dew'], route={'iron_monastery': C_ROUTE_CUT}),
+    'c:deungdo': dict(kind='common', domain='deungdo', name='흰 밤 나루 살리기', story='mdq_17', hubs=['deungdo_landing', 'lamp_rest'],
+        stages=[['night_tea', 'ember_ash_pill', 'smelt_clear_soup', 'burrow_scale', 'century_form_scrap', 'white_night_frost', 'bleached_lantern_paper', 'frozen_arrow_shaft'],
+                ['myeongdeung_lamp', 'cheong_carp_steam', 'lt_cook_8', 'lt_needle_8', 'severed_lamp_oil', 'red_shrine_lacquer', 'frost_bell_iron', 'lamp_wick_core'],
+                ['lt_carve_8', 'lt_still_8', 'lt_hammer_8', 'lt_rod_8', 'waterlogged_plank', 'faded_star_glass', 'star_record_plate', 'white_night_frost'],
+                ['lt_sickle_8', 'lt_lantern_8', 'lt_compass_8', 'h8_calm', 'king_ember_ash', 'ledger_tab', 'balance_weight', 'severed_lamp_oil'],
+                ['lt_pick_8', 'lt_knife_9', 'a8_light', 'a8_robe', 'pact_stone_dust', 'lamp_wick_core', 'king_ember_ash', 'frost_bell_iron']],
+        shop=['grand_pill', 'heavenly_dew'], route={'hq_yard': C_ROUTE_CUT, 'lamp_rest': 0}),
+}
+
+VAULT_COMMON = [
+    ('hf_proj_crate', 90, 1, 1), ('of_top_proj_vest', 120, 2, 1), ('of_acc_proj_towel', 80, 1, 1), ('tk_bundle', 30, 1, 1),
+    ('treat_box', 15, 1, 2), ('hf_proj_cart', 180, 2, 2), ('of_bundle', 60, 2, 2),
+    ('hf_proj_pole', 200, 3, 3), ('pet_egg_2', 120, 3, 3), ('hair_pattern', 150, 3, 4), ('hf_proj_beam', 300, 4, 5),
+]
+VAULT_FACTION = (3, 220, 200)
+
+TITLES = [
+    ('pj_f_1', '거점의 짐꾼', 1, {'gather_qty_pct': 2}, {'project': 'faction', 'n': 5000}, '세력 사업에 모두 5,000몫을 넘긴다', False),
+    ('pj_f_2', '거점의 일꾼', 2, {'craft_quality': 2, 'gather_qty_pct': 2}, {'project': 'faction', 'n': 30000}, '세력 사업에 모두 30,000몫을 넘긴다', False),
+    ('pj_f_3', '거점을 세운 손', 3, {'craft_quality': 3, 'rare_loot_pct': 1}, {'project': 'faction', 'n': 100000}, '세력 사업에 모두 100,000몫을 넘긴다', False),
+    ('pj_f_x', '주춧돌', 4, {'craft_quality': 4, 'healing_pct': 3}, {'project': 'f_stages', 'n': 5}, '한 세력 사업의 다섯 단계 모두에 기여한다', True),
+    ('pj_c_gw', '반요촌 살림꾼', 2, {'mental_loss_pct': -3}, {'project': 'c:gwiheo', 'n': 20000}, '반요촌 살림 일으키기에 20,000몫을 넘긴다', False),
+    ('pj_c_mk', '묵창 나루 뱃사람', 2, {'erosion_pct': -3}, {'project': 'c:mukjeok', 'n': 20000}, '묵창 나루 넓히기에 20,000몫을 넘긴다', False),
+    ('pj_c_dd', '흰 밤의 등지기', 3, {'mental_loss_pct': -3, 'healing_pct': 2}, {'project': 'c:deungdo', 'n': 30000}, '흰 밤 나루 살리기에 30,000몫을 넘긴다', False),
+    ('pj_c_all', '먼 땅의 물주', 3, {'gather_qty_pct': 3, 'rare_loot_pct': 1}, {'project': 'common', 'n': 150000}, '공동 사업에 모두 150,000몫을 넘긴다', False),
+    ('pj_c_x', '세 나루를 연 사람', 4, {'travel_time_pct': -3, 'healing_pct': 3}, {'project': 'c_last', 'n': 3}, '세 땅 공동 사업의 마지막 단계에 모두 기여한다', True),
+]
+TITLE_CAT = '사업'
+
+ITEMS = [
+    ('proj_rice_cake', '낙성 떡', 'consumable', 3, '사업 한 단계를 마친 날 거점에서 나누는 떡입니다. 먹으면 체력과 정신이 오르고 한동안 든든합니다.', 20, 60, False,
+     {'hp': 30, 'mn': 10, 'buffs': ['well_fed']}),
+    ('tk_bundle', '노정패 묶음', 'consumable', 2, '세력 비고에서 공훈으로 바꾸는 노정패 꾸러미입니다. 풀면 노정패 10개가 됩니다.', 40, 100, False, {'tokens': 10}),
+    ('treat_box', '동무 새참 바구니', 'consumable', 2, '어느 동무에게 주어도 좋아하는 별미처럼 반기는 새참 바구니입니다. 별채 동무 먹이 주기에 씁니다.', 40, 60, False, None),
+]
+FURN = {
+    'hf_proj_plaque': ('proj_plaque', '사업 마지막 단계에 힘을 보탠 이에게 주는 기념패입니다.', 1000, False),
+    'hf_proj_crate': ('proj_crate', '사업 자재를 담아 두던 나무 궤짝입니다.', 300, False),
+    'hf_proj_cart': ('proj_cart', '거점까지 자재를 실어 나르던 손수레입니다. 위에 소품을 올릴 수 있습니다.', 600, False),
+    'hf_proj_pole': ('proj_pole', '공사판에 꽂던 깃대입니다. 깃발은 거점 사업의 붉은 천입니다.', 700, False),
+    'hf_proj_beam': ('proj_beam', '거점을 다 지어 대들보를 올린 날 건 현판입니다.', 1000, False),
+    'hf_fp_night': ('fp_night', '정청 처마 끝에 걸던 청사초롱입니다.', 800, False),
+    'hf_fp_redmoon': ('fp_redmoon', '백골 장터 제단에 놓던 붉은 향로입니다.', 800, False),
+    'hf_fp_lotus': ('fp_lotus', '십삼문 장부고의 검은 서가입니다.', 800, False),
+    'hf_fp_north': ('fp_north', '철벽 고찰에서 맹약을 알리던 북입니다.', 800, False),
+    'hf_fp_river': ('fp_river', '구름나루 뱃사공들이 노를 걸어 두던 걸이입니다.', 800, False),
+    'hf_fp_south': ('fp_south', '잔불촌의 꺼지지 않는 작은 화덕입니다.', 800, False),
+    'hf_fp_mandate': ('fp_mandate', '관성대 별 기록관이 쓰던 탁상 혼천의입니다.', 800, False),
+}
+OUTFITS = {
+    'of_top_proj_vest': ('top:proj_vest', '거점 사업 일꾼들이 입던 두꺼운 무명 조끼입니다.'),
+    'of_acc_proj_towel': ('acc:proj_towel', '땀을 훔치던 무명 머릿수건입니다.'),
+    'of_acc_fp_night': ('acc:fp_night', '정청 순라들이 갓에 달던 구슬 갓끈입니다.'),
+    'of_bottom_fp_redmoon': ('bottom:fp_redmoon', '적월교 사람들이 제사 날 두르던 붉은 행전입니다.'),
+    'of_acc_fp_lotus': ('acc:fp_lotus', '장부를 넘기다 소매가 닳지 않게 끼던 검은 토시입니다.'),
+    'of_acc_fp_north': ('acc:fp_north', '북령 눈길을 걷던 이들이 쓰던 털모자입니다.'),
+    'of_top_fp_river': ('top:fp_river', '구름나루 뱃사공들이 입던 물빛 저고리입니다.'),
+    'of_acc_fp_south': ('acc:fp_south', '잔불촌 화덕지기들이 쓰던 불그스름한 두건입니다.'),
+    'of_top_fp_mandate': ('top:fp_mandate', '관성대 기록관들이 입던 별 수놓은 도포입니다.'),
+}

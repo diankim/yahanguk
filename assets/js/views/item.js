@@ -29,6 +29,7 @@ function useText(id) {
   if (f.sp > 0) out.push(`영력·기력 ${f.sp}`);
   if (f.er > 0) out.push(`침식 −${f.er}`);
   if (f.stam > 0) out.push(`탐색력 +${f.stam}`);
+  if (f.tokens > 0) out.push(`노정패 +${f.tokens}`);
   if (f.cures?.length) out.push(`${f.cures.map(nm).join('·')} 치료`);
   for (const b of f.buffs || []) {
     const s = names[b], fx = effectText(s?.e || {});
@@ -188,7 +189,8 @@ function draw(box, id, inv, prices, mode) {
   const both = k => Number(inv.inventory?.[k] || 0) + (isHq(k) ? 0 : Number(inv.inventory?.[hqOf(k)] || 0));
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
   const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
-  const stashOk = !!here?.is_safe_zone && !weakSafe(here.region_id) && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
+  const fsr = store.snaps['world_field_snapshotnull']?.region, weakSt = fsr?.region_id === here?.region_id && fsr?.weak ? !!fsr.weak.storage : weakSafe(here?.region_id);
+  const stashOk = !!here?.is_safe_zone && !weakSt && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
   const bid = baseOf(id);
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[bid]);
   const makes = (inv.recipes || []).filter(r => r.output === bid);

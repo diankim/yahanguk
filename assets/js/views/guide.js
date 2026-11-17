@@ -1,10 +1,10 @@
-import { icon, esc, $, $$, effectText, nameOf, josa } from '../core.js';
+import { icon, esc, $, $$, effectText, nameOf, josa, fmt } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -82,6 +82,8 @@ function factionLoreHtml() {
         <li><b>이점</b> ${esc(l.perk)}</li><li><b>등급 효과</b> 2~5등급마다 ${esc(l.rank)}</li><li><b>적대</b> ${esc(factionNames(GD.factionHostile[k] || []))}</li><li><b>평판의 이름</b> ${esc(l.name2)}</li></ul></div>`; }).join('');
 }
 
+const pjBase = kind => { const p = Object.values(PROJECT.projects || {}).find(x => x.kind === kind); return (p?.base || []).map(n => fmt.num(n)).join(' · '); };
+const pjList = (kind, f) => Object.values(PROJECT.projects || {}).filter(p => p.kind === kind).map(p => `<li>${f(p)}</li>`).join('');
 const S = [
   ['start', '처음 30분', `
     <ol class="how">
@@ -229,6 +231,7 @@ const S = [
         <ul><li><b>전</b>: ${GD.storage.prices.length}번, +4칸씩 · ${GD.storage.prices.map(v => v.toLocaleString('ko-KR')).join(' → ')}전</li>
           <li><b>이야기 6~10장</b>: 해결마다 +2</li>
           <li><b>외전 귀허도·묵적록</b>: 장(「요인록」·「묵적록」 다섯 장씩)을 마칠 때마다 +2</li>
+          <li><b>외전 명등기</b>: 3·6·9·12·15장을 마칠 때마다 +3</li>
           <li><b>대세력 평판</b>: 300·600·1,000에서 +2씩. 세력을 떠나면 사라집니다.</li>
           <li><b>지역 완전 답사</b>: 10·20·30곳에서 +2씩</li></ul></li>
       <li>용량이 줄어 넘쳐도 물품은 남고, 새로 맡기기만 막힙니다.</li>
@@ -902,12 +905,36 @@ const S = [
       <li>입질 뒤 명어 무게는 ${GD.fishRules.named.weight}(신품 어종 ${GD.fishRules.weight.legendary}보다 어렵게), 희귀 어종 보정은 절반만 붙습니다. 용비늘 낚싯대는 무게를 조금 더합니다.</li>
       <li>명어와 명어로 만든 것도 거래할 수 있지만, 명어 칭호는 직접 낚아야 얻습니다. 도감은 못 낚은 명어의 이름을 감추고 힌트만 보여 줍니다.</li>
     </ul>`],
+  ['deungdo', '등도 옛터와 외전 「명등기」', `
+    <p>묵적록 5장을 마친 Lv45부터 외전 「명등기」를 받을 수 있습니다. 3장을 마치면 봉인고 아래 옛 물길 너머로 <b>등도 옛터</b>가 열리고, 이야기가 나아갈 때마다 구역이 하나씩 지도에 나타납니다. 열리기 전 구역은 지도에 보이지 않고 갈 수도 없습니다.</p>
+    <h4>지역</h4>
+    <ul>
+      <li>남문 수로 선착 안전지대 Lv45 · 꺼진 관아 터 Lv45 · 무관 거리 Lv46 · 붉은 사당 골목 Lv47 · 옛 나루 저자 Lv48 · 등지기 쉼막 안전지대 Lv48 · 첫 관상대 Lv49 · 잿빛 왕궁 터 Lv49 · 맹약 마당 Lv${GD.level.cap}</li>
+      <li>두 안전지대는 묵창 나루처럼 <b>빈약한 안전지대</b>입니다(거래소·창고·마구간 없음, 상점 하루 개수, 수리비 세 배).</li>
+      <li>8단계 장비(장착 Lv${GD.level.cap - 3})와 8단계 생활 도구는 등도 재료와 명등 심지로 만들고, 남문 수로 선착에서 만들면 품질이 오릅니다. 칸마다 일반 재료로 만드는 장비와 명소 「등불 서린」 재료로 만드는 명장 장비가 하나 이상 있습니다.</li>
+      <li>레벨 상한은 ${GD.level.cap}입니다. Lv${GD.level.cap}에 받는 명등기 장면은 경험치 없이 전·물품만 줍니다.</li>
+      <li><b>이야기를 따라온 요괴:</b> 장면 할 일이 등도 요괴를 쓰러뜨리라고 하면, 그 할 일이 걸린 동안에만 그 요괴가 할 일에 적힌 구역에도 나타납니다. 이 요괴는 할 일에만 세고 경험치·전·전리품을 남기지 않습니다(다시하기 중에도 같음).</li>
+    </ul>
+    <h4>백야(白夜)</h4>
+    <p>등도에서는 밤이 오지 않습니다. 흰 하늘 아래 있는 동안 늘 걸리고, 상태 칸 10칸에 세지 않습니다.</p>
+    <ul>
+      <li>${effectText(Object.fromEntries(Object.entries(GD.domains?.deungdo?.fx?.effects || {}).filter(([k]) => !k.startsWith('wn_')))).join(' · ')}</li>
+      <li><b>그림자 없음:</b> 기척 숨기기 +${GD.domains?.deungdo?.fx?.effects?.wn_sneak ?? 15}%p · 조용히 살피기 상한 +${GD.domains?.deungdo?.fx?.effects?.wn_quiet ?? 10} · 회피 +${GD.domains?.deungdo?.fx?.effects?.wn_eva ?? 3}</li>
+      <li><b>불러 줄 이 없음:</b> 등도에서 쓰러지면 본부 구조대가 오지 못합니다. 같은 곳 조사원의 구조·회생 부적, 또는 하루 ${GD.domains?.deungdo?.fx?.recall?.per_day ?? 1}번 「제 이름 외기」(체력 ${GD.domains?.deungdo?.fx?.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어남 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」)로 일어납니다. 쓰러진 지 ${GD.rescue?.death_h ?? 4}시간이 지나도록 일어나지 못하면 숨집니다.</li>
+      <li>명등 등롱을 켜면 1시간 동안 백야를 받지 않습니다.</li>
+      <li><b>밤 되찾기:</b> 그 구역의 장을 마치면 그 구역에서는 백야가 걷힙니다. 안전지대에는 백야가 없습니다.</li>
+    </ul>
+    <h4>등도 명소</h4>
+    <ul>
+      <li>무관 거리·첫 관상대·잿빛 왕궁 터에 명소가 하나씩 있습니다. 흰 밤에는 시간대가 없어, <b>그 구역의 밤을 되찾은 뒤에만</b> 보입니다.</li>
+      <li>명소 기술 ${GD.meisho?.lamp?.rank ?? 50}단계부터 등도 명소에서 「등불 서린 …」 재료가 함께 나옵니다.</li>
+    </ul>`],
   ['growth', '성장과 캐릭터 빌드', `
     <h4>레벨</h4>
     <ul>
       <li>최고 레벨은 <b>${GD.level.cap}</b>입니다. 쌓아 둘 수 있는 능력치 포인트는 ${GD.level.stat_points_cap}점까지입니다.</li>
       <li>다음 레벨까지 <b>100 × 레벨 + 12 × 레벨²</b> 경험치가 듭니다. 높은 레벨일수록 천천히 오릅니다.
-        <ul><li>Lv10 2,200 · Lv20 6,800 · Lv30 13,800 · Lv40 23,200 · Lv44 27,632</li></ul></li>
+        <ul><li>Lv10 2,200 · Lv20 6,800 · Lv30 13,800 · Lv40 23,200 · Lv45 28,800 · Lv49 33,712</li></ul></li>
       <li>레벨이 오르면 능력치 ${GD.level.per_level}점을 받습니다. 체력은 레벨과 상관없이 최대 100입니다.</li>
     </ul>
     <h4>능력치</h4>
@@ -1153,6 +1180,39 @@ const S = [
     </ul>
     ${petPartnerHtml()}`],
   ['lore-factions', '세력 이야기', factionLoreHtml()],
+  ['fproject', '거점 사업', `
+    <p>대세력마다 거점을 함께 다시 세우는 사업이 있습니다. 세력 거점에서 정한 물품을 넘깁니다(캐릭터 › 세력 「거점 사업」 또는 거점 현장의 띠). 그 세력 조사원(가입 퀘스트를 마친)은 공훈을, 다른 세력이나 대세력이 없는 조사원은 「돕기」로 전을 받습니다.</p>
+    <h4>단계와 혜택</h4>
+    <ol>${(PROJECT.perk_text?.faction || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
+    <ul>
+      <li>단계는 한 번 차면 그대로 남습니다. 혜택(상점·지역 효과·지름길·비고·꾸미기)은 그 세력 조사원만 받습니다.</li>
+      <li>단계마다 받는 물품은 제작품 넷과 채집 재료 넷, 모두 여덟 가지입니다. 날마다 그중 둘이 「급히 필요」(몫 ×${PROJECT.urgent?.mul ?? 1.5})로 바뀌고, 급히 필요한 채집 재료는 현장 채집터에 「사업」 칩이 붙습니다.</li>
+      <li>단계 목표는 모든 세력이 같습니다: ${pjBase('faction')}몫. 사람이 적은 세력은 다른 세력의 도움으로 채울 수 있습니다.</li>
+    </ul>
+    <h4>넘기기와 보상</h4>
+    <ul>
+      <li>내 세력 사업은 몫 ${PROJECT.pay?.faction?.per_merit ?? 100}마다 공훈 1. 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}까지이고, 상한을 넘는 물품은 돌려받습니다.</li>
+      <li>남의 세력 사업 돕기: 몫 1마다 ${PROJECT.pay?.help?.gil_rate ?? 0.6}전, 몫은 그 세력 단계에 쌓입니다. 단계가 찰 때 기여가 ${PROJECT.memento?.pct ?? 1}% 넘으면 낙성 떡을 받고, 누계는 사업 칭호에 셉니다. 내 세력이 있으면 몫 1,000마다 두 세력 관계가 +${PROJECT.help_rel?.per_k ?? 0.1} 오릅니다(한 사람 하루 +${PROJECT.help_rel?.person_day ?? 0.5}, 두 세력 사이 하루 +${PROJECT.help_rel?.pair_day ?? 2}까지).</li>
+      <li>우수품은 몫 ×${PROJECT.hq_mul ?? 1.5}(급히와 겹쳐도 ×${PROJECT.mul_cap ?? 2}까지). 가방에 모자란 것은 창고에서 꺼내 넘깁니다. 장착 중·잠금·강화한 장비·임무 물품은 넘기지 않습니다.</li>
+      <li>단계가 차는 순간 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 낙성 떡(그 세력 조사원은 공훈 +${PROJECT.memento?.faction_merit ?? 20}도)을 창고로 받고, 마지막 단계에는 「낙성 기념패」 가구도 받습니다.</li>
+      <li>다섯 단계를 다 마친 뒤에도 넘길 수 있고 기여·칭호에 셉니다. 보상은 ${(PROJECT.pay?.after_mul ?? 0.5) * 100}%입니다.</li>
+    </ul>
+    <h4>세력마다</h4>
+    <ul>${pjList('faction', p => `${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 상점 ${esc((p.shop || []).join('·'))} · 지역 효과 ${esc(effectText(p.area_fx || {}).join(', '))} · 바탕 무늬 「${esc(p.pattern || '')}」`)}</ul>
+    <h4>비고 공통 품목</h4>
+    <ul>${(PROJECT.vault || []).map(v => `<li>${esc(v.name)} · 공훈 ${v.price} · ${v.rank}등급 · 사업 ${v.stage}단계부터</li>`).join('')}</ul>
+    <p class="muted small">사업 칭호 ${PROJECT.titles ?? 9}개(분류 「사업」)는 넘긴 몫의 누계로 얻습니다.</p>`],
+  ['cproject', '공동 사업', `
+    <p>빈약한 안전지대가 있는 먼 땅 셋에는 모든 조사원이 함께 채우는 공동 사업이 있습니다. 그 땅이 열린 조사원은 누구나 그 땅 안전지대에서 넘길 수 있고, 보상은 전입니다.</p>
+    <ul>${pjList('common', p => `「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 혜택은 외전 「${esc(p.story_name || '')}」 마지막 장까지 마친 조사원만`)}</ul>
+    <h4>단계마다 풀리는 것</h4>
+    <ol>${(PROJECT.perk_text?.common || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
+    <ul>
+      <li>상점 품목 수가 느는 것은 모두에게 보이고, 새 품목·하루 개수·지름길·창고·거래소·마구간·수리비·되팔기는 그 땅 이야기를 마친 사람에게만 풀립니다. 마치지 않은 사람에게는 빈약한 안전지대 그대로입니다.</li>
+      <li>단계 목표(세 땅 모두 같음): ${pjBase('common')}몫.</li>
+      <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
+      <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
+    </ul>`],
   ['feast', '세력 행사', `
     <ul>
       <li>일곱 대세력이 요일마다 거점에서 행사를 엽니다. 매일 ${GD.feast?.start}부터 ${GD.feast?.min}분 동안 열립니다(한국 시각).</li>
@@ -1419,6 +1479,7 @@ const S = [
       <li><b>맡은 일의 실마리</b>: 보조·세력 퀘스트에서 단서를 찾으라는 할 일을 맡고 있으면, 탐색에서 「맡은 일의 실마리」가 나옵니다. 주 이야기 단서가 먼저 나옵니다.</li>
       <li><b>보고</b>: 넘길 물품은 보고할 때 가방에서 나갑니다. 잠근 물품·장착 중인 마지막 하나는 넘기지 않습니다. 보상 물품이 가방에 들어갈 자리가 없거나 이동 중이면 보고할 수 없습니다.</li>
       <li><b>포기하기</b>: 보조 퀘스트는 일지 › 보조 퀘스트의 진행 중 카드에서 「포기하기」로 처음부터 다시 받을 수 있습니다. 이미 보상을 받은 장면은 다시 보고해도 보상이 없습니다.</li>
+      <li><b>다시하기</b>: 마친 퀘스트(주 이야기 장·보조·외전·직업·소속)는 일지의 마친 카드에서 「다시하기」로 처음부터 다시 겪을 수 있습니다. ${esc(QUEST_REPLAY.ask)} 중간에 「다시하기 그만두기」를 해도 처음 마친 기록·칭호는 그대로이고, 이야기 단서·가설은 다시하지 않습니다.</li>
       <li>경험치는 퀘스트가 중심입니다. 사냥은 경험치가 낮고, 레벨보다 쉬운 곳일수록 더 줄어듭니다.</li>
       <li>${QUEST_XP}.</li>
     </ul>`],
@@ -1979,18 +2040,106 @@ const S = [
       <li>칭호·꾸미기는 보낸 횟수·혼자·흠 없이(이름 획을 잃지 않고 아무도 물러나지 않음)로 얻습니다. 귀령초는 귀허의 주인과 같은 길(1%)로 나옵니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur}% · 침식 +${x.er} · ${x.cd}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
+  ['ggboss', '값귀 · 외전 「명등기」 8장', `${(() => { const B = GD.boss?.gapgwi || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, d = b.delta || {}, nm = B.mech_names || {}; return `
+    <p>외전 「명등기」 7장을 마치면 Lv${B.lv ?? 47}부터 ${esc(B.place || '붉은 사당 골목')}의 현장에서 「값귀」 칸으로 들어갑니다. 혼자 또는 같은 곳의 파티원 4명까지 60초 동안 모입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>8장의 싸움으로, 누구든 깰 수 있는 쉬운 판입니다. 혼자면 마감이 없고(여럿이면 ${st.round_s ?? 60}초 안에 안 고른 사람은 방어), 입장 물품이 필요 없으며 회복품도 마음껏 씁니다. 떨이 바구니·값표 맞추기만 나오고, 밀려나도 잃는 것이 없습니다. 처음 쓰러뜨리면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>${esc(B.modes?.hard || '깊은 장부')}</td><td>${esc(B.hard_quest_name || '명등기 8장')}을 마치면 열립니다. 모두 ${esc(B.item_name || '')}을 하나씩 씁니다(${esc((B.item_where || '').replace(/[.。]$/, ''))}). ${B.min ?? 18}분 안에 쓰러뜨려야 합니다.</td></tr></table>
+    <h4>장터와 값(섬)</h4>
+    <ul>
+      <li>골목은 위아래 좌판 두 줄과 가운데 거리 한 줄, 다섯 칸씩 열다섯 칸입니다. 라운드마다 가로·세로 바로 옆 칸으로 한 칸 옮겨 섭니다(행동과 따로, 맵을 눌러서). 좌판마다 값표가 붙어 있습니다.</li>
+      <li>저마다 머리 위에 0~${b.max ?? 9}섬의 값이 붙습니다. 공격하면 +${d.attack ?? 1}, 협동 기술은 +${d.coop ?? 1}섬 오릅니다.</li>
+      <li><b>흥정</b>: 공격 대신 값귀에게 흥정을 걸어 내 값을 ${-(b.haggle ?? -5)}섬 깎습니다. <b>값 매기기</b>: 바로 옆 칸 동료의 이름을 누르고 골라 그 값을 ${b.price ?? 3}섬 올려 줍니다.</li>
+    </ul>
+    <h4>깊은 장부의 수법 — 귀띔</h4>
+    <table class="guide-table"><tr><th>수법</th><th>귀띔</th></tr>
+      <tr><td>${esc(nm.judge || '판결 망치')}</td><td>망치는 내려칠 자리를 먼저 붉게 칠해 둡니다.</td></tr>
+      <tr><td>${esc(nm.bargain || '바가지')}</td><td>몸값이 비싼 사람이 값을 치릅니다.</td></tr>
+      <tr><td>${esc(nm.ledger || '장부 맞추기')}</td><td>장부는 셈이 맞아야 덮입니다.</td></tr>
+      <tr><td>${esc(nm.tether || '외상 줄')}</td><td>외상으로 묶인 사이는 너무 멀어도, 너무 가까워도 탈이 납니다.</td></tr>
+      <tr><td>${esc(nm.close || '장 닫힘')}</td><td>장은 한쪽 끝부터 파합니다.</td></tr></table>
+    <ul>
+      <li>무엇이 언제 떨어지는지는 맵 위 숫자로 미리 보이고, 체력이 줄수록 수법이 겹쳐 쌓입니다. 귀띔은 여기까지입니다 — 어떻게 받아칠지는 장부를 몇 번 덮여 보며 직접 알아내세요.</li>
+    </ul>
+    <h4>보상</h4>
+    <ul>
+      <li>깊은 장부에서 처음 쓰러뜨리면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배 · 탈것 「${f.mount_name}」 · 이름 색 「${f.name_style_name}」 · 별채 가구 「값을 덮은 대저울」, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>칭호는 쓰러뜨린 횟수·혼자·흠 없이(아무도 물러나지 않음)로 얻습니다. 테두리는 처음, 바탕 무늬는 3번, 낙관 「價」는 10번 쓰러뜨리면 받습니다.</li>
+      <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
+    </ul>`; })()}`],
+  ['byboss', '백야 · 외전 「명등기」 16장', `${(() => { const B = GD.boss?.baekya || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, nm = B.mech_names || {}, wn = b.wn || {}; return `
+    <p>외전 「명등기」 16장에서 맹약 마당의 「백야」와 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 60초 동안 모입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>16장의 싸움으로, 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 ${st.round_s ?? 60}초), 입장 물품이 필요 없으며 밀려나도 잃는 것이 없습니다. 멈춘 물방울·흔들리는 등만 나오고 흰 밤에 시간 제한이 없습니다. 처음 이기면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>${esc(B.modes?.hard || '깊은 흰 밤')}</td><td>${esc(B.hard_quest_name || '명등기 17장')}을 마치면 열립니다. 모두 ${esc(B.item_name || '')}을 하나씩 씁니다.</td></tr></table>
+    <h4>맹약 마당</h4>
+    <ul>
+      <li>바깥 고리 등 기둥 일곱 칸, 안쪽 마당 일곱 칸, 가운데 백야로 되어 있습니다. 라운드마다 바로 옆 칸으로 한 칸 옮겨 섭니다(행동과 따로, 맵을 눌러서).</li>
+      <li>켜진 등이 많을수록 주는 피해가 크고 받는 피해가 작습니다. 꺼진 등은 그 등 기둥 칸에서 「등 켜기」로 다시 켭니다.</li>
+      <li>백야의 공격은 허공에 멈춰 숫자를 셉니다. 등이 꺼진 쪽의 화살은 숫자가 줄지 않습니다(멈춤).</li>
+      <li><b>등 켜기</b>·<b>걷어 내기</b>는 늘 쓸 수 있지만, 정확한 라운드(!)에 눌러야 통합니다. 일찍 누르면 그 라운드를 버립니다.</li>
+      <li><b>바램</b>: 화살·가루에 닿으면 쌓여 받는 피해가 늘고, 세 겹이면 다음 라운드에 꼼짝 못 합니다. 회복품이나 의무관 협동 기술이 덜어 줍니다.</li>
+    </ul>
+    <h4>깊은 판의 수법 — 귀띔</h4>
+    <table class="guide-table"><tr><th>수법</th><th>귀띔</th></tr>
+      <tr><td>${esc(nm.arrow || '화살비')}</td><td>허공에 멈춘 화살도 언젠가는 떨어집니다.</td></tr>
+      <tr><td>${esc(nm.brush || '붉은 붓')}</td><td>붓이 칠한 쪽을 눈여겨보세요.</td></tr>
+      <tr><td>${esc(nm.drop || '물방울·흰 가루')}</td><td>물은 모이고, 가루는 흩어집니다.</td></tr>
+      <tr><td>${esc(nm.tower || '등 기둥 탑')}</td><td>하얀 기둥은 곁에 선 사람 수를 셉니다.</td></tr>
+      <tr><td>${esc(nm.gust || '꺼져 가는 등')}</td><td>흔들리는 불은 제때 손봐야 꺼지지 않습니다.</td></tr>
+      <tr><td>${esc(nm.big || '굵은 화살')}</td><td>혼자 피하기 어려운 화살도 곁에서는 손이 닿습니다.</td></tr>
+      <tr><td>${esc(nm.clock || '멈춤 시계')}</td><td>모래시계가 다하면 걸음이 묶입니다.</td></tr>
+      <tr><td>${esc(nm.wn || '흰 밤')}</td><td>마지막에는 마당이 모두 어두워집니다. 밤을 밝히는 것은 등입니다.</td></tr></table>
+    <ul>
+      <li>체력이 줄수록 수법이 겹쳐 쌓입니다. 귀띔은 여기까지입니다 — 흰 밤을 몇 번 겪으며 받아치는 법을 직접 알아내세요.</li>
+    </ul>
+    <h4>보상</h4>
+    <ul>
+      <li>깊은 판에서 처음 이기면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배 · 탈것 「${f.mount_name}」 · 이름 색 「${f.name_style_name}」 · 별채 가구 「맹약 마당 등 기둥」, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>칭호는 이긴 횟수·혼자·흠 없이로 얻습니다. 테두리는 처음, 바탕 무늬는 3번, 낙관 「宵」는 10번 이기면 받습니다.</li>
+      <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
+    </ul>`; })()}`],
+  ['ugboss', '무용담 · 가장 어려운 판', `${(() => { const U = GD.ultimate || {}, T = U.tokens || {}; return `
+    <p>객사 이야기꾼 춘보가 부풀린 무용담이 퍼지자, 보낸 우두머리들이 이야기 속 모습으로 더 사납게 다시 깨어납니다. 이야기판 → 깊은 판 다음의 셋째 판입니다. 판마다 그 이야기를 들려주는 사람의 퀘스트를 마치면 열립니다 — 구중 봉연 나루지기 덕삼(요인록을 마친 뒤), 묵창 주막 홍매댁(묵적록을 마친 뒤), 남문 수로 선착 등지기 차랑(명등기를 마친 뒤).</p>
+    <table class="guide-table"><tr><th>판</th><th>순서</th><th>들어가는 곳</th></tr>
+      ${['gwiheo', 'mukjeok', 'gapgwi'].map(k => U.boards?.[k]).filter(Boolean).map(b => `<tr><td>${esc(b.name)}</td><td>${b.boss === 'gwiheo' ? '구중 봉주 → 귀허의 주인' : b.boss === 'gapgwi' ? '값귀 → 백야' : '먹그림자'}</td><td>${esc(b.place || '')}</td></tr>`).join('')}
+    </table>
+    <h4>들어가기</h4>
+    <ul>
+      <li>Lv${U.level ?? 50}만, 같은 곳의 파티원 ${(U.party || [2, 4])[0]}~${(U.party || [2, 4])[1]}명이 함께 들어갑니다(혼자는 들어갈 수 없음). 그 보스의 깊은 판을 한 번 이상 깨야 합니다.</li>
+      <li>횟수 제한이 없고, 져도 잃는 것이 없습니다(장비·침식·재도전 대기 없음). 회복품은 한 사람 셋까지입니다.</li>
+    </ul>
+    <h4>아무것도 알려 주지 않는 판</h4>
+    <p>무용담은 이야기꾼이 부풀린 이야기라, 이야기마다 무엇이 튀어나올지 아무도 모릅니다. 이 도움말에도, 싸움 화면에도 수법을 받아치는 법은 적혀 있지 않고 글로 된 낌새도 뜨지 않습니다. 맵 위에 무엇이 떠오르는지 지켜보고, 쓰러지며 하나씩 알아내고, 동료와 역할을 나눠 파훼해 나가는 판입니다.</p>
+    <h4>싸우는 법</h4>
+    <ul>
+      <li>세 판 모두 맵 위에서 싸우고, 한 라운드에 이웃 칸 한 칸씩 옮겨 섭니다. 그 판 전용 단추가 늘 떠 있습니다.</li>
+      <li>막마다 마지막에 전멸기가 한 번 옵니다. 하나라도 놓치면 그 자리에서 전멸합니다.</li>
+      <li>막마다 정해진 라운드 안에 쓰러뜨리지 못해도 전멸합니다. 전멸하면 처음 막부터 다시 합니다. 수법과 전멸기를 모두 처리하고 최고 장비를 갖추면 반드시 깰 수 있게 맞췄습니다.</li>
+    </ul>
+    <h4>수법을 놓치면</h4>
+    <ul>
+      <li>놓친 수법의 피해와 함께 곁의 동료도 조금씩 다칩니다.</li>
+      <li>놓친 사람에게는 「${GD.ultimate?.weak?.name ?? '기가 꺾임'}」이 한 겹 붙습니다(겹마다 주는 피해 −${Math.round((GD.ultimate?.weak?.deal ?? 0.12) * 100)}%·받는 피해 +${Math.round((GD.ultimate?.weak?.take ?? 0.2) * 100)}%). 한 겹은 ${GD.ultimate?.weak?.rounds ?? 12}라운드 뒤 풀리고, ${GD.ultimate?.weak?.strong_at ?? 3}겹이 쌓이면 「${GD.ultimate?.weak?.strong_name ?? '넋이 나감'}」으로 바뀌어 훨씬 약해집니다.</li>
+    </ul>
+    <h4>보상 — 판마다 다른 토큰</h4>
+    <ul>
+      <li>깰 때마다 그 판의 토큰 ${T.clear ?? 3}개, 처음 깨면 ${T.first ?? 10}개 더(${Object.values(U.boards || {}).map(b => esc(b.token_name)).join(' · ')}). 경험치·전은 없습니다.</li>
+      <li>판마다 그 판 퀘스트를 준 사람(구중 봉연·묵창 나루·남문 수로 선착)의 「무용담 교환」에서 그 판 토큰으로 꾸미기 물품(가구·벽지·바닥재·옷·장신구·테두리·바탕 무늬·낙관·이름 색·꼬마 동무)으로 바꿉니다. 물품마다 값이 다르고, 같은 것은 한 번만 바꿀 수 있습니다. 모두 거래할 수 없습니다.</li>
+      <li>칭호는 판마다 처음 깸·10번 깸, 그리고 둘이서·흠 없이·셋 다로 얻습니다(능력치 효과 없음).</li>
+    </ul>`; })()}`],
 ];
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
-  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'gear', 'durability', 'survival']],
+  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
-  ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast']],
-  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission']],
+  ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
+  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'cproject']],
   ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';

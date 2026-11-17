@@ -86,10 +86,12 @@ def build(dsn):
     d['feast'] = q(dsn, "select world_feast_rules() || jsonb_build_object('feasts', (select jsonb_agg(f || jsonb_build_object('place', g.region_name) order by (f ->> 'dow')::int) from jsonb_array_elements(world_feast_rules() -> 'feasts') f join world_map_regions g on g.region_id = f ->> 'region'))")
     d['level'] = q(dsn, "select world_level_rules()")
     d['mentor'] = q(dsn, "select world_mentor_rules()")
+    d['questReplay'] = q(dsn, "select world_quest_replay_rules()")
     d['xpLead'] = q(dsn, "select world_xp_lead_rules()")
-    d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx')) from jsonb_each(world_domain_rules()) e(k, v)")
+    d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx', 'pin', coalesce((v ->> 'pin')::boolean, false))) from jsonb_each(world_domain_rules()) e(k, v)")
     d['names'] = q(dsn, "select world_name_rules()")
     d['boss'] = q(dsn, "select world_boss_rules()")
+    d['ultimate'] = q(dsn, "select world_ultimate_rules() || jsonb_build_object('boards', (select jsonb_object_agg(k, v || jsonb_build_object('place', (select r.region_name from world_map_regions r where r.region_id = v ->> 'region'))) from jsonb_each(world_ultimate_rules() -> 'boards') e(k, v)))")
     d['bijang'] = q(dsn, "select world_bijang_rules()")
     d['jobSkills'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'desc', v ->> 'desc')) from jsonb_each(world_job_skill_rules()) e(k, v)")
     # 대세력: 가입 받는 곳·세력 안전지대·관계 기준값
@@ -113,7 +115,8 @@ def build(dsn):
     late = q(dsn, "select count(*) from world_story_chapters where seq between 6 and 10")
     arcs = re.findall(r"'([a-z]+_\d+)'", re.search(r"g\.quest_id = any \(array\[([^\]]+)\]", src).group(1))
     d['bag'] = {'base': int(re.match(r'\d+', bag).group(0))}
-    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + 2 * len(arcs) + 6 + 6, 'prices': prices, 'arc': len(arcs)}
+    arc_n = sum(3 if a.startswith('mdq_') else 2 for a in arcs)
+    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + arc_n + 6 + 6, 'prices': prices, 'arc': len(arcs), 'arc_n': arc_n}
     # 칭호 수
     t = q(dsn, """select json_build_object('total', count(*), 'public', count(*) filter (where not hidden),
         'skill', count(*) filter (where title_key ~ '^(ct|gt)_'),
@@ -132,6 +135,19 @@ def build(dsn):
         'list', (select jsonb_agg(jsonb_build_object('region', r.region_name, 'kind', m.kind, 'level', m.min_level) order by m.min_level, m.sort) from world_meisho m join world_map_regions r using (region_id) where m.active),
         'recipes', (select jsonb_agg(jsonb_build_array(cr.craft_field, cr.required_skill_rank, i.item_name) order by cr.craft_field, cr.required_skill_rank)
           from world_crafting_recipes cr join world_item_catalog i on i.item_id = cr.output_item where cr.required_skill_rank >= 30))""")
+    d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(
+        'titles', jsonb_array_length(world_project_rules() -> 'titles'),
+        'vault', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'price', (v ->> 'price')::int, 'rank', (v ->> 'rank')::int, 'stage', (v ->> 'stage')::int) order by (v ->> 'stage')::int, (v ->> 'price')::int)
+          from jsonb_array_elements(world_project_rules() -> 'vault') v join world_item_catalog i on i.item_id = v ->> 'id'),
+        'f_shop', world_project_rules() -> 'f_shop', 'c_shop', world_project_rules() -> 'c_shop',
+        'projects', (select jsonb_object_agg(k, jsonb_build_object('kind', p ->> 'kind', 'name', p ->> 'name', 'faction', p ->> 'faction', 'domain', p ->> 'domain', 'story', p ->> 'story',
+            'story_name', (select split_part(q.cat, '·', 2) from world_quests q where q.quest_id = p ->> 'story'),
+            'hubs', (select jsonb_agg(m.region_name order by m.region_name) from world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))),
+            'hub_ids', p -> 'hubs', 'base', (select jsonb_agg((s ->> 'base')::int) from jsonb_array_elements(p -> 'stages') s),
+            'area_fx', p -> 'area_fx', 'cut', (select max(value::text::numeric) from jsonb_each(p -> 'route')),
+            'shop', (select jsonb_agg(i.item_name) from jsonb_array_elements_text(p -> 'shop') x join world_item_catalog i on i.item_id = x),
+            'pattern', p -> 'pattern' ->> 1))
+          from jsonb_each(world_project_rules() -> 'projects') e(k, p)))""")
     return d
 
 

@@ -39,6 +39,10 @@ const M = {
   inkdrop: 'M0-8C2-4 5-1 5 2a5 5 0 01-10 0c0-3 3-6 5-10zM-6 7h12M-3 4l1 1',
   lampway: 'M-8 7L0-1 8 7M0-1v-4M-3-8h6v3h-6zM-6 3h1M5 3h1',
   wedknot: 'M-6-2a3 3 0 106 0 3 3 0 10-6 0M0-2a3 3 0 106 0 3 3 0 10-6 0M0 1v6M-3 7h6M-2-8l2 3 2-3',
+  ugvortex: 'M0 0a1.2 1.2 0 012.4 0 2.6 2.6 0 01-5.2 0 4 4 0 018 0 5.4 5.4 0 01-10.8 0M-7 5c2 2 4 2 7 1s5-1 7 1M0-7.5v-1.5M-5.5-5.5l-1-1M5.5-5.5l1-1',
+  abacus: 'M-8-7h16v14h-16zM-8-2h16M-4-7v14M0-7v14M4-7v14M-4-6l1.3 1.3-1.3 1.3-1.3-1.3zM4-6l1.3 1.3-1.3 1.3-1.3-1.3zM0 0l1.3 1.3-1.3 1.3-1.3-1.3zM-4 3l1.3 1.3-1.3 1.3-1.3-1.3zM4 2l1.3 1.3-1.3 1.3-1.3-1.3z',
+  balance: 'M0-7v13M-4 6h8M-7-4h14M-7-4l-2 5M-7-4l2 5M-9 1a2 1 0 004 0M7-4l-2 5M7-4l2 5M5 1a2 1 0 004 0M-1-8h2',
+  sevenlamps: 'M0-2.4a2.4 2.4 0 110 4.8 2.4 2.4 0 110-4.8zM0-7.4a1 1 0 110 2 1 1 0 110-2zM5-4.9a1 1 0 110 2 1 1 0 110-2zM6.3 0.6a1 1 0 110 2 1 1 0 110-2zM2.9 5.1a1 1 0 110 2 1 1 0 110-2zM-2.9 5.1a1 1 0 110 2 1 1 0 110-2zM-6.3 0.6a1 1 0 110 2 1 1 0 110-2zM-5-4.9a1 1 0 110 2 1 1 0 110-2z',
 };
 export const FRAMES = {
   fr_lantern: ['common', 'lantern'], fr_path: ['common', 'path'], fr_compass: ['legend', 'compass'],
@@ -53,6 +57,8 @@ export const FRAMES = {
   fr_gwiheo: ['legend', 'vortex'],
   fr_mukjeok: ['legend', 'inkdrop'],
   fr_ninecourt: ['legend', 'ninegrid'],
+  fr_gapgwi: ['legend', 'balance'], fr_baekya: ['legend', 'sevenlamps'],
+  fr_ug_gwiheo: ['ultimate', 'ugvortex'], fr_ug_gapgwi: ['ultimate', 'abacus'],
   fr_wed: ['legend', 'wedknot'],
   fr_mentor: ['rare', 'lampway'],
   fr_home: ['legend', 'eave'],
@@ -61,16 +67,19 @@ export const FRAMES = {
 };
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
 const MIDS = [[50, 4, 0], [96, 50, 90], [50, 96, 180], [4, 50, 270]];
+const UG_SPARK = [[31, 4], [69, 4], [96, 31], [96, 69], [69, 96], [31, 96], [4, 69], [4, 31]];
 
 function glyphSvg(key) {
   const [tier, motif] = FRAMES[key] || ['common', 'lantern'];
   const d = M[motif];
   const glyph = (x, y, r, s = 1) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})"><circle r="8.5" class="fr-bg"/><path d="${d}"/></g>`;
   const spots = tier === 'common' ? [CORNERS[0], CORNERS[2]] : CORNERS;
-  let body = spots.map(([x, y, r]) => glyph(x, y, r, tier === 'legend' || tier === 'legacy' ? 0.9 : 0.8)).join('');
-  if (tier === 'legend') body += MIDS.map(([x, y, r]) => glyph(x, y, r, 0.55)).join('');
+  const ug = tier === 'ultimate';
+  let body = spots.map(([x, y, r]) => glyph(x, y, r, ug ? 1 : tier === 'legend' || tier === 'legacy' ? 0.9 : 0.8)).join('');
+  if (tier === 'legend' || ug) body += MIDS.map(([x, y, r]) => glyph(x, y, r, ug ? 0.62 : 0.55)).join('');
+  if (ug) body = `<rect class="ug-in" x="7" y="7" width="86" height="86" rx="24"/>${UG_SPARK.map(([x, y]) => `<path class="ug-sp" d="M${x} ${y - 3}l2 3-2 3-2-3z"/>`).join('')}${body}`;
   if (tier === 'legacy') body += MIDS.map(([x, y, r]) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.6)"><circle r="8.5" class="fr-bg"/><path d="${M.star}"/></g>`).join('');
-  return `<svg class="fr-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${body}</svg>`;
+  return `<svg class="fr-svg${ug ? ' ug' : ''}" viewBox="0 0 100 100" aria-hidden="true" focusable="false">${body}</svg>`;
 }
 const HEX_STAR = 'M0.00 -7.00L0.99 -2.40L4.95 -4.95L2.40 -0.99L7.00 0.00L2.40 0.99L4.95 4.95L0.99 2.40L0.00 7.00L-0.99 2.40L-4.95 4.95L-2.40 0.99L-7.00 0.00L-2.40 -0.99L-4.95 -4.95L-0.99 -2.40Z';
 function legacySvg(small) {
@@ -107,10 +116,30 @@ const P = {
   pt_tn_join: '<path d="M4 18V3l8 3-8 3M14 18V8l5 2-5 2"/>',
   pt_ninecourt: '<path d="M2 2h16v16H2zM7.3 2v16M12.7 2v16M2 7.3h16M2 12.7h16"/><circle cx="10" cy="10" r="1.2"/>',
   pt_gwiheo: '<path d="M0 6c3-3 7-3 10 0s7 3 10 0M0 15c3-3 7-3 10 0s7 3 10 0"/><path d="M10 10.5a1.5 1.5 0 013 0 3 3 0 01-6 0"/>',
+  pt_gapgwi: '<path d="M3 3l6-1 1 7-6 1z"/><path d="M5 5h3M5.2 7h2"/><circle cx="8.2" cy="8.4" r="1.1"/><path d="M12 13h6M13 11.5v3M15 11.5v3M17 11.5v3"/><path d="M13 3l4 .6-.5 3.4-4-.6z"/>',
+  pt_baekya: '<path d="M4 4h3v4H4zM5.5 2.6v1.4M5.5 8v1.6M3.4 4h4.2"/><circle cx="14" cy="5" r=".7"/><circle cx="16.4" cy="8.6" r=".5"/><circle cx="12.6" cy="9.4" r=".4"/><path d="M8 16l7-3M14.2 12.3l.8.7-.5 1"/><circle cx="3.6" cy="16" r=".6"/>',
+  pt_f_night: '<path d="M0 6q5-4 10 0t10 0M0 16q5-4 10 0t10 0"/><path d="M5 2v4M15 12v4"/>',
+  pt_f_redmoon: '<path d="M14 3a5 5 0 100 10 4 4 0 010-10z"/><path d="M2 17h6M3 15l2-3 2 3"/>',
+  pt_f_lotus: '<path d="M10 16c-4 0-6-3-6-6 3 0 5 2 6 4 1-2 3-4 6-4 0 3-2 6-6 6z"/><path d="M10 14V6M2 3h4M14 3h4"/>',
+  pt_f_north: '<path d="M0 16l5-8 4 5 4-7 7 10"/><path d="M4 9.6l1-1.6 1 1.6M12 7.6l1-1.6 1.2 1.8"/>',
+  pt_f_river: '<path d="M0 8c3-2 7-2 10 0s7 2 10 0M0 14c3-2 7-2 10 0s7 2 10 0"/><path d="M6 4h8l-2 2H8z"/>',
+  pt_f_south: '<path d="M10 17c-3 0-4-2-4-4 0-3 4-4 4-8 2 2 4 4 4 8 0 2-1 4-4 4z"/><path d="M10 15c-1 0-1.5-.8-1.5-1.5 0-1 1.5-1.5 1.5-3 1 1 1.5 2 1.5 3 0 .8-.5 1.5-1.5 1.5z"/>',
+  pt_f_mandate: '<circle cx="4" cy="4" r=".9"/><circle cx="11" cy="7" r=".9"/><circle cx="16" cy="3" r=".7"/><circle cx="7" cy="15" r=".9"/><circle cx="15" cy="16" r=".8"/><path d="M4 4l7 3 5-4M11 7l-4 8 8 1"/>',
   pt_yahaeng: '<path d="M15 2a4 4 0 100 8 3.2 3.2 0 010-8z"/><path d="M1 18c0-2 2-3 4-2 1-2 4-2 5 0 1-.5 3 0 3 2z"/><path d="M5 6h2v3H5zM6 5v1"/><circle cx="18" cy="15" r=".6"/><circle cx="2" cy="10" r=".5"/>',
 };
 let pid = 0;
 const SCENE = {
+  pt_ug_inkline: `<svg class="pt-layer pt-scene pt-ug" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <path class="sc-rule" d="M-10 40H410M-10 80H410M-10 120H410M-10 160H410"/>
+    <path class="sc-snap" d="M30 176L410 18M-10 92L410 136M150 -10L250 210"/>
+    <path d="M-10 60C60 56 120 66 190 58S320 50 410 62M-10 140C80 146 160 134 240 142S350 150 410 138"/>
+    <g class="sc-sp"><path d="M196 64l3 4-3 4-3-4z"/><path d="M238 142l3 4-3 4-3-4z"/><path d="M330 54l2.4 3.2-2.4 3.2-2.4-3.2z"/><path d="M72 58l2.4 3.2-2.4 3.2-2.4-3.2z"/></g>
+    <path d="M30 176L-10 192M60 30L120 4M120 4l6 10M300 194l40-26"/>
+    <g class="sc-reel"><circle cx="30" cy="176" r="11"/><circle cx="30" cy="176" r="3.5"/></g>
+    <path d="M14 162h32v28H14zM30 165v-6"/>
+    <g class="sc-drop"><circle cx="112" cy="140" r="2.2"/><circle cx="121" cy="146" r="1.2"/><circle cx="104" cy="149" r=".9"/><circle cx="212" cy="98" r="1.8"/><circle cx="220" cy="92" r="1"/><circle cx="286" cy="62" r="2"/><circle cx="296" cy="68" r="1.1"/><circle cx="352" cy="132" r="1.6"/><circle cx="360" cy="126" r=".8"/><circle cx="168" cy="110" r="1"/></g>
+    <path class="sc-ink" d="M206 98c2-6 6-6 6 0a3 3 0 01-6 0zM106 140c2-6 6-6 6 0a3 3 0 01-6 0zM280 62c2-6 6-6 6 0a3 3 0 01-6 0z"/>
+    <path class="sc-top" d="M0 1H400M0 199H400"/></svg>`,
   pt_yahaeng: `<svg class="pt-layer pt-scene" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
     <path class="sc-moon" d="M352 22a26 26 0 1 0 0 52a20 20 0 0 1 0-52z"/>
     <path d="M-10 150C40 138 80 140 120 150S200 162 250 150S340 136 410 148M-10 166C50 156 110 158 160 168S260 178 320 166S380 158 410 162M60 150q10-12 22 0M200 162q12-14 26 0M300 150q8-10 18 0"/>
@@ -125,8 +154,8 @@ export function patternLayer(key) {
 }
 export const patternSwatch = key => `<span class="pt-swatch">${patternLayer(key)}</span>`;
 
-export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_muk: '墨', sl_jeok: '跡', sl_seon: '先', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同', sl_bj: '藏',
+export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '解', sl_yu: '遊', sl_eo: '漁', sl_woo: '友', sl_ya: '夜', sl_yeon: '緣', sl_deung: '燈', sl_heun: '痕', sl_gwi: '歸', sl_muk: '墨', sl_jeok: '跡', sl_seon: '先', sl_tn_solo: '武', sl_tn_team: '雙', sl_hap: '合', sl_dong: '同', sl_bj: '藏', sl_ug_heo: '虛', sl_tak: '拓', sl_ug_jong: '終', sl_gga: '價', sl_so: '宵',
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星' };
-const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_muk: 'legend', sl_jeok: 'legend', sl_seon: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare', sl_bj: 'legend',
+const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_muk: 'legend', sl_jeok: 'legend', sl_seon: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare', sl_bj: 'legend', sl_ug_heo: 'ultimate', sl_tak: 'legend', sl_ug_jong: 'ultimate', sl_gga: 'legend', sl_so: 'legend',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend' };
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

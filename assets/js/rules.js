@@ -130,7 +130,11 @@ export const BIJANG = {
   maps: BJ.maps || [],
 };
 export const UCOMM_NOTE = { ph: '남길 글 (안 써도 됩니다)', hint: '게시판의 이 의뢰 아래에 보입니다. 다른 조사원이 읽는 글이니 알맞게 적어 주세요.', removed: '운영진이 이 의뢰의 글을 내렸습니다.', ask: '이 의뢰에 남긴 글을 내릴까요? 의뢰는 그대로 남고, 올린 사람에게 알림이 갑니다.' };
-export const UCOMM_PAST = '받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
+const QR = GD.questReplay || { pct: 20, min: 5, max_active: 3 };
+export const QUEST_REPLAY = {
+  ask: `경험치·물품 보상 없이 처음부터 다시 합니다. 할 일·넘길 물품은 처음과 같고, 다 마치면 그 퀘스트 전 보상의 ${QR.pct}%(최소 ${QR.min}전)를 받습니다. 한 번에 ${QR.max_active}편까지 다시 할 수 있습니다.`,
+};
+export const UCOMM_PAST ='받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
 
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };
 export const GATHER_GAP = RT.gather_s * 1000;
@@ -152,6 +156,23 @@ export const DOMAIN_FX = {
   guard: `이름 새김 탕(또렷한 이름 2시간)·이름 먹 부적(이름 지킴 1시간)은 한 단계 가볍게 하고, 침식 ${MUK_ER[0] ?? 30} 아래면 막습니다.`,
   blur: `묵적 봉쇄령에서는 침식이 이름을 지웁니다. 침식 ${MUK_ER.join('·')}마다 이름 획 ${MUK_BLUR.strokes}개 가운데 ${Math.floor(MUK_BLUR.strokes / Math.max(1, MUK_ER.length))}개씩 지워지며 이름 흐림이 깊어지고, 침식을 낮추면 바로 돌아옵니다.`,
 };
+const WN = GD.domains?.deungdo?.fx || {};
+const WN_DEATH = GD.rescue?.death_h ?? 4, WN_DAY = WN.recall?.per_day ?? 1;
+const WN_WARN = `이곳은 본부 구조대가 오지 못합니다. 쓰러진 지 ${WN_DEATH}시간이 지나면 숨집니다 — 「제 이름 외기」(하루 ${WN_DAY}번)·회생 부적·같은 곳 조사원의 구조로 일어나세요.`;
+export const WHITE_NIGHT = {
+  band: `흰 밤 — ${WN_WARN}`,
+  downed: `흰 밤 속입니다. ${WN_WARN}`,
+  recall: `하루 ${WN.recall?.per_day ?? 1}번, 체력 ${WN.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어납니다 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」(주는 피해 −10%)`,
+  ask: '제 이름을 끝까지 외어 스스로 일어날까요? 가장 가까운 등도 안전지대에서 깨어나고, 1시간 동안 주는 피해가 줄어듭니다.',
+  phase: n => `백야 · ${n}`,
+  phaseTip: '흰 밤이라 하늘은 밝지만 시간은 흐릅니다 — 시간대 효과(낚시·조우 등)는 그대로 받습니다.',
+};
+export const UG_RESULT = {
+  title: name => `${name}을(를) 깼습니다`,
+  wiped: '이야기꾼의 무용담이 여기서 끊겼습니다',
+  won: (tok, n, first) => `${tok}을(를) ${n}개 받았습니다. 이 판을 처음 깼다면 ${first}개를 더 받습니다(가방이 차면 창고로, 받은 수는 알림에). 횟수 제한 없이 다시 설 수 있습니다.`,
+  lost: '무용담은 져도 잃는 것이 없습니다(장비 닳음·침식·재도전 대기 없음). 다시 열면 1막부터입니다.',
+};
 const BROKEN = '▒▣▤▥▦▧▨▩◈■';
 export const brokenName = name => [...String(name || '')].map((ch, i) => ch === ' ' ? ' ' : BROKEN[(ch.codePointAt(0) + i) % BROKEN.length]).join('');
 export const NAMELESS = { mine: '이름을 잃었습니다 — 묵적 봉쇄령의 침식을 낮추면 돌아옵니다', other: '이름이 지워져 읽을 수 없습니다' };
@@ -172,7 +193,21 @@ export const SYS_CHAT = {
   '연리 소식': { icon: 'knot', cls: 'note' },
   '운영 공지': { icon: 'bell', cls: 'note' },
   '선배 소식': { icon: 'users', cls: 'note' },
+  '사업 소식': { icon: 'hammer', cls: 'note' },
 };
+
+const PJ = GD.project || { pay: { day_cap: 8000, faction: { per_merit: 100 }, common: { gil_rate: 0.6 }, help: { gil_rate: 0.6 }, after_mul: 0.5 }, urgent: { n: 2, mul: 1.5 }, hq_mul: 1.5, mul_cap: 2, help_rel: { per_k: 1, person_day: 3, pair_day: 10 }, memento: { pct: 1, faction_merit: 20, common_gil_pct: 0.5 }, lift: {}, perk_text: { faction: [], common: [] }, projects: {}, vault: [], titles: 0 };
+export const PROJECT = {
+  ...PJ,
+  of: k => PJ.projects?.[k] || null,
+  facKey: f => f ? `f:${f}` : null,
+  rewardOf: (rw, pts, after) => { const k = after ? PJ.pay.after_mul : 1; return rw === 'merit' ? `공훈 ${fmtN(Math.floor(pts * k / PJ.pay.faction.per_merit))}` : `${fmtN(Math.floor(pts * k * (PJ.pay[rw]?.gil_rate ?? PJ.pay.common.gil_rate)))}전`; },
+  goalTip: kind => `단계 목표는 ${kind === 'faction' ? '모든 세력이 같습니다' : '세 땅 모두 같습니다'}: ${(Object.values(PJ.projects || {}).find(p => p.kind === kind)?.base || []).map(fmtN).join(' · ')}몫.`,
+  payTip: rw => `넘긴 물품의 몫(1개 기준 몫 × 수량)만큼 ${rw === 'merit' ? `공훈을 받습니다(몫 ${PJ.pay.faction.per_merit} = 공훈 1).` : `전을 받습니다(몫 1 = ${PJ.pay[rw]?.gil_rate ?? PJ.pay.common.gil_rate}전).`} 「급히」 품목은 ×${PJ.urgent.mul}, 우수품은 ×${PJ.hq_mul}(겹쳐도 ×${PJ.mul_cap}까지). 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmtN(PJ.pay.day_cap)}까지이고, 넘치는 물품은 돌려받습니다. 다섯 단계를 다 마친 뒤에도 넘길 수 있지만 보상은 ${PJ.pay.after_mul * 100}%입니다.`,
+  helpTip: () => `내 세력이 아닌 세력의 거점 사업도 그 거점에서 도울 수 있습니다. 몫 1마다 ${PJ.pay.help.gil_rate}전을 받고, 몫은 그 세력 사업에 쌓입니다. 단계가 찰 때 기여가 ${PJ.memento.pct}% 넘으면 낙성 떡을 받고, 누계는 사업 칭호에 셉니다. 상점·지역 효과·지름길·비고·꾸미기 혜택은 그 세력 조사원만 받습니다. 내 세력이 있으면 몫 1,000마다 두 세력 관계가 +${PJ.help_rel.per_k} 오릅니다(한 사람 하루 +${PJ.help_rel.person_day}, 두 세력 사이 하루 +${PJ.help_rel.pair_day}까지).`,
+  mementoTip: () => `한 단계가 차는 순간, 그 단계 목표의 ${PJ.memento.pct}% 넘게 넘긴 사람은 낙성 떡과 ${`공훈 +${PJ.memento.faction_merit}(그 세력 조사원)·단계 목표의 ${PJ.memento.common_gil_pct}%만큼 전(공동)`}을 받습니다. 마지막 단계에 힘을 보태면 기념품이 더 있습니다.`,
+};
+const fmtN = n => Number(n || 0).toLocaleString('ko-KR');
 
 const MT = GD.mentor || { gap: 10, near_min: 10, day_cap: 60, pair_cap: 30, xp_day: 50, kinds: {}, skip: [], shop: [], post: { hours: 2, note: 30, wants: {} } };
 export const MENTOR = {

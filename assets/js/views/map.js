@@ -1,9 +1,11 @@
-import { ask, store, on, act, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
+import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS, travelCdLeft, travelCdFromError } from './common.js';
 import { buildCells, centroid, factionColor } from '../geo.js';
 import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
+import { GAMEDATA } from '../gamedata.js';
+import { weakSafe } from '../rules.js';
 
 const bjMaps = () => store.hud?.bijang?.maps || [];
 const bjAt = id => bjMaps().filter(m => m.region_id === id);
@@ -153,9 +155,10 @@ function onResize() { if ($('#map-svg', el)) paint(); }
 let geom = null, geomKey = '';
 function geometry() {
   const key = mapData.regions.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
-  if (key !== geomKey) { geom = buildCells(mapData.regions); geomKey = key; }
+  if (key !== geomKey) { geom = buildCells(mapData.regions.filter(r => !isPin(r))); geomKey = key; }
   return geom;
 }
+function isPin(r) { return !!GAMEDATA.domains?.[r.territory_id]?.pin; }
 function factionOf(id) { return zones.get(id)?.control_faction_id ?? null; }
 
 export function routeTo(target) {
@@ -217,6 +220,7 @@ function paint() {
   if (rt && rt.length > 1) route = `<polyline class="route-line" points="${rt.map(r => P(r).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
   const terr = new Map();
   for (const r of regions) {
+    if (isPin(r)) continue;
     const t = r.territory_id || 'none', c = centroid(g.cells.get(r.region_id) || [[r.world_x, r.world_y]]);
     const o = terr.get(t) || { name: r.territory_name || '', x: 0, y: 0, n: 0 }; o.x += c[0]; o.y += c[1]; o.n++; terr.set(t, o);
   }
@@ -274,7 +278,7 @@ function paint() {
     const [x, y] = P(r); if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
     const cls = r.region_id === here?.region_id ? 'here' : r.level_locked ? 'lock' : r.reachable ? 'near' : 'far';
     const sel = r.region_id === selected ? ' sel' : '', safe = zones.get(r.region_id)?.is_safe_zone;
-    nodes += `<g class="node ${cls}${sel}${safe ? ' safe' : ''}" data-region="${esc(r.region_id)}" tabindex="0" role="button" aria-label="${esc(r.region_name)}">
+    nodes += `<g class="node ${cls}${sel}${safe ? ' safe' : ''}${isPin(r) ? ' pin' : ''}" data-region="${esc(r.region_id)}" tabindex="0" role="button" aria-label="${esc(r.region_name)}">
       <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="15" class="hitbox" data-region="${esc(r.region_id)}"/>
       ${r.region_id === dest ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" class="dest-ring"/>` : ''}
       ${safe ? `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" transform="rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})" class="dot" data-region="${esc(r.region_id)}"/>`
@@ -351,6 +355,24 @@ function routeEstimate(route) {
   const rideSecs = total((Number(m?.speed_multiplier) || 1) * (Number(m?.river_speed) || 1));
   return { secs: walk ? total(1) : rideSecs, rideSecs, walk, need, have, mount: m, hops };
 }
+const quotes = new Map();
+async function fillQuote(box, id, est) {
+  const key = `${id}:${store.character?.location}:${store.character?.mount_id}:${store.character?.mount_tokens}`;
+  let q = quotes.get(key);
+  if (!q || Date.now() - q.at > 60000) {
+    try { q = { at: Date.now(), v: await rpc('world_travel_quote', { p_region_id: id }) }; } catch { return; }
+    quotes.set(key, q);
+  }
+  const v = q.v;
+  if (!v || v.error || selected !== id || !box.isConnected) return;
+  const b = $('[data-quote]', box), f = $('[data-quote-fare]', box), w = $('[data-quote-walk]', box);
+  const walk = !!v.walked;
+  if (b) b.innerHTML = `${icon('route', 14)} 경로 ${v.hops}구간 · 약 ${fmt.remain(v.secs * 1000)}${walk ? ' · 걸어서' : ''}`;
+  const pk = $('#map-peek:not([hidden]) .peek-txt small', el);
+  if (b && pk) pk.textContent = b.textContent.trim();
+  if (f) f.innerHTML = v.project ? ' · 사업 지름길: 운임 없음' : fareLine({ ...est, walk, need: v.need });
+  if (w) w.innerHTML = walkHint({ ...est, walk, need: v.need });
+}
 function fareLine(est) {
   const m = est.mount; if (!m || m.fare_free) return '';
   if (m.river_free) return ' · 수향연맹 뱃길: 운임 없음';
@@ -392,12 +414,12 @@ function drawDetail() {
         <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${sealed.has(r.region_id) ? ' · <b class="sealed">봉연에 잠김</b>' : ''}${shadow && shadow.region === r.region_name ? ` · <b class="shadow">${esc(shadowText(shadow))}</b>` : ''}</p>
         ${bjAt(r.region_id).map(m => `<p class="hint accent">${icon('chest', 14)} 펼친 ${esc(m.name)}이(가) 이곳을 가리킵니다 · 와서 「비장도 따라 파기」</p>`).join('')}
         <div class="chips">${zone?.is_safe_zone ? chip('안전지대', 'ok') : danger(r.danger_level)}${chip(nameOf(r.region_type))}${chip(`Lv.${r.min_level}+`)}</div>
-        ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')} · 거래소${zone.has_stable ? ' · 마구간' : ''} · 전투 없음</p>` : ''}
+        ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')}${weakSafe(r.region_id) ? ' · 빈약한 안전지대' : ` · 거래소${zone.has_stable ? ' · 마구간' : ''}`} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>
         ${!zone?.is_safe_zone ? `<dl class="kv"><div><dt>요괴</dt><dd>${monsters.length ? monsters.map(m => esc(m.monster_name)).join(', ') : '미확인'}</dd></div></dl>` : ''}
-        ${route && route.length > 1 ? `<div class="route-box"><b>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}${est.walk ? ' · 걸어서' : ''}</b>
+        ${route && route.length > 1 ? `<div class="route-box"><b data-quote>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}${est.walk ? ' · 걸어서' : ''}</b>
           <ol class="route-steps">${route.map((x, i) => `<li class="${i === 0 ? 'from' : i === route.length - 1 ? 'to' : ''}">${esc(x.region_name)}</li>`).join('')}</ol>
-          <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${fareLine(est)}</p>${walkHint(est)}</div>` : ''}
+          <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}<span data-quote-fare>${fareLine(est)}</span></p><div data-quote-walk>${walkHint(est)}</div></div>` : ''}
         ${reason === 'cd' ? `<p class="hint">${icon('hourglass', 14)}<span>이동을 취소한 뒤라 <b data-tcd>${fmt.remain(travelCdLeft())}</b> 뒤에 다시 출발할 수 있습니다.</span></p>` : reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
         <div class="btn-row">
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
@@ -407,6 +429,7 @@ function drawDetail() {
           <div class="btn-row">${members.map(m => `<button class="btn small" data-ride="${esc(m.owner_id)}">${icon('users', 14)}<span>${esc(m.character_name)} 동승 요청</span></button>`).join('')}</div></div>` : ''}
       </div>
     </article>`;
+  if (route && route.length > 1 && !reason) fillQuote(box, r.region_id, est);
   const go = $('#travel-go', box);
   if (go) go.onclick = () => guard(go, async () => { try { return await act('world_travel_route', { p_region_id: r.region_id }); } catch (e) { if (travelCdFromError(e)) { drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } throw e; } });
   const cdEl = $('[data-tcd]', box);

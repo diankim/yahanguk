@@ -1909,6 +1909,279 @@ export const PETS = {
       step: ["......k................", ".....kgk...............", "....kgggk..............", "...kgggggk.............", "..kgggggggk............", "...kkgggkkwk...........", "....kktkkhwhk..........", "...kwhkkhhhhhk.........", "..khhhhkhhhhhhk.kkkkk..", ".khhhhhhhhshhhkkaaaaak.", ".khhshhhhssshhhaaaaaaak", ".ksssssdsssssdsaieaieak", ".kssdsssssdssssaeeaeeak", "kbbbbbbbbbbbbbbpaaaapk.", ".kcccccccccccccaaaaak..", "..kkaakaakkkaakaakkk...", "..kaak.kaakaak.kaak....", "...kk...kk.kk...kk....."],
       sleep: ["......k................", ".....kgk...............", "....kgggk..............", "...kgggggk.............", "..kgggggggk............", "...kkgggkkwk...........", "....kktkkhwhk..........", "...kwhkkhhhhhk.........", "..khhhhkhhhhhhk.kkkkk..", ".khhhhhhhhshhhkkaaaaak.", ".khhshhhhssshhhaaaaaaak", ".ksssssdsssssdsakkakkak", ".kssdsssssdssssapaaapk.", "kbbbbbbbbbbbbbbaaaaak..", ".kaaaaaaaaaaaaaaaaak...", "..kkkkkkkkkkkkkkkkk...."]
     }
+  },
+  ug_vortex_jelly: {
+    name: "아기 소용돌이 해파리",
+    grade: 4,
+    kind: "water",
+    desc: "귀허의 소용돌이 한가운데서 맴돌다 떨어져 나온 아기 해파리입니다. 머리 꼭대기에 작은 소용돌이 무늬가 늘 빙글빙글 돌고 있어, 오래 들여다보면 보는 사람이 먼저 어지러워집니다. 짧은 촉수를 파닥이며 헤엄치다가 제 무늬를 따라 한 바퀴 돌고 나서야 앞으로 나아갑니다.",
+    likes: "treat_fish",
+    baby: {
+      pal: { a: "#b4e8f4", b: "#7cc6e2", w: "#ffffff", s: "#3d8fc8", t: "#b9a8ee", u: "#8c7ad6", e: "#23304a", i: "#ffffff", p: "#f6a6c0", k: "#1a120e" },
+      idle: ["......kkk......", "....kkaaakk....", "...kaaaaaaak...", "..kawassaaaak..", ".kawasaasaaaak.", ".kaaasassaaaak.", ".kaaaasaaaaaak.", "kaaieaaaaaieaak", "kaaeeaaaaaeeaak", "kapaaaaaaaaapak", ".kbbbbbbbbbbbk.", ".ktkuktkuktkuk.", ".ktkkukktkkuk..", "..k..k..k..k..."],
+      blink: ["......kkk......", "....kkaaakk....", "...kaaaaaaak...", "..kawassaaaak..", ".kawasaasaaaak.", ".kaaasassaaaak.", ".kaaaasaaaaaak.", "kaaaaaaaaaaaaak", "kaakkaaaaakkaak", "kapaaaaaaaaapak", ".kbbbbbbbbbbbk.", ".ktkuktkuktkuk.", ".ktkkukktkkuk..", "..k..k..k..k..."],
+      step: ["......kkk......", "....kkaaakk....", "...kaaaaaaak...", "..kawassaaaak..", ".kawasaasaaaak.", ".kaaasassaaaak.", ".kaaaasaaaaaak.", "kaaieaaaaaieaak", "kaaeeaaaaaeeaak", "kapaaaaaaaaapak", ".kbbbbbbbbbbbk.", ".kuktkuktkuktk.", "..kukktkkukktk.", "...k..k..k..k.."],
+      sleep: ["......kkk......", "....kkaaakk....", "...kaaaaaaak...", "..kawassaaaak..", ".kawasaasaaaak.", ".kaaasassaaaak.", ".kaaaasaaaaaak.", "kaakkaaaaakkaak", "kapaaaaaaaaapak", ".kbbbbbbbbbbbk.", "ktututututututk", ".kkkkkkkkkkkkk."]
+    },
+    adult: {
+      pal: { a: "#b4e8f4", b: "#7cc6e2", w: "#ffffff", s: "#3d8fc8", t: "#b9a8ee", u: "#8c7ad6", e: "#23304a", i: "#ffffff", p: "#f6a6c0", k: "#1a120e" },
+      idle: ["......kkkk.......", "....kkaaaakk.....", "...kaaaaaaaak....", "..kaawaassaaak...", ".kaawaasaasaaak..", ".kawaasaassaaaak.", "kaaaaasaaaaaaaak.", "kaaaaaassssaaaak.", "kaaieaaaaaaaieaak", "kaaeeaaaaaaaeeaak", "kapaaaaaaaaaaapak", "kbbabbabbabbabbk.", ".ktkuktkkuktkuk..", ".ktkkuktkkukktk..", "..ktkk.kukk.ktk..", "...k....k....k..."],
+      blink: ["......kkkk.......", "....kkaaaakk.....", "...kaaaaaaaak....", "..kaawaassaaak...", ".kaawaasaasaaak..", ".kawaasaassaaaak.", "kaaaaasaaaaaaaak.", "kaaaaaassssaaaak.", "kaaaaaaaaaaaaaaak", "kaakkaaaaaaakkaak", "kapaaaaaaaaaaapak", "kbbabbabbabbabbk.", ".ktkuktkkuktkuk..", ".ktkkuktkkukktk..", "..ktkk.kukk.ktk..", "...k....k....k..."],
+      step: ["......kkkk.......", "....kkaaaakk.....", "...kaaaaaaaak....", "..kaawaassaaak...", ".kaawaasaasaaak..", ".kawaasaassaaaak.", "kaaaaasaaaaaaaak.", "kaaaaaassssaaaak.", "kaaieaaaaaaaieaak", "kaaeeaaaaaaaeeaak", "kapaaaaaaaaaaapak", "kbbabbabbabbabbk.", ".kuktkukktkuktk..", "..kuktkkuktkkuk..", ".kuk.kktk.kkuk...", "..k....k....k...."],
+      sleep: ["......kkkk.......", "....kkaaaakk.....", "...kaaaaaaaak....", "..kaawaassaaak...", ".kaawaasaasaaak..", ".kawaasaassaaaak.", "kaaaaasaaaaaaaak.", "kaaaaaassssaaaak.", "kaakkaaaaaaakkaak", "kapaaaaaaaaaaapak", "kbbabbabbabbabbk.", "ktututututututuk.", ".kkkkkkkkkkkkkk.."]
+    }
+  },
+  ug_ink_tadpole: {
+    name: "먹방울 올챙이",
+    grade: 4,
+    kind: "shadow",
+    desc: "명부 탑 벼루에서 똑 떨어진 먹 한 방울이 깨어난 올챙이입니다. 몸이 동글동글한 먹방울이라 지나간 자리마다 옅은 먹 자국이 남고, 꼬리 끝은 붓끝처럼 뾰족해서 바닥에 제멋대로 획을 긋습니다. 맑은 물에 넣으면 먹이 풀릴까 봐 벼루 연지에서만 헤엄치려 합니다.",
+    likes: "treat_fish",
+    baby: {
+      pal: { a: "#33364c", h: "#4c5070", w: "#a6aed0", g: "#d8ccae", m: "#a8987a", t: "#1e2030", e: "#d4dcf2", i: "#ffffff", p: "#e89ab4", k: "#1a120e" },
+      idle: ["..........kkkk...", "........kkaaaak..", ".......kaahwaaak.", "......kahwaaaaaak", "......kawaieaaiek", "...kkkkaaaeeaaeek", ".kkmgtahpaaaaapak", "ktmggtaaaaaaaaaak", ".kkmgtkaaaaaaaak.", "...kkk.kkkhhhkk..", "..........kkk...."],
+      blink: ["..........kkkk...", "........kkaaaak..", ".......kaahwaaak.", "......kahwaaaaaak", "......kawaaaaaaak", "...kkkkaaakkaakk.", ".kkmgtahpaaaaapak", "ktmggtaaaaaaaaaak", ".kkmgtkaaaaaaaak.", "...kkk.kkkhhhkk..", "..........kkk...."],
+      step: ["..........kkkk...", "........kkaaaak..", ".......kaahwaaak.", "......kahwaaaaaak", "...kkkkawaieaaiek", ".kkmgtkaaaeeaaeek", "ktmggtahpaaaaapak", ".kkmgtaaaaaaaaaak", "...kkkkaaaaaaaak.", ".......kkkhhhkk..", "..........kkk...."],
+      sleep: ["..........kkkk...", "........kkaaaak..", ".......kaahwaaak.", "......kahwaaaaaak", "...kkkkawaakkaak.", ".kkmgtahpaaaaapak", "ktmggtaaaaaaaaaak", ".kkmgtkaaaaaaaak.", "...kkk.kkkkkkkk.."]
+    },
+    adult: {
+      pal: { a: "#33364c", h: "#4c5070", w: "#a6aed0", g: "#d8ccae", m: "#a8987a", t: "#1e2030", e: "#d4dcf2", i: "#ffffff", p: "#e89ab4", k: "#1a120e" },
+      idle: [".............kkkkk...", "...........kkaaaaak..", "..........kaahwwaaak.", ".........kahwaaaaaaak", ".........kawaaaaaaaak", ".........kaaaieaaaiek", ".....kkk.kaaaeeaaaeek", "...kkmgtkahpaaaaaapak", ".kkmgggttaaaaaaaaaaak", "ktmgggttaaaaaaaaaaak.", ".kkmgggtkaaaaaaaaaak.", "...kkmgtkkkaahhhaak..", ".....kkk...kkkkkkk..."],
+      blink: [".............kkkkk...", "...........kkaaaaak..", "..........kaahwwaaak.", ".........kahwaaaaaaak", ".........kawaaaaaaaak", ".........kaaaaaaaaaak", ".....kkk.kaaakkaaakk.", "...kkmgtkahpaaaaaapak", ".kkmgggttaaaaaaaaaaak", "ktmgggttaaaaaaaaaaak.", ".kkmgggtkaaaaaaaaaak.", "...kkmgtkkkaahhhaak..", ".....kkk...kkkkkkk..."],
+      step: [".............kkkkk...", "...........kkaaaaak..", "..........kaahwwaaak.", ".........kahwaaaaaaak", ".........kawaaaaaaaak", ".....kkk.kaaaieaaaiek", "...kkmgtkkaaaeeaaaeek", ".kkmgggtkahpaaaaaapak", "ktmgggttaaaaaaaaaaaak", ".kkmgggtaaaaaaaaaaak.", "...kkmgtkaaaaaaaaaak.", ".....kkk.kkaahhhaak..", "...........kkkkkkk..."],
+      sleep: [".............kkkkk...", "...........kkaaaaak..", "..........kaahwwaaak.", ".........kahwaaaaaaak", ".........kawaaaaaaaak", ".....kkk.kaaakkaaakk.", "...kkmgtkahpaaaaaapak", ".kkmgggttaaaaaaaaaaak", "ktmgggttaaaaaaaaaaak.", ".kkmgggtkaaaaaaaaaak.", "...kkkkk.kkkkkkkkkk.."]
+    }
+  },
+  ug_crown_wisp: {
+    name: "왕관 쓴 꼬마 넋",
+    grade: 4,
+    kind: "ghost",
+    desc: "귀허의 빈 왕좌 둘레를 맴돌던 작은 넋이 주인 없는 왕관을 주워 쓰고 따라왔습니다. 왕관이 머리보다 커서 고개를 숙일 때마다 눈 위로 미끄러져 내려옵니다. 누가 「전하」 하고 불러 주면 몸이 반짝 밝아지고, 그 밖에는 왕관을 두 손으로 꼭 붙들고 다닙니다.",
+    likes: "treat_rice",
+    baby: {
+      pal: { a: "#eef3fb", b: "#bccbe2", y: "#eec64a", o: "#c8962a", r: "#e0506a", e: "#2a2e48", i: "#8f9ad0", p: "#f6aec4", k: "#1a120e" },
+      idle: ["....k.k.k.....", "...kykykyk....", "...kyyryyk....", "...koooookk...", "..kaaaaaaaak..", ".kaaaaaaaaaak.", ".kaaieaaieaak.", ".kaaeeaaeeaak.", ".kapaaaaaapak.", ".kaaaaaaaaabk.", "..kaaaaaaabbk.", "...kabkaabkk..", "....kbkkkbk...", ".....k...k...."],
+      blink: ["....k.k.k.....", "...kykykyk....", "...kyyryyk....", "...koooookk...", "..kaaaaaaaak..", ".kaaaaaaaaaak.", ".kaaaaaaaaaak.", ".kaakkaakkaak.", ".kapaaaaaapak.", ".kaaaaaaaaabk.", "..kaaaaaaabbk.", "...kabkaabkk..", "....kbkkkbk...", ".....k...k...."],
+      step: ["..............", "....k.k.k.....", "...kykykyk....", "...kyyryyk....", "...koooookk...", "..kaaaaaaaak..", ".kaaaaaaaaaak.", ".kaaieaaieaak.", ".kaaeeaaeeaak.", ".kapaaaaaapak.", ".kaaaaaaaaabk.", "..kaaaaaaabbk.", "..kabkaabkkk..", "...kk.kkk....."],
+      sleep: [".....k.k.k....", "....kykykyk...", "....kyyryyk...", "...kkoooook...", "..kaaaaaaaak..", ".kaaaaaaaaaak.", ".kaakkaakkaak.", ".kapaaaaaapak.", "kaaaaaaaaaabbk", ".kkkkkkkkkkkk."]
+    },
+    adult: {
+      pal: { a: "#eef3fb", b: "#bccbe2", y: "#eec64a", o: "#c8962a", r: "#e0506a", e: "#2a2e48", i: "#8f9ad0", p: "#f6aec4", k: "#1a120e" },
+      idle: [".....k..k..k....", "....kykkykkyk...", "....kyykykyyk...", "....kyyyryyyk...", "....koooooook...", "...kaaaaaaaaak..", "..kaaaaaaaaaaak.", ".kaaaieaaaieaak.", ".kaaaeeaaaeeaak.", ".kaapaaaaaaapak.", ".kaaaaaaaaaaabk.", ".kaaaaaaaaaabbk.", "..kaaaaaaaabbk..", "..kabkaabkabk...", "...kbkkkbkkbk...", "....k...k..k...."],
+      blink: [".....k..k..k....", "....kykkykkyk...", "....kyykykyyk...", "....kyyyryyyk...", "....koooooook...", "...kaaaaaaaaak..", "..kaaaaaaaaaaak.", ".kaaaaaaaaaaaak.", ".kaaakkaaakkaak.", ".kaapaaaaaaapak.", ".kaaaaaaaaaaabk.", ".kaaaaaaaaaabbk.", "..kaaaaaaaabbk..", "..kabkaabkabk...", "...kbkkkbkkbk...", "....k...k..k...."],
+      step: ["................", ".....k..k..k....", "....kykkykkyk...", "....kyykykyyk...", "....kyyyryyyk...", "....koooooook...", "...kaaaaaaaaak..", "..kaaaaaaaaaaak.", ".kaaaieaaaieaak.", ".kaaaeeaaaeeaak.", ".kaapaaaaaaapak.", ".kaaaaaaaaaaabk.", ".kaaaaaaaaaabbk.", "..kaaaaaaaabbk..", ".kabkaabkabkk...", "..kk.kkk.kk....."],
+      sleep: ["......k..k..k...", ".....kykkykkyk..", ".....kyykykyyk..", ".....kyyyryyyk..", "....kkoooooook..", "...kaaaaaaaaak..", "..kaaaaaaaaaaak.", ".kaaakkaaakkaak.", ".kaapaaaaaaapak.", ".kaaaaaaaaaaabk.", "kaaaaaaaaaaaabbk", ".kkkkkkkkkkkkkk."]
+    }
+  },
+  ug_chain_rhino: {
+    name: "사슬 아기 코뿔소",
+    grade: 4,
+    kind: "breaker",
+    desc: "귀허의 사슬 넷이 끊어지던 날, 끊긴 고리 하나를 목에 건 채 굴러 나온 아기 코뿔소입니다. 코끝의 작은 뿔로 무엇이든 톡톡 밀어 보는데, 아직 힘이 약해 밀리는 것은 늘 자기 쪽입니다. 목에 건 사슬 고리가 짤랑거리면 신이 나서 더 빨리 뛰어다닙니다.",
+    likes: "treat_herb",
+    baby: {
+      pal: { a: "#a6aabc", b: "#80849a", m: "#cdd0dc", u: "#8cd8ea", h: "#f6ecd4", c: "#eef2f8", d: "#9aa4b6", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["..................k..", ".........k.......khk.", "........kak.kkk.khhk.", "........kaakuuhkkhhk.", ".........kuuaahuhhhk.", "....kkkkkuaaaaaahhhk.", "..kkuuuuuaaaaieaaak..", ".kuuaaaaaaaaaeeaaauk.", "kuaaaaaaaaaapaaaaaauk", "kaaaaaaaaccccaammmmk.", "kbbaaaaaackkcaaakkk..", ".kkbbbbbbckkcbkbbk...", ".kbbkbbkkccccbkbbk...", ".kbbkbbk.kddkk.kk....", "..kk.kk.kccck........", "........kckk.........", ".........k..........."],
+      blink: ["..................k..", ".........k.......khk.", "........kak.kkk.khhk.", "........kaakuuhkkhhk.", ".........kuuaahuhhhk.", "....kkkkkuaaaaaahhhk.", "..kkuuuuuaaaaaaaaak..", ".kuuaaaaaaaaakkaaauk.", "kuaaaaaaaaaapaaaaaauk", "kaaaaaaaaccccaammmmk.", "kbbaaaaaackkcaaakkk..", ".kkbbbbbbckkcbkbbk...", ".kbbkbbkkccccbkbbk...", ".kbbkbbk.kddkk.kk....", "..kk.kk.kccck........", "........kckk.........", ".........k..........."],
+      step: ["..................k..", ".........k.......khk.", "........kak.kkk.khhk.", "........kaakuuhkkhhk.", ".........kuuaahuhhhk.", "....kkkkkuaaaaaahhhk.", "..kkuuuuuaaaaieaaak..", ".kuuaaaaaaaaaeeaaauk.", "kuaaaaaaaaaapaaaaaauk", "kaaaaaaaaccccaammmmk.", "kbbaaaaaackkcaaakkk..", ".kkbbbbbbckkcbkbbk...", "..kbbkbbkccccbbkbbk..", "..kbbkbbkkddkkk.kk...", "...kk.kkkccck........", "........kckk.........", ".........k..........."],
+      sleep: ["..................k..", ".........k.......khk.", "........kak.kkk.khhk.", "........kaakuuhkkhhk.", ".........kuuaahuhhhk.", "....kkkkkuaaaaaahhhk.", "..kkuuuuuaaaaaaaaak..", ".kuuaaaaaaaaakkaaauk.", "kuaaaaaaaaaapaaaaaauk", "kaaaaaaaaccccaammmmk.", "kbbaaaaaackkcaaakkk..", ".kkbbbbbbckkckkk.....", "...kkkkkkcccck.......", ".........kkkk........"]
+    },
+    adult: {
+      pal: { a: "#a6aabc", b: "#80849a", m: "#cdd0dc", u: "#8cd8ea", h: "#f6ecd4", c: "#eef2f8", d: "#9aa4b6", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["........................k.", ".......................khk", ".............k........khhk", "............kakkkkkk..khhk", "............kaauuuuhkkhhhk", "............kuuaaahhuuhhhk", "...........kuaaaaaaaahhhhk", "....kkkkkkkkaaaaaaieaaakk.", "..kkuuuuuuuuaaaaaaeeaaauk.", ".kuuaaaaaaaaaaaaaaaaaaaauk", "kuaaaaaaaaaaaaaaapaaaaaaak", "kaaaaaaaaaaacccccaaammmmmk", "kbaaaaaaaaaackkkcaaaammmk.", ".kbbaaaaaaaack.kcaaakkkk..", "..kkbbbbbbbbckkkcbkkbbk...", "..kbbkbbkkkkcccccbkkbbk...", "..kbbkbbk...kdddkk..kk....", "...kk.kk...kcccck.........", "...........kckkk..........", "............k............."],
+      blink: ["........................k.", ".......................khk", ".............k........khhk", "............kakkkkkk..khhk", "............kaauuuuhkkhhhk", "............kuuaaahhuuhhhk", "...........kuaaaaaaaahhhhk", "....kkkkkkkkaaaaaaaaaaakk.", "..kkuuuuuuuuaaaaaakkaaauk.", ".kuuaaaaaaaaaaaaaaaaaaaauk", "kuaaaaaaaaaaaaaaapaaaaaaak", "kaaaaaaaaaaacccccaaammmmmk", "kbaaaaaaaaaackkkcaaaammmk.", ".kbbaaaaaaaack.kcaaakkkk..", "..kkbbbbbbbbckkkcbkkbbk...", "..kbbkbbkkkkcccccbkkbbk...", "..kbbkbbk...kdddkk..kk....", "...kk.kk...kcccck.........", "...........kckkk..........", "............k............."],
+      step: ["........................k.", ".......................khk", ".............k........khhk", "............kakkkkkk..khhk", "............kaauuuuhkkhhhk", "............kuuaaahhuuhhhk", "...........kuaaaaaaaahhhhk", "....kkkkkkkkaaaaaaieaaakk.", "..kkuuuuuuuuaaaaaaeeaaauk.", ".kuuaaaaaaaaaaaaaaaaaaaauk", "kuaaaaaaaaaaaaaaapaaaaaaak", "kaaaaaaaaaaacccccaaammmmmk", "kbaaaaaaaaaackkkcaaaammmk.", ".kbbaaaaaaaack.kcaaakkkk..", "..kkbbbbbbbbckkkcbkkbbk...", "...kbbkbbkkkcccccbbkkbbk..", "...kbbkbbk..kdddkkk..kk...", "....kk.kk..kcccck.........", "...........kckkk..........", "............k............."],
+      sleep: ["........................k.", ".......................khk", ".............k........khhk", "............kakkkkkk..khhk", "............kaauuuuhkkhhhk", "............kuuaaahhuuhhhk", "...........kuaaaaaaaahhhhk", "....kkkkkkkkaaaaaaaaaaakk.", "..kkuuuuuuuuaaaaaakkaaauk.", ".kuuaaaaaaaaaaaaaaaaaaaauk", "kuaaaaaaaaaaaaaaapaaaaaaak", "kaaaaaaaaaaacccccaaammmmmk", "kbaaaaaaaaaackkkcaaaammmk.", ".kbbaaaaaaaack.kcaaakkkk..", "..kkbbbbbbbbckkkckkk......", "....kkkkkkkkccccck........", "............kkkkk........."]
+    }
+  },
+  ug_seal_mammoth: {
+    name: "봉연 아기 매머드",
+    grade: 4,
+    kind: "giant",
+    desc: "구중 봉연 아홉 겹 문 가장 안쪽에서 잠들어 있던 아기 매머드입니다. 이마에 붙은 봉인 부적 한 장 때문에 오래 깨지 않았는데, 부적이 반쯤 떨어진 지금은 졸음만 많이 남았습니다. 긴 털 속에 온기를 잔뜩 품고 있어 추운 밤이면 다들 그 옆에 붙어 앉습니다.",
+    likes: "treat_herb",
+    baby: {
+      pal: { a: "#b07e5a", b: "#86583a", f: "#d6a67c", t: "#f8f0e0", s: "#f4e2a6", r: "#cc3e3a", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["......kkkkk......", "....kkfffffkk....", "...kaaaaaaaaak...", "..kaaaasssaaaak..", ".kbaaaasrsaaaabk.", "kbbaaaasssaaaabbk", "kbbaieaaaaaieabbk", "kbbaeeaaaaaeeabbk", "kbbapaaabaaapabbk", ".kbbaaaabaaaabbk.", "..kaaatkbktaaak..", "..kaaaktbtkaaak..", "..kaaakkbkkaaak..", "..kbbkkbbk.kbbk..", "...kk..kk...kk..."],
+      blink: ["......kkkkk......", "....kkfffffkk....", "...kaaaaaaaaak...", "..kaaaasssaaaak..", ".kbaaaasrsaaaabk.", "kbbaaaasssaaaabbk", "kbbaaaaaaaaaaabbk", "kbbakkaaaaakkabbk", "kbbapaaabaaapabbk", ".kbbaaaabaaaabbk.", "..kaaatkbktaaak..", "..kaaaktbtkaaak..", "..kaaakkbkkaaak..", "..kbbkkbbk.kbbk..", "...kk..kk...kk..."],
+      step: ["......kkkkk......", "....kkfffffkk....", "...kaaaaaaaaak...", "..kaaaasssaaaak..", ".kbaaaasrsaaaabk.", "kbbaaaasssaaaabbk", "kbbaieaaaaaieabbk", "kbbaeeaaaaaeeabbk", "kbbapaaabaaapabbk", ".kbbaaaabaaaabbk.", "..kaaatkbktaaak..", "..kaaaktbtkaaak..", "..kaaakkbkkaaak..", "...kbbkbbkkbbk...", "....kk.kk..kk...."],
+      sleep: ["......kkkkk......", "....kkfffffkk....", "...kaaaaaaaaak...", "..kaaaasssaaaak..", ".kbaaaasrsaaaabk.", "kbbaaaasssaaaabbk", "kbbakkaaaaakkabbk", "kbbapaaabaaapabbk", ".kbbaaaabaaaabbk.", "..kaaatkbktaaak..", ".kaaaaaabaaaaaak.", "..kkkkkkkkkkkkk.."]
+    },
+    adult: {
+      pal: { a: "#b07e5a", b: "#86583a", f: "#d6a67c", t: "#f8f0e0", s: "#f4e2a6", r: "#cc3e3a", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: [".......kkkkkkk.......", ".....kkfffffffkk.....", "....kaaaaaaaaaaak....", "...kaaaaasssaaaaak...", "..kaaaaaasrsaaaaaak..", ".kbaaaaaasssaaaaaabk.", "kbbaaaaaaaaaaaaaaabbk", "kbbaaieaaaaaaaieaabbk", "kbbaaeeaaaaaaaeeaabbk", "kbbaapaaaabaaaapaabbk", ".kbbaaaaaabaaaaaabbk.", "..kaaaatkkbkktaaaak..", "..kaaaaatkbktaaaaak..", "..kaaaaaktbtkaaaaak..", "..kaaaaakkbkkaaaaak..", "..kbbkbbkbbk.kbbkbbk.", "...kk.kk.kk...kk.kk.."],
+      blink: [".......kkkkkkk.......", ".....kkfffffffkk.....", "....kaaaaaaaaaaak....", "...kaaaaasssaaaaak...", "..kaaaaaasrsaaaaaak..", ".kbaaaaaasssaaaaaabk.", "kbbaaaaaaaaaaaaaaabbk", "kbbaaaaaaaaaaaaaaabbk", "kbbaakkaaaaaaakkaabbk", "kbbaapaaaabaaaapaabbk", ".kbbaaaaaabaaaaaabbk.", "..kaaaatkkbkktaaaak..", "..kaaaaatkbktaaaaak..", "..kaaaaaktbtkaaaaak..", "..kaaaaakkbkkaaaaak..", "..kbbkbbkbbk.kbbkbbk.", "...kk.kk.kk...kk.kk.."],
+      step: [".......kkkkkkk.......", ".....kkfffffffkk.....", "....kaaaaaaaaaaak....", "...kaaaaasssaaaaak...", "..kaaaaaasrsaaaaaak..", ".kbaaaaaasssaaaaaabk.", "kbbaaaaaaaaaaaaaaabbk", "kbbaaieaaaaaaaieaabbk", "kbbaaeeaaaaaaaeeaabbk", "kbbaapaaaabaaaapaabbk", ".kbbaaaaaabaaaaaabbk.", "..kaaaatkkbkktaaaak..", "..kaaaaatkbktaaaaak..", "..kaaaaaktbtkaaaaak..", "..kaaaaakkbkkaaaaak..", "...kbbkbbkbkkbbkbbk..", "....kk.kk.k..kk.kk..."],
+      sleep: [".......kkkkkkk.......", ".....kkfffffffkk.....", "....kaaaaaaaaaaak....", "...kaaaaasssaaaaak...", "..kaaaaaasrsaaaaaak..", ".kbaaaaaasssaaaaaabk.", "kbbaaaaaaaaaaaaaaabbk", "kbbaakkaaaaaaakkaabbk", "kbbaapaaaabaaaapaabbk", ".kbbaaaaaabaaaaaabbk.", "..kaaaatkkbkktaaaak..", ".kaaaaaaaabaaaaaaaak.", "..kkkkkkkkkkkkkkkkk.."]
+    }
+  },
+  ug_hanji_chameleon: {
+    name: "한지 카멜레온",
+    grade: 4,
+    kind: "mirror",
+    desc: "명부 탑의 빈 한지 더미 속에서 깨어난 카멜레온입니다. 몸이 한지 그 자체라 결이 그대로 비치고, 무엇이든 가까이 대면 그 빛깔이 종이에 번지듯 몸에 옮아옵니다. 먹이 묻으면 큰일이라 붓을 든 사람만 보면 꼬리를 돌돌 말고 한 발짝 물러섭니다.",
+    likes: "treat_meat",
+    baby: {
+      pal: { a: "#f4ead4", b: "#d6c49e", l: "#c4ae86", g: "#a8dcb8", m: "#f4b4c4", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["...........kk.....", ".........kkllk....", "..kkk...kaaaaakk..", ".kaaak.kaaaaaaaak.", "kakkkakaaaaaieaaak", "kakaaaaalaaaeeaaak", "kakakaagaaapaaaak.", ".kaakaalaaamaaak..", "..kkkaaaaaaaalk...", "....kbkkbkkbkkbk..", ".....k..k..k..k..."],
+      blink: ["...........kk.....", ".........kkllk....", "..kkk...kaaaaakk..", ".kaaak.kaaaaaaaak.", "kakkkakaaaaaaaaaak", "kakaaaaalaaakkaaak", "kakakaagaaapaaaak.", ".kaakaalaaamaaak..", "..kkkaaaaaaaalk...", "....kbkkbkkbkkbk..", ".....k..k..k..k..."],
+      step: ["...........kk.....", ".........kkllk....", "..kkk...kaaaaakk..", ".kaaak.kaaaaaaaak.", "kakkkakaaaaaieaaak", "kakaaaaalaaaeeaaak", "kakakaagaaapaaaak.", ".kaakaalaaamaaak..", "..kkkaaaaaaaalkk..", ".....kbkkbkkbkkbk.", "......k..k..k..k.."],
+      sleep: ["...........kk.....", ".........kkllk....", "..kkk...kaaaaakk..", ".kaaak.kaaaaaaaak.", "kakkkakaaaaakkaaak", "kakaaaaalaaapaaaak", "kakakaagaaamaaakk.", ".kaakaaaaaaaalk...", "..kk.kkkkkkkkk...."]
+    },
+    adult: {
+      pal: { a: "#f4ead4", b: "#d6c49e", l: "#c4ae86", g: "#a8dcb8", m: "#f4b4c4", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["...............kkk....", ".............kklllk...", "...kkkk.....kaaaaaak..", "..kaaaak...kaaaaaaaak.", ".kakkkkakkkaaaaaaaaaak", "kakkaakakaaaaaaaieaaak", "kakakkaaaagaaaaeeaaaak", "kakakaaaaaaalaapaaaak.", "kakkaaaamaaaaaaaaaak..", ".kaakaaaaaaalaaaakk...", "..kkkaaagaaaaaaalk....", "....kbkkbkkkkbkkbk....", ".....k..k....k..k....."],
+      blink: ["...............kkk....", ".............kklllk...", "...kkkk.....kaaaaaak..", "..kaaaak...kaaaaaaaak.", ".kakkkkakkkaaaaaaaaaak", "kakkaakakaaaaaaaaaaaak", "kakakkaaaagaaaakkkaaak", "kakakaaaaaaalaapaaaak.", "kakkaaaamaaaaaaaaaak..", ".kaakaaaaaaalaaaakk...", "..kkkaaagaaaaaaalk....", "....kbkkbkkkkbkkbk....", ".....k..k....k..k....."],
+      step: ["...............kkk....", ".............kklllk...", "...kkkk.....kaaaaaak..", "..kaaaak...kaaaaaaaak.", ".kakkkkakkkaaaaaaaaaak", "kakkaakakaaaaaaaieaaak", "kakakkaaaagaaaaeeaaaak", "kakakaaaaaaalaapaaaak.", "kakkaaaamaaaaaaaaaak..", ".kaakaaaaaaalaaaakk...", "..kkkaaagaaaaaaalk....", ".....kbkkbkkkkbkkbk...", "......k..k....k..k...."],
+      sleep: ["...............kkk....", ".............kklllk...", "...kkkk.....kaaaaaak..", "..kaaaak...kaaaaaaaak.", ".kakkkkakkkaaaaaaaaaak", "kakkaakakaaaaaaakkaaak", "kakakkaaaagaaaapaaaaak", "kakakaaaaaaalaaaaaaak.", "kakkaaaamaaaaaaaaaak..", ".kaakaaaaaaalaaaakk...", "..kk.kkkkkkkkkkkk....."]
+    }
+  },
+  ug_brush_panda: {
+    name: "붓꼬리 아기 판다",
+    grade: 4,
+    kind: "wood",
+    desc: "명부 탑 붓걸이 옆 대숲에서 자란 아기 판다입니다. 늘 제 키만 한 대나무 붓을 끌어안고 다니며, 심심하면 붓끝을 먹에 찍어 바닥에 동그라미만 잔뜩 그려 놓습니다. 그림을 칭찬해 주면 붓을 내밀어 한 획 그어 보라고 조릅니다.",
+    likes: "treat_herb",
+    baby: {
+      pal: { w: "#f6f4ee", n: "#3a3640", y: "#a8c060", h: "#e8d8b0", t: "#1e1c24", e: "#0e0c12", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["..kk.......kk..", ".knnkkkkkkknnk.", "knnnwwwwwwwnnnk", ".kwwwwwwwwwwwk.", "kwwnnnwwwnnnwwk", "kwwniewwwniewwk", "kwwneewwwneewwk", "kwwpwwwnwwwpwwk", ".kwwwwwwwwwwwk.", ".knnwwwwwwwnnyk", ".knnwwwwwwwnnyk", "..kwwwwwwwwwkhk", ".knnnkkkkknnntk", "..kkk.....kkkk."],
+      blink: ["..kk.......kk..", ".knnkkkkkkknnk.", "knnnwwwwwwwnnnk", ".kwwwwwwwwwwwk.", "kwwnnnwwwnnnwwk", "kwwnnnwwwnnnwwk", "kwwnkkwwwnkkwwk", "kwwpwwwnwwwpwwk", ".kwwwwwwwwwwwk.", ".knnwwwwwwwnnyk", ".knnwwwwwwwnnyk", "..kwwwwwwwwwkhk", ".knnnkkkkknnntk", "..kkk.....kkkk."],
+      step: ["..kk.......kk..", ".knnkkkkkkknnk.", "knnnwwwwwwwnnnk", ".kwwwwwwwwwwwk.", "kwwnnnwwwnnnwwk", "kwwniewwwniewwk", "kwwneewwwneewwk", "kwwpwwwnwwwpwwk", ".kwwwwwwwwwwwk.", ".knnwwwwwwwnnyk", ".knnwwwwwwwnnyk", "..kwwwwwwwwwkhk", "..knnnkkknnnktk", "...kkk...kkk.k."],
+      sleep: ["..kk.......kk..", ".knnkkkkkkknnk.", "knnnwwwwwwwnnnk", ".kwwwwwwwwwwwk.", "kwwnnnwwwnnnwwk", "kwwnkkwwwnkkwwk", "kwwpwwwnwwwpwwk", ".kwwwwwwwwwwwk.", ".knnwwwwwwwnnyk", ".knnnnnnnnnnnhk", "..kkkkkkkkkkkk."]
+    },
+    adult: {
+      pal: { w: "#f6f4ee", n: "#3a3640", y: "#a8c060", h: "#e8d8b0", t: "#1e1c24", e: "#0e0c12", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["..kkk.........kkk..", ".knnnkkkkkkkkknnnk.", "knnnnwwwwwwwwwnnnnk", ".knwwwwwwwwwwwwwnk.", "kwwwwwwwwwwwwwwwwwk", "kwwwnnnwwwwwnnnwwwk", "kwwwnniewwwnniewwwk", "kwwwnneewwwnneewwwk", "kwwpwwwwwnwwwwwpwwk", ".kwwwwwwwwwwwwwwwk.", "..knnwwwwwwwwwnnyk.", ".knnnwwwwwwwwwnnyk.", "..kwwwwwwwwwwwwkhk.", "..kwwwwwwwwwwwwktk.", ".knnnnkkkkknnnnkk..", "..kkkk.....kkkk...."],
+      blink: ["..kkk.........kkk..", ".knnnkkkkkkkkknnnk.", "knnnnwwwwwwwwwnnnnk", ".knwwwwwwwwwwwwwnk.", "kwwwwwwwwwwwwwwwwwk", "kwwwnnnwwwwwnnnwwwk", "kwwwnnnnwwwnnnnwwwk", "kwwwnnkkwwwnnkkwwwk", "kwwpwwwwwnwwwwwpwwk", ".kwwwwwwwwwwwwwwwk.", "..knnwwwwwwwwwnnyk.", ".knnnwwwwwwwwwnnyk.", "..kwwwwwwwwwwwwkhk.", "..kwwwwwwwwwwwwktk.", ".knnnnkkkkknnnnkk..", "..kkkk.....kkkk...."],
+      step: ["..kkk.........kkk..", ".knnnkkkkkkkkknnnk.", "knnnnwwwwwwwwwnnnnk", ".knwwwwwwwwwwwwwnk.", "kwwwwwwwwwwwwwwwwwk", "kwwwnnnwwwwwnnnwwwk", "kwwwnniewwwnniewwwk", "kwwwnneewwwnneewwwk", "kwwpwwwwwnwwwwwpwwk", ".kwwwwwwwwwwwwwwwk.", "..knnwwwwwwwwwnnyk.", ".knnnwwwwwwwwwnnyk.", "..kwwwwwwwwwwwwkhk.", "..kwwwwwwwwwwwwktk.", "..knnnnkkknnnnk.k..", "...kkkk...kkkk....."],
+      sleep: ["..kkk.........kkk..", ".knnnkkkkkkkkknnnk.", "knnnnwwwwwwwwwnnnnk", ".knwwwwwwwwwwwwwnk.", "kwwwwwwwwwwwwwwwwwk", "kwwwnnnwwwwwnnnwwwk", "kwwwnkkwwwwwnkkwwwk", "kwwpwwwwwnwwwwwpwwk", ".kwwwwwwwwwwwwwwwk.", "..knnwwwwwwwwwnnyk.", ".knnnnnnnnnnnnnnhk.", "..kkkkkkkkkkkkkkk.."]
+    }
+  },
+  ug_go_penguin: {
+    name: "바둑판 아기 펭귄",
+    grade: 4,
+    kind: "bird",
+    desc: "아홉 칸 뜰 돌바닥에서 미끄럼을 타던 아기 펭귄입니다. 배에 아홉 칸 바둑판 무늬가 그려져 있어 누가 그 위에 바둑돌을 올려놓으면 꼼짝 않고 한 판이 끝나길 기다립니다. 이기는 쪽 편을 들어 날개를 파닥이는데, 대개는 진 쪽 편입니다.",
+    likes: "treat_fish",
+    baby: {
+      pal: { n: "#2e3044", w: "#f6f6f0", l: "#c4c4d2", y: "#f0b040", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["....kkkkkk....", "...knnnnnnk...", "..knnnnnnnnk..", ".knnwwnnwwnnk.", ".knwiewwiewnk.", ".knweewweewnk.", ".knpwwyywwpnk.", "knnwllllllwnnk", "knnwwlwwlwwnnk", ".knwllllllwnk.", ".knwwlwwlwwnk.", "..knwlwwlwnk..", "...kyykkyyk...", "....kk..kk...."],
+      blink: ["....kkkkkk....", "...knnnnnnk...", "..knnnnnnnnk..", ".knnwwnnwwnnk.", ".knwwwwwwwwnk.", ".knwkkwwkkwnk.", ".knpwwyywwpnk.", "knnwllllllwnnk", "knnwwlwwlwwnnk", ".knwllllllwnk.", ".knwwlwwlwwnk.", "..knwlwwlwnk..", "...kyykkyyk...", "....kk..kk...."],
+      step: ["....kkkkkk....", "...knnnnnnk...", "..knnnnnnnnk..", ".knnwwnnwwnnk.", ".knwiewwiewnk.", ".knweewweewnk.", ".knpwwyywwpnk.", "knnwllllllwnnk", "knnwwlwwlwwnnk", ".knwllllllwnk.", ".knwwlwwlwwnk.", "..knwlwwlwnk..", "..kyykkkkyyk..", "...kk....kk..."],
+      sleep: ["....kkkkkk....", "...knnnnnnk...", "..knnnnnnnnk..", ".knnwwnnwwnnk.", ".knwkkwwkkwnk.", ".knpwwyywwpnk.", "knnwllllllwnnk", "knnwwlwwlwwnnk", ".knwllllllwnk.", "..knnnnnnnnk..", "...kkkkkkkk..."]
+    },
+    adult: {
+      pal: { n: "#2e3044", w: "#f6f6f0", l: "#c4c4d2", y: "#f0b040", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: [".....kkkkkk.....", "...kknnnnnnkk...", "..knnnnnnnnnnk..", ".knnnwwnnwwnnnk.", ".knnwwwwwwwwnnk.", ".knwwiewwiewwnk.", ".knwweewweewwnk.", ".knwpwwyywwpwnk.", "knnwwwwwwwwwwnnk", "knnwllllllllwnnk", "knnwwwlwwlwwwnnk", ".knwllllllllwnk.", ".knwwwlwwlwwwnk.", "..knwwlwwlwwnk..", "..knnnnnnnnnnk..", "...kyykkkkyyk...", "....kk....kk...."],
+      blink: [".....kkkkkk.....", "...kknnnnnnkk...", "..knnnnnnnnnnk..", ".knnnwwnnwwnnnk.", ".knnwwwwwwwwnnk.", ".knwwwwwwwwwwnk.", ".knwwkkwwkkwwnk.", ".knwpwwyywwpwnk.", "knnwwwwwwwwwwnnk", "knnwllllllllwnnk", "knnwwwlwwlwwwnnk", ".knwllllllllwnk.", ".knwwwlwwlwwwnk.", "..knwwlwwlwwnk..", "..knnnnnnnnnnk..", "...kyykkkkyyk...", "....kk....kk...."],
+      step: [".....kkkkkk.....", "...kknnnnnnkk...", "..knnnnnnnnnnk..", ".knnnwwnnwwnnnk.", ".knnwwwwwwwwnnk.", ".knwwiewwiewwnk.", ".knwweewweewwnk.", ".knwpwwyywwpwnk.", "knnwwwwwwwwwwnnk", "knnwllllllllwnnk", "knnwwwlwwlwwwnnk", ".knwllllllllwnk.", ".knwwwlwwlwwwnk.", "..knwwlwwlwwnk..", "..knnnnnnnnnnk..", "..kyykkkkkkyyk..", "...kk......kk..."],
+      sleep: [".....kkkkkk.....", "...kknnnnnnkk...", "..knnnnnnnnnnk..", ".knnnwwnnwwnnnk.", ".knnwwwwwwwwnnk.", ".knwwkkwwkkwwnk.", ".knwpwwyywwpwnk.", "knnwwwwwwwwwwnnk", "knnwllllllllwnnk", "knnwwwlwwlwwwnnk", ".knwllllllllwnk.", "..knnnnnnnnnnk..", "...kkkkkkkkkk..."]
+    }
+  },
+  ug_tally_hedgehog: {
+    name: "셈가지 고슴도치",
+    grade: 4,
+    kind: "shell",
+    desc: "값귀의 장부 곁에서 셈가지 묶음을 등에 지고 다니던 고슴도치입니다. 등의 가시가 모두 붉은 끈으로 묶은 셈가지라, 놀라서 몸을 동그랗게 말면 영락없이 커다란 주판알 하나가 됩니다. 셈이 틀리면 가시 하나를 쏙 뽑아 바로잡아 주고는 뿌듯해합니다.",
+    likes: "treat_honey",
+    baby: {
+      pal: { y: "#ecd08a", x: "#b8944c", r: "#cc3e3a", f: "#f4dcbc", b: "#c89c74", o: "#3a2620", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["......k.k.k........", ".....kxkxkxk.......", "....kyxyxyxykk.....", "...kxyxyxyxyxfkk...", "..kyxyrrrrxyxfffkk.", ".kxyxyxyxyxyffffffk", ".kxyxyxyxyxfffieffk", "kyxyxyxyxyxffpeefok", ".kxyxyxyxybffffffk.", "..kbbbbbbbbbbbbbk..", "...kbkbkkkkkbkbk...", "....k.k.....k.k...."],
+      blink: ["......k.k.k........", ".....kxkxkxk.......", "....kyxyxyxykk.....", "...kxyxyxyxyxfkk...", "..kyxyrrrrxyxfffkk.", ".kxyxyxyxyxyffffffk", ".kxyxyxyxyxfffffffk", "kyxyxyxyxyxffpkkfok", ".kxyxyxyxybffffffk.", "..kbbbbbbbbbbbbbk..", "...kbkbkkkkkbkbk...", "....k.k.....k.k...."],
+      step: ["......k.k.k........", ".....kxkxkxk.......", "....kyxyxyxykk.....", "...kxyxyxyxyxfkk...", "..kyxyrrrrxyxfffkk.", ".kxyxyxyxyxyffffffk", ".kxyxyxyxyxfffieffk", "kyxyxyxyxyxffpeefok", ".kxyxyxyxybffffffk.", "..kbbbbbbbbbbbbbk..", "...kkbkbkkkbkbkk...", ".....k.k...k.k....."],
+      sleep: [".....k.k.k.........", "...kkykykykk.......", "..kyxyxyxyxyk......", ".kxyxyxyxyxyxk.....", "kyxyrrrrrrryxyk....", "kyxyxyxyxyxyxyk....", "kyxyxffkkfxyxyk....", ".kxyxyfpfyxyxk.....", "..kbbbbbbbbbk......", "...kkkkkkkkk......."]
+    },
+    adult: {
+      pal: { y: "#ecd08a", x: "#b8944c", r: "#cc3e3a", f: "#f4dcbc", b: "#c89c74", o: "#3a2620", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["........k.k.k.k........", "......kkxkxkxkxk.......", ".....kxyxyxyxyxyk......", "....kyxyxyxyxyxyxk.....", "...kxyxyxyxyxyxyxfkk...", "..kyxyxrrrrrxyxyxfffkk.", ".kxyxyxyxyxyxyxyffffffk", ".kxyxyxyxyxyxyxfffieffk", "kyxyxyxyxyxyxyxffpeefok", ".kxyxyxyxyxyxybffffffk.", "..kbbbbbbbbbbbbbbbbbk..", "...kbbkbbkkkkkkbbkbbk..", "....kk.kk......kk.kk..."],
+      blink: ["........k.k.k.k........", "......kkxkxkxkxk.......", ".....kxyxyxyxyxyk......", "....kyxyxyxyxyxyxk.....", "...kxyxyxyxyxyxyxfkk...", "..kyxyxrrrrrxyxyxfffkk.", ".kxyxyxyxyxyxyxyffffffk", ".kxyxyxyxyxyxyxfffffffk", "kyxyxyxyxyxyxyxffpkkfok", ".kxyxyxyxyxyxybffffffk.", "..kbbbbbbbbbbbbbbbbbk..", "...kbbkbbkkkkkkbbkbbk..", "....kk.kk......kk.kk..."],
+      step: ["........k.k.k.k........", "......kkxkxkxkxk.......", ".....kxyxyxyxyxyk......", "....kyxyxyxyxyxyxk.....", "...kxyxyxyxyxyxyxfkk...", "..kyxyxrrrrrxyxyxfffkk.", ".kxyxyxyxyxyxyxyffffffk", ".kxyxyxyxyxyxyxfffieffk", "kyxyxyxyxyxyxyxffpeefok", ".kxyxyxyxyxyxybffffffk.", "..kbbbbbbbbbbbbbbbbbk..", "...kkbbkbbkkkkbbkbbk...", ".....kk.kk....kk.kk...."],
+      sleep: [".......k.k.k...........", ".....kkykykykk.........", "...kkyxyxyxyxykk.......", "..kyxyxyxyxyxyxyk......", ".kxyxyrrrrrrryxyxk.....", "kyxyxyxyxyxyxyxyxyk....", "kyxyxyxffkkffyxyxyk....", ".kxyxyxffpffxyxyxk.....", "..kyxyxyxyxyxyxyk......", "...kbbbbbbbbbbbk.......", "....kkkkkkkkkkk........"]
+    }
+  },
+  ug_bead_snake: {
+    name: "주판알 꼬마 뱀",
+    grade: 4,
+    kind: "venom",
+    desc: "값귀의 주판에서 알이 한 줄로 꿰인 채 빠져나와 꼬마 뱀이 되었습니다. 몸통이 모두 주판알이라 기어갈 때마다 알이 대롱대롱 미끄러지며 딸깍딸깍 셈 소리를 냅니다. 똬리를 틀면 알이 가지런히 모여 제 키가 몇인지 스스로 세어 봅니다.",
+    likes: "treat_meat",
+    baby: {
+      pal: { a: "#e2b07a", q: "#8a5634", o: "#e0a870", r: "#5a3220", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["............kkkk...", "...........kaaaak..", "..........kaaaaaak.", "..........kaieaieak", "..........kaeeaeeak", "..kk..kk..kapaaapak", ".kqqkkqqkkkaaaaaak.", "kqoqqqoqqrraaaaak..", ".kqqkkqqkkkkkkkk...", "..kk..kk..........."],
+      blink: ["............kkkk...", "...........kaaaak..", "..........kaaaaaak.", "..........kaaaaaaak", "..........kakkakkak", "..kk..kk..kapaaapak", ".kqqkkqqkkkaaaaaak.", "kqoqqqoqqrraaaaak..", ".kqqkkqqkkkkkkkk...", "..kk..kk..........."],
+      step: ["............kkkk...", "...........kaaaak..", "..........kaaaaaak.", "..........kaieaieak", "..........kaeeaeeak", "..kk..kk..kapaaapak", ".kqqkkqqkkkaaaaaak.", "kqqoqqqoqrraaaaak..", ".kqqkkqqkkkkkkkk...", "..kk..kk..........."],
+      sleep: ["............kkkk...", "...........kaaaak..", "..........kaaaaaak.", "..........kakkakkak", "..kk..kk..kapaaapak", ".kqqkkqqkkkaaaaaak.", "kqoqqqoqqrraaaaak..", ".kqqkkqqkkkkkkkk...", "..kk..kk..........."]
+    },
+    adult: {
+      pal: { a: "#e2b07a", q: "#8a5634", o: "#e0a870", r: "#5a3220", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["................kkkkk...", "...............kaaaaak..", "..............kaaaaaaak.", "..............kaieaaieak", "..............kaeeaaeeak", "..kk..kk..kk..kapaaaapak", ".kqqkkqqkkqqkkkaaaaaaak.", "kqoqqqoqqqoqqrraaaaaak..", ".kqqkkqqkkqqkkkkkkkkk...", "..kk..kk..kk............"],
+      blink: ["................kkkkk...", "...............kaaaaak..", "..............kaaaaaaak.", "..............kaaaaaaaak", "..............kakkaakkak", "..kk..kk..kk..kapaaaapak", ".kqqkkqqkkqqkkkaaaaaaak.", "kqoqqqoqqqoqqrraaaaaak..", ".kqqkkqqkkqqkkkkkkkkk...", "..kk..kk..kk............"],
+      step: ["................kkkkk...", "...............kaaaaak..", "..............kaaaaaaak.", "..............kaieaaieak", "..............kaeeaaeeak", "..kk..kk..kk..kapaaaapak", ".kqqkkqqkkqqkkkaaaaaaak.", "kqqoqqqoqqqoqrraaaaaak..", ".kqqkkqqkkqqkkkkkkkkk...", "..kk..kk..kk............"],
+      sleep: ["................kkkkk...", "...............kaaaaak..", "..............kaaaaaaak.", "..............kakkaakkak", "..kk..kk..kk..kapaaaapak", ".kqqkkqqkkqqkkkaaaaaaak.", "kqoqqqoqqqoqqrraaaaaak..", ".kqqkkqqkkqqkkkkkkkkk...", "..kk..kk..kk............"]
+    }
+  },
+  ug_ledger_ant: {
+    name: "장부 지기 개미",
+    grade: 4,
+    kind: "swarm",
+    desc: "제 몸보다 큰 장부 한 권을 등에 지고 다니는 개미입니다. 값귀의 장부에서 떨어진 낱장을 하나하나 주워 모아 제 장부를 꾸렸다고 합니다. 무엇을 주면 꼭 장부를 펴고 다리 하나로 꾹꾹 눌러 적어 두는데, 아직 글을 몰라 점만 찍습니다.",
+    likes: "treat_honey",
+    baby: {
+      pal: { a: "#c06c40", c: "#3a5a8c", w: "#f6efe0", l: "#b8ac94", n: "#4a2a1c", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["............k...k.", "...kkkkk...knk.knk", "..kccccck..kknknk.", ".kcwwwwwckkaaaaak.", ".kcwlwlwckaaaaaaak", ".kccccccckaieaaiek", "kaaaaakaakaeeaaeek", "kaaaaaaaakapaaapak", ".kaaaakaakkaaaaak.", "..knknkknknkknkk..", "...k.k..k.k..k...."],
+      blink: ["............k...k.", "...kkkkk...knk.knk", "..kccccck..kknknk.", ".kcwwwwwckkaaaaak.", ".kcwlwlwckaaaaaaak", ".kccccccckaaaaaaak", "kaaaaakaakakkaakk.", "kaaaaaaaakapaaapak", ".kaaaakaakkaaaaak.", "..knknkknknkknkk..", "...k.k..k.k..k...."],
+      step: ["............k...k.", "...kkkkk...knk.knk", "..kccccck..kknknk.", ".kcwwwwwckkaaaaak.", ".kcwlwlwckaaaaaaak", ".kccccccckaieaaiek", "kaaaaakaakaeeaaeek", "kaaaaaaaakapaaapak", ".kaaaakaakkaaaaak.", "..kknknkknknkknk..", "....k.k..k.k..k..."],
+      sleep: ["............k...k.", "...kkkkk...knk.knk", "..kccccck..kknknk.", ".kcwwwwwckkaaaaak.", ".kcwlwlwckaaaaaaak", ".kccccccckakkaakk.", "kaaaaakaakapaaapak", ".kaaaaaaaaaaaaaak.", "..kkkkkkkkkkkkkk.."]
+    },
+    adult: {
+      pal: { a: "#c06c40", c: "#3a5a8c", w: "#f6efe0", l: "#b8ac94", n: "#4a2a1c", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["................k...k.", "...kkkkkk......knk.knk", "..kcccccck.....kknknk.", ".kcwwwwwwck...kaaaaak.", ".kcwlwlwlck..kaaaaaaak", ".kcwwwwwwck.kaaaaaaaak", ".kcccccccck.kaieaaieak", "kaaaaaaakaakkaeeaaeeak", "kaaaaaaaaaaaaapaaaapak", ".kaaaaaakaakkaaaaaaak.", "..kaaaakkkk.kaaaaakk..", "..knknkknknk.knknk....", "...k.k..k.k...k.k....."],
+      blink: ["................k...k.", "...kkkkkk......knk.knk", "..kcccccck.....kknknk.", ".kcwwwwwwck...kaaaaak.", ".kcwlwlwlck..kaaaaaaak", ".kcwwwwwwck.kaaaaaaaak", ".kcccccccck.kaaaaaaaak", "kaaaaaaakaakkakkaakkak", "kaaaaaaaaaaaaapaaaapak", ".kaaaaaakaakkaaaaaaak.", "..kaaaakkkk.kaaaaakk..", "..knknkknknk.knknk....", "...k.k..k.k...k.k....."],
+      step: ["................k...k.", "...kkkkkk......knk.knk", "..kcccccck.....kknknk.", ".kcwwwwwwck...kaaaaak.", ".kcwlwlwlck..kaaaaaaak", ".kcwwwwwwck.kaaaaaaaak", ".kcccccccck.kaieaaieak", "kaaaaaaakaakkaeeaaeeak", "kaaaaaaaaaaaaapaaaapak", ".kaaaaaakaakkaaaaaaak.", "..kaaaak.kkkkaaaaakk..", "...knknkknknkkknknk...", "....k.k..k.k...k.k...."],
+      sleep: ["................k...k.", "...kkkkkk......knk.knk", "..kcccccck.....kknknk.", ".kcwwwwwwck...kaaaaak.", ".kcwlwlwlck..kaaaaaaak", ".kcwwwwwwck.kaaaaaaaak", ".kcccccccck.kakkaakkak", "kaaaaaaakaakkapaaaapak", "kaaaaaaaaaaaaaaaaaaak.", ".kaaaaaaaaaaaaaaaaak..", "..kkkkkkkkkkkkkkkkk..."]
+    }
+  },
+  ug_lantern_bear: {
+    name: "등롱 반달곰",
+    grade: 4,
+    kind: "ward",
+    desc: "흰 밤 등도에서 꺼진 등을 하나씩 켜고 다니던 등지기의 곁을 지키던 아기 반달곰입니다. 가슴의 반달 무늬가 등불을 받으면 은은하게 빛나고, 작은 등롱 하나를 꼭 쥐고 놓지 않습니다. 등불이 흔들리면 제가 먼저 놀라서 등롱을 두 팔로 감싸 안습니다.",
+    likes: "treat_honey",
+    baby: {
+      pal: { n: "#3a343e", m: "#ccA27a", o: "#1a1416", w: "#f4f0e6", l: "#d8443a", g: "#ffd476", d: "#5a3a2a", y: "#9a7642", e: "#0c0a0c", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["..kk.......kk....", ".knnkkkkkkknnk...", "knnnnnnnnnnnnnk..", "knnnnnnnnnnnnnk..", "knniennnnniennk..", "knneennnnneennk..", "knpnnmmommnnpnk..", ".knnnmmmmmnnnkk..", "..knnnnnnnnnkkyk.", ".knnwnnnnnwnnkyk.", ".knnnwnnnwnnndddk", ".knnnnwnwnnnnlglk", ".knnnnnwnnnnnlllk", "..knnnkkknnnkkdk.", "...kkk...kkk..k.."],
+      blink: ["..kk.......kk....", ".knnkkkkkkknnk...", "knnnnnnnnnnnnnk..", "knnnnnnnnnnnnnk..", "knnnnnnnnnnnnnk..", "knnkknnnnnkknnk..", "knpnnmmommnnpnk..", ".knnnmmmmmnnnkk..", "..knnnnnnnnnkkyk.", ".knnwnnnnnwnnkyk.", ".knnnwnnnwnnndddk", ".knnnnwnwnnnnlglk", ".knnnnnwnnnnnlllk", "..knnnkkknnnkkdk.", "...kkk...kkk..k.."],
+      step: ["..kk.......kk....", ".knnkkkkkkknnk...", "knnnnnnnnnnnnnk..", "knnnnnnnnnnnnnk..", "knniennnnniennk..", "knneennnnneennk..", "knpnnmmommnnpnk..", ".knnnmmmmmnnnkk..", "..knnnnnnnnnkkyk.", ".knnwnnnnnwnnkyk.", ".knnnwnnnwnnndddk", ".knnnnwnwnnnnlglk", ".knnnnnwnnnnnlllk", "..kknnnknnnkkkdk.", "....kkk.kkk...k.."],
+      sleep: ["..kk.......kk....", ".knnkkkkkkknnk...", "knnnnnnnnnnnnnk..", "knnnnnnnnnnnnnk..", "knnkknnnnnkknnk..", "knpnnmmommnnpnk..", ".knnnmmmmmnnnkk..", "..knnnnnnnnnkkyk.", ".knnwnnnnnwnnkyk.", ".knnnwnnnwnnndddk", ".knnnnwnwnnnnlglk", ".knnnnnwnnnnnlllk", "..kkkkkkkkkkkkkk."]
+    },
+    adult: {
+      pal: { n: "#3a343e", m: "#ccA27a", o: "#1a1416", w: "#f4f0e6", l: "#d8443a", g: "#ffd476", d: "#5a3a2a", y: "#9a7642", e: "#0c0a0c", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["..kkk.........kkk....", ".knnnkkkkkkkkknnnk...", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnniennnnnnniennnk..", "knnneennnnnnneennnk..", "knnpnnnmmommnnnpnnk..", ".knnnnmmmmmmmnnnnkk..", "..knnnnnnnnnnnnnkkyk.", "..knnwnnnnnnnwnnkkyk.", "..knnnwnnnnnwnnnkdddk", "..knnnnwnnnwnnnnklglk", "..knnnnnwnwnnnnnklglk", "..knnnnnnwnnnnnnklllk", "...knnnnkkknnnnk.kdk.", "....kkkk...kkkk...k.."],
+      blink: ["..kkk.........kkk....", ".knnnkkkkkkkkknnnk...", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnkknnnnnnnkknnnk..", "knnpnnnmmommnnnpnnk..", ".knnnnmmmmmmmnnnnkk..", "..knnnnnnnnnnnnnkkyk.", "..knnwnnnnnnnwnnkkyk.", "..knnnwnnnnnwnnnkdddk", "..knnnnwnnnwnnnnklglk", "..knnnnnwnwnnnnnklglk", "..knnnnnnwnnnnnnklllk", "...knnnnkkknnnnk.kdk.", "....kkkk...kkkk...k.."],
+      step: ["..kkk.........kkk....", ".knnnkkkkkkkkknnnk...", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnniennnnnnniennnk..", "knnneennnnnnneennnk..", "knnpnnnmmommnnnpnnk..", ".knnnnmmmmmmmnnnnkk..", "..knnnnnnnnnnnnnkkyk.", "..knnwnnnnnnnwnnkkyk.", "..knnnwnnnnnwnnnkdddk", "..knnnnwnnnwnnnnklglk", "..knnnnnwnwnnnnnklglk", "..knnnnnnwnnnnnnklllk", "..knnnnkkkkknnnnkkdk.", "...kkkk.....kkkk..k.."],
+      sleep: ["..kkk.........kkk....", ".knnnkkkkkkkkknnnk...", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnnnnnnnnnnnnnnnk..", "knnnkknnnnnnnkknnnk..", "knnpnnnmmommnnnpnnk..", ".knnnnmmmmmmmnnnnkk..", "..knnnnnnnnnnnnnkkyk.", "..knnwnnnnnnnwnnkkyk.", "..knnnwnnnnnwnnnkdddk", "..knnnnwnnnwnnnnklglk", "..knnnnnwnwnnnnnklglk", "..knnnnnnwnnnnnnklllk", "...kkkkkkkkkkkkk.kkk."]
+    }
+  },
+  ug_whitenight_bat: {
+    name: "흰 밤 아기 박쥐",
+    grade: 4,
+    kind: "sky",
+    desc: "밤이 오지 않는 등도에서 어둠을 찾다 지쳐 하얗게 바래 버린 아기 박쥐입니다. 흰 밤에는 숨을 그림자가 없어 아무 데서나 꾸벅꾸벅 졸고, 누가 손바닥으로 그늘을 만들어 주면 그 안으로 쏙 들어가 날개를 접습니다. 귀가 커서 등심 타는 소리까지 다 듣습니다.",
+    likes: "treat_honey",
+    baby: {
+      pal: { a: "#f6f4f0", b: "#c8c0d0", w: "#d6d2ea", m: "#a49ccc", p: "#f4a6bc", e: "#3a3448", i: "#ffffff", k: "#1a120e" },
+      idle: ["......k.......k......", ".....kak.....kak.....", ".k...kaakkkkkaak...k.", "kmk..kapaaaaapak..kmk", "kmmkkaaaaaaaaaaakkmmk", "kmwmkaaieaaaieaakmwmk", "kmwwmaaeeaaaeeaamwwmk", "kmwwwaapaaaaapaawwwmk", "kmwwwwaaaaaaaaawwwwmk", ".kmwkmwaaaaaaawmkwmk.", "..kmkkkkbkkkbkkkkmk..", "...k....k...k....k..."],
+      blink: ["......k.......k......", ".....kak.....kak.....", ".k...kaakkkkkaak...k.", "kmk..kapaaaaapak..kmk", "kmmkkaaaaaaaaaaakkmmk", "kmwmkaaaaaaaaaaakmwmk", "kmwwmaakkaaakkaamwwmk", "kmwwwaapaaaaapaawwwmk", "kmwwwwaaaaaaaaawwwwmk", ".kmwkmwaaaaaaawmkwmk.", "..kmkkkkbkkkbkkkkmk..", "...k....k...k....k..."],
+      step: [".k....k.......k....k.", "kmk..kak.....kak..kmk", "kmmk.kaakkkkkaak.kmmk", "kmwmkkapaaaaapakkmwmk", "kmwwmkaaaaaaaaakmwwmk", ".kmwwaaieaaaieaawwmk.", "..kmwaaeeaaaeeaawmk..", "...kkaapaaaaapaakk...", ".....kaaaaaaaaak.....", "......kaaaaaaak......", ".......kbkkkbk.......", "........k...k........"],
+      sleep: ["......k.......k......", ".....kak.....kak.....", ".....kaakkkkkaak.....", ".....kapaaaaapak.....", "....kaaaaaaaaaaak....", "...kmwakkaaakkawmk...", "...kmwwapaaapawwmk...", "...kmwwwwwwwwwwwmk...", "....kmmmmmmmmmmmk....", ".....kkkkkkkkkkk....."]
+    },
+    adult: {
+      pal: { a: "#f6f4f0", b: "#c8c0d0", w: "#d6d2ea", m: "#a49ccc", p: "#f4a6bc", e: "#3a3448", i: "#ffffff", k: "#1a120e" },
+      idle: [".......k.........k.......", "......kak.......kak......", "......kaak.....kaak......", ".k....kapakkkkkapak....k.", "kmk...kapaaaaaaapak...kmk", "kmmk.kaaaaaaaaaaaaak.kmmk", "kmwmkkaaaieaaaaieaaakmwmk", "kmwwmaaaaeeaaaaeeaaamwwmk", "kmwwwaaapaaaaaaaapaawwwmk", "kmwwwwaaaaaaaaaaaaawwwwmk", "kmwwwwwaaaaaaaaaaawwwwwmk", ".kmwkmwkaaaaaaaaakwmkwmk.", "..kmkkk.kkbkkkkkbkkkkmk..", "...k......k.....k....k..."],
+      blink: [".......k.........k.......", "......kak.......kak......", "......kaak.....kaak......", ".k....kapakkkkkapak....k.", "kmk...kapaaaaaaapak...kmk", "kmmk.kaaaaaaaaaaaaak.kmmk", "kmwmkkaaaaaaaaaaaaaakmwmk", "kmwwmaaaakkaaaakkaaamwwmk", "kmwwwaaapaaaaaaaapaawwwmk", "kmwwwwaaaaaaaaaaaaawwwwmk", "kmwwwwwaaaaaaaaaaawwwwwmk", ".kmwkmwkaaaaaaaaakwmkwmk.", "..kmkkk.kkbkkkkkbkkkkmk..", "...k......k.....k....k..."],
+      step: [".k.....k.........k.....k.", "kmk...kak.......kak...kmk", "kmmk..kaak.....kaak..kmmk", "kmwmk.kapakkkkkapak.kmwmk", "kmwwmkkapaaaaaaapakkmwwmk", ".kmwwmkaaaaaaaaaaakmwwmk.", "..kmwwaaaieaaaaieaaawwmk.", "...kmwaaaeeaaaaeeaaawmk..", "....kkaapaaaaaaaapaakk...", "......kaaaaaaaaaaakk.....", ".......kaaaaaaaaak.......", "........kkbkkkkkbk.......", "..........k.....k........", "........................."],
+      sleep: [".......k.........k.......", "......kak.......kak......", "......kaak.....kaak......", "......kapakkkkkapak......", "......kapaaaaaaapak......", "....kkaaaaaaaaaaaaakkk...", "...kmwaaakkaaaakkaaawmk..", "...kmwwapaaaaaaaapawwmk..", "...kmwwwwwwwwwwwwwwwmk...", "....kmmmmmmmmmmmmmmmk....", ".....kkkkkkkkkkkkkkk....."]
+    }
   }
 };
 
