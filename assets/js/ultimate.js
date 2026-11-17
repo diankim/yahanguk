@@ -15,7 +15,7 @@ export async function openUltimateShop(board) {
     $('#ug-body', m).innerHTML = `<h3 class="sub-h">${esc(b.name || '')} 교환</h3>
       <p class="muted small">${esc(b.token_name || '')} <b>${fmt.num(have)}</b>개 · ${esc(b.name || '')}을(를) 깰 때마다 얻습니다. 물품마다 한 번만 바꿀 수 있고, 모두 거래할 수 없으며 능력치 효과는 없습니다.</p>
       ${b.open ? '' : '<p class="hint warn">이곳에서 받는 무용담 퀘스트를 마치면 이 싸움이 열립니다.</p>'}
-      <ul class="mt-shop">${rows.map(x => `<li class="${x.owned ? 'have' : ''}"><div><b>${esc(x.name)}</b><small>${esc(kindOf(x))}</small></div>
+      <ul class="mt-shop">${rows.map(x => `<li class="${x.owned ? 'have' : ''}"><div><b>${esc(x.name)}</b>${String(x.name).endsWith(kindOf(x)) ? '' : `<small>${esc(kindOf(x))}</small>`}</div>
         <span class="mt-price">${fmt.num(x.price)}</span>
         ${x.owned ? '<span class="chip ok">바꿈</span>' : `<button class="btn small ${have >= x.price ? 'primary' : ''}" data-here="토큰 교환" data-ug-buy="${esc(x.key)}" ${have >= x.price ? '' : 'disabled'}>바꾸기</button>`}</li>`).join('')}</ul>`;
     $$('[data-ug-buy]', m).forEach(btn => btn.onclick = () => guard(btn, async () => {

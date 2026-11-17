@@ -64,7 +64,7 @@ const story = () => snap?.mode === 'story';
 const storyRules = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo']?.story || {};
 const modeName = (md = snap?.mode) => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo']?.modes?.[md] || (md === 'story' ? '이야기판' : '어려움');
 const ult = () => snap?.mode === 'ultimate';
-const PHASE = new Proxy({}, { get: (_, k) => ult() ? (snap?.board?.phases || [])[k - 1] : story() ? (storyRules().phases || [])[k - 1] : bossOf().PHASE[k] });
+const PHASE = new Proxy({}, { get: (_, k) => ult() ? (snap?.board?.phases || [])[k - 1] : story() ? (storyRules().phases || [])[k - 1] ?? bossOf().PHASE[k] : bossOf().PHASE[k] });
 
 export async function render(root, sub) {
   lobbyBoss = BOSS[sub] ? sub : null;
@@ -189,23 +189,20 @@ function draw() {
   const cap = s.falls_cap, solo = (s.members || []).length === 1;
   const endState = m => m.out || m.resting ? '쓰러짐' : '끝까지 버팀';
   const top = mobileLog() && !done, restoreLog = keepLogScroll(el, top);
-  const B = bossOf(), mk = s.boss === 'mukjeok', gg = s.boss === 'gapgwi', by = s.boss === 'baekya';
+  const B = bossOf(), mk = s.boss === 'mukjeok', gg = s.boss === 'gapgwi', by = s.boss === 'baekya', mapped = mk || gg || by || hexOn(s);
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p>
       <h1>${ult() ? esc(s.board?.ug?.board_name || B.name) : B.name} ${chip(ult() ? (GD.boss?.gwiheo?.modes?.ultimate || '무용담') : modeName(), story() ? 'ok' : 'bad')} <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
       <div class="head-actions">${mk && s.board && f.status !== 'wait' ? chip(`빛나는 칸 ${(s.board.lit || []).length}/8 · 이름 획 ${s.board.strokes}/${s.board.max}`, s.board.strokes <= 3 ? 'bad' : 'good') : ''}${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}${s.joined && (fight || f.status === 'wait') ? `<button class="btn small danger keep-label" id="gw-forfeit">${icon('back', 15)}<span>포기</span></button>` : ''}</div></div>
     ${!done ? forfeitVoteHtml(s.vote) : ''}
     ${done ? resultHtml(f, s) : ''}
-    <div class="raid-wrap pf-wrap gw-wrap ${mk ? 'mk' : ''} ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
+    <div class="raid-wrap pf-wrap gw-wrap ${mk ? 'mk' : ''} ${mapped ? 'map' : ''} ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
       ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
             ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기${story() ? '' : ` · ${esc(itemName())} 1개`}</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
         ${ult() && f.status !== 'wait' ? ugBar(s) : ''}
-        ${mk && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${boardHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
-        ${gg && f.status !== 'wait' ? ggHtml(s, fight && s.joined) : ''}
+        ${mapped && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${mapHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
         ${s.boss === 'sealed_lord' && fight && s.board?.pair ? `<p class="small warn">${icon('chain', 13)} 봉인 사슬에 묶인 두 사람: ${(s.board.pair || []).map(id => esc(nameOfMember(s, id))).join(' · ')}</p>` : ''}
-        ${by && f.status !== 'wait' ? byBoard(s, fight && s.joined) : ''}
-        ${hexOn(s) && f.status !== 'wait' ? hexBoard(s, fight && s.joined, moveTo) : ''}
       </div></section>
       ${fight && s.joined ? actHtml(s, me) : ''}`)}
       ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
@@ -218,7 +215,7 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
         ${logHtml(s, me, done)}</div></section>`)}
     </div>
     ${tipsHtml(s.tips)}`;
-  el.classList.toggle('mk-live', (mk || by || gg || hexOn(s)) && fight && !!s.joined);
+  el.classList.toggle('mk-live', mapped && fight && !!s.joined);
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   memDetail(s); tray.redraw();
   if (!done) { fitFight(el); restoreLog(); }
@@ -226,6 +223,8 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
   const was = shownStatus; shownStatus = f.status;
   if (was && was !== f.status && done) showResult(el);
 }
+
+const mapHtml = (s, live) => s.boss === 'mukjeok' ? boardHtml(s, live) : s.boss === 'gapgwi' ? ggHtml(s, live) : s.boss === 'baekya' ? byBoard(s, live) : hexBoard(s, live, moveTo);
 
 function logHtml(s, me, done) {
   const rows = s.log || [];
@@ -291,16 +290,21 @@ function resultHtml(f, s) {
   const won = f.status === 'won';
   const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
   return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 && s.falls_cap ? Math.min(mine.falls || 0, s.falls_cap) : mine.falls || 0}` : ''}</p>
-    <p class="small">${story() ? (won ? '보상은 알림으로 보냈습니다(처음 보낼 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
+    <p class="small">${ult() ? ugResult(won, s) : story() ? (won ? '보상은 알림으로 보냈습니다(처음 보낼 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw${s.boss && s.boss !== 'gwiheo' ? `/${s.boss}` : ''}">처음으로</a>`)}</div></section>`;
 }
 
+function ugResult(won, s) {
+  const U = GD.ultimate || {}, bd = U.boards?.[s.board?.ug?.board || s.boss] || {}, tk = U.tokens || {};
+  return won ? `${esc(bd.token_name || '토큰')}을(를) ${tk.clear ?? 3}개 받았습니다(처음 깨면 ${tk.first ?? 10}개 더, 가방이 차면 창고로). 횟수 제한 없이 다시 설 수 있습니다.`
+    : '무용담은 져도 잃는 것이 없습니다(장비 닳음·침식·재도전 대기 없음). 다시 열면 1막부터입니다.';
+}
 const tipsHtml = tips => (tips || []).length ? `<details class="panel fold"><summary class="panel-head"><h2>${icon('help', 16)} 파훼법 <small class="muted">쓰러뜨린 조사원만 봅니다</small></h2></summary>
   <div class="panel-body"><ul class="small">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>` : '';
 
 function drawLobby(s) {
-  const B = bossOf();
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p><h1>${B.name}</h1></div></div>
+  const B = bossOf(), ugHere = !!s.ultimate && s.here === false, ugMode = GD.ultimate?.mode_name || '무용담';
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${ugHere ? `${esc(ugMode)} · ${esc(store.character?.location || '')}` : `${B.arc} · ${B.place}`}</p><h1>${ugHere ? esc(s.ultimate.name || B.name) : B.name}</h1></div></div>
     <section class="panel"><div class="panel-body">
       <p class="desc">${B.desc}</p>
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
@@ -311,7 +315,7 @@ function drawLobby(s) {
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}</div>
       ${s.ultimate ? `<div class="gw-mode gw-ult"><p class="small"><b>${esc(GD.boss?.[s.boss]?.modes?.ultimate || '무용담')}</b> · 객사 이야기꾼이 부풀린 이야기 속 싸움입니다. 둘에서 넷까지만 들어가고, 낌새를 미리 보여 주지 않습니다. 횟수 제한이 없고 져도 잃는 것이 없습니다.</p>
         ${s.ultimate.tip ? `<p class="small warn">${esc(s.ultimate.tip)}</p>` : ''}
-        <p class="small muted">${esc(s.ultimate.name || '')}${(s.ultimate.acts || []).length ? ` · ${s.ultimate.acts.map(esc).join(' → ')}` : ''} · 깬 횟수 ${s.ultimate.kills ?? 0}번</p>
+        <p class="small muted">${[ugHere ? '' : esc(s.ultimate.name || ''), (s.ultimate.acts || []).length > 1 ? s.ultimate.acts.map((a, i) => `${i + 1}막 ${esc(a)}`).join(' → ') : '', `깬 횟수 ${s.ultimate.kills ?? 0}번`].filter(Boolean).join(' · ')}</p>
         ${s.ultimate.can_open ? `<button class="btn" id="gw-open-ult">${icon('sword', 16)}<span>${esc(GD.boss?.[s.boss]?.modes?.ultimate || '무용담')}에 서기</span></button>` : `<p class="hint">${icon('pin', 14)} ${esc(s.ultimate.why || '지금은 설 수 없습니다.')}</p>`}</div>` : ''}
       <p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>
       ${s.last ? `<a class="btn small ghost" href="#/gw/${esc(s.last)}">${icon('scroll', 15)}<span>지난 도전 기록 보기</span></a>` : ''}
@@ -324,7 +328,7 @@ function drawLobby(s) {
 
 function bind() {
   const f = snap?.fight; if (!f) return;
-  const b = $('#gw-begin', el); if (b) b.onclick = async () => { if (!(await askPartySize(bossOf().ask, (snap?.members || []).length || 1, true))) return; run(b, () => rpc('world_gw_begin', { p_fight: f.id })); };
+  const b = $('#gw-begin', el); if (b) b.onclick = async () => { if (!story() && !(await askPartySize(ult() ? 'ug' : bossOf().ask, (snap?.members || []).length || 1, true))) return; run(b, () => rpc('world_gw_begin', { p_fight: f.id })); };
   const j = $('#gw-join', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: f.id }));
   const fb = $('#gw-forfeit', el);
   if (fb) fb.onclick = async () => { if (await askForfeit(`${bossOf().name} 싸움`, (snap.members || []).length <= 1, snap.vote)) run(fb, () => rpc('world_gw_forfeit', { p_fight: f.id })); };
@@ -418,11 +422,11 @@ function ggHtml(s, live) {
     const jh = colHz[col], cls = ['gg-cell', stall ? 'stall' : 'street', closed.has(col) ? 'closed' : '', jh?.k === 'judge' ? (due(jh) ? 'judge due' : 'judge') : '', jh?.k === 'close' ? 'closing' : '',
       ledSet.has(c) || stallT.has(c) ? 'ledger' : '', moves.has(c) ? 'mk-step' : '', c === here ? 'here' : '', c === dest ? 'dest' : ''].filter(Boolean).join(' ');
     g += `<rect class="${cls}" x="${x}" y="${y}" width="58" height="62" rx="6" ${moves.has(c) || (live && c === here) ? `data-mk-step="${c}"` : ''}><title>${c}번 칸${stall ? ` · 좌판 값표 ${tags[c] ?? '?'}섬` : ' · 거리'}</title></rect>`;
-    if (stall) g += `<text class="gg-tag ${hz.some(h => h.k === 'tagm' && Number(h.c) === c) ? 'hot' : ''}" x="${x + 52}" y="${y + 14}">${tags[c] ?? ''}섬</text>`;
+    if (stall) g += `<text class="gg-tag ${ledSet.has(c) || stallT.has(c) ? 'led' : ''} ${hz.some(h => h.k === 'tagm' && Number(h.c) === c) ? 'hot' : ''}" x="${x + 52}" y="${y + 14}">${tags[c] ?? ''}섬</text>`;
   }
   for (const [col, h] of Object.entries(colHz)) g += `<text class="gg-coltag ${h.k} ${due(h) ? 'due' : ''}" x="${8 + (col - 1) * 62 + 29}" y="14">${h.k === 'judge' ? `망치 ${num(h)}${h.sh ? ' ↔' : ''}` : `닫힘 ${num(h)}`}</text>`;
-  if (led) for (const c of led.cells) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag ${due(led) ? 'due' : ''}" x="${x - 14}" y="${y - 18}">합${led.t}·${num(led)}</text>`; }
-  for (const [c, t] of stallT) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag wm ${cw.due ? 'due' : ''}" x="${x - 14}" y="${y - 18}">합${t}·${cw.due ? '!' : cw.end}</text>`; }
+  if (led) for (const c of led.cells) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag ${due(led) ? 'due' : ''}" x="${x - 27}" y="${y - 18}">합${led.t}·${num(led)}</text>`; }
+  for (const [c, t] of stallT) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag wm ${cw.due ? 'due' : ''}" x="${x - 27}" y="${y - 18}">합${t}·${cw.due ? '!' : cw.end}</text>`; }
   for (const h of hz) {
     if (h.k === 'basket') { const [x, y] = ggXY(Number(h.c)); g += `<g class="gg-basket ${due(h) ? 'due' : ''}"><circle cx="${x}" cy="${y - 14}" r="13"/><text x="${x}" y="${y - 9}">${num(h)}</text></g>`; }
     if (h.k === 'tether' && h.cells?.length === 2) { const [x1, y1] = ggXY(h.cells[0]), [x2, y2] = ggXY(h.cells[1]); g += `<g class="gg-tether ${due(h) ? 'due' : ''}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 6}">줄 ${num(h)}</text></g>`; }
@@ -454,10 +458,10 @@ function weakLine(s, w) {
   const ids = Object.keys(w || {}).filter(id => w[id]?.n);
   if (!ids.length) return '';
   const nm = id => id === s.me ? '나' : ((s.members || []).find(m => m.id === id)?.name || '');
-  return `<p class="small">${ids.map(id => { const x = w[id]; return `<b class="${x.strong || id === s.me ? 'bad' : ''}" data-tip="${esc(`수법을 놓친 사람에게만 붙고, 놓칠 때마다 한 겹씩 쌓여 ${x.strong ? '' : '세 겹이면 더 큰 약화로 바뀝니다. '}한 겹씩 몇 라운드 뒤 풀립니다. 주는 피해 ×${Number(x.deal).toFixed(2)} · 받는 피해 ×${Number(x.take).toFixed(2)} · 다음 풀림까지 ${x.left}라운드`)}">${esc(nm(id))} 「${esc(x.name)}」 ${x.n}겹</b>`; }).join(' · ')}</p>`;
+  return `<p class="small">${ids.map(id => { const x = w[id]; return `<b class="${x.strong || id === s.me ? 'bad' : ''}" data-tip="${esc(`수법을 놓친 사람에게만 붙고, 놓칠 때마다 한 겹 쌓여 ${x.strong ? '' : '세 겹이면 더 큰 약화로 바뀝니다. '}겹마다 몇 라운드 뒤 하나씩 풀립니다. 주는 피해 ×${Number(x.deal).toFixed(2)} · 받는 피해 ×${Number(x.take).toFixed(2)} · 다음 풀림까지 ${x.left}라운드`)}">${esc(nm(id))} 「${esc(x.name)}」 ${x.n}겹</b>`; }).join(' · ')}</p>`;
 }
 function ugBar(s) {
-  const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : ''), cut = u.next_cut;
+  const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : GD.boss?.[u.board || s.boss]?.ultimate?.acts?.[i]?.name || ''), cut = u.next_cut;
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
     <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.wm ? ` · <b class="bad wm-name">「${esc(u.wm.name || '')}」</b>` : ''}`}</p>${weakLine(s, u.weak)}</div>`;
 }

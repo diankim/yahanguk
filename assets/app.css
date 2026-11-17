@@ -594,6 +594,7 @@ body.chat-open .chat-fab { display: none; }
   .toasts { bottom: 24px; }
   .layout { grid-template-columns: 280px minmax(0, 1fr); }
   .main { padding: 20px 24px 40px; }
+  .main:has(.raid-wrap.playing) { padding-bottom: 0; }
   .hud { position: sticky; top: var(--top-h); height: calc(100vh - var(--top-h)); overflow-y: auto; border-bottom: 0; border-right: 1px solid var(--line); background: var(--bg); }
   .hud-strip { display: none; }
   .hud-body, .hud.open .hud-body { display: grid; padding: 12px; gap: 8px; max-height: none; overflow: visible; }
@@ -815,6 +816,7 @@ details.fold > summary h2 { display: flex; align-items: center; gap: 8px; width:
 .facilities { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
 .facility { display: grid; justify-items: start; gap: 4px; padding: 16px 14px; min-height: 108px; border-radius: var(--r-lg); border: var(--bw) solid var(--line); text-align: left; cursor: pointer;
   background: var(--surface-2); color: var(--text); transition: border-color .12s; }
+a.facility { text-decoration: none; }
 .facility:hover { border-color: var(--gold); } .facility .ico { color: var(--gold); }
 .facility small { color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
 .field-grid { display: grid; gap: 14px; margin-bottom: 14px; } .field-grid > .panel { margin: 0; }
@@ -2338,7 +2340,9 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gg-coltag { font-size: 12px; font-weight: 800; text-anchor: middle; fill: var(--hp); }
 .gg-coltag.close { fill: var(--muted); }
 .gg-coltag.due { fill: #fff; }
-.gg-ledtag { fill: #1a1410; font-size: 11px; font-weight: 800; text-anchor: middle; }
+.gg-ledtag { fill: #1a1410; font-size: 10.5px; font-weight: 800; text-anchor: start; }
+.gg-tag.led { font-size: 10px; }
+.gg-map > :not(.gg-cell), .by-map > :not(.by-cell), .hx-map > :not(.hx-cell) { pointer-events: none; }
 .gg-hot { color: var(--gold); font-weight: 700; }
 .gg-hot.due { color: var(--hp); }
 .gg-ledtag.due { fill: var(--hp); }
@@ -2539,14 +2543,20 @@ b.contest { color: var(--warn); font-weight: 600; }
   .mk-live > .view-head .head-actions { flex: none; width: auto; margin: 0; display: grid; justify-items: end; gap: 1px; font-size: calc(10.5px * var(--fz, 1)); }
   .mk-live > .view-head .head-actions .chip { font-size: calc(10.5px * var(--fz, 1)); min-height: 0; padding: 0 6px; }
   .mk-live > .view-head .frame-c { display: none; }
-  .gw-wrap.mk.playing .gw-ladder { display: none; }
-  .gw-wrap.mk .mk-duo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: start; margin-top: 4px; }
-  .gw-wrap.mk .mk-duo .mk-wrap { order: -1; margin: 0; }
-  .gw-wrap.mk .mk-duo .gw-band { margin: 0; padding: 5px 6px; }
-  .gw-wrap.mk .mk-duo .gw-band-top { flex-wrap: wrap; gap: 2px 6px; }
-  .gw-wrap.mk .mk-duo .gw-chosen, .gw-wrap.mk .mk-duo .gw-mine { display: none; }
-  .gw-wrap.mk .mk-duo .gw-tell { font-size: calc(12px * var(--fz, 1)); line-height: 1.4; }
-  .gw-wrap.mk .mk-duo .gw-tell.xl, .gw-wrap.mk .mk-duo .gw-tell.xxl { font-size: calc(11px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map.playing .gw-ladder { display: none; }
+  .gw-wrap.map .mk-duo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: start; margin-top: 4px; }
+  .gw-wrap.map .mk-duo > :not(.gw-band) { order: -1; margin: 0; }
+  .gw-wrap.map .mk-duo .gw-band { margin: 0; padding: 5px 6px; }
+  .gw-wrap.map .mk-duo .gw-band-top { flex-wrap: wrap; gap: 2px 6px; }
+  .gw-wrap.map .mk-duo .gw-chosen, .gw-wrap.map .mk-duo .gw-mine { display: none; }
+  .gw-wrap.map .mk-duo .gw-tell { font-size: calc(12px * var(--fz, 1)); line-height: 1.4; }
+  .gw-wrap.map .mk-duo .gw-tell.xl, .gw-wrap.map .mk-duo .gw-tell.xxl { font-size: calc(11px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map .mk-duo:has(.gg-wrap) { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .gw-wrap.map .mk-duo .gg-map { width: min(100%, 300px); }
+  .gw-wrap.map .mk-duo :is(.by-map, .hx-map) { width: 180px; }
+  .gw-wrap.map .mk-duo :is(.by-wrap, .hx-wrap, .hx-info) { width: 180px; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) > .mk-hint + .mk-hint { display: none; }
+  .gw-wrap.map .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) .mk-hint { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
   .gw-wrap.mk .mk-board { width: 180px; }
   .gw-wrap.mk .mk-cell { padding: 2px; }
   .gw-wrap.mk .mk-cell small { display: none; }
@@ -2555,10 +2565,10 @@ b.contest { color: var(--warn); font-weight: 600; }
   .gw-wrap.mk .mk-strokes { grid-template-columns: repeat(3, 6px); } .gw-wrap.mk .mk-strokes i { width: 6px; height: 3px; }
   .gw-wrap.mk .mk-hint { display: none; }
   .gw-wrap.mk:not(.playing) .mk-board { width: min(100%, 240px); }
-  .gw-wrap.mk.playing .raid-act .panel-body { padding-block: 6px; gap: 4px; }
-  .gw-wrap.mk.playing .raid-me .raid-mine { display: none; }
-  .gw-wrap.mk.playing .gw-gim { margin-top: 2px; padding: 2px 6px; }
-  .gw-wrap.mk.playing .gw-gim .btn { min-height: 32px; }
+  .gw-wrap.map.playing .raid-act .panel-body { padding-block: 6px; gap: 4px; }
+  .gw-wrap.map.playing .raid-me .raid-mine { display: none; }
+  .gw-wrap.map.playing .gw-gim { margin-top: 2px; padding: 2px 6px; }
+  .gw-wrap.map.playing .gw-gim .btn { min-height: 32px; }
 }
 .raid-log.gw-log li { display: block; padding: 2px 0 2px 8px; border-left: 3px solid transparent; }
 .raid-log.gw-log li.gw-rhead { border: 0; padding: 6px 0 2px; font-weight: 700; color: var(--accent); font-size: calc(12px * var(--fz, 1)); }
@@ -3297,6 +3307,8 @@ b.shadow { color: var(--sp); }
   body:has(.raid-wrap) .chat-fab[data-count]:not([data-count=""])::after { right: auto; left: -8px; top: -6px; }
   body:has(.dmeter.open) .chat-fab { display: none; }
   :root[data-head="sheet"] body:has(.raid-wrap) .chat-fab { width: 26px; height: 40px; border-right: 0; }
+  .view-host:has(> .gw-wrap:not(.ended)) > .view-head { padding-right: 30px; }
+  .gw-wrap:not(.ended) .raid-boss :is(.raid-hp, .gw-ladder, .gw-ug) { margin-right: 14px; }
 }
 /* 요괴화 표식: 채팅 이름 옆·조사원 카드 이름 옆 — 요화 마지막 1시간은 모두에게 보인다 */
 .yohwa-mark { display: inline-flex; align-items: center; margin-left: 5px; padding: 0 6px; height: 17px; border-radius: 3px; font-style: normal; font-weight: 700;
@@ -3670,15 +3682,39 @@ b.shadow { color: var(--sp); }
   :root[data-fz="l"] .field-wrap .fg-b .spots .btn, :root[data-fz="xl"] .field-wrap .fg-b .spots .btn { width: 100%; }
 }
 @media (min-width: 900px) {
-  .gw-wrap.mk.playing .mk-duo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; margin-top: 6px; }
-  .gw-wrap.mk.playing .mk-duo .mk-wrap { order: -1; margin: 0; }
-  .gw-wrap.mk.playing .mk-duo .gw-band { margin: 0; }
+  .gw-wrap.map.playing .mk-duo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; margin-top: 6px; }
+  .gw-wrap.map.playing .mk-duo > :not(.gw-band) { order: -1; margin: 0; }
+  .gw-wrap.map.playing .mk-duo .gw-band { margin: 0; padding: 6px 8px; }
+  .gw-wrap.map.playing .mk-duo .gw-band-top { flex-wrap: wrap; gap: 2px 6px; }
+  .gw-wrap.map.playing .mk-duo .gw-chosen { display: none; }
+  .gw-wrap.map.playing .mk-duo .gw-tell { font-size: calc(12.5px * var(--fz, 1)); line-height: 1.4; }
+  .gw-wrap.map.playing .mk-duo .gw-tell:is(.xl, .xxl) { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.35; }
   .gw-wrap.mk.playing .mk-board { width: 186px; }
   .gw-wrap.mk.playing .mk-hint { max-width: 186px; font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .gg-map) { width: 280px; }
+  .gw-wrap.map.playing .raid-act .raid-me { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+  .gw-wrap.map.playing .raid-act .raid-me > .raid-ammo { grid-column: auto; }
+  .gw-wrap.map.playing .raid-act .raid-me > .raid-mine { display: none; }
+  .view-host > .gw-wrap.playing ~ details.fold { display: none; }
+  .gw-wrap.map.playing .mk-duo :is(.by-wrap, .hx-wrap, .hx-info) { width: 210px; }
+  .gw-wrap.map.playing .mk-duo :is(.by-map, .hx-map) { width: 210px; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) .mk-hint { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) > .mk-hint + .mk-hint { display: none; }
 }
 @media (min-width: 900px) and (max-height: 700px) {
   .gw-wrap.mk.playing .mk-board { width: 160px; }
   .gw-wrap.mk.playing .mk-hint { display: none; }
+  .gw-wrap.map.playing .gw-ladder { display: none; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .gg-map) { width: 250px; }
+  .gw-wrap.map.playing .mk-duo :is(.by-wrap, .by-map) { width: 176px; }
+  .gw-wrap.map.playing .mk-duo :is(.hx-wrap, .hx-info, .hx-map) { width: 164px; }
+  .gw-wrap.map.playing .coop-btn small { display: none; }
+  .gw-wrap.map.playing .gw-gim { margin-top: 4px; padding: 3px 6px; }
+  .gw-wrap.map.playing .gw-gim .btn { min-height: 32px; }
+  .gw-wrap.map.playing .gw-ug { gap: 2px; margin-top: 2px; }
+  .gw-wrap.map.playing .gw-ug p { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map.playing .gw-ug .chip { min-height: 0; padding-block: 0; }
+  .gw-wrap.map.playing .mk-duo .hx-line { font-size: calc(11.5px * var(--fz, 1)); line-height: 1.35; }
 }
 .fight-col { display: contents; }
 .party-wrap { display: block; }

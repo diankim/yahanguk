@@ -21,7 +21,7 @@ begin
     "lines": [{"a": 7, "b": 13, "cells": [1, 4]}, {"a": 9, "b": 15, "cells": [2, 5]}, {"a": 7, "b": 9, "cells": [8]}, {"a": 13, "b": 15, "cells": [14]}],
     "mech_mul": 1, "fail_raw": 8, "aoe_every": 0,
     "acts": [
-      {"phases": ["사슬 끌림", "봉인 터짐", "기운 모으기", "기운 모으기"], "seq": [["drag"], ["drag", "burst"], ["burst", "charge"], ["burst", "charge"]]},
+      {"phases": ["사슬 끌림", "봉인 터짐", "기운 모으기", "아홉 겹 봉인"], "seq": [["drag"], ["drag", "burst"], ["burst", "charge"], ["burst", "charge"]]},
       {"phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "seq": [["tide"], ["tide", "name"], ["name", "vortex", "drag"], ["tide", "name", "vortex", "drag"]]}],
     "names": {"drag": "사슬 끌림", "burst": "봉인 터짐", "charge": "기운 모으기", "tide": "물살", "name": "이름 빼앗김", "vortex": "소용돌이"},
     "drag": {"every": 3, "off": 1, "left": 2, "raw": 50},
