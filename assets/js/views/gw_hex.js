@@ -16,6 +16,7 @@ const nameOf = (s, id) => (s.members || []).find(m => m.id === id)?.name || '';
 
 export function hexBoard(s, live, moveTo) {
   const b = s.board || {}, hz = b.hz || [], pillars = new Set(b.pillars || []), moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
+  const wm = b.ug?.wm || null, seal = wm?.k === 'seal9' ? wm : null, sea = wm?.k === 'sea' ? wm : null;
   const fill = new Map(), add = (c, k) => fill.set(c, [...(fill.get(c) || []), k]);
   for (const h of hz) {
     const k = `hx-${h.k}${due(h) ? ' due' : ''}`;
@@ -25,10 +26,11 @@ export function hexBoard(s, live, moveTo) {
   let cells = '';
   for (let c = 0; c < 19; c++) {
     const [x, y] = at(c);
-    const cls = ['hx-cell', c === 0 ? 'core' : '', pillars.has(c) ? 'pillar' : '', vortex && c >= 1 && c <= 6 ? 'hx-ring' : '', ...(fill.get(c) || []), moves.has(c) ? 'mk-step' : '', c === dest ? 'dest' : '', c === here ? 'here' : ''].filter(Boolean).join(' ');
+    const cls = ['hx-cell', c === 0 ? 'core' : '', pillars.has(c) ? 'pillar' : '', (vortex || sea?.vortex) && c >= 1 && c <= 6 ? 'hx-ring' : '', seal?.due && pillars.has(c) ? 'wm-due' : '', ...(fill.get(c) || []), moves.has(c) ? 'mk-step' : '', c === dest ? 'dest' : '', c === here ? 'here' : ''].filter(Boolean).join(' ');
     const label = c === 0 ? '가운데 · 귀허 소용돌이(들어갈 수 없음)' : `${c}번 칸${pillars.has(c) ? ' · 봉인 기둥' : ''}${c <= 6 ? ' · 가운데 이웃' : ''}${moves.has(c) ? ' · 눌러서 옮겨 서기' : ''}`;
     cells += `<polygon class="${cls}" points="${hexPath(x, y)}" ${c && (moves.has(c) || (live && c === here)) ? `data-mk-step="${c}"` : ''}><title>${esc(label)}</title></polygon>`;
-    if (pillars.has(c)) cells += `<g class="hx-pil"><rect x="${(x - 5).toFixed(0)}" y="${(y - 14).toFixed(0)}" width="10" height="24" rx="2"/><rect class="cap" x="${(x - 8).toFixed(0)}" y="${(y - 17).toFixed(0)}" width="16" height="5" rx="1"/></g>`;
+    if (pillars.has(c)) cells += `<g class="hx-pil"><rect x="${(x - 5).toFixed(0)}" y="${(y - 14).toFixed(0)}" width="10" height="24" rx="2"/><rect class="cap" x="${(x - 8).toFixed(0)}" y="${(y - 17).toFixed(0)}" width="16" height="5" rx="1"/></g>`
+      + (seal?.order?.[c] ? `<g class="wm-n"><circle cx="${(x + 15).toFixed(0)}" cy="${(y - 15).toFixed(0)}" r="11"/><text x="${(x + 15).toFixed(0)}" y="${(y - 10).toFixed(0)}">${seal.order[c]}</text></g>` : seal?.due ? `<g class="wm-n due"><circle cx="${(x + 15).toFixed(0)}" cy="${(y - 15).toFixed(0)}" r="11"/><text x="${(x + 15).toFixed(0)}" y="${(y - 10).toFixed(0)}">!</text></g>` : '');
     else if (c) cells += `<text class="hx-no" x="${x.toFixed(0)}" y="${(y + 21).toFixed(0)}">${c}</text>`;
   }
   let marks = '';
@@ -51,7 +53,7 @@ export function hexBoard(s, live, moveTo) {
     }
   }
   const [cx0, cy0] = at(0), face = b.face;
-  const core = `<g class="hx-core ${vortex ? 'spin' : ''} ${vortex && due(vortex) ? 'due' : ''}"><circle cx="${cx0}" cy="${cy0}" r="24"/>${vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">${num(vortex)}</text>` : `<text x="${cx0}" y="${cy0 + 4}">${face ? (face === 'human' ? '사람' : '요괴') : '봉주'}</text>`}</g>`;
+  const core = `<g class="hx-core ${vortex || sea?.vortex ? 'spin' : ''} ${(vortex && due(vortex)) || sea?.vortex ? 'due' : ''}"><circle cx="${cx0}" cy="${cy0}" r="24"/>${sea?.vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">!</text>` : vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">${num(vortex)}</text>` : `<text x="${cx0}" y="${cy0 + 4}">${face ? (face === 'human' ? '사람' : '요괴') : sea?.due ? '?' : '봉주'}</text>`}</g>`;
   const who = {};
   for (const m of s.members || []) if (m.pos != null && !m.out) (who[m.pos] = who[m.pos] || []).push(m);
   const named = new Map(hz.filter(h => h.k === 'name').map(h => [h.t, h]));
@@ -66,13 +68,13 @@ export function hexBoard(s, live, moveTo) {
   }
   if (dest) { const [x, y] = at(dest); tokens += `<polygon class="hx-destmark" points="${hexPath(x, y, S - 6)}"/>`; }
   const charge = hz.find(h => h.k === 'charge');
-  const crack = Number(b.crack || 0), cmax = Number(b.crack_max || 3);
   const mechs = (b.mechs || []).map(k => HZ_NAME[k] || k).join(' · ');
   return `<div class="hx-wrap"><svg class="hx-map" viewBox="0 0 320 292" role="img" aria-label="구중 봉연 벌집 칸">${cells}${marks}${core}${tokens}</svg>
     <div class="hx-info">
       ${charge ? `<div class="hx-charge ${due(charge) ? 'due' : ''}"><span>${icon('spark', 13)} 기운 모으기 · ${due(charge) ? '이번 라운드 끝' : `${charge.left}라운드 뒤`}</span><div class="bar"><span style="width:${Math.min(100, Number(charge.dmg || 0) / Math.max(1, Number(charge.need || 1)) * 100).toFixed(0)}%"></span></div></div>` : ''}
       <p class="hx-line">${b.line ? esc(b.line) : '&nbsp;'}</p>
-      <p class="mk-hint muted small">${face ? `<b class="hx-face ${face}">${face === 'human' ? '사람 얼굴' : '요괴 얼굴'}</b> · ` : ''}${mechs ? `${esc(mechs)} · ` : ''}<span class="hx-crack ${crack ? 'on' : ''}">봉인 균열 ${crack}/${cmax}</span></p>
+      ${sea?.faces ? `<p class="wm-seq">${sea.faces.map((f, i) => `<b class="hx-face ${f}">${i + 1} ${f === 'human' ? '사람' : '요괴'}</b>`).join('<i>→</i>')}</p>` : ''}
+      <p class="mk-hint muted small">${face ? `<b class="hx-face ${face}">${face === 'human' ? '사람 얼굴' : '요괴 얼굴'}</b> · ` : ''}${wm ? `<b class="wm-name">「${esc(wm.name || '')}」</b> · ` : ''}${esc(mechs)}</p>
       ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}
     </div></div>`;
 }

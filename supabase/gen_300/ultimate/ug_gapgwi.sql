@@ -15,9 +15,10 @@ create or replace function public.world_ug_nbm(p_kind text)
 as $f$
 declare r int[] := '{}'; c int; m int; z int;
 begin
-  for c in 1 .. case when p_kind = 'gg' then 15 else 14 end loop
+  for c in 1 .. case p_kind when 'gg' then 15 when 'ux' then 18 when 'mk' then 9 else 14 end loop
     m := 1 << (c - 1);
-    foreach z in array case when p_kind = 'gg' then public.world_gg_nb(c) else public.world_by_nb(c) end loop m := m | (1 << (z - 1)); end loop;
+    foreach z in array case p_kind when 'gg' then public.world_gg_nb(c) when 'ux' then public.world_ux_nb(c)
+        when 'mk' then array(select jsonb_array_elements_text(public.world_mk_lines() -> 'nb' -> c::text)::int) else public.world_by_nb(c) end loop m := m | (1 << (z - 1)); end loop;
     r := r || m;
   end loop;
   return r;
@@ -151,7 +152,7 @@ begin
     return public.world_ug_solve_rec(p_kind, p_nbm, p_pos, p_kk, al, p_still, p_act, p_ch, p_i + 1, p_grp, p_val);
   end if;
   who := (ch ->> 'w')::int; oth := (ch ->> 'o')::int;
-  if who is null or who > nm or (ch ->> 't' = 'apart' and (oth is null or oth > nm)) or (ch ->> 't' = 'near' and nm < 2) then
+  if who is null or who > nm or (ch ->> 't' = 'apart' and (oth is null or oth > nm)) or (ch ->> 't' in ('near', 'adj') and nm < 2) then
     return public.world_ug_solve_rec(p_kind, p_nbm, p_pos, p_kk, p_allow, p_still, p_act, p_ch, p_i + 1, p_grp, p_val);
   end if;
   for x in select z from generate_series(1, array_length(p_nbm, 1)) z where vs[(who - 1) * p_kk + r] & (1 << (z - 1)) <> 0 order by (z <> p_pos[who]), z loop
@@ -167,12 +168,13 @@ begin
         res := public.world_ug_solve_rec(p_kind, p_nbm, p_pos, p_kk, al, p_still, p_act, p_ch, p_i + 1, p_grp, p_val);
         if res is not null then return res; end if;
       end if;
-    elsif ch ->> 't' = 'near' then
+    elsif ch ->> 't' in ('near', 'adj') then
+      fm := case when ch ->> 't' = 'adj' then p_nbm[x] & ~(1 << (x - 1)) else p_nbm[x] end;
       for j in 1 .. nm loop
-        continue when j = who or vs[(j - 1) * p_kk + r] & p_nbm[x] = 0;
+        continue when j = who or vs[(j - 1) * p_kk + r] & fm = 0;
         al := p_allow;
         al[(who - 1) * p_kk + r] := al[(who - 1) * p_kk + r] & (1 << (x - 1));
-        al[(j - 1) * p_kk + r] := al[(j - 1) * p_kk + r] & p_nbm[x];
+        al[(j - 1) * p_kk + r] := al[(j - 1) * p_kk + r] & fm;
         res := public.world_ug_solve_rec(p_kind, p_nbm, p_pos, p_kk, al, p_still, p_act, p_ch, p_i + 1, p_grp, p_val);
         if res is not null then return res; end if;
         if coalesce(nullif(current_setting('yh.ugb', true), '')::int, 0) <= 0 then return null; end if;
@@ -216,7 +218,7 @@ begin
   ids := array(select e ->> 'id' from jsonb_array_elements(p_mem) e);
   pos := array(select (e ->> 'pos')::int from jsonb_array_elements(p_mem) e);
   if nm = 0 then return jsonb_build_object('m', '[]'::jsonb); end if;
-  select greatest(1, least(10, coalesce(max((e ->> 'r')::int), p_nr) - p_nr + 1)) into kk from jsonb_array_elements(coalesce(p_cons, '[]'::jsonb)) e where (e ->> 'r')::int >= p_nr;
+  select greatest(1, least(16, coalesce(max((e ->> 'r')::int), p_nr) - p_nr + 1)) into kk from jsonb_array_elements(coalesce(p_cons, '[]'::jsonb)) e where (e ->> 'r')::int >= p_nr;
   kk := coalesce(kk, 1);
   allow := array_fill(fullm, array[nm * kk]); still := array_fill(false, array[nm * kk]); act := array_fill(null::text, array[nm * kk]);
   caps := array_fill(1023, array[kk]);
@@ -237,7 +239,7 @@ begin
       act[(w - 1) * kk + k] := c ->> 'a';
     elsif c ->> 't' = 'need' then ch := ch || jsonb_build_array(jsonb_build_object('t', 'need', 'k', k, 'm', m, 'n', coalesce((c ->> 'n')::int, 1), 'a', c ->> 'a', 'g', c ->> 'g', 'ord', 0));
     elsif c ->> 't' = 'only' then ch := ch || jsonb_build_array(jsonb_build_object('t', 'only', 'k', k, 'm', m, 'g', c ->> 'g', 'ord', 1));
-    elsif c ->> 't' in ('near', 'alone') then ch := ch || jsonb_build_array(jsonb_build_object('t', c ->> 't', 'k', k, 'w', w, 'ord', 2));
+    elsif c ->> 't' in ('near', 'alone', 'adj') then ch := ch || jsonb_build_array(jsonb_build_object('t', c ->> 't', 'k', k, 'w', w, 'ord', 2));
     elsif c ->> 't' = 'apart' then
       if array_position(ids, c ->> 'a') is null or array_position(ids, c ->> 'b') is null then continue; end if;
       ch := ch || jsonb_build_array(jsonb_build_object('t', 'apart', 'k', k, 'w', array_position(ids, c ->> 'a'), 'o', array_position(ids, c ->> 'b'), 'd', (c ->> 'd')::int, 'ord', 2));
@@ -329,7 +331,7 @@ begin
   na := coalesce(array_length(alive, 1), 0);
   hid := coalesce((b ->> 'hid')::int, 0);
   cur := public.world_gg_seq(p_fight, f.hp, f.max_hp);
-  mechs := array(select jsonb_array_elements_text(cur -> 'm'));
+  mechs := coalesce(public.world_ug_wm_easy_a(p_fight), array(select jsonb_array_elements_text(cur -> 'm')));
   if (cur ->> 'i')::int <> coalesce((b ->> 'seq')::int, 0) then
     perform public.world_gw_say(p_fight, nr, 'phase', case
       when 'tether' = any (mechs) then '값귀가 두 사람의 소매를 붉은 외상 줄로 묶는다. 「같이 갚든가, 갈라서든가.」'
@@ -398,11 +400,11 @@ end $f$;
 create or replace function public.world_ug_fail(p_fight uuid, p_round integer, p_fails integer, p_raw numeric, p_fade boolean)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; x record; cap int := coalesce((rb ->> 'fail_cap')::int, 3); e int; b jsonb;
+declare x record; b jsonb;
 begin
   if p_fails <= 0 then return; end if;
-  update public.world_gw_fights set enrage = enrage + p_fails where fight_id = p_fight returning enrage, board into e, b;
-  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 실수 ' || least(e, cap) || '/' || cap || case when e >= cap then ' — 이야기가 그 자리에서 끝장난다.' else '. 모두가 함께 다친다.' end);
+  select board into b from public.world_gw_fights where fight_id = p_fight;
+  perform public.world_gw_say(p_fight, p_round, 'bad', '이야기꾼이 침을 튀긴다 — 「거기서 발을 헛디뎠지!」 모두가 조금씩 다친다.');
   for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
     perform public.world_gw_hurt(p_fight, x.owner_id, round(p_raw * p_fails)::int, p_round, '번진 실수에');
     if p_fade then b := public.world_by_fade(p_fight, b, x.owner_id, p_fails, p_round); end if;
@@ -557,7 +559,7 @@ begin
   lamps := array(select jsonb_array_elements_text(coalesce(b -> 'lamps', '[]'::jsonb))::int);
   hid := coalesce((b ->> 'hid')::int, 0);
   cur := public.world_by_seq(p_fight, f.hp, f.max_hp);
-  mechs := array(select jsonb_array_elements_text(cur -> 'm'));
+  mechs := coalesce(public.world_ug_wm_easy_a(p_fight), array(select jsonb_array_elements_text(cur -> 'm')));
   if (cur ->> 'i')::int <> coalesce((b ->> 'seq')::int, 0) then
     perform public.world_gw_say(p_fight, nr, 'phase', case
       when 'wn' = any (mechs) then '겹친 목소리가 비명을 지른다. 일곱 등이 한꺼번에 꺼지고 마당이 새하얗게 바랜다. 공중에 멈춘 것들이 꺼진 등 둘레에 매달린 채 숨을 죽인다.'

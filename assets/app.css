@@ -2459,7 +2459,19 @@ b.contest { color: var(--warn); font-weight: 600; }
 .hx-charge .bar span { background: var(--gold); }
 .hx-charge.due { color: var(--hp); }
 .hx-info .mk-hint { text-align: center; margin: 0; }
-.hx-face.human { color: var(--mp); } .hx-face.yokai { color: var(--hp); } .hx-crack.on { color: var(--hp); font-weight: 700; }
+.hx-face.human { color: var(--mp); } .hx-face.yokai { color: var(--hp); }
+.wm-n { pointer-events: none; }
+.wm-n circle { fill: var(--bg); stroke: var(--gold); stroke-width: 2.5; }
+.wm-n text { fill: var(--gold); font-size: 13px; font-weight: 900; text-anchor: middle; }
+.wm-n.due circle { stroke: var(--hp); stroke-width: 3; } .wm-n.due text { fill: var(--hp); }
+.wm-n.done circle { stroke: var(--line); } .wm-n.done text { fill: var(--muted); }
+.hx-cell.wm-due { stroke: var(--hp); stroke-width: 2.5; }
+.ug-t.wm-n { color: var(--gold); border-color: var(--gold); }
+.mk-cell.wm-cell { outline: 2px solid var(--gold); outline-offset: -3px; }
+.wm-seq { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 2px 0; font-size: calc(14px * var(--fz, 1)); }
+.wm-seq b { padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; } .wm-seq i { color: var(--muted); font-style: normal; }
+.wm-name { color: var(--hp); }
+.gg-ledtag.wm { fill: var(--gold); }
 .hx-line { margin: 0; font-size: calc(12.5px * var(--fz, 1)); font-weight: 700; min-height: 1.4em; text-align: center; }
 .hx-gim .btn[disabled] { opacity: .45; }
 @keyframes hx-spin { to { transform: rotate(360deg); } }

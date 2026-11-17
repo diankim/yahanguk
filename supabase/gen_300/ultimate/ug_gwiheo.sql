@@ -19,7 +19,7 @@ begin
   r := jsonb_set(r, '{gwiheo,ultimate,hex}', $j${
     "pillars": [7, 9, 13, 15], "start": [10, 16, 12, 18],
     "lines": [{"a": 7, "b": 13, "cells": [1, 4]}, {"a": 9, "b": 15, "cells": [2, 5]}, {"a": 7, "b": 9, "cells": [8]}, {"a": 13, "b": 15, "cells": [14]}],
-    "mech_mul": 1, "crack_max": 3, "fail_raw": 8, "aoe_every": 0,
+    "mech_mul": 1, "fail_raw": 8, "aoe_every": 0,
     "acts": [
       {"phases": ["사슬 끌림", "봉인 터짐", "기운 모으기", "기운 모으기"], "seq": [["drag"], ["drag", "burst"], ["burst", "charge"], ["burst", "charge"]]},
       {"phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "seq": [["tide"], ["tide", "name"], ["name", "vortex", "drag"], ["tide", "name", "vortex", "drag"]]}],
@@ -99,7 +99,7 @@ begin
     update public.world_gw_members set pos = (hx -> 'start' ->> (k % jsonb_array_length(hx -> 'start')))::int, prev = null, nameless = false where fight_id = p_fight and owner_id = x.owner_id;
     k := k + 1;
   end loop;
-  update public.world_gw_fights set board = coalesce(board, '{}'::jsonb) || jsonb_build_object('ux', jsonb_build_object('hz', '[]'::jsonb, 'hid', 0, 'crack', 0, 'act', p_act, 'line', ''))
+  update public.world_gw_fights set board = coalesce(board, '{}'::jsonb) || jsonb_build_object('ux', jsonb_build_object('hz', '[]'::jsonb, 'hid', 0, 'act', p_act, 'line', ''))
    where fight_id = p_fight;
 end $f$;
 
@@ -113,7 +113,7 @@ begin
   b := f.board; ux := coalesce(b -> 'ux', '{}'::jsonb); nr := f.round + 1; ar := nr - coalesce((b -> 'ug' ->> 'act_start')::int, 0);
   act := coalesce((b -> 'ug' ->> 'act')::int, 1);
   ph := case when f.hp * 4 > f.max_hp * 3 then 1 when f.hp * 2 > f.max_hp then 2 when f.hp * 4 > f.max_hp then 3 else 4 end;
-  mechs := array(select jsonb_array_elements_text(hx -> 'acts' -> (act - 1) -> 'seq' -> (ph - 1)));
+  mechs := coalesce(public.world_ug_wm_easy_a(p_fight), array(select jsonb_array_elements_text(hx -> 'acts' -> (act - 1) -> 'seq' -> (ph - 1))));
   if ph <> f.phase then
     perform public.world_gw_say(p_fight, nr, 'phase', case when act = 1 then case ph when 2 then '봉인 기둥이 금 가며 울린다. 사슬 끝마다 빛이 고인다.' else '봉주가 사슬을 거두어 가슴께로 기운을 끌어모은다. 기둥이 터질 듯 떤다.' end
       else case ph when 2 then '물이 이름을 핥기 시작한다.' when 3 then '바다 가운데가 꺼지며 소용돌이가 인다. 끊겼던 봉주의 사슬이 다시 솟는다.' else '귀허의 바다 전체가 일어선다. 물살·이름·소용돌이·사슬이 한꺼번에 몰려온다.' end end);
@@ -196,7 +196,7 @@ create or replace function public.world_ux_mech(p_fight uuid, p_round integer, p
  returns numeric language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare hx jsonb := public.world_ux_cfg(p_fight); f public.world_gw_fights%rowtype; ux jsonb; hz jsonb := '[]'::jsonb; keep jsonb := '[]'::jsonb; h jsonb; x record; w record;
-  fails int := 0; crack int; hit boolean; nm text; cells int[]; t int; dest int; chainers int[] := '{}'; used int[] := '{}'; tank uuid; need numeric; ord text[] := array['tide', 'vortex', 'drag', 'burst', 'charge', 'name'];
+  fails int := 0; hit boolean; nm text; cells int[]; t int; dest int; chainers int[] := '{}'; used int[] := '{}'; tank uuid; need numeric; ord text[] := array['tide', 'vortex', 'drag', 'burst', 'charge', 'name'];
   pillars int[]; kk text;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
@@ -318,20 +318,19 @@ begin
       if hit then fails := fails + 1; end if;
     end loop;
   end loop;
-  for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'chain' and y.pos = any (pillars) and not (y.pos = any (used)) loop
+  for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'chain' and y.pos = any (pillars) and not (y.pos = any (used))
+      and not public.world_ug_wm_on(p_fight) loop
     perform public.world_gw_say(p_fight, p_round, 'miss', x.name || ' — 기둥의 사슬을 내리쳤지만 아직 끊을 때가 아닙니다.');
   end loop;
   keep := (select coalesce(jsonb_agg(e), '[]'::jsonb) from jsonb_array_elements(keep) e
     where not (e ->> 'k' = 'name' and not exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.owner_id = (e ->> 't')::uuid and y.nameless and y.out_rounds = 0)));
-  crack := coalesce((ux ->> 'crack')::int, 0);
   if fails > 0 then
-    crack := crack + fails;
-    perform public.world_gw_say(p_fight, p_round, 'bad', '한 사람이 놓친 틈으로 봉인에 금이 번져 모두가 함께 다칩니다(봉인 균열 ' || least(crack, (hx ->> 'crack_max')::int) || '/' || (hx ->> 'crack_max') || ').');
+    perform public.world_gw_say(p_fight, p_round, 'bad', '놓친 틈으로 봉인에 금이 번져 모두가 조금씩 다칩니다.');
     for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest order by y.joined_at loop
-      perform public.world_ux_dmg(p_fight, x.owner_id, (hx ->> 'fail_raw')::numeric * crack, p_round, '번진 균열에', false);
+      perform public.world_ux_dmg(p_fight, x.owner_id, (hx ->> 'fail_raw')::numeric * fails, p_round, '번진 균열에', false);
     end loop;
   end if;
-  update public.world_gw_fights set board = jsonb_set(board, '{ux}', ux || jsonb_build_object('hz', keep, 'crack', crack, 'wipe', crack >= (hx ->> 'crack_max')::int)) where fight_id = p_fight;
+  update public.world_gw_fights set board = jsonb_set(board, '{ux}', ux || jsonb_build_object('hz', keep)) where fight_id = p_fight;
   return 0;
 end $f$;
 
@@ -345,8 +344,8 @@ begin
   ux := coalesce(f.board -> 'ux', '{}'::jsonb); act := coalesce((ux ->> 'act')::int, (f.board -> 'ug' ->> 'act')::int, 1);
   return jsonb_build_object('hex', true, 'act', act, 'pillars', hx -> 'pillars', 'my_pos', me.pos,
     'moves', case when me.pos is not null and me.out_rounds = 0 and f.status = 'fight' then to_jsonb(public.world_ux_nb(me.pos)) else '[]'::jsonb end,
-    'hz', coalesce(ux -> 'hz', '[]'::jsonb), 'crack', coalesce((ux ->> 'crack')::int, 0), 'crack_max', (hx ->> 'crack_max')::int,
-    'face', case when act = 2 then f.board ->> 'face' end, 'line', coalesce(ux ->> 'line', ''), 'names', hx -> 'names',
+    'hz', coalesce(ux -> 'hz', '[]'::jsonb),
+    'face', case when act = 2 and not coalesce((f.mech ->> 'hide')::boolean, false) then f.board ->> 'face' end, 'line', coalesce(ux ->> 'line', ''), 'names', hx -> 'names',
     'mechs', hx -> 'acts' -> (act - 1) -> 'seq' -> (greatest(1, f.phase) - 1), 'phases', hx -> 'acts' -> (act - 1) -> 'phases');
 end $f$;
 
@@ -371,14 +370,6 @@ select pg_temp.yh_patch('public.world_ug_mech(uuid,integer,numeric,boolean,boole
   $o$  if f.boss_id <> 'sealed_lord' then return 0; end if;$o$,
   $n$  if public.world_ux_on(p_fight) then return public.world_ux_mech(p_fight, p_round, p_dmg); end if;
   if f.boss_id <> 'sealed_lord' then return 0; end if;$n$);
-
-select pg_temp.yh_patch('public.world_ug_after(uuid,integer)',
-  $o$  if coalesce((ug ->> 'rest')::int, 0) > 0 then return false; end if;$o$,
-  $n$  if coalesce((ug ->> 'rest')::int, 0) > 0 then return false; end if;
-  if coalesce((f.board -> 'ux' ->> 'wipe')::boolean, false) then
-    perform public.world_ug_wipe(p_fight, p_round, '이야기꾼의 말로는 놓친 틈마다 금이 번져 봉인이 통째로 무너졌다고 한다 — 봉인 균열이 가득 찼다.');
-    return true;
-  end if;$n$);
 
 select pg_temp.yh_patch('public.world_ug_view(uuid,uuid)',
   $o$  if f.boss_id = 'mukjeok' then

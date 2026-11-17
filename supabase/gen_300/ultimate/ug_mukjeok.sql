@@ -5,7 +5,7 @@ begin
     "acts": [{"boss": "mukjeok", "cuts": [10, 20, 30], "name": "먹그림자", "rounds": 36}], "phases": ["먹줄", "따라 쓰는 붓", "가운데 칸", "먹비"],
     "hp_n": [1, 1.0, 1.35, 1.5], "items": 3, "raw_n": [1, 1.2, 1.3, 1.3], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2,
     "board": {"hand_mul": 1.6, "mech_mul": 1, "strokes": 9, "aoe_every": 6,
-      "fail": {"strokes": 3, "raw": 15},
+      "fail": {"raw": 15},
       "line": {"every": 3, "off": 1, "left": 2, "raw": 60},
       "step": {"every": 2, "off": 0, "left": 1, "raw": 55},
       "mimic": {"every": 4, "off": 2, "left": 1, "raw": 50},
@@ -97,7 +97,7 @@ begin
   na := coalesce(array_length(alive, 1), 0);
   hid := coalesce((b ->> 'hid')::int, 0);
   lit := array(select jsonb_array_elements_text(coalesce(b -> 'lit', '[]'::jsonb))::int);
-  cur := public.world_ug_mk_seq(p_fight, f.hp, f.max_hp); ms := cur -> 'm';
+  cur := public.world_ug_mk_seq(p_fight, f.hp, f.max_hp); ms := coalesce(public.world_ug_wm_easy_j(p_fight), cur -> 'm');
   if (cur ->> 'i')::int <> coalesce((b ->> 'seq')::int, 0) then
     perform public.world_gw_say(p_fight, nr, 'phase', case
       when ms ? 'erase' and ms ? 'line' then '먹구름이 명부 위로 내려앉는다. 먹줄과 발자국, 흉내와 이름 지우기가 한꺼번에 몰려온다.'
@@ -207,6 +207,7 @@ declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; f public.
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   select * into me from public.world_gw_members where fight_id = p_fight and owner_id = p_uid;
+  if f.board -> 'wm' ->> 'status' = 'on' and f.board -> 'wm' -> 'steps' @> to_jsonb(p_round) then return; end if;
   select e into h from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) e where e ->> 'k' = 'mem' and (e ->> 'left')::int <= 0 and (e ->> 'c')::int = me.pos limit 1;
   if h is null then
     perform public.world_gw_say(p_fight, p_round, 'miss', me.name || ' — 되새길 기억이 떠오르지 않은 칸입니다. 손끝이 허공만 짚었습니다.');
@@ -269,11 +270,10 @@ begin
         perform public.world_gw_say(p_fight, p_round, 'good', k.name || '이(가) 가운데 칸을 지키고 ' || case when callers > 0 then callers || '명이 이름을 불러 주자 ' else '' end
           || '붓이 꺾였습니다. 그림자가 ' || round(f.max_hp * (rb -> 'erase' ->> 'pct')::numeric / 100.0) || '의 피해를 입고 이름이 한 획 또렷해집니다(이름 획 ' || st || ').');
       else
-        st := st - (rb -> 'fail' ->> 'strokes')::int;
         tot := tot + 1;
         if k.owner_id is not null then perform public.world_ug_weak_add(p_fight, k.owner_id, p_round); end if;
         perform public.world_gw_say(p_fight, p_round, 'bad', case when k.owner_id is null then '가운데 칸에 선 사람이 없었습니다. ' else '이름을 불러 준 목소리가 모자랐습니다(' || callers || '/' || need || '). ' end
-          || '붓이 가운데 칸을 긋고 이름 획 ' || (rb -> 'fail' ->> 'strokes') || '개가 지워졌습니다(남은 획 ' || greatest(0, st) || ').');
+          || '붓이 가운데 칸을 긋고 지나갑니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
           perform public.world_ug_mk_dmg(p_fight, x.owner_id, (rb -> 'erase' ->> 'raw')::numeric * half, p_round, '가운데 칸에서 번져 나온 먹에', true);
         end loop;
@@ -282,19 +282,18 @@ begin
       perform public.world_gw_say(p_fight, p_round, 'miss', public.world_mk_cell_name((h ->> 'c')::int) || ' 칸에 떠올랐던 기억이 되새겨지지 못하고 흩어졌습니다.');
     end if;
   end loop;
-  if not erase_due then
+  if not erase_due and not public.world_ug_wm_on(p_fight) then
     for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'call' loop
       perform public.world_gw_say(p_fight, p_round, 'miss', x.name || ' — 이름을 불렀지만 지워지려는 이름이 없어 메아리만 돌아옵니다.');
     end loop;
   end if;
   for u, v in select kk, vv::int from jsonb_each_text(fails) e(kk, vv) loop
     tot := tot + v;
-    st := st - v * (rb -> 'fail' ->> 'strokes')::int;
     select * into x from public.world_gw_members where fight_id = p_fight and owner_id = u::uuid;
     for i in 1 .. v loop perform public.world_ug_weak_add(p_fight, u::uuid, p_round); end loop;
     if x.pos is not null and x.pos <> 5 then lit := array_remove(lit, x.pos::int); end if;
     perform public.world_gw_say(p_fight, p_round, 'bad', x.name || ' — 수법을 놓쳐 ' || case when x.pos is not null and x.pos <> 5 then '선 칸이 먹에 덮이고 ' else '' end
-      || '이름 획 ' || (v * (rb -> 'fail' ->> 'strokes')::int) || '개가 지워졌습니다(남은 획 ' || greatest(0, st) || ').');
+      || '번진 먹이 곁의 동료에게도 튑니다.');
     for k in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.owner_id <> u::uuid loop
       perform public.world_ug_mk_dmg(p_fight, k.owner_id, (rb -> 'fail' ->> 'raw')::numeric * v, p_round, x.name || '의 실수로 번진 먹에', false);
     end loop;
@@ -317,7 +316,7 @@ begin
     'lit', coalesce(f.board -> 'lit', '[]'::jsonb), 'mem', 0, 'lost', 0, 'ink', '[]'::jsonb, 'my_pos', me.pos,
     'moves', case when me.pos is not null and f.status = 'fight' then public.world_mk_lines() -> 'nb' -> me.pos::text else '[]'::jsonb end,
     'hz', (select coalesce(jsonb_agg(e || jsonb_build_object('cells', to_jsonb(public.world_ug_mk_cells(e)))), '[]'::jsonb) from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) e),
-    'fails', coalesce((f.board ->> 'fails')::int, 0), 'fail_strokes', (rb -> 'fail' ->> 'strokes')::int,
+    'fails', coalesce((f.board ->> 'fails')::int, 0),
     'mechs', public.world_ug_mk_seq(p_fight, f.hp, f.max_hp) -> 'm');
 end $f$;
 

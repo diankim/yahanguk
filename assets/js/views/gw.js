@@ -4,6 +4,7 @@ import { loading, errorBox, chip } from './common.js';
 import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, askPartySize, partyHere, drawLater } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
+import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
 import { baseOf } from '../hq.js';
@@ -42,7 +43,7 @@ const CELL = { 4: '왼쪽 위', 9: '위', 2: '오른쪽 위', 3: '왼쪽', 5: '�
 const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머뭇거림' };
 
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
-let queued = null, lastRound = null, freshUntil = 0, roundLen = 5000;
+let queued = null, lastRound = null, freshUntil = 0, roundLen = 5000, rtFight = null, rtLive = false, reading = false, readAgain = false;
 const picked = new Set();
 function roundSeen() {
   const f = snap?.fight; if (!f || f.status !== 'fight') return;
@@ -73,7 +74,7 @@ export async function render(root, sub) {
   clearInterval(tick); tick = setInterval(countdown, 250);
   await refresh();
 }
-export function destroy() { el?.classList.remove('mk-live'); clearTimeout(timer); clearInterval(tick); unfitFight(); hideTip(); tray.close(); el = null; }
+export function destroy() { el?.classList.remove('mk-live'); rtWatch(true); clearTimeout(timer); clearInterval(tick); unfitFight(); hideTip(); tray.close(); el = null; }
 const HEAL_ITEMS = GW_HEAL;
 window.addEventListener('yh-battle-item', e => {
   const f = snap?.fight;
@@ -84,8 +85,23 @@ window.addEventListener('yh-battle-item', e => {
   run({ disabled: false, dataset: {}, id: '' }, () => act({ p_action: 'item', p_target: target || snap.me, p_item: id }));
 });
 
+function rtWatch(off) {
+  const id = !off && el && snap?.fight?.id && !ended() ? snap.fight.id : null;
+  if (id === rtFight) return;
+  rtFight = id; rtLive = false;
+  if (!id) { bclear('gw'); return; }
+  bgroup('gw', [`gw:${id}`], 'change', onSignal, live => { const was = rtLive; rtLive = live; if (live && !was && el) refresh(); });
+}
+function onSignal(p) {
+  const f = snap?.fight;
+  if (!el || !f || p?.id !== f.id) return;
+  if (Number(p.round) < Number(f.round) || (Number(p.round) === Number(f.round) && p.status === f.status)) return;
+  refresh();
+}
 async function refresh() {
   if (!el) return;
+  if (reading) { readAgain = true; return; }
+  reading = true;
   clearTimeout(timer);
   try {
     const prev = snap?.fight?.status, r0 = snap?.fight?.round;
@@ -98,7 +114,9 @@ async function refresh() {
     if (prev && prev !== snap?.fight?.status && ended()) await settle();
     draw();
     plan();
+    rtWatch();
   } catch (e) { if (el) el.innerHTML = errorBox(e.message); }
+  finally { reading = false; if (readAgain) { readAgain = false; refresh(); } }
 }
 const now = clock.now;
 const ended = () => ['won', 'failed'].includes(snap?.fight?.status);
@@ -108,7 +126,10 @@ function plan() {
   const f = snap?.fight; if (!f || ended() || document.hidden) return;
   let wait;
   if (f.status === 'wait') wait = Math.min(3000, Math.max(400, new Date(f.start_at) - now() + 300));
-  else {
+  else if (rtLive) {
+    const toEnd = new Date(f.round_ends_at) - now() + 350, first = (snap.members || []).find(m => !m.out)?.id;
+    wait = Math.max(400, toEnd + (snap.joined && first === snap.me ? 0 : snap.joined ? 2500 : 4000));
+  } else {
     const toEnd = new Date(f.round_ends_at) - now() + 350;
     wait = snap.my_act ? Math.min(2000, Math.max(400, toEnd)) : Math.max(400, story() ? Math.min(5000, toEnd) : toEnd);
   }
@@ -354,7 +375,11 @@ function boardHtml(s, live) {
   const cells = new Set(mech.k === 'line' || ['drop', 'pool'].includes(mech.s) ? mech.cells || [] : []), marked = new Set(mark ? mech.cells || [] : []);
   const moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
   const who = {}; for (const m of s.members || []) if (m.pos) (who[m.pos] = who[m.pos] || []).push(m);
-  const ug = b.ugmk ? mkugCells(s) : null;
+  const ug = b.ugmk ? mkugCells(s) : null, rw = b.ug?.wm?.k === 'rewrite' ? b.ug.wm : null;
+  if (rw && ug) {
+    (rw.cells || []).forEach((c, i) => { const o = (ug[c] = ug[c] || { cls: new Set(), tags: [], tips: [] }); o.cls.add('wm-cell'); o.tags.push(`<b class="ug-t wm-n">${i + 1}</b>`); });
+    if (rw.due) { const o = (ug[5] = ug[5] || { cls: new Set(), tags: [], tips: [] }); o.cls.add('ug-due'); o.tags.push('<b class="ug-t ug-erase due">名!</b>'); }
+  }
   const ticks = Array.from({ length: b.max || 9 }, (_, i) => `<i class="${i < b.strokes ? 'on' : ''}"></i>`).join('');
   return `<div class="mk-wrap"><div class="mk-board ${mech.k === 'erase' || mech.s === 'keep' ? 'erase' : ''}" role="grid" aria-label="아홉 칸 명부">${GRID.map(n => {
     const center = n === 5, st = center ? 'center' : lit.has(n) ? 'lit' : 'blank';
@@ -364,7 +389,7 @@ function boardHtml(s, live) {
     const label = `${CELL[n]} 칸${center ? ' · 이름' : st === 'lit' ? ' · 빛남' : ' · 빈칸'}${cells.has(n) ? (story() ? ' · 먹이 떨어짐' : ' · 먹줄') : ''}${marked.has(n) ? ' · 지우려는 칸(서 있으면 막음)' : ''}${ug?.[n] ? ` · ${ug[n].tips.join(' · ')}` : ''}${moves.has(n) ? ' · 눌러서 옮겨 서기' : ''}`;
     return `<button type="button" class="${cls}" ${moves.has(n) || (live && n === here) ? `data-mk-step="${n}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}">${ug?.[n]?.tags.length ? `<span class="ug-tags">${center ? tag : ''}${ug[n].tags.join('')}</span>` : tag}<span class="mk-ppl">${ppl}</span>${n === dest ? '<b class="mk-arrow">→</b>' : ''}</button>`;
   }).join('')}</div>
-  <p class="mk-hint muted small">${b.ugmk ? `수법을 놓칠 때마다 이름 획 ${b.fail_strokes || 3}개 · 이름 획이 다 지워지면 전멸${live ? ' · 테 두른 이웃 칸을 누르면 옮겨 섭니다' : ''}` : live ? (moveTo ? `「${CELL[moveTo]}」 칸으로 옮겨 섭니다${s.my_act ? '' : ' — 행동을 고르면 함께 옮깁니다'} · 내 칸을 누르면 취소` : (b.moves || []).length ? '테 두른 이웃 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)' : '먹에 발이 묶여 이번 라운드에는 옮길 수 없습니다') : `기억 조각 ${b.mem || 0}/6`}</p></div>`;
+  <p class="mk-hint muted small">${b.ugmk ? `${b.ug?.wm ? `<b class="wm-name">「${esc(b.ug.wm.name || '')}」</b> · ` : ''}수법을 놓친 사람은 「기가 꺾임」${live ? ' · 테 두른 이웃 칸을 누르면 옮겨 섭니다' : ''}` : live ? (moveTo ? `「${CELL[moveTo]}」 칸으로 옮겨 섭니다${s.my_act ? '' : ' — 행동을 고르면 함께 옮깁니다'} · 내 칸을 누르면 취소` : (b.moves || []).length ? '테 두른 이웃 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)' : '먹에 발이 묶여 이번 라운드에는 옮길 수 없습니다') : `기억 조각 ${b.mem || 0}/6`}</p></div>`;
 }
 function mkGim(s, me, a, tName) {
   if (s.boss !== 'mukjeok' || me.out) return '';
@@ -386,17 +411,18 @@ function ggHtml(s, live) {
   const due = h => Number(h.left) <= 0, num = h => due(h) ? '!' : String(h.left);
   const who = {}; for (const m of s.members || []) if (m.pos && !m.out) (who[m.pos] = who[m.pos] || []).push(m);
   const colHz = {}; for (const h of hz) if (h.k === 'judge' || h.k === 'close') colHz[h.col] = h;
-  const led = hz.find(h => h.k === 'ledger'), ledSet = new Set(led?.cells || []);
+  const led = hz.find(h => h.k === 'ledger'), ledSet = new Set(led?.cells || []), cw = b.ug?.wm?.k === 'close' ? b.ug.wm : null, stallT = new Map((cw?.stalls || []).map(x => [Number(x.c), x.t]));
   let g = '';
   for (let c = 1; c <= 15; c++) {
     const r = Math.floor((c - 1) / 5), k = (c - 1) % 5, x = 8 + k * 62, y = 22 + r * 66, col = k + 1, stall = r !== 1;
     const jh = colHz[col], cls = ['gg-cell', stall ? 'stall' : 'street', closed.has(col) ? 'closed' : '', jh?.k === 'judge' ? (due(jh) ? 'judge due' : 'judge') : '', jh?.k === 'close' ? 'closing' : '',
-      ledSet.has(c) ? 'ledger' : '', moves.has(c) ? 'mk-step' : '', c === here ? 'here' : '', c === dest ? 'dest' : ''].filter(Boolean).join(' ');
+      ledSet.has(c) || stallT.has(c) ? 'ledger' : '', moves.has(c) ? 'mk-step' : '', c === here ? 'here' : '', c === dest ? 'dest' : ''].filter(Boolean).join(' ');
     g += `<rect class="${cls}" x="${x}" y="${y}" width="58" height="62" rx="6" ${moves.has(c) || (live && c === here) ? `data-mk-step="${c}"` : ''}><title>${c}번 칸${stall ? ` · 좌판 값표 ${tags[c] ?? '?'}섬` : ' · 거리'}</title></rect>`;
     if (stall) g += `<text class="gg-tag ${hz.some(h => h.k === 'tagm' && Number(h.c) === c) ? 'hot' : ''}" x="${x + 52}" y="${y + 14}">${tags[c] ?? ''}섬</text>`;
   }
   for (const [col, h] of Object.entries(colHz)) g += `<text class="gg-coltag ${h.k} ${due(h) ? 'due' : ''}" x="${8 + (col - 1) * 62 + 29}" y="14">${h.k === 'judge' ? `망치 ${num(h)}${h.sh ? ' ↔' : ''}` : `닫힘 ${num(h)}`}</text>`;
   if (led) for (const c of led.cells) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag ${due(led) ? 'due' : ''}" x="${x - 14}" y="${y - 18}">합${led.t}·${num(led)}</text>`; }
+  for (const [c, t] of stallT) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag wm ${cw.due ? 'due' : ''}" x="${x - 14}" y="${y - 18}">합${t}·${cw.due ? '!' : cw.end}</text>`; }
   for (const h of hz) {
     if (h.k === 'basket') { const [x, y] = ggXY(Number(h.c)); g += `<g class="gg-basket ${due(h) ? 'due' : ''}"><circle cx="${x}" cy="${y - 14}" r="13"/><text x="${x}" y="${y - 9}">${num(h)}</text></g>`; }
     if (h.k === 'tether' && h.cells?.length === 2) { const [x1, y1] = ggXY(h.cells[0]), [x2, y2] = ggXY(h.cells[1]); g += `<g class="gg-tether ${due(h) ? 'due' : ''}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 6}">줄 ${num(h)}</text></g>`; }
@@ -411,7 +437,7 @@ function ggHtml(s, live) {
   g += `<rect class="gg-scale" x="320" y="88" width="54" height="62" rx="6"/><text class="gg-scale-t" x="347" y="123">값귀</text>`;
   const bg = hz.find(h => h.k === 'bargain'), mine = b.mine, cap = b.bargain?.cap, mul = b.bargain && mine != null && cap == null ? (b.bargain.base + b.bargain.k * mine) : null;
   return `<div class="gg-wrap"><svg class="gg-map" viewBox="0 0 380 230" role="img" aria-label="붉은 사당 골목 장터">${g}</svg>
-    <p class="mk-hint muted small">${mine != null ? `내 값 <b>${mine}섬</b>` : ''}${bg ? ` · <span class="gg-hot ${due(bg) ? 'due' : ''}">바가지 ${num(bg)}</span>${mul != null ? ` (지금 맞으면 ×${mul.toFixed(2)})` : ''}${cap != null ? ` (${cap}섬을 넘으면 맞음)` : ''}` : ''}${led ? ` · 장부 합 <b>${led.t}</b> · 지금 <b>${led.sum ?? 0}</b>` : ''}${closed.size ? ` · 닫힌 줄 ${closed.size}/${b.close_max || 4}` : ''}</p>
+    <p class="mk-hint muted small">${cw ? `<b class="wm-name">「${esc(cw.name || '')}」</b> · ` : ''}${mine != null ? `내 값 <b>${mine}섬</b>` : ''}${bg ? ` · <span class="gg-hot ${due(bg) ? 'due' : ''}">바가지 ${num(bg)}</span>${mul != null ? ` (지금 맞으면 ×${mul.toFixed(2)})` : ''}${cap != null ? ` (${cap}섬을 넘으면 맞음)` : ''}` : ''}${led ? ` · 장부 합 <b>${led.t}</b> · 지금 <b>${led.sum ?? 0}</b>` : ''}${closed.size ? ` · 닫힌 줄 ${closed.size}/${b.close_max || 4}` : ''}</p>
     ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}</div>`;
 }
 function ggGim(s, me, a) {
@@ -433,7 +459,7 @@ function weakLine(s, w) {
 function ugBar(s) {
   const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : ''), cut = u.next_cut;
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
-    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.fail_cap ? ` · 실수 <b class="${(u.fails || 0) >= u.fail_cap - 1 ? 'bad' : ''}">${u.fails || 0}/${u.fail_cap}</b>` : ''}`}</p>${weakLine(s, u.weak)}</div>`;
+    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.wm ? ` · <b class="bad wm-name">「${esc(u.wm.name || '')}」</b>` : ''}`}</p>${weakLine(s, u.weak)}</div>`;
 }
 const BY_HZ = { arrow: '화살', big: '굵은 화살', gust: '꺼져 가는 등', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
 function bySector(c) { return ((c - 1) % 7) + 1; }
@@ -491,9 +517,13 @@ function byBoard(s, live) {
     });
   }
   if (dest) { const [x, y] = byCellAt(dest); tokens += `<circle class="by-destmark" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="16"/>`; }
-  const wn = b.wn, myFade = Number(fade[s.me] || 0);
+  const wn = b.wn, myFade = Number(fade[s.me] || 0), dj = b.ug?.wm?.k === 'dongji' ? b.ug.wm : null;
+  if (dj) for (const x of dj.mine || []) {
+    const m = -Math.PI / 2 + (Number(x.c) - 1) * 2 * Math.PI / 7, lx = 180 + 176 * Math.cos(m), ly = 180 + 176 * Math.sin(m);
+    lampDots += `<g class="wm-n ${x.n <= dj.lit ? 'done' : ''}"><circle cx="${lx.toFixed(0)}" cy="${ly.toFixed(0)}" r="10"/><text x="${lx.toFixed(0)}" y="${(ly + 4).toFixed(0)}">${x.n}</text></g>`;
+  }
   return `<div class="by-wrap"><svg class="by-map" viewBox="0 0 360 360" role="img" aria-label="맹약 마당">${cells}${lampDots}<circle class="by-core" cx="180" cy="180" r="40"/><text class="by-core-t" x="180" y="185">백야</text>${marks}${tokens}</svg>
-    <p class="mk-hint muted small">${wn ? `<b>흰 밤</b> · 등 ${wn.lit}/${wn.need}${wn.left != null ? ` · ${wn.left > 0 ? `${wn.left}라운드 남음` : '이번 라운드 끝'}` : ''}` : `켜진 등 ${lamps.size}/7 · 주는 피해 ×${Number(b.dmg_mul || 1).toFixed(2)} · 받는 피해 ×${Number(b.hurt_mul || 1).toFixed(2)}`}${myFade ? ` · <b class="warn">내 바램 ${myFade}/${b.fade_stun || 3}</b>` : ''}${b.stunned ? ' · <b class="bad">이번 라운드 꼼짝 못 함</b>' : ''}</p>
+    <p class="mk-hint muted small">${dj ? `<b class="wm-name">「${esc(dj.name || '')}」</b> · 등 ${dj.lit}/7 · ${dj.left}라운드 남음 · ` : ''}${wn ? `<b>흰 밤</b> · 등 ${wn.lit}/${wn.need}${wn.left != null ? ` · ${wn.left > 0 ? `${wn.left}라운드 남음` : '이번 라운드 끝'}` : ''}` : `켜진 등 ${lamps.size}/7 · 주는 피해 ×${Number(b.dmg_mul || 1).toFixed(2)} · 받는 피해 ×${Number(b.hurt_mul || 1).toFixed(2)}`}${myFade ? ` · <b class="warn">내 바램 ${myFade}/${b.fade_stun || 3}</b>` : ''}${b.stunned ? ' · <b class="bad">이번 라운드 꼼짝 못 함</b>' : ''}</p>
     ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}</div>`;
 }
 function bySweepCell(s) {
