@@ -281,7 +281,7 @@ function field(s, roster, blocked) {
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
           ${fightBack()}
-          ${GAMEDATA.ultimate?.shop_region === s.region.region_id ? `<button class="tile" id="ug-shop" type="button" title="무용담 토큰을 꾸미기 물품으로 바꿉니다">${icon('chest', 22)}<span>무용담 교환</span></button>` : ''}
+          ${Object.entries(GAMEDATA.ultimate?.boards || {}).filter(([, b]) => b.region === s.region.region_id).map(([k, b]) => `<a class="tile danger" href="#/gw/${esc(b.boss)}" title="${esc(b.name)} · Lv${GAMEDATA.ultimate?.level ?? 50} · ${(GAMEDATA.ultimate?.party || [2, 4]).join('~')}명">${icon('flag', 22)}<span>${esc(b.name)}</span></a><button class="tile" type="button" data-ug-shop="${esc(k)}" title="${esc(b.token_name)}을(를) 꾸미기 물품으로 바꿉니다">${icon('chest', 22)}<span>${esc(b.short)} 교환</span></button>`).join('')}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${['mukjeok', 'gapgwi', 'baekya'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
         </div>
@@ -471,7 +471,7 @@ function bind(s) {
   $('#camp', el)?.addEventListener('click', () => openRest(s.region));
   $('#idle-rest', el)?.addEventListener('click', goIdleRest);
   $('#bj-dig', el)?.addEventListener('click', e => digBijang(e.currentTarget, s));
-  $('#ug-shop', el)?.addEventListener('click', () => import('../ultimate.js').then(m => m.openUltimateShop()));
+  el.querySelectorAll('[data-ug-shop]').forEach(b => b.addEventListener('click', () => import('../ultimate.js').then(m => m.openUltimateShop(b.dataset.ugShop))));
   $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
   bindFish();

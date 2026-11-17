@@ -5,25 +5,24 @@ const kindOf = x => KIND[x.kind] || (String(x.id).startsWith('hp_') ? '벽지' :
 
 export async function openUltimateShop(board) {
   let s;
-  try { s = await rpc('world_ultimate_shop'); } catch { return null; }
+  try { s = await rpc('world_ultimate_shop', { p_board: board || null }); } catch { return null; }
   const boards = Object.entries(s.boards || {});
   let cur = board && s.boards?.[board] ? board : boards[0]?.[0];
   const m = openModal({ title: '무용담 교환', body: '<div id="ug-body"></div>' });
   const draw = () => {
     const b = s.boards[cur] || {}, have = Number(s.tokens?.[cur] || 0);
     const rows = (s.items || []).filter(x => x.board === cur);
-    $('#ug-body', m).innerHTML = `<div class="chips ug-boards">${boards.map(([k, v]) => `<button type="button" class="chip ${k === cur ? 'on' : ''}" data-ug-board="${esc(k)}">${esc(v.name)} · ${fmt.num(s.tokens?.[k] || 0)}</button>`).join('')}</div>
+    $('#ug-body', m).innerHTML = `<h3 class="sub-h">${esc(b.name || '')} 교환</h3>
       <p class="muted small">${esc(b.token_name || '')} <b>${fmt.num(have)}</b>개 · ${esc(b.name || '')}을(를) 깰 때마다 얻습니다. 물품마다 한 번만 바꿀 수 있고, 모두 거래할 수 없으며 능력치 효과는 없습니다.</p>
-      ${s.open ? '' : '<p class="hint warn">명등기 뒤 퀘스트 「부풀린 무용담」을 마치면 무용담 싸움이 열립니다.</p>'}
+      ${b.open ? '' : '<p class="hint warn">이곳에서 받는 무용담 퀘스트를 마치면 이 싸움이 열립니다.</p>'}
       <ul class="mt-shop">${rows.map(x => `<li class="${x.owned ? 'have' : ''}"><div><b>${esc(x.name)}</b><small>${esc(kindOf(x))}</small></div>
         <span class="mt-price">${fmt.num(x.price)}</span>
         ${x.owned ? '<span class="chip ok">바꿈</span>' : `<button class="btn small ${have >= x.price ? 'primary' : ''}" data-here="토큰 교환" data-ug-buy="${esc(x.key)}" ${have >= x.price ? '' : 'disabled'}>바꾸기</button>`}</li>`).join('')}</ul>`;
-    $$('[data-ug-board]', m).forEach(c => c.onclick = () => { cur = c.dataset.ugBoard; draw(); });
     $$('[data-ug-buy]', m).forEach(btn => btn.onclick = () => guard(btn, async () => {
       const x = (s.items || []).find(v => v.key === btn.dataset.ugBuy);
       if (!await ask(`${x.name}을(를) ${b.token_name} ${x.price}개로 바꿀까요? 같은 것은 다시 바꿀 수 없습니다.`, { title: '무용담 교환', ok: '바꾸기' })) return;
       const r = await act('world_ultimate_buy', { p_key: x.key });
-      s = await rpc('world_ultimate_shop'); draw(); return r;
+      s = await rpc('world_ultimate_shop', { p_board: board || null }); draw(); return r;
     }));
   };
   draw();

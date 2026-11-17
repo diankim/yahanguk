@@ -18,21 +18,23 @@ as $f$
 $f$;
 revoke all on function public.world_ultimate_tokens(uuid) from public, anon, authenticated;
 
-create or replace function public.world_ultimate_shop()
+drop function if exists public.world_ultimate_shop();
+create or replace function public.world_ultimate_shop(p_board text default null)
  returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public'
 as $f$
-declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_ultimate_rules();
+declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_ultimate_rules(); done text[];
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  done := public.world_quest_done_ids(uid);
   return jsonb_build_object(
-    'boards', r -> 'boards',
+    'boards', (select coalesce(jsonb_object_agg(b.key, b.value || jsonb_build_object('open', done @> array[b.value ->> 'open_quest'])), '{}'::jsonb)
+      from jsonb_each(r -> 'boards') b where p_board is null or b.key = p_board),
     'tokens', public.world_ultimate_tokens(uid),
     'items', (select coalesce(jsonb_agg(x.value || jsonb_build_object('owned', exists (select 1 from public.world_ultimate_buys u where u.owner_id = uid and u.item_key = x.value ->> 'key')) order by x.ordinality), '[]'::jsonb)
-      from jsonb_array_elements(r -> 'shop') with ordinality x),
-    'open', public.world_quest_done_ids(uid) @> array[r ->> 'open_quest']);
+      from jsonb_array_elements(r -> 'shop') with ordinality x where p_board is null or x.value ->> 'board' = p_board));
 end $f$;
-revoke all on function public.world_ultimate_shop() from public, anon;
-grant execute on function public.world_ultimate_shop() to authenticated;
+revoke all on function public.world_ultimate_shop(text) from public, anon;
+grant execute on function public.world_ultimate_shop(text) to authenticated;
 
 create or replace function public.world_ultimate_buy(p_key text)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public'
@@ -48,6 +50,8 @@ begin
   tk := b ->> 'token'; cost := (s ->> 'price')::int;
   select * into c from public.world_characters where owner_id = uid for update;
   if c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 바꿀 수 없습니다.'; end if;
+  if (public.world_region_at(c.location)).region_id is distinct from b ->> 'region' then
+    raise exception '%의 교환은 %에서만 할 수 있습니다.', b ->> 'name', (select rg.region_name from public.world_map_regions rg where rg.region_id = b ->> 'region'); end if;
   if exists (select 1 from public.world_ultimate_buys where owner_id = uid and item_key = p_key) then raise exception '이미 바꾼 것입니다. 같은 것은 한 번만 바꿀 수 있습니다.'; end if;
   select items into st from public.world_storage where owner_id = uid for update;
   if coalesce((public.world_ultimate_tokens(uid) ->> (s ->> 'board'))::int, 0) < cost then

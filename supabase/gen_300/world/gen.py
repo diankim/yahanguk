@@ -558,7 +558,7 @@ ug_items = [item(b['token'], b['token_name'], 'material', 5, b['token_desc'], 40
 fresh('items', [i['item_name'] for i in ug_items], '물품')
 fresh('item_ids', [i['item_id'] for i in ug_items], '물품 id')
 bulk('world_item_catalog', ug_items, ICOLS, 'item_id', IUPD)
-ug_rules = dict(open_quest=U.OPEN_QUEST, shop_region=U.SHOP_REGION, level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME,
+ug_rules = dict(level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME,
                 boards=U.BOARDS, shop=[dict(key=f'{b}:{i}', board=b, kind=k, id=i, name=n, price=pr) for b, k, i, n, pr in U.SHOP])
 w(f"""create or replace function public.world_ultimate_rules() returns jsonb language sql immutable set search_path = '' as $r$ select {J(ug_rules)}::jsonb $r$;""")
 part('../ultimate/shop.sql')
@@ -590,14 +590,17 @@ UQ = _iu.module_from_spec(_qp); _qp.loader.exec_module(UQ)
 w(f"""insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset({J([dict(k=k, n=v[0], b=v[1]) for k, v in UQ.NPCS.items()])}) as x(k text, n text, b text)
 on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;""")
 fresh('npcs', [v[0] for v in UQ.NPCS.values()], '인물')
-bulk('world_quests', [dict(quest_id=UQ.QID, cat='외전·명등기', title=UQ.TITLE, summary=UQ.SUMMARY, region_id=UQ.REGION, min_level=UQ.LEVEL, after=UQ.AFTER, sort=1499, epilogue=[])],
+bulk('world_quests', [dict(quest_id=q['id'], cat='무용담', title=q['title'], summary=q['summary'], region_id=q['region'], min_level=UQ.LEVEL, after=q['after'], sort=1490 + k, epilogue=[])
+                      for k, q in enumerate(UQ.QUESTS)],
      [('quest_id', 'text'), ('kind', 'text'), ('cat', 'text'), ('title', 'text'), ('summary', 'text'), ('region_id', 'text'), ('min_level', 'int'), ('after', 'jsonb'),
       ('sort', 'int'), ('epilogue', 'jsonb'), ('active', 'boolean')], 'quest_id', ['cat', 'title', 'summary', 'region_id', 'min_level', 'after', 'sort', 'epilogue', 'active'],
      {'kind': "'side'", 'after': TA('after'), 'active': 'true'})
-bulk('world_quest_steps', [dict(quest_id=UQ.QID, step=k + 1, title=st['title'], goal=st['goal'], need={'at': st['at'], 'tasks': st['tasks']}, lines=st['lines'], reward={})
-                           for k, st in enumerate(UQ.STEPS)],
+bulk('world_quest_steps', [dict(quest_id=q['id'], step=k + 1, title=st['title'], goal=st['goal'], need={'at': st['at'], 'tasks': st['tasks']}, lines=st['lines'], reward={})
+                           for q in UQ.QUESTS for k, st in enumerate(q['steps'])],
      [('quest_id', 'text'), ('step', 'int'), ('title', 'text'), ('goal', 'text'), ('need', 'jsonb'), ('lines', 'jsonb'), ('reward', 'jsonb')],
      'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
+for q in UQ.QUESTS:
+    if U.BOARDS[q['board']]['open_quest'] != q['id'] or U.BOARDS[q['board']]['region'] != q['region']: errors.append('무용담 퀘스트와 판 규칙이 어긋남: ' + q['id'])
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
