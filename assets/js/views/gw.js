@@ -261,11 +261,16 @@ function drawLobby(s) {
       <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
       ${s.can_open ? `<button class="btn ${s.story ? '' : 'primary'}" id="gw-open">${icon('sword', 16)}<span>${s.story ? `${esc(modeName('hard'))}에 서기` : B.open}</span></button>`
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}</div>
+      ${s.ultimate ? `<div class="gw-mode gw-ult"><p class="small"><b>${esc(GD.boss?.[s.boss]?.modes?.ultimate || '무용담')}</b> · 객사 이야기꾼이 부풀린 이야기 속 싸움입니다. 둘에서 넷까지만 들어가고, 낌새를 미리 보여 주지 않습니다. 횟수 제한이 없고 져도 잃는 것이 없습니다.</p>
+        ${s.ultimate.note ? `<p class="small warn">${esc(s.ultimate.note)}</p>` : ''}
+        <p class="small muted">깬 횟수 ${s.ultimate.clears ?? 0}번${s.ultimate.token_name ? ` · ${esc(s.ultimate.token_name)} ${s.ultimate.tokens ?? 0}개` : ''}</p>
+        ${s.ultimate.can_open ? `<button class="btn" id="gw-open-ult">${icon('sword', 16)}<span>${esc(GD.boss?.[s.boss]?.modes?.ultimate || '무용담')}에 서기</span></button>` : `<p class="hint">${icon('pin', 14)} ${esc(s.ultimate.why || '지금은 설 수 없습니다.')}</p>`}</div>` : ''}
       <p class="muted small">같은 곳에 파티원이 있으면 60초 동안 모입니다.</p>
       ${s.last ? `<a class="btn small ghost" href="#/gw/${esc(s.last)}">${icon('scroll', 15)}<span>지난 도전 기록 보기</span></a>` : ''}
     </div></section>${tipsHtml(s.tips)}`;
   const o = $('#gw-open', el); if (o) o.onclick = async () => { if (!(await askPartySize(B.ask, await partyHere()))) return; run(o, () => rpc('world_gw_open', s.boss && s.boss !== 'gwiheo' ? { p_boss: s.boss } : {})); };
   const so = $('#gw-open-story', el); if (so) so.onclick = () => run(so, () => rpc('world_gw_open', { p_boss: s.boss, p_mode: 'story' }));
+  const uo = $('#gw-open-ult', el); if (uo) uo.onclick = async () => { if (!(await askPartySize('ug', await partyHere()))) return; run(uo, () => rpc('world_gw_open', { p_boss: s.boss || 'gwiheo', p_mode: 'ultimate' })); };
   const j = $('#gw-join-inv', el); if (j) j.onclick = () => run(j, () => rpc('world_gw_join', { p_fight: s.invite }));
 }
 
