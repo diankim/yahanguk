@@ -2101,7 +2101,7 @@ const S = [
   ['ugboss', '무용담 · 가장 어려운 판', `${(() => { const U = GD.ultimate || {}, T = U.tokens || {}; return `
     <p>객사 이야기꾼 춘보가 부풀린 무용담이 퍼지자, 보낸 우두머리들이 이야기 속 모습으로 더 사납게 다시 깨어납니다. 이야기판 → 깊은 판 다음의 셋째 판입니다. 판마다 그 이야기를 들려주는 사람의 퀘스트를 마치면 열립니다 — 구중 봉연 나루지기 덕삼(요인록을 마친 뒤), 묵창 주막 홍매댁(묵적록을 마친 뒤), 남문 수로 선착 등지기 차랑(명등기를 마친 뒤).</p>
     <table class="guide-table"><tr><th>판</th><th>순서</th><th>들어가는 곳</th></tr>
-      ${Object.values(U.boards || {}).map(b => `<tr><td>${esc(b.name)}(${esc(b.short || '')})</td><td>${b.boss === 'gwiheo' ? '구중 봉주 → 귀허의 주인' : b.boss === 'gapgwi' ? '값귀 → 백야' : '먹그림자'}</td><td>${b.boss === 'gwiheo' ? '귀허' : b.boss === 'gapgwi' ? '붉은 사당 골목' : '아홉 칸 뜰'}</td></tr>`).join('')}
+      ${Object.values(U.boards || {}).map(b => `<tr><td>${esc(b.name)}</td><td>${b.boss === 'gwiheo' ? '구중 봉주 → 귀허의 주인' : b.boss === 'gapgwi' ? '값귀 → 백야' : '먹그림자'}</td><td>${b.boss === 'gwiheo' ? '귀허' : b.boss === 'gapgwi' ? '붉은 사당 골목' : '아홉 칸 뜰'}</td></tr>`).join('')}
     </table>
     <ul>
       <li>Lv${U.level ?? 50}만, 같은 곳의 파티원 ${(U.party || [2, 4])[0]}~${(U.party || [2, 4])[1]}명이 함께 들어갑니다(혼자는 들어갈 수 없음). 그 보스의 깊은 판을 한 번 이상 깨야 합니다.</li>

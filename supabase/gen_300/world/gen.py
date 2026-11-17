@@ -581,7 +581,7 @@ begin
       else exists (select 1 from public.world_cosmetic_catalog where cosmetic_key = x ->> 'id') end;
     if not ok then miss := miss || (x ->> 'name'); end if;
   end loop;
-  if cardinality(miss) > 0 then raise {'notice' if getattr(U, 'DRAFT', False) else 'exception'} '극 판 교환 물품이 없음: %', array_to_string(miss, ', '); end if;
+  if cardinality(miss) > 0 then raise {'notice' if getattr(U, 'DRAFT', False) else 'exception'} '무용담 교환 물품이 없음: %', array_to_string(miss, ', '); end if;
 end $c$;""")
 fresh('titles', [t[1] for t in U.TITLES], '칭호')
 fresh('title_keys', [t[0] for t in U.TITLES], '칭호 키')

@@ -5,11 +5,11 @@ MODE_NAME = '무용담'
 WEAK = {'rounds': 12, 'deal': 0.12, 'take': 0.2, 'strong_at': 3, 'strong_deal': 0.5, 'strong_take': 1.0, 'more_take': 0.25, 'name': '기가 꺾임', 'strong_name': '넋이 나감'}
 
 BOARDS = {
-    'gwiheo': dict(name='무용담 · 귀허의 주인', short='무주', boss='gwiheo', open_quest='mdq_x_ug_gwiheo', region='sealed_abyss', token='ug_tok_gwiheo', token_name='귀허 등심',
+    'gwiheo': dict(name='무용담 · 귀허의 주인', boss='gwiheo', open_quest='mdq_x_ug_gwiheo', region='sealed_abyss', token='ug_tok_gwiheo', token_name='귀허 등심',
                    token_desc='무용담 「귀허의 주인」을 깨고 얻은 등심 한 가닥이다. 소용돌이 바닥에서 건져 올려도 불씨가 꺼지지 않았다. 무용담 교환에서 귀허의 물건으로 바꾼다.'),
-    'mukjeok': dict(name='무용담 · 먹그림자', short='무먹', boss='mukjeok', open_quest='mdq_x_ug_mukjeok', region='mukchang_ferry', token='ug_tok_mukjeok', token_name='명부 먹심',
+    'mukjeok': dict(name='무용담 · 먹그림자', boss='mukjeok', open_quest='mdq_x_ug_mukjeok', region='mukchang_ferry', token='ug_tok_mukjeok', token_name='명부 먹심',
                     token_desc='무용담 「먹그림자」를 깨고 얻은 먹심 한 토막이다. 아홉 칸 명부를 다시 쓸 때 남은 먹이 굳은 것이다. 무용담 교환에서 명부의 물건으로 바꾼다.'),
-    'gapgwi': dict(name='무용담 · 값귀', short='무값', boss='gapgwi', open_quest='mdq_x_ug_gapgwi', region='deungdo_landing', token='ug_tok_gapgwi', token_name='장부 셈가지',
+    'gapgwi': dict(name='무용담 · 값귀', boss='gapgwi', open_quest='mdq_x_ug_gapgwi', region='deungdo_landing', token='ug_tok_gapgwi', token_name='장부 셈가지',
                    token_desc='무용담 「값귀」를 깨고 얻은 셈가지 하나다. 값귀의 주판에서 빠져나와 흰 밤에도 그림자가 졌다. 무용담 교환에서 장부의 물건으로 바꾼다.'),
 }
 
