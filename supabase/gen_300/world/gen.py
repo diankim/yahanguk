@@ -111,6 +111,8 @@ for tid, tname in terrs.items():
     rule = {'name': tname, 'open_quest': D.OPEN_QUEST[tid], 'no_shadow': True, 'rare': 'lamp_wick_core'}
     if tid == D.TERR[0]:
         rule.update(regions=D.REGION_OPEN, night=D.NIGHT_BACK, fx=D.DOMAIN_FX)
+    else:
+        rule['pin'] = True
     rules[tid] = rule
 w(f"""do $d$
 declare j jsonb := public.world_domain_rules() || {J(rules)};

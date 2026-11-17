@@ -3555,3 +3555,4 @@ details.pt-fold > summary h2 .help-q { margin-left: 2px; }
 .scene-dmg.end { color: #ffd23a; font-size: calc(18px * var(--fz, 1)); }
 .scene-banner { position: absolute; top: 8%; display: flex; flex-direction: column; align-items: flex-start; padding: 3px 12px 4px; border-left: 4px solid var(--bh); background: rgba(14, 10, 8, .82); color: #ffffff; font-size: calc(17px * var(--fz, 1)); font-weight: 900; line-height: 1.15; white-space: nowrap; pointer-events: none; text-shadow: 0 0 6px var(--bh); }
 .scene-banner small { font-size: calc(10px * var(--fz, 1)); font-weight: 700; color: var(--bh); text-shadow: none; }
+#map-svg .node.pin .dot { stroke-dasharray: 2 1.5; }

@@ -4,6 +4,7 @@ import { buildCells, centroid, factionColor } from '../geo.js';
 import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
+import { GAMEDATA } from '../gamedata.js';
 
 const bjMaps = () => store.hud?.bijang?.maps || [];
 const bjAt = id => bjMaps().filter(m => m.region_id === id);
@@ -153,9 +154,10 @@ function onResize() { if ($('#map-svg', el)) paint(); }
 let geom = null, geomKey = '';
 function geometry() {
   const key = mapData.regions.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
-  if (key !== geomKey) { geom = buildCells(mapData.regions); geomKey = key; }
+  if (key !== geomKey) { geom = buildCells(mapData.regions.filter(r => !isPin(r))); geomKey = key; }
   return geom;
 }
+function isPin(r) { return !!GAMEDATA.domains?.[r.territory_id]?.pin; }
 function factionOf(id) { return zones.get(id)?.control_faction_id ?? null; }
 
 export function routeTo(target) {
@@ -217,6 +219,7 @@ function paint() {
   if (rt && rt.length > 1) route = `<polyline class="route-line" points="${rt.map(r => P(r).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
   const terr = new Map();
   for (const r of regions) {
+    if (isPin(r)) continue;
     const t = r.territory_id || 'none', c = centroid(g.cells.get(r.region_id) || [[r.world_x, r.world_y]]);
     const o = terr.get(t) || { name: r.territory_name || '', x: 0, y: 0, n: 0 }; o.x += c[0]; o.y += c[1]; o.n++; terr.set(t, o);
   }
@@ -274,7 +277,7 @@ function paint() {
     const [x, y] = P(r); if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
     const cls = r.region_id === here?.region_id ? 'here' : r.level_locked ? 'lock' : r.reachable ? 'near' : 'far';
     const sel = r.region_id === selected ? ' sel' : '', safe = zones.get(r.region_id)?.is_safe_zone;
-    nodes += `<g class="node ${cls}${sel}${safe ? ' safe' : ''}" data-region="${esc(r.region_id)}" tabindex="0" role="button" aria-label="${esc(r.region_name)}">
+    nodes += `<g class="node ${cls}${sel}${safe ? ' safe' : ''}${isPin(r) ? ' pin' : ''}" data-region="${esc(r.region_id)}" tabindex="0" role="button" aria-label="${esc(r.region_name)}">
       <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="15" class="hitbox" data-region="${esc(r.region_id)}"/>
       ${r.region_id === dest ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="11" class="dest-ring"/>` : ''}
       ${safe ? `<rect x="${(x - 6).toFixed(1)}" y="${(y - 6).toFixed(1)}" width="12" height="12" rx="2" transform="rotate(45 ${x.toFixed(1)} ${y.toFixed(1)})" class="dot" data-region="${esc(r.region_id)}"/>`
