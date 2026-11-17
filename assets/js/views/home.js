@@ -281,7 +281,7 @@ function field(s, roster, blocked) {
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
           ${fightBack()}
-          ${GAMEDATA.ultimate?.shop_region === s.region.region_id ? `<button class="tile" id="ug-shop" type="button" title="극 판 토큰을 꾸미기 물품으로 바꿉니다">${icon('chest', 22)}<span>극의 장부 교환</span></button>` : ''}
+          ${GAMEDATA.ultimate?.shop_region === s.region.region_id ? `<button class="tile" id="ug-shop" type="button" title="무용담 토큰을 꾸미기 물품으로 바꿉니다">${icon('chest', 22)}<span>무용담 교환</span></button>` : ''}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${['mukjeok', 'gapgwi', 'baekya'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
         </div>

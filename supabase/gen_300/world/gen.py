@@ -547,7 +547,7 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
          'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
     sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(qsrows)} · 새 인물 {len(QN)}\n")
 
-for bs in ('gapgwi', 'baekya'):
+for bs in ('gapgwi', 'baekya', 'ultimate'):
     bp = os.path.join(os.path.dirname(HERE), bs, 'boss.sql')
     if os.path.exists(bp): w(open(bp).read())
 part('j_boss_hooks.sql')
@@ -587,6 +587,9 @@ on conflict (title_key) do update set title_name = excluded.title_name, descript
   hidden = excluded.hidden, rule = excluded.rule, category = excluded.category, grade = excluded.grade;""")
 _qp = _iu.spec_from_file_location('ug_quest', os.path.join(os.path.dirname(HERE), 'ultimate', 'quest.py'))
 UQ = _iu.module_from_spec(_qp); _qp.loader.exec_module(UQ)
+w(f"""insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset({J([dict(k=k, n=v[0], b=v[1]) for k, v in UQ.NPCS.items()])}) as x(k text, n text, b text)
+on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;""")
+fresh('npcs', [v[0] for v in UQ.NPCS.values()], '인물')
 bulk('world_quests', [dict(quest_id=UQ.QID, cat='외전·명등기', title=UQ.TITLE, summary=UQ.SUMMARY, region_id=UQ.REGION, min_level=UQ.LEVEL, after=UQ.AFTER, sort=1499, epilogue=[])],
      [('quest_id', 'text'), ('kind', 'text'), ('cat', 'text'), ('title', 'text'), ('summary', 'text'), ('region_id', 'text'), ('min_level', 'int'), ('after', 'jsonb'),
       ('sort', 'int'), ('epilogue', 'jsonb'), ('active', 'boolean')], 'quest_id', ['cat', 'title', 'summary', 'region_id', 'min_level', 'after', 'sort', 'epilogue', 'active'],

@@ -402,7 +402,7 @@ export const NAME_STYLES = {
   1031: ['먹빛 금', '묵적록 칭호를 6개 얻으면'],
   1032: ['묵적', '먹그림자를 처음 보내면'],
   1033: ['등롱빛', '챙김 160으로 바꾸면'],
-  1035: ['극묵', '극 판 교환으로 받으면'],
+  1035: ['담묵', '무용담 교환으로 받으면'],
 };
 export const nameStyle = (v, id) => NAME_STYLES[v] ? { cls: ` ns-${v}`, hu: hue(id) } : { cls: '', hu: Number.isInteger(v) ? v : hue(id) };
 export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }

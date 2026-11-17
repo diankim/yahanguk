@@ -58,7 +58,7 @@ begin
   update public.world_characters set inventory = case when s ->> 'kind' = 'item' then public.world_inv_add(t -> 'inv', s ->> 'id', 1) else t -> 'inv' end, updated_at = now() where owner_id = uid;
   if st is not null then update public.world_storage set items = t -> 'st', updated_at = now() where owner_id = uid; end if;
   insert into public.world_ultimate_buys(owner_id, item_key, board) values (uid, p_key, s ->> 'board');
-  if s ->> 'kind' = 'outfit' then perform public.world_outfit_give(uid, s ->> 'id', '극 판 토큰으로');
+  if s ->> 'kind' = 'outfit' then perform public.world_outfit_give(uid, s ->> 'id', '무용담 토큰으로');
   elsif s ->> 'kind' in ('frame', 'pattern', 'seal') then insert into public.world_character_cosmetics(owner_id, cosmetic_key) values (uid, s ->> 'id') on conflict do nothing;
   elsif s ->> 'kind' = 'name_style' then insert into public.world_faction_unlocks(owner_id, unlock_key) values (uid, s ->> 'id') on conflict do nothing;
   elsif s ->> 'kind' = 'pet' then perform public.world_pet_grant(uid, s ->> 'id', 'ultimate', false);
