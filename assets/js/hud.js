@@ -2,7 +2,7 @@ import { deathAt, gmBadge, ask, store, on, emit, rpc, act, loadCharacter, nameOf
 import { envChip } from './env.js';
 import { GAMEDATA } from './gamedata.js';
 import { load, invalidate } from './views/common.js';
-import { playAlarm, armAlarm } from './sound.js';
+import { playAlarm, armAlarm, setScene } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
 import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute } from './rules.js';
 import { withHq, baseOf } from './hq.js';
@@ -165,6 +165,7 @@ export function setWnSoft(on) { try { localStorage.setItem('yh-whitenight-soft',
 function paintWhiteNight() {
   const on = !!store.hud?.domain?.white_night;
   document.body.classList.toggle('wn', on);
+  setScene({ wn: on });
   const soft = wnSoft();
   document.body.classList.toggle('wn-soft', on && soft);
 }
