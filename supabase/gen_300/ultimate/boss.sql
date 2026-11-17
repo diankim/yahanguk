@@ -25,15 +25,15 @@ begin
   r := jsonb_set(r, '{gapgwi,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [66, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [5, 10, 14], "name": "구중 봉주", "rounds": 18}, {"boss": "gwiheo", "cuts": [7, 12, 16], "name": "귀허의 주인", "rounds": 24}], "hp_n": [1, 0.57, 0.8, 0.88], "board": {"hand_mul": 1.6, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 2.2, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["두 얼굴", "사슬 넷", "이름 빼앗기", "귀허의 소용돌이"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "mukjeok", "cuts": [8, 18, 28], "name": "먹그림자", "rounds": 36}], "hp_n": [1, 0.6, 0.75, 0.79], "board": {"line_n": [3, 3, 3, 3], "hand_mul": 2.4, "line_off": [1, 0, 0, 1], "line_warn": true, "rot_every": 4, "line_every": [4, 4, 3, 4], "erase_every": 4, "erase_strokes": 3, "mimic_reverse": true}, "items": 3, "raw_n": [1, 2.5, 1.4, 1.4], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [6, 11, 16], "name": "값귀", "rounds": 20}, {"boss": "baekya", "cuts": [6, 12, 18], "name": "백야", "rounds": 26}], "hp_n": [1, 0.52, 0.76, 0.84],
-    "board": {"hide": true, "hand_mul": 1.6, "mech_mul": 0.8, "fail_party": {"raw": 12, "fade": 1},
+  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [36, 4], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [8, 14, 20], "name": "값귀", "rounds": 24}, {"boss": "baekya", "cuts": [8, 16, 24], "name": "백야", "rounds": 32}], "hp_n": [1, 0.42, 0.6, 0.62],
+    "board": {"hide": true, "hand_mul": 1.2, "mech_mul": 0.5, "fail_party": {"raw": 12, "fade": 1},
       "judge": {"every": 2, "off": 1, "left": 2, "raw": 50, "shift": true},
       "bargain": {"every": 3, "off": 0, "left": 2, "raw": 35, "base": 0.4, "k": 0.14},
       "ledger": {"every": 4, "off": 2, "left": 3, "cells": [2, 2, 3, 3], "raw": 30, "heal_pct": 6, "hit_pct": 3, "broke": 2, "broke_pct": 30},
       "tether": {"every": 4, "off": 3, "left": 2, "dist": 3, "raw": 35},
       "seq": [{"at": 100, "m": ["judge"]}, {"at": 87.5, "m": ["judge", "bargain"]}, {"at": 66, "m": ["ledger", "judge", "bargain"]}, {"at": 33, "m": ["ledger", "tether", "judge", "bargain"]}]},
-    "items": 3, "raw_n": [1, 2.0, 1.4, 1.4], "hp_atk": 12.5, "hp_min": 9000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{baekya,ultimate}', $j${"raw": [74, 6], "hp_n": [1, 0.3, 0.69, 0.76], "board": {"hide": true, "hand_mul": 1.6, "mech_mul": 0.8,
+    "items": 3, "raw_n": [1, 1.4, 1.3, 1.3], "hp_atk": 12.5, "hp_min": 9000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
+  r := jsonb_set(r, '{baekya,ultimate}', $j${"raw": [38, 4], "hp_n": [1, 0.55, 0.9, 0.95], "board": {"hide": true, "hand_mul": 1.2, "mech_mul": 0.55,
     "fail_party": {"raw": 12, "fade": 1},
     "arrow": {"every": 2, "off": 0, "n": [1, 2, 3, 3], "left": 2, "raw": 55, "fade": 1},
     "brush": {"every": 4, "off": 1, "left": 2, "raw": 70, "width": 1},
@@ -43,7 +43,7 @@ begin
     "num": {"every": 6, "off": 3, "raw": 55, "fade": 1},
     "big": {"every": 4, "off": 2, "left": 2, "raw": 65, "fade": 1},
     "gust": {"every": 4, "off": 3, "left": 2, "raw": 40},
-    "wn": {"need": 7, "need_solo": 7, "rounds": [8, 8, 8, 7], "arrow_left": 1, "fail_hp": 0, "fails": 0, "wipe": true},
+    "wn": {"need": 7, "need_solo": 7, "rounds": [11, 11, 10, 10], "arrow_left": 2, "fail_hp": 0, "fails": 0, "wipe": true},
     "seq": [{"at": 100, "m": ["arrow"]}, {"at": 87.5, "m": ["arrow", "brush", "gust"]}, {"at": 75, "m": ["brush", "drop", "num", "gust"]}, {"at": 50, "m": ["brush", "drop", "tower", "num", "big", "gust"]},
       {"at": 37.5, "m": ["arrow", "tower", "clock", "big", "gust", "drop", "num"]}, {"at": 25, "m": ["wn", "arrow", "drop", "brush", "clock", "big", "num"]}]}, "raw_n": [1, 1.2, 1.4, 1.4], "hp_atk": 6, "hp_min": 9000}$j$::jsonb);
   execute format('create or replace function public.world_boss_rules() returns jsonb language sql immutable set search_path = '''' as $f$ select %L::jsonb $f$', r);

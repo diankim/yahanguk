@@ -21,7 +21,7 @@ begin
     (public.world_boss_rules() - 'gapgwi') || jsonb_build_object('gapgwi', $j${
   "name": "값귀", "fight": "값을 매기는 장부", "place": "붉은 사당 골목", "arc": "명등기", "region": "red_shrine_lane", "lv": 47,
   "quest": "mdq_7", "quest_name": "명등기 7장", "item": "red_shrine_lacquer", "item_name": "붉은 사당 옻", "item_where": "붉은 사당 골목에서 채집해 얻습니다.",
-  "min": 18, "hp_min": 8000, "hp_atk": 42, "hp_n": [1.2, 0.8, 0.7, 0.72], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [40, 4], "enrage": 0.15,
+  "min": 18, "hp_min": 8000, "hp_atk": 42, "hp_n": [1.2, 0.8, 0.65, 0.62], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [40, 4], "enrage": 0.15,
   "first": {"gil": 2000, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
   "hard_quest": "mdq_8", "hard_quest_name": "명등기 8장 「끊긴 기름」",
   "modes": {"story": "이야기판", "hard": "깊은 장부"},
@@ -297,7 +297,7 @@ begin
       else
         fails := fails + 1;
         update public.world_gw_fights set hp = least(max_hp, hp + round(max_hp * (rb -> 'ledger' ->> 'heal_pct')::numeric / 100.0)), updated_at = now() where fight_id = p_fight;
-        perform public.world_gw_say(p_fight, p_round, 'bad', '좌판 위 값의 합 ' || sm || '섬(' || cnt || '곳) — 장부가 맞지 않았습니다(' || (h ->> 't') || '섬). 값귀가 물 밑 장부에서 값을 꺼내 낫습니다.');
+        perform public.world_gw_say(p_fight, p_round, 'bad', '좌판 위 값의 합 ' || sm || '섬(선 곳 ' || cnt || '/' || least(cardinality(cells), na) || ') — 장부가 맞지 않았습니다(목표 ' || (h ->> 't') || '섬). 값귀가 물 밑 장부에서 값을 꺼내 낫습니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
           perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'ledger' ->> 'raw')::numeric, p_round, '맞지 않은 장부에', true);
         end loop;
