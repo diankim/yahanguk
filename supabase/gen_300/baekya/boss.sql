@@ -19,7 +19,7 @@ begin
     (public.world_boss_rules() - 'baekya') || jsonb_build_object('baekya', $j${
   "name": "백야", "fight": "흰 밤의 맹약 마당", "place": "맹약 마당", "arc": "명등기", "region": "pact_court", "lv": 50,
   "quest": "mdq_15", "quest_name": "명등기 15장", "item": "pact_stone_dust", "item_name": "맹약 돌가루", "item_where": "맹약 마당에서 채집해 얻습니다.",
-  "min": 18, "hp_min": 9000, "hp_atk": 46, "hp_n": [1.0, 1.0, 0.8, 1.0], "raw_n": [0.7, 0.8, 0.8, 0.85], "raw": [44, 4], "enrage": 0.15,
+  "min": 18, "hp_min": 9000, "hp_atk": 46, "hp_n": [0.8, 0.9, 0.8, 1.0], "raw_n": [0.6, 0.62, 0.8, 0.85], "raw": [44, 4], "enrage": 0.15,
   "first": {"gil": 2500, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
   "hard_quest": "mdq_17", "hard_quest_name": "명등기 17장",
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
@@ -43,7 +43,7 @@ begin
     "num": {"every": 7, "off": 3, "raw": 35, "fade": 1},
     "big": {"every": 5, "off": 2, "left": 3, "raw": 45, "fade": 1},
     "gust": {"every": 5, "off": 4, "left": 3, "raw": 25},
-    "wn": {"need": 7, "need_solo": 5, "rounds": [14, 12, 10, 10], "arrow_left": 2, "fail_hp": 40, "fails": 1, "wipe": false},
+    "wn": {"need": 7, "need_solo": 5, "rounds": [16, 14, 12, 12], "arrow_left": 2, "fail_hp": 40, "fails": 1, "wipe": false},
     "aoe_every": 4,
     "seq": [{"at": 100, "m": ["arrow"]}, {"at": 87.5, "m": ["arrow", "brush"]}, {"at": 75, "m": ["brush", "drop", "gust"]}, {"at": 50, "m": ["brush", "drop", "tower", "gust", "big"]},
       {"at": 37.5, "m": ["arrow", "tower", "clock", "big", "gust", "drop"]}, {"at": 25, "m": ["wn", "arrow", "drop", "brush", "clock", "big"]}],
@@ -51,7 +51,7 @@ begin
       "수향이 부른다. 태우지 못한 아이들을, 한 이름씩.", "천명이 부른다. 별이 아니라 사람이 정한다.", "정청이 부른다. 고친 보고서 대신, 거둬 간 동료의 이름을.",
       "흑련이 부른다. 맡아 둔 이름을 돌려준다. — 아이 목소리가 들렸다. 「서율 오라버니!」"]},
   "solo": {"artificer": {"solo_dmg": -35, "solo_guard": 20}, "scout": {"solo_dmg": -15, "solo_guard": 45}, "exorcist": {"solo_dmg": -36, "solo_guard": 20},
-    "medic": {"solo_dmg": -10, "solo_guard": 20}, "sealmaster": {"solo_dmg": -15, "solo_guard": 25}, "analyst": {"solo_dmg": -25, "solo_guard": 35},
+    "medic": {"solo_dmg": 20, "solo_guard": 20}, "sealmaster": {"solo_dmg": -15, "solo_guard": 25}, "analyst": {"solo_dmg": -25, "solo_guard": 35},
     "tamer": {"solo_dmg": -25, "solo_guard": 35}}
 }$j$::jsonb));
 end $$;
@@ -759,7 +759,7 @@ select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
   $n$when p_action in ('chain', 'sweep') then jsonb_build_object('c', coalesce(p_item, ''))$n$);
 select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
   $o$  if not mk and (p_action = 'recall' or p_move is not null) then$o$,
-  $n$  if f.boss_id <> 'baekya' and p_action in ('move', 'light', 'sweep') then raise exception '알 수 없는 행동입니다.'; end if;
+  $n$  if (f.boss_id <> 'baekya' and p_action in ('light', 'sweep')) or (f.boss_id not in ('baekya', 'gapgwi') and p_action = 'move') then raise exception '알 수 없는 행동입니다.'; end if;
   if f.boss_id = 'baekya' then
     if p_action in ('chain', 'recall', 'deal', 'call') then raise exception '알 수 없는 행동입니다.'; end if;
     if coalesce((f.board -> 'stun' ->> uid::text)::int = f.round, false) then raise exception '온몸이 하얗게 바래 이번 라운드에는 꼼짝도 할 수 없습니다.'; end if;
@@ -771,7 +771,7 @@ select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
       raise exception '흰 밤에는 칼끝이 닿지 않습니다. 등 기둥 칸에서 등을 켜세요.'; end if;
     if p_action = 'sweep' and (p_item is null or p_item !~ '^[0-9]+$') then raise exception '걷어 낼 칸을 고르세요.'; end if;
   end if;
-  if not mk and f.boss_id <> 'baekya' and (p_action = 'recall' or p_move is not null) then$n$);
+  if not mk and f.boss_id not in ('baekya', 'gapgwi') and (p_action = 'recall' or p_move is not null) then$n$);
 
 select pg_temp.yh_patch('public.world_gw_snapshot(uuid,text)',
   $o$'board', case when f.boss_id = 'gapgwi' then$o$,

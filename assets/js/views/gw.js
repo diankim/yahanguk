@@ -20,11 +20,11 @@ const BOSS = {
     desc: '쓰러진 자리의 매듭 안쪽, 아홉 칸으로 나뉜 명부. 가운데 칸의 이름을 지키며 칸을 밟아 기억을 되찾습니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'mk',
     story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 봉인 먹줄이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
     hard: '깊은 명부 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 봉인 먹줄을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
-  gapgwi: { name: '값귀', arc: '외전 · 명등기', place: '붉은 사당 골목', PHASE: { 1: '장부 넘기기', 2: '셈 거두기', 3: '장부 맞추기', 4: '가라앉는 배' }, last: '가라앉는 배', mechs: [],
+  gapgwi: { name: '값귀', arc: '외전 · 명등기', place: '붉은 사당 골목', PHASE: { 1: '판결 망치', 2: '바가지', 3: '장부 맞추기', 4: '장 닫힘' }, last: '장 닫힘', mechs: [],
     calm: '값귀가 주판알을 딸깍인다.', tray: '붉은 사당에서 쓸 물품', win: '값귀를 쓰러뜨렸습니다', lose: '장부가 물 밑으로 가라앉았습니다', open: '값귀 앞에 서기',
-    desc: '사당 마룻바닥 밑에서 기어 나온 젖은 장부 더미. 저마다 머리 위에 매겨진 값(섬)을 셈하며 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'gg',
+    desc: '좌판 두 줄과 거리 한 줄로 된 붉은 사당 골목 장터. 망치를 피하고, 머리 위 값(섬)을 흥정으로 깎거나 서로 매겨 주며 장부를 맞춥니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'gg',
     story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 붉은 사당 옻이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
-    hard: '깊은 장부 · 라운드마다 마감이 있고 판결·흥정이 겹쳐 옵니다. 모두 붉은 사당 옻을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
+    hard: '깊은 장부 · 라운드마다 마감이 있고 망치·바가지·장부·외상 줄·장 닫힘이 겹쳐 옵니다. 모두 붉은 사당 옻을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
   sealed_lord: { name: '구중 봉주', arc: '무용담', place: '구중 봉연', PHASE: {}, last: '', mechs: [], calm: '봉주가 아홉 겹 봉인 위에서 숨을 고른다.', tray: '쓸 물품', win: '무용담을 끝맺었습니다', lose: '이야기 속에서 쓰러졌습니다', open: '', desc: '', ask: 'ug', story: '', hard: '' },
   baekya: { name: '백야', arc: '외전 · 명등기', place: '맹약 마당', PHASE: { 1: '화살비', 2: '붉은 붓', 3: '물방울과 가루', 4: '흰 밤' }, last: '흰 밤', mechs: [],
     calm: '하얀 형체의 몸 위로 이름 글자가 개미 떼처럼 기어 다닌다.', tray: '맹약 마당에서 쓸 물품', win: '흰 밤을 걷어 냈습니다', lose: '마당이 하얗게 바랬습니다', open: '맹약 마당 일곱 자리에 서기',
@@ -149,7 +149,7 @@ function actName(s, a) {
   if (a.a === 'coop') { const sk = (s.skills || []).find(x => x.id === a.s); return `기술 「${sk?.name || ''}」${t ? ` → ${t}` : ''}`; }
   if (a.a === 'item') return `회복품 「${nameOf(a.i)}」${t ? ` → ${t}` : ''}`;
   const mv = a.m ? ` · 「${CELL[a.m]}」 칸으로` : '';
-  return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 맞바꾸기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', sweep: `${a.c || ''}번 칸 걷어 내기`, move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기', deal: '흥정 받기' })[a.a] || a.a) + mv;
+  return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 매기기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', sweep: `${a.c || ''}번 칸 걷어 내기`, move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기', deal: '흥정' })[a.a] || a.a) + mv;
 }
 
 function draw() {
@@ -177,7 +177,7 @@ function draw() {
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
         ${ult() && f.status !== 'wait' ? ugBar(s) : ''}
         ${mk && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${boardHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
-        ${gg && fight ? ggHtml(s) : ''}
+        ${gg && f.status !== 'wait' ? ggHtml(s, fight && s.joined) : ''}
         ${s.boss === 'sealed_lord' && fight && s.board?.pair ? `<p class="small warn">${icon('chain', 13)} 봉인 사슬에 묶인 두 사람: ${(s.board.pair || []).map(id => esc(nameOfMember(s, id))).join(' · ')}</p>` : ''}
         ${by && f.status !== 'wait' ? byBoard(s, fight && s.joined) : ''}
       </div></section>
@@ -185,7 +185,7 @@ function draw() {
       ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
-          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
+          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b>${m.val}섬</b>` : '', gg && m.pos ? `${m.pos}번 칸` : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
@@ -327,7 +327,7 @@ const BOSS_RULES = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo'];
 const itemName = () => BOSS_RULES()?.item_name || '귀허 부적';
 function act(args) {
   const out = { p_fight: snap.fight.id, p_target: null, p_item: null, ...args };
-  if (['mukjeok', 'baekya'].includes(snap.boss) && moveTo) out.p_move = moveTo;
+  if (['mukjeok', 'baekya', 'gapgwi'].includes(snap.boss) && moveTo) out.p_move = moveTo;
   return rpc('world_gw_act', out);
 }
 function step(cell) {
@@ -335,7 +335,7 @@ function step(cell) {
   const here = b.my_pos;
   if (cell === here || cell === moveTo) moveTo = null;
   else if ((b.moves || []).includes(cell)) moveTo = cell;
-  else { toast(s.boss === 'baekya' ? '바로 옆 칸으로만 옮겨 설 수 있습니다.' : b.moves?.length ? '바로 옆(가로·세로) 칸으로만 옮겨 설 수 있습니다.' : '먹에 발이 묶여 이번 라운드에는 칸을 옮길 수 없습니다.', 'warn'); return; }
+  else { toast(s.boss === 'baekya' ? '바로 옆 칸으로만 옮겨 설 수 있습니다.' : s.boss === 'gapgwi' ? '바로 옆(가로·세로) 칸으로만 옮겨 설 수 있습니다.' : b.moves?.length ? '바로 옆(가로·세로) 칸으로만 옮겨 설 수 있습니다.' : '먹에 발이 묶여 이번 라운드에는 칸을 옮길 수 없습니다.', 'warn'); return; }
   const a = s.my_act;
   if (a?.a) {
     const again = { p_action: a.a, p_target: a.t || null, p_item: a.s || a.i || a.c || null };
@@ -373,27 +373,48 @@ function mkGim(s, me, a, tName) {
   </div>`;
 }
 const ACT_NAME = { attack: '공격', guard: '방어', brace: '버티기', item: '물품', coop: '기술', deal: '흥정' };
-const ggDanger = (s, v) => (s.board?.judge?.vals || []).includes(v);
-function ggHtml(s) {
-  const b = s.board || {}, j = b.judge, bg = b.bargain, pv = b.preview || {};
-  const vals = (s.members || []).map(m => `<li class="${ggDanger(s, m.val) ? 'bad' : ''} ${m.id === s.me ? 'me' : ''}"><b>${esc(m.name)}</b> <span>${m.val ?? '-'}섬</span></li>`).join('');
-  const next = Object.entries(pv).map(([k, v]) => `<span class="${ggDanger(s, v) ? 'bad' : ''}">${ACT_NAME[k] || k} → <b>${v}</b></span>`).join(' · ');
-  return `<div class="gg-board">
-    <ul class="gg-vals">${vals}</ul>
-    ${j ? `<p class="gg-row ${j.left <= 1 ? 'warn' : ''}">${icon('scroll', 13)} 판결${j.name ? ` 「${esc(j.name)}」` : ''} · ${j.left > 0 ? `${j.left}라운드 뒤` : '이번 라운드 끝'}${j.vals ? ` · 거두는 값 <b>${j.vals.join(' ')}</b>` : ''}</p>` : ''}
-    ${bg ? `<p class="gg-row">${icon('coin', 13)} 장부 맞추기${bg.target != null ? ` · 합 <b>${bg.target}섬</b>` : ''}${bg.tol ? `(앞뒤 ${bg.tol})` : ''}${bg.sum != null ? ` · 지금 합 <b>${bg.sum}</b>` : ''} · ${bg.left > 0 ? `${bg.left}라운드 남음` : '이번 라운드 끝'}</p>` : ''}
-    ${b.close ? `<p class="gg-row warn">${icon('hourglass', 13)} 장날 마감까지 ${b.close.left}라운드</p>` : ''}
-    ${b.tag_brace ? `<p class="gg-row warn">${icon('flag', 13)} 내게 값표 · 버티기 ${b.tag_brace.done}/${b.tag_brace.need}번이면 떨어짐(동료가 이름을 불러도 떨어짐)</p>` : ''}
-    ${b.mine != null && next ? `<p class="gg-row muted small">내 값 <b>${b.mine}섬</b> · 고르면 ${next}</p>` : ''}
-  </div>`;
+function ggXY(c) { const r = Math.floor((c - 1) / 5), k = (c - 1) % 5; return [8 + k * 62 + 30, 22 + r * 66 + 32]; }
+function ggHtml(s, live) {
+  const b = s.board || {}, hz = b.hz || [], closed = new Set(b.closed || []), tags = b.tags || {}, moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
+  const due = h => Number(h.left) <= 0, num = h => due(h) ? '!' : String(h.left);
+  const who = {}; for (const m of s.members || []) if (m.pos && !m.out) (who[m.pos] = who[m.pos] || []).push(m);
+  const colHz = {}; for (const h of hz) if (h.k === 'judge' || h.k === 'close') colHz[h.col] = h;
+  const led = hz.find(h => h.k === 'ledger'), ledSet = new Set(led?.cells || []);
+  let g = '';
+  for (let c = 1; c <= 15; c++) {
+    const r = Math.floor((c - 1) / 5), k = (c - 1) % 5, x = 8 + k * 62, y = 22 + r * 66, col = k + 1, stall = r !== 1;
+    const jh = colHz[col], cls = ['gg-cell', stall ? 'stall' : 'street', closed.has(col) ? 'closed' : '', jh?.k === 'judge' ? (due(jh) ? 'judge due' : 'judge') : '', jh?.k === 'close' ? 'closing' : '',
+      ledSet.has(c) ? 'ledger' : '', moves.has(c) ? 'mk-step' : '', c === here ? 'here' : '', c === dest ? 'dest' : ''].filter(Boolean).join(' ');
+    g += `<rect class="${cls}" x="${x}" y="${y}" width="58" height="62" rx="6" ${moves.has(c) || (live && c === here) ? `data-mk-step="${c}"` : ''}><title>${c}번 칸${stall ? ` · 좌판 값표 ${tags[c] ?? '?'}섬` : ' · 거리'}</title></rect>`;
+    if (stall) g += `<text class="gg-tag ${hz.some(h => h.k === 'tagm' && Number(h.c) === c) ? 'hot' : ''}" x="${x + 52}" y="${y + 14}">${tags[c] ?? ''}섬</text>`;
+  }
+  for (const [col, h] of Object.entries(colHz)) g += `<text class="gg-coltag ${h.k} ${due(h) ? 'due' : ''}" x="${8 + (col - 1) * 62 + 29}" y="14">${h.k === 'judge' ? `망치 ${num(h)}${h.sh ? ' ↔' : ''}` : `닫힘 ${num(h)}`}</text>`;
+  if (led) for (const c of led.cells) { const [x, y] = ggXY(c); g += `<text class="gg-ledtag ${due(led) ? 'due' : ''}" x="${x - 14}" y="${y - 18}">합${led.t}·${num(led)}</text>`; }
+  for (const h of hz) {
+    if (h.k === 'basket') { const [x, y] = ggXY(Number(h.c)); g += `<g class="gg-basket ${due(h) ? 'due' : ''}"><circle cx="${x}" cy="${y - 14}" r="13"/><text x="${x}" y="${y - 9}">${num(h)}</text></g>`; }
+    if (h.k === 'tether' && h.cells?.length === 2) { const [x1, y1] = ggXY(h.cells[0]), [x2, y2] = ggXY(h.cells[1]); g += `<g class="gg-tether ${due(h) ? 'due' : ''}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 6}">줄 ${num(h)}</text></g>`; }
+  }
+  for (const [c, ms] of Object.entries(who)) {
+    const [x, y] = ggXY(Number(c));
+    ms.slice(0, 4).forEach((m, i) => {
+      const dx = ms.length > 1 ? (i % 2 ? 12 : -12) : 0, dy = ms.length > 2 ? (i > 1 ? 14 : -2) : 6;
+      g += `<g class="gg-tok ${m.id === s.me ? 'me' : ''}"><circle cx="${x + dx}" cy="${y + dy}" r="12"/><text x="${x + dx}" y="${y + dy + 4}">${esc(String(m.name || '').slice(0, 1))}</text><text class="v" x="${x + dx}" y="${y + dy + 24}">${m.val ?? ''}섬</text><title>${esc(m.name)} · ${m.val ?? '?'}섬</title></g>`;
+    });
+  }
+  g += `<rect class="gg-scale" x="320" y="88" width="54" height="62" rx="6"/><text class="gg-scale-t" x="347" y="123">값귀</text>`;
+  const bg = hz.find(h => h.k === 'bargain'), mine = b.mine, mul = b.bargain && mine != null ? (b.bargain.base + b.bargain.k * mine) : null;
+  return `<div class="gg-wrap"><svg class="gg-map" viewBox="0 0 380 230" role="img" aria-label="붉은 사당 골목 장터">${g}</svg>
+    <p class="mk-hint muted small">${mine != null ? `내 값 <b>${mine}섬</b>` : ''}${bg ? ` · <span class="gg-hot ${due(bg) ? 'due' : ''}">바가지 ${num(bg)}</span>${mul != null ? ` (지금 맞으면 ×${mul.toFixed(2)})` : ''}` : ''}${led ? ` · 장부 합 <b>${led.t}</b> · 지금 <b>${led.sum ?? 0}</b>` : ''}${closed.size ? ` · 닫힌 줄 ${closed.size}/${b.close_max || 4}` : ''}</p>
+    ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}</div>`;
 }
 function ggGim(s, me, a) {
   if (s.boss !== 'gapgwi' || me.out) return '';
-  const b = s.board || {}, t = target && target !== s.me ? target : null, solo = (s.members || []).length === 1;
-  if (solo && !b.deal_mine) return '';
-  return `<div class="gw-gim"><span class="gw-gim-h" title="값을 바꾸는 행동">${icon('bell', 13)}<b>값</b></span>
-    ${solo ? '' : t ? `<button class="btn ${a?.a === 'call' ? 'on' : ''}" data-gw="call" data-t="${esc(t)}" title="고른 동료와 값을 맞바꿉니다(공격 대신)">${icon('users', 16)}<span>${esc(nameOfMember(s, t))} 부르기 · 값 맞바꾸기</span></button>` : '<p class="small muted">값을 맞바꿀 동료 이름을 누르세요.</p>'}
-    ${b.deal_mine ? `<button class="btn ${a?.a === 'deal' ? 'on' : ''}" data-gw="deal" title="값귀의 흥정을 받습니다: 이번 공격이 크게 세지고 값이 ×${b.deal_x}(일의 자리)로 바뀝니다">${icon('coin', 16)}<span>흥정 받기 · ${b.mine}섬 → ${b.preview?.deal ?? '?'}섬</span></button>` : ''}
+  const b = s.board || {}, t = target && target !== s.me ? target : null, tm = (s.members || []).find(m => m.id === t), at = moveTo || b.my_pos;
+  const near = tm && tm.pos && at && Math.abs(Math.floor((tm.pos - 1) / 5) - Math.floor((at - 1) / 5)) + Math.abs((tm.pos - 1) % 5 - (at - 1) % 5) <= 1;
+  const down = b.mine != null ? Math.max(0, b.mine + (b.haggle ?? -4)) : null, up = tm ? Math.min(b.max ?? 9, (tm.val ?? 0) + (b.price ?? 3)) : null;
+  return `<div class="gw-gim gg-gim"><span class="gw-gim-h" title="값을 바꾸는 행동">${icon('bell', 13)}<b>값</b></span>
+    <button class="btn ${a?.a === 'deal' ? 'on' : ''}" data-gw="deal" title="값귀에게 흥정을 걸어 내 값을 ${-(b.haggle ?? -4)}섬 깎습니다(공격 대신)">${icon('coin', 16)}<span>흥정${down != null ? ` · ${b.mine}→${down}섬` : ''}</span></button>
+    <button class="btn ${a?.a === 'call' ? 'on' : ''}" data-gw="call" ${t ? `data-t="${esc(t)}"` : 'disabled'} title="${t ? (near ? `${esc(tm.name)}의 값을 ${b.price ?? 3}섬 올려 줍니다(바로 옆 칸일 때만)` : '바로 옆 칸에 선 동료만 값을 매겨 줄 수 있습니다') : '값을 매겨 줄 동료의 이름을 누르세요'}">${icon('users', 16)}<span>값 매기기${t ? ` · ${esc(tm.name)} ${tm.val ?? '?'}→${up}섬` : ''}</span></button>
   </div>`;
 }
 function ugBar(s) {

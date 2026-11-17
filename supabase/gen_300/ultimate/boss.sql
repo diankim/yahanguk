@@ -25,7 +25,14 @@ begin
   r := jsonb_set(r, '{gapgwi,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [66, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [5, 10, 14], "name": "구중 봉주", "rounds": 18}, {"boss": "gwiheo", "cuts": [7, 12, 16], "name": "귀허의 주인", "rounds": 24}], "hp_n": [1, 0.57, 0.8, 0.88], "board": {"hand_mul": 1.6, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 2.2, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["두 얼굴", "사슬 넷", "이름 빼앗기", "귀허의 소용돌이"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "mukjeok", "cuts": [8, 18, 28], "name": "먹그림자", "rounds": 36}], "hp_n": [1, 0.6, 0.75, 0.79], "board": {"line_n": [3, 3, 3, 3], "hand_mul": 2.4, "line_off": [1, 0, 0, 1], "line_warn": true, "rot_every": 4, "line_every": [4, 4, 3, 4], "erase_every": 4, "erase_strokes": 3, "mimic_reverse": true}, "items": 3, "raw_n": [1, 2.5, 1.4, 1.4], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [6, 11, 16], "name": "값귀", "rounds": 20}, {"boss": "baekya", "cuts": [6, 12, 18], "name": "백야", "rounds": 26}], "hp_n": [1, 0.52, 0.76, 0.84], "board": {"hide": true, "guide": false, "hand_mul": 1.6, "tag_move": true, "judge_off": [0, 1, 1, 0], "deal_force": true, "judge_lead": 1, "bargain_tol": 0, "judge_every": [0, 3, 3, 2], "judge_fixed": true, "trial_first": true, "bargain_show": false, "close_rounds": 0, "compound_all": true}, "items": 3, "raw_n": [1, 2.0, 1.4, 1.4], "hp_atk": 12.5, "hp_min": 9000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
+  r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [6, 11, 16], "name": "값귀", "rounds": 20}, {"boss": "baekya", "cuts": [6, 12, 18], "name": "백야", "rounds": 26}], "hp_n": [1, 0.52, 0.76, 0.84],
+    "board": {"hide": true, "hand_mul": 1.6, "mech_mul": 0.8, "fail_party": {"raw": 12, "fade": 1},
+      "judge": {"every": 2, "off": 1, "left": 2, "raw": 50, "shift": true},
+      "bargain": {"every": 3, "off": 0, "left": 2, "raw": 35, "base": 0.4, "k": 0.14},
+      "ledger": {"every": 4, "off": 2, "left": 3, "cells": [2, 2, 3, 3], "raw": 30, "heal_pct": 6, "hit_pct": 3, "broke": 2, "broke_pct": 30},
+      "tether": {"every": 4, "off": 3, "left": 2, "dist": 3, "raw": 35},
+      "seq": [{"at": 100, "m": ["judge"]}, {"at": 87.5, "m": ["judge", "bargain"]}, {"at": 66, "m": ["ledger", "judge", "bargain"]}, {"at": 33, "m": ["ledger", "tether", "judge", "bargain"]}]},
+    "items": 3, "raw_n": [1, 2.0, 1.4, 1.4], "hp_atk": 12.5, "hp_min": 9000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{baekya,ultimate}', $j${"raw": [74, 6], "hp_n": [1, 0.3, 0.69, 0.76], "board": {"hide": true, "hand_mul": 1.6, "mech_mul": 0.8,
     "fail_party": {"raw": 12, "fade": 1},
     "arrow": {"every": 2, "off": 0, "n": [1, 2, 3, 3], "left": 2, "raw": 55, "fade": 1},
@@ -217,9 +224,9 @@ begin
   b := f.board; lord := coalesce(b -> 'lord', '{}'::jsonb); ar := p_round - coalesce((b -> 'ug' ->> 'act_start')::int, 0);
   if lord ? 'pair' then
     p := array(select jsonb_array_elements_text(lord -> 'pair')::uuid);
-    select case when act ->> 'a' in ('attack', 'deal') or (act ->> 'a' = 'coop' and coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = act ->> 's'), false)) then 'attack'
+    select case when act ->> 'a' = 'attack' or (act ->> 'a' = 'coop' and coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = act ->> 's'), false)) then 'attack'
       when act is null or act ->> 'a' in ('guard', 'brace') then 'guard' else coalesce(act ->> 'a', 'guard') end into c1 from public.world_gw_members where fight_id = p_fight and owner_id = p[1];
-    select case when act ->> 'a' in ('attack', 'deal') or (act ->> 'a' = 'coop' and coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = act ->> 's'), false)) then 'attack'
+    select case when act ->> 'a' = 'attack' or (act ->> 'a' = 'coop' and coalesce((select (s.effect ->> 'strike')::boolean from public.world_coop_skills s where s.skill_id = act ->> 's'), false)) then 'attack'
       when act is null or act ->> 'a' in ('guard', 'brace') then 'guard' else coalesce(act ->> 'a', 'guard') end into c2 from public.world_gw_members where fight_id = p_fight and owner_id = p[2];
     select string_agg(name, '·') into names from public.world_gw_members where fight_id = p_fight and owner_id = any (p);
     if c1 = c2 then
@@ -332,10 +339,7 @@ begin
         when f.mech ->> 'k' = 'line' then jsonb_build_object('cells', f.mech -> 'cells', 'left', 0) end,
       'rotate_next', case when f.board ? 'rot_next' then jsonb_build_object('dir', f.board -> 'rot_next' ->> 'dir', 'left', (f.board -> 'rot_next' ->> 'at')::int - f.round) end);
   elsif f.boss_id = 'gapgwi' then
-    v := public.world_gg_view(p_fight, p_uid) - 'preview' - 'judge' - 'bargain' - 'close'
-      || case when f.board ? 'judge' then jsonb_build_object('judge', jsonb_build_object('left', (f.board -> 'judge' ->> 'at')::int - f.round)) else '{}'::jsonb end
-      || case when f.board ? 'bargain' then jsonb_build_object('bargain', jsonb_build_object('left', (f.board -> 'bargain' ->> 'at')::int - f.round)
-           || case when f.board ? 'ug_bargained' then jsonb_build_object('target', (f.board -> 'bargain' ->> 't')::int) else '{}'::jsonb end) else '{}'::jsonb end;
+    v := public.world_gg_view(p_fight, p_uid);
   elsif f.boss_id = 'baekya' then
     v := public.world_by_view(p_fight, p_uid) - 'dmg_mul' - 'hurt_mul';
   elsif f.boss_id = 'sealed_lord' then
@@ -554,10 +558,6 @@ select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
   $o$  if mk and p_action = 'call' and f.mech ->> 'k' is distinct from 'erase' then$o$,
   $n$  if mk and p_action = 'call' and f.mech ->> 'k' is distinct from 'erase' and f.mode <> 'ultimate' then$n$);
 select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
-  $o$    if p_action = 'deal' and f.mech ->> 'deal' is distinct from uid::text then raise exception$o$,
-  $n$    if p_action = 'deal' and f.mode = 'ultimate' and f.mech ->> 'deal' is distinct from uid::text then p_action := 'attack'; end if;
-    if p_action = 'deal' and f.mech ->> 'deal' is distinct from uid::text then raise exception$n$);
-select pg_temp.yh_patch('public.world_gw_act(uuid,text,uuid,text,smallint)',
   $o$  if f.status <> 'fight' then return public.world_gw_snapshot(p_fight); end if;$o$,
   $n$  if f.status <> 'fight' then return public.world_gw_snapshot(p_fight); end if;
   if f.mech ->> 'k' = 'rest' then raise exception '막 사이에 숨을 고르는 중입니다. 다음 라운드에 고르세요.'; end if;$n$);
@@ -629,72 +629,6 @@ select pg_temp.yh_patch('public.world_gw_resolve(uuid)',
 select pg_temp.yh_patch('public.world_gw_resolve(uuid)',
   $o$      elsif tgt <> m.owner_id or random() < 0.3 then$o$,
   $n$      elsif tgt <> m.owner_id or (f.mode <> 'ultimate' and random() < 0.3) then$n$);
-
-select pg_temp.yh_patch('public.world_gg_round(uuid)',
-  $o$      if ph = 4 and coalesce((rb ->> 'compound')::boolean, false) then$o$,
-  $n$      if (ph = 4 or coalesce((rb ->> 'compound_all')::boolean, false)) and coalesce((rb ->> 'compound')::boolean, false) then$n$);
-select pg_temp.yh_patch('public.world_gg_round(uuid)',
-  $o$      jat := nr + (rb ->> 'judge_lead')::int - 1;$o$,
-  $n$      if coalesce((rb ->> 'judge_fixed')::boolean, false) then
-        if b ? 'ug_rule' then rules := b -> 'ug_rule'; else b := b || jsonb_build_object('ug_rule', rules); end if;
-      end if;
-      jat := nr + (rb ->> 'judge_lead')::int - 1;$n$);
-
-select pg_temp.yh_patch('public.world_gg_round(uuid)',
-  $o$    b := b || jsonb_build_object('bargain', jsonb_build_object('t', tgt,$o$,
-  $n$    if coalesce((rb ->> 'judge_fixed')::boolean, false) then
-      if b ? 'ug_bt' then tgt := (b ->> 'ug_bt')::int; else b := b || jsonb_build_object('ug_bt', tgt); end if;
-    end if;
-    b := b || jsonb_build_object('bargain', jsonb_build_object('t', tgt,$n$);
-
-select pg_temp.yh_patch('public.world_gg_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$        perform public.world_gw_hit(p_fight, w.owner_id, raw, p_round, '값귀의 판결에 값을 거두어져', true);
-        if coalesce((rb ->> 'judge_tag')::boolean, false) and not tags ? w.owner_id::text then tags := tags || jsonb_build_object(w.owner_id::text, 0); end if;$o$,
-  $n$        if not (coalesce((rb ->> 'trial_first')::boolean, false) and not b ? 'ug_judged') then
-        perform public.world_gw_hit(p_fight, w.owner_id, raw, p_round, '값귀의 판결에 값을 거두어져', true);
-        if coalesce((rb ->> 'judge_tag')::boolean, false) and not tags ? w.owner_id::text then tags := tags || jsonb_build_object(w.owner_id::text, 0); end if;
-        end if;$n$);
-select pg_temp.yh_patch('public.world_gg_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$    b := b - 'judge';
-  end if;$o$,
-  $n$    b := b - 'judge';
-    if coalesce((rb ->> 'trial_first')::boolean, false) and not b ? 'ug_judged' then
-      b := b || '{"ug_judged": true}'::jsonb;
-      perform public.world_gw_say(p_fight, p_round, 'seal', '이야기꾼의 말로는 첫 판결은 셈만 하고 거두지 않았다고 한다.');
-    end if;
-  end if;$n$);
-select pg_temp.yh_patch('public.world_gg_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$      h := round(f.max_hp * (rb ->> 'bargain_heal_pct')::numeric / 100.0);
-      update public.world_gw_fights set hp = least(max_hp, hp + h), enrage = enrage + case when f.mode = 'story' then 0 else 1 end, updated_at = now() where fight_id = p_fight;$o$,
-  $n$      h := round(f.max_hp * (rb ->> 'bargain_heal_pct')::numeric / 100.0) * case when coalesce((rb ->> 'trial_first')::boolean, false) and not b ? 'ug_bargained' then 0 else 1 end;
-      update public.world_gw_fights set hp = least(max_hp, hp + h), enrage = enrage + case when f.mode = 'story' or h = 0 then 0 else 1 end, updated_at = now() where fight_id = p_fight;
-      if coalesce((rb ->> 'trial_first')::boolean, false) then
-        perform public.world_gw_say(p_fight, p_round, 'seal', '장부 목표는 ' || (b -> 'bargain' ->> 't') || '섬이었다.');
-        b := b || '{"ug_bargained": true}'::jsonb;
-      end if;$n$);
-
-select pg_temp.yh_patch('public.world_gg_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$   where x.fight_id = p_fight and x.out_rounds = 0 and not x.rest;
-  for w in select x.* from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not x.rest and x.act ->> 'a' = 'deal' order by x.joined_at, x.owner_id loop$o$,
-  $n$   where x.fight_id = p_fight and x.out_rounds = 0 and not x.rest;
-  if coalesce((rb ->> 'deal_force')::boolean, false) and f.mech ->> 'deal' is not null then
-    update public.world_gw_members x set gval = (x.gval * (rb ->> 'deal_x')::int) % 10 where x.fight_id = p_fight and x.owner_id::text = f.mech ->> 'deal' and x.out_rounds = 0
-       and x.act ->> 'a' is distinct from 'deal' returning x.name, x.gval into tn, tv;
-    if tn is not null then perform public.world_gw_say(p_fight, p_round, 'seal', tn || ' — 값에 ' || (rb ->> 'deal_x') || '이 곱해져 ' || tv || '섬.'); tn := null; end if;
-  end if;
-  for w in select x.* from public.world_gw_members x where x.fight_id = p_fight and x.out_rounds = 0 and not x.rest and x.act ->> 'a' = 'deal' order by x.joined_at, x.owner_id loop$n$);
-select pg_temp.yh_patch('public.world_gg_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$    tags := tags - w.t::text;$o$,
-  $n$    if coalesce((rb ->> 'tag_move')::boolean, false) and tags ? w.t::text
-       and not exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.owner_id = w.t and y.act ->> 'a' = 'call' and y.act ->> 't' = w.owner_id::text) then
-      tags := (tags - w.t::text) || jsonb_build_object(w.owner_id::text, 0);
-      perform public.world_gw_say(p_fight, p_round, 'seal', '값표가 ' || w.name || '에게 옮겨 붙었다.');
-    else
-      tags := tags - w.t::text;
-    end if;$n$);
-select pg_temp.yh_patch('public.world_gg_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$      '판결 — 「' || public.world_gg_rule_name(b -> 'judge' -> 'r', rb) || '은 거둔다」: '$o$,
-  $n$      '판결 — ' || case when coalesce((rb ->> 'hide')::boolean, false) then '' else '「' || public.world_gg_rule_name(b -> 'judge' -> 'r', rb) || '은 거둔다」: ' end$n$);
 
 select pg_temp.yh_patch('public.world_mk_mech(uuid,integer,boolean,boolean,uuid[])',
   $o$    gone := (select count(*) from unnest(lit) z where z = any (cells));
