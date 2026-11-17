@@ -427,7 +427,7 @@ function ggGim(s, me, a) {
 function ugBar(s) {
   const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : ''), cut = u.next_cut;
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
-    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.weak && u.weak.n ? ` · <b class="bad" data-tip="${esc(`수법을 놓칠 때마다 한 겹씩 쌓이고, 이 막이 끝나면 풀립니다. 주는 피해 ×${Number(u.weak.deal).toFixed(2)} · 받는 피해 ×${Number(u.weak.take).toFixed(2)}`)}">${esc(u.weak.name)} ${u.weak.n}겹</b>` : ''}`}</p></div>`;
+    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.fail_cap ? ` · 실수 <b class="${(u.fails || 0) >= u.fail_cap - 1 ? 'bad' : ''}">${u.fails || 0}/${u.fail_cap}</b>` : ''}`}</p></div>`;
 }
 const BY_HZ = { arrow: '화살', big: '굵은 화살', gust: '꺼져 가는 등', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
 function bySector(c) { return ((c - 1) % 7) + 1; }
