@@ -558,7 +558,7 @@ ug_items = [item(b['token'], b['token_name'], 'material', 5, b['token_desc'], 40
 fresh('items', [i['item_name'] for i in ug_items], '물품')
 fresh('item_ids', [i['item_id'] for i in ug_items], '물품 id')
 bulk('world_item_catalog', ug_items, ICOLS, 'item_id', IUPD)
-ug_rules = dict(open_quest=U.OPEN_QUEST, level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME,
+ug_rules = dict(open_quest=U.OPEN_QUEST, shop_region=U.SHOP_REGION, level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME,
                 boards=U.BOARDS, shop=[dict(key=f'{b}:{i}', board=b, kind=k, id=i, name=n, price=pr) for b, k, i, n, pr in U.SHOP])
 w(f"""create or replace function public.world_ultimate_rules() returns jsonb language sql immutable set search_path = '' as $r$ select {J(ug_rules)}::jsonb $r$;""")
 part('../ultimate/shop.sql')

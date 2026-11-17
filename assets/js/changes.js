@@ -20,7 +20,7 @@ export const CHANGES = {
   skill: /skill/,
   codex: /battle|gather|expedition|meisho_dig/,
   storage: /craft_(item|batch)|storage|travel|enhance|outfit_design_weave|housing_expand/,
-  storageIfUsed: /craft_(item|batch)$|outfit_design_weave$|housing_expand$/,
+  storageIfUsed: /craft_(item|batch)$|outfit_design_weave$|housing_expand$|ultimate_buy$/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
   avatar: /avatar|outfit|wardrobe|reset_identity/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,

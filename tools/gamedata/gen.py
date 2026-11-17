@@ -91,6 +91,7 @@ def build(dsn):
     d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx', 'pin', coalesce((v ->> 'pin')::boolean, false))) from jsonb_each(world_domain_rules()) e(k, v)")
     d['names'] = q(dsn, "select world_name_rules()")
     d['boss'] = q(dsn, "select world_boss_rules()")
+    d['ultimate'] = q(dsn, "select world_ultimate_rules()")
     d['bijang'] = q(dsn, "select world_bijang_rules()")
     d['jobSkills'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'desc', v ->> 'desc')) from jsonb_each(world_job_skill_rules()) e(k, v)")
     # 대세력: 가입 받는 곳·세력 안전지대·관계 기준값

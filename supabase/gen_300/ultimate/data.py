@@ -3,6 +3,7 @@ LEVEL = 50
 PARTY = (2, 4)
 TOKENS = {'first': 10, 'clear': 3}
 MODE_NAME = '극'
+SHOP_REGION = 'jeongni_vault'
 
 BOARDS = {
     'gwiheo': dict(name='극 귀허', short='극귀', boss='gwiheo', token='ug_tok_gwiheo', token_name='귀허 등심',
