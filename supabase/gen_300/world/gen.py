@@ -546,6 +546,38 @@ for bs in ('gapgwi', 'baekya'):
     bp = os.path.join(os.path.dirname(HERE), bs, 'boss.sql')
     if os.path.exists(bp): w(open(bp).read())
 part('j_boss_hooks.sql')
+import importlib.util as _iu
+_sp = _iu.spec_from_file_location('ug_data', os.path.join(os.path.dirname(HERE), 'ultimate', 'data.py'))
+U = _iu.module_from_spec(_sp); _sp.loader.exec_module(U)
+ug_items = [item(b['token'], b['token_name'], 'material', 5, b['token_desc'], 40, 0, False, 1) for b in U.BOARDS.values()]
+fresh('items', [i['item_name'] for i in ug_items], '물품')
+fresh('item_ids', [i['item_id'] for i in ug_items], '물품 id')
+bulk('world_item_catalog', ug_items, ICOLS, 'item_id', IUPD)
+ug_rules = dict(open_quest=U.OPEN_QUEST, level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME,
+                boards=U.BOARDS, shop=[dict(key=f'{b}:{i}', board=b, kind=k, id=i, name=n, price=pr) for b, k, i, n, pr in U.SHOP])
+w(f"""create or replace function public.world_ultimate_rules() returns jsonb language sql immutable set search_path = '' as $r$ select {J(ug_rules)}::jsonb $r$;""")
+part('../ultimate/shop.sql')
+w(f"""do $c$ declare x jsonb; ok boolean; miss text[] := '{{}}';
+begin
+  for x in select jsonb_array_elements(public.world_ultimate_rules() -> 'shop') loop
+    ok := case x ->> 'kind'
+      when 'item' then exists (select 1 from public.world_item_catalog where item_id = x ->> 'id')
+      when 'outfit' then public.world_avatar_parts() -> 'outfits' ? (x ->> 'id')
+      when 'pet' then exists (select 1 from public.world_pet_species where pet_id = x ->> 'id')
+      when 'name_style' then x ->> 'id' like 'ns:%'
+      else exists (select 1 from public.world_cosmetic_catalog where cosmetic_key = x ->> 'id') end;
+    if not ok then miss := miss || (x ->> 'name'); end if;
+  end loop;
+  if cardinality(miss) > 0 then raise {'notice' if getattr(U, 'DRAFT', False) else 'exception'} '극 판 교환 물품이 없음: %', array_to_string(miss, ', '); end if;
+end $c$;""")
+fresh('titles', [t[1] for t in U.TITLES], '칭호')
+fresh('title_keys', [t[0] for t in U.TITLES], '칭호 키')
+w(f"""insert into public.world_title_catalog(title_key, title_name, description, condition_text, bonus, hidden, rule, sort, category, grade)
+select x.title_key, x.title_name, x.description, case when x.hidden then '숨겨진 조건' else x.cond end, x.bonus, x.hidden, x.rule, 3200 + x.n, '{U.TITLE_CAT}', x.grade
+  from jsonb_to_recordset({J([dict(title_key=k, title_name=n, grade=g, bonus=b, rule=r, cond=c, hidden=h, description=c + '.', n=i) for i, (k, n, g, b, r, c, h) in enumerate(U.TITLES)])})
+    as x(title_key text, title_name text, grade int, bonus jsonb, rule jsonb, cond text, hidden boolean, description text, n int)
+on conflict (title_key) do update set title_name = excluded.title_name, description = excluded.description, condition_text = excluded.condition_text, bonus = excluded.bonus,
+  hidden = excluded.hidden, rule = excluded.rule, category = excluded.category, grade = excluded.grade;""")
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
