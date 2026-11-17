@@ -157,11 +157,19 @@ export const DOMAIN_FX = {
   blur: `묵적 봉쇄령에서는 침식이 이름을 지웁니다. 침식 ${MUK_ER.join('·')}마다 이름 획 ${MUK_BLUR.strokes}개 가운데 ${Math.floor(MUK_BLUR.strokes / Math.max(1, MUK_ER.length))}개씩 지워지며 이름 흐림이 깊어지고, 침식을 낮추면 바로 돌아옵니다.`,
 };
 const WN = GD.domains?.deungdo?.fx || {};
+const WN_DEATH = GD.rescue?.death_h ?? 4, WN_DAY = WN.recall?.per_day ?? 1;
+const WN_WARN = `이곳은 본부 구조대가 오지 못합니다. 쓰러진 지 ${WN_DEATH}시간이 지나면 숨집니다 — 「제 이름 외기」(하루 ${WN_DAY}번)·회생 부적·같은 곳 조사원의 구조로 일어나세요.`;
 export const WHITE_NIGHT = {
-  band: '흰 밤 — 여기서 쓰러지면 본부 구조대가 오지 못합니다. 동료와 함께 다니거나 회생 부적을 챙기세요.',
-  downed: '흰 밤 속이라 본부 구조대가 오지 못합니다. 같은 곳 조사원의 구조·회생 부적·「제 이름 외기」로 일어나세요.',
+  band: `흰 밤 — ${WN_WARN}`,
+  downed: `흰 밤 속입니다. ${WN_WARN}`,
   recall: `하루 ${WN.recall?.per_day ?? 1}번, 체력 ${WN.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어납니다 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」(주는 피해 −10%)`,
   ask: '제 이름을 끝까지 외어 스스로 일어날까요? 가장 가까운 등도 안전지대에서 깨어나고, 1시간 동안 주는 피해가 줄어듭니다.',
+};
+export const UG_RESULT = {
+  title: name => `${name}을(를) 깼습니다`,
+  wiped: '이야기꾼의 무용담이 여기서 끊겼습니다',
+  won: (tok, n, first) => `${tok}을(를) ${n}개 받았습니다. 이 판을 처음 깼다면 ${first}개를 더 받습니다(가방이 차면 창고로, 받은 수는 알림에). 횟수 제한 없이 다시 설 수 있습니다.`,
+  lost: '무용담은 져도 잃는 것이 없습니다(장비 닳음·침식·재도전 대기 없음). 다시 열면 1막부터입니다.',
 };
 const BROKEN = '▒▣▤▥▦▧▨▩◈■';
 export const brokenName = name => [...String(name || '')].map((ch, i) => ch === ' ' ? ' ' : BROKEN[(ch.codePointAt(0) + i) % BROKEN.length]).join('');

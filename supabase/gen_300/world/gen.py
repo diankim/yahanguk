@@ -555,6 +555,7 @@ for bs in ('gapgwi/boss.sql', 'baekya/boss.sql', 'ultimate/boss.sql', 'ultimate/
     bp = os.path.join(os.path.dirname(HERE), bs)
     if os.path.exists(bp): w(open(bp).read())
 part('j_boss_hooks.sql')
+part('o_boss_rewards.sql')
 part('k_gw_rt.sql')
 import importlib.util as _iu
 _sp = _iu.spec_from_file_location('ug_data', os.path.join(os.path.dirname(HERE), 'ultimate', 'data.py'))

@@ -919,7 +919,7 @@ const S = [
     <ul>
       <li>${effectText(Object.fromEntries(Object.entries(GD.domains?.deungdo?.fx?.effects || {}).filter(([k]) => !k.startsWith('wn_')))).join(' · ')}</li>
       <li><b>그림자 없음:</b> 기척 숨기기 +${GD.domains?.deungdo?.fx?.effects?.wn_sneak ?? 15}%p · 조용히 살피기 상한 +${GD.domains?.deungdo?.fx?.effects?.wn_quiet ?? 10} · 회피 +${GD.domains?.deungdo?.fx?.effects?.wn_eva ?? 3}</li>
-      <li><b>불러 줄 이 없음:</b> 등도에서 쓰러지면 본부 구조대가 오지 못합니다. 같은 곳 조사원의 구조·회생 부적, 또는 하루 ${GD.domains?.deungdo?.fx?.recall?.per_day ?? 1}번 「제 이름 외기」(체력 ${GD.domains?.deungdo?.fx?.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어남 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」)로 일어납니다.</li>
+      <li><b>불러 줄 이 없음:</b> 등도에서 쓰러지면 본부 구조대가 오지 못합니다. 같은 곳 조사원의 구조·회생 부적, 또는 하루 ${GD.domains?.deungdo?.fx?.recall?.per_day ?? 1}번 「제 이름 외기」(체력 ${GD.domains?.deungdo?.fx?.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어남 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」)로 일어납니다. 쓰러진 지 ${GD.rescue?.death_h ?? 4}시간이 지나도록 일어나지 못하면 숨집니다.</li>
       <li>명등 등롱을 켜면 1시간 동안 백야를 받지 않습니다.</li>
       <li><b>밤 되찾기:</b> 그 구역의 장을 마치면 그 구역에서는 백야가 걷힙니다. 안전지대에는 백야가 없습니다.</li>
     </ul>
@@ -2062,8 +2062,8 @@ const S = [
       ${(b.seq || []).map(e => `<tr><td>${e.at}% 아래</td><td>${e.m.map(k => esc(nm[k] || k)).join(' + ')}</td></tr>`).join('')}</table>
     <h4>보상</h4>
     <ul>
-      <li>깊은 장부에서 처음 쓰러뜨리면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
-      <li>칭호는 쓰러뜨린 횟수·혼자·흠 없이(아무도 물러나지 않음)로 얻습니다.</li>
+      <li>깊은 장부에서 처음 쓰러뜨리면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배 · 탈것 「${f.mount_name}」 · 이름 색 「${f.name_style_name}」 · 별채 가구 「값을 덮은 대저울」, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>칭호는 쓰러뜨린 횟수·혼자·흠 없이(아무도 물러나지 않음)로 얻습니다. 테두리는 처음, 바탕 무늬는 3번, 낙관 「價」는 10번 쓰러뜨리면 받습니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
   ['byboss', '백야 · 외전 「명등기」 16장', `${(() => { const B = GD.boss?.baekya || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, nm = B.mech_names || {}, wn = b.wn || {}; return `
@@ -2094,8 +2094,8 @@ const S = [
       ${(b.seq || []).map(e => `<tr><td>${e.at}% 아래</td><td>${e.m.map(k => esc(nm[k] || k)).join(' + ')}</td></tr>`).join('')}</table>
     <h4>보상</h4>
     <ul>
-      <li>깊은 판에서 처음 이기면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
-      <li>칭호는 이긴 횟수·혼자·흠 없이로 얻습니다.</li>
+      <li>깊은 판에서 처음 이기면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배 · 탈것 「${f.mount_name}」 · 이름 색 「${f.name_style_name}」 · 별채 가구 「맹약 마당 등 기둥」, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>칭호는 이긴 횟수·혼자·흠 없이로 얻습니다. 테두리는 처음, 바탕 무늬는 3번, 낙관 「宵」는 10번 이기면 받습니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
   ['ugboss', '무용담 · 가장 어려운 판', `${(() => { const U = GD.ultimate || {}, T = U.tokens || {}; return `

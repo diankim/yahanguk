@@ -1,5 +1,5 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
-import { GW_DAILY } from '../rules.js';
+import { GW_DAILY, UG_RESULT } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, askPartySize, partyHere, drawLater } from './fightui.js';
@@ -289,15 +289,18 @@ function resultHtml(f, s) {
   const mine = (s.members || []).find(m => m.id === s.me);
   const won = f.status === 'won';
   const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
-  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 && s.falls_cap ? Math.min(mine.falls || 0, s.falls_cap) : mine.falls || 0}` : ''}</p>
+  return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, ult() ? ugTitle(won, s) : won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${ult() ? esc(s.board?.ug?.act_name || '') : PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 && s.falls_cap ? Math.min(mine.falls || 0, s.falls_cap) : mine.falls || 0}` : ''}</p>
     <p class="small">${ult() ? ugResult(won, s) : story() ? (won ? '보상은 알림으로 보냈습니다(처음 보낼 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw${s.boss && s.boss !== 'gwiheo' ? `/${s.boss}` : ''}">처음으로</a>`)}</div></section>`;
 }
 
 function ugResult(won, s) {
   const U = GD.ultimate || {}, bd = U.boards?.[s.board?.ug?.board || s.boss] || {}, tk = U.tokens || {};
-  return won ? `${esc(bd.token_name || '토큰')}을(를) ${tk.clear ?? 3}개 받았습니다(처음 깨면 ${tk.first ?? 10}개 더, 가방이 차면 창고로). 횟수 제한 없이 다시 설 수 있습니다.`
-    : '무용담은 져도 잃는 것이 없습니다(장비 닳음·침식·재도전 대기 없음). 다시 열면 1막부터입니다.';
+  return won ? esc(UG_RESULT.won(bd.token_name || '토큰', tk.clear ?? 3, tk.first ?? 10)) : UG_RESULT.lost;
+}
+function ugTitle(won, s) {
+  const bd = GD.ultimate?.boards?.[s.board?.ug?.board || s.boss] || {};
+  return esc(won ? UG_RESULT.title(bd.name || '무용담') : UG_RESULT.wiped);
 }
 const tipsHtml = tips => (tips || []).length ? `<details class="panel fold"><summary class="panel-head"><h2>${icon('help', 16)} 파훼법 <small class="muted">쓰러뜨린 조사원만 봅니다</small></h2></summary>
   <div class="panel-body"><ul class="small">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>` : '';
@@ -524,9 +527,9 @@ function byBoard(s, live) {
   const wn = b.wn, myFade = Number(fade[s.me] || 0), dj = b.ug?.wm?.k === 'dongji' ? b.ug.wm : null;
   if (dj) for (const x of dj.mine || []) {
     const m = -Math.PI / 2 + (Number(x.c) - 1) * 2 * Math.PI / 7, lx = 180 + 176 * Math.cos(m), ly = 180 + 176 * Math.sin(m);
-    lampDots += `<g class="wm-n ${x.n <= dj.lit ? 'done' : ''}"><circle cx="${lx.toFixed(0)}" cy="${ly.toFixed(0)}" r="10"/><text x="${lx.toFixed(0)}" y="${(ly + 4).toFixed(0)}">${x.n}</text></g>`;
+    lampDots += `<g class="wm-n ${x.n <= dj.lit ? 'done' : ''}"><circle cx="${lx.toFixed(0)}" cy="${ly.toFixed(0)}" r="12"/><text x="${lx.toFixed(0)}" y="${(ly + 5).toFixed(0)}">${x.n}</text></g>`;
   }
-  return `<div class="by-wrap"><svg class="by-map" viewBox="0 0 360 360" role="img" aria-label="맹약 마당">${cells}${lampDots}<circle class="by-core" cx="180" cy="180" r="40"/><text class="by-core-t" x="180" y="185">백야</text>${marks}${tokens}</svg>
+  return `<div class="by-wrap"><svg class="by-map" viewBox="-14 -14 388 388" role="img" aria-label="맹약 마당">${cells}${lampDots}<circle class="by-core" cx="180" cy="180" r="40"/><text class="by-core-t" x="180" y="185">백야</text>${marks}${tokens}</svg>
     <p class="mk-hint muted small">${dj ? `<b class="wm-name">「${esc(dj.name || '')}」</b> · 등 ${dj.lit}/7 · ${dj.left}라운드 남음 · ` : ''}${wn ? `<b>흰 밤</b> · 등 ${wn.lit}/${wn.need}${wn.left != null ? ` · ${wn.left > 0 ? `${wn.left}라운드 남음` : '이번 라운드 끝'}` : ''}` : `켜진 등 ${lamps.size}/7 · 주는 피해 ×${Number(b.dmg_mul || 1).toFixed(2)} · 받는 피해 ×${Number(b.hurt_mul || 1).toFixed(2)}`}${myFade ? ` · <b class="warn">내 바램 ${myFade}/${b.fade_stun || 3}</b>` : ''}${b.stunned ? ' · <b class="bad">이번 라운드 꼼짝 못 함</b>' : ''}</p>
     ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}</div>`;
 }

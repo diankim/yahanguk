@@ -22,7 +22,7 @@ begin
   "name": "값귀", "fight": "값을 매기는 장부", "place": "붉은 사당 골목", "arc": "명등기", "region": "red_shrine_lane", "lv": 47,
   "quest": "mdq_7", "quest_name": "외전 「명등기」 7장 「묻은 이름」", "item": "red_shrine_lacquer", "item_name": "붉은 사당 옻", "item_where": "붉은 사당 골목에서 채집해 얻습니다.",
   "min": 18, "hp_min": 8000, "hp_atk": 42, "hp_n": [1.2, 0.8, 0.65, 0.62], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [40, 4], "enrage": 0.15,
-  "first": {"gil": 2000, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
+  "first": {"gil": 2000, "xp": 0.5, "mount": "leaf_ox", "mount_name": "낱장 황소", "name_style": "ns:1036", "name_style_name": "인주", "furniture": "gg_first"}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
   "hard_quest": "mdq_8", "hard_quest_name": "외전 「명등기」 8장 「끊긴 기름」",
   "modes": {"story": "이야기판", "hard": "깊은 장부"},
   "phases": ["판결 망치", "바가지", "장부 맞추기", "장 닫힘"],
@@ -447,7 +447,11 @@ begin
           v_gil := case when is_first then (r -> 'first' ->> 'gil')::int else (r -> 'again' ->> 'gil')::int end;
           update public.world_characters set gil = gil + v_gil, updated_at = now() where owner_id = m.owner_id;
           if xp > 0 then xp := coalesce((public.world_grant_xp_got(m.owner_id, xp) ->> 'xp')::int, 0); end if;
-          msg := case when is_first then '값귀를 처음으로 쓰러뜨렸습니다. ' || to_char(v_gil, 'FM999,999') || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '을 받았습니다.'
+          if is_first then
+            insert into public.world_owned_mounts(owner_id, mount_id) values (m.owner_id, r -> 'first' ->> 'mount') on conflict do nothing;
+            insert into public.world_faction_unlocks(owner_id, unlock_key) values (m.owner_id, r -> 'first' ->> 'name_style') on conflict do nothing;
+          end if;
+          msg := case when is_first then '값귀를 처음으로 쓰러뜨렸습니다. ' || to_char(v_gil, 'FM999,999') || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || ' · 탈것 「' || (r -> 'first' ->> 'mount_name') || '」 · 이름 색 「' || (r -> 'first' ->> 'name_style_name') || '」을(를) 받았습니다.'
             else '값귀를 쓰러뜨렸습니다(' || (coalesce(rec.kills, 0) + 1) || '번째). ' || v_gil || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '.' end;
           insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '값귀 처치', msg, jsonb_build_object('fight_id', p_fight, 'first', is_first, 'boss', 'gapgwi'));
           insert into public.world_events(actor_id, actor_name, event_type, content, payload)

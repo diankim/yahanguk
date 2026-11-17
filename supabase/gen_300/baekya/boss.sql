@@ -20,7 +20,7 @@ begin
   "name": "백야", "fight": "흰 밤의 맹약 마당", "place": "맹약 마당", "arc": "명등기", "region": "pact_court", "lv": 50,
   "quest": "mdq_15", "quest_name": "외전 「명등기」 15장 「검은 끈의 장」", "item": "pact_stone_dust", "item_name": "맹약 돌가루", "item_where": "맹약 마당에서 채집해 얻습니다.",
   "min": 18, "hp_min": 9000, "hp_atk": 46, "hp_n": [0.8, 0.9, 0.8, 1.0], "raw_n": [0.6, 0.62, 0.8, 0.85], "raw": [44, 4], "enrage": 0.15,
-  "first": {"gil": 2500, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
+  "first": {"gil": 2500, "xp": 0.5, "mount": "first_night_horse", "mount_name": "첫 밤 흑마", "name_style": "ns:1037", "name_style_name": "청야", "furniture": "by_first"}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
   "hard_quest": "mdq_17", "hard_quest_name": "외전 「명등기」 17장 「명등」",
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
   "phases": ["화살비", "붉은 붓", "물방울과 가루", "흰 밤"],
@@ -623,7 +623,11 @@ begin
           v_gil := case when is_first then (r -> 'first' ->> 'gil')::int else (r -> 'again' ->> 'gil')::int end;
           update public.world_characters set gil = gil + v_gil, updated_at = now() where owner_id = m.owner_id;
           if xp > 0 then xp := coalesce((public.world_grant_xp_got(m.owner_id, xp) ->> 'xp')::int, 0); end if;
-          msg := case when is_first then '백야를 처음으로 이겼습니다. ' || to_char(v_gil, 'FM999,999') || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '을 받았습니다.'
+          if is_first then
+            insert into public.world_owned_mounts(owner_id, mount_id) values (m.owner_id, r -> 'first' ->> 'mount') on conflict do nothing;
+            insert into public.world_faction_unlocks(owner_id, unlock_key) values (m.owner_id, r -> 'first' ->> 'name_style') on conflict do nothing;
+          end if;
+          msg := case when is_first then '백야를 처음으로 이겼습니다. ' || to_char(v_gil, 'FM999,999') || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || ' · 탈것 「' || (r -> 'first' ->> 'mount_name') || '」 · 이름 색 「' || (r -> 'first' ->> 'name_style_name') || '」을(를) 받았습니다.'
             else '백야를 이겼습니다(' || (coalesce(rec.kills, 0) + 1) || '번째). ' || v_gil || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '.' end;
           insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '백야를 이김', msg, jsonb_build_object('fight_id', p_fight, 'first', is_first, 'boss', 'baekya'));
           insert into public.world_events(actor_id, actor_name, event_type, content, payload)
