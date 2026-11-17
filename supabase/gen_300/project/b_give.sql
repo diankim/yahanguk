@@ -1,3 +1,5 @@
+grant execute on function public.world_mf_name(text) to fn_owner_field;
+
 create or replace function public.world_project_rule(p_key text)
  returns jsonb language sql immutable set search_path = pg_catalog, public
 as $f$ select public.world_project_rules() -> 'projects' -> p_key $f$;
@@ -126,7 +128,7 @@ begin
     points = case when done >= 5 then 0 else carry end,
     goal = public.world_project_goal(p_key, done, goal_n), updated_at = now() where project_key = p_key;
   place := case when fac then public.world_mf_name(p ->> 'faction') || ' 거점 사업' else (public.world_domain_rules() -> (p ->> 'domain') ->> 'name') || ' 공동 사업' end;
-  msg := place || ' 「' || (p ->> 'name') || '」 ' || done || '단계를 마쳤습니다. ' || coalesce(public.world_project_text(p_key, done), '');
+  msg := place || ' 「' || (p ->> 'name') || '」 ' || done || '단계를 마쳤습니다. ' || coalesce(public.world_project_text(p_key, done) || '.', '');
   insert into public.world_notifications(user_id, kind, title, content, payload)
   select c.owner_id, 'project_stage', '사업 ' || done || '단계 마침', msg ||
       case when c.owner_id = any (got) then ' 힘을 보탠 몫으로 낙성 떡을 창고에 넣었습니다' ||
@@ -151,9 +153,9 @@ end $f$;
 create or replace function public.world_project_have(p_uid uuid, p_inv jsonb, p_st jsonb, p_item text)
  returns jsonb language sql stable security definer set search_path = pg_catalog, public
 as $f$
-  select jsonb_build_object('have', public.world_give_check(p_uid, p_item, p_inv), 'have_hq', public.world_give_check(p_uid, p_item || '_hq', p_inv),
+  select jsonb_build_object('have', public.world_give_check(p_uid, p_item, p_inv), 'hq_have', public.world_give_check(p_uid, p_item || '_hq', p_inv),
     'have_st', case when p_st is null or exists (select 1 from public.world_item_locks l where l.owner_id = p_uid and l.item_id = p_item) then 0 else greatest(0, coalesce((p_st ->> p_item)::int, 0)) end,
-    'have_st_hq', case when p_st is null or exists (select 1 from public.world_item_locks l where l.owner_id = p_uid and l.item_id = p_item || '_hq') then 0 else greatest(0, coalesce((p_st ->> (p_item || '_hq'))::int, 0)) end)
+    'hq_st', case when p_st is null or exists (select 1 from public.world_item_locks l where l.owner_id = p_uid and l.item_id = p_item || '_hq') then 0 else greatest(0, coalesce((p_st ->> (p_item || '_hq'))::int, 0)) end)
 $f$;
 
 create or replace function public.world_project_st_ok(p_uid uuid)
@@ -219,7 +221,7 @@ declare uid uuid := public.fn_owner_auth_uid(); p jsonb := public.world_project_
   pr public.world_projects%rowtype; ct public.world_project_contrib%rowtype; today date := (now() at time zone 'Asia/Seoul')::date; fac boolean;
   inv jsonb; st jsonb; st_ok boolean; e record; base text; hq boolean; q int; free_inv int; take_inv int; take_st int; allowed text[]; urg text[]; mul numeric;
   pts bigint := 0; cap int; m numeric := 1; gain bigint := 0; before_pts int; rid text; ups jsonb := '[]'::jsonb; up jsonb; used_st boolean := false; n_items int := 0;
-  before_total bigint; th bigint; nm text;
+  before_total bigint; th bigint; nm text; left_over jsonb := '{}'::jsonb; st_take jsonb := '{}'::jsonb;
 begin perform public.world_travel_guard('사업 납품');
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
@@ -264,6 +266,12 @@ begin perform public.world_travel_guard('사업 납품');
     base := public.world_item_base(e.key); hq := base <> e.key;
     nm := coalesce((select item_name from public.world_item_catalog where item_id = e.key), e.key);
     if not (base = any (allowed)) then raise exception '「%」은(는) 지금 단계에서 받는 물품이 아닙니다.', nm; end if;
+    mul := least((r ->> 'mul_cap')::numeric, case when base = any (urg) then (r -> 'urgent' ->> 'mul')::numeric else 1 end * case when hq then (r ->> 'hq_mul')::numeric else 1 end);
+    if cap - before_pts - pts <= 0 then left_over := left_over || jsonb_build_object(e.key, q); continue; end if;
+    if q > ceil((cap - before_pts - pts) / ((r -> 'v' ->> base)::numeric * mul)) then
+      left_over := left_over || jsonb_build_object(e.key, q - ceil((cap - before_pts - pts) / ((r -> 'v' ->> base)::numeric * mul))::int);
+      q := ceil((cap - before_pts - pts) / ((r -> 'v' ->> base)::numeric * mul))::int;
+    end if;
     free_inv := public.world_give_check(uid, e.key, inv);
     if exists (select 1 from public.world_item_locks l where l.owner_id = uid and l.item_id = e.key) then raise exception '「%」은(는) 잠가 둔 물품입니다.', nm; end if;
     take_inv := least(q, free_inv);
@@ -274,9 +282,8 @@ begin perform public.world_travel_guard('사업 납품');
     if take_inv > 0 then inv := public.world_inv_add(inv, e.key, -take_inv); end if;
     if take_st > 0 then
       st := case when coalesce((st ->> e.key)::int, 0) - take_st <= 0 then st - e.key else jsonb_set(st, array[e.key], to_jsonb(coalesce((st ->> e.key)::int, 0) - take_st)) end;
-      used_st := true;
+      used_st := true; st_take := st_take || jsonb_build_object(e.key, take_st);
     end if;
-    mul := least((r ->> 'mul_cap')::numeric, case when base = any (urg) then (r -> 'urgent' ->> 'mul')::numeric else 1 end * case when hq then (r ->> 'hq_mul')::numeric else 1 end);
     pts := pts + floor((r -> 'v' ->> base)::numeric * mul * q)::bigint;
     n_items := n_items + q;
   end loop;
@@ -307,10 +314,11 @@ begin perform public.world_travel_guard('사업 납품');
   for th in select distinct ((t.rule ->> 'n')::bigint) from public.world_title_catalog t where t.rule ? 'project' and (t.rule ->> 'project' like '%:%' or t.rule ->> 'project' in ('faction', 'common')) loop
     if before_total < th and before_total + pts >= th then perform public.world_title_award_check(uid, 'project'); exit; end if;
   end loop;
-  return jsonb_build_object('pts', pts, 'n', n_items, 'merit', case when fac then gain else 0 end, 'gil', case when fac then 0 else gain end, 'from_storage', used_st,
+  return jsonb_build_object('pts', pts, 'n', n_items, 'merit', case when fac then gain else 0 end, 'gil', case when fac then 0 else gain end, 'from_storage', st_take, 'left', left_over,
     'today', before_pts + pts, 'cap', cap, 'stage_up', ups,
     'content', n_items || '개를 넘겼습니다 · ' || pts || '몫 · ' || case when fac then '공훈 +' || gain else gain || '전' end ||
-      case when before_pts + pts >= cap then ' · 오늘 상한에 닿았습니다.' else ' · 오늘 ' || (before_pts + pts) || '/' || cap end ||
+      case when left_over <> '{}'::jsonb then ' · 오늘 상한에 닿아 ' || (select sum((x.value)::text::int) from jsonb_each(left_over) x) || '개는 돌려받았습니다.'
+        when before_pts + pts >= cap then ' · 오늘 상한에 닿았습니다.' else ' · 오늘 ' || (before_pts + pts) || '/' || cap end ||
       case when jsonb_array_length(ups) > 0 then ' · 사업이 ' || (ups -> -1 ->> 'stage') || '단계를 마쳤습니다!' else '' end,
     'view', public.world_project_view(p_key));
 end $f$;

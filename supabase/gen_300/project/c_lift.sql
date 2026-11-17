@@ -133,3 +133,6 @@ $q$       > (select sc.daily_cap from public.world_shop_catalog sc where sc.shop
       raise exception '이곳에서는 이 물품을 하루에 %개까지만 살 수 있습니다(오늘 %개 삼).', (select sc.daily_cap from public.world_shop_catalog sc where sc.shop_id = s.shop_id and sc.item_id = p_item_id),$q$,
 $q$       > (select sc.daily_cap from public.world_shop_catalog sc where sc.shop_id = s.shop_id and sc.item_id = p_item_id) * public.world_project_cap_mul(uid, s.shop_id) then
       raise exception '이곳에서는 이 물품을 하루에 %개까지만 살 수 있습니다(오늘 %개 삼).', (select sc.daily_cap from public.world_shop_catalog sc where sc.shop_id = s.shop_id and sc.item_id = p_item_id) * public.world_project_cap_mul(uid, s.shop_id),$q$]);
+select pg_temp.pj_fix('world_ucomm_board', array[
+$q$'safe', coalesce(r.is_safe_zone, false) and not public.world_weak_safe(r.region_id),$q$,
+$q$'safe', coalesce(r.is_safe_zone, false) and (not public.world_weak_safe(r.region_id) or public.world_weak_lift(uid, r.region_id, 'ucomm')),$q$]);

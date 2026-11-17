@@ -183,7 +183,20 @@ export const SYS_CHAT = {
   '연리 소식': { icon: 'knot', cls: 'note' },
   '운영 공지': { icon: 'bell', cls: 'note' },
   '선배 소식': { icon: 'users', cls: 'note' },
+  '사업 소식': { icon: 'hammer', cls: 'note' },
 };
+
+const PJ = GD.project || { pay: { faction: { per_merit: 40, day_cap: 2400 }, common: { gil_rate: 0.8, day_cap: 6000 }, after_mul: 0.5 }, urgent: { n: 2, mul: 1.5 }, hq_mul: 1.5, mul_cap: 2, goal: { window_h: 72, active_min: 60 }, memento: { pct: 1, faction_merit: 20, common_gil_pct: 0.5 }, lift: {}, perk_text: { faction: [], common: [] }, projects: {}, vault: [], titles: 0 };
+export const PROJECT = {
+  ...PJ,
+  of: k => PJ.projects?.[k] || null,
+  facKey: f => f ? `f:${f}` : null,
+  rewardOf: (kind, pts, after) => kind === 'faction' ? `공훈 ${Math.floor(pts * (after ? PJ.pay.after_mul : 1) / PJ.pay.faction.per_merit)}` : `${Math.floor(pts * (after ? PJ.pay.after_mul : 1) * PJ.pay.common.gil_rate)}전`,
+  goalTip: kind => `단계 목표는 기본값 × √(지난 ${Math.round(PJ.goal.window_h / 24)}일 동안 ${PJ.goal.active_min}분 넘게 움직인 ${kind === 'faction' ? '그 세력 조사원' : '그 땅이 열린 조사원'} 수)입니다. 한국 시각 날마다 그날 첫 납품 때 다시 셉니다.`,
+  payTip: kind => `넘긴 물품의 몫(1개 기준 몫 × 수량)만큼 ${kind === 'faction' ? `공훈을 받습니다(몫 ${PJ.pay.faction.per_merit} = 공훈 1).` : `전을 받습니다(몫 1 = ${PJ.pay.common.gil_rate}전).`} 「급히」 품목은 ×${PJ.urgent.mul}, 우수품은 ×${PJ.hq_mul}(겹쳐도 ×${PJ.mul_cap}까지). 한 사람이 하루에 넘길 수 있는 몫은 ${fmtN(PJ.pay[kind]?.day_cap)}까지이고, 넘치는 물품은 돌려받습니다. 다섯 단계를 다 마친 뒤에도 넘길 수 있지만 보상은 ${PJ.pay.after_mul * 100}%입니다.`,
+  mementoTip: () => `한 단계가 차는 순간, 그 단계 목표의 ${PJ.memento.pct}% 넘게 넘긴 사람은 낙성 떡과 ${`공훈 +${PJ.memento.faction_merit}(세력)·단계 목표의 ${PJ.memento.common_gil_pct}%만큼 전(공동)`}을 받습니다. 마지막 단계에 힘을 보태면 기념품이 더 있습니다.`,
+};
+const fmtN = n => Number(n || 0).toLocaleString('ko-KR');
 
 const MT = GD.mentor || { gap: 10, near_min: 10, day_cap: 60, pair_cap: 30, xp_day: 50, kinds: {}, skip: [], shop: [], post: { hours: 2, note: 30, wants: {} } };
 export const MENTOR = {

@@ -210,7 +210,7 @@ export function markNeeded(root, b) {
   const need = neededItems(b);
   $$('[data-need-item]', root).forEach(el => { const n = need.get(el.dataset.needItem); el.classList.toggle('q-need', !!n); if (n) el.title = `퀘스트: ${n.quests.join(', ')} · ${n.left}개 더`; else el.removeAttribute('title'); });
   $$('[data-need-spot]', root).forEach(el => { const ids = (el.dataset.needSpot || '').split(','), hit_ = ids.filter(id => need.has(id));
-    let tag = el.querySelector('.q-need-tag'); if (!hit_.length) { tag?.remove(); return; }
+    let tag = el.querySelector('.q-need-tag:not(.pj-tag)'); if (!hit_.length) { tag?.remove(); return; }
     if (!tag) { tag = document.createElement('span'); tag.className = 'q-need-tag'; el.querySelector('b')?.append(tag); }
     tag.textContent = '퀘스트'; tag.title = [...new Set(hit_.flatMap(id => need.get(id).quests))].join(', '); });
 }

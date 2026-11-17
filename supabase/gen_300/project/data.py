@@ -119,7 +119,7 @@ PROJECTS = {
 
 VAULT_COMMON = [
     ('hf_proj_crate', 90, 1, 1), ('of_top_proj_vest', 120, 2, 1), ('of_acc_proj_towel', 80, 1, 1), ('tk_bundle', 30, 1, 1),
-    ('pet_treat_box', 15, 1, 2), ('hf_proj_cart', 180, 2, 2), ('of_bundle', 60, 2, 2),
+    ('treat_box', 15, 1, 2), ('hf_proj_cart', 180, 2, 2), ('of_bundle', 60, 2, 2),
     ('hf_proj_pole', 200, 3, 3), ('pet_egg_2', 120, 3, 3), ('hair_pattern', 150, 3, 4), ('hf_proj_beam', 300, 4, 5),
 ]
 VAULT_FACTION = (3, 220, 200)
@@ -141,7 +141,7 @@ ITEMS = [
     ('proj_rice_cake', '낙성 떡', 'consumable', 3, '사업 한 단계를 마친 날 거점에서 나누는 떡입니다. 먹으면 체력과 정신이 오르고 한동안 든든합니다.', 20, 60, False,
      {'hp': 30, 'mn': 10, 'buffs': ['well_fed']}),
     ('tk_bundle', '노정패 묶음', 'consumable', 2, '세력 비고에서 공훈으로 바꾸는 노정패 꾸러미입니다. 풀면 노정패 10개가 됩니다.', 40, 100, False, {'tokens': 10}),
-    ('pet_treat_box', '동무 새참 바구니', 'pet', 2, '어느 동무에게 주어도 좋아하는 별미처럼 반기는 새참 바구니입니다. 별채 동무 먹이 주기에 씁니다.', 40, 60, False, None),
+    ('treat_box', '동무 새참 바구니', 'consumable', 2, '어느 동무에게 주어도 좋아하는 별미처럼 반기는 새참 바구니입니다. 별채 동무 먹이 주기에 씁니다.', 40, 60, False, None),
 ]
 FURN = {
     'hf_proj_plaque': ('proj_plaque', '사업 마지막 단계에 힘을 보탠 이에게 주는 기념패입니다.', 1000, False),

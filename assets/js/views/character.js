@@ -702,6 +702,7 @@ async function faction(body) {
     `<button class="tile ${supplied ? '' : 'primary'}" id="supply" data-here="보급 수령" ${supplied ? 'disabled' : ''} title="소속 부서에서 하루 한 번 보급품을 받습니다">${icon('bag', 20)}<span>${supplied ? '보급 받음' : '일일 보급'}</span></button>`,
     ...(major ? [tile('base', '거점', 'shield', false)] : []),
     ...(major && fq?.faction_id ? fqPops(fq).map(([k, l, ico, dot]) => tile(k, l, ico, dot)) : []),
+    ...(major && fq?.faction_id ? [`<button class="tile" data-pj="f:${esc(major)}" title="정한 물품을 거점에 넘겨 함께 거점을 세웁니다">${icon('hammer', 20)}<span>거점 사업</span></button>`] : []),
   ].join('');
   body.innerHTML = `
     ${panel(major ? `${nameOf(major)}${fq?.ranks ? ` · ${esc(fq.ranks[(fq.rank || 1) - 1] || '')}` : ''}` : `${nameOf(c.faction_key)}`, `
@@ -716,6 +717,7 @@ async function faction(body) {
           <div class="join-row" id="jr-${k}"><button class="btn small ${at && (c.level || 1) >= JOIN_LV ? 'primary' : 'ghost'}" data-here="세력 가입" data-join="${k}">가입 신청</button><button class="btn small ghost" data-guide="${k}">${icon('help', 14)}<span>자세히 알아보기</span></button></div></article>`; }).join('')}</div>`, { ico: 'shield' })}
     ${board ? boardPanel(board) : ''}`;
   $$('[data-fpop]', body).forEach(b => b.onclick = () => openPop(b.dataset.fpop));
+  $$('[data-pj]', body).forEach(b => b.onclick = () => import('./project.js').then(x => x.openProject(b.dataset.pj)));
   const sup = $('#supply', body); if (sup) sup.onclick = () => guard(sup, async () => { const r = await act('world_claim_faction_supply'); if (store.hud) store.hud.supply = { claimed_today: true }; if (r?.letter) showLetter(r.letter); return r; });
   $$('[data-guide]', body).forEach(b => b.onclick = () => openFactionGuide(b.dataset.guide));
   $$('[data-join]', body).forEach(b => b.onclick = async () => {

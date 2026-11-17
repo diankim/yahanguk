@@ -1,10 +1,10 @@
-import { icon, esc, $, $$, effectText, nameOf, josa } from '../core.js';
+import { icon, esc, $, $$, effectText, nameOf, josa, fmt } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -82,6 +82,8 @@ function factionLoreHtml() {
         <li><b>이점</b> ${esc(l.perk)}</li><li><b>등급 효과</b> 2~5등급마다 ${esc(l.rank)}</li><li><b>적대</b> ${esc(factionNames(GD.factionHostile[k] || []))}</li><li><b>평판의 이름</b> ${esc(l.name2)}</li></ul></div>`; }).join('');
 }
 
+const pjBase = kind => { const p = Object.values(PROJECT.projects || {}).find(x => x.kind === kind); return (p?.base || []).map(n => fmt.num(n)).join(' · '); };
+const pjList = (kind, f) => Object.values(PROJECT.projects || {}).filter(p => p.kind === kind).map(p => `<li>${f(p)}</li>`).join('');
 const S = [
   ['start', '처음 30분', `
     <ol class="how">
@@ -1176,6 +1178,38 @@ const S = [
     </ul>
     ${petPartnerHtml()}`],
   ['lore-factions', '세력 이야기', factionLoreHtml()],
+  ['fproject', '거점 사업', `
+    <p>대세력마다 거점을 함께 다시 세우는 사업이 있습니다. 그 세력에 들어 가입 퀘스트를 마친 조사원만, 세력 거점에서 정한 물품을 넘깁니다(캐릭터 › 세력 「거점 사업」 또는 거점 현장의 띠).</p>
+    <h4>단계와 혜택</h4>
+    <ol>${(PROJECT.perk_text?.faction || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
+    <ul>
+      <li>단계는 한 번 차면 그대로 남습니다. 혜택은 그 세력 조사원만 받습니다.</li>
+      <li>단계마다 받는 물품은 제작품 넷과 채집 재료 넷, 모두 여덟 가지입니다. 날마다 그중 둘이 「급히 필요」(몫 ×${PROJECT.urgent?.mul ?? 1.5})로 바뀌고, 급히 필요한 채집 재료는 현장 채집터에 「사업」 칩이 붙습니다.</li>
+      <li>세력마다 단계 목표: ${pjBase('faction')}몫 × √(지난 ${Math.round((PROJECT.goal?.window_h ?? 72) / 24)}일 동안 ${PROJECT.goal?.active_min ?? 60}분 넘게 움직인 그 세력 조사원 수).</li>
+    </ul>
+    <h4>넘기기와 보상</h4>
+    <ul>
+      <li>몫 ${PROJECT.pay?.faction?.per_merit ?? 40}마다 공훈 1. 한 사람이 하루에 넘길 수 있는 몫은 ${fmt.num(PROJECT.pay?.faction?.day_cap ?? 2400)}까지이고, 상한을 넘는 물품은 돌려받습니다.</li>
+      <li>우수품은 몫 ×${PROJECT.hq_mul ?? 1.5}(급히와 겹쳐도 ×${PROJECT.mul_cap ?? 2}까지). 가방에 모자란 것은 창고에서 꺼내 넘깁니다. 장착 중·잠금·강화한 장비·임무 물품은 넘기지 않습니다.</li>
+      <li>단계가 차는 순간 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 공훈 +${PROJECT.memento?.faction_merit ?? 20}과 낙성 떡을 창고로 받고, 마지막 단계에는 「낙성 기념패」 가구도 받습니다.</li>
+      <li>다섯 단계를 다 마친 뒤에도 넘길 수 있고 기여·칭호에 셉니다. 보상은 ${(PROJECT.pay?.after_mul ?? 0.5) * 100}%입니다.</li>
+    </ul>
+    <h4>세력마다</h4>
+    <ul>${pjList('faction', p => `${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 상점 ${esc((p.shop || []).join('·'))} · 지역 효과 ${esc(effectText(p.area_fx || {}).join(', '))} · 바탕 무늬 「${esc(p.pattern || '')}」`)}</ul>
+    <h4>비고 공통 품목</h4>
+    <ul>${(PROJECT.vault || []).map(v => `<li>${esc(v.name)} · 공훈 ${v.price} · ${v.rank}등급 · 사업 ${v.stage}단계부터</li>`).join('')}</ul>
+    <p class="muted small">사업 칭호 ${PROJECT.titles ?? 9}개(분류 「사업」)는 넘긴 몫의 누계로 얻습니다.</p>`],
+  ['cproject', '공동 사업', `
+    <p>빈약한 안전지대가 있는 먼 땅 셋에는 모든 조사원이 함께 채우는 공동 사업이 있습니다. 그 땅이 열린 조사원은 누구나 그 땅 안전지대에서 넘길 수 있고, 보상은 전입니다.</p>
+    <ul>${pjList('common', p => `「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 혜택은 「${esc(p.story_name || '')}」을(를) 마친 조사원만`)}</ul>
+    <h4>단계마다 풀리는 것</h4>
+    <ol>${(PROJECT.perk_text?.common || []).map((t, i) => `<li><b>${i + 1}단계</b>: ${esc(t)}</li>`).join('')}</ol>
+    <ul>
+      <li>상점 품목 수가 느는 것은 모두에게 보이고, 새 품목·하루 개수·지름길·창고·거래소·마구간·수리비·되팔기는 그 땅 이야기를 마친 사람에게만 풀립니다. 마치지 않은 사람에게는 빈약한 안전지대 그대로입니다.</li>
+      <li>단계 목표: ${pjBase('common')}몫 × √(지난 ${Math.round((PROJECT.goal?.window_h ?? 72) / 24)}일 동안 움직였고 그 땅이 열린 조사원 수).</li>
+      <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.8}전, 한 사람이 하루에 한 땅에 넘길 수 있는 몫은 ${fmt.num(PROJECT.pay?.common?.day_cap ?? 6000)}까지입니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
+      <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
+    </ul>`],
   ['feast', '세력 행사', `
     <ul>
       <li>일곱 대세력이 요일마다 거점에서 행사를 엽니다. 매일 ${GD.feast?.start}부터 ${GD.feast?.min}분 동안 열립니다(한국 시각).</li>
@@ -2092,8 +2126,8 @@ const GROUPS = [
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
-  ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast']],
-  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission']],
+  ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
+  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'cproject']],
   ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';

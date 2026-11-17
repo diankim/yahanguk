@@ -134,6 +134,19 @@ def build(dsn):
         'list', (select jsonb_agg(jsonb_build_object('region', r.region_name, 'kind', m.kind, 'level', m.min_level) order by m.min_level, m.sort) from world_meisho m join world_map_regions r using (region_id) where m.active),
         'recipes', (select jsonb_agg(jsonb_build_array(cr.craft_field, cr.required_skill_rank, i.item_name) order by cr.craft_field, cr.required_skill_rank)
           from world_crafting_recipes cr join world_item_catalog i on i.item_id = cr.output_item where cr.required_skill_rank >= 30))""")
+    d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(
+        'titles', jsonb_array_length(world_project_rules() -> 'titles'),
+        'vault', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'price', (v ->> 'price')::int, 'rank', (v ->> 'rank')::int, 'stage', (v ->> 'stage')::int) order by (v ->> 'stage')::int, (v ->> 'price')::int)
+          from jsonb_array_elements(world_project_rules() -> 'vault') v join world_item_catalog i on i.item_id = v ->> 'id'),
+        'f_shop', world_project_rules() -> 'f_shop', 'c_shop', world_project_rules() -> 'c_shop',
+        'projects', (select jsonb_object_agg(k, jsonb_build_object('kind', p ->> 'kind', 'name', p ->> 'name', 'faction', p ->> 'faction', 'domain', p ->> 'domain', 'story', p ->> 'story',
+            'story_name', (select q.title from world_quests q where q.quest_id = p ->> 'story'),
+            'hubs', (select jsonb_agg(m.region_name order by m.region_name) from world_map_regions m where m.region_id in (select jsonb_array_elements_text(p -> 'hubs'))),
+            'hub_ids', p -> 'hubs', 'base', (select jsonb_agg((s ->> 'base')::int) from jsonb_array_elements(p -> 'stages') s),
+            'area_fx', p -> 'area_fx', 'cut', (select max(value::text::numeric) from jsonb_each(p -> 'route')),
+            'shop', (select jsonb_agg(i.item_name) from jsonb_array_elements_text(p -> 'shop') x join world_item_catalog i on i.item_id = x),
+            'pattern', p -> 'pattern' ->> 1))
+          from jsonb_each(world_project_rules() -> 'projects') e(k, p)))""")
     return d
 
 

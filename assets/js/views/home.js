@@ -7,7 +7,8 @@ import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, weakSafe, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT } from '../rules.js';
+import { openProject, projectBand, urgentSet } from './project.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -166,7 +167,7 @@ function sceneTint(r) {
 function sceneFx(r) {
   const e = store.env;
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
-  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
+  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w, r?.project?.here)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
 function inflHtml(m) {
   const v = inflMine(m);
@@ -201,12 +202,13 @@ function scene(s, traveling, downed) {
 }
 
 function town(s, roster) {
-  const r = s.region, banyo = weakSafe(r.region_id);
+  const r = s.region, wk = r.weak || null, pj = r.project?.here;
   const tiles = [
-    ['shop', 'shop', r.shop_name || '상점', banyo ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
-    ['smithy', 'hammer', '대장간', banyo ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
-    banyo ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
-    banyo ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
+    ['shop', 'shop', r.shop_name || '상점', wk?.shop ? '품목이 적고 비쌈 · 하루에 살 수 있는 개수가 정해짐' : '물자 사고팔기'],
+    ['smithy', 'hammer', '대장간', wk?.repair ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
+    wk?.market ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
+    wk?.storage ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
+    pj ? ['project', 'hammer', pj.kind === 'faction' ? '거점 사업' : '공동 사업', `${pj.name} · ${pj.stage >= 5 ? '다섯 단계 마침' : `${pj.stage + 1}단계 ${pj.pct}%`}`] : null,
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
     ['inn', 'moon', r.rest_spot_name || '숙소', restLine() || '쉬며 회복하고 탐색력 채우기'],
     ['idle', 'hourglass', '자율 휴식', '접속하지 않는 동안 쉬어 두기'],
@@ -218,6 +220,7 @@ function town(s, roster) {
   ].filter(Boolean);
   return `
     ${s.stamina ? townStamina(s.stamina) : ''}
+    ${projectBand(r.project)}
     <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : k === 'depart' ? 'data-tcd-home' : ''}>${esc(k === 'depart' && travelCdLeft() > 0 ? `다시 출발까지 ${fmt.remain(travelCdLeft())}` : d)}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
@@ -251,6 +254,8 @@ async function digBijang(b, s) {
   const r = await guard(b, () => act('world_bijang_dig'));
   if (r?.fight_id) window.yahangGo('pfight', r.fight_id);
 }
+const pjTag = (s, items) => { const u = urgentSet(s.region?.project), hit_ = (items || []).filter(id => u.has(id));
+  return hit_.length ? `<span class="q-need-tag pj-tag" title="${esc(`사업에 급히 필요: ${hit_.map(nameOf).join(', ')}`)}">사업</span>` : ''; };
 function field(s, roster, blocked) {
   const st = s.stamina || { now: 0, max: 20 }, n = s.node;
   const kids = (s.nodes || []).filter(x => x.parent_id === n.node_id);
@@ -315,7 +320,7 @@ function field(s, roster, blocked) {
         <header class="panel-head"><h2>${icon('leaf', 16)}채집터${helpQ('채집은 12초마다 한 번(같은 채집터는 5분 뒤에 다시) 할 수 있고, 한국 시각 하루 처음 10번은 탐색력이 들지 않습니다(그 뒤로는 탐색력 1).', '채집 안내')}</h2><span class="muted small">${s.hidden_spots ? `숨은 채집터 ${s.hidden_spots}` : ''}</span></header>
         <div class="panel-body">
           ${(s.spots || []).length ? `<ul class="spots">${s.spots.map(p => `<li data-need-spot="${esc((p.items || []).join(','))}">
-              <div><b>${esc(p.name)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
+              <div><b>${esc(p.name)}${pjTag(s, p.items)}</b><small>${esc(CAT[p.category] || '')} · ${(p.items || []).map(id => `<span data-need-item="${esc(id)}">${esc(nameOf(id))}</span>`).join(', ')}</small></div>
               <button class="btn small primary" data-gather="${esc(p.spot_id)}" data-ready="${p.ready_at ? new Date(p.ready_at).getTime() : ''}" ${blocked ? 'disabled data-blocked="1"' : ''}>채집</button></li>`).join('')}</ul>`
             : empty(s.hidden_spots ? '이곳의 채집터를 아직 찾지 못했습니다. 탐색해 보세요.' : '이곳에는 채집터가 없습니다.', 'leaf')}
           ${meishoHtml(s.meisho, blocked)}
@@ -474,6 +479,7 @@ function bind(s) {
   el.querySelectorAll('[data-ug-shop]').forEach(b => b.addEventListener('click', () => import('../ultimate.js').then(m => m.openUltimateShop(b.dataset.ugShop))));
   $('#ov-open', el)?.addEventListener('click', async () => (await import('../overflow.js')).openOverflow());
   $$('[data-fac]', el).forEach(b => b.onclick = () => openFacility(b.dataset.fac, s));
+  $$('[data-pj-open]', el).forEach(b => b.onclick = () => openProject(b.dataset.pjOpen));
   bindFish();
 }
 
@@ -563,6 +569,7 @@ function openFacility(k, s) {
   if (k === 'records') return import('./legacy.js').then(x => x.openLegacyRecords());
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
+  if (k === 'project') return openProject(s.region.project?.here?.key || null);
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];
   const m = openModal({ title, wide: true, body: '<div class="fac-body"></div>' });
   const box = $('.fac-body', m);
