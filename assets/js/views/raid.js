@@ -5,7 +5,7 @@ import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
 import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
-  resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml } from './fightui.js';
+  resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, drawLater } from './fightui.js';
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
 import { baseOf } from '../hq.js';
@@ -20,6 +20,7 @@ const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
 let el = null, rid = null, snap = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
+let queued = null;
 
 export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0; shownStatus = '';
@@ -79,6 +80,7 @@ function countdown() {
 }
 
 function draw() {
+  if (drawLater(draw)) return;
   if (!el) return;
   const s = snap || {}, r = s.raid;
   if (!r) {
@@ -353,7 +355,7 @@ function bind() {
 }
 
 async function run(btn, fn, isAct) {
-  if (sending) return;
+  if (sending) { queued = () => run(btn, fn, isAct); return; }
   sending = true; btn.disabled = true;
   try {
     const out = await fn();
@@ -365,7 +367,7 @@ async function run(btn, fn, isAct) {
     invalidate('world_raid_brief');
     draw();
   } catch (e) { toast(e.message || String(e), 'error'); if (!btn.dataset.act) btn.disabled = false; }
-  finally { sending = false; countdown(); }
+  finally { sending = false; countdown(); if (queued) { const q = queued; queued = null; q(); } }
   return null;
 }
 

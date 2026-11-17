@@ -1,7 +1,7 @@
 import { rpc, esc, icon, fmt, $, $$, toast, store, spOf } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSectionsHtml, itemTray, resultBox, settleFight, tickUntil, serverClock,
-  mobileLog, newestFirst, keepLogScroll, logRow, jobName, fightCol, fitFight, unfitFight } from './fightui.js';
+  mobileLog, newestFirst, keepLogScroll, logRow, jobName, fightCol, fitFight, unfitFight, drawLater } from './fightui.js';
 import { INTENT, SKILL, trayList, weakNote } from './battle.js';
 import { mountMeter } from './meter.js';
 import { clearFightNotes } from '../settings.js';
@@ -11,6 +11,7 @@ const trayIds = () => trayList({}, Infinity).map(([k]) => k);
 
 let seenLog = -1, seenFid = null;
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, sel = null;
+let queued = null;
 const clock = serverClock();
 
 export async function render(root, sub) {
@@ -69,6 +70,7 @@ function memDetail() {
 }
 
 function draw() {
+  if (drawLater(draw)) return;
   if (!el || !snap) return;
   const s = snap, b = s.battle || {}, me = s.me, c = store.character || {};
   if (me || ended()) clearFightNotes(['pfight_invite'], 'fight_id', fid);
@@ -158,7 +160,7 @@ function bind() {
 }
 
 async function run(btn, fn) {
-  if (sending) return;
+  if (sending) { queued = () => run(btn, fn); return; }
   sending = true; btn.disabled = true;
   try {
     const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id;
@@ -167,5 +169,5 @@ async function run(btn, fn) {
     if ((ended() && prev !== snap.status) || prevRound !== snap.round || prevTurn !== snap.turn_id || btn.id === 'pf-join') await settle();
     draw(); plan();
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
-  finally { sending = false; }
+  finally { sending = false; if (queued) { const q = queued; queued = null; q(); } }
 }

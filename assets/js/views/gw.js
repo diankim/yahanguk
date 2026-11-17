@@ -2,7 +2,7 @@ import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.
 import { GW_DAILY } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
-  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, askPartySize, partyHere } from './fightui.js';
+  reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, askPartySize, partyHere, drawLater } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
 import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
@@ -40,6 +40,19 @@ const CELL = { 4: '왼쪽 위', 9: '위', 2: '오른쪽 위', 3: '왼쪽', 5: '�
 const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머뭇거림' };
 
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
+let queued = null, lastRound = null, freshUntil = 0;
+const picked = new Set();
+function roundSeen() {
+  const f = snap?.fight; if (!f || f.status !== 'fight' || !snap.joined) return;
+  if (snap.my_act) picked.add(f.round);
+  if (lastRound != null && f.round > lastRound) {
+    freshUntil = Date.now() + 1600;
+    const me = (snap.members || []).find(m => m.id === snap.me), missed = [];
+    for (let r = lastRound; r < f.round; r++) if (r > 0 && !picked.has(r)) missed.push(r);
+    if (missed.length && me && !me.out && !me.resting && f.mech?.k !== 'rest' && !story()) toast(`${missed.join('·')}라운드는 행동을 고르지 않아 방어로 넘어갔습니다.`, 'warn');
+  }
+  lastRound = f.round;
+}
 const clock = serverClock();
 const bossOf = () => BOSS[snap?.boss] || BOSS[lobbyBoss] || BOSS.gwiheo;
 const story = () => snap?.mode === 'story';
@@ -50,7 +63,7 @@ const PHASE = new Proxy({}, { get: (_, k) => ult() ? (snap?.board?.phases || [])
 
 export async function render(root, sub) {
   lobbyBoss = BOSS[sub] ? sub : null;
-  el = root; fid = lobbyBoss ? null : sub || null; snap = null; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; bindTips(el);
+  el = root; fid = lobbyBoss ? null : sub || null; snap = null; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; lastRound = null; picked.clear(); bindTips(el);
   const b = BOSS[lobbyBoss] || BOSS.gwiheo;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${b.arc}</p><h1>${b.name}</h1></div></div>${loading()}`;
   clearInterval(tick); tick = setInterval(countdown, 250);
@@ -75,6 +88,7 @@ async function refresh() {
     snap = await rpc('world_gw_snapshot', { p_fight: fid, p_boss: lobbyBoss });
     clock.sync(snap);
     if (snap?.fight?.round !== r0) moveTo = null;
+    roundSeen();
     memToast();
     if (snap?.fight?.id && fid !== snap.fight.id) { fid = snap.fight.id; history.replaceState(null, '', `#/gw/${fid}`); }
     if (prev && prev !== snap?.fight?.status && ended()) await settle();
@@ -117,8 +131,10 @@ function roundBand(s) {
   const f = s.fight, mech = f.mech || {}, gim = story() ? !!mech.s : bossOf().mechs.includes(mech.k);
   const chosen = (s.members || []).filter(m => !m.out && !m.resting && m.acted).length, alive = (s.members || []).filter(m => !m.out && !m.resting).length;
   const myAct = s.my_act ? actName(s, s.my_act) : null;
-  return `<div class="gw-band ${gim ? 'gim' : ''} ${mech.aoe ? 'aoe' : ''}">
-    <div class="gw-band-top"><span class="gw-round">${f.round}라운드</span>${gim ? chip('수법', 'bad') : mech.aoe ? chip('기를 모음', 'warn') : ''}${mech.mimic ? chip(mech.stuck ? `${MIMIC[mech.mimic]} · 멈추지 않는 붓` : MIMIC[mech.mimic], mech.mimic === 'hesit' ? 'good' : 'warn') : ''}
+  const me = (s.members || []).find(m => m.id === s.me), fresh = Date.now() < freshUntil;
+  const turn = !s.joined || !me || me.out || mech.k === 'rest' ? '' : s.my_act ? `<span class="gw-turn done">${icon('check', 13)}<span>${esc(myAct)}</span></span>` : '<span class="gw-turn todo">내 행동 고르기</span>';
+  return `<div class="gw-band ${gim ? 'gim' : ''} ${mech.aoe ? 'aoe' : ''} ${fresh ? 'fresh' : ''}">
+    <div class="gw-band-top"><span class="gw-round"><b>${f.round}</b>라운드</span>${fresh ? chip('새 라운드', 'warn') : ''}${turn}${gim ? chip('수법', 'bad') : mech.aoe ? chip('기를 모음', 'warn') : ''}${mech.mimic ? chip(mech.stuck ? `${MIMIC[mech.mimic]} · 멈추지 않는 붓` : MIMIC[mech.mimic], mech.mimic === 'hesit' ? 'good' : 'warn') : ''}
       ${story() ? '' : `<span class="gw-band-time">${icon('hourglass', 13)}<b data-until="${esc(f.round_ends_at)}" data-sec="1">…</b></span>`}
       <span class="gw-chosen muted small">고른 사람 ${chosen}/${alive}</span></div>
     ${story() ? `<p class="muted small gw-calm">${alive > 1 ? '모두 고르면 다음 라운드로 넘어갑니다 · 1분 안에 안 고르면 방어' : '고르면 다음 라운드로 넘어갑니다 · 마감 없음'}</p>` : '<div class="bar gw-round-bar"><span></span></div>'}
@@ -137,6 +153,7 @@ function actName(s, a) {
 }
 
 function draw() {
+  if (drawLater(draw)) return;
   if (!el) return;
   const s = snap || {};
   if (s.none) return drawLobby(s);
@@ -384,7 +401,7 @@ function ugBar(s) {
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
     <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}`}</p></div>`;
 }
-const BY_HZ = { arrow: '화살', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
+const BY_HZ = { arrow: '화살', big: '굵은 화살', gust: '꺼져 가는 등', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
 function bySector(c) { return ((c - 1) % 7) + 1; }
 function byNb(c) { return c <= 7 ? [((c + 5) % 7) + 1, (c % 7) + 1, c + 7] : [((c - 7 + 5) % 7) + 8, ((c - 7) % 7) + 8, c - 7]; }
 function byCellAt(c, side = 0) {
@@ -411,11 +428,13 @@ function byBoard(s, live) {
   let lampDots = '';
   for (let k = 1; k <= 7; k++) {
     const m = -Math.PI / 2 + (k - 1) * 2 * Math.PI / 7, x = 180 + 158 * Math.cos(m), y = 180 + 158 * Math.sin(m);
-    const fl = hz.find(h => h.k === 'flick' && Number(h.s) === k);
+    const fl = hz.find(h => (h.k === 'flick' || h.k === 'gust') && Number(h.s) === k);
     lampDots += `<circle class="by-lamp ${lamps.has(k) ? 'on' : ''} ${fl ? 'flick' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6"/>`;
+    if (fl?.k === 'gust') { const lx = 180 + 176 * Math.cos(m), ly = 180 + 176 * Math.sin(m); lampDots += `<text class="by-gust ${due(fl) ? 'due' : ''}" x="${lx.toFixed(0)}" y="${(ly + 4).toFixed(0)}">${num(fl)}</text>`; }
   }
   let marks = '';
   for (const h of hz) {
+    if (h.k === 'big') { const [x, y] = byCellAt(Number(h.c)); marks += `<g class="by-big ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><text x="${x.toFixed(0)}" y="${(y - 30).toFixed(0)}">굵은 화살 ${num(h)}</text></g>`; continue; }
     if (h.k === 'brush') { const [x, y] = byCellAt(Number(h.s)); marks += `<text class="by-tag red" x="${x.toFixed(0)}" y="${(y - 18).toFixed(0)}">붓 ${num(h)}</text>`; continue; }
     if (['arrow', 'sdrop', 'tower'].includes(h.k)) {
       const [x, y] = byCellAt(Number(h.c), who[h.c] ? -1 : 0);
@@ -446,15 +465,16 @@ function byBoard(s, live) {
 function bySweepCell(s) {
   const b = s.board || {}, at = moveTo || b.my_pos; if (!at) return null;
   const near = new Set([at, ...byNb(at)]);
-  const cand = (b.hz || []).filter(h => h.k === 'arrow' && near.has(Number(h.c))).sort((x, y) => (x.frozen ? 99 : x.left) - (y.frozen ? 99 : y.left));
+  const cand = (b.hz || []).filter(h => (h.k === 'arrow' || h.k === 'big') && near.has(Number(h.c))).sort((x, y) => (x.frozen ? 99 : x.left) - (y.frozen ? 99 : y.left));
   return cand.length ? Number(cand[0].c) : null;
 }
 function byGim(s, me, a) {
   if (s.boss !== 'baekya' || me.out) return '';
-  const b = s.board || {}, at = moveTo || b.my_pos, canLight = at && at <= 7 && !(b.lamps || []).includes(at), sw = bySweepCell(s);
+  const b = s.board || {}, at = moveTo || b.my_pos, canLight = at && at <= 7, sw = bySweepCell(s);
+  const gust = (b.hz || []).find(h => h.k === 'gust' && Number(h.s) === at), lit = (b.lamps || []).includes(at);
   return `<div class="gw-gim by-gim"><span class="gw-gim-h" title="맹약 마당에서 늘 쓰는 행동">${icon('bell', 13)}<b>마당</b></span>
-    <button class="btn ${a?.a === 'light' ? 'on' : ''}" data-gw="light" ${canLight ? '' : 'disabled'} title="${canLight ? `${at}번 등 기둥의 꺼진 등을 켭니다` : '꺼진 등이 있는 등 기둥 칸(바깥 고리)에 서야 합니다'}">${icon('spark', 16)}<span>등 켜기${canLight ? ` · ${at}번` : ''}</span></button>
-    <button class="btn ${a?.a === 'sweep' ? 'on' : ''}" data-gw="sweep" data-c="${sw || ''}" ${sw ? '' : 'disabled'} title="${sw ? `${sw}번 칸의 멈춘 화살을 걷어 냅니다${b.sweep_fade ? '(손이 바램 1)' : ''}` : '내 칸이나 바로 옆 칸에 멈춘 화살이 있어야 합니다'}">${icon('close', 16)}<span>걷어 내기${sw ? ` · ${sw}번` : ''}</span></button>
+    <button class="btn ${a?.a === 'light' ? 'on' : ''}" data-gw="light" ${canLight ? '' : 'disabled'} title="${!canLight ? '등 기둥 칸(바깥 고리)에 서야 합니다' : !lit ? `${at}번 칸의 꺼진 등을 다시 켭니다` : gust ? `흔들리는 ${at}번 등을 감쌉니다 — 흔들림이 다하는 라운드(!)에 눌러야 지켜집니다` : `${at}번 등은 켜져 있습니다 — 지금 누르면 헛수고입니다`}">${icon('spark', 16)}<span>등 켜기${canLight ? ` · ${at}번 칸` : ''}</span></button>
+    <button class="btn ${a?.a === 'sweep' ? 'on' : ''}" data-gw="sweep" data-c="${sw || ''}" ${sw ? '' : 'disabled'} title="${sw ? `${sw}번 칸 화살을 걷어 냅니다 — 떨어지는 라운드(!)에만 잡히고, 그 전에 누르면 헛손질입니다` : '내 칸이나 바로 옆 칸에 멈춘 화살이 있어야 합니다'}">${icon('close', 16)}<span>걷어 내기${sw ? ` · ${sw}번 칸` : ''}</span></button>
   </div>`;
 }
 function storyGim(s, me, a) {
@@ -485,17 +505,17 @@ function askVote(f) {
 }
 
 async function run(btn, fn) {
-  if (sending) return;
+  if (sending) { queued = () => run(btn, fn); return; }
   sending = true; btn.disabled = true;
   try {
     const prev = snap?.fight?.status, round0 = snap?.fight?.round;
     const out = await fn();
-    if (out) { snap = out; clock.sync(out); memToast(); }
+    if (out) { snap = out; clock.sync(out); roundSeen(); memToast(); }
     if (snap?.fight?.round !== round0) moveTo = null;
     if (snap?.fight?.id && fid !== snap.fight.id) { fid = snap.fight.id; history.replaceState(null, '', `#/gw/${fid}`); }
     if (ended() && prev !== snap.fight.status) await settle();
     else if (btn.dataset.gwSkill || btn.dataset.use || btn.id === 'gw-open' || btn.id?.startsWith('gw-join')) await reloadCharacter();
     draw(); plan();
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
-  finally { sending = false; }
+  finally { sending = false; if (queued) { const q = queued; queued = null; q(); } }
 }

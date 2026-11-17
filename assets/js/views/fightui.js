@@ -30,6 +30,22 @@ export { bindTips, hideTip } from '../tips.js';
 
 export const jobName = j => JOBS[j]?.name || nameOf(j);
 const hpBar = (hp, label = hp, big = false) => `<span class="bar mem-hp ${big ? 'big' : ''} ${hp < 35 ? 'low' : ''}"><span style="width:${Math.max(0, Math.min(100, Number(hp) || 0))}%"></span><em>${label}</em></span>`;
+let pressing = false;
+const later = new Set();
+const release = () => {
+  if (!pressing) return;
+  pressing = false;
+  const fs = [...later]; later.clear();
+  if (fs.length) setTimeout(() => fs.forEach(f => f()), 0);
+};
+document.addEventListener('pointerdown', e => { if (e.button === 0 && e.target.closest?.('.raid-wrap, .fx-press')) pressing = true; }, true);
+document.addEventListener('pointerup', release, true);
+document.addEventListener('pointercancel', release, true);
+export function drawLater(fn) {
+  if (!pressing) return false;
+  later.add(fn);
+  return true;
+}
 export function memberLi(m, o = {}) {
   return `<li class="jb-${esc(m.job || '')} ${o.cls || ''} ${o.me ? 'me' : ''} ${o.tgt ? 'tgt' : ''} ${o.sel ? 'sel' : ''} ${o.out ? 'out' : ''} ${o.turn ? 'turn' : ''}">
     <button type="button" class="mem-pick" data-pick="${esc(m.id)}" title="${esc(o.title || `${m.name} · ${m.level ? `Lv${m.level} ` : ''}${jobName(m.job)}`)}">

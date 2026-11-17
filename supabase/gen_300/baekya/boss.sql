@@ -19,12 +19,12 @@ begin
     (public.world_boss_rules() - 'baekya') || jsonb_build_object('baekya', $j${
   "name": "백야", "fight": "흰 밤의 맹약 마당", "place": "맹약 마당", "arc": "명등기", "region": "pact_court", "lv": 50,
   "quest": "mdq_15", "quest_name": "명등기 15장", "item": "pact_stone_dust", "item_name": "맹약 돌가루", "item_where": "맹약 마당에서 채집해 얻습니다.",
-  "min": 18, "hp_min": 9000, "hp_atk": 46, "hp_n": [1.0, 1.25, 0.8, 1.15], "raw_n": [0.85, 0.95, 0.8, 0.85], "raw": [44, 4], "enrage": 0.15,
+  "min": 18, "hp_min": 9000, "hp_atk": 46, "hp_n": [1.0, 1.0, 0.8, 1.0], "raw_n": [0.7, 0.8, 0.8, 0.85], "raw": [44, 4], "enrage": 0.15,
   "first": {"gil": 2500, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
   "hard_quest": "mdq_17", "hard_quest_name": "명등기 17장",
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
   "phases": ["화살비", "붉은 붓", "물방울과 가루", "흰 밤"],
-  "mech_names": {"arrow": "화살비", "brush": "붉은 붓", "drop": "물방울·흰 가루", "tower": "등 기둥 탑", "clock": "멈춤 시계", "num": "차례 화살", "wn": "흰 밤", "sdrop": "멈춘 물방울", "flick": "흔들리는 등"},
+  "mech_names": {"arrow": "화살비", "brush": "붉은 붓", "drop": "물방울·흰 가루", "tower": "등 기둥 탑", "clock": "멈춤 시계", "num": "차례 화살", "big": "굵은 화살", "gust": "꺼져 가는 등", "wn": "흰 밤", "sdrop": "멈춘 물방울", "flick": "흔들리는 등"},
   "story": {"min": 30, "round_s": 60, "hp_min": 2400, "hp_atk": 26, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
     "board": {"fade": null, "sweep_fade": 0,
       "sdrop": {"every": 3, "off": 1, "left": 2, "raw": 15},
@@ -32,19 +32,21 @@ begin
       "wn": {"need": 5, "need_solo": 5, "rounds": [0, 0, 0, 0], "arrow_left": 0, "fails": 99, "fail_hp": 40},
       "seq": [{"at": 100, "m": ["sdrop"]}, {"at": 75, "m": ["flick"]}, {"at": 50, "m": ["sdrop", "flick"]}, {"at": 25, "m": ["wn"]}]}},
   "board": {
-    "dmg_lo": 0.55, "dmg_k": 0.45, "hurt_hi": 1.3, "hurt_k": 0.3,
+    "dmg_lo": 0.7, "dmg_k": 0.3, "hurt_hi": 1.15, "hurt_k": 0.15,
     "fade": {"pct": 15, "stun": 3, "after": 1, "item": 1, "medic": 2},
-    "sweep_fade": 1,
+    "sweep_fade": 0, "mech_mul": 0.35,
     "arrow": {"every": 2, "off": 0, "n": [1, 2, 2, 3], "left": 3, "raw": 30, "fade": 1},
     "brush": {"every": 4, "off": 1, "left": 2, "raw": 40, "width": 1},
     "drop": {"every": 4, "off": 3, "left": 3, "stack_raw": 44, "spread_raw": 18, "solo_mul": 0.4, "swap": false},
     "tower": {"every": 3, "off": 2, "left": 3, "need": [1, 1, 1, 2], "raw": 18},
     "clock": {"every": 5, "off": 4, "left": 3, "pair_drop": false},
     "num": {"every": 7, "off": 3, "raw": 35, "fade": 1},
-    "wn": {"need": 7, "need_solo": 5, "rounds": [12, 10, 8, 8], "arrow_left": 2, "fail_hp": 40, "fails": 1, "wipe": false},
+    "big": {"every": 5, "off": 2, "left": 3, "raw": 45, "fade": 1},
+    "gust": {"every": 5, "off": 4, "left": 3, "raw": 25},
+    "wn": {"need": 7, "need_solo": 5, "rounds": [14, 12, 10, 10], "arrow_left": 2, "fail_hp": 40, "fails": 1, "wipe": false},
     "aoe_every": 4,
-    "seq": [{"at": 100, "m": ["arrow"]}, {"at": 87.5, "m": ["arrow", "brush"]}, {"at": 75, "m": ["brush", "drop"]}, {"at": 50, "m": ["brush", "drop", "tower"]},
-      {"at": 37.5, "m": ["arrow", "tower", "clock"]}, {"at": 25, "m": ["wn", "drop"]}],
+    "seq": [{"at": 100, "m": ["arrow"]}, {"at": 87.5, "m": ["arrow", "brush"]}, {"at": 75, "m": ["brush", "drop", "gust"]}, {"at": 50, "m": ["brush", "drop", "tower", "gust", "big"]},
+      {"at": 37.5, "m": ["arrow", "tower", "clock", "big", "gust", "drop"]}, {"at": 25, "m": ["wn", "arrow", "drop", "brush", "clock", "big"]}],
     "voices": ["남명이 부른다. 내 백성은 내가 부른다.", "북령이 부른다. 다시는, 이 아니라 이번에는.", "적월이 부른다. 값이 아니라 이름으로.",
       "수향이 부른다. 태우지 못한 아이들을, 한 이름씩.", "천명이 부른다. 별이 아니라 사람이 정한다.", "정청이 부른다. 고친 보고서 대신, 거둬 간 동료의 이름을.",
       "흑련이 부른다. 맡아 둔 이름을 돌려준다. — 아이 목소리가 들렸다. 「서율 오라버니!」"]},
@@ -82,7 +84,8 @@ as $f$
 declare p int; rb jsonb;
 begin
   if p_hz ->> 'k' in ('arrow', 'sdrop', 'tower') then return array[(p_hz ->> 'c')::int]; end if;
-  if p_hz ->> 'k' = 'flick' then return array[(p_hz ->> 's')::int]; end if;
+  if p_hz ->> 'k' in ('flick', 'gust') then return array[(p_hz ->> 's')::int]; end if;
+  if p_hz ->> 'k' = 'big' then return public.world_by_area((p_hz ->> 'c')::int); end if;
   if p_hz ->> 'k' = 'brush' then
     rb := public.world_boss_fight_rules(p_fight) -> 'board';
     return public.world_by_sweep_cells((p_hz ->> 's')::int, coalesce((rb -> 'brush' ->> 'width')::int, 1));
@@ -140,7 +143,7 @@ declare m public.world_gw_members%rowtype;
 begin
   select * into m from public.world_gw_members where fight_id = p_fight and owner_id = p_uid;
   if not found or m.out_rounds > 0 or m.rest then return 0; end if;
-  return public.world_gw_hurt(p_fight, p_uid, round(p_raw * public.world_by_hurt_mul(p_fight, p_uid)
+  return public.world_gw_hurt(p_fight, p_uid, round(p_raw * coalesce((public.world_boss_fight_rules(p_fight) -> 'board' ->> 'mech_mul')::numeric, 1) * public.world_by_hurt_mul(p_fight, p_uid)
     * case when p_guardable and coalesce(m.act ->> 'a', 'guard') in ('guard', 'brace') then 0.5 else 1 end)::int, p_round, p_why);
 end $f$;
 
@@ -281,6 +284,22 @@ begin
       end loop;
       tell := tell || case when tell <> '' then ' ' else '' end || '사람마다 숫자가 새겨진 화살이 머리 위에 멈춘다.';
     end if;
+    if 'big' = any (mechs) and nr % (rb -> 'big' ->> 'every')::int = (rb -> 'big' ->> 'off')::int then
+      select pos into c from public.world_gw_members where fight_id = p_fight and owner_id = alive[na];
+      if c is not null then
+        hid := hid + 1;
+        hz := hz || jsonb_build_array(jsonb_build_object('id', hid, 'k', 'big', 'c', c, 'left', (rb -> 'big' ->> 'left')::int));
+        tell := tell || case when tell <> '' then ' ' else '' end || '굵은 화살 하나가 ' || c || '번 칸 위에 멈춘다. 그 둘레가 모두 과녁이다.';
+      end if;
+    end if;
+    if 'gust' = any (mechs) and not b ? 'wn' and nr % (rb -> 'gust' ->> 'every')::int = (rb -> 'gust' ->> 'off')::int then
+      select z into c from unnest(lamps) z where not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'gust' and (e ->> 's')::int = z) order by random() limit 1;
+      if c is not null then
+        hid := hid + 1;
+        hz := hz || jsonb_build_array(jsonb_build_object('id', hid, 'k', 'gust', 's', c, 'left', (rb -> 'gust' ->> 'left')::int));
+        tell := tell || case when tell <> '' then ' ' else '' end || c || '번 등이 흔들리기 시작한다.';
+      end if;
+    end if;
     if 'sdrop' = any (mechs) and nr % (rb -> 'sdrop' ->> 'every')::int = (rb -> 'sdrop' ->> 'off')::int then
       hid := hid + 1;
       hz := hz || jsonb_build_array(jsonb_build_object('id', hid, 'k', 'sdrop', 'c', 8 + floor(random() * 7)::int, 'left', (rb -> 'sdrop' ->> 'left')::int));
@@ -332,7 +351,7 @@ create or replace function public.world_by_mech(p_fight uuid, p_round integer, p
  returns numeric language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; f public.world_gw_fights%rowtype; b jsonb; n int; na int; w record; x record; h jsonb; keep jsonb := '[]';
-  lamps int[]; wn jsonb; extra numeric := 0; cells int[]; cnt int; raw numeric; lit_n int; nm text; c int; s int; solo boolean; fades jsonb := '{}'; k text; v int;
+  lamps int[]; saved int[] := '{}'; wn jsonb; extra numeric := 0; cells int[]; fails int := 0; cnt int; raw numeric; lit_n int; nm text; c int; s int; solo boolean; fades jsonb := '{}'; k text; v int;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   b := f.board;
@@ -346,13 +365,17 @@ begin
     if c is null or not (c = w.pos or c = any (public.world_by_nb(w.pos))) then
       perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — 손이 닿지 않는 칸입니다(제 칸이나 바로 옆 칸만).'); continue;
     end if;
-    cnt := (select count(*) from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e where e ->> 'k' = 'arrow' and (e ->> 'c')::int = c);
+    cnt := (select count(*) from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e where e ->> 'k' in ('arrow', 'big') and (e ->> 'c')::int = c
+      and (e ->> 'left')::int <= 0 and not coalesce((e ->> 'frozen')::boolean, false));
     if cnt = 0 then
-      perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — ' || c || '번 칸에는 걷어 낼 화살이 없습니다.'); continue;
+      perform public.world_gw_say(p_fight, p_round, 'miss', w.name || ' — ' || case when exists (select 1 from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e where e ->> 'k' in ('arrow', 'big') and (e ->> 'c')::int = c)
+        then c || '번 칸 화살은 아직 허공에 단단히 멈춰 있어 손에 잡히지 않습니다(떨어지는 라운드에만).' else c || '번 칸에는 걷어 낼 화살이 없습니다.' end); continue;
     end if;
-    b := b || jsonb_build_object('hz', (select coalesce(jsonb_agg(e), '[]'::jsonb) from jsonb_array_elements(b -> 'hz') e where not (e ->> 'k' = 'arrow' and (e ->> 'c')::int = c)));
-    b := public.world_by_fade(p_fight, b, w.owner_id, coalesce((rb ->> 'sweep_fade')::int, 0), p_round);
-    perform public.world_gw_say(p_fight, p_round, 'good', w.name || ' — ' || c || '번 칸의 멈춘 화살을 손으로 걷어 냈습니다' || case when coalesce((rb ->> 'sweep_fade')::int, 0) > 0 then '. 손끝이 하얗게 바랩니다.' else '.' end);
+    select string_agg(case when e ->> 'k' = 'big' then '굵은 화살' else '화살' end, '·') into nm from jsonb_array_elements(b -> 'hz') e
+     where e ->> 'k' in ('arrow', 'big') and (e ->> 'c')::int = c and (e ->> 'left')::int <= 0 and not coalesce((e ->> 'frozen')::boolean, false);
+    b := b || jsonb_build_object('hz', (select coalesce(jsonb_agg(e), '[]'::jsonb) from jsonb_array_elements(b -> 'hz') e
+      where not (e ->> 'k' in ('arrow', 'big') and (e ->> 'c')::int = c and (e ->> 'left')::int <= 0 and not coalesce((e ->> 'frozen')::boolean, false))));
+    perform public.world_gw_say(p_fight, p_round, 'good', w.name || ' — ' || c || '번 칸으로 떨어지던 ' || nm || '을(를) 손으로 걷어 냈습니다.');
   end loop;
   for w in select x2.* from public.world_gw_members x2 where x2.fight_id = p_fight and x2.out_rounds = 0 and not x2.rest and x2.act ->> 'a' in ('item', 'coop') loop
     if jsonb_typeof(rb -> 'fade') = 'object' then
@@ -369,7 +392,14 @@ begin
       perform public.world_gw_say(p_fight, p_round, 'miss', nm || ' — 등 기둥 칸(바깥 고리)에 서야 등을 켤 수 있습니다.'); continue;
     end if;
     if c = any (lamps) then
-      perform public.world_gw_say(p_fight, p_round, 'miss', c || '번 등은 이미 켜져 있습니다.'); continue;
+      if exists (select 1 from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e where e ->> 'k' = 'gust' and (e ->> 's')::int = c and (e ->> 'left')::int <= 0) then
+        saved := saved || c;
+        perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — 꺼져 가던 ' || c || '번 등롱을 두 손으로 감싸 불씨를 지켰습니다.');
+      else
+        perform public.world_gw_say(p_fight, p_round, 'miss', c || '번 등은 켜져 있습니다' || case when exists (select 1 from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e where e ->> 'k' = 'gust' and (e ->> 's')::int = c)
+          then ' — 아직 꺼질 때가 아니라 감싸 줄 것이 없습니다(흔들림이 다하는 라운드에만).' else '.' end);
+      end if;
+      continue;
     end if;
     lamps := lamps || c;
     perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — ' || c || '번 등롱에 손을 얹자 등이 켜집니다. 그 둘레로 저녁 빛깔이 돌아옵니다.');
@@ -390,12 +420,33 @@ begin
     if (h ->> 'left')::int > 0 or coalesce((h ->> 'frozen')::boolean, false) then keep := keep || jsonb_build_array(h); continue; end if;
     cells := public.world_by_hz_cells(p_fight, h);
     if h ->> 'k' = 'arrow' then
+      if exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells)) then fails := fails + 1; end if;
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
         perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'arrow' ->> 'raw')::numeric, p_round, '떨어진 화살에', true);
         b := public.world_by_fade(p_fight, b, x.owner_id, coalesce((rb -> 'arrow' ->> 'fade')::int, 0), p_round);
       end loop;
+    elsif h ->> 'k' = 'big' then
+      perform public.world_gw_say(p_fight, p_round, 'boss', '아무도 걷어 내지 않은 굵은 화살이 ' || (h ->> 'c') || '번 칸 둘레를 꿰뚫습니다!');
+      fails := fails + 1;
+      for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
+        perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'big' ->> 'raw')::numeric, p_round, '굵은 화살에', false);
+        b := public.world_by_fade(p_fight, b, x.owner_id, coalesce((rb -> 'big' ->> 'fade')::int, 1), p_round);
+      end loop;
+      if wn is null and public.world_by_sector((h ->> 'c')::int) = any (lamps) then
+        lamps := array_remove(lamps, public.world_by_sector((h ->> 'c')::int));
+        perform public.world_gw_say(p_fight, p_round, 'bad', public.world_by_sector((h ->> 'c')::int) || '번 등이 화살에 꿰여 꺼졌습니다.');
+      end if;
+    elsif h ->> 'k' = 'gust' then
+      if (h ->> 's')::int = any (saved) then continue; end if;
+      lamps := array_remove(lamps, (h ->> 's')::int);
+      perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 's') || '번 등이 꺼지며 마당 전체에 흰 바람이 휘몰아칩니다!');
+      fails := fails + 1;
+      for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
+        perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'gust' ->> 'raw')::numeric, p_round, '흰 바람에', true);
+      end loop;
     elsif h ->> 'k' = 'brush' then
       perform public.world_gw_say(p_fight, p_round, 'boss', '붉은 붓이 마당 한쪽을 쓸고 지나갑니다!');
+      if exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells)) then fails := fails + 1; end if;
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
         perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'brush' ->> 'raw')::numeric, p_round, '붉은 붓에', true);
       end loop;
@@ -403,6 +454,7 @@ begin
       select count(*) into cnt from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells);
       raw := (rb -> 'drop' ->> 'stack_raw')::numeric * case when solo then (rb -> 'drop' ->> 'solo_mul')::numeric else 1 end;
       select name into nm from public.world_gw_members where fight_id = p_fight and owner_id = (h ->> 't')::uuid;
+      if cnt < 2 and not solo then fails := fails + 1; end if;
       perform public.world_gw_say(p_fight, p_round, case when cnt >= 2 or solo then 'good' else 'bad' end, '물방울이 ' || coalesce(nm, '') || ' 위에서 터집니다 — ' || cnt || '명이 나눠 받습니다.');
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
         perform public.world_by_dmg(p_fight, x.owner_id, raw / greatest(1, cnt), p_round, '나눠 받은 물방울에', true);
@@ -415,6 +467,7 @@ begin
         if x.owner_id::text <> h ->> 't' then
           b := public.world_by_fade(p_fight, b, x.owner_id, coalesce((rb -> 'num' ->> 'fade')::int, 1), p_round);
           perform public.world_gw_say(p_fight, p_round, 'bad', x.name || ' — ' || coalesce(nm, '') || ' 곁에 있다가 함께 바랬습니다.');
+          fails := fails + 1;
         end if;
       end loop;
     elsif h ->> 'k' = 'tower' then
@@ -423,6 +476,7 @@ begin
         perform public.world_gw_say(p_fight, p_round, 'good', (h ->> 'c') || '번 기둥을 ' || cnt || '명이 받아 냈습니다.');
       else
         perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'c') || '번 기둥에 선 사람이 모자랍니다(' || cnt || '/' || (h ->> 'need') || '). 하얀 기둥이 무너지며 등을 덮습니다.');
+        fails := fails + 1;
         lamps := array_remove(lamps, (h ->> 'c')::int);
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
           perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'tower' ->> 'raw')::numeric, p_round, '무너진 기둥에', true);
@@ -433,6 +487,7 @@ begin
       if x.owner_id is not null and x.out_rounds = 0 and x.act ? 'm' then
         b := public.world_by_fade(p_fight, b, x.owner_id, coalesce((rb -> 'fade' ->> 'stun')::int, 3), p_round);
         perform public.world_gw_say(p_fight, p_round, 'bad', x.name || ' — 모래시계가 멈춘 순간 움직였습니다.');
+        fails := fails + 1;
       elsif x.owner_id is not null then
         perform public.world_gw_say(p_fight, p_round, 'good', x.name || ' — 숨을 죽이고 그 자리를 지켰습니다. 모래시계가 깨집니다.');
       end if;
@@ -456,6 +511,13 @@ begin
       end if;
     end if;
   end loop;
+  if fails > 0 and jsonb_typeof(rb -> 'fail_party') = 'object' then
+    perform public.world_gw_say(p_fight, p_round, 'bad', '한 사람이 발을 헛디딘 틈으로 흰 빛이 파고들어 모두가 함께 바랩니다' || case when fails > 1 then '(' || fails || '번)' else '' end || '.');
+    for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
+      perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'fail_party' ->> 'raw')::numeric * fails, p_round, '함께 번진 흰 빛에', false);
+      b := public.world_by_fade(p_fight, b, x.owner_id, (rb -> 'fail_party' ->> 'fade')::int * fails, p_round);
+    end loop;
+  end if;
   b := b || jsonb_build_object('hz', keep, 'lamps', to_jsonb(coalesce(lamps, '{}'::int[])));
   if wn is not null then b := b || jsonb_build_object('wn', wn); end if;
   update public.world_gw_fights set board = b where fight_id = p_fight;

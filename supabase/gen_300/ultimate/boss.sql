@@ -26,16 +26,19 @@ begin
   r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [66, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [5, 10, 14], "name": "구중 봉주", "rounds": 18}, {"boss": "gwiheo", "cuts": [7, 12, 16], "name": "귀허의 주인", "rounds": 24}], "hp_n": [1, 0.57, 0.8, 0.88], "board": {"hand_mul": 1.6, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 2.2, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["두 얼굴", "사슬 넷", "이름 빼앗기", "귀허의 소용돌이"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "mukjeok", "cuts": [8, 18, 28], "name": "먹그림자", "rounds": 36}], "hp_n": [1, 0.6, 0.75, 0.79], "board": {"line_n": [3, 3, 3, 3], "hand_mul": 2.4, "line_off": [1, 0, 0, 1], "line_warn": true, "rot_every": 4, "line_every": [4, 4, 3, 4], "erase_every": 4, "erase_strokes": 3, "mimic_reverse": true}, "items": 3, "raw_n": [1, 2.5, 1.4, 1.4], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [6, 11, 16], "name": "값귀", "rounds": 20}, {"boss": "baekya", "cuts": [6, 12, 18], "name": "백야", "rounds": 26}], "hp_n": [1, 0.52, 0.76, 0.84], "board": {"hide": true, "guide": false, "hand_mul": 1.6, "tag_move": true, "judge_off": [0, 1, 1, 0], "deal_force": true, "judge_lead": 1, "bargain_tol": 0, "judge_every": [0, 3, 3, 2], "judge_fixed": true, "trial_first": true, "bargain_show": false, "close_rounds": 0, "compound_all": true}, "items": 3, "raw_n": [1, 2.0, 1.4, 1.4], "hp_atk": 12.5, "hp_min": 9000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{baekya,ultimate}', $j${"raw": [74, 6], "hp_n": [1, 0.3, 0.69, 0.76], "board": {"hide": true, "hand_mul": 1.6,
+  r := jsonb_set(r, '{baekya,ultimate}', $j${"raw": [74, 6], "hp_n": [1, 0.3, 0.69, 0.76], "board": {"hide": true, "hand_mul": 1.6, "mech_mul": 0.8,
+    "fail_party": {"raw": 12, "fade": 1},
     "arrow": {"every": 2, "off": 0, "n": [1, 2, 3, 3], "left": 2, "raw": 55, "fade": 1},
     "brush": {"every": 4, "off": 1, "left": 2, "raw": 70, "width": 1},
     "drop": {"every": 3, "off": 2, "left": 2, "stack_raw": 90, "spread_raw": 35, "solo_mul": 0.5, "swap": true},
     "tower": {"every": 3, "off": 1, "left": 2, "need": [1, 1, 2, 2], "raw": 35},
     "clock": {"every": 5, "off": 3, "left": 2, "pair_drop": true},
     "num": {"every": 6, "off": 3, "raw": 55, "fade": 1},
+    "big": {"every": 4, "off": 2, "left": 2, "raw": 65, "fade": 1},
+    "gust": {"every": 4, "off": 3, "left": 2, "raw": 40},
     "wn": {"need": 7, "need_solo": 7, "rounds": [8, 8, 8, 7], "arrow_left": 1, "fail_hp": 0, "fails": 0, "wipe": true},
-    "seq": [{"at": 100, "m": ["arrow"]}, {"at": 87.5, "m": ["arrow", "brush"]}, {"at": 75, "m": ["brush", "drop", "num"]}, {"at": 50, "m": ["brush", "drop", "tower", "num"]},
-      {"at": 37.5, "m": ["tower", "clock", "drop"]}, {"at": 25, "m": ["wn", "arrow", "drop"]}]}, "raw_n": [1, 1.2, 1.4, 1.4], "hp_atk": 6, "hp_min": 9000}$j$::jsonb);
+    "seq": [{"at": 100, "m": ["arrow"]}, {"at": 87.5, "m": ["arrow", "brush", "gust"]}, {"at": 75, "m": ["brush", "drop", "num", "gust"]}, {"at": 50, "m": ["brush", "drop", "tower", "num", "big", "gust"]},
+      {"at": 37.5, "m": ["arrow", "tower", "clock", "big", "gust", "drop", "num"]}, {"at": 25, "m": ["wn", "arrow", "drop", "brush", "clock", "big", "num"]}]}, "raw_n": [1, 1.2, 1.4, 1.4], "hp_atk": 6, "hp_min": 9000}$j$::jsonb);
   execute format('create or replace function public.world_boss_rules() returns jsonb language sql immutable set search_path = '''' as $f$ select %L::jsonb $f$', r);
 end $$;
 

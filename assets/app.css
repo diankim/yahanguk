@@ -2307,7 +2307,15 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-band.aoe { border: 2px solid var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--surface)); }
 .gw-band.gim { border: 2px solid var(--bad); background: color-mix(in srgb, var(--bad) 8%, var(--surface)); }
 .gw-band-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.gw-round { font-weight: 800; font-size: calc(15px * var(--fz, 1)); }
+.gw-round { font-weight: 800; font-size: calc(15px * var(--fz, 1)); white-space: nowrap; }
+.gw-round b { font-size: calc(20px * var(--fz, 1)); margin-right: 1px; font-variant-numeric: tabular-nums; }
+.gw-turn { display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px; font-size: calc(12px * var(--fz, 1)); font-weight: 700; white-space: nowrap; }
+.gw-turn.todo { background: var(--accent); color: #fff; animation: gw-turn 1s ease-in-out infinite alternate; }
+.gw-turn.done { border: 1px solid var(--ok); color: var(--ok); }
+@keyframes gw-turn { from { opacity: 1; } to { opacity: .55; } }
+.gw-band.fresh { box-shadow: 0 0 0 3px var(--gold); animation: gw-fresh 1.4s ease-out; }
+@keyframes gw-fresh { from { box-shadow: 0 0 0 6px var(--gold); } to { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .gw-turn.todo, .gw-band.fresh { animation: none; } }
 .gw-band-time { margin-left: auto; font-variant-numeric: tabular-nums; }
 .gw-band .gw-round-bar { margin: 0; }
 .gw-tell { margin: 2px 0; font-size: calc(14px * var(--fz, 1)); line-height: 1.55; font-family: var(--font-serif, inherit); }
@@ -2365,6 +2373,12 @@ b.contest { color: var(--warn); font-weight: 600; }
 .by-clock text { fill: var(--gold); font-size: 14px; }
 .by-clock.due text { fill: var(--hp); }
 .by-tag { font-size: 12px; }
+.by-big circle { fill: rgba(244, 241, 234, .12); stroke: #f4f1ea; stroke-width: 3; stroke-dasharray: 10 5; }
+.by-big text { fill: #f4f1ea; font-size: 12px; font-weight: 800; text-anchor: middle; }
+.by-big.due circle { stroke: var(--hp); fill: color-mix(in srgb, var(--hp) 25%, transparent); }
+.by-big.due text { fill: var(--hp); }
+.by-gust { fill: var(--gold); font-size: 13px; font-weight: 800; text-anchor: middle; }
+.by-gust.due { fill: var(--hp); }
 .by-tag.red { fill: var(--hp); }
 .by-tok circle { fill: #4a4450; stroke: #8a8290; }
 .by-tok text { fill: #eee; font-size: 12px; font-weight: 700; text-anchor: middle; }
@@ -3093,7 +3107,7 @@ b.shadow { color: var(--sp); }
 .gw-ladder li { display: flex; align-items: baseline; gap: 5px; padding: 2px 7px; line-height: 1.5; }
 .gw-ladder li b { font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
 .gw-ladder li.now b { color: var(--accent); }
-.gw-band-top { flex-wrap: nowrap; min-width: 0; }
+.gw-band-top { flex-wrap: wrap; row-gap: 2px; min-width: 0; }
 .gw-band-time { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; flex: none; }
 .gw-band-time b { font-size: calc(14px * var(--fz, 1)); }
 .gw-chosen { white-space: nowrap; flex: none; }
