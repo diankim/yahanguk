@@ -108,7 +108,7 @@ async function story(body, keep) {
   const ch = chapters.find(c => c.chapter_id === selCh);
   const doneN = chapters.filter(c => c.status === 'done').length;
   body.innerHTML = `${arcBar}
-    ${b?.all_done ? `<div class="notice safe">${icon('moon', 18)}<div><b>지금까지의 이야기를 모두 마쳤습니다</b><span>장을 눌러 지난 장면과 결말을 다시 읽을 수 있습니다. 보조 퀘스트와 의뢰도 계속 받을 수 있습니다.</span></div><button class="btn small" data-sub="side">보조 퀘스트</button></div>` : ''}
+    ${b?.all_done ? `<div class="notice safe">${icon('moon', 18)}<div><b>${MAIN_ARC}의 이야기를 모두 마쳤습니다</b><span>장을 눌러 지난 장면과 결말을 다시 읽을 수 있습니다. 보조 퀘스트와 의뢰도 계속 받을 수 있습니다.</span></div><button class="btn small" data-sub="side">보조 퀘스트</button></div>` : ''}
     <div class="chips">${chip(`마친 장 ${doneN}/${chapters.length}`, 'accent')}<span class="muted small">장을 누르면 아래에 펼쳐집니다</span></div>
     <ol class="chapter-line">${chapters.map(c => `<li class="${c.status} ${c.chapter_id === selCh ? 'sel' : ''}"><button data-ch="${esc(c.chapter_id)}" ${c.status === 'locked' ? 'disabled' : ''} aria-pressed="${c.chapter_id === selCh}">
       <b>${c.seq}장</b><span>${c.status === 'locked' ? `Lv.${c.min_level}` : esc(c.title)}</span></button></li>`).join('')}</ol>
