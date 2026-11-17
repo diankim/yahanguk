@@ -143,6 +143,7 @@ part('i_borrow.sql')
 part('k_quest_fix.sql')
 part('l_storage.sql')
 part('m_travel_quote.sql')
+part('n_borrowed.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
@@ -430,7 +431,7 @@ w(f"""update public.world_item_catalog i set reference_price = greatest(
     ceil(1.2 * (select min(t.v) from (select sum(m.reference_price * (x.value)::int * 1.0 / greatest(1, cr.output_qty)) v from public.world_crafting_recipes cr, jsonb_each_text(cr.ingredients) x
       join public.world_item_catalog m on m.item_id = x.key where cr.output_item = i.item_id group by cr.recipe_id) t)),
     coalesce(ceil(1.15 * (select max(f.reference_price) from public.world_item_catalog f where f.tier = 7 and f.category = i.category and f.base_item_id is null
-      and f.item_id not like 'raid%' and coalesce((f.equipment_traits ->> 'life_slot'), '') = coalesce((i.equipment_traits ->> 'life_slot'), ''))), 0))
+      and f.item_id not like 'raid%' and f.equipment_traits::text !~ '"mz_' and coalesce((f.equipment_traits ->> 'life_slot'), '') = coalesce((i.equipment_traits ->> 'life_slot'), ''))), 0))
  where i.item_id in (select jsonb_array_elements_text({J(priced + [t[0] for t in D.TOOLS])})) and i.category <> 'consumable';""")
 w(f"""update public.world_item_catalog i set reference_price = greatest(i.reference_price,
     ceil(1.1 * (select min(t.v) from (select sum(m.reference_price * (x.value)::int * 1.0 / greatest(1, cr.output_qty)) v from public.world_crafting_recipes cr, jsonb_each_text(cr.ingredients) x
