@@ -846,6 +846,7 @@ const S = [
     </ul>
     <h4>귀령초</h4>
     <p>거래할 수 있는 물품입니다. 위험도 7 이상 지역에서 드물게 나옵니다.</p>
+    <p class="gw-can" data-gw-can hidden></p>
     <table class="guide-table"><tr><th>얻는 길</th><th>확률</th></tr>
       <tr><td>채집</td><td>${gwPct(0.02)}</td></tr>
       <tr><td>일반 요괴</td><td>${gwPct(0.02)}</td></tr>
@@ -2232,6 +2233,7 @@ export function render(el, { standalone = false } = {}) {
       info.textContent = '';
       list.innerHTML = g[3].map(id => byId[id]).filter(Boolean).map((x, i) => sec(x, i === 0)).join('');
     }
+    if (!standalone && $('[data-gw-can]', list)) import('./item.js').then(m => m.fillGwWhen(list)).catch(() => {});
   };
   $('#g-q', el).oninput = e => { gq = e.target.value; paint(); };
   $$('[data-gk]', el).forEach(b => b.onclick = () => { gsel = b.dataset.gk; gq = ''; $('#g-q', el).value = ''; paint(); $('#g-list', el)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });

@@ -158,8 +158,9 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
 }
 
 export function fillGwWhen(root) {
-  const els = $$('[data-gw-when]', root); if (!els.length) return;
+  const els = $$('[data-gw-when]', root), cans = $$('[data-gw-can]', root); if (!els.length && !cans.length) return;
   load('world_gwiryeong_mine', undefined, { maxAge: 60000 }).then(r => {
+    for (const el of cans) { el.textContent = GWIRYEONG.can(r?.can); el.hidden = !r?.can; }
     const p = r?.plants || [];
     for (const el of els) {
       if (!p.length) { if (el.dataset.gwKeep == null) el.hidden = true; continue; }
@@ -206,7 +207,7 @@ function draw(box, id, inv, prices, mode) {
       ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${isFurniture(id) || hasPic(it) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
-    ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b class="gw-when" data-gw-when hidden></b><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.wither)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
+    ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b class="gw-when" data-gw-when hidden></b><span class="gw-can" data-gw-can hidden></span><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.wither)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
     ${BIJANG.maps.some(m => m.id === id) ? `<div class="notice item-note">${icon('chest', 18)}<div><b>비장도</b><span>${esc(BIJANG.how)}</span><span>${esc(BIJANG.hold)}</span></div></div>` : ''}
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
