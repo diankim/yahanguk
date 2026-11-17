@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -902,6 +902,29 @@ const S = [
       <li>입질 뒤 명어 무게는 ${GD.fishRules.named.weight}(신품 어종 ${GD.fishRules.weight.legendary}보다 어렵게), 희귀 어종 보정은 절반만 붙습니다. 용비늘 낚싯대는 무게를 조금 더합니다.</li>
       <li>명어와 명어로 만든 것도 거래할 수 있지만, 명어 칭호는 직접 낚아야 얻습니다. 도감은 못 낚은 명어의 이름을 감추고 힌트만 보여 줍니다.</li>
     </ul>`],
+  ['deungdo', '등도 옛터와 외전 「명등기」', `
+    <p>묵적록 5장을 마친 Lv45부터 외전 「명등기」를 받을 수 있습니다. 3장을 마치면 봉인고 아래 옛 물길 너머로 <b>등도 옛터</b>가 열리고, 이야기가 나아갈 때마다 구역이 하나씩 지도에 나타납니다. 열리기 전 구역은 지도에 보이지 않고 갈 수도 없습니다.</p>
+    <h4>지역</h4>
+    <ul>
+      <li>남문 수로 선착 안전지대 Lv45 · 꺼진 관아 터 Lv45 · 무관 거리 Lv46 · 붉은 사당 골목 Lv47 · 옛 나루 저자 Lv48 · 등지기 쉼막 안전지대 Lv48 · 첫 관상대 Lv49 · 잿빛 왕궁 터 Lv49 · 맹약 마당 Lv${GD.level.cap}</li>
+      <li>두 안전지대는 묵창 나루처럼 <b>빈약한 안전지대</b>입니다(거래소·창고·마구간 없음, 상점 하루 개수, 수리비 세 배).</li>
+      <li>8단계 장비(장착 Lv${GD.level.cap - 3})와 8단계 생활 도구는 등도 재료와 명등 심지로 만들고, 남문 수로 선착에서 만들면 품질이 오릅니다. 칸마다 일반 재료로 만드는 장비와 명소 「등불 서린」 재료로 만드는 명장 장비가 하나 이상 있습니다.</li>
+      <li>레벨 상한은 ${GD.level.cap}입니다.</li>
+    </ul>
+    <h4>백야(白夜)</h4>
+    <p>등도에서는 밤이 오지 않습니다. 흰 하늘 아래 있는 동안 늘 걸리고, 상태 칸 10칸에 세지 않습니다.</p>
+    <ul>
+      <li>${effectText(Object.fromEntries(Object.entries(GD.domains?.deungdo?.fx?.effects || {}).filter(([k]) => !k.startsWith('wn_')))).join(' · ')}</li>
+      <li><b>그림자 없음:</b> 기척 숨기기 +${GD.domains?.deungdo?.fx?.effects?.wn_sneak ?? 15}%p · 조용히 살피기 상한 +${GD.domains?.deungdo?.fx?.effects?.wn_quiet ?? 10} · 회피 +${GD.domains?.deungdo?.fx?.effects?.wn_eva ?? 3}</li>
+      <li><b>불러 줄 이 없음:</b> 등도에서 쓰러지면 본부 구조대가 오지 못합니다. 같은 곳 조사원의 구조·회생 부적, 또는 하루 ${GD.domains?.deungdo?.fx?.recall?.per_day ?? 1}번 「제 이름 외기」(체력 ${GD.domains?.deungdo?.fx?.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어남 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」)로 일어납니다.</li>
+      <li>명등 등롱을 켜면 1시간 동안 백야를 받지 않습니다.</li>
+      <li><b>밤 되찾기:</b> 그 구역의 장을 마치면 그 구역에서는 백야가 걷힙니다. 안전지대에는 백야가 없습니다.</li>
+    </ul>
+    <h4>등도 명소</h4>
+    <ul>
+      <li>무관 거리·첫 관상대·잿빛 왕궁 터에 명소가 하나씩 있습니다. 흰 밤에는 시간대가 없어, <b>그 구역의 밤을 되찾은 뒤에만</b> 보입니다.</li>
+      <li>명소 기술 ${GD.meisho?.lamp?.rank ?? 50}단계부터 등도 명소에서 「등불 서린 …」 재료가 함께 나옵니다.</li>
+    </ul>`],
   ['growth', '성장과 캐릭터 빌드', `
     <h4>레벨</h4>
     <ul>
@@ -1419,6 +1442,7 @@ const S = [
       <li><b>맡은 일의 실마리</b>: 보조·세력 퀘스트에서 단서를 찾으라는 할 일을 맡고 있으면, 탐색에서 「맡은 일의 실마리」가 나옵니다. 주 이야기 단서가 먼저 나옵니다.</li>
       <li><b>보고</b>: 넘길 물품은 보고할 때 가방에서 나갑니다. 잠근 물품·장착 중인 마지막 하나는 넘기지 않습니다. 보상 물품이 가방에 들어갈 자리가 없거나 이동 중이면 보고할 수 없습니다.</li>
       <li><b>포기하기</b>: 보조 퀘스트는 일지 › 보조 퀘스트의 진행 중 카드에서 「포기하기」로 처음부터 다시 받을 수 있습니다. 이미 보상을 받은 장면은 다시 보고해도 보상이 없습니다.</li>
+      <li><b>다시하기</b>: 마친 퀘스트(주 이야기 장·보조·외전·직업·소속)는 일지의 마친 카드에서 「다시하기」로 처음부터 다시 겪을 수 있습니다. ${esc(QUEST_REPLAY.ask)} 중간에 「다시하기 그만두기」를 해도 처음 마친 기록·칭호는 그대로이고, 이야기 단서·가설은 다시하지 않습니다.</li>
       <li>경험치는 퀘스트가 중심입니다. 사냥은 경험치가 낮고, 레벨보다 쉬운 곳일수록 더 줄어듭니다.</li>
       <li>${QUEST_XP}.</li>
     </ul>`],
@@ -1983,7 +2007,7 @@ const S = [
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
-  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'mount', 'safe', 'weather']],
+  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
