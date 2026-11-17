@@ -358,7 +358,7 @@ function fareLine(est) {
 }
 function walkHint(est) {
   if (!est?.walk) return '';
-  return `<p class="hint warn">${icon('route', 14)} 노정패가 <b>${est.need}개</b> 필요하지만 <b>${est.have}개</b>뿐이라 탈것에서 내려 <b>걸어갑니다</b>. 탈것을 타면 약 ${fmt.remain(est.rideSecs * 1000)}</p>`;
+  return `<p class="hint warn">${icon('route', 14)}<span>노정패가 <b>${est.need}개</b> 필요하지만 <b>${est.have}개</b>뿐이라 탈것에서 내려 <b>걸어갑니다</b>. 탈것을 타면 약 ${fmt.remain(est.rideSecs * 1000)}</span></p>`;
 }
 
 function factionLegend() {
@@ -398,7 +398,7 @@ function drawDetail() {
         ${route && route.length > 1 ? `<div class="route-box"><b>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}${est.walk ? ' · 걸어서' : ''}</b>
           <ol class="route-steps">${route.map((x, i) => `<li class="${i === 0 ? 'from' : i === route.length - 1 ? 'to' : ''}">${esc(x.region_name)}</li>`).join('')}</ol>
           <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}${fareLine(est)}</p>${walkHint(est)}</div>` : ''}
-        ${reason === 'cd' ? `<p class="hint">${icon('hourglass', 14)} 이동을 취소한 뒤라 <b data-tcd>${fmt.remain(travelCdLeft())}</b> 뒤에 다시 출발할 수 있습니다.</p>` : reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
+        ${reason === 'cd' ? `<p class="hint">${icon('hourglass', 14)}<span>이동을 취소한 뒤라 <b data-tcd>${fmt.remain(travelCdLeft())}</b> 뒤에 다시 출발할 수 있습니다.</span></p>` : reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}
         <div class="btn-row">
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
                    : `<button class="btn primary" id="travel-go" ${reason ? 'disabled' : ''}>${icon('route', 16)}<span>${route && route.length > 2 ? '경로 따라 출발' : '이곳으로 출발'}</span></button>`}

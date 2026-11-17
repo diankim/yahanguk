@@ -790,7 +790,7 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .terr-line i { width: 10px; height: 10px; border-radius: 3px; background: var(--fc); }
 .region-detail { border-top: 3px solid var(--fc); }
 .route-box { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--r); background: var(--surface-2); border: var(--bw) solid var(--line); margin: 8px 0; }
-.route-box b { display: flex; align-items: center; gap: 6px; }
+.route-box > b { display: flex; align-items: center; gap: 6px; }
 .route-steps { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: calc(12.5px * var(--fz, 1)); }
 .route-steps li { padding: 1px 8px; border-radius: 999px; background: var(--surface); border: var(--bw) solid var(--line); }
 .route-steps li.from { border-color: var(--muted); } .route-steps li.to { border-color: var(--accent); color: var(--text); font-weight: 650; }
