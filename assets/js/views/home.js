@@ -224,7 +224,7 @@ function town(s, roster) {
   return `
     ${s.stamina ? townStamina(s.stamina) : ''}
     ${projectBand(r.project)}
-    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : k === 'depart' ? 'data-tcd-home' : ''}>${esc(k === 'depart' && travelCdLeft() > 0 ? `다시 출발까지 ${fmt.remain(travelCdLeft())}` : d)}</small></button>`).join('')}${ugBoards(s).map(([k, b]) => `<a class="facility" href="#/gw/${esc(b.boss)}">${icon('flag', 26)}<b>${esc(b.name)}</b><small>${esc(ugReq())}</small></a><button class="facility" type="button" data-ug-shop="${esc(k)}">${icon('chest', 26)}<b>${esc(b.short)} 교환</b><small>${esc(ugShopTip(b))}</small></button>`).join('')}</div>
+    <div class="facilities">${tiles.map(([k, ic, n, d]) => `<button class="facility" data-fac="${k}">${icon(ic, 26)}<b>${esc(n)}</b><small ${k === 'inn' ? 'data-rest-line' : k === 'depart' ? 'data-tcd-home' : ''}>${esc(k === 'depart' && travelCdLeft() > 0 ? `다시 출발까지 ${fmt.remain(travelCdLeft())}` : d)}</small></button>`).join('')}${ugBoards(s).map(([k, b]) => `<a class="facility" href="#/gw/${esc(b.boss)}">${icon('flag', 26)}<b>${esc(b.name)}</b><small>${esc(ugReq())}</small></a><button class="facility" type="button" data-ug-shop="${esc(k)}">${icon('chest', 26)}<b>${esc(b.name)} 교환</b><small>${esc(ugShopTip(b))}</small></button>`).join('')}</div>
     ${fishPanel(!!idleSt || !!store.expedition)}
     ${people(roster, s.corpses)}`;
 }
@@ -289,7 +289,7 @@ function field(s, roster, blocked) {
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 외전 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
           ${fightBack()}
-          ${ugBoards(s).map(([k, b]) => `<a class="tile danger" href="#/gw/${esc(b.boss)}" title="${esc(`${b.name} · ${ugReq()}`)}">${icon('flag', 22)}<span>${esc(b.name)}</span></a><button class="tile" type="button" data-ug-shop="${esc(k)}" title="${esc(ugShopTip(b))}">${icon('chest', 22)}<span>${esc(b.short)} 교환</span></button>`).join('')}
+          ${ugBoards(s).map(([k, b]) => `<a class="tile danger" href="#/gw/${esc(b.boss)}" title="${esc(`${b.name} · ${ugReq()}`)}">${icon('flag', 22)}<span>${esc(b.name)}</span></a><button class="tile" type="button" data-ug-shop="${esc(k)}" title="${esc(ugShopTip(b))}">${icon('chest', 22)}<span>${esc(b.name)} 교환</span></button>`).join('')}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${['mukjeok', 'gapgwi', 'baekya'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
         </div>

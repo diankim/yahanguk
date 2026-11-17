@@ -53,7 +53,7 @@ export function hexBoard(s, live, moveTo) {
     }
   }
   const [cx0, cy0] = at(0), face = b.face;
-  const core = `<g class="hx-core ${vortex || sea?.vortex ? 'spin' : ''} ${(vortex && due(vortex)) || sea?.vortex ? 'due' : ''}"><circle cx="${cx0}" cy="${cy0}" r="24"/>${sea?.vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">!</text>` : vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">${num(vortex)}</text>` : `<text x="${cx0}" y="${cy0 + 4}">${face ? (face === 'human' ? '사람' : '요괴') : sea?.due ? '?' : '봉주'}</text>`}</g>`;
+  const core = `<g class="hx-core ${vortex || sea?.vortex ? 'spin' : ''} ${(vortex && due(vortex)) || sea?.vortex ? 'due' : ''}"><circle cx="${cx0}" cy="${cy0}" r="24"/>${sea?.vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">!</text>` : vortex ? `<text class="n" x="${cx0}" y="${cy0 + 6}">${num(vortex)}</text>` : `<text x="${cx0}" y="${cy0 + 4}">${face ? (face === 'human' ? '사람' : '요괴') : sea?.due ? '?' : s.boss === 'gwiheo' ? '주인' : '봉주'}</text>`}</g>`;
   const who = {};
   for (const m of s.members || []) if (m.pos != null && !m.out) (who[m.pos] = who[m.pos] || []).push(m);
   const named = new Map(hz.filter(h => h.k === 'name').map(h => [h.t, h]));
@@ -72,7 +72,7 @@ export function hexBoard(s, live, moveTo) {
   return `<div class="hx-wrap"><svg class="hx-map" viewBox="0 0 320 292" role="img" aria-label="구중 봉연 벌집 칸">${cells}${marks}${core}${tokens}</svg>
     <div class="hx-info">
       ${charge ? `<div class="hx-charge ${due(charge) ? 'due' : ''}"><span>${icon('spark', 13)} 기운 모으기 · ${due(charge) ? '이번 라운드 끝' : `${charge.left}라운드 뒤`}</span><div class="bar"><span style="width:${Math.min(100, Number(charge.dmg || 0) / Math.max(1, Number(charge.need || 1)) * 100).toFixed(0)}%"></span></div></div>` : ''}
-      <p class="hx-line">${b.line ? esc(b.line) : '&nbsp;'}</p>
+      ${b.line ? `<p class="hx-line">${esc(b.line)}</p>` : ''}
       ${sea?.faces ? `<p class="wm-seq">${sea.faces.map((f, i) => `<b class="hx-face ${f}">${i + 1} ${f === 'human' ? '사람' : '요괴'}</b>`).join('<i>→</i>')}</p>` : ''}
       <p class="mk-hint muted small">${face ? `<b class="hx-face ${face}">${face === 'human' ? '사람 얼굴' : '요괴 얼굴'}</b> · ` : ''}${wm ? `<b class="wm-name">「${esc(wm.name || '')}」</b> · ` : ''}${esc(mechs)}</p>
       ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}

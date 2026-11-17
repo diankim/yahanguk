@@ -27,7 +27,7 @@ begin
   "modes": {"story": "이야기판", "hard": "깊은 장부"},
   "phases": ["판결 망치", "바가지", "장부 맞추기", "장 닫힘"],
   "mech_names": {"judge": "판결 망치", "bargain": "바가지", "ledger": "장부 맞추기", "tether": "외상 줄", "close": "장 닫힘", "basket": "떨이 바구니", "tagm": "값표 맞추기"},
-  "story": {"min": 30, "round_s": 60, "hp_min": 2000, "hp_atk": 24, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
+  "story": {"phases": ["떨이 바구니", "값표 맞추기", "떨이와 값표", "마감 흥정"], "min": 30, "round_s": 60, "hp_min": 2000, "hp_atk": 24, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
     "board": {"mech_mul": 1,
       "basket": {"every": 3, "off": 1, "left": 2, "raw": 12},
       "tagm": {"every": 4, "off": 3, "left": 3, "raw": 8, "hit_pct": 3},

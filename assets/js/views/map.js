@@ -368,6 +368,8 @@ async function fillQuote(box, id, est) {
   const b = $('[data-quote]', box), f = $('[data-quote-fare]', box), w = $('[data-quote-walk]', box);
   const walk = !!v.walked;
   if (b) b.innerHTML = `${icon('route', 14)} 경로 ${v.hops}구간 · 약 ${fmt.remain(v.secs * 1000)}${walk ? ' · 걸어서' : ''}`;
+  const pk = $('#map-peek:not([hidden]) .peek-txt small', el);
+  if (b && pk) pk.textContent = b.textContent.trim();
   if (f) f.innerHTML = v.project ? ' · 사업 지름길: 운임 없음' : fareLine({ ...est, walk, need: v.need });
   if (w) w.innerHTML = walkHint({ ...est, walk, need: v.need });
 }

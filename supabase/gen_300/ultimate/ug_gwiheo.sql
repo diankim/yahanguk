@@ -345,7 +345,7 @@ begin
   return jsonb_build_object('hex', true, 'act', act, 'pillars', hx -> 'pillars', 'my_pos', me.pos,
     'moves', case when me.pos is not null and me.out_rounds = 0 and f.status = 'fight' then to_jsonb(public.world_ux_nb(me.pos)) else '[]'::jsonb end,
     'hz', coalesce(ux -> 'hz', '[]'::jsonb),
-    'face', case when act = 2 and not coalesce((f.mech ->> 'hide')::boolean, false) then f.board ->> 'face' end, 'line', coalesce(ux ->> 'line', ''), 'names', hx -> 'names',
+    'face', case when act = 2 and not coalesce((f.mech ->> 'hide')::boolean, false) then f.board ->> 'face' end, 'line', '', 'names', hx -> 'names',
     'mechs', hx -> 'acts' -> (act - 1) -> 'seq' -> (greatest(1, f.phase) - 1), 'phases', hx -> 'acts' -> (act - 1) -> 'phases');
 end $f$;
 

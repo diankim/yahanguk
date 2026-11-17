@@ -1,5 +1,6 @@
 import { store, on, emit, rpc, esc, icon, fmt, effectText, effectGood, ENV_ICON, openModal } from './core.js';
 import { hit } from './changes.js';
+import { WHITE_NIGHT } from './rules.js';
 
 let timer = null, loading = null;
 
@@ -27,8 +28,9 @@ export function mountEnv() {
 
 export function envChip(e = store.env, { compact = false } = {}) {
   if (!e?.phase || !e?.weather) return '';
-  return `<button class="env-chip w-${esc(e.weather.key)} p-${esc(e.phase.key)}" data-env-open title="날씨와 시간대 효과 보기">
-    ${icon(ENV_ICON[e.phase.key] || 'moon', 14)}<span>${esc(e.phase.name)}</span>${icon(ENV_ICON[e.weather.key] || 'cloud', 14)}<span>${esc(e.weather.name)}</span>
+  const wn = !!store.hud?.domain?.white_night;
+  return `<button class="env-chip w-${esc(e.weather.key)} p-${esc(e.phase.key)}" data-env-open title="${esc(wn ? WHITE_NIGHT.phaseTip : '날씨와 시간대 효과 보기')}">
+    ${icon(ENV_ICON[e.phase.key] || 'moon', 14)}<span>${esc(wn ? WHITE_NIGHT.phase(e.phase.name) : e.phase.name)}</span>${icon(ENV_ICON[e.weather.key] || 'cloud', 14)}<span>${esc(e.weather.name)}</span>
     ${compact ? '' : `<small data-env-left="${new Date(e.weather.ends_at).getTime()}">${fmt.remain(new Date(e.weather.ends_at) - Date.now())}</small>`}</button>`;
 }
 function fxList(effects) {

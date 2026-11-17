@@ -35,7 +35,7 @@ function body(v) {
     <div class="pj-prog">${after ? `<b>${icon('check', 14)} 다섯 단계를 모두 마쳤습니다</b><small class="muted">계속 넘기면 기여·칭호에 셉니다(보상 ${PROJECT.pay.after_mul * 100}%). 모두 ${fmt.num(v.total)}몫</small>`
       : `<div class="pj-bar"><span>${v.stage + 1}단계</span>${bar(v.points, v.goal || 1, 'gold')}<b>${fmt.num(v.points)} / ${fmt.num(v.goal)}몫 · ${pct}%</b></div>
         <small class="muted">단계 목표${helpQ(PROJECT.goalTip(kind), '목표 안내')} · 이번 단계에 힘을 보탠 조사원 ${fmt.num(v.givers || 0)}명</small>`}</div>
-    <dl class="kv pj-mine"><div><dt>오늘 내 몫(모든 사업)</dt><dd>${fmt.num(Math.min(v.today?.pts || 0, v.today?.cap || 0))} / ${fmt.num(v.today?.cap || 0)}${v.today?.here && v.today.here !== v.today.pts ? ` <small class="muted">· 여기 ${fmt.num(v.today.here)}</small>` : ''}</dd></div>
+    <dl class="kv pj-mine"><div><dt>오늘 내 몫</dt><dd>${fmt.num(Math.min(v.today?.pts || 0, v.today?.cap || 0))} / ${fmt.num(v.today?.cap || 0)} <small class="muted">· 모든 사업 합쳐</small>${v.today?.here && v.today.here !== v.today.pts ? ` <small class="muted">· 여기 ${fmt.num(v.today.here)}</small>` : ''}</dd></div>
       ${after ? '' : `<div><dt>이번 단계 내 몫</dt><dd>${fmt.num(v.mine?.cur || 0)}${v.mine?.need ? ` <small class="${(v.mine.cur || 0) >= v.mine.need ? 'ok' : 'muted'}">(기념품 ${fmt.num(v.mine.need)}몫${helpQ(PROJECT.mementoTip(), '기념품 안내')})</small>` : ''}</dd></div>`}
       <div><dt>내 누계</dt><dd>${fmt.num(v.mine?.total || 0)}몫</dd></div></dl>
     ${v.benefit && !v.benefit.ok ? `<p class="hint warn">${icon('pin', 14)} ${esc(v.benefit.why)}</p>` : ''}

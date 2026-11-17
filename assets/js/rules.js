@@ -164,6 +164,8 @@ export const WHITE_NIGHT = {
   downed: `흰 밤 속입니다. ${WN_WARN}`,
   recall: `하루 ${WN.recall?.per_day ?? 1}번, 체력 ${WN.recall?.hp ?? 1}로 가장 가까운 등도 안전지대에서 일어납니다 · 소지금·경험치 손실 없음 · 1시간 「바랜 이름」(주는 피해 −10%)`,
   ask: '제 이름을 끝까지 외어 스스로 일어날까요? 가장 가까운 등도 안전지대에서 깨어나고, 1시간 동안 주는 피해가 줄어듭니다.',
+  phase: n => `백야 · ${n}`,
+  phaseTip: '흰 밤이라 하늘은 밝지만 시간은 흐릅니다 — 시간대 효과(낚시·조우 등)는 그대로 받습니다.',
 };
 export const UG_RESULT = {
   title: name => `${name}을(를) 깼습니다`,

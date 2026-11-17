@@ -129,7 +129,7 @@ function arcView(body, bar, list, map) {
   const lock = (ARCS.find(([n]) => n === arc) || [])[1] || '';
   const sorted = [...list].sort((a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'));
   body.innerHTML = `${bar}
-    ${sorted.length ? `<div class="chips">${chip(`마침 ${sorted.filter(q => q.status === 'done').length}/${sorted.length}`, 'accent')}<span class="muted small">앞 이야기를 마치면 다음 이야기가 이어서 열립니다</span></div>
+    ${sorted.length ? `<div class="chips">${chip(`마침 ${sorted.filter(q => q.status === 'done').length}/${sorted.length}`, 'accent')}${sorted.every(q => q.status === 'done') ? '' : '<span class="muted small">앞 이야기를 마치면 다음 이야기가 이어서 열립니다</span>'}</div>
       <ul class="q-list">${sorted.map(q => sideItem(q, map, true)).join('')}</ul>` : empty(lock || '아직 열린 이야기가 없습니다.', 'scroll')}`;
   bindArcs(body);
   bindQuests(body);
@@ -229,7 +229,7 @@ function replayBox(q) {
   if (q.status !== 'done') return '';
   if (!q.replay) return `<div class="btn-row q-abandon"><button class="btn small" data-here="퀘스트 다시하기" data-q-replay="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('refresh', 14)}<span>다시하기</span></button></div>`;
   const cur = q.replay.cur || {};
-  return `<p class="q-now">${icon('chevron', 12)}<span>${chip('다시하기', 'ok')}<b>장면 ${cur.step || (q.replay.step || 0) + 1}/${q.steps}</b> · ${esc(cur.goal || '')}</span></p>
+  return `<p class="q-now">${icon('chevron', 12)}<span>${chip('다시하기', 'ok')} <b>장면 ${cur.step || (q.replay.step || 0) + 1}/${q.steps}</b> · ${esc(cur.goal || '')}</span></p>
     <div class="btn-row q-abandon"><button class="btn small ghost" data-q-unreplay="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>다시하기 그만두기</span></button></div>`;
 }
 async function commission(body) {

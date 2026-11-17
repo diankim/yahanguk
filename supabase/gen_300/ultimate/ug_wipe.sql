@@ -274,7 +274,7 @@ begin
     when 'sea' then '귀허의 바다가 뒤집혀 모두를 벌집 반대편으로 쓸어 간다. 주인의 두 얼굴이 차례로 바뀌는 모습이 잠깐 비쳤다 사라지고, 누군가의 이름이 물에 녹는다.'
     when 'rewrite' then '그림자가 명부를 처음부터 다시 쓰기 시작한다. 아홉 칸 가운데 세 칸이 차례로 깜빡였다 꺼진다.'
     when 'close' then '장 마감 종이 울린다. 모두의 값이 새로 매겨지고, 흰 좌판 위에 맞춰야 할 값이 적힌다.'
-    else '일곱 등이 한꺼번에 꺼진다. 동짓밤 — 저마다의 손끝에 켜야 할 등 번호가 떠오른다.' end);
+    else '일곱 등이 한꺼번에 꺼진다. 동짓밤이 내린다.' end);
 end $f$;
 
 create or replace function public.world_ug_wm_post(p_fight uuid, p_nr integer, p_hid0 integer)

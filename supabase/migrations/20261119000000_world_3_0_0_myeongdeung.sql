@@ -809,7 +809,7 @@ begin
   "modes": {"story": "이야기판", "hard": "깊은 장부"},
   "phases": ["판결 망치", "바가지", "장부 맞추기", "장 닫힘"],
   "mech_names": {"judge": "판결 망치", "bargain": "바가지", "ledger": "장부 맞추기", "tether": "외상 줄", "close": "장 닫힘", "basket": "떨이 바구니", "tagm": "값표 맞추기"},
-  "story": {"min": 30, "round_s": 60, "hp_min": 2000, "hp_atk": 24, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
+  "story": {"phases": ["떨이 바구니", "값표 맞추기", "떨이와 값표", "마감 흥정"], "min": 30, "round_s": 60, "hp_min": 2000, "hp_atk": 24, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
     "board": {"mech_mul": 1,
       "basket": {"every": 3, "off": 1, "left": 2, "raw": 12},
       "tagm": {"every": 4, "off": 3, "left": 3, "raw": 8, "hit_pct": 3},
@@ -1446,7 +1446,7 @@ begin
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
   "phases": ["화살비", "붉은 붓", "물방울과 가루", "흰 밤"],
   "mech_names": {"arrow": "화살비", "brush": "붉은 붓", "drop": "물방울·흰 가루", "tower": "등 기둥 탑", "clock": "멈춤 시계", "num": "차례 화살", "big": "굵은 화살", "gust": "꺼져 가는 등", "wn": "흰 밤", "sdrop": "멈춘 물방울", "flick": "흔들리는 등"},
-  "story": {"min": 30, "round_s": 60, "hp_min": 2400, "hp_atk": 26, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
+  "story": {"phases": ["멈춘 물방울", "흔들리는 등", "물방울과 등", "흰 밤"], "min": 30, "round_s": 60, "hp_min": 2400, "hp_atk": 26, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
     "board": {"fade": null, "sweep_fade": 0,
       "sdrop": {"every": 3, "off": 1, "left": 2, "raw": 15},
       "flick": {"every": 4, "off": 3, "left": 2},
@@ -3200,7 +3200,7 @@ begin
   return jsonb_build_object('hex', true, 'act', act, 'pillars', hx -> 'pillars', 'my_pos', me.pos,
     'moves', case when me.pos is not null and me.out_rounds = 0 and f.status = 'fight' then to_jsonb(public.world_ux_nb(me.pos)) else '[]'::jsonb end,
     'hz', coalesce(ux -> 'hz', '[]'::jsonb),
-    'face', case when act = 2 and not coalesce((f.mech ->> 'hide')::boolean, false) then f.board ->> 'face' end, 'line', coalesce(ux ->> 'line', ''), 'names', hx -> 'names',
+    'face', case when act = 2 and not coalesce((f.mech ->> 'hide')::boolean, false) then f.board ->> 'face' end, 'line', '', 'names', hx -> 'names',
     'mechs', hx -> 'acts' -> (act - 1) -> 'seq' -> (greatest(1, f.phase) - 1), 'phases', hx -> 'acts' -> (act - 1) -> 'phases');
 end $f$;
 
@@ -4790,7 +4790,7 @@ begin
     when 'sea' then '귀허의 바다가 뒤집혀 모두를 벌집 반대편으로 쓸어 간다. 주인의 두 얼굴이 차례로 바뀌는 모습이 잠깐 비쳤다 사라지고, 누군가의 이름이 물에 녹는다.'
     when 'rewrite' then '그림자가 명부를 처음부터 다시 쓰기 시작한다. 아홉 칸 가운데 세 칸이 차례로 깜빡였다 꺼진다.'
     when 'close' then '장 마감 종이 울린다. 모두의 값이 새로 매겨지고, 흰 좌판 위에 맞춰야 할 값이 적힌다.'
-    else '일곱 등이 한꺼번에 꺼진다. 동짓밤 — 저마다의 손끝에 켜야 할 등 번호가 떠오른다.' end);
+    else '일곱 등이 한꺼번에 꺼진다. 동짓밤이 내린다.' end);
 end $f$;
 
 create or replace function public.world_ug_wm_post(p_fight uuid, p_nr integer, p_hid0 integer)

@@ -25,13 +25,13 @@ const BOSS = {
     hard: '깊은 명부 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 봉인 먹줄을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
   gapgwi: { name: '값귀', arc: '외전 · 명등기', place: '붉은 사당 골목', PHASE: { 1: '판결 망치', 2: '바가지', 3: '장부 맞추기', 4: '장 닫힘' }, last: '장 닫힘', mechs: [],
     calm: '값귀가 주판알을 딸깍인다.', tray: '붉은 사당에서 쓸 물품', win: '값귀를 쓰러뜨렸습니다', lose: '장부가 물 밑으로 가라앉았습니다', open: '값귀 앞에 서기',
-    desc: '좌판 두 줄과 거리 한 줄로 된 붉은 사당 골목 장터. 망치를 피하고, 머리 위 값(섬)을 흥정으로 깎거나 서로 매겨 주며 장부를 맞춥니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'gg',
+    desc: '좌판 두 줄과 거리 한 줄로 된 붉은 사당 골목 장터. 장터 칸을 옮겨 다니며 머리 위 값(섬)을 다스려야 합니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'gg',
     story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 붉은 사당 옻이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
-    hard: '깊은 장부 · 라운드마다 마감이 있고 망치·바가지·장부·외상 줄·장 닫힘이 겹쳐 옵니다. 모두 붉은 사당 옻을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
+    hard: '깊은 장부 · 라운드마다 마감이 있고, 장부가 꼬일수록 장터가 사나워집니다. 모두 붉은 사당 옻을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
   sealed_lord: { name: '구중 봉주', arc: '무용담', place: '구중 봉연', PHASE: {}, last: '', mechs: [], calm: '봉주가 아홉 겹 봉인 위에서 숨을 고른다.', tray: '쓸 물품', win: '무용담을 끝맺었습니다', lose: '이야기 속에서 쓰러졌습니다', open: '', desc: '', ask: 'ug', story: '', hard: '' },
   baekya: { name: '백야', arc: '외전 · 명등기', place: '맹약 마당', PHASE: { 1: '화살비', 2: '붉은 붓', 3: '물방울과 가루', 4: '흰 밤' }, last: '흰 밤', mechs: [],
     calm: '하얀 형체의 몸 위로 이름 글자가 개미 떼처럼 기어 다닌다.', tray: '맹약 마당에서 쓸 물품', win: '흰 밤을 걷어 냈습니다', lose: '마당이 하얗게 바랬습니다', open: '맹약 마당 일곱 자리에 서기',
-    desc: '바깥 등 기둥 일곱 칸과 안쪽 마당 일곱 칸으로 된 둥근 마당. 허공에 멈춘 화살·물방울·가루가 숫자를 세다 떨어지니 맵을 보고 움직이며 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'by',
+    desc: '바깥 등 기둥 일곱 칸과 안쪽 마당 일곱 칸으로 된 둥근 마당. 허공에 멈춘 것들이 숫자를 세니 맵을 보며 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'by',
     story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 입장 물품이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
     hard: '깊은 판 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 입장 물품을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
 };
@@ -64,6 +64,7 @@ const story = () => snap?.mode === 'story';
 const storyRules = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo']?.story || {};
 const modeName = (md = snap?.mode) => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo']?.modes?.[md] || (md === 'story' ? '이야기판' : '어려움');
 const ult = () => snap?.mode === 'ultimate';
+const ugPlace = () => GD.ultimate?.boards?.[snap?.board?.ug?.board]?.place || '';
 const PHASE = new Proxy({}, { get: (_, k) => ult() ? (snap?.board?.phases || [])[k - 1] : story() ? (storyRules().phases || [])[k - 1] ?? bossOf().PHASE[k] : bossOf().PHASE[k] });
 
 export async function render(root, sub) {
@@ -190,7 +191,7 @@ function draw() {
   const endState = m => m.out || m.resting ? '쓰러짐' : '끝까지 버팀';
   const top = mobileLog() && !done, restoreLog = keepLogScroll(el, top);
   const B = bossOf(), mk = s.boss === 'mukjeok', gg = s.boss === 'gapgwi', by = s.boss === 'baekya', mapped = mk || gg || by || hexOn(s);
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${B.arc} · ${B.place}</p>
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${ult() ? `${esc(GD.ultimate?.mode_name || '무용담')}${ugPlace() ? ` · ${esc(ugPlace())}` : ''}` : `${B.arc} · ${B.place}`}</p>
       <h1>${ult() ? esc(s.board?.ug?.board_name || B.name) : B.name} ${chip(ult() ? (GD.boss?.gwiheo?.modes?.ultimate || '무용담') : modeName(), story() ? 'ok' : 'bad')} <small>${f.status === 'wait' ? '모이는 중' : fight ? `${f.phase}단계 · ${esc(PHASE[f.phase] || '')}` : f.status === 'won' ? '쓰러뜨림' : '물러남'}</small></h1></div>
       <div class="head-actions">${mk && s.board && f.status !== 'wait' ? chip(`빛나는 칸 ${(s.board.lit || []).length}/8 · 이름 획 ${s.board.strokes}/${s.board.max}`, s.board.strokes <= 3 ? 'bad' : 'good') : ''}${f.enrage ? chip(`분노 ${f.enrage}`, 'bad') : ''}${fight ? `<span class="muted small">전체 남은 시간 <span data-until="${esc(f.ends_at)}">…</span></span>` : ''}${s.joined && (fight || f.status === 'wait') ? `<button class="btn small danger keep-label" id="gw-forfeit">${icon('back', 15)}<span>포기</span></button>` : ''}</div></div>
     ${!done ? forfeitVoteHtml(s.vote) : ''}
@@ -252,7 +253,7 @@ function actHtml(s, me) {
   const on = k => a?.a === k ? 'on' : '';
   const hp = me.hp ?? c.health, sp = s.sp ?? c.spiritual_power;
   const skills = s.skills || [], left = Number(s.items_left ?? 0), free = s.items_left == null, resting = mech.k === 'rest', off = me.out || resting ? 'disabled' : '';
-  const outBox = resting ? `<div class="raid-out rest"><b>${icon('hourglass', 14)} 막 사이 · 숨을 고르는 중</b><span>다음 막이 곧 시작됩니다.</span></div>` : me.out ? `<div class="raid-out"><b>${icon('hourglass', 14)} 물러나 숨을 고르는 중 · ${me.out}라운드</b><span>물러남이 끝나면 체력 30으로 쉬는 중이 됩니다. 저절로 돌아가지 않으니, 준비되면 행동을 골라 돌아가세요.</span></div>`
+  const outBox = resting ? `<div class="raid-out rest"><b>${icon('hourglass', 14)} 막 사이 · 숨을 고르는 중 · 다음 막이 곧 시작됩니다</b></div>` : me.out ? `<div class="raid-out"><b>${icon('hourglass', 14)} 물러나 숨을 고르는 중 · ${me.out}라운드</b><span>물러남이 끝나면 체력 30으로 쉬는 중이 됩니다. 저절로 돌아가지 않으니, 준비되면 행동을 골라 돌아가세요.</span></div>`
     : me.resting ? `<div class="raid-out rest"><b>${icon('check', 14)} 쉬는 중 · 준비되면 행동해서 돌아가세요</b><span>주인이 나를 노리지 않고 수법에서도 빠집니다. <b>공격·방어·버티기·기술·물품</b> 가운데 하나를 고르면 이번 라운드부터 다시 싸웁니다(먼저 <b>방어</b>나 <b>물품</b>이 안전합니다).</span></div>` : '';
   return `<section class="panel raid-act ${a ? '' : 'my-turn'}"><div class="panel-body">
     ${outBox}
@@ -261,13 +262,13 @@ function actHtml(s, me) {
     <div class="raid-buttons gw-btns">
       <button class="btn primary ${on('attack')}" data-gw="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>
       <button class="btn ${on('guard')}" data-gw="guard" ${off}>${icon('shield', 16)}<span>방어</span></button>
-      <button class="btn ${on('brace')}" data-gw="brace" ${off} title="몸을 낮춰 막기만 합니다. 쏟아지는 물살·소용돌이에 방어보다 강합니다">${icon('down', 16)}<span>버티기</span></button>
+      <button class="btn ${on('brace')}" data-gw="brace" ${off} title="몸을 낮춰 막기만 합니다.${s.boss === 'gwiheo' && !ult() ? ' 쏟아지는 물살·소용돌이에 방어보다 강합니다' : ''}">${icon('down', 16)}<span>버티기</span></button>
       <button class="btn ${on('item')}" id="gw-items" type="button" ${off} title="${free ? '체력 회복품을 마음껏 씁니다' : `체력 회복품을 한 싸움에 ${ult() ? (GD.boss?.[s.board?.ug?.board || s.boss]?.ultimate?.items ?? 3) : 2}개까지 씁니다`}(나 또는 고른 동료)">${icon('heart', 16)}<span>물품${free ? '' : ` ${left}`}</span></button>
     </div>
     <div class="raid-coopbox"><div class="coop-grid gw-skills">${skills.map(k => coopBtn({ ...k, on: a?.a === 'coop' && a?.s === k.id,
         why: me.out ? '물러남' : resting ? '막 사이' : !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `${spOf()[0]} ${k.cost}` : '',
         desc: `${k.desc} (${spOf()[0]} ${k.cost} · ${k.rounds}라운드마다)` }, `data-gw-skill="${esc(k.id)}"`)).join('') || '<p class="muted small">쓸 수 있는 협동 기술이 없습니다.</p>'}</div></div>
-    ${s.board?.ugmk ? mkugGim(s, me, a, moveTo, nameOfMember, n => CELL[n]) : mkGim(s, me, a, tName)}${ggGim(s, me, a)}${byGim(s, me, a)}${hexGim(s, me, a, target, moveTo)}${storyGim(s, me, a)}
+    ${resting ? '' : `${s.board?.ugmk ? mkugGim(s, me, a, moveTo, nameOfMember, n => CELL[n]) : mkGim(s, me, a, tName)}${ggGim(s, me, a)}${byGim(s, me, a)}${hexGim(s, me, a, target, moveTo)}${storyGim(s, me, a)}`}
     ${!me.out && (mech.k === 'name' || mech.k === 'chain') ? `<div class="gw-gim"><span class="gw-gim-h" title="이번 라운드에만 나오는 행동">${icon('bell', 13)}<b>이번만</b></span>
       ${mech.k === 'name' ? `<button class="btn ${on('call')}" data-gw="call">${icon('users', 16)}<span>${esc(tName)}의 이름 부르기</span></button>` : ''}
       ${mech.k === 'chain' ? (mech.colors || []).filter((v, i, x) => x.indexOf(v) === i).map(col => `<button class="btn ${COLOR[col] || ''} ${a?.a === 'chain' && a?.c === col ? 'on' : ''}" data-gw="chain" data-c="${esc(col)}">${esc(col)} 사슬</button>`).join('') : ''}
@@ -290,7 +291,7 @@ function resultHtml(f, s) {
   const won = f.status === 'won';
   const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
   return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, ult() ? ugTitle(won, s) : won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${ult() ? esc(s.board?.ug?.act_name || '') : PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 && s.falls_cap ? Math.min(mine.falls || 0, s.falls_cap) : mine.falls || 0}` : ''}</p>
-    <p class="small">${ult() ? ugResult(won, s) : story() ? (won ? '보상은 알림으로 보냈습니다(처음 보낼 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
+    <p class="small">${ult() ? ugResult(won, s) : story() ? (won ? '보상은 알림으로 보냈습니다(처음 이겼을 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw${s.boss && s.boss !== 'gwiheo' ? `/${s.boss}` : ''}">처음으로</a>`)}</div></section>`;
 }
 
@@ -544,8 +545,8 @@ function byGim(s, me, a) {
   const b = s.board || {}, at = moveTo || b.my_pos, canLight = at && at <= 7, sw = bySweepCell(s);
   const gust = (b.hz || []).find(h => h.k === 'gust' && Number(h.s) === at), lit = (b.lamps || []).includes(at);
   return `<div class="gw-gim by-gim"><span class="gw-gim-h" title="맹약 마당에서 늘 쓰는 행동">${icon('bell', 13)}<b>마당</b></span>
-    <button class="btn ${a?.a === 'light' ? 'on' : ''}" data-gw="light" ${canLight ? '' : 'disabled'} title="${!canLight ? '등 기둥 칸(바깥 고리)에 서야 합니다' : !lit ? `${at}번 칸의 꺼진 등을 다시 켭니다` : gust ? `흔들리는 ${at}번 등을 감쌉니다 — 흔들림이 다하는 라운드(!)에 눌러야 지켜집니다` : `${at}번 등은 켜져 있습니다 — 지금 누르면 헛수고입니다`}">${icon('spark', 16)}<span>등 켜기${canLight ? ` · ${at}번 칸` : ''}</span></button>
-    <button class="btn ${a?.a === 'sweep' ? 'on' : ''}" data-gw="sweep" data-c="${sw || ''}" ${sw ? '' : 'disabled'} title="${sw ? `${sw}번 칸 화살을 걷어 냅니다 — 떨어지는 라운드(!)에만 잡히고, 그 전에 누르면 헛손질입니다` : '내 칸이나 바로 옆 칸에 멈춘 화살이 있어야 합니다'}">${icon('close', 16)}<span>걷어 내기${sw ? ` · ${sw}번 칸` : ''}</span></button>
+    <button class="btn ${a?.a === 'light' ? 'on' : ''}" data-gw="light" ${canLight ? '' : 'disabled'} title="${!canLight ? '등 기둥 칸(바깥 고리)에 서야 합니다' : !lit ? `${at}번 칸의 꺼진 등을 다시 켭니다` : gust ? `흔들리는 ${at}번 등을 감쌉니다${story() ? ' — 흔들림이 다하는 라운드(!)에 눌러야 지켜집니다' : ''}` : `${at}번 등은 켜져 있습니다`}">${icon('spark', 16)}<span>등 켜기${canLight ? ` · ${at}번 칸` : ''}</span></button>
+    <button class="btn ${a?.a === 'sweep' ? 'on' : ''}" data-gw="sweep" data-c="${sw || ''}" ${sw ? '' : 'disabled'} title="${sw ? `${sw}번 칸 화살을 걷어 냅니다${story() ? ' — 떨어지는 라운드(!)에만 잡히고, 그 전에 누르면 헛손질입니다' : ''}` : '내 칸이나 바로 옆 칸에 멈춘 화살이 있어야 합니다'}">${icon('close', 16)}<span>걷어 내기${sw ? ` · ${sw}번 칸` : ''}</span></button>
   </div>`;
 }
 function storyGim(s, me, a) {

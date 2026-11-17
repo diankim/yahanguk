@@ -25,7 +25,7 @@ begin
   "modes": {"story": "이야기판", "hard": "깊은 흰 밤"},
   "phases": ["화살비", "붉은 붓", "물방울과 가루", "흰 밤"],
   "mech_names": {"arrow": "화살비", "brush": "붉은 붓", "drop": "물방울·흰 가루", "tower": "등 기둥 탑", "clock": "멈춤 시계", "num": "차례 화살", "big": "굵은 화살", "gust": "꺼져 가는 등", "wn": "흰 밤", "sdrop": "멈춘 물방울", "flick": "흔들리는 등"},
-  "story": {"min": 30, "round_s": 60, "hp_min": 2400, "hp_atk": 26, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
+  "story": {"phases": ["멈춘 물방울", "흔들리는 등", "물방울과 등", "흰 밤"], "min": 30, "round_s": 60, "hp_min": 2400, "hp_atk": 26, "hp_n": [1, 1, 1, 1], "raw": [12, 2], "first": {"gil": 1000},
     "board": {"fade": null, "sweep_fade": 0,
       "sdrop": {"every": 3, "off": 1, "left": 2, "raw": 15},
       "flick": {"every": 4, "off": 3, "left": 2},
