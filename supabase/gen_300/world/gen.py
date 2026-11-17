@@ -601,6 +601,11 @@ bulk('world_quest_steps', [dict(quest_id=q['id'], step=k + 1, title=st['title'],
      'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
 for q in UQ.QUESTS:
     if U.BOARDS[q['board']]['open_quest'] != q['id'] or U.BOARDS[q['board']]['region'] != q['region']: errors.append('무용담 퀘스트와 판 규칙이 어긋남: ' + q['id'])
+_rw = subprocess.run([sys.executable, os.path.join(HERE, '..', '..', 'gen_rewrite', 'gen.py')], capture_output=True, text=True)
+if _rw.returncode:
+    errors.append('홍인사·요인록 대본: ' + _rw.stderr.strip())
+else:
+    w(_rw.stdout)
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
