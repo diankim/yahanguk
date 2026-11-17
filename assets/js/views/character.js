@@ -340,7 +340,7 @@ async function growth(body) {
   const ok = $('#al-ok', body);
   ok.onclick = async () => {
     const list = STATS.filter(([k]) => pend[k]).map(([k, n]) => `${n} +${pend[k]}`).join(' · ');
-    if (!(await ask(`능력치를 이대로 올릴까요? ${list} (포인트 ${allocSum(pend)}점) 한 번 올린 능력치는 세심단 없이는 되돌릴 수 없습니다.`, { title: '능력치 확정', ok: '확정' }))) return;
+    if (!(await ask(`능력치를 이대로 올릴까요? ${list} (포인트 ${allocSum(pend)}점) 한 번 올린 능력치는 환골탈태 서첩 없이는 되돌릴 수 없습니다.`, { title: '능력치 확정', ok: '확정' }))) return;
     guard(ok, async () => {
       const spent = { ...pend };
       pend = {}; saveAlloc(c, pend);
