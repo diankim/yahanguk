@@ -1384,11 +1384,11 @@ details.f-fold > summary { font-weight: 600; margin: 4px 0 8px; } details.f-fold
 .pt-layer.pt-scene { opacity: .32; } .pt-swatch .pt-layer.pt-scene { opacity: .8; }
 .pt-scene path { fill: none; stroke: currentColor; stroke-width: 1; } .pt-scene .sc-moon { fill: currentColor; fill-opacity: .4; stroke: none; }
 .pt-scene .sc-ember circle { fill: #f08a3c; } .pt-scene .sc-top { stroke: #b0263a; stroke-width: 3; }
-.pt-layer.pt-ug { opacity: .3; } .pt-swatch .pt-layer.pt-ug { opacity: .85; }
+.pt-layer.pt-ug { opacity: .36; } .pt-swatch .pt-layer.pt-ug { opacity: .85; }
 .pt-ug .sc-rule { stroke-dasharray: 2 6; opacity: .6; } .pt-ug .sc-snap { stroke: #c9d1df; stroke-width: 1.6; }
 .pt-ug .sc-reel circle { fill: currentColor; fill-opacity: .35; } .pt-ug .sc-reel circle + circle { fill-opacity: 1; }
-.pt-ug .sc-ink { fill: currentColor; stroke: none; } .pt-ug .sc-top { stroke: #c9d1df; stroke-width: 3; }
-[data-tone=light] .pt-ug .sc-snap, [data-tone=light] .pt-ug .sc-top { stroke: #3c4458; }
+.pt-ug .sc-ink { fill: currentColor; stroke: none; } .pt-ug .sc-sp path { fill: #c9d1df; stroke: none; } .pt-ug .sc-top { stroke: #c9d1df; stroke-width: 3; }
+[data-tone=light] .pt-ug .sc-snap, [data-tone=light] .pt-ug .sc-top { stroke: #3c4458; } [data-tone=light] .pt-ug .sc-sp path { fill: #3c4458; }
 .seal-mark { display: inline-block; box-sizing: border-box; width: 1.4em; height: 1.4em; margin-left: 6px; vertical-align: -.2em; font-family: var(--font-serif, serif); font-size: .78em; font-weight: 700; line-height: 1;
   color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; }
 .seal-mark svg { display: block; width: 100%; height: 100%; overflow: visible; }
