@@ -24,7 +24,6 @@ begin
   r := jsonb_set(r, '{mukjeok,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gapgwi,modes,ultimate}', '"무용담"');
   r := jsonb_set(r, '{gwiheo,ultimate}', $j${"min": 25, "raw": [46, 5], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "sealed_lord", "cuts": [8, 15, 20], "name": "구중 봉주", "rounds": 24}, {"boss": "gwiheo", "cuts": [12, 21, 29], "name": "귀허의 주인", "rounds": 36}], "hp_n": [1, 0.57, 0.8, 0.88], "board": {"hand_mul": 1.2, "aoe_every": 4, "face_every": 3, "name_every": 6, "vortex_pct": 80, "center_pres": 0, "chain_every": 6, "vortex_every": 5}, "items": 3, "raw_n": [1, 1.45, 1.4, 1.4], "enrage": 0.15, "hp_atk": 6.8, "hp_min": 9000, "phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
-  r := jsonb_set(r, '{mukjeok,ultimate}', $j${"min": 25, "raw": [70, 6], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "mukjeok", "cuts": [8, 18, 28], "name": "먹그림자", "rounds": 36}], "hp_n": [1, 0.6, 0.75, 0.79], "board": {"line_n": [3, 3, 3, 3], "hand_mul": 2.4, "line_off": [1, 0, 0, 1], "line_warn": true, "rot_every": 4, "line_every": [4, 4, 3, 4], "erase_every": 4, "erase_strokes": 3, "mimic_reverse": true}, "items": 3, "raw_n": [1, 2.5, 1.4, 1.4], "hp_atk": 10.5, "hp_min": 12000, "rest_hp": 30, "rest_rounds": 2}$j$::jsonb);
   r := jsonb_set(r, '{gapgwi,ultimate}', $j${"min": 25, "raw": [36, 4], "tip": "역할을 나누지 않으면 깨기 어렵습니다 — 노림을 받아 버티거나 돕는 사람(방패·보조)이나 돌볼 사람(치유)과 함께 가세요.", "acts": [{"boss": "gapgwi", "cuts": [10, 19, 27], "name": "값귀", "rounds": 32}, {"boss": "baekya", "cuts": [12, 23, 33], "name": "백야", "rounds": 44}], "hp_n": [1, 0.42, 0.6, 0.62],
     "board": {"hide": true, "hand_mul": 1.2, "mech_mul": 0.5, "fail_party": {"raw": 12, "fade": 1},
       "judge": {"every": 2, "off": 1, "left": 2, "raw": 50, "shift": true},
@@ -330,14 +329,7 @@ begin
   ug := coalesce(f.board -> 'ug', '{}'::jsonb); rest := greatest(coalesce((ug ->> 'rest')::int, 0), case when f.mech ->> 'k' = 'rest' then 1 else 0 end); br := public.world_boss_fight_rules(p_fight);
   ar := f.round - coalesce((ug ->> 'act_start')::int, 0);
   if f.boss_id = 'mukjeok' then
-    v := jsonb_build_object('strokes', coalesce((f.board ->> 'strokes')::int, 0), 'max', coalesce((f.board ->> 'max')::int, 9),
-      'lit', coalesce(f.board -> 'lit', '[]'::jsonb), 'mem', coalesce((f.board ->> 'mem')::int, 0), 'lost', coalesce((f.board ->> 'lost')::int, 0),
-      'ink', (select coalesce(jsonb_agg(distinct vv::int), '[]'::jsonb) from jsonb_each_text(coalesce(f.board -> 'ink', '{}'::jsonb)) e(kk, vv)),
-      'moves', case when me.pos is not null and not public.world_mk_held(p_fight, p_uid) and f.status = 'fight' then public.world_mk_lines() -> 'nb' -> me.pos::text else '[]'::jsonb end,
-      'my_pos', me.pos,
-      'ink_warn', case when f.board ? 'ink_next' then jsonb_build_object('cells', f.board -> 'ink_next' -> 'cells', 'left', (f.board -> 'ink_next' ->> 'at')::int - f.round)
-        when f.mech ->> 'k' = 'line' then jsonb_build_object('cells', f.mech -> 'cells', 'left', 0) end,
-      'rotate_next', case when f.board ? 'rot_next' then jsonb_build_object('dir', f.board -> 'rot_next' ->> 'dir', 'left', (f.board -> 'rot_next' ->> 'at')::int - f.round) end);
+    v := public.world_ug_mk_view(p_fight, p_uid);
   elsif f.boss_id = 'gapgwi' then
     v := public.world_gg_view(p_fight, p_uid);
   elsif f.boss_id = 'baekya' then
@@ -406,41 +398,6 @@ grant execute on function public.world_ug_cfg(uuid), public.world_ug_say_ok(uuid
   public.world_ug_lord_round(uuid), public.world_ug_gw_round(uuid), public.world_ug_mech(uuid, integer, numeric, boolean, boolean, uuid[]), public.world_ug_raw(uuid),
   public.world_ug_wipe(uuid, integer, text), public.world_ug_after(uuid, integer), public.world_ug_cleared(uuid, integer), public.world_ug_view(uuid, uuid),
   public.world_ug_settle(uuid, boolean) to service_role, fn_owner_field;
-
-create or replace function public.world_ug_mk_lines(p_n integer)
- returns jsonb language plpgsql security definer set search_path = pg_catalog, public
-as $f$
-declare lm jsonb := public.world_mk_lines(); ids text[]; cells int[]; k int := 0;
-begin
-  loop
-    k := k + 1;
-    ids := array(select l from unnest(array['r0', 'r1', 'r2', 'c0', 'c1', 'c2', 'd0', 'd1']) l order by random() limit greatest(1, p_n));
-    cells := array(select distinct jsonb_array_elements_text(lm -> 'lines' -> l)::int from unnest(ids) l order by 1);
-    exit when array_length(cells, 1) <= 7 or k >= 30;
-  end loop;
-  return jsonb_build_object('lines', to_jsonb(ids), 'cells', to_jsonb(cells));
-end $f$;
-
-create or replace function public.world_ug_mk_rotate(p_fight uuid, p_b jsonb, p_dir text, p_round integer)
- returns jsonb language plpgsql security definer set search_path = pg_catalog, public
-as $f$
-declare g int[] := array(select jsonb_array_elements_text(public.world_mk_lines() -> 'grid')::int); mp jsonb := '{}'::jsonb; i int; r int; c int; j int; b jsonb := p_b;
-begin
-  for i in 0 .. 8 loop
-    r := i / 3; c := i % 3;
-    j := case when p_dir = 'cw' then c * 3 + (2 - r) else (2 - c) * 3 + r end;
-    mp := mp || jsonb_build_object(g[i + 1]::text, g[j + 1]);
-  end loop;
-  b := b || jsonb_build_object('lit', (select coalesce(jsonb_agg((mp ->> z)::int order by (mp ->> z)::int), '[]'::jsonb) from jsonb_array_elements_text(coalesce(b -> 'lit', '[]'::jsonb)) z));
-  if b ? 'ink_next' then
-    b := jsonb_set(b, '{ink_next,cells}', (select coalesce(jsonb_agg((mp ->> z)::int order by (mp ->> z)::int), '[]'::jsonb) from jsonb_array_elements_text(b -> 'ink_next' -> 'cells') z));
-  end if;
-  perform public.world_gw_say(p_fight, p_round, 'seal', '명부가 ' || case when p_dir = 'cw' then '오른쪽' else '왼쪽' end || '으로 한 칸 돌았다. 기억 칸이 따라 옮겨 갔다.');
-  return b - 'rot_next';
-end $f$;
-
-revoke all on function public.world_ug_mk_lines(integer), public.world_ug_mk_rotate(uuid, jsonb, text, integer) from public, anon, authenticated;
-grant execute on function public.world_ug_mk_lines(integer), public.world_ug_mk_rotate(uuid, jsonb, text, integer) to service_role, fn_owner_field;
 
 create or replace function public.world_gw_say(p_fight uuid, p_round integer, p_kind text, p_text text)
  returns void language sql security definer set search_path = pg_catalog, public
@@ -630,45 +587,3 @@ select pg_temp.yh_patch('public.world_gw_resolve(uuid)',
   $o$      elsif tgt <> m.owner_id or random() < 0.3 then$o$,
   $n$      elsif tgt <> m.owner_id or (f.mode <> 'ultimate' and random() < 0.3) then$n$);
 
-select pg_temp.yh_patch('public.world_mk_mech(uuid,integer,boolean,boolean,uuid[])',
-  $o$    gone := (select count(*) from unnest(lit) z where z = any (cells));
-    lit := array(select z from unnest(lit) z where not (z = any (cells)));$o$,
-  $n$    gone := 0;
-    if not rb ? 'line_warn' then
-      gone := (select count(*) from unnest(lit) z where z = any (cells));
-      lit := array(select z from unnest(lit) z where not (z = any (cells)));
-    end if;$n$);
-
-select pg_temp.yh_patch('public.world_mk_round(uuid)',
-  $o$  due := alive > 0 and (f.cycle % every = off or coalesce((b ->> 'late')::boolean, false));$o$,
-  $n$  due := alive > 0 and (f.cycle % every = off or coalesce((b ->> 'late')::boolean, false));
-  if rb ? 'line_warn' then
-    due := alive > 0 and coalesce((b -> 'ink_next' ->> 'at')::int = nr, false);
-    if b ? 'rot_next' and (b -> 'rot_next' ->> 'at')::int = nr then b := public.world_ug_mk_rotate(p_fight, b, b -> 'rot_next' ->> 'dir', nr); end if;
-  end if;$n$);
-select pg_temp.yh_patch('public.world_mk_round(uuid)',
-  $o$  if ph = 3 then
-    b := b || jsonb_build_object('ink', (select$o$,
-  $n$  if rb ? 'line_warn' then
-    if m ->> 'k' = 'line' and b ? 'ink_next' then
-      cells := array(select jsonb_array_elements_text(b -> 'ink_next' -> 'cells')::int);
-      m := m || jsonb_build_object('lines', b -> 'ink_next' -> 'lines', 'cells', to_jsonb(cells), 'center', 5 = any (cells));
-      b := b - 'ink_next';
-    elsif due then
-      b := jsonb_set(b, '{ink_next,at}', to_jsonb(nr + 1));
-    elsif b ? 'ink_next' and (b -> 'ink_next' ->> 'at')::int <= nr then
-      b := b - 'ink_next';
-    end if;
-    if alive > 0 and not b ? 'ink_next' and (f.cycle + 1) % every = off then
-      b := b || jsonb_build_object('ink_next', public.world_ug_mk_lines(nline) || jsonb_build_object('at', nr + 1));
-    end if;
-    if ph = 4 and not b ? 'rot_next' and (nr + 1) % (rb ->> 'rot_every')::int = 0 then
-      b := b || jsonb_build_object('rot_next', jsonb_build_object('at', nr + 1, 'dir', case when random() < 0.5 then 'cw' else 'ccw' end));
-    end if;
-  end if;
-  if ph = 3 then
-    b := b || jsonb_build_object('ink', (select$n$);
-select pg_temp.yh_patch('public.world_mk_round(uuid)',
-  $o$      mm := case when na > ng then 'attack' when ng > na then 'guard' else 'hesit' end;$o$,
-  $n$      mm := case when na > ng then 'attack' when ng > na then 'guard' else 'hesit' end;
-      if coalesce((rb ->> 'mimic_reverse')::boolean, false) and mm in ('attack', 'guard') then mm := case mm when 'attack' then 'guard' else 'attack' end; end if;$n$);

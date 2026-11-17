@@ -382,11 +382,11 @@ select pg_temp.yh_patch('public.world_ug_after(uuid,integer)',
 
 select pg_temp.yh_patch('public.world_ug_view(uuid,uuid)',
   $o$  if f.boss_id = 'mukjeok' then
-    v := jsonb_build_object('strokes',$o$,
+    v := public.world_ug_mk_view(p_fight, p_uid);$o$,
   $n$  if public.world_ux_on(p_fight) then
     v := public.world_ux_view(p_fight, p_uid);
   elsif f.boss_id = 'mukjeok' then
-    v := jsonb_build_object('strokes',$n$);
+    v := public.world_ug_mk_view(p_fight, p_uid);$n$);
 select pg_temp.yh_patch('public.world_ug_view(uuid,uuid)',
   $o$  return v || jsonb_build_object('phase_name', br -> 'phases' ->> (f.phase - 1), 'phases', br -> 'phases',$o$,
   $n$  if v ? 'hex' then br := br || jsonb_build_object('phases', v -> 'phases'); end if;
