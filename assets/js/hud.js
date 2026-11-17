@@ -160,7 +160,16 @@ function qsCard(c) {
   }).join('');
   return `<section class="hud-card hud-qs"><h3>퀵슬롯 <a class="linkish" href="#/char/status">바꾸기</a></h3><div class="hqs-grid">${cells}</div></section>`;
 }
+export function wnSoft() { try { return localStorage.getItem('yh-whitenight-soft') === '1'; } catch { return false; } }
+export function setWnSoft(on) { try { localStorage.setItem('yh-whitenight-soft', on ? '1' : '0'); } catch {} document.body.classList.toggle('wn-soft', !!on && document.body.classList.contains('wn')); }
+function paintWhiteNight() {
+  const on = !!store.hud?.domain?.white_night;
+  document.body.classList.toggle('wn', on);
+  const soft = wnSoft();
+  document.body.classList.toggle('wn-soft', on && soft);
+}
 function render() {
+  paintWhiteNight();
   const c = store.character; if (!root || !c) return;
   const items = statusItems(c);
   const need = xpNeed(c.level);

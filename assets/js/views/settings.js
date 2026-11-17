@@ -6,6 +6,7 @@ import { patternLayer, patternSwatch, sealMark } from '../cosmetics.js';
 import { hue as autoHue, NAME_STYLES } from '../chat.js';
 const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 330];
 import { logout } from '../session.js';
+import { wnSoft, setWnSoft } from '../hud.js';
 import { prefMode, savePrefsDevice, savePrefsAccount, loadPrefsAccount } from '../prefs.js';
 
 const PREF_NAME = { look: '테마·글자 크기', sound: '소리' };
@@ -82,7 +83,8 @@ export async function render(root, sub) {
     <section id="sec-theme" class="set-sec">
       ${panel('저장', prefBar('look'), { ico: 'shield' })}
       ${panel('글자 크기', `<p class="muted small">바로 바뀝니다(아래 저장 단추와 상관없음).</p>
-        <div class="fz-row" role="radiogroup" aria-label="글자 크기">${FONT_SIZES.map(([k, n, z]) => `<button type="button" class="btn ${savedFontSize() === k ? 'primary' : ''}" data-fz="${k}" role="radio" aria-checked="${savedFontSize() === k}"><span style="font-size:${Math.round(14 * z * 10) / 10}px">가</span><small>${n}</small></button>`).join('')}</div>`, { ico: 'scroll' })}
+        <div class="fz-row" role="radiogroup" aria-label="글자 크기">${FONT_SIZES.map(([k, n, z]) => `<button type="button" class="btn ${savedFontSize() === k ? 'primary' : ''}" data-fz="${k}" role="radio" aria-checked="${savedFontSize() === k}"><span style="font-size:${Math.round(14 * z * 10) / 10}px">가</span><small>${n}</small></button>`).join('')}</div>
+        <label class="toggle-row"><span><b>백야를 옅게</b><small>등도의 흰 하늘 덧그림을 옅게, 움직이지 않게 합니다.</small></span><input type="checkbox" data-wn-soft ${wnSoft() ? 'checked' : ''}></label>`, { ico: 'scroll' })}
       ${panel('테마', `<p class="muted small">고르면 바로 미리 보입니다. 저장해야 다음 접속에도 남습니다.</p>
         <div class="theme-grid">${THEMES.map(t => themeCard(t, t.id === draft.theme)).join('')}</div>
         <h3 class="sub-h">직접 설정</h3>
@@ -173,6 +175,8 @@ export async function render(root, sub) {
     if (tr) playSfx(tr.dataset.try);
     const pd = e.target.closest('[data-pref-dev]'), pa = e.target.closest('[data-pref-acc]'), pl = e.target.closest('[data-pref-load]');
     if (pd || pa || pl) { prefAct(pd, pa, pl); return; }
+    const wn = e.target.closest('[data-wn-soft]');
+    if (wn) setWnSoft(wn.checked);
     const fz = e.target.closest('[data-fz]');
     if (fz) { applyFontSize(fz.dataset.fz); $$('[data-fz]', el).forEach(x => { const on = x === fz; x.classList.toggle('primary', on); x.setAttribute('aria-checked', String(on)); }); }
   });
