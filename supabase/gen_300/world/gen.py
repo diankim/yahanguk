@@ -607,6 +607,7 @@ if _rw.returncode:
     errors.append('홍인사·요인록 대본: ' + _rw.stderr.strip())
 else:
     w(_rw.stdout)
+_sd = subprocess.run([sys.executable, os.path.join(HERE, '..', 'side', 'gen.py')], capture_output=True, text=True); errors.append('명등기 보조: ' + _sd.stderr.strip()) if _sd.returncode else w(_sd.stdout)
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
