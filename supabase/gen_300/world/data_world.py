@@ -521,7 +521,7 @@ TITLES = [
     ('gg_kill1', '값을 치르지 않은 이', 5, {'presence': 6, 'erosion_pct': -6, 'combat_damage_pct': 3}, {'n': 1, 'ev': 'gg_win'}, '깊은 장부에서 값귀를 쓰러뜨린다', False),
     ('gg_kill10', '장부를 덮은 이', 5, {'mental_loss_pct': -6, 'combat_damage_pct': 2}, {'n': 10, 'ev': 'gg_win'}, '깊은 장부에서 값귀를 10번 쓰러뜨린다', False),
     ('gg_solo', '홀로 셈을 맞춘 이', 5, {'evasion_pct': 2, 'combat_damage_pct': 3}, {'p': {'solo': True}, 'ev': 'gg_win'}, '혼자 깊은 장부에서 값귀를 쓰러뜨린다', False),
-    ('gg_flawless', '한 섬도 거두이지 않은 장부', 5, {'healing_pct': 5, 'incoming_damage_pct': -3}, {'p': {'flawless': True}, 'ev': 'gg_win'}, '둘 이상이 함께, 아무도 물러나지 않고 깊은 장부에서 값귀를 쓰러뜨린다', True),
+    ('gg_flawless', '한 섬도 뜯기지 않은 장부', 5, {'healing_pct': 5, 'incoming_damage_pct': -3}, {'p': {'flawless': True}, 'ev': 'gg_win'}, '둘 이상이 함께, 아무도 물러나지 않고 깊은 장부에서 값귀를 쓰러뜨린다', True),
     ('by_kill1', '흰 밤을 걷어 낸 이', 5, {'presence': 6, 'erosion_pct': -8, 'mental_loss_pct': -4}, {'n': 1, 'ev': 'by_win'}, '깊은 판에서 백야를 이긴다', False),
     ('by_kill10', '맹약 마당의 등지기', 5, {'mental_loss_pct': -6, 'combat_damage_pct': 3}, {'n': 10, 'ev': 'by_win'}, '깊은 판에서 백야를 10번 이긴다', False),
     ('by_solo', '제 이름으로 등을 켠 이', 5, {'evasion_pct': 2, 'combat_damage_pct': 3}, {'p': {'solo': True}, 'ev': 'by_win'}, '혼자 깊은 판에서 백야를 이긴다', False),

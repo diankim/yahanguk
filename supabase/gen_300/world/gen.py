@@ -533,13 +533,13 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
     qrows, qsrows = [], []
     for i, q in enumerate(quests):
         L = q['L']
-        tot = round(0.6 * (100 * L + 12 * L * L))
+        tot = 0 if L >= D.CAP else round(Q.XP * (100 * L + 12 * L * L))
         mine = [s for s in qsteps if s['quest'] == q['id']]
         task_steps = [s['step'] for s in mine if s['need'].get('tasks') or s['need'].get('give')]
         per = tot // max(1, len(task_steps))
         qrows.append(dict(quest_id=q['id'], cat=Q.CAT, title=q['title'], summary=q['summary'], region_id=q['region'], min_level=L, after=q['after'], sort=1400 + i, epilogue=[]))
         for s in mine:
-            rw = {'xp': per} if s['step'] in task_steps else {}
+            rw = {'xp': per} if s['step'] in task_steps and per else {}
             if s['step'] == len(mine):
                 rw['gil'] = 20 + 10 * L
                 rw['items'] = q['items']

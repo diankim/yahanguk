@@ -5,6 +5,7 @@ WORLD = os.path.join(os.path.dirname(HERE), 'world')
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, WORLD)
 import data_quests as DQ
+import data_world as DW
 
 REF = json.load(open(os.path.join(HERE, 'ref.json'), encoding='utf-8'))
 ARC = '외전·명등기'
@@ -27,8 +28,8 @@ META = {
     'mds_lampshop': (48, REST, '제작', ['mdq_10']),
     'mds_ledger': (49, FOBS, '조사', ['mdq_12']),
     'mds_bison': (49, PALACE, '전투', ['mdq_14']),
-    'mds_scale': (49, VAULT, '조사', ['mdq_17']),
-    'mds_hands': (49, VAULT, '채집', ['mdq_17']),
+    'mds_scale': (50, VAULT, '조사', ['mdq_17']),
+    'mds_hands': (50, VAULT, '채집', ['mdq_17']),
     'mds_seven': (50, PACT, '제작', ['mdq_17']),
     'mde_danbi_1': (50, 'ledger_cellar', ARC, ['mdq_17']),
     'mde_danbi_2': (50, 'red_plain', ARC, ['mde_danbi_1']),
@@ -159,7 +160,7 @@ def level_check(t, L, q, p):
         lv = REF['node_min'].get(r)
     if lv is not None and lv > L:
         errors.append(f'{q}: 퀘스트 Lv{L}보다 높은 출입 레벨 Lv{lv} — {p}')
-    if t['t'] == 'fish' and 'f' in t:
+    if t['t'] == 'fish' and 'f' in t and META.get(q, (0, 0, ''))[2] != '낚시':
         errors.append(f'{q}: 정해진 물고기를 낚는 할 일(운·시간대·날씨에 기댐) — {p}')
     if t.get('phase') or t.get('weather'):
         errors.append(f'{q}: 시간대·날씨 할 일 — {p}')
@@ -498,7 +499,7 @@ on conflict (title_key) do update set title_name = excluded.title_name, descript
             steps.append([s['title'], goal, need, s['lines']])
         if sc and sc[-1]['todo']:
             errors.append(f"{q['id']}: 마지막 장면에 할 일이 있음")
-        xp = 0 if field == ARC else round(RULES['xp'] * REF['xp_need'][L])
+        xp = 0 if field == ARC or L >= DW.CAP else round(RULES['xp'] * REF['xp_need'][L])
         task_steps = [k for k, st in enumerate(steps) if st[2].get('tasks') or st[2].get('give')]
         per = xp // max(1, len(task_steps))
         if not q['summary']:
