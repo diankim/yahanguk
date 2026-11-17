@@ -365,6 +365,8 @@ const F = await import('./assets/js/housing/furniture.js');
 const o = {};
 for (const [k, f] of Object.entries(F.FUR)) o[k] = { t: 'FUR', name: f.name, grade: f.grade, W: f.W, D: f.D, layer: f.layer || 'floor', top: f.top || 0, pet: f.pet || null, petKind: f.petKind || null, cat: f.cat };
 for (const [k, f] of Object.entries(F.WALL)) o[k] = { t: 'WALL', name: f.name, grade: f.grade, kind: f.kind, w: f.w, h: f.h, cat: f.cat, frame: f.frame || null };
+for (const [k, f] of Object.entries(F.PAPER)) o['paper:' + k] = { t: 'PAPER', name: f.name, grade: f.grade };
+for (const [k, f] of Object.entries(F.GROUND)) o['ground:' + k] = { t: 'GROUND', name: f.name, grade: f.grade };
 console.log(JSON.stringify(o));
 """)
 fsrc, shop_fur, fur_ids = [], [], []
@@ -378,10 +380,13 @@ for k, spec in D.FURNITURE.items():
         tr = {'hk': k, 'kind': f['layer'], 'w': f['W'], 'd': f['D'], 'top': f['top'], 'cat': f['cat'], 'grade': g}
         if f['pet']: tr['pet'] = f['pet']
         if f['petKind']: tr['pet_kind'] = f['petKind']
+    elif f['t'] in ('PAPER', 'GROUND'):
+        pk = k.split(':', 1)[1]
+        tr = {'hk': pk, 'kind': 'paper' if f['t'] == 'PAPER' else 'ground', 'cat': '벽지' if f['t'] == 'PAPER' else '바닥재', 'grade': g}
     else:
         tr = {'hk': k, 'kind': 'wall', 'wall': f['kind'], 'ww': f['w'], 'wh': f['h'], 'cat': f['cat'], 'grade': g}
     tradeable = spec['source'] in ('shop', 'drop_normal', 'drop_guardian')
-    iid = 'hf_' + k
+    iid = {'PAPER': 'hp_', 'GROUND': 'hg_'}.get(f['t'], 'hf_') + k.split(':', 1)[-1]
     items.append(dict(item(iid, f['name'], 'furniture', g, f"별채 가구 · {tr['cat']}. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.", 1,
                            {1: 0, 2: 0, 3: 0, 4: 800, 5: 2400}[g], tradeable, 1, traits=tr), stackable=False))
     names_new.append(f['name'])
@@ -578,6 +583,16 @@ select x.title_key, x.title_name, x.description, case when x.hidden then '숨겨
     as x(title_key text, title_name text, grade int, bonus jsonb, rule jsonb, cond text, hidden boolean, description text, n int)
 on conflict (title_key) do update set title_name = excluded.title_name, description = excluded.description, condition_text = excluded.condition_text, bonus = excluded.bonus,
   hidden = excluded.hidden, rule = excluded.rule, category = excluded.category, grade = excluded.grade;""")
+_qp = _iu.spec_from_file_location('ug_quest', os.path.join(os.path.dirname(HERE), 'ultimate', 'quest.py'))
+UQ = _iu.module_from_spec(_qp); _qp.loader.exec_module(UQ)
+bulk('world_quests', [dict(quest_id=UQ.QID, cat='외전·명등기', title=UQ.TITLE, summary=UQ.SUMMARY, region_id=UQ.REGION, min_level=UQ.LEVEL, after=UQ.AFTER, sort=1499, epilogue=[])],
+     [('quest_id', 'text'), ('kind', 'text'), ('cat', 'text'), ('title', 'text'), ('summary', 'text'), ('region_id', 'text'), ('min_level', 'int'), ('after', 'jsonb'),
+      ('sort', 'int'), ('epilogue', 'jsonb'), ('active', 'boolean')], 'quest_id', ['cat', 'title', 'summary', 'region_id', 'min_level', 'after', 'sort', 'epilogue', 'active'],
+     {'kind': "'side'", 'after': TA('after'), 'active': 'true'})
+bulk('world_quest_steps', [dict(quest_id=UQ.QID, step=k + 1, title=st['title'], goal=st['goal'], need={'at': st['at'], 'tasks': st['tasks']}, lines=st['lines'], reward={})
+                           for k, st in enumerate(UQ.STEPS)],
+     [('quest_id', 'text'), ('step', 'int'), ('title', 'text'), ('goal', 'text'), ('need', 'jsonb'), ('lines', 'jsonb'), ('reward', 'jsonb')],
+     'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
