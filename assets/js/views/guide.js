@@ -2003,12 +2003,33 @@ const S = [
       <li>칭호·꾸미기는 보낸 횟수·혼자·흠 없이(이름 획을 잃지 않고 아무도 물러나지 않음)로 얻습니다. 귀령초는 귀허의 주인과 같은 길(1%)로 나옵니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur}% · 침식 +${x.er} · ${x.cd}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
+  ['ggboss', '값귀 · 외전 「명등기」 8장', `${(() => { const B = GD.boss?.gapgwi || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, d = b.delta || {}; return `
+    <p>외전 「명등기」 7장을 마치면 Lv${B.lv ?? 47}부터 ${esc(B.place || '붉은 사당 골목')}의 현장에서 「값귀」 칸으로 들어갑니다. 혼자 또는 같은 곳의 파티원 4명까지 60초 동안 모입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>8장의 싸움으로, 누구든 깰 수 있는 쉬운 판입니다. 혼자면 마감이 없고(여럿이면 ${st.round_s ?? 60}초 안에 안 고른 사람은 방어), 입장 물품이 필요 없으며 회복품도 마음껏 씁니다. 판결이 느리게 오고 장부 맞추기는 지금 합을 보여 줍니다. 밀려나도 잃는 것이 없고, 처음 쓰러뜨리면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>${esc(B.modes?.hard || '깊은 장부')}</td><td>${esc(B.hard_quest_name || '명등기 8장')}을 마치면 열립니다. 모두 ${esc(B.item_name || '')}을 하나씩 씁니다(${esc(B.item_where || '')}). 라운드·물품·협동 기술·물러남·쉬는 중은 귀허의 주인과 같고, ${B.min ?? 15}분 안에 쓰러뜨려야 합니다.</td></tr></table>
+    <h4>값(섬)</h4>
+    <ul>
+      <li>함께 선 이마다 머리 위에 0~9섬의 값이 붙습니다. 행동마다 값이 바뀝니다: 공격 +${d.attack ?? 3} · 방어 +${d.guard ?? 1} · 버티기 ${d.brace ?? -2} · 협동 기술 +${d.coop ?? 2} · 물품 그대로, 열을 넘으면 일의 자리만 남습니다. 화면의 「고르면 …」 줄이 행동마다 바뀔 값을 미리 보여 줍니다.</li>
+      <li><b>부르기</b>: 동료 이름을 누르고 고르면 그 사람과 값을 맞바꿉니다(공격 대신).</li>
+    </ul>
+    <h4>네 단계</h4>
+    <table class="guide-table"><tr><th>단계</th><th>귀띔</th></tr>
+      ${(B.phases || ['장부 넘기기', '셈 거두기', '장부 맞추기', '가라앉는 배']).map((n, i) => `<tr><td>${i + 1} ${esc(n)}</td><td>${['값표가 붙은 사람이 휘두른 힘은 값귀를 낫게 합니다. 동료가 이름을 불러 주면 떨어집니다.', '값귀가 미리 외친 규칙에 값이 맞는 사람을 거둡니다. 판결 전에 값을 옮겨 두세요.', '모두의 값을 더해 목표에 맞추면 값귀가 크게 무너집니다.', '장날 마감 안에 쓰러뜨려야 합니다. 규칙이 겹쳐 옵니다.'][i] || ''}</td></tr>`).join('')}
+    </table>
+    <ul><li>값귀가 가끔 한 사람에게 「값에 ${b.deal_x ?? 3}을 곱해 주마」 흥정을 겁니다. 받으면 그 공격이 크게 세지지만 값도 곱해집니다.</li></ul>
+    <h4>보상</h4>
+    <ul>
+      <li>깊은 장부에서 처음 쓰러뜨리면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>칭호는 쓰러뜨린 횟수·혼자·흠 없이(아무도 물러나지 않음)로 얻습니다.</li>
+      <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
+    </ul>`; })()}`],
 ];
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'gear', 'durability', 'survival']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
