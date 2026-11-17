@@ -18,6 +18,14 @@
       "ReadNotifications"
     ]
   },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Reading the production Supabase database with read-only SELECT/WITH queries through mcp__Supabase__execute_sql is routine for this project and allowed.",
+      "Shell commands that read or edit files inside /home/user/yahanguk or the session scratchpad (cat, sed, grep, python3 scripts that rewrite repo files, node --check, tools/check scripts) are routine and allowed.",
+      "Local git operations in /home/user/yahanguk (status, diff, log, add, commit, fetch) are allowed; pushing still needs the user's go-ahead."
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
