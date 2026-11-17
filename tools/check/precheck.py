@@ -13,9 +13,9 @@ ACCOUNT_TABLES = {
     'world_events', 'world_chat_messages', 'world_party_messages', 'world_circles', 'world_circle_invites',
     'world_gwiryeong_plants', 'world_case_state', 'world_party_loot_pool',
 }
-UNUSED_OK = {'pet_token'}
+UNUSED_OK = {'pet_token', 'md_litter', 'plank_water_jar', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
 HQ_SKIP = {'travel_ration'}
-NOSRC_OK = {'pet_token', 'seal_shard'}
+NOSRC_OK = {'pet_token', 'seal_shard', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
 HQ_OK_JS = {'QS_DEFAULT'}
 HQ_OK_FN = {'world_case_combine_regional'}
 BASE_KEYED = re.compile(r"\.output\s*===\s*([\w$.]+)|ingredients\??\.?\[([\w$.]+)\]|lore\.items\??\.?\[([\w$.]+)\]|l\.items\??\.?\[([\w$.]+)\]")
