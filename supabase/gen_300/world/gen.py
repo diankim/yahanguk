@@ -608,6 +608,9 @@ if _rw.returncode:
 else:
     w(_rw.stdout)
 _sd = subprocess.run([sys.executable, os.path.join(HERE, '..', 'side', 'gen.py')], capture_output=True, text=True); errors.append('명등기 보조: ' + _sd.stderr.strip()) if _sd.returncode else w(_sd.stdout)
+_pj = _iu.spec_from_file_location('pj_gen', os.path.join(os.path.dirname(HERE), 'project', 'gen.py'))
+PJ = _iu.module_from_spec(_pj); _pj.loader.exec_module(PJ)
+w(PJ.build(fresh, errors, REF))
 part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())

@@ -993,6 +993,75 @@ export const FUR = {
     { x: .38, y: .48, w: .24, d: .02, h: .03, z: .58, c: '#f4f2ea' },
     { t: 'ell', x: .5, y: .5, z: .74, rx: 2, ry: 3, c: '#f4f2ea' }, { t: 'ell', x: .5, y: .5, z: .76, rx: 1, ry: 2, c: '#ffffff' },
     { x: .47, y: .47, w: .06, d: .06, h: .04, z: .68, c: C.gold }] },
+  proj_crate: { name: '자재 궤짝', grade: 2, W: 1, D: 1, layer: 'floor', cat: '수납', top: .5, parts: [
+    { x: .1, y: .14, w: .8, d: .72, h: .46, c: C.pine }, { x: .1, y: .14, w: .8, d: .72, h: .04, z: .46, c: '#b98a56' },
+    { x: .1, y: .14, w: .8, d: .04, h: .46, c: C.wood }, { x: .1, y: .82, w: .8, d: .04, h: .46, c: C.wood },
+    { x: .1, y: .14, w: .04, d: .72, h: .46, c: C.dark }, { x: .86, y: .14, w: .04, d: .72, h: .46, c: C.dark },
+    { x: .1, y: .14, w: .8, d: .72, h: .04, z: .14, c: C.stone2 }, { x: .1, y: .14, w: .8, d: .72, h: .04, z: .34, c: C.stone2 },
+    { x: .2, y: .3, w: .16, d: .4, h: .08, z: .5, c: C.paper }, { x: .44, y: .3, w: .12, d: .4, h: .1, z: .5, c: C.stone },
+    { x: .62, y: .26, w: .16, d: .16, h: .14, z: .5, c: C.lac }] },
+  proj_cart: { name: '납품 수레', grade: 3, W: 2, D: 1, layer: 'floor', cat: '수납', top: .52, parts: [
+    { t: 'ell', x: .42, y: .1, z: .22, rx: 7, ry: 7, c: C.deep }, { t: 'ell', x: .42, y: .1, z: .22, rx: 3, ry: 3, c: C.brass },
+    { t: 'ell', x: 1.58, y: .1, z: .22, rx: 7, ry: 7, c: C.deep }, { t: 'ell', x: 1.58, y: .1, z: .22, rx: 3, ry: 3, c: C.brass },
+    { x: .14, y: .18, w: 1.72, d: .64, h: .06, z: .3, c: C.dark },
+    { x: .14, y: .18, w: 1.72, d: .64, h: .14, z: .36, c: C.pine }, { x: .14, y: .18, w: 1.72, d: .64, h: .02, z: .5, c: '#b98a56' },
+    { x: .14, y: .18, w: .04, d: .64, h: .2, z: .36, c: C.wood }, { x: 1.82, y: .18, w: .04, d: .64, h: .2, z: .36, c: C.wood },
+    { x: 1.86, y: .44, w: .12, d: .04, h: .04, z: .36, c: C.dark }, { x: 1.86, y: .52, w: .12, d: .04, h: .04, z: .36, c: C.dark },
+    { x: .24, y: .26, w: .3, d: .5, h: .14, z: .52, c: C.cream }, { x: .24, y: .26, w: .3, d: .04, h: .14, z: .52, c: C.lac }] },
+  proj_pole: { name: '공사 깃대', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .26, y: .26, w: .48, d: .48, h: .12, c: C.stone2 }, { x: .3, y: .3, w: .4, d: .4, h: .06, z: .12, c: C.stone },
+    { x: .46, y: .46, w: .08, d: .08, h: 1.9, z: .18, c: C.wood },
+    { x: .5, y: .46, w: .04, d: .5, h: .4, z: 1.56, c: C.lac }, { x: .5, y: .46, w: .04, d: .5, h: .06, z: 1.86, c: C.gold },
+    { x: .5, y: .62, w: .04, d: .18, h: .14, z: 1.68, c: C.cream }, { x: .44, y: .44, w: .12, d: .12, h: .06, z: 2.08, c: C.gold }] },
+  fp_night: { name: '청사 처마 등', grade: 3, W: 1, D: 1, layer: 'floor', cat: '조명', glow: true, parts: [
+    { x: .22, y: .22, w: .56, d: .56, h: .08, c: C.dark },
+    { x: .2, y: .44, w: .08, d: .08, h: 1.86, z: .08, c: C.dark }, { x: .2, y: .44, w: .62, d: .08, h: .06, z: 1.94, c: C.lac },
+    { x: .14, y: .4, w: .74, d: .16, h: .04, z: 2.0, c: C.ind },
+    { x: .64, y: .46, w: .04, d: .04, h: .2, z: 1.74, c: C.gold },
+    { x: .5, y: .32, w: .32, d: .32, h: .06, z: 1.1, c: C.ind }, { x: .5, y: .32, w: .32, d: .32, h: .18, z: 1.16, c: '#d8503a' },
+    { x: .5, y: .32, w: .32, d: .32, h: .16, z: 1.34, c: C.ind2 }, { x: .5, y: .32, w: .32, d: .32, h: .06, z: 1.5, c: C.ind },
+    { x: .58, y: .4, w: .16, d: .16, h: .06, z: 1.56, c: C.gold }, { x: .63, y: .45, w: .06, d: .06, h: .16, z: .94, c: C.lac }] },
+  fp_redmoon: { name: '월식 제단 향로', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .26, y: .26, w: .08, d: .08, h: .22, c: C.lacD }, { x: .66, y: .26, w: .08, d: .08, h: .22, c: C.lacD }, { x: .46, y: .66, w: .08, d: .08, h: .22, c: C.lacD },
+    { t: 'ell', x: .5, y: .5, z: .4, rx: 9, ry: 6, c: C.lac }, { t: 'ell', x: .5, y: .5, z: .52, rx: 8, ry: 2, c: C.lacD },
+    { x: .2, y: .44, w: .08, d: .12, h: .12, z: .46, c: C.gold }, { x: .72, y: .44, w: .08, d: .12, h: .12, z: .46, c: C.gold },
+    { t: 'ell', x: .5, y: .5, z: .56, rx: 5, ry: 1, c: '#3a2a2a' },
+    { x: .48, y: .48, w: .02, d: .02, h: .22, z: .56, c: C.ember }, { x: .54, y: .44, w: .02, d: .02, h: .18, z: .56, c: C.ember },
+    { t: 'ell', x: .5, y: .46, z: .92, rx: 3, ry: 2, c: '#d8d2c2' }, { t: 'ell', x: .58, y: .4, z: 1.06, rx: 2, ry: 2, c: '#e6e0d2' },
+    { t: 'ell', x: .5, y: .5, z: .62, rx: 2, ry: 2, c: C.red }] },
+  fp_lotus: { name: '장부지기 서가', grade: 3, W: 1, D: 1, layer: 'floor', cat: '수납', parts: [
+    { x: .1, y: .3, w: .8, d: .44, h: 1.5, c: C.black }, { x: .14, y: .32, w: .72, d: .4, h: .03, z: .4, c: '#3a3a42' },
+    { x: .14, y: .32, w: .72, d: .4, h: .03, z: .8, c: '#3a3a42' }, { x: .14, y: .32, w: .72, d: .4, h: .03, z: 1.2, c: '#3a3a42' },
+    { x: .18, y: .7, w: .12, d: .04, h: .3, z: .1, c: C.paper }, { x: .32, y: .7, w: .1, d: .04, h: .28, z: .1, c: C.ind }, { x: .46, y: .7, w: .14, d: .04, h: .3, z: .1, c: C.paper2 },
+    { x: .2, y: .7, w: .14, d: .04, h: .3, z: .5, c: C.cream }, { x: .38, y: .7, w: .1, d: .04, h: .3, z: .5, c: C.lac }, { x: .6, y: .7, w: .18, d: .04, h: .26, z: .5, c: C.paper },
+    { x: .2, y: .7, w: .2, d: .04, h: .3, z: .9, c: C.paper2 }, { x: .52, y: .7, w: .12, d: .04, h: .3, z: .9, c: C.ind2 },
+    { t: 'ell', x: .5, y: .5, z: 1.56, rx: 5, ry: 2, c: '#1e1e24' }, { t: 'ell', x: .5, y: .5, z: 1.62, rx: 3, ry: 1, c: C.pink }] },
+  fp_north: { name: '설산 맹약 북', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .16, y: .3, w: .08, d: .4, h: .7, c: C.dark }, { x: .76, y: .3, w: .08, d: .4, h: .7, c: C.dark },
+    { x: .16, y: .3, w: .68, d: .06, h: .06, z: .7, c: C.dark }, { x: .16, y: .64, w: .68, d: .06, h: .06, z: .7, c: C.dark },
+    { t: 'ell', x: .5, y: .5, z: .56, rx: 9, ry: 9, c: C.lac }, { t: 'ell', x: .5, y: .5, z: .56, rx: 7, ry: 7, c: C.cream },
+    { t: 'ell', x: .5, y: .5, z: .56, rx: 3, ry: 3, c: C.ind }, { t: 'ell', x: .5, y: .5, z: .56, rx: 1, ry: 1, c: C.white },
+    { x: .24, y: .76, w: .5, d: .04, h: .04, z: .08, c: C.pine }, { x: .3, y: .8, w: .4, d: .04, h: .04, z: .08, c: C.pine }] },
+  fp_river: { name: '나룻배 노 걸이', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .14, y: .24, w: .72, d: .52, h: .06, c: C.dark },
+    { x: .18, y: .46, w: .06, d: .08, h: 1.4, z: .06, c: C.wood }, { x: .76, y: .46, w: .06, d: .08, h: 1.4, z: .06, c: C.wood },
+    { x: .14, y: .44, w: .72, d: .12, h: .06, z: 1.3, c: C.wood }, { x: .14, y: .44, w: .72, d: .12, h: .06, z: .8, c: C.wood },
+    { x: .32, y: .4, w: .04, d: .04, h: 1.3, z: .1, c: C.pine }, { x: .3, y: .38, w: .08, d: .08, h: .3, z: .1, c: C.water },
+    { x: .52, y: .4, w: .04, d: .04, h: 1.3, z: .1, c: C.pine }, { x: .5, y: .38, w: .08, d: .08, h: .3, z: .1, c: C.water2 },
+    { x: .66, y: .4, w: .04, d: .04, h: 1.3, z: .1, c: C.pine }, { x: .64, y: .38, w: .08, d: .08, h: .3, z: .1, c: C.water },
+    { x: .2, y: .5, w: .16, d: .02, h: .2, z: 1.0, c: C.jade }] },
+  fp_south: { name: '잔불 화덕', grade: 3, W: 1, D: 1, layer: 'floor', cat: '조명', glow: true, parts: [
+    { x: .18, y: .18, w: .64, d: .64, h: .4, c: C.clay }, { x: .18, y: .18, w: .64, d: .64, h: .04, z: .4, c: '#8a5a3a' },
+    { x: .3, y: .78, w: .4, d: .04, h: .22, z: .06, c: '#2a1a12' }, { x: .34, y: .79, w: .32, d: .03, h: .12, z: .08, c: C.coal },
+    { x: .38, y: .79, w: .1, d: .03, h: .06, z: .1, c: C.ember },
+    { t: 'ell', x: .5, y: .5, z: .44, rx: 6, ry: 3, c: '#2a1a12' }, { t: 'ell', x: .5, y: .5, z: .46, rx: 4, ry: 2, c: C.coal },
+    { t: 'ell', x: .46, y: .48, z: .5, rx: 2, ry: 1, c: C.ember }, { t: 'ell', x: .5, y: .5, z: .66, rx: 2, ry: 2, c: '#f0c070' },
+    { x: .3, y: .3, w: .4, d: .4, h: .06, z: .58, c: C.deep }] },
+  fp_mandate: { name: '작은 혼천의', grade: 3, W: 1, D: 1, layer: 'surface', cat: '소품', parts: [
+    { x: .3, y: .3, w: .4, d: .4, h: .06, c: C.dark }, { x: .46, y: .46, w: .08, d: .08, h: .16, z: .06, c: C.brass },
+    { t: 'ell', x: .5, y: .5, z: .44, rx: 7, ry: 7, c: C.brass }, { t: 'ell', x: .5, y: .5, z: .44, rx: 6, ry: 6, c: C.dark },
+    { t: 'ell', x: .5, y: .5, z: .44, rx: 7, ry: 2, c: C.gold }, { t: 'ell', x: .5, y: .5, z: .44, rx: 2, ry: 7, c: C.gold },
+    { t: 'ell', x: .5, y: .5, z: .44, rx: 2, ry: 2, c: C.ind2 }, { x: .49, y: .49, w: .02, d: .02, h: .1, z: .7, c: C.gold }] },
 };
 
 export const WALL = {
@@ -1375,6 +1444,13 @@ export const WALL = {
     [.86, 2, .09, 30, '#5a4434'], [.1, 16.8, 1.6, 1.2, '#5a4434'],
     [.8, 14.5, .2, 5, '#d8b25a'], [.84, 15.5, .12, 3, '#5a4434'],
     [-.12, -3, 2.04, 2.5, '#3e2c22'], [-.12, 34, 2.04, 2.5, '#3e2c22'], [.04, 36.5, 1.72, 1, '#d8b25a']] },
+  proj_plaque: { name: '낙성 기념패', grade: 4, kind: 'deco', cat: '현판', w: 1.1, h: 22, rects: [
+    [0, 0, 1.1, 22, C.deep], [.06, 1.5, .98, 19, C.lac], [.14, 3.5, .82, 15, C.gold], [.2, 5, .7, 12, C.lacD],
+    [.3, 7, .5, 1.5, C.gold], [.3, 10, .5, 1.5, C.gold], [.3, 13, .5, 1.5, C.gold], [.48, -4, .14, 4, C.dark], [.36, -5, .38, 1.5, C.brass]] },
+  proj_beam: { name: '상량 현판', grade: 4, kind: 'deco', cat: '현판', w: 2, h: 16, rects: [
+    [-.06, 0, 2.12, 16, C.deep], [0, 1, 2, 14, C.dark], [.08, 2.5, 1.84, 11, '#b98a56'],
+    [.24, 5, .22, 6, C.ink], [.6, 5, .22, 6, C.ink], [1.18, 5, .22, 6, C.ink], [1.54, 5, .22, 6, C.ink],
+    [.92, 4.5, .16, 7, C.lac], [.04, 14, .3, 4, C.red], [1.66, 14, .3, 4, C.ind2], [.12, 18, .14, 3, C.yellow], [1.74, 18, .14, 3, C.green]] },
 };
 
 export const PAPER = {
