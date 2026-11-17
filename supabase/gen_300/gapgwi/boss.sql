@@ -394,7 +394,7 @@ begin
         and y.pos = any (array(select jsonb_array_elements_text(e -> 'cells')::int)))) else '{}'::jsonb end), '[]'::jsonb)
       from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e),
     'delta', rb -> 'delta', 'haggle', (rb ->> 'haggle')::int, 'price', (rb ->> 'price')::int, 'max', coalesce((rb ->> 'max')::int, 9),
-    'bargain', case when rb ? 'bargain' then jsonb_build_object('base', (rb -> 'bargain' ->> 'base')::numeric, 'k', (rb -> 'bargain' ->> 'k')::numeric) end,
+    'bargain', case when rb ? 'bargain' then jsonb_build_object('base', (rb -> 'bargain' ->> 'base')::numeric, 'k', (rb -> 'bargain' ->> 'k')::numeric, 'cap', (rb -> 'bargain' ->> 'cap')::int) end,
     'close_max', (rb -> 'close' ->> 'max')::int,
     'broke', coalesce((b ->> 'broke')::int, 0));
 end $f$;

@@ -409,9 +409,9 @@ function ggHtml(s, live) {
     });
   }
   g += `<rect class="gg-scale" x="320" y="88" width="54" height="62" rx="6"/><text class="gg-scale-t" x="347" y="123">값귀</text>`;
-  const bg = hz.find(h => h.k === 'bargain'), mine = b.mine, mul = b.bargain && mine != null ? (b.bargain.base + b.bargain.k * mine) : null;
+  const bg = hz.find(h => h.k === 'bargain'), mine = b.mine, cap = b.bargain?.cap, mul = b.bargain && mine != null && cap == null ? (b.bargain.base + b.bargain.k * mine) : null;
   return `<div class="gg-wrap"><svg class="gg-map" viewBox="0 0 380 230" role="img" aria-label="붉은 사당 골목 장터">${g}</svg>
-    <p class="mk-hint muted small">${mine != null ? `내 값 <b>${mine}섬</b>` : ''}${bg ? ` · <span class="gg-hot ${due(bg) ? 'due' : ''}">바가지 ${num(bg)}</span>${mul != null ? ` (지금 맞으면 ×${mul.toFixed(2)})` : ''}` : ''}${led ? ` · 장부 합 <b>${led.t}</b> · 지금 <b>${led.sum ?? 0}</b>` : ''}${closed.size ? ` · 닫힌 줄 ${closed.size}/${b.close_max || 4}` : ''}</p>
+    <p class="mk-hint muted small">${mine != null ? `내 값 <b>${mine}섬</b>` : ''}${bg ? ` · <span class="gg-hot ${due(bg) ? 'due' : ''}">바가지 ${num(bg)}</span>${mul != null ? ` (지금 맞으면 ×${mul.toFixed(2)})` : ''}${cap != null ? ` (${cap}섬을 넘으면 맞음)` : ''}` : ''}${led ? ` · 장부 합 <b>${led.t}</b> · 지금 <b>${led.sum ?? 0}</b>` : ''}${closed.size ? ` · 닫힌 줄 ${closed.size}/${b.close_max || 4}` : ''}</p>
     ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}</div>`;
 }
 function ggGim(s, me, a) {
@@ -427,7 +427,7 @@ function ggGim(s, me, a) {
 function ugBar(s) {
   const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : ''), cut = u.next_cut;
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
-    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}`}</p></div>`;
+    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.fail_cap ? ` · 실수 <b class="${(u.fails || 0) >= u.fail_cap - 1 ? 'bad' : ''}">${u.fails || 0}/${u.fail_cap}</b>` : ''}`}</p></div>`;
 }
 const BY_HZ = { arrow: '화살', big: '굵은 화살', gust: '꺼져 가는 등', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
 function bySector(c) { return ((c - 1) % 7) + 1; }

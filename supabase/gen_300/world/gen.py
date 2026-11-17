@@ -548,7 +548,7 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
          'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
     sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(qsrows)} · 새 인물 {len(QN)}\n")
 
-for bs in ('gapgwi/boss.sql', 'baekya/boss.sql', 'ultimate/boss.sql', 'ultimate/ug_gwiheo.sql', 'ultimate/ug_mukjeok.sql'):
+for bs in ('gapgwi/boss.sql', 'baekya/boss.sql', 'ultimate/boss.sql', 'ultimate/ug_gwiheo.sql', 'ultimate/ug_mukjeok.sql', 'ultimate/ug_gapgwi.sql'):
     bp = os.path.join(os.path.dirname(HERE), bs)
     if os.path.exists(bp): w(open(bp).read())
 part('j_boss_hooks.sql')
