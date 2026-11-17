@@ -19,7 +19,7 @@ F_PERK_TEXT = ['거점 상점에 새 품목 둘(그 세력 조사원만)', '거�
                '비고에 새 품목', '세력 바탕 무늬·거점 머리 그림']
 
 PROJECTS = {
-    'f:night_office': dict(kind='faction', faction='night_office', name='청사 다시 세우기', hubs=['hq_yard', 'hq_dorm'],
+    'f:night_office': dict(kind='faction', faction='night_office', name='청사 다시 세우기', hubs=['lantern_market'],
         stages=[['ward_talisman', 'iron_ingot', 'tonic', 'fine_paper', 'seal_paper', 'raw_iron', 'ward_fragment', 'ghost_ash'],
                 ['sealing_ink', 'repair_kit', 'clear_spirit_pill', 'lumber', 'talisman_thread', 'medicine_base', 'spirit_dust', 'venom_gland'],
                 ['revival_charm', 'spirit_qi_pill', 'snakehead_broth', 'spirit_glass', 'herbal_extract', 'spirit_bark', 'steel_ingot', 'charcoal'],
@@ -85,7 +85,7 @@ PROJECTS = {
         area_fx={'healing_pct': 5, 'incoming_damage_pct': -3},
         route=['ember_pass', 'ash_coast', 'crimson_mine', 'nine_lighthouse', 'red_forest', 'black_tide_rift'],
         vault=['hf_fp_south', 'of_acc_fp_south'], pattern=('pt_f_south', '불씨 무늬')),
-    'f:mandate_court': dict(kind='faction', faction='mandate_court', name='관성대 별 기록 잇기', hubs=['star_observatory', 'hq_dorm'],
+    'f:mandate_court': dict(kind='faction', faction='mandate_court', name='관성대 별 기록 잇기', hubs=['star_observatory'],
         stages=[['fine_paper', 'talisman_thread', 'spirit_tea', 'ward_talisman', 'cloud_cotton', 'moon_moss', 'spirit_dust', 'seal_paper'],
                 ['sealing_ink', 'spirit_thread', 'clear_spirit_pill', 'lumber', 'ghost_ash', 'ward_fragment', 'raw_iron', 'inkstone'],
                 ['spirit_glass', 'purify_water', 'spirit_qi_pill', 'reinforced_lumber', 'lumber', 'spirit_thread', 'fine_paper', 'talisman_thread'],
