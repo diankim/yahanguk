@@ -26,9 +26,9 @@ const BOSS = {
     story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 붉은 사당 옻이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
     hard: '깊은 장부 · 라운드마다 마감이 있고 판결·흥정이 겹쳐 옵니다. 모두 붉은 사당 옻을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
   sealed_lord: { name: '구중 봉주', arc: '무용담', place: '구중 봉연', PHASE: {}, last: '', mechs: [], calm: '봉주가 아홉 겹 봉인 위에서 숨을 고른다.', tray: '쓸 물품', win: '무용담을 끝맺었습니다', lose: '이야기 속에서 쓰러졌습니다', open: '', desc: '', ask: 'ug', story: '', hard: '' },
-  baekya: { name: '백야', arc: '외전 · 명등기', place: '맹약 마당', PHASE: { 1: '거둠', 2: '소등', 3: '긁힌 칸', 4: '흰 밤' }, last: '흰 밤', mechs: [],
+  baekya: { name: '백야', arc: '외전 · 명등기', place: '맹약 마당', PHASE: { 1: '화살비', 2: '붉은 붓', 3: '물방울과 가루', 4: '흰 밤' }, last: '흰 밤', mechs: [],
     calm: '하얀 형체의 몸 위로 이름 글자가 개미 떼처럼 기어 다닌다.', tray: '맹약 마당에서 쓸 물품', win: '흰 밤을 걷어 냈습니다', lose: '마당이 하얗게 바랬습니다', open: '맹약 마당 일곱 자리에 서기',
-    desc: '맹약 마당을 둘러싼 일곱 자리와 가운데 돌상. 서로의 이름을 고르게 불러 붉은 줄을 막고, 꺼진 등을 다시 켜며 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'by',
+    desc: '바깥 등 기둥 일곱 칸과 안쪽 마당 일곱 칸으로 된 둥근 마당. 허공에 멈춘 화살·물방울·가루가 숫자를 세다 떨어지니 맵을 보고 움직이며 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'by',
     story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 입장 물품이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
     hard: '깊은 판 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 입장 물품을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
 };
@@ -133,7 +133,7 @@ function actName(s, a) {
   if (a.a === 'coop') { const sk = (s.skills || []).find(x => x.id === a.s); return `기술 「${sk?.name || ''}」${t ? ` → ${t}` : ''}`; }
   if (a.a === 'item') return `회복품 「${nameOf(a.i)}」${t ? ` → ${t}` : ''}`;
   const mv = a.m ? ` · 「${CELL[a.m]}」 칸으로` : '';
-  return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 맞바꾸기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기', deal: '흥정 받기' })[a.a] || a.a) + mv;
+  return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 맞바꾸기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', sweep: `${a.c || ''}번 칸 걷어 내기`, move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기', deal: '흥정 받기' })[a.a] || a.a) + mv;
 }
 
 function draw() {
@@ -168,7 +168,7 @@ function draw() {
       ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
-          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 자리` : '', by && m.gone ? '<b class="bad">빠짐</b>' : '', by && m.marked ? '<b class="bad">붉은 줄</b>' : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
+          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
@@ -299,7 +299,7 @@ function bind() {
   $$('[data-gw]', el).forEach(x => x.onclick = () => {
     const a = x.dataset.gw, args = { p_action: a, p_target: null, p_item: null };
     if (a === 'call') args.p_target = x.dataset.t || target || snap.me;
-    if (a === 'chain') args.p_item = x.dataset.c;
+    if (a === 'chain' || a === 'sweep') args.p_item = x.dataset.c;
     if (a === 'attack') ammoWarn(snap?.ammo);
     run(x, () => act(args));
   });
@@ -318,7 +318,7 @@ function step(cell) {
   const here = b.my_pos;
   if (cell === here || cell === moveTo) moveTo = null;
   else if ((b.moves || []).includes(cell)) moveTo = cell;
-  else { toast(b.moves?.length ? '바로 옆(가로·세로) 칸으로만 옮겨 설 수 있습니다.' : '먹에 발이 묶여 이번 라운드에는 칸을 옮길 수 없습니다.', 'warn'); return; }
+  else { toast(s.boss === 'baekya' ? '바로 옆 칸으로만 옮겨 설 수 있습니다.' : b.moves?.length ? '바로 옆(가로·세로) 칸으로만 옮겨 설 수 있습니다.' : '먹에 발이 묶여 이번 라운드에는 칸을 옮길 수 없습니다.', 'warn'); return; }
   const a = s.my_act;
   if (a?.a) {
     const again = { p_action: a.a, p_target: a.t || null, p_item: a.s || a.i || a.c || null };
@@ -384,32 +384,77 @@ function ugBar(s) {
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
     <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}`}</p></div>`;
 }
+const BY_HZ = { arrow: '화살', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
+function bySector(c) { return ((c - 1) % 7) + 1; }
+function byNb(c) { return c <= 7 ? [((c + 5) % 7) + 1, (c % 7) + 1, c + 7] : [((c - 7 + 5) % 7) + 8, ((c - 7) % 7) + 8, c - 7]; }
+function byCellAt(c, side = 0) {
+  const da = 2 * Math.PI / 7, r = c <= 7 ? 137 : 76, m = -Math.PI / 2 + (bySector(c) - 1) * da + side * (c <= 7 ? 0.2 : 0.3);
+  return [180 + r * Math.cos(m), 180 + r * Math.sin(m)];
+}
+function bySectorPath(k, r0, r1) {
+  const da = 2 * Math.PI / 7, a = -Math.PI / 2 - da / 2 + (k - 1) * da, b = a + da, P = (r, t) => `${(180 + r * Math.cos(t)).toFixed(1)},${(180 + r * Math.sin(t)).toFixed(1)}`;
+  return `M${P(r1, a)}A${r1},${r1} 0 0 1 ${P(r1, b)}L${P(r0, b)}A${r0},${r0} 0 0 0 ${P(r0, a)}Z`;
+}
 function byBoard(s, live) {
-  const b = s.board || {}, lit = new Set(b.lit || []), moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
-  const n = b.seats || 7, who = {};
-  for (const m of s.members || []) if (m.pos && !m.gone) (who[m.pos] = who[m.pos] || []).push(m);
-  const dims = new Set((b.dims || []).map(d => d.c));
-  const seats = Array.from({ length: n }, (_, i) => i + 1).map(k => {
-    const ang = (k - 1) / n * 2 * Math.PI - Math.PI / 2, x = 50 + 40 * Math.cos(ang), y = 50 + 40 * Math.sin(ang);
-    const ppl = (who[k] || []).slice(0, 4).map(m => `<span class="mk-who ${m.id === s.me ? 'me' : ''} ${m.marked ? 'marked' : ''}" title="${esc(m.name)}">${esc(String(m.name || '').slice(0, 1))}</span>`).join('');
-    const cls = ['by-seat', lit.has(k) ? 'lit' : 'dark', dims.has(k) ? 'dim' : '', moves.has(k) ? 'mk-step' : '', k === dest ? 'dest' : '', k === here ? 'here' : ''].filter(Boolean).join(' ');
-    const label = `${k}번 자리 · ${lit.has(k) ? '등 켜짐' : '등 꺼짐'}${moves.has(k) ? ' · 눌러서 옮겨 서기' : ''}`;
-    return `<button type="button" class="${cls}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%" ${moves.has(k) || (live && k === here) ? `data-mk-step="${k}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}"><i class="by-lamp"></i><span class="mk-ppl">${ppl}</span>${k === dest ? '<b class="mk-arrow">→</b>' : ''}</button>`;
-  }).join('');
-  const wn = b.wn;
-  return `<div class="by-wrap"><div class="by-board">${seats}<div class="by-table"><b>${lit.size}/${n}</b><small>켜진 등</small></div></div>
-    <p class="mk-hint muted small">${wn ? `흰 밤 · 등 ${wn.lit ?? lit.size}/${wn.need} · ${wn.left > 0 ? `${wn.left}라운드 남음` : '이번 라운드 끝'}` : `주는 피해 ×${Number(b.dmg_mul || 1).toFixed(2)} · 받는 피해 ×${Number(b.hurt_mul || 1).toFixed(2)}`}${b.my_mark ? ` · <b class="bad">내 이름에 붉은 줄</b>` : ''}${b.block ? ` · <b class="warn">${esc(b.block)} 막힘</b>` : ''}</p>
-    ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 자리로 옮겨 섭니다 · 내 자리를 누르면 취소` : (b.moves || []).length ? '테 두른 이웃 자리를 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)' : ''}</p>` : ''}</div>`;
+  const b = s.board || {}, lamps = new Set(b.lamps || []), moves = new Set(live ? b.moves || [] : []), here = b.my_pos, dest = live ? moveTo : null;
+  const who = {}, hz = b.hz || [], fade = b.fade || {};
+  for (const m of s.members || []) if (m.pos && !m.out) (who[m.pos] = who[m.pos] || []).push(m);
+  const due = h => !h.frozen && Number(h.left) <= 0, num = h => h.frozen ? '멈춤' : due(h) ? '!' : String(h.left);
+  const cellFill = new Map();
+  for (const h of hz) if (h.k === 'brush') for (const c of h.cells || []) cellFill.set(c, due(h) ? 'by-brush due' : 'by-brush');
+  let cells = '';
+  for (let k = 1; k <= 7; k++) for (const [c, r0, r1] of [[k, 110, 165], [k + 7, 42, 110]]) {
+    const cls = ['by-cell', c <= 7 ? 'outer' : 'inner', lamps.has(bySector(c)) ? 'lit' : 'pale', moves.has(c) ? 'mk-step' : '', c === dest ? 'dest' : '', c === here ? 'here' : '', cellFill.get(c) || ''].filter(Boolean).join(' ');
+    const label = `${c}번 칸 · ${c <= 7 ? `등 기둥 ${lamps.has(c) ? '켜짐' : '꺼짐'}` : '마당'}${moves.has(c) ? ' · 눌러서 옮겨 서기' : ''}`;
+    cells += `<path class="${cls}" d="${bySectorPath(k, r0, r1)}" ${moves.has(c) || (live && c === here) ? `data-mk-step="${c}"` : ''}><title>${esc(label)}</title></path>`;
+  }
+  let lampDots = '';
+  for (let k = 1; k <= 7; k++) {
+    const m = -Math.PI / 2 + (k - 1) * 2 * Math.PI / 7, x = 180 + 158 * Math.cos(m), y = 180 + 158 * Math.sin(m);
+    const fl = hz.find(h => h.k === 'flick' && Number(h.s) === k);
+    lampDots += `<circle class="by-lamp ${lamps.has(k) ? 'on' : ''} ${fl ? 'flick' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6"/>`;
+  }
+  let marks = '';
+  for (const h of hz) {
+    if (h.k === 'brush') { const [x, y] = byCellAt(Number(h.s)); marks += `<text class="by-tag red" x="${x.toFixed(0)}" y="${(y - 18).toFixed(0)}">붓 ${num(h)}</text>`; continue; }
+    if (['arrow', 'sdrop', 'tower'].includes(h.k)) {
+      const [x, y] = byCellAt(Number(h.c), who[h.c] ? -1 : 0);
+      if (h.k === 'tower') marks += `<g class="by-tower ${due(h) ? 'due' : ''}"><rect x="${(x - 13).toFixed(0)}" y="${(y - 20).toFixed(0)}" width="26" height="30" rx="4"/><text x="${x.toFixed(0)}" y="${(y + 1).toFixed(0)}">${Number(h.need) > 1 ? `${h.need}명` : '1명'}</text><text class="sm" x="${x.toFixed(0)}" y="${(y + 22).toFixed(0)}">${num(h)}</text></g>`;
+      else marks += `<g class="by-hz ${h.k} ${due(h) ? 'due' : ''} ${h.frozen ? 'frozen' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="17"/><text x="${x.toFixed(0)}" y="${(y + 7).toFixed(0)}">${num(h)}</text></g>`;
+      continue;
+    }
+    const tm = (s.members || []).find(m => m.id === h.t); if (!tm?.pos) continue;
+    const [x, y] = byCellAt(tm.pos);
+    if (h.k === 'stack') marks += `<g class="by-ring stack ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y - 48).toFixed(0)}">물방울 ${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
+    if (h.k === 'spread' || h.k === 'num') marks += `<g class="by-ring spread ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y + 58).toFixed(0)}">${h.k === 'num' ? `${h.i}번 화살 ` : '흰 가루 '}${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
+    if (h.k === 'clock') marks += `<g class="by-clock ${due(h) ? 'due' : ''}"><text x="${(x + 22).toFixed(0)}" y="${(y - 14).toFixed(0)}">⧗${num(h)}</text></g>`;
+  }
+  let tokens = '';
+  for (const [c, ms] of Object.entries(who)) {
+    const busy = hz.some(h => ['arrow', 'sdrop', 'tower'].includes(h.k) && Number(h.c) === Number(c)), [x, y] = byCellAt(Number(c), busy ? 1 : 0);
+    ms.slice(0, 4).forEach((m, i) => {
+      const dx = (i % 2 ? 9 : -9) * (ms.length > 1 ? 1 : 0), dy = (i > 1 ? 10 : -4) * (ms.length > 1 ? 1 : 0), f = Number(fade[m.id] || 0);
+      tokens += `<g class="by-tok ${m.id === s.me ? 'me' : ''} ${f ? `fade${Math.min(3, f)}` : ''}"><circle cx="${(x + dx).toFixed(0)}" cy="${(y + dy).toFixed(0)}" r="12"/><text x="${(x + dx).toFixed(0)}" y="${(y + dy + 5).toFixed(0)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}${f ? ` · 바램 ${f}` : ''}</title></g>`;
+    });
+  }
+  if (dest) { const [x, y] = byCellAt(dest); tokens += `<circle class="by-destmark" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="16"/>`; }
+  const wn = b.wn, myFade = Number(fade[s.me] || 0);
+  return `<div class="by-wrap"><svg class="by-map" viewBox="0 0 360 360" role="img" aria-label="맹약 마당">${cells}${lampDots}<circle class="by-core" cx="180" cy="180" r="40"/><text class="by-core-t" x="180" y="185">백야</text>${marks}${tokens}</svg>
+    <p class="mk-hint muted small">${wn ? `<b>흰 밤</b> · 등 ${wn.lit}/${wn.need}${wn.left != null ? ` · ${wn.left > 0 ? `${wn.left}라운드 남음` : '이번 라운드 끝'}` : ''}` : `켜진 등 ${lamps.size}/7 · 주는 피해 ×${Number(b.dmg_mul || 1).toFixed(2)} · 받는 피해 ×${Number(b.hurt_mul || 1).toFixed(2)}`}${myFade ? ` · <b class="warn">내 바램 ${myFade}/${b.fade_stun || 3}</b>` : ''}${b.stunned ? ' · <b class="bad">이번 라운드 꼼짝 못 함</b>' : ''}</p>
+    ${live ? `<p class="mk-hint muted small">${moveTo ? `${moveTo}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소` : '점선 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)'}</p>` : ''}</div>`;
+}
+function bySweepCell(s) {
+  const b = s.board || {}, at = moveTo || b.my_pos; if (!at) return null;
+  const near = new Set([at, ...byNb(at)]);
+  const cand = (b.hz || []).filter(h => h.k === 'arrow' && near.has(Number(h.c))).sort((x, y) => (x.frozen ? 99 : x.left) - (y.frozen ? 99 : y.left));
+  return cand.length ? Number(cand[0].c) : null;
 }
 function byGim(s, me, a) {
-  if (s.boss !== 'baekya' || me.out || me.gone) return '';
-  const b = s.board || {}, dest = moveTo || b.my_pos, dark = dest && !(b.lit || []).includes(dest);
-  const alive = (s.members || []).filter(m => !m.gone && !m.out), solo = alive.length <= 1;
-  const can = new Set(b.can_call || []), t = target && target !== s.me ? target : null;
-  return `<div class="gw-gim"><span class="gw-gim-h" title="일곱 자리 행동">${icon('bell', 13)}<b>자리</b></span>
-    ${dark ? `<button class="btn ${a?.a === 'light' ? 'on' : ''}" data-gw="light" title="내가 선 자리의 꺼진 등을 켭니다(공격 대신)">${icon('spark', 16)}<span>등 켜기 · ${dest}번 자리</span></button>` : ''}
-    ${solo ? `<button class="btn ${a?.a === 'call' ? 'on' : ''}" data-gw="call" data-t="${esc(s.me)}" title="혼자 남았을 때 제 이름을 욉니다">${icon('users', 16)}<span>제 이름 외기</span></button>`
-      : t ? `<button class="btn ${a?.a === 'call' ? 'on' : ''}" data-gw="call" data-t="${esc(t)}" ${can.size && !can.has(t) ? 'title="흰 밤에는 이웃 자리만 소리가 닿습니다"' : ''}>${icon('users', 16)}<span>${esc(nameOfMember(s, t))}의 이름 부르기</span></button>` : '<p class="small muted">이름을 불러 줄 동료를 누르세요.</p>'}
+  if (s.boss !== 'baekya' || me.out) return '';
+  const b = s.board || {}, at = moveTo || b.my_pos, canLight = at && at <= 7 && !(b.lamps || []).includes(at), sw = bySweepCell(s);
+  return `<div class="gw-gim by-gim"><span class="gw-gim-h" title="맹약 마당에서 늘 쓰는 행동">${icon('bell', 13)}<b>마당</b></span>
+    <button class="btn ${a?.a === 'light' ? 'on' : ''}" data-gw="light" ${canLight ? '' : 'disabled'} title="${canLight ? `${at}번 등 기둥의 꺼진 등을 켭니다` : '꺼진 등이 있는 등 기둥 칸(바깥 고리)에 서야 합니다'}">${icon('spark', 16)}<span>등 켜기${canLight ? ` · ${at}번` : ''}</span></button>
+    <button class="btn ${a?.a === 'sweep' ? 'on' : ''}" data-gw="sweep" data-c="${sw || ''}" ${sw ? '' : 'disabled'} title="${sw ? `${sw}번 칸의 멈춘 화살을 걷어 냅니다${b.sweep_fade ? '(손이 바램 1)' : ''}` : '내 칸이나 바로 옆 칸에 멈춘 화살이 있어야 합니다'}">${icon('close', 16)}<span>걷어 내기${sw ? ` · ${sw}번` : ''}</span></button>
   </div>`;
 }
 function storyGim(s, me, a) {
