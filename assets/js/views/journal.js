@@ -87,16 +87,18 @@ function bindQuests(body) {
   });
 }
 
-let selCh = '', lastStory = null, lastSide = null, arc = '';
-const MAIN_ARC = '본편';
-const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
+let selCh = '', lastStory = null, lastSide = null, arc = null;
+const MAIN_ARC = '홍인사';
+const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.', '요인록'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
+const arcName = n => (ARCS.find(([a]) => a === n) || [])[2] || n;
 const arcOf = q => fieldOf(q) === '외전' ? ((q.cat || '').split('·')[1] || '') : '';
 async function story(body, keep) {
   const [b, j, map] = keep && lastStory ? lastStory : (lastStory = await Promise.all([load('world_story_board'), journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
   const ext = (j?.quests || []).filter(q => q.kind === 'side' && arcOf(q));
   const arcs = [...ARCS.map(([n]) => n), ...new Set(ext.map(arcOf).filter(n => !ARCS.some(([a]) => a === n)))];
+  if (arc === null) { const on = ext.find(q => q.status === 'active'); arc = on && !(j?.quests || []).some(q => q.kind === 'main' && q.status === 'active') ? arcOf(on) : ''; }
   if (arc && !arcs.includes(arc)) arc = '';
-  const arcBar = `<div class="chips kind-chips arc-chips" role="group" aria-label="이야기"><button class="chip ${arc ? '' : 'on'}" data-arc="">${MAIN_ARC}</button>${arcs.map(n => { const l = ext.filter(q => arcOf(q) === n); return `<button class="chip ${arc === n ? 'on' : ''}" data-arc="${esc(n)}">${esc(n)}${l.length ? ` <small>마침 ${l.filter(q => q.status === 'done').length}</small>` : ''}</button>`; }).join('')}</div>`;
+  const arcBar = `<div class="chips kind-chips arc-chips" role="group" aria-label="이야기"><button class="chip ${arc ? '' : 'on'}" data-arc="">${MAIN_ARC}</button>${arcs.map(n => { const l = ext.filter(q => arcOf(q) === n); return `<button class="chip ${arc === n ? 'on' : ''}" data-arc="${esc(n)}">${esc(arcName(n))}${l.length ? ` <small>마침 ${l.filter(q => q.status === 'done').length}</small>` : ''}</button>`; }).join('')}</div>`;
   if (arc) { arcView(body, arcBar, ext.filter(q => arcOf(q) === arc), map); return; }
   const chapters = b?.chapters || [];
   const mains = new Map((j?.quests || []).filter(q => q.kind === 'main').map(q => [q.chapter_id, q]));
@@ -127,7 +129,7 @@ async function story(body, keep) {
 function bindArcs(body) { $$('[data-arc]', body).forEach(x => x.onclick = () => { arc = x.dataset.arc; story(body, true); }); }
 function arcView(body, bar, list, map) {
   const lock = (ARCS.find(([n]) => n === arc) || [])[1] || '';
-  const sorted = [...list].sort((a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'));
+  const sorted = [...list].sort((a, b) => (b.status === 'active') - (a.status === 'active') || a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'));
   body.innerHTML = `${bar}
     ${sorted.length ? `<div class="chips">${chip(`마침 ${sorted.filter(q => q.status === 'done').length}/${sorted.length}`, 'accent')}${sorted.every(q => q.status === 'done') ? '' : '<span class="muted small">앞 이야기를 마치면 다음 이야기가 이어서 열립니다</span>'}</div>
       <ul class="q-list">${sorted.map(q => sideItem(q, map, true)).join('')}</ul>` : empty(lock || '아직 열린 이야기가 없습니다.', 'scroll')}`;
