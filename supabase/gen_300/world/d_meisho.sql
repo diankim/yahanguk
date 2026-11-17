@@ -61,3 +61,8 @@ select pg_temp.yh_patch('public.world_meisho_dig(text)',
     lp := least((ru #>> ''{lamp,pct,cap}'')::numeric, (ru #>> ''{lamp,pct,base}'')::numeric + public.world_meisho_gear(uid, ''mz_l_pct''));
     if random() * 100 < lp then extra := extra || jsonb_build_object(ru -> ''lamp'' -> ''items'' ->> m.kind, 1); end if;
   end if;');
+
+select pg_temp.yh_patch('public.world_item_sources_all(text)',
+  $q$where x.active and (public.world_item_base(p_item) in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'kinds' -> x.kind -> 'items'))$q$,
+  $q$where x.active and (public.world_item_base(p_item) in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'kinds' -> x.kind -> 'items'))
+                 or (public.world_item_base(p_item) = public.world_meisho_rules() -> 'lamp' -> 'items' ->> x.kind and r.territory_id in (select jsonb_array_elements_text(public.world_meisho_rules() -> 'lamp' -> 'territory')))$q$);

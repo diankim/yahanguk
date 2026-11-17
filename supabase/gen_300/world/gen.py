@@ -136,6 +136,7 @@ part('d_meisho.sql')
 part('e_party.sql')
 part('f_titles.sql')
 part('g_lines.sql')
+part('h_replay.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
@@ -353,7 +354,7 @@ for g in D.MZ_GEAR:
     recipes.append(recipe('r_' + g['id'], g['name'] + ' 만들기', g['id'], g.get('qty', 1), g['mats'], g['field'], D.LV8, f"명장의 솜씨로 {g['name']}을(를) 만든다.",
                           8 if cat != 'consumable' else 4, FERRY_NAME if cat != 'consumable' else None, FIELD_LINE.get(g['field'], g['field']), g['rank']))
     if g.get('line'): tool_lines.append(dict(item_id=g['id'], line=g['line']))
-    if cat != 'consumable' or g.get('hq'): hq.append(g['id'])
+    if cat != 'consumable' or g.get('hq') or g.get('fx'): hq.append(g['id'])
     priced.append(g['id'])
 
 FUR = node_dump("""
@@ -498,6 +499,37 @@ w(f"""insert into public.world_gathering_discoveries(owner_id, spot_id)
 select c.owner_id, gs.spot_id from public.world_characters c
   cross join public.world_gathering_spots gs join public.world_exploration_nodes n on n.node_id = gs.node_id and n.hierarchy_level = 1 and n.region_id in ({ids})
 on conflict do nothing;""")
+
+if os.path.exists(os.path.join(HERE, 'data_quests.py')):
+    import data_quests as Q
+    quests, qsteps = Q.build()
+    QN = Q.NPCS
+    have_npc = set(json.load(open(os.path.join(HERE, 'ref', 'quest_ref.json')))['npcs'].values())
+    for k, (nm, _) in QN.items():
+        if nm in have_npc: errors.append('인물 이름 겹침: ' + nm)
+    bulk('world_quest_npcs', [dict(npc_key=k, npc_name=nm, bio=bio) for k, (nm, bio) in QN.items()], [('npc_key', 'text'), ('npc_name', 'text'), ('bio', 'text')], 'npc_key', ['npc_name', 'bio'])
+    for iid, nm, field, mats, qty, desc in getattr(Q, 'NEW_ITEMS', []):
+        pass
+    qrows, srows = [], []
+    for i, q in enumerate(quests):
+        L = q['L']
+        tot = round(0.6 * (100 * L + 12 * L * L))
+        mine = [s for s in qsteps if s['quest'] == q['id']]
+        task_steps = [s['step'] for s in mine if s['need'].get('tasks') or s['need'].get('give')]
+        per = tot // max(1, len(task_steps))
+        qrows.append(dict(quest_id=q['id'], cat=Q.CAT, title=q['title'], summary=q['summary'], region_id=q['region'], min_level=L, after=q['after'], sort=1400 + i, epilogue=[]))
+        for s in mine:
+            rw = {'xp': per} if s['step'] in task_steps else {}
+            if s['step'] == len(mine):
+                rw['gil'] = 20 + 10 * L
+                rw['items'] = q['items']
+            srows.append(dict(quest_id=q['id'], step=s['step'], title=s['title'], goal=s['goal'], need=s['need'], lines=s['lines'], reward=rw))
+    bulk('world_quests', qrows, [('quest_id', 'text'), ('kind', 'text'), ('cat', 'text'), ('title', 'text'), ('summary', 'text'), ('region_id', 'text'), ('min_level', 'int'), ('after', 'jsonb'),
+         ('sort', 'int'), ('epilogue', 'jsonb'), ('active', 'boolean')], 'quest_id', ['cat', 'title', 'summary', 'region_id', 'min_level', 'after', 'sort', 'epilogue', 'active'],
+         {'kind': "'side'", 'after': TA('after'), 'active': 'true'})
+    bulk('world_quest_steps', srows, [('quest_id', 'text'), ('step', 'int'), ('title', 'text'), ('goal', 'text'), ('need', 'jsonb'), ('lines', 'jsonb'), ('reward', 'jsonb')],
+         'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
+    sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(srows)} · 새 인물 {len(QN)}\n")
 
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())

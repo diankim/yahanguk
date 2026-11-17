@@ -16,7 +16,15 @@ language plpgsql stable security definer set search_path to 'pg_catalog', 'publi
 begin
   return public.world_party_near_of(public.fn_owner_auth_uid());
 end $$;
-grant execute on function public.world_party_near() to public;
+revoke all on function public.world_party_near() from public, anon;
+grant execute on function public.world_party_near() to authenticated;
+do $d$
+declare o text;
+begin
+  for o in select rolname from pg_roles where rolname like 'fn_owner%' loop
+    execute format('grant execute on function public.world_party_near() to %I', o);
+  end loop;
+end $d$;
 
 select pg_temp.yh_patch('public.world_status_self(uuid,text)',
   $q$where cs.owner_id = p_owner and cs.expires_at > now() and (cat.effects ->> p_key) ~ '^-?[0-9]+(\.[0-9]+)?$'$q$,

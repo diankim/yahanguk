@@ -8,7 +8,7 @@ import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
-import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES } from '../rules.js';
+import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
@@ -77,11 +77,19 @@ function bindQuests(body) {
     if (!(await ask(`「${x.dataset.qTitle}」을(를) 포기할까요?\n진행이 처음으로 돌아가고, 다시 받아 처음부터 할 수 있습니다.\n이미 보상을 받은 장면은 다시 보고해도 보상이 없습니다.`, { title: '퀘스트 포기', ok: '포기하기', danger: true }))) return;
     guard(x, () => act('world_quest_abandon', { p_quest: x.dataset.qAbandon }));
   });
+  $$('[data-q-replay]', body).forEach(x => x.onclick = async () => {
+    if (!(await ask(`「${x.dataset.qTitle}」을(를) 처음부터 다시 할까요?\n${QUEST_REPLAY.ask}`, { title: '퀘스트 다시하기', ok: '다시하기' }))) return;
+    guard(x, () => act('world_quest_replay_start', { p_quest: x.dataset.qReplay }));
+  });
+  $$('[data-q-unreplay]', body).forEach(x => x.onclick = async () => {
+    if (!(await ask(`「${x.dataset.qTitle}」 다시하기를 그만둘까요?\n처음 마친 기록은 그대로 남습니다.`, { title: '다시하기 그만두기', ok: '그만두기' }))) return;
+    guard(x, () => act('world_quest_replay_abandon', { p_quest: x.dataset.qUnreplay }));
+  });
 }
 
 let selCh = '', lastStory = null, lastSide = null, arc = '';
 const MAIN_ARC = '본편';
-const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.']];
+const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
 const arcOf = q => fieldOf(q) === '외전' ? ((q.cat || '').split('·')[1] || '') : '';
 async function story(body, keep) {
   const [b, j, map] = keep && lastStory ? lastStory : (lastStory = await Promise.all([load('world_story_board'), journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
@@ -214,7 +222,15 @@ function sideItem(q, map, inArc) {
     ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`
       : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}
     ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-here="퀘스트 포기" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
+    ${replayBox(q)}
   </details></li>`;
+}
+function replayBox(q) {
+  if (q.status !== 'done') return '';
+  if (!q.replay) return `<div class="btn-row q-abandon"><button class="btn small" data-here="퀘스트 다시하기" data-q-replay="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('refresh', 14)}<span>다시하기</span></button></div>`;
+  const cur = q.replay.cur || {};
+  return `<p class="q-now">${icon('chevron', 12)}<span>${chip('다시하기', 'ok')}<b>장면 ${cur.step || (q.replay.step || 0) + 1}/${q.steps}</b> · ${esc(cur.goal || '')}</span></p>
+    <div class="btn-row q-abandon"><button class="btn small ghost" data-q-unreplay="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>다시하기 그만두기</span></button></div>`;
 }
 async function commission(body) {
   const b = await load('world_commission_board');
