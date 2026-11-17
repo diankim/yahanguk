@@ -19,7 +19,7 @@ REF = json.load(open(os.path.join(HERE, 'ref', 'existing_names.json')))
 PRICE = REF['item_price']
 errors = []
 warns = []
-DB_VERSION = '20261126000000'
+DB_VERSION = '20261119000000'
 
 
 def fresh(kind, names, label):

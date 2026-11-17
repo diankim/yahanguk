@@ -74,4 +74,4 @@ TITLES = [
     ('ug_all', '부풀린 이야기를 모두 겪은 이', 5, {}, {'all': [{'p': {'board': b}, 'ev': 'ug_win'} for b in ('gwiheo', 'mukjeok', 'gapgwi')]}, '무용담 셋을 모두 깬다', False),
 ]
 TITLE_CAT = '무용담'
-DRAFT = True
+DRAFT = False
