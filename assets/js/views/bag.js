@@ -370,6 +370,7 @@ function actsHtml(id, n, it, part, ri, showUse, eqSet) {
   const ul = useLabel(id);
   const right = showUse ? `<button class="btn small" data-here="물품 사용" ${ul !== '사용' ? '' : 'data-here-down'} data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} ${ul}" title="${esc(USABLE[id])}">${ul}</button>`
     : it?.category === 'pet' ? `<button class="btn small" data-adopt="${esc(id)}" aria-label="${name} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>`
+    : it?.category === 'outfit' ? `<button class="btn small" data-wear="${esc(id)}" aria-label="${name} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷 하나를 얻습니다' : '옷장에 넣어 「내 모습」에서 입습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>`
     : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade data-here="동무 정표 바꾸기" title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`
     : '';
   return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, right] });
