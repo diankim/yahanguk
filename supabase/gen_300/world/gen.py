@@ -133,6 +133,7 @@ begin
 end $d$;
 grant execute on function public.world_meisho_rules() to public;""")
 part('d_meisho.sql')
+part('e_party.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
@@ -282,7 +283,8 @@ bulk('world_region_sites', rows, [('site_id', 'text'), ('region_id', 'text'), ('
      ('description', 'text'), ('bonus_chance', 'int'), ('loot_category', 'text'), ('loot_categories', 'jsonb'), ('active', 'boolean')], 'site_id', ['site_name', 'loot_table', 'rare_bonus', 'active'],
      {'loot_categories': TA('loot_categories'), 'active': 'true'})
 
-statuses = [dict(status_key=k, status_name=n, polarity=p, duration_minutes=m, effects=e, icon=ic, description=d) for k, n, p, m, e, ic, d in D.STATUSES]
+statuses = [dict(status_key=k, status_name=n, polarity=p, duration_minutes=m, effects=dict(e, party_only=1) if k in D.PARTY_STATUSES else e, icon=ic, description=d)
+            for k, n, p, m, e, ic, d in D.STATUSES]
 statuses += [dict(status_key=k, status_name=n, polarity='positive', duration_minutes=m, effects=e, icon=ic, description=d) for k, n, m, e, ic, d in D.MZ_STATUSES]
 fresh('statuses', [s['status_key'] for s in statuses], '상태 키')
 fresh('status_names', [s['status_name'] for s in statuses], '상태 이름')
