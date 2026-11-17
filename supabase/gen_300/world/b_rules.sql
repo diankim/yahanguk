@@ -20,6 +20,14 @@ begin
 end $$;
 revoke all on function public.world_region_shut(uuid) from public, anon, authenticated;
 
+create or replace function public.world_region_shut() returns text[]
+language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
+begin
+  return public.world_region_shut(public.fn_owner_auth_uid());
+end $$;
+revoke all on function public.world_region_shut() from public, anon;
+grant execute on function public.world_region_shut() to authenticated;
+
 create or replace function public.world_deungdo_night(p_uid uuid, p_region text) returns boolean
 language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $$
 declare q text;
@@ -66,7 +74,7 @@ end $d$;
 
 select pg_temp.yh_patch('public.world_map_snapshot()',
   ' hide := coalesce((select array_agg(x.region_id) from public.world_map_regions x where x.territory_id = any(shut)), ''{}'');',
-  ' hide := coalesce((select array_agg(x.region_id) from public.world_map_regions x where x.territory_id = any(shut)), ''{}'') || public.world_region_shut(uid);');
+  ' hide := coalesce((select array_agg(x.region_id) from public.world_map_regions x where x.territory_id = any(shut)), ''{}'') || public.world_region_shut();');
 select pg_temp.yh_patch('public.world_map_snapshot()',
   '  where r.active and not (coalesce(r.territory_id, '''') = any(shut));',
   '  where r.active and not (coalesce(r.territory_id, '''') = any(shut)) and not (r.region_id = any(hide));');
@@ -123,8 +131,8 @@ begin
   select to_jsonb(sc) into st from public.world_status_catalog sc where sc.status_key = rc ->> 'status';
   if st is not null then
     delete from public.world_character_statuses where owner_id = uid and status_key = rc ->> 'status';
-    insert into public.world_character_statuses(owner_id, status_key, intensity, expires_at, metadata)
-    values (uid, rc ->> 'status', 1, now() + make_interval(mins => (st ->> 'duration_minutes')::int), '{}'::jsonb);
+    insert into public.world_character_statuses(owner_id, status_key, stacks, potency, source_activity, expires_at)
+    values (uid, rc ->> 'status', 1, 1, 'self_recall', now() + make_interval(mins => (st ->> 'duration_minutes')::int));
   end if;
   insert into public.world_events(actor_id, actor_name, event_type, content, payload)
   values (uid, c.character_name, 'rescue', c.character_name || '이(가) 제 이름을 외어 ' || s.region_name || '에서 일어났습니다.', jsonb_build_object('self', true, 'recall', true, 'to', s.region_id));
