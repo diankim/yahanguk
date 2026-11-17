@@ -21,7 +21,7 @@ begin
     (public.world_boss_rules() - 'gapgwi') || jsonb_build_object('gapgwi', $j${
   "name": "값귀", "fight": "값을 매기는 장부", "place": "붉은 사당 골목", "arc": "명등기", "region": "red_shrine_lane", "lv": 47,
   "quest": "mdq_7", "quest_name": "명등기 7장", "item": "red_shrine_lacquer", "item_name": "붉은 사당 옻", "item_where": "붉은 사당 골목에서 채집해 얻습니다.",
-  "min": 15, "hp_min": 8000, "hp_atk": 42, "hp_n": [1.0, 1.3, 0.8, 1.15], "raw_n": [1, 1.1, 0.8, 0.85], "raw": [40, 4], "enrage": 0.15,
+  "min": 15, "hp_min": 8000, "hp_atk": 42, "hp_n": [1.05, 1.5, 0.8, 1.15], "raw_n": [1, 1.1, 0.8, 0.85], "raw": [40, 4], "enrage": 0.15,
   "first": {"gil": 2000, "xp": 0.5}, "again": {"gil": 150, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 50,
   "hard_quest": "mdq_8", "hard_quest_name": "명등기 8장 「끊긴 기름」",
   "modes": {"story": "이야기판", "hard": "깊은 장부"},
@@ -45,10 +45,10 @@ begin
     "bargain_every": 6, "bargain_rounds": 3, "bargain_tol": 0, "bargain_show": false, "bargain_span": 6,
     "bargain_pct": 6, "broke_rounds": 3, "broke_pct": 30, "bargain_heal_pct": 8,
     "deal": true, "deal_every": 4, "deal_off": 2, "deal_mul": 2.5, "deal_x": 3,
-    "close_rounds": 6, "low_pct": 10, "guide": false},
-  "solo": {"artificer": {"solo_dmg": -40, "solo_guard": -24}, "scout": {"solo_dmg": -25, "solo_guard": -46}, "exorcist": {"solo_dmg": -41, "solo_guard": -16},
-    "medic": {"solo_dmg": -30, "solo_guard": -55}, "sealmaster": {"solo_dmg": -42, "solo_guard": -32}, "analyst": {"solo_dmg": -25, "solo_guard": -36},
-    "tamer": {"solo_dmg": -25, "solo_guard": -46}}
+    "close_rounds": 16, "aoe_every": 4, "low_pct": 10, "guide": false},
+  "solo": {"artificer": {"solo_dmg": -25, "solo_guard": -24}, "scout": {"solo_dmg": -25, "solo_guard": -15}, "exorcist": {"solo_dmg": -20, "solo_guard": -16},
+    "medic": {"solo_dmg": 15, "solo_guard": -55}, "sealmaster": {"solo_dmg": -28, "solo_guard": -10}, "analyst": {"solo_dmg": -25, "solo_guard": -36},
+    "tamer": {"solo_dmg": -25, "solo_guard": 0}}
 }$j$::jsonb));
 end $$;
 
