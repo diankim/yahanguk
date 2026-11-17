@@ -414,6 +414,6 @@ gamedata로 나갈 것: pay(per_merit·gil_rate·day_cap)·urgent·hq_mul·mul_c
 2. **한 사람 하루 상한 하나** — 모든 사업(내 세력·공동·남의 세력)을 합쳐 8,000몫(`pay.day_cap`). 셈은 `world_project_day_pts(uid, 한국 날짜)` = 그날 contrib.day_pts 합, 넘는 수량은 지금처럼 돌려받음. 사업이 달라도 캐릭터 행 잠금으로 차례로 셈.
 3. **보상** — 내 세력 사업 몫 100 = 공훈 1(`pay.faction.per_merit`, 하루 최대 공훈은 상한에서 80), 공동 사업 몫 1 = 0.6전(`pay.common.gil_rate`), 남의 세력 사업 몫 1 = 0.6전(`pay.help.gil_rate`). 5단계 뒤 절반 그대로.
 4. **다른 세력 돕기** — 대세력이 없거나 다른 세력인 조사원도 그 세력 거점(hubs = 세력 안전지대)에서 그 세력 사업에 넘김(`world_project_role` = help). 몫은 그 세력 단계에 쌓이고 보상은 전, 단계가 찰 때 기여 1%↑면 낙성 떡(마지막 단계 기념패), 누계는 사업 칭호에 셈. 공훈 +20·바탕 무늬·상점·지역 효과·지름길·비고는 그 세력 조사원만(지금처럼). 같은 세력인데 가입 퀘스트를 안 마친 사람은 여전히 못 넘김.
-   - 관계: 내 세력이 있으면 `world_project_rel_up`이 `world_faction_relations`를 몫 1,000마다 +0.5(`help_rel.per_k`), 한 사람이 그날 그 사업에서 +2(`person_day`)까지, 두 세력이 서로의 사업을 도운 그날 몫을 합쳐 +6(`pair_day`)까지 올림. 파티 활동(쌍마다 시간당 +1까지)보다 느리게 둠. 입장이 바뀌면 `world_faction_log` relation.
+   - 관계: 내 세력이 있으면 `world_project_rel_up`이 `world_faction_relations`를 몫 1,000마다 +1(`help_rel.per_k`), 한 사람이 그날 그 사업에서 +3(`person_day`)까지, 두 세력이 서로의 사업을 도운 그날 몫을 합쳐 +10(`pair_day`)까지 올림. 파티 활동(쌍마다 시간당 +1까지)보다 느리게 둠. 입장이 바뀌면 `world_faction_log` relation.
 5. 화면: 남의 세력 사업은 「…사업 돕기」(보상 전·혜택은 그 세력 것이라는 줄 `.pj-help`·「?」 helpTip), 현장 띠·시설 칸·캐릭터 › 세력 칸이 남의 거점에서도 열림(brief here.help·also, gamedata project hub_ids).
 6. 날수(sim.py, 60% 참여·납품하는 사람은 상한까지): 몫을 모두 거점 사업에 넣으면 1단계 정통 1.5일 · 적월 3.0 · 북령 3.6 · 천명 3.8 · 수향 4.9 · 흑련 12.8 · 남명 15.2일. 정통 참여자 둘이 흑련·남명을 하나씩 도우면 흑련 5.6 · 남명 6.0 · 정통 2.2일. 공동은 서버 몫의 절반이 한 땅에 모이면 1단계 3.5일.

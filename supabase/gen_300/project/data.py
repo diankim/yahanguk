@@ -1,5 +1,5 @@
 PAY = {'day_cap': 8000, 'faction': {'per_merit': 100}, 'common': {'gil_rate': 0.6}, 'help': {'gil_rate': 0.6}, 'after_mul': 0.5}
-HELP_REL = {'per_k': 0.5, 'person_day': 2, 'pair_day': 6}
+HELP_REL = {'per_k': 1, 'person_day': 3, 'pair_day': 10}
 URGENT = {'n': 2, 'mul': 1.5}
 HQ_MUL = 1.5
 MUL_CAP = 2
