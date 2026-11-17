@@ -1358,6 +1358,10 @@ details.f-fold > summary { font-weight: 600; margin: 4px 0 8px; } details.f-fold
 .fr-wrap.t-rare, .fr-wrap.t-legend { border-style: double; }
 .fr-wrap.t-rare { --fr: var(--gold); --fr-glyph: var(--gold); }
 .fr-wrap.t-legend { --fr: var(--accent); --fr-glyph: var(--gold); }
+.fr-wrap.t-ultimate { border-style: double; --fr: #c9d1df; --fr-glyph: #e6ebf4; --frame-bg: #1b1d27; } [data-tone=light] .fr-wrap.t-ultimate { --fr: #3c4458; --fr-glyph: #262c3c; --frame-bg: #eef0f5; }
+.fr-svg.ug .ug-in { fill: none; stroke: var(--fr); stroke-width: .8; stroke-dasharray: 3 2.4; }
+.fr-svg.ug .ug-sp { fill: var(--fr-glyph); stroke: none; }
+.fr-svg.ug g path { stroke-width: 1.5; }
 /* 레거시(야행의 흔적): 먹빛 바탕에 핏빛 겹테·금빛 문양 */
 .fr-wrap.t-legacy { border-color: transparent; border-radius: 0; --fr: #a3243a; --fr-glyph: #e0bd66; --frame-bg: #120d10; } [data-tone=light] .fr-wrap.t-legacy { --fr: #8a1b2e; --fr-glyph: #9a7420; --frame-bg: #f4eee2; }
 /* 팔각 패: 안쪽 문장도 팔각으로 자르고, 테는 SVG(cosmetics.js legacySvg)가 그린다 */
@@ -1380,12 +1384,19 @@ details.f-fold > summary { font-weight: 600; margin: 4px 0 8px; } details.f-fold
 .pt-layer.pt-scene { opacity: .32; } .pt-swatch .pt-layer.pt-scene { opacity: .8; }
 .pt-scene path { fill: none; stroke: currentColor; stroke-width: 1; } .pt-scene .sc-moon { fill: currentColor; fill-opacity: .4; stroke: none; }
 .pt-scene .sc-ember circle { fill: #f08a3c; } .pt-scene .sc-top { stroke: #b0263a; stroke-width: 3; }
+.pt-layer.pt-ug { opacity: .3; } .pt-swatch .pt-layer.pt-ug { opacity: .85; }
+.pt-ug .sc-rule { stroke-dasharray: 2 6; opacity: .6; } .pt-ug .sc-snap { stroke: #c9d1df; stroke-width: 1.6; }
+.pt-ug .sc-reel circle { fill: currentColor; fill-opacity: .35; } .pt-ug .sc-reel circle + circle { fill-opacity: 1; }
+.pt-ug .sc-ink { fill: currentColor; stroke: none; } .pt-ug .sc-top { stroke: #c9d1df; stroke-width: 3; }
+[data-tone=light] .pt-ug .sc-snap, [data-tone=light] .pt-ug .sc-top { stroke: #3c4458; }
 .seal-mark { display: inline-block; box-sizing: border-box; width: 1.4em; height: 1.4em; margin-left: 6px; vertical-align: -.2em; font-family: var(--font-serif, serif); font-size: .78em; font-weight: 700; line-height: 1;
   color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; }
 .seal-mark svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .seal-mark text { fill: currentColor; font-size: calc(13.5px * var(--fz, 1)); font-family: inherit; font-weight: inherit; }
 .seal-mark.t-rare { color: var(--gold); border-color: var(--gold); }
 .seal-mark.t-legend { color: var(--surface); background: var(--accent); border-color: var(--accent); }
+.seal-mark.t-ultimate { color: #e6ebf4; background: #1f2230; border-color: #c9d1df; outline: 1px solid #c9d1df; outline-offset: 1px; }
+[data-tone=light] .seal-mark.t-ultimate { color: #f4f6fa; background: #2a3042; border-color: #2a3042; outline-color: #2a3042; }
 /* 레거시 낙관 「痕」: 백문(白文) — 붉게 찍고 글자 자리를 비운 깨진 돌도장, 살짝 기울임 */
 .seal-mark.t-legacy { color: var(--surface); background: #b0263a; border: 0; border-radius: 0; transform: rotate(-5deg);
   clip-path: polygon(7% 10%, 35% 6%, 42% 10%, 93% 7%, 95% 38%, 91% 45%, 94% 93%, 55% 95%, 47% 91%, 10% 94%, 6% 60%, 10% 52%); }
@@ -1809,6 +1820,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list li.msg .av.face.fr:not(.mini).t-rare { outline: 3px double var(--gold); }
 .chat-list li.msg .av.face.fr:not(.mini).t-legend { outline: 3px double var(--accent); }
 .chat-list li.msg .av.face.fr:not(.mini).t-legacy { outline: 3px double #a3243a; border-radius: 3px; }
+.chat-list li.msg .av.face.fr:not(.mini).t-ultimate { outline: 3px double #c9d1df; }
 /* 특별 이름 색(칭호 보상): 평면 색 + 이름 앞 작은 마름모 */
 .ns-1001 { --ns: #b49cf0; } [data-tone=light] .ns-1001 { --ns: #6a4bb8; }
 .ns-1002 { --ns: #ef6a3c; } [data-tone=light] .ns-1002 { --ns: #c2421a; }
@@ -1839,6 +1851,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .ns-1030 { --ns: #e07b8a; } [data-tone=light] .ns-1030 { --ns: #9b2f4a; }
 .ns-1032 { --ns: #b8b2c8; } [data-tone=light] .ns-1032 { --ns: #3a3442; }
 .ns-1033 { --ns: #f0b85a; } [data-tone=light] .ns-1033 { --ns: #8a5a12; }
+.ns-1035 { --ns: #c9d1df; } [data-tone=light] .ns-1035 { --ns: #2f3546; }
 /* 야행묵금(레거시): 마름모 대신 작은 「痕」, 이름 아래 붉은 붓 한 획 */
 .chat-list li.msg.ns-1016 .meta b, .card-name.ns-1016, .hue-preview.ns-1016 b, .hue-pick.ns-1016 { font-family: var(--font-serif, serif);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C20 2 45 3 70 4S95 5 99 2L99 4C90 7 60 7 35 6.5S8 7 1 5z' fill='%23b0263a'/%3E%3C/svg%3E") no-repeat left bottom / 100% 4px; padding-bottom: 3px; }
@@ -2313,6 +2326,18 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gw-gim { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); border: 2px dashed color-mix(in srgb, var(--bad) 60%, var(--line)); display: grid; gap: 6px; }
 .gw-gim p { margin: 0; }
 .mk-wrap { margin-top: 8px; display: grid; justify-items: center; gap: 4px; }
+.by-wrap { display: grid; gap: 4px; justify-items: center; margin-top: 6px; }
+.by-board { position: relative; width: min(100%, 240px); aspect-ratio: 1 / 1; }
+.by-seat { position: absolute; transform: translate(-50%, -50%); width: 22%; aspect-ratio: 1 / 1; border-radius: 50%; border: var(--bw) solid var(--line); background: var(--panel-2, var(--bg)); display: grid; place-items: center; padding: 0; color: var(--text); }
+.by-seat .by-lamp { position: absolute; top: 6%; width: 22%; aspect-ratio: 1 / 1; border-radius: 50%; background: var(--muted); }
+.by-seat.lit .by-lamp { background: var(--gold); }
+.by-seat.dim { border-style: dashed; }
+.by-seat.here { border-color: var(--accent); border-width: 2px; }
+.by-seat.mk-step { border-color: var(--gold); cursor: pointer; }
+.by-seat.dest { border-color: var(--gold); border-width: 2px; }
+.by-seat .mk-who.marked { color: var(--hp); }
+.by-table { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 34%; aspect-ratio: 1 / 1; border-radius: var(--r-sm); border: var(--bw) solid var(--line); display: grid; place-content: center; text-align: center; }
+.by-table small { color: var(--muted); font-size: calc(11px * var(--fz, 1)); }
 .mk-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 4px; width: min(100%, 240px); aspect-ratio: 1 / 1; }
 .mk-cell { position: relative; min-width: 0; padding: 3px; display: grid; grid-template-rows: auto 1fr; justify-items: center; align-items: center; font: inherit; color: var(--muted);
   border-radius: var(--r-sm); border: var(--bw, 1px) dashed var(--line); background: var(--surface); overflow: hidden; }
@@ -2739,6 +2764,7 @@ b.sealed { color: var(--bad); }
 .chat-list li.msg .av.face.fr:not(.mini).t-rare { --fr: var(--gold); --fr-glyph: var(--gold); }
 .chat-list li.msg .av.face.fr:not(.mini).t-legend { --fr: var(--accent); --fr-glyph: var(--gold); }
 .chat-list li.msg .av.face.fr:not(.mini).t-legacy { --fr: #a3243a; --fr-glyph: #e0bd66; }
+.chat-list li.msg .av.face.fr:not(.mini).t-ultimate { --fr: #c9d1df; --fr-glyph: #e6ebf4; --frame-bg: #1b1d27; }
 .chat-list li.msg .av.face.mini { width: 34px; height: 34px; margin: -1px -3px 0; outline: 0; border-radius: 0; overflow: visible; }
 .chat-list li.msg .av.face.mini .mini-in { display: block; width: 72px; height: 72px; transform: scale(calc(34 / 72)); transform-origin: 0 0; }
 .chat-list li.msg { grid-template-columns: 28px minmax(0, 1fr); column-gap: 11px; }

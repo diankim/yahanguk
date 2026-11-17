@@ -2024,12 +2024,33 @@ const S = [
       <li>칭호는 쓰러뜨린 횟수·혼자·흠 없이(아무도 물러나지 않음)로 얻습니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
+  ['byboss', '백야 · 외전 「명등기」 16장', `${(() => { const B = GD.boss?.baekya || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}; return `
+    <p>외전 「명등기」 16장에서 맹약 마당의 「백야」와 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 60초 동안 모입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>16장의 싸움으로, 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 ${st.round_s ?? 60}초), 입장 물품이 필요 없으며 밀려나도 잃는 것이 없습니다. 처음 이기면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>${esc(B.modes?.hard || '깊은 판')}</td><td>${esc(B.hard_quest_name || '명등기 17장')}을 마치면 열립니다. 모두 ${esc(B.item_name || '')}을 하나씩 씁니다.</td></tr></table>
+    <h4>일곱 자리</h4>
+    <ul>
+      <li>맹약 마당을 둘러싼 일곱 자리마다 등이 하나 있습니다. 켜진 등이 많을수록 주는 피해가 크고 받는 피해가 작습니다.</li>
+      <li>라운드마다 이웃 자리로 한 칸 옮겨 설 수 있습니다(행동과 따로). 꺼진 등 앞에 서면 「등 켜기」를 고를 수 있습니다.</li>
+      <li><b>이름 부르기</b>: 동료 이름을 누르고 부릅니다. 한동안 아무에게도 불리지 않은 사람이 붉은 붓에 노려집니다. 혼자 남으면 「제 이름 외기」로 대신합니다.</li>
+    </ul>
+    <h4>네 단계</h4>
+    <table class="guide-table"><tr><th>단계</th><th>귀띔</th></tr>
+      ${(B.phases || ['거둠', '소등', '긁힌 칸', '흰 밤']).map((n, i) => `<tr><td>${i + 1} ${esc(n)}</td><td>${['서로를 고르게 불러 주세요.', '등이 꺼지기 전에 그 자리를 지키세요.', '막힌 행동은 모두가 한 바퀴로 서로를 불러야 풀립니다.', '소리가 이웃 자리에만 닿습니다. 불린 사람이 제 자리 등을 켜야 합니다.'][i] || ''}</td></tr>`).join('')}
+    </table>
+    <h4>보상</h4>
+    <ul>
+      <li>깊은 판에서 처음 이기면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>칭호는 이긴 횟수·혼자·흠 없이로 얻습니다.</li>
+      <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
+    </ul>`; })()}`],
 ];
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'gear', 'durability', 'survival']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
