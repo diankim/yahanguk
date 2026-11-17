@@ -137,6 +137,7 @@ part('e_party.sql')
 part('f_titles.sql')
 part('g_lines.sql')
 part('h_replay.sql')
+part('i_borrow.sql')
 
 R = D.REGIONS
 fresh('regions', [r['name'] for r in R], '지역')
