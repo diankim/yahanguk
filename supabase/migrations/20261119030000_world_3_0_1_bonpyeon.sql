@@ -21,8 +21,5 @@ do $$ begin
   end if;
 end $$;
 
-update public.world_patch_notes set body = body || $N$
-- 도움말·싸움 화면에서 「요인록」·「묵적록」·「명등기」를 「외전」이 아니라 「홍인사」와 이어지는 본편으로 적습니다. 도움말 「사건과 일지」에 본편 네 이야기와 「홍인사」 소개를 넣고, 귀령초 확률표가 숫자로 나오게 고쳤습니다.$N$ where note_id = '3.0.0' and position($N$- 도움말·싸움 화면에서 「요인록」·「묵적록」·「명등기」를 「외전」이 아니라 「홍인사」와 이어지는 본편으로 적습니다. 도움말 「사건과 일지」에 본편 네 이야기와 「홍인사」 소개를 넣고, 귀령초 확률표가 숫자로 나오게 고쳤습니다.$N$ in body) = 0;
-
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261119030000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;

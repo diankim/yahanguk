@@ -41,10 +41,5 @@ select pg_temp.yh_patch('public.world_item_sources_all(text)',
     'luck', public.world_pet_egg_rules() -> 'eggs' ? p_item,
     'token', case when public.world_pet_egg_rules() #>> '{token,egg}' = p_item then (public.world_pet_egg_rules() #>> '{token,n}')::int end,$q$);
 
-update public.world_patch_notes set body = body || $N$
-- 외전 「요인록」·「묵적록」·「명등기」 칸 위쪽에도 마친 장 수와 장 단추 줄이 생겼습니다. 장을 누르면 그 장이 아래에 펼쳐지고, 장이 아닌 외전 이야기는 「이어지는 이야기」에 모였습니다.$N$ where note_id = '3.0.0' and position($N$- 외전 「요인록」·「묵적록」·「명등기」 칸 위쪽에도 마친 장 수와 장 단추 줄이 생겼습니다. 장을 누르면 그 장이 아래에 펼쳐지고, 장이 아닌 외전 이야기는 「이어지는 이야기」에 모였습니다.$N$ in body) = 0;
-update public.world_patch_notes set body = body || $N$
-- 「빛나는 알」·「얼룩무늬 알」 물품 정보의 얻는 곳에 탐색·채집·낚시에서 드물게 나오는 것과 동무 정표로 바꾸는 것이 함께 적힙니다.$N$ where note_id = '3.0.0' and position($N$- 「빛나는 알」·「얼룩무늬 알」 물품 정보의 얻는 곳에 탐색·채집·낚시에서 드물게 나오는 것과 동무 정표로 바꾸는 것이 함께 적힙니다.$N$ in body) = 0;
-
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261119010000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
