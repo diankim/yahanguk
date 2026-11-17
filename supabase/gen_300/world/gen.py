@@ -543,6 +543,7 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
          'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
     sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(qsrows)} · 새 인물 {len(QN)}\n")
 
+part('patch_note.sql')
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;""")
