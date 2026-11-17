@@ -365,7 +365,14 @@ begin
     perform public.world_gw_say(p_fight, p_round, 'good', '바뀐 얼굴의 반대쪽을 쳤습니다(' || i || '/' || jsonb_array_length(wm -> 'faces') || ').');
   elsif wm ->> 'k' = 'sea' and i = jsonb_array_length(wm -> 'faces') + 1 then
     select * into x from public.world_gw_members where fight_id = p_fight and owner_id = (wm ->> 't')::uuid;
-    if x.owner_id is null or x.out_rounds > 0 or x.rest or x.nameless or x.act ->> 'a' is distinct from 'brace' or not (x.pos between 1 and 6) then
+    if x.owner_id is null or x.out_rounds > 0 or x.rest then
+      return public.world_ug_wm_fail(p_fight, p_round, '이름을 빼앗긴 이가 자리에 없어 소용돌이를 받아 내지 못했다고 한다');
+    end if;
+    if x.nameless and not exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.owner_id <> x.owner_id and y.out_rounds = 0 and not y.rest
+        and y.act ->> 'a' = 'call' and y.act ->> 't' = x.owner_id::text and y.pos is not null and x.pos is not null and public.world_ux_dist(y.pos, x.pos) = 1) then
+      return public.world_ug_wm_fail(p_fight, p_round, '아무도 곁에서 이름을 불러 주지 않아, 이름을 잃은 채로는 귀허의 바다를 받아 낼 수 없었다고 한다');
+    end if;
+    if x.act ->> 'a' is distinct from 'brace' or not (x.pos between 1 and 6) then
       return public.world_ug_wm_fail(p_fight, p_round, '이름을 되찾은 이가 가운데 곁에서 소용돌이를 받아 내지 못했다고 한다');
     end if;
     perform public.world_gw_say(p_fight, p_round, 'good', x.name || ' — 되찾은 이름으로 귀허의 바다를 홀로 받아 냈습니다.');

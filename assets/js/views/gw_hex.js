@@ -86,7 +86,7 @@ export function hexGim(s, me, a, target, moveTo) {
   const t = target && target !== s.me ? target : named.find(id => id !== s.me) || null;
   const tm = (s.members || []).find(m => m.id === t), near = tm?.pos != null && pos != null && dist(pos, tm.pos) === 1;
   return `<div class="gw-gim hx-gim"><span class="gw-gim-h" title="구중 봉연에서 늘 쓰는 행동">${icon('bell', 13)}<b>봉연</b></span>
-    <button class="btn ${a?.a === 'chain' ? 'on' : ''}" data-gw="chain" data-c="" ${onPil ? '' : 'disabled'} title="${onPil ? '봉인 기둥 칸에서 사슬을 끊습니다 — 사슬이 당겨지거나 기운이 터지는 라운드(!)에만 통하고, 그 전에 누르면 헛수고입니다' : '봉인 기둥 칸에 서야 합니다'}">${icon('close', 16)}<span>사슬 끊기${onPil ? ` · ${pos}번 기둥` : ''}</span></button>
+    <button class="btn ${a?.a === 'chain' ? 'on' : ''}" data-gw="chain" data-c="" ${onPil ? '' : 'disabled'} title="${onPil ? '봉인 기둥 칸에서 사슬을 끊습니다' : '봉인 기둥 칸에 서야 합니다'}">${icon('close', 16)}<span>사슬 끊기${onPil ? ` · ${pos}번 기둥` : ''}</span></button>
     <button class="btn ${a?.a === 'call' ? 'on' : ''}" data-gw="call" data-t="${esc(t || '')}" ${t ? '' : 'disabled'} title="${t ? `${nameOf(s, t)}의 이름을 부릅니다 — 바로 옆 칸에 서 있을 때만 닿습니다${near ? '' : '(지금은 떨어져 있음)'}` : '부를 동료 이름을 누르세요'}">${icon('users', 16)}<span>이름 부르기${t ? ` · ${esc(nameOf(s, t))}` : ''}</span></button>
   </div>`;
 }

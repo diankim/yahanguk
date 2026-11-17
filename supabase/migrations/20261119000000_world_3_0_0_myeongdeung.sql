@@ -2873,7 +2873,7 @@ begin
     "lines": [{"a": 7, "b": 13, "cells": [1, 4]}, {"a": 9, "b": 15, "cells": [2, 5]}, {"a": 7, "b": 9, "cells": [8]}, {"a": 13, "b": 15, "cells": [14]}],
     "mech_mul": 1, "fail_raw": 8, "aoe_every": 0,
     "acts": [
-      {"phases": ["사슬 끌림", "봉인 터짐", "기운 모으기", "아홉 겹 봉인"], "seq": [["drag"], ["drag", "burst"], ["burst", "charge"], ["burst", "charge"]]},
+      {"phases": ["사슬 끌림", "봉인 터짐", "기운 모으기", "아홉 겹 봉인"], "seq": [["drag"], ["drag", "burst"], ["burst", "charge"], ["drag", "burst", "charge"]]},
       {"phases": ["물살", "이름 빼앗기", "소용돌이", "귀허의 바다"], "seq": [["tide"], ["tide", "name"], ["name", "vortex", "drag"], ["tide", "name", "vortex", "drag"]]}],
     "names": {"drag": "사슬 끌림", "burst": "봉인 터짐", "charge": "기운 모으기", "tide": "물살", "name": "이름 빼앗김", "vortex": "소용돌이"},
     "drag": {"every": 3, "off": 1, "left": 2, "raw": 50},
@@ -3084,7 +3084,7 @@ begin
   end loop;
   for kk in select unnest(ord) loop
     for h in select e from jsonb_array_elements(hz) e where e ->> 'k' = kk loop
-      if (h ->> 'left')::int > 0 then keep := keep || jsonb_build_array(h); continue; end if;
+      if (h ->> 'left')::int > 0 or (kk = 'name' and coalesce((h ->> 'wm')::boolean, false)) then keep := keep || jsonb_build_array(h); continue; end if;
       cells := array(select (v)::int from jsonb_array_elements_text(coalesce(h -> 'cells', '[]'::jsonb)) v);
       hit := false;
       if kk = 'tide' then
@@ -4878,7 +4878,14 @@ begin
     perform public.world_gw_say(p_fight, p_round, 'good', '바뀐 얼굴의 반대쪽을 쳤습니다(' || i || '/' || jsonb_array_length(wm -> 'faces') || ').');
   elsif wm ->> 'k' = 'sea' and i = jsonb_array_length(wm -> 'faces') + 1 then
     select * into x from public.world_gw_members where fight_id = p_fight and owner_id = (wm ->> 't')::uuid;
-    if x.owner_id is null or x.out_rounds > 0 or x.rest or x.nameless or x.act ->> 'a' is distinct from 'brace' or not (x.pos between 1 and 6) then
+    if x.owner_id is null or x.out_rounds > 0 or x.rest then
+      return public.world_ug_wm_fail(p_fight, p_round, '이름을 빼앗긴 이가 자리에 없어 소용돌이를 받아 내지 못했다고 한다');
+    end if;
+    if x.nameless and not exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.owner_id <> x.owner_id and y.out_rounds = 0 and not y.rest
+        and y.act ->> 'a' = 'call' and y.act ->> 't' = x.owner_id::text and y.pos is not null and x.pos is not null and public.world_ux_dist(y.pos, x.pos) = 1) then
+      return public.world_ug_wm_fail(p_fight, p_round, '아무도 곁에서 이름을 불러 주지 않아, 이름을 잃은 채로는 귀허의 바다를 받아 낼 수 없었다고 한다');
+    end if;
+    if x.act ->> 'a' is distinct from 'brace' or not (x.pos between 1 and 6) then
       return public.world_ug_wm_fail(p_fight, p_round, '이름을 되찾은 이가 가운데 곁에서 소용돌이를 받아 내지 못했다고 한다');
     end if;
     perform public.world_gw_say(p_fight, p_round, 'good', x.name || ' — 되찾은 이름으로 귀허의 바다를 홀로 받아 냈습니다.');
@@ -6640,13 +6647,13 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.0.0', '3.0
 ### 우두머리 「값귀」
 - 명등기 7장을 마치면 붉은 사당 골목에서 「값귀」와 싸웁니다(혼자 또는 같은 곳의 파티원 4명까지). 8장은 쉬운 이야기판으로 이어지고, 8장을 마치면 어려운 「깊은 장부」가 열립니다.
 - 좌판과 거리가 엇갈린 장터 열다섯 칸 위에서 싸우고, 한 라운드에 이웃 칸 한 칸씩 옮겨 섭니다. 함께 선 이마다 값(0~9섬)이 붙어 공격할수록 오르고, 「흥정」으로 내 값을 깎고 「값 매기기」로 옆 동료의 값을 올립니다.
-- 판결 망치·바가지·장부 맞추기·외상 줄·장 닫힘 같은 수법이 맵 위에 남은 라운드 숫자로 보이고 0이 되는 라운드에 터지며, 체력이 줄수록 겹쳐 쌓입니다. 자세한 규칙은 도움말 › 탐색·전투 › 값귀에 있습니다.
+- 수법은 맵 위에 남은 라운드 숫자로 보이고 0이 되는 라운드에 터지며, 체력이 줄수록 겹쳐 쌓입니다. 깊은 장부의 수법은 도움말에도 귀띔만 적혀 있습니다. 받아치는 법은 직접 겪으며 알아내 보세요.
 - 깊은 장부 처치는 하루 한 번 인정합니다. 처음 쓰러뜨리면 탈것 「낱장 황소」, 이름 색 「인주」, 별채 가구 「값을 덮은 대저울」을 받고, 칭호 여섯과 테두리·바탕 무늬·낙관 「價」가 쓰러뜨린 횟수에 따라 따라옵니다.
 
 ### 우두머리 「백야」
 - 명등기 16장에서 맹약 마당의 「백야」와 싸웁니다(혼자 또는 같은 곳의 파티원 4명까지). 16장은 쉬운 이야기판이고, 17장을 마치면 어려운 깊은 판이 열립니다.
 - 바깥 등 기둥 일곱과 안쪽 마당이 둘러싼 둥근 마당 위에서 싸웁니다. 켜진 등이 많을수록 유리하고, 「등 켜기」와 「걷어 내기」는 늘 누를 수 있지만 맞는 라운드에만 통합니다.
-- 화살비·붉은 붓·물방울과 흰 가루·멈춤 시계·흰 밤이 체력이 줄수록 겹쳐 쌓이고, 마지막 흰 밤에는 등 일곱을 모두 켜야 합니다. 자세한 규칙은 도움말 › 탐색·전투 › 백야에 있습니다.
+- 수법은 체력이 줄수록 겹쳐 쌓입니다. 깊은 판의 수법은 도움말에도 귀띔만 적혀 있습니다. 받아치는 법은 직접 겪으며 알아내 보세요.
 - 깊은 판 승리는 하루 한 번 인정합니다. 처음 이기면 탈것 「첫 밤 흑마」, 이름 색 「청야」, 별채 가구 「맹약 마당 등 기둥」을 받고, 칭호 여섯과 테두리·바탕 무늬·낙관 「宵」가 이긴 횟수에 따라 따라옵니다.
 
 ### 무용담 — 가장 어려운 판
@@ -6655,9 +6662,9 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.0.0', '3.0
 - **무용담 · 먹그림자**: 묵적록을 마친 뒤 묵창 주막 홍매댁이 이야기를 들려줍니다.
 - **무용담 · 값귀**(값귀 → 백야): 명등기를 마친 뒤 남문 수로 선착 등지기 차랑이 이야기를 들려줍니다.
 - 이야기를 들려주는 사람의 퀘스트를 마치고, 그 보스의 깊은 판을 한 번 이상 깨면 들어갈 수 있습니다. Lv50, 2~4명만 들어갑니다.
-- 세 판 모두 맵 위에서 싸웁니다. 글로 된 낌새는 없고, 수법은 맵 위 숫자로만 보입니다.
+- **아무것도 알려 주지 않는 판입니다.** 이 패치노트에도, 도움말에도, 싸움 화면에도 수법을 받아치는 법은 적혀 있지 않고 글로 된 낌새도 뜨지 않습니다. 맵 위에 무엇이 떠오르는지 지켜보고, 쓰러지며 하나씩 알아내고, 동료와 역할을 나눠 파훼해 나가세요.
 - 수법을 놓치면 곁의 동료도 조금씩 다치고, 놓친 사람에게는 한동안 주는 피해가 줄고 받는 피해가 느는 약화가 쌓입니다.
-- 막마다 마지막 단계에 예고 없이 그 막의 전멸기가 한 번 옵니다(아홉 겹 봉인 · 귀허의 바다 · 다시 쓰는 명부 · 마감 결산 · 동짓밤). 한 단계라도 못 하면 전멸합니다.
+- 막마다 마지막에 예고 없이 전멸기가 한 번 옵니다. 하나라도 놓치면 전멸합니다.
 - 막마다 정해진 라운드 안에 쓰러뜨리지 못해도 전멸합니다. 역할을 나누지 않으면 깨기 어렵습니다.
 - 횟수 제한이 없고 져도 잃는 것이 없습니다.
 - 깰 때마다 판마다 다른 토큰을 받습니다. 그 이야기를 들려준 사람의 「무용담 교환」에서 가구·옷·꾸미기·꼬마 동무로 바꿉니다(같은 것은 한 번만).
