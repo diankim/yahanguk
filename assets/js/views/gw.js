@@ -8,6 +8,7 @@ import { mountMeter } from './meter.js';
 import { GW_HEAL } from './item.js';
 import { baseOf } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
+import { hexOn, hexBoard, hexGim } from './gw_hex.js';
 
 const BOSS = {
   gwiheo: { name: '귀허의 주인', arc: '외전 · 요인록', place: '귀허', PHASE: { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' }, last: '소용돌이', mechs: ['chain', 'name', 'vortex'],
@@ -124,7 +125,7 @@ function countdown() {
 }
 
 const nameOfMember = (s, id) => (s.members || []).find(m => m.id === id)?.name || '';
-const ladder = ph => `<ol class="gw-ladder">${[1, 2, 3, 4].map(p => `<li class="${p === ph ? 'now' : p < ph ? 'done' : ''}" title="${PHASE_AT[p]}"><b>${p}</b><span>${p === 4 && !story() ? bossOf().last : PHASE[p]}</span></li>`).join('')}</ol>`;
+const ladder = ph => `<ol class="gw-ladder">${[1, 2, 3, 4].map(p => `<li class="${p === ph ? 'now' : p < ph ? 'done' : ''}" title="${PHASE_AT[p]}"><b>${p}</b><span>${p === 4 && !story() && !hexOn(snap) ? bossOf().last : PHASE[p]}</span></li>`).join('')}</ol>`;
 const tellSize = t => { const n = String(t || '').length; return n > 110 ? 'xxl' : n > 80 ? 'xl' : n > 55 ? 'l' : ''; };
 
 function roundBand(s) {
@@ -180,19 +181,20 @@ function draw() {
         ${gg && fight ? ggHtml(s) : ''}
         ${s.boss === 'sealed_lord' && fight && s.board?.pair ? `<p class="small warn">${icon('chain', 13)} 봉인 사슬에 묶인 두 사람: ${(s.board.pair || []).map(id => esc(nameOfMember(s, id))).join(' · ')}</p>` : ''}
         ${by && f.status !== 'wait' ? byBoard(s, fight && s.joined) : ''}
+        ${hexOn(s) && f.status !== 'wait' ? hexBoard(s, fight && s.joined, moveTo) : ''}
       </div></section>
       ${fight && s.joined ? actHtml(s, me) : ''}`)}
       ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 함께 선 이 ${(s.members || []).length}명</h2>${fight && s.joined ? '<small class="muted gw-pick-hint">이름을 누르면 기술·이름 부르기·회복품 대상</small>' : ''}</header><div class="panel-body">
         <ul class="raid-mem pf-mem" id="gw-mem">${(s.members || []).map(m => memberLi(m, { cls: `${fight && s.joined && m.id === (target || s.me) ? 'pick' : ''} ${m.nameless ? 'tgt' : ''}`, me: m.id === s.me, sel: m.id === sel, out: m.out || m.resting, fx: m.fx,
           state: done ? endState(m) : m.out ? `물러남 ${m.out}라운드` : m.resting ? '쉬는 중' : fight ? (m.acted ? '골랐음' : '고르는 중') : '',
-          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
+          sub: [esc(jobName(m.job)), mk && m.pos ? `「${CELL[m.pos]}」 칸` : '', by && m.pos ? `${m.pos}번 칸` : '', hexOn(s) && m.pos ? `${m.pos}번 칸` : '', by && m.fade ? `<b class="warn">바램 ${m.fade}</b>` : '', gg && m.val != null ? `<b class="${fight && ggDanger(s, m.val) ? 'bad' : ''}">${m.val}섬</b>` : '', gg && m.tagged ? '<b class="warn">값표</b>' : '', m.bound ? '<b class="bad">먹에 묶임</b>' : '', m.nameless ? '<b class="bad">이름 잃음</b>' : '', fight && story() && f.mech?.blur === m.id ? '<b class="warn">이름 흐림</b>' : '', fight && story() && f.mech?.s === 'chain1' && f.mech.target === m.id ? '<b class="warn">사슬에 감김</b>' : '', solo && cap ? `쓰러짐 ${Math.min(m.falls || 0, cap)}/${cap}` : '', fight && f.mech?.k === 'vortex' && f.mech.tank === m.id ? '물살이 쏠림' : '', `피해 ${fmt.num(m.dmg)}`].filter(Boolean).join(' · ') })).join('')}</ul>
         <div class="mem-detail" id="gw-memdetail" hidden></div>
 ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} ${done ? '전투 기록 · 라운드별로 되짚어 보기' : '전투 기록'}</h2></header><div class="panel-body">
         ${logHtml(s, me, done)}</div></section>`)}
     </div>
     ${tipsHtml(s.tips)}`;
-  el.classList.toggle('mk-live', (mk || by) && fight && !!s.joined);
+  el.classList.toggle('mk-live', (mk || by || hexOn(s)) && fight && !!s.joined);
   mountMeter($('#gw-meter', el), (s.members || []).map(m => ({ ...m, me: m.id === s.me })));
   memDetail(s); tray.redraw();
   if (!done) { fitFight(el); restoreLog(); }
@@ -242,7 +244,7 @@ function actHtml(s, me) {
     <div class="raid-coopbox"><div class="coop-grid gw-skills">${skills.map(k => coopBtn({ ...k, on: a?.a === 'coop' && a?.s === k.id,
         why: me.out ? '물러남' : resting ? '막 사이' : !k.unlocked ? `전투 숙련 ${k.rank}단계` : k.wait ? `${k.wait}라운드 뒤` : sp < k.cost ? `${spOf()[0]} ${k.cost}` : '',
         desc: `${k.desc} (${spOf()[0]} ${k.cost} · ${k.rounds}라운드마다)` }, `data-gw-skill="${esc(k.id)}"`)).join('') || '<p class="muted small">쓸 수 있는 협동 기술이 없습니다.</p>'}</div></div>
-    ${mkGim(s, me, a, tName)}${ggGim(s, me, a)}${byGim(s, me, a)}${storyGim(s, me, a)}
+    ${mkGim(s, me, a, tName)}${ggGim(s, me, a)}${byGim(s, me, a)}${hexGim(s, me, a, target, moveTo)}${storyGim(s, me, a)}
     ${!me.out && (mech.k === 'name' || mech.k === 'chain') ? `<div class="gw-gim"><span class="gw-gim-h" title="이번 라운드에만 나오는 행동">${icon('bell', 13)}<b>이번만</b></span>
       ${mech.k === 'name' ? `<button class="btn ${on('call')}" data-gw="call">${icon('users', 16)}<span>${esc(tName)}의 이름 부르기</span></button>` : ''}
       ${mech.k === 'chain' ? (mech.colors || []).filter((v, i, x) => x.indexOf(v) === i).map(col => `<button class="btn ${COLOR[col] || ''} ${a?.a === 'chain' && a?.c === col ? 'on' : ''}" data-gw="chain" data-c="${esc(col)}">${esc(col)} 사슬</button>`).join('') : ''}
@@ -327,7 +329,7 @@ const BOSS_RULES = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo'];
 const itemName = () => BOSS_RULES()?.item_name || '귀허 부적';
 function act(args) {
   const out = { p_fight: snap.fight.id, p_target: null, p_item: null, ...args };
-  if (['mukjeok', 'baekya'].includes(snap.boss) && moveTo) out.p_move = moveTo;
+  if ((['mukjeok', 'baekya'].includes(snap.boss) || hexOn(snap)) && moveTo) out.p_move = moveTo;
   return rpc('world_gw_act', out);
 }
 function step(cell) {

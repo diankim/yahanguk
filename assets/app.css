@@ -2388,6 +2388,55 @@ b.contest { color: var(--warn); font-weight: 600; }
 .by-destmark { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 3 3; }
 .by-gim .btn[disabled] { opacity: .45; }
 @media (prefers-reduced-motion: reduce) { .by-lamp.flick { animation: none; opacity: .4; } }
+.hx-wrap { display: grid; gap: 4px; justify-items: center; margin-top: 6px; }
+.hx-map { width: min(100%, 320px); height: auto; display: block; }
+.hx-cell { fill: color-mix(in srgb, var(--mp) 8%, var(--bg)); stroke: var(--line); stroke-width: 1.5; }
+.hx-cell.core { fill: color-mix(in srgb, var(--mp) 22%, var(--bg)); }
+.hx-cell.pillar { fill: color-mix(in srgb, var(--gold) 16%, var(--bg)); }
+.hx-cell.hx-ring { stroke: var(--mp); stroke-width: 2; }
+.hx-map .hx-cell.hx-tide { fill: color-mix(in srgb, var(--mp) 34%, var(--bg)); }
+.hx-map .hx-cell.hx-burst { fill: color-mix(in srgb, var(--gold) 40%, var(--bg)); }
+.hx-map .hx-cell.hx-drag { fill: color-mix(in srgb, var(--hp) 30%, var(--bg)); }
+.hx-map .hx-cell.due { fill: color-mix(in srgb, var(--hp) 58%, var(--bg)); }
+.hx-cell.mk-step { stroke: var(--gold); stroke-dasharray: 5 4; stroke-width: 2; cursor: pointer; }
+.hx-cell.here { stroke: var(--accent); stroke-width: 3; }
+.hx-cell.dest { stroke: var(--gold); stroke-width: 3.5; stroke-dasharray: none; }
+.hx-no { fill: var(--muted); font-size: 9px; text-anchor: middle; pointer-events: none; }
+.hx-pil rect { fill: var(--gold); stroke: #1a1410; stroke-width: 1; pointer-events: none; }
+.hx-pil rect.cap { fill: #f4f1ea; }
+.hx-core circle { fill: var(--bg); stroke: var(--mp); stroke-width: 2.5; }
+.hx-core text { fill: var(--mp); font-size: 12px; font-weight: 800; text-anchor: middle; pointer-events: none; }
+.hx-core text.n { font-size: 19px; }
+.hx-core.spin circle { stroke-dasharray: 8 5; animation: hx-spin 3s linear infinite; transform-box: fill-box; transform-origin: center; }
+.hx-core.due circle { stroke: var(--hp); stroke-width: 4; }
+.hx-core.due text { fill: var(--hp); }
+.hx-chain line { stroke: var(--hp); stroke-width: 3; stroke-dasharray: 7 5; }
+.hx-chain circle, .hx-tag circle { fill: var(--bg); stroke: var(--hp); stroke-width: 2; }
+.hx-chain text, .hx-tag text, .hx-name text { fill: var(--hp); font-size: 13px; font-weight: 800; text-anchor: middle; pointer-events: none; }
+.hx-tag.tide circle { stroke: var(--mp); } .hx-tag.tide text { fill: var(--mp); }
+.hx-tag.burst circle { stroke: var(--gold); } .hx-tag.burst text { fill: var(--gold); }
+.hx-chain.due line { stroke-width: 4.5; } .hx-chain.due circle, .hx-tag.due circle { stroke: var(--hp); stroke-width: 3; } .hx-tag.due text { fill: var(--hp); }
+.hx-arrow line { stroke: var(--mp); stroke-width: 2.5; } .hx-arrow circle { fill: var(--mp); }
+.hx-arrow.due line { stroke: var(--hp); } .hx-arrow.due circle { fill: var(--hp); }
+.hx-tok circle { fill: #4a4450; stroke: #8a8290; }
+.hx-tok text { fill: #eee; font-size: 11px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.hx-tok.me circle { fill: var(--gold); stroke: #fff; stroke-width: 2; }
+.hx-tok.me text { fill: #1a1410; }
+.hx-tok.rest circle { opacity: .55; }
+.hx-name circle { fill: none; stroke: var(--hp); stroke-width: 2.5; stroke-dasharray: 4 3; }
+.hx-name.due circle { stroke-width: 4; stroke-dasharray: none; }
+.hx-destmark { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 3 3; pointer-events: none; }
+.hx-tok, .hx-name, .hx-arrow, .hx-chain, .hx-tag { pointer-events: none; }
+.hx-info { width: min(100%, 320px); display: grid; gap: 2px; }
+.hx-charge { display: grid; gap: 2px; font-size: calc(12px * var(--fz, 1)); font-weight: 700; color: var(--gold); }
+.hx-charge .bar span { background: var(--gold); }
+.hx-charge.due { color: var(--hp); }
+.hx-info .mk-hint { text-align: center; margin: 0; }
+.hx-face.human { color: var(--mp); } .hx-face.yokai { color: var(--hp); } .hx-crack.on { color: var(--hp); font-weight: 700; }
+.hx-line { margin: 0; font-size: calc(12.5px * var(--fz, 1)); font-weight: 700; min-height: 1.4em; text-align: center; }
+.hx-gim .btn[disabled] { opacity: .45; }
+@keyframes hx-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hx-core.spin circle { animation: none; } }
 .mk-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 4px; width: min(100%, 240px); aspect-ratio: 1 / 1; }
 .mk-cell { position: relative; min-width: 0; padding: 3px; display: grid; grid-template-rows: auto 1fr; justify-items: center; align-items: center; font: inherit; color: var(--muted);
   border-radius: var(--r-sm); border: var(--bw, 1px) dashed var(--line); background: var(--surface); overflow: hidden; }
