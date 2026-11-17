@@ -629,7 +629,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 거래 가능 여부
 
 - 희귀 성장 아이템 거래 불가, 사망 관련 아이템 거래 가능. 거래 가능 여부는 서버가 검증한다.
-- 거래소 전용(원본 world_item_catalog.market_only 한 칸 → world_market_only·화면 core.js MARKET_ONLY는 물품 목록 mk로 채움): 비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽. 직접 거래·정인 선물(world_bond_gift) 불가, 등록가 시세 70% 이상·24시간 20개(world_trade_offer_create), 거래세 10%(world_trade_offer_buy, 수향 감면 적용). 응축 영핵·봉연 파편·동무 정표는 2.1.0부터 거래 가능(사용자 결정 11/13 — 거래 막힌 재료를 모두 풂, 20261117000000).
+- 거래소 전용(원본 world_item_catalog.market_only 한 칸 → world_market_only·화면 core.js MARKET_ONLY는 물품 목록 mk로 채움): 지금 해당 물품 없음(3.0.1, 사용자 결정 11/17 — 비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽을 풂, 20261119040000; 2.1.0에 응축 영핵·봉연 파편·동무 정표). 칸을 켜면 직접 거래·정인 선물(world_bond_gift) 불가, 등록가 시세 70% 이상·24시간 20개(world_trade_offer_create), 거래세 10%(world_trade_offer_buy, 수향 감면 적용).
 
 ### 경제 균형
 
