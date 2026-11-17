@@ -17,5 +17,19 @@
       "mcp__claude-code-remote__read_documentation",
       "ReadNotifications"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__Supabase__execute_sql",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/sql_readonly.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
