@@ -88,6 +88,7 @@ function bindQuests(body) {
 }
 
 let selCh = '', lastStory = null, lastSide = null, arc = null;
+const arcSel = {};
 const MAIN_ARC = '홍인사';
 const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.', '요인록'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
 const arcName = n => (ARCS.find(([a]) => a === n) || [])[2] || n;
@@ -129,10 +130,26 @@ async function story(body, keep) {
 function bindArcs(body) { $$('[data-arc]', body).forEach(x => x.onclick = () => { arc = x.dataset.arc; story(body, true); }); }
 function arcView(body, bar, list, map) {
   const lock = (ARCS.find(([n]) => n === arc) || [])[1] || '';
-  const sorted = [...list].sort((a, b) => (b.status === 'active') - (a.status === 'active') || a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'));
+  const order = (a, b) => (b.status === 'active') - (a.status === 'active') || a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko');
+  const chNo = q => +((/^(?:gq|mkq|mdq)_(\d+)$/.exec(q.quest_id) || [])[1] || 0);
+  const chs = list.filter(chNo).sort((a, b) => chNo(a) - chNo(b));
+  const rest = list.filter(q => !chNo(q)).sort(order);
+  if (!chs.some(q => q.quest_id === arcSel[arc] && q.status !== 'locked'))
+    arcSel[arc] = (chs.find(q => q.status === 'active') || chs.find(q => q.status === 'available') || [...chs].reverse().find(q => q.status === 'done') || chs[0])?.quest_id || '';
+  const sel = chs.find(q => q.quest_id === arcSel[arc]);
+  const doneN = chs.filter(q => q.status === 'done').length;
+  const allDone = chs.length && doneN === chs.length;
+  const top = chs.length ? `${allDone ? `<div class="notice safe">${icon('moon', 18)}<div><b>${esc(arcName(arc))}의 이야기를 모두 마쳤습니다</b><span>장을 눌러 지난 장면을 다시 읽거나 다시할 수 있습니다.</span></div></div>` : ''}
+    <div class="chips">${chip(`마친 장 ${doneN}/${chs.length}`, 'accent')}<span class="muted small">장을 누르면 아래에 펼쳐집니다</span></div>
+    <ol class="chapter-line">${chs.map(q => `<li class="${q.status === 'available' ? 'active' : q.status} ${q.quest_id === arcSel[arc] ? 'sel' : ''}"><button data-arc-ch="${esc(q.quest_id)}" ${q.status === 'locked' ? 'disabled' : ''} aria-pressed="${q.quest_id === arcSel[arc]}">
+      <b>${chNo(q)}장</b><span>${q.status === 'locked' ? `Lv.${q.min_level}` : esc(q.title)}</span></button></li>`).join('')}</ol>
+    ${sel ? `<ul class="q-list">${sideItem(sel, map, true).replace('<details ', '<details open ')}</ul>` : ''}
+    ${chs.some(q => q.status === 'locked') ? `<p class="muted small">잠긴 장 ${chs.filter(q => q.status === 'locked').length}개 — 앞 장을 마치고 레벨이 되면 열립니다.</p>` : ''}` : '';
+  const others = rest.length ? `${chs.length ? '<h3 class="sub-h">이어지는 이야기</h3>' : ''}<div class="chips">${chip(`마침 ${rest.filter(q => q.status === 'done').length}/${rest.length}`)}${rest.every(q => q.status === 'done') ? '' : '<span class="muted small">앞 이야기를 마치면 다음 이야기가 이어서 열립니다</span>'}</div>
+      <ul class="q-list">${rest.map(q => sideItem(q, map, true)).join('')}</ul>` : '';
   body.innerHTML = `${bar}
-    ${sorted.length ? `<div class="chips">${chip(`마침 ${sorted.filter(q => q.status === 'done').length}/${sorted.length}`, 'accent')}${sorted.every(q => q.status === 'done') ? '' : '<span class="muted small">앞 이야기를 마치면 다음 이야기가 이어서 열립니다</span>'}</div>
-      <ul class="q-list">${sorted.map(q => sideItem(q, map, true)).join('')}</ul>` : empty(lock || '아직 열린 이야기가 없습니다.', 'scroll')}`;
+    ${list.length ? top + others : empty(lock || '아직 열린 이야기가 없습니다.', 'scroll')}`;
+  $$('[data-arc-ch]', body).forEach(x => x.onclick = () => { arcSel[arc] = x.dataset.arcCh; story(body, true); });
   bindArcs(body);
   bindQuests(body);
 }
