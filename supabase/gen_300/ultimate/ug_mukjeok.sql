@@ -271,6 +271,7 @@ begin
       else
         st := st - (rb -> 'fail' ->> 'strokes')::int;
         tot := tot + 1;
+        if k.owner_id is not null then perform public.world_ug_weak_add(p_fight, k.owner_id, p_round); end if;
         perform public.world_gw_say(p_fight, p_round, 'bad', case when k.owner_id is null then '가운데 칸에 선 사람이 없었습니다. ' else '이름을 불러 준 목소리가 모자랐습니다(' || callers || '/' || need || '). ' end
           || '붓이 가운데 칸을 긋고 이름 획 ' || (rb -> 'fail' ->> 'strokes') || '개가 지워졌습니다(남은 획 ' || greatest(0, st) || ').');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
@@ -290,6 +291,7 @@ begin
     tot := tot + v;
     st := st - v * (rb -> 'fail' ->> 'strokes')::int;
     select * into x from public.world_gw_members where fight_id = p_fight and owner_id = u::uuid;
+    for i in 1 .. v loop perform public.world_ug_weak_add(p_fight, u::uuid, p_round); end loop;
     if x.pos is not null and x.pos <> 5 then lit := array_remove(lit, x.pos::int); end if;
     perform public.world_gw_say(p_fight, p_round, 'bad', x.name || ' — 수법을 놓쳐 ' || case when x.pos is not null and x.pos <> 5 then '선 칸이 먹에 덮이고 ' else '' end
       || '이름 획 ' || (v * (rb -> 'fail' ->> 'strokes')::int) || '개가 지워졌습니다(남은 획 ' || greatest(0, st) || ').');

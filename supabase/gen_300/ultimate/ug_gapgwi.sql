@@ -447,7 +447,7 @@ begin
         fails := fails + 1;
         perform public.world_gw_say(p_fight, p_round, 'boss', '판결 망치가 ' || (h ->> 'col') || '번째 줄을 내리칩니다! — ' || nm);
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
-          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'judge' ->> 'raw')::numeric * case when p_broke then 0.5 else 1 end, p_round, '판결 망치에', false);
+          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'judge' ->> 'raw')::numeric * case when p_broke then 0.5 else 1 end, p_round, '판결 망치에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       end if;
     elsif h ->> 'k' = 'bargain' then
@@ -458,7 +458,7 @@ begin
         fails := fails + 1;
         perform public.world_gw_say(p_fight, p_round, 'boss', '값귀가 ' || cap || '섬을 넘은 값에 바가지를 씌웁니다! — ' || nm);
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.gval > cap loop
-          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'bargain' ->> 'raw')::numeric * case when p_broke then 0.5 else 1 end, p_round, x.gval || '섬 바가지에', false);
+          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'bargain' ->> 'raw')::numeric * case when p_broke then 0.5 else 1 end, p_round, x.gval || '섬 바가지에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       end if;
     elsif h ->> 'k' = 'ledger' then
@@ -472,7 +472,7 @@ begin
         update public.world_gw_fights set hp = least(max_hp, hp + round(max_hp * (rb -> 'ledger' ->> 'heal_pct')::numeric / 100.0)), updated_at = now() where fight_id = p_fight;
         perform public.world_gw_say(p_fight, p_round, 'bad', '좌판 위 값의 합 ' || sm || '섬(선 곳 ' || cnt || '/' || least(cardinality(cells), na) || ') — 장부가 맞지 않았습니다(목표 ' || (h ->> 't') || '섬). 값귀가 물 밑 장부에서 값을 꺼내 낫습니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
-          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'ledger' ->> 'raw')::numeric, p_round, '맞지 않은 장부에', false);
+          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'ledger' ->> 'raw')::numeric, p_round, '맞지 않은 장부에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       end if;
     elsif h ->> 'k' = 'tether' then
@@ -480,7 +480,7 @@ begin
         fails := fails + 1;
         perform public.world_gw_say(p_fight, p_round, 'bad', '외상 줄이 팽팽해지기 전에 두 사람이 너무 가까웠습니다. 줄이 두 사람을 함께 조입니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.owner_id in ((h ->> 'a')::uuid, (h ->> 'b')::uuid) loop
-          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'tether' ->> 'raw')::numeric, p_round, '외상 줄에', false);
+          perform public.world_gg_dmg(p_fight, x.owner_id, (rb -> 'tether' ->> 'raw')::numeric, p_round, '외상 줄에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       else
         perform public.world_gw_say(p_fight, p_round, 'good', '멀리 떨어져 선 두 사람 사이에서 외상 줄이 툭 끊어졌습니다.');
@@ -737,7 +737,7 @@ begin
         fails := fails + 1;
         perform public.world_gw_say(p_fight, p_round, 'boss', case when h ->> 'k' = 'arrow' then (h ->> 'c') || '번 칸에 화살이 떨어집니다! — ' else '붉은 붓이 마당 한쪽을 쓸고 지나갑니다! — ' end || nm);
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
-          perform public.world_by_dmg(p_fight, x.owner_id, (rb -> (h ->> 'k') ->> 'raw')::numeric * half, p_round, case when h ->> 'k' = 'arrow' then '떨어진 화살에' else '붉은 붓에' end, false);
+          perform public.world_by_dmg(p_fight, x.owner_id, (rb -> (h ->> 'k') ->> 'raw')::numeric * half, p_round, case when h ->> 'k' = 'arrow' then '떨어진 화살에' else '붉은 붓에' end, false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           b := public.world_by_fade(p_fight, b, x.owner_id, 1, p_round);
         end loop;
       end if;
@@ -745,7 +745,7 @@ begin
       fails := fails + 1;
       perform public.world_gw_say(p_fight, p_round, 'boss', '아무도 걷어 내지 않은 굵은 화살이 ' || (h ->> 'c') || '번 칸 둘레를 꿰뚫습니다!');
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
-        perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'big' ->> 'raw')::numeric * half, p_round, '굵은 화살에', false);
+        perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'big' ->> 'raw')::numeric * half, p_round, '굵은 화살에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         b := public.world_by_fade(p_fight, b, x.owner_id, 1, p_round);
       end loop;
       if wn is null and public.world_by_sector((h ->> 'c')::int) = any (lamps) then
@@ -758,7 +758,7 @@ begin
       lamps := array_remove(lamps, (h ->> 's')::int);
       perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 's') || '번 등이 꺼지며 마당 전체에 흰 바람이 휘몰아칩니다!');
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
-        perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'gust' ->> 'raw')::numeric * half, p_round, '흰 바람에', false);
+        perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'gust' ->> 'raw')::numeric * half, p_round, '흰 바람에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
       end loop;
     elsif h ->> 'k' = 'stack' then
       select count(*) into cnt from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells);
@@ -769,7 +769,7 @@ begin
         fails := fails + 1;
         perform public.world_gw_say(p_fight, p_round, 'bad', '물방울이 ' || coalesce(nm, '') || ' 위에서 홀로 터집니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
-          perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'drop' ->> 'stack_raw')::numeric * half, p_round, '홀로 받은 물방울에', false);
+          perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'drop' ->> 'stack_raw')::numeric * half, p_round, '홀로 받은 물방울에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       end if;
     elsif h ->> 'k' in ('spread', 'num') then
@@ -777,7 +777,7 @@ begin
       cnt := 0;
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) and y.owner_id::text <> h ->> 't' loop
         perform public.world_by_dmg(p_fight, x.owner_id, (case when h ->> 'k' = 'spread' then (rb -> 'drop' ->> 'spread_raw') else (rb -> 'num' ->> 'raw') end)::numeric * half, p_round,
-          case when h ->> 'k' = 'num' then (h ->> 'i') || '번 화살에' else '흰 가루에' end, false);
+          case when h ->> 'k' = 'num' then (h ->> 'i') || '번 화살에' else '흰 가루에' end, false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         b := public.world_by_fade(p_fight, b, x.owner_id, 1, p_round);
         perform public.world_gw_say(p_fight, p_round, 'bad', x.name || ' — ' || coalesce(nm, '') || ' 곁에 있다가 함께 바랬습니다.');
         cnt := cnt + 1;
@@ -792,7 +792,7 @@ begin
         lamps := array_remove(lamps, (h ->> 'c')::int);
         perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'c') || '번 기둥에 선 사람이 모자랍니다(' || cnt || '/' || (h ->> 'need') || '). 하얀 기둥이 무너지며 등을 덮습니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest loop
-          perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'tower' ->> 'raw')::numeric * half, p_round, '무너진 기둥에', false);
+          perform public.world_by_dmg(p_fight, x.owner_id, (rb -> 'tower' ->> 'raw')::numeric * half, p_round, '무너진 기둥에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       end if;
     elsif h ->> 'k' = 'clock' then

@@ -548,7 +548,7 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
          'quest_id, step', ['title', 'goal', 'need', 'lines', 'reward'])
     sys.stderr.write(f"퀘스트 {len(qrows)} · 장면 {len(qsrows)} · 새 인물 {len(QN)}\n")
 
-for bs in ('gapgwi/boss.sql', 'baekya/boss.sql', 'ultimate/boss.sql', 'ultimate/ug_gwiheo.sql', 'ultimate/ug_mukjeok.sql', 'ultimate/ug_gapgwi.sql'):
+for bs in ('gapgwi/boss.sql', 'baekya/boss.sql', 'ultimate/boss.sql', 'ultimate/ug_gwiheo.sql', 'ultimate/ug_mukjeok.sql', 'ultimate/ug_gapgwi.sql', 'ultimate/ug_weak.sql'):
     bp = os.path.join(os.path.dirname(HERE), bs)
     if os.path.exists(bp): w(open(bp).read())
 part('j_boss_hooks.sql')
@@ -559,7 +559,7 @@ ug_items = [item(b['token'], b['token_name'], 'material', 5, b['token_desc'], 40
 fresh('items', [i['item_name'] for i in ug_items], '물품')
 fresh('item_ids', [i['item_id'] for i in ug_items], '물품 id')
 bulk('world_item_catalog', ug_items, ICOLS, 'item_id', IUPD)
-ug_rules = dict(level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME,
+ug_rules = dict(level=U.LEVEL, party=list(U.PARTY), tokens=U.TOKENS, mode_name=U.MODE_NAME, weak=U.WEAK,
                 boards=U.BOARDS, shop=[dict(key=f'{b}:{i}', board=b, kind=k, id=i, name=n, price=pr) for b, k, i, n, pr in U.SHOP])
 w(f"""create or replace function public.world_ultimate_rules() returns jsonb language sql immutable set search_path = '' as $r$ select {J(ug_rules)}::jsonb $r$;""")
 part('../ultimate/shop.sql')

@@ -245,10 +245,10 @@ begin
           hit := true;
           dest := public.world_ux_step(x.pos, (h ->> 'd')::int);
           if dest is null or dest = 0 then
-            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'tide' ->> 'raw')::numeric + (hx -> 'tide' ->> 'wall')::numeric, p_round, '물살에 떠밀려 벽에 부딪혀', true);
+            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'tide' ->> 'raw')::numeric + (hx -> 'tide' ->> 'wall')::numeric, p_round, '물살에 떠밀려 벽에 부딪혀', true); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           else
             update public.world_gw_members set prev = pos, pos = dest where fight_id = p_fight and owner_id = x.owner_id;
-            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'tide' ->> 'raw')::numeric, p_round, '물살에 떠밀려 ' || dest || '번 칸으로 밀려나며', true);
+            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'tide' ->> 'raw')::numeric, p_round, '물살에 떠밀려 ' || dest || '번 칸으로 밀려나며', true); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           end if;
         end loop;
       elsif kk = 'vortex' then
@@ -265,7 +265,7 @@ begin
               dest := (select z from unnest(public.world_ux_nb(x.pos)) z where z between 1 and 6 order by z limit 1);
               if dest is not null then update public.world_gw_members set prev = pos, pos = dest where fight_id = p_fight and owner_id = x.owner_id; end if;
             end if;
-            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'vortex' ->> 'raw')::numeric, p_round, '소용돌이에 끌려가며', true);
+            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'vortex' ->> 'raw')::numeric, p_round, '소용돌이에 끌려가며', true); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           end loop;
         end if;
       elsif kk = 'drag' then
@@ -280,14 +280,14 @@ begin
             hit := true;
             dest := case when public.world_ux_dist(x.pos, (h ->> 'a')::int) <= public.world_ux_dist(x.pos, (h ->> 'b')::int) then (h ->> 'a')::int else (h ->> 'b')::int end;
             update public.world_gw_members set prev = pos, pos = dest where fight_id = p_fight and owner_id = x.owner_id;
-            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'drag' ->> 'raw')::numeric, p_round, '사슬에 감겨 ' || dest || '번 기둥으로 끌려가며', false);
+            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'drag' ->> 'raw')::numeric, p_round, '사슬에 감겨 ' || dest || '번 기둥으로 끌려가며', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           end loop;
         end if;
       elsif kk = 'burst' then
         perform public.world_gw_say(p_fight, p_round, 'boss', (h ->> 'p') || '번 봉인 기둥이 터진다!');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) order by y.joined_at loop
           hit := true;
-          perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'burst' ->> 'raw')::numeric, p_round, '터진 봉인 기둥에', false);
+          perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'burst' ->> 'raw')::numeric, p_round, '터진 봉인 기둥에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end loop;
       elsif kk = 'charge' then
         need := (h ->> 'need')::numeric;
@@ -304,7 +304,7 @@ begin
           hit := true;
           perform public.world_gw_say(p_fight, p_round, 'bad', '봉주가 모은 기운이 터졌다(' || (h ->> 'dmg') || '/' || need || ').');
           for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest order by y.joined_at loop
-            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'charge' ->> 'raw')::numeric, p_round, '터진 기운에', false);
+            perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'charge' ->> 'raw')::numeric, p_round, '터진 기운에', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
           end loop;
         end if;
       elsif kk = 'name' then
@@ -312,7 +312,7 @@ begin
         if x.owner_id is not null and x.out_rounds = 0 and not x.rest and x.nameless then
           hit := true;
           update public.world_gw_members set nameless = false where fight_id = p_fight and owner_id = x.owner_id;
-          perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'name' ->> 'raw')::numeric, p_round, '이름을 끝내 되찾지 못해', false);
+          perform public.world_ux_dmg(p_fight, x.owner_id, (hx -> 'name' ->> 'raw')::numeric, p_round, '이름을 끝내 되찾지 못해', false); perform public.world_ug_weak_add(p_fight, x.owner_id, p_round);
         end if;
       end if;
       if hit then fails := fails + 1; end if;

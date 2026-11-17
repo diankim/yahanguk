@@ -2,6 +2,7 @@ LEVEL = 50
 PARTY = (2, 4)
 TOKENS = {'first': 10, 'clear': 3}
 MODE_NAME = '무용담'
+WEAK = {'rounds': 12, 'deal': 0.12, 'take': 0.2, 'strong_at': 3, 'strong_deal': 0.5, 'strong_take': 1.0, 'more_take': 0.25, 'name': '기가 꺾임', 'strong_name': '넋이 나감'}
 
 BOARDS = {
     'gwiheo': dict(name='무용담 · 귀허의 주인', short='무주', boss='gwiheo', open_quest='mdq_x_ug_gwiheo', region='sealed_abyss', token='ug_tok_gwiheo', token_name='귀허 등심',
