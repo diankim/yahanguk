@@ -360,7 +360,7 @@ FISH_GOODS = [
     ('minnow_fritter', '송사리 튀김', 'consumable', 2, 40, True, 40, {'hp': 30, 'buffs': ['well_fed']}, '흰눈 송사리를 통째로 튀겼다. 체력을 조금 채운다.', 'cooking', {'snow_minnow': 3, 'herb': 1}, 2, 45),
     ('smelt_clear_soup', '빙어 맑은국', 'consumable', 2, 40, True, 80, {'mn': 30, 'buffs': ['warm_belly']}, '등불 빙어를 맑게 끓였다. 정신을 채우고 속이 따뜻해진다.', 'cooking', {'lantern_smelt': 2, 'river_reed': 1}, 2, 45),
     ('burrow_scale', None, None, None, None, None, None, None, None, 'leatherwork', {'burrow_hagfish': 1, 'charcoal': 1}, 2, 46),
-    ('cheong_carp_steam', '청씨 잉어찜', 'consumable', 3, 20, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['vigor']}, '청씨 잉어를 약초와 함께 쪘다. 체력과 정신을 함께 채운다.', 'cooking', {'cheong_carp': 1, 'herb': 2}, 2, 46),
+    ('cheong_carp_steam', '청씨 잉어찜', 'consumable', 3, 20, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['vigor']}, '청씨 잉어를 약초와 함께 쪘다. 체력과 정신을 함께 채운다.', 'cooking', {'cheong_carp': 1, 'herb': 2, 'plank_water_jar': 1}, 2, 46),
 ]
 NAMED_GOODS = [
     ('lampfish_oil_lamp', '등어 기름 명등', 'consumable', 5, 20, True, 1600, {'buffs': ['undying_glow']}, '꺼지지 않는 등어의 기름을 부은 등이다. 3시간 동안 백야의 기본 효과가 미치지 않고 마음이 덜 흔들린다.', 'artifice', {'undying_lampfish': 1, 'severed_lamp_oil': 1}, 2, 48),
@@ -482,9 +482,9 @@ SHOP_REST = [
 FURNITURE = {
     'wall_bleached_eave_lamp': dict(source='shop', mats={P: 2, 'wood': 2}, field='carpentry', lv=45),
     'floor_frozen_target': dict(source='drop_normal', mats={A: 2, 'lumber': 2}, field='carpentry', lv=45),
-    'floor_cheong_prow': dict(source='drop_normal', mats={K: 3, 'lacquer': 1}, field='carpentry', lv=45),
+    'floor_cheong_prow': dict(source='drop_normal', mats={K: 2, 'lacquer': 1, 'plank_water_jar': 1}, field='carpentry', lv=45),
     'surface_armillary_model': dict(source='drop_guardian', mats={G: 2, R: 1, 'iron_ingot': 2}, field='artifice', lv=45),
-    'floor_empty_throne_stool': dict(source='drop_guardian', mats={E: 2, 'lumber': 2, 'lacquer': 2}, field='carpentry', lv=45),
+    'floor_empty_throne_stool': dict(source='drop_guardian', mats={E: 2, 'md_litter': 1, 'lacquer': 2}, field='carpentry', lv=45),
     'floor_seven_seat_table': dict(source='boss:dd_pact_5', mats=None, field=None, lv=45),
     'rubbing_undying_lampfish': dict(source='named', mats={'undying_lampfish': 1, 'fine_paper': 2, P: 2}, field='sealing', lv=45),
     'rubbing_burrow_goldcarp': dict(source='named', mats={'burrow_goldcarp': 1, 'fine_paper': 2, P: 2}, field='sealing', lv=45),
