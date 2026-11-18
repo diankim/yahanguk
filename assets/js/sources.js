@@ -5,6 +5,18 @@ const oneCache = new Map(), allCache = new Map();
 const cached = (m, fn, id) => { if (!m.has(id)) m.set(id, rpc(fn, { p_item: id }).catch(e => { m.delete(id); throw e; })); return m.get(id); };
 export const itemSources = id => cached(oneCache, 'world_item_sources', id);
 export const itemSourcesAll = id => cached(allCache, 'world_item_sources_all', id);
+const nowCache = new Map();
+export function shopNow(id) {
+  const c = nowCache.get(id); if (c && Date.now() < c.until) return c.p;
+  const p = rpc('world_item_shop_now', { p_item: id }).then(r => { nowCache.set(id, { p, until: Math.min(new Date(r?.next_at).getTime() || 0, Date.now() + 600000) }); return r; }).catch(e => { nowCache.delete(id); throw e; });
+  nowCache.set(id, { p, until: Date.now() + 600000 }); return p;
+}
+export function shopNowHtml(r, label) {
+  if (!r?.sold) return '';
+  const list = r.shops || [], hh = (new Date(r.next_at).getUTCHours() + 9) % 24;
+  const body = list.length ? `${list.slice(0, 4).map(x => regionBtn(x, true)).join('')}${regionsMore('지금 파는 상점', list.map(nameOf), 4)}` : `<small class="muted">이번 회차엔 진열한 곳 없음 · ${hh}시에 바뀜</small>`;
+  return `${label(r.always ? '늘 파는 상점' : '지금 파는 상점')}${body}`;
+}
 
 export const regionBtn = (r, withIcon = false) => `<button type="button" class="q-link src-go" data-src-go="${esc(r)}" title="지도에서 보기">${withIcon ? icon('map', 12) : ''}<span>${esc(nameOf(r))}</span></button>`;
 export const moreBtn = (n, attrs) => n > 0 ? `<button type="button" class="q-link src-more" ${attrs}>외 ${n}곳</button>` : '';

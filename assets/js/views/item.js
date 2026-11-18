@@ -1,7 +1,7 @@
 import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, loadPrices, chip, zonesNow, catItem, fxNames } from './common.js';
-import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
+import { itemSources, regionBtn, sourcesMore, SRC_KINDS, shopNow, shopNowHtml } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture } from '../housing/count.js';
 import { ownRow, fillOwned } from '../owned.js';
@@ -186,7 +186,8 @@ async function fillSources(box, id) {
     const html = SRC_KINDS.map(([k, label]) => part(label, s[k], s[`${k}_n`])).filter(Boolean).join('');
     const buy = [s.smithy && '대장간', s.shop && '안전지대 상점(회차마다 바뀜)', s.vault && '세력 비고(공훈)'].filter(Boolean);
     const extra = [s.craft && '<span class="src"><b>제작</b> 가방 › 제작</span>', buy.length && `<span class="src"><b>사기</b> ${esc(buy.join(' · '))}</span>`, s.bijang && `<span class="src"><b>비장고</b> ${s.bijang === 'final' ? '마지막 방' : '상자'}</span>`, s.luck && '<span class="src"><b>드물게</b> 탐색 · 채집 · 낚시(잡았을 때)</span>', s.token && `<span class="src"><b>바꾸기</b> 동무 정표 ${s.token}개</span>`].filter(Boolean).join('');
-    dd.innerHTML = (html + extra) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
+    const sh = s.shop ? shopNowHtml(await shopNow(id).catch(() => null), t => `<b>${t}</b> `) : '';
+    dd.innerHTML = (html + extra + (sh ? `<span class="src">${sh}</span>` : '')) || '<span class="muted">원정·이야기·특별한 보상으로 얻습니다</span>';
   } catch { dd.textContent = '-'; }
 }
 function draw(box, id, inv, prices, mode) {

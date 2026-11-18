@@ -3075,6 +3075,8 @@ body.chat-out .chat-col { display: none !important; }
 /* 퀘스트 할 일의 「얻는 곳」: 지역 바로 가기 5곳까지 */
 .q-src { display: contents; }
 .q-src > small { font-size: calc(11.5px * var(--fz, 1)); align-self: center; }
+.q-shop { display: contents; }
+.q-shop > small { font-size: calc(11.5px * var(--fz, 1)); align-self: center; }
 /* 채집 도감의 세부 채집터: 지역 한 줄 + 채집터 꼬리표 */
 .gx-spots { display: grid; gap: 6px; margin-top: 4px; padding-top: 6px; border-top: var(--bw) dashed var(--line); }
 /* 지도: 봉연의 그림자가 나올 곳 — 원 고리(현재 위치·분쟁·잠김)와 헷갈리지 않게 보라 마름모 테 + 위쪽 네 갈래 별, 테가 천천히 돈다 */

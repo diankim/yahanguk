@@ -1,7 +1,7 @@
 import { store, act, esc, icon, guard, $, $$, nameOf, toast, ask, RAID_ON, on, midBattle } from './core.js';
 import { load, invalidate, chip, knownRecipes } from './views/common.js';
 import { playDialogue } from './factionquest.js';
-import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore } from './sources.js';
+import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regionsMore, shopNow, shopNowHtml } from './sources.js';
 import { TASK_ACTS, CHANGES, hit } from './changes.js';
 import { baseOf } from './hq.js';
 import { askPartySize, partyHere } from './views/fightui.js';
@@ -36,9 +36,10 @@ async function fillSrc(root = document) {
     try {
       const s = await itemSources(id) || {};
       const places = sourcePlaces(s), total = sourceTotal(s);
+      const sh = s.shop ? shopNowHtml(await shopNow(id).catch(() => null), t => `<small class="muted">${t}</small>`) : '';
       if (!el.isConnected) continue;
-      el.innerHTML = places.length ? `<small class="muted">얻는 곳</small>${places.slice(0, 5).map(r => regionBtn(r, true)).join('')}${sourcesMore(id, total - Math.min(5, places.length))}`
-        : s.shop || s.smithy ? `<small class="muted">안전지대 ${s.smithy ? '대장간' : '상점'}에서 삽니다</small>` : '';
+      el.innerHTML = (places.length ? `<small class="muted">얻는 곳</small>${places.slice(0, 5).map(r => regionBtn(r, true)).join('')}${sourcesMore(id, total - Math.min(5, places.length))}`
+        : s.smithy ? '<small class="muted">안전지대 대장간에서 삽니다</small>' : s.shop && !sh ? '<small class="muted">안전지대 상점에서 삽니다</small>' : '') + (sh ? `<span class="q-shop">${sh}</span>` : '');
     } catch {}
   }
 }
