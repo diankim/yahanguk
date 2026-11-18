@@ -124,13 +124,13 @@ begin
   return (select e.key from jsonb_each(public.world_regular_rules() -> 'npcs') e where e.value ->> 'region' = rid order by (e.value ->> 'sort')::int limit 1);
 end $f$;
 
-create or replace function public.world_regular_xp(p_rank int, p_hq boolean)
+create or replace function public.world_regular_xp(p_rank int, p_fine boolean)
  returns int language sql immutable set search_path = pg_catalog, public
 as $f$
   select case when p_rank >= 50 then 0 else
     floor(greatest((public.world_regular_rules() -> 'xp' ->> 'min')::numeric,
       ceil((public.world_skill_line_xp(p_rank + 1) - public.world_skill_line_xp(p_rank)) * (public.world_regular_rules() -> 'xp' ->> 'pct')::numeric / 100))
-      * case when p_hq then (public.world_regular_rules() -> 'xp' ->> 'hq_mul')::numeric else 1 end)::int end
+      * case when p_fine then (public.world_regular_rules() -> 'xp' ->> 'hq_mul')::numeric else 1 end)::int end
 $f$;
 
 create or replace function public.world_regular_view(p_npc text default null)
@@ -163,7 +163,7 @@ begin
     when dn >= day_n then '오늘 납품은 다 했습니다(모든 단골을 합쳐 하루 ' || day_n || '번).'
     else null end;
   return jsonb_build_object('npc', k, 'name', n ->> 'name', 'short', n ->> 'short', 'line', n ->> 'line', 'line_name', public.world_line_name(n ->> 'line'), 'rank', rk,
-    'xp', public.world_regular_xp(rk, false), 'xp_hq', public.world_regular_xp(rk, true),
+    'xp', public.world_regular_xp(rk, false), 'xp_fine', public.world_regular_xp(rk, true),
     'region', n ->> 'region', 'place', (select m.region_name from public.world_map_regions m where m.region_id = n ->> 'region'),
     'aff', aff, 'stage', public.world_regular_stage(aff), 'next', public.world_regular_next(aff), 'cap', (r -> 'aff' ->> 'cap')::int, 'total', coalesce(g.total, 0),
     'title', n ->> 'title_name',
@@ -173,7 +173,7 @@ begin
     'can', jsonb_build_object('give', why is null, 'why', why));
 end $f$;
 
-create or replace function public.world_regular_give(p_npc text, p_order int, p_hq boolean default false)
+create or replace function public.world_regular_give(p_npc text, p_order int, p_fine boolean default false)
  returns jsonb language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare uid uuid := public.fn_owner_auth_uid(); nr jsonb := public.world_regular_rule(p_npc); r jsonb := public.world_regular_rules(); c public.world_characters%rowtype;
@@ -201,7 +201,7 @@ begin
   select x into o from jsonb_array_elements(public.world_regular_orders(uid, p_npc, today)) x where (x ->> 'i')::int = p_order;
   if o is null then raise exception '없는 주문입니다.'; end if;
   id := o ->> 'id'; q := (o ->> 'qty')::int;
-  if coalesce(p_hq, false) then
+  if coalesce(p_fine, false) then
     if not exists (select 1 from public.world_item_catalog h where h.item_id = id || '_hq') then raise exception '우수품이 없는 물품입니다.'; end if;
     id := id || '_hq';
   end if;
@@ -226,9 +226,9 @@ begin
   end if;
   line := nr ->> 'line';
   rk := public.world_regular_rank(uid, line);
-  xp := public.world_regular_xp(rk, coalesce(p_hq, false));
+  xp := public.world_regular_xp(rk, coalesce(p_fine, false));
   v_gil := floor(coalesce((select reference_price from public.world_item_catalog where item_id = o ->> 'id'), 0) * q * (r -> 'gil' ->> 'rate')::numeric + (r -> 'gil' ->> 'base')::numeric)::int;
-  add := case when coalesce(p_hq, false) then (r -> 'aff' ->> 'hq')::int else (r -> 'aff' ->> 'give')::int end;
+  add := case when coalesce(p_fine, false) then (r -> 'aff' ->> 'hq')::int else (r -> 'aff' ->> 'give')::int end;
   aff0 := g.aff; aff1 := least((r -> 'aff' ->> 'cap')::int, aff0 + add);
   s0 := public.world_regular_stage(aff0); s1 := public.world_regular_stage(aff1);
   perform set_config('yh.wear_leaves', 'on', true);

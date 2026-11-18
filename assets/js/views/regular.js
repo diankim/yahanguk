@@ -11,7 +11,7 @@ function orderCard(o, v) {
   return `<li class="rg-order ${o.done ? 'done' : h >= o.qty || hq >= o.qty ? 'ready' : ''}">
     <header><button type="button" class="linkish" data-rg-info="${esc(o.id)}"><b>${esc(o.name)}</b></button><span class="chip">${o.qty}개</span>${o.done ? `<span class="chip ok">${icon('check', 12)}넘김</span>` : ''}</header>
     <small class="muted">${o.tier}단계 · 가방 ${fmt.num(o.have || 0)}${o.have_st ? ` · 창고 ${fmt.num(o.have_st)}` : ''}${o.hq_ok ? ` · 우수 ${fmt.num(hq)}` : ''}</small>
-    <small class="rg-pay">${esc(v.line_name)} 경험 +${fmt.num(v.xp)} · ${fmt.jeon(o.gil)} · 친밀도 +${REGULAR.aff.give}${o.hq_ok ? ` <span class="muted">(우수품 경험 +${fmt.num(v.xp_hq)} · 친밀도 +${REGULAR.aff.hq})</span>` : ''}</small>
+    <small class="rg-pay">${esc(v.line_name)} 경험 +${fmt.num(v.xp)} · ${fmt.jeon(o.gil)} · 친밀도 +${REGULAR.aff.give}${o.hq_ok ? ` <span class="muted">(우수품 경험 +${fmt.num(v.xp_fine)} · 친밀도 +${REGULAR.aff.hq})</span>` : ''}</small>
     <div class="btn-row"><button type="button" class="q-link" data-rg-src="${esc(o.id)}">${icon('pin', 12)}얻는 곳</button>
       ${o.done ? '' : `${o.hq_ok && hq >= o.qty ? `<button type="button" class="btn small" data-here="단골 납품" data-rg-give="${o.i}" data-hq="1" ${off ? 'disabled' : ''}>우수품 넘기기</button>` : ''}
       <button type="button" class="btn small primary" data-here="단골 납품" data-rg-give="${o.i}" ${off || h < o.qty ? 'disabled' : ''}>넘기기</button>`}</div></li>`;
@@ -41,7 +41,7 @@ function draw(m, v) {
     const o = (v.orders || []).find(x => x.i === Number(b.dataset.rgGive)); if (!o) return;
     const hq = b.dataset.hq === '1';
     if (!(await ask(`「${o.name}${hq ? ' (우수)' : ''}」 ${o.qty}개를 ${v.short}에게 넘길까요?`, { title: '단골 납품', ok: '넘기기' }))) return;
-    const r = await guard(b, () => act('world_regular_give', { p_npc: v.npc, p_order: o.i, p_hq: hq }));
+    const r = await guard(b, () => act('world_regular_give', { p_npc: v.npc, p_order: o.i, p_fine: hq }));
     if (r?.view) { draw(m, r.view); if (r.stage_up) window.dispatchEvent(new CustomEvent('yh-regular-stage', { detail: r })); }
   });
 }
