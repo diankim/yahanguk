@@ -13,6 +13,7 @@ parts = [head,
          r.stdout,
          'select public.world_quest_label_refresh();',
          open(os.path.join(HERE, 'patch_note.sql'), encoding='utf-8').read(),
+         open(os.path.join(HERE, 'patch_merge.sql'), encoding='utf-8').read(),
          f"insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{VER}', now())\non conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;"]
 out = os.path.join(ROOT, 'supabase', 'migrations', f'{VER}_world_3_1_0_epilogue.sql')
 open(out, 'w', encoding='utf-8').write('\n\n'.join(parts) + '\n')
