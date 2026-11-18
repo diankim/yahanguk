@@ -241,3 +241,6 @@ export const SURVIVAL = (() => {
 })();
 
 export const REBOND = (h => h % 24 ? `${h}시간` : h === 24 ? '하루' : `${h / 24}일`)(GD.wedding?.rebond_h ?? 24);
+
+export const ARC_NAME = { '귀허도': '요인록' };
+export const storyArcOf = cat => { const [a, b] = String(cat || '').split('·'); return a === '외전' ? (ARC_NAME[b] || b || '') : ''; };

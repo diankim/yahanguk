@@ -5,6 +5,7 @@ import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regions
 import { TASK_ACTS, CHANGES, hit } from './changes.js';
 import { baseOf } from './hq.js';
 import { askPartySize, partyHere } from './views/fightui.js';
+import { storyArcOf } from './rules.js';
 
 const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
 const foldKey = 'yh-fold-quests';
@@ -62,7 +63,7 @@ export const atLine = q => {
   const done = !left.length;
   return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${links(at)}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
 };
-const head = (kind, q) => `<header>${chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '')}${kind === 'main' ? '' : chip(q.cat || '')}${q.replay ? chip('다시하기', 'ok') : ''}<b>${esc(q.title)}</b></header>`;
+const head = (kind, q) => { const arcN = storyArcOf(q.cat); return `<header>${arcN ? chip('본편', 'accent') + chip(arcN) : chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '') + (kind === 'main' ? '' : chip(q.cat || ''))}${q.replay ? chip('다시하기', 'ok') : ''}<b>${esc(q.title)}</b></header>` };
 
 function activeItem(q) {
   if (q.phase === 'clues') {
@@ -115,7 +116,7 @@ async function askFinal() {
 const GKEY = 'yh-q-group';
 const GROUPS = [['', '순서대로'], ['field', '분야별'], ['place', '장소별']];
 const grp = () => { try { return localStorage.getItem(GKEY) || ''; } catch { return ''; } };
-const fieldOf = q => q.kind === 'main' ? '주 이야기' : (q.cat || '').split('·')[0] || '기타';
+const fieldOf = q => q.kind === 'main' ? '주 이야기' : storyArcOf(q.cat) || (q.cat || '').split('·')[0] || '기타';
 const placeOf = q => { const left = (q.tasks || []).find(t => t.cur < t.n && (t.regions || []).length);
   return left ? nameOf(left.regions[0]) : (q.at_names || [])[0] || '어디서나'; };
 function grouped(list, b) {

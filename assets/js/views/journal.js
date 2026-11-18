@@ -8,7 +8,7 @@ import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
-import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY } from '../rules.js';
+import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY, ARC_NAME } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
@@ -90,8 +90,8 @@ function bindQuests(body) {
 let selCh = '', lastStory = null, lastSide = null, arc = null;
 const arcSel = {};
 const MAIN_ARC = '홍인사';
-const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.', '요인록'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
-const arcName = n => (ARCS.find(([a]) => a === n) || [])[2] || n;
+const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
+const arcName = n => ARC_NAME[n] || n;
 const arcOf = q => fieldOf(q) === '외전' ? ((q.cat || '').split('·')[1] || '') : '';
 async function story(body, keep) {
   const [b, j, map] = keep && lastStory ? lastStory : (lastStory = await Promise.all([load('world_story_board'), journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]));
