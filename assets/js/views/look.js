@@ -80,7 +80,7 @@ export async function lookTab(body) {
       <div class="lk-side">
         <div class="lk-frames">${['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(draft, { frame: f, scale: 2 })}" alt="">`).join('')}</div>
         <label class="lk-home"><input type="checkbox" id="lk-home" ${homeOn ? 'checked' : ''}> 별채에 세우기</label>
-        <label class="lk-home" title="채팅·조사원 카드·목록의 얼굴을 내 모습의 얼굴로 씁니다(올린 사진 대신)"><input type="checkbox" id="lk-face" ${faceOn ? 'checked' : ''}> 얼굴로 쓰기<img class="lk-face" src="${avatarImage(plain(draft), { scale: 1, crop: FACE_CROP })}" alt=""></label>
+        <label class="lk-home" title="채팅·조사원 카드·목록의 얼굴을 내 모습의 얼굴로 씁니다(올린 사진 대신)"><input type="checkbox" id="lk-face" ${faceOn ? 'checked' : ''}> 얼굴로 쓰기<img class="lk-face" src="${avatarImage(draft, { scale: 1, crop: FACE_CROP })}" alt=""></label>
         <div class="lk-act"><button class="btn ghost sm" id="lk-reset" ${dirty ? '' : 'disabled'}>되돌리기</button><button class="btn primary sm" id="lk-save" ${dirty ? '' : 'disabled'}>${icon('palette', 16)} 이 모습으로</button></div>
       </div>
     </div>
@@ -123,7 +123,7 @@ export async function lookTab(body) {
     const r = await act('world_avatar_set', { p_look: draft, p_home_on: homeOn });
     if (r?.look) draft = wearable(snap, r.look);
     if (typeof r?.home_on === 'boolean') homeOn = r.home_on;
-    if (faceOn) await act('world_set_avatar_px', { p_image: avatarImage(plain(draft), { scale: 4, crop: FACE_CROP, job: snap.job }) });
+    if (faceOn) await act('world_set_avatar_px', { p_image: avatarImage(draft, { scale: 4, crop: FACE_CROP, job: snap.job }) });
     else if (faceNow()) await act('world_set_avatar', { p_image: null });
     return r;
   }, { success: '모습을 바꿨습니다.' });
