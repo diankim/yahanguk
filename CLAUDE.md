@@ -287,6 +287,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 칭호
 
 - 258개(공개 185, 7.7.7p 비수·퇴마·의술의 길과 숨김 그믐밤 비수·안개 속 퇴마사·빗속의 의원 — 「…의 길」은 payload.line으로 셈): 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
+- 판정 world_title_rule_ok: 조건에 어종(fish)·요괴(monster_id)가 적힌 규칙은 그 칸으로 색인(idx_world_events_fish_kind·idx_world_events_combat_monster)을 타는 갈래로 셈(3.0.2d — 못 얻은 칭호마다 그 사람 기록을 처음부터 훑던 것). 새 조건 칸이 많이 쓰이면 같은 방식으로.
 - 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만(캐릭터를 만들거나 명단에 오르면 trg_world_staff_title이 저절로 줌), 남의 목록에 안 나옴.
 - 등급 world_title_catalog.grade 1 범품·2 양품·3 진품·4 명품·5 신품(색 회색·초록·파랑·보라 칠·주홍 칠), 어려울수록 높고 효과도 큼(첫 효과 그 등급, 둘째·셋째 한·두 등급 아래). 효과 키: 주는/받는 피해·근접/원거리/술법·치명타·회피·달아나기·방어·이목(world_combat_stats가 world_title_bonus_of로)·회복·침식·정신 손실·조우(world_status_effect_total이 world_title_extra로)·단서·희귀품·채집·제작·이동·낚시.
 - 최대 3개 장착 + 대표 칭호 하나(채팅·프로필). 숨김 칭호는 얻기 전까지 이름·조건을 서버가 감춤.
@@ -375,6 +376,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 노정 건량 준비(make_travel_ration)는 누구나.
 - 즐겨찾기 world_craft_favorites(RLS·직접 읽기 없음), world_craft_favs()·world_craft_fav_toggle(p_recipe)(30개). bag.js는 접속 동안 한 번 읽고 거르기 칸·이름 앞 별·어느 정렬에서나 먼저.
 - 여러 개 world_craft_batch(p_recipe_id, p_times 1~50): 한 요청 안에서 world_craft_item을 차례로(매번 검사·품질·덤·craft 기록). 실패한 한 번만 되돌리고 멈춰 만든 만큼 반환, 한 번도 못 만들면 그 까닭을 오류로. n=1이면 world_craft_item.
+- 도구 단계는 가방·창고·장착에 있는 물품만 추린 뒤 world_tool_covers로 셈(world_craft_item, 3.0.2d — 물품 목록 전체를 훑던 것).
 - 제작 화면(bag.js): 검색은 제작법·완성품 이름만(검색 중엔 거르기 무시). 이름·재료·도구를 누르면 물품 정보. 카드에 조건(레벨·직업·기술) 초록/빨강, 장비는 부위·단계. 설명 글의 완성품 이름 뒤에 「(효과: …)」(.desc-fx, descFx·gearFx, item.js traitText, 이름이 없으면 끝에, 부위 이름은 뺌, 효과 없으면 비움). 접는 「거르기·정렬」(craftFilterBox, 닫히면 한 줄 요약·켠 수, yh-craft-filt, 칩, 「거르기 모두 풀기」): 분야·「만드는 것」(부위 여덟·제작 공구·소모품·재료·가구, world_item_catalog.category로 가름, 장비·생활 도구·그 밖 묶음), 아무것도 안 고르면 전체. 정렬: 가능한 것 먼저·레벨 낮은/높은순(같은 레벨은 완성품 단계순). 횟수 [초기화] − n + [전부](craftN, 가방·창고·우수품으로 되는 만큼, 50까지), 「제작 ×n」은 오른쪽 아래(.craft-act, 한 줄: 횟수 단추 28px·제작 36px 오른쪽 끝, 카드 300px 아래면 여백 줄이고 망치 아이콘 뺌 — container query, 입력칸 input.cq-n).
 - 효과 문구 색 item.js fxHtml·FX_KINDS: 체력 --hp·정신 --mp·영력 --sp·침식 --er·치료 --ok·탐색력 --gold.
 
