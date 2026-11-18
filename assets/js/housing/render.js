@@ -114,8 +114,14 @@ export function makeRoom(N, defs) {
     fillPoly(layer, top, P(p.c));
     if (h >= 3) { const hl = sh(p.c, 1.18); line(layer, top[0], top[1], hl); line(layer, top[0], top[3], hl); }
   }
+  function drawSpr(it, f) {
+    const r = it.r || 0, v = (r & 2) && f.spr.back ? f.spr.back : f.spr.front, flip = r & 1, [w, d] = dims(it);
+    const cw = f.spr.w, ch = f.spr.h, x0 = Math.round(iso(it.x, it.y + d)[0]), y0 = Math.round(iso(it.x + w, it.y + d)[1]) - ch, pal = f.spr.pal.map(P);
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) { const c = v[y * cw + (flip ? cw - 1 - x : x)]; if (c && c !== '.') put(layer, x0 + x, y0 + y, pal[parseInt(c, 16)]); }
+  }
   function drawItem(it) {
     const z0 = (it.z0 || 0) * ZU;
+    if (FUR[it.k].spr) return drawSpr(it, FUR[it.k]);
     for (const p of rotParts(FUR[it.k], it.r || 0)) {
       if (p.t === 'ell') { const [cx, cy] = iso(it.x + p.x, it.y + p.y, p.z * ZU + z0); fillEll(layer, cx, cy, p.rx, p.ry, P(p.c)); fillEll(layer, cx - p.rx * .3, cy - p.ry * .35, Math.max(1, p.rx * .35), Math.max(1, p.ry * .3), sh(p.c, 1.14)); }
       else { drawBox(it.x, it.y, p, z0); if (p.view) drawView(it.x, it.y, p, z0); }

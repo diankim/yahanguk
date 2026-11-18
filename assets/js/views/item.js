@@ -15,8 +15,9 @@ const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
   trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나',
   hair_pattern: '머리 모양과 색을 마음대로 그려 도안첩에 담음 · 내 모습에서 바로 씀(한 장 씀)',
+  furn_pattern: '가구를 직접 그려 도안첩에 담음 · 바닥 칸 하나에 한 장(1×1 한 장 · 2×1 두 장 · 2×2 네 장) · 지어서 별채 곳간에',
   ...Object.fromEntries(BIJANG.maps.map(m => [m.id, `펼치기 · Lv${m.lo}~${m.hi} 바깥 지역 하나에 묻힌 비장고가 지도에 드러남`])) };
-export const useLabel = id => BIJANG.maps.some(m => m.id === id) ? '펼치기' : id === 'hair_pattern' ? '그리기' : '사용';
+export const useLabel = id => BIJANG.maps.some(m => m.id === id) ? '펼치기' : id === 'hair_pattern' || id === 'furn_pattern' ? '그리기' : '사용';
 export function canStash() {
   const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
   const fsr = store.snaps['world_field_snapshotnull']?.region, weakSt = fsr?.region_id === here?.region_id && fsr?.weak ? !!fsr.weak.storage : weakSafe(here?.region_id);
@@ -315,6 +316,7 @@ export async function useItem(id, btn, n = 1) {
     if (snap) openFreeEditor('hair', snap, () => {});
     return;
   }
+  if (id === 'furn_pattern') { const { openFurnBook } = await import('./furndesign.js'); openFurnBook(); return; }
   const bj = BIJANG.maps.find(m => m.id === id);
   if (bj) {
     if (!(await ask(`${bj.name}을(를) 펼칩니다. Lv${bj.lo}~${bj.hi} 바깥 지역 하나가 지도에 드러나고, 그 지역에서 「비장도 따라 파기」를 할 수 있습니다. 펼친 지도는 거래할 수 없습니다.`, { title: '비장도 펼치기', ok: '펼치기' }))) return;
@@ -322,7 +324,7 @@ export async function useItem(id, btn, n = 1) {
   }
   return guard(btn, () => useItemAct(id, n));
 }
-export const USE_ONE = new Set(['reset_stats', 'reset_identity', 'hair_pattern', ...BIJANG.maps.map(m => m.id)]);
+export const USE_ONE = new Set(['reset_stats', 'reset_identity', 'hair_pattern', 'furn_pattern', ...BIJANG.maps.map(m => m.id)]);
 export const useMaxOf = (id, have) => USABLE[id] ? (USE_ONE.has(baseOf(id)) ? 1 : Math.min(50, have)) : 0;
 export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ONE.has(baseOf(id)) && have > 1 ? qtyHtml({ key, min: 1, max: Math.min(50, have), value: 1, all: true, small, label: '쓸 수량' }) : '';
 function openResetIdentity() {

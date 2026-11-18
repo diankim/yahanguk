@@ -7,8 +7,9 @@ import { PAL, PAL_NAMES } from '../housing/drawing.js';
 import { openColorPicker } from '../colorpick.js';
 import { hqCount } from '../hq.js';
 import { reportFlag } from '../reportflag.js';
+import { furnPicURL } from '../housing/furndef.js';
 
-const SLOT_NAME = { top: '윗옷', bottom: '아랫옷', face: '얼굴', hair: '머리' };
+const SLOT_NAME = { top: '윗옷', bottom: '아랫옷', face: '얼굴', hair: '머리', furn: '가구' };
 const FREE = new Set(['face', 'hair']);
 const FB = AV.face, HB = AV.hairBox;
 const freeCrop = slot => slot === 'face' ? [FB.x - 1, FB.y - 3, FB.w + 4, FB.h + 6] : [0, 0, AW, AH];
@@ -31,6 +32,7 @@ function layout(slot, base) {
 export function cropOf(slot, base) { return AV[slot]?.[base]?.mask ? layout(slot, base).crop : null; }
 
 export function designPic(d, { job, scale = 3, look } = {}) {
+  if (d?.slot === 'furn') return d.px ? furnPicURL(d.base, d.pal, d.px, { scale: 2 }) : '';
   if (d?.px && FREE.has(d.slot)) {
     const fid = 'v' + (++seq);
     registerDesigns({ [fid]: { slot: d.slot, base: d.slot, pal: d.pal, px: d.px } });
@@ -290,7 +292,7 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
   let r, st;
   try { [r, st] = await Promise.all([load('world_outfit_design_list', undefined, { maxAge: 60000 }), load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null)]); }
   catch (e) { box.innerHTML = errorBox(e.message); return; }
-  const rules = r.rules || {}, items = r.items || [], trash = r.trash || [];
+  const rules = r.rules || {}, items = (r.items || []).filter(d => d.slot !== 'furn'), trash = (r.trash || []).filter(d => d.slot !== 'furn');
   const clothes = items.filter(d => !FREE.has(d.slot)), faces = items.filter(d => d.slot === 'face'), hairs = items.filter(d => d.slot === 'hair');
   const full = r.kept >= rules.keep, dayFull = r.made_today >= rules.per_day;
   const faceRule = rules.face || freeRule('face'), hairRule = rules.hair || freeRule('hair'), hairItems = Number(r.hair_items) || 0;
@@ -344,17 +346,7 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
       <div class="btn-row"><button class="btn primary" data-go data-here="옷 짓기" ${rl.why ? 'disabled' : ''}>짓기</button>${rl.why ? `<small class="od-why bad">${esc(rl.why)}</small>` : ''}</div></div>` });
     $('[data-go]', l).onclick = e => guard(e.currentTarget, async () => { const res = await act('world_outfit_design_weave', { p_id: d.id }); l.close(); again(); return res; });
   });
-  $$('[data-give]', box).forEach(b => b.onclick = async () => {
-    const d = find(b.dataset.give); if (!d) return;
-    let fr; try { fr = await load('world_friend_overview'); } catch (e) { return toast(e.message, 'error'); }
-    const friends = (fr?.friends || []).filter(f => !f.is_dead);
-    if (!friends.length) return toast('도안은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.', 'error');
-    const l = openLayer({ title: '도안 보내기', body: `<div class="od-weave"><img class="od-pic" src="${designPic(d, { job: snap.job, look: snap.look })}" alt="">
-      <label class="field"><span>받는 사람 (친구)</span><select name="to">${friends.map(f => `<option value="${esc(f.owner_id)}">${esc(f.character_name)} · Lv.${f.level}</option>`).join('')}</select></label>
-      <p class="muted small">사본을 보냅니다. ${d.slot === 'hair' ? '받은 사람이 바로 쓸 수 있고' : '받은 사람이 옷을 지어 입을 수 있고'}, 받은 사본은 다시 넘길 수 없습니다. 오늘 ${r.given_today}/${rules.give_day}번 보냈습니다.</p>
-      <div class="btn-row"><button class="btn primary" data-send>보내기</button></div></div>` });
-    $('[data-send]', l).onclick = e => guard(e.currentTarget, async () => { const res = await act('world_outfit_design_give', { p_id: d.id, p_target: $('select', l).value }); l.close(); again(); return res; });
-  });
+  $$('[data-give]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.give); if (d) openDesignGive(d, designPic(d, { job: snap.job, look: snap.look }), d.slot === 'hair' ? '받은 사람이 바로 쓸 수 있고' : '받은 사람이 옷을 지어 입을 수 있고', r, again); });
   $$('[data-del]', box).forEach(b => b.onclick = async () => {
     const d = find(b.dataset.del); if (!d) return;
     const tail = FREE.has(d.slot) ? `쓰던 ${SLOT_NAME[d.slot]}이라면 처음 고른 모양으로 돌아가고, 「지운 도안」에서 되살릴 수 있습니다.${d.slot === 'face' ? ' 새 눈·입을 그리면 가장 먼저 지운 눈·입 자리에 덮어 담깁니다.' : ''}` : '이미 지은 옷은 그대로 입을 수 있고, 「지운 도안」에서 되살릴 수 있습니다. 오늘 그린 장수는 돌아오지 않습니다.';
@@ -363,6 +355,17 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
   });
   $$('[data-restore]', box).forEach(b => b.onclick = () => guard(b, async () => { const res = await act('world_outfit_design_restore', { p_id: Number(b.dataset.restore) }); again(); return res; }));
   $$('[data-report]', box).forEach(b => b.onclick = () => openDesignReport(Number(b.dataset.report), again));
+}
+
+export async function openDesignGive(d, pic, how, r, done) {
+  let fr; try { fr = await load('world_friend_overview'); } catch (e) { return toast(e.message, 'error'); }
+  const friends = (fr?.friends || []).filter(f => !f.is_dead), rules = r.rules || {};
+  if (!friends.length) return toast('도안은 친구에게만 보낼 수 있습니다. 먼저 친구를 맺으세요.', 'error');
+  const l = openLayer({ title: '도안 보내기', body: `<div class="od-weave"><img class="od-pic" src="${pic}" alt="">
+    <label class="field"><span>받는 사람 (친구)</span><select name="to">${friends.map(f => `<option value="${esc(f.owner_id)}">${esc(f.character_name)} · Lv.${f.level}</option>`).join('')}</select></label>
+    <p class="muted small">사본을 보냅니다. ${how}, 받은 사본은 다시 넘길 수 없습니다. 오늘 ${r.given_today}/${rules.give_day}번 보냈습니다.</p>
+    <div class="btn-row"><button class="btn primary" data-send>보내기</button></div></div>` });
+  $('[data-send]', l).onclick = e => guard(e.currentTarget, async () => { const res = await act('world_outfit_design_give', { p_id: d.id, p_target: $('select', l).value }); l.close(); done?.(res); return res; });
 }
 
 export function openDesignReport(id, done) {

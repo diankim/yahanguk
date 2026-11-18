@@ -2030,6 +2030,18 @@ const S = [
       <li><b>보내기</b>: 내가 그린 도안의 사본을 친구에게 하루 ${GD.outfit.give_day}번까지 보낼 수 있습니다. 받은 사람은 직접 지어 입고, 받은 사본은 다시 넘길 수 없습니다. 이미 가진(지운 것 포함) 도안은 다시 받지 않습니다.</li>
       <li><b>제보</b>: 부적절한 도안은 도안첩에서 「제보」로 운영진에게 알릴 수 있고, 그 도안은 내 화면에서 숨겨집니다. 운영진이 내린 도안은 사본과 지은 옷까지 모두 원래 옷으로 보입니다.</li>
     </ul>`],
+  ['furn', '가구 도안', `
+    <p>별채에 놓을 가구를 도트로 직접 그려 짓습니다. 별채 머리의 「가구 도안」이나 가방의 「가구 그리기 도안」 → 「그리기」에서 엽니다.</p>
+    <table class="guide-table"><tr><th>크기</th><th>그림판</th><th>쓰는 가구 그리기 도안</th><th>짓는 재료(한 개)</th></tr>
+      ${Object.entries(GD.furn?.sizes || {}).map(([k, z]) => `<tr><td>${k.replace('x', '×')} 칸</td><td>${z.pw}×${z.ph}점</td><td>${z.w * z.d}장</td><td>${Object.entries(GD.furn.mats || {}).map(([m, n]) => `${esc(GD.furn.mat_names?.[m] || m)} ${n * z.w * z.d}`).join(' · ')}</td></tr>`).join('')}</table>
+    <ul>
+      <li><b>그리기</b>: 앞모습 한 장을 그리고, 뒷모습을 따로 그리거나 「앞뒤 같음」으로 둡니다. 별채에서 돌리면 앞 → 앞 좌우 뒤집기 → 뒤 → 뒤 좌우 뒤집기로 보입니다. 그림판의 붉은 점선이 바닥 칸, 푸른 점선이 윗면 높이입니다. 색은 ${GD.furn?.colors || 16}가지까지 고릅니다.</li>
+      <li><b>쓰임</b>: 보통 가구 · 탁자(윗면에 소품을 올림, 낮은 상·탁자·장 높이 가운데 하나) · 깔개(다른 가구 밑에 깔림) · 동무 가구(잠자리·밥그릇·장난감·횃대, 좋아하는 갈래를 고르면 그 갈래 동무가 자주 찾아감)를 고릅니다. 크기와 쓰임은 담은 뒤 바꿀 수 없습니다.</li>
+      <li><b>가구 그리기 도안</b>: 담을 때 바닥 칸 하나에 한 장씩 씁니다. 비장고 마지막 방에서 나오고(1등급 1장 · 2등급 2장 · 3등급 4장), 거래소에서 사고팔 수 있습니다. 고칠 때는 쓰지 않습니다.</li>
+      <li><b>짓기</b>: 도안첩의 「짓기」로 한 번에 10개까지 지어 별채 곳간에 넣습니다. 안전지대에서 짓고, 창고 재료도 씁니다. 도안은 남으므로 몇 번이든 다시 지을 수 있습니다. 지은 가구는 곳간에만 두고(가방으로 꺼낼 수 없음), 거래할 수 없습니다. 한 방에 같은 가구는 3개까지 놓습니다.</li>
+      <li><b>보내기·제보</b>: 내가 그린 도안의 사본을 친구에게 보낼 수 있고(옷 도안과 함께 하루 ${GD.outfit?.give_day ?? ''}번), 받은 사람도 지어 놓을 수 있습니다. 도안첩에는 받은 것까지 ${GD.furn?.keep || 20}장을 둡니다. 남의 별채에 놓인 직접 그린 가구는 별채 그림 칸의 깃발로 제보할 수 있고, 운영진이 내린 가구는 회색 받침으로만 보입니다.</li>
+      <li><b>고치기</b>: 내가 그린 도안을 고치면 이미 지은 가구도 모두 고친 모습으로 바뀝니다.</li>
+    </ul>`],
   ['pets', '꼬마 동무', `
     <p>별채에서 함께 살거나 데리고 다니는 작은 동무입니다. 능력치·보상 효과는 없고, 모으고 보여 주는 즐거움입니다(조련사만 데리고 다니는 동무와 함께 싸웁니다 — 「직업과 역할」의 「조련사와 동무」). ${GD.pets.total}종이 있고, 그 가운데 열둘은 조사원 제보로 들어온 동무입니다.</p>
     <h4>얻는 곳</h4>
@@ -2195,7 +2207,7 @@ const GROUPS = [
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
-  ['home', '별채', 'home', ['house', 'pets', 'look', 'outfit']],
+  ['home', '별채', 'home', ['house', 'furn', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],

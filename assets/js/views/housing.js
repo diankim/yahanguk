@@ -12,6 +12,7 @@ import { idOf, placedCounts, rememberHome } from '../housing/count.js';
 import { helpQ } from '../tips.js';
 import { openDesignReport, wornDesigns } from './outfitdesign.js';
 import { reportFlag, pickReport } from '../reportflag.js';
+import { registerFurns } from '../housing/furndef.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -51,6 +52,7 @@ async function reload() {
   } catch (e) { if (el) el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>별채</h1></div></div>${errorBox(e.message)}`; }
 }
 function resetState() {
+  registerFurns(snap.furns);
   const cl = o => JSON.parse(JSON.stringify(o || []));
   const rs = roomsOf(); if (!rs[cur]?.open || rs[cur]?.why) cur = 0;
   const cr = curRoom();
@@ -133,11 +135,11 @@ function draw() {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${esc(cr.name || '안채')} ${cr.size}×${cr.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
-      ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button>` : ''}${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
+      ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button><button class="btn small" id="hs-furn">${icon('hammer', 15)} 가구 도안</button>` : ''}${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
     ${roomBar()}
     ${can && edBlock && !editing ? `<p class="muted small hs-why">${esc(edBlock)}</p>` : ''}
     <div class="hs-wrap ${editing ? 'editing' : ''}">
-      <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}${editing || !designRows().length ? '' : reportFlag('data-hrep', '입은 도안 제보')}</div>
+      <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}${editing || !designRows().length ? '' : reportFlag('data-hrep', '도안 제보')}</div>
       ${editing ? palette() : ''}
       ${!editing ? housePets().map(petBar).join('') : ''}
     </div>
@@ -178,7 +180,9 @@ async function goRoom(i) {
 }
 function designRows() {
   const meId = store.character?.owner_id;
-  return (snap?.avatars || []).filter(a => a.id !== meId).flatMap(a => wornDesigns(a.look, snap.avatar_designs).map(w => ({ ...w, who: a.name })));
+  const me = store.character?.character_name, here = new Set((snap?.items || []).map(i => i.k));
+  const furns = Object.entries(snap?.furns || {}).filter(([k, f]) => here.has(k) && !f.gone && f.grp && f.a !== me).map(([, f]) => ({ id: f.grp, who: f.a, name: `가구 「${f.name}」` }));
+  return (snap?.avatars || []).filter(a => a.id !== meId).flatMap(a => wornDesigns(a.look, snap.avatar_designs).map(w => ({ ...w, who: a.name }))).concat(furns);
 }
 function fit() {
   if (!cv || !room) return;
@@ -334,6 +338,7 @@ function bind() {
   })));
   $('#hs-store')?.addEventListener('click', openStore);
   $('#hs-book')?.addEventListener('click', () => openGallery(() => { if (!editing) reload(); }));
+  $('#hs-furn')?.addEventListener('click', () => import('./furndesign.js').then(m => m.openFurnBook(res => { if (res?.item && !editing) reload(); })));
   $('#hs-pic')?.addEventListener('click', () => {
     const s = sel; if (!s || !WALL[s.k]?.frame) return;
     pickDrawing(WALL[s.k].frame, s.d, d => {
@@ -425,7 +430,7 @@ async function openStore() {
     return `<p class="muted small">거둔 가구가 들어가는 곳입니다. 곳간 ${used}/${snap.store_cap}칸 · 꺼내면 가방으로 갑니다. 넣기·꺼내기는 안전지대에서, 버리기는 어디서나 됩니다. 곳간이 차면 새로 얻은 가구는 가방으로 갑니다.${snap.edit_block ? ` <b class="bad-text">넣기·꺼내기: ${esc(snap.edit_block)}</b>` : ''}</p>
       <div class="seg-mini hs-st-tabs" role="tablist"><button class="${storeTab === 'store' ? 'on' : ''}" data-st-tab="store">곳간 ${st.length}</button><button class="${storeTab === 'bag' ? 'on' : ''}" data-st-tab="bag">가방 ${bag.length}</button></div>
       <div class="hs-st-cols" data-tab="${storeTab}">
-        <section class="hs-st-col" data-col="store"><h4>곳간 <small class="muted">${used}/${snap.store_cap}칸</small></h4><ul class="hs-fgrid">${st.map(([id, n]) => `<li><p><b>${esc(furName(id))}</b> <small class="muted">×${n} · ${GRADE[gradeOf(id)]}</small></p><span><button class="btn small" data-here="곳간 정리" data-st="take:${id}">꺼내기</button><button class="btn small danger" data-here="곳간 정리" data-st="discard:${id}">버리기</button></span></li>`).join('') || '<li class="muted small empty">비어 있습니다.</li>'}</ul></section>
+        <section class="hs-st-col" data-col="store"><h4>곳간 <small class="muted">${used}/${snap.store_cap}칸</small></h4><ul class="hs-fgrid">${st.map(([id, n]) => `<li><p><b>${esc(furName(id))}</b> <small class="muted">×${n} · ${GRADE[gradeOf(id)]}</small></p><span>${/^hf_fd\d+$/.test(id) ? '' : `<button class="btn small" data-here="곳간 정리" data-st="take:${id}">꺼내기</button>`}<button class="btn small danger" data-here="곳간 정리" data-st="discard:${id}">버리기</button></span></li>`).join('') || '<li class="muted small empty">비어 있습니다.</li>'}</ul></section>
         <section class="hs-st-col" data-col="bag"><h4>가방의 가구</h4><ul class="hs-fgrid">${bag.map(([id, n]) => `<li><p><b>${esc(furName(id))}</b> <small class="muted">×${n} · ${GRADE[gradeOf(id)]}</small></p><span><button class="btn small" data-here="곳간 정리" data-st="put:${id}">곳간에 넣기</button></span></li>`).join('') || '<li class="muted small empty">가방에 가구가 없습니다.</li>'}</ul></section>
       </div>`;
   };

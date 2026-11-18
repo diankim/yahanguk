@@ -3569,6 +3569,21 @@ b.shadow { color: var(--sp); }
 .od-decos { display: flex; flex-wrap: wrap; gap: 8px; }
 .od-dk { display: flex; align-items: center; gap: 4px; }
 .od-why { align-self: center; }
+.fd-rots { display: flex; gap: 6px; flex-wrap: wrap; }
+.fd-rots figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; background: var(--surface-2); border-radius: var(--r-sm); }
+.fd-rots img { height: 64px; width: auto; image-rendering: pixelated; }
+.fd-rots figcaption { font-size: calc(10px * var(--fz, 1)); color: var(--muted); }
+.fd-same { display: inline-flex; align-items: center; gap: 4px; font-size: calc(12px * var(--fz, 1)); }
+.fd-guide { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
+.fd-red { color: #e05a4c; } .fd-blue { color: #3fa9d8; }
+.od-pic.fd-pic { object-fit: contain; image-rendering: pixelated; background: var(--surface-2); }
+.fd-mats:empty { display: none; }
+.fd-opts { display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 720px) {
+  .fd-ed .fd-opts { order: -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+  .fd-ed .fd-opts > [hidden] { display: none; }
+  .fd-ed .fd-rots { order: 1; justify-content: center; }
+}
 @media (max-width: 720px) {
   .od-ed { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
   .od-left, .od-right { display: contents; }
