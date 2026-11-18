@@ -158,7 +158,7 @@ function chapterView(ch, q, map) {
   const scenesDone = done || !q || q.step >= q.steps;
   const head = `<p class="desc">${esc(ch.intro)}</p>${ch.rewards?.text ? `<p class="muted small">마치면: ${esc(ch.rewards.text)}</p>` : ''}
     ${q ? `<div class="chips">${chip(`장면 ${q.step}/${q.steps}`, scenesDone ? 'ok' : 'accent')}${chip(`단서 ${(ch.clues || []).filter(c => c.found).length}/${(ch.clues || []).length}`)}${chip(`가설 ${(ch.combos || []).filter(x => x.done).length}/${(ch.combos || []).length}`)}${q.region_name ? chip(q.region_name) : ''}</div>` : ''}`;
-  const scenes = q ? `<h3 class="sub-h">장면</h3>${q.status === 'available' && !q.cur?.here_ok ? `<p class="hint">${icon('pin', 14)} ${esc(q.region_name || '')}에서 이 장의 이야기를 들을 수 있습니다.</p>` : ''}${sceneList(q, map)}` : '';
+  const scenes = q ? `<h3 class="sub-h">장면</h3>${q.status === 'available' && !q.cur?.here_ok ? `<p class="hint">${icon('pin', 14)} ${esc(firstAt(q).name || '')}에서 이 장의 이야기를 들을 수 있습니다.</p>` : ''}${sceneList(q, map)}` : '';
   const clues = done ? `<h3 class="sub-h">결론</h3><p class="desc">${esc(ch.outro)}</p>${(ch.combos || []).map(x => `<p class="muted small"><b>${esc(x.name)}</b> — ${esc(x.conclusion)}</p>`).join('')}`
     : scenesDone ? clueBlock(ch, map)
     : `<h3 class="sub-h">단서와 가설</h3><p class="muted small">장면을 모두 마치면 이 장의 단서 ${(ch.clues || []).length}개를 탐색에서 찾을 수 있고, 모은 단서로 가설을 세웁니다.</p>`;
@@ -225,21 +225,23 @@ async function side(body, keep) {
   bindQuests(body);
 }
 function nowLine(q) {
-  if (q.status !== 'active' || !q.cur) return '';
+  if (!q.cur || !(q.status === 'active' || autoAct(q))) return '';
   const left = (q.cur.tasks || []).filter(t => t.cur < t.n), regs = [...new Set(left.flatMap(t => t.regions || []))].map(nameOf);
   const where = q.cur.ready ? `보고: ${(q.cur.at_names || []).join('·') || '의뢰인에게'}` : regs.length ? `할 곳: ${regs.slice(0, 3).join('·')}` : (q.cur.at_names || []).length ? `보고: ${q.cur.at_names.join('·')}` : '';
   return `<p class="q-now">${icon('chevron', 12)}<span><b>${q.cur.ready ? `장면 ${q.cur.step} · 보고만 남음` : `장면 ${q.cur.step}`}</b> · ${esc(q.cur.goal || q.cur.title || '')}${where ? ` <small class="muted">(${esc(where)})</small>` : ''}</span></p>`;
 }
+const autoAct = q => q.status === 'available' && (q.cur?.tasks || []).length > 0;
+const firstAt = q => q.status === 'available' && q.cur?.at?.length ? { id: q.cur.at[0], name: (q.cur.at_names || [])[0] || q.region_name, here: !!q.cur.here_ok } : { id: q.region_id, name: q.region_name, here: q.here };
 function sideItem(q, map, inArc) {
-  const [sn, tone] = STATUS_N[q.status] || ['', ''];
+  const [sn, tone] = STATUS_N[autoAct(q) ? 'active' : q.status] || ['', ''], at = firstAt(q);
   const subCat = inArc ? '' : (q.cat || '').split('·')[1] || '';
-  const where = `${icon('pin', 12)} ${esc(q.region_name || '')} · Lv.${q.min_level}${q.here ? ' · 지금 여기' : ''}`;
-  return `<li class="q-item ${q.status} ${q.cur?.ready ? 'ready' : ''}"><details ${q.status === 'active' ? 'open' : ''}>
+  const where = `${icon('pin', 12)} ${esc(at.name || '')} · Lv.${q.min_level}${at.here ? ' · 지금 여기' : ''}`;
+  return `<li class="q-item ${q.status} ${q.cur?.ready ? 'ready' : ''}"><details ${q.status === 'active' || autoAct(q) ? 'open' : ''}>
     <summary><header>${q.replay ? chip('다시하는 중', 'ok') : chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
-      <p class="q-at ${q.here ? 'ok' : ''}">${where}</p>${nowLine(q)}</summary>
+      <p class="q-at ${at.here ? 'ok' : ''}">${where}</p>${nowLine(q)}</summary>
     <p class="q-goal">${esc(q.summary || '')}</p>
     ${q.status === 'locked' ? `<p class="muted small">${q.locked_reason === 'project' && q.open_text ? esc(q.open_text) : `레벨 ${q.min_level}부터 받을 수 있습니다.`}</p>`
-      : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}
+      : q.status === 'available' && !autoAct(q) && !at.here ? `<div class="btn-row">${goButton(at.id, map)}</div>` : sceneList(q, map)}
     ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-here="퀘스트 포기" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
     ${replayBox(q)}
   </details></li>`;
