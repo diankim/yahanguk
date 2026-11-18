@@ -1,6 +1,6 @@
 import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { hit } from '../changes.js';
-import { load, chip, loading, errorBox, foldOpen } from './common.js';
+import { load, loadPrices, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
@@ -16,7 +16,7 @@ const carts = { shop: { buy: {}, sell: {} }, smithy: { buy: {}, sell: {} } };
 export async function renderShop(box) {
   box.innerHTML = loading();
   try {
-    const [s, prices, inv] = await Promise.all([load('world_shop_snapshot', undefined, { maxAge: 120000 }), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
+    const [s, prices, inv] = await Promise.all([load('world_shop_snapshot', undefined, { maxAge: 120000 }), loadPrices().catch(() => []),
       load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks()]);
     if (!s?.available) { box.innerHTML = empty('이곳에는 상점이 없습니다. 안전지대에서 이용하세요.', 'shop'); return; }
     tradePane(box, s, { kind: 'shop', sell: true, prices, equipment: inv?.equipment || {}, catalog: inv?.catalog || [] });
@@ -282,7 +282,7 @@ export async function renderMarket(box) {
     const [{ data: openAll, error }, { data: myOpen, error: e2 }, prices, , inv, sold] = await Promise.all([
       db.from('world_trade_offers').select(OCOLS).eq('status', 'open').order('created_at', { ascending: false }).limit(300),
       db.from('world_trade_offers').select(OCOLS).eq('status', 'open').eq('seller_id', store.character.owner_id).order('created_at', { ascending: false }),
-      load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
+      loadPrices().catch(() => []), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null),
       boardTab === 'sell' ? db.from('world_economy_ledger').select('currency_delta,details,created_at').eq('owner_id', store.character.owner_id).eq('action', 'trade_sale').gte('created_at', soldSince).order('created_at', { ascending: false }).limit(MARKET_SOLD.max).then(r => r.data || [], () => []) : [],
     ]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
@@ -371,7 +371,7 @@ const bundle = (items, gil) => [...Object.entries(items || {}).map(([k, n]) => `
 async function renderDirect(body) {
   try {
     const [roster, prices, pending, , inv] = await Promise.all([load('world_region_roster', undefined, { maxAge: 10000 }).catch(() => []),
-      load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), load('world_trade_direct_snapshot').catch(() => []), loadLocks(),
+      loadPrices().catch(() => []), load('world_trade_direct_snapshot').catch(() => []), loadLocks(),
       load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
     const c = store.character, have = c.inventory || {};

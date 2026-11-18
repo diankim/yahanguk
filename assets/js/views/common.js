@@ -15,6 +15,7 @@ export async function load(name, args, { maxAge = 0 } = {}) {
   inflight.set(key, p);
   return p;
 }
+export const loadPrices = () => load('world_economy_price_snapshot', undefined, { maxAge: 6 * 3600000 });
 let invFreshAt = 0;
 on('snaps', snaps => {
   for (const [name, d] of Object.entries(snaps || {})) {

@@ -1,6 +1,6 @@
 import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
-import { load, chip, zonesNow, catItem, fxNames } from './common.js';
+import { load, loadPrices, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture, myHomeCounts } from '../housing/count.js';
@@ -152,7 +152,7 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
   const m = document.getElementById('modal') ? openLayer(opts) : openModal(opts);
   const box = $('.item-info', m);
   try {
-    const [inv, prices] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 10000 }), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []), loadLocks()]);
+    const [inv, prices] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 10000 }), loadPrices().catch(() => []), loadLocks()]);
     draw(box, id, inv, new Map((prices || []).map(p => [p.item_id, p])), mode);
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
@@ -298,7 +298,7 @@ function draw(box, id, inv, prices, mode) {
       return;
     }
     try {
-      const [inv2, prices2] = await Promise.all([load('world_inventory_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => [])]);
+      const [inv2, prices2] = await Promise.all([load('world_inventory_snapshot'), loadPrices().catch(() => [])]);
       if (box.isConnected) draw(box, id, inv2, new Map((prices2 || []).map(p => [p.item_id, p])), mode);
     } catch {}
   };

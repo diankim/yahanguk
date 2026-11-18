@@ -1,6 +1,6 @@
 import { store, on, act, rpc, ask, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON, openModal, closeModal, MARKET_ONLY } from '../core.js';
 import { loreBundle, refreshLore } from '../lore.js';
-import { load, panel, chip, loading, errorBox, currentRegion, foldOpen } from './common.js';
+import { load, loadPrices, panel, chip, loading, errorBox, currentRegion, foldOpen } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report } from '../quests.js';
@@ -329,7 +329,7 @@ async function openUcommPost(here, feePct, noteMax) {
   const m = openModal({ title: '조사원 의뢰 올리기', wide: true, body: `<div class="uc-post">${loading()}</div>` });
   const box = $('.uc-post', m);
   let inv, prices;
-  try { [inv, prices] = await Promise.all([load('world_inventory_snapshot'), load('world_economy_price_snapshot', undefined, { maxAge: 120000 })]); }
+  try { [inv, prices] = await Promise.all([load('world_inventory_snapshot'), loadPrices()]); }
   catch (e) { box.innerHTML = errorBox(e.message); return; }
   const pmap = new Map((prices || []).map(p => [p.item_id, p]));
   const items = pickRows((inv.catalog || []).filter(i => !isHq(i.id) && i.category !== 'quest' && pmap.get(i.id)?.tradeable !== false && !MARKET_ONLY.has(i.id))

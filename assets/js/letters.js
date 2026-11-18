@@ -1,6 +1,6 @@
 import { store, rpc, act, ask, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, nameOf, toast } from './core.js';
 import { WEAK_NAMES } from './rules.js';
-import { load } from './views/common.js';
+import { load, loadPrices } from './views/common.js';
 import { cardName } from './views/card.js';
 import { untradeNote, giveable } from './views/services.js';
 import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
@@ -74,7 +74,7 @@ export async function openCompose(to, toName, done, title = '') {
   const m = openModal({ title: '서신 쓰기', wide: true, body: '<div class="lt-compose"><p class="muted">불러오는 중…</p></div>' });
   const box = $('.lt-compose', m);
   try {
-    const [fr, prices, inv, , stg] = await Promise.all([load('world_friend_overview').catch(() => null), load('world_economy_price_snapshot', undefined, { maxAge: 120000 }).catch(() => []),
+    const [fr, prices, inv, , stg] = await Promise.all([load('world_friend_overview').catch(() => null), loadPrices().catch(() => []),
       load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null), loadLocks(), load('world_storage_snapshot', undefined, { maxAge: 15000 }).catch(() => null)]);
     const placeOk = !stg || stg.can_move !== false, placeWhy = store.character?.travel_destination ? '이동 중에는 물품을 붙일 수 없습니다.' : `물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서, 이동·원정·자율 활동 중이 아닐 때만 부칩니다.`;
     const friends = (fr?.friends || []).filter(f => !f.is_dead);
