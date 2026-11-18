@@ -1213,13 +1213,15 @@ const S = [
       <li>단계 목표(세 땅 모두 같음): ${pjBase('common')}몫.</li>
       <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
       <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
+      <li>다섯 단계를 다 마친 뒤에도 같은 보상으로 넘길 수 있습니다. 마지막 단계 목표만큼 찰 때마다 한 바퀴로 세어, 그 바퀴에 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 낸 조사원에게 전과 낙성 떡(아직 없으면 낙관도)을 나눕니다 — 늦게 온 조사원도 받을 수 있습니다.</li>
     </ul>`],
   ['regular', '연담', `
     <p>채집·제작 분야마다 연담을 맺을 사람이 한 명씩 있습니다. 인물마다 여는 퀘스트를 마치면 그 사람이 있는 곳 현장에 「연담」 칸이 생기고, 날마다 주문을 받아 납품합니다. 일지 › 의뢰에서 맺은 연담을 모아 봅니다.</p>
     <ul>
       <li>${REGULAR.tip()}</li>
       <li>주문 물품은 내 그 분야 단계에 맞춰 나옵니다(제작은 그 분야 제작품 — 장비 ${REGULAR.qty?.gear}개·소모품과 재료 ${REGULAR.qty?.item}개, 채집·채광은 재료 ${REGULAR.qty?.gather}개, 낚시는 물고기 ${REGULAR.qty?.fish}마리). 가방에 모자라면 창고에서 꺼내 넘깁니다(창고를 쓸 수 있는 곳에서).</li>
-      <li><table class="guide-table"><tr><th>분야</th><th>인물</th><th>곳</th><th>열림</th><th>칭호</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td></tr>`).join('')}</table></li>
+      <li>친밀도가 ${(REGULAR.aff?.stages || []).slice(1).join('·')}에 닿을 때마다 그 인물과 둘이서 보내는 이야기가 하나씩 열립니다(인물마다 다섯 편). 다섯째 이야기를 마치면 그 인물만의 칭호와 기념품(가구·옷·장신구, 거래 불가)을 받습니다.</li>
+      <li><table class="guide-table"><tr><th>분야</th><th>인물</th><th>곳</th><th>첫 이야기</th><th>칭호</th><th>기념품</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
       <li>한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 연담 칭호(「첫 연담」·「다섯 연담」·「열한 연담」)에 셉니다.</li>
     </ul>`],
   ['feast', '세력 행사', `
