@@ -340,6 +340,8 @@ world_quest_cast
 world_quest_chapter_done
 world_quest_done
 world_quest_done_ids
+world_quest_gate_ok
+world_quest_gate_text
 world_quest_journal
 world_quest_lines_for
 world_quest_main_open
