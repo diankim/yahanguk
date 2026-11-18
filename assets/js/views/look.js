@@ -6,7 +6,7 @@ import { openColorPicker } from '../colorpick.js';
 import { hqCount } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 
-let draft = null, draftOwner = '', homeOn = true, faceOn = false, tab = 'hair';
+let draft = null, draftOwner = '', draftJob = '', homeOn = true, faceOn = false, tab = 'hair';
 const CROP = { head: [0, 0, 30, 25], face: [5, 11, 20, 12], top: [4, 22, 22, 12], legs: [5, 27, 20, 9], all: null };
 const TABS = [
   ['skin', '피부', 'face', [['skin', 'skins', 's']]],
@@ -34,6 +34,9 @@ const wovenOf = (snap, slot) => (snap.owned || []).filter(k => k.startsWith(slot
 function owns(snap, slot, key) {
   return AV.jobDefault[snap.job]?.[slot] === key || (snap.owned || []).includes(`${slot}:${key}`);
 }
+const wearable = (snap, look) => { const l = fixLook(look, snap.job);
+  for (const s of WEAR) if (s !== 'acc' && !l[s + '_d'] && !owns(snap, s, l[s])) l[s] = AV.jobDefault[snap.job]?.[s] ?? l[s];
+  return l; };
 
 function pickBlock([slot, table, swatch], crop, snap) {
   const keys = Object.keys(AV[table]), cur = draft[slot];
@@ -67,7 +70,7 @@ export async function lookTab(body) {
   const snap = await load('world_avatar_get', undefined, { maxAge: 600000 });
   if (!snap) { body.innerHTML = errorBox('모습을 불러오지 못했습니다.'); return; }
   registerDesigns(snap.designs);
-  if (!draft || draftOwner !== c.owner_id) { draft = fixLook(snap.look, snap.job); draftOwner = c.owner_id; homeOn = snap.home_on !== false; faceOn = faceNow(); }
+  if (!draft || draftOwner !== c.owner_id || draftJob !== snap.job) { draft = wearable(snap, snap.look); draftJob = snap.job; draftOwner = c.owner_id; homeOn = snap.home_on !== false; faceOn = faceNow(); }
   const dirty = !sameLook(fixLook(snap.look, snap.job), draft) || homeOn !== (snap.home_on !== false) || faceOn !== faceNow();
   const cur = TABS.find(t => t[0] === tab) || TABS[1];
   const curName = cur[3].filter(x => !x[2]).map(([s, t]) => AV[t][draft[s]]?.name).concat(cur[3].filter(x => x[2]).map(([s, t]) => AV[t][draft[s]]?.name)).filter(Boolean).join(' · ');
@@ -115,10 +118,10 @@ export async function lookTab(body) {
   if (cur[0] === 'design') designBook($('.lk-design', body), snap, { onDel: d => { invalidate('world_avatar_get'); const k = d.slot + '_d'; if (FREE_TAB[d.slot] && dnum(draft[k]) === dnum(d.id)) { draft = { ...draft }; delete draft[k]; } }, onWear: (slot, base, id) => { invalidate('world_avatar_get'); draft = FREE_TAB[slot] ? { ...draft, [slot + '_d']: dnum(id) } : { ...draft, [slot]: base, [slot + '_d']: dnum(id) }; tab = FREE_TAB[slot] || slot; lookTab(body); } });
   $('#lk-home', body).onchange = e => { homeOn = e.target.checked; lookTab(body); };
   $('#lk-face', body).onchange = e => { faceOn = e.target.checked; lookTab(body); };
-  $('#lk-reset', body).onclick = () => { draft = fixLook(snap.look, snap.job); homeOn = snap.home_on !== false; faceOn = faceNow(); lookTab(body); };
+  $('#lk-reset', body).onclick = () => { draft = wearable(snap, snap.look); homeOn = snap.home_on !== false; faceOn = faceNow(); lookTab(body); };
   $('#lk-save', body).onclick = e => guard(e.currentTarget, async () => {
     const r = await act('world_avatar_set', { p_look: draft, p_home_on: homeOn });
-    if (r?.look) draft = fixLook(r.look, snap.job);
+    if (r?.look) draft = wearable(snap, r.look);
     if (typeof r?.home_on === 'boolean') homeOn = r.home_on;
     if (faceOn) await act('world_set_avatar_px', { p_image: avatarImage(plain(draft), { scale: 4, crop: FACE_CROP, job: snap.job }) });
     else if (faceNow()) await act('world_set_avatar', { p_image: null });
