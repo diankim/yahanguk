@@ -1196,7 +1196,7 @@ const S = [
       <li>남의 세력 사업 돕기: 몫 1마다 ${PROJECT.pay?.help?.gil_rate ?? 0.6}전, 몫은 그 세력 단계에 쌓입니다. 단계가 찰 때 기여가 ${PROJECT.memento?.pct ?? 1}% 넘으면 낙성 떡을 받고, 누계는 사업 칭호에 셉니다. 내 세력이 있으면 몫 1,000마다 두 세력 관계가 +${PROJECT.help_rel?.per_k ?? 0.1} 오릅니다(한 사람 하루 +${PROJECT.help_rel?.person_day ?? 0.5}, 두 세력 사이 하루 +${PROJECT.help_rel?.pair_day ?? 2}까지).</li>
       <li>우수품은 몫 ×${PROJECT.hq_mul ?? 1.5}(급히와 겹쳐도 ×${PROJECT.mul_cap ?? 2}까지). 가방에 모자란 것은 창고에서 꺼내 넘깁니다. 장착 중·잠금·강화한 장비·임무 물품은 넘기지 않습니다.</li>
       <li>단계가 차는 순간 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 낙성 떡(그 세력 조사원은 공훈 +${PROJECT.memento?.faction_merit ?? 20}도)을 창고로 받고, 마지막 단계에는 「낙성 기념패」 가구도 받습니다.</li>
-      <li>다섯 단계를 다 마친 뒤에도 넘길 수 있고 기여·칭호에 셉니다. 보상은 ${(PROJECT.pay?.after_mul ?? 0.5) * 100}%입니다.</li>
+      <li>다섯 단계를 다 마친 뒤에도 같은 보상으로 넘길 수 있고 기여·칭호에 셉니다. 마지막 단계 목표만큼 찰 때마다 한 바퀴로 세어, 그 바퀴에 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 낸 조사원에게 낙성 떡(아직 없으면 기념패·낙관도)을 나눕니다 — 늦게 온 조사원도 받을 수 있습니다.</li>
     </ul>
     <h4>세력마다</h4>
     <ul>${pjList('faction', p => `${esc(MAJOR_FACTIONS[p.faction]?.name || '')} 「${esc(p.name)}」 · ${esc((p.hubs || []).join('·'))} — 상점 ${esc((p.shop || []).join('·'))} · 지역 효과 ${esc(effectText(p.area_fx || {}).join(', '))} · 바탕 무늬 「${esc(p.pattern || '')}」`)}</ul>

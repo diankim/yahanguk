@@ -249,7 +249,7 @@ begin
   if aff1 >= (r -> 'aff' ->> 'cap')::int and aff0 < (r -> 'aff' ->> 'cap')::int then perform public.world_title_award_check(uid, 'regular'); end if;
   return jsonb_build_object('npc', p_npc, 'item', id, 'qty', q, 'xp', xp, 'gil', v_gil, 'aff', aff1, 'add', aff1 - aff0, 'stage', s1, 'stage_up', s1 > s0,
     'from_storage', used_st, 'today', dn + 1, 'cap', (r ->> 'day_n')::int,
-    'content', public.world_josa(nr ->> 'short', '에게', '에게') || ' 「' || nm || '」 ' || q || '개를 넘겼습니다 · ' || public.world_line_name(line) || ' 경험 +' || xp || ' · ' || v_gil || '전 · 친밀도 +' || (aff1 - aff0) ||
+    'content', public.world_josa(nr ->> 'short', '에게', '에게') || ' 「' || nm || '」 ' || q || '개를 넘겼습니다 · ' || public.world_line_name(line) || ' 경험 +' || xp || ' · ' || to_char(v_gil, 'FM999,999,990') || '전 · 친밀도 +' || (aff1 - aff0) ||
       case when s1 > s0 then ' · 친밀도 ' || s1 || '단계 — 새 이야기가 열렸습니다!' else '' end || ' · 오늘 ' || (dn + 1) || '/' || (r ->> 'day_n'),
     'view', public.world_regular_view(p_npc));
 end $f$;

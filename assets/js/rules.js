@@ -203,9 +203,11 @@ export const PROJECT = {
   ...PJ,
   of: k => PJ.projects?.[k] || null,
   facKey: f => f ? `f:${f}` : null,
-  rewardOf: (rw, pts, after) => { const k = after ? PJ.pay.after_mul : 1; return rw === 'merit' ? `공훈 ${fmtN(Math.floor(pts * k / PJ.pay.faction.per_merit))}` : `${fmtN(Math.floor(pts * k * (PJ.pay[rw]?.gil_rate ?? PJ.pay.common.gil_rate)))}전`; },
+  rewardOf: (rw, pts) => { const k = 1; return rw === 'merit' ? `공훈 ${fmtN(Math.floor(pts * k / PJ.pay.faction.per_merit))}` : `${fmtN(Math.floor(pts * k * (PJ.pay[rw]?.gil_rate ?? PJ.pay.common.gil_rate)))}전`; },
   goalTip: kind => `단계 목표는 ${kind === 'faction' ? '모든 세력이 같습니다' : '세 땅 모두 같습니다'}: ${(Object.values(PJ.projects || {}).find(p => p.kind === kind)?.base || []).map(fmtN).join(' · ')}몫.`,
-  payTip: rw => `넘긴 물품의 몫(1개 기준 몫 × 수량)만큼 ${rw === 'merit' ? `공훈을 받습니다(몫 ${PJ.pay.faction.per_merit} = 공훈 1).` : `전을 받습니다(몫 1 = ${PJ.pay[rw]?.gil_rate ?? PJ.pay.common.gil_rate}전).`} 「급히」 품목은 ×${PJ.urgent.mul}, 우수품은 ×${PJ.hq_mul}(겹쳐도 ×${PJ.mul_cap}까지). 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmtN(PJ.pay.day_cap)}까지이고, 넘치는 물품은 돌려받습니다. 다섯 단계를 다 마친 뒤에도 넘길 수 있지만 보상은 ${PJ.pay.after_mul * 100}%입니다.`,
+  payTip: rw => `넘긴 물품의 몫(1개 기준 몫 × 수량)만큼 ${rw === 'merit' ? `공훈을 받습니다(몫 ${PJ.pay.faction.per_merit} = 공훈 1).` : `전을 받습니다(몫 1 = ${PJ.pay[rw]?.gil_rate ?? PJ.pay.common.gil_rate}전).`} 「급히」 품목은 ×${PJ.urgent.mul}, 우수품은 ×${PJ.hq_mul}(겹쳐도 ×${PJ.mul_cap}까지). 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmtN(PJ.pay.day_cap)}까지이고, 넘치는 물품은 돌려받습니다. 다섯 단계를 다 마친 뒤에도 같은 보상으로 넘길 수 있습니다.`,
+  lapLine: '마지막 단계 목표만큼 찰 때마다 한 바퀴',
+  lapTip: kind => `다섯 단계를 마친 뒤에도 납품 보상은 그대로이고, 하루 상한도 같습니다. 마지막 단계 목표만큼 몫이 찰 때마다 「한 바퀴」로 세어, 그 바퀴에 목표의 ${PJ.memento.pct}% 넘게 낸 조사원에게 낙성 떡을 나눕니다${kind === 'faction' ? `(그 세력 조사원은 공훈 +${PJ.memento.faction_merit}도). 아직 낙성 기념패가 없으면 기념패도 함께 받습니다` : `(목표의 ${PJ.memento.common_gil_pct}%만큼 전도). 아직 낙관 「拓」이 없으면 낙관도 함께 받습니다`}. 늦게 온 조사원도 기념품을 받을 수 있습니다.`,
   helpTip: () => `내 세력이 아닌 세력의 거점 사업도 그 거점에서 도울 수 있습니다. 몫 1마다 ${PJ.pay.help.gil_rate}전을 받고, 몫은 그 세력 사업에 쌓입니다. 단계가 찰 때 기여가 ${PJ.memento.pct}% 넘으면 낙성 떡을 받고, 누계는 사업 칭호에 셉니다. 상점·지역 효과·지름길·비고·꾸미기 혜택은 그 세력 조사원만 받습니다. 내 세력이 있으면 몫 1,000마다 두 세력 관계가 +${PJ.help_rel.per_k} 오릅니다(한 사람 하루 +${PJ.help_rel.person_day}, 두 세력 사이 하루 +${PJ.help_rel.pair_day}까지).`,
   mementoTip: () => `한 단계가 차는 순간, 그 단계 목표의 ${PJ.memento.pct}% 넘게 넘긴 사람은 낙성 떡과 ${`공훈 +${PJ.memento.faction_merit}(그 세력 조사원)·단계 목표의 ${PJ.memento.common_gil_pct}%만큼 전(공동)`}을 받습니다. 마지막 단계에 힘을 보태면 기념품이 더 있습니다.`,
 };

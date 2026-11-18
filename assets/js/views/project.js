@@ -26,17 +26,19 @@ function itemCard(it) {
 }
 
 function body(v) {
-  const kind = v.kind, after = v.after, pct = after || !v.goal ? 100 : Math.min(100, Math.floor(v.points * 100 / v.goal));
+  const kind = v.kind, after = v.after, pct = !v.goal ? 100 : Math.min(100, Math.floor(v.points * 100 / v.goal));
   const any = (v.items || []).some(it => haveOf(it) + haveHqOf(it) > 0);
   return `<div class="pj">
     <p class="eyebrow">${esc(v.place || '')} · ${esc((v.hubs || []).join('·'))}${helpQ(PROJECT.payTip(v.reward), '납품 안내')}</p>
     ${v.reward === 'help' ? `<p class="hint pj-help">${icon('hammer', 14)} ${esc(v.place || '')} 사업을 돕습니다 · 몫 1마다 ${PROJECT.pay.help.gil_rate}전${v.rel ? ` · ${esc(`${v.rel.with}과(와)의`)} 관계 오늘 +${+v.rel.today}/${+v.rel.cap}` : ''}${helpQ(PROJECT.helpTip(), '돕기 안내')}</p>` : ''}
     ${ladder(v)}
-    <div class="pj-prog">${after ? `<b>${icon('check', 14)} 다섯 단계를 모두 마쳤습니다</b><small class="muted">계속 넘기면 기여·칭호에 셉니다(보상 ${PROJECT.pay.after_mul * 100}%). 모두 ${fmt.num(v.total)}몫</small>`
+    <div class="pj-prog">${after ? `<b>${icon('check', 14)} 다섯 단계를 모두 마쳤습니다${v.laps ? ` · ${fmt.num(v.laps)}바퀴 더` : ''}</b>
+        <div class="pj-bar"><span>${fmt.num((v.laps || 0) + 1)}바퀴</span>${bar(v.points, v.goal || 1, 'gold')}<b>${fmt.num(v.points)} / ${fmt.num(v.goal)}몫 · ${pct}%</b></div>
+        <small class="muted">${PROJECT.lapLine}${helpQ(PROJECT.lapTip(kind), '바퀴 안내')} · 모두 ${fmt.num(v.total)}몫</small>`
       : `<div class="pj-bar"><span>${v.stage + 1}단계</span>${bar(v.points, v.goal || 1, 'gold')}<b>${fmt.num(v.points)} / ${fmt.num(v.goal)}몫 · ${pct}%</b></div>
         <small class="muted">단계 목표${helpQ(PROJECT.goalTip(kind), '목표 안내')} · 이번 단계에 힘을 보탠 조사원 ${fmt.num(v.givers || 0)}명</small>`}</div>
     <dl class="kv pj-mine"><div><dt>오늘 내 몫</dt><dd>${fmt.num(Math.min(v.today?.pts || 0, v.today?.cap || 0))} / ${fmt.num(v.today?.cap || 0)} <small class="muted">· 모든 사업 합쳐</small>${v.today?.here && v.today.here !== v.today.pts ? ` <small class="muted">· 여기 ${fmt.num(v.today.here)}</small>` : ''}</dd></div>
-      ${after ? '' : `<div><dt>이번 단계 내 몫</dt><dd>${fmt.num(v.mine?.cur || 0)}${v.mine?.need ? ` <small class="${(v.mine.cur || 0) >= v.mine.need ? 'ok' : 'muted'}">(기념품 ${fmt.num(v.mine.need)}몫${helpQ(PROJECT.mementoTip(), '기념품 안내')})</small>` : ''}</dd></div>`}
+      ${`<div><dt>${after ? '이번 바퀴 내 몫' : '이번 단계 내 몫'}</dt><dd>${fmt.num(v.mine?.cur || 0)}${v.mine?.need ? ` <small class="${(v.mine.cur || 0) >= v.mine.need ? 'ok' : 'muted'}">(기념품 ${fmt.num(v.mine.need)}몫${helpQ(PROJECT.mementoTip(), '기념품 안내')})</small>` : ''}</dd></div>`}
       <div><dt>내 누계</dt><dd>${fmt.num(v.mine?.total || 0)}몫</dd></div></dl>
     ${v.benefit && !v.benefit.ok ? `<p class="hint warn">${icon('pin', 14)} ${esc(v.benefit.why)}</p>` : ''}
     <ul class="pj-items">${(v.items || []).map(itemCard).join('')}</ul>
