@@ -264,8 +264,8 @@ export function effectText(effects, potency = 1) {
 const LOWER_BETTER = new Set(['encounter_pct', 'incoming_damage_pct', 'travel_time_pct', 'erosion_pct', 'mental_loss_pct', 'mental_per_action', 'health_per_action']);
 export function effectGood(k, v) { return LOWER_BETTER.has(k) ? Number(v) < 0 : Number(v) > 0; }
 const names = new Map(Object.entries(FIXED));
-export function registerNames(entries) { for (const [k, v] of entries) if (k && v) names.set(k, v); }
-export function namesDump() { return [...names]; }
+export function registerNames(entries) { for (const [k, v] of entries) if (k && v && !(k in FIXED)) names.set(k, v); }
+export function namesDump() { return [...names].filter(([k]) => !(k in FIXED)); }
 export function nameOf(code) {
   if (code == null) return '';
   if (JOBS[code]) return JOBS[code].name;
