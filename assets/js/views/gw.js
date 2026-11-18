@@ -360,10 +360,12 @@ function bind() {
 
 const BOSS_RULES = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo'];
 const itemName = () => BOSS_RULES()?.item_name || '귀허 부적';
-function act(args) {
-  const out = { p_fight: snap.fight.id, p_target: null, p_item: null, ...args };
+async function act(args) {
+  const out = { p_fight: snap.fight.id, p_target: null, p_item: null, ...args }, r = snap.fight.round;
   if ((['mukjeok', 'baekya', 'gapgwi'].includes(snap.boss) || hexOn(snap)) && moveTo) out.p_move = moveTo;
-  return rpc('world_gw_act', out);
+  const res = await rpc('world_gw_act', out);
+  picked.add(r);
+  return res;
 }
 function step(cell) {
   const s = snap, b = s?.board; if (!b || s.fight?.status !== 'fight' || !s.joined) return;
