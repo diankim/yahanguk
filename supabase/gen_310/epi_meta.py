@@ -19,16 +19,16 @@ for key, pj, reg in HUBS:
         OPEN[q] = {'project': pj, 'stage': n}
 
 X = {
-    'ep_x_doorkeeper': ('sealed_abyss', ['mq_nine_gates', 'mdq_17']),
-    'ep_x_clerk': ('hq_yard', ['mq_nine_gates', 'mdq_17']),
+    'ep_x_doorkeeper': ('jeongni_vault', ['mq_nine_gates', 'mdq_17']),
+    'ep_x_clerk': ('hq_yard', ['mq_nine_gates', 'mdq_17', 'ep_x_doorkeeper']),
     'ep_x_lighthouse': ('nine_lighthouse', ['mq_nine_gates', 'mdq_17']),
-    'ep_x_sawol': ('red_plain', ['mq_nine_gates', 'mde_danbi_2']),
+    'ep_x_sawol': ('bone_market', ['mq_nine_gates', 'mde_danbi_2']),
     'ep_x_mukho': ('banyo_village', ['gq_5', 'mdq_17']),
-    'ep_x_yeoul': ('ash_reeds', ['gq_5', 'mdq_17']),
+    'ep_x_yeoul': ('banyo_village', ['gq_5', 'mdq_17', 'ep_x_mukho']),
     'ep_x_hongmae': ('mukchang_ferry', ['mkq_5', 'mdq_17']),
-    'ep_x_seoha': ('mukchang_ferry', ['mke_daon_3', 'mdq_17']),
-    'ep_x_solnae': ('frost_pine_pass', ['mde_hanseol']),
-    'ep_x_pine': ('dark_yamen', ['mdq_17']),
+    'ep_x_seoha': ('mukchang_ferry', ['mke_daon_3', 'mdq_17', 'ep_x_hongmae']),
+    'ep_x_solnae': ('hq_yard', ['mdq_17', 'mde_unbi_2']),
+    'ep_x_pine': ('hq_dorm', ['mdq_17']),
 }
 META['ep_night_2'] = (50, 'hq_dorm', '뒷이야기', META['ep_night_2'][3])
 for q, (reg, after) in X.items():
@@ -45,12 +45,13 @@ NPCS = {
     'q:sx_ep_daepae': ('흑련 목수 대패', '대팻밥을 뒤집어쓰고 다니는 흑련 목수. 나무를 집으면 코부터 갖다 댄다.'),
     'q:sx_ep_bongsu': ('행자 봉수', '철벽 고찰 막내 행자. 바람에 볼이 텄고 지고는 못 산다.'),
     'q:sx_ep_eokbo': ('썰매꾼 억보', '북령맹 호송대 썰매꾼. 긴장하면 말을 더듬고 썰매 줄 매듭을 풀었다 맨다.'),
+    'q:sx_x_gisan': ('서신방 서리 기산', '명등청 서신방 서리. 일곱 해 전 여울과 함께 다니던 옛 조사원으로, 긴장하면 손끝이 떨린다.'),
     'q:sx_ep_jjanmul': ('소금 장수 짠물댁', '십삼문 밀수 부두 소금 장수. 셈 끝에 늘 「밑지는 장사」를 붙인다.'),
 }
 NEW_SPEAK = {
     '놋단': 'q:sx_ep_notdan', '수련생': 'q:sx_ep_trainee', '교도': 'q:sx_ep_follower', '장터 아낙': 'q:sx_ep_marketwife',
     '끝순': 'q:sx_ep_kkeutsun', '심지 장수': 'q:sx_ep_gaprye', '소식꾼': 'q:sx_ep_sosik', '대패': 'q:sx_ep_daepae',
-    '봉수': 'q:sx_ep_bongsu', '억보': 'q:sx_ep_eokbo', '짠물댁': 'q:sx_ep_jjanmul',
+    '봉수': 'q:sx_ep_bongsu', '억보': 'q:sx_ep_eokbo', '짠물댁': 'q:sx_ep_jjanmul', '기산': 'q:sx_x_gisan',
     '강두철': 'night_office:kang', '문서진': 'mandate_court:mun', '마일수': 'q:dh_ilsu', '고분': 'q:dh_gopun',
     '복례': 'q:sn_bokrye', '쇠불': 'q:sn_soebul', '달래': 'q:sn_dalrae', '옥분': 'q:sn_okbun',
     '운해': 'q:bl_unhae', '묵호': 'q:g_mukho', '여울': 'q:g_yeoul', '단이': 'q:g_dani',

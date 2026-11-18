@@ -381,7 +381,7 @@ def build(quests):
             errors.append(f'furniture.js에 {tr["hk"]} 없음')
         traits = dict(tr, cat=cat, grade=4)
         rows.append(f"({T(iid)}, {T(nm)}, 'furniture', 4, {T('별채 가구 · ' + cat + '. ' + desc + ' ' + KEEP_DESC)}, false, false, 800, 1, {J(traits)})")
-    w("""insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, tradeable, reference_price, stack_size, equipment_traits) values
+    if rows: w("""insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, tradeable, reference_price, stack_size, equipment_traits) values
 """ + ',\n'.join(rows) + """
 on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description,
   stackable = excluded.stackable, tradeable = excluded.tradeable, reference_price = excluded.reference_price, stack_size = excluded.stack_size, equipment_traits = excluded.equipment_traits;""")
@@ -446,7 +446,7 @@ on conflict (title_key) do update set title_name = excluded.title_name, descript
         if not q['summary']:
             errors.append(f"{q['id']}: 요약 없음")
         for a in after:
-            if a not in REF['quests'] and a not in META:
+            if a not in REF['quests'] and a not in META and a not in _side.META:
                 errors.append(f"{q['id']}: 앞 퀘스트 모름 {a}")
         cat = f'{ARC}·{REGION_BY_ID.get(reg, reg)}'
         w(f"""insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
