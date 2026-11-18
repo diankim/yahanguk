@@ -2,6 +2,7 @@ import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, as
 import { brokenName } from './rules.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate } from './views/common.js';
+import { ownSlot, fillOwned } from './owned.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
 import { logRow } from './spar.js';
@@ -112,7 +113,7 @@ export function fqPopHtml(key, s) {
       ${listFilterHtml(vaultFilt, { cats: VAULT_CATS, have: new Set((s.vault || []).map(v => v.kind)), label: '비고 물품 찾기' })}
       <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}" ${listRowAttrs(v.kind, v.name)}><div>
           <b>${v.kind === 'item' ? `<button type="button" class="linkish" data-fq-info="${esc(v.item_id)}">${esc(v.name)}</button>` : v.kind === 'name_style' ? `<span class="fq-ns ns-${esc(v.item_id.slice(3))}">${esc(v.name)}</span>` : esc(v.name)} ${kindChip(v)}</b>
-          <small class="muted">공훈 ${fmt.num(v.price)}${v.locked ? ` · ${esc(ranks[v.rank_need - 1] || '')}부터` : ''}</small></div>
+          <small class="muted">공훈 ${fmt.num(v.price)}${v.locked ? ` · ${esc(ranks[v.rank_need - 1] || '')}부터` : ''}</small>${v.kind === 'item' ? ownSlot(v.item_id) : ''}</div>
         ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? actBox({ key: v.item_id, max: 99, value: 1, all: false, off: !vaultOpen || v.locked, btns: [`<button class="btn small primary" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button>`] })
           : actBox({ qty: false, btns: [`<button class="btn small primary" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>받기</button>`] })}</li>`).join('')}</ul>
       <p class="muted small">공훈으로만 사고, 비고는 물건을 사들이지 않습니다. 칭호·테두리·이름 색·탈것은 하나만 받고, 세력을 떠나도 남습니다. 세력 장비는 거래할 수 없습니다.</p>`;
@@ -147,7 +148,7 @@ export function bindFaction(body, s) {
     guard(b, async () => { const r = await act('world_faction_vault_buy', { p_item: id, p_qty: one ? 1 : qty }); return r; });
   });
   $$('[data-fq-info]', body).forEach(b => b.onclick = () => openItemInfo(b.dataset.fqInfo));
-  if ($('.fq-vault', body)) bindListFilter(body, vaultFilt, () => $$('.fq-vault > li', body));
+  if ($('.fq-vault', body)) { bindListFilter(body, vaultFilt, () => $$('.fq-vault > li', body)); fillOwned(body); }
   bindQty(body);
   bindDonate(body, s);
   const tr = $('#fq-trial', body);

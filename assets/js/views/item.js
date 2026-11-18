@@ -3,7 +3,8 @@ import { loreBundle, rebirthScene } from '../lore.js';
 import { load, loadPrices, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
-import { isFurniture, myHomeCounts } from '../housing/count.js';
+import { isFurniture } from '../housing/count.js';
+import { ownRow, fillOwned } from '../owned.js';
 import { GWIRYEONG, weakSafe, gwWhen, BIJANG } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
@@ -212,7 +213,7 @@ function draw(box, id, inv, prices, mode) {
     <p class="item-lore" data-lore hidden></p>
     <dl class="kv info">
       <div><dt>가진 수량</dt><dd>${fmt.num(have)}개${have > 0 ? ` · ${fmt.num(Math.ceil(have / stackOf(id)))}칸` : ''} <small class="muted">(한 칸 ${fmt.num(stackOf(id))}개)</small>${pairHave > 0 ? `<br><small class="muted">${isHq(id) ? '보통' : '우수품'} ${fmt.num(pairHave)}개 따로 · 제작·사용에는 함께 ${fmt.num(have + pairHave)}개</small>` : ''}</dd></div>
-      ${isFurniture(id) ? `<div data-home-have hidden><dt>별채</dt><dd></dd></div>` : ''}
+      ${ownRow(id)}
       ${pr?.reference_price ? `<div><dt>기준 시세</dt><dd>${fmt.jeon(pr.reference_price)}</dd></div>` : ''}
       ${pr?.npc_sell_price ? `<div><dt>상점 매입</dt><dd>약 ${fmt.jeon(pr.npc_sell_price)}</dd></div>` : ''}
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
@@ -247,12 +248,7 @@ function draw(box, id, inv, prices, mode) {
   fillSources(box, id);
   if (isFurniture(id)) import('../housing/thumbs.js').then(({ furnPic }) => { const x = $('[data-fpic]', box); if (x) { x.innerHTML = furnPic(id); if (!x.innerHTML) x.remove(); } }).catch(() => {});
   else if (hasPic(it)) import('./outfitdesign.js').then(({ itemPic }) => itemPic(id, it)).then(h => { const x = $('[data-fpic]', box); if (x) { x.innerHTML = h; if (!h) x.remove(); } }).catch(() => {});
-  if (isFurniture(id)) myHomeCounts(rpc).then(h => {
-    const row = $('[data-home-have]', box); if (!row) return;
-    const placed = h.placed[id] || 0, stored = h.stored[id] || 0; if (!placed && !stored) return;
-    $('dd', row).textContent = [placed ? `놓은 것 ${fmt.num(placed)}개` : '', stored ? `곳간 ${fmt.num(stored)}개` : ''].filter(Boolean).join(' · ');
-    row.hidden = false;
-  }).catch(() => {});
+  fillOwned(box).catch(() => {});
   fillGwWhen(box);
   loreBundle().then(l => { const p = $('[data-lore]', box); const t = l.items?.[baseOf(id)]; if (p && t) { p.textContent = t; p.hidden = false; } });
   box.onclick = async e => {

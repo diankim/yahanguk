@@ -23,6 +23,7 @@ export const CHANGES = {
   storageIfUsed: /craft_(item|batch)$|outfit_design_weave$|housing_expand$|ultimate_buy$|project_give$/,
   dismantle: /dismantle|skill|craft|level|reset_identity/,
   avatar: /avatar|outfit|wardrobe|reset_identity/,
+  owned: /housing_|pet_|ultimate_buy|mentor_shop|faction_vault|reset_identity|wardrobe/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity/,
   raidBrief: /raid_final_start|raid_join/,

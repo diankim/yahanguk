@@ -1943,6 +1943,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 }
 /* 목록의 짧은 설명(작은 글씨 한 줄) */
 small.brief { display: block; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; color: var(--muted); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+small.own-tag { display: block; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .inv-name small.brief { margin-top: 1px; }
 /* 물품 정보: 얻는 곳(한 줄로 갈래를 이어 쓴다) */
 .kv.info .wide { grid-column: 1 / -1; }

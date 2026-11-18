@@ -3,6 +3,7 @@ import { armAlarm } from '../sound.js';
 import { GAMEDATA } from '../gamedata.js';
 import { baseOf } from '../hq.js';
 import { hit } from '../changes.js';
+import { forgetHome } from '../housing/count.js';
 
 const inflight = new Map();
 const cacheAt = new Map();
@@ -90,6 +91,7 @@ on('changed', ({ name = '', data, field } = {}) => {
   if (!hit('invQuiet', name)) for (const k of ['world_shop_snapshot', 'world_smithy_snapshot', 'world_enhance_quote', 'world_repair_quote']) invalidate(k);
   if (hit('dismantle', name)) invalidate('world_dismantle_info');
   if (hit('mounts', name)) invalidate('world_mount_snapshot');
+  if (hit('owned', name)) { invalidate('world_pet_snapshot'); forgetHome(); }
   if (hit('avatar', name)) { invalidate('world_avatar_get'); invalidate('world_outfit_design_list'); }
   if (hit('raidBrief', name)) invalidate('world_raid_brief');
   if (hit('gwiryeong', name)) invalidate('world_gwiryeong_mine');

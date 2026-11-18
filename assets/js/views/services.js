@@ -4,6 +4,7 @@ import { load, loadPrices, chip, loading, errorBox, foldOpen } from './common.js
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
+import { ownSlot, ownKind, fillOwned } from '../owned.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 
@@ -52,7 +53,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
       <ul class="item-list shop-list">${list.map(i => `<li ${listRowAttrs(pickCat(i.category), i.item_name || nameOf(i.item_id))}>
         <div class="item-main"><b>${infoName(i.item_id, i.item_name, i.category)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
-          <small>${i.tier}단계${have[i.item_id] ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}${capLine(i)}</small>${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
+          <small>${i.tier}단계${have[i.item_id] && !ownKind(i.item_id) ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}${capLine(i)}</small>${ownSlot(i.item_id)}${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
         ${capLeft(i) > 0 ? stepper('buy', i.item_id, capLeft(i)) : qtyHtml({ key: `buy:${i.item_id}`, max: 0, off: true })}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
     </section>
     ${sell ? `<section data-list="sell" ${mode === 'sell' ? '' : 'hidden'}>
@@ -77,6 +78,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘는 몫은 값을 받지 못하고 버려집니다</span>`;
   };
   bindListFilter(box, shopFilt, () => $$('li[data-mk-cat]', box));
+  fillOwned(box);
   $$('.seg-mini button[data-mode]', box).forEach(b => b.onclick = () => {
     shopMode = b.dataset.mode;
     $$('.seg-mini button[data-mode]', box).forEach(x => x.classList.toggle('on', x === b));
@@ -298,7 +300,7 @@ export async function renderMarket(box) {
     const hiddenNote = untradeNote(have, ref);
     const mine = (offers || []).filter(o => o.seller_id === me), others = (offers || []).filter(o => o.seller_id !== me);
     const row = (o, own) => `<li class="r-${esc(rarOf(o.item_id))}" ${listRowAttrs(catMap.get(o.item_id), nameOf(o.item_id))}><div class="item-main"><b>${infoName(o.item_id)}</b>${rTag(o.item_id)}<span class="qty">×${o.quantity}</span>
-        <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
+        <small class="mk-price">개당 <b>${fmt.jeon(o.unit_price)}</b> · 합계 <b>${fmt.jeon(o.unit_price * o.quantity)}</b>${ref.get(o.item_id) ? ` · 기준가 ${fmt.jeon(ref.get(o.item_id).reference_price)}` : ''}</small>${own ? '' : ownSlot(o.item_id)}${mkDesc.get(o.item_id) ? `<small class="brief">${esc(brief(mkDesc.get(o.item_id)))}</small>` : ''}</div>
         ${own ? actBox({ qty: false, btns: [`<button class="btn small" data-cancel="${o.offer_id}">등록 취소</button>`] }) : actBox({ key: `take:${o.offer_id}`, max: o.quantity, value: o.quantity, btns: [`<button class="btn small primary" data-here="거래소 구매" data-take="${o.offer_id}">사기</button>`] })}</li>`;
     const rules = `<details class="mk-rules"><summary>${icon('help', 14)} 거래 규칙</summary>
       <p class="muted small"><b>희귀 재료</b>(비취 파편·귀경 파편·뇌철 광석·성진사·요핵·잔화 결정·천공 깃털·각인판·강화 요수 가죽)는 거래소에서만 사고팝니다: 기준 시세 70% 이상 · 한 사람 24시간 20개까지 · 거래세 10%.</p>
@@ -320,6 +322,7 @@ export async function renderMarket(box) {
       ${rules}`);
     const list = $('.mk-list', body);
     if (list) bindListFilter(body, buyFilt, () => $$('li', list), n => { $('.mk-none', body).hidden = n > 0; });
+    fillOwned(body);
     const form = $('#trade-form', body);
     if (form) {
       const bounds = () => { const p = Number(ref.get(form.item.value)?.reference_price) || 0; return { p, min: MARKET_ONLY.has(form.item.value) && p ? Math.ceil(p * 0.7) : 1, max: p ? p * 10 : Infinity }; };
