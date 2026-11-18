@@ -182,7 +182,7 @@ function noteActs(n) {
 const GO_KIND = { title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
   drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look', project_stage: 'home', regular_stage: 'log/side' };
-const pastActs = n => { const a = noteActs(n); return /data-(invite|ride|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
+const pastActs = n => { const a = noteActs(n); return /data-(invite|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
 const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.lgone) { const o = byId(btn.dataset.lgone); if (!o) return false; await markRead(o); (await import('./letters.js')).openRemoved(o.payload.removed); return true; }
