@@ -10,7 +10,7 @@ language sql immutable set search_path = '' as $$
   end
 $$;
 revoke all on function public.world_title_ev_hit(jsonb, text, jsonb) from public, anon, authenticated;
-alter function public.world_title_ev_hit(jsonb, text, jsonb) owner to fn_owner_field;
+select pg_temp.yh_own('public.world_title_ev_hit(jsonb, text, jsonb)', 'fn_owner_field');
 
 select pg_temp.yh_fix('world_title_award_check(uuid,text)', array[
   E'DECLARE t record; got int := 0; last_outcome text; r jsonb;',
