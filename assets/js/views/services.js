@@ -99,26 +99,23 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const plan = new Map(items.map(([k, n]) => {
       if (m !== 'sell' || room === Infinity) return [k, { n, cut: 0 }];
       const u = Math.max(1, Math.round(sellPrice(k) * 0.95));
-      if (room <= 0) return [k, { n, skip: true }];
+      if (room <= 0) return [k, { n, cut: n, all: true }];
       if (u * n <= room) { room -= u * n; return [k, { n, cut: 0 }]; }
       const keep = Math.floor(room / u); room = 0; return [k, { n, cut: n - keep }];
     }));
-    const over = [...plan.values()].some(p => p.cut > 0 || p.skip);
+    const over = [...plan.values()].some(p => p.cut > 0);
     const lineOf = (k, n) => { const nm = m === 'buy' ? stock.get(k)?.item_name || nameOf(k) : nameOf(k), p = plan.get(k);
-      return p.skip ? `${nm} ×${n} — 오늘 한도가 차서 팔지 않습니다` : p.cut ? `${nm} ×${n} — 한도를 넘는 ${p.cut}개쯤은 값을 받지 못하고 버려집니다` : `${nm} ×${n}`; };
-    const ok = await ask(`${items.map(([k, n]) => lineOf(k, n)).join('\n')}\n${m === 'buy' ? `합계 ${fmt.jeon(sum)}` : over ? `받을 돈은 오늘 남은 한도 ${fmt.jeon(sold.left)}까지입니다` : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
+      return p.all ? `${nm} ×${n} — 오늘 한도가 차서 값을 받지 못하고 모두 버려집니다` : p.cut ? `${nm} ×${n} — 한도를 넘는 ${p.cut}개쯤은 값을 받지 못하고 버려집니다` : `${nm} ×${n}`; };
+    const ok = await ask(`${items.map(([k, n]) => lineOf(k, n)).join('\n')}\n${m === 'buy' ? `합계 ${fmt.jeon(sum)}` : over ? (Number(sold.left) > 0 ? `받을 돈은 오늘 남은 한도 ${fmt.jeon(sold.left)}까지입니다` : '오늘 판매 한도가 다 차서 받을 돈은 없습니다') : `받을 돈 약 ${fmt.jeon(Math.round(sum * 0.95))}(세금 5% 뺌)`}`,
       { title: over ? '판매 한도를 넘습니다. 판매할까요?' : `${label}할까요?`, ok: `${label}하기`, alarm: over });
     if (!ok) return;
     btn.dataset.busy = '1'; btn.disabled = true;
     const fail = [];
-    let last = null, done = 0, dropped = 0, full = false;
+    let last = null, done = 0, dropped = 0;
     for (const [k, n] of items) {
-      const p = plan.get(k);
-      if (m === 'sell' && (p.skip || full)) continue;
       try {
         last = await rpc(m === 'buy' ? 'world_shop_buy' : 'world_shop_sell', m === 'buy' ? { p_item_id: k, p_qty: n } : { p_item_id: k, p_qty: n, p_overflow: over });
         delete cart[m][k]; done++; dropped += Number(last?.dropped || 0);
-        if (m === 'sell' && Number(last?.left) <= 0) full = true;
       } catch (err) { fail.push(`${nameOf(k)}: ${friendlyError(err)}`); }
     }
     if (done) toast(`${label} 완료 ${done}가지${dropped ? ` · 한도를 넘은 ${dropped}개는 버려짐` : ''}${fail.length ? ` · 실패 ${fail.length}가지` : ''}${m === 'sell' && last?.cap ? ` · 오늘 판매 ${fmt.jeon(last.sold)} / ${fmt.jeon(last.cap)}` : ''}`, fail.length ? 'warn' : 'ok');
@@ -470,9 +467,9 @@ export async function renderStorage(box) {
     const putMax = k => Math.min(canGive(k), roomOf(k));
     const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
-    const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}`; };
+    const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}${m === 'put' && stored.get(id) ? ` · 창고 ${fmt.num(stored.get(id))}` : ''}`; };
     const row = (id, label, n, max, m, note, part) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
-        <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${part ? `${part}번째 칸 · 묶음 ${stackOf(id)}개` : cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
+        <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${part ? `${part}번째 칸 · 묶음 ${stackOf(id)}개 · 창고에 모두 ${fmt.num(stored.get(id) || n)}` : cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
         ${ro && m === 'put' ? '' : actBox({ key: `${m}:${id}${part ? `:${part}` : ''}`, max: m === 'take' ? n : max, value: max || n, off: m === 'put' && !max, btns: m === 'take'
           ? [`<button class="btn small act-dc" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>`, ro ? '' : `<button class="btn small primary" data-here="창고 이용" data-take="${esc(id)}" ${max ? '' : 'disabled'}>꺼내기</button>`]
           : [`<button class="btn small primary" data-here="창고 이용" data-put="${esc(id)}" ${max ? '' : 'disabled'}>맡기기</button>`] })}</li>`;
