@@ -152,7 +152,7 @@ function weaveLine(d, nWeave, st) {
 
 function openWeave(d, st, done) {
   const l = openLayer({ title: '가구 짓기', body: `<div class="od-weave"><img class="od-pic fd-pic" src="${furnPic(d)}" alt="">
-    <p>「${esc(d.t || FURN.name)}」을(를) 지어 별채 곳간에 넣습니다. 도안은 도안첩에 그대로 남아 몇 번이든 다시 지을 수 있습니다.</p>
+    <p>${esc(`「${d.t || FURN.name}」을(를) 지어 별채 곳간에 넣습니다. 도안은 도안첩에 그대로 남아 몇 번이든 다시 지을 수 있습니다.`)}</p>
     ${qtyHtml({ key: 'n', min: 1, max: 10, value: 1, label: '지을 수' })}<div class="fd-mats"></div>
     <div class="btn-row"><button class="btn primary" data-go data-here="가구 짓기">짓기</button></div></div>` });
   const paint = () => { const w = weaveLine(d, qtyOf(l, 'n') || 1, st); $('.fd-mats', l).innerHTML = w.html; $('[data-go]', l).disabled = w.lack; };
