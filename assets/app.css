@@ -1337,7 +1337,6 @@ details.f-fold > summary { font-weight: 600; margin: 4px 0 8px; } details.f-fold
 .inv-item small.use-fx.one { flex-wrap: nowrap; min-width: 0; } .inv-item small.use-fx.one > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inv-item small.inv-tags { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
 .inv-item .inv-name { min-width: 0; }
-@media (max-width: 640px) { .inv-list li.inv-item:has(> .act-box[style*="--w:3"]) { flex-wrap: wrap; } .inv-list li.inv-item:has(> .act-box[style*="--w:3"]) > .inv-row { flex: 1 1 100%; } .inv-list li.inv-item > .act-box[style*="--w:3"] { margin: 0 0 6px auto; } }
 .qty-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; } .qty-row > span { flex: 1 1 140px; min-width: 0; font-size: calc(13px * var(--fz, 1)); } .qty-row.off { opacity: .55; }
 
 /* 조사원 카드: 이름 단추와 겹쳐 뜨는 창 */
@@ -1944,7 +1943,7 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 }
 /* 목록의 짧은 설명(작은 글씨 한 줄) */
 small.brief { display: block; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; color: var(--muted); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-small.own-tag { display: block; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; color: var(--accent); max-width: 100%; }
+small.own-tag { display: block; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; color: var(--mp); max-width: 100%; }
 .inv-name small.brief { margin-top: 1px; }
 /* 물품 정보: 얻는 곳(한 줄로 갈래를 이어 쓴다) */
 .kv.info .wide { grid-column: 1 / -1; }

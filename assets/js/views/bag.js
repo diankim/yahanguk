@@ -373,7 +373,7 @@ function actsHtml(id, n, it, part, ri, showUse, eqSet, stash = canStash()) {
     : it?.category === 'outfit' ? `<button class="btn small" data-wear="${esc(id)}" aria-label="${name} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷 하나를 얻습니다' : '옷장에 넣어 「내 모습」에서 입습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>`
     : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade data-here="동무 정표 바꾸기" title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`
     : '';
-  return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, stash && dcMax > 0 ? `<button class="btn small" data-stash="${esc(id)}" data-q="${key}" data-max="${dcMax}" data-here="창고 이용" aria-label="${name} 창고에 맡기기" title="개인 창고에 맡깁니다">창고에</button>` : '', right] });
+  return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, right || (stash && dcMax > 0 ? `<button class="btn small" data-stash="${esc(id)}" data-q="${key}" data-max="${dcMax}" data-here="창고 이용" aria-label="${name} 창고에 맡기기" title="개인 창고에 맡깁니다">창고</button>` : '')] });
 }
 function bindActions(body) {
   bindQty(body);
