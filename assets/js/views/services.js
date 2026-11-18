@@ -73,7 +73,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     const net = Math.round(sum * 0.95);
     $('#shop-sum', box).innerHTML = n ? `${n}가지 · ${m === 'buy' ? '합계' : '받을 돈 약'} <b>${fmt.jeon(m === 'sell' ? net : sum)}</b>` : '<span class="muted">수량을 고르세요</span>';
     const go = $('#shop-go', box); go.textContent = m === 'buy' ? '구매하기' : '판매하기';
-    go.disabled = !n || (m === 'buy' && sum > gil) || (m === 'sell' && sold && sold.left <= 0);
+    go.disabled = !n || (m === 'buy' && sum > gil);
     if (m === 'buy' && sum > gil) $('#shop-sum', box).innerHTML += ' <span class="bad">· 전이 모자랍니다</span>';
     if (m === 'sell' && sold && n && net > sold.left) $('#shop-sum', box).innerHTML += ` <span class="bad">· 오늘 남은 한도 ${fmt.jeon(sold.left)}을 넘는 몫은 값을 받지 못하고 버려집니다</span>`;
   };
