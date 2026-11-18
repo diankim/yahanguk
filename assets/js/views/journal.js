@@ -184,9 +184,9 @@ function regional(r) {
     ${r?.submitted ? '' : `<button class="btn ${n >= 3 ? 'primary' : ''}" id="reg-submit" data-here="사건 보고" ${n >= 3 ? '' : 'disabled'}>${icon('scroll', 16)}<span>보고서 제출</span></button>`}`, { ico: 'map' });
 }
 
-const FIELDS = [['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye'], ['생활', 'home']];
-const STATUS = [['', '전체'], ['active', '진행 중'], ['available', '받을 수 있음'], ['done', '마침'], ['locked', '레벨 부족']];
-const STATUS_N = { active: ['진행 중', 'accent'], available: ['받을 수 있음', 'ok'], done: ['마침', ''], locked: ['레벨 부족', 'bad'] };
+const FIELDS = [['직업', 'user'], ['소속', 'flag'], ['전투', 'sword'], ['채집', 'leaf'], ['제작', 'hammer'], ['조사', 'search'], ['낚시', 'eye'], ['생활', 'home'], ['뒷이야기', 'scroll']];
+const STATUS = [['', '전체'], ['active', '진행 중'], ['available', '받을 수 있음'], ['done', '마침'], ['locked', '잠김']];
+const STATUS_N = { active: ['진행 중', 'accent'], available: ['받을 수 있음', 'ok'], done: ['마침', ''], locked: ['잠김', 'bad'] };
 const SORTS = { level: (a, b) => a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'),
   region: (a, b) => (a.region_name || '').localeCompare(b.region_name || '', 'ko') || a.min_level - b.min_level,
   name: (a, b) => a.title.localeCompare(b.title, 'ko') };
@@ -238,7 +238,7 @@ function sideItem(q, map, inArc) {
     <summary><header>${q.replay ? chip('다시하는 중', 'ok') : chip(sn, tone)}${subCat ? chip(subCat) : ''}<b>${esc(q.title)}</b>${q.steps ? `<small class="muted">${q.step}/${q.steps}</small>` : ''}</header>
       <p class="q-at ${q.here ? 'ok' : ''}">${where}</p>${nowLine(q)}</summary>
     <p class="q-goal">${esc(q.summary || '')}</p>
-    ${q.status === 'locked' ? `<p class="muted small">레벨 ${q.min_level}부터 받을 수 있습니다.</p>`
+    ${q.status === 'locked' ? `<p class="muted small">${q.locked_reason === 'project' && q.open_text ? esc(q.open_text) : `레벨 ${q.min_level}부터 받을 수 있습니다.`}</p>`
       : q.status === 'available' && !q.here ? `<div class="btn-row">${goButton(q.region_id, map)}</div>` : sceneList(q, map)}
     ${q.status === 'active' ? `<div class="btn-row q-abandon"><button class="btn small ghost" data-here="퀘스트 포기" data-q-abandon="${esc(q.quest_id)}" data-q-title="${esc(q.title)}">${icon('close', 14)}<span>포기하기</span></button></div>` : ''}
     ${replayBox(q)}
