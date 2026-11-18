@@ -315,6 +315,29 @@ TOPS = {
         "..xaeaacaaaaab..",
         "..dbbbbcbbbbbd..",
     ]),
+    'rg_unbi_cape': ('호송대 눈길 망토', {'a': '#5a6a82', 'b': '#44526a', 'c': '#efe9dc', 'd': '#6e4a2c', 'e': '#b8323a'}, [
+        "................",
+        "..cccccccccccc..",
+        ".cccccceecccccc.",
+        ".xaaaaaeeaaaaay.",
+        "xaaaaaaeeaaaaaay",
+        "xaaaaabbbbaaaaay",
+        "xaaaaabdbbaaaaay",
+        "xaaaaabbbbaaaaay",
+        "cccccbbbbbbccccc",
+    ]),
+    'rg_hisu_coat': ('출납 서리 겉옷', {'a': '#3e4a5e', 'b': '#2c3646', 'c': '#f1ead8', 'd': '#26262c', 'e': '#c9a24a'}, [
+        "................",
+        "....xacccab.....",
+        ".bxaaaaccaaaaby.",
+        ".bxaaaacaaaaaby.",
+        ".edddddddddddde.",
+        "..bxaaacaaaab...",
+        "...xaaacaaaab...",
+        "..xaaaacaaaaab..",
+        "..xaaaacaaaaab..",
+        "..ebbbbcbbbbbe..",
+    ]),
 }
 
 
@@ -760,6 +783,18 @@ ACC = {
         "bbbbbbbbbbbbbbbbbbbbbb",
         "....................aa",
         ".....................a",
+    ]),
+    'rg_wolha_coin': ('귀퉁이 엽전 끈', {'a': '#7a5a34', 'b': '#c9a24a', 'c': '#5e4a24'}, 19, 24, [
+        "a..",
+        "a..",
+        "bb.",
+        "bcb",
+        "bbb",
+    ]),
+    'rg_daon_ring': ('풀꽃 반지', {'a': '#f2a8c0', 'b': '#f2d06a', 'c': '#5f9a52'}, 6, 26, [
+        ".a.",
+        "aba",
+        ".c.",
     ]),
 }
 
