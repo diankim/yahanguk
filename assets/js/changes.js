@@ -39,6 +39,7 @@ export const CHANGES = {
   fieldQuiet: /battle_action/,
   noteExpDone: /expedition_complete/,
   noteTrade: /trade_direct_respond/,
+  noteFriend: /friend_(respond|request)$/,
   chatParty: /party/,
   chatRooms: /travel|major_faction|reset_identity/,
   chatBlocks: /block|friend/,

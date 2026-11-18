@@ -75,7 +75,7 @@ export function mountNotifications(btn) {
       if (/^party_exp_(departed|result)$/.test(n.kind)) loadCharacter().catch(() => {}).then(() => emit('changed', { name: 'world_party_expedition_notice' }));
       else if (n.kind === 'ride_departed') loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_travel_party_notice' }));
       else if (!/^(title|cosmetic|friend_|circle_invite|bug_|faction_open|raid_notice|pet_new)/.test(n.kind)) selfSoon();
-      if (POP_KINDS.has(n.kind)) notePop(n); else toast(n.title || '새 알림', 'info');
+      if (POP_KINDS.has(n.kind)) notePop(n); else noteToast(n);
     };
     if (store.user?.id) bgroup('note', [`note:${store.user.id}`], 'note', onNote, l => {
       const was = notesLive; notesLive = l;
@@ -87,6 +87,7 @@ export function mountNotifications(btn) {
   on('changed', ev => {
     const done = hit('noteExpDone', ev.name) ? 'expedition_done' : hit('noteTrade', ev.name) ? 'trade_offer' : '';
     if (done) document.querySelectorAll(`.note-pop[data-kind="${done}"]`).forEach(x => { const n = byId(x.dataset.id); x.remove(); if (n) markRead(n); });
+    if (hit('noteFriend', ev.name)) { const who = String(ev.args?.p_from || ev.args?.p_target || ''); if (who) notes.filter(n => n.kind === 'friend_request' && String(n.payload?.from_id) === who).forEach(n => { document.querySelectorAll(`.note-pop[data-id="${CSS.escape(String(n.id))}"]`).forEach(x => x.remove()); markRead(n); }); }
     if (!midBattle(ev) && !notesLive) setTimeout(soon, 600);
   });
   document.addEventListener('visibilitychange', () => {
@@ -102,11 +103,22 @@ async function loadNotes(first) {
     if (error) throw error;
     const seen = new Set(notes.map(n => n.id));
     const fresh = (data || []).filter(n => n?.id != null);
-    if (!first) fresh.filter(n => !seen.has(n.id) && !shown.has(n.id)).slice(0, 3).forEach(n => { shown.add(n.id); if (POP_KINDS.has(n.kind)) { if (!staleFight(n)) notePop(n); } else toast(n.title || '새 알림', 'info'); });
+    if (!first) fresh.filter(n => !seen.has(n.id) && !shown.has(n.id)).slice(0, 3).forEach(n => { shown.add(n.id); if (POP_KINDS.has(n.kind)) { if (!staleFight(n)) notePop(n); } else noteToast(n); });
     fresh.forEach(n => shown.add(n.id));
     notes = fresh; drawDot();
     if (first) notes.filter(n => POP_KINDS.has(n.kind) && !staleFight(n)).slice(0, 2).forEach(notePop);
   } catch {}
+}
+let toastQ = [], toastT = 0;
+const noteName = n => !/^(title|cosmetic)$/.test(n.kind) ? '' : (String(n.content || '').match(/「([^」]+)」/) || [])[1] || '';
+function noteToast(n) {
+  toastQ.push(n); clearTimeout(toastT);
+  toastT = setTimeout(() => {
+    const groups = new Map();
+    toastQ.forEach(x => { const t = x.title || '새 알림'; if (!groups.has(t)) groups.set(t, []); groups.get(t).push(noteName(x)); });
+    toastQ = [];
+    groups.forEach((names, t) => { const ns = names.filter(Boolean); toast(ns.length ? `${t} · ${ns.map(x => `「${x}」`).join(' ')}` : names.length > 1 ? `${t} (${names.length})` : t, 'info'); });
+  }, 400);
 }
 const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'gw_vote', 'pfight_invite']);
 const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000;

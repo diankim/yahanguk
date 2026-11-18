@@ -366,7 +366,7 @@ function bind() {
   })));
   if (cv) {
     cv.addEventListener('click', onCanvas);
-    cv.addEventListener('mousemove', e => { if (!pick || pick.type !== 'fur') return; const [gx, gy] = room.toGrid(...bufXY(e)); const h = { x: Math.floor(gx), y: Math.floor(gy) }; if (!hover || h.x !== hover.x || h.y !== hover.y) { hover = h; paint(); } });
+    cv.addEventListener('mousemove', e => { if (!pick || pick.type !== 'fur') return; const [gx, gy] = gridFor(...bufXY(e), pick.k); const h = { x: Math.floor(gx), y: Math.floor(gy) }; if (!hover || h.x !== hover.x || h.y !== hover.y) { hover = h; paint(); } });
     cv.addEventListener('mouseleave', () => { hover = null; paint(); });
   }
 }
@@ -378,6 +378,13 @@ function wallAt(bx, by) {
   if (bx < O.x) { side = 'L'; t = (O.x - bx) / (TW / 2); } else { side = 'R'; t = (bx - O.x) / (TW / 2); }
   const z = O.y + t * TH / 2 - by;
   return t >= 0 && t <= N && z >= 0 && z <= WALLH ? { side, t, z } : null;
+}
+function gridFor(bx, by, k) {
+  if (FUR[k]?.layer === 'surface') {
+    const hosts = state.items.filter(it => { const f = FUR[it.k]; return f && f.layer !== 'rug' && f.layer !== 'surface' && f.top > 0; }).sort((a, b) => FUR[b.k].top - FUR[a.k].top);
+    for (const it of hosts) { const [w, d] = dimsOf(it), [gx, gy] = room.toGrid(bx, by + FUR[it.k].top * ZU); if (gx >= it.x && gy >= it.y && gx < it.x + w && gy < it.y + d) return [gx, gy]; }
+  }
+  return room.toGrid(bx, by);
 }
 function onCanvas(e) {
   const [bx, by] = bufXY(e);
@@ -397,15 +404,18 @@ function onCanvas(e) {
     return redrawEdit();
   }
   if (pick?.type === 'fur') {
-    if (!onFloor) return;
-    const it = { k: pick.k, x: cx, y: cy, r: pick.r || 0 };
+    const [px, py] = gridFor(bx, by, pick.k);
+    if (!(px >= 0 && py >= 0 && px < N && py < N)) return;
+    const it = { k: pick.k, x: Math.floor(px), y: Math.floor(py), r: pick.r || 0 };
     if (tryChange(() => state.items.push(it))) { if (left(idOf('fur', pick.k)) <= 0) pick = null; }
     return redrawEdit();
   }
   const got = room.hit(bx, by);
-  if (got && (state.items.includes(got) || state.wall.includes(got))) { sel = got === sel ? null : got; return redrawEdit(); }
-  if (sel && state.items.includes(sel) && onFloor) {
-    const s = sel; if (tryChange(() => { s.x = cx; s.y = cy; })) sel = s; return redrawEdit();
+  const onTop = sel && got && got !== sel && FUR[sel.k]?.layer === 'surface' && FUR[got.k]?.top > 0 && state.items.includes(got);
+  if (!onTop && got && (state.items.includes(got) || state.wall.includes(got))) { sel = got === sel ? null : got; return redrawEdit(); }
+  if (sel && state.items.includes(sel)) {
+    const [px, py] = gridFor(bx, by, sel.k); if (!(px >= 0 && py >= 0 && px < N && py < N)) return;
+    const s = sel; if (tryChange(() => { s.x = Math.floor(px); s.y = Math.floor(py); })) sel = s; return redrawEdit();
   }
   if (sel && state.wall.includes(sel)) {
     const w = wallAt(bx, by); if (!w) return;
