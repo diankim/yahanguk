@@ -3,7 +3,7 @@ import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } 
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf, useLabel } from './item.js';
+import { canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf, useLabel } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
@@ -361,11 +361,11 @@ async function craft(body, inv, stg) {
   }));
 }
 
-function actsHtml(id, n, it, part, ri, showUse, eqSet) {
+function actsHtml(id, n, it, part, ri, showUse, eqSet, stash = canStash()) {
   if (part?.eq) return '';
   const eq = eqSet.has(id), locked = isLocked(id), dcMax = Math.max(0, n - (eq ? 1 : 0)), key = `q:${ri}`;
   const useMax = showUse ? useMaxOf(id, n) : 0;
-  const qmax = Math.max(useMax, locked ? 0 : dcMax);
+  const qmax = Math.max(useMax, locked && !stash ? 0 : dcMax);
   const name = esc(nameOf(id));
   const ul = useLabel(id);
   const right = showUse ? `<button class="btn small" data-here="물품 사용" ${ul !== '사용' ? '' : 'data-here-down'} data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} ${ul}" title="${esc(USABLE[id])}">${ul}</button>`
@@ -373,7 +373,7 @@ function actsHtml(id, n, it, part, ri, showUse, eqSet) {
     : it?.category === 'outfit' ? `<button class="btn small" data-wear="${esc(id)}" aria-label="${name} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷 하나를 얻습니다' : '옷장에 넣어 「내 모습」에서 입습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>`
     : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade data-here="동무 정표 바꾸기" title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`
     : '';
-  return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, right] });
+  return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, stash && dcMax > 0 ? `<button class="btn small" data-stash="${esc(id)}" data-q="${key}" data-max="${dcMax}" data-here="창고 이용" aria-label="${name} 창고에 맡기기" title="개인 창고에 맡깁니다">창고에</button>` : '', right] });
 }
 function bindActions(body) {
   bindQty(body);
@@ -383,6 +383,11 @@ function bindActions(body) {
     if (q > max) return toast(`${nameOf(id)}은(는) ${max}개까지 버릴 수 있습니다.`, 'error');
     if (!(await ask(`${nameOf(id)} ×${q}을(를) 버릴까요? 되찾을 수 없습니다.`, { title: '버리기', ok: '버리기', danger: true }))) return;
     guard(b, () => act('world_item_discard', { p_item_id: id, p_qty: q }));
+  });
+  $$('[data-stash]', body).forEach(b => b.onclick = () => {
+    const id = b.dataset.stash, max = Number(b.dataset.max) || 0, q = qtyOf(body, b.dataset.q) || 1;
+    if (q > max) return toast(`${nameOf(id)}은(는) ${max}개까지 맡길 수 있습니다.`, 'error');
+    guard(b, () => act('world_storage_put', { p_item: id, p_qty: q }));
   });
   $$('[data-adopt]', body).forEach(b => b.onclick = () => guard(b, () => act('world_pet_adopt', { p_item: b.dataset.adopt })));
   $$('[data-wear]', body).forEach(b => b.onclick = () => guard(b, () => act('world_wardrobe_add', { p_item: b.dataset.wear })));

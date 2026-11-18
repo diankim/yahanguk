@@ -17,6 +17,11 @@ const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력
   hair_pattern: '머리 모양과 색을 마음대로 그려 도안첩에 담음 · 내 모습에서 바로 씀(한 장 씀)',
   ...Object.fromEntries(BIJANG.maps.map(m => [m.id, `펼치기 · Lv${m.lo}~${m.hi} 바깥 지역 하나에 묻힌 비장고가 지도에 드러남`])) };
 export const useLabel = id => BIJANG.maps.some(m => m.id === id) ? '펼치기' : id === 'hair_pattern' ? '그리기' : '사용';
+export function canStash() {
+  const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
+  const fsr = store.snaps['world_field_snapshotnull']?.region, weakSt = fsr?.region_id === here?.region_id && fsr?.weak ? !!fsr.weak.storage : weakSafe(here?.region_id);
+  return !!here?.is_safe_zone && !weakSt && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
+}
 const hasPic = it => !!(it?.equipment_traits?.look || it?.equipment_traits?.hair_pattern);
 const useCache = new Map();
 function useText(id) {
@@ -190,9 +195,7 @@ function draw(box, id, inv, prices, mode) {
   const pairId = pairOf(id), pairHave = Number(inv.inventory?.[pairId] || 0);
   const both = k => Number(inv.inventory?.[k] || 0) + (isHq(k) ? 0 : Number(inv.inventory?.[hqOf(k)] || 0));
   const dcMax = Math.max(0, have - (equipped ? 1 : 0));
-  const cc = store.character || {}, here = [...(zonesNow()?.values() || [])].find(r => r.region_name === cc.location || r.region_id === cc.location);
-  const fsr = store.snaps['world_field_snapshotnull']?.region, weakSt = fsr?.region_id === here?.region_id && fsr?.weak ? !!fsr.weak.storage : weakSafe(here?.region_id);
-  const stashOk = !!here?.is_safe_zone && !weakSt && !(cc.travel_arrives_at && new Date(cc.travel_arrives_at) > Date.now());
+  const stashOk = canStash();
   const bid = baseOf(id);
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[bid]);
   const makes = (inv.recipes || []).filter(r => r.output === bid);
