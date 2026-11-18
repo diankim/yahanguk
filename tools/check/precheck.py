@@ -53,6 +53,7 @@ where i.base_item_id is null and i.category = 'material'
     'tool_gaps': """select coalesce(json_agg(line order by line), '[]') from (select l.line, min(c.tier) lo, max(c.tier) hi, count(distinct c.tier) n
   from public.world_tool_lines l join public.world_item_catalog c on c.item_id = l.item_id group by l.line) x where n < hi - lo + 1""",
     'my_fight': """select coalesce(to_json(pg_get_functiondef('public.world_my_fight(uuid)'::regprocedure)), '\"\"')""",
+    'task_kinds': """select coalesce(json_agg(distinct k), '[]') from (select jsonb_array_elements(need->'tasks')->>'t' k from public.world_quest_steps union all select jsonb_array_elements(need->'tasks')->>'t' from public.world_faction_scenes) x where k is not null""",
     'bait': """select coalesce(json_agg(t order by t), '[]') from (select t from public.world_fish_species s, unnest(s.bait_for) t group by t having count(*) < 3) x""",
     'hq_ids': """select coalesce(json_agg(distinct base_item_id), '[]') from public.world_item_catalog where base_item_id is not null""",
     'hq_read': """with hq as (select distinct base_item_id b from public.world_item_catalog where base_item_id is not null)
@@ -146,6 +147,11 @@ def db_checks(run):
             out.append(('얻는 곳', i, '재료인데 world_item_sources에 얻는 곳이 하나도 없음'))
     for l in json.loads(run(SQL['tool_gaps'])):
         out.append(('도구 사슬', l, 'world_tool_lines 단계가 중간에 빠짐'))
+    acts = re.search(r"TASK_ACTS = \{(.*?)\};", (JS / 'changes.js').read_text(), re.S)
+    known = set(re.findall(r"(\w+): /", acts.group(1))) if acts else set()
+    for k in json.loads(run(SQL['task_kinds'])):
+        if k not in known:
+            out.append(('퀘스트 판', k, '할 일 갈래가 changes.js TASK_ACTS에 없음 → 현장 행동마다 퀘스트 판을 버림'))
     for t in json.loads(run(SQL['bait'])):
         out.append(('명어 미끼', t, '미끼가 되는 물고기가 셋보다 적음'))
     for f, ids in json.loads(run(SQL['hq_read'])):
