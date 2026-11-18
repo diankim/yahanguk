@@ -287,7 +287,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 ### 칭호
 
 - 258개(공개 185, 7.7.7p 비수·퇴마·의술의 길과 숨김 그믐밤 비수·안개 속 퇴마사·빗속의 의원 — 「…의 길」은 payload.line으로 셈): 세력 수련장 14(분류 '세력', world_faction_trial) / 기본 100(공개 50·숨김 50) / 낚시 / 이야기 6~9장 4 / 비무 10(공개 8·숨김 2, 규칙 'spar') / 요화 5(귀령의 손길(성장)·나머지 비밀 숨김, 규칙 'yohwa' — world_yohwa_log onset·stage3·seal·cure) / 도감 20(규칙 'codex' kind·all·kinds·gather, world_codex_rule_count). 토벌·별채·외전·레거시는 해당 절.
-- 판정 world_title_rule_ok: 조건에 어종(fish)·요괴(monster_id)가 적힌 규칙은 그 칸으로 색인(idx_world_events_fish_kind·idx_world_events_combat_monster)을 타는 갈래로 셈(3.0.2d — 못 얻은 칭호마다 그 사람 기록을 처음부터 훑던 것). 새 조건 칸이 많이 쓰이면 같은 방식으로.
+- 판정 world_title_rule_ok: 조건(p)에 색인 칸이 있는 규칙은 그 칸 같음 조건을 더해 색인을 타는 한 갈래로 셈(3.0.2d — 못 얻은 칭호마다 그 사람 기록을 처음부터 훑던 것). 갈래별 칸 목록은 world_title_ev_keys() 한 곳(fish.fish·combat monster_id·wick·line·explore wn_alone·use_item/gather item_id·travel region_id), 칸마다 부분 색인 idx_world_events_k_<갈래>_<칸>(낚시 idx_world_events_fish_kind·요괴 idx_world_events_combat_monster). 새 조건 칸이 많이 쓰이면 목록과 색인을 함께 더함.
 - 「야행국 운영진」(gm_staff, 분류 '운영', 효과 없음)은 world_staff에만(캐릭터를 만들거나 명단에 오르면 trg_world_staff_title이 저절로 줌), 남의 목록에 안 나옴.
 - 등급 world_title_catalog.grade 1 범품·2 양품·3 진품·4 명품·5 신품(색 회색·초록·파랑·보라 칠·주홍 칠), 어려울수록 높고 효과도 큼(첫 효과 그 등급, 둘째·셋째 한·두 등급 아래). 효과 키: 주는/받는 피해·근접/원거리/술법·치명타·회피·달아나기·방어·이목(world_combat_stats가 world_title_bonus_of로)·회복·침식·정신 손실·조우(world_status_effect_total이 world_title_extra로)·단서·희귀품·채집·제작·이동·낚시.
 - 최대 3개 장착 + 대표 칭호 하나(채팅·프로필). 숨김 칭호는 얻기 전까지 이름·조건을 서버가 감춤.
