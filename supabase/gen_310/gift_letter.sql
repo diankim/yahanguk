@@ -9,7 +9,7 @@ begin
     insert into public.world_letters(recipient_id, sender_id, sender_name, title, body, items, pinned)
     values (r.owner_id, null, '야행국 운영진', '고마운 마음을 담아',
       '야행국의 밤을 함께 걸어 주셔서 고맙습니다. 즐겁게 플레이해 주신 데 대한 작은 감사의 뜻으로 「머리 그리기 도안」 한 장을 보내 드립니다.' || E'\n\n' ||
-      '· 안전지대에서 이 서신의 물품 받기를 누르면 가방에 들어옵니다.' || E'\n' ||
+      '· 온전한 안전지대에서 이 서신의 물품 받기를 누르면 가방에 들어옵니다.' || E'\n' ||
       '· 「내 모습」에서 머리를 직접 그려 저장할 때 한 장을 씁니다.' || E'\n\n' ||
       '앞으로도 야행국에서 즐거운 밤 보내시길 바랍니다.',
       '{"hair_pattern": 1}'::jsonb, pins < 5);
