@@ -136,6 +136,9 @@ def build(dsn):
         'list', (select jsonb_agg(jsonb_build_object('region', r.region_name, 'kind', m.kind, 'level', m.min_level) order by m.min_level, m.sort) from world_meisho m join world_map_regions r using (region_id) where m.active),
         'recipes', (select jsonb_agg(jsonb_build_array(cr.craft_field, cr.required_skill_rank, i.item_name) order by cr.craft_field, cr.required_skill_rank)
           from world_crafting_recipes cr join world_item_catalog i on i.item_id = cr.output_item where cr.required_skill_rank >= 30))""")
+    d['regular'] = q(dsn, """select (world_regular_rules() - 'npcs') || jsonb_build_object('npcs', (select jsonb_object_agg(e.key, jsonb_build_object('name', e.value ->> 'name', 'short', e.value ->> 'short',
+        'line', e.value ->> 'line', 'line_name', world_line_name(e.value ->> 'line'), 'place', (select m.region_name from world_map_regions m where m.region_id = e.value ->> 'region'),
+        'lv', (e.value ->> 'lv')::int, 'title', e.value ->> 'title_name', 'reward', e.value ->> 'reward', 'sort', (e.value ->> 'sort')::int)) from jsonb_each(world_regular_rules() -> 'npcs') e))""")
     d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(
         'titles', jsonb_array_length(world_project_rules() -> 'titles'),
         'vault', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'price', (v ->> 'price')::int, 'rank', (v ->> 'rank')::int, 'stage', (v ->> 'stage')::int) order by (v ->> 'stage')::int, (v ->> 'price')::int)

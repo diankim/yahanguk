@@ -3864,3 +3864,27 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 .scene-art .ln-deco-lamp { fill: color-mix(in srgb, var(--gold) 80%, var(--sc, var(--accent))); }
 .scene-art .ln-deco-flag { fill: var(--sc, var(--accent)); }
 .qs-pick { display: flex; gap: 6px; align-items: center; min-width: 0 } .qs-pick .pick-field { flex: 1; min-width: 0 } .qs-pick .pick-btn { width: 100%; justify-content: flex-start }
+
+.rg { display: flex; flex-direction: column; gap: 10px; }
+.rg-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rg-hearts { display: inline-flex; gap: 2px; }
+.rg-hearts i { display: inline-flex; color: var(--line); }
+.rg-hearts i.on { color: var(--accent); }
+.rg-bar { flex: 1 1 200px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rg-quests { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.rg-quests li { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); color: var(--muted); font-size: calc(12px * var(--fz, 1)); }
+.rg-quests li.done { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.rg-quests li.now { color: var(--text); border-color: var(--accent); }
+.rg-quests li.rg-title { color: var(--text); }
+.rg-orders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
+.rg-order { display: flex; flex-direction: column; gap: 4px; padding: 8px; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); min-width: 0; }
+.rg-order header { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rg-order.ready { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.rg-order.done { opacity: .6; }
+.rg-order .btn-row { margin-top: auto; justify-content: flex-end; flex-wrap: wrap; }
+.rg-pay { font-size: calc(12px * var(--fz, 1)); }
+.rg-sec { margin: 14px 0; }
+.rg-sec h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
+.rg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; list-style: none; margin: 0; padding: 0; }
+.rg-row { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px; text-align: left; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); cursor: pointer; }
+@media (max-width: 640px) { .rg-orders { grid-template-columns: minmax(0, 1fr); } }

@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1214,6 +1214,14 @@ const S = [
       <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
       <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
     </ul>`],
+  ['regular', '단골', `
+    <p>채집·제작 분야마다 단골 한 사람이 있습니다. 인물마다 여는 퀘스트를 마치면 그 사람이 있는 곳 현장에 「단골」 칸이 생기고, 날마다 주문을 받아 납품합니다. 일지 › 의뢰에서 연 단골을 모아 봅니다.</p>
+    <ul>
+      <li>${REGULAR.tip()}</li>
+      <li>주문 물품은 내 그 분야 단계에 맞춰 나옵니다(제작은 그 분야 제작품 — 장비 ${REGULAR.qty?.gear}개·소모품과 재료 ${REGULAR.qty?.item}개, 채집·채광은 재료 ${REGULAR.qty?.gather}개, 낚시는 물고기 ${REGULAR.qty?.fish}마리). 가방에 모자라면 창고에서 꺼내 넘깁니다(창고를 쓸 수 있는 곳에서).</li>
+      <li><table class="guide-table"><tr><th>분야</th><th>단골</th><th>곳</th><th>열림</th><th>칭호</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td></tr>`).join('')}</table></li>
+      <li>단골 한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 단골 칭호에 셉니다.</li>
+    </ul>`],
   ['feast', '세력 행사', `
     <ul>
       <li>일곱 대세력이 요일마다 거점에서 행사를 엽니다. 매일 ${GD.feast?.start}부터 ${GD.feast?.min}분 동안 열립니다(한국 시각).</li>
@@ -2211,7 +2219,7 @@ const GROUPS = [
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
-  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'cproject']],
+  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'regular', 'cproject']],
   ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';

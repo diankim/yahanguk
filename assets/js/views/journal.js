@@ -1,4 +1,5 @@
 import { store, on, act, rpc, ask, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON, openModal, closeModal, MARKET_ONLY } from '../core.js';
+import { openRegular, regularListHtml } from './regular.js';
 import { loreBundle, refreshLore } from '../lore.js';
 import { load, loadPrices, panel, chip, loading, errorBox, currentRegion, foldOpen } from './common.js';
 import { focusRegion } from './map.js';
@@ -266,6 +267,11 @@ async function commission(body) {
       ${x.claimed ? chip('완료', 'ok') : `<button class="btn small ${x.progress >= x.need ? 'primary' : ''}" data-here="의뢰 보고" data-claim="${x.slot}" ${x.progress >= x.need ? '' : 'disabled'}>${x.kind === 'deliver' ? '납품하기' : '보상 받기'}</button>`}
     </article>`).join('') || empty('오늘의 의뢰가 없습니다.', 'scroll')}</div>`;
   $$('[data-claim]', body).forEach(x => x.onclick = () => guard(x, () => act('world_commission_claim', { p_slot: Number(x.dataset.claim) })));
+  const rb = document.createElement('section'); rb.className = 'rg-sec'; rb.innerHTML = `<h3>${icon('heart', 16)} 단골</h3>${loading()}`; body.append(rb);
+  rpc('world_regular_list').then(d => {
+    rb.innerHTML = `<h3>${icon('heart', 16)} 단골</h3>${regularListHtml(d)}`;
+    $$('[data-rg-open]', rb).forEach(b => b.onclick = () => openRegular(b.dataset.rgOpen));
+  }).catch(e => { rb.innerHTML = errorBox(e.message); });
   const ub = document.createElement('div'); ub.className = 'ucomm'; body.append(ub);
   ub.innerHTML = loading();
   userCommissions(ub).catch(e => { ub.innerHTML = errorBox(e.message); });
