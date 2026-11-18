@@ -215,9 +215,9 @@ const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 42
 export const REGULAR = {
   ...RG,
   stageAt: n => RG.aff.stages[Math.max(0, Math.min(RG.aff.stages.length, n) - 1)] || 0,
-  none: '아직 단골로 지내는 사람이 없습니다. 인물마다 여는 퀘스트를 마치면 그 사람의 주문을 받을 수 있습니다.',
+  none: '아직 연담을 맺은 사람이 없습니다. 인물마다 여는 퀘스트를 마치면 그 사람의 주문을 받을 수 있습니다.',
   titleTip: who => `${who}와(과)의 다섯째 이야기를 마치면 받는 칭호`,
-  tip: () => `단골은 채집·제작 분야마다 한 사람씩 열한 명입니다. 날마다 단골마다 주문 ${RG.orders}개가 들어오고(내 그 분야 단계에 맞는 물품), 한 주문은 하루 한 번 넘깁니다. 모든 단골을 합쳐 하루 ${RG.day_n}번까지 넘길 수 있습니다. 넘기면 그 분야 기술 경험(다음 단계까지 필요한 경험의 ${RG.xp.pct}%, 최소 ${RG.xp.min} — 우수품 ×${RG.xp.hq_mul})·전(시세 × 수량 × ${RG.gil.rate} + ${RG.gil.base})·친밀도 +${RG.aff.give}(우수품 +${RG.aff.hq})를 받습니다. 친밀도가 ${RG.aff.stages.slice(1).map(fmtN).join('·')}에 닿을 때마다 그 사람과의 이야기가 하나씩 열리고, 다섯째 이야기를 마치면 칭호와 기념품을 받습니다.`,
+  tip: () => `연담은 채집·제작 분야마다 한 사람씩, 열한 명과 맺습니다. 날마다 사람마다 주문 ${RG.orders}개가 들어오고(내 그 분야 단계에 맞는 물품), 한 주문은 하루 한 번 넘깁니다. 모든 연담을 합쳐 하루 ${RG.day_n}번까지 넘길 수 있습니다. 넘기면 그 분야 기술 경험(다음 단계까지 필요한 경험의 ${RG.xp.pct}%, 최소 ${RG.xp.min} — 우수품 ×${RG.xp.hq_mul})·전(시세 × 수량 × ${RG.gil.rate} + ${RG.gil.base})·친밀도 +${RG.aff.give}(우수품 +${RG.aff.hq})를 받습니다. 친밀도가 ${RG.aff.stages.slice(1).map(fmtN).join('·')}에 닿을 때마다 그 사람과의 이야기가 하나씩 열리고, 다섯째 이야기를 마치면 칭호와 기념품을 받습니다.`,
 };
 
 const MT = GD.mentor || { gap: 10, near_min: 10, day_cap: 60, pair_cap: 30, xp_day: 50, kinds: {}, skip: [], shop: [], post: { hours: 2, note: 30, wants: {} } };

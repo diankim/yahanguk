@@ -1214,13 +1214,13 @@ const S = [
       <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
       <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
     </ul>`],
-  ['regular', '단골', `
-    <p>채집·제작 분야마다 단골 한 사람이 있습니다. 인물마다 여는 퀘스트를 마치면 그 사람이 있는 곳 현장에 「단골」 칸이 생기고, 날마다 주문을 받아 납품합니다. 일지 › 의뢰에서 연 단골을 모아 봅니다.</p>
+  ['regular', '연담', `
+    <p>채집·제작 분야마다 연담을 맺을 사람이 한 명씩 있습니다. 인물마다 여는 퀘스트를 마치면 그 사람이 있는 곳 현장에 「연담」 칸이 생기고, 날마다 주문을 받아 납품합니다. 일지 › 의뢰에서 맺은 연담을 모아 봅니다.</p>
     <ul>
       <li>${REGULAR.tip()}</li>
       <li>주문 물품은 내 그 분야 단계에 맞춰 나옵니다(제작은 그 분야 제작품 — 장비 ${REGULAR.qty?.gear}개·소모품과 재료 ${REGULAR.qty?.item}개, 채집·채광은 재료 ${REGULAR.qty?.gather}개, 낚시는 물고기 ${REGULAR.qty?.fish}마리). 가방에 모자라면 창고에서 꺼내 넘깁니다(창고를 쓸 수 있는 곳에서).</li>
-      <li><table class="guide-table"><tr><th>분야</th><th>단골</th><th>곳</th><th>열림</th><th>칭호</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td></tr>`).join('')}</table></li>
-      <li>단골 한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 단골 칭호에 셉니다.</li>
+      <li><table class="guide-table"><tr><th>분야</th><th>인물</th><th>곳</th><th>열림</th><th>칭호</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td></tr>`).join('')}</table></li>
+      <li>한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 연담 칭호(「첫 연담」·「다섯 연담」·「열한 연담」)에 셉니다.</li>
     </ul>`],
   ['feast', '세력 행사', `
     <ul>

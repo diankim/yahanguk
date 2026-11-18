@@ -144,7 +144,7 @@ begin
   if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
   if k is null then k := public.world_regular_here(uid); end if;
   n := public.world_regular_rule(k);
-  if n is null or not public.world_regular_open(uid, k) then raise exception '아직 단골로 지내는 사람이 아닙니다.'; end if;
+  if n is null or not public.world_regular_open(uid, k) then raise exception '아직 연담을 맺은 사람이 아닙니다.'; end if;
   select * into g from public.world_regular_progress where owner_id = uid and npc = k;
   aff := coalesce(g.aff, 0);
   done := case when g.day = today then g.done else '{}' end;
@@ -160,7 +160,7 @@ begin
   why := case when (public.world_region_at(c.location)).region_id is distinct from n ->> 'region'
       then (select m.region_name from public.world_map_regions m where m.region_id = n ->> 'region') || '에서 넘깁니다.'
     when c.downed_at is not null or c.health <= 0 then '전투불능 상태에서는 넘길 수 없습니다.'
-    when dn >= day_n then '오늘 납품은 다 했습니다(모든 단골을 합쳐 하루 ' || day_n || '번).'
+    when dn >= day_n then '오늘 납품은 다 했습니다(모든 연담을 합쳐 하루 ' || day_n || '번).'
     else null end;
   return jsonb_build_object('npc', k, 'name', n ->> 'name', 'short', n ->> 'short', 'line', n ->> 'line', 'line_name', public.world_line_name(n ->> 'line'), 'rank', rk,
     'xp', public.world_regular_xp(rk, false), 'xp_fine', public.world_regular_xp(rk, true),
@@ -180,11 +180,11 @@ declare uid uuid := public.fn_owner_auth_uid(); nr jsonb := public.world_regular
   g public.world_regular_progress%rowtype; today date := (now() at time zone 'Asia/Seoul')::date; o jsonb; id text; q int; nm text; inv jsonb; st jsonb; st_ok boolean;
   free_inv int; take_inv int; take_st int; rk int; xp int; v_gil int; add int; aff0 int; aff1 int; s0 int; s1 int; dn int; v_done int[]; used_st jsonb := '{}'::jsonb; line text;
 begin
-  perform public.world_travel_guard('단골 납품');
+  perform public.world_travel_guard('연담 납품');
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_seal_guard();
-  if nr is null then raise exception '없는 단골입니다.'; end if;
-  if not public.world_regular_open(uid, p_npc) then raise exception '아직 단골로 지내는 사람이 아닙니다.'; end if;
+  if nr is null then raise exception '없는 연담 상대입니다.'; end if;
+  if not public.world_regular_open(uid, p_npc) then raise exception '아직 연담을 맺은 사람이 아닙니다.'; end if;
   select * into c from public.world_characters where owner_id = uid for update;
   if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
   if coalesce(c.is_dead, false) or c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 넘길 수 없습니다.'; end if;
@@ -193,7 +193,7 @@ begin
   end if;
   insert into public.world_regular_day(owner_id, day, n) values (uid, today, 0) on conflict (owner_id) do update set day = excluded.day, n = 0 where world_regular_day.day <> excluded.day;
   select d.n into dn from public.world_regular_day d where d.owner_id = uid for update;
-  if dn >= (r ->> 'day_n')::int then raise exception '오늘 납품은 다 했습니다(모든 단골을 합쳐 하루 %번). 내일 다시 오세요.', r ->> 'day_n'; end if;
+  if dn >= (r ->> 'day_n')::int then raise exception '오늘 납품은 다 했습니다(모든 연담을 합쳐 하루 %번). 내일 다시 오세요.', r ->> 'day_n'; end if;
   insert into public.world_regular_progress(owner_id, npc, day) values (uid, p_npc, today) on conflict do nothing;
   select * into g from public.world_regular_progress where owner_id = uid and npc = p_npc for update;
   v_done := case when g.day = today then g.done else '{}' end;

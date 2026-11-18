@@ -36,9 +36,9 @@ NPCS = [
 ]
 
 MILESTONES = [
-    dict(key='rg_one', name='「첫 단골」', n=1, grade=2, desc='단골 한 사람과 친밀도가 가장 높은 단계에 닿았다.'),
-    dict(key='rg_five', name='「다섯 집 단골」', n=5, grade=3, desc='단골 다섯 사람과 친밀도가 가장 높은 단계에 닿았다.'),
-    dict(key='rg_all', name='「모두의 단골」', n=11, grade=4, desc='단골 열한 사람 모두와 친밀도가 가장 높은 단계에 닿았다.'),
+    dict(key='rg_one', name='「첫 연담」', n=1, grade=2, desc='연담을 맺은 한 사람과 친밀도가 가장 높은 단계에 닿았다.'),
+    dict(key='rg_five', name='「다섯 연담」', n=5, grade=3, desc='연담을 맺은 다섯 사람과 친밀도가 가장 높은 단계에 닿았다.'),
+    dict(key='rg_all', name='「열한 연담」', n=11, grade=4, desc='연담을 맺은 열한 사람 모두와 친밀도가 가장 높은 단계에 닿았다.'),
 ]
 
 
