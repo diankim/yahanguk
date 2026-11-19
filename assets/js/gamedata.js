@@ -92,7 +92,7 @@ export const GAMEDATA = {
     {"id":"sp_aim","job":"spearman","rank":3,"name":"창끝 겨누기","desc":"요괴가 받는 피해가 두 번 12% 늘어납니다.","target":"boss","cost":4,"cd":10},
     {"id":"sp_wall","job":"spearman","rank":8,"name":"창벽","desc":"두 번 공격을 40% 확률로 흘립니다.","target":"self","cost":5,"cd":12},
     {"id":"sp_hook","job":"spearman","rank":18,"name":"자루 걸기","desc":"요괴가 모으는 기운을 늦춥니다.","target":"boss","cost":9,"cd":22},
-    {"id":"sp_charge","job":"spearman","rank":36,"name":"새벽 돌격","desc":"세 번의 공격이 35% 강해집니다.","target":"self","cost":14,"cd":30},
+    {"id":"sp_charge","job":"spearman","rank":36,"name":"새벽 돌격","desc":"내달려 찌르면서(이 기술이 곧 공격) 그 공격부터 세 번이 35% 강해집니다.","target":"self","cost":14,"cd":30},
     {"id":"tm_fetch","job":"tamer","rank":3,"name":"물어 와","desc":"동무를 보스에게 곧바로 보내 화살과 함께 한 번 공격한다. 이번 동무 공격은 두 배.","target":"self","cost":4,"cd":8},
     {"id":"tm_guard","job":"tamer","rank":8,"name":"곁 지키기","desc":"동무를 동료 곁에 보낸다. 그 동료를 노린 다음 두 번 공격의 피해 −30%(동무의 힘에 따라 줄어든다).","target":"ally","cost":5,"cd":12},
     {"id":"tm_herd","job":"tamer","rank":18,"name":"몰이","desc":"동무가 보스 둘레를 돌며 몬다. 다음 반격 한 번을 막고, 보스가 받는 피해가 네 번 동안 +10%(동무의 힘에 따라 줄어든다, 봉연의 그림자에서는 사람이 많을수록 더 여러 번).","target":"boss","cost":9,"cd":20},
@@ -119,6 +119,7 @@ export const GAMEDATA = {
   "idle": {"eff":0.35,"gain":12,"rate":{"rest":3,"research":10,"training":12,"maintenance":8}},
   "jobChange": {"alloc":{"medic":["spirit_affinity","willpower","vitality"],"scout":["agility","perception","vitality"],"tamer":["agility","perception","vitality"],"analyst":["strength","agility","perception"],"exorcist":["spirit_affinity","willpower","perception"],"spearman":["strength","agility","perception"],"artificer":["strength","vitality","agility"],"formation":["spirit_affinity","willpower","perception"],"sealmaster":["spirit_affinity","willpower","vitality"],"bloodknight":["strength","vitality","willpower"]},"cd_min":60,"weapon":{"medic":"w_magic1_silent","scout":"w_ranged1_keen","tamer":"short_bow","analyst":"w_melee1_keen","exorcist":"spirit_bell","spearman":"w_spear1_b","artificer":"iron_sword","formation":"w_magic1_keen","sealmaster":"w_magic1_heavy","bloodknight":"w_melee1_heavy"},"price_lv":20,"price_base":100},
   "spear": {"max":5,"per":5,"name":"창끝 기세","per24":1,"rank24":24,"finish_at":30,"finish_pct":15,"finish_name":"마무리 찌르기"},
+  "presence": {"cap":{"artificer":300,"sealmaster":220,"bloodknight":280},"cap_other":160},
   "jobSkillCost": {"artificer":12,"scout":12,"exorcist":12,"medic":25,"sealmaster":12,"analyst":12,"tamer":12,"bloodknight":20,"spearman":20,"formation":25},
   "gearSet": {"max":10,"base":4,"rank":15,"name_max":12},
   "weaponRules": {"ammo":{"dart":["쇠뇌","취관"],"arrow":["각궁","단궁"]},"forms":{"medic":[["부채","silent"],["침통","base"]],"scout":[["각궁","keen"],["쇠뇌","base"]],"tamer":[["단궁","base"],["취관","keen"]],"analyst":[["단도","keen"],["수리검","base"]],"exorcist":[["방울","base"],["법경","keen"]],"spearman":[["언월도","base"],["장창","keen"]],"artificer":[["등패와 환도","base"],["등패와 철퇴","heavy"]],"formation":[["산가지","base"],["나경","silent"]],"sealmaster":[["금강령","silent"],["사슬","base"]],"bloodknight":[["도끼","heavy"],["대검","base"]]},"kinds":{"base":"기본 — 주는 피해","keen":"예리 — 치명타","heavy":"묵직 — 이목·받는 피해 감소","silent":"소리 없음 — 회피·이목 낮춤"},"drop_job_mul":4},
@@ -169,7 +170,7 @@ export const GAMEDATA = {
     "artificer": {"desc":"근접으로 방어·껍질·결계를 무시하고 1.7배 피해를 줍니다.","name":"파갑참"},
     "formation": {"desc":"세 턴 동안 받는 피해가 35% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.","name":"산가지 진"},
     "sealmaster": {"desc":"피해를 주고 요괴의 다음 행동을 묶습니다. 우두머리는 절반 확률.","name":"봉인술"},
-    "bloodknight": {"desc":"체력 15를 깎아 보호막 30을 두릅니다(보호막 세기 덤 적용). 다 깨지면 깎은 체력의 절반을 돌려받습니다.","name":"피 갑주"}
+    "bloodknight": {"desc":"체력 15를 깎아 세 턴 동안 보호막 30을 두릅니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.","name":"피 갑주"}
   },
   "factionJoin": {
     "night_office": ["hq_yard","hq_dorm","ghost_bamboo"],

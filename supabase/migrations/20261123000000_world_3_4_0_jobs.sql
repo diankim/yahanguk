@@ -707,11 +707,21 @@ select pg_temp.yh_fix('world_create_character_v2', array[
     when 'spearman'   then '{"tonic":2}'
     when 'formation'  then '{"ward_talisman":2,"seal_paper":2}'$q$]);
 
+create or replace function public.world_presence_rules() returns jsonb language sql immutable as $$
+  select jsonb_build_object('cap', jsonb_build_object('artificer', 300, 'bloodknight', 280, 'sealmaster', 220), 'cap_other', 160)
+$$;
+grant execute on function public.world_presence_rules() to authenticated;
+create or replace function public.world_presence_cap(p_job text) returns integer language sql immutable as $$
+  select coalesce((public.world_presence_rules() -> 'cap' ->> p_job)::int, (public.world_presence_rules() ->> 'cap_other')::int)
+$$;
+select pg_temp.yh_share('public.world_presence_cap(text)');
+
 select pg_temp.yh_fix('world_combat_stats', array[
   $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 ELSE 1 END;$q$,
   $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'bloodknight' THEN 0.95 WHEN c.job_key = 'spearman' AND style = 'melee' THEN 1.12 ELSE 1 END;$q$,
   $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'sealmaster' THEN 60$q$,
-  $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'bloodknight' THEN 50 WHEN c.job_key = 'sealmaster' THEN 60$q$]);
+  $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'bloodknight' THEN 70 WHEN c.job_key = 'sealmaster' THEN 60$q$,
+  $q$  pres := greatest(5, least(300, (1 + coalesce($q$, $q$  pres := greatest(5, least(public.world_presence_cap(c.job_key), (1 + coalesce($q$]);
 
 select pg_temp.yh_fix('world_expedition_complete', array[$q$ when 'tamer' then '동무의 코' end;$q$, $q$ when 'tamer' then '동무의 코' when 'bloodknight' then '베어 버티기' when 'spearman' then '새벽 돌파' when 'formation' then '길흉 셈' end;$q$]);
 select pg_temp.yh_fix('world_expedition_progress', array[$q$ when 'tamer' then '동무의 코' end);$q$, $q$ when 'tamer' then '동무의 코' when 'bloodknight' then '베어 버티기' when 'spearman' then '새벽 돌파' when 'formation' then '길흉 셈' end);$q$]);
@@ -1628,7 +1638,7 @@ update public.world_patch_notes set body = body || $N$
 ## 3.4.0
 
 - 새 직업 셋이 생겼습니다.
-  - 혈기사: 도끼·대검을 드는 방패입니다. 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 세 턴 동안 보호막을 두릅니다.
+  - 혈기사: 도끼·대검을 드는 방패입니다(이목 +70). 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 세 턴 동안 보호막을 두릅니다.
   - 여명 창객: 언월도·장창을 드는 근접 공격수입니다. 연달아 공격할수록 「창끝 기세」가 겹으로 쌓여 세지고(다섯 겹까지), 방어·버티기·물품·이동을 하면 끊깁니다. 현장 토벌에서는 첫 공격에 선제로 한 번 더 찌르고, 「관통 찌르기」는 요괴 방어의 절반을 꿰뚫습니다.
   - 진법가: 산가지·나경을 드는 치유사입니다. 다친 뒤 고치는 의무관과 달리 보호막과 피해 감소로 맞기 전에 지킵니다. 「산가지 진」은 세 턴 동안 받는 피해를 크게 줄입니다.
   - 세 직업 모두 기술 계열(혈투·창술·진법), 협동 기술 넷, 원정 기술, 비무회 기술이 있습니다. 직업 퀘스트도 세 편씩 생겼습니다(혈기사 남명회 땅 · 진법가 흑련회 땅 · 여명 창객 수향연맹 땅).
@@ -1640,6 +1650,7 @@ update public.world_patch_notes set body = body || $N$
   - 새 갈래를 채우는 무기 65자루와 그 제작법이 생겼습니다(1~8단계).
   - 떨어지는 무기는 내 직업 갈래가 더 잘 나옵니다.
   - 쇠뇌·취관은 화살 대신 「편전」을 씁니다. 가지고 있던 쇠뇌살은 편전으로 바뀌었습니다. 활이 쇠뇌·취관으로 바뀐 무기를 끼고 있던 조사원은 가진 화살 가운데 100개까지를 편전으로 바꿔 드렸습니다.
+- 이목에 직업마다 상한을 두었습니다(호위 무사 300 · 혈기사 280 · 봉인술사 220 · 그 밖의 직업 160). 방패가 아닌 직업이 무거운 장비를 둘러 방패보다 요괴 눈에 더 띄던 것을 막습니다.
 - 「장비 세트」가 생겼습니다. 가방 › 장비에서 지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 처음 네 칸이고, 어느 직업이든 전투 기술 계열 하나가 15단계에 닿을 때마다 한 칸씩 늘어 열 칸까지입니다(직업을 바꿔도 줄지 않습니다).
 - 「환골탈태 서첩」을 모든 안전지대 상점에서 늘 팝니다(값은 레벨에 따라 다름). 이제 서첩은 직업만 바꾸고 소속은 그대로 둡니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 쓴 뒤 한 시간은 다시 쓸 수 없습니다(남은 시간은 가방의 서첩 단추에 보입니다). 새 직업 무기가 하나도 없으면 시작 무기 하나를 받습니다. 주 능력치가 상한에 닿아 남는 점수는 직접 나눕니다.
 - 직업을 바꿔도 계열마다 쌓은 기술 단계는 그대로 남고, 새 직업의 계열은 따로 키웁니다. 캐릭터 › 기술의 「다른 직업 기술」을 펼치면 다른 직업 계열의 단계와 기술을 볼 수 있습니다.

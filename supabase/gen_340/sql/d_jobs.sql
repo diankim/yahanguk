@@ -75,11 +75,21 @@ select pg_temp.yh_fix('world_create_character_v2', array[
     when 'spearman'   then '{"tonic":2}'
     when 'formation'  then '{"ward_talisman":2,"seal_paper":2}'$q$]);
 
+create or replace function public.world_presence_rules() returns jsonb language sql immutable as $$
+  select jsonb_build_object('cap', jsonb_build_object('artificer', 300, 'bloodknight', 280, 'sealmaster', 220), 'cap_other', 160)
+$$;
+grant execute on function public.world_presence_rules() to authenticated;
+create or replace function public.world_presence_cap(p_job text) returns integer language sql immutable as $$
+  select coalesce((public.world_presence_rules() -> 'cap' ->> p_job)::int, (public.world_presence_rules() ->> 'cap_other')::int)
+$$;
+select pg_temp.yh_share('public.world_presence_cap(text)');
+
 select pg_temp.yh_fix('world_combat_stats', array[
   $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 ELSE 1 END;$q$,
   $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'bloodknight' THEN 0.95 WHEN c.job_key = 'spearman' AND style = 'melee' THEN 1.12 ELSE 1 END;$q$,
   $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'sealmaster' THEN 60$q$,
-  $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'bloodknight' THEN 50 WHEN c.job_key = 'sealmaster' THEN 60$q$]);
+  $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'bloodknight' THEN 70 WHEN c.job_key = 'sealmaster' THEN 60$q$,
+  $q$  pres := greatest(5, least(300, (1 + coalesce($q$, $q$  pres := greatest(5, least(public.world_presence_cap(c.job_key), (1 + coalesce($q$]);
 
 select pg_temp.yh_fix('world_expedition_complete', array[$q$ when 'tamer' then '동무의 코' end;$q$, $q$ when 'tamer' then '동무의 코' when 'bloodknight' then '베어 버티기' when 'spearman' then '새벽 돌파' when 'formation' then '길흉 셈' end;$q$]);
 select pg_temp.yh_fix('world_expedition_progress', array[$q$ when 'tamer' then '동무의 코' end);$q$, $q$ when 'tamer' then '동무의 코' when 'bloodknight' then '베어 버티기' when 'spearman' then '새벽 돌파' when 'formation' then '길흉 셈' end);$q$]);

@@ -76,6 +76,7 @@ def build(dsn):
     d['idle'] = q(dsn, "select world_idle_rules()")
     d['jobChange'] = q(dsn, "select world_job_change_rules()")
     d['spear'] = q(dsn, "select world_spear_rules()")
+    d['presence'] = q(dsn, "select world_presence_rules()")
     d['jobSkillCost'] = q(dsn, f"select json_object_agg(j, world_job_skill_cost(j)) from unnest({jarr(JOB_KEYS)}) j")
     d['gearSet'] = q(dsn, "select world_gear_set_rules()")
     d['weaponRules'] = q(dsn, "select world_weapon_rules()")
