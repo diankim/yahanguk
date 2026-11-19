@@ -64,4 +64,3 @@ $f$;
   if s then execute 'grant fn_owner_field to ' || quote_ident(current_user) || ' with set false'; end if;
 end $m$;
 update public.world_patch_notes set body = replace(body, '다른 무기(같은 단계 이하)로', '같은 단계거나 그 밑 단계의 다른 무기로') where note_id = '3.0.0' and body like '%다른 무기(같은 단계 이하)로%';
-update public.world_app_meta set value = '20261123050000' where key = 'db_version';
