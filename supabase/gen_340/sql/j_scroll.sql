@@ -130,3 +130,5 @@ grant execute on function public.world_job_change_status() to authenticated;
 select pg_temp.yh_fix('world_character_purge', array[$q$  delete from public.world_gear_sets where owner_id = p_uid;$q$,
   $q$  delete from public.world_gear_sets where owner_id = p_uid;
   delete from public.world_job_changes where owner_id = p_uid;$q$]);
+
+select pg_temp.yh_fix('world_hud_snapshot', array[$q$'bijang', public.world_bijang_brief(uid),$q$, $q$'bijang', public.world_bijang_brief(uid), 'job_cd', public.world_job_change_until(uid),$q$]);

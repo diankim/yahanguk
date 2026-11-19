@@ -1,6 +1,6 @@
 import { icon, esc, $, $$, effectText, nameOf, josa, fmt } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
-import { toast, RAID_ON, JOBS, FACTIONS } from '../core.js';
+import { toast, RAID_ON, JOBS, FACTIONS, JOB_ORDER } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
@@ -22,14 +22,14 @@ function jobTableHtml() {
     const stats = Object.entries(j.base).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([s, v]) => `${STAT_KO[s]} ${v}`).join('<br>');
     return `<tr><td><b>${esc(j.name)}</b><br>${esc(j.trait)}${j.sub ? `<br>${esc(j.sub)}` : ''}</td><td>${stats}</td><td>${(j.fx || []).map(esc).join('<br>')}</td></tr>`; };
   return `<table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
-    ${['artificer', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster', 'analyst'].map(row).join('')}</table>`;
+    ${JOB_ORDER.map(row).join('')}</table>`;
 }
 function coopTableHtml() {
   const band = k => `<tr class="g-band"><th colspan="4">${esc(JOBS[k].name)} · ${esc(JOBS[k].trait)}</th></tr>` +
     GD.coop.filter(c => c.job === k).sort((a, b) => a.rank - b.rank)
       .map(c => `<tr><td>${c.rank}</td><td><b>${esc(c.name)}</b></td><td>${esc(c.desc)}</td><td>${c.cost} · ${c.cd}초</td></tr>`).join('');
   return `<table class="guide-table"><tr><th>숙련</th><th>협동 기술</th><th>효과</th><th>영력 · 다시 쓰기</th></tr>
-    ${['artificer', 'analyst', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster'].map(band).join('')}</table>`;
+    ${JOB_ORDER.map(band).join('')}</table>`;
 }
 const kindStyle = k => { const [a, b, c] = (GD.kindMul?.[k] || [1, 1, 1]).map(Number), top = Math.max(a, b, c);
   return top <= 1 ? '고르게' : [['근접', a], ['원거리', b], ['술법', c]].filter(([, v]) => v === top).map(([n, v]) => `${n} ×${v}`).join('·'); };
@@ -49,7 +49,7 @@ function soloAidHtml() {
   const guardTxt = g => g ? ` · 받는 피해 ${g > 0 ? '−' : '+'}${Math.abs(g)}%` : '';
   const cell = (a, key) => pctTxt(a[key] || 0) + guardTxt(Number(key === 'final_dmg' ? a.final_guard : a.solo_guard) || 0);
   return `<table class="guide-table"><tr><th>직업</th><th>귀허의 주인(주는 피해)</th><th>먹그림자(주는 피해)</th><th>구중 봉주 결전(주는 피해)</th></tr>
-    ${['artificer', 'analyst', 'scout', 'tamer', 'exorcist', 'medic', 'sealmaster'].map(k => { const a = GD.soloAid[k] || {};
+    ${JOB_ORDER.map(k => { const a = GD.soloAid[k] || {};
       return `<tr><td>${esc(JOBS[k].name)}</td><td>${cell(a, 'solo_dmg')}</td><td>${cell(GD.boss?.mukjeok?.solo?.[k] || {}, 'solo_dmg')}</td><td>${cell(a, 'final_dmg')}</td></tr>`; }).join('')}</table>`;
 }
 function relStartHtml() {

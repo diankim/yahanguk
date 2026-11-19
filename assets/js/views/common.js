@@ -91,6 +91,7 @@ on('changed', ({ name = '', data, field } = {}) => {
   if (!hit('invQuiet', name)) for (const k of ['world_shop_snapshot', 'world_smithy_snapshot', 'world_enhance_quote', 'world_repair_quote']) invalidate(k);
   if (hit('dismantle', name)) invalidate('world_dismantle_info');
   if (hit('mounts', name)) invalidate('world_mount_snapshot');
+  if (hit('gearSets', name)) invalidate('world_gear_set_list');
   if (hit('owned', name)) { invalidate('world_pet_snapshot'); forgetHome(); }
   if (hit('avatar', name)) { invalidate('world_avatar_get'); invalidate('world_outfit_design_list'); }
   if (hit('raidBrief', name)) invalidate('world_raid_brief');
@@ -103,6 +104,19 @@ window.addEventListener('yahang:arrived', () => invalidate());
 window.addEventListener('yh-note', e => { const k = e.detail?.kind || ''; if (k === 'title') invalidate('world_title_snapshot'); if (k === 'cosmetic') { invalidate('world_title_snapshot'); invalidate('world_cosmetic_snapshot'); } });
 
 const tcdKey = () => `yh-travel-cd:${store.character?.owner_id || ''}`;
+export function jobCdLeft(now = Date.now()) { const u = store.hud?.job_cd; return u ? Math.max(0, new Date(u) - now) : 0; }
+let jobCdTimer = 0;
+export function paintJobCd(root = document) {
+  const els = [...root.querySelectorAll('[data-jobcd]')];
+  const left = jobCdLeft(), set = (el, k, v) => { if (el[k] !== v) el[k] = v; };
+  for (const el of els) {
+    if (el.dataset.jobcd === 'btn') { set(el, 'disabled', left > 0); set(el, 'textContent', left > 0 ? fmt.remain(left) : (el.dataset.jobcdText || '사용')); set(el, 'title', left > 0 ? `직업을 바꾼 지 얼마 되지 않았습니다. ${fmt.remain(left)} 뒤에 다시 쓸 수 있습니다.` : ''); }
+    else { set(el, 'hidden', left <= 0); set(el, 'textContent', left > 0 ? `${fmt.remain(left)} 뒤에 다시 쓸 수 있음` : ''); }
+  }
+  clearTimeout(jobCdTimer); jobCdTimer = 0;
+  if (els.length && left > 0) jobCdTimer = setTimeout(() => paintJobCd(), 1000);
+}
+if (typeof MutationObserver !== 'undefined' && document.body) new MutationObserver(() => { if (!jobCdTimer && document.querySelector('[data-jobcd]')) paintJobCd(); }).observe(document.body, { childList: true, subtree: true });
 export function travelCdLeft(now = Date.now()) { try { return Math.max(0, Number(localStorage.getItem(tcdKey()) || 0) - now); } catch { return 0; } }
 export function setTravelCd(secs) { try { const s = Number(secs) || 0; if (s > 0) localStorage.setItem(tcdKey(), String(Date.now() + s * 1000)); else localStorage.removeItem(tcdKey()); } catch {} }
 export const travelCdFromError = err => { const m = /^cd:(\d+)$/.exec(String(err?.hint || '')); if (m) setTravelCd(m[1]); return !!m; };

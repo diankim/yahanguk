@@ -8,6 +8,7 @@ import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
 import { hit } from '../changes.js';
+import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -228,7 +229,7 @@ async function equip(body, inv) {
   };
   const token = tokenRowHtml();
   body.innerHTML = `<div class="eq-split">
-      <div class="eq-left">${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
+      <div class="eq-left">${panel('장비 세트', '<div id="gear-sets"><p class="muted small">불러오는 중…</p></div>', { ico: 'refresh', extra: helpQ(GEAR_SET_TIP(), '장비 세트') })}${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
       <div class="eq-right" id="eq-detail"></div>
     </div>`;
   const slotBody = slot => `<ul class="equip-list">${equipRowLi(inv, prof, here, slot, rq)}</ul><h3 class="sub-h">바꿔 낄 장비</h3>${optionsHtml(slot)}`;
@@ -239,6 +240,7 @@ async function equip(body, inv) {
     bindActions(body); bindRepair(body);
   };
   bindActions(body); bindRepair(body);
+  drawGearSets($('#gear-sets', body), eq);
   if (wideEq()) drawDetail(SLOTS[eqSel] ? eqSel : 'weapon');
   $$('[data-eqslot]', body).forEach(b => b.onclick = () => {
     const slot = b.dataset.eqslot;
@@ -251,6 +253,37 @@ async function equip(body, inv) {
   });
 }
 let eqSel = 'weapon';
+const GEAR_SET_TIP = () => { const r = GAMEDATA.gearSet || {}; return `지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 처음 ${r.base || 4}칸이고, 전투 기술 계열이 ${r.rank || 15}단계에 닿을 때마다 한 칸씩 늘어 ${r.max || 10}칸까지입니다. 세트에 담긴 물품이 가방에 없거나 장착 조건이 맞지 않는 칸은 건너뜁니다(보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다). 전투·원정 중에는 바꿔 낄 수 없습니다.`; };
+async function drawGearSets(box, eq) {
+  if (!box) return;
+  let d;
+  try { d = await load('world_gear_set_list', undefined, { maxAge: 600000 }); } catch (e) { box.innerHTML = `<p class="muted small">${esc(friendlyError(e))}</p>`; return; }
+  if (!box.isConnected) return;
+  const sets = new Map((d?.sets || []).map(x => [x.n, x])), cap = d?.cap || 4, max = d?.rules?.max || 10;
+  const same = x => { const a = x.items || {}, ks = new Set([...Object.keys(a), ...Object.keys(eq || {})]); return [...ks].every(k => (a[k] || null) === (eq?.[k] || null)); };
+  const row = n => { const x = sets.get(n);
+    if (!x) return `<li class="gs-row empty"><span class="gs-name"><b>${n}</b><small class="muted">비어 있음</small></span><span class="gs-btns"><button class="btn small" data-gs-save="${n}">지금 장비 저장</button></span></li>`;
+    const cnt = Object.keys(x.items || {}).length, on = same(x);
+    return `<li class="gs-row ${on ? 'on' : ''}"><span class="gs-name"><b>${n}</b><button type="button" class="linkish" data-gs-menu="${n}" title="이름 바꾸기·덮어쓰기·지우기">${esc(x.name)}</button><small class="muted">${cnt}칸${on ? ' · 끼고 있음' : ''}</small></span>
+      <span class="gs-btns"><button class="btn small primary" data-gs-apply="${n}" ${on ? 'disabled' : ''}>끼기</button></span></li>`; };
+  box.innerHTML = `<ul class="gs-list">${Array.from({ length: cap }, (_, i) => row(i + 1)).join('')}</ul>${cap < max ? `<p class="muted small">전투 기술 계열이 ${d?.rules?.rank || 15}단계에 닿을 때마다 한 칸씩 늘어납니다(${cap}/${max}).</p>` : ''}`;
+  const named = n => sets.get(Number(n))?.name || `세트 ${n}`;
+  $$('[data-gs-save]', box).forEach(b => b.onclick = () => guard(b, () => act('world_gear_set_save', { p_n: Number(b.dataset.gsSave), p_name: '' })));
+  $$('[data-gs-apply]', box).forEach(b => b.onclick = () => guard(b, async () => {
+    const r = await act('world_gear_set_apply', { p_n: Number(b.dataset.gsApply) });
+    const skip = r?.skipped || [];
+    return { content: `「${r?.name || named(b.dataset.gsApply)}」을(를) 꼈습니다${(r?.equipped || []).length ? ` · ${r.equipped.length}칸 바꿈` : ''}${skip.length ? ` · 건너뜀 ${skip.map(k => `${SLOTS[k.slot]?.[0] || k.slot}(${k.why})`).join(', ')}` : ''}` };
+  }));
+  $$('[data-gs-menu]', box).forEach(b => b.onclick = () => {
+    const n = Number(b.dataset.gsMenu), nmax = d?.rules?.name_max || 12;
+    const m = openModal({ title: `장비 세트 ${n}`, body: `<label class="field"><span>이름 (${nmax}자까지)</span><input id="gs-nm" maxlength="${nmax}" value="${esc(named(n))}" autocomplete="off"></label>
+      <div class="modal-actions"><button class="btn act-dc" id="gs-del">지우기</button><button class="btn" id="gs-over">지금 장비로 덮어쓰기</button><button class="btn primary" id="gs-ren">이름 바꾸기</button></div>` });
+    const done = r => { if (r !== undefined) closeModal(); };
+    $('#gs-ren', m).onclick = e => guard(e.currentTarget, () => act('world_gear_set_rename', { p_n: n, p_name: $('#gs-nm', m).value })).then(done);
+    $('#gs-over', m).onclick = async e => { const btn = e.currentTarget; if (!(await ask(`「${named(n)}」을(를) 지금 낀 장비로 덮어쓸까요?`, { title: '장비 세트', ok: '덮어쓰기' }))) return; guard(btn, () => act('world_gear_set_save', { p_n: n, p_name: $('#gs-nm', m).value })).then(done); };
+    $('#gs-del', m).onclick = async e => { const btn = e.currentTarget; if (!(await ask(`「${named(n)}」 세트를 지울까요? 장비는 그대로입니다.`, { title: '장비 세트', ok: '지우기' }))) return; guard(btn, () => act('world_gear_set_clear', { p_n: n })).then(done); };
+  });
+}
 const wideEq = () => matchMedia('(min-width: 900px)').matches;
 function traits(it) {
   const t = it?.equipment_traits; if (!t) return '';
@@ -368,7 +401,7 @@ function actsHtml(id, n, it, part, ri, showUse, eqSet, stash = canStash()) {
   const qmax = Math.max(useMax, locked && !stash ? 0 : dcMax);
   const name = esc(nameOf(id));
   const ul = useLabel(id);
-  const right = showUse ? `<button class="btn small" data-here="물품 사용" ${ul !== '사용' ? '' : 'data-here-down'} data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} ${ul}" title="${esc(USABLE[id])}">${ul}</button>`
+  const right = showUse ? `<button class="btn small" data-here="물품 사용" ${id === 'reset_identity' ? `data-jobcd="btn" data-jobcd-text="${esc(ul)}"` : ''} ${ul !== '사용' ? '' : 'data-here-down'} data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} ${ul}" title="${esc(USABLE[id])}">${ul}</button>`
     : it?.category === 'pet' ? `<button class="btn small" data-adopt="${esc(id)}" aria-label="${name} 열기" title="바구니·알을 열어 꼬마 동무를 맞습니다">열기</button>`
     : it?.category === 'outfit' ? `<button class="btn small" data-wear="${esc(id)}" aria-label="${name} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷 하나를 얻습니다' : '옷장에 넣어 「내 모습」에서 입습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>`
     : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade data-here="동무 정표 바꾸기" title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`

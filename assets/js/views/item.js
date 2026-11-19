@@ -1,4 +1,4 @@
-import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, FACTIONS, RAID_ON, useItemAct } from '../core.js';
+import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, JOB_ORDER, FACTIONS, RAID_ON, useItemAct } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, loadPrices, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS, shopNow, shopNowHtml } from '../sources.js';
@@ -114,7 +114,7 @@ const statReqs = (o, c) => {
   return req.map(([k, v]) => [`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v), `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`]);
 };
 const FIELD_LINE = { sealing: 'wardcraft' };
-const STAT_JOBS = { strength: ['artificer'], vitality: ['artificer'], agility: ['scout', 'tamer', 'analyst'], perception: ['scout', 'tamer', 'analyst'], spirit_affinity: ['exorcist'], willpower: ['medic', 'sealmaster'] };
+const STAT_JOBS = { strength: ['artificer', 'bloodknight', 'spearman'], vitality: ['artificer', 'bloodknight'], agility: ['scout', 'tamer', 'analyst', 'spearman'], perception: ['scout', 'tamer', 'analyst'], spirit_affinity: ['exorcist', 'formation'], willpower: ['medic', 'sealmaster', 'formation'] };
 export function suitedJobs(o) {
   if (!o || !['weapon', 'armor'].includes(o.category)) return [];
   const req = Object.entries(o.required_stats || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
@@ -124,7 +124,7 @@ export function suitedJobs(o) {
   if (o.category === 'weapon') jobs = weaponJobs(o);
   return o.required_job ? [o.required_job] : jobs;
 }
-const WEAPON_JOBS = { melee: ['artificer', 'analyst'], ranged: ['scout', 'tamer'], magic: ['exorcist', 'sealmaster', 'medic'] };
+const WEAPON_JOBS = { melee: ['artificer', 'analyst', 'bloodknight', 'spearman'], ranged: ['scout', 'tamer'], magic: ['exorcist', 'sealmaster', 'medic', 'formation'] };
 export const weaponJobs = o => Array.isArray(o?.equipment_traits?.jobs) ? o.equipment_traits.jobs : WEAPON_JOBS[o?.equipment_traits?.weapon_type || 'melee'] || [];
 const weaponOk = (o, c) => o?.category !== 'weapon' || !c?.job_key || weaponJobs(o).includes(c.job_key);
 const weaponJobText = o => `${weaponJobs(o).map(nameOf).join('·')} 무기`;
@@ -330,13 +330,12 @@ export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ON
 function openResetIdentity() {
   const c = store.character || {};
   const m = openModal({ title: '환골탈태 서첩', body: `
-    <p class="muted small">직업과 소속을 다시 고릅니다. 능력치는 새 직업의 기본값으로 돌아가 쓴 포인트를 모두 돌려받습니다. 레벨·기술 단계·대세력·물품·전·칭호는 그대로이고, 새 직업·소속으로 찰 수 없는 장비는 벗깁니다. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다.</p>
+    <p class="muted small">직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 새 직업 무기가 하나도 없으면 시작 무기 하나를 받습니다. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.</p>
+    <p class="hint" data-jobcd hidden></p>
     <h3 class="sub-h">직업</h3>
-    <div class="choice-grid ri-grid">${Object.entries(JOBS).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
-    <h3 class="sub-h">소속</h3>
-    <div class="choice-grid ri-grid">${Object.entries(FACTIONS).filter(([k]) => ['headquarters', 'fieldbureau', 'archivebureau', 'sealbureau', 'medicalbureau', 'independent'].includes(k)).map(([k, f]) => `<label class="choice"><input type="radio" name="rf" value="${k}" ${k === c.faction_key ? 'checked' : ''}><span><b>${esc(f.name)}</b><small>${esc(f.trait || '')}</small></span></label>`).join('')}</div>
+    <div class="choice-grid ri-grid">${JOB_ORDER.map(k => [k, JOBS[k]]).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
     <div id="ri-pet" hidden><h3 class="sub-h">데리고 다닐 꼬마 동무</h3><div class="ri-pet-body"></div></div>
-    <div class="modal-actions sticky-actions"><button class="btn primary" id="ri-go">${icon('spark', 15)}<span>이대로 다시 시작</span></button></div>` });
+    <div class="modal-actions sticky-actions"><button class="btn primary" id="ri-go" data-jobcd="btn" data-jobcd-text="이대로 다시 시작">이대로 다시 시작</button></div>` });
   let pets = null;
   const petBox = $('#ri-pet', m);
   const petCard = (id, sub, on) => { const g = petGroupOf(id); return `<label class="choice ri-petc"><input type="radio" name="rp" value="${esc(id)}" ${on ? 'checked' : ''}><img src="${petImage(id, sub.adult, { scale: 2 })}" alt=""><span><b>${esc(sub.name)}</b><small>${esc([g?.name, sub.note].filter(Boolean).join(' · '))}</small></span></label>`; };
@@ -355,13 +354,14 @@ function openResetIdentity() {
   $$('input[name=rj]', m).forEach(r => r.addEventListener('change', showPets));
   showPets();
   $('#ri-go', m).onclick = async e => {
-    const job = $('input[name=rj]:checked', m)?.value, fac = $('input[name=rf]:checked', m)?.value;
-    if (!job || !fac) return toast('직업과 소속을 고르세요.', 'error');
+    const job = $('input[name=rj]:checked', m)?.value, fac = c.faction_key;
+    if (!job) return toast('직업을 고르세요.', 'error');
+    if (job === c.job_key) return toast('지금과 같은 직업입니다.', 'error');
     const pet = job === 'tamer' ? $('input[name=rp]:checked', m)?.value || null : null;
     if (job === 'tamer' && !pets) return toast('동무 목록을 불러오는 중입니다.', 'error');
     if (job === 'tamer' && !pet) return toast('데리고 다닐 꼬마 동무를 고르세요.', 'error');
     const petName = pet ? (pets.mine || []).find(p => p.id === pet)?.nick || PETS[pet]?.name || pet : '';
-    if (!(await ask(`${JOBS[job]?.name} · ${FACTIONS[fac]?.name}(으)로 다시 시작할까요?${petName ? ` ${petName}와(과) 함께 다닙니다.` : ''} 서첩 하나를 쓰고, 되돌릴 수 없습니다.`, { title: '환골탈태', ok: '다시 시작' }))) return;
+    if (!(await ask(`${JOBS[job]?.name}(으)로 직업을 바꿀까요?${petName ? ` ${petName}와(과) 함께 다닙니다.` : ''} 서첩 하나를 쓰고, ${GD.jobChange?.cd_min || 60}분 동안은 다시 바꿀 수 없습니다.`, { title: '환골탈태', ok: '바꾸기' }))) return;
     await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac, p_pet: pet }); closeModal(); if (RAID_ON) rebirthScene(job, fac); return out; });
   };
 }

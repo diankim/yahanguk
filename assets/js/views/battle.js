@@ -60,7 +60,8 @@ function draw(fresh = []) {
   if (c.job_key === 'tamer' && !b.pet) weakNote('pet');
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
   const skillWait = Math.max(0, ready - turnNow);
-  const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = c.job_key === 'medic' ? 25 : 12;
+  const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = GAMEDATA.jobSkillCost?.[c.job_key] ?? 12;
+  const pf = b.pfx || {}, myChips = [pf.chain > 0 && c.job_key === 'spearman' ? chip(`${GAMEDATA.spear?.name || '창끝 기세'} ${pf.chain}겹`, 'ok') : '', pf.pshield > 0 ? chip(`보호막 ${pf.pshield}`, 'ok') : '', pf.zin > 0 ? chip(`산가지 진 ${pf.zin}턴`, 'ok') : ''].join('');
   const inv = c.inventory || {};
   const log = (b.log || []).slice(-8);
   host.innerHTML = `
@@ -81,6 +82,7 @@ function draw(fresh = []) {
           <div class="vital"><span>정신</span><b>${c.mental}</b>${bar(c.mental, 100, 'mp')}</div>
           <div class="vital"><span>${spOf()[0]}</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, spOf()[1])}</div>
         </div>
+        ${myChips ? `<div class="chips me-chips">${myChips}</div>` : ''}
         <p class="weapon-line">${icon('sword', 14)} ${esc(w.name)} · ${STYLE[w.type] || '근접'} 공격 ${ef ? chip(ef[0], ef[1]) : ''}${(data.gear_warn || []).filter(g => g.slot === 'weapon' || g.slot === 'armor').map(g => chip(`${g.slot === 'weapon' ? '무기' : '방어구'} ${g.dur > 0 ? '닳음' : '부서짐'}`, 'bad')).join('')}${w.type === 'magic' ? ' <small class="muted">술법은 영력 3을 씁니다</small>' : (w.type || 'melee') === 'melee' ? ' <small class="muted">근접 공격은 기력 2를 씁니다</small>' : ''}</p>
         ${c.job_key === 'tamer' ? `<p class="weapon-line pet-line">${icon('heart', 14)} ${b.pet ? `${esc(b.pet.name)} · ${esc(b.pet.grp_name || '')} · 힘 ${petPow(b.pet)}% <small class="muted">공격하는 차례마다 한 번 덧붙어 싸웁니다</small>` : '<span class="bad-text">데리고 다니는 동무가 없습니다</span> <small class="muted">별채 › 동무 도감에서 「데리고 다니기」</small>'}</p>` : ''}
         <div class="float-layer" id="me-float"></div>
@@ -89,7 +91,7 @@ function draw(fresh = []) {
         <span class="btn-row"><button class="btn small primary" data-sneak>기척 숨기기</button><button class="btn small" data-sneak-no>맞서기</button></span></div>` : ''}
       <div class="actions ${callOpt ? 'has-call' : ''}" id="actions">
         <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
-        <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
+        <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${c.job_key === 'bloodknight' ? '체력 15 · ' : ''}${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
         <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · ${spOf()[0]} +4</small><i class="cd"></i></button>
         <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력·기력</small><i class="cd"></i></button>
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>

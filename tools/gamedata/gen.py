@@ -22,7 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'assets' / 'js' / 'gamedata.js'
-JOB_KEYS = ['artificer', 'scout', 'exorcist', 'medic', 'sealmaster', 'analyst', 'tamer']
+JOB_KEYS = ['artificer', 'scout', 'exorcist', 'medic', 'sealmaster', 'analyst', 'tamer', 'bloodknight', 'spearman', 'formation']
 FACTION_KEYS = ['night_office', 'red_moon_cult', 'black_lotus', 'north_league',
                 'river_alliance', 'southern_remnant', 'mandate_court']
 HOSTILE_AT = -40  # world_faction_stance: base −40 이하 = 적대
@@ -74,6 +74,11 @@ def build(dsn):
     d['coopRules'] = q(dsn, "select world_coop_rules()")
     d['expXp'] = q(dsn, "select world_expedition_xp_rules()")
     d['idle'] = q(dsn, "select world_idle_rules()")
+    d['jobChange'] = q(dsn, "select world_job_change_rules()")
+    d['spear'] = q(dsn, "select world_spear_rules()")
+    d['jobSkillCost'] = q(dsn, f"select json_object_agg(j, world_job_skill_cost(j)) from unnest({jarr(JOB_KEYS)}) j")
+    d['gearSet'] = q(dsn, "select world_gear_set_rules()")
+    d['weaponRules'] = q(dsn, "select world_weapon_rules()")
     d['rescue'] = q(dsn, "select world_rescue_rules()")
     d['survival'] = q(dsn, "select world_survival_rules()")
     d['rate'] = q(dsn, "select world_rate_rules()")

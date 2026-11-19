@@ -226,6 +226,7 @@ textarea { resize: none; }
 .step { display: flex; align-items: center; gap: 10px; }
 .step b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: calc(12.5px * var(--fz, 1)); }
 .choice-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+@media (max-width: 640px) { .choice-grid.job-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; } }
 .choice-card { display: grid; gap: 4px; text-align: left; padding: 14px; border-radius: var(--r); border: var(--bw) solid var(--line); background: var(--surface-2); cursor: pointer; color: var(--text); }
 .choice-card small { color: var(--muted); font-size: calc(12.5px * var(--fz, 1)); }
 .choice-card[aria-pressed=true] { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 9%, var(--surface-2)); box-shadow: 0 0 0 1px var(--gold); }
@@ -487,6 +488,15 @@ body.chat-open .chat-fab { display: none; }
 .status-list li.good { box-shadow: inset 2px 0 0 var(--ok); }
 .idle-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-bottom: 10px; }
 .idle-card header { justify-content: flex-start; gap: 8px; }
+.gs-list { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.gs-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: var(--bw) solid var(--line); border-radius: var(--r); background: var(--surface-2); min-width: 0; }
+.gs-row.on { border-color: var(--gold); }
+.gs-row.empty { opacity: .8; }
+.gs-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
+.gs-name b { color: var(--gold); }
+.gs-name .linkish { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.gs-name small { white-space: nowrap; }
+.gs-btns { flex: none; }
 .idle-line { display: flex; align-items: center; gap: 8px; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .idle-line select { flex: 1; min-width: 0; height: 32px; }
 .idle-card header .ico { color: var(--gold); }

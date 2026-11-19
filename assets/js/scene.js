@@ -238,7 +238,7 @@ const grey = c => { const v = Math.round(((c & 255) + (c >> 8 & 255) + (c >> 16 
 const ease = t => t < 0 ? 0 : t > 1 ? 1 : Math.sin(t * Math.PI);
 const line = (put, x0, y0, x1, y1, c) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1); for (let i = 0; i <= n; i++) put(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), c); };
 const C = h => P(h);
-const JOB_HUE = { artificer: '#ffc83a', scout: '#7ac8ff', exorcist: '#ff7a3a', medic: '#6ae07a', sealmaster: '#c8c8ff', analyst: '#b46aff', tamer: '#ffb46a' };
+const JOB_HUE = { artificer: '#ffc83a', scout: '#7ac8ff', exorcist: '#ff7a3a', medic: '#6ae07a', sealmaster: '#c8c8ff', analyst: '#b46aff', tamer: '#ffb46a', bloodknight: '#e0405a', spearman: '#ffe08a', formation: '#7ae0d0' };
 const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const a2 = s => s.px * (1 - (Date.now() - s.t0) / s.dur);
 const thick = put => (x, y, c) => { put(x, y, c); put(x + 1, y, c); put(x, y + 1, c); put(x + 1, y + 1, c); };
@@ -250,6 +250,14 @@ const JOB_FX = {
   sealmaster(put, a, b, t) { const p = Math.min(1, t * 1.4), x1 = Math.round(a.x + (b.x - a.x) * p); for (let x = Math.min(a.x, x1); x <= Math.max(a.x, x1); x++) { const y = a.y - 18 + ((x >> 2) % 2); put(x, y, C(x % 6 < 3 ? '#e0e0ea' : '#7a7a88')); put(x, y + 1, C(x % 6 < 3 ? '#9a9aa8' : '#5a5a68')); } if (p >= 1) for (let r = 0; r < 2; r++) for (let i = 0; i < 40; i++) { const ang = i / 40 * Math.PI * 2 + t * 5 * (r ? -1 : 1); put(Math.round(b.x + (13 - r * 3) * Math.cos(ang)), Math.round(b.y - 12 - r * 10 + 4 * Math.sin(ang)), C(i % 4 < 2 ? '#e0e0ea' : '#7a7a88')); } },
   analyst(put, a, b, t) { if (t < .25) return; const k = (t - .25) / .75; for (let n = 0; n < 2; n++) for (let i = 0; i < 30; i++) { const u = i / 29; if (u > k * 1.3) break; const x = Math.round(b.x - 14 + 28 * u), y = Math.round(b.y - 36 + 30 * u + (n ? -6 + 12 * u : 0)) - (n ? 0 : 0); const xx = n ? Math.round(b.x + 14 - 28 * u) : x; put(xx, y, C('#b07ad8')); put(xx + 1, y, C('#e8d0ff')); put(xx, y + 1, C('#5a2a7a')); } },
   tamer(put, a, b, t, s) { const p = Math.min(1, t * 1.5), x = Math.round(a.x + (b.x - a.x - (a.flip ? -12 : 12)) * p); if (s.f.pet) drawPet(put, s.f.pet.id, !!s.f.pet.adult, 'step', x, a.y - Math.round(8 * Math.sin(p * Math.PI)), !a.flip); else for (let i = 0; i < 4; i++) put(x + i, a.y - 4, C('#c8a070')); if (p >= 1) drawEffect(put, 'star', b.x, b.y - 30); },
+  bloodknight(put, a, b, t) { const k = ease(t), cx = a.x, cy = a.y - 18; for (let i = 0; i < 28; i++) { const u = i / 27 * Math.PI * 2, r = 13 + Math.round(2 * Math.sin(u * 3 + t * 8)); if (u / (Math.PI * 2) > k * 1.2) break; put(Math.round(cx + r * Math.cos(u)), Math.round(cy + r * 0.8 * Math.sin(u)), C(i % 3 ? '#c8283c' : '#ff7a8a')); }
+    if (t > .5) for (let n = 0; n < 4; n++) { const x = b.x - 6 + n * 4, y = b.y - 30 + Math.round((t - .5) * 2 * 18) + (n % 2) * 3; put(x, y, C('#e0405a')); put(x, y + 1, C('#a01830')); } },
+  spearman(put, a, b, t) { const d = a.flip ? -1 : 1, p = Math.min(1, t * 2.2), x0 = a.x + d * 8, x1 = Math.round(x0 + (b.x - x0 - d * 4) * p), y = a.y - 20; line(put, x0, y, x1, y, C('#8a6a3a')); line(put, x0, y + 1, x1, y + 1, C('#6a4a2a'));
+    for (let i = 0; i < 5; i++) { put(x1 + d * i, y - Math.max(0, 2 - i), C('#fff6c8')); put(x1 + d * i, y + 1 + Math.max(0, 2 - i), C('#ffe08a')); }
+    if (p >= 1) for (let i = 0; i < 8; i++) { const u = i / 8 * Math.PI * 2, r = 3 + Math.round(ease(t) * 7); put(Math.round(b.x + r * Math.cos(u)), Math.round(y + r * Math.sin(u)), C('#ffe08a')); } },
+  formation(put, a, b, t) { const k = ease(t), cx = a.x, cy = a.y - 20; for (let n = 0; n < 6; n++) { const u0 = n / 6 * Math.PI * 2 - Math.PI / 2, u1 = (n + 1) / 6 * Math.PI * 2 - Math.PI / 2, r = 16; if (n / 6 > k * 1.3) break;
+    line(put, Math.round(cx + r * Math.cos(u0)), Math.round(cy + r * Math.sin(u0)), Math.round(cx + r * Math.cos(u1)), Math.round(cy + r * Math.sin(u1)), C(n % 2 ? '#7ae0d0' : '#c8fff4')); }
+    for (let n = 0; n < 3; n++) { const yy = cy - 6 + n * 6; line(put, cx - 6, yy, cx + 6, yy, C('#5ac8b8')); } },
 };
 
 export function sceneHtml() {

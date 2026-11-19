@@ -1,3 +1,8 @@
+create or replace function public.world_job_skill_cost(p_job text) returns integer language sql immutable as $$
+  select case when p_job in ('medic', 'formation') then 25 when p_job in ('bloodknight', 'spearman') then 20 else 12 end
+$$;
+select pg_temp.yh_share('public.world_job_skill_cost(text)');
+
 create or replace function public.world_spear_rules() returns jsonb language sql immutable as $$
   select jsonb_build_object('name', '창끝 기세', 'per', 5, 'per24', 1, 'rank24', 24, 'max', 5, 'finish_name', '마무리 찌르기', 'finish_pct', 15, 'finish_at', 30)
 $$;
@@ -19,7 +24,7 @@ grant execute on function public.world_spear_rules() to authenticated;
 
 select pg_temp.yh_fix('world_battle_action', array[
   $q$sp := sp - CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END;$q$,
-  $q$sp := sp - CASE WHEN c.job_key IN ('medic', 'formation') THEN 25 WHEN c.job_key IN ('bloodknight', 'spearman') THEN 20 ELSE 12 END;$q$,
+  $q$sp := sp - public.world_job_skill_cost(c.job_key);$q$,
 
   $q$  first_atk := NOT coalesce((v_pfx ->> 'opened')::boolean, false);$q$,
   $q$  first_atk := NOT coalesce((v_pfx ->> 'opened')::boolean, false);
@@ -137,3 +142,7 @@ select pg_temp.yh_fix('world_battle_action', array[
     END IF;
     IF ended IS NULL AND hp <= 0 AND 'medicine_c43b' = ANY (sk) AND NOT coalesce((v_pfx ->> 'reborn')::boolean, false) THEN$q$
 ]);
+
+select pg_temp.yh_fix('world_battle_action', array[
+  $q$    IF sp < (CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END) THEN RAISE EXCEPTION '%', CASE WHEN style = 'melee' THEN '기력' ELSE '영력' END || '이 모자랍니다. (필요 ' || CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END || ')'; END IF;$q$,
+  $q$    IF sp < public.world_job_skill_cost(c.job_key) THEN RAISE EXCEPTION '%', CASE WHEN style = 'melee' THEN '기력' ELSE '영력' END || '이 모자랍니다. (필요 ' || public.world_job_skill_cost(c.job_key) || ')'; END IF;$q$]);

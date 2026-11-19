@@ -1,5 +1,5 @@
 import { ID_RULE, idToEmail, selfReload } from './config.js';
-import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
+import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, JOB_ORDER, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { PETS, petImage } from './housing/petsprite.js';
 import { FIRST_PETS, petGroupOf, petGroupLine } from './petpick.js';
@@ -227,7 +227,7 @@ function renderCreateForm() {
       <section class="card"><h2 class="step"><b>1</b>이름</h2>
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
       </section>
-      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투 역할(호위 무사 방패·수호 · 월궁 사수 원거리 공격 · 조련사 짝 사냥 · 퇴마관 술법 공격 · 암영 검객 근접 공격 · 의무관 치유 · 봉인술사 보조·버팀)과 기본 능력치·시작 장비를 정합니다. 무기는 직업에 맞는 것만 들 수 있습니다(근접: 호위 무사·암영 검객, 원거리: 월궁 사수·조련사, 술법: 퇴마관·봉인술사·의무관). 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</p><div class="choice-grid">${cards(JOBS, 'job')}</div><div class="lore-detail" id="job-detail"></div>
+      <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투 역할(${esc(JOB_ORDER.map(k => `${JOBS[k].name} ${JOBS[k].trait}`).join(' · '))})과 기본 능력치·시작 장비를 정합니다. 무기는 직업마다 정해진 두 갈래만 들 수 있습니다. 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</p><div class="choice-grid job-grid">${cards(Object.fromEntries(JOB_ORDER.map(k => [k, JOBS[k]])), 'job')}</div><div class="lore-detail" id="job-detail"></div>
         <div id="pet-pick" hidden><h3 class="step-sub">함께 시작할 꼬마 동무</h3><p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 무리마다 하는 일이 다르고, 힘은 등급이 아니라 친밀도로만 정해집니다(처음엔 약하고 돌볼수록 세집니다). 다른 동무도 나중에 상점 바구니·알·퀘스트로 얻을 수 있습니다.</p><div class="choice-grid pet-grid">${petCards}</div></div></section>
       <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 처음 배속되는 야행국 안의 부서로, 늘 붙는 소속 효과와 일일 보급·전용 임무를 정합니다. ${esc(AFFIL_VS_FACTION.split('. ').slice(1).join('. '))}</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div><div class="lore-detail" id="faction-detail"></div></section>
       <section class="card confirm-card">
