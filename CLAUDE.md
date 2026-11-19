@@ -260,7 +260,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 캐릭터 신원
 
-- 가입 후 최초 1회 생성 화면에서 이름·직업·소속, 이후 로그인은 바로 게임. 이름·직업·소속은 바꿀 수 없고 설정에도 변경 선택지가 없다. 예외 귀속 소모품(거래 불가·창고 가능, 모두에게 하나씩): 환골탈태 서첩(reset_identity, world_reset_identity: 직업·소속 다시 고르기·전용 장비와 못 드는 무기 해제·포인트 반환, 레벨·기술 단계·대세력은 그대로 — 7.7.7p, 대세력 비고 world_faction_vault 2등급 공훈 300), 세심단(reset_stats, world_reset_stats: 능력치만 — 다시 연 뒤 얻는 곳이 없어 도움말·능력치 확정 문구에서 뺌, 물품·함수는 남음). 이름은 불변. 창 item.js openResetIdentity(모바일 .ri-grid·.sticky-actions).
+- 가입 후 최초 1회 생성 화면에서 이름·직업·소속, 이후 로그인은 바로 게임. 이름·소속은 바꿀 수 없다. 직업은 귀속 소모품 환골탈태 서첩(reset_identity, 거래 불가·창고 가능)으로 — 3.4.0(사용자 결정): 모든 안전지대 상점이 늘 팖(값 100+20×레벨, world_shop_buy·snapshot이 레벨로 값을 매김), world_reset_identity는 직업만 바꾸고 소속은 그대로(3인자 p_faction은 무시), 레벨로 받은 능력치는 새 직업 주 능력치 셋에 상한까지 차례로 저절로 놓고 남는 점수는 stat_points로 남김(world_job_change_rules alloc), 새 직업 무기가 하나도 없으면 시작 무기(rules weapon) 하나, 못 드는 장비 해제, 쓴 뒤 cd_min 60분 다시 못 씀(표 world_job_changes, world_job_change_until — 거절 HINT 'cd:초', world_hud_snapshot.job_cd → 화면 common.js jobCdLeft·paintJobCd가 [data-jobcd] 단추·안내에 남은 시간, 가방 서첩 「사용」·서첩 창). 세심단(reset_stats, world_reset_stats: 능력치만)은 대세력 비고 2등급 공훈 300. 이름은 불변. 창 item.js openResetIdentity(직업만, JOB_ORDER 순).
 - 이름 중복은 서버가 막는다(대소문자·앞뒤 공백 무시).
 - 「캐릭터 정리」(계정 › 캐릭터 정리, world_character_delete)는 캐릭터 몫 표를 지운다. 나중에 생긴 표는 world_character_purge(postgres 주인, fn_owner_field만 실행) 한 곳에 모음 — 퀘스트·세력 진행·튜토리얼·창고·칭호 묶음·퀵슬롯·기술 택일·잠금·내구도·획득순·강화·보따리·도감·첫 방문·비경·꾸미기·즐겨찾기·동무·별채(한 지붕이면 별채는 둠). 계정 몫(친구·차단·모임·화면/알림 설정·제보·귓속말 읽음)과 하루 한 번 기록(소속 보급·의뢰판)·world_events는 남긴다(1.0.4j, 제보 38). 1.0.4n에 개인 경험치 보정(world_xp_damp)·요화 기록(world_yohwa_log, 칭호 셈)·올린 조사원 의뢰(open)도 지움. 남기는 표 목록은 tools/check/precheck.py ACCOUNT_TABLES 한 곳 — 점검이 둘 다에 없는 새 표를 잡는다. 캐릭터별 새 표를 만들면 이 함수에도 더한다.
 - 소속 효과(world_affil_effect → world_status_effect_total, 경제 world_affil_cap·world_affil_tax): 본부 직속 제작 품질 +4·회복 +5%·판매 한도 +500전 / 현장대응국 채집 +6%·이동 −6%·조우 −5% / 기록감찰국 단서 +8%·희귀품 +3%·주는 피해 +2% / 봉인관리국 정신 손실 −10%·침식 −8%·주는 피해 +3% / 의무지원국 회복 +10%·받는 피해 −4%·채집 +3% / 외부 협력자 이동 −5%·희귀품 +2%·판매 수수료 3%. 하루 소속 보급·소속 임무도 소속마다. 화면 core.js FACTIONS.
@@ -281,6 +281,17 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 돌보기 친밀도는 world_pet_care_gain 한 곳(조련사 ×1.5·손님 2), world_pet_act(p_owner null, …)이 데리고 다니는 동무 돌보기(모든 직업, 하루 횟수 그 동무 행으로, 배탈 없음, 화면 housing.js openPets 「돌보기」 → openCarry). 꼬마 족제비 little_ferret = 진품, jq2_tamer 보상(꼬미 — 대본 결말에서 조사원을 따라옴, canon.md).
 - 직업 퀘스트 jq_tamer(Lv3 본부 객사)·jq2_tamer(Lv18 옛 의금부 옥사)·jq3_tamer(Lv32 잿빛 갈대숲, 받기 반요촌) 대본 supabase/gen_tamer/script.md, 생성기 gen_tamer/quests.py(gen_side110 겹침 검사·보상 공식), 인물 q:dh_gomsil 곰실·q:sx_duseok 두석·q:sx_galdae 갈대지기, 설정 canon.md 「동무가 따르는 까닭」. 기본 옷 top:tamer·bottom:tamer(of_top_tamer·of_bottom_tamer, world_outfit_rules pool).
 - 생성기 supabase/gen_tamer/gen.py(a_*~l_*.sql·m_quests.sql·parts.json → migrations/20261116020000_world_2_1_0_tamer.sql). 함수 고치기 pg_temp.yh_fix(이름 또는 서명 'f(text)', [옛 조각, 새 조각…] — 조각마다 정확히 한 번, 겹친 이름은 서명으로), 실행 권한 pg_temp.yh_share, 주인 바꾸기 pg_temp.yh_own.
+
+### 혈기사·여명 창객·진법가와 무기 갈래(3.4.0)
+
+- 생성기 supabase/gen_340/(plan.md·skills.md·weapons.md 기획 · weapon_plan.py FORMS·LINES → weapons_gen.py → sql/a_weapons.sql · skills_data.py → skills_gen.py → sql/f_skills.sql · quests.py(대본 script_<직업>.md, gen_side110 겹침 검사·gen_300/side/ref.json) → sql/l_quests.sql · n_outfits.py → sql/n_outfits.sql · build.py가 sql/*.sql을 묶어 migrations/20261123000000_world_3_4_0_jobs.sql). 직업 키 bloodknight 혈기사(계열 bloodcraft 혈투, 방패 — 근접 피흡 8%(한 방 6까지, 기술 leech_pct 상한 6)·받는 피해 −6·이목 +50·공격력 ×0.95, 현장 기술 피 갑주 pshield) · spearman 여명 창객(spear 창술, 근접 공격 — 공격력 ×1.12·현장 첫 공격 선제 50%·창끝 기세·관통 찌르기 ×1.6 방어 절반) · formation 진법가(formation 진법, 막는 치유 — 보호막 세기 shield_pct +15·회복 −10·정신 손실 −5, 산가지 진 zin 3턴 −35%). 직업 순서 core.js JOB_ORDER(생성 화면·도움말 표·서첩 창).
+- 창끝 기세(사용자 결정 11/19 — 맵 보스 「이웃 칸」 대신): 연달아 공격할 때마다 한 겹 +5%(24단계 기본 기술 겹쳐 찌르기 +1%p), 다섯 겹까지, 공격·기술 아닌 행동이면 끊김. 숙달 여명일섬에 마무리 찌르기(요괴 체력 30% 아래 +15%). 수치 world_spear_rules() 한 곳, 계산 world_spear_mul(uid, 겹, 체력, 최대) — 현장·파티 토벌 world_battle_action(pfx chain)·봉연 world_raid_action(fx spch)·귀허류 world_gw_resolve(fx spch).
+- 현장 기술 기력·영력 값 world_job_skill_cost(직업) 한 곳(gamedata jobSkillCost → battle.js), 피 갑주는 체력 15도.
+- 무기 갈래(사용자 결정 11/19): 직업마다 두 갈래(world_weapon_rules().forms — 하나는 기본(주는 피해), 하나는 역할 보조: 묵직 호위·혈기사 / 예리 공격수 / 소리 없음 회복·봉인), 같은 단계는 위력이 같고 보조 수치만 다름. equipment_traits.jobs가 한 직업만(명소 무기 6은 모든 직업). 떨어뜨림은 내 직업 무기 ×drop_job_mul 4(world_gear_roll). 탄 둘: 화살(각궁·단궁)·편전 ammo_dart(쇠뇌·취관, 옛 쇠뇌살 ammo_bolt는 이관 뒤 안 씀). 배포 때 맞지 않는 장착 무기는 같은 단계 직업 무기로 바꿔 끼움(우수품·강화·내구도 유지, 알림 guide tip weapon_swap — b_weapon_migrate.sql).
+- 장비 세트 world_gear_sets(owner·n·name·items 칸→물품): world_gear_set_list·save·rename·clear·apply, 칸 수 world_gear_set_cap = base 4 + 열 직업 전투 계열 중 15단계에 닿은 계열 수(지금 직업과 무관 — 직업을 바꿔도 줄지 않음, 사용자 결정), 최대 10(world_gear_set_rules). apply는 칸마다 world_equip_item, 없으면 보통↔우수품으로 대신, 실패 칸은 skipped. 화면 bag.js drawGearSets(가방 › 장비 맨 위), 캐릭터 정리 대상.
+- 혼자 도전 보정 세 직업(시뮬 11/19, 같은 단순 정책으로 기존 직업과 상대 비교): 귀허 혈기사 −52/−27·창객 −25/−36·진법 −30/−55, 먹그림자는 조련사 값(−40/0) 그대로 범위 안, 결전 final_dmg는 임시값.
+- 기술 화면: 지금 직업 계열만 펼치고, 다른 직업 전투 계열은 「다른 직업 기술」 접는 칸(character.js otherLines, data-fold sk-other — 흐리게·「○○일 때만 효과」·택일 단추 없음).
+- 직업 퀘스트 jq_/jq2_/jq3_<bloodknight|formation|spearman>(Lv3·18(19)·32, 남명·흑련·수향 땅), 인물 q:bk_*·q:dh_heojuhak·q:sx_*, 기본 옷 top/bottom:blood·formation·spear.
 
 ### 전투 능력치
 
@@ -333,7 +344,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 장비 1~7단계(6단계 귀허도 Lv32·7단계 묵적록 Lv42 — tier_check 1~7, world_normalize_item_rarity 7단계 = 신품·drop_rate 0.03, 드롭 world_gear_drops Lv41~45, 7단계 생활 도구 12는 world_tool_lines 사슬에 이음, 모두 묵창 나루 제작), 같은 단계도 갈래가 다름(무기 묵직·예리·소리 없음, 방어구 쇠미늘·철릭·도포·야행복). 5단계도 거래·되팔기·분해 가능.
 - 특성 합 world_gear_total(무기 위력·피해·방어구 방어·피해 감소·도구 채집·낚싯대 특성 제외) → world_status_effect_total, world_combat_stats가 방어·회피·치명타·달아나기·이목을 더함(상한 회피 40·치명타 60·달아나기 95).
 - 이목 = 30 + 체질×0.8 − 민첩×0.4 + 방어구 방어력×0.6 + 장비 이목(5~300). 원정 합동 전투·파티 토벌·보스가 이목^1.3로 표적.
-- 무기 직업 태그 equipment_traits.jobs(근접 호위 무사·암영 검객 · 원거리 조사원 · 술법 퇴마관·봉인술사·의무관, 없으면 trg_world_weapon_jobs가 weapon_type으로 채움, world_weapon_job_ok — world_equip_item·world_reset_identity, 화면 item.js weaponJobs).
+- 무기 직업 태그 equipment_traits.jobs(3.4.0부터 무기마다 한 직업 — 갈래는 §6 「혈기사·여명 창객·진법가와 무기 갈래」, 없으면 trg_world_weapon_jobs가 weapon_type으로 채움(world_weapon_jobs_of), world_weapon_job_ok — world_equip_item·world_reset_identity, 화면 item.js weaponJobs).
 - 주 능력치 조건(레벨당 3점 기준): 무기·방어구 5+0.35×3×(장착 레벨−1), 관모·신·노리개·호신부·탈·채집 도구 5+0.25×3×(장착 레벨−1). 주 능력치는 무기 종류·장비 갈래로. 새 장비도 같은 식.
 - 생활 도구(g_tools.sql·b_life.sql·data_life.py): 능력치 조건 없이 equipment_traits.req_line(gathering_rank·crafting_rank·investigation_rank)·req_rank(world_equip_item, item.js statReqs). 제작 공구 조건은 craft_fields 계열 중 최고 단계. 효과(world_field_gather): 곡괭이(world_tool_lines pick)는 ore·relics, 채집도(knife)는 herbs·wood·supplies·water에서 채집량 +10%p, 낫·등은 sig_pct·sig_where로 지역 signature_items(영맥 낫 herbs·spirit 3%·영등 relics 또는 어두운 region_type 5%). 영맥 나침반은 길·채집터 무게 ×1.2. 낚싯대 단계 덤은 2단계까지, 그 위는 fish_bite_pct·fish_rare_pct·fish_size_pct. 생활 장비 46가지 lt_*(곡괭이·채집도·낫·등·나침반·낚싯대·제작 공구 다섯 모두 2~6단계가 빠짐없이 — 1.1.1g에 3·5단계 낫·등·제작 공구 14를 더함(마이그레이션 20261109050000), 제작법 r_lt_*). 새 도구도 이 규칙, 단계마다 칸이 빠지지 않게(world_tool_lines 사슬).
 - 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, 화면 bag.js toolCovers는 물품 목록 tl·tier — world_tool_lines 한 곳만 고침). 채집은 도구를 조건으로 보지 않는다.
@@ -505,7 +516,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 - 자율 중에는 현장 행동(이동·탐색·전투·채집·낚시·휴식·제작·분해·강화·수리·상점·거래소·직접 거래·원정·구조·의뢰)을 world_guard_action_context·world_events 트리거가 막고, 「그 자리」 행동·물품 사용도 이동·원정 중과 똑같이 막는다(아래, 1.0.3d 사용자 결정 — 뭘 하는 중이긴 하니까). 되는 것은 능력치·칭호·꾸미기·채팅·장비 바꾸기·전리품 분배.
 - 끝나기 전 그만두기(캐릭터 › 자율, world_claim_idle_activity를 일찍 부르면 중단) = 지난 시간만큼, 최소 1 보정 없음.
-- 보상 world_claim_idle_activity(시간 h): 숙련·회복 floor(4.2h), 경험치 floor(h×비율×0.35)(수련 12·조사 10·정비 8·휴식 3, 최소 1, 최고 레벨이면 0). 수치는 world_idle_rules 하나(→ gamedata idle → rules.js idleGain·idleXp, 1.1.0d). 수련 = 전투 숙련·직업 계열(world_job_line), 조사 = 조사 숙련·탐사, 정비 = 제작 숙련·world_craft_line_of(생활 전문화 제작 분야), 휴식 = 체력·정신·영력(world_idle_skill_for).
+- 보상 world_claim_idle_activity(시간 h): 숙련·회복 floor(4.2h), 경험치 floor(h×비율×0.35)(수련 12·조사 10·정비 8·휴식 3, 최소 1, 최고 레벨이면 0). 수치는 world_idle_rules 하나(→ gamedata idle → rules.js idleGain·idleXp, 1.1.0d). 수련 = 전투 숙련·직업 계열(world_job_line), 조사 = 조사 숙련·탐사, 정비 = 제작 숙련·world_craft_line_of(생활 전문화 제작 분야), 휴식 = 체력·정신·영력(world_idle_skill_for). 3.4.0(제보 119, 사용자 결정 — 양은 그대로): 수련은 직업 계열·막기·응급 처치·분석, 정비는 제작 분야 여덟 가운데 올릴 기술을 고름 — world_start_idle_activity(활동, 분, p_line)(3인자가 검사 뒤 yh.idle_line으로 2인자에 넘김, world_idle_activities.skill_line), 목록 world_idle_choices(uid)·world_idle_info → world_idle_activity_snapshot.choices, 화면 character.js idleLineSel(기기 yh-idle-line).
 - 화면(캐릭터 › 자율)은 시간 단추마다 같은 식의 예상 보상, 누르면 확인 창. training·research·maintenance·rest 각 분기와 수령을 검증한다.
 
 이동·원정·자율 중 막는 행동(셋 다 같게, 1.0.3d):
