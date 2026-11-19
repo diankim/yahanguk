@@ -1,5 +1,7 @@
 create or replace function public.world_weapon_rules() returns jsonb language sql immutable as $$
-  select jsonb_build_object('drop_job_mul', 4, 'ammo', jsonb_build_object('arrow', jsonb_build_array('각궁', '단궁'), 'dart', jsonb_build_array('쇠뇌', '취관')))
+  select jsonb_build_object('drop_job_mul', 4, 'ammo', jsonb_build_object('arrow', jsonb_build_array('각궁', '단궁'), 'dart', jsonb_build_array('쇠뇌', '취관')),
+    'kinds', jsonb_build_object('base', '기본 — 주는 피해', 'heavy', '묵직 — 이목·받는 피해 감소', 'keen', '예리 — 치명타', 'silent', '소리 없음 — 회피·이목 낮춤'),
+    'forms', jsonb_build_object('artificer', jsonb_build_array(jsonb_build_array('등패와 환도', 'base'), jsonb_build_array('등패와 철퇴', 'heavy')), 'bloodknight', jsonb_build_array(jsonb_build_array('도끼', 'heavy'), jsonb_build_array('대검', 'base')), 'analyst', jsonb_build_array(jsonb_build_array('단도', 'keen'), jsonb_build_array('수리검', 'base')), 'spearman', jsonb_build_array(jsonb_build_array('언월도', 'base'), jsonb_build_array('장창', 'keen')), 'scout', jsonb_build_array(jsonb_build_array('각궁', 'keen'), jsonb_build_array('쇠뇌', 'base')), 'tamer', jsonb_build_array(jsonb_build_array('단궁', 'base'), jsonb_build_array('취관', 'keen')), 'exorcist', jsonb_build_array(jsonb_build_array('방울', 'base'), jsonb_build_array('법경', 'keen')), 'sealmaster', jsonb_build_array(jsonb_build_array('금강령', 'silent'), jsonb_build_array('사슬', 'base')), 'medic', jsonb_build_array(jsonb_build_array('부채', 'silent'), jsonb_build_array('침통', 'base')), 'formation', jsonb_build_array(jsonb_build_array('산가지', 'base'), jsonb_build_array('나경', 'silent'))))
 $$;
 
 create or replace function public.world_gear_roll(p_mech text, p_level integer, p_rank text, p_rare numeric DEFAULT 0)

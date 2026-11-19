@@ -24,6 +24,13 @@ function jobTableHtml() {
   return `<table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
     ${JOB_ORDER.map(row).join('')}</table>`;
 }
+function weaponFormsHtml() {
+  const W = GD.weaponRules || {}, K = W.kinds || {};
+  return `<table class="guide-table"><tr><th>직업</th><th>무기 갈래 둘</th></tr>
+    ${JOB_ORDER.map(k => `<tr><td>${esc(JOBS[k].name)}</td><td>${(W.forms?.[k] || []).map(([n, t]) => `<b>${esc(n)}</b> <small class="muted">${esc(K[t] || '')}</small>`).join('<br>')}</td></tr>`).join('')}</table>
+    <p class="muted small">같은 단계 무기는 위력이 같고, 보조 수치(묵직·예리·소리 없음)만 다릅니다. 화살은 ${esc((W.ammo?.arrow || []).join('·'))}, 편전은 ${esc((W.ammo?.dart || []).join('·'))}이 씁니다. 떨어지는 무기는 내 직업 것이 ${W.drop_job_mul || 4}배 잘 나옵니다.</p>`;
+}
+const scrollText = () => { const r = GD.jobChange || {}; return `「환골탈태 서첩」은 모든 안전지대 상점에서 늘 팝니다(값 ${r.price_base || 100}전 + 레벨×${r.price_lv || 20}전, 거래 불가). 쓰면 직업만 새로 고르고, 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓입니다. 소속·레벨·기술 단계·대세력은 그대로입니다. 쓴 뒤 ${r.cd_min || 60}분은 다시 쓸 수 없고, 남은 시간은 가방의 서첩 단추에 보입니다.`; };
 function coopTableHtml() {
   const band = k => `<tr class="g-band"><th colspan="4">${esc(JOBS[k].name)} · ${esc(JOBS[k].trait)}</th></tr>` +
     GD.coop.filter(c => c.job === k).sort((a, b) => a.rank - b.rank)
@@ -75,7 +82,7 @@ const FACTION_LORE = {
   mandate_court: { doctrine: '천명은 관측하고 관리해야 할 법칙이며, 예언은 권력이다.', homeNote: '본부 객사는 Lv25 전의 분소', land: '천명 상계', perk: '원정 답사도 상승 +20%', rank: '요괴 조우 −2%씩 · 날씨·시간대 불이익 10%씩 덜 받기', name2: '천문 허가' },
 };
 function factionLoreHtml() {
-  return `<p>대세력은 Lv5부터 하나만 들 수 있는 세계의 큰 세력입니다.</p><ul><li>처음에 고르는 <b>소속</b>과는 다릅니다. 소속은 본부 직속 등 6가지이고 「환골탈태 서첩」으로 한 번 다시 고를 때 말고는 바뀌지 않지만, 대세력은 들고 나기를 고를 수 있습니다.</li><li>가입은 아래 「가입 받는 곳」에서 캐릭터 › 세력으로 합니다.</li></ul>` +
+  return `<p>대세력은 Lv5부터 하나만 들 수 있는 세계의 큰 세력입니다.</p><ul><li>처음에 고르는 <b>소속</b>과는 다릅니다. 소속은 본부 직속 등 6가지이고 한 번 고르면 바뀌지 않지만, 대세력은 들고 나기를 고를 수 있습니다.</li><li>가입은 아래 「가입 받는 곳」에서 캐릭터 › 세력으로 합니다.</li></ul>` +
     Object.entries(FACTION_LORE).map(([k, l]) => { const f = MAJOR_FACTIONS[k] || {}; return `<div class="lore-card"><p><b>${esc(f.name || k)}</b> <small class="muted">${esc(f.type || '')}</small></p>
       <p class="muted small">「${esc(l.doctrine)}」</p><p>${esc(f.desc || '')}</p>
       <ul><li><b>근거지</b> ${esc(l.land)}</li><li><b>안전지대</b> ${esc((GD.factionHome[k] || []).map(regionName).join('·'))}${l.homeNote ? `. ${esc(l.homeNote)}` : ''}</li><li><b>가입 받는 곳</b> ${esc((GD.factionJoin[k] || []).map(regionName).join('·'))}</li><li><b>가입 조건</b> ${esc(f.entry || '')}</li>
@@ -388,6 +395,12 @@ const S = [
       <li><b>상점</b>: 1·2단계 일부는 안전지대 상점에서 팝니다.</li>
       <li>거래 불가로 표시된 것 말고는 거래할 수 있습니다. 상점에 되팔거나 대장간에서 분해할 수도 있습니다.</li>
     </ul>`],
+  ['gearset', '장비 세트', `
+    <p>지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 가방 › 장비 맨 위 「장비 세트」 칸에서 씁니다.</p>
+    <ul><li>처음 ${GD.gearSet?.base || 4}칸이고, 전투 기술 계열(직업 계열)이 ${GD.gearSet?.rank || 15}단계에 닿을 때마다 한 칸씩 늘어 ${GD.gearSet?.max || 10}칸까지입니다. 직업을 여럿 키울수록 칸이 늡니다.</li>
+      <li>「지금 장비 저장」은 낀 장비 전체를 그 칸에 담습니다. 이름을 누르면 이름 바꾸기·덮어쓰기·지우기를 합니다(이름은 ${GD.gearSet?.name_max || 12}자까지).</li>
+      <li>「끼기」를 누르면 담긴 장비를 차례로 낍니다. 가방에 없거나 장착 조건(레벨·직업·능력치)이 맞지 않는 칸은 건너뛰고 까닭을 알려 줍니다. 보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다.</li>
+      <li>세트는 장비를 따로 보관하지 않습니다. 담은 물품을 팔거나 버리면 그 칸은 비게 됩니다. 전투·원정 중에는 바꿔 낄 수 없습니다.</li></ul>`],
   ['durability', '장비 내구도와 수리', `
     <ul>
       <li><b>닳는 때</b>: 아래 때마다 1씩 닳습니다.
@@ -962,8 +975,8 @@ const S = [
           <li>제작: 단조 · 목공 · 법구 공예 · 봉인 공예 · 직조 · 가죽 공예 · 연금 · 요리</li>
           <li>조사: 탐사</li></ul></li>
       <li><b>전투 기술 경험은 직업 계열에</b> 쌓입니다(든 무기와 상관없이). 토벌 승리·원정 귀환의 전투 경험 절반·자율 수련이 모두 직업 계열로 갑니다.</li>
-      <li><b>무기는 직업에 맞는 것만</b> 듭니다: 근접 무기 호위 무사·암영 검객 · 원거리 무기 월궁 사수·조련사 · 술법 무기 퇴마관·봉인술사·의무관. 물품 정보 「장착 조건」에 적혀 있습니다.</li>
-      <li><b>환골탈태 서첩</b>으로 직업을 바꾸면 새 직업의 계열만 쓰입니다. 지난 직업의 전투 계열은 단계가 남지만 효과·고유 동작·전투 숙련에 들지 않습니다(같은 계열이 드는 조합 기술도). 서첩은 대세력 비고에서 2등급부터 공훈 300으로 삽니다.</li>
+      <li><b>무기는 직업마다 정해진 두 갈래만</b> 듭니다(아래 표). 물품 정보 「장착 조건」에 적혀 있습니다.</li>
+      <li><b>환골탈태 서첩</b>으로 직업을 바꾸면 새 직업의 계열만 쓰입니다. 지난 직업의 전투 계열은 단계가 남지만 효과·고유 동작·전투 숙련에 들지 않습니다(같은 계열이 드는 조합 기술도). ${esc(scrollText())}</li>
       <li>그 행동을 할 때만 경험이 쌓입니다: 전투 행동 +10 · 채집·채광 +8 · 낚시 한 번 +8 · 제작·분해 +12 · 탐색 +5 · 이야기 +10 · 이동 +3</li>
       <li><b>토벌 행동 경험</b>: 토벌에서 쓴 행동도 함께 셉니다. 한 전투에 행동마다 +8이고, 종류마다 3번까지입니다.
         <ul><li>요괴가 수법 낌새를 보인 턴에 행동하기(암영 검객은 「약점 간파」도) → 분석. 누구나 오릅니다.</li>
@@ -1095,7 +1108,7 @@ const S = [
     <ul>
       <li>대세력과는 별개로 늘 붙는 <b>소속 효과</b>가 있습니다.</li>
       <li>하루 한 번 받는 <b>소속 보급</b>과 소속 전용 <b>소속 임무</b>가 소속마다 다릅니다. 둘 다 캐릭터 › 세력에 있습니다.</li>
-      <li>바꾸려면 귀속 물품 「환골탈태 서첩」을 씁니다.</li>
+      <li>소속은 한 번 고르면 바꿀 수 없습니다(환골탈태 서첩은 직업만 바꿉니다).</li>
     </ul>
     <table class="guide-table"><tr><th>소속</th><th>소속 효과</th><th>하루 보급과 소속 임무</th></tr>
       <tr><td>본부 직속</td><td>제작 품질 +4<br>회복량 +5%<br>상점 판매 한도 +500전</td><td><b>보급</b> 야령초 2 · 황지 2 · 청심환 1<br><b>임무</b> 본부 보급 검수, 제작 2번</td></tr>
@@ -1151,10 +1164,10 @@ const S = [
   ['jobs', '직업과 역할 (생성 시 고정)', `
     <p>직업은 일곱 역할로 나뉩니다.</p>
     <ul>
-      <li>무기는 직업에 맞는 것만 듭니다: 근접 무기 호위 무사·암영 검객 · 원거리 무기 월궁 사수·조련사 · 술법 무기 퇴마관·봉인술사·의무관.</li>
+      <li>무기는 직업마다 정해진 두 갈래만 듭니다.</li></ul>${weaponFormsHtml()}<ul>
       <li>기본 능력치는 합이 모두 30이고, 직업마다 배분이 다릅니다.</li>
       <li>한 능력치의 상한은 <b>직업 기본값 + 레벨×1.5</b>입니다.</li>
-      <li>이름은 만든 뒤 바꿀 수 없습니다. 직업·소속은 귀속 물품 「환골탈태 서첩」(모두에게 하나씩)으로 다시 고를 수 있습니다.</li>
+      <li>이름·소속은 만든 뒤 바꿀 수 없습니다. 직업은 「환골탈태 서첩」으로 다시 고를 수 있습니다 — ${esc(scrollText())}</li>
     </ul>
     ${jobTableHtml()}
     <p class="muted small">기본 능력치는 높은 순으로 적었고, 나머지 능력치는 3~4입니다. 원정 기술이 하는 일은 「직업별 원정 기술」에 있습니다.</p>
@@ -1273,7 +1286,7 @@ const S = [
           <li>세력 탈것은 모두 넷이 함께 타고 노정패 운임이 2입니다. 수향연맹 화방선이 ×2.5, 나머지는 ×2.4입니다.</li></ul></li>
     </ul>
     <table class="guide-table"><tr><th>등급</th><th>세력마다 하나씩 있는 비고 물품</th></tr>
-      <tr><td>2등급</td><td>세력 칭호 · 환골탈태 서첩(공훈 300)</td></tr>
+      <tr><td>2등급</td><td>세력 칭호 · 세심단(공훈 300)</td></tr>
       <tr><td>3등급</td><td>세력 테두리 · 세력 장비. 장비는 4단계이고 거래할 수 없습니다.</td></tr>
       <tr><td>4등급</td><td>채팅 이름 색</td></tr>
       <tr><td>5등급</td><td>세력 탈것</td></tr></table>
@@ -1366,7 +1379,8 @@ const S = [
       <li><b>잠금</b>: 잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용·제작 재료로는 쓸 수 있습니다. 장착 중인 장비의 마지막 한 개도 팔거나 버릴 수 없습니다.</li>
       <li><b>버리기</b>: 필요 없는 물품을 수량을 정해 버립니다. 버린 물품은 되찾을 수 없고, 임무 물품은 버릴 수 없습니다.</li>
       <li><b>다시 시작하는 물품</b>: 귀속 물품이라 거래할 수 없고, 창고에는 맡길 수 있습니다.
-        <ul><li><b>환골탈태 서첩</b>: 직업·소속을 다시 고르고, 능력치 포인트를 모두 돌려받습니다. 레벨·기술 단계·대세력은 그대로이고, 새 직업·소속으로 못 드는 장비는 벗겨집니다. 대세력 비고에서 2등급부터 공훈 300으로 살 수 있습니다.</li>
+        <ul><li><b>환골탈태 서첩</b>: ${esc(scrollText())} 새 직업이 못 드는 장비는 벗겨지고, 새 직업 무기가 하나도 없으면 시작 무기 하나를 받습니다.</li>
+        <li><b>세심단</b>: 직업은 그대로 두고 능력치 포인트를 모두 돌려받아 다시 나눕니다. 대세력 비고에서 2등급부터 공훈 300으로 삽니다.</li>
           <li>이름은 바꿀 수 없습니다.</li></ul></li>
     </ul>`],
   ['economy', '경제와 거래', `
@@ -2215,7 +2229,7 @@ const S = [
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'durability', 'survival']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'gearset', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'furn', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
