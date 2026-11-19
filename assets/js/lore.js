@@ -242,10 +242,10 @@ export async function showLetter(letter) {
   (await import('./factionquest.js')).playDialogue({ title: letter.title, lines: letter.lines, cast: {} }, null);
 }
 export async function rebirthScene(job, affil) {
-  const j = JOBS[job]?.name || '', f = FACTIONS[affil]?.name || '';
-  (await import('./factionquest.js')).playDialogue({ title: '배속 변경', cast: { 'q:m_yeon': { name: '사건 서기관 연서희' } }, lines: [
-    { s: null, t: '정청 서기관 책상 위에 환골탈태 서첩이 펼쳐진다. 붓이 이름 옆 두 칸을 지우고 새로 적는다.' },
-    { s: 'q:m_yeon', t: `${j}, 그리고 ${f}. 이렇게 적어 둘게요.` },
-    { s: 'q:m_yeon', t: '배속이 바뀌어도 장부 맨 앞의 이름은 그대로예요. 당신이 걸어온 밤도 그대로고요.' },
+  const j = JOBS[job]?.name || '';
+  (await import('./factionquest.js')).playDialogue({ title: '직업 변경', cast: { 'q:m_yeon': { name: '사건 서기관 연서희' } }, lines: [
+    { s: null, t: '정청 서기관 책상 위에 환골탈태 서첩이 펼쳐진다. 붓이 이름 옆 한 칸을 지우고 새로 적는다.' },
+    { s: 'q:m_yeon', t: `${j}. 이렇게 적어 둘게요.` },
+    { s: 'q:m_yeon', t: '하는 일이 바뀌어도 장부 맨 앞의 이름은 그대로예요. 당신이 걸어온 밤도 그대로고요.' },
     { s: 'q:m_yeon', t: '새 자리에서도 돌아오기만 하면 돼요. 그게 제일 중요해요.' }] }, null);
 }

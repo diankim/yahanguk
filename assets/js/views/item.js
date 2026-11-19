@@ -11,7 +11,7 @@ import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 import { PETS, petImage } from '../housing/petsprite.js';
 import { FIRST_PETS, petGroupOf, petGroupLine } from '../petpick.js';
 
-const USE_SPECIAL = { reset_identity: '직업·소속 다시 고르기 · 능력치 포인트 돌려받기', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
+const USE_SPECIAL = { reset_identity: '직업 다시 고르기 · 능력치는 새 직업에 맞게 저절로 놓임', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
   trail_map: '지금 있는 지역의 비경을 3시간 동안 엶(채집량 +50% · 희귀품·단서 +10%)', sealed_bundle: '열면 장비·회복약·전 가운데 하나',
   hair_pattern: '머리 모양과 색을 마음대로 그려 도안첩에 담음 · 내 모습에서 바로 씀(한 장 씀)',

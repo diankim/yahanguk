@@ -388,7 +388,7 @@ const SKILL_GAIN = {
 };
 const SKILL_CAP = 50;
 const lineXp = r => { if (r <= 1) return 0; const n = Math.max(0, r - 30); return 4 * r * r + 76 * r - 80 + n * (n + 1) * (2 * n + 1); };
-const SKILL_NAME = { sealing: '봉인술', guarding: '막기' };
+const SKILL_NAME = { sealing: '봉인술', guarding: '막기', formation: '진법', bloodcraft: '혈투', spear: '창술' };
 const mineOnly = (cats, c) => cats.filter(x => !COMBAT_LINES.includes(x) || x === JOB_LINE[c?.job_key]);
 const foreignLine = (k, c) => COMBAT_LINES.includes(k) && k !== JOB_LINE[c?.job_key];
 export const BRANCHES = [
