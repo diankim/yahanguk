@@ -76,7 +76,7 @@ select pg_temp.yh_fix('world_create_character_v2', array[
     when 'formation'  then '{"ward_talisman":2,"seal_paper":2}'$q$]);
 
 create or replace function public.world_presence_rules() returns jsonb language sql immutable as $$
-  select jsonb_build_object('cap', jsonb_build_object('artificer', 300, 'bloodknight', 280, 'sealmaster', 220), 'cap_other', 160)
+  select jsonb_build_object('cap', jsonb_build_object('artificer', 300, 'bloodknight', 300, 'sealmaster', 220), 'cap_other', 160)
 $$;
 grant execute on function public.world_presence_rules() to authenticated;
 create or replace function public.world_presence_cap(p_job text) returns integer language sql immutable as $$
