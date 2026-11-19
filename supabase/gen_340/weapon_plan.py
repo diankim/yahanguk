@@ -3,10 +3,10 @@ FORMS = {
     'bloodknight': [('도끼', 'melee', 'heavy'), ('대검', 'melee', 'base2')],
     'analyst': [('단도', 'melee', 'keen'), ('수리검', 'melee', 'silent')],
     'spearman': [('언월도', 'melee', 'base3'), ('장창', 'melee', 'keen2')],
-    'scout': [('각궁', 'ranged', 'keen'), ('쇠뇌', 'ranged', 'heavy')],
+    'scout': [('각궁', 'ranged', 'keen'), ('쇠뇌', 'ranged', 'base2')],
     'tamer': [('단궁', 'ranged', 'base'), ('취관', 'ranged', 'silent')],
     'exorcist': [('방울', 'magic', 'base'), ('법경', 'magic', 'keen2')],
-    'sealmaster': [('금강령', 'magic', 'heavy'), ('사슬', 'magic', 'base2')],
+    'sealmaster': [('금강령', 'magic', 'keen2'), ('사슬', 'magic', 'base2')],
     'medic': [('부채', 'magic', 'silent'), ('침통', 'magic', 'base2')],
     'formation': [('산가지', 'magic', 'keen'), ('나경', 'magic', 'silent2')],
 }
