@@ -995,7 +995,7 @@ insert into public.world_coop_skills(skill_id, job_key, unlock_rank, skill_name,
 ('sp_aim', 'spearman', 3, '창끝 겨누기', '요괴가 받는 피해가 두 번 12% 늘어납니다.', 'boss', '{"type": "expose", "n": 2, "pct": 12}', 4, 10, 0.04, 0, '창끝으로 요괴의 빈틈을 짚었습니다', 411),
 ('sp_wall', 'spearman', 8, '창벽', '두 번 공격을 40% 확률로 흘립니다.', 'self', '{"type": "evade", "n": 2, "pct": 40}', 5, 12, 0.04, 0, '창 자루로 공격을 흘려 냈습니다', 412),
 ('sp_hook', 'spearman', 18, '자루 걸기', '요괴가 모으는 기운을 늦춥니다.', 'boss', '{"type": "delay", "n": 2}', 9, 22, 0.06, 0, '창 자루로 요괴의 발을 걸었습니다', 413),
-('sp_charge', 'spearman', 36, '새벽 돌격', '세 번의 공격이 35% 강해집니다.', 'self', '{"type": "might", "n": 3, "pct": 35}', 14, 30, 0.07, 0, '새벽빛처럼 앞으로 내달렸습니다', 414),
+('sp_charge', 'spearman', 36, '새벽 돌격', '내달려 찌르면서(이 기술이 곧 공격) 그 공격부터 세 번이 35% 강해집니다.', 'self', '{"type": "might", "n": 3, "pct": 35, "strike": true}', 14, 30, 0.07, 0, '새벽빛처럼 앞으로 내달렸습니다', 414),
 ('fm_point', 'formation', 3, '방위 진', '동료 하나에게 보호막 25를 둘러 줍니다.', 'ally', '{"type": "shield", "amt": 25}', 4, 8, 0.04, 0, '다칠 방위를 셈해 진을 쳐 두었습니다', 421),
 ('fm_gate', 'formation', 8, '팔문 진', '모두 세 번 받는 피해를 15% 줄입니다.', 'all', '{"type": "ward_all", "n": 3, "pct": 15}', 8, 20, 0.05, 0, '여덟 문을 닫아 모두를 감쌌습니다', 422),
 ('fm_reckon', 'formation', 18, '셈 맞추기', '이번 수법 피해를 모두 절반으로 줄입니다.', 'all', '{"type": "break", "pct": 50}', 10, 20, 0.06, 0, '요괴의 수를 미리 셈해 피해를 덜었습니다', 423),
@@ -1054,7 +1054,7 @@ select pg_temp.yh_fix('world_gw_resolve', array[
   $q$    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
     if av = 'attack' then$q$,
   $q$    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
-    if m.job_key = 'spearman' and av <> 'attack' and vfx ? 'spch' then
+    if m.job_key = 'spearman' and coalesce(m.act ->> 'a', 'guard') not in ('attack', 'coop') and vfx ? 'spch' then
       vfx := vfx - 'spch'; update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
     end if;
     if av = 'attack' then$q$,
