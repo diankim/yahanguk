@@ -131,7 +131,12 @@ def build(dsn):
                  where active and category is not null group by 1) c)) from world_title_catalog where active""")
     d['titles'] = t
     # 낚시: 어종·낚시터
-    d['fish'] = q(dsn, "select json_build_object('species', (select count(*) from world_fish_species where active), 'grounds', (select count(*) from world_fish_grounds), 'named', (select count(*) from world_fish_species where active and named))")
+    d['fish'] = q(dsn, """select json_build_object('species', (select count(*) from world_fish_species where active), 'grounds', (select count(*) from world_fish_grounds), 'named', (select count(*) from world_fish_species where active and named),
+      'hab', (select json_object_agg(h, l) from (select g.habitat h, json_agg(r.region_name order by r.min_level, r.region_name) l from world_fish_grounds g join world_map_regions r on r.region_id = g.region_id group by g.habitat) x),
+      'only', (select coalesce(json_agg(json_build_object('name', s.fish_name, 'at', (select json_agg(r.region_name order by r.min_level) from unnest(s.grounds) gid join world_map_regions r on r.region_id = gid)) order by s.sort), '[]') from world_fish_species s where s.active and not s.named and coalesce(array_length(s.grounds, 1), 0) > 0),
+      'named_list', (select json_agg(json_build_object('ground', g.ground_name, 'region', r.region_name, 'terr', r.territory_id, 'lv', n.min_level, 'baits', (select count(*) from world_fish_species b where b.active and n.fish_id = any (b.bait_for))) order by n.min_level, n.sort)
+        from world_fish_species n join world_fish_grounds g on g.region_id = any (n.grounds) and g.habitat = n.habitat join world_map_regions r on r.region_id = g.region_id where n.active and n.named),
+      'bait_rar', (select json_agg(distinct b.rarity) from world_fish_species b where b.active and exists (select 1 from world_fish_species n where n.named and n.fish_id = any (b.bait_for))))""")
     d['outfit'] = q(dsn, """select (world_outfit_rules() -> 'design') - 'weave' || jsonb_build_object('give_day', (world_drawing_rules() ->> 'give_day')::int, 'src', world_outfit_rules() -> 'src', 'feast', world_outfit_rules() -> 'feast',
         'weave', (select jsonb_object_agg(e.key, jsonb_build_object('level', r.minimum_level, 'mats', (select jsonb_agg(jsonb_build_array(i.item_name, m.value::int) order by i.item_name) from jsonb_each_text(r.ingredients) m join world_item_catalog i on i.item_id = m.key)))
           from jsonb_each_text(world_outfit_rules() -> 'design' -> 'weave') e join world_crafting_recipes r on r.recipe_id = e.value))""")

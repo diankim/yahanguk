@@ -237,15 +237,15 @@ export function domainNow() {
   const until = d.guard_until ? new Date(d.guard_until).getTime() : 0, fx = fxText(d.effects);
   const max = d.blur?.strokes || 0, left = d.blur ? (d.strokes_left ?? max) : 0, stage = d.stage || 0;
   return { name: d.stage_name || d.name, guarded: until > Date.now(), off: !fx.length, until, max, left, stage,
-    strokes: d.blur ? `이름 획 ${left}/${max}` : '', nameless: !!(stage && d.blur?.stages?.[stage - 1]?.nameless), text: fx.join(' · ') };
+    wn: !!(d.white_night || d.no_rescue), strokes: d.blur ? `이름 획 ${left}/${max}` : '', nameless: !!(stage && d.blur?.stages?.[stage - 1]?.nameless), text: fx.join(' · ') };
 }
 function domainChip() {
   const d = domainNow();
-  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.name, d.strokes, d.off ? DOMAIN_FX.guardedOff : d.text].filter(Boolean).join(' · '))}">${d.max ? `획 <b>${d.left}/${d.max}</b>` : esc(d.name)}</span>` : '';
+  return d ? `<span class="hs-yohwa blur s${d.stage}${d.off ? ' off' : ''}" title="${esc([d.name, d.strokes, d.off ? (d.wn ? WHITE_NIGHT : DOMAIN_FX).guardedOff : d.text].filter(Boolean).join(' · '))}">${d.max ? `획 <b>${d.left}/${d.max}</b>` : esc(d.name)}</span>` : '';
 }
 function domainPin() {
   const d = domainNow(); if (!d) return '';
-  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(`${DOMAIN_FX.note} ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.max ? ` <em class="nb-n">${esc(d.strokes)}</em>` : ''}</b><small>${esc(d.off ? DOMAIN_FX.guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : DOMAIN_FX.guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
+  return `<a class="yohwa-pin blur s${d.stage}${d.off ? ' off' : ''}" href="#/char/status" data-tip="${esc(d.wn ? `${DOMAIN_FX.note} ${WHITE_NIGHT.tip}` : `${DOMAIN_FX.note}${d.max ? ` ${DOMAIN_FX.blur} ${DOMAIN_FX.guard}` : ''}`)}">${icon('mask', 14)}<span><b>${esc(d.name)}${d.max ? ` <em class="nb-n">${esc(d.strokes)}</em>` : ''}</b><small>${esc(d.off ? (d.wn ? WHITE_NIGHT : DOMAIN_FX).guardedOff : d.text)}${d.guarded ? ` · ${esc(d.off ? '' : (d.wn ? WHITE_NIGHT : DOMAIN_FX).guarded)} <i data-timer="${d.until}" data-kind="status">${fmt.remain(d.until - Date.now())}</i>` : ''}</small></span></a>`;
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);

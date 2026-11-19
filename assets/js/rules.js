@@ -169,6 +169,9 @@ export const WHITE_NIGHT = {
   ask: '제 이름을 끝까지 외어 스스로 일어날까요? 가장 가까운 등도 안전지대에서 깨어나고, 1시간 동안 주는 피해가 줄어듭니다.',
   phase: n => `백야 · ${n}`,
   phaseTip: '흰 밤이라 하늘은 밝지만 시간은 흐릅니다 — 시간대 효과(낚시·조우 등)는 그대로 받습니다.',
+  guardedOff: '등불로 막는 중',
+  guarded: '등불로 막는 중',
+  tip: `등도 옛터에는 흰 밤이 걷히지 않습니다. 정신 손실 +${WN.effects?.mental_loss_pct ?? 15}% · 받는 피해 +${WN.effects?.incoming_damage_pct ?? 5}% · 요괴 조우 +${WN.effects?.encounter_pct ?? 5}%, 대신 그림자가 없어 기척 숨기기 +${WN.effects?.wn_sneak ?? 15}% · 조용히 살피기 상한 +${WN.effects?.wn_quiet ?? 10}% · 회피 +${WN.effects?.wn_eva ?? 3}%. 밤을 되찾은 지역과 등도의 안전지대에서는 걸리지 않고, 명등 등롱(등불 아래)·등어 기름 명등(꺼지지 않는 등빛)을 켜면 막습니다. ${WN_WARN}`,
 };
 export const UG_RESULT = {
   title: name => `${name}을(를) 깼습니다`,

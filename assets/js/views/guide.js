@@ -10,6 +10,11 @@ const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
 const HR = GD.houseRooms || {};
 const hrN = i => HR.names?.[i] || '';
+const FISH_HAB = [['river', '강'], ['marsh', '늪'], ['sea', '바다'], ['lake', '호수'], ['deep', '깊은 물'], ['canal', '수로'], ['abyss', '심연']];
+const NAMED_GROUPS = [['', '바깥 땅'], ['mukjeok', '묵적 봉쇄령'], ['deungdo', '등도 옛터']];
+const RAR_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+const baitRange = () => { const r = (GD.fish.bait_rar || []).map(x => RAR_ORDER.indexOf(x)).filter(i => i >= 0).sort((a, b) => a - b); return r.length ? `${nameOf(RAR_ORDER[r[0]])}~${nameOf(RAR_ORDER[r[r.length - 1]])}` : ''; };
+const baitCount = () => { const n = (GD.fish.named_list || []).map(x => x.baits); const lo = Math.min(...n), hi = Math.max(...n); return lo === hi ? `${lo}` : `${lo}~${hi}`; };
 const hrCost = s => [`${s.level ? `Lv${s.level} · ` : ''}${s.gil.toLocaleString()}전`, ...Object.entries(s.items || {}).map(([id, n]) => `${HR.item_names?.[id] || nameOf(id)} ${n}`)].join(' · ');
 const houseRoomsHtml = () => `<table class="guide-table"><tr><th>방</th><th>크기</th><th>놓는 가구</th><th>여는·넓히는 값</th></tr>${(HR.rooms || []).map((r, i) => [6, 7, 8, 9].map(n => `<tr><td>${n === 6 ? hrN(i) : ''}</td><td>${n}×${n}</td><td>${HR.cap?.[n] ?? ''}</td><td>${r.steps?.[n] ? `${n === 6 ? '열기 · ' : ''}${hrCost(r.steps[n])}` : '처음 크기'}</td></tr>`).join('')).join('')}</table>`;
 
@@ -545,24 +550,14 @@ const S = [
     </ul>
     <h4>낚시터 ${GD.fish.grounds}곳</h4>
     <table class="guide-table"><tr><th>물</th><th>낚시터</th></tr>
-      <tr><td>강</td><td>백지교 · 구름나루</td></tr>
-      <tr><td>늪</td><td>천엽 연화늪 · 폐쇄된 연화원 · 잿빛 갈대숲</td></tr>
-      <tr><td>바다</td><td>염등촌 · 십삼문 암시장 · 재의 해안 · 빙혼곡 · 주혈 광산 · 구등대 군도 · 월식성 · 만조의 갑문 · 무극 관성대</td></tr>
-      <tr><td>호수</td><td>설피골 · 유리협곡 · 수경루 · 천경호</td></tr>
-      <tr><td>깊은 물</td><td>용잠 수궁</td></tr>
-      <tr><td>수로</td><td>구룡 폐수로 · 침수된 구시가지</td></tr>
-      <tr><td>심연</td><td>흑조 균열 · 구중 봉연 · 귀허</td></tr></table>
+      ${FISH_HAB.filter(([h]) => GD.fish.hab?.[h]).map(([h, n]) => `<tr><td>${n}</td><td>${esc(GD.fish.hab[h].join(' · '))}</td></tr>`).join('')}</table>
     <ul><li>일지 › 도감에서 낚시터마다 바로 갈 수 있습니다.</li></ul>
     <h4>어종</h4>
     <ul>
       <li>어종은 ${GD.fish.species}종입니다. 물가마다 사는 어종이 다릅니다.</li>
       <li>어떤 어종은 특정 <b>시간대·날씨</b>에만 잘 뭅니다. 예를 들어 먹물 메기는 삼경, 용왕 참돔은 장우에 잘 뭅니다.</li>
-      <li>바다 어종 가운데 몇은 <b>그 낚시터에서만</b> 나옵니다.
-        <ul><li>먹빛 노래미: 십삼문</li>
-          <li>대구: 빙혼곡 · 만조의 갑문</li>
-          <li>붉은 쏨뱅이: 주혈 광산 · 재의 해안</li>
-          <li>월식 홍어: 월식성</li>
-          <li>성하 청새치: 관성대</li></ul></li>
+      <li>어종 가운데 몇은 <b>그 낚시터에서만</b> 나옵니다.
+        <ul>${(GD.fish.only || []).map(x => `<li>${esc(x.name)}: ${esc(x.at.join(' · '))}</li>`).join('')}</ul></li>
       <li>낚지 못한 어종은 도감에서 이름이 가려져 있고 힌트만 보입니다.</li>
       <li>모든 어종은 손질·요리 같은 제작법 하나 이상에 쓰입니다.</li>
       <li><b>입질</b>은 낚싯대·낚시 생활 전문화·세우 같은 날씨·낚시 칭호로 좋아집니다. 높은 단계 낚싯대는 희귀 어종과 큰 물고기도 잘 걸립니다.</li>
@@ -917,10 +912,11 @@ const S = [
     </ul>
     <h4>명어(名魚)와 미끼</h4>
     <ul>
-      <li>묵적 봉쇄령 낚시터 여섯(먹물 여울·묵창 앞바다·번진 먹 늪·먹비 고인 못·탑 밑 먹 수로·아홉째 칸 우물)마다 이름을 지킨 물고기 <b>명어</b>가 하나씩 삽니다.</li>
-      <li>묵적 봉쇄령 밖에도 명어 아홉이 삽니다. 대세력 땅마다 하나(침수 골목 웅덩이·월영 유리못·십삼문 밀수 부두·천경호 얼음 구멍·수궁 잠긴 회랑·관성대 별빛 벼랑·흑조 균열 물가)와 중립 땅 둘(백지교 아래 여울·잿빛 갈대 여울)이며, 낚시터 레벨에 맞춰 일찍부터 노릴 수 있습니다.</li>
-      <li>명어는 그 낚시터에서 정해진 <b>시간대·날씨</b>에 <b>미끼</b>를 걸었을 때만 뭅니다. 미끼는 그 물에 사는 범품~진품 물고기 서너 종 가운데 아무것이나 되고, 걸면 던질 때마다 한 마리씩 씁니다.</li>
-      <li>입질 뒤 명어 무게는 ${GD.fishRules.named.weight}(신품 어종 ${GD.fishRules.weight.legendary}보다 어렵게), 희귀 어종 보정은 절반만 붙습니다. 용비늘 낚싯대는 무게를 조금 더합니다.</li>
+      <li>낚시터 ${GD.fish.named}곳에 이름을 지킨 물고기 <b>명어</b>가 하나씩 삽니다. 명어 하나는 그 낚시터 한 곳에서만 나옵니다.
+        <ul>${NAMED_GROUPS.map(([t, n]) => { const l = (GD.fish.named_list || []).filter(x => t ? x.terr === t : !NAMED_GROUPS.some(([k]) => k && k === x.terr)); return l.length ? `<li>${n} ${l.length}: ${esc(l.map(x => `${x.ground}(${x.region} Lv${x.lv})`).join(' · '))}</li>` : ''; }).join('')}</ul></li>
+      <li>바깥 땅의 명어는 낚시터 레벨에 맞춰 일찍부터 노릴 수 있습니다.</li>
+      <li>명어는 그 낚시터에서 정해진 <b>시간대·날씨</b>에 <b>미끼</b>를 걸었을 때만 뭅니다. 미끼는 명어마다 정해진 ${baitRange()} 물고기 ${baitCount()}종 가운데 아무것이나 되고(같은 물에 사는 물고기), 걸면 던질 때마다 한 마리씩 씁니다. 가방에 미끼가 될 물고기가 있으면 낚시터 칸에 「미끼」 고르는 칸이 생깁니다.</li>
+      <li>입질 뒤 명어 무게는 ${GD.fishRules.named.weight}(신품 어종 ${GD.fishRules.weight.legendary}보다 어렵게), 희귀 어종 보정은 절반만 붙습니다. 용비늘 낚싯대·명목 낚싯대는 무게를 조금 더합니다.</li>
       <li>명어와 명어로 만든 것도 거래할 수 있지만, 명어 칭호는 직접 낚아야 얻습니다. 도감은 못 낚은 명어의 이름을 감추고 힌트만 보여 줍니다.</li>
     </ul>`],
   ['deungdo', '등도 옛터와 「명등기」', `
