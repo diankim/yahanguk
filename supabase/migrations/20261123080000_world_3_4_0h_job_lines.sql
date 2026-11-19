@@ -83,8 +83,16 @@ begin
   end if;
 end $b$;
 
+do $c$
+begin
+  if (public.world_contrib_rules() ->> 'heal')::numeric <> 0.05 then
+    perform pg_temp.yh_setjson('public.world_contrib_rules()'::regprocedure, public.world_contrib_rules() || '{"heal": 0.05, "guard_mul": {"formation": 1.6}}'::jsonb);
+  end if;
+end $c$;
+
 update public.world_patch_notes set body = body || $N$- 새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때 퀘스트 대사의 직업마다 다른 줄이 다른 직업 줄이나 빈 줄로 나오던 것을 맞췄습니다.
 - 백야 판에서 진법가의 협동 기술도 의무관처럼 동료의 「바램」을 덜어 줍니다.
+- 함께 싸운 기여도에서 치유 몫의 무게를 줄이고 진법가가 막아 준 피해 배수를 낮춰, 직업마다 기여도가 고르게 나오도록 맞췄습니다.
 - 도움말을 지금 규칙에 맞게 고쳤습니다(새 세 직업·8단계 장비·낚시터와 명어·묵적 봉쇄령과 등도 옛터가 열리는 때 등).
 $N$
  where note_id = '3.0.0' and position('새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때' in body) = 0;
