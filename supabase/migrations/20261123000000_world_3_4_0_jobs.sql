@@ -23,11 +23,13 @@ begin
 end $f$;
 
 create or replace function pg_temp.yh_own(p_fn text, p_role text) returns void language plpgsql as $f$
-declare g boolean := not has_schema_privilege(p_role, 'public', 'CREATE');
+declare g boolean := not has_schema_privilege(p_role, 'public', 'CREATE'); s boolean := not pg_has_role(current_user, p_role, 'SET');
 begin
+  if s then execute format('grant %I to %I with set true', p_role, current_user); end if;
   if g then execute format('grant create on schema public to %I', p_role); end if;
   execute format('alter function %s owner to %I', p_fn, p_role);
   if g then execute format('revoke create on schema public from %I', p_role); end if;
+  if s then execute format('grant %I to %I with set false', p_role, current_user); end if;
 end $f$;
 
 update public.world_item_catalog set item_name = '편전', description = '쇠뇌와 취관에 재는 짧은 살. 통아(대롱)에 넣어 쏘거나 불어 쏜다. 쇠뇌·취관으로 공격할 때마다 하나씩 쓴다.' where item_id = 'ammo_dart';
