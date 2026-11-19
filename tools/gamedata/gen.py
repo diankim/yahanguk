@@ -67,6 +67,9 @@ def build(dsn):
     d['factionSpread'] = q(dsn, "select world_faction_spread_rules()")
     d['factionPerk'] = q(dsn, "select world_faction_perk_rules()")
     d['battleItems'] = q(dsn, "select world_battle_item_rules()")
+    d['itemNames'] = q(dsn, """select coalesce(json_object_agg(i.item_id, i.item_name order by i.item_id), '{}') from world_item_catalog i where i.item_id in (
+      select jsonb_array_elements_text(world_battle_item_rules() -> 'gw' -> 'items') union select jsonb_array_elements_text(world_battle_item_rules() -> 'tourney' -> 'items')
+      union select jsonb_object_keys(b -> 'items') from jsonb_array_elements(world_pet_slot_rules() -> 'buy') b)""")
     d['busy'] = q(dsn, "select world_busy_rules()")
     d['gwiryeong'] = q(dsn, "select world_gwiryeong_rules()")
     d['contrib'] = q(dsn, "select world_contrib_rules()")

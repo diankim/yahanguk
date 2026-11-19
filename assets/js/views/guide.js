@@ -29,6 +29,7 @@ function jobTableHtml() {
   return `<table class="guide-table"><tr><th>직업 · 역할</th><th>기본 능력치</th><th>직업 효과</th></tr>
     ${JOB_ORDER.map(row).join('')}</table>`;
 }
+const itemName = id => GD.itemNames?.[id] || nameOf(id);
 const STYLE_JOBS = { melee: ['artificer', 'bloodknight', 'analyst', 'spearman'], ranged: ['scout', 'tamer'], magic: ['exorcist', 'medic', 'sealmaster', 'formation'] };
 const styleWpn = st => esc(STYLE_JOBS[st].flatMap(k => (GD.weaponRules?.forms?.[k] || []).map(f => f[0])).join('·'));
 const skillCostText = () => { const c = GD.jobSkillCost || {}, by = {}; for (const k of JOB_ORDER) (by[c[k] ?? 12] ||= []).push(JOBS[k].name); return Object.entries(by).sort((a, b) => a[0] - b[0]).map(([n, l]) => `${l.join('·')} ${n}`).join(' · '); };
@@ -1593,7 +1594,7 @@ const S = [
     <table class="guide-table"><tr><th>전투</th><th>어떤 싸움인가</th><th>쓰러지면</th></tr>
       <tr><td><b>파티 현장 토벌</b></td><td>탐색하다 만난 요괴를 「동료 부르기」로 파티원과 함께 칩니다. 정예·우두머리도 됩니다. 빠른 사람부터 차례로 칩니다. 혼자보다 쉽게 이기고, 보상은 각자 받습니다.</td><td><b>진짜 전투불능</b>입니다. 구조를 받아야 합니다.</td></tr>
       <tr><td><b>봉연의 그림자</b></td><td>사흘~나흘에 한 번 한국 시각 ${GD.shadow.from}~${GD.shadow.to} 사이에 한 지역에 나타나는 서버 전체의 필드 보스입니다. 체력이 아주 많아, 그 자리에 모인 조사원 모두가 2시간 동안 실시간으로 몰아칩니다. 행동은 1초 간격이고, 보스는 2초마다 움직입니다. 레벨과 상관없이 누구나, 늦게 와도 합류합니다. 어렵다기보다 회복약·영력약을 많이 먹는 싸움이고, 끝날 때까지 몇 번이고 다시 덤빌 수 있습니다.</td><td>체력 1로 1분 물러났다가 <b>쉬는 중</b>이 됩니다. 행동하면 다시 싸웁니다.</td></tr>
-      <tr><td><b>구중 봉주 결전</b></td><td>이야기 10장의 마지막 싸움입니다. 혼자 또는 파티원 4명까지 20분 안에 체력 하나를 함께 깎습니다. 보스는 행동 수, 곧 차례에 맞춰 움직입니다. 체력 회복품은 한 싸움에 다섯 개까지입니다. 혼자 이기기는 열에 셋~넷, 둘이면 어렵지만 해볼 만하게 맞췄습니다.</td><td>30초 물러났다가 쉬는 중이 됩니다. 행동하면 체력 30으로 돌아옵니다.</td></tr>
+      <tr><td><b>구중 봉주 결전</b></td><td>이야기 10장의 마지막 싸움입니다. 혼자 또는 파티원 4명까지 20분 안에 체력 하나를 함께 깎습니다. 보스는 행동 수, 곧 차례에 맞춰 움직입니다. 체력 회복품은 한 싸움에 다섯 개까지입니다. 혼자 이기기는 열에 셋~넷, 둘이면 조합에 따라 열에 다섯~여덟로 맞췄습니다.</td><td>30초 물러났다가 쉬는 중이 됩니다. 행동하면 체력 30으로 돌아옵니다.</td></tr>
       <tr><td><b>귀허의 주인</b></td><td>「요인록」의 마지막 보스입니다. 5초 라운드마다 낌새를 읽고, 거기에 맞는 행동을 정확히 고르는 <b>명령 방식</b>입니다. 수법 라운드는 10초입니다. 쉬운 <b>이야기판</b>과 어려운 <b>깊은 귀허</b>가 있고, 깊은 귀허에서는 회복품을 한 싸움에 두 개까지만 씁니다. 묵적록의 먹그림자도 같은 방식입니다.</td><td>인원에 따라 몇 라운드 물러났다가 쉬는 중이 됩니다. 행동을 고르면 돌아옵니다.<br><b>혼자</b>(깊은 귀허): 쓰러짐 10번까지. 그다음에 쓰러지면 실패합니다. 이야기판은 제한이 없습니다.<br><b>둘 이상</b>: 모두가 물러나 있으면 실패합니다.</td></tr></table>
     <ul>
       <li>봉연·결전·귀허에서 「쉬는 중」에는 보스가 나를 노리지 않습니다. 물품으로 체력을 채운 뒤 돌아가세요.</li>
@@ -1783,7 +1784,7 @@ const S = [
           <li>보통 5초, 수법이 나오면 10초 안에 고르지 않으면 방어합니다. 모두 고르면 바로 다음 라운드로 갑니다.</li>
           <li>「버티기」는 몸을 낮춰 막기만 합니다. 쏟아지는 물살·소용돌이에는 방어보다 강합니다.</li>
           <li>모두를 치는 물살은 정해진 라운드에 미리 알립니다. 라운드 띠의 낌새 문구가 다음 수를 넌지시 알려 줍니다. 「기를 모으기 시작했다」 같은 문구입니다.</li></ul></li>
-      <li><b>물품</b>: 체력 회복품을 <b>한 싸움에 두 개까지</b> 행동으로 씁니다. 나 또는 고른 동료에게 씁니다. ${(GD.battleItems?.gw?.items || []).map(nameOf).join(' · ')}이 됩니다.</li>
+      <li><b>물품</b>: 체력 회복품을 <b>한 싸움에 두 개까지</b> 행동으로 씁니다. 나 또는 고른 동료에게 씁니다. ${(GD.battleItems?.gw?.items || []).map(itemName).join(' · ')}이 됩니다.</li>
       <li><b>물러남과 쉬는 중</b>
         <ul><li>쓰러지면 잠시 물러납니다. 혼자 1 · 둘 2 · 셋 4 · 넷 5라운드입니다.</li>
           <li>물러남이 끝나거나 「야전 소생」을 받으면 체력 30으로 <b>쉬는 중</b>이 됩니다.</li>
@@ -1983,7 +1984,7 @@ const S = [
           <li>시작 ${TOURNEY_WEEK.absent}분 전에 쓰러져 있거나 목숨을 잃었으면 불참이 되고, 상대가 부전승입니다.</li>
           <li>${TOURNEY_WEEK.min}명, 팀전은 ${TOURNEY_WEEK.min}팀 이상이어야 열립니다.</li></ul></li>
       <li><b>방식</b>: 단판 토너먼트입니다. 겨루기는 서버가 자동으로 펼칩니다. 한 라운드의 겨루기는 하나씩 차례로 열리고, 합마다 ${GD.tourney?.exchange_s ?? 3}초, 겨루기 사이에 ${GD.tourney?.between_s ?? 8}초 쉽니다.</li>
-      <li><b>작전</b>: 시작 전에 정해 둡니다. 태세는 공격·균형·수비 가운데 고르고, 회복품 ${GD.battleItems?.tourney?.pick || 2}가지와 직업 기술 쓰는 때를 정합니다. 고를 수 있는 회복품은 ${(GD.battleItems?.tourney?.items || []).map(nameOf).join(' · ')}(우수품도 됨)입니다.</li>
+      <li><b>작전</b>: 시작 전에 정해 둡니다. 태세는 공격·균형·수비 가운데 고르고, 회복품 ${GD.battleItems?.tourney?.pick || 2}가지와 직업 기술 쓰는 때를 정합니다. 고를 수 있는 회복품은 ${(GD.battleItems?.tourney?.items || []).map(itemName).join(' · ')}(우수품도 됨)입니다.</li>
       <li><b>레벨 보정</b>: 기세는 경기 평균 레벨로 같게 둡니다. 레벨 차 1마다 2%만 유리하고, 최대 20%입니다. 능력치·장비 차이는 절반만 반영합니다.</li>
       <li><b>관람</b>: 개최지에 있으면 같은 회차 경기 가운데 골라 봅니다. 결과는 전체 채팅 「비무 소식」으로 알리고, 비무 방에 일주일 남깁니다.</li>
       <li>목숨·체력·물품·전·경험치는 그대로입니다.</li>
@@ -2113,7 +2114,7 @@ const S = [
           <li>같은 동무를 두 곳에 함께 둘 수는 없습니다. 다른 곳으로 고르면 앞 자리에서 빠집니다.</li>
           <li>혼례 정인과 한 지붕에 살면 두 사람이 저마다 자기 동무를 자기 자리만큼 둡니다. 갈라서면 각자의 동무는 각자의 별채로 돌아갑니다.</li></ul></li>
       ${(() => { const PS = GD.petSlot || { base: 1, buy: [] }; return `<li><b>동무 자리</b>: 처음에는 한 사람에 ${PS.base}자리이고, 별채 › 동무 창의 「동무 자리 늘리기」로 ${(PS.buy || []).length}자리를 더 늘립니다(모두 ${PS.base + (PS.buy || []).length}자리).
-        <ul>${(PS.buy || []).map((b, i) => `<li>${PS.base + i + 1}째 자리: ${[b.gil ? `${Number(b.gil).toLocaleString()}전` : '', ...Object.entries(b.items || {}).map(([id, n]) => `${esc(nameOf(id))} ×${n}`)].filter(Boolean).join(' · ')}</li>`).join('')}
+        <ul>${(PS.buy || []).map((b, i) => `<li>${PS.base + i + 1}째 자리: ${[b.gil ? `${Number(b.gil).toLocaleString()}전` : '', ...Object.entries(b.items || {}).map(([id, n]) => `${esc(itemName(id))} ×${n}`)].filter(Boolean).join(' · ')}</li>`).join('')}
           <li>별채를 고칠 수 있는 곳(안전지대, 빈약한 안전지대 제외)에서 늘리고, 재료는 가방 먼저, 모자라면 창고에서 씁니다.</li>
           <li>자리가 하나뿐일 때 「별채에 두기」를 누르면 별채 동무를 바꿉니다.</li>
           <li>동무 도감은 별채 화면의 「동무」에서 엽니다.</li></ul></li>`; })()}

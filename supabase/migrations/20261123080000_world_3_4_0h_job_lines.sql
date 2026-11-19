@@ -45,6 +45,22 @@ begin
   end loop;
 end $r$;
 
+create or replace function pg_temp.yh_setjson(p_fn regprocedure, p_j jsonb) returns void language plpgsql as $f$
+declare src text := pg_get_functiondef(p_fn); body text := (select prosrc from pg_proc where oid = p_fn);
+begin
+  if position(body in src) = 0 then raise exception 'yh_setjson %: 본문을 못 찾음', p_fn; end if;
+  execute replace(src, body, ' select ' || quote_literal(p_j::text) || '::jsonb ');
+end $f$;
+
+do $o$
+begin
+  if (public.world_outfit_rules() -> 'src')::text like '%극의 장부 교환%' then
+    perform pg_temp.yh_setjson('public.world_outfit_rules()'::regprocedure, jsonb_set(public.world_outfit_rules(), '{src}',
+      (select jsonb_object_agg(k, replace(replace(replace(v, '극의 장부 교환 · 극 귀허', '무용담 교환 · 무용담 · 귀허의 주인'), '극의 장부 교환 · 극 명부', '무용담 교환 · 무용담 · 먹그림자'), '극의 장부 교환 · 극 장부', '무용담 교환 · 무용담 · 값귀'))
+         from jsonb_each_text(public.world_outfit_rules() -> 'src') e(k, v))));
+  end if;
+end $o$;
+
 update public.world_patch_notes set body = body || $N$- 새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때 퀘스트 대사의 직업마다 다른 줄이 다른 직업 줄이나 빈 줄로 나오던 것을 맞췄습니다.
 - 도움말을 지금 규칙에 맞게 고쳤습니다(새 세 직업·8단계 장비·낚시터와 명어·묵적 봉쇄령과 등도 옛터가 열리는 때 등).
 $N$
