@@ -193,7 +193,7 @@ export const AFFIL_LORE = {
   },
 };
 
-export const AFFIL_VS_FACTION = '소속은 야행국 안에서 처음 배속된 부서이고, 「환골탈태 서첩」으로 한 번 다시 고를 때 말고는 바뀌지 않습니다. 대세력(정통파·적월교·흑련회·북령맹·수향연맹·남명회·천명원)은 세계를 다니며 나중에 맹세하는 바깥 세력으로, 떠나고 옮길 수 있습니다. 둘의 효과는 함께 붙습니다.';
+export const AFFIL_VS_FACTION = '소속은 야행국 안에서 처음 배속된 부서이고, 한 번 정하면 바뀌지 않습니다. 대세력(정통파·적월교·흑련회·북령맹·수향연맹·남명회·천명원)은 세계를 다니며 나중에 맹세하는 바깥 세력으로, 떠나고 옮길 수 있습니다. 둘의 효과는 함께 붙습니다.';
 
 const STAT_KO = { strength: '근력', agility: '민첩', vitality: '체질', perception: '감각', willpower: '의지', spirit_affinity: '영성' };
 export const baseText = b => Object.entries(b).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${STAT_KO[k]} ${v}`).join(' · ');

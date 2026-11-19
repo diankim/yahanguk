@@ -1,9 +1,9 @@
-import { rarTag, db, store, on, act, rpc, toast, ask, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
+import { rarTag, db, store, on, act, rpc, toast, ask, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf, JOB_ORDER } from '../core.js';
 import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem, foldOpen } from './common.js';
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf, useLabel } from './item.js';
+import { weaponJobs, canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf, useLabel } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
@@ -20,6 +20,7 @@ let el, sub = 'items', cat = 'all', craftFilter = 'can', off = [], q = '', cq = 
 const FIELDS = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
 const craftFields = new Set();
 const craftKinds = new Set();
+const craftJobs = new Set();
 let craftSort = 'can';
 const FAV_MAX = 30;
 const STAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
@@ -113,18 +114,20 @@ function gearFx(it, kind) {
 let craftFiltOpen = (() => { try { return localStorage.getItem('yh-craft-filt') === '1'; } catch { return false; } })();
 const KIND_GROUPS = [['장비', ['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask']], ['생활 도구', ['tool', 'explore', 'fishing', 'craft']], ['그 밖', ['consumable', 'material', 'furniture', 'outfit', 'etc']]];
 const CRAFT_SORTS = [['can', '가능한 것 먼저'], ['lv', '제작 레벨 낮은순'], ['lvd', '제작 레벨 높은순']];
-function craftFilterBox(inv, kindCount) {
+function craftFilterBox(inv, kindCount, jobCount) {
   const tog = (attr, k, on, label, n, cls = '') => `<label class="tg ${cls}"><input type="checkbox" ${attr}="${k}" ${on ? 'checked' : ''}><span>${esc(label)}${n != null ? ` <small>${n}</small>` : ''}</span></label>`;
   const fieldN = f => (inv.recipes || []).filter(r => (r.field || '') === f).length;
   const sumF = craftFields.size ? [...craftFields].map(f => nameOf(f)).join('·') : '모든 분야';
   const sumK = craftKinds.size ? [...craftKinds].map(k => KIND_LABEL[k]).join('·') : '모든 물품';
   const sumS = (CRAFT_SORTS.find(x => x[0] === craftSort) || CRAFT_SORTS[0])[1];
-  const on = craftFields.size + craftKinds.size;
+  const on = craftFields.size + craftKinds.size + craftJobs.size;
+  const sumJ = craftJobs.size ? ` · ${[...craftJobs].map(j => nameOf(j)).join('·')} 무기` : '';
   return `<details class="craft-filt" ${craftFiltOpen ? 'open' : ''}>
-    <summary>${icon('filter', 14)}<b>거르기·정렬</b>${on ? `<i class="cf-on">${on}</i>` : ''}<span class="cf-sum">${esc(sumF)} · ${esc(sumK)} · ${esc(sumS)}</span></summary>
+    <summary>${icon('filter', 14)}<b>거르기·정렬</b>${on ? `<i class="cf-on">${on}</i>` : ''}<span class="cf-sum">${esc(sumF)} · ${esc(sumK)}${esc(sumJ)} · ${esc(sumS)}</span></summary>
     <div class="cf-body">
       <div class="cf-row"><span class="cf-h">분야</span><div class="cf-tags">${FIELDS.map(f => tog('data-field', f, craftFields.has(f), nameOf(f), fieldN(f), inv.crafting_profession === f ? 'mine' : '')).join('')}</div></div>
       ${KIND_GROUPS.map(([g, ks]) => { const list = ks.filter(k => kindCount[k]); return list.length ? `<div class="cf-row"><span class="cf-h">${esc(g)}</span><div class="cf-tags">${list.map(k => tog('data-kind', k, craftKinds.has(k), KIND_LABEL[k], kindCount[k])).join('')}</div></div>` : ''; }).join('')}
+      <div class="cf-row"><span class="cf-h">무기 직업</span><div class="cf-tags">${JOB_ORDER.filter(j => jobCount[j]).map(j => tog('data-cjob', j, craftJobs.has(j), nameOf(j), jobCount[j], store.character?.job_key === j ? 'mine' : '')).join('')}</div></div>
       <div class="cf-row cf-foot"><label class="craft-sort"><span class="muted small">정렬</span><select id="craft-sort">${CRAFT_SORTS.map(([k, t]) => `<option value="${k}" ${craftSort === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
         ${on ? '<button class="btn small ghost" id="craft-filt-clear">거르기 모두 풀기</button>' : ''}</div>
       <p class="muted small">내 제작 분야(${esc(nameOf(inv.crafting_profession || 'smithing'))}, 초록)의 제작법은 품질 +12입니다. 품질 85 이상이면 「우수품」이 나옵니다(30단계 추가 기술이 있으면 80). 분야는 캐릭터 › 성장 › 생활 전문화에서 정합니다.</p>
@@ -328,16 +331,17 @@ async function craft(body, inv, stg) {
     return [x.r.name, x.r.output_name || nameOf(x.r.output)].join(' ').toLowerCase().includes(t); })
     .filter(x => !craftFields.size || craftFields.has(x.r.field || (cookOut.has(x.r.output) ? 'cooking' : '')))
     .filter(x => !craftKinds.size || craftKinds.has(x.kind))
+    .filter(x => !craftJobs.size || (x.kind === 'weapon' && weaponJobs(cmap.get(x.r.output)).some(j => craftJobs.has(j))))
     .filter(x => cq.trim() || craftFilter === 'all' || (craftFilter === 'fav' ? favs.has(x.r.id) : craftFilter === 'can' ? x.can : x.atLoc))
     .sort(favFirst);
-  const kindCount = {}; (inv.recipes || []).forEach(r => { const k = kindOf(r); kindCount[k] = (kindCount[k] || 0) + 1; });
+  const kindCount = {}, jobCount = {}; (inv.recipes || []).forEach(r => { const k = kindOf(r); kindCount[k] = (kindCount[k] || 0) + 1; if (k === 'weapon') weaponJobs(cmap.get(r.output)).forEach(j => { jobCount[j] = (jobCount[j] || 0) + 1; }); });
   renderKeep(body, `
     ${stUse ? `<p class="muted small">${icon('chest', 13)} 안전지대에서는 창고 재료도 함께 씁니다(가방 먼저). 재료 수량에 창고 몫을 더해 보입니다.</p>` : stg?.in_safe ? `<p class="muted small">${icon('chest', 13)} ${esc(WEAK_NAMES)}에서는 창고 재료를 쓰지 않습니다. 가방에 든 재료만 셉니다.</p>` : ''}
     ${bagUsed(store.character) >= bagLimit(store.character) ? `<p class="bad small">가방이 가득 찼습니다(${bagUsed(store.character)}/${bagLimit(store.character)}칸). 완성품이 새 칸을 차지하면 제작할 수 없습니다.</p>` : ''}
     <div class="notice">${icon('hammer', 18)}<div><b>제작은 어디서나 할 수 있습니다</b><span>제작법에 적힌 장소에서 제작하면 품질 +${LOC_BONUS}. 제작 분야 ${esc(nameOf(inv.crafting_profession || 'smithing'))} · ${fmt.num(store.character?.skill_progress?.[({ sealing: 'wardcraft' })[inv.crafting_profession] || inv.crafting_profession || 'smithing']?.rank || 1)}단계</span></div></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="craft-q" type="search" placeholder="만들 물품 찾기 (제작법·완성품 이름)" value="${esc(cq)}"></label>
     ${segmented('craft-filter', [['fav', `즐겨찾기 ${favs.size}`], ['can', '지금 가능'], ['here', '이곳 덤'], ['all', '전체']], craftFilter)}
-    ${craftFilterBox(inv, kindCount)}
+    ${craftFilterBox(inv, kindCount, jobCount)}
     ${cq.trim() ? `<p class="muted small">「${esc(cq.trim())}」 검색 결과 ${rows.length}개 · 검색 중에는 모든 제작법에서 찾습니다.</p>` : ''}
     ${matFocus || recipeFocus ? `<div class="focus-bar">${icon('search', 14)}<span>${matFocus ? `${esc(`「${nameOf(matFocus)}」이(가)`)} 들어가는 제작법` : `「${esc(nameOf(recipeFocus))}」 제작법`}</span><button class="btn small ghost" id="craft-unfocus">모두 보기</button></div>` : ''}
     ${rows.length ? `<div class="recipe-grid">${rows.map(({ r, lacks, toolOk, toolBy, reqs, can, maxN, atLoc, kind, tier }) => `
@@ -364,7 +368,8 @@ async function craft(body, inv, stg) {
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; redraw('[data-seg="craft-filter"]'); });
   $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); redraw(`[data-field="${b.dataset.field}"]`); });
   $$('[data-kind]', body).forEach(b => b.onchange = () => { b.checked ? craftKinds.add(b.dataset.kind) : craftKinds.delete(b.dataset.kind); redraw(`[data-kind="${b.dataset.kind}"]`); });
-  $('#craft-filt-clear', body)?.addEventListener('click', () => { craftFields.clear(); craftKinds.clear(); redraw('.craft-filt'); });
+  $$('[data-cjob]', body).forEach(b => b.onchange = () => { b.checked ? craftJobs.add(b.dataset.cjob) : craftJobs.delete(b.dataset.cjob); redraw(`[data-cjob="${b.dataset.cjob}"]`); });
+  $('#craft-filt-clear', body)?.addEventListener('click', () => { craftFields.clear(); craftKinds.clear(); craftJobs.clear(); redraw('.craft-filt'); });
   $('.craft-filt', body)?.addEventListener('toggle', e => { craftFiltOpen = e.target.open; try { localStorage.setItem('yh-craft-filt', craftFiltOpen ? '1' : '0'); } catch {} });
   $('#craft-sort', body).onchange = e => { craftSort = e.target.value; redraw('#craft-sort'); };
   const ci = $('#craft-q', body);

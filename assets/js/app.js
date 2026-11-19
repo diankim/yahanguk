@@ -234,7 +234,7 @@ function renderCreateForm() {
         <div class="confirm-row"><span>이름</span><b id="sum-name">—</b></div>
         <div class="confirm-row"><span>직업</span><b id="sum-job">—</b></div>
         <div class="confirm-row"><span>소속</span><b id="sum-faction">—</b></div>
-        <p class="warn">${icon('shield', 16)} 이름은 생성 후 바꿀 수 없고, 다른 조사원과 겹칠 수 없습니다. 직업·소속은 처음 받는 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.</p>
+        <p class="warn">${icon('shield', 16)} 이름·소속은 생성 후 바꿀 수 없고, 이름은 다른 조사원과 겹칠 수 없습니다. 직업은 안전지대 상점에서 파는 「환골탈태 서첩」으로 나중에 바꿀 수 있습니다.</p>
         <p class="form-msg" id="create-msg"></p>
         <button class="btn primary block" type="submit" id="create-btn">이 조사원으로 입국하기</button>
       </section>

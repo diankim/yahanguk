@@ -330,7 +330,7 @@ export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ON
 function openResetIdentity() {
   const c = store.character || {};
   const m = openModal({ title: '환골탈태 서첩', body: `
-    <p class="muted small">직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 새 직업 무기가 하나도 없으면 시작 무기 하나를 받습니다. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.</p>
+    <p class="muted small">직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 새 직업 무기가 하나도 없으면 시작 무기 하나를 받고, 무기 칸이 비면 가진 새 직업 무기를 저절로 낍니다. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.</p>
     <p class="hint" data-jobcd hidden></p>
     <h3 class="sub-h">직업</h3>
     <div class="choice-grid ri-grid">${JOB_ORDER.map(k => [k, JOBS[k]]).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
