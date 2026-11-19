@@ -153,6 +153,7 @@ select pg_temp.yh_fix('world_battle_action', array[
     IF NOT ('bloodcraft_m50' = ANY (sk)) THEN
       IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
       hp := hp - 15;
+      PERFORM set_config('yh.pf_cost', '15', true);
     END IF;
     extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 30 ELSE 20 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
     v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
@@ -169,3 +170,10 @@ select pg_temp.yh_fix('world_battle_action', array[
     IF style = 'melee' AND c.job_key = 'spearman' AND m.kind IN ('bird', 'sky') AND coalesce((c.skill_progress -> 'spear' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
     IF style = 'magic' AND c.job_key = 'formation' AND m.kind IN ('ward', 'water') AND coalesce((c.skill_progress -> 'formation' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
     IF coalesce((v_pfx ->> 'brace')::boolean, false) THEN mul := mul * 1.20;$q$]);
+
+select pg_temp.yh_fix('world_pfight_resolve', array[
+  $q$      perform set_config('yh.pf_hb', coalesce((select health from public.world_characters where owner_id = mm.owner_id), 0)::text, true);$q$,
+  $q$      perform set_config('yh.pf_hb', coalesce((select health from public.world_characters where owner_id = mm.owner_id), 0)::text, true);
+      perform set_config('yh.pf_cost', '', true);$q$,
+  $q$        taken = pm.taken + greatest(0, coalesce(nullif(current_setting('yh.pf_hb', true), '')::int, c.health) - c.health),$q$,
+  $q$        taken = pm.taken + greatest(0, coalesce(nullif(current_setting('yh.pf_hb', true), '')::int, c.health) - c.health - coalesce(nullif(current_setting('yh.pf_cost', true), '')::int, 0)),$q$]);

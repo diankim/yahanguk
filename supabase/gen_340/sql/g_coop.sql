@@ -139,6 +139,7 @@ select pg_temp.yh_fix('world_gw_hurt', array[
        and not coalesce((w.fx ->> 'oath')::boolean, false) and 'bloodcraft_c43b' = any (public.world_skill_procs(w.owner_id)) order by w.joined_at limit 1 for update;
     if found then
       update public.world_gw_members set hp = hp - 20, taken = taken + 20, fx = fx || '{"oath": true}'::jsonb where fight_id = p_fight and owner_id = bk.owner_id;
+      perform public.world_gw_credit(p_fight, bk.owner_id, d - (m.hp - 1), 'guard');
       d := m.hp - 1;
       perform public.world_gw_say(p_fight, p_round, 'good', bk.name || ' — 「피로 잇는 맹세」 제 피 20을 내어 ' || m.name || '을(를) 버티게 했습니다.');
     end if;
@@ -147,6 +148,8 @@ select pg_temp.yh_fix('world_gw_hurt', array[
     -- $q$]);
 
 select pg_temp.yh_fix('world_raid_hit', array[
+  $q$nm text; absorb int;$q$,
+  $q$nm text; absorb int; v_bko uuid; v_d0 int;$q$,
   $q$  update public.world_characters set health = greatest(1, health - d), updated_at = now() where owner_id = who returning health into hp;$q$,
   $q$  if d > 0 and (select ch.health from public.world_characters ch where ch.owner_id = who) - d <= 1 then
     perform 1 from public.world_raid_members bm join public.world_characters bc on bc.owner_id = bm.owner_id
@@ -157,8 +160,10 @@ select pg_temp.yh_fix('world_raid_hit', array[
                   where bm.raid_id = p_raid and bm.owner_id <> who and bc.job_key = 'bloodknight' and bc.health > 21 and bm.out_until is null and bm.left_at is null
                     and not coalesce((bm.fx ->> 'oath')::boolean, false) and 'bloodcraft_c43b' = any (public.world_skill_procs(bm.owner_id)) order by bm.owner_id limit 1),
            u1 as (update public.world_raid_members x set fx = x.fx || '{"oath": true}'::jsonb, taken = x.taken + 20 from b where x.raid_id = p_raid and x.owner_id = b.owner_id returning x.owner_id)
-      update public.world_characters ch set health = ch.health - 20, updated_at = now() from u1 where ch.owner_id = u1.owner_id;
+      update public.world_characters ch set health = ch.health - 20, updated_at = now() from u1 where ch.owner_id = u1.owner_id returning ch.owner_id into v_bko;
+      v_d0 := d;
       d := greatest(0, (select ch.health from public.world_characters ch where ch.owner_id = who) - 2);
+      perform public.world_raid_credit(p_raid, v_bko, v_d0 - d, 'guard');
       perform public.world_raid_say_n(p_raid, 'good', nm || ' — 「피로 잇는 맹세」로 쓰러지지 않고 버텼습니다.', nm, 0);
     end if;
   end if;
