@@ -7,6 +7,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, HERE)
 import data_world as D
+import sys as _s, pathlib as _p
+_s.path.insert(0, str(_p.Path(__file__).resolve().parents[2] / 'quest_short'))
+from short import SHORT
 
 J = lambda o: '$J$' + json.dumps(o, ensure_ascii=False, separators=(',', ':')) + '$J$::jsonb'
 U = lambda *k: 'dd30/' + '/'.join(k)
@@ -537,7 +540,7 @@ if os.path.exists(os.path.join(HERE, 'data_quests.py')):
         mine = [s for s in qsteps if s['quest'] == q['id']]
         task_steps = [s['step'] for s in mine if s['need'].get('tasks') or s['need'].get('give')]
         per = tot // max(1, len(task_steps))
-        qrows.append(dict(quest_id=q['id'], cat=Q.CAT, title=q['title'], summary=q['summary'], region_id=q['region'], min_level=L, after=q['after'], sort=1400 + i, epilogue=[]))
+        qrows.append(dict(quest_id=q['id'], cat=Q.CAT, title=q['title'], summary=SHORT.get(q['id'], q['summary']), region_id=q['region'], min_level=L, after=q['after'], sort=1400 + i, epilogue=[]))
         for s in mine:
             rw = {'xp': per} if s['step'] in task_steps and per else {}
             if s['step'] == len(mine):
@@ -596,7 +599,7 @@ UQ = _iu.module_from_spec(_qp); _qp.loader.exec_module(UQ)
 w(f"""insert into public.world_quest_npcs(npc_key, npc_name, bio) select x.k, x.n, x.b from jsonb_to_recordset({J([dict(k=k, n=v[0], b=v[1]) for k, v in UQ.NPCS.items()])}) as x(k text, n text, b text)
 on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded.bio;""")
 fresh('npcs', [v[0] for v in UQ.NPCS.values()], '인물')
-bulk('world_quests', [dict(quest_id=q['id'], cat='무용담', title=q['title'], summary=q['summary'], region_id=q['region'], min_level=UQ.LEVEL, after=q['after'], sort=1490 + k, epilogue=[])
+bulk('world_quests', [dict(quest_id=q['id'], cat='무용담', title=q['title'], summary=SHORT.get(q['id'], q['summary']), region_id=q['region'], min_level=UQ.LEVEL, after=q['after'], sort=1490 + k, epilogue=[])
                       for k, q in enumerate(UQ.QUESTS)],
      [('quest_id', 'text'), ('kind', 'text'), ('cat', 'text'), ('title', 'text'), ('summary', 'text'), ('region_id', 'text'), ('min_level', 'int'), ('after', 'jsonb'),
       ('sort', 'int'), ('epilogue', 'jsonb'), ('active', 'boolean')], 'quest_id', ['cat', 'title', 'summary', 'region_id', 'min_level', 'after', 'sort', 'epilogue', 'active'],

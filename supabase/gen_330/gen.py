@@ -28,6 +28,9 @@ for _n in RD.NPCS:
             OPEN[_q] = {'regular': _n['k'], 'stage': _i}
 
 import importlib.util as _iu
+import sys as _s, pathlib as _p
+_s.path.insert(0, str(_p.Path(__file__).resolve().parents[1] / 'quest_short'))
+from short import SHORT
 _sp = _iu.spec_from_file_location('side_gen', os.path.join(SIDE, 'gen.py')); _side = _iu.module_from_spec(_sp); _sp.loader.exec_module(_side)
 _sp2 = _iu.spec_from_file_location('epi_gen', os.path.join(os.path.dirname(HERE), 'gen_310', 'epi_meta.py')); EM = _iu.module_from_spec(_sp2); _sp2.loader.exec_module(EM)
 NPCS = {}
@@ -469,7 +472,7 @@ on conflict (title_key) do update set title_name = excluded.title_name, descript
                 errors.append(f"{q['id']}: 앞 퀘스트 모름 {a}")
         cat = f"{ARC}·{NPC_OF[q['id']]['short']}"
         w(f"""insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
-values ({T(q['id'])}, 'side', {T(cat)}, {T(q['title'])}, {T(q['summary'])}, {T(reg)}, {L}, {T('{' + ','.join(after) + '}')}::text[], null, {SORT0 + i}, '[]'::jsonb, true, null, null)
+values ({T(q['id'])}, 'side', {T(cat)}, {T(q['title'])}, {T(SHORT.get(q['id'], q['summary']))}, {T(reg)}, {L}, {T('{' + ','.join(after) + '}')}::text[], null, {SORT0 + i}, '[]'::jsonb, true, null, null)
 on conflict (quest_id) do update set cat = excluded.cat, title = excluded.title, summary = excluded.summary, region_id = excluded.region_id, min_level = excluded.min_level, after = excluded.after, sort = excluded.sort, active = true;""")
         w(f"update public.world_quests set open_req = {J(OPEN[q['id']]) if OPEN.get(q['id']) else 'null'} where quest_id = {T(q['id'])};")
         w(f"delete from public.world_quest_steps where quest_id = {T(q['id'])} and step > {len(steps)};")

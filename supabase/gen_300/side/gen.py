@@ -6,6 +6,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, WORLD)
 import data_quests as DQ
 import data_world as DW
+import sys as _s, pathlib as _p
+_s.path.insert(0, str(_p.Path(__file__).resolve().parents[2] / 'quest_short'))
+from short import SHORT
 
 REF = json.load(open(os.path.join(HERE, 'ref.json'), encoding='utf-8'))
 ARC = '외전·명등기'
@@ -509,7 +512,7 @@ on conflict (title_key) do update set title_name = excluded.title_name, descript
                 errors.append(f"{q['id']}: 앞 퀘스트 모름 {a}")
         cat = ARC if field == ARC else f'{field}·{REGION_BY_ID.get(reg, reg)}'
         w(f"""insert into public.world_quests(quest_id, kind, cat, title, summary, region_id, min_level, after, chapter_id, sort, epilogue, active, job_key, faction_key)
-values ({T(q['id'])}, 'side', {T(cat)}, {T(q['title'])}, {T(q['summary'])}, {T(reg)}, {L}, {T('{' + ','.join(after) + '}')}::text[], null, {SORT0 + i}, '[]'::jsonb, true, null, null)
+values ({T(q['id'])}, 'side', {T(cat)}, {T(q['title'])}, {T(SHORT.get(q['id'], q['summary']))}, {T(reg)}, {L}, {T('{' + ','.join(after) + '}')}::text[], null, {SORT0 + i}, '[]'::jsonb, true, null, null)
 on conflict (quest_id) do update set cat = excluded.cat, title = excluded.title, summary = excluded.summary, region_id = excluded.region_id, min_level = excluded.min_level, after = excluded.after, sort = excluded.sort, active = true;""")
         w(f"delete from public.world_quest_steps where quest_id = {T(q['id'])} and step > {len(steps)};")
         for k, (title, goal, need, ls) in enumerate(steps):
