@@ -235,12 +235,14 @@ const S = [
       <li>가방의 물품 정보에서 바로 맡길 수도 있습니다. 가방 목록에는 물품마다 창고에 든 수가 함께 적힙니다.</li>
       <li><b>안전지대 밖에서</b>: 가방 › 제작의 「창고 보기」로 <b>들어 있는 것을 보고 버릴 수 있습니다</b>. 맡기기·꺼내기는 안전지대에서만, 그리고 전투불능·이동·원정·자율 활동이 아닐 때만 됩니다.</li>
       <li><b>넓히기</b>: 최대 ${GD.storage.max}칸까지 넓힙니다.
-        <ul><li><b>전</b>: ${GD.storage.prices.length}번, +4칸씩 · ${GD.storage.prices.map(v => v.toLocaleString('ko-KR')).join(' → ')}전</li>
+        <ul><li><b>전</b>: ${GD.storage.prices.length}번, +${GD.storage.step}칸씩 · ${GD.storage.prices.map(v => v.toLocaleString('ko-KR')).join(' → ')}전</li>
           <li><b>이야기 6~10장</b>: 해결마다 +2</li>
           <li><b>본편 「요인록」·「묵적록」</b>: 장(다섯 장씩)을 마칠 때마다 +2</li>
           <li><b>본편 「명등기」</b>: 3·6·9·12·15장을 마칠 때마다 +3</li>
           <li><b>대세력 평판</b>: 300·600·1,000에서 +2씩. 세력을 떠나면 사라집니다.</li>
-          <li><b>지역 완전 답사</b>: 10·20·30곳에서 +2씩</li></ul></li>
+          <li><b>지역 완전 답사</b>: ${GD.storage.survey.per}곳마다 +${GD.storage.survey.cells}씩(${GD.storage.survey.per * GD.storage.survey.max}곳까지)</li>
+          <li><b>직업 숙련</b>: 직업 전투 기술 계열이 ${GD.storage.jobs.rank}단계에 닿을 때마다, 두 번째 계열부터 +${GD.storage.jobs.cells}씩(${GD.storage.jobs.max}계열까지) — 직업을 바꿔 키울수록 늘어납니다.</li>
+          <li><b>연담</b>: 인물 이야기 다섯 편을 모두 마칠 때마다 +${GD.storage.regular.cells}</li></ul></li>
       <li>용량이 줄어 넘쳐도 물품은 남고, 새로 맡기기만 막힙니다.</li>
     </ul>
     <h4>대장간</h4>

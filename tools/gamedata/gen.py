@@ -115,14 +115,15 @@ def build(dsn):
     d['regionNames'] = q(dsn, f"select json_object_agg(region_id, region_name order by region_id) from world_map_regions where region_id = any({jarr(ids)})")
     # 가방·창고 칸
     bag = q(dsn, "select to_json(column_default) from information_schema.columns where table_schema = 'public' and table_name = 'world_characters' and column_name = 'bag_capacity'")
-    src = q(dsn, "select to_json(prosrc) from pg_proc where proname = 'world_storage_capacity'")
-    base = int(re.search(r"'base',\s*(\d+)", src).group(1))
-    prices = [int(x) for x in re.search(r"array\[([\d,\s]+)\]\)\[b\.n", src).group(1).split(',')]
-    late = q(dsn, "select count(*) from world_story_chapters where seq between 6 and 10")
-    arcs = re.findall(r"'([a-z]+_\d+)'", re.search(r"g\.quest_id = any \(array\[([^\]]+)\]", src).group(1))
     d['bag'] = {'base': int(re.match(r'\d+', bag).group(0))}
-    arc_n = sum(3 if a.startswith('mdq_') else 2 for a in arcs)
-    d['storage'] = {'base': base, 'max': base + 4 * len(prices) + 2 * late + arc_n + 6 + 6, 'prices': prices, 'arc': len(arcs), 'arc_n': arc_n}
+    sr = q(dsn, "select public.world_storage_rules()")
+    late = q(dsn, "select count(*) from world_story_chapters where seq between 6 and 10")
+    reg_n = q(dsn, "select count(*) from world_quests where quest_id like 'rg\\_%\\_5'")
+    arc_n = sum(int(v) for v in sr['arcs'].values())
+    st_max = (sr['base'] + sr['step'] * len(sr['prices']) + sr['story'] * late + arc_n + sr['faction']['cells'] * len(sr['faction']['steps'])
+              + sr['survey']['cells'] * sr['survey']['max'] + sr['jobs']['cells'] * sr['jobs']['max'] + sr['regular']['cells'] * reg_n)
+    d['storage'] = {'base': sr['base'], 'max': st_max, 'step': sr['step'], 'prices': sr['prices'], 'arc': len(sr['arcs']), 'arc_n': arc_n,
+                    'story': sr['story'], 'faction': sr['faction'], 'survey': sr['survey'], 'jobs': sr['jobs'], 'regular': dict(sr['regular'], n=reg_n)}
     # 칭호 수
     t = q(dsn, """select json_build_object('total', count(*), 'public', count(*) filter (where not hidden),
         'skill', count(*) filter (where title_key ~ '^(ct|gt)_'),

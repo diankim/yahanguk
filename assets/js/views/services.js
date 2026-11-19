@@ -490,7 +490,7 @@ export function openDirectTrade(to) {
 }
 
 let storeMode = 'put';
-const STORE_PRICES = [1000, 2500, 5000, 10000];
+const ST = GD.storage, STORE_PRICES = ST.prices;
 const storeSplit = () => { try { return localStorage.getItem('yh-bag-split') !== '0'; } catch { return true; } };
 export async function renderStorage(box) {
   box.innerHTML = loading();
@@ -519,7 +519,7 @@ export async function renderStorage(box) {
       if (!storeSplit() || st <= 1 || n <= st) return [row(i.item_id, i.name, n, Math.min(n, i.room), 'take', full)];
       return Array.from({ length: Math.ceil(n / st) }, (_, k) => { const q = Math.min(st, n - k * st); return row(i.item_id, i.name, q, Math.min(q, i.room), 'take', full, k + 1); });
     };
-    const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['홍인사', src.story], ['요인록~명등기', src.arc], ['세력 평판', src.faction], ['지역 답사', src.survey]]
+    const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['홍인사', src.story], ['요인록~명등기', src.arc], ['세력 평판', src.faction], ['지역 답사', src.survey], ['직업 숙련', src.jobs], ['연담', src.regular]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
     box.innerHTML = `
       <div class="shop-head"><div><b>개인 창고</b><small>어느 안전지대에서 열어도 같은 창고입니다 · ${esc(parts)}</small></div>
@@ -539,12 +539,14 @@ export async function renderStorage(box) {
       </section>
       <section data-list="grow" ${mode === 'grow' ? '' : 'hidden'}>
         <ul class="spot-list">
-          <li><div><b>전으로 넓히기</b><small>4번까지 +4칸씩 · ${STORE_PRICES.map((p, i) => `<span class="${i < steps ? 'ok' : ''}">${fmt.num(p)}전</span>`).join(' → ')} · 넓힌 횟수 ${steps}/4</small></div>
-            ${steps >= 4 ? chip('다 넓힘', 'ok') : `<button class="btn small primary" id="st-grow" ${ro || (c?.gil ?? s.gil) < src.next_price ? 'disabled' : ''}>+4칸 · ${fmt.jeon(src.next_price)}</button>`}</li>
+          <li><div><b>전으로 넓히기</b><small>${STORE_PRICES.length}번까지 +${ST.step}칸씩 · ${STORE_PRICES.map((p, i) => `<span class="${i < steps ? 'ok' : ''}">${fmt.num(p)}전</span>`).join(' → ')} · 넓힌 횟수 ${steps}/${STORE_PRICES.length}</small></div>
+            ${steps >= STORE_PRICES.length ? chip('다 넓힘', 'ok') : `<button class="btn small primary" id="st-grow" ${ro || (c?.gil ?? s.gil) < src.next_price ? 'disabled' : ''}>+${ST.step}칸 · ${fmt.jeon(src.next_price)}</button>`}</li>
           <li><div><b>「홍인사」 6~10장</b><small>장을 해결할 때마다 +2칸 (최대 +10)</small></div>${chip(`+${src.story || 0}`, src.story ? 'ok' : '')}</li>
           <li><div><b>「요인록」~「명등기」</b><small>요인록·묵적록 장마다 +2칸, 명등기 3·6·9·12·15장 +3칸 (최대 +${GD.storage.arc_n})</small></div>${chip(`+${src.arc || 0}`, src.arc ? 'ok' : '')}</li>
-          <li><div><b>대세력 평판</b><small>평판 300·600·1000에서 +2칸씩 (최대 +6) · 세력을 떠나면 사라집니다</small></div>${chip(`+${src.faction || 0}`, src.faction ? 'ok' : '')}</li>
-          <li><div><b>지역 완전 답사</b><small>10·20·30곳에서 +2칸씩 (최대 +6) · 지금 ${src.surveyed || 0}곳</small></div>${chip(`+${src.survey || 0}`, src.survey ? 'ok' : '')}</li>
+          <li><div><b>대세력 평판</b><small>평판 ${ST.faction.steps.map(v => fmt.num(v)).join('·')}에서 +${ST.faction.cells}칸씩 (최대 +${ST.faction.cells * ST.faction.steps.length}) · 세력을 떠나면 사라집니다</small></div>${chip(`+${src.faction || 0}`, src.faction ? 'ok' : '')}</li>
+          <li><div><b>지역 완전 답사</b><small>${ST.survey.per}곳마다 +${ST.survey.cells}칸 (${ST.survey.per * ST.survey.max}곳까지, 최대 +${ST.survey.cells * ST.survey.max}) · 지금 ${src.surveyed || 0}곳</small></div>${chip(`+${src.survey || 0}`, src.survey ? 'ok' : '')}</li>
+          <li><div><b>직업 숙련</b><small>직업 전투 기술 계열이 ${ST.jobs.rank}단계에 닿을 때마다, 두 번째 계열부터 +${ST.jobs.cells}칸 (최대 +${ST.jobs.cells * ST.jobs.max}) · 지금 ${src.job_lines || 0}계열</small></div>${chip(`+${src.jobs || 0}`, src.jobs ? 'ok' : '')}</li>
+          <li><div><b>연담</b><small>인물 이야기 다섯 편을 모두 마칠 때마다 +${ST.regular.cells}칸 (최대 +${ST.regular.cells * ST.regular.n}) · 지금 ${src.regular_done || 0}명</small></div>${chip(`+${src.regular || 0}`, src.regular ? 'ok' : '')}</li>
         </ul>
         <p class="muted small">용량이 줄어 창고가 넘쳐도 물품은 그대로 남고, 새로 맡기기만 막힙니다.</p>
       </section>`;
