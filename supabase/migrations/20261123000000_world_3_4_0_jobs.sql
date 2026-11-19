@@ -666,7 +666,7 @@ as $function$
 $function$;
 
 select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'))$q$, $q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'),
-    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 보호막 30을 두릅니다(보호막 세기 덤 적용). 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
+    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 세 턴 동안 보호막 30을 두릅니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
     'spearman', jsonb_build_object('name', '관통 찌르기', 'desc', '근접 ×1.6으로 찌르고 상대 방어의 절반을 무시합니다.', 'duel', jsonb_build_object('kind', 'pierce', 'n', 1, 'mul', 1.6), 'line', '{me}의 「관통 찌르기」: 창끝이 갑주 틈을 꿰었다.'),
     'formation', jsonb_build_object('name', '산가지 진', 'desc', '세 턴 동안 받는 피해가 35% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.18), 'line', '{me}의 「산가지 진」: 다칠 자리를 미리 막아 기세 {n}을(를) 지켰다.'))$q$]);
 
@@ -776,7 +776,7 @@ select pg_temp.yh_fix('world_battle_action', array[
       hp := hp - 15;
     END IF;
     extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 40 ELSE 30 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
-    v_pfx := v_pfx || jsonb_build_object('pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
+    v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
     lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 둘렀다.');
   ELSIF act = 'skill' AND c.job_key = 'formation' THEN
     v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END);
@@ -816,7 +816,7 @@ select pg_temp.yh_fix('world_battle_action', array[
       IF 'bloodcraft_c13a' = ANY (sk) AND random() < 0.25 THEN extra := extra * 2; END IF;
       IF coalesce((v_pfx ->> 'bk_last')::boolean, false) THEN extra := extra * 3; v_pfx := v_pfx - 'bk_last'; END IF;
       IF hp >= 100 AND 'bloodcraft_c30a' = ANY (sk) THEN
-        v_pfx := v_pfx || jsonb_build_object('pshield', least(coalesce((v_pfx ->> 'pshield')::int, 0) + extra, greatest(coalesce((v_pfx ->> 'pshield')::int, 0), 20)));
+        v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(coalesce((v_pfx ->> 'pshield')::int, 0) + extra, greatest(coalesce((v_pfx ->> 'pshield')::int, 0), 20)));
         lines := lines || jsonb_build_array('「끊기지 않는 숨」 넘친 피가 보호막이 됐다. +' || extra);
       ELSIF hp < 100 THEN
         hp := least(100, hp + extra); lines := lines || jsonb_build_array('흘린 피를 갈무리했다. 체력 +' || extra);
@@ -863,12 +863,18 @@ select pg_temp.yh_fix('world_battle_action', array[
         END IF;$q$,
 
   $q$  v_pfx := v_pfx - 'bound'; v_fx := v_fx - 'evade' - 'thorns' - 'mirror';$q$,
-  $q$  IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN
+  $q$  IF v_pfx ? 'pshield_t' THEN
+    IF (v_pfx ->> 'pshield_t')::int <= 1 OR coalesce((v_pfx ->> 'pshield')::int, 0) <= 0 THEN
+      IF coalesce((v_pfx ->> 'pshield')::int, 0) > 0 THEN lines := lines || jsonb_build_array('보호막이 걷혔다.'); END IF;
+      v_pfx := v_pfx - 'pshield' - 'pshield_t' - 'bk_paid' - 'babs';
+    ELSE v_pfx := v_pfx || jsonb_build_object('pshield_t', (v_pfx ->> 'pshield_t')::int - 1); END IF;
+  END IF;
+  IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN
     IF 'formation_c30a' = ANY (sk) AND hp < 100 THEN hp := least(100, hp + 3); END IF;
     v_pfx := v_pfx || jsonb_build_object('zin', (v_pfx ->> 'zin')::int - 1);
     IF (v_pfx ->> 'zin')::int <= 0 THEN
       v_pfx := v_pfx - 'zin'; extra := round(10 * CASE WHEN 'formation_m50' = ANY (sk) THEN 2 ELSE 1 END * (1 + public.world_status_effect_total('healing_pct') / 100.0)); hp := least(100, hp + extra);
-      IF 'formation_m50' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('pshield', greatest(coalesce((v_pfx ->> 'pshield')::int, 0), round(15 * (1 + public.world_status_effect_total('shield_pct') / 100.0)))); END IF;
+      IF 'formation_m50' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', greatest(coalesce((v_pfx ->> 'pshield')::int, 0), round(15 * (1 + public.world_status_effect_total('shield_pct') / 100.0)))); END IF;
       lines := lines || jsonb_build_array('산가지 진이 걷히며 체력 +' || extra);
     END IF;
   END IF;
@@ -1622,7 +1628,7 @@ update public.world_patch_notes set body = body || $N$
 ## 3.4.0
 
 - 새 직업 셋이 생겼습니다.
-  - 혈기사: 도끼·대검을 드는 방패입니다. 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 보호막을 두릅니다.
+  - 혈기사: 도끼·대검을 드는 방패입니다. 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 세 턴 동안 보호막을 두릅니다.
   - 여명 창객: 언월도·장창을 드는 근접 공격수입니다. 연달아 공격할수록 「창끝 기세」가 겹으로 쌓여 세지고(다섯 겹까지), 방어·버티기·물품·이동을 하면 끊깁니다. 현장 토벌에서는 첫 공격에 선제로 한 번 더 찌르고, 「관통 찌르기」는 요괴 방어의 절반을 꿰뚫습니다.
   - 진법가: 산가지·나경을 드는 치유사입니다. 다친 뒤 고치는 의무관과 달리 보호막과 피해 감소로 맞기 전에 지킵니다. 「산가지 진」은 세 턴 동안 받는 피해를 크게 줄입니다.
   - 세 직업 모두 기술 계열(혈투·창술·진법), 협동 기술 넷, 원정 기술, 비무회 기술이 있습니다. 직업 퀘스트도 세 편씩 생겼습니다(혈기사 남명회 땅 · 진법가 흑련회 땅 · 여명 창객 수향연맹 땅).

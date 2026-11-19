@@ -34,7 +34,7 @@ as $function$
 $function$;
 
 select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'))$q$, $q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'),
-    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 보호막 30을 두릅니다(보호막 세기 덤 적용). 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
+    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 세 턴 동안 보호막 30을 두릅니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
     'spearman', jsonb_build_object('name', '관통 찌르기', 'desc', '근접 ×1.6으로 찌르고 상대 방어의 절반을 무시합니다.', 'duel', jsonb_build_object('kind', 'pierce', 'n', 1, 'mul', 1.6), 'line', '{me}의 「관통 찌르기」: 창끝이 갑주 틈을 꿰었다.'),
     'formation', jsonb_build_object('name', '산가지 진', 'desc', '세 턴 동안 받는 피해가 35% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.18), 'line', '{me}의 「산가지 진」: 다칠 자리를 미리 막아 기세 {n}을(를) 지켰다.'))$q$]);
 

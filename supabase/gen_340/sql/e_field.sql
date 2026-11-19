@@ -37,7 +37,7 @@ select pg_temp.yh_fix('world_battle_action', array[
       hp := hp - 15;
     END IF;
     extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 40 ELSE 30 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
-    v_pfx := v_pfx || jsonb_build_object('pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
+    v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
     lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 둘렀다.');
   ELSIF act = 'skill' AND c.job_key = 'formation' THEN
     v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END);
@@ -77,7 +77,7 @@ select pg_temp.yh_fix('world_battle_action', array[
       IF 'bloodcraft_c13a' = ANY (sk) AND random() < 0.25 THEN extra := extra * 2; END IF;
       IF coalesce((v_pfx ->> 'bk_last')::boolean, false) THEN extra := extra * 3; v_pfx := v_pfx - 'bk_last'; END IF;
       IF hp >= 100 AND 'bloodcraft_c30a' = ANY (sk) THEN
-        v_pfx := v_pfx || jsonb_build_object('pshield', least(coalesce((v_pfx ->> 'pshield')::int, 0) + extra, greatest(coalesce((v_pfx ->> 'pshield')::int, 0), 20)));
+        v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(coalesce((v_pfx ->> 'pshield')::int, 0) + extra, greatest(coalesce((v_pfx ->> 'pshield')::int, 0), 20)));
         lines := lines || jsonb_build_array('「끊기지 않는 숨」 넘친 피가 보호막이 됐다. +' || extra);
       ELSIF hp < 100 THEN
         hp := least(100, hp + extra); lines := lines || jsonb_build_array('흘린 피를 갈무리했다. 체력 +' || extra);
@@ -124,12 +124,18 @@ select pg_temp.yh_fix('world_battle_action', array[
         END IF;$q$,
 
   $q$  v_pfx := v_pfx - 'bound'; v_fx := v_fx - 'evade' - 'thorns' - 'mirror';$q$,
-  $q$  IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN
+  $q$  IF v_pfx ? 'pshield_t' THEN
+    IF (v_pfx ->> 'pshield_t')::int <= 1 OR coalesce((v_pfx ->> 'pshield')::int, 0) <= 0 THEN
+      IF coalesce((v_pfx ->> 'pshield')::int, 0) > 0 THEN lines := lines || jsonb_build_array('보호막이 걷혔다.'); END IF;
+      v_pfx := v_pfx - 'pshield' - 'pshield_t' - 'bk_paid' - 'babs';
+    ELSE v_pfx := v_pfx || jsonb_build_object('pshield_t', (v_pfx ->> 'pshield_t')::int - 1); END IF;
+  END IF;
+  IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN
     IF 'formation_c30a' = ANY (sk) AND hp < 100 THEN hp := least(100, hp + 3); END IF;
     v_pfx := v_pfx || jsonb_build_object('zin', (v_pfx ->> 'zin')::int - 1);
     IF (v_pfx ->> 'zin')::int <= 0 THEN
       v_pfx := v_pfx - 'zin'; extra := round(10 * CASE WHEN 'formation_m50' = ANY (sk) THEN 2 ELSE 1 END * (1 + public.world_status_effect_total('healing_pct') / 100.0)); hp := least(100, hp + extra);
-      IF 'formation_m50' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('pshield', greatest(coalesce((v_pfx ->> 'pshield')::int, 0), round(15 * (1 + public.world_status_effect_total('shield_pct') / 100.0)))); END IF;
+      IF 'formation_m50' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', greatest(coalesce((v_pfx ->> 'pshield')::int, 0), round(15 * (1 + public.world_status_effect_total('shield_pct') / 100.0)))); END IF;
       lines := lines || jsonb_build_array('산가지 진이 걷히며 체력 +' || extra);
     END IF;
   END IF;
