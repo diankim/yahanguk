@@ -1,14 +1,14 @@
 FORMS = {
     'artificer': [('등패와 환도', 'melee', 'base'), ('등패와 철퇴', 'melee', 'heavy')],
     'bloodknight': [('도끼', 'melee', 'heavy'), ('대검', 'melee', 'base2')],
-    'analyst': [('단도', 'melee', 'keen'), ('수리검', 'melee', 'silent')],
+    'analyst': [('단도', 'melee', 'keen'), ('수리검', 'melee', 'base4')],
     'spearman': [('언월도', 'melee', 'base3'), ('장창', 'melee', 'keen2')],
     'scout': [('각궁', 'ranged', 'keen'), ('쇠뇌', 'ranged', 'base2')],
-    'tamer': [('단궁', 'ranged', 'base'), ('취관', 'ranged', 'silent')],
+    'tamer': [('단궁', 'ranged', 'base'), ('취관', 'ranged', 'keen3')],
     'exorcist': [('방울', 'magic', 'base'), ('법경', 'magic', 'keen2')],
     'sealmaster': [('금강령', 'magic', 'keen2'), ('사슬', 'magic', 'base2')],
     'medic': [('부채', 'magic', 'silent'), ('침통', 'magic', 'base2')],
-    'formation': [('산가지', 'magic', 'keen'), ('나경', 'magic', 'silent2')],
+    'formation': [('산가지', 'magic', 'base4'), ('나경', 'magic', 'silent2')],
 }
 LINES = {
     ('artificer', 0): ['iron_sword=월철 등패와 환도', 'moon_blade=월식 등패와 환도', '+청강 등패와 환도', 'w_melee4_base=용린 등패와 환도', '+태극 등패와 환도', 'w_melee6_base=귀허 등패와 환도', 'w_melee7_base=묵창 등패와 환도', 'w_melee8_base=언 종루 등패와 환도'],
