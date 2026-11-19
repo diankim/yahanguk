@@ -8,13 +8,15 @@ select pg_temp.yh_fix('world_battle_action', array[
 
   $q$  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
   $q$  ELSIF act = 'skill' AND c.job_key = 'bloodknight' THEN
-    IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
-    hp := hp - 15;
-    extra := round(30 * (1 + public.world_status_effect_total('shield_pct') / 100.0));
-    v_pfx := v_pfx || jsonb_build_object('pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', 15);
-    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': 체력 15를 깎아 보호막 ' || extra || '을(를) 둘렀다.');
+    IF NOT ('bloodcraft_m50' = ANY (sk)) THEN
+      IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
+      hp := hp - 15;
+    END IF;
+    extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 40 ELSE 30 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
+    v_pfx := v_pfx || jsonb_build_object('pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
+    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 둘렀다.');
   ELSIF act = 'skill' AND c.job_key = 'formation' THEN
-    v_pfx := v_pfx || jsonb_build_object('zin', 3);
+    v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END);
     lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'formation' ->> 'name') || ': 다칠 자리를 셈해 진을 쳤다. 세 턴 동안 받는 피해가 줄어든다.');
   ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
 
@@ -28,20 +30,52 @@ select pg_temp.yh_fix('world_battle_action', array[
 
   $q$    IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN mul := mul * 1.2; END IF;$q$,
   $q$    IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN mul := mul * 1.2; END IF;
+    IF c.job_key = 'bloodknight' AND 'bloodcraft_c24a' = ANY (sk) AND hp < 50 THEN mul := mul * 1.15; END IF;
+    IF c.job_key = 'formation' AND 'formation_c30b' = ANY (sk) AND coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mul := mul * 1.15; END IF;
+    IF c.job_key = 'formation' AND coalesce((v_pfx ->> 'turned')::boolean, false) THEN mul := mul * 1.2; v_pfx := v_pfx - 'turned'; END IF;
+    IF c.job_key = 'spearman' AND 'spear_c30b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN mul := mul * 1.25; END IF;
+    IF c.job_key = 'spearman' AND 'spear_c24a' = ANY (sk) AND style = 'melee' THEN crit_x := crit_x + 0.2; END IF;
+    IF c.job_key = 'spearman' AND 'spear_m50' = ANY (sk) AND first_atk THEN force_crit := true; END IF;
     IF c.job_key = 'spearman' AND style = 'melee' THEN
-      mul := mul * (1 + 0.06 * least(3, coalesce((v_pfx ->> 'chain')::int, 0)));
+      mul := mul * (1 + (0.06 + CASE WHEN coalesce((c.skill_progress -> 'spear' ->> 'rank')::int, 0) >= 24 THEN 0.02 ELSE 0 END) * least(3, coalesce((v_pfx ->> 'chain')::int, 0)));
       v_pfx := v_pfx || jsonb_build_object('chain', least(3, coalesce((v_pfx ->> 'chain')::int, 0) + 1));
     END IF;$q$,
 
   $q$    dmg := greatest(1, round(base * mul - mdef * 0.8));$q$,
-  $q$    dmg := greatest(1, round(base * mul - mdef * 0.8 * CASE WHEN skill_name = '관통 찌르기' THEN 0.5 ELSE 1 END));$q$,
+  $q$    dmg := greatest(1, round(base * mul - mdef * 0.8 * CASE WHEN skill_name = '관통 찌르기' AND 'spear_c43a' = ANY (sk) THEN 0 WHEN skill_name = '관통 찌르기' THEN 0.5 ELSE 1 END));$q$,
 
   $q$    a.current_hp := greatest(0, a.current_hp - dmg);
     lines := lines || jsonb_build_array(coalesce(skill_name,$q$,
   $q$    a.current_hp := greatest(0, a.current_hp - dmg);
-    IF c.job_key = 'bloodknight' AND style = 'melee' AND dmg > 0 AND hp < 100 THEN
-      extra := least(6, greatest(1, round(dmg * 0.08))); hp := least(100, hp + extra);
-      lines := lines || jsonb_build_array('흘린 피를 갈무리했다. 체력 +' || extra);
+    IF c.job_key = 'bloodknight' AND style = 'melee' AND dmg > 0 THEN
+      extra := least(CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 10 ELSE 6 END, greatest(1, round(dmg * (8 + public.world_status_effect_total('leech_pct')) / 100.0)));
+      IF 'bloodcraft_c13a' = ANY (sk) AND random() < 0.25 THEN extra := extra * 2; END IF;
+      IF coalesce((v_pfx ->> 'bk_last')::boolean, false) THEN extra := extra * 3; v_pfx := v_pfx - 'bk_last'; END IF;
+      IF hp >= 100 AND 'bloodcraft_c30a' = ANY (sk) THEN
+        v_pfx := v_pfx || jsonb_build_object('pshield', least(coalesce((v_pfx ->> 'pshield')::int, 0) + extra, greatest(coalesce((v_pfx ->> 'pshield')::int, 0), 20)));
+        lines := lines || jsonb_build_array('「끊기지 않는 숨」 넘친 피가 보호막이 됐다. +' || extra);
+      ELSIF hp < 100 THEN
+        hp := least(100, hp + extra); lines := lines || jsonb_build_array('흘린 피를 갈무리했다. 체력 +' || extra);
+      END IF;
+    END IF;
+    IF c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
+      IF 'spear_c13a' = ANY (sk) AND coalesce((v_pfx ->> 'chain')::int, 0) >= 3 AND random() < 0.25 THEN
+        extra := greatest(1, round(dmg * 0.6)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「세 번 찌르기」 +' || extra);
+      END IF;
+      IF 'spear_c13b' = ANY (sk) AND random() < 0.2 AND a.current_hp > 0 THEN
+        extra := greatest(1, round(dmg * 0.4)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「반달 베기」 +' || extra);
+      END IF;
+      IF 'spear_c24b' = ANY (sk) AND random() < 0.15 THEN v_fx := v_fx || jsonb_build_object('weak', 1); lines := lines || jsonb_build_array('「자루 쳐내기」 요괴가 휘청였다.'); END IF;
+      IF 'spear_c30a' = ANY (sk) AND coalesce((v_pfx ->> 'chain')::int, 0) >= 3 THEN v_fx := v_fx || jsonb_build_object('marked', greatest(1, coalesce((v_fx ->> 'marked')::int, 0))); END IF;
+      IF 'spear_c43b' = ANY (sk) THEN
+        v_pfx := v_pfx || jsonb_build_object('spin', coalesce((v_pfx ->> 'spin')::int, 0) + 1);
+        IF (v_pfx ->> 'spin')::int % 4 = 0 AND a.current_hp > 0 THEN
+          extra := greatest(1, round(dmg * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「언월 회전」 +' || extra);
+        END IF;
+      END IF;
+    END IF;
+    IF c.job_key = 'formation' AND style = 'magic' AND dmg > 0 AND 'formation_c24b' = ANY (sk) AND random() < 0.2 THEN
+      v_fx := v_fx || jsonb_build_object('weak', 1); lines := lines || jsonb_build_array('「허를 셈」 요괴의 다음 수가 무뎌졌다.');
     END IF;
     IF first_atk AND c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
       extra := greatest(1, round(dmg * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
@@ -51,22 +85,36 @@ select pg_temp.yh_fix('world_battle_action', array[
 
   $q$        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'exorcism_c43b' = ANY (sk) THEN 0.74 ELSE 0.8 END); END IF;$q$,
   $q$        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'exorcism_c43b' = ANY (sk) THEN 0.74 ELSE 0.8 END); END IF;
-        IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mdmg := round(mdmg * 0.65); END IF;$q$,
+        IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'formation_c24a' = ANY (sk) THEN 0.55 ELSE 0.65 END); END IF;
+        IF c.job_key = 'formation' AND 'formation_c13b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN mdmg := round(mdmg * 0.7); END IF;
+        IF c.job_key = 'formation' AND 'formation_c43b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN v_pfx := v_pfx || jsonb_build_object('turned', true); END IF;$q$,
 
   $q$        lines := lines || jsonb_build_array('「강기」가 ' || absorb || ' 피해를 막았다.');$q$,
   $q$        lines := lines || jsonb_build_array('보호막이 ' || absorb || ' 피해를 막았다.');
         IF (v_pfx ->> 'pshield')::int <= 0 AND v_pfx ? 'bk_paid' THEN
-          hp := least(100, hp + ((v_pfx ->> 'bk_paid')::int / 2)); v_pfx := v_pfx - 'bk_paid';
-          lines := lines || jsonb_build_array('피 갑주가 깨지며 깎았던 체력 일부가 돌아왔다.');
+          IF (v_pfx ->> 'bk_paid')::int > 0 THEN hp := least(100, hp + ((v_pfx ->> 'bk_paid')::int / 2)); lines := lines || jsonb_build_array('피 갑주가 깨지며 깎았던 체력 일부가 돌아왔다.'); END IF;
+          IF 'bloodcraft_c30b' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('surge', least(40, coalesce((v_pfx ->> 'surge')::int, 0) + round(absorb * 0.3))); lines := lines || jsonb_build_array('「갑주 되갚기」 막아 낸 힘을 다음 공격에 싣는다.'); END IF;
+          v_pfx := v_pfx - 'bk_paid';
         END IF;$q$,
 
   $q$  v_pfx := v_pfx - 'bound'; v_fx := v_fx - 'evade' - 'thorns' - 'mirror';$q$,
   $q$  IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN
+    IF 'formation_c30a' = ANY (sk) AND hp < 100 THEN hp := least(100, hp + 3); END IF;
     v_pfx := v_pfx || jsonb_build_object('zin', (v_pfx ->> 'zin')::int - 1);
     IF (v_pfx ->> 'zin')::int <= 0 THEN
-      v_pfx := v_pfx - 'zin'; extra := round(10 * (1 + public.world_status_effect_total('healing_pct') / 100.0)); hp := least(100, hp + extra);
+      v_pfx := v_pfx - 'zin'; extra := round(10 * CASE WHEN 'formation_m50' = ANY (sk) THEN 2 ELSE 1 END * (1 + public.world_status_effect_total('healing_pct') / 100.0)); hp := least(100, hp + extra);
+      IF 'formation_m50' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('pshield', greatest(coalesce((v_pfx ->> 'pshield')::int, 0), round(15 * (1 + public.world_status_effect_total('shield_pct') / 100.0)))); END IF;
       lines := lines || jsonb_build_array('산가지 진이 걷히며 체력 +' || extra);
     END IF;
   END IF;
-  v_pfx := v_pfx - 'bound'; v_fx := v_fx - 'evade' - 'thorns' - 'mirror';$q$
+  v_pfx := v_pfx - 'bound'; v_fx := v_fx - 'evade' - 'thorns' - 'mirror';$q$,
+
+  $q$    IF ended IS NULL AND hp <= 0 AND 'medicine_c43b' = ANY (sk) AND NOT coalesce((v_pfx ->> 'reborn')::boolean, false) THEN$q$,
+  $q$    IF ended IS NULL AND hp <= 0 AND 'bloodcraft_c43a' = ANY (sk) AND NOT coalesce((v_pfx ->> 'endured')::boolean, false) THEN
+      hp := 1; v_pfx := v_pfx || jsonb_build_object('endured', true, 'bk_last', true); lines := lines || jsonb_build_array('「마지막 한 모금」 쓰러질 일격을 버텨 냈다. 체력 1');
+    END IF;
+    IF ended IS NULL AND hp <= 0 AND 'formation_c43a' = ANY (sk) AND NOT coalesce((v_pfx ->> 'endured')::boolean, false) THEN
+      hp := 25; v_pfx := v_pfx || jsonb_build_object('endured', true); lines := lines || jsonb_build_array('「무너지지 않는 진」 진이 쓰러질 일격을 대신 받았다. 체력 25');
+    END IF;
+    IF ended IS NULL AND hp <= 0 AND 'medicine_c43b' = ANY (sk) AND NOT coalesce((v_pfx ->> 'reborn')::boolean, false) THEN$q$
 ]);
