@@ -114,14 +114,14 @@ EYE_COLS = set(range(6, 11)) | set(range(17, 22))
 EX, EY = 6, 14
 
 EYE_SHAPES = {
-    'round': ['lllll', '.wEEE', '.EeeE', '.eeee', '..ff.'],
-    'droopy': ['..lll', '.lwEE', 'lEeeE', '.eeef', '..ff.'],
-    'sparkle': ['.llll', 'lwEwE', 'lEeeE', '.feew', '..ff.'],
-    'cat': ['l....', '.llll', '.wEEE', '.eeeE', '..ff.'],
-    'sleepy': ['.....', 'lllll', '.wEEE', '.feee', '.....'],
-    'sharp': ['l....', '.llll', '..EEE', '..lll', '.....'],
-    'teary': ['.llll', 'lwEEE', 'lEeeE', '.feee', '.vvv.'],
-    'dot': ['.....', '..wE.', '..EE.', '.....', '.....'],
+    'round': ['llllv', '.EEEE', '.eewE', '.feee', '..ff.'],
+    'droopy': ['..llv', '.lEEE', 'leewE', '.eeef', '..ff.'],
+    'sparkle': ['.lllv', 'lEEEE', 'leewE', '.feew', '..ff.'],
+    'cat': ['l....', '.lllv', '.EEEE', '.eewE', '..ff.'],
+    'sleepy': ['.....', 'llllv', '.EEEE', '.fewE', '.....'],
+    'sharp': ['l....', '.lllv', '..EwE', '..lll', '.....'],
+    'teary': ['.lllv', 'lEEEE', 'leewE', '.feee', '.vvv.'],
+    'dot': ['.....', '..EE.', '..Ew.', '.....', '.....'],
     'smile': ['.....', '.lll.', 'l...l', '.....', '.....'],
     'wink': None,
 }
@@ -141,14 +141,7 @@ def eye(kind, closed):
                 g.set(EX + dx, EY + dy, ch)
     rx = W - EX - 5
     for dy, r in enumerate(right):
-        m = list(r[::-1])
-        for c in range(5):
-            if m[c] == 'w':
-                m[c] = r[c] if r[c] != 'w' else 'E'
-        for c in range(5):
-            if r[c] == 'w':
-                m[c] = 'w'
-        for dx, ch in enumerate(m):
+        for dx, ch in enumerate(r[::-1]):
             if ch != '.':
                 g.set(rx + dx, EY + dy, ch)
     for x in (8, 9):

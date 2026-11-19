@@ -518,3 +518,25 @@ ART.update({
     'twintail': ('양갈래', twintail2),
 })
 ORDER = ['calm', 'sports', 'curtain', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'cloud']
+
+
+import hair_rows as R
+
+
+def drawn(k):
+    def fn():
+        gs = []
+        for p in R.HAIR[k]:
+            g = Grid()
+            if p:
+                for dy, r in enumerate(p['rows']):
+                    for dx, ch in enumerate(r):
+                        if ch != '.':
+                            g.set(p['x'] + dx, p['y'] + dy, ch)
+            gs.append(g)
+        return tuple(gs)
+    return fn
+
+
+for k in R.HAIR:
+    ART[k] = (ART[k][0], drawn(k))
