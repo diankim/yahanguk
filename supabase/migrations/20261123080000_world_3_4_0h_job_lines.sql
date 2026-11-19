@@ -61,7 +61,30 @@ begin
   end if;
 end $o$;
 
+create or replace function pg_temp.yh_patch(p_fn text, p_old text, p_new text, p_n int default 1) returns void
+language plpgsql as $$
+declare d text; k int;
+begin
+  d := pg_get_functiondef(p_fn::regprocedure);
+  if position(p_new in d) > 0 then return; end if;
+  k := (length(d) - length(replace(d, p_old, ''))) / greatest(1, length(p_old));
+  if k <> p_n then raise exception '고칠 자리 수가 다름: % (%번 기대, %번)', p_fn, p_n, k; end if;
+  execute replace(d, p_old, p_new);
+end $$;
+
+select pg_temp.yh_patch(f, $q$w.job_key = 'medic' and w.act ->> 't' is not null$q$, $q$(rb -> 'fade') ? w.job_key and w.act ->> 't' is not null$q$)
+  from unnest(array['public.world_by_mech(uuid,integer,boolean,boolean,uuid[])', 'public.world_ug_by_mech(uuid,integer,boolean,boolean,uuid[])']) f;
+select pg_temp.yh_patch(f, $q$-(rb -> 'fade' ->> 'medic')::int$q$, $q$-(rb -> 'fade' ->> w.job_key)::int$q$)
+  from unnest(array['public.world_by_mech(uuid,integer,boolean,boolean,uuid[])', 'public.world_ug_by_mech(uuid,integer,boolean,boolean,uuid[])']) f;
+do $b$
+begin
+  if not (public.world_boss_rules() -> 'baekya' -> 'board' -> 'fade') ? 'formation' then
+    perform pg_temp.yh_setjson('public.world_boss_rules()'::regprocedure, jsonb_set(public.world_boss_rules(), '{baekya,board,fade,formation}', to_jsonb((public.world_boss_rules() -> 'baekya' -> 'board' -> 'fade' ->> 'medic')::int)));
+  end if;
+end $b$;
+
 update public.world_patch_notes set body = body || $N$- 새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때 퀘스트 대사의 직업마다 다른 줄이 다른 직업 줄이나 빈 줄로 나오던 것을 맞췄습니다.
+- 백야 판에서 진법가의 협동 기술도 의무관처럼 동료의 「바램」을 덜어 줍니다.
 - 도움말을 지금 규칙에 맞게 고쳤습니다(새 세 직업·8단계 장비·낚시터와 명어·묵적 봉쇄령과 등도 옛터가 열리는 때 등).
 $N$
  where note_id = '3.0.0' and position('새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때' in body) = 0;
