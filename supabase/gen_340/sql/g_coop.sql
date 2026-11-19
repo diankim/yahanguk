@@ -82,7 +82,7 @@ select pg_temp.yh_fix('world_gw_resolve', array[
 select pg_temp.yh_fix('world_raid_action', array[
   $q$  if act = 'attack' then
     if st ->> 'style' = 'magic' then$q$,
-  $q$  if c.job_key = 'spearman' and act not in ('attack', 'coop') then f := f - 'spch'; end if;
+  $q$  if c.job_key = 'spearman' and act not in ('attack', 'coop') then f := f || jsonb_build_object('spch', floor(coalesce((f ->> 'spch')::int, 0) * (public.world_spear_rules() ->> 'boss_keep')::numeric)::int); end if;
   if act = 'attack' then
     if st ->> 'style' = 'magic' then$q$,
   $q$    mul := mul * psolo;
@@ -99,7 +99,7 @@ select pg_temp.yh_fix('world_gw_resolve', array[
     if av = 'attack' then$q$,
   $q$    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
     if m.job_key = 'spearman' and coalesce(m.act ->> 'a', 'guard') not in ('attack', 'coop') and vfx ? 'spch' then
-      vfx := vfx - 'spch'; update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
+      vfx := vfx || jsonb_build_object('spch', floor(coalesce((vfx ->> 'spch')::int, 0) * (public.world_spear_rules() ->> 'boss_keep')::numeric)::int); update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
     end if;
     if av = 'attack' then$q$,
   $q$      if f.mode = 'ultimate' and m.weak <> '[]'::jsonb then d := d * (public.world_ug_weak(p_fight, m.owner_id) ->> 'deal')::numeric; end if;$q$,
@@ -168,3 +168,15 @@ select pg_temp.yh_fix('world_raid_hit', array[
     end if;
   end if;
   update public.world_characters set health = greatest(1, health - d), updated_at = now() where owner_id = who returning health into hp;$q$]);
+
+select pg_temp.yh_fix('world_contrib_rules', array[
+  $q$"boost_need": 0.1}'::jsonb$q$,
+  $q$"boost_need": 0.1, "guard_mul": {"formation": 2.5}}'::jsonb$q$]);
+
+select pg_temp.yh_fix('world_raid_credit', array[
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt, 1)))$q$,
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt * case when p_kind = 'guard' then coalesce((public.world_contrib_rules() -> 'guard_mul' ->> job_key)::numeric, 1) else 1 end, 1)))$q$]);
+
+select pg_temp.yh_fix('world_gw_credit', array[
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt, 1)))$q$,
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt * case when p_kind = 'guard' then coalesce((public.world_contrib_rules() -> 'guard_mul' ->> job_key)::numeric, 1) else 1 end, 1)))$q$]);

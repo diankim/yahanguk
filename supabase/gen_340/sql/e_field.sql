@@ -4,7 +4,7 @@ $$;
 select pg_temp.yh_share('public.world_job_skill_cost(text)');
 
 create or replace function public.world_spear_rules() returns jsonb language sql immutable as $$
-  select jsonb_build_object('name', '창끝 기세', 'per', 5, 'per24', 1, 'rank24', 24, 'max', 5, 'finish_name', '마무리 찌르기', 'finish_pct', 15, 'finish_at', 30)
+  select jsonb_build_object('name', '창끝 기세', 'per', 5, 'per24', 1, 'rank24', 24, 'max', 5, 'boss_keep', 0.5, 'finish_name', '마무리 찌르기', 'finish_pct', 15, 'finish_at', 30)
 $$;
 create or replace function public.world_spear_mul(p_uid uuid, p_n integer, p_hp numeric, p_max numeric) returns numeric
  language plpgsql stable security definer set search_path = pg_catalog, public as $$

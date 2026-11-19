@@ -81,6 +81,7 @@ const pc = v => Math.round(Number(v) * 100);
 const allAt = n => Math.round(100 * Math.min(1, Math.pow(CR.all_full / n, CR.all_pow)));
 export const CONTRIB = {
   weights: `공격 약 ${pc(CB.deal)}% · 버팀 약 ${pc(CB.hold)}% · 치유 약 ${pc(CB.heal)}% · 북돋움 약 ${pc(CB.boost)}%`,
+  guard: `진법가가 막아 준 피해는 버팀 갈래에서 ${(CB.guard_mul || {}).formation || 1}배로 셉니다(방패처럼 도발로 맞지 않고 보호막·결계로 미리 막기 때문)`,
   deal: `공격 갈래 안에서 실제로 깎은 피해는 약 ${pc(CB.result)}%, 내 공격력에 비해 얼마나 꾸준히 쳤나는 약 ${pc(1 - CB.result)}%로 셉니다`,
 };
 export const SHADOW = {

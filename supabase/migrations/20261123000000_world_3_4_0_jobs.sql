@@ -753,7 +753,7 @@ $$;
 select pg_temp.yh_share('public.world_job_skill_cost(text)');
 
 create or replace function public.world_spear_rules() returns jsonb language sql immutable as $$
-  select jsonb_build_object('name', '창끝 기세', 'per', 5, 'per24', 1, 'rank24', 24, 'max', 5, 'finish_name', '마무리 찌르기', 'finish_pct', 15, 'finish_at', 30)
+  select jsonb_build_object('name', '창끝 기세', 'per', 5, 'per24', 1, 'rank24', 24, 'max', 5, 'boss_keep', 0.5, 'finish_name', '마무리 찌르기', 'finish_pct', 15, 'finish_at', 30)
 $$;
 create or replace function public.world_spear_mul(p_uid uuid, p_n integer, p_hp numeric, p_max numeric) returns numeric
  language plpgsql stable security definer set search_path = pg_catalog, public as $$
@@ -1077,7 +1077,7 @@ select pg_temp.yh_fix('world_gw_resolve', array[
 select pg_temp.yh_fix('world_raid_action', array[
   $q$  if act = 'attack' then
     if st ->> 'style' = 'magic' then$q$,
-  $q$  if c.job_key = 'spearman' and act not in ('attack', 'coop') then f := f - 'spch'; end if;
+  $q$  if c.job_key = 'spearman' and act not in ('attack', 'coop') then f := f || jsonb_build_object('spch', floor(coalesce((f ->> 'spch')::int, 0) * (public.world_spear_rules() ->> 'boss_keep')::numeric)::int); end if;
   if act = 'attack' then
     if st ->> 'style' = 'magic' then$q$,
   $q$    mul := mul * psolo;
@@ -1094,7 +1094,7 @@ select pg_temp.yh_fix('world_gw_resolve', array[
     if av = 'attack' then$q$,
   $q$    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
     if m.job_key = 'spearman' and coalesce(m.act ->> 'a', 'guard') not in ('attack', 'coop') and vfx ? 'spch' then
-      vfx := vfx - 'spch'; update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
+      vfx := vfx || jsonb_build_object('spch', floor(coalesce((vfx ->> 'spch')::int, 0) * (public.world_spear_rules() ->> 'boss_keep')::numeric)::int); update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
     end if;
     if av = 'attack' then$q$,
   $q$      if f.mode = 'ultimate' and m.weak <> '[]'::jsonb then d := d * (public.world_ug_weak(p_fight, m.owner_id) ->> 'deal')::numeric; end if;$q$,
@@ -1163,6 +1163,18 @@ select pg_temp.yh_fix('world_raid_hit', array[
     end if;
   end if;
   update public.world_characters set health = greatest(1, health - d), updated_at = now() where owner_id = who returning health into hp;$q$]);
+
+select pg_temp.yh_fix('world_contrib_rules', array[
+  $q$"boost_need": 0.1}'::jsonb$q$,
+  $q$"boost_need": 0.1, "guard_mul": {"formation": 2.5}}'::jsonb$q$]);
+
+select pg_temp.yh_fix('world_raid_credit', array[
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt, 1)))$q$,
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt * case when p_kind = 'guard' then coalesce((public.world_contrib_rules() -> 'guard_mul' ->> job_key)::numeric, 1) else 1 end, 1)))$q$]);
+
+select pg_temp.yh_fix('world_gw_credit', array[
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt, 1)))$q$,
+  $q$to_jsonb(round(coalesce((credits ->> p_kind)::numeric, 0) + p_amt * case when p_kind = 'guard' then coalesce((public.world_contrib_rules() -> 'guard_mul' ->> job_key)::numeric, 1) else 1 end, 1)))$q$]);
 
 select pg_temp.yh_fix('world_expedition_settle', array[
   $q$        if c.job_key = 'analyst' and random() < 0.25 then$q$,
@@ -1667,8 +1679,8 @@ update public.world_patch_notes set body = body || $N$
 
 - 새 직업 셋이 생겼습니다.
   - 혈기사: 도끼·대검을 드는 방패입니다(이목 +70). 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 세 턴 동안 보호막을 두르며 그 차례에 베어 듭니다.
-  - 여명 창객: 언월도·장창을 드는 근접 공격수입니다. 연달아 공격할수록 「창끝 기세」가 겹으로 쌓여 세지고(다섯 겹까지), 방어·버티기·물품·이동을 하면 끊깁니다. 현장 토벌에서는 첫 공격에 선제로 한 번 더 찌르고, 「관통 찌르기」는 요괴 방어의 절반을 꿰뚫습니다.
-  - 진법가: 산가지·나경을 드는 치유사입니다. 다친 뒤 고치는 의무관과 달리 보호막과 피해 감소로 맞기 전에 지킵니다. 「산가지 진」은 산가지를 날리며 세 턴 동안 받는 피해를 줄입니다.
+  - 여명 창객: 언월도·장창을 드는 근접 공격수입니다. 연달아 공격할수록 「창끝 기세」가 겹으로 쌓여 세지고(다섯 겹까지), 방어·버티기·물품·이동을 하면 끊깁니다(합동 토벌·귀허류 같은 우두머리 싸움에서는 수법을 받아 내느라 방어해도 쌓인 기세의 절반이 남습니다). 현장 토벌에서는 첫 공격에 선제로 한 번 더 찌르고, 「관통 찌르기」는 요괴 방어의 절반을 꿰뚫습니다.
+  - 진법가: 산가지·나경을 드는 치유사입니다. 다친 뒤 고치는 의무관과 달리 보호막과 피해 감소로 맞기 전에 지킵니다. 「산가지 진」은 산가지를 날리며 세 턴 동안 받는 피해를 줄입니다. 합동 토벌·귀허류에서 진법가가 보호막·결계로 막아 준 피해는 기여도 「버팀」에서 2.5배로 셉니다.
   - 세 직업 모두 기술 계열(혈투·창술·진법), 협동 기술 넷, 원정 기술, 비무회 기술이 있습니다. 직업 퀘스트도 세 편씩 생겼습니다(혈기사 남명회 땅 · 진법가 흑련회 땅 · 여명 창객 수향연맹 땅).
   - 잘 듣는 요괴 갈래: 혈기사 거괴·갑각 · 여명 창객 비금·천상 · 진법가 금주·수귀.
   - 기본 옷도 직업마다 한 벌씩 생겼고, 옷 꾸러미에서도 나옵니다.
