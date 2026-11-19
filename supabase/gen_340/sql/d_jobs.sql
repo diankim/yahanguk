@@ -40,7 +40,7 @@ select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「휘
 
 select pg_temp.yh_fix('world_solo_aid(text)', array[$q$
     when 'analyst'    then$q$, $q$
-    when 'bloodknight' then '{"solo_dmg": -40, "solo_guard": -24, "final_dmg": -2}'
+    when 'bloodknight' then '{"solo_dmg": -52, "solo_guard": -27, "final_dmg": -2}'
     when 'spearman'   then '{"solo_dmg": -25, "solo_guard": -36, "final_dmg": 34}'
     when 'formation'  then '{"solo_dmg": -30, "solo_guard": -55, "final_dmg": 18}'
     when 'analyst'    then$q$]);
