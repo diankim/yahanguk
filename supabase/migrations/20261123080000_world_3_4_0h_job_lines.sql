@@ -90,9 +90,26 @@ begin
   end if;
 end $c$;
 
+do $c$
+begin
+  if (public.world_contrib_rules() ->> 'heal')::numeric <> 0.05 or not public.world_contrib_rules() ? 'job_mul' then
+    perform pg_temp.yh_setjson('public.world_contrib_rules()'::regprocedure, public.world_contrib_rules() || '{"heal": 0.05, "guard_mul": {"formation": 1.6},
+      "job_mul": {"medic": 0.98, "scout": 0.88, "tamer": 0.76, "analyst": 1.25, "exorcist": 1.15, "spearman": 1.08, "artificer": 0.98, "formation": 0.86, "sealmaster": 1.35, "bloodknight": 1.0}}'::jsonb);
+  end if;
+end $c$;
+
+select pg_temp.yh_patch('public.world_contrib_shares(jsonb)', $q$    select x ->> 'id' id,$q$,
+  $q$    select x ->> 'id' id, coalesce(x ->> 'job', (select c.job_key from public.world_characters c where c.owner_id::text = x ->> 'id')) job,$q$);
+select pg_temp.yh_patch('public.world_contrib_shares(jsonb)', $q$  select coalesce(jsonb_object_agg(s.id, case when z.tot > 0 then round(s.v / z.tot * 100, 1) else 0 end), '{}'::jsonb) into res
+    from s, (select sum(v) tot from s) z;$q$,
+  $q$  select coalesce(jsonb_object_agg(s.id, case when z.tot > 0 then round(s.v / z.tot * 100, 1) else 0 end), '{}'::jsonb) into res
+    from (select s.id, s.v * coalesce((r -> 'job_mul' ->> e.job)::numeric, 1) v from s join e using (id)) s,
+         (select sum(s.v * coalesce((r -> 'job_mul' ->> e.job)::numeric, 1)) tot from s join e using (id)) z;$q$);
+
 update public.world_patch_notes set body = body || $N$- 새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때 퀘스트 대사의 직업마다 다른 줄이 다른 직업 줄이나 빈 줄로 나오던 것을 맞췄습니다.
 - 백야 판에서 진법가의 협동 기술도 의무관처럼 동료의 「바램」을 덜어 줍니다.
 - 함께 싸운 기여도에서 치유 몫의 무게를 줄이고 진법가가 막아 준 피해 배수를 낮춰, 직업마다 기여도가 고르게 나오도록 맞췄습니다.
+- 함께 싸운 기여도를 다시 맞췄습니다. 치유 몫의 무게를 줄이고, 직업마다 역할이 달라 생기는 차이를 고르게 해 같은 몫을 해낸 사람이 직업과 상관없이 비슷한 기여도를 받습니다.
 - 도움말을 지금 규칙에 맞게 고쳤습니다(새 세 직업·8단계 장비·낚시터와 명어·묵적 봉쇄령과 등도 옛터가 열리는 때 등).
 $N$
  where note_id = '3.0.0' and position('새 세 직업(혈기사·여명 창객·진법가)으로 읽을 때' in body) = 0;
