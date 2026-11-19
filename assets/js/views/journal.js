@@ -9,7 +9,7 @@ import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
-import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY, ARC_NAME } from '../rules.js';
+import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY, ARC_NAME, storyChapterNo } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
@@ -132,7 +132,7 @@ function bindArcs(body) { $$('[data-arc]', body).forEach(x => x.onclick = () => 
 function arcView(body, bar, list, map) {
   const lock = (ARCS.find(([n]) => n === arc) || [])[1] || '';
   const order = (a, b) => (b.status === 'active') - (a.status === 'active') || a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko');
-  const chNo = q => +((/^(?:gq|mkq|mdq)_(\d+)$/.exec(q.quest_id) || [])[1] || 0);
+  const chNo = q => storyChapterNo(q.quest_id);
   const chs = list.filter(chNo).sort((a, b) => chNo(a) - chNo(b));
   const rest = list.filter(q => !chNo(q)).sort(order);
   if (!chs.some(q => q.quest_id === arcSel[arc] && q.status !== 'locked'))

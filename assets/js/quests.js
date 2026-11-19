@@ -5,7 +5,7 @@ import { itemSources, sourcePlaces, sourceTotal, regionBtn, sourcesMore, regions
 import { TASK_ACTS, CHANGES, hit } from './changes.js';
 import { baseOf } from './hq.js';
 import { askPartySize, partyHere } from './views/fightui.js';
-import { storyArcOf } from './rules.js';
+import { storyArcOf, isStoryMain } from './rules.js';
 
 const KIND = { main: '주 이야기', side: '보조', faction: '세력' };
 const foldKey = 'yh-fold-quests';
@@ -64,7 +64,7 @@ export const atLine = q => {
   const done = !left.length;
   return doLine + `<p class="q-at ${done && q.here_ok ? 'ok' : ''}">${icon('pin', 12)} ${done ? '보고' : '다 하면 보고'}: ${links(at)}${q.here_ok ? (done ? ' (지금 여기)' : ' (여기)') : ''}</p>`;
 };
-const head = (kind, q) => { const arcN = storyArcOf(q.cat); return `<header>${arcN ? chip('본편', 'accent') + chip(arcN) : chip(KIND[kind] || '보조', kind === 'main' ? 'accent' : kind === 'faction' ? 'warn' : '') + (kind === 'main' ? '' : chip(q.cat || ''))}${q.replay ? chip('다시하기', 'ok') : ''}<b>${esc(q.title)}</b></header>` };
+const head = (kind, q) => { const arcN = storyArcOf(q.cat); return `<header>${arcN ? (isStoryMain(q) ? chip('본편', 'accent') : chip('보조')) + chip(arcN) : chip(kind !== 'main' && isStoryMain(q) ? '본편' : KIND[kind] || '보조', kind === 'main' || isStoryMain(q) ? 'accent' : kind === 'faction' ? 'warn' : '') + (kind === 'main' ? '' : chip(q.cat || ''))}${q.replay ? chip('다시하기', 'ok') : ''}<b>${esc(q.title)}</b></header>` };
 
 function activeItem(q) {
   if (q.phase === 'clues') {
@@ -225,8 +225,9 @@ export async function fillQuests(box) {
   try { b = await load('world_quest_board', undefined, { maxAge: 600000 }); if (b !== qbSeen) { qbSeen = b; qbAt = Date.now(); qbWatch = watchOf(b); } } catch { box.remove(); return; }
   markNeeded(document, b);
   if (!box.isConnected) return;
-  const act_ = [...(b.active || [])].sort((x, y) => isHere(y, b.here_id) - isHere(x, b.here_id));
-  const here = (b.available || []).filter(q => q.here), other = (b.available || []).filter(q => !q.here);
+  const mainFirst = (x, y) => isStoryMain(y) - isStoryMain(x);
+  const act_ = [...(b.active || [])].sort((x, y) => mainFirst(x, y) || isHere(y, b.here_id) - isHere(x, b.here_id));
+  const here = (b.available || []).filter(q => q.here).sort(mainFirst), other = (b.available || []).filter(q => !q.here).sort(mainFirst);
   const nAct = act_.length + (b.faction && !b.faction.locked ? 1 : 0);
   noteReady({ ...b, active: act_ });
   box.innerHTML = `${hereNote({ ...b, active: act_ })}
