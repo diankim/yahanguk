@@ -1,3 +1,22 @@
+create or replace function public.world_spear_rules() returns jsonb language sql immutable as $$
+  select jsonb_build_object('name', '창끝 기세', 'per', 5, 'per24', 1, 'rank24', 24, 'max', 5, 'finish_name', '마무리 찌르기', 'finish_pct', 15, 'finish_at', 30)
+$$;
+create or replace function public.world_spear_mul(p_uid uuid, p_n integer, p_hp numeric, p_max numeric) returns numeric
+ language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare r jsonb := public.world_spear_rules(); rk int; m numeric;
+begin
+  select coalesce((c.skill_progress -> 'spear' ->> 'rank')::int, 0) into rk from public.world_characters c where c.owner_id = p_uid;
+  m := 1 + ((r ->> 'per')::numeric + case when coalesce(rk, 0) >= (r ->> 'rank24')::int then (r ->> 'per24')::numeric else 0 end) / 100.0 * least((r ->> 'max')::int, greatest(0, coalesce(p_n, 0)));
+  if coalesce(p_max, 0) > 0 and p_hp * 100 < p_max * (r ->> 'finish_at')::numeric and 'spear_m50' = any (public.world_skill_procs(p_uid)) then
+    m := m * (1 + (r ->> 'finish_pct')::numeric / 100.0);
+  end if;
+  return m;
+end $$;
+select pg_temp.yh_own('public.world_spear_mul(uuid, integer, numeric, numeric)', 'fn_owner_field');
+select pg_temp.yh_share('public.world_spear_mul(uuid, integer, numeric, numeric)');
+select pg_temp.yh_share('public.world_spear_rules()');
+grant execute on function public.world_spear_rules() to authenticated;
+
 select pg_temp.yh_fix('world_battle_action', array[
   $q$sp := sp - CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END;$q$,
   $q$sp := sp - CASE WHEN c.job_key IN ('medic', 'formation') THEN 25 WHEN c.job_key IN ('bloodknight', 'spearman') THEN 20 ELSE 12 END;$q$,
@@ -37,8 +56,8 @@ select pg_temp.yh_fix('world_battle_action', array[
     IF c.job_key = 'spearman' AND 'spear_c24a' = ANY (sk) AND style = 'melee' THEN crit_x := crit_x + 0.2; END IF;
     IF c.job_key = 'spearman' AND 'spear_m50' = ANY (sk) AND first_atk THEN force_crit := true; END IF;
     IF c.job_key = 'spearman' AND style = 'melee' THEN
-      mul := mul * (1 + (0.06 + CASE WHEN coalesce((c.skill_progress -> 'spear' ->> 'rank')::int, 0) >= 24 THEN 0.02 ELSE 0 END) * least(3, coalesce((v_pfx ->> 'chain')::int, 0)));
-      v_pfx := v_pfx || jsonb_build_object('chain', least(3, coalesce((v_pfx ->> 'chain')::int, 0) + 1));
+      mul := mul * public.world_spear_mul(uid, coalesce((v_pfx ->> 'chain')::int, 0), a.current_hp, a.max_hp);
+      v_pfx := v_pfx || jsonb_build_object('chain', least((public.world_spear_rules() ->> 'max')::int, coalesce((v_pfx ->> 'chain')::int, 0) + 1));
     END IF;$q$,
 
   $q$    dmg := greatest(1, round(base * mul - mdef * 0.8));$q$,

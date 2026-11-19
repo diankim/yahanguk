@@ -46,3 +46,34 @@ select pg_temp.yh_fix('world_gw_resolve', array[
         if m.job_key = 'bloodknight' and d > 0 then
           update public.world_gw_members set hp = least(100, hp + least(6, greatest(1, round(d * 0.1)))::int) where fight_id = p_fight and owner_id = m.owner_id and out_rounds = 0 and hp > 0;
         end if;$q$]);
+
+select pg_temp.yh_fix('world_raid_action', array[
+  $q$  if act = 'attack' then
+    if st ->> 'style' = 'magic' then$q$,
+  $q$  if c.job_key = 'spearman' and act <> 'attack' then f := f - 'spch'; end if;
+  if act = 'attack' then
+    if st ->> 'style' = 'magic' then$q$,
+  $q$    mul := mul * psolo;
+    dmg := greatest(1, round((cbr ->> 'd')::numeric * mul))::int;$q$,
+  $q$    mul := mul * psolo;
+    if c.job_key = 'spearman' and st ->> 'style' = 'melee' then
+      mul := mul * public.world_spear_mul(uid, coalesce((f ->> 'spch')::int, 0), rd.hp, rd.max_hp);
+      f := f || jsonb_build_object('spch', least((public.world_spear_rules() ->> 'max')::int, coalesce((f ->> 'spch')::int, 0) + 1));
+    end if;
+    dmg := greatest(1, round((cbr ->> 'd')::numeric * mul))::int;$q$]);
+
+select pg_temp.yh_fix('world_gw_resolve', array[
+  $q$    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
+    if av = 'attack' then$q$,
+  $q$    select coalesce(x.fx, '{}'::jsonb) into vfx from public.world_gw_members x where x.fight_id = p_fight and x.owner_id = m.owner_id;
+    if m.job_key = 'spearman' and av <> 'attack' and vfx ? 'spch' then
+      vfx := vfx - 'spch'; update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
+    end if;
+    if av = 'attack' then$q$,
+  $q$      if f.mode = 'ultimate' and m.weak <> '[]'::jsonb then d := d * (public.world_ug_weak(p_fight, m.owner_id) ->> 'deal')::numeric; end if;$q$,
+  $q$      if f.mode = 'ultimate' and m.weak <> '[]'::jsonb then d := d * (public.world_ug_weak(p_fight, m.owner_id) ->> 'deal')::numeric; end if;
+      if m.job_key = 'spearman' and coalesce(m.stats ->> 'style', 'melee') = 'melee' then
+        d := d * public.world_spear_mul(m.owner_id, coalesce((vfx ->> 'spch')::int, 0), f.hp, f.max_hp);
+        vfx := vfx || jsonb_build_object('spch', least((public.world_spear_rules() ->> 'max')::int, coalesce((vfx ->> 'spch')::int, 0) + 1));
+        update public.world_gw_members set fx = vfx where fight_id = p_fight and owner_id = m.owner_id;
+      end if;$q$]);
