@@ -176,7 +176,7 @@ async function openMove() {
     const tos = ws.filter(w => w.id !== f.id && !w.locked && w.tier <= f.tier && w.level < f.level)
       .sort((a, b) => (Array.isArray(b.jobs) && b.jobs.includes(job)) - (Array.isArray(a.jobs) && a.jobs.includes(job)) || b.tier - a.tier);
     toSel.innerHTML = tos.map(opt).join('');
-    why.hidden = !!tos.length; why.textContent = tos.length ? '' : `가방에 ${f.tier}단계 이하이고 강화가 +${f.level}보다 낮은 다른 무기가 없습니다.`;
+    why.hidden = !!tos.length; why.textContent = tos.length ? '' : `가방에 ${f.tier}단계거나 그 밑 단계이고 강화가 +${f.level}보다 낮은 다른 무기가 없습니다.`;
     go.disabled = !tos.length;
   };
   fromSel.onchange = fill; fill();
