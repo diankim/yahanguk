@@ -1,5 +1,5 @@
 import { rarTag, db, store, on, act, rpc, toast, ask, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf } from '../core.js';
-import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem } from './common.js';
+import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem, foldOpen } from './common.js';
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
@@ -229,7 +229,7 @@ async function equip(body, inv) {
   };
   const token = tokenRowHtml();
   body.innerHTML = `<div class="eq-split">
-      <div class="eq-left">${panel('장비 세트', '<div id="gear-sets"><p class="muted small">불러오는 중…</p></div>', { ico: 'refresh', extra: helpQ(GEAR_SET_TIP(), '장비 세트') })}${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
+      <div class="eq-left"><details class="panel fold pt-fold" data-fold="gear-sets" ${foldOpen('gear-sets', true) ? 'open' : ''}><summary class="panel-head"><h2>${icon('refresh', 16)}장비 세트${helpQ(GEAR_SET_TIP(), '장비 세트')}</h2></summary><div class="panel-body"><div id="gear-sets"><p class="muted small">불러오는 중…</p></div></div></details>${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
       <div class="eq-right" id="eq-detail"></div>
     </div>`;
   const slotBody = slot => `<ul class="equip-list">${equipRowLi(inv, prof, here, slot, rq)}</ul><h3 class="sub-h">바꿔 낄 장비</h3>${optionsHtml(slot)}`;

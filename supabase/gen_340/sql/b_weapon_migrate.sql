@@ -57,17 +57,17 @@ begin
      limit 1;
     if tgt is null then continue; end if;
     tgt_hq := case when r.hq and exists (select 1 from public.world_item_catalog h where h.item_id = tgt || '_hq') then tgt || '_hq' else tgt end;
-    select inventory into inv from public.world_characters where owner_id = r.owner_id for update;
-    inv := case when coalesce((inv ->> r.item_id)::int, 0) > 1 then jsonb_set(inv, array[r.item_id], to_jsonb((inv ->> r.item_id)::int - 1)) else inv - r.item_id end;
-    inv := jsonb_set(inv, array[tgt_hq], to_jsonb(coalesce((inv ->> tgt_hq)::int, 0) + 1));
-    update public.world_characters set inventory = inv where owner_id = r.owner_id;
-    update public.world_character_equipment set item_id = tgt_hq where owner_id = r.owner_id and slot = 'weapon';
     if not exists (select 1 from public.world_item_durability where owner_id = r.owner_id and item_id = tgt_hq) then
       update public.world_item_durability set item_id = tgt_hq where owner_id = r.owner_id and item_id = r.item_id;
     end if;
     if not exists (select 1 from public.world_gear_enhance where owner_id = r.owner_id and item_id = tgt_hq) then
       update public.world_gear_enhance set item_id = tgt_hq where owner_id = r.owner_id and item_id = r.item_id;
     end if;
+    select inventory into inv from public.world_characters where owner_id = r.owner_id for update;
+    inv := case when coalesce((inv ->> r.item_id)::int, 0) > 1 then jsonb_set(inv, array[r.item_id], to_jsonb((inv ->> r.item_id)::int - 1)) else inv - r.item_id end;
+    inv := jsonb_set(inv, array[tgt_hq], to_jsonb(coalesce((inv ->> tgt_hq)::int, 0) + 1));
+    update public.world_characters set inventory = inv where owner_id = r.owner_id;
+    update public.world_character_equipment set item_id = tgt_hq where owner_id = r.owner_id and slot = 'weapon';
     insert into public.world_notifications(user_id, kind, title, content, payload)
     values (r.owner_id, 'guide', '무기를 바꿔 드렸습니다',
             '무기 개편으로 끼고 있던 ' || (select item_name from public.world_item_catalog where item_id = r.item_id) || '을(를) 같은 단계의 직업 무기 '
