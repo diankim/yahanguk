@@ -93,9 +93,10 @@ begin
   insert into public.world_job_changes(owner_id, changed_at) values (uid, now()) on conflict (owner_id) do update set changed_at = now();
   return jsonb_build_object('ok', true, 'refunded', back, 'left_points', pts, 'stats', vals, 'weapon', case when got_wpn then wpn end,
     'unequipped', coalesce(to_jsonb(off_items), '[]'::jsonb),
-    'content', format('%s(으)로 새 길을 걷습니다. 레벨로 받은 능력치를 새 직업에 맞게 다시 놓았습니다.%s%s', job_label,
+    'content', format('%s(으)로 새 길을 걷습니다. 레벨로 받은 능력치를 새 직업에 맞게 다시 놓았습니다.%s%s%s', job_label,
       case when got_wpn then ' ' || (select item_name from public.world_item_catalog where item_id = wpn) || '을(를) 받았습니다.' else '' end,
-      case when off_items is not null then ' 새 직업이 쓸 수 없는 장비는 벗었습니다.' else '' end));
+      case when off_items is not null then ' 새 직업이 쓸 수 없는 장비는 벗었습니다.' else '' end,
+      case when pts > 0 then ' 주 능력치가 상한에 닿아 남은 ' || pts || '점은 캐릭터 › 성장에서 직접 나누세요.' else '' end));
 end
 $function$;
 
