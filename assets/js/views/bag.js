@@ -253,7 +253,7 @@ async function equip(body, inv) {
   });
 }
 let eqSel = 'weapon';
-const GEAR_SET_TIP = () => { const r = GAMEDATA.gearSet || {}; return `지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 처음 ${r.base || 4}칸이고, 전투 기술 계열이 ${r.rank || 15}단계에 닿을 때마다 한 칸씩 늘어 ${r.max || 10}칸까지입니다. 세트에 담긴 물품이 가방에 없거나 장착 조건이 맞지 않는 칸은 건너뜁니다(보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다). 전투·원정 중에는 바꿔 낄 수 없습니다.`; };
+const GEAR_SET_TIP = () => { const r = GAMEDATA.gearSet || {}; return `지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 처음 ${r.base || 4}칸이고, 어느 직업이든 전투 기술 계열 하나가 ${r.rank || 15}단계에 닿을 때마다 한 칸씩 늘어 ${r.max || 10}칸까지입니다(직업을 바꿔도 줄지 않음). 세트에 담긴 물품이 가방에 없거나 장착 조건이 맞지 않는 칸은 건너뜁니다(보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다). 전투·원정 중에는 바꿔 낄 수 없습니다.`; };
 async function drawGearSets(box, eq) {
   if (!box) return;
   let d;
@@ -266,7 +266,7 @@ async function drawGearSets(box, eq) {
     const cnt = Object.keys(x.items || {}).length, on = same(x);
     return `<li class="gs-row ${on ? 'on' : ''}"><span class="gs-name"><b>${n}</b><button type="button" class="linkish" data-gs-menu="${n}" title="이름 바꾸기·덮어쓰기·지우기">${esc(x.name)}</button><small class="muted">${cnt}칸${on ? ' · 끼고 있음' : ''}</small></span>
       <span class="gs-btns"><button class="btn small primary" data-gs-apply="${n}" ${on ? 'disabled' : ''}>끼기</button></span></li>`; };
-  box.innerHTML = `<ul class="gs-list">${Array.from({ length: cap }, (_, i) => row(i + 1)).join('')}</ul>${cap < max ? `<p class="muted small">전투 기술 계열이 ${d?.rules?.rank || 15}단계에 닿을 때마다 한 칸씩 늘어납니다(${cap}/${max}).</p>` : ''}`;
+  box.innerHTML = `<ul class="gs-list">${Array.from({ length: cap }, (_, i) => row(i + 1)).join('')}</ul>${cap < max ? `<p class="muted small">어느 직업이든 전투 기술 계열 하나가 ${d?.rules?.rank || 15}단계에 닿을 때마다 한 칸씩 늘어납니다(${cap}/${max}).</p>` : ''}`;
   const named = n => sets.get(Number(n))?.name || `세트 ${n}`;
   $$('[data-gs-save]', box).forEach(b => b.onclick = () => guard(b, () => act('world_gear_set_save', { p_n: Number(b.dataset.gsSave), p_name: '' })));
   $$('[data-gs-apply]', box).forEach(b => b.onclick = () => guard(b, async () => {

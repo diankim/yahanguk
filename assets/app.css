@@ -488,6 +488,10 @@ body.chat-open .chat-fab { display: none; }
 .status-list li.good { box-shadow: inset 2px 0 0 var(--ok); }
 .idle-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-bottom: 10px; }
 .idle-card header { justify-content: flex-start; gap: 8px; }
+.sk-other { margin-top: 8px; border-top: var(--bw) dashed var(--line); padding-top: 6px; }
+.sk-other > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.sk-line.other { opacity: .72; }
+.sk-line.other .sk-head small { font-weight: 400; margin-left: 4px; }
 .gs-list { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
 .gs-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: var(--bw) solid var(--line); border-radius: var(--r); background: var(--surface-2); min-width: 0; }
 .gs-row.on { border-color: var(--gold); }
