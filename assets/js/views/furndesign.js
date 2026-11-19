@@ -27,23 +27,23 @@ function guides(g, size, k, top) {
   dia(0, 'rgba(224,90,76,.9)'); if (top) dia(top, 'rgba(95,208,255,.95)');
 }
 
-export function openFurnEditor(done, edit = null, have = 0) {
-  const max = FURN.colors || 16;
-  let size = edit?.base || '1x1', attr = { layer: 'floor', top: 0, ...(edit?.furn || {}) }, kind = kindOf(attr);
-  let pal = edit?.pal ? palOf(edit.pal).slice(0, max) : START.slice(), cur = 1, view = 0, same = true, pad = null, cells = [];
+export function openFurnEditor(done, edit = null, have = 0, from = null) {
+  const max = FURN.colors || 16, src = edit || from;
+  let size = src?.base || '1x1', attr = { layer: 'floor', top: 0, ...(src?.furn || {}) }, kind = kindOf(attr);
+  let pal = src?.pal ? palOf(src.pal).slice(0, max) : START.slice(), cur = 1, view = 0, same = true, pad = null, cells = [];
   const reset = () => {
-    const z = sizeOf(size), n = z.pw * z.ph, src = String(edit?.px || '');
-    same = !(src.length >= 2 * n);
-    cells = Array.from({ length: 2 * n }, (_, i) => src[i < n || !same ? i : i - n] || '.');
+    const z = sizeOf(size), n = z.pw * z.ph, sp = String(src?.px || '');
+    same = !(sp.length >= 2 * n);
+    cells = Array.from({ length: 2 * n }, (_, i) => sp[i < n || !same ? i : i - n] || '.');
   };
   reset();
   const n = () => sizeOf(size).pw * sizeOf(size).ph;
   const pxStr = () => same ? cells.slice(0, n()).join('') : cells.join('');
   const palStr = () => pal.map(c => c.slice(1)).join('');
   const first = pxStr() + palStr();
-  const confirmClose = async () => pxStr() + palStr() === first || ask(edit ? '고친 것을 담지 않고 닫을까요?' : '그리던 가구를 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '가구 도안 닫기', ok: '닫기', cancel: '계속 그리기' });
+  const confirmClose = async () => (!from && pxStr() + palStr() === first) || ask(edit ? '고친 것을 담지 않고 닫을까요?' : '그리던 가구를 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '가구 도안 닫기', ok: '닫기', cancel: '계속 그리기' });
   const opt = (v, l, on) => `<option value="${v}"${on ? ' selected' : ''}>${esc(l)}</option>`;
-  const layer = openLayer({ title: edit ? '가구 도안 고치기' : '가구 그리기', wide: true, confirmClose, body: `<div class="od-ed fd-ed">
+  const layer = openLayer({ title: edit ? '가구 도안 고치기' : from ? '복사해 그리기' : '가구 그리기', wide: true, confirmClose, body: `<div class="od-ed fd-ed">
     <div class="od-left">
       <div class="od-slot"><button class="chip-btn" data-view="0">앞모습</button><button class="chip-btn" data-view="1">뒷모습</button>
         <label class="fd-same"><input type="checkbox" data-same> 앞뒤 같음</label></div>
@@ -65,7 +65,7 @@ export function openFurnEditor(done, edit = null, have = 0) {
       <div class="dr-pal od-picks">${PAL.map((c, i) => `<button class="dr-sw" data-pick="${c}" style="--c:${c}" title="${esc(PAL_NAMES[i])}" aria-label="${esc(PAL_NAMES[i])}"></button>`).join('')}<button class="chip-btn" data-own>${icon('palette', 14)} 직접 고르기</button></div>
       <label class="field"><span>가구 이름</span><input maxlength="${FURN.title_max || 12}" name="t" placeholder="비워 두면 「${esc(FURN.name || '직접 그린 가구')}」" value="${esc(edit?.t || '')}"></label>
       <p class="muted small fd-note"></p>
-      <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : '도안첩에 담기'}</button></div>
+      <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : from ? '새 도안으로 담기' : '도안첩에 담기'}</button></div>
     </div></div>` });
   let cv = $('.fd-canvas', layer);
   const sc = () => Math.max(4, Math.min(10, Math.floor(Math.min(innerWidth - 56, 460) / sizeOf(size).pw)));
@@ -79,7 +79,7 @@ export function openFurnEditor(done, edit = null, have = 0) {
     $('[data-for=pk]', layer).hidden = kind !== 'pet';
     $('[data-for=top]', layer).hidden = !needTop;
     $('.fd-note', layer).textContent = edit ? '크기와 쓰임은 바꿀 수 없습니다. 고쳐 담으면 이미 지은 가구도 고친 모습으로 바뀝니다.'
-      : `담으면 가구 그리기 도안 ${tiles(size)}장을 씁니다(가방 ${have}장). 담은 도안은 도안첩에서 목공 재료로 지어 별채 곳간에 넣습니다. 앞모습은 오른쪽 아래를 보는 모습이고, 돌리면 좌우가 뒤집힙니다.`;
+      : `${from ? '원래 도안은 그대로 두고 새 도안으로 담습니다. ' : ''}담으면 가구 그리기 도안 ${tiles(size)}장을 씁니다(가방 ${have}장). 담은 도안은 도안첩에서 목공 재료로 지어 별채 곳간에 넣습니다. 앞모습은 오른쪽 아래를 보는 모습이고, 돌리면 좌우가 뒤집힙니다.`;
   };
   const rots = () => {
     const px = pxStr(), p = palStr();
@@ -171,7 +171,7 @@ export async function furnBook(box, { onChange } = {}) {
     <img class="od-pic fd-pic" src="${furnPic(d)}" alt="">
     <div class="od-meta"><b>${esc(d.t || FURN.name)}</b><small class="muted">${SIZE_NAME[d.base] || d.base} 칸${furnAttrText(d.furn) ? ` · ${esc(furnAttrText(d.furn))}` : ''}</small>
       <small class="muted">${d.mine ? '내가 그림' : `${esc(d.a)} 그림${d.gift ? ` · ${esc(d.gift)}님이 보냄` : ''}`}</small>${d.woven ? '<span class="chip ok">지은 적 있음</span>' : ''}</div>
-    <div class="od-acts"><button class="btn small primary" data-weave="${d.id}" data-here="가구 짓기">${icon('hammer', 14)} 짓기</button>${d.mine ? `<button class="btn small" data-edit="${d.id}">고치기</button><button class="btn small" data-give="${d.id}">보내기</button>` : ''}<button class="btn small ghost" data-del="${d.id}">지우기</button></div></li>`;
+    <div class="od-acts"><button class="btn small primary" data-weave="${d.id}" data-here="가구 짓기">${icon('hammer', 14)} 짓기</button>${d.mine ? `<button class="btn small" data-edit="${d.id}">고치기</button><button class="btn small" data-copy="${d.id}" ${full || have < tiles(d.base) ? 'disabled' : ''} title="이 도안을 바탕으로 새 도안을 그립니다">복사</button><button class="btn small" data-give="${d.id}">보내기</button>` : ''}<button class="btn small ghost" data-del="${d.id}">지우기</button></div></li>`;
   box.innerHTML = `<div class="od-book">
     <div class="od-head"><span class="chip">가구 도안 ${items.length}/${keep}</span><span class="chip">가구 그리기 도안 ${have}장</span>
       <button class="btn small primary" data-new ${full || have < 1 ? 'disabled' : ''}>${icon('plus', 14)} 가구 그리기</button></div>
@@ -183,6 +183,7 @@ export async function furnBook(box, { onChange } = {}) {
   const find = id => items.find(x => String(x.id) === String(id));
   $('[data-new]', box).onclick = () => openFurnEditor(again, null, have);
   $$('[data-edit]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.edit); if (d) openFurnEditor(again, d, have); });
+  $$('[data-copy]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.copy); if (d) openFurnEditor(again, null, have, d); });
   $$('[data-weave]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.weave); if (d) openWeave(d, st, again); });
   $$('[data-give]', box).forEach(b => b.onclick = () => { const d = find(b.dataset.give); if (d) openDesignGive(d, furnPic(d), '받은 사람이 가구를 지어 별채에 놓을 수 있고', r, again); });
   $$('[data-del]', box).forEach(b => b.onclick = async () => {
