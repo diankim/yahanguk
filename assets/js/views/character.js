@@ -362,14 +362,19 @@ async function growth(body) {
 }
 function profWait(c) { return c.life_changed_at ? new Date(c.life_changed_at).getTime() + 72 * 3600e3 - Date.now() : 0; }
 
+const WPN = j => ((GAMEDATA.weaponRules?.forms || {})[j] || []).map(f => f[0]).join('·');
+const fightBy = j => `${JOBS[j]?.name || j}(으)로 싸우면 오릅니다(무기 ${WPN(j)}).`;
 const CAT_DESC = {
-  melee: '호위 무사(방패·수호)의 계열. 칼·창으로 싸우면 오릅니다. 받는 피해가 줄고, 택일은 방패(이목·도발) 갈래와 수호(반격·버티기) 갈래입니다.',
-  ranged: '월궁 사수의 계열. 활·쇠뇌로 싸우면 오릅니다. 치명타와 원거리 피해가 늘어납니다.',
-  sealing: '봉인술사의 계열. 술법으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 몰아치기와 북돋기·약화 갈래입니다.',
-  dagger: '암영 검객(근접 공격)의 계열. 단도·비수 같은 근접 무기로 싸우면 오릅니다. 근접 피해·치명타가 늘고, 택일은 공격 갈래와 암습(급소·독·덫) 갈래입니다.',
-  exorcism: '퇴마관의 계열. 술법으로 싸우면 오릅니다. 술법 피해가 늘고, 택일은 몰아치기와 정화(영귀 퇴치·결계 걷기) 갈래입니다.',
-  medicine: '의무관(치유)의 계열. 술법(침·약)으로 싸우면 오릅니다. 회복량이 크게 늘고, 택일은 침술과 처방(회복·해독·버티기) 갈래입니다.',
-  taming: '조련사(짝 사냥)의 계열. 활·쇠뇌로 싸우면 오릅니다. 화살 피해는 사격보다 덜 오르고 동무 피해가 오르며, 택일은 사냥(동무 동작·마무리)과 돌봄(막아서기·버티기) 갈래입니다.',
+  melee: `호위 무사(방패·수호)의 계열. ${fightBy('artificer')} 받는 피해가 줄고, 택일은 방패(이목·도발) 갈래와 수호(반격·버티기) 갈래입니다.`,
+  ranged: `월궁 사수의 계열. ${fightBy('scout')} 치명타와 원거리 피해가 늘어납니다.`,
+  sealing: `봉인술사의 계열. ${fightBy('sealmaster')} 술법 피해가 늘고, 택일은 몰아치기와 북돋기·약화 갈래입니다.`,
+  dagger: `암영 검객(근접 공격)의 계열. ${fightBy('analyst')} 근접 피해·치명타가 늘고, 택일은 공격 갈래와 암습(급소·독·덫) 갈래입니다.`,
+  exorcism: `퇴마관의 계열. ${fightBy('exorcist')} 술법 피해가 늘고, 택일은 몰아치기와 정화(영귀 퇴치·결계 걷기) 갈래입니다.`,
+  medicine: `의무관(치유)의 계열. ${fightBy('medic')} 회복량이 크게 늘고, 택일은 침술과 처방(회복·해독·버티기) 갈래입니다.`,
+  taming: `조련사(짝 사냥)의 계열. ${fightBy('tamer')} 화살 피해는 사격보다 덜 오르고 동무 피해가 오르며, 택일은 사냥(동무 동작·마무리)과 돌봄(막아서기·버티기) 갈래입니다.`,
+  bloodcraft: `혈기사(방패·피흡)의 계열. ${fightBy('bloodknight')} 받는 피해가 줄고 피흡·근접 피해가 늘며, 택일은 베어 버팀(피흡) 갈래와 피 갑주(보호막) 갈래입니다.`,
+  spear: `여명 창객(근접 공격)의 계열. ${fightBy('spearman')} 근접 피해와 창끝 기세가 늘고, 택일은 찌르기 갈래와 휘두르기 갈래입니다.`,
+  formation: `진법가(막는 치유)의 계열. ${fightBy('formation')} 보호막 세기·술법 피해가 늘고, 택일은 진 치기(산가지 진) 갈래와 셈 맞추기(수법 읽기) 갈래입니다.`,
   analysis: '요괴의 약점을 살피며 싸울 때 오릅니다. 익히면 치명타 확률이 오릅니다.',
   guarding: '막기 자세로 공격을 받아낼 때 오릅니다.',
   first_aid: '회복약을 쓰거나 동료를 구조할 때 오릅니다.',
@@ -381,7 +386,7 @@ const CAT_DESC = {
   alchemy: '연금 제작법(약·영약)으로 만들 때 오릅니다.', cooking: '요리를 만들 때 오릅니다.',
 };
 const SKILL_GAIN = {
-  melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', dagger: '전투 행동 +10', exorcism: '전투 행동 +10', medicine: '전투 행동 +10', taming: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
+  melee: '전투 행동 +10', ranged: '전투 행동 +10', sealing: '전투 행동 +10', dagger: '전투 행동 +10', exorcism: '전투 행동 +10', medicine: '전투 행동 +10', taming: '전투 행동 +10', bloodcraft: '전투 행동 +10', spear: '전투 행동 +10', formation: '전투 행동 +10', analysis: '전투 행동 +10', first_aid: '전투 행동 +10', guarding: '전투 행동 +10',
   foraging: '채집 +8', mining: '채집 +8', fishing: '던질 때 +8',
   smithing: '제작·분해 +12', carpentry: '제작·분해 +12', artifice: '제작·분해 +12', wardcraft: '제작·분해 +12', weaving: '제작·분해 +12', leatherwork: '제작·분해 +12',
   alchemy: '제작 +12', cooking: '요리 +12', tracking: '탐색 +5 · 이야기 +10 · 이동 +3',
