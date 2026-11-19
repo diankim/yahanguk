@@ -26,12 +26,18 @@ const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 const GATHER = ['fieldwork', 'mining', 'fishing'];
 const CRAFT = ['smithing', 'carpentry', 'artifice', 'sealing', 'weaving', 'leatherwork', 'alchemy', 'cooking'];
 const IDLE = [
-  ['training', '자율 수련', '경험치와 전투 숙련, 직업의 전투 기술 계열을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 탐사 기술을 올립니다.', 'search'],
+  ['training', '자율 수련', '경험치와 전투 숙련, 고른 전투 기술(직업 계열·막기·응급 처치·분석)을 올립니다.', 'sword'], ['research', '자료 조사', '경험치와 조사 숙련, 탐사 기술을 올립니다.', 'search'],
   ['maintenance', '장비 정비', '경험치와 제작 숙련, 고른 제작 분야의 기술 계열을 올립니다.', 'hammer'], ['rest', '휴식', '체력·정신·영력을 회복하고 경험치를 조금 얻습니다.', 'moon'],
 ];
 let idleWeapon = 'melee';
-const trainSkill = () => SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameOf(JOB_LINE[store.character?.job_key] || 'melee');
-const maintSkill = () => nameOf(store.character?.crafting_profession || 'smithing');
+let idleChoices = null;
+const idlePicked = k => { try { return JSON.parse(localStorage.getItem('yh-idle-line') || '{}')[k] || null; } catch { return null; } };
+const idleSetPick = (k, v) => { try { const o = JSON.parse(localStorage.getItem('yh-idle-line') || '{}'); o[k] = v; localStorage.setItem('yh-idle-line', JSON.stringify(o)); } catch {} };
+const idleLineOf = k => { const list = idleChoices?.[k] || [], p = idlePicked(k); return list.find(x => x.line === p) || list.find(x => x.line === idleChoices?.default?.[k]) || null; };
+const trainSkill = () => idleLineOf('training')?.name || SKILL_NAME[JOB_LINE[store.character?.job_key]] || nameOf(JOB_LINE[store.character?.job_key] || 'melee');
+const maintSkill = () => idleLineOf('maintenance')?.name || nameOf(store.character?.crafting_profession || 'smithing');
+const idleLineSel = k => { const list = idleChoices?.[k]; if (!list?.length) return ''; const cur = idleLineOf(k)?.line;
+  return `<label class="idle-line"><span>올릴 기술</span><select data-idle-line="${k}">${list.map(x => `<option value="${esc(x.line)}" ${x.line === cur ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>`; };
 function idleReward(k, min, level, early = false) {
   const h = min / 60, lo = early ? 0 : 1, gain = Math.max(lo, idleGain(h)), xp = level >= LEVEL_CAP ? 0 : Math.max(lo, idleXp(k, h));
   const out = xp ? [`경험치 +${xpGot(xp)}`] : [];
@@ -458,19 +464,20 @@ async function skills(body) {
 async function idle(body, given) {
   const [snap, prof] = given ? [given, null] : await Promise.all([load('world_idle_activity_snapshot', undefined, { maxAge: 600000 }), load('world_combat_profile', undefined, { maxAge: 30000 }).catch(() => null)]);
   if (prof) idleWeapon = prof?.current?.weapon?.type || 'melee';
+  if (snap?.choices) idleChoices = snap.choices;
   const active = snap?.active;
   const ready = active && (snap.ready || new Date(snap.ready_at) <= new Date());
   const name = IDLE.find(x => x[0] === snap?.activity_type)?.[1] || '자율 활동';
   body.innerHTML = `
     ${active ? panel('진행 중인 자율 활동', `
       <div class="idle-now"><div class="idle-ring ${ready ? 'done' : ''}">${icon(ready ? 'check' : 'hourglass', 24)}</div>
-        <div><b>${esc(name)} · ${snap.duration_minutes}분</b><span id="idle-left">${ready ? '완료되었습니다. 보상을 받으세요.' : `${fmt.remain(new Date(snap.ready_at) - Date.now())} 남음`}</span>
+        <div><b>${esc(name)} · ${snap.duration_minutes}분${snap.skill_name && snap.activity_type !== 'rest' ? ` · ${esc(snap.skill_name)}` : ''}</b><span id="idle-left">${ready ? '완료되었습니다. 보상을 받으세요.' : `${fmt.remain(new Date(snap.ready_at) - Date.now())} 남음`}</span>
         ${bar(Math.min(snap.elapsed_seconds || 0, snap.duration_minutes * 60), snap.duration_minutes * 60, 'xp')}</div></div>
       <div class="btn-row">${ready ? `<button class="btn primary" id="idle-claim">${icon('check', 16)}<span>보상 수령</span></button>`
         : `<button class="btn" id="idle-stop">${icon('close', 16)}<span>그만두기</span></button>`}</div>
       <p class="muted small">완료 시각은 서버가 기록합니다. 접속하지 않아도 진행되며, 한 번에 하나만 할 수 있습니다. 도중에 그만두면 지난 시간만큼만 받습니다.</p>`, { ico: 'hourglass' }) : ''}
     <div class="idle-grid">${IDLE.map(([k, n, d, ic]) => `<article class="idle-card" data-idle-card="${k}">
-      <header>${icon(ic, 18)}<b>${n}</b></header><p>${d}</p>
+      <header>${icon(ic, 18)}<b>${n}</b></header><p>${d}</p>${active ? '' : idleLineSel(k)}
       <div class="dur">${DURATIONS.map(([m, l]) => `<button class="btn small" data-idle="${k}" data-min="${m}" ${active ? 'disabled' : ''}><b>${l}</b><small>${esc(idleReward(k, m, store.character?.level || 1).join(' · '))}</small></button>`).join('')}</div></article>`).join('')}</div>
     <p class="muted small">자율 활동은 접속하지 않는 동안의 보조 성장입니다. 직접 탐사·전투·제작이 더 큰 보상을 줍니다.</p>`;
   const claim = $('#idle-claim', body);
@@ -485,10 +492,12 @@ async function idle(body, given) {
   let focus = null; try { focus = sessionStorage.getItem('yh-idle-focus'); sessionStorage.removeItem('yh-idle-focus'); } catch {}
   const fc = focus && $(`[data-idle-card="${focus}"]`, body);
   if (fc) { fc.classList.add('focus'); requestAnimationFrame(() => fc.scrollIntoView({ block: 'center', behavior: 'smooth' })); setTimeout(() => fc.classList.remove('focus'), 2600); }
+  $$('[data-idle-line]', body).forEach(x => x.onchange = () => { idleSetPick(x.dataset.idleLine, x.value); idle(body, snap); });
   $$('[data-idle]', body).forEach(b => b.onclick = async () => {
     const k = b.dataset.idle, m = Number(b.dataset.min), n = IDLE.find(x => x[0] === k)?.[1] || '자율 활동', l = DURATIONS.find(x => x[0] === m)?.[1] || `${m}분`;
     const ok = await ask(`${n}을(를) ${l} 동안 할까요?\n받을 것: ${idleReward(k, m, store.character?.level || 1).join(' · ')}\n끝날 때까지 다른 자율 활동은 할 수 없고, 다 끝난 뒤에 보상을 받습니다.`, { title: '자율 활동 시작', ok: '시작', cancel: '그만두기' });
-    if (ok) guard(b, () => act('world_start_idle_activity', { p_activity: k, p_duration_minutes: m }));
+    const ln = idleChoices?.[k] ? idleLineOf(k)?.line : null;
+    if (ok) guard(b, () => act('world_start_idle_activity', ln ? { p_activity: k, p_duration_minutes: m, p_line: ln } : { p_activity: k, p_duration_minutes: m }));
   });
   clearInterval(idleTick);
   if (active && !ready) {
