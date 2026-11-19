@@ -6,7 +6,7 @@ FORMS = {
     'scout': [('각궁', 'ranged', 'keen'), ('쇠뇌', 'ranged', 'base2')],
     'tamer': [('단궁', 'ranged', 'base'), ('취관', 'ranged', 'keen3')],
     'exorcist': [('방울', 'magic', 'base'), ('법경', 'magic', 'keen2')],
-    'sealmaster': [('금강령', 'magic', 'keen2'), ('사슬', 'magic', 'base2')],
+    'sealmaster': [('금강령', 'magic', 'silent3'), ('사슬', 'magic', 'base2')],
     'medic': [('부채', 'magic', 'silent'), ('침통', 'magic', 'base2')],
     'formation': [('산가지', 'magic', 'base4'), ('나경', 'magic', 'silent2')],
 }
