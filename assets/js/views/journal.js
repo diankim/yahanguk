@@ -14,7 +14,11 @@ import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
 const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
-let el, sub = 'story', rec = 'survey', off = [];
+let el, sub = 'story', rec = 'survey', off = [], findQ = '';
+const QSUBS = ['story', 'side'], CXS = ['monster', 'gather', 'fish'];
+const findOn = () => QSUBS.includes(sub) || (sub === 'record' && CXS.includes(rec));
+const findTip = () => QSUBS.includes(sub) ? '퀘스트 찾기 (이름·지역·내용)' : '도감 찾기 (이름·지역·설명)';
+function paintFind() { const b = $('.log-find', el); if (!b) return; b.hidden = !findOn(); const qi = $('#log-q', b); qi.placeholder = findTip(); qi.setAttribute('aria-label', findTip()); }
 
 export async function render(root, s) {
   if (!store.character) return;
@@ -23,8 +27,14 @@ export async function render(root, s) {
   else if (s === 'codex') { sub = 'record'; rec = 'monster'; }
   else sub = SUBS.some(x => x[0] === s) ? s : 'story';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('scroll', 14)} 조사원 일지</p><h1>일지</h1></div></div>
-    ${segmented('log-sub', SUBS, sub)}<div id="log-body"></div>`;
-  bindSegmented(el, 'log-sub', k => { sub = k; window.history.replaceState(null, '', `#/log/${k}`); draw(); });
+    ${segmented('log-sub', SUBS, sub)}<div class="log-find"><input type="search" class="mk-q" id="log-q" value="${esc(findQ)}"></div><div id="log-body"></div>`;
+  paintFind();
+  bindSegmented(el, 'log-sub', k => { sub = k; paintFind(); window.history.replaceState(null, '', `#/log/${k}`); draw(); });
+  const qi = $('#log-q', el);
+  const apply = () => { if (qi.value === findQ) return; findQ = qi.value; if (QSUBS.includes(sub)) draw(true); else { const b = $('#rec-body', el); if (b) cxFilter(b); } };
+  qi.addEventListener('input', e => { if (!e.isComposing) apply(); });
+  qi.addEventListener('compositionend', apply);
+  qi.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); apply(); qi.blur(); } });
   off.forEach(f => f()); off = [on('changed', ({ name } = {}) => { if (hit('journalView', name)) draw(true); })];
   await draw();
 }
@@ -33,7 +43,7 @@ export function destroy() { off.forEach(f => f()); off = []; }
 async function draw(soft) {
   const body = $('#log-body', el); if (!body) return;
   if (!soft) body.innerHTML = loading();
-  try { await ({ story, side, commission, record })[sub](body); }
+  try { await (findQ.trim() && QSUBS.includes(sub) ? findView : ({ story, side, commission, record })[sub])(body); }
   catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
@@ -225,6 +235,28 @@ async function side(body, keep) {
   $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
   bindQuests(body);
 }
+const norm = t => String(t || '').toLowerCase().replace(/\s+/g, '');
+const kindOf = q => q.kind === 'main' ? MAIN_ARC : arcOf(q) ? arcName(arcOf(q)) : fieldOf(q);
+async function findView(body) {
+  const [j, map] = await Promise.all([journal(), load('world_map_snapshot', undefined, { maxAge: 30000 })]);
+  const words = findQ.trim().toLowerCase().split(/\s+/).filter(Boolean).map(norm);
+  const textOf = q => norm([q.title, q.summary, q.region_name, q.cat, kindOf(q), ...(q.cur?.at_names || []),
+    ...(q.scenes || []).filter(x => x.done).flatMap(x => [x.title, x.goal])].join(' '));
+  const list = (j?.quests || []).filter(q => { const t = textOf(q); return words.every(w => t.includes(w)); })
+    .sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.min_level - b.min_level || a.title.localeCompare(b.title, 'ko'));
+  body.innerHTML = `<div class="chips">${chip(`찾은 퀘스트 ${list.length}`, 'accent')}<span class="muted small">주 이야기·본편·보조 퀘스트를 함께 찾습니다</span></div>
+    ${list.length ? `<ul class="q-list">${list.map(q => sideItem(q, map, true).replace('<header>', `<header>${chip(kindOf(q))}`)).join('')}</ul>` : empty('찾는 퀘스트가 없습니다.', 'search')}`;
+  bindQuests(body);
+}
+function cxFilter(box) {
+  const words = findQ.trim().toLowerCase().split(/\s+/).filter(Boolean).map(norm);
+  const cards = $$('.mon-card, .fish-card', box);
+  let shown = 0;
+  cards.forEach(c => { const t = norm(c.textContent + ' ' + ($('.panel-head', c.closest('.panel') || c)?.textContent || '')); const ok = words.every(w => t.includes(w)); c.hidden = !ok; if (ok) shown++; });
+  $$('.panel', box).forEach(p => { const cs = $$('.mon-card, .fish-card', p); if (cs.length) p.hidden = words.length > 0 && cs.every(c => c.hidden); });
+  const note = $('.cx-find', box) || $('.codex-head', box)?.appendChild(Object.assign(document.createElement('p'), { className: 'cx-find muted small' }));
+  if (note) { note.hidden = !words.length; note.textContent = `찾은 것 ${shown}/${cards.length}${shown ? '' : ' — 아직 못 거둔 것은 이름이 가려져 있어 찾을 수 없습니다'}`; }
+}
 function nowLine(q) {
   if (!q.cur || !(q.status === 'active' || autoAct(q))) return '';
   const left = (q.cur.tasks || []).filter(t => t.cur < t.n), regs = [...new Set(left.flatMap(t => t.regions || []))].map(nameOf);
@@ -383,9 +415,9 @@ async function openUcommPost(here, feePct, noteMax) {
 
 async function record(body) {
   body.innerHTML = `${segmented('rec-sub', REC, rec)}<div id="rec-body">${loading()}</div>`;
-  bindSegmented(body, 'rec-sub', k => { rec = k; window.history.replaceState(null, '', `#/log/${k}`); record(body); });
+  bindSegmented(body, 'rec-sub', k => { rec = k; paintFind(); window.history.replaceState(null, '', `#/log/${k}`); record(body); });
   const box = $('#rec-body', body);
-  try { await ({ survey, lore: regionLore, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[rec](box); }
+  try { await ({ survey, lore: regionLore, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[rec](box); if (CXS.includes(rec)) cxFilter(box); }
   catch (e) { box.innerHTML = errorBox(e.message); }
 }
 
@@ -462,7 +494,7 @@ async function monsterCodex(box) {
       </li>`).join('')}</ul>
     ${unseenLine(list, kinds)}
     ${codexTitles(o.titles)}`;
-  $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box); });
+  $$('[data-kind]', box).forEach(b => b.onclick = () => { cxKind = b.dataset.kind; monsterCodex(box).then(() => cxFilter(box)); });
   const wb = $('[data-witness]', box);
   const n = all.filter(m => m.kind === cxKind).reduce((s, m) => s + (Number(m.defeated) || 0), 0);
   const paint = l => { const arr = l.witness?.[cxKind] || [];

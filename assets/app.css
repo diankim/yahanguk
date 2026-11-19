@@ -2742,6 +2742,7 @@ b.sealed { color: var(--bad); }
 /* 거래소(모바일 정리): 사기·팔기·직접 거래 한 줄 탭, 사기 칸 거르기, 팔기 칸은 물품 한 줄·수량/가격 한 줄·등록 단추 한 줄 */
 .mk-tabs { width: 100%; } .mk-tabs button { flex: 1; }
 .mk-filter { display: grid; gap: 6px; margin: 10px 0 6px; } .mk-filter .mk-q { width: 100%; min-width: 0; }
+.log-find { margin: 8px 0 12px; } .log-find .mk-q { width: 100%; min-width: 0; }
 .mk-count { margin: 8px 0 0; }
 .trade-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin: 10px 0 4px; align-items: end; }
 .trade-form .tf-item, .trade-form .tf-hint, .trade-form .tf-go { grid-column: 1 / -1; }
