@@ -31,18 +31,7 @@ select pg_temp.yh_fix('world_battle_action', array[
   IF act NOT IN ('attack', 'skill') THEN v_pfx := v_pfx - 'chain'; END IF;$q$,
 
   $q$  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
-  $q$  ELSIF act = 'skill' AND c.job_key = 'bloodknight' THEN
-    IF NOT ('bloodcraft_m50' = ANY (sk)) THEN
-      IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
-      hp := hp - 15;
-    END IF;
-    extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 40 ELSE 30 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
-    v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
-    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 둘렀다.');
-  ELSIF act = 'skill' AND c.job_key = 'formation' THEN
-    v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END);
-    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'formation' ->> 'name') || ': 다칠 자리를 셈해 진을 쳤다. 세 턴 동안 받는 피해가 줄어든다.');
-  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
+  $q$  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
 
   $q$    ELSIF act = 'skill' AND c.job_key = 'tamer' THEN style := 'ranged'; skill_name := public.world_job_skill_rules() -> 'tamer' ->> 'name';$q$,
   $q$    ELSIF act = 'skill' AND c.job_key = 'tamer' THEN style := 'ranged'; skill_name := public.world_job_skill_rules() -> 'tamer' ->> 'name';
@@ -50,7 +39,7 @@ select pg_temp.yh_fix('world_battle_action', array[
 
   $q$    ELSIF skill_name = '파갑참' THEN mul := mul * 1.7;$q$,
   $q$    ELSIF skill_name = '파갑참' THEN mul := mul * 1.7;
-    ELSIF skill_name = '관통 찌르기' THEN mul := mul * 1.6;$q$,
+    ELSIF skill_name = '관통 찌르기' THEN mul := mul * 1.4;$q$,
 
   $q$    IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN mul := mul * 1.2; END IF;$q$,
   $q$    IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN mul := mul * 1.2; END IF;
@@ -102,15 +91,15 @@ select pg_temp.yh_fix('world_battle_action', array[
     IF c.job_key = 'formation' AND style = 'magic' AND dmg > 0 AND 'formation_c24b' = ANY (sk) AND random() < 0.2 THEN
       v_fx := v_fx || jsonb_build_object('weak', greatest(2, coalesce((v_fx ->> 'weak')::int, 0))); lines := lines || jsonb_build_array('「허를 셈」 요괴의 다음 수가 무뎌졌다.');
     END IF;
-    IF first_atk AND c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
-      extra := greatest(1, round(dmg * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
+    IF first_atk AND skill_name IS NULL AND c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
+      extra := greatest(1, round(dmg * 0.3)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
       lines := lines || jsonb_build_array('「선제」 요괴보다 먼저 한 번 더 찔렀다. +' || extra);
     END IF;
     lines := lines || jsonb_build_array(coalesce(skill_name,$q$,
 
   $q$        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'exorcism_c43b' = ANY (sk) THEN 0.74 ELSE 0.8 END); END IF;$q$,
   $q$        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'exorcism_c43b' = ANY (sk) THEN 0.74 ELSE 0.8 END); END IF;
-        IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'formation_c24a' = ANY (sk) THEN 0.55 ELSE 0.65 END); END IF;
+        IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'formation_c24a' = ANY (sk) THEN 0.65 ELSE 0.75 END); END IF;
         IF c.job_key = 'formation' AND 'formation_c13b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN mdmg := round(mdmg * 0.7); END IF;
         IF c.job_key = 'formation' AND 'formation_c43b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN v_pfx := v_pfx || jsonb_build_object('turned', true); END IF;$q$,
 
@@ -154,3 +143,29 @@ select pg_temp.yh_fix('world_battle_action', array[
 select pg_temp.yh_fix('world_battle_action', array[
   $q$    IF sp < (CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END) THEN RAISE EXCEPTION '%', CASE WHEN style = 'melee' THEN '기력' ELSE '영력' END || '이 모자랍니다. (필요 ' || CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END || ')'; END IF;$q$,
   $q$    IF sp < public.world_job_skill_cost(c.job_key) THEN RAISE EXCEPTION '%', CASE WHEN style = 'melee' THEN '기력' ELSE '영력' END || '이 모자랍니다. (필요 ' || public.world_job_skill_cost(c.job_key) || ')'; END IF;$q$]);
+
+select pg_temp.yh_fix('world_battle_action', array[
+  $q$    sp := sp - public.world_job_skill_cost(c.job_key); v_pfx := v_pfx || jsonb_build_object('skill_ready', turn + 3);
+  END IF;$q$,
+  $q$    sp := sp - public.world_job_skill_cost(c.job_key); v_pfx := v_pfx || jsonb_build_object('skill_ready', turn + 3);
+  END IF;
+  IF act = 'skill' AND c.job_key = 'bloodknight' THEN
+    IF NOT ('bloodcraft_m50' = ANY (sk)) THEN
+      IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
+      hp := hp - 15;
+    END IF;
+    extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 30 ELSE 20 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
+    v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
+    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 두르고 베어 들었다.');
+    act := 'attack';
+  ELSIF act = 'skill' AND c.job_key = 'formation' THEN
+    v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END, 'fm_hit', true);
+    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'formation' ->> 'name') || ': 다칠 자리를 셈해 진을 치며 산가지를 날렸다. 세 턴 동안 받는 피해가 줄어든다.');
+    act := 'attack';
+  END IF;$q$,
+  $q$    IF coalesce((v_pfx ->> 'brace')::boolean, false) THEN mul := mul * 1.20;$q$,
+  $q$    IF coalesce((v_pfx ->> 'fm_hit')::boolean, false) THEN mul := mul * 0.7; v_pfx := v_pfx - 'fm_hit'; END IF;
+    IF style = 'melee' AND c.job_key = 'bloodknight' AND m.kind IN ('giant', 'shell') AND coalesce((c.skill_progress -> 'bloodcraft' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
+    IF style = 'melee' AND c.job_key = 'spearman' AND m.kind IN ('bird', 'sky') AND coalesce((c.skill_progress -> 'spear' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
+    IF style = 'magic' AND c.job_key = 'formation' AND m.kind IN ('ward', 'water') AND coalesce((c.skill_progress -> 'formation' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
+    IF coalesce((v_pfx ->> 'brace')::boolean, false) THEN mul := mul * 1.20;$q$]);

@@ -666,9 +666,9 @@ as $function$
 $function$;
 
 select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'))$q$, $q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'),
-    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 세 턴 동안 보호막 30을 두릅니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
-    'spearman', jsonb_build_object('name', '관통 찌르기', 'desc', '근접 ×1.6으로 찌르고 상대 방어의 절반을 무시합니다.', 'duel', jsonb_build_object('kind', 'pierce', 'n', 1, 'mul', 1.6), 'line', '{me}의 「관통 찌르기」: 창끝이 갑주 틈을 꿰었다.'),
-    'formation', jsonb_build_object('name', '산가지 진', 'desc', '세 턴 동안 받는 피해가 35% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.18), 'line', '{me}의 「산가지 진」: 다칠 자리를 미리 막아 기세 {n}을(를) 지켰다.'))$q$]);
+    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 세 턴 동안 보호막 20을 두르고 그 차례에 베어 듭니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
+    'spearman', jsonb_build_object('name', '관통 찌르기', 'desc', '근접 ×1.4로 찌르고 상대 방어의 절반을 무시합니다.', 'duel', jsonb_build_object('kind', 'pierce', 'n', 1, 'mul', 1.4), 'line', '{me}의 「관통 찌르기」: 창끝이 갑주 틈을 꿰었다.'),
+    'formation', jsonb_build_object('name', '산가지 진', 'desc', '산가지를 날리며(술법 ×0.7) 진을 쳐 세 턴 동안 받는 피해가 25% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.18), 'line', '{me}의 「산가지 진」: 다칠 자리를 미리 막아 기세 {n}을(를) 지켰다.'))$q$]);
 
 select pg_temp.yh_fix('world_solo_aid(text)', array[$q$
     when 'analyst'    then$q$, $q$
@@ -718,7 +718,7 @@ select pg_temp.yh_share('public.world_presence_cap(text)');
 
 select pg_temp.yh_fix('world_combat_stats', array[
   $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 ELSE 1 END;$q$,
-  $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'bloodknight' THEN 0.95 WHEN c.job_key = 'spearman' AND style = 'melee' THEN 1.12 ELSE 1 END;$q$,
+  $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'bloodknight' THEN 0.95 WHEN c.job_key = 'spearman' AND style = 'melee' THEN 1.06 ELSE 1 END;$q$,
   $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'sealmaster' THEN 60$q$,
   $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'bloodknight' THEN 70 WHEN c.job_key = 'sealmaster' THEN 60$q$,
   $q$  pres := greatest(5, least(300, (1 + coalesce($q$, $q$  pres := greatest(5, least(public.world_presence_cap(c.job_key), (1 + coalesce($q$]);
@@ -780,18 +780,7 @@ select pg_temp.yh_fix('world_battle_action', array[
   IF act NOT IN ('attack', 'skill') THEN v_pfx := v_pfx - 'chain'; END IF;$q$,
 
   $q$  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
-  $q$  ELSIF act = 'skill' AND c.job_key = 'bloodknight' THEN
-    IF NOT ('bloodcraft_m50' = ANY (sk)) THEN
-      IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
-      hp := hp - 15;
-    END IF;
-    extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 40 ELSE 30 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
-    v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
-    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 둘렀다.');
-  ELSIF act = 'skill' AND c.job_key = 'formation' THEN
-    v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END);
-    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'formation' ->> 'name') || ': 다칠 자리를 셈해 진을 쳤다. 세 턴 동안 받는 피해가 줄어든다.');
-  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
+  $q$  ELSIF act = 'skill' AND c.job_key = 'analyst' THEN$q$,
 
   $q$    ELSIF act = 'skill' AND c.job_key = 'tamer' THEN style := 'ranged'; skill_name := public.world_job_skill_rules() -> 'tamer' ->> 'name';$q$,
   $q$    ELSIF act = 'skill' AND c.job_key = 'tamer' THEN style := 'ranged'; skill_name := public.world_job_skill_rules() -> 'tamer' ->> 'name';
@@ -799,7 +788,7 @@ select pg_temp.yh_fix('world_battle_action', array[
 
   $q$    ELSIF skill_name = '파갑참' THEN mul := mul * 1.7;$q$,
   $q$    ELSIF skill_name = '파갑참' THEN mul := mul * 1.7;
-    ELSIF skill_name = '관통 찌르기' THEN mul := mul * 1.6;$q$,
+    ELSIF skill_name = '관통 찌르기' THEN mul := mul * 1.4;$q$,
 
   $q$    IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN mul := mul * 1.2; END IF;$q$,
   $q$    IF coalesce((v_fx ->> 'broken')::int, 0) > 0 THEN mul := mul * 1.2; END IF;
@@ -851,15 +840,15 @@ select pg_temp.yh_fix('world_battle_action', array[
     IF c.job_key = 'formation' AND style = 'magic' AND dmg > 0 AND 'formation_c24b' = ANY (sk) AND random() < 0.2 THEN
       v_fx := v_fx || jsonb_build_object('weak', greatest(2, coalesce((v_fx ->> 'weak')::int, 0))); lines := lines || jsonb_build_array('「허를 셈」 요괴의 다음 수가 무뎌졌다.');
     END IF;
-    IF first_atk AND c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
-      extra := greatest(1, round(dmg * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
+    IF first_atk AND skill_name IS NULL AND c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
+      extra := greatest(1, round(dmg * 0.3)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
       lines := lines || jsonb_build_array('「선제」 요괴보다 먼저 한 번 더 찔렀다. +' || extra);
     END IF;
     lines := lines || jsonb_build_array(coalesce(skill_name,$q$,
 
   $q$        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'exorcism_c43b' = ANY (sk) THEN 0.74 ELSE 0.8 END); END IF;$q$,
   $q$        IF coalesce((v_pfx ->> 'ward')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'exorcism_c43b' = ANY (sk) THEN 0.74 ELSE 0.8 END); END IF;
-        IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'formation_c24a' = ANY (sk) THEN 0.55 ELSE 0.65 END); END IF;
+        IF coalesce((v_pfx ->> 'zin')::int, 0) > 0 THEN mdmg := round(mdmg * CASE WHEN 'formation_c24a' = ANY (sk) THEN 0.65 ELSE 0.75 END); END IF;
         IF c.job_key = 'formation' AND 'formation_c13b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN mdmg := round(mdmg * 0.7); END IF;
         IF c.job_key = 'formation' AND 'formation_c43b' = ANY (sk) AND v_intent LIKE 'g%:%' THEN v_pfx := v_pfx || jsonb_build_object('turned', true); END IF;$q$,
 
@@ -904,6 +893,32 @@ select pg_temp.yh_fix('world_battle_action', array[
   $q$    IF sp < (CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END) THEN RAISE EXCEPTION '%', CASE WHEN style = 'melee' THEN '기력' ELSE '영력' END || '이 모자랍니다. (필요 ' || CASE WHEN c.job_key = 'medic' THEN 25 ELSE 12 END || ')'; END IF;$q$,
   $q$    IF sp < public.world_job_skill_cost(c.job_key) THEN RAISE EXCEPTION '%', CASE WHEN style = 'melee' THEN '기력' ELSE '영력' END || '이 모자랍니다. (필요 ' || public.world_job_skill_cost(c.job_key) || ')'; END IF;$q$]);
 
+select pg_temp.yh_fix('world_battle_action', array[
+  $q$    sp := sp - public.world_job_skill_cost(c.job_key); v_pfx := v_pfx || jsonb_build_object('skill_ready', turn + 3);
+  END IF;$q$,
+  $q$    sp := sp - public.world_job_skill_cost(c.job_key); v_pfx := v_pfx || jsonb_build_object('skill_ready', turn + 3);
+  END IF;
+  IF act = 'skill' AND c.job_key = 'bloodknight' THEN
+    IF NOT ('bloodcraft_m50' = ANY (sk)) THEN
+      IF hp <= 15 THEN RAISE EXCEPTION '체력이 모자라 피 갑주를 두를 수 없습니다.'; END IF;
+      hp := hp - 15;
+    END IF;
+    extra := round(CASE WHEN 'bloodcraft_c24b' = ANY (sk) THEN 30 ELSE 20 END * (1 + public.world_status_effect_total('shield_pct') / 100.0));
+    v_pfx := v_pfx || jsonb_build_object('pshield_t', 3, 'pshield', least(90, coalesce((v_pfx ->> 'pshield')::int, 0) + extra), 'bk_paid', CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 0 ELSE 15 END);
+    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'bloodknight' ->> 'name') || ': ' || CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN '' ELSE '체력 15를 깎아 ' END || '보호막 ' || extra || '을(를) 두르고 베어 들었다.');
+    act := 'attack';
+  ELSIF act = 'skill' AND c.job_key = 'formation' THEN
+    v_pfx := v_pfx || jsonb_build_object('zin', CASE WHEN 'formation_c13a' = ANY (sk) THEN 4 ELSE 3 END, 'fm_hit', true);
+    lines := lines || jsonb_build_array((public.world_job_skill_rules() -> 'formation' ->> 'name') || ': 다칠 자리를 셈해 진을 치며 산가지를 날렸다. 세 턴 동안 받는 피해가 줄어든다.');
+    act := 'attack';
+  END IF;$q$,
+  $q$    IF coalesce((v_pfx ->> 'brace')::boolean, false) THEN mul := mul * 1.20;$q$,
+  $q$    IF coalesce((v_pfx ->> 'fm_hit')::boolean, false) THEN mul := mul * 0.7; v_pfx := v_pfx - 'fm_hit'; END IF;
+    IF style = 'melee' AND c.job_key = 'bloodknight' AND m.kind IN ('giant', 'shell') AND coalesce((c.skill_progress -> 'bloodcraft' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
+    IF style = 'melee' AND c.job_key = 'spearman' AND m.kind IN ('bird', 'sky') AND coalesce((c.skill_progress -> 'spear' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
+    IF style = 'magic' AND c.job_key = 'formation' AND m.kind IN ('ward', 'water') AND coalesce((c.skill_progress -> 'formation' ->> 'rank')::int, 0) >= 8 THEN mul := mul * 1.12; END IF;
+    IF coalesce((v_pfx ->> 'brace')::boolean, false) THEN mul := mul * 1.20;$q$]);
+
 insert into public.world_skill_catalog(skill_id, skill_name, category, description, passive_effect, unlock_rank, slot) values
 ('bloodcraft_t3', '피 맛', 'bloodcraft', '근접 피해 +4% · 피흡 +1%p.', '{"damage_pct": 4, "leech_pct": 1}'::jsonb, 3, 'base'),
 ('bloodcraft_t8', '거친 숨', 'bloodcraft', '근접 피해 +12%, 거괴·갑각 요괴에게 +12% 더.', '{"damage_pct": 12}'::jsonb, 8, 'base'),
@@ -917,12 +932,12 @@ insert into public.world_skill_catalog(skill_id, skill_name, category, descripti
 ('bloodcraft_c13a', '휘둘러 마시기', 'bloodcraft', '택일 기술(베어 버팀) · 공격이 적중하면 25% 확률로 그 한 방의 피흡이 두 배', '{}'::jsonb, 13, 'a'),
 ('bloodcraft_c13b', '나눠 두른 갑주', 'bloodcraft', '택일 기술(피 갑주) · 보스전(합동 토벌·귀허류)에서 협동 기술로 두르는 보호막이 50% 두꺼워진다', '{}'::jsonb, 13, 'b'),
 ('bloodcraft_c24a', '피바람', 'bloodcraft', '택일 기술(베어 버팀) · 체력이 50 아래면 근접 피해 +15%', '{}'::jsonb, 24, 'a'),
-('bloodcraft_c24b', '두꺼운 피', 'bloodcraft', '택일 기술(피 갑주) · 피 갑주의 보호막 30 → 40', '{}'::jsonb, 24, 'b'),
+('bloodcraft_c24b', '두꺼운 피', 'bloodcraft', '택일 기술(피 갑주) · 피 갑주의 보호막 20 → 30', '{}'::jsonb, 24, 'b'),
 ('bloodcraft_c30a', '끊기지 않는 숨', 'bloodcraft', '택일 기술(베어 버팀) · 체력이 가득할 때 피흡으로 얻을 체력이 보호막으로 쌓인다(20까지)', '{}'::jsonb, 30, 'a'),
 ('bloodcraft_c30b', '갑주 되갚기', 'bloodcraft', '택일 기술(피 갑주) · 보호막이 깨질 때 막아 낸 피해의 30%를 다음 공격에 실어 되갚는다', '{}'::jsonb, 30, 'b'),
 ('bloodcraft_c43a', '마지막 한 모금', 'bloodcraft', '택일 기술(베어 버팀) · 쓰러질 피해를 받으면 한 전투에 한 번 체력 1로 버티고, 다음 공격의 피흡이 세 배', '{}'::jsonb, 43, 'a'),
 ('bloodcraft_c43b', '피로 잇는 맹세', 'bloodcraft', '택일 기술(피 갑주) · 보스전(합동 토벌·귀허류)에서 동료가 쓰러질 피해를 받으면 한 싸움에 한 번 내 체력 20을 내어 대신 버티게 한다', '{}'::jsonb, 43, 'b'),
-('bloodcraft_m50', '혈해(血海)', 'bloodcraft', '숙달 기술 · 피흡으로 한 번에 얻는 체력 상한 6 → 10, 피 갑주를 쓸 때 체력을 깎지 않는다', '{}'::jsonb, 50, 'master'),
+('bloodcraft_m50', '혈해(血海)', 'bloodcraft', '숙달 기술 · 피흡으로 한 번에 얻는 체력 상한 4 → 8, 피 갑주를 쓸 때 체력을 깎지 않는다', '{}'::jsonb, 50, 'master'),
 ('spear_t3', '창끝 고르기', 'spear', '근접 피해 +4% · 치명타 +1%.', '{"damage_pct": 4, "crit_pct": 1}'::jsonb, 3, 'base'),
 ('spear_t8', '꿰뚫는 눈', 'spear', '근접 피해 +16%, 비금·천상 요괴에게 +12% 더.', '{"damage_pct": 16}'::jsonb, 8, 'base'),
 ('spear_t13', '긴 호흡', 'spear', '근접 피해 +3%.', '{"damage_pct": 3}'::jsonb, 13, 'base'),
@@ -952,7 +967,7 @@ insert into public.world_skill_catalog(skill_id, skill_name, category, descripti
 ('formation_t50', '진법 대성', 'formation', '보호막 세기 +5% · 술법 피해 +3%.', '{"shield_pct": 5, "damage_pct": 3}'::jsonb, 50, 'base'),
 ('formation_c13a', '겹진', 'formation', '택일 기술(진 치기) · 산가지 진이 한 턴 더 간다(네 턴)', '{}'::jsonb, 13, 'a'),
 ('formation_c13b', '낌새 셈', 'formation', '택일 기술(셈 맞추기) · 요괴가 수법을 예고한 턴에 받는 피해 −30% 더', '{}'::jsonb, 13, 'b'),
-('formation_c24a', '두른 진', 'formation', '택일 기술(진 치기) · 산가지 진의 받는 피해 감소 35% → 45%', '{}'::jsonb, 24, 'a'),
+('formation_c24a', '두른 진', 'formation', '택일 기술(진 치기) · 산가지 진의 받는 피해 감소 25% → 35%', '{}'::jsonb, 24, 'a'),
 ('formation_c24b', '허를 셈', 'formation', '택일 기술(셈 맞추기) · 술법이 적중하면 20% 확률로 요괴를 휘청이게 해 다음 공격을 약하게 한다', '{}'::jsonb, 24, 'b'),
 ('formation_c30a', '진 안의 숨', 'formation', '택일 기술(진 치기) · 산가지 진 동안 턴마다 체력 +3', '{}'::jsonb, 30, 'a'),
 ('formation_c30b', '수 읽기', 'formation', '택일 기술(셈 맞추기) · 산가지 진 동안 술법 피해 +15%', '{}'::jsonb, 30, 'b'),
@@ -988,8 +1003,8 @@ create or replace function public.world_leech_of(p_uid uuid, p_dmg numeric) retu
  language plpgsql stable security definer set search_path = pg_catalog, public as $$
 begin
   if coalesce(p_dmg, 0) <= 0 then return 0; end if;
-  return least(case when 'bloodcraft_m50' = any (public.world_skill_procs(p_uid)) then 10 else 6 end,
-               greatest(1, round(p_dmg * (8 + least(6, public.world_eff_as(p_uid, 'leech_pct'))) / 100.0)))::int;
+  return least(case when 'bloodcraft_m50' = any (public.world_skill_procs(p_uid)) then 8 else 4 end,
+               greatest(1, round(p_dmg * (5 + least(6, public.world_eff_as(p_uid, 'leech_pct'))) / 100.0)))::int;
 end $$;
 select pg_temp.yh_own('public.world_leech_of(uuid, numeric)', 'fn_owner_field');
 select pg_temp.yh_share('public.world_leech_of(uuid, numeric)');
@@ -1638,9 +1653,9 @@ update public.world_patch_notes set body = body || $N$
 ## 3.4.0
 
 - 새 직업 셋이 생겼습니다.
-  - 혈기사: 도끼·대검을 드는 방패입니다(이목 +70). 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 세 턴 동안 보호막을 두릅니다.
+  - 혈기사: 도끼·대검을 드는 방패입니다(이목 +70). 근접 공격마다 준 피해의 일부를 체력으로 되찾고(피흡), 「피 갑주」로 제 체력을 깎아 세 턴 동안 보호막을 두르며 그 차례에 베어 듭니다.
   - 여명 창객: 언월도·장창을 드는 근접 공격수입니다. 연달아 공격할수록 「창끝 기세」가 겹으로 쌓여 세지고(다섯 겹까지), 방어·버티기·물품·이동을 하면 끊깁니다. 현장 토벌에서는 첫 공격에 선제로 한 번 더 찌르고, 「관통 찌르기」는 요괴 방어의 절반을 꿰뚫습니다.
-  - 진법가: 산가지·나경을 드는 치유사입니다. 다친 뒤 고치는 의무관과 달리 보호막과 피해 감소로 맞기 전에 지킵니다. 「산가지 진」은 세 턴 동안 받는 피해를 크게 줄입니다.
+  - 진법가: 산가지·나경을 드는 치유사입니다. 다친 뒤 고치는 의무관과 달리 보호막과 피해 감소로 맞기 전에 지킵니다. 「산가지 진」은 산가지를 날리며 세 턴 동안 받는 피해를 줄입니다.
   - 세 직업 모두 기술 계열(혈투·창술·진법), 협동 기술 넷, 원정 기술, 비무회 기술이 있습니다. 직업 퀘스트도 세 편씩 생겼습니다(혈기사 남명회 땅 · 진법가 흑련회 땅 · 여명 창객 수향연맹 땅).
   - 잘 듣는 요괴 갈래: 혈기사 거괴·갑각 · 여명 창객 비금·천상 · 진법가 금주·수귀.
   - 기본 옷도 직업마다 한 벌씩 생겼고, 옷 꾸러미에서도 나옵니다.

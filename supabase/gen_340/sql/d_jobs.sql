@@ -34,9 +34,9 @@ as $function$
 $function$;
 
 select pg_temp.yh_fix('world_job_skill_rules', array[$q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'))$q$, $q$ 'line', '{me}의 「휘파람」: 동무가 함께 달려들었다.'),
-    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 세 턴 동안 보호막 30을 두릅니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
-    'spearman', jsonb_build_object('name', '관통 찌르기', 'desc', '근접 ×1.6으로 찌르고 상대 방어의 절반을 무시합니다.', 'duel', jsonb_build_object('kind', 'pierce', 'n', 1, 'mul', 1.6), 'line', '{me}의 「관통 찌르기」: 창끝이 갑주 틈을 꿰었다.'),
-    'formation', jsonb_build_object('name', '산가지 진', 'desc', '세 턴 동안 받는 피해가 35% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.18), 'line', '{me}의 「산가지 진」: 다칠 자리를 미리 막아 기세 {n}을(를) 지켰다.'))$q$]);
+    'bloodknight', jsonb_build_object('name', '피 갑주', 'desc', '체력 15를 깎아 세 턴 동안 보호막 20을 두르고 그 차례에 베어 듭니다(보호막 세기 덤 적용). 그 안에 다 깨지면 깎은 체력의 절반을 돌려받습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.2), 'line', '{me}의 「피 갑주」: 제 피로 갑주를 둘러 기세 {n}을(를) 버텼다.'),
+    'spearman', jsonb_build_object('name', '관통 찌르기', 'desc', '근접 ×1.4로 찌르고 상대 방어의 절반을 무시합니다.', 'duel', jsonb_build_object('kind', 'pierce', 'n', 1, 'mul', 1.4), 'line', '{me}의 「관통 찌르기」: 창끝이 갑주 틈을 꿰었다.'),
+    'formation', jsonb_build_object('name', '산가지 진', 'desc', '산가지를 날리며(술법 ×0.7) 진을 쳐 세 턴 동안 받는 피해가 25% 줄고, 진이 걷힐 때 체력 10을 되찾습니다.', 'duel', jsonb_build_object('kind', 'heal', 'heal', 0.18), 'line', '{me}의 「산가지 진」: 다칠 자리를 미리 막아 기세 {n}을(를) 지켰다.'))$q$]);
 
 select pg_temp.yh_fix('world_solo_aid(text)', array[$q$
     when 'analyst'    then$q$, $q$
@@ -86,7 +86,7 @@ select pg_temp.yh_share('public.world_presence_cap(text)');
 
 select pg_temp.yh_fix('world_combat_stats', array[
   $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 ELSE 1 END;$q$,
-  $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'bloodknight' THEN 0.95 WHEN c.job_key = 'spearman' AND style = 'melee' THEN 1.12 ELSE 1 END;$q$,
+  $q$WHEN c.job_key = 'analyst' AND style = 'melee' THEN 1.18 WHEN c.job_key = 'bloodknight' THEN 0.95 WHEN c.job_key = 'spearman' AND style = 'melee' THEN 1.06 ELSE 1 END;$q$,
   $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'sealmaster' THEN 60$q$,
   $q$WHEN c.job_key = 'artificer' THEN 80 WHEN c.job_key = 'bloodknight' THEN 70 WHEN c.job_key = 'sealmaster' THEN 60$q$,
   $q$  pres := greatest(5, least(300, (1 + coalesce($q$, $q$  pres := greatest(5, least(public.world_presence_cap(c.job_key), (1 + coalesce($q$]);

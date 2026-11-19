@@ -16,8 +16,8 @@ create or replace function public.world_leech_of(p_uid uuid, p_dmg numeric) retu
  language plpgsql stable security definer set search_path = pg_catalog, public as $$
 begin
   if coalesce(p_dmg, 0) <= 0 then return 0; end if;
-  return least(case when 'bloodcraft_m50' = any (public.world_skill_procs(p_uid)) then 10 else 6 end,
-               greatest(1, round(p_dmg * (8 + least(6, public.world_eff_as(p_uid, 'leech_pct'))) / 100.0)))::int;
+  return least(case when 'bloodcraft_m50' = any (public.world_skill_procs(p_uid)) then 8 else 4 end,
+               greatest(1, round(p_dmg * (5 + least(6, public.world_eff_as(p_uid, 'leech_pct'))) / 100.0)))::int;
 end $$;
 select pg_temp.yh_own('public.world_leech_of(uuid, numeric)', 'fn_owner_field');
 select pg_temp.yh_share('public.world_leech_of(uuid, numeric)');
