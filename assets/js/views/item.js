@@ -330,7 +330,7 @@ export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ON
 function openResetIdentity() {
   const c = store.character || {};
   const m = openModal({ title: '환골탈태 서첩', body: `
-    <p class="muted small">직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 새 직업 무기가 하나도 없으면 시작 무기 하나를 받고, 무기 칸이 비면 가진 새 직업 무기를 저절로 낍니다. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.</p>
+    <p class="muted small">직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 무기 칸이 비면 가진 새 직업 무기 가운데 가장 높은 단계를 저절로 낍니다. 새 직업 무기가 하나도 없으면 맨손이 되니 미리 마련해 두세요. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.</p>
     <p class="hint" data-jobcd hidden></p>
     <h3 class="sub-h">직업</h3>
     <div class="choice-grid ri-grid">${JOB_ORDER.map(k => [k, JOBS[k]]).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>
@@ -361,7 +361,10 @@ function openResetIdentity() {
     if (job === 'tamer' && !pets) return toast('동무 목록을 불러오는 중입니다.', 'error');
     if (job === 'tamer' && !pet) return toast('데리고 다닐 꼬마 동무를 고르세요.', 'error');
     const petName = pet ? (pets.mine || []).find(p => p.id === pet)?.nick || PETS[pet]?.name || pet : '';
-    if (!(await ask(`${JOBS[job]?.name}(으)로 직업을 바꿀까요?${petName ? ` ${petName}와(과) 함께 다닙니다.` : ''} 서첩 하나를 쓰고, ${GD.jobChange?.cd_min || 60}분 동안은 다시 바꿀 수 없습니다.`, { title: '환골탈태', ok: '바꾸기' }))) return;
-    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac, p_pet: pet }); closeModal(); if (RAID_ON) rebirthScene(job, fac); return out; });
+    const armed = Object.entries(c.inventory || {}).some(([id, n]) => Number(n) > 0 && catItem(id)?.category === 'weapon' && weaponJobs(catItem(id)).includes(job));
+    if (!(await ask(`${JOBS[job]?.name}(으)로 직업을 바꿀까요?${petName ? ` ${petName}와(과) 함께 다닙니다.` : ''} 서첩 하나를 쓰고, ${GD.jobChange?.cd_min || 60}분 동안은 다시 바꿀 수 없습니다.${armed ? '' : `\n\n가방에 ${JOBS[job]?.name} 무기가 없습니다. 바꾸면 맨손이 되니, 무기를 먼저 마련해 두는 것이 좋습니다.`}`, { title: '환골탈태', ok: '바꾸기', alarm: !armed }))) return;
+    await guard(e.currentTarget, async () => { const out = await act('world_reset_identity', { p_job: job, p_faction: fac, p_pet: pet }); closeModal();
+      if (out?.no_weapon && await ask(`${JOBS[job]?.name}이(가) 들 수 있는 무기가 없어 지금은 맨손입니다. 상점·제작·거래소에서 무기를 마련해 가방 › 장비에서 끼우세요.`, { title: '무기가 없습니다', ok: '장비 보기', cancel: '닫기', alarm: true })) location.hash = '#/bag/equip';
+      else if (RAID_ON) rebirthScene(job, fac); return out; });
   };
 }

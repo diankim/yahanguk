@@ -1,4 +1,4 @@
-import { rarTag, openModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
+import { rarTag, openModal, closeModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { hit } from '../changes.js';
 import { load, loadPrices, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
@@ -148,9 +148,49 @@ export async function renderSmithy(box) {
   } catch (e) { body.innerHTML = errorBox(e.message); }
 }
 
+const MOVE_BOX = `<div class="enh-card enh-move"><div class="enh-head"><b>강화 옮기기</b><span class="muted small">한 사람 한 번</span></div>
+  <p class="muted small">강화한 무기의 강화 단계를 가방에 든 다른 무기로 옮깁니다. 받을 무기는 단계가 같거나 낮아야 하고, 옮긴 무기는 +0이 됩니다. 전·재료는 들지 않으며 한 사람에 한 번만 할 수 있습니다. 직업을 바꿔 쓸 수 없게 된 강화 무기를 새 직업 무기로 옮길 때 쓰세요.</p>
+  <div class="btn-row"><button class="btn" id="enh-move" data-here="강화 옮기기">${icon('refresh', 16)}<span>강화 옮기기</span></button></div></div>`;
+function bindMove(body, after) {
+  const b = $('#enh-move', body);
+  if (b) b.onclick = () => guard(b, async () => { await openMove(); after(); });
+}
+async function openMove() {
+  const info = await rpc('world_enhance_move_info');
+  if (info?.used) { const m = info.moved || {}; toast(`이미 강화 옮기기를 썼습니다(${nameOf(m.from)} → ${nameOf(m.to)} +${m.level}).`, 'warn'); return; }
+  const ws = info?.weapons || [];
+  registerNames(ws.map(w => [w.id, w.name]));
+  const froms = ws.filter(w => w.level > 0 && !w.locked);
+  if (!froms.length) { toast('가방에 강화한 무기가 없습니다. 옮길 무기를 가방에 넣고 오세요.', 'warn'); return; }
+  const job = store.character?.job_key;
+  const opt = w => `<option value="${esc(w.id)}">${esc(w.name)} · ${w.tier}단계${w.level ? ` · +${w.level}` : ''}${Array.isArray(w.jobs) && job && !w.jobs.includes(job) ? ' (지금 직업은 못 씀)' : ''}</option>`;
+  const m = openModal({ title: '강화 옮기기', body: `
+    <p class="muted small">한 사람에 한 번만 할 수 있습니다. 받을 무기는 단계가 같거나 낮아야 하고, 옮긴 무기는 +0이 됩니다.</p>
+    <label class="field"><span>옮길 무기(강화한 것)</span><select id="mv-from">${froms.map(opt).join('')}</select></label>
+    <label class="field"><span>받을 무기</span><select id="mv-to"></select></label>
+    <p class="hint" id="mv-why" hidden></p>
+    <div class="modal-actions"><button class="btn primary" id="mv-go">옮기기</button></div>` });
+  const fromSel = $('#mv-from', m), toSel = $('#mv-to', m), why = $('#mv-why', m), go = $('#mv-go', m);
+  const fill = () => {
+    const f = ws.find(w => w.id === fromSel.value);
+    const tos = ws.filter(w => w.id !== f.id && !w.locked && w.tier <= f.tier && w.level < f.level)
+      .sort((a, b) => (Array.isArray(b.jobs) && b.jobs.includes(job)) - (Array.isArray(a.jobs) && a.jobs.includes(job)) || b.tier - a.tier);
+    toSel.innerHTML = tos.map(opt).join('');
+    why.hidden = !!tos.length; why.textContent = tos.length ? '' : `가방에 ${f.tier}단계 이하이고 강화가 +${f.level}보다 낮은 다른 무기가 없습니다.`;
+    go.disabled = !tos.length;
+  };
+  fromSel.onchange = fill; fill();
+  go.onclick = async () => {
+    const f = fromSel.value, t = toSel.value;
+    const lv = ws.find(w => w.id === f)?.level;
+    if (!await ask(`${nameOf(f)}의 강화 +${lv}을(를) ${nameOf(t)}(으)로 옮깁니다. ${nameOf(f)}은(는) +0이 되고, 강화 옮기기는 다시 할 수 없습니다.`, { title: '강화를 옮길까요?', ok: '옮기기' })) return;
+    await guard(go, async () => { const r = await act('world_enhance_move', { p_from: f, p_to: t }); closeModal(); return r; });
+  };
+}
+
 async function enhancePane(body) {
   const q = await load('world_enhance_quote', undefined, { maxAge: 60000 });
-  if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword'); return; }
+  if (!q?.weapon) { body.innerHTML = empty('장착 중인 무기가 없습니다. 가방 › 장비에서 무기를 끼우고 오세요.', 'sword') + MOVE_BOX; bindMove(body, () => enhancePane(body)); return; }
   registerNames(Object.entries(q.names || {}));
   const have = q.have || {}, stored = q.stored || {}, items = Object.entries(q.items || {});
   const short = items.filter(([k, n]) => (have[k] || 0) < n);
@@ -166,8 +206,9 @@ async function enhancePane(body) {
       <div class="btn-row"><button class="btn primary" id="enh-go" data-here="강화" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(${WEAK_NAMES} 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>`;
+    <p class="muted small">장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(${WEAK_NAMES} 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>${MOVE_BOX}`;
   bindInfo(body);
+  bindMove(body, () => enhancePane(body));
   const go = $('#enh-go', body);
   if (go) go.onclick = async () => {
     if (!await ask(`${q.name} +${q.level + 1} 강화\n성공 확률 ${q.chance}% · ${fmt.jeon(q.gil)}\n${items.map(([k, n]) => `${nameOf(k)} ×${n}`).join(', ')}`, { title: '강화할까요?', ok: '강화하기' })) return;

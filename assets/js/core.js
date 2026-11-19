@@ -612,12 +612,12 @@ async function readStacks() {
 export const stackOf = id => stacks?.get(id) || 1;
 export const catOf = id => cats?.get(id) || '';
 export const kindChip = (id, cat) => { const c = cat || catOf(id); return c ? `<span class="kind-chip k-${esc(c)}">${esc(nameOf(c))}</span>` : ''; };
-let equipped = null, weaponStyle = 'melee';
+let equipped = null, weaponStyle = 'melee', weaponOn = true;
 async function loadEquipped() {
   try {
     const { data } = await db.from('world_character_equipment').select('item_id,slot').eq('owner_id', store.user.id); equipped = (data || []).map(r => r.item_id);
     const w = (data || []).find(r => r.slot === 'weapon');
-    weaponStyle = 'melee';
+    weaponStyle = 'melee'; weaponOn = !!w;
     if (w) {
       if (!stacksFresh) await loadStacks();
       if (wtypes) weaponStyle = wtypes.get(w.item_id) || 'melee';
@@ -630,6 +630,7 @@ export function brief(t, n = 42) { const s = String(t || '').split(/(?<=[.!?。]
 export const rarTag = r => `<span class="rar-tag r-${esc(r || 'common')}">${esc(nameOf(r || 'common'))}</span>`;
 export function equippedIds() { return equipped || []; }
 export function forgetEquipped() { equipped = null; }
+export const hasWeapon = () => equipped == null || weaponOn;
 export function bagUsed(c) {
   const inv = c?.inventory || {}, eq = (equipped || []).filter(id => Number(inv[id]) > 0).length;
   return Object.entries(inv).reduce((a, [id, n]) => a + Math.ceil(Math.max(0, Number(n) || 0) / stackOf(id)), 0) - eq;

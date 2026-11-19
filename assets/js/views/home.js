@@ -1,7 +1,7 @@
 import { yohwaDownNow } from '../hud.js';
 import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
-import { deathAt, gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf} from '../core.js';
+import { deathAt, gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf, hasWeapon } from '../core.js';
 import { face } from '../people.js';
 import { helpQ } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
@@ -296,6 +296,7 @@ function field(s, roster, blocked) {
           ${['mukjeok', 'gapgwi', 'baekya'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
         </div>
         <label class="quiet-toggle"><input type="checkbox" id="quiet-mode" ${quietOn() ? 'checked' : ''}><span><b>조용히 살피기</b> <small class="muted">요괴 조우 −${quietPct()}% · 꾸러미 −${Math.floor(quietPct() / 2)}% (기민, 최대 ${AGILE.quietCap}%)</small></span></label>
+        ${!hasWeapon() ? `<p class="hint warn gear-warn">${icon('sword', 14)} <span><b>무기가 없습니다</b> · 맨손으로는 제대로 싸울 수 없습니다. 상점·제작·거래소에서 지금 직업의 무기를 마련해 <a href="#/bag/equip">가방 › 장비</a>에서 끼우세요.</span></p>` : ''}
         ${(s.gear_warn || []).length ? `<p class="hint warn gear-warn">${icon('wrench', 14)} <span><b>닳은 장비</b> · ${s.gear_warn.map(g => `${esc(g.name)}(${g.dur > 0 ? `${g.dur}/${g.max}` : '부서짐'})`).join(', ')} — 부서진 장비는 효과가 없고, 4분의 1 아래면 성능이 20% 떨어집니다. 안전지대 대장간이나 수리 도구로 고치세요.</span></p>` : ''}
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
         ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
