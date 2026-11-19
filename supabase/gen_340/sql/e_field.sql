@@ -66,13 +66,14 @@ select pg_temp.yh_fix('world_battle_action', array[
     END IF;$q$,
 
   $q$    dmg := greatest(1, round(base * mul - mdef * 0.8));$q$,
-  $q$    dmg := greatest(1, round(base * mul - mdef * 0.8 * CASE WHEN skill_name = '관통 찌르기' AND 'spear_c43a' = ANY (sk) THEN 0 WHEN skill_name = '관통 찌르기' THEN 0.5 ELSE 1 END));$q$,
+  $q$    dmg := greatest(1, round(base * mul - mdef * 0.8 * CASE WHEN skill_name = '관통 찌르기' AND 'spear_c43a' = ANY (sk) THEN 0 WHEN skill_name = '관통 찌르기' THEN 0.5 ELSE 1 END));
+    IF coalesce((v_pfx ->> 'bsurge')::int, 0) > 0 THEN dmg := dmg + (v_pfx ->> 'bsurge')::int; lines := lines || jsonb_build_array('「갑주 되갚기」 막아 낸 피해를 되갚았다. +' || (v_pfx ->> 'bsurge')); v_pfx := v_pfx - 'bsurge'; END IF;$q$,
 
   $q$    a.current_hp := greatest(0, a.current_hp - dmg);
     lines := lines || jsonb_build_array(coalesce(skill_name,$q$,
   $q$    a.current_hp := greatest(0, a.current_hp - dmg);
     IF c.job_key = 'bloodknight' AND style = 'melee' AND dmg > 0 THEN
-      extra := least(CASE WHEN 'bloodcraft_m50' = ANY (sk) THEN 10 ELSE 6 END, greatest(1, round(dmg * (8 + public.world_status_effect_total('leech_pct')) / 100.0)));
+      extra := public.world_leech_of(uid, dmg);
       IF 'bloodcraft_c13a' = ANY (sk) AND random() < 0.25 THEN extra := extra * 2; END IF;
       IF coalesce((v_pfx ->> 'bk_last')::boolean, false) THEN extra := extra * 3; v_pfx := v_pfx - 'bk_last'; END IF;
       IF hp >= 100 AND 'bloodcraft_c30a' = ANY (sk) THEN
@@ -89,7 +90,7 @@ select pg_temp.yh_fix('world_battle_action', array[
       IF 'spear_c13b' = ANY (sk) AND random() < 0.2 AND a.current_hp > 0 THEN
         extra := greatest(1, round(dmg * 0.4)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra; lines := lines || jsonb_build_array('「반달 베기」 +' || extra);
       END IF;
-      IF 'spear_c24b' = ANY (sk) AND random() < 0.15 THEN v_fx := v_fx || jsonb_build_object('weak', 1); lines := lines || jsonb_build_array('「자루 쳐내기」 요괴가 휘청였다.'); END IF;
+      IF 'spear_c24b' = ANY (sk) AND random() < 0.15 THEN v_fx := v_fx || jsonb_build_object('weak', greatest(2, coalesce((v_fx ->> 'weak')::int, 0))); lines := lines || jsonb_build_array('「자루 쳐내기」 요괴가 휘청였다.'); END IF;
       IF 'spear_c30a' = ANY (sk) AND coalesce((v_pfx ->> 'chain')::int, 0) >= 3 THEN v_fx := v_fx || jsonb_build_object('marked', greatest(1, coalesce((v_fx ->> 'marked')::int, 0))); END IF;
       IF 'spear_c43b' = ANY (sk) THEN
         v_pfx := v_pfx || jsonb_build_object('spin', coalesce((v_pfx ->> 'spin')::int, 0) + 1);
@@ -99,7 +100,7 @@ select pg_temp.yh_fix('world_battle_action', array[
       END IF;
     END IF;
     IF c.job_key = 'formation' AND style = 'magic' AND dmg > 0 AND 'formation_c24b' = ANY (sk) AND random() < 0.2 THEN
-      v_fx := v_fx || jsonb_build_object('weak', 1); lines := lines || jsonb_build_array('「허를 셈」 요괴의 다음 수가 무뎌졌다.');
+      v_fx := v_fx || jsonb_build_object('weak', greatest(2, coalesce((v_fx ->> 'weak')::int, 0))); lines := lines || jsonb_build_array('「허를 셈」 요괴의 다음 수가 무뎌졌다.');
     END IF;
     IF first_atk AND c.job_key = 'spearman' AND style = 'melee' AND dmg > 0 AND a.current_hp > 0 THEN
       extra := greatest(1, round(dmg * 0.5)); a.current_hp := greatest(0, a.current_hp - extra); ex_total := ex_total + extra;
@@ -115,9 +116,10 @@ select pg_temp.yh_fix('world_battle_action', array[
 
   $q$        lines := lines || jsonb_build_array('「강기」가 ' || absorb || ' 피해를 막았다.');$q$,
   $q$        lines := lines || jsonb_build_array('보호막이 ' || absorb || ' 피해를 막았다.');
+        IF 'bloodcraft_c30b' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('babs', coalesce((v_pfx ->> 'babs')::int, 0) + absorb); END IF;
         IF (v_pfx ->> 'pshield')::int <= 0 AND v_pfx ? 'bk_paid' THEN
           IF (v_pfx ->> 'bk_paid')::int > 0 THEN hp := least(100, hp + ((v_pfx ->> 'bk_paid')::int / 2)); lines := lines || jsonb_build_array('피 갑주가 깨지며 깎았던 체력 일부가 돌아왔다.'); END IF;
-          IF 'bloodcraft_c30b' = ANY (sk) THEN v_pfx := v_pfx || jsonb_build_object('surge', least(40, coalesce((v_pfx ->> 'surge')::int, 0) + round(absorb * 0.3))); lines := lines || jsonb_build_array('「갑주 되갚기」 막아 낸 힘을 다음 공격에 싣는다.'); END IF;
+          IF 'bloodcraft_c30b' = ANY (sk) THEN v_pfx := (v_pfx - 'babs') || jsonb_build_object('bsurge', least(40, coalesce((v_pfx ->> 'bsurge')::int, 0) + round(coalesce((v_pfx ->> 'babs')::int, 0) * 0.3))); lines := lines || jsonb_build_array('「갑주 되갚기」 막아 낸 힘을 다음 공격에 싣는다.'); END IF;
           v_pfx := v_pfx - 'bk_paid';
         END IF;$q$,
 
