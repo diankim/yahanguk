@@ -1,7 +1,7 @@
 import { rpc, store, esc, icon, $, $$, toast, guard, ask, openLayer, isGM } from '../core.js';
 import { load } from './common.js';
 import { reportFlag } from '../reportflag.js';
-import { PAL, PAL_NAMES, SIZE_NAME, dimsOf, picURL, palOf, palText } from '../housing/drawing.js';
+import { DRAW_PAL, DRAW_NAMES, PAL_MAX, SIZE_NAME, dimsOf, picURL, palOf, palText } from '../housing/drawing.js';
 import { openColorPicker } from '../colorpick.js';
 
 let book = null;
@@ -65,16 +65,16 @@ export function openEditor(d, rules, done) {
     <div class="dr-ed-side">
       <div class="dr-tools">${[['pen', '붓'], ['fill', '채우기'], ['erase', '지우개']].map(([k, l]) => `<button class="chip-btn ${k === tool ? 'on' : ''}" data-tool="${k}">${l}</button>`).join('')}<button class="chip-btn" data-undo>되돌리기</button><button class="chip-btn" data-clear>모두 지우기</button></div>
       <div class="dr-pal"></div>
-      <div class="dr-tools"><button class="chip-btn" data-own>${icon('palette', 14)} 이 칸 색 직접 고르기</button><button class="chip-btn" data-reset>기본 색으로</button></div>
-      <p class="muted small">색 칸을 고른 뒤 「직접 고르기」로 원하는 색을 넣습니다. 그 칸으로 칠한 곳이 모두 새 색으로 바뀝니다.</p>
+      <div class="dr-tools"><button class="chip-btn" data-own>${icon('palette', 14)} 이 칸 색 직접 고르기</button><button class="chip-btn" data-add>${icon('plus', 14)} 색 칸 더하기</button><button class="chip-btn" data-drop>마지막 칸 빼기</button><button class="chip-btn" data-reset>기본 색으로</button></div>
+      <p class="muted small">색 칸을 고른 뒤 「직접 고르기」로 원하는 색을 넣습니다. 그 칸으로 칠한 곳이 모두 새 색으로 바뀝니다. 색 칸은 처음 16칸이고 32칸까지 늘릴 수 있습니다.</p>
       <div class="dr-prev"><img alt="미리 보기"><small class="muted">실제 크기 ${w}×${h}</small></div>
       <label class="field"><span>그림 이름 (${rules?.title_max || 12}자까지)</span><input name="title" maxlength="${rules?.title_max || 12}" value="${esc(title)}" autocomplete="off"></label>
       <div class="btn-row"><button class="btn primary" data-save>${icon('chest', 15)} 그림첩에 담기</button></div>
       <p class="muted small">${d.id ? '고친 그림은 걸어 둔 액자에도 바로 보입니다. 이미 보낸 사본은 그대로입니다.' : '담으면 오늘 그릴 수 있는 장수가 하나 줄어듭니다. 담은 뒤에는 언제든 고칠 수 있습니다.'}</p>
     </div></div>` });
   const cv = $('.dr-cv', layer), g = cv.getContext('2d'), prev = $('.dr-prev img', layer);
-  const swName = i => pal[i].toLowerCase() === PAL[i] ? PAL_NAMES[i] : `색 ${i + 1} · ${pal[i]}`;
-  const paintPal = () => { $('.dr-pal', layer).innerHTML = pal.map((c, i) => `<button class="dr-sw ${i === color ? 'on' : ''}" data-c="${i}" style="--c:${c}" title="${esc(swName(i))}" aria-label="${esc(swName(i))}"></button>`).join(''); };
+  const swName = i => pal[i].toLowerCase() === DRAW_PAL[i] ? DRAW_NAMES[i] : `색 ${i + 1} · ${pal[i]}`;
+  const paintPal = () => { $('[data-add]', layer).disabled = pal.length >= PAL_MAX; $('[data-drop]', layer).disabled = pal.length <= 16; $('.dr-pal', layer).innerHTML = pal.map((c, i) => `<button class="dr-sw ${i === color ? 'on' : ''}" data-c="${i}" style="--c:${c}" title="${esc(swName(i))}" aria-label="${esc(swName(i))}"></button>`).join(''); };
   paintPal();
   const fit = () => {
     const room = Math.min(($('.dr-ed-main', layer).getBoundingClientRect().width || 320) - 4, 520);
@@ -83,7 +83,7 @@ export function openEditor(d, rules, done) {
   const paint = () => {
     const cs = Number(cv.dataset.cs || 10);
     g.fillStyle = '#f6ead0'; g.fillRect(0, 0, cv.width, cv.height);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const ch = px[y * w + x]; if (ch !== '.') { g.fillStyle = pal[parseInt(ch, 16)]; g.fillRect(x * cs, y * cs, cs, cs); } }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const ch = px[y * w + x]; if (ch !== '.') { g.fillStyle = pal[parseInt(ch, 32)]; g.fillRect(x * cs, y * cs, cs, cs); } }
     g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 1; g.beginPath();
     for (let x = 1; x < w; x++) { g.moveTo(x * cs + .5, 0); g.lineTo(x * cs + .5, cv.height); }
     for (let y = 1; y < h; y++) { g.moveTo(0, y * cs + .5); g.lineTo(cv.width, y * cs + .5); }
@@ -91,7 +91,7 @@ export function openEditor(d, rules, done) {
     prev.src = picURL({ s, px: px.join(''), pal: palText(pal) }, 2);
   };
   const cellAt = e => { const r = cv.getBoundingClientRect(); const x = Math.floor((e.clientX - r.left) / r.width * w), y = Math.floor((e.clientY - r.top) / r.height * h); return x >= 0 && y >= 0 && x < w && y < h ? [x, y] : null; };
-  const ink = () => tool === 'erase' ? '.' : color.toString(16);
+  const ink = () => tool === 'erase' ? '.' : color.toString(32);
   const fill = (x, y) => {
     const from = px[y * w + x], to = ink(); if (from === to) return;
     const q = [[x, y]];
@@ -108,9 +108,16 @@ export function openEditor(d, rules, done) {
   const stop = () => { drawing = false; };
   cv.addEventListener('pointerup', stop); cv.addEventListener('pointercancel', stop);
   layer.addEventListener('click', e => {
-    const t = e.target.closest('[data-tool],[data-c],[data-undo],[data-clear],[data-save],[data-own],[data-reset]'); if (!t) return;
+    const t = e.target.closest('[data-tool],[data-c],[data-undo],[data-clear],[data-save],[data-own],[data-reset],[data-add],[data-drop]'); if (!t) return;
+    if (t.dataset.add != null) { if (pal.length < PAL_MAX) { pal.push(DRAW_PAL[pal.length]); color = pal.length - 1; paintPal(); } return; }
+    if (t.dataset.drop != null) {
+      const k = (pal.length - 1).toString(32);
+      if (pal.length <= 16) return;
+      if (px.includes(k)) return toast('마지막 색 칸으로 칠한 곳이 있어 뺄 수 없습니다. 먼저 다른 색으로 덮어 주세요.', 'error');
+      pal.pop(); if (color >= pal.length) color = pal.length - 1; paintPal(); return;
+    }
     if (t.dataset.own != null) { openColorPicker(pal[color], { title: `색 ${color + 1}` }).then(c => { if (c) { pal[color] = c.toLowerCase(); paintPal(); paint(); } }); return; }
-    if (t.dataset.reset != null) { PAL.forEach((c, i) => { pal[i] = c; }); paintPal(); return paint(); }
+    if (t.dataset.reset != null) { pal.forEach((_, i) => { pal[i] = DRAW_PAL[i]; }); paintPal(); return paint(); }
     if (t.dataset.tool) { tool = t.dataset.tool; $$('[data-tool]', layer).forEach(b => b.classList.toggle('on', b === t)); return; }
     if (t.dataset.c) { color = Number(t.dataset.c); if (tool === 'erase') { tool = 'pen'; $$('[data-tool]', layer).forEach(b => b.classList.toggle('on', b.dataset.tool === 'pen')); } paintPal(); return; }
     if (t.dataset.undo != null) { const u = undo.pop(); if (u) { px.splice(0, px.length, ...u.split('')); paint(); } return; }

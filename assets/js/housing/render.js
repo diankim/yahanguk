@@ -152,7 +152,7 @@ export function makeRoom(N, defs) {
     if ((pic?.px || pic?.rgb) && d.paper) {
       const [pw, ph] = pic.rgb ? [pic.w, pic.h] : dimsOf(pic.s), top = it.z + d.paper[1] + ph;
       for (let v = 0; v < ph; v++) for (let u = 0; u < pw; u++) {
-        const col = pic.rgb ? pic.rgb[v * pw + u] : (c => !c || c === '.' ? null : palOf(pic)[parseInt(c, 16)] || '#000000')(pic.px[v * pw + u]); if (!col) continue;
+        const col = pic.rgb ? pic.rgb[v * pw + u] : (c => !c || c === '.' ? null : palOf(pic)[parseInt(c, 32)] || '#000000')(pic.px[v * pw + u]); if (!col) continue;
         const t = it.t + d.paper[0] + (it.side === 'R' ? u : pw - 1 - u) / 16;
         fillPoly(layer, wallPoly(it.side, t, top - v - 1, 1 / 16, 1), P(col));
       }
