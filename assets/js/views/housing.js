@@ -70,7 +70,8 @@ function drawClosed() {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>아직 별채가 없습니다</h1></div></div>
     <div class="notice">${icon('help', 18)}<div><b>본부 객사의 「객사 별채」 퀘스트</b><span>주 이야기 4장 「북령의 얼음 인장」을 마치고 Lv15가 되면 본부 객사의 살림꾼 순덕에게서 받을 수 있습니다. 부적목·황지를 채집하고 오방색 방석을 만든 뒤 수리비 1,000전을 치르면 6×6 별채와 기본 세트 「단청 별채」를 받습니다.</span></div></div>
     ${panel('지금 내 상태', `<ul class="hs-req"><li class="${c.level >= 15 ? 'ok' : 'no'}">레벨 15 이상 (지금 Lv.${c.level || 1})</li><li class="${q.step ? 'ok' : ''}">퀘스트 ${q.done ? '마침' : q.step ? `${q.step}장면까지 보고함` : '받지 않음'}</li></ul>
-      <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>`, { ico: 'scroll' })}
+      <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>
+      <div class="btn-row"><button class="btn small" id="hs-go-dorm">${icon('map', 14)} 본부 객사 지도에서 보기</button><button class="btn small" id="hs-go-log">${icon('scroll', 14)} 일지 › 보조 퀘스트</button></div>`, { ico: 'scroll' })}
     ${mergePanel()}
     ${panel('그림첩', `<p class="muted small">별채가 없어도 도트 그림을 그려 모으고 친구에게 보낼 수 있습니다. 별채를 얻으면 그림 액자에 걸 수 있습니다.</p><button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button>`, { ico: 'palette' })}
     ${panel('초상 화첩', `<p class="muted small">이야기에서 만난 인물의 초상을 모읍니다. 별채가 없어도 볼 수 있고, 액자는 별채를 얻은 뒤에 꺼낼 수 있습니다.</p><button class="btn small" id="hs-portrait">${icon('scroll', 15)} 초상 화첩</button>`, { ico: 'scroll' })}
@@ -80,6 +81,8 @@ function drawClosed() {
   $('#hs-pets')?.addEventListener('click', openPets);
   $('#hs-book')?.addEventListener('click', () => openGallery());
   $('#hs-portrait')?.addEventListener('click', () => import('./portraits.js').then(m => m.openPortraitBook()));
+  $('#hs-go-dorm')?.addEventListener('click', () => import('./map.js').then(m => { m.focusRegion('hq_dorm'); window.yahangGo('map', 'world'); }));
+  $('#hs-go-log')?.addEventListener('click', () => window.yahangGo('log', 'side'));
 }
 
 const counts = placedCounts;
