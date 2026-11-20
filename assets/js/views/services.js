@@ -529,7 +529,7 @@ export async function renderStorage(box) {
       <div class="seg-mini" role="tablist">${ro ? '' : `<button class="${mode === 'put' ? 'on' : ''}" data-mode="put">맡기기</button>`}<button class="${mode === 'take' ? 'on' : ''}" data-mode="take">${ro ? '보관 물품' : '꺼내기'}</button><button class="${mode === 'grow' ? 'on' : ''}" data-mode="grow">넓히기</button></div>
       ${listFilterHtml(storeFilt, { label: '창고 물품 찾기', cls: 'st-filter', hidden: mode === 'grow' })}
       <section data-list="put" ${mode === 'put' ? '' : 'hidden'}>
-        <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·강화한 장비의 마지막 하나·임무 물품은 맡길 수 없습니다.</p>
+        <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·임무 물품은 맡길 수 없습니다. 강화한 장비는 맡겨도 강화 단계가 그대로 남습니다.</p>
         <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', putMax(k) <= 0 ? '<span class="bad">창고에 자리가 없습니다</span>' : equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
       </section>
       <section data-list="take" ${mode === 'take' ? '' : 'hidden'}>
