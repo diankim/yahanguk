@@ -14,7 +14,8 @@ import { nickTag, noteOf, setNote } from '../people.js';
 
 const RANKS = [['combat', '전투'], ['gathering', '채집'], ['crafting', '제작'], ['investigation', '조사']];
 
-const sealGlyph = ch => `<i><svg viewBox="0 0 15 15" aria-hidden="true"><text x="7.5" y="10.9" text-anchor="middle">${ch}</text></svg></i>`;
+let sealN = 0;
+const sealGlyph = ch => { const id = `sg${++sealN}`; return `<i><svg viewBox="0 0 15 15" aria-hidden="true"><mask id="${id}"><rect width="15" height="15" fill="#fff"/><text x="7.5" y="11.4" text-anchor="middle" fill="#000">${ch}</text></mask><rect width="15" height="15" rx="3" fill="currentColor" mask="url(#${id})"/></svg></i>`; };
 export async function openCharacterCard(id) {
   if (!id) return;
   const opts = { title: '조사원 정보', body: '<div class="char-card"><div class="loading"><span class="spinner"></span>불러오는 중…</div></div>' };

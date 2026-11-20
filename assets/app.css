@@ -1987,11 +1987,11 @@ small.own-tag { display: block; font-size: calc(11px * var(--fz, 1)); line-heigh
 .pc-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
 .fchip.fseal { padding-left: 3px; }
 .fchip.fseal::before { display: none; }
-.fchip.fseal i { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 3px; background: var(--fc); color: #fff; font-style: normal; font-family: var(--font-serif, serif); font-weight: 700; font-size: calc(10.5px * var(--fz, 1)); line-height: 1; flex: none; }
+.pc-chips i { display: block; width: calc(12px * var(--fz, 1)); height: calc(12px * var(--fz, 1)); flex: none; color: var(--fc); }
 .pc-chips .fchip, .pc-chips .chip { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: calc(11px * var(--fz, 1)); padding: 1px 6px 1px 3px; min-height: 0; line-height: 1.5; }
 .pc-chips i svg { display: block; width: 100%; height: 100%; }
-.pc-chips i text { fill: currentColor; font-family: var(--font-serif, serif); font-weight: 700; font-size: 10.5px; }
-.pc-chips .tn-badge i { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 3px; background: var(--gold); color: var(--bg, #fff); font-style: normal; font-family: var(--font-serif, serif); font-weight: 700; font-size: calc(10.5px * var(--fz, 1)); line-height: 1; flex: none; }
+.pc-chips i text { font-style: normal; font-family: var(--font-serif, serif); font-weight: 900; font-size: 11.5px; }
+.pc-chips .tn-badge i { color: var(--gold); }
 .friend-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 4px; border-radius: 50%; background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); vertical-align: middle; }
 b.contest { color: var(--warn); font-weight: 600; }
 .infl-mine { cursor: help; }
