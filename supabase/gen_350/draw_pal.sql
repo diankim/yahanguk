@@ -46,7 +46,9 @@ begin
   drop function public.world_drawing_save(bigint, text, text, text);
   execute src;
 end $d$;
+grant create on schema public to fn_owner_field;
 alter function public.world_drawing_save(bigint, text, text, text, text) owner to fn_owner_field;
+revoke create on schema public from fn_owner_field;
 revoke all on function public.world_drawing_save(bigint, text, text, text, text) from public, anon;
 grant execute on function public.world_drawing_save(bigint, text, text, text, text) to authenticated, service_role;
 
