@@ -32,3 +32,6 @@ $n$)
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124050000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
+
+update public.world_patch_notes set body = rtrim(body, E'\n') || E'\n- 조사원 카드와 별채 동무 창에서 몸이 납작한 동무(새끼 악어 등)가 다른 동무보다 훨씬 크게 늘어나 보이던 것을 고쳤습니다.\n'
+ where note_id = '3.5.0' and position('몸이 납작한 동무' in body) = 0;
