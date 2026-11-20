@@ -4,6 +4,7 @@ import { feastBandRow, bindFeastBand } from '../feast.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
+import { spearRing, spearInner, spearTitle, spearSet, isSpear } from './fightui.js';
 import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, FX_NAME, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemSectionsHtml, battleItems, itemTray,
   resultBox, reloadCharacter, ammoHtml, ammoWarn, settleFight, untilText, tickUntil, mobileLog, newestFirst, atLogEdge, logRow, fitLog, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, drawLater } from './fightui.js';
 import { catItem } from './common.js';
@@ -233,7 +234,7 @@ function actionsShell(me) {
     <div class="raid-out" id="raid-out" hidden><b id="raid-out-title"></b><span id="raid-out-text"></span></div>
     <div class="raid-me" id="raid-me"></div>
     <div class="raid-buttons">
-      <button class="btn primary" data-act="attack">${icon('sword', 16)}<span>공격</span></button>
+      ${isSpear() ? `<button class="btn primary sp-atk" data-act="attack" title="${esc(spearTitle(me?.fx?.spch))}">${spearRing(me?.fx?.spch, spearInner('공격', me?.fx?.spch))}</button>` : `<button class="btn primary" data-act="attack">${icon('sword', 16)}<span>공격</span></button>`}
       <button class="btn" data-act="guard">${icon('shield', 16)}<span>방어</span></button>
       <button class="btn" id="raid-items" type="button">${icon('heart', 16)}<span>물품</span></button>
       <button class="btn raid-coop-open" id="raid-coop-open" type="button">${icon('users', 16)}<span>기술</span></button>
@@ -247,6 +248,7 @@ function coopButtons(me) {
 }
 function patchActions(me, members) {
   const box = $('#raid-me', el); if (!box) return;
+  spearSet($('.sp-atk', el), me?.fx?.spch);
   const tgt = target && members.some(m => m.id === target) ? target : members.find(m => m.me)?.id;
   const tName = members.find(m => m.id === tgt)?.name || '나';
   const mine = members.find(m => m.me), spName = spOf()[0];

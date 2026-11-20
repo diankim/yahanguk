@@ -3,6 +3,7 @@ import { chip } from './common.js';
 import { USABLE } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GAMEDATA } from '../gamedata.js';
+import { spearRing, spearInner, spearTitle } from './fightui.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
@@ -61,7 +62,7 @@ function draw(fresh = []) {
   const ready = Number(b.pfx?.skill_ready || 0), turnNow = Number(b.turn || 0) + 1;
   const skillWait = Math.max(0, ready - turnNow);
   const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = GAMEDATA.jobSkillCost?.[c.job_key] ?? 12;
-  const pf = b.pfx || {}, myChips = [pf.chain > 0 && c.job_key === 'spearman' ? chip(`${GAMEDATA.spear?.name || '창끝 기세'} ${pf.chain}겹`, 'ok') : '', pf.pshield > 0 ? chip(`보호막 ${pf.pshield}`, 'ok') : '', pf.zin > 0 ? chip(`산가지 진 ${pf.zin}턴`, 'ok') : ''].join('');
+  const pf = b.pfx || {}, myChips = [pf.pshield > 0 ? chip(`보호막 ${pf.pshield}`, 'ok') : '', pf.zin > 0 ? chip(`산가지 진 ${pf.zin}턴`, 'ok') : ''].join('');
   const inv = c.inventory || {};
   const log = (b.log || []).slice(-8);
   host.innerHTML = `
@@ -90,7 +91,8 @@ function draw(fresh = []) {
       ${b.sneak != null ? `<div class="hint accent sneak-ask" id="sneak-ask">${icon('eye', 16)}<span><b>기척을 숨기겠습니까?</b> 성공 ${b.sneak}% · 실패하면 요괴가 먼저 덤벼듭니다. 탐색력은 돌아오지 않습니다.</span>
         <span class="btn-row"><button class="btn small primary" data-sneak>기척 숨기기</button><button class="btn small" data-sneak-no>맞서기</button></span></div>` : ''}
       <div class="actions ${callOpt ? 'has-call' : ''}" id="actions">
-        <button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>
+        ${c.job_key === 'spearman' ? `<button class="act primary sp-atk" data-a="attack" title="${esc(`${w.name} · ${spearTitle(pf.chain)}`)}">${spearRing(pf.chain, spearInner(`${STYLE[w.type] || '근접'} 공격`, pf.chain, true))}<i class="cd"></i></button>`
+          : `<button class="act primary" data-a="attack">${icon('sword', 20)}<b>${STYLE[w.type] || '근접'} 공격</b><small>${esc(w.name)}</small><i class="cd"></i></button>`}
         <button class="act" data-a="skill" ${medUsed || skillWait ? 'data-wait="' + (medUsed ? 99 : skillWait) + '"' : ''}>${icon('spark', 20)}<b>${esc(skill[0])}</b><small>${medUsed ? '이번 전투에 씀' : skillWait ? `${skillWait}턴 뒤` : `${c.job_key === 'bloodknight' ? '체력 15 · ' : ''}${spOf()[0]} ${skillCost}`}</small><i class="cd"></i></button>
         <button class="act" data-a="guard">${icon('shield', 20)}<b>방어</b><small>피해 크게 감소 · ${spOf()[0]} +4</small><i class="cd"></i></button>
         <button class="act" data-a="item">${icon('plus', 20)}<b>물품</b><small>회복·정화·영력·기력</small><i class="cd"></i></button>

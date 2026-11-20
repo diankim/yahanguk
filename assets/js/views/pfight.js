@@ -3,6 +3,7 @@ import { loading, errorBox, chip } from './common.js';
 import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSectionsHtml, itemTray, resultBox, settleFight, tickUntil, serverClock,
   mobileLog, newestFirst, keepLogScroll, logRow, jobName, fightCol, fitFight, unfitFight, drawLater } from './fightui.js';
 import { INTENT, SKILL, trayList, weakNote } from './battle.js';
+import { spearRing, spearInner, spearTitle } from './fightui.js';
 import { mountMeter } from './meter.js';
 import { clearFightNotes } from '../settings.js';
 
@@ -128,7 +129,8 @@ function actHtml(s, b, c) {
   return `<section class="panel raid-act ${s.my_turn ? 'my-turn' : ''}"><header class="panel-head"><h2>${icon('sword', 16)} ${s.my_turn ? '내 차례' : '내 행동'}</h2><small class="muted">${s.my_turn ? '고르면 바로 풀립니다' : '차례가 오면 단추가 켜집니다'}</small></header><div class="panel-body">
     <div class="raid-me">${vitHtml('체력', c.health, 'hp', c.health < 35)}${vitHtml(spOf()[0], c.spiritual_power, spOf()[1])}${vitHtml('정신', c.mental, 'mp')}</div>
     <div class="raid-buttons pf-btns">
-      <button class="btn primary ${on('attack')}" data-pf="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>
+      ${c.job_key === 'spearman' ? `<button class="btn primary sp-atk ${on('attack')}" data-pf="attack" ${off} title="${esc(spearTitle(b.pfx?.chain))}">${spearRing(b.pfx?.chain, spearInner('공격', b.pfx?.chain))}</button>`
+        : `<button class="btn primary ${on('attack')}" data-pf="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>`}
       <button class="btn ${on('skill')}" data-pf="skill" ${medUsed || wait || off ? 'disabled' : ''}>${icon('spark', 16)}<span>${esc(skill[0])}${medUsed ? ' (씀)' : wait ? ` (${wait}차례 뒤)` : ''}</span></button>
       <button class="btn ${on('guard')}" data-pf="guard" ${off}>${icon('shield', 16)}<span>방어</span></button>
       <button class="btn ${on('item')}" id="pf-items" type="button" ${off}>${icon('heart', 16)}<span>물품</span></button>

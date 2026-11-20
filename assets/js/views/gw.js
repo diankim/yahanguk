@@ -1,6 +1,7 @@
 import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
 import { GW_DAILY, UG_RESULT } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
+import { spearRing, spearInner, spearTitle, isSpear } from './fightui.js';
 import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, coopBtn, itemListHtml, itemGroups, itemTray, resultBox,
   reloadCharacter, ammoHtml, ammoWarn, settleFight, tickUntil, serverClock, mobileLog, newestFirst, keepLogScroll, logRow, fightCol, fitFight, unfitFight, jobName, showResult, soloAidHtml, askPartySize, partyHere, drawLater } from './fightui.js';
 import { clearFightNotes } from '../settings.js';
@@ -260,7 +261,8 @@ function actHtml(s, me) {
     <div class="raid-me">${vitHtml('체력', hp, 'hp', hp < 35)}${vitHtml(spOf()[0], sp, spOf()[1])}${vitHtml('정신', c.mental, 'mp')}${ammoHtml(s.ammo)}${s.solo ? soloAidHtml(s.solo.dmg, s.solo.guard, s.solo.falls) : ''}
       <div class="raid-mine"><span class="rm-txt">대상 <b>${esc(tName)}</b>${a ? ` · 이번 라운드 <b>${esc(actName(s, a))}</b>` : ''}</span><span class="rm-fx">${fxChips(me.fx)}</span></div></div>
     <div class="raid-buttons gw-btns">
-      <button class="btn primary ${on('attack')}" data-gw="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>
+      ${isSpear() ? `<button class="btn primary sp-atk ${on('attack')}" data-gw="attack" ${off} title="${esc(spearTitle(s.spch))}">${spearRing(s.spch, spearInner('공격', s.spch))}</button>`
+        : `<button class="btn primary ${on('attack')}" data-gw="attack" ${off}>${icon('sword', 16)}<span>공격</span></button>`}
       <button class="btn ${on('guard')}" data-gw="guard" ${off}>${icon('shield', 16)}<span>방어</span></button>
       <button class="btn ${on('brace')}" data-gw="brace" ${off} title="몸을 낮춰 막기만 합니다.${s.boss === 'gwiheo' && !ult() ? ' 쏟아지는 물살·소용돌이에 방어보다 강합니다' : ''}">${icon('down', 16)}<span>버티기</span></button>
       <button class="btn ${on('item')}" id="gw-items" type="button" ${off} title="${free ? '체력 회복품을 마음껏 씁니다' : `체력 회복품을 한 싸움에 ${ult() ? (GD.boss?.[s.board?.ug?.board || s.boss]?.ultimate?.items ?? 3) : 2}개까지 씁니다`}(나 또는 고른 동료)">${icon('heart', 16)}<span>물품${free ? '' : ` ${left}`}</span></button>

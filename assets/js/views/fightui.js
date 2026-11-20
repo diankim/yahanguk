@@ -5,11 +5,25 @@ import { baseOf, isHq, haveOf } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { weakNote } from './battle.js';
 const SURE = GD.coopRules?.sure_crit || 2;
+const SP_MAX = GD.spear?.max ?? 5, SP_NAME = GD.spear?.name || '창끝 기세';
+export const isSpear = () => store.character?.job_key === 'spearman';
+const spK = n => Math.max(0, Math.min(SP_MAX, Math.floor(Number(n) || 0)));
+const spSegs = k => Array.from({ length: SP_MAX }, (_, i) => `<circle class="${i < k ? 'on' : ''}" cx="22" cy="22" r="19.6" pathLength="${SP_MAX * 10}" stroke-dasharray="8 ${SP_MAX * 10 - 8}" stroke-dashoffset="${-i * 10 - 1}"/>`).join('');
+export const spearTitle = n => `${SP_NAME} ${spK(n)}/${SP_MAX} · 연달아 공격할수록 쌓이고, 방어·버티기·물품·이동하면 끊깁니다`;
+export const spearRing = (n, inner) => `<span class="sp-ring" data-sp="${spK(n)}"><svg viewBox="0 0 44 44" aria-hidden="true"><g transform="rotate(-90 22 22)">${spSegs(spK(n))}</g></svg><span class="sp-in">${inner}</span></span>`;
+export const spearInner = (label, n, big = false) => `${big ? icon('sword', 13) : ''}<b>${esc(label)}</b><small class="sp-n">${big ? '기세 ' : ''}${spK(n)}/${SP_MAX}</small>`;
+export function spearSet(btn, n) {
+  if (!btn) return;
+  const k = spK(n), r = btn.querySelector('.sp-ring'); if (!r || r.dataset.sp === String(k)) return;
+  r.dataset.sp = String(k); btn.title = spearTitle(k);
+  r.querySelectorAll('circle').forEach((c, i) => c.classList.toggle('on', i < k));
+  const t = r.querySelector('.sp-n'); if (t) t.textContent = t.textContent.replace(/\d+\/\d+/, `${k}/${SP_MAX}`);
+}
 
 export const FX_NAME = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', critnext: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '철벽', guard: '방어', bound: '사슬',
-  expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임', pet_fetch: '물어 와', pet_x2: '한 몸 사냥', spch: '창끝 기세' };
+  expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임', pet_fetch: '물어 와', pet_x2: '한 몸 사냥' };
 export const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vital', critnext: 'vital', evade: 'dodge', shield: 'bubble', cover: 'hand', gward: 'talisman', taunt: 'star', guard: 'shield', bound: 'chain',
-  expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward', block: 'hand', pet_fetch: 'heart', pet_x2: 'heart', spch: 'bolt' };
+  expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward', block: 'hand', pet_fetch: 'heart', pet_x2: 'heart' };
 export const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 동안).', might: '주는 피해가 늘어난다(정해진 횟수 동안).', crit: '치명타가 더 잘 터진다.', crit_next: `다음 공격이 반드시 치명타로 들어가고, 치명타 피해가 ${SURE}배가 된다.`, critnext: `다음 공격이 반드시 치명타로 들어가고, 치명타 피해가 ${SURE}배가 된다.`,
   evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음에 받는 공격 한 번의 피해를 절반으로 줄이고 정신을 지킨다.',
   taunt: '요괴의 눈길을 끌어 대신 맞고, 받는 피해가 줄어든다.', guard: '방어 태세 — 다음 공격의 피해가 줄어든다.', bound: '사슬에 묶여 다음 공격의 피해가 절반이 된다.',
