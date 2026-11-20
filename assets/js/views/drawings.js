@@ -65,8 +65,8 @@ export function openEditor(d, rules, done) {
     <div class="dr-ed-side">
       <div class="dr-tools">${[['pen', '붓'], ['fill', '채우기'], ['erase', '지우개']].map(([k, l]) => `<button class="chip-btn ${k === tool ? 'on' : ''}" data-tool="${k}">${l}</button>`).join('')}<button class="chip-btn" data-undo>되돌리기</button><button class="chip-btn" data-clear>모두 지우기</button></div>
       <div class="dr-pal"></div>
-      <div class="dr-tools"><button class="chip-btn" data-own>${icon('palette', 14)} 이 칸 색 직접 고르기</button><button class="chip-btn" data-add>${icon('plus', 14)} 색 칸 더하기</button><button class="chip-btn" data-drop>마지막 칸 빼기</button><button class="chip-btn" data-reset>기본 색으로</button></div>
-      <p class="muted small">색 칸을 고른 뒤 「직접 고르기」로 원하는 색을 넣습니다. 그 칸으로 칠한 곳이 모두 새 색으로 바뀝니다. 색 칸은 처음 16칸이고 32칸까지 늘릴 수 있습니다.</p>
+      <div class="dr-paltools"><button class="chip-btn" data-own>색 바꾸기</button><button class="chip-btn" data-add>색 더하기</button><button class="chip-btn" data-drop>색 빼기</button><button class="chip-btn" data-reset>기본색으로</button></div>
+      <p class="muted small">색 칸을 고르고 「색 바꾸기」로 원하는 색을 넣습니다. 그 칸으로 칠한 곳이 모두 새 색으로 바뀝니다. 「색 더하기」로 32칸까지 늘리고, 「색 빼기」는 고른 칸을 뺍니다(16칸까지).</p>
       <div class="dr-prev"><img alt="미리 보기"><small class="muted">실제 크기 ${w}×${h}</small></div>
       <label class="field"><span>그림 이름 (${rules?.title_max || 12}자까지)</span><input name="title" maxlength="${rules?.title_max || 12}" value="${esc(title)}" autocomplete="off"></label>
       <div class="btn-row"><button class="btn primary" data-save>${icon('chest', 15)} 그림첩에 담기</button></div>
@@ -111,10 +111,10 @@ export function openEditor(d, rules, done) {
     const t = e.target.closest('[data-tool],[data-c],[data-undo],[data-clear],[data-save],[data-own],[data-reset],[data-add],[data-drop]'); if (!t) return;
     if (t.dataset.add != null) { if (pal.length < PAL_MAX) { pal.push(DRAW_PAL[pal.length]); color = pal.length - 1; paintPal(); } return; }
     if (t.dataset.drop != null) {
-      const k = (pal.length - 1).toString(32);
       if (pal.length <= 16) return;
-      if (px.includes(k)) return toast('마지막 색 칸으로 칠한 곳이 있어 뺄 수 없습니다. 먼저 다른 색으로 덮어 주세요.', 'error');
-      pal.pop(); if (color >= pal.length) color = pal.length - 1; paintPal(); return;
+      if (px.includes(color.toString(32))) return toast('고른 색으로 칠한 곳이 있어 뺄 수 없습니다. 먼저 다른 색으로 덮어 주세요.', 'error');
+      for (let i = 0; i < px.length; i++) if (px[i] !== '.') { const n = parseInt(px[i], 32); if (n > color) px[i] = (n - 1).toString(32); }
+      undo.length = 0; pal.splice(color, 1); if (color >= pal.length) color = pal.length - 1; paintPal(); return paint();
     }
     if (t.dataset.own != null) { openColorPicker(pal[color], { title: `색 ${color + 1}` }).then(c => { if (c) { pal[color] = c.toLowerCase(); paintPal(); paint(); } }); return; }
     if (t.dataset.reset != null) { pal.forEach((_, i) => { pal[i] = DRAW_PAL[i]; }); paintPal(); return paint(); }

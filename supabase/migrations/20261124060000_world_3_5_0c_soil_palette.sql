@@ -59,7 +59,7 @@ $n$  if not coalesce((public.world_meisho_when(m.meisho_id) ->> 'open')::boolean
 select pg_temp.rf('public.world_bijang_rules()'::regprocedure, array[
 $o$"open": {"cap": 60, "pct": 30, "gear": "mz_soil_pct"}$o$, $n$"open": {"cap": 70, "pct": 40, "gear": "mz_soil_pct"}$n$]);
 
-update public.world_patch_notes set body = rtrim(body, E'\n') || E'\n- 명소의 「흙 살피기」는 이제 명소가 열려 있는 동안에만 할 수 있습니다(명소마다 하루 한 번은 그대로).\n- 비장도를 펼쳤을 때 비장고가 열릴 확률을 30%에서 40%로 올렸습니다. 명장 장비로 올릴 수 있는 상한도 60%에서 70%로 올렸습니다.\n- 그림첩 그림판에서 색 칸마다 원하는 색을 직접 고를 수 있습니다. 처음엔 열여섯 칸이고 「색 칸 더하기」로 서른두 칸까지 늘릴 수 있습니다. 그림마다 고른 색이 따로 남고, 이미 그린 그림은 원래 색 그대로입니다.\n'
+update public.world_patch_notes set body = rtrim(body, E'\n') || E'\n- 명소의 「흙 살피기」는 이제 명소가 열려 있는 동안에만 할 수 있습니다(명소마다 하루 한 번은 그대로).\n- 비장도를 펼쳤을 때 비장고가 열릴 확률을 30%에서 40%로 올렸습니다. 명장 장비로 올릴 수 있는 상한도 60%에서 70%로 올렸습니다.\n- 그림첩 그림판에서 색 칸마다 원하는 색을 직접 고를 수 있습니다. 처음엔 열여섯 칸이고 「색 더하기」로 서른두 칸까지 늘릴 수 있습니다. 그림마다 고른 색이 따로 남고, 이미 그린 그림은 원래 색 그대로입니다.\n'
  where note_id = '3.5.0' and position('흙 살피기」는 이제' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124060000', now())

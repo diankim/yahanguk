@@ -2885,6 +2885,8 @@ b.sealed { color: var(--bad); }
 .dr-ed-side { display: grid; gap: 8px; min-width: 0; }
 .dr-tools { display: flex; flex-wrap: wrap; gap: 4px; }
 .dr-pal { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.dr-paltools { display: flex; gap: 4px; }
+.dr-paltools .chip-btn { flex: 1 1 0; min-width: 0; padding: 4px 4px; white-space: nowrap; font-size: calc(12px * var(--fz, 1)); }
 .dr-sw { aspect-ratio: 1; min-height: 26px; border: 2px solid var(--line); border-radius: 4px; background: var(--c); cursor: pointer; padding: 0; }
 .dr-sw.on { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
 .dr-prev { display: flex; align-items: center; gap: 8px; }
