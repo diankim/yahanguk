@@ -3905,28 +3905,30 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 .rg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; list-style: none; margin: 0; padding: 0; }
 .rg-row { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px; text-align: left; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); cursor: pointer; }
 @media (max-width: 640px) { .rg-orders { grid-template-columns: minmax(0, 1fr); } }
-.pt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
-.pt-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: inherit; font: inherit; text-align: center; cursor: pointer; min-width: 0; }
-.pt-card b { font-size: calc(12.5px * var(--fz, 1)); overflow-wrap: anywhere; }
-.pt-card small { font-size: calc(11px * var(--fz, 1)); }
-.pt-card.locked { cursor: default; opacity: .7; }
-.pt-dot { width: 72px; height: 96px; border-radius: 0; image-rendering: pixelated; border: 3px solid #5c3a22; outline: 1px solid #8a6a3a; background: #d8cdb6; }
-.pt-q { display: grid; place-items: center; font-size: 28px; color: var(--muted); background: var(--bg); }
-.pt-view { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
-.pt-ill { width: 100%; border-radius: 0; aspect-ratio: 3 / 4; object-fit: cover; border: 4px solid #5c3a22; outline: 1px solid #8a6a3a; background: var(--bg); }
-.pt-text h3 { margin: 2px 0 6px; }
-.pt-text p { line-height: 1.6; }
+.pb-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.pb-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: inherit; font: inherit; text-align: center; cursor: pointer; min-width: 0; }
+.pb-card b { font-size: calc(12.5px * var(--fz, 1)); overflow-wrap: anywhere; }
+.pb-card small { font-size: calc(11px * var(--fz, 1)); }
+.pb-card.locked { cursor: default; opacity: .7; }
+.pb-dot { width: 72px; height: 96px; border-radius: 0; image-rendering: pixelated; border: 3px solid #5c3a22; outline: 1px solid #8a6a3a; background: #d8cdb6; }
+.pb-q { display: grid; place-items: center; font-size: 28px; color: var(--muted); background: var(--bg); }
+.pb-view { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; }
+.pb-frame { position: relative; height: min(68vh, 560px); aspect-ratio: 1086 / 1448; max-width: 100%; }
+.pb-ill { position: absolute; left: 8.6%; right: 8.8%; top: 9.3%; bottom: 5.9%; width: 82.6%; height: 84.8%; object-fit: cover; border-radius: 0; background: #1a120e; }
+.pb-fr { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pb-text h3 { margin: 2px 0 6px; }
+.pb-text p { line-height: 1.6; }
 @media (max-width: 640px) {
-  .pt-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .pt-card { padding: 4px 2px; gap: 2px; }
-  .pt-card b { font-size: calc(10.5px * var(--fz, 1)); }
-  .pt-card small { font-size: calc(9.5px * var(--fz, 1)); }
-  .pt-dot { width: 48px; height: 64px; border-width: 2px; }
-  .pt-q { font-size: 20px; }
-  .pt-view { grid-template-columns: 1fr; gap: 8px; }
-  .pt-ill { width: auto; max-height: 32vh; margin: 0 auto; display: block; }
-  .pt-text h3 { margin: 0 0 4px; }
-  .pt-text p { margin: 4px 0; }
-  .pt-text p { line-height: 1.5; }
+  .pb-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .pb-card { padding: 4px 2px; gap: 2px; }
+  .pb-card b { font-size: calc(10.5px * var(--fz, 1)); }
+  .pb-card small { font-size: calc(9.5px * var(--fz, 1)); }
+  .pb-dot { width: 48px; height: 64px; border-width: 2px; }
+  .pb-q { font-size: 20px; }
+  .pb-view { grid-template-columns: 1fr; gap: 8px; }
+  .pb-frame { height: min(40vh, 400px); margin: 0 auto; }
+  .pb-text h3 { margin: 0 0 4px; }
+  .pb-text p { margin: 4px 0; }
+  .pb-text p { line-height: 1.5; }
 }
