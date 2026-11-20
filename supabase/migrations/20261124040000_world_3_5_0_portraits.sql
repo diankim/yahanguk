@@ -84,7 +84,7 @@ insert into public.world_item_catalog(item_id, item_name, category, tier, descri
 on conflict (item_id) do update set item_name = excluded.item_name, category = excluded.category, tier = excluded.tier, description = excluded.description,
   stackable = excluded.stackable, tradeable = excluded.tradeable, reference_price = excluded.reference_price, stack_size = excluded.stack_size, equipment_traits = excluded.equipment_traits;
 
-create or replace function public.world_portrait_rules() returns jsonb language sql immutable set search_path = pg_catalog, public as $f$ select '{"item": "hf_portrait_", "cast": [{"k": "hanseol", "q": "mq_red_seal"}, {"k": "mogaram", "q": "mq_red_seal"}, {"k": "yeonseohui", "q": "mq_red_seal"}, {"k": "nodeul", "q": "mq_drowned_ledger"}, {"k": "danbi", "q": "mq_red_moon_oath"}, {"k": "yeounbi", "q": "mq_red_moon_oath"}, {"k": "sawol", "q": "mq_red_moon_oath"}, {"k": "seokjinak", "q": "mq_frost_seal"}, {"k": "baekmu", "q": "mq_frost_seal"}, {"k": "wolhwa", "q": "mq_eclipse_gate"}, {"k": "jinsorang", "q": "mq_sunken_lantern"}, {"k": "gaon", "q": "mq_sunken_lantern"}, {"k": "jangmuhyeon", "q": "mq_ash_sea"}, {"k": "galmae", "q": "mq_ash_sea"}, {"k": "dohwa", "q": "mq_ash_sea"}, {"k": "baekunseo", "q": "mq_lamp_shadow"}, {"k": "yundohan", "q": "mq_nine_gates"}, {"k": "hahujeong", "q": "mq_nine_gates"}, {"k": "guseul", "q": "sq110_f_lotus"}, {"k": "samagyeom", "q": "sq110_f_redmoon"}, {"k": "maehyang", "q": "sq110_f_river"}, {"k": "cheongpa", "q": "sq110_f_river"}, {"k": "seoiyeon", "q": "sq110_f_mandate"}, {"k": "seoharam", "q": "sq110_f_mandate"}, {"k": "mumyeong", "q": "sq110_f_lotus2"}, {"k": "soi", "q": "sq110_f_south2"}, {"k": "kangducheol", "q": "sq110_f_office"}, {"k": "munsu", "q": "sq110_f_office"}, {"k": "munseojin", "q": "sq110_f_mandate2"}, {"k": "yeoul", "q": "gq_1"}, {"k": "mukho", "q": "gq_1"}, {"k": "dani", "q": "gq_1"}, {"k": "hisu", "q": "mkq_1"}, {"k": "daon", "q": "mkq_1"}, {"k": "wolha", "q": "mkq_1"}, {"k": "seoyul", "q": "mkq_5"}, {"k": "seoha", "q": "mkq_5"}, {"k": "hyegak", "q": "mdq_7"}, {"k": "yeoseotjjae", "q": "mdq_8"}, {"k": "gwakduchil", "q": "mdq_15"}, {"k": "gyeonghyeon", "q": "mdq_17"}]}'::jsonb $f$;
+create or replace function public.world_portrait_rules() returns jsonb language sql immutable set search_path = pg_catalog, public as $f$ select '{"item": "hf_portrait_", "cast": [{"k": "hanseol", "q": "mq_red_seal"}, {"k": "mogaram", "q": "mq_red_seal"}, {"k": "yeonseohui", "q": "mq_red_seal"}, {"k": "nodeul", "q": "mq_drowned_ledger"}, {"k": "danbi", "q": "mq_red_moon_oath"}, {"k": "yeounbi", "q": "mq_red_moon_oath"}, {"k": "sawol", "q": "mq_red_moon_oath"}, {"k": "seokjinak", "q": "mq_frost_seal"}, {"k": "baekmu", "q": "mq_frost_seal"}, {"k": "wolhwa", "q": "mq_eclipse_gate"}, {"k": "jinsorang", "q": "mq_sunken_lantern"}, {"k": "gaon", "q": "mq_sunken_lantern"}, {"k": "jangmuhyeon", "q": "mq_ash_sea"}, {"k": "galmae", "q": "mq_ash_sea"}, {"k": "dohwa", "q": "mq_ash_sea"}, {"k": "baekunseo", "q": "mq_lamp_shadow"}, {"k": "yundohan", "q": "mq_nine_gates"}, {"k": "hahujeong", "q": "mq_nine_gates"}, {"k": "guseul", "q": "mq_nameless_bell"}, {"k": "samagyeom", "q": "mq_eclipse_gate"}, {"k": "maehyang", "q": "mdq_4"}, {"k": "cheongpa", "q": "mdq_4"}, {"k": "seoiyeon", "q": "mq_nine_gates"}, {"k": "seoharam", "q": "mdq_4"}, {"k": "mumyeong", "q": "mq_frost_seal"}, {"k": "soi", "q": "mq_frost_seal"}, {"k": "kangducheol", "q": "mq_red_seal"}, {"k": "munsu", "q": "mdq_1"}, {"k": "munseojin", "q": "mq_nine_gates"}, {"k": "yeoul", "q": "gq_1"}, {"k": "mukho", "q": "gq_1"}, {"k": "dani", "q": "gq_1"}, {"k": "hisu", "q": "mkq_1"}, {"k": "daon", "q": "mkq_1"}, {"k": "wolha", "q": "mkq_1"}, {"k": "seoyul", "q": "mkq_5"}, {"k": "seoha", "q": "mkq_5"}, {"k": "hyegak", "q": "mdq_7"}, {"k": "yeoseotjjae", "q": "mdq_8"}, {"k": "gwakduchil", "q": "mdq_15"}, {"k": "gyeonghyeon", "q": "mdq_17"}]}'::jsonb $f$;
 
 
 create or replace function public.world_portrait_have(p_uid uuid, p_item text) returns int
@@ -106,7 +106,10 @@ begin
   done := public.world_quest_done_ids(uid);
   return jsonb_build_object(
     'house', exists (select 1 from public.world_housing h where h.owner_id = public.world_housing_home(uid)),
-    'list', coalesce((select jsonb_agg(jsonb_build_object('k', c.value ->> 'k', 'quest', q.title, 'lv', q.min_level, 'cat', q.cat,
+    'list', coalesce((select jsonb_agg(jsonb_build_object('k', c.value ->> 'k', 'quest', q.title, 'lv', q.min_level,
+        'story', case when q.kind = 'main' then '홍인사 ' || (select count(*) from public.world_quests m where m.kind = 'main' and m.quest_id like 'mq\_%' and m.min_level <= q.min_level) || '장'
+          when q.cat like '외전·%' then case split_part(q.cat, '·', 2) when '귀허도' then '요인록' else split_part(q.cat, '·', 2) end || ' ' || substring(q.quest_id from '_(\d+)$') || '장'
+          else q.cat end,
         'open', (c.value ->> 'q') = any(done),
         'have', (c.value ->> 'q') = any(done) and public.world_portrait_have(uid, pre || (c.value ->> 'k')) > 0) order by c.ord)
       from jsonb_array_elements(public.world_portrait_rules() -> 'cast') with ordinality c(value, ord)
@@ -155,7 +158,7 @@ update public.world_patch_notes set body = rtrim(body, E'\n') || $N$
 
 ## 3.5.0
 
-- 「초상 화첩」이 생겼습니다. 이야기에서 만난 인물 마흔한 명의 초상을 모읍니다. 그 인물이 처음 크게 나오는 이야기를 마치면 화첩에 그 인물이 열리고, 열리기 전 칸에는 어느 이야기를 마치면 되는지 적혀 있습니다.
+- 「초상 화첩」이 생겼습니다. 이야기에서 만난 인물 마흔한 명의 초상을 모읍니다. 그 인물이 처음 크게 나오는 본편 장(홍인사·요인록·묵적록·명등기)을 마치면 화첩에 그 인물이 열리고, 열리기 전 칸에는 어느 이야기를 마치면 되는지 적혀 있습니다.
 - 화첩에서 열린 인물을 골라 「꺼내기」를 누르면 그 인물의 초상 액자가 별채 곳간에 들어옵니다. 별채 「꾸미기」에서 벽에 걸 수 있고, 걸린 액자를 누르면 큰 그림을 볼 수 있습니다.
 - 같은 인물 액자는 하나만 가질 수 있습니다. 버려도 화첩에서 다시 꺼낼 수 있습니다. 액자는 거래하거나 팔 수 없습니다.
 - 화첩은 별채 머리의 「초상 화첩」에서 엽니다. 별채가 없어도 화첩은 볼 수 있습니다.

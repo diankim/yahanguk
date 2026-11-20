@@ -17,7 +17,10 @@ begin
   done := public.world_quest_done_ids(uid);
   return jsonb_build_object(
     'house', exists (select 1 from public.world_housing h where h.owner_id = public.world_housing_home(uid)),
-    'list', coalesce((select jsonb_agg(jsonb_build_object('k', c.value ->> 'k', 'quest', q.title, 'lv', q.min_level, 'cat', q.cat,
+    'list', coalesce((select jsonb_agg(jsonb_build_object('k', c.value ->> 'k', 'quest', q.title, 'lv', q.min_level,
+        'story', case when q.kind = 'main' then '홍인사 ' || (select count(*) from public.world_quests m where m.kind = 'main' and m.quest_id like 'mq\_%' and m.min_level <= q.min_level) || '장'
+          when q.cat like '외전·%' then case split_part(q.cat, '·', 2) when '귀허도' then '요인록' else split_part(q.cat, '·', 2) end || ' ' || substring(q.quest_id from '_(\d+)$') || '장'
+          else q.cat end,
         'open', (c.value ->> 'q') = any(done),
         'have', (c.value ->> 'q') = any(done) and public.world_portrait_have(uid, pre || (c.value ->> 'k')) > 0) order by c.ord)
       from jsonb_array_elements(public.world_portrait_rules() -> 'cast') with ordinality c(value, ord)

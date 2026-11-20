@@ -33,12 +33,12 @@ export async function openPortraitBook(onChange) {
   const layer = openLayer({ title: '초상 화첩', wide: true, body: '<div class="pt-book"></div>' });
   const box = $('.pt-book', layer);
   const paint = () => {
-    const list = data.list || [], open = list.filter(x => x.open).length;
+    const list = [...(data.list || [])].sort((a, b) => (b.open - a.open) || ((a.lv ?? 99) - (b.lv ?? 99))), open = list.filter(x => x.open).length;
     box.innerHTML = `<div class="pt-head"><span>열린 초상 <b>${open}</b> / ${list.length}</span>${helpQ(HELP, '초상 화첩 안내')}</div>
       ${data.house ? '' : '<p class="muted small">별채가 없어도 화첩은 볼 수 있습니다. 초상 액자는 별채를 얻은 뒤에 꺼낼 수 있습니다.</p>'}
       <div class="pt-grid">${list.map(x => x.open
         ? `<button class="pt-card" data-k="${esc(x.k)}"><img class="pt-dot" src="${dotURL(x.k)}" alt=""><b>${esc(nameOf(x.k))}</b><small class="muted">${x.have ? '액자 있음' : '꺼낼 수 있음'}</small></button>`
-        : `<div class="pt-card locked"><span class="pt-dot pt-q">?</span><b>???</b><small class="muted">${esc(x.quest || '')} 마치면 (Lv.${x.lv ?? '?'})</small></div>`).join('')}</div>`;
+        : `<div class="pt-card locked"><span class="pt-dot pt-q">?</span><b>???</b><small class="muted">${esc(x.story || '')} 「${esc(x.quest || '')}」 (Lv.${x.lv ?? '?'})</small></div>`).join('')}</div>`;
   };
   paint();
   box.addEventListener('click', e => {
@@ -46,7 +46,7 @@ export async function openPortraitBook(onChange) {
     const k = t.dataset.k, x = (data.list || []).find(v => v.k === k), b = PORTRAIT_BOOK[k];
     const d = openLayer({ title: b.n, wide: true, body: `<div class="pt-view"><img class="pt-ill" src="${portraitImg(k)}" alt="${esc(b.n)}의 초상">
       <div class="pt-text"><p class="eyebrow">${esc(b.t)}</p><h3>${esc(b.n)}</h3><p>${esc(b.b)}</p>
-      <p class="muted small">「${esc(x.quest || '')}」에서 열린 초상입니다.</p>
+      <p class="muted small">${esc(x.story || '')} 「${esc(x.quest || '')}」에서 열린 초상입니다.</p>
       <div class="btn-row"><button class="btn primary small" data-take ${x.have || !data.house ? 'disabled' : ''}>${icon('chest', 14)} 꺼내기</button></div>
       <p class="muted small">${x.have ? '이미 이 초상 액자가 가방·창고·별채 어딘가에 있습니다.' : data.house ? '꺼내면 별채 곳간에 초상 액자가 들어옵니다.' : '별채를 얻은 뒤에 꺼낼 수 있습니다.'}</p>
       <p class="muted small">초상 그림은 생성형 AI로 만든 이미지입니다.</p></div></div>` });
