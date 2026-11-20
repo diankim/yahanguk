@@ -148,12 +148,12 @@ export function makeRoom(N, defs) {
     const d = WALL[it.k]; if (!d) return;
     for (const [t0, z0, w0, h0, col] of d.rects || []) fillPoly(layer, wallPoly(it.side, it.t + t0, it.z + z0, w0, h0), P(col));
     const pic = d.frame && it.d != null ? pics[it.d] : null;
-    if (pic?.px && d.paper) {
-      const [pw, ph] = dimsOf(pic.s), top = it.z + d.paper[1] + ph;
+    if ((pic?.px || pic?.rgb) && d.paper) {
+      const [pw, ph] = pic.rgb ? [pic.w, pic.h] : dimsOf(pic.s), top = it.z + d.paper[1] + ph;
       for (let v = 0; v < ph; v++) for (let u = 0; u < pw; u++) {
-        const ch = pic.px[v * pw + u]; if (!ch || ch === '.') continue;
+        const col = pic.rgb ? pic.rgb[v * pw + u] : (c => !c || c === '.' ? null : PAL[parseInt(c, 16)] || '#000000')(pic.px[v * pw + u]); if (!col) continue;
         const t = it.t + d.paper[0] + (it.side === 'R' ? u : pw - 1 - u) / 16;
-        fillPoly(layer, wallPoly(it.side, t, top - v - 1, 1 / 16, 1), P(PAL[parseInt(ch, 16)] || '#000000'));
+        fillPoly(layer, wallPoly(it.side, t, top - v - 1, 1 / 16, 1), P(col));
       }
     }
     if (d.text) {
