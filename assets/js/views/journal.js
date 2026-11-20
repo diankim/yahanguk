@@ -4,7 +4,7 @@ import { loreBundle, refreshLore } from '../lore.js';
 import { load, loadPrices, panel, chip, loading, errorBox, currentRegion, foldOpen } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
-import { taskLine, giveLine, atLine, report } from '../quests.js';
+import { taskLine, giveLine, atLine, report, storyCombine } from '../quests.js';
 import { sourcesMore } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
@@ -128,12 +128,7 @@ async function story(body, keep) {
     ${regional(b?.regional)}`;
   $$('[data-ch]', body).forEach(x => x.onclick = () => { selCh = x.dataset.ch; story(body, true); });
   bindArcs(body);
-  $$('[data-combo]', body).forEach(x => x.onclick = () => guard(x, async () => {
-    const r = await act('world_story_combine', { p_combo_id: x.dataset.combo });
-    if (r?.epilogue?.lines?.length) (await import('../factionquest.js')).playDialogue({ title: r.epilogue.title, lines: r.epilogue.lines, cast: r.epilogue.cast,
-      extra: `<p class="hint good">${icon('check', 14)} 장을 마쳤습니다</p>` });
-    return r;
-  }));
+  $$('[data-combo]', body).forEach(x => x.onclick = () => storyCombine(x));
   const rs = $('#reg-submit', body); if (rs) rs.onclick = () => guard(rs, () => act('world_case_combine_regional'));
   $$('[data-sub]', body).forEach(x => x.onclick = () => { sub = x.dataset.sub; window.yahangGo('log', sub); });
   bindQuests(body);

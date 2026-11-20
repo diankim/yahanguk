@@ -66,13 +66,33 @@ export const atLine = q => {
 };
 const head = (kind, q) => { const arcN = storyArcOf(q.cat); return `<header>${arcN ? (isStoryMain(q) ? chip('본편', 'accent') : chip('보조')) + chip(arcN) : chip(kind !== 'main' && isStoryMain(q) ? '본편' : KIND[kind] || '보조', kind === 'main' || isStoryMain(q) ? 'accent' : kind === 'faction' ? 'warn' : '') + (kind === 'main' ? '' : chip(q.cat || ''))}${q.replay ? chip('다시하기', 'ok') : ''}<b>${esc(q.title)}</b></header>` };
 
+const mapLink = n => n === store.character?.location ? `<b>${esc(n)}</b>` : `<button type="button" class="q-link" data-q-map="${esc(n)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(n)}</span></button>`;
+function clueItem(q) {
+  const c = q.clues || {}, list = c.list || [], combos = c.combos || [];
+  const has = new Set(list.filter(k => k.found).map(k => k.id));
+  const left = {}; list.filter(k => !k.found).forEach(k => { left[k.rn] = (left[k.rn] || 0) + 1; });
+  const where = Object.keys(left), here = store.character?.location, all = !where.length;
+  const ready = combos.filter(x => !x.done && (x.needs || []).every(n => has.has(n)));
+  const doneN = combos.filter(x => x.done).length;
+  return `<li class="q-item q-clue ${ready.length ? 'ready' : ''}">${head(q.kind, q)}
+    <p class="q-step">장면을 모두 마쳤습니다 · 단서 ${c.found ?? 0}/${c.total ?? 0} · 가설 ${doneN}/${combos.length}</p>
+    <p class="q-goal">${all ? '단서를 모두 모았습니다. 가설을 확정하면 이 장이 끝납니다.' : `남은 단서를 찾으세요. 아래 곳을 <b>탐색</b>하면 나옵니다${ready.length ? ' — 모인 단서로 먼저 세울 수 있는 가설도 있습니다' : ''}.`}</p>
+    ${all ? '' : `<p class="q-at do ${where.includes(here) ? 'ok' : ''}">${icon('flag', 12)} 찾을 곳: ${where.map(n => `${mapLink(n)} ${left[n]}개`).join(' · ')}${where.includes(here) ? ' (지금 여기 — 탐색하세요)' : ''}</p>`}
+    ${combos.length ? `<ul class="q-tasks q-combos">${combos.map(x => {
+      const ok = (x.needs || []).every(n => has.has(n));
+      return `<li class="${x.done ? 'done' : ''}">${icon(x.done ? 'check' : 'scroll', 12)}<span>${esc(x.name)}</span>${x.done ? '<small class="ok">확정</small>' : ok ? `<button class="btn small primary" data-here="가설 확정" data-story-combo="${esc(x.id)}">가설 확정</button>` : `<small class="muted">단서 ${(x.needs || []).filter(n => has.has(n)).length}/${(x.needs || []).length}</small>`}</li>`; }).join('')}</ul>` : ''}
+    <div class="btn-row"><a class="btn small ghost" href="#/log/story">${icon('scroll', 14)}<span>일지에서 단서 보기</span></a></div></li>`;
+}
+export function storyCombine(btn) {
+  return guard(btn, async () => {
+    const r = await act('world_story_combine', { p_combo_id: btn.dataset.storyCombo || btn.dataset.combo });
+    if (r?.epilogue?.lines?.length) playDialogue({ title: r.epilogue.title, lines: r.epilogue.lines, cast: r.epilogue.cast,
+      extra: `<p class="hint good">${icon('check', 14)} 장을 마쳤습니다</p>` });
+    return r;
+  });
+}
 function activeItem(q) {
-  if (q.phase === 'clues') {
-    const c = q.clues || {};
-    return `<li class="q-item">${head(q.kind, q)}
-      <p class="q-goal">단서 찾기 · ${c.found ?? 0}/${c.total ?? 0} — ${esc(((c.region_names || []).join('·') || '이 장의 지역') + '을(를)')} 탐색하고, 모으면 일지 › 주 이야기에서 가설을 확정하세요.</p>
-      <div class="btn-row"><a class="btn small" href="#/log/story">${icon('scroll', 14)}<span>일지 보기</span></a></div></li>`;
-  }
+  if (q.phase === 'clues') return clueItem(q);
   return `<li class="q-item ${q.ready ? 'ready' : ''}">${head(q.kind, q)}
     <p class="q-step">장면 ${q.step}/${q.steps} · ${esc(q.step_title || '')}</p>
     <p class="q-goal">${esc(q.goal || '')}</p>
@@ -244,6 +264,7 @@ export async function fillQuests(box) {
   $$('[data-q-grp]', box).forEach(d => d.addEventListener('toggle', () => setOpen(d.dataset.qGrp, d.open)));
   $('[data-q-fac]', box)?.addEventListener('toggle', e => setOpen('!fac', !e.target.open));
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
+  $$('[data-story-combo]', box).forEach(x => x.onclick = () => storyCombine(x));
   $$('[data-q-group]', box).forEach(x => x.onclick = () => { try { localStorage.setItem(GKEY, x.dataset.qGroup); } catch {} fillQuests(box); });
   $('[data-q-final]', box)?.addEventListener('click', e => guard(e.currentTarget, async () => {
     if (!(await askFinal())) return null;
