@@ -175,7 +175,7 @@ function actName(s, a) {
   const t = a.t ? nameOfMember(s, a.t) : '';
   if (a.a === 'coop') { const sk = (s.skills || []).find(x => x.id === a.s); return `기술 「${sk?.name || ''}」${t ? ` → ${t}` : ''}`; }
   if (a.a === 'item') return `회복품 「${nameOf(a.i)}」${t ? ` → ${t}` : ''}`;
-  const mv = a.m ? ` · 「${CELL[a.m]}」 칸으로` : '';
+  const mv = a.m ? ` · ${s?.boss === 'mukjeok' && CELL[a.m] ? `「${CELL[a.m]}」` : `${a.m}번`} 칸으로` : '';
   return (({ attack: '공격', guard: '방어', brace: '버티기', call: snap?.boss === 'gapgwi' ? `값 매기기 → ${t}` : t && a.t === snap?.me && snap?.boss === 'baekya' ? '제 이름 외기' : `이름 부르기 → ${t}`, light: '등 켜기', sweep: `${a.c || ''}번 칸 걷어 내기`, move: '옮겨 서기', chain: `${a.c || ''} 사슬 끊기`, recall: '되찾기', deal: '흥정' })[a.a] || a.a) + mv;
 }
 
