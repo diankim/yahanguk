@@ -1267,7 +1267,7 @@ export const WALL = {
   window_meokbi: { name: '먹비 창호', grade: 2, kind: 'window', cat: '창문', w: 1.6, h: 32, rects: [
     [0, 0, 1.6, 32, C.deep], [.1, 2, 1.4, 28, '#3b3e49'], [.1, 2, .04, 28, C.paper2], [.4, 2, .04, 28, C.paper2], [.75, 2, .04, 28, C.paper2], [1.1, 2, .04, 28, C.paper2],
     [.1, 9, 1.4, .8, C.paper2], [.1, 16, 1.4, .8, C.paper2], [.1, 23, 1.4, .8, C.paper2], [.25, 5, .03, 3, C.ink], [.9, 12, .03, 4, C.ink], [.6, 20, .03, 3, C.ink], [1.3, 25, .03, 3, C.ink]] },
-  rubbing_doorplate_carp: { name: '문패 잉어 어탁', grade: 5, kind: 'deco', cat: '족자', w: 2.2, h: 30, rects: [
+  rubbing_doorplate_carp: { name: '문패 잉어 탁본', grade: 5, kind: 'deco', cat: '족자', w: 2.2, h: 30, rects: [
     [-.06, -1, 2.32, 32, C.gold], [0, 0, 2.2, 30, C.dark], [.12, 2, 1.96, 26, C.paper],
     [.4, 11, 1.2, 8, C.ink], [.3, 13, .2, 4, C.ink], [1.6, 12, .4, 6, C.ink], [1.9, 11, .1, 2, C.ink], [1.9, 17, .1, 2, C.ink],
     [.6, 12, .5, 1, C.paper2], [.7, 15, .6, 1, C.paper2], [.45, 13, .08, 1, C.paper], [.3, 22, .2, 3, C.lac], [1.6, 4, .3, 4, C.lac], [1.05, -4, .1, 3, C.gold]] },
