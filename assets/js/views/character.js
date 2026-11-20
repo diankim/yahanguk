@@ -430,7 +430,7 @@ async function skills(body) {
   const KN = Object.fromEntries(BRANCHES.flatMap(([, , , cats]) => cats.map(k => [k, SKILL_NAME[k] || nameOf(k)])));
   body.innerHTML = `<div class="notice">${icon('help', 18)}<div><b>숙련과 기술</b><span>기술은 행동을 되풀이할수록 오르는 계열별 단계(최고 50)입니다. 전투 계열은 직업마다 하나(${Object.entries(JOB_LINE).map(([j, l]) => `${esc(JOBS[j]?.name || j)} ${esc(SKILL_NAME[l] || nameOf(l))}`).join(' · ')})이고 분석·막기·응급 처치는 모두가 함께 씁니다(분석은 요괴의 수법 낌새를 본 턴에 행동하면 오릅니다). 단계마다 기술을 익히고, 13·30단계에는 추가 기술(직업 전투 계열은 사격을 빼고 13·30단계도 택일), 24·43단계에는 둘 중 하나를 고르는 기술, 50단계에는 가장 강한 숙달 기술이 있습니다. 네모를 누르면 그 단계의 기술이 펼쳐집니다(빨간 점: 고를 기술이 있음).</span></div></div>
     ${Object.keys(groups).length ? `<div class="skill-groups">${[['combat'], ['gathering', 'investigation'], ['crafting']].map(col => `<div class="sk-col">${col.map(key => BRANCHES.find(b => b[0] === key)).map(([k, n, ico, cats]) => panel(`${n} 숙련 · ${fmt.num(c[k + '_rank'] || 1)}단계`,
-      `<div class="sk-lines">${mineOnly(cats, c).map(line).join('')}</div>${k === 'combat' ? otherHtml : ''}`, { ico, cls: 'compact' })).join('')}</div>`).join('')}</div>`
+      `<div class="sk-lines">${mineOnly(cats, c).map(k => line(k)).join('')}</div>${k === 'combat' ? otherHtml : ''}`, { ico, cls: 'compact' })).join('')}</div>`).join('')}</div>`
     : empty('익힌 기술 정보가 없습니다.')}
     ${myCombos.length ? panel('조합 기술', `<ul class="combo-list">${myCombos.map(x => {
       const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');

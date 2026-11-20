@@ -154,17 +154,25 @@ grant execute on function public.world_portrait_take(text) to authenticated;
 grant execute on function public.world_portrait_rules() to anon, authenticated;
 
 
-update public.world_patch_notes set body = rtrim(body, E'\n') || $N$
+insert into public.world_patch_notes(note_id, title, body) values ('3.5.0', '3.5.0 · 초상 화첩', $N$이야기에서 만난 인물들의 초상을 모아 별채 벽에 걸 수 있습니다.
 
-## 3.5.0
-
-- 「초상 화첩」이 생겼습니다. 이야기에서 만난 인물 마흔한 명의 초상을 모읍니다. 그 인물이 처음 크게 나오는 본편 장(홍인사·요인록·묵적록·명등기)을 마치면 화첩에 그 인물이 열리고, 열리기 전 칸에는 어느 이야기를 마치면 되는지 적혀 있습니다.
-- 화첩에서 열린 인물을 골라 「꺼내기」를 누르면 그 인물의 초상 액자가 별채 곳간에 들어옵니다. 별채 「꾸미기」에서 벽에 걸 수 있고, 걸린 액자를 누르면 큰 그림을 볼 수 있습니다.
-- 같은 인물 액자는 하나만 가질 수 있습니다. 버려도 화첩에서 다시 꺼낼 수 있습니다. 액자는 거래하거나 팔 수 없습니다.
+## 초상 화첩
+### 화첩
+- 홍인사·요인록·묵적록·명등기에서 만난 인물 마흔한 명의 초상을 모으는 「초상 화첩」이 생겼습니다.
+- 그 인물이 처음 크게 나오는 본편 장을 마치면 화첩에 열립니다. 아직 열리지 않은 칸에는 어느 장을 마치면 되는지 적혀 있습니다.
+- 열린 인물을 누르면 큰 초상과 인물 소개가 액자에 담겨 뜹니다.
 - 화첩은 별채 머리의 「초상 화첩」에서 엽니다. 별채가 없어도 화첩은 볼 수 있습니다.
+
+### 초상 액자
+- 열린 인물 창에서 「꺼내기」를 누르면 그 인물의 초상 액자가 별채 곳간에 들어옵니다. 별채 「꾸미기」에서 벽에 걸고, 걸린 액자를 누르면 큰 초상을 봅니다.
+- 같은 인물 액자는 하나만 가질 수 있습니다. 버리거나 잃어도 화첩에서 다시 꺼낼 수 있습니다.
+- 액자는 거래하거나 상점에 팔 수 없습니다.
 - 초상 그림은 생성형 AI로 만든 이미지입니다.
-$N$
- where note_id = '3.0.0' and position('## 3.5.0' in body) = 0;
+
+## 고친 것
+- 캐릭터 › 기술에서 3.4.0부터 분석·막기·응급 처치·채굴·낚시와 제작 계열 대부분이 「다른 직업 기술」처럼 흐리게 보이고, 24·43단계 택일 기술을 고르는 단추와 빨간 점이 나오지 않던 것을 고쳤습니다. 이제 이 계열들도 단계 칸을 눌러 택일 기술을 고를 수 있습니다.
+$N$)
+on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124040000', now())
