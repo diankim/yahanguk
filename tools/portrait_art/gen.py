@@ -76,8 +76,20 @@ def crop34_content(im):
     c = Image.new('RGB', (ww, hh), bg); c.paste(im.crop((max(0, l), top, min(im.width, l + ww), y1)), (max(0, -l), 0)); return c
 
 
+def flat_bottom(im):
+    w, h = im.size
+    def busy(y):
+        px = [sum(im.getpixel((x, y))) for x in range(0, w, max(1, w // 60))]
+        return max(px) - min(px) > 60
+    n = 0
+    while n < h // 4 and not busy(h - 1 - n): n += 1
+    return n
+
+
 def crop34_full(im):
     im = im.convert('RGB'); w, h = im.size
+    b = flat_bottom(im)
+    if b > 6: im = im.crop((0, 0, w, h - b)); w, h = im.size
     if abs(w * 4 - h * 3) <= 4: return im
     if w * 4 > h * 3:
         nw = h * 3 // 4; l = (w - nw) // 2; return im.crop((l, 0, l + nw, h))
