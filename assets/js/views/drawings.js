@@ -113,8 +113,13 @@ export function openEditor(d, rules, done) {
     if (t.dataset.drop != null) {
       if (pal.length <= 16) return;
       if (px.includes(color.toString(32))) return toast('고른 색으로 칠한 곳이 있어 뺄 수 없습니다. 먼저 다른 색으로 덮어 주세요.', 'error');
-      for (let i = 0; i < px.length; i++) if (px[i] !== '.') { const n = parseInt(px[i], 32); if (n > color) px[i] = (n - 1).toString(32); }
-      undo.length = 0; pal.splice(color, 1); if (color >= pal.length) color = pal.length - 1; paintPal(); return paint();
+      const k = color;
+      ask('고른 색 칸을 뺍니다. 색을 빼면 뒤 칸들의 번호가 당겨져서, 지금까지의 「되돌리기」 기록이 모두 지워집니다. 뺀 뒤에는 그 전 모습으로 되돌릴 수 없습니다.', { title: '색 빼기', ok: '빼기' }).then(yes => {
+        if (!yes) return;
+        for (let i = 0; i < px.length; i++) if (px[i] !== '.') { const n = parseInt(px[i], 32); if (n > k) px[i] = (n - 1).toString(32); }
+        undo.length = 0; pal.splice(k, 1); if (color >= pal.length) color = pal.length - 1; paintPal(); paint();
+      });
+      return;
     }
     if (t.dataset.own != null) { openColorPicker(pal[color], { title: `색 ${color + 1}` }).then(c => { if (c) { pal[color] = c.toLowerCase(); paintPal(); paint(); } }); return; }
     if (t.dataset.reset != null) { pal.forEach((_, i) => { pal[i] = DRAW_PAL[i]; }); paintPal(); return paint(); }
