@@ -84,6 +84,7 @@ def build(dsn):
     d['gearSet'] = q(dsn, "select world_gear_set_rules()")
     d['weaponRules'] = q(dsn, "select world_weapon_rules()")
     d['rescue'] = q(dsn, "select world_rescue_rules()")
+    d['ride'] = q(dsn, "select world_ride_rules()")
     d['survival'] = q(dsn, "select world_survival_rules()")
     d['rate'] = q(dsn, "select world_rate_rules()")
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")

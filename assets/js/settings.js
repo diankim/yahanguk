@@ -3,6 +3,7 @@ import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 import { bgroup } from './rtb.js';
 import { hit } from './changes.js';
+import { GAMEDATA } from './gamedata.js';
 export { initSound, playSfx } from './sound.js';
 
 export { THEMES, deriveCustom, readCustom, themeOf, applyTheme, savedThemeId, applySavedTheme, themeCard, FONT_SIZES, savedFontSize, applyFontSize } from './theme.js';
@@ -121,7 +122,9 @@ function noteToast(n) {
   }, 400);
 }
 const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'gw_vote', 'pfight_invite']);
-const staleFight = n => FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000;
+const RIDE_MS = (Number(GAMEDATA.ride?.wait_s) || 60) * 1000;
+const rideLeftMs = n => (n.payload?.expires_at ? new Date(n.payload.expires_at).getTime() : new Date(n.created_at).getTime() + RIDE_MS) - Date.now();
+const staleFight = n => (FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000) || (n.kind === 'ride_request' && rideLeftMs(n) <= 0);
 export function clearFightNotes(kinds, key, id) {
   if (id == null) return;
   const ks = new Set(kinds), hit = notes.filter(n => ks.has(n.kind) && String(n.payload?.[key]) === String(id));
@@ -142,7 +145,7 @@ async function markRead(n) {
 function noteActs(n) {
   if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-here="구조" data-rescue="${esc(n.id)}">구조</button>`;
   if (n.kind === 'party_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-invite="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-invite="${esc(n.id)}" data-acc="0">거절</button>`;
-  if (n.kind === 'ride_request' && n.payload?.request_id) return `<button class="btn primary small" data-ride="${esc(n.id)}" data-acc="1">함께 타기</button><button class="btn small" data-ride="${esc(n.id)}" data-acc="0">사양</button>`;
+  if (n.kind === 'ride_request' && n.payload?.request_id && rideLeftMs(n) > 0) return `<button class="btn primary small" data-ride="${esc(n.id)}" data-acc="1">함께 타기</button><button class="btn small" data-ride="${esc(n.id)}" data-acc="0">사양</button>`;
   if (n.kind === 'trade_offer' && n.payload?.trade_id) return `<button class="btn primary small" data-trade="${esc(n.id)}" data-acc="1" data-here="직접 거래">수락</button><button class="btn small" data-trade="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'friend_request' && n.payload?.from_id) return `<button class="btn primary small" data-friend="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-friend="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'circle_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-circle="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-circle="${esc(n.id)}" data-acc="0">거절</button>`;
@@ -272,6 +275,10 @@ function notePop(n) {
     if (b) { if (await runAct(b)) card.remove(); return; }
     if (e.target.closest('[data-pop-close]')) card.remove();
   });
+  if (n.kind === 'ride_request') {
+    document.querySelectorAll('.note-pop[data-kind="ride_request"]').forEach(x => x.remove());
+    setTimeout(() => card.remove(), Math.max(0, rideLeftMs(n)));
+  }
   stack.append(card);
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'reward' }));
 }

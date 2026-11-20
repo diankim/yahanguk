@@ -154,7 +154,132 @@ grant execute on function public.world_portrait_take(text) to authenticated;
 grant execute on function public.world_portrait_rules() to anon, authenticated;
 
 
-insert into public.world_patch_notes(note_id, title, body) values ('3.5.0', '3.5.0 · 초상 화첩', $N$이야기에서 만난 인물들의 초상을 모아 별채 벽에 걸 수 있습니다.
+create or replace function public.world_ride_rules() returns jsonb language sql immutable set search_path = pg_catalog, public as $f$ select '{"wait_s": 60}'::jsonb $f$;
+grant execute on function public.world_ride_rules() to anon, authenticated;
+
+create or replace function pg_temp.rf(p_fn regprocedure, p_pairs text[]) returns void language plpgsql as $g$
+declare src text := pg_get_functiondef(p_fn); i int; n int;
+begin
+  for i in 1 .. array_length(p_pairs, 1) / 2 loop
+    n := (length(src) - length(replace(src, p_pairs[2 * i - 1], ''))) / greatest(length(p_pairs[2 * i - 1]), 1);
+    if n <> 1 then raise exception '% 조각 %: % 번 나옴', p_fn, i, n; end if;
+    src := replace(src, p_pairs[2 * i - 1], p_pairs[2 * i]);
+  end loop;
+  execute src;
+end $g$;
+
+create or replace function public.world_ride_expire(p_a uuid, p_b uuid) returns void
+language plpgsql security definer set search_path = pg_catalog, public as $f$
+begin
+  update public.world_travel_party_requests q set status = 'cancelled', cancelled_at = now()
+   where q.status = 'pending' and q.created_at < now() - make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int)
+     and (q.leader_id in (p_a, p_b) or q.passenger_id in (p_a, p_b));
+end $f$;
+
+create or replace function public.world_ride_supersede(p_uid uuid, p_passenger uuid) returns void
+language plpgsql security definer set search_path = pg_catalog, public as $f$
+declare x record; nm text := coalesce((select character_name from public.world_characters where owner_id = p_uid), '동료');
+begin
+  for x in select q.request_id, q.leader_id, q.passenger_id from public.world_travel_party_requests q
+     where q.status = 'pending' and (q.leader_id in (p_uid, p_passenger) or q.passenger_id in (p_uid, p_passenger)) for update loop
+    update public.world_travel_party_requests set status = 'cancelled', cancelled_at = now() where request_id = x.request_id;
+    update public.world_notifications set read_at = now()
+     where user_id = x.passenger_id and kind = 'ride_request' and read_at is null and payload ->> 'request_id' = x.request_id::text;
+    if x.leader_id <> p_uid then
+      insert into public.world_notifications(user_id, kind, title, content, payload)
+      values (x.leader_id, 'ride_declined', '동승 요청 취소',
+        nm || '의 동승 요청이 나중에 들어와, 보낸 동승 요청은 취소되었습니다.',
+        jsonb_build_object('request_id', x.request_id, 'superseded', true));
+    end if;
+  end loop;
+end $f$;
+
+do $g$
+declare f text;
+begin
+  foreach f in array array['world_ride_expire(uuid, uuid)', 'world_ride_supersede(uuid, uuid)'] loop
+    execute format('revoke all on function public.%s from public, anon, authenticated', f);
+    execute format('grant execute on function public.%s to fn_owner_party_invite_v2', f);
+  end loop;
+end $g$;
+grant execute on function public.world_ride_rules() to fn_owner_party_invite_v2, fn_owner_party_respond_v2;
+
+select pg_temp.rf('public.world_travel_party_invite_v2(uuid, text)', array[
+$o$  SELECT * INTO c FROM public.world_characters WHERE owner_id = uid FOR UPDATE;$o$,
+$n$  PERFORM 1 FROM public.world_characters WHERE owner_id IN (uid, p_passenger_id) ORDER BY owner_id FOR UPDATE;
+  SELECT * INTO c FROM public.world_characters WHERE owner_id = uid FOR UPDATE;$n$,
+$o$  pl := public.world_travel_plan(uid, r.region_id, least(c.level, p.level));
+  v_hops := (pl ->> 'hops')::int;
+
+  UPDATE public.world_travel_party_requests q SET status = 'cancelled', cancelled_at = now()
+   WHERE q.leader_id = uid AND q.passenger_id = p_passenger_id AND q.status = 'pending';
+$o$,
+$n$  pl := public.world_travel_plan(uid, r.region_id, least(c.level, p.level));
+  v_hops := (pl ->> 'hops')::int;
+
+  PERFORM public.world_ride_expire(uid, p_passenger_id);
+  SELECT max(q.created_at) INTO wait_at FROM public.world_travel_party_requests q WHERE q.leader_id = uid AND q.status = 'pending';
+  IF wait_at IS NOT NULL THEN
+    wait_left := greatest(1, ceil(extract(epoch FROM wait_at + make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int) - now())))::int;
+    RAISE EXCEPTION USING message = format('보낸 동승 요청이 아직 답을 기다리고 있습니다(%s초 남음).', wait_left), hint = 'ride_wait:' || wait_left;
+  END IF;
+  PERFORM public.world_ride_supersede(uid, p_passenger_id);
+$n$,
+$o$      || CASE WHEN v_hops > 1 THEN '(' || v_hops || '구간)' ELSE '' END || '. 운임은 파티장이 냅니다.',
+    jsonb_build_object('request_id', rid, 'from_id', uid, 'to_region', p_region_id, 'hops', v_hops));$o$,
+$n$      || CASE WHEN v_hops > 1 THEN '(' || v_hops || '구간)' ELSE '' END || '. 운임은 요청한 쪽이 냅니다.',
+    jsonb_build_object('request_id', rid, 'from_id', uid, 'to_region', p_region_id, 'hops', v_hops,
+      'expires_at', now() + make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int)));$n$,
+$o$    'hops', v_hops,
+    'content', p.character_name || '에게 동승 요청을 보냈습니다. 수락하면 함께 출발합니다.'$o$,
+$n$    'hops', v_hops,
+    'expires_at', now() + make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int),
+    'content', p.character_name || '에게 동승 요청을 보냈습니다. ' || (public.world_ride_rules() ->> 'wait_s') || '초 안에 수락하면 함께 출발합니다.'$n$,
+$o$  v_hops int;
+BEGIN$o$,
+$n$  v_hops int;
+  wait_at timestamptz;
+  wait_left int;
+BEGIN$n$]);
+
+select pg_temp.rf('public.world_travel_party_respond_v2(uuid, boolean)', array[
+$o$ select * into q from public.world_travel_party_requests where request_id=p_request_id for update;
+ if q.request_id is null or q.passenger_id<>uid or q.status<>'pending'
+   then raise exception '유효한 동승 요청이 없습니다.'; end if;$o$,
+$n$ select * into q from public.world_travel_party_requests where request_id=p_request_id;
+ if q.request_id is not null and q.passenger_id=uid then
+   perform 1 from public.world_characters where owner_id in (q.leader_id, uid) order by owner_id for update;
+ end if;
+ select * into q from public.world_travel_party_requests where request_id=p_request_id for update;
+ if q.request_id is null or q.passenger_id<>uid
+   then raise exception '유효한 동승 요청이 없습니다.'; end if;
+ if q.status='cancelled'
+   then raise exception '취소된 동승 요청입니다. 더 나중에 들어온 동승 요청이 있거나 답할 시간이 지났습니다.'; end if;
+ if q.status<>'pending'
+   then raise exception '이미 답한 동승 요청입니다.'; end if;$n$,
+$o$ perform public.world_seal_guard();
+
+ select * into c from public.world_characters where owner_id=q.leader_id for update;$o$,
+$n$ perform public.world_seal_guard();
+ if q.created_at < now() - make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int)
+   then raise exception '%', '동승 요청에 답할 시간(' || (public.world_ride_rules() ->> 'wait_s') || '초)이 지났습니다.' using hint = 'ride_expired'; end if;
+
+ select * into c from public.world_characters where owner_id=q.leader_id for update;$n$,
+$o$' · 파티장이 노정패 '$o$,
+$n$' · '||c.character_name||'이(가) 노정패 '$n$]);
+
+select pg_temp.rf('public.world_travel_party_snapshot()', array[
+$o$'status',q.status,'created_at',q.created_at)), '[]'::jsonb)
+   from public.world_travel_party_requests q where (q.leader_id=uid or q.passenger_id=uid) and q.status in ('pending','departed'))$o$,
+$n$'status',q.status,'created_at',q.created_at,
+     'expires_at',q.created_at + make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int),
+     'leader_name',(select x.character_name from public.world_characters x where x.owner_id=q.leader_id),
+     'passenger_name',(select x.character_name from public.world_characters x where x.owner_id=q.passenger_id))), '[]'::jsonb)
+   from public.world_travel_party_requests q where (q.leader_id=uid or q.passenger_id=uid)
+    and (q.status='departed' or (q.status='pending' and q.created_at >= now() - make_interval(secs => (public.world_ride_rules() ->> 'wait_s')::int))))$n$]);
+
+
+insert into public.world_patch_notes(note_id, title, body) values ('3.5.0', '3.5.0 · 초상 화첩', $N$이야기에서 만난 인물들의 초상을 모아 별채 벽에 걸 수 있습니다. 파티원 누구나 동승을 요청할 수 있습니다.
 
 ## 초상 화첩
 ### 화첩
@@ -169,8 +294,15 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.5.0', '3.5
 - 액자는 거래하거나 상점에 팔 수 없습니다.
 - 초상 그림은 생성형 AI로 만든 이미지입니다.
 
+## 파티 동승
+- 파티장만이 아니라 파티원 누구나 동승을 요청할 수 있습니다. 지도에서 목적지를 고르고 같은 곳의 파티원에게 요청하면, 요청한 사람의 탈것에 함께 타고 운임도 요청한 사람이 냅니다.
+- 요청은 60초 동안 답을 기다리고, 그 안에 수락하지 않으면 사라집니다.
+- 보낸 요청이 답을 기다리는 동안에는 새 동승 요청을 보낼 수 없습니다. 지도에 남은 시간이 보입니다.
+- 한 사람에게 동승 요청이 겹치면 나중에 들어온 요청만 남습니다. 앞 요청을 보낸 사람에게는 취소되었다는 알림이 갑니다.
+
 ## 고친 것
 - 캐릭터 › 기술에서 3.4.0부터 분석·막기·응급 처치·채굴·낚시와 제작 계열 대부분이 「다른 직업 기술」처럼 흐리게 보이고, 24·43단계 택일 기술을 고르는 단추와 빨간 점이 나오지 않던 것을 고쳤습니다. 이제 이 계열들도 단계 칸을 눌러 택일 기술을 고를 수 있습니다.
+- 휴대폰 현장에서 이어진 길·채집을 누를 때마다 화면이 위아래로 한 번 튀던 것을 고쳤습니다.
 $N$)
 on conflict (note_id) do update set title = excluded.title, body = excluded.body;
 

@@ -54,6 +54,7 @@ async function peopleCheck() {
 export async function render(root) {
   if (!store.character) return;
   el = root;
+  el.style.overflowAnchor = 'none';
   bindTips(el);
   el.innerHTML = loading();
   off.forEach(f => f());
@@ -97,13 +98,13 @@ async function draw() {
     stopBattle();
     noteRegion(s.region);
     if (!traveling) regionIntro(s.region?.region_id);
-    const back = fieldY != null, y = fieldY ?? window.scrollY; fieldY = null;
+    const back = fieldY != null, y = fieldY ?? window.scrollY, t0 = Date.now(); fieldY = null;
     const oldQ = $('#quest-box', el)?.innerHTML, oldR = $('#raid-band', el)?.innerHTML;
     if (el.offsetHeight) el.style.minHeight = `${el.offsetHeight}px`;
     el.innerHTML =`${scene(s, traveling, downed)}${store.hud?.domain?.white_night ? `<p class="hint warn wn-band">${icon('mask', 14)}<span>${esc(WHITE_NIGHT.band)}</span></p>` : ''}${checklistHtml()}${raidBand()}${questBox()}${partyHtml(pty, s)}${s.region.safe ? town(s, roster) : field(s, roster, traveling || downed || !!store.expedition || !!idleSt || s.overflow > 0)}`;
     if (oldQ && $('#quest-box', el)) $('#quest-box', el).innerHTML = oldQ;
     if (oldR && $('#raid-band', el)) $('#raid-band', el).innerHTML = oldR;
-    const keepY = () => { if ((y > 0 || back) && el.isConnected) scrollAfterModal(y, back); };
+    const keepY = () => { if ((y > 0 || back) && el.isConnected) scrollAfterModal(y, back || userScrollAt < t0); };
     keepY();
     bind(s);
     const release = () => { keepY(); requestAnimationFrame(() => { if (el.isConnected) el.style.minHeight = ''; }); };
@@ -146,7 +147,8 @@ function openAid(target, name) {
   $$('[data-aid-use]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_party_use_item', { p_target: target, p_item_id: b.dataset.aidUse }); closeModal(); return r; }));
 }
 
-let fieldY = null;
+let fieldY = null, userScrollAt = 0;
+for (const k of ['touchmove', 'wheel', 'keydown']) window.addEventListener(k, () => { userScrollAt = Date.now(); }, { passive: true });
 function drawBattle(pty) {
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;

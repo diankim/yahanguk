@@ -153,6 +153,9 @@ function setupMap(here) {
 function onResize() { if ($('#map-svg', el)) paint(); }
 
 let geom = null, geomKey = '';
+const RIDE_WAIT = Number(GAMEDATA.ride?.wait_s) || 60;
+let rideUntil = 0;
+const rideLeft = () => Math.max(0, Math.ceil((rideUntil - Date.now()) / 1000));
 function geometry() {
   const key = mapData.regions.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
   if (key !== geomKey) { geom = buildCells(mapData.regions.filter(r => !isPin(r))); geomKey = key; }
@@ -314,7 +317,7 @@ function select(id, center) {
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
   const seats = Number(((mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id) || {}).passenger_capacity || 1);
-  if (partyData?.party?.leader_id === store.character?.owner_id && seats >= 2) load('world_party_overview', undefined, { maxAge: 30000 }).then(p => {
+  if (partyData?.party && seats >= 2) load('world_party_overview', undefined, { maxAge: 30000 }).then(p => {
     const k = x => JSON.stringify((x?.members || []).map(m => [m.owner_id, m.location, !!m.in_combat, !!m.downed]).concat([x?.party?.leader_id]));
     if (selected === id && k(p) !== k(partyData)) { partyData = p; drawDetail(); }
   }).catch(() => {});
@@ -405,7 +408,6 @@ function drawDetail() {
   else if (r.level_locked) reason = `Lv.${r.min_level} 이상부터 들어갈 수 있습니다.`;
   else if (!route) reason = '지금 갈 수 있는 길이 없습니다. 레벨이 모자란 지역이 길을 막고 있습니다.';
   const members = (partyData?.members || []).filter(m => m.owner_id !== c.owner_id && m.location === c.location && !m.in_combat && !m.downed);
-  const isLeader = partyData?.party?.leader_id === c.owner_id;
   const monsters = (r.monsters || []).slice(0, 4);
   box.innerHTML = `
     <article class="panel region-detail" style="--fc:${factionColor(factionOf(r.region_id))}">
@@ -425,8 +427,9 @@ function drawDetail() {
           ${isHere ? `<button class="btn primary" id="go-field">${icon('home', 16)}<span>현장으로</span></button>`
                    : `<button class="btn primary" id="travel-go" ${reason ? 'disabled' : ''}>${icon('route', 16)}<span>${route && route.length > 2 ? '경로 따라 출발' : '이곳으로 출발'}</span></button>`}
         </div>
-        ${!reason && !isHere && route?.length > 1 && isLeader && members.length ? `<div class="ride"><p class="muted small">파티원에게 동승을 요청하면 수락하는 순간 함께 출발해 같은 때 도착합니다${est.hops > 1 ? `(${est.hops}구간)` : ''}. 운임은 파티장만 한 번(구간 수만큼) 냅니다.</p>
-          <div class="btn-row">${members.map(m => `<button class="btn small" data-ride="${esc(m.owner_id)}">${icon('users', 14)}<span>${esc(m.character_name)} 동승 요청</span></button>`).join('')}</div></div>` : ''}
+        ${!reason && !isHere && route?.length > 1 && members.length ? `<div class="ride"><p class="muted small">파티원에게 동승을 요청하면 ${RIDE_WAIT}초 안에 수락하는 순간 함께 출발해 같은 때 도착합니다${est.hops > 1 ? `(${est.hops}구간)` : ''}. 내 탈것에 태우고, 운임은 요청한 내가 한 번(구간 수만큼) 냅니다.</p>
+          <p class="hint" data-ride-wait ${rideLeft() ? '' : 'hidden'}>${icon('hourglass', 14)}<span>보낸 동승 요청에 답을 기다리는 중 · <b>${rideLeft()}</b>초</span></p>
+          <div class="btn-row">${members.map(m => `<button class="btn small" data-ride="${esc(m.owner_id)}" ${rideLeft() ? 'disabled' : ''}>${icon('users', 14)}<span>${esc(m.character_name)} 동승 요청</span></button>`).join('')}</div></div>` : ''}
       </div>
     </article>`;
   if (route && route.length > 1 && !reason) fillQuote(box, r.region_id, est);
@@ -435,7 +438,21 @@ function drawDetail() {
   const cdEl = $('[data-tcd]', box);
   if (cdEl) { const t = setInterval(() => { if (!cdEl.isConnected) return clearInterval(t); const left = travelCdLeft(); if (left > 0) cdEl.textContent = fmt.remain(left); else { clearInterval(t); drawDetail(); if (!$('#map-peek', el)?.hidden) showPeek(selected); } }, 1000); }
   $('#go-field', box)?.addEventListener('click', () => window.yahangGo('home'));
-  $$('[data-ride]', box).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_invite_v2', { p_passenger_id: b.dataset.ride, p_region_id: r.region_id }), { success: '동승 요청을 보냈습니다. 상대가 수락하면 함께 출발합니다.' }));
+  $$('[data-ride]', box).forEach(b => b.onclick = () => guard(b, async () => {
+    try { const res = await act('world_travel_party_invite_v2', { p_passenger_id: b.dataset.ride, p_region_id: r.region_id }); rideUntil = res?.expires_at ? new Date(res.expires_at).getTime() : Date.now() + RIDE_WAIT * 1000; rideTick(box); return res; }
+    catch (e) { const m = /^ride_wait:(\d+)$/.exec(e?.hint || ''); if (m) { rideUntil = Date.now() + Number(m[1]) * 1000; rideTick(box); } throw e; }
+  }, { success: `동승 요청을 보냈습니다. ${RIDE_WAIT}초 안에 상대가 수락하면 함께 출발합니다.` }).then(() => { if (rideLeft()) rideTick(box); }));
+  if (rideLeft()) rideTick(box);
+}
+function rideTick(box) {
+  const paint = () => {
+    const w = $('[data-ride-wait]', box), left = rideLeft();
+    if (w) { w.hidden = !left; const b = $('b', w); if (b) b.textContent = left; }
+    $$('[data-ride]', box).forEach(b => { b.disabled = !!left; });
+    return left;
+  };
+  if (!paint()) return;
+  const t = setInterval(() => { if (!box.isConnected || !paint()) clearInterval(t); }, 1000);
 }
 
 function drawList(filter, q) {
@@ -469,11 +486,11 @@ async function drawTravel(body) {
         : `<p class="desc">현재 <b>${esc(status?.location || c.location)}</b>에 있습니다. 세계 지도에서 아무 지역이나 고르면 길을 따라 한 번에 이동합니다.</p>
            <button class="btn primary" id="tr-map">${icon('map', 16)}<span>세계 지도 열기</span></button>`, { ico: 'route' })}
       ${panel('동승 요청', `
-        ${incoming.length ? `<ul class="spot-list">${incoming.map(r => `<li><div><b>${esc(r.to_name || nameOf(r.to_region))}</b><small>파티장의 동승 제안${r.hops > 1 ? ` · ${r.hops}구간` : ''} · 운임은 파티장이 냅니다</small></div>
+        ${incoming.length ? `<ul class="spot-list">${incoming.map(r => `<li><div><b>${esc(r.to_name || nameOf(r.to_region))}</b><small>${esc(r.leader_name || '파티원')}의 동승 제안${r.hops > 1 ? ` · ${r.hops}구간` : ''} · 운임은 ${esc(r.leader_name || '요청한 쪽')}이(가) 냅니다 · <span data-ride-exp="${new Date(r.expires_at).getTime()}">${Math.max(0, Math.ceil((new Date(r.expires_at) - Date.now()) / 1000))}초</span> 안에 답하기</small></div>
           <div class="btn-row"><button class="btn small primary" data-ride="${esc(r.request_id)}" data-accept="1">수락</button><button class="btn small" data-ride="${esc(r.request_id)}" data-accept="0">거절</button></div></li>`).join('')}</ul>` : ''}
-        ${outgoing.length ? `<p class="muted small">보낸 요청 ${outgoing.length}건이 응답을 기다리는 중입니다.</p>` : ''}
+        ${outgoing.length ? `<p class="muted small">${outgoing.map(r => `${esc(r.passenger_name || '파티원')}에게 보낸 동승 요청이 답을 기다리는 중입니다(<span data-ride-exp="${new Date(r.expires_at).getTime()}">${Math.max(0, Math.ceil((new Date(r.expires_at) - Date.now()) / 1000))}초</span>).`).join(' ')}</p>` : ''}
         ${!incoming.length && !outgoing.length ? empty('대기 중인 동승 요청이 없습니다.', 'users') : ''}
-        <p class="muted small">동승은 같은 파티원끼리만 됩니다. 파티장이 지도에서 목적지를 고르고 요청하면, 수락하는 순간 함께 출발합니다. 전투·원정 중에는 출발할 수 없습니다.</p>`, { ico: 'users' })}
+        <p class="muted small">동승은 같은 파티원끼리만 됩니다. 파티원 누구나 지도에서 목적지를 고르고 요청할 수 있고, 받은 사람이 ${RIDE_WAIT}초 안에 수락하는 순간 요청한 사람의 탈것으로 함께 출발합니다. 보낸 요청이 답을 기다리는 동안에는 새 요청을 보낼 수 없고, 한 사람에게 요청이 겹치면 나중에 들어온 것만 남습니다. 전투·원정 중에는 출발할 수 없습니다.</p>`, { ico: 'users' })}
     </div>
     ${panel('내 탈것', `${RAID_ON && !mounts?.mount_id ? `<p class="hint">${icon('route', 14)} 지금은 탈것 없이 <b>걸어 다닙니다</b>(속도 ×1, 노정패 운임 없음). 아래에서 탈것을 고르면 다시 탑니다.</p>` : ''}<div class="mount-grid">${owned.map(m => `
       <article class="mount ${m.equipped ? 'on' : ''}">
@@ -494,6 +511,8 @@ async function drawTravel(body) {
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
   $$('[data-goto]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.goto); switchTo('world'); });
+  const exps = $$('[data-ride-exp]', body);
+  if (exps.length) { const t = setInterval(() => { if (!body.isConnected) return clearInterval(t); let any = false; exps.forEach(x => { const left = Math.max(0, Math.ceil((Number(x.dataset.rideExp) - Date.now()) / 1000)); x.textContent = `${left}초`; if (left) any = true; else x.closest('li')?.querySelectorAll('[data-ride]').forEach(b => { b.disabled = true; }); }); if (!any) clearInterval(t); }, 1000); }
   const span = $('[data-arrive]', body);
   if (span) { const t = setInterval(() => { if (!span.isConnected) return clearInterval(t); span.textContent = `${fmt.remain(Number(span.dataset.arrive) - Date.now())} 후 도착`; }, 1000); }
 }
