@@ -948,9 +948,9 @@ a.facility { text-decoration: none; }
 .act.sp-atk { padding: 4px; display: grid; place-items: center; }
 .act.sp-atk .sp-ring { height: 100%; }
 .btn.sp-atk { padding-block: 0; justify-content: center; }
-.btn.sp-atk .sp-ring { height: 34px; }
-@media (max-width: 640px) { .raid-wrap .raid-buttons .btn.sp-atk .sp-ring { height: 42px; } }
-.btn.sp-atk .sp-in { padding: 9%; } .btn.sp-atk .sp-in b { font-size: calc(10px * var(--fz, 1)); } .btn.sp-atk .sp-in .sp-n { font-size: calc(9px * var(--fz, 1)); }
+.btn.sp-atk .sp-ring { height: 30px; }
+@media (max-width: 640px) { .raid-wrap .raid-buttons .btn.sp-atk .sp-ring { height: 36px; } }
+.btn.sp-atk .sp-in { padding: 6%; } .btn.sp-atk .sp-in b { font-size: calc(10px * var(--fz, 1)); } .btn.sp-atk .sp-in .sp-n { font-size: calc(9px * var(--fz, 1)); }
 .act.ghost { background: transparent; }
 /* 동료 부르기: 행동 칸 여섯째, 포인트색 테두리로 눈에 띄게 */
 .actions.has-call { grid-template-columns: repeat(6, minmax(0, 1fr)); }
