@@ -156,6 +156,7 @@ let geom = null, geomKey = '';
 const RIDE_WAIT = Number(GAMEDATA.ride?.wait_s) || 60;
 let rideUntil = 0;
 const rideLeft = () => Math.max(0, Math.ceil((rideUntil - Date.now()) / 1000));
+window.addEventListener('yh-note', e => { if (/^ride_(declined|departed)$/.test(e.detail?.kind || '')) { rideUntil = 0; document.querySelectorAll('[data-ride-wait]').forEach(w => { w.hidden = true; }); document.querySelectorAll('.ride [data-ride]').forEach(x => { x.disabled = false; }); } });
 function geometry() {
   const key = mapData.regions.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
   if (key !== geomKey) { geom = buildCells(mapData.regions.filter(r => !isPin(r))); geomKey = key; }
