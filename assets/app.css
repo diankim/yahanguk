@@ -1983,7 +1983,10 @@ small.own-tag { display: block; font-size: calc(11px * var(--fz, 1)); line-heigh
 /* 세력 판도: 세력 색 점·칩, 분쟁 표시 */
 .fdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fc); margin: 0 4px 0 2px; vertical-align: 1px; }
 .fchip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; font-size: calc(12px * var(--fz, 1)); border: 1px solid color-mix(in srgb, var(--fc) 70%, var(--line)); background: color-mix(in srgb, var(--fc) 22%, transparent); color: var(--text); }
-.fchip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--fc); }
+.fchip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--fc); flex: none; }
+.pc-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.pc-chips .fchip, .pc-chips .chip { white-space: nowrap; font-size: calc(11.5px * var(--fz, 1)); padding: 1px 7px; min-height: 0; line-height: 1.5; }
+.friend-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 4px; border-radius: 50%; background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); vertical-align: middle; }
 b.contest { color: var(--warn); font-weight: 600; }
 .infl-mine { cursor: help; }
 .infl-mine.full { color: var(--bad); font-weight: 600; }
