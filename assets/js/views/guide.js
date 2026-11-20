@@ -2089,6 +2089,14 @@ const S = [
       <li><b>보내기·제보</b>: 내가 그린 도안의 사본을 친구에게 보낼 수 있고(옷 도안과 함께 하루 ${GD.outfit?.give_day ?? ''}번), 받은 사람도 지어 놓을 수 있습니다. 도안첩에는 받은 것까지 ${GD.furn?.keep || 20}장을 둡니다. 남의 별채에 놓인 직접 그린 가구는 별채 그림 칸의 깃발로 제보할 수 있고, 운영진이 내린 가구는 회색 받침으로만 보입니다.</li>
       <li><b>고치기</b>: 내가 그린 도안을 고치면 이미 지은 가구도 모두 고친 모습으로 바뀝니다.</li>
     </ul>`],
+  ['portrait', '초상 화첩', `
+    <p>이야기에서 만난 인물 마흔한 명의 초상을 모읍니다. 별채 머리의 「초상 화첩」에서 엽니다(별채가 없어도 별채 화면에서 볼 수 있습니다).</p>
+    <ul>
+      <li><b>얻는 곳</b>: 그 인물이 처음 크게 나오는 이야기(홍인사 장·세력 이야기·요인록·묵적록·명등기)를 마치면 화첩에 열립니다. 열리기 전 칸에는 어느 이야기를 마치면 되는지 적혀 있습니다.</li>
+      <li><b>액자</b>: 열린 인물을 눌러 「꺼내기」를 누르면 초상 액자가 별채 곳간에 들어옵니다. 「꾸미기」에서 벽에 걸고, 걸린 액자를 누르면 큰 그림을 봅니다.</li>
+      <li><b>하나씩</b>: 같은 인물 액자는 가방·창고·별채를 합쳐 하나만 가질 수 있습니다. 버려도 화첩에서 다시 꺼낼 수 있고, 거래하거나 팔 수는 없습니다.</li>
+      <li>초상 그림은 생성형 AI로 만든 이미지입니다.</li>
+    </ul>`],
   ['pets', '꼬마 동무', `
     <p>별채에서 함께 살거나 데리고 다니는 작은 동무입니다. 능력치·보상 효과는 없고, 모으고 보여 주는 즐거움입니다(조련사만 데리고 다니는 동무와 함께 싸웁니다 — 「직업과 역할」의 「조련사와 동무」). ${GD.pets.total}종이 있고, 그 가운데 열둘은 조사원 제보로 들어온 동무입니다.</p>
     <h4>얻는 곳</h4>
@@ -2254,7 +2262,7 @@ const GROUPS = [
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'gearset', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
-  ['home', '별채', 'home', ['house', 'furn', 'pets', 'look', 'outfit']],
+  ['home', '별채', 'home', ['house', 'furn', 'portrait', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],

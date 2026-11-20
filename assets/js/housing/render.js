@@ -1,4 +1,5 @@
 import { PAL, dimsOf } from './drawing.js';
+import { portraitPic } from './portraits.js';
 export const TW = 32, TH = 16, ZU = 20, WALLH = 78, PAD = 10;
 const rgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 export const pack = (r, g, b) => (255 << 24 | b << 16 | g << 8 | r) >>> 0;
@@ -147,7 +148,7 @@ export function makeRoom(N, defs) {
   function drawWallItem(it) {
     const d = WALL[it.k]; if (!d) return;
     for (const [t0, z0, w0, h0, col] of d.rects || []) fillPoly(layer, wallPoly(it.side, it.t + t0, it.z + z0, w0, h0), P(col));
-    const pic = d.frame && it.d != null ? pics[it.d] : null;
+    const pic = d.portrait ? portraitPic(d.portrait) : d.frame && it.d != null ? pics[it.d] : null;
     if ((pic?.px || pic?.rgb) && d.paper) {
       const [pw, ph] = pic.rgb ? [pic.w, pic.h] : dimsOf(pic.s), top = it.z + d.paper[1] + ph;
       for (let v = 0; v < ph; v++) for (let u = 0; u < pw; u++) {

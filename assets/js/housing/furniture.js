@@ -1,3 +1,4 @@
+import { PORTRAITS, PORTRAIT_FRAME } from './portraits.js';
 const C = {
   wood: '#8a5a32', dark: '#553420', deep: '#3e2616', pine: '#a8784a', lac: '#9a3326', lacD: '#6e2219', gold: '#d8b25a', brass: '#b08a40',
   paper: '#f1e8d4', paper2: '#e2d6bb', ink: '#2a2a2e', ind: '#33467a', ind2: '#4b63a0', red: '#b84a3a', jade: '#5f9a82', jade2: '#7fb59c',
@@ -1538,6 +1539,12 @@ export const WALL = {
     [.24, 5, .22, 6, C.ink], [.6, 5, .22, 6, C.ink], [1.18, 5, .22, 6, C.ink], [1.54, 5, .22, 6, C.ink],
     [.92, 4.5, .16, 7, C.lac], [.04, 14, .3, 4, C.red], [1.66, 14, .3, 4, C.ind2], [.12, 18, .14, 3, C.yellow], [1.74, 18, .14, 3, C.green]] },
 };
+for (const [k, d] of Object.entries(PORTRAITS)) {
+  const { w, h, paper } = PORTRAIT_FRAME;
+  WALL['portrait_' + k] = { name: '초상 · ' + d.n, grade: 4, kind: 'deco', cat: '초상', portrait: k, w, h, paper, rects: [
+    [-.06, -1, w + .12, h + 2, '#8a6a3a'], [0, 0, w, h, '#3a2418'], [.08, 2, w - .16, h - 4, '#1e1410'], [paper[0], paper[1], w - .25, h - 6, '#d8cdb6'],
+    [w / 2 - .04, -4, .08, 3, '#8a6a3a']] };
+}
 
 export const PAPER = {
   hanji:       { name: '한지',       grade: 1, c: '#d9ccb0', l: '#e7ddc6', pat: 'plain' },

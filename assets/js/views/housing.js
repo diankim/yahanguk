@@ -73,11 +73,13 @@ function drawClosed() {
       <p class="muted small">일지 › 보조 퀘스트의 「생활」 칸에서도 볼 수 있습니다.</p>`, { ico: 'scroll' })}
     ${mergePanel()}
     ${panel('그림첩', `<p class="muted small">별채가 없어도 도트 그림을 그려 모으고 친구에게 보낼 수 있습니다. 별채를 얻으면 그림 액자에 걸 수 있습니다.</p><button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button>`, { ico: 'palette' })}
+    ${panel('초상 화첩', `<p class="muted small">이야기에서 만난 인물의 초상을 모읍니다. 별채가 없어도 볼 수 있고, 액자는 별채를 얻은 뒤에 꺼낼 수 있습니다.</p><button class="btn small" id="hs-portrait">${icon('scroll', 15)} 초상 화첩</button>`, { ico: 'scroll' })}
     ${panel('꼬마 동무', `<p class="muted small">별채가 없어도 동무를 모으고 한 마리를 데리고 다닐 수 있습니다(조사원 카드에 함께 보입니다).</p><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무 도감</button>`, { ico: 'heart' })}
     ${store_.length ? panel('곳간에 쌓인 가구', `<p class="muted small">별채를 얻기 전에 받은 가구입니다. 별채를 얻으면 꺼내 놓을 수 있습니다.</p><ul class="hs-list">${store_.map(([id, n]) => `<li>${esc(furName(id))} ×${n}</li>`).join('')}</ul>`, { ico: 'chest' }) : ''}`;
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
   $('#hs-book')?.addEventListener('click', () => openGallery());
+  $('#hs-portrait')?.addEventListener('click', () => import('./portraits.js').then(m => m.openPortraitBook()));
 }
 
 const counts = placedCounts;
@@ -135,7 +137,7 @@ function draw() {
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${esc(cr.name || '안채')} ${cr.size}×${cr.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
-      ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button><button class="btn small" id="hs-furn">${icon('hammer', 15)} 가구 도안</button>` : ''}${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button>` : ''}</div></div>
+      ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button><button class="btn small" id="hs-furn">${icon('hammer', 15)} 가구 도안</button>` : ''}${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button><button class="btn small" id="hs-portrait">${icon('scroll', 15)} 초상 화첩</button>` : ''}</div></div>
     ${roomBar()}
     ${can && edBlock && !editing ? `<p class="muted small hs-why">${esc(edBlock)}</p>` : ''}
     <div class="hs-wrap ${editing ? 'editing' : ''}">
@@ -338,6 +340,7 @@ function bind() {
   })));
   $('#hs-store')?.addEventListener('click', openStore);
   $('#hs-book')?.addEventListener('click', () => openGallery(() => { if (!editing) reload(); }));
+  $('#hs-portrait')?.addEventListener('click', () => import('./portraits.js').then(m => m.openPortraitBook(() => { if (!editing) reload(); })));
   $('#hs-furn')?.addEventListener('click', () => import('./furndesign.js').then(m => m.openFurnBook(res => { if (res?.item && !editing) reload(); })));
   $('#hs-pic')?.addEventListener('click', () => {
     const s = sel; if (!s || !WALL[s.k]?.frame) return;
@@ -393,6 +396,7 @@ function onCanvas(e) {
     const hitPet = onFloor && pets.find(pt => Math.abs(gx - pt.x - .5) < 1 && Math.abs(gy - pt.y - .5) < 1);
     if (hitPet) { fx.push({ key: 'heart', pk: hitPet.key, until: Date.now() + 1200 }); paint(); return; }
     const hitW = room.hit(bx, by), pic = hitW && WALL[hitW.k]?.frame && hitW.d != null ? snap.drawings?.[hitW.d] : null;
+    if (hitW && WALL[hitW.k]?.portrait) return void import('./portraits.js').then(m => m.openPortraitView(WALL[hitW.k].portrait));
     if (pic) openViewer(pic, snap.owner_id, () => reload());
     return;
   }
