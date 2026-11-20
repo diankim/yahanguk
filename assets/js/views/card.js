@@ -6,7 +6,7 @@ import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, fmt,
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
 import { chip, invalidate } from './common.js';
-import { factionColor } from '../geo.js';
+import { factionColor, FACTION_SEAL } from '../geo.js';
 import { brokenName, NAMELESS } from '../rules.js';
 import { nameStyle } from '../chat.js';
 import { patternLayer, sealMark } from '../cosmetics.js';
@@ -58,7 +58,7 @@ async function draw(box, id) {
       <div class="profile-card">${patternLayer(c.profile?.pattern)}<div class="pc-emblem">${emblem(c.owner_id, c.profile, 72)}</div>
         <div><h3><span class="card-name${nameStyle(c.profile?.chat_hue, c.owner_id).cls}${c.nameless ? ' name-broken' : ''}" style="--hu:${nameStyle(c.profile?.chat_hue, c.owner_id).hu}"${c.nameless ? ` title="${esc(c.owner_id === store.character?.owner_id ? NAMELESS.mine : NAMELESS.other)}"` : ''}>${esc(c.nameless ? brokenName(c.character_name) : c.character_name)}</span>${sealMark(c.profile?.seal)}${c.gm ? '<span class="gm-badge" title="운영진(GM)">GM</span>' : ''}${rel === 'friends' ? `<span class="friend-mark" title="친구" aria-label="친구">${icon('users', 13)}</span>` : ''}${c.yohwa === 'frenzy' ? '<em class="yohwa-mark" title="요괴화 — 요괴의 힘이 몸을 차지한 채 한 시간을 버티는 중입니다">요괴화</em>' : ''}</h3>
           ${c.display_title ? `<p class="title-badge">「${esc(c.display_title)}」</p>` : ''}
-          <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id || c.tn_champ ? `<p class="pc-chips">${c.major_faction_id ? `<span class="fchip" style="--fc:${factionColor(c.major_faction_id)}">${esc(nameOf(c.major_faction_id))}${c.faction_rank ? ` · ${esc(c.faction_rank)}` : ''}</span>` : ''}${c.tn_champ ? `<span class="chip tn-badge">${c.tn_champ === 'team' ? '비무 장원 · 팀전' : '비무 장원'}</span>` : ''}</p>` : ''}</div>
+          <p>Lv.${c.level || 1} · ${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p>${c.major_faction_id || c.tn_champ ? `<p class="pc-chips">${c.major_faction_id ? `<span class="fchip fseal" style="--fc:${factionColor(c.major_faction_id)}" title="${esc(nameOf(c.major_faction_id))}${c.faction_rank ? ` · ${esc(c.faction_rank)}` : ''}"><i>${FACTION_SEAL[c.major_faction_id] || ''}</i>${esc(c.faction_rank || nameOf(c.major_faction_id))}</span>` : ''}${c.tn_champ ? `<span class="chip tn-badge" title="${c.tn_champ === 'team' ? '비무회 팀전 장원' : '비무회 장원'}"><i>武</i>${c.tn_champ === 'team' ? '장원·팀전' : '장원'}</span>` : ''}</p>` : ''}</div>
         <div class="pc-side"><div class="pc-look" title="내 모습"><img src="${avatarImage(c.look, { scale: 3, job: c.job_key })}" alt=""></div>
         ${c.pet ? `<div class="pc-pet" title="함께 다니는 꼬마 동무"><img src="${petImage(c.pet.id, c.pet.adult, { scale: 3 })}" alt=""><small>${esc(c.pet.nick || c.pet.name || '')}</small></div>` : ''}</div>
       ${!c.mine && wornDesigns(c.look, c.look_designs).length ? reportFlag('data-drep-pick', '입은 도안 제보') : ''}</div>

@@ -74,4 +74,5 @@ const FACTION_GRAYS = {
   red_moon_cult: '#262626', black_lotus: '#727272', southern_remnant: '#9e9e9e', null: '#d0d0d0',
 };
 const mono = () => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'heukbaek';
+export const FACTION_SEAL = { night_office: '夜', red_moon_cult: '月', black_lotus: '蓮', north_league: '北', river_alliance: '水', southern_remnant: '火', mandate_court: '天' };
 export function factionColor(id) { const t = mono() ? FACTION_GRAYS : FACTION_COLORS; return t[id] || t.null; }
