@@ -9,7 +9,7 @@ const SP_MAX = GD.spear?.max ?? 5, SP_NAME = GD.spear?.name || '창끝 기세';
 export const isSpear = () => store.character?.job_key === 'spearman';
 const spK = n => Math.max(0, Math.min(SP_MAX, Math.floor(Number(n) || 0)));
 const spSegs = k => Array.from({ length: SP_MAX }, (_, i) => `<circle class="${i < k ? 'on' : ''}" cx="22" cy="22" r="19.6" pathLength="${SP_MAX * 10}" stroke-dasharray="8 ${SP_MAX * 10 - 8}" stroke-dashoffset="${-i * 10 - 1}"/>`).join('');
-export const spearTitle = n => `${SP_NAME} ${spK(n)}/${SP_MAX} · 연달아 공격할수록 쌓이고, 방어·버티기·물품·이동하면 끊깁니다`;
+export const spearTitle = n => `${SP_NAME} ${spK(n)}/${SP_MAX} · 연달아 공격할수록 쌓이고, 방어·버티기·물품을 고르면 한 겹씩 줄어듭니다`;
 export const spearRing = (n, inner) => `<span class="sp-ring" data-sp="${spK(n)}"><svg viewBox="0 0 44 44" aria-hidden="true"><g transform="rotate(-90 22 22)">${spSegs(spK(n))}</g></svg><span class="sp-in">${inner}</span></span>`;
 export const spearInner = (label, n, big = false) => `${big ? icon('sword', 13) : ''}<b>${esc(label)}</b><small class="sp-n">${big ? '기세 ' : ''}${spK(n)}/${SP_MAX}</small>`;
 export function spearSet(btn, n) {
