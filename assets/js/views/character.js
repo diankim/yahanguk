@@ -116,7 +116,7 @@ export function equipRowLi(inv, prof, here, slot, rq) {
     const cost = (rq?.items || []).find(x => x.item_id === id)?.cost;
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
-    return `<li>${icon(ic, 18)}<div><b>${label} · <button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(nameOf(id))}</button>${enh} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
+    return `<li>${icon(ic, 18)}<div><b>${label} · <button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(nameOf(id))}</button>${enh}${it?.tier ? ` <em class="eq-tier">${it.tier}단계</em>` : ''} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기${cost != null ? ` <small>${fmt.jeon(cost)}</small>` : ''}</button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
@@ -153,7 +153,7 @@ export function eqMini(inv, prof, pick = false) {
     if (!id) return pick ? `<li><button type="button" class="none" data-eqslot="${slot}">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></button></li>`
       : `<li class="empty">${icon(ic, 14)}<span><small>${label}</small><b>비어 있음</b></span></li>`;
     const mx = durs[id]?.max ?? 0, d = durs[id]?.durability ?? mx, n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
-    return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label} ${rarTag(it?.rarity)}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
+    return `<li><button type="button" ${pick ? `data-eqslot="${slot}"` : `data-eqi="${esc(id)}"`}>${icon(ic, 14)}<span><small>${label}${it?.tier ? ` <em class="eq-tier">${it.tier}단계</em>` : ''} ${rarTag(it?.rarity)}</small><b>${esc(nameOf(id))}${n ? ` +${n}` : ''}</b>
       ${mx ? `<i class="dur ${d <= 0 ? 'broken' : d * 4 < mx ? 'worn' : ''}" style="--p:${Math.max(0, Math.min(100, d / mx * 100))}%" title="내구도 ${d}/${mx}"></i>` : ''}</span></button></li>`;
   }).join('')}</ul>`;
 }

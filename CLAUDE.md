@@ -363,7 +363,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 상위 도구: world_tool_lines(채집도 field_knife→field_knife_2→t3_gather→t5_gather, 곡괭이 ore_pick→t4_gather)·world_tool_covers로 높은 단계 도구가 낮은 단계 조건을 채움(world_craft_item, 화면 bag.js toolCovers는 물품 목록 tl·tier — world_tool_lines 한 곳만 고침). 채집은 도구를 조건으로 보지 않는다.
 - 장착 조건(레벨·직업·소속·능력치)은 world_equip_item이 검사, 가방 › 장비·물품 정보에 「장착 조건」 초록/빨강. 생활 도구·제작 공구에는 직업 조건을 두지 않는다(무기만 직업 태그).
 - 드롭(world_gear_drops, world_gear_roll): 한 번에 하나, 일반 최대 1%·정예 5%·우두머리 15%(희귀품 보정), 3단계 이상은 우두머리만, 원정 60% 수준. 2~4단계 제작법, 5단계 일부 무극 관성대 제작, 1·2단계 일부 상점.
-- 장비 등급: 장착 칸(eqMini)·부위 줄(equipRowLi)·바꿔 낄 장비·거래소 목록이 같은 등급 표시 core.js rarTag(희귀도)를 쓴다. 가방 › 장비 긴 안내는 패널 머리 「?」(bag.js EQUIP_TIP + DUR_NOTE).
+- 장비 등급: 장착 칸(eqMini)·부위 줄(equipRowLi)·바꿔 낄 장비·거래소 목록이 같은 등급 표시 core.js rarTag(희귀도)를 쓴다. 장착 칸·부위 줄에는 장비 단계 칩(.eq-tier 「n단계」)도, 부위 줄·바꿔 낄 장비 이름은 누르면 물품 정보(data-eqinfo). 가방 › 장비 긴 안내는 패널 머리 「?」(bag.js EQUIP_TIP + DUR_NOTE).
 - 가방 › 장비: 900px 이상 왼쪽 장착 칸(eqMini pick)·오른쪽 고른 부위(#eq-detail: equipRowLi + 바꿔 낄 장비, bag.js eqSel 유지) 나란히(.eq-split), 좁은 화면은 칸을 누르면 부위 창(성공하면 닫힘).
 
 ### 무기 소모
