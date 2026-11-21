@@ -83,11 +83,20 @@ function clueItem(q) {
       return `<li class="${x.done ? 'done' : ''}">${icon(x.done ? 'check' : 'scroll', 12)}<span>${esc(x.name)}</span>${x.done ? '<small class="ok">확정</small>' : ok ? `<button class="btn small primary" data-here="가설 확정" data-story-combo="${esc(x.id)}">가설 확정</button>` : `<small class="muted">단서 ${(x.needs || []).filter(n => has.has(n)).length}/${(x.needs || []).length}</small>`}</li>`; }).join('')}</ul>` : ''}
     <div class="btn-row"><a class="btn small ghost" href="#/log/story">${icon('scroll', 14)}<span>일지에서 단서 보기</span></a></div></li>`;
 }
+const arcOf = q => storyArcOf(q?.cat) || '홍인사';
+async function nextStoryHtml(doneArc) {
+  invalidate('world_quest_board');
+  let b; try { b = await load('world_quest_board'); } catch { return ''; }
+  return (b?.active || []).filter(x => x.auto && isStoryMain(x)).slice(0, 2).map(x => {
+    const at = (x.at_names || [])[0], arc = arcOf(x);
+    return `<p class="hint accent q-next-arc">${icon('chevron', 14)}<span>${arc !== doneArc ? `다음 이야기 <b>「${esc(arc)}」</b> · ` : '다음 장 · '}<b>「${esc(x.title)}」</b>${at ? ` — 받는 곳 ${mapLink(at)}` : ''}<br><small class="muted">현장 퀘스트 칸 「진행 중」 맨 위에 올라 있습니다.</small></span></p>`;
+  }).join('');
+}
 export function storyCombine(btn) {
   return guard(btn, async () => {
     const r = await act('world_story_combine', { p_combo_id: btn.dataset.storyCombo || btn.dataset.combo });
     if (r?.epilogue?.lines?.length) playDialogue({ title: r.epilogue.title, lines: r.epilogue.lines, cast: r.epilogue.cast,
-      extra: `<p class="hint good">${icon('check', 14)} 장을 마쳤습니다</p>` });
+      extra: `<p class="hint good">${icon('check', 14)} 장을 마쳤습니다</p>${await nextStoryHtml('홍인사')}` });
     return r;
   });
 }
@@ -298,10 +307,12 @@ export async function fillQuests(box) {
 
 export async function report(btn) {
   await guard(btn, async () => {
-    const r = await act('world_quest_report', { p_quest: btn.dataset.qReport });
+    const id = btn.dataset.qReport, was = [...(qbSeen?.active || []), ...(qbSeen?.available || [])].find(x => x.quest_id === id);
+    const r = await act('world_quest_report', { p_quest: id });
     invalidate('world_quest_board');
+    const nextHtml = r.done && isStoryMain(was || { quest_id: id }) ? await nextStoryHtml(arcOf(was)) : '';
     window.dispatchEvent(new CustomEvent('yh-sfx', { detail: r.done ? 'reward' : 'confirm' }));
-    const extra = r.done ? `<p class="hint good q-done">${icon('check', 14)}<span><b>퀘스트 완료</b> · 「${esc(r.quest_title)}」</span></p>`
+    const extra = r.done ? `<p class="hint good q-done">${icon('check', 14)}<span><b>퀘스트 완료</b> · 「${esc(r.quest_title)}」</span></p>${nextHtml}`
       : r.clues_open ? `<p class="hint accent">${icon('scroll', 14)}<span>이제 이 장의 단서를 탐색에서 찾을 수 있습니다. 모으면 일지 › 주 이야기에서 가설을 확정하세요.</span></p>`
       : r.next ? `<p class="hint">${icon('chevron', 14)}<span>다음 · <b>${esc(r.next.title)}</b> — ${esc(r.next.goal)}</span></p>` : '';
     playDialogue({ title: `${r.quest_title} · ${r.title}`, lines: r.lines, cast: r.cast, reward: r.reward, extra, again: '마친 장면은 일지의 퀘스트 장면 목록에서 다시 볼 수 있습니다.' }, null);
