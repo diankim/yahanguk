@@ -1,6 +1,7 @@
 import { $, $$, esc, icon, fmt, act, rpc, ask, guard, openModal, bar } from '../core.js';
 import { REGULAR } from '../rules.js';
 import { helpQ } from '../tips.js';
+import { kinSectionHtml, bindKinSection } from '../kin.js';
 
 const hearts = n => `<span class="rg-hearts" aria-label="친밀도 ${n}단계">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}">${icon('heart', 13)}</i>`).join('')}</span>`;
 const haveOf = o => (o.have || 0) + (o.have_st || 0);
@@ -29,12 +30,26 @@ function body(v) {
     <ul class="rg-orders">${(v.orders || []).map(o => orderCard(o, v)).join('')}</ul>
     ${v.can?.give ? '' : `<p class="hint">${icon('pin', 14)} ${esc(v.can?.why || '')}</p>`}
     <p class="muted small">${v.storage ? '가방에 모자란 것은 창고에서 꺼내 넘깁니다.' : '가방에 든 것만 넘깁니다.'} 장착 중·잠금·강화한 장비는 빠집니다.</p>
+    <div class="kin-host"></div>
   </div>`;
+}
+
+function drawKin(m, k) {
+  const box = $('.kin-host', m); if (!box) return;
+  if (k) m._kin = k; else k = m._kin;
+  box.innerHTML = kinSectionHtml(k);
+  bindKinSection(box, k, nv => drawKin(m, nv));
+}
+
+function loadKin(m, npc) {
+  if (m._kin && m._kin.npc === npc) { drawKin(m); return; }
+  rpc('world_kin_view', { p_npc: npc }).then(k => drawKin(m, k)).catch(() => {});
 }
 
 function draw(m, v) {
   const box = $('.rg-host', m); if (!box) return;
   box.innerHTML = body(v);
+  loadKin(m, v.npc);
   $$('[data-rg-info]', box).forEach(b => b.onclick = () => import('./item.js').then(x => x.openItemInfo(b.dataset.rgInfo)));
   $$('[data-rg-src]', box).forEach(b => b.onclick = () => import('../sources.js').then(x => x.openAllSources(b.dataset.rgSrc)));
   $$('[data-rg-give]', box).forEach(b => b.onclick = async () => {

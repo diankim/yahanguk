@@ -226,6 +226,18 @@ export const REGULAR = {
   tip: () => `연담은 채집·제작 분야마다 한 사람씩, 열한 명과 맺습니다. 날마다 사람마다 주문 ${RG.orders}개가 들어오고(내 그 분야 단계에 맞는 물품), 한 주문은 하루 한 번 넘깁니다. 모든 연담을 합쳐 하루 ${RG.day_n}번까지 넘길 수 있습니다. 넘기면 그 분야 기술 경험(다음 단계까지 필요한 경험의 ${RG.xp.pct}%, 최소 ${RG.xp.min} — 우수품 ×${RG.xp.hq_mul})·전(시세 × 수량 × ${RG.gil.rate} + ${RG.gil.base})·친밀도 +${RG.aff.give}(우수품 +${RG.aff.hq})를 받습니다. 친밀도가 ${RG.aff.stages.slice(1).map(fmtN).join('·')}에 닿을 때마다 그 사람과의 이야기가 하나씩 열리고, 다섯째 이야기를 마치면 칭호와 기념품을 받습니다.`,
 };
 
+const KN = GD.kin || { cost: 300, talk_day: 10, gift_day: 1, fx_h: 24, rebond_h: 24, reward: { pct: 50, n: 2 }, faded: '빛바랜 정표', npcs: {} };
+export const KIN = {
+  ...KN,
+  tip: () => `연담 다섯째 이야기를 마친 사람과 백년지기를 맺을 수 있습니다(한 사람에 한 인물). 그 사람이 있는 곳에서 정표 짓는 값 ${fmtN(KN.cost)}전을 내면 백년지기가 내 별채에 머뭅니다. 별채에서 하루 ${KN.talk_day}번 말을 걸 수 있고, 그날 첫 말 걸기부터 ${KN.fx_h}시간 동안 정표를 차고 있으면 회복 +5%·침식 −5%(연리 효과가 켜져 있으면 겹치지 않음). 정표는 연리 정표와 같은 칸이라 한 번에 하나만 찹니다. 선물은 하루 ${KN.gift_day}번 — 그 사람 분야의 물품이면 가끔 답례(그 사람이 만든 물품 ${KN.reward.n}개)를 받습니다. 끊으면 정표는 「${KN.faded}」로 남고 친밀도·연담 주문은 그대로이며, ${KN.rebond_h}시간 뒤에 다시 맺을 수 있습니다.`,
+  giftTip: (name, line) => `하루 한 번 건넬 수 있습니다. ${line ? `${name}의 분야(${line}) 물품이면 특별히 반기고, 가끔 답례를 받습니다.` : ''}`,
+  mineTip: `별채에서 말을 걸면 그날부터 ${KN.fx_h}시간 회복 +5%·침식 −5%(정표를 찼을 때).`,
+  offer: (name, token, cost, again) => `${name}과(와) ${again ? '다시 ' : ''}백년지기를 맺을 수 있습니다. 정표 「${token}」을(를) 짓는 값 ${fmtN(cost)}전.`,
+  makeAsk: (name, token, cost) => `${fmtN(cost)}전을 내고 ${name}과(와) 백년지기를 맺을까요? 정표 「${token}」을(를) 나눠 갖고, ${name}이(가) 내 별채에 머뭅니다.`,
+  breakAsk: (name, token) => `${name}과(와)의 백년지기를 끊을까요? ${name}은(는) 별채를 떠나고 정표 「${token}」은(는) 「${KN.faded}」로 남습니다. 친밀도와 연담 주문은 그대로이고, ${KN.rebond_h}시간 뒤에 다시 맺을 수 있습니다.`,
+  left: n => `오늘 말 걸기 ${n}번 남음`,
+};
+
 const MT = GD.mentor || { gap: 10, near_min: 10, day_cap: 60, pair_cap: 30, xp_day: 50, kinds: {}, skip: [], shop: [], post: { hours: 2, note: 30, wants: {} } };
 export const MENTOR = {
   ...MT,

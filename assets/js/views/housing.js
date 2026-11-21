@@ -13,6 +13,8 @@ import { helpQ } from '../tips.js';
 import { openDesignReport, wornDesigns } from './outfitdesign.js';
 import { reportFlag, pickReport } from '../reportflag.js';
 import { registerFurns } from '../housing/furndef.js';
+import { kinLook, kinFace, kinTalk, kinGreet, kinWear, kinRoom, kinGift } from '../kin.js';
+import { KIN } from '../rules.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -32,6 +34,8 @@ let pets = [], fx = [], poops = [], folks = [];
 const housePets = () => (snap?.pets || (snap?.pet ? [snap.pet] : [])).filter(p => PETS[p.id]);
 const petKey = p => `${p.keeper || ''}:${p.id}`;
 const findPet = k => housePets().find(p => petKey(p) === k);
+const houseKin = () => (snap?.kin || []).filter((k, i, a) => kinLook(k.npc) && a.findIndex(x => x.npc === k.npc) === i);
+const findKin = o => houseKin().find(k => k.owner === o);
 
 export async function render(root, sub) {
   el = root; ownerArg = sub || null; cur = 0; editing = false; pick = null; sel = null; dirty = false; pets = []; fx = [];
@@ -146,7 +150,7 @@ function draw() {
     <div class="hs-wrap ${editing ? 'editing' : ''}">
       <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}${editing || !designRows().length ? '' : reportFlag('data-hrep', '도안 제보')}</div>
       ${editing ? palette() : ''}
-      ${!editing ? housePets().map(petBar).join('') : ''}
+      ${!editing ? rowsHtml() : ''}
     </div>
     ${me && !editing ? ownerPanel() : ''}
     ${me && !editing ? mergePanel() : ''}
@@ -247,6 +251,28 @@ function palette() {
   }).join('');
   return `<div class="hs-pal"><div class="chips">${PAL_TABS.map(([k, l]) => `<button class="chip-btn ${palTab === k ? 'on' : ''}" data-paltab="${k}">${l}</button>`).join('')}</div>
     <div class="hs-pal-grid">${rows || '<p class="muted small">놓을 수 있는 것이 없습니다. 가구는 상점·제작·토벌·원정·칭호 보상으로 얻습니다.</p>'}</div></div>`;
+}
+function rowsHtml() {
+  const ps = housePets().map(petBar).join(''), ks = houseKin().map(kinBar).join('');
+  if (!ks || !ps) return ps + ks;
+  return `<div class="hs-rows"><div class="hs-col">${ps}</div><div class="hs-col">${ks}</div></div>`;
+}
+function kinBar(k) {
+  const o = esc(k.owner), away = (k.room || 0) !== cur ? roomsOf()[k.room || 0]?.name : '';
+  const who = k.mine ? '내 백년지기' : `${k.owner === snap.owner_id ? snap.owner_name : snap.mate_name || '정인'}의 백년지기`;
+  const on = k.mine && k.wear && k.fx_until && new Date(k.fx_until) > new Date();
+  const move = k.mine && away && roomsOf().filter(r => r.open && !r.why).length > 1 ? `<button class="btn small" data-kinroom="${o}">이 방으로</button>` : '';
+  const btns = k.mine ? `${move}<button class="btn small primary" data-kin="talk" data-ko="${o}" ${k.left > 0 ? '' : 'disabled'}>말 걸기</button><button class="btn small" data-kin="gift" data-ko="${o}" ${k.gift ? '' : 'disabled'} title="${esc(k.gift ? KIN.giftTip(k.name, k.line_name) : '오늘은 이미 선물했습니다')}">선물</button><button class="btn small" data-kin="wear" data-ko="${o}">${k.wear ? '정표 벗기' : '정표 차기'}</button>`
+    : `<button class="btn small" data-kin="greet" data-ko="${o}">인사</button>`;
+  return `<div class="hs-petbar hs-kinbar"><img src="${kinFace(k.npc, 1)}" alt=""><b><small class="muted">${esc(who)}</small> ${esc(k.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${k.mine ? `<span class="muted small">정표 「${esc(k.token)}」 ${k.wear ? '차는 중' : '벗어 둠'} · ${esc(KIN.left(Math.max(0, k.left || 0)))}${on ? ' · <span class="ok">회복 +5%·침식 −5%</span>' : ''}</span>${helpQ(KIN.tip(), '백년지기 안내')}` : ''}
+    <span class="hs-petbtn">${btns}</span></div>`;
+}
+async function kinAct(b, what, o) {
+  const k = findKin(o); if (!k) return;
+  if (what === 'greet') return guard(b, () => kinGreet(k));
+  if (what === 'talk') return guard(b, () => kinTalk(k, r => { k.left = r.left; if (r.fx_until) k.fx_until = r.fx_until; draw(); }));
+  if (what === 'gift') return kinGift(k, () => { k.gift = false; draw(); });
+  if (what === 'wear') return guard(b, () => kinWear(k, !k.wear, r => { k.wear = r.wear; draw(); }));
 }
 function petBar(p) {
   const me = keeper(), today = p.today || {}, m = p.mess || {}, k = esc(petKey(p));
@@ -356,6 +382,11 @@ function bind() {
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
   $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet, b.dataset.pk)));
+  $$('[data-kin]', el).forEach(b => b.addEventListener('click', () => kinAct(b, b.dataset.kin, b.dataset.ko)));
+  $$('[data-kinroom]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => {
+    const k = findKin(b.dataset.kinroom); if (!k) return;
+    return kinRoom(cur, r => { k.room = r.room; setupFolks(); draw(); });
+  })));
   $$('[data-care]', el).forEach(b => b.addEventListener('click', () => petCare(b, b.dataset.care, b.dataset.pk)));
   $$('[data-petroom]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => {
     const p = findPet(b.dataset.petroom); if (!p) return;
@@ -398,6 +429,8 @@ function onCanvas(e) {
   if (!editing) {
     const hitPet = onFloor && pets.find(pt => Math.abs(gx - pt.x - .5) < 1 && Math.abs(gy - pt.y - .5) < 1);
     if (hitPet) { fx.push({ key: 'heart', pk: hitPet.key, until: Date.now() + 1200 }); paint(); return; }
+    const hitKin = onFloor && folks.find(f => f.kin && Math.abs(gx - f.x - .5) < 1 && Math.abs(gy - f.y - .5) < 1.4);
+    if (hitKin) { const k = hitKin.kin; if (!k.mine || k.left > 0) kinAct(null, k.mine ? 'talk' : 'greet', k.owner); else toast(KIN.left(0)); return; }
     const hitW = room.hit(bx, by), pic = hitW && WALL[hitW.k]?.frame && hitW.d != null ? snap.drawings?.[hitW.d] : null;
     if (hitW && WALL[hitW.k]?.portrait) return void import('./portraits.js').then(m => m.openPortraitView(WALL[hitW.k].portrait));
     if (pic) openViewer(pic, snap.owner_id, () => reload());
@@ -693,8 +726,16 @@ function freeTiles(w, skip = []) {
 function setupFolks() {
   folks = [];
   registerDesigns(snap?.avatar_designs);
-  const list = snap?.avatars || []; if (!list.length || !state || (snap.look_room || 0) !== cur) return;
+  if (!state) return;
+  const list = (snap.look_room || 0) === cur ? snap?.avatars || [] : [];
+  const kins = houseKin().filter(k => (k.room || 0) === cur);
+  if (!list.length && !kins.length) return;
   const w = walkable(), taken = pets.map(pt => [Math.round(pt.x), Math.round(pt.y)]);
+  for (const k of kins) {
+    const free = freeTiles(w, taken); if (!free.length) break;
+    const [x, y] = free[Math.floor(Math.random() * free.length)]; taken.push([x, y]);
+    folks.push({ id: 'kin:' + k.owner, kin: k, name: k.name, look: kinLook(k.npc), x, y, path: [], wait: 8 + Math.random() * 20, flip: Math.random() < .5, f: Math.floor(Math.random() * 40), walking: false });
+  }
   for (const a of list) {
     const free = freeTiles(w, taken); if (!free.length) break;
     const [x, y] = free[Math.floor(Math.random() * free.length)]; taken.push([x, y]);

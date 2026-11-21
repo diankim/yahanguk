@@ -4,7 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS, JOB_ORDER } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1259,6 +1259,14 @@ const S = [
       <li><table class="guide-table"><tr><th>분야</th><th>인물</th><th>곳</th><th>첫 이야기</th><th>칭호</th><th>기념품</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
       <li>한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 연담 칭호(「첫 연담」·「다섯 연담」·「열한 연담」)에 셉니다.</li>
     </ul>`],
+  ['kin', '백년지기', `
+    <p>연담 다섯째 이야기를 마친 사람 가운데 한 명과 백년지기를 맺으면, 그 사람이 내 별채에 머물며 말을 주고받습니다. 연담 창(그 사람이 있는 곳 현장의 「연담」 칸)에서 맺고 끊습니다.</p>
+    <ul>
+      <li>${KIN.tip()}</li>
+      <li>별채에서 백년지기를 누르거나 아래 줄의 「말 걸기」를 누르면 그때그때 맞는 말을 합니다 — 시간대·날씨, 내 처지(쓰러짐·침식·요화·원정에서 돌아옴·먼 길·레벨 오름), 별채(초상·동무·새 가구·함께 사는 정인), 맺은 지 이레·한 달·백 날 같은 날.</li>
+      <li>백년지기가 머무는 방은 동무처럼 고를 수 있습니다(다른 방에 있으면 줄의 「이 방으로」). 혼례 정인과 한 지붕이면 두 사람의 백년지기가 함께 지내고, 정인의 백년지기를 누르면 인사를 건넵니다. 말 걸기·선물·이점은 저마다 자기 백년지기에게만.</li>
+      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>답례 ×${KIN.reward?.n}(분야 물품을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${esc(n.token)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
+    </ul>`],
   ['feast', '세력 행사', `
     <ul>
       <li>일곱 대세력이 요일마다 거점에서 행사를 엽니다. 매일 ${GD.feast?.start}부터 ${GD.feast?.min}분 동안 열립니다(한국 시각).</li>
@@ -2284,7 +2292,7 @@ const GROUPS = [
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
-  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'regular', 'cproject']],
+  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'regular', 'kin', 'cproject']],
   ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';
