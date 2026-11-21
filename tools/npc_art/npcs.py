@@ -148,7 +148,7 @@ NPCS['daon'] = {
     'designs': {'face': 96, 'hair': 97, 'from_top': 98},
     'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
     'top': {
-        'pal': {"a": "#c1b7ad", "b": "#67403f", "c": "#dac3af", "d": "#512f2e", "e": "#937c65", "f": "#b0a192", "g": "#85796d", "h": "#6a584d", "i": "#534339", "j": "#814148", "k": "#504037", "l": "#685d52", "m": "#7f6c5a", "n": "#7d6d5f", "o": "#d8cbbd", "p": "#8d7761"},
+        'pal': {"a": "#c1b7ad", "b": "#67403f", "c": "#9e9186", "d": "#512f2e", "e": "#937c65", "f": "#b0a192", "g": "#85796d", "h": "#6a584d", "i": "#534339", "j": "#814148", "k": "#504037", "l": "#685d52", "m": "#7f6c5a", "n": "#7d6d5f", "o": "#d8cbbd", "p": "#8d7761"},
         'rows': [
             '..abccccde..',
             '.afgbccbghi.',
