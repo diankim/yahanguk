@@ -45,3 +45,27 @@ NPCS['danbi'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#5c1416", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#3a0a0c"},
     },
 }
+
+NPCS['wolha'] = {
+    'name': '월하',
+    'designs': {'face': 57, 'hair': 83, 'from_top': 84},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#a02a3a", "k": "#782a2a", "w": "#4e5e80", "g": "#d6aa52", "e": "#f2d06a", "m": "#313131", "n": "#1a1a1f", "l": "#c8382e", "q": "#36425e", "s": "#5e1414"},
+        'rows': [
+            '..nkwqqwkn..',
+            '.kmknwwnkmn.',
+            'nnkmnnnkmann',
+            'nknkmnnmnann',
+            '.sssmnnmsss.',
+            '.nnmnnnnmnn.',
+            'nnnmnnnnmnnn',
+            'knkmnnnnmknk',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#5c1416", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#3a0a0c"},
+    },
+}
