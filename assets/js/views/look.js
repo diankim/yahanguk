@@ -1,4 +1,4 @@
-import { act, store, esc, icon, guard, $, $$, ask, toast } from '../core.js';
+import { act, store, esc, icon, guard, $, $$, ask, toast, isGM } from '../core.js';
 import { load, errorBox, invalidate } from './common.js';
 import { AV, avatarImage, fixLook, registerDesigns, TONE_KEYS } from '../housing/avatarsprite.js';
 import { designBook, cropOf, designPic, openFreeEditor } from './outfitdesign.js';
@@ -58,7 +58,7 @@ function pickBlock([slot, table, swatch], crop, snap) {
 function freeBlock(slot, snap) {
   const ds = Object.entries(snap.designs || {}).filter(([, d]) => d.slot === slot);
   const keep = GD.outfit?.[slot]?.keep || (slot === 'face' ? 3 : 10), has = slot === 'hair' ? hqCount(store.character?.inventory || {}, 'hair_pattern') : 1;
-  const can = ds.length < keep && has > 0;
+  const can = (ds.length < keep || isGM(store.user?.id)) && has > 0;
   return `<p class="lk-cur">${FREE_NAME[slot]} <small class="muted">${ds.length}/${keep}${slot === 'hair' ? ` · 머리 그리기 도안 ${has}장` : ''}</small></p>
     <div class="lk-grid">${ds.map(([id, d]) => `<button class="lk-opt${String(draft[slot + '_d'] ?? '') === id ? ' on' : ''}" data-lkf="${slot}" data-id="${esc(id)}" title="${FREE_NAME[slot]}"><img src="${designPic(d, { job: snap.job, look: draft })}" alt=""></button>`).join('')}<button class="lk-opt lk-new" data-lknew="${slot}" ${can ? '' : 'disabled'} title="${slot === 'face' ? '눈·입 그리기' : '머리 그리기'}" aria-label="${slot === 'face' ? '눈·입 그리기' : '머리 그리기'}">${icon('plus', 20)}</button></div>
     ${ds.some(([id]) => String(draft[slot + '_d'] ?? '') === id) ? `<div class="btn-row lk-free-acts"><button class="btn small" data-lkedit="${slot}">${icon('palette', 14)} 이 ${slot === 'face' ? '눈·입' : '머리'} 고치기</button><button class="btn small ghost" data-lkdel="${slot}">지우기</button></div>` : ''}

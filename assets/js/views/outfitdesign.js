@@ -1,4 +1,4 @@
-import { act, store, esc, icon, guard, $, $$, openLayer, ask, toast, nameOf, fmt } from '../core.js';
+import { act, store, esc, icon, guard, $, $$, openLayer, ask, toast, nameOf, fmt, isGM } from '../core.js';
 import { load, knownRecipes, errorBox, invalidate } from './common.js';
 import { AV, AW, AH, avatarImage, avatarPixels, fixLook, defaultLook, registerDesigns, faceStart, hairStart, hairBlocked } from '../housing/avatarsprite.js';
 import { GAMEDATA as GD } from '../gamedata.js';
@@ -297,11 +297,12 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
   catch (e) { box.innerHTML = errorBox(e.message); return; }
   const rules = r.rules || {}, items = (r.items || []).filter(d => d.slot !== 'furn'), trash = (r.trash || []).filter(d => d.slot !== 'furn');
   const clothes = items.filter(d => !FREE.has(d.slot)), faces = items.filter(d => d.slot === 'face'), hairs = items.filter(d => d.slot === 'hair');
-  const full = r.kept >= rules.keep, dayFull = r.made_today >= rules.per_day;
+  const gm = isGM(store.user?.id), full = !gm && r.kept >= rules.keep, dayFull = !gm && r.made_today >= rules.per_day;
   const faceRule = rules.face || freeRule('face'), hairRule = rules.hair || freeRule('hair'), hairItems = Number(r.hair_items) || 0;
+  const faceFull = !gm && (r.faces || 0) >= faceRule.keep, hairFull = !gm && (r.hairs || 0) >= hairRule.keep;
   const woven = new Set((snap.owned || []).filter(k => /:@\d+$/.test(k)).map(k => k.split('@')[1]));
   const wornNow = d => FREE.has(d.slot) && String(snap.look?.[d.slot + '_d'] ?? '') === String(d.id);
-  const copyOff = d => d.slot === 'face' ? (r.faces || 0) >= faceRule.keep : d.slot === 'hair' ? (r.hairs || 0) >= hairRule.keep || hairItems < 1 : full || dayFull;
+  const copyOff = d => d.slot === 'face' ? faceFull : d.slot === 'hair' ? hairFull || hairItems < 1 : full || dayFull;
   const card = d => {
     const free = FREE.has(d.slot);
     const wear = free ? (onWear ? `<button class="btn small primary" data-wear="${d.id}">${wornNow(d) ? '쓰는 중' : '쓰기'}</button>` : '')
@@ -323,11 +324,11 @@ export async function designBook(box, snap, { onWear, onDel } = {}) {
     ${list(clothes, '아직 옷 도안이 없습니다. 옷장에 있는 옷을 바탕으로 무늬를 직접 칠해 보세요.')}
     <h4 class="sub-h small">눈·입 도안</h4>
     <div class="od-head"><span class="chip">${r.faces || 0}/${faceRule.keep}장</span>
-      <button class="btn small primary" data-newf="face" ${(r.faces || 0) >= faceRule.keep ? 'disabled' : ''}>${icon('plus', 14)} 눈·입 그리기</button></div>
+      <button class="btn small primary" data-newf="face" ${faceFull ? 'disabled' : ''}>${icon('plus', 14)} 눈·입 그리기</button></div>
     ${list(faces, '눈과 입을 직접 그려 담으면 바로 쓸 수 있습니다.')}
     <h4 class="sub-h small">머리 도안</h4>
     <div class="od-head"><span class="chip">${r.hairs || 0}/${hairRule.keep}장</span><span class="chip">머리 그리기 도안 ${hairItems}장</span>
-      <button class="btn small primary" data-newf="hair" ${(r.hairs || 0) >= hairRule.keep || hairItems < 1 ? 'disabled' : ''}>${icon('plus', 14)} 머리 그리기</button></div>
+      <button class="btn small primary" data-newf="hair" ${hairFull || hairItems < 1 ? 'disabled' : ''}>${icon('plus', 14)} 머리 그리기</button></div>
     ${hairItems < 1 ? '<p class="muted small">머리를 그리려면 「머리 그리기 도안」이 있어야 합니다. 비장고에서 나오고, 거래소에서 사고팔 수 있습니다.</p>' : ''}
     ${list(hairs, '아직 그린 머리가 없습니다.')}
     ${trash.length ? `<details class="fold od-trash"><summary>지운 도안 ${trash.length}</summary><ul class="od-list">${trash.map(d => `<li class="od-card"><img class="od-pic" src="${designPic(d, { job: snap.job, look: snap.look })}" alt=""><div class="od-meta"><b>${esc(d.t || '이름 없는 도안')}</b><small class="muted">${SLOT_NAME[d.slot]}</small></div><div class="od-acts"><button class="btn small" data-restore="${d.id}">되살리기</button></div></li>`).join('')}</ul></details>` : ''}
