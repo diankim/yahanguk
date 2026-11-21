@@ -108,10 +108,10 @@ def body(frame):
     return g
 
 
-EYE_COLS = set(range(6, 11)) | set(range(17, 22))
+EYE_COLS = set(range(7, 12)) | set(range(16, 21))
 
 
-EX, EY = 6, 14
+EX, EY = 7, 15
 
 EYE_SHAPES = {
     'round': ['llllv', '.EEEE', '.eewE', '.feee', '..ff.'],
@@ -145,7 +145,7 @@ def eye(kind, closed):
             if ch != '.':
                 g.set(rx + dx, EY + dy, ch)
     for x in (8, 9):
-        g.sym(x, EY + 5, 'p')
+        g.sym(x + EX - 6, EY + 5, 'p')
     return g
 
 
@@ -154,23 +154,24 @@ EYES = {
     'sharp': '째진 눈', 'teary': '촉촉한 눈', 'dot': '콩알 눈', 'smile': '웃는 눈', 'wink': '윙크',
 }
 
-MY = 19
+MY = 20
 
 
 def mouth(kind):
     g = Grid()
+    T = MY - 1
     if kind == 'small':
         g.rect(13, MY, 14, MY, 'm')
     elif kind == 'smile':
-        g.sym(12, MY, 'm'); g.rect(13, MY + 1, 14, MY + 1, 'm')
+        g.sym(12, T, 'm'); g.rect(13, T + 1, 14, T + 1, 'm')
     elif kind == 'open':
-        g.rect(13, MY, 14, MY, 'n'); g.rect(13, MY + 1, 14, MY + 1, 'm')
+        g.rect(13, T, 14, T, 'n'); g.rect(13, T + 1, 14, T + 1, 'm')
     elif kind == 'cat':
-        g.sym(11, MY, 'm'); g.sym(12, MY + 1, 'm'); g.rect(13, MY, 14, MY, 'm')
+        g.sym(11, T, 'm'); g.sym(12, T + 1, 'm'); g.rect(13, T, 14, T, 'm')
     elif kind == 'grin':
-        g.sym(12, MY, 'm'); g.rect(13, MY, 14, MY, 'w'); g.rect(13, MY + 1, 14, MY + 1, 'm')
+        g.sym(12, T, 'm'); g.rect(13, T, 14, T, 'w'); g.rect(13, T + 1, 14, T + 1, 'm')
     elif kind == 'pout':
-        g.sym(12, MY + 1, 'm'); g.sym(13, MY, 'm')
+        g.sym(12, T + 1, 'm'); g.sym(13, T, 'm')
     return g
 
 

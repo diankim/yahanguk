@@ -516,8 +516,9 @@ ART.update({
     'princess': ('일자 앞머리 물결 머리', princess2),
     'layered': ('부스스 짧은 머리', layered2),
     'twintail': ('양갈래', twintail2),
+    'drape': ('흘러내린 앞머리', None),
 })
-ORDER = ['calm', 'sports', 'curtain', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'cloud']
+ORDER = ['calm', 'sports', 'curtain', 'drape', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'cloud']
 
 
 import hair_rows as R
