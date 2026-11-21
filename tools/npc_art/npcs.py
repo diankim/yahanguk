@@ -238,3 +238,27 @@ NPCS['cheongpa'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#3e4553", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#262b34"},
     },
 }
+
+NPCS['haram'] = {
+    'name': '서하람',
+    'designs': {'face': 110, 'hair': 111, 'from_top': 112},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'skin_c': 'f9e2d2', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#47555d", "b": "#d8cbbd", "c": "#ffffff", "d": "#b99d7f", "e": "#2e3a41", "f": "#ece7e1", "g": "#3e4b53", "h": "#685d52", "i": "#2c373e", "j": "#937c65", "k": "#c1b7ad", "l": "#63594f", "m": "#475059", "n": "#a8784a", "o": "#94897f", "p": "#85796d", "q": "#6e8285"},
+        'rows': [
+            '..abccccde..',
+            '.fbgbccbgbh.',
+            'efbbgbdggbhi',
+            'jkgbggegbgjl',
+            '.mmmmmnmmmm.',
+            '.obbbgebbbp.',
+            'apbqbgebqbpi',
+            'ieeggeeggeei',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#b09e81", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#86714e"},
+    },
+}
