@@ -90,7 +90,31 @@ NPCS['yeoul'] = {
     },
     'bottom': {
         'from': 'shadow',
-        'pal': {"a": "#24242a", "b": "#18181d", "z": "#5c1416", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#3a0a0c"},
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#4e5e6e", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#323d48"},
     },
     'marks': [[18, 22, '#bdbdca', 'skin'], [19, 22, '#8c97a6', 'skin'], [17, 23, '#bdbdca', 'skin']],
+}
+
+NPCS['munsu'] = {
+    'name': '문수',
+    'designs': {'face': 89, 'hair': 90, 'from_top': 91},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#a02a3a", "k": "#7e1e2c", "w": "#b4a79a", "g": "#7c6b5b", "e": "#6f5544", "m": "#f4efe2", "n": "#cdbfb2", "C": "#6f5544", "D": "#a8784a", "E": "#a8784a"},
+        'rows': [
+            '..wgCCCCgw..',
+            '.gemgCCgmew.',
+            'wegwmggmweww',
+            'weewgnggweww',
+            '.DDDDDEDDDD.',
+            '.eewwnwgwee.',
+            'wggwwnwgwggw',
+            'wgewgnwgweew',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#2e2a28", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#1a1716"},
+    },
 }
