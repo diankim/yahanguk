@@ -497,6 +497,7 @@ export async function renderStorage(box) {
   try {
     const [s, , inv] = await Promise.all([load('world_storage_snapshot', undefined, { maxAge: 300000 }), loadLocks(), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
     const catMap = new Map((inv?.catalog || []).map(i => [i.id, pickCat(i.category)]));
+    const rarMap = new Map((inv?.catalog || []).map(i => [i.id, i.rarity || 'common']));
     const c = store.character, have = c?.inventory || {};
     const src = s.sources || {}, steps = Number(src.bought_steps || 0);
     const ro = !s.can_move, mode = ro && storeMode === 'put' ? 'take' : storeMode;
@@ -509,7 +510,7 @@ export async function renderStorage(box) {
     const putList = Object.entries(have).filter(([k, n]) => n > 0 && canGive(k) > 0);
     const bagSpace = bagLimit(c) - bagUsed(c);
     const cellsOf = (id, n, m) => { const st = stackOf(id), k = Math.ceil(Math.max(0, n - (m === 'put' && equippedSet.has(id) ? 1 : 0)) / st); return `${m === 'put' ? '가방' : '창고'} ${k}칸${st > 1 ? ` · 묶음 ${st}개` : ''}${m === 'put' && stored.get(id) ? ` · 창고 ${fmt.num(stored.get(id))}` : ''}`; };
-    const row = (id, label, n, max, m, note, part) => `<li ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
+    const row = (id, label, n, max, m, note, part) => `<li class="r-${esc(rarMap.get(id) || 'common')}" ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${part ? `${part}번째 칸 · 묶음 ${stackOf(id)}개 · 창고에 모두 ${fmt.num(stored.get(id) || n)}` : cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
         ${ro && m === 'put' ? '' : actBox({ key: `${m}:${id}${part ? `:${part}` : ''}`, max: m === 'take' ? n : max, value: max || n, off: m === 'put' && !max, btns: m === 'take'
           ? [`<button class="btn small act-dc" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>`, ro ? '' : `<button class="btn small primary" data-here="창고 이용" data-take="${esc(id)}" ${max ? '' : 'disabled'}>꺼내기</button>`]
