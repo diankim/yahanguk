@@ -1497,9 +1497,11 @@ grant execute on function public.world_kin_gift(text) to authenticated;
 grant execute on function public.world_kin_room_set(int) to authenticated;
 grant execute on function public.world_kin_greet(uuid) to authenticated;
 grant execute on function public.world_kin_rules() to anon, authenticated;
-insert into public.world_patch_notes(note_id, title, body) values ('3.6.0', '3.6.0 · 백년지기', $N$연담 인물과 백년지기를 맺으면 그 사람이 내 별채에 머물며 말을 주고받습니다.
+update public.world_patch_notes set title = '3.5.0 / 3.6.0 · 초상 화첩 · 백년지기', body = body || $N$
 
-## 백년지기
+## 3.6.0 · 백년지기
+연담 인물과 백년지기를 맺으면 그 사람이 내 별채에 머물며 말을 주고받습니다.
+
 ### 맺기
 - 연담 다섯째 이야기를 마친 인물과 「백년지기」를 맺을 수 있습니다. 한 사람에 한 인물입니다.
 - 그 인물이 있는 곳의 연담 창에서 정표 짓는 값 300전을 내고 맺습니다. 인물마다 정표가 다릅니다.
@@ -1515,8 +1517,9 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.6.0', '3.6
 ### 정표
 - 정표는 연리 정표와 같은 칸이라 한 번에 하나만 찹니다.
 - 정표를 차고 그날 처음 말을 걸면 그때부터 하루 동안 회복 +5%·침식 −5%를 받습니다. 연리 효과가 켜져 있으면 겹치지 않습니다.
-$N$)
-on conflict (note_id) do update set title = excluded.title, body = excluded.body;
+$N$
+ where note_id = '3.5.0' and position('## 3.6.0' in body) = 0;
+update public.world_patch_notes set title = '3.5.0 / 3.6.0 · 초상 화첩 · 백년지기' where note_id = '3.5.0';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124170000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
