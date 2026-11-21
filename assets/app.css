@@ -3962,5 +3962,7 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
   .pb-text p { margin: 4px 0; }
   .pb-text p { line-height: 1.5; }
 }
-.weapon-line .kg-good { color: var(--ok); font-weight: 700; }
-.weapon-line .kg-bad { color: var(--bad); font-weight: 700; }
+.weapon-line .kg-good, .chip.mech.kg-good { color: var(--ok); font-weight: 700; }
+.weapon-line .kg-bad, .chip.mech.kg-bad { color: var(--bad); font-weight: 700; }
+.chip.mech.kg-good { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+.chip.mech.kg-bad { border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); }

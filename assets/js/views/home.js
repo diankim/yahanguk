@@ -13,7 +13,7 @@ import { openRegular, regularTile } from './regular.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
-import { renderBattle, stopBattle, STYLE } from './battle.js';
+import { renderBattle, stopBattle, STYLE, kindTag } from './battle.js';
 import { setScene } from '../sound.js';
 import { envChip } from '../env.js';
 import { sceneArt } from '../scenery.js';
@@ -204,13 +204,6 @@ function scene(s, traveling, downed) {
     ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래·물품 사용·퀘스트 보고를 할 수 없습니다. 장비 바꾸기는 됩니다. 도중에 그만두면 지난 시간만큼만 받습니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
-const KIND_KEY = Object.fromEntries(Object.entries(GAMEDATA.kinds || {}).map(([k, n]) => [n, k]));
-function kindTag(name, type, job) {
-  const k = KIND_KEY[name], mul = Number((GAMEDATA.kindMul?.[k] || [])[['melee', 'ranged', 'magic'].indexOf(type || 'melee')] ?? 1), jb = (GAMEDATA.kindJobs?.[k] || []).includes(job);
-  const v = mul * (jb ? 1.2 : 1), cls = v >= 1.15 ? 'kg-good' : v <= 0.9 ? 'kg-bad' : '';
-  const tip = `${STYLE[type] || '근접'} ×${mul}${jb ? ' · 내 직업 +20%' : ''}`;
-  return cls ? `<b class="${cls}" title="${esc(tip)}">${esc(name)}${cls === 'kg-good' ? '▲' : '▼'}</b>` : `<span title="${esc(tip)}">${esc(name)}</span>`;
-}
 const ugBoards = s => Object.entries(GAMEDATA.ultimate?.boards || {}).filter(([, b]) => b.region === s.region?.region_id);
 const ugReq = () => `Lv${GAMEDATA.ultimate?.level ?? 50} · ${(GAMEDATA.ultimate?.party || [2, 4]).join('~')}명`;
 const ugShopTip = b => `${b.token_name}을(를) 꾸미기 물품으로 바꿉니다`;

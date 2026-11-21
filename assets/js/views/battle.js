@@ -28,6 +28,16 @@ export function trayList(inv, always = 0) {
 }
 
 export const kindJobs = eff => eff?.jobs || (eff?.job ? [eff.job] : []);
+const KIND_KEY = Object.fromEntries(Object.entries(GAMEDATA.kinds || {}).map(([k, n]) => [n, k]));
+export function kindJudge(name, type, job) {
+  const k = KIND_KEY[name], mul = Number((GAMEDATA.kindMul?.[k] || [])[['melee', 'ranged', 'magic'].indexOf(type || 'melee')] ?? 1), jb = (GAMEDATA.kindJobs?.[k] || []).includes(job);
+  const v = mul * (jb ? 1.2 : 1), cls = v >= 1.15 ? 'kg-good' : v <= 0.9 ? 'kg-bad' : '';
+  return { cls, mark: cls === 'kg-good' ? '▲' : cls ? '▼' : '', tip: `${STYLE[type] || '근접'} ×${mul}${jb ? ' · 내 직업 +20%' : ''}` };
+}
+export function kindTag(name, type, job) {
+  const j = kindJudge(name, type, job);
+  return j.cls ? `<b class="${j.cls}" title="${esc(j.tip)}">${esc(name)}${j.mark}</b>` : `<span title="${esc(j.tip)}">${esc(name)}</span>`;
+}
 export const petPow = p => Math.round(Number(p?.pow || 0) * 100);
 export function effectiveness(style, eff) {
   const m = eff?.[style]; if (m == null) return null;
@@ -79,7 +89,7 @@ function draw(fresh = []) {
           <span class="foe-hp">${fmt.num(b.hp)} / ${fmt.num(b.max_hp)}</span>
         </div>
         ${bar(b.hp, b.max_hp, 'enemy big')}
-        <div class="chips">${b.kind_name ? `<button class="chip mech" id="mech-info">${esc(b.kind_name)} ${icon('help', 12)}</button>` : ''}${Object.entries(b.fx || {}).filter(([, v]) => v).map(([k]) => chip(FX[k] || k, 'warn')).join('')}${b.pfx?.bound ? chip('붙잡힘', 'bad') : ''}</div>
+        <div class="chips">${b.kind_name ? (kj => `<button class="chip mech ${kj.cls}" id="mech-info" title="${esc(kj.tip)}">${esc(b.kind_name)}${kj.mark} ${icon('help', 12)}</button>`)(kindJudge(b.kind_name, w.type, c.job_key)) : ''}${Object.entries(b.fx || {}).filter(([, v]) => v).map(([k]) => chip(FX[k] || k, 'warn')).join('')}${b.pfx?.bound ? chip('붙잡힘', 'bad') : ''}</div>
         <div class="intent lvl-${intent[2]}">${icon(intent[2] >= 2 ? 'flame' : 'eye', 18)}<div><b>다음 행동 · ${esc(intent[0])}</b><span>${esc(intent[1])}</span></div></div>
         <div class="float-layer" id="foe-float"></div>
       </div>
