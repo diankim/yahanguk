@@ -69,3 +69,28 @@ NPCS['wolha'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#5c1416", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#3a0a0c"},
     },
 }
+
+NPCS['yeoul'] = {
+    'name': '여울',
+    'designs': {'face': 86, 'hair': 87, 'from_top': 88},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#6d7e8e", "k": "#85796d", "w": "#b0a192", "g": "#6a584d", "m": "#d8cbbd", "n": "#1a1a1f", "C": "#5e5248", "D": "#7f6c5a", "E": "#7d6d5f"},
+        'rows': [
+            '..waCCCaaw..',
+            '.wwkaCCaagg.',
+            'wwggkaaaawgg',
+            'wwwggkaawwgg',
+            '.DDDDDEDDDD.',
+            '.wwwkwwwkww.',
+            'wmwkwwwwwkww',
+            'wwwwwwwwwwww',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#5c1416", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#3a0a0c"},
+    },
+    'marks': [[18, 22, '#bdbdca', 'skin'], [19, 22, '#8c97a6', 'skin'], [17, 23, '#bdbdca', 'skin']],
+}
