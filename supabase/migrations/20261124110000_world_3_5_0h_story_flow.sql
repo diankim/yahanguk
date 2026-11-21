@@ -17,7 +17,7 @@ $n$              and (public.world_quest_first_tasks(x.quest_id) or x.kind = 'ma
 $o$  where (a.ok or (a.kind = 'main' and a.after <@ dn)) and not (a.ok and public.world_quest_first_tasks(a.quest_id));$o$,
 $n$  where (a.ok or (a.kind = 'main' and a.after <@ dn)) and not (a.ok and (public.world_quest_first_tasks(a.quest_id) or a.kind = 'main' or a.quest_id = 'fq_sealed_lord' or a.quest_id ~ '^(gq|mkq|mdq)_[0-9]+$'));$n$]);
 
-update public.world_patch_notes set body = rtrim(body, E'\n') || E'\n- 본편 이야기(홍인사·요인록·묵적록·명등기)는 한 장을 마치면 다음 장이 바로 「진행 중」에 올라옵니다. 어디로 가서 받는지 카드에 보이고, 그곳에서 보고하면 다음 장이 시작됩니다.\n'
+update public.world_patch_notes set body = rtrim(body, E'\n') || E'\n- 본편 이야기(홍인사·요인록·묵적록·명등기)는 한 장을 마치면 다음 장이 바로 「진행 중」에 올라옵니다. 어디로 가서 받는지 카드에 보이고, 그곳에서 보고하면 다음 장이 시작됩니다.\n- 현장 퀘스트 칸의 받을 수 있는 퀘스트를 정리했습니다. 받을 수 있는 본편이 맨 위에 따로 보이고, 여기서 받을 수 있는 퀘스트 아래로 다른 곳의 퀘스트가 분야(전투·채집·낚시·제작·연담 등)별 접는 칸으로 나뉩니다.\n'
  where note_id = '3.5.0' and position('다음 장이 바로 「진행 중」' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124110000', now())
