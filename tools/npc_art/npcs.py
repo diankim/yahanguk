@@ -190,3 +190,27 @@ NPCS['unbi'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#4a4f62", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#2e3140"},
     },
 }
+
+NPCS['galmae'] = {
+    'name': '갈매',
+    'designs': {'face': 105, 'hair': 104, 'from_top': 106},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#955209", "b": "#ab6417", "c": "#7b4408", "d": "#5b4436", "e": "#f2c94c", "f": "#8c4d09", "g": "#412d21", "h": "#94897f", "i": "#856a29", "j": "#6c541a", "k": "#675019", "l": "#85796d", "m": "#523c2e", "n": "#3f3226", "o": "#7d6d5f", "p": "#b0a192", "q": "#6a584d", "r": "#3e2b20", "s": "#8d7761", "t": "#534339", "u": "#937c65"},
+        'rows': [
+            '..aabbbbac..',
+            '.decabbaccf.',
+            'ghiibbfbiijk',
+            'ghlmmljiiijk',
+            '.nnnnnonnnn.',
+            '.dlmmpgpmmi.',
+            'dmqmmpgpmmir',
+            'sttpptgqqtus',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#8a5226", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#5e3618"},
+    },
+}
