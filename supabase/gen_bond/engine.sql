@@ -458,3 +458,21 @@ begin
   if public.world_housing_home(p_owner) <> public.world_housing_home(uid) then raise exception '한 지붕 아래에서만 인사할 수 있습니다.'; end if;
   return jsonb_build_object('npc', k.npc, 'talk', public.world_kin_line(k.npc, 'first_' || public.world_time_phase(now())));
 end $function$;
+
+create or replace function public.world_kin_brief(p_owner uuid, p_mine boolean default false)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare k public.world_kin%rowtype; nr jsonb;
+begin
+  select * into k from public.world_kin where owner_id = p_owner;
+  if k.npc is null or k.ended_at is not null then return null; end if;
+  nr := public.world_kin_npc(k.npc);
+  if not p_mine then
+    return jsonb_build_object('npc', k.npc, 'name', nr ->> 'short', 'token', nr ->> 'token', 'wear', k.wear);
+  end if;
+  return jsonb_build_object('npc', k.npc, 'name', nr ->> 'short', 'token', nr ->> 'token', 'wear', k.wear,
+    'on', public.world_kin_on(p_owner), 'fx_until', k.fx_until, 'line_name', nr ->> 'line_name', 'made_at', k.made_at);
+end $function$;

@@ -7,6 +7,7 @@ import { GAMEDATA } from './gamedata.js';
 import { untradeNote, giveable } from './views/services.js';
 import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
 import { loadLocks } from './views/item.js';
+import { kinTokenSvg } from './kintoken.js';
 
 export const TOKENS = {
   knot: ['연리 매듭', '두 가닥을 엮어 풀리지 않게 맺은 매듭', 'M7 9a3 3 0 106 0 3 3 0 10-6 0M11 9a3 3 0 106 0 3 3 0 10-6 0M12 12v8M10 20h4'],
@@ -196,11 +197,15 @@ function openWedAsk(cur, after) {
 }
 
 export function tokenRowHtml() {
-  const b = bond();
+  const b = bond(), k = snap?.kin;
+  const kr = k ? `<li class="token-row">${kinTokenSvg(k.npc, 18)}<div><b>정표 · ${esc(k.token)}</b><small>${esc(k.name + '과(와)')} 백년지기${k.wear ? (k.on ? ' · 백년지기의 기운(회복량 +5% · 침식 -5%)' : ' · 별채에서 말을 걸면 하루 동안 회복량 +5% · 침식 -5%') : ''}</small></div>
+    <button class="btn small ghost eq-off" data-kin-wear>${k.wear ? '벗기' : '착용'}</button></li>` : '';
+  if (!b && kr) return kr;
   if (!b) return `<li class="empty-slot">${tokenSvg('knot', 18)}<div><b>정표</b><small>비어 있음 · 정인과 연리를 맺으면 정표를 지닙니다</small></div></li>`;
   return `<li class="token-row">${tokenSvg(b.token_key, 18)}<div><b>정표 · ${esc(b.token_name)}</b><small>${esc(b.partner_name)}님과의 연리 · ${esc(b.stage_name)}${b.together ? ' · 연리의 기운(회복량 +5% · 침식 -5%)' : ''}</small></div>
-    <button class="btn small ghost eq-off" data-bond-wear>${b.my_wear ? '벗기' : '착용'}</button></li>`;
+    <button class="btn small ghost eq-off" data-bond-wear>${b.my_wear ? '벗기' : '착용'}</button></li>${kr}`;
 }
 export function bindTokenRow(root) {
   $$('[data-bond-wear]', root).forEach(b => b.onclick = () => run(b, 'world_bond_set', { p_wear: !bond()?.my_wear, p_hide: null }));
+  $$('[data-kin-wear]', root).forEach(b => b.onclick = () => run(b, 'world_kin_wear', { p_wear: !snap?.kin?.wear }));
 }

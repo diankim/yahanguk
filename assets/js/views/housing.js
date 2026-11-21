@@ -15,6 +15,7 @@ import { reportFlag, pickReport } from '../reportflag.js';
 import { registerFurns } from '../housing/furndef.js';
 import { kinLook, kinFace, kinTalk, kinGreet, kinWear, kinRoom, kinGift } from '../kin.js';
 import { KIN } from '../rules.js';
+import { kinTokenSvg } from '../kintoken.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -264,7 +265,7 @@ function kinBar(k) {
   const move = k.mine && away && roomsOf().filter(r => r.open && !r.why).length > 1 ? `<button class="btn small" data-kinroom="${o}">이 방으로</button>` : '';
   const btns = k.mine ? `${move}<button class="btn small primary" data-kin="talk" data-ko="${o}" ${k.left > 0 ? '' : 'disabled'}>말 걸기</button><button class="btn small" data-kin="gift" data-ko="${o}" ${k.gift ? '' : 'disabled'} title="${esc(k.gift ? KIN.giftTip(k.name, k.line_name) : '오늘은 이미 선물했습니다')}">선물</button><button class="btn small" data-kin="wear" data-ko="${o}">${k.wear ? '정표 벗기' : '정표 차기'}</button>`
     : `<button class="btn small" data-kin="greet" data-ko="${o}">인사</button>`;
-  return `<div class="hs-petbar hs-kinbar"><img src="${kinFace(k.npc, 1)}" alt=""><b><small class="muted">${esc(who)}</small> ${esc(k.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${k.mine ? `<span class="muted small">정표 「${esc(k.token)}」 ${k.wear ? '차는 중' : '벗어 둠'} · ${esc(KIN.left(Math.max(0, k.left || 0)))}${on ? ' · <span class="ok">회복 +5%·침식 −5%</span>' : ''}</span>${helpQ(KIN.tip(), '백년지기 안내')}` : ''}
+  return `<div class="hs-petbar hs-kinbar"><img src="${kinFace(k.npc, 1)}" alt=""><b><small class="muted">${esc(who)}</small> ${esc(k.name)}</b>${!k.mine ? ` <span class="muted small">${kinTokenSvg(k.npc, 14)}${esc(k.token)}</span>` : ''}${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${k.mine ? `<span class="muted small">${kinTokenSvg(k.npc, 14)}정표 「${esc(k.token)}」 ${k.wear ? '차는 중' : '벗어 둠'} · ${esc(KIN.left(Math.max(0, k.left || 0)))}${on ? ' · <span class="ok">회복 +5%·침식 −5%</span>' : ''}</span>${helpQ(KIN.tip(), '백년지기 안내')}` : ''}
     <span class="hs-petbtn">${btns}</span></div>`;
 }
 async function kinAct(b, what, o) {

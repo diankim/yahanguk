@@ -5,6 +5,7 @@ import { reportFlag, pickReport } from '../reportflag.js';
 import { rpc, act, ask, guard, store, nameOf, esc, icon, emblem, profileOf, fmt, openLayer, openModal, closeModal, closeLayers, $ } from '../core.js';
 import { circles, inviteToCircle } from '../circles.js';
 import { bond, bondSnap, loadBond, openPropose, tokenSvg } from '../bond.js';
+import { kinTokenSvg } from '../kintoken.js';
 import { chip, invalidate } from './common.js';
 import { factionColor, FACTION_SEAL } from '../geo.js';
 import { brokenName, NAMELESS } from '../rules.js';
@@ -71,6 +72,7 @@ async function draw(box, id) {
         <div><dt>숙련</dt><dd title="갈래마다 가장 높은 기술 단계(최고 50)">${RANKS.map(([k, n]) => `${n} ${c.ranks?.[k] || 1}`).join(' · ')} <span class="muted small">/ 50</span></dd></div>
         <div><dt>얻은 칭호</dt><dd>${fmt.num(c.title_count || 0)}개</dd></div>
         ${pub ? `<div><dt>정인</dt><dd class="bond-pub">${pub.wear ? tokenSvg(pub.token_key, 16) : ''}${esc(pub.partner_name || '')} <span class="muted small">· ${esc(pub.token_name)} · ${esc(pub.stage_name)}</span></dd></div>` : ''}
+        ${c.kin ? `<div><dt>백년지기</dt><dd class="bond-pub">${c.kin.wear ? kinTokenSvg(c.kin.npc, 16) : ''}${esc(c.kin.name || '')} <span class="muted small">· ${esc(c.kin.token)}</span></dd></div>` : ''}
       </dl>
       ${(c.titles || []).length ? `<h3 class="sub-h">장착한 칭호</h3><div class="chips card-titles">${c.titles.map(t => `<span class="chip ${t.hidden ? '' : 'accent'}" title="${esc(t.description || '')}">${esc(t.name)}</span>`).join('')}</div>` : ''}
       ${acts.trim() ? `<div class="card-acts">${acts}</div>` : ''}

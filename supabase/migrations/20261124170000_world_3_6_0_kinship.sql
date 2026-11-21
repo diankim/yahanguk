@@ -491,6 +491,24 @@ begin
   return jsonb_build_object('npc', k.npc, 'talk', public.world_kin_line(k.npc, 'first_' || public.world_time_phase(now())));
 end $function$;
 
+create or replace function public.world_kin_brief(p_owner uuid, p_mine boolean default false)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare k public.world_kin%rowtype; nr jsonb;
+begin
+  select * into k from public.world_kin where owner_id = p_owner;
+  if k.npc is null or k.ended_at is not null then return null; end if;
+  nr := public.world_kin_npc(k.npc);
+  if not p_mine then
+    return jsonb_build_object('npc', k.npc, 'name', nr ->> 'short', 'token', nr ->> 'token', 'wear', k.wear);
+  end if;
+  return jsonb_build_object('npc', k.npc, 'name', nr ->> 'short', 'token', nr ->> 'token', 'wear', k.wear,
+    'on', public.world_kin_on(p_owner), 'fx_until', k.fx_until, 'line_name', nr ->> 'line_name', 'made_at', k.made_at);
+end $function$;
+
 delete from public.world_kin_lines;
 insert into public.world_kin_lines(npc, key, n, lines) values
 ('hanseol', 'bond_make', 1, '[["", "자정 종이 울린 뒤였다. 한설은 야시장 등 아래 평상에 앉아 수첩의 마지막 쪽을 펼쳐 두고 있었다. 내가 금동곳을 내밀자 그가 한동안 말을 잊었다."], ["한설", "머리에 장식을 더하는 건 달갑지 않은데. ……이건 예외로 하지. 잘 간수하마."]]'::jsonb),
@@ -1475,6 +1493,14 @@ select pg_temp.kn_fix('world_housing_snapshot', array[
 $q$'furns', public.world_furn_room($q$,
 $q$'kin', public.world_kin_home(own, uid), 'furns', public.world_furn_room($q$]);
 
+select pg_temp.kn_fix('world_bond_snapshot', array[
+$q$'bond', res,$q$,
+$q$'bond', res, 'kin', public.world_kin_brief(uid, true),$q$]);
+
+select pg_temp.kn_fix('world_character_card(uuid)', array[
+$q$'nameless', public.world_name_lost(c.owner_id),$q$,
+$q$'nameless', public.world_name_lost(c.owner_id), 'kin', public.world_kin_brief(c.owner_id, false),$q$]);
+
 select pg_temp.kn_fix('world_character_purge(uuid)', array[
 $q$  delete from public.world_regular_day where owner_id = p_uid;$q$,
 $q$  delete from public.world_regular_day where owner_id = p_uid;
@@ -1483,7 +1509,7 @@ $q$  delete from public.world_regular_day where owner_id = p_uid;
 do $g$
 declare f text;
 begin
-  foreach f in array array['world_kin_rules()', 'world_kin_npc(text)', 'world_kin_on(uuid)', 'world_kin_in_field(text, text)', 'world_kin_line(text, text, int)', 'world_kin_view(text)', 'world_kin_make(text)', 'world_kin_break()', 'world_kin_wear(boolean)', 'world_kin_ctx(uuid, public.world_kin)', 'world_kin_talk()', 'world_kin_gift(text)', 'world_kin_room_set(int)', 'world_kin_home(uuid, uuid)', 'world_kin_greet(uuid)'] loop
+  foreach f in array array['world_kin_rules()', 'world_kin_npc(text)', 'world_kin_on(uuid)', 'world_kin_in_field(text, text)', 'world_kin_line(text, text, int)', 'world_kin_view(text)', 'world_kin_make(text)', 'world_kin_break()', 'world_kin_wear(boolean)', 'world_kin_ctx(uuid, public.world_kin)', 'world_kin_talk()', 'world_kin_gift(text)', 'world_kin_room_set(int)', 'world_kin_home(uuid, uuid)', 'world_kin_greet(uuid)', 'world_kin_brief(uuid, boolean)'] loop
     perform pg_temp.kn_share('public.' || f);
     perform pg_temp.kn_own('public.' || f, 'fn_owner_field');
   end loop;

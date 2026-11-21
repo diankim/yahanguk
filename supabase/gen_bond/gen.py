@@ -50,7 +50,7 @@ end $f$;
 FNS = ['world_kin_rules()', 'world_kin_npc(text)', 'world_kin_on(uuid)', 'world_kin_in_field(text, text)',
        'world_kin_line(text, text, int)', 'world_kin_view(text)', 'world_kin_make(text)', 'world_kin_break()',
        'world_kin_wear(boolean)', 'world_kin_ctx(uuid, public.world_kin)', 'world_kin_talk()', 'world_kin_gift(text)',
-       'world_kin_room_set(int)', 'world_kin_home(uuid, uuid)', 'world_kin_greet(uuid)']
+       'world_kin_room_set(int)', 'world_kin_home(uuid, uuid)', 'world_kin_greet(uuid)', 'world_kin_brief(uuid, boolean)']
 RPC = ['world_kin_view(text)', 'world_kin_make(text)', 'world_kin_break()', 'world_kin_wear(boolean)', 'world_kin_talk()',
        'world_kin_gift(text)', 'world_kin_room_set(int)', 'world_kin_greet(uuid)']
 
@@ -70,6 +70,14 @@ $q$if coalesce(p_wear, false) then update public.world_kin set wear = false wher
 select pg_temp.kn_fix('world_housing_snapshot', array[
 $q$'furns', public.world_furn_room($q$,
 $q$'kin', public.world_kin_home(own, uid), 'furns', public.world_furn_room($q$]);
+
+select pg_temp.kn_fix('world_bond_snapshot', array[
+$q$'bond', res,$q$,
+$q$'bond', res, 'kin', public.world_kin_brief(uid, true),$q$]);
+
+select pg_temp.kn_fix('world_character_card(uuid)', array[
+$q$'nameless', public.world_name_lost(c.owner_id),$q$,
+$q$'nameless', public.world_name_lost(c.owner_id), 'kin', public.world_kin_brief(c.owner_id, false),$q$]);
 
 select pg_temp.kn_fix('world_character_purge(uuid)', array[
 $q$  delete from public.world_regular_day where owner_id = p_uid;$q$,

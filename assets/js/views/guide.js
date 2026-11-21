@@ -4,6 +4,7 @@ import { toast, RAID_ON, JOBS, FACTIONS, JOB_ORDER } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
+import { kinTokenSvg } from '../kintoken.js';
 import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
@@ -1265,7 +1266,7 @@ const S = [
       <li>${KIN.tip()}</li>
       <li>별채에서 백년지기를 누르거나 아래 줄의 「말 걸기」를 누르면 그때그때 맞는 말을 합니다 — 시간대·날씨, 내 처지(쓰러짐·침식·요화·원정에서 돌아옴·먼 길·레벨 오름), 별채(초상·동무·새 가구·함께 사는 정인), 맺은 지 이레·한 달·백 날 같은 날.</li>
       <li>백년지기가 머무는 방은 동무처럼 고를 수 있습니다(다른 방에 있으면 줄의 「이 방으로」). 혼례 정인과 한 지붕이면 두 사람의 백년지기가 함께 지내고, 정인의 백년지기를 누르면 인사를 건넵니다. 말 걸기·선물·이점은 저마다 자기 백년지기에게만.</li>
-      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>답례 ×${KIN.reward?.n}(분야 물품을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${esc(n.token)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
+      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>답례 ×${KIN.reward?.n}(분야 물품을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${kinTokenSvg(k, 16)} ${esc(n.token)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
     </ul>`],
   ['feast', '세력 행사', `
     <ul>

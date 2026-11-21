@@ -8,12 +8,14 @@ import { NPC_LOOKS, NPC_DESIGNS } from './housing/npcs.js';
 import { avatarImage, registerDesigns } from './housing/avatarsprite.js';
 import { KIN } from './rules.js';
 import { helpQ } from './tips.js';
+import { kinTokenSvg } from './kintoken.js';
 
 let ready = false;
 export function kinLook(npc) {
   if (!ready) { registerDesigns(NPC_DESIGNS); ready = true; }
   return NPC_LOOKS[npc] || null;
 }
+const bondAgain = () => import('./bond.js').then(m => m.loadBond(true)).catch(() => {});
 export const kinFace = (npc, scale = 2) => { const l = kinLook(npc); return l ? avatarImage(l, { scale, crop: [2, 0, 26, 26] }) : ''; };
 
 export function playKin(name, ...talks) {
@@ -28,6 +30,7 @@ export async function kinTalk(k, after) {
   const r = await act('world_kin_talk');
   if (!r) return;
   playKin(k.name, r.talk);
+  bondAgain();
   after?.(r);
   return r;
 }
@@ -39,6 +42,7 @@ export async function kinGreet(k) {
 
 export async function kinWear(k, wear, after) {
   const r = await act('world_kin_wear', { p_wear: wear });
+  bondAgain();
   after?.(r);
   return r;
 }
@@ -81,7 +85,7 @@ export async function kinGift(k, after) {
 
 export function kinSectionHtml(v) {
   if (!v) return '';
-  const tok = `「${esc(v.token)}」`;
+  const tok = `${kinTokenSvg(v.npc, 16)}「${esc(v.token)}」`;
   let body;
   if (v.mine) {
     body = `<p>${esc(v.name + '이(가)')} 내 백년지기입니다 · 정표 ${tok}${v.wear ? ' <span class="chip ok">차는 중</span>' : ' <span class="chip">벗어 둠</span>'}</p>
@@ -101,6 +105,7 @@ export function bindKinSection(box, v, redraw) {
     if (!(await ask(KIN.makeAsk(v.name, v.token, v.cost), { title: '백년지기 맺기', ok: '맺기' }))) return;
     const r = await act('world_kin_make', { p_npc: v.npc });
     playKin(v.name, r.talk);
+    bondAgain();
     redraw?.(r.view);
     return r;
   }));
@@ -108,6 +113,7 @@ export function bindKinSection(box, v, redraw) {
     if (!(await ask(KIN.breakAsk(v.name, v.token), { title: '백년지기 끊기', ok: '끊기', danger: true }))) return;
     const r = await act('world_kin_break');
     playKin(v.name, r.talk);
+    bondAgain();
     redraw?.(r.view);
     return r;
   }));

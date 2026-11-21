@@ -10,7 +10,7 @@ export const CHANGES = {
   fishSpot: /fish|travel/,
   fishSpotNone: /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/,
   rest: /field_rest|survival_action/,
-  bond: /bond|kin_(make|wear)|equip|travel|party|field_move/,
+  bond: /bond|kin_|equip|travel|party|field_move/,
   reads: /^world_me$|snapshot|_state$|_board$|overview|roster|_status$|_brief$|_list$|_check$|_quote$|_info$|sources|counts|combat_profile|profile_of|journal|threads|faces|_card$|_rules$|_mine$|_get$|_favs$|_preview$|_spot$|_scene$|_codex|_lore|_bundle/,
   settles: /travel_status|gw_snapshot|pfight_snapshot|bijang_snapshot|raid_snapshot|hud_snapshot|field_snapshot|expedition_overview/,
   titles: /title|notice|cosmetic|reset_identity|project_give/,
