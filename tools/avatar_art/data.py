@@ -337,4 +337,4 @@ JOB_DEFAULT = {
     'spearman': ('spear', 'spear'),
 }
 
-FIXED = {'v': '#f6f1ea', 'w': '#ffffff', 'l': '#2a1c22', 'p': '#f8c4bc', 'm': '#c8645e', 'n': '#7a2a2a'}
+FIXED = {'v': '#f6f1ea', 'w': '#ffffff', 'l': '#2a1c22', 'p': '#f8c4bc', 'm': '#c8645e', 'n': '#7a2a2a', 'r': '#3a3a3f'}
