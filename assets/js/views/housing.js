@@ -720,7 +720,7 @@ function tickFolk(m) {
 }
 function drawFolk(c, m) {
   const [sx, sy] = c.iso(m.x + .5, m.y + .5, 0);
-  const frame = m.walking ? (m.f % 4 < 2 ? 'walk' : 'stand') : m.f % 36 < 2 ? 'blink' : 'stand';
+  const frame = m.walking ? ['walk', 'stand', 'walk2', 'stand'][Math.floor(m.f / 2) % 4] : m.f % 36 < 2 ? 'blink' : 'stand';
   drawAvatar(c.put, m.look, frame, sx, sy + 4, m.flip, m.job);
 }
 window.addEventListener('resize', () => { if (cv && room) { fit(); paint(); } });

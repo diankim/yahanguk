@@ -162,6 +162,11 @@ function putDesign(px, p, pal, mask, d, map) {
 }
 
 export function avatarPixels(look, frame = 'stand', { front } = {}) {
+  if (frame === 'walk2') {
+    const a = avatarPixels(look, 'stand', { front }), b = avatarPixels(look, 'walk', { front }), out = a.slice();
+    for (let y = 0; y < AH; y++) for (let x = 0; x < AW; x++) { const i = y * AW + x; if (a[i] !== b[i]) out[y * AW + (AW - 1 - x)] = b[i]; }
+    return out;
+  }
   const l = fixLook(look), W = AW, H = AH, px = new Array(W * H).fill(null);
   const base = { ...AV.fixed, ...tonePal(l) };
   const step = frame === 'walk' ? 'walk' : 'stand', hair = AV.hair[l.hair], top = AV.top[l.top], bot = AV.bottom[l.bottom];
