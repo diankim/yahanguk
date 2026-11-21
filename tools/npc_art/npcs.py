@@ -166,3 +166,27 @@ NPCS['daon'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#b09e81", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#86714e"},
     },
 }
+
+NPCS['unbi'] = {
+    'name': '여운비',
+    'designs': {'face': 100, 'hair': 99, 'from_top': 101},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#a2a5ae", "b": "#424a61", "c": "#ffffff", "d": "#31384c", "e": "#686c7c", "f": "#8c8f9c", "g": "#a18b60", "h": "#5f646d", "i": "#646776", "j": "#484c54", "k": "#6d727b", "l": "#bcbcbc", "m": "#3a3648", "n": "#383446", "o": "#393954", "p": "#31314b", "q": "#222238", "r": "#24243b", "s": "#c4c4c4"},
+        'rows': [
+            '..abccccde..',
+            '.afgbccbgfe.',
+            'eahcbbdbchei',
+            'jkccgbdgccjl',
+            '.mmmmmnmmmm.',
+            '.offbpdbffp.',
+            'opccbpdbccpq',
+            'qrscbrrbcsrq',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#4a4f62", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#2e3140"},
+    },
+}
