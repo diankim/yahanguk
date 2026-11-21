@@ -127,7 +127,7 @@ export function openDesignEditor(snap, rules, done, { slot: s0, edit, from } = {
     $('.od-frames', layer).innerHTML = ['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(look, { frame: f, scale: 2, job: snap.job })}" alt="">`).join('');
     anim();
   };
-  const anim = () => { const img = $('.od-anim', layer); if (img) { img.src = avatarImage(look, { frame: frame % 2 ? 'walk' : 'stand', scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
+  const anim = () => { const img = $('.od-anim', layer); if (img) { img.src = avatarImage(look, { frame: ['walk', 'stand', 'walk2', 'stand'][frame % 4], scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
   timer = setInterval(() => { if (!layer.isConnected) return clearInterval(timer); frame++; anim(); }, 260);
   const paintPal = () => {
     $('.od-pal', layer).innerHTML = pal.map((c, i) => `<button class="od-sw${i === cur ? ' on' : ''}" data-slotc="${i}" style="--c:${c}" aria-label="색 ${i + 1}"><b>${i + 1}</b></button>`).join('') + (pal.length < max ? `<button class="chip-btn" data-addc>+ 색</button>` : '');
@@ -213,7 +213,7 @@ export function openFreeEditor(slot, snap, done, edit = null, from = null) {
       <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : from ? '새 도안으로 담기' : '도안첩에 담기'}</button></div>
     </div></div>` });
   const cv = $('.od-canvas', layer), g = cv.getContext('2d');
-  const anim = () => { const img = $('.od-anim', layer); if (img && look) { img.src = avatarImage(look, { frame: frame % 2 ? 'walk' : 'stand', scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
+  const anim = () => { const img = $('.od-anim', layer); if (img && look) { img.src = avatarImage(look, { frame: ['walk', 'stand', 'walk2', 'stand'][frame % 4], scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
   const draw = () => {
     sync();
     const [cx, cy, cw, ch] = crop, px = avatarPixels(look, 'stand', { front: slot }), sc = cv.width / cw;
