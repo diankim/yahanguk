@@ -2161,6 +2161,8 @@ b.contest { color: var(--warn); font-weight: 600; }
 .q-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .q-item { padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); display: grid; gap: 4px; }
 .q-item.ready { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); }
+.q-item.avail.story { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); border-left-width: 3px; }
+.q-story-h { color: var(--accent); display: flex; align-items: center; gap: 6px; }
 .q-item header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .q-item header b { font-size: calc(14px * var(--fz, 1)); }
 .q-step, .q-goal { margin: 0; font-size: calc(12.5px * var(--fz, 1)); }

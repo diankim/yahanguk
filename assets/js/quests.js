@@ -113,7 +113,7 @@ function factionItem(f) {
     <div class="btn-row">${f.ready ? `<button class="btn small primary" data-here="세력 퀘스트 보고" data-f-report>${icon('scroll', 14)}<span>보고하기</span></button>` : ''}<button class="btn small ghost" data-go-faction>세력 화면</button></div></li>`;
 }
 function availItem(q) {
-  return `<li class="q-item avail">${head(q.kind, q)}
+  return `<li class="q-item avail${isStoryMain(q) ? ' story' : ''}">${head(q.kind, q)}
     <p class="q-goal">${esc(q.summary || '')}</p>
     <p class="q-at ${q.here ? 'ok' : ''}">${icon('pin', 12)} ${esc(q.region_name || '')} · Lv.${q.min_level}${q.locked ? ` · <b class="bad">Lv.${q.min_level}부터</b>` : ''}</p>
     ${q.here && !q.locked ? `<div class="btn-row"><button class="btn small primary" data-here="퀘스트 받기·보고" data-q-report="${esc(q.quest_id)}">${icon('scroll', 14)}<span>이야기 듣기</span></button></div>` : ''}</li>`;
@@ -247,7 +247,8 @@ export async function fillQuests(box) {
   if (!box.isConnected) return;
   const mainFirst = (x, y) => isStoryMain(y) - isStoryMain(x);
   const act_ = [...(b.active || [])].sort((x, y) => mainFirst(x, y) || isHere(y, b.here_id) - isHere(x, b.here_id));
-  const here = (b.available || []).filter(q => q.here).sort(mainFirst), other = (b.available || []).filter(q => !q.here).sort(mainFirst);
+  const avail = b.available || [], story = avail.filter(isStoryMain).sort((x, y) => (y.here && !y.locked) - (x.here && !x.locked) || x.min_level - y.min_level);
+  const here = avail.filter(q => q.here && !isStoryMain(q)), other = avail.filter(q => !q.here && !isStoryMain(q));
   const nAct = act_.length + (b.faction && !b.faction.locked ? 1 : 0);
   noteReady({ ...b, active: act_ });
   box.innerHTML = `${hereNote({ ...b, active: act_ })}
@@ -257,6 +258,7 @@ export async function fillQuests(box) {
         ${RAID_ON && b.final_again && b.here_id === 'sealed_abyss' ? `<div class="btn-row q-again"><span class="muted small">구중 봉주와 다시 겨룰 수 있습니다</span><button class="btn small primary" data-here="결전" data-q-final>${icon('sword', 14)}<span>결전 다시 도전</span></button></div>` : ''}
         ${nAct > 1 ? `<div class="chips kind-chips q-group" role="group" aria-label="묶어 보기"><span class="muted small">묶어 보기</span>${GROUPS.map(([k, n]) => `<button class="chip ${grp() === k ? 'on' : ''}" data-q-group="${k}">${n}</button>`).join('')}</div>` : ''}
         ${grp() && act_.length > 1 ? grouped(act_, b) : `${facBox(b.faction)}${act_.length ? `<ul class="q-list">${act_.map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}`}
+        ${story.length ? `<h3 class="sub-h q-story-h">${icon('scroll', 14)}받을 수 있는 본편</h3><ul class="q-list">${story.map(availItem).join('')}</ul>` : ''}
         ${here.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${here.map(availItem).join('')}</ul>` : ''}
         ${other.length ? `<details class="q-more"><summary>다른 곳에서 받을 수 있는 퀘스트 ${other.length}개</summary><ul class="q-list">${other.map(availItem).join('')}</ul></details>` : ''}
       </div></details>`;
