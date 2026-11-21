@@ -2932,6 +2932,8 @@ b.sealed { color: var(--bad); }
 .pc-pet img { image-rendering: pixelated; width: auto; height: auto; }
 .pc-pet small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
 .pc-side { flex-wrap: nowrap; justify-content: flex-end; flex-shrink: 0; padding-right: 16px; }
+.pc-info .pc-side { float: right; margin: 0 0 0 8px; position: relative; }
+.pc-info::after { content: ''; display: block; clear: both; }
 @media (max-width: 640px) {
   .profile-card { gap: 10px; padding: 10px; }
   .pc-look img { height: 46px; }
