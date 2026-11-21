@@ -1,0 +1,1502 @@
+lock table public.world_characters in access exclusive mode;
+
+create or replace function pg_temp.kn_fix(p_name text, p_pairs text[]) returns void language plpgsql as $f$
+declare d text; i int; n int;
+begin
+  if position('(' in p_name) > 0 then d := pg_get_functiondef(('public.' || p_name)::regprocedure);
+  else select pg_get_functiondef(p.oid) into strict d from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = p_name; end if;
+  for i in 1 .. array_length(p_pairs, 1) / 2 loop
+    n := (length(d) - length(replace(d, p_pairs[2 * i - 1], ''))) / length(p_pairs[2 * i - 1]);
+    if n <> 1 then raise exception '함수 % 모양이 예상과 다릅니다(조각 %: % 곳)', p_name, i, n; end if;
+    d := replace(d, p_pairs[2 * i - 1], p_pairs[2 * i]);
+  end loop;
+  execute d;
+end $f$;
+
+create or replace function pg_temp.kn_share(p_fn text) returns void language plpgsql as $f$
+declare x text;
+begin
+  execute format('revoke all on function %s from public, anon, authenticated', p_fn);
+  for x in select rolname from pg_roles where rolname like 'fn\_owner%' or rolname = 'service_role' loop
+    execute format('grant execute on function %s to %I', p_fn, x);
+  end loop;
+end $f$;
+
+create or replace function pg_temp.kn_own(p_fn text, p_role text) returns void language plpgsql as $f$
+declare g boolean := not has_schema_privilege(p_role, 'public', 'CREATE');
+begin
+  if g then execute format('grant create on schema public to %I', p_role); end if;
+  execute format('alter function %s owner to %I', p_fn, p_role);
+  if g then execute format('revoke create on schema public from %I', p_role); end if;
+end $f$;
+
+create table if not exists public.world_kin (
+  owner_id uuid primary key references public.world_characters(owner_id) on delete cascade,
+  npc text,
+  made_at timestamptz,
+  ended_at timestamptz,
+  wear boolean not null default true,
+  fx_until timestamptz,
+  room int not null default 0,
+  past jsonb not null default '[]'::jsonb,
+  day date,
+  gift_day date,
+  mem jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.world_kin enable row level security;
+revoke all on public.world_kin from public, anon, authenticated;
+
+create table if not exists public.world_kin_lines (
+  npc text not null,
+  key text not null,
+  n int not null,
+  lines jsonb not null,
+  primary key (npc, key, n)
+);
+alter table public.world_kin_lines enable row level security;
+revoke all on public.world_kin_lines from public, anon, authenticated;
+
+create or replace function public.world_kin_rules()
+ returns jsonb
+ language sql
+ immutable
+ set search_path to 'pg_catalog', 'public'
+as $function$
+  select '{
+    "cost": 300, "talk_day": 10, "gift_day": 1, "fx_h": 24,
+    "reward": {"pct": 50, "n": 2},
+    "pick": {"idle": 70, "weather": 20, "home": 10},
+    "cap": {"weather": 2, "state": 2, "first": 3},
+    "state_pct": 15, "idle_recent": 10, "away_days": 3, "days": [7, 30, 100], "far_hops": 3,
+    "faded": "빛바랜 정표",
+    "npcs": {
+      "hanseol": {"token": "금동곳", "reward": "ward_talisman"},
+      "yeoul": {"token": "갈대 영사 매듭", "reward": "banyo_salve"},
+      "wolha": {"token": "엽전 노리개", "reward": "moonlight_essence"},
+      "daon": {"token": "들꽃 매듭 노리개", "reward": "rejuv_pill"},
+      "hisu": {"token": "먹물 붓 노리개", "reward": "meokgwi_incense"},
+      "danbi": {"token": "주홍 방울", "reward": "bark_stew"},
+      "unbi": {"token": "붉은 술 매듭", "reward": "eel_tonic"},
+      "cheongpa": {"token": "뱃사공 매듭 팔찌", "reward": "bream_sashimi"},
+      "galmae": {"token": "불씨 쇠고리", "reward": "repair_kit"},
+      "haram": {"token": "별자리 점자 패", "reward": "shad_lamp"},
+      "munsu": {"token": "나무 등잔 조각", "reward": "meokbi_umbrella"}
+    }
+  }'::jsonb
+$function$;
+
+create or replace function public.world_kin_npc(p_npc text)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare k jsonb := public.world_kin_rules() -> 'npcs' -> p_npc; r jsonb := public.world_regular_rule(p_npc);
+begin
+  if k is null or r is null then return null; end if;
+  return r || k || jsonb_build_object('npc', p_npc,
+    'reward_name', (select i.item_name from public.world_item_catalog i where i.item_id = k ->> 'reward'),
+    'line_name', public.world_line_name(r ->> 'line'),
+    'region_name', (select m.region_name from public.world_map_regions m where m.region_id = r ->> 'region'));
+end $function$;
+
+create or replace function public.world_kin_on(p_owner uuid)
+ returns boolean
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+#variable_conflict use_column
+begin
+  return (select * from (
+    select exists (select 1 from public.world_kin k where k.owner_id = p_owner and k.npc is not null and k.ended_at is null
+                      and k.wear and k.fx_until > now())
+  ) yhq limit 1);
+end $function$;
+
+create or replace function public.world_kin_in_field(p_line text, p_item text)
+ returns boolean
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare r jsonb := public.world_regular_rules();
+begin
+  if p_line = 'fishing' then
+    return exists (select 1 from public.world_fish_species f where f.fish_id = p_item);
+  elsif r -> 'lines' ? p_line then
+    return exists (select 1 from public.world_gathering_spots s where p_item = any (s.loot_items)
+                     and s.category = any (array(select jsonb_array_elements_text(r -> 'lines' -> p_line))));
+  end if;
+  return exists (select 1 from public.world_crafting_recipes w where w.output_item = p_item and public.world_craft_line_of(w.craft_field) = p_line);
+end $function$;
+
+create or replace function public.world_kin_line(p_npc text, p_key text, p_avoid int default null)
+ returns jsonb
+ language plpgsql
+ volatile security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare out jsonb;
+begin
+  select jsonb_build_object('key', l.key, 'n', l.n, 'lines', l.lines) into out
+    from public.world_kin_lines l where l.npc = p_npc and l.key = p_key
+   order by (l.n = p_avoid and (select count(*) from public.world_kin_lines x where x.npc = p_npc and x.key = p_key) > 1), random() limit 1;
+  return out;
+end $function$;
+
+create or replace function public.world_kin_view(p_npc text default null)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_kin_rules(); n text := coalesce(p_npc, public.world_regular_here(uid));
+  nr jsonb := public.world_kin_npc(n); k public.world_kin%rowtype; c public.world_characters%rowtype; why text; rb timestamptz; here boolean;
+  done boolean; bond_wear boolean;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  if nr is null then return null; end if;
+  select * into c from public.world_characters where owner_id = uid;
+  select * into k from public.world_kin where owner_id = uid;
+  here := (public.world_region_at(c.location)).region_id is not distinct from nr ->> 'region';
+  done := (nr ->> 'key') || '_5' = any (public.world_quest_done_ids(uid));
+  rb := k.ended_at + make_interval(hours => (public.world_wedding_rules() ->> 'rebond_h')::int);
+  why := case when not done then public.world_josa(nr ->> 'short', '과', '와') || '의 연담 마지막 이야기를 마치면 맺을 수 있습니다.'
+              when k.npc is not null and k.ended_at is null and k.npc <> n then '이미 ' || coalesce((public.world_kin_npc(k.npc)) ->> 'short', '') || '와(과) 백년지기입니다. 백년지기는 한 사람만 맺습니다.'
+              when k.npc = n and k.ended_at is null then null
+              when rb > now() then '백년지기를 끊은 지 얼마 되지 않았습니다.'
+              when not here then (nr ->> 'region_name') || '에서 맺습니다.'
+              when c.gil < (r ->> 'cost')::int then '정표 짓는 값 ' || (r ->> 'cost') || '전이 모자랍니다.'
+              else null end;
+  return jsonb_build_object('npc', n, 'name', nr ->> 'short', 'token', nr ->> 'token', 'cost', (r ->> 'cost')::int,
+    'reward', nr ->> 'reward', 'reward_name', nr ->> 'reward_name', 'line', nr ->> 'line', 'line_name', nr ->> 'line_name',
+    'region_name', nr ->> 'region_name', 'here', here, 'done', done,
+    'mine', k.npc is not null and k.ended_at is null and k.npc = n,
+    'other', case when k.npc is not null and k.ended_at is null and k.npc <> n then (public.world_kin_npc(k.npc)) ->> 'short' end,
+    'again', coalesce(k.past, '[]'::jsonb) @> jsonb_build_array(jsonb_build_object('npc', n)),
+    'can_make', why is null and not (k.npc is not null and k.ended_at is null), 'why', why,
+    'rebond_until', case when rb > now() then rb end,
+    'made_at', case when k.npc = n and k.ended_at is null then k.made_at end,
+    'wear', case when k.npc = n and k.ended_at is null then k.wear end,
+    'faded', (select jsonb_agg(jsonb_build_object('npc', p ->> 'npc', 'token', public.world_kin_npc(p ->> 'npc') ->> 'token')) from jsonb_array_elements(coalesce(k.past, '[]'::jsonb)) p),
+    'faded_name', r ->> 'faded');
+end $function$;
+
+create or replace function public.world_kin_make(p_npc text)
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_kin_rules(); nr jsonb := public.world_kin_npc(p_npc);
+  c public.world_characters%rowtype; k public.world_kin%rowtype; v jsonb; again boolean; bw boolean; ln jsonb;
+begin
+  perform public.world_travel_guard('백년지기 맺기');
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  if nr is null then raise exception '백년지기를 맺을 수 없는 사람입니다.'; end if;
+  select * into c from public.world_characters where owner_id = uid for update;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  if coalesce(c.is_dead, false) or c.health <= 0 or c.downed_at is not null then raise exception '전투불능 상태에서는 맺을 수 없습니다.'; end if;
+  insert into public.world_kin(owner_id) values (uid) on conflict do nothing;
+  select * into k from public.world_kin where owner_id = uid for update;
+  v := public.world_kin_view(p_npc);
+  if not coalesce((v ->> 'can_make')::boolean, false) then raise exception '%', coalesce(v ->> 'why', '지금은 맺을 수 없습니다.'); end if;
+  again := (v ->> 'again')::boolean;
+  bw := exists (select 1 from public.world_bonds b where b.ended_at is null and ((b.a_id = uid and b.a_wear) or (b.b_id = uid and b.b_wear)));
+  update public.world_characters set gil = gil - (r ->> 'cost')::int, updated_at = now() where owner_id = uid;
+  insert into public.world_economy_ledger(owner_id, action, currency_delta, sink, details)
+  values (uid, 'kin_make', -(r ->> 'cost')::int, true, jsonb_build_object('npc', p_npc));
+  update public.world_kin set npc = p_npc, made_at = now(), ended_at = null, wear = not bw, fx_until = null, room = 0,
+    day = null, mem = jsonb_build_object('lv', c.level), updated_at = now() where owner_id = uid;
+  ln := public.world_kin_line(p_npc, case when again then 'bond_again' else 'bond_make' end);
+  return jsonb_build_object('ok', true, 'npc', p_npc, 'talk', ln, 'wear', not bw,
+    'content', public.world_josa(nr ->> 'short', '과', '와') || ' 백년지기를 맺었습니다 · 「' || (nr ->> 'token') || '」' ||
+      case when bw then ' — 연리 정표를 차고 있어 백년지기 정표는 벗어 두었습니다.' else '' end,
+    'view', public.world_kin_view(p_npc));
+end $function$;
+
+create or replace function public.world_kin_break()
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); k public.world_kin%rowtype; c public.world_characters%rowtype; nr jsonb; ln jsonb;
+begin
+  perform public.world_travel_guard('백년지기 끊기');
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into c from public.world_characters where owner_id = uid for update;
+  select * into k from public.world_kin where owner_id = uid for update;
+  if not found or k.npc is null or k.ended_at is not null then raise exception '맺은 백년지기가 없습니다.'; end if;
+  nr := public.world_kin_npc(k.npc);
+  if (public.world_region_at(c.location)).region_id is distinct from nr ->> 'region' then
+    raise exception '%에서 끊을 수 있습니다.', nr ->> 'region_name';
+  end if;
+  ln := public.world_kin_line(k.npc, 'bond_break');
+  update public.world_kin set ended_at = now(), npc = null, wear = false, fx_until = null,
+    past = (select coalesce(jsonb_agg(p), '[]'::jsonb) from jsonb_array_elements(past) p where p ->> 'npc' <> k.npc)
+           || jsonb_build_array(jsonb_build_object('npc', k.npc, 'made_at', k.made_at, 'ended_at', now())),
+    updated_at = now() where owner_id = uid;
+  return jsonb_build_object('ok', true, 'npc', k.npc, 'talk', ln,
+    'content', public.world_josa(nr ->> 'short', '과', '와') || '의 백년지기를 끊었습니다. 정표는 「' || (public.world_kin_rules() ->> 'faded') || '」로 남습니다.',
+    'view', public.world_kin_view(k.npc));
+end $function$;
+
+create or replace function public.world_kin_wear(p_wear boolean)
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); k public.world_kin%rowtype; bw boolean;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into k from public.world_kin where owner_id = uid for update;
+  if not found or k.npc is null or k.ended_at is not null then raise exception '맺은 백년지기가 없습니다.'; end if;
+  bw := exists (select 1 from public.world_bonds b where b.ended_at is null and ((b.a_id = uid and b.a_wear) or (b.b_id = uid and b.b_wear)));
+  if p_wear and bw then
+    update public.world_bonds set a_wear = case when a_id = uid then false else a_wear end, b_wear = case when b_id = uid then false else b_wear end
+     where ended_at is null and (a_id = uid or b_id = uid);
+  end if;
+  update public.world_kin set wear = p_wear, updated_at = now() where owner_id = uid;
+  return jsonb_build_object('ok', true, 'wear', p_wear,
+    'content', case when p_wear then '「' || (public.world_kin_npc(k.npc) ->> 'token') || '」을(를) 찼습니다.' || case when bw then ' 정표 칸은 하나라 연리 정표는 벗었습니다.' else '' end
+                    else '「' || (public.world_kin_npc(k.npc) ->> 'token') || '」을(를) 벗었습니다.' end);
+end $function$;
+
+create or replace function public.world_kin_ctx(p_uid uuid, p_k public.world_kin)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare r jsonb := public.world_kin_rules(); c public.world_characters%rowtype; m jsonb := coalesce(p_k.mem, '{}'::jsonb);
+  last_at timestamptz := (m ->> 'last_at')::timestamptz; today date := (now() at time zone 'Asia/Seoul')::date; home uuid;
+  terr text; heavy text; light text; mate uuid; mate_npc text; homes text[] := '{}'; er int; erst int;
+begin
+  select * into c from public.world_characters where owner_id = p_uid;
+  er := coalesce(c.erosion, 0);
+  heavy := case when exists (select 1 from public.world_character_statuses s where s.owner_id = p_uid and s.status_key = 'yohwa') then 'me_yohwa'
+                when er >= 80 then 'me_erosion_80'
+                when c.downed_at is null and exists (select 1 from public.world_events e where e.actor_id = p_uid and e.event_type = 'downed'
+                       and (e.created_at at time zone 'Asia/Seoul')::date = today) then 'me_rescued'
+                when coalesce(c.health, 100) < 35 then 'me_hp_low' end;
+  erst := case when er >= 55 then 55 when er >= 30 then 30 else 0 end;
+  light := case when erst > coalesce((m ->> 'er')::int, 0) and erst < 80 then 'me_erosion_' || erst
+                when last_at is not null and exists (select 1 from public.world_events e where e.actor_id = p_uid and e.event_type = 'expedition_end' and e.created_at > last_at) then 'me_exp_back'
+                when last_at is not null and exists (select 1 from public.world_events e where e.actor_id = p_uid and e.event_type = 'travel' and e.created_at > last_at
+                       and jsonb_array_length(coalesce(e.payload -> 'route', '[]'::jsonb)) > (r ->> 'far_hops')::int) then 'me_far_travel'
+                when c.level > coalesce((m ->> 'lv')::int, c.level) then 'me_levelup' end;
+  home := public.world_housing_home(p_uid);
+  if exists (select 1 from public.world_housing h where h.owner_id = home and coalesce(h.wall, '[]'::jsonb) @> jsonb_build_array(jsonb_build_object('k', 'portrait_' || p_k.npc))) then homes := array_append(homes, 'home_portrait'); end if;
+  if exists (select 1 from public.world_housing_pets p where public.world_housing_home(p.keeper_id) = home) then homes := array_append(homes, 'home_pet'); end if;
+  if last_at is not null and exists (select 1 from public.world_housing h where h.owner_id = home and h.updated_at > last_at) then homes := array_append(homes, 'home_new_furn'); end if;
+  select case when s.home_id = p_uid then s.mate_id else s.home_id end into mate from public.world_housing_shared s where s.home_id = p_uid or s.mate_id = p_uid limit 1;
+  if mate is not null then
+    homes := array_append(homes, 'home_mate');
+    select k.npc into mate_npc from public.world_kin k where k.owner_id = mate and k.npc is not null and k.ended_at is null;
+    if mate_npc is not null and mate_npc <> p_k.npc then homes := array_append(homes, ('mate_' || mate_npc)); end if;
+  end if;
+  select m2.territory_id into terr from public.world_map_regions m2 where m2.region_id = (public.world_region_at(c.location)).region_id;
+  return jsonb_build_object('phase', public.world_time_phase(now()), 'weather', public.world_weather_key(terr, now()),
+    'heavy', heavy, 'light', light, 'er', erst, 'lv', c.level, 'homes', to_jsonb(homes),
+    'days', case when p_k.made_at is not null then floor(extract(epoch from now() - p_k.made_at) / 86400)::int end,
+    'away', case when last_at is not null then extract(epoch from now() - last_at) / 86400 > (r ->> 'away_days')::numeric else false end);
+end $function$;
+
+create or replace function public.world_kin_talk()
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_kin_rules(); k public.world_kin%rowtype; x jsonb;
+  today date := (now() at time zone 'Asia/Seoul')::date; m jsonb; d jsonb; n int; key text; ln jsonb; cap int := (r ->> 'talk_day')::int;
+  dd int; seen jsonb; w int; tot int; roll int; pool text[]; h text; idle_avoid int[]; first_fx boolean;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into k from public.world_kin where owner_id = uid for update;
+  if not found or k.npc is null or k.ended_at is not null then raise exception '맺은 백년지기가 없습니다.'; end if;
+  m := coalesce(k.mem, '{}'::jsonb);
+  d := case when k.day = today then coalesce(m -> 'd', '{}'::jsonb) else '{}'::jsonb end;
+  n := coalesce((d ->> 'n')::int, 0);
+  if n >= cap then raise exception '오늘은 더 말을 걸 수 없습니다(하루 %번). 내일 다시 와 주세요.', cap; end if;
+  x := public.world_kin_ctx(uid, k);
+  seen := coalesce(m -> 'seen', '[]'::jsonb);
+  if n = 0 then
+    dd := (x ->> 'days')::int;
+    key := (select 't_days_' || v from jsonb_array_elements_text(r -> 'days') v
+             where dd >= v::int and not seen ? ('t_days_' || v) order by v::int desc limit 1);
+    if key is not null then seen := seen || to_jsonb(key); end if;
+    if key is null and coalesce((x ->> 'away')::boolean, false) then key := 't_long_away'; end if;
+  end if;
+  if key is null and n = cap - 1 then key := 't_last_today'; end if;
+  if key is null and x ->> 'heavy' is not null and coalesce((d ->> 'st')::int, 0) < (r -> 'cap' ->> 'state')::int
+     and (coalesce((d ->> 'st')::int, 0) = 0 or random() * 100 < (r ->> 'state_pct')::numeric) then
+    key := x ->> 'heavy'; d := d || jsonb_build_object('st', coalesce((d ->> 'st')::int, 0) + 1);
+  end if;
+  if key is null and x ->> 'light' is not null then key := x ->> 'light'; end if;
+  if key is null and (d ->> 'ph') is distinct from (x ->> 'phase') and coalesce((d ->> 'first')::int, 0) < (r -> 'cap' ->> 'first')::int then
+    key := 'first_' || (x ->> 'phase'); d := d || jsonb_build_object('ph', x ->> 'phase', 'first', coalesce((d ->> 'first')::int, 0) + 1);
+  end if;
+  if key is null then
+    pool := array(select h2 from jsonb_array_elements_text(x -> 'homes') h2 where not coalesce(d -> 'home', '[]'::jsonb) ? h2);
+    tot := (r -> 'pick' ->> 'idle')::int
+         + case when coalesce((d ->> 'w')::int, 0) < (r -> 'cap' ->> 'weather')::int and x ->> 'weather' is not null then (r -> 'pick' ->> 'weather')::int else 0 end
+         + case when coalesce(array_length(pool, 1), 0) > 0 then (r -> 'pick' ->> 'home')::int else 0 end;
+    roll := floor(random() * tot)::int;
+    if roll >= (r -> 'pick' ->> 'idle')::int and coalesce((d ->> 'w')::int, 0) < (r -> 'cap' ->> 'weather')::int and x ->> 'weather' is not null
+       and roll < (r -> 'pick' ->> 'idle')::int + (r -> 'pick' ->> 'weather')::int then
+      key := 'w_' || (x ->> 'weather'); d := d || jsonb_build_object('w', coalesce((d ->> 'w')::int, 0) + 1);
+    elsif roll >= (r -> 'pick' ->> 'idle')::int and coalesce(array_length(pool, 1), 0) > 0
+       and (roll >= (r -> 'pick' ->> 'idle')::int + (r -> 'pick' ->> 'weather')::int or coalesce((d ->> 'w')::int, 0) >= (r -> 'cap' ->> 'weather')::int or x ->> 'weather' is null) then
+      h := pool[1 + floor(random() * array_length(pool, 1))::int];
+      key := h; d := d || jsonb_build_object('home', coalesce(d -> 'home', '[]'::jsonb) || to_jsonb(h));
+    else
+      key := 'idle';
+    end if;
+  end if;
+  if key = 'idle' then
+    idle_avoid := array(select (v)::int from jsonb_array_elements_text(coalesce(m -> 'idle', '[]'::jsonb)) v);
+    select jsonb_build_object('key', l.key, 'n', l.n, 'lines', l.lines) into ln from public.world_kin_lines l
+     where l.npc = k.npc and l.key = 'idle' order by (l.n = any (idle_avoid)), random() limit 1;
+    m := m || jsonb_build_object('idle', (select coalesce(jsonb_agg(v), '[]'::jsonb) from (
+           select v from jsonb_array_elements(coalesce(m -> 'idle', '[]'::jsonb) || to_jsonb((ln ->> 'n')::int)) v) z
+           offset greatest(0, jsonb_array_length(coalesce(m -> 'idle', '[]'::jsonb)) + 1 - (r ->> 'idle_recent')::int)));
+  else
+    ln := public.world_kin_line(k.npc, key, (m -> 'last' ->> key)::int);
+    if ln is null then
+      select jsonb_build_object('key', l.key, 'n', l.n, 'lines', l.lines) into ln from public.world_kin_lines l where l.npc = k.npc and l.key = 'idle' order by random() limit 1;
+    end if;
+    m := jsonb_set(m, '{last}', coalesce(m -> 'last', '{}'::jsonb) || jsonb_build_object(key, (ln ->> 'n')::int));
+  end if;
+  first_fx := n = 0;
+  d := d || jsonb_build_object('n', n + 1);
+  m := m || jsonb_build_object('d', d, 'seen', seen, 'last_at', now(), 'lv', (x ->> 'lv')::int, 'er', (x ->> 'er')::int);
+  update public.world_kin set day = today, mem = m,
+    fx_until = case when first_fx then now() + make_interval(hours => (r ->> 'fx_h')::int) else fx_until end,
+    updated_at = now() where owner_id = uid;
+  return jsonb_build_object('ok', true, 'npc', k.npc, 'talk', ln, 'left', cap - n - 1, 'cap', cap,
+    'fx_until', case when first_fx then now() + make_interval(hours => (r ->> 'fx_h')::int) else k.fx_until end, 'wear', k.wear);
+end $function$;
+
+create or replace function public.world_kin_gift(p_item text)
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_kin_rules(); k public.world_kin%rowtype; c public.world_characters%rowtype;
+  nr jsonb; today date := (now() at time zone 'Asia/Seoul')::date; inv jsonb; base text; hq boolean; infield boolean; key text;
+  ln jsonb; rw jsonb; rid text; rn int := (r -> 'reward' ->> 'n')::int; got boolean := false; nm text; stored boolean := false;
+begin
+  perform public.world_travel_guard('백년지기 선물');
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into c from public.world_characters where owner_id = uid for update;
+  if not found then raise exception '캐릭터를 먼저 만드세요.'; end if;
+  select * into k from public.world_kin where owner_id = uid for update;
+  if not found or k.npc is null or k.ended_at is not null then raise exception '맺은 백년지기가 없습니다.'; end if;
+  if k.gift_day = today then raise exception '선물은 하루에 한 번 줄 수 있습니다. 내일 다시 주세요.'; end if;
+  if p_item is null or not exists (select 1 from public.world_item_catalog i where i.item_id = p_item) then raise exception '줄 물품을 골라 주세요.'; end if;
+  if exists (select 1 from public.world_item_locks l where l.owner_id = uid and l.item_id = p_item) then raise exception '잠근 물품은 줄 수 없습니다. 잠금을 풀고 주세요.'; end if;
+  inv := coalesce(c.inventory, '{}'::jsonb);
+  if public.world_give_check(uid, p_item, inv) < 1 then raise exception '줄 수 있는 물품이 아닙니다(장착 중·강화한 것·임무 물품은 빠집니다).'; end if;
+  nr := public.world_kin_npc(k.npc);
+  base := public.world_item_base(p_item); hq := base <> p_item;
+  infield := public.world_kin_in_field(nr ->> 'line', base);
+  key := case when infield and hq then 'gift_hq' when infield then 'gift_field' else 'gift_other' end;
+  inv := public.world_inv_add(inv, p_item, -1);
+  if infield and random() * 100 < (r -> 'reward' ->> 'pct')::numeric then
+    rid := nr ->> 'reward';
+    if exists (select 1 from public.world_item_catalog h where h.item_id = rid || '_hq') then rid := rid || '_hq'; end if;
+    got := true;
+    if public.world_bag_room(inv, rid, public.world_bag_limit(uid)) >= rn then
+      inv := public.world_inv_add(inv, rid, rn);
+    else
+      stored := true;
+    end if;
+  end if;
+  perform set_config('yh.wear_leaves', 'on', true);
+  update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid;
+  if stored then perform public.world_letter_spill(uid, jsonb_build_object(rid, rn)); end if;
+  update public.world_kin set gift_day = today, updated_at = now() where owner_id = uid;
+  ln := public.world_kin_line(k.npc, key);
+  if got then rw := public.world_kin_line(k.npc, 'gift_reward'); end if;
+  nm := (select item_name from public.world_item_catalog where item_id = p_item);
+  return jsonb_build_object('ok', true, 'npc', k.npc, 'talk', ln, 'reward_talk', rw, 'infield', infield,
+    'reward', case when got then jsonb_build_object('id', rid, 'n', rn, 'name', (select item_name from public.world_item_catalog where item_id = rid), 'stored', stored) end,
+    'content', public.world_josa(nr ->> 'short', '에게', '에게') || ' 「' || nm || '」을(를) 건넸습니다.' ||
+      case when got then ' 답례로 「' || (select item_name from public.world_item_catalog where item_id = rid) || '」 ' || rn || '개를 받았습니다' || case when stored then '(가방이 차서 창고로).' else '.' end else '' end);
+end $function$;
+
+create or replace function public.world_kin_room_set(p_room int)
+ returns jsonb
+ language plpgsql
+ security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); k public.world_kin%rowtype; why text;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  perform public.world_seal_guard();
+  select * into k from public.world_kin where owner_id = uid for update;
+  if not found or k.npc is null or k.ended_at is not null then raise exception '맺은 백년지기가 없습니다.'; end if;
+  why := public.world_housing_room_ok(public.world_housing_home(uid), p_room);
+  if why is not null then raise exception '%', why; end if;
+  update public.world_kin set room = p_room, updated_at = now() where owner_id = uid;
+  return jsonb_build_object('ok', true, 'room', p_room, 'content', '백년지기가 지낼 방을 옮겼습니다.');
+end $function$;
+
+create or replace function public.world_kin_home(p_home uuid, p_viewer uuid)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare r jsonb := public.world_kin_rules(); today date := (now() at time zone 'Asia/Seoul')::date;
+begin
+  return (select coalesce(jsonb_agg(jsonb_build_object(
+      'owner', k.owner_id, 'npc', k.npc, 'name', public.world_kin_npc(k.npc) ->> 'short', 'token', public.world_kin_npc(k.npc) ->> 'token',
+      'room', public.world_housing_room_eff(p_home, k.room), 'mine', k.owner_id = p_viewer,
+      'wear', case when k.owner_id = p_viewer then k.wear end,
+      'fx_until', case when k.owner_id = p_viewer then k.fx_until end,
+      'left', case when k.owner_id = p_viewer then (r ->> 'talk_day')::int - case when k.day = today then coalesce((k.mem -> 'd' ->> 'n')::int, 0) else 0 end end,
+      'gift', case when k.owner_id = p_viewer then k.gift_day is distinct from today end,
+      'line_name', case when k.owner_id = p_viewer then public.world_kin_npc(k.npc) ->> 'line_name' end,
+      'made_at', k.made_at) order by k.owner_id = p_viewer desc), '[]'::jsonb)
+    from public.world_kin k
+   where k.npc is not null and k.ended_at is null
+     and (k.owner_id = p_home or k.owner_id in (select s.mate_id from public.world_housing_shared s where s.home_id = p_home)));
+end $function$;
+
+create or replace function public.world_kin_greet(p_owner uuid)
+ returns jsonb
+ language plpgsql
+ stable security definer
+ set search_path to 'pg_catalog', 'public'
+as $function$
+declare uid uuid := public.fn_owner_auth_uid(); k public.world_kin%rowtype;
+begin
+  if uid is null then raise exception '로그인이 필요합니다.'; end if;
+  select * into k from public.world_kin where owner_id = p_owner and npc is not null and ended_at is null;
+  if not found then raise exception '그 백년지기는 지금 별채에 없습니다.'; end if;
+  if public.world_housing_home(p_owner) <> public.world_housing_home(uid) then raise exception '한 지붕 아래에서만 인사할 수 있습니다.'; end if;
+  return jsonb_build_object('npc', k.npc, 'talk', public.world_kin_line(k.npc, 'first_' || public.world_time_phase(now())));
+end $function$;
+
+delete from public.world_kin_lines;
+insert into public.world_kin_lines(npc, key, n, lines) values
+('hanseol', 'bond_make', 1, '[["", "자정 종이 울린 뒤였다. 한설은 야시장 등 아래 평상에 앉아 수첩의 마지막 쪽을 펼쳐 두고 있었다. 내가 금동곳을 내밀자 그가 한동안 말을 잊었다."], ["한설", "머리에 장식을 더하는 건 달갑지 않은데. ……이건 예외로 하지. 잘 간수하마."]]'::jsonb),
+('hanseol', 'bond_make', 2, '[["", "한설이 붓을 꺼내 예외 조항 아래에 한 줄을 더했다. 「그 사람의 집에, 감찰관의 자리를 하나 둔다.」 글씨는 자로 그은 듯 반듯했다."], ["한설", "넷째 줄까지 적었군. 결재도 끝났어. 근무가 없는 날엔 네 별채에 가 있겠다. 자리는 문간 쪽으로 내줘. ……네가 돌아오는 걸 먼저 볼 수 있으니까."]]'::jsonb),
+('hanseol', 'bond_again', 1, '[["", "한설은 금동곳을 손바닥에서 한 번 굴려 보았다. 수첩 사이에는 빛바랜 옛 정표가 아직 끼워져 있었다."], ["한설", "접어 둔 쪽은 다시 펼쳐 본다고 했지. ……이것도 그랬어. 넷째 줄은 다시 쓸 필요 없다. 지운 적이 없으니까."]]'::jsonb),
+('hanseol', 'bond_break', 1, '[["", "한설은 정표를 돌려받고 한동안 침묵했다. 수첩을 펼친 그는 넷째 줄 위에 가는 선을 하나 그었다. 글씨를 지우지는 않았다."], ["한설", "줄만 그었다. 정청 서식은 지우는 게 아니라 긋는 거니까. ……국숫집은 여전히 자정 무렵 불을 땐다. 그 시간에 오면 마주칠 수도 있겠군."]]'::jsonb),
+('hanseol', 'first_dawn', 1, '[["", "한설은 문간 자리에 앉아 겉옷도 벗지 않은 채 꾸벅꾸벅 졸고 있었다. 내가 다가서자 퍼뜩 고개를 들고 수첩부터 덮었다."], ["한설", "안 잤다. 잠깐 눈만 감았어. ……자정부터 줄곧 감고 있었던 건 맞지만. 그건 휴식이다."]]'::jsonb),
+('hanseol', 'first_dawn', 2, '[["", "새벽빛이 창호지를 희게 물들였다. 한설은 빛에 수첩을 비춰 가며 전날 접어 둔 귀퉁이를 하나씩 세고 있었다."], ["한설", "일어났나. 어젯밤 확인한 곳이 열둘이야. 별 탈 없었어. ……그 얘길 먼저 해 주려고 기다렸지."]]'::jsonb),
+('hanseol', 'first_noon', 1, '[["", "한낮 볕이 마루 끝까지 들어왔다. 한설은 볕 한가운데 앉아 규정집 책갑의 끈을 새로 매고 있었다."], ["한설", "왔군. 낮에는 도무지 손이 놀아서 탈이야. 이쪽 좀 잡아 줘. 매듭이 자꾸 비뚤어지는군."]]'::jsonb),
+('hanseol', 'first_noon', 2, '[["", "한설은 별채 기둥에 놋쇠 자를 대고 있었다. 내 발소리를 듣고도 자를 떼지 않았다."], ["한설", "이 기둥, 반 푼 기울었어. 고치라는 뜻은 아니야. ……눈에 보이는데 어쩌겠나."]]'::jsonb),
+('hanseol', 'first_dusk', 1, '[["", "해가 지붕 너머로 넘어가자 한설은 관복을 내려 입었다. 소매를 털고 수첩을 품에 넣는 손길이 익숙했다."], ["한설", "근무 나갈 시간이다. ……네 얼굴은 보고 가야 할 것 같아서. 자정 종이 울리면 돌아오마."]]'::jsonb),
+('hanseol', 'first_dusk', 2, '[["", "한설은 문간에서 등잔에 기름을 채우고 있었다. 저녁 공기 속으로 기름이 찰랑이는 소리가 났다."], ["한설", "오늘은 야시장 동쪽부터 돌아볼 거야. 등 줄이 또 기울었다더군. 다녀오마."]]'::jsonb),
+('hanseol', 'first_night', 1, '[["", "한설이 문간 자리에 앉아 젖은 소맷부리를 짜고 있었다. 옷에서는 밤이슬과 숯 연기 냄새가 났다."], ["한설", "근무 끝났다. 자정 종을 듣고 곧장 왔어. 국숫집이 일찍 문을 닫았더군. ……배고프진 않나?"]]'::jsonb),
+('hanseol', 'first_night', 2, '[["", "등잔 아래에서 한설은 그날 받은 영수증을 날짜순으로 맞추고 있었다. 마지막 장을 포개고서야 나를 올려다보았다."], ["한설", "아직 안 잤나. 이것만 정리하면 끝이야. ……기다린 거라면 조금만 더 기다려 줘."]]'::jsonb),
+('hanseol', 'w_clear', 1, '[["", "한설이 마당에서 구름 한 점 없는 하늘을 올려다보았다."], ["한설", "이런 날은 부적도 잘 마르고 장사꾼들 표정도 밝지. 너도 볕 좀 쬐어라. 방 안에만 있지 말고."]]'::jsonb),
+('hanseol', 'w_cloudy', 1, '[["", "낮게 드리운 구름 탓에 별채 안이 어둑했다. 한설은 등잔을 하나 더 켜고 수첩을 옮겨 놓았다."], ["한설", "흐린 날엔 획이 잘 안 보여. 등잔 하나 더 켰다. 기름값은 내가 낼 테니 신경 쓰지 마라."]]'::jsonb),
+('hanseol', 'w_rain', 1, '[["", "굵은 빗줄기가 처마를 두드렸다. 한설은 문간에 서서 젖은 관복 자락을 털었다."], ["한설", "이 비면 야시장 부적이 죄다 젖겠군. 내일은 손볼 게 많겠어. 잠깐 비를 피하고 가마."]]'::jsonb),
+('hanseol', 'w_rain', 2, '[["", "한설은 수첩을 기름종이로 두 겹 싸서 품에 넣었다. 지붕 위로 빗소리가 거세졌다."], ["한설", "종이는 한 번 젖으면 되돌리기 어려워. 너도 나갈 거면 우장부터 챙겨. 감기라도 들면 곤란하니까."]]'::jsonb),
+('hanseol', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 한설은 마루 끝에서 처마의 물방울을 바라보았다."], ["한설", "우산을 쓰기도 애매한 비군. ……나는 이런 비가 싫지 않아. 야시장 등이 흐릿하게 번져 보이거든."]]'::jsonb),
+('hanseol', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 한설은 등잔을 들고 문간에서 담장 너머를 살폈다."], ["한설", "안개 낀 밤엔 혼자 다니지 마라. 물 찬 골목은 둘이 들어가는 게 규정이야. ……나갈 일이 있으면 나를 불러."]]'::jsonb),
+('hanseol', 'w_wind', 1, '[["", "찬 바람에 문풍지가 덜덜 떨렸다. 한설은 문틈에 손바닥을 대며 바람이 새는 곳을 찾았다."], ["한설", "여기랑 여기. 두 군데서 새는군. 문풍지는 내가 다시 바르마. 부탁받은 건 아니야. 그냥 눈에 밟혀서 그래."]]'::jsonb),
+('hanseol', 'w_snow', 1, '[["", "밤새 내린 눈이 마당을 덮었다. 한설은 제 발자국이 곧게 이어진 것을 내려다보고 있었다."], ["한설", "눈 위에선 걸음이 다 드러나는군. ……내 걸음은 반듯하지? 웃지 마라."]]'::jsonb),
+('hanseol', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 한설은 창을 닫고 정화 부적 한 장을 문설주에 붙였다."], ["한설", "혈무가 짙군. 문은 되도록 열지 마라. 부적은 붙여 뒀어. ……네가 여기 있으니 더 꼼꼼히 살피게 되는군."]]'::jsonb),
+('hanseol', 'me_yohwa', 1, '[["", "한설이 내 얼굴을 한참 들여다보았다. 수첩을 꺼내려던 손이 멈췄다."], ["한설", "이건 적어 둘 일이 아니군. 조사원, 내 이름을 불러 봐."]]'::jsonb),
+('hanseol', 'me_yohwa', 2, '[["", "내가 그의 이름을 부르자 한설은 작게 고개를 끄덕였다. 굳어 있던 어깨가 조금 풀렸다."], ["한설", "……그래. 아직 알아보는군. 네가 네 이름을 잊더라도 나는 잊지 않으마. 몇 번이고 불러 줄 테니."]]'::jsonb),
+('hanseol', 'me_erosion_80', 1, '[["", "한설이 내 손목을 등잔 가까이 끌어당겼다. 거무스름하게 번진 기운을 본 그의 낯이 굳었다."], ["한설", "……이 지경이 될 때까지 뭘 한 거야. 앉아. 당장. 정화부터 해야겠어. 오늘은 한 발짝도 나가지 마라. 명령이다."]]'::jsonb),
+('hanseol', 'me_erosion_55', 1, '[["", "한설은 내 어깨 너머로 흐르는 탁한 기운을 보고 수첩을 내려놓았다."], ["한설", "요기가 꽤 스몄군. 정화할 물건은 있나? 없으면 내 걸 가져가. ……영수증은 안 쓴다."]]'::jsonb),
+('hanseol', 'me_erosion_30', 1, '[["", "한설이 내 옷자락에 남은 비릿한 기운을 알아채고 미간을 좁혔다."], ["한설", "깊은 데 다녀왔군. 아직 버틸 만하다고 방심하지 마라. 번지기 전에 털어 내."]]'::jsonb),
+('hanseol', 'me_hp_low', 1, '[["", "내가 문턱에서 휘청하자 한설이 일어나 팔을 붙잡았다. 손에 힘이 꽤 들어가 있었다."], ["한설", "서 있지도 못하면서 어딜 돌아다녀. 앉아 있어. 국숫집에서 따뜻한 국물이라도 받아 오마. 값은 내가 치를 테니 걱정 말고."]]'::jsonb),
+('hanseol', 'me_rescued', 1, '[["", "한설은 내가 들어서자마자 수첩을 덮고 일어났다. 얼굴에서 핏기가 가셨다."], ["한설", "쓰러졌다고 들었다. 어디 다친 데는? ……아니, 우선 앉아. 내 눈으로 확인해야겠어."]]'::jsonb),
+('hanseol', 'me_exp_back', 1, '[["", "한설은 문간에서 돌아오는 길을 내다보고 있었다. 내 짐을 보자 말없이 받아 마루에 내려놓았다."], ["한설", "돌아왔군. 네가 없는 동안 집은 잘 살폈어. 별일 없었다. ……너는? 다친 데 없나?"]]'::jsonb),
+('hanseol', 'me_far_travel', 1, '[["", "신을 벗는 나를 보던 한설의 시선이 닳은 밑창에 머물렀다."], ["한설", "먼 길을 왔군. 신이 많이 닳았어. 다음엔 갈아 신고 가라. 발목 상하면 오래 고생한다."]]'::jsonb),
+('hanseol', 'me_levelup', 1, '[["", "한설은 나를 위아래로 살피다가 작게 고개를 끄덕였다."], ["한설", "오늘은 발걸음이 다르군. 좋은 일이 있었나? ……말하지 않아도 돼. 얼굴을 보니 알겠어."]]'::jsonb),
+('hanseol', 'home_portrait', 1, '[["", "한설은 벽에 걸린 제 초상 앞에 서서 놋쇠 자로 액자 틀을 재고 있었다."], ["한설", "반듯하게 걸었군. ……그런데 굳이 이걸 걸어 둘 필요가 있나? 보고 싶으면 부르면 되잖아."]]'::jsonb),
+('hanseol', 'home_pet', 1, '[["", "동무가 한설의 무릎에 올라앉았다. 그는 수첩을 펴지 못한 채 두 손을 어정쩡하게 들고 있었다."], ["한설", "조사원, 이 녀석 좀 어떻게 해 봐. ……아니, 급한 건 아니야. 근무 중도 아닌데 굳이 쫓아낼 이유는 없지."]]'::jsonb),
+('hanseol', 'home_new_furn', 1, '[["", "한설이 새 가구 주위를 천천히 돌며 모서리를 손끝으로 쓸었다."], ["한설", "새로 들였군. 자리 잘 잡았어. 벽에서 두 마디 띄운 것도 좋고. ……나라면 세 마디 띄웠겠지만."]]'::jsonb),
+('hanseol', 'home_mate', 1, '[["", "한설이 문간 자리를 비켜 앉으며 마루 안쪽을 턱으로 가리켰다."], ["한설", "네 정인이 아까 다녀갔어. 인사는 했지. 이 집 식구한테 인사도 안 하고 있을 순 없잖나."]]'::jsonb),
+('hanseol', 't_days_7', 1, '[["", "한설이 수첩을 넘기다 이레 전 날짜에서 손을 멈췄다. 날짜 옆에 작은 점이 있었다."], ["한설", "오늘이 이레째군. 세어 본 건 아니야. ……날짜가 적혀 있으니 눈에 들어온 거지."]]'::jsonb),
+('hanseol', 't_days_30', 1, '[["", "한설이 국숫집 쪽지들을 마루에 가지런히 놓고 있었다. 귀퉁이가 반듯하게 접혀 있었다."], ["한설", "한 달이군. 같이 먹은 날도, 못 만난 날도 있었지. ……어느 날도 잊지는 않았어."]]'::jsonb),
+('hanseol', 't_days_100', 1, '[["", "한설이 새 수첩을 내밀었다. 빈 표지 아래 첫 장의 귀퉁이만 접혀 있었다."], ["한설", "백 날 동안 적은 게 이만큼이군. 새 수첩은 네가 가져. 첫 장은 접어 뒀어. 앞으로 다시 펼쳐 볼 일이 많을 테니까."]]'::jsonb),
+('hanseol', 't_long_away', 1, '[["", "한설은 문간 자리에서 고개만 돌렸다. 무릎 위 수첩은 같은 쪽에 펼쳐져 있었다."], ["한설", "사흘 만이군. 바빴겠지. 따지려는 건 아니야. ……그냥 사흘이라고."]]'::jsonb),
+('hanseol', 't_long_away', 2, '[["", "한설은 곧바로 말을 꺼내지 않고 등잔 심지를 돋워 내 쪽으로 밀었다."], ["한설", "앉아. 그동안 적어 둔 게 많아. 다 들으려면 한참 걸릴 거다."]]'::jsonb),
+('hanseol', 't_last_today', 1, '[["", "한설이 수첩을 덮고 등잔 불을 낮췄다. 하품을 참느라 입가에 힘이 들어갔다."], ["한설", "오늘은 여기까지다. 할 말을 다 해 버리면 내일 할 말이 없잖나. ……내일도 와."]]'::jsonb),
+('hanseol', 'idle', 1, '[["", "한설이 놋쇠 자로 마루 널판 틈을 재다가 나를 올려다보았다."], ["한설", "이 집은 널판이 고르게 깔렸군. 누가 지었는지는 몰라도 꼼꼼한 사람이야."]]'::jsonb),
+('hanseol', 'idle', 2, '[["", "한설은 수첩 뒤쪽에서 국숫집 쪽지를 꺼내 보다가 도로 접었다."], ["한설", "뭘 보나. 지난번 국수값을 맞춰 보는 중이야. ……네가 한 그릇 더 먹었더군."]]'::jsonb),
+('hanseol', 'idle', 3, '[["", "한설이 규정집 책갑을 무릎에 놓고 뚜껑을 열었다 닫았다 했다. 딸깍거리는 소리가 났다."], ["한설", "네가 만들어 준 책갑이 아직도 멀쩡해. 손때가 좀 탔지만 바꿀 생각은 없어."]]'::jsonb),
+('hanseol', 'idle', 4, '[["", "한설이 창밖을 보았다. 약방의 고분 할멈이 담 너머로 지나가고 있었다."], ["한설", "고분 할멈이 요즘 나만 보면 웃어. 국밥집 노인도 그렇고. ……뭐가 그리 우스운지 모르겠군. 너는 짐작 가는 게 있나?"]]'::jsonb),
+('hanseol', 'idle', 5, '[["", "한설이 문간에서 붓을 씻고 있었다. 먹물이 물그릇에 가느다랗게 풀렸다."], ["한설", "붓은 쓴 날 바로 씻어야 해. 미루면 먹이 굳거든. ……오늘은 네가 쓰던 붓도 씻어 뒀다."]]'::jsonb),
+('hanseol', 'idle', 6, '[["", "한설이 마루 끝에 걸터앉아 다리를 흔들고 있었다. 눈이 마주치자 다리를 멈추고 무릎을 반듯이 모았다."], ["한설", "봤나? ……못 본 걸로 해."]]'::jsonb),
+('hanseol', 'idle', 7, '[["", "한설이 내 책상 위 종이를 한 장씩 들어 귀를 맞췄다."], ["한설", "네 책상은 볼 때마다 손이 근질거려. 오늘은 못 참고 종이 귀만 맞춰 뒀다. 내용은 안 봤어."]]'::jsonb),
+('hanseol', 'idle', 8, '[["", "한설이 수첩을 펼쳐 보였다. 「오늘 할 일」 아래 적힌 「조사원 별채」만 아직 줄이 그어지지 않았다."], ["한설", "다른 건 다 끝냈어. 이건 지금 하는 중이고."]]'::jsonb),
+('hanseol', 'idle', 9, '[["", "한설이 등잔 그을음이 묻은 손가락을 수건에 닦았다. 수건 한쪽이 새까맸다."], ["한설", "야시장 등 쉰두 개 중 아홉 개의 심지를 갈았어. 손이 이 모양이지. ……손잡는 건 씻고 나서 하자."]]'::jsonb),
+('hanseol', 'idle', 10, '[["", "한설이 나를 한참 바라보다 짧게 물었다."], ["한설", "밥은 먹었나. ……아니, 별 뜻은 없어. 안 먹었으면 같이 먹으려고 물은 거다."]]'::jsonb),
+('hanseol', 'idle', 11, '[["", "한설이 벼루에 먹을 갈고 있었다. 먹이 천천히 닳으며 은은한 송연 냄새가 번졌다."], ["한설", "먹은 서둘러 갈면 거칠어져. ……한번 해 볼 텐가? 손에 묻어도 나무라진 않으마."]]'::jsonb),
+('hanseol', 'idle', 12, '[["", "한설이 구석에 세워 둔 낚싯대를 손끝으로 건드렸다. 찌가 달린 줄이 가늘게 흔들렸다."], ["한설", "백지교에 또 가 볼까 한다. ……이번엔 네가 먼저 낚싯대를 드는 게 어때."]]'::jsonb),
+('hanseol', 'idle', 13, '[["", "한설이 관복 소매의 터진 자리를 꿰매고 있었다. 바늘땀이 제법 고르게 이어졌다."], ["한설", "생각보다 손이 많이 가는군. ……네 옷도 해진 데 있으면 가져와. 하는 김에 봐주지."]]'::jsonb),
+('hanseol', 'idle', 14, '[["", "처마 끝 풍경이 가볍게 울렸다. 한설은 잠시 손을 멈추고 소리를 들었다."], ["한설", "야시장 찻집에도 저런 게 달렸어. 규정집 읽다가 그 소리에 정신을 차리곤 했지. ……가끔은 못 차렸지만."]]'::jsonb),
+('hanseol', 'idle', 15, '[["", "한설이 마당 귀퉁이에서 잡초를 뽑고 있었다. 뽑아 둔 풀은 어느새 길이순으로 놓여 있었다."], ["한설", "왜 줄을 세웠냐고? ……나도 모르겠군. 손이 멋대로 그랬어."]]'::jsonb),
+('hanseol', 'idle', 16, '[["", "한설이 주전자에서 차를 따라 잔 두 개를 채웠다. 하나를 내 쪽으로 밀어 놓았다."], ["한설", "뜨거우니 천천히 마셔. ……네가 올 것 같아 두 잔을 준비했지."]]'::jsonb),
+('hanseol', 'idle', 17, '[["", "한설이 별채의 방명록을 넘기다 한 줄에서 손을 멈췄다. 이내 헛기침을 했다."], ["한설", "누가 나를 감찰관 나리라고 적어 뒀군. ……여기서는 그냥 한설이라고 불러도 되는데."]]'::jsonb),
+('hanseol', 'idle', 18, '[["", "한설이 제 손가락 마디를 문지르고 있었다. 붓을 오래 쥔 자리에 단단한 굳은살이 박여 있었다."], ["한설", "오래 붓을 잡다 보니 이렇게 됐어. ……만져 봐도 된다. 아프진 않으니까."]]'::jsonb),
+('hanseol', 'idle', 19, '[["", "한설이 접어 둔 종이를 펴서 작은 등 그림을 살폈다. 그림마다 옆에 짤막한 표시가 붙어 있었다."], ["한설", "야시장 등 위치를 적어 둔 거야. 눈 감고도 길을 찾을 수 있지만, 빠진 게 없는지 확인해야 마음이 놓이거든."]]'::jsonb),
+('hanseol', 'idle', 20, '[["", "한설이 마루 밑에서 작은 단추 하나를 찾아 손바닥 위에 올려놓았다."], ["한설", "네 옷에서 떨어진 것 같군. ……며칠 전부터 봤는데 이제야 주웠어. 잃어버린 줄도 몰랐지?"]]'::jsonb),
+('hanseol', 'idle', 21, '[["", "한설이 의자에 등을 기댄 채 눈을 감았다가, 내 기척에 슬며시 눈을 떴다."], ["한설", "쉬는 중이었어. ……딱히 할 일 없으면 여기 앉아. 조용히 있어도 괜찮으니까."]]'::jsonb),
+('hanseol', 'idle', 22, '[["", "한설이 수첩의 빈 쪽에 별채의 문과 창을 그려 넣고 있었다. 선은 한 치도 비뚤어지지 않았다."], ["한설", "드나드는 길을 그려 둔 거다. ……네 방 안쪽은 그리지 않았어. 거기까지 살필 생각은 없으니까."]]'::jsonb),
+('hanseol', 'idle', 23, '[["", "한설이 종이에 싼 엿 한 조각을 내밀었다. 종이 끝이 여러 번 접혀 있었다."], ["한설", "야시장에서 사 왔어. 근무 끝나고 먹으려다가 남겨 뒀지. ……네가 단것을 좋아하는지는 아직 모르겠군."]]'::jsonb),
+('hanseol', 'idle', 24, '[["", "한설이 문간의 신을 한 켤레씩 돌려 놓았다. 내 신도 나가기 편한 방향으로 놓여 있었다."], ["한설", "신은 이렇게 둬야 급할 때 바로 신지. ……네 것까지 손댄 건 미안하군. 불편하면 도로 놓으마."]]'::jsonb),
+('hanseol', 'idle', 25, '[["", "한설이 규정집을 읽다가 책장을 덮었다. 손가락은 한 대목에 오래 머물러 있었다."], ["한설", "사사로운 정에 휘둘리지 말라는 조항이 있어. ……알고 있다. 그래서 판단할 때는 더 조심하려고."]]'::jsonb),
+('hanseol', 'idle', 26, '[["", "한설이 화로 곁에 앉아 군밤 껍질을 벗기고 있었다. 뜨거운 밤 하나를 손끝에서 이리저리 굴렸다."], ["한설", "야시장에서 한 봉지 사 왔어. ……이건 좀 식혀서 먹어. 방금 깐 건 뜨겁군."]]'::jsonb),
+('hanseol', 'idle', 27, '[["", "한설이 처마 밑에 작은 등롱을 걸고 있었다. 등을 놓고 두어 걸음 물러나 기울기를 살폈다."], ["한설", "야시장에서 보고 마음에 들어 샀어. ……네 집에 걸어도 괜찮겠나? 이미 걸고 묻는군."]]'::jsonb),
+('hanseol', 'idle', 28, '[["", "한설이 작은 바둑판 앞에서 흑돌과 백돌을 번갈아 놓았다. 내가 다가서자 한쪽 돌을 거두었다."], ["한설", "혼자 두면 상대 수까지 다 알아서 재미가 없어. ……한 판 둘 텐가? 봐주진 않겠다."]]'::jsonb),
+('hanseol', 'idle', 29, '[["", "한설이 창밖을 오가는 사람들을 무심히 바라보다가 내 쪽으로 시선을 돌렸다."], ["한설", "사람 수를 세고 있었어. 오래된 버릇이지. ……네가 들어오는 건 세지 않아도 알겠더군."]]'::jsonb),
+('hanseol', 'idle', 30, '[["", "한설은 한동안 말없이 마당을 바라보았다. 그러다 내게 자리를 조금 내주었다."], ["한설", "별일 없는 날이군. ……예전 같으면 무료하다고 했겠지. 지금은 이런 날도 괜찮아."]]'::jsonb),
+('hanseol', 'gift_field', 1, '[["", "한설은 선물을 받자 소매에서 놋쇠 자를 꺼냈다가 잠시 멈추고 도로 넣었다."], ["한설", "예외 조항 첫째 줄이지. 네가 건넨 건 자를 대지 않고 받는다. ……고맙다."]]'::jsonb),
+('hanseol', 'gift_field', 2, '[["", "한설이 받은 물건을 등불 가까이 들어 올렸다. 빛이 표면을 스쳤다."], ["한설", "손이 많이 갔겠군. 네가 만든 거라면 알아볼 수 있어. 잘 간직하마."]]'::jsonb),
+('hanseol', 'gift_hq', 1, '[["", "한설이 선물을 손바닥에 올리고 모서리를 천천히 쓸었다. 한동안 말이 없었다."], ["한설", "……흠잡을 데가 없군. 내가 이런 말을 하는 건 드문 일인 거, 알지?"]]'::jsonb),
+('hanseol', 'gift_other', 1, '[["", "한설은 선물을 받아 이리저리 돌려 보았다. 낯선 물건을 살피는 눈이었다."], ["한설", "감찰관이 이런 걸 받아도 되나 모르겠군. 아, 지금은 근무 중이 아니지. 고맙게 받으마."]]'::jsonb),
+('hanseol', 'gift_other', 2, '[["", "한설이 선물을 받고 수첩을 펴려다 멈췄다."], ["한설", "어느 칸에 적어야 하나. ……「받은 것」 칸을 새로 만들어야겠군."]]'::jsonb),
+('hanseol', 'gift_reward', 1, '[["", "한설이 기름종이에 싼 꾸러미를 내 손에 쥐여 주었다. 안에는 정화 부적 두 장이 반듯하게 포개져 있었다."], ["한설", "받기만 하면 장부가 안 맞잖나. 내가 만든 거야. ……네가 쓰기 편하도록 챙겼어."]]'::jsonb),
+('hanseol', 'gift_reward', 2, '[["", "한설이 영수증 한 장과 함께 작은 부적 꾸러미를 내밀었다. 영수증 귀퉁이가 접혀 있었다."], ["한설", "답례다. 영수증도 써 뒀어. 귀퉁이는 접어 놨다. ……나중에 다시 펼쳐 볼 생각이거든."]]'::jsonb),
+('hanseol', 'mate_yeoul', 1, '[["", "한설이 마루 안쪽 그늘에 앉은 여울의 목도리를 흘끗 보았다. 수첩을 덮은 한설이 내 쪽으로 몸을 돌리고 목소리를 낮췄다."], ["한설", "볕을 피해 앉는 걸 보니 사정이 있겠지. 굳이 캐묻진 않겠다. ……규정에 금지 조항은 없어도, 묻지 않는 편이 나을 때가 있으니까."]]'::jsonb),
+('hanseol', 'mate_wolha', 1, '[["", "마당에서 엽전 꾸러미를 세는 월하를 보던 한설이 미간을 좁힌 채 나를 돌아보았다."], ["한설", "흑련 거둠꾼이 감찰관 앞에서 엽전을 세다니, 배짱은 좋군. 값을 한 닢씩 덜 받는다는 소문도 들었어. ……손님에게 이득인 걸 무슨 죄로 잡겠나."]]'::jsonb),
+('hanseol', 'mate_daon', 1, '[["", "한설이 마당을 맨발로 뛰어다니는 다온을 눈으로 좇다가 내 곁으로 와 섰다."], ["한설", "저 아이 짚신이 또 한 짝 없군. 마루 밑으로 들어가는 걸 아까 봤다. ……어디 있는지는 말하지 않을 거야. 직접 찾는 재미도 있어야지."]]'::jsonb),
+('hanseol', 'mate_hisu', 1, '[["", "한설이 마루 끝에서 장부를 맞추는 희수를 한동안 지켜보다가 나를 불러 그쪽을 턱으로 가리켰다."], ["한설", "붓 쥔 손을 보니 정청에서 배운 서리가 맞군. 획이 반듯해. 누가 가르쳤는지 궁금하긴 한데…… 굳이 묻지는 않겠다."]]'::jsonb),
+('hanseol', 'mate_danbi', 1, '[["", "한설이 단비가 건넨 엿 반쪽을 손에 든 채 내 앞에 와 앉았다. 엿을 한참 내려다보고 나서야 입을 열었다."], ["한설", "엿을 반으로 꺾어 주길래 나머지는 누구 몫이냐고 물었지. 대답 대신 웃더군. 규정엔 없는 셈법이야. ……그래도 달긴 하더라."]]'::jsonb),
+('hanseol', 'mate_unbi', 1, '[["", "문간에 칼을 무릎에 눕히고 앉은 여운비를 보던 한설이 자세를 고쳐 앉으며 내게 눈짓했다."], ["한설", "불침번 서는 자세가 정청 순라 못지않군. 아니, 더 낫겠어. ……문간 자리를 빼앗으려는 건 아니다. 나도 저 자리가 탐날 뿐이지."]]'::jsonb),
+('hanseol', 'mate_cheongpa', 1, '[["", "한설이 물가에서 노를 손질하는 청파 쪽으로 고개를 돌렸다가, 기침 소리가 잦아들자 나를 보았다."], ["한설", "저 사공은 기침이 심하더군. 의원에게는 가 봤나? 네가 슬쩍 물어봐라. 내가 물으면…… 아무래도 감찰하는 것처럼 들릴 테니."]]'::jsonb),
+('hanseol', 'mate_galmae', 1, '[["", "한설이 갈매가 패 놓은 장작에 놋쇠 자를 대어 보더니 나를 손짓해 불렀다."], ["한설", "장작 길이가 한 치도 다르지 않군. 말은 거칠어도 손은 정확해. ……역시 사람은 말만 듣고 판단할 게 아니야."]]'::jsonb),
+('hanseol', 'mate_haram', 1, '[["", "한설이 마루 끝 하람 곁을 일부러 큰 걸음으로 지나 내 쪽으로 왔다. 하람이 고개를 돌려 그 발소리를 좇았다."], ["한설", "발소리만 듣고도 알아채더군. 그래서 일부러 발을 크게 굴렀어. 몰래 다가가는 건…… 예의가 아니니까."]]'::jsonb),
+('hanseol', 'mate_munsu', 1, '[["", "마당에서 쉬지 않고 떠드는 문수 쪽을 보던 한설이 수첩에 무언가를 적고 나서 내게 말했다."], ["한설", "정청 서리방에서 본 기억이 나는군. 글씨가 유난히 좋았지. 그런데 말도 저렇게 많은 줄은 몰랐어. ……글씨만큼은 참 조용했는데."]]'::jsonb),
+('yeoul', 'bond_make', 1, '[["", "맞이 등 아래에서 여울이 갈대 영사 두 가닥을 무릎에 놓고 있었다. 한 가닥 끝에는 여울의 이름이, 다른 가닥 끝에는 내 이름이 먹으로 적혀 있었다."], ["여울", "이 두 가닥을 땋아서 매듭을 지으면, 내 이름이 바깥에 매이는 거래. 솔래 아주머니가 옛날 얘기로 들은 거라 진짜인지는 몰라."]]'::jsonb),
+('yeoul', 'bond_make', 2, '[["", "여울은 두 가닥을 천천히 땋았다. 마지막 매듭을 당기자 매듭이 손바닥 위에서 미지근하게 데워졌다."], ["여울", "……따뜻해졌어. 이거 차고 말뚝까지 가 볼래? 못 넘으면 그냥 웃고 돌아오자."]]'::jsonb),
+('yeoul', 'bond_make', 3, '[["", "섬 끝 말뚝 앞에서 여울이 거룻배 뱃머리에 섰다. 한참 숨을 고르고 말뚝 너머 물에 노를 넣었다. 배가 말뚝을 지나 미끄러졌다."], ["여울", "넘었다. ……넘었어, {이름}! 일곱 해 동안 한 번도 못 넘은 데를!"]]'::jsonb),
+('yeoul', 'bond_make', 4, '[["", "여울은 뱃전을 붙잡고 뒤를 돌아보았다. 말뚝이 안개 속에서 멀어지고 있었다. 손목의 매듭을 다른 손으로 꼭 감쌌다."], ["여울", "나만 넘은 거네. ……마을 사람들한테는 함부로 말 못 하겠다. 다들 아직 저 안에 있으니까. 그래도, 네가 내 이름을 불러 주는 동안은 바깥에 있어 볼래."]]'::jsonb),
+('yeoul', 'bond_again', 1, '[["", "여울은 새 매듭을 받아 들고 말뚝 쪽을 한 번 보았다. 손목에는 빛바랜 옛 매듭이 아직 감겨 있었다."], ["여울", "풀어 놓으려다가도 자꾸 손이 가더라. 말뚝은 다시 못 넘었지만. ……또 와 줬네. 고마워, {이름}."]]'::jsonb),
+('yeoul', 'bond_break', 1, '[["", "여울은 매듭을 손목에서 풀어 한동안 쥐고 있었다. 매듭이 손바닥에서 천천히 식어 갔다."], ["여울", "……식었네. 괜찮아. 돌아가는 길은 알아. 맞이 등은 계속 켜 둘게. 네가 오면, 그땐 노래 불러 줄 수 있으니까."]]'::jsonb),
+('yeoul', 'first_dawn', 1, '[["", "여울이 창가에 붙어 서서 바깥을 내다보고 있었다. 창호지 너머로 해가 막 떠올라 여울의 얼굴이 붉게 물들었다."], ["여울", "섬에서는 해가 떠도 안개 너머로만 보였거든. ……이렇게 또렷한 건 아직 낯설어. 조금만 더 봐도 돼?"]]'::jsonb),
+('yeoul', 'first_dawn', 2, '[["", "여울은 목도리를 목까지 끌어올리고 문간에 앉아 있었다. 새벽길을 걸어온 듯 짚신 끝에 이슬이 젖어 있었다."], ["여울", "어, 일어났네. 사람들 깨기 전에 오느라 일찍 나왔어. 해 뜨면 길에 사람이 많아지니까."]]'::jsonb),
+('yeoul', 'first_noon', 1, '[["", "한낮 볕이 마루를 가득 채웠다. 여울은 볕이 닿지 않는 그늘 쪽으로 자리를 옮겨 앉았다."], ["여울", "바깥 볕은 세다. 비늘이 금방 말라서 근질거려. ……그래도 이 그늘에서 볕 구경하는 건 좋아."]]'::jsonb),
+('yeoul', 'first_noon', 2, '[["", "여울이 장갑 낀 왼손으로 부채를 부치고 있었다. 장갑 끝이 땀에 조금 젖어 있었다."], ["여울", "장갑 안이 땀으로 축축해졌어. ……사람들 안 보일 때만 잠깐 벗을게. 여기선 그 정도는 괜찮지?"]]'::jsonb),
+('yeoul', 'first_dusk', 1, '[["", "해가 기울자 여울이 삿갓을 벗어 무릎에 내려놓았다. 뺨의 비늘이 저녁 빛을 받아 푸르스름하게 비쳤다."], ["여울", "이 시간이 제일 편해. 어두워지면 비늘이 잘 안 보이거든. ……이제 좀 숨 쉬겠다."]]'::jsonb),
+('yeoul', 'first_dusk', 2, '[["", "여울은 문간에서 마을 쪽에 하나둘 켜지는 등불을 세고 있었다."], ["여울", "바깥은 해 지면 집집마다 등을 켜네. 섬에선 배웅할 때만 켰는데. ……보고 있으면 맞이 노래가 절로 나와."]]'::jsonb),
+('yeoul', 'first_night', 1, '[["", "여울이 등잔 아래서 쇠 문패 하나에 끌로 글자를 파고 있었다. 사각사각 쇳가루 떨어지는 소리가 고요한 방에 또렷했다."], ["여울", "깼어? 새로 온 사람 문패를 파고 있었어. 소리가 좀 났지? ……다 만들면 섬에 가져다 걸어 주려고."]]'::jsonb),
+('yeoul', 'first_night', 2, '[["", "여울은 목도리를 풀어 개어 두고 창문을 반쯤 열어 두었다. 밤바람에 머리 리본 끝이 살랑 흔들렸다."], ["여울", "여기선 굳이 가릴 필요 없잖아. ……처음엔 그게 더 어색했는데, 이젠 편해."]]'::jsonb),
+('yeoul', 'w_clear', 1, '[["", "여울이 마당 한가운데 서서 고개를 젖히고 하늘을 올려다보았다. 구름 한 점 없는 하늘이었다."], ["여울", "하늘이 이렇게 파랬나? 일곱 해 동안 잿빛만 봤더니 눈이 시려. ……조금만 더 보고 들어갈게."]]'::jsonb),
+('yeoul', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 여울은 삿갓도 쓰지 않고 마루 끝에 나와 앉았다."], ["여울", "흐린 날은 섬이랑 비슷해서 마음이 놓여. 사람들도 고개를 숙이고 다니니까 나를 잘 안 봐."]]'::jsonb),
+('yeoul', 'w_rain', 1, '[["", "굵은 비가 마당을 두드렸다. 여울이 처마 밑에 손을 내밀어 빗물을 받았다. 장갑을 벗은 왼손이었다."], ["여울", "섬 비는 미지근한데 바깥 비는 차갑네. 비늘이 오랜만에 촉촉해. ……빗소리가 크니까 누가 오는지도 잘 안 들리네. 여기서 조금 더 맞고 갈래."]]'::jsonb),
+('yeoul', 'w_rain', 2, '[["", "여울이 젖은 목도리를 화로 곁에 널고 있었다. 목도리에서 김이 모락모락 피어올랐다."], ["여울", "오다가 다 젖었어. 우산을 쓰면 삿갓을 못 쓰고, 삿갓을 쓰면 우산이 걸리고. ……바깥 사람들은 어떻게 다니는 거야?"]]'::jsonb),
+('yeoul', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 여울은 문간에 앉아 빗방울이 처마 끝에 맺혔다 떨어지는 것을 보고 있었다."], ["여울", "이런 비는 안개랑 비슷해. 그래서 좀 그리워져. ……섬에 한번 다녀올 때가 됐나 봐."]]'::jsonb),
+('yeoul', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 여울이 그 안개 속으로 걸어 나가 크게 숨을 들이쉬었다."], ["여울", "바깥 안개는 재 냄새가 안 나네. ……익숙한데도 다르다. 오늘은 마당에서 조금 더 있어 볼래."]]'::jsonb),
+('yeoul', 'w_wind', 1, '[["", "찬 바람에 문풍지가 덜덜 떨렸다. 여울은 목도리를 코끝까지 끌어올리고 화로 앞에 웅크렸다."], ["여울", "섬엔 바람이 거의 안 불거든. 이렇게 매운 바람은 처음이야. ……가리기는 쉬워서 다행이지만."]]'::jsonb),
+('yeoul', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 여울이 장갑을 벗고 마당의 눈을 한 움큼 쥐었다가 놀라서 털어 냈다."], ["여울", "앗, 차가워! ……이렇게 차가웠나? 예전에도 눈은 봤을 텐데. 한 번만 더 만져 볼래."]]'::jsonb),
+('yeoul', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 여울은 창을 닫고 손목의 매듭을 쥐었다. 매듭이 평소보다 따뜻했다."], ["여울", "요기가 짙은 날은 매듭이 뜨거워져. 섬이 나를 부르는 것 같아. ……오늘은 네 옆에 꼭 붙어 있을게."]]'::jsonb),
+('yeoul', 'me_yohwa', 1, '[["", "여울이 내 손목을 잡아 당겼다. 소매를 걷어 내 살갗을 한참 들여다보았다."], ["여울", "……{이름}, 내 말 들려? 여기 봐. 괜찮다고 쉽게 말하진 않을게. 대신 네가 대답할 때까지 곁에서 부를게."]]'::jsonb),
+('yeoul', 'me_erosion_80', 1, '[["", "여울의 얼굴이 굳었다. 여울이 내 팔을 붙잡고 자리에 앉혔다. 얼굴에서 웃음기가 사라졌다."], ["여울", "……이 냄새, 알아. 내가 섬으로 들어가기 전에도 이랬어. 우선 앉아. 정화할 방법부터 찾자. 오늘은 더 멀리 가지 말아 줘."]]'::jsonb),
+('yeoul', 'me_erosion_55', 1, '[["", "여울이 내 옷자락에 코를 대 보고 미간을 좁혔다."], ["여울", "재 냄새가 나. 섬에서 맡던 냄새야. ……무리하지 마, {이름}. 네가 돌아오는 걸 기다리는 사람도 있잖아."]]'::jsonb),
+('yeoul', 'me_erosion_30', 1, '[["", "여울이 내 어깨에 어린 거뭇한 기운을 살피며 손을 멈췄다."], ["여울", "오늘은 요기가 좀 묻어 왔네. 괜찮아 보인다고 그냥 두진 마. 씻고 쉬면서 상태를 살펴봐."]]'::jsonb),
+('yeoul', 'me_hp_low', 1, '[["", "내가 마루에 털썩 주저앉자 여울이 장갑을 벗어 던지고 맨손으로 내 이마를 짚었다. 비늘 덮인 손등이 서늘했다."], ["여울", "열은 없는데 숨이 가쁘네. 섬에선 이럴 때 갈대 영사 달인 물을 먹였어. 일단 물부터 마셔. 금방 떠 올게."]]'::jsonb),
+('yeoul', 'me_rescued', 1, '[["", "문을 열자 여울이 신발도 벗지 않은 채 마루 끝에 걸터앉아 있었다. 삿갓 끈이 반쯤 풀려 있었다."], ["여울", "쓰러졌다는 얘기 들었어. 어디로 가야 할지도 몰라서 여기서 기다렸어. ……이제 왔으니까 됐어. 다친 데부터 보여 줘."]]'::jsonb),
+('yeoul', 'me_exp_back', 1, '[["", "마당에 들어서자 처마 밑에서 노랫소리가 아주 작게 흘러나왔다. 기둥 뒤에서 맞이 노래를 부르던 여울이 나와 눈이 마주쳤다."], ["여울", "아, 들켰네! 어서 와, {이름}. 맞이 노래 끝까지 들어 볼래? 이웃들한테 들키지 않게 작게 불러 줄게."]]'::jsonb),
+('yeoul', 'me_far_travel', 1, '[["", "여울이 내 신을 받아 들고 밑창의 흙을 털었다. 낯선 땅의 붉은 흙이 묻어 있었다."], ["여울", "먼 데 다녀왔구나. 이 흙은 어디 거야? 나는 섬이랑 여기밖에 몰라서. ……다음엔 얘기 많이 해 줘."]]'::jsonb),
+('yeoul', 'me_levelup', 1, '[["", "여울이 내 얼굴을 보더니 손뼉을 짝 쳤다."], ["여울", "뭔가 좋은 일 있었지? 얼굴에 다 쓰여 있어. 조사원 시절엔 나도 저랬어. ……축하해."]]'::jsonb),
+('yeoul', 'home_portrait', 1, '[["", "여울이 벽에 걸린 제 초상 앞에서 손으로 뺨을 가렸다. 그림 속 뺨의 비늘이 그대로였다."], ["여울", "비늘까지 다 그렸네. ……안 가려도 되는 데가 생긴 것 같아서 좀 이상해. 싫진 않아."]]'::jsonb),
+('yeoul', 'home_pet', 1, '[["", "동무가 여울의 장갑 낀 왼손에 코를 대고 킁킁거렸다. 여울이 장갑을 벗자 동무가 비늘을 핥았다."], ["여울", "얘는 내 손이 신기한가 봐. ……겁내지 않네. 너처럼."]]'::jsonb),
+('yeoul', 'home_new_furn', 1, '[["", "여울이 새 가구 앞에 쪼그려 앉아 나뭇결에 귀를 대 보았다."], ["여울", "새 가구네? 나무에서 아직 숲 냄새가 나는 것 같아. 섬 갈대랑은 느낌이 다르다. 나도 앉아 봐도 돼? 조심할게."]]'::jsonb),
+('yeoul', 'home_mate', 1, '[["", "여울이 목도리를 고쳐 매며 마루 안쪽을 흘끗 보았다."], ["여울", "네 정인이 아까 인사했어. 내 비늘 보고도 눈 하나 깜짝 안 하더라. ……좋은 사람이네."]]'::jsonb),
+('yeoul', 't_days_7', 1, '[["", "여울이 손목의 매듭을 손끝으로 가만히 만졌다. 매듭은 여전히 미지근했다."], ["여울", "벌써 이레야. 매듭은 여전히 따뜻하네. ……이렇게 바깥에서 맞는 날이 더 많아졌으면 좋겠어."]]'::jsonb),
+('yeoul', 't_days_30', 1, '[["", "여울이 종이 한 장을 내밀었다. 바깥에서 본 것들이 반듯한 글씨로 줄줄이 적혀 있었다."], ["여울", "한 달 동안 처음 본 것들. 해 뜨는 거, 파란 하늘, 진짜 객사 국밥. ……벌써 서른 줄이 넘었어."]]'::jsonb),
+('yeoul', 't_days_100', 1, '[["", "여울이 손바닥만 한 쇠패 하나를 내밀었다. 「여울이 다녀간 집」이라는 글씨가 파여 있었다."], ["여울", "백 날 기념이야. 이 집 문간에 걸어 줘. 섬 문패처럼 쇠로 팠으니까 안 번져."]]'::jsonb),
+('yeoul', 't_long_away', 1, '[["", "여울은 문간에 앉아 무릎을 끌어안고 있었다. 나를 보자 한 박자 늦게 일어섰다."], ["여울", "왔네. ……사흘 동안 섬에 다녀올까 했는데, 네가 오면 아무도 없을까 봐 그냥 있었어."]]'::jsonb),
+('yeoul', 't_long_away', 2, '[["", "여울이 반가운 얼굴을 하다가 이내 입술을 비죽였다."], ["여울", "바빴지? 알아. 그래도 매듭이 좀 식은 것 같았단 말이야. ……이제 다시 따뜻해졌다."]]'::jsonb),
+('yeoul', 't_last_today', 1, '[["", "여울이 목도리를 개어 무릎에 올려놓고 창밖 어둠을 한 번 내다보았다."], ["여울", "오늘은 이만 얘기하자. 나도 좀 쉬어야겠어. ……내일도 와서 이름 불러 줘, {이름}."]]'::jsonb),
+('yeoul', 'idle', 1, '[["", "여울이 손목의 갈대 영사 매듭을 만지작거리고 있었다. 매듭 끝에 적힌 두 이름이 손때에 반질반질해졌다."], ["여울", "이거 만지면 마음이 놓여. 아직 따뜻하구나, 하고."]]'::jsonb),
+('yeoul', 'idle', 2, '[["", "여울이 문간에 놓인 삿갓의 끈을 다시 매고 있었다. 끈 한쪽이 해져 있었다."], ["여울", "오는 길에 나뭇가지에 걸려서 끈이 해졌어. 삿갓 벗겨질 뻔했지 뭐야. ……다행히 아무도 없었어."]]'::jsonb),
+('yeoul', 'idle', 3, '[["", "여울이 창밖을 지나가는 아이 하나를 몸을 숨긴 채 보고 있었다."], ["여울", "아이들은 눈이 밝아서 비늘을 금방 알아봐. 그래서 아이가 지나가면 숨게 돼. ……사실 아이들은 무서워하기보단 신기해하는데."]]'::jsonb),
+('yeoul', 'idle', 4, '[["", "여울이 쇠 문패 하나를 무릎에 올려놓고 쇳가루를 후 불었다."], ["여울", "섬에 새로 온 사람 문패야. 다음에 섬 갈 때 가져갈 거야. 요즘은 들어오는 사람한테 맞이 노래부터 불러 줘."]]'::jsonb),
+('yeoul', 'idle', 5, '[["", "여울이 객사 쪽 하늘을 보며 코를 킁킁거렸다."], ["여울", "객사 국밥 냄새가 여기까지 오는 것 같아. 진짜 국밥은 국물이 뽀얗더라. 기억이 맞았어. ……또 먹으러 가자. 나 뒷문으로 들어갈게."]]'::jsonb),
+('yeoul', 'idle', 6, '[["", "여울은 마루에 앉아 장갑을 벗고 비늘에 기름을 바르고 있었다."], ["여울", "바깥 공기는 말라서 비늘이 갈라져. 섬에선 안 하던 일이야. ……이거 하는 거, 너만 봐."]]'::jsonb),
+('yeoul', 'idle', 7, '[["", "여울이 별채 기둥에 등을 기대고 맞이 노래를 작게 흥얼거렸다."], ["여울", "바깥에서 부르니까 가락이 좀 다르게 들려. 끝이 더 위로 올라가. ……네 집이라 그런가."]]'::jsonb),
+('yeoul', 'idle', 8, '[["", "여울이 장터에서 사 온 엿을 종이째 내밀었다. 손끝에 끈적한 엿이 묻어 있었다."], ["여울", "목도리 쓰고 장터 갔다 왔어. 엿장수가 내 얼굴을 안 봐서 다행이었어. ……하나는 네 거."]]'::jsonb),
+('yeoul', 'idle', 9, '[["", "여울이 바닥에 앉아 종이에 길을 그리고 있었다. 반요촌에서 별채까지 오는 길이었다."], ["여울", "사람 없는 길만 골라 그렸어. 물길 따라 오다가 이 둑을 타면 아무도 안 마주쳐. ……길잡이 버릇이야."]]'::jsonb),
+('yeoul', 'idle', 10, '[["", "여울이 별채 우물가에서 두레박 줄을 손으로 쓸어 보고 있었다."], ["여울", "이 줄도 꽤 낡았네. 갈대 영사로 새로 꼬아 줄까? 섬 두레박 줄은 내가 꼰 건데 아직 멀쩡해."]]'::jsonb),
+('yeoul', 'idle', 11, '[["", "여울이 화로에 손을 쬐다가 왼손 장갑을 벗어 같이 쬐었다."], ["여울", "비늘 손은 늘 차가워. 바깥에 오니까 더 그래. ……네 손 좀 빌려줘. 아니, 그냥 잠깐만."]]'::jsonb),
+('yeoul', 'idle', 12, '[["", "여울이 마당에 핀 꽃 한 송이 앞에 쪼그려 앉아 있었다."], ["여울", "섬엔 꽃이 안 펴. 갈대만 펴. 이게 무슨 꽃이야? ……이름 알려 주면 잊지 않게 적어 둘게."]]'::jsonb),
+('yeoul', 'idle', 13, '[["", "여울이 목도리 안쪽을 뒤집어 보이며 웃었다. 안쪽에 작은 주머니가 꿰매져 있었다."], ["여울", "여기 정화 부적 넣어 다녀. 말뚝 넘을 때 혹시 몰라서. ……쓸 일은 아직 없었어."]]'::jsonb),
+('yeoul', 'idle', 14, '[["", "여울이 바깥에서 들려오는 장사꾼 외침을 듣고 소리 나는 쪽으로 고개를 돌렸다."], ["여울", "바깥은 시끄러워. 섬은 너무 조용했거든. ……처음엔 무서웠는데 이젠 좀 재밌어."]]'::jsonb),
+('yeoul', 'idle', 15, '[["", "여울은 별채 문패 앞에서 손가락으로 내 이름을 짚어 보고 있었다."], ["여울", "나무 문패네. 안개 없으니까 안 번지겠다. ……그래도 쇠로 바꾸고 싶으면 말해."]]'::jsonb),
+('yeoul', 'idle', 16, '[["", "여울이 거룻배 노를 깎을 나뭇가지를 다듬고 있었다. 칼끝에서 나무 껍질이 둥글게 말려 떨어졌다."], ["여울", "말뚝까지 젓는 노가 닳아서. 바깥 나무로 깎으면 더 오래 갈 것 같아."]]'::jsonb),
+('yeoul', 'idle', 17, '[["", "여울이 창가에 앉아 지나가는 조사원들의 옷을 하나하나 눈으로 좇았다."], ["여울", "요즘 조사원 옷은 이렇게 생겼구나. 내 때랑 달라. ……나 그때 입던 거, 어디 갔는지 모르겠다."]]'::jsonb),
+('yeoul', 'idle', 18, '[["", "여울이 갈대 영사로 작은 물건을 엮고 있었다. 손가락이 빠르게 움직였다."], ["여울", "네 짐 보따리 끈. 이게 질겨서 잘 안 끊어져. 다 하면 바꿔 줄게."]]'::jsonb),
+('yeoul', 'idle', 19, '[["", "여울이 국밥 흉내를 내겠다며 부엌에서 솥을 들여다보고 있었다."], ["여울", "바깥 재료로 끓이면 객사 맛이 날까? 섬에선 다섯 판이나 실패했잖아. ……이번엔 네가 간 봐."]]'::jsonb),
+('yeoul', 'idle', 20, '[["", "여울이 목도리를 벗고 거울 앞에서 뺨의 비늘을 한참 들여다보았다."], ["여울", "바깥 볕을 쬐서 그런가, 비늘 색이 조금 밝아진 것 같아. ……기분 탓이겠지?"]]'::jsonb),
+('yeoul', 'idle', 21, '[["", "여울은 마루에 누워 천장을 올려다보고 있었다. 팔다리를 쭉 펴고 있었다."], ["여울", "섬 집은 천장이 낮아서 이렇게 누우면 답답했거든. 여긴 높아서 좋다."]]'::jsonb),
+('yeoul', 'idle', 22, '[["", "여울이 묵호 촌장의 쇠 문패 탁본을 펼쳐 보이고 있었다."], ["여울", "촌장님이 요즘 이 문패 글자를 매일 짚으셔. 빈자리 첫 글자도 언젠가 찾아서 새겨 드리고 싶어."]]'::jsonb),
+('yeoul', 'idle', 23, '[["", "여울이 바깥에서 사 온 바늘쌈을 풀어 보이며 웃었다."], ["여울", "솔래 아주머니 선물이야. 섬 바늘은 다 녹이 슬었거든. ……바깥 물건 들고 가면 다들 좋아해."]]'::jsonb),
+('yeoul', 'idle', 24, '[["", "여울이 별채 앞을 지나던 개 한 마리를 손짓으로 불렀다. 개가 꼬리를 흔들며 다가왔다."], ["여울", "개는 나 보고 안 짖어. 냄새로 사람 가리는 것 같아. ……그럼 난 사람 냄새가 나나 봐."]]'::jsonb),
+('yeoul', 'idle', 25, '[["", "여울이 장부 한 권을 펼쳐 반듯한 글씨로 무언가를 적고 있었다."], ["여울", "섬 문패 쉰한 개 이름 목록이야. 바깥에도 한 벌 둬야 안심이 돼서. 여기 둬도 돼?"]]'::jsonb),
+('yeoul', 'idle', 26, '[["", "여울은 문간에서 신발을 벗다가 짚신 바닥을 들여다보았다."], ["여울", "말뚝 넘어 걸어오면 짚신이 금방 닳아. 섬에선 배만 타서 몰랐어. ……바깥 사람들은 정말 많이 걷는구나."]]'::jsonb),
+('yeoul', 'idle', 27, '[["", "여울이 등잔 기름을 채우다가 기름병 냄새를 맡아 보았다."], ["여울", "갈대숲 물고기 기름이랑 냄새가 달라. 이건 덜 비려. ……맞이 등에도 이거 넣으면 좋겠다."]]'::jsonb),
+('yeoul', 'idle', 28, '[["", "여울이 내 어깨에 묻은 먼지를 털어 주다가 손을 멈췄다."], ["여울", "바깥 먼지는 재가 아니라 흙이네. ……이상하게 이게 더 좋아."]]'::jsonb),
+('yeoul', 'idle', 29, '[["", "여울이 창문을 열고 바깥 소리에 귀를 기울였다. 멀리서 종소리가 울렸다."], ["여울", "종이 울리면 시간을 알 수 있구나. 섬은 시간이 그냥 흘러. ……여기 오고 나서 하루가 길어졌어."]]'::jsonb),
+('yeoul', 'idle', 30, '[["", "여울이 나를 돌아보더니 입가에 작은 웃음을 띠었다."], ["여울", "있잖아, 바깥에 나와서 제일 좋은 게 뭔지 알아? ……네가 부르면 대답할 수 있다는 거."]]'::jsonb),
+('yeoul', 'gift_field', 1, '[["", "여울이 광석을 받아 들고 등불에 비춰 보았다. 결이 곱게 반짝였다."], ["여울", "빛깔 좋다. 문패 만드는 데 쓸 수도 있겠어. ……고마워, {이름}."]]'::jsonb),
+('yeoul', 'gift_field', 2, '[["", "여울이 광석을 손바닥에 올리고 무게를 가늠했다."], ["여울", "묵직하네. 어디에 쓰면 좋을지 풀무 아저씨한테도 물어봐야겠어. ……네가 준 거라고 말할게."]]'::jsonb),
+('yeoul', 'gift_hq', 1, '[["", "여울이 선물을 두 손으로 받쳐 들고 한참 말이 없었다."], ["여울", "……이렇게 좋은 걸 나한테 줘도 돼? 아껴 쓰는 데는 익숙한데, 이런 선물을 받는 건 아직 서툴러."]]'::jsonb),
+('yeoul', 'gift_other', 1, '[["", "여울이 선물을 이리저리 돌려 보며 고개를 갸웃했다."], ["여울", "이건 어떻게 쓰는 거야? ……모르는 물건이라도 네가 골라 준 거면 궁금해지네."]]'::jsonb),
+('yeoul', 'gift_other', 2, '[["", "여울이 선물을 목도리 안쪽 주머니에 조심스럽게 넣었다."], ["여울", "잃어버리지 않게 잘 챙길게. ……가끔 꺼내 보면 네 생각도 나겠지."]]'::jsonb),
+('yeoul', 'gift_reward', 1, '[["", "여울이 갈대 잎에 싼 작은 단지 두 개를 내 손에 쥐여 주었다. 쌉싸름한 고약 냄새가 났다."], ["여울", "반요촌에서 쓰는 고약이야. 상처에 쓰는 거니까 필요할 때 꺼내 봐. ……나도 뭔가 주고 싶었어."]]'::jsonb),
+('yeoul', 'gift_reward', 2, '[["", "여울이 고약 단지 뚜껑에 반듯한 글씨로 무언가를 적어 내밀었다."], ["여울", "「아플 때 바르기」. ……아껴 두기만 하지 말고, 필요하면 써. 알았지?"]]'::jsonb),
+('yeoul', 'mate_hanseol', 1, '[["", "여울이 목도리를 고쳐 매며 문간의 한설을 곁눈질하더니 내 옆으로 바짝 붙어 앉아 속삭였다."], ["여울", "관복 입은 걸 보고 나도 모르게 숨으려 했어. 그런데 비늘을 보고도 아무것도 안 묻더라. ……정청 사람이라고 다 똑같진 않은가 봐."]]'::jsonb),
+('yeoul', 'mate_wolha', 1, '[["", "마당에서 엽전을 세는 월하를 보던 여울이 피식 웃으며 내 쪽으로 고개를 기울였다."], ["여울", "나한테도 품삯을 부르더라. 반요 길잡이 하루 값이라면서. 그런데 꼭 한 닢을 덜 받겠대. ……깎아 준 건지 놀린 건지 아직도 모르겠어."]]'::jsonb),
+('yeoul', 'mate_daon', 1, '[["", "여울이 장갑 낀 왼손을 내려다보며 내게 다가왔다. 장갑 위에 다온의 작은 손자국이 하얗게 남아 있었다."], ["여울", "장갑 속을 보여 달래서 보여 줬더니 반짝반짝하대. 하나도 안 무서워하더라. ……섬 애들이랑 똑같아. 걔들도 늘 그랬거든."]]'::jsonb),
+('yeoul', 'mate_hisu', 1, '[["", "여울이 희수의 장부 곁을 지나다가 걸음을 멈추고, 장부 귀퉁이를 가리키며 나를 돌아보았다."], ["여울", "글씨가 참 반듯해. 섬 문패에 새기는 글씨처럼 한 획도 빠뜨리지 않더라. ……문패 하나 새길 때 밑글씨 좀 부탁해도 될까?"]]'::jsonb),
+('yeoul', 'mate_danbi', 1, '[["", "여울이 단비가 준 엿 반쪽을 입에 문 채 내 곁에 와 앉았다."], ["여울", "엿 장수가 자기 오른쪽에 서 달래. 그쪽 귀가 잘 들린다고. 나도 장갑 안 낀 쪽에 서 달라고 했지. ……서로 부탁 하나씩 한 셈이네."]]'::jsonb),
+('yeoul', 'mate_unbi', 1, '[["", "문간에서 칼을 닦는 여운비 쪽을 보던 여울이 목도리를 턱까지 끌어올리고 내 쪽으로 몸을 돌렸다."], ["여울", "칼 든 사람을 보면 아직도 몸이 굳어. 그런데 저 사람은 말없이 내 삿갓 끈을 다시 매 줬어. ……그 뒤로는 마주쳐도 전처럼 겁나진 않더라."]]'::jsonb),
+('yeoul', 'mate_cheongpa', 1, '[["", "여울이 물가에서 노를 젓는 청파를 한참 바라보다가 나를 불렀다."], ["여울", "노 젓는 모습을 보니까 섬 거룻배가 생각나. 노를 물에 넣는 각도까지 닮았거든. ……물에서 살아 본 사람끼리는 알아보는 게 있나 봐."]]'::jsonb),
+('yeoul', 'mate_galmae', 1, '[["", "여울이 갈매가 패 놓은 장작을 한 아름 안고 오며 내게 웃어 보였다."], ["여울", "묵은 값이라며 장작을 산더미처럼 패 놨더라. 나도 묵었으니 같이 패겠다고 했더니 손님은 가만있으래. ……손님이라니. 바깥에 나와선 처음 들어 본 말이야."]]'::jsonb),
+('yeoul', 'mate_haram', 1, '[["", "여울이 마루 끝 하람 곁에서 일어나 내게 왔다. 맨 왼손을 쥐었다 폈다 하며 손등을 내려다보았다."], ["여울", "눈이 안 보이니까 내 비늘을 손으로 만져 봤어. 서늘하고 매끄럽대. ……무섭다는 말 대신 그런 말을 들으니까, 기분이 묘하게 좋더라."]]'::jsonb),
+('yeoul', 'mate_munsu', 1, '[["", "문수의 끝없는 이야기를 듣던 여울이 웃음을 참으며 내 귀에 대고 소곤거렸다."], ["여울", "저렇게 말 많은 사람은 섬에 없어. 다들 조용하거든. 그런데 가만히 듣다 보면…… 맞이 노래 같아. 끝없이 이어지는 게 꼭 그래."]]'::jsonb),
+('wolha', 'bond_make', 1, '[["", "밤 장이 파한 뒤였다. 월하는 좌판 등잔 아래서 엽전 두 닢을 검은 연꽃 매듭 끈에 꿰고 있었다. 한 닢은 늘 손가락 사이에서 굴리던 제 엽전이었고, 다른 한 닢은 내가 방금 정표 값으로 건넨 엽전 가운데 하나였다."], ["월하", "왔어요? 마침 잘 왔네. 이것 좀 봐 줘요. ……매듭 하나 묶는데 손이 영 말을 안 듣네요. 이런 일에 손이 떨릴 줄은 몰랐는데."]]'::jsonb),
+('wolha', 'bond_make', 2, '[["", "월하가 매듭을 당겨 조이고 노리개를 내 손바닥에 올려놓았다. 손을 거두지 않고 내 손등 위에 한동안 얹어 두었다."], ["월하", "한 닢은 내 거고, 한 닢은 {이름}이 준 거예요. 둘을 나란히 꿰니까 이제야 셈이 맞네요. 늘 한 닢씩 모자라게 쳤지만, 이건 온전히 갖고 싶었어요."], ["월하", "밤에는 장을 봐야 하니까 낮에 들를게요. 문간 자리 하나만 비워 둬요. 거기 앉으면 오가는 사람도 잘 보이겠네요."]]'::jsonb),
+('wolha', 'bond_again', 1, '[["", "월하는 새 노리개를 받아 들고 한참 웃지도 못했다. 도포 안쪽 주머니에서 빛바랜 옛 노리개가 끈째 비어져 나와 있었다."], ["월하", "몇 번이나 버리려고 꺼냈는데 끝내 못 버렸어요. 다시 와 줘서 고마워요, {이름}. 정말로."]]'::jsonb),
+('wolha', 'bond_break', 1, '[["", "월하는 노리개를 돌려받아 손바닥 위에서 한참 내려다보았다. 엽전 두 닢이 등불에 희미하게 빛났다. 웃으려 했지만 입꼬리만 조금 올라갔다."], ["월하", "……알았어요. 더 붙잡지는 않을게요. {이름}하고 흥정하고 싶진 않으니까."], ["월하", "일곱째 문은 늘 그 자리에 있어요. 지나갈 일 있으면 들러요. 내가 먼저 알아볼 테니까."]]'::jsonb),
+('wolha', 'first_dawn', 1, '[["", "새벽 골목에서 엽전 꾸러미가 짤랑거리는 소리가 들렸다. 곧 월하가 문을 밀고 들어왔다. 밤새 장을 본 탓에 눈이 벌겋게 충혈되어 있었다."], ["월하", "장 끝나자마자 왔어요. 오늘 첫 손님은 {이름}이네요. 흥정은 됐고요. ……얼굴 봤으니 이제 한숨 자야겠어요."]]'::jsonb),
+('wolha', 'first_dawn', 2, '[["", "부엌에서 월하가 쌀을 씻고 있었다. 팔꿈치까지 걷어 올린 소매 아래로 물방울이 뚝뚝 떨어졌다."], ["월하", "오는 길에 쌀 좀 샀어요. 아침 먹고 나가요. 어제도 굶었죠? 솥에 손도 안 댔던데."]]'::jsonb),
+('wolha', 'first_noon', 1, '[["", "볕 드는 자리에 대자로 누워 있던 월하가 나를 보더니 옆자리를 손바닥으로 툭툭 쳤다."], ["월하", "이리 와서 앉아요. 장부고엔 볕이 안 들거든요. 낮에 여기서 볕 쬐는 맛이 꽤 좋네요."]]'::jsonb),
+('wolha', 'first_noon', 2, '[["", "월하가 마루에 앉아 어젯밤 번 엽전을 세다가 손을 멈추고 내 얼굴을 빤히 보았다."], ["월하", "밥 먹었어요? 얼굴 보니 안 먹었구만. 엽전은 나중에 세고 국수부터 말아 줄게요."]]'::jsonb),
+('wolha', 'first_dusk', 1, '[["", "해가 기울자 월하가 도포를 털어 입고 연꽃 매듭을 고쳐 맸다. 문을 나서려다 말고 돌아섰다."], ["월하", "장 열러 가야겠네요. 가기 전에 인사나 하고 가려고 돌아왔죠. 밤길 조심해요. 나도 조심할 테니까."]]'::jsonb),
+('wolha', 'first_dusk', 2, '[["", "월하가 문간에서 짚신 끈을 매다가 고개만 돌려 나를 보았다."], ["월하", "오늘 밤엔 어디 가요? 깊은 곳에 갈 거면 말해 줘요. 장을 보다가도 그쪽 소문만 들리면 신경이 쓰여서요."]]'::jsonb),
+('wolha', 'first_night', 1, '[["", "자정 무렵 문간에서 덜그럭 소리가 났다. 월하가 좌판 등을 끄지도 않은 채 들고 와 처마에 걸고 있었다."], ["월하", "손님이 없어서 일찍 접었죠. 하하, 거짓말이에요. 오늘은 장사보다 이쪽이 더 마음에 걸려서요."]]'::jsonb),
+('wolha', 'first_night', 2, '[["", "월하가 등잔 아래서 그날 받은 이름들을 장부에 옮겨 적고 있었다. 내가 곁에 앉자 붓을 잠깐 내려놓았다."], ["월하", "이것만 적으면 끝나요. 그동안 옆에 좀 있어 줘요. 혼자 쓰면 졸려서 글씨가 자꾸 삐뚤어지거든요."]]'::jsonb),
+('wolha', 'w_clear', 1, '[["", "월하가 마당에 장부를 펴서 볕에 널다가 나를 보고 장부 한 권을 내밀었다."], ["월하", "같이 널어 줘요. 볕 좋을 때 말려 놔야 장마에도 끄떡없거든요. 저쪽부터 펴 주세요. 바람에 날아가면 큰일 나요."]]'::jsonb),
+('wolha', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 마루 끝에 앉아 있던 월하가 일어나 제 겉옷을 내 어깨에 걸쳐 주었다."], ["월하", "날이 흐리니 바람도 차네요. 나갈 거면 이거 걸쳐요. 내 옷이라 좀 크긴 하겠지만."]]'::jsonb),
+('wolha', 'w_rain', 1, '[["", "굵은 비가 마당을 두드렸다. 월하는 우산도 없이 흠뻑 젖은 채 문간에 들어서서 품에서 기름종이 꾸러미부터 꺼냈다."], ["월하", "난 좀 젖어도 괜찮아요. 약과만 멀쩡하면 됐죠. 오는 길에 샀어요. 수건은 이따 주고, 이것부터 받아요."]]'::jsonb),
+('wolha', 'w_rain', 2, '[["", "월하는 처마 밑에 앉아 빈손을 무릎에 얹고 있었다. 빗소리에 손가락만 자꾸 꼼지락거렸다."], ["월하", "비 오는 날엔 엽전을 안 굴렸잖아요. 이젠 굴릴 것도 없고요. 손이 허전하니 잠깐 잡아 줘요. 비 그칠 때까지만."]]'::jsonb),
+('wolha', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 처마 끝으로 손바닥을 내밀어 빗방울을 받던 월하가 나를 돌아보았다."], ["월하", "이 정도 비는 같이 맞아도 괜찮겠네요. 마당 한 바퀴 돌래요? 젖은 옷은 내가 말려 줄게요."]]'::jsonb),
+('wolha', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 월하가 처마에 걸린 풍경을 손가락으로 툭 건드렸다. 맑은 소리가 안개 속으로 멀리 번졌다."], ["월하", "안개 낀 십삼문에선 소리로 사람을 찾기도 해요. 나갈 땐 소매에 방울이라도 달아요. 내가 찾아갈 수 있게."]]'::jsonb),
+('wolha', 'w_wind', 1, '[["", "바람이 문짝을 덜컹덜컹 흔들었다. 월하가 화로를 내 쪽으로 밀어 놓고 자기는 바람 드는 문 쪽에 앉았다."], ["월하", "거기가 더 따뜻하죠? 난 십삼문 골목바람에 익숙해서 괜찮아요. 정말이니까 손부터 녹여요."]]'::jsonb),
+('wolha', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 마당 눈 위에 동그란 엽전 자국이 줄지어 찍혀 있었다. 자국은 내 방문 앞에서 시작해 문간 월하 자리까지 이어졌다."], ["월하", "엽전으로 찍은 거예요. 자국 따라오면 내 자리까지 나와요. 일어나면 제일 먼저 보라고 찍어 뒀죠."]]'::jsonb),
+('wolha', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 월하가 문간에 쪼그려 앉아 노리개 끈을 문고리에 칭칭 감아 두고 있었다."], ["월하", "흑련에선 이런 날 문고리에 매듭을 걸어요. 이름이 흐려질 때 문이라도 단단히 붙들어 두자는 뜻이죠. 오늘은 나가지 마요. 나도 장에 안 갈 테니까."]]'::jsonb),
+('wolha', 'me_yohwa', 1, '[["", "월하가 웃음기가 싹 가신 얼굴로 내 앞에 쪼그려 앉았다. 두 손으로 내 얼굴을 감싸고 눈을 맞췄다."], ["월하", "{이름}, 내 말 들려요? 한 번 더 부를게요. 이름은 자꾸 불러 줘야 흐려지지 않거든요. 거둠꾼 말이니 믿어 봐요."]]'::jsonb),
+('wolha', 'me_erosion_80', 1, '[["", "월하가 내 소매를 걷어 올리더니 말없이 장부를 덮었다. 웃음이 싹 가신 얼굴이었다."], ["월하", "당장 앉아요. 정화부터 해야겠어요. 오늘은 장에도 안 갈 테니까 밖에 나갈 생각 말아요. 문간은 내가 지킬게요."]]'::jsonb),
+('wolha', 'me_erosion_55', 1, '[["", "월하가 영유리 한 알을 꺼내 내 얼굴에 대고 들여다보았다. 유리 너머로 월하의 눈썹이 찌푸려졌다."], ["월하", "원래 바랜 글씨 읽을 때 쓰는 유리인데, 오늘은 {이름} 얼굴빛이 더 걱정이네요. 청정수 지어 줄 테니 마시고 가요."]]'::jsonb),
+('wolha', 'me_erosion_30', 1, '[["", "월하가 내 어깨에 앉은 거뭇한 기운을 손바닥으로 털어 냈다. 다 털린 뒤에도 몇 번을 더 털었다."], ["월하", "깊은 데 다녀왔죠? 아직은 괜찮아 보여도 쌓이면 곤란해요. 다음엔 더 심해지기 전에 와요. 이런 건 미루면 손해라니까요."]]'::jsonb),
+('wolha', 'me_hp_low', 1, '[["", "내가 문간 기둥을 짚고 숨을 고르자 월하가 말없이 등을 내밀고 쪼그려 앉았다."], ["월하", "업혀요. 남의 이름도 짊어지고 다니는 사람인데, {이름} 하나 못 업겠어요? ……자, 얼른요. 눕혀 놓고 영초 차도 우려 올게요."]]'::jsonb),
+('wolha', 'me_rescued', 1, '[["", "마당에 들어서자 처마에 좌판 등이 걸려 있었다. 장이 한창일 시각이었다. 등 아래서 월하가 노리개를 쥔 채 나를 기다리고 있었다."], ["월하", "쓰러졌단 말 듣고 좌판부터 접었어요. 등까지 챙겨 올 정신은 있었나 봐요. ……어디 다쳤어요? 우선 앉아 봐요."]]'::jsonb),
+('wolha', 'me_exp_back', 1, '[["", "월하가 마당 평상에 엽전 꾸러미를 날짜만큼 나눠 늘어놓고 있었다. 나를 보더니 마지막 꾸러미를 묶다 말고 일어났다."], ["월하", "왔네. 보자, 팔다리는 다 붙어 있고……. 며칠 안 보이니까 별채가 어찌나 조용하던지. 씻고 와요. 국 데워 놨어요."]]'::jsonb),
+('wolha', 'me_far_travel', 1, '[["", "월하가 내 보따리를 받아 들고 무게를 손으로 가늠했다. 보따리 끈에 낯선 풀씨가 붙어 있었다."], ["월하", "보따리가 제법 묵직하네요. 꽤 먼 데까지 다녀왔나 봐요. 이 풀씨도 처음 보고요. 앉아서 얘기 좀 해 줘요. 오늘은 그걸로 충분해요."]]'::jsonb),
+('wolha', 'me_levelup', 1, '[["", "월하가 노리개를 만지작거리다 말고 나를 보며 씩 웃었다."], ["월하", "오늘 좋은 일 있었죠? 얼굴에 다 쓰여 있는데요. 축하해요! 오늘 밤엔 나도 기분 좋게 장을 열겠네요."]]'::jsonb),
+('wolha', 'home_portrait', 1, '[["", "월하가 벽에 걸린 제 초상 앞에서 팔짱을 끼고 고개를 갸웃했다. 귀 끝이 조금 붉었다."], ["월하", "내 초상까지 걸어 놨어요? 어쩐지 낯간지럽네요. 그래도 떼지는 말아요. 내가 없는 동안 심심하지는 않겠어요."]]'::jsonb),
+('wolha', 'home_pet', 1, '[["", "동무가 월하의 노리개 끈을 물고 늘어졌다. 월하는 끈을 빼앗기지 않으려 엉거주춤 서서 나를 보며 웃었다."], ["월하", "어이구, 그건 안 돼. 아주 중요한 거란 말이야. {이름}, 이 녀석 좀 봐요. 좋은 물건은 귀신같이 알아보네요."]]'::jsonb),
+('wolha', 'home_new_furn', 1, '[["", "월하가 새 가구를 한 바퀴 돌아보더니 그 옆에 제 방석을 끌어다 놓았다."], ["월하", "좋은 나무네요. 하마터면 값부터 매길 뻔했어요. 여기 내 자리로 써도 돼요? 볕도 잘 들고, 문간도 가깝네요."]]'::jsonb),
+('wolha', 'home_mate', 1, '[["", "월하가 떡 접시를 들고 와 마루 안쪽을 턱으로 가리켰다."], ["월하", "아까 {이름} 정인이 떡을 나눠 주더라고요. 흑련 사람이냐기에 별채 문간 지기라고 했죠. 틀린 말은 아니잖아요?"]]'::jsonb),
+('wolha', 't_days_7', 1, '[["", "월하가 노리개 끈을 손가락에 감았다 풀었다 하다가 나와 눈이 마주치자 노리개를 들어 보였다."], ["월하", "엽전을 안 굴린 지도 이레네요. 손이 어찌나 심심한지. 그럴 땐 이 노리개를 만져요. {이름} 엽전도 같이 있으니까."]]'::jsonb),
+('wolha', 't_days_30', 1, '[["", "월하가 엽전 서른 닢을 실에 꿰어 내밀었다. 몇 닢에는 먹으로 작은 점이 찍혀 있었다."], ["월하", "하루에 한 닢씩 꿰었어요. 먹으로 점 찍은 건 같이 밥 먹은 날이고요. 벌써 서른 닢이네요. 이건 쓰지 말고 간직해야겠어요."]]'::jsonb),
+('wolha', 't_days_100', 1, '[["", "월하가 술병 하나와 잔 둘을 소반에 받쳐 들고 왔다. 안주 접시와 영초 차 두 잔도 곁에 놓여 있었다."], ["월하", "벌써 백 날이에요. 이번엔 안주도 안 잊고 해장 차도 챙겼죠. 처음 같이 술 마시던 날 기억나요? 나 제법 늘었죠?"]]'::jsonb),
+('wolha', 't_long_away', 1, '[["", "월하가 평상에 엽전 세 닢을 나란히 놓고 있었다. 나를 보더니 한 닢씩 주머니에 쓸어 넣었다."], ["월하", "사흘 치예요. 기다린 날마다 한 닢씩 놓아 뒀죠. ……돈 받겠다는 건 아니에요. 그냥 이렇게라도 세고 있었어요."]]'::jsonb),
+('wolha', 't_long_away', 2, '[["", "월하가 좌판에서 손님 맞듯 허리를 굽혀 인사했다. 입꼬리가 자꾸 올라가서 소용이 없었다."], ["월하", "어서 오세요, 손님. ……아, 못 하겠다. 괜히 장난쳤네요. 보고 싶었어요. 사흘 내내 문간만 봤다고요."]]'::jsonb),
+('wolha', 't_last_today', 1, '[["", "월하가 처마에 건 좌판 등의 심지를 낮추며 내 쪽을 돌아보았다."], ["월하", "오늘은 여기서 장을 파할까요? 단골이면 내일도 와야죠. 그땐 십삼문에서 들은 재미있는 얘기나 해 줄게요."]]'::jsonb),
+('wolha', 'idle', 1, '[["", "월하가 마루에 턱을 괴고 엎드려 있었다. 내가 지나가자 눈만 나를 따라왔다."], ["월하", "그냥 구경했어요. 장사꾼은 사람 보는 게 일이잖아요. 그런데 {이름}은 표정이 훤히 보여서 흥정하기 어렵겠네요."]]'::jsonb),
+('wolha', 'idle', 2, '[["", "월하가 영유리 한 알을 눈에 대고 나를 들여다보았다."], ["월하", "이걸 대고 보면 바랜 글씨도 진하게 보여요. 그런데 {이름}은 원래 또렷하네요. 다행이에요."]]'::jsonb),
+('wolha', 'idle', 3, '[["", "월하가 내 옷고름이 풀린 것을 보고 손을 뻗어 다시 매 주었다. 손놀림이 빠르고 매듭이 단단했다."], ["월하", "흑련에 들어갈 때 이 연꽃 매듭을 받았어요. 그때 매는 법도 배웠죠. 누가 가르쳐 줬는지는 잊었는데 손은 기억하네요. 이렇게 써먹을 줄이야."]]'::jsonb),
+('wolha', 'idle', 4, '[["", "월하가 장부 한 장을 등불에 비춰 보다가 흡족하게 고개를 끄덕였다."], ["월하", "장부가 말끔하게 넘어가네요. 서리들이 아직도 약을 어디서 구했냐고 묻더라고요. 그렇게 궁금하면 직접 와서 물어보라 했죠."]]'::jsonb),
+('wolha', 'idle', 5, '[["", "월하가 마루 밑을 들여다보며 끙끙대고 있었다. 팔을 쭉 뻗어 무언가를 더듬었다."], ["월하", "엽전이 마루 밑으로 굴러 들어갔어요. 아이고, 손이 예전 같지 않네. 저쪽에서 좀 밀어 줄래요?"]]'::jsonb),
+('wolha', 'idle', 6, '[["", "월하가 내 우산을 펼쳐 들고 마당에 서 있었다. 처마 밑에 서 있던 나를 불러 우산 아래로 들였다."], ["월하", "우산을 쓰면 한 손을 못 쓰니까 싫다고 했잖아요. 그런데 {이름} 씌워 줄 때는 괜찮네요. 한 손쯤이야."]]'::jsonb),
+('wolha', 'idle', 7, '[["", "월하가 화로에 생선을 굽고 있었다. 껍질이 타닥타닥 터지며 고소한 냄새가 마당까지 퍼졌다."], ["월하", "구룡 폐수로에서 낚았어요. {이름}이 낚는 걸 보고 배웠죠. 큰 놈은 따로 빼 뒀어요. 가시 발라 줄 테니 이리 와요."]]'::jsonb),
+('wolha', 'idle', 8, '[["", "월하가 좌판에서 쓰는 작은 저울을 꺼내 내 손바닥에 올려놓았다."], ["월하", "손님들한테 이름의 무게를 재는 시늉을 하면 좋아해요. 진짜 무게가 나오는 건 아니죠. 자, 손 줘 봐요. 저울보다 내 손이 더 정확할지도 모르잖아요."]]'::jsonb),
+('wolha', 'idle', 9, '[["", "마루 끝에 걸터앉아 휘파람을 불던 월하가 나를 보고 멈칫했다."], ["월하", "십삼문에선 휘파람이 도둑 신호예요. 여기선 마음껏 불어도 되니 좋네요. 아, 너무 시끄러웠어요?"]]'::jsonb),
+('wolha', 'idle', 10, '[["", "월하가 벽에 기댄 채 장부를 베고 잠들어 있었다. 내가 이불을 덮어 주자 실눈을 떴다."], ["월하", "들켰네요. 종이 냄새가 나야 잠이 잘 오거든요. 이불까지 덮어 줬으니 조금만 더 누워 있어야겠어요."]]'::jsonb),
+('wolha', 'idle', 11, '[["", "월하가 술병 하나를 흔들어 보이고 도로 소반 아래 넣었다."], ["월하", "십삼문에서 제일 좋은 술이에요. 낮에 마셨다간 장사 망치니까 밤 장 끝나고 같이 마셔요. 안주는 이번엔 내가 챙길게요."]]'::jsonb),
+('wolha', 'idle', 12, '[["", "문간에서 지나가는 장사꾼 보따리를 눈으로 훑던 월하가 내 쪽으로 몸을 기울였다."], ["월하", "저 보따리, 은 닷 냥어치는 되겠는데요. 맞히나 내기할래요? 아, {이름}은 내기 안 하죠. 그럼 맞히면 내가 저녁 살게요."]]'::jsonb),
+('wolha', 'idle', 13, '[["", "월하가 종이에 엽전 하나를 그리고 있었다. 귀퉁이가 깨진 엽전이었다."], ["월하", "내가 준 그 엽전, 잘 갖고 있죠? 볼 때마다 그날 생각이 나요. 일부러 져 준 걸 {이름}이 알아챘잖아요. 그때부터였나 봐요. 자꾸 셈이 틀어지기 시작한 게."]]'::jsonb),
+('wolha', 'idle', 14, '[["", "월하가 마당 돌 하나를 주워 손바닥에 올리고 무게를 가늠했다."], ["월하", "좌판 누름돌로 딱이네요. 가져가도 돼요? 문간 돌은 안 건드릴게요. 거긴 앉기 좋게 생겼거든요."]]'::jsonb),
+('wolha', 'idle', 15, '[["", "월하가 책상 위 영수증 몇 장을 넘겨 보다가 웃음을 터뜨렸다."], ["월하", "다들 {이름}한테 제값을 쳐 줬네요. 나만 한 닢씩 덜 줬고요. 그래서 내가 더 기억에 남죠?"]]'::jsonb),
+('wolha', 'idle', 16, '[["", "창가에 앉아 골목 사람들의 걸음을 구경하던 월하가 내 쪽을 돌아보았다."], ["월하", "걸음만 봐도 어디 가는지 대충 알 수 있어요. {이름}은 여기 올 때 유난히 빨리 걷던데요. 무슨 급한 일이라도 있어요?"]]'::jsonb),
+('wolha', 'idle', 17, '[["", "월하가 화로 앞에 쪼그려 앉아 영초 차를 우리고 있었다. 풀 내음이 방 안에 퍼졌다."], ["월하", "{이름}이 지어 주던 걸 따라 해 봤어요. 좀 쓰긴 한데 마셔 보고 말해 줘요. 너무 솔직하게 말하진 말고요, 나 상처받으니까."]]'::jsonb),
+('wolha', 'idle', 18, '[["", "월하가 내 짚신을 무릎에 올려놓고 해진 뒤축을 꿰매고 있었다. 바늘땀이 반듯했다."], ["월하", "많이 걸었나 봐요. 장부 꿰매다 보니 바느질이 늘었거든요. 내일은 이 신 신고 나가요."]]'::jsonb),
+('wolha', 'idle', 19, '[["", "월하가 별채 문패를 소맷자락으로 닦고 있었다."], ["월하", "흑련 사람은 문패를 안 달아요. 다들 호칭으로만 불리거든요. 그래서인지 이렇게 이름이 적힌 문패를 보면 자꾸 눈이 가네요."]]'::jsonb),
+('wolha', 'idle', 20, '[["", "월하가 등잔 기름병을 흔들어 남은 기름을 가늠했다."], ["월하", "기름이 반 병 남았으니 사흘은 가겠네요. 그전에 채워 둘게요. {이름}이 밤에 돌아올 때 어두우면 안 되니까."]]'::jsonb),
+('wolha', 'idle', 21, '[["", "월하가 내 머리카락에 붙은 마른 잎을 떼어 손바닥에 올려 보여 주었다."], ["월하", "머리에 이걸 달고 다녔어요? 어디서 뒹굴었길래. 다음엔 나가기 전에 내가 한번 살펴줄게요."]]'::jsonb),
+('wolha', 'idle', 22, '[["", "월하가 노리개의 엽전 두 닢을 손가락으로 나란히 맞춰 보며 한참 들여다보았다."], ["월하", "요즘은 엽전을 보면 전에 누가 썼을까 궁금해져요. 장사꾼답지 않죠? 이 두 닢은 내력까지 아니까 더 오래 들여다보게 되네요."]]'::jsonb),
+('wolha', 'idle', 23, '[["", "월하가 빗자루로 마당 낙엽을 쓸다가 쓴 자리 한가운데에 나를 세웠다."], ["월하", "깨끗하죠? 십삼문에선 좌판 앞을 쓸 겨를도 없어요. 여긴 좀 다르네요. 낙엽이 쌓인 걸 보고도 그냥 못 지나치겠어요."]]'::jsonb),
+('wolha', 'idle', 24, '[["", "월하가 내 손을 끌어다 손금을 들여다보는 시늉을 했다. 다 본 뒤에도 손을 놓지 않았다."], ["월하", "오래 살 손금이네요. 나보다 오래 살겠어요. 그럼 나도 오래 살아야겠네. 혼자 가면 심심할 테니까."]]'::jsonb),
+('wolha', 'idle', 25, '[["", "월하가 장부 맨 뒤 빈 쪽에 무언가를 적다가 얼른 덮었다."], ["월하", "아무것도 아니에요. 오늘 있었던 일을 좀 적었죠. 장부라고 꼭 거래만 적으란 법은 없잖아요. 그래도 들여다보진 말아요."]]'::jsonb),
+('wolha', 'idle', 26, '[["", "월하가 좌판에서 들고 온 작은 등을 처마에 걸었다. 일곱째 문 좌판에 늘 걸려 있던 등이었다."], ["월하", "장 쉬는 날엔 이 등을 여기 걸어요. 십삼문에선 늘 일곱째 문에 달려 있던 거죠. 다른 데 걸어 보니 제법 새롭네요."]]'::jsonb),
+('wolha', 'idle', 27, '[["", "월하가 바닥에 엽전 다섯 닢을 늘어놓고 손가락으로 밀다가 한 닢을 내 앞으로 밀어 주었다."], ["월하", "셈 연습이에요. 한 닢 덜 쳐 주려면 먼저 정확히 세야 하거든요. 이건 {이름} 몫이에요. 덤까지 주는 거 처음 보죠?"]]'::jsonb),
+('wolha', 'idle', 28, '[["", "월하가 마당 우물을 들여다보며 엽전 한 닢을 쥔 손을 내밀었다가 거뒀다."], ["월하", "우물에 엽전을 던지면 소원이 이뤄진다던데, 아까워서 못 던지겠네요. 말로 해야지. {이름}이 무사히 돌아오게 해 주세요. 아, 들었어요? 소원은 들키면 안 된다던데."]]'::jsonb),
+('wolha', 'idle', 29, '[["", "월하가 나를 보다가 노리개를 만지작거리던 손을 멈췄다."], ["월하", "장사하다가도 자꾸 {이름} 이름이 튀어나와요. 손님 앞에서도요. 한 번은 손님이 자기 부르는 줄 알고 돌아봤다니까요. 아주 난감했죠."]]'::jsonb),
+('wolha', 'idle', 30, '[["", "월하가 마루에 누워 눈을 감은 채 손만 내 쪽으로 뻗었다. 내가 그 손을 잡자 월하가 눈을 감은 채 웃었다."], ["월하", "장사 안 하는 날이 이렇게 길었나 싶네요. 뭐, 서두를 일도 없고. 조금 더 누워 있을래요."]]'::jsonb),
+('wolha', 'gift_field', 1, '[["", "월하가 약병을 받아 등불에 비춰 보았다. 맑은 물빛이 손가락 사이로 흔들렸다."], ["월하", "맑게 잘 지었네요. 장부고 서리들이 또 어디서 구했냐고 묻겠어요. 이번엔 약병부터 내밀고 품평이나 시켜 볼까요?"]]'::jsonb),
+('wolha', 'gift_field', 2, '[["", "월하가 약병 마개를 열어 냄새를 맡더니 눈을 가늘게 뜨고 웃었다."], ["월하", "잘 지었네요. 처음 약을 가져왔을 때보다 솜씨가 훨씬 늘었어요. 약병이 흔들릴까 봐 두 손으로 꼭 쥐고 오던 모습도 아직 기억나요."]]'::jsonb),
+('wolha', 'gift_hq', 1, '[["", "월하가 선물을 받아 들고 손바닥 위에서 이리저리 돌려 보다가 한참 말이 없었다."], ["월하", "이건 값도 못 매기겠네요. 어디서 이런 걸 구했어요? 제법 안목이 좋은데요."]]'::jsonb),
+('wolha', 'gift_other', 1, '[["", "월하가 선물을 이리저리 돌려 보며 눈을 가늘게 떴다."], ["월하", "장사꾼이라 그런지 물건을 받으면 자꾸 살펴보게 돼요. 이건 어디에 쓰는 거예요? 설명부터 들어야겠는데요."]]'::jsonb),
+('wolha', 'gift_other', 2, '[["", "월하가 선물을 도포 안쪽 주머니에 넣었다. 귀퉁이 깨진 엽전을 넣어 두던 주머니였다."], ["월하", "여기 넣어 두면 다른 물건이랑 안 섞여요. 귀퉁이 깨진 엽전도 이 주머니에 넣었었죠. 이젠 제법 묵직해졌네요."]]'::jsonb),
+('wolha', 'gift_reward', 1, '[["", "월하가 작은 약병 두 개를 내 손에 쥐여 주었다. 달빛을 머금은 듯 은은하게 빛났다."], ["월하", "월광 정수예요. 장부고 붓쟁이한테 배워서 지었죠. 이번엔 꽤 잘 나왔어요. 뚜껑 단단히 닫았으니 새지는 않을 거예요."]]'::jsonb),
+('wolha', 'gift_reward', 2, '[["", "월하가 약병 둘을 건네며 내 손을 두 손으로 감싸 쥐었다."], ["월하", "기운 없을 때 마셔요. 깊은 데 갈 때도 꼭 챙기고요. 다 마실 때쯤엔 새로 지어 둘게요."]]'::jsonb),
+('wolha', 'mate_hanseol', 1, '[["", "문간의 한설을 본 월하가 엽전을 만지작거리던 손을 멈추고 내 옆으로 슬쩍 다가왔다."], ["월하", "감찰관님 앞에선 흥정도 조심해야죠. 정청 사람 앞에서 값을 부르는 건 목숨 걸린 일이거든요. 그런데 저분은 값을 묻지도 않네요. ……차라리 물어보셨으면 좋겠어요."]]'::jsonb),
+('wolha', 'mate_yeoul', 1, '[["", "그늘에 앉은 여울을 곁눈질하던 월하가 목소리를 낮춰 내게 말했다."], ["월하", "저 사람 이름에도 값을 매겨 보려 했는데 도무지 안 나오더라고요. ……{이름} 이름 때처럼요. 그런 이름이 또 있을 줄이야."]]'::jsonb),
+('wolha', 'mate_daon', 1, '[["", "다온의 머리를 헝클어 놓고 돌아온 월하가 내 곁에 털썩 앉으며 웃었다."], ["월하", "꼬맹이 공책에 제 장도 있대요. 좋아하는 걸 엽전이라고 적었길래 고쳐 달랬죠. 뭘로 고쳤는지는 비밀이라네요. ……거둠꾼이 꼬맹이한테 비밀을 맡기게 될 줄이야."]]'::jsonb),
+('wolha', 'mate_hisu', 1, '[["", "장부를 펴 놓은 희수 쪽을 보던 월하가 웃음을 참으며 내게 몸을 기울였다."], ["월하", "정청 서리와 흑련 거둠꾼이 한집에 있으니 장부끼리 다투겠어요. 저쪽은 이름을 적고 저는 맡아 두죠. 하는 일은 닮았는데…… 서로 못 믿겠단 말이에요."]]'::jsonb),
+('wolha', 'mate_danbi', 1, '[["", "월하가 단비가 건넨 엿 반쪽을 손바닥에 올려 무게를 가늠하는 시늉을 하며 내게 보여 주었다."], ["월하", "엿을 반쪽만 주더라고요. 한 닢 덜 받는 저랑 닮았나 했죠. 그런데 생각해 보니 저 사람은 덜 준 게 아니라 나눠 준 거잖아요. ……그 셈에선 제가 졌네요."]]'::jsonb),
+('wolha', 'mate_unbi', 1, '[["", "문간의 여운비를 보고 슬그머니 자리를 비켜 앉은 월하가 내 쪽으로 고개를 돌렸다."], ["월하", "북령 장수 앞에서 엽전을 꺼내려니 괜히 수상해 보이더라고요. 그런데 신 끈을 매 주고도 값을 안 받겠대요. ……북령 사람한테도 공짜가 있네요."]]'::jsonb),
+('wolha', 'mate_cheongpa', 1, '[["", "월하가 물가에 매인 청파의 배를 손가락으로 가리키며 내게 말을 걸었다."], ["월하", "뱃삯도 안 받고 손님을 태운다니, 장사꾼 눈엔 손해 보는 배죠. 그런데 내리는 사람들이 죄다 노래를 하더라고요. ……그건 얼마를 받아야 할지 저도 모르겠어요."]]'::jsonb),
+('wolha', 'mate_galmae', 1, '[["", "월하가 갈매에게 받은 엽전 한 닢을 손바닥에 올려 내게 내밀더니 웃음을 터뜨렸다."], ["월하", "물 한 바가지 떠 줬더니 곧장 엽전을 주더라고요. 저는 한 닢 덜 받고, 저 사람은 한 닢 더 내고. ……우리 둘이 만나면 셈이 딱 맞겠어요."]]'::jsonb),
+('wolha', 'mate_haram', 1, '[["", "마루 끝 하람 곁을 발소리 죽여 지나온 월하가 내 앞에서 어깨를 으쓱했다."], ["월하", "발소리를 죽였는데도 절 알아채더라고요. 엽전 소리가 안 나는 사람이라나요. 예전 같으면 엽전을 굴려 봤겠지만…… 이젠 그럴 손가락이 없잖아요."]]'::jsonb),
+('wolha', 'mate_munsu', 1, '[["", "문수 앞에 턱을 괴고 앉아 있던 월하가 일어나 내게 와서 기지개를 켰다."], ["월하", "말 많은 손님은 대개 값을 깎으려 들죠. 그런데 저 사람은 아무것도 안 사면서 계속 얘기만 해요. 신기해서 끝까지 들었네요. ……장사꾼 버릇 하나 고친 셈이죠."]]'::jsonb),
+('daon', 'bond_make', 1, '[["", "짐배가 떠난 저녁이었다. 선창 돌계단 맨 위 칸에서 다온이 무릎에 무언가를 놓고 끙끙대고 있었다. 비밀 자리 갈대 끈에 마른 들꽃을 한 송이씩 끼워 매듭을 짓는 중이었다."], ["다온", "{이름} 님! 여기 앉아요! 잠깐만요, 꽃이 자꾸 빠져서요. 거의 다 했어요!"]]'::jsonb),
+('daon', 'bond_make', 2, '[["", "다온이 마지막 매듭을 이로 꽉 물어 당겼다. 들꽃 매듭 노리개를 두 손으로 받쳐 내 앞에 내밀었다. 손가락마다 풀물이 퍼렇게 들어 있었다."], ["다온", "비밀 자리에서 따 온 꽃이에요. 거긴 아무도 안 오잖아요. 그러니까 이 꽃은 {이름} 님한테만 있는 거예요!"], ["다온", "나루 할아버지들이 꿀물 친구보다 더 친한 친구를 백년지기라고 한대요. 백 년이나 친구라는 거죠! 그래서 공책에도 써 놨어요. 이것 봐요!"]]'::jsonb),
+('daon', 'bond_make', 3, '[["", "다온이 공책을 펼쳐 보였다. 「다온의 꿀물 친구」 옆에 「백 년」이라는 글자가 숯으로 꾹꾹 눌려 있었다. 「년」 자의 받침이 삐뚤게 튀어나와 있었다."], ["다온", "정표 값은 저도 반 낼래요. 서리님이 물건을 받으면 값을 치러야 한댔거든요. 엽전도 모아 놨어요. 진짜라니까요!"], ["다온", "짐배 안 오는 날에 별채 놀러 가도 돼요? 서리님이 정청 가실 때 따라가면 된대요. 아주머니한테도 허락받았어요!"]]'::jsonb),
+('daon', 'bond_again', 1, '[["", "다온은 새 노리개를 받아 들고 한참 내려다보았다. 허리춤 주머니에서 꽃잎이 다 바스러진 옛 노리개를 꺼내 나란히 놓았다."], ["다온", "이것도 계속 가지고 있었어요. 꽃잎은 다 떨어졌지만 매듭은 멀쩡해요. 공책에서도 안 지웠고요. 한번 적은 건 남겨 두는 거예요."], ["다온", "다시 친구 해 줘서 고마워요. 이번엔 꽃을 두 겹으로 끼울래요. 오래오래 안 떨어지게요!"]]'::jsonb),
+('daon', 'bond_break', 1, '[["", "다온은 노리개를 돌려받고 고개를 숙인 채 꽃잎만 만지작거렸다. 귀 끝이 빨갰고 입술이 바들바들 떨렸다."], ["다온", "알았어요. 안 울 거예요. 정말이에요."]]'::jsonb),
+('daon', 'bond_break', 2, '[["", "다온이 소매로 코를 북북 문지르고 공책을 꼭 끌어안았다."], ["다온", "……그래도 공책에 쓴 「꿀물 친구」는 안 지울래요. 짐배 오는 날에도 친구 몫은 떠 놓을 거예요. 선창 지나가면 한 사발 마시고 가요. 꼭이요."]]'::jsonb),
+('daon', 'first_dawn', 1, '[["", "새벽빛이 마루에 막 닿았다. 다온이 다온 몫 이불을 둘둘 만 채 문간까지 굴러 나와 있었다. 눈을 반쯤 뜨고 나를 보더니 배시시 웃었다."], ["다온", "{이름} 님 일어나는 소리에 깼어요. 아, 원래 일찍 일어나긴 해요! 나루에선 짐배가 새벽부터 들어오거든요."]]'::jsonb),
+('daon', 'first_dawn', 2, '[["", "부엌에서 달그락 소리가 났다. 다온이 까치발을 하고 솥에 물을 붓고 있었다. 부뚜막 가장자리에 숯으로 그은 금이 하나 보였다."], ["다온", "아침 꿀물 만들어요! 여기 그은 금 보이죠? 이 안쪽은 제 자리예요. 아주머니한테 배웠어요. {이름} 님은 저쪽에서 기다려요!"]]'::jsonb),
+('daon', 'first_noon', 1, '[["", "한낮 볕이 마당에 쨍쨍했다. 다온이 맨발로 마당을 뛰어다니다 나를 보고 우뚝 멈췄다. 발바닥이 흙투성이였다."], ["다온", "{이름} 님, 큰일 났어요! 개미들이 줄을 지어 가길래 따라갔는데, 전부 부엌 꿀단지로 가요!"]]'::jsonb),
+('daon', 'first_noon', 2, '[["", "다온이 마루에 엎드려 공책을 펼쳐 놓고 있었다. 내 발소리에 고개를 번쩍 들었다. 볼에 숯 검댕이 한 줄 묻어 있었다."], ["다온", "왔다! 오늘 {이름} 님 장에 쓸 게 생겼어요. 아까 문지방에 발 찧었죠? 「문지방 조심 안 함」이라고 적었어요!"]]'::jsonb),
+('daon', 'first_dusk', 1, '[["", "노을이 마당을 붉게 물들였다. 다온이 문간에 나가 앉아 길 쪽을 내다보았다. 무릎을 끌어안은 채 발끝을 꼼지락거렸다."], ["다온", "서리님이 해 지면 데리러 온댔는데 또 늦으시네요. 명부 보시느라 까먹었나? 뭐, 늦어도 괜찮아요. 여기서 자면 되니까요."]]'::jsonb),
+('daon', 'first_dusk', 2, '[["", "다온이 등잔에 불을 붙이려다 손을 데고 손가락을 입에 물었다. 내가 다가가자 얼른 손을 등 뒤로 감췄다."], ["다온", "안 데었어요! 아주 조금만요. {이름} 님이 불 켜 주세요. 저는 잘 보고 배울래요."]]'::jsonb),
+('daon', 'first_night', 1, '[["", "다온이 이불 속에서 눈만 내놓고 있었다. 잠이 안 오는지 이불이 자꾸 들썩였다."], ["다온", "{이름} 님, 오늘 어디 다녀왔어요? 얘기 좀 해 줘요! 듣다가 잠들어도 깨우면 안 돼요."]]'::jsonb),
+('daon', 'first_night', 2, '[["", "문간 등잔 아래에서 다온이 공책을 펼친 채 꾸벅꾸벅 졸고 있었다. 숯을 쥔 손이 공책 위에서 멈춰 있었다. 내가 이불을 덮어 주자 다온이 눈을 가늘게 떴다."], ["다온", "{이름} 님 돌아오면 「다녀옴」이라고 적으려고 했어요. 자, 다 적었다. 이제 마음 놓고 잘래요."]]'::jsonb),
+('daon', 'w_clear', 1, '[["", "구름이 높이 뜬 날이었다. 다온이 마당 한가운데 대자로 누워 하늘을 가리켰다."], ["다온", "{이름} 님, 얼른 누워 봐요! 저 구름은 아주머니 국자 같죠? 그 옆 구름은 {이름} 님이 이름 붙여 줘요. 표주박은 지난번에 했으니까 빼고요!"]]'::jsonb),
+('daon', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 다온이 처마 밑에 쪼그려 앉아 손바닥을 펴고 하늘을 올려다보았다."], ["다온", "비가 올 듯 말 듯 하네요. 이런 날엔 짐배도 꼭 늦는데. 오늘은 당번이 아니라서 다행이에요. {이름} 님하고 놀 수 있잖아요!"]]'::jsonb),
+('daon', 'w_rain', 1, '[["", "굵은 비가 마당을 두드렸다. 다온이 처마 끝에 사발을 줄지어 놓고 빗물을 받고 있었다."], ["다온", "빗물로 꿀물을 타 볼 거예요. 덕배 할아버지가 우물물보다 달다고 했거든요. 진짜 그런지 같이 맛보고 공책에 적어요!"]]'::jsonb),
+('daon', 'w_rain', 2, '[["", "천둥이 쿠르릉 울리자 다온이 내 소매를 덥석 붙잡았다. 붙잡고 나서야 제 손을 내려다보았다."], ["다온", "하나도 안 무서워요! 그냥 손 닿는 데 소매가 있길래 잡았어요. ……비 그칠 때까지만 이러고 있을래요."]]'::jsonb),
+('daon', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 다온이 맨발로 마당에 나가 빗방울을 맞으며 빙글빙글 돌았다."], ["다온", "이 비는 맞아도 돼요! 나루 먹비랑 다르게 깨끗하잖아요. {이름} 님도 나와요! 옷 젖으면 같이 말리면 되죠."]]'::jsonb),
+('daon', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 다온이 문간에 바짝 붙어 서서 내 옷자락을 손가락 끝으로 집었다."], ["다온", "저런 안개 속에 들어가면 꼭 길을 잃어요. 오늘은 마당에서도 헤맬 것 같아요. {이름} 님이 앞장서요. 옷자락 잡고 갈게요!"]]'::jsonb),
+('daon', 'w_wind', 1, '[["", "바람이 휘잉 지붕을 훑고 지나갔다. 다온이 이불을 머리끝까지 뒤집어쓰고 화로 앞에 웅크려 있었다."], ["다온", "빙혼곡에서 불던 바람 같아요. 이런 날엔 짐배 일꾼들 입김도 하얗게 나왔어요. {이름} 님도 이불 안으로 와요. 둘이 덮으면 안 춥겠죠?"]]'::jsonb),
+('daon', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 다온이 맨발로 눈밭에 뛰어나가려다 문턱에서 멈칫했다. 내 얼굴을 살피고는 얼른 짚신을 꿰어 신었다."], ["다온", "봐요, 신 신었어요! 이제 눈밭에 나가도 되죠? 눈사람 둘 만들래요. 큰 건 {이름} 님, 작은 건 저예요!"]]'::jsonb),
+('daon', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 다온이 문틈마다 공책 종이를 찢어 끼우고 있었다. 종이마다 삐뚤빼뚤 「다온」이라고 적혀 있었다."], ["다온", "아주머니가 이런 날엔 밖에 나가지 말랬어요. 이름 적은 종이를 문틈에 끼우면 안개가 못 들어온대요. 진짜인지는 모르지만요! {이름} 님도 오늘은 집에 있어요."]]'::jsonb),
+('daon', 'me_yohwa', 1, '[["", "다온이 내 얼굴을 보자마자 얼어붙었다. 달려와 숯 조각으로 내 손등에 제 이름을 꾹꾹 눌러 썼다. 숯을 쥔 손이 떨렸다."], ["다온", "{이름} 님! 여기 제 이름 썼어요. 다온이라고요! ……이러면 안 잊어버리겠죠? 제가 이름도 계속 불러 줄게요. 목이 쉬어도 괜찮아요!"]]'::jsonb),
+('daon', 'me_erosion_80', 1, '[["", "다온이 내 팔에 번진 거무스름한 기운을 보고 눈이 동그래졌다. 공책을 내던지고 부엌으로 뛰어갔다."], ["다온", "여기 앉아요! 제가 얼른 약탕 가져올게요, 꿀이랑 같이요! 같이 마시면 덜 쓰니까요."]]'::jsonb),
+('daon', 'me_erosion_55', 1, '[["", "다온이 공책을 펼치더니 내 장에 무언가를 적었다. 숯을 누르는 손에 힘이 잔뜩 들어가 있었다."], ["다온", "「얼굴이 먹빛」이라고 적었어요. 빈칸 벌판 깊은 데까지 갔죠? 얼른 씻고 와요. 제가 쓴 물 끓여 놓을게요."]]'::jsonb),
+('daon', 'me_erosion_30', 1, '[["", "다온이 젖은 수건을 들고 와 내 소매의 거뭇한 얼룩을 박박 문질렀다. 문지르고 나서 수건을 들여다보았다."], ["다온", "어? 아무리 닦아도 수건에 안 묻어요. 아픈 거예요? 아프면서 숨기면 공책에 적을 거예요. 「아픈데 말 안 함」이라고요!"]]'::jsonb),
+('daon', 'me_hp_low', 1, '[["", "내가 마루에 주저앉자 다온이 부엌으로 쪼르르 달려가 물동이를 질질 끌고 왔다. 동이 물이 찰랑 넘쳐 마루를 적셨다."], ["다온", "물부터 마셔요, 물! 짐배 아저씨들도 힘들 땐 물부터 마신대요. 꿀물도 금방 타 올게요. 꿀 듬뿍 넣어서요! 그러니까 움직이지 마요!"]]'::jsonb),
+('daon', 'me_rescued', 1, '[["", "마당에 들어서자 문간 기둥에 숯으로 쓴 종이 한 장이 붙어 있었다. 「{이름} 님 오면 꼭 앉아 있기」. 종이 밑에서 다온이 퉁퉁 부은 눈으로 나를 올려다보았다."], ["다온", "서리님한테 들었어요. 쓰러졌다면서요! 저 안 울었어요. 눈은 그냥 좀 부은 거예요."], ["다온", "오늘은 멀리 가지 마요. 제가 문간에 앉아서 지켜볼 거예요. 그러면 안심이잖아요."]]'::jsonb),
+('daon', 'me_exp_back', 1, '[["", "다온이 마당 끝에서 나를 보자마자 맨발로 달려왔다. 품에서 공책을 꺼내 손가락으로 날짜를 짚었다."], ["다온", "여기부터 여기까지 {이름} 님이 안 왔어요. 하루에 동그라미 하나씩 쳤거든요. 이제 그만 쳐도 되겠네요. 무사히 와서 좋아요!"]]'::jsonb),
+('daon', 'me_far_travel', 1, '[["", "다온이 공책을 펼쳐 놓고 손가락으로 장을 하나씩 넘기며 무언가를 셌다."], ["다온", "나루에서 여기까지가 공책 한 장이면, {이름} 님은 오늘 세 장 넘게 걸었겠어요! 거기도 꿀물 마셔요? 다리 주물러 줄 테니까 얘기해 줘요. 하나도 안 빼고 적을래요!"]]'::jsonb),
+('daon', 'me_levelup', 1, '[["", "다온이 내 얼굴을 빤히 들여다보다가 코를 찡긋했다."], ["다온", "오늘 뭔가 잘했죠? 얼굴이 아주 반짝거려요! 공책에 「오늘 {이름} 님 반짝임」이라고 써야지. 제가 봤으니까 틀림없어요!"]]'::jsonb),
+('daon', 'home_portrait', 1, '[["", "다온이 벽에 걸린 제 초상 앞에서 입을 떡 벌리고 서 있었다. 까치발을 하고 그림 속 제 볼을 손가락으로 콕 찔렀다."], ["다온", "우와, 저예요? 그림에는 검댕이 하나도 없네요! 그림 속 다온은 세수 안 해도 되겠다. 서리님한테도 보여 줄래요!"]]'::jsonb),
+('daon', 'home_pet', 1, '[["", "다온이 동무와 나란히 엎드려 마룻바닥의 개미를 들여다보고 있었다. 동무가 꼬리를 흔들 때마다 다온도 따라서 엉덩이를 흔들었다."], ["다온", "얘랑 친구 먹었어요! 공책에 따로 장도 만들었고요. 좋아하는 건 「다온이 주는 주먹밥」이에요. 그건 제가 정했어요!"]]'::jsonb),
+('daon', 'home_new_furn', 1, '[["", "다온이 새 가구 둘레를 한 바퀴 빙 돌고, 그 밑에 엎드려 안을 들여다보았다."], ["다온", "여기 밑에 쏙 들어가겠어요! 제 비밀 자리로 삼아도 돼요? {이름} 님한테만 알려 줄게요. 서리님이 찾으시면 모른 척해 주세요!"]]'::jsonb),
+('daon', 'home_mate', 1, '[["", "다온이 반 사발짜리 꿀물 쟁반을 들고 돌아와 내 귀에 대고 소곤거렸다."], ["다온", "아까 {이름} 님 정인한테도 꿀물 타 줬어요. 짐 나른 건 아니니까 반 사발만요! 맛있다고 하던데요? 그 사람 장도 만들어 볼까요?"]]'::jsonb),
+('daon', 't_days_7', 1, '[["", "다온이 공책을 펼쳐 보였다. 장 귀퉁이에 동그라미가 일곱 개 그려져 있었다."], ["다온", "벌써 이레예요! 하루에 동그라미 하나씩 그렸어요. 백 년이면 몇 개지? 공책 한 권으로는 어림도 없겠어요!"]]'::jsonb),
+('daon', 't_days_30', 1, '[["", "다온이 두툼해진 공책을 두 손으로 받쳐 들고 왔다. 내 장 뒤로 종이가 여러 장 덧붙어 있었다."], ["다온", "한 달 만에 {이름} 님 이야기가 다섯 장이나 늘었어요! 제 이야기보다 길어요. 제 장은 비밀이 많아서 짧은 거니까 괜찮아요."]]'::jsonb),
+('daon', 't_days_100', 1, '[["", "다온이 쟁반에 꿀물 두 사발을 받쳐 들고 왔다. 사발마다 비밀 자리 갈대 대롱이 꽂혀 있었다."], ["다온", "오늘이 백 날이에요! 꿀물은 제가 {이름} 님 거 탔어요. 그러니까 {이름} 님은 제 거 타 줘요. 서로 바꿔 마시는 거예요!"]]'::jsonb),
+('daon', 't_long_away', 1, '[["", "다온이 공책을 펼쳐 빈 동그라미 세 개를 손가락으로 짚어 보이며 입을 삐죽 내밀었다."], ["다온", "사흘이에요. 공책에 동그라미가 세 개나 비었어요. 삐진 건 아니에요! 그냥 빈칸이 자꾸 눈에 띄어서요."]]'::jsonb),
+('daon', 't_long_away', 2, '[["", "다온이 내 옷자락을 붙잡고 놓지 않았다. 발끝으로 바닥을 콩콩 찼다."], ["다온", "어디 다녀왔어요? 서리님도 모르신다길래 걱정했잖아요. 다음엔 공책에 어디 가는지 써 놓고 가요. 그럼 덜 기다릴게요. 아주 조금만요."]]'::jsonb),
+('daon', 't_last_today', 1, '[["", "다온이 공책을 베개처럼 끌어안고 마루에 모로 누웠다. 눈꺼풀이 자꾸 내려왔다."], ["다온", "오늘 얘기는 다 했어요! 새끼손가락 걸어요. 내일 또 오기예요! 약속 안 지키면 공책에 적을 거예요!"]]'::jsonb),
+('daon', 'idle', 1, '[["", "다온이 마루에 엎드려 숯으로 공책에 무언가를 열심히 적고 있었다. 내가 들여다보자 팔로 가렸다."], ["다온", "보면 안 돼요! 아, {이름} 님 장이었네요. 그럼 봐도 돼요. 오늘은 「머리 안 빗음」이라고 적었어요."]]'::jsonb),
+('daon', 'idle', 2, '[["", "다온이 허리춤의 갈대 대롱을 하나 뽑아 내게 내밀었다."], ["다온", "비밀 자리 갈대로 깎은 대롱이에요. 한번 씹어 봐요, 달죠? {이름} 님 건 제일 긴 걸 골랐어요."]]'::jsonb),
+('daon', 'idle', 3, '[["", "다온이 짚신 한 짝을 손에 들고 마당을 두리번거렸다. 다른 한 짝이 보이지 않았다."], ["다온", "짚신 한 짝이 또 없어졌어요. 분명 어제 여기 벗어 놨는데! {이름} 님도 좀 찾아봐 줘요. 길도 잃고 신도 잃고, 정말 큰일이에요."]]'::jsonb),
+('daon', 'idle', 4, '[["", "다온이 부엌 문간에서 손가락으로 꿀단지 바닥을 훑어 핥고 있었다. 나와 눈이 마주치자 손가락을 입에 문 채 굳었다."], ["다온", "당번 몫이에요! 당번은 맨 마지막에 먹는 거잖아요. 이제 마지막 차례가 온 거예요."]]'::jsonb),
+('daon', 'idle', 5, '[["", "다온이 마당 우물가에 쪼그려 앉아 물에 비친 제 얼굴을 들여다보았다. 볼에 묻은 검댕을 손등으로 문지르다가 더 번지게 했다."], ["다온", "아이, 더 번졌네! {이름} 님이 좀 닦아 줘요. 서리님은 소매로 얼마나 세게 문지르는지 볼이 다 얼얼해요."]]'::jsonb),
+('daon', 'idle', 6, '[["", "다온이 공책 맨 앞장을 펼쳐 보였다. 「다온」이 스무 번쯤 적혀 있었다. 뒤로 갈수록 글씨가 반듯했다."], ["다온", "전엔 제 이름도 자꾸 틀리게 썼어요. 지금은 잘 써요! {이름} 님 이름도 눈 감고 쓸 수 있어요. 한번 볼래요?"]]'::jsonb),
+('daon', 'idle', 7, '[["", "다온이 눈을 감고 숯으로 공책에 내 이름을 썼다. 눈을 뜨고 들여다보더니 키득키득 웃었다."], ["다온", "앗, 한 글자가 옆 장에 넘어갔어요! 그래도 글자는 다 맞죠? 획 하나 안 빠뜨렸어요."]]'::jsonb),
+('daon', 'idle', 8, '[["", "다온이 마루 끝에 앉아 두 발을 동동 굴렀다. 발바닥이 새까맸다."], ["다온", "나루 할아버지들이 맨발로 다니면 땅이랑 친구가 된댔어요. 그럼 여기 마당도 이제 제 친구네요!"]]'::jsonb),
+('daon', 'idle', 9, '[["", "다온이 주먹밥 두 개를 꺼내 하나를 내 손에 쥐여 주었다. 아주머니가 싸 준 보따리에서 나온 것이었다."], ["다온", "아주머니가 {이름} 님 먹으라고 큰 걸 싸 주셨어요. 그런데 제 게 더 크죠? 제가 몰래 바꿨어요! 농담이에요, 얼른 바꿔요!"]]'::jsonb),
+('daon', 'idle', 10, '[["", "다온이 공책을 펼쳐 덕배 할아버지 장을 가리켰다."], ["다온", "덕배 할아버지가 대롱으로 국물까지 마셨대요! 아주머니가 국자 들고 쫓아갔고요. 얼마나 웃겼는지 몰라요. 그림으로 그려 놨으니까 보여 줄게요!"]]'::jsonb),
+('daon', 'idle', 11, '[["", "다온이 마당 돌 위에 표주박을 올려놓고 그 앞에 쪼그려 앉았다."], ["다온", "이 표주박, 비밀 자리에서 같이 썼던 거예요. 아직 안 씻었어요! 에이, 농담이죠. 깨끗이 씻었는데도 단내가 남아 있어요."]]'::jsonb),
+('daon', 'idle', 12, '[["", "다온이 손가락을 하나씩 접으며 무언가를 셈하고 있었다."], ["다온", "짐배 오는 날, 안 오는 날, 안 오는 날, 또 오는 날……. 그러면 이레에 네 번은 놀러 올 수 있겠네요! 서리님이 정청에 자주 가시면요."]]'::jsonb),
+('daon', 'idle', 13, '[["", "다온이 부뚜막 금 앞에서 한 발을 들고 금을 넘을까 말까 망설였다."], ["다온", "이 금을 넘으면 아주머니 국자가 날아오거든요. 여기엔 아주머니도 안 계신데 발이 안 떨어져요. 참 이상하죠?"]]'::jsonb),
+('daon', 'idle', 14, '[["", "다온이 공책을 펼쳐 서리님 장을 보여 주었다. 「좋아하는 것」 칸이 여전히 비어 있었다."], ["다온", "서리님은 뭘 좋아하시는지 아직도 안 알려 주세요. 반가워도 웃지도 않으시고요. {이름} 님은 아세요? 알면 저한테만 살짝 알려 줘요!"]]'::jsonb),
+('daon', 'idle', 15, '[["", "다온이 내 손바닥을 끌어다 제 손바닥을 대 보았다. 내 손가락 마디 중간쯤에서 다온의 손끝이 멈췄다."], ["다온", "아직 손이 작네요. 백 년쯤 지나면 {이름} 님만큼 커질까요? 그땐 제가 손잡고 길 안내해 드릴게요!"]]'::jsonb),
+('daon', 'idle', 16, '[["", "다온이 처마 밑에 매달린 거미줄을 손가락으로 가리켰다. 이슬 방울이 줄에 조롱조롱 맺혀 있었다."], ["다온", "거미도 자기 집이 있네요. 문패는 없지만요. 우리 집 문패는 글씨가 다 지워졌거든요. 여긴 이름이 또렷해서 좋아요."]]'::jsonb),
+('daon', 'idle', 17, '[["", "다온이 구슬 하나를 굴리다 마룻바닥 틈에 빠뜨렸다. 엎드려 틈을 들여다보며 끙끙댔다."], ["다온", "노을 할아버지가 주신 구슬이에요. 바람 부는 새벽에 주우셨대요. 꼭 꺼내야 해요! 공책에도 「구슬 줌」이라고 적어 놨단 말이에요."]]'::jsonb),
+('daon', 'idle', 18, '[["", "다온이 숯 조각을 들고 내 손등에 작은 동그라미를 그렸다."], ["다온", "오늘 저랑 놀았다는 도장이에요! 오래 남아 있으면 좋겠다. 손 씻을 때 이 부분만 살살 씻어 주세요."]]'::jsonb),
+('daon', 'idle', 19, '[["", "다온이 마당 가장자리에서 들꽃 한 송이를 꺾어 와 내 노리개 매듭에 꽂았다."], ["다온", "노리개에서 꽃 하나가 빠졌더라고요. 그래서 마당 꽃을 끼웠어요! 비밀 자리 꽃이랑 별채 꽃이 나란히 있네요."]]'::jsonb),
+('daon', 'idle', 20, '[["", "다온이 마루에 누워 천장 나뭇결을 손가락으로 따라 그렸다."], ["다온", "천장에도 구름이 있어요! 저건 꿀단지, 옆에 건 대롱 같아요. 여기선 누워서도 구름 구경을 할 수 있네요."]]'::jsonb),
+('daon', 'idle', 21, '[["", "다온이 물동이를 두 손으로 끌어안고 비틀비틀 마당을 건너왔다. 물이 찰랑 넘쳐 맨발을 적셨다."], ["다온", "혼자 들 수 있어요! 제가 할게요. 아, 잠깐만요. 손잡이 이쪽만 살짝 잡아 주면 안 돼요?"]]'::jsonb),
+('daon', 'idle', 22, '[["", "다온이 공책에 숯으로 별채 그림을 그리고 있었다. 지붕이 하늘보다 컸다."], ["다온", "{이름} 님 별채를 그렸어요! 문간에 앉은 건 저고 마당에 선 건 {이름} 님이에요. 팔이 길다고요? 손 흔드는 중이라서 그래요!"]]'::jsonb),
+('daon', 'idle', 23, '[["", "다온이 갑자기 내 소매를 잡아끌고 담장 밑을 가리켰다. 풀숲 사이로 작은 개구리 한 마리가 폴짝 뛰었다."], ["다온", "봤어요? 방금 개구리요! 나루 개구리보다 훨씬 작아요. 공책에 「별채 개구리, 쬐끔함」이라고 적어야지!"]]'::jsonb),
+('daon', 'idle', 24, '[["", "다온이 마루 끝에 앉아 콧노래를 흥얼거렸다. 가락도 가사도 없이 콧소리로만 이어졌다."], ["다온", "그냥 흥얼거린 거예요. 꿀물 탈 때도 저절로 나오는 소리거든요. 어, {이름} 님 앞에서도 나오네요?"]]'::jsonb),
+('daon', 'idle', 25, '[["", "다온이 마당 빨랫줄에 널린 내 옷을 올려다보며 손가락으로 길이를 쟀다."], ["다온", "{이름} 님 옷은 제 옷 두 개를 이은 만큼 길어요! 제 옷은 자꾸 해져서 아주머니가 뛰지 말라는데, 가만히 있으면 재미가 없잖아요."]]'::jsonb),
+('daon', 'idle', 26, '[["", "다온이 내 무릎에 머리를 대고 누워 공책을 배 위에 올려 두었다."], ["다온", "옛날에 엄마도 이렇게 무릎을 빌려줬어요. 아주 어릴 때요. {이름} 님 무릎도 따뜻하네요. 조금만 더 누워 있을래요."]]'::jsonb),
+('daon', 'idle', 27, '[["", "다온이 문간에서 짚신 끈을 매다가 끈이 엉켜 끙끙댔다."], ["다온", "노리개 매듭은 잘 묶는데 신 끈은 왜 자꾸 엉킬까요? 노리개는 한 번에 묶었는데! 그땐 정말 열심히 했거든요."]]'::jsonb),
+('daon', 'idle', 28, '[["", "다온이 마루에 꿀물 사발 두 개를 나란히 놓고 높이를 눈으로 몇 번이나 견주었다."], ["다온", "똑같이 따랐어요! 이건 친구 몫이고 이건 당번 몫이에요. 여기엔 짐배가 안 오니까 당번 몫도 먼저 마셔도 되겠죠?"]]'::jsonb),
+('daon', 'idle', 29, '[["", "다온이 손가락으로 마당 흙바닥에 글자를 쓰다가 고개를 들었다."], ["다온", "{이름} 님은 누구한테 글자를 배웠어요? 전 {이름} 님 이름을 따라 쓰면서 글자를 많이 익혔어요. 그러니까 {이름} 님도 제 선생님이네요!"]]'::jsonb),
+('daon', 'idle', 30, '[["", "다온이 마루에 앉아 꾸벅꾸벅 졸다가 내 어깨 쪽으로 천천히 기울었다. 숯을 쥔 손이 무릎 위로 툭 떨어졌다. 다온은 눈도 뜨지 않고 졸린 목소리로 중얼거렸다."], ["다온", "지금 자면 안 되는데……. {이름} 님이 해 준 얘기 아직 다 못 적었단 말이에요."]]'::jsonb),
+('daon', 'gift_field', 1, '[["", "다온이 풀 묶음을 받아 들고 코를 박아 킁킁 냄새를 맡았다. 잎을 하나 뜯어 손바닥에 비벼 보았다."], ["다온", "와, 향이 진해요! 이걸로 꿀물 타면 꿀을 반만 넣어도 되겠어요. 「{이름} 님이 가져옴」이라고 적어 둬야지!"]]'::jsonb),
+('daon', 'gift_field', 2, '[["", "다온이 받아 든 것을 이리저리 뒤집어 보더니 줄기를 따로 골라냈다."], ["다온", "줄기는 쓰니까 잎만 써야 해요. {이름} 님, 이거 알면서 일부러 줄기까지 가져왔죠? 제가 골라내는 거 보려고요!"]]'::jsonb),
+('daon', 'gift_hq', 1, '[["", "다온이 선물을 받아 들고 두 눈이 휘둥그레졌다. 손이 닳을까 봐 손가락 끝으로만 받쳐 들었다."], ["다온", "우와, 이거 정말 좋은 거죠? 반짝반짝해요! 이렇게 좋은 건 처음 받아 봐요."]]'::jsonb),
+('daon', 'gift_other', 1, '[["", "다온이 선물을 받아 들고 고개를 갸웃했다. 위아래로 흔들어 보고 귀에 대 보았다."], ["다온", "이거 어디에 쓰는 거예요? 알려 주세요! 모르겠으면 그림부터 그려 놓을래요. {이름} 님한테 받은 건 잊기 싫거든요."]]'::jsonb),
+('daon', 'gift_other', 2, '[["", "다온이 선물을 허리춤 주머니에 넣었다가 다시 꺼내 보고 또 넣었다."], ["다온", "아주머니한테 얼른 보여 드려야지! 서리님한테도 자랑할래요. 서리님은 웃진 않으셔도 끝까지 들어 주실 거예요."]]'::jsonb),
+('daon', 'gift_reward', 1, '[["", "다온이 작은 환약 두 알을 기름종이에 싸서 내 손에 꼭 쥐여 주었다. 환약에서 쌉싸름한 풀 냄새가 났다."], ["다온", "회춘단이에요! {이름} 님이 가져온 풀로 아주머니랑 같이 빚었어요. 동그랗게 굴리는 건 제가 했고요! 쓰니까 꿀물이랑 먹어요."]]'::jsonb),
+('daon', 'gift_reward', 2, '[["", "다온이 환약 두 알을 내밀며 허리춤에서 엽전 한 닢을 꺼내 그 위에 얹으려다 멈칫했다."], ["다온", "아차, 값도 드리려고 했는데! 선물에는 값을 안 치르는 거죠? 그럼 이 엽전으로 다음 꿀단지 살래요."]]'::jsonb),
+('daon', 'mate_hanseol', 1, '[["", "한설 곁에서 공책을 펼쳤다 덮은 다온이 쪼르르 내게 달려와 귓속말을 했다."], ["다온", "저 아저씨, 서리님이랑 같은 정청 사람이죠? 제 짚신이 마루 밑에 있는 걸 봐 놓고도 안 꺼내 줬어요! 근데 웃더라고요. ……공책에 「웃음 아끼는 아저씨」라고 쓸래요."]]'::jsonb),
+('daon', 'mate_yeoul', 1, '[["", "여울의 장갑 낀 손을 구경하던 다온이 제 손바닥을 쫙 펴 보이며 내게 달려왔다."], ["다온", "저 누나 손, 진짜 반짝반짝해요! 장갑 안에 비늘이 있거든요. 무섭긴요, 물고기 같아서 예쁜데요! 누나 장도 만들었어요. ……뭘 좋아하는지는 아직 못 물어봤어요."]]'::jsonb),
+('daon', 'mate_wolha', 1, '[["", "월하에게 머리를 헝클어진 다온이 머리카락을 손으로 다듬으며 내게 돌아왔다."], ["다온", "아저씨가 또 제 머리를 헝클어 놨어요! 대신 공책에 적힌 좋아하는 건 고쳐 줬죠. ……뭘로 바꿨는지는 비밀이에요. 아저씨랑 저만 알기로 했거든요."]]'::jsonb),
+('daon', 'mate_hisu', 1, '[["", "희수 무릎 옆에서 장부를 구경하던 다온이 희수가 고개를 들자 얼른 내 쪽으로 도망쳐 왔다."], ["다온", "서리님도 여기 오세요! 나루에선 밤새 서안에 앉아 계시는데 여기선 마루에 장부를 펴요. ……{이름} 님 별채에선 서리님도 편하신가 봐요. 좋다!"]]'::jsonb),
+('daon', 'mate_danbi', 1, '[["", "다온이 단비가 꺾어 준 엿 반쪽을 볼이 볼록하게 문 채 내게 와서 자랑했다."], ["다온", "저 누나 엿은 꿀물보다 달아요! 반쪽을 주셔서 저도 꿀물 반 사발 드렸어요. 짐을 나른 건 아니니까 반만요. ……그랬더니 누나가 엄청 웃었어요!"]]'::jsonb),
+('daon', 'mate_unbi', 1, '[["", "여운비에게 신 끈을 맡겼다 돌아온 다온이 제 짚신을 내려다보며 내게 말했다."], ["다온", "처음엔 무서운 누나인 줄 알았는데 제 짚신 끈을 매 주셨어요. 셋을 엇갈리고 넷째에서 감으랬는데…… 벌써 잊어버렸어요. 공책에 적을 걸!"]]'::jsonb),
+('daon', 'mate_cheongpa', 1, '[["", "물가에서 청파의 배를 타고 돌아온 다온이 숨을 헐떡이며 내 앞에 섰다."], ["다온", "저 형 배를 공짜로 탔어요! 그래서 꿀물 한 사발 드렸죠. 그런데 기침을 자꾸 하세요. ……다음엔 꿀을 더 넣으면 좀 나아질까요?"]]'::jsonb),
+('daon', 'mate_galmae', 1, '[["", "다온이 갈매가 패 놓은 장작 더미 앞에서 입을 떡 벌리고 있다가 내 소매를 끌어 그쪽을 가리켰다."], ["다온", "저 누나 장작 패는 거 보셨어요? 엄청 빨라요! 저도 도끼 잡고 싶었는데 안 된대요. 대신 장작 나르기 당번을 맡았어요. ……저 그런 거 잘하거든요!"]]'::jsonb),
+('daon', 'mate_haram', 1, '[["", "하람에게 얼굴을 내밀었다 돌아온 다온이 제 볼을 손으로 문지르며 나를 올려다보았다."], ["다온", "저 형은 눈이 하얀데도 손으로 봐요! 제 얼굴을 만지더니 검댕 묻었다고 하셨어요. ……어떻게 알았지? 손끝으로 검댕까지 보이나 봐요!"]]'::jsonb),
+('daon', 'mate_munsu', 1, '[["", "문수 옆에서 이야기를 듣던 다온이 공책을 안고 내게 와 앉았다."], ["다온", "저 사람 책벌레 얘기는 끝이 안 나요! 공책에 받아 적다가 벌써 한 장을 다 썼어요. ……끝까지 들으면 두 장은 되겠죠?"]]'::jsonb),
+('hisu', 'bond_make', 1, '[["", "해 질 녘 출납청에는 희수 혼자였다. 희수는 서안 위의 장부를 모두 보자기에 싸 한쪽으로 밀어 두었다. 빈 서안 한가운데 작은 붓 한 자루가 놓여 있었다. 붓대 끝에 매듭 끈이 감겨 노리개처럼 늘어져 있었다."], ["희수", "획이 흔들릴 때마다 종이 귀퉁이에 이름을 쓰곤 했어요. 서리들은 저마다 그런 붓이 하나씩 있다고 말씀드렸죠. 이게 제 붓이에요."]]'::jsonb),
+('hisu', 'bond_make', 2, '[["", "희수가 붓 노리개를 두 손으로 집어 내 앞에 내밀었다. 손끝이 아주 조금 떨렸다."], ["희수", "이제 귀퉁이에 이름을 쓰지 않아도 될 것 같아요. 소매에 다 새겨 두었으니까요. 이 붓은 조사원이 가져 주세요."]]'::jsonb),
+('hisu', 'bond_make', 3, '[["", "희수가 장부 한 권을 펼쳐 출납 줄 맨 끝에 붓을 댔다. 「정표 하나 — 받음」이라고 적고, 받은 이 칸에서 붓이 오래 멈췄다. 희수는 그 칸에 「조사원」 대신 내 이름을 한 획 한 획 적었다."], ["희수", "적었어요. 장부에 이름을 적은 건 처음이에요."], ["희수", "정청에 올라올 때 객사 대신 조사원 별채에 머물러도 될까요? 낮에는 출납청에 있고, 해 지면 돌아올게요. 장부도 마루에서만 펼치겠습니다."]]'::jsonb),
+('hisu', 'bond_again', 1, '[["", "희수는 새 붓 노리개를 받아 들고 한참 내려다보았다. 보따리에서 옛 장부 한 권을 꺼내 펼쳤다. 끊던 날 그은 줄 아래, 이름은 지워지지 않고 그대로 있었다."], ["희수", "줄만 그었어요. 이름은 긁어내지 않았고요. 종이가 상하니까요."], ["희수", "다시 오셨네요. 그 아래에 새로 적을게요. 「돌아옴」이라고."]]'::jsonb),
+('hisu', 'bond_break', 1, '[["", "희수는 붓 노리개를 돌려받아 서안 위에 반듯하게 놓았다. 장부를 펼쳐 내 이름이 적힌 줄 위에 가는 선을 하나 그었다. 선을 긋는 붓이 한 번도 흔들리지 않았다."], ["희수", "선을 하나 그었어요. 장부에는 지우는 법이 없으니까요."]]'::jsonb),
+('hisu', 'bond_break', 2, '[["", "희수가 붓을 붓걸이에 걸고 내게 작별 인사하듯 고개를 숙였다. 숙인 고개는 오래도록 들리지 않았다."], ["희수", "출납청은 철마다 문을 열어요. 소매가 해지면 들르세요. 꿰매 드리는 일까지 장부에 올리진 않을 테니까요."]]'::jsonb),
+('hisu', 'first_dawn', 1, '[["", "닭이 울기 전이었다. 희수가 문간에서 보따리를 여미고 있었다. 정청에 나갈 채비였다."], ["희수", "일어나셨어요? 깨우지 않으려고 조심했는데. 아침은 부뚜막에 올려 뒀어요. 식기 전에 드세요."]]'::jsonb),
+('hisu', 'first_dawn', 2, '[["", "희수가 마루 끝에 앉아 붓을 다듬고 있었다. 내 발소리에 붓을 내려놓고 옷매무새부터 고쳤다."], ["희수", "나루에 있을 때부터 이 시각이면 눈이 떠져요. 조사원은 더 주무세요. 나갈 때 문은 조용히 닫을게요."]]'::jsonb),
+('hisu', 'first_noon', 1, '[["", "한낮에 희수가 정청에서 돌아와 마루에 보자기 하나를 풀었다. 종이에 싼 주먹밥 두 개가 나왔다."], ["희수", "점심 가져왔어요. 출납청 서안에서는 먹지 않으니까요. 하나는 조사원 거예요. 혼자 먹다 보면 또 장부부터 펼치게 돼서요."]]'::jsonb),
+('hisu', 'first_noon', 2, '[["", "희수가 볕 드는 마루에서 장부 속장을 한 장씩 펴 말리고 있었다. 종이 귀퉁이가 볕에 바삭바삭 말라 갔다."], ["희수", "볕 좋을 때 말려야 해요. 마루 좀 빌렸습니다. 사용 내역도 적어 둘까요? 농담이에요."]]'::jsonb),
+('hisu', 'first_dusk', 1, '[["", "해 질 녘 희수가 정청에서 돌아와 문간에 보따리를 내려놓았다. 손등으로 이마를 한 번 짚고 숨을 내쉬었다."], ["희수", "다녀왔어요. 오늘은 장부가 일찍 맞았어요. 덕분에 평소보다 빨리 왔네요."]]'::jsonb),
+('hisu', 'first_dusk', 2, '[["", "희수가 마루에 앉아 소매를 걷고 내 겉옷을 무릎에 올려놓았다. 소매 끝을 손끝으로 뒤집어 보고 있었다."], ["희수", "소매가 또 해졌어요. 한 치쯤 되겠네요. 저녁 먹고 꿰맬 테니 벗어 두세요."]]'::jsonb),
+('hisu', 'first_night', 1, '[["", "등잔 아래 마루에서 희수가 장부 두 권을 펴 놓고 숫자를 맞추고 있었다. 붓끝이 한 번 떨리자 희수가 붓을 내려놓았다."], ["희수", "숫자 좀 불러 주시겠어요? 셋째 장부터요. 천천히 부탁드려요."]]'::jsonb),
+('hisu', 'first_night', 2, '[["", "희수가 이불을 펴 놓고도 눕지 않고 마루 끝에 앉아 있었다. 내가 다가가자 무릎 위에서 손가락을 꼼지락거렸다."], ["희수", "잠이 오질 않네요. 오늘은 장부 말고 다른 얘기 좀 해 주세요. ……무슨 얘기든 괜찮아요."]]'::jsonb),
+('hisu', 'w_clear', 1, '[["", "하늘이 맑게 갰다. 희수가 마당 빨랫줄에 장부 싸는 보자기를 널고 손바닥으로 주름을 폈다."], ["희수", "이런 날 보자기를 빨아야 먹 냄새가 잘 빠져요. 조사원 겉옷도 같이 널어 뒀어요."]]'::jsonb),
+('hisu', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 희수가 장부 속장을 한 장씩 들어 창가 빛에 비춰 보고 있었다."], ["희수", "흐린 날엔 먹이 잘 마르지 않아요. 오늘은 새로 쓰지 않고 적어 둔 것만 살펴보려고요. 조사원도 눈 좀 쉬세요."]]'::jsonb),
+('hisu', 'w_rain', 1, '[["", "빗줄기가 지붕을 요란하게 때렸다. 희수가 장부 보따리를 끌어안고 마루 가장 안쪽으로 물러앉았다. 처마 끝에서 튄 빗물이 문턱까지 들이쳤다."], ["희수", "장부는 빗물이 튀는 곳에서 세 자쯤 떨어뜨려 둬야 해요. 규정이 그렇습니다. 조사원도 이쪽으로 오세요. 그건 제가 걱정돼서 그러는 거고요."]]'::jsonb),
+('hisu', 'w_rain', 2, '[["", "희수가 처마 밑에 서서 빗줄기를 바라보며 보자기 끈을 만지작거렸다. 비뚤어진 노리개가 끈 끝에서 달랑거렸다."], ["희수", "빙혼곡 길이 많이 질겠어요. 비가 그치면 나루로 내려가야겠네요. 하루쯤 더 머물러야겠어요."]]'::jsonb),
+('hisu', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 희수가 우산 하나를 펴 들고 문간에서 나를 기다리고 있었다."], ["희수", "이 정도 비면 정청까지 걸어갈 만하겠어요. 우산은 하나만 가져왔어요. ……일부러 그런 건 아닙니다."]]'::jsonb),
+('hisu', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 희수가 문간에 장부 보따리를 내려놓고 붓통을 열었다."], ["희수", "안개가 짙어서 오늘은 여기서 일해야겠어요. 길을 헤매면 장부 대조가 하루 밀리니까요. 조사원도 멀리 나가지 마세요."]]'::jsonb),
+('hisu', 'w_wind', 1, '[["", "찬 바람에 문풍지가 덜덜 떨렸다. 희수가 깔개 하나를 내 자리에 깔아 두었다. 출납청 걸상에 깔던 삼베 깔개였다."], ["희수", "마루가 차가워요. 이 깔개 쓰세요. 출납청 궤짝에 넣어 두었던 거예요. 다른 사람이 못 쓰게 잠가 뒀죠."]]'::jsonb),
+('hisu', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 희수가 마당 눈 위에 붓대 끝으로 글자를 쓰고 있었다. 「별채」 두 글자가 눈 위에 반듯하게 패였다."], ["희수", "종이에 쓰기엔 아까운 글자도 눈 위에는 마음껏 쓸 수 있네요. 조사원도 하나 써 보세요. 녹기 전에 읽어 볼게요."]]'::jsonb),
+('hisu', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 희수가 등잔 심지를 끝까지 돋우고 장부 대신 빈 종이를 펼쳤다."], ["희수", "혈무가 끼면 글씨가 흐려 보여요. 이럴 땐 익숙한 이름을 쓰곤 해요. 눈으로는 잘 안 보여도 손이 기억하거든요. 오늘은 밖에 나가지 마세요."]]'::jsonb),
+('hisu', 'me_yohwa', 1, '[["", "희수가 내 얼굴을 보자 붓을 내려놓는 것도 잊고 다가왔다. 내 앞에 무릎을 꿇고 오른 소매를 뒤집어 수놓인 이름을 손끝으로 짚었다."], ["희수", "여기 있어요. 한 땀씩 단단히 수놓았어요. 쉽게 지워지지 않을 거예요."], ["희수", "{이름}. 제 말 들리세요? ……이름 부르는 건 아직 서툴지만 계속 불러 볼게요. 들리면 고개만 끄덕여 주세요."]]'::jsonb),
+('hisu', 'me_erosion_80', 1, '[["", "희수가 내 팔목에 번진 거무스름한 기운을 보고 붓을 쥔 손에 힘을 주었다. 붓대가 손안에서 삐걱거렸다."], ["희수", "우선 앉으세요. 정화부터 해야 해요. 오늘은 정청에도 가지 않겠습니다. 어디에도 나가지 마세요. 꼭 지키셔야 해요."]]'::jsonb),
+('hisu', 'me_erosion_55', 1, '[["", "희수가 내 소매 끝에 묻은 거뭇한 얼룩을 손끝으로 문질러 보았다. 얼룩이 번지기만 하고 지워지지 않았다."], ["희수", "먹이 아니네요. 문질러도 지워지지 않아요. 정화 부적을 지니고 다니세요. 소매 안쪽에 넣을 자리를 만들어 드릴게요."]]'::jsonb),
+('hisu', 'me_erosion_30', 1, '[["", "희수가 장부를 덮고 내 얼굴을 한참 살폈다. 붓을 들어 장부 귀퉁이에 작은 점을 하나 찍었다."], ["희수", "오늘은 점 하나만 찍었어요. 더 짙어지기 전에 정화하세요. ……점이 늘어나는 건 보고 싶지 않아요."]]'::jsonb),
+('hisu', 'me_hp_low', 1, '[["", "내가 마루 끝에 주저앉자 희수가 보리차 주전자를 들고 와 잔에 따랐다. 평소답지 않게 손이 떨려 찻물이 잔 밖으로 넘쳤다."], ["희수", "천천히 드세요. 모자라면 더 따라 드릴게요. 오늘은 출납청에 가지 않겠습니다. 장부는 내일 맞춰도 돼요."]]'::jsonb),
+('hisu', 'me_rescued', 1, '[["", "문을 열자 희수가 마루에 장부를 펼쳐 놓고 앉아 있었다. 장부에는 한 줄도 적혀 있지 않았고 붓 끝의 먹은 말라 있었다."], ["희수", "출납청에서 쓰러지셨다는 말을 들었어요. ……그 뒤로는 장부에 한 줄도 못 적었습니다."], ["희수", "어디 다치셨어요? 빠뜨리지 말고 전부 말씀해 주세요."]]'::jsonb),
+('hisu', 'me_exp_back', 1, '[["", "희수가 문간에서 장부를 펴 놓고 있다가 나를 보고 붓을 내려놓았다. 장부 귀퉁이에 동그라미가 몇 개 그려져 있었다."], ["희수", "돌아오셨네요. 오늘쯤 오실 줄 알았는데 하루 늦으셨어요. 늦은 건 따로 적지 않겠습니다."]]'::jsonb),
+('hisu', 'me_far_travel', 1, '[["", "희수가 장부를 펼쳐 내가 지나온 고을 이름을 하나씩 받아 적었다."], ["희수", "고을을 다섯이나 지나셨군요. 나루 출납 장부에도 없는 먼 곳이네요. 발 씻을 물부터 데워 올게요. 나머지 얘기는 앉아서 들려주세요."]]'::jsonb),
+('hisu', 'me_levelup', 1, '[["", "희수가 나를 한참 보다가 장부를 펼쳐 무언가를 적었다."], ["희수", "오늘 날짜 아래에 한 줄 더 적었어요. 「조사원, 또 늘었음.」 이렇게요. 제 장부는 아직 틀린 적 없어요."]]'::jsonb),
+('hisu', 'home_portrait', 1, '[["", "희수가 벽에 걸린 제 초상 앞에 서서 한참 말이 없었다. 귀 끝이 점점 붉어졌다."], ["희수", "제 초상을 왜 거기 거셨어요? 장부를 보다가도 자꾸 눈이 가잖아요. 그렇다고 떼시라는 뜻은 아니에요."]]'::jsonb),
+('hisu', 'home_pet', 1, '[["", "동무가 희수의 보따리 끈 끝 노리개를 앞발로 툭툭 건드리고 있었다. 희수가 보따리를 높이 들어 올렸다가 슬그머니 다시 내려 주었다."], ["희수", "장부는 건드리면 안 돼요. 노리개는 괜찮고요. 다온이랑 꼭 닮았네요. 말 안 듣는 것까지."]]'::jsonb),
+('hisu', 'home_new_furn', 1, '[["", "희수가 새 가구 모서리에 손바닥을 대고 위가 평평한지 가늠해 보았다."], ["희수", "장부 펼치기 좋은 자리네요. 서안은 아니니 여기서 밥도 먹을 수 있겠어요."]]'::jsonb),
+('hisu', 'home_mate', 1, '[["", "희수가 장부를 덮어 무릎 밑에 깔고 마루 안쪽을 흘끔 보았다."], ["희수", "아까 조사원 정인께 인사드렸어요. 출납 서리라고 말씀드렸더니 장부를 보여 달라시더군요. 업무 장부라 정중히 사양했어요."]]'::jsonb),
+('hisu', 't_days_7', 1, '[["", "희수가 장부 출납 줄을 펼쳐 보였다. 이레 동안 날짜마다 짧은 줄이 하나씩 적혀 있었다."], ["희수", "하루에 한 줄씩 적었어요. 「보리차 두 잔」, 「소매 한 치」 같은 일들이요. 납품 장부와는 따로 묶어 두었습니다."]]'::jsonb),
+('hisu', 't_days_30', 1, '[["", "희수가 얇은 장부 한 권을 내밀었다. 표지에 「별채」 두 글자가 반듯하게 적혀 있었고, 귀퉁이에 「희수 적음」이 얌전히 앉아 있었다."], ["희수", "한 달 치예요. 틀린 데는 없고요. 빠진 날도 없네요."]]'::jsonb),
+('hisu', 't_days_100', 1, '[["", "희수가 마루에 나물밥 두 그릇을 차려 놓았다. 장부는 방 안에 두고 온 빈손이었다."], ["희수", "벌써 백 날이네요. 출납청 마루에서 함께 먹었던 나물밥 기억하세요? 이번엔 제가 지었어요. 조금 쌉쌀한 건 일부러 그런 거예요."]]'::jsonb),
+('hisu', 't_long_away', 1, '[["", "희수가 장부를 펼쳐 사흘 치 빈 줄을 손가락으로 짚었다."], ["희수", "사흘 동안 적을 일이 없었어요. 그 줄은 비워 두겠습니다. 오늘부터 다시 쓰면 되니까요."]]'::jsonb),
+('hisu', 't_long_away', 2, '[["", "희수가 나를 보고 고개를 짧게 숙이더니 그대로 오래 숙이고 있었다."], ["희수", "오셨군요. 사흘 내내 출납청에서 획이 자꾸 흔들렸어요. 무슨 일이 있으셨는지는 묻지 않을게요."]]'::jsonb),
+('hisu', 't_last_today', 1, '[["", "희수가 붓을 씻어 붓걸이에 걸고 장부를 덮었다. 덮고 나서 장부 등을 손바닥으로 한 번 쓸었다."], ["희수", "오늘 기록은 여기까지예요. 마지막 줄엔 「내일도」라고 적었습니다. ……틀린 적 없는 장부니까, 내일도 오셔야 해요."]]'::jsonb),
+('hisu', 'idle', 1, '[["", "희수가 마루 끝에서 보리차를 따라 내 앞에 한 잔 놓았다. 자기 잔에는 반만 따랐다."], ["희수", "여기 우물물로 끓이니 차 맛이 다르네요. 출납청 보리차는 맛없다고 하셨잖아요. 그 말씀 기억하고 있어요."]]'::jsonb),
+('hisu', 'idle', 2, '[["", "희수가 내 겉옷 소매를 뒤집어 수놓인 이름을 손끝으로 한 번 쓸었다. 실밥 하나 삐져나오지 않았는지 살피는 손길이었다."], ["희수", "실밥 하나 풀리지 않았네요. 잘됐어요. 소매가 상하지 않았는지 살핀 것뿐이에요."]]'::jsonb),
+('hisu', 'idle', 3, '[["", "희수가 붓을 쥐고 종이 귀퉁이에 무언가를 쓰려다 멈췄다. 붓을 내려놓고 빈 귀퉁이를 손바닥으로 덮었다."], ["희수", "손이 저절로 귀퉁이로 가네요. 이제 그럴 필요 없는데도요. 획이 흔들려서 그런 건 아닙니다."]]'::jsonb),
+('hisu', 'idle', 4, '[["", "희수가 다온이 놓고 간 공책을 주워 들고 펼쳐 보았다. 「서리님」 장의 「좋아하는 것」 칸이 여전히 비어 있었다."], ["희수", "다온이가 요즘도 뭘 좋아하냐고 물어요. 조사원은 짐작하시겠죠? 다온이한테는 아직 말하지 말아 주세요."]]'::jsonb),
+('hisu', 'idle', 5, '[["", "희수가 마루에 장부 두 권을 펼쳐 놓고, 하나를 내 쪽으로 밀었다."], ["희수", "이 줄 좀 읽어 주시겠어요? 천천히요. 혼자서도 맞출 수 있지만, 조사원이 불러 주시면 한결 수월해요."]]'::jsonb),
+('hisu', 'idle', 6, '[["", "희수가 장부 등을 묶은 실을 손끝으로 퉁겨 보았다. 은빛 실이 팽팽하게 버텼다."], ["희수", "조사원이 꼬아 오신 영사 실이에요. 아직도 팽팽해요. 장부 열두 권을 전부 이 실로 묶었어요."]]'::jsonb),
+('hisu', 'idle', 7, '[["", "희수가 빈 서안 대신 마루에 앉아 밥그릇을 들고 있었다. 숟가락질이 점점 빨라졌다."], ["희수", "배가 많이 고팠나 봐요. 여기서는 일을 마치기 전에도 밥을 먹게 되네요. 서안이 아니라 마루니까요."]]'::jsonb),
+('hisu', 'idle', 8, '[["", "희수가 보자기 끈 끝에 달린 비뚤어진 노리개를 손바닥에 올려 보았다."], ["희수", "한 번 덜 감아서 비뚤어진 매듭이에요. 아직 그대로 달고 다녀요. 다온이가 보고 놀렸죠. 서리님 보자기엔 왜 이런 게 달렸냐고요."]]'::jsonb),
+('hisu', 'idle', 9, '[["", "희수가 창가에 앉아 붓으로 허공에 획을 그어 보고 있었다. 붓끝이 닿지 않는데도 손목이 반듯하게 움직였다."], ["희수", "종이가 없을 때도 이렇게 연습해요. 무슨 글자를 쓰는지는 묻지 마세요. 조사원도 아시잖아요."]]'::jsonb),
+('hisu', 'idle', 10, '[["", "희수가 내 짚신 끈을 다시 꿰고 있었다. 끈을 당기는 손이 빠르지 않았지만 한 번도 다시 꿰지 않았다."], ["희수", "장부 등 꿰매는 것과 비슷해요. 구멍만 잘 맞추면 쉽게 풀리지 않거든요. 한번 신어 보세요. 불편한 데 없는지요."]]'::jsonb),
+('hisu', 'idle', 11, '[["", "희수가 등잔 심지를 돋우자 불똥이 튀며 불빛이 잠깐 환해졌다."], ["희수", "출납청에서는 조사원이 심지를 돋워 주셨죠. 숫자를 부르시다가도요. 이번에는 제가 할게요."]]'::jsonb),
+('hisu', 'idle', 12, '[["", "희수가 마루에 걸레질을 하고 있었다. 걸레가 지나간 자리에서 젖은 나무 냄새가 올라왔다."], ["희수", "출납청 서안을 닦던 버릇대로 닦았어요. 별채 마루가 더 깨끗해져도 괜찮겠죠?"]]'::jsonb),
+('hisu', 'idle', 13, '[["", "희수가 장부를 넘기다 웃음을 참는 얼굴로 입술을 꾹 다물었다."], ["희수", "다온이가 정청에 올릴 장부에 꿀단지를 그려 놨어요. 하필 귀퉁이에요. 지우려다가 그냥 뒀어요."]]'::jsonb),
+('hisu', 'idle', 14, '[["", "희수가 처마 밑 제비집을 올려다보며 손가락을 하나씩 접었다."], ["희수", "새끼가 넷이네요. 어제는 셋이었는데. 장부에도 넷이라고 고쳐 적어야겠어요."]]'::jsonb),
+('hisu', 'idle', 15, '[["", "희수가 마루에 보자기를 펼쳐 놓고 해진 귀퉁이를 꿰매고 있었다. 바늘이 천을 드나드는 소리가 사각사각 났다."], ["희수", "그렇게 계속 보고 계시면 바늘을 놓치겠어요. 보지 마시라는 건 아니에요. 조금만 기다려 주세요."]]'::jsonb),
+('hisu', 'idle', 16, '[["", "희수가 식은 보리차를 한 모금 마시고 얼굴을 찡그렸다."], ["희수", "차가 다 식었네요. 이야기하느라 깜빡했어요. 장부를 볼 때는 이런 일이 없는데요."]]'::jsonb),
+('hisu', 'idle', 17, '[["", "희수가 노정 건량 하나를 꺼내 반으로 쪼개 내게 내밀었다."], ["희수", "조사원이 만들어 주신 건량이에요. 아까워서 남겨 뒀어요. 정청 주방 것보다 덜 짜거든요. 그날 먹었던 맛 그대로예요."]]'::jsonb),
+('hisu', 'idle', 18, '[["", "희수가 마당에 서서 빙혼곡 쪽 하늘을 오래 바라보았다."], ["희수", "나루에 내려갈 날을 세고 있었어요. 아직 며칠 남았네요. 마음이 놓이는 건지 아쉬운 건지 모르겠어요."]]'::jsonb),
+('hisu', 'idle', 19, '[["", "희수가 장부 출납 줄 끝에 붓을 대고 잠깐 망설였다. 이내 반듯하게 한 줄을 적었다."], ["희수", "「오늘, 별채 마루에서 웃음 — 한 번.」 조사원이 웃으신 걸 적은 거예요. 제가 웃은 건 아니고요."]]'::jsonb),
+('hisu', 'idle', 20, '[["", "희수가 겉옷을 개다가 소매 끝 실밥 하나를 이로 끊어 냈다. 내가 보고 있는 것을 알아챈 희수가 손등으로 입을 가렸다."], ["희수", "가위가 멀리 있어서 그랬어요. 못 보신 걸로 해 주세요."]]'::jsonb),
+('hisu', 'idle', 21, '[["", "희수가 마루 끝에 걸터앉아 두 발을 가지런히 모으고 있었다. 마룻바닥이 찬지 발끝을 조금 들어 올렸다."], ["희수", "출납청 걸상보다는 편해요. 등받이는 없어도 기둥에 기댈 수 있으니까요."]]'::jsonb),
+('hisu', 'idle', 22, '[["", "희수가 서랍에서 종이에 싼 주먹밥을 꺼내 들고 잠깐 내려다보았다. 아침에 싸 둔 그대로였다."], ["희수", "아침에 싸 놓고 또 잊었네요. 반씩 나눠 먹을까요? 그날처럼요. 식었어도 함께 먹으면 괜찮아요."]]'::jsonb),
+('hisu', 'idle', 23, '[["", "희수가 붓통을 열어 붓을 크기대로 늘어놓고 있었다. 끝이 갈라진 붓 하나를 집어 들고 한참 보았다."], ["희수", "처음 서리가 됐을 때 쓰던 붓이에요. 끝이 갈라져서 이젠 못 쓰지만 버리기는 어렵네요. 조사원께 드린 붓도 언젠가는 낡겠죠."]]'::jsonb),
+('hisu', 'idle', 24, '[["", "희수가 내 손바닥에 먹으로 작은 점 하나를 찍었다."], ["희수", "장부에 확인 표시할 때 찍는 점이에요. 오늘 오신 것도 이렇게 확인했어요. 씻으면 지워지니 걱정 마세요."]]'::jsonb),
+('hisu', 'idle', 25, '[["", "희수가 처마 끝에 걸린 등을 올려다보며 등잔 기름을 가늠했다."], ["희수", "정청 대청 처마에도 비슷한 등이 있어요. 바람이 불면 늘 흔들리죠. 여기는 바람이 덜 드나 봐요."]]'::jsonb),
+('hisu', 'idle', 26, '[["", "희수가 다온이 별채에 두고 간 짚신 한 짝을 주워 문간에 가지런히 놓았다."], ["희수", "다온이 신이에요. 또 한 짝을 잃어버렸나 봐요. 찾으면 「짚신 한 짝 찾음」이라고 적어 둬야겠네요."]]'::jsonb),
+('hisu', 'idle', 27, '[["", "희수가 마루에 엎드려 다온의 공책에 무언가를 적고 있었다. 다온의 글씨 옆에 반듯한 글씨가 한 줄 늘었다."], ["희수", "다온이가 빈칸을 채워 달라고 해서요. 제 칸은 아니고 조사원 칸에 적었어요. 제가 알고 있는 걸로요."]]'::jsonb),
+('hisu', 'idle', 28, '[["", "희수가 등잔 아래 앉아 소매 안쪽 수를 놓던 붉은 부적실 남은 가닥을 손가락에 감았다 풀었다 했다."], ["희수", "소매에 수놓고 남은 실이에요. 딱 한 가닥 남았네요. 어디에 쓸지는 좀 더 생각해 보려고요."]]'::jsonb),
+('hisu', 'idle', 29, '[["", "희수가 나를 보다가 입술을 달싹였다. 한 번, 두 번 무언가를 소리 없이 굴려 보는 입모양이었다."], ["희수", "{이름}. 이번엔 끝까지 불렀어요. 장부에는 적지 않을게요. 직접 부르고 싶었으니까요."]]'::jsonb),
+('hisu', 'idle', 30, '[["", "희수가 장부 귀퉁이를 접었다 폈다 하며 한참 망설이다가 접힌 귀퉁이 하나를 찢어 내게 내밀었다. 펼쳐 보니 반듯한 글씨로 「오늘 저녁, 같이」라고만 적혀 있었다."], ["희수", "말로 하려니 자꾸 막혀서 적었어요. ……나머지는 읽어 보시면 아실 거예요."]]'::jsonb),
+('hisu', 'gift_field', 1, '[["", "희수가 받은 것을 손끝으로 펴 보고 실 끝을 당겨 보았다. 실이 팽팽하게 버텼다."], ["희수", "꼬임이 고르네요. 장부 묶기에 좋겠어요. 출납청 납품용 말고 제 장부에 쓰려고요."]]'::jsonb),
+('hisu', 'gift_field', 2, '[["", "희수가 받은 천을 무릎 위에 펼쳐 놓고 손바닥으로 결을 쓸었다."], ["희수", "천의 결이 반듯해요. 보자기를 새로 만들면 빙혼곡 눈길에서도 장부를 잘 지킬 수 있겠어요. 고맙습니다. 받은 건 따로 적어 둘게요."]]'::jsonb),
+('hisu', 'gift_hq', 1, '[["", "희수가 선물을 받아 들고 한동안 말이 없었다. 손끝으로 귀퉁이를 몇 번이나 쓸었다."], ["희수", "이렇게 좋은 걸 주시다니. 뭐라고 적어야 할지 모르겠어요. 「아주 좋음」이라고 쓰기엔 좀 부족한데요."]]'::jsonb),
+('hisu', 'gift_other', 1, '[["", "희수가 선물을 받아 들고 이리저리 살펴보다가 장부를 펼쳤다."], ["희수", "처음 보는 물건이네요. 이름을 알려 주시겠어요? 잘못 적어 두면 곤란하니까요."]]'::jsonb),
+('hisu', 'gift_other', 2, '[["", "희수가 선물을 보자기에 싸서 장부 보따리 맨 위에 올려 두었다."], ["희수", "나루에 가져갈게요. 다온이에게 자랑하지 말아야 하는데, 아마 보자마자 말하게 될 것 같아요."]]'::jsonb),
+('hisu', 'gift_reward', 1, '[["", "희수가 작은 향 두 대를 종이에 싸서 내 손에 쥐여 주었다. 종이 귀퉁이에 「희수 적음」이 작게 적혀 있었다."], ["희수", "먹귀를 쫓는 향이에요. 나루에선 집집마다 문간에 두죠. 깊은 데 가실 때 꼭 챙기세요. 제 답례예요."]]'::jsonb),
+('hisu', 'gift_reward', 2, '[["", "희수가 향 두 대를 건네며 내 소매 끝을 한 번 여며 주었다."], ["희수", "소매 안쪽 말고 바깥 주머니에 넣으세요. 안쪽은 이미 꽉 찼잖아요."]]'::jsonb),
+('hisu', 'mate_hanseol', 1, '[["", "한설에게 고개를 숙이고 돌아온 희수가 내 곁에 앉아 작게 말했다."], ["희수", "정청 감찰관님이세요. 출납청에선 마주칠 일이 없는 분인데…… 여기선 앉으라고 하시네요. 정청이었다면 계속 서 있었을 거예요."]]'::jsonb),
+('hisu', 'mate_yeoul', 1, '[["", "희수가 여울에게 받은 종이를 펼쳐 내게 보여 주며 붓을 적셨다."], ["희수", "섬에 걸 문패 밑글씨를 부탁받았어요. 문패 글씨는 처음 써 봐요. 장부보다 큼직하게, 획 하나 빠뜨리지 않고 써 드리려고요."]]'::jsonb),
+('hisu', 'mate_wolha', 1, '[["", "마당에서 엽전을 세는 월하를 본 희수가 장부를 품 쪽으로 끌어당기며 내게 말했다."], ["희수", "흑련회 거둠꾼이세요. 제 장부를 보여 드릴 순 없죠. 그런데 아까 떨어뜨린 붓을 주워 주셨어요. 값도 안 받으셨고요. ……그건 적어 둬야겠어요."]]'::jsonb),
+('hisu', 'mate_daon', 1, '[["", "희수가 다온이 놓고 간 짚신 한 짝을 문간에 가지런히 놓고 나를 돌아보았다."], ["희수", "다온이가 여기선 신을 더 잘 벗어요. 나루에선 제가 신으라고 하면 곧장 신는데, 여기선 {이름} 님부터 살피네요. ……조금 섭섭해요. 정말 조금요."]]'::jsonb),
+('hisu', 'mate_danbi', 1, '[["", "희수가 단비가 두고 간 엿 반쪽을 가리키며 나를 보았다."], ["희수", "서안에선 안 먹는다고 했더니 엿 반쪽을 마루에 놓고 가셨어요. 여기선 먹어도 되니까요. ……그걸 어떻게 아셨을까요."]]'::jsonb),
+('hisu', 'mate_unbi', 1, '[["", "희수가 손바닥만 한 장부에 무언가를 적는 여운비 쪽을 눈짓으로 가리키며 내게 말했다."], ["희수", "저분도 장부를 쓰시더라고요. 날짜와 바람, 길동무. 칸이 딱 셋이에요. ……처음 보는 장부지만, 틀린 줄은 하나도 없을 것 같아요."]]'::jsonb),
+('hisu', 'mate_cheongpa', 1, '[["", "희수가 청파가 놓고 간 생선 꾸러미를 들어 내게 보이며 입꼬리를 조금 올렸다."], ["희수", "뱃삯 대신 받은 생선이라는데, 정작 뱃삯은 안 받으신대요. 그럼 받은 걸까요, 안 받은 걸까요. ……장부에 뭐라고 적어야 할지 모르겠어요."]]'::jsonb),
+('hisu', 'mate_galmae', 1, '[["", "희수가 갈매에게 받은 엽전 한 닢을 손바닥에 올려 둔 채 당황한 얼굴로 나를 보았다."], ["희수", "붓을 빌려 드렸더니 그 자리에서 엽전 한 닢을 주셨어요. 출납청에서도 이렇게 셈이 빠른 분은 드물어요. ……「붓 대여, 한 닢」. 적어 둬야겠죠."]]'::jsonb),
+('hisu', 'mate_haram', 1, '[["", "하람의 관측 일지를 넘겨 보던 희수가 손끝을 비비며 내게 말했다."], ["희수", "손끝으로 읽는 일지래요. 저는 점밖에 보이지 않아서 읽을 수 없어요. 그런데 줄은 하나도 어긋나지 않았어요. ……참 대단한 분이에요."]]'::jsonb),
+('hisu', 'mate_munsu', 1, '[["", "문수 곁에서 일어난 희수가 먹 묻은 제 소매 끝을 털며 내 옆으로 왔다."], ["희수", "정청 서리셨대요. 서리방 걸상이 짝짝이였던 것까지 기억하시더라고요. 말은 많으신데 글씨는 참 차분해요. ……서리다운 글씨예요."]]'::jsonb),
+('danbi', 'bond_make', 1, '[["", "장이 파한 밤이었다. 모닥불이 사그라든 장터에서 단비가 엿판 위에 작은 주홍 방울 하나를 올려놓고 오른손 검지로 톡 건드렸다. 방울이 맑게 울렸다. 단비가 소매에서 제 방울을 꺼내 마주 흔들자 두 소리가 한 소리처럼 겹쳤다."], ["단비", "들으셨어요? 똑같죠? 제 방울을 들고 언년 할머니 동네 대장간까지 갔어요. 열한 개나 흔들어 보고 겨우 골랐다니까요."]]'::jsonb),
+('danbi', 'bond_make', 2, '[["", "단비가 주홍 방울에 붉은 끈을 꿰려다 오른손 하나로 안 되자 끈 끝을 이로 물었다. 끈을 문 채로 나를 올려다보며 눈짓했다."], ["단비", "이쪽 끈 좀 잡아 주세요. ……됐다! 방울 소리는 멀리까지 들리잖아요. {이름} 님이 어디서 흔들든 제 방울이 알아들을 거예요. 귀는 한쪽뿐이어도 방울은 둘이니까요."], ["단비", "장 쉬는 날엔 별채 부엌 좀 빌릴게요. 엿 고으려면 큰 솥이 필요하거든요. 아, 오른쪽 방석은 제가 찜했어요. 미리 말씀드리는 거예요."]]'::jsonb),
+('danbi', 'bond_again', 1, '[["", "단비는 새 방울을 받아 들고 흔들어 보지도 않았다. 엿판 서랍에서 기름종이 꾸러미 하나를 꺼냈다. 종이가 누렇게 바랬고 안의 반쪽 엿은 딱딱하게 굳어 있었다."], ["단비", "그날 꺾어 둔 반쪽이에요. 먹으면 정말 끝날까 봐 못 먹었어요. ……이젠 먹어도 되겠죠? {이름} 님도 반 드세요. 많이 굳었으니까 이 조심하시고요."]]'::jsonb),
+('danbi', 'bond_break', 1, '[["", "단비는 방울을 돌려받아 손바닥 위에서 한참 굴렸다. 엿 항아리에서 한 가락을 꺼내 좌판 모서리에 대고 똑 꺾었다. 반쪽을 입에 넣었지만 씹지 못하고 오래 물고만 있었다."], ["단비", "……오늘은 엿이 안 넘어가네요. 안 괜찮은 날인가 봐요. 뭐, 이런 날도 있는 거죠."], ["단비", "엿판 오른쪽은 비워 둘게요. 지나가다 들르시면 반쪽 드릴게요. 값은…… 그때 가서 정하죠."]]'::jsonb),
+('danbi', 'first_dawn', 1, '[["", "부엌에서 달큰한 조청 냄새가 마루까지 흘러나왔다. 단비가 밤새 고은 엿 솥을 오른손으로 젓고 있었다. 주걱이 솥 바닥을 긁을 때마다 끈적한 소리가 났다."], ["단비", "어쩜 딱 맞춰 일어나셨어요! 지금이 제일 맛있을 때거든요. 손가락 좀 내밀어 보세요. 앗, 뜨거우세요? 갓 고은 엿이니까 그렇죠!"]]'::jsonb),
+('danbi', 'first_dawn', 2, '[["", "마당 평상 위에 기름종이 꾸러미 넷이 나란히 놓여 있었다. 단비가 꾸러미마다 숯으로 이름을 적고 있었다. 「대장님」, 「할머니」, 「아주머니」, 그리고 내 이름이었다."], ["단비", "아침마다 이렇게 반쪽씩 챙겨 놔요. 아주머니 건 조금 작게 꺾었어요. 육포를 그렇게 질기게 파시는데 엿이라도 덜 드셔야죠."]]'::jsonb),
+('danbi', 'first_noon', 1, '[["", "대문 앞이 시끌시끌했다. 단비가 대문 기둥에 「단비네 별채 지점」이라고 쓴 나무패를 걸어 놓고 지나가는 아이들에게 엿을 한 가락씩 쥐여 주고 있었다."], ["단비", "장사 아니에요! 장터 꼬맹이들한테도 그냥 나눠 줬거든요. 값은 {이름} 님 앞으로 달아 둘게요. 농담이에요. 반쯤은요."]]'::jsonb),
+('danbi', 'first_noon', 2, '[["", "단비가 마루에 엿 가락을 줄지어 늘어놓고 굵기를 손끝으로 재고 있었다. 하나가 유난히 굵었다."], ["단비", "이것 좀 보세요. 얘만 혼자 통통하죠? 한 손으로 늘이다 보면 꼭 하나씩 이래요. 팔기는 좀 그러니 {이름} 님 점심으로 드세요."]]'::jsonb),
+('danbi', 'first_dusk', 1, '[["", "노을이 담장을 넘어 마루까지 붉게 들어왔다. 단비가 지붕 끝 사다리에 오른손으로 매달린 채 서쪽 하늘을 보고 있었다."], ["단비", "달 뜨는 쪽이 궁금해서 올라왔어요. 적사 황무지 언덕만큼 높진 않지만요. 그런데…… 내려갈 때 사다리 좀 잡아 주실래요? 올라올 땐 안 무서웠는데."]]'::jsonb),
+('danbi', 'first_dusk', 2, '[["", "단비가 엿 항아리 뚜껑을 덮고 보자기로 싸고 있었다. 보자기 매듭을 이로 물어 당기다가 나를 보고 웃었다."], ["단비", "내일 장에 가져갈 거라 단단히 싸 둬야 해요. 이 매듭, 이로 묶은 거 대장님이 아시면 혼날 텐데. {이름} 님만 모른 척해 주세요."]]'::jsonb),
+('danbi', 'first_night', 1, '[["", "마루에 등잔을 하나만 켜 두고 단비가 오른쪽 귀를 손바닥으로 막은 채 앉아 있었다. 나를 보자 단비가 손을 내렸다."], ["단비", "오른쪽 귀까지 막으면 아무 소리도 안 들려요. 무녀 때는 그게 무서웠는데 요즘은 가끔 이러고 있어요. ……이제 그만할래요. {이름} 님 발소리는 듣고 싶거든요."]]'::jsonb),
+('danbi', 'first_night', 2, '[["", "어둠 속에서 짤랑 하고 방울 소리가 났다. 단비가 소매 속 방울을 오른손으로 꾹 누르며 이불 위에서 몸을 일으켰다."], ["단비", "뒤척이다가 방울을 울렸나 봐요. 깨우셨어요? 기왕 깬 김에 엿 한 조각 드실래요? 밤에 먹으면 더 달거든요. 대장님한텐 이 얘기도 하지 마세요."]]'::jsonb),
+('danbi', 'w_clear', 1, '[["", "볕이 쨍쨍했다. 단비가 마당에 소쿠리를 줄지어 펼쳐 놓고 생선포를 뒤집고 있었다. 짭조름한 냄새가 담장 너머까지 퍼졌다."], ["단비", "이런 볕에 말려야 꼬들꼬들해져요. 엿 한 입, 생선포 한 입! 처음엔 {이름} 님이 만들어 주셨는데 이젠 저도 할 줄 알아요. 아직 그때 맛엔 조금 못 미치지만요."]]'::jsonb),
+('danbi', 'w_cloudy', 1, '[["", "구름이 해를 가려 마당이 서늘했다. 단비가 소매를 걷어붙이고 굳은 엿 덩이를 기둥 못에 걸어 오른손으로 길게 늘이고 있었다."], ["단비", "흐린 날이 엿 늘이기엔 딱이에요. 더우면 녹고 추우면 뚝 끊어지거든요. 저쪽 끝 좀 잡아 주세요. 같이 당겨야 하얗게 잘 늘어나요."]]'::jsonb),
+('danbi', 'w_rain', 1, '[["", "장대비가 쏟아져 처마 밑이 물안개로 뿌옜다. 단비가 엿 항아리를 하나씩 안아 들고 부엌 깊숙이 옮기고 있었다."], ["단비", "비가 오면 엿이 눅눅해져서 서로 달라붙어요. 장터에선 이런 날 항아리 지키느라 정신없죠. 오늘은 {이름} 님이 제 항아리 좀 봐주세요."]]'::jsonb),
+('danbi', 'w_rain', 2, '[["", "빗소리가 지붕을 가득 메웠다. 단비가 마루 오른쪽 끝에 앉아 왼쪽 귀를 처마 쪽으로 돌리고 있었다."], ["단비", "왼쪽 귀를 빗소리 쪽으로 돌리면 아무것도 안 들려요. 오른쪽으로 들으면 빗소리도, {이름} 님 숨소리도 들리고요. ……전 이쪽이 좋네요."]]'::jsonb),
+('danbi', 'w_drizzle', 1, '[["", "실비가 소리 없이 마당을 적셨다. 단비가 처마 밑 화덕에 작은 솥을 걸고 생강을 저미고 있었다. 오른손 칼질이 느리지만 고르게 이어졌다."], ["단비", "이런 가랑비가 더 무서워요. 젖는 줄도 모르고 돌아다니다 감기 들거든요. 생강엿 고아 둘 테니 돌아오시면 한 숟갈 드세요."]]'::jsonb),
+('danbi', 'w_fog', 1, '[["", "안개가 짙게 내려 담장 너머가 사라졌다. 마당 한가운데서 방울 소리가 짤랑 울렸다. 단비가 소매에서 방울을 꺼내 흔들고 있었다."], ["단비", "안개가 끼면 장터 엿장수들은 방울부터 흔들어요. 소리 듣고 찾아오라고요. {이름} 님도 정표 방울 흔들어 보세요. 제가 찾아갈게요. 오른쪽에서 부르시는 건 잊지 마시고요."]]'::jsonb),
+('danbi', 'w_wind', 1, '[["", "마른 바람이 마당의 흙먼지를 휘감아 올렸다. 단비가 눈을 찡그리며 머리카락을 오른손으로 붙잡았다. 끈을 이로 물고 머리를 묶으려다 바람에 끈을 놓쳤다."], ["단비", "이 바람, 백골 장터랑 꼭 같네요. 붉은 모래만 안 날리지. 어, 끈 날아갔다! {이름} 님, 머리 좀 묶어 주실래요? 한 손으로는 영 안 되네요."]]'::jsonb),
+('danbi', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 단비가 마당 눈 위에 뜨거운 조청을 숟가락으로 똑똑 떨어뜨리고 있었다. 떨어진 조청이 눈 위에서 금빛 구슬처럼 굳었다."], ["단비", "눈엿이에요! 언년 할머니가 겨울마다 만들어 주셨죠. 눈 위에 떨어뜨려야 금방 굳어요. 하나 드셔 보세요. 차갑고 달아서 자꾸 손이 가요."]]'::jsonb),
+('danbi', 'w_bloodmist', 1, '[["", "붉은 안개가 마당 바닥을 기었다. 단비가 문간 문설주에 제 방울을 매달고 손끝으로 한 번 흔들었다. 축문은 붙이지 않았다."], ["단비", "무녀 때는 이런 날 축문을 외웠어요. 이젠 들리지 않아서 외울 수 없지만요. 방울은 걸어 둘래요. 소리는 멀리 가니까. ……오늘 나가실 거면 저부터 깨워 주세요."]]'::jsonb),
+('danbi', 'me_yohwa', 1, '[["", "단비의 웃음이 뚝 끊겼다. 단비가 내 오른쪽으로 바짝 다가와 앉더니 소매에서 방울을 꺼내 내 귓가에서 흔들었다. 짤랑, 짤랑. 단비가 방울 소리 사이사이 내 이름을 불렀다."], ["단비", "{이름} 님. ……제 말 들리세요? 축문은 더는 못 외워도 이름은 부를 수 있어요. 방울 소리 따라오세요. 저 여기 있어요. 오른쪽에요."]]'::jsonb),
+('danbi', 'me_erosion_80', 1, '[["", "단비가 내 낯빛을 보고 들고 있던 엿 가락을 그대로 툭 떨어뜨렸다. 단비가 부엌으로 뛰어가 솥에 물을 붓는 소리가 콸콸 들렸다."], ["단비", "움직이지 말고 앉아 계세요! 약선탕부터 끓여 올게요. 정화도 하셔야 하고요. 오늘은 엿 못 드려요. 이거 다 드시기 전까진요."]]'::jsonb),
+('danbi', 'me_erosion_55', 1, '[["", "단비가 엿 한 조각을 내 입에 쏙 넣어 주더니 내가 씹는 얼굴을 빤히 지켜보았다."], ["단비", "엿이 평소만큼 달지 않죠? 요기가 스미면 단맛도 덜 느껴진다고 언년 할머니가 그러셨어요. 정화하고 다시 드셔 보세요. 그땐 제대로 달 거예요."]]'::jsonb),
+('danbi', 'me_erosion_30', 1, '[["", "단비가 내 등 뒤로 돌아가 손바닥으로 등을 툭, 툭, 툭 세 번 쳤다."], ["단비", "액막이 흉내 좀 냈어요. 무녀 때 버릇이 남아서요. 효험은 없으니 정화는 꼭 하셔야 해요. 그래도 세 번이나 두드려 드렸으니 조금 든든하지 않으세요?"]]'::jsonb),
+('danbi', 'me_hp_low', 1, '[["", "내 얼굴을 본 단비가 품에서 기름종이 꾸러미를 꺼내 반쪽 엿을 내 입에 밀어 넣었다. 내가 씹는 동안 단비가 오른손을 내 팔에 얹고 기다렸다."], ["단비", "넘어가세요? ……그럼 아직은 괜찮은 날인가 봐요. 그래도 오늘은 누워 계세요. 국 끓여 올게요. 칼질은 느려도 국 하나는 잘 끓이거든요."]]'::jsonb),
+('danbi', 'me_rescued', 1, '[["", "마당에 들어서자 부엌에서 냄비 뚜껑이 덜그럭거렸다. 단비가 국자를 든 채 뛰어나오다 나를 보고 우뚝 섰다. 눈가가 벌겋고 입가는 웃고 있었다."], ["단비", "쓰러지셨단 말 듣고 국부터 끓였어요. 가만있으면 손이 떨려서요. ……웃다가 울 뻔했네요. 요즘은 안 그러는데, 오늘은 좀 어렵네요."]]'::jsonb),
+('danbi', 'me_exp_back', 1, '[["", "대문을 들어서자 단비가 엿 한 가락을 꺾지 않은 채 통째로 내밀었다. 길이가 내 팔뚝만 했다."], ["단비", "오늘은 통째로 드세요! 무사히 돌아오신 날엔 안 꺾기로 했거든요. 대장님께는 살짝 비밀로 해 주세요. 대장님도 통째로 받으신 건 딱 한 번뿐이니까요."]]'::jsonb),
+('danbi', 'me_far_travel', 1, '[["", "단비가 내 보따리를 오른손으로 받아 마루에 내려놓더니 눈을 반짝였다."], ["단비", "꽤 멀리 다녀오셨나 봐요! 거긴 뭘 먹어요? 단 거요, 짠 거요? 국물도 있어요? 천천히 얘기해 주세요. 오른쪽 귀로 잘 들을게요. 괜찮은 건 엿판에도 올려 보려고요."]]'::jsonb),
+('danbi', 'me_levelup', 1, '[["", "단비가 대문 쪽으로 몸을 돌리더니 장터에서 손님 부르듯 목청을 높였다."], ["단비", "자, 모두 들으세요! 오늘 우리 {이름} 님이 또 한 뼘 자라셨답니다! ……어라, 아무도 없네. 괜찮아요. 이 목청이면 장터까지 들렸을걸요?"]]'::jsonb),
+('danbi', 'home_portrait', 1, '[["", "단비가 벽에 걸린 제 초상을 보다가 오른손으로 입을 가리고 웃었다."], ["단비", "그림 속에서도 엿 장수 단비네요. 무녀 옷이 아니라 다행이에요. 그 옷으로 그려 놓으셨으면 떼어 달라고 졸랐을 거예요."]]'::jsonb),
+('danbi', 'home_pet', 1, '[["", "동무가 단비 발치에서 앞발로 입을 연신 비비고 있었다. 이빨에 엿이 들러붙은 것이었다. 단비가 배를 잡고 웃었다."], ["단비", "엿 부스러기 하나 줬더니 저 난리예요! 이빨에 붙었나 봐요. 괜찮아, 금방 녹아. 장터 꼬맹이들도 다 저랬거든요."]]'::jsonb),
+('danbi', 'home_new_furn', 1, '[["", "단비가 엿 항아리를 안고 와 새 가구 위에 올려 보더니 고개를 갸웃했다. 다시 내려서 옆에 놓아 보았다."], ["단비", "항아리 올려놓기엔 딱 좋은 높이인데, 엿이 묻으면 아깝겠어요. 이렇게 예쁜 가구에 말이에요. 그냥 옆에 둘래요. 오른쪽에요."]]'::jsonb),
+('danbi', 'home_mate', 1, '[["", "단비가 엿 반쪽 하나를 기름종이에 싸 들고 마루 안쪽을 가리키며 생긋 웃었다."], ["단비", "{이름} 님 정인 드릴 반쪽이에요. 아까 제 왼쪽에서 말씀하셔서 못 들었거든요. 죄송해서요. 다음엔 오른쪽에서 불러 달라고 전해 주시겠어요?"]]'::jsonb),
+('danbi', 't_days_7', 1, '[["", "단비가 엿판 서랍에서 꺼낸 기름종이 꾸러미 일곱 개를 마루에 주르륵 늘어놓았다."], ["단비", "이레 동안 챙겨 둔 반쪽이에요. 날마다 {이름} 님 몫으로 싸 뒀죠. 몇 개는 제가 슬쩍 먹었지만요. 세어 보진 마세요. 일곱 개라고 해 두자고요."]]'::jsonb),
+('danbi', 't_days_30', 1, '[["", "단비가 장부 한 권을 펼쳐 보였다. 반듯한 글씨 사이로 비뚜름한 글씨가 한 줄씩 끼어 있었다."], ["단비", "대장님 엿판 장부예요. 장 쉬는 날마다 제가 한 줄씩 적었어요. 「{이름} 님 별채, 엿 고음」이라고요. 대장님도 보셨는데 안 지우시더라고요. 허락하신 거겠죠?"]]'::jsonb),
+('danbi', 't_days_100', 1, '[["", "단비가 소반 위에 엿 한 가락과 약선탕 두 그릇을 차려 놓았다. 엿 가락은 꺾지 않은 채였다."], ["단비", "벌써 백 날이에요! 오늘은 같이 엿을 꺾어요. 저는 이쪽, {이름} 님은 저쪽 끝을 잡으세요. 어디서 똑 부러지든 그게 우리 반쪽이에요."]]'::jsonb),
+('danbi', 't_long_away', 1, '[["", "단비가 기름종이 꾸러미 세 개를 내 손바닥에 하나씩 올려놓았다. 셋째 꾸러미는 엿이 녹아 종이에 들러붙어 있었다."], ["단비", "사흘 치 반쪽이에요. 하나는 기다리다 녹아 버렸네요. 늦으셨으니까 그것도 드셔야 해요. 그게 벌이에요."]]'::jsonb),
+('danbi', 't_long_away', 2, '[["", "단비가 대문 기둥에 걸린 나무패를 뒤집어 보였다. 「오른쪽 비었음」이라고 비뚜름하게 적혀 있었다."], ["단비", "사흘 내내 이걸 걸어 뒀어요. 지나가던 할머니가 보고 제 오른쪽에 서 주시더라고요. 고맙긴 했는데…… {이름} 님이 아니잖아요."]]'::jsonb),
+('danbi', 't_last_today', 1, '[["", "단비가 엿 항아리 뚜껑을 덮고 오른손 엄지로 뚜껑 위를 한 번 쓸었다."], ["단비", "오늘은 엿판 닫을게요. 장사꾼은 마감하면 목을 아껴야 하거든요. 다음 장날에도 손님을 불러야죠. {이름} 님도 또 오실 거죠?"]]'::jsonb),
+('danbi', 'idle', 1, '[["", "단비가 엿 한 가락을 마루 모서리에 대고 똑 꺾었다. 두 조각의 크기가 확연히 달랐다. 단비가 큰 쪽을 내게 내밀었다."], ["단비", "한 손으로 꺾으면 꼭 이렇게 크기가 달라져요. 큰 건 {이름} 님 드세요. 일부러 그런 건 아니에요. ……반쯤은요."]]'::jsonb),
+('danbi', 'idle', 2, '[["", "단비가 마루의 방석 둘을 이리저리 바꿔 놓더니 하나를 손바닥으로 탁탁 두드렸다."], ["단비", "{이름} 님은 여기 앉으세요. 그래야 제가 오른쪽 귀로 들을 수 있거든요. 별채에 오면 이 자리부터 맞춰야 마음이 편해요."]]'::jsonb),
+('danbi', 'idle', 3, '[["", "단비가 맞은편 육포 좌판 아낙 흉내를 내며 허리에 손을 짚었다."], ["단비", "「엿만 먹고 가는 손님은 손님도 아니여!」 아주머니가 늘 그러세요. 그러면서 우리 엿은 제일 많이 사 가시죠. 육포랑 먹으면 그렇게 맛있대요."]]'::jsonb),
+('danbi', 'idle', 4, '[["", "단비가 소매에서 방울을 꺼내 기름종이로 반들반들 닦았다. 오래 써서 귀퉁이가 닳아 있었다."], ["단비", "무녀 때부터 달고 다닌 방울이에요. 축문은 이제 못 듣지만 이건 차마 못 버리겠더라고요. 요즘은 엿판에서 손님 부를 때 흔들어요."]]'::jsonb),
+('danbi', 'idle', 5, '[["", "단비가 갑자기 내 오른쪽에서 왼쪽으로 자리를 옮겨 앉았다. 내가 말을 걸자 단비가 고개를 갸웃했다."], ["단비", "네? 뭐라고 하셨어요? 하하, 장난이에요. 왼쪽에 앉으면 이렇게 된다니까요. 이제 아셨죠? 저 혼자 왼쪽에 두지 마세요."]]'::jsonb),
+('danbi', 'idle', 6, '[["", "단비가 화로 앞에 쪼그려 앉아 먹빛으로 굳은 왼손을 불 쪽으로 내밀었다. 한참을 내밀고 있다가 오른손으로 왼손등을 만져 보았다."], ["단비", "왼손은 뜨거운지 차가운지도 몰라요. 오른손으로 만져 봐야 알죠. 아, 따뜻하네. 너무 오래 쬐었나 봐요."]]'::jsonb),
+('danbi', 'idle', 7, '[["", "단비가 엿판 나무패를 새로 깎아 「단비네」 세 글자를 쓰고 있었다. 마지막 획이 또 오른쪽으로 기울었다."], ["단비", "반듯하게 써 보려고 했는데 또 기울었네요. 뭐, 됐어요. 이게 단비네 글씨죠. 손님들도 이 글씨 보고 찾아오시니까요."]]'::jsonb),
+('danbi', 'idle', 8, '[["", "단비가 마당 평상에 엎드려 엿 항아리 뚜껑의 작은 손자국을 엄지로 쓸고 있었다."], ["단비", "언년 할머니 손녀가 아기 때 찍은 손자국이래요. 이젠 장터에서 엿 사 먹는 꼬마가 됐죠. 저보다 손이 커졌다니까요."]]'::jsonb),
+('danbi', 'idle', 9, '[["", "단비가 나에게 생선포 한 조각을 내밀더니 저도 한 조각을 입에 물었다."], ["단비", "누가 더 오래 씹나 내기해요. 어라, 벌써 삼키셨어요? 생선포는 오래 씹어야 단맛이 나는데. {이름} 님이 지셨네요!"]]'::jsonb),
+('danbi', 'idle', 10, '[["", "단비가 별채 부엌 솥을 두드리며 흐뭇하게 웃었다. 솥뚜껑 손잡이에 붉은 끈이 매여 있었다."], ["단비", "솥에도 이름을 붙였어요. 「둘째 솥」이에요. 첫째는 장터에 있거든요. 붉은 끈은 제 솥이란 표시고요. {이름} 님 솥인 건 저도 알죠!"]]'::jsonb),
+('danbi', 'idle', 11, '[["", "단비가 손가락을 하나씩 꼽으며 무언가를 셌다. 오른손 손가락이 다 접히자 고개를 갸웃했다."], ["단비", "다음 장까지 며칠 남았나 세는데, 손가락이 다섯 개라 자꾸 헷갈려요. {이름} 님 손가락도 좀 빌려주시겠어요?"]]'::jsonb),
+('danbi', 'idle', 12, '[["", "단비가 엿을 오도독 깨물다가 나를 곁눈질했다."], ["단비", "오늘은 엿이 술술 넘어가요. 괜찮은 날이네요. 이상하게 {이름} 님 별채에 오는 날은 거의 다 그렇더라고요."]]'::jsonb),
+('danbi', 'idle', 13, '[["", "단비가 대문 밖을 내다보다 지나가는 장꾼에게 손을 흔들었다. 장꾼이 단비를 알아보고 꾸벅 인사했다."], ["단비", "백골 장터에서 매운탕 사 드시던 장꾼이에요. 여기서도 절 알아보시네요. 저, 이제 제법 이름난 엿 장수인가 봐요."]]'::jsonb),
+('danbi', 'idle', 14, '[["", "단비가 기름종이를 반듯하게 접는 법을 보여 주겠다며 종이 한 장을 마루에 펼쳤다. 오른손으로 귀퉁이를 접고, 접은 데를 턱으로 눌렀다."], ["단비", "기름종이는 이렇게 세 번 접어야 엿이 안 새요. 턱으로 누르는 건 따라 하지 마세요. 저야 한 손이 모자라니까 그러는 거고요."]]'::jsonb),
+('danbi', 'idle', 15, '[["", "단비가 마루 끝에 앉아 오른쪽 귀를 내 쪽으로 기울인 채 기다렸다. 내가 아무 말도 하지 않자 단비가 입을 삐죽였다."], ["단비", "무슨 얘기라도 해 주세요. 오른쪽 귀가 심심하대요. 오늘 뭘 드셨는지부터 들어 볼까요?"]]'::jsonb),
+('danbi', 'idle', 16, '[["", "단비가 엿 반쪽을 기름종이에 싸서 내게 내밀었다. 꾸러미 겉에 「대장님」이라고 적혀 있었다."], ["단비", "이거 대장님께 좀 전해 주세요. 제가 드리면 「짐 수 세는 중이오」 하시면서 안 받으시거든요. {이름} 님이 드리면 다를지도 몰라요. 귀 끝 빨개지시는지도 꼭 봐주시고요."]]'::jsonb),
+('danbi', 'idle', 17, '[["", "단비가 엿 고는 솥 앞에서 콧잔등에 땀을 송글송글 맺고 있었다. 주걱을 젓는 오른팔이 조금 떨렸다."], ["단비", "엿은 사람 등 쓸어 주듯 저어야 해요. 너무 세면 눋고, 살살 하면 안 엉기거든요. {이름} 님도 한번 저어 보세요. 어머, 언년 할머니만큼 잘하시네!"]]'::jsonb),
+('danbi', 'idle', 18, '[["", "단비가 화덕 재 속에서 고구마 하나를 꺼내 호호 불었다. 껍질을 오른손 손톱으로 벗겨 반을 갈랐다."], ["단비", "엿 고고 남은 불에 고구마를 묻어 뒀어요. 장터에선 엿장수들이 이렇게 새참을 먹거든요. 반 드세요. 이것도 반쪽씩 나눠야죠."]]'::jsonb),
+('danbi', 'idle', 19, '[["", "단비가 별채 마당 흙을 한 줌 쥐었다가 손가락 사이로 흘려보냈다."], ["단비", "여긴 흙이 까맣네요. 장터는 온통 붉은 모래거든요. 처음엔 낯설었는데 이젠 좋아요. 신발 속에 모래가 안 들어오니까요."]]'::jsonb),
+('danbi', 'idle', 20, '[["", "단비가 엿 한 조각을 내 입에 넣어 주고 내 얼굴을 빤히 보았다."], ["단비", "오늘 엿 맛은 어때요? 조청을 평소보다 좀 더 졸였거든요. 말씀 안 하셔도 표정에 다 보여요. 손님 얼굴 살피는 건 무녀 때부터 배웠으니까요."]]'::jsonb),
+('danbi', 'idle', 21, '[["", "단비가 마루에 앉아 오른손을 가만히 내려다보았다."], ["단비", "축문 첫 줄을 떠올리려는데 도무지 생각이 안 나요. 들리지 않으니 조금씩 잊히나 봐요. ……그래도 엿 고는 법은 하나도 안 잊었어요."]]'::jsonb),
+('danbi', 'idle', 22, '[["", "단비가 대문 앞에 작은 좌판을 펼치고 목청을 가다듬었다. 지나가는 사람은 아무도 없었다."], ["단비", "엿 사세요! 단비네 엿이에요! 한 입엔 달고 두 입엔 짭짤한 엿! 하하, 연습 중이에요. 장날에 목소리가 안 나오면 큰일이잖아요."]]'::jsonb),
+('danbi', 'idle', 23, '[["", "단비가 엿판 장부 한 귀퉁이에 무언가를 몰래 적다가 나와 눈이 마주쳤다."], ["단비", "「오늘 {이름} 님이랑 고구마 반쪽」이라고 적었어요. 대장님 장부에 일기 쓴 걸 들키면 혼날 텐데. 그래도 대장님은 안 지우시더라고요."]]'::jsonb),
+('danbi', 'idle', 24, '[["", "단비가 손님 이름 외우는 법을 알려 주겠다며 손가락으로 오른쪽 귀를 가리켰다."], ["단비", "오른쪽으로 들은 이름은 잘 기억해요. 왼쪽에선 아예 안 들리니까요. 그래서 단골손님도 늘 오른쪽에서 말씀하시죠. {이름} 님도 처음부터 그러셨고요."]]'::jsonb),
+('danbi', 'idle', 25, '[["", "단비가 마루에 엿 가락 둘을 엇갈려 놓고 무언가를 만들고 있었다. 엿 가락이 비뚤배뚤 사람 모양이 되었다."], ["단비", "이건 대장님이고 이건 {이름} 님이에요. 대장님도 제 오른쪽, {이름} 님도 오른쪽…… 어라, 자리가 모자라네. 대장님, 조금만 비켜 서세요!"]]'::jsonb),
+('danbi', 'idle', 26, '[["", "단비가 별채 문간에 걸린 내 주홍 방울 정표를 손끝으로 건드려 울렸다. 소매 속 방울을 마주 흔들었다."], ["단비", "두 방울 소리, 아직도 똑같죠? 대장간 아저씨가 열한 개를 흔들어 보고 골라 주신 거예요. 가끔 맞춰 들어 봐요. 혹시 달라졌을까 싶어서요."]]'::jsonb),
+('danbi', 'idle', 27, '[["", "단비가 사마겸 대호법 흉내를 내며 어깨를 쫙 펴고 굵은 목소리를 냈다."], ["단비", "「엿 장수 주제에 장사를 잘하는구나!」 하고 칭찬하실 줄 알았는데 그냥 지나가셨어요. 대호법님은 그게 칭찬이라네요. 참 어렵죠?"]]'::jsonb),
+('danbi', 'idle', 28, '[["", "단비가 오른쪽 손바닥을 펴 보였다. 손바닥 가운데 엿이 굳어 하얗게 달라붙어 있었다."], ["단비", "엿 장수 손바닥은 늘 끈적해요. 씻어도 단내가 남거든요. {이름} 님 손에도 조금 묻혀 드릴까요? 그럼 한동안 제 생각 나실 텐데."]]'::jsonb),
+('danbi', 'idle', 29, '[["", "단비가 엿판에서 가져온 붉은 천 조각을 마루 기둥에 묶었다. 매듭은 이로 물어 당겨 지었다."], ["단비", "장터 엿판마다 이 붉은 천을 묶어요. 「오늘 장 섬」이란 뜻이죠. 여기도 단비네 지점이니까요. 오늘 손님은 {이름} 님 한 분이고요."]]'::jsonb),
+('danbi', 'idle', 30, '[["", "단비가 마루에 모로 누워 오른쪽 귀를 베개에 묻었다. 세상 소리가 다 막혔는지 단비가 눈을 깜박였다. 한참 뒤 단비가 몸을 뒤집어 왼쪽 귀를 베고 누웠다."], ["단비", "오른쪽 귀를 베고 누우면 세상 소리가 싹 사라져요. 낮잠 잘 땐 편하죠. 그런데 오늘은 반대로 누울래요. {이름} 님 목소리 들으면서 자려고요."]]'::jsonb),
+('danbi', 'gift_field', 1, '[["", "단비가 그릇을 받아 코를 대고 킁 냄새를 맡았다. 오른손 새끼손가락으로 국물을 찍어 맛을 보았다."], ["단비", "음, 간이 딱 맞네요. 장꾼들한테 팔아도 되겠어요. 하지만 이건 제가 먹을래요. 선물로 받은 거잖아요!"]]'::jsonb),
+('danbi', 'gift_field', 2, '[["", "단비가 받은 음식을 엿판 장부 위에 올려놓고 한참 들여다보았다."], ["단비", "이거 어떻게 만드셨어요? 차근차근 알려 주세요. 오른쪽에서 말씀해 주시고요. 단비네 새 반찬으로 내도 될까요? 이름은 「{이름} 님네」로 지을래요."]]'::jsonb),
+('danbi', 'gift_hq', 1, '[["", "단비가 선물을 받아 들고 손바닥 위에서 이리저리 돌려 보다가 오른손으로 입을 막았다."], ["단비", "장터에 내놓으면 아주머니들이 줄을 서겠는데요? 그래도 안 팔래요. 제가 갖고 있기에도 아까울 만큼 좋은걸요."]]'::jsonb),
+('danbi', 'gift_other', 1, '[["", "단비가 선물을 받아 위아래로 흔들어 보았다. 소매 속 방울이 같이 짤랑 울렸다."], ["단비", "이건 먹는 건 아니죠? 엿 장수라 그런가 뭐든 먹을 수 있나부터 보게 돼요. 먹는 게 아니어도 좋아요. 엿판 옆에 둘게요."]]'::jsonb),
+('danbi', 'gift_other', 2, '[["", "단비가 선물을 기름종이에 싸서 엿판 서랍에 넣었다. 반쪽 엿 꾸러미들 옆이었다."], ["단비", "아끼는 것들은 다 이 서랍에 넣어요. 반쪽 엿도 여기 있고요. {이름} 님 선물도 잘 넣어 둘게요."]]'::jsonb),
+('danbi', 'gift_reward', 1, '[["", "단비가 뚜껑 덮은 그릇 두 개를 보자기에 싸서 내 앞에 내밀었다. 보자기 매듭이 이로 묶은 듯 단단했다."], ["단비", "영맥 약선탕이에요. 언년 할머니께 배운 대로 두 그릇 끓였어요. 오늘은 반쪽씩 안 나눠요. 둘 다 {이름} 님 드세요."]]'::jsonb),
+('danbi', 'gift_reward', 2, '[["", "단비가 약선탕 두 그릇을 건네며 그릇 뚜껑마다 숯으로 비뚜름하게 무언가를 적었다."], ["단비", "하나는 「아플 때」, 하나는 「안 아플 때」예요. 아플 땐 그쪽부터 드시고, 안 아플 땐 다른 걸 드세요. 맛은 똑같아도 받는 기분은 다르잖아요."]]'::jsonb),
+('danbi', 'mate_hanseol', 1, '[["", "한설에게 엿 반쪽을 건네고 돌아온 단비가 오른손으로 입을 가리고 웃으며 내게 속삭였다."], ["단비", "감찰관님이 엿을 받으셨다니까요! 명등제 때도 그렇게 엄하셨는데요. 남은 반쪽은 누구 몫이냐고 물으시길래 그냥 웃었어요. ……{이름} 님 거라고 하면 장부에 적으실 것 같아서요."]]'::jsonb),
+('danbi', 'mate_yeoul', 1, '[["", "여울의 오른쪽에 앉았다 온 단비가 내 오른쪽으로 와 앉으며 말했다."], ["단비", "저 언니는 왼손에 장갑을 끼고, 저는 왼쪽 귀가 안 들리잖아요. 그래서 서로 오른쪽에 앉으면 딱 맞아요. ……이렇게 잘 맞는 짝은 처음 봤어요."]]'::jsonb),
+('danbi', 'mate_wolha', 1, '[["", "엽전을 세는 월하를 보던 단비가 손가락 마디를 꼽다가 내게 고개를 돌렸다."], ["단비", "월하 아저씨는 명등제 때 그 아이 이름을 저한테 맡기셨어요. 판 사람이 부르면 안 될 것 같다고요. ……그래서 아저씨께는 엿을 통째로 드려요. 제가 받은 것에 비하면 반쪽으론 모자라니까요."]]'::jsonb),
+('danbi', 'mate_daon', 1, '[["", "다온에게 엿을 통째로 쥐여 준 단비가 내 쪽으로 돌아와 키득거렸다."], ["단비", "꼬맹이에겐 엿을 통째로 줬어요. 장터 꼬맹이들 이마 닦아 주던 손이라서요. 그런데 그걸 반으로 꺾더니 제 몫을 주지 뭐예요. ……누가 그렇게 가르쳤을까요?"]]'::jsonb),
+('danbi', 'mate_hisu', 1, '[["", "희수에게 말을 걸러 갔다가 돌아온 단비가 내 오른쪽에 서며 말했다."], ["단비", "서리님 글씨는 대장님처럼 반듯하더라고요. 우리 엿판 장부를 보시면 놀라실걸요? 대장님 없는 날엔 제가 쓰는데…… 줄마다 오른쪽으로 기울어 있거든요."]]'::jsonb),
+('danbi', 'mate_unbi', 1, '[["", "단비가 문간의 여운비 쪽을 턱으로 가리키며 내 귀에 대고 키득거렸다."], ["단비", "우리 대장님, 여기만 오시면 귀 끝이 빨개지세요. 오늘도 「나쁘지 않소」를 벌써 두 번이나 하셨다니까요. 제가 다 세고 있었죠. ……이 말 들으시면 또 빨개지실걸요?"]]'::jsonb),
+('danbi', 'mate_cheongpa', 1, '[["", "청파의 등을 두드려 주고 온 단비가 오른손을 털며 내 곁에 앉았다."], ["단비", "청파 씨는 저만 보면 단비 누님이라고 해요. 엿 장수한테 누님이라니요. 기침할 때 등을 두드려 주는 건 무녀 때 배운 것도 아니에요. ……그냥 저절로 손이 가더라고요."]]'::jsonb),
+('danbi', 'mate_galmae', 1, '[["", "갈매의 장작 더미에 무언가를 몰래 올려놓고 온 단비가 내게 손가락을 입에 대 보였다."], ["단비", "갈매 씨는 엿을 드릴 때마다 엽전을 내세요. 선물이라고 해도 소용없어요. 그래서 이번엔 장작 위에 몰래 뒀죠. ……누가 줬는지 모르면 셈도 못 하실 테니까요."]]'::jsonb),
+('danbi', 'mate_haram', 1, '[["", "하람에게 엿 반쪽을 건네고 돌아온 단비가 내게 엿 꺾는 시늉을 해 보였다."], ["단비", "하람 씨는 엿 꺾는 소리만 듣고도 제가 준 반쪽인 줄 알아요. 명등제 때 함께 이름을 불렀던 목소리도 기억하시고요. ……제 목소리가 좀 멀리 가잖아요."]]'::jsonb),
+('danbi', 'mate_munsu', 1, '[["", "문수 옆에서 한참 듣다 온 단비가 오른쪽 귀를 손으로 문지르며 내게 웃었다."], ["단비", "문수 씨는 말이 많아서 좋아요. 왼쪽 귀로 놓쳐도 금세 다시 말씀하시거든요. ……저한텐 더없이 편한 수다 상대예요. 제 입장에선요."]]'::jsonb),
+('unbi', 'bond_make', 1, '[["", "고찰 헛간 칼걸이의 붉은 술이 짧아져 있었다. 여운비가 작업대 앞에 앉아 칼자루에서 뽑은 붉은 실 몇 가닥으로 매듭을 짓고 있었다. 셋을 엇갈리고, 넷째에서 한 번 감아 돌렸다."], ["여운비", "앉으시오. 다 되어 가오. 수좌가 그러더이다. 술을 뽑아 놓으니 칼이 허전해 보인다고. ……칼이야 좀 허전해도 괜찮소."]]'::jsonb),
+('unbi', 'bond_make', 2, '[["", "여운비가 매듭 끝을 이로 끊고 술을 가지런히 빗어 내렸다. 내 손목을 끌어다 그 위에 붉은 술 매듭을 감았다. 매듭을 조이는 손가락이 단단했다."], ["여운비", "북령 매듭은 한 번 지으면 좀처럼 풀리지 않소. 장부엔 이미 「눈길 동무」라 적었으니, 이건 그 아래 찍는 도장이라 생각하시오."], ["여운비", "장터와 고찰을 오갈 때 당신 별채에도 들르겠소. 호송 길엔 쉬어 갈 굴이 하나씩 있는 법이오. 이젠 그곳이 내 쉼터요. ……불침번 앞 반은 내가 서겠소. 약속했잖소."]]'::jsonb),
+('unbi', 'bond_again', 1, '[["", "여운비가 손바닥만 한 장부를 펼쳐 보였다. 끊던 날 이후의 줄마다 오른쪽 칸이 비어 있었다. 여운비는 오늘 날짜 줄의 오른쪽 칸에 붓을 대고 내 이름을 다시 적었다."], ["여운비", "빈칸도 그대로 남겨 뒀소. 함께 걷지 않은 날도 길의 일부니까. ……오늘부터는 다시 이름을 적겠소."]]'::jsonb),
+('unbi', 'bond_break', 1, '[["", "여운비는 내 손목에서 붉은 술 매듭을 풀었다. 북령 매듭을 푸는 데 한참이 걸렸다. 다 푼 술을 손바닥에 올려놓고 한동안 내려다보았다."], ["여운비", "안 풀린다 큰소리쳤는데, 결국 풀리는구려. ……매듭을 맨 손으로 풀었으니 그럴 수밖에."]]'::jsonb),
+('unbi', 'bond_break', 2, '[["", "여운비가 술을 품에 넣고 장부를 펼쳤다. 오늘 줄의 오른쪽 칸을 비워 둔 채 붓을 거두었다."], ["여운비", "장부는 그대로 두겠소. 함께 걸었던 날까지 없던 일이 되는 건 아니니까. ……고개는 혼자 넘지 마시오. 동무 사이가 아니어도 그건 지켜야 하오."]]'::jsonb),
+('unbi', 'first_dawn', 1, '[["", "날이 막 밝아 오는 대문 밖에 여운비가 서 있었다. 오른 뺨을 동쪽으로 돌린 채 한참 꼼짝하지 않았다. 볼에 닿는 바람을 읽는 얼굴이었다."], ["여운비", "동풍이오. 낮까지는 맑겠지만 해 질 무렵엔 서쪽 바람이 거세지겠소. 나갈 거면 그전에 돌아오시오. 오늘 바람은 벌써 장부에 적어 뒀소."]]'::jsonb),
+('unbi', 'first_dawn', 2, '[["", "문간 자리에서 여운비가 칼을 무릎에 눕힌 채 앉아 있었다. 불침번을 선 밤 그대로였다. 내 발소리에 칼을 칼집에 밀어 넣고 일어섰다."], ["여운비", "앞 반을 섰소. 뒤 반엔 깨우려다가 그냥 내가 마저 섰고. 지난번엔 당신이 그랬잖소. 이제 빚은 갚은 셈이오."]]'::jsonb),
+('unbi', 'first_noon', 1, '[["", "마당 볕 아래에 썰매 끈 몇 줄이 사려져 있었다. 여운비가 끈 한 줄의 끝을 기둥에 걸고 몸을 뒤로 젖혀 힘껏 당기고 있었다."], ["여운비", "고찰에서 가져온 끈이오. 볕에 한번 힘껏 당겨 봐야 밤 추위에도 버틸지 알 수 있소. 저쪽 끝을 잡으시오. 더 세게!"]]'::jsonb),
+('unbi', 'first_noon', 2, '[["", "여운비가 마루 끝에서 기름종이 꾸러미 하나를 풀고 있었다. 반으로 꺾인 엿 반쪽이 나왔다. 여운비가 그것을 한참 내려다보다가 입에 넣었다."], ["여운비", "그 엿 장수가 길에서 먹으라며 쥐여 줬소. 일할 땐 안 먹는다 했더니 쉴 때 먹으라더이다. ……지금은 쉬는 중이오."]]'::jsonb),
+('unbi', 'first_dusk', 1, '[["", "서쪽 하늘이 붉게 물들자 여운비가 문간에 한쪽 무릎을 꿇고 내 신을 끌어다 놓았다. 신 끈을 손끝으로 한 번 당겨 보았다."], ["여운비", "밤길에 나갈 거요? 그럼 신 끈부터 다시 매시오. 낮에 맨 건 밤이면 헐거워지기 마련이오. 내가 매 주지는 않겠소. 어디, 제대로 매는지 보겠소."]]'::jsonb),
+('unbi', 'first_dusk', 2, '[["", "여운비가 칼을 허리에 차고 망토 깃을 여몄다. 장터로 내려갈 채비였다. 대문을 나서기 전 오른 뺨을 하늘로 들어 바람을 한 번 더 읽었다."], ["여운비", "장터에 내려가 그 애 장부나 봐야겠소. 이번에도 글씨가 죄다 오른쪽으로 기울었겠지. 밤바람이 북쪽으로 돌면 내일 아침엔 돌아오겠소."]]'::jsonb),
+('unbi', 'first_night', 1, '[["", "깊은 밤 문간에 작은 화로 불빛이 남아 있었다. 여운비가 칼을 무릎에 가로놓고 대문 쪽을 보고 앉아 있었다. 내가 다가가자 고개만 반쯤 돌렸다."], ["여운비", "지금은 내 불침번이오. 당신은 주무시오. 뒤 반이 되면 깨우겠소. ……정말 깨울지는 그때 가서 보겠지만."]]'::jsonb),
+('unbi', 'first_night', 2, '[["", "여운비가 등잔 아래서 손바닥만 한 장부를 펴 놓고 오늘 줄을 적고 있었다. 붓끝을 입김으로 녹이는 버릇은 방 안에서도 그대로였다."], ["여운비", "날짜, 바람, 길동무. 오늘도 길동무 칸엔 당신을 적었소. 한 발짝도 함께 걷지 않았지만 말이오. 같은 지붕 아래서 하루를 보냈으니 그걸로 됐소."]]'::jsonb),
+('unbi', 'w_clear', 1, '[["", "쨍한 볕 아래 여운비가 썰매 끈 사린 것을 마당에 펼쳐 놓고 옻칠 단지를 열었다. 시큼하고 알싸한 옻 냄새가 마당에 번졌다."], ["여운비", "볕 좋은 날 옻을 먹여야 끈이 고르게 마르오. 손에 묻으면 사흘은 가려우니 멀리 계시오. 구경까지 말리진 않겠소."]]'::jsonb),
+('unbi', 'w_cloudy', 1, '[["", "하늘이 낮게 깔렸다. 여운비가 마당 한가운데 서서 오른 뺨을 이리저리 돌려 보다가 미간을 찌푸렸다."], ["여운비", "볼에 닿는 바람이 무겁소. 밤엔 눈이 오겠구려. 내일 고개를 넘을 생각이었다면 미루시오. 때로는 돌아설 줄도 알아야 길을 아는 거요."]]'::jsonb),
+('unbi', 'w_rain', 1, '[["", "장대비가 마당을 때렸다. 여운비가 처마 밑에서 젖은 망토를 털더니 내 신을 뒤집어 바닥을 손가락으로 눌러 보았다. 갈대 엮은 바닥에서 물이 찔끔 배어 나왔다."], ["여운비", "갈대 바닥은 비에 약하오. 눈길에선 든든해도 진창에선 잘 미끄러지지. 오늘은 나무 굽 신을 신으시오. 없으면 집에 계시오."]]'::jsonb),
+('unbi', 'w_rain', 2, '[["", "빗소리가 지붕을 덮었다. 여운비가 칼을 뽑아 무릎 위에 올려놓고 마른 천으로 칼날의 습기를 천천히 닦아 냈다."], ["여운비", "비 오는 밤에 칼을 방치하면 금세 녹이 슬지. 호송대에선 이런 밤이면 모두 둘러앉아 칼을 닦았소. 심심하면 당신 칼도 가져오시오."]]'::jsonb),
+('unbi', 'w_drizzle', 1, '[["", "실비가 소리 없이 마당을 적셨다. 여운비가 망토도 걸치지 않고 마당 가운데 서서 얼굴을 들고 있었다. 오른 뺨의 흰 줄 위로 빗방울이 맺혔다 흘렀다."], ["여운비", "이런 가랑비는 볼에 닿는 감촉이 바람과 비슷하오. 헷갈리지 않으려면 가끔 이렇게 서 있어야 하오. ……우스워 보여도 어쩔 수 없소."]]'::jsonb),
+('unbi', 'w_fog', 1, '[["", "짙은 안개로 담장 너머가 사라졌다. 여운비가 아무렇지 않게 대문을 나섰다가 몇 걸음 만에 돌아와 내 앞에 섰다. 길을 잃은 기색이 없었다."], ["여운비", "안개가 끼니 모두 나만큼밖에 못 보는구려. 오늘은 내가 손해 볼 일이 적겠소. 장에 갈 거면 따라오시오. 바람을 읽어 길을 잡아 주겠소."]]'::jsonb),
+('unbi', 'w_wind', 1, '[["", "북쪽에서 매운 바람이 몰아쳤다. 여운비가 대문 밖에 버티고 서서 바람을 정면으로 맞고 있었다. 망토 자락이 뒤로 팽팽하게 펄럭였다."], ["여운비", "설피골 바람이 여기까지 불어왔구려. 고찰 썰매꾼들도 오늘은 고개를 안 넘겠소. 잘 판단한 거요. 바람에 물러선다고 부끄러울 건 없소."]]'::jsonb),
+('unbi', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 여운비가 고찰에서 끌고 온 빈 썰매 끈을 어깨에 걸고 마당에 서 있었다. 썰매 위에는 아무것도 실려 있지 않았다."], ["여운비", "타시오. 끈이 사람 하나 무게를 버티는지 시험해 봐야겠소. ……돌 대신 당신을 싣겠다는 것뿐이오. 괜한 생각은 마시오."]]'::jsonb),
+('unbi', 'w_bloodmist', 1, '[["", "붉은 안개가 마당 바닥을 기었다. 여운비가 대문 빗장을 지르고 칼을 뽑아 문간에 비스듬히 기대 세웠다. 칼자루 끝의 짧아진 붉은 술이 안개 속에서 검붉게 보였다."], ["여운비", "오늘은 해 지기 전부터 불침번을 서겠소. 앞 반, 뒤 반 가릴 때가 아니오. 당신은 방에 계시오. 이런 날엔 바람조차 제대로 읽히지 않소."]]'::jsonb),
+('unbi', 'me_yohwa', 1, '[["", "여운비가 손바닥만 한 장부를 꺼내 맨 앞 장부터 펼쳤다. 오른쪽 칸마다 적힌 내 이름을 손가락으로 짚어 가며 한 줄씩 소리 내어 읽었다. 목소리가 낮고 고르게 이어졌다."], ["여운비", "{이름}. 썰매가 기울던 날이오. {이름}. 눈보라 치는 굴에서 불을 지켰던 날도 있지. {이름}. ……모두 여기 적혀 있소. 북령 매듭은 쉽게 풀리지 않소. 끝까지 읽을 테니 듣고 있으시오."]]'::jsonb),
+('unbi', 'me_erosion_80', 1, '[["", "여운비가 칼자루 끝에 남은 붉은 술을 마저 뽑아 내 손목에 감았다. 정표 매듭 위에 한 겹을 더 지었다. 매듭을 조이는 손이 떨리지 않으려고 힘이 잔뜩 들어가 있었다."], ["여운비", "정화하기 전엔 문밖으로 나가지 마시오. 이 매듭도 풀지 말고. ……칼이야 술이 없어도 제 몫을 하오. 하지만 당신 손목엔 매듭이 있어야겠소."]]'::jsonb),
+('unbi', 'me_erosion_55', 1, '[["", "여운비가 내 쪽으로 오른 뺨을 돌리고 한동안 가만히 있었다. 바람을 읽을 때와 같은 얼굴이었다."], ["여운비", "당신 쪽에서 탁한 바람이 오오. 볼에 달라붙을 만큼 끈적하구려. 깊은 데 다녀왔소? 정화부터 하시오. 이런 바람은 장부에 남기고 싶지 않소."]]'::jsonb),
+('unbi', 'me_erosion_30', 1, '[["", "여운비가 장부를 펼쳐 오늘 줄의 바람 칸에 붓을 댔다가 멈췄다. 나를 한 번 보고 나서야 한 글자를 적었다."], ["여운비", "「흐림」이라 적었소. 날씨가 아니라 당신 상태 말이오. 아직은 그 정도지만, 더 나빠지기 전에 정화하시오."]]'::jsonb),
+('unbi', 'me_hp_low', 1, '[["", "여운비가 말없이 내 앞에 한쪽 무릎을 꿇더니 신 끈을 풀어 신을 벗겼다. 내 발을 화로 쪽으로 돌려놓고 손바닥으로 발등을 감쌌다."], ["여운비", "호송대에선 쓰러질 듯한 사람의 신부터 벗기오. 발이 얼면 더는 못 걸으니까. ……여기가 춥지 않다는 건 아오. 그래도 잠깐 이대로 계시오."]]'::jsonb),
+('unbi', 'me_rescued', 1, '[["", "대문을 들어서자 문간 섬돌 위에 칼이 칼집째 가로놓여 있었다. 여운비가 그 옆에 망토를 깔고 앉아 있었다. 언제부터 앉아 있었는지 망토 자락에 밤이슬이 하얗게 앉아 있었다."], ["여운비", "장터에서 쓰러졌다는 소식을 들었소. 고찰로 가던 길을 돌려 여기로 왔지. ……막상 와 보니 기다리는 것 말곤 할 수 있는 게 없더이다. 불침번이나 서던 사람이라."]]'::jsonb),
+('unbi', 'me_exp_back', 1, '[["", "여운비가 대문 앞에서 장부를 펴 든 채 나를 맞았다. 내 머리끝부터 발끝까지를 왼 눈으로 천천히 훑으며 손가락을 하나씩 접었다."], ["여운비", "팔 둘, 다리 둘, 신도 두 짝. 빠진 것 없이 돌아왔구려. 호송대에선 돌아온 사람을 이렇게 세었소. 하나라도 모자라면 장부를 덮을 수 없었지. 오늘은 마음 놓고 덮겠소."]]'::jsonb),
+('unbi', 'me_far_travel', 1, '[["", "여운비가 장부를 펼쳐 붓을 들고 나를 기다렸다. 내가 말을 꺼내기도 전에 먼저 물었다."], ["여운비", "그곳 바람은 어느 쪽에서 불었소? 아침과 저녁엔 달랐소? 길 이야기는 바람부터 듣겠소. 그다음엔 누구와 걸었는지, 뭘 먹었는지 차례로 말해 보시오."]]'::jsonb),
+('unbi', 'me_levelup', 1, '[["", "여운비가 내 걸음을 한참 보더니 다가와 내 신 끈을 풀었다가 한 고리 더 조여 다시 맸다."], ["여운비", "걸음이 전과 다르오. 빨리 걷기 시작하면 신 끈부터 느슨해지기 마련이지. ……나쁘지 않소. 그거면 됐소."]]'::jsonb),
+('unbi', 'home_portrait', 1, '[["", "여운비가 고개를 왼쪽으로 크게 돌려 벽의 제 초상을 보았다. 오른쪽에 걸려 있어서 그렇게 해야 보였다."], ["여운비", "하필 내가 못 보는 쪽에 걸었구려. ……나무라는 건 아니오. 그 자리가 맞소. 내 오른쪽은 당신에게 맡겼잖소."]]'::jsonb),
+('unbi', 'home_pet', 1, '[["", "동무가 여운비의 오른쪽 발치에 소리 없이 앉아 있다가 꼬리로 망토 자락을 쳤다. 여운비가 화들짝 칼자루를 쥐었다가 동무를 보고 손을 풀었다."], ["여운비", "……저 녀석도 내 오른쪽을 아는 모양이오. 호송대 개들도 꼭 그쪽으로 다가왔지. 사람 놀래키는 솜씨가 제법이구려."]]'::jsonb),
+('unbi', 'home_new_furn', 1, '[["", "여운비가 새 가구 모서리를 두 손으로 잡고 흔들어 보았다. 꿈쩍하지 않자 이번엔 체중을 실어 밀어 보았다."], ["여운비", "꿈쩍도 않는구려. 가구든 끈이든 직접 당겨 봐야 마음이 놓이오. 이 정도면 믿고 앉아도 되겠소."]]'::jsonb),
+('unbi', 'home_mate', 1, '[["", "여운비가 마루 안쪽에서 돌아와 문간에 앉으며 칼끈을 고쳐 맸다."], ["여운비", "당신 정인 신 끈이 풀려 있더이다. 손이 먼저 나갈 뻔했지만 참았소. 남의 신을 함부로 매 주는 건 아니니까. 대신 전해 주시오. 셋을 엇갈리고 넷째에 한 번 감아 돌리라고."]]'::jsonb),
+('unbi', 't_days_7', 1, '[["", "여운비가 장부를 펼쳐 이레 치 줄을 보여 주었다. 오른쪽 칸이 하나도 빠짐없이 채워져 있었다. 왼쪽 칸은 몇 줄 비어 있었다."], ["여운비", "그 엿 장수가 장터에만 있던 날엔 왼쪽 칸을 비워 뒀소. 오른쪽 칸이 더 많아진 건 처음이구려. ……그 애 귀엔 들어가지 않게 하시오. 한동안 시끄러울 테니."]]'::jsonb),
+('unbi', 't_days_30', 1, '[["", "여운비가 가죽 끈 한 타래를 내밀었다. 손가락 굵기의 끈 끝마다 북령 매듭이 하나씩 지어져 있었다. 매듭이 서른 개였다."], ["여운비", "날마다 하나씩 지었소. 신 끈을 갈 때 쓰시오. 모자라면 또 지어 주겠소. 하나는 일부러 헐겁게 묶었으니 찾아보시오."]]'::jsonb),
+('unbi', 't_days_100', 1, '[["", "여운비가 두툼한 모직 망토 한 벌을 펼쳐 보였다. 깃 안쪽에 붉은 술 매듭이 하나 지어져 있었다. 눈길 동무가 되던 날 받은 망토와 똑같은 모양이었다."], ["여운비", "망토는 한 벌로 모자라오. 입는 동안 다른 한 벌을 말려야 하니까. 호송대에선 백 날을 함께 걸은 동무에게 둘째 망토를 지어 주었소. ……지금 지어낸 풍습은 아니오."]]'::jsonb),
+('unbi', 't_long_away', 1, '[["", "여운비가 문간에서 칼을 무릎에 눕혀 둔 채 나를 보았다. 눈 밑이 거뭇했다."], ["여운비", "사흘 밤을 혼자 지켰소. 앞 반도 뒤 반도 내 차지였지. ……깨울 사람이 없으니 밤이 길더이다. 오늘은 앞 반만 서겠소."]]'::jsonb),
+('unbi', 't_long_away', 2, '[["", "여운비가 장부를 펼쳐 사흘 치 줄을 보여 주었다. 오른쪽 칸 셋에 작은 동그라미만 그려져 있었다."], ["여운비", "빈칸이라 적기도, 당신 이름을 쓰기도 어려워 동그라미만 쳤소. 그런 적은 처음이오. ……오늘은 제대로 이름을 적겠소."]]'::jsonb),
+('unbi', 't_last_today', 1, '[["", "여운비가 대문 빗장을 한 번 흔들어 보고, 문간 자리로 돌아가 칼을 무릎에 눕혔다."], ["여운비", "오늘 장부는 다 적었소. 이제 불침번을 설 차례요. 불침번에선 말수를 줄여야 하오. 들어가 쉬시오."]]'::jsonb),
+('unbi', 'idle', 1, '[["", "여운비가 마루 끝에 앉아 숫돌에 물을 붓고 칼날을 천천히 밀고 있었다. 사악, 사악 소리가 일정하게 이어졌다."], ["여운비", "칼은 쓰지 않는 날에도 갈아 둬야 하오. 필요해진 뒤에 갈면 늦으니까. 당신 칼도 가져오시오. 걷는 버릇 때문에 날이 한쪽만 닳았을 거요."]]'::jsonb),
+('unbi', 'idle', 2, '[["", "여운비가 대문 앞에 서서 눈을 감은 채 오른 뺨을 이쪽저쪽으로 돌리고 있었다."], ["여운비", "눈을 감으면 볼로 바람을 더 또렷이 읽을 수 있소. 남쪽에선 장작 타는 냄새가 나고, 북쪽은 고요하구려. 한번 해 보시오. 처음엔 아무것도 못 느낄 테지만."]]'::jsonb),
+('unbi', 'idle', 3, '[["", "여운비가 장부 하나를 펼쳐 들고 혀를 찼다. 단비네 엿판 장부였다. 글씨가 죄다 오른쪽으로 기울어 있었다."], ["여운비", "사흘 못 봤더니 장부가 이 모양이오. 「생선포 많이 팜」이라니, 몇 개를 팔았는지 적어야지. ……그래도 지우진 않겠소. 그 애 글씨니까."]]'::jsonb),
+('unbi', 'idle', 4, '[["", "여운비가 망토 깃 안쪽의 붉은 술 매듭을 손끝으로 만지작거렸다. 술 끝이 조금 해져 있었다."], ["여운비", "첫 호송에 나설 때 아버지가 신 끈에 달아 주신 술도 이렇게 해졌소. 그럴 땐 버리지 않고 새 실을 덧대는 거요. ……사람도 마찬가지겠지."]]'::jsonb),
+('unbi', 'idle', 5, '[["", "여운비가 별채 대문 기둥 밑동에 칼끝으로 짧은 홈 하나를 그었다. 길표 돌에 긋던 홈과 같은 모양이었다."], ["여운비", "길표요. 눈이 덮여도 손으로 더듬어 찾을 수 있게 그었소. 여기 오는 길을 잃을 일은 없겠지만, 그래도 표시해 두니 든든하구려."]]'::jsonb),
+('unbi', 'idle', 6, '[["", "여운비가 바늘에 실을 꿰려고 애쓰고 있었다. 바늘귀 앞에서 실 끝이 번번이 비껴갔다. 왼 눈 하나로는 거리가 잘 잡히지 않는 듯했다."], ["여운비", "……이리 와서 바늘에 실 좀 꿰어 주시오. 매듭은 눈 감고도 짓는데 바늘귀만은 영 맞히질 못하겠소. 다른 데 가서 말하진 마시오."]]'::jsonb),
+('unbi', 'idle', 7, '[["", "여운비가 썰매 끈 자투리를 엮어 손바닥만 한 무언가를 만들고 있었다. 다 엮고 보니 칼집 끝을 싸는 덮개였다."], ["여운비", "당신 칼집 끝이 문턱에 자꾸 부딪히더이다. 그래서 덮개를 만들었소. 끼워 보시오. 잘 맞으면 그걸로 됐소."]]'::jsonb),
+('unbi', 'idle', 8, '[["", "여운비가 손가락을 꼽으며 무언가를 셌다. 엄지와 검지를 접고 멈췄다."], ["여운비", "그 애가 내가 「나쁘지 않소」라고 한 횟수를 센다더이다. 언제부터 셌는지 원. 당신까지 셀 생각은 마시오. 그리 자주 하는 말도 아니니."]]'::jsonb),
+('unbi', 'idle', 9, '[["", "여운비가 품에서 대나무 잎 몇 장을 꺼내 마루에 반듯하게 펴 놓았다. 하나같이 주먹밥을 쌌던 잎이었다."], ["여운비", "고개에서 함께 먹었던 주먹밥을 싼 잎이오. 장부에 끼워 뒀더니 벌써 이만큼 모였구려. 쓸모는 없지만…… 버릴 수가 없소."]]'::jsonb),
+('unbi', 'idle', 10, '[["", "여운비가 장작을 패고 있었다. 도끼가 떨어질 때마다 장작이 깨끗하게 두 쪽으로 갈라졌다. 장작 더미 왼쪽에만 패 놓은 장작이 가지런히 쌓여 있었다."], ["여운비", "오른쪽에 쌓아 두면 못 보고 걷어차기 십상이오. 그쪽 장작은 당신이 쌓아 주시오. 내 오른쪽은 맡겼잖소."]]'::jsonb),
+('unbi', 'idle', 11, '[["", "여운비가 갑자기 고개를 돌려 대문 쪽을 보았다. 아무 소리도 나지 않았다. 잠시 뒤 대문 밖에서 내 신발 소리가 들렸다. 나는 막 별채로 돌아오는 길이었다."], ["여운비", "당신은 넷째 걸음마다 왼발을 조금 끄는구려. 그래서 발소리만 듣고도 알았소. 고치라는 소린 아니오. 지금도 알아보기 좋으니까."]]'::jsonb),
+('unbi', 'idle', 12, '[["", "여운비가 오른 뺨의 흰 줄을 손등으로 문지르고 있었다. 찬바람이 지나간 뒤였다."], ["여운비", "바람이 차가워지면 뺨의 이 흉터부터 시리오. 덕분에 날씨를 남보다 일찍 알게 됐지. 쓸모없는 상처만은 아니구려."]]'::jsonb),
+('unbi', 'idle', 13, '[["", "여운비가 망태 하나를 풀어 안의 것을 마루에 하나씩 늘어놓았다. 끈 자투리, 숯 한 줌, 부싯돌, 마른 주먹밥 하나였다."], ["여운비", "고개에 나설 망태는 늘 이렇게 꾸려 놓소. 언제 떠날지 모르니까. 당신 것도 가져오시오. 아마 숯을 빼먹었을 거요. 다들 그걸 잊더이다."]]'::jsonb),
+('unbi', 'idle', 14, '[["", "여운비가 혜각 수좌에게서 온 짧은 서신을 펼쳐 보이며 입꼬리를 조금 올렸다."], ["여운비", "썰매꾼들이 행전 짚신을 신고 고개를 다섯 번이나 넘었다 하오. 발가락 하나 다친 사람도 없고. 수좌가 당신에게 절이라도 올리라 했다더이다. ……말씀은 전했소. 절은 못 하겠소."]]'::jsonb),
+('unbi', 'idle', 15, '[["", "여운비가 마당에 앉아 썰매 끈 한 줄로 매듭을 지어 보였다. 셋을 엇갈리고 넷째에서 감아 돌린 다음, 끈 끝을 내게 내밀었다."], ["여운비", "이번엔 당신 차례요. 눈 감고 매듭을 지어 보시오. 고개에선 손이 얼어붙어 눈을 뜨나 감으나 매한가지니까."]]'::jsonb),
+('unbi', 'idle', 16, '[["", "여운비가 맹주에게 다녀온 이야기를 하며 칼끈을 고쳐 맸다."], ["여운비", "맹주께서 다시 앞자리에 서라 하셨소. 사양했지. 바람을 늦게 읽는 사람이 앞에 서면 뒤따르는 이들까지 위험해지니까. 대신 끈은 계속 살피겠다 했소. 당신이 손질한 가죽으로."]]'::jsonb),
+('unbi', 'idle', 17, '[["", "여운비가 처마 끝 고드름 하나를 꺾어 손바닥에 올려놓고 녹는 것을 지켜보았다."], ["여운비", "호송대장이던 시절엔 고드름 녹는 걸 보며 봄을 기다렸소. 여기 것은 설피골보다 빨리 녹는구려. 이곳엔 봄도 먼저 오겠소."]]'::jsonb),
+('unbi', 'idle', 18, '[["", "여운비가 문간에서 내 신 두 켤레를 나란히 놓고 끈의 닳은 정도를 손끝으로 비교했다."], ["여운비", "오른쪽 신 끈이 더 닳았구려. 그쪽 발에 힘을 더 싣는 모양이오. ……내 오른쪽을 지키느라 그리됐나. 새 끈은 내가 지어 두겠소."]]'::jsonb),
+('unbi', 'idle', 19, '[["", "여운비가 장부 맨 뒤 장을 펼쳐 무언가를 그리고 있었다. 별채 대문과 마당과 문간이 선 몇 개로 그려져 있었다."], ["여운비", "호송대에선 쉬어 가는 굴을 장부 맨 뒤에 그려 두었소. 고갯길 굴 셋에 장터 엿판, 그리고 여기까지. ……이상하구려. 여기를 가장 크게 그렸소."]]'::jsonb),
+('unbi', 'idle', 20, '[["", "여운비가 마루에 앉아 단비가 싸 준 엿 반쪽을 내게 내밀었다. 기름종이 겉에 비뚜름한 글씨로 「대장님」이라 적혀 있었다."], ["여운비", "그 애가 내게 준 엿이오. 반쪽을 받았으니 나도 당신과 반씩 나누겠소. 이래야 셈이 맞지. ……이런 셈은 해 본 적이 없구려."]]'::jsonb),
+('unbi', 'idle', 21, '[["", "여운비가 별채 기둥에 등을 대고 서서 키를 재듯 손바닥을 정수리에 올렸다. 그 자리에 칼끝으로 살짝 금을 그었다."], ["여운비", "호송대에 새 동무가 오면 헛간 기둥에 키부터 표시했소. 썰매 끈을 몸에 맞춰야 하니까. 당신도 여기 서 보시오."]]'::jsonb),
+('unbi', 'idle', 22, '[["", "여운비가 언 손을 화로에 쬐다가 손을 뒤집어 손바닥 굳은살을 내려다보았다."], ["여운비", "끈을 당기며 생긴 굳은살이오. 열두 해가 지나도 없어지질 않더이다. ……그런데 요즘은 조금 부드러워졌소. 앞자리를 내려놓은 걸 손도 아는 모양이지."]]'::jsonb),
+('unbi', 'idle', 23, '[["", "여운비가 북령 쪽 하늘을 보며 한참 말이 없었다."], ["여운비", "내 위로 언니가 둘 있소. 둘 다 시집가서 썰매 끈 같은 건 잡아 본 적도 없지. 셋째 딸이 칼 차고 고개를 넘는다고 집안 어른들이 혀를 찼소. ……지금도 한 사람쯤은 혀를 차겠구려."]]'::jsonb),
+('unbi', 'idle', 24, '[["", "여운비가 마당 눈 위에 서서 발밑을 꾹꾹 밟아 다졌다. 다진 자리 위에 빈 썰매를 올려 보고 미끄러지는지 살폈다."], ["여운비", "마당이라도 썰매가 지날 자리는 다져 둬야 하오. 지금 쓸 일이 없더라도. 정작 필요해졌을 땐 늦으니까."]]'::jsonb),
+('unbi', 'idle', 25, '[["", "여운비가 망토를 펼쳐 깃의 바늘땀을 하나씩 짚어 보다가 한 땀에서 손가락을 멈췄다."], ["여운비", "여기 바늘땀 하나가 비뚤어졌소. 당신 망토를 지을 때 내가 뜬 거요. 가죽이 워낙 질겨서. ……고쳐 뜨지는 않겠소. 그날의 흔적이니 그대로 두겠소."]]'::jsonb),
+('unbi', 'idle', 26, '[["", "여운비가 장부를 펼쳐 오른쪽 칸 줄을 세어 보고 있었다. 셈을 다 하고 나서 왼쪽 칸과 견주었다."], ["여운비", "아직은 왼쪽 칸이 더 많소. 그 애와는 오래 걸었으니 당연한 일이오. 서두를 건 없소. 해마다 조금씩 따라잡으면 되지."]]'::jsonb),
+('unbi', 'idle', 27, '[["", "여운비가 칼자루를 쥔 채 문간에 앉아 대문 쪽만 보고 있었다. 내가 곁에 앉자 칼자루를 쥔 손이 조금 풀렸다."], ["여운비", "가만히 앉아 있어도 자꾸 대문을 살피게 되오. 누가 들어올까 싶어서. ……당신이 옆에 앉으면 그 버릇도 조금 잦아드오."]]'::jsonb),
+('unbi', 'idle', 28, '[["", "여운비가 고찰에서 가져온 썰매 방울을 내 손바닥에 올려놓았다. 소가죽 끈에 매단 투박한 놋방울이었다."], ["여운비", "썰매 앞에 매다는 방울이오. 눈보라 속에서 뒤따르는 썰매가 길을 잃지 않게 하지. 그 애 방울과는 소리가 다르오. 그 애 건 멀리까지 울리고, 이건 가까이서 서로 놓치지 말라고 다는 거요."]]'::jsonb),
+('unbi', 'idle', 29, '[["", "여운비가 장부 오늘 줄의 길동무 칸에 내 이름을 쓰다가 붓을 멈추고 나를 보았다. 귀 끝이 빨갰다."], ["여운비", "날마다 적는 이름인데도 이 칸에만 오면 붓이 느려지오. 한 획도 허투루 쓰고 싶지 않아서. ……보지 마시오. 다 적으면 보여 주겠소."]]'::jsonb),
+('unbi', 'idle', 30, '[["", "여운비가 대문 기둥에 걸린 나무패를 한참 올려다보았다. 비뚜름한 글씨로 「단비네 별채 지점」이라 적혀 있었다."], ["여운비", "그 애가 달아 놨구려. 남의 집 대문에 제 엿판 이름이라니. 떼라고 할까 했는데…… 글씨는 기울어도 제법 반듯하게 걸었소. 그냥 두시오."]]'::jsonb),
+('unbi', 'gift_field', 1, '[["", "여운비가 받은 것을 두 손으로 잡고 힘껏 잡아당겨 보았다. 꿈쩍하지 않자 손바닥으로 결을 거슬러 쓸어 보았다."], ["여운비", "늘어나지도 않고 결도 고르구려. 직접 당겨 봤으니 믿겠소. 썰매꾼들한테도 보여 주겠소. 당신 솜씨라고."]]'::jsonb),
+('unbi', 'gift_field', 2, '[["", "여운비가 받은 것의 이음매를 엄지로 꾹꾹 눌러 가며 한 땀씩 살폈다. 마지막 땀에서 손을 멈추고 고개를 끄덕였다."], ["여운비", "마지막 바늘땀이 가장 반듯하구려. 보통은 끝에 가서 흐트러지는데. 나쁘지 않소."]]'::jsonb),
+('unbi', 'gift_hq', 1, '[["", "여운비가 선물을 받아 들고 왼 눈 가까이 가져가 오래 들여다보았다. 내려놓고 나서도 한동안 손을 떼지 않았다."], ["여운비", "이건 「나쁘지 않소」 한마디로는 모자라겠구려. ……그다음에 무슨 말을 해야 할지는 아직 모르겠소. 생각나면 전하겠소."]]'::jsonb),
+('unbi', 'gift_other', 1, '[["", "여운비가 선물을 받아 위아래로 뒤집어 보더니 망태에 넣을지 품에 넣을지 잠깐 망설였다."], ["여운비", "고개 망태엔 쓸모 있는 것만 넣소. 그런데 이건…… 품에 넣겠소. 무슨 쓸모가 있는지는 아직 모르겠지만."]]'::jsonb),
+('unbi', 'gift_other', 2, '[["", "여운비가 선물을 장부 옆에 나란히 놓고 오늘 줄 끝에 작은 글씨를 하나 더 적었다."], ["여운비", "장부엔 「받음」이라고만 적었소. 무엇을 받았는지는 굳이 쓰지 않았지. 나만 알면 되니까."]]'::jsonb),
+('unbi', 'gift_reward', 1, '[["", "여운비가 뚜껑 덮은 그릇 두 개를 망토 자락에 싸 들고 왔다. 그릇에서 진한 국물 냄새가 새어 나왔다."], ["여운비", "장어 보양탕이오. 고개 넘는 썰매꾼들에게 먹이던 거요. 그 엿 장수한테 끓이는 법을 배웠소. 간은 그 애가 보고, 나는 불을 봤지."]]'::jsonb),
+('unbi', 'gift_reward', 2, '[["", "여운비가 보양탕 두 그릇을 건네며 그릇을 싼 망토 끈을 북령 매듭으로 묶어 주었다."], ["여운비", "하나는 고개 넘기 전에, 다른 하나는 넘고 나서 드시오. 떠나기 전엔 힘을 내고, 돌아와선 다음 길을 준비하라고 주는 거요. 호송대에서 하던 말이오."]]'::jsonb),
+('unbi', 'mate_hanseol', 1, '[["", "여운비가 문간 자리를 반쯤 비켜 앉으며 한설 쪽을 턱으로 가리키고 내게 말했다."], ["여운비", "감찰관과 문간을 나눠 앉았소. 둘 다 대문을 지켜보는 사람이니 말이오. 불침번도 앞 반은 내가, 뒤 반은 그쪽이 서기로 했소. ……말은 안 했어도 서로 알아들었소."]]'::jsonb),
+('unbi', 'mate_yeoul', 1, '[["", "여울의 삿갓 끈을 매 주고 온 여운비가 손을 털며 내게 짧게 말했다."], ["여운비", "놀라게 했구려. 풀린 끈을 보면 손이 먼저 가는 버릇이오. 그래서 허락을 받고 다시 맸소. 셋을 엇갈리고 넷째에서 감았으니…… 이제 바람에도 안 풀릴 거요."]]'::jsonb),
+('unbi', 'mate_wolha', 1, '[["", "월하의 오른손을 흘끗 본 여운비가 내 쪽으로 고개를 돌려 목소리를 낮췄다."], ["여운비", "아홉 손가락으로 엽전을 줍더이다. 전엔 떨어뜨릴 일도 없었겠지. 신 끈을 매 주니 값은 얼마냐고 묻더군. 안 받는다 했소. ……그 사람에겐 그게 더 어려운 모양이오."]]'::jsonb),
+('unbi', 'mate_daon', 1, '[["", "다온의 짚신 끈을 다시 매 주고 일어선 여운비가 망토 자락을 털며 나를 보았다."], ["여운비", "그 아이 신 끈을 오늘만 세 번 맸소. 가르쳐 줘도 금세 잊는다니 별수 있겠소. ……썰매꾼 막내를 보는 것 같구려."]]'::jsonb),
+('unbi', 'mate_hisu', 1, '[["", "희수가 장부에 적는 것을 보던 여운비가 품에서 손바닥만 한 장부를 꺼내 내게 보여 주었다."], ["여운비", "서리 장부는 칸이 많더이다. 내 장부엔 셋뿐인데 말이오. 몇 칸이냐 물었더니 세다가 그만두더군. ……많아서가 아니라, 세는 게 일이라서 그렇다더이다."]]'::jsonb),
+('unbi', 'mate_danbi', 1, '[["", "단비가 대문 기둥에 건 나무패를 올려다보던 여운비가 한숨을 쉬며 나를 돌아보았다."], ["여운비", "그 애가 남의 별채에 엿판 이름까지 걸었구려. 「단비네 별채 지점」이라니. 장부는 내가 봐야겠소. 그 애 글씨는 죄다 기울어서 말이오. ……그리고 「나쁘지 않소」 두 번 했다고 세지 말라 전하시오."]]'::jsonb),
+('unbi', 'mate_cheongpa', 1, '[["", "물가의 청파에게 다녀온 여운비가 손끝에 남은 매듭 감촉을 문지르며 내게 말했다."], ["여운비", "꼬맹이 매듭이 제법 단단하더이다. 누가 당번인지 알 만하오. 그런데 내가 「가지 마시오」 했던 걸 아직도 떠든다지? ……다시는 그런 말을 할 일 없도록 하시오."]]'::jsonb),
+('unbi', 'mate_galmae', 1, '[["", "갈매 쪽을 보던 여운비가 귀 끝이 빨개진 채 내 쪽으로 고개를 홱 돌렸다."], ["여운비", "남명 사람이 내 말버릇을 따라 하더이다. 고치라 해도 소용없고. 그런데 북령 말이 남명 사람 입에 붙은 걸 들으니…… 나쁘지 않소. 아, 또 나왔구려."]]'::jsonb),
+('unbi', 'mate_haram', 1, '[["", "하람 곁에서 바람을 읽던 여운비가 오른 뺨을 내 쪽으로 돌리며 말했다."], ["여운비", "나는 볼로 바람을 읽고 저 관측관은 귀로 듣소. 오늘 북풍도 둘 다 맞혔지. ……눈 대신 다른 감각으로 바람을 읽는 사람이 둘이나 한집에 있구려."]]'::jsonb),
+('unbi', 'mate_munsu', 1, '[["", "밤 불침번을 서던 여운비가 이불 속 문수 쪽으로 귀를 기울이다가, 문간에 나온 나를 보고 말했다."], ["여운비", "불침번을 서는데 그 서리가 책벌레 이야기를 하더이다. 끝날 기미는 없고. ……불침번에 말은 삼가도 듣는 건 괜찮지 않겠소. 덕분에 밤이 짧았소."]]'::jsonb),
+('cheongpa', 'bond_make', 1, '[["", "손님이 다 내린 저녁 배 위에서 청파가 잠수 줄 끝을 칼로 한 뼘 잘라 내고 있었다. 잘린 토막에는 물굴에서 내가 지은 꽁꽁 매듭이 그대로 붙어 있었다. 매듭은 물에 젖고 말라 돌처럼 단단해져 있었다."], ["청파", "{이름} 님, 이거 기억나세요? 매듭도 아니고 그냥 꽁꽁 묶어 놓은 거요. 이백 숨을 버텼잖아요. 이젠 이만큼 잘라도 돼요. 당번이 가지고 있으면 되니까요."]]'::jsonb),
+('cheongpa', 'bond_make', 2, '[["", "청파가 줄 토막을 내 손목에 두르고 그 끝을 다른 매듭으로 이었다. 손가락이 빠르게 움직이다 마지막 고리에서 한참 머뭇거렸다. 청파가 쿨럭 기침을 한 번 하고 고리를 당겼다."], ["청파", "식구 매듭이에요. 식구한테만 지어 주는 건데…… 이제 {이름} 님한테도 지어 드리고 싶어요. 꽁꽁 매듭까지 한 줄에 있으니 풀릴 리 없겠죠. 풀어야 할 때도요."], ["청파", "손님 없는 날엔 노 저어 놀러 올게요! 이젠 강도 거슬러 올라갈 수 있어요. 숨이 좀 차긴 하겠지만요. 줄 한 끝은 별채 기둥에 매 둘게요. 거기가 당번 자리예요."]]'::jsonb),
+('cheongpa', 'bond_again', 1, '[["", "청파가 새 팔찌를 내 손목에 매어 주고 품에서 기름종이 꾸러미를 꺼냈다. 꾸러미를 풀자 빛바랜 옛 팔찌가 등롱 종이와 쇠못 사이에 가지런히 들어 있었다."], ["청파", "옛날 팔찌도 꾸러미에 넣어 뒀어요. 같이 다니면서 주운 물건들 옆에요. 버리면 마음이 좀 가벼워질 줄 알았는데…… 도로 넣어 두니까 오히려 노가 덜 흔들리더라고요. 다시 와 주셔서 고마워요. 정말요."]]'::jsonb),
+('cheongpa', 'bond_break', 1, '[["", "청파가 내 손목에서 팔찌를 풀었다. 식구 매듭은 풀리지 않아 칼로 잘라야 했다. 청파는 칼질을 하고 나서 한참 동안 숨을 세는 얼굴로 가만히 있었다."], ["청파", "……여덟 숨. 벌써 숨이 골라졌네요. 괜찮아요. 저 괜찮아요."], ["청파", "이제 생명줄은 기둥에 안 매고 제 허리에만 감을게요. 당번은 바꾸지 않는다고 했잖아요. 그러니까 그 자리는 비워 둘래요. 구름나루 지나가실 땐 손 한번 흔들어 주세요. 노 젓다가도 알아볼게요."]]'::jsonb),
+('cheongpa', 'first_dawn', 1, '[["", "새벽 물안개를 뚫고 노 젓는 소리가 가까워졌다. 물가에 배를 댄 청파가 대문까지 걸어 들어와 문설주를 붙잡고 허리를 숙였다. 쇳소리 섞인 숨이 한참 이어졌다."], ["청파", "강을 거슬러 오느라…… 잠깐만요, 숨 좀 고르고요. 스물. 됐다! {이름} 님, 오늘 첫 손님이시네요! 뱃삯은 안 받아요. 원래 안 받지만요!"]]'::jsonb),
+('cheongpa', 'first_dawn', 2, '[["", "마루 끝에 청파가 등을 대고 누워 배 위에 두 손을 얹고 있었다. 손이 들숨 날숨을 따라 천천히 오르내렸다. 입술이 숫자를 세고 있었다."], ["청파", "아침마다 숨을 세거든요. 오늘은 열한 숨이나 참았어요! 백지교에선 열 숨이 전부였는데. 한 숨 늘었죠? 이거 {이름} 님한테 제일 먼저 보여 드리는 거예요."]]'::jsonb),
+('cheongpa', 'first_noon', 1, '[["", "마당 빨랫줄 대신 청파의 잠수 줄이 볕에 걸려 있었다. 청파가 줄에 달린 매듭을 하나씩 풀었다 다시 짓고 있었다."], ["청파", "줄은 볕에 말릴 때 매듭도 다시 지어 줘야 해요. 젖은 채 두면 줄이 매듭에 파고들거든요. 꽁꽁 매듭은 빼고요. 그건 {이름} 님 팔찌에 있잖아요."]]'::jsonb),
+('cheongpa', 'first_noon', 2, '[["", "청파가 마루에 걸터앉아 다리를 흔들며 키득거리고 있었다. 나를 보자 기침을 섞어 가며 웃음을 참았다."], ["청파", "오늘 손님이 배에서 국을 두 그릇이나 드시고 노래를 시작하셨거든요? 그런데 도통 끝날 기미가 없어서 노까지 멈췄어요. 노래 끝날 때까지 강 한가운데 떠 있었다니까요! 영감님은 그게 뱃사공 예의라시네요."]]'::jsonb),
+('cheongpa', 'first_dusk', 1, '[["", "해가 강 너머로 기울자 청파가 대문 밖에 나가 서서 강 아래쪽을 내다보았다. 저 멀리 장대 등이 하나둘 켜지고 있었다."], ["청파", "장대 등에 불이 들어왔네요. 저 등을 따라 내려가야 해요. 하나 지날 때마다 열 숨씩 쉬고요. 참, 내일 손님 국에 넣을 생선은 {이름} 님이 낚아 주시는 거죠?"]]'::jsonb),
+('cheongpa', 'first_dusk', 2, '[["", "청파가 문간 기둥에 매어 둔 생명줄 끝을 풀었다 다시 맸다. 매듭을 짓는 손이 일부러 느렸다."], ["청파", "가기 전에 당번 자리 매듭부터 다시 지어 놓으려고요. 기둥에 줄 끝이 남아 있으면 아래로 내려가도 위가 어딘지 알 것 같거든요. ……물길 얘기는 아니에요. 그냥 마음이 그렇다고요."]]'::jsonb),
+('cheongpa', 'first_night', 1, '[["", "깊은 밤 문간 쪽에서 쇳소리 기침이 길게 이어졌다. 청파가 이불을 입에 대고 기침을 삼키고 있었다. 내가 다가가자 손을 내저었다."], ["청파", "깨우셨죠? 물굴에서 나온 뒤로 밤마다 기침이 나요. 괜찮아요. 기침이 멎으면 숨을 세면 되거든요. 같이 세 주실래요? 둘이 하면 금방이에요."]]'::jsonb),
+('cheongpa', 'first_night', 2, '[["", "청파가 기름종이 꾸러미를 가슴에 안은 채 모로 누워 있었다. 꾸러미 귀퉁이를 손가락으로 만지작거렸다."], ["청파", "이 꾸러미를 안고 자면 배에 누운 것 같아요. 흔들리지 않는 배요. 그런데 {이름} 님 별채에선 물이 차오를 걱정도 없는데 잠이 더 안 오네요. 이상하죠?"]]'::jsonb),
+('cheongpa', 'w_clear', 1, '[["", "볕이 쨍쨍했다. 청파가 마당에 놋대야를 내다 놓고 물을 가득 채웠다. 대야 물에 하늘이 파랗게 비쳤다."], ["청파", "보세요! 대야 속에 하늘이 들어 있어요. 천경호 같죠? 이런 물은 바닥을 봐도 무섭지 않아요. 이 정도면 저도 얼굴쯤은 담글 수 있겠어요. 딱 한 숨만요."]]'::jsonb),
+('cheongpa', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 청파가 강 쪽으로 목을 빼고 물빛을 살폈다."], ["청파", "흐린 날엔 물빛이 회색으로 변해서 배 밑이 안 보이거든요. 전 그래서 좋아요! 괜히 아래를 들여다볼 일도 없고요. 노 젓기엔 이런 날이 최고예요."]]'::jsonb),
+('cheongpa', 'w_rain', 1, '[["", "장대비가 쏟아졌다. 청파가 바가지 하나를 들고 빗속을 뛰어나가 물가에 매어 둔 배로 달려갔다. 한참 뒤 흠뻑 젖어 돌아왔다."], ["청파", "배에 물이 차서 퍼내고 왔어요! 영감님 배는 비만 오면 금세 무거워진다니까요. 저도 무거워졌네요. 옷이 흠뻑 젖어서요!"]]'::jsonb),
+('cheongpa', 'w_rain', 2, '[["", "빗소리가 지붕을 덮었다. 청파가 처마 밑에 앉아 눈을 감고 빗소리에 맞춰 손가락을 접고 있었다."], ["청파", "빗소리에 맞춰 숨을 세면 숫자가 잘 안 틀려요. 물속에서 듣던 소리랑 닮았거든요. ……그래도 무섭진 않아요. 지금은 물 위에 있으니까요."]]'::jsonb),
+('cheongpa', 'w_drizzle', 1, '[["", "실비가 소리 없이 내렸다. 청파가 우장도 없이 물가에 쪼그려 앉아 낚싯줄을 드리우고 있었다."], ["청파", "이런 비가 오면 붕어가 잘 물어요. 수면이 간질간질해서 먹이가 떨어진 줄 아나 봐요. {이름} 님도 얼른 와요! 오늘 국거리는 제가 먼저 낚을 거예요."]]'::jsonb),
+('cheongpa', 'w_fog', 1, '[["", "짙은 안개가 강을 덮어 물가가 보이지 않았다. 청파가 대문 앞에 서서 강 쪽으로 귀를 기울였다. 멀리서 장대 등 고리가 바람에 삐걱대는 소리가 났다."], ["청파", "안개 낀 날엔 배를 안 띄워요. 영감님이 정하신 규칙이에요. 장대 등 소리를 따라갈 순 있어도 다른 배랑 부딪칠 수 있거든요. 오늘은 손님도 없으니 별채에서 {이름} 님이랑 있을래요."]]'::jsonb),
+('cheongpa', 'w_wind', 1, '[["", "바람이 거세게 불어 강물이 하얗게 일어섰다. 청파가 노 손잡이를 무릎에 올려놓고 손바닥의 물집을 들여다보고 있었다."], ["청파", "맞바람을 뚫고 노를 저으면 숨이 두 배는 들어요. 올라오다가 기침도 세 번이나 했고요. 그래도 왔잖아요! 바람한테는 안 졌어요."]]'::jsonb),
+('cheongpa', 'w_snow', 1, '[["", "밤새 눈이 쌓이고 강이 얼었다. 청파가 대문으로 들어서며 신을 털었다. 노도 배도 없이 맨몸이었다."], ["청파", "강이 꽁꽁 얼어서 걸어왔어요! 물 위를 두 발로 걸었다니까요. 진짜로요! 밑을 봐도 얼음뿐이니 무섭지도 않더라고요. 제가 물 위를 걸어 다니게 될 줄 누가 알았겠어요?"]]'::jsonb),
+('cheongpa', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 청파가 기름종이 꾸러미를 무릎에 올려놓고 입술을 달싹이고 있었다. 이름을 하나씩, 숨을 고르며 부르고 있었다."], ["청파", "명등제 때 불렀던 아이들이에요. 그 배에 태우지 못했던 아이들요. ……이런 날엔 이름이 흐려진다잖아요. 하나도 빠뜨리지 않으려고요. {이름} 님 이름은 마지막에 부를게요."]]'::jsonb),
+('cheongpa', 'me_yohwa', 1, '[["", "청파가 허리에 감은 생명줄을 풀어 한 끝을 내 손목 팔찌에 묶었다. 다른 끝은 제 허리에 감았다. 줄을 한 번 톡 당겼다."], ["청파", "줄을 한 번 당기면 ''저 여기 있어요'', 두 번이면 ''올라오세요''예요. {이름} 님…… {이름} 님! 제 말 들리면 줄을 한 번만 당겨 주세요. 절대 놓지 않을게요. 늘 {이름} 님이 당번이었지만 오늘만은 제가 지킬게요."]]'::jsonb),
+('cheongpa', 'me_erosion_80', 1, '[["", "청파가 화로에 주전자를 올리고 꿀을 크게 한 숟갈 떠 넣었다. 찻잔에 영초 차를 따라 내 두 손에 쥐여 주었다. 김이 무럭무럭 올랐다."], ["청파", "정화부터 하세요. 그리고 이 차는 식기 전에 다 드시고요. 저처럼 차갑게 식혀 먹지 말고요. 꿀이 바닥에 가라앉으면 쓴맛만 남거든요. 오늘은 쓰지 않게 타 드렸어요."]]'::jsonb),
+('cheongpa', 'me_erosion_55', 1, '[["", "청파가 내 숨소리에 귀를 기울이더니 얼굴이 굳었다."], ["청파", "{이름} 님 숨소리가…… 쇳소리가 나요. 물굴에서 막 나왔을 때 제 숨 같아요. 깊은 데 다녀오셨죠? 정화하고 돌아오시면 같이 열 숨만 세요."]]'::jsonb),
+('cheongpa', 'me_erosion_30', 1, '[["", "청파가 사발에 물을 떠 와 소금을 한 꼬집 넣고 휘휘 저어 내밀었다."], ["청파", "입부터 헹구세요. 잠수꾼들은 물을 먹고 올라오면 꼭 이렇게 해요. 나쁜 걸 뱉어 내라고요. 요기에도 통할지는 모르지만, 뱉고 나면 속은 좀 시원하잖아요."]]'::jsonb),
+('cheongpa', 'me_hp_low', 1, '[["", "청파가 나를 마루에 앉히고 제 손을 내 가슴에 얹고 제 숨을 길게 들이쉬어 보였다."], ["청파", "제 숨에 맞춰 보세요. 들이쉬고…… 내쉬고. 하나. 다시 들이쉬고…… 둘. 숨이 고르면 아픈 것도 조금 나아져요. 잠수꾼들은 그렇게 버티거든요. 열까지만 같이 세요."]]'::jsonb),
+('cheongpa', 'me_rescued', 1, '[["", "마당에 들어서자 쇳소리 기침이 크게 터졌다. 청파가 대문 기둥을 붙잡고 몸을 반으로 접은 채 기침을 하고 있었다. 강에서부터 뛰어온 듯 신이 진흙투성이였다."], ["청파", "손님한테 쓰러지셨다는 얘길 듣고 노 젓다 말고 배부터 댔어요. 그대로 뛰어왔고요. 기침은 괜찮아요! 지금 걱정할 사람은 제가 아니잖아요. 앉아 계세요. 저 숨 좀 고를 동안 어디 가지 마시고요."]]'::jsonb),
+('cheongpa', 'me_exp_back', 1, '[["", "청파가 내 손목을 잡아 팔찌를 살피더니 끈 끝에 작은 토끼 매듭 하나를 새로 지어 달았다. 팔찌 끝에 같은 매듭이 이미 몇 개 달려 있었다."], ["청파", "무사히 돌아오셨으니까 매듭 하나 더 달았어요. 다녀오실 때마다 하나씩 달 거예요. 그러다 팔찌가 무거워지면 어떡하냐고요? 무거워질수록 좋죠. 그만큼 많이 돌아오셨다는 뜻이니까요."]]'::jsonb),
+('cheongpa', 'me_far_travel', 1, '[["", "청파가 손가락에 물을 묻혀 마루 위에 구불구불한 선을 그었다. 강줄기였다."], ["청파", "여기가 구름나루고, 여기가 별채예요. {이름} 님은 어느 강을 건너셨어요? 여기요, 아니면 저기요? 물 이름만 알면 지나온 길을 다 그릴 수 있어요. 자, 마르기 전에 그려 주세요!"]]'::jsonb),
+('cheongpa', 'me_levelup', 1, '[["", "청파가 나를 보자마자 두 팔을 번쩍 들고 소리를 지르다가 그대로 기침을 터뜨렸다."], ["청파", "{이름} 님, 더 강해지셨네요! 제가 모를 줄 아셨어요? 내일은 기념으로 손님들 국을 한 그릇씩 더 드려야겠어요. 배부르면 노래하니까 {이름} 님 노래도 시켜 볼래요!"]]'::jsonb),
+('cheongpa', 'home_portrait', 1, '[["", "청파가 벽에 걸린 제 초상 앞에서 숨을 멈추고 한참 서 있다가 푸 하고 내쉬었다."], ["청파", "그림 속 저는 기침을 안 하네요. ……좋다. 저 녀석이라면 아흔여섯 숨도 거뜬히 참겠어요. 애초에 숨을 안 쉬니까요."]]'::jsonb),
+('cheongpa', 'home_pet', 1, '[["", "청파가 놋대야에 띄운 나뭇잎 배를 손가락으로 밀자 동무가 앞발로 물을 철벙철벙 쳤다. 청파가 물을 뒤집어쓰고 웃었다."], ["청파", "얘는 물을 하나도 안 무서워하네요! 잠수꾼 해도 되겠어요. ……아니, 안 돼. 넌 그냥 위에서 놀아. 그게 훨씬 좋아."]]'::jsonb),
+('cheongpa', 'home_new_furn', 1, '[["", "청파가 새 가구 둘레를 빙 돌며 손바닥으로 모서리를 두드려 보고 귀를 댔다."], ["청파", "나무 속이 아주 단단해요. 배 만들 때 쓰는 나무 같네요. 이걸로 배를 지으면 비가 와도 끄떡없겠는데요? 농담이에요! 뜯어 갈 생각 없어요."]]'::jsonb),
+('cheongpa', 'home_mate', 1, '[["", "청파가 물에 젖은 손을 바지에 닦으며 마루 안쪽을 돌아보았다."], ["청파", "아까 정인 분이 제 배를 구경하셨어요. 뱃삯을 내시겠다는 걸 사양했죠. {이름} 님 식구한테 어떻게 돈을 받아요. 다만 식구 매듭은 안 지어 드렸어요. 그건 {이름} 님한테만 지어 드린 거니까요."]]'::jsonb),
+('cheongpa', 't_days_7', 1, '[["", "청파가 기름종이 꾸러미를 펼쳐 새로 넣은 것을 보여 주었다. 별채 마당의 작은 조약돌 하나였다."], ["청파", "이레째 기념으로 주운 돌이에요! 같이 다닌 곳에선 하나씩 챙기기로 했잖아요. 여긴 같이 지내는 곳이니까 제일 예쁜 걸로 골랐어요."]]'::jsonb),
+('cheongpa', 't_days_30', 1, '[["", "청파가 두 손가락을 펴 보이며 의기양양하게 웃었다."], ["청파", "한 달 새 숨을 두 번이나 더 참게 됐어요. 이제 열두 숨이에요! 아침마다 별채 마루에서 연습한 덕이죠. 물굴에서 버티던 아흔여섯 숨엔 아직 멀었지만…… 다시 들어갈 일은 없으니까요. 그래도 늘었다는 게 좋아요."]]'::jsonb),
+('cheongpa', 't_days_100', 1, '[["", "청파가 굵은 줄 한 가닥을 들고 와 내 앞에 앉았다. 줄 끝으로 식구 매듭을 천천히 지어 보이더니 그 줄을 내 손에 쥐여 주었다."], ["청파", "백 날이니까 식구 매듭 짓는 법을 알려 드릴게요. 식구가 아니면 못 가르쳐 주는데, 이젠 {이름} 님도 식구잖아요! 첫 매듭은 제 생명줄에 달아 주세요. 꽁꽁 매듭 말고 식구 매듭으로요!"]]'::jsonb),
+('cheongpa', 't_long_away', 1, '[["", "문간 기둥에 생명줄 끝이 단단히 감겨 있었다. 줄은 마당을 가로질러 청파의 허리까지 이어져 있었다. 청파가 줄을 당겨 보이며 입을 삐죽였다."], ["청파", "당번이 사흘이나 안 계셔서 기둥한테 대신 맡겼어요. 그런데 기둥은 아무리 당겨도 대답이 없더라고요. 매듭 하나는 잘 지키던데요? 그래도 {이름} 님만은 못하죠."]]'::jsonb),
+('cheongpa', 't_long_away', 2, '[["", "청파가 마루에 기름종이 꾸러미 셋을 늘어놓았다. 꾸러미마다 생선 한 마리씩이 들어 있었다."], ["청파", "사흘 동안 하루에 한 마리씩 {이름} 님 몫을 낚아 뒀어요. 손님 국에도 안 넣고요. 그런데 안 오셔서 셋째 생선은 좀 냄새가 나네요. 그건 제가 먹을게요."]]'::jsonb),
+('cheongpa', 't_last_today', 1, '[["", "청파가 노를 어깨에 메고 문간에 섰다. 물가 쪽을 한 번 돌아보았다."], ["청파", "배부터 단단히 매 놓고 올게요. 밤새 떠내려가면 큰일이잖아요. 이번엔 꽁꽁 매듭 말고 토끼 매듭으로 맬 거예요. 토끼가 굴에 들어가면 오늘 얘기는 끝이에요!"]]'::jsonb),
+('cheongpa', 'idle', 1, '[["", "청파가 기름종이 꾸러미를 풀어 안의 것을 마루에 하나씩 늘어놓았다. 바랜 등롱 종이 열한 장, 엿 종이 한 장, 녹슨 쇠못 하나가 줄지어 놓였다."], ["청파", "이건 꺼진 관아 터에서, 이건 단비 누님한테, 이 못은 옛 나루 저자 배에서 주운 거예요. 하나하나 다 기억나요. {이름} 님도 짚어 보세요. 우리 같이 다닌 곳들이잖아요."]]'::jsonb),
+('cheongpa', 'idle', 2, '[["", "청파가 마루 끝에 서서 노 젓는 시늉을 했다. 허리를 크게 굽혔다 펴며 양팔을 휘저었다."], ["청파", "영감님은 제가 노 젓는 모습이 아직 잠수꾼 같다세요. 물을 미는 게 아니라 물속으로 들어가려는 사람 같대요. 이렇게 젓는 건가요? ……이게 맞아요?"]]'::jsonb),
+('cheongpa', 'idle', 3, '[["", "청파가 손바닥을 펴 보였다. 노를 쥐는 자리마다 물집이 잡혔다 터진 자국이 겹겹이 남아 있었다."], ["청파", "잠수하던 때는 손바닥이 말랑했는데 이젠 온통 굳은살이에요. 제법 노꾼 손이 됐죠? 한번 만져 보세요. 영감님 손만큼은 아직 아니라지만요."]]'::jsonb),
+('cheongpa', 'idle', 4, '[["", "청파가 잠수 줄 한 토막으로 토끼 매듭을 짓다가 끝을 내게 내밀었다."], ["청파", "복습해 볼까요? 토끼가 굴에서 나와 나무를 한 바퀴 돌고 다시 굴로 들어가요. 어라, {이름} 님 토끼는 또 나무를 두 바퀴 돌았네요. 그러면 꽁꽁 매듭이 된다니까요!"]]'::jsonb),
+('cheongpa', 'idle', 5, '[["", "청파가 달래 아주머니 주막 흉내를 내며 국자로 허공을 휘저었다."], ["청파", "달래 아주머니가 맨날 이러세요. ''청파야, 손님은 굶겨도 너는 밥 먹고 다녀!'' 덕분에 주먹밥을 하나 더 얻어 왔어요. 반 나눠 드릴게요."]]'::jsonb),
+('cheongpa', 'idle', 6, '[["", "청파가 강 쪽으로 손을 뻗어 물 흐르는 방향을 손끝으로 따라 그렸다."], ["청파", "물은 위에서 아래로 흐르잖아요. 그런데 요즘 전 거꾸로 올라가요. {이름} 님 별채가 위쪽에 있으니까요. 물살 거슬러 오기가 이렇게 숨찬 줄 예전엔 몰랐어요."]]'::jsonb),
+('cheongpa', 'idle', 7, '[["", "청파가 쿨럭 기침을 하더니 제 기침 소리를 스스로 흉내 내며 웃었다."], ["청파", "배고픈 손님들은 제 기침을 흉내 내요. 밥을 먹고 나면 노래를 부르고요. 그러니까 기침 흉내가 들린다 싶으면 제가 밥을 늦게 드렸다는 뜻이에요. 얼른 차려야죠!"]]'::jsonb),
+('cheongpa', 'idle', 8, '[["", "청파가 놋대야 물에 나뭇잎 하나를 띄우고 후 불어 밀었다. 나뭇잎이 대야 끝까지 미끄러졌다."], ["청파", "증조할아버지도 이런 식으로 손님을 실어 나르셨겠죠. 그땐 뱃삯을 받으셨겠지만요. 전 안 받아요. 나뭇잎 배도 공짜니까 어서 타세요!"]]'::jsonb),
+('cheongpa', 'idle', 9, '[["", "청파가 마당 끝 물가에 앉아 발을 물에 담그고 있었다. 이번엔 무릎까지 담가 있었다."], ["청파", "보세요, 이번엔 무릎까지 담갔어요! 연화늪에선 발만 겨우 담갔는데. ……이젠 몸이 더 내려가고 싶지 않은가 봐요. 위에 당번이 있으니까요. 거기서 보고 계세요."]]'::jsonb),
+('cheongpa', 'idle', 10, '[["", "청파가 별채 기둥에 감긴 생명줄 매듭을 손끝으로 두드려 보았다."], ["청파", "당번 자리 매듭이 멀쩡한지 보는 거예요. 하루에도 몇 번씩요. 안 풀릴 거 아는데도 자꾸 확인하게 되네요. 잠수꾼 버릇이죠. 줄은 아무리 살펴도 지나치지 않아요."]]'::jsonb),
+('cheongpa', 'idle', 11, '[["", "청파가 하늘을 보며 손가락을 꼽다가 고개를 갸웃했다."], ["청파", "갈매 누님은 저 별이 물고기처럼 생겼다는데, 제 눈엔 아무리 봐도 노예요. 하람 형님한테 물어보면 분명 ''그건 관측이 아니라 감상이잖아요'' 하실걸요."]]'::jsonb),
+('cheongpa', 'idle', 12, '[["", "청파가 마루에 엎드려 천경호에서 낚은 물고기 비늘 한 장을 볕에 비춰 보았다. 비늘에 하늘빛이 어렸다."], ["청파", "물이 시작되는 곳에 사는 생선 비늘이에요. 손님들한테 보여 드렸더니 노래까지 부르시더라고요. 하나는 {이름} 님 꾸러미에도 넣어 드릴게요. 꾸러미가 없으면 제가 만들어 드리고요."]]'::jsonb),
+('cheongpa', 'idle', 13, '[["", "청파가 노들 영감 이야기를 하다 말고 웃음을 터뜨렸다."], ["청파", "영감님은 오지 말라시면서 꿀은 꼭 챙겨 주세요. 오늘은 거슬러 오다가 숨차면 먹으라며 꿀단지를 통째로 주셨다니까요. ……벌써 반이나 먹은 건 영감님께 말씀하지 마세요."]]'::jsonb),
+('cheongpa', 'idle', 14, '[["", "청파가 품에서 작은 밧줄 고리를 꺼내 마당 말뚝에 던졌다. 고리가 말뚝에 쏙 걸렸다."], ["청파", "배를 댈 땐 이렇게 고리를 던져요. 열 번 던지면 아홉 번은 걸리죠. 나머지 한 번은 물에 빠지고요. 그럴 땐 영감님이 갈고리로 건져 주세요. {이름} 님도 해 보실래요?"]]'::jsonb),
+('cheongpa', 'idle', 15, '[["", "청파가 화로에 영초 차를 올려놓고 차가 우러나는 동안 가만히 앉아 있었다."], ["청파", "영초 차는 푹 우려야 목이 좀 트여요. 기다리는 동안은 말 안 하셔도 돼요. 그날처럼요. ……그때 말없이 곁에 있어 주신 거, 정말 고마웠어요."]]'::jsonb),
+('cheongpa', 'idle', 16, '[["", "청파가 마루에 앉아 낚싯바늘을 하나씩 갈고 있었다. 바늘 끝을 엄지에 대 보고 고개를 끄덕였다."], ["청파", "{이름} 님 낚싯바늘은 뭐든 잘 걸잖아요. 생선도, 꾸러미도요. 백지교 일 이후로 저도 바늘을 {이름} 님처럼 갈고 있어요."]]'::jsonb),
+('cheongpa', 'idle', 17, '[["", "청파가 별채 마당을 가로지르는 바람에 얼굴을 대고 눈을 가늘게 떴다."], ["청파", "대장님은 볼로 바람을 읽으신대요. 전 숨으로 읽고요. 들이쉴 때 차가우면 내일 물이 불고, 따뜻하면 고기가 떠요. 물론…… 틀릴 때도 있어요."]]'::jsonb),
+('cheongpa', 'idle', 18, '[["", "청파가 손님에게 받은 짚신 한 켤레를 들어 보였다. 뱃삯 대신 놓고 간 것이었다."], ["청파", "뱃삯은 안 받는다고 했는데도 짚신을 놓고 가셨어요. 제 발엔 너무 크네요. {이름} 님이 신어 보실래요? 아무한테나 줄 순 없지만 식구라면 괜찮겠죠."]]'::jsonb),
+('cheongpa', 'idle', 19, '[["", "청파가 물가에 매어 둔 배를 손가락으로 가리키며 뿌듯하게 웃었다."], ["청파", "영감님은 저 배를 그냥 ''배''라고 부르시거든요. 그래서 제가 이름을 지었어요. ''올라가는 배''요! 내려갈 때도 그 이름 그대로 불러요. 한번 지은 이름은 안 바꿀 거예요."]]'::jsonb),
+('cheongpa', 'idle', 20, '[["", "청파가 마루 끝에 누워 물 흐르는 소리에 귀를 기울였다. 손가락이 저도 모르게 숫자를 세고 있었다."], ["청파", "물소리만 들으면 저도 모르게 손가락으로 숨을 세요. 그만하려고 해도 잘 안 되네요. ……{이름} 님, 손 좀 잡아도 될까요? 그러면 손가락이 쉴 것 같아요."]]'::jsonb),
+('cheongpa', 'idle', 21, '[["", "청파가 국거리 생선을 손질하다가 칼을 멈추고 생선 배 속을 들여다보았다."], ["청파", "생선 배 속에 든 건 물풀이에요. 강바닥에서 자라는 거죠. 전 이제 그 아래로 내려가지 않지만, 생선들이 대신 소식을 가져다주네요. 고마운 녀석들이에요."]]'::jsonb),
+('cheongpa', 'idle', 22, '[["", "청파가 단비가 준 엿 반쪽을 입에 물고 오물거리며 노를 손질했다."], ["청파", "단비 누님이 노 저을 때 먹으라고 엿을 주셨는데요. 노 젓다 기침하면 엿이 입 밖으로 튀어나가거든요! 그래서 쉴 때 먹으려고요. 대장님처럼요."]]'::jsonb),
+('cheongpa', 'idle', 23, '[["", "청파가 마당 흙바닥에 나룻배 하나를 그리고 그 안에 사람 둘을 그렸다. 하나는 노를 쥐고 있었다."], ["청파", "노 쥔 사람이 저고 앉아 있는 사람이 {이름} 님이에요. 줄은…… 여기다 그려야겠다. 우리 둘 사이에요. 줄을 그리기가 제일 어려워요. 너무 팽팽하면 불안해 보이잖아요."]]'::jsonb),
+('cheongpa', 'idle', 24, '[["", "청파가 문간에 앉아 강 아래를 오가는 배들을 손가락으로 세었다."], ["청파", "저 배는 염등촌으로, 저 배는 갑문으로 가요. 돛만 봐도 알 수 있어요. 우리 배가 제일 작아도 노랫소리는 제일 커요! 밥이 맛있으니까요."]]'::jsonb),
+('cheongpa', 'idle', 25, '[["", "청파가 밧줄 한 사리를 감다 말고 끝을 잡아 흔들었다. 끝이 해져 실밥이 너풀거렸다."], ["청파", "줄 끝이 해지면 불로 살짝 지져서 풀리지 않게 해요. 그런데 {이름} 님이 지은 꽁꽁 매듭은 그럴 필요도 없겠네요. 처음부터 안 풀리잖아요."]]'::jsonb),
+('cheongpa', 'idle', 26, '[["", "청파가 마루에서 하품을 하다가 하품 끝에 기침이 섞여 나오자 얼굴을 찡그렸다."], ["청파", "하품 하나도 마음대로 못 하네요. ……숨통아, 오늘만 좀 봐줘라. {이름} 님 앞에서 하품 한번 멋지게 해 보고 싶단 말이야."]]'::jsonb),
+('cheongpa', 'idle', 27, '[["", "청파가 기름종이 한 장을 반듯하게 접어 무언가를 쌌다. 다 싼 꾸러미를 내 손에 쥐여 주었다."], ["청파", "{이름} 님 꾸러미도 하나 만들어 봤어요. 첫 장엔 천경호 비늘을 넣었고요. 같이 다닌 곳에서 하나씩 모아 보세요. 기름종이로 싸면 물에 젖을 걱정도 없어요."]]'::jsonb),
+('cheongpa', 'idle', 28, '[["", "청파가 물가 말뚝에 걸터앉아 다리를 흔들며 노래를 흥얼거리다가 멈추고 나를 보았다."], ["청파", "손님들이 배부를 때 부르는 노래예요. 저도 지금 배가 부르거든요. {이름} 님 별채에서 밥을 먹었잖아요!"]]'::jsonb),
+('cheongpa', 'idle', 29, '[["", "청파가 화로 곁에 앉아 젖은 소매를 말리며 증조할아버지 이야기를 꺼냈다가 말끝을 흐렸다."], ["청파", "증조할아버지 선단은 뱃삯을 받고 이름까지 팔았대요. ……그래서 전 아무것도 안 받으려고요. 대신 밥은 꼭 먹여요. 그게 제가 갚을 수 있는 길이니까요. 무거운 얘길 했네요. 미안해요."]]'::jsonb),
+('cheongpa', 'idle', 30, '[["", "청파가 마루 기둥에 기대앉아 손목의 줄을 손가락에 감았다 풀었다 했다. 줄 끝이 내 팔찌와 이어져 있었다."], ["청파", "그냥 줄을 이어 둔 거예요. 물에 들어갈 일도 없는데요. ……그래도 끝에 {이름} 님이 있다는 걸 손으로 느끼면 숨이 좀 편해져요. 정말이에요."]]'::jsonb),
+('cheongpa', 'gift_field', 1, '[["", "청파가 생선을 받아 아가미를 들춰 보고 코를 바짝 대 보았다. 눈이 반짝였다."], ["청파", "와, 싱싱하네요! 오늘 아침에 잡으셨죠? 손님 국에 넣으면 다들 노래하겠는데…… 아니, 오늘은 우리끼리 먹어요. {이름} 님이랑 저랑요."]]'::jsonb),
+('cheongpa', 'gift_field', 2, '[["", "청파가 받은 물고기의 비늘을 손끝으로 쓸어 보며 무게를 가늠했다."], ["청파", "엄청 큰 놈이네요! 끌어올릴 때 매듭은 안 풀렸어요? 토끼 매듭으로 묶으셨죠? 거봐요, 토끼 매듭을 믿으시라니까요!"]]'::jsonb),
+('cheongpa', 'gift_hq', 1, '[["", "청파가 선물을 받아 들고 숨을 멈춘 채 들여다보다가 기침과 함께 숨을 내쉬었다."], ["청파", "……숨이 멎는 줄 알았어요. 정말로요. 이건 꾸러미 맨 위에 넣어 둘래요."]]'::jsonb),
+('cheongpa', 'gift_other', 1, '[["", "청파가 선물을 받아 위아래로 뒤집어 보더니 귀에 대 보았다."], ["청파", "이건 물에 뜨나요, 가라앉나요? 잠수꾼 버릇이라 그게 먼저 궁금해요. 뭐든 좋아요. 품에 넣고 다닐래요. 노가 덜 흔들리게요."]]'::jsonb),
+('cheongpa', 'gift_other', 2, '[["", "청파가 선물을 기름종이로 싸서 꾸러미에 넣었다. 꾸러미가 조금 더 불룩해졌다."], ["청파", "꾸러미가 묵직할수록 노가 덜 흔들리는 것 같아요. 그래서 {이름} 님이 주신 건 하나도 빼놓지 않고 여기에 넣어요."]]'::jsonb),
+('cheongpa', 'gift_reward', 1, '[["", "청파가 뚜껑 덮은 접시 둘을 조심조심 들고 왔다. 뚜껑을 열자 얇게 뜬 참돔 살이 꽃잎처럼 펼쳐져 있었다."], ["청파", "용왕 참돔 회예요! {이름} 님이 주신 생선으로 영감님한테 칼질 배워서 떴어요. 손님한테도 안 내는 거예요. 하나는 지금 드시고, 나머지는 조금 있다 드세요!"]]'::jsonb),
+('cheongpa', 'gift_reward', 2, '[["", "청파가 회 접시 둘을 건네며 접시 끝에 꿀단지 숟가락을 하나 얹어 주었다."], ["청파", "영감님 꿀이에요. 회 드신 뒤에 입가심하세요. ……꿀이 자꾸 줄어든다고 하시니까 영감님한텐 우리끼리만 아는 걸로 해요."]]'::jsonb),
+('cheongpa', 'mate_hanseol', 1, '[["", "한설에게 꾸벅 인사하다 기침이 터진 청파가 숨을 고르며 내게 달려왔다."], ["청파", "감찰관님이세요! 명등제 때 밤새 장부 모서리를 펴 놓으셨던 분이요. 여기선 국수 얘기를 하시더라고요. 자정에 여는 국숫집이 있대요. 진짜로요!"]]'::jsonb),
+('cheongpa', 'mate_yeoul', 1, '[["", "여울과 물가에 쪼그려 앉아 있던 청파가 일어나 내게 손을 흔들었다."], ["청파", "저 누님도 섬에서 노를 저어 보셨대요. 물에 노 넣는 각도가 저랑 똑같아요! 물 밑은 안 내려다보신다네요. ……저도 그래요. 둘 다 물 위만 보는 거죠."]]'::jsonb),
+('cheongpa', 'mate_wolha', 1, '[["", "월하가 떨어뜨린 엽전을 주워 건네주고 온 청파가 내게 웃어 보였다."], ["청파", "월하 님이 엽전을 또 떨어뜨리셔서 제가 주웠어요. 다온이가 없을 땐 제 차례죠! 뱃삯을 내시겠다는 것도 사양했더니…… 셈이 안 맞는다고 난처해하시더라고요."]]'::jsonb),
+('cheongpa', 'mate_daon', 1, '[["", "다온을 태우고 물가를 한 바퀴 돌고 온 청파가 숨을 몰아쉬며 내 앞에 섰다."], ["청파", "다온이가 노를 잡더니 배가 빙글빙글 돌았어요! 뱃삯 대신 꿀물 한 사발도 줬고요. ……저 원래 뱃삯은 안 받는데 꿀물은 받았어요. 그건 밥이잖아요!"]]'::jsonb),
+('cheongpa', 'mate_hisu', 1, '[["", "희수에게 생선 꾸러미를 건네고 돌아온 청파가 손을 저으며 내게 웃었다."], ["청파", "적지 마세요, 서리님! 그냥 드린 생선이에요. 받았다고 써야 하나 말아야 하나 고민하시길래…… 차라리 「먹음」이라고 적으시라고 했어요."]]'::jsonb),
+('cheongpa', 'mate_danbi', 1, '[["", "단비에게 등을 두드려 받고 기침을 멈춘 청파가 내 쪽으로 돌아앉았다."], ["청파", "단비 누님은 제가 기침할 때마다 등을 두드려 주세요. 엿도 반쪽씩 주시고요. ……등도에서 받은 엿 종이는 아직도 꾸러미에 있어요. 버릴 수가 없더라고요."]]'::jsonb),
+('cheongpa', 'mate_unbi', 1, '[["", "여운비에게 생명줄 매듭을 보여 주고 온 청파가 자랑스럽게 내게 매듭을 들어 보였다."], ["청파", "대장님이 제 매듭이 단단하다고 칭찬하셨어요! 「나쁘지 않소」는 아니었지만요. 그리고 그때 「가지 마시오」 하신 것도 아직 떠들고 다녀요. ……귀 빨개지시는 게 재밌거든요!"]]'::jsonb),
+('cheongpa', 'mate_galmae', 1, '[["", "갈매에게 「꼬맹이」 소리를 듣고 온 청파가 볼을 부풀린 채 내게 하소연했다."], ["청파", "갈매 누님은 아직도 저를 꼬맹이라 불러요! 이제 어엿한 노꾼인데요. 그래도 물굴에서 절 건질 때 줄을 잡아 주셨잖아요. ……그러니까 참는 거예요. 조금만요!"]]'::jsonb),
+('cheongpa', 'mate_haram', 1, '[["", "하람 옆에서 숨을 길게 쉬던 청파가 손가락을 접어 보이며 내게 왔다."], ["청파", "하람 형님이 제 숨을 세더니 열둘이래요! 제가 센 거랑 같아요. 형님은 남의 숨을, 저는 제 숨을 세니까…… 둘이 맞춰 보면 틀릴 일이 없죠!"]]'::jsonb),
+('cheongpa', 'mate_munsu', 1, '[["", "문수를 보자마자 키득거리던 청파가 내 소매를 잡아끌며 말했다."], ["청파", "문수 님이 밤에 제 노 소리를 듣고 놀라 {이름} 님 팔을 붙잡으셨대요! 제가 그렇게 무서운가요? ……앞으론 노 소리를 줄여 볼게요. 기침은 마음대로 안 돼도 노는 조심해서 저을 수 있으니까요."]]'::jsonb),
+('galmae', 'bond_make', 1, '[["", "화로 뒤 작은 방 칼걸이에는 갈매의 칼 한 자루와 빈 고리 하나가 걸려 있었다. 갈매가 벽에서 등을 떼고 서서 쇳조각 하나를 손바닥에서 굴렸다. 칼걸이 고리를 짜고 남은 강철 토막을 구부려 만든 작은 고리였다. 고리 안쪽에 불씨 고개 숯불에 그을린 자국이 검게 남아 있었다."], ["갈매", "칼걸이 만들고 남은 쇠야. 버리긴 아까워서 하나 더 구부렸지. 벽에 건 건 그 방에서만 쓰잖아. 이건 어디든 가지고 다녀."]]'::jsonb),
+('galmae', 'bond_make', 2, '[["", "갈매가 내 손목을 덥석 잡아 고리를 끼우고 끝을 손끝으로 꽉 오므렸다. 오므리는 손에 힘이 너무 들어가 내가 움찔하자 갈매가 얼른 손을 뗐다."], ["갈매", "아, 아팠어? ……이 정도면 안 빠지겠지. 정표 값 낸 것도 알아. 그러니까 빚진 거 없어. 셈은 끝이야."], ["갈매", "보름 사이에 등잔 살피러 다니다 네 별채에도 들를게. 걸상 하나만 마련해 둬. 묵고 가면 장작은 내가 패고. 그건 묵은 값이고…… 네 보러 오는 건 다른 얘기야."]]'::jsonb),
+('galmae', 'bond_again', 1, '[["", "갈매가 새 쇠고리를 내 손목에 끼우고 화로 뒤 작은 방 칼걸이를 턱으로 가리켰다. 비어 있어야 할 둘째 고리에 빛바랜 옛 쇠고리가 걸려 있었다."], ["갈매", "끊던 날 네 자리에 걸어 놨어. 네 고리니까. ……다시 올 줄은 몰랐는데. 이제 두 고리 다 찼네. 됐어. 다음에 또 끊을 거면 미리 말해. 셈은 그 자리에서 해야 하니까."]]'::jsonb),
+('galmae', 'bond_break', 1, '[["", "갈매가 내 손목에서 쇠고리를 벗겨 내려다보았다. 입술을 꾹 깨물더니 마당 한쪽 장작더미 쪽으로 성큼 걸어갔다. 걷어차려던 발이 장작 앞에서 멈췄다."], ["갈매", "……안 찰 거야. 할배처럼 하기로 했으니까. 걷어차 봤자 다시 쌓는 건 나잖아."], ["갈매", "우리 사이에 남은 빚은 없어. 다 끝났어. ……그래도 네가 내 등 봐 준 건 안 잊어. 그건 셈에 넣을 수 없으니까."]]'::jsonb),
+('galmae', 'first_dawn', 1, '[["", "새벽 마당에서 쓱쓱 날 가는 소리가 났다. 갈매가 우물가 돌에 숫돌을 얹고 마을 낫 한 자루를 갈고 있었다. 숫돌 위로 물이 잿빛으로 흘렀다."], ["갈매", "일어났어? 어젯밤 묵은 값 치르는 중이야. 잔불촌에서 가져온 낫인데, 네 숫돌이 더 잘 먹네. 숫돌 빌린 값은 장작으로 갚을게."]]'::jsonb),
+('galmae', 'first_dawn', 2, '[["", "담장 위에 갈매가 걸터앉아 별채 쪽은 등지고 바깥 길만 보고 있었다. 내가 마당에 나서자 고개도 돌리지 않고 손만 들었다."], ["갈매", "아침 정찰 끝. 이상 없어. 바깥은 내가 봤으니 마당은 네가 봐. 돌담에 앉던 버릇이 아직 남았네. 여긴 담장이 낮아서 발이 땅에 닿아."]]'::jsonb),
+('galmae', 'first_noon', 1, '[["", "별채 부엌 아궁이에서 불길이 거세게 일었다. 갈매가 아궁이 앞에 쭈그려 앉아 쇠 집게로 시뻘겋게 단 쇠토막을 뒤집고 있었다. 얼굴에 땀이 줄줄 흘렀다."], ["갈매", "부엌 불 좀 빌렸다! 어멈 국자 손잡이가 빠져서 붙이는 중이야. 숯은 내 걸 썼어. 불만 빌린 거라고. 동네 불 쓰는 건 빚 아니잖아."]]'::jsonb),
+('galmae', 'first_noon', 2, '[["", "마루 볕 드는 자리에 갈매가 팔베개를 하고 누워 있었다. 허리춤이 비어 있었다. 손이 자꾸 허리께로 갔다가 빈자리를 만지고 돌아왔다."], ["갈매", "칼 없이 낮잠 자는 연습 중이야. 할배는 어떻게 그렇게 태평했을까. ……넌 내 등 뒤에 좀 앉아 있어. 그러면 잠이 올지도 모르겠네."]]'::jsonb),
+('galmae', 'first_dusk', 1, '[["", "노을이 담장 그림자를 길게 늘였다. 갈매가 기름병을 허리에 차고 부지깽이를 손에 쥐고 대문을 나섰다."], ["갈매", "봉연 문 앞 등잔에 기름 채우러 가. 해 지기 전에 넣어야 밤새 타거든. 금방 올 테니까 걸상은 그대로 둬."]]'::jsonb),
+('galmae', 'first_dusk', 2, '[["", "대문 앞에서 갈매가 별채 쪽으로 등을 돌린 채 한동안 서 있었다. 발끝으로 땅을 툭툭 찼다."], ["갈매", "내 등 좀 봐. ……아니, 그냥 한번 해 보고 싶었어. 나갈 때 네가 뒤에 있으면 길이 덜 휑하더라고."]]'::jsonb),
+('galmae', 'first_night', 1, '[["", "깊은 밤 마당 한가운데 갈매가 대자로 누워 하늘을 보고 있었다. 손가락으로 별을 하나씩 짚으며 무어라 중얼거렸다."], ["갈매", "하람이한테 별자리 알려 주던 거 연습하고 있어. 저게 물고기였나 국자였나 헷갈리네. 틀려도 걘 웃기만 하니까 뭐. 너도 와서 누워 봐."]]'::jsonb),
+('galmae', 'first_night', 2, '[["", "화로 옆 걸상에 앉은 갈매가 부지깽이로 불을 뒤적이고 있었다. 불티가 톡톡 튀어 올랐다."], ["갈매", "잔불촌에선 보름마다 이렇게 앉아서 첩을 무릎에 올려놔. 오늘은 보름도 아니고 첩도 없지만. ……할배 얘기나 해 줄까? 밤새 해도 모자랄걸."]]'::jsonb),
+('galmae', 'w_clear', 1, '[["", "볕이 쨍쨍했다. 갈매가 마당에 숯을 쫙 펼쳐 널고 하나씩 뒤집고 있었다. 손이 새까맸다."], ["갈매", "불씨 고개에서 가져온 정련 숯이야. 바짝 말려야 불이 고르게 붙거든. 야, 밟지 마! 네 발자국 찍힌 건 네 몫이다?"]]'::jsonb),
+('galmae', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 갈매가 숫돌에 물을 끼얹으며 하늘을 힐끗 올려다보았다."], ["갈매", "이런 날 숫돌이 제일 잘 먹어. 볕이 세면 금방 마르고 비 오면 손이 미끄럽거든. 무기 가져와. 오늘 갈아야 해."]]'::jsonb),
+('galmae', 'w_rain', 1, '[["", "장대비가 쏟아졌다. 갈매가 숯 바구니를 끌어안고 처마 밑으로 뛰어 들어와 발을 동동 굴렀다. 바구니 위에 제 겉옷을 덮어씌웠다."], ["갈매", "숯 젖으면 큰일 나! 애써 말린 건데. ……나? 나는 괜찮아. 숯은 젖으면 사흘을 날리지만 난 하루면 마르잖아."]]'::jsonb),
+('galmae', 'w_rain', 2, '[["", "빗발이 지붕을 두드렸다. 갈매가 처마 끝에 서서 빗소리에 귀를 기울이더니 한쪽 입꼬리를 올렸다."], ["갈매", "비가 오면 발소리가 묻히잖아. 정찰대는 이런 날 서로 등을 맞대고 움직였어. 뒤에서 누가 와도 모르니까. ……우리도 한번 해 볼래? 연습이야, 연습."]]'::jsonb),
+('galmae', 'w_drizzle', 1, '[["", "실비가 소리 없이 내렸다. 갈매가 대야에 빗물을 받아 숫돌을 담갔다."], ["갈매", "숫돌엔 빗물이 좋대. 우물물은 쇠 맛이 나서 날이 거칠어진다고. 할배가 그러셨어. 믿든 말든 네 마음이고."]]'::jsonb),
+('galmae', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 갈매가 내 뒤로 돌아와 등을 맞대고 섰다. 갈매의 어깨뼈가 내 등에 딱 닿았다."], ["갈매", "안개 낀 날엔 정찰대가 이렇게 움직여. 등을 맞대고 서로 반대쪽을 보는 거지. 자, 마당 끝까지 가 보자. 발 맞춰. 하나, 둘."]]'::jsonb),
+('galmae', 'w_wind', 1, '[["", "거센 바람에 화로 불씨가 마당으로 날렸다. 갈매가 화로 앞에 팔을 벌리고 막아서서 불씨를 손바닥으로 탁탁 눌러 껐다."], ["갈매", "불씨 고개 바람이 여기까지 부네! 이런 날 불씨 하나 날리면 마을이 다 타. ……손? 괜찮아. 대장간에서 단련된 손이야. 이 정도론 끄떡없어."]]'::jsonb),
+('galmae', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 마당에 나선 내 뒤통수에 퍽 하고 눈뭉치가 맞았다. 돌아보니 갈매가 담장 뒤에서 눈뭉치를 하나 더 쥐고 있었다."], ["갈매", "뒤를 안 살폈지? 정찰대였으면 벌써 당했어. 하하! 자, 이번엔 네 차례야. 대신 내 등 뒤에서 던지진 마."]]'::jsonb),
+('galmae', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 갈매가 담장 위에 올라앉아 별채를 등지고 바깥 길을 노려보았다. 부지깽이를 무릎에 가로놓았다."], ["갈매", "오늘 바깥은 내가 맡을게. 별채 안은 네가 봐. 밖에 나오지 말고. ……할배도 이런 날이면 마을 어귀 돌담에서 밤을 새웠어. 나도 그렇게 할 거야."]]'::jsonb),
+('galmae', 'me_yohwa', 1, '[["", "갈매가 내 멱살을 두 손으로 움켜쥐고 얼굴을 바짝 들이댔다. 정찰대 호령처럼 크고 거친 목소리가 마당을 울렸다."], ["갈매", "{이름}! 대답해! 정찰대에선 이름을 부르면 대답하는 거야! ……{이름}. 들리잖아. 대답할 때까지 부를 거니까, 해가 뜨기 전에 얼른 대답해."]]'::jsonb),
+('galmae', 'me_erosion_80', 1, '[["", "갈매가 내 허리춤에서 무기를 뽑아 문간 칼걸이 고리에 탁 건 다음에야 내 얼굴을 똑바로 보았다. 입술이 하얗게 질려 있었다."], ["갈매", "정화 끝날 때까지 무기는 내가 맡아. 돌려 달래도 소용없어. ……내가 칼 풀게 만든 게 너잖아. 이번엔 내가 널 쉬게 할 차례야."]]'::jsonb),
+('galmae', 'me_erosion_55', 1, '[["", "갈매가 내 무기를 받아 숫돌에 한 번 밀어 보더니 날을 등잔에 비춰 보았다. 날 위에 먹빛 얼룩이 얇게 앉아 있었다."], ["갈매", "날에 먹빛이 묻었네. 깊은 데서 휘둘렀구나. 무기가 이 꼴이면 너도 멀쩡할 리 없지. 날은 내가 갈 테니 넌 정화부터 해. 둘 다 오늘 끝내자."]]'::jsonb),
+('galmae', 'me_erosion_30', 1, '[["", "갈매가 손가락을 하나 세워 내 코앞에 들이밀었다."], ["갈매", "깊은 데 다녀왔으면 그 값은 바로 치러야지. 지금 정화하면 끝이야. 미루면 빚이 되고. 남명 사람은 빚지고 못 살아. 너도 이제 반쯤은 남명 사람이잖아."]]'::jsonb),
+('galmae', 'me_hp_low', 1, '[["", "갈매가 나를 벽 앞에 앉히고 저도 내 앞에 등을 돌려 앉았다. 내 등이 벽에, 갈매의 등이 내 무릎에 닿았다."], ["갈매", "쉬어. 앞은 내가 지킬 테니까 벽에 기대서 가만히 있어. 정찰대에선 다친 사람을 제일 안쪽에 앉혀. 거기가 가장 안전하거든."]]'::jsonb),
+('galmae', 'me_rescued', 1, '[["", "마당 한쪽 장작더미가 와르르 무너져 있었다. 갈매가 그 앞에 서서 장작 하나를 주워 들고 있다가 나를 보고 장작을 떨어뜨렸다."], ["갈매", "……찼어. 네가 쓰러졌단 말 듣고 화가 나서. 할배처럼 참으려고 했는데 못 참았어. 장작은 다시 쌓을게. 네가 앉아서 쉬는 거 보고."]]'::jsonb),
+('galmae', 'me_exp_back', 1, '[["", "대문을 들어서자 갈매가 말없이 내 뒤로 돌아갔다. 내 등과 어깨와 허리를 손바닥으로 탁탁 두드리며 살폈다."], ["갈매", "앞은 네가 알아서 봤겠지. 뒤는 내가 확인할게. ……됐다. 등엔 다친 데 없네. 앞에 난 상처는 네가 책임져."]]'::jsonb),
+('galmae', 'me_far_travel', 1, '[["", "갈매가 내 어깨너머로 대문 밖을 내다보더니 길 끝까지 눈으로 훑었다."], ["갈매", "뒤에 따라붙은 놈은 없지? 먼 길 다녀오면 꼭 하나씩 붙더라. ……없네. 들어와. 어디로 돌아왔는지 얘기해 봐. 정찰대장 눈에 허점이 안 보일 자신 있어?"]]'::jsonb),
+('galmae', 'me_levelup', 1, '[["", "갈매가 마루에 팔꿈치를 턱 올려놓고 손바닥을 펴 보였다."], ["갈매", "팔씨름하자. 얼마나 늘었는지 봐야겠어. ……어? 힘이 제법인데? 아니, 내가 진 건 아니야! 다시 해. 이건 셈이 아니라 승부라고!"]]'::jsonb),
+('galmae', 'home_portrait', 1, '[["", "갈매가 벽에 걸린 제 초상을 보다가 귀 끝이 빨개지더니 액자를 손가락으로 툭 쳤다."], ["갈매", "칼 안 찬 모습으로 그렸네. ……그림이 마음에 든다는 건 아니고. 칼이 없어서 좋다고. 괜히 놀리지 마."]]'::jsonb),
+('galmae', 'home_pet', 1, '[["", "동무가 갈매 등 뒤로 슬금슬금 다가갔다. 갈매가 돌아보지도 않고 손을 뒤로 뻗어 동무의 머리를 정확히 짚었다."], ["갈매", "뒤로 오지 말라니까. 정찰대장 뒤에 몰래 붙으면 한 대 맞는 수가 있어. ……너는 봐줄게. 동무니까."]]'::jsonb),
+('galmae', 'home_new_furn', 1, '[["", "갈매가 새 가구의 이음새를 손끝으로 훑더니 주먹으로 쾅 두드려 보았다."], ["갈매", "이음새를 쇠로 박았네. 그런데 못 대가리가 반 푼쯤 덜 들어갔어. 망치 줘 봐. 금방 고쳐 줄게. 빚 갚으려는 게 아니라 그냥 눈에 거슬려서 그래."]]'::jsonb),
+('galmae', 'home_mate', 1, '[["", "갈매가 마루 안쪽을 돌아보다가 내 옆구리를 팔꿈치로 쿡 찔렀다."], ["갈매", "네 정인이 뒤에서 인사하더라. 하마터면 주먹부터 나갈 뻔했어. ……앞으로 와서 인사하라고 전해 줘. 내 등 뒤는 네 자리라고도."]]'::jsonb),
+('galmae', 't_days_7', 1, '[["", "갈매가 엽전 일곱 닢을 마루에 탁탁 늘어놓았다."], ["갈매", "이레 묵은 값이야. 하루에 한 닢씩. 받아 둬. 안 그러면 빚진 기분이라 잠이 안 와. 셈은 셈이고, 다른 건 다른 거니까."]]'::jsonb),
+('galmae', 't_days_30', 1, '[["", "갈매가 숫돌 하나를 내 손에 쥐여 주었다. 숫돌 가운데가 한 달 동안 갈아 내 오목하게 패여 있었다."], ["갈매", "한 달 동안 네 별채에서 쓰던 숫돌이야. 이렇게 패일 만큼 갈았네. 네 무기만 서른 번쯤 갈았나 봐. 이제 네가 가져. 난 새 숫돌 길들여야지."]]'::jsonb),
+('galmae', 't_days_100', 1, '[["", "갈매가 낫 한 자루를 내밀었다. 손잡이에 남명 매듭이 감겨 있고 날 끝에 작은 홈이 하나 파여 있었다. 첫 망치에 튄 쇳조각을 녹여 덧댄 자리였다."], ["갈매", "우리 둘이 처음 망치질하다 엇나간 쇳조각 기억나? 그걸 녹여 날에 덧댔어. 정청 끄나풀도 백 날쯤 됐으면 나물은 실컷 캐 먹었겠지? 앞으로도 이걸 써."]]'::jsonb),
+('galmae', 't_long_away', 1, '[["", "갈매가 걸상에 앉아 팔짱을 끼고 있었다. 나를 보자마자 손가락 세 개를 펴 보였다."], ["갈매", "사흘. 네 걸상 지킨 지 사흘이나 됐어. 이거 큰 빚인 거 알지? 오늘 다 갚아. 저녁 먹고 등 맞대고 앉아서 해 뜰 때까지."]]'::jsonb),
+('galmae', 't_long_away', 2, '[["", "담장 위에 갈매가 걸터앉아 대문 밖 길을 보고 있었다. 내가 대문을 들어서는데도 고개를 돌리지 않았다."], ["갈매", "사흘 내내 여기서 길만 봤어. 할배 기다리던 돌담이 생각나더라. ……그래도 넌 돌아왔네. 됐어. 이제 내려갈게."]]'::jsonb),
+('galmae', 't_last_today', 1, '[["", "갈매가 내 뒤로 와서 등을 맞대고 앉았다. 등 너머로 갈매가 기지개를 켜는 게 느껴졌다."], ["갈매", "오늘 셈은 다 끝났어. 할 말도 없고. ……그러니까 그냥 이대로 좀 있자. 이건 셈에 안 넣을게."]]'::jsonb),
+('galmae', 'idle', 1, '[["", "갈매가 숫돌 앞에 나를 앉히고 내 손을 칼자루에 얹었다. 내 손목을 잡아 각도를 낮췄다."], ["갈매", "날을 더 눕혀. 손가락 하나 들어갈 만큼만 띄우고. 옳지. 이러다 낫 가는 솜씨는 나보다 낫겠어. 소문내진 마. 마을 일감이 전부 너한테 몰린다."]]'::jsonb),
+('galmae', 'idle', 2, '[["", "내가 물 한 바가지를 떠다 주자 갈매가 그 자리에서 엽전 한 닢을 내밀었다."], ["갈매", "물값이야. 뭐, 안 받겠다고? 그럼 장작 한 개 패 줄게. 받았으면 돌려줘야지. 그래야 마음이 편해."]]'::jsonb),
+('galmae', 'idle', 3, '[["", "갈매가 엿가락처럼 휜 쇠막대 하나를 들고 와 마루에 내려놓았다."], ["갈매", "일곱 살 때 처음 망치로 두드린 거야. 할배는 혼내는 대신 화로 위에 걸어 두셨어. 잔불촌 방에 두면 자꾸 눈이 가서 가져왔어. 여기 놔도 되지?"]]'::jsonb),
+('galmae', 'idle', 4, '[["", "갈매가 쇠불이 흉내를 내며 배를 잡고 웃었다."], ["갈매", "「박자는 맞는데 힘이 한쪽으로 쏠렸어!」 네가 두드린 식칼 보고 쇠불이가 그랬어. 그래도 어멈은 아직 그 칼만 쓰더라. 제일 잘 든다나."]]'::jsonb),
+('galmae', 'idle', 5, '[["", "갈매가 부지깽이를 지팡이처럼 짚고 마당을 휘적휘적 걸었다. 한쪽 팔은 옷 속에 넣어 소매를 비워 두었다."], ["갈매", "할배 흉내 내는 거야. 마을에선 칼 대신 부지깽이만 들고 다니셨거든. 빈 소매가 이렇게 펄럭이고. 어때, 닮았어? 야, 웃지 마. 진지하게 묻잖아."]]'::jsonb),
+('galmae', 'idle', 6, '[["", "갈매가 내 뒤에 서 있었다. 한참 그대로 있다가 내가 돌아보지 않는 걸 보고 혀를 찼다."], ["갈매", "너 정말 안 돌아보네. 예전엔 내가 뒤에 서기만 해도 다들 놀랐는데. ……좋아. 나도 이제 네가 뒤에 있어도 안 돌아볼게. 우리 둘 다 버릇 하나씩 고친 셈이지."]]'::jsonb),
+('galmae', 'idle', 7, '[["", "갈매가 문간 칼걸이의 빈 고리를 손가락으로 튕겨 소리를 냈다. 쨍 하고 맑게 울렸다."], ["갈매", "하나는 네 무기 걸라고 달았고, 하나는 비워 뒀어. 내 칼은 잔불촌에 있으니까. 여기선 둘 다 빈손이네. ……이것도 나쁘지 않아."]]'::jsonb),
+('galmae', 'idle', 8, '[["", "갈매가 입을 다물고 있다가 불쑥 중얼거렸다. 말을 하고 나서 제 입을 손바닥으로 막았다."], ["갈매", "「나쁘지 않은데」…… 아, 또 나왔네. 북령 말버릇이 옮았어. 다 대장님 때문이야. 그 사람 앞에서 이 말 해 봐. 귀 끝 빨개지는 거 볼 수 있어."]]'::jsonb),
+('galmae', 'idle', 9, '[["", "갈매가 마루에 엎드려 손가락으로 사람 이름을 하나씩 꼽았다."], ["갈매", "잠꾸러기, 꼬맹이, 북령, 하람이. ……그럼 넌 뭐라고 부르지? 정청 끄나풀이라고 하기엔 이제 좀 그렇고. 더 생각해 볼게. 그래도 이름이 제일 낫네."]]'::jsonb),
+('galmae', 'idle', 10, '[["", "갈매가 손바닥을 펴 보였다. 대장간 불에 덴 자국이 동그랗게 여럿 남아 있었다."], ["갈매", "이건 낫 만들다 덴 거고, 이건 식칼, 이건 칼걸이 고리. 전부 기억나. ……네 거 만들 땐 여기로 튀었어. 첫 망치에 튄 그놈 말이야. 웃기지?"]]'::jsonb),
+('galmae', 'idle', 11, '[["", "갈매가 담장 밑 흙에 찍힌 발자국을 쪼그려 앉아 들여다보았다."], ["갈매", "고양이 발자국이야. 어젯밤 담장에서 뛰어내렸네. 앞발부터 디딘 것도 보여. 정찰대장 버릇이 남아서 발자국만 보면 그냥 못 지나가."]]'::jsonb),
+('galmae', 'idle', 12, '[["", "갈매가 잔불촌 아이들 얘기를 하다가 혼자 킥킥 웃었다."], ["갈매", "새벽이가 내 걸상에 몰래 앉았다가 어멈한테 혼났대. 「갈매 언니 자리야!」 하면서. 원래 내 걸상도 아니었는데. 할배 거였거든. 이젠 다들 내 거라고 하네."]]'::jsonb),
+('galmae', 'idle', 13, '[["", "갈매가 화로 불빛에 엄지를 비춰 보았다. 엄지 끝에 먹이 거뭇하게 배어 있었다."], ["갈매", "명등제 때 장무현 줄에 이름 적고 엄지 도장 찍었잖아. 아직도 먹이 남았어. ……이건 오래 안 지워졌으면 좋겠네."]]'::jsonb),
+('galmae', 'idle', 14, '[["", "갈매가 하늘을 올려다보며 손가락으로 빈 곳을 짚었다."], ["갈매", "별 사이 빈자리가 예쁘다고 했더니 하람이가 혼내더라. 「그건 관측이 아니라 감상이잖아요」라면서. 감상 좀 하면 어때서. 너도 저 빈자리 예쁘지?"]]'::jsonb),
+('galmae', 'idle', 15, '[["", "갈매가 바구니를 내밀었다. 안에 나물이 소복했다."], ["갈매", "내가 덤으로 준 낫으로 캔 거지? 아니야? 그럼 내가 캔 거라도 가져가. 다음엔 네가 캐 와. 그 낫 썩히면 가만 안 둔다."]]'::jsonb),
+('galmae', 'idle', 16, '[["", "갈매가 걸상에 앉아 무릎에 손을 얹고 눈을 감았다. 입술이 조용히 움직였다. 첩을 무릎에 얹고 부르던 이름들이었다."], ["갈매", "보름이 아니어도 가끔 이름을 불러 봐. 누굴 빠뜨렸나 싶어서. ……다 불렀네. 마지막은 네 이름이야. 첩에는 없는 이름이지."]]'::jsonb),
+('galmae', 'idle', 17, '[["", "갈매가 담장 위로 훌쩍 올라앉아 발을 흔들었다. 아래로 늘어뜨린 발끝이 땅에 닿을 듯 말 듯했다."], ["갈매", "잔불촌 돌담보단 낮네. 여기도 등 뒤가 비긴 하지만 별채가 있잖아. ……네가 안에 있으면 마음이 놓여. 그러니까 거기 좀 있어."]]'::jsonb),
+('galmae', 'idle', 18, '[["", "갈매가 기름병을 흔들어 보고 혀를 찼다."], ["갈매", "봉연 문 앞 등잔에 기름 채워야 하는데 모자라네. 네 별채 기름 좀 빌릴게. 빌린 건 꼭 갚아. 다음 보름에 두 배로 가져올게."]]'::jsonb),
+('galmae', 'idle', 19, '[["", "갈매가 밤이 깊었는데도 대문을 반쯤 열어 두고 문간에 앉았다. 내가 닫으려 하자 손을 들어 막았다."], ["갈매", "남명이 망한 뒤로 할배는 문을 반쯤 열어 두고 주무셨대. 누가 돌아올지 모른다고. ……나도 잔불촌에선 그래. 여긴 네가 안에 있으니 닫아도 되지만, 오늘만 열어 두자."]]'::jsonb),
+('galmae', 'idle', 20, '[["", "갈매가 마당에 금을 긋고 그 안에 돌멩이 몇 개를 늘어놓았다. 진지한 얼굴로 돌을 하나씩 옮겼다."], ["갈매", "국경 길 정찰 순서야. 여기가 파수막, 여기가 고갯마루. 앞장서는 법은 배웠으니까 이젠 뒤를 맡아 봐. 뒤에 서는 게 더 어려워."]]'::jsonb),
+('galmae', 'idle', 21, '[["", "갈매가 내 무기를 집어 들고 이음새를 손끝으로 훑었다. 미간이 확 좁혀졌다."], ["갈매", "또 헐거워졌네. 남의 낫은 잘 고쳐 주면서 네 무기는 왜 안 살펴? 이리 줘. 빚 갚으려는 거 아니야. 네 등 뒤에서 이게 부러지면 내가 막아야 하잖아."]]'::jsonb),
+('galmae', 'idle', 22, '[["", "갈매가 걸상을 끌어다 별채 문간 옆에 놓고 앉아 엉덩이로 들썩여 보았다."], ["갈매", "잔불촌 걸상이랑 높이가 똑같지? 쇠불이한테 치수 재 달라고 해서 맞췄어. 여기 앉으면 잔불촌 생각나고, 거기 앉으면 여기 생각나. 좀 헷갈리는데…… 싫진 않네."]]'::jsonb),
+('galmae', 'idle', 23, '[["", "갈매가 장작을 패다가 도끼를 내려놓고 패 놓은 장작을 세었다."], ["갈매", "스물 개. 어젯밤 묵은 값이야. 이불이 하도 푹신해서 다섯 개 더 팼어. 편히 잔 값도 치러야지."]]'::jsonb),
+('galmae', 'idle', 24, '[["", "갈매가 손을 내밀어 내 손을 끌어다 손목의 쇠고리를 손가락으로 돌려 보았다."], ["갈매", "녹은 안 슬었네. 강철로 만들었으니까. 월철이었으면 벌써 처졌을걸. 안쪽 그을린 자국 보이지? 불씨 고개 숯으로 구부린 흔적이야. 그건 닦지 마."]]'::jsonb),
+('galmae', 'idle', 25, '[["", "갈매가 대문 앞에 서서 한참 바깥을 보다가 돌아섰다. 얼굴이 조금 붉었다."], ["갈매", "고갯마루 할배 무덤에 다녀왔어. 네 얘기도 했지. 「얘가 내 등 봐 주는 애야」 하고. ……뭐라 하셨을진 몰라도 바람은 시원하더라."]]'::jsonb),
+('galmae', 'idle', 26, '[["", "갈매가 쇠토막 하나를 화로에 달궈 집게로 꺼냈다. 망치를 내게 쥐여 주고 뒤로 물러섰다."], ["갈매", "망치를 들었다가 그대로 떨어뜨려. 힘껏 내리치는 게 아니야. ……그렇지! 박자 좋네. 쇠불이한테 이번엔 힘 안 쏠렸다고 말해 줘야겠다."]]'::jsonb),
+('galmae', 'idle', 27, '[["", "갈매가 내 신발을 들어 바닥을 보고 고개를 저었다."], ["갈매", "신 끈은 대장님 담당이잖아. 내가 건드리면 그 사람 화내. 대신 박힌 못은 빼 줄게. 쇠 다루는 건 내 일이니까."]]'::jsonb),
+('galmae', 'idle', 28, '[["", "갈매가 마루에 등을 대고 누워 팔을 머리 뒤로 깍지 꼈다. 허리춤이 비어 있었는데도 손이 그쪽으로 가지 않았다."], ["갈매", "봐, 이제 칼 찾느라 허리춤을 더듬지도 않잖아. 네 별채에서 연습한 덕이야. ……이건 빚이 아니야. 고맙다는 거지. 차이는 알겠지?"]]'::jsonb),
+('galmae', 'idle', 29, '[["", "갈매가 내 쪽으로 몸을 돌려 무언가 말을 하려다 입을 닫았다. 다시 입을 열었다가 귀 끝이 빨개지며 소리를 질렀다."], ["갈매", "아무것도 아니야! ……다음 보름에 얘기할게. 오늘은 안 돼. 그때도 못 하면 그다음 보름에 하지 뭐."]]'::jsonb),
+('galmae', 'idle', 30, '[["", "갈매가 등을 기댈 데를 찾아 마루를 두리번거리다가 내 등에 제 등을 턱 붙였다."], ["갈매", "기둥보다 낫네. 따뜻하고. ……움직이지 마. 너한테 등 맡긴 거야. 맡았으면 끝까지 봐 줘야지."]]'::jsonb),
+('galmae', 'gift_field', 1, '[["", "갈매가 받은 것을 손에 쥐고 무게를 가늠하더니 날을 손톱으로 튕겨 소리를 들었다."], ["갈매", "쇳소리가 좋네. 고르게 잘 두드렸어. 값부터 쳐 주려 했는데, 선물이랬지? 그럼 이걸로 마을 낫 하나만 더 고쳐도 돼?"]]'::jsonb),
+('galmae', 'gift_field', 2, '[["", "갈매가 받은 것의 날을 등잔에 비춰 보며 한쪽 눈을 감았다."], ["갈매", "날이 곧게 섰네. 할배가 봤으면 숫돌 하나 더 주셨을걸. 난 숫돌 대신…… 자, 꿀밤이다."]]'::jsonb),
+('galmae', 'gift_hq', 1, '[["", "갈매가 선물을 받아 들고 입을 벌렸다 닫았다 했다. 한참 만에 머리를 벅벅 긁었다."], ["갈매", "이건 빚이네. 이렇게 좋은 걸 받았으니 그냥 넘어갈 수가 없잖아. ……뭘로 갚아야 하나. 보름 몇 번은 고민해야겠어."]]'::jsonb),
+('galmae', 'gift_other', 1, '[["", "갈매가 선물을 받아 위아래로 흔들어 보고 바닥에 톡 두드려 보았다."], ["갈매", "쇠는 아니네. 그럼 내가 손볼 데도 없겠어. 그냥 받을게. 고칠 데 없는 물건을 받아 보는 건 처음이야."]]'::jsonb),
+('galmae', 'gift_other', 2, '[["", "갈매가 선물을 화로 뒤 걸상 밑에 밀어 넣었다."], ["갈매", "잔불촌 갈 때 가져갈 거야. 걸상 밑은 내 자리라 아무도 안 건드려. 쇠불이가 물으면 네가 줬다고 할게."]]'::jsonb),
+('galmae', 'gift_reward', 1, '[["", "갈매가 기름 먹인 천에 싼 꾸러미 둘을 내 앞에 툭 던졌다. 풀어 보니 수리 도구가 한 벌씩 들어 있었다."], ["갈매", "장비 수리 도구야. 쇠불이네 쇠 말고 네가 준 쇠로 직접 만들었어. 이걸로 셈은 맞았지? 받기만 하면 영 마음이 불편하거든."]]'::jsonb),
+('galmae', 'gift_reward', 2, '[["", "갈매가 수리 도구 두 벌을 건네며 하나를 손가락으로 툭 쳤다."], ["갈매", "하나는 네 장비 고칠 때 쓰고, 하나는 내 장비 고칠 때 써. 내 건 네가 고쳐 줘. 그래야 서로 등 맡기는 사이답지."]]'::jsonb),
+('galmae', 'mate_hanseol', 1, '[["", "한설을 본 갈매가 팔짱을 끼고 턱을 치켜든 채 나를 돌아보았다."], ["갈매", "정청 감찰관이 왜 네 별채에 있나 했더니…… 백년지기라고? 명등제 때 장부 모서리 펴던 그 사람이지. 그건 고마웠어. 그래도 내 등 뒤로 오진 말라고 해."]]'::jsonb),
+('galmae', 'mate_yeoul', 1, '[["", "여울에게 장작 나르지 말라고 손을 내젓고 온 갈매가 내게 말했다."], ["갈매", "손님한테 장작을 나르게 할 순 없지. 묵은 값은 내가 치르는 거야. 비늘은 안 물어봤냐고? 남명 사람은 남의 등에 뭐가 있든 캐묻지 않아. ……등은 지켜 주는 거지 들추는 게 아니니까."]]'::jsonb),
+('galmae', 'mate_wolha', 1, '[["", "월하에게 한 닢 얹어 엽전을 돌려주고 온 갈매가 내 옆에 털썩 앉아 웃었다."], ["갈매", "흑련 아저씨는 꼭 한 닢을 덜 주더라. 그래서 내가 한 닢 더 얹어 돌려줘. 그럼 셈이 맞잖아. ……그 사람 표정 봤어? 곤란해서 어쩔 줄 모르더라."]]'::jsonb),
+('galmae', 'mate_daon', 1, '[["", "다온에게 장작을 한 아름 안겨 보낸 갈매가 손을 털며 내게 말했다."], ["갈매", "꼬맹이가 도끼를 달라길래 대신 장작 나르기를 시켰어. 제법 잘하더라. 남명 정찰대 막내들도 그렇게 시작했지. ……저 애도 언젠간 앞에 서겠지."]]'::jsonb),
+('galmae', 'mate_hisu', 1, '[["", "희수에게 붓을 돌려주고 온 갈매가 엽전 주머니를 허리춤에 넣으며 나를 보았다."], ["갈매", "서리한테 붓을 빌리고 값을 줬더니 곧장 장부에 적더라. 「붓 대여, 한 닢」이라고. ……셈을 그 자리에서 끝내는 사람이 나 말고도 있네. 마음에 들어."]]'::jsonb),
+('galmae', 'mate_danbi', 1, '[["", "장작 더미 위의 엿 반쪽 꾸러미를 집어 든 갈매가 두리번거리다 내게 흔들어 보였다."], ["갈매", "누가 장작 위에 엿을 놨나 했더니…… 엿 장수겠지. 누가 줬는지 모르면 못 갚을 줄 알았나 본데, 반쪽 엿 주는 사람이 또 있어? 내일 장작으로 갚을 거야."]]'::jsonb),
+('galmae', 'mate_unbi', 1, '[["", "문간의 여운비를 흘끗 본 갈매가 입을 삐죽이며 내 쪽으로 돌아앉았다."], ["갈매", "하필 북령이랑 한집이라니. 그런데 저 사람이 불침번 서면 등 뒤가 든든하더라. 나쁘지 않은데…… 아, 또 그 말이네. 북령 때문에 옮았다니까!"]]'::jsonb),
+('galmae', 'mate_cheongpa', 1, '[["", "청파의 등을 퍽 치고 온 갈매가 손바닥을 비비며 내게 말했다."], ["갈매", "꼬맹이 기침을 들으면 저도 모르게 등을 치게 돼. 물굴에서 줄 잡아 주던 버릇인가 봐. ……좀 세게 쳤나? 그래도 저 녀석, 이제 노꾼이잖아. 그 정도론 안 넘어져."]]'::jsonb),
+('galmae', 'mate_haram', 1, '[["", "하람에게 별자리를 읽어 주고 온 갈매가 내 옆에 앉아 하늘을 턱으로 가리켰다."], ["갈매", "잠꾸러기한테 별 읽어 주는 건 내 몫이야. 지금은 안 졸아도 여전히 잠꾸러기지. 국자랑 빈을 알려 줬더니 맞대. ……그러면서 또 관측이 아니라 감상이라잖아."]]'::jsonb),
+('galmae', 'mate_munsu', 1, '[["", "문수 앞에서 한참 듣다 온 갈매가 걸상에 주저앉으며 내게 투덜거렸다."], ["갈매", "저 서리 수다는 끝이 안 나. 언제까지 들으면 되는지 셈도 못 하겠어. 그런데 결국 끝까지 들었지. 빚진 기분이 들어서…… 아니, 빚은 아니야. 그냥 듣고 싶었어."]]'::jsonb),
+('haram', 'bond_make', 1, '[["", "관성대 지붕 기와가 낮 볕을 품어 미지근했다. 하람이 관측 의자 곁 바닥에 앉아 손바닥만 한 청동 패 하나를 무릎에 올려놓고 있었다. 패 위에 작은 점들이 여럿 찍혀 있었다. 하람의 손끝이 점 위를 하나씩 더듬었다."], ["", "하람이 내 쪽으로 패를 내밀었다."], ["서하람", "별자리예요. 하늘에 뜬 건 아니고, 제가 지금껏 관측한 {이름} 님을 찍었어요. 계단에서 열여덟 번 숨 쉬시던 날, 발목에 풀벌레를 달고 오신 날, 밤새 제 일지를 적어 주신 날. 여기 다 있어요."]]'::jsonb),
+('haram', 'bond_make', 2, '[["", "하람이 내 손을 끌어다 손가락을 점 위에 얹었다. 점마다 깊이가 조금씩 달랐다."], ["서하람", "점을 이어 보면 별자리가 돼요. 이름도 지었고요. 아무도 쓰지 않은 이름이에요. ……궁금하세요? 그래도 안 알려 드릴래요. 관측 대상이라고 다 알아야 하는 건 아니니까요."], ["서하람", "갈매 씨가 보름마다 잔불촌에 갈 때 저를 {이름} 님 별채에 데려다주기로 했어요. 또 똑같은 소리 한다고 투덜대면서요. 관성대 계단을 혼자 세느니, 여기서 {이름} 님 발소리를 듣는 편이 좋잖아요."]]'::jsonb),
+('haram', 'bond_again', 1, '[["", "하람이 새 점자 패를 내 손에 쥐여 주고, 품에서 옛 패를 꺼내 나란히 대 보았다. 옛 패의 마지막 점 뒤로 빈자리가 손톱만큼 남아 있었다."], ["서하람", "그날 이후로는 점을 찍지 않았어요. 관측을 그만둔 건 아니에요. 찍을 만한 일이 없었을 뿐이죠. ……새 패에는 다시 찍을 수 있겠네요. 빈 곳은 그대로 둘래요. 갈매 씨가 빈자리도 예쁘다고 했거든요."]]'::jsonb),
+('haram', 'bond_break', 1, '[["", "하람이 점자 패를 돌려받아 손바닥에 올려놓고 점을 처음부터 끝까지 한 번 더듬었다. 손끝이 마지막 점에서 오래 머물렀다."], ["서하람", "관측 대상은 명부에서 지우지 않아요. 한 해를 지켜보겠다고 적었으니까요. 오시든 안 오시든, 그해가 끝날 때까지는 그대로예요."], ["서하람", "다시 오실 거라고 예언하지는 않을게요. ……그저 기다려 볼래요. 오시면 그때 다시 관측하면 되니까요."]]'::jsonb),
+('haram', 'first_dawn', 1, '[["", "새벽빛이 막 비쳤다. 하람이 마루 끝 관측 자리에 앉아 고개를 마당 쪽으로 기울이고 있었다. 내 발소리에 고개를 돌렸다."], ["서하람", "밤새 들은 소리부터 말씀드릴까요? 자정쯤 고양이가 담을 넘었고, 새벽 두 시 무렵엔 바람에 우물 두레박이 흔들렸어요. 참새는 조금 전에 울었고요. {이름} 님은 밤새 세 번 뒤척이셨어요."]]'::jsonb),
+('haram', 'first_dawn', 2, '[["", "마루 위 다기에서 똑, 똑, 똑 물 떨어지는 소리가 났다. 하람이 주둥이에 턱을 단 주전자를 기울여 잔 둘에 차를 따르고 있었다."], ["서하람", "똑 소리가 아홉 번 나면 한 잔이에요. 이제 넘치지 않아요. 이쪽 잔은 {이름} 님 거예요. 할머니가 제게 해 주셨듯이, 아침 첫 차는 제가 따라 드리고 싶었거든요."]]'::jsonb),
+('haram', 'first_noon', 1, '[["", "볕이 마당에 가득했다. 하람이 얼굴을 하늘 쪽으로 들고 서서 나를 불렀다."], ["서하람", "{이름} 님, 오늘 하늘은 무슨 색이에요? 파랗다는 말 말고, 무엇을 닮았는지 알려 주세요. 제 일지에는 남들이 본 하늘만 있거든요. 오늘은 {이름} 님 눈에 비친 하늘을 적고 싶어요."]]'::jsonb),
+('haram', 'first_noon', 2, '[["", "하람이 볕 드는 마루에 모로 누워 담요를 덮고 있었다. 담요 밖으로 나온 손이 기와를 쓰다듬듯 마루 널을 쓸었다. 숨소리가 고르게 길어져 있었다."], ["서하람", "낮잠 자는 법을 배웠어요. 별 때문에 쏟아지던 졸음 말고, 몸이 피곤해서 드는 잠이요. ……옆에 조금만 앉아 계실래요? 아직 혼자 잠드는 건 서툴러서요."]]'::jsonb),
+('haram', 'first_dusk', 1, '[["", "해가 지자 하람이 대문 쪽으로 몸을 돌리고 귀를 기울였다. 한참 뒤 입꼬리가 올라갔다."], ["서하람", "아, 갈매 씨는 아니네요. 그분은 가까이 올 때까지 숨을 참다가 한꺼번에 내쉬거든요. 지나가는 장꾼이에요. 보름이 아직 안 끝났네요. 다행이에요."]]'::jsonb),
+('haram', 'first_dusk', 2, '[["", "하람이 바닥 넓은 어유 등을 마루 한가운데 내려놓고 부싯돌을 더듬었다. 불이 붙자 손바닥을 등 위에 가만히 대 보았다."], ["서하람", "따뜻하네요. 불이 붙었어요. 저는 없어도 괜찮지만 {이름} 님은 등이 있어야 저를 보시잖아요. ……지금 제 얼굴 보이세요? 그럼 됐어요."]]'::jsonb),
+('haram', 'first_night', 1, '[["", "깊은 밤 마루 끝에 하람이 앉아 두 손을 무릎에 얹고 있었다. 별채가 잠든 소리를 하나씩 듣는 얼굴이었다."], ["서하람", "여기 밤은 길어요. 그래도 관성대보단 짧게 느껴져요. 들을 소리가 많거든요. 주무시기 전에 오늘 보신 것 하나만 들려주세요. 그 얘기 곱씹으며 밤을 보낼게요."]]'::jsonb),
+('haram', 'first_night', 2, '[["", "하람이 관측 일지를 펴 놓고 손끝으로 점을 찍고 있었다. 송곳이 종이를 뚫을 때마다 아주 작은 소리가 났다."], ["서하람", "「오늘 온 사람」 칸이에요. 별채에 온 건 저인데 {이름} 님 이름을 적고 있네요. 제 관측 대상은 늘 그 칸에 적기로 했거든요. 규칙은 제가 만들었어요. 관측관이니까요."]]'::jsonb),
+('haram', 'w_clear', 1, '[["", "하늘이 맑았다. 하람이 마당 한가운데 서서 손바닥을 펴고 볕을 받았다."], ["서하람", "볕이 손바닥에 고르게 닿아요. 구름 하나 없는 모양이네요. 밤이면 별도 많이 보이겠어요. 몇 개나 보이는지 세어 주세요. 다 세기도 전에 졸릴지 몰라요. 전 그랬거든요."]]'::jsonb),
+('haram', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 하람이 기와 끝에 손을 대 보고 고개를 갸웃했다."], ["서하람", "기와가 차가워요. 오늘은 흐린가 봐요. 구름은 볼 수 없으니 기와에 물어보는 거죠. 기와는 거짓말을 안 하거든요. 사람 숨소리처럼요."]]'::jsonb),
+('haram', 'w_rain', 1, '[["", "굵은 비가 지붕을 두드렸다. 하람이 마루에 앉아 천장을 향해 얼굴을 들고 손가락을 접었다 폈다 했다."], ["서하람", "빗소리로 기와를 세고 있어요. 장마다 소리가 조금씩 다르거든요. 이 집 지붕엔 이백마흔 장쯤 있겠네요. 관성대보다 적어서 세기 편해요."]]'::jsonb),
+('haram', 'w_rain', 2, '[["", "빗소리 사이로 똑, 똑 하는 소리가 섞였다. 하람이 다기를 기울이다 말고 멈칫했다."], ["서하람", "빗소리에 찻물 떨어지는 소리가 묻혀서 몇 번인지 놓쳤어요. ……혹시 넘쳤나요? 아, 아니군요. 웃으시는 걸 들으니 알겠어요."]]'::jsonb),
+('haram', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 마당에 서 있던 하람이 한참 만에 제 머리를 만져 보고 깜짝 놀랐다. 머리카락이 촉촉하게 젖어 있었다."], ["서하람", "비가 와요? 이렇게 조용히 내리면 저도 몰라요! 가랑비는 귀로 알아채기 어렵네요. 다음엔 한마디만 해 주세요. 비 온다고요. 그거면 충분해요."]]'::jsonb),
+('haram', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 하람이 고개를 이리저리 돌리며 귀를 기울이다가 미간을 좁혔다."], ["서하람", "안개가 끼면 소리가 사방에서 들려요. 어디서 나는지 가늠하기 어렵네요. {이름} 님, 손뼉 한 번만 쳐 주시겠어요? 어디 계신지 듣게요."]]'::jsonb),
+('haram', 'w_wind', 1, '[["", "찬 바람이 처마 끝 풍경을 쉴 새 없이 흔들었다. 하람이 풍경 쪽으로 고개를 들고 손가락을 접었다."], ["서하람", "풍경이 일곱 번 울리고 잠깐 쉬네요. 북풍이 불 때 나는 박자예요. 갈매 씨도 잔불촌에서 춥겠어요. 내일 오시면 화로 곁에 앉혀 드려요."]]'::jsonb),
+('haram', 'w_snow', 1, '[["", "밤새 눈이 내렸다. 하람이 마당 가운데 가만히 서서 귀를 하늘로 향하고 있었다. 어깨에 눈이 소복이 쌓였다. 사방이 고요한 가운데 눈 내려앉는 소리만 사락사락 났다."], ["서하람", "눈도 소리가 나요. 아주 작아서 그렇지. ……{이름} 님도 들리세요? 숨을 잠깐 멈춰 보세요. 그렇죠? 이제 조금 들리죠?"]]'::jsonb),
+('haram', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 하람이 마루 끝 관측 자리에 앉아 내 쪽으로 손을 뻗어 손목을 가만히 짚었다."], ["서하람", "다들 오늘 하늘이 무섭다고 하네요. 저는 색을 볼 수 없으니 몰랐어요. 그런데 {이름} 님 맥이 평소보다 빨라요. ……무서운 날이 맞나 봐요. 진정되실 때까지 손목을 짚고 있을게요."]]'::jsonb),
+('haram', 'me_yohwa', 1, '[["", "하람이 내 손을 두 손으로 붙잡고 제 뺨에 대었다. 하얗게 바랜 눈이 내 쪽을 향했다."], ["서하람", "{이름} 님, 지금 무엇이 보이세요? 마당도 좋고 하늘도 좋아요. 제 얼굴도요. 보이는 걸 계속 말씀해 주세요. ……말씀하시는 동안은 이름이 흐려지지 않을 거예요. 저는 듣고 있을게요. 제 귀는 아직 멀쩡하니까요."]]'::jsonb),
+('haram', 'me_erosion_80', 1, '[["", "하람이 내 가슴에 귀를 대더니 몸이 굳었다. 품에서 점자 패를 꺼내 내 손에 꽉 쥐여 주었다. 쥐여 준 손을 놓지 않았다."], ["서하람", "맥이 불규칙해요. 이런 박자는 처음이에요. 지금 바로 정화하셔야 해요. ……{이름} 님이 사라지면 명부 둘째 줄이 비어요. 그 줄만은 비워 둘 수 없어요."]]'::jsonb),
+('haram', 'me_erosion_55', 1, '[["", "하람이 내 말을 듣다가 고개를 갸웃했다. 다시 말해 보라고 손짓했다."], ["서하람", "목소리 끝이 탁해졌어요. 말끝에 먹이 묻은 것 같아요. 깊은 데 다녀오셨죠? 정화부터 하고 오세요. 그다음엔 다시 말씀해 주세요. 맑아진 목소리를 일지에 남길래요."]]'::jsonb),
+('haram', 'me_erosion_30', 1, '[["", "하람이 마루 끝에 앉아 내 발소리를 듣고 있다가 고개를 들었다."], ["서하람", "발소리가 평소보다 반 박자 무거워요. 아직 반 박자뿐이지만요. 한 박자가 되기 전에 쉬세요. 반 박자는 적지 않을게요. 한 박자가 되면 그땐 적을 거예요."]]'::jsonb),
+('haram', 'me_hp_low', 1, '[["", "하람이 손을 더듬어 내 손목을 찾아 맥을 짚었다. 손끝이 한참 맥 위에 머물렀다."], ["서하람", "맥이 가늘어요. 우선 누우세요. 제가 계속 짚어 볼게요. 빨라지든 느려지든 바로 알려 드릴게요. 관측만큼은 자신 있으니까 제게 맡기세요."]]'::jsonb),
+('haram', 'me_rescued', 1, '[["", "대문을 들어서자 지붕 위에서 기와 밟는 소리가 났다. 하람이 지붕 마루에 앉아 대문 쪽으로 고개를 내밀고 있었다. 사다리를 더듬어 내려오는 손이 떨렸다."], ["서하람", "운해 씨 서신을 받았어요. 쓰러지셨다고 해서 지붕에서 발소리만 기다렸어요. 천 번 넘게 세다가 숫자도 잊어버렸고요. ……이제 그만 세도 되겠네요. 돌아오셨으니까요."]]'::jsonb),
+('haram', 'me_exp_back', 1, '[["", "하람이 대문 앞에서 나를 맞으며 소매 끝을 손가락으로 집어 살폈다."], ["서하람", "열하루 하고 반나절 만이네요. 소매에는 마른 풀씨가 붙었고 쇠 냄새도 나요. 싸우고 오셨죠? 다 말씀하지 않으셔도 괜찮아요. 무사히 돌아오신 것만 일지에 크게 남길게요."]]'::jsonb),
+('haram', 'me_far_travel', 1, '[["", "하람이 내 앞에 앉아 무릎 위에 관측 일지를 펼쳤다."], ["서하람", "다녀오신 곳의 하늘은 어땠어요? 별이 여기서 보던 자리와 같았나요? 같은 별인데도 사람마다 다르게 이야기하더라고요. 이번엔 {이름} 님이 보신 하늘을 듣고 싶어요."]]'::jsonb),
+('haram', 'me_levelup', 1, '[["", "하람이 마루 끝에서 내 발소리를 듣다가 송곳으로 일지에 점을 하나 찍었다."], ["서하람", "걸음이 가벼워졌네요. 계단을 오를 때도 숨을 한 번 덜 쉬시겠어요. 오늘 일지에는 「가벼움」이라고 찍을래요. 예언이 아니라 지금 들은 그대로예요."]]'::jsonb),
+('haram', 'home_portrait', 1, '[["", "하람이 벽을 더듬다가 액자 틀을 찾아 손가락으로 네 모서리를 짚어 보았다."], ["서하람", "제 초상이에요? 저는 볼 수 없으니까 설명해 주세요. ……눈은 어떻게 그렸나요? 하얗게요? 그럼 지금 모습 그대로네요."]]'::jsonb),
+('haram', 'home_pet', 1, '[["", "동무가 하람의 무릎에 앞발을 올렸다. 하람이 손끝으로 동무의 귀와 코와 수염을 차례로 더듬었다."], ["서하람", "관측할 동무가 하나 늘었네요. 귀 둘, 코 하나. 수염은 왼쪽이 하나 더 많아요. 일지에도 새 칸을 만들어야겠어요. 「오늘 온 동무」라고요."]]'::jsonb),
+('haram', 'home_new_furn', 1, '[["", "하람이 마루를 걷다가 무릎이 새 가구 모서리에 톡 부딪쳤다. 하람이 멈춰 서서 가구 둘레를 손바닥으로 더듬어 재었다."], ["서하람", "가구가 새로 들어왔네요. 가로는 한 걸음 반, 높이는 허리쯤이에요. 이제 위치를 외웠으니 다음엔 안 부딪칠 거예요. 옮기실 땐 미리 말씀해 주세요."]]'::jsonb),
+('haram', 'home_mate', 1, '[["", "하람이 마루 안쪽으로 고개를 돌리고 잠시 귀를 기울였다."], ["서하람", "정인 분은 {이름} 님보다 발걸음이 반 걸음 짧아요. 문턱 앞에서 꼭 한 번 멈추시고요. 제 관측 대상은 아니지만 손님 칸에 적어 둘게요."]]'::jsonb),
+('haram', 't_days_7', 1, '[["", "하람이 점자 패를 내밀었다. 처음 받던 날보다 점이 일곱 개 늘어 있었다."], ["서하람", "하루에 점 하나씩 찍었어요. 이레 만에 별자리 꼬리가 이렇게 길어졌네요. 다 이어 놓으면 무슨 모양일까요? 저도 아직 몰라요. 예언은 안 하니까요."]]'::jsonb),
+('haram', 't_days_30', 1, '[["", "하람이 관측 일지의 한 장을 펼쳐 보였다. 「오늘 온 사람」 칸에 점이 빼곡했다. 그 아래 「오늘 기다린 사람」 칸에도 점이 몇 줄 찍혀 있었다."], ["서하람", "「오늘 기다린 사람」 칸에 드디어 이름을 붙였어요. 한 달이나 걸렸네요. ……「하람」이에요. 별다른 이름은 아니에요. 기다린 사람이 저였으니까요."]]'::jsonb),
+('haram', 't_days_100', 1, '[["", "하람이 담요 하나를 펼쳐 내 무릎과 제 무릎에 함께 덮었다. 관성대 지붕에서 스무 해 동안 덮던 그 담요였다."], ["서하람", "벌써 백 날이네요. 담요는 아직도 하나예요. 운해 씨가 하나 더 가져다주겠다는 것도 마다했어요. ……두 장이면 따로 덮게 되잖아요."]]'::jsonb),
+('haram', 't_long_away', 1, '[["", "하람이 관측 일지를 펴 「오늘 온 사람」 칸을 손끝으로 짚었다. 사흘 치가 비어 있었다. 바로 아래 「오늘 기다린 사람」 칸에는 점이 세 줄 찍혀 있었다."], ["서하람", "「오늘 온 사람」 칸은 사흘째 비어 있었어요. 대신 아래 칸에 점을 세 줄 찍었죠. 오늘은 위쪽에도 점을 남길 수 있겠네요."]]'::jsonb),
+('haram', 't_long_away', 2, '[["", "하람이 내 발소리를 듣고 고개를 들었다가 손으로 가슴께를 짚었다."], ["서하람", "발소리를 듣자마자 맥이 빨라졌어요. {이름} 님 말고 제 맥이요. ……관측관이 이러면 곤란한데. 이건 일지에 남기지 않을래요."]]'::jsonb),
+('haram', 't_last_today', 1, '[["", "하람이 일지를 덮고 송곳을 붓통에 넣었다. 담요를 끌어당겨 무릎에 덮었다."], ["서하람", "오늘 관측은 여기까지예요. {이름} 님도 쉬셔야 내일 또 살펴볼 수 있죠. 편히 주무세요. 밤에 무슨 소리가 났는지는 아침에 알려 드릴게요."]]'::jsonb),
+('haram', 'idle', 1, '[["", "하람이 손끝으로 나침반 홈을 하나씩 짚었다. 깊은 홈과 얕은 홈을 지나 점 하나, 점 둘에서 손가락이 멈췄다."], ["서하람", "북쪽은 저기죠? 맞혔나요? 아직도 맞히면 기분이 좋아요. 갈매 씨는 이제 시큰둥한데 {이름} 님은 늘 놀라 주시잖아요."]]'::jsonb),
+('haram', 'idle', 2, '[["", "하람이 마루에 앉아 소매 끝을 내 쪽으로 내밀며 코를 찡긋했다."], ["서하람", "오늘 소매에 묻혀 오신 것부터 맞혀 볼게요. 장터 기름 냄새에 비 맞은 흙냄새까지. 어때요, 맞았죠? 일지에는 맞힌 것만 적을게요."]]'::jsonb),
+('haram', 'idle', 3, '[["", "하람이 차를 한 모금 마시고 잔을 내려놓더니 손가락으로 잔 안쪽의 가는 줄을 쓸었다."], ["서하람", "잔 안쪽에 새겨 주신 줄이 보이시죠? 그만큼 따르면 꼭 한 잔이에요. 이제 할머니 몰래 지붕에서도 흘리지 않고 따라요. 할머니가 아시면 섭섭해하실 테니 모르는 척해 주세요."]]'::jsonb),
+('haram', 'idle', 4, '[["", "하람이 갈매 흉내를 내며 목소리를 굵게 꾸몄다."], ["서하람", "「또 똑같아! 별이 맨날 그 자리야!」 갈매 씨가 별 칸을 적을 때마다 그러세요. 그래 놓고 한 번도 빼먹지 않고 적어 주시죠. 참 갈매 씨답죠?"]]'::jsonb),
+('haram', 'idle', 5, '[["", "하람이 밤하늘 쪽으로 얼굴을 들고 손가락으로 한 자리를 짚었다."], ["서하람", "「빈」은 국자 손잡이 끝에서 두 마디 떨어진 곳이에요. 오늘도 그 자리에 있나요? ……있다고 해 주시면 좋겠어요. 나중에 갈매 씨한테도 확인해 볼 거지만요."]]'::jsonb),
+('haram', 'idle', 6, '[["", "하람이 마루 끝에서 별채 문턱까지 걸음을 세며 걸어갔다가 돌아왔다."], ["서하람", "마루 끝에서 문턱까지 열네 걸음이에요. 관성대 계단은 백여덟 칸이나 되고요. 여긴 금방 닿네요. {이름} 님까지 열네 걸음이면 되니까요."]]'::jsonb),
+('haram', 'idle', 7, '[["", "하람이 손을 내밀며 머뭇거렸다. 손끝이 내 얼굴 앞에서 멈췄다."], ["서하람", "……얼굴을 한 번 만져 봐도 될까요? 관측 대상인데 생김새도 모르는 건 이상하잖아요. 눈썹, 코, 입술. 아, 웃으셨네요? 볼이 올라갔어요."]]'::jsonb),
+('haram', 'idle', 8, '[["", "하람이 송곳으로 종이에 점을 찍다가 점 하나를 손끝으로 문질러 보고 혀를 찼다."], ["서하람", "점을 너무 깊게 찍었네요. 뒷장까지 뚫리겠어요. 별 기록이었으면 혼났겠죠. 그래도 {이름} 님 칸에 찍은 점이니 그대로 둘래요. 그날은 그만큼 또렷했으니까요."]]'::jsonb),
+('haram', 'idle', 9, '[["", "하람이 손바닥에 성진사 가루를 조금 덜어 귀에 대고 살살 흔들었다."], ["서하람", "별 가루가 흔들리는 소리예요. 처음 가져다주셨을 때도 이 소리가 났어요. 들을 때마다 나침반 바늘이 북쪽을 가리키던 날이 생각나요."]]'::jsonb),
+('haram', 'idle', 10, '[["", "하람이 처마 밑 풀숲 쪽으로 몸을 기울이고 가만히 있었다. 풀벌레 소리가 이어졌다."], ["서하람", "예전에는 풀벌레 소리를 끝까지 들어 본 적이 없어요. 늘 중간에 잠들었거든요. 이제는 계속 듣고 있어요. 생각보다 훨씬 길어요. 끝이 없는 것 같기도 하고요."]]'::jsonb),
+('haram', 'idle', 11, '[["", "하람이 내 손을 잡더니 손가락 마디를 하나씩 눌러 보았다."], ["서하람", "여기 굳은살이 새로 생겼네요. 지난달에는 없었는데. 새 무기를 쓰시나요? 달라진 건 일지에도 남겨야겠어요."]]'::jsonb),
+('haram', 'idle', 12, '[["", "하람이 별채 밤 소리를 손가락으로 하나씩 꼽아 보이며 웃었다."], ["서하람", "별채 소리 지도를 만들고 있어요. 문간 널빤지는 높게 울리고, 부엌 문은 둔탁한 소리가 나요. 우물 두레박은 길게 끌리고요. 다 외우면 혼자서도 길을 찾을 수 있겠죠."]]'::jsonb),
+('haram', 'idle', 13, '[["", "하람이 하품을 하다 말고 놀란 얼굴로 입을 가렸다."], ["서하람", "저 방금 하품했어요! 별 때문이 아니라 정말 피곤해서요. 이런 하품은 처음이라 할 때마다 신기해요."]]'::jsonb),
+('haram', 'idle', 14, '[["", "하람이 마루에 앉아 무릎을 끌어안고 한동안 말이 없었다."], ["서하람", "스무 해 동안 같은 꿈을 꿨어요. 별이 저를 부르는 꿈이요. 이제는 꾸지 않아요. ……요즘엔 대신 계단을 오르는 소리가 들려요. 누군가 열여섯 번 숨 쉬며 올라오는 소리요."]]'::jsonb),
+('haram', 'idle', 15, '[["", "하람이 손으로 내 발소리를 흉내 내며 마룻바닥을 톡톡 두드렸다."], ["서하람", "{이름} 님은 가볍게 두 번 걷고 잠깐 쉰 뒤 한 번 더 디디세요. 갈매 씨는 성큼성큼 걷고, 할머니는 한 발씩 천천히 옮기시죠. 발소리만 들어도 누군지 알 수 있어요. 관측관이니까요."]]'::jsonb),
+('haram', 'idle', 16, '[["", "하람이 천명원 이야기를 하다가 손가락으로 기와를 톡톡 두드렸다."], ["서하람", "천명원 어르신들은 별을 보고 앞일을 맞히세요. 하지만 저는 예언하지 않아요. 앞일을 맞히다 보면 별을 바꾸고 싶어질 것 같거든요. 지금 모습 그대로 두고 싶어요."]]'::jsonb),
+('haram', 'idle', 17, '[["", "하람이 물시계 소리를 흉내 내듯 손가락으로 무릎을 일정하게 두드렸다."], ["서하람", "관성대 물시계에 {이름} 님이 깎아 주신 눈금을 달았어요. 손으로 만져도 시간을 알 수 있죠. 그래도 밤은 길어요. 이곳에 있으면 조금 짧아지지만요."]]'::jsonb),
+('haram', 'idle', 18, '[["", "하람이 별채 마당에서 주워 온 돌멩이 하나를 손바닥에 굴렸다."], ["서하람", "혜성 낙하지 돌보다 거칠어요. 녹았다 굳은 돌이 아니라서 그렇겠죠. 그저 별채 마당에서 주운 돌인데…… 그래서 더 마음에 들어요."]]'::jsonb),
+('haram', 'idle', 19, '[["", "하람이 다기에서 찻물을 따르며 똑 소리를 셌다. 아홉 번째에서 손을 멈추고 잔을 내게 밀었다."], ["서하람", "아홉. 한 잔 다 따랐어요. 이번엔 제가 했으니 다음 잔은 {이름} 님이 따라 주세요. 소리 셀 필요 없이 눈으로 보시면 되잖아요."]]'::jsonb),
+('haram', 'idle', 20, '[["", "하람이 반딧불 이야기를 꺼내며 내 쪽으로 고개를 기울였다."], ["서하람", "반딧불 넋 이야기 다시 들려주세요. 지난번엔 노란 점이 셋이었다는 말만 하셨잖아요. 오늘은 좀 더 자세히요. 제가 눈 감고 그려 볼게요. 아, 눈은 이미 감고 있는 셈이네요."]]'::jsonb),
+('haram', 'idle', 21, '[["", "하람이 할머니 이야기를 하다 말고 웃음을 참았다."], ["서하람", "요즘 할머니는 「람아, 자거라」 대신 「람아, 그 사람 왔냐」고 물으세요. 별채에 간다니까 떡도 싸 주셨고요. 반은 {이름} 님 몫, 반은 갈매 씨 몫이래요. ……그럼 제 몫은요?"]]'::jsonb),
+('haram', 'idle', 22, '[["", "하람이 마루에 누워 기와 처마 끝에서 떨어지는 빗방울 소리에 맞춰 손가락을 접었다."], ["서하람", "하나, 둘……. 빗방울은 아무리 세어도 끝이 없네요. 별도 그렇고요. 그런데 {이름} 님 숨소리는 셀수록 마음이 편해져요."]]'::jsonb),
+('haram', 'idle', 23, '[["", "하람이 손끝으로 일지의 첫 장을 더듬었다. 점들이 조금 닳아 있었다."], ["서하람", "첫 줄은 너무 자주 만져서 점이 닳았어요. 「봄, 보름. 계단 숨 열여덟. 소매에 성진사 가루.」 다시 찍지는 않을래요. 닳아 버린 것까지 그날의 기록이니까요."]]'::jsonb),
+('haram', 'idle', 24, '[["", "하람이 운해 이야기를 하며 웃었다."], ["서하람", "운해 씨는 밤에 서고 등잔 손잡이의 홈을 더듬어 불을 켜요. 그것도 {이름} 님이 파 주셨죠. 운해 씨는 저 덕분에 손으로 읽게 됐다지만, 실은 {이름} 님께 배운 거예요."]]'::jsonb),
+('haram', 'idle', 25, '[["", "하람이 별채 마루 끝 관측 자리를 손바닥으로 쓸며 먼지를 털어 냈다."], ["서하람", "관측 의자는 관성대에 두고 왔어요. 여기선 마루 끝이면 충분해요. 앉아 있으면 별채 소리가 다 들리거든요. 의자보다 마음에 들어요."]]'::jsonb),
+('haram', 'idle', 26, '[["", "하람이 손바닥을 펴 바람을 받으며 고개를 갸웃했다."], ["서하람", "여긴 관성대와 바람 냄새가 달라요. 밥 짓는 냄새가 섞여 있거든요. 관성대엔 별 냄새밖에 없었어요. 별 냄새가 뭐냐고요? 차가운 냄새요."]]'::jsonb),
+('haram', 'idle', 27, '[["", "하람이 일지를 펴 놓고 송곳을 쥔 채 머뭇거렸다. 한참 만에 아주 작은 점 하나를 찍었다."], ["서하람", "「오늘 온 사람」 칸 옆에 점 하나를 더 찍었어요. 무슨 뜻이냐고요? ……그건 아직 비밀이에요. 별자리 이름도 안 알려 드렸잖아요."]]'::jsonb),
+('haram', 'idle', 28, '[["", "하람이 갑자기 고개를 들고 웃었다. 대문 밖에서 아무 소리도 나지 않았다."], ["서하람", "갈매 씨가 생각났어요. 지금쯤 잔불촌 화로 앞에서 첩을 무릎에 올려놓고 계시겠죠. 「빈」 자리 읽어 주시던 목소리가 좋아요. 가끔 틀리시긴 해도요."]]'::jsonb),
+('haram', 'idle', 29, '[["", "하람이 손을 더듬어 담요 끝을 찾아 내 무릎에 덮어 주었다."], ["서하람", "무릎이 차가우시죠? 발소리가 반 박자 느려졌어요. 추우면 그러시더라고요. 담요 반 덮으세요. 나머지 반은 제 몫이에요. 하나뿐이니까요."]]'::jsonb),
+('haram', 'idle', 30, '[["", "하람이 관측 일지를 덮고 그 위에 두 손을 얹었다. 하얗게 바랜 눈이 나를 향했다."], ["서하람", "오래 관측해야 비로소 알게 되는 게 있어요. 한 번 보고는 모르는 것들이요. ……저는 {이름} 님을 더 알고 싶어요. 그러니 오래 지켜볼래요."]]'::jsonb),
+('haram', 'gift_field', 1, '[["", "하람이 받은 법구를 손바닥에 올려놓고 손끝으로 홈과 모서리를 하나하나 더듬었다."], ["서하람", "홈이 있네요. 제가 손으로 읽을 수 있게 파 주신 거죠? 이건 다른 사람보다 제게 더 필요한 법구예요. 관성대 서고의 「손으로 읽는 것」 칸에 두겠어요."]]'::jsonb),
+('haram', 'gift_field', 2, '[["", "하람이 받은 것을 귀에 대고 살살 흔들어 소리를 들었다."], ["서하람", "안에서 울리는 소리가 고르네요. 잘 만드셨어요. 법구장 어르신들도 이렇게 소리를 들어 보시면 좋을 텐데요."]]'::jsonb),
+('haram', 'gift_hq', 1, '[["", "하람이 선물을 받아 들고 손끝을 한참 떼지 못했다. 입술이 달싹였다."], ["서하람", "손끝으로 만져 보니 얼마나 좋은 물건인지 알겠어요. ……이상하네요. 제 맥이 빨라졌어요. 이런 것도 관측에 들어가겠죠?"]]'::jsonb),
+('haram', 'gift_other', 1, '[["", "하람이 선물을 받아 손바닥 위에서 이리저리 굴리며 생김새를 더듬었다."], ["서하람", "동그랗고 한쪽은 납작해요. 조금 차갑기도 하고요. 제가 제대로 짚었나요? 틀렸으면 알려 주세요. 무엇인지 맞혀 보는 것도 관측이니까요."]]'::jsonb),
+('haram', 'gift_other', 2, '[["", "하람이 선물을 관측 일지 사이에 끼워 두려다 너무 두꺼워 일지 옆에 나란히 놓았다."], ["서하람", "일지 옆에 놓아 둘래요. 그러면 손으로 더듬을 때마다 오늘 받은 걸 기억할 테니까요. 받은 날의 숨도 적어 둘게요. 열다섯 번이었어요."]]'::jsonb),
+('haram', 'gift_reward', 1, '[["", "하람이 작은 등잔 두 개를 내 앞에 나란히 내려놓았다. 등잔 바닥이 넓고 손잡이마다 손으로 읽는 홈이 하나씩 파여 있었다."], ["서하람", "샛비늘 등잔이에요. 어유로 불을 밝히죠. 바람에도 잘 꺼지지 않고 바닥이 넓어 쉽게 넘어지지도 않아요. 저는 불빛이 필요 없지만 {이름} 님은 다르시잖아요."]]'::jsonb),
+('haram', 'gift_reward', 2, '[["", "하람이 등잔 둘을 건네며 손잡이 홈을 내 손가락에 대 주었다."], ["서하람", "손잡이 홈은 제가 팠어요. {이름} 님이 제게 해 주셨던 것처럼요. 어두울 때 손끝으로 찾아 켜세요. 이제 {이름} 님도 손으로 읽으실 수 있겠네요."]]'::jsonb),
+('haram', 'mate_hanseol', 1, '[["", "문간 쪽에서 큰 발소리가 다가오자 하람이 고개를 돌렸다가, 내 쪽으로 다시 얼굴을 향했다."], ["서하람", "감찰관님이세요. 제가 놀라지 않게 일부러 발소리를 크게 내 주시거든요. 명등제 때 장부 모서리를 펴시던 소리도 기억나요. ……그 손을 가진 분이 이렇게 걸으시는구나 싶어요."]]'::jsonb),
+('haram', 'mate_yeoul', 1, '[["", "여울의 손등을 쓸어 보던 손을 거둔 하람이 내 쪽으로 고개를 돌렸다."], ["서하람", "서늘하고 매끄러워요. 물고기 비늘 같지만 그보다 따뜻해요. ……그냥 제가 만져 보고 알아낸 거예요. 제 일지엔 무섭다는 말은 없어요."]]'::jsonb),
+('haram', 'mate_wolha', 1, '[["", "월하 쪽으로 귀를 기울이던 하람이 웃으며 내게 말했다."], ["서하람", "월하 님은 엽전 소리가 안 나요. 예전엔 손가락 사이에서 났다는데요. 명등제 때 「서율」 줄을 부르셨죠. ……그 목소리는 엽전 소리보다 훨씬 낮았어요."]]'::jsonb),
+('haram', 'mate_daon', 1, '[["", "다온의 볼을 건드리고 온 하람이 손끝을 비비며 내게 말했다."], ["서하람", "다온이는 볼에 검댕을 묻히고 다녀요. 만지면 손끝에 묻거든요. 명등제 때 「서하」 줄도 맡았죠. ……떨면서도 끝까지 이름을 불렀어요. 저는 그 목소리도 기억해요."]]'::jsonb),
+('haram', 'mate_hisu', 1, '[["", "희수의 장부 넘기는 소리를 듣던 하람이 고개를 끄덕이며 내게 몸을 기울였다."], ["서하람", "서리님은 장을 넘길 때 한 번도 서두르지 않아요. 명등청 첫 명부 첫 줄에 테를 두르실 때도 그랬어요. ……손놀림이 늘 한결같아요."]]'::jsonb),
+('haram', 'mate_danbi', 1, '[["", "단비에게 엿 반쪽을 받아 든 하람이 내 쪽으로 손바닥을 내밀어 보였다."], ["서하람", "단비 씨가 엿을 꺾으면 짧고 맑은 소리가 나요. 다른 사람은 끝이 조금 길게 끌리거든요. 목소리도 그래요. ……별채 끝에서 부르셔도 다 들려요."]]'::jsonb),
+('haram', 'mate_unbi', 1, '[["", "여운비와 같은 쪽으로 고개를 기울이고 있던 하람이 내게 말했다."], ["서하람", "운비 님은 볼로, 저는 귀로 바람을 읽어요. 오늘 북풍도 둘 다 알아챘죠. ……둘이 같은 답을 냈으니 관측이 맞아요. 예언은 아니고요."]]'::jsonb),
+('haram', 'mate_cheongpa', 1, '[["", "청파의 숨소리를 듣던 하람이 접은 손가락을 내게 들어 보였다."], ["서하람", "청파 씨 숨이 열둘이에요. 지난번보다 하나 늘었죠. 청파 씨는 자기 숨을 세고 저는 그 소리를 들어요. ……서로 맞춰 보니 틀림없네요."]]'::jsonb),
+('haram', 'mate_galmae', 1, '[["", "갈매의 발소리를 알아들은 하람이 웃음을 참으며 내게 속삭였다."], ["서하람", "갈매 씨는 계단이 없어도 숨을 참았다가 한꺼번에 내쉬어요. 별자리는 가끔 틀리게 읽어 주시고요. ……그런데 저는 그게 좋아요. 맞게 읽으실 땐 목소리가 그렇게 들뜨지 않거든요."]]'::jsonb),
+('haram', 'mate_munsu', 1, '[["", "문수의 이야기를 듣던 하람이 손가락을 접어 세다가 내게 고개를 돌렸다."], ["서하람", "문수 씨는 한 식경에 「거든요」를 마흔 번쯤 하세요. 오늘은 마흔셋이네요. ……놀리는 게 아니라 관측이에요. 신나실수록 더 자주 하시더라고요."]]'::jsonb),
+('munsu', 'bond_make', 1, '[["", "선착 처마 밑 서안 위에 손바닥만 한 나무 조각 하나가 놓여 있었다. 등잔 모양으로 깎다 만 듯 귀퉁이가 뭉툭했다. 문수가 그 앞에서 손가락을 꼼지락거리며 한참 입을 열었다 닫았다 했다."], ["문수", "나무로 깎은 등잔이에요. 당연히 불은 못 켜죠. 그래도…… 꺼질 걱정은 없잖아요. 물소리가 아무리 커도, 바람이 불어도요."]]'::jsonb),
+('munsu', 'bond_make', 2, '[["", "문수가 나무 등잔 조각을 두 손으로 내밀었다. 손바닥에 칼에 베인 자국이 여럿 나 있었다."], ["문수", "제가 직접 깎았어요. 망치질 배우다가 칼도 잡아 봤거든요. 손을 세 번 베였나? 아니, 네 번이요. 등잔을 늘 셋 켜잖아요. 장부 보려고 하나, 계단 보려고 하나, 무서워서 하나. 이건 넷째예요. 조사원님 드리려고요."], ["문수", "저, 밤배 없는 날엔 조사원님 별채에서 쉬어도 될까요? 물소리 없는 곳에서 하룻밤 자 보고 싶어요. 함박 님도 다녀오라셨어요. 제가 없으면 쉼막이 좀 조용해질 거라면서요."]]'::jsonb),
+('munsu', 'bond_again', 1, '[["", "문수가 새 나무 등잔을 내 손에 쥐여 주고 품에서 옛 조각을 꺼냈다. 뭉툭한 귀퉁이가 손때에 반들반들해져 있었다."], ["문수", "버릴까도 했는데, 불도 못 켜는 등잔을 버리면 정말 아무 쓸모가 없잖아요. 그래서 차마 못 버렸어요. ……다시 와 주셨으니까, 이제 할 말이 백 개쯤 생겼네요. 하나씩 들려드릴게요."]]'::jsonb),
+('munsu', 'bond_break', 1, '[["", "문수는 나무 등잔을 돌려받고 아무 말도 하지 않았다. 서안 위에 조각을 내려놓고 손끝으로 뭉툭한 귀퉁이만 계속 쓸었다. 처마 밑으로 물소리만 들렸다."], ["", "한참 만에 문수가 입을 열었다. 목소리가 작았다."], ["문수", "……이상하네요. 오늘은 정말 아무 말도 안 나와요."], ["문수", "수다 상대 자리는 그대로 둘게요. 다리가 짝짝이라 다른 사람은 앉기도 힘들 거예요. ……선착 지나실 때 잠깐 앉았다 가세요. 그땐 저도 다시 떠들 수 있을 테니까요."]]'::jsonb),
+('munsu', 'first_dawn', 1, '[["", "아침 볕이 방문 창호지에 닿자 이불 속에서 문수가 벌떡 일어나 앉았다. 머리카락이 한쪽으로 다 눌려 있었다."], ["문수", "조사원님! 저 밤새 푹 잤어요! 한 번도 안 깨고요! 물소리가 안 들리니까 눈 뜨니 아침이더라고요. 선착에선 상상도 못 할 일이에요. 아, 꿈도 안 꿨네요!"]]'::jsonb),
+('munsu', 'first_dawn', 2, '[["", "문간에 등잔 셋이 나란히 놓여 있었다. 둘은 불이 꺼져 있고 하나만 가물가물 타고 있었다. 문수가 그 하나를 훅 불어 끄고 머쓱하게 웃었다."], ["문수", "습관대로 등잔 셋을 다 켜고 잤어요. 그런데 여긴 장부 볼 일도, 어두운 계단도 없잖아요. 밤중에 둘은 껐죠. ……마지막 하나는 무서워서 남겨 뒀는데, 그것도 방금 껐어요."]]'::jsonb),
+('munsu', 'first_noon', 1, '[["", "마당 쪽에서 망치 소리가 서툴게 이어졌다. 문수가 엎드린 채 짝짝이 다리 발판 하나에 못을 박다가 엄지를 찧고 펄쩍 뛰었다."], ["문수", "아야! 괜찮아요, 손가락만 좀 찧었어요. 별채 문턱이 높아서 발판을 만들고 있었거든요. 이번엔 장부 없는 데만 못 박고 있어요! 장부 뚫은 서리라는 별명도 이제 그만 들어야죠."]]'::jsonb),
+('munsu', 'first_noon', 2, '[["", "문수가 내 책상 위 붓을 크기대로 늘어놓고 붓끝을 하나씩 손가락으로 매만지고 있었다."], ["문수", "붓끝이 많이 갈라졌네요. 먹을 너무 진하게 가신 거 아니에요? 그러면 붓이 뻣뻣해져요. 좀 묽게 갈아야 오래 쓰죠. 이걸 누구한테 배웠냐면…… 아, 그 얘긴 나중에 해 드릴게요."]]'::jsonb),
+('munsu', 'first_dusk', 1, '[["", "해가 기울자 문수가 대문 앞에 서서 남쪽 하늘을 바라보았다. 발끝을 동동 굴렀다."], ["문수", "지금쯤 차랑 님이 선착 등 기둥에 불을 붙이고 계시겠네요. 오늘은 저 없이 기름도 혼자 채우셔야 하는데…… 괜찮겠죠? 선착에 별일 없을 거라고 말씀 좀 해 주세요."]]'::jsonb),
+('munsu', 'first_dusk', 2, '[["", "문수가 처마 끝 등롱을 올려다보며 손가락으로 무언가를 셌다."], ["문수", "등롱살이 여덟 개네요. 정청 것이랑 같아요. 등도 건 열두 개인데, 처음엔 제가 잘못 센 줄 알고 세 번이나 세 봤어요. 여긴 바람에도 잘 버티겠네요. 다행이에요."]]'::jsonb),
+('munsu', 'first_night', 1, '[["", "깊은 밤 문수가 이불을 턱 밑까지 끌어올리고 눈을 말똥말똥 뜨고 있었다."], ["문수", "여긴 너무 조용해요. 선착에선 물소리가 무섭더니, 막상 아무 소리도 안 나니까 그것도 무섭네요. 참, 저도 어쩌면 좋아요. ……조사원님, 아무 얘기나 좀 해 주세요. 목소리 들으면 괜찮아질 것 같아요."]]'::jsonb),
+('munsu', 'first_night', 2, '[["", "문수가 이불 속에서 무언가를 한참 떠들다가 말소리가 점점 느려졌다. 문장 하나가 중간에서 뚝 끊겼다. 잠시 뒤 문수가 퍼뜩 눈을 떴다."], ["문수", "제가 잠들었어요? 얘기하다가요? 어디까지 했더라…… 책벌레가 장부를…… 아, 기억나세요? 거기부터 다시 할게요."]]'::jsonb),
+('munsu', 'w_clear', 1, '[["", "볕이 쨍쨍했다. 문수가 칠액 통을 들고 대문 앞에 쪼그려 앉아 대문 아랫단에 붓질을 하고 있었다. 붓 자국이 고르게 이어졌다."], ["문수", "볕 좋을 때 칠해야 금방 마르거든요. 저 붓질은 꽤 잘해요! 대문 칠한 값은 안 받을게요. 칠액도 조사원님이 만드신 거고, 저는 붓만 놀렸으니까요."]]'::jsonb),
+('munsu', 'w_cloudy', 1, '[["", "하늘이 낮게 흐렸다. 문수가 마루에 앉아 기지개를 쭉 켰다."], ["문수", "흐린 날이 좋아요. 선착에선 물소리가 낮게 깔려서 덜 무섭거든요. 여긴 애초에 물소리가 없지만…… 그래도 이런 날엔 마음이 좀 차분해져요."]]'::jsonb),
+('munsu', 'w_rain', 1, '[["", "굵은 비가 지붕을 두드렸다. 문수가 마루 한가운데 앉아 빗소리보다 크게 떠들기 시작했다. 목소리가 점점 높아졌다."], ["문수", "빗소리가 꼭 선착 물소리 같아요! 그래서 일부러 더 크게 떠드는 거예요. 그러면 안 들리거든요! 조사원님도 같이 얘기해요! 아, 맞장구만 쳐 주셔도 돼요. 그걸로 충분해요!"]]'::jsonb),
+('munsu', 'w_rain', 2, '[["", "빗발이 거세졌다. 문수가 문간에 둔 작은 나무 궤를 열어 보이며 뿌듯하게 웃었다. 안에 든 종이가 바싹 말라 있었다."], ["문수", "보세요! 종이가 하나도 안 젖었죠? 선착 장부 궤 보고 따라 만들었어요. 칠도 꼼꼼히 했고요. 조사원님 서신은 여기 넣어 두세요. 비 맞아 글씨 번지면 속상하잖아요."]]'::jsonb),
+('munsu', 'w_drizzle', 1, '[["", "가는 비가 소리 없이 내렸다. 문수가 우산 두 개를 들고 문간에 서서 하나를 내게 내밀었다."], ["문수", "선착에서 쓰는 먹비 우산이에요. 가랑비엔 안 써도 될 것 같다가 꼭 감기에 걸리더라고요. 적어도 저는 그래요. 하나는 조사원님 쓰세요. 같이 쓰기엔 좀 좁아서요."]]'::jsonb),
+('munsu', 'w_fog', 1, '[["", "짙은 안개가 마당을 덮었다. 마당 어딘가에서 툭 소리가 나자 문수가 어깨를 움찔했다. 연달아 작은 소리가 날 때마다 문수의 어깨가 들썩였다."], ["문수", "방금 뭐 떨어졌어요? 아, 감이요. 그럼 지금 난 소리는요? 새예요? ……안개가 끼면 소리가 바로 옆에서 나는 것 같아요. 뭐가 뭔지 하나씩 알려 주세요. 알고 나면 덜 무서워요."]]'::jsonb),
+('munsu', 'w_wind', 1, '[["", "거센 바람에 처마 끝 등롱이 이리저리 흔들렸다. 문수가 등롱 밑에 서서 손을 뻗었다 거뒀다 했다."], ["문수", "등롱살 부러지면 큰일인데! 선착에서도 이런 바람에 열한 개나 부러졌어요. 조사원님, 저거 내려놓을까요? 제가 붙잡고 있을까요? ……아, 붙잡는 건 아무래도 안 되겠네요."]]'::jsonb),
+('munsu', 'w_snow', 1, '[["", "밤새 눈이 쌓였다. 문수가 문간에 서서 마당을 내다보다 숨을 죽였다. 눈이 소리를 다 덮어 사방이 고요했다."], ["문수", "차랑 님이 그러셨어요. 흰 밤엔 소리가 세 걸음도 못 간다고요. 눈 오는 날이 딱 그런 것 같아요. 그런데 이상하게 안 무섭네요. ……조사원님이 바로 옆에 계셔서 그런가 봐요."]]'::jsonb),
+('munsu', 'w_bloodmist', 1, '[["", "붉은 안개가 낮게 깔렸다. 문수가 문간에 등잔 셋을 나란히 켜 놓고 그 가운데 앉아 무릎을 끌어안았다."], ["문수", "정리소 도랑 지킬 때도 등잔을 셋씩 켰어요. ……오늘은 하나 더 켤래요. 나무 등잔은 불이 안 들어오니까 진짜 등잔으로요. 조사원님 계신 쪽도 환하게 해 두려고요."]]'::jsonb),
+('munsu', 'me_yohwa', 1, '[["", "문수가 내 앞에 털썩 앉아 내 두 손을 붙잡았다. 늘 쏟아지던 말이 나오지 않는지 입술만 떨렸다. 한참 만에 아주 작은 목소리가 나왔다."], ["문수", "{이름} 님. ……처음 이렇게 불러 봐요. 늘 조사원님이라고만 했잖아요. {이름} 님, 들리세요? 뭐라도 대답해 주세요. 대답만 들으면…… 아직 괜찮으신 거죠? 계속 부를게요. 대답하실 때까지요."]]'::jsonb),
+('munsu', 'me_erosion_80', 1, '[["", "내가 대문 쪽으로 몸을 돌리자 문수가 먼저 뛰어가 대문 앞에 두 팔을 벌리고 섰다. 다리가 후들후들 떨렸다."], ["문수", "안 돼요! 지금은 못 나가세요! 저도 무섭지만 이렇게 문을 막고 있잖아요. ……제발 정화부터 하세요. 끝나기 전엔 안 비킬 거예요. 다리가 좀 떨려도요."]]'::jsonb),
+('munsu', 'me_erosion_55', 1, '[["", "문수가 내게 찻잔을 건네다 내 손을 보고 멈칫했다. 잔을 쥔 내 손가락이 굳은 듯 잘 펴지지 않았다."], ["문수", "손가락이 잘 안 펴지세요. 붓 쥔 채로 굳어 버린 손 같아서…… 그런 손을 많이 봤거든요. 무서워요. 먼저 정화하세요. 제가 손도 주물러 드릴게요. 다시 펴질 때까지요."]]'::jsonb),
+('munsu', 'me_erosion_30', 1, '[["", "문수가 내 얼굴을 한 번 보더니 손가락을 하나씩 꼽으며 빠르게 떠들기 시작했다."], ["문수", "정청 서고 책에서 봤어요. 요기가 끼면 첫째 쉬고, 둘째 정화하고, 셋째 따뜻한 걸 먹으래요. 넷째는…… 뭐였더라? 제 말이 다 맞는 건 아닐 테니까, 일단 쉬고 정화부터 하세요. 그건 확실해요."]]'::jsonb),
+('munsu', 'me_hp_low', 1, '[["", "문수가 허둥지둥 등잔 셋을 가져와 내 둘레에 하나씩 놓고 불을 붙였다. 성냥을 긋는 손이 떨려 두 번이나 헛그었다."], ["문수", "하나는 조사원님 보시라고, 하나는 문 쪽을 밝히려고, 마지막 하나는…… 제가 무서워서요. 그냥 누워 계세요. 제가 옆에서 얘기할게요. 듣기만 하셔도 돼요. 그날처럼요."]]'::jsonb),
+('munsu', 'me_rescued', 1, '[["", "대문을 들어서자 문수가 마루 끝에 앉아 있었다. 나를 보고도 아무 말이 없었다. 무릎 위에서 두 손만 꼭 쥐고 있었다."], ["", "내가 먼저 이름을 부르자 문수가 그제야 고개를 들었다. 눈가가 젖어 있었다."], ["문수", "……오늘은 말이 안 나왔어요. 쓰러지셨다는 얘기를 듣고 나서부터요. 저한테 가끔 그런 날이 있잖아요. ……그런데 이제 괜찮아요. 조사원님이 오셨으니까. 어디 다치셨는지부터 말씀해 주세요."]]'::jsonb),
+('munsu', 'me_exp_back', 1, '[["", "대문을 들어서자 문수가 손바닥을 내 앞에 쫙 펴 보였다. 손바닥에 먹으로 작은 글자가 빼곡히 적혀 있었다."], ["문수", "못 뵌 동안 할 얘기를 적어 놨어요! 열일곱 가지나 돼요. 첫째, 함박 님 고양이가 새끼를 낳았고요. 둘째, 청파 님이 노를 또 부러뜨렸고요. 셋째는…… 아, 우선 앉으세요! 얘기가 길어요."]]'::jsonb),
+('munsu', 'me_far_travel', 1, '[["", "문수가 걸상을 끌어다 내 앞에 앉았다. 무릎을 바짝 붙이고 눈을 반짝였다."], ["문수", "먼 데 다녀오셨죠? 거기도 물소리가 나요? 서고엔 책벌레도 있고요? 하나씩 들려주세요. 이번엔 제가 맞장구칠게요. 연습 많이 했어요!"]]'::jsonb),
+('munsu', 'me_levelup', 1, '[["", "문수가 손뼉을 짝 치더니 내 앞에 바짝 다가앉았다. 연습한 것을 꺼내 보이는 얼굴이었다."], ["문수", "오늘 또 뭔가 해내셨죠? 어, 정말요? 대단해요! ……어때요, 제 맞장구? 조사원님한테 배운 대로 해 봤어요. 아직 좀 어색하죠?"]]'::jsonb),
+('munsu', 'home_portrait', 1, '[["", "문수가 벽에 걸린 제 초상을 보다가 두 손으로 얼굴을 가렸다. 손가락 사이로 그림을 다시 훔쳐보았다."], ["문수", "어, 저 입 다물고 있네요! 그림 속에선 이렇게 생겼구나. 신기해요. 평소엔 워낙 떠들어서 저도 보기 힘든 얼굴인데요!"]]'::jsonb),
+('munsu', 'home_pet', 1, '[["", "문수가 동무 앞에 쪼그려 앉아 쉬지 않고 무언가를 이야기하고 있었다. 동무가 고개를 갸웃할 때마다 문수가 반색했다."], ["문수", "보세요, 얘가 제 말에 맞장구를 쳐요! 고개를 갸웃한다니까요. 책벌레 얘기도 벌써 반이나 들었어요. 뒷얘기는 조사원님께 먼저 해 드리려고 남겨 뒀죠."]]'::jsonb),
+('munsu', 'home_new_furn', 1, '[["", "문수가 새 가구 다리를 하나씩 손으로 짚어 흔들어 보더니 고개를 끄덕였다."], ["문수", "어, 다리가 전부 똑같네요! 이렇게 반듯하게 만드는 건 어떻게 해요? 제 걸상은 세 번이나 잘랐는데도 짝짝이거든요. 이건 한 번에 맞추신 거죠? 부러워요!"]]'::jsonb),
+('munsu', 'home_mate', 1, '[["", "문수가 마루 안쪽에서 돌아와 걸상에 앉으며 숨을 몰아쉬었다."], ["문수", "정인 분께 인사드리다가 그만 책벌레 얘기까지 해 버렸어요. 끝까지 들어 주시더라고요! 다만 맞장구는 없었어요. 그건 역시 조사원님이 제일 잘하시네요."]]'::jsonb),
+('munsu', 't_days_7', 1, '[["", "문수가 나무 등잔 조각을 하나 더 꺼내 보였다. 첫 조각보다 귀퉁이가 조금 덜 뭉툭했다."], ["문수", "이레 동안 하나 더 깎았어요. 이번엔 손을 두 번밖에 안 베였고요! 실력이 늘었죠? 이것도 받으세요. 불 못 켜는 등잔이 둘이나 됐네요. 쓸모는 없어도 전 좋아요."]]'::jsonb),
+('munsu', 't_days_30', 1, '[["", "문수가 손가락을 꼽으며 무언가를 셌다. 손가락이 모자라 다른 손으로 넘어갔다."], ["문수", "한 달 동안 조사원님께 떠든 얘기만 백 가지는 넘을걸요? 그런데 책벌레 얘기는 아직 끝을 못 봤어요. 자꾸 옆길로 새거든요. 이것도 재주라면 재주죠!"]]'::jsonb),
+('munsu', 't_days_100', 1, '[["", "문수가 짝짝이 다리 걸상 둘을 마당에 나란히 놓았다. 하나는 별채 것이고 하나는 선착에서 지고 온 것이었다."], ["문수", "선착에 있던 수다 상대 걸상까지 가져왔어요! 함박 님이 지게를 빌려주셨어요. 백 날이잖아요. 오늘은 둘을 나란히 놓고 책벌레 얘기를 꼭 끝낼 거예요. 이번엔 정말 끝까지요!"]]'::jsonb),
+('munsu', 't_long_away', 1, '[["", "문수가 걸상에 앉아 있다가 나를 보자마자 말을 쏟아 내기 시작했다. 숨도 안 쉬고 이어 갔다."], ["문수", "사흘이나 지났잖아요! 혼자 떠들다 보니 함박 님도 차랑 님도 귀를 막고 주무시더라고요. 청파 님은 노 저으러 가 버리고요! 들을 사람이 없으니까 얘기가 자꾸 쌓여요. 이제 오셨으니 하나씩 들려드릴게요."]]'::jsonb),
+('munsu', 't_long_away', 2, '[["", "문수가 아무 말 없이 내 앞에 앉아 나를 빤히 보았다. 입을 열지 않았다."], ["문수", "……먼저 말 좀 걸어 주세요. 그날처럼요. 사흘 동안 아무도 제게 먼저 말을 안 걸어 줬거든요."]]'::jsonb),
+('munsu', 't_last_today', 1, '[["", "문수가 이불을 펴다 말고 손을 탁 쳤다."], ["문수", "아, 책벌레 뒷얘기! 또 못 했네요. 내일은 꼭 해 드릴게요. 그러니까 내일도 말 걸어 주셔야 해요! 안 그러면 책벌레가 장부를 몽땅 먹어 버릴지도 몰라요."]]'::jsonb),
+('munsu', 'idle', 1, '[["", "문수가 내 곁에 앉더니 숨을 한 번 크게 들이쉬었다."], ["문수", "책벌레 얘기 해 드릴게요. 정청 서고에 책벌레가 한 마리 살았는데요, 그게 하필 감찰관님 장부를 갉아먹다가…… 아, 잠깐만요. 먼저 서고가 어떻게 생겼는지부터 설명해야겠네요."]]'::jsonb),
+('munsu', 'idle', 2, '[["", "문수가 마루 기둥에 박힌 못 하나를 손가락으로 톡톡 건드렸다."], ["문수", "이 못은 제가 박은 거 아니에요! 정말이에요! 이제 장부 없는 곳에만 못을 박거든요. 정청에서 장부를 뚫어 버린 뒤로요. 그 장부 주인은 아직도 제 인사를 안 받아 주세요."]]'::jsonb),
+('munsu', 'idle', 3, '[["", "문수가 내 붓을 집어 종이에 한 획을 반듯하게 그었다."], ["문수", "감찰관님이 제 글씨를 보시고 「글씨 하나는 됐다」고 하셨어요. ……하나요. 다른 건 잘했다는 말씀을 안 하셨는데, 그럼 어떻게 받아들여야 하죠?"]]'::jsonb),
+('munsu', 'idle', 4, '[["", "문수가 짝짝이 다리 걸상에 앉아 일부러 몸을 좌우로 흔들었다. 걸상이 삐걱 기울었다 돌아왔다."], ["문수", "전 이 흔들림이 좋아요. 정청 서리방 걸상도 짝짝이였어요. 서리가 편하면 졸기 때문이라던데…… 제 생각엔 목수가 대충 만든 것 같아요."]]'::jsonb),
+('munsu', 'idle', 5, '[["", "문수가 마루에 코를 대고 킁킁 냄새를 맡았다."], ["문수", "나무 냄새 나죠? 정청에선 온통 먹 냄새만 나고, 선착에선 물 냄새가 나요. 여긴 나무 냄새에 밥 냄새까지 섞여서 좋아요. 셋 중엔 여기가 제일이에요."]]'::jsonb),
+('munsu', 'idle', 6, '[["", "문수가 쉼막 함박 님 흉내를 내며 두 손으로 귀를 막았다."], ["문수", "「반 식경만 들어도 귀가 아파!」 함박 님이 늘 그러세요. 그러면서 밥은 제 그릇에 제일 많이 담아 주시죠. 떠들려면 배부터 든든해야 한대요."]]'::jsonb),
+('munsu', 'idle', 7, '[["", "문수가 손을 내 쪽으로 내밀며 손바닥을 위로 펼쳤다."], ["문수", "맞장구 연습 좀 해요! 제가 얘기하면 「오, 그래요?」 하고 받아 주세요. 저도 따라 해 볼게요. 자, 오늘 선착에 배가 열두 척 들어왔거든요. 지금이에요!"]]'::jsonb),
+('munsu', 'idle', 8, '[["", "문수가 벼루에 먹을 갈며 물을 조금씩 더 부었다. 먹물이 묽게 퍼졌다."], ["문수", "먹은 묽게 갈아야 붓이 안 뻣뻣해져요. 도제조님이 알려 주셨어요. 종이에 「물을 더」라고 적으셨죠. 그날은 그게 전부였어요. ……다음 날엔 「됐네」 하고 직접 말씀하셨어요."]]'::jsonb),
+('munsu', 'idle', 9, '[["", "문수가 손가락을 꼽으며 무서운 것을 하나씩 셌다. 셋째 손가락에서 멈췄다."], ["문수", "물소리, 어두운 계단, 조용한 밤. ……전엔 무서운 게 열 가지도 넘었는데 이제 셋만 남았어요. 별채에 다니면서 많이 줄었죠? 이것도 자랑할 만하죠?"]]'::jsonb),
+('munsu', 'idle', 10, '[["", "문수가 처마 밑에 나무 등잔 조각 둘을 나란히 세워 두고 흐뭇하게 바라보았다."], ["문수", "불도 못 켜는 등잔이 두 개예요. 밤에 세워 두면 진짜 등잔처럼 보이죠. ……불빛 하나 없어도 보고 있으면 마음이 놓여요. 좀 이상한가요?"]]'::jsonb),
+('munsu', 'idle', 11, '[["", "문수가 청파 이야기를 하다가 혼자 웃음을 터뜨렸다."], ["문수", "밤에 청파 님 노 젓는 소리에 놀라 조사원님 팔을 붙잡았던 거 기억하세요? 청파 님께 말씀드렸더니 「저 그렇게 무서워요?」 하시더라고요. 무서운 건 청파 님이 아니라 노 젓는 소리였는데요!"]]'::jsonb),
+('munsu', 'idle', 12, '[["", "문수가 별채 문지방을 손가락으로 재더니 고개를 끄덕였다."], ["문수", "문지방이 딱 한 뼘 반 높이예요. 발판이 반 뼘이니까 이제 한 뼘만 넘으면 되죠. 치수 재는 건 출납 서리답게 잘해요. 못질이 영 서툴러서 그렇지!"]]'::jsonb),
+('munsu', 'idle', 13, '[["", "문수가 말을 하다 말고 제 입을 손으로 막았다."], ["문수", "저 방금 「거든요」 몇 번 했어요? 함박 님은 한 식경에 마흔 번이나 한다고 세어 보셨대요. 고치려고 하는데…… 잘 안 되거든요. 아, 또 했네요!"]]'::jsonb),
+('munsu', 'idle', 14, '[["", "문수가 내 쪽으로 몸을 기울이고 목소리를 낮췄다."], ["문수", "다들 제 얘길 듣다가 「그래서 요점이 뭔데?」 하세요. 조사원님은 그런 적 한 번도 없으시죠. ……사실 요점 같은 건 없어요. 그냥 얘기하고 싶은 거예요. 들어 주시는 게 좋아서요."]]'::jsonb),
+('munsu', 'idle', 15, '[["", "문수가 칠액 묻은 붓을 들고 별채 대문 앞에서 서성였다."], ["문수", "대문 칠은 끝났으니 이번엔 문고리 차례예요! 그런데 문고리에도 칠해도 되나요? 안 되겠죠? 붓질은 자신 있는데 어디까지 칠해야 하는지는 영 모르겠네요."]]'::jsonb),
+('munsu', 'idle', 16, '[["", "문수가 손을 펴 칼에 베인 자국들을 내려다보았다."], ["문수", "나무 등잔 깎다가 베인 자국이에요. 하나, 둘, 셋, 넷. 다음엔 다섯 번째가 생길까 봐 겁나요. ……그래도 또 깎을 거예요. 무서워도 하고 싶은 건 하고 싶으니까요."]]'::jsonb),
+('munsu', 'idle', 17, '[["", "문수가 남문 수로 선착 이야기를 하다가 손짓으로 배 모양을 그렸다."], ["문수", "어젯밤 손님이 등도에 있던 옛집을 보러 오셨대요. 장부에 할머니 이름을 적었더니 그걸 소리 내 읽어 달라고 하셨어요. ……읽어 드렸더니 우시더라고요. 저도 눈물이 날 뻔했어요."]]'::jsonb),
+('munsu', 'idle', 18, '[["", "문수가 별채 서가를 올려다보다가 한쪽 다리가 기운 것을 보고 손을 뻗었다가 멈췄다."], ["문수", "저 서가 다리가…… 아, 아니에요. 제가 손대면 또 못이 장부를 뚫을지도 몰라요. 조사원님이 고쳐 주세요. 저는 옆에서 망치질 몇 번 하시는지 셀게요."]]'::jsonb),
+('munsu', 'idle', 19, '[["", "문수가 선착 장부 이야기를 하며 손가락으로 허공에 줄을 그었다."], ["문수", "명등청에서 선착 장부를 보시더니 조사원님 이름이 서른 줄 넘게 나온다고, 선착에 사는 분이냐고 물으셨대요. 아니라고 했죠. 제가 조사원님 별채에 산다고…… 어, 그것도 아닌데요?"]]'::jsonb),
+('munsu', 'idle', 20, '[["", "문수가 마루에 누워 별채 천장 서까래를 손가락으로 세었다."], ["문수", "서까래가 열여섯 개예요. 선착 처마엔 열하나뿐인데 여긴 다섯 개나 많네요. 그래서 그런가, 여기선 조금 덜 무서워요. 그냥 제 기분 탓일 수도 있지만요."]]'::jsonb),
+('munsu', 'idle', 21, '[["", "문수가 내 앞에 앉아 아무 말 없이 기다렸다. 내가 먼저 말을 걸자 문수가 활짝 웃었다."], ["문수", "그거요! 먼저 말 걸어 주시는 거요. 가끔 일부러 기다려 봐요. ……어김없이 말을 걸어 주시니까, 이제 기다리는 것도 겁나지 않아요."]]'::jsonb),
+('munsu', 'idle', 22, '[["", "문수가 꺼진 관아 터 쪽 하늘을 오래 바라보았다."], ["문수", "다음 달에 느티나무 뒤뜰에 또 가려고요. 도제조님께 묽게 간 먹 한 종지 갖다 드리려고요. ……같이 가 주실래요? 그날처럼 잠깐 앉아 있다 오면 돼요."]]'::jsonb),
+('munsu', 'idle', 23, '[["", "문수가 손을 들어 내 소매 끝에 묻은 먹 자국을 가리켰다."], ["문수", "먹을 또 진하게 가셨죠? 소매에까지 튀었네요. 진한 먹은 잘 안 지워져요. 다음엔 제가 갈아 드릴게요. 묽게요! 그건 제가 자신 있거든요. 붓질 다음으로요."]]'::jsonb),
+('munsu', 'idle', 24, '[["", "문수가 이불을 개다가 이불 귀퉁이를 붙잡고 멈췄다."], ["문수", "선착에선 이불을 늘 펴 둬요. 언제 밤배가 들어올지 모르거든요. 그런데 여기선 아침마다 개어도 되네요. ……이불 개는 게 이렇게 기분 좋은 일인지 몰랐어요."]]'::jsonb),
+('munsu', 'idle', 25, '[["", "문수가 짝짝이 걸상 다리 밑에 끼워 둔 나무쪽을 빼서 보여 주었다."], ["문수", "이건 걸상 다리 받침이에요. 세 번 자르다가 남은 나무토막이죠. 이걸 끼우면 흔들리지 않아요. ……남은 토막도 쓸 데가 있네요. 저처럼요. 어, 방금 말 좀 멋있지 않았어요?"]]'::jsonb),
+('munsu', 'idle', 26, '[["", "문수가 별채 마당 끝에서 귀를 기울이고 서 있다가 돌아왔다."], ["문수", "여기선 물소리 대신 바람 소리가 나요. 계단 올라오는 소리 같지 않아서 좋아요. ……가끔 문 두드리는 소리처럼 들리긴 해요. 그래도 그냥 바람이라고 생각하려고요."]]'::jsonb),
+('munsu', 'idle', 27, '[["", "문수가 쉬지 않고 떠들다가 갑자기 말을 멈추고 나를 보았다."], ["문수", "저 한 식경이나 떠들었는데 한 번도 말을 안 끊으셨네요. 그날 대패질하실 때도 그러셨죠. 이번엔 조사원님 차례예요. 제가 들어 드릴게요. 맞장구도 잘 쳐 볼게요!"]]'::jsonb),
+('munsu', 'idle', 28, '[["", "문수가 서신 한 통을 꺼내 보이며 키득거렸다."], ["문수", "차랑 님한테 서신이 왔어요. 「등 기둥 기름은 넣었다. 너 없으니 조용해서 좋다. 빨리 와라.」라네요. 조용해서 좋다면서 얼른 오래요! ……차랑 님도 제 수다가 그리우신가 봐요."]]'::jsonb),
+('munsu', 'idle', 29, '[["", "문수가 나무 등잔 조각을 손바닥에 올려놓고 입김을 훅 불었다."], ["문수", "불 끄는 흉내예요. 그런데 아무리 불어도 안 꺼지죠? 애초에 불이 안 켜지니까요. 이런 등잔이 제일 좋아요. ……무서운 밤에도 꺼질 걱정이 없잖아요."]]'::jsonb),
+('munsu', 'idle', 30, '[["", "문수가 걸상에 앉아 발을 흔들다가 문득 진지한 얼굴로 나를 보았다."], ["문수", "그 방에선 숨소리조차 크게 못 냈어요. 그래서 지금 이렇게 말이 많은 걸지도 몰라요. ……그런데 조사원님 곁에선 가끔 아무 말 안 해도 괜찮아요. 그게 참 신기해요."]]'::jsonb),
+('munsu', 'gift_field', 1, '[["", "문수가 받은 나무 물건을 두 손으로 들고 이리저리 돌려 보다가 다리 넷을 하나씩 손가락으로 쟀다."], ["문수", "와, 다리가 전부 똑같아요! 하나도 안 짝짝이네요! 조사원님은 어떻게 한 번에 맞추세요? 저는 세 번이나 잘랐는데도 삐뚤어져요. 이거 선착에 가져가면 함박 님도 깜짝 놀라시겠어요."]]'::jsonb),
+('munsu', 'gift_field', 2, '[["", "문수가 받은 것에 코를 대고 나무 냄새를 깊이 맡았다."], ["문수", "부적목이죠? 결이 아주 곧네요. 옛 나루 저자에서 난 거요. ……처음 선착 서안을 짜 주셨을 때도 이런 냄새가 났어요. 그날이 생각나네요."]]'::jsonb),
+('munsu', 'gift_hq', 1, '[["", "문수가 선물을 받아 들고 입을 벌린 채 한참 말이 없었다. 늘 쏟아지던 말이 이번엔 좋은 쪽으로 막혀 있었다."], ["문수", "……말이 안 나오네요. 무서워서 그런 건 아니에요. 너무 좋아서…… 이런 날도 있군요."]]'::jsonb),
+('munsu', 'gift_other', 1, '[["", "문수가 선물을 받아 위아래로 흔들어 보고 귀에 대 보았다."], ["문수", "이거 뭐예요? 아, 잠깐! 말하지 마세요. 제가 맞혀 볼게요. 음…… 모르겠어요. 그냥 알려 주세요! 대신 이게 뭔지 듣고 나면 한 식경은 떠들 수 있을 것 같아요."]]'::jsonb),
+('munsu', 'gift_other', 2, '[["", "문수가 선물을 품에 넣다가 다시 꺼내 손바닥에 올려 보았다."], ["문수", "서리는 받은 걸 전부 적어야 하잖아요. 그런데 오늘은 장부를 안 가져왔네요. 그럼 머릿속에 적어 둘게요. 「조사원님께 받음. 아주 좋음.」 이렇게요!"]]'::jsonb),
+('munsu', 'gift_reward', 1, '[["", "문수가 먹빛 기름종이를 바른 우산 두 자루를 품에 안고 와 내밀었다. 우산 손잡이 끝마다 짝짝이 다리처럼 길이가 조금씩 달랐다."], ["문수", "먹비 우산이에요. 선착에서 비 올 때 쓰는 거죠. 제가 직접 만들었어요! 손잡이 길이를 맞추다가 또 짝짝이가 됐지만…… 비는 제대로 막아요. 정말이에요!"]]'::jsonb),
+('munsu', 'gift_reward', 2, '[["", "문수가 우산 둘을 건네며 하나를 펴 보였다. 우산살 사이로 기름종이가 팽팽하게 당겨져 있었다."], ["문수", "우산살이 열두 개예요. 등도 등롱이랑 같죠. 혹시 잘못 셌나 싶어 세 번이나 확인했어요. 하나는 조사원님 쓰시고, 다른 하나는 필요한 분께 씌워 주세요."]]'::jsonb),
+('munsu', 'mate_hanseol', 1, '[["", "한설에게 벌떡 일어나 인사하고 돌아온 문수가 붓을 쥔 채 내게 와서 숨을 몰아쉬었다."], ["문수", "감찰관님이세요! 제 글씨 보고 「하나는 됐다」 하셨던 분이요. 여기서 뵈니 떨려서 말이…… 아, 나오네요. 결국 나오거든요!"]]'::jsonb),
+('munsu', 'mate_yeoul', 1, '[["", "여울 옆에서 떠들다 온 문수가 내 곁에 앉으며 말했다."], ["문수", "섬에서 오셨대요. 거긴 다들 조용해서 저처럼 떠드는 사람이 없다네요. 그런데 제 얘기가 맞이 노래 같다고 하셨어요. ……말이 노래 같다는 칭찬은 처음 들어 봤거든요."]]'::jsonb),
+('munsu', 'mate_wolha', 1, '[["", "월하에게 책벌레 얘기를 하다 온 문수가 신이 나서 내게 달려왔다."], ["문수", "월하 님이 제 얘기를 끝까지 들어 주셨어요! 장사꾼은 말 많은 손님이 값을 깎으려는 줄 안대요. ……전 아무것도 안 샀는데요. 그냥 얘기만 했는데도요!"]]'::jsonb),
+('munsu', 'mate_daon', 1, '[["", "다온의 공책을 넘겨다보고 온 문수가 웃으며 내게 귓속말을 했다."], ["문수", "다온이가 책벌레 얘기를 공책에 적는데 벌써 한 장을 다 썼대요. 끝을 안 알려 준다고 화도 내고요. ……사실 저도 끝을 몰라요. 이건 비밀이에요!"]]'::jsonb),
+('munsu', 'mate_hisu', 1, '[["", "희수 곁에서 붓끝을 구경하던 문수가 반가운 얼굴로 내게 돌아왔다."], ["문수", "서리님도 먹을 묽게 가시네요! 그래야 붓이 안 뻑뻑하거든요. 둘 다 같은 방식으로 가니까…… 벼루 하나만 있어도 충분하겠어요!"]]'::jsonb),
+('munsu', 'mate_danbi', 1, '[["", "단비의 오른쪽에서 한참 이야기하고 온 문수가 내 곁에 앉았다."], ["문수", "단비 씨는 오른쪽에서 말하면 잘 들으신대요. 그래서 그쪽에 앉았는데, 제가 너무 떠들어서 오른쪽 귀가 바쁘다네요. 왼쪽은 쉬는 귀래요. ……쉬는 귀라니, 왠지 부러워요."]]'::jsonb),
+('munsu', 'mate_unbi', 1, '[["", "불침번 서는 여운비를 보고 이불 속으로 들어갔던 문수가 이불 밖으로 얼굴만 내밀고 내게 말했다."], ["문수", "대장님이 문간에서 불침번을 서시면 밤이 덜 무서워요. 여긴 물소리도 없지만요. 불침번은 말을 안 한다시길래…… 제가 대신 떠들어 드려요. 밤새도록요!"]]'::jsonb),
+('munsu', 'mate_cheongpa', 1, '[["", "청파의 노 소리에 움찔했던 문수가 머쓱하게 웃으며 내게 말했다."], ["문수", "청파 님 노 소리는 이제 알아요. 그런데 알아도 깜짝 놀라거든요. 저 때문에 노를 살살 젓겠다고 하셨어요. ……고마워서 책벌레 얘기를 들려 드렸죠."]]'::jsonb),
+('munsu', 'mate_galmae', 1, '[["", "갈매에게 받은 엽전 한 닢을 들고 어쩔 줄 모르던 문수가 내게 그것을 보여 주었다."], ["문수", "갈매 씨가 제 얘기를 듣고 엽전을 주셨어요! 들은 값이래요. ……오히려 제가 드려야 하는 거 아닌가요? 떠든 사람은 저잖아요. 셈이 뒤집혔어요!"]]'::jsonb),
+('munsu', 'mate_haram', 1, '[["", "하람 앞에서 떠들다 말고 돌아온 문수가 손가락을 꼽으며 내게 말했다."], ["문수", "하람 씨가 제 「거든요」를 세세요! 오늘은 마흔셋이래요. 신나는 날엔 더 많이 한다는데…… 오늘 좀 들떴거든요. 아, 마흔넷!"]]'::jsonb);
+
+grant select, insert, update, delete on public.world_kin to fn_owner_field;
+grant select on public.world_kin_lines to fn_owner_field;
+
+select pg_temp.kn_fix('world_bond_bonus(uuid, text)', array[
+$q$when not public.world_bond_together(p_owner) then 0$q$,
+$q$when not public.world_bond_together(p_owner) and not public.world_kin_on(p_owner) then 0$q$]);
+
+select pg_temp.kn_fix('world_bond_set(boolean, boolean)', array[
+$q$return jsonb_build_object('ok', true, 'content', case when p_wear is not null$q$,
+$q$if coalesce(p_wear, false) then update public.world_kin set wear = false where owner_id = uid; end if;
+  return jsonb_build_object('ok', true, 'content', case when p_wear is not null$q$]);
+
+select pg_temp.kn_fix('world_housing_snapshot', array[
+$q$'furns', public.world_furn_room($q$,
+$q$'kin', public.world_kin_home(own, uid), 'furns', public.world_furn_room($q$]);
+
+select pg_temp.kn_fix('world_character_purge(uuid)', array[
+$q$  delete from public.world_regular_day where owner_id = p_uid;$q$,
+$q$  delete from public.world_regular_day where owner_id = p_uid;
+  delete from public.world_kin where owner_id = p_uid;$q$]);
+
+do $g$
+declare f text;
+begin
+  foreach f in array array['world_kin_rules()', 'world_kin_npc(text)', 'world_kin_on(uuid)', 'world_kin_in_field(text, text)', 'world_kin_line(text, text, int)', 'world_kin_view(text)', 'world_kin_make(text)', 'world_kin_break()', 'world_kin_wear(boolean)', 'world_kin_ctx(uuid, public.world_kin)', 'world_kin_talk()', 'world_kin_gift(text)', 'world_kin_room_set(int)', 'world_kin_home(uuid, uuid)', 'world_kin_greet(uuid)'] loop
+    perform pg_temp.kn_share('public.' || f);
+    perform pg_temp.kn_own('public.' || f, 'fn_owner_field');
+  end loop;
+end $g$;
+grant execute on function public.world_kin_view(text) to authenticated;
+grant execute on function public.world_kin_make(text) to authenticated;
+grant execute on function public.world_kin_break() to authenticated;
+grant execute on function public.world_kin_wear(boolean) to authenticated;
+grant execute on function public.world_kin_talk() to authenticated;
+grant execute on function public.world_kin_gift(text) to authenticated;
+grant execute on function public.world_kin_room_set(int) to authenticated;
+grant execute on function public.world_kin_greet(uuid) to authenticated;
+grant execute on function public.world_kin_rules() to anon, authenticated;
+
+insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124170000', now())
+on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;

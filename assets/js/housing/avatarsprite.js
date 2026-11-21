@@ -187,6 +187,7 @@ export function avatarPixels(look, frame = 'stand', { front } = {}) {
   if (hd) putHair(px, hd, 'front'); else put(px, hair.front, base);
   if (l.acc) put(px, AV.acc[l.acc].part, { ...base, ...AV.acc[l.acc].pal });
   wear[front]?.();
+  for (const [mx, my, mc] of l.marks || []) { const i = my * W + mx; if (px[i] === base.S) px[i] = mc; }
   const out = px.slice();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (px[y * W + x]) continue;
