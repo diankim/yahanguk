@@ -517,8 +517,21 @@ ART.update({
     'layered': ('부스스 짧은 머리', layered2),
     'twintail': ('양갈래', twintail2),
     'drape': ('흘러내린 앞머리', None),
+    'slick': ('넘긴 올림 머리', None),
+    'sweep': ('옆으로 쓸린 짧은 머리', None),
+    'bowl': ('바가지 머리', None),
+    'leaf': ('반반 잎 머리', None),
+    'pipi': ('짧은 삐삐 머리', None),
+    'bob': ('시스루 단발', None),
+    'flip': ('바깥 뻗침 중단발', None),
+    'curlybob': ('곱슬 단발', None),
+    'braid': ('한 갈래 땋은 머리', None),
+    'tucked': ('귀 뒤로 넘긴 긴 머리', None),
+    'lowtwin': ('낮게 묶은 양갈래', None),
+    'ponytail': ('뒤로 묶은 꽁지머리', None),
+    'halfbang': ('앞머리 반묶음 긴 머리', None),
 })
-ORDER = ['calm', 'sports', 'curtain', 'drape', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'cloud']
+ORDER = ['calm', 'sports', 'curtain', 'drape', 'layered', 'fluffy', 'curly', 'halfup', 'pony', 'buns', 'twintail', 'long', 'princess', 'cloud', 'slick', 'sweep', 'bowl', 'leaf', 'pipi', 'bob', 'flip', 'curlybob', 'braid', 'tucked', 'lowtwin', 'ponytail', 'halfbang']
 
 
 import hair_rows as R

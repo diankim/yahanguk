@@ -17,9 +17,8 @@ declare
   src text := pg_get_functiondef(fn);
   body text := (select prosrc from pg_proc where oid = fn);
 begin
-  if not (j -> 'free' -> 'hair') ? 'drape' then
-    j := jsonb_set(j, '{free,hair}', (select jsonb_agg(v order by v) from jsonb_array_elements_text((j -> 'free' -> 'hair') || '"drape"') v));
-  end if;
+  j := jsonb_set(j, '{free,hair}', (select jsonb_agg(distinct v order by v) from jsonb_array_elements_text((j -> 'free' -> 'hair')
+    || '["drape","slick","sweep","bowl","leaf","pipi","bob","flip","curlybob","braid","tucked","lowtwin","ponytail","halfbang"]'::jsonb) v));
   if position(body in src) = 0 then raise exception 'world_avatar_parts: 본문을 못 찾음'; end if;
   execute replace(src, body, ' select ' || quote_literal(j::text) || '::jsonb ');
 end $m$;
