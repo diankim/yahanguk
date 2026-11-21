@@ -142,3 +142,27 @@ NPCS['hisu'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#4a4232", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#2e2a1e"},
     },
 }
+
+NPCS['daon'] = {
+    'name': '다온',
+    'designs': {'face': 96, 'hair': 97, 'from_top': 98},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#c1b7ad", "b": "#67403f", "c": "#dac3af", "d": "#512f2e", "e": "#937c65", "f": "#b0a192", "g": "#85796d", "h": "#6a584d", "i": "#534339", "j": "#814148", "k": "#504037", "l": "#685d52", "m": "#7f6c5a", "n": "#7d6d5f", "o": "#d8cbbd", "p": "#8d7761"},
+        'rows': [
+            '..abccccde..',
+            '.afgbccbghi.',
+            'eahjgbdgjhik',
+            'eabbhglhbbik',
+            '.mmmmmnmmmm.',
+            '.afbbhihgff.',
+            'aohbbhihhgfp',
+            'kiibbiihhiik',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#b09e81", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#86714e"},
+    },
+}
