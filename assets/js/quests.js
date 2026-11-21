@@ -150,6 +150,22 @@ function grouped(list, b) {
       <summary class="sub-h">${esc(k)}${k === here ? ' <small class="ok">· 지금 여기</small>' : ''} <small class="muted">${map.get(k).length}</small></summary>
       <ul class="q-list">${map.get(k).map(activeItem).join('')}</ul></details>`).join('')}`;
 }
+const AV_ORDER = ['직업', '소속', '세력', '연계', '전투', '조사', '채집', '낚시', '제작', '생활', '연담', '뒷이야기', '요인록', '묵적록', '명등기', '무용담'];
+const avField = q => storyArcOf(q.cat) || (q.cat || '').split('·')[0] || '기타';
+const avRank = k => { const i = AV_ORDER.indexOf(k); return i < 0 ? AV_ORDER.length : i; };
+const canHere = q => !!q.here && !q.locked;
+function availGroups(list) {
+  const map = new Map();
+  for (const q of list) { const k = avField(q); if (!map.has(k)) map.set(k, []); map.get(k).push(q); }
+  const keys = [...map.keys()].sort((x, y) => avRank(x) - avRank(y) || x.localeCompare(y, 'ko'));
+  const op = opened();
+  return keys.map(k => {
+    const qs = map.get(k).sort((x, y) => x.min_level - y.min_level || String(x.title).localeCompare(String(y.title), 'ko'));
+    return `<details class="q-grp q-av" data-q-av="${esc(k)}" ${op.includes('av:' + k) ? 'open' : ''}>
+      <summary class="sub-h">${esc(k)} <small class="muted">${qs.length}</small></summary>
+      <ul class="q-list">${qs.map(availItem).join('')}</ul></details>`;
+  }).join('');
+}
 function facBox(f) {
   if (!f) return '';
   return `<details class="q-grp" data-q-fac ${opened().includes('!fac') ? '' : 'open'}>
@@ -248,7 +264,7 @@ export async function fillQuests(box) {
   const mainFirst = (x, y) => isStoryMain(y) - isStoryMain(x);
   const act_ = [...(b.active || [])].sort((x, y) => mainFirst(x, y) || isHere(y, b.here_id) - isHere(x, b.here_id));
   const avail = b.available || [], story = avail.filter(isStoryMain).sort((x, y) => (y.here && !y.locked) - (x.here && !x.locked) || x.min_level - y.min_level);
-  const here = avail.filter(q => q.here && !isStoryMain(q)), other = avail.filter(q => !q.here && !isStoryMain(q));
+  const hereAv = avail.filter(q => !isStoryMain(q) && canHere(q)).sort((x, y) => avRank(avField(x)) - avRank(avField(y)) || x.min_level - y.min_level), rest = avail.filter(q => !isStoryMain(q) && !canHere(q));
   const nAct = act_.length + (b.faction && !b.faction.locked ? 1 : 0);
   noteReady({ ...b, active: act_ });
   box.innerHTML = `${hereNote({ ...b, active: act_ })}
@@ -259,12 +275,13 @@ export async function fillQuests(box) {
         ${nAct > 1 ? `<div class="chips kind-chips q-group" role="group" aria-label="묶어 보기"><span class="muted small">묶어 보기</span>${GROUPS.map(([k, n]) => `<button class="chip ${grp() === k ? 'on' : ''}" data-q-group="${k}">${n}</button>`).join('')}</div>` : ''}
         ${grp() && act_.length > 1 ? grouped(act_, b) : `${facBox(b.faction)}${act_.length ? `<ul class="q-list">${act_.map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}`}
         ${story.length ? `<h3 class="sub-h q-story-h">${icon('scroll', 14)}받을 수 있는 본편</h3><ul class="q-list">${story.map(availItem).join('')}</ul>` : ''}
-        ${here.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${here.map(availItem).join('')}</ul>` : ''}
-        ${other.length ? `<details class="q-more"><summary>다른 곳에서 받을 수 있는 퀘스트 ${other.length}개</summary><ul class="q-list">${other.map(availItem).join('')}</ul></details>` : ''}
+        ${hereAv.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${hereAv.map(availItem).join('')}</ul>` : ''}
+        ${rest.length ? `<h3 class="sub-h q-av-h">${hereAv.length ? '다른 곳에서' : ''} 받을 수 있는 퀘스트 <small class="muted">${rest.length}</small></h3>${availGroups(rest)}` : ''}
       </div></details>`;
   $('[data-q-fold]', box).addEventListener('toggle', e => { try { localStorage.setItem(foldKey, e.target.open ? '1' : '0'); } catch {} });
   $$('[data-q-grp]', box).forEach(d => d.addEventListener('toggle', () => setOpen(d.dataset.qGrp, d.open)));
   $('[data-q-fac]', box)?.addEventListener('toggle', e => setOpen('!fac', !e.target.open));
+  $$('[data-q-av]', box).forEach(d => d.addEventListener('toggle', () => setOpen('av:' + d.dataset.qAv, d.open)));
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
   $$('[data-story-combo]', box).forEach(x => x.onclick = () => storyCombine(x));
   $$('[data-q-group]', box).forEach(x => x.onclick = () => { try { localStorage.setItem(GKEY, x.dataset.qGroup); } catch {} fillQuests(box); });
