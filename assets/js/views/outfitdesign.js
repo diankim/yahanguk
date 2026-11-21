@@ -1,6 +1,6 @@
 import { act, store, esc, icon, guard, $, $$, openLayer, ask, toast, nameOf, fmt, isGM } from '../core.js';
 import { load, knownRecipes, errorBox, invalidate } from './common.js';
-import { AV, AW, AH, avatarImage, avatarPixels, fixLook, defaultLook, registerDesigns, faceStart, hairStart, hairBlocked } from '../housing/avatarsprite.js';
+import { AV, AW, AH, avatarImage, avatarPixels, fixLook, defaultLook, registerDesigns, faceStart, hairStart } from '../housing/avatarsprite.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pixelPad } from '../housing/pixelpad.js';
 import { PAL, PAL_NAMES } from '../housing/drawing.js';
@@ -188,7 +188,7 @@ export function openFreeEditor(slot, snap, done, edit = null, from = null) {
     const ax = x + crop[0] - 1, ay = y + crop[1] - 1;
     if (slot === 'face') { const i = ax - FB.x, j = ay - FB.y; return i >= 0 && j >= 0 && i < FB.w && j < FB.h ? j * FB.w + i : -1; }
     const i = ax - HB.x, j = ay - HB.y;
-    return i >= 0 && j >= 0 && i < HB.w && j < HB.h && !hairBlocked(i, j) ? j * HB.w + i : -1;
+    return i >= 0 && j >= 0 && i < HB.w && j < HB.h ? j * HB.w + i : -1;
   };
   const palStr = () => pal.map(c => c.slice(1)).join('');
   const sync = () => { const id = 'e' + (++seq); registerDesigns({ [id]: { slot, base: slot, pal: palStr(), px: cells.join('') } }); look = { ...me, [slot + '_d']: id }; };
@@ -196,7 +196,7 @@ export function openFreeEditor(slot, snap, done, edit = null, from = null) {
   const confirmClose = async () => (!from && cells.join('') + palStr() === first) || ask(edit ? '고친 것을 담지 않고 닫을까요? 고친 칸은 사라집니다.' : '그리던 도안을 담지 않고 닫을까요? 칠한 칸은 사라집니다.', { title: '도안 닫기', ok: '닫기', cancel: '계속 그리기' });
   const note = (slot === 'face'
     ? '눈·입 자리만 칠합니다. 지운 칸에는 피부가 보이고, 눈 감는 모습은 따로 없습니다.'
-    : '눈·입 자리는 칠할 수 없습니다. 얼굴 위에 칠한 칸은 앞으로, 머리 밖으로 나간 칸은 몸 뒤로 그려집니다.')
+    : '얼굴 위에 칠한 칸은 눈·입보다 앞으로, 머리 밖으로 나간 칸은 몸 뒤로 그려집니다. 앞머리를 눈·입 칸까지 내려 그릴 수 있습니다.')
     + (from ? ' 원래 도안은 그대로 두고 새 도안으로 담습니다.' : '') + (edit ? ' 고쳐 담으면 바로 바뀝니다.' + (slot === 'hair' ? ' 고칠 때는 머리 그리기 도안을 쓰지 않습니다.' : '') : slot === 'face' ? ' 담으면 바로 쓸 수 있습니다.' : ' 담으면 머리 그리기 도안 한 장을 쓰고, 바로 쓸 수 있습니다.');
   const layer = openLayer({ title: (slot === 'face' ? '눈·입 ' : '머리 ') + (edit ? '고치기' : from ? '복사해 그리기' : '그리기'), wide: true, confirmClose, body: `<div class="od-ed">
     <div class="od-left">
@@ -265,7 +265,6 @@ export async function itemPic(id, it) {
     c.width = AW * sc; c.height = AH * sc;
     px.forEach((v, i) => { if (v) { g.fillStyle = v; g.fillRect(i % AW * sc, Math.floor(i / AW) * sc, sc, sc); } });
     for (let j = 0; j < HB.h; j++) for (let i = 0; i < HB.w; i++) {
-      if (hairBlocked(i, j)) continue;
       const x = HB.x + i + 1, y = HB.y + j + 1;
       g.fillStyle = (i + j) % 2 ? 'rgba(214,170,82,.38)' : 'rgba(214,170,82,.2)'; g.fillRect(x * sc, y * sc, sc, sc);
     }

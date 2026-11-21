@@ -95,9 +95,8 @@ function putFace(px, d) {
     if (c.length === 6) px[(F.y + j + 1) * AW + F.x + i + 1] = '#' + c;
   }
 }
-const HB = AV.hairBox, FB = AV.face;
+const HB = AV.hairBox;
 const HEAD = (() => { const b = AV.body.stand, set = new Set(); b.rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) if (r[x] !== '.' && b.y + y <= 23) set.add((b.y + y) * 100 + b.x + x); }); return set; })();
-export const hairBlocked = (i, j) => { const x = HB.x + i, y = HB.y + j; return x >= FB.x && x < FB.x + FB.w && y >= FB.y && y < FB.y + FB.h; };
 export function hairOf(look) {
   const id = look?.hair_d, d = id != null && designs.get(String(id));
   return d && d.slot === 'hair' && d.px?.length === HB.w * HB.h ? d : null;
@@ -105,7 +104,7 @@ export function hairOf(look) {
 function putHair(px, d, layer) {
   for (let j = 0; j < HB.h; j++) for (let i = 0; i < HB.w; i++) {
     const v = d.px[j * HB.w + i];
-    if (v == null || v === '.' || hairBlocked(i, j)) continue;
+    if (v == null || v === '.') continue;
     const x = HB.x + i, y = HB.y + j, front = HEAD.has(y * 100 + x);
     if (layer !== 'all' && front !== (layer === 'front')) continue;
     const n = parseInt(v, 16), c = d.pal.slice(n * 6, n * 6 + 6);
@@ -114,7 +113,7 @@ function putHair(px, d, layer) {
 }
 export function hairStart(look) {
   const l = fixLook(look), base = { ...AV.fixed, ...tonePal(l) }, h = AV.hair[l.hair], cell = new Array(HB.w * HB.h).fill(null);
-  const lay = (p, back) => p && p.rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const c = r[x] === '.' ? null : base[r[x]], i = x + p.x - HB.x, j = y + p.y - HB.y; if (c && i >= 0 && j >= 0 && i < HB.w && j < HB.h && !hairBlocked(i, j) && !(back && HEAD.has((p.y + y) * 100 + p.x + x))) cell[j * HB.w + i] = c; } });
+  const lay = (p, back) => p && p.rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const c = r[x] === '.' ? null : base[r[x]], i = x + p.x - HB.x, j = y + p.y - HB.y; if (c && i >= 0 && j >= 0 && i < HB.w && j < HB.h && !(back && HEAD.has((p.y + y) * 100 + p.x + x))) cell[j * HB.w + i] = c; } });
   lay(h.back, true); lay(h.front, false);
   const pal = [], rgb = c => [1, 3, 5].map(k => parseInt(c.slice(k, k + 2), 16));
   for (const c of cell) if (c && !pal.includes(c) && pal.length < 16) pal.push(c);
