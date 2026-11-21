@@ -253,7 +253,7 @@ const S = [
           <li><b>이야기 6~10장</b>: 해결마다 +2</li>
           <li><b>본편 「요인록」·「묵적록」</b>: 장(다섯 장씩)을 마칠 때마다 +2</li>
           <li><b>본편 「명등기」</b>: 3·6·9·12·15장을 마칠 때마다 +3</li>
-          <li><b>대세력 평판</b>: 300·600·1,000에서 +2씩. 세력을 떠나면 사라집니다.</li>
+          <li><b>대세력 평판</b>: 300·600·1,000에 처음 닿을 때마다 +2씩. 한 번 늘어난 칸은 세력을 떠나거나 옮겨도 그대로입니다.</li>
           <li><b>지역 완전 답사</b>: ${GD.storage.survey.per}곳마다 +${GD.storage.survey.cells}씩(${GD.storage.survey.per * GD.storage.survey.max}곳까지)</li>
           <li><b>직업 숙련</b>: 직업 전투 기술 계열이 ${GD.storage.jobs.rank}단계에 닿을 때마다, 두 번째 계열부터 +${GD.storage.jobs.cells}씩(${GD.storage.jobs.max}계열까지) — 직업을 바꿔 키울수록 늘어납니다.</li>
           <li><b>연담</b>: 인물 이야기 다섯 편을 모두 마칠 때마다 +${GD.storage.regular.cells}</li></ul></li>

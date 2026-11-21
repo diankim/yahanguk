@@ -227,7 +227,7 @@ async function equip(body, inv) {
     return options.length ? `<ul class="spot-list">${options.map(o => {
       const blocked = gearBlock(o, c);
       const reqs = gearReqHtml(o, c);
-      return `<li><div><b>${esc(o.name)}</b> ${rarTag(o.rarity)}<small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${reqs ? `<small class="reqs">장착 조건 ${reqs}</small>` : ''}</div>
+      return `<li><div><b><button type="button" class="linkish" data-eqinfo="${esc(o.id)}">${esc(o.name)}</button></b> ${rarTag(o.rarity)}<small>${o.tier}단계 · ${esc(o.description || '')}</small>${traits(o)}${reqs ? `<small class="reqs">장착 조건 ${reqs}</small>` : ''}</div>
         <button class="btn small" data-equip="${esc(o.id)}" ${blocked ? 'disabled' : ''}>장착</button></li>`; }).join('')}</ul>` : `<p class="muted small">바꿔 낄 수 있는 물품이 없습니다.</p>`;
   };
   const token = tokenRowHtml();
@@ -253,6 +253,7 @@ async function equip(body, inv) {
     $$('[data-equip]', m).forEach(x => x.onclick = () => guard(x, () => act('world_equip_item', { p_item_id: x.dataset.equip })).then(ok));
     $$('[data-unequip]', m).forEach(x => x.onclick = () => guard(x, () => act('world_unequip_item', { p_slot: x.dataset.unequip })).then(ok));
     $$('[data-repair]', m).forEach(x => x.onclick = () => guard(x, () => act('world_equipment_repair', { p_item_id: x.dataset.repair, p_method: x.dataset.how })).then(ok));
+    $$('[data-eqinfo]', m).forEach(x => x.onclick = () => openItemInfo(x.dataset.eqinfo, { mode: 'bag' }));
   });
 }
 let eqSel = 'weapon';

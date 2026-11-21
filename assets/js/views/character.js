@@ -116,7 +116,7 @@ export function equipRowLi(inv, prof, here, slot, rq) {
     const cost = (rq?.items || []).find(x => x.item_id === id)?.cost;
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
-    return `<li>${icon(ic, 18)}<div><b>${label} · ${esc(nameOf(id))}${enh} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
+    return `<li>${icon(ic, 18)}<div><b>${label} · <button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(nameOf(id))}</button>${enh} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기${cost != null ? ` <small>${fmt.jeon(cost)}</small>` : ''}</button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
@@ -126,6 +126,7 @@ export const DUR_NOTE = `공격할 때마다 무기, 맞을 때마다 방어구�
 export function bindRepair(root) {
   $$('[data-repair]', root).forEach(b => b.onclick = () => guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repair, p_method: b.dataset.how })));
   $$('[data-unequip]', root).forEach(b => b.onclick = () => guard(b, () => act('world_unequip_item', { p_slot: b.dataset.unequip })));
+  $$('[data-eqinfo]', root).forEach(b => b.onclick = () => openItemInfo(b.dataset.eqinfo, { mode: 'bag' }));
   bindTokenRow(root);
 }
 const SLOT_HINT = { weapon: '무기 종류가 공격 방식을 정합니다', armor: '받는 피해를 줄입니다', hat: '방어·침착·단서 발견', shoes: '이동 시간·몸놀림·버티기',
