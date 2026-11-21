@@ -963,7 +963,6 @@ a.facility { text-decoration: none; }
 .act .cd { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: calc(14px * var(--fz, 1)); font-weight: 700; color: var(--muted); pointer-events: none;
   background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 22%, transparent) calc(var(--p, 0) * 100%), transparent 0); }
 .act .cd:empty { display: none; }
-.item-tray { display: flex; flex-wrap: wrap; gap: 6px; } .item-tray .btn { flex-direction: column; gap: 0; } .item-tray small { font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
 .battle-log { list-style: none; margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--surface); border: var(--bw) solid var(--line); display: grid; gap: 3px; font-size: calc(13px * var(--fz, 1)); max-height: 210px; overflow: auto; }
 .battle-log li { color: var(--muted); } .battle-log li.new { color: var(--text); animation: rise .25s ease-out; }
 .float-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
@@ -2652,7 +2651,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .raid-log li.mine b { text-decoration: underline; text-underline-offset: 3px; }
 .raid-item-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 5px; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
 .raid-item { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 4px; text-align: left; padding: 5px 7px; border-radius: var(--r-sm); border: var(--bw, 1px) solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
-.raid-item b { font-size: calc(12.5px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .raid-item span { font-size: calc(11px * var(--fz, 1)); font-variant-numeric: tabular-nums; color: var(--muted); }
+.raid-item b { font-size: calc(12.5px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .raid-item > span { font-size: calc(11px * var(--fz, 1)); font-variant-numeric: tabular-nums; color: var(--muted); }
 .raid-item small { grid-column: 1 / -1; font-size: calc(11px * var(--fz, 1)); color: var(--muted); line-height: 1.35; }
 .raid-item:disabled { opacity: .5; }
 /* PC: 왼쪽 요괴·행동·기록, 오른쪽 참가자 */
@@ -3963,3 +3962,5 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
   .pb-text p { margin: 4px 0; }
   .pb-text p { line-height: 1.5; }
 }
+.weapon-line .kg-good { color: var(--ok); font-weight: 700; }
+.weapon-line .kg-bad { color: var(--bad); font-weight: 700; }

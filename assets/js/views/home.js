@@ -204,6 +204,13 @@ function scene(s, traveling, downed) {
     ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래·물품 사용·퀘스트 보고를 할 수 없습니다. 장비 바꾸기는 됩니다. 도중에 그만두면 지난 시간만큼만 받습니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
+const KIND_KEY = Object.fromEntries(Object.entries(GAMEDATA.kinds || {}).map(([k, n]) => [n, k]));
+function kindTag(name, type, job) {
+  const k = KIND_KEY[name], mul = Number((GAMEDATA.kindMul?.[k] || [])[['melee', 'ranged', 'magic'].indexOf(type || 'melee')] ?? 1), jb = (GAMEDATA.kindJobs?.[k] || []).includes(job);
+  const v = mul * (jb ? 1.2 : 1), cls = v >= 1.15 ? 'kg-good' : v <= 0.9 ? 'kg-bad' : '';
+  const tip = `${STYLE[type] || '근접'} ×${mul}${jb ? ' · 내 직업 +20%' : ''}`;
+  return cls ? `<b class="${cls}" title="${esc(tip)}">${esc(name)}${cls === 'kg-good' ? '▲' : '▼'}</b>` : `<span title="${esc(tip)}">${esc(name)}</span>`;
+}
 const ugBoards = s => Object.entries(GAMEDATA.ultimate?.boards || {}).filter(([, b]) => b.region === s.region?.region_id);
 const ugReq = () => `Lv${GAMEDATA.ultimate?.level ?? 50} · ${(GAMEDATA.ultimate?.party || [2, 4]).join('~')}명`;
 const ugShopTip = b => `${b.token_name}을(를) 꾸미기 물품으로 바꿉니다`;
@@ -303,7 +310,7 @@ function field(s, roster, blocked) {
         ${s.trail?.expires_at && new Date(s.trail.expires_at) > new Date() ? `<p class="hint good trail-line">${icon('spark', 14)} <b>비경이 열려 있습니다</b> · ${esc(fmt.remain(new Date(s.trail.expires_at) - Date.now()))} 남음 · 채집량 +50% · 희귀품·단서 +10%</p>` : ''}
         ${!blocked && st.now <= 0 ? `<div class="hint warn st-empty">${icon('flame', 14)}<span>탐색력이 바닥났습니다. 차오르는 동안 <b>원정</b>을 보내 두면 시간을 버리지 않습니다. 원정은 탐색력을 쓰지 않습니다.</span><button class="btn small primary" id="exp-open3">원정 보내기</button></div>` : ''}
         ${s.story_here?.length ? `<p class="hint accent">${icon('scroll', 14)} 이 지역 어딘가에 「${esc(s.story_here[0].chapter)}」의 단서가 있습니다. 탐색을 이어가세요.</p>` : ''}
-        <p class="weapon-line small">${icon('sword', 14)} ${esc(w.name || '맨손')} · ${STYLE[w.type] || '근접'}${kinds.length ? ` · 이 지역 요괴 갈래: ${kinds.map(k => esc(k)).join('·')}` : ''}</p>
+        <p class="weapon-line small">${icon('sword', 14)}<span>${esc(w.name || '맨손')} · ${STYLE[w.type] || '근접'}${kinds.length ? ` · 이 지역 요괴 갈래: ${kinds.map(k => kindTag(k, w.type, c.job_key)).join('·')}` : ''}</span></p>
       </section>
 
       <details class="panel fold log-card" data-fold="field-log" ${foldOpen('field-log') ? 'open' : ''}>

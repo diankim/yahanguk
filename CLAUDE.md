@@ -204,6 +204,7 @@
 
 - 13갈래(world_monster_kinds: 비금·갑각·영귀·독충·목령·은형·수귀·군충·금주·경요·파봉·천상·거괴, world_region_monsters.kind). 갈래마다 무기(근접·원거리·술법) 배율과 유리한 직업(+20%)(world_kind_mult: 현장은 피해에, 원정은 위협을 배율^0.6으로 나눔).
 - 수법 39개(world_monster_gimmicks, 갈래마다 Lv1·10·20부터 하나씩, gtype big·charge·status·drain·heal·shield·evade·thorns·grapple·mirror·summon). 현장은 world_battle_intent_k가 단계별 12/22/30%(정예·우두머리 +6%p)로 'g:키'(터뜨리는 턴 'g!:키') 예고, 화면엔 이름·낌새만(대처 안내·버튼 없음). 방어는 어느 수법이든 피해를 줄임(큰 한 방·터뜨림은 1/4). 거울막(mirror)은 바로 다음 행동 한 번에만, 되돌리는 피해 술법 피해 30%·최대 15, 체력 1 아래로는 안 깎음. 모으는 턴에 체력 15% 넘게 깎거나 봉인술로 묶으면 끊김. 원정은 world_exp_fight_story가 두 번째 합에 한 번(Lv10부터), 기술 단계(2단계 수법 15·3단계 30 기준)·레벨 차·능력치로 10~75%(상성 무기·직업 +25%p) 저절로 대처.
+- 현장 무기 줄 「이 지역 요괴 갈래」는 home.js kindTag가 gamedata kindMul(지금 무기 갈래)×kindJobs(내 직업 +20%)로 1.15 이상 초록 ▲·0.9 이하 빨강 ▼(.kg-good·.kg-bad, 배수는 title).
 - 요괴 도감 world_monster_codex(world_battle_open·trg_world_codex_on_event(전투 한 번에 한 번, p_seen=1)·원정 묘사가 적음): 만나면 기본 정보, 쓰러뜨리면 상성·파훼법(world_gimmick_tip)·전리품(world_monster_codex_snapshot). 전투 화면 상성 배율도 쓰러뜨린 요괴만.
 - 채집 도감 world_gather_codex_snapshot(현장 채집 기록 32가지 재료): spots(지역 8곳까지, c 채집터 수·fc 찾은 수·s 이름 넷 — 찾은 곳 먼저·출입 레벨 순)를 journal.js spotsHtml이 지역마다 한 줄(「지역 Lv.n+ · 찾음 a/b — 채집터 둘(Lv) 외 n곳」, 지역 둘까지·「외 지역 n곳」). 일지 › 도감 = 요괴·채집·어종.
 - 지역 정보 공개(world_field_snapshot, 서버가 가림, 답사도는 한 번만 계산 svj): 출몰 요괴 갈래만 → 답사도 30% 일반 요괴 → 70% 우두머리(만난 요괴는 바로), 얻는 것 30% 채집 재료 → 70% 전리품 → 100% 희귀품.

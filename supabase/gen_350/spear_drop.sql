@@ -26,5 +26,8 @@ $n$coalesce(m.act ->> 'a', 'guard') not in ('attack', 'coop', 'move') and vfx ? 
 $o$vfx := vfx || jsonb_build_object('spch', floor(coalesce((vfx ->> 'spch')::int, 0) * (public.world_spear_rules() ->> 'boss_keep')::numeric)::int);$o$,
 $n$vfx := vfx || jsonb_build_object('spch', greatest(0, coalesce((vfx ->> 'spch')::int, 0) - (public.world_spear_rules() ->> 'drop')::int));$n$]);
 
+update public.world_patch_notes set body = rtrim(body, E'\n') || E'\n- 여명 창객의 「창끝 기세」는 이제 방어·버티기·물품을 고르면 한 번에 다 끊기지 않고 한 겹씩 줄어듭니다. 칸을 옮기는 것으로는 줄지 않습니다.\n- 현장 토벌의 「물품」을 다른 싸움처럼 창으로 띄웁니다. 모든 싸움의 물품 창에서 체력·정신·영력·침식·치료를 가방처럼 색으로 나눠 보입니다.\n- 현장의 「이 지역 요괴 갈래」에서 지금 무기·직업에 유리한 갈래는 초록 ▲, 불리한 갈래는 빨강 ▼로 보입니다.\n'
+ where note_id = '3.5.0' and position('창끝 기세」는 이제' in body) = 0;
+
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261124090000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;

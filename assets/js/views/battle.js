@@ -3,7 +3,7 @@ import { chip } from './common.js';
 import { USABLE } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GAMEDATA } from '../gamedata.js';
-import { spearRing, spearInner, spearTitle } from './fightui.js';
+import { spearRing, spearInner, spearTitle, itemTray, itemSectionsHtml } from './fightui.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
@@ -42,7 +42,14 @@ export function renderBattle(box, snap, done, opts) {
   nextAt = Number(snap.battle?.turn || 0) === 0 ? 0 : Math.min(new Date(snap.battle?.next_action_at || 0).getTime(), Date.now() + GAP);
   draw();
 }
-export function stopBattle() { clearInterval(cdTimer); host = null; }
+export function stopBattle() { clearInterval(cdTimer); tray.close(); host = null; }
+const tray = itemTray({ title: '싸움에서 쓸 물품', bodyId: 'bt-items-body', fill: fillItems });
+function fillItems(box) {
+  const inv = store.character?.inventory || {};
+  box.innerHTML = `<p class="muted small">물품을 고르면 이번 턴의 행동이 됩니다.</p>
+    ${itemSectionsHtml(trayList({}, Infinity).map(([k]) => k), inv, '체력·정신 회복·치료')}`;
+  $$('[data-use]', box).forEach(x => x.onclick = () => { tray.close(); send('item', x.dataset.use); });
+}
 window.addEventListener('yh-battle-item', e => {
   if (!host?.isConnected || !data?.battle) return;
   e.detail.handled = true;
@@ -63,8 +70,7 @@ function draw(fresh = []) {
   const skillWait = Math.max(0, ready - turnNow);
   const medUsed = c.job_key === 'medic' && !!b.pfx?.med_used, skillCost = GAMEDATA.jobSkillCost?.[c.job_key] ?? 12;
   const pf = b.pfx || {}, myChips = [pf.pshield > 0 ? chip(`보호막 ${pf.pshield}`, 'ok') : '', pf.zin > 0 ? chip(`산가지 진 ${pf.zin}턴`, 'ok') : ''].join('');
-  const inv = c.inventory || {};
-  const log = (b.log || []).slice(-8);
+  const log =(b.log || []).slice(-8);
   host.innerHTML = `
     <section class="battle">
       <div class="foe ${b.rank !== 'normal' ? 'rank-' + esc(b.rank) : ''}" id="foe">
@@ -99,7 +105,6 @@ function draw(fresh = []) {
         <button class="act ghost" data-a="flee">${icon('back', 20)}<b>도주</b><small>민첩이 높을수록</small><i class="cd"></i></button>
         ${callOpt ? `<button class="act call" id="act-call" title="같은 곳의 파티원에게 합류 알림(60초) · 합류한 사람마다 요괴 체력이 늘고, 이기면 경험치를 한 사람마다 10% 더 받습니다">${icon('users', 20)}<b>동료 부르기</b><small>같은 곳 ${callOpt.call}명 · 차례대로 함께</small></button>` : ''}
       </div>
-      <div class="item-tray" id="item-tray" hidden>${trayList(inv, 4).map(([k, d]) => `<button class="btn small" data-item="${k}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} ×${fmt.num(inv[k])}<small>${d}</small></button>`).join('')}</div>
       <ol class="battle-log">${log.map((l, i) => `<li class="${i >= log.length - fresh.length ? 'new' : ''}">${esc(l)}</li>`).join('')}</ol>
       <p class="muted small">${esc(skill[0])}: ${esc(skill[1])}</p>
     </section>`;
@@ -107,10 +112,9 @@ function draw(fresh = []) {
     ${b.eff ? `<p class="small">상성: 근접 ×${b.eff.melee} · 원거리 ×${b.eff.ranged} · 술법 ×${b.eff.magic}${kindJobs(b.eff).length ? ` · ${esc(kindJobs(b.eff).map(j => JOB[j] || '').join('·'))} +20%` : ''}</p>` : '<p class="muted small">이 요괴를 한 번 쓰러뜨리면 일지 › 도감에 상성과 수법 대처법이 적힙니다.</p>'}` }));
   $$('[data-a]', host).forEach(btn => btn.onclick = async () => {
     const a = btn.dataset.a;
-    if (a === 'item') { $('#item-tray', host).hidden = !$('#item-tray', host).hidden; return; }
+    if (a === 'item') { tray.open(); return; }
     send(a);
   });
-  $$('[data-item]', host).forEach(btn => btn.onclick = () => send('item', btn.dataset.item));
   const cb = $('#act-call', host); if (cb && callOpt?.onCall) cb.onclick = () => callOpt.onCall(cb);
   $('[data-sneak]', host)?.addEventListener('click', () => send('sneak'));
   $('[data-sneak-no]', host)?.addEventListener('click', () => { $('#sneak-ask', host)?.remove(); });
@@ -171,8 +175,7 @@ function refreshVitals() {
   box.innerHTML = `<div class="vital"><span>체력</span><b>${c.health}</b>${bar(c.health, 100, 'hp')}</div>
     <div class="vital"><span>정신</span><b>${c.mental}</b>${bar(c.mental, 100, 'mp')}</div>
     <div class="vital"><span>${spOf()[0]}</span><b>${c.spiritual_power}</b>${bar(c.spiritual_power, 100, spOf()[1])}</div>`;
-  const inv = c.inventory || {};
-  $$('[data-item]', host).forEach(b => { const k = b.dataset.item, n = Number(inv[k] || 0); b.disabled = n <= 0; const t = b.firstChild; if (t?.nodeType === 3) t.textContent = `${nameOf(k)} ×${fmt.num(n)}`; });
+  tray.redraw();
 }
 async function refreshCharacter() {
   const { loadCharacter } = await import('../core.js');
