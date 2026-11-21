@@ -1984,14 +1984,15 @@ small.own-tag { display: block; font-size: calc(11px * var(--fz, 1)); line-heigh
 .fdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fc); margin: 0 4px 0 2px; vertical-align: 1px; }
 .fchip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; font-size: calc(12px * var(--fz, 1)); border: 1px solid color-mix(in srgb, var(--fc) 70%, var(--line)); background: color-mix(in srgb, var(--fc) 22%, transparent); color: var(--text); }
 .fchip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--fc); flex: none; }
+.pc-info { flex: 1 1 auto; min-width: 0; }
 .pc-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
 .fchip.fseal::before { display: none; }
-.pc-chips i { display: block; width: calc(12px * var(--fz, 1)); height: calc(12px * var(--fz, 1)); flex: none; color: var(--fc); }
-.pc-chips .fchip, .pc-chips .chip { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-size: calc(11px * var(--fz, 1)); padding: 1px 7px 1px 6px; min-height: 0; line-height: 1.5; }
+.pc-chips i { display: block; width: calc(11.5px * var(--fz, 1)); height: calc(11.5px * var(--fz, 1)); flex: none; color: var(--fc); }
+.pc-chips .fchip, .pc-chips .chip { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-size: calc(10.5px * var(--fz, 1)); padding: 1px 6px 1px 5px; min-height: 0; line-height: 1.5; }
 .pc-chips i svg { display: block; width: 100%; height: 100%; }
 .pc-chips i text { font-style: normal; font-family: var(--font-serif, serif); font-weight: 900; font-size: 11.5px; }
 .pc-chips .tn-badge i { color: var(--gold); }
-.friend-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 4px; border-radius: 50%; background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); vertical-align: middle; }
+.friend-mark { display: inline-block; margin-left: 4px; color: var(--ok); vertical-align: -1px; } .friend-mark svg { width: calc(13px * var(--fz, 1)); height: calc(13px * var(--fz, 1)); }
 b.contest { color: var(--warn); font-weight: 600; }
 .infl-mine { cursor: help; }
 .infl-mine.full { color: var(--bad); font-weight: 600; }
@@ -2932,9 +2933,11 @@ b.sealed { color: var(--bad); }
 .pc-pet small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
 .pc-side { flex-wrap: nowrap; justify-content: flex-end; flex-shrink: 0; padding-right: 16px; }
 @media (max-width: 640px) {
-  .pc-look img { height: 54px; }
-  .pc-pet img { zoom: .75; }
-  .pc-side { gap: 4px; }
+  .profile-card { gap: 10px; padding: 10px; }
+  .pc-look img { height: 46px; }
+  .pc-pet img { zoom: .55; }
+  .pc-side { gap: 2px; padding-right: 4px; }
+  .pc-pet small { max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 .rep-flag { width: 24px; height: 24px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); opacity: .55; cursor: pointer; }
 .rep-flag:hover, .rep-flag:focus-visible { opacity: 1; color: var(--hp); }
