@@ -319,7 +319,7 @@ export async function useItem(id, btn, n = 1) {
   if (id === 'furn_pattern') { const { openFurnBook } = await import('./furndesign.js'); openFurnBook(); return; }
   const bj = BIJANG.maps.find(m => m.id === id);
   if (bj) {
-    if (!(await ask(`${bj.name}을(를) 펼칩니다. Lv${bj.lo}~${bj.hi} 바깥 지역 하나가 지도에 드러나고, 그 지역에서 「비장도 따라 파기」를 할 수 있습니다. 펼친 지도는 거래할 수 없습니다.`, { title: '비장도 펼치기', ok: '펼치기' }))) return;
+    if (!(await ask(`${bj.name}을(를) 펼칩니다. Lv${bj.lo}~${bj.hi} 바깥 지역 하나가 지도에 드러나고, 그 지역에서 「비장도 따라 파기」를 할 수 있습니다. 파수꾼은 Lv${BIJANG.guardLv(bj, store.character?.level)}입니다(지도 주인 레벨에 맞춤). 펼친 지도는 거래할 수 없습니다.`, { title: '비장도 펼치기', ok: '펼치기' }))) return;
     return guard(btn, () => act('world_bijang_open', { p_item: id }));
   }
   return guard(btn, () => useItemAct(id, n));
