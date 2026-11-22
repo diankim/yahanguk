@@ -8,6 +8,7 @@ import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
 import { hit } from '../changes.js';
+import { ownKind, ownSlot, fillOwned } from '../owned.js';
 import { GAMEDATA } from '../gamedata.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
@@ -302,6 +303,8 @@ async function craft(body, inv, stg) {
   const stUse = !!(stg?.use_here ?? stg?.in_safe);
   const stHave = stUse ? Object.fromEntries((stg.items || []).map(i => [i.item_id, Number(i.qty) || 0])) : {};
   const have = new Proxy({}, { get: (_, k) => (Number(bagHave[k]) || 0) + (stHave[k] || 0) + (Number(bagHave[hqOf(k)]) || 0) + (stHave[hqOf(k)] || 0) });
+  const stAll = Object.fromEntries((stg?.items || []).map(i => [i.item_id, Number(i.qty) || 0]));
+  const ownedLine = k => { if (ownKind(k)) return ownSlot(k); const b = (Number(bagHave[k]) || 0) + (Number(bagHave[hqOf(k)]) || 0), s = (stAll[k] || 0) + (stAll[hqOf(k)] || 0); return b + s ? `<small class="muted own-have">가진 것 ${fmt.num(b + s)}${s ? ` (가방 ${fmt.num(b)} · 창고 ${fmt.num(s)})` : ''}</small>` : '<small class="muted own-have">가진 것 없음</small>'; };
   const c = store.character;
   const cookOut = new Set((inv.catalog || []).filter(i => i.crafting_specialization === 'cooking').map(i => i.id));
   const cmap = catalogMap(inv);
@@ -349,7 +352,7 @@ async function craft(body, inv, stg) {
       <article class="recipe ${can ? 'can' : ''}">
         <header><button class="fav-star ${favs.has(r.id) ? 'on' : ''}" data-fav="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기'}" title="${favs.has(r.id) ? '즐겨찾기에서 빼기' : `즐겨찾기에 넣기 (${favs.size}/${FAV_MAX})`}">${STAR}</button><button class="linkish recipe-name" data-info="${esc(r.output)}" title="만드는 물품 정보 보기"><b>${esc(r.name)}</b></button>${(SLOTS[kind] || kind === 'craft') ? `<span class="chip slot">${icon(SLOTS[kind]?.[1] || 'hammer', 12)}${esc(SLOTS[kind]?.[0] || KIND_LABEL.craft)}${tier ? ` ${tier}단계` : ''}</span>` : ''}${r.field ? chip(nameOf(r.field), r.field === inv.crafting_profession ? 'ok' : '') : ''}${atLoc ? chip(`품질 +${LOC_BONUS}`, 'accent') : ''}</header>
         ${(() => { const fx = USABLE[r.output] || ((SLOTS[kind] || kind === 'craft') ? gearFx(cmap.get(r.output), kind) : ''); return `<p class="muted small">${descFx(r.description || '', r.output_name || nameOf(r.output), fx)}</p>`; })()}
-        <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1}</p>
+        <p class="out">${icon('chevron', 14)} <button class="linkish" data-info="${esc(r.output)}">${esc(r.output_name || nameOf(r.output))}</button> ×${r.qty || 1} ${ownedLine(r.output)}</p>
         <ul class="ingr">${Object.entries(r.ingredients || {}).map(([k, n]) => { const h = Number(have[k] || 0), sh = (stHave[k] || 0) + (stHave[hqOf(k)] || 0); return `<li class="${h >= n ? 'ok' : 'bad'}"><button class="linkish" data-info="${esc(k)}">${esc(nameOf(k))}</button><b>${fmt.num(h)}/${n}</b>${sh ? `<small class="muted" title="가방 ${fmt.num((Number(bagHave[k]) || 0) + (Number(bagHave[hqOf(k)]) || 0))} · 창고 ${fmt.num(sh)}">창고 ${fmt.num(sh)}</small>` : ''}</li>`; }).join('')}</ul>
         ${reqs.length ? `<p class="reqs"><span class="muted small">제작 조건</span>${reqs.map(([t, ok]) => `<span class="req ${ok ? 'ok' : 'bad'}">${esc(t)}</span>`).join('')}</p>` : ''}
         <p class="muted small">${r.tool ? `도구: <button class="linkish" data-info="${esc(r.tool)}">${esc(r.tool_name || nameOf(r.tool))}</button>${toolNote(r.tool, toolBy)} · ` : ''}지정 장소: ${esc(r.location || '없음')}</p>
@@ -365,6 +368,7 @@ async function craft(body, inv, stg) {
         </div>
       </article>`).join('')}</div>`
       : empty(cq.trim() ? `「${cq.trim()}」에 맞는 제작법이 없습니다.` : craftFilter === 'fav' ? `즐겨찾는 제작법이 없습니다. 제작법 이름 앞의 별을 누르면 여기에 모입니다(${FAV_MAX}개까지).` : craftFilter === 'can' ? '지금 재료가 모두 갖춰진 제작법이 없습니다. 전체 목록에서 필요한 재료를 확인하세요.' : '해당하는 제작법이 없습니다.', 'hammer')}`, 'label.search');
+  fillOwned(body).catch(() => {});
   const redraw = sel => stay(sel, () => craft(body, inv, stg));
   bindSegmented(body, 'craft-filter', k => { craftFilter = k; redraw('[data-seg="craft-filter"]'); });
   $$('[data-field]', body).forEach(b => b.onchange = () => { b.checked ? craftFields.add(b.dataset.field) : craftFields.delete(b.dataset.field); redraw(`[data-field="${b.dataset.field}"]`); });
