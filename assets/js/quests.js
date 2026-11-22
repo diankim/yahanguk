@@ -285,11 +285,12 @@ export async function fillQuests(box) {
         ${grp() && act_.length > 1 ? grouped(act_, b) : `${facBox(b.faction)}${act_.length ? `<ul class="q-list">${act_.map(activeItem).join('')}</ul>` : '<p class="muted small">진행 중인 퀘스트가 없습니다. 아래에서 받을 수 있는 퀘스트를 찾아보세요.</p>'}`}
         ${story.length ? `<h3 class="sub-h q-story-h">${icon('scroll', 14)}받을 수 있는 본편</h3><ul class="q-list">${story.map(availItem).join('')}</ul>` : ''}
         ${hereAv.length ? `<h3 class="sub-h">여기서 받을 수 있는 퀘스트</h3><ul class="q-list">${hereAv.map(availItem).join('')}</ul>` : ''}
-        ${rest.length ? `<h3 class="sub-h q-av-h">${hereAv.length ? '다른 곳에서' : ''} 받을 수 있는 퀘스트 <small class="muted">${rest.length}</small></h3>${availGroups(rest)}` : ''}
+        ${rest.length ? `<details class="q-grp q-av-all" data-q-avall ${opened().includes('!avall') ? 'open' : ''}><summary class="sub-h q-av-h">${hereAv.length ? '다른 곳에서' : ''} 받을 수 있는 퀘스트 <small class="muted">${rest.length}</small></summary>${availGroups(rest)}</details>` : ''}
       </div></details>`;
   $('[data-q-fold]', box).addEventListener('toggle', e => { try { localStorage.setItem(foldKey, e.target.open ? '1' : '0'); } catch {} });
   $$('[data-q-grp]', box).forEach(d => d.addEventListener('toggle', () => setOpen(d.dataset.qGrp, d.open)));
   $('[data-q-fac]', box)?.addEventListener('toggle', e => setOpen('!fac', !e.target.open));
+  $('[data-q-avall]', box)?.addEventListener('toggle', e => setOpen('!avall', e.target.open));
   $$('[data-q-av]', box).forEach(d => d.addEventListener('toggle', () => setOpen('av:' + d.dataset.qAv, d.open)));
   $$('[data-q-report]', box).forEach(x => x.onclick = () => report(x));
   $$('[data-story-combo]', box).forEach(x => x.onclick = () => storyCombine(x));
