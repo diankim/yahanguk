@@ -264,3 +264,99 @@ NPCS['haram'] = {
         'pal': {"a": "#24242a", "b": "#18181d", "z": "#b09e81", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#86714e"},
     },
 }
+
+NPCS['mogaram'] = {
+    'name': '모가람',
+    'designs': {'face': 'n89', 'hair': 'n90', 'from_top': 'n101'},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'skin_c': 'f8e1cf', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#ab9a79", "b": "#43464f", "c": "#ffffff", "d": "#33353d", "e": "#806c45", "f": "#4d5059", "g": "#a18b60", "h": "#816a54", "i": "#8d805e", "j": "#66513e", "k": "#30333b", "l": "#242e3b", "m": "#222d38", "n": "#373941", "o": "#343846", "p": "#394554", "q": "#313d4b"},
+        'rows': [
+            '..abccccde..',
+            '.fbgbccbgbd.',
+            'dfhgiidigbjk',
+            'lfbgbgdbghdm',
+            '.nnnnnonnnn.',
+            '.pqgqqlqgqq.',
+            'fbbgbbdbgbbk',
+            'mllgqddqgllm',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#313d4b", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#1e252e"},
+    },
+}
+
+NPCS['yeonseohui'] = {
+    'name': '연서희',
+    'designs': {'face': 'n85', 'hair': 'n115', 'from_top': 'n95'},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'skin_c': 'fbe8de', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#9589a3", "b": "#837395", "c": "#ffffff", "d": "#645576", "e": "#bca977", "f": "#8f789e", "g": "#b7aabf", "h": "#605271", "i": "#827292", "j": "#715e87", "k": "#a48b48"},
+        'rows': [
+            '..abccccdd..',
+            '.aeebccbeed.',
+            'fabegbdeebdh',
+            'fabegbfebbdh',
+            '.iiiiijiiii.',
+            '.abbegfebbb.',
+            'abebegfebbeh',
+            'hddegffgekdh',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#5f4e6b", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#3a3042"},
+    },
+}
+
+NPCS['kangducheol'] = {
+    'name': '강두철',
+    'designs': {'face': 'n57', 'hair': 'n108', 'from_top': 'n117'},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'skin_c': 'd9ab83', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#ffffff", "b": "#f4efe2", "c": "#8f8f8f", "d": "#dbc68f", "e": "#7d6b45", "f": "#202a37", "g": "#333e4e", "h": "#a2a19d", "i": "#2d344c", "j": "#1f2835", "k": "#3d4661", "l": "#2c3746", "m": "#736343", "n": "#635735"},
+        'rows': [
+            '..abccccdd..',
+            '.abbeccebbd.',
+            'fghhheihhhfj',
+            'fgkeklikekfj',
+            '.mmmmmnmmmm.',
+            '.glellilell.',
+            'glkelkileklj',
+            'jfielffleifj',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#2c3746", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#1b222b"},
+    },
+}
+
+NPCS['yeoseotjjae'] = {
+    'name': '여섯째',
+    'designs': {'face': 'n116', 'hair': 'n111', 'from_top': 'n84'},
+    'look': {'eyes': 'round', 'hair': 'curtain', 'skin': 'fair', 'mouth': 'small', 'bottom': 'shadow', 'skin_c': 'efd3b9', 'hair_c': '101014'},
+    'top': {
+        'pal': {"a": "#373737", "b": "#313131", "c": "#101014", "d": "#252525", "e": "#1d1d23", "f": "#907133", "g": "#782a2a", "h": "#606060", "i": "#1a1a1f", "j": "#242424", "k": "#4a4a4a", "l": "#131318", "m": "#121217", "n": "#1d1d1d", "o": "#404040"},
+        'rows': [
+            '..abccccdd..',
+            '.ebfbccbfbd.',
+            'debghbdhibdj',
+            'daigihkiiilm',
+            '.nnnnnonnnn.',
+            '.abibbdibbb.',
+            'abbibbdbibbm',
+            'mllbbddbillm',
+        ],
+        'x': 8, 'y': 23,
+    },
+    'bottom': {
+        'from': 'shadow',
+        'pal': {"a": "#24242a", "b": "#18181d", "z": "#313131", "d": "#9a2a36", "x": "#29292f", "y": "#1a1a1f", "u": "#1e1e1e"},
+    },
+}
