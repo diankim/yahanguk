@@ -87,7 +87,7 @@ declare lv int := coalesce((select c.level from public.world_characters c where 
 begin
   return coalesce((select array_agg(distinct m.region_id || '|' || m.kind order by m.region_id || '|' || m.kind)
     from public.world_region_monsters m join public.world_monster_kinds k on k.kind_key = m.kind
-   where m.region_id in (select g.region_id from public.world_map_regions g
+   where m.role <> 'guardian' and coalesce(m.spawn_weight, 1) > 0 and m.region_id in (select g.region_id from public.world_map_regions g
                           where g.active and not g.is_safe_zone and g.min_level <= lv and public.world_region_open(p_uid, g.region_id))), '{}');
 end $f$;
 
