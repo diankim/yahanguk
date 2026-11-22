@@ -103,6 +103,7 @@ export const GAMEDATA = {
   "questXp": {"mid":6,"band":[[1,25],[6,40],[11,40],[16,75],[21,90],[26,75],[31,100]],"grace":3,"low_pct":20,"mid_pct":50},
   "factionSpread": {"floor":60,"steps":[[0,100],[1,75],[2,55],[3,40],[4,25]],"hold_h":24,"idle_h":24,"day_cap":90,"home_pct":150,"window_h":72,"boost_max":1.3,"active_min":60,"flip_ratio":1.25,"person_cap":60,"region_cap":40,"day_region_cap":60},
   "factionPerk": {
+    "donate": {"cap":60,"rate":50},
     "night_office": {"exp_xp_pct":10},
     "north_league": {"exp_hurt_pct":-20,"rank_hurt_pct":-2,"gather_skill_pct":10}
   },

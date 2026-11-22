@@ -1,5 +1,5 @@
 import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, particle, JOBS } from './core.js';
-import { brokenName } from './rules.js';
+import { brokenName, FACTION_DONATE } from './rules.js';
 import { openItemInfo } from './views/item.js';
 import { chip, invalidate } from './views/common.js';
 import { ownSlot, fillOwned } from './owned.js';
@@ -47,7 +47,7 @@ const kindChip = v => KIND[v.kind] ? chip(KIND[v.kind][0]) : v.slot && v.slot !=
 const PRECIOUS = new Set(['rare', 'epic', 'legendary']);
 let donPicks = {};
 const donateHtml = (s, open) => {
-  const d = s.donate || {}, rate = d.rate || 50, cap = d.cap || 30, items = d.items || [];
+  const d = s.donate || {}, rate = d.rate || FACTION_DONATE.rate, cap = d.cap || FACTION_DONATE.cap, items = d.items || [];
   const full = (d.merit || 0) >= cap;
   return `<p class="small">필요 없는 물품(거래할 수 없는 것도)을 세력에 넘기면 기준 시세 ${rate}전마다 공훈 1을 받습니다. 하루 공훈 ${cap}까지.</p>
     <div class="chips">${chip(`오늘 ${fmt.num(d.merit || 0)}/${cap}`, full ? 'ok' : '')}${chip(`넘긴 시세 ${fmt.num(d.value || 0)}전`)}</div>
@@ -175,7 +175,7 @@ export function bindFaction(body, s) {
 
 function bindDonate(body, s) {
   const box = $('#fq-don-box', body); if (!box) return;
-  const d = s.donate || {}, rate = d.rate || 50, cap = d.cap || 30, items = d.items || [];
+  const d = s.donate || {}, rate = d.rate || FACTION_DONATE.rate, cap = d.cap || FACTION_DONATE.cap, items = d.items || [];
   for (const id of Object.keys(donPicks)) { const it = items.find(x => x.item_id === id); if (!it) delete donPicks[id]; else donPicks[id] = Math.min(donPicks[id], it.qty); }
   const picks = new Map(Object.entries(donPicks));
   const rows = pickRows(items.map(i => ({ id: i.item_id, name: i.name, have: i.qty, max: i.qty, rarity: i.rarity, sub: `시세 ${fmt.num(i.price)}전${i.tradeable ? '' : ' · 거래 불가'}` })), []);

@@ -5,7 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1323,9 +1323,9 @@ const S = [
       <tr><td>5등급</td><td>세력 탈것</td></tr></table>
     <ul>
       <li><b>수향연맹 뱃길</b>: 가입 퀘스트를 마친 수향연맹 조사원이 수향 나룻배·화방선을 타면 운임이 없고, 이동 속도가 등급마다 빨라집니다. 1등급 ×1.10부터 5등급 ×1.30까지이고, 탈것 단련과 곱해집니다.</li>
-      <li><b>세력 기부</b>: 세력 안전지대에서 필요 없는 물품을 넘기면 기준 시세 50전마다 공훈 1을 받습니다.
+      <li><b>세력 기부</b>: 세력 안전지대에서 필요 없는 물품을 넘기면 기준 시세 ${FACTION_DONATE.rate}전마다 공훈 1을 받습니다.
         <ul><li>거래할 수 없는 물품도 됩니다.</li>
-          <li>하루 공훈 30까지 받습니다.</li>
+          <li>하루 공훈 ${FACTION_DONATE.cap}까지 받습니다.</li>
           <li>장착 중인 마지막 하나 · 잠근 물품 · 강화한 장비 · 임무 물품은 넘길 수 없습니다.</li>
           <li>넘긴 물품은 돌려받지 못합니다. 진품 이상이 섞이면 한 번 더 묻습니다.</li></ul></li>
       <li><b>수련장</b>: 세력 안전지대에서 하루 한 번 지금 등급의 시련을 치릅니다.

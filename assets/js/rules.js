@@ -48,6 +48,7 @@ export const FACTION_PERK = {
   north_league: `원정 중 받는 피해 ${FPN.exp_hurt_pct ?? -20}% · 채집·채광 숙련 경험 +${FPN.gather_skill_pct ?? 10}%`,
   north_rank: `받는 피해 ${FPN.rank_hurt_pct ?? -2}%씩`,
 };
+export const FACTION_DONATE = { rate: FPK.donate?.rate ?? 50, cap: FPK.donate?.cap ?? 60 };
 export const FACTION_CAP = `한 사람이 한 시간 정산에 쌓는 영향력은 지역마다 ${FSR.region_cap || 40}, 모든 지역을 합쳐 ${FSR.person_cap || 60}까지, 하루(한국 시각)에는 지역마다 ${FSR.day_region_cap || 60}, 모든 지역을 합쳐 ${FSR.day_cap || 90}까지`;
 export function inflMine(m) {
   if (!m) return null;
