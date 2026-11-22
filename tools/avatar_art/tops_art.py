@@ -833,6 +833,13 @@ ACC = {
         "aba",
         ".c.",
     ]),
+    'rg_yeoseotjjae_veil': ('검은 두건', {'a': '#1e1c22', 'b': '#34313a', 'c': '#4a4652'}, 3, 19, [
+        "...cccccccccccccccc...",
+        "...aaaaaaaaaaaaaaaa...",
+        "....aaaabaaaaabaaa....",
+        "......aaaabbaaaa......",
+        ".......aaaaaaaa.......",
+    ]),
 }
 
 
