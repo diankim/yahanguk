@@ -21,7 +21,7 @@ export function spearSet(btn, n) {
 }
 
 export const FX_NAME = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', critnext: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '철벽', guard: '방어', bound: '사슬',
-  expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임', brand: '검은 낙인', grip: '손아귀', ink: '묵흔', pet_fetch: '물어 와', pet_x2: '한 몸 사냥' };
+  expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임', brand: '검은 낙인', grip: '그림자 손아귀', ink: '묵흔', pet_fetch: '물어 와', pet_x2: '한 몸 사냥' };
 export const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vital', critnext: 'vital', evade: 'dodge', shield: 'bubble', cover: 'hand', gward: 'talisman', taunt: 'star', guard: 'shield', bound: 'chain',
   expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward', block: 'hand', brand: 'target', grip: 'hand', ink: 'drop', pet_fetch: 'heart', pet_x2: 'heart' };
 export const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 동안).', might: '주는 피해가 늘어난다(정해진 횟수 동안).', crit: '치명타가 더 잘 터진다.', crit_next: `다음 공격이 반드시 치명타로 들어가고, 치명타 피해가 ${SURE}배가 된다.`, critnext: `다음 공격이 반드시 치명타로 들어가고, 치명타 피해가 ${SURE}배가 된다.`,

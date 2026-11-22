@@ -190,11 +190,12 @@ function chargeTick() {
 }
 let fitT = null;
 window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => { if (el && snap?.raid && built) { logCount = 0; patch(); } }, 150); });
+const hitSrc = k => /^hit_/.test(k || '') ? FX_NAME[k.slice(4)] : null;
 function logLine(l, boss, myName) {
   const who = l.who, n = l.n, has = who != null && n != null, mine = who && who === myName ? ' mine' : '';
   const t = `<time>${fmt.time(l.at)}</time>`;
   if (has && (l.kind === 'atk' || l.kind === 'crit')) return logRow(`k-out${mine}`, `<b>${esc(who)}</b> → ${esc(boss)} <em>${fmt.num(+n)}</em> 피해${l.kind === 'crit' ? ' <i class="crit">치명타</i>' : ''}`, t);
-  if (has && l.kind === 'hit') return logRow(`k-in${mine}`, `${esc(boss)} → <b>${esc(who)}</b> <em>−${fmt.num(+n)}</em> 맞음`, t);
+  if (has && (l.kind === 'hit' || hitSrc(l.kind))) return logRow(`k-in${mine}`, `${esc(hitSrc(l.kind) || boss)} → <b>${esc(who)}</b> <em>−${fmt.num(+n)}</em> 맞음`, t);
   if (has && l.kind === 'fall') return logRow(`k-in fall${mine}`, `${esc(boss)} → <b>${esc(who)}</b> <em>−${fmt.num(+n)}</em> 쓰러져 물러남`, t);
   return logRow(`k-${esc(l.kind)}${mine || (myName && String(l.text || '').startsWith(`${myName} — `) ? ' mine' : '')}`, esc(l.text), t);
 }
