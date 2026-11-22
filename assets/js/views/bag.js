@@ -175,7 +175,7 @@ async function items(body, inv, stg) {
     .sort(sorter(acq));
   const c = store.character, used = bagUsed(c), cap = bagLimit(c);
   renderKeep(body, `<div class="bag-cap ${used >= cap ? 'full' : ''}"><div class="cap-top"><span>${icon('bag', 16)} 가방 ${fmt.num(used)} / ${fmt.num(cap)}칸</span><button class="btn small" data-storage title="창고에 무엇이 있는지 봅니다. 맡기기·꺼내기는 안전지대에서만 됩니다.">${icon('chest', 14)}<span>창고 열기</span></button></div>${bar(used, cap, used >= cap ? 'enemy' : 'xp')}
-      <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비 1개 · 화살 등 100개 · 진품 이상 소모품 20개 · 그 밖 40개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
+      <small>같은 물품은 한 칸에 묶음으로 쌓입니다(장비·가구·옷 1개 · 화살·편전 100개 · 그 밖 50개, 물품 정보에서 확인). 가득 차면 전리품을 두고 오고, 구매·제작이 막힙니다. 사건 해결·지역 완전 답사·수향연맹 소속으로 넓어집니다.</small></div>
     <label class="search"><span>${icon('search', 16)}</span><input id="bag-q" type="search" placeholder="가방 안 물품 찾기 (이름)" value="${esc(q)}"></label>
     ${segmented('bag-cat', CATS, cat)}
     ${cat === 'all' || cat === 'consumable' ? `<div class="chips fx-pick" role="group" aria-label="회복 종류로 거르기"><span class="muted small">효과</span>${FX_KINDS.map(([k, n]) => `<button type="button" class="chip fxk-${k} ${fxPick.has(k) ? 'on' : ''}" data-fxk="${k}" aria-pressed="${fxPick.has(k)}">${n}</button>`).join('')}</div>` : ''}
