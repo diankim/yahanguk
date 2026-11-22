@@ -83,6 +83,7 @@ def build(dsn):
     d['jobSkillCost'] = q(dsn, f"select json_object_agg(j, world_job_skill_cost(j)) from unnest({jarr(JOB_KEYS)}) j")
     d['gearSet'] = q(dsn, "select world_gear_set_rules()")
     d['weaponRules'] = q(dsn, "select world_weapon_rules()")
+    d['weaponRank'] = q(dsn, "select world_weapon_rank_rules()")
     d['rescue'] = q(dsn, "select world_rescue_rules()")
     d['ride'] = q(dsn, "select world_ride_rules()")
     d['survival'] = q(dsn, "select world_survival_rules()")

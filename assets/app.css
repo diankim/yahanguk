@@ -3081,6 +3081,7 @@ b.sealed { color: var(--bad); }
 }
 .eq-mini .ico { color: var(--gold); flex: none; margin-top: 2px; }
 .eq-tier { font-style: normal; font-weight: 700; color: var(--text); font-size: calc(10.5px * var(--fz, 1)); padding: 0 4px; border-radius: 3px; background: color-mix(in srgb, var(--gold) 22%, transparent); white-space: nowrap; }
+.equip-list small.eq-keep { display: block; color: var(--gold); margin-top: 2px; }
 .eq-mini span { display: grid; gap: 1px; min-width: 0; flex: 1; }
 .eq-mini small { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); }
 .eq-mini b { font-size: calc(12px * var(--fz, 1)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

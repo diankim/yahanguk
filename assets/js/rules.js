@@ -290,3 +290,10 @@ export const ARC_NAME = { '귀허도': '요인록' };
 export const storyArcOf = cat => { const [a, b] = String(cat || '').split('·'); return a === '외전' ? (ARC_NAME[b] || b || '') : ''; };
 export const storyChapterNo = id => +((/^(?:gq|mkq|mdq)_(\d+)$/.exec(id || '') || [])[1] || 0);
 export const isStoryMain = q => q?.kind === 'main' || q?.quest_id === 'fq_sealed_lord' || storyChapterNo(q?.quest_id) > 0;
+
+const WRK = GD.weaponRank?.steps || [[1, 1], [10, 5], [14, 10], [20, 15], [32, 25], [42, 33], [47, 38]];
+export const weaponRankNeed = lv => { let n = 1; for (const [l, r] of WRK) if (Number(lv || 1) >= l) n = r; return n; };
+export const WEAPON_RANK = {
+  steps: WRK,
+  keep: (line, need, have) => `지금 ${line} ${have}단계라 이 무기의 기준(${need}단계)에 못 미칩니다. 끼고 있는 동안은 그대로 쓰지만, 내려놓으면 ${line} ${need}단계가 되기 전에는 다시 낄 수 없습니다.`,
+};

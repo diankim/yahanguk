@@ -1,11 +1,11 @@
-import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, JOB_ORDER, FACTIONS, RAID_ON, useItemAct } from '../core.js';
+import { ask, db, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, openModal, closeModal, openLayer, closeLayers, effectText, toast, stackOf, JOBS, JOB_ORDER, FACTIONS, RAID_ON, useItemAct, JOB_LINE } from '../core.js';
 import { loreBundle, rebirthScene } from '../lore.js';
 import { load, loadPrices, chip, zonesNow, catItem, fxNames } from './common.js';
 import { itemSources, regionBtn, sourcesMore, SRC_KINDS, shopNow, shopNowHtml } from '../sources.js';
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture } from '../housing/count.js';
 import { ownRow, fillOwned } from '../owned.js';
-import { GWIRYEONG, weakSafe, gwWhen, BIJANG } from '../rules.js';
+import { GWIRYEONG, weakSafe, gwWhen, BIJANG, weaponRankNeed } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 import { PETS, petImage } from '../housing/petsprite.js';
@@ -106,12 +106,21 @@ const statReqs = (o, c) => {
     const n = RANK_NAME[tr.req_line] || '채집 숙련', have = Number(c?.[tr.req_line] || 1), need = Number(tr.req_rank);
     return [[`${n} ${need}단계 이상`, have >= need, `${n} ${need}단계 필요 (지금 ${have}단계)`]];
   }
+  if (o.category === 'weapon') {
+    const r = weaponRank(o, c);
+    return r && r.need > 1 ? [[`${r.name} ${r.need}단계 이상`, r.ok, `${r.name} ${r.need}단계 필요 (지금 ${r.have}단계)`]] : [];
+  }
   const req = Object.entries(o.required_stats || {});
   if (!req.length) return [];
   if (ACCESSORY.has(o.category)) { const v = Math.max(...req.map(([, n]) => Number(n))); return [[`가장 높은 능력치 ${v} 이상`, topStat(c) >= v, `가장 높은 능력치 ${v} 필요 (지금 ${topStat(c)})`]]; }
   if (o.category === 'armor') return req.map(([k, v]) => { const p = STAT_PAIR[k] || k, have = Math.max(Number(c?.[k] || 0), Number(c?.[p] || 0));
     return [`${nameOf(k)} 또는 ${nameOf(p)} ${v} 이상`, have >= Number(v), `${nameOf(k)} 또는 ${nameOf(p)} ${v} 필요 (지금 ${have})`]; });
   return req.map(([k, v]) => [`${nameOf(k)} ${v} 이상`, Number(c?.[k] || 0) >= Number(v), `${nameOf(k)} ${v} 필요 (지금 ${Number(c?.[k] || 0)})`]);
+};
+export const weaponRank = (o, c) => {
+  if (o?.category !== 'weapon') return null;
+  const line = JOB_LINE[c?.job_key] || 'melee', need = weaponRankNeed(o.minimum_level), have = Number(c?.skill_progress?.[line]?.rank || 1);
+  return { line, name: `${nameOf(line)} 기술`, need, have, ok: have >= need };
 };
 const FIELD_LINE = { sealing: 'wardcraft' };
 const STAT_JOBS = { strength: ['artificer', 'bloodknight', 'spearman'], vitality: ['artificer', 'bloodknight'], agility: ['scout', 'tamer', 'analyst', 'spearman'], perception: ['scout', 'tamer', 'analyst'], spirit_affinity: ['exorcist', 'formation'], willpower: ['medic', 'sealmaster', 'formation'] };

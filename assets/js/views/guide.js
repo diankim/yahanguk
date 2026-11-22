@@ -5,7 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN } from '../rules.js';
+import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -40,6 +40,7 @@ function weaponFormsHtml() {
     ${JOB_ORDER.map(k => `<tr><td>${esc(JOBS[k].name)}</td><td>${(W.forms?.[k] || []).map(([n, t]) => `<b>${esc(n)}</b> <small class="muted">${esc(K[t] || '')}</small>`).join('<br>')}</td></tr>`).join('')}</table>
     <p class="muted small">같은 단계 무기는 위력이 같고, 보조 수치(묵직·예리·소리 없음)만 다릅니다. 화살은 ${esc((W.ammo?.arrow || []).join('·'))}, 편전은 ${esc((W.ammo?.dart || []).join('·'))}이 씁니다. 떨어지는 무기는 내 직업 것이 ${W.drop_job_mul || 4}배 잘 나옵니다.</p>`;
 }
+const weaponRankTable = () => `<table class="guide-table"><tr><th>무기 장착 레벨</th>${WEAPON_RANK.steps.map(([l], i, a) => `<td>${l}${a[i + 1] ? `~${a[i + 1][0] - 1}` : '~'}</td>`).join('')}</tr><tr><th>직업 기술 단계</th>${WEAPON_RANK.steps.map(([, r]) => `<td>${r}</td>`).join('')}</tr></table>`;
 const scrollText = () => { const r = GD.jobChange || {}; return `「환골탈태 서첩」은 모든 안전지대 상점에서 늘 팝니다(값 ${r.price_base || 100}전 + 레벨×${r.price_lv || 20}전, 거래 불가). 쓰면 직업만 새로 고르고, 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓입니다. 소속·레벨·기술 단계·대세력은 그대로입니다. 쓴 뒤 ${r.cd_min || 60}분은 다시 쓸 수 없고, 남은 시간은 가방의 서첩 단추에 보입니다.`; };
 function coopTableHtml() {
   const band = k => `<tr class="g-band"><th colspan="4">${esc(JOBS[k].name)} · ${esc(JOBS[k].trait)}</th></tr>` +
@@ -381,7 +382,9 @@ const S = [
       <li>가방 › 장비에서 끼우고 벗습니다. 전투·원정 중에는 안 됩니다. 장착한 장비는 가방 칸을 차지하지 않습니다.</li>
     </ul>
     <h4>장착 조건</h4>
-    <p>단계가 높은 장비는 장착 레벨과 함께 그 갈래의 주 능력치를 요구합니다. 무기라면 근접은 근력, 원거리는 민첩, 술법은 영성 등입니다.</p>
+    <p>단계가 높은 방어구·장신구는 장착 레벨과 함께 그 갈래의 주 능력치를 요구합니다. 무기는 능력치 대신 지금 직업의 전투 기술 단계를 봅니다(창객은 창술, 퇴마관은 퇴마술처럼). 직업을 바꾸면 새 직업 기술을 키워야 높은 무기를 들 수 있습니다.</p>
+    ${weaponRankTable()}
+    <p>이미 끼고 있는 무기는 기준에 못 미쳐도 그대로 쓸 수 있고, 장비 칸에 안내가 한 줄 뜹니다. 내려놓으면 기준 단계가 되기 전에는 다시 낄 수 없습니다.</p>
     <table class="guide-table"><tr><th>필요 능력치</th><th>Lv.5</th><th>Lv.10</th><th>Lv.15</th><th>Lv.20</th></tr>
       <tr><td>무기·방어구</td><td>9</td><td>14</td><td>20</td><td>25</td></tr>
       <tr><td>관모·신·노리개·호신부·탈</td><td>8</td><td>12</td><td>16</td><td>19</td></tr></table>
@@ -420,7 +423,7 @@ const S = [
     <p>지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 가방 › 장비 맨 위 「장비 세트」 칸에서 씁니다.</p>
     <ul><li>처음 ${GD.gearSet?.base || 4}칸이고, 열 직업의 전투 기술 계열 가운데 ${GD.gearSet?.rank || 15}단계에 닿은 계열 하나마다 한 칸씩 늘어 ${GD.gearSet?.max || 10}칸까지입니다. 지금 직업과 상관없이 세므로 직업을 바꿔도 칸이 줄지 않고, 직업을 여럿 키울수록 늡니다.</li>
       <li>「지금 장비 저장」은 낀 장비 전체를 그 칸에 담습니다. 이름을 누르면 이름 바꾸기·덮어쓰기·지우기를 합니다(이름은 ${GD.gearSet?.name_max || 12}자까지).</li>
-      <li>「끼기」를 누르면 담긴 장비를 차례로 낍니다. 가방에 없거나 장착 조건(레벨·직업·능력치)이 맞지 않는 칸은 건너뛰고 까닭을 알려 줍니다. 보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다.</li>
+      <li>「끼기」를 누르면 담긴 장비를 차례로 낍니다. 가방에 없거나 장착 조건(레벨·직업·능력치·무기는 직업 기술)이 맞지 않는 칸은 건너뛰고 까닭을 알려 줍니다. 보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다.</li>
       <li>세트는 장비를 따로 보관하지 않습니다. 담은 물품을 팔거나 버리면 그 칸은 비게 됩니다. 전투·원정 중에는 바꿔 낄 수 없습니다.</li></ul>`],
   ['durability', '장비 내구도와 수리', `
     <ul>

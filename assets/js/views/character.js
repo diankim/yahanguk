@@ -4,11 +4,11 @@ import { load, invalidate, panel, chip, loading, errorBox, MAJOR_FACTIONS, items
 import { openStatus, yohwaOf, yohwaLine, yohwaDowned } from '../hud.js';
 import { focusRegion } from './map.js';
 import { paintTitleDot, markTitlesSeen, dotSeen } from '../titledot.js';
-import { SLOTS, USABLE, openItemInfo } from './item.js';
+import { SLOTS, USABLE, openItemInfo, weaponRank } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT, PROJECT } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT, PROJECT, WEAPON_RANK } from '../rules.js';
 const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEvery}분마다`;
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
@@ -116,7 +116,9 @@ export function equipRowLi(inv, prof, here, slot, rq) {
     const cost = (rq?.items || []).find(x => x.item_id === id)?.cost;
     const n = slot === 'weapon' ? Number(prof?.current?.weapon?.enhance) || 0 : 0;
     const enh = n ? ` <span class="enh-lv">+${n}</span>` : '';
-    return `<li>${icon(ic, 18)}<div><b>${label} · <button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(nameOf(id))}</button>${enh}${it?.tier ? ` <em class="eq-tier">${it.tier}단계</em>` : ''} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${mx ? durBar(d, mx) : ''}</div>
+    const wr = slot === 'weapon' ? weaponRank(it, store.character) : null;
+    const keep = wr && !wr.ok ? `<small class="eq-keep">${esc(WEAPON_RANK.keep(wr.name, wr.need, wr.have))}</small>` : '';
+    return `<li>${icon(ic, 18)}<div><b>${label} · <button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(nameOf(id))}</button>${enh}${it?.tier ? ` <em class="eq-tier">${it.tier}단계</em>` : ''} ${rarTag(it?.rarity)}</b><small>${esc(effectText(withPower(it?.equipment_traits, n, prof)).join(' · ') || it?.description || '')}${n ? ` · 강화 +${n}` : ''}</small>${keep}${mx ? durBar(d, mx) : ''}</div>
       ${mx && d < mx ? `<div class="btn-col"><button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="kit" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구 <small>×${kits}</small></span></button>
         <button class="btn small" data-here="수리" data-repair="${esc(id)}" data-how="gil" ${here?.is_safe_zone ? '' : 'disabled'} title="${here?.is_safe_zone ? '' : '안전지대에서만 맡길 수 있습니다'}">맡기기${cost != null ? ` <small>${fmt.jeon(cost)}</small>` : ''}</button></div>` : ''}
       <button class="btn small ghost eq-off" data-unequip="${esc(slot)}" aria-label="${esc(label)} 벗기">벗기</button></li>`;
