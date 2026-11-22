@@ -119,7 +119,8 @@ const statReqs = (o, c) => {
 };
 export const weaponRank = (o, c) => {
   if (o?.category !== 'weapon') return null;
-  const line = JOB_LINE[c?.job_key] || 'melee', need = weaponRankNeed(o.minimum_level), have = Number(c?.skill_progress?.[line]?.rank || 1);
+  const js = weaponJobs(o), job = !c?.job_key || js.includes(c.job_key) || !js.length ? c?.job_key : js[0];
+  const line = JOB_LINE[job] || 'melee', need = weaponRankNeed(o.minimum_level), have = Number(c?.skill_progress?.[line]?.rank || 1);
   return { line, name: `${nameOf(line)} 기술`, need, have, ok: have >= need };
 };
 const FIELD_LINE = { sealing: 'wardcraft' };
