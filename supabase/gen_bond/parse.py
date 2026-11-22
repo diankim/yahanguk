@@ -6,6 +6,7 @@ NPCS = {'hanseol': '한설', 'yeoul': '여울', 'wolha': '월하', 'daon': '다�
         'mogaram': '모가람', 'yeonseohui': '연서희', 'kangducheol': '강두철', 'yeoseotjjae': '여섯째'}
 NEW4 = ['mogaram', 'yeonseohui', 'kangducheol', 'yeoseotjjae']
 BY_NAME = {v: k for k, v in NPCS.items()}
+SCENE = ['bond_make', 'bond_again', 'bond_break']
 KEY = re.compile(r'^### ([a-z][a-z0-9_]*)\b')
 LINE = re.compile(r'^- ([^:]{1,8}): (.+)$')
 REQUIRED = ['bond_make', 'bond_again', 'bond_break', 'first_dawn', 'first_noon', 'first_dusk', 'first_night',
@@ -64,6 +65,9 @@ def parse_npc(k):
             buf.append(ln)
     if key:
         keys[key] = bundles(buf, who)
+    for k2 in SCENE:
+        if keys.get(k2):
+            keys[k2] = [[x for b in keys[k2] for x in b]]
     return keys
 
 

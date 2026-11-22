@@ -5,6 +5,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 VER = '20261125080000'
 OUT = os.path.join(ROOT, 'supabase', 'migrations', f'{VER}_world_3_7_0_kin4.sql')
 NEW4 = ['mogaram', 'yeonseohui', 'kangducheol', 'yeoseotjjae']
+SCENE = ['bond_make', 'bond_again', 'bond_break']
 NPCS = {
     'mogaram': {'token': '대나무 서표', 'reward': 'moss_porridge'},
     'yeonseohui': {'token': '무명 약낭', 'reward': 'herb_rice'},
@@ -179,17 +180,17 @@ def main():
     rows = []
     for npc, keys in talk.items():
         for key, bs in keys.items():
-            if npc not in NEW4 and key not in mates:
+            if npc not in NEW4 and key not in mates and key not in SCENE:
                 continue
             for i, b in enumerate(bs, 1):
                 rows.append(f"({q(npc)}, {q(key)}, {i}, {q(json.dumps(b, ensure_ascii=False))}::jsonb)")
     lines = ('delete from public.world_kin_lines where npc = any (array[' + ', '.join(q(x) for x in NEW4) + ']) or key = any (array['
-             + ', '.join(q(x) for x in mates) + ']);\ninsert into public.world_kin_lines(npc, key, n, lines) values\n'
+             + ', '.join(q(x) for x in mates + SCENE) + ']);\ninsert into public.world_kin_lines(npc, key, n, lines) values\n'
              + ',\n'.join(rows) + ';\n')
     head = (HEAD.replace('%REWARDS%', ', '.join(q(v['reward']) for v in NPCS.values()))
                 .replace('%NPCS%', q(json.dumps(NPCS, ensure_ascii=False)))
                 .replace('%GIFT%', q(json.dumps(GIFT_KINDS, ensure_ascii=False))))
-    tail = TAIL.replace('%NOTE%', q(NOTE_LINE))
+    tail = ''
     meta = (f"\ninsert into public.world_app_meta(key, value, changed_at) values ('db_version', '{VER}', now())\n"
             "on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;\n")
     open(OUT, 'w', encoding='utf-8').write(head + lines + tail + meta)
