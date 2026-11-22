@@ -60,12 +60,14 @@ export function drawLater(fn) {
   later.add(fn);
   return true;
 }
+const MEM_MARK = { brand: '낙인', grip: '손아귀' };
 export function memberLi(m, o = {}) {
-  return `<li class="jb-${esc(m.job || '')} ${o.cls || ''} ${o.me ? 'me' : ''} ${o.tgt ? 'tgt' : ''} ${o.sel ? 'sel' : ''} ${o.out ? 'out' : ''} ${o.turn ? 'turn' : ''}">
+  const mk = Object.keys(MEM_MARK).filter(k => (o.fx || []).includes(k));
+  return `<li class="jb-${esc(m.job || '')} ${o.cls || ''} ${o.me ? 'me' : ''} ${o.tgt ? 'tgt' : ''} ${o.sel ? 'sel' : ''} ${o.out ? 'out' : ''} ${o.turn ? 'turn' : ''} ${mk.map(k => `mk-${k}`).join(' ')}">
     <button type="button" class="mem-pick" data-pick="${esc(m.id)}" title="${esc(o.title || `${m.name} · ${m.level ? `Lv${m.level} ` : ''}${jobName(m.job)}`)}">
-      <span class="mem-top"><b>${o.pre || ''}${esc(m.name)}<span class="fx-icons">${fxIcons(o.fx)}</span></b>${o.state ? `<small>${esc(o.state)}</small>` : ''}</span>
+      <span class="mem-top"><b>${o.pre || ''}${esc(m.name)}<span class="fx-icons">${fxIcons((o.fx || []).filter(k => !MEM_MARK[k]))}</span></b>${o.state ? `<small>${esc(o.state)}</small>` : ''}</span>
       ${hpBar(o.hp ?? m.hp)}
-      <small class="mem-sub">${o.sub ?? esc(jobName(m.job))}</small></button></li>`;
+      <small class="mem-sub">${o.sub ?? esc(jobName(m.job))}</small>${mk.length ? `<span class="mem-mark">${mk.map(k => `<em class="mm-${k}" title="${esc(FX_NAME[k])}">${MEM_MARK[k]}</em>`).join('')}</span>` : ''}</button></li>`;
 }
 export function memDetailHtml(m, o = {}) {
   const fx = fxKeys(o.fx);

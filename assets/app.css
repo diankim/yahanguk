@@ -2315,6 +2315,16 @@ b.contest { color: var(--warn); font-weight: 600; }
 .mem-top small { font-size: calc(11px * var(--fz, 1)); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mem-pick .bar { height: 4px; }
 .mem-sub { font-size: calc(10.5px * var(--fz, 1)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mem-pick { position: relative; }
+.raid-mem li.mk-grip .mem-pick { background: color-mix(in srgb, var(--er) 24%, var(--surface-2)); border-color: var(--er); box-shadow: inset 0 0 0 2px var(--er); }
+.raid-mem li.mk-brand .mem-pick { background: color-mix(in srgb, var(--bad) 26%, var(--surface-2)); border-color: var(--bad); box-shadow: inset 0 0 0 2px var(--bad); animation: mk-brand 1.2s ease-in-out infinite; }
+@keyframes mk-brand { 50% { background: color-mix(in srgb, var(--bad) 12%, var(--surface-2)); } }
+.mem-mark { position: absolute; top: 2px; right: 3px; display: flex; gap: 2px; pointer-events: none; }
+.mem-mark em { font-style: normal; font-weight: 700; font-size: calc(10px * var(--fz, 1)); line-height: 1.5; padding: 0 5px; border-radius: 999px; color: #fff; }
+.mem-mark .mm-brand { background: var(--bad); }
+.mem-mark .mm-grip { background: var(--er); }
+.raid-mem li.mk-brand .mem-top, .raid-mem li.mk-grip .mem-top { padding-right: 46px; }
+@media (prefers-reduced-motion: reduce) { .raid-mem li.mk-brand .mem-pick { animation: none; } }
 /* 파티 현장 토벌 참가자: 봉연 토벌처럼 칸 격자 — PC 네 칸·휴대폰 두 칸(4명까지) */
 .raid-mem.pf-mem { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
 .raid-mem.pf-mem li { padding: 0; border: 0; display: block; min-width: 0; }

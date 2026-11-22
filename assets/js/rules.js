@@ -198,6 +198,7 @@ export const SYS_CHAT = {
   '구조 알림': { icon: 'heart', cls: '' },
   '세력 소식': { icon: 'pin', cls: 'note' },
   '봉연 소식': { icon: 'flame', cls: 'raidnote' },
+  '그림자 소식': { icon: 'flame', cls: 'raidnote' },
   '비무 소식': { icon: 'sword', cls: 'note' },
   '연리 소식': { icon: 'knot', cls: 'note' },
   '운영 공지': { icon: 'bell', cls: 'note' },

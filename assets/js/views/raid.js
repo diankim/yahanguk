@@ -25,7 +25,7 @@ let queued = null;
 
 export async function render(root, sub) {
   el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0; shownStatus = '';
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>${loading()}`;
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>그림자</h1></div></div>${loading()}`;
   await refresh();
   bindTips(el);
   subscribe();
@@ -86,8 +86,8 @@ function draw() {
   const s = snap || {}, r = s.raid;
   if (!r) {
     built = '';
-    el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>봉연</h1></div></div>
-      <div class="panel"><div class="panel-body"><p class="desc">지금은 드러난 사슬 벗은 그림자가 없습니다. 출현 하루 전부터 전체 채팅 「봉연 소식」과 알림으로 후보 지역을 알려 드립니다.</p>${locksHtml(s.locks)}</div></div>`;
+    el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>그림자</h1></div></div>
+      <div class="panel"><div class="panel-body"><p class="desc">지금은 드러난 사슬 벗은 그림자가 없습니다. 출현 하루 전부터 전체 채팅 「그림자 소식」과 알림으로 후보 지역을 알려 드립니다.</p>${locksHtml(s.locks)}</div></div>`;
     return;
   }
   const me = s.me || {}, ended = settled(s);
