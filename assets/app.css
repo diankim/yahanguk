@@ -3338,6 +3338,7 @@ b.shadow { color: var(--sp); }
 .dm-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 0 6px; padding: 1px 6px; min-height: 19px; border-radius: 3px; overflow: hidden;
   background: color-mix(in srgb, var(--text) 5%, transparent); border-left: 3px solid var(--jb, var(--line)); }
 .dm-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--jb, var(--accent)) 34%, transparent); pointer-events: none; transition: width .3s; }
+.dm-fill.sh { inset: 0 auto 0 auto; background: color-mix(in srgb, var(--dm-s) 28%, transparent); box-shadow: inset 0 -2px 0 var(--dm-s); }
 .dm-row > :not(.dm-fill) { position: relative; }
 .dm-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dm-row.me .dm-name { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
