@@ -1364,7 +1364,7 @@ details.f-fold > summary { font-weight: 600; margin: 4px 0 8px; } details.f-fold
 @media (max-width: 640px) { .inv-list li.inv-item:has(.inv-use) { flex-wrap: wrap; } .inv-item .inv-use { margin-left: auto; padding-bottom: 6px; } }
 .inv-item small.brief.one { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inv-item small.use-fx.one { flex-wrap: nowrap; min-width: 0; } .inv-item small.use-fx.one > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.inv-item small.inv-tags { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
+.inv-item small.inv-tags { flex-wrap: wrap; row-gap: 2px; } .inv-item small.inv-tags > i { white-space: nowrap; }
 .inv-item .inv-name { min-width: 0; }
 .qty-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; } .qty-row > span { flex: 1 1 140px; min-width: 0; font-size: calc(13px * var(--fz, 1)); } .qty-row.off { opacity: .55; }
 
