@@ -1,4 +1,10 @@
 const R = 95, STEPS = 40;
+const CUTS = {
+  hidden_bazaar: [[381, 539, 393, 551]],
+  patrol_office: [[330, 546, 400, 546]],
+  ledger_cellar: [[393, 551, 368, 612], [368, 612, 372, 650]],
+  old_ferry_market: [[334, 548, 348, 562], [348, 562, 353, 603], [353, 603, 324, 652]],
+};
 
 function seedOf(id) {
   let h = 0;
@@ -33,6 +39,11 @@ export function buildCells(regions) {
       if (o === r) continue;
       const a = o.world_x - r.world_x, b = o.world_y - r.world_y;
       poly = clip(poly, a, b, (o.world_x ** 2 + o.world_y ** 2 - r.world_x ** 2 - r.world_y ** 2) / 2);
+    }
+    for (const [x1, y1, x2, y2] of CUTS[r.region_id] || []) {
+      let a = y2 - y1, b = x1 - x2, c = a * x1 + b * y1;
+      if (a * r.world_x + b * r.world_y > c) { a = -a; b = -b; c = -c; }
+      poly = clip(poly, a, b, c);
     }
     cells.set(r.region_id, poly);
   }

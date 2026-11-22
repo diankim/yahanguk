@@ -1,7 +1,7 @@
 import { ask, store, on, act, rpc, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, RAID_ON } from '../core.js';
 import { load, panel, chip, danger, loading, errorBox, currentRegion, invalidate, safeZones, MAJOR_FACTIONS, travelCdLeft, travelCdFromError } from './common.js';
 import { buildCells, centroid, factionColor } from '../geo.js';
-import { waterUnder, waterOver, waterBays, edgeInBay, SEA_FISH } from '../water.js';
+import { waterUnder, waterOver, SEA_FISH } from '../water.js';
 import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
 import { GAMEDATA } from '../gamedata.js';
@@ -210,7 +210,6 @@ function paint() {
   let inner = '', border = '', coast = '', seaCoast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
-    if (edgeInBay(e)) continue;
     if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
   }
   const seen = new Set(); let roads = '';
@@ -309,7 +308,7 @@ function paint() {
     <rect width="${W}" height="${H}" class="sea"/><rect width="${W}" height="${H}" fill="url(#sea-wave)"/>
     ${waterUnder(g, X, Y, view.k)}
     <g class="land">${land}</g>${waterOver(g, id => byId.has(id), X, Y, view.k, zoom)}<g>${hatch}</g>
-    <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>${waterBays(g, id => byId.has(id), X, Y, view.k)}
+    <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
     <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
 }
