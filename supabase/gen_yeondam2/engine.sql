@@ -45,7 +45,7 @@ begin
                           where g.active and not g.is_safe_zone and g.min_level <= lv and public.world_region_open(p_uid, g.region_id))), '{}');
 end $f$;
 
-create or replace function public.world_regular_cpool(p_uid uuid, p_npc text, p_rank int)
+create or replace function public.world_regular_cpool(p_uid uuid, p_npc text, p_rank int, p_ammo boolean default true)
  returns text[] language plpgsql stable security definer set search_path = pg_catalog, public
 as $f$
 declare r jsonb := public.world_regular_rules(); c jsonb := r -> 'combat'; base text := public.world_regular_rule(p_npc) ->> 'line';
@@ -53,7 +53,7 @@ declare r jsonb := public.world_regular_rules(); c jsonb := r -> 'combat'; base 
   out text[]; rare text[]; a text;
 begin
   if kind is null then return '{}'; end if;
-  if kind = 'weapon' then
+  if kind = 'weapon' and p_ammo then
     a := public.world_ammo_of(p_uid);
     if a is not null then return array[a]; end if;
   end if;
@@ -82,7 +82,7 @@ create or replace function public.world_regular_cgil(p_uid uuid, p_npc text, p_r
 as $f$
 declare r jsonb := public.world_regular_rules();
 begin
-  return floor(coalesce((select avg(coalesce(i.reference_price, 0)) from public.world_item_catalog i where i.item_id = any (public.world_regular_cpool(p_uid, p_npc, p_rank))), 0)
+  return floor(coalesce((select avg(coalesce(i.reference_price, 0)) from public.world_item_catalog i where i.item_id = any (public.world_regular_cpool(p_uid, p_npc, p_rank, false))), 0)
     * (r -> 'combat' ->> 'gil_n')::numeric * (r -> 'gil' ->> 'rate')::numeric + (r -> 'gil' ->> 'base')::numeric)::int;
 end $f$;
 
@@ -101,7 +101,7 @@ begin
     select k into kk from unnest(public.world_regular_kinds(p_uid)) k order by md5(p_uid::text || ':' || p_npc || ':' || p_day::text || ':kill:' || k) limit 1;
     if kk is not null then out := out || jsonb_build_object('i', 1, 'type', 'kill', 'region', split_part(kk, '|', 1), 'kind', split_part(kk, '|', 2), 'qty', (c ->> 'kill')::int); end if;
     select z into pick from unnest(public.world_regular_cpool(p_uid, p_npc, rk)) z order by md5(p_uid::text || ':' || p_npc || ':' || p_day::text || ':' || z) limit 1;
-    if pick is not null then out := out || jsonb_build_object('i', 2, 'type', 'item', 'id', pick, 'qty', (it ->> 1)::int); end if;
+    if pick is not null then out := out || jsonb_build_object('i', 2, 'type', 'item', 'id', pick, 'qty', case when pick = public.world_ammo_of(p_uid) then (c ->> 'ammo_n')::int else (it ->> 1)::int end); end if;
     return out;
   end if;
   select coalesce(jsonb_agg(jsonb_build_object('i', z.o - 1, 'id', z.x, 'qty',
@@ -350,7 +350,7 @@ declare f text;
 begin
   perform pg_temp.pj_share('public.world_regular_prog(jsonb, jsonb)');
   foreach f in array array['world_regular_line(uuid, text)', 'world_regular_line_name(uuid, text)', 'world_regular_here_list(uuid)', 'world_regular_kinds(uuid)',
-    'world_regular_cpool(uuid, text, int)', 'world_regular_cgil(uuid, text, int)', 'world_regular_tally(uuid, date)', 'world_regular_brief_one(uuid, text)'] loop
+    'world_regular_cpool(uuid, text, int, boolean)', 'world_regular_cgil(uuid, text, int)', 'world_regular_tally(uuid, date)', 'world_regular_brief_one(uuid, text)'] loop
     perform pg_temp.pj_share('public.' || f);
     perform pg_temp.pj_own('public.' || f, 'fn_owner_field');
   end loop;

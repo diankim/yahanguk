@@ -9,6 +9,7 @@ COMBAT = {
     'kill': 5,
     'act': {'analysis': ['analysis', 8], 'guarding': ['guarding', 8], 'first_aid': ['first_aid', 5], 'job': ['win', 8]},
     'item': {'analysis': ['loot', 3], 'guarding': ['armor', 1], 'first_aid': ['heal', 3], 'job': ['weapon', 3]},
+    'ammo_n': 100,
     'armor': ['armor', 'hat', 'shoes'],
     'gil_n': 3,
     'act_name': {'analysis': '수법 낌새에 맞서기', 'guarding': '방어', 'first_aid': '회복품·처치', 'win': '이긴 토벌'},
