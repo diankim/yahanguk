@@ -11,7 +11,7 @@ begin
   execute def || ' AS $fn$' || src || '$fn$';
 end $m$;
 
-update public.world_patch_notes set body = body || E'\n- 봉연의 그림자는 호위 무사·혈기사를 다른 조사원보다 훨씬 자주 노립니다.'
+update public.world_patch_notes set body = body || E'\n- 사슬 벗은 그림자는 호위 무사·혈기사를 다른 조사원보다 훨씬 자주 노립니다.'
  where note_id = '3.7.0' and body not like '%호위 무사·혈기사를 다른 조사원보다 훨씬 자주%';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261126050000', now()) on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
