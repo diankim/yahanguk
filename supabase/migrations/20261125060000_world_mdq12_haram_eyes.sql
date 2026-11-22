@@ -25,7 +25,7 @@ begin
   end if;
 end $m$;
 
-update public.world_patch_notes set body = replace(body, E'- 세력 기부 물품을 고르는 창에서 받을 공훈이 바로 보입니다.\n', E'- 세력 기부 물품을 고르는 창에서 받을 공훈이 바로 보입니다.\n- 명등기 12장 「잘못 읽은 별」의 기록판 장면에서, 서하람이 기록판에 적힌 구절이 제 눈을 두고 하는 말임을 알아차리는 대목을 더했습니다.\n')
- where note_id = '3.5.0' and body like '%## 3.6.3%' and body not like '%기록판 장면에서, 서하람이%';
+update public.world_patch_notes set body = replace(body, E'- 세력 기부 물품을 고르는 창에서 받을 공훈이 바로 보입니다.\n', E'- 세력 기부 물품을 고르는 창에서 받을 공훈이 바로 보입니다.\n- 명등기 12장 「잘못 읽은 별」의 기록판 장면 대사를 다듬었습니다.\n')
+ where note_id = '3.5.0' and body like '%## 3.6.3%' and body not like '%기록판 장면 대사를%';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261125060000', now()) on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
