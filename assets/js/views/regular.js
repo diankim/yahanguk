@@ -11,7 +11,7 @@ const haveHqOf = o => (o.hq_have || 0) + (o.hq_st || 0);
 function taskCard(o, v) {
   const n = Math.min(o.prog || 0, o.qty), ready = n >= o.qty, off = o.done || !v.can?.give || !ready;
   return `<li class="rg-order task ${o.done ? 'done' : ready ? 'ready' : ''}">
-    <header><b>${esc(REGULAR.taskName(o))}</b><span class="chip">${o.qty}${REGULAR.taskUnit(o)}</span>${o.done ? `<span class="chip ok">${icon('check', 12)}보고함</span>` : ''}</header>
+    <header><b>${esc(REGULAR.taskName(o))}</b>${o.type === 'act' && REGULAR.actHelp?.[o.act] ? helpQ(REGULAR.actHelp[o.act](), o.name) : ''}<span class="chip">${o.qty}${REGULAR.taskUnit(o)}</span>${o.done ? `<span class="chip ok">${icon('check', 12)}보고함</span>` : ''}</header>
     <small class="muted">${esc(REGULAR.taskWhere)}${helpQ(REGULAR.taskTip(o), '탐사 주문')}</small>
     <div class="rg-bar">${bar(n, o.qty, 'gold')}<small class="muted">${fmt.num(n)} / ${fmt.num(o.qty)}${ready || o.done ? '' : ` · ${fmt.num(o.qty - n)}${REGULAR.taskUnit(o)} 남음`}</small></div>
     <small class="rg-pay">${esc(v.line_name)} 경험 +${fmt.num(v.xp)} · ${fmt.jeon(o.gil)} · 친밀도 +${REGULAR.aff.give}</small>
