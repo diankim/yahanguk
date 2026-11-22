@@ -179,11 +179,14 @@ function bindDonate(body, s) {
   for (const id of Object.keys(donPicks)) { const it = items.find(x => x.item_id === id); if (!it) delete donPicks[id]; else donPicks[id] = Math.min(donPicks[id], it.qty); }
   const picks = new Map(Object.entries(donPicks));
   const rows = pickRows(items.map(i => ({ id: i.item_id, name: i.name, have: i.qty, max: i.qty, rarity: i.rarity, sub: `시세 ${fmt.num(i.price)}전${i.tradeable ? '' : ' · 거래 불가'}` })), []);
-  const sum = () => {
+  const meritOf = sel => {
     let val = 0, n = 0;
-    for (const [id, q] of picks) { const it = items.find(x => x.item_id === id); if (it && q > 0) { val += it.price * q; n += q; } }
-    const gain = Math.max(0, Math.min(cap, Math.floor(((d.value || 0) + val) / rate)) - (d.merit || 0));
-    const over = Math.floor(((d.value || 0) + val) / rate) > cap;
+    for (const [id, q] of sel) { const it = items.find(x => x.item_id === id); if (it && q > 0) { val += it.price * q; n += q; } }
+    const raw = Math.floor(((d.value || 0) + val) / rate);
+    return { val, n, gain: Math.max(0, Math.min(cap, raw) - (d.merit || 0)), over: raw > cap };
+  };
+  const sum = () => {
+    const { val, n, gain, over } = meritOf(picks);
     const el = $('#fq-don-sum', box), btn = $('#fq-donate', box);
     if (el) el.innerHTML = n ? `${fmt.num(n)}개 · 시세 ${fmt.num(val)}전 → 공훈 <b>+${gain}</b>${over ? ` <span class="warn">(오늘 상한 ${esc(`${cap}을(를)`)} 넘는 몫은 공훈이 되지 않습니다)</span>` : ''}` : '';
     if (btn) btn.disabled = !n;
@@ -191,6 +194,7 @@ function bindDonate(body, s) {
   const redraw = () => { box.innerHTML = donateHtml(s, true); bindDonate(body, s); };
   const bind = () => {
     $('#fq-don-pick', box)?.addEventListener('click', () => openItemPick({ title: '세력에 넘길 물품', rows, many: true, picked: donPicks, okText: '이대로 담기',
+      sumText: sel => { const m = meritOf(sel); return m.n ? ` · 시세 ${fmt.num(m.val)}전 → 공훈 <b>+${m.gain}</b>${m.over ? ` <span class="warn">(오늘 상한 ${cap})</span>` : ''}` : ''; },
       onDone: p => { donPicks = p; redraw(); } }));
     $$('[data-don-rm]', box).forEach(b => b.onclick = e => { e.preventDefault(); delete donPicks[b.getAttribute('data-don-rm')]; redraw(); });
     const btn = $('#fq-donate', box);

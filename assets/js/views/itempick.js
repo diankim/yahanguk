@@ -65,7 +65,7 @@ export function pickRows(list, catalog) {
   }).sort(koSort);
 }
 
-export function openItemPick({ title = '물품 고르기', rows = [], many = false, picked = {}, kinds = Infinity, okText = '담기', empty = '고를 수 있는 물품이 없습니다.', note = '', onDone }) {
+export function openItemPick({ title = '물품 고르기', rows = [], many = false, picked = {}, kinds = Infinity, okText = '담기', empty = '고를 수 있는 물품이 없습니다.', note = '', sumText, onDone }) {
   const sel = new Map(Object.entries(picked || {}).filter(([, n]) => n > 0).map(([k, n]) => [k, Number(n)]));
   const cats = PICK_CATS.filter(([k]) => k === 'all' || rows.some(r => r.cat === k));
   let cat = 'all', q = '';
@@ -84,7 +84,8 @@ export function openItemPick({ title = '물품 고르기', rows = [], many = fal
   const sum = () => {
     const el = $('.ipk-sum', box); if (!el) return;
     const n = [...sel.values()].reduce((a, b) => a + b, 0);
-    el.textContent = sel.size ? `${sel.size}가지 · ${fmt.num(n)}개${Number.isFinite(kinds) ? ` (${kinds}가지까지)` : ''}` : '고른 물품 없음';
+    const base = sel.size ? `${sel.size}가지 · ${fmt.num(n)}개${Number.isFinite(kinds) ? ` (${kinds}가지까지)` : ''}` : '고른 물품 없음';
+    el.innerHTML = esc(base) + (sumText ? sumText(sel) || '' : '');
   };
   const draw = () => {
     const t = q.trim().toLowerCase();
