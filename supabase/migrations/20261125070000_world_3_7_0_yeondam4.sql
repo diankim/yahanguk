@@ -85,7 +85,7 @@ create or replace function public.world_regular_kinds(p_uid uuid)
 as $f$
 declare lv int := coalesce((select c.level from public.world_characters c where c.owner_id = p_uid), 1);
 begin
-  return coalesce((select array_agg(distinct m.kind order by m.kind)
+  return coalesce((select array_agg(distinct m.region_id || '|' || m.kind order by m.region_id || '|' || m.kind)
     from public.world_region_monsters m join public.world_monster_kinds k on k.kind_key = m.kind
    where m.region_id in (select g.region_id from public.world_map_regions g
                           where g.active and not g.is_safe_zone and g.min_level <= lv and public.world_region_open(p_uid, g.region_id))), '{}');
@@ -145,7 +145,7 @@ begin
     it := c -> 'item' -> (n ->> 'line');
     out := jsonb_build_array(jsonb_build_object('i', 0, 'type', 'act', 'act', act ->> 0, 'qty', (act ->> 1)::int));
     select k into kk from unnest(public.world_regular_kinds(p_uid)) k order by md5(p_uid::text || ':' || p_npc || ':' || p_day::text || ':kill:' || k) limit 1;
-    if kk is not null then out := out || jsonb_build_object('i', 1, 'type', 'kill', 'kind', kk, 'qty', (c ->> 'kill')::int); end if;
+    if kk is not null then out := out || jsonb_build_object('i', 1, 'type', 'kill', 'region', split_part(kk, '|', 1), 'kind', split_part(kk, '|', 2), 'qty', (c ->> 'kill')::int); end if;
     select z into pick from unnest(public.world_regular_cpool(p_uid, p_npc, rk)) z order by md5(p_uid::text || ':' || p_npc || ':' || p_day::text || ':' || z) limit 1;
     if pick is not null then out := out || jsonb_build_object('i', 2, 'type', 'item', 'id', pick, 'qty', (it ->> 1)::int); end if;
     return out;
@@ -175,8 +175,9 @@ begin
       'analysis', coalesce(sum((payload -> 'acts' ->> 'analysis')::int), 0),
       'guarding', coalesce(sum((payload -> 'acts' ->> 'guarding')::int), 0),
       'first_aid', coalesce(sum((payload -> 'acts' ->> 'first_aid')::int), 0),
-      'kinds', coalesce((select jsonb_object_agg(z.kind, z.n) from (select m.kind, count(*) n from ev join public.world_region_monsters m on m.monster_id = ev.payload ->> 'monster_id'
-                          where m.kind is not null group by m.kind) z), '{}'::jsonb))
+      'kinds', coalesce((select jsonb_object_agg(z.rk, z.n) from (select (ev.payload ->> 'region_id') || '|' || m.kind rk, count(*) n
+                          from ev join lateral (select x.kind from public.world_region_monsters x where x.monster_id = ev.payload ->> 'monster_id' and x.kind is not null limit 1) m on true
+                          group by 1) z), '{}'::jsonb))
     into out from ev;
   return out;
 end $f$;
@@ -185,7 +186,7 @@ create or replace function public.world_regular_prog(p_order jsonb, p_tally json
  returns int language sql immutable set search_path = pg_catalog, public
 as $f$
   select case p_order ->> 'type' when 'act' then coalesce((p_tally ->> (p_order ->> 'act'))::int, 0)
-    when 'kill' then coalesce((p_tally -> 'kinds' ->> (p_order ->> 'kind'))::int, 0) else 0 end
+    when 'kill' then coalesce((p_tally -> 'kinds' ->> ((p_order ->> 'region') || '|' || (p_order ->> 'kind')))::int, 0) else 0 end
 $f$;
 
 create or replace function public.world_regular_view(p_npc text default null)
@@ -212,8 +213,10 @@ begin
   end if;
   select coalesce(jsonb_agg(case when o ->> 'type' in ('act', 'kill') then
              o || jsonb_build_object('name', case when o ->> 'type' = 'act' then r -> 'combat' -> 'act_name' ->> (o ->> 'act')
-                                                  else coalesce((select mk.kind_name from public.world_monster_kinds mk where mk.kind_key = o ->> 'kind'), o ->> 'kind') || ' 요괴' end,
-               'done', (o ->> 'i')::int = any (done), 'prog', public.world_regular_prog(o, tl), 'hq_ok', false, 'gil', cg)
+                                                  else coalesce((select mrg.region_name from public.world_map_regions mrg where mrg.region_id = o ->> 'region') || '의 ', '') || coalesce((select mk.kind_name from public.world_monster_kinds mk where mk.kind_key = o ->> 'kind'), o ->> 'kind') || ' 요괴' end,
+               'done', (o ->> 'i')::int = any (done), 'prog', public.world_regular_prog(o, tl), 'hq_ok', false, 'gil', cg,
+               'region_name', (select mrg.region_name from public.world_map_regions mrg where mrg.region_id = o ->> 'region'),
+               'kind_name', (select mk.kind_name from public.world_monster_kinds mk where mk.kind_key = o ->> 'kind'))
            else o || jsonb_build_object('name', i.item_name, 'tier', i.tier, 'category', i.category, 'done', (o ->> 'i')::int = any (done),
              'hq_ok', exists (select 1 from public.world_item_catalog h where h.item_id = (o ->> 'id') || '_hq'),
              'gil', floor(coalesce(i.reference_price, 0) * (o ->> 'qty')::int * (r -> 'gil' ->> 'rate')::numeric + (r -> 'gil' ->> 'base')::numeric)::int)
@@ -276,8 +279,8 @@ begin
     if coalesce(p_fine, false) then raise exception '이 주문은 물품을 넘기는 주문이 아닙니다.'; end if;
     pg := public.world_regular_prog(o, public.world_regular_tally(uid, today));
     nm := case when o ->> 'type' = 'act' then r -> 'combat' -> 'act_name' ->> (o ->> 'act')
-               else coalesce((select mk.kind_name from public.world_monster_kinds mk where mk.kind_key = o ->> 'kind'), o ->> 'kind') || ' 요괴' end;
-    if pg < q then raise exception '아직 다 채우지 못했습니다(오늘 탐사에서 「%」 %/%).', nm, pg, q; end if;
+               else coalesce((select mrg.region_name from public.world_map_regions mrg where mrg.region_id = o ->> 'region') || '의 ', '') || coalesce((select mk.kind_name from public.world_monster_kinds mk where mk.kind_key = o ->> 'kind'), o ->> 'kind') || ' 요괴' end;
+    if pg < q then raise exception '아직 다 채우지 못했습니다(오늘 「%」 %/%).', nm, pg, q; end if;
     id := coalesce(o ->> 'act', o ->> 'kind');
     v_gil := public.world_regular_cgil(uid, p_npc, rk);
   else
@@ -340,7 +343,7 @@ begin
       jsonb_build_object('npc', p_npc, 'stage', s1, 'quest', (nr ->> 'key') || '_' || s1));
   end if;
   if aff1 >= (r -> 'aff' ->> 'cap')::int and aff0 < (r -> 'aff' ->> 'cap')::int then perform public.world_title_award_check(uid, 'regular'); end if;
-  msg := case when task then public.world_josa(nr ->> 'short', '에게', '에게') || ' 오늘 탐사에서 「' || nm || '」 ' || q || (case when o ->> 'type' = 'kill' then '마리를' else '번을' end) || ' 보고했습니다'
+  msg := case when task then public.world_josa(nr ->> 'short', '에게', '에게') || ' 오늘 「' || nm || '」 ' || q || (case when o ->> 'type' = 'kill' then '마리를' else '번을' end) || ' 보고했습니다'
               else public.world_josa(nr ->> 'short', '에게', '에게') || ' 「' || nm || '」 ' || q || '개를 넘겼습니다' end;
   return jsonb_build_object('npc', p_npc, 'item', id, 'type', coalesce(o ->> 'type', 'item'), 'qty', q, 'xp', xp, 'gil', v_gil, 'aff', aff1, 'add', aff1 - aff0, 'stage', s1, 'stage_up', s1 > s0,
     'from_storage', used_st, 'today', dn + 1, 'cap', (r ->> 'day_n')::int,
@@ -680,7 +683,7 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.7.0', '3.7
 - 다른 연담처럼 친밀도가 오를 때마다 둘이서 보내는 이야기가 하나씩 열리고(인물마다 다섯 편), 다섯째 이야기를 마치면 그 인물만의 칭호와 가구·장신구를 받습니다.
 
 ## 싸움으로 채우는 주문
-- 네 사람은 날마다 세 가지 주문을 냅니다. 오늘 탐사 토벌에서 그 기술을 몇 번 쓰기, 오늘 탐사에서 어느 갈래 요괴를 몇 마리 물리치기, 그리고 물품 넘기기입니다.
+- 네 사람은 날마다 세 가지 주문을 냅니다. 오늘 탐사 토벌에서 그 기술을 몇 번 쓰기, 정해 준 지역에서 그곳에 나오는 갈래 요괴를 몇 마리 물리치기, 그리고 물품 넘기기입니다. 처치 주문의 지역은 날마다 내 레벨로 갈 수 있는 곳 가운데서 정해지고, 주문 칸에서 바로 지도로 갈 수 있습니다.
 - 행동과 처치 주문은 한국 시각 그날 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두). 원정·비무·우두머리 싸움은 세지 않습니다. 한 번의 토벌이 여러 주문에 함께 셉니다.
 - 다 채우면 그 인물이 있는 곳에서 「보고」하면 됩니다. 물품은 들지 않습니다.
 - 여섯째의 주문은 지금 직업의 전투 기술 경험을 줍니다. 물품 주문은 내 무기에 맞춰 나옵니다.

@@ -231,10 +231,10 @@ export const REGULAR = {
   titleTip: who => `${who}와(과)의 다섯째 이야기를 마치면 받는 칭호`,
   othersLine: '여기서 함께 맺은 연담',
   taskWhere: '오늘 0시부터 센 수',
-  taskName: o => o.type === 'kill' ? `탐사에서 ${o.name} 물리치기` : o.act === 'win' ? '탐사에서 토벌 이기기' : `탐사 토벌에서 「${o.name}」`,
+  taskName: o => o.type === 'kill' ? `${o.region_name || ''}에서 ${o.kind_name || o.name} 요괴 물리치기` : o.act === 'win' ? '탐사에서 토벌 이기기' : `탐사 토벌에서 「${o.name}」`,
   taskUnit: o => o.type === 'kill' ? '마리' : '번',
   countRule: REGULAR_COUNT,
-  taskTip: o => `${REGULAR_COUNT} ${o.type === 'kill' ? `이긴 토벌의 요괴가 ${o.name}이면 한 마리로 셉니다.` : o.act === 'win' ? '이긴 토벌 한 번이 한 번입니다.' : `이긴 토벌에서 「${o.name}」을(를) 한 횟수를 셉니다.`} 다 채우면 이 사람이 있는 곳에서 「보고」합니다.`,
+  taskTip: o => `${REGULAR_COUNT} ${o.type === 'kill' ? `${o.region_name || '그 지역'}에서 이긴 토벌의 요괴가 ${o.kind_name || o.name} 갈래면 한 마리로 셉니다. 다른 지역에서 잡은 것은 세지 않습니다.` : o.act === 'win' ? '이긴 토벌 한 번이 한 번입니다.' : `이긴 토벌에서 「${o.name}」을(를) 한 횟수를 셉니다.`} 다 채우면 이 사람이 있는 곳에서 「보고」합니다.`,
   tip: () => `연담은 채집·제작 분야마다 한 사람씩 ${RG_CRAFT}명, 싸움 쪽 기술(분석·막기·응급 처치·지금 직업의 전투 기술)마다 한 사람씩 ${RG_FIGHT}명과 맺습니다. 날마다 사람마다 주문 ${RG.orders}개가 들어오고(내 그 분야 단계에 맞는 물품 — 싸움 쪽 연담은 탐사 행동·처치·물품 주문 하나씩), 한 주문은 하루 한 번 넘깁니다. 모든 연담을 합쳐 하루 ${RG.day_n}번까지 넘길 수 있습니다. 넘기면 그 분야 기술 경험(다음 단계까지 필요한 경험의 ${RG.xp.pct}%, 최소 ${RG.xp.min} — 우수품 ×${RG.xp.hq_mul})·전(시세 × 수량 × ${RG.gil.rate} + ${RG.gil.base})·친밀도 +${RG.aff.give}(우수품 +${RG.aff.hq})를 받습니다. 친밀도가 ${RG.aff.stages.slice(1).map(fmtN).join('·')}에 닿을 때마다 그 사람과의 이야기가 하나씩 열리고, 다섯째 이야기를 마치면 칭호와 기념품을 받습니다.`,
 };
 

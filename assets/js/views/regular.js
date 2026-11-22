@@ -2,6 +2,7 @@ import { $, $$, esc, icon, fmt, act, rpc, ask, guard, openModal, bar } from '../
 import { REGULAR } from '../rules.js';
 import { helpQ } from '../tips.js';
 import { kinSectionHtml, bindKinSection } from '../kin.js';
+import { regionBtn } from '../sources.js';
 
 const hearts = n => `<span class="rg-hearts" aria-label="친밀도 ${n}단계">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}">${icon('heart', 13)}</i>`).join('')}</span>`;
 const haveOf = o => (o.have || 0) + (o.have_st || 0);
@@ -14,7 +15,7 @@ function taskCard(o, v) {
     <small class="muted">${esc(REGULAR.taskWhere)}${helpQ(REGULAR.taskTip(o), '탐사 주문')}</small>
     <div class="rg-bar">${bar(n, o.qty, 'gold')}<small class="muted">${fmt.num(n)} / ${fmt.num(o.qty)}${ready || o.done ? '' : ` · ${fmt.num(o.qty - n)}${REGULAR.taskUnit(o)} 남음`}</small></div>
     <small class="rg-pay">${esc(v.line_name)} 경험 +${fmt.num(v.xp)} · ${fmt.jeon(o.gil)} · 친밀도 +${REGULAR.aff.give}</small>
-    <div class="btn-row">${o.done ? '' : `<button type="button" class="btn small primary" data-here="연담 납품" data-rg-give="${o.i}" ${off ? 'disabled' : ''}>보고</button>`}</div></li>`;
+    <div class="btn-row">${o.type === 'kill' && o.region_name ? regionBtn(o.region_name, true) : ''}${o.done ? '' : `<button type="button" class="btn small primary" data-here="연담 납품" data-rg-give="${o.i}" ${off ? 'disabled' : ''}>보고</button>`}</div></li>`;
 }
 
 function orderCard(o, v) {
