@@ -7,7 +7,18 @@ const hearts = n => `<span class="rg-hearts" aria-label="친밀도 ${n}단계">$
 const haveOf = o => (o.have || 0) + (o.have_st || 0);
 const haveHqOf = o => (o.hq_have || 0) + (o.hq_st || 0);
 
+function taskCard(o, v) {
+  const n = Math.min(o.prog || 0, o.qty), ready = n >= o.qty, off = o.done || !v.can?.give || !ready;
+  return `<li class="rg-order task ${o.done ? 'done' : ready ? 'ready' : ''}">
+    <header><b>${esc(REGULAR.taskName(o))}</b><span class="chip">${o.qty}${REGULAR.taskUnit(o)}</span>${o.done ? `<span class="chip ok">${icon('check', 12)}보고함</span>` : ''}</header>
+    <small class="muted">${esc(REGULAR.taskWhere)}${helpQ(REGULAR.taskTip(o), '탐사 주문')}</small>
+    <div class="rg-bar">${bar(n, o.qty, 'gold')}<small class="muted">${fmt.num(n)} / ${fmt.num(o.qty)}${ready || o.done ? '' : ` · ${fmt.num(o.qty - n)}${REGULAR.taskUnit(o)} 남음`}</small></div>
+    <small class="rg-pay">${esc(v.line_name)} 경험 +${fmt.num(v.xp)} · ${fmt.jeon(o.gil)} · 친밀도 +${REGULAR.aff.give}</small>
+    <div class="btn-row">${o.done ? '' : `<button type="button" class="btn small primary" data-here="연담 납품" data-rg-give="${o.i}" ${off ? 'disabled' : ''}>보고</button>`}</div></li>`;
+}
+
 function orderCard(o, v) {
+  if (o.type === 'act' || o.type === 'kill') return taskCard(o, v);
   const h = haveOf(o), hq = haveHqOf(o), off = o.done || !v.can?.give;
   return `<li class="rg-order ${o.done ? 'done' : h + hq >= o.qty ? 'ready' : ''}">
     <header><button type="button" class="linkish" data-rg-info="${esc(o.id)}"><b>${esc(o.name)}</b></button><span class="chip">${o.qty}개</span>${o.done ? `<span class="chip ok">${icon('check', 12)}넘김</span>` : ''}</header>
@@ -21,7 +32,8 @@ function orderCard(o, v) {
 function body(v) {
   const top = v.next == null, from = REGULAR.stageAt(v.stage), to = v.next ?? v.cap;
   return `<div class="rg">
-    <p class="eyebrow">${esc(v.place || '')} · ${esc(v.line_name)} 연담${helpQ(REGULAR.tip(), '연담 안내')}</p>
+    <p class="eyebrow">${esc(v.place || '')} · ${esc(v.line_label ? `${v.line_label}(${v.line_name})` : v.line_name)} 연담${helpQ(REGULAR.tip(), '연담 안내')}</p>
+    ${(v.others || []).length ? `<div class="btn-row rg-others"><small class="muted">${esc(REGULAR.othersLine)}</small>${v.others.map(x => `<button type="button" class="btn small" data-rg-other="${esc(x.npc)}">${icon('heart', 12)}${esc(x.short)}</button>`).join('')}</div>` : ''}
     <div class="rg-head">${hearts(v.stage)}<b>친밀도 ${v.stage}단계</b>
       ${top ? `<small class="ok">가장 높은 단계</small>` : `<div class="rg-bar">${bar(v.aff - from, to - from || 1, 'gold')}<small class="muted">${fmt.num(v.aff)} / ${fmt.num(to)} · 다음 단계까지 ${fmt.num(to - v.aff)}</small></div>`}</div>
     <ol class="rg-quests">${(v.quests || []).map(q => `<li class="${q.done ? 'done' : q.open ? 'now' : ''}" title="${esc(q.done ? '마침' : q.open ? '열림 — 일지 › 보조 퀘스트' : `친밀도 ${q.n}단계에 열림`)}"><b>${q.n}</b>${q.done ? icon('check', 12) : q.open ? icon('scroll', 12) : icon('knot', 12)}</li>`).join('')}
@@ -52,8 +64,14 @@ function draw(m, v) {
   loadKin(m, v.npc);
   $$('[data-rg-info]', box).forEach(b => b.onclick = () => import('./item.js').then(x => x.openItemInfo(b.dataset.rgInfo)));
   $$('[data-rg-src]', box).forEach(b => b.onclick = () => import('../sources.js').then(x => x.openAllSources(b.dataset.rgSrc)));
+  $$('[data-rg-other]', box).forEach(b => b.onclick = () => guard(b, () => loadInto(m, b.dataset.rgOther)));
   $$('[data-rg-give]', box).forEach(b => b.onclick = async () => {
     const o = (v.orders || []).find(x => x.i === Number(b.dataset.rgGive)); if (!o) return;
+    if (o.type === 'act' || o.type === 'kill') {
+      const r = await guard(b, () => act('world_regular_give', { p_npc: v.npc, p_order: o.i, p_fine: false }));
+      if (r?.view) { draw(m, r.view); if (r.stage_up) window.dispatchEvent(new CustomEvent('yh-regular-stage', { detail: r })); }
+      return;
+    }
     const hq = b.dataset.hq === '1';
     const mix = !hq && haveOf(o) < o.qty ? ` (보통 ${fmt.num(haveOf(o))}개 + 우수품 ${fmt.num(o.qty - haveOf(o))}개)` : '';
     if (!(await ask(`「${o.name}${hq ? ' (우수)' : ''}」 ${o.qty}개${mix}를 ${v.short}에게 넘길까요?`, { title: '연담 납품', ok: '넘기기' }))) return;
@@ -62,12 +80,16 @@ function draw(m, v) {
   });
 }
 
+async function loadInto(m, npc) {
+  const v = await rpc('world_regular_view', { p_npc: npc });
+  const t = $('.modal-head h2, .modal-title', m); if (t) t.textContent = `연담 · ${v.name}`;
+  draw(m, v);
+}
+
 export async function openRegular(npc = null) {
   const m = openModal({ title: '연담', wide: true, body: '<div class="rg-host"><div class="loading"><span class="spinner"></span>불러오는 중…</div></div>' });
   try {
-    const v = await rpc('world_regular_view', { p_npc: npc });
-    const t = $('.modal-head h2, .modal-title', m); if (t) t.textContent = `연담 · ${v.name}`;
-    draw(m, v);
+    await loadInto(m, npc);
   } catch (e) {
     const box = $('.rg-host', m); if (box) box.innerHTML = `<p class="hint warn">${esc(e.message || '불러오지 못했습니다.')}</p>`;
   }
@@ -83,4 +105,4 @@ export function regularListHtml(d) {
       <small class="${x.left > 0 ? '' : 'muted'}">오늘 주문 ${x.left}개 남음</small></button></li>`).join('')}</ul>`;
 }
 
-export const regularTile = b => b ? ['regular', 'heart', `연담 · ${b.short}`, `${b.line_name} · 친밀도 ${b.stage}단계 · 오늘 주문 ${b.left}개`] : null;
+export const regularTiles = b => (b ? b.all || [b] : []).map(x => [`regular:${x.npc}`, 'heart', `연담 · ${x.short}`, `${x.line_name} · 친밀도 ${x.stage}단계 · 오늘 주문 ${x.left}개`]);

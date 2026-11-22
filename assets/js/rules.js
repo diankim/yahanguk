@@ -221,12 +221,21 @@ export const PROJECT = {
 const fmtN = n => Number(n || 0).toLocaleString('ko-KR');
 
 const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 420, stages: [0, 60, 150, 270, 420] }, xp: { pct: 25, min: 30, hq_mul: 1.5 }, gil: { rate: 0.3, base: 30 }, qty: { gear: 1, item: 3, gather: 10, fish: 3 }, npcs: {} };
+const REGULAR_COUNT = '한국 시각 오늘 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두, 원정·비무·우두머리 싸움은 빼고). 한 번의 토벌이 여러 주문에 함께 셉니다.';
+const RG_FIGHT = Object.values(RG.npcs || {}).filter(n => n.kind === 'combat').length;
+const RG_CRAFT = Object.keys(RG.npcs || {}).length - RG_FIGHT;
 export const REGULAR = {
   ...RG,
   stageAt: n => RG.aff.stages[Math.max(0, Math.min(RG.aff.stages.length, n) - 1)] || 0,
   none: '아직 연담을 맺은 사람이 없습니다. 인물마다 여는 퀘스트를 마치면 그 사람의 주문을 받을 수 있습니다.',
   titleTip: who => `${who}와(과)의 다섯째 이야기를 마치면 받는 칭호`,
-  tip: () => `연담은 채집·제작 분야마다 한 사람씩, 열한 명과 맺습니다. 날마다 사람마다 주문 ${RG.orders}개가 들어오고(내 그 분야 단계에 맞는 물품), 한 주문은 하루 한 번 넘깁니다. 모든 연담을 합쳐 하루 ${RG.day_n}번까지 넘길 수 있습니다. 넘기면 그 분야 기술 경험(다음 단계까지 필요한 경험의 ${RG.xp.pct}%, 최소 ${RG.xp.min} — 우수품 ×${RG.xp.hq_mul})·전(시세 × 수량 × ${RG.gil.rate} + ${RG.gil.base})·친밀도 +${RG.aff.give}(우수품 +${RG.aff.hq})를 받습니다. 친밀도가 ${RG.aff.stages.slice(1).map(fmtN).join('·')}에 닿을 때마다 그 사람과의 이야기가 하나씩 열리고, 다섯째 이야기를 마치면 칭호와 기념품을 받습니다.`,
+  othersLine: '여기서 함께 맺은 연담',
+  taskWhere: '오늘 0시부터 센 수',
+  taskName: o => o.type === 'kill' ? `탐사에서 ${o.name} 물리치기` : o.act === 'win' ? '탐사에서 토벌 이기기' : `탐사 토벌에서 「${o.name}」`,
+  taskUnit: o => o.type === 'kill' ? '마리' : '번',
+  countRule: REGULAR_COUNT,
+  taskTip: o => `${REGULAR_COUNT} ${o.type === 'kill' ? `이긴 토벌의 요괴가 ${o.name}이면 한 마리로 셉니다.` : o.act === 'win' ? '이긴 토벌 한 번이 한 번입니다.' : `이긴 토벌에서 「${o.name}」을(를) 한 횟수를 셉니다.`} 다 채우면 이 사람이 있는 곳에서 「보고」합니다.`,
+  tip: () => `연담은 채집·제작 분야마다 한 사람씩 ${RG_CRAFT}명, 싸움 쪽 기술(분석·막기·응급 처치·지금 직업의 전투 기술)마다 한 사람씩 ${RG_FIGHT}명과 맺습니다. 날마다 사람마다 주문 ${RG.orders}개가 들어오고(내 그 분야 단계에 맞는 물품 — 싸움 쪽 연담은 탐사 행동·처치·물품 주문 하나씩), 한 주문은 하루 한 번 넘깁니다. 모든 연담을 합쳐 하루 ${RG.day_n}번까지 넘길 수 있습니다. 넘기면 그 분야 기술 경험(다음 단계까지 필요한 경험의 ${RG.xp.pct}%, 최소 ${RG.xp.min} — 우수품 ×${RG.xp.hq_mul})·전(시세 × 수량 × ${RG.gil.rate} + ${RG.gil.base})·친밀도 +${RG.aff.give}(우수품 +${RG.aff.hq})를 받습니다. 친밀도가 ${RG.aff.stages.slice(1).map(fmtN).join('·')}에 닿을 때마다 그 사람과의 이야기가 하나씩 열리고, 다섯째 이야기를 마치면 칭호와 기념품을 받습니다.`,
 };
 
 const KN = GD.kin || { cost: 300, talk_day: 10, gift_day: 1, fx_h: 24, rebond_h: 24, reward: { pct: 50, n: 2 }, faded: '빛바랜 정표', npcs: {} };

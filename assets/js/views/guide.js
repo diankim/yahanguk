@@ -1252,13 +1252,14 @@ const S = [
       <li>다섯 단계를 다 마친 뒤에도 같은 보상으로 넘길 수 있습니다. 마지막 단계 목표만큼 찰 때마다 한 바퀴로 세어, 그 바퀴에 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 낸 조사원에게 전과 낙성 떡(아직 없으면 낙관도)을 나눕니다 — 늦게 온 조사원도 받을 수 있습니다.</li>
     </ul>`],
   ['regular', '연담', `
-    <p>채집·제작 분야마다 연담을 맺을 사람이 한 명씩 있습니다. 인물마다 여는 퀘스트를 마치면 그 사람이 있는 곳 현장에 「연담」 칸이 생기고, 날마다 주문을 받아 납품합니다. 일지 › 의뢰에서 맺은 연담을 모아 봅니다.</p>
+    <p>채집·제작 분야마다, 그리고 싸움 쪽 기술(분석·막기·응급 처치·지금 직업의 전투 기술)마다 연담을 맺을 사람이 한 명씩 있습니다. 인물마다 여는 퀘스트를 마치면 그 사람이 있는 곳 현장에 「연담」 칸이 생기고, 날마다 주문을 받아 납품합니다. 일지 › 의뢰에서 맺은 연담을 모아 봅니다.</p>
     <ul>
       <li>${REGULAR.tip()}</li>
       <li>주문 물품은 내 그 분야 단계에 맞춰 나옵니다(제작은 그 분야 제작품 — 장비 ${REGULAR.qty?.gear}개·소모품과 재료 ${REGULAR.qty?.item}개, 채집·채광은 재료 ${REGULAR.qty?.gather}개, 낚시는 물고기 ${REGULAR.qty?.fish}마리). 가방에 모자라면 창고에서 꺼내 넘깁니다(창고를 쓸 수 있는 곳에서).</li>
+      <li>싸움 쪽 연담은 날마다 주문 셋을 하나씩 냅니다 — 오늘 탐사 토벌에서 그 기술을 쓴 횟수(분석 「${REGULAR.combat?.act_name?.analysis}」 ${REGULAR.combat?.act?.analysis?.[1]}번·막기 「${REGULAR.combat?.act_name?.guarding}」 ${REGULAR.combat?.act?.guarding?.[1]}번·응급 처치 「${REGULAR.combat?.act_name?.first_aid}」 ${REGULAR.combat?.act?.first_aid?.[1]}번·직업 전투는 이긴 토벌 ${REGULAR.combat?.act?.job?.[1]}번), 오늘 탐사에서 어느 갈래 요괴 ${REGULAR.combat?.kill}마리 물리치기(내 레벨로 갈 수 있는 열린 바깥 지역에 나오는 갈래), 그리고 물품(분석은 요괴 전리품 재료 ${REGULAR.combat?.item?.analysis?.[1]}개·막기는 몸·관모·신 방어구 ${REGULAR.combat?.item?.guarding?.[1]}벌·응급 처치는 체력 회복약 ${REGULAR.combat?.item?.first_aid?.[1]}개·직업 전투는 원거리 무기면 그 탄, 아니면 영력·기력 회복약 ${REGULAR.combat?.item?.job?.[1]}개). ${REGULAR.countRule} 행동·처치 주문은 다 채우면 그 사람 곳에서 「보고」하고, 전은 그 사람 물품 주문 평균 시세로 셉니다.</li>
       <li>친밀도가 ${(REGULAR.aff?.stages || []).slice(1).join('·')}에 닿을 때마다 그 인물과 둘이서 보내는 이야기가 하나씩 열립니다(인물마다 다섯 편). 다섯째 이야기를 마치면 그 인물만의 칭호와 기념품(가구·옷·장신구, 거래 불가)을 받습니다.</li>
       <li><table class="guide-table"><tr><th>분야</th><th>인물</th><th>곳</th><th>첫 이야기</th><th>칭호</th><th>기념품</th></tr>${Object.values(REGULAR.npcs || {}).sort((a, b) => a.sort - b.sort).map(n => `<tr><td>${esc(n.line_name)}</td><td>${esc(n.name)}</td><td>${esc(n.place)}</td><td>Lv${n.lv}</td><td>${esc(n.title)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
-      <li>한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 연담 칭호(「첫 연담」·「다섯 연담」·「열한 연담」)에 셉니다.</li>
+      <li>한 사람과 친밀도가 가장 높은 단계에 닿을 때마다 연담 칭호(「첫 연담」·「다섯 연담」·「열한 연담」·「열다섯 연담」)에 셉니다.</li>
     </ul>`],
   ['kin', '백년지기', `
     <p>연담 다섯째 이야기를 마친 사람 가운데 한 명과 백년지기를 맺으면, 그 사람이 내 별채에 머물며 말을 주고받습니다. 연담 창(그 사람이 있는 곳 현장의 「연담」 칸)에서 맺고 끊습니다.</p>

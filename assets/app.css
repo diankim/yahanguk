@@ -3943,6 +3943,8 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 .rg-order.done { opacity: .6; }
 .rg-order .btn-row { margin-top: auto; justify-content: flex-end; flex-wrap: wrap; }
 .rg-pay { font-size: calc(12px * var(--fz, 1)); }
+.rg-order.task .rg-bar { flex: 0 0 auto; }
+.rg-others { align-items: center; gap: 6px; }
 .rg-sec { margin: 14px 0; }
 .rg-sec h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
 .rg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; list-style: none; margin: 0; padding: 0; }

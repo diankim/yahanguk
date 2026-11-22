@@ -153,8 +153,9 @@ def build(dsn):
         'recipes', (select jsonb_agg(jsonb_build_array(cr.craft_field, cr.required_skill_rank, i.item_name) order by cr.craft_field, cr.required_skill_rank)
           from world_crafting_recipes cr join world_item_catalog i on i.item_id = cr.output_item where cr.required_skill_rank >= 30))""")
     d['regular'] = q(dsn, """select (world_regular_rules() - 'npcs') || jsonb_build_object('npcs', (select jsonb_object_agg(e.key, jsonb_build_object('name', e.value ->> 'name', 'short', e.value ->> 'short',
-        'line', e.value ->> 'line', 'line_name', world_line_name(e.value ->> 'line'), 'place', (select m.region_name from world_map_regions m where m.region_id = e.value ->> 'region'),
-        'lv', (e.value ->> 'lv')::int, 'title', e.value ->> 'title_name', 'reward', e.value ->> 'reward', 'sort', (e.value ->> 'sort')::int)) from jsonb_each(world_regular_rules() -> 'npcs') e))""")
+        'line', e.value ->> 'line', 'line_name', coalesce(e.value ->> 'line_label', world_line_name(e.value ->> 'line')), 'place', (select m.region_name from world_map_regions m where m.region_id = e.value ->> 'region'),
+        'lv', (e.value ->> 'lv')::int, 'title', e.value ->> 'title_name', 'reward', e.value ->> 'reward', 'sort', (e.value ->> 'sort')::int,
+        'kind', e.value ->> 'kind', 'line_label', e.value ->> 'line_label')) from jsonb_each(world_regular_rules() -> 'npcs') e))""")
     d['kin'] = q(dsn, """select (world_kin_rules() - 'npcs') || jsonb_build_object('rebond_h', world_wedding_rules() -> 'rebond_h',
         'npcs', (select jsonb_object_agg(e.key, jsonb_build_object('token', e.value ->> 'token', 'reward', (select i.item_name from world_item_catalog i where i.item_id = e.value ->> 'reward')))
           from jsonb_each(world_kin_rules() -> 'npcs') e))""")
