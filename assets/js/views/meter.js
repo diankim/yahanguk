@@ -17,7 +17,7 @@ export function meterHtml(rows, secs = 0) {
   const rowsHtml = sorted.map(r => {
     const v = r[key], pct = tab === 'share' ? v : sum > 0 ? v / sum * 100 : 0;
     return `<li class="dm-row jb-${esc(r.job || '')} ${r.me ? 'me' : ''}" title="${esc(`${r.name} · ${jobName(r.job) || ''} — 준 피해 ${fmt.num(r.dmg)} · 받은 피해 ${fmt.num(r.taken)} · 회복 ${fmt.num(r.heal)}${shieldCol ? ` · 보호막 ${fmt.num(r.shield)}` : ''} · 기여 ${r.share.toFixed(1)}%`)}">
-      ${tab === 'heal' && r.shield > 0 ? `<i class="dm-fill" style="width:${(r.heal / top * 100).toFixed(1)}%"></i><i class="dm-fill sh" style="left:${(r.heal / top * 100).toFixed(1)}%;width:${(r.shield / top * 100).toFixed(1)}%"></i>` : `<i class="dm-fill" style="width:${(v / top * 100).toFixed(1)}%"></i>`}
+      ${tab === 'heal' ? `<i class="dm-fill hl" style="width:${(r.heal / top * 100).toFixed(1)}%"></i>${r.shield > 0 ? `<i class="dm-fill sh" style="left:${(r.heal / top * 100).toFixed(1)}%;width:${(r.shield / top * 100).toFixed(1)}%"></i>` : ''}` : `<i class="dm-fill" style="width:${(v / top * 100).toFixed(1)}%"></i>`}
       <span class="dm-name">${esc(r.name)}</span>
       <b class="dm-val">${tab === 'share' ? `${v.toFixed(1)}%` : fmt.num(v)}</b><span class="dm-pct">${tab === 'share' ? '' : `${pct.toFixed(1)}%`}</span>
       <span class="dm-sub">${tab !== 'dmg' ? `<em class="o">${fmt.num(r.dmg)}</em>` : ''}${tab !== 'taken' ? `<em class="i">${fmt.num(r.taken)}</em>` : ''}${tab !== 'heal' && healCol ? `<em class="h">${fmt.num(r.mend)}</em>` : ''}${tab === 'heal' && r.shield > 0 ? `<em class="h">${fmt.num(r.heal)}</em><em class="s">${fmt.num(r.shield)}</em>` : ''}</span></li>`;
