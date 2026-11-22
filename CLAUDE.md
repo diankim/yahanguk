@@ -331,7 +331,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 가방 용량
 
-- 같은 물품은 묶음(world_item_catalog.stack_size)까지 한 칸: 장비·가구 1 · 탄 100 · 고급 소모품(진품 이상) 25 · 그 밖 재료·소모품·임무 물품 50(사용자 결정, 11/22 옛 20·40에서 — 새 물품이 20·40으로 들어와도 trg_world_normalize_item_rarity가 25·50으로 바꿈). 새 물품도 같은 기준. 희귀도 이름은 칭호 등급과 같음.
+- 같은 물품은 묶음(world_item_catalog.stack_size)까지 한 칸: 장비·가구 1 · 탄 100 · 그 밖 재료·소모품(고급 포함)·임무 물품 50(사용자 결정 11/22 — 옛 고급 20·나머지 40을 하나로; 새 물품을 20·25·40으로 넣어도 trg_world_normalize_item_rarity가 50으로 바꿈, 옷·동무 바구니·비장도는 1). 새 물품도 같은 기준. 희귀도 이름은 칭호 등급과 같음.
 - 칸 = 물품마다 올림(수량÷묶음)의 합(world_bag_count·world_bag_room, core.js bagUsed). 기본 34칸(7.7.7p, bag_capacity 기본값), 넓히기: 이야기 1장(붉은 인장) +5·2~5장 +3씩·지역 답사 보고서 +4·지역 완전 답사 +1·수향연맹 +6 등.
 - 완전 답사(+1칸)는 길·채집터를 찾을 때마다 판정(world_survey_award, world_exploration_discoveries·world_gathering_discoveries 삽입 트리거 trg_world_survey_award).
 - 장착 장비는 칸을 안 쓴다: inventory에 남으므로 서버는 장착 수만큼 용량을 더하고(world_bag_limit·world_enforce_bag_capacity·원정 귀환·보따리·직접 거래), core.js bagUsed는 뺀다. 장착 목록은 접속 때와 장착을 바꾸는 행동(장착·해제·원정 귀환·환골탈태·분해, core.js act) 뒤에만 다시 읽는다. 서버에서 가방 자리는 bag_capacity가 아니라 world_bag_limit으로 따진다.
