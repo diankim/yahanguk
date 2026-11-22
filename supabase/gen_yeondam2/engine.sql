@@ -45,6 +45,14 @@ begin
                           where g.active and not g.is_safe_zone and g.min_level <= lv and public.world_region_open(p_uid, g.region_id))), '{}');
 end $f$;
 
+create or replace function public.world_regular_ckind_ok(p_kind text, p_field text, p_cat text, p_fx jsonb)
+ returns boolean language sql stable set search_path = pg_catalog, public
+as $f$
+  select case p_kind when 'armor' then p_cat = any (array(select jsonb_array_elements_text(public.world_regular_rules() -> 'combat' -> 'armor')))
+                     when 'heal' then public.world_craft_line_of(p_field) = 'alchemy' and coalesce((p_fx ->> 'hp')::int, 0) > 0
+                     else public.world_craft_line_of(p_field) = 'alchemy' and coalesce((p_fx ->> 'sp')::int, 0) > 0 end
+$f$;
+
 create or replace function public.world_regular_cpool(p_uid uuid, p_npc text, p_rank int, p_ammo boolean default true)
  returns text[] language plpgsql stable security definer set search_path = pg_catalog, public
 as $f$
@@ -68,9 +76,7 @@ begin
        where coalesce(w.minimum_level, 1) <= hi and coalesce(w.minimum_level, 1) >= case when pass = 1 then lo else 0 end
          and i.tradeable and not coalesce(i.market_only, false) and i.base_item_id is null and i.category not in ('furniture', 'outfit', 'pet', 'quest')
          and not (w.output_item = any (rare))
-         and case kind when 'armor' then i.category = any (array(select jsonb_array_elements_text(c -> 'armor')))
-                       when 'heal' then public.world_craft_line_of(w.craft_field) = 'alchemy' and coalesce((i.use_fx ->> 'hp')::int, 0) > 0
-                       else public.world_craft_line_of(w.craft_field) = 'alchemy' and coalesce((i.use_fx ->> 'sp')::int, 0) > 0 end;
+         and public.world_regular_ckind_ok(kind, w.craft_field, i.category, i.use_fx);
     end if;
     exit when coalesce(array_length(out, 1), 0) >= (r ->> 'orders')::int;
   end loop;
@@ -350,7 +356,7 @@ declare f text;
 begin
   perform pg_temp.pj_share('public.world_regular_prog(jsonb, jsonb)');
   foreach f in array array['world_regular_line(uuid, text)', 'world_regular_line_name(uuid, text)', 'world_regular_here_list(uuid)', 'world_regular_kinds(uuid)',
-    'world_regular_cpool(uuid, text, int, boolean)', 'world_regular_cgil(uuid, text, int)', 'world_regular_tally(uuid, date)', 'world_regular_brief_one(uuid, text)'] loop
+    'world_regular_cpool(uuid, text, int, boolean)', 'world_regular_ckind_ok(text, text, text, jsonb)', 'world_regular_cgil(uuid, text, int)', 'world_regular_tally(uuid, date)', 'world_regular_brief_one(uuid, text)'] loop
     perform pg_temp.pj_share('public.' || f);
     perform pg_temp.pj_own('public.' || f, 'fn_owner_field');
   end loop;

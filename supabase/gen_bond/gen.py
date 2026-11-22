@@ -6,7 +6,9 @@ OUT = os.path.join(ROOT, 'supabase', 'migrations', '20261124170000_world_3_6_0_k
 VER = '20261124170000'
 
 subprocess.run([sys.executable, os.path.join(HERE, 'parse.py')], check=True)
-talk = json.load(open(os.path.join(HERE, 'talk.json'), encoding='utf-8'))
+NEW4 = ['mogaram', 'yeonseohui', 'kangducheol', 'yeoseotjjae']
+talk = {k: {key: v for key, v in d.items() if key not in ['mate_' + x for x in NEW4]}
+        for k, d in json.load(open(os.path.join(HERE, 'talk.json'), encoding='utf-8')).items() if k not in NEW4}
 
 
 def q(s):

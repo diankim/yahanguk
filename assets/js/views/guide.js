@@ -99,6 +99,7 @@ function factionLoreHtml() {
         <li><b>이점</b> ${esc(l.perk)}</li><li><b>등급 효과</b> 2~5등급마다 ${esc(l.rank)}</li><li><b>적대</b> ${esc(factionNames(GD.factionHostile[k] || []))}</li><li><b>평판의 이름</b> ${esc(l.name2)}</li></ul></div>`; }).join('');
 }
 
+const kinGiftOf = k => { const r = REGULAR.npcs?.[k]; if (!r) return ''; if (r.kind !== 'combat') return r.line_name || ''; const g = REGULAR.combat?.item?.[r.line]?.[0]; return `${r.line_name} · ${KIN.gift_kinds?.[g] || ''}`; };
 const pjBase = kind => { const p = Object.values(PROJECT.projects || {}).find(x => x.kind === kind); return (p?.base || []).map(n => fmt.num(n)).join(' · '); };
 const pjList = (kind, f) => Object.values(PROJECT.projects || {}).filter(p => p.kind === kind).map(p => `<li>${f(p)}</li>`).join('');
 const S = [
@@ -1267,7 +1268,7 @@ const S = [
       <li>${KIN.tip()}</li>
       <li>별채에서 백년지기를 누르거나 아래 줄의 「말 걸기」를 누르면 그때그때 맞는 말을 합니다 — 시간대·날씨, 내 처지(쓰러짐·침식·요화·원정에서 돌아옴·먼 길·레벨 오름), 별채(초상·동무·새 가구·함께 사는 정인), 맺은 지 이레·한 달·백 날 같은 날.</li>
       <li>백년지기가 머무는 방은 동무처럼 고를 수 있습니다(다른 방에 있으면 줄의 「이 방으로」). 혼례 정인과 한 지붕이면 두 사람의 백년지기가 함께 지내고, 정인의 백년지기를 누르면 인사를 건넵니다. 말 걸기·선물·이점은 저마다 자기 백년지기에게만.</li>
-      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>답례 ×${KIN.reward?.n}(분야 물품을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${kinTokenSvg(k, 16)} ${esc(n.token)}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
+      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>반기는 선물(분야 물품)</th><th>답례 ×${KIN.reward?.n}(분야 물품을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${kinTokenSvg(k, 16)} ${esc(n.token)}</td><td>${esc(kinGiftOf(k))}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
     </ul>`],
   ['feast', '세력 행사', `
     <ul>

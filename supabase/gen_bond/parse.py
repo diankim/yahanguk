@@ -2,7 +2,9 @@ import json, re, sys, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NPCS = {'hanseol': '한설', 'yeoul': '여울', 'wolha': '월하', 'daon': '다온', 'hisu': '희수', 'danbi': '단비',
-        'unbi': '여운비', 'cheongpa': '청파', 'galmae': '갈매', 'haram': '서하람', 'munsu': '문수'}
+        'unbi': '여운비', 'cheongpa': '청파', 'galmae': '갈매', 'haram': '서하람', 'munsu': '문수',
+        'mogaram': '모가람', 'yeonseohui': '연서희', 'kangducheol': '강두철', 'yeoseotjjae': '여섯째'}
+NEW4 = ['mogaram', 'yeonseohui', 'kangducheol', 'yeoseotjjae']
 BY_NAME = {v: k for k, v in NPCS.items()}
 KEY = re.compile(r'^### ([a-z][a-z0-9_]*)\b')
 LINE = re.compile(r'^- ([^:]{1,8}): (.+)$')
@@ -65,8 +67,8 @@ def parse_npc(k):
     return keys
 
 
-def parse_mates():
-    txt = open(os.path.join(HERE, 'talk_mates.md'), encoding='utf-8').read().splitlines()
+def parse_mates(fn):
+    txt = open(os.path.join(HERE, fn), encoding='utf-8').read().splitlines()
     out, npc, key, buf = {}, None, None, []
 
     def flush():
@@ -76,6 +78,10 @@ def parse_mates():
         if ln.startswith('## '):
             flush()
             npc, key, buf = BY_NAME.get(ln[3:].strip()), None, []
+            continue
+        if ln.startswith('### ') and not KEY.match(ln):
+            flush()
+            key, buf = None, []
             continue
         m = KEY.match(ln)
         if m:
@@ -90,8 +96,12 @@ def parse_mates():
 
 def main():
     talk = {k: parse_npc(k) for k in NPCS}
-    for k, d in parse_mates().items():
-        talk[k].update(d)
+    for fn in ['talk_mates.md'] + [f'mates_{k}.md' for k in NEW4]:
+        for k, d in parse_mates(fn).items():
+            for key, bs in d.items():
+                if key in talk[k]:
+                    raise SystemExit(f'겹친 키({fn}): {k}:{key}')
+                talk[k][key] = bs
     bad = []
     for k, d in talk.items():
         for r in REQUIRED:
