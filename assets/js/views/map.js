@@ -10,8 +10,8 @@ import { weakSafe } from '../rules.js';
 const bjMaps = () => store.hud?.bijang?.maps || [];
 const bjAt = id => bjMaps().filter(m => m.region_id === id);
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
-const shadowText = w => w.status === 'fight' ? '봉연의 그림자 토벌 중' : w.status === 'signup' ? '봉연의 그림자 · 모이는 중'
-  : `봉연의 그림자 출현 예정${w.spawn_at ? ` · ${new Date(w.spawn_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`;
+const shadowText = w => w.status === 'fight' ? '사슬 벗은 그림자 토벌 중' : w.status === 'signup' ? '사슬 벗은 그림자 · 모이는 중'
+  : `사슬 벗은 그림자 출현 예정${w.spawn_at ? ` · ${new Date(w.spawn_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`;
 let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set(), shadow = null, surveyed = new Set();
 
 export async function render(root, s) {
@@ -70,7 +70,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
         <div class="map-peek" id="map-peek" hidden></div>
-        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${bjMaps().length ? '<span><i class="lg bj"></i>펼친 비장도</span>' : ''}${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>봉연의 그림자</span>' : ''}</div>
+        <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${bjMaps().length ? '<span><i class="lg bj"></i>펼친 비장도</span>' : ''}${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>사슬 벗은 그림자</span>' : ''}</div>
       </div>
       <div class="map-side" id="map-detail"></div>
     </div>

@@ -62,7 +62,7 @@ export function bossUse(id) {
   const b = baseOf(id), f = catItem(b)?.fx;
   const raid = !!f && (f.hp > 0 || f.mn > 0 || f.sp > 0), gw = GW_HEAL.includes(b);
   return raid || gw ? { raid, gw, label: raid && gw ? '토벌·귀허' : raid ? '토벌' : '귀허',
-    tip: [raid && '봉연의 그림자·10장 결전에서 「물품」으로 사용(결전은 체력 회복품 한 싸움 다섯 개)', gw && '귀허의 주인과 싸울 때 사용(한 싸움 두 개)'].filter(Boolean).join(' / ') } : null;
+    tip: [raid && '사슬 벗은 그림자·10장 결전에서 「물품」으로 사용(결전은 체력 회복품 한 싸움 다섯 개)', gw && '귀허의 주인과 싸울 때 사용(한 싸움 두 개)'].filter(Boolean).join(' / ') } : null;
 }
 export const FX_KINDS = [['hp', '체력', /^체력/], ['mind', '정신', /^정신/], ['sp', '영력·기력', /^영력/], ['er', '침식', /^침식/], ['cure', '치료', /치료|풀기|일어나기/], ['stam', '탐색력', /^탐색력/]];
 const FX_ORDER = ['cure', 'hp', 'mind', 'sp', 'er', 'stam'].map(k => FX_KINDS.find(x => x[0] === k));

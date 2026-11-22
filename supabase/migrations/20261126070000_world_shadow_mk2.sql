@@ -1,8 +1,8 @@
 do $m$
 declare v jsonb := public.world_shadow_rules() || jsonb_build_object('name', '사슬 벗은 그림자', 'mk2', jsonb_build_object(
-    'brand', jsonb_build_object('every', 10, 'off', 3, 'delay', 6, 'mul', 5, 'streak', 0.5),
+    'brand', jsonb_build_object('every', 10, 'off', 3, 'delay', 6, 'mul', 5, 'streak', 0.5, 'cap', 2),
     'grip', jsonb_build_object('every', 8, 'off', 5, 'dmg', 6, 'beats', 10, 'pick', 3),
-    'ink', jsonb_build_object('beats', 5, 'dmg', 3),
+    'ink', jsonb_build_object('beats', 3, 'dmg', 2),
     'counter_mul', 2));
 begin
   execute format('create or replace function public.world_shadow_rules() returns jsonb language sql immutable set search_path = pg_catalog as %L', ' select ' || quote_literal(v::text) || '::jsonb ');
@@ -102,7 +102,7 @@ begin
     '       order by public.world_shadow_pres(rd.kind, x.job_key, x.stats, x.fx) desc, random() limit 1;' || chr(10) ||
     '      update public.world_raid_members set fx = fx - ''brand'' where raid_id = p_raid and fx ? ''brand'';' || chr(10) ||
     '      if pick is not null then' || chr(10) ||
-    '        gx := case when pick::text = rfx ->> ''brand_last'' then coalesce((rfx ->> ''brand_streak'')::int, 0) + 1 else 0 end;' || chr(10) ||
+    '        gx := case when pick::text = rfx ->> ''brand_last'' then least((mk -> ''brand'' ->> ''cap'')::int, coalesce((rfx ->> ''brand_streak'')::int, 0) + 1) else 0 end;' || chr(10) ||
     '        perform public.world_raid_say(p_raid, ''boss'', ''검은 낙인이 '' || nm || ''에게 내리꽂힙니다'' || case when gx > 0 then ''(잇달아 받아 더 아픕니다)'' else '''' end || ''!'');' || chr(10) ||
     '        perform public.world_raid_hit(p_raid, pick, public.world_raid_boss_base(p_raid, rd.kind, lv) * ph_mul * (mk -> ''brand'' ->> ''mul'')::numeric * (1 + (mk -> ''brand'' ->> ''streak'')::numeric * gx), ''buster'');' || chr(10) ||
     '        rfx := rfx || jsonb_build_object(''brand_last'', pick, ''brand_streak'', gx);' || chr(10) ||
