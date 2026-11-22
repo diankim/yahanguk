@@ -10,7 +10,7 @@ import { forfeitVoteHtml, askForfeit, askForfeitVote, fxChips, fxKeys, FX_NAME, 
 import { catItem } from './common.js';
 import { clearFightNotes } from '../settings.js';
 import { baseOf } from '../hq.js';
-const CREDIT = [['dmg', '피해'], ['guard', '막아 줌'], ['shield', '그중 보호막'], ['hit1', '받아 냄'], ['heal', '회복'], ['boost', '북돋움']];
+const CREDIT = [['dmg', '피해'], ['guard', '막아 줌'], ['shield', '그중 보호막'], ['hit1', '받아 냄'], ['heal', '회복'], ['heal_self', '자기 회복'], ['boost', '북돋움']];
 const creditLine = c => {
   const v = c || {};
   const parts = CREDIT.filter(([k]) => Number(v[k]) > 0).map(([k, n]) => `${n} ${fmt.num(Math.round(v[k]))}`);
