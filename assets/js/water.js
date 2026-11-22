@@ -26,6 +26,7 @@ const REEDS = { blank_field: [[230,180],[246,192],[222,198]], lotus_marsh: [[720
 const ABYSS = [{ in: 'sealed_abyss', at: [530,642,24] }];
 const RIFTS = [{ in: 'black_tide_rift', pts: [[702,424],[712,436],[704,448],[720,456],[712,470],[730,476],[748,494],[740,476],[754,468],[734,454],[738,440],[722,436],[716,424]] }];
 const WHIRLS = [{ in: 'gwiheo_core', at: [630,1078,20] }];
+const BAYS = [{ in: 'hidden_bazaar', pts: [[364,712],[356,680],[350,652],[351,624],[355,600],[361,580],[371,562],[382,545],[389,530],[400,519],[414,517],[424,525],[427,538],[421,550],[407,556],[394,562],[385,575],[379,596],[377,622],[378,652],[381,684],[380,712]] }];
 const ISLES = { in: 'nine_lighthouse', at: [[968,690,13],[996,646,8],[948,742,10],[1012,712,6],[930,770,7],[985,760,5]] };
 
 function smooth(pts) {
@@ -65,12 +66,13 @@ function isles(cells) {
   return isleCache;
 }
 
+export const inBay = (x, y) => BAYS.some(b => inside([x, y], b.pts));
 export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory', 'mukchang_ferry', 'sleeping_port']);
 const seg = (e, X, Y) => `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
 
 export function waterUnder(g, X, Y, k) {
   let d = '', sea = '';
-  for (const e of g.edges) if (!e.b) { d += seg(e, X, Y); if (SEA_FISH.has(e.a)) sea += seg(e, X, Y); }
+  for (const e of g.edges) if (!e.b && !inBay((e.p[0] + e.q[0]) / 2, (e.p[1] + e.q[1]) / 2)) { d += seg(e, X, Y); if (SEA_FISH.has(e.a)) sea += seg(e, X, Y); }
   return (d ? `<path d="${d}" class="w-shallow" style="opacity:.45" stroke-width="${(34 * k).toFixed(1)}"/><path d="${d}" class="w-shallow" stroke-width="${(16 * k).toFixed(1)}"/>` : '')
     + (sea ? `<path d="${sea}" class="w-shallow sea" stroke-width="${(22 * k).toFixed(1)}"/>` : '');
 }
@@ -119,4 +121,27 @@ export function waterOver(g, has, X, Y, k, zoom) {
     if (big && big[2] >= 8) isl += lighthouse(X(big[0]), Y(big[1] + big[2] * .25), Math.max(.8, Math.min(1.6, k * 1.1)), near);
   }
   return `<g class="water">${isl}<g class="w-bank">${bank}</g><g class="w-flow">${flow}</g><g class="w-ice">${ice}</g><g class="w-under">${under}</g>${pools}${reeds ? `<path d="${reeds}" class="w-reed"/>` : ''}${dark}</g>`;
+}
+
+export function waterBays(g, has, X, Y, k) {
+  const f = v => v.toFixed(1);
+  const closed = pts => {
+    const n = pts.length, at = j => pts[(j + n) % n];
+    let d = `M${f(X(at(0)[0]))},${f(Y(at(0)[1]))}`;
+    for (let j = 0; j < n; j++) {
+      const p0 = at(j - 1), p1 = at(j), p2 = at(j + 1), p3 = at(j + 2);
+      d += `C${f(X(p1[0] + (p2[0] - p0[0]) / 6))},${f(Y(p1[1] + (p2[1] - p0[1]) / 6))} ${f(X(p2[0] - (p3[0] - p1[0]) / 6))},${f(Y(p2[1] - (p3[1] - p1[1]) / 6))} ${f(X(p2[0]))},${f(Y(p2[1]))}`;
+    }
+    return d + 'Z';
+  };
+  const list = BAYS.filter(b => has(b.in));
+  if (!list.length) return '';
+  let land = '';
+  for (const poly of g.cells.values()) if (poly.length) land += 'M' + poly.map(([x, y]) => `${f(X(x))},${f(Y(y))}`).join('L') + 'Z';
+  let out = '';
+  list.forEach((b, i) => {
+    const d = closed(b.pts), id = `w-bay-${i}`, edge = SEA_FISH.has(b.in) ? 'b-coast sea' : 'b-coast';
+    out += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" class="sea"/><path d="${d}" fill="url(#sea-wave)"/><path d="${d}" class="w-shallow sea" clip-path="url(#${id})" stroke-width="${f(Math.max(3, 9 * k))}"/><path d="${d}" class="${edge}"/>`;
+  });
+  return `<g class="water w-bays"><clipPath id="w-bay-land"><path d="${land}"/></clipPath><g clip-path="url(#w-bay-land)">${out}</g></g>`;
 }
