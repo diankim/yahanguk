@@ -90,6 +90,15 @@ AS $function$
       when exists (select 1 from jsonb_each(public.world_bijang_rules() -> 'chest') c, jsonb_array_elements(c.value -> 'items') v where v ->> 'id' = public.world_item_base(p_item)) then 'chest' end)
 $function$;
 
+create or replace function public.world_item_sources(p_item text) returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $f$
+declare s jsonb := public.world_item_sources_all(p_item); k text;
+begin
+  foreach k in array array['gather', 'sites', 'monsters', 'fish', 'meisho'] loop
+    s := jsonb_set(s, array[k], coalesce((select jsonb_agg(v order by o) from jsonb_array_elements(s -> k) with ordinality a(v, o) where o <= 6), '[]'::jsonb));
+  end loop;
+  return s;
+end $f$;
+
 select pg_temp.yh_patch('public.world_gather_codex_snapshot()'::regprocedure, 'declare uid uuid := public.fn_owner_auth_uid();', 'declare uid uuid := public.fn_owner_auth_uid(); dm jsonb := coalesce(public.world_region_dist(public.fn_owner_auth_uid()) -> ''d'', ''{}''::jsonb);');
 select pg_temp.yh_patch('public.world_gather_codex_snapshot()'::regprocedure, ' order by 2 limit 6) z) as regions', ' order by 2 limit 6) z) as regions,
           (select z.n from (select distinct r2.region_name as n, coalesce(r2.min_level, 1) as l from public.world_gathering_spots s2
