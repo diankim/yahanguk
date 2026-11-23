@@ -50,6 +50,7 @@ where i.base_item_id is null and exists (select 1 from public.world_crafting_rec
 where i.base_item_id is null and i.category = 'material'
   and coalesce((s->>'gather_n')::int, 0) + coalesce((s->>'meisho_n')::int, 0) + coalesce((s->>'sites_n')::int, 0) + coalesce((s->>'monsters_n')::int, 0) + coalesce((s->>'fish_n')::int, 0) = 0
   and not coalesce((s->>'craft')::boolean, false) and not coalesce((s->>'shop')::boolean, false) and not coalesce((s->>'smithy')::boolean, false) and not coalesce((s->>'vault')::boolean, false)""",
+    'cosmetics': "select coalesce(json_agg(cosmetic_key), '[]') from public.world_cosmetic_catalog where kind in ('frame','pattern','seal')",
     'tool_gaps': """select coalesce(json_agg(line order by line), '[]') from (select l.line, min(c.tier) lo, max(c.tier) hi, count(distinct c.tier) n
   from public.world_tool_lines l join public.world_item_catalog c on c.item_id = l.item_id group by l.line) x where n < hi - lo + 1""",
     'my_fight': """select coalesce(to_json(pg_get_functiondef('public.world_my_fight(uuid)'::regprocedure)), '\"\"')""",
@@ -145,6 +146,10 @@ def db_checks(run):
     for i in json.loads(run(SQL['no_source'])):
         if i not in NOSRC_OK:
             out.append(('얻는 곳', i, '재료인데 world_item_sources에 얻는 곳이 하나도 없음'))
+    cos = (JS / 'cosmetics.js').read_text()
+    for k in json.loads(run(SQL['cosmetics'])):
+        if not re.search(rf"\b{k}\s*:", cos):
+            out.append(('꾸미기 그림', k, 'world_cosmetic_catalog에 있는데 cosmetics.js에 그림(FRAMES·P·SCENE·SEALS)이 없음 → 화면에 아무것도 안 보임'))
     for l in json.loads(run(SQL['tool_gaps'])):
         out.append(('도구 사슬', l, 'world_tool_lines 단계가 중간에 빠짐'))
     acts = re.search(r"TASK_ACTS = \{(.*?)\};", (JS / 'changes.js').read_text(), re.S)
