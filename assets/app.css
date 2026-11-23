@@ -4033,7 +4033,7 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 @media (max-width: 899px) { .gd-wrap { grid-template-columns: minmax(0, 1fr); } }
 
 .hs-emote { position: absolute; z-index: 5; width: 0; height: 0; }
-.hs-emote-c { position: absolute; transform: translate(-50%, -50%); display: grid; gap: 1px; min-width: 76px; padding: 6px 8px; border: var(--bw, 1px) solid var(--accent); border-radius: 999px; background: var(--surface); color: var(--fg); font-size: calc(12px * var(--fz, 1)); text-align: center; cursor: pointer; }
+.hs-emote-c { position: absolute; translate: -50% -50%; display: grid; gap: 1px; min-width: 76px; padding: 6px 8px; border: var(--bw, 1px) solid var(--accent); border-radius: 999px; background: var(--surface); color: var(--fg); font-size: calc(12px * var(--fz, 1)); text-align: center; cursor: pointer; }
 .hs-emote-c small { color: var(--muted); font-size: calc(10.5px * var(--fz, 1)); }
-.hs-emote-b { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; border-radius: 999px; background: var(--surface); box-shadow: none; }
+.hs-emote-b { position: absolute; translate: -50% -50%; white-space: nowrap; border-radius: 999px; background: var(--surface); box-shadow: none; }
 @media (max-width: 640px) { .hs-emote-b { font-size: calc(11.5px * var(--fz, 1)); padding: 0 8px; min-height: 30px; } }
