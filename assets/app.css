@@ -3334,6 +3334,7 @@ b.shadow { color: var(--sp); }
 .src-all { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 2px 0 10px; }
 .src-all .q-link { font-size: calc(13px * var(--fz, 1)); }
 .src-more { font-size: inherit; }
+.src-near { display: inline-block; margin-left: 4px; padding: 0 5px; border: 1px solid var(--ok); border-radius: 8px; color: var(--ok); font-size: calc(10.5px * var(--fz, 1)); line-height: 1.5; font-weight: 600; white-space: nowrap; vertical-align: 1px; }
 
 /* 피해 기록판(meter.js): 휴대폰은 오른쪽 끝 손잡이로 펼치는 반투명 창, PC는 참가자 칸 아래 */
 .dmeter { --dm-o: color-mix(in srgb, var(--gold) 80%, var(--text)); --dm-i: var(--bad); --dm-h: var(--ok); --dm-s: var(--mp); font-size: calc(11.5px * var(--fz, 1)); }

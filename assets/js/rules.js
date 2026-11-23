@@ -225,6 +225,12 @@ const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 42
 const REGULAR_COUNT = '한국 시각 오늘 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두, 원정·비무·우두머리 싸움은 빼고). 한 번의 토벌이 여러 주문에 함께 셉니다.';
 const RG_FIGHT = Object.values(RG.npcs || {}).filter(n => n.kind === 'combat').length;
 const RG_CRAFT = Object.keys(RG.npcs || {}).length - RG_FIGHT;
+export const NEAR = {
+  tag: h => h === 0 ? '지금 여기' : `가까움 · ${h}구간`,
+  tip: '지금 있는 곳에서 가장 가까운 곳입니다. 내 레벨로 지날 수 없거나 아직 열리지 않은 지역은 셈하지 않습니다.',
+  head: '가까운 곳 먼저 · 나머지는 낮은 레벨부터',
+};
+
 export const REGULAR = {
   ...RG,
   stageAt: n => RG.aff.stages[Math.max(0, Math.min(RG.aff.stages.length, n) - 1)] || 0,

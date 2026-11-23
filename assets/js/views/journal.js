@@ -5,7 +5,7 @@ import { load, loadPrices, panel, chip, loading, errorBox, currentRegion, foldOp
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report, storyCombine } from '../quests.js';
-import { sourcesMore } from '../sources.js';
+import { sourcesMore, nearTag, nearH } from '../sources.js';
 import { pickRows, pickerHtml, bindPicker } from './itempick.js';
 import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
@@ -497,14 +497,14 @@ async function monsterCodex(box) {
   if (wb) loreBundle().then(l => { if (paint(l).some(w => !w.open && n >= w.need)) refreshLore().then(l2 => wb.isConnected && paint(l2)); });
 }
 const GCAT = GAMEDATA.names.gather;
-const spotRow = g => {
+const spotRow = (g, near) => {
   const s = (g.s || []).slice(0, 2), more = g.c - s.length;
-  return `<p class="gx-line"><button type="button" class="q-link" data-q-map="${esc(g.r)}" title="지도에서 보기">${esc(g.r)}</button> <span class="muted">Lv.${g.l}+ · 찾음 ${g.fc}/${g.c}</span>${s.length ? ` — ${s.map(t => `<span class="${t.f ? 'gx-f' : 'muted'}" title="${t.f ? '찾은 채집터' : '아직 찾지 못한 채집터'}">${esc(t.n)}(Lv.${t.lv})</span>`).join(', ')}${more > 0 ? ` <span class="muted">외 ${more}곳</span>` : ''}` : ''}</p>`;
+  return `<p class="gx-line"><button type="button" class="q-link" data-q-map="${esc(g.r)}" title="지도에서 보기">${esc(g.r)}${nearTag(nearH(near, g.r))}</button> <span class="muted">Lv.${g.l}+ · 찾음 ${g.fc}/${g.c}</span>${s.length ? ` — ${s.map(t => `<span class="${t.f ? 'gx-f' : 'muted'}" title="${t.f ? '찾은 채집터' : '아직 찾지 못한 채집터'}">${esc(t.n)}(Lv.${t.lv})</span>`).join(', ')}${more > 0 ? ` <span class="muted">외 ${more}곳</span>` : ''}` : ''}</p>`;
 };
 function spotsHtml(x) {
   const sp = x.spots || [];
   if (!sp.length) return `<small class="muted">${esc((x.regions || []).join(', '))}</small>`;
-  return `<div class="gx-spots">${sp.slice(0, 2).map(spotRow).join('')}${sp.length > 2 ? `<p class="gx-line">${x.id ? sourcesMore(x.id, sp.length - 2) : `<span class="muted">외 지역 ${sp.length - 2}곳</span>`}</p>` : ''}</div>`;
+  return `<div class="gx-spots">${sp.slice(0, 2).map(g => spotRow(g, x.near)).join('')}${sp.length > 2 ? `<p class="gx-line">${x.id ? sourcesMore(x.id, sp.length - 2) : `<span class="muted">외 지역 ${sp.length - 2}곳</span>`}</p>` : ''}</div>`;
 }
 async function gatherCodex(box) {
   const o = await load('world_gather_codex_snapshot', undefined, { maxAge: 20000 });
