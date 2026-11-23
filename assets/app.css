@@ -1016,6 +1016,31 @@ a.facility { text-decoration: none; }
 @keyframes memHurt { 0% { background: color-mix(in srgb, var(--bad) 30%, transparent); transform: translateX(-3px); } 30% { transform: translateX(3px); } 60% { transform: translateX(-1px); } 100% { background: transparent; transform: none; } }
 .raid-members.ovl-aoe { animation: aoeFlash .52s ease-out; } @keyframes aoeFlash { 0% { outline: 2px solid var(--bad); outline-offset: 0; } 100% { outline: 2px solid transparent; outline-offset: 8px; } }
 .raid-me.heal-glow { animation: healGlow .7s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .float { animation: floatUp 1.1s ease-out forwards !important; }
+  .shake { animation: shake .35s !important; }
+  .shake-big { animation: shakeBig .5s !important; }
+  .battle.shake-screen { animation: shakeBig .4s !important; }
+  .battle > .foe.hit-flash::after { animation: flashOut .26s ease-out !important; }
+  .battle > .me.hurt-flash::after { animation: flashOut .38s ease-out !important; }
+  .battle > .me.heal-glow { animation: healGlow .7s ease-out !important; }
+  .battle.crit-flash { animation: critFlash .42s ease-out !important; }
+  .battle > .foe.foe-down > :not(.float-layer) { animation: foeDown .9s ease-in forwards !important; }
+  .ink-stroke { animation: inkDraw .13s ease-out var(--dl, 0ms) forwards, inkFade .45s ease-in calc(var(--dl, 0ms) + 260ms) forwards !important; }
+  .ink-stroke.ghost { animation: inkDraw .16s ease-out var(--dl, 0ms) forwards, inkFadeG .35s ease-in calc(var(--dl, 0ms) + 120ms) forwards !important; }
+  .ink-stroke.fly { animation: inkDraw .1s linear var(--dl, 0ms) forwards, inkFly .55s ease-out var(--dl, 0ms) forwards !important; }
+  .ink-drop { animation: inkDrop .55s cubic-bezier(.2, .7, .3, 1) var(--dl, 80ms) forwards !important; }
+  .ink-enso { animation: inkFadeE .4s ease-in .32s forwards !important; }
+  .ink-enso mask circle { animation: ensoDraw .2s ease-out forwards !important; }
+  .ink-shield { animation: shieldUp .75s cubic-bezier(.2, .8, .3, 1) forwards !important; }
+  .ink-shield .sh-a { animation: ensoDraw .18s ease-out forwards !important; }
+  .ink-plus { animation: plusRise .8s ease-out var(--dl, 0ms) forwards !important; }
+  .fx-ovl.ovl-hit { animation: ovlFlash .26s ease-out !important; }
+  .raid-mem li.mem-hurt .mem-pick { animation: memHurt .42s ease-out !important; }
+  .raid-members.ovl-aoe { animation: aoeFlash .52s ease-out !important; }
+  .raid-me.heal-glow { animation: healGlow .7s ease-out !important; }
+  .fx-ovl.ovl-hurt { animation: ovlHurt .38s ease-out !important; }
+}
 .end-card { display: grid; gap: 10px; } .end-card .lead { font-size: calc(15px * var(--fz, 1)); font-weight: 650; }
 .loot { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; } .loot li { padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: var(--bw) solid var(--line); }
 @media (max-width: 560px) {
