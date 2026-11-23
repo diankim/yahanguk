@@ -20,7 +20,7 @@ export const CHANGES = {
   skill: /skill|regular_give/,
   codex: /battle|gather|expedition|meisho_dig/,
   storage: /craft_(item|batch)|storage|travel|garden_act|enhance|outfit_design_weave|furn_weave|housing_expand|project_give|regular_give|kin_gift/,
-  storageIfUsed: /craft_(item|batch)$|outfit_design_weave$|furn_weave$|housing_expand$|ultimate_buy$|project_give$|regular_give$/,
+  storageIfUsed: /garden_act$|craft_(item|batch)$|outfit_design_weave$|furn_weave$|housing_expand$|ultimate_buy$|project_give$|regular_give$/,
   dismantle: /dismantle|skill|craft|level|reset_identity|regular_give/,
   avatar: /avatar|outfit|wardrobe|reset_identity|furn_/,
   owned: /housing_|portrait_take|furn_weave|pet_|ultimate_buy|mentor_shop|faction_vault|reset_identity|wardrobe/,

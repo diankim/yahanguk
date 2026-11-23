@@ -169,7 +169,7 @@ function cellAt(ev) {
   return null;
 }
 
-const leftTxt = ms => fmt.remain(ms);
+const leftTxt = ms => ms >= 864e5 ? `${Math.floor(ms / 864e5)}일 ${Math.floor(ms % 864e5 / 36e5)}시간` : fmt.remain(ms);
 function stateLine(p) {
   const s = stateOf(p);
   if (s.rot) return `<span class="gd-bad">썩었습니다 · 치워야 다시 심을 수 있습니다</span>`;
@@ -180,35 +180,42 @@ function stateLine(p) {
 const tierChip = t => `<span class="chip gd-tier t${t}">${t}단계</span>`;
 const cellName = c => `${Math.floor(c / 4) + 1}줄 ${c % 4 + 1}칸`;
 
+const safeWhy = () => snap.place?.safe ? '' : (snap.place?.why || '');
+const gate = (on, why) => on ? '' : `disabled title="${esc(why)}"`;
+
 function detailHtml() {
   if (sel == null) return `<p class="muted small">밭의 칸을 누르면 그 칸의 작물과 할 일이 보입니다.</p>`;
-  const own = snap.own, p = plotAt(sel);
+  const own = snap.own, p = plotAt(sel), why = safeWhy();
   if (snap.scare?.cell === sel) return `<h3 class="sub-h">${cellName(sel)} · 허수아비</h3><p>까마귀가 내려앉지 않습니다 · 낡아 쓰러지기까지 <b data-gd-left="scare">${leftTxt(new Date(snap.scare.until).getTime() - now())}</b></p>`;
   if (!p) {
-    const scareOk = own && !snap.scare && snap.scare_have > 0;
-    return `<h3 class="sub-h">${cellName(sel)} · 빈 칸</h3>${own ? `<div class="btn-row"><button class="btn small primary" data-gd="plant">${icon('leaf', 14)} 심기</button>
-      <button class="btn small" data-gd="scare" ${scareOk ? '' : 'disabled'} title="${esc(snap.scare ? '허수아비가 이미 서 있습니다' : snap.scare_have ? '' : '가방에 허수아비가 없습니다')}">허수아비 세우기 (가진 ${snap.scare_have || 0})</button></div>` : '<p class="muted small">비어 있는 칸입니다.</p>'}`;
+    const scareWhy = snap.scare ? '허수아비가 이미 서 있습니다' : !snap.scare_have ? '가방·창고에 허수아비가 없습니다' : why;
+    return `<h3 class="sub-h">${cellName(sel)} · 빈 칸</h3>${own ? `<div class="btn-row"><button class="btn small primary" data-gd="plant" ${gate(!why, why)}>${icon('leaf', 14)} 심기</button>
+      <button class="btn small" data-gd="scare" ${gate(!scareWhy, scareWhy)}>허수아비 세우기 (가진 ${snap.scare_have || 0})</button></div>${why ? `<p class="muted small">${esc(why)}</p>` : ''}` : '<p class="muted small">비어 있는 칸입니다.</p>'}`;
   }
   const s = stateOf(p);
-  const fert = p.fert_name ? `${esc(p.fert_name)}` : '없음';
   const btns = own ? `<div class="btn-row">
-      ${s.ripe && !s.rot ? `<button class="btn small primary" data-gd="harvest">${icon('bag', 14)} 거두기</button>` : ''}
+      ${s.ripe && !s.rot ? `<button class="btn small primary" data-gd="harvest" ${gate(!why, why)}>${icon('bag', 14)} 거두기</button>` : ''}
       ${!s.ripe ? `<button class="btn small ${s.dry ? 'primary' : ''}" data-gd="water">물 주기</button>` : ''}
-      ${!s.ripe && !p.fert ? `<button class="btn small" data-gd="fert">비료 주기</button>` : ''}
-      <button class="btn small ${s.rot ? 'primary' : 'danger'}" data-gd="clear">${s.rot ? '치우기' : '뽑아 버리기'}</button></div>` : '';
+      <button class="btn small ${s.rot ? 'primary' : 'danger'}" data-gd="clear">${s.rot ? '치우기' : '뽑아 버리기'}</button></div>${s.ripe && !s.rot && why ? `<p class="muted small">${esc(why)}</p>` : ''}` : '';
   return `<h3 class="sub-h">${cellName(sel)} · ${esc(p.name)} ${tierChip(p.tier)}</h3>
     <p class="gd-line">${stateLine(p)}</p>
     <div class="bar gd-bar"><i style="width:${Math.round(s.prog * 100)}%"></i></div>
     <dl class="kv"><div><dt>다 자라는 데</dt><dd>${Math.round(p.grow_s / 360) / 10}시간</dd></div>
-      <div><dt>비료</dt><dd>${fert}</dd></div>
+      <div><dt>비료</dt><dd>${p.fert_name ? esc(p.fert_name) : '없음'}</dd></div>
       ${own ? `<div><dt>거둘 양</dt><dd>${p.yield}개${p.eaten ? ` <small class="muted">(까마귀가 ${p.eaten}개 먹음)</small>` : ''}</dd></div>` : ''}</dl>${btns}`;
 }
 
+function cellCard(c) {
+  const on = sel === c ? ' on' : '';
+  if (snap.scare?.cell === c) return `<li data-gd-cell="${c}" class="gd-cell scare${on}"><b>허수아비</b><small>${leftTxt(new Date(snap.scare.until).getTime() - now())}</small></li>`;
+  const p = plotAt(c);
+  if (!p) return `<li data-gd-cell="${c}" class="gd-cell empty${on}"><b class="muted">빈 칸</b></li>`;
+  const s = stateOf(p);
+  const st = s.rot ? '<span class="gd-bad">썩음</span>' : s.ripe ? '<span class="gd-ok">거둘 때</span>' : s.dry ? '<span class="gd-warn">물 마름</span>' : `<span data-gd-left="grow:${p.cell}">${leftTxt(s.left)}</span>`;
+  return `<li data-gd-cell="${c}" class="gd-cell${on}${snap.crow?.cell === c ? ' crow' : ''}"><b>${esc(p.name)}</b>${tierChip(p.tier)}<small>${st}</small></li>`;
+}
 function listHtml() {
-  const ps = (snap.plots || []).slice().sort((a, b) => a.cell - b.cell);
-  if (!ps.length) return '<p class="muted small">심은 작물이 없습니다.</p>';
-  return `<ul class="gd-list">${ps.map(p => { const s = stateOf(p);
-    return `<li data-gd-cell="${p.cell}" class="${sel === p.cell ? 'on' : ''}"><b>${esc(p.name)}</b>${tierChip(p.tier)}<small>${s.rot ? '<span class="gd-bad">썩음</span>' : s.ripe ? '<span class="gd-ok">거둘 때</span>' : s.dry ? `<span class="gd-warn">물 마름</span> · 남은 ${leftTxt(s.left)}` : `남은 <span data-gd-left="grow:${p.cell}">${leftTxt(s.left)}</span>`}</small></li>`; }).join('')}</ul>`;
+  return `<ul class="gd-grid" style="--n:${snap.size}">${cells().sort((a, b) => a - b).map(cellCard).join('')}</ul>`;
 }
 
 function draw() {
@@ -217,12 +224,12 @@ function draw() {
   const anyRipe = ps.some(p => { const s = stateOf(p); return s.ripe && !s.rot; }), anyDry = ps.some(p => stateOf(p).dry);
   const actions = `<a class="btn small" href="#/house${ownerArg ? '/' + esc(ownerArg) : ''}">${icon('home', 15)} 별채로</a>
     ${own ? `<button class="btn small ${anyDry ? 'primary' : ''}" data-gd="waterAll" ${ps.length ? '' : 'disabled'}>모두 물 주기</button>
-    <button class="btn small ${anyRipe ? 'primary' : ''}" data-gd="harvestAll" ${anyRipe ? '' : 'disabled'}>모두 거두기</button>
+    <button class="btn small ${anyRipe ? 'primary' : ''}" data-gd="harvestAll" ${anyRipe ? gate(!safeWhy(), safeWhy()) : 'disabled title="다 자란 작물이 없습니다"'}>모두 거두기</button>
     ${snap.next ? `<button class="btn small" data-gd="expand">넓히기</button>` : ''}` : ''}${helpQ(GARDEN.help, '뒤뜰 밭')}`;
   el.innerHTML = head(`${snap.owner_name}의 뒤뜰 밭`, `${snap.size}×${snap.size}`, actions) + `
     ${snap.crow ? `<div class="notice gd-crow">${icon('bell', 16)}<span>까마귀가 ${cellName(snap.crow.cell)} 작물을 쪼아 먹고 있습니다. 쫓지 않으면 ${GARDEN.crowEvery(snap.rules)}마다 한 입씩 더 먹습니다.</span><button class="btn small primary" data-gd="shoo">쫓기</button></div>` : ''}
     <div class="gd-wrap"><div class="hs-stage gd-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><div class="gd-cvbox"><canvas id="gd-cv" aria-label="뒤뜰 밭"></canvas><div class="gd-tags" aria-hidden="true"></div></div></div>
-    <div class="gd-side">${panel('고른 칸', `<div id="gd-detail">${detailHtml()}</div>`, { ico: 'leaf' })}${panel('작물', `<div id="gd-list">${listHtml()}</div>`, { ico: 'scroll' })}</div></div>`;
+    <div class="gd-side">${panel('고른 칸', `<div id="gd-detail">${detailHtml()}</div>`, { ico: 'leaf' })}${panel('밭 칸', `<div id="gd-list">${listHtml()}</div>`, { ico: 'scroll' })}</div></div>`;
   cv = $('#gd-cv', el);
   const g = geom(); cv.width = g.W; cv.height = g.H; bgCache = null;
   cv.addEventListener('click', ev => { const c = cellAt(ev); if (c === 'crow') return run('shoo'); if (c == null) return; sel = sel === c ? null : c; paintSide(); paint(); });
@@ -257,7 +264,6 @@ async function onClick(e) {
   const b = e.target.closest?.('[data-gd]'); if (!b || !el?.contains(b) || b.disabled) return;
   const k = b.dataset.gd;
   if (k === 'plant') return pickCrop();
-  if (k === 'fert') return pickFert();
   if (k === 'expand') return expand();
   if (k === 'clear') { const p = plotAt(sel), s = p && stateOf(p); if (!s?.rot && !(await ask(`${p.name}을(를) 뽑아 버립니다. 아무것도 돌려받지 못합니다.`, { title: '뽑아 버리기', ok: '뽑기', danger: true }))) return; return run('clear', sel); }
   if (k === 'waterAll') return run('water');
@@ -266,10 +272,10 @@ async function onClick(e) {
   if (k === 'shoo') return run('shoo');
 }
 
-async function run(a, cell = null, item = null) {
+async function run(a, cell = null, item = null, fert = null) {
   if (busy) return; busy = true;
   try {
-    const r = await act('world_garden_act', { p_act: a, p_cell: cell, p_item: item, p_owner: ownerArg });
+    const r = await act('world_garden_act', { p_act: a, p_cell: cell, p_item: item, p_owner: ownerArg, p_fert: fert });
     if (r?.content) toast(r.content, 'ok');
     await reload();
   } catch (e) { toast(e.message, 'error'); } finally { busy = false; }
@@ -279,15 +285,17 @@ function pickCrop() {
   const crops = snap.crops || [], r = snap.rules || {};
   const tiers = [...new Set(crops.map(c => c.tier))];
   const body = tiers.map(t => `<h3 class="sub-h">${t}단계 작물 <small class="muted">${GARDEN.growLine(r, t)}</small></h3><ul class="gd-pick">${crops.filter(c => c.tier === t).map(c => `
-    <li><b>${esc(c.name)}</b>${tierChip(t)}<small>${c.hours}시간 · ${r.yield?.[0]}~${r.yield?.[1]}개 · 가진 ${c.have}</small><button class="btn small ${c.have ? 'primary' : ''}" data-crop="${esc(c.id)}" ${c.have ? '' : 'disabled'}>심기</button></li>`).join('')}</ul>`).join('');
+    <li><b>${esc(c.name)}</b>${tierChip(t)}<small>${c.hours}시간 · ${r.yield?.[0]}~${r.yield?.[1]}개 · 가진 ${c.have}${c.stored ? `(창고 ${c.stored})` : ''}</small><button class="btn small ${c.have ? 'primary' : ''}" data-crop="${esc(c.id)}" ${c.have ? '' : 'disabled'}>고르기</button></li>`).join('')}</ul>`).join('');
   const L = openLayer({ title: `${cellName(sel)}에 심기`, body: `<p class="muted small">${esc(GARDEN.plantTip)}</p>${body}` });
-  L.addEventListener('click', e => { const b = e.target.closest('[data-crop]'); if (!b) return; L.close(); run('plant', sel, b.dataset.crop); });
+  L.addEventListener('click', e => { const b = e.target.closest('[data-crop]'); if (!b) return; L.close(); pickFert(crops.find(c => c.id === b.dataset.crop)); });
 }
-function pickFert() {
-  const p = plotAt(sel), r = snap.rules || {}, need = r.fert_n?.[p.tier] || 1;
-  const rows = (snap.ferts || []).map(f => `<li><b>${esc(f.name)}</b><small>${esc(GARDEN.fertFx(f))} · ${need}개 · 가진 ${f.have}</small><button class="btn small ${f.have >= need ? 'primary' : ''}" data-fert="${esc(f.id)}" ${f.have >= need ? '' : 'disabled'}>주기</button></li>`).join('');
-  const L = openLayer({ title: `${p.name}에 비료 주기`, body: `<p class="muted small">${esc(GARDEN.fertTip(p.tier, need))}</p><ul class="gd-pick">${rows}</ul>` });
-  L.addEventListener('click', e => { const b = e.target.closest('[data-fert]'); if (!b) return; L.close(); run('fert', sel, b.dataset.fert); });
+function pickFert(crop) {
+  if (!crop) return;
+  const r = snap.rules || {}, need = r.fert_n?.[crop.tier] || 1;
+  const rows = (snap.ferts || []).map(f => `<li><b>${esc(f.name)}</b><small>${esc(GARDEN.fertFx(f))} · ${need}개 · 가진 ${f.have}${f.stored ? `(창고 ${f.stored})` : ''}</small><button class="btn small ${f.have >= need ? 'primary' : ''}" data-fert="${esc(f.id)}" ${f.have >= need ? '' : 'disabled'}>함께 심기</button></li>`).join('');
+  const L = openLayer({ title: `${crop.name} 심기 · 비료 고르기`, body: `<p class="muted small">${esc(GARDEN.fertTip(crop.tier, need))}</p>
+    <ul class="gd-pick"><li><b>비료 없이</b><small>${crop.hours}시간 · ${r.yield?.[0]}~${r.yield?.[1]}개</small><button class="btn small primary" data-fert="">심기</button></li>${rows}</ul>` });
+  L.addEventListener('click', e => { const b = e.target.closest('[data-fert]'); if (!b) return; L.close(); run('plant', sel, crop.id, b.dataset.fert || null); });
 }
 async function expand() {
   const n = snap.next; if (!n) return;

@@ -245,19 +245,31 @@ create or replace function public.world_garden_cell_ok(p_size int, p_cell int) r
   select p_cell between 0 and 15 and p_cell % 4 < p_size and p_cell / 4 < p_size
 $f$;
 
+create or replace function public.world_garden_place(p_uid uuid) returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $f$
+declare loc text; safe boolean;
+begin
+  select location into loc from public.world_characters where owner_id = p_uid;
+  safe := coalesce((public.world_field_region(loc)).is_safe_zone, false);
+  return jsonb_build_object('safe', safe, 'storage', safe and not public.world_weak_here(p_uid, 'storage'),
+    'why', case when not safe then '심기와 거두기는 안전지대에서만 할 수 있습니다. 물 주기와 까마귀 쫓기는 어디서나 됩니다.' end);
+end $f$;
+
 create or replace function public.world_garden_view(p_owner uuid default null) returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $f$
-declare uid uuid := public.fn_owner_auth_uid(); home uuid; g public.world_gardens%rowtype; r jsonb := public.world_garden_rules(); own boolean; inv jsonb; nx jsonb; rot interval;
+declare uid uuid := public.fn_owner_auth_uid(); home uuid; g public.world_gardens%rowtype; r jsonb := public.world_garden_rules(); own boolean; inv jsonb; st jsonb; nx jsonb; rot interval; pl jsonb;
 begin
   home := public.world_garden_who(uid, p_owner, false);
   own := uid = home or uid = public.world_housing_mate(home);
   g := public.world_garden_sync(home);
   rot := make_interval(hours => (r ->> 'rot_h')::int);
+  pl := public.world_garden_place(uid);
   select inventory into inv from public.world_characters where owner_id = uid;
   inv := coalesce(inv, '{}'::jsonb);
+  select items into st from public.world_storage where owner_id = uid;
+  st := case when (pl ->> 'storage')::boolean then coalesce(st, '{}'::jsonb) else '{}'::jsonb end;
   nx := (select e from jsonb_array_elements(r -> 'expand') e where (e ->> 'size')::int = g.size + 1);
   return jsonb_build_object(
     'owner', home, 'owner_name', (select character_name from public.world_characters where owner_id = home), 'own', own, 'now', now(),
-    'size', g.size, 'max', (r ->> 'max')::int,
+    'size', g.size, 'max', (r ->> 'max')::int, 'place', pl,
     'next', case when own and nx is not null then nx || jsonb_build_object('names', (select jsonb_object_agg(k, ic.item_name) from jsonb_object_keys(nx -> 'items') k join public.world_item_catalog ic on ic.item_id = k)) end,
     'scare', case when g.scare_cell is not null then jsonb_build_object('cell', g.scare_cell, 'until', g.scare_until) end,
     'crow', case when g.crow_cell is not null then jsonb_build_object('cell', g.crow_cell, 'at', g.crow_at, 'next', g.crow_at + make_interval(hours => (r -> 'crow' ->> 'every_h')::int)) end,
@@ -266,26 +278,33 @@ begin
         'ripe_at', public.world_garden_ripe_at(p), 'rot_at', public.world_garden_ripe_at(p) + rot, 'planted_at', p.planted_at,
         'fert', p.fert, 'fert_name', fc.item_name, 'yield', case when own then greatest(0, p.yield - p.eaten) end, 'eaten', p.eaten) order by p.cell), '[]'::jsonb)
       from public.world_garden_plots p join public.world_item_catalog ic on ic.item_id = p.item_id left join public.world_item_catalog fc on fc.item_id = p.fert where p.owner_id = home),
-    'crops', case when own then (select jsonb_agg(jsonb_build_object('id', c, 'name', ic.item_name, 'tier', ic.tier, 'hours', (r -> 'hours' ->> ic.tier::text)::int, 'have', coalesce((inv ->> c)::int, 0)) order by ic.tier, o)
+    'crops', case when own then (select jsonb_agg(jsonb_build_object('id', c, 'name', ic.item_name, 'tier', ic.tier, 'hours', (r -> 'hours' ->> ic.tier::text)::int,
+        'have', coalesce((inv ->> c)::int, 0) + coalesce((st ->> c)::int, 0), 'stored', coalesce((st ->> c)::int, 0)) order by ic.tier, o)
       from jsonb_array_elements_text(r -> 'crops') with ordinality x(c, o) join public.world_item_catalog ic on ic.item_id = x.c) end,
-    'ferts', case when own then (select jsonb_agg(jsonb_build_object('id', f.key, 'name', ic.item_name, 'kind', f.value ->> 'kind', 'pct', (f.value ->> 'pct')::int, 'n', (f.value ->> 'n')::int, 'have', coalesce((inv ->> f.key)::int, 0)) order by f.value ->> 'kind' desc, f.key)
+    'ferts', case when own then (select jsonb_agg(jsonb_build_object('id', f.key, 'name', ic.item_name, 'kind', f.value ->> 'kind', 'pct', (f.value ->> 'pct')::int, 'n', (f.value ->> 'n')::int,
+        'have', coalesce((inv ->> f.key)::int, 0) + coalesce((st ->> f.key)::int, 0), 'stored', coalesce((st ->> f.key)::int, 0)) order by f.value ->> 'kind' desc, f.key)
       from jsonb_each(r -> 'fert') f join public.world_item_catalog ic on ic.item_id = f.key) end,
-    'scare_have', case when own then coalesce((inv ->> (r -> 'scare' ->> 'item'))::int, 0) end,
+    'scare_have', case when own then coalesce((inv ->> (r -> 'scare' ->> 'item'))::int, 0) + coalesce((st ->> (r -> 'scare' ->> 'item'))::int, 0) end,
     'rules', jsonb_build_object('hours', r -> 'hours', 'water_h', r -> 'water_h', 'yield', r -> 'yield', 'rot_h', r -> 'rot_h', 'crow', r -> 'crow', 'scare', r -> 'scare', 'fert_n', r -> 'fert_n'));
 end $f$;
 
-create or replace function public.world_garden_take(p_uid uuid, p_item text, p_n int) returns void language plpgsql security definer set search_path = pg_catalog, public as $f$
-declare have int;
+create or replace function public.world_garden_take(p_uid uuid, p_need jsonb) returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $f$
+declare c public.world_characters%rowtype; st jsonb; mt jsonb; ok boolean := (public.world_garden_place(p_uid) ->> 'storage')::boolean;
 begin
-  select coalesce((inventory ->> p_item)::int, 0) into have from public.world_characters where owner_id = p_uid for update;
-  if have < p_n then raise exception '가방에 %이(가) %개 있어야 합니다. (가진 수 %)', (select item_name from public.world_item_catalog where item_id = p_item), p_n, have; end if;
-  update public.world_characters set inventory = case when have - p_n > 0 then jsonb_set(inventory, array[p_item], to_jsonb(have - p_n)) else inventory - p_item end, updated_at = now() where owner_id = p_uid;
+  select * into c from public.world_characters where owner_id = p_uid for update;
+  if ok then select items into st from public.world_storage where owner_id = p_uid for update; end if;
+  mt := public.world_materials_take(coalesce(c.inventory, '{}'::jsonb), case when ok then coalesce(st, '{}'::jsonb) else '{}'::jsonb end, p_need);
+  update public.world_characters set inventory = mt -> 'inv', updated_at = now() where owner_id = p_uid;
+  if ok and mt -> 'from_st' <> '{}'::jsonb then
+    update public.world_storage set items = (select coalesce(jsonb_object_agg(key, value), '{}'::jsonb) from jsonb_each(mt -> 'st') where jsonb_typeof(value) = 'number' and value::text::int > 0), updated_at = now() where owner_id = p_uid;
+  end if;
+  return mt -> 'from_st';
 end $f$;
 
-create or replace function public.world_garden_act(p_act text, p_cell int default null, p_item text default null, p_owner uuid default null) returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $f$
+create or replace function public.world_garden_act(p_act text, p_cell int default null, p_item text default null, p_owner uuid default null, p_fert text default null) returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $f$
 declare uid uuid := public.fn_owner_auth_uid(); home uuid; g public.world_gardens%rowtype; r jsonb := public.world_garden_rules(); p public.world_garden_plots%rowtype;
-  tr int; nm text; f jsonb; n int; got jsonb := '{}'::jsonb; inv jsonb; room int; stored jsonb := '{}'::jsonb; k text; v int; cnt int := 0; why text; nx jsonb; st jsonb; mt jsonb; c public.world_characters%rowtype;
-  rot interval := make_interval(hours => (r ->> 'rot_h')::int); vn text; msg text;
+  tr int; nm text; f jsonb; n int; got jsonb := '{}'::jsonb; inv jsonb; k text; v int; cnt int := 0; left_n int := 0; why text; nx jsonb; c public.world_characters%rowtype;
+  rot interval := make_interval(hours => (r ->> 'rot_h')::int); vn text; msg text; fs jsonb := '{}'::jsonb; need jsonb; pl jsonb; lim int;
 begin
   perform public.world_seal_guard();
   if p_act = 'shoo' then
@@ -307,18 +326,32 @@ begin
   else
     perform public.world_travel_guard('밭 가꾸기');
   end if;
+  if p_act in ('plant', 'harvest', 'scare') then
+    pl := public.world_garden_place(uid);
+    if not (pl ->> 'safe')::boolean then raise exception '%', pl ->> 'why'; end if;
+  end if;
   g := public.world_garden_sync(home);
-  if p_cell is not null and p_act in ('plant', 'water', 'fert', 'harvest', 'clear', 'scare') and not public.world_garden_cell_ok(g.size, p_cell) then raise exception '밭에 없는 칸입니다.'; end if;
+  if p_cell is not null and p_act in ('plant', 'water', 'harvest', 'clear', 'scare') and not public.world_garden_cell_ok(g.size, p_cell) then raise exception '밭에 없는 칸입니다.'; end if;
   if p_act = 'plant' then
     if p_cell is null or p_item is null then raise exception '심을 칸과 작물을 고르세요.'; end if;
     if not (r -> 'crops' ? p_item) then raise exception '밭에 심을 수 없는 물품입니다.'; end if;
     if g.scare_cell = p_cell then raise exception '허수아비가 서 있는 칸입니다.'; end if;
     if exists (select 1 from public.world_garden_plots where owner_id = home and cell = p_cell) then raise exception '이미 작물이 있는 칸입니다.'; end if;
     select ic.tier, ic.item_name into tr, nm from public.world_item_catalog ic where ic.item_id = p_item;
-    perform public.world_garden_take(uid, p_item, 1);
-    insert into public.world_garden_plots(owner_id, cell, item_id, grow_s, yield)
-    values (home, p_cell, p_item, (r -> 'hours' ->> tr::text)::int * 3600, (r -> 'yield' ->> 0)::int + floor(random() * ((r -> 'yield' ->> 1)::int - (r -> 'yield' ->> 0)::int + 1))::int);
-    msg := public.world_josa(nm, '을', '를') || ' 심었습니다. 물을 주어야 자랍니다.';
+    need := jsonb_build_object(p_item, 1);
+    if p_fert is not null then
+      f := r -> 'fert' -> p_fert;
+      if f is null then raise exception '비료로 쓸 수 없는 물품입니다.'; end if;
+      n := (r -> 'fert_n' ->> tr::text)::int;
+      need := need || jsonb_build_object(p_fert, n);
+    end if;
+    fs := public.world_garden_take(uid, need);
+    insert into public.world_garden_plots(owner_id, cell, item_id, grow_s, yield, fert)
+    values (home, p_cell, p_item,
+      ceil((r -> 'hours' ->> tr::text)::int * 3600 * case when f ->> 'kind' = 'speed' then 1 - (f ->> 'pct')::numeric / 100 else 1 end)::int,
+      (r -> 'yield' ->> 0)::int + floor(random() * ((r -> 'yield' ->> 1)::int - (r -> 'yield' ->> 0)::int + 1))::int + case when f ->> 'kind' = 'more' then (f ->> 'n')::int else 0 end,
+      p_fert);
+    msg := public.world_josa(nm, '을', '를') || ' 심었습니다' || case when p_fert is not null then '(' || (select item_name from public.world_item_catalog where item_id = p_fert) || ' ' || n || '개)' else '' end || '. 물을 주어야 자랍니다.';
   elsif p_act = 'water' then
     for p in select * from public.world_garden_plots x where x.owner_id = home and (p_cell is null or x.cell = p_cell) and coalesce(public.world_garden_ripe_at(x) > now(), true) loop
       perform public.world_garden_settle(home, p.cell);
@@ -327,46 +360,24 @@ begin
     end loop;
     if cnt = 0 then raise exception '물을 줄 작물이 없습니다. 다 자란 작물에는 물을 주지 않아도 됩니다.'; end if;
     msg := case when cnt = 1 then '물을 주었습니다.' else cnt || '칸에 물을 주었습니다.' end;
-  elsif p_act = 'fert' then
-    select * into p from public.world_garden_plots where owner_id = home and cell = p_cell;
-    if not found then raise exception '작물이 없는 칸입니다.'; end if;
-    if public.world_garden_ripe_at(p) is not null and public.world_garden_ripe_at(p) <= now() then raise exception '다 자란 작물에는 비료를 줄 수 없습니다.'; end if;
-    if p.fert is not null then raise exception '이 칸에는 이미 비료를 주었습니다.'; end if;
-    f := r -> 'fert' -> p_item;
-    if f is null then raise exception '비료로 쓸 수 없는 물품입니다.'; end if;
-    select ic.tier into tr from public.world_item_catalog ic where ic.item_id = p.item_id;
-    n := (r -> 'fert_n' ->> tr::text)::int;
-    perform public.world_garden_take(uid, p_item, n);
-    perform public.world_garden_settle(home, p_cell);
-    if f ->> 'kind' = 'speed' then
-      update public.world_garden_plots set fert = p_item, grow_s = ceil(grown_s + (grow_s - grown_s) * (1 - (f ->> 'pct')::numeric / 100))::int where owner_id = home and cell = p_cell;
-    else
-      update public.world_garden_plots set fert = p_item, yield = yield + (f ->> 'n')::int where owner_id = home and cell = p_cell;
-    end if;
-    select item_name into nm from public.world_item_catalog where item_id = p_item;
-    msg := public.world_josa(nm, '을', '를') || ' ' || n || '개 주었습니다. ' || case when f ->> 'kind' = 'speed' then '남은 자라는 시간이 ' || (f ->> 'pct') || '% 줄었습니다.' else '거둘 양이 ' || (f ->> 'n') || '개 늘었습니다.' end;
   elsif p_act = 'harvest' then
+    select * into c from public.world_characters where owner_id = uid for update;
+    inv := coalesce(c.inventory, '{}'::jsonb);
+    lim := public.world_bag_limit(uid);
     for p in select * from public.world_garden_plots x where x.owner_id = home and (p_cell is null or x.cell = p_cell)
         and public.world_garden_ripe_at(x) <= now() and public.world_garden_ripe_at(x) + rot > now() order by x.cell for update loop
       v := greatest(0, p.yield - p.eaten);
-      got := jsonb_set(got, array[p.item_id], to_jsonb(coalesce((got ->> p.item_id)::int, 0) + v));
+      if v > 0 and public.world_bag_room(inv, p.item_id, lim) < v then left_n := left_n + 1; continue; end if;
+      if v > 0 then inv := public.world_inv_add(inv, p.item_id, v); got := jsonb_set(got, array[p.item_id], to_jsonb(coalesce((got ->> p.item_id)::int, 0) + v)); end if;
       delete from public.world_garden_plots where owner_id = home and cell = p.cell;
       if g.crow_cell = p.cell then update public.world_gardens set crow_cell = null, crow_at = null where owner_id = home; end if;
       cnt := cnt + 1;
     end loop;
-    if cnt = 0 then raise exception '%', case when p_cell is not null and exists (select 1 from public.world_garden_plots x where x.owner_id = home and x.cell = p_cell and public.world_garden_ripe_at(x) + rot <= now()) then '썩은 작물은 거둘 수 없습니다. 치워 주세요.' else '거둘 작물이 없습니다.' end; end if;
-    select * into c from public.world_characters where owner_id = uid for update;
-    inv := coalesce(c.inventory, '{}'::jsonb);
-    for k, v in select key, value::int from jsonb_each_text(got) loop
-      continue when v <= 0;
-      room := least(v, public.world_bag_room(inv, k, public.world_bag_limit(uid)));
-      if room > 0 then inv := public.world_inv_add(inv, k, room); end if;
-      if v - room > 0 then stored := jsonb_set(stored, array[k], to_jsonb(v - room)); end if;
-    end loop;
+    if cnt = 0 and left_n > 0 then raise exception '가방에 자리가 없어 거둘 수 없습니다. 가방을 비운 뒤 거두세요.'; end if;
+    if cnt = 0 then raise exception '%', case when p_cell is not null and exists (select 1 from public.world_garden_plots x where x.owner_id = home and x.cell = p_cell and public.world_garden_ripe_at(x) + rot <= now()) then '썩은 작물은 거둘 수 없습니다. 치워 주세요.' else '거둘 작물이 없습니다. 다 자란 작물만 거둡니다.' end; end if;
     update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid;
-    perform public.world_letter_spill(uid, stored);
     msg := (select string_agg(ic.item_name || ' ' || x.value || '개', ', ') from jsonb_each_text(got) x join public.world_item_catalog ic on ic.item_id = x.key where x.value::int > 0);
-    msg := coalesce(msg || '를 거두었습니다.', '까마귀가 다 먹어 거둘 것이 없었습니다.') || case when stored <> '{}'::jsonb then ' 가방에 다 들어가지 않은 몫은 개인 창고에 넣었습니다.' else '' end;
+    msg := coalesce(msg || '를 가방에 거두었습니다.', '까마귀가 다 먹어 거둘 것이 없었습니다.') || case when left_n > 0 then ' 가방에 자리가 모자라 ' || left_n || '칸은 남겨 두었습니다.' else '' end;
   elsif p_act = 'clear' then
     delete from public.world_garden_plots where owner_id = home and cell = p_cell returning item_id into k;
     if k is null then raise exception '치울 작물이 없습니다.'; end if;
@@ -376,7 +387,7 @@ begin
     if p_cell is null then raise exception '허수아비를 세울 칸을 고르세요.'; end if;
     if g.scare_until is not null and g.scare_until > now() then raise exception '허수아비가 이미 서 있습니다. 낡아 쓰러진 뒤에 새로 세울 수 있습니다.'; end if;
     if exists (select 1 from public.world_garden_plots where owner_id = home and cell = p_cell) then raise exception '작물이 있는 칸에는 세울 수 없습니다.'; end if;
-    perform public.world_garden_take(uid, r -> 'scare' ->> 'item', 1);
+    fs := public.world_garden_take(uid, jsonb_build_object(r -> 'scare' ->> 'item', 1));
     update public.world_gardens set scare_cell = p_cell, scare_until = now() + make_interval(days => (r -> 'scare' ->> 'days')::int) where owner_id = home;
     msg := '허수아비를 세웠습니다. ' || (r -> 'scare' ->> 'days') || '일 동안 까마귀가 내려앉지 않습니다.';
   elsif p_act = 'expand' then
@@ -384,31 +395,27 @@ begin
     if nx is null then raise exception '밭은 %×%가 가장 넓습니다.', r ->> 'max', r ->> 'max'; end if;
     select * into c from public.world_characters where owner_id = uid for update;
     if c.gil < (nx ->> 'gil')::int then raise exception '%전이 필요합니다. (가진 전 %)', nx ->> 'gil', c.gil; end if;
-    select items into st from public.world_storage where owner_id = uid for update;
-    mt := public.world_materials_take(coalesce(c.inventory, '{}'::jsonb), coalesce(st, '{}'::jsonb), nx -> 'items');
-    update public.world_characters set inventory = mt -> 'inv', gil = gil - (nx ->> 'gil')::int, updated_at = now() where owner_id = uid;
-    if mt -> 'from_st' <> '{}'::jsonb then
-      update public.world_storage set items = (select coalesce(jsonb_object_agg(key, value), '{}'::jsonb) from jsonb_each(mt -> 'st') where jsonb_typeof(value) = 'number' and value::text::int > 0), updated_at = now() where owner_id = uid;
-    end if;
+    fs := public.world_garden_take(uid, nx -> 'items');
+    update public.world_characters set gil = gil - (nx ->> 'gil')::int, updated_at = now() where owner_id = uid;
     update public.world_gardens set size = (nx ->> 'size')::int where owner_id = home;
     insert into public.world_economy_ledger(owner_id, action, currency_delta, sink, details) values (uid, 'garden_expand', -(nx ->> 'gil')::int, true, jsonb_build_object('size', nx -> 'size'));
-    return jsonb_build_object('ok', true, 'size', nx -> 'size', 'from_storage', mt -> 'from_st', 'content', '밭을 ' || (nx ->> 'size') || '×' || (nx ->> 'size') || '로 넓혔습니다.');
+    msg := '밭을 ' || (nx ->> 'size') || '×' || (nx ->> 'size') || '로 넓혔습니다.';
   else
     raise exception '알 수 없는 밭 일입니다.';
   end if;
-  return jsonb_build_object('ok', true, 'content', msg, 'got', case when p_act = 'harvest' then got end, 'stored', case when p_act = 'harvest' then stored end);
+  return jsonb_build_object('ok', true, 'content', msg, 'got', case when p_act = 'harvest' then got end, 'from_storage', fs);
 end $f$;
 
 do $o$ declare f text; x text; g boolean := not has_schema_privilege('fn_owner_field', 'public', 'CREATE'); begin
-  foreach f in array array['world_garden_rules()', 'world_garden_grown(world_garden_plots, timestamptz)', 'world_garden_ripe_at(world_garden_plots)', 'world_garden_settle(uuid, integer)', 'world_garden_sync(uuid)', 'world_garden_who(uuid, uuid, boolean)', 'world_garden_cell_ok(integer, integer)', 'world_garden_view(uuid)', 'world_garden_take(uuid, text, integer)', 'world_garden_act(text, integer, text, uuid)'] loop
+  foreach f in array array['world_garden_rules()', 'world_garden_grown(world_garden_plots, timestamptz)', 'world_garden_ripe_at(world_garden_plots)', 'world_garden_settle(uuid, integer)', 'world_garden_sync(uuid)', 'world_garden_who(uuid, uuid, boolean)', 'world_garden_cell_ok(integer, integer)', 'world_garden_view(uuid)', 'world_garden_take(uuid, jsonb)', 'world_garden_place(uuid)', 'world_garden_act(text, integer, text, uuid, text)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
     for x in select rolname from pg_roles where rolname like 'fn\_owner%' or rolname = 'service_role' loop
       execute format('grant execute on function public.%s to %I', f, x);
     end loop;
   end loop;
-  grant execute on function public.world_garden_view(uuid), public.world_garden_act(text, integer, text, uuid) to authenticated;
+  grant execute on function public.world_garden_view(uuid), public.world_garden_act(text, integer, text, uuid, text) to authenticated;
   if g then grant create on schema public to fn_owner_field; end if;
-  foreach f in array array['world_garden_settle(uuid, integer)', 'world_garden_sync(uuid)', 'world_garden_who(uuid, uuid, boolean)', 'world_garden_view(uuid)', 'world_garden_take(uuid, text, integer)', 'world_garden_act(text, integer, text, uuid)'] loop
+  foreach f in array array['world_garden_settle(uuid, integer)', 'world_garden_sync(uuid)', 'world_garden_who(uuid, uuid, boolean)', 'world_garden_view(uuid)', 'world_garden_take(uuid, jsonb)', 'world_garden_place(uuid)', 'world_garden_act(text, integer, text, uuid, text)'] loop
     execute format('alter function public.%s owner to fn_owner_field', f);
   end loop;
   if g then revoke create on schema public from fn_owner_field; end if;
@@ -424,7 +431,8 @@ update public.world_patch_notes set body = body || $pn$
 
 ## 3.8.1
 - [뒤뜰 밭] 별채 뒤뜰에 밭이 생겼습니다. 가진 식재료를 한 칸에 하나씩 심고 물을 주면 자라고, 다 자라면 거둡니다. 2×2에서 시작해 4×4까지 넓힐 수 있습니다.
-- [뒤뜰 밭] 작물은 단계마다 자라는 시간이 다르고, 물 한 번이 하루 갑니다. 비료(원령재·수귀 비늘은 빨리 자라게, 요수 뼈·독낭은 더 많이 거두게)를 칸마다 한 번 줄 수 있습니다.
+- [뒤뜰 밭] 심기·거두기는 안전지대에서, 물 주기는 어디서나 합니다. 심을 식재료와 비료는 가방과 개인 창고에서 꺼내 쓰고, 거둔 작물은 가방에 들어갑니다.
+- [뒤뜰 밭] 작물은 단계마다 자라는 시간이 다르고, 물 한 번이 하루 갑니다. 심을 때 비료(원령재·수귀 비늘은 빨리 자라게, 요수 뼈·독낭은 더 많이 거두게)를 함께 고를 수 있습니다.
 - [뒤뜰 밭] 다 자란 뒤 이틀 동안 거두지 않으면 썩습니다. 썩은 칸은 치워야 다시 심을 수 있습니다.
 - [뒤뜰 밭] 이따금 까마귀가 날아와 작물을 쪼아 먹습니다. 앉은 까마귀는 눌러 쫓을 수 있고, 별채 손님도 쫓아 줄 수 있습니다. 허수아비(상점·목공 제작)를 세우면 이레 동안 까마귀가 내려앉지 않습니다.
 - [얻는 곳] 물품 정보·퀘스트 칸·채집 도감·「외 n곳」 목록에서 지금 있는 곳에서 가장 가까운 곳을 맨 앞에 두고 「지금 여기」·「가까움 · n구간」으로 알려 줍니다. 내 레벨로 지날 수 없거나 아직 열리지 않은 지역은 셈하지 않습니다.$pn$ where note_id = '3.8.0';
