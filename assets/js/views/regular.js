@@ -23,6 +23,7 @@ function orderCard(o, v) {
   const h = haveOf(o), hq = haveHqOf(o), off = o.done || !v.can?.give;
   return `<li class="rg-order ${o.done ? 'done' : h + hq >= o.qty ? 'ready' : ''}">
     <header><button type="button" class="linkish" data-rg-info="${esc(o.id)}"><b>${esc(o.name)}</b></button><span class="chip">${o.qty}개</span>${o.done ? `<span class="chip ok">${icon('check', 12)}넘김</span>` : ''}</header>
+    ${REGULAR.isMeat(o.id) ? `<small class="rg-hunt">${icon('sword', 12)}${esc(REGULAR.huntLine(o.name))}</small>` : ''}
     <small class="muted">${o.tier}단계 · 가방 ${fmt.num(o.have || 0)}${o.have_st ? ` · 창고 ${fmt.num(o.have_st)}` : ''}${o.hq_ok ? ` · 우수 ${fmt.num(hq)}` : ''}</small>
     <small class="rg-pay">${esc(v.line_name)} 경험 +${fmt.num(v.xp)} · ${fmt.jeon(o.gil)} · 친밀도 +${REGULAR.aff.give}${o.hq_ok ? ` <span class="muted">(우수품 경험 +${fmt.num(v.xp_fine)} · 친밀도 +${REGULAR.aff.hq})</span>` : ''}</small>
     <div class="btn-row"><button type="button" class="q-link" data-rg-src="${esc(o.id)}">${icon('pin', 12)}얻는 곳</button>

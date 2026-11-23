@@ -232,6 +232,8 @@ export const REGULAR = {
   titleTip: who => `${who}와(과)의 다섯째 이야기를 마치면 받는 칭호`,
   othersLine: '여기서 함께 맺은 연담',
   taskWhere: '오늘 0시부터 센 수',
+  isMeat: id => (GD.food?.meat_ids || []).includes(id),
+  huntLine: name => `요괴를 토벌해 「${name}」을(를) 가져오세요. 거래소에서 사 온 것도 받습니다.`,
   taskName: o => o.type === 'kill' ? `${o.region_name || ''}에서 ${o.kind_name || o.name} 요괴 물리치기` : o.act === 'win' ? '탐사에서 토벌 이기기' : `탐사 토벌에서 「${o.name}」`,
   taskUnit: o => o.type === 'kill' ? '마리' : '번',
   countRule: REGULAR_COUNT,

@@ -3954,6 +3954,7 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 .rg-order.done { opacity: .6; }
 .rg-order .btn-row { margin-top: auto; justify-content: flex-end; flex-wrap: wrap; }
 .rg-pay { font-size: calc(12px * var(--fz, 1)); }
+.rg-hunt { display: flex; align-items: center; gap: 4px; font-size: calc(12px * var(--fz, 1)); color: var(--gold); }
 .rg-order.task .rg-bar { flex: 0 0 auto; }
 .rg-others { align-items: center; gap: 6px; }
 .rg-sec { margin: 14px 0; }

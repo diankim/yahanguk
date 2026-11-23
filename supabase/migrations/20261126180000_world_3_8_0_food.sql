@@ -357,6 +357,7 @@ insert into public.world_patch_notes(note_id, title, body) values ('3.8.0', '3.8
 - [특선] 일곱 세력 거점 상점이 그 세력의 특선 음식 두 가지를 늘 팝니다(사람마다 품목별 하루 5개). 같은 음식은 제작법으로도 만들 수 있고, 그 거점에서 만들면 솜씨가 더 납니다. 특선 음식은 세력마다 다른 기운(1시간 30분)을 줍니다.
 - [상점] 거점 상점이 교체 품목으로 그 땅의 식재료와 고기를 팝니다. 한 번에 진열되는 품목도 늘었습니다.
 - [연담] 연담 인물마다 좋아하는 음식이 생겼습니다. 백년지기에게 좋아하는 음식을 선물하면 분야 물품처럼 답례를 받고, 답례를 받을 기회도 더 큽니다.
+- [연담] 기록관 모가람의 요괴 전리품 재료 주문에 고기도 나옵니다. 요괴를 토벌해 얻어도, 거래소에서 사 와도 받습니다.
 - [창고] 개인 창고 기본 칸이 70칸에서 90칸으로 늘었습니다.$pn$);
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261126180000', now()) on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;

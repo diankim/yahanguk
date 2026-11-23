@@ -160,7 +160,7 @@ def build(dsn):
     d['kin'] = q(dsn, """select (world_kin_rules() - 'npcs') || jsonb_build_object('rebond_h', world_wedding_rules() -> 'rebond_h',
         'npcs', (select jsonb_object_agg(e.key, jsonb_build_object('token', e.value ->> 'token', 'reward', (select i.item_name from world_item_catalog i where i.item_id = e.value ->> 'reward'), 'food', (select i.item_name from world_item_catalog i where i.item_id = world_kin_rules() -> 'food' ->> e.key)))
           from jsonb_each(world_kin_rules() -> 'npcs') e))""")
-    d['food'] = q(dsn, """select jsonb_build_object('meat_p', r -> 'meat_p', 'meat_n', r -> 'meat_n', 'cap', r -> 'cap',
+    d['food'] = q(dsn, """select jsonb_build_object('meat_ids', r -> 'meats', 'meat_p', r -> 'meat_p', 'meat_n', r -> 'meat_n', 'cap', r -> 'cap',
         'ing', (select jsonb_agg(i.item_name order by i.tier, i.reference_price, i.item_id) from world_item_catalog i where i.item_id like 'fd\\_%' and i.base_item_id is null),
         'meats', (select jsonb_agg(i.item_name order by i.reference_price, i.item_id) from world_item_catalog i where i.item_id in (select jsonb_array_elements_text(r -> 'meats'))),
         'specials', (select jsonb_agg(jsonb_build_object('faction', h.key, 'hub', h.value, 'items', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'lv', (select min(c.minimum_level) from world_crafting_recipes c where c.output_item = i.item_id), 'buff', (select s.status_name from world_status_catalog s where s.status_key = i.use_fx -> 'buffs' ->> 0)) order by i.item_id) from world_item_catalog i where i.item_id in (select jsonb_array_elements_text(r -> 'specials' -> h.key)))) order by h.key) from jsonb_each_text(r -> 'hubs') h),
