@@ -100,7 +100,7 @@ export function fightFx(root, a, b, o = {}) {
         const mbox = root.querySelector('.raid-me'), ml = overlay(mbox);
         setTimeout(() => { inkFx(ml, 'claw', { tone: 'bad' }); num(ml, `-${d}`, 'hurt'); pop(ml, 'ovl-hurt', 380); pop(mbox, d >= 15 ? 'shake-big' : 'shake', d >= 15 ? 520 : 360); }, mine > 0 ? 220 : 0);
       }
-    } else if (d < 0 && id === me) { const ml = overlay(root.querySelector('.raid-me')); inkFx(ml, 'rise', { color: 'var(--hp)' }); num(ml, `+${-d}`, 'heal'); }
+    } else if (d < 0 && id === me) { const ml = overlay(root.querySelector('.raid-me')); inkFx(ml, 'rise', { color: 'var(--ok)' }); num(ml, `+${-d}`, 'heal'); }
   }
   if (hurt >= 3 || (hurt >= 2 && hurt >= alive)) pop(root.querySelector('.raid-members'), 'ovl-aoe', 520);
 }

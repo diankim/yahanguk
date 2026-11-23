@@ -226,9 +226,9 @@ function hitFx(r, action, ended, before = {}) {
     if (hard) pulse(sec, 'shake-screen', 420);
   }
   const now = r.me || { health: r.health };
-  const gains = [['hp', now.health - before.hp, 'var(--hp)'], ['mp', now.mental - before.mp, 'var(--mp)'], ['sp', now.spiritual_power - before.sp, `var(--${spOf()[1]})`], ['er', before.er - now.erosion, 'var(--er)']]
+  const gains = [['hp', now.health - before.hp, 'var(--ok)'], ['mp', now.mental - before.mp, 'var(--mp)'], ['sp', now.spiritual_power - before.sp, `var(--${spOf()[1]})`], ['er', before.er - now.erosion, 'var(--er)']]
     .filter(([, d]) => Number.isFinite(d) && d > 0);
-  if (!gains.length && r.heal) gains.push(['hp', r.heal, 'var(--hp)']);
+  if (!gains.length && r.heal) gains.push(['hp', r.heal, 'var(--ok)']);
   gains.forEach(([k, d, col], i) => setTimeout(() => { inkFx(mel, 'rise', { color: col }); put(mel, `${k === 'er' ? '침식 −' : '+'}${d}`, 'heal', col); }, i * 180));
   if (ended && r.ended === 'victory') pulse('#foe', 'foe-down', 900);
 }
