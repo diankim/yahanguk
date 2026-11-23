@@ -1,7 +1,7 @@
 import { rpc, esc, icon, openModal, store, $ } from './core.js';
 import { replayLog } from './replay.js';
 
-const KIND_ICON = { start: 'flame', hit: 'sword', crit: 'spark', miss: 'wind', end: 'check' };
+const KIND_ICON = { start: 'flame', hit: 'sword', crit: 'spark', miss: 'wind', end: 'check', skill: 'star', heal: 'heart', stun: 'chain', down: 'down' };
 export function openSparResult(x) {
   if (!x?.names) return;
   const me = store.character?.owner_id, mine = (x.ids || []).indexOf(me) + 1, won = mine && mine === x.winner;
