@@ -1000,8 +1000,9 @@ a.facility { text-decoration: none; }
 @keyframes ensoDraw { to { stroke-dashoffset: 0; } }
 @keyframes inkFadeE { to { opacity: 0; } }
 .ink-fx.faint { opacity: .35; transform: scale(.7); }
-.ink-stroke.rise { animation: inkDraw .16s ease-out var(--dl, 0ms) forwards, inkRise .7s ease-out var(--dl, 0ms) forwards; }
-@keyframes inkRise { 0% { translate: 0 18px; opacity: .95; } 60% { opacity: .85; } 100% { translate: 0 -34px; opacity: 0; } }
+.ink-plus { position: absolute; left: var(--px); top: var(--py); opacity: 0; animation: plusRise .8s ease-out var(--dl, 0ms) forwards; }
+.ink-plus svg { display: block; }
+@keyframes plusRise { 0% { opacity: 0; transform: translateY(6px) scale(.5); } 20% { opacity: 1; transform: translateY(0) scale(1.1); } 35% { transform: translateY(-6px) scale(1); } 100% { opacity: 0; transform: translateY(-40px) scale(.9); } }
 .fx-fixed { position: fixed; pointer-events: none; z-index: 60; overflow: visible; }
 .raid-boss, .raid-me { position: relative; }
 .fx-ovl { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; z-index: 3; }

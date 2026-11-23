@@ -29,6 +29,10 @@ function drops(n, spread, color = '') {
   }
   return s;
 }
+function plus(x, y, n, dl) {
+  const w = Math.max(4, n * 0.3);
+  return `<i class="ink-plus" style="--px:${x}px;--py:${y}px;--dl:${dl}ms;width:${n}px;height:${n}px;margin:${-n / 2}px 0 0 ${-n / 2}px"><svg width="${n}" height="${n}" viewBox="0 0 ${n} ${n}" overflow="visible"><g transform="translate(0 ${(n - w) / 2})"><path d="${brush(n, w)}" fill="currentColor"/></g><g transform="rotate(90 ${n / 2} ${n / 2}) translate(0 ${(n - w) / 2})"><path d="${brush(n, w)}" fill="currentColor"/></g></svg></i>`;
+}
 let uid = 0;
 function enso(size, w, cls = '', sweep = 320) {
   const cx = size / 2, r = size / 2 - w, n = 40, a0 = rnd(0, 360) * Math.PI / 180, out = [], inn = [], id = `ie${++uid}`;
@@ -49,7 +53,7 @@ const MAKE = {
   crit: () => strokeSvg({ len: 150, w: 16, rot: rnd(26, 40), cls: 'verm', delay: 70 }) + drops(5, 66, 'verm'),
   claw: o => [-14, 0, 14].map((d, i) => strokeSvg({ len: 104, w: 8, rot: 34, dx: d, dy: -d * 0.4, delay: i * 45 })).join('') + drops(4, 44, o.tone),
   guard: () => enso(72, 8, '', 170),
-  rise: () => [-26, 0, 24].map((d, i) => strokeSvg({ len: 58 + i % 2 * 16, w: 7, rot: -90 + rnd(-6, 6), dx: d, dy: 8, cls: 'rise', delay: i * 70 })).join('') + drops(3, 30),
+  rise: () => [[-30, 10, 18, 0], [4, 18, 24, 90], [30, 4, 16, 180], [-12, 26, 14, 260], [16, 30, 12, 340]].map(([x, y, n, dl]) => plus(x, y, n, dl)).join(''),
 };
 
 export function inkFx(layer, kind, opts = {}) {
