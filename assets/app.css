@@ -970,6 +970,38 @@ a.facility { text-decoration: none; }
 .float.dmg { color: var(--gold); } .float.crit { color: var(--accent); font-size: calc(30px * var(--fz, 1)); } .float.hurt { color: var(--bad); } .float.heal { color: var(--ok); }
 @keyframes floatUp { from { opacity: 1; transform: translate(-50%, 0) scale(1.1); } to { opacity: 0; transform: translate(-50%, -54px) scale(.95); } }
 .shake { animation: shake .35s; } @keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+.shake-big { animation: shakeBig .5s; } @keyframes shakeBig { 10% { transform: translate(-10px, 3px); } 25% { transform: translate(9px, -3px); } 40% { transform: translate(-7px, 2px); } 55% { transform: translate(6px, -1px); } 70% { transform: translate(-3px, 1px); } 85% { transform: translate(2px, 0); } }
+.battle.shake-screen { animation: shakeBig .4s; }
+.battle > .foe::after, .battle > .me::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; }
+.battle > .foe.hit-flash::after { background: #fff; animation: flashOut .26s ease-out; }
+.battle > .me.hurt-flash::after { background: var(--bad); animation: flashOut .38s ease-out; }
+.battle > .me.heal-glow { animation: healGlow .7s ease-out; }
+@keyframes flashOut { from { opacity: .45; } to { opacity: 0; } }
+@keyframes healGlow { 0% { outline: 3px solid var(--ok); outline-offset: 0; } 100% { outline: 3px solid transparent; outline-offset: 12px; } }
+.battle.crit-flash { animation: critFlash .42s ease-out; } @keyframes critFlash { 0% { outline: 3px solid var(--accent); outline-offset: 0; } 100% { outline: 3px solid transparent; outline-offset: 10px; } }
+.battle > .foe.foe-down > :not(.float-layer) { animation: foeDown .9s ease-in forwards; } @keyframes foeDown { 0% { opacity: 1; filter: none; } 30% { opacity: 1; filter: brightness(2); } 100% { opacity: .15; filter: grayscale(1); transform: translateY(6px); } }
+.hfx { position: absolute; left: 50%; top: 46%; pointer-events: none; }
+.hfx-slash, .hfx-slash::before, .hfx-slash::after { width: 150px; height: 4px; margin: -2px 0 0 -75px; background: var(--text); border-radius: 2px; }
+.hfx-slash { transform: rotate(-32deg) scaleX(0); animation: slashIn .42s ease-out forwards; }
+.hfx-slash::before, .hfx-slash::after { content: ''; position: absolute; left: 0; margin: 0; height: 2px; opacity: .7; }
+.hfx-slash::before { top: -9px; } .hfx-slash::after { top: 11px; }
+@keyframes slashIn { 0% { transform: rotate(-32deg) scaleX(0); opacity: 1; } 45% { transform: rotate(-32deg) scaleX(1); opacity: 1; } 100% { transform: rotate(-32deg) scaleX(1.1); opacity: 0; } }
+.hfx-arrow { width: 120px; height: 3px; margin: -1px 0 0 -60px; background: var(--text); border-radius: 2px; animation: arrowIn .38s ease-out forwards; }
+.hfx-arrow::after { content: ''; position: absolute; right: -2px; top: -5px; border: 6px solid transparent; border-left: 10px solid var(--text); border-right: 0; }
+@keyframes arrowIn { 0% { transform: translateX(-160px); opacity: 1; } 55% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(10px); opacity: 0; } }
+.hfx-burst { width: 20px; height: 20px; margin: -10px 0 0 -10px; border: 4px solid var(--accent); border-radius: 50%; animation: burstOut .48s ease-out forwards; }
+.hfx-burst::before { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); opacity: .6; }
+@keyframes burstOut { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(5); opacity: 0; } }
+.hfx-slash.big, .hfx-slash.big::before, .hfx-slash.big::after, .hfx-arrow.big { background: var(--gold); } .hfx-arrow.big::after { border-left-color: var(--gold); } .hfx-burst.big { border-color: var(--gold); }
+.hfx-crit { width: 60px; height: 60px; margin: -30px 0 0 -30px; border: 3px solid var(--accent); transform: rotate(45deg); animation: critStar .7s ease-out forwards; }
+@keyframes critStar { 0% { transform: rotate(45deg) scale(.2); opacity: 1; } 100% { transform: rotate(135deg) scale(3); opacity: 0; } }
+.hfx-claw, .hfx-claw::before, .hfx-claw::after { width: 90px; height: 3px; margin: -1px 0 0 -45px; background: var(--bad); border-radius: 2px; }
+.hfx-claw { transform: rotate(38deg) scaleX(0); animation: clawIn .4s ease-out forwards; }
+.hfx-claw::before, .hfx-claw::after { content: ''; position: absolute; left: 0; margin: 0; }
+.hfx-claw::before { top: -12px; } .hfx-claw::after { top: 12px; }
+@keyframes clawIn { 0% { transform: rotate(38deg) scaleX(0); opacity: 1; } 50% { transform: rotate(38deg) scaleX(1); opacity: 1; } 100% { transform: rotate(38deg) scaleX(1); opacity: 0; } }
+.hfx-guard { width: 52px; height: 60px; margin: -30px 0 0 -26px; border: 4px solid var(--gold); border-radius: 8px 8px 26px 26px; animation: guardUp .64s ease-out forwards; }
+@keyframes guardUp { 0% { transform: scale(.6); opacity: 0; } 30% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
 .end-card { display: grid; gap: 10px; } .end-card .lead { font-size: calc(15px * var(--fz, 1)); font-weight: 650; }
 .loot { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; } .loot li { padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: var(--bw) solid var(--line); }
 @media (max-width: 560px) {

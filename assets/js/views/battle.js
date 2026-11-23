@@ -160,19 +160,19 @@ async function send(action, item) {
     const c = store.character;
     if (c) c.health = r.health ?? c.health;
     sfx(r);
-    floats(r);
     weakNote(r.weak);
     const foe = data.battle?.name || r.result?.monster || '요괴';
     if (r.ended) {
       data.battle = null;
       const fresh = refreshCharacter().then(() => emit('changed', { name: 'world_battle_action', data: r }));
+      floats(r); hitFx(r, action, true);
       setTimeout(() => { if (action === 'sneak') toast(`기척을 숨겨 ${foe}의 눈을 피했습니다.`, 'ok'); else showEnd(r, foe); }, 650);
       Promise.all([fresh, new Promise(ok => setTimeout(ok, 650))]).then(() => onEnd?.(r));
     } else {
       if (action === 'flee') setTimeout(() => showFleeFail(r, foe), 400);
       data.battle = r.battle;
       draw(r.lines || []);
-      if (r.damage) shake('#foe'); if (r.taken) shake('#me');
+      floats(r); hitFx(r, action, false);
       applyMe(r).then(() => { emit('changed', { name: 'world_battle_action', data: r }); if (data.battle && host?.isConnected) refreshVitals(); });
     }
   } catch (e) {
@@ -204,7 +204,26 @@ function floats(r) {
   if (r.taken) put('#me-float', `-${r.taken}`, 'hurt');
   if (r.heal) put('#me-float', `+${r.heal}`, 'heal');
 }
-function shake(sel) { const n = $(sel, host); if (!n) return; n.classList.remove('shake'); void n.offsetWidth; n.classList.add('shake'); }
+function pulse(sel, cls, ms) { const n = sel instanceof Element ? sel : $(sel, host); if (!n) return; n.classList.remove(cls); void n.offsetWidth; n.classList.add(cls); setTimeout(() => n.classList.remove(cls), ms); }
+function mark(layer, cls, ms = 520) { const l = $(layer, host); if (!l) return; const s = document.createElement('i'); s.className = `hfx ${cls}`; l.append(s); setTimeout(() => s.remove(), ms); }
+function hitFx(r, action, ended) {
+  const kind = (data.weapon?.type || 'melee'), sec = $('.battle', host);
+  if (r.damage) {
+    mark('#foe-float', `hfx-${kind === 'ranged' ? 'arrow' : kind === 'magic' ? 'burst' : 'slash'}${action === 'skill' ? ' big' : ''}`);
+    pulse('#foe', 'hit-flash', 260);
+    pulse('#foe', r.crit ? 'shake-big' : 'shake', r.crit ? 520 : 360);
+    if (r.crit) { pulse(sec, 'crit-flash', 420); mark('#foe-float', 'hfx-crit', 700); }
+  }
+  if (r.taken) {
+    const hard = r.taken >= 15;
+    mark('#me-float', 'hfx-claw');
+    pulse('#me', 'hurt-flash', 380);
+    pulse('#me', hard ? 'shake-big' : 'shake', hard ? 520 : 360);
+    if (hard) pulse(sec, 'shake-screen', 420);
+  } else if (action === 'guard' && !r.heal) { mark('#me-float', 'hfx-guard', 640); }
+  if (r.heal) pulse('#me', 'heal-glow', 700);
+  if (ended && r.ended === 'victory') pulse('#foe', 'foe-down', 900);
+}
 function sfx(r) {
   const k = r.ended === 'victory' ? 'victory' : r.ended === 'defeat' ? 'defeat' : r.crit ? 'crit' : r.damage ? 'hit' : r.heal ? 'heal' : r.taken ? 'hurt' : 'guard';
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: k }));
