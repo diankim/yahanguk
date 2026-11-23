@@ -189,14 +189,14 @@ function detailHtml() {
   if (snap.scare?.cell === sel) return `<h3 class="sub-h">${cellName(sel)} · 허수아비</h3><p>까마귀가 내려앉지 않습니다 · 낡아 쓰러지기까지 <b data-gd-left="scare">${leftTxt(new Date(snap.scare.until).getTime() - now())}</b></p>`;
   if (!p) {
     const scareWhy = snap.scare ? '허수아비가 이미 서 있습니다' : !snap.scare_have ? '가방·창고에 허수아비가 없습니다' : why;
-    return `<h3 class="sub-h">${cellName(sel)} · 빈 칸</h3>${own ? `<div class="btn-row"><button class="btn small primary" data-gd="plant" ${gate(!why, why)}>${icon('leaf', 14)} 심기</button>
-      <button class="btn small" data-gd="scare" ${gate(!scareWhy, scareWhy)}>허수아비 세우기 (가진 ${snap.scare_have || 0})</button></div>${why ? `<p class="muted small">${esc(why)}</p>` : ''}` : '<p class="muted small">비어 있는 칸입니다.</p>'}`;
+    return `<h3 class="sub-h">${cellName(sel)} · 빈 칸</h3>${own ? `<div class="btn-row"><button class="btn small primary" data-gd="plant" data-here="밭 가꾸기" ${gate(!why, why)}>${icon('leaf', 14)} 심기</button>
+      <button class="btn small" data-gd="scare" data-here="밭 가꾸기" ${gate(!scareWhy, scareWhy)}>허수아비 세우기 (가진 ${snap.scare_have || 0})</button></div>${why ? `<p class="muted small">${esc(why)}</p>` : ''}` : '<p class="muted small">비어 있는 칸입니다.</p>'}`;
   }
   const s = stateOf(p);
   const btns = own ? `<div class="btn-row">
-      ${s.ripe && !s.rot ? `<button class="btn small primary" data-gd="harvest" ${gate(!why, why)}>${icon('bag', 14)} 거두기</button>` : ''}
-      ${!s.ripe ? `<button class="btn small ${s.dry ? 'primary' : ''}" data-gd="water">물 주기</button>` : ''}
-      <button class="btn small ${s.rot ? 'primary' : 'danger'}" data-gd="clear">${s.rot ? '치우기' : '뽑아 버리기'}</button></div>${s.ripe && !s.rot && why ? `<p class="muted small">${esc(why)}</p>` : ''}` : '';
+      ${s.ripe && !s.rot ? `<button class="btn small primary" data-gd="harvest" data-here="밭 가꾸기" ${gate(!why, why)}>${icon('bag', 14)} 거두기</button>` : ''}
+      ${!s.ripe ? `<button class="btn small ${s.dry ? 'primary' : ''}" data-gd="water" data-here="밭 가꾸기">물 주기</button>` : ''}
+      <button class="btn small ${s.rot ? 'primary' : 'danger'}" data-gd="clear" data-here="밭 가꾸기">${s.rot ? '치우기' : '뽑아 버리기'}</button></div>${s.ripe && !s.rot && why ? `<p class="muted small">${esc(why)}</p>` : ''}` : '';
   return `<h3 class="sub-h">${cellName(sel)} · ${esc(p.name)} ${tierChip(p.tier)}</h3>
     <p class="gd-line">${stateLine(p)}</p>
     <div class="bar gd-bar"><i style="width:${Math.round(s.prog * 100)}%"></i></div>
@@ -223,9 +223,9 @@ function draw() {
   const own = snap.own, ps = snap.plots || [];
   const anyRipe = ps.some(p => { const s = stateOf(p); return s.ripe && !s.rot; }), anyDry = ps.some(p => stateOf(p).dry);
   const actions = `<a class="btn small" href="#/house${ownerArg ? '/' + esc(ownerArg) : ''}">${icon('home', 15)} 별채로</a>
-    ${own ? `<button class="btn small ${anyDry ? 'primary' : ''}" data-gd="waterAll" ${ps.length ? '' : 'disabled'}>모두 물 주기</button>
-    <button class="btn small ${anyRipe ? 'primary' : ''}" data-gd="harvestAll" ${anyRipe ? gate(!safeWhy(), safeWhy()) : 'disabled title="다 자란 작물이 없습니다"'}>모두 거두기</button>
-    ${snap.next ? `<button class="btn small" data-gd="expand">넓히기</button>` : ''}` : ''}${helpQ(GARDEN.help, '뒤뜰 밭')}`;
+    ${own ? `<button class="btn small ${anyDry ? 'primary' : ''}" data-gd="waterAll" data-here="밭 가꾸기" ${ps.length ? '' : 'disabled'}>모두 물 주기</button>
+    <button class="btn small ${anyRipe ? 'primary' : ''}" data-gd="harvestAll" data-here="밭 가꾸기" ${anyRipe ? gate(!safeWhy(), safeWhy()) : 'disabled title="다 자란 작물이 없습니다"'}>모두 거두기</button>
+    ${snap.next ? `<button class="btn small" data-gd="expand" data-here="밭 가꾸기">넓히기</button>` : ''}` : ''}${helpQ(GARDEN.help, '뒤뜰 밭')}`;
   el.innerHTML = head(`${snap.owner_name}의 뒤뜰 밭`, `${snap.size}×${snap.size}`, actions) + `
     ${snap.crow ? `<div class="notice gd-crow">${icon('bell', 16)}<span>까마귀가 ${cellName(snap.crow.cell)} 작물을 쪼아 먹고 있습니다. 쫓지 않으면 ${GARDEN.crowEvery(snap.rules)}마다 한 입씩 더 먹습니다.</span><button class="btn small primary" data-gd="shoo">쫓기</button></div>` : ''}
     <div class="gd-wrap"><div class="hs-stage gd-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><div class="gd-cvbox"><canvas id="gd-cv" aria-label="뒤뜰 밭"></canvas><div class="gd-tags" aria-hidden="true"></div></div></div>
@@ -261,7 +261,7 @@ function tick() {
 async function onClick(e) {
   const li = e.target.closest?.('[data-gd-cell]');
   if (li) { sel = Number(li.dataset.gdCell); paintSide(); paint(); return; }
-  const b = e.target.closest?.('[data-gd]'); if (!b || !el?.contains(b) || b.disabled) return;
+  const b = e.target.closest?.('[data-gd]'); if (!b || !el?.contains(b) || b.disabled || b.classList.contains('here-locked')) return;
   const k = b.dataset.gd;
   if (k === 'plant') return pickCrop();
   if (k === 'expand') return expand();

@@ -182,7 +182,7 @@ function noteActs(n) {
   if (go) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="${esc(go)}">보러 가기</button>`;
   return '';
 }
-const GO_KIND = { garden_shoo: 'garden', title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
+const GO_KIND = { garden_shoo: 'garden', bond_emote: 'house', title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
   drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look', project_stage: 'home', regular_stage: 'log/side' };
 const pastActs = n => { const a = noteActs(n); return /data-(invite|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
