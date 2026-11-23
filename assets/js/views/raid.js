@@ -1,4 +1,5 @@
-import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot } from '../core.js';
+import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_ON, spOf, particle, xpGot, myWeaponStyle } from '../core.js';
+import { fightFx } from '../inkfx.js';
 import { sceneHtml, mountScene } from '../scene.js';
 import { feastBandRow, bindFeastBand } from '../feast.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
@@ -20,11 +21,12 @@ const creditLine = c => {
 const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
+let fxPrev = null, fxLog = 0;
 let el = null, rid = null, snap = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
 let queued = null;
 
 export async function render(root, sub) {
-  el = root; rid = sub || null; snap = null; target = null; sel = null; built = ''; logCount = 0; shownStatus = '';
+  el = root; rid = sub || null; snap = null; fxPrev = null; fxLog = 0; target = null; sel = null; built = ''; logCount = 0; shownStatus = '';
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>그림자</h1></div></div>${loading()}`;
   await refresh();
   bindTips(el);
@@ -101,6 +103,7 @@ function draw() {
   const key = `${r.id}:${r.status}:${!!me.joined}:${me.left ? 1 : 0}:${me.can_join ? 1 : 0}:${s.vote ? s.vote.until : ''}`;
   if (key !== built) { build(); built = key; } else patch();
   countdown();
+  inkFight(s);
   const was = shownStatus; shownStatus = r.status;
   if (was && was !== r.status && ended) showResult(el);
 }
@@ -177,6 +180,13 @@ function patch() {
     fitLog(log);
   }
   tray.redraw();
+}
+function inkFight(s) {
+  const r = s.raid, ms = s.members || [], myName = ms.find(m => m.me)?.name, all = s.log || [];
+  const cur = { id: r.id, boss: r.hp, mem: Object.fromEntries(ms.map(m => [m.id, { hp: m.hp, dmg: m.dmg, out: !!(m.out || m.away || m.left) }])) };
+  const crit = all.some(l => l.id > fxLog && l.kind === 'crit' && l.who === myName);
+  if (fxPrev?.id === r.id && r.status === 'fight') fightFx(el, fxPrev, cur, { me: ms.find(m => m.me)?.id, style: myWeaponStyle(), crit });
+  fxPrev = cur; fxLog = all.length ? all[all.length - 1].id : fxLog;
 }
 function chargeTick() {
   clearTimeout(chargeT);

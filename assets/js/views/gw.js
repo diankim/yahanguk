@@ -1,4 +1,5 @@
-import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf } from '../core.js';
+import { rpc, store, esc, icon, fmt, $, $$, toast, nameOf, spOf, myWeaponStyle } from '../core.js';
+import { fightFx } from '../inkfx.js';
 import { GW_DAILY, UG_RESULT } from '../rules.js';
 import { loading, errorBox, chip } from './common.js';
 import { spearRing, spearInner, spearTitle, isSpear } from './fightui.js';
@@ -44,6 +45,7 @@ const CELL = { 4: '왼쪽 위', 9: '위', 2: '오른쪽 위', 3: '왼쪽', 5: '�
 const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머뭇거림' };
 
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
+let fxPrev = null, fxLog = 0;
 let queued = null, lastRound = null, freshUntil = 0, roundLen = 5000, rtFight = null, rtLive = false, reading = false, readAgain = false;
 const picked = new Set();
 function roundSeen() {
@@ -70,7 +72,7 @@ const PHASE = new Proxy({}, { get: (_, k) => ult() ? (snap?.board?.phases || [])
 
 export async function render(root, sub) {
   lobbyBoss = BOSS[sub] ? sub : null;
-  el = root; fid = lobbyBoss ? null : sub || null; snap = null; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; lastRound = null; picked.clear(); bindTips(el);
+  el = root; fid = lobbyBoss ? null : sub || null; snap = null; fxPrev = null; fxLog = 0; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; lastRound = null; picked.clear(); bindTips(el);
   const b = BOSS[lobbyBoss] || BOSS.gwiheo;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${b.arc}</p><h1>${b.name}</h1></div></div>${loading()}`;
   clearInterval(tick); tick = setInterval(countdown, 250);
@@ -222,8 +224,16 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
   memDetail(s); tray.redraw();
   if (!done) { fitFight(el); restoreLog(); }
   bind(); countdown();
+  inkFight(s, me);
   const was = shownStatus; shownStatus = f.status;
   if (was && was !== f.status && done) showResult(el);
+}
+function inkFight(s, me) {
+  const f = s.fight, all = s.log || [];
+  const cur = { id: f.id, boss: f.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.hp, dmg: m.dmg, out: !!(m.out || m.resting) }])) };
+  const crit = !!me.name && all.some(l => l.id > fxLog && l.kind === 'atk' && String(l.text).startsWith(me.name) && /치명/.test(l.text));
+  if (fxPrev?.id === f.id && (f.status === 'fight' || ended())) fightFx(el, fxPrev, cur, { me: s.me, style: myWeaponStyle(), crit, others: true });
+  fxPrev = cur; fxLog = all.length ? all[all.length - 1].id : fxLog;
 }
 
 const mapHtml = (s, live) => s.boss === 'mukjeok' ? boardHtml(s, live) : s.boss === 'gapgwi' ? ggHtml(s, live) : s.boss === 'baekya' ? byBoard(s, live) : hexBoard(s, live, moveTo);

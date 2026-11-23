@@ -981,7 +981,7 @@ a.facility { text-decoration: none; }
 .battle.crit-flash { animation: critFlash .42s ease-out; } @keyframes critFlash { 0% { outline: 3px solid var(--accent); outline-offset: 0; } 100% { outline: 3px solid transparent; outline-offset: 10px; } }
 .battle > .foe.foe-down > :not(.float-layer) { animation: foeDown .9s ease-in forwards; } @keyframes foeDown { 0% { opacity: 1; filter: none; } 30% { opacity: 1; filter: brightness(2); } 100% { opacity: .15; filter: grayscale(1); transform: translateY(6px); } }
 .ink-fx { position: absolute; left: 50%; top: 48%; width: 0; height: 0; pointer-events: none; color: var(--text); opacity: .88; }
-.float-layer .float { z-index: 2; }
+.float-layer .float, .fx-ovl .float { z-index: 2; }
 .ink-fx.gold { color: var(--gold); } .ink-fx.bad { color: var(--bad); }
 .ink-stroke { position: absolute; left: var(--dx, 0); top: var(--dy, 0); overflow: visible; transform: rotate(var(--rot)); clip-path: inset(0 100% 0 0); animation: inkDraw .13s ease-out var(--dl, 0ms) forwards, inkFade .45s ease-in calc(var(--dl, 0ms) + 260ms) forwards; }
 .ink-stroke.ghost { opacity: .3; animation: inkDraw .16s ease-out var(--dl, 0ms) forwards, inkFadeG .35s ease-in calc(var(--dl, 0ms) + 120ms) forwards; }
@@ -999,6 +999,16 @@ a.facility { text-decoration: none; }
 .ink-enso.ghost { opacity: .3; transform: scale(1.16) rotate(-14deg); }
 @keyframes ensoDraw { to { stroke-dashoffset: 0; } }
 @keyframes inkFadeE { to { opacity: 0; } }
+.ink-fx.faint { opacity: .35; transform: scale(.7); }
+.raid-boss, .raid-me { position: relative; }
+.fx-ovl { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; z-index: 3; }
+.fx-ovl.ovl-hit { animation: ovlFlash .26s ease-out; } .fx-ovl.ovl-hurt { animation: ovlHurt .38s ease-out; }
+@keyframes ovlFlash { from { background: color-mix(in srgb, #fff 18%, transparent); } to { background: transparent; } }
+@keyframes ovlHurt { from { background: color-mix(in srgb, var(--bad) 22%, transparent); } to { background: transparent; } }
+.raid-mem li.mem-hurt .mem-pick { animation: memHurt .42s ease-out; }
+@keyframes memHurt { 0% { background: color-mix(in srgb, var(--bad) 30%, transparent); transform: translateX(-3px); } 30% { transform: translateX(3px); } 60% { transform: translateX(-1px); } 100% { background: transparent; transform: none; } }
+.raid-members.ovl-aoe { animation: aoeFlash .52s ease-out; } @keyframes aoeFlash { 0% { outline: 2px solid var(--bad); outline-offset: 0; } 100% { outline: 2px solid transparent; outline-offset: 8px; } }
+.raid-me.heal-glow { animation: healGlow .7s ease-out; }
 .end-card { display: grid; gap: 10px; } .end-card .lead { font-size: calc(15px * var(--fz, 1)); font-weight: 650; }
 .loot { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; } .loot li { padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: var(--bw) solid var(--line); }
 @media (max-width: 560px) {

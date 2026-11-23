@@ -1,4 +1,4 @@
-import { rpc, esc, icon, fmt, $, $$, toast, store, spOf } from '../core.js';
+import { rpc, esc, icon, fmt, $, $$, toast, store, spOf, myWeaponStyle } from '../core.js';
 import { loading, errorBox, chip } from './common.js';
 import { bindTips, hideTip, memberLi, showSelected, fightNums, vitHtml, itemSectionsHtml, itemTray, resultBox, settleFight, tickUntil, serverClock,
   mobileLog, newestFirst, keepLogScroll, logRow, jobName, fightCol, fitFight, unfitFight, drawLater } from './fightui.js';
@@ -6,6 +6,7 @@ import { INTENT, SKILL, trayList, weakNote } from './battle.js';
 import { spearRing, spearInner, spearTitle } from './fightui.js';
 import { mountMeter } from './meter.js';
 import { clearFightNotes } from '../settings.js';
+import { fightFx } from '../inkfx.js';
 
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
 const trayIds = () => trayList({}, Infinity).map(([k]) => k);
@@ -39,13 +40,17 @@ async function refresh() {
   if (!el) return;
   clearTimeout(timer);
   try {
-    const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id;
+    const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id, before = snap ? fxOf(snap) : null, logN = snap?.log?.length || 0;
     snap = await rpc('world_pfight_snapshot', { p_fight: fid });
     clock.sync(snap);
     if ((prev && prev !== snap.status && ended()) || (prevRound && prevRound !== snap.round) || (prevTurn && prevTurn !== snap.turn_id)) await settle();
     draw(); plan();
+    const myName = `${store.character?.character_name} · `;
+    if (before && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true,
+      crit: (snap.log || []).slice(logN).some(l => l.startsWith(myName) && /치명/.test(l)) });
   } catch (e) { if (el) el.innerHTML = errorBox(e.message); }
 }
+const fxOf = s => s && { boss: s.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.health, dmg: m.dmg, out: !!m.out }])) };
 const settle = () => settleFight('world_pfight_act');
 
 function plan() {

@@ -59,3 +59,46 @@ export function inkFx(layer, kind, opts = {}) {
   layer.append(box);
   setTimeout(() => box.remove(), opts.ms || 820);
 }
+
+function overlay(box) {
+  if (!box) return null;
+  let l = box.querySelector(':scope > .fx-ovl');
+  if (!l) { l = document.createElement('div'); l.className = 'fx-ovl'; box.append(l); }
+  return l;
+}
+function pop(box, cls, ms) { if (!box) return; box.classList.remove(cls); void box.offsetWidth; box.classList.add(cls); setTimeout(() => box.classList.remove(cls), ms); }
+function num(layer, text, cls) { if (!layer) return; const s = document.createElement('span'); s.className = `float ${cls}`; s.textContent = text; layer.append(s); setTimeout(() => s.remove(), 1100); }
+
+export function fightFx(root, a, b, o = {}) {
+  if (!root || !a || !b) return;
+  const boss = root.querySelector('.raid-boss'), bl = overlay(boss);
+  const me = o.me, ma = a.mem[me], mb = b.mem[me];
+  const mine = ma && mb ? Math.max(0, (mb.dmg || 0) - (ma.dmg || 0)) : 0;
+  const drop = Math.max(0, (a.boss || 0) - (b.boss || 0));
+  const style = o.style === 'ranged' ? 'arrow' : o.style === 'magic' ? 'burst' : 'slash';
+  if (mine > 0 && bl) {
+    inkFx(bl, style);
+    if (o.crit) inkFx(bl, 'crit');
+    num(bl, `-${mine.toLocaleString()}`, o.crit ? 'crit' : 'dmg');
+    pop(bl, 'ovl-hit', 260);
+    pop(boss.querySelector('.raid-hp'), o.crit ? 'shake-big' : 'shake', o.crit ? 520 : 360);
+  } else if (drop > 0 && bl && o.others) {
+    inkFx(bl, style === 'burst' ? 'slash' : style, { tone: 'faint' });
+  }
+  let hurt = 0, alive = 0;
+  for (const [id, m] of Object.entries(b.mem)) {
+    const p = a.mem[id]; if (!p) continue;
+    if (!m.out) alive++;
+    const d = (p.hp ?? 0) - (m.hp ?? 0);
+    if (d > 0) {
+      hurt++;
+      const li = root.querySelector(`[data-pick="${CSS.escape(id)}"]`)?.closest('li');
+      pop(li, 'mem-hurt', 420);
+      if (id === me) {
+        const mbox = root.querySelector('.raid-me'), ml = overlay(mbox);
+        setTimeout(() => { inkFx(ml, 'claw', { tone: 'bad' }); num(ml, `-${d}`, 'hurt'); pop(ml, 'ovl-hurt', 380); pop(mbox, d >= 15 ? 'shake-big' : 'shake', d >= 15 ? 520 : 360); }, mine > 0 ? 220 : 0);
+      }
+    } else if (d < 0 && id === me) pop(root.querySelector('.raid-me'), 'heal-glow', 700);
+  }
+  if (hurt >= 3 || (hurt >= 2 && hurt >= alive)) pop(root.querySelector('.raid-members'), 'ovl-aoe', 520);
+}
