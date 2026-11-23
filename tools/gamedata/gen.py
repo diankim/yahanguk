@@ -166,6 +166,13 @@ def build(dsn):
         'specials', (select jsonb_agg(jsonb_build_object('faction', h.key, 'hub', h.value, 'items', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'lv', (select min(c.minimum_level) from world_crafting_recipes c where c.output_item = i.item_id), 'buff', (select s.status_name from world_status_catalog s where s.status_key = i.use_fx -> 'buffs' ->> 0)) order by i.item_id) from world_item_catalog i where i.item_id in (select jsonb_array_elements_text(r -> 'specials' -> h.key)))) order by h.key) from jsonb_each_text(r -> 'hubs') h),
         'status', (select jsonb_agg(jsonb_build_object('name', s.status_name, 'min', s.duration_minutes, 'effects', s.effects) order by s.duration_minutes, s.status_key) from world_status_catalog s where s.status_key in (select jsonb_array_elements_text(r -> 'buffs'))))
         from (select world_food_rules() r) x""")
+    d['garden'] = q(dsn, """select (r - 'crops' - 'fert' - 'expand' - 'scare') || jsonb_build_object(
+        'scare', (r -> 'scare') || jsonb_build_object('name', (select item_name from world_item_catalog where item_id = r -> 'scare' ->> 'item'),
+          'recipe', (select jsonb_object_agg(i.item_name, x.value) from world_crafting_recipes c, jsonb_each(c.ingredients) x join world_item_catalog i on i.item_id = x.key where c.output_item = r -> 'scare' ->> 'item')),
+        'crops', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'tier', i.tier) order by i.tier, o) from jsonb_array_elements_text(r -> 'crops') with ordinality c(id, o) join world_item_catalog i on i.item_id = c.id),
+        'fert', (select jsonb_agg(jsonb_build_object('name', i.item_name) || f.value order by f.value ->> 'kind' desc, (coalesce(f.value ->> 'pct', f.value ->> 'n'))::int) from jsonb_each(r -> 'fert') f join world_item_catalog i on i.item_id = f.key),
+        'expand', (select jsonb_agg(jsonb_build_object('size', e -> 'size', 'gil', e -> 'gil', 'items', (select jsonb_object_agg(i.item_name, x.value) from jsonb_each(e -> 'items') x join world_item_catalog i on i.item_id = x.key))) from jsonb_array_elements(r -> 'expand') e))
+        from (select world_garden_rules() r) x""")
     d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(
         'titles', jsonb_array_length(world_project_rules() -> 'titles'),
         'vault', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'price', (v ->> 'price')::int, 'rank', (v ->> 'rank')::int, 'stage', (v ->> 'stage')::int) order by (v ->> 'stage')::int, (v ->> 'price')::int)

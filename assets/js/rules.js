@@ -225,6 +225,15 @@ const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 42
 const REGULAR_COUNT = '한국 시각 오늘 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두, 원정·비무·우두머리 싸움은 빼고). 한 번의 토벌이 여러 주문에 함께 셉니다.';
 const RG_FIGHT = Object.values(RG.npcs || {}).filter(n => n.kind === 'combat').length;
 const RG_CRAFT = Object.keys(RG.npcs || {}).length - RG_FIGHT;
+export const GARDEN = {
+  help: '별채 뒤뜰 밭입니다. 가진 식재료를 한 칸에 하나씩 심고 물을 주면 자랍니다. 물 한 번이 하루 가고, 물이 마른 동안은 자라지 않습니다. 작물 단계가 높을수록 오래 자랍니다. 다 자란 뒤 이틀 안에 거두지 않으면 썩습니다. 비료는 칸마다 한 번, 빨리 자라게 하거나 더 많이 거두게 합니다. 이따금 까마귀가 내려앉아 작물을 쪼아 먹으니 눌러 쫓아 주세요. 허수아비를 세우면 이레 동안 까마귀가 오지 않습니다. 밭은 별채 주인과 한 지붕 정인이 가꾸고, 손님은 까마귀를 쫓아 줄 수 있습니다.',
+  plantTip: '심으면 그 식재료 하나가 가방에서 빠집니다. 심은 뒤 물을 주어야 자랍니다.',
+  growLine: (r, t) => `${r.hours?.[t] ?? '?'}시간 · 비료 ${r.fert_n?.[t] ?? 1}개씩`,
+  fertFx: f => f.kind === 'speed' ? `남은 자라는 시간 −${f.pct}%` : `거둘 양 +${f.n}개`,
+  fertTip: (t, n) => `${t}단계 작물에는 비료가 ${n}개 듭니다. 한 칸에 한 번만 줄 수 있습니다.`,
+  crowEvery: r => `${r?.crow?.every_h ?? 3}시간`,
+};
+
 export const NEAR = {
   tag: h => h === 0 ? '지금 여기' : `가까움 · ${h}구간`,
   tip: '지금 있는 곳에서 가장 가까운 곳입니다. 내 레벨로 지날 수 없거나 아직 열리지 않은 지역은 셈하지 않습니다.',

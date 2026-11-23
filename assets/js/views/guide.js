@@ -2122,6 +2122,40 @@ const S = [
       <li><b>보내기·제보</b>: 내가 그린 도안의 사본을 친구에게 보낼 수 있고(옷 도안과 함께 하루 ${GD.outfit?.give_day ?? ''}번), 받은 사람도 지어 놓을 수 있습니다. 도안첩에는 받은 것까지 ${GD.furn?.keep || 20}장을 둡니다. 남의 별채에 놓인 직접 그린 가구는 별채 그림 칸의 깃발로 제보할 수 있고, 운영진이 내린 가구는 회색 받침으로만 보입니다.</li>
       <li><b>고치기</b>: 내가 그린 도안을 고치면 이미 지은 가구도 모두 고친 모습으로 바뀝니다.</li>
     </ul>`],
+  ['garden', '뒤뜰 밭', `
+    <p>별채 뒤뜰의 밭에 가진 식재료를 심어 키웁니다. 별채가 있으면 별채 머리의 「뒤뜰 밭」 단추로 들어갑니다. 수확은 채집 숙련·퀘스트 셈에 들지 않습니다.</p>
+    <h4>심기와 물 주기</h4>
+    <ul>
+      <li>빈 칸을 누르고 「심기」에서 가방에 있는 식재료 하나를 심습니다. 심을 수 있는 것은 식재료 ${GD.garden.crops.length}가지입니다.</li>
+      <li>물 한 번이 ${GD.garden.water_h}시간 갑니다. 물이 마른 동안은 자라지 않습니다. 「모두 물 주기」로 한꺼번에 줄 수 있습니다.</li>
+      <li>다 자라면 칸 위에 「!」가 뜹니다. 한 칸에서 ${GD.garden.yield[0]}~${GD.garden.yield[1]}개를 거둡니다. 가방에 다 들어가지 않으면 개인 창고로 갑니다.</li>
+      <li>다 자란 뒤 ${GD.garden.rot_h}시간 안에 거두지 않으면 썩습니다. 썩은 칸은 치워야 다시 심을 수 있고, 치워도 아무것도 나오지 않습니다.</li>
+    </ul>
+    <h4>작물 단계와 자라는 시간</h4>
+    <p>밭 그림의 칸 위 숫자와 작물 목록의 「n단계」가 작물 단계입니다.</p>
+    <table class="guide-table"><tr><th>단계</th><th>다 자라기까지</th><th>비료</th><th>작물</th></tr>
+      ${[1, 2, 3, 4].map(t => `<tr><td>${t}단계</td><td>${GD.garden.hours[t]}시간</td><td>${GD.garden.fert_n[t]}개</td><td>${GD.garden.crops.filter(c => c.tier === t).map(c => c.name).join(' · ')}</td></tr>`).join('')}</table>
+    <h4>비료</h4>
+    <ul>
+      <li>칸마다 한 번, 다 자라기 전에 줍니다. 위 표의 개수만큼 듭니다.</li>
+      ${GD.garden.fert.map(f => `<li><b>${f.name}</b>: ${f.kind === 'speed' ? `남은 자라는 시간 −${f.pct}%` : `거둘 양 +${f.n}개`}</li>`).join('')}
+    </ul>
+    <h4>까마귀와 허수아비</h4>
+    <ul>
+      <li>${GD.garden.crow.every_h}시간마다 한 번씩, 까마귀가 자라는 작물에 내려앉을 때가 있습니다. 앉을 때 한 입 먹고, 쫓지 않으면 ${GD.garden.crow.every_h}시간마다 한 입씩 더 먹습니다. 다 먹으면 작물이 사라집니다.</li>
+      <li>앉은 까마귀를 누르거나 「쫓기」를 누르면 날아갑니다. 별채 손님도 쫓아 줄 수 있습니다.</li>
+      <li><b>${GD.garden.scare.name}</b>: 빈 칸 하나에 세우면 ${GD.garden.scare.days}일 동안 까마귀가 내려앉지 않습니다. 날이 지나면 낡아 쓰러지고 그 칸은 다시 밭이 됩니다. 안전지대 상점(${GD.garden.scare.price}전)에서 사거나 목공으로 만듭니다(${Object.entries(GD.garden.scare.recipe || {}).map(([k, v]) => `${k} ${v}`).join(' · ')}).</li>
+    </ul>
+    <h4>넓히기</h4>
+    <ul>
+      <li>2×2에서 시작해 ${GD.garden.max}×${GD.garden.max}까지 넓힙니다. 안전지대에서만 넓힐 수 있고, 재료는 가방을 먼저 쓰고 모자라면 창고에서 꺼냅니다.</li>
+      ${(GD.garden.expand || []).map(e => `<li>${e.size}×${e.size}: ${Number(e.gil).toLocaleString('ko-KR')}전 · ${Object.entries(e.items).map(([k, v]) => `${k} ${v}`).join(' · ')}</li>`).join('')}
+    </ul>
+    <h4>누가 가꾸나</h4>
+    <ul>
+      <li>별채 주인과 한 지붕 정인이 심기·물·비료·거두기를 합니다. 이동·원정·자율 활동 중에는 가꿀 수 없습니다.</li>
+      <li>손님은 밭을 구경하고 까마귀를 쫓아 줄 수 있습니다.</li>
+    </ul>`],
   ['portrait', '초상 화첩', `
     <p>이야기에서 만난 인물 마흔한 명의 초상을 모으는 화첩입니다. 모은 초상은 액자로 꺼내 별채 벽에 겁니다. 능력치 효과는 없습니다.</p>
     <h4>여는 곳</h4>
@@ -2313,7 +2347,7 @@ const GROUPS = [
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'gearset', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
-  ['home', '별채', 'home', ['house', 'furn', 'portrait', 'pets', 'look', 'outfit']],
+  ['home', '별채', 'home', ['house', 'garden', 'furn', 'portrait', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
