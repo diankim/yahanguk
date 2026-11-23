@@ -33,6 +33,17 @@ function plus(x, y, n, dl) {
   const w = Math.max(4, n * 0.3);
   return `<i class="ink-plus" style="--px:${x}px;--py:${y}px;--dl:${dl}ms;width:${n}px;height:${n}px;margin:${-n / 2}px 0 0 ${-n / 2}px"><svg width="${n}" height="${n}" viewBox="0 0 ${n} ${n}" overflow="visible"><g transform="translate(0 ${(n - w) / 2})"><path d="${brush(n, w)}" fill="currentColor"/></g><g transform="rotate(90 ${n / 2} ${n / 2}) translate(0 ${(n - w) / 2})"><path d="${brush(n, w)}" fill="currentColor"/></g></svg></i>`;
 }
+function shield(n) {
+  const h = n * 1.15, j = () => rnd(-1.2, 1.2), pts = [];
+  const P = [[0.1, 0.12], [0.3, 0.06], [0.5, 0.02], [0.7, 0.06], [0.9, 0.12], [0.92, 0.42], [0.84, 0.66], [0.68, 0.84], [0.5, 0.98], [0.32, 0.84], [0.16, 0.66], [0.08, 0.42], [0.1, 0.12]];
+  for (const [x, y] of P) pts.push(`${(x * n + j()).toFixed(1)} ${(y * h + j()).toFixed(1)}`);
+  const d = `M${pts.join(' L')}`;
+  return `<svg class="ink-shield" width="${n}" height="${h}" viewBox="0 0 ${n} ${h}" style="margin:${-h / 2}px 0 0 ${-n / 2}px" overflow="visible">
+    <path d="${d}" fill="none" stroke="currentColor" stroke-width="${n * 0.11}" stroke-linejoin="round" stroke-linecap="round" pathLength="100" class="sh-a"/>
+    <path d="${d}" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="14 6" transform="translate(${rnd(-3, -1)} ${rnd(1, 3)})" opacity=".6"/>
+    <path d="M${n * 0.5} ${h * 0.22} L${n * 0.5 + j()} ${h * 0.74}" stroke="currentColor" stroke-width="${n * 0.07}" stroke-linecap="round" opacity=".75"/>
+  </svg>${drops(4, 46)}`;
+}
 let uid = 0;
 function enso(size, w, cls = '', sweep = 320) {
   const cx = size / 2, r = size / 2 - w, n = 40, a0 = rnd(0, 360) * Math.PI / 180, out = [], inn = [], id = `ie${++uid}`;
@@ -52,7 +63,7 @@ const MAKE = {
   burst: o => enso(96, 9, 'ghost') + enso(84, 10) + drops(7, 64, o.tone),
   crit: () => strokeSvg({ len: 150, w: 16, rot: rnd(26, 40), cls: 'verm', delay: 70 }) + drops(5, 66, 'verm'),
   claw: o => [-14, 0, 14].map((d, i) => strokeSvg({ len: 104, w: 8, rot: 34, dx: d, dy: -d * 0.4, delay: i * 45 })).join('') + drops(4, 44, o.tone),
-  guard: () => enso(72, 8, '', 170),
+  guard: () => shield(64),
   rise: () => [[-30, 10, 18, 0], [4, 18, 24, 90], [30, 4, 16, 180], [-12, 26, 14, 260], [16, 30, 12, 340]].map(([x, y, n, dl]) => plus(x, y, n, dl)).join(''),
 };
 
