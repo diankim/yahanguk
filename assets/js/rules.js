@@ -225,6 +225,15 @@ const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 42
 const REGULAR_COUNT = '한국 시각 오늘 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두, 원정·비무·우두머리 싸움은 빼고). 한 번의 토벌이 여러 주문에 함께 셉니다.';
 const RG_FIGHT = Object.values(RG.npcs || {}).filter(n => n.kind === 'combat').length;
 const RG_CRAFT = Object.keys(RG.npcs || {}).length - RG_FIGHT;
+export const BOND_EMOTE = {
+  emotes: GD.bondEmote?.emotes || [],
+  left: n => `오늘 ${n}번 남음`,
+  rate: '조금 천천히 해 주세요.',
+  gained: n => `인연도가 ${n} 올랐습니다(오늘 첫 상호작용).`,
+  icon: k => ({ heart: 'heart', spark: 'star', note: 'note', sweat: 'sick' })[k] || 'heart',
+  help: '별채에서 정인의 모습을 누르면 상호작용을 고를 수 있습니다. 하루 10번까지이고, 하루 처음 한 번은 인연도가 오릅니다. 정인에게 알림이 가며, 설정 › 알림 「연리」에서 끌 수 있습니다.',
+};
+
 export const GARDEN = {
   help: '별채 뒤뜰 밭입니다. 가진 식재료를 한 칸에 하나씩 심고 물을 주면 자랍니다. 심기·거두기는 안전지대에서, 물 주기는 어디서나 합니다. 심을 식재료·비료는 가방과 창고에서 꺼내 쓰고, 거둔 작물은 가방에 들어갑니다. 물 한 번이 하루 가고, 물이 마른 동안은 자라지 않습니다. 작물 단계가 높을수록 오래 자랍니다. 다 자란 뒤 이틀 안에 거두지 않으면 썩습니다. 비료는 심을 때 함께 골라 빨리 자라게 하거나 더 많이 거두게 합니다. 이따금 까마귀가 내려앉아 작물을 쪼아 먹으니 눌러 쫓아 주세요. 허수아비를 세우면 이레 동안 까마귀가 오지 않습니다. 밭은 별채 주인과 한 지붕 정인이 가꾸고, 손님은 까마귀를 쫓아 줄 수 있습니다.',
   plantTip: '식재료 하나를 가방(모자라면 창고)에서 꺼내 심습니다. 다음 창에서 비료를 함께 고릅니다. 심은 뒤 물을 주어야 자랍니다.',

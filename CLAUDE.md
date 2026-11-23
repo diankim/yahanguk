@@ -455,6 +455,13 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 개방: 보조 퀘스트 hs_byeolchae 「객사 별채」(본부 객사, Lv15, after mq_frost_seal, 인물 q:hs_bomi 「순덕」, 마지막 장면 need.gil 1,000) → trg_world_housing_quest가 world_housing_open으로 6×6과 기본 세트 「단청 별채」(world_housing_default_set). 기본 세트 여섯은 capital_market에서 늘 판다(재료값×1.5, 귀속).
 - 가구 보상: trg_world_housing_event(world_events combat·expedition_end·story·gw_win, 캐릭터 행은 안 고치고 곳간·알림만: 일반 0.4%·정예 1.2%·우두머리 3%·원정 완주 4%, 별채 있는 사람만, 곳간이 차면 가방(그때만 캐릭터 행) → 가방도 차면 버리고 알림, 한 번 주는 보상은 곳간을 넘어도)·trg_world_housing_title(칭호)·trg_world_housing_raid(봉연의 그림자 기여 1%↑ 6%+20%×몫, 10장 결전 첫 승리). 방명록 80자·한 별채 하루 3개. 알림 갈래 housing(housing_visit·housing_guest·housing_item·pet_play).
 
+### 정인 상호작용(3.8.1)
+
+- 사용자 결정 11/23(심즈 둘레 메뉴 + 연담·꼬동 느낌): 별채에서 연리 정인의 모습(world_avatar_room — 한 지붕 별채, 혹은 정인 별채 구경)을 누르면 둘레에 상호작용 8가지(포옹하기·손 잡기·머리 쓰다듬기·장난치기·칭찬하기·위로하기·하이파이브·함께 춤추기)가 뜨고, 고르면 내 모습이 정인 곁으로 걸어가 정인이 폴짝 뛰며 머리 위에 하트·별·음표 효과(petsprite EFFECTS)를 띄우고 반응 문구가 뜸.
+- 문구는 **대사 없이 몸짓·기색만**(사용자 결정 — 정인은 다른 조사원이 키우는 캐릭터라 성격·말투를 정하지 않음, 「~것 같습니다」로 단정하지 않게). 원본 supabase/gen_bondemote/lines.md(272줄: 상호작용마다 공통 6·설렘 3·편안함/애틋함/오랜 사이 4, 시간대·날씨·처지마다 공통 4·구간마다 1) → gen.py(대사가 든 줄이 있으면 멈춤) → lines.sql(engine.sql + 표 world_bond_emote_lines) → gen_garden/build.py가 3.8.1 마이그레이션에 붙임.
+- 규칙 world_bond_emote_rules() 한 곳(emotes·tiers 설렘 0·편안함 300·애틋함 1,000·오랜 사이 2,500 — 인연도에 상한이 없어 넓게, 사용자 결정·day 10·gap_s 3·gain 2(하루 처음 한 번)·state_p·weather_p·erosion 55·hp 35·exp_h 1·weather 키 묶음) → gamedata bondEmote → rules.js BOND_EMOTE·guide.js 「연리」.
+- RPC world_bond_emote(p_emote): world_seal_guard, 행 잠금(world_bond_emotes — 캐릭터 정리 대상), 3초 안 연타는 HINT rate, 하루 10, 고르기 = ① 내 처지(요화·침식·체력·원정 귀환 1시간) state_p ② 그 시간대 첫 상호작용 ③ 날씨 weather_p ④ 기본 줄, 구간 줄 + 공통, 바로 앞 줄 제외. 하루 처음 world_bond_gain 2, 정인에게 알림 bond_emote(갈래 bond, 끌 수 있음 — 문구에 안내). 남은 횟수는 world_bond_snapshot.bond.emote_left. 화면 housing.js openEmoteMenu·sendEmote(rpc로 부름 — act로 부르면 별채가 다시 그려져 걸어가던 모습이 사라짐), 연출이 끝날 때까지 다시 못 누름.
+
 ### 내 모습(1.2.0)
 
 - 그림 원본 tools/avatar_art/(data.py 몸·얼굴·눈·입, hair_art.py 머리 27(ORDER, 모양은 hair_rows.py — 3.6.0b에 열넷을 더함, 묶은 머리 끈은 공통 색 r 진회색: 빨간 끈은 색 맞추기 어려워 쓰지 않음, 사용자 결정), tops_art.py 윗옷·아랫옷·장신구 손그림) → gen.py가 assets/js/housing/avatar.js와 supabase/gen_avatar/parts.json을 만들고, supabase/gen_avatar/gen.py(avatar.sql + parts.json)가 마이그레이션 20261110000000을 만든다. 28×34 칸, 3단 명암, 바깥 윤곽은 꼬마 동무처럼 검은 한 겹(#1a120e, avatarsprite.js — 사용자 결정).

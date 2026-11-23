@@ -16,6 +16,8 @@ import { registerFurns } from '../housing/furndef.js';
 import { kinLook, kinFace, kinTalk, kinGreet, kinWear, kinRoom, kinGift } from '../kin.js';
 import { KIN } from '../rules.js';
 import { kinTokenSvg } from '../kintoken.js';
+import { loadBond } from '../bond.js';
+import { BOND_EMOTE } from '../rules.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -32,6 +34,7 @@ const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith
 let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0, cur = 0;
 let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
 let pets = [], fx = [], poops = [], folks = [];
+let bondP = null, emoteLeft = 0, emoteBusy = false;
 const housePets = () => (snap?.pets || (snap?.pet ? [snap.pet] : [])).filter(p => PETS[p.id]);
 const petKey = p => `${p.keeper || ''}:${p.id}`;
 const findPet = k => housePets().find(p => petKey(p) === k);
@@ -47,6 +50,7 @@ export function destroy() { cancelAnimationFrame(raf); raf = null; el = null; cv
 
 async function reload() {
   if (!el) return;
+  loadBond().then(b => { bondP = b?.bond?.partner_id || null; emoteLeft = b?.bond?.emote_left ?? 0; }).catch(() => {});
   try {
     const pre = store.houseSnap; store.houseSnap = null;
     snap = pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
@@ -430,6 +434,8 @@ function onCanvas(e) {
   if (!editing) {
     const hitPet = onFloor && pets.find(pt => Math.abs(gx - pt.x - .5) < 1 && Math.abs(gy - pt.y - .5) < 1);
     if (hitPet) { fx.push({ key: 'heart', pk: hitPet.key, until: Date.now() + 1200 }); paint(); return; }
+    const hitMate = onFloor && bondP && folks.find(f => f.id === bondP && Math.abs(gx - f.x - .5) < 1 && Math.abs(gy - f.y - .5) < 1.4);
+    if (hitMate) return openEmoteMenu(hitMate);
     const hitKin = onFloor && folks.find(f => f.kin && Math.abs(gx - f.x - .5) < 1 && Math.abs(gy - f.y - .5) < 1.4);
     if (hitKin) { const k = hitKin.kin; if (!k.mine || k.left > 0) kinAct(null, k.mine ? 'talk' : 'greet', k.owner); else toast(KIN.left(0)); return; }
     const hitW = room.hit(bx, by), pic = hitW && WALL[hitW.k]?.frame && hitW.d != null ? snap.drawings?.[hitW.d] : null;
@@ -745,9 +751,11 @@ function setupFolks() {
 }
 function tickFolk(m) {
   m.f++;
+  if (m.hop > 0) m.hop--;
+  if (m.hold > 0) { m.hold--; return; }
   if (m.path.length) {
-    const [tx, ty] = m.path[0], dx = tx - m.x, dy = ty - m.y, sp = 0.1;
-    if (Math.abs(dx) + Math.abs(dy) <= sp) { m.x = tx; m.y = ty; m.path.shift(); if (!m.path.length) { m.walking = false; m.wait = 24 + Math.random() * 60; } }
+    const [tx, ty] = m.path[0], dx = tx - m.x, dy = ty - m.y, sp = m.fast ? 0.3 : 0.1;
+    if (Math.abs(dx) + Math.abs(dy) <= sp) { m.x = tx; m.y = ty; m.path.shift(); if (!m.path.length) { m.walking = false; m.wait = 24 + Math.random() * 60; const cb = m.onArrive; m.onArrive = null; m.fast = false; cb?.(); } }
     else { m.x += Math.sign(dx) * Math.min(sp, Math.abs(dx)); m.y += Math.sign(dy) * Math.min(sp, Math.abs(dy)); m.flip = (dx - dy) < 0; m.walking = true; }
     return;
   }
@@ -761,8 +769,55 @@ function tickFolk(m) {
   if (path && path.length) m.path = path; else m.wait = 30;
 }
 function drawFolk(c, m) {
-  const [sx, sy] = c.iso(m.x + .5, m.y + .5, 0);
+  const [sx, sy0] = c.iso(m.x + .5, m.y + .5, 0), hop = m.hop > 0 ? Math.round(Math.abs(Math.sin(m.hop / 6 * Math.PI)) * 5) : 0, sy = sy0 - hop;
   const frame = m.walking ? ['walk', 'stand', 'walk2', 'stand'][Math.floor(m.f / 2) % 4] : m.f % 36 < 2 ? 'blink' : 'stand';
   drawAvatar(c.put, m.look, frame, sx, sy + 4, m.flip, m.job);
+  for (const f of fx) if (f.fk === m.id) drawEffect(c.put, f.key, sx, sy - 34 - Math.floor((2400 - (f.until - Date.now())) / 300));
+}
+function closeEmoteMenu() { el?.querySelector('.hs-emote')?.remove(); }
+function openEmoteMenu(mate) {
+  closeEmoteMenu();
+  if (emoteBusy) return;
+  const stage = $('.hs-stage', el); if (!stage || !room) return;
+  const [bx, by] = room.iso(mate.x + .5, mate.y + .5, 0), r = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  const px = r.left - sr.left + bx * r.width / room.W, py = r.top - sr.top + (by - 18) * r.height / room.H;
+  const list = BOND_EMOTE.emotes, rad = Math.min(118, Math.max(84, r.width * 0.2));
+  const box = document.createElement('div'); box.className = 'hs-emote';
+  box.innerHTML = `<button type="button" class="hs-emote-c" data-emx aria-label="닫기"><b>${esc(mate.name)}</b><small>${esc(BOND_EMOTE.left(emoteLeft))}</small></button>` + list.map((e, i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / list.length;
+    return `<button type="button" class="btn small hs-emote-b" data-emote="${esc(e.k)}" style="left:${Math.cos(a) * rad}px;top:${Math.sin(a) * rad * 0.78}px" ${emoteLeft > 0 ? '' : 'disabled'}>${esc(e.name)}</button>`;
+  }).join('');
+  box.style.left = `${Math.max(rad + 50, Math.min(sr.width - rad - 50, px))}px`; box.style.top = `${Math.max(rad * 0.78 + 24, Math.min(sr.height - rad * 0.78 - 24, py))}px`;
+  stage.append(box);
+  const off = ev => { if (!box.contains(ev.target)) { closeEmoteMenu(); document.removeEventListener('pointerdown', off, true); } };
+  setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
+  box.addEventListener('click', ev => {
+    if (ev.target.closest('[data-emx]')) { closeEmoteMenu(); return; }
+    const b = ev.target.closest('[data-emote]'); if (!b || b.disabled) return;
+    document.removeEventListener('pointerdown', off, true); closeEmoteMenu(); sendEmote(mate, b.dataset.emote);
+  });
+}
+async function sendEmote(mate, key) {
+  if (emoteBusy) return; emoteBusy = true;
+  let r;
+  try { r = await rpc('world_bond_emote', { p_emote: key }); }
+  catch (e) { emoteBusy = false; toast(e.hint === 'rate' ? BOND_EMOTE.rate : e.message, 'error'); return; }
+  emoteLeft = r.left ?? Math.max(0, emoteLeft - 1);
+  const me = folks.find(f => f.id === store.user?.id), icon = BOND_EMOTE.icon(r.icon);
+  const react = () => {
+    mate.hold = 26; mate.walking = false; mate.path = []; mate.hop = 12;
+    if (me) { me.flip = (mate.x - me.x) - (mate.y - me.y) < 0; mate.flip = !me.flip; me.hold = 26; }
+    fx.push({ key: icon, fk: mate.id, until: Date.now() + 2400 });
+    toast(r.line, 'ok', 6500);
+    if (r.gained) setTimeout(() => toast(BOND_EMOTE.gained(r.gained), 'ok'), 700);
+    setTimeout(() => { emoteBusy = false; }, 2400);
+  };
+  mate.path = []; mate.hold = 200; mate.walking = false;
+  if (!me) return react();
+  const w = walkable(), tx = Math.round(mate.x), ty = Math.round(mate.y), sx = Math.round(me.x), sy = Math.round(me.y);
+  const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => [tx + a, ty + b]).filter(([x, y]) => w.ok(x, y)).sort((a, b) => (Math.abs(a[0] - sx) + Math.abs(a[1] - sy)) - (Math.abs(b[0] - sx) + Math.abs(b[1] - sy)));
+  const dest = near[0], path = dest && (dest[0] !== sx || dest[1] !== sy) ? pathTo(w, sx, sy, dest[0], dest[1]) : null;
+  if (path && path.length) { me.hold = 0; me.fast = true; me.x = sx; me.y = sy; me.path = path; me.onArrive = react; setTimeout(() => { if (me.onArrive === react) { me.onArrive = null; react(); } }, 6000); }
+  else react();
 }
 window.addEventListener('resize', () => { if (cv && room) { fit(); paint(); } });
