@@ -168,6 +168,15 @@ food_js = json.dumps(KIN_FOOD, ensure_ascii=False)
 w(f"select pg_temp.yh_patch('public.world_kin_rules()'::regprocedure, '\"faded\": \"빛바랜 정표\"', {q(chr(34) + 'faded' + chr(34) + ': ' + chr(34) + '빛바랜 정표' + chr(34) + ', ' + chr(34) + 'food' + chr(34) + ': ' + food_js + ', ' + chr(34) + 'food_mul' + chr(34) + ': ' + str(KIN_FOOD_MUL))});")
 w("select pg_temp.yh_patch('public.world_kin_gift(text)'::regprocedure, 'infield := public.world_kin_in_field(uid, k.npc, base);', 'infield := public.world_kin_in_field(uid, k.npc, base) or base = (r -> ''food'' ->> k.npc);');")
 w("select pg_temp.yh_patch('public.world_kin_gift(text)'::regprocedure, 'random() * 100 < (r -> ''reward'' ->> ''pct'')::numeric', 'random() * 100 < (r -> ''reward'' ->> ''pct'')::numeric * (case when base = (r -> ''food'' ->> k.npc) then (r ->> ''food_mul'')::numeric else 1 end)');")
+w("""do $yhm$ declare fn regprocedure := 'public.world_use_item(text)'::regprocedure; src text; o text := 'buff IN (''well_fed'', ''warm_belly'', ''vigor'', ''sea_luck'')'; n int;
+begin
+  select prosrc into src from pg_proc where oid = fn;
+  n := (length(src) - length(replace(src, o, ''))) / length(o);
+  if n <> 3 then raise exception 'use_item meal patch: % 번 나옴', n; end if;
+  src := replace(src, o, '(' || o || ' OR public.world_food_rules() -> ''buffs'' ? buff)');
+  execute regexp_replace(pg_get_functiondef(fn), 'AS \\$function\\$.*\\$function\\$', '', 's') || ' AS $yhfn$' || src || '$yhfn$';
+end $yhm$;""")
+w("update public.world_skill_catalog set description = replace(description, '(든든함·속이 따뜻함·기운 충천·바다의 복)', '(든든함·속이 따뜻함·기운 충천·바다의 복과 고기 힘·뿌리 온기·곡기 든든·큰상 기운·세력 특선 기운)') where skill_id = 'cooking_c43b' and description like '%(든든함·속이 따뜻함·기운 충천·바다의 복)%';")
 w(f"select pg_temp.yh_patch('public.world_storage_rules()'::regprocedure, '''base'', {STORAGE_BASE[0]},', '''base'', {STORAGE_BASE[1]},');")
 
 with open(os.path.join(HERE, 'patch_note.sql')) as f:
