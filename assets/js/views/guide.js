@@ -100,6 +100,7 @@ function factionLoreHtml() {
         <li><b>이점</b> ${esc(l.perk)}</li><li><b>등급 효과</b> 2~5등급마다 ${esc(l.rank)}</li><li><b>적대</b> ${esc(factionNames(GD.factionHostile[k] || []))}</li><li><b>평판의 이름</b> ${esc(l.name2)}</li></ul></div>`; }).join('');
 }
 
+const FOOD = GD.food || {};
 const kinGiftOf = k => { const r = REGULAR.npcs?.[k]; if (!r) return ''; if (r.kind !== 'combat') return r.line_name || ''; const g = REGULAR.combat?.item?.[r.line]?.[0]; return `${r.line_name} · ${KIN.gift_kinds?.[g] || ''}`; };
 const pjBase = kind => { const p = Object.values(PROJECT.projects || {}).find(x => x.kind === kind); return (p?.base || []).map(n => fmt.num(n)).join(' · '); };
 const pjList = (kind, f) => Object.values(PROJECT.projects || {}).filter(p => p.kind === kind).map(p => `<li>${f(p)}</li>`).join('');
@@ -617,6 +618,18 @@ const S = [
       <tr><td>월광 이끼죽 Lv12</td><td>체력 35 · 정신 10 · 속이 따뜻함</td><td>월광 이끼 · 농축 약초액 · 노정 건량</td></tr>
       <tr><td>영맥 약선탕 Lv24</td><td>체력 50 · 정신 10 · 기운 충천</td><td>영맥 수피 · 약제 바탕 · 빙정염</td></tr></table>
     <ul><li>모두 한 번에 3개씩, 어디서나 만듭니다.</li></ul>
+    <h4>식재료와 고기</h4>
+    <ul>
+      <li>식재료 ${FOOD.ing?.length || 0}가지(${esc((FOOD.ing || []).join('·'))})는 이미 있는 채집터에서 다른 재료와 함께 나옵니다. 지역 풍경과 세력 땅마다 나는 것이 다르고, 거점 상점이 교체 품목으로 팔기도 합니다.</li>
+      <li>고기(${esc((FOOD.meats || []).join('·'))})는 비금·거괴·파봉·갑각·수귀·천상 갈래 요괴를 물리치면 ${FOOD.meat_n?.[0]}~${FOOD.meat_n?.[1]}개씩 얻을 때가 있습니다. 정예·우두머리일수록 자주 나옵니다.</li>
+      <li>고기는 그대로 먹지 못합니다. 멧돼지고기는 숯불 훈연(정련 숯), 독게살은 독 빼기(농축 약초액), 요괴 생선살은 소금 절이기(빙정염)가 필요해 그 재료가 함께 듭니다.</li>
+      <li>매운탕·찜·조림·탕·죽 같은 기존 요리에도 식재료가 들어갑니다.</li>
+    </ul>
+    <h4>세력 특선 음식</h4>
+    <table class="guide-table"><tr><th>세력</th><th>거점</th><th>특선 음식</th><th>기운</th></tr>${(FOOD.specials || []).map(f => `<tr><td>${esc(MAJOR_FACTIONS[f.faction]?.name || f.faction)}</td><td>${esc(f.hub)}</td><td>${(f.items || []).map(i => `${esc(i.name)} Lv${i.lv}`).join(' · ')}</td><td>${esc(f.items?.[0]?.buff || '')}</td></tr>`).join('')}</table>
+    <ul><li>거점 상점이 늘 팝니다(사람마다 품목별 하루 ${FOOD.cap}개). 제작법으로도 만들 수 있고, 그 거점에서 만들면 품질이 오릅니다.</li></ul>
+    <h4>새 음식 기운</h4>
+    <table class="guide-table"><tr><th>기운</th><th>효과</th><th>지속</th></tr>${(FOOD.status || []).map(t => `<tr><td>${esc(t.name)}</td><td>${esc(effectText(t.effects).join(' · '))}</td><td>${t.min >= 60 ? `${Math.floor(t.min / 60)}시간${t.min % 60 ? ` ${t.min % 60}분` : ''}` : `${t.min}분`}</td></tr>`).join('')}</table>
     <h4>음식 기운</h4>
     <table class="guide-table"><tr><th>기운</th><th>효과</th></tr>
       <tr><td>든든함</td><td>채집량 +6% · 회복량 +5%</td></tr>
@@ -1272,7 +1285,7 @@ const S = [
       <li>${KIN.tip()}</li>
       <li>별채에서 백년지기를 누르거나 아래 줄의 「말 걸기」를 누르면 그때그때 맞는 말을 합니다 — 시간대·날씨, 내 처지(쓰러짐·침식·요화·원정에서 돌아옴·먼 길·레벨 오름), 별채(초상·동무·새 가구·함께 사는 정인), 맺은 지 이레·한 달·백 날 같은 날.</li>
       <li>백년지기가 머무는 방은 동무처럼 고를 수 있습니다(다른 방에 있으면 줄의 「이 방으로」). 혼례 정인과 한 지붕이면 두 사람의 백년지기가 함께 지내고, 정인의 백년지기를 누르면 인사를 건넵니다. 말 걸기·선물·이점은 저마다 자기 백년지기에게만.</li>
-      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>반기는 선물(분야 물품)</th><th>답례 ×${KIN.reward?.n}(분야 물품을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${kinTokenSvg(k, 16)} ${esc(n.token)}</td><td>${esc(kinGiftOf(k))}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
+      <li><table class="guide-table"><tr><th>인물</th><th>정표</th><th>반기는 선물(분야 물품)</th><th>좋아하는 음식</th><th>답례 ×${KIN.reward?.n}(분야 물품·좋아하는 음식을 건넸을 때 · 우수품이 있으면 우수품)</th></tr>${Object.entries(KIN.npcs || {}).sort(([a], [b]) => (REGULAR.npcs?.[a]?.sort ?? 0) - (REGULAR.npcs?.[b]?.sort ?? 0)).map(([k, n]) => `<tr><td>${esc(REGULAR.npcs?.[k]?.name || k)}</td><td>${kinTokenSvg(k, 16)} ${esc(n.token)}</td><td>${esc(kinGiftOf(k))}</td><td>${esc(n.food || '')}</td><td>${esc(n.reward || '')}</td></tr>`).join('')}</table></li>
     </ul>`],
   ['feast', '세력 행사', `
     <ul>

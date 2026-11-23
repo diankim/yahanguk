@@ -61,7 +61,7 @@ export async function kinGift(k, after) {
   const note = untradeNote(have, ref, false);
   let sel = {};
   const m = openModal({ title: `${k.name}에게 선물`, body: `<form class="kin-gift">
-    <p class="desc">${esc(KIN.giftTip(k.name, k.line_name))}</p>
+    <p class="desc">${esc(KIN.giftTip(k.name, k.line_name, k.npc))}</p>
     <div class="chips" data-gift-chips></div>
     <button class="btn small dt-pick" type="button" data-gift-add ${rows.length ? '' : 'disabled'}>${icon('bag', 15)}<span>가방에서 고르기</span></button>
     ${note}

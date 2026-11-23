@@ -345,7 +345,7 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 
 ### 개인 창고(world_storage)
 
-- 어느 안전지대에서나 같은 창고, 기본 70칸(가방과 같은 묶음). world_storage_snapshot·world_storage_put·world_storage_take(들어가는 만큼)·world_storage_expand.
+- 어느 안전지대에서나 같은 창고, 기본 90칸(3.8.0에 70→90, 식재료가 늘어 — world_storage_rules base, 가방과 같은 묶음). world_storage_snapshot·world_storage_put·world_storage_take(들어가는 만큼)·world_storage_expand.
 - 넓히기(world_storage_capacity, 최대 204 — 3.4.0g 사용자 결정: 직업을 바꿔 키우는 사람이 장비를 둘 자리, 수치는 world_storage_rules() 한 곳 → gamedata storage → services.js 창고 「넓히기」·guide.js): 전 8번 +4씩(1,000·2,500·5,000·10,000·20,000·35,000·50,000·80,000전, world_storage.bought 0~8)·이야기 6~10장 +2씩·외전 장 gq_1~5·mkq_1~5 마칠 때마다 +2(2.0.0)·명등기 3·6·9·12·15장 +3(3.0.0)·대세력 평판 300·600·1000 +2씩(한 번 닿은 단계는 world_storage_marks.faction_steps에 남아 세력을 떠나거나 옮겨도 그대로 — trg_world_storage_faction_mark, 3.5.0l 사용자 결정)·완전 답사 10곳마다 +2(80곳까지)·직업 전투 계열(world_combat_lines)이 15단계에 닿을 때마다 두 번째 계열부터 +4(다섯 계열까지)·연담 인물 이야기 rg_<npc>_5를 마칠 때마다 +1(열다섯 명). 줄어 넘쳐도 물품은 남고 맡기기만 막음.
 - 보기는 어디서나(snapshot can_move·reason·in_safe, 가방 › 제작 「창고 보기」), 맡기기·꺼내기는 안전지대만. 버리기 world_storage_discard는 어디서나(잠금·귀속 소모품 거절). 장착 중인 마지막 하나·임무 물품은 못 맡기고(강화한 장비는 맡겨도 강화가 남음 — world_enhance_cleanup은 가방·창고가 모두 0일 때만 지우고 창고 쪽 trg_world_enhance_cleanup_store, 꺼내기는 가방을 먼저 채움, 3.4.0k 사용자 요청), 전투불능·이동·원정·자율 중엔 못 씀(world_storage_check, world_seal_guard). 행동 기록 없음.
 - 안전지대 제작은 world_craft_item이 모자란 재료를 창고에서 꺼내 씀(가방 먼저, 빈약한 안전지대 둘 제외 — world_banyo_here), 제작 화면 재료 수에 창고 몫 표시(world_storage_snapshot.use_here — 안전지대이고 빈약한 곳이 아닐 때만, 2.3.2: 화면이 「반요촌」 이름만 보고 묵창 나루에서 창고 몫을 더해 「만들 수 있음」으로 보이던 것). 필요 도구도 같은 조건에서 창고에 있으면 됨(1.0.3e, 조건만 — 제작 공구 품질 덤 world_craft_tool_bonus는 가방에 든 것만), 화면 bag.js toolNote가 「(강화 채집도 · 창고로 됨)」처럼 대신 채운 도구를 적음. 결과가 가방에 안 들어가면 제작 전에 거절.
@@ -426,6 +426,13 @@ world_quickslots(8칸, world_quickslots_get·set), 캐릭터 › 상태 맨 위(
 - 어종 50종(서식지·희귀도·시간대·날씨). 희귀도 무게(범품 60·양품 25·진품 9·명품 3·신품 0.6, 진품 이상은 희귀 보정을 곱함)·시간대/날씨 맞음 ×3·어긋남 ×0.3(「물때 읽기」 0.6)은 world_fish_rules 한 곳(→ gamedata fishRules). 미끼 칸 world_fish_species.bait_for(그 물고기가 미끼가 되는 명어 목록, 묵적록부터). world_fish_species.grounds(그 낚시터에서만, 비우면 같은 물 어디서나 — world_fish·world_fish_spot·world_fish_codex.where·world_item_sources가 거름, 도감 「…에서만」). 모든 어종은 제작법 하나 이상에 쓰인다(손질·요리, 등롱 어유→어유 등잔(등잔빛: 조우·침식·정신 손실 감소), 귀어 환혼단, 복어→독낭, 은린어→수귀 비늘, 봉인 먹·말린 생선포·4~6단계 낚싯대·수조) — 새 어종도 제작법을 잇는다. 도감은 못 낚은 어종 이름을 감추고 힌트만.
 - 낚시 칭호 11(바다 sea_angler·tide_reader·nine_harbors·sea_dragon 포함): 입질·희귀 어종·크기 효과.
 - 요리: 손질한 생선으로(바다 요리 9 포함). 어죽(건량 1 + 생선살 1 → 2그릇) 탐색력 2(1.0.4o, 옛 4 — 건량 하나가 탐색력 8이 되던 고리) · 노정 건량 제작 5→3개(재료값 129전 ÷ 3 × 1.1 = 47 ≤ 시세 50). 우수품은 탐색력을 늘리지 않음(world_use_item v_hq는 체력·정신·영력·침식만, 화면 item.js USABLE 「탐색력은 같음」). 생선 없는 음식(gen71/i_food.sql): 야령초 나물밥 Lv1 체력 20·월광 이끼죽 Lv12 체력 35·정신 10·영맥 약선탕 Lv24 체력 50·정신 10(두 그릇씩). 먹으면 회복 + 이로운 상태(든든함·속이 따뜻함·기운 충천·바다의 복).
+
+### 야행 식탁(3.8.0)
+
+- 제보 141·사용자 결정 11/23. 생성기 supabase/gen_food/(plan.md 기획 · data.py 식재료 ING·고기 MEAT·갈래별 고기 MEAT_DROP·채집 규칙 GATHER·기운 ST·요리 DISH·세력 특선 SPECIAL·기존 제작법 고치기 EDIT·연담 좋아하는 음식 KIN_FOOD · patch_note.sql · gen.py가 id 겹침·재료 쓰임·기운 키·손질 규칙을 검사) → migrations/20261126180000_world_3_8_0_food.sql. 수치는 world_food_rules() 한 곳(meats·meat_p 일반 .25/정예 .4/우두머리 .6·meat_n 1~2·fixed 특선·cap 하루 5·shop_mul·show_min·specials·hubs·buffs) → gamedata food → guide.js 「요리」.
+- 식재료 fd_* 17(재료·묶음 50): 이미 있는 채집터 loot_items에 채집터마다 하나씩 더함(지역 풍경·세력 땅·레벨 규칙 GATHER, md5로 고름) — 채집 함수는 그대로. 고기 mt_* 6: 비금·거괴·파봉·갑각·수귀·천상 갈래 요괴 drops에 들어가지만 일반 전리품 굴림에서 빠지고(world_food_is_meat) world_battle_action이 world_food_meat_roll(loot, drops, rank)로 따로 굴림. 손질이 필요한 고기(멧돼지 → 정련 숯·독게 → 농축 약초액·요괴 생선 → 빙정염)는 그 재료가 제작법에 함께 듦.
+- 요리 dish_* 32(낮은 단계 30~45분 기존 기운, 높은 단계 새 기운 고기 힘·뿌리 온기·곡기 든든 1시간·큰상 기운 2시간 — 사용자 결정: 음식 기운은 짧게 해 소비되게; 명장 요리는 그대로)·기존 요리 24 제작법에 식재료를 섞음. 세력 특선 sp_<세력>_1·2(Lv10·30, 거점 상점이 늘 팖 — world_shop_refresh가 world_food_fixed()를 늘 진열, 하루 5개 daily_cap, 제작법 장소는 그 거점, 기운 fs_<세력> 90분). 상점 진열 최소 10(빈약한 곳 6)·거점 상점 교체 품목에 그 땅 식재료·고기.
+- 연담 좋아하는 음식: world_kin_rules().food(인물 → 물품)·food_mul 1.5 — world_kin_gift가 좋아하는 음식을 분야 물품처럼 보고 답례 확률에 곱함. 화면 rules.js KIN.giftTip(이름, 분야, npc)·guide.js 백년지기 표(gamedata kin.npcs[].food).
 
 ### 별채
 
