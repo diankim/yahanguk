@@ -49,12 +49,14 @@ const MAKE = {
   crit: () => strokeSvg({ len: 150, w: 16, rot: rnd(26, 40), cls: 'verm', delay: 70 }) + drops(5, 66, 'verm'),
   claw: o => [-14, 0, 14].map((d, i) => strokeSvg({ len: 104, w: 8, rot: 34, dx: d, dy: -d * 0.4, delay: i * 45 })).join('') + drops(4, 44, o.tone),
   guard: () => enso(72, 8, '', 170),
+  rise: () => [-26, 0, 24].map((d, i) => strokeSvg({ len: 58 + i % 2 * 16, w: 7, rot: -90 + rnd(-6, 6), dx: d, dy: 8, cls: 'rise', delay: i * 70 })).join('') + drops(3, 30),
 };
 
 export function inkFx(layer, kind, opts = {}) {
   if (!layer || !MAKE[kind]) return;
   const box = document.createElement('div');
   box.className = `ink-fx ink-${kind} ${opts.tone || ''}`;
+  if (opts.color) box.style.color = opts.color;
   box.innerHTML = MAKE[kind](opts);
   layer.append(box);
   setTimeout(() => box.remove(), opts.ms || 820);
@@ -98,7 +100,17 @@ export function fightFx(root, a, b, o = {}) {
         const mbox = root.querySelector('.raid-me'), ml = overlay(mbox);
         setTimeout(() => { inkFx(ml, 'claw', { tone: 'bad' }); num(ml, `-${d}`, 'hurt'); pop(ml, 'ovl-hurt', 380); pop(mbox, d >= 15 ? 'shake-big' : 'shake', d >= 15 ? 520 : 360); }, mine > 0 ? 220 : 0);
       }
-    } else if (d < 0 && id === me) pop(root.querySelector('.raid-me'), 'heal-glow', 700);
+    } else if (d < 0 && id === me) { const ml = overlay(root.querySelector('.raid-me')); inkFx(ml, 'rise', { color: 'var(--hp)' }); num(ml, `+${-d}`, 'heal'); }
   }
   if (hurt >= 3 || (hurt >= 2 && hurt >= alive)) pop(root.querySelector('.raid-members'), 'ovl-aoe', 520);
+}
+
+export function fixedOver(el, ms = 1300) {
+  if (!el) return null;
+  const r = el.getBoundingClientRect(), d = document.createElement('div');
+  d.className = 'fx-fixed';
+  Object.assign(d.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+  document.body.append(d);
+  setTimeout(() => d.remove(), ms);
+  return d;
 }

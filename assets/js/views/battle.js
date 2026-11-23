@@ -4,7 +4,7 @@ import { USABLE } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GAMEDATA } from '../gamedata.js';
 import { spearRing, spearInner, spearTitle, itemTray, itemSectionsHtml } from './fightui.js';
-import { inkFx } from '../inkfx.js';
+import { inkFx, fixedOver } from '../inkfx.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
@@ -156,6 +156,7 @@ async function send(action, item) {
   if (busy || Date.now() < nextAt) return;
   busy = true; tickCooldown();
   try {
+    const c0 = store.character || {}, before = { hp: c0.health, mp: c0.mental, sp: c0.spiritual_power, er: c0.erosion };
     const r = await rpc('world_battle_action', item ? { p_action: action, p_item: item } : { p_action: action });
     nextAt = Date.now() + GAP;
     const c = store.character;
@@ -166,14 +167,14 @@ async function send(action, item) {
     if (r.ended) {
       data.battle = null;
       const fresh = refreshCharacter().then(() => emit('changed', { name: 'world_battle_action', data: r }));
-      floats(r); hitFx(r, action, true);
+      hitFx(r, action, true, before);
       setTimeout(() => { if (action === 'sneak') toast(`기척을 숨겨 ${foe}의 눈을 피했습니다.`, 'ok'); else showEnd(r, foe); }, 650);
       Promise.all([fresh, new Promise(ok => setTimeout(ok, 650))]).then(() => onEnd?.(r));
     } else {
       if (action === 'flee') setTimeout(() => showFleeFail(r, foe), 400);
       data.battle = r.battle;
       draw(r.lines || []);
-      floats(r); hitFx(r, action, false);
+      hitFx(r, action, false, before);
       applyMe(r).then(() => { emit('changed', { name: 'world_battle_action', data: r }); if (data.battle && host?.isConnected) refreshVitals(); });
     }
   } catch (e) {
@@ -199,29 +200,36 @@ function applyMe(r) {
   return Promise.resolve();
 }
 
-function floats(r) {
-  const put = (id, text, cls) => { const layer = $(id, host); if (!layer) return; const s = document.createElement('span'); s.className = `float ${cls}`; s.textContent = text; layer.append(s); setTimeout(() => s.remove(), 1100); };
-  if (r.damage) put('#foe-float', `-${r.damage}`, r.crit ? 'crit' : 'dmg');
-  if (r.taken) put('#me-float', `-${r.taken}`, 'hurt');
-  if (r.heal) put('#me-float', `+${r.heal}`, 'heal');
+function floats(r, foe, me) {
+  const put = (layer, text, cls, color) => { if (!layer) return; const s = document.createElement('span'); s.className = `float ${cls}`; s.textContent = text; if (color) s.style.color = color; layer.append(s); setTimeout(() => s.remove(), 1100); };
+  if (r.damage) put(foe, `-${r.damage}`, r.crit ? 'crit' : 'dmg');
+  if (r.taken) put(me, `-${r.taken}`, 'hurt');
+  return put;
 }
 function pulse(sel, cls, ms) { const n = sel instanceof Element ? sel : $(sel, host); if (!n) return; n.classList.remove(cls); void n.offsetWidth; n.classList.add(cls); setTimeout(() => n.classList.remove(cls), ms); }
-function hitFx(r, action, ended) {
+function hitFx(r, action, ended, before = {}) {
   const kind = (data.weapon?.type || 'melee'), sec = $('.battle', host);
+  const foe = ended ? fixedOver($('#foe', host)) : $('#foe-float', host), mel = ended ? fixedOver($('#me', host)) : $('#me-float', host);
+  const put = floats(r, foe, mel);
   if (r.damage) {
-    inkFx($('#foe-float', host), kind === 'ranged' ? 'arrow' : kind === 'magic' ? 'burst' : 'slash', { tone: action === 'skill' ? 'gold' : '' });
+    inkFx(foe, kind === 'ranged' ? 'arrow' : kind === 'magic' ? 'burst' : 'slash', { tone: action === 'skill' ? 'gold' : '' });
     pulse('#foe', 'hit-flash', 260);
     pulse('#foe', r.crit ? 'shake-big' : 'shake', r.crit ? 520 : 360);
-    if (r.crit) { pulse(sec, 'crit-flash', 420); inkFx($('#foe-float', host), 'crit'); }
+    if (r.crit) { pulse(sec, 'crit-flash', 420); inkFx(foe, 'crit'); }
   }
+  if (action === 'guard') inkFx(mel, 'guard', { tone: 'gold' });
   if (r.taken) {
     const hard = r.taken >= 15;
-    inkFx($('#me-float', host), 'claw', { tone: 'bad' });
+    setTimeout(() => inkFx(mel, 'claw', { tone: 'bad' }), action === 'guard' ? 160 : 0);
     pulse('#me', 'hurt-flash', 380);
     pulse('#me', hard ? 'shake-big' : 'shake', hard ? 520 : 360);
     if (hard) pulse(sec, 'shake-screen', 420);
-  } else if (action === 'guard' && !r.heal) { inkFx($('#me-float', host), 'guard', { tone: 'gold' }); }
-  if (r.heal) pulse('#me', 'heal-glow', 700);
+  }
+  const now = r.me || { health: r.health };
+  const gains = [['hp', now.health - before.hp, 'var(--hp)'], ['mp', now.mental - before.mp, 'var(--mp)'], ['sp', now.spiritual_power - before.sp, `var(--${spOf()[1]})`], ['er', before.er - now.erosion, 'var(--er)']]
+    .filter(([, d]) => Number.isFinite(d) && d > 0);
+  if (!gains.length && r.heal) gains.push(['hp', r.heal, 'var(--hp)']);
+  gains.forEach(([k, d, col], i) => setTimeout(() => { inkFx(mel, 'rise', { color: col }); put(mel, `${k === 'er' ? '침식 −' : '+'}${d}`, 'heal', col); }, i * 180));
   if (ended && r.ended === 'victory') pulse('#foe', 'foe-down', 900);
 }
 function sfx(r) {
