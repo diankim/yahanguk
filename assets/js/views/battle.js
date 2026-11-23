@@ -4,6 +4,7 @@ import { USABLE } from './item.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GAMEDATA } from '../gamedata.js';
 import { spearRing, spearInner, spearTitle, itemTray, itemSectionsHtml } from './fightui.js';
+import { inkFx } from '../inkfx.js';
 
 export const STYLE = { melee: '근접', ranged: '원거리', magic: '술법' };
 export const JOB = Object.fromEntries(Object.entries(JOBS).map(([k, v]) => [k, v.name]));
@@ -205,22 +206,21 @@ function floats(r) {
   if (r.heal) put('#me-float', `+${r.heal}`, 'heal');
 }
 function pulse(sel, cls, ms) { const n = sel instanceof Element ? sel : $(sel, host); if (!n) return; n.classList.remove(cls); void n.offsetWidth; n.classList.add(cls); setTimeout(() => n.classList.remove(cls), ms); }
-function mark(layer, cls, ms = 520) { const l = $(layer, host); if (!l) return; const s = document.createElement('i'); s.className = `hfx ${cls}`; l.append(s); setTimeout(() => s.remove(), ms); }
 function hitFx(r, action, ended) {
   const kind = (data.weapon?.type || 'melee'), sec = $('.battle', host);
   if (r.damage) {
-    mark('#foe-float', `hfx-${kind === 'ranged' ? 'arrow' : kind === 'magic' ? 'burst' : 'slash'}${action === 'skill' ? ' big' : ''}`);
+    inkFx($('#foe-float', host), kind === 'ranged' ? 'arrow' : kind === 'magic' ? 'burst' : 'slash', { tone: action === 'skill' ? 'gold' : '' });
     pulse('#foe', 'hit-flash', 260);
     pulse('#foe', r.crit ? 'shake-big' : 'shake', r.crit ? 520 : 360);
-    if (r.crit) { pulse(sec, 'crit-flash', 420); mark('#foe-float', 'hfx-crit', 700); }
+    if (r.crit) { pulse(sec, 'crit-flash', 420); inkFx($('#foe-float', host), 'crit'); }
   }
   if (r.taken) {
     const hard = r.taken >= 15;
-    mark('#me-float', 'hfx-claw');
+    inkFx($('#me-float', host), 'claw', { tone: 'bad' });
     pulse('#me', 'hurt-flash', 380);
     pulse('#me', hard ? 'shake-big' : 'shake', hard ? 520 : 360);
     if (hard) pulse(sec, 'shake-screen', 420);
-  } else if (action === 'guard' && !r.heal) { mark('#me-float', 'hfx-guard', 640); }
+  } else if (action === 'guard' && !r.heal) { inkFx($('#me-float', host), 'guard', { tone: 'gold' }); }
   if (r.heal) pulse('#me', 'heal-glow', 700);
   if (ended && r.ended === 'victory') pulse('#foe', 'foe-down', 900);
 }
