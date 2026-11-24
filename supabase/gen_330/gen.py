@@ -467,6 +467,8 @@ on conflict (title_key) do update set title_name = excluded.title_name, descript
         per = xp // max(1, len(task_steps))
         if not q['summary']:
             errors.append(f"{q['id']}: 요약 없음")
+        if q['id'] not in SHORT:
+            errors.append(f"{q['id']}: 카드 한 줄 소개 없음(supabase/quest_short/short.py)")
         for a in after:
             if a not in REF['quests'] and a not in META and a not in _side.META:
                 errors.append(f"{q['id']}: 앞 퀘스트 모름 {a}")
