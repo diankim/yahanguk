@@ -434,6 +434,7 @@ function drawDetail() {
           <p class="hint" data-ride-wait ${rideLeft() ? '' : 'hidden'}>${icon('hourglass', 14)}<span>보낸 동승 요청에 답을 기다리는 중 · <b>${rideLeft()}</b>초</span></p>
           <div class="btn-row" data-ride-go-row ${rideLeft() && rideGroup ? '' : 'hidden'}><button class="btn small primary" data-ride-go>지금 출발</button><span class="muted small">수락한 파티원과 바로 떠납니다</span></div>
           <div class="btn-row">${members.length > 1 ? `<button class="btn small primary" data-ride-all ${rideLeft() ? 'disabled' : ''}>${icon('users', 14)}<span>모두에게 동승 요청</span></button>` : ''}${members.map(m => `<button class="btn small" data-ride="${esc(m.owner_id)}" ${rideLeft() ? 'disabled' : ''}>${icon('users', 14)}<span>${esc(m.character_name)} 동승 요청</span></button>`).join('')}</div></div>` : ''}
+        ${!reason && !isHere && route?.length > 1 && !members.length && (partyData?.members || []).some(m => m.owner_id !== c.owner_id) ? `<p class="muted small help-line">${icon('users', 14)} ${(partyData?.members || []).some(m => m.owner_id !== c.owner_id && m.location === c.location) ? '같은 곳의 파티원이 싸우는 중이거나 쓰러져 있어 동승을 요청할 수 없습니다' : '같은 곳에 있는 파티원이 없어 동승을 요청할 수 없습니다'}${helpQ(RIDE_TIP, '동승 안내')}</p>` : ''}
       </div>
     </article>`;
   if (route && route.length > 1 && !reason) fillQuote(box, r.region_id, est);
