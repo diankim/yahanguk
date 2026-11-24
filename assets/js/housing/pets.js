@@ -2199,10 +2199,10 @@ export const PET_SKINS = {
     },
     adult: {
       pal: { a: "#fbf9f4", o: "#e8964a", d: "#4a3f3a", n: "#e07a86", e: "#2a1a14", i: "#8a7a74", p: "#f3a0a0", k: "#1a120e" },
-      idle: [".........k...k...", "........kak.kak..", ".......kaookddak.", "..k....kaaaoadak.", ".kok...kaieaieak.", "kdk....kaeeaeeak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaakaakkkaakak.", "..kaakaak.kaakak.", "...kk.kk...kk.k.."],
-      blink: [".........k...k...", "........kak.kak..", ".......kaookddak.", "..k....kaaaoadak.", ".kok...kaaaaaaak.", "kdk....kakkakkak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaakaakkkaakak.", "..kaakaak.kaakak.", "...kk.kk...kk.k.."],
-      step: [".........k...k...", "........kak.kak..", ".......kaookddak.", "..k....kaaaoadak.", ".kok...kaieaieak.", "kdk....kaeeaeeak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "...kaakaakkaakak.", "..kaak.kaakakkak.", "...kk...kk.k..k.."],
-      sleep: ["..........k...k..", ".........kak.kak.", "........kaookddak", "..kkkkkkkaaaoadak", ".kaaaaaaaakkakkak", "kaaaaaaaapaanaapk", "kaaaaaaaaaaaaaaak", ".kodododododdokk.", "..kkkkkkkkkkkk..."]
+      idle: [".........k...k...", "........kak.kak..", ".......kaookddak.", "..k....kaaaaodak.", ".kok...kaieaieak.", "kdk....kaeeaeeak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaakaakkkaakak.", "..kaakaak.kaakak.", "...kk.kk...kk.k.."],
+      blink: [".........k...k...", "........kak.kak..", ".......kaookddak.", "..k....kaaaaodak.", ".kok...kaaaaaaak.", "kdk....kakkakkak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaakaakkkaakak.", "..kaakaak.kaakak.", "...kk.kk...kk.k.."],
+      step: [".........k...k...", "........kak.kak..", ".......kaookddak.", "..k....kaaaaodak.", ".kok...kaieaieak.", "kdk....kaeeaeeak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "...kaakaakkaakak.", "..kaak.kaakakkak.", "...kk...kk.k..k.."],
+      sleep: ["..........k...k..", ".........kak.kak.", "........kaookddak", "..kkkkkkkaaaaodak", ".kaaaaaaaakkakkak", "kaaaaaaaapaanaapk", "kaaaaaaaaaaaaaaak", ".kodododododdokk.", "..kkkkkkkkkkkk..."]
     }
   }
 };

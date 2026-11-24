@@ -23,7 +23,7 @@ aodododoaaa.''')
 CALICO_ADULT = dict(pal=CALICO_PAL, idle='''
 ........a...a..
 .......aoo.dda.
-.......aaaoada.
+.......aaaaoda.
 .o.....aieaiea.
 d......aeeaeea.
 o......paanaap.
@@ -37,7 +37,7 @@ o......paanaap.
 ..aa...aa.a..a.''', sleep='''
 .........a...a.
 ........aoo.dda
-........aaaoada
+........aaaaoda
 .aaaaaaaakkakka
 aaaaaaaapaanaap
 aaaaaaaaaaaaaaa
