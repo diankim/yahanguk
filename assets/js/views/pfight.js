@@ -46,10 +46,13 @@ async function refresh() {
     clock.sync(snap);
     if ((prev && prev !== snap.status && ended()) || (prevRound && prevRound !== snap.round) || (prevTurn && prevTurn !== snap.turn_id)) await settle();
     draw(); plan();
-    const myName = `${store.character?.character_name} · `;
-    if (before && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true,
-      crit: (snap.log || []).slice(logN).some(l => l.startsWith(myName) && /치명/.test(l)) });
+    inkAfter(before, logN);
   } catch (e) { if (el) el.innerHTML = errorBox(e.message); }
+}
+function inkAfter(before, logN) {
+  const myName = `${store.character?.character_name} · `;
+  if (before && snap && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true,
+    crit: (snap.log || []).slice(logN).some(l => l.startsWith(myName) && /치명/.test(l)) });
 }
 const fxOf = s => s && { boss: s.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.health, dmg: m.dmg, out: !!m.out }])) };
 const settle = () => settleFight('world_pfight_act');
@@ -171,11 +174,12 @@ async function run(btn, fn) {
   if (sending) { queued = () => run(btn, fn); return; }
   sending = true; btn.disabled = true;
   try {
-    const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id;
+    const prev = snap?.status, prevRound = snap?.round, prevTurn = snap?.turn_id, before = snap ? fxOf(snap) : null, logN = snap?.log?.length || 0;
     const out = await fn();
     if (out) { snap = out; clock.sync(out); }
     if ((ended() && prev !== snap.status) || prevRound !== snap.round || prevTurn !== snap.turn_id || btn.id === 'pf-join') await settle();
     draw(); plan();
+    if (out) inkAfter(before, logN);
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
   finally { sending = false; if (queued) { const q = queued; queued = null; q(); } }
 }
