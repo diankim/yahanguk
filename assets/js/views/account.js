@@ -2,6 +2,7 @@ import { ask, db, store, rpc, esc, particle, icon, $, toast, friendlyError, load
 import { logout } from '../session.js';
 import { panel } from './common.js';
 import { emailToId } from '../config.js';
+import { helpLine } from '../tips.js';
 
 export async function render(el) {
   const u = store.user || {};
@@ -56,6 +57,6 @@ export async function fillInvites(box) {
   let r; try { r = await rpc('world_invite_mine'); } catch { return; }
   if (!box.isConnected || !(r?.codes || []).length) return;
   const day = t => t ? new Date(t).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-  box.innerHTML = panel('내 초대권', `<p class="desc">함께할 사람에게 건네세요. 새로 가입하는 사람이 회원가입 화면에 이 번호를 적습니다. 초대권마다 쓸 수 있는 기한이 있고, 한 장으로 한 사람만 가입합니다. 번호는 따로 적어 두세요.</p>
+  box.innerHTML = panel('내 초대권', `${helpLine(`함께할 사람에게 건네세요. 새로 가입하는 사람이 회원가입 화면에 이 번호를 적습니다. 초대권마다 쓸 수 있는 기한이 있고, 한 장으로 한 사람만 가입합니다. 번호는 따로 적어 두세요.`, '초대권 안내')}
     <ul class="invite-list">${r.codes.map(c => `<li class="${c.used || c.expired ? 'muted' : ''}"><code>${esc(c.code)}</code><span>${c.used ? '쓰임' : c.expired ? '기한 지남' : `${esc(day(c.until || r.close_at))}까지`}</span></li>`).join('')}</ul>`, { ico: 'scroll' });
 }

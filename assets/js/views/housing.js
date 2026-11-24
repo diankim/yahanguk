@@ -9,7 +9,7 @@ import { GAMEDATA } from '../gamedata.js';
 import { petLine, CAPS } from '../housing/petlines.js';
 import { openGallery, pickDrawing, openViewer } from './drawings.js';
 import { idOf, placedCounts, rememberHome } from '../housing/count.js';
-import { helpQ } from '../tips.js';
+import { helpQ, helpLine } from '../tips.js';
 import { openDesignReport, wornDesigns } from './outfitdesign.js';
 import { reportFlag, pickReport } from '../reportflag.js';
 import { registerFurns } from '../housing/furndef.js';
@@ -316,7 +316,7 @@ function mergePanel() {
     body = `<p>${esc(m.partner_name)}님의 답을 기다립니다. (24시간 안에 받지 않으면 사라집니다)</p><button class="btn small" data-merge="cancel">제안 거두기</button>`;
   } else if (m.partner_id) {
     body = `<p>혼례를 올린 <b>${esc(m.partner_name)}</b>님과 별채 하나를 함께 쓸 수 있습니다.</p>
-      <p class="muted small">고른 별채가 「우리 집」이 되어 둘이 함께 꾸미고, 넓이는 그대로지만 설치할 수 있는 가구·곳간이 두 사람 몫이 됩니다(넓히기는 둘 중 누구나). 다른 별채는 지우지 않고 보관하며, 각자 별채로 돌아가면 들여온 가구는 들여온 사람에게 돌아갑니다.</p>
+      ${helpLine(`고른 별채가 「우리 집」이 되어 둘이 함께 꾸미고, 넓이는 그대로지만 설치할 수 있는 가구·곳간이 두 사람 몫이 됩니다(넓히기는 둘 중 누구나). 다른 별채는 지우지 않고 보관하며, 각자 별채로 돌아가면 들여온 가구는 들여온 사람에게 돌아갑니다.`, '한 지붕 안내')}
       <div class="btn-row">${m.my_house ? '<button class="btn small primary" data-merge="mine">내 별채로 합치자고 하기</button>' : ''}${m.partner_house ? `<button class="btn small" data-merge="theirs">${esc(m.partner_name)}님 별채로 합치자고 하기</button>` : ''}</div>
       ${!m.my_house && !m.partner_house ? '<p class="muted small">둘 중 한 사람에게 별채가 있어야 합칠 수 있습니다.</p>' : ''}`;
   } else return '';
@@ -534,7 +534,7 @@ async function openPets() {
     return out.join('');
   };
   const tamer = store.character?.job_key === 'tamer';
-  const body = `<p class="muted small">${tamer ? '조련사는 데리고 다니는 동무와 함께 싸웁니다(동무의 힘은 친밀도로 정해집니다). 별채에 둔 동무는 싸우지 않습니다.' : '꼬마 동무는 능력치 효과가 없습니다.'} 데리고 다니는 동무는 한 마리로 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채에는 동무 자리만큼 두어 방 안을 돌아다니게 합니다. 한 지붕에 사는 정인은 서로 자기 동무를 둡니다. 같은 동무를 두 곳에 함께 둘 수는 없어서, 다른 곳으로 고르면 앞 자리에서 빠집니다.${ps.house && sl.cap === 1 ? ' 자리가 하나뿐이면 「별채에 두기」가 별채 동무를 바꿉니다.' : ''}</p>
+  const body = `${helpLine(`${tamer ? '조련사는 데리고 다니는 동무와 함께 싸웁니다(동무의 힘은 친밀도로 정해집니다). 별채에 둔 동무는 싸우지 않습니다.' : '꼬마 동무는 능력치 효과가 없습니다.'} 데리고 다니는 동무는 한 마리로 조사원 카드에 함께 보이고(별채가 없어도 됩니다), 별채에는 동무 자리만큼 두어 방 안을 돌아다니게 합니다. 한 지붕에 사는 정인은 서로 자기 동무를 둡니다. 같은 동무를 두 곳에 함께 둘 수는 없어서, 다른 곳으로 고르면 앞 자리에서 빠집니다.${ps.house && sl.cap === 1 ? ' 자리가 하나뿐이면 「별채에 두기」가 별채 동무를 바꿉니다.' : ''}`, '동무 안내')}
     ${slots}
     ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}

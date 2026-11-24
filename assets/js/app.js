@@ -36,6 +36,7 @@ import * as tourneyPage from './views/tourney.js';
 import * as housePage from './views/housing.js';
 import * as gardenPage from './views/garden.js';
 import { preloadNames, hasNameCache, ensureCatalog } from './views/common.js';
+import { helpLine } from './tips.js';
 
 mountCards();
 
@@ -229,7 +230,7 @@ function renderCreateForm() {
         <label class="field"><span>캐릭터 이름 (2~12자 · 한글·영문·숫자)</span><input name="name" maxlength="12" autocomplete="off" required placeholder="예: 서하윤"></label>
       </section>
       <section class="card"><h2 class="step"><b>2</b>직업</h2><p class="muted small">직업은 전투 역할(${esc(JOB_ORDER.map(k => `${JOBS[k].name} ${JOBS[k].trait}`).join(' · '))})과 기본 능력치·시작 장비를 정합니다. 무기는 직업마다 정해진 두 갈래만 들 수 있습니다. 채집·제작은 직업과 상관없이 누구나 같은 조건입니다.</p><div class="choice-grid job-grid">${cards(Object.fromEntries(JOB_ORDER.map(k => [k, JOBS[k]])), 'job')}</div><div class="lore-detail" id="job-detail"></div>
-        <div id="pet-pick" hidden><h3 class="step-sub">함께 시작할 꼬마 동무</h3><p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 무리마다 하는 일이 다르고, 힘은 등급이 아니라 친밀도로만 정해집니다(처음엔 약하고 돌볼수록 세집니다). 다른 동무도 나중에 상점 바구니·알·퀘스트로 얻을 수 있습니다.</p><div class="choice-grid pet-grid">${petCards}</div></div></section>
+        <div id="pet-pick" hidden><h3 class="step-sub">함께 시작할 꼬마 동무</h3>${helpLine(`조련사는 데리고 다니는 동무와 함께 싸웁니다. 무리마다 하는 일이 다르고, 힘은 등급이 아니라 친밀도로만 정해집니다(처음엔 약하고 돌볼수록 세집니다). 다른 동무도 나중에 상점 바구니·알·퀘스트로 얻을 수 있습니다.`, '동무 안내')}<div class="choice-grid pet-grid">${petCards}</div></div></section>
       <section class="card"><h2 class="step"><b>3</b>소속</h2><p class="muted small">소속은 처음 배속되는 야행국 안의 부서로, 늘 붙는 소속 효과와 일일 보급·전용 임무를 정합니다. ${esc(AFFIL_VS_FACTION.split('. ').slice(1).join('. '))}</p><div class="choice-grid">${cards(FACTIONS, 'faction')}</div><div class="lore-detail" id="faction-detail"></div></section>
       <section class="card confirm-card">
         <div class="confirm-row"><span>이름</span><b id="sum-name">—</b></div>

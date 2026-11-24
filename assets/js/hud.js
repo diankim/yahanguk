@@ -192,10 +192,9 @@ function render() {
   body.innerHTML = `
     <section class="hud-card">
       <div class="hud-id">${emblem(c.owner_id, c.profile, 44)}
-        <div><h2>${myName(c)}${gmBadge(c.owner_id)}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
+        <div><h2>${myName(c)}${gmBadge(c.owner_id)}${c.profile?.title_name ? `<span class="title-badge">「${esc(c.profile.title_name)}」</span>` : ''}</h2><p>${esc(nameOf(c.job_key))} · ${esc(nameOf(c.faction_key))}</p></div>
         <span class="lv">Lv.${c.level}</span>${erosionRing(c)}</div>
-      <div class="title-row">${c.profile?.title_name ? `<p class="title-badge">「${esc(c.profile.title_name)}」</p>` : ''}<button class="btn small ghost" id="hud-title-swap" title="저장해 둔 칭호 묶음으로 바꿔 낍니다">${icon('refresh', 13)}<span>칭호 바꾸기</span></button></div>
-      ${envChip()}
+      <div class="title-row">${envChip()}<button class="btn small ghost" id="hud-title-swap" title="저장해 둔 칭호 묶음으로 바꿔 낍니다">${icon('refresh', 13)}<span>칭호 바꾸기</span></button></div>
       <div class="xp"><span>경험치${xpPct() !== 100 ? ` <i class="xp-damp${xpPct() > 100 ? ' up' : ''}" data-tip="${esc(xpNote())}">${xpPct() > 100 ? '덤' : '조절'} ${xpPct()}%</i>` : ''}</span><span>${(c.level || 1) >= LEVEL_CAP ? '최고 레벨' : `${fmt.num(c.experience)} / ${fmt.num(need)}`}</span></div>${bar((c.level || 1) >= LEVEL_CAP ? 1 : c.experience, (c.level || 1) >= LEVEL_CAP ? 1 : need, 'xp')}
     </section>
     <section class="hud-card vitals">
@@ -228,7 +227,7 @@ function render() {
 function stamina(c) {
   const st = state.hud?.stamina; if (!st) return '';
   const t = st.next_at ? new Date(st.next_at).getTime() : 0, left = t - Date.now();
-  return `<div class="vital st"><span>탐색력</span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}<small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></div>`;
+  return `<div class="vital st"><span>탐색력 <small class="muted" data-timer="${t || ''}" data-kind="stamina">${st.now >= st.max ? '가득' : (t && left > 0 ? `${fmt.remain(left)} 뒤 +1` : '')}</small></span><b>${st.now}/${st.max}</b>${bar(st.now, st.max, 'st')}</div>`;
 }
 const myName = c => domainNow()?.nameless ? `<span class="name-broken" title="${esc(NAMELESS.mine)}">${esc(brokenName(c.character_name))}</span>` : esc(c.character_name);
 export function domainNow() {
@@ -282,7 +281,7 @@ function erosionRing(c, cls = '') {
     <svg viewBox="${blur ? '0 0 44 44' : '0 0 36 36'}" aria-hidden="true"><g transform="translate(${blur ? 4 : 0} ${blur ? 4 : 0})"><circle class="t" cx="18" cy="18" r="15.9"/><circle class="v" cx="18" cy="18" r="15.9" stroke-dasharray="${v} 100" pathLength="100"/></g>${blur}</svg></${tag}>`;
 }
 function vital(label, v, kind) {
-  return `<div class="vital"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
+  return `<div class="vital ${kind}"><span>${label}</span><b>${Math.round(v || 0)}</b>${bar(v, 100, kind)}</div>`;
 }
 
 let arriving = false, lastArriveTry = 0;

@@ -3,7 +3,7 @@ import { cardName } from './card.js';
 import { sealMark } from '../cosmetics.js';
 import { deathAt, gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, guard, $, $$, fmt, empty, openModal, closeModal, toast, scrollAfterModal , spOf, hasWeapon } from '../core.js';
 import { face } from '../people.js';
-import { helpQ } from '../tips.js';
+import { helpQ, helpLine } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
 import { factionColor } from '../geo.js';
@@ -412,7 +412,7 @@ function tree(s) {
       <p class="small">찾은 장소 <b>${sv.nodes_found ?? 0}/${sv.nodes_total ?? 0}</b> · 찾은 채집터 <b>${sv.spots_found ?? 0}/${sv.spots_total ?? 0}</b> · ${steps.map(([p, t]) => `<span class="${pct >= p ? 'ok' : 'muted'}">${p}% ${t}</span>`).join(' · ')}</p>
     </div>
     <ul class="tree">${walk('root')}</ul>
-    <p class="muted small">「길」은 그 장소에서 이어지는 다음 장소, 「채집터」는 그 장소의 채집터입니다(찾은 수/전체). 표시된 곳은 다 찾았고, 「찾지 못한 곳」은 바로 위 장소에서 탐색하면 드러납니다. 이름을 누르면 그곳으로 갑니다.</p>`;
+    ${helpLine(`「길」은 그 장소에서 이어지는 다음 장소, 「채집터」는 그 장소의 채집터입니다(찾은 수/전체). 표시된 곳은 다 찾았고, 「찾지 못한 곳」은 바로 위 장소에서 탐색하면 드러납니다. 이름을 누르면 그곳으로 갑니다.`, '답사 지도 안내')}`;
 }
 
 function people(roster, corpses) {
@@ -602,7 +602,7 @@ function openRest(r) {
       <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${gainText(restGain(r, false))}</small><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3 · 10분마다</small><small class="rest-cd" data-rest-cd></small></button>
       <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${gainText(restGain(r, true))}</small><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'} · 30분마다</small><small class="rest-cd" data-rest-cd></small></button>
     </div>
-    <p class="muted small">이미 가득 찬 수치는 그만큼 덜 오릅니다. 회복량 보정(침식·날씨·소속 등)에 따라 실제 회복은 달라질 수 있습니다. 쉬고 나면 실제로 오른 만큼을 알려 드립니다. 같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.</p>` });
+    ${helpLine(`이미 가득 찬 수치는 그만큼 덜 오릅니다. 회복량 보정(침식·날씨·소속 등)에 따라 실제 회복은 달라질 수 있습니다. 쉬고 나면 실제로 오른 만큼을 알려 드립니다. 같은 방식의 휴식은 잠깐 쉬기 10분, 푹 쉬기 30분이 지나야 다시 할 수 있습니다.`, '쉬기 안내')}` });
   tick();
   $$('[data-rest]', m).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_field_rest', { p_style: b.dataset.rest }); closeModal(); return out; }));
 }

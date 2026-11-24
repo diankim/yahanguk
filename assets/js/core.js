@@ -131,6 +131,15 @@ export async function act(name, args) {
   emit('changed', { name, data, args, field });
   return data;
 }
+const rideGo = new Set();
+export function rideGoLater(group, at) {
+  if (!group || rideGo.has(group)) return;
+  rideGo.add(group);
+  const ms = Math.max(0, new Date(at || Date.now()).getTime() - Date.now()) + 1500;
+  setTimeout(async () => {
+    try { const r = await act('world_travel_party_depart', { p_group: group }); if (r?.content && !r.done) toast(r.content, r.ok === false ? 'info' : 'ok'); } catch {}
+  }, ms);
+}
 const readOwn = () => db.from('world_characters').select('*').eq('owner_id', store.user.id).maybeSingle();
 const onFieldView = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
 const FIELD_LIGHT = new Set(['quiet', 'omen', 'cache', 'regional', 'hazard']);

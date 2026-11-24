@@ -1,4 +1,4 @@
-import { gmBadge, ask, db, store, rpc, act, esc, icon, h, $, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
+import { gmBadge, ask, db, store, rpc, act, rideGoLater, esc, icon, h, $, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 import { bgroup } from './rtb.js';
@@ -194,7 +194,7 @@ async function runAct(btn) {
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.ride) {
-    await guard(btn, async () => { try { return await act('world_travel_party_respond_v2', { p_request_id: n.payload.request_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } });
+    await guard(btn, async () => { try { const res = await act('world_travel_party_respond_v2', { p_request_id: n.payload.request_id, p_accept: btn.dataset.acc === '1' }); if (res?.waiting) rideGoLater(res.group_id, res.expires_at); return res; } finally { await markRead(n); } });
     return true;
   }
   if (btn.dataset.invite) {

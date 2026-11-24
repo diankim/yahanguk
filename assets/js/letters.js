@@ -5,6 +5,7 @@ import { cardName } from './views/card.js';
 import { untradeNote, giveable } from './views/services.js';
 import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
 import { loadLocks } from './views/item.js';
+import { helpLine } from './tips.js';
 
 let snap = null, at = 0;
 export async function loadLetters(force) {
@@ -28,7 +29,7 @@ export function lettersPanelHtml(b) {
         ${Object.keys(l.items || {}).length ? `<small class="${l.claimed ? 'muted' : 'ok'}">${icon('bag', 12)} ${esc(itemsText(l.items))}${l.claimed ? ' · 받음' : ''}</small>` : ''}</div>
       <button class="btn small" data-lt-open="${l.id}">읽기</button></li>`).join('')}</ul>`
       : '<p class="muted small">받은 서신이 없습니다.</p>'}
-    <p class="muted small">친구에게만 보낼 수 있습니다. 물품은 다섯 가지까지 붙이고, 물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서 부치고 받습니다. 고정하지 않은 서신은 받은 지 ${days}일 뒤 지워지고, ${box}통을 넘으면 읽은 것부터·오래된 것부터 지워집니다(고정은 ${pins}통까지, 받지 않은 물품은 개인 창고로). 지워지면 알림이 오고 알림에서 글을 다시 읽을 수 있습니다.</p>`;
+    ${helpLine(`친구에게만 보낼 수 있습니다. 물품은 다섯 가지까지 붙이고, 물품이 든 서신은 안전지대(${WEAK_NAMES} 제외)에서 부치고 받습니다. 고정하지 않은 서신은 받은 지 ${days}일 뒤 지워지고, ${box}통을 넘으면 읽은 것부터·오래된 것부터 지워집니다(고정은 ${pins}통까지, 받지 않은 물품은 개인 창고로). 지워지면 알림이 오고 알림에서 글을 다시 읽을 수 있습니다.`, '서신 안내')}`;
 }
 
 export function bindLettersPanel(root, redraw) {

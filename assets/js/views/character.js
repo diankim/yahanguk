@@ -13,7 +13,7 @@ const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEver
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
 import { GAMEDATA } from '../gamedata.js';
-import { helpQ } from '../tips.js';
+import { helpQ, helpLine } from '../tips.js';
 import { baseOf, isHq, hqCount, hqOf } from '../hq.js';
 import { lookTab } from './look.js';
 
@@ -222,7 +222,7 @@ async function status(body) {
       <p class="muted small">${byYohwa ? '요화로 쓰러지면 구조·본부 구조대·회생 부적으로는 일어날 수 없습니다. 「안전지대 봉인」을 고르면 24시간 해독 뒤 요화가 풀립니다.' : '시간이 다하면 캐릭터는 목숨을 잃고 그 자리에 시신이 남습니다. 새로 시작하려면 계정 화면 맨 아래에서 캐릭터를 정리할 수 있습니다.'}</p>`, { ico: byYohwa ? 'mask' : 'heart', cls: 'danger' }) : ''}
     ${yl && !downed ? `<div class="notice ${yo.seal ? '' : 'danger'} yohwa-note">${icon(yo.seal ? 'shield' : 'mask', 18)}<div><b>${esc(yl.title)}</b><span>${yo.seal ? esc(yl.text) : `${esc(yl.text)} <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>${yo.fr ? ' · 요화와 합친 효과: 주는 피해 +42%·받는 피해 −12%·정신 손실 −20%·민첩 +15%·침식 +24% · 끝나면 쓰러집니다. 귀령초를 쓰면 요화와 함께 풀립니다.' : ' · 단계마다 회복량 −10%·정신 손실 +10%·받는 피해 +6%·침식 +8%(주는 피해 +4%) · 서 있을 때는 귀령초로 풀고, 요화로 쓰러지면 「안전지대 봉인」으로 풀립니다.'}`}${yo.seal ? ` 남은 시간 <em data-left="${new Date(yl.until).getTime()}">${fmt.remain(new Date(yl.until) - Date.now())}</em>` : ''}</span></div>${yo.y && (c.inventory?.gwiryeong_cho || 0) > 0 ? '<button class="btn small primary" data-here="물품 사용" data-here-down data-use="gwiryeong_cho">귀령초 쓰기</button>' : ''}</div>` : ''}
     ${panel('퀵슬롯', `<div class="qs-grid">${qs.map((k, i) => qsCell(k, i, invItems, downed)).join('')}</div>
-      <p class="muted small">자주 쓰는 회복 물품을 등록해 두고 눌러 바로 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 이동 중에는 쓸 수 없고, 전투불능일 때는 회생 부적만 쓸 수 있습니다(요화로 쓰러졌을 때는 회생 부적도 안 됨).</p>`,
+      ${helpLine(`자주 쓰는 회복 물품을 등록해 두고 눌러 바로 씁니다(음식·약초 같은 재료도 됨). 「칸 바꾸기」로 고르고, 등록한 칸은 어느 기기에서나 같습니다. 이동 중에는 쓸 수 없고, 전투불능일 때는 회생 부적만 쓸 수 있습니다(요화로 쓰러졌을 때는 회생 부적도 안 됨).`, '퀵슬롯 안내')}`,
       { ico: 'plus', extra: `<button class="btn small ghost" id="qs-edit">칸 바꾸기</button>` })}
     ${panel('조사원 상태', `<div class="st-box">
       <div class="st-main">
@@ -303,7 +303,7 @@ async function growth(body) {
     <div class="grid-2">
       ${panel('기능 숙련', `<ul class="rank-list">${ranks.map(([n, r, best]) => `<li><span>${n}</span><b>${fmt.num(r || 1)}단계</b><small>${esc(best)}</small></li>`).join('')}</ul>
         <p class="muted small">숙련은 그 갈래 기술 가운데 가장 높은 단계입니다(최고 50). 전투 숙련은 단계마다 공격력 +0.6%입니다. 기술 탭에서 계열별 단계를 봅니다.</p>`, { ico: 'target' })}
-      ${panel('생활 전문화', `<p class="desc">채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고(채집: 약초·목재·보급품·영기 / 채광: 광맥·유물 / 낚시: 물가), 고른 제작 분야의 제작법은 품질 +12이며 자율 「장비 정비」가 그 분야 계열을 올립니다. 제작 분야는 반드시 하나를 고릅니다(정하지 않았으면 단조).</p>
+      ${panel('생활 전문화', `${helpLine(`채집과 제작에서 집중할 분야입니다. 맞는 채집터에서는 채집량이 1 늘고(채집: 약초·목재·보급품·영기 / 채광: 광맥·유물 / 낚시: 물가), 고른 제작 분야의 제작법은 품질 +12이며 자율 「장비 정비」가 그 분야 계열을 올립니다. 제작 분야는 반드시 하나를 고릅니다(정하지 않았으면 단조).`, '생활 전문화 안내')}
         <p class="${profWait(c) > 0 ? 'hint' : 'muted small'}">${profWait(c) > 0 ? `${icon('hourglass', 14)} 다음 변경까지 ${fmt.remain(profWait(c))}` : '한 번 바꾸면 3일 동안 다시 바꿀 수 없습니다.'}</p>
         <div class="form-grid">
           <label class="field"><span>채집 분야</span><select id="g-prof">${GATHER.map(k => `<option value="${k}" ${inv?.gathering_profession === k ? 'selected' : ''}>${esc(nameOf(k))}</option>`).join('')}</select></label>
@@ -443,7 +443,7 @@ async function skills(body) {
         <b>${esc(x.name)}</b>${x.unlocked ? chip('익힘', 'ok') : chip(`전투 숙련 ${x.rank}단계`)}
         <small>${esc(x.desc || '')}</small><small>${x.target === 'ally' ? '동료 한 명' : x.target === 'all' ? '참가자 모두' : x.target === 'boss' ? '요괴' : '나'} · 영력 ${x.cost} · 다시 쓰기 ${x.cooldown}초</small></li>`).join('')}</ul>
       <p class="muted small">합동 토벌(10장 결전·사슬 벗은 그림자)과 귀허의 주인에서만 그 턴의 행동으로 고릅니다. 같은 지역 파티 원정의 합동 전투에서는 열린 기술이 확률로 저절로 나옵니다.</p>`, { ico: 'users' }) : ''}
-    <p class="muted small">전투 기술 경험은 든 무기가 아니라 직업의 계열에 쌓이고, 무기는 직업마다 정해진 두 갈래만 들 수 있습니다. 직업을 바꿔도 계열마다 쌓은 단계는 그대로 남고, 새 직업의 계열은 따로 키웁니다(「다른 직업 기술」에서 볼 수 있습니다). 직업 계열의 피해·치명타는 공격에 늘 더해집니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.</p>`;
+    ${helpLine(`전투 기술 경험은 든 무기가 아니라 직업의 계열에 쌓이고, 무기는 직업마다 정해진 두 갈래만 들 수 있습니다. 직업을 바꿔도 계열마다 쌓은 단계는 그대로 남고, 새 직업의 계열은 따로 키웁니다(「다른 직업 기술」에서 볼 수 있습니다). 직업 계열의 피해·치명타는 공격에 늘 더해집니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.`, '기술 안내')}`;
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
     $$('.sk-node', el).forEach(b => b.onclick = () => {

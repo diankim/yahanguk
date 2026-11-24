@@ -8,6 +8,7 @@ const CHAT_HUES = [0, 18, 36, 50, 85, 130, 160, 185, 205, 225, 255, 280, 305, 33
 import { logout } from '../session.js';
 import { wnSoft, setWnSoft } from '../hud.js';
 import { prefMode, savePrefsDevice, savePrefsAccount, loadPrefsAccount } from '../prefs.js';
+import { helpLine } from '../tips.js';
 
 const PREF_NAME = { look: '테마·글자 크기', sound: '소리' };
 const prefText = g => prefMode(g) === 'device' ? `이 기기 전용 — 다른 기기에서 ${PREF_NAME[g]}를 바꿔도 여기는 그대로입니다.` : '계정 설정을 따릅니다 — 바꾸면 계정에도 저장되어 다른 기기에서 접속할 때 같아집니다.';
@@ -111,7 +112,7 @@ export async function render(root, sub) {
         <p class="muted small">소리 설정은 바로 적용됩니다. 음악은 지금 있는 지역의 악기 소리만 받아 브라우저에서 직접 연주합니다.</p>`, { ico: 'volume' })}
     </section>
     <section id="sec-notify" class="set-sec">
-      ${panel('알림', `<p class="muted small">끈 알림은 화면 위에 뜨지 않고 알림 창의 「지난 알림」에만 남습니다. 운영 공지·제보 답장·원정 귀환·요화 같은 알림은 끌 수 없습니다. 바꾸면 바로 저장됩니다(어느 기기에서나 같음).</p>
+      ${panel('알림', `${helpLine(`끈 알림은 화면 위에 뜨지 않고 알림 창의 「지난 알림」에만 남습니다. 운영 공지·제보 답장·원정 귀환·요화 같은 알림은 끌 수 없습니다. 바꾸면 바로 저장됩니다(어느 기기에서나 같음).`, '알림 설정 안내')}
         <div id="nt-list">${NOTIFY_GROUPS.map(([k, n, d]) => `<label class="toggle-row"><span><b>${n}</b><small>${d}</small></span><input type="checkbox" data-nt="${k}" checked disabled></label>`).join('')}</div>`, { ico: 'bell' })}
     </section>
     <section id="sec-account" class="set-sec">

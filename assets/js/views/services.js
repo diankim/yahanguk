@@ -2,7 +2,7 @@ import { rarTag, openModal, closeModal, ask, db, store, on, act, rpc, emit, load
 import { hit } from '../changes.js';
 import { load, loadPrices, chip, loading, errorBox, foldOpen } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
-import { helpQ } from '../tips.js';
+import { helpQ, helpLine } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
 import { ownSlot, ownKind, fillOwned } from '../owned.js';
 import { GAMEDATA as GD } from '../gamedata.js';
@@ -149,7 +149,7 @@ export async function renderSmithy(box) {
 }
 
 const MOVE_BOX = `<div class="enh-card enh-move"><div class="enh-head"><b>강화 옮기기</b><span class="muted small">한 사람 한 번</span></div>
-  <p class="muted small">강화한 무기의 강화 단계를 가방에 든 다른 무기로 옮깁니다. 받을 무기는 단계가 같거나 낮아야 하고, 옮긴 무기는 +0이 됩니다. 전·재료는 들지 않으며 한 사람에 한 번만 할 수 있습니다. 직업을 바꿔 쓸 수 없게 된 강화 무기를 새 직업 무기로 옮길 때 쓰세요.</p>
+  ${helpLine(`강화한 무기의 강화 단계를 가방에 든 다른 무기로 옮깁니다. 받을 무기는 단계가 같거나 낮아야 하고, 옮긴 무기는 +0이 됩니다. 전·재료는 들지 않으며 한 사람에 한 번만 할 수 있습니다. 직업을 바꿔 쓸 수 없게 된 강화 무기를 새 직업 무기로 옮길 때 쓰세요.`, '강화 옮기기 안내')}
   <div class="btn-row"><button class="btn" id="enh-move" data-here="강화 옮기기">${icon('refresh', 16)}<span>강화 옮기기</span></button></div></div>`;
 function bindMove(body, after) {
   const b = $('#enh-move', body);
@@ -206,7 +206,7 @@ async function enhancePane(body) {
       <div class="btn-row"><button class="btn primary" id="enh-go" data-here="강화" ${short.length || q.have_gil < q.gil ? 'disabled' : ''}>${icon('sword', 16)}<span>+${q.level + 1} 강화하기</span></button></div>
       ${short.length ? `<p class="muted small">모자란 재료는 「재료 사기」에서 살 수 있습니다(강철 주괴·응축 영핵은 회차에 따라 나옵니다).</p>` : ''}`}
     </div>
-    <p class="muted small">장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(${WEAK_NAMES} 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.</p>${MOVE_BOX}`;
+    ${helpLine(`장착 중인 무기를 +${q.max}까지 강화합니다. 단계가 오를수록 위력이 오르고 성공 확률은 낮아집니다. 실패하면 재료와 전만 들고 단계는 내려가지 않습니다. 가방에 모자란 재료는 개인 창고에서 꺼내 씁니다(${WEAK_NAMES} 제외). 강화는 그 무기에 붙고, 그 무기를 모두 팔거나 내주면 사라집니다.`, '강화 안내')}${MOVE_BOX}`;
   bindInfo(body);
   bindMove(body, () => enhancePane(body));
   const go = $('#enh-go', body);
@@ -262,7 +262,7 @@ async function dismantlePane(body) {
       return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
         <div class="item-act"><button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
-  body.innerHTML += `<p class="muted small">장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.</p>`;
+  body.innerHTML += `${helpLine(`장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.`, '분해 안내')}`;
   bindInfo(body);
   $$('[data-dis]', body).forEach(b => b.onclick = async () => {
     const d = di?.[b.dataset.dis] || {};

@@ -3,6 +3,7 @@ import { load } from './common.js';
 import { reportFlag } from '../reportflag.js';
 import { DRAW_PAL, DRAW_NAMES, PAL_MAX, SIZE_NAME, dimsOf, picURL, palOf, palText } from '../housing/drawing.js';
 import { openColorPicker } from '../colorpick.js';
+import { helpLine } from '../tips.js';
 
 let book = null;
 export async function drawingBook(force) {
@@ -21,7 +22,7 @@ export async function openGallery(onChange) {
   const box = $('.dr-gal', layer);
   const paint = () => {
     const r = b.rules, mine = b.mine || [], left = Math.max(0, r.per_day - b.made_today), full = mine.length >= r.keep;
-    box.innerHTML = `<p class="muted small">도트 그림을 그려 그림첩에 모아 두고, 별채의 그림 액자에 걸거나 친구에게 보냅니다. 새 그림은 하루 ${r.per_day}장(오늘 ${left}장 더) · 그림첩 ${mine.length}/${r.keep}장 · 보내기 하루 ${r.give_day}장. 이미 그린 그림은 언제든 고칠 수 있고, 받은 그림은 고칠 수 없습니다.</p>
+    box.innerHTML = `${helpLine(`도트 그림을 그려 그림첩에 모아 두고, 별채의 그림 액자에 걸거나 친구에게 보냅니다. 새 그림은 하루 ${r.per_day}장(오늘 ${left}장 더) · 그림첩 ${mine.length}/${r.keep}장 · 보내기 하루 ${r.give_day}장. 이미 그린 그림은 언제든 고칠 수 있고, 받은 그림은 고칠 수 없습니다.`, '그림첩 안내', `오늘 ${left}장 더 · 그림첩 ${mine.length}/${r.keep}장`)}
       <div class="btn-row"><button class="btn small primary" data-new="S" ${left && !full ? '' : 'disabled'}>${icon('plus', 14)} ${SIZE_NAME.S} ${dimsOf('S', r).join('×')}</button><button class="btn small primary" data-new="L" ${left && !full ? '' : 'disabled'}>${icon('plus', 14)} ${SIZE_NAME.L} ${dimsOf('L', r).join('×')}</button></div>
       <div class="dr-grid">${mine.map(d => card(d, `${d.authored ? `<button class="btn small" data-edit="${d.id}">고치기</button>` : ''}<button class="btn small" data-give="${d.id}">보내기</button><button class="btn small danger" data-del="${d.id}">지우기</button>`)).join('') || '<p class="muted small">아직 그림이 없습니다.</p>'}</div>
       <p class="muted small">작은 그림은 「작은 그림 액자」, 큰 그림은 「큰 그림 액자」에 걸립니다. 꾸미기에서 액자를 고른 뒤 「그림 걸기」를 누르세요.</p>`;

@@ -20,3 +20,4 @@ export function bindTips(root) {
 export const helpQ = (text, label = '안내') => `<i class="help-q" role="img" tabindex="0" aria-label="${esc(label)}" data-tip="${esc(text)}">?</i>`;
 if (typeof document !== 'undefined' && document.body) bindTips(document.body);
 else if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => bindTips(document.body), { once: true });
+export const helpLine = (text, label = '안내', lead = '') => `<p class="muted small help-line">${lead || esc(label)}${helpQ(String(text).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), label)}</p>`;

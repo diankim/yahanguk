@@ -10,6 +10,7 @@ import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 import { PETS, petImage } from '../housing/petsprite.js';
 import { FIRST_PETS, petGroupOf, petGroupLine } from '../petpick.js';
+import { helpLine } from '../tips.js';
 
 const USE_SPECIAL = { reset_identity: '직업 다시 고르기 · 능력치는 새 직업에 맞게 저절로 놓임', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -340,7 +341,7 @@ export const useQtyHtml = (id, have, key, small = true) => USABLE[id] && !USE_ON
 function openResetIdentity() {
   const c = store.character || {};
   const m = openModal({ title: '환골탈태 서첩', body: `
-    <p class="muted small">직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 무기 칸이 비면 가진 새 직업 무기 가운데 가장 높은 단계를 저절로 낍니다. 새 직업 무기가 하나도 없으면 맨손이 되니 미리 마련해 두세요. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.</p>
+    ${helpLine(`직업을 새로 고릅니다. 레벨로 받은 능력치는 새 직업의 주 능력치에 맞게 저절로 놓이고, 소속·레벨·기술 단계·대세력·물품·전·칭호는 그대로입니다. 새 직업이 들 수 없는 장비는 벗고, 무기 칸이 비면 가진 새 직업 무기 가운데 가장 높은 단계를 저절로 낍니다. 새 직업 무기가 하나도 없으면 맨손이 되니 미리 마련해 두세요. 전투 기술은 새 직업의 계열만 쓰고, 지난 직업의 전투 계열은 단계만 남고 효과가 없습니다. 쓴 뒤 ${GD.jobChange?.cd_min || 60}분은 다시 쓸 수 없습니다.`, '환골탈태 안내')}
     <p class="hint" data-jobcd hidden></p>
     <h3 class="sub-h">직업</h3>
     <div class="choice-grid ri-grid">${JOB_ORDER.map(k => [k, JOBS[k]]).map(([k, j]) => `<label class="choice"><input type="radio" name="rj" value="${k}" ${k === c.job_key ? 'checked' : ''}><span><b>${esc(j.name)}</b><small>${esc(j.trait || '')}</small></span></label>`).join('')}</div>

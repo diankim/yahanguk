@@ -7,6 +7,7 @@ import { spearRing, spearInner, spearTitle } from './fightui.js';
 import { mountMeter } from './meter.js';
 import { clearFightNotes } from '../settings.js';
 import { fightFx } from '../inkfx.js';
+import { helpLine } from '../tips.js';
 
 const OUT = { won: '이김', down: '쓰러짐', fled: '달아남', gone: '빠짐', done: '끝' };
 const trayIds = () => trayList({}, Infinity).map(([k]) => k);
@@ -115,7 +116,7 @@ function draw() {
             sub: `${esc(jobName(m.job))}${m.id === s.target_id && fight ? ' · <b class="bad">노림받음</b>' : ''}` }); }).join('')}</ul>
         <div class="mem-detail" id="pf-memdetail" hidden></div>
         <div class="dm-host" id="pf-meter"></div>
-        <p class="muted small">빠른 사람(민첩 + 감각÷2)부터 차례로 움직입니다. 요괴는 라운드마다 이목이 높은 이를 더 자주 노리고, 그 사람의 차례 바로 뒤에 반격합니다(그 차례에 방어하면 막습니다). 30초 동안 고르지 않으면 방어로 넘어갑니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).</p></div></section>
+        ${helpLine(`빠른 사람(민첩 + 감각÷2)부터 차례로 움직입니다. 요괴는 라운드마다 이목이 높은 이를 더 자주 노리고, 그 사람의 차례 바로 뒤에 반격합니다(그 차례에 방어하면 막습니다). 30초 동안 고르지 않으면 방어로 넘어갑니다. 합류한 사람마다 요괴 체력이 늘고, 이기면 각자 전리품을 굴리고 경험치를 한 사람마다 10% 더 받습니다(세 명까지).`, '파티 토벌 안내')}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2></header><div class="panel-body">
         <ol class="raid-log">${newestFirst(lg, top).map(l => logRow(`no-time${/^—/.test(l) ? ' k-round' : ''}${l.startsWith(`${c.character_name} · `) ? ' mine' : ''}`, esc(l))).join('') || '<li class="muted">아직 기록이 없습니다.</li>'}</ol></div></section>`)}
     </div>`;

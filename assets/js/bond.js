@@ -8,6 +8,7 @@ import { untradeNote, giveable } from './views/services.js';
 import { pickRows, openItemPick, bundleChips } from './views/itempick.js';
 import { loadLocks } from './views/item.js';
 import { kinTokenSvg } from './kintoken.js';
+import { helpLine } from './tips.js';
 
 export const TOKENS = {
   knot: ['연리 매듭', '두 가닥을 엮어 풀리지 않게 맺은 매듭', 'M7 9a3 3 0 106 0 3 3 0 10-6 0M11 9a3 3 0 106 0 3 3 0 10-6 0M12 12v8M10 20h4'],
@@ -101,7 +102,7 @@ export function bondPanelHtml(s) {
         ${b.married ? '<span class="chip ok">백년가약</span>' : `<button class="btn small" data-bond="wed" data-here="혼례 청하기">${icon('knot', 14)}<span>혼례 올리기</span></button>`}
         <button class="btn small ghost danger-text" data-bond="break">정표 파기</button>
       </div>
-      <p class="muted small">인연은 정인과 같은 곳·같은 파티로 함께 토벌(+2)·탐색·채집(+1), 하루 한 번 안부 귓속말(+5${b.greeted_today ? ', 오늘 함' : ''})·선물(+10), 함께 원정 완주(+20)·구조(+20)로 하루 100까지 오릅니다. 인연 300·둘 다 Lv.20·주 이야기 6장을 마치면 혼례를 올릴 수 있습니다. 마음이 이어짐(100)·연리(300)·백년해로(700)에 이르면 둘 다 꾸미기를 받습니다. 정인을 구조하면 체력 50으로 일어납니다.${b.partner_hide || b.my_hide ? ' 지금은 다른 조사원에게 연리가 보이지 않습니다.' : ''}</p>`;
+      ${helpLine(`인연은 정인과 같은 곳·같은 파티로 함께 토벌(+2)·탐색·채집(+1), 하루 한 번 안부 귓속말(+5${b.greeted_today ? ', 오늘 함' : ''})·선물(+10), 함께 원정 완주(+20)·구조(+20)로 하루 100까지 오릅니다. 인연 300·둘 다 Lv.20·주 이야기 6장을 마치면 혼례를 올릴 수 있습니다. 마음이 이어짐(100)·연리(300)·백년해로(700)에 이르면 둘 다 꾸미기를 받습니다. 정인을 구조하면 체력 50으로 일어납니다.${b.partner_hide || b.my_hide ? ' 지금은 다른 조사원에게 연리가 보이지 않습니다.' : ''}`, '인연 안내')}`;
   }
   return `
     ${br ? `<div class="bond-card broken"><div class="bond-token">${tokenSvg(br.token_key, 34)}</div><div class="bond-main"><b>깨진 정표 · ${esc(br.token_name)}</b>

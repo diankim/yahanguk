@@ -11,6 +11,7 @@ import { isHq } from '../hq.js';
 import { hit } from '../changes.js';
 import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY, ARC_NAME, storyChapterNo } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
+import { helpLine } from '../tips.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
 const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
@@ -216,7 +217,7 @@ async function side(body, keep) {
   };
   const shown = all.filter(pass).length;
   body.innerHTML = `
-    <p class="desc">보조 퀘스트는 지역의 인물에게서 받습니다. 받은 퀘스트의 할 일을 마치고 보고 장소에서 보고하면 보상과 다음 장면이 나옵니다. 마친 퀘스트도 장면을 다시 읽을 수 있습니다.</p>
+    ${helpLine(`보조 퀘스트는 지역의 인물에게서 받습니다. 받은 퀘스트의 할 일을 마치고 보고 장소에서 보고하면 보상과 다음 장면이 나옵니다. 마친 퀘스트도 장면을 다시 읽을 수 있습니다.`, '보조 퀘스트 안내')}
     <div class="chips">${chip(`마침 ${cnt(all, 'done')}/${all.length + (j.hidden || 0)}`, 'accent')}${chip(`진행 ${cnt(all, 'active')}`)}${chip(`받을 수 있음 ${cnt(all, 'available')}`, 'ok')}</div>
     <div class="q-filter">
       <div class="chips kind-chips" role="group" aria-label="분야"><button class="chip ${sField ? '' : 'on'}" data-f="">전체</button>${fields.map(([f]) => `<button class="chip ${sField === f ? 'on' : ''}" data-f="${esc(f)}">${esc(f)} <small>${cnt(all.filter(q => fieldOf(q) === f), 'done')}/${all.filter(q => fieldOf(q) === f).length}</small></button>`).join('')}</div>
@@ -335,8 +336,8 @@ async function userCommissions(box) {
   const isPast = m => m.status === 'cancelled' || m.settled, live = mine.filter(m => !isPast(m)), past = mine.filter(isPast);
   box.innerHTML = `<div class="sub-head"><h3 class="sub-h">${icon('scroll', 15)} 조사원 의뢰</h3>
       <button class="btn small primary" id="uc-post" ${here.safe && openMine < (b?.max_open || 5) ? '' : 'disabled'}>${icon('plus', 14)}<span>의뢰 올리기</span></button></div>
-    <p class="muted small">조사원이 보수를 걸고 구하는 물품입니다. 안전지대에서 물품을 넘기면 보수(등록처 세력 수수료 ${feePct}% 뗌)와 경험치를 받습니다. 경험치는 하루 세 번까지(오늘 ${b?.xp_left ?? 0}번 남음).
-      ${here.safe ? `지금 여기서 올리면 등록처는 <b>${esc(here.region)}</b>${here.faction ? `(${esc(here.faction)})` : ''}입니다.` : `의뢰를 올리고 넘기고 받는 일은 안전지대(${WEAK_NAMES} 제외)에서 합니다.`}${openMine >= (b?.max_open || 5) ? ' 의뢰는 한 번에 다섯 건까지 올릴 수 있습니다.' : ''}</p>
+    ${helpLine(`조사원이 보수를 걸고 구하는 물품입니다. 안전지대에서 물품을 넘기면 보수(등록처 세력 수수료 ${feePct}% 뗌)와 경험치를 받습니다. 경험치는 하루 세 번까지(오늘 ${b?.xp_left ?? 0}번 남음).
+      ${here.safe ? `지금 여기서 올리면 등록처는 <b>${esc(here.region)}</b>${here.faction ? `(${esc(here.faction)})` : ''}입니다.` : `의뢰를 올리고 넘기고 받는 일은 안전지대(${WEAK_NAMES} 제외)에서 합니다.`}${openMine >= (b?.max_open || 5) ? ' 의뢰는 한 번에 다섯 건까지 올릴 수 있습니다.' : ''}`, '조사원 의뢰 안내', `경험치 오늘 ${b?.xp_left ?? 0}번 남음`)}
     ${live.length ? `<h4 class="sub-h small">내가 올린 의뢰</h4><div class="commission-grid">${live.map(mineCard).join('')}</div>` : ''}
     ${past.length ? `<details class="fold f-fold uc-past" data-fold="ucomm-past" ${foldOpen('ucomm-past', false) ? 'open' : ''}><summary>지난 의뢰 ${past.length} <small class="muted">${esc(UCOMM_PAST)}</small></summary><div class="commission-grid">${past.map(mineCard).join('')}</div></details>` : ''}
     <h4 class="sub-h small">들어온 의뢰 ${open.length}</h4>
@@ -422,7 +423,7 @@ async function survey(body) {
   (o.regions || []).forEach(r => (groups[r.territory_name || '기타'] ||= []).push(r));
   const done = (o.regions || []).filter(r => r.progress >= 100).length;
   body.innerHTML = `
-    <p class="desc">지역마다 숨은 장소와 채집터를 찾아낸 만큼 답사가 오릅니다. 탐색과 원정으로 찾을 수 있습니다. 한 지역을 100% 답사하면 가방이 1칸 넓어지고, 다섯 지역을 완전히 답사하면 특별한 동행이 나타난다고 합니다.</p>
+    ${helpLine(`지역마다 숨은 장소와 채집터를 찾아낸 만큼 답사가 오릅니다. 탐색과 원정으로 찾을 수 있습니다. 한 지역을 100% 답사하면 가방이 1칸 넓어지고, 다섯 지역을 완전히 답사하면 특별한 동행이 나타난다고 합니다.`, '답사 안내')}
     <div class="chips">${chip(`완전 답사 ${done}곳`, 'accent')}</div>
     ${Object.entries(groups).map(([t, list]) => panel(t, `<ul class="survey-list">${list.map(r => `<li class="${r.safe_zone ? 'safe' : ''}">
         <div><b>${esc(r.region_name)}</b><small>${r.safe_zone ? '안전지대' : `위험 ${r.danger} · Lv.${r.min_level}+ · 장소 ${r.nodes_found}/${r.nodes_total} · 채집터 ${r.spots_found}/${r.spots_total}`}</small></div>
@@ -472,7 +473,7 @@ async function monsterCodex(box) {
   const list = all.filter(m => !cxKind || m.kind === cxKind);
   const kname = Object.fromEntries(kinds.map(k => [k.key, k.name]));
   box.innerHTML = `
-    <div class="codex-head"><p class="desc">요괴는 열세 갈래로 나뉘고, 갈래마다 잘 듣는 무기(근접·원거리·술법)와 유리한 직업이 있습니다. 만난 요괴는 기본 정보가, 한 번 쓰러뜨린 요괴는 상성·수법 대처법·전리품이 적힙니다.</p>
+    <div class="codex-head">${helpLine(`요괴는 열세 갈래로 나뉘고, 갈래마다 잘 듣는 무기(근접·원거리·술법)와 유리한 직업이 있습니다. 만난 요괴는 기본 정보가, 한 번 쓰러뜨린 요괴는 상성·수법 대처법·전리품이 적힙니다.`, '요괴 도감 안내')}
       <div class="chips">${chip(`만남 ${seen}/${all.length}`, '')}${chip(`토벌 ${got}/${all.length}`, 'accent')}</div>${bar(got, all.length || 1, 'xp')}</div>
     <div class="chips kind-chips"><button class="chip ${cxKind ? '' : 'on'}" data-kind="">전체</button>${kinds.map(k => `<button class="chip ${cxKind === k.key ? 'on' : ''}" data-kind="${esc(k.key)}">${esc(k.name)} <small>${k.defeated}/${k.total}</small></button>`).join('')}</div>
     ${cxKind ? `<p class="muted small">${esc(kinds.find(k => k.key === cxKind)?.desc || '')}</p><div class="witness" data-witness></div>` : ''}
@@ -535,7 +536,7 @@ async function fishCodex(body) {
   const grounds = o.grounds || [];
   const when = x => [x.phase ? nameOf(x.phase) : '', x.weather ? nameOf(x.weather) : ''].filter(Boolean).join('·');
   body.innerHTML = `
-    <div class="codex-head"><p class="desc">강·늪·바다·호수·깊은 물에서 낚은 물고기가 여기에 기록됩니다. 아직 낚지 못한 어종은 이름이 가려져 있고, 사는 곳과 잘 무는 때만 알려 줍니다. 낚싯대를 가방에 넣고 물가 지역의 현장에서 낚으세요.</p>
+    <div class="codex-head">${helpLine(`강·늪·바다·호수·깊은 물에서 낚은 물고기가 여기에 기록됩니다. 아직 낚지 못한 어종은 이름이 가려져 있고, 사는 곳과 잘 무는 때만 알려 줍니다. 낚싯대를 가방에 넣고 물가 지역의 현장에서 낚으세요.`, '어종 도감 안내')}
       <div class="chips">${chip(`도감 ${got}/${sp.length}`, 'accent')}${chip(`낚은 물고기 ${fmt.num(o.total_caught)}마리`)}</div>
       ${bar(got, sp.length || 1, 'xp')}</div>
     ${Object.entries(HABITAT).map(([h, hn]) => {
