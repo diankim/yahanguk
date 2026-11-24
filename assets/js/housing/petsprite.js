@@ -1,11 +1,12 @@
-import { PETS, EFFECTS } from './pets.js';
+import { PETS, PET_SKINS, EFFECTS } from './pets.js';
 import { P, drawSprite } from './render.js';
 
 const packed = new Map();
 const pal = p => { if (!packed.has(p)) packed.set(p, Object.fromEntries(Object.entries(p).map(([c, h]) => [c, P(h)]))); return packed.get(p); };
-export const formOf = (id, adult) => { const s = PETS[id]; return s ? (adult ? s.adult : s.baby) : null; };
-export function drawPet(put, id, adult, frame, x0, y0, flip) {
-  const f = formOf(id, adult); if (!f) return;
+export const skinOf = (id, skin) => { const k = skin && PET_SKINS[skin]; return k && k.pet === id ? k : null; };
+export const formOf = (id, adult, skin) => { const s = skinOf(id, skin) || PETS[id]; return s ? (adult ? s.adult : s.baby) : null; };
+export function drawPet(put, id, adult, frame, x0, y0, flip, skin) {
+  const f = formOf(id, adult, skin); if (!f) return;
   const rows = f[frame] || f.idle, w = rows[0].length;
   drawSprite(put, rows, pal(f.pal), Math.round(x0 - w / 2), Math.round(y0 - rows.length), flip);
 }
@@ -14,10 +15,10 @@ export function drawEffect(put, key, x0, y0) {
   drawSprite(put, e.rows, pal(e.pal), Math.round(x0 - e.rows[0].length / 2), Math.round(y0 - e.rows.length), false);
 }
 const cache = new Map();
-export function petImage(id, adult = false, { frame = 'idle', dark = false, scale = 3 } = {}) {
-  const key = `${id}|${adult}|${frame}|${dark}|${scale}`;
+export function petImage(id, adult = false, { frame = 'idle', dark = false, scale = 3, skin = null } = {}) {
+  const key = `${id}|${adult}|${frame}|${dark}|${scale}|${skin || ''}`;
   if (cache.has(key)) return cache.get(key);
-  const f = formOf(id, adult); if (!f) return '';
+  const f = formOf(id, adult, skin); if (!f) return '';
   const rows = f[frame] || f.idle, w = rows[0].length, h = rows.length;
   const c = document.createElement('canvas'); c.width = w * scale; c.height = h * scale;
   const g = c.getContext('2d');
@@ -28,4 +29,4 @@ export function petImage(id, adult = false, { frame = 'idle', dark = false, scal
   }
   const url = c.toDataURL(); cache.set(key, url); return url;
 }
-export { PETS };
+export { PETS, PET_SKINS };

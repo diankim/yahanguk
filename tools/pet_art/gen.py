@@ -107,6 +107,16 @@ def main():
             fr = e[form]
             sizes.append(f"{pid}.{form}: {len(fr['idle'][0])}x{len(fr['idle'])} sleep {len(fr['sleep'][0])}x{len(fr['sleep'])}")
         pets[pid] = e
+    sspec = importlib.util.spec_from_file_location('skins', os.path.join(HERE, 'skins.py'))
+    sk = importlib.util.module_from_spec(sspec); sspec.loader.exec_module(sk)
+    skins = {}
+    for k in sk.SKINS:
+        if k['pet'] not in pets:
+            raise SystemExit(f"skin {k['key']}: no pet {k['pet']}")
+        e = {'pet': k['pet'], 'name': k['name'], 'desc': k.get('desc', '')}
+        for form in ('baby', 'adult'):
+            e[form] = build_form(k[form], f"{k['key']}.{form}")
+        skins[k['key']] = e
     effects = {}
     for k, v in d.EFFECTS.items():
         pal = dict(v['pal']); pal['k'] = '#1a120e'
@@ -123,9 +133,9 @@ def main():
             return '[' + ', '.join(json.dumps(x) for x in o) + ']'
         return json.dumps(o, ensure_ascii=False)
     head = ""
-    s = head + 'export const PETS = ' + js(pets) + ';\n\nexport const EFFECTS = ' + js(effects) + ';\n'
+    s = head + 'export const PETS = ' + js(pets) + ';\n\nexport const PET_SKINS = ' + js(skins) + ';\n\nexport const EFFECTS = ' + js(effects) + ';\n'
     open(OUT, 'w').write(s)
     print('\n'.join(sizes))
-    print('pets', len(pets), 'bytes', len(s))
+    print('pets', len(pets), 'skins', len(skins), 'bytes', len(s))
 
 main()

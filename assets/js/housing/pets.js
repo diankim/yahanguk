@@ -2185,6 +2185,28 @@ export const PETS = {
   }
 };
 
+export const PET_SKINS = {
+  snow_calico: {
+    pet: "spotted_cat",
+    name: "눈송이 삼색",
+    desc: "온몸이 눈처럼 하얗고 정수리와 꼬리에만 삼색 얼룩이 앉은 모습입니다.",
+    baby: {
+      pal: { a: "#fbf9f4", o: "#e8964a", d: "#4a3f3a", n: "#e07a86", e: "#2a1a14", i: "#8a7a74", p: "#f3a0a0", k: "#1a120e" },
+      idle: ["......k...k...", ".....kok.kdk..", "....koookdddk.", ".k..kodaaodak.", "kok.kaieaieak.", "kdk.kaeeaeeak.", ".kokkpaanaapk.", ".kdaaaaaaaaak.", ".kaaaaaaaaaak.", ".kaakakkakaak.", "..kk.k..k.kk.."],
+      blink: ["......k...k...", ".....kok.kdk..", "....koookdddk.", ".k..kodaaodak.", "kok.kaaaaaaak.", "kdk.kakkakkak.", ".kokkpaanaapk.", ".kdaaaaaaaaak.", ".kaaaaaaaaaak.", ".kaakakkakaak.", "..kk.k..k.kk.."],
+      step: ["......k...k...", ".....kok.kdk..", "....koookdddk.", ".k..kodaaodak.", "kok.kaieaieak.", "kdk.kaeeaeeak.", ".kokkpaanaapk.", ".kdaaaaaaaaak.", ".kaaaaaaaaaak.", "..kaakakakaak.", "...kk.k.k.kk.."],
+      sleep: [".......k...k..", "......kok.kdk.", ".....koookdddk", "..kkkkodaaodak", ".kaaaaakkakkak", "kaaaaapaanaapk", "kaodododoaaak.", ".kkkkkkkkkkk.."]
+    },
+    adult: {
+      pal: { a: "#fbf9f4", o: "#e8964a", d: "#4a3f3a", n: "#e07a86", e: "#2a1a14", i: "#8a7a74", p: "#f3a0a0", k: "#1a120e" },
+      idle: [".........k...k...", "........kok.kdk..", ".......koookdddk.", "..k....kodaoadak.", ".kok...kaieaieak.", "kdk....kaeeaeeak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaakaakkkaakak.", "..kaakaak.kaakak.", "...kk.kk...kk.k.."],
+      blink: [".........k...k...", "........kok.kdk..", ".......koookdddk.", "..k....kodaoadak.", ".kok...kaaaaaaak.", "kdk....kakkakkak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaakaakkkaakak.", "..kaakaak.kaakak.", "...kk.kk...kk.k.."],
+      step: [".........k...k...", "........kok.kdk..", ".......koookdddk.", "..k....kodaoadak.", ".kok...kaieaieak.", "kdk....kaeeaeeak.", "kok....kpaanaapk.", ".kdkkkkkkaaaaak..", "..koaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "..kaaaaaaaaaaaak.", "...kaakaakkaakak.", "..kaak.kaakakkak.", "...kk...kk.k..k.."],
+      sleep: ["..........k...k..", ".........kok.kdk.", "........koookdddk", "..kkkkkkkodaoadak", ".kaaaaaaaakkakkak", "kaaaaaaaapaanaapk", "kaaaaaaaaaaaaaaak", ".kodododododdokk.", "..kkkkkkkkkkkk..."]
+    }
+  }
+};
+
 export const EFFECTS = {
   poop: {
     pal: { b: "#7a4e2a", d: "#5a3519", h: "#a8744a", k: "#1a120e" },

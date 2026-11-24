@@ -2,7 +2,7 @@ import { rpc, act, store, on, esc, icon, $, $$, toast, guard, ask, openModal, cl
 import { loading, errorBox, panel } from './common.js';
 import { makeRoom, TW, TH, WALLH, ZU } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
-import { PETS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
+import { PETS, PET_SKINS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
 import { drawAvatar, registerDesigns } from '../housing/avatarsprite.js';
 import { cardName } from './card.js';
 import { GAMEDATA } from '../gamedata.js';
@@ -285,7 +285,7 @@ function petBar(p) {
   const away = (p.room || 0) !== cur ? roomsOf()[p.room || 0]?.name : '';
   const owner = p.keeper && p.keeper !== snap.owner_id && snap.mate_name ? `${snap.mate_name}의 ` : p.keeper && p.keeper === snap.owner_id && snap.mate_name ? `${snap.owner_name}의 ` : '';
   const move = me && away && roomsOf().filter(r => r.open && !r.why).length > 1 ? `<button class="btn small" data-petroom="${k}">이 방으로</button>` : '';
-  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2 })}" alt=""><b>${owner ? `<small class="muted">${esc(owner)}</small>` : ''}${esc(p.nick || p.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
+  return `<div class="hs-petbar"><img src="${petImage(p.id, p.adult, { scale: 2, skin: p.skin })}" alt=""><b>${owner ? `<small class="muted">${esc(owner)}</small>` : ''}${esc(p.nick || p.name)}</b>${away ? ` <small class="muted">${esc(away)}에 있음</small>` : ''}${m.sick ? ' <b class="bad-text">배탈</b>' : ''}<span class="muted small">친밀도 ${p.affinity || 0}${(p.grown ?? p.adult) ? ' · 다 자람' : ' / 100이면 자람'}${m.n ? ` · 어질러진 자리 ${m.n}` : ''}</span>${helpQ(messTip, '어질러진 자리')}
     <span class="hs-petbtn">${move}<button class="btn small" data-pet="pat" data-pk="${k}" ${!me && today.pat ? 'disabled' : ''}>쓰다듬기</button><button class="btn small" data-pet="play" data-pk="${k}" ${!me && today.play ? 'disabled' : ''}>놀아 주기</button>${me ? `<button class="btn small" data-pet="feed" data-pk="${k}">먹이 주기</button>` : ''}${m.n ? `<button class="btn small" data-care="clean" data-pk="${k}">치우기</button>` : ''}${me && m.sick && !m.n ? `<button class="btn small primary" data-care="cure" data-pk="${k}">약 먹이기</button>` : ''}</span></div>`;
 }
 function ownerPanel() {
@@ -518,7 +518,7 @@ async function openPets(keepY = 0) {
   const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null;
   const placed = ps.placed || (room_?.pet_id ? [room_.pet_id] : []), sl = ps.slots || { cap: 1, used: placed.length };
   const nm = id => mine.get(id)?.nick || PETS[id]?.name || '';
-  const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2 })}" alt="">` : '<span class="ps-empty"></span>';
+  const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2, skin: mine.get(id)?.skin })}" alt="">` : '<span class="ps-empty"></span>';
   const nx = sl.next && typeof sl.next === 'object' ? sl.next : null;
   const cost = nx ? [nx.gil ? `${Number(nx.gil).toLocaleString()}전` : '', ...Object.entries(nx.items || {}).map(([id, n]) => `${nameOf(id)} ×${n}`)].filter(Boolean).join(' · ') : '';
   const buy = ps.house && nx ? `<span class="btn-row"><button class="btn small" data-slotbuy data-here="동무 자리 늘리기">${icon('plus', 13)} 동무 자리 늘리기</button><small class="muted">${esc(cost)}</small></span>` : '';
@@ -540,15 +540,16 @@ async function openPets(keepY = 0) {
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
     <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
     <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id), kind = KINDS[PETS[s.id]?.kind] || ''; return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
-      <span class="pet-face" data-tip="${esc(`${s.name}${kind ? ` · ${kind}` : ''} — ${PETS[s.id]?.desc || ''}`)}"><img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3 })}" alt=""><b>${esc(m?.nick || s.name)}</b></span><small>${kind ? `<i class="pet-kind">${esc(kind)}</i>` : ''}${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
-      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button>${m.grown ? `<button class="linkish small" data-look="${s.id}" data-baby="${m.baby ? '' : '1'}" title="조사원 카드·별채에 보이는 모습">${m.baby ? '자란 모습으로' : '아기 모습으로'}</button>` : ''}</span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
+      <span class="pet-face" data-tip="${esc(`${s.name}${kind ? ` · ${kind}` : ''} — ${PETS[s.id]?.desc || ''}`)}"><img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3, skin: m?.skin })}" alt=""><b>${esc(m?.nick || s.name)}</b></span><small>${kind ? `<i class="pet-kind">${esc(kind)}</i>` : ''}${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
+      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button>${m.grown ? `<button class="linkish small" data-look="${s.id}" data-baby="${m.baby ? '' : '1'}" title="조사원 카드·별채에 보이는 모습">${m.baby ? '자란 모습으로' : '아기 모습으로'}</button>` : ''}${(m.skins || []).length ? `<button class="linkish small" data-skins="${s.id}" title="조사원 카드·별채에 보이는 무늬">무늬${m.skin ? ` · ${esc(PET_SKINS[m.skin]?.name || '')}` : ''}</button>` : ''}</span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   const mb = $('.modal-body', root), back = () => { if (mb && typeof keepY === 'number' && keepY > 0) mb.scrollTop = keepY; };
   back(); setTimeout(back, 40);
   const yNow = () => mb?.scrollTop || 0;
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry],[data-unplace],[data-slotbuy]'); if (!b) return;
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry],[data-unplace],[data-slotbuy],[data-skins]'); if (!b) return;
+    if (b.dataset.skins) { openSkins(mine.get(b.dataset.skins), yNow()); return; }
     if (b.dataset.carry != null) { openCarry(mine.get(prof), ps); return; }
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '', y0 = yNow();
@@ -575,10 +576,23 @@ async function openPets(keepY = 0) {
     });
   });
 }
+function openSkins(m, y0) {
+  if (!m) return;
+  const opts = [null, ...(m.skins || []).filter(k => PET_SKINS[k])];
+  const card = k => { const on = (m.skin || null) === k, sk = k && PET_SKINS[k];
+    return `<div class="skin-opt${on ? ' on' : ''}"><div class="skin-pics"><img src="${petImage(m.id, false, { scale: 3, skin: k })}" alt=""><img src="${petImage(m.id, true, { scale: 3, skin: k })}" alt=""></div>
+      <b>${esc(sk ? sk.name : '원래 무늬')}</b><small class="muted">${esc(sk ? sk.desc : PETS[m.id]?.desc || '')}</small>
+      ${on ? '<em class="on">쓰는 중</em>' : `<button class="btn small primary" data-skin="${esc(k || '')}">이 모습으로</button>`}</div>`; };
+  openModal({ title: `${m.nick || PETS[m.id]?.name || ''} 무늬`, body: `<p class="muted small">고른 무늬는 조사원 카드·별채·행사 장면에 보입니다. 아기 모습·자란 모습 모두 바뀝니다.</p><div class="skin-grid">${opts.map(card).join('')}</div>` });
+  $('#modal')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-skin]'); if (!b) return;
+    guard(b, async () => { const r = await rpc('world_pet_skin', { p_pet: m.id, p_skin: b.dataset.skin || null }); closeModal(); await reload(); openPets(y0); return r; });
+  });
+}
 function openCarry(p, ps) {
   if (!p) return;
   const today = { pat: p.pat || 0, play: p.play || 0, feed: p.feed || 0 };
-  const draw = () => `<div class="carry-care"><img src="${petImage(p.id, p.adult, { scale: 4 })}" alt=""><div><b>${esc(p.nick || PETS[p.id]?.name || '')}</b>
+  const draw = () => `<div class="carry-care"><img src="${petImage(p.id, p.adult, { scale: 4, skin: p.skin })}" alt=""><div><b>${esc(p.nick || PETS[p.id]?.name || '')}</b>
       <p class="muted small">친밀도 ${p.affinity || 0}${p.grown ? ' · 다 자람' : ' / 100이면 자람'} · 오늘 쓰다듬기 ${today.pat}/${CAPS.pat} · 놀기 ${today.play}/${CAPS.play} · 먹이 ${today.feed}/${CAPS.feed}</p>
       <p class="small" id="carry-line"></p>
       <span class="btn-row"><button class="btn small" data-c="pat">쓰다듬기</button><button class="btn small" data-c="play">놀아 주기</button><button class="btn small" data-c="feed">먹이 주기</button></span></div></div>`;
@@ -665,7 +679,7 @@ function setupPet() {
   for (const p of list) {
     const free = freeTiles(w, taken); if (!free.length) break;
     const [x, y] = free[Math.floor(Math.random() * free.length)]; taken.push([x, y]);
-    pets.push({ key: petKey(p), d: p, id: p.id, kind: PETS[p.id]?.kind, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10 + Math.random() * 20, flip: false, f: Math.floor(Math.random() * 28), z: 0, top: 0 });
+    pets.push({ key: petKey(p), d: p, id: p.id, skin: p.skin, kind: PETS[p.id]?.kind, adult: !!p.adult, x, y, path: [], state: 'idle', wait: 10 + Math.random() * 20, flip: false, f: Math.floor(Math.random() * 28), z: 0, top: 0 });
   }
   setupPoops();
 }
@@ -721,7 +735,7 @@ function drawPetIn(c, pet) {
   const st = pet.state, blink = st === 'idle' && pet.f % 28 < 2;
   const frame = st === 'sleep' ? 'sleep' : st === 'walk' || st === 'play' ? (pet.f % 4 < 2 ? 'step' : 'idle') : blink ? 'blink' : 'idle';
   const hop = st === 'play' && pet.f % 4 < 2 ? 2 : 0;
-  drawPet(c.put, pet.id, pet.adult, frame, sx, sy + 3 - hop, st === 'play' ? pet.f % 8 < 4 : pet.flip);
+  drawPet(c.put, pet.id, pet.adult, frame, sx, sy + 3 - hop, st === 'play' ? pet.f % 8 < 4 : pet.flip, pet.skin);
   const top = sy - 14 - (pet.adult ? 4 : 0);
   if (st === 'sleep' && pet.f % 16 < 10) drawEffect(c.put, 'zz', sx + 6, top);
   if (st === 'eat' && pet.f % 10 < 6) drawEffect(c.put, 'bowl', sx + 8, sy + 2);

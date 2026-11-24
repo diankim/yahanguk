@@ -349,11 +349,11 @@ function openResetIdentity() {
     <div class="modal-actions sticky-actions"><button class="btn primary" id="ri-go" data-jobcd="btn" data-jobcd-text="이대로 다시 시작">이대로 다시 시작</button></div>` });
   let pets = null;
   const petBox = $('#ri-pet', m);
-  const petCard = (id, sub, on) => { const g = petGroupOf(id); return `<label class="choice ri-petc"><input type="radio" name="rp" value="${esc(id)}" ${on ? 'checked' : ''}><img src="${petImage(id, sub.adult, { scale: 2 })}" alt=""><span><b>${esc(sub.name)}</b><small>${esc([g?.name, sub.note].filter(Boolean).join(' · '))}</small></span></label>`; };
+  const petCard = (id, sub, on) => { const g = petGroupOf(id); return `<label class="choice ri-petc"><input type="radio" name="rp" value="${esc(id)}" ${on ? 'checked' : ''}><img src="${petImage(id, sub.adult, { scale: 2, skin: sub.skin })}" alt=""><span><b>${esc(sub.name)}</b><small>${esc([g?.name, sub.note].filter(Boolean).join(' · '))}</small></span></label>`; };
   const drawPets = () => {
     const mine = pets?.mine || [];
     $('.ri-pet-body', petBox).innerHTML = !pets ? '<p class="muted small">동무를 불러오는 중…</p>' : mine.length
-      ? `<p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 함께하는 동무 가운데 하나를 고르세요(힘은 친밀도로 정해집니다).</p><div class="choice-grid ri-grid">${[...mine].sort((a, b) => (b.id === pets.profile) - (a.id === pets.profile) || b.affinity - a.affinity).map((p, i) => petCard(p.id, { name: p.nick || PETS[p.id]?.name || p.id, adult: p.adult, note: `친밀도 ${p.affinity}` }, pets.profile ? p.id === pets.profile : i === 0)).join('')}</div>`
+      ? `<p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 함께하는 동무 가운데 하나를 고르세요(힘은 친밀도로 정해집니다).</p><div class="choice-grid ri-grid">${[...mine].sort((a, b) => (b.id === pets.profile) - (a.id === pets.profile) || b.affinity - a.affinity).map((p, i) => petCard(p.id, { name: p.nick || PETS[p.id]?.name || p.id, adult: p.adult, skin: p.skin, note: `친밀도 ${p.affinity}` }, pets.profile ? p.id === pets.profile : i === 0)).join('')}</div>`
       : `<p class="muted small">조련사는 데리고 다니는 동무와 함께 싸웁니다. 아직 함께하는 동무가 없으니 처음 동무 하나를 고르세요.</p><div class="choice-grid ri-grid">${FIRST_PETS.map(id => petCard(id, { name: PETS[id]?.name || id, adult: false, note: petGroupLine(petGroupOf(id)) }, false)).join('')}</div>`;
   };
   const showPets = async () => {
