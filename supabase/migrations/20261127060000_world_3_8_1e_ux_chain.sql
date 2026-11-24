@@ -20,6 +20,7 @@ $q$          select string_agg(y.name, '·') into nm from public.world_gw_member
             and not (y.pos = any (used));$q$, $q$          nm := coalesce((select string_agg(cname ->> z::text, '·') from unnest(chainers) z where not (z = any (used))), '함께한 조사원');$q$]);
 
 update public.world_patch_notes set body = body || $pn$
-- [싸움] 무용담 · 귀허의 주인에서 소용돌이에 끌려간 라운드에 사슬을 끊으면 싸움이 멈추던 것을 고쳤습니다.$pn$ where note_id = '3.8.0';
+- [싸움] 무용담 · 귀허의 주인에서 소용돌이에 끌려간 라운드에 사슬을 끊으면 싸움이 멈추던 것을 고쳤습니다.
+- [이동] 지도에서 같은 곳에 함께 탈 파티원이 없으면 동승 칸 자리에 그 까닭을 한 줄로 알려 줍니다.$pn$ where note_id = '3.8.0';
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261127060000', now()) on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
