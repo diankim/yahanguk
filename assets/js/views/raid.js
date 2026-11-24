@@ -22,7 +22,7 @@ const creditLine = c => {
 const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
 
-let fxPrev = null, fxLog = 0;
+let fxPrev = null, fxLog = 0, guardFx = false;
 let el = null, rid = null, snap = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
 let queued = null;
 
@@ -184,9 +184,10 @@ function patch() {
 }
 function inkFight(s) {
   const r = s.raid, ms = s.members || [], myName = ms.find(m => m.me)?.name, all = s.log || [];
-  const cur = { id: r.id, boss: r.hp, mem: Object.fromEntries(ms.map(m => [m.id, { hp: m.hp, dmg: m.dmg, out: !!(m.out || m.away || m.left) }])) };
+  const cur = { id: r.id, boss: r.hp, mem: Object.fromEntries(ms.map(m => [m.id, { hp: m.hp, dmg: m.dmg, heal: m.heal, out: !!(m.out || m.away || m.left) }])) };
   const crit = all.some(l => l.id > fxLog && l.kind === 'crit' && l.who === myName);
-  if (fxPrev?.id === r.id && r.status === 'fight') fightFx(el, fxPrev, cur, { me: ms.find(m => m.me)?.id, style: myWeaponStyle(), crit });
+  if (fxPrev?.id === r.id && r.status === 'fight') fightFx(el, fxPrev, cur, { me: ms.find(m => m.me)?.id, style: myWeaponStyle(), crit, guard: guardFx });
+  guardFx = false;
   fxPrev = cur; fxLog = all.length ? all[all.length - 1].id : fxLog;
 }
 function chargeTick() {
@@ -373,7 +374,7 @@ async function run(btn, fn, isAct) {
   sending = true; btn.disabled = true;
   try {
     const out = await fn();
-    if (out?.raid) { snap = out; lastFetch = Date.now(); }
+    if (out?.raid) { snap = out; lastFetch = Date.now(); guardFx = btn.dataset.act === 'guard'; }
     if (isAct) readyAt = Date.now() + 1000;
     if (settled(snap)) await settle();
     else if (btn.dataset.act === 'item' || btn.dataset.use) await reloadCharacter();

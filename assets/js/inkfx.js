@@ -115,7 +115,19 @@ export function fightFx(root, a, b, o = {}) {
         const mbox = root.querySelector('.raid-me'), ml = overlay(mbox);
         setTimeout(() => { inkFx(ml, 'claw', { tone: 'bad' }); num(ml, `-${d}`, 'hurt'); pop(ml, 'ovl-hurt', 380); pop(mbox, d >= 15 ? 'shake-big' : 'shake', d >= 15 ? 520 : 360); }, mine > 0 ? 220 : 0);
       }
-    } else if (d < 0 && id === me) { const ml = overlay(root.querySelector('.raid-me')); inkFx(ml, 'rise', { color: 'var(--ok)' }); num(ml, `+${-d}`, 'heal'); }
+    }
+    const up = Math.max(-d, o.selfHeal && id === me ? Math.max(0, (m.heal || 0) - (p.heal || 0)) : 0);
+    if (up > 0) {
+      const li = root.querySelector(`[data-pick="${CSS.escape(id)}"]`)?.closest('li'), ll = overlay(li);
+      if (ll) inkFx(ll, 'rise', { color: 'var(--ok)', ms: 700 });
+      if (id === me) { const ml = overlay(root.querySelector('.raid-me')); setTimeout(() => { inkFx(ml, 'rise', { color: 'var(--ok)' }); num(ml, `+${up}`, 'heal'); }, d > 0 ? 260 : 0); }
+    }
+  }
+  if (o.guard && me) {
+    const ml = overlay(root.querySelector('.raid-me'));
+    inkFx(ml, 'guard', { tone: 'gold' });
+    const li = root.querySelector(`[data-pick="${CSS.escape(me)}"]`)?.closest('li');
+    inkFx(overlay(li), 'guard', { tone: 'gold', ms: 700 });
   }
   if (hurt >= 3 || (hurt >= 2 && hurt >= alive)) pop(root.querySelector('.raid-members'), 'ovl-aoe', 520);
 }

@@ -49,12 +49,12 @@ async function refresh() {
     inkAfter(before, logN);
   } catch (e) { if (el) el.innerHTML = errorBox(e.message); }
 }
-function inkAfter(before, logN) {
+function inkAfter(before, logN, act) {
   const myName = `${store.character?.character_name} · `;
-  if (before && snap && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true,
+  if (before && snap && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true, selfHeal: true, guard: act === 'guard',
     crit: (snap.log || []).slice(logN).some(l => l.startsWith(myName) && /치명/.test(l)) });
 }
-const fxOf = s => s && { boss: s.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.health, dmg: m.dmg, out: !!m.out }])) };
+const fxOf = s => s && { boss: s.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.health, dmg: m.dmg, heal: m.heal, out: !!m.out }])) };
 const settle = () => settleFight('world_pfight_act');
 
 function plan() {
@@ -179,7 +179,7 @@ async function run(btn, fn) {
     if (out) { snap = out; clock.sync(out); }
     if ((ended() && prev !== snap.status) || prevRound !== snap.round || prevTurn !== snap.turn_id || btn.id === 'pf-join') await settle();
     draw(); plan();
-    if (out) inkAfter(before, logN);
+    if (out) inkAfter(before, logN, btn.dataset?.pf);
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
   finally { sending = false; if (queued) { const q = queued; queued = null; q(); } }
 }

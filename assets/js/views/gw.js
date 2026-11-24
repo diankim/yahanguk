@@ -230,9 +230,10 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
 }
 function inkFight(s, me) {
   const f = s.fight, all = s.log || [];
-  const cur = { id: f.id, boss: f.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.hp, dmg: m.dmg, out: !!(m.out || m.resting) }])) };
+  const cur = { id: f.id, round: f.round, act: s.my_act?.a || null, boss: f.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.hp, dmg: m.dmg, heal: m.heal, out: !!(m.out || m.resting) }])) };
+  const pm = fxPrev?.mem?.[s.me], guard = !!(fxPrev && s.joined && pm && !pm.out && f.round > fxPrev.round && f.mech?.k !== 'rest' && (!fxPrev.act || ['guard', 'brace'].includes(fxPrev.act)));
   const crit = !!me.name && all.some(l => l.id > fxLog && l.kind === 'atk' && String(l.text).startsWith(me.name) && /치명/.test(l.text));
-  if (fxPrev?.id === f.id && (f.status === 'fight' || ended())) fightFx(el, fxPrev, cur, { me: s.me, style: myWeaponStyle(), crit, others: true });
+  if (fxPrev?.id === f.id && (f.status === 'fight' || ended())) fightFx(el, fxPrev, cur, { me: s.me, style: myWeaponStyle(), crit, others: true, guard });
   fxPrev = cur; fxLog = all.length ? all[all.length - 1].id : fxLog;
 }
 
