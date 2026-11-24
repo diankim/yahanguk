@@ -26,6 +26,8 @@ export async function renderShop(box) {
 
 function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = [] }) {
   const descOf = new Map((catalog || []).map(i => [i.id, i.description]));
+  const rarOf = new Map((catalog || []).map(i => [i.id, i.rarity || 'common']));
+  const rc = id => `class="r-${esc(rarOf.get(id) || 'common')}"`;
   const cart = carts[kind], c = store.character, have = c?.inventory || {};
   const mode = sell ? shopMode : 'buy';
   const ref = new Map((prices || []).map(p => [p.item_id, p]));
@@ -51,7 +53,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
     ${filt}
     <section data-list="buy" ${mode === 'buy' ? '' : 'hidden'}>
       <p class="muted small">가방 여유 ${Math.max(0, space)}칸 · 같은 물품은 한 칸에 묶음으로 쌓입니다. 가방이 가득 차면 살 수 없습니다.</p>
-      <ul class="item-list shop-list">${list.map(i => `<li ${listRowAttrs(pickCat(i.category), i.item_name || nameOf(i.item_id))}>
+      <ul class="item-list shop-list">${list.map(i => `<li ${rc(i.item_id)} ${listRowAttrs(pickCat(i.category), i.item_name || nameOf(i.item_id))}>
         <div class="item-main"><b>${infoName(i.item_id, i.item_name, i.category)}</b><span class="qty">${fmt.jeon(i.unit_price)}</span>
           <small>${i.tier}단계${have[i.item_id] && !ownKind(i.item_id) ? ` · 가진 것 ${fmt.num(have[i.item_id])}` : ''}${capLine(i)}</small>${ownSlot(i.item_id)}${i.description ? `<small class="brief">${esc(brief(i.description))}</small>` : ''}</div>
         ${capLeft(i) > 0 ? stepper('buy', i.item_id, capLeft(i)) : qtyHtml({ key: `buy:${i.item_id}`, max: 0, off: true })}</li>`).join('') || `<li>${empty('지금은 파는 물품이 없습니다.')}</li>`}</ul>
@@ -61,7 +63,7 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
         <small>${sold.left > 0 ? `앞으로 ${fmt.jeon(sold.left)}까지 더 받을 수 있습니다` : '오늘 한도를 다 채웠습니다'}${sold.resets_at ? ` · ${fmt.time(sold.resets_at)}부터 차례로 풀립니다` : ''} · 한도는 24시간에 2,000전</small></div>`
         : '<p class="muted small">상점 판매 수익은 하루 한도가 있고 세금 5%가 붙습니다.</p>'}
       <p class="muted small">장비도 팔 수 있습니다. 잠근 물품·임무 물품·장착 중인 마지막 하나는 나오지 않습니다.</p>
-      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li ${listRowAttrs(pickCat(ref.get(k)?.category), nameOf(k))}>
+      <ul class="item-list shop-list">${sellable.map(([k, n]) => `<li ${rc(k)} ${listRowAttrs(pickCat(ref.get(k)?.category), nameOf(k))}>
         <div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>개당 약 ${fmt.jeon(sellPrice(k))}에 매입${equipped.has(k) ? ' · 장착 중 하나는 남김' : ''}</small>${descOf.get(k) ? `<small class="brief">${esc(brief(descOf.get(k)))}</small>` : ''}</div>
         ${stepper('sell', k, sellMax(k))}</li>`).join('') || `<li>${empty('상점에 팔 수 있는 물품이 없습니다.', 'coin')}</li>`}</ul>
     </section>` : ''}
@@ -138,9 +140,9 @@ export async function renderSmithy(box) {
   const body = $('.sm-body', box);
   try {
     if (smithyTab === 'buy') {
-      const s = await load('world_smithy_snapshot', undefined, { maxAge: 120000 });
+      const [s, inv] = await Promise.all([load('world_smithy_snapshot', undefined, { maxAge: 120000 }), load('world_inventory_snapshot', undefined, { maxAge: 30000 }).catch(() => null)]);
       if (!s?.available) { body.innerHTML = empty(s?.content || '대장간은 안전지대에만 있습니다.', 'shop'); return; }
-      return tradePane(body, s, { kind: 'smithy', sell: false });
+      return tradePane(body, s, { kind: 'smithy', sell: false, catalog: inv?.catalog || [] });
     }
     if (smithyTab === 'enhance') return enhancePane(body);
     if (smithyTab === 'repair') return repairPane(body);
