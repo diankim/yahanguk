@@ -4117,8 +4117,11 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
   .hud-card.vitals { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px 10px; }
   .hud-card.vitals > .vital { grid-column: span 2; }
   .hud-card.vitals > .vital.er, .hud-card.vitals > .vital.st { grid-column: span 3; }
+  .hud-card.vitals > .vital > span { min-width: 0; overflow-wrap: anywhere; }
+  .hud-card.vitals > .vital.st > span small { white-space: nowrap; }
   .hud-card.money { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .hud-card.money > div { padding: 4px 6px; }
+  .hud-card.money > div { padding: 4px 6px; align-content: start; }
+  .hud-card.money b { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; word-break: keep-all; line-height: 1.25; font-size: calc(12px * var(--fz, 1)); }
   .hud-body { gap: 8px; }
   .hud-body .hud-card { padding: 10px; gap: 6px; }
   .hud-card.vitals .statuses { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding-top: 6px; }
