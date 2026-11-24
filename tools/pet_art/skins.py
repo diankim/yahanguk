@@ -6,7 +6,7 @@ CALICO_PAL = {'a': '#fbf9f4', 'o': '#e8964a', 'd': '#4a3f3a', 'n': '#e07a86', 'e
 CALICO_BABY = dict(pal=CALICO_PAL, idle='''
 .....a...a..
 ....aoo.dda.
-....odaaoda.
+....aaaaoda.
 o...aieaiea.
 d...aeeaeea.
 .o..paanaap.
@@ -16,14 +16,14 @@ d...aeeaeea.
 ..aa.a.a.aa.''', sleep='''
 ......a...a.
 .....aoo.dda
-.....odaaoda
+.....aaaaoda
 .aaaaakkakka
 aaaaapaanaap
 aodododoaaa.''')
 CALICO_ADULT = dict(pal=CALICO_PAL, idle='''
 ........a...a..
 .......aoo.dda.
-.......odaoada.
+.......aaaoada.
 .o.....aieaiea.
 d......aeeaeea.
 o......paanaap.
@@ -37,7 +37,7 @@ o......paanaap.
 ..aa...aa.a..a.''', sleep='''
 .........a...a.
 ........aoo.dda
-........odaoada
+........aaaoada
 .aaaaaaaakkakka
 aaaaaaaapaanaap
 aaaaaaaaaaaaaaa
