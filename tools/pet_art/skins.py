@@ -4,8 +4,8 @@ def skin(**kw): SKINS.append(kw)
 
 CALICO_PAL = {'a': '#fbf9f4', 'o': '#e8964a', 'd': '#4a3f3a', 'n': '#e07a86', 'e': E, 'i': '#8a7a74', 'p': PK}
 CALICO_BABY = dict(pal=CALICO_PAL, idle='''
-.....o...d..
-....ooo.ddd.
+.....a...a..
+....aoo.dda.
 ....odaaoda.
 o...aieaiea.
 d...aeeaeea.
@@ -14,15 +14,15 @@ d...aeeaeea.
 .aaaaaaaaaa.
 .aa.a..a.aa.''', step_tail='''
 ..aa.a.a.aa.''', sleep='''
-......o...d.
-.....ooo.ddd
+......a...a.
+.....aoo.dda
 .....odaaoda
 .aaaaakkakka
 aaaaapaanaap
 aodododoaaa.''')
 CALICO_ADULT = dict(pal=CALICO_PAL, idle='''
-........o...d..
-.......ooo.ddd.
+........a...a..
+.......aoo.dda.
 .......odaoada.
 .o.....aieaiea.
 d......aeeaeea.
@@ -35,8 +35,8 @@ o......paanaap.
 ..aa.aa...aa.a.''', step_tail='''
 ...aa.aa..aa.a.
 ..aa...aa.a..a.''', sleep='''
-.........o...d.
-........ooo.ddd
+.........a...a.
+........aoo.dda
 ........odaoada
 .aaaaaaaakkakka
 aaaaaaaapaanaap
