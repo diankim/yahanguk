@@ -130,6 +130,7 @@ export const GAMEDATA = {
   },
   "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"death_h":4,"per_lv_low":40},
   "ride": {"wait_s":60},
+  "sparWatch": {"step_ms":550,"keep_min":10,"active_min":15},
   "survival": {
     "ground": {"er":10,"mn":18,"min":15},
     "cleanse": {"er":18,"mn":6,"hq_er":21,"hq_mn":7}

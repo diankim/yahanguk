@@ -544,7 +544,7 @@ async function refillAfterPop() {
 function subscribe() {
   if (away) { bclear('chat'); return; }
   const c = store.character, me = store.user?.id;
-  bgroup('chat', ['chat:global', c?.location && `chat:region:${c.location}`, c?.major_faction_id && `chat:faction:${c.major_faction_id}`, me && `whisper:${me}`], 'msg', p => addMsg(p.new),
+  bgroup('chat', ['chat:global', c?.location && `chat:region:${c.location}`, c?.major_faction_id && `chat:faction:${c.major_faction_id}`, me && `whisper:${me}`], 'msg', p => { if (p?.spar) { window.dispatchEvent(new CustomEvent('yh-spar-news', { detail: p.spar })); return; } addMsg(p.new); },
     l => { const was = live; live = l; if (l && !was) loadNew(); }, chatDenied);
 }
 let deniedAt = 0;

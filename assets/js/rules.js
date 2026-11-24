@@ -324,3 +324,10 @@ export const WEAPON_RANK = {
   steps: WRK,
   keep: (line, need, have) => `지금 ${line} ${have}단계라 이 무기의 기준(${need}단계)에 못 미칩니다. 끼고 있는 동안은 그대로 쓰지만, 내려놓으면 ${line} ${need}단계가 되기 전에는 다시 낄 수 없습니다.`,
 };
+export const SPAR_WATCH = (r => ({
+  keepMin: r.keep_min ?? 10, step: r.step_ms ?? 550,
+  band: n => `비무 ${n}판 · 관전`, live: '겨루는 중', done: w => w ? `끝남 · ${w} 승` : '끝남',
+  tip: '관전 중입니다. 같은 곳에서 벌어진 비무는 끝난 뒤에도 잠시 다시 볼 수 있습니다.',
+  listTip: `이 지역에서 ${r.keep_min ?? 10}분 안에 벌어진 비무입니다. 골라서 보세요.`,
+  gone: '볼 수 없는 비무입니다. 그 지역을 떠났거나 시간이 지났습니다.',
+}))(GD.sparWatch || {});

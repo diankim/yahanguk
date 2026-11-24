@@ -5,7 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { WEAK_NAMES, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK } from '../rules.js';
+import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1875,6 +1875,7 @@ const S = [
       <li>야행 비무회와 같은 계산으로 겨룹니다(기세·레벨 보정·직업 보정·조련사 동무). 작전은 정하지 않고, 균형 태세로 몰릴 때(기세 ${Math.round((GD.tourney?.skill_at?.mid ?? 0.6) * 100)}% 아래) 직업 기술을 한 번 쓰며 회복품은 쓰지 않습니다.</li>
       <li>목숨을 걸지 않는 겨루기라 체력·물품·전·경험치는 줄지도 늘지도 않습니다.</li>
       <li>같은 상대와는 3분에 한 번입니다. 결과는 한 줄씩 펼쳐집니다.</li>
+      <li>같은 곳에 있던 조사원은 비무를 관전할 수 있습니다. 비무가 벌어지면 알림이 가고(설정 › 알림 「비무 관전」에서 끔), 현장 띠의 「비무 n판 · 관전」에서 ${SPAR_WATCH.keepMin}분 동안 여러 판을 골라 봅니다. 두 사람은 관전을 막을 수 없습니다.</li>
     </ul>`],
   ['idle', '자율 활동', `
     <p>캐릭터 › 자율에서 활동을 맡겨 둡니다. 접속하지 않아도 진행되고, 끝나면 직접 보상을 받습니다.</p>

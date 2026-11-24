@@ -2,6 +2,7 @@ import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_
 import { fightFx } from '../inkfx.js';
 import { sceneHtml, mountScene } from '../scene.js';
 import { feastBandRow, bindFeastBand } from '../feast.js';
+import { SPAR_WATCH } from '../rules.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
@@ -392,15 +393,21 @@ function briefAge() {
   return now >= due ? 0 : 600000;
 }
 export const raidBand = () => '<div id="raid-band"></div>';
+const swAge = () => { const d = store.snaps['world_spar_watch_listnull']; return d && d.place === store.character?.location ? 1800000 : 0; };
+const swNow = d => (d?.place === store.character?.location ? d.list || [] : []).filter(x => Date.now() - new Date(x.finished_at) < SPAR_WATCH.keepMin * 60000)
+  .map(x => ({ ...x, live: Date.now() < new Date(x.ends_at) }));
+window.addEventListener('yh-spar-news', () => { invalidate('world_spar_watch_list'); const box = document.getElementById('raid-band'); if (box) fillRaidBand(box); });
 export async function fillRaidBand(box) {
   if (!box) return;
   const wedP = load('world_wedding_now', undefined, { maxAge: store.snaps['world_wedding_nownull'] ? 60000 : 300000 }).catch(() => null);
+  const swP = load('world_spar_watch_list', undefined, { maxAge: swAge() }).catch(() => null);
   let b = null; if (RAID_ON) { try { b = await load('world_raid_brief', undefined, { maxAge: briefAge() }); } catch {} }
-  const wed = await wedP;
+  const wed = await wedP, sw = swNow(await swP);
   if (!box.isConnected) return;
   const w = b?.world, rows = [];
   const fr = feastBandRow(); if (fr) rows.push(fr);
   if (wed?.wed_id) rows.push(`<a class="raid-band-row hot" href="#" data-wed-band="${esc(wed.wed_id)}">${icon('heart', 14)}<span><b>${esc(wed.a)}·${esc(wed.b)}</b>의 혼례 · ${esc(wed.place || '')} · ${wed.status === 'ceremony' || new Date(wed.starts_at) <= new Date() ? `${left(wed.ends_at)} 남음` : `${left(wed.starts_at)} 뒤 시작`}</span><small>혼례 보기</small></a>`);
+  if (sw.length) rows.push(`<a class="raid-band-row${sw.some(x => x.live) ? ' hot' : ''}" href="#" data-sw-band>${icon('sword', 14)}<span>${esc(SPAR_WATCH.band(sw.length))}</span><small>보기</small></a>`);
   if (b?.final) rows.push(`<a class="raid-band-row hot" href="#/raid/${esc(b.final)}">${icon('sword', 14)}<span><b>구중 봉주와의 결전</b>이 열려 있습니다</span><small>들어가기</small></a>`);
   if (w) {
     const t = x => x ? left(x) : '';
@@ -412,6 +419,8 @@ export async function fillRaidBand(box) {
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
   bindFeastBand(box);
+  const swb = $('[data-sw-band]', box);
+  if (swb) swb.onclick = async e => { e.preventDefault(); const m = await import('../spar.js'); if (sw.length === 1) m.openSparWatch(sw[0].id); else m.openSparWatchList(sw); };
   const wb = $('[data-wed-band]', box);
   if (wb) wb.onclick = async e => { e.preventDefault(); (await import('../bond.js')).openWedding(wb.dataset.wedBand); };
   backPrompt(w);

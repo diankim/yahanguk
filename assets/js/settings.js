@@ -151,6 +151,7 @@ function noteActs(n) {
   if (n.kind === 'circle_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-circle="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-circle="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'bond_request' && n.payload?.request_id) return `<button class="btn primary small" data-bondn="${esc(n.id)}" data-acc="1">받기</button><button class="btn small" data-bondn="${esc(n.id)}" data-acc="0">돌려보내기</button>`;
   if (n.kind === 'spar_request' && n.payload?.spar_id) return `<button class="btn primary small" data-spar="${esc(n.id)}" data-acc="1">겨루기</button><button class="btn small" data-spar="${esc(n.id)}" data-acc="0">사양</button>`;
+  if (n.kind === 'spar_watch' && n.payload?.spar_id) return `<button class="btn primary small" data-sparw="${esc(n.id)}">관전</button>`;
   if (n.kind === 'spar_result' && n.payload?.spar_id && /비무에서/.test(n.title || '')) return `<button class="btn primary small" data-sparv="${esc(n.id)}">결과 보기</button>`;
   if (n.kind === 'bug_report' || n.kind === 'bug_reply') return `<button class="btn primary small" data-bug="${esc(n.id)}">보기</button>`;
   if (n.kind === 'bag_overflow') return `<button class="btn primary small" data-ov="${esc(n.id)}">정리하기</button>`;
@@ -186,11 +187,11 @@ const GO_KIND = { garden_shoo: 'garden', bond_emote: 'house', title: 'char/title
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
   drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look', project_stage: 'home', regular_stage: 'log/side' };
 const pastActs = n => { const a = noteActs(n); return /data-(invite|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
-const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
+const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'sparw', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.lgone) { const o = byId(btn.dataset.lgone); if (!o) return false; await markRead(o); (await import('./letters.js')).openRemoved(o.payload.removed); return true; }
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.ride || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.feastv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
+  const n = byId(btn.dataset.ride || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.sparw || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.feastv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.ride) {
@@ -224,6 +225,7 @@ async function runAct(btn) {
     if (r?.result) (await import('./spar.js')).openSparResult(r.result);
     return true;
   }
+  if (btn.dataset.sparw) { await markRead(n); closeModal(); (await import('./spar.js')).openSparWatch(n.payload.spar_id); return true; }
   if (btn.dataset.sparv) { await markRead(n); await guard(btn, async () => { await (await import('./spar.js')).viewSpar(n.payload.spar_id); return null; }); return true; }
   if (btn.dataset.bug) { await markRead(n); closeModal(); window.dispatchEvent(new CustomEvent('yh-open-bug', { detail: { tab: n.kind === 'bug_report' ? 'inbox' : 'send' } })); return true; }
   if (btn.dataset.pexo) { await guard(btn, async () => { try { return await act('world_party_expedition_respond', { p_offer: n.payload.offer_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } }); return true; }
