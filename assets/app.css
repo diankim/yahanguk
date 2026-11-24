@@ -4128,4 +4128,5 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
   .hud-body .hud-card { padding: 10px; gap: 6px; }
   .hud-card.vitals .statuses { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding-top: 6px; }
   .hud-card.vitals .statuses .st-chips { display: contents; }
+  .hud-card.vitals .statuses .yohwa-pin { flex: 1 1 100%; margin: 0; }
 }

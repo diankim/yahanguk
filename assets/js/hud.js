@@ -248,7 +248,7 @@ function domainPin() {
 }
 function statusCard() {
   const yo = yohwaOf(state.hud?.statuses), list = yo.rest, yl = yohwaLine(yo);
-  return `<div class="statuses"><h3>상태 ${list.length}/10</h3>${domainPin()}${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
+  return `<div class="statuses">${domainPin()}${yl ? `<a class="yohwa-pin ${yl.cls}" href="#/char/status">${icon(yo.seal ? 'shield' : 'mask', 14)}<span><b>${esc(yl.title)}</b><small>${esc(yo.seal ? '해독 끝까지' : yl.text)} <i data-timer="${new Date(yl.until).getTime()}" data-kind="status">${fmt.remain(new Date(yl.until) - Date.now())}</i></small></span></a>` : ''}<h3>상태 ${list.length}/10</h3>${list.length ? `<div class="st-chips">${list.map((s, i) => `<button class="st-chip ${s.polarity === 'positive' ? 'good' : 'bad'}" data-st="${i}">
       <b>${esc(s.name)}${s.stacks > 1 ? `×${s.stacks}` : ''}</b><i data-timer="${new Date(s.expires_at).getTime()}" data-kind="status">${fmt.remain(new Date(s.expires_at) - Date.now())}</i></button>`).join('')}</div>`
     : ''}</div>`;
 }
