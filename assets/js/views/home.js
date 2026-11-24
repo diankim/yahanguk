@@ -5,7 +5,7 @@ import { deathAt, gmBadge, ask, store, on, act, rpc, nameOf, esc, icon, bar, gua
 import { face } from '../people.js';
 import { helpQ, helpLine } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
-import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen } from './common.js';
+import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen, rarRow } from './common.js';
 import { factionColor } from '../geo.js';
 import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT } from '../rules.js';
 import { openProject, projectBand, urgentSet } from './project.js';
@@ -142,7 +142,7 @@ function openAid(target, name) {
   const inv = store.character.inventory || {}, medic = store.character.job_key === 'medic';
   const have = haveOf(AID_ITEMS, inv).map(k => [k, USABLE[k] || USABLE[baseOf(k)] || '']);
   const m = openModal({ title: `${name} 돌보기`, body: `<p class="muted small">같은 곳에 있는 동료에게 약·부적을 씁니다.${medic ? ' 의무관이 쓰면 효과가 1.4배입니다.' : ''} 쓰러진 동료는 구조해야 합니다.</p>
-    ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-here="동료 돌보기" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
+    ${have.length ? `<ul class="item-list">${have.map(([k, d]) => `<li class="${rarRow(k)}"><div class="item-main"><b>${esc(nameOf(k))} ×${fmt.num(inv[k])}</b><small>${esc(d)}${medic ? ' (×1.4)' : ''}</small></div><div class="item-act"><button class="btn small primary" data-here="동료 돌보기" data-aid-use="${esc(k)}">쓰기</button></div></li>`).join('')}</ul>`
       : empty('가방에 동료에게 쓸 약·부적이 없습니다.')}` });
   $$('[data-aid-use]', m).forEach(b => b.onclick = () => guard(b, async () => { const r = await act('world_party_use_item', { p_target: target, p_item_id: b.dataset.aidUse }); closeModal(); return r; }));
 }

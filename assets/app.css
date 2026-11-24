@@ -521,6 +521,8 @@ body.chat-open .chat-fab { display: none; }
 .item-list li.r-epic { border-left-color: var(--sp); } .item-list li.r-legendary { border-left-color: #c8412f; }
 /* 거래소 목록: 넓은 창에서는 두 칸(한 줄이 길기만 하고 가운데가 비던 것) */
 @media (min-width: 640px) { .mk-list, .mk-mine { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .mk-list li, .mk-mine li { align-items: flex-start; } }
+.r-common { --rc: var(--line); } .r-uncommon { --rc: var(--ok); } .r-rare { --rc: var(--mp); } .r-epic { --rc: var(--sp); } .r-legendary { --rc: #c8412f; }
+.rr { border-left: 3px solid var(--rc, var(--line)); }
 .rar-tag { font-size: calc(11px * var(--fz, 1)); font-weight: 600; padding: 0 5px; border: 1px solid currentColor; border-radius: 3px; line-height: 1.5; color: var(--muted); } .rar-tag.r-uncommon { color: var(--ok); } .rar-tag.r-rare { color: var(--mp); } .rar-tag.r-epic { color: var(--sp); } .rar-tag.r-legendary { color: #c8412f; }
 .item-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .item-main b { font-size: calc(13px * var(--fz, 1)); }

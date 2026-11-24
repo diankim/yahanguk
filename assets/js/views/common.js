@@ -52,6 +52,7 @@ export const catItem = id => catalogMap()?.get(id) || catMap?.get(baseOf(id)) ||
 export const fxNames = () => (catalogMap(), fxNameMap);
 export const catalogList = () => { const m = catalogMap(); return m ? [...m.values()] : null; };
 export const itemDesc = id => catItem(id)?.description || '';
+export const rarRow = id => { const r = id && catItem(id)?.rarity; return r ? `rr r-${r}` : ''; };
 catalogMap();
 export async function ensureCatalog() {
   if (invStatic) return;

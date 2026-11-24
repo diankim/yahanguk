@@ -1,7 +1,7 @@
 import { act, esc, icon, guard, $, $$, fmt, openModal, openLayer, closeModal, ask, nameOf, store, josa, particle, JOBS } from './core.js';
 import { brokenName, FACTION_DONATE } from './rules.js';
 import { openItemInfo } from './views/item.js';
-import { chip, invalidate } from './views/common.js';
+import { chip, invalidate, rarRow } from './views/common.js';
 import { ownSlot, fillOwned } from './owned.js';
 import { factionColor } from './geo.js';
 import { replayLog } from './replay.js';
@@ -111,7 +111,7 @@ export function fqPopHtml(key, s) {
       <div class="chips">${chip(`공훈 ${fmt.num(s.merit)}`, 'ok')}</div>
       ${!s.join_done ? `<p class="hint">${icon('shield', 14)} 가입 퀘스트를 마치면 열립니다.</p>` : !s.at_home ? `<p class="hint">${icon('pin', 14)} ${esc((s.home_names || []).join('·'))}에서 열 수 있습니다.</p>` : ''}
       ${listFilterHtml(vaultFilt, { cats: VAULT_CATS, have: new Set((s.vault || []).map(v => v.kind)), label: '비고 물품 찾기' })}
-      <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}" ${listRowAttrs(v.kind, v.name)}><div>
+      <ul class="fq-vault">${(s.vault || []).map(v => `<li class="${v.kind === 'item' ? rarRow(v.item_id) : ''} ${v.locked ? 'locked' : ''} ${v.owned ? 'owned' : ''}" ${listRowAttrs(v.kind, v.name)}><div>
           <b>${v.kind === 'item' ? `<button type="button" class="linkish" data-fq-info="${esc(v.item_id)}">${esc(v.name)}</button>` : v.kind === 'name_style' ? `<span class="fq-ns ns-${esc(v.item_id.slice(3))}">${esc(v.name)}</span>` : esc(v.name)} ${kindChip(v)}</b>
           <small class="muted">공훈 ${fmt.num(v.price)}${v.locked ? ` · ${esc(ranks[v.rank_need - 1] || '')}부터` : ''}</small>${v.kind === 'item' ? ownSlot(v.item_id) : ''}</div>
         ${v.owned ? chip('가짐', 'ok') : v.kind === 'item' ? actBox({ key: v.item_id, max: 99, value: 1, all: false, off: !vaultOpen || v.locked, btns: [`<button class="btn small primary" data-here="비고 교환" data-fq-buy="${esc(v.item_id)}" ${vaultOpen && !v.locked ? '' : 'disabled'}>사기</button>`] })

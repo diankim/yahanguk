@@ -3,7 +3,7 @@ import { PROJECT } from '../rules.js';
 import { helpQ } from '../tips.js';
 import { hqOf } from '../hq.js';
 import { openItemPick } from './itempick.js';
-import { catItem } from './common.js';
+import { catItem, rarRow } from './common.js';
 
 const RAR = ['', 'common', 'uncommon', 'rare', 'epic', 'legend', 'legend', 'legend', 'legend'];
 const KIND = { craft: '제작품', gather: '채집' };
@@ -18,7 +18,7 @@ function ladder(v) {
 
 function itemCard(it) {
   const h = haveOf(it), hq = haveHqOf(it);
-  return `<li class="pj-item ${it.urgent ? 'urgent' : ''} ${h + hq ? 'has' : ''}">
+  return `<li class="pj-item ${rarRow(it.id)} ${it.urgent ? 'urgent' : ''} ${h + hq ? 'has' : ''}">
     <header><button type="button" class="linkish" data-pj-info="${esc(it.id)}"><b>${esc(it.name)}</b></button>${it.urgent ? `<span class="chip warn pj-urgent">급히 ×${PROJECT.urgent.mul}</span>` : ''}</header>
     <small class="muted">${esc(KIND[it.kind] || '')} · ${it.tier}단계 · 1개 <b>${fmt.num(unitOf(it, false))}</b>몫${hq ? ` · 우수 ${fmt.num(unitOf(it, true))}몫` : ''}</small>
     <small class="pj-have">가방 ${fmt.num(it.have || 0)}${it.have_st ? ` · 창고 ${fmt.num(it.have_st)}` : ''}${hq ? ` · 우수 ${fmt.num(hq)}` : ''}</small>

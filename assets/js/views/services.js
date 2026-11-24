@@ -1,6 +1,6 @@
 import { rarTag, openModal, closeModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { hit } from '../changes.js';
-import { load, loadPrices, chip, loading, errorBox, foldOpen } from './common.js';
+import { load, loadPrices, chip, loading, errorBox, foldOpen, rarRow } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ, helpLine } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
@@ -229,7 +229,7 @@ async function repairPane(body) {
   const q = await load('world_repair_quote', undefined, { maxAge: 60000 });
   const items = q?.items || [];
   body.innerHTML = items.length ? `
-    <ul class="item-list">${items.map(i => `<li><div class="item-main"><b>${infoName(i.item_id, i.name)}</b><span class="qty">${fmt.jeon(i.cost)}</span>
+    <ul class="item-list">${items.map(i => `<li class="${rarRow(i.item_id)}"><div class="item-main"><b>${infoName(i.item_id, i.name)}</b><span class="qty">${fmt.jeon(i.cost)}</span>
       <small>내구도 ${fmt.num(i.durability)} / ${fmt.num(i.max)}${i.equipped ? ' · 장착 중' : ''}</small></div>
       <div class="item-act"><button class="btn small" data-here="수리" data-rep-one="${esc(i.item_id)}" ${store.character?.gil < i.cost ? 'disabled' : ''}>고치기</button></div></li>`).join('')}</ul>
     <div class="shop-foot"><span>${items.length}개 · 합계 <b>${fmt.jeon(q.total)}</b>${store.character?.gil < q.total ? ' <span class="bad">· 전이 모자랍니다</span>' : ''}</span>
@@ -261,7 +261,7 @@ async function dismantlePane(body) {
       const low = d.line && d.rank < d.need;
       const what = !d.line ? '' : low ? `<span class="bad">재료 없음 · ${esc(d.line_name)} 경험 +12만(${esc(d.line_name)} ${d.need}단계부터 재료)</span>`
         : `돌려받는 재료: ${esc(yieldText(d.yield) || '—')} · ${esc(d.line_name)} 경험 +12`;
-      return `<li><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
+      return `<li class="${rarRow(k)}"><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
         <div class="item-act"><button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
   body.innerHTML += `${helpLine(`장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.`, '분해 안내')}`;
@@ -305,7 +305,7 @@ function untradeNote(have, ref, direct = false) {
 function soldHtml(sold) {
   const list = sold || [], sum = list.reduce((a, x) => a + (Number(x.currency_delta) || 0), 0);
   return `<details class="fold f-fold mk-sold" data-fold="mk-sold" ${foldOpen('mk-sold', false) ? 'open' : ''}><summary>판매 내역 <small class="muted">최근 ${MARKET_SOLD.days}일 ${list.length}건${list.length ? ` · 받은 돈 ${fmt.jeon(sum)}` : ''}</small></summary>
-    ${list.length ? `<ul class="item-list mk-sold-list">${list.map(x => `<li><div class="item-main"><b>${infoName(x.details?.item)}</b><span class="qty">×${Number(x.details?.qty) || 0}</span>
+    ${list.length ? `<ul class="item-list mk-sold-list">${list.map(x => `<li class="${rarRow(x.details?.item)}"><div class="item-main"><b>${infoName(x.details?.item)}</b><span class="qty">×${Number(x.details?.qty) || 0}</span>
       <small class="mk-price">받은 돈 <b>${fmt.jeon(x.currency_delta)}</b> · ${esc(fmt.when(x.created_at))}</small></div></li>`).join('')}</ul>
       <p class="muted small">거래세를 뗀 금액입니다. 산 사람은 보이지 않습니다.</p>` : `<p class="muted small">최근 ${MARKET_SOLD.days}일 동안 팔린 물품이 없습니다.</p>`}</details>`;
 }

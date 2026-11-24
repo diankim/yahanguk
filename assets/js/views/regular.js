@@ -1,5 +1,6 @@
 import { $, $$, esc, icon, fmt, act, rpc, ask, guard, openModal, bar } from '../core.js';
 import { REGULAR } from '../rules.js';
+import { rarRow } from './common.js';
 import { helpQ } from '../tips.js';
 import { kinSectionHtml, bindKinSection } from '../kin.js';
 import { regionBtn } from '../sources.js';
@@ -21,7 +22,7 @@ function taskCard(o, v) {
 function orderCard(o, v) {
   if (o.type === 'act' || o.type === 'kill') return taskCard(o, v);
   const h = haveOf(o), hq = haveHqOf(o), off = o.done || !v.can?.give;
-  return `<li class="rg-order ${o.done ? 'done' : h + hq >= o.qty ? 'ready' : ''}">
+  return `<li class="rg-order ${rarRow(o.id)} ${o.done ? 'done' : h + hq >= o.qty ? 'ready' : ''}">
     <header><button type="button" class="linkish" data-rg-info="${esc(o.id)}"><b>${esc(o.name)}</b></button><span class="chip">${o.qty}개</span>${o.done ? `<span class="chip ok">${icon('check', 12)}넘김</span>` : ''}</header>
     ${REGULAR.isMeat(o.id) ? `<small class="rg-hunt">${icon('sword', 12)}${esc(REGULAR.huntLine(o.name))}</small>` : ''}
     <small class="muted">${o.tier}단계 · 가방 ${fmt.num(o.have || 0)}${o.have_st ? ` · 창고 ${fmt.num(o.have_st)}` : ''}${o.hq_ok ? ` · 우수 ${fmt.num(hq)}` : ''}</small>

@@ -1,7 +1,7 @@
 import { store, on, act, rpc, ask, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, RAID_ON, openModal, closeModal, MARKET_ONLY } from '../core.js';
 import { openRegular, regularListHtml } from './regular.js';
 import { loreBundle, refreshLore } from '../lore.js';
-import { load, loadPrices, panel, chip, loading, errorBox, currentRegion, foldOpen } from './common.js';
+import { load, loadPrices, panel, chip, loading, errorBox, currentRegion, foldOpen, rarRow } from './common.js';
 import { focusRegion } from './map.js';
 import { showResult } from './expedition.js';
 import { taskLine, giveLine, atLine, report, storyCombine } from '../quests.js';
@@ -317,14 +317,14 @@ async function userCommissions(box) {
     const act2 = m.status === 'done' && !m.settled ? `<button class="btn small primary" data-here="조사원 의뢰" data-uc-collect="${m.id}" ${here.safe ? '' : 'disabled title="안전지대에서 받습니다"'}>${icon('bag', 14)}<span>물품 받기</span></button>`
       : m.status === 'open' ? `<button class="btn small ghost" data-here="의뢰 거두기" data-uc-cancel="${m.id}">${icon('close', 14)}<span>거두기</span></button>`
       : m.status === 'expired' && !m.settled ? `<button class="btn small primary" data-here="의뢰 거두기" data-uc-cancel="${m.id}">${icon('coin', 14)}<span>보수 돌려받기</span></button>` : '';
-    return `<article class="commission uc mine ${m.status === 'done' && !m.settled ? 'ready' : m.settled || m.status === 'cancelled' ? 'done' : ''}">
+    return `<article class="commission uc mine ${rarRow(m.item)} ${m.status === 'done' && !m.settled ? 'ready' : m.settled || m.status === 'cancelled' ? 'done' : ''}">
       <header>${icon('scroll', 18)}<b><button class="linkish" data-uc-info="${esc(m.item)}">${getLabel(m.item)}</button> ×${m.qty}</b></header>
       ${noteLine(m)}<small class="muted">보수 ${fmt.jeon(m.reward)} · 등록처 ${esc(m.region || '-')}${m.faction ? `(${esc(m.faction)})` : ''}${m.fulfiller ? ` · 넘긴 이 ${esc(m.fulfiller)}` : ''}</small>
       <div class="uc-foot">${chip(st[0], st[1])}${act2}</div></article>`;
   };
   const openCard = o => {
     const enough = o.have >= o.qty, pay = o.reward - Math.max(1, Math.floor(o.reward * feePct / 100));
-    return `<article class="commission uc ${enough ? 'ready' : ''}">
+    return `<article class="commission uc ${rarRow(o.item)} ${enough ? 'ready' : ''}">
       <header>${icon('bag', 18)}<b><button class="linkish" data-uc-info="${esc(o.item)}">${getLabel(o.item)}</button> ×${o.qty}</b></header>
       <small class="muted">의뢰인 ${esc(o.owner)} · 등록처 ${esc(o.region || '-')}${o.faction ? `(${esc(o.faction)})` : ''} · ${leftText(o.expires_at)}</small>
       ${noteLine(o)}${b.staff && o.note ? `<button class="btn small ghost" data-uc-unnote="${o.id}">${icon('close', 14)}<span>글 내리기</span></button>` : ''}

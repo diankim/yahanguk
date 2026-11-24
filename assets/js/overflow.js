@@ -1,4 +1,5 @@
 import { rpc, act, esc, icon, h, $, $$, openModal, guard, ask, fmt, emit, nameOf } from './core.js';
+import { rarRow } from './views/common.js';
 
 export async function openOverflow() {
   const body = h(`<div class="overflow-box"><p class="muted small">불러오는 중…</p></div>`);
@@ -17,7 +18,7 @@ async function draw(body) {
   }
   body.innerHTML = `
     <p class="ov-lead">${icon('bag', 16)}<span>가방 <b>${fmt.num(bag.used)} / ${fmt.num(bag.limit)}칸</b> · 들어가지 못한 전리품입니다. 챙기거나 버려야 다시 길을 나설 수 있습니다.</span></p>
-    <ul class="item-list ov-list">${items.map(i => `<li>
+    <ul class="item-list ov-list">${items.map(i => `<li class="${rarRow(i.item_id)}">
       <div class="item-main"><b><button class="linkish" data-info="${esc(i.item_id)}" title="물품 정보">${esc(i.name)}</button> <span class="qty">×${fmt.num(i.qty)}</span></b>
         <small>${esc(i.rarity ? nameOf(i.rarity) : '')}${i.room > 0 ? ` · 지금 ${fmt.num(Math.min(i.room, i.qty))}개 들어감` : ' · 가방에 자리 없음'}</small></div>
       <div class="item-act">
