@@ -510,7 +510,7 @@ async function openStore() {
 }
 
 const tokenRow = inv => { const n = Number(inv.pet_token || 0); return n ? `<div class="hs-token"><span>${icon('heart', 14)} 동무 정표 ×${n} <small class="muted">다섯 개 = 빛나는 알 하나</small></span><button class="btn small ${n >= 5 ? 'primary' : ''}" data-token data-here="동무 정표 바꾸기" ${n >= 5 ? '' : 'disabled'}>빛나는 알로 바꾸기</button></div>` : ''; };
-async function openPets() {
+async function openPets(keepY = 0) {
   let ps;
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
   const inv = store.character?.inventory || {};
@@ -544,15 +544,18 @@ async function openPets() {
       ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button>${m.grown ? `<button class="linkish small" data-look="${s.id}" data-baby="${m.baby ? '' : '1'}" title="조사원 카드·별채에 보이는 모습">${m.baby ? '자란 모습으로' : '아기 모습으로'}</button>` : ''}</span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
+  const mb = $('.modal-body', root), back = () => { if (mb && typeof keepY === 'number' && keepY > 0) mb.scrollTop = keepY; };
+  back(); setTimeout(back, 40);
+  const yNow = () => mb?.scrollTop || 0;
   root?.addEventListener('click', async e => {
     const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry],[data-unplace],[data-slotbuy]'); if (!b) return;
     if (b.dataset.carry != null) { openCarry(mine.get(prof), ps); return; }
     if (b.dataset.nick) {
-      const id = b.dataset.nick, cur = mine.get(id)?.nick || '';
+      const id = b.dataset.nick, cur = mine.get(id)?.nick || '', y0 = yNow();
       openModal({ title: '별명 짓기', body: `<form id="pet-nick" class="hs-gb-form"><input name="nick" maxlength="8" value="${esc(cur)}" placeholder="${esc(PETS[id]?.name || '')}" autocomplete="off"><button class="btn small primary">짓기</button></form><p class="muted small">8자까지 · 한글·영문·숫자 · 비우면 원래 이름으로 돌아갑니다.</p>` });
       $('#pet-nick')?.addEventListener('submit', ev => {
         ev.preventDefault(); const f = ev.currentTarget;
-        guard(f.querySelector('button'), async () => { await rpc('world_pet_nickname', { p_pet: id, p_name: f.nick.value }); closeModal(); await reload(); openPets(); return { content: '별명을 지었습니다.' }; });
+        guard(f.querySelector('button'), async () => { await rpc('world_pet_nickname', { p_pet: id, p_name: f.nick.value }); closeModal(); await reload(); openPets(y0); return { content: '별명을 지었습니다.' }; });
       });
       return;
     }
@@ -567,7 +570,7 @@ async function openPets() {
       else if (b.dataset.unplace) r = await rpc('world_pet_unplace', { p_pet: b.dataset.unplace });
       else if (b.dataset.prof !== undefined) r = await rpc('world_pet_profile_set', { p_pet: b.dataset.prof || null });
       else r = await rpc('world_pet_place', { p_pet: b.dataset.place || null });
-      closeModal(); await reload(); openPets();
+      const y = yNow(); closeModal(); await reload(); openPets(y);
       return r?.content ? r : { content: '바꿨습니다.' };
     });
   });
