@@ -21,7 +21,10 @@ begin
 ,
       ('public.world_battle_open(uuid,text,uuid,integer,integer)'::regprocedure,
        $a$public.world_level_cap() + CASE rk WHEN 'normal' THEN 0 ELSE 1 END$a$,
-       $b$public.world_monster_cap(p_region) + CASE rk WHEN 'normal' THEN 0 ELSE 1 END$b$)
+       $b$public.world_monster_cap(p_region) + CASE rk WHEN 'normal' THEN 0 ELSE 1 END$b$),
+      ('public.world_battle_open(uuid,text,uuid,integer,integer)'::regprocedure,
+       E'  lv := greatest(1, lv);\n',
+       E'  lv := greatest(1, lv);\n  IF m.region_id <> p_region THEN lv := least(p_level + floor(random() * 3)::int, public.world_level_cap() + CASE rk WHEN ''normal'' THEN 0 ELSE 1 END); END IF;\n')
   ) v(f, o, nw) loop
     d := pg_get_functiondef(x.f);
     n := (length(d) - length(replace(d, x.o, ''))) / length(x.o);
