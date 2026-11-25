@@ -92,7 +92,10 @@ export function friendlyError(e) {
 export async function rpc(name, args) {
   const { data, error } = args === undefined ? await db.rpc(name) : await db.rpc(name, args);
   if (!hit('reads', name) || hit('settles', name)) charMut++;
-  if (error) throw Object.assign(new Error(friendlyError(error)), { hint: error.hint || '', code: error.code || '' });
+  if (error) {
+    if (error.hint === 'overflow') import('./overflow.js').then(m => m.openOverflow()).catch(() => {});
+    throw Object.assign(new Error(friendlyError(error)), { hint: error.hint || '', code: error.code || '' });
+  }
   return data;
 }
 export async function snap(name, args) {
