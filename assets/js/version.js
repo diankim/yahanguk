@@ -38,11 +38,16 @@ async function check() {
   } finally { checking = false; }
 }
 
+const STALE = /Importing binding name|does not provide an export named|dynamically imported module|Importing a module script failed/i;
+function onStale(m) { if (dismissedAt !== 'stale' && STALE.test(String(m || ''))) show('stale', 'stale'); }
+window.addEventListener('error', e => onStale(e.message || e.error?.message));
+window.addEventListener('unhandledrejection', e => onStale(e.reason?.message || e.reason));
+
 function show(kind, key) {
   if (document.querySelector('.update-pop')) return;
   const el = document.createElement('div');
   el.className = 'update-pop'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-label', '새 버전');
-  el.innerHTML = `${icon('refresh', 20)}<div><b>야행국이 새로 손질되었습니다</b><span>${esc(kind === 'db' ? '서버 규칙이 바뀌었습니다. 새로고침해야 바뀐 내용이 제대로 적용됩니다.' : '화면이 새로 바뀌었습니다. 새로고침하면 바뀐 내용을 볼 수 있습니다.')}</span></div>
+  el.innerHTML = `${icon('refresh', 20)}<div><b>야행국이 새로 손질되었습니다</b><span>${esc(kind === 'stale' ? '지난 판 화면 파일이 남아 있어 방금 누른 것이 열리지 않았습니다. 새로고침하면 바로 됩니다.' : kind === 'db' ? '서버 규칙이 바뀌었습니다. 새로고침해야 바뀐 내용이 제대로 적용됩니다.' : '화면이 새로 바뀌었습니다. 새로고침하면 바뀐 내용을 볼 수 있습니다.')}</span></div>
     <div class="note-actions"><button class="btn primary small" data-reload>지금 새로고침</button><a class="btn ghost small" href="#/patch">패치노트</a><button class="btn ghost small" data-later>나중에</button></div>`;
   el.querySelector('[data-reload]').onclick = () => selfReload('update');
   el.querySelector('[data-later]').onclick = () => { dismissedAt = key; el.remove(); };
