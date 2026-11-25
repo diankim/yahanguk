@@ -16,12 +16,12 @@ function ladder(v) {
   return `<ol class="pj-ladder">${(v.perks || []).map(p => `<li class="${p.done ? 'done' : p.stage === v.stage + 1 ? 'now' : ''}" data-tip="${esc(p.text || '')}" tabindex="0"><b>${p.stage}</b><small>${esc(p.text || '')}</small></li>`).join('')}</ol>`;
 }
 
-function itemCard(it) {
-  const h = haveOf(it), hq = haveHqOf(it);
+function itemCard(it, v) {
+  const h = haveOf(it), hq = haveHqOf(it), seen = !v.storage && it.see_st ? ` · 창고 ${fmt.num(it.see_st)}<span class="muted">(여기선 못 꺼냄)</span>` : '';
   return `<li class="pj-item ${rarRow(it.id)} ${it.urgent ? 'urgent' : ''} ${h + hq ? 'has' : ''}">
     <header><button type="button" class="linkish" data-pj-info="${esc(it.id)}"><b>${esc(it.name)}</b></button>${it.urgent ? `<span class="chip warn pj-urgent">급히 ×${PROJECT.urgent.mul}</span>` : ''}</header>
     <small class="muted">${esc(KIND[it.kind] || '')} · ${it.tier}단계 · 1개 <b>${fmt.num(unitOf(it, false))}</b>몫${hq ? ` · 우수 ${fmt.num(unitOf(it, true))}몫` : ''}</small>
-    <small class="pj-have">가방 ${fmt.num(it.have || 0)}${it.have_st ? ` · 창고 ${fmt.num(it.have_st)}` : ''}${hq ? ` · 우수 ${fmt.num(hq)}` : ''}</small>
+    <small class="pj-have">가방 ${fmt.num(it.have || 0)}${it.have_st ? ` · 창고 ${fmt.num(it.have_st)}` : ''}${seen}${hq ? ` · 우수 ${fmt.num(hq)}` : ''}</small>
     <button type="button" class="q-link" data-pj-src="${esc(it.id)}">${icon('pin', 12)}얻는 곳</button></li>`;
 }
 
@@ -41,7 +41,7 @@ function body(v) {
       ${`<div><dt>${after ? '이번 바퀴 내 몫' : '이번 단계 내 몫'}</dt><dd>${fmt.num(v.mine?.cur || 0)}${v.mine?.need ? ` <small class="${(v.mine.cur || 0) >= v.mine.need ? 'ok' : 'muted'}">(기념품 ${fmt.num(v.mine.need)}몫${helpQ(PROJECT.mementoTip(), '기념품 안내')})</small>` : ''}</dd></div>`}
       <div><dt>내 누계</dt><dd>${fmt.num(v.mine?.total || 0)}몫</dd></div></dl>
     ${v.benefit && !v.benefit.ok ? `<p class="hint warn">${icon('pin', 14)} ${esc(v.benefit.why)}</p>` : ''}
-    <ul class="pj-items">${(v.items || []).map(itemCard).join('')}</ul>
+    <ul class="pj-items">${(v.items || []).map(it => itemCard(it, v)).join('')}</ul>
     ${v.can?.give ? '' : `<p class="hint">${icon('pin', 14)} ${esc(v.can?.why || '')}</p>`}
     <div class="btn-row pj-foot"><span class="muted small">${v.storage ? '가방에 모자란 것은 창고에서 꺼내 넘깁니다.' : '가방에 든 것만 넘깁니다.'} 장착 중·잠금·강화한 장비는 빠집니다.</span>
       <button type="button" class="btn primary" data-here="사업 납품" id="pj-give" ${v.can?.give && any ? '' : 'disabled'}>${icon('bag', 15)}<span>골라 넘기기</span></button></div>
