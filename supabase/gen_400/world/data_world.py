@@ -6,7 +6,7 @@ MON_CAP = 55
 CAP = 55
 LV9 = 52
 TOOL_LV = 50
-WEAK_SAFE = ['bs_town', 'jb_village', 'nm_village']
+WEAK_SAFE = []
 HUB = {'pado': 'pd_city', 'bulssi': 'bs_town', 'jaebit': 'jb_village', 'nunmaru': 'nm_village', 'dalmaji': 'dm_city', 'haeoreum': 'ho_city', 'goimteo': 'dm_city'}
 
 REGIONS = [

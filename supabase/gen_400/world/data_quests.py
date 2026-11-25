@@ -47,9 +47,9 @@ JBV, EBONY, FERRY = 'jb_village', 'jb_ebony', 'jb_ferry'
 NMV, SNOW = 'nm_village', 'nm_snow'
 DM, FIELD, BAMBOO, POOL = 'dm_city', 'dm_field', 'dm_bamboo', 'dm_pool'
 HO, OUTER, COAST = 'ho_city', 'ho_outer', 'ho_coast'
-PLACE = {'본부 정청': HQ, '염등촌': SALT, '구름나루': RIVER, '수경루': MIRROR, '파도너울성': PD, '앞바다 해역': OFF, '해류가 뒤집힌 해역': RIFT,
-         '불씨들녘': BS, '화산 둘레 지열 터': GEO, '잿빛그늘숲': JBV, '흑단 고목 숲': EBONY, '먹빛 강 나루터': FERRY, '눈마루': NMV,
-         '달맞이성': DM, '모음전': DM, '고임터': POOL, '해오름성': HO, '해오름성 바깥': OUTER, '해오름성 바깥 해안': COAST}
+PLACE = {'본부 정청': HQ, '염등촌': SALT, '구름나루': RIVER, '수경루': MIRROR, '파도너울성': PD, '쪽빛 앞바다': OFF, '뒤집힌 물목': RIFT,
+         '화덕골': BS, '김 오르는 비탈': GEO, '억새 나루': JBV, '검은 고목 숲': EBONY, '먹빛 강 나루터': FERRY, '눈마루 돌마을': NMV,
+         '달맞이성': DM, '모음전': DM, '고임터': POOL, '해오름성': HO, '연밥 둑': OUTER, '첫볕 물가': COAST}
 
 
 def tv(r, phase=None):
