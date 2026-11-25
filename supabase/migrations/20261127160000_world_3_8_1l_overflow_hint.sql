@@ -33,7 +33,7 @@ update public.world_quest_steps
 update public.world_patch_notes set body = body || E'\n- [원정] 원정 짐 보따리가 남아 길 떠나기·탐색 등이 막히면 그 자리에서 보따리 창이 바로 열립니다.'
 where note_id = '3.8.0' and position('그 자리에서 보따리 창이 바로 열립니다' in body) = 0;
 
-update public.world_patch_notes set body = body || E'\n- [싸움] 싸움 중 회복약·영력약을 쓰면 기록에 실제로 오른 만큼을 적습니다(이미 가득 차 있으면 0). 써서 오른 것이 없어도 회복 효과는 뜹니다.'
+update public.world_patch_notes set body = body || E'\n- [싸움] 싸움 중 회복약·영력약을 쓰면 기록에 실제로 오른 만큼을 적습니다(이미 가득 차 있으면 0). 파티 토벌에서는 오른 것이 없어도 회복 효과가 뜹니다.'
 where note_id = '3.8.0' and position('실제로 오른 만큼을 적습니다' in body) = 0;
 
 update public.world_patch_notes set body = body || E'\n- [대사] 뒷이야기 일부 장면의 대사를 다듬었습니다.'
