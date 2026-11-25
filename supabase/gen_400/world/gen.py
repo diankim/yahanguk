@@ -118,6 +118,7 @@ REGION_OPEN = {r['id']: gate(r['id']) for r in R}
 
 w("lock table public.world_characters in access exclusive mode;\n")
 part('../a_level.sql')
+part('b_tier9.sql')
 
 rules = {}
 for tid, tname in D.TERRS.items():
