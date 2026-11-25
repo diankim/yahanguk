@@ -151,7 +151,7 @@ function fieldLight(name, data) {
 async function patchField(f, data, lvl) {
   const c = store.character;
   if (!c || c.level !== lvl || !c.stamina_at || c.downed_at || c.health <= 0 || store.snaps['world_field_snapshotnull'] !== f) return loadCharacter({ field: true }).catch(() => {});
-  const per = 900, mx = f.stamina.max, at = new Date(c.stamina_at).getTime(), sec = Math.max(0, Date.now() - at) / 1000;
+  const per = Number(f.stamina.per_seconds) || 900, mx = f.stamina.max, at = new Date(c.stamina_at).getTime(), sec = Math.max(0, Date.now() - at) / 1000;
   const now = Math.min(mx, Math.max(0, c.stamina) + Math.floor(sec / per));
   const stamina = { ...f.stamina, now, next_at: now >= mx ? null : new Date(at + (Math.floor(sec / per) + 1) * per * 1000).toISOString() };
   const recent = [{ content: data.content, kind: data.outcome, at: new Date().toISOString() }, ...f.recent].slice(0, 12);

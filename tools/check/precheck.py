@@ -106,6 +106,11 @@ def client_checks():
             for i, line in enumerate(src.split('\n'), 1):
                 if t in line and re.search(r"/[^/\n<>]*" + re.escape(t) + r"[^/\n<>]*/[gimsuy]*\s*(\.test|\.exec|,)|\.(includes|startsWith|indexOf)\(['`][^'`]*" + re.escape(t), line):
                     out.append(('서버 문구', f'{rel}:{i}', f'서버 문구 「{t}」를 읽음 → 응답 표시값으로'))
+    vj = json.loads((ROOT / 'version.json').read_text()).get('db_version', '')
+    last = max(((m.group(1), f.name) for f in (ROOT / 'supabase' / 'migrations').glob('*.sql')
+                for m in re.finditer(r"'db_version',\s*'(\d{14})'", f.read_text())), default=('', ''))
+    if last[0] and vj != last[0]:
+        out.append(('버전', 'version.json', f'db_version {vj}인데 마지막 마이그레이션({last[1]})은 {last[0]} → 배포할 때 version.json db_version을 맞춤'))
     html = (ROOT / 'index.html').read_text()
     for p in js_files():
         rel = p.relative_to(ROOT).as_posix()
