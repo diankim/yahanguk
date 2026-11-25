@@ -301,9 +301,9 @@ function setItemsHtml(x, inv, st) {
     if (Object.values(eq).includes(id)) return ['장착 중', 'ok'];
     const b = Number(have[id]) || 0, s = stQ[id] || 0, alt = hqOf(id) === id ? baseOf(id) : hqOf(id), ab = Number(have[alt]) || 0;
     if (b) return [`가방 ${fmt.num(b)}`, 'ok'];
-    if (s) return [`창고 ${fmt.num(s)} · 가방에 꺼내야 낌`, 'warn'];
-    if (ab) return [`가방에 ${alt === hqOf(id) ? '우수품' : '보통'}만 있음 · 대신 낌`, 'warn'];
-    return [st ? '가지고 있지 않음' : '가방에 없음', 'bad'];
+    if (s) return [`창고 ${fmt.num(s)}`, 'warn'];
+    if (ab) return [`${alt === hqOf(id) ? '우수품' : '보통'}만 있음`, 'warn'];
+    return [st ? '없음' : '가방에 없음', 'bad'];
   };
   return `<ul class="spot-list gs-item-list">${slots.map(k => { const id = items[k], it = cmap.get(id), [w, tone] = where(id);
     return `<li class="${rarRow(id)}"><div><small class="muted">${esc(SLOTS[k]?.[0] || k)}</small> <b><button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(it?.name || nameOf(id))}</button></b> ${it ? rarTag(it.rarity) : ''}${it ? `<small>${it.tier}단계</small>` : ''}${traits(it)}</div>${chip(w, tone)}</li>`; }).join('')}</ul>`;
