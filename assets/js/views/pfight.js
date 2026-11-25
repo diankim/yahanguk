@@ -32,7 +32,7 @@ window.addEventListener('yh-battle-item', e => {
   if (!snap.my_turn) { toast('아직 내 차례가 아닙니다. 차례가 오면 물품을 쓸 수 있습니다.', 'warn'); return; }
   const id = e.detail.id;
   if (!trayList({ [id]: 1 }).some(([k]) => k === id)) { toast('싸우는 동안에는 이 물품을 쓸 수 없습니다. 회복약·정화 부적·영력약만 「물품」으로 고릅니다.', 'warn'); return; }
-  run({ disabled: false, dataset: {}, id: '' }, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: id }));
+  run({ disabled: false, dataset: { pf: 'item' }, id: '' }, () => rpc('world_pfight_act', { p_fight: fid, p_action: 'item', p_item: id }));
 });
 
 const now = clock.now;
@@ -51,10 +51,10 @@ async function refresh() {
 }
 function inkAfter(before, logN, act) {
   const myName = `${store.character?.character_name} · `;
-  if (before && snap && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true, selfHeal: true, guard: act === 'guard',
+  if (before && snap && (snap.status === 'fight' || ended())) fightFx(el, before, fxOf(snap), { me: store.character?.owner_id, style: myWeaponStyle(), others: true, selfHeal: true, guard: act === 'guard', item: act === 'item',
     crit: (snap.log || []).slice(logN).some(l => l.startsWith(myName) && /치명/.test(l)) });
 }
-const fxOf = s => s && { boss: s.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.health, dmg: m.dmg, heal: m.heal, out: !!m.out }])) };
+const fxOf = s => s && { boss: s.hp, mem: Object.fromEntries((s.members || []).map(m => [m.id, { hp: m.health, sp: m.sp, dmg: m.dmg, heal: m.heal, out: !!m.out }])) };
 const settle = () => settleFight('world_pfight_act');
 
 function plan() {
@@ -179,7 +179,7 @@ async function run(btn, fn) {
     if (out) { snap = out; clock.sync(out); }
     if ((ended() && prev !== snap.status) || prevRound !== snap.round || prevTurn !== snap.turn_id || btn.id === 'pf-join') await settle();
     draw(); plan();
-    if (out) inkAfter(before, logN, btn.dataset?.pf);
+    if (out) inkAfter(before, logN, btn.dataset?.use ? 'item' : btn.dataset?.pf);
   } catch (e) { toast(e.message || String(e), 'error'); btn.disabled = false; }
   finally { sending = false; if (queued) { const q = queued; queued = null; q(); } }
 }

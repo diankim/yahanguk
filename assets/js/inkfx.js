@@ -102,7 +102,7 @@ export function fightFx(root, a, b, o = {}) {
   } else if (drop > 0 && bl && o.others) {
     inkFx(bl, style === 'burst' ? 'slash' : style, { tone: 'faint' });
   }
-  let hurt = 0, alive = 0;
+  let hurt = 0, alive = 0, meUp = false;
   for (const [id, m] of Object.entries(b.mem)) {
     const p = a.mem[id]; if (!p) continue;
     if (!m.out) alive++;
@@ -120,8 +120,13 @@ export function fightFx(root, a, b, o = {}) {
     if (up > 0) {
       const li = root.querySelector(`[data-pick="${CSS.escape(id)}"]`)?.closest('li'), ll = overlay(li);
       if (ll) inkFx(ll, 'rise', { color: 'var(--ok)', ms: 700 });
-      if (id === me) { const ml = overlay(root.querySelector('.raid-me')); setTimeout(() => { inkFx(ml, 'rise', { color: 'var(--ok)' }); num(ml, `+${up}`, 'heal'); }, d > 0 ? 260 : 0); }
+      if (id === me) { meUp = true; const ml = overlay(root.querySelector('.raid-me')); setTimeout(() => { inkFx(ml, 'rise', { color: 'var(--ok)' }); num(ml, `+${up}`, 'heal'); }, d > 0 ? 260 : 0); }
     }
+  }
+  if (o.item && me && ma && mb && !meUp) {
+    const sp = Math.max(0, (mb.sp || 0) - (ma.sp || 0)), ml = overlay(root.querySelector('.raid-me'));
+    setTimeout(() => { inkFx(ml, 'rise', { color: sp > 0 ? 'var(--sp)' : 'var(--ok)' }); num(ml, `+${sp}`, 'heal'); }, (ma.hp ?? 0) > (mb.hp ?? 0) ? 260 : 0);
+    inkFx(overlay(root.querySelector(`[data-pick="${CSS.escape(me)}"]`)?.closest('li')), 'rise', { color: sp > 0 ? 'var(--sp)' : 'var(--ok)', ms: 700 });
   }
   if (o.guard && me) {
     const ml = overlay(root.querySelector('.raid-me'));
