@@ -17,7 +17,7 @@ begin
   execute format('alter function public.world_project_view(text) owner to %I', o);
 end $$;
 
-update public.world_patch_notes set body = body || E'\n- [사업] 빈약한 안전지대(반요촌·묵창 나루·남문 수로 선착·등지기 쉼막)의 사업 창에서도 품목마다 창고에 든 수가 보입니다. 그곳에서는 창고에서 꺼내 넘길 수 없어 「여기선 못 꺼냄」이 함께 붙습니다.'
+update public.world_patch_notes set body = body || E'\n- [사업·제작] 빈약한 안전지대(반요촌·묵창 나루·남문 수로 선착·등지기 쉼막)에서도 사업 창 품목과 제작 재료에 창고에 든 수가 보입니다. 그곳에서는 창고 것을 쓸 수 없어 「여기선 못 꺼냄」·「여기선 못 씀」이 함께 붙습니다.'
 where note_id = '3.8.0' and position('「여기선 못 꺼냄」' in body) = 0;
 
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261127140000', now())
