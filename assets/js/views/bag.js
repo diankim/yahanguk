@@ -1,5 +1,5 @@
 import { rarTag, db, store, on, act, rpc, toast, ask, openModal, closeModal, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, segmented, bindSegmented, bar, bagLimit, bagUsed, effectText, brief, stackOf, JOB_ORDER } from '../core.js';
-import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem, foldOpen } from './common.js';
+import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem, foldOpen, rarRow } from './common.js';
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
@@ -244,7 +244,7 @@ async function equip(body, inv) {
     bindActions(body); bindRepair(body);
   };
   bindActions(body); bindRepair(body);
-  drawGearSets($('#gear-sets', body), eq);
+  drawGearSets($('#gear-sets', body), eq, inv);
   if (wideEq()) drawDetail(SLOTS[eqSel] ? eqSel : 'weapon');
   $$('[data-eqslot]', body).forEach(b => b.onclick = () => {
     const slot = b.dataset.eqslot;
@@ -259,7 +259,7 @@ async function equip(body, inv) {
 }
 let eqSel = 'weapon';
 const GEAR_SET_TIP = () => { const r = GAMEDATA.gearSet || {}; return `지금 낀 장비를 세트로 저장해 두었다가 한 번에 바꿔 낍니다. 처음 ${r.base || 4}칸이고, 어느 직업이든 전투 기술 계열 하나가 ${r.rank || 15}단계에 닿을 때마다 한 칸씩 늘어 ${r.max || 10}칸까지입니다(직업을 바꿔도 줄지 않음). 세트에 담긴 물품이 가방에 없거나 장착 조건이 맞지 않는 칸은 건너뜁니다(보통이 없으면 우수품, 우수품이 없으면 보통으로 대신 낍니다). 전투·원정 중에는 바꿔 낄 수 없습니다.`; };
-async function drawGearSets(box, eq) {
+async function drawGearSets(box, eq, inv) {
   if (!box) return;
   let d;
   try { d = await load('world_gear_set_list', undefined, { maxAge: 600000 }); } catch (e) { box.innerHTML = `<p class="muted small">${esc(friendlyError(e))}</p>`; return; }
@@ -281,13 +281,32 @@ async function drawGearSets(box, eq) {
   }));
   $$('[data-gs-menu]', box).forEach(b => b.onclick = () => {
     const n = Number(b.dataset.gsMenu), nmax = d?.rules?.name_max || 12;
-    const m = openModal({ title: `장비 세트 ${n}`, body: `<label class="field"><span>이름 (${nmax}자까지)</span><input id="gs-nm" maxlength="${nmax}" value="${esc(named(n))}" autocomplete="off"></label>
+    const m = openModal({ title: `장비 세트 ${n}`, body: `<div class="gs-items">${setItemsHtml(sets.get(n), inv, null)}</div><label class="field"><span>이름 (${nmax}자까지)</span><input id="gs-nm" maxlength="${nmax}" value="${esc(named(n))}" autocomplete="off"></label>
       <div class="modal-actions"><button class="btn act-dc" id="gs-del">지우기</button><button class="btn" id="gs-over">지금 장비로 덮어쓰기</button><button class="btn primary" id="gs-ren">이름 바꾸기</button></div>` });
     const done = r => { if (r !== undefined) closeModal(); };
+    const bindInfo = el => $$('[data-eqinfo]', el).forEach(x => x.onclick = () => openItemInfo(x.dataset.eqinfo, { mode: 'bag' }));
+    bindInfo(m);
+    load('world_storage_snapshot', undefined, { maxAge: 300000 }).then(st => { const g = $('.gs-items', m); if (g?.isConnected) { g.innerHTML = setItemsHtml(sets.get(n), inv, st); bindInfo(g); } }).catch(() => {});
     $('#gs-ren', m).onclick = e => guard(e.currentTarget, () => act('world_gear_set_rename', { p_n: n, p_name: $('#gs-nm', m).value })).then(done);
     $('#gs-over', m).onclick = async e => { const btn = e.currentTarget; if (!(await ask(`「${named(n)}」을(를) 지금 낀 장비로 덮어쓸까요?`, { title: '장비 세트', ok: '덮어쓰기' }))) return; guard(btn, () => act('world_gear_set_save', { p_n: n, p_name: $('#gs-nm', m).value })).then(done); };
     $('#gs-del', m).onclick = async e => { const btn = e.currentTarget; if (!(await ask(`「${named(n)}」 세트를 지울까요? 장비는 그대로입니다.`, { title: '장비 세트', ok: '지우기' }))) return; guard(btn, () => act('world_gear_set_clear', { p_n: n })).then(done); };
   });
+}
+function setItemsHtml(x, inv, st) {
+  const items = x?.items || {}, cmap = catalogMap(inv), eq = inv?.equipment || {}, have = inv?.inventory || {};
+  const stQ = Object.fromEntries((st?.items || []).map(i => [i.item_id, Number(i.qty) || 0]));
+  const slots = Object.keys(SLOTS).filter(k => items[k]);
+  if (!slots.length) return '<p class="muted small">담긴 장비가 없습니다.</p>';
+  const where = id => {
+    if (Object.values(eq).includes(id)) return ['장착 중', 'ok'];
+    const b = Number(have[id]) || 0, s = stQ[id] || 0, alt = hqOf(id) === id ? baseOf(id) : hqOf(id), ab = Number(have[alt]) || 0;
+    if (b) return [`가방 ${fmt.num(b)}`, 'ok'];
+    if (s) return [`창고 ${fmt.num(s)} · 가방에 꺼내야 낌`, 'warn'];
+    if (ab) return [`가방에 ${alt === hqOf(id) ? '우수품' : '보통'}만 있음 · 대신 낌`, 'warn'];
+    return [st ? '가지고 있지 않음' : '가방에 없음', 'bad'];
+  };
+  return `<ul class="spot-list gs-item-list">${slots.map(k => { const id = items[k], it = cmap.get(id), [w, tone] = where(id);
+    return `<li class="${rarRow(id)}"><div><small class="muted">${esc(SLOTS[k]?.[0] || k)}</small> <b><button type="button" class="linkish" data-eqinfo="${esc(id)}">${esc(it?.name || nameOf(id))}</button></b> ${it ? rarTag(it.rarity) : ''}${it ? `<small>${it.tier}단계</small>` : ''}${traits(it)}</div>${chip(w, tone)}</li>`; }).join('')}</ul>`;
 }
 const wideEq = () => matchMedia('(min-width: 900px)').matches;
 function traits(it) {

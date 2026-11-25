@@ -500,6 +500,11 @@ body.chat-open .chat-fab { display: none; }
 .gs-name b { color: var(--gold); }
 .gs-name .linkish { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .gs-name small { white-space: nowrap; }
+.gs-items { margin-bottom: 10px; max-height: 52vh; overflow-y: auto; }
+.gs-item-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.gs-item-list li { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; min-width: 0; }
+.gs-item-list li > div { min-width: 0; }
+.gs-item-list li > .chip { align-self: flex-start; white-space: normal; text-align: left; }
 .gs-btns { flex: none; }
 .idle-line { display: flex; align-items: center; gap: 8px; font-size: calc(12.5px * var(--fz, 1)); color: var(--muted); }
 .idle-line select { flex: 1; min-width: 0; height: 32px; }
