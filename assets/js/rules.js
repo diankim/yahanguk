@@ -315,7 +315,7 @@ export const REBOND = (h => h % 24 ? `${h}시간` : h === 24 ? '하루' : `${h /
 
 export const ARC_NAME = { '귀허도': '요인록' };
 export const storyArcOf = cat => { const [a, b] = String(cat || '').split('·'); return a === '외전' ? (ARC_NAME[b] || b || '') : ''; };
-export const storyChapterNo = id => +((/^(?:gq|mkq|mdq)_(\d+)$/.exec(id || '') || [])[1] || 0);
+export const storyChapterNo = id => +((/^(?:gq|mkq|mdq|hwq)_(\d+)$/.exec(id || '') || [])[1] || 0);
 export const isStoryMain = q => q?.kind === 'main' || q?.quest_id === 'fq_sealed_lord' || storyChapterNo(q?.quest_id) > 0;
 
 const WRK = GD.weaponRank?.steps || [[1, 1], [10, 5], [14, 10], [20, 15], [32, 25], [42, 33], [47, 38]];

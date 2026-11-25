@@ -102,7 +102,7 @@ function bindQuests(body) {
 let selCh = '', lastStory = null, lastSide = null, arc = null;
 const arcSel = {};
 const MAIN_ARC = '홍인사';
-const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.']];
+const ARCS = [['귀허도', '10장 「구중 봉연」을 마치면 열립니다.'], ['묵적록', '10장을 마치고 Lv37부터 실마리가 보입니다.'], ['명등기', '묵적록 5장 「아홉 칸 명부」를 마치고 Lv45부터 시작합니다.'], ['건넛누리', '명등기 17장을 마치고 Lv50부터 시작합니다.']];
 const arcName = n => ARC_NAME[n] || n;
 const arcOf = q => fieldOf(q) === '외전' ? ((q.cat || '').split('·')[1] || '') : '';
 async function story(body, keep) {
