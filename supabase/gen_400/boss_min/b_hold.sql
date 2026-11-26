@@ -1,6 +1,6 @@
 create or replace function public.world_hold_rules()
  returns jsonb language sql immutable set search_path = ''
-as $f$ select '{"name": "버팀 태세", "guard": 25, "dmg": -15, "shields": ["artificer", "bloodknight"], "healers": ["medic", "formation"], "bosses": ["dohaesu", "ttangul"], "modes": ["hard"]}'::jsonb $f$;
+as $f$ select '{"name": "버팀 태세", "guard": 35, "dmg": -15, "presence": 40, "shields": ["artificer", "bloodknight"], "healers": ["medic", "formation"], "bosses": ["dohaesu", "ttangul"], "modes": ["hard"]}'::jsonb $f$;
 
 create or replace function public.world_hold_can(p_fight uuid)
  returns boolean language plpgsql stable security definer set search_path = pg_catalog, public
@@ -20,7 +20,7 @@ begin
   select * into f from public.world_gw_fights where fight_id = p_fight;
   if not found or not (r -> 'bosses' ? f.boss_id) or not (r -> 'modes' ? f.mode) then return null; end if;
   select * into me from public.world_gw_members where fight_id = p_fight and owner_id = p_uid;
-  return jsonb_build_object('name', r ->> 'name', 'guard', (r ->> 'guard')::int, 'dmg', (r ->> 'dmg')::int,
+  return jsonb_build_object('name', r ->> 'name', 'guard', (r ->> 'guard')::int, 'dmg', (r ->> 'dmg')::int, 'presence', (r ->> 'presence')::int,
     'can', f.status = 'wait' and public.world_hold_can(p_fight) and me.owner_id is not null,
     'on', coalesce(me.fx ? 'hold', false) or coalesce((me.stats ->> 'hold')::boolean, false),
     'shield', not public.world_hold_can(p_fight),
@@ -49,7 +49,8 @@ as $f$
 declare r jsonb := public.world_hold_rules();
 begin
   if public.world_hold_can(p_fight) then
-    update public.world_gw_members set stats = stats || jsonb_build_object('solo_guard', (r ->> 'guard')::int, 'solo_dmg', (r ->> 'dmg')::int, 'hold', true)
+    update public.world_gw_members set stats = stats || jsonb_build_object('solo_guard', (r ->> 'guard')::int, 'solo_dmg', (r ->> 'dmg')::int, 'hold', true,
+      'presence', coalesce((stats ->> 'presence')::numeric, 30) + coalesce((r ->> 'presence')::numeric, 0))
      where fight_id = p_fight and fx ? 'hold';
   end if;
   update public.world_gw_members set fx = fx - 'hold' where fight_id = p_fight and fx ? 'hold';
