@@ -111,9 +111,14 @@ begin
    where table_id = p_table returning * into t;
   select p.port_name, p.region_name into pn, rn from public.world_hfeast_ports() p where p.port_id = t.port_id;
   hm := to_char(t.eat_until at time zone (r ->> 'tz'), 'HH24:MI');
-  for m in select distinct b.owner_id from public.world_hfeast_bowls b join public.world_characters c on c.owner_id = b.owner_id
+  for m in select distinct b.owner_id, c.downed_at is not null down from public.world_hfeast_bowls b join public.world_characters c on c.owner_id = b.owner_id
             where b.table_id = p_table and not coalesce(c.is_dead, false) loop
-    if public.world_hfeast_buff(m.owner_id, kd) then
+    if m.down then
+      insert into public.world_notifications(user_id, kind, title, content, payload)
+      values (m.owner_id, r ->> 'note', coalesce(pn, '') || ' 잔칫상이 열렸습니다',
+              (ki ->> 'name') || '이(가) 차려졌지만 쓰러진 채로는 「' || (ki ->> 'buff') || '」 기운을 받을 수 없습니다. 일어난 뒤 ' || hm || '까지 ' || coalesce(pn, '항구') || '에서 「상에서 먹기」를 하세요.',
+              jsonb_build_object('table', p_table, 'port', t.port_id, 'kind', kd, 'eat_until', t.eat_until, 'got', false, 'down', true));
+    elsif public.world_hfeast_buff(m.owner_id, kd) then
       insert into public.world_hfeast_eats(table_id, owner_id, giver) values (p_table, m.owner_id, true) on conflict do nothing;
       insert into public.world_notifications(user_id, kind, title, content, payload)
       values (m.owner_id, r ->> 'note', coalesce(pn, '') || ' 잔칫상이 열렸습니다',
@@ -127,10 +132,10 @@ begin
     end if;
   end loop;
   who := coalesce((select owner_id from public.world_staff order by owner_id limit 1), (select owner_id from public.world_characters order by owner_id limit 1));
-  if who is not null and rn is not null then
-    insert into public.world_chat_messages(channel_type, sender_id, sender_name, region, content)
-    values ('region', who, r ->> 'chat', rn,
-            coalesce(pn, rn) || '의 나눔 잔칫상에 ' || (ki ->> 'name') || '이(가) 차려졌습니다. ' || hm || '까지 와서 「상에서 먹기」를 하면 「' || (ki ->> 'buff') || '」 기운을 ' || (r ->> 'buff_h') || '시간 동안 받습니다.');
+  if who is not null then
+    insert into public.world_chat_messages(channel_type, sender_id, sender_name, content)
+    values ('global', who, r ->> 'chat',
+            coalesce(pn, rn, '항구') || '의 나눔 잔칫상에 ' || (ki ->> 'name') || '이(가) 차려졌습니다. ' || hm || '까지 와서 「상에서 먹기」를 하면 「' || (ki ->> 'buff') || '」 기운을 ' || (r ->> 'buff_h') || '시간 동안 받습니다.');
   end if;
 end $function$;
 

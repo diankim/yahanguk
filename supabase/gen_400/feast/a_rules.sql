@@ -12,7 +12,7 @@ as $function$
     'slot_h', 12,
     'tz', 'Asia/Seoul',
     'tie', 'soban',
-    'keep_days', 3,
+    'keep_days', 2,
     'order', jsonb_build_array('meat', 'soban', 'sea'),
     'kinds', jsonb_build_object(
       'meat', jsonb_build_object('name', '고기상', 'key', 'hfeast_meat', 'buff', '고깃상의 힘', 'icon', 'spark', 'desc', '고기 요리가 가장 많이 오른 상', 'effects', jsonb_build_object('combat_damage_pct', 5)),
