@@ -116,7 +116,7 @@ begin
     if m.down then
       insert into public.world_notifications(user_id, kind, title, content, payload)
       values (m.owner_id, r ->> 'note', coalesce(pn, '') || ' 잔칫상이 열렸습니다',
-              (ki ->> 'name') || '이(가) 차려졌지만 쓰러진 채로는 「' || (ki ->> 'buff') || '」 기운을 받을 수 없습니다. 일어난 뒤 ' || hm || '까지 ' || coalesce(pn, '항구') || '에서 「상에서 먹기」를 하세요.',
+              (ki ->> 'name') || '이(가) 차려졌지만 쓰러진 채로는 「' || (ki ->> 'buff') || '」 기운을 받을 수 없습니다. 일어난 뒤 한국 시각 ' || hm || '까지 ' || coalesce(pn, '항구') || '에서 「상에서 먹기」를 하세요.',
               jsonb_build_object('table', p_table, 'port', t.port_id, 'kind', kd, 'eat_until', t.eat_until, 'got', false, 'down', true));
     elsif public.world_hfeast_buff(m.owner_id, kd) then
       insert into public.world_hfeast_eats(table_id, owner_id, giver) values (p_table, m.owner_id, true) on conflict do nothing;
@@ -127,7 +127,7 @@ begin
     else
       insert into public.world_notifications(user_id, kind, title, content, payload)
       values (m.owner_id, r ->> 'note', coalesce(pn, '') || ' 잔칫상이 열렸습니다',
-              (ki ->> 'name') || '이(가) 차려졌지만 상태 칸 ' || cap || '칸이 모두 차 있어 「' || (ki ->> 'buff') || '」 기운을 받지 못했습니다. ' || hm || '까지 칸을 비우고 ' || coalesce(pn, '항구') || '에서 「상에서 먹기」를 하면 받을 수 있습니다.',
+              (ki ->> 'name') || '이(가) 차려졌지만 상태 칸 ' || cap || '칸이 모두 차 있어 「' || (ki ->> 'buff') || '」 기운을 받지 못했습니다. 한국 시각 ' || hm || '까지 칸을 비우고 ' || coalesce(pn, '항구') || '에서 「상에서 먹기」를 하면 받을 수 있습니다.',
               jsonb_build_object('table', p_table, 'port', t.port_id, 'kind', kd, 'eat_until', t.eat_until, 'got', false));
     end if;
   end loop;
@@ -135,7 +135,7 @@ begin
   if who is not null then
     insert into public.world_chat_messages(channel_type, sender_id, sender_name, content)
     values ('global', who, r ->> 'chat',
-            coalesce(pn, rn, '항구') || '의 나눔 잔칫상에 ' || (ki ->> 'name') || '이(가) 차려졌습니다. ' || hm || '까지 와서 「상에서 먹기」를 하면 「' || (ki ->> 'buff') || '」 기운을 ' || (r ->> 'buff_h') || '시간 동안 받습니다.');
+            coalesce(pn, rn, '항구') || '의 나눔 잔칫상에 ' || (ki ->> 'name') || '이(가) 차려졌습니다. 한국 시각 ' || hm || '까지 와서 「상에서 먹기」를 하면 「' || (ki ->> 'buff') || '」 기운을 ' || (r ->> 'buff_h') || '시간 동안 받습니다.');
   end if;
 end $function$;
 
@@ -232,7 +232,7 @@ begin
   delete from public.world_hfeast_tables where port_id = port and slot_at < now() - make_interval(days => (r ->> 'keep_days')::int);
   insert into public.world_hfeast_tables(port_id, slot_at) values (port, slot) on conflict (port_id, slot_at) do nothing;
   select * into t from public.world_hfeast_tables where port_id = port and slot_at = slot for update;
-  if t.status <> 'fill' then raise exception '이번 잔칫상은 이미 차려졌습니다. 다음 상은 %부터 올릴 수 있습니다.', to_char((slot + make_interval(hours => (r ->> 'slot_h')::int)) at time zone (r ->> 'tz'), 'HH24:MI') using hint = 'hfeast_open'; end if;
+  if t.status <> 'fill' then raise exception '이번 잔칫상은 이미 차려졌습니다. 다음 상은 한국 시각 %부터 올릴 수 있습니다.', to_char((slot + make_interval(hours => (r ->> 'slot_h')::int)) at time zone (r ->> 'tz'), 'HH24:MI') using hint = 'hfeast_open'; end if;
   select count(*) into mine from public.world_hfeast_bowls where table_id = t.table_id and owner_id = uid;
   if mine >= (r ->> 'per_person')::int then raise exception '한 상에는 한 사람이 %그릇까지 올릴 수 있습니다.', r ->> 'per_person' using hint = 'hfeast_mine'; end if;
   update public.world_characters set inventory = public.world_materials_take(c.inventory, '{}'::jsonb, jsonb_build_object(taken, 1)) -> 'inv' where owner_id = uid;

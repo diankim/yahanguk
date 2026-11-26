@@ -256,8 +256,8 @@ tfggfft.akkakka
 tfgfffaacpanapc
 .tffffaaabaaaaa
 ..tttttaaaaaaa.''')
-skin(key='pandan_squirrel', pet='squirrel', name='판단잎 다람쥐',
-    desc='잿빛그늘숲 약초 마을 텃밭에서 판단 잎을 깔고 자다 꼬리가 잎빛으로 물든 다람쥐입니다. 꼬리를 흔들 때마다 달큰한 잎 냄새가 나서, 마을 아이들이 밥 짓는 날이면 쫓아다닙니다.',
+skin(key='pandan_squirrel', pet='squirrel', name='향잎 꼬리 다람쥐',
+    desc='잿빛그늘숲 약초 마을 텃밭에서 향잎을 깔고 자다 꼬리가 잎빛으로 물든 다람쥐입니다. 꼬리를 흔들 때마다 달큰한 잎 냄새가 나서, 마을 아이들이 밥 짓는 날이면 쫓아다닙니다.',
     baby=PANDAN_SQUIRREL_BABY, adult=PANDAN_SQUIRREL_ADULT)
 
 SNOW_LEOPARD_CAT_BABY = dict(pal={"a": "#c8c2bc", "c": "#f6f3ec", "n": "#e48a96", "e": "#6a9a88", "i": "#e8f4ec", "p": "#d98a96", "d": "#5a5258"}, idle='''
