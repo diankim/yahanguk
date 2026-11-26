@@ -20,8 +20,8 @@ export const CHANGES = {
   idle: /idle/,
   skill: /skill|regular_give/,
   codex: /battle|gather|expedition|meisho_dig/,
-  storage: /craft_(item|batch)|storage|travel|garden_act|trade_ship_part|enhance|outfit_design_weave|furn_weave|housing_expand|project_give|regular_give|kin_gift/,
-  storageIfUsed: /garden_act$|trade_ship_part$|craft_(item|batch)$|outfit_design_weave$|furn_weave$|housing_expand$|ultimate_buy$|project_give$|regular_give$/,
+  storage: /craft_(item|batch)|storage|mount_acquire|travel|garden_act|trade_ship_part|enhance|outfit_design_weave|furn_weave|housing_expand|project_give|regular_give|kin_gift/,
+  storageIfUsed: /mount_acquire$|garden_act$|trade_ship_part$|craft_(item|batch)$|outfit_design_weave$|furn_weave$|housing_expand$|ultimate_buy$|project_give$|regular_give$/,
   dismantle: /dismantle|skill|craft|level|reset_identity|regular_give/,
   avatar: /avatar|outfit|wardrobe|reset_identity|furn_|realm_bond_buy/,
   owned: /housing_|cabin_save|lantern_catch|realm_bond_buy|portrait_take|furn_weave|pet_|ultimate_buy|mentor_shop|faction_vault|reset_identity|wardrobe/,
@@ -45,6 +45,7 @@ export const CHANGES = {
   chatParty: /party/,
   chatRooms: /travel|major_faction|reset_identity/,
   chatBlocks: /block|friend/,
+  tradeRec: /^world_trade_(sell|buy|load|repair|ship_(get|upgrade)|sail|depart|board_(respond|cancel))$|notice/,
 };
 export const SFX_ACTS = [
   [/field_search|battle_action|field_gather|meisho_/, null], [/shop_buy|shop_sell|trade_offer|trade_(buy|sell)$|mount_acquire/, 'coin'], [/craft/, 'craft'], [/repair/, 'repair'],

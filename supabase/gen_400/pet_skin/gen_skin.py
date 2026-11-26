@@ -9,6 +9,7 @@ N = dict(trade=5000, catch=10, float=30, raid=10, exp=10, guard=20, feast=10)
 PORT = {'pd_city': '파도너울성 선창', 'bs_town': '화덕골 부두', 'jb_village': '억새 나루 선창', 'ho_city': '첫볕 선창'}
 TERR = {'pado': '파도너울성', 'bulssi': '불씨들녘', 'jaebit': '잿빛그늘숲', 'nunmaru': '눈마루', 'dalmaji': '달맞이성', 'haeoreum': '해오름성'}
 STORY = {'jaebit': 'hwq_8', 'bulssi': 'hwq_7', 'nunmaru': 'hwq_9', 'haeoreum': 'hwq_14'}
+REVEAL = {'ttangul': 'hwq_13', 'dohaesu': 'hwq_5'}
 LAST = 'hwq_15'
 GEAR = ['weapon', 'armor', 'hat', 'shoes', 'norigae', 'amulet', 'mask']
 
@@ -78,6 +79,9 @@ def rules(D, SQ):
     e('palm_sugar_rabbit', 'side', f'{tr("haeoreum")} 권역의 보조 퀘스트를 모두 마치기', q=side['haeoreum'])
     e('lotus_lantern', 'catch', f'{PORT["ho_city"]}에서 등불 {N["catch"]}번 건지기', port='ho_city', n=N['catch'])
     e('lotusleaf_newt', 'trade', f'{PORT["ho_city"]}에서 교역품을 정가 합 {N["trade"]:,}전어치 팔기', k='trade:ho_city', n=N['trade'])
+    for v in E.values():
+        if v.get('boss') in REVEAL:
+            v['reveal'] = REVEAL[v['boss']]
     return E, side
 
 
@@ -86,6 +90,9 @@ def emit(D, SQ, errors, J):
     E, side = rules(D, SQ)
     if set(E) != set(new):
         errors.append('무늬 얻는 길과 그림이 다름: ' + ', '.join(sorted(set(E) ^ set(new))))
+    for k, v in E.items():
+        if v.get('boss') and v['boss'] not in REVEAL:
+            errors.append('보스 무늬에 보일 때(reveal)가 없음: ' + k)
     for t, qs in side.items():
         if not qs:
             errors.append('보조 퀘스트가 없는 권역: ' + t)

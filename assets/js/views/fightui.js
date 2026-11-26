@@ -22,19 +22,19 @@ export function spearSet(btn, n) {
 }
 
 export const FX_NAME = { ward: '결계', might: '기세', crit: '약점', crit_next: '급소', critnext: '급소', evade: '피할 길', shield: '보호막', cover: '보호받음', gward: '진언', taunt: '철벽', guard: '방어', bound: '사슬',
-  expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임', brand: '검은 낙인', grip: '그림자 손아귀', ink: '묵흔', pet_fetch: '물어 와', pet_x2: '한 몸 사냥' };
+  expose: '약점 드러남', stagger: '휘청임', smoke: '연막', break: '퇴마 결계', block: '손길 묶임', brand: '검은 낙인', grip: '그림자 손아귀', ink: '묵흔', pet_fetch: '물어 와', pet_x2: '한 몸 사냥', nw: '고임 무게', dry: '마름', stiff: '굳음', nopen: '물길 트임', weight: '고임 무게', ebb: '되밀린 물' };
 export const FX_ICON = { ward: 'ward', might: 'bolt', crit: 'crosshair', crit_next: 'vital', critnext: 'vital', evade: 'dodge', shield: 'bubble', cover: 'hand', gward: 'talisman', taunt: 'star', guard: 'shield', bound: 'chain',
-  expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward', block: 'hand', brand: 'target', grip: 'hand', ink: 'drop', pet_fetch: 'heart', pet_x2: 'heart' };
+  expose: 'crosshair', stagger: 'spiral', smoke: 'fog', break: 'ward', block: 'hand', brand: 'target', grip: 'hand', ink: 'drop', pet_fetch: 'heart', pet_x2: 'heart', nw: 'target', dry: 'flame', stiff: 'chain', nopen: 'spiral', weight: 'target', ebb: 'wind' };
 export const FX_TIP = { ward: '받는 피해가 줄어든다(정해진 횟수 동안).', might: '주는 피해가 늘어난다(정해진 횟수 동안).', crit: '치명타가 더 잘 터진다.', crit_next: `다음 공격이 반드시 치명타로 들어가고, 치명타 피해가 ${SURE}배가 된다.`, critnext: `다음 공격이 반드시 치명타로 들어가고, 치명타 피해가 ${SURE}배가 된다.`,
   evade: '요괴의 공격을 피할 확률이 오른다.', shield: '받는 피해를 먼저 막아 주는 보호막.', cover: '잠깐 동안 동료가 대신 맞아 준다.', gward: '다음에 받는 공격 한 번의 피해를 절반으로 줄이고 정신을 지킨다.',
   taunt: '요괴의 눈길을 끌어 대신 맞고, 받는 피해가 줄어든다.', guard: '방어 태세 — 다음 공격의 피해가 줄어든다.', bound: '사슬에 묶여 다음 공격의 피해가 절반이 된다.',
-  expose: '요괴가 받는 피해가 늘어난다.', stagger: '요괴가 휘청여 반격하지 못한다.', smoke: '연막 속에서 요괴의 공격이 빗나갈 수 있다.', break: '다음 광역·기운 터뜨림의 피해가 줄어든다.', block: '손길이 묶여 반격하지 못한다.', brand: '곧 검은 낙인이 내리꽂힌다. 그때 이목이 가장 높은 이가 받는다 — 방패는 방어하고, 나머지는 끌어오지 말 것.', grip: '그림자 손아귀에 잡혀 2초마다 체력이 깎이고 공격이 절반이 된다. 대신 막기·철벽 수호·꺾이지 않는 몸·해독 침으로 떼어 낸다.', ink: '묵흔이 번져 2초마다 체력이 조금 깎인다. 회복을 받으면 바로 지워진다.', pet_fetch: '이번 공격에 동무가 함께 달려들어 동무 공격이 두 배가 된다.', pet_x2: '동무 공격이 두 배가 된다(정해진 횟수 동안).', spch: '연달아 공격할수록 주는 피해가 겹마다 늘어난다. 방어·버티기·물품·움직이기를 하면 끊긴다.' };
+  expose: '요괴가 받는 피해가 늘어난다.', stagger: '요괴가 휘청여 반격하지 못한다.', smoke: '연막 속에서 요괴의 공격이 빗나갈 수 있다.', break: '다음 광역·기운 터뜨림의 피해가 줄어든다.', block: '손길이 묶여 반격하지 못한다.', brand: '곧 검은 낙인이 내리꽂힌다. 그때 이목이 가장 높은 이가 받는다 — 방패는 방어하고, 나머지는 끌어오지 말 것.', grip: '그림자 손아귀에 잡혀 2초마다 체력이 깎이고 공격이 절반이 된다. 대신 막기·철벽 수호·꺾이지 않는 몸·해독 침으로 떼어 낸다.', ink: '묵흔이 번져 2초마다 체력이 조금 깎인다. 회복을 받으면 바로 지워진다.', pet_fetch: '이번 공격에 동무가 함께 달려들어 동무 공격이 두 배가 된다.', pet_x2: '동무 공격이 두 배가 된다(정해진 횟수 동안).', spch: '연달아 공격할수록 주는 피해가 겹마다 늘어난다. 방어·버티기·물품·움직이기를 하면 끊긴다.', nw: '곧 고인 물이 이 사람에게 떨어진다. 곁의 동료가 방어를 고르면 함께 나눠 진다 — 혼자 받으면 크게 다친다.', dry: '몸이 마르는 중 — 체력을 거의 가득 채워야 풀린다. 못 풀면 굳어 주는 피해가 줄어든다.', stiff: '마른 몸이 굳어 이 싸움 동안 주는 피해가 줄었다(겹침).', nopen: '고임 심이 트여 잠깐 동안 너울이 받는 피해가 늘었다.' };
 export const SKILL_ICON = { art_mend: 'vital', art_supply: 'crosshair', art_shield: 'dodge', art_array: 'bolt', an_share: 'eye', an_point: 'vital', an_break: 'hourglass', an_command: 'bolt',
   exo_cover: 'hand', exo_mantra: 'talisman', exo_barrier: 'ward', exo_guardian: 'star', med_aid: 'heart', med_needle: 'needle', med_revive: 'refresh', med_pulse: 'heart',
   sc_mark: 'crosshair', sc_path: 'dodge', sc_smoke: 'fog', sc_signal: 'flag', seal_ward: 'ward', seal_might: 'bolt', seal_chain: 'chain', seal_bagua: 'shield',
   tm_fetch: 'heart', tm_guard: 'hand', tm_herd: 'spiral', tm_pack: 'bolt' };
 
-const BAD = new Set(['bound', 'brand', 'grip', 'ink']);
+const BAD = new Set(['bound', 'brand', 'grip', 'ink', 'nw', 'dry', 'stiff']);
 const tipOf = k => `${FX_NAME[k]} — ${FX_TIP[k] || ''}`;
 export const fxKeys = keys => (keys || []).filter(k => FX_NAME[k]);
 export const fxIcons = keys => fxKeys(keys).map(k => `<i class="fx-i ${BAD.has(k) ? 'bad' : ''}" data-tip="${esc(tipOf(k))}" aria-label="${esc(FX_NAME[k])}">${icon(FX_ICON[k] || 'spark', 12)}</i>`).join('');
@@ -61,7 +61,7 @@ export function drawLater(fn) {
   later.add(fn);
   return true;
 }
-const MEM_MARK = { brand: '낙인', grip: '손아귀' };
+const MEM_MARK = { brand: '낙인', grip: '손아귀', nw: '무게', dry: '마름' };
 export function memberLi(m, o = {}) {
   const mk = Object.keys(MEM_MARK).filter(k => (o.fx || []).includes(k));
   return `<li class="jb-${esc(m.job || '')} ${o.cls || ''} ${o.me ? 'me' : ''} ${o.tgt ? 'tgt' : ''} ${o.sel ? 'sel' : ''} ${o.out ? 'out' : ''} ${o.turn ? 'turn' : ''} ${mk.map(k => `mk-${k}`).join(' ')}">

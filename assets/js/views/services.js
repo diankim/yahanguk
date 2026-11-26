@@ -3,7 +3,7 @@ import { hit } from '../changes.js';
 import { load, loadPrices, chip, loading, errorBox, foldOpen, rarRow } from './common.js';
 import { openItemInfo, loadLocks, isLocked } from './item.js';
 import { helpQ, helpLine } from '../tips.js';
-import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
+import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES, MOUNT_REALM } from '../rules.js';
 import { ownSlot, ownKind, fillOwned } from '../owned.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
@@ -604,16 +604,21 @@ export async function renderStable(box) {
     const c = store.character;
     const mine = (m.mounts || []).filter(x => x.owned);
     const tokens = Number(m.mount_tokens || 0);
-    const train = mine.length ? `<h3 class="sub-h">탈것 단련 <small class="muted">가진 노정패 ${tokens}개 · 단계마다 이동 속도 +4% (최고 5단계)</small></h3>
-      <ul class="spot-list train-list">${mine.map(x => { const lv = Number(x.training || 0), cost = 20 * (lv + 1);
-        return `<li><div><b>${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
-          ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-here="탈것 단련" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; }).join('')}</ul>` : '';
-    box.innerHTML = train + (here.length ? `<h3 class="sub-h">들일 수 있는 탈것</h3>` : '') + (here.length ? `<div class="mount-grid">${here.map(x => `<article class="mount ${x.owned ? 'on' : ''}">
-        <header><b>${esc(x.mount_name)}</b>${chip(x.tier)}</header><p>${esc(x.description || '')}</p>
+    const trainLi = x => { const lv = Number(x.training || 0), cost = 20 * (lv + 1);
+      return `<li ${x.equipped ? '' : mountRow(x)}><div><b>${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>${esc(MOUNT_REALM.name(m, MOUNT_REALM.of(x)))} · 단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
+          ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-here="탈것 단련" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; };
+    const now = mine.find(x => x.equipped), spare = mine.filter(x => !x.equipped), mrBar = mountRealmBar(m);
+    const trainTip = `가진 노정패 ${tokens}개 · 단계마다 이동 속도 +4% (최고 5단계)`;
+    box.innerHTML = `<div class="mt-bar"><p class="muted small">${esc(trainTip)}</p>${mrBar.html}</div>`
+      + mountFold('st-now', '지금 탈것', now ? now.mount_name : '걸어서', now ? `<ul class="spot-list train-list">${trainLi(now)}</ul>` : empty('지금은 걸어 다닙니다.', 'route'), { first: true })
+      + (spare.length ? mountFold('st-own', '가진 탈것 단련', mountRealmSum(m, spare), `<ul class="spot-list train-list">${spare.map(trainLi).join('')}</ul>`) : '')
+      + mountFold('st-buy', '들일 수 있는 탈것', here.length ? `${here.length}` : '', here.length ? `<div class="mount-grid">${here.map(x => `<article ${mountRow(x)} class="mount ${x.owned ? 'on' : ''}">
+        <header><b>${esc(x.mount_name)}</b><span class="btn-row">${chip(MOUNT_REALM.name(m, MOUNT_REALM.of(x)))}${chip(x.tier)}</span></header><p>${esc(x.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${x.speed_multiplier}</dd></div><div><dt>정원</dt><dd>${x.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${x.fare_free ? '없음' : `구간당 노정패 ${x.fare_tokens}`}</dd></div></dl>
         <small class="muted">${esc(conditions(x, c))}</small>
         ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-here="탈것 들이기" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
-      : (mine.length ? '' : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route')));
+      : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route'), { ico: 'shop' });
+    bindMountRealm(box, m, mrBar.st);
     $$('[data-train]', box).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_mount_train', { p_mount_id: b.dataset.train }); renderStable(box); return out; }));
     $$('[data-buy]', box).forEach(b => b.onclick = async () => { if (await ask('이 탈것을 들일까요?', { title: '탈것 들이기', ok: '들이기' })) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
   } catch (e) { box.innerHTML = errorBox(e.message); }
@@ -624,5 +629,22 @@ export function conditions(m, c) {
   if (m.unlock_faction) p.push(`${nameOf(m.unlock_faction)} 소속`);
   if (m.unlock_reputation) p.push(`평판 ${m.unlock_reputation}`);
   if (m.unlock_item) p.push(`${nameOf(m.unlock_item)} 공물`);
+  if (m.mats) p.push(Object.entries(m.mats).map(([k, n]) => `${nameOf(k)} ${n}`).join(' · ') + ' (가방·창고)');
   return p.length ? '조건: ' + p.join(' · ') : '누구나 들일 수 있습니다.';
 }
+const mrPhone = () => { try { return matchMedia('(max-width: 640px)').matches; } catch { return false; } };
+const mrKey = snap => 'yh-mount-realm:' + MOUNT_REALM.here(snap);
+export function mountRealmBar(snap) {
+  let cat = MOUNT_REALM.here(snap);
+  try { const v = localStorage.getItem(mrKey(snap)); if (v && (snap?.realm_names || {})[v]) cat = v; } catch {}
+  const st = { cat, q: '' };
+  return { st, html: listFilterHtml(st, { cats: Object.entries(snap?.realm_names || {}), cls: 'mr-filter', label: '탈것 찾기' }) };
+}
+export function bindMountRealm(root, snap, st) {
+  bindListFilter(root, st, () => $$('[data-mk-cat]', root));
+  $$('[data-lfc]', root).forEach(b => b.addEventListener('click', () => { try { localStorage.setItem(mrKey(snap), b.dataset.lfc); } catch {} }));
+}
+export const mountRow = m => listRowAttrs(MOUNT_REALM.of(m), m.mount_name);
+export const mountFold = (key, title, sum, body, { ico = 'route', first = false } = {}) => `<details class="panel fold mt-fold" data-fold="${key}" ${foldOpen(key, first || !mrPhone()) ? 'open' : ''}>
+  <summary class="panel-head"><h2>${icon(ico, 16)}${esc(title)}${sum ? ` <small class="muted">${esc(sum)}</small>` : ''}</h2></summary><div class="panel-body">${body}</div></details>`;
+export const mountRealmSum = (snap, list) => Object.entries(snap?.realm_names || {}).map(([k, n]) => [n, list.filter(m => MOUNT_REALM.of(m) === k).length]).filter(([, c]) => c).map(([n, c]) => `${n} ${c}`).join(' · ');

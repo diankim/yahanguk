@@ -12,9 +12,10 @@ import { hit } from '../changes.js';
 import { UCOMM_PAST, UCOMM_NOTE, WEAK_NAMES, QUEST_REPLAY, ARC_NAME, storyChapterNo } from '../rules.js';
 import { GAMEDATA } from '../gamedata.js';
 import { helpLine } from '../tips.js';
+import { loadTradeRecord, tradeRecordHtml } from './traderec.js';
 
 const SUBS = [['story', '주 이야기', 'scroll'], ['side', '보조 퀘스트', 'flag'], ['commission', '의뢰', 'letter'], ['record', '기록', 'map']];
-const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye']];
+const REC = [['survey', '답사', 'map'], ...(RAID_ON ? [['lore', '지역', 'scroll']] : []), ['history', '원정', 'flame'], ['monster', '요괴', 'sword'], ['gather', '채집', 'leaf'], ['fish', '어종', 'eye'], ['trade', '교역', 'ship']];
 let el, sub = 'story', rec = 'survey', off = [], findQ = '';
 const QSUBS = ['story', 'side'], CXS = ['monster', 'gather', 'fish'];
 const findOn = () => QSUBS.includes(sub) || (sub === 'record' && CXS.includes(rec));
@@ -413,8 +414,13 @@ async function record(body) {
   body.innerHTML = `${segmented('rec-sub', REC, rec)}<div id="rec-body">${loading()}</div>`;
   bindSegmented(body, 'rec-sub', k => { rec = k; paintFind(); window.history.replaceState(null, '', `#/log/${k}`); record(body); });
   const box = $('#rec-body', body);
-  try { await ({ survey, lore: regionLore, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex })[rec](box); if (CXS.includes(rec)) cxFilter(box); }
+  try { await ({ survey, lore: regionLore, history: expHistory, monster: monsterCodex, gather: gatherCodex, fish: fishCodex, trade: tradeLog })[rec](box); if (CXS.includes(rec)) cxFilter(box); }
   catch (e) { box.innerHTML = errorBox(e.message); }
+}
+
+async function tradeLog(body) {
+  const r = await loadTradeRecord();
+  body.innerHTML = `${helpLine('교역선으로 장사하고 뱃길을 다닌 기록입니다. 항구 화면의 「장부」 칸과 같은 내용이고, 항구 이름을 누르면 지도에서 짚습니다.', '교역 기록 안내')}${tradeRecordHtml(r)}`;
 }
 
 async function survey(body) {

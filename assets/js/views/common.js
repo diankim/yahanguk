@@ -99,6 +99,7 @@ on('changed', ({ name = '', data, field } = {}) => {
   if (hit('gwiryeong', name)) invalidate('world_gwiryeong_mine');
   if (hit('titles', name)) invalidate('world_title_snapshot');
   if (hit('realmBond', name)) invalidate('world_realm_bond_list');
+  if (hit('tradeRec', name)) invalidate('world_trade_record_view');
   if (hit('faction', name)) { invalidate('world_faction_snapshot'); invalidate('world_faction_mission_snapshot'); invalidate('world_faction_base_snapshot'); }
 });
 on('changed', ({ name }) => { if (hit('combat', name)) invalidate('world_combat_profile'); if (hit('skill', name)) invalidate('world_skill_snapshot'); if (hit('codex', name)) { invalidate('world_monster_codex_snapshot'); invalidate('world_gather_codex_snapshot'); } if (hit('roster', name)) { invalidate('world_region_roster'); invalidate('world_party_overview'); } if (hit('map', name)) invalidate('world_map_snapshot'); if (hit('journal', name)) invalidate('world_quest_journal'); });

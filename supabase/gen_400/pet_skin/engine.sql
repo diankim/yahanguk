@@ -143,9 +143,10 @@ end $$;
 
 create or replace function public.world_pet_skin_book(p_uid uuid)
  returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $f$
-declare out jsonb[] := '{}'; s record; fl jsonb; got timestamptz; have boolean; need int;
+declare out jsonb[] := '{}'; s record; fl jsonb; got timestamptz; have boolean; need int; done text[];
 begin
   if p_uid is null then return '[]'::jsonb; end if;
+  done := public.world_quest_done_ids(p_uid);
   for s in select k.key, k.value from jsonb_each(public.world_pet_skin_rules() -> 'skins') k order by k.key loop
     have := exists (select 1 from public.world_pets p where p.owner_id = p_uid and p.pet_id = s.value ->> 'pet');
     if s.value ->> 'how' = 'pet' then
@@ -153,6 +154,10 @@ begin
       continue;
     end if;
     select e.at into got from public.world_pet_skin_earned e where e.owner_id = p_uid and e.skin = s.key;
+    if got is null and s.value ? 'reveal' and not (s.value ->> 'reveal' = any (done)) then
+      out := out || jsonb_build_object('k', s.key, 'pet', s.value ->> 'pet', 'how', 'earn', 'hidden', true, 'got', false, 'have', have);
+      continue;
+    end if;
     need := public.world_pet_skin_need(s.value);
     if got is null and s.value ->> 'by' = 'survey' and fl is null then fl := public.world_survey_full_list(p_uid); end if;
     out := out || jsonb_build_object('k', s.key, 'pet', s.value ->> 'pet', 'how', 'earn', 'got', got is not null, 'at', got, 'have', have,

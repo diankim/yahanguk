@@ -181,6 +181,7 @@ function noteActs(n) {
   if (n.kind === 'guide' && n.payload?.tip === 'ch1' && n.payload?.location) return `<button class="btn primary small" data-fdown="${esc(n.id)}">정청 위치 보기</button>`;
   if (n.kind === 'guide' && n.payload?.tip === 'gwiryeong') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="bag/items">가방 보기</button>`;
   if (n.kind === 'guide' && /^mentor_/.test(n.payload?.tip || '')) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="party">동료 보기</button>`;
+  if (n.kind === 'guide' && n.payload?.tip === 'mount_realm') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="map/travel">탈것 보기</button>`;
   if (n.kind === 'guide' && n.payload?.tip === 'erosion') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="char/status">상태 보기</button>`;
   if (n.kind === 'yohwa' || n.kind === 'erosion_warn') return `<a class="btn primary small" href="#/char" data-pop-close>상태 보기</a>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;

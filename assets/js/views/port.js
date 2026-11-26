@@ -4,13 +4,14 @@ import { qtyHtml, bindQty, qtyOf } from './itempick.js';
 import { helpQ } from '../tips.js';
 import { TRADE, CABIN } from '../rules.js';
 import { baseOf, hqCount } from '../hq.js';
+import { loadTradeRecord, tradeRecordHtml } from './traderec.js';
 
-let el = null, v = null, want = null, pick = null, cmp = null, mode = 'direct', party = false, bonus = 'time', timer = null, offs = [], busy = false, reTry = 0, stg = null, ART = null, artP = null;
+let el = null, rec = null, v = null, want = null, pick = null, cmp = null, mode = 'direct', party = false, bonus = 'time', timer = null, offs = [], busy = false, reTry = 0, stg = null, ART = null, artP = null;
 const frames = new Map();
 const loadArt = () => artP ||= import('../ship_art.js').then(m => { ART = m; return m; }).catch(() => { artP = null; return null; });
 const mobile = () => { try { return matchMedia('(max-width: 899px)').matches; } catch { return false; } };
 const MO_OPEN = new Set(['ship', 'board', 'hold']);
-const fpanel = (key, title, sum, body, { ico, cls = '', help = '' } = {}) => `<details class="panel fold tr-fold ${cls}" data-fold="tr-${key}" ${foldOpen('tr-' + key, !mobile() || MO_OPEN.has(key)) ? 'open' : ''}><summary class="panel-head"><h2>${ico ? icon(ico, 16) : ''}<span class="tr-title">${esc(title)}</span>${sum ? `<small class="muted tr-sum">${sum}</small>` : ''}${help}</h2></summary><div class="panel-body">${body}</div></details>`;
+const fpanel = (key, title, sum, body, { ico, cls = '', help = '', open } = {}) => `<details class="panel fold tr-fold ${cls}" data-fold="tr-${key}" ${foldOpen('tr-' + key, open ?? (!mobile() || MO_OPEN.has(key))) ? 'open' : ''}><summary class="panel-head"><h2>${ico ? icon(ico, 16) : ''}<span class="tr-title">${esc(title)}</span>${sum ? `<small class="muted tr-sum">${sum}</small>` : ''}${help}</h2></summary><div class="panel-body">${body}</div></details>`;
 
 export async function render(root, sub) {
   el = root; want = sub || null; pick = null; v = null;
@@ -235,13 +236,30 @@ function yardPanel() {
   return fpanel('yard', '조선소', esc(`다음 ${p.name} · 재료 ${pct}%`), body, { ico: 'hammer', cls: 'tr-p-yard' });
 }
 
+const ledgerSum = r => r ? esc(`판 ${fmt.num(r.sold_n)}개 · 항구 ${r.seen}/${r.port_n} · 칭호 ${(r.titles || []).filter(t => t.earned).length}/${(r.titles || []).length}`) : '내 교역 기록';
+function ledgerPanel() {
+  return fpanel('ledger', '장부', ledgerSum(rec), `<div class="tr-ledger">${rec ? tradeRecordHtml(rec) : loading()}</div>`, { ico: 'scroll', cls: 'tr-p-ledger', open: false });
+}
+async function fillLedger() {
+  try {
+    const r = await loadTradeRecord();
+    if (!el) return;
+    rec = r;
+    const b = $('.tr-p-ledger .tr-ledger', el), sm = $('.tr-p-ledger .tr-sum', el);
+    if (b) b.innerHTML = tradeRecordHtml(r);
+    if (sm) sm.innerHTML = ledgerSum(r);
+  } catch (e) { const b = el && $('.tr-p-ledger .tr-ledger', el); if (b) b.innerHTML = errorBox(e.message); }
+}
+
 function draw() {
   if (!el || !v) return;
   const title = v.here ? `${portName(v.here)} 항구` : '항구';
   const sub = v.here ? TRADE.port(v.here)?.dock || '' : '';
   el.innerHTML = head(title, sub, `<span class="tr-gil">${icon('coin', 14)} ${fmt.jeon(v.gil)}</span>${helpQ(TRADE.help, '교역선')}`) + band()
     + (!v.here && !v.ship ? `<p class="hint">${esc(TRADE.away)}</p>` : '')
-    + `<div class="tr-wrap"><div class="tr-col">${boardPanel()}${cmpPanel()}${portsPanel()}</div><div class="tr-col">${shipPanel()}${holdPanel()}${sailPanel()}${yardPanel()}</div></div>`;
+    + `<div class="tr-wrap"><div class="tr-col">${boardPanel()}${cmpPanel()}${portsPanel()}</div><div class="tr-col">${shipPanel()}${holdPanel()}${sailPanel()}${yardPanel()}</div></div>${ledgerPanel()}`;
+  const ld = $('.tr-p-ledger', el);
+  if (ld) { ld.addEventListener('toggle', () => { if (ld.open) fillLedger(); }); if (ld.open) fillLedger(); }
   bindQty(el, () => sellSum());
   sellSum();
   const pc = $('[data-tr-party]', el); if (pc) pc.onchange = () => { party = pc.checked; draw(); };

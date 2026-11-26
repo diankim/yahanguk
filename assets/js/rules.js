@@ -91,6 +91,20 @@ export const SHADOW = {
   charge: `기운 모으기를 끊는 데 드는 피해는 최근 2분 동안 싸운 조사원들 공격력 합의 ${SH.charge_mul}배입니다`,
   stay: `토벌 시간의 ${pc(SH.stay_full)}% 넘게 함께했으면 기본 보상을 다 받고, 레벨 ${SH.gil_lv} 아래는 전을 레벨만큼 덜 받습니다`,
 };
+const NL = GD.neol || { name: '엉긴 너울', short: '너울', news: '너울 소식', mk2: {}, result: { win: { here: {}, near: {} }, fail: { here: {}, near: {} } } };
+const NM = NL.mk2 || {}, NW = NM.weight || {}, ND = NM.dry || {}, NC = NM.core || {}, NT = NM.tide || {};
+const fxLine = o => Object.entries(o || {}).map(([k, v]) => `${({ gather_qty_pct: '채집', rare_loot_pct: '귀한 것', incoming_damage_pct: '받는 피해', healing_pct: '회복', encounter_pct: '요괴 조우' })[k] || k} ${v > 0 ? '+' : ''}${v}%`).join(' · ');
+export const NEOL = {
+  name: NL.name, short: NL.short, news: NL.news,
+  winName: NL.result?.win?.name || '흐름이 돌아옴', failName: NL.result?.fail?.name || '마름',
+  weight: `약 ${(NW.every || 12) * 2}초마다 이목이 가장 높은 이의 머리 위에 물이 고이고, ${NW.delay || 6}초 뒤 떨어집니다. 그동안 방어를 고른 사람이 함께 나눠 받습니다(호위 무사·혈기사는 ${NW.tank_n || 2}사람 몫). 혼자 받으면 ${NW.solo || 1.5}배가 됩니다`,
+  dry: `${ND.from_phase || 2}단계부터 크게 덮치는 공격에 맞은 이 가운데 ${ND.pick || 3}명이 마릅니다. 체력을 ${ND.line || 90} 넘게 채우면 풀리고, 못 풀면 2초마다 체력 −${ND.dmg || 3}, ${(ND.beats || 8) * 2}초 뒤 굳어 그 싸움 동안 주는 피해가 ${ND.stiff || 15}%씩(${ND.stiff_cap || 2}겹까지) 줄어듭니다`,
+  core: `${NC.from_phase || 3}단계부터 약 ${(NC.every || 20) * 2}초마다 고임 심이 ${NC.secs || 8}초 드러납니다. 그 사이 최근 2분 동안 싸운 이들 공격력 합의 ${NC.mul || 4}배(최소 ${NC.min || 0})를, 서로 다른 ${NC.hits || 3}명 넘게 함께 쳐야 트입니다. 트이면 ${NC.open_s || 12}초 동안 너울이 받는 피해 +${NC.open_pct || 20}%, 못 트면 체력이 ${NC.regrow || 3}% 되살아나고 다음 고임 무게가 ${NC.relock || 1.3}배`,
+  tide: `약 ${(NT.every || 9) * 2}초마다 물이 빠져 나간 뒤 ${NT.tell || 4}초 뒤 첫 물이 덮칩니다(방어하면 줄어듦). ${NT.gap || 2}초 뒤 되밀려 오는 물은 방어를 고른 채로 있으면 휩쓸리고(${NT.ebb || 1.5}배·피해 줄임 없음), 공격·물품·기술을 고른 사람은 무사합니다`,
+  win: `${(NL.result?.win?.name) || '흐름이 돌아옴'} — 나타난 곳 ${fxLine(NL.result?.win?.here)}, 같은 땅 이웃 ${fxLine(NL.result?.win?.near)}`,
+  fail: `${(NL.result?.fail?.name) || '마름'} — 나타난 곳 ${fxLine(NL.result?.fail?.here)}, 같은 땅 이웃 ${fxLine(NL.result?.fail?.near)}`,
+  when: `사슬 벗은 그림자와 번갈아, 그림자가 지난 뒤 ${NL.gap_h || 36}~${(NL.gap_h || 36) + (NL.jitter_h || 12)}시간 안에 한국 시각 ${NL.from || '12:00'}~${NL.to || '23:00'} 사이 건넛누리 바깥 지역 한 곳에 고여 일어섭니다(그 지역을 연 조사원이 ${NL.min_open || 3}명 아래인 곳은 빼고)`,
+};
 export const COOP_RULE = {
   sure: `확정 치명타(그림자 찌르기·약점 진언)는 피해가 ${CR.sure_crit}배입니다`,
   all: `참가자 모두에게 거는 기술(약점 표시·추격 신호)은 받는 사람이 ${CR.all_full}명을 넘으면 한 사람 몫이 줄어듭니다(${CR.all_full * 2}명이면 약 ${allAt(CR.all_full * 2)}%, ${CR.all_full * 3}명이면 약 ${allAt(CR.all_full * 3)}%)`,
@@ -250,6 +264,7 @@ export const SYS_CHAT = {
   '세력 소식': { icon: 'pin', cls: 'note' },
   '봉연 소식': { icon: 'flame', cls: 'raidnote' },
   '그림자 소식': { icon: 'flame', cls: 'raidnote' },
+  '너울 소식': { icon: 'drop', cls: 'raidnote' },
   '비무 소식': { icon: 'sword', cls: 'note' },
   '연리 소식': { icon: 'knot', cls: 'note' },
   '운영 공지': { icon: 'bell', cls: 'note' },
@@ -523,6 +538,8 @@ export const PET_SKIN = {
   can: '고를 수 있음',
   prog: (n, need) => `${Number(n || 0).toLocaleString()} / ${Number(need || 0).toLocaleString()}`,
   book: '무늬 모음',
+  hiddenName: '???',
+  hidden: '이야기를 더 나아가면 보입니다',
   bookHelp: '건넛누리 권역 활동으로 무늬를 얻습니다. 얻은 무늬는 기록에 남아, 바탕 동무가 없어도 그 동무를 얻는 대로 바로 고를 수 있습니다. 운에 맡기는 길은 없고, 거래할 수 없습니다.',
   guide: '건넛누리의 무늬는 권역 활동(이야기·답사·보조 퀘스트·교역·등불·잔칫상·습격·원정·도감·우두머리)으로 얻습니다. 얻는 길과 진행은 동무 창의 「무늬 모음」에 보이고, 얻으면 알림이 옵니다. 바탕 동무가 없어도 기록은 남아, 그 동무를 얻으면 바로 고를 수 있습니다.',
 };
@@ -561,4 +578,14 @@ export const CABIN = {
   nextLine: n => n ? `${n.name}(Lv${n.lv})을 지으면 객실이 ${n.size}×${n.size}로 넓어집니다.` : '가장 넓은 객실입니다.',
   editTip: '배가 대 있는 항구에서 꾸밉니다. 놓는 가구는 가방·곳간에서 꺼내고, 거둔 가구는 곳간으로 갑니다. 창문·문·병풍·화로처럼 배에 맞지 않는 것과 큰 깔개·큰 벽 장식은 놓을 수 없습니다.',
   viewTip: '같은 파티원이 그 배가 대 있는 항구에 함께 있거나 그 배를 함께 타고 가면 객실을 구경할 수 있습니다.',
+};
+export const MOUNT_REALM = {
+  here: snap => snap?.realm || 'main',
+  of: m => m?.realm || 'main',
+  name: (snap, r) => (snap?.realm_names || {})[r] || '',
+  ok: (snap, m) => (m?.realm || 'main') === (snap?.realm || 'main'),
+  terr: (snap, t) => (snap?.terr_realm || {})[t] || 'main',
+  only: (snap, m) => `${(snap?.realm_names || {})[m?.realm || 'main'] || ''}에서만`,
+  tip: '탈것은 제 땅에서만 탑니다(본토 탈것은 본토, 건넛누리 탈것은 건넛누리). 땅을 건너면 저절로 내리고, 그 땅에서 마지막으로 탄 탈것이 있으면 그것으로 다시 태웁니다. 땅 사이 길은 걸어서 건넙니다. 교역선은 탈것과 따로라 어느 땅에서나 탑니다.',
+  route: '땅이 다른 구간은 걸어서 갑니다',
 };

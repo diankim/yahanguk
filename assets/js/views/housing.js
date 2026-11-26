@@ -604,12 +604,14 @@ async function openPets(keepY = 0) {
     });
   });
 }
+const skinHidden = () => `<div class="skin-opt locked hidden"><div class="skin-pics"><span class="skin-q">?</span><span class="skin-q">?</span></div><b>${esc(PET_SKIN.hiddenName)}</b><small class="skin-src">${esc(PET_SKIN.hidden)}</small></div>`;
 const skinLock = b => `<small class="skin-src">${esc(b.src || PET_SKIN.basic)}</small>${b.how === 'earn' ? `<span class="skin-bar"><i style="width:${Math.min(100, Math.round(100 * (b.n || 0) / Math.max(1, b.need || 1)))}%"></i></span><small class="skin-state">${esc(PET_SKIN.prog(b.n, b.need))}</small>` : ''}`;
 function openSkins(m, y0, list = []) {
   if (!m) return;
   const can = new Set(m.skins || []), info = new Map(list.map(b => [b.k, b]));
   const opts = [null, ...list.map(b => b.k).filter(k => PET_SKINS[k])];
-  const card = k => { const on = (m.skin || null) === k, sk = k && PET_SKINS[k], lock = k && !can.has(k);
+  const card = k => { if (k && info.get(k)?.hidden) return skinHidden();
+    const on = (m.skin || null) === k, sk = k && PET_SKINS[k], lock = k && !can.has(k);
     return `<div class="skin-opt${on ? ' on' : ''}${lock ? ' locked' : ''}"><div class="skin-pics"><img src="${petImage(m.id, false, { scale: 3, skin: k })}" alt=""><img src="${petImage(m.id, true, { scale: 3, skin: k })}" alt=""></div>
       <b>${esc(sk ? sk.name : '원래 무늬')}</b><small class="muted">${esc(sk ? sk.desc : PETS[m.id]?.desc || '')}</small>
       ${lock ? skinLock(info.get(k) || {}) : on ? '<em class="on">쓰는 중</em>' : `<button class="btn small primary" data-skin="${esc(k || '')}">이 모습으로</button>`}</div>`; };
@@ -620,11 +622,12 @@ function openSkins(m, y0, list = []) {
   });
 }
 function openSkinBook(book, mine, y0) {
-  const card = b => { const sk = PET_SKINS[b.k], ok = b.got && b.have;
+  const card = b => { if (b.hidden) return skinHidden();
+    const sk = PET_SKINS[b.k], ok = b.got && b.have;
     return `<div class="skin-opt${ok ? '' : ' locked'}"><div class="skin-pics"><img src="${petImage(b.pet, true, { scale: 3, skin: b.k })}" alt=""></div>
       <b>${esc(sk.name)}</b><small class="muted">${esc(PETS[b.pet]?.name || '')}</small>
       ${!b.got ? skinLock(b) : !b.have ? `<small class="skin-state">${esc(PET_SKIN.got)} · ${esc(PET_SKIN.noPet)}</small>` : `<small class="skin-state ok">${esc(PET_SKIN.can)}</small><button class="btn small" data-bookpet="${esc(b.pet)}">무늬 고르기</button>`}</div>`; };
-  const rank = b => (b.got && b.have ? 0 : b.got ? 1 : 2);
+  const rank = b => (b.hidden ? 3 : b.got && b.have ? 0 : b.got ? 1 : 2);
   const list = [...book].sort((a, b) => rank(a) - rank(b));
   openModal({ title: `${PET_SKIN.book} ${book.filter(b => b.got).length}/${book.length}`, body: `${helpLine(PET_SKIN.bookHelp, PET_SKIN.book)}<div class="skin-grid">${list.map(card).join('')}</div>`, wide: true });
   $('#modal')?.addEventListener('click', e => {

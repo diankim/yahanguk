@@ -1,4 +1,6 @@
 import { RB_SCENE, RB_SEALS, RB_SEAL_TIER } from './realm_cosmetics.js';
+import { TR_MOTIFS, TR_FRAMES, TR_PATTERNS, TR_SEALS, TR_SEAL_TIER } from './trade_cosmetics.js';
+import { NL_MOTIFS, NL_FRAMES, NL_SEALS, NL_SEAL_TIER } from './neol_cosmetics.js';
 const M = {
   lantern: 'M-4-7h8M-5-5h10v9h-10zM0 4v3M-2 7h4',
   path: 'M-8 0h4M-2 0h4M4 0h4',
@@ -67,6 +69,10 @@ export const FRAMES = {
   fr_tn_solo: ['legend', 'crossed'], fr_tn_team: ['legend', 'twin'],
   fr_yahaeng: ['legacy', 'nightwalk'],
 };
+Object.assign(M, TR_MOTIFS);
+Object.assign(FRAMES, TR_FRAMES);
+Object.assign(M, NL_MOTIFS);
+Object.assign(FRAMES, NL_FRAMES);
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
 const MIDS = [[50, 4, 0], [96, 50, 90], [50, 96, 180], [4, 50, 270]];
 const UG_SPARK = [[31, 4], [69, 4], [96, 31], [96, 69], [69, 96], [31, 96], [4, 69], [4, 31]];
@@ -129,6 +135,7 @@ const P = {
   pt_f_mandate: '<circle cx="4" cy="4" r=".9"/><circle cx="11" cy="7" r=".9"/><circle cx="16" cy="3" r=".7"/><circle cx="7" cy="15" r=".9"/><circle cx="15" cy="16" r=".8"/><path d="M4 4l7 3 5-4M11 7l-4 8 8 1"/>',
   pt_yahaeng: '<path d="M15 2a4 4 0 100 8 3.2 3.2 0 010-8z"/><path d="M1 18c0-2 2-3 4-2 1-2 4-2 5 0 1-.5 3 0 3 2z"/><path d="M5 6h2v3H5zM6 5v1"/><circle cx="18" cy="15" r=".6"/><circle cx="2" cy="10" r=".5"/>',
 };
+Object.assign(P, TR_PATTERNS);
 let pid = 0;
 const SCENE = {
   pt_ug_inkline: `<svg class="pt-layer pt-scene pt-ug" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
@@ -163,4 +170,8 @@ const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rar
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend', sl_myeongdeung: 'legend' };
 Object.assign(SEALS, RB_SEALS);
 Object.assign(SEAL_TIER, RB_SEAL_TIER);
+Object.assign(SEALS, TR_SEALS);
+Object.assign(SEAL_TIER, TR_SEAL_TIER);
+Object.assign(SEALS, NL_SEALS);
+Object.assign(SEAL_TIER, NL_SEAL_TIER);
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

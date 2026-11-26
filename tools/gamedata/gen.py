@@ -74,6 +74,7 @@ def build(dsn):
     d['gwiryeong'] = q(dsn, "select world_gwiryeong_rules()")
     d['contrib'] = q(dsn, "select world_contrib_rules()")
     d['shadow'] = q(dsn, "select world_shadow_rules()")
+    d['neol'] = q(dsn, "select world_neol_rules()")
     d['coopRules'] = q(dsn, "select world_coop_rules()")
     d['expXp'] = q(dsn, "select world_expedition_xp_rules()")
     d['idle'] = q(dsn, "select world_idle_rules()")
@@ -192,7 +193,11 @@ def build(dsn):
         'seek', r -> 'price' -> 'seek', 'events', r -> 'price' -> 'event' -> 'names',
         'day_cap', r -> 'day_cap', 'slot_n', r -> 'slot_n', 'sail', r -> 'sail', 'bonus', r -> 'bonus',
         'raid', jsonb_build_object('p', r -> 'raid' -> 'p', 'p_far', r -> 'raid' -> 'p_far', 'far_min', r -> 'raid' -> 'far_min'), 'cross', (select jsonb_agg(jsonb_build_array(x ->> 0, x ->> 1)) from jsonb_array_elements(r -> 'cross') x),
-        'lose_pct', r -> 'raid' -> 'lose_pct', 'send_lose', r -> 'raid' -> 'send_lose', 'dur', r -> 'dur', 'name_max', r -> 'name_max')
+        'lose_pct', r -> 'raid' -> 'lose_pct', 'send_lose', r -> 'raid' -> 'send_lose', 'dur', r -> 'dur', 'name_max', r -> 'name_max',
+        'title_cat', r -> 'title_cat',
+        'titles', (select jsonb_agg(jsonb_build_object('key', t ->> 'key', 'name', t ->> 'name', 'cond', t ->> 'cond', 'grade', (t ->> 'grade')::int, 'bonus', t -> 'bonus') order by o) from jsonb_array_elements(r -> 'titles') with ordinality z(t, o) where not (t ->> 'hidden')::boolean),
+        'titles_hidden', (select count(*) from jsonb_array_elements(r -> 'titles') t where (t ->> 'hidden')::boolean),
+        'cosmetics', (select jsonb_agg(jsonb_build_object('key', c.cosmetic_key, 'kind', c.kind, 'name', c.cosmetic_name, 'cond', c.condition_text) order by c.sort) from world_cosmetic_catalog c where c.category = r ->> 'title_cat'))
         from (select world_trade_rules() r) x""")
     d['cabin'] = q(dsn, """select (r - 'sources' - 'craft') || jsonb_build_object(
         'sources', jsonb_build_object('cross', (select jsonb_agg(i.item_name) from jsonb_array_elements_text(r -> 'sources' -> 'cross' -> 'items') x join world_item_catalog i on i.item_id = x),

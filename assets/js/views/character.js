@@ -521,7 +521,7 @@ async function idle(body, given) {
 }
 
 let statusTick = null, idleTick = null;
-const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '세력', '성장', '비밀', '기타'];
+const TCAT_ORDER = ['운영', '레거시', '탐사', '전투', '이동', '이야기', '채집', '제작', '낚시', '도감', '교류', '비무', '교역', '세력', '성장', '비밀', '기타'];
 let tq = '', tcat = '', tOwned = false, tEquipped = false;
 let tsort = (() => { try { return localStorage.getItem('yh-title-sort') || 'cat'; } catch { return 'cat'; } })();
 const TGRADE = GRADES;

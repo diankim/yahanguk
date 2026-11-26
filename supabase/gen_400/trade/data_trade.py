@@ -106,6 +106,30 @@ def parts():
     return out
 
 
+TITLE_CAT = '교역'
+TITLES = [
+    ('tr_cross', '물을 건넌 장사꾼', 'cross', 1, 2, {'travel_time_pct': -2}, False, '배를 직접 타고 처음 바다를 건넌다(구름나루 ↔ 파도너울성)', '제 배를 몰거나 얻어 타고 처음으로 큰 바다를 건넜습니다.'),
+    ('tr_sold_1', '뱃짐 장수', 'sold', 30000, 2, {'rare_loot_pct': 1, 'gather_qty_pct': 1}, False, '교역품을 정가 합 30,000전어치 판다', '항구마다 뱃짐을 풀어 이름이 조금씩 알려졌습니다.'),
+    ('tr_sold_2', '물길의 객주', 'sold', 150000, 3, {'rare_loot_pct': 2, 'gather_qty_pct': 2}, False, '교역품을 정가 합 150,000전어치 판다', '물길을 따라 오가는 짐 가운데 제 몫이 적지 않습니다.'),
+    ('tr_sold_3', '열세 나루 큰손', 'sold', 300000, 4, {'rare_loot_pct': 3, 'gather_qty_pct': 2, 'travel_time_pct': -2}, False, '교역품을 정가 합 300,000전어치 판다', '열세 나루 객주들이 배가 닿기 전부터 자리를 비워 둡니다.'),
+    ('tr_ports', '나루마다 이름 난 배', 'ports', 13, 3, {'travel_time_pct': -3}, False, '배로 열세 항구에 모두 닿는다', '열세 항구 선창 어디에 대도 사람들이 배 이름을 압니다.'),
+    ('tr_demand', '소식 빠른 장사꾼', 'demand', 10, 3, {'rare_loot_pct': 2, 'encounter_pct': -2}, False, '수요 사건이 난 항구에서 그날 교역품을 판 날이 10일', '잔치·흉년·큰 장 소식을 남보다 먼저 듣고 배를 댑니다.'),
+    ('tr_full', '하루 장사 한 배', 'full', 1, 2, {'gather_qty_pct': 2}, False, '한 번 팔기로 그날 몫(정가 합 3,000)을 꽉 채운다', '하루 팔 몫을 한 번에 풀어 놓을 만큼 짐을 실어 왔습니다.'),
+    ('tr_send', '앉아서 버는 선주', 'send', 30, 2, {'travel_time_pct': -2}, False, '보내 둔 배가 30번 항구에 닿는다', '사람이 타지 않아도 배가 알아서 짐을 팔고 돌아옵니다.'),
+    ('tr_raid_1', '뱃전을 지킨 이', 'raid', 1, 2, {'incoming_damage_pct': -1}, False, '뱃길 습격을 처음 물리친다', '뱃전으로 기어오른 것을 처음으로 물리쳐 짐을 지켰습니다.'),
+    ('tr_raid_2', '물길 강도의 악몽', 'raid', 30, 4, {'combat_damage_pct': 2, 'incoming_damage_pct': -2}, False, '뱃길 습격을 30번 물리친다', '물길 강도들 사이에 이 배만은 건드리지 말라는 말이 돕니다.'),
+    ('tr_ocean', '대양을 가르는 선주', 'ocean', 1, 4, {'travel_time_pct': -3, 'encounter_pct': -3}, False, '대양함선 선장으로 바다를 건넌다', '대양함선을 몰고 큰 바다를 가로질렀습니다.'),
+    ('tr_crew', '세 가지 덤을 아는 뱃사람', 'crew', 3, 3, {'healing_pct': 2, 'mental_loss_pct': -2}, False, '동료와 함께 떠나 물길 줄이기·함께 막기·함께 흥정을 한 번씩 모두 쓴다(선장·동승 모두 셈)', '함께 탄 동료와 물길을 줄이고, 함께 막고, 함께 흥정해 보았습니다.'),
+    ('tr_best', '한탕의 전설', 'best', 5001, 4, {'rare_loot_pct': 3, 'craft_quality': 2}, True, '한 번 팔기로 5,000전 넘게 받는다', '한 번 짐을 풀어 5,000전 넘게 받아 낸 이야기가 선창마다 돕니다.'),
+    ('tr_broke', '바닥까지 닳은 배', 'broke', 1, 1, {}, True, '파손(내구도 0)된 배를 고쳐 다시 띄운다', '부서진 배를 끝내 고쳐 다시 물에 띄웠습니다.'),
+]
+COSMETICS = [
+    ('fr_hull', 'frame', 'legend', '뱃전 테', '칭호 「물길의 객주」를 얻으면', {'title': 'tr_sold_2'}, 1540),
+    ('pt_sealane', 'pattern', 'legend', '뱃길 장부', '칭호 「나루마다 이름 난 배」를 얻으면', {'title': 'tr_ports'}, 1541),
+    ('sl_bak', 'seal', 'legend', '낙관 「舶」', '칭호 「대양을 가르는 선주」를 얻으면', {'title': 'tr_ocean'}, 1542),
+]
+
+
 def rules():
     return {
         'ports': {p: dict(region=p, name=n, dock=d, shipyard=y, realm=rm, sea=s, good=next(g[0] for g in GOODS if g[2] == p)) for p, n, d, y, rm, s in PORTS},
@@ -126,4 +150,6 @@ def rules():
         'raid': {'p': 10, 'p_far': 15, 'far_min': 180, 'robber': 0.34, 'lose_pct': 20, 'send_lose': [10, 20], 'lv_up': 1, 'robber_id': ROBBER[0]},
         'dur': {'voyage': 2, 'raid': 10, 'repair_gil': 2},
         'name_max': 12,
+        'title_cat': TITLE_CAT,
+        'titles': [dict(key=k, name=n, by=b, n=x, grade=g, bonus=bo, hidden=h, cond=c, desc=d) for k, n, b, x, g, bo, h, c, d in TITLES],
     }

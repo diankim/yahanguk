@@ -2,7 +2,7 @@ import { rpc, act, store, emit, esc, icon, fmt, $, $$, toast, ask, nameOf, RAID_
 import { fightFx } from '../inkfx.js';
 import { sceneHtml, mountScene } from '../scene.js';
 import { feastBandRow, bindFeastBand } from '../feast.js';
-import { SPAR_WATCH } from '../rules.js';
+import { SPAR_WATCH, NEOL } from '../rules.js';
 import { load, invalidate, loading, errorBox, chip } from './common.js';
 import { bgroup, bclear } from '../rtb.js';
 import { mountMeter } from './meter.js';
@@ -19,11 +19,12 @@ const creditLine = c => {
   return parts.length ? `<small class="muted raid-credit">(${parts.join(' · ')})</small>` : '';
 };
 
-const BOSS_FX = ['expose', 'stagger', 'smoke', 'break'];
+const BOSS_FX = ['expose', 'stagger', 'smoke', 'break', 'nopen'];
 const STATUS = { announced: '예고', signup: '참가 신청 중', fight: '토벌 중', won: '토벌 성공', failed: '토벌 실패' };
+const NL_STATUS = { fight: '흩어 보내는 중', won: '흩어 보냄', failed: '놓침' };
 
 let fxPrev = null, fxLog = 0, guardFx = false;
-let el = null, rid = null, snap = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null;
+let el = null, rid = null, snap = null, tick = null, timer = null, lastFetch = 0, target = null, sending = false, readyAt = 0, outUntil = 0, outEnds = {}, shownStatus = '', built = '', logCount = 0, away = false, resting = false, sel = null, chargeEnd = 0, chargeDur = 8000, chargeT = null, nlT = null;
 let queued = null;
 
 export async function render(root, sub) {
@@ -34,7 +35,7 @@ export async function render(root, sub) {
   subscribe();
   clearInterval(tick); tick = setInterval(countdown, 1000);
 }
-export function destroy() { scene?.stop(); scene = null; unfitFight(); hideTip(); clearTimeout(chargeT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
+export function destroy() { scene?.stop(); scene = null; unfitFight(); hideTip(); clearTimeout(chargeT); clearTimeout(nlT); bclear('raid'); clearInterval(tick); clearTimeout(timer); el = null; tray.close(); }
 
 let scene = null;
 async function refresh() {
@@ -90,7 +91,7 @@ function draw() {
   if (!r) {
     built = '';
     el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} 합동 토벌</p><h1>그림자</h1></div></div>
-      <div class="panel"><div class="panel-body"><p class="desc">지금은 드러난 사슬 벗은 그림자가 없습니다. 출현 하루 전부터 전체 채팅 「그림자 소식」과 알림으로 후보 지역을 알려 드립니다.</p>${locksHtml(s.locks)}</div></div>`;
+      <div class="panel"><div class="panel-body"><p class="desc">지금은 드러난 서버 보스(사슬 벗은 그림자·${esc(NEOL.name)})가 없습니다. 출현 하루 전부터 전체 채팅 「그림자 소식」·「${esc(NEOL.news)}」과 알림으로 후보 지역을 알려 드립니다.</p>${locksHtml(s.locks)}${flowsHtml(s.flows)}</div></div>`;
     return;
   }
   const me = s.me || {}, ended = settled(s);
@@ -117,7 +118,7 @@ function build() {
     : `${icon('check', 14)} ${r.ended_at ? new Date(r.ended_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''} 끝남`;
   const playing = me.joined && !me.left && fight;
   el.innerHTML = `<div class="view-head raid-head"><div><p class="eyebrow">${icon('flag', 14)} ${r.kind === 'final' ? '10장 최종 결전' : '서버 토벌'}${r.region ? ` · ${esc(r.region)}` : ''}</p>
-      <h1>${esc(r.boss)} <small>${esc(STATUS[r.status] || '')}</small></h1></div>
+      <h1>${esc(r.boss)} <small>${esc((r.boss_key === 'neol' && NL_STATUS[r.status]) || STATUS[r.status] || '')}</small></h1></div>
       <div class="head-actions">${me.joined ? '' : chip('관전 중')}${me.joined && r.kind === 'final' && (fight || r.status === 'signup') ? `<button class="btn small danger raid-forfeit keep-label" id="raid-forfeit">${icon('back', 15)}<span>포기</span></button>` : ''}${me.joined && !me.left && r.kind === 'world' && (fight || r.status === 'signup') ? `<button class="btn small keep-label" id="raid-leave" title="${fight ? '토벌에서 나가기(기여도는 남음)' : '참가 신청 거두기'}" aria-label="${fight ? '토벌에서 퇴장' : '신청 거두기'}">${icon('back', 15)}<span>${fight ? '퇴장' : '신청 거두기'}</span></button>` : ''}${r.kind === 'world' ? `<a class="btn small ghost" href="#/guide">${icon('help', 15)}<span>도움말</span></a>` : ''}</div></div>
     <div class="raid-wrap ${playing ? 'playing' : ''}">
       ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
@@ -133,10 +134,10 @@ function build() {
       ${fightCol('r', `<section class="panel raid-members"><header class="panel-head"><h2>${icon('users', 16)} 참가자 <span id="raid-mcount"></span></h2>${playing ? '<small class="muted">이름을 누르면 협동 기술 대상</small>' : ''}</header><div class="panel-body"><ul class="raid-mem" id="raid-mem"></ul><div class="mem-detail" id="raid-memdetail" hidden></div>${r.status === 'announced' ? '' : '<div class="dm-host" id="raid-meter"></div>'}</div></section>
       <section class="panel raid-log-box"><header class="panel-head"><h2>${icon('scroll', 16)} 전투 기록</h2><span class="raid-legend"><i class="lg-out"></i>내가 준 피해<i class="lg-in"></i>받은 피해</span></header><div class="panel-body"><ol class="raid-log" id="raid-log"></ol></div></section>`)}
     </div>
-    ${locksHtml(s.locks)}`;
+    ${locksHtml(s.locks)}${flowsHtml(s.flows)}`;
   logCount = 0;
   scene?.stop(); scene = null;
-  const sb = $('.scene-box', el); if (sb) scene = mountScene(sb, 'raid');
+  const sb = $('.scene-box', el); if (sb) scene = mountScene(sb, r.boss_key === 'neol' ? 'raid_neol' : 'raid');
   patch();
   bind();
   fitFight(el);
@@ -154,9 +155,11 @@ function patch() {
     const fx = fxChips((r.boss_fx || []).filter(k => BOSS_FX.includes(k)));
     sy.innerHTML = `<p class="raid-intent ${r.intent ? 'on' : ''}">${icon('flame', 14)}<span>${r.intent ? esc(r.intent) : '요괴가 숨을 고르는 중'}</span></p>
       <div class="raid-charge ${r.charge ? 'on' : ''} ${r.charge?.secs != null ? 'timed' : ''}">${r.charge ? `${r.charge.secs != null ? '<i class="ch-time"></i>' : ''}<span title="${fmt.num(r.charge.need)} 넘게 몰아치면 끊깁니다">${icon('flame', 14)} 기운 모으기 ${r.charge.secs != null ? '<span class="ch-left"><b class="ch-sec"></b>초 남음</span>' : `${r.charge.left}번 남음`} · 끊기까지 ${fmt.num(Math.max(0, r.charge.need - (r.charge.got || 0)))}</span><div class="bar"><span style="width:${Math.min(100, (r.charge.got || 0) / Math.max(1, r.charge.need) * 100)}%"></span></div>` : ''}</div>
+      ${r.neol ? neolBand(r.neol, members) : ''}
       <div class="chips raid-bfx">${fx}</div>`;
+    sy.classList.toggle('nl', !!r.neol);
     chargeEnd = r.charge?.secs != null ? Date.now() + r.charge.secs * 1000 : 0; chargeDur = (r.charge?.dur || 8) * 1000;
-    chargeTick();
+    chargeTick(); nlTick();
   }
   const mc = $('#raid-mcount', el); if (mc) mc.textContent = `${members.length}명`;
   const ml = $('#raid-mem', el); if (ml) ml.innerHTML = membersHtml(members);
@@ -200,6 +203,27 @@ function chargeTick() {
   box.classList.toggle('urgent', ms < 3000);
   if (ms > 0) chargeT = setTimeout(chargeTick, 100);
 }
+function neolBand(n, members) {
+  const t0 = Date.now(), end = x => t0 + (Number(x?.secs) || 0) * 1000;
+  const sec = x => `<b class="nl-sec" data-end="${end(x)}" data-dur="${(Number(x?.dur) || 1) * 1000}">${(Number(x?.secs) || 0).toFixed(1)}</b>`;
+  const who = id => members.find(m => m.id === id)?.name || '누군가';
+  const rows = [];
+  if (n.tide) rows.push(`<div class="nl-tide ${esc(n.tide.stage)}" title="${esc(NEOL.tide)}"><i class="nl-time"></i>${icon('wind', 16)}<strong>${n.tide.stage === 'tell' ? '첫 물 · 방어!' : '되밀린 물 · 방어 풀기!'}</strong><span>${sec(n.tide)}초</span></div>`);
+  if (n.weight) rows.push(`<div class="nl-row nl-weight" title="${esc(NEOL.weight)}">${icon('target', 14)}<span>고임 무게 · <b>${esc(who(n.weight.tgt))}</b> · ${sec(n.weight)}초 · 지금 방어 <b>${n.weight.guarding}</b>명</span></div>`);
+  if (n.core) rows.push(`<div class="nl-row nl-core" title="${esc(NEOL.core)}">${icon('spiral', 14)}<span>고임 심 · 친 사람 <b>${n.core.hit_n}/${n.hits}</b> · ${fmt.num(Math.round(n.core.got))}/${fmt.num(Math.round(n.core.need))} · ${sec(n.core)}초</span><div class="bar"><span style="width:${Math.min(100, n.core.got / Math.max(1, n.core.need) * 100)}%"></span></div></div>`);
+  if (n.open) rows.push(`<div class="nl-row nl-open">${icon('spiral', 14)}<span>물길 트임 · 받는 피해 +${n.open.pct}% · ${sec(n.open)}초</span></div>`);
+  return rows.length ? `<div class="nl-band">${rows.join('')}</div>` : '';
+}
+function nlTick() {
+  clearTimeout(nlT);
+  const list = el ? $$('#raid-says .nl-sec', el) : []; if (!list.length) return;
+  const now = Date.now();
+  list.forEach(b => {
+    const ms = Math.max(0, Number(b.dataset.end) - now); b.textContent = (ms / 1000).toFixed(1);
+    const t = b.closest('.nl-tide')?.querySelector('.nl-time'); if (t) t.style.width = `${Math.min(100, ms / Number(b.dataset.dur || 1000) * 100)}%`;
+  });
+  nlT = setTimeout(nlTick, 100);
+}
 let fitT = null;
 window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(() => { if (el && snap?.raid && built) { logCount = 0; patch(); } }, 150); });
 const hitSrc = k => /^hit_/.test(k || '') ? FX_NAME[k.slice(4)] : null;
@@ -230,16 +254,16 @@ function joinHtml(r, me) {
   if (late && me.joined) return '';
   if (me.joined) return `<p class="hint good">${icon('check', 14)} 참가를 신청했습니다. 신청이 끝나면 토벌이 시작됩니다.</p>
     ${r.kind === 'final' && r.leader ? `<button class="btn primary" id="raid-begin">${icon('sword', 16)}<span>지금 시작하기</span></button><p class="muted small">함께할 동료가 다 왔으면 바로 시작합니다. 90초가 지나면 저절로 시작합니다.</p>` : ''}`;
-  return me.can_join ? `<button class="btn primary" id="raid-join" data-here="토벌 합류">${icon('flag', 16)}<span>${r.kind === 'final' ? '결전에 합류' : late ? '지금 토벌에 합류' : '토벌 참가 신청'}</span></button>${late ? '<p class="muted small">지금 합류하면 남은 시간만큼 그림자의 체력이 늘고, 기여도는 합류한 뒤부터 쌓입니다.</p>' : ''}`
+  return me.can_join ? `<button class="btn primary" id="raid-join" data-here="토벌 합류">${icon('flag', 16)}<span>${r.kind === 'final' ? '결전에 합류' : late ? '지금 토벌에 합류' : '토벌 참가 신청'}</span></button>${late ? `<p class="muted small">지금 합류하면 남은 시간만큼 ${r.boss_key === 'neol' ? esc(NEOL.short) : '그림자'}의 체력이 늘고, 기여도는 합류한 뒤부터 쌓입니다.</p>` : ''}`
     : `<p class="hint">${icon('pin', 14)} ${esc(me.why || '신청할 수 없습니다.')}</p>`;
 }
 
 function resultHtml(r, members) {
   const mine = (members || []).find(m => m.me), rw = mine?.reward;
   const items = rw?.items ? Object.entries(rw.items).map(([k, v]) => `${esc(nameOf(k))} ×${v}`).join(', ') : '';
-  return resultBox(r.status === 'won', esc(`${r.boss || '요괴'}을(를) ${r.status === 'won' ? '물리쳤습니다' : '막지 못했습니다'}`),
+  return resultBox(r.status === 'won', esc(r.boss_key === 'neol' ? `${r.boss}을(를) ${r.status === 'won' ? '흩어 보냈습니다' : '흩어 보내지 못했습니다 — 너울이 다른 곳으로 흘러갔습니다'}` : `${r.boss || '요괴'}을(를) ${r.status === 'won' ? '물리쳤습니다' : '막지 못했습니다'}`),
     `${rw ? `<p class="small">기여도 ${rw.share}%${rw.gil ? ` · ${fmt.num(rw.gil)}전` : ''}${rw.xp ? ` · 경험치 ${fmt.num(xpGot(rw.xp))}` : ''}${items ? ` · ${items}` : ''}${rw.lost ? ` · 가방이 모자라 두고 옴: ${esc(rw.lost)}` : ''}</p>` : mine ? '' : '<p class="muted small">관전한 토벌입니다.</p>'}
-    ${r.kind === 'world' && r.status === 'failed' ? '<p class="muted small">출현 지역이 다음 회차까지 봉연에 잠깁니다(그곳·이웃 침식과 요괴 조우 증가).</p>' : ''}`);
+    ${r.kind === 'world' && r.boss_key === 'neol' ? `<p class="muted small">${esc(r.status === 'won' ? NEOL.win : NEOL.fail)} · 다음 ${esc(NEOL.short)}까지</p>` : r.kind === 'world' && r.status === 'failed' ? '<p class="muted small">출현 지역이 다음 회차까지 봉연에 잠깁니다(그곳·이웃 침식과 요괴 조우 증가).</p>' : ''}`);
 }
 
 function actionsShell(me) {
@@ -321,6 +345,11 @@ function memDetail(list) {
 function locksHtml(locks) {
   if (!(locks || []).length) return '';
   return `<p class="hint warn raid-locks">${icon('flame', 14)}<span>봉연에 잠긴 곳 · ${locks.map(l => `<b>${esc(l.region)}</b>`).join(', ')} — 그곳은 침식·요괴 조우·받는 피해가 늘고 채집량이 줄며, 이웃 지역도 침식·요괴 조우가 늘어납니다. 다음 그림자를 물리치면 풀립니다.</span></p>`;
+}
+
+function flowsHtml(list) {
+  if (!(list || []).length) return '';
+  return list.map(l => `<p class="hint ${l.kind === 'flow' ? 'good' : 'warn'} raid-locks">${icon('drop', 14)}<span><b>${esc(l.region)}</b> · ${esc(l.kind === 'flow' ? NEOL.win : NEOL.fail)}. 다음 ${esc(NEOL.short)}을(를) 흩어 보내면 바뀝니다.</span></p>`).join('');
 }
 
 function bindActs(scope) {
@@ -417,6 +446,7 @@ export async function fillRaidBand(box) {
       : `<b>${esc(w.region || '')}</b> · 토벌 중 ${w.max_hp ? Math.round(w.hp / w.max_hp * 100) : 0}% · ${t(w.ends_at)} 남음${w.joined ? '' : ' · 지금도 합류 가능'}`;
     rows.push(`<a class="raid-band-row ${w.status === 'announced' ? '' : 'hot'}" href="#/raid/${esc(w.id)}">${icon('flame', 14)}<span>${esc(w.boss)} · ${what}</span><small>${w.status === 'announced' ? '보기' : w.joined ? '들어가기' : w.status === 'signup' ? '신청·보기' : '합류·관전'}</small></a>`);
   }
+  for (const f of b?.flows || []) rows.push(`<a class="raid-band-row ${f.kind === 'flow' ? 'flow' : 'lock'}" href="#/raid">${icon('drop', 14)}<span>${esc(f.kind === 'flow' ? NEOL.winName : NEOL.failName)} · ${esc(f.region)}</span><small>자세히</small></a>`);
   if ((b?.locks || []).length) rows.push(`<a class="raid-band-row lock" href="#/raid">${icon('moon', 14)}<span>봉연에 잠김 · ${b.locks.map(l => esc(l.region)).join(', ')}</span><small>자세히</small></a>`);
   box.innerHTML = rows.length ? `<div class="raid-band">${rows.join('')}</div>` : '';
   bindFeastBand(box);

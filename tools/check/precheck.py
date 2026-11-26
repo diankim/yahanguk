@@ -15,7 +15,7 @@ ACCOUNT_TABLES = {
 }
 UNUSED_OK = {'pet_token', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
 HQ_SKIP = {'travel_ration'}
-NOSRC_OK = {'pet_token', 'seal_shard', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
+NOSRC_OK = {'pet_token', 'seal_shard', 'neol_drop', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
 HQ_OK_JS = {'QS_DEFAULT'}
 HQ_OK_FN = {'world_case_combine_regional'}
 BASE_KEYED = re.compile(r"\.output\s*===\s*([\w$.]+)|ingredients\??\.?\[([\w$.]+)\]|lore\.items\??\.?\[([\w$.]+)\]|l\.items\??\.?\[([\w$.]+)\]")

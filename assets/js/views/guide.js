@@ -1,11 +1,11 @@
-import { icon, esc, $, $$, effectText, nameOf, josa, fmt } from '../core.js';
+import { icon, esc, $, $$, effectText, nameOf, josa, fmt, GRADES } from '../core.js';
 import { startTutorial, reopenChecklist } from '../tutorial.js';
 import { toast, RAID_ON, JOBS, FACTIONS, JOB_ORDER } from '../core.js';
 import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lore.js';
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { HFEAST } from '../rules.js';
+import { HFEAST, NEOL } from '../rules.js';
 import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN, TRADE, REALM_BOND } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
@@ -207,6 +207,20 @@ const S = [
       <tr><td>십삼문 암시장</td><td>먹빛 쌍마 수레</td></tr>
       <tr><td>철벽 고찰</td><td>설원 개썰매</td></tr></table>
     <ul><li>월광록과 거점 마구간의 넷이 타는 탈것 여섯은 모두 ×2.3이고, 레벨 20·응축 영핵 하나·12,000전으로 어느 세력이든 들일 수 있습니다.</li></ul>
+    <h4>땅마다 탈것</h4>
+    <ul>
+      <li>탈것은 <b>제 땅에서만</b> 탑니다. 지금 있는 탈것은 모두 <b>본토</b> 탈것이고, 건넛누리 마구간과 권역 인연 비고의 탈것은 <b>건넛누리</b> 탈것입니다.</li>
+      <li>땅을 건너면 저절로 내립니다. 그 땅에서 마지막으로 탄 탈것을 가지고 있으면 그것으로 <b>저절로 다시 태웁니다</b>(없으면 걸어갑니다). 땅이 바뀌면 알림이 옵니다.</li>
+      <li>길이 땅을 건너면 구간마다 그 구간 땅의 탈것으로 셈하고, <b>땅 사이 길</b>(수경루 우물 틈 ↔ 파도너울성)과 다른 땅 구간은 걸어서 갑니다. 운임도 탄 구간만 냅니다.</li>
+      <li>동승은 태우는 사람의 탈것이 지금 땅의 탈것이어야 합니다. 수향연맹 뱃길 덤은 본토 물길에서만 받습니다. 교역선은 탈것과 따로라 어느 땅에서나 탑니다.</li>
+    </ul>
+    <table class="guide-table"><tr><th>건넛누리 마구간</th><th>들일 수 있는 탈것</th></tr>
+      <tr><td>파도너울성</td><td>물갈퀴 망아지</td></tr>
+      <tr><td>화덕골</td><td>잿빛 노새 수레</td></tr>
+      <tr><td>억새 나루</td><td>억새 물소</td></tr>
+      <tr><td>눈마루 돌마을</td><td>깃발 털염소</td></tr>
+      <tr><td>달맞이성</td><td>금테 마차</td></tr>
+      <tr><td>해오름성</td><td>연밥 큰 거위</td></tr></table>
     <h4>특별한 탈것</h4>
     <table class="guide-table"><tr><th>탈것</th><th>얻는 법</th></tr>
       <tr><td>홍인 해태</td><td>붉은 인장 사건 해결</td></tr>
@@ -1754,6 +1768,18 @@ const S = [
       <li>레벨과 상관없이 누구나 들 수 있습니다. 요괴는 지역 레벨 +3으로 치고, 기여도는 레벨로 깎지 않습니다. 레벨이 낮아도 성실하게 싸우면 기여 1등을 할 수 있습니다.</li>
       <li><b>세기</b>: ${SHADOW.hp}. ${SHADOW.hit}. ${SHADOW.charge}.</li>
     </ul>
+    <h4>건넛누리 서버 보스 「${esc(NEOL.name)}」</h4>
+    <ul>
+      <li><b>정체</b>: 마른 해에 요기가 흐르지 못하고 한곳에 고여 굳은 거대한 덩이입니다. 이름도 바탕도 없어서, 쓰러뜨리는 것이 아니라 <b>흩어 보내면</b> 요기가 땅과 물로 돌아갑니다. 파도너울성 보조 퀘스트 「흩어 보내는 사람들」에서 처음 이야기를 듣습니다(참가 조건은 아님).</li>
+      <li><b>나타나는 때</b>: ${esc(NEOL.when)}. 모임 30분 뒤 2시간 동안 흩어 보내고, 도중에도 그 지역에 가면 합류합니다. 알림은 전체 채팅 「${esc(NEOL.news)}」과 알림으로 그림자와 같은 때(24·12·6·3시간 전)에 옵니다.</li>
+      <li><b>고임 무게</b>(방패의 일): ${esc(NEOL.weight)}. 방패 하나로는 버겁습니다 — 둘째 방패나 곁의 동료가 방어를 골라 함께 지세요.</li>
+      <li><b>마름</b>(치유의 일): ${esc(NEOL.dry)}. 체력 막대 위 금이 그 선입니다.</li>
+      <li><b>고임 심</b>(공격의 일): ${esc(NEOL.core)}. 혼자 몰아쳐서는 트이지 않습니다.</li>
+      <li><b>엇박 해일</b>(모두의 일): ${esc(NEOL.tide)}. 띠에 「첫 물 · 방어!」, 「되밀린 물 · 방어 풀기!」가 크게 뜹니다.</li>
+      <li>그림자의 반격·크게 휘두르기·사슬·기운 모으기도 그대로 섞여 나옵니다. 받는 피해·기여도·물러남·퇴장은 그림자와 같습니다.</li>
+      <li><b>흩어 보낸 뒤</b>: 이기면 ${esc(NEOL.win)}. 지면 ${esc(NEOL.fail)}. 다음 ${esc(NEOL.short)}까지 이어지고, 이웃은 같은 땅 안에서만 셉니다.</li>
+      <li><b>보상</b>: 그림자처럼 기여도 1% 이상이면 받습니다. 전·경험치는 그림자와 같은 식이고, 재료 「흩은 너울 방울」(거래 가능)이 기여에 따라 나옵니다. 9단계 너울 노리개·호패·탈(Lv53, 거래 불가)은 이길 때 확률로 나오거나, 흩은 너울 방울 12개와 흐름 맺힌 정 2개로 달맞이성에서 만듭니다.</li>
+    </ul>
     <h4>기여도와 기록판</h4>
     <ul>
       <li><b>기여도</b>: 합동 토벌·결전·귀허의 주인·파티 토벌이 모두 같은 셈법을 씁니다. 네 갈래에서 각자 차지한 몫을 따로 재어 합칩니다.
@@ -2182,6 +2208,12 @@ const S = [
     <p>${esc(TRADE.yardTip)} 내구도는 항해마다 ${TRADE.dur?.voyage ?? 2}, 습격을 받으면 ${TRADE.dur?.raid ?? 10} 닳습니다. ${esc(TRADE.repairTip(TRADE.dur?.repair_gil ?? 2))}</p>
     <table class="guide-table"><tr><th>갈래</th>${Object.keys(TRADE.parts || {}).map(t => `<th>${esc(TRADE.ship(Number(t))?.name || t)}</th>`).join('')}</tr>
       ${Object.entries(TRADE.part_names || {}).map(([k, n]) => `<tr><td>${esc(n)}</td>${Object.values(TRADE.parts || {}).map(c => `<td>${c[k] ? Object.entries(c[k]).map(([i, q]) => `${esc(i)} ${q}`).join(' · ') : '—'}</td>`).join('')}</tr>`).join('')}</table>
+    <h4>장부와 교역 칭호</h4>
+    <p>항구 화면 맨 끝 「장부」 칸과 일지 › 기록 › 교역에 판 교역품·항구별 벌이·가장 큰 한 번 벌이·뱃길·습격·함께 쓴 덤이 쌓입니다. 칭호는 캐릭터 › 칭호의 「${esc(TRADE.title_cat || '교역')}」 분류에 있습니다.</p>
+    <table class="guide-table"><tr><th>칭호</th><th>얻는 법</th><th>등급</th><th>효과</th></tr>
+      ${(TRADE.titles || []).map(t => `<tr><td>${esc(t.name)}</td><td>${esc(t.cond)}</td><td>${esc(GRADES[t.grade] || '')}</td><td>${esc(effectText(t.bonus || {}).join(' · ') || '없음')}</td></tr>`).join('')}
+      ${TRADE.titles_hidden ? `<tr><td>???</td><td>숨겨진 칭호 ${TRADE.titles_hidden}개</td><td></td><td></td></tr>` : ''}</table>
+    ${(TRADE.cosmetics || []).length ? `<p>꾸미기: ${TRADE.cosmetics.map(c => `<b>${esc(c.name)}</b> ${esc(c.cond)}`).join(' · ')}.</p>` : ''}
   `],
   ['garden', '뒤뜰 밭', `
     <p>별채 뒤뜰의 밭에 가진 식재료를 심어 키웁니다. 별채가 있으면 별채 머리의 「뒤뜰 밭」 단추로 들어갑니다. 수확은 채집 숙련·퀘스트 셈에 들지 않습니다.</p>

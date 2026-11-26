@@ -566,6 +566,14 @@ sys.path.insert(0, os.path.join(HERE, '..', 'realm_bond'))
 import gen_rb as RBG
 w(RBG.emit(R, [p[0] for p in TRG.T.PORTS], SQ, J, TA, known, RID, xp_need, fresh, errors))
 
+sys.path.insert(0, os.path.join(HERE, '..', 'mounts'))
+import gen_mount as MTG
+w(MTG.emit(D, J, errors, fresh, known))
+
+sys.path.insert(0, os.path.join(HERE, '..', 'neol'))
+import gen_neol as NLG
+w(NLG.emit(J, TA, known, RID, fresh, errors, xp_need))
+
 w(open(os.path.join(HERE, '..', '..', 'gen_portrait', 'items.sql'), encoding='utf-8').read())
 
 w(f"""select public.world_quest_label_refresh();

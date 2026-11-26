@@ -51,6 +51,19 @@ select {J(mid)} #>> '{{}}', {J(rg)} #>> '{{}}', {J(nm)} #>> '{{}}', 'human', 1, 
   '숨어 있다 먼저 친다. 낌새를 살피고 방어를 섞어라.', 'raider', {J(kind)} #>> '{{}}'
 on conflict (monster_id) do update set monster_name = excluded.monster_name, description = excluded.description, drops = excluded.drops, max_level = excluded.max_level,
   role = excluded.role, kind = excluded.kind, mechanic_key = excluded.mechanic_key;""")
-    for f in ('c_funcs.sql', 'd_hooks.sql'):
+    for f in ('c_funcs.sql', 'd_hooks.sql', 'e_records.sql'):
         w(open(os.path.join(HERE, f)).read())
+    fresh('titles', [t[1] for t in T.TITLES], '칭호')
+    fresh('title_keys', [t[0] for t in T.TITLES], '칭호 키')
+    fresh('cosmetics', [c[3] for c in T.COSMETICS], '꾸미기')
+    keys = {t[0] for t in T.TITLES}
+    for c in T.COSMETICS:
+        if c[5]['title'] not in keys:
+            errors.append(f'교역 꾸미기 칭호 없음: {c[0]}')
+    if len(T.PORTS) != next(t[3] for t in T.TITLES if t[2] == 'ports'):
+        errors.append('교역 칭호 항구 수가 항구 목록과 다름')
+    w(f"""insert into public.world_cosmetic_catalog(cosmetic_key, kind, tier, cosmetic_name, condition_text, category, rule, hidden, sort)
+select x.k, x.kind, x.tier, x.name, x.cond, '{T.TITLE_CAT}', x.rule, false, x.sort
+  from jsonb_to_recordset({J([dict(k=k, kind=kd, tier=t, name=n, cond=c, rule=r, sort=so) for k, kd, t, n, c, r, so in T.COSMETICS])}) as x(k text, kind text, tier text, name text, cond text, rule jsonb, sort int)
+on conflict (cosmetic_key) do update set cosmetic_name = excluded.cosmetic_name, condition_text = excluded.condition_text, rule = excluded.rule, tier = excluded.tier, category = excluded.category;""")
     w(CB.sql(J, known, errors))

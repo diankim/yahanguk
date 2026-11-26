@@ -198,8 +198,22 @@ const SCENES = {
     for (let i = 0; i < 40; i++) p.dot(Math.floor(p.rnd() * 256), 50 + Math.floor(p.rnd() * 20), p.rnd() < .5 ? '#6a4a80' : '#5a3a6a');
     return crowdSlots();
   },
+  raid_neol(p, ph) {
+    p.sky(ph, [24, 16, 10], { colors: ph === 'day' ? ['#4f8aa0', '#6fa8b8', '#9ccad0'] : ['#14262e', '#1c3640', '#26474e'], orb: false, star: '#9fe0d6' });
+    p.rect(0, 40, 256, 16, '#1f4a52'); for (let x = 0; x < 256; x += 2) p.dot(x, 40 + Math.round(Math.sin(x / 9)), '#2f6a70');
+    for (let j = 0; j < 36; j++) { const w = Math.round(34 + 30 * Math.sin(Math.PI * j / 36) + 4 * Math.sin(j / 3)); const c = j > 30 ? '#5fb8b0' : j % 5 === 0 ? '#2f8a86' : '#1f5e5c'; p.rect(128 - w / 2 + Math.round(3 * Math.sin(j / 4)), 54 - j, w, 1, c); }
+    for (let i = 0; i < 9; i++) p.rect(104 + i * 6, 20 + Math.round(2 * Math.sin(i)), 3, 2, '#e4f4f0');
+    p.rect(114, 34, 4, 2, '#9fe0d6'); p.rect(138, 34, 4, 2, '#9fe0d6');
+    p.rect(0, 54, 256, 42, '#6a6250'); for (let y = 56; y < 96; y += 4) for (let x = (y / 4) % 2 ? 0 : 7; x < 256; x += 14) p.rect(x, y, 6, 1, '#7a7260');
+    const pool = (x, y, w) => { p.rect(x, y, w, 3, '#2f8a86'); p.rect(x + 2, y, w - 4, 1, '#5fb8b0'); };
+    pool(52, 64, 22); pool(170, 70, 26); pool(104, 84, 30);
+    const post = x => { p.rect(x, 40, 3, 24, '#5a3a24'); p.rect(x - 3, 40, 9, 2, '#8a5a32'); p.rect(x - 1, 46, 5, 6, '#c8ae78'); };
+    post(40); post(84); post(170); post(214);
+    for (let i = 0; i < 40; i++) p.dot(Math.floor(p.rnd() * 256), 50 + Math.floor(p.rnd() * 20), p.rnd() < .5 ? '#5fb8b0' : '#2f6a70');
+    return crowdSlots();
+  },
 };
-const SEEDS = { feast_lamp: 31, feast_redmoon: 5, feast_ledger: 17, feast_snowlamp: 23, feast_flowlamp: 41, feast_ember: 53, feast_star: 67, wedding: 7, tourney: 77, raid: 91 };
+const SEEDS = { feast_lamp: 31, feast_redmoon: 5, feast_ledger: 17, feast_snowlamp: 23, feast_flowlamp: 41, feast_ember: 53, feast_star: 67, wedding: 7, tourney: 77, raid: 91, raid_neol: 93 };
 
 const bgCache = new Map();
 function background(key, ph) {
