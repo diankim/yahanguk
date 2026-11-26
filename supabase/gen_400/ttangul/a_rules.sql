@@ -21,7 +21,7 @@ begin
     "cells": [[0,-2],[1,-2],[2,-2],[-1,-1],[0,-1],[1,-1],[2,-1],[-2,0],[-1,0],[0,0],[1,0],[2,0],[-2,1],[-1,1],[0,1],[1,1],[-2,2],[-1,2],[0,2]],
     "center": 10, "start": [5, 9, 11, 15], "pulls": [3, 8, 12, 17],
     "mech_mul": 0.45, "fall_hp": null, "aoe_every": 4,
-    "slide": {"every": 4, "off": 2, "left": 3, "push": 2, "raw": 30},
+    "slide": {"every": 4, "off": 2, "left": 3, "push": 1, "raw": 30},
     "weight": {"every": 5, "off": 4, "left": 3, "cells": 3, "hole": 2, "perm_max": 3},
     "pull": {"every": 5, "left": 4, "heal_pct": 1, "stop": 6, "hit_mul": 12},
     "fist": {"every": 6, "off": 3, "left": 2, "raw": 80, "push": 1},

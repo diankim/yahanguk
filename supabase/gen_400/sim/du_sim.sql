@@ -78,7 +78,7 @@ begin
     if h ->> 'k' = 'weight' and c = any (cells) then return sc - 1000; end if;
     if h ->> 'k' = 'shave' and public.world_du_ring(c) = 2 then return sc - 1000; end if;
     if h ->> 'k' = 'slide' and p = any (cells) then
-      sc := sc - 30; p := pg_temp.yh_dupush(fid, p, null, 2 - case when brace then 1 else 0 end); if p is null then return sc - 1000; end if;
+      sc := sc - 30; p := pg_temp.yh_dupush(fid, p, null, 1 - case when brace then 1 else 0 end); if p is null then return sc - 1000; end if;
     end if;
     if h ->> 'k' = 'boulder' and p = any (cells) then
       sc := sc - 35; p := pg_temp.yh_dupush(fid, p, (h ->> 'dir')::int, 1 - case when brace then 1 else 0 end); if p is null then return sc - 1000; end if;

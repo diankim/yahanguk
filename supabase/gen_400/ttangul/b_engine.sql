@@ -329,7 +329,7 @@ declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; f public.
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   b := f.board; pulls := coalesce(b -> 'pulls', '{}'); holes := coalesce(b -> 'holes', '{}'); cracked := coalesce(b -> 'cracked', '[]'); wedges := coalesce(b -> 'wedges', '[]');
-  for h in select * from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) loop
+  for h in select e from jsonb_array_elements(coalesce(b -> 'hz', '[]'::jsonb)) e order by case e ->> 'k' when 'weight' then 2 when 'shave' then 3 else 1 end loop
     if (h ->> 'left')::int > 0 then keep := keep || jsonb_build_array(h); continue; end if;
     cells := public.world_du_hz_cells(p_fight, h);
     if h ->> 'k' = 'pull' then
