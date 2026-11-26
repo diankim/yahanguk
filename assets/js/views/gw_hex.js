@@ -1,5 +1,5 @@
 import { esc, icon } from '../core.js';
-import { TEL_DEFS, telWave, telChev } from './telfx.js';
+import { TEL_DEFS, telWave, telChev, telPush } from './telfx.js';
 
 const Q = [0, 1, 1, 0, -1, -1, 0, 2, 2, 2, 1, 0, -1, -2, -2, -2, -1, 0, 1];
 const R = [0, 0, -1, -1, 0, 1, 1, 0, -1, -2, -2, -2, -1, 0, 1, 2, 2, 2, 1];
@@ -9,6 +9,7 @@ const HZ_NAME = { drag: '사슬 끌림', burst: '봉인 터짐', charge: '기운
 
 export const hexOn = s => !!s?.board?.hex;
 const at = c => [CX + S * Math.sqrt(3) * (Q[c] + R[c] / 2), CY + S * 1.5 * R[c]];
+const step = (c, d) => { const i = Q.findIndex((q, k) => q === Q[c] + DQ[d] && R[k] === R[c] + DR[d]); return i < 0 ? null : i; };
 const dist = (a, b) => (Math.abs(Q[a] - Q[b]) + Math.abs(R[a] - R[b]) + Math.abs(Q[a] + R[a] - Q[b] - R[b])) / 2;
 const hexPath = (x, y, r = S - 1.5) => Array.from({ length: 6 }, (_, i) => { const t = Math.PI / 180 * (60 * i - 30); return `${(x + r * Math.cos(t)).toFixed(1)},${(y + r * Math.sin(t)).toFixed(1)}`; }).join(' ');
 const due = h => Number(h.left) <= 0;
@@ -70,9 +71,25 @@ export function hexBoard(s, live, moveTo) {
     });
   }
   if (dest) { const [x, y] = at(dest); tokens += `<polygon class="hx-destmark" points="${hexPath(x, y, S - 6)}"/>`; }
+  let pushes = '';
+  for (const m of s.members || []) {
+    if (m.pos == null || m.out || m.resting) continue;
+    const p = m.id === s.me && dest ? dest : Number(m.pos), [x1, y1] = at(p), lb = esc(String(m.name || '').slice(0, 1));
+    for (const h of hz) {
+      if (!(h.cells || []).map(Number).includes(p)) continue;
+      if (h.k === 'tide') {
+        const d = Number(h.d), nd = step(p, d);
+        if (nd) { const [x2, y2] = at(nd); pushes += telPush(x1, y1, x2, y2, 'water', due(h), lb, false); }
+        else { const ang = Math.atan2(S * 1.5 * DR[d], S * Math.sqrt(3) * (DQ[d] + DR[d] / 2)); pushes += telPush(x1, y1, x1 + S * 1.15 * Math.cos(ang), y1 + S * 1.15 * Math.sin(ang), 'water', due(h), lb, true); }
+      } else if (h.k === 'drag') {
+        const nd = dist(p, Number(h.a)) <= dist(p, Number(h.b)) ? Number(h.a) : Number(h.b);
+        if (nd !== p) { const [x2, y2] = at(nd); pushes += telPush(x1, y1, x2, y2, 'ground', due(h), lb, false); }
+      }
+    }
+  }
   const charge = hz.find(h => h.k === 'charge');
   const mechs = (b.mechs || []).map(k => HZ_NAME[k] || k).join(' · ');
-  return `<div class="hx-wrap"><svg class="hx-map" viewBox="0 0 320 292" role="img" aria-label="구중 봉연 벌집 칸">${TEL_DEFS}${cells}${marks}${core}${tokens}</svg>
+  return `<div class="hx-wrap"><svg class="hx-map" viewBox="0 0 320 292" role="img" aria-label="구중 봉연 벌집 칸">${TEL_DEFS}${cells}${marks}${core}${pushes}${tokens}</svg>
     <div class="hx-info">
       ${charge ? `<div class="hx-charge ${due(charge) ? 'due' : ''}"><span>${icon('spark', 13)} 기운 모으기 · ${due(charge) ? '이번 라운드 끝' : `${charge.left}라운드 뒤`}</span><div class="bar"><span style="width:${Math.min(100, Number(charge.dmg || 0) / Math.max(1, Number(charge.need || 1)) * 100).toFixed(0)}%"></span></div></div>` : ''}
       ${b.line ? `<p class="hx-line">${esc(b.line)}</p>` : ''}

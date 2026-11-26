@@ -1,5 +1,5 @@
 const BOARD = '.hx-map, .by-map, .gg-map, .mk-board';
-const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev), .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
+const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev):not(.tel-push):not(.hx-chain), .tel-push.due .tel-wall, .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
 const deg = a => (a * 180 / Math.PI).toFixed(1);
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -13,6 +13,16 @@ export function telWave(x, y, ang, due) {
 export function telChev(x, y, ang, due) {
   const c = dx => `<path d="M${dx - 4} -6 l5 6 l-5 6"/>`;
   return `<g class="tel-chev ${due ? 'due' : ''}" data-a="${deg(ang)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg(ang)})">${c(-7)}${c(0)}${c(7)}</g>`;
+}
+
+export function telPush(x1, y1, x2, y2, kind, due, label, wall) {
+  const a = Math.atan2(y2 - y1, x2 - x1), ex = x2 - 13 * Math.cos(a), ey = y2 - 13 * Math.sin(a);
+  const hd = (r, t) => `${(ex + r * Math.cos(a + t)).toFixed(1)},${(ey + r * Math.sin(a + t)).toFixed(1)}`;
+  const tip = `${(ex + 7 * Math.cos(a)).toFixed(1)},${(ey + 7 * Math.sin(a)).toFixed(1)}`;
+  const end = wall
+    ? `<g class="tel-wall"><polygon points="${Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 5 : 12, t = Math.PI / 5 * i; return `${(x2 + r * Math.cos(t)).toFixed(1)},${(y2 + r * Math.sin(t)).toFixed(1)}`; }).join(' ')}"/><text x="${x2.toFixed(1)}" y="${(y2 + 4).toFixed(1)}">벽</text></g>`
+    : `<g class="tel-ghost"><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="11"/><text x="${x2.toFixed(1)}" y="${(y2 + 4).toFixed(1)}">${label}</text></g>`;
+  return `<g class="tel-push ${kind} ${due ? 'due' : ''}"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"/><polygon points="${tip} ${hd(6, 2.2)} ${hd(6, -2.2)}"/>${end}</g>`;
 }
 
 export function telSnap(root) {
