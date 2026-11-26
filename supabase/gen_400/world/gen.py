@@ -557,6 +557,14 @@ sys.path.insert(0, os.path.join(HERE, '..', 'trade'))
 import gen_trade as TRG
 TRG.emit(fresh, errors, bulk, J, REF, [i['item_name'] for i in items], [m[1] for m in mons], out)
 
+sys.path.insert(0, os.path.join(HERE, '..', 'pet_skin'))
+import gen_skin as PSK
+w(PSK.emit(D, SQ, errors, J))
+
+sys.path.insert(0, os.path.join(HERE, '..', 'realm_bond'))
+import gen_rb as RBG
+w(RBG.emit(R, [p[0] for p in TRG.T.PORTS], SQ, J, TA, known, RID, xp_need, fresh, errors))
+
 w(f"""select public.world_quest_label_refresh();
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '{DB_VERSION}', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;""")
