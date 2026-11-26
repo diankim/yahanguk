@@ -256,6 +256,7 @@ export const SYS_CHAT = {
   '선배 소식': { icon: 'users', cls: 'note' },
   '사업 소식': { icon: 'hammer', cls: 'note' },
   '잔치 소식': { icon: 'bowl', cls: 'note' },
+  '교역 소식': { icon: 'ship', cls: 'note' },
 };
 
 const PJ = GD.project || { pay: { day_cap: 8000, faction: { per_merit: 100 }, common: { gil_rate: 0.6 }, help: { gil_rate: 0.6 }, after_mul: 0.5 }, urgent: { n: 2, mul: 1.5 }, hq_mul: 1.5, mul_cap: 2, help_rel: { per_k: 1, person_day: 3, pair_day: 10 }, memento: { pct: 1, faction_merit: 20, common_gil_pct: 0.5 }, lift: {}, perk_text: { faction: [], common: [] }, projects: {}, vault: [], titles: 0 };
@@ -293,6 +294,40 @@ export const GARDEN = {
   fertFx: f => f.kind === 'speed' ? `남은 자라는 시간 −${f.pct}%` : `거둘 양 +${f.n}개`,
   fertTip: (t, n) => `${t}단계 작물에는 비료가 ${n}개 듭니다. 비료는 심을 때만 줄 수 있고, 심은 뒤에는 더 줄 수 없습니다.`,
   crowEvery: r => `${r?.crow?.every_h ?? 3}시간`,
+};
+
+const TD = GD.trade || { ports: {}, goods: {}, foods: {}, ships: [], parts: {}, part_names: {}, sail: { tokens: 2, board_s: 60, send_mul: 0.8, direct_div: 4 }, bonus: {}, day_cap: 3000, slot_n: 10, lose_pct: 20, send_lose: [10, 20], dur: { voyage: 2, raid: 10, repair_gil: 2 }, name_max: 12, seek: { n: 2, days: 3 }, events: [] };
+const tLeft = ms => { const s = Math.max(0, Math.round(ms / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.floor(s % 3600 / 60)}분` : s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`; };
+export const TRADE = {
+  ...TD,
+  port: k => TD.ports?.[k] || null,
+  ship: t => TD.ships?.[Math.max(1, Math.min(5, t || 1)) - 1] || null,
+  isPort: k => !!TD.ports?.[k],
+  tags: { origin: '산지', want: '찾는 곳', far: '먼 뭍 물건', seek: '찾는 물건', event: '수요', hot: '많이 팔림' },
+  tagTip: { origin: '이 항구에서 나는 물건입니다. 여기서만 사서 실을 수 있고, 파는 값은 싸게 쳐 줍니다.', want: '이 항구가 늘 비싸게 사 주는 물건입니다.', far: '바다 건너에서 온 물건이라 비싸게 쳐 줍니다.',
+    seek: `이 항구가 요즘 찾는 물건입니다. ${TD.seek?.days || 3}일마다 바뀝니다.`, event: '오늘 이 항구에 큰일이 있어 모든 교역품을 평소보다 비싸게 삽니다.', hot: '조사원들이 이 항구에 많이 팔아 값이 내려갔습니다. 하루에 걸쳐 돌아옵니다.' },
+  help: `항구에서 산지 교역품을 사서 배 짐칸에 싣고, 다른 항구로 가서 팝니다. 같은 물건도 항구마다 값이 다르고, 값은 한국 시각 0시마다 조금씩 흔들립니다. 산지에서는 싸고, 그 물건을 찾는 항구에서는 비쌉니다. 다른 항구의 값은 그 항구에 들렀을 때 본 값이 시세판에 남습니다. 하루에 팔 수 있는 몫은 판 물건의 정가 합 ${(TD.day_cap || 3000).toLocaleString('ko-KR')}전까지이고, 받는 돈은 그날 시세대로입니다. 배는 노정패 ${TD.sail?.tokens ?? 2}개로 띄웁니다. 직접 타고 가면 빠르고 제값을 받으며 그 항구 시세판을 새로 봅니다. 보내 두면 사람은 남고 배와 짐만 가서 그 항구에서 저절로 팔리는데, 받는 돈이 ${Math.round((1 - (TD.sail?.send_mul ?? 0.8)) * 100)}% 적습니다. 뱃길에서는 습격을 받을 수 있습니다. 직접 타고 갔다면 싸워 물리치면 짐을 지키고, 지면 짐 ${TD.lose_pct ?? 20}%를 잃고 배가 상합니다.`,
+  modeName: { direct: '직접 타고 가기', send: '보내 두기' },
+  modeTip: {
+    direct: `내가 배를 타고 갑니다. 닿을 때까지 다른 일을 할 수 없고, 닿으면 그 항구에 서 있습니다. 습격을 받으면 싸웁니다. 파티원을 태우면 덤 하나를 고릅니다.`,
+    send: `배와 짐만 보냅니다. 나는 이 자리에 남아 다른 일을 할 수 있습니다. 닿으면 짐이 그 항구에서 저절로 팔리고(떠날 때 값의 ${Math.round((TD.sail?.send_mul ?? 0.8) * 100)}%), 습격을 받으면 짐 ${(TD.send_lose || [10, 20]).join('~')}%를 잃습니다. 하루 판매 몫을 넘는 짐은 배에 남습니다.`,
+  },
+  bonusTip: k => { const b = TD.bonus?.[k] || {}, m = TD.bonus?.max_mates || 3;
+    return k === 'time' ? `함께 탄 동료 한 명마다 뱃길 시간 −${b.per}%(${m}명까지)` : k === 'guard' ? `습격에 졌을 때 잃는 짐이 동료 한 명마다 −${b.per}%(${m}명까지)` : `닿은 항구에서 팔 때 값이 동료 한 명마다 +${b.per}%(${m}명까지)`; },
+  boardTip: `같은 항구에 있는 파티원에게 함께 타자고 합니다. ${TD.sail?.board_s ?? 60}초 안에 답한 사람만 태우고 떠납니다. 태울 수 있는 사람 수는 내 배 크기를 따릅니다. 함께 탄 동료의 배는 짐칸만 끌배로 따라옵니다.`,
+  leftText: ms => ms > 0 ? `${tLeft(ms)} 뒤 닿음` : '닿는 중…',
+  inviteText: ms => ms > 0 ? `${tLeft(ms)} 안에 답하세요` : '마감',
+  boardText: ms => ms > 0 ? `${tLeft(ms)} 뒤 떠남 · 동료의 답을 기다리는 중` : '떠나는 중…',
+  sailTitle: v => `${v.status === 'raid' ? '뱃길 습격' : '항해 중'} → ${v.to_name || ''}`,
+  boardTitle: v => `배 띄우기 준비 → ${v.to_name || ''}`,
+  sendTitle: v => `보낸 배 → ${v.to_name || ''}`,
+  raidText: '배가 습격을 받았습니다. 물리치면 짐을 지킵니다.',
+  dayTip: cap => `하루에 팔 수 있는 몫은 판 교역품의 정가 합 ${Number(cap).toLocaleString('ko-KR')}전까지입니다. 받는 돈은 시세대로라 정가보다 비싸게 팔면 더 많이 법니다. 한국 시각 0시에 다시 찹니다. 상점 되팔기 한도와는 따로입니다.`,
+  foodTip: '세력 특선 음식은 가방에서 짐칸으로 옮겨 실을 수 있습니다. 시세판에는 없고, 파는 값은 팔 때 그 항구 시세로 정해집니다.',
+  repairTip: g => `내구도 1마다 ${g}전입니다. 항해마다 조금씩, 습격을 받으면 크게 닳고, 다 닳으면 고치기 전에는 띄울 수 없습니다. 조선소가 없는 항구에서도 고칠 수 있습니다.`,
+  yardTip: '조선소가 있는 항구에서 다음 배에 드는 재료를 갈래마다 넣습니다. 재료는 가방을 먼저 쓰고 모자라면 창고에서 꺼냅니다(빈약한 안전지대에서는 창고를 쓰지 않음). 모든 갈래가 차고 레벨이 되면 전을 내고 배를 올립니다. 재료를 넣을 때마다 목공 경험을 조금 얻습니다.',
+  seenNone: '들른 적 없음',
+  away: '항구에 있지 않습니다. 배를 타고 내린 항구나 항구가 있는 지역으로 가면 교역을 할 수 있습니다.',
 };
 
 export const NEAR = {

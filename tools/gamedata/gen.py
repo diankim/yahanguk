@@ -183,6 +183,16 @@ def build(dsn):
         'fert', (select jsonb_agg(jsonb_build_object('name', i.item_name) || f.value order by f.value ->> 'kind' desc, (coalesce(f.value ->> 'pct', f.value ->> 'n'))::int) from jsonb_each(r -> 'fert') f join world_item_catalog i on i.item_id = f.key),
         'expand', (select jsonb_agg(jsonb_build_object('size', e -> 'size', 'gil', e -> 'gil', 'items', (select jsonb_object_agg(i.item_name, x.value) from jsonb_each(e -> 'items') x join world_item_catalog i on i.item_id = x.key))) from jsonb_array_elements(r -> 'expand') e))
         from (select world_garden_rules() r) x""")
+    d['trade'] = q(dsn, """select jsonb_build_object(
+        'ports', (select jsonb_object_agg(p.key, jsonb_build_object('name', p.value ->> 'name', 'dock', p.value ->> 'dock', 'shipyard', (p.value ->> 'shipyard')::boolean, 'realm', p.value ->> 'realm', 'good', p.value ->> 'good')) from jsonb_each(r -> 'ports') p),
+        'goods', r -> 'goods',
+        'foods', (select jsonb_object_agg(i.item_id, jsonb_build_object('name', i.item_name, 'base', i.reference_price)) from unnest(world_food_fixed()) f(id) join world_item_catalog i on i.item_id = f.id),
+        'ships', r -> 'ships', 'part_names', r -> 'part_names',
+        'parts', (select jsonb_object_agg(t.key, (select jsonb_object_agg(c.key, (select jsonb_object_agg(coalesce(i.item_name, x.key), x.value) from jsonb_each(c.value) x left join world_item_catalog i on i.item_id = x.key)) from jsonb_each(t.value) c)) from jsonb_each(r -> 'parts') t),
+        'seek', r -> 'price' -> 'seek', 'events', r -> 'price' -> 'event' -> 'names',
+        'day_cap', r -> 'day_cap', 'slot_n', r -> 'slot_n', 'sail', r -> 'sail', 'bonus', r -> 'bonus',
+        'lose_pct', r -> 'raid' -> 'lose_pct', 'send_lose', r -> 'raid' -> 'send_lose', 'dur', r -> 'dur', 'name_max', r -> 'name_max')
+        from (select world_trade_rules() r) x""")
     d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(
         'titles', jsonb_array_length(world_project_rules() -> 'titles'),
         'vault', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'price', (v ->> 'price')::int, 'rank', (v ->> 'rank')::int, 'stage', (v ->> 'stage')::int) order by (v ->> 'stage')::int, (v ->> 'price')::int)
