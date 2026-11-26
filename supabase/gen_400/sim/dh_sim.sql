@@ -76,7 +76,7 @@ end $$;
 
 create or replace function pg_temp.yh_pick(fid uuid, pol text) returns void language plpgsql as $$
 declare f public.world_gw_fights%rowtype; x record; hd int; need int := 0; guiders uuid[] := '{}'; hz jsonb; due_head boolean := false; due_breath boolean := false;
-  c int; best int; bs numeric; s numeric; brace boolean; v_act text; na int; t int; d int; hp int;
+  c int; best int; bs numeric; s numeric; brace boolean; v_act text; tgt uuid; sk text; na int; t int; d int; hp int;
 begin
   select * into f from public.world_gw_fights where fight_id = fid;
   hd := (f.board ->> 'head')::int;
@@ -114,7 +114,22 @@ begin
       if pol = 'real' and random() < 0.12 then best := (array[x.pos] || public.world_dh_nb(x.pos))[1 + floor(random() * (1 + cardinality(public.world_dh_nb(x.pos))))::int]; v_act := 'attack'; end if;
     end if;
     if v_act = 'attack' and hp < 35 and coalesce(x.items_used, 0) < 2 and f.mode = 'hard' then v_act := 'item'; end if;
-    update public.world_gw_members set act = jsonb_build_object('a', v_act) || case when v_act = 'item' then jsonb_build_object('i', 'tonic', 't', x.owner_id) else '{}'::jsonb end
+    tgt := null; sk := null;
+    if v_act = 'attack' and x.job_key = 'medic' then
+      if f.round >= coalesce((x.cds ->> 'med_revive')::int, 0) then
+        select owner_id into tgt from public.world_gw_members where fight_id = fid and (rest or (out_rounds > 0 and out_rounds < 9999)) limit 1;
+        if tgt is not null then sk := 'med_revive'; end if;
+      end if;
+      if sk is null and f.round >= coalesce((x.cds ->> 'med_pulse')::int, 0)
+         and (select count(*) from public.world_gw_members where fight_id = fid and out_rounds = 0 and hp < 70) >= 2 then sk := 'med_pulse'; end if;
+      if sk is null and f.round >= coalesce((x.cds ->> 'med_aid')::int, 0) then
+        select owner_id into tgt from public.world_gw_members where fight_id = fid and out_rounds = 0 and hp < 60 order by hp limit 1;
+        if tgt is not null then sk := 'med_aid'; end if;
+      end if;
+    end if;
+    if v_act = 'attack' and x.job_key = 'artificer' and f.round >= coalesce((x.cds ->> 'exo_guardian')::int, 0) then sk := 'exo_guardian'; end if;
+    if sk is not null then v_act := 'coop'; update public.world_characters set spiritual_power = 100 where owner_id = x.owner_id; end if;
+    update public.world_gw_members set act = jsonb_build_object('a', v_act) || case when v_act = 'item' then jsonb_build_object('i', 'tonic', 't', x.owner_id) when v_act = 'coop' then jsonb_build_object('s', sk) || case when tgt is not null then jsonb_build_object('t', tgt) else '{}'::jsonb end else '{}'::jsonb end
       || case when best is distinct from x.pos then jsonb_build_object('m', best) else '{}'::jsonb end, rest = false where fight_id = fid and owner_id = x.owner_id;
   end loop;
 end $$;
