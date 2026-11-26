@@ -70,6 +70,23 @@ const INS = {
   cello:      { notes: [33, 37, 41, 45, 49, 53, 57], len: 3.1, sus: true, gain: 0.6, att: 0.12, rel: 0.7, pan: -0.12, send: 0.4 },
   bell:       { notes: [60, 66, 72, 78, 84], len: 3.1, sus: false, gain: 0.16, att: 0.003, rel: 1.2, pan: 0.2, send: 0.7 },
   taiko:      { notes: [36], len: 2.0, sus: false, gain: 0.45, att: 0.003, rel: 0.4, pan: 0, send: 0.3 },
+  marimba:    { notes: [36, 43, 50, 57, 64, 71, 78, 85], len: 2.2, sus: false, gain: 0.5, att: 0.003, rel: 0.5, pan: -0.2, send: 0.4 },
+  steeldrum:  { notes: [52, 58, 64, 70, 76, 82], len: 2.6, sus: false, gain: 0.34, att: 0.003, rel: 0.6, pan: 0.25, send: 0.5 },
+  kalimba:    { notes: [55, 61, 67, 73, 79, 85], len: 2.6, sus: false, gain: 0.42, att: 0.003, rel: 0.6, pan: 0.3, send: 0.55 },
+  vibes:      { notes: [41, 47, 53, 59, 65, 71, 77, 83], len: 3.1, sus: false, gain: 0.4, att: 0.004, rel: 1.0, pan: -0.15, send: 0.55 },
+  glock:      { notes: [67, 73, 79, 85, 91, 97], len: 2.8, sus: false, gain: 0.24, att: 0.002, rel: 0.8, pan: 0.3, send: 0.6 },
+  tubular:    { notes: [36, 42, 48, 54, 60, 66, 72], len: 3.1, sus: false, gain: 0.32, att: 0.003, rel: 1.4, pan: 0, send: 0.65 },
+  xylophone:  { notes: [53, 59, 65, 71, 77, 83, 89], len: 1.4, sus: false, gain: 0.4, att: 0.002, rel: 0.4, pan: -0.25, send: 0.4 },
+  dulcimer:   { notes: [48, 54, 60, 66, 72, 78, 84], len: 2.8, sus: false, gain: 0.38, att: 0.003, rel: 0.6, pan: 0.25, send: 0.5 },
+  shanai:     { notes: [58, 62, 66, 70, 74, 78, 82, 86], len: 3.1, sus: true, gain: 0.34, att: 0.05, rel: 0.35, pan: 0.05, send: 0.5 },
+  sitar:      { notes: [38, 43, 48, 53, 58, 63, 68, 73, 78], len: 3.1, sus: false, gain: 0.46, att: 0.004, rel: 0.8, pan: -0.1, send: 0.5 },
+  panflute:   { notes: [60, 64, 68, 72, 76, 80, 84, 88], len: 3.1, sus: true, gain: 0.44, att: 0.07, rel: 0.45, pan: 0.05, send: 0.6 },
+  ocarina:    { notes: [60, 64, 68, 72, 76, 80, 84], len: 3.1, sus: true, gain: 0.42, att: 0.05, rel: 0.4, pan: 0.05, send: 0.55 },
+  choir:      { notes: [40, 46, 52, 58, 64, 70, 76], len: 3.1, sus: true, gain: 0.32, att: 0.4, rel: 0.9, pan: 0.1, send: 0.65 },
+  tinkle:     { notes: [72, 78, 84, 90], len: 3.1, sus: false, gain: 0.18, att: 0.003, rel: 1.5, pan: 0.25, send: 0.75 },
+  tom:        { notes: [40, 47, 54], len: 1.4, sus: false, gain: 0.5, att: 0.002, rel: 0.3, pan: 0, send: 0.25 },
+  woodblock:  { notes: [70, 77], len: 0.5, sus: false, gain: 0.34, att: 0.001, rel: 0.2, pan: -0.2, send: 0.25 },
+  agogo:      { notes: [64, 72], len: 1.2, sus: false, gain: 0.24, att: 0.001, rel: 0.4, pan: 0.2, send: 0.3 },
 };
 const buffers = {}, loadingIns = {};
 function loadIns(k) {
@@ -83,7 +100,7 @@ function loadIns(k) {
 }
 function keepOnly(keys) { Object.keys(buffers).forEach(k => { if (!keys.includes(k)) { delete buffers[k]; loadingIns[k] = null; } }); }
 
-let soft = 0;
+let soft = 0, gmul = 1;
 function playNote(k, midi, t, dur, vel, o = {}) {
   const I = INS[k], buf = buffers[k]; if (!I || !buf || vel <= 0) return;
   if (k === 'piano' && soft) { vel *= soft; o = { ...o, lp: o.lp || 1800, att: Math.max(o.att ?? I.att, 0.02) }; }
@@ -93,7 +110,7 @@ function playNote(k, midi, t, dur, vel, o = {}) {
   let head = g;
   if (o.lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; f.Q.value = 0.4; g.connect(f); head = f; }
   if (pan) { pan.pan.value = I.pan + (Math.random() - 0.5) * 0.1; head.connect(pan); toBgm(pan, I.send); } else toBgm(head, I.send);
-  const peak = Math.max(0.0002, vel * I.gain);
+  const peak = Math.max(0.0002, vel * I.gain * gmul);
   const ring = I.sus ? dur : Math.max(dur, Math.min(I.len, dur + 1.6));
   const end = t + ring + I.rel;
   const att = o.att ?? I.att;
@@ -133,22 +150,38 @@ function playNote(k, midi, t, dur, vel, o = {}) {
 }
 
 const DRUM_KIND = { big: { f0: 92, f1: 40, dec: 1.1, g: 1.0, hit: 0.5, smp: 0.5 }, mid: { f0: 135, f1: 68, dec: 0.55, g: 0.7, hit: 0.45, smp: 0.55 }, small: { f0: 230, f1: 140, dec: 0.22, g: 0.35, hit: 0.6, smp: 0.6 } };
-function playDrum(t, vel, kind = 'big') {
+const DKIT = {
+  hand: { body: 0.3, big: ['tom', 43, 0.6, 0.85], mid: ['tom', 50, 0.4, 0.75], small: ['woodblock', 75, 0.3, 0.55] },
+  kendang: { body: 0.45, big: ['tom', 40, 0.7, 0.9], mid: ['tom', 47, 0.4, 0.75], small: ['tom', 56, 0.25, 0.5] },
+  forest: { body: 0.15, big: ['tom', 45, 0.5, 0.7], mid: ['woodblock', 70, 0.3, 0.75], small: ['woodblock', 78, 0.2, 0.55] },
+  himal: { body: 0.9, big: ['tom', 36, 1.0, 0.9], mid: ['tom', 42, 0.6, 0.7], small: ['tinkle', 86, 1.5, 0.45] },
+  tabla: { body: 0.2, big: ['tom', 41, 0.6, 0.85], mid: ['tom', 53, 0.35, 0.8], small: ['tom', 60, 0.2, 0.6] },
+  temple: { body: 0.5, big: ['tom', 38, 0.8, 0.85], mid: ['tom', 47, 0.4, 0.65], small: ['agogo', 76, 0.3, 0.45] },
+};
+const kitIns = p => !p.drum ? [] : p.kit && DKIT[p.kit] ? Object.values(DKIT[p.kit]).filter(Array.isArray).map(x => x[0]) : ['taiko'];
+function playDrum(t, vel, kind = 'big', kit = null) {
   const K = DRUM_KIND[kind] || DRUM_KIND.big; if (vel <= 0) return;
+  const D = kit && DKIT[kit], body = D ? D.body : 1;
+  const bv = vel * body * gmul;
   const o = ctx.createOscillator(), g = ctx.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime(K.f0, t); o.frequency.exponentialRampToValueAtTime(K.f1, t + Math.min(0.25, K.dec * 0.5));
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.34 * K.g * vel), t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + K.dec);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.34 * K.g * bv), t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + K.dec);
   o.connect(g); toBgm(g, 0.22); o.start(t); o.stop(t + K.dec + 0.05);
   if (noiseBuf) {
     const n = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), ng = ctx.createGain();
     n.buffer = noiseBuf; lp.type = 'lowpass'; lp.frequency.value = kind === 'small' ? 2200 : 900;
-    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.12 * K.hit * vel), t + 0.003); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.12 * K.hit * bv), t + 0.003); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
     n.connect(lp); lp.connect(ng); toBgm(ng, 0.15); n.start(t, Math.random()); n.stop(t + 0.1);
   }
-  if (buffers.taiko) playNote('taiko', kind === 'small' ? 43 : kind === 'mid' ? 38 : 34, t, 0.5, vel * K.smp);
+  const S = D && D[kind];
+  if (S) { if (buffers[S[0]]) playNote(S[0], S[1], t, S[2], vel * S[3]); }
+  else if (buffers.taiko) playNote('taiko', kind === 'small' ? 43 : kind === 'mid' ? 38 : 34, t, 0.5, vel * K.smp);
 }
 
-const MODES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], phryg: [0, 1, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], mixo: [0, 2, 4, 5, 7, 9, 10] };
+const MODES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], phryg: [0, 1, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], mixo: [0, 2, 4, 5, 7, 9, 10],
+  pelog: [0, 1, 3, 6, 7, 8, 10], bhairav: [0, 1, 4, 5, 7, 8, 11], todi: [0, 1, 3, 6, 7, 8, 11] };
+const SNAP = { penta: [0, 2, 4, 7, 9], selisir: [0, 1, 3, 7, 8], slendro: [0, 2, 5, 7, 9], himal: [0, 3, 5, 7, 10] };
+const snapMode = (m, set) => !set ? m : m.map(x => [...set, set[0] + 12].reduce((a, b) => Math.abs(b - x) < Math.abs(a - x) ? b : a));
 const PROG = {
   minor: { ante: [[0, 5, 3, 4], [0, 3, 5, 6], [0, 6, 5, 4], [5, 6, 0, 4], [0, 2, 3, 6]], cons: [[5, 6, 0, 0], [3, 4, 0, 0], [0, 5, 6, 0], [5, 3, 4, 0], [2, 5, 6, 0]],
            bA: [[5, 6, 2, 5], [3, 4, 5, 6], [5, 3, 6, 2]], bC: [[3, 6, 2, 4], [5, 3, 4, 4], [3, 5, 6, 6]] },
@@ -193,6 +226,16 @@ const ACC = {
   sitar: [[0, 0, .9], [0, 7, .55], [0.5, 7, .4], [1, 4, .6], [1.5, 7, .4], [2, 0, .75], [2.5, 7, .4], [3, 4, .6], [3.25, 7, .35], [3.5, 9, .45]],
   kotekan: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 4, 2, 4, 7, 4, 9, 7][k % 8] + (k >= 8 ? 2 : 0), k % 2 ? .32 : .55]),
   drone: [[0, 0, .8], [2, 7, .5], [3, 11, .35]],
+  steelwave: [[0, 0, .8], [0.75, 4, .45], [1.5, 7, .55], [2, 9, .4], [2.5, 7, .5], [3.25, 4, .42], [3.5, 2, .35]],
+  steel16: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 7, 4, 9, 7, 4, 11, 9][k % 8] + (k >= 8 ? 2 : 0), k % 4 ? (k % 2 ? .28 : .4) : .7]),
+  polos: Array.from({ length: 8 }, (_, k) => [k / 2, [0, 2, 4, 2, 0, 2, 4, 7][k], k % 2 ? .45 : .65]),
+  sangsih: Array.from({ length: 8 }, (_, k) => [k / 2 + 0.25, [4, 7, 9, 7, 4, 2, 7, 9][k], .4]),
+  angklung: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 4, 7, 9][Math.floor(k / 4)], k % 4 ? .26 : .5]),
+  ranat: Array.from({ length: 8 }, (_, k) => [k / 2, [0, 4, 7, 9, 11, 9, 7, 4][k] + (k >= 4 ? 2 : 0), k % 2 ? .45 : .7]),
+  ranat16: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 2, 4, 7, 9, 7, 4, 2][k % 8] + (k >= 8 ? 7 : 0), k % 4 ? .38 : .66]),
+  khim: [[0, 0, .6], [0.25, 0, .35], [1, 4, .5], [1.25, 4, .3], [2, 7, .55], [2.25, 7, .3], [3, 4, .5], [3.25, 4, .3]],
+  bowl: [[0, 7, .7], [2.5, 11, .4]],
+  jhala: Array.from({ length: 16 }, (_, k) => [k / 4, k % 4 === 0 ? [0, 4, 2, 7][k / 4] : 7, k % 4 ? .3 : .75]),
 };
 const roll = (from, to, step, v0, v1, k = 'small') => { const o = []; for (let x = from, i = 0, n = Math.round((to - from) / step); x < to - 1e-6; x += step, i++) o.push([x, v0 + (v1 - v0) * i / Math.max(1, n - 1), k]); return o; };
 const DRUM = {
@@ -298,34 +341,50 @@ const PROFILES = {
     bt: { bpm: 90, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'piano', acc: 'inkrain16', bass: 'half', drum: 'b_mukjeok2', pad: 'swell', bell: 0.1,
       form: [F('A', 'lead', 0.88, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { oct: -7, echo: 'harp' })] },
     form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.92, { duet: 'shakuhachi' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'harp' })] },
-  pado: { tonic: 58, mode: 'major', bpm: 84, meter: 3, rhy: 'dance3', lead: 'flute', lead2: 'harp', counter: 'koto', arp: 'harp', accIns: 'harp', acc: 'wave3', bass: 'waltz', drum: 'p_wave', drumIn: ['A2', 'B', 'A3'], pad: 'swell', bell: 0.12,
-    bt: { bpm: 116, lead: 'flute', lead2: 'strings', counter: 'harp', arp: 'harp', accIns: 'harp', acc: 'flowing', bass: 'drive', drum: 'b_pado', pad: 'swell', bell: 0.1,
-      form: [F('A', 'lead', 0.85, { echo: 'harp' }), F('B', 'lead2', 0.95, { oct: -7, duet: 'flute' }), F('A2', 'lead', 0.9, { trem: true })] },
-    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead', 0.65, { echo: 'koto' }), F('B', 'lead2', 0.75, { duet: 'flute' }), F('A3', 'lead', 0.6), F('bridge', 0, 0.3, { n: 1 })] },
-  bulssi: { tonic: 53, mode: 'minor', bpm: 100, meter: 4, rhy: 'calm', lead: 'koto', lead2: 'cello', counter: 'shakuhachi', arp: 'piano', accIns: 'piano', acc: 'anvil', bass: 'drive', drum: 'hammer', drumIn: ['A', 'A2', 'B', 'A3'], pad: 'light', bell: 0.3,
-    bt: { bpm: 128, lead: 'koto', lead2: 'cello', counter: 'shakuhachi', arp: 'piano', accIns: 'piano', acc: 'anvil', bass: 'drive', drum: 'b_bulssi', bell: 0.35,
-      form: [F('A', 'lead', 0.9, { trem: true }), F('B', 'lead2', 0.95, { duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { echo: 'piano' })] },
-    form: [F('drop', 0, 0.5, { n: 2 }), F('A', 'lead', 0.65), F('A2', 'lead', 0.72, { echo: 'piano' }), F('B', 'lead2', 0.82, { duet: 'shakuhachi' }), F('A3', 'lead', 0.7, { trem: true }), F('bridge', 0, 0.4, { n: 1 })] },
-  jaebit: { tonic: 56, mode: 'major', bpm: 62, meter: 4, rhy: 'calm', lead: 'flute', lead2: 'harp', counter: 'cello', arp: 'harp', accIns: 'koto', acc: 'raindrop', bass: 'half', drum: null, pad: 'sustain', bell: 0.35, soft: 0.85,
-    bt: { bpm: 92, rhy: 'oblivion2', lead: 'flute', lead2: 'cello', counter: 'harp', arp: 'harp', accIns: 'koto', acc: 'flowing', bass: 'half', drum: 'b_jaebit', pad: 'sustain', bell: 0.3,
-      form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { duet: 'flute' }), F('A2', 'lead', 0.9, { echo: 'harp' })] },
-    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.58, { echo: 'harp' }), F('B', 'lead2', 0.66, { duet: 'flute' }), F('A3', 'lead', 0.52), F('bridge', 0, 0.3, { n: 2 })] },
-  nunmaru: { tonic: 60, mode: 'dorian', bpm: 50, meter: 4, rhy: 'lament', lead: 'shakuhachi', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'drone', bass: 'pedal', drum: 'n_step', drumIn: ['B', 'A3'], pad: 'open', bell: 0.6,
-    bt: { bpm: 84, lead: 'shakuhachi', lead2: 'cello', counter: 'strings', arp: 'harp', accIns: 'harp', bass: 'long', drum: 'b_nunmaru', pad: 'open', bell: 0.6,
-      form: [F('A', 'lead', 0.88), F('B', 'lead2', 0.95, { oct: -7, duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { echo: 'harp' })] },
-    form: [F('intro', 0, 0.3, { n: 3 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.58, { echo: 'cello' }), F('B', 'lead2', 0.7, { oct: -7, duet: 'shakuhachi' }), F('A3', 'lead', 0.5), F('bridge', 0, 0.25, { n: 2 })] },
-  dalmaji: { tonic: 62, mode: 'mixo', prog: 'major', bpm: 112, meter: 4, rhy: 'fast', lead: 'fiddle', lead2: 'koto', counter: 'flute', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'pedal', drum: 'tabla', pad: 'open', bell: 0.2,
-    bt: { bpm: 132, lead: 'fiddle', lead2: 'flute', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'drive', drum: 'b_dalmaji', pad: 'open', bell: 0.2,
-      form: [F('A', 'lead', 0.88, { duet: 'koto' }), F('B', 'lead2', 0.95, { duet: 'fiddle', trem: true }), F('A2', 'lead', 0.9, { echo: 'koto' })] },
-    form: [F('drop', 0, 0.55, { n: 2 }), F('A', 'lead', 0.65), F('A2', 'lead', 0.72, { duet: 'koto' }), F('B', 'lead2', 0.8, { duet: 'fiddle' }), F('drop', 0, 0.55, { n: 1 }), F('A3', 'lead', 0.7, { echo: 'koto' })] },
-  goimteo: { tonic: 62, mode: 'phryg', bpm: 60, meter: 4, rhy: 'lament', lead: 'fiddle', lead2: 'cello', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'pedal', drum: 'tabla', drumIn: ['A2', 'B'], pad: 'open', bell: 0.25, soft: 0.85,
-    bt: { bpm: 100, lead: 'fiddle', lead2: 'cello', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'drive', drum: 'b_dalmaji', pad: 'open', bell: 0.2,
-      form: [F('A', 'lead', 0.88), F('B', 'lead2', 0.95, { oct: -7, duet: 'fiddle' }), F('A2', 'lead', 0.9, { echo: 'koto' })] },
-    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('drop', 0, 0.35, { n: 1 }), F('A2', 'lead', 0.58, { echo: 'koto' }), F('B', 'lead2', 0.68, { oct: -7 }), F('A3', 'lead', 0.52)] },
-  haeoreum: { tonic: 57, mode: 'major', bpm: 80, meter: 4, rhy: 'calm', lead: 'harp', lead2: 'flute', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'kotekan', bass: 'half', drum: 'gong', drumIn: ['A2', 'B', 'C', 'A3'], pad: 'light', bell: 0.55,
-    bt: { bpm: 108, lead: 'koto', lead2: 'flute', counter: 'harp', arp: 'harp', accIns: 'koto', acc: 'kotekan', bass: 'march', drum: 'b_haeoreum', bell: 0.5,
-      form: [F('A', 'lead', 0.88, { echo: 'harp' }), F('B', 'lead2', 0.95, { duet: 'koto' }), F('A2', 'lead', 0.9, { trem: true })] },
-    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead', 0.62, { echo: 'bell' }), F('B', 'lead2', 0.72, { duet: 'koto' }), F('C', 'koto', 0.62), F('A3', 'lead', 0.58), F('bridge', 0, 0.3, { n: 1 })] },
+  pado: { tonic: 58, mode: 'major', snap: 'penta', prog: 'major', bpm: 92, gain: 1.1, meter: 4, rhy: 'calm', lead: 'marimba', lead2: 'kalimba', counter: 'kalimba', arp: 'kalimba', accIns: 'steeldrum', acc: 'steelwave', accOct: -7, accLen: 0.7,
+    bass: 'half', bassIns: 'marimba', bassOct: -7, drum: 'p_wave', kit: 'hand', drumIn: ['A2', 'B', 'A3'], pad: 'none', bell: 0.3, bellIns: 'kalimba', tremIns: 'marimba',
+    bt: { bpm: 120, rhy: 'battle', lead: 'marimba', lead2: 'steeldrum', counter: 'kalimba', arp: 'kalimba', accIns: 'steeldrum', acc: 'steel16', accOct: -7, accLen: 0.35, bass: 'drive', bassIns: 'marimba', bassOct: -7,
+      drum: 'b_pado', kit: 'hand', pad: 'none', bell: 0.2, bellIns: 'kalimba',
+      form: [F('A', 'lead', 0.88, { echo: 'kalimba' }), F('B', 'lead2', 0.95, { duet: 'marimba', trem: true }), F('A2', 'lead', 0.9, { echo: 'steeldrum' })] },
+    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.6), F('A2', 'lead', 0.68, { echo: 'kalimba' }), F('B', 'lead2', 0.78, { duet: 'marimba' }), F('A3', 'lead', 0.62, { trem: true }), F('bridge', 0, 0.3, { n: 1 })] },
+  bulssi: { tonic: 53, mode: 'pelog', snap: 'selisir', prog: 'minor', bpm: 104, meter: 4, rhy: 'calm', lead: 'vibes', lead2: 'tubular', counter: 'vibes', arp: 'glock', accIns: 'glock', acc: 'polos', accOct: 7, accLen: 0.45,
+    acc2: 'sangsih', acc2Ins: 'vibes', acc2Oct: 0, acc2Len: 0.35, acc2Vol: 0.8, bass: 'gongan', bassIns: 'vibes', bassOct: -7, gong: ['tubular', -14, 0.75],
+    drum: 'hammer', kit: 'kendang', drumIn: ['A', 'A2', 'B', 'A3'], pad: 'none', bell: 0, tremIns: 'glock',
+    bt: { bpm: 132, rhy: 'battle', lead: 'vibes', lead2: 'tubular', counter: 'glock', arp: 'glock', accIns: 'glock', acc: 'polos', accOct: 7, accLen: 0.3, acc2: 'sangsih', acc2Ins: 'vibes', acc2Oct: 0, acc2Len: 0.25,
+      bass: 'drive', bassIns: 'vibes', bassOct: -7, gong: ['tubular', -14, 0.85], drum: 'b_bulssi', kit: 'kendang', pad: 'none', bell: 0, tremIns: 'glock',
+      form: [F('A', 'lead', 0.9), F('B', 'lead2', 0.95, { duet: 'vibes', trem: true }), F('A2', 'lead', 0.9, { echo: 'glock' })] },
+    form: [F('drop', 0, 0.5, { n: 2 }), F('A', 'lead', 0.65), F('A2', 'lead', 0.72, { echo: 'glock' }), F('B', 'lead2', 0.82, { duet: 'vibes' }), F('A3', 'lead', 0.7, { trem: true }), F('bridge', 0, 0.4, { n: 1 })] },
+  jaebit: { tonic: 56, mode: 'major', snap: 'slendro', prog: 'major', bpm: 66, meter: 4, rhy: 'calm', lead: 'ocarina', lead2: 'xylophone', counter: 'kalimba', arp: 'kalimba', accIns: 'kalimba', acc: 'raindrop', accOct: 0,
+    acc2: 'angklung', acc2Ins: 'marimba', acc2Oct: -7, acc2Len: 0.22, acc2Vol: 0.55, bass: 'half', bassIns: 'marimba', bassOct: -7, drum: 'n_step', kit: 'forest', drumIn: ['A2', 'B', 'A3'],
+    pad: 'sustain', padIns: 'choir', padVol: 0.5, bell: 0.25, bellIns: 'tinkle', tremIns: 'marimba', soft: 0.85,
+    bt: { bpm: 96, gain: 1.15, rhy: 'oblivion2', lead: 'ocarina', lead2: 'xylophone', counter: 'kalimba', arp: 'kalimba', accIns: 'xylophone', acc: 'angklung', accOct: -7, accLen: 0.22, acc2: 'raindrop', acc2Ins: 'kalimba', acc2Oct: 0, acc2Len: 1,
+      bass: 'half', bassIns: 'marimba', bassOct: -7, drum: 'b_jaebit', kit: 'forest', pad: 'sustain', padIns: 'choir', padVol: 0.4, bell: 0.2, bellIns: 'tinkle',
+      form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { duet: 'ocarina', trem: true }), F('A2', 'lead', 0.9, { echo: 'kalimba' })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.58, { echo: 'kalimba' }), F('B', 'lead2', 0.66, { trem: true }), F('A3', 'lead', 0.52), F('bridge', 0, 0.3, { n: 2 })] },
+  nunmaru: { tonic: 60, mode: 'dorian', snap: 'himal', prog: 'minor', bpm: 46, meter: 4, rhy: 'lament', lead: 'panflute', lead2: 'choir', counter: 'panflute', arp: 'tinkle', accIns: 'tinkle', acc: 'bowl', accOct: 0, accLen: 2.5,
+    bass: 'pedal', bassIns: 'choir', bassOct: -7, gong: ['tubular', -7, 0.45], drum: 'n_step', kit: 'himal', drumIn: ['B', 'A3'], pad: 'open', padIns: 'choir', padOct: -7, padVol: 0.8, bell: 0.5, bellIns: 'tinkle',
+    bt: { bpm: 80, rhy: 'battle', lead: 'panflute', lead2: 'choir', counter: 'panflute', arp: 'tinkle', accIns: 'tubular', acc: 'drone', accOct: -7, accLen: 2, bass: 'long', bassIns: 'choir', bassOct: -7,
+      gong: ['tubular', -7, 0.6], drum: 'b_nunmaru', kit: 'himal', pad: 'open', padIns: 'choir', padOct: -7, padVol: 0.7, bell: 0.5, bellIns: 'tinkle',
+      form: [F('A', 'lead', 0.88), F('B', 'lead2', 0.95, { duet: 'panflute' }), F('A2', 'lead', 0.9, { echo: 'tubular' })] },
+    form: [F('intro', 0, 0.3, { n: 3 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.58, { echo: 'tubular' }), F('B', 'lead2', 0.7, { oct: -7, duet: 'panflute' }), F('A3', 'lead', 0.5), F('bridge', 0, 0.25, { n: 2 })] },
+  dalmaji: { tonic: 62, mode: 'bhairav', prog: 'major', bpm: 100, meter: 4, rhy: 'fast', lead: 'sitar', lead2: 'shanai', counter: 'shanai', arp: 'sitar', accIns: 'sitar', acc: 'sitar', accOct: -7, accLen: 0.8,
+    bass: 'tanpura', bassIns: 'sitar', bassOct: -7, drum: 'tabla', kit: 'tabla', pad: 'none', bell: 0.15, bellIns: 'tinkle', tremIns: 'sitar',
+    bt: { bpm: 128, gain: 1.15, lead: 'sitar', lead2: 'shanai', counter: 'sitar', arp: 'sitar', accIns: 'sitar', acc: 'jhala', accOct: -7, accLen: 0.3, bass: 'tanpura', bassIns: 'sitar', bassOct: -7, drum: 'b_dalmaji', kit: 'tabla', pad: 'none', bell: 0.15, bellIns: 'tinkle', tremIns: 'sitar',
+      form: [F('A', 'lead', 0.88, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'sitar' }), F('A2', 'lead', 0.9, { oct: -7, trem: true })] },
+    form: [F('drop', 0, 0.55, { n: 2 }), F('A', 'lead', 0.65, { oct: -7 }), F('A2', 'lead', 0.72, { oct: -7, echo: 'sitar' }), F('B', 'lead2', 0.8, { duet: 'sitar' }), F('drop', 0, 0.55, { n: 1 }), F('A3', 'lead', 0.7, { oct: -7 })] },
+  goimteo: { tonic: 62, mode: 'todi', prog: 'minor', bpm: 54, gain: 1.6, meter: 4, rhy: 'lament', lead: 'sitar', lead2: 'shanai', counter: 'sitar', arp: 'sitar', accIns: 'tubular', acc: 'drone', accOct: -14, accLen: 3,
+    bass: 'tanpura', bassIns: 'sitar', bassOct: -14, gong: ['tubular', -14, 0.5], drum: 'tabla', kit: 'tabla', drumIn: ['A2', 'B'], pad: 'open', padIns: 'choir', padOct: -14, padVol: 0.7, bell: 0,
+    bt: { bpm: 96, gain: 1.3, lead: 'sitar', lead2: 'shanai', counter: 'sitar', arp: 'sitar', accIns: 'sitar', acc: 'jhala', accOct: -14, accLen: 0.3, bass: 'tanpura', bassIns: 'sitar', bassOct: -14, gong: ['tubular', -14, 0.6],
+      drum: 'b_dalmaji', kit: 'tabla', pad: 'open', padIns: 'choir', padOct: -14, padVol: 0.6, bell: 0,
+      form: [F('A', 'lead', 0.88, { oct: -7 }), F('B', 'lead2', 0.95, { oct: -7, duet: 'sitar' }), F('A2', 'lead', 0.9, { oct: -7 })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5, { oct: -7 }), F('drop', 0, 0.35, { n: 1 }), F('A2', 'lead', 0.58, { oct: -7 }), F('B', 'lead2', 0.68, { oct: -7 }), F('A3', 'lead', 0.52, { oct: -7 })] },
+  haeoreum: { tonic: 57, mode: 'mixo', prog: 'major', bpm: 84, gain: 1.4, meter: 4, rhy: 'calm', lead: 'xylophone', lead2: 'shanai', counter: 'dulcimer', arp: 'dulcimer', accIns: 'dulcimer', acc: 'khim', accOct: -7, accLen: 0.5,
+    acc2: 'ranat', acc2Ins: 'marimba', acc2Oct: -14, acc2Len: 0.45, acc2Vol: 0.6, bass: 'half', bassIns: 'marimba', bassOct: -14, gong: ['tubular', -14, 0.7], drum: 'gong', kit: 'temple', drumIn: ['A2', 'B', 'C', 'A3'],
+    pad: 'none', bell: 0.4, bellIns: 'tinkle', tremIns: 'xylophone',
+    bt: { bpm: 112, gain: 1.1, rhy: 'battle', lead: 'xylophone', lead2: 'shanai', counter: 'dulcimer', arp: 'dulcimer', accIns: 'xylophone', acc: 'ranat16', accOct: -7, accLen: 0.3, acc2: 'khim', acc2Ins: 'dulcimer', acc2Oct: -7, acc2Len: 0.4,
+      bass: 'march', bassIns: 'marimba', bassOct: -14, gong: ['tubular', -14, 0.8], drum: 'b_haeoreum', kit: 'temple', pad: 'none', bell: 0.35, bellIns: 'tinkle', tremIns: 'xylophone',
+      form: [F('A', 'lead', 0.88, { echo: 'dulcimer' }), F('B', 'lead2', 0.95, { duet: 'xylophone' }), F('A2', 'lead', 0.9, { trem: true })] },
+    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.58), F('A2', 'lead', 0.64, { echo: 'dulcimer' }), F('B', 'lead2', 0.74, { duet: 'xylophone' }), F('C', 'dulcimer', 0.62), F('A3', 'lead', 0.6, { trem: true }), F('bridge', 0, 0.3, { n: 1 })] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', songLit = false, barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = '';
@@ -344,13 +403,13 @@ function profile(battle = inBattle()) {
   if (env.phase === 'night') p.bpm *= 0.96;
   return p;
 }
-const insOf = p => [...new Set([p.lead, p.lead2, p.counter, p.arp, p.accIns, p.bassIns || 'cello', p.pad === 'none' ? null : 'strings', p.bell > 0 ? 'bell' : null, p.drum ? 'taiko' : null,
-  ...p.form.flatMap(f => [f.ins && INS[f.ins] ? f.ins : null, f.echo, f.duet, f.trem ? 'koto' : null])].filter(k => k && INS[k]))];
+const insOf = p => [...new Set([p.lead, p.lead2, p.counter, p.arp, p.accIns, p.acc2 ? p.acc2Ins : null, p.bassIns || 'cello', p.pad === 'none' ? null : p.padIns || 'strings', p.bell > 0 ? p.bellIns || 'bell' : null, ...kitIns(p), p.gong?.[0],
+  ...p.form.flatMap(f => [f.ins && INS[f.ins] ? f.ins : null, f.echo, f.duet, f.trem ? p.tremIns || 'koto' : null])].filter(k => k && INS[k]))];
 
 function seeded(str) { let h = 2166136261; for (const ch of str) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909); h >>>= 0; return h / 4294967296; }; }
 
 function makeSong(p, key, loop) {
-  const M = MODES[p.mode], prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
+  const M = snapMode(MODES[p.mode], SNAP[p.snap]), prog0 = PROG[p.prog || (p.mode === 'major' ? 'major' : 'minor')];
   const prog = p.mode === 'phryg' ? Object.fromEntries(Object.entries(prog0).map(([k, v]) => [k, v.map(c => c.map(x => (x === 4 ? 1 : x)))])) : prog0;
   const theme = seeded(key), vary = seeded(`${key}:${loop}`);
   const pick = (r, a) => a[Math.floor(r() * a.length)];
@@ -428,7 +487,7 @@ const DYN = [0.84, 0.95, 1.08, 0.86];
 const LEAD_GAIN = { strings: 1.9, cello: 1.05, piano: 1.1 };
 function playBar(p, S, bar, t, beat) {
   const { midi, mod7, chordTones } = S, mb = p.meter;
-  soft = p.soft || 0;
+  soft = p.soft || 0; gmul = p.gain || 1;
   const dyn = (DYN[bar.pi ?? 0] ?? 1) * (bar.pj ? 1.04 : 1);
   const inten = bar.inten * (p.safe ? 0.85 : 1) * dyn;
   const human = () => (Math.random() - 0.5) * 0.02, hv = v => v * (0.9 + Math.random() * 0.2);
@@ -443,7 +502,7 @@ function playBar(p, S, bar, t, beat) {
     const m = hm(d + oct), prev = bar.mel[i - 1], at = t + pos * beat + human();
     const acc = pos === 0 ? 1.08 : pos % 1 ? 0.88 : 1;
     playNote(bar.lead, m, at, len * beat * 0.98, hv((0.95 * inten + 0.05) * acc * lg),
-      { slide: orn === 'slide' ? (bar.lead === 'fiddle' ? 2 : 1) : (bar.lead === 'fiddle' && prev && Math.abs(prev[1] - d) === 1 && Math.random() < 0.3 ? 1 : 0), grace: orn === 'grace' ? 2 : 0,
+      { slide: orn === 'slide' ? (['fiddle', 'sitar', 'shanai'].includes(bar.lead) ? 2 : 1) : (bar.lead === 'fiddle' && prev && Math.abs(prev[1] - d) === 1 && Math.random() < 0.3 ? 1 : 0), grace: orn === 'grace' ? 2 : 0,
         att: bar.lead === 'strings' ? 0.12 : undefined, expr: sus && len * beat > 0.45, vib: sus && len * beat > 0.9 && bar.lead !== 'strings' });
     if (bar.duet && bar.duet !== bar.lead && len >= 0.5) {
       const dd = [2, 3, 4, 5].map(x => d - x).find(x => tones.includes(mod7(x)));
@@ -458,13 +517,14 @@ function playBar(p, S, bar, t, beat) {
     src.forEach(([, d], i) => { if (at < mb) { const dn = i === src.length - 1 ? near(d) : d; playNote(p.counter, hm(dn - 7), t + at * beat + human(), (i === src.length - 1 ? 1.5 : 0.5) * beat, hv(0.48 * inten), { expr: true }); at += i === src.length - 1 ? 1.5 : 0.5; } });
   }
   if (bar.hint) bar.hint.forEach(([pos, d, len]) => playNote(p.counter, hm(near(d) - 7), t + pos * beat, len * beat, 0.4, { expr: true }));
-  const accIns = p.accIns || p.arp, accBase = d => hm(d - (accIns === 'strings' ? 14 : 7), p.tonic);
+  const accIns = p.accIns || p.arp, accBase = d => hm(d + (p.accOct ?? (accIns === 'strings' ? -14 : -7)), p.tonic);
   const pat = (ACC[p.acc] || ACC.calm).filter(([pos]) => pos < mb);
   const accVol = (answer ? 0.5 : 1) * (['intro', 'bridge', 'drop'].includes(bar.sec) ? 0.55 : 0.4) * inten * (accIns === 'strings' ? 0.9 : 1);
   const accLen = p.acc === 'drone' ? 3 : p.acc === 'raindrop' ? 1.5 : p.acc === 'sitar' ? 0.8 : p.acc === 'wave3' ? 0.55 : p.acc === 'anvil' || p.acc === 'kotekan' ? 0.32 : p.acc === 'tango' ? 1.3 : p.acc === 'tango8' ? 0.7 : p.acc === 'sparse' || p.acc === 'eerie' || p.acc === 'slow3' ? 2 : p.acc === 'fast' ? 0.3 : p.acc === 'ostinato' || p.acc === 'battle' || p.acc === 'flowing' || p.acc === 'shimmer' || p.acc === 'dance3' ? 0.6 : 1;
-  pat.forEach(([pos, step, v], i) => playNote(accIns, accBase(root + step), t + pos * beat + human(), accLen * beat, hv(accVol * v * (1 - 0.15 * (i / Math.max(1, pat.length - 1))))));
-  if (bar.trem) { const n = mb * 4; for (let k = 0; k < n; k++) playNote('koto', hm(tri[k % 3]), t + k * beat / 4, beat / 2, hv((k % 4 ? 0.16 : 0.28) * inten * (0.7 + 0.5 * Math.sin(Math.PI * k / n)))); }
-  const bI = p.bassIns || 'cello', bO = p.tonic < 53 ? -7 : -14, bass = midi(root + bO, p.tonic), five = midi(root + 4 + bO, p.tonic), bv = 0.75 * inten + 0.05;
+  pat.forEach(([pos, step, v], i) => playNote(accIns, accBase(root + step), t + pos * beat + human(), (p.accLen ?? accLen) * beat, hv(accVol * v * (1 - 0.15 * (i / Math.max(1, pat.length - 1))))));
+  if (p.acc2 && p.acc2Ins) (ACC[p.acc2] || []).filter(([pos]) => pos < mb).forEach(([pos, step, v]) => playNote(p.acc2Ins, hm(root + step + (p.acc2Oct ?? -7), p.tonic), t + pos * beat + human(), (p.acc2Len ?? 0.4) * beat, hv(accVol * v * (p.acc2Vol ?? 1))));
+  if (bar.trem) { const n = mb * 4; for (let k = 0; k < n; k++) playNote(p.tremIns || 'koto', hm(tri[k % 3]), t + k * beat / 4, beat / 2, hv((k % 4 ? 0.16 : 0.28) * inten * (0.7 + 0.5 * Math.sin(Math.PI * k / n)))); }
+  const bI = p.bassIns || 'cello', bO = p.bassOct ?? (p.tonic < 53 ? -7 : -14), bass = midi(root + bO, p.tonic), five = midi(root + 4 + bO, p.tonic), bv = 0.75 * inten + 0.05;
   if (bar.sec !== 'intro' || p.bass === 'pedal' || p.bass === 'long' || p.bass === 'tango') {
     switch (p.bass) {
       case 'battle': [[0, 1], [1.5, .7], [2, .9], [3, .7]].forEach(([pos, v]) => playNote(bI, bass, t + pos * beat, 0.45 * beat, hv(0.6 * v))); break;
@@ -472,6 +532,8 @@ function playBar(p, S, bar, t, beat) {
       case 'march': [[0, bass, 1], [1.5, bass, .6], [2, five, .85], [3, bass, .6]].forEach(([pos, m, v]) => playNote(bI, m, t + pos * beat, 0.8 * beat, hv(v * bv))); break;
       case 'tango': [[0, bass, 1], [1.5, five, .72], [3, bass, .85]].forEach(([pos, m, v]) => playNote(bI, m, t + pos * beat, (pos === 3 ? 0.9 : 1.4) * beat, hv(v * bv), { expr: true })); if (!bar.last && p.battle) playNote(bI, bass - 1, t + 3.5 * beat, 0.45 * beat, hv(0.5 * bv)); break;
       case 'waltz': playNote(bI, bass, t, 0.9 * beat, hv(bv)); break;
+      case 'tanpura': { const lo = midi(bO, p.tonic), sa = midi(bO + 7, p.tonic), pa = midi(bO + 4, p.tonic); [[0, pa, .7], [1, sa, .55], [2, sa, .55], [3, lo, .85]].filter(([pos]) => pos < mb).forEach(([pos, m, v]) => playNote(bI, m, t + pos * beat, 1.6 * beat, hv(v * bv))); break; }
+      case 'gongan': playNote(bI, bass, t, mb * beat, hv(bv)); if (mb === 4) playNote(bI, five, t + 2 * beat, 2 * beat, hv(0.6 * bv)); break;
       case 'pedal': playNote(bI, midi(-14, p.tonic), t, mb * beat, hv(0.6 * inten + 0.1), { swell: true }); break;
       case 'half': playNote(bI, bass, t, 2 * beat, hv(bv), { expr: true }); playNote(bI, five, t + 2 * beat, (mb - 2) * beat, hv(0.85 * bv), { expr: true }); break;
       default: playNote(bI, bass, t, mb * beat, hv(bv), { swell: true });
@@ -483,14 +545,15 @@ function playBar(p, S, bar, t, beat) {
   if (padOn && bar.sec !== 'drop' && !(bar.lead === 'strings' && bar.mel.length)) {
     const pv = (bar.sec === 'B' ? 0.6 : p.pad === 'sustain' ? 0.32 : 0.44) * inten;
     const notes = p.pad === 'open' ? [root, root + 4, root + 7] : tri;
-    notes.forEach(d => playNote('strings', hm(d - 7, p.tonic), t + 0.05, mb * beat, hv(pv), { swell: true }));
+    notes.forEach(d => playNote(p.padIns || 'strings', hm(d + (p.padOct ?? -7), p.tonic), t + 0.05, mb * beat, hv(pv * (p.padVol ?? 1)), { swell: true }));
   }
-  if (p.bell > 0 && (bar.mel.length || bar.sec === 'intro') && Math.random() < p.bell * (bar.sec === 'B' ? 1.4 : 0.6) && (bar.sec === 'intro' || barNo % (bshape(p) ? 2 : 4) === 0)) playNote('bell', hm(root + 7, p.tonic), t + (bshape(p) ? 0 : Math.min(2, mb - 1) * beat), 2 * beat, 0.55);
+  if (p.bell > 0 && (bar.mel.length || bar.sec === 'intro') && Math.random() < p.bell * (bar.sec === 'B' ? 1.4 : 0.6) && (bar.sec === 'intro' || barNo % (bshape(p) ? 2 : 4) === 0)) playNote(p.bellIns || 'bell', hm(root + (p.bellOct ?? 7), p.tonic), t + (bshape(p) ? 0 : Math.min(2, mb - 1) * beat), 2 * beat, 0.55);
+  if (p.gong && bar.pi === 0 && (bar.pj ?? 0) === 0 && bar.sec !== 'bridge') playNote(p.gong[0], midi(p.gong[1] ?? -14, p.tonic), t, mb * beat, hv((p.gong[2] ?? 0.7) * (0.6 + 0.4 * inten)));
   if (p.drum && (!p.drumIn || p.drumIn.includes(bar.sec) || bar.sec === 'drop')) {
     const set = DRUM[p.drum]; if (set) {
       const hits = (bar.last ? set.fill : barNo % 2 ? set.alt : set.main).filter(([pos]) => pos < mb);
       const dv = bshape(p) ? 0.95 : 0.6 + 0.35 * inten;
-      if (p.drum !== 'pulse' || barNo % 2 === 0 || bar.last) hits.forEach(([pos, v, k]) => playDrum(t + pos * beat + human() * 0.5, hv(v * dv), k));
+      if (p.drum !== 'pulse' || barNo % 2 === 0 || bar.last) hits.forEach(([pos, v, k]) => playDrum(t + pos * beat + human() * 0.5, hv(v * dv), k, p.kit));
     }
   }
 }
