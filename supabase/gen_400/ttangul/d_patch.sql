@@ -27,7 +27,6 @@ select pg_temp.yh_patch('public.world_gw_start(uuid)',
     br := public.world_boss_fight_rules(p_fight);
     update public.world_gw_fights set status = 'fight', max_hp = public.world_du_hp(p_fight, n), hp = public.world_du_hp(p_fight, n), phase = 1, round = 0, cycle = 0,
            ends_at = now() + make_interval(mins => (br ->> 'min')::int), updated_at = now() where fight_id = p_fight;
-    if n = 1 and f.mode <> 'story' then update public.world_gw_members m set stats = m.stats || public.world_solo_aid(m.job_key, 'ttangul') where fight_id = p_fight; end if;
     perform public.world_du_begin(p_fight, n);
     perform public.world_gw_next_round(p_fight);
     return;

@@ -6,10 +6,10 @@ begin
     (public.world_boss_rules() - 'dohaesu') || jsonb_build_object('dohaesu', $j${
   "name": "도해수", "fight": "뒤집힌 물목", "place": "뒤집힌 물목", "arc": "도해록", "region": "pd_rift", "lv": 51,
   "quest": "hwq_5", "quest_name": "본편 「도해록」 5장", "item": "kelp_scale_shell", "item_name": "해초 비늘 껍질", "item_where": "뒤집힌 물목에서 채집해 얻습니다.",
-  "min": 18, "hp_min": 9000, "hp_n": [1.6, 1, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [32, 3], "enrage": 0.25,
+  "min": 18, "hp_min": 9000, "hp_n": [1, 1, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [32, 3], "enrage": 0.25,
   "first": {"gil": 3000, "xp": 0.5}, "again": {"gil": 180, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 55,
   "hard_quest": "hwq_5", "hard_quest_name": "본편 「도해록」 5장",
-  "modes": {"story": "이야기판", "hard": "깊은 물목"},
+  "hard_min": 2, "modes": {"story": "이야기판", "hard": "깊은 물목"},
   "phases": ["해류", "물보라", "뒤집힌 물살", "틈의 숨"],
   "mech_names": {"thrash": "몸부림", "current": "해류", "surge": "해류 뒤집힘", "spray": "물보라 덮침", "tentacle": "촉수 감기", "whirl": "소용돌이 기둥", "wet": "젖은 몸", "breath": "틈의 숨", "head": "머리 들기"},
   "dps": {"ref": {"analyst": 584, "spearman": 525, "exorcist": 495, "formation": 495, "medic": 494, "sealmaster": 494, "scout": 480, "tamer": 480, "bloodknight": 447, "artificer": 422},
@@ -34,9 +34,6 @@ begin
     "seq": [{"at": 100, "m": ["current", "thrash", "head"]}, {"at": 87.5, "m": ["current", "thrash", "head", "spray"]}, {"at": 75, "m": ["current", "head", "surge", "tentacle", "spray"]},
       {"at": 50, "m": ["current", "thrash", "head", "spray", "tentacle", "whirl"]}, {"at": 37.5, "m": ["current", "head", "surge", "spray", "tentacle", "wet", "whirl"]},
       {"at": 25, "m": ["current", "head", "breath", "surge", "spray", "tentacle", "wet", "whirl"]}],
-    "low_pct": 10},
-  "solo": {"artificer": {"solo_dmg": -25, "solo_guard": -24}, "scout": {"solo_dmg": -25, "solo_guard": -15}, "exorcist": {"solo_dmg": -26, "solo_guard": -16},
-    "medic": {"solo_dmg": -32, "solo_guard": -74}, "sealmaster": {"solo_dmg": -28, "solo_guard": -10}, "analyst": {"solo_dmg": -25, "solo_guard": 5},
-    "tamer": {"solo_dmg": -25, "solo_guard": 0}, "bloodknight": {"solo_dmg": -25, "solo_guard": -24}, "spearman": {"solo_dmg": -25, "solo_guard": -30}, "formation": {"solo_dmg": -20, "solo_guard": -40}}
+    "low_pct": 10}
 }$j$::jsonb));
 end $$;

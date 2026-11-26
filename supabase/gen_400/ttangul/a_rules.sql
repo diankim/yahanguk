@@ -9,7 +9,7 @@ begin
   "min": 18, "hp_min": 9000, "hp_n": [1, 1, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [34, 3], "enrage": 0.25,
   "first": {"gil": 3500, "xp": 0.5}, "again": {"gil": 200, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 55,
   "hard_quest": "hwq_13", "hard_quest_name": "본편 「도해록」 13장",
-  "modes": {"story": "이야기판", "hard": "깊은 고임터"},
+  "hard_min": 2, "modes": {"story": "이야기판", "hard": "깊은 고임터"},
   "phases": ["땅울음", "산사태", "끌개", "판 깎기"],
   "mech_names": {"thrash": "땅울음", "slide": "산사태 밀기", "weight": "땅의 무게", "pull": "끌개", "wedge": "쐐기돌", "fist": "돌주먹", "boulder": "굴러오는 바위", "shave": "판 깎기", "final": "마지막 몸부림"},
   "dps": {"ref": {"analyst": 584, "spearman": 525, "exorcist": 495, "formation": 495, "medic": 494, "sealmaster": 494, "scout": 480, "tamer": 480, "bloodknight": 447, "artificer": 422},
@@ -31,9 +31,6 @@ begin
     "seq": [{"at": 100, "m": ["thrash"]}, {"at": 87.5, "m": ["thrash", "slide"]}, {"at": 75, "m": ["slide", "weight", "pull"]},
       {"at": 50, "m": ["slide", "weight", "pull", "fist", "boulder"]}, {"at": 37.5, "m": ["thrash", "slide", "weight", "pull", "fist", "boulder"]},
       {"at": 25, "m": ["shave", "slide", "fist", "boulder"]}],
-    "low_pct": 10},
-  "solo": {"artificer": {"solo_dmg": -25, "solo_guard": -24}, "scout": {"solo_dmg": -25, "solo_guard": -15}, "exorcist": {"solo_dmg": -26, "solo_guard": -16},
-    "medic": {"solo_dmg": 20, "solo_guard": -55}, "sealmaster": {"solo_dmg": -28, "solo_guard": -10}, "analyst": {"solo_dmg": -25, "solo_guard": -36},
-    "tamer": {"solo_dmg": -25, "solo_guard": 0}, "bloodknight": {"solo_dmg": -25, "solo_guard": -24}, "spearman": {"solo_dmg": -25, "solo_guard": -30}, "formation": {"solo_dmg": -20, "solo_guard": -40}}
+    "low_pct": 10}
 }$j$::jsonb));
 end $$;
