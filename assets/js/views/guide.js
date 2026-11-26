@@ -2151,6 +2151,7 @@ const S = [
       <li><b>${esc(TRADE.modeName.send)}</b>: ${esc(TRADE.modeTip.send)}</li>
       <li>어느 쪽이든 한 번 띄울 때 노정패 ${TRADE.sail?.tokens ?? 2}개가 듭니다. 직접 타고 가면 뱃길 시간이 보내 두기의 ${TRADE.sail?.direct_div ? `${TRADE.sail.direct_div}분의 1` : '몇 분의 1'}입니다.</li>
       <li>${esc(TRADE.boardTip)} 덤은 하나만 고릅니다: ${['time', 'guard', 'haggle'].map(k => `<b>${esc(TRADE.bonus?.[k]?.name || k)}</b> ${esc(TRADE.bonusTip(k))}`).join(' · ')}.</li>
+      <li>${esc(TRADE.raidTip())}</li>
       <li>항해 중에는 이동·원정·자율 활동·현장 토벌 같은 다른 일을 할 수 없습니다. 습격을 받으면 그 싸움만 합니다.</li>
     </ul>
     <h4>배</h4>

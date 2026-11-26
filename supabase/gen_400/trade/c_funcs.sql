@@ -564,10 +564,10 @@ end $f$;
 
 create or replace function public.world_trade_brief(p_uid uuid)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $f$
-declare me uuid; sends jsonb; inv jsonb;
+declare me uuid; sends jsonb; inv jsonb; bd uuid;
 begin
   if p_uid is null then return null; end if;
-  if not exists (select 1 from public.world_ships s where s.owner_id = p_uid) and not exists (select 1 from public.world_trade_board b where b.owner_id = p_uid and b.status = 'pending')
+  if not exists (select 1 from public.world_ships s where s.owner_id = p_uid) and not exists (select 1 from public.world_trade_board b where b.owner_id = p_uid and b.status in ('pending', 'accepted'))
      and not exists (select 1 from public.world_trade_aboard a where a.owner_id = p_uid) then return null; end if;
   perform public.world_trade_tick(p_uid);
   select a.voyage_id into me from public.world_trade_aboard a where a.owner_id = p_uid;
@@ -575,10 +575,12 @@ begin
    where v.captain_id = p_uid and v.mode = 'send' and v.status = 'sail';
   select coalesce(jsonb_agg(public.world_trade_voyage_view(b.voyage_id)), '[]'::jsonb) into inv from public.world_trade_board b join public.world_trade_voyages v on v.voyage_id = b.voyage_id
    where b.owner_id = p_uid and b.status = 'pending' and v.status = 'board';
-  if me is null and sends = '[]'::jsonb and inv = '[]'::jsonb
+  select b.voyage_id into bd from public.world_trade_board b join public.world_trade_voyages v on v.voyage_id = b.voyage_id
+   where b.owner_id = p_uid and b.status = 'accepted' and v.status = 'board' limit 1;
+  if me is null and sends = '[]'::jsonb and inv = '[]'::jsonb and bd is null
      and not exists (select 1 from public.world_trade_voyages v where v.captain_id = p_uid and v.status = 'board') then return null; end if;
   return jsonb_build_object('voyage', public.world_trade_voyage_view(coalesce(me, (select v.voyage_id from public.world_trade_voyages v where v.captain_id = p_uid and v.status = 'board' limit 1))),
-    'sends', sends, 'invites', inv);
+    'sends', sends, 'invites', inv, 'boarding', public.world_trade_voyage_view(bd));
 end $f$;
 
 create or replace function public.world_trade_status()
@@ -593,6 +595,7 @@ create or replace function public.world_trade_view(p_port text default null)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $f$
 declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_trade_rules(); here text; port text; live boolean; board jsonb; seen public.world_trade_seen%rowtype;
   d date := public.world_housing_today(); dem jsonb; used int; ports jsonb; c public.world_characters%rowtype; ship_port text; sp_tier int; src text; spd numeric;
+  seen_all jsonb; mates int := 0; pid uuid; tcut numeric; fk text; fq jsonb; ft numeric; fy numeric;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_trade_tick(uid);
@@ -613,20 +616,38 @@ begin
     select * into seen from public.world_trade_seen where owner_id = uid and port_id = port;
     board := seen.vals;
   end if;
+  if live then
+    for fk in select h.good_id from public.world_ship_hold h where h.owner_id = uid and public.world_trade_good(h.good_id) ->> 'food' = 'true' order by h.good_id loop
+      fq := public.world_trade_quote(port, fk, d, 2);
+      ft := (public.world_trade_quote(port, fk, d, 1) ->> 'price')::numeric;
+      fy := (public.world_trade_quote(port, fk, d - 1, 1) ->> 'price')::numeric;
+      board := coalesce(board, '[]'::jsonb) || jsonb_build_array(fq || jsonb_build_object('pct', case when fy > 0 then round((ft - fy) * 100 / fy)::int else 0 end, 'buy', null));
+    end loop;
+  end if;
+  select coalesce(jsonb_object_agg(s.port_id, jsonb_build_object('at', s.at, 'vals', s.vals)), '{}'::jsonb) into seen_all from public.world_trade_seen s where s.owner_id = uid;
+  if here is not null then
+    select party_id into pid from public.world_party_members where owner_id = uid;
+    if pid is not null then
+      select count(*) into mates from public.world_party_members m where m.party_id = pid and m.owner_id <> uid and public.world_trade_ready(m.owner_id, here, true) is null;
+    end if;
+    mates := least(mates, greatest(0, coalesce((public.world_trade_ship_rule(sp_tier) ->> 'crew')::int, 2) - 1), (r -> 'bonus' ->> 'max_mates')::int);
+  end if;
+  tcut := 1 - (r -> 'bonus' -> 'time' ->> 'per')::numeric * mates / 100;
   select coalesce(base_sum, 0) into used from public.world_trade_sales where owner_id = uid and day = d;
   select coalesce(jsonb_agg(jsonb_build_object('id', p.key, 'name', p.value ->> 'name', 'dock', p.value ->> 'dock', 'shipyard', (p.value ->> 'shipyard')::boolean,
       'realm', p.value ->> 'realm', 'good', p.value ->> 'good', 'lv', g.min_level, 'open', public.world_trade_dest_ok(uid, p.key) is null,
       'seen_at', (select s.at from public.world_trade_seen s where s.owner_id = uid and s.port_id = p.key),
       'minutes', public.world_trade_route_min(src, p.key),
       'direct_min', round(public.world_trade_route_min(src, p.key) * spd / (r -> 'sail' ->> 'direct_div')::numeric),
-      'send_min', round(public.world_trade_route_min(src, p.key) * spd)) order by g.min_level, p.key), '[]'::jsonb)
+      'send_min', round(public.world_trade_route_min(src, p.key) * spd),
+      'party_min', round(public.world_trade_route_min(src, p.key) * spd / (r -> 'sail' ->> 'direct_div')::numeric * tcut)) order by g.min_level, p.key), '[]'::jsonb)
     into ports from jsonb_each(r -> 'ports') p left join public.world_map_regions g on g.region_id = p.key;
   return jsonb_build_object('here', here, 'from', src, 'port', port, 'port_name', public.world_trade_port(port) ->> 'name', 'live', live, 'shipyard', coalesce((public.world_trade_port(port) ->> 'shipyard')::boolean, false),
     'board', board, 'seen_at', case when not live then seen.at end, 'seek', case when live then to_jsonb(public.world_trade_seek(port, d)) end,
     'demand', dem || jsonb_build_object('port_name', public.world_trade_port(dem ->> 'port') ->> 'name'),
     'ports', ports, 'ship', public.world_trade_ship_view(uid), 'hold', public.world_trade_hold(uid), 'parts', public.world_trade_parts_view(uid),
     'brief', public.world_trade_brief(uid), 'day', jsonb_build_object('used', coalesce(used, 0), 'cap', (r ->> 'day_cap')::int),
-    'tokens', c.mount_tokens, 'gil', c.gil, 'level', c.level);
+    'tokens', c.mount_tokens, 'gil', c.gil, 'level', c.level, 'seen', seen_all, 'mates', mates);
 end $f$;
 
 create or replace function public.world_trade_guard_here(p_what text)
