@@ -167,14 +167,16 @@ export function avatarPixels(look, frame = 'stand', { front } = {}) {
     return out;
   }
   const l = fixLook(look), W = AW, H = AH, px = new Array(W * H).fill(null);
+  const off = new Set((Array.isArray(l.off) ? l.off : []).filter(k => k !== front));
+  for (const [k, plain] of [['top', 'vest'], ['bottom', 'shorts']]) if (off.has(k) && AV[k][plain]) { l[k] = plain; delete l[k + '_d']; }
   const base = { ...AV.fixed, ...tonePal(l) };
   const step = frame === 'walk' ? 'walk' : 'stand', hair = AV.hair[l.hair], top = AV.top[l.top], bot = AV.bottom[l.bottom];
-  const hd = hairOf(l);
-  if (hd) putHair(px, hd, 'back'); else put(px, hair.back, base);
+  const hd = off.has('hair') ? null : hairOf(l);
+  if (hd) putHair(px, hd, 'back'); else if (!off.has('hair')) put(px, hair.back, base);
   put(px, AV.body[step], base);
   const bd = designOf(l, 'bottom'), td = designOf(l, 'top'), fd = faceOf(l);
   const wear = {
-    hair: () => hd && putHair(px, hd, 'all'),
+    hair: () => { const h = hairOf(l); if (h) putHair(px, h, 'all'); else put(px, hair.front, base); },
     face: () => fd && putFace(px, fd),
     bottom: () => bd ? putDesign(px, bot[step], designPal({ ...base, ...bot.pal }, bot.mask, bd), bot.mask, bd, step === 'walk' ? bot.mask.walk : null) : put(px, bot[step], { ...base, ...bot.pal }),
     top: () => td ? putDesign(px, top.part, designPal({ ...base, ...top.pal }, top.mask, td), top.mask, td, null) : put(px, top.part, { ...base, ...top.pal }),
@@ -183,9 +185,10 @@ export function avatarPixels(look, frame = 'stand', { front } = {}) {
   wear.top();
   if (fd) { if (front !== 'face') wear.face(); }
   else { put(px, AV.eyes[l.eyes][frame === 'blink' ? 'closed' : 'open'], base); put(px, AV.mouth[l.mouth].part, base); }
-  if (hd) putHair(px, hd, 'front'); else put(px, hair.front, base);
-  if (l.acc) put(px, AV.acc[l.acc].part, { ...base, ...AV.acc[l.acc].pal });
-  wear[front]?.();
+  if (hd) putHair(px, hd, 'front'); else if (!off.has('hair')) put(px, hair.front, base);
+  if (l.acc && !off.has('acc')) put(px, AV.acc[l.acc].part, { ...base, ...AV.acc[l.acc].pal });
+  if (front === 'acc' && l.acc) put(px, AV.acc[l.acc].part, { ...base, ...AV.acc[l.acc].pal });
+  else wear[front]?.();
   for (const [mx, my, mc] of l.marks || []) { const i = my * W + mx; if (px[i] === base.S) px[i] = mc; }
   const out = px.slice();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {

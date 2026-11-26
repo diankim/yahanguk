@@ -331,3 +331,10 @@ export const SPAR_WATCH = (r => ({
   listTip: `이 지역에서 ${r.keep_min ?? 10}분 안에 벌어진 비무입니다. 골라서 보세요.`,
   gone: '볼 수 없는 비무입니다. 그 지역을 떠났거나 시간이 지났습니다.',
 }))(GD.sparWatch || {});
+export const TRAVEL_FAMILIAR = (f => ({
+  ...f,
+  pct: r => Math.max(0, Math.round((Number(r?.travel_discount) || 0) * 100)),
+  tag: n => `익숙한 곳 −${n}%`,
+  tip: n => `이 지역을 자주 탐색해 길이 익숙합니다. 이 지역으로 들어가는 구간의 이동 시간이 ${n}% 줄어듭니다(최대 ${f.cap}%).`,
+  line: `자주 탐색한 지역은 지날 때 이동이 빨라집니다. 그 지역에서 탐색한 시간마다(한 시간에 한 번 셈) 그 지역으로 들어가는 구간이 ${f.per}%씩, 최대 ${f.cap}%까지 줄어듭니다. 지도에서 지역을 고르면 「익숙한 곳 −n%」로 보입니다.`,
+}))({ per: 6, cap: 30 });

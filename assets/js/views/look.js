@@ -2,10 +2,12 @@ import { act, store, esc, icon, guard, $, $$, ask, toast, isGM } from '../core.j
 import { load, errorBox, invalidate } from './common.js';
 import { AV, avatarImage, fixLook, registerDesigns, TONE_KEYS } from '../housing/avatarsprite.js';
 import { designBook, cropOf, designPic, openFreeEditor } from './outfitdesign.js';
+import { wornBar, wornLook, onWorn } from './wornbar.js';
 import { openColorPicker } from '../colorpick.js';
 import { hqCount } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 
+const wornHooked = new WeakSet();
 let draft = null, draftOwner = '', draftJob = '', homeOn = true, faceOn = false, tab = 'hair';
 const CROP = { head: [0, 0, 30, 25], face: [5, 11, 20, 12], top: [4, 22, 22, 12], legs: [5, 27, 20, 9], all: null };
 const TABS = [
@@ -48,10 +50,10 @@ function pickBlock([slot, table, swatch], crop, snap) {
     return `<div class="lk-sws">${opts.map(k => { const n = esc(AV[table][k].name); return `<button class="lk-sw${k === cur && !own ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}" style="--c:${AV[table][k][swatch]}"></button>`; }).join('')}${ck ? `<button class="lk-sw own${own ? ' on' : ''}" data-lkc="${ck}" data-from="${esc(AV[table][cur]?.[swatch] || '#888888')}" title="직접 고르기" aria-label="직접 고르기" style="--c:${own ? '#' + own : 'transparent'}">${own ? '' : icon('palette', 14)}</button>` : ''}</div>`;
   }
   const dkey = OVER[slot] || slot + '_d', woven = slot === 'top' || slot === 'bottom' ? wovenOf(snap, slot) : [];
-  return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k]?.name || '없음'); return `<button class="lk-opt${k === cur && !draft[dkey] ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage(pickLook(slot, k), { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
-    ${woven.length ? `<p class="lk-cur">지은 도안</p><div class="lk-grid">${woven.map(id => { const d = snap.designs[id]; return `<button class="lk-opt${String(draft[dkey]) === id ? ' on' : ''}" data-lkd="${slot}" data-id="${esc(id)}" data-base="${esc(d.base)}" title="도안 · ${esc(AV[slot][d.base]?.name || '')}"><img src="${avatarImage({ ...draft, [slot]: d.base, [dkey]: id }, { scale: 3, crop: cropOf(slot, d.base) || CROP[crop] })}" alt=""></button>`; }).join('')}</div>` : ''}
+  return `<div class="lk-grid">${opts.map(k => { const n = esc(AV[table][k]?.name || '없음'); return `<button class="lk-opt${k === cur && !draft[dkey] ? ' on' : ''}" data-lk="${slot}" data-v="${esc(k)}" title="${n}" aria-label="${n}"><img src="${avatarImage(wornLook(pickLook(slot, k), slot), { scale: 3, crop: CROP[crop] })}" alt=""></button>`; }).join('')}</div>
+    ${woven.length ? `<p class="lk-cur">지은 도안</p><div class="lk-grid">${woven.map(id => { const d = snap.designs[id]; return `<button class="lk-opt${String(draft[dkey]) === id ? ' on' : ''}" data-lkd="${slot}" data-id="${esc(id)}" data-base="${esc(d.base)}" title="도안 · ${esc(AV[slot][d.base]?.name || '')}"><img src="${avatarImage(wornLook({ ...draft, [slot]: d.base, [dkey]: id }, slot), { scale: 3, crop: cropOf(slot, d.base) || CROP[crop] })}" alt=""></button>`; }).join('')}</div>` : ''}
     ${locked ? `<p class="lk-cur">아직 없는 ${slot === 'acc' ? '장신구' : '옷'} <small class="muted">${locked}${slot === 'acc' ? '가지' : '벌'} · 눌러 얻는 곳 보기</small></p>
-    <div class="lk-grid">${keys.filter(k => !owned.includes(k)).map(k => { const n = AV[table][k].name, src = GD.outfit?.src?.[`${slot}:${k}`] || ''; return `<span class="lk-opt lk-lock" tabindex="0" data-tip="${esc(n)}${src ? ' — ' + esc(src) : ''}" aria-label="${esc(n)}"><img src="${avatarImage(pickLook(slot, k), { scale: 3, crop: CROP[crop] })}" alt=""></span>`; }).join('')}</div>
+    <div class="lk-grid">${keys.filter(k => !owned.includes(k)).map(k => { const n = AV[table][k].name, src = GD.outfit?.src?.[`${slot}:${k}`] || ''; return `<span class="lk-opt lk-lock" tabindex="0" data-tip="${esc(n)}${src ? ' — ' + esc(src) : ''}" aria-label="${esc(n)}"><img src="${avatarImage(wornLook(pickLook(slot, k), slot), { scale: 3, crop: CROP[crop] })}" alt=""></span>`; }).join('')}</div>
     <p class="muted small">물품으로 얻은 옷은 가방에서 「옷장에」를 누르고, 칭호·행사로 얻는 옷은 옷장에 바로 들어갑니다.</p>` : ''}`;
 }
 
@@ -76,9 +78,10 @@ export async function lookTab(body) {
   const curName = cur[3].filter(x => !x[2]).map(([s, t]) => AV[t][draft[s]]?.name).concat(cur[3].filter(x => x[2]).map(([s, t]) => AV[t][draft[s]]?.name)).filter(Boolean).join(' · ');
   body.innerHTML = `<div class="lk-wrap">
     <div class="panel lk-stage">
-      <img class="lk-big" src="${avatarImage(draft, { scale: 6 })}" alt="내 모습">
+      <img class="lk-big" src="${avatarImage(wornLook(draft, cur[0]), { scale: 6 })}" alt="내 모습">
       <div class="lk-side">
-        <div class="lk-frames">${['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(draft, { frame: f, scale: 2 })}" alt="">`).join('')}</div>
+        <div class="lk-frames">${['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(wornLook(draft, cur[0]), { frame: f, scale: 2 })}" alt="">`).join('')}</div>
+        ${wornBar(cur[0])}
         <label class="lk-home"><input type="checkbox" id="lk-home" ${homeOn ? 'checked' : ''}> 별채에 세우기</label>
         <label class="lk-home" title="채팅·조사원 카드·목록의 얼굴을 내 모습의 얼굴로 씁니다(올린 사진 대신)"><input type="checkbox" id="lk-face" ${faceOn ? 'checked' : ''}> 얼굴로 쓰기<img class="lk-face" src="${avatarImage(draft, { scale: 1, crop: FACE_CROP })}" alt=""></label>
         <div class="lk-act"><button class="btn ghost sm" id="lk-reset" ${dirty ? '' : 'disabled'}>되돌리기</button><button class="btn primary sm" id="lk-save" ${dirty ? '' : 'disabled'}>${icon('palette', 16)} 이 모습으로</button></div>
@@ -90,6 +93,7 @@ export async function lookTab(body) {
       ${cur[0] === 'design' ? '<div class="lk-design"></div>' : cur[3].map(b => pickBlock(b, cur[2], snap)).join('') + (cur[0] === 'eyes' || cur[0] === 'mouth' ? freeBlock('face', snap) : cur[0] === 'hair' ? freeBlock('hair', snap) : '')}
     </div>
   </div>`;
+  if (!wornHooked.has(body)) { wornHooked.add(body); onWorn(body, () => lookTab(body)); }
   $$('[data-lktab]', body).forEach(b => b.onclick = () => { tab = b.dataset.lktab; lookTab(body); });
   $$('[data-lk]', body).forEach(b => b.onclick = () => { const k = b.dataset.lk; draft = { ...draft, [k]: b.dataset.v }; delete draft[OVER[k] || k + '_d']; if (TONE_KEYS[k]) delete draft[TONE_KEYS[k][0]]; lookTab(body); });
   $$('[data-lkc]', body).forEach(b => b.onclick = async () => { const k = b.dataset.lkc, c = await openColorPicker(draft[k] ? '#' + draft[k] : b.dataset.from, { title: '직접 고르는 색' }); if (c) { draft = { ...draft, [k]: c.slice(1).toLowerCase() }; lookTab(body); } });

@@ -8,13 +8,13 @@ import { openColorPicker } from '../colorpick.js';
 import { hqCount } from '../hq.js';
 import { reportFlag } from '../reportflag.js';
 import { furnPicURL } from '../housing/furndef.js';
+import { wornBar, wornLook, wornImg, onWorn } from './wornbar.js';
 
 const SLOT_NAME = { top: '윗옷', bottom: '아랫옷', face: '얼굴', hair: '머리', furn: '가구' };
 const FREE = new Set(['face', 'hair']);
 const FB = AV.face, HB = AV.hairBox;
 const freeCrop = slot => slot === 'face' ? [FB.x - 1, FB.y - 3, FB.w + 4, FB.h + 6] : [0, 0, AW, AH];
 const freeRule = slot => GD.outfit?.[slot] || { keep: slot === 'face' ? 3 : 10, colors: slot === 'face' ? 8 : 16 };
-const PIC_CROP = { top: [4, 22, 22, 12], bottom: [5, 27, 20, 9] };
 const DECO_NAME = { c: '장식 하나', d: '장식 둘', e: '장식 셋', z: '신' };
 const EDIT = 'axyb';
 let seq = 0;
@@ -100,7 +100,7 @@ export function openDesignEditor(snap, rules, done, { slot: s0, edit, from } = {
       <div class="dr-tools od-tools">${[['pen', '붓'], ['fill', '채우기'], ['erase', '지우개']].map(([k, l]) => `<button class="chip-btn" data-tool="${k}">${l}</button>`).join('')}<button class="chip-btn" data-undo>되돌리기</button><button class="chip-btn" data-clear>모두 지우기</button></div>
     </div>
     <div class="od-right">
-      <div class="od-prev"><img class="od-anim" alt="걷는 모습"><div class="od-frames"></div><button class="chip-btn" data-flip>좌우 바꿔 보기</button></div>
+      <div class="od-prev"><img class="od-anim" alt="걷는 모습"><div class="od-frames"></div><button class="chip-btn" data-flip>좌우 바꿔 보기</button>${wornBar(slot)}</div>
       <p class="od-h">내 색 <small class="muted">칸을 고르고 아래에서 색을 정합니다</small></p>
       <div class="od-pal"></div>
       <div class="dr-pal od-picks">${PAL.map((c, i) => `<button class="dr-sw" data-pick="${c}" style="--c:${c}" title="${esc(PAL_NAMES[i])}" aria-label="${esc(PAL_NAMES[i])}"></button>`).join('')}<button class="chip-btn" data-own>${icon('palette', 14)} 직접 고르기</button></div>
@@ -110,10 +110,11 @@ export function openDesignEditor(snap, rules, done, { slot: s0, edit, from } = {
       <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : from ? '새 도안으로 담기' : '도안첩에 담기'}</button></div>
     </div></div>` });
   let cv = $('.od-canvas', layer), g = cv.getContext('2d');
+  onWorn(layer, () => draw());
   const at = (x, y) => { const gx = x + lay.crop[0], gy = y + lay.crop[1]; return lay.pos.findIndex(([px, py]) => px === gx && py === gy); };
   const draw = () => {
     sync();
-    const [cx, cy, cw, ch] = lay.crop, px = avatarPixels(look, 'stand', { front: slot }), sc = cv.width / cw;
+    const [cx, cy, cw, ch] = lay.crop, px = avatarPixels(wornLook(look, slot), 'stand', { front: slot }), sc = cv.width / cw;
     g.fillStyle = '#efe6d2'; g.fillRect(0, 0, cv.width, cv.height);
     for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
       const v = px[(cy + y) * AW + cx + x];
@@ -124,10 +125,10 @@ export function openDesignEditor(snap, rules, done, { slot: s0, edit, from } = {
     paintPrev();
   };
   const paintPrev = () => {
-    $('.od-frames', layer).innerHTML = ['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(look, { frame: f, scale: 2, job: snap.job })}" alt="">`).join('');
+    $('.od-frames', layer).innerHTML = ['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(wornLook(look, slot), { frame: f, scale: 2, job: snap.job })}" alt="">`).join('');
     anim();
   };
-  const anim = () => { const img = $('.od-anim', layer); if (img) { img.src = avatarImage(look, { frame: ['walk', 'stand', 'walk2', 'stand'][frame % 4], scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
+  const anim = () => { const img = $('.od-anim', layer); if (img) { img.src = avatarImage(wornLook(look, slot), { frame: ['walk', 'stand', 'walk2', 'stand'][frame % 4], scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
   timer = setInterval(() => { if (!layer.isConnected) return clearInterval(timer); frame++; anim(); }, 260);
   const paintPal = () => {
     $('.od-pal', layer).innerHTML = pal.map((c, i) => `<button class="od-sw${i === cur ? ' on' : ''}" data-slotc="${i}" style="--c:${c}" aria-label="색 ${i + 1}"><b>${i + 1}</b></button>`).join('') + (pal.length < max ? `<button class="chip-btn" data-addc>+ 색</button>` : '');
@@ -142,7 +143,7 @@ export function openDesignEditor(snap, rules, done, { slot: s0, edit, from } = {
   };
   const paintBases = () => {
     $$('[data-slot]', layer).forEach(b => b.classList.toggle('on', b.dataset.slot === slot));
-    $('.od-bases', layer).innerHTML = ownedBases(snap, slot).map(k => `<button class="lk-opt${k === base ? ' on' : ''}" data-base="${esc(k)}" title="${esc(AV[slot][k].name)}"><img src="${avatarImage({ ...me, [slot]: k, top_d: undefined, bottom_d: undefined }, { scale: 2, crop: layout(slot, k).crop, job: snap.job })}" alt=""></button>`).join('') || '<p class="muted small">이 칸에 고를 옷이 없습니다.</p>';
+    $('.od-bases', layer).innerHTML = ownedBases(snap, slot).map(k => `<button class="lk-opt${k === base ? ' on' : ''}" data-base="${esc(k)}" title="${esc(AV[slot][k].name)}"><img src="${avatarImage(wornLook({ ...me, [slot]: k, top_d: undefined, bottom_d: undefined }, slot), { scale: 2, crop: layout(slot, k).crop, job: snap.job })}" alt=""></button>`).join('') || '<p class="muted small">이 칸에 고를 옷이 없습니다.</p>';
     $$('[data-base]', layer).forEach(b => b.onclick = async () => { if (b.dataset.base === base) return; if (cells.some(c => c !== '.') && !(await ask('바탕 옷을 바꾸면 칠한 칸이 지워집니다. 바꿀까요?', { ok: '바꾸기' }))) return; base = b.dataset.base; build(); });
   };
   const build = () => {
@@ -204,7 +205,7 @@ export function openFreeEditor(slot, snap, done, edit = null, from = null) {
       <div class="dr-tools od-tools">${[['pen', '붓'], ['fill', '채우기'], ['erase', '지우개']].map(([k, l]) => `<button class="chip-btn" data-tool="${k}">${l}</button>`).join('')}<button class="chip-btn" data-undo>되돌리기</button><button class="chip-btn" data-clear>모두 지우기</button></div>
     </div>
     <div class="od-right">
-      <div class="od-prev"><img class="od-anim" alt="걷는 모습"><div class="od-frames"></div><button class="chip-btn" data-flip>좌우 바꿔 보기</button></div>
+      <div class="od-prev"><img class="od-anim" alt="걷는 모습"><div class="od-frames"></div><button class="chip-btn" data-flip>좌우 바꿔 보기</button>${wornBar(slot)}</div>
       <p class="od-h">내 색 <small class="muted">${max}칸까지 · 칸을 고르고 아래에서 색을 정합니다</small></p>
       <div class="od-pal"></div>
       <div class="dr-pal od-picks">${PAL.map((c, i) => `<button class="dr-sw" data-pick="${c}" style="--c:${c}" title="${esc(PAL_NAMES[i])}" aria-label="${esc(PAL_NAMES[i])}"></button>`).join('')}<button class="chip-btn" data-own>${icon('palette', 14)} 직접 고르기</button></div>
@@ -213,10 +214,11 @@ export function openFreeEditor(slot, snap, done, edit = null, from = null) {
       <div class="btn-row"><button class="btn primary" data-save>${icon('check', 16)} ${edit ? '고친 것 담기' : from ? '새 도안으로 담기' : '도안첩에 담기'}</button></div>
     </div></div>` });
   const cv = $('.od-canvas', layer), g = cv.getContext('2d');
-  const anim = () => { const img = $('.od-anim', layer); if (img && look) { img.src = avatarImage(look, { frame: ['walk', 'stand', 'walk2', 'stand'][frame % 4], scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
+  onWorn(layer, () => draw());
+  const anim = () => { const img = $('.od-anim', layer); if (img && look) { img.src = avatarImage(wornLook(look, slot), { frame: ['walk', 'stand', 'walk2', 'stand'][frame % 4], scale: 4, job: snap.job }); img.style.transform = flip ? 'scaleX(-1)' : ''; } };
   const draw = () => {
     sync();
-    const [cx, cy, cw, ch] = crop, px = avatarPixels(look, 'stand', { front: slot }), sc = cv.width / cw;
+    const [cx, cy, cw, ch] = crop, px = avatarPixels(wornLook(look, slot), 'stand', { front: slot }), sc = cv.width / cw;
     g.fillStyle = '#efe6d2'; g.fillRect(0, 0, cv.width, cv.height);
     for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
       const v = px[(cy + y) * AW + cx + x];
@@ -224,7 +226,7 @@ export function openFreeEditor(slot, snap, done, edit = null, from = null) {
       if (at(x, y) < 0) { g.fillStyle = 'rgba(20,16,14,.45)'; g.fillRect(x * sc, y * sc, sc, sc); }
       else { g.strokeStyle = 'rgba(120,100,80,.25)'; g.strokeRect(x * sc + .5, y * sc + .5, sc - 1, sc - 1); }
     }
-    $('.od-frames', layer).innerHTML = ['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(look, { frame: f, scale: 2, job: snap.job })}" alt="">`).join('');
+    $('.od-frames', layer).innerHTML = ['stand', 'blink', 'walk'].map(f => `<img src="${avatarImage(wornLook(look, slot), { frame: f, scale: 2, job: snap.job })}" alt="">`).join('');
     anim();
   };
   const timer = setInterval(() => { if (!layer.isConnected) return clearInterval(timer); frame++; anim(); }, 260);
@@ -274,7 +276,7 @@ export async function itemPic(id, it) {
   if (!AV[slot]?.[key]) return '';
   const l = { ...look, [slot]: key };
   delete l[slot + '_d'];
-  return `<img class="fpic-img" src="${avatarImage(l, { scale: 3, crop: PIC_CROP[slot] || null, job })}" alt="입어 본 모습">`;
+  return `<span class="worn-pic">${wornImg(l, slot, { scale: 3, job })}${wornBar(slot)}</span>`;
 }
 
 function recipeLine(slot, rules, st) {

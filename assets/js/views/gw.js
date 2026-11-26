@@ -13,6 +13,7 @@ import { baseOf } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { hexOn, hexBoard, hexGim } from './gw_hex.js';
 import { mkugCells, mkugMimic, mkugMemTag, mkugGim, mkugCue } from './gw_mkug.js';
+import { telSnap, telPlay } from './telfx.js';
 
 const BOSS = {
   gwiheo: { name: '귀허의 주인', arc: '본편 · 요인록', place: '귀허', PHASE: { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' }, last: '소용돌이', mechs: ['chain', 'name', 'vortex'],
@@ -45,7 +46,7 @@ const CELL = { 4: '왼쪽 위', 9: '위', 2: '오른쪽 위', 3: '왼쪽', 5: '�
 const MIMIC = { attack: '흉내: 공격', guard: '흉내: 막기', hesit: '머뭇거림' };
 
 let el = null, fid = null, snap = null, timer = null, tick = null, sending = false, target = null, sel = null, shownStatus = '', lobbyBoss = null, moveTo = null, seenLog = 0;
-let fxPrev = null, fxLog = 0;
+let fxPrev = null, fxLog = 0, telRound = null, telFight = null;
 let queued = null, lastRound = null, freshUntil = 0, roundLen = 5000, rtFight = null, rtLive = false, reading = false, readAgain = false;
 const picked = new Set();
 function roundSeen() {
@@ -72,7 +73,7 @@ const PHASE = new Proxy({}, { get: (_, k) => ult() ? (snap?.board?.phases || [])
 
 export async function render(root, sub) {
   lobbyBoss = BOSS[sub] ? sub : null;
-  el = root; fid = lobbyBoss ? null : sub || null; snap = null; fxPrev = null; fxLog = 0; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; lastRound = null; picked.clear(); bindTips(el);
+  el = root; fid = lobbyBoss ? null : sub || null; snap = null; fxPrev = null; fxLog = 0; telRound = null; telFight = null; target = null; sel = null; shownStatus = ''; moveTo = null; seenLog = 0; lastRound = null; picked.clear(); bindTips(el);
   const b = BOSS[lobbyBoss] || BOSS.gwiheo;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('flag', 14)} ${b.arc}</p><h1>${b.name}</h1></div></div>${loading()}`;
   clearInterval(tick); tick = setInterval(countdown, 250);
@@ -184,6 +185,7 @@ function actName(s, a) {
 function draw() {
   if (drawLater(draw)) return;
   if (!el) return;
+  const telBefore = telSnap(el);
   const s = snap || {};
   if (s.none) return drawLobby(s);
   const f = s.fight, me = (s.members || []).find(m => m.id === s.me) || {};
@@ -225,6 +227,7 @@ ${f.status === 'wait' ? '' : '<div class="dm-host" id="gw-meter"></div>'}</div><
   if (!done) { fitFight(el); restoreLog(); }
   bind(); countdown();
   inkFight(s, me);
+  if (f.round !== telRound) { if (telRound != null && f.round > telRound && f.id === telFight) telPlay(el, telBefore); telRound = f.round; telFight = f.id; }
   const was = shownStatus; shownStatus = f.status;
   if (was && was !== f.status && done) showResult(el);
 }
@@ -407,7 +410,7 @@ function boardHtml(s, live) {
   return `<div class="mk-wrap"><div class="mk-board ${mech.k === 'erase' || mech.s === 'keep' ? 'erase' : ''}" role="grid" aria-label="아홉 칸 명부">${GRID.map(n => {
     const center = n === 5, st = center ? 'center' : lit.has(n) ? 'lit' : 'blank';
     const cls = ['mk-cell', st, ink.has(n) ? 'ink' : '', cells.has(n) ? 'mk-line' : '', marked.has(n) ? 'mk-mark' : '', moves.has(n) ? 'mk-step' : '', n === dest ? 'dest' : '', n === here ? 'here' : '', ...(ug?.[n]?.cls || [])].filter(Boolean).join(' ');
-    const ppl = (who[n] || []).slice(0, 4).map(m => { const mi = ug && mkugMimic(s, m.id); return `<span class="mk-who ${m.id === s.me ? 'me' : ''} ${m.out || m.resting ? 'out' : ''} ${mi ? `ug-mim${mi.due ? ' due' : ''}` : ''}" title="${esc(m.name)}${mi ? ` · 흉내 ${mi.n}` : ''}">${esc(String(m.name || '').slice(0, 1))}${mi ? `<i>${mi.n}</i>` : ''}</span>`; }).join('');
+    const ppl = (who[n] || []).slice(0, 4).map(m => { const mi = ug && mkugMimic(s, m.id); return `<span data-mid="${esc(m.id)}" class="mk-who ${m.id === s.me ? 'me' : ''} ${m.out || m.resting ? 'out' : ''} ${mi ? `ug-mim${mi.due ? ' due' : ''}` : ''}" title="${esc(m.name)}${mi ? ` · 흉내 ${mi.n}` : ''}">${esc(String(m.name || '').slice(0, 1))}${mi ? `<i>${mi.n}</i>` : ''}</span>`; }).join('');
     const tag = center ? `<span class="mk-strokes" title="이름 획 ${b.strokes}/${b.max}">${ticks}</span>` : `<small>${st === 'lit' ? '빛남' : '빈칸'}${ink.has(n) ? (story() ? ' · 웅덩이' : ' · 먹 자국') : ''}${marked.has(n) ? ' · 점' : ''}</small>`;
     const label = `${CELL[n]} 칸${center ? ' · 이름' : st === 'lit' ? ' · 빛남' : ' · 빈칸'}${cells.has(n) ? (story() ? ' · 먹이 떨어짐' : ' · 먹줄') : ''}${marked.has(n) ? ' · 지우려는 칸(서 있으면 막음)' : ''}${ug?.[n] ? ` · ${ug[n].tips.join(' · ')}` : ''}${moves.has(n) ? ' · 눌러서 옮겨 서기' : ''}`;
     return `<button type="button" class="${cls}" ${moves.has(n) || (live && n === here) ? `data-mk-step="${n}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}">${ug?.[n]?.tags.length ? `<span class="ug-tags">${center ? tag : ''}${ug[n].tags.join('')}</span>` : tag}<span class="mk-ppl">${ppl}</span>${n === dest ? '<b class="mk-arrow">→</b>' : ''}</button>`;
@@ -454,7 +457,7 @@ function ggHtml(s, live) {
     const [x, y] = ggXY(Number(c));
     ms.slice(0, 4).forEach((m, i) => {
       const dx = ms.length > 1 ? (i % 2 ? 12 : -12) : 0, dy = ms.length > 2 ? (i > 1 ? 14 : -2) : 6;
-      g += `<g class="gg-tok ${m.id === s.me ? 'me' : ''}"><circle cx="${x + dx}" cy="${y + dy}" r="12"/><text x="${x + dx}" y="${y + dy + 4}">${esc(String(m.name || '').slice(0, 1))}</text><text class="v" x="${x + dx}" y="${y + dy + 24}">${m.val ?? ''}섬</text><title>${esc(m.name)} · ${m.val ?? '?'}섬</title></g>`;
+      g += `<g data-mid="${esc(m.id)}" class="gg-tok ${m.id === s.me ? 'me' : ''}"><circle cx="${x + dx}" cy="${y + dy}" r="12"/><text x="${x + dx}" y="${y + dy + 4}">${esc(String(m.name || '').slice(0, 1))}</text><text class="v" x="${x + dx}" y="${y + dy + 24}">${m.val ?? ''}섬</text><title>${esc(m.name)} · ${m.val ?? '?'}섬</title></g>`;
     });
   }
   g += `<rect class="gg-scale" x="320" y="88" width="54" height="62" rx="6"/><text class="gg-scale-t" x="347" y="123">값귀</text>`;
@@ -517,18 +520,18 @@ function byBoard(s, live) {
   }
   let marks = '';
   for (const h of hz) {
-    if (h.k === 'big') { const [x, y] = byCellAt(Number(h.c)); marks += `<g class="by-big ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><text x="${x.toFixed(0)}" y="${(y - 30).toFixed(0)}">굵은 화살 ${num(h)}</text></g>`; continue; }
+    if (h.k === 'big') { const [x, y] = byCellAt(Number(h.c)); marks += `<g class="by-big ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><text x="${x.toFixed(0)}" y="${(y - 30).toFixed(0)}">굵은 화살 ${num(h)}</text></g>`; continue; }
     if (h.k === 'brush') { const [x, y] = byCellAt(Number(h.s)); marks += `<text class="by-tag red" x="${x.toFixed(0)}" y="${(y - 18).toFixed(0)}">붓 ${num(h)}</text>`; continue; }
     if (['arrow', 'sdrop', 'tower'].includes(h.k)) {
       const [x, y] = byCellAt(Number(h.c), who[h.c] ? -1 : 0);
       if (h.k === 'tower') marks += `<g class="by-tower ${due(h) ? 'due' : ''}"><rect x="${(x - 13).toFixed(0)}" y="${(y - 20).toFixed(0)}" width="26" height="30" rx="4"/><text x="${x.toFixed(0)}" y="${(y + 1).toFixed(0)}">${Number(h.need) > 1 ? `${h.need}명` : '1명'}</text><text class="sm" x="${x.toFixed(0)}" y="${(y + 22).toFixed(0)}">${num(h)}</text></g>`;
-      else marks += `<g class="by-hz ${h.k} ${due(h) ? 'due' : ''} ${h.frozen ? 'frozen' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="17"/><text x="${x.toFixed(0)}" y="${(y + 7).toFixed(0)}">${num(h)}</text></g>`;
+      else marks += `<g class="by-hz ${h.k} ${due(h) ? 'due' : ''} ${h.frozen ? 'frozen' : ''}"><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="30"/><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="17"/><text x="${x.toFixed(0)}" y="${(y + 7).toFixed(0)}">${num(h)}</text></g>`;
       continue;
     }
     const tm = (s.members || []).find(m => m.id === h.t); if (!tm?.pos) continue;
     const [x, y] = byCellAt(tm.pos);
-    if (h.k === 'stack') marks += `<g class="by-ring stack ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y - 48).toFixed(0)}">물방울 ${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
-    if (h.k === 'spread' || h.k === 'num') marks += `<g class="by-ring spread ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y + 58).toFixed(0)}">${h.k === 'num' ? `${h.i}번 화살 ` : '흰 가루 '}${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
+    if (h.k === 'stack') marks += `<g class="by-ring stack ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y - 48).toFixed(0)}">물방울 ${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
+    if (h.k === 'spread' || h.k === 'num') marks += `<g class="by-ring spread ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y + 58).toFixed(0)}">${h.k === 'num' ? `${h.i}번 화살 ` : '흰 가루 '}${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
     if (h.k === 'clock') marks += `<g class="by-clock ${due(h) ? 'due' : ''}"><text x="${(x + 22).toFixed(0)}" y="${(y - 14).toFixed(0)}">⧗${num(h)}</text></g>`;
   }
   let tokens = '';
@@ -536,7 +539,7 @@ function byBoard(s, live) {
     const busy = hz.some(h => ['arrow', 'sdrop', 'tower'].includes(h.k) && Number(h.c) === Number(c)), [x, y] = byCellAt(Number(c), busy ? 1 : 0);
     ms.slice(0, 4).forEach((m, i) => {
       const dx = (i % 2 ? 9 : -9) * (ms.length > 1 ? 1 : 0), dy = (i > 1 ? 10 : -4) * (ms.length > 1 ? 1 : 0), f = Number(fade[m.id] || 0);
-      tokens += `<g class="by-tok ${m.id === s.me ? 'me' : ''} ${f ? `fade${Math.min(3, f)}` : ''}"><circle cx="${(x + dx).toFixed(0)}" cy="${(y + dy).toFixed(0)}" r="12"/><text x="${(x + dx).toFixed(0)}" y="${(y + dy + 5).toFixed(0)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}${f ? ` · 바램 ${f}` : ''}</title></g>`;
+      tokens += `<g data-mid="${esc(m.id)}" class="by-tok ${m.id === s.me ? 'me' : ''} ${f ? `fade${Math.min(3, f)}` : ''}"><circle cx="${(x + dx).toFixed(0)}" cy="${(y + dy).toFixed(0)}" r="12"/><text x="${(x + dx).toFixed(0)}" y="${(y + dy + 5).toFixed(0)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}${f ? ` · 바램 ${f}` : ''}</title></g>`;
     });
   }
   if (dest) { const [x, y] = byCellAt(dest); tokens += `<circle class="by-destmark" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="16"/>`; }
