@@ -1,5 +1,5 @@
 const BOARD = '.hx-map, .by-map, .gg-map, .mk-board';
-const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev):not(.tel-push):not(.hx-chain), .tel-push.due .tel-wall, .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
+const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev):not(.hx-chain), .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
 const deg = a => (a * 180 / Math.PI).toFixed(1);
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -13,16 +13,6 @@ export function telWave(x, y, ang, due) {
 export function telChev(x, y, ang, due) {
   const c = dx => `<path d="M${dx - 4} -6 l5 6 l-5 6"/>`;
   return `<g class="tel-chev ${due ? 'due' : ''}" data-a="${deg(ang)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg(ang)})">${c(-7)}${c(0)}${c(7)}</g>`;
-}
-
-export function telPush(x1, y1, x2, y2, kind, due, label, wall) {
-  const a = Math.atan2(y2 - y1, x2 - x1), ex = x2 - 13 * Math.cos(a), ey = y2 - 13 * Math.sin(a);
-  const hd = (r, t) => `${(ex + r * Math.cos(a + t)).toFixed(1)},${(ey + r * Math.sin(a + t)).toFixed(1)}`;
-  const tip = `${(ex + 7 * Math.cos(a)).toFixed(1)},${(ey + 7 * Math.sin(a)).toFixed(1)}`;
-  const end = wall
-    ? `<g class="tel-wall"><polygon points="${Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 5 : 12, t = Math.PI / 5 * i; return `${(x2 + r * Math.cos(t)).toFixed(1)},${(y2 + r * Math.sin(t)).toFixed(1)}`; }).join(' ')}"/><text x="${x2.toFixed(1)}" y="${(y2 + 4).toFixed(1)}">벽</text></g>`
-    : `<g class="tel-ghost"><circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="11"/><text x="${x2.toFixed(1)}" y="${(y2 + 4).toFixed(1)}">${label}</text></g>`;
-  return `<g class="tel-push ${kind} ${due ? 'due' : ''}"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"/><polygon points="${tip} ${hd(6, 2.2)} ${hd(6, -2.2)}"/>${end}</g>`;
 }
 
 export function telSnap(root) {
@@ -40,7 +30,13 @@ export function telSnap(root) {
     const [x, y] = mid(r); if (near(x, y)) continue;
     fx.push({ kind: 'boom', x, y, w: Math.min(140, Math.max(r.width, r.height)) });
   }
-  return { toks, fx };
+  const push = [];
+  for (const e of b.querySelectorAll('.hx-cell.hx-tide.due, .hx-cell.hx-drag.due, [data-push].due')) {
+    const [x, y] = mid(e.getBoundingClientRect());
+    const w = fx.find(f => f.kind === 'wave' && Math.hypot(f.x - x, f.y - y) < 12);
+    push.push({ kind: e.classList.contains('hx-drag') || e.dataset.push === 'ground' ? 'ground' : 'water', x, y, a: w ? w.a : null });
+  }
+  return { toks, fx, push };
 }
 
 function overlay(b) {
@@ -65,6 +61,8 @@ function piece(ov, cls, x, y, html, rot) {
 }
 
 const WAVES = '<svg viewBox="-30 -15 60 30"><path d="M-12 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/><path d="M0 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/><path d="M12 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/></svg>';
+const TRAIL_W = '<svg viewBox="0 -10 100 20" preserveAspectRatio="none"><path d="M0 -6 q5 -4 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"/><path d="M0 0 q5 -4 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"/><path d="M0 6 q5 -4 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"/></svg>';
+const TRAIL_G = '<svg viewBox="0 -10 100 20" preserveAspectRatio="none"><path d="M10 -7 l8 7 l-8 7"/><path d="M38 -7 l8 7 l-8 7"/><path d="M66 -7 l8 7 l-8 7"/></svg>';
 const CHEVS = '<svg viewBox="-16 -9 32 18"><path d="M-14 -7 l7 7 l-7 7"/><path d="M-4 -7 l7 7 l-7 7"/><path d="M6 -7 l7 7 l-7 7"/></svg>';
 
 export function telPlay(root, before) {
@@ -79,10 +77,27 @@ export function telPlay(root, before) {
     const r = (t.querySelector('circle') || t).getBoundingClientRect();
     const nx = r.left + r.width / 2 - base.left, ny = r.top + r.height / 2 - base.top, dx = old[0] - nx, dy = old[1] - ny;
     if (Math.hypot(dx, dy) < 4) continue;
-    const shoved = forces.some(f => Math.hypot(f.x - old[0], f.y - old[1]) < 46);
+    const pc = (before.push || []).find(f => Math.hypot(f.x - old[0], f.y - old[1]) < 24);
+    const shoved = pc || forces.some(f => Math.hypot(f.x - old[0], f.y - old[1]) < 46);
     t.animate([{ transform: `translate(${dx * unit}px, ${dy * unit}px)` }, { transform: 'translate(0, 0)' }],
-      shoved ? { duration: 620, easing: 'cubic-bezier(.15, 1.45, .35, 1)' } : { duration: 380, easing: 'ease-out' });
-    if (shoved && ov) piece(ov, 'tel-dust', nx, ny);
+      shoved ? { duration: 560, delay: 140, easing: 'cubic-bezier(.15, 1.4, .35, 1)', fill: 'backwards' } : { duration: 380, easing: 'ease-out' });
+    if (shoved && ov) {
+      const kind = pc?.kind || 'ground', len = Math.hypot(dx, dy), ang = Math.atan2(-dy, -dx) * 180 / Math.PI;
+      piece(ov, `tel-trail ${kind}`, old[0], old[1], kind === 'water' ? TRAIL_W : TRAIL_G, ang);
+      ov.lastChild.style.setProperty('--len', `${len}px`);
+      piece(ov, kind === 'water' ? 'tel-splash' : 'tel-dust', nx, ny);
+    }
+  }
+  for (const pc of before.push || []) {
+    if (pc.kind !== 'water' || pc.a == null) continue;
+    for (const t of b.querySelectorAll('[data-mid]')) {
+      const old = before.toks[t.dataset.mid]; if (!old || Math.hypot(pc.x - old[0], pc.y - old[1]) > 24) continue;
+      const r = (t.querySelector('circle') || t).getBoundingClientRect();
+      if (Math.hypot(r.left + r.width / 2 - base.left - old[0], r.top + r.height / 2 - base.top - old[1]) > 4) continue;
+      const ra = pc.a * Math.PI / 180, bx = Math.cos(ra), by = Math.sin(ra);
+      t.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${bx * 14 * unit}px, ${by * 14 * unit}px)`, offset: .35 }, { transform: `translate(${-bx * 4 * unit}px, ${-by * 4 * unit}px)`, offset: .6 }, { transform: 'translate(0, 0)' }], { duration: 650, delay: 140, easing: 'ease-out' });
+      if (ov) { piece(ov, 'tel-boom', old[0] + bx * 22, old[1] + by * 22, '<i></i><b></b>'); ov.lastChild.style.setProperty('--w', '40px'); ov.lastChild.querySelectorAll('i, b').forEach(e => { e.style.animationDelay = '.3s'; e.style.animationFillMode = 'both'; }); }
+    }
   }
   if (!ov) return;
   let boom = false;
