@@ -18,7 +18,7 @@ begin
     "board": {"mech_mul": 1, "fall_hp": 40,
       "current": {"every": 3, "off": 1, "left": 2},
       "spray": {"every": 4, "off": 2, "left": 3, "cells": 2, "raw": 14},
-      "head": {"every": 6, "off": 5, "left": 3, "hit_pct": 3},
+      "head": {"every": 6, "off": 5, "left": 3, "hit_mul": 18},
       "seq": [{"at": 100, "m": ["current"]}, {"at": 66, "m": ["current", "spray"]}, {"at": 33, "m": ["current", "spray", "head"]}]}},
   "board": {
     "rift": [6, 7, 10, 11], "rift_hurt": 20, "start": [1, 4, 13, 16], "corner": [1, 4, 16, 13],
@@ -29,7 +29,7 @@ begin
     "tentacle": {"every": 6, "off": 3, "left": 3, "dist": 4, "raw": 45},
     "whirl": {"every": 5, "off": 0, "life": 4, "raw": 20},
     "wet": {"max": 3, "extra_at": 3},
-    "head": {"every": 5, "off": 3, "left": 3, "hit_pct": 4, "stun": 2, "stun_pct": 30},
+    "head": {"every": 5, "off": 3, "left": 3, "hit_mul": 24, "stun": 2, "stun_pct": 30},
     "breath": {"every": 6, "off": 5, "left": 4, "pull": 1},
     "seq": [{"at": 100, "m": ["current", "thrash", "head"]}, {"at": 87.5, "m": ["current", "thrash", "head", "spray"]}, {"at": 75, "m": ["current", "head", "surge", "tentacle", "spray"]},
       {"at": 50, "m": ["current", "thrash", "head", "spray", "tentacle", "whirl"]}, {"at": 37.5, "m": ["current", "head", "surge", "spray", "tentacle", "wet", "whirl"]},

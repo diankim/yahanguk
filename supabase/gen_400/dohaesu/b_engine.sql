@@ -291,14 +291,15 @@ create or replace function public.world_dh_mech(p_fight uuid, p_round integer, p
  returns numeric language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; f public.world_gw_fights%rowtype; b jsonb; x record; h jsonb; keep jsonb := '[]';
-  extra numeric := 0; cells int[]; na int; ng int; nm text; wet boolean; mechs text[]; hd int;
+  extra numeric := 0; cells int[]; na int; ng int; nm text; wet boolean; mechs text[]; hd int; gatk numeric;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   b := f.board; hd := (b ->> 'head')::int;
   mechs := array(select jsonb_array_elements_text(coalesce(f.mech -> 'mechs', '[]'::jsonb)));
   wet := 'wet' = any (mechs);
   select count(*) into na from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest;
-  select count(*), string_agg(y.name, '·') into ng, nm from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'guide' and y.pos = hd;
+  select count(*), string_agg(y.name, '·'), coalesce(sum(coalesce((y.stats ->> 'attack')::numeric, 0)), 0) into ng, nm, gatk
+    from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'guide' and y.pos = hd;
   if ng > 0 then
     update public.world_gw_members y set gval = 0 where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'guide' and y.pos = hd;
   end if;
@@ -339,7 +340,7 @@ begin
       end if;
     elsif h ->> 'k' = 'head' then
       if ng > 0 then
-        extra := extra + round(f.max_hp * (rb -> 'head' ->> 'hit_pct')::numeric / 100.0);
+        extra := extra + round(gatk * coalesce((rb -> 'head' ->> 'hit_mul')::numeric, 0));
         b := b || jsonb_build_object('stun', coalesce((rb -> 'head' ->> 'stun')::int, 0));
         perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — 머리 칸에서 바다 쪽 길을 알려 주었습니다. 도해수가 그쪽으로 몸을 틀며 크게 휘청입니다.');
       else
@@ -347,7 +348,7 @@ begin
       end if;
     elsif h ->> 'k' = 'breath' then
       if ng * 2 >= na and ng > 0 then
-        extra := extra + round(f.max_hp * (rb -> 'head' ->> 'hit_pct')::numeric / 100.0);
+        extra := extra + round(gatk * coalesce((rb -> 'head' ->> 'hit_mul')::numeric, 0));
         perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — 길을 알려 주어 틈의 숨을 막았습니다.');
       else
         perform public.world_gw_say(p_fight, p_round, 'boss', '틈이 숨을 들이쉽니다! 판 위의 물이 가운데로 쏠립니다.');
