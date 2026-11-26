@@ -6,8 +6,8 @@ const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const TEL_DEFS = '<defs><clipPath id="tel-clip"><circle r="15"/></clipPath></defs>';
 
 export function telWave(x, y, ang, due) {
-  const line = dy => `<path d="M-36 ${dy} q3 -3 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0"/>`;
-  return `<g class="tel-wave ${due ? 'due' : ''}" data-a="${deg(ang)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg(ang)})"><g clip-path="url(#tel-clip)"><g class="tel-flow">${line(-6)}${line(0)}${line(6)}</g></g></g>`;
+  const line = '<path d="M0 -21 q3 3 0 6 t0 6 t0 6 t0 6 t0 6 t0 6 t0 6"/>';
+  return `<g class="tel-wave ${due ? 'due' : ''}" data-a="${deg(ang)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${deg(ang)})"><g clip-path="url(#tel-clip)">${line}${line}${line}</g></g>`;
 }
 
 export function telChev(x, y, ang, due) {
@@ -54,7 +54,7 @@ function piece(ov, cls, x, y, html, rot) {
   ov.appendChild(d);
 }
 
-const WAVES = '<svg viewBox="-30 -12 60 24"><path d="M-30 -6 q3 -3 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0"/><path d="M-30 0 q3 -3 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0"/><path d="M-30 6 q3 -3 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0"/></svg>';
+const WAVES = '<svg viewBox="-30 -15 60 30"><path d="M-12 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/><path d="M0 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/><path d="M12 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/></svg>';
 const CHEVS = '<svg viewBox="-16 -9 32 18"><path d="M-14 -7 l7 7 l-7 7"/><path d="M-4 -7 l7 7 l-7 7"/><path d="M6 -7 l7 7 l-7 7"/></svg>';
 
 export function telPlay(root, before) {
