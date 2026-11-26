@@ -43,7 +43,7 @@ begin
   if not found or m.out_rounds > 0 or m.rest then return 0; end if;
   select * into f from public.world_gw_fights where fight_id = p_fight;
   return public.world_gw_hurt(p_fight, p_uid, round(p_raw * coalesce((br -> 'board' ->> 'mech_mul')::numeric, 1) * (1 + coalesce((br ->> 'enrage')::numeric, 0) * f.enrage)
-    * public.world_dh_hurt_mul(p_fight, p_uid) * case when p_guardable and coalesce(m.act ->> 'a', 'guard') in ('guard', 'brace') then 0.5 else 1 end)::int, p_round, p_why);
+    * public.world_dh_hurt_mul(p_fight, p_uid) * (1 - coalesce((m.stats ->> 'solo_guard')::numeric, 0) / 100.0) * case when p_guardable and coalesce(m.act ->> 'a', 'guard') in ('guard', 'brace') then 0.5 else 1 end)::int, p_round, p_why);
 end $f$;
 
 create or replace function public.world_dh_fall(p_fight uuid, p_uid uuid, p_round integer, p_why text)
@@ -298,7 +298,7 @@ begin
   mechs := array(select jsonb_array_elements_text(coalesce(f.mech -> 'mechs', '[]'::jsonb)));
   wet := 'wet' = any (mechs);
   select count(*) into na from public.world_gw_members where fight_id = p_fight and out_rounds = 0 and not rest;
-  select count(*), string_agg(y.name, '·'), coalesce(sum(coalesce((y.stats ->> 'attack')::numeric, 0)), 0) into ng, nm, gatk
+  select count(*), string_agg(y.name, '·'), coalesce(sum(coalesce((y.stats ->> 'attack')::numeric, 0) * (1 + coalesce((y.stats ->> 'solo_dmg')::numeric, 0) / 100.0)), 0) into ng, nm, gatk
     from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'guide' and y.pos = hd;
   if ng > 0 then
     update public.world_gw_members y set gval = 0 where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.act ->> 'a' = 'guide' and y.pos = hd;

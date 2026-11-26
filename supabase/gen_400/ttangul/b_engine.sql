@@ -50,7 +50,7 @@ begin
   if not found or m.out_rounds > 0 or m.rest then return 0; end if;
   select * into f from public.world_gw_fights where fight_id = p_fight;
   return public.world_gw_hurt(p_fight, p_uid, round(p_raw * coalesce((br -> 'board' ->> 'mech_mul')::numeric, 1) * (1 + coalesce((br ->> 'enrage')::numeric, 0) * f.enrage)
-    * case when coalesce(m.act ->> 'a', 'guard') in ('guard', 'brace') then p_guard else 1 end)::int, p_round, p_why);
+    * (1 - coalesce((m.stats ->> 'solo_guard')::numeric, 0) / 100.0) * case when coalesce(m.act ->> 'a', 'guard') in ('guard', 'brace') then p_guard else 1 end)::int, p_round, p_why);
 end $f$;
 
 create or replace function public.world_du_fall(p_fight uuid, p_uid uuid, p_round integer, p_why text)
@@ -331,7 +331,7 @@ begin
       if nm is not null then
         pulls := pulls || jsonb_build_object(h ->> 'c', p_round + (rb -> 'pull' ->> 'stop')::int);
         update public.world_gw_members y set gval = 0 where y.fight_id = p_fight and y.pos = (h ->> 'c')::int and y.act ->> 'a' = 'stop' and coalesce(y.gval, 0) > 0;
-        extra := extra + coalesce((select sum(coalesce((y.stats ->> 'attack')::numeric, 0)) from public.world_gw_members y where y.fight_id = p_fight and y.pos = (h ->> 'c')::int and y.act ->> 'a' = 'stop'), 0)
+        extra := extra + coalesce((select sum(coalesce((y.stats ->> 'attack')::numeric, 0) * (1 + coalesce((y.stats ->> 'solo_dmg')::numeric, 0) / 100.0)) from public.world_gw_members y where y.fight_id = p_fight and y.pos = (h ->> 'c')::int and y.act ->> 'a' = 'stop'), 0)
           * coalesce((rb -> 'pull' ->> 'hit_mul')::numeric, 0);
         perform public.world_gw_say(p_fight, p_round, 'good', nm || ' — ' || (h ->> 'c') || '번 끌개에 쐐기돌을 박아 멈췄습니다. 땅울이가 휘청입니다.');
       end if;

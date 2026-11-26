@@ -23,8 +23,8 @@ begin
           update public.world_characters set gil = gil + v_gil, updated_at = now() where owner_id = m.owner_id;
         end if;
         insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '도해수를 바다로 돌려보냈습니다',
-          case when is_first then '붉은 사당 골목에서 도해수를 바다로 돌려보냈습니다. ' || to_char(v_gil, 'FM999,999') || '전을 받았습니다. 이야기를 이어 가세요.'
-            else '붉은 사당 골목에서 다시 한 번 도해수를 바다로 돌려보냈습니다.' end,
+          case when is_first then '뒤집힌 물목에서 도해수를 바다로 돌려보냈습니다. ' || to_char(v_gil, 'FM999,999') || '전을 받았습니다. 이야기를 이어 가세요.'
+            else '뒤집힌 물목에서 다시 한 번 도해수를 바다로 돌려보냈습니다.' end,
           jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu', 'mode', 'story', 'first', is_first));
       else
         insert into public.world_notifications(user_id, kind, title, content, payload)
@@ -50,7 +50,7 @@ begin
             else '도해수를 바다로 돌려보냈습니다(' || (coalesce(rec.kills, 0) + 1) || '번째). ' || v_gil || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '.' end;
           insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '도해수 진정', msg, jsonb_build_object('fight_id', p_fight, 'first', is_first, 'boss', 'dohaesu'));
           insert into public.world_events(actor_id, actor_name, event_type, content, payload)
-          values (m.owner_id, m.name, 'dh_win', m.name || '이(가) 붉은 사당 골목에서 도해수를 바다로 돌려보냈습니다.',
+          values (m.owner_id, m.name, 'dh_win', m.name || '이(가) 뒤집힌 물목에서 도해수를 바다로 돌려보냈습니다.',
                   jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu', 'first', is_first, 'solo', solo, 'flawless', flawless and n >= 2, 'members', n, 'kills', coalesce(rec.kills, 0) + 1));
         else
           insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '도해수 진정', '오늘은 이미 처치를 인정받아 보상은 없습니다.', jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu'));
