@@ -383,7 +383,8 @@ function showPeek(id) {
 }
 
 function hopSeconds(from, to, speed) {
-  const d = Math.hypot(to.world_x - from.world_x, to.world_y - from.world_y);
+  const gap = realmOf(from) !== realmOf(to) ? GAMEDATA.domains?.[to.territory_id]?.gap ?? GAMEDATA.domains?.[from.territory_id]?.gap : null;
+  const d = gap != null ? Number(gap) : Math.hypot(to.world_x - from.world_x, to.world_y - from.world_y);
   const terr = Math.max(Number(from.terrain_cost) || 1, Number(to.terrain_cost) || 1);
   const cross = from.territory_id && to.territory_id && from.territory_id !== to.territory_id ? 1.2 : 1;
   return Math.max(12, Math.round((d * 1.4 + Math.abs((to.elevation || 0) - (from.elevation || 0)) * 6 + 12) * terr * cross / speed));

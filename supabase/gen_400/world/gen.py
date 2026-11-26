@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import sys
@@ -114,18 +115,45 @@ for r in R:
     if r['id'] not in order:
         warns.append('본편에 안 나오는 지역(첫 장 뒤에 열림): ' + r['id'])
         order[r['id']] = (15, 9)
+
+
+def pull_open():
+    import heapq
+    nbs = {r['id']: [n for n in r['nb'] if n in RID] for r in R}
+    start = [r['id'] for r in R if any(n not in RID for n in r['nb'])]
+    for dest in sorted(RID, key=lambda x: order[x]):
+        g = order[dest]
+        dist, prev, pq = {s: (0 if order[s] <= g else 1) for s in start}, {}, []
+        for s0 in start: heapq.heappush(pq, (dist[s0], s0))
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d > dist.get(u, 1e9): continue
+            for v in nbs[u]:
+                nd = d + (0 if order[v] <= g else 1)
+                if nd < dist.get(v, 1e9): dist[v] = nd; prev[v] = u; heapq.heappush(pq, (nd, v))
+        if dest not in dist: errors.append('들어갈 길이 없는 지역: ' + dest); continue
+        u = dest
+        while u in prev:
+            u = prev[u]
+            if order[u] > g: order[u] = g
+        for s0 in start:
+            if u == s0 and order[s0] > g: order[s0] = g
+
+
+pull_open()
 REGION_OPEN = {r['id']: gate(r['id']) for r in R}
 
 w("lock table public.world_characters in access exclusive mode;\n")
 part('../a_level.sql')
 part('b_tier9.sql')
 part('c_story.sql')
+part('d_realm.sql')
 
 rules = {}
 for tid, tname in D.TERRS.items():
     regs = [r['id'] for r in R if r['terr'] == tid]
     first = min(regs, key=lambda x: order[x])
-    rule = {'name': tname, 'open_quest': REGION_OPEN[first], 'no_shadow': True, 'rare': D.HW, 'mon_cap': D.MON_CAP, 'realm': D.REALM,
+    rule = {'name': tname, 'open_quest': REGION_OPEN[first], 'no_shadow': True, 'rare': D.HW, 'mon_cap': D.MON_CAP, 'realm': D.REALM, 'gap': D.REALM_GAP,
             'regions': {rg: REGION_OPEN[rg] for rg in regs}}
     if tid in D.PIN_TERRS:
         rule['pin'] = True
@@ -197,6 +225,20 @@ def spot_name(rid, cat, k):
     raise SystemExit('채집터 이름이 모자람: ' + rid + cat)
 
 
+SPOT_SEQ = {}
+
+
+def spot_loot(rid, cat):
+    import itertools
+    pool = D.SPOT_POOL[rid][cat]
+    combos = [c for n in (2, 3, 4) for c in itertools.combinations(pool, n)]
+    combos.sort(key=lambda c: hashlib.md5((rid + cat + '|'.join(c)).encode()).hexdigest())
+    k = SPOT_SEQ.get((rid, cat), 0)
+    SPOT_SEQ[(rid, cat)] = k + 1
+    if k >= len(combos): errors.append(f'채집터 재료 조합이 모자람: {rid} {cat}')
+    return list(combos[k % len(combos)])
+
+
 nrows, srows = [], []
 for r in R:
     rid, lv = r['id'], r['lv']
@@ -226,22 +268,21 @@ for r in R:
                 en, ec = D.ENTRY_SPOT[rid]
                 if en in spot_names: errors.append('채집터 이름 겹침: ' + en)
                 spot_names.add(en)
-                srows.append(dict(spot_id=U('spot', rid, 'entry'), node_id=nid, spot_name=en, category=ec, r=rid, min_level=lv, yield_min=1, yield_max=2, difficulty=1))
+                srows.append(dict(spot_id=U('spot', rid, 'entry'), node_id=nid, spot_name=en, category=ec, loot_items=spot_loot(rid, ec), min_level=lv, yield_min=1, yield_max=2, difficulty=1))
                 if ec not in D.SPOT_LOOT[rid]: errors.append(f'들머리 채집터 갈래가 SPOT_LOOT에 없음: {rid} {ec}')
                 continue
             for j in range(2):
                 cat = cats[(sk + j) % len(cats)]
-                srows.append(dict(spot_id=U('spot', rid, str(h), str(i), str(j)), node_id=nid, spot_name=spot_name(rid, cat, sk + j), category=cat, r=rid,
+                srows.append(dict(spot_id=U('spot', rid, str(h), str(i), str(j)), node_id=nid, spot_name=spot_name(rid, cat, sk + j), category=cat, loot_items=spot_loot(rid, cat),
                                   min_level=nlv, yield_min=1, yield_max=2 if hl <= 3 else 3, difficulty=10 + hl))
             sk += 2
 ND = "(" + J({str(k): v for k, v in NODE_DESC.items()}) + " ->> x.hierarchy_level::text)"
 bulk('world_exploration_nodes', sorted(nrows, key=lambda x: x['hierarchy_level']), [('node_id', 'text'), ('region_id', 'text'), ('parent_node_id', 'text'), ('hierarchy_level', 'smallint'),
      ('node_name', 'text'), ('description', 'text'), ('min_level', 'int'), ('sort_order', 'int')], 'node_id', ['node_name', 'parent_node_id', 'min_level'],
      {'node_id': 'md5(x.node_id)::uuid', 'parent_node_id': 'md5(x.parent_node_id)::uuid', 'description': ND})
-LOOT = "array(select jsonb_array_elements_text(" + J(D.SPOT_LOOT) + " -> x.r -> x.category))"
 bulk('world_gathering_spots', srows, [('spot_id', 'text'), ('node_id', 'text'), ('spot_name', 'text'), ('category', 'text'), ('loot_items', 'jsonb'), ('min_level', 'int'),
-     ('yield_min', 'int'), ('yield_max', 'int'), ('difficulty', 'int'), ('active', 'boolean'), ('r', 'text')], 'spot_id', ['spot_name', 'loot_items', 'min_level'],
-     {'spot_id': 'md5(x.spot_id)::uuid', 'node_id': 'md5(x.node_id)::uuid', 'loot_items': LOOT, 'active': 'true'})
+     ('yield_min', 'int'), ('yield_max', 'int'), ('difficulty', 'int'), ('active', 'boolean')], 'spot_id', ['spot_name', 'loot_items', 'min_level'],
+     {'spot_id': 'md5(x.spot_id)::uuid', 'node_id': 'md5(x.node_id)::uuid', 'loot_items': TA('loot_items'), 'active': 'true'})
 
 mons = [m for v in D.MONSTERS.values() for m in v]
 fresh('monsters', [m[1] for m in mons], '요괴')

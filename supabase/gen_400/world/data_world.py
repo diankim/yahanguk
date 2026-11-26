@@ -180,26 +180,6 @@ SPOT_NOUN = {
     'ore': ['유리 결 바위', '쇳가루 섞인 모래', '소금 결정 바위', '검은 돌 광맥', '식은 쇳물 덩이'],
 }
 HW = 'flow_essence'
-SPOT_LOOT = {
-    'pd_city': {'supplies': ['coconut_fiber', 'travel_ration', 'fd_rice'], 'water': ['blue_salt', 'coconut_fiber']},
-    'bs_town': {'supplies': ['chili_seed_oil', 'travel_ration', 'charcoal'], 'ore': ['volcanic_glass', 'ore']},
-    'jb_village': {'supplies': ['turmeric_root', 'travel_ration', 'herb'], 'herbs': ['herb', 'fragrant_blade_leaf']},
-    'nm_village': {'supplies': ['highland_barley', 'travel_ration', 'yak_wool'], 'water': ['ice_salt', 'highland_barley']},
-    'dm_city': {'supplies': ['red_spice_pod', 'travel_ration', 'fd_rice'], 'water': ['river_reed', 'red_spice_pod']},
-    'ho_city': {'supplies': ['palm_sugar', 'travel_ration', 'fd_rice'], 'water': ['lotus_seed', 'palm_sugar']},
-    'pd_shore': {'water': ['blue_salt', 'blue_salt', 'river_reed'], 'supplies': ['coconut_fiber', 'coconut_fiber', 'travel_ration'], 'herbs': ['herb', 'medicine_base', 'blue_salt']},
-    'pd_offsea': {'water': ['blue_salt', 'kelp_scale_shell', 'river_reed'], 'relics': ['seal_paper', 'coconut_fiber', 'kelp_scale_shell'], 'spirit': ['spirit_dust', 'kelp_scale_shell', HW]},
-    'pd_rift': {'spirit': ['spirit_dust', 'kelp_scale_shell', HW], 'water': ['blue_salt', 'kelp_scale_shell'], 'ore': ['ore', 'raw_iron', 'blue_salt']},
-    'bs_geo': {'ore': ['ore', 'volcanic_glass', 'volcanic_glass', 'raw_iron'], 'supplies': ['chili_seed_oil', 'chili_seed_oil', 'charcoal'], 'spirit': ['spirit_dust', 'cold_ember_filings', HW]},
-    'jb_ebony': {'herbs': ['herb', 'turmeric_root', 'turmeric_root', 'medicine_base'], 'wood': ['wood', 'inkrain_bark', 'fragrant_blade_leaf'], 'spirit': ['spirit_dust', 'inkrain_bark', HW]},
-    'jb_ferry': {'water': ['river_reed', 'river_reed', 'fragrant_blade_leaf'], 'wood': ['wood', 'inkrain_bark', 'lumber'], 'herbs': ['herb', 'turmeric_root', 'medicine_base']},
-    'nm_snow': {'supplies': ['highland_barley', 'highland_barley', 'yak_wool'], 'water': ['ice_salt', 'ice_salt', 'river_reed'], 'spirit': ['spirit_dust', 'ice_salt', HW]},
-    'dm_field': {'supplies': ['red_spice_pod', 'red_spice_pod', 'fd_rice'], 'herbs': ['herb', 'red_spice_pod', 'medicine_base'], 'ore': ['ore', 'pooled_light_shard', 'raw_iron']},
-    'dm_bamboo': {'wood': ['wood', 'bamboo_shoot_husk', 'bamboo_shoot_husk', 'lumber'], 'herbs': ['herb', 'medicine_base', 'bamboo_shoot_husk'], 'spirit': ['spirit_dust', 'pooled_light_shard', HW]},
-    'dm_pool': {'spirit': ['spirit_dust', 'pooled_light_shard', 'pooled_light_shard', HW], 'ore': ['ore', 'raw_iron', 'pooled_light_shard'], 'relics': ['seal_paper', 'pooled_light_shard', HW]},
-    'ho_outer': {'water': ['lotus_seed', 'lotus_seed', 'river_reed'], 'herbs': ['herb', 'lotus_seed', 'medicine_base'], 'relics': ['seal_paper', 'dawn_scale', 'palm_sugar']},
-    'ho_coast': {'water': ['blue_salt', 'dawn_scale', 'river_reed'], 'supplies': ['palm_sugar', 'palm_sugar', 'coconut_fiber'], 'spirit': ['spirit_dust', 'dawn_scale', HW]},
-}
 ENTRY_SPOT = {
     'pd_city': ('어귀의 널다리 짐 바구니', 'supplies'), 'bs_town': ('어귀의 화덕 재 더미', 'supplies'), 'jb_village': ('어귀의 약초 덕장 밑', 'herbs'),
     'nm_village': ('어귀의 깃발 문 돌담', 'supplies'), 'dm_city': ('어귀의 성문 우물 턱', 'water'), 'ho_city': ('어귀의 해자 다리 밑', 'water'),
@@ -674,3 +654,82 @@ COSMETICS = [
     ('fr_hanul', 'frame', 'legend', '물때 테', '건넛누리 바깥 열 곳에 모두 닿으면', {'title': 'hw_walker'}, 1530),
     ('sl_hanul', 'seal', 'legend', '낙관 「潮」', '건넛누리 열두 곳의 우두머리를 모두 쓰러뜨리면', {'title': 'hw_boss_all'}, 1531),
 ]
+
+MIRROR_X = 977
+MIRROR = {
+    'pd_city': 'mirror_pavilion', 'pd_shore': 'lotus_marsh', 'pd_offsea': 'sunken_palace', 'pd_rift': 'tide_gate',
+    'bs_town': 'ember_village', 'bs_geo': 'ember_pass', 'bs_crack': 'black_tide_rift',
+    'gr_pavilion': 'white_tower',
+    'jb_village': 'mukchang_ferry', 'jb_ferry': 'blank_field', 'jb_ebony': 'meokbi_forest',
+    'nm_village': 'iron_monastery', 'nm_snow': 'snow_hollow', 'nm_peak': 'thunder_peak', 'nm_lake': 'sky_lake', 'nm_gorge': 'frost_valley',
+    'dm_city': 'hq_yard', 'dm_field': 'field_outskirts', 'dm_bamboo': 'ghost_bamboo', 'dm_pool': 'jeongni_vault',
+    'dm_bridge': 'paper_bridge', 'dm_archive': 'hq_archive', 'dm_caravan': 'patrol_office', 'dm_gate': 'old_prison', 'dm_aqueduct': 'seal_vault',
+    'ho_city': 'dark_yamen', 'ho_outer': 'deungdo_landing', 'ho_coast': 'old_ferry_market',
+}
+CROSS = {'pd_city': ['mirror_pavilion']}
+TRANSIT_OPEN_WITH = {
+    'bs_crack': 'bs_town', 'gr_pavilion': 'jb_village', 'nm_peak': 'jb_village', 'nm_lake': 'jb_village', 'nm_gorge': 'jb_village',
+    'dm_bridge': 'dm_city', 'dm_archive': 'dm_pool', 'dm_caravan': 'ho_outer', 'dm_gate': 'ho_outer', 'dm_aqueduct': 'ho_outer',
+}
+REALM_GAP = 78
+
+
+def _mirror():
+    import json, os
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        import data_transit as T
+    except ImportError:
+        T = None
+    if T:
+        TERRS.update(T.TRANSIT_TERRS)
+        CLIMATES.update(T.TRANSIT_CLIMATES)
+        REGIONS.extend(T.TRANSIT_REGIONS)
+        for name in ('NODES', 'SPOT_ADJ', 'ENTRY_SPOT', 'MONSTERS', 'GROUNDS', 'PROFILES', 'LORE', 'SITES'):
+            globals()[name].update(getattr(T, 'TRANSIT_' + name))
+        SPOT_POOL.update(T.TRANSIT_SPOT_POOL)
+    G = json.load(open(os.path.join(here, 'ref', 'mainland_graph.json')))
+    back = {v: k for k, v in MIRROR.items()}
+    built = {r['id'] for r in REGIONS}
+    for r in REGIONS:
+        m = G[MIRROR[r['id']]]
+        r['x'], r['y'] = MIRROR_X - m[2], m[3]
+        nb = sorted({back[n] for n in m[8] if n in back and back[n] in built} | {back[k] for k, v in G.items() if MIRROR[r['id']] in v[8] and k in back and back[k] in built})
+        r['nb'] = nb + CROSS.get(r['id'], [])
+
+
+SPOT_POOL = {}
+SPOT_POOL.update({
+    'pd_city': {'supplies': ['coconut_fiber', 'travel_ration', 'fd_rice', 'palm_sugar'], 'water': ['blue_salt', 'coconut_fiber', 'river_reed', 'fd_minari']},
+    'bs_town': {'supplies': ['chili_seed_oil', 'travel_ration', 'charcoal', 'fd_chili'], 'ore': ['volcanic_glass', 'ore', 'raw_iron', 'cold_ember_filings']},
+    'jb_village': {'supplies': ['turmeric_root', 'travel_ration', 'herb', 'fd_ginger'], 'herbs': ['herb', 'fragrant_blade_leaf', 'fd_mushroom', 'medicine_base']},
+    'nm_village': {'supplies': ['highland_barley', 'travel_ration', 'yak_wool', 'fd_potato'], 'water': ['ice_salt', 'highland_barley', 'river_reed', 'fd_buckwheat']},
+    'dm_city': {'supplies': ['red_spice_pod', 'travel_ration', 'fd_rice', 'fd_spice_seed'], 'water': ['river_reed', 'red_spice_pod', 'fd_garlic', 'fd_minari']},
+    'ho_city': {'supplies': ['palm_sugar', 'travel_ration', 'fd_rice', 'fd_sweet_potato'], 'water': ['lotus_seed', 'palm_sugar', 'fd_lotus_root', 'river_reed']},
+    'pd_shore': {'water': ['blue_salt', 'river_reed', 'kelp_scale_shell', 'fd_minari', 'herbal_extract'], 'supplies': ['coconut_fiber', 'travel_ration', 'blue_salt', 'fd_rice', 'palm_sugar'],
+                 'herbs': ['herb', 'medicine_base', 'blue_salt', 'fd_minari', 'herbal_extract']},
+    'pd_offsea': {'water': ['blue_salt', 'kelp_scale_shell', 'river_reed', 'herbal_extract', 'fd_minari'], 'relics': ['seal_paper', 'coconut_fiber', 'kelp_scale_shell', 'ward_fragment', 'lumber'],
+                  'spirit': ['spirit_dust', 'kelp_scale_shell', HW, 'ward_fragment', 'seal_paper']},
+    'pd_rift': {'spirit': ['spirit_dust', 'kelp_scale_shell', HW, 'ward_fragment', 'seal_paper'], 'water': ['blue_salt', 'kelp_scale_shell', 'river_reed', 'herbal_extract', 'medicine_base'],
+                'ore': ['ore', 'raw_iron', 'blue_salt', 'kelp_scale_shell', 'charcoal']},
+    'bs_geo': {'ore': ['ore', 'volcanic_glass', 'raw_iron', 'cold_ember_filings', 'charcoal'], 'supplies': ['chili_seed_oil', 'charcoal', 'fd_chili', 'fd_garlic', 'travel_ration'],
+               'spirit': ['spirit_dust', 'cold_ember_filings', HW, 'volcanic_glass', 'ward_fragment']},
+    'jb_ebony': {'herbs': ['herb', 'turmeric_root', 'medicine_base', 'fd_mushroom', 'fd_ginger'], 'wood': ['wood', 'inkrain_bark', 'fragrant_blade_leaf', 'lumber', 'fd_mushroom'],
+                 'spirit': ['spirit_dust', 'inkrain_bark', HW, 'fd_mushroom', 'ward_fragment']},
+    'jb_ferry': {'water': ['river_reed', 'fragrant_blade_leaf', 'fd_minari', 'herbal_extract', 'fd_lotus_root'], 'wood': ['wood', 'inkrain_bark', 'lumber', 'fragrant_blade_leaf', 'river_reed'],
+                 'herbs': ['herb', 'turmeric_root', 'medicine_base', 'fd_greens', 'fd_ginger']},
+    'nm_snow': {'supplies': ['highland_barley', 'yak_wool', 'fd_potato', 'travel_ration', 'fd_buckwheat'], 'water': ['ice_salt', 'river_reed', 'highland_barley', 'herbal_extract', 'fd_greens'],
+                'spirit': ['spirit_dust', 'ice_salt', HW, 'ward_fragment', 'yak_wool']},
+    'dm_field': {'supplies': ['red_spice_pod', 'fd_rice', 'fd_spice_seed', 'fd_garlic', 'fd_sweet_potato'], 'herbs': ['herb', 'red_spice_pod', 'medicine_base', 'fd_greens', 'fd_ginger'],
+                 'ore': ['ore', 'pooled_light_shard', 'raw_iron', 'charcoal', 'iron_ingot']},
+    'dm_bamboo': {'wood': ['wood', 'bamboo_shoot_husk', 'lumber', 'fragrant_blade_leaf', 'fd_mushroom'], 'herbs': ['herb', 'medicine_base', 'bamboo_shoot_husk', 'fd_mushroom', 'fd_greens'],
+                  'spirit': ['spirit_dust', 'pooled_light_shard', HW, 'ward_fragment', 'bamboo_shoot_husk']},
+    'dm_pool': {'spirit': ['spirit_dust', 'pooled_light_shard', HW, 'ward_fragment', 'herbal_extract'], 'ore': ['ore', 'raw_iron', 'pooled_light_shard', 'charcoal', 'iron_ingot'],
+                'relics': ['seal_paper', 'pooled_light_shard', HW, 'ward_fragment', 'red_spice_pod']},
+    'ho_outer': {'water': ['lotus_seed', 'river_reed', 'fd_lotus_root', 'fd_minari', 'fd_rice'], 'herbs': ['herb', 'lotus_seed', 'medicine_base', 'fd_greens', 'herbal_extract'],
+                 'relics': ['seal_paper', 'dawn_scale', 'palm_sugar', 'ward_fragment', 'lotus_seed']},
+    'ho_coast': {'water': ['blue_salt', 'dawn_scale', 'river_reed', 'kelp_scale_shell', 'fd_minari'], 'supplies': ['palm_sugar', 'coconut_fiber', 'fd_sweet_potato', 'travel_ration', 'fd_rice'],
+                 'spirit': ['spirit_dust', 'dawn_scale', HW, 'ward_fragment', 'seal_paper']},
+})
+_mirror()
+SPOT_LOOT = SPOT_POOL
