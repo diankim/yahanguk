@@ -7,7 +7,7 @@ import { helpQ, helpLine } from '../tips.js';
 import { haveOf, baseOf } from '../hq.js';
 import { load, invalidate, chip, danger, loading, errorBox, safeZones, zonesNow, travelCdLeft, foldOpen, rarRow } from './common.js';
 import { factionColor } from '../geo.js';
-import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT } from '../rules.js';
+import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT, TRADE } from '../rules.js';
 import { openProject, projectBand, urgentSet } from './project.js';
 import { openRegular, regularTiles } from './regular.js';
 import { bindTips } from './fightui.js';
@@ -204,6 +204,7 @@ function scene(s, traveling, downed) {
     ${idleSt ? `<div class="notice">${icon('hourglass', 18)}<div><b>자율 활동 중</b><span>활동이 끝나 보상을 받을 때까지 이동·탐색·전투·채집·낚시·제작·거래·물품 사용·퀘스트 보고를 할 수 없습니다. 장비 바꾸기는 됩니다. 도중에 그만두면 지난 시간만큼만 받습니다.</span></div><a class="btn small" href="#/char/idle">자율 활동 보기</a></div>` : ''}`;
 }
 
+const portLine = k => { const p = TRADE.port(k); return `${p.dock} · 시세판·교역${p.shipyard ? '·조선소' : ''}`; };
 const ugBoards = s => Object.entries(GAMEDATA.ultimate?.boards || {}).filter(([, b]) => b.region === s.region?.region_id);
 const ugReq = () => `Lv${GAMEDATA.ultimate?.level ?? 50} · ${(GAMEDATA.ultimate?.party || [2, 4]).join('~')}명`;
 const ugShopTip = b => `${b.token_name}을(를) 꾸미기 물품으로 바꿉니다`;
@@ -214,6 +215,7 @@ function town(s, roster) {
     ['smithy', 'hammer', '대장간', wk?.repair ? '수리비 세 배 · 강화 재료는 월철 주괴·정련 숯만' : '재료 사기 · 강화 · 수리 · 분해'],
     wk?.market ? null : ['market', 'coin', '거래소', '조사원끼리 사고팔기'],
     wk?.storage ? null : ['storage', 'chest', '창고', '어디서나 같은 개인 창고'],
+    TRADE.isPort(r.region_id) ? ['port', 'ship', '항구', portLine(r.region_id)] : null,
     ...regularTiles(r.regular),
     pj ? ['project', 'hammer', pj.kind !== 'faction' ? '공동 사업' : pj.help ? `${pj.place || ''} 사업 돕기` : '거점 사업', `${pj.name} · ${pj.stage >= 5 ? '다섯 단계 마침' : `${pj.stage + 1}단계 ${pj.pct}%`}`] : null,
     r.has_stable ? ['stable', 'route', '마구간', '탈것 들이기'] : null,
@@ -293,6 +295,7 @@ function field(s, roster, blocked) {
           <a class="tile" href="#/map" title="지도">${icon('map', 22)}<span>지도</span></a>
           ${s.region.region_id === 'gwiheo_core' ? `<a class="tile danger" href="#/gw" title="귀허의 주인 · 「요인록」 4장을 마치고 Lv38부터, 귀허 부적 1개">${icon('flag', 22)}<span>귀허의 주인</span></a>` : ''}
           ${fightBack()}
+          ${TRADE.isPort(s.region.region_id) ? `<a class="tile" href="#/port" title="${esc(portLine(s.region.region_id))}">${icon('ship', 22)}<span>항구</span></a>` : ''}
           ${ugBoards(s).map(([k, b]) => `<a class="tile danger" href="#/gw/${esc(b.boss)}" title="${esc(`${b.name} · ${ugReq()}`)}">${icon('flag', 22)}<span>${esc(b.name)}</span></a><button class="tile" type="button" data-ug-shop="${esc(k)}" title="${esc(ugShopTip(b))}">${icon('chest', 22)}<span>${esc(b.name)} 교환</span></button>`).join('')}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${['mukjeok', 'gapgwi', 'baekya'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
@@ -574,6 +577,7 @@ function openFacility(k, s) {
   if (k === 'board') return window.yahangGo('log', 'commission');
   if (k === 'faction') return window.yahangGo('char', 'faction');
   if (k === 'tourney') return window.yahangGo('tourney');
+  if (k === 'port') return window.yahangGo('port');
   if (k === 'records') return import('./legacy.js').then(x => x.openLegacyRecords());
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();

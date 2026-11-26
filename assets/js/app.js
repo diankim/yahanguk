@@ -35,6 +35,7 @@ import * as bijangPage from './views/bijang.js';
 import * as tourneyPage from './views/tourney.js';
 import * as housePage from './views/housing.js';
 import * as gardenPage from './views/garden.js';
+import * as portPage from './views/port.js';
 import { preloadNames, hasNameCache, ensureCatalog } from './views/common.js';
 import { helpLine } from './tips.js';
 
@@ -51,7 +52,7 @@ const VIEWS = {
   bag: { mod: bag, label: '가방', icon: 'bag' },
   log: { mod: journal, label: '일지', icon: 'scroll' },
 };
-const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' }, pfight: { mod: pfightPage, label: '파티 토벌' }, bijang: { mod: bijangPage, label: '비장고' }, tourney: { mod: tourneyPage, label: '비무 방' }, house: { mod: housePage, label: '별채' }, garden: { mod: gardenPage, label: '뒤뜰 밭' } };
+const PAGES = { party: { mod: party, label: '동료' }, guide: { mod: guide, label: '도움말' }, account: { mod: account, label: '계정' }, settings: { mod: settingsPage, label: '설정' }, patch: { mod: patchPage, label: '패치노트' }, raid: { mod: raidPage, label: '토벌' }, gw: { mod: gwPage, label: '귀허의 주인' }, pfight: { mod: pfightPage, label: '파티 토벌' }, bijang: { mod: bijangPage, label: '비장고' }, tourney: { mod: tourneyPage, label: '비무 방' }, house: { mod: housePage, label: '별채' }, garden: { mod: gardenPage, label: '뒤뜰 밭' }, port: { mod: portPage, label: '항구' } };
 
 const REOPEN_AT = Date.parse('2026-11-02T00:00:00+09:00');
 let routedFor = null, routing = null;

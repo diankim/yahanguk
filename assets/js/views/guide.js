@@ -5,7 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR } from '../rules.js';
+import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, TRADE } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -2130,6 +2130,35 @@ const S = [
       <li><b>보내기·제보</b>: 내가 그린 도안의 사본을 친구에게 보낼 수 있고(옷 도안과 함께 하루 ${GD.outfit?.give_day ?? ''}번), 받은 사람도 지어 놓을 수 있습니다. 도안첩에는 받은 것까지 ${GD.furn?.keep || 20}장을 둡니다. 남의 별채에 놓인 직접 그린 가구는 별채 그림 칸의 깃발로 제보할 수 있고, 운영진이 내린 가구는 회색 받침으로만 보입니다.</li>
       <li><b>고치기</b>: 내가 그린 도안을 고치면 이미 지은 가구도 모두 고친 모습으로 바뀝니다.</li>
     </ul>`],
+  ['trade', '교역선', `
+    <p>${esc(TRADE.help)}</p>
+    <h4>항구</h4>
+    <p>항구가 있는 지역 현장에 「항구」 칸이 있습니다. 시세판을 보고, 교역품을 사서 싣고 팔고, 배를 띄우고 고치며, 조선소가 있는 항구에서는 배를 짓습니다. 교역·조선·수리는 그 항구에 내가 서 있고 배도 그 항구에 대 있을 때만 합니다.</p>
+    <table class="guide-table"><tr><th>항구</th><th>배 대는 곳</th><th>특산 교역품</th><th>조선소</th></tr>
+      ${Object.values(TRADE.ports || {}).sort((a, b) => (a.realm !== 'main') - (b.realm !== 'main') || (TRADE.goods?.[a.good]?.base || 0) - (TRADE.goods?.[b.good]?.base || 0)).map(p => `<tr><td>${esc(p.name)}${p.realm !== 'main' ? ' <small class="muted">건넛누리</small>' : ''}</td><td>${esc(p.dock)}</td><td>${esc(TRADE.goods?.[p.good]?.name || '')} <small class="muted">정가 ${TRADE.goods?.[p.good]?.base ?? ''}전</small></td><td>${p.shipyard ? '있음' : ''}</td></tr>`).join('')}</table>
+    <h4>시세</h4>
+    <ul>
+      <li>교역품은 산지 항구에서만 삽니다. 짐칸 한 칸에 ${TRADE.slot_n}개씩 싣고, 교역품은 가방이 아니라 배 짐칸에만 실립니다. 거래소·직접 거래로 넘길 수 없습니다.</li>
+      <li>시세판 꼬리표: ${Object.entries(TRADE.tags).map(([k, t]) => `<b>${esc(t)}</b> ${esc(TRADE.tagTip[k])}`).join(' ')}</li>
+      <li>다른 항구의 값은 그 항구에 들렀을 때(배로 닿거나 걸어서 가거나) 본 값이 「n시간 전」으로 남습니다. 들른 적 없는 항구는 「?」입니다.</li>
+      <li>${esc(TRADE.dayTip(TRADE.day_cap || 3000))}</li>
+      <li>${esc(TRADE.foodTip)}</li>
+    </ul>
+    <h4>배 띄우기</h4>
+    <ul>
+      <li><b>${esc(TRADE.modeName.direct)}</b>: ${esc(TRADE.modeTip.direct)}</li>
+      <li><b>${esc(TRADE.modeName.send)}</b>: ${esc(TRADE.modeTip.send)}</li>
+      <li>어느 쪽이든 한 번 띄울 때 노정패 ${TRADE.sail?.tokens ?? 2}개가 듭니다. 직접 타고 가면 뱃길 시간이 보내 두기의 ${TRADE.sail?.direct_div ? `${TRADE.sail.direct_div}분의 1` : '몇 분의 1'}입니다.</li>
+      <li>${esc(TRADE.boardTip)} 덤은 하나만 고릅니다: ${['time', 'guard', 'haggle'].map(k => `<b>${esc(TRADE.bonus?.[k]?.name || k)}</b> ${esc(TRADE.bonusTip(k))}`).join(' · ')}.</li>
+      <li>항해 중에는 이동·원정·자율 활동·현장 토벌 같은 다른 일을 할 수 없습니다. 습격을 받으면 그 싸움만 합니다.</li>
+    </ul>
+    <h4>배</h4>
+    <table class="guide-table"><tr><th>배</th><th>짐칸</th><th>내구도</th><th>뱃길 시간</th><th>태울 사람</th><th>짓는 조건</th></tr>
+      ${(TRADE.ships || []).map(x => `<tr><td>${esc(x.name)}</td><td>${x.slots}칸</td><td>${x.dur}</td><td>${x.speed < 1 ? `${Math.round((1 - x.speed) * 100)}% 빠름` : '기준'}</td><td>${x.crew}명</td><td>${x.tier === 1 ? '조선소에서 받음' : `Lv.${x.lv} · ${Number(x.gil).toLocaleString('ko-KR')}전`}</td></tr>`).join('')}</table>
+    <p>${esc(TRADE.yardTip)} 내구도는 항해마다 ${TRADE.dur?.voyage ?? 2}, 습격을 받으면 ${TRADE.dur?.raid ?? 10} 닳습니다. ${esc(TRADE.repairTip(TRADE.dur?.repair_gil ?? 2))}</p>
+    <table class="guide-table"><tr><th>갈래</th>${Object.keys(TRADE.parts || {}).map(t => `<th>${esc(TRADE.ship(Number(t))?.name || t)}</th>`).join('')}</tr>
+      ${Object.entries(TRADE.part_names || {}).map(([k, n]) => `<tr><td>${esc(n)}</td>${Object.values(TRADE.parts || {}).map(c => `<td>${c[k] ? Object.entries(c[k]).map(([i, q]) => `${esc(i)} ${q}`).join(' · ') : '—'}</td>`).join('')}</tr>`).join('')}</table>
+  `],
   ['garden', '뒤뜰 밭', `
     <p>별채 뒤뜰의 밭에 가진 식재료를 심어 키웁니다. 별채가 있으면 별채 머리의 「뒤뜰 밭」 단추로 들어갑니다. 수확은 채집 숙련·퀘스트 셈에 들지 않습니다.</p>
     <h4>심기와 물 주기</h4>
@@ -2360,7 +2389,7 @@ const GROUPS = [
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
-  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'regular', 'kin', 'cproject']],
+  ['eco', '가방·경제', 'coin', ['bag', 'economy', 'trade', 'commission', 'regular', 'kin', 'cproject']],
   ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';

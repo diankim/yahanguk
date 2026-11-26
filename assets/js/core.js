@@ -32,6 +32,7 @@ export const store = { user: null, character: null, snaps: {} };
 export function busyOf(s = store) {
   const c = s.character, now = Date.now(), at = c?.travel_arrives_at ? new Date(c.travel_arrives_at).getTime() : 0;
   if (at > now) return { kind: 'travel', until: at };
+  { const v = s.hud?.voyage?.voyage; if (v?.status === 'sail' && v.mode === 'direct') return { kind: 'sailing', until: null }; }
   if (s.expedition) return { kind: 'expedition', until: null };
   if (s.idle?.active) return { kind: 'idle', until: null };
   if (c && (c.downed_at || c.health <= 0)) return { kind: 'downed', until: null };
@@ -310,6 +311,7 @@ export const fmt = {
 
 const ICONS = {
   home: 'M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z',
+  ship: 'M3 15h18l-3 5H6l-3-5zM12 3v12M12 4l6 9h-6M11 6l-5 7h5',
   popout: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
   map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
   user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',

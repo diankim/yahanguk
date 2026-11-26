@@ -4,7 +4,7 @@ import { GAMEDATA } from './gamedata.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm, setScene } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT } from './rules.js';
+import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT, TRADE } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -62,7 +62,7 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
       readIdle || first ? load('world_idle_activity_snapshot', undefined, { maxAge: first ? 0 : 10000 }).catch(authLost) : state.idle,
       load('world_hud_snapshot', undefined, { maxAge: hudAge }).catch(authLost),
     ]);
-    const was = !!store.expedition;
+    const was = !!store.expedition, sailed = state.hud?.voyage?.voyage?.status === 'sail' && state.hud.voyage.voyage.mode === 'direct';
     { const was = state.hud?.stamina, st = hud?.stamina;
       if (was?.next_at && was.now < was.max && st && st.now >= st.max) playAlarm('stamina', 'st:' + new Date(was.next_at).getTime()); }
     state = { idle, hud, exp: hud?.expedition || null };
@@ -72,6 +72,7 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
     store.hud = hud;
     render();
     if (was !== !!state.exp) emit('expedition', state.exp);
+    if (hud && sailed && !['sail', 'raid'].includes(hud?.voyage?.voyage?.status)) window.dispatchEvent(new CustomEvent('yahang:arrived', { detail: { location: store.character?.location } }));
     if (wasIdle !== !!idle?.active) emit('idle', idle);
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
@@ -123,6 +124,7 @@ function statusItems(c) {
     text: ['signup', 'wait', 'gather'].includes(fg.status) ? '함께할 동료를 기다리는 중입니다.' : '싸움 화면을 벗어나 있습니다.', action: ['싸움으로', () => window.yahangGo(fk.route, fg.id)] });
   const e = fg?.kind === 'pfight' ? null : state.hud?.battle;
   if (e) items.push({ kind: 'combat', icon: 'sword', title: `전투 중 · ${e.name}`, text: `적 체력 ${e.hp}/${e.max_hp}`, meter: [e.hp, e.max_hp], action: ['전투로', () => window.yahangGo('home')] });
+  for (const v of voyageItems(state.hud?.voyage)) items.push(v);
   const ready = idleReadyAt(state.idle);
   if (ready) {
     const left = ready - Date.now();
@@ -137,6 +139,26 @@ function statusItems(c) {
   return items;
 }
 
+function voyageItems(b) {
+  if (!b) return [];
+  const out = [], v = b.voyage, go = ['항구 보기', () => { closeStrip(); window.yahangGo('port'); }];
+  if (v?.status === 'sail') out.push({ kind: 'voyage', icon: 'ship', title: TRADE.sailTitle(v), timer: v.arrives_at, text: TRADE.leftText(new Date(v.arrives_at).getTime() - Date.now()), action: location.hash.startsWith('#/port') ? null : go });
+  else if (v?.status === 'raid') out.push({ kind: 'combat', icon: 'ship', title: TRADE.sailTitle(v), text: TRADE.raidText, action: v.fight_id ? ['싸움으로', () => { closeStrip(); window.yahangGo('pfight', v.fight_id); }] : null });
+  else if (v?.status === 'board') out.push({ kind: 'voyage', icon: 'ship', title: TRADE.boardTitle(v), timer: v.board_ends, text: TRADE.boardText(new Date(v.board_ends).getTime() - Date.now()), action: location.hash.startsWith('#/port') ? null : go });
+  for (const x of b.sends || []) out.push({ kind: 'voyage', icon: 'ship', title: TRADE.sendTitle(x), timer: x.arrives_at, text: TRADE.leftText(new Date(x.arrives_at).getTime() - Date.now()) });
+  return out;
+}
+let voyTried = '', voyAt = 0;
+function voyageDue(now) {
+  const b = state.hud?.voyage; if (!b) return;
+  const ts = [b.voyage?.check_at, ...(b.sends || []).map(x => x.check_at), ...(b.invites || []).map(x => x.board_ends)].filter(Boolean).map(t => new Date(t).getTime()).filter(t => t <= now);
+  if (!ts.length) return;
+  const key = ts.sort().join(',');
+  if (key === voyTried && now - voyAt < 60000) return;
+  if (now - voyAt < 5000) return;
+  voyTried = key; voyAt = now;
+  refresh({ char: true, idle: false });
+}
 function openExpeditionView() { closeStrip(); window.dispatchEvent(new CustomEvent('yh-open-expedition')); }
 function closeStrip() { root?.classList.remove('open'); $('#hud-strip', root)?.setAttribute('aria-expanded', 'false'); }
 const onField = () => !location.hash || location.hash === '#' || /^#\/(home)?(\/|$)/.test(location.hash);
@@ -298,6 +320,7 @@ function onTick() {
     if (kind === 'travel') el.textContent = left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…';
     if (kind === 'busy') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '곧 끝납니다';
     if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
+    if (kind === 'voyage') el.textContent = TRADE.leftText(left);
     if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
     if (kind === 'danger') el.textContent = left > 0 ? `목숨이 다하기까지 ${fmt.remain(left)}` : '시간이 다했습니다';
     if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0) statusDue = true; }
@@ -322,6 +345,7 @@ function onTick() {
       content: `${state.exp.place_name || '원정지'}에서 돌아왔습니다. 결과를 받아 보세요.` } }));
   }
   if (!ready) delete root.dataset.idleReady;
+  voyageDue(now);
 }
 
 async function cancelTravel(btn) {

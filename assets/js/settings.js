@@ -62,7 +62,7 @@ export function bindCrop(root, onReady) {
 let notes = [], bell, notesLive = false;
 const selfSoon = throttle(() => loadCharacter({ hud: true }).catch(() => {}).then(() => emit('changed', { name: 'world_notice' })), 5000);
 const shown = new Set();
-const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'tourney_start', 'raid_invite', 'raid_vote', 'gw_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite', 'yohwa', 'guide']);
+const POP_KINDS = new Set(['ride_request', 'party_exp_offer', 'party_expedition', 'party_invite', 'expedition_done', 'bag_overflow', 'trade_offer', 'friend_request', 'circle_invite', 'bond_request', 'bond_broken', 'bond_accepted', 'spar_request', 'spar_result', 'tourney_start', 'raid_invite', 'raid_vote', 'gw_vote', 'gw_invite', 'pfight_invite', 'tourney_partner', 'bond_wedding_ask', 'wedding_invite', 'yohwa', 'guide', 'trade_board', 'trade_raid']);
 export function mountNotifications(btn) {
   bell = btn;
   bell.onclick = openNotifications;
@@ -121,10 +121,11 @@ function noteToast(n) {
     groups.forEach((names, t) => { const ns = names.filter(Boolean); toast(ns.length ? `${t} · ${ns.map(x => `「${x}」`).join(' ')}` : names.length > 1 ? `${t} (${names.length})` : t, 'info'); });
   }, 400);
 }
-const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'gw_vote', 'pfight_invite']);
+const FIGHT_NOTE = new Set(['gw_invite', 'raid_invite', 'raid_vote', 'gw_vote', 'pfight_invite', 'trade_raid']);
 const RIDE_MS = (Number(GAMEDATA.ride?.wait_s) || 60) * 1000;
 const rideLeftMs = n => (n.payload?.expires_at ? new Date(n.payload.expires_at).getTime() : new Date(n.created_at).getTime() + RIDE_MS) - Date.now();
-const staleFight = n => (FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000) || (n.kind === 'ride_request' && rideLeftMs(n) <= 0);
+const boardLeftMs = n => (n.payload?.ends ? new Date(n.payload.ends).getTime() : new Date(n.created_at).getTime() + (Number(GAMEDATA.trade?.sail?.board_s) || 60) * 1000) - Date.now();
+const staleFight = n => (FIGHT_NOTE.has(n.kind) && Date.now() - new Date(n.created_at).getTime() > 3 * 60000) || (n.kind === 'ride_request' && rideLeftMs(n) <= 0) || (n.kind === 'trade_board' && boardLeftMs(n) <= 0);
 export function clearFightNotes(kinds, key, id) {
   if (id == null) return;
   const ks = new Set(kinds), hit = notes.filter(n => ks.has(n.kind) && String(n.payload?.[key]) === String(id));
@@ -146,6 +147,8 @@ function noteActs(n) {
   if (n.kind === 'rescue_request' && n.payload?.target_id) return `<button class="btn primary small" data-here="구조" data-rescue="${esc(n.id)}">구조</button>`;
   if (n.kind === 'party_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-invite="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-invite="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'ride_request' && n.payload?.request_id && rideLeftMs(n) > 0) return `<button class="btn primary small" data-ride="${esc(n.id)}" data-acc="1">함께 타기</button><button class="btn small" data-ride="${esc(n.id)}" data-acc="0">사양</button>`;
+  if (n.kind === 'trade_board' && n.payload?.voyage_id && boardLeftMs(n) > 0) return `<button class="btn primary small" data-tboard="${esc(n.id)}" data-acc="1">함께 타기</button><button class="btn small" data-tboard="${esc(n.id)}" data-acc="0">사양</button>`;
+  if (n.kind === 'trade_raid' && n.payload?.fight_id && n.payload?.won == null) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="pfight/${esc(n.payload.fight_id)}">싸움으로</button>`;
   if (n.kind === 'trade_offer' && n.payload?.trade_id) return `<button class="btn primary small" data-trade="${esc(n.id)}" data-acc="1" data-here="직접 거래">수락</button><button class="btn small" data-trade="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'friend_request' && n.payload?.from_id) return `<button class="btn primary small" data-friend="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-friend="${esc(n.id)}" data-acc="0">거절</button>`;
   if (n.kind === 'circle_invite' && n.payload?.invite_id) return `<button class="btn primary small" data-circle="${esc(n.id)}" data-acc="1">수락</button><button class="btn small" data-circle="${esc(n.id)}" data-acc="0">거절</button>`;
@@ -185,13 +188,14 @@ function noteActs(n) {
 }
 const GO_KIND = { garden_shoo: 'garden', bond_emote: 'house', title: 'char/titles', cosmetic: 'settings', reward: 'bag/items', bag_full: 'bag/items', trade_result: 'bag/items', skill_rerank: 'char/skills',
   yohwa: 'char/status', notice: 'patch', friend_accepted: 'party', party_leave: 'party', party_exp_departed: 'home', tourney_partner: 'tourney',
-  drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look', project_stage: 'home', regular_stage: 'log/side' };
-const pastActs = n => { const a = noteActs(n); return /data-(invite|trade|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
-const ACT_SEL = ['ride', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'sparw', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
+  drawing_gift: 'house', drawing_removed: 'house', ucomm_done: 'log/commission', ucomm_note_removed: 'log/commission', outfit_gift: 'char/look', outfit_removed: 'char/look', outfit_got: 'char/look', project_stage: 'home', regular_stage: 'log/side',
+  trade_arrive: 'port', trade_sail: 'port', trade_cancel: 'port', trade_board_reply: 'port', trade_raid: 'port' };
+const pastActs = n => { const a = noteActs(n); return /data-(invite|trade|tboard|friend|circle|bondn|spar|pexo|pexp|wed|rescue)="|data-join="1"/.test(a) ? '' : a; };
+const ACT_SEL = ['ride', 'tboard', 'invite', 'trade', 'friend', 'circle', 'bondn', 'bug', 'rescue', 'go-exp', 'ov', 'spar', 'sparv', 'sparw', 'pexp', 'pexo', 'raid', 'gw', 'pfight', 'tn', 'wed', 'wedv', 'feastv', 'fdown', 'letter', 'lgone', 'house', 'goto'].map(k => `[data-${k}]`).join(',');
 async function runAct(btn) {
   if (btn.dataset.lgone) { const o = byId(btn.dataset.lgone); if (!o) return false; await markRead(o); (await import('./letters.js')).openRemoved(o.payload.removed); return true; }
   if (btn.dataset.ov) { const o = byId(btn.dataset.ov); if (o) await markRead(o); closeModal(); (await import('./overflow.js')).openOverflow(); return true; }
-  const n = byId(btn.dataset.ride || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.sparw || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.feastv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
+  const n = byId(btn.dataset.ride || btn.dataset.tboard || btn.dataset.rescue || btn.dataset.invite || btn.dataset.trade || btn.dataset.friend || btn.dataset.circle || btn.dataset.bondn || btn.dataset.bug || btn.dataset.goExp || btn.dataset.spar || btn.dataset.sparv || btn.dataset.sparw || btn.dataset.pexp || btn.dataset.pexo || btn.dataset.raid || btn.dataset.gw || btn.dataset.pfight || btn.dataset.tn || btn.dataset.wed || btn.dataset.wedv || btn.dataset.feastv || btn.dataset.fdown || btn.dataset.letter || btn.dataset.house || btn.dataset.goto);
   if (!n) { if (btn.dataset.goExp) { window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; } return false; }
   if (btn.dataset.rescue) { await guard(btn, () => act('world_rescue_character', { p_target: n.payload.target_id })); return true; }
   if (btn.dataset.ride) {
@@ -257,6 +261,10 @@ async function runAct(btn) {
   if (btn.dataset.letter) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('party'); return true; }
   if (btn.dataset.fdown) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const { focusRegion } = await import('./views/map.js'); focusRegion(n.payload?.location); window.yahangGo('map', 'world'); return true; }
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
+  if (btn.dataset.tboard) {
+    await guard(btn, async () => { try { return await act('world_trade_board_respond', { p_voyage: n.payload.voyage_id, p_accept: btn.dataset.acc === '1' }); } finally { await markRead(n); } });
+    return true;
+  }
   if (btn.dataset.goto) {
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');
     try {
@@ -281,6 +289,7 @@ function notePop(n) {
     document.querySelectorAll('.note-pop[data-kind="ride_request"]').forEach(x => x.remove());
     setTimeout(() => card.remove(), Math.max(0, rideLeftMs(n)));
   }
+  if (n.kind === 'trade_board') setTimeout(() => card.remove(), Math.max(0, boardLeftMs(n)));
   stack.append(card);
   window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'reward' }));
 }
@@ -304,7 +313,7 @@ function openNotifications() {
       ${notes.length > 1 ? '<button class="btn block" data-read-all>모두 확인</button>' : ''}</div>`);
   body.addEventListener('click', async e => {
     const r = e.target.closest('[data-read]'), a = e.target.closest(ACT_SEL), all = e.target.closest('[data-read-all]');
-    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.ride || a.dataset.invite || a.dataset.trade || a.dataset.friend || a.dataset.circle || a.dataset.bondn || a.dataset.spar || a.dataset.sparv || a.dataset.pexo)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
+    if (a) { const row = a.closest('.note-item'); if (await runAct(a) && (a.dataset.ride || a.dataset.tboard || a.dataset.invite || a.dataset.trade || a.dataset.friend || a.dataset.circle || a.dataset.bondn || a.dataset.spar || a.dataset.sparv || a.dataset.pexo)) row?.remove(); if (a.dataset.goExp) closeModal(); return; }
     if (r) { const n = byId(r.dataset.read); r.closest('.note-item')?.remove(); if (n) await guard(r, () => markRead(n), { success: '' }); emptyNew(); }
     if (all) { await guard(all, async () => { for (const n of [...notes]) await markRead(n); body.innerHTML = '<p class="muted">새 알림이 없습니다.</p>'; emptyNew(); }, { success: '알림을 모두 확인했습니다.' }); }
   });
