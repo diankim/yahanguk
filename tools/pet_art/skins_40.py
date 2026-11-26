@@ -744,7 +744,7 @@ skin(key='marigold_puppy', pet='white_puppy', name='금잔화 목걸이 강아�
     desc='달맞이성 잔칫날 향신료 시장에서 누가 걸어 준 금잔화 목걸이를 늘 차고 다니는 흰 강아지입니다. 꽃잎이 하나라도 떨어지면 주워 와서 내밉니다.',
     baby=MARIGOLD_PUPPY_BABY, adult=MARIGOLD_PUPPY_ADULT)
 
-INDIGO_DDONGGAE_BABY = dict(pal={"a": "#ead6ab", "b": "#4a3222", "g": "#d8b47c", "m": "#5c3f2a", "c": "#fbf3e2", "n": "#1a0f0a", "q": "#2a4a8a", "r": "#4a78c0", "d": "#3a78c8", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "w": "#f4f4f0"}, idle='''
+WAVE_DDONGGAE_BABY = dict(pal={"a": "#ead6ab", "b": "#4a3222", "g": "#8cc4d0", "m": "#5c3f2a", "c": "#fbf3e2", "n": "#1a0f0a", "q": "#4e2c12", "r": "#7e4a20", "d": "#2f6fb8", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "w": "#f4f4f0"}, idle='''
 .......q....
 ......qrq...
 .....qqrqq..
@@ -753,7 +753,7 @@ INDIGO_DDONGGAE_BABY = dict(pal={"a": "#ead6ab", "b": "#4a3222", "g": "#d8b47c",
 ...baieaieab
 b..bbeeaeebb
 b...pamnmap.
-.baaaaaccca.
+.baaadwdwda.
 .aggaaaaaaaa
 .aaaaggaaaaa
 .mm.m...m.mm''', step_tail='''
@@ -767,7 +767,7 @@ b...pamnmap.
 baabpamnmapb
 .aggaaaaaaaa
 .aaaaaggaaa.''')
-INDIGO_DDONGGAE_ADULT = dict(pal={"a": "#ead6ab", "b": "#4a3222", "g": "#d8b47c", "m": "#5c3f2a", "c": "#fbf3e2", "n": "#1a0f0a", "q": "#2a4a8a", "r": "#4a78c0", "d": "#3a78c8", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "w": "#f4f4f0"}, idle='''
+WAVE_DDONGGAE_ADULT = dict(pal={"a": "#ead6ab", "b": "#4a3222", "g": "#8cc4d0", "m": "#5c3f2a", "c": "#fbf3e2", "n": "#1a0f0a", "q": "#4e2c12", "r": "#7e4a20", "d": "#2f6fb8", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "w": "#f4f4f0"}, idle='''
 ..........q....
 .........qrq...
 ........qqrqq..
@@ -794,9 +794,9 @@ baaaaabpamnmapb
 .aaaaaaaddddddd
 aaggaaaaggaaaaa
 .aaaaaaaaaaaaa.''')
-skin(key='indigo_ddonggae', pet='ddonggae', name='쪽빛 두건 똥개',
-    desc='파도너울성 쪽배 사공 집에서 크는 똥개입니다. 사공이 쓰다 준 쪽빛 두건과 줄무늬 목수건을 하고, 배가 들어오면 장대 다리 끝까지 달려 나갑니다.',
-    baby=INDIGO_DDONGGAE_BABY, adult=INDIGO_DDONGGAE_ADULT)
+skin(key='wave_ddonggae', pet='ddonggae', name='물결 목수건 똥개',
+    desc='파도너울성 쪽배 사공 집에서 크는 똥개입니다. 사공이 매어 준 쪽빛 물결 목수건을 하고, 털에 바닷물 빛 얼룩이 앉았습니다. 배가 들어오면 장대 다리 끝까지 달려 나갑니다.',
+    baby=WAVE_DDONGGAE_BABY, adult=WAVE_DDONGGAE_ADULT)
 
 TURMERIC_CAT_BABY = dict(pal={"a": "#f2b820", "o": "#b86a10", "c": "#fbf1df", "n": "#e07a86", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0"}, idle='''
 .....a...a..
