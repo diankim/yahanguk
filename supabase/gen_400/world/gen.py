@@ -113,8 +113,7 @@ def gate(rg):
 
 for r in R:
     if r['id'] not in order:
-        warns.append('본편에 안 나오는 지역(첫 장 뒤에 열림): ' + r['id'])
-        order[r['id']] = (15, 9)
+        order[r['id']] = (99, 1)
 
 
 def pull_open():
