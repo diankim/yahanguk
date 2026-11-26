@@ -219,21 +219,12 @@ $f$;
 create or replace function public.world_realm_bond_task_count(p_uid uuid, p_task jsonb, p_since timestamptz)
  returns int language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $f$
 begin
-  if p_task ->> 't' = 'tradesale' then
-    return coalesce((select sum((s ->> 'qty')::int * (public.world_trade_good(s ->> 'good') ->> 'base')::int)
-      from public.world_economy_ledger l, jsonb_array_elements(l.details -> 'sold') s
-     where l.owner_id = p_uid and l.action = 'trade_goods_sale' and l.created_at >= p_since
-       and l.details ->> 'port' in (select jsonb_array_elements_text(p_task -> 'r'))), 0)::int;
-  end if;
   return public.world_faction_task_count(p_uid, p_task, p_since);
 end $f$;
 
 create or replace function public.world_realm_bond_task_label(p_task jsonb)
  returns text language sql stable security definer set search_path to 'pg_catalog', 'public' as $f$
-  select case when p_task ->> 't' = 'tradesale' then
-      coalesce((select string_agg(m.region_name, '·') || '에서 ' from public.world_map_regions m where m.region_id in (select jsonb_array_elements_text(p_task -> 'r'))), '')
-      || '교역품 팔기(정가 합)'
-    else public.world_faction_task_label(p_task) end
+  select public.world_faction_task_label(p_task)
 $f$;
 
 create or replace function public.world_realm_bond_board_of(p_uid uuid, p_realm text)
@@ -247,7 +238,7 @@ begin
     for t in select x from jsonb_array_elements(coalesce(q -> 'tasks', '[]'::jsonb)) x loop
       n := public.world_realm_bond_task_count(p_uid, t, d0);
       tasks := tasks || jsonb_build_object('label', public.world_realm_bond_task_label(t), 'have', least(n, (t ->> 'n')::int), 'n', (t ->> 'n')::int,
-        'unit', case when t ->> 't' = 'tradesale' then '전' when t ->> 't' in ('win', 'gather') then '번' else '회' end);
+        'unit', case when t ->> 't' = 'tradesale' then case when t ->> 'by' = 'gil' then '전' else '개' end when t ->> 't' in ('win', 'gather') then '번' else '회' end);
       if n < (t ->> 'n')::int then done := false; end if;
     end loop;
     for e in select key, value from jsonb_each(coalesce(q -> 'give', '{}'::jsonb)) loop

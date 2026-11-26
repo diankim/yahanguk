@@ -36,6 +36,8 @@ VAULT = [
     ('cosmetic', 'sl_rb_{k}', 5, 300, '{n} 낙관', True),
 ]
 QUEST_LV = 50
+OPEN_AFTER = {'pado': 'hwq_3', 'bulssi': 'hwq_7', 'jaebit': 'hwq_8', 'nunmaru': 'hwq_8', 'dalmaji': 'hwq_9', 'haeoreum': 'hwq_14'}
+SPEAKER_LIKE = re.compile(r'^[가-힣A-Za-z0-9 ·]{1,24}\s?[:：]')
 TITLE_CAT = '권역 인연'
 QUEST_CAT = '권역 인연·'
 
@@ -56,7 +58,7 @@ def rules(R, ports):
               dict(key='deliver', title='특산 납품', tasks=[], pick=v['specials'], give_n=DELIVER_N),
               dict(key='exped', title='권역 원정', tasks=[dict(t='expedition', n=1, r=r)])]
         if v['ports']:
-            ls.append(dict(key='trade', title='항구 교역', tasks=[dict(t='tradesale', n=TRADE_BASE, r=v['ports'])]))
+            ls.append(dict(key='trade', title='항구 교역', tasks=[dict(t='tradesale', n=TRADE_BASE, r=v['ports'], by='gil')]))
         reqs[k] = ls
     vault = []
     for k, nm, _, _ in REALMS:
@@ -71,6 +73,8 @@ def rules(R, ports):
     titles.append(dict(key='rb_all_kin', name='한울땅 한식구', grade=4, rule=dict(realm_bond='realms', stage=5, n=6),
                        desc='건넛누리 여섯 권역이 모두 제 집처럼 문을 열어 줍니다.', cond='여섯 권역 모두 권역 인연 5단계(한식구)에 닿는다'))
     quests = {f'rb_{k}_{s}': [k, s] for k, _, _, _ in REALMS for s in range(2, 6)}
+    if set(OPEN_AFTER) != {k for k, _, _, _ in REALMS}:
+        raise SystemExit('OPEN_AFTER 권역이 REALMS와 다름')
     return dict(realms=realms, order=[k for k, _, _, _ in REALMS], regions=regions,
                 stages=[dict(n=n, name=nm, need=need) for n, nm, need in STAGES], gain=GAIN, day=DAY,
                 perks=PERKS, safe_only=SAFE_ONLY, perk_text=PERK_TEXT, requests=dict(n=REQ_N, list=reqs),
@@ -144,7 +148,14 @@ def quests_sql(RB, SQ, J, TA, known, RID, xp_need, fresh, errors):
         n, qs = parse_script(f, k, SQ, errors)
         npcs.update(n)
         quests += qs
-    speakers = {n: npc_key(n) for n in npcs}
+    import data_trade as TD
+    PORTS = {p[0] for p in TD.PORTS}
+    GOODS = {g[0] for g in TD.GOODS}
+    miss = sorted(set(RB['quests']) - {q['id'] for q in quests})
+    if miss:
+        errors.append('권역 이야기 빠짐: ' + ', '.join(miss))
+    speakers = {n: SQ.npc_key(n) for n in SQ.NPC}
+    speakers.update({n: npc_key(n) for n in npcs})
     fresh('npcs', list(npcs), '인물')
     fresh('quest_ids', [q['id'] for q in quests], '퀘스트 id')
     qrows, srows = [], []
@@ -161,6 +172,8 @@ def quests_sql(RB, SQ, J, TA, known, RID, xp_need, fresh, errors):
             if j > 0 and not st['need'].get('tasks') and not st['need'].get('give'):
                 errors.append(f"권역 이야기 {q['id']} 장면 {j + 1}: need에 할 일이 없음")
             for ln in lines:
+                if ln['s'] is None and SPEAKER_LIKE.match(ln['t']):
+                    errors.append(f"권역 이야기 {q['id']} 장면 {j + 1}: 말하는 이로 안 잡힌 줄 — {ln['t'][:24]}")
                 if ln['s'] is None and ln['t'][:3] in ('그런데', '그러나', '그러자', '그리고', '하지만'):
                     errors.append(f"권역 이야기 {q['id']} 장면 {j + 1}: 서술 첫머리 접속사")
                 if any(x in ln['t'] for x in ('형님', '누님', '라는 것이었다', '라고 일렀다', '라고 일러')):
@@ -169,7 +182,17 @@ def quests_sql(RB, SQ, J, TA, known, RID, xp_need, fresh, errors):
                 for rg in t.get('r', []):
                     if rg not in RID:
                         errors.append(f"권역 이야기 {q['id']} 지역 없음: {rg}")
+                if t.get('t') in ('tradesale', 'hfeast', 'lantern'):
+                    for rg in t.get('r', []):
+                        if rg not in PORTS:
+                            errors.append(f"권역 이야기 {q['id']} {t['t']} 항구 아님: {rg}")
+                if t.get('t') in ('tradesale', 'hfeast', 'lantern') and not isinstance(t.get('n'), int):
+                    errors.append(f"권역 이야기 {q['id']} {t['t']} n이 개수(정수)가 아님")
                 for it in t.get('items', []):
+                    if t.get('t') == 'tradesale':
+                        if it not in GOODS:
+                            errors.append(f"권역 이야기 {q['id']} 교역품 없음: {it}")
+                        continue
                     if it not in known:
                         errors.append(f"권역 이야기 {q['id']} 물품 없음: {it}")
             for it in st['need'].get('give', {}):
@@ -180,7 +203,7 @@ def quests_sql(RB, SQ, J, TA, known, RID, xp_need, fresh, errors):
         per = round(0.4 * xp_need(L) * 0.25) // max(1, len(task_steps))
         need = next(x['need'] for x in RB['stages'] if x['n'] == s)
         qrows.append(dict(quest_id=q['id'], cat=RB['quest_cat'] + rv['name'], title=q['title'], summary=q['summary'], region_id=hub, min_level=L,
-                          after=[f'rb_{k}_{s - 1}'] if s > 2 else [], sort=3900 + i, epilogue=[], open_req={'realm_bond': k, 'pts': need}))
+                          after=[OPEN_AFTER[k]] + ([f'rb_{k}_{s - 1}'] if s > 2 else []), sort=3900 + i, epilogue=[], open_req={'realm_bond': k, 'pts': need}))
         for x in steps:
             rw = {'xp': per} if x['step'] in task_steps else {}
             if x['step'] == len(steps):
