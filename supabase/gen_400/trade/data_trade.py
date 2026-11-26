@@ -28,7 +28,7 @@ TABLE = '''
 2:15 2:25 2:45 3:45 2:10 1:05 1:10 - 0:45
 1:50 2:05 2:20 3:25 2:25 1:20 1:30 0:45 -
 '''
-HANUL_ROUTES = [('pd_city', 'bs_town', 80), ('pd_city', 'jb_village', 100), ('jb_village', 'ho_city', 100), ('bs_town', 'ho_city', 145), ('pd_city', 'ho_city', 180)]
+HANUL_ROUTES = [('pd_city', 'bs_town', 80), ('pd_city', 'jb_village', 100), ('jb_village', 'ho_city', 100), ('bs_town', 'ho_city', 145), ('pd_city', 'ho_city', 180), ('bs_town', 'jb_village', 160)]
 CROSS = [('river_ferry', 'pd_city', 120)]
 
 

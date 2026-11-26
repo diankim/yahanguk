@@ -336,7 +336,7 @@ begin
       where c.owner_id in (select a.owner_id from public.world_trade_aboard a where a.voyage_id = v.voyage_id);
     for u in select a.owner_id from public.world_trade_aboard a where a.voyage_id = v.voyage_id order by a.owner_id loop
       insert into public.world_trade_seen(owner_id, port_id, vals, at) values (u, v.to_port, vals, now())
-      on conflict (owner_id, port_id) do update set vals = excluded.vals, at = excluded.at;
+      on conflict (owner_id, port_id) do update set vals = excluded.vals, at = excluded.at where public.world_trade_seen.vals is distinct from excluded.vals;
       perform public.world_trade_note(u, 'trade_arrive', '배가 닿음', (public.world_trade_port(v.to_port) ->> 'name') || '에 닿았습니다.', jsonb_build_object('voyage_id', v.voyage_id, 'port', v.to_port));
     end loop;
     delete from public.world_trade_aboard where voyage_id = v.voyage_id;
@@ -592,7 +592,7 @@ end $f$;
 create or replace function public.world_trade_view(p_port text default null)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $f$
 declare uid uuid := public.fn_owner_auth_uid(); r jsonb := public.world_trade_rules(); here text; port text; live boolean; board jsonb; seen public.world_trade_seen%rowtype;
-  d date := public.world_housing_today(); dem jsonb; used int; ports jsonb; c public.world_characters%rowtype; ship_port text;
+  d date := public.world_housing_today(); dem jsonb; used int; ports jsonb; c public.world_characters%rowtype; ship_port text; sp_tier int; src text; spd numeric;
 begin
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
   perform public.world_trade_tick(uid);
@@ -602,8 +602,13 @@ begin
   here := case when public.world_trade_sailing(uid) then null else public.world_trade_here(uid) end;
   port := case when p_port is not null and r -> 'ports' ? p_port then p_port else here end;
   live := port is not null and port = here;
-  select port_id into ship_port from public.world_ships where owner_id = uid;
-  if live then board := public.world_trade_board_vals(port);
+  select port_id, tier into ship_port, sp_tier from public.world_ships where owner_id = uid;
+  src := coalesce(here, ship_port);
+  spd := coalesce((public.world_trade_ship_rule(sp_tier) ->> 'speed')::numeric, 1);
+  if live then
+    board := public.world_trade_board_vals(port);
+    insert into public.world_trade_seen(owner_id, port_id, vals, at) values (uid, port, board, now())
+    on conflict (owner_id, port_id) do update set vals = excluded.vals, at = excluded.at where public.world_trade_seen.vals is distinct from excluded.vals;
   elsif port is not null then
     select * into seen from public.world_trade_seen where owner_id = uid and port_id = port;
     board := seen.vals;
@@ -612,9 +617,11 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('id', p.key, 'name', p.value ->> 'name', 'dock', p.value ->> 'dock', 'shipyard', (p.value ->> 'shipyard')::boolean,
       'realm', p.value ->> 'realm', 'good', p.value ->> 'good', 'lv', g.min_level, 'open', public.world_trade_dest_ok(uid, p.key) is null,
       'seen_at', (select s.at from public.world_trade_seen s where s.owner_id = uid and s.port_id = p.key),
-      'minutes', public.world_trade_route_min(coalesce(ship_port, here), p.key)) order by g.min_level, p.key), '[]'::jsonb)
+      'minutes', public.world_trade_route_min(src, p.key),
+      'direct_min', round(public.world_trade_route_min(src, p.key) * spd / (r -> 'sail' ->> 'direct_div')::numeric),
+      'send_min', round(public.world_trade_route_min(src, p.key) * spd)) order by g.min_level, p.key), '[]'::jsonb)
     into ports from jsonb_each(r -> 'ports') p left join public.world_map_regions g on g.region_id = p.key;
-  return jsonb_build_object('here', here, 'port', port, 'port_name', public.world_trade_port(port) ->> 'name', 'live', live, 'shipyard', coalesce((public.world_trade_port(port) ->> 'shipyard')::boolean, false),
+  return jsonb_build_object('here', here, 'from', src, 'port', port, 'port_name', public.world_trade_port(port) ->> 'name', 'live', live, 'shipyard', coalesce((public.world_trade_port(port) ->> 'shipyard')::boolean, false),
     'board', board, 'seen_at', case when not live then seen.at end, 'seek', case when live then to_jsonb(public.world_trade_seek(port, d)) end,
     'demand', dem || jsonb_build_object('port_name', public.world_trade_port(dem ->> 'port') ->> 'name'),
     'ports', ports, 'ship', public.world_trade_ship_view(uid), 'hold', public.world_trade_hold(uid), 'parts', public.world_trade_parts_view(uid),
