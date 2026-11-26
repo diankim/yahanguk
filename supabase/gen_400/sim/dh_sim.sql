@@ -98,7 +98,9 @@ begin
         if due_head or due_breath then v_act := 'guide'; end if;
         best := hd;
       else
-        select z into best from unnest(public.world_dh_nb(x.pos)) z where not public.world_dh_rift(fid, z) order by public.world_dh_dist(z, hd), z limit 1;
+        select z into best from unnest(array[x.pos] || public.world_dh_nb(x.pos)) z where not public.world_dh_rift(fid, z)
+          order by (pg_temp.yh_cellscore(fid, x.owner_id, z, false) > -100) desc, public.world_dh_dist(z, hd), z limit 1;
+        if pg_temp.yh_cellscore(fid, x.owner_id, best, false) <= -100 and pg_temp.yh_cellscore(fid, x.owner_id, best, true) > -100 then v_act := 'brace'; end if;
       end if;
     else
       bs := -1e9;
