@@ -148,6 +148,7 @@ part('../a_level.sql')
 part('b_tier9.sql')
 part('c_story.sql')
 part('d_realm.sql')
+part('e_travel.sql')
 
 rules = {}
 for tid, tname in D.TERRS.items():

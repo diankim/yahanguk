@@ -87,6 +87,7 @@ def build(dsn):
     d['rescue'] = q(dsn, "select world_rescue_rules()")
     d['ride'] = q(dsn, "select world_ride_rules()")
     d['sparWatch'] = q(dsn, "select world_spar_watch_rules()")
+    d['travel'] = q(dsn, "select world_travel_rules()")
     d['survival'] = q(dsn, "select world_survival_rules()")
     d['rate'] = q(dsn, "select world_rate_rules()")
     d['weakSafe'] = q(dsn, "select world_weak_safe_rules()")

@@ -416,13 +416,14 @@ async function fillQuote(box, id, est) {
   if (!v || v.error || selected !== id || !box.isConnected) return;
   const b = $('[data-quote]', box), f = $('[data-quote-fare]', box), w = $('[data-quote-walk]', box);
   const walk = !!v.walked;
-  if (b) b.innerHTML = `${icon('route', 14)} 경로 ${v.hops}구간 · 약 ${fmt.remain(v.secs * 1000)}${walk ? ' · 걸어서' : ''}${famTag(id)}`;
+  if (b) b.innerHTML = `${icon('route', 14)} 경로 ${v.hops}구간 · 약 ${fmt.remain(v.secs * 1000)}${walk ? ' · 걸어서' : ''}${famTag(id, v.fam)}`;
   const pk = $('#map-peek:not([hidden]) .peek-txt small', el);
   if (b && pk) pk.textContent = b.textContent.trim();
   if (f) f.innerHTML = v.project ? ' · 사업 지름길: 운임 없음' : fareLine({ ...est, walk, need: v.need });
   if (w) w.innerHTML = walkHint({ ...est, walk, need: v.need });
 }
-function famTag(id) {
+function famTag(id, route) {
+  if (route > 0) return ` · <span class="fam" data-tip="${esc(TRAVEL_FAMILIAR.routeTip(route))}">${esc(TRAVEL_FAMILIAR.routeTag(route))}</span>`;
   const n = TRAVEL_FAMILIAR.pct(mapData?.regions?.find(x => x.region_id === id));
   return n > 0 ? ` · <span class="fam" data-tip="${esc(TRAVEL_FAMILIAR.tip(n))}">${esc(TRAVEL_FAMILIAR.tag(n))}</span>` : '';
 }
