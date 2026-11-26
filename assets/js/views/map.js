@@ -6,7 +6,7 @@ import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
 import { GAMEDATA } from '../gamedata.js';
 import { helpQ, helpLine } from '../tips.js';
-import { weakSafe } from '../rules.js';
+import { weakSafe, TRAVEL_FAMILIAR } from '../rules.js';
 
 const bjMaps = () => store.hud?.bijang?.maps || [];
 const bjAt = id => bjMaps().filter(m => m.region_id === id);
@@ -416,11 +416,15 @@ async function fillQuote(box, id, est) {
   if (!v || v.error || selected !== id || !box.isConnected) return;
   const b = $('[data-quote]', box), f = $('[data-quote-fare]', box), w = $('[data-quote-walk]', box);
   const walk = !!v.walked;
-  if (b) b.innerHTML = `${icon('route', 14)} 경로 ${v.hops}구간 · 약 ${fmt.remain(v.secs * 1000)}${walk ? ' · 걸어서' : ''}`;
+  if (b) b.innerHTML = `${icon('route', 14)} 경로 ${v.hops}구간 · 약 ${fmt.remain(v.secs * 1000)}${walk ? ' · 걸어서' : ''}${famTag(id)}`;
   const pk = $('#map-peek:not([hidden]) .peek-txt small', el);
   if (b && pk) pk.textContent = b.textContent.trim();
   if (f) f.innerHTML = v.project ? ' · 사업 지름길: 운임 없음' : fareLine({ ...est, walk, need: v.need });
   if (w) w.innerHTML = walkHint({ ...est, walk, need: v.need });
+}
+function famTag(id) {
+  const n = TRAVEL_FAMILIAR.pct(mapData?.regions?.find(x => x.region_id === id));
+  return n > 0 ? ` · <span class="fam" data-tip="${esc(TRAVEL_FAMILIAR.tip(n))}">${esc(TRAVEL_FAMILIAR.tag(n))}</span>` : '';
 }
 function fareLine(est) {
   const m = est.mount; if (!m || m.fare_free) return '';
@@ -465,7 +469,7 @@ function drawDetail() {
         ${zone?.is_safe_zone ? `<p class="hint ok">${icon('shield', 14)} ${esc(zone.shop_name || '상점')}${weakSafe(r.region_id) ? ' · 빈약한 안전지대' : ` · 거래소${zone.has_stable ? ' · 마구간' : ''}`} · 전투 없음</p>` : ''}
         <p class="desc">${esc(r.description || '')}</p>
         ${!zone?.is_safe_zone ? `<dl class="kv"><div><dt>요괴</dt><dd>${monsters.length ? monsters.map(m => esc(m.monster_name)).join(', ') : '미확인'}</dd></div></dl>` : ''}
-        ${route && route.length > 1 ? `<div class="route-box"><b data-quote>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}${est.walk ? ' · 걸어서' : ''}</b>
+        ${route && route.length > 1 ? `<div class="route-box"><b data-quote>${icon('route', 14)} 경로 ${est.hops}구간 · 약 ${fmt.remain(est.secs * 1000)}${est.walk ? ' · 걸어서' : ''}${famTag(r.region_id)}</b>
           <ol class="route-steps">${route.map((x, i) => `<li class="${i === 0 ? 'from' : i === route.length - 1 ? 'to' : ''}">${esc(x.region_name)}</li>`).join('')}</ol>
           <p class="muted small">여러 구간을 한 번에 이어 갑니다. 중간 지역에서는 멈추지 않고 마지막 도착만 알립니다. 준비금 ${fmt.jeon(5 * est.hops)}<span data-quote-fare>${fareLine(est)}</span></p><div data-quote-walk>${walkHint(est)}</div></div>` : ''}
         ${reason === 'cd' ? `<p class="hint">${icon('hourglass', 14)}<span>이동을 취소한 뒤라 <b data-tcd>${fmt.remain(travelCdLeft())}</b> 뒤에 다시 출발할 수 있습니다.</span></p>` : reason ? `<p class="hint">${icon('eye', 14)} ${esc(reason)}</p>` : ''}

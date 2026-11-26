@@ -5,7 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK } from '../rules.js';
+import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -166,6 +166,7 @@ const S = [
       <li>지도에서 <b>선으로 이어진 지역</b>만 바로 갈 수 있습니다. 먼 곳은 경유해야 합니다.</li>
       <li>지역마다 들어갈 수 있는 레벨이 있습니다. 지역 안의 답사 지점·채집터·원정지는 깊을수록 출입 레벨이 2씩 높고, 최고 ${GD.level?.cap ?? 45}입니다(귀허도 깊은 곳은 40).</li>
       <li>이동 시간은 거리·고도 차·지형·영역 경계·탈것 속도로 정해집니다. 지도에 나오는 시간은 예상치이고, 실제 도착 시각은 서버가 정합니다.</li>
+      <li><b>익숙한 길</b>: ${TRAVEL_FAMILIAR.line}</li>
       <li><b>취소</b>: 출발 후 60초 안에 취소할 수 있습니다. 위약금은 없지만 낸 운임은 돌려받지 못하고, 취소하면 <b>3분 동안 다시 출발할 수 없습니다</b>.</li>
       <li><b>이동 보상</b>: 경험치·탐사 기술·이동 칭호 진행은 <b>도착했을 때</b> 받습니다.</li>
       <li><b>도착할 때의 상태 변화</b>: 바깥 지역에 도착하면 3분의 1 확률로 상태 변화를 굴립니다. 안전지대에 도착하면 굴리지 않습니다.</li>
