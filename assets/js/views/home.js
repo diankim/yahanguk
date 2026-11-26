@@ -10,6 +10,7 @@ import { factionColor } from '../geo.js';
 import { PARTY_EXP, AGILE, quietPctOf, SEARCH_GAP, GATHER_GAP, inflMine, MENTOR, FIGHT_KINDS, WHITE_NIGHT, TRADE } from '../rules.js';
 import { openProject, projectBand, urgentSet } from './project.js';
 import { openRegular, regularTiles } from './regular.js';
+import { realmTile } from './realmbond.js';
 import { bindTips } from './fightui.js';
 import { renderShop, renderMarket, renderStable, renderSmithy, renderStorage, keepScroll } from './services.js';
 import { openExpeditionWindow } from './expedition.js';
@@ -227,6 +228,7 @@ function town(s, roster) {
     ['tourney', 'sword', '비무 방', '야행 비무회 신청·대진표·관람'],
     LANTERN.isPort(r.region_id) ? ['lantern', 'lantern', '등불 편지', LANTERN.tile] : null,
     HFEAST.isPort(r.region_id) ? ['hfeast', 'bowl', '나눔 잔칫상', HFEAST.tile] : null,
+    realmTile(r.region_id),
     ['faction', 'flag', '세력', store.character?.major_faction_id ? `${nameOf(store.character.major_faction_id)} · 퀘스트·의뢰판·비고` : '대세력 살펴보기·가입'],
     r.region_id === 'hq_yard' ? ['records', 'scroll', '정청 기록고', '첫째 밤의 흔적이 남은 장부'] : null,
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
@@ -589,6 +591,7 @@ function openFacility(k, s) {
   if (k === 'idle') return goIdleRest();
   if (k === 'lantern') return import('../lantern.js').then(x => x.openLantern());
   if (k === 'hfeast') return import('../hfeast.js').then(x => x.openHarborFeast());
+  if (k === 'realm') return import('./realmbond.js').then(x => x.openRealmBond(null));
   if (k === 'project') return openProject(s.region.project?.here?.key || null);
   if (k.startsWith('regular')) return openRegular(k.split(':')[1] || s.region.regular?.npc || null);
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];

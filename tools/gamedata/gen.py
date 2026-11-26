@@ -194,6 +194,10 @@ def build(dsn):
         'raid', jsonb_build_object('p', r -> 'raid' -> 'p', 'p_far', r -> 'raid' -> 'p_far', 'far_min', r -> 'raid' -> 'far_min'), 'cross', (select jsonb_agg(jsonb_build_array(x ->> 0, x ->> 1)) from jsonb_array_elements(r -> 'cross') x),
         'lose_pct', r -> 'raid' -> 'lose_pct', 'send_lose', r -> 'raid' -> 'send_lose', 'dur', r -> 'dur', 'name_max', r -> 'name_max')
         from (select world_trade_rules() r) x""")
+    d['cabin'] = q(dsn, """select (r - 'sources' - 'craft') || jsonb_build_object(
+        'sources', jsonb_build_object('cross', (select jsonb_agg(i.item_name) from jsonb_array_elements_text(r -> 'sources' -> 'cross' -> 'items') x join world_item_catalog i on i.item_id = x),
+          'raid', (select jsonb_agg(i.item_name) from jsonb_object_keys(r -> 'sources' -> 'raid' -> 'items') x join world_item_catalog i on i.item_id = x)))
+        from (select world_cabin_rules() r) x""")
     d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(
         'titles', jsonb_array_length(world_project_rules() -> 'titles'),
         'vault', (select jsonb_agg(jsonb_build_object('name', i.item_name, 'price', (v ->> 'price')::int, 'rank', (v ->> 'rank')::int, 'stage', (v ->> 'stage')::int) order by (v ->> 'stage')::int, (v ->> 'price')::int)

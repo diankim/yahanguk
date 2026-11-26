@@ -1,4 +1,5 @@
 import { PORTRAITS, PORTRAIT_FRAME } from './portraits.js';
+import { CABIN_FUR, CABIN_WALL, CABIN_PAPER, CABIN_GROUND } from './cabin_furn.js';
 const C = {
   wood: '#8a5a32', dark: '#553420', deep: '#3e2616', pine: '#a8784a', lac: '#9a3326', lacD: '#6e2219', gold: '#d8b25a', brass: '#b08a40',
   paper: '#f1e8d4', paper2: '#e2d6bb', ink: '#2a2a2e', ind: '#33467a', ind2: '#4b63a0', red: '#b84a3a', jade: '#5f9a82', jade2: '#7fb59c',
@@ -1627,6 +1628,8 @@ export const GROUND = {
   wanja:    { name: '완자 마루',  grade: 3, a: '#8a5a36', b: '#764a2c', pat: 'wanja' },
   ug_vortex: { name: '소용돌이 마루', grade: 4, a: '#2e3a44', b: '#27323b', c: '#4f9aa6', pat: 'vortex' },
 };
+
+for (const [T, S] of [[FUR, CABIN_FUR], [WALL, CABIN_WALL], [PAPER, CABIN_PAPER], [GROUND, CABIN_GROUND]]) for (const [k, d] of Object.entries(S)) T[k] = { ...d, ship: true };
 
 export const DEFAULT_SET = {
   paper: 'dancheong', ground: 'maru',

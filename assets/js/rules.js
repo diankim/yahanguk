@@ -526,3 +526,39 @@ export const PET_SKIN = {
   bookHelp: '건넛누리 권역 활동으로 무늬를 얻습니다. 얻은 무늬는 기록에 남아, 바탕 동무가 없어도 그 동무를 얻는 대로 바로 고를 수 있습니다. 운에 맡기는 길은 없고, 거래할 수 없습니다.',
   guide: '건넛누리의 무늬는 권역 활동(이야기·답사·보조 퀘스트·교역·등불·잔칫상·습격·원정·도감·우두머리)으로 얻습니다. 얻는 길과 진행은 동무 창의 「무늬 모음」에 보이고, 얻으면 알림이 옵니다. 바탕 동무가 없어도 기록은 남아, 그 동무를 얻으면 바로 고를 수 있습니다.',
 };
+
+const RB = GD.realmBond || { stages: [], day: { realm: 120, all: 300 }, gain: {}, realms: {}, order: [], perk_text: {}, requests: { n: 3 } };
+const rbNum = n => Number(n || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 });
+export const REALM_BOND = {
+  ...RB,
+  stageName: n => (RB.stages || []).find(s => s.n === n)?.name || '',
+  stageNeed: n => (RB.stages || []).find(s => s.n === n)?.need ?? 0,
+  realmOfHub: r => Object.entries(RB.realms || {}).find(([, v]) => (v.hubs || []).includes(r))?.[0] || null,
+  realmName: k => RB.realms?.[k]?.name || '',
+  num: rbNum,
+  unopened: '아직 가 보지 않은 곳',
+  none: '아직 인연을 맺은 권역이 없습니다. 건넛누리 권역의 안전지대에 처음 닿으면 그 권역과 인연이 시작됩니다.',
+  tile: '의뢰판 · 특산 기부 · 비고',
+  intro: '건넛누리 권역마다 따로 쌓는 인연입니다. 대세력과 상관없이 누구나 여섯 권역 모두와 맺고, 떠나기가 없어 쌓은 것은 그대로 남습니다.',
+  help: () => `인연도는 그 권역 안에서 활동하면 쌓입니다 — 권역 의뢰 하나에 ${RB.gain?.request}, 토벌 승리 ${RB.gain?.win}, 탐색·채집 ${RB.gain?.explore}, 원정 ${RB.gain?.exp_min}분마다 1(한 번에 ${RB.gain?.exp_max}까지), 그 권역 항구에서 교역품 판매 정가 ${rbNum(RB.gain?.trade_gil)}전마다 1, 그 권역 특산 재료 기부 시세 ${RB.gain?.donate_gil}전마다 1. 하루(한국 시각)에 권역마다 ${RB.day?.realm}, 모든 권역 합쳐 ${RB.day?.all}까지 쌓입니다. 쌓은 만큼 그 권역의 「인연 표」도 쌓여 비고에서 씁니다(인연 표를 써도 인연도는 줄지 않습니다). 단계를 올리려면 인연도 문턱에 닿고 그 단계의 권역 이야기 한 편을 마쳐야 합니다. 단계 혜택은 그 권역 안에서만 붙습니다.`,
+  ladderTip: () => (RB.stages || []).map(s => `${s.n} ${s.name} ${rbNum(s.need)}`).join(' · '),
+  away: name => `의뢰 보고·특산 기부·비고 교환은 ${name} 안전지대에서만 합니다. 진행은 어디서나 볼 수 있습니다.`,
+  capFull: '오늘 이 권역에서 쌓을 수 있는 인연도가 찼습니다. 한국 시각 0시에 다시 찹니다.',
+  reqNote: () => `매일(한국 시각 0시) 권역마다 의뢰 ${RB.requests?.n || 3}가지가 바뀝니다. 오늘 0시부터 한 일을 세고, 다 되면 그 권역 안전지대에서 보고합니다. 하나에 인연도·인연 표 +${RB.gain?.request}.`,
+  donateNote: () => `그 권역 특산 재료를 넘기면 기준 시세 ${RB.gain?.donate_gil}전마다 인연도·인연 표 1. 오늘 쌓을 수 있는 몫을 넘게 고르면 받지 않으니 수량을 줄이세요. 장착 중·잠금·강화한 것은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다.`,
+  vaultNote: '인연 표로만 받습니다. 칭호·이름 색·탈것·꾸미기는 하나만 받고, 비고 물품은 거래할 수 없습니다.',
+  storyNote: '단계마다 권역 이야기 한 편이 있습니다. 받은 이야기는 일지 › 보조 퀘스트에서 이어 갑니다.',
+  nextLine: x => x ? `다음 ${x.stage}단계 「${x.name}」 · 인연도 ${rbNum(x.need)} + 권역 이야기 「${x.quest_title || ''}」` : '가장 높은 단계 「한식구」입니다.',
+  storyState: x => x.done || x.quest_done ? '마침' : x.active || x.quest_active ? '진행 중 · 일지 › 보조 퀘스트' : (x.why ?? x.quest_why) || `받을 수 있음 · ${x.at || x.quest_at || ''}에서`,
+  kinds: { title: '칭호', item: '물품', name_style: '이름 색', mount: '탈것', cosmetic: '꾸미기' },
+};
+
+export const CABIN = {
+  ...(GD.cabin || {}),
+  onlyTip: '배 객실 전용 가구입니다. 별채에는 놓을 수 없고, 거룻배부터 생기는 배 객실에만 놓습니다.',
+  alsoTip: '별채 가구지만 배 객실에도 놓을 수 있습니다.',
+  sizeLine: (size, cap) => `객실 ${size}×${size} · 놓을 수 있는 가구 ${cap}`,
+  nextLine: n => n ? `${n.name}(Lv${n.lv})을 지으면 객실이 ${n.size}×${n.size}로 넓어집니다.` : '가장 넓은 객실입니다.',
+  editTip: '배가 대 있는 항구에서 꾸밉니다. 놓는 가구는 가방·곳간에서 꺼내고, 거둔 가구는 곳간으로 갑니다. 창문·문·병풍·화로처럼 배에 맞지 않는 것과 큰 깔개·큰 벽 장식은 놓을 수 없습니다.',
+  viewTip: '같은 파티원이 그 배가 대 있는 항구에 함께 있거나 그 배를 함께 타고 가면 객실을 구경할 수 있습니다.',
+};

@@ -3,7 +3,7 @@ import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem, f
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { weaponJobs, canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, useMaxOf, useLabel } from './item.js';
+import { weaponJobs, canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, cabinUse, useMaxOf, useLabel } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
@@ -194,10 +194,10 @@ async function items(body, inv, stg) {
       const cellTag = part ? (part.eq ? '' : st > 1 ? `한 칸 ${part.q}/${st}` : '') : `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`;
       const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
       const showQty = part ? part.q : n, showUse = !!USABLE[id];
-      const boss = bossUse(id);
+      const boss = bossUse(id), cab = cabinUse(id);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}${tags.includes('장착 중') ? ' is-eq' : ''}"><button class="inv-row" data-info="${esc(id)}">
         <span class="inv-cat c-${esc(catOf(it))}">${esc(CAT_SHORT[it?.category] || '기타')}</span>
-        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span>${(!part || part.first) && stored[id] ? `<span class="inv-st" data-stopen title="창고에 ${fmt.num(stored[id])}개 · 눌러서 창고 보기">${icon('chest', 10)}${fmt.num(stored[id])}</span>` : ''}</span>${it?.description ? `<small class="brief one" title="${esc(it.description)}">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" data-gw-when data-gw-keep title="${esc(`${GWIRYEONG.short}. ${GWIRYEONG.supply}`)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx one" title="${esc(USABLE[id])}">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss ? `<small class="inv-tags">${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
+        <span class="inv-name"><span class="inv-title"><b>${esc(nameOf(id))}</b><span class="inv-qty">${fmt.num(showQty)}</span>${(!part || part.first) && stored[id] ? `<span class="inv-st" data-stopen title="창고에 ${fmt.num(stored[id])}개 · 눌러서 창고 보기">${icon('chest', 10)}${fmt.num(stored[id])}</span>` : ''}</span>${it?.description ? `<small class="brief one" title="${esc(it.description)}">${esc(brief(it.description))}</small>` : ''}${baseOf(id) === 'gwiryeong_cho' ? `<small class="gw-note" data-gw-when data-gw-keep title="${esc(`${GWIRYEONG.short}. ${GWIRYEONG.supply}`)}">${esc(GWIRYEONG.short)}</small>` : ''}${USABLE[id] ? `<small class="use-fx one" title="${esc(USABLE[id])}">${icon('heart', 11)} <span>${fxHtml(USABLE[id])}</span></small>` : ''}${tags.length || boss || cab ? `<small class="inv-tags">${boss ? `<i class="boss" title="${esc(boss.tip)}">${icon('sword', 10)}${esc(boss.label)}</i>` : ''}${cab ? `<i class="boss cabin" title="${esc(cab.tip)}">${icon('ship', 10)}${esc(cab.label)}</i>` : ''}${tags.map(t => `<i class="${t === '장착 중' ? 'eq' : t === '잠금' ? 'lk' : /필요|전용/.test(t) ? 'bad' : ''}">${esc(t)}</i>`).join('')}</small>` : ''}</span>
 </button>
         ${actsHtml(id, n, it, part, ri, showUse, equipped)}</li>`; }).join('')}</ul>`
       : empty(q.trim() ? `「${q.trim()}」에 맞는 물품이 없습니다.` : cat === 'all' ? '가방이 비어 있습니다. 탐사와 채집으로 물품을 모으세요.' : '이 분류의 물품이 없습니다.', 'bag')}

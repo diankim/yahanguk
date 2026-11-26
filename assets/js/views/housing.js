@@ -1,5 +1,5 @@
 import { rpc, act, store, on, esc, icon, $, $$, toast, guard, ask, openModal, closeModal, nameOf, GRADES } from '../core.js';
-import { loading, errorBox, panel } from './common.js';
+import { loading, errorBox, panel, catItem } from './common.js';
 import { makeRoom, TW, TH, WALLH, ZU } from '../housing/render.js';
 import { FUR, WALL, PAPER, GROUND } from '../housing/furniture.js';
 import { PETS, PET_SKINS, drawPet, drawEffect, petImage } from '../housing/petsprite.js';
@@ -17,7 +17,7 @@ import { kinLook, kinFace, kinTalk, kinGreet, kinWear, kinRoom, kinGift } from '
 import { KIN } from '../rules.js';
 import { kinTokenSvg } from '../kintoken.js';
 import { loadBond } from '../bond.js';
-import { BOND_EMOTE, PET_SKIN } from '../rules.js';
+import { BOND_EMOTE, PET_SKIN, CABIN } from '../rules.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -31,7 +31,7 @@ const PAL_TABS = [['floor', '바닥'], ['wall', '벽'], ['paper', '벽지'], ['g
 const gradeOf = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.grade || 1;
 const furName = id => (id.startsWith('hp_') ? PAPER[id.slice(3)] : id.startsWith('hg_') ? GROUND[id.slice(3)] : FUR[id.slice(3)] || WALL[id.slice(3)])?.name || nameOf(id);
 
-let el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0, cur = 0;
+let cabin = false, el = null, ownerArg = null, snap = null, room = null, cv = null, raf = null, lastDraw = 0, cur = 0;
 let state = null, orig = null, editing = false, pick = null, sel = null, palTab = 'floor', dirty = false;
 let pets = [], fx = [], poops = [], folks = [];
 let bondP = null, emoteLeft = 0, emoteBusy = false;
@@ -41,9 +41,12 @@ const findPet = k => housePets().find(p => petKey(p) === k);
 const houseKin = () => (snap?.kin || []).filter((k, i, a) => kinLook(k.npc) && a.findIndex(x => x.npc === k.npc) === i);
 const findKin = o => houseKin().find(k => k.owner === o);
 
+const HEAD_ICO = () => cabin ? 'ship' : 'home';
+const HEAD_NAME = () => cabin ? (CABIN.name || '객실') : '별채';
+const placeOk = id => { const t = catItem(id)?.equipment_traits; return cabin ? !!t?.cabin : !t?.ship_only; };
 export async function render(root, sub) {
-  el = root; ownerArg = sub || null; cur = 0; editing = false; pick = null; sel = null; dirty = false; pets = []; fx = [];
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>별채</h1></div></div>${loading()}`;
+  cabin = /^cabin/.test(sub || ''); el = root; ownerArg = (cabin ? (sub || '').slice(6) : sub) || null; cur = 0; editing = false; pick = null; sel = null; dirty = false; pets = []; fx = [];
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon(HEAD_ICO(), 14)} ${HEAD_NAME()}</p><h1>${HEAD_NAME()}</h1></div></div>${loading()}`;
   await reload();
 }
 export function destroy() { cancelAnimationFrame(raf); raf = null; el = null; cv = null; }
@@ -53,12 +56,12 @@ async function reload() {
   loadBond().then(b => { bondP = b?.bond?.partner_id || null; emoteLeft = b?.bond?.emote_left ?? 0; }).catch(() => {});
   try {
     const pre = store.houseSnap; store.houseSnap = null;
-    snap = pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
-    if (!ownerArg || snap.role === 'owner') rememberHome(snap);
+    snap = cabin ? await rpc('world_cabin_view', { p_owner: ownerArg }) : pre && pre.owner === ownerArg && Date.now() - pre.at < 10000 ? pre.snap : await rpc('world_housing_snapshot', { p_owner: ownerArg });
+    if (!cabin && (!ownerArg || snap.role === 'owner')) rememberHome(snap);
     if (!el) return;
-    if (!snap.open) return drawClosed();
+    if (!snap.open) return cabin ? drawCabinClosed() : drawClosed();
     resetState(); draw();
-  } catch (e) { if (el) el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채</p><h1>별채</h1></div></div>${errorBox(e.message)}`; }
+  } catch (e) { if (el) el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon(HEAD_ICO(), 14)} ${HEAD_NAME()}</p><h1>${HEAD_NAME()}</h1></div></div>${errorBox(e.message)}${cabin ? `<p class="muted small">${esc(CABIN.viewTip || '')}</p><a class="btn small" href="#/port">${icon('ship', 14)} 항구로</a>` : ''}`; }
 }
 function resetState() {
   registerFurns(snap.furns);
@@ -67,12 +70,19 @@ function resetState() {
   const cr = curRoom();
   state = { items: cl(snap.items).filter(inRoom), wall: cl(snap.wall).filter(inRoom), paper: cr.paper, ground: cr.ground };
   orig = counts(state); dirty = false; sel = null; pick = null;
-  if (snap.role === 'owner') rememberHome(snap);
+  if (!cabin && snap.role === 'owner') rememberHome(snap);
   room = makeRoom(cr.size || snap.size, DEFS);
   setupPet();
   setupFolks();
 }
 
+function drawCabinClosed() {
+  const nx = snap.next;
+  const why = snap.why === 'no_ship' ? `아직 배가 없습니다. 조선소가 있는 항구에서 ${esc(GAMEDATA.trade?.ships?.[0]?.name || '나룻배')}를 받으세요.` : esc(CABIN.small || '');
+  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('ship', 14)} ${HEAD_NAME()}</p><h1>아직 객실이 없습니다</h1></div></div>
+    <div class="notice">${icon('ship', 18)}<div><b>${why}</b><span>${esc(CABIN.nextLine ? CABIN.nextLine(nx) : '')} ${esc(Object.entries(CABIN.cap || {}).map(([n, c]) => `${n}×${n} 가구 ${c}`).join(' · '))}</span></div></div>
+    <div class="btn-row"><a class="btn small" href="#/port">${icon('ship', 14)} 항구로</a><a class="btn small" href="#/house">${icon('home', 14)} 별채로</a></div>`;
+}
 function drawClosed() {
   const q = snap.quest || {}, c = store.character || {};
   const store_ = Object.entries(snap.store || {}).filter(([, n]) => n > 0);
@@ -129,6 +139,7 @@ function validate(st) {
   }
   if (st.items.length + st.wall.length > cap) return `이 방에는 가구를 ${cap}개까지 놓을 수 있습니다.`;
   const c = counts(st);
+  for (const id of Object.keys(c)) if (!placeOk(id)) return `${furName(id)}은(는) ${cabin ? '배 객실에 놓을 수 없습니다.' : '배 객실에만 놓을 수 있습니다.'}`;
   for (const [id, n] of Object.entries(c)) {
     if (id.startsWith('hf_') && n > kindCap(gradeOf(id))) return `${furName(id)}은(는) 한 방에 ${kindCap(gradeOf(id))}개까지 놓을 수 있습니다.`;
     if (n > haveAll(id)) return `${furName(id)}이(가) 모자랍니다.`;
@@ -147,22 +158,33 @@ function draw() {
   if (!el || !snap) return;
   const me = snap.role === 'owner', can = !!snap.role, edBlock = snap.edit_block;
   const cr = curRoom();
-  el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${esc(cr.name || '안채')} ${cr.size}×${cr.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
+  el.innerHTML = `${cabin ? cabinHead(can, edBlock) : `<div class="view-head"><div><p class="eyebrow">${icon('home', 14)} 별채 · ${esc(cr.name || '안채')} ${cr.size}×${cr.size}</p><h1>${esc(snap.owner_name)}${snap.mate_name ? `·${esc(snap.mate_name)}` : ''}의 별채</h1>
       <p class="muted small">발걸음 오늘 ${snap.visits_today} · 전체 ${snap.visits_total} · 대문 ${esc(GATE.find(g => g[0] === snap.gate)?.[1] || '')}</p></div>
     <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || '가구를 놓고 옮깁니다')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button>` : ''}
       ${can ? `<button class="btn small" id="hs-book">${icon('palette', 15)} 그림첩</button><button class="btn small" id="hs-furn">${icon('hammer', 15)} 가구 도안</button>` : ''}<a class="btn small" id="hs-garden" href="#/garden${ownerArg ? '/' + esc(ownerArg) : ''}">${icon('leaf', 15)} 뒤뜰 밭</a>${me ? `<button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button><button class="btn small" id="hs-pets">${icon('heart', 15)} 동무</button><button class="btn small" id="hs-portrait">${icon('scroll', 15)} 초상 화첩</button>` : ''}</div></div>
-    ${roomBar()}
+    ${roomBar()}`}
     ${can && edBlock && !editing ? `<p class="muted small hs-why">${esc(edBlock)}</p>` : ''}
     <div class="hs-wrap ${editing ? 'editing' : ''}">
       <div class="hs-stage"><div class="frame-c"><i></i><i></i><i></i><i></i></div><canvas id="hs-cv" aria-label="${esc(snap.owner_name)}의 별채"></canvas>${editing ? toolbar() : ''}${editing || !designRows().length ? '' : reportFlag('data-hrep', '도안 제보')}</div>
       ${editing ? palette() : ''}
       ${!editing ? rowsHtml() : ''}
     </div>
-    ${me && !editing ? ownerPanel() : ''}
-    ${me && !editing ? mergePanel() : ''}
-    ${guestbook()}`;
+    ${me && !editing && !cabin ? ownerPanel() : ''}
+    ${me && !editing && !cabin ? mergePanel() : ''}
+    ${cabin ? cabinFoot() : guestbook()}`;
   cv = $('#hs-cv'); fit(); paint(true); loop();
   bind();
+}
+function cabinHead(can, edBlock) {
+  const sh = snap.ship || {}, cr = curRoom();
+  return `<div class="view-head"><div><p class="eyebrow">${icon('ship', 14)} ${esc(sh.kind || '')} · ${esc(CABIN.sizeLine(cr.size, cr.cap))}</p><h1>${esc(sh.name || snap.owner_name)}의 ${HEAD_NAME()}</h1>
+      <p class="muted small">${esc(snap.owner_name)}의 배 · ${esc(sh.status === 'docked' ? sh.port_name || '' : '물길 위')}</p></div>
+    <div class="head-actions">${can ? `<button class="btn small ${editing ? 'primary' : ''}" id="hs-edit" ${edBlock && !editing ? 'disabled' : ''} title="${esc(edBlock || CABIN.editTip || '')}">${icon('hammer', 15)} ${editing ? '꾸미는 중' : '꾸미기'}</button><button class="btn small" id="hs-store">${icon('chest', 15)} 곳간</button>` : ''}<a class="btn small" href="#/port">${icon('ship', 15)} 항구</a><a class="btn small" href="#/house">${icon('home', 15)} 별채</a></div></div>`;
+}
+function cabinFoot() {
+  if (editing) return '';
+  const me = snap.role === 'owner';
+  return panel(HEAD_NAME(), `<p class="muted small">${esc(CABIN.nextLine(snap.next))}</p><p class="muted small">${esc(me ? CABIN.editTip : CABIN.viewTip)}</p>`, { ico: 'ship' });
 }
 function roomBar() {
   const rs = roomsOf(), me = snap.role === 'owner';
@@ -250,13 +272,14 @@ function palette() {
     : palTab === 'wall' ? Object.entries(WALL).map(([k, v]) => ['wall', k, v]) : Object.entries(FUR).map(([k, v]) => ['fur', k, v]);
   const rows = list.map(([type, k, v]) => {
     if (type === 'fur' && k === STAIR && cur) return '';
+    if (!placeOk(idOf(type, k))) return '';
     const id = idOf(type, k), n = left(id), on = (type === 'paper' && state.paper === k) || (type === 'ground' && state.ground === k) || (pick && pick.k === k && pick.type === type);
     if (n <= 0 && !on) return '';
     const pic = type === 'paper' ? `<span class="hs-sw" style="--a:${v.c};--b:${v.l}"></span>` : type === 'ground' ? `<span class="hs-sw" style="--a:${v.a};--b:${v.b}"></span>` : `<img src="${room.thumb(k)}" alt="">`;
     return `<button class="hs-pal-it g${v.grade} ${on ? 'on' : ''}" data-pal="${type}:${esc(k)}" title="${esc(v.name)} · ${GRADE[v.grade]}">${pic}<b>${esc(v.name)}</b><small>${type === 'paper' || type === 'ground' ? (on ? '바름' : `${n}장`) : `남은 ${n}`}</small></button>`;
   }).join('');
   return `<div class="hs-pal"><div class="chips">${PAL_TABS.map(([k, l]) => `<button class="chip-btn ${palTab === k ? 'on' : ''}" data-paltab="${k}">${l}</button>`).join('')}</div>
-    <div class="hs-pal-grid">${rows || '<p class="muted small">놓을 수 있는 것이 없습니다. 가구는 상점·제작·토벌·원정·칭호 보상으로 얻습니다.</p>'}</div></div>`;
+    <div class="hs-pal-grid">${rows || `<p class="muted small">${cabin ? esc(CABIN.editTip || '') : '놓을 수 있는 것이 없습니다. 가구는 상점·제작·토벌·원정·칭호 보상으로 얻습니다.'}</p>`}</div></div>`;
 }
 function rowsHtml() {
   const ps = housePets().map(petBar).join(''), ks = houseKin().map(kinBar).join('');
@@ -476,9 +499,9 @@ function onCanvas(e) {
 }
 async function save() {
   const body = { room: cur, items: state.items.map(({ k, x, y, r }) => ({ k, x, y, r: r || 0 })), wall: state.wall.map(({ k, side, t, z, d }) => (d != null ? { k, side, t, z, d } : { k, side, t, z })), paper: state.paper, ground: state.ground };
-  snap = await act('world_housing_save', { p_owner: snap.owner_id, p_state: body });
+  snap = cabin ? await act('world_cabin_save', { p_state: body }) : await act('world_housing_save', { p_owner: snap.owner_id, p_state: body });
   editing = false; resetState(); draw();
-  return { content: '별채를 저장했습니다.' };
+  return { content: `${HEAD_NAME()}을(를) 저장했습니다.` };
 }
 
 let storeTab = 'store';
@@ -503,7 +526,7 @@ async function openStore() {
     guard(b, async () => {
       if (dir === 'discard' && !(await ask(`${furName(id)} 하나를 버릴까요? 되돌릴 수 없습니다.`, { title: '가구 버리기', ok: '버리기', danger: true }))) return;
       const r = await act('world_housing_store_move', { p_item: id, p_qty: 1, p_dir: dir });
-      snap = await rpc('world_housing_snapshot', { p_owner: null }); resetState();
+      snap = cabin ? await rpc('world_cabin_view', { p_owner: null }) : await rpc('world_housing_snapshot', { p_owner: null }); resetState();
       const body = $('#modal .modal-body') || $('#modal .modal > div:last-child'); if (body) body.innerHTML = drawStore();
       draw(); return r;
     });

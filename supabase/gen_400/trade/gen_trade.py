@@ -2,6 +2,7 @@ import json
 import os
 
 import data_trade as T
+from cabin import gen_cabin as CB
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -52,3 +53,4 @@ on conflict (monster_id) do update set monster_name = excluded.monster_name, des
   role = excluded.role, kind = excluded.kind, mechanic_key = excluded.mechanic_key;""")
     for f in ('c_funcs.sql', 'd_hooks.sql'):
         w(open(os.path.join(HERE, f)).read())
+    w(CB.sql(J, known, errors))

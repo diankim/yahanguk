@@ -4523,3 +4523,39 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
 .tr-raid { display: flex; align-items: center; gap: 6px; color: var(--warn); margin: 4px 0 8px; }
 @media (max-width: 899px) { .tr-p-cmp { order: 4; } .tr-p-ports { order: 5; } .tr-p-sail { order: 6; } .tr-p-yard { order: 7; } }
 .tr-nm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; } .tr-nm .tr-tag { margin-left: 0; }
+.rb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.rb-card { --fc: var(--accent); display: grid; gap: 8px; align-content: start; padding: 10px 12px; border: var(--bw) solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; min-width: 0; }
+.rb-card:hover, .rb-card:focus-visible { border-color: var(--accent); outline: none; }
+.rb-card header, .rb-title { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rb-card header b { font-size: calc(15px * var(--fz, 1)); margin-right: auto; }
+.rb-card.off { cursor: default; opacity: .5; border-style: dashed; }
+.rb-card .rank-ladder, .rb .rank-ladder { margin: 0; }
+.rb-card .chips, .rb-head .chips { margin: 0; }
+.rb-card p { margin: 0; }
+.rb-bar { display: grid; gap: 3px; }
+.rb { --fc: var(--accent); display: grid; gap: 10px; }
+.rb-head { display: grid; gap: 8px; }
+.rb-head p { margin: 0; }
+.rb-tabs { margin: 0; }
+.rb-sec { display: grid; gap: 8px; min-width: 0; }
+.rb-sec > p { margin: 0; }
+.rb-specials { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+.rb-specials li { display: grid; gap: 2px; padding: 6px 10px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); min-width: 0; }
+.rb-reqs > li.owned { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.rb-perks tr.on td { color: var(--text); font-weight: 600; background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.rb-perks td .chip { margin-left: 4px; }
+.rb-story { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rb-story li { display: grid; gap: 4px; padding: 8px 10px; border: var(--bw) solid var(--line); border-radius: var(--r-sm); min-width: 0; }
+.rb-story li header { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rb-story li p { margin: 0; }
+.rb-story li.done { border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.rb-story li.now, .rb-story li.open { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.rb-story li.locked { opacity: .65; }
+@media (max-width: 640px) { .rb-grid { grid-template-columns: 1fr; } .rb-tabs button span { font-size: calc(10.5px * var(--fz, 1)); } }
+.rb-card.off { align-self: start; }
+.rb-foot, .rb-why { display: flex; gap: 4px; align-items: center; }
+.rb-foot .ico, .rb-why .ico { flex: none; }
+.inv-name small i.boss.cabin { color: var(--sp, var(--accent)); }
+.tr-cabin { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tr-cabin p { margin: 0; }
+.rb-perks td:first-child { white-space: nowrap; }

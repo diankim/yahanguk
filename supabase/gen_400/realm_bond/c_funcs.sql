@@ -287,6 +287,44 @@ create or replace function public.world_realm_bond_vault_of(p_uid uuid, p_realm 
   where v ->> 'realm' = p_realm and public.world_realm_bond_vault_ready(v)
 $f$;
 
+create or replace function public.world_realm_bond_story_why(p_uid uuid, p_quest text)
+ returns text language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $f$
+declare q public.world_quests%rowtype; dn text[]; a text; lv int;
+begin
+  select * into q from public.world_quests where quest_id = p_quest and active;
+  if not found then return '아직 준비 중인 이야기입니다.'; end if;
+  dn := public.world_quest_done_ids(p_uid);
+  if p_quest = any (dn) then return null; end if;
+  foreach a in array coalesce(q.after, '{}'::text[]) loop
+    if not (a = any (dn)) then
+      return case when a like 'rb\_%' then '앞 이야기 ' else '본편 ' end || '「' || coalesce((select x.title from public.world_quests x where x.quest_id = a), a) || '」을(를) 마치면 열립니다.';
+    end if;
+  end loop;
+  if q.open_req is not null and not coalesce(public.world_realm_bond_pts_of(p_uid, q.open_req ->> 'realm_bond') >= coalesce((q.open_req ->> 'pts')::numeric, 0), false) then
+    return public.world_quest_gate_text(q.open_req);
+  end if;
+  select c.level into lv from public.world_characters c where c.owner_id = p_uid;
+  if coalesce(lv, 1) < q.min_level then return 'Lv' || q.min_level || '부터 받을 수 있습니다.'; end if;
+  return null;
+end $f$;
+
+create or replace function public.world_realm_bond_dot(p_uid uuid)
+ returns int language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $f$
+declare b public.world_realm_bonds%rowtype; n int := 0; nx int; x jsonb;
+begin
+  for b in select * from public.world_realm_bonds where owner_id = p_uid loop
+    nx := case when b.stage < 5 then b.stage + 1 end;
+    if nx is not null and b.story < nx and b.pts >= public.world_realm_bond_need(nx)
+       and not exists (select 1 from public.world_quest_progress p where p.owner_id = p_uid and p.quest_id = 'rb_' || b.realm || '_' || nx)
+       and public.world_realm_bond_story_why(p_uid, 'rb_' || b.realm || '_' || nx) is null then n := n + 1; continue; end if;
+    if public.world_realm_bond_room(p_uid, b.realm) <= 0 then continue; end if;
+    for x in select y from jsonb_array_elements(public.world_realm_bond_board_of(p_uid, b.realm)) y loop
+      if (x ->> 'ready')::boolean and not (x ->> 'claimed')::boolean then n := n + 1; exit; end if;
+    end loop;
+  end loop;
+  return n;
+end $f$;
+
 create or replace function public.world_realm_bond_card(p_uid uuid, p_realm text)
  returns jsonb language plpgsql stable security definer set search_path to 'pg_catalog', 'public' as $f$
 declare r jsonb := public.world_realm_bond_rules(); b public.world_realm_bonds%rowtype; dy date := public.world_realm_bond_day(); nx int; tot numeric; qid text; k text; perks jsonb[] := '{}';
@@ -304,9 +342,12 @@ begin
   return jsonb_build_object('realm', p_realm, 'name', r -> 'realms' -> p_realm ->> 'name', 'opened', true, 'opened_at', b.opened_at,
     'stage', b.stage, 'stage_name', public.world_realm_bond_stage_name(b.stage), 'pts', b.pts, 'tokens', floor(b.tokens)::int,
     'today', case when b.day = dy then b.day_pts else 0 end, 'today_cap', (r -> 'day' ->> 'realm')::numeric, 'all_today', tot, 'all_cap', (r -> 'day' ->> 'all')::numeric,
+    'hub_name', (select g.region_name from public.world_map_regions g where g.region_id = r -> 'realms' -> p_realm -> 'hubs' ->> 0),
     'next', case when nx is null then null else jsonb_build_object('stage', nx, 'name', public.world_realm_bond_stage_name(nx), 'need', public.world_realm_bond_need(nx),
       'quest', qid, 'quest_title', (select q.title from public.world_quests q where q.quest_id = qid and q.active),
-      'quest_done', b.story >= nx) end,
+      'quest_at', (select g.region_name from public.world_quests q join public.world_map_regions g on g.region_id = q.region_id where q.quest_id = qid),
+      'quest_done', b.story >= nx, 'quest_active', exists (select 1 from public.world_quest_progress p where p.owner_id = p_uid and p.quest_id = qid and p.done_at is null),
+      'quest_why', public.world_realm_bond_story_why(p_uid, qid)) end,
     'perks', (select to_jsonb(array_agg(p order by (p ->> 'stage')::int)) from unnest(perks) p));
 end $f$;
 
@@ -359,8 +400,11 @@ begin
   return card || jsonb_build_object('here', h, 'at_hub', h ->> 'realm' = rl and coalesce((h ->> 'hub')::boolean, false),
     'board', public.world_realm_bond_board_of(uid, rl), 'vault', public.world_realm_bond_vault_of(uid, rl), 'specials', sp,
     'room', public.world_realm_bond_room(uid, rl), 'donate_gil', (r -> 'gain' ->> 'donate_gil')::int,
-    'story', (select coalesce(jsonb_agg(jsonb_build_object('quest', q.quest_id, 'title', q.title, 'stage', (r -> 'quests' -> q.quest_id ->> 1)::int,
-        'done', exists (select 1 from public.world_quest_progress p where p.owner_id = uid and p.quest_id = q.quest_id and p.done_at is not null)) order by q.quest_id), '[]'::jsonb)
+    'story', (select coalesce(jsonb_agg(jsonb_build_object('quest', q.quest_id, 'title', q.title, 'stage', (r -> 'quests' -> q.quest_id ->> 1)::int, 'summary', q.summary,
+        'at', (select g.region_name from public.world_map_regions g where g.region_id = q.region_id),
+        'done', exists (select 1 from public.world_quest_progress p where p.owner_id = uid and p.quest_id = q.quest_id and p.done_at is not null),
+        'active', exists (select 1 from public.world_quest_progress p where p.owner_id = uid and p.quest_id = q.quest_id and p.done_at is null),
+        'why', public.world_realm_bond_story_why(uid, q.quest_id)) order by q.quest_id), '[]'::jsonb)
       from public.world_quests q where q.active and r -> 'quests' -> q.quest_id ->> 0 = rl));
 end $f$;
 
@@ -406,7 +450,7 @@ begin
   end if;
   g := public.world_realm_bond_add(uid, rl, (public.world_realm_bond_rules() -> 'gain' ->> 'request')::numeric, 'request');
   return jsonb_build_object('ok', true, 'gain', g, 'card', public.world_realm_bond_card(uid, rl),
-    'content', '의뢰 「' || (q ->> 'title') || '」을(를) 마쳤습니다. 인연도 +' || trim(to_char(g, 'FM999990.##')) || ' · 인연 표 +' || trim(to_char(g, 'FM999990.##')));
+    'content', '의뢰 「' || (q ->> 'title') || '」을(를) 마쳤습니다. 인연도 +' || rtrim(to_char(g, 'FM999990.99'), '.') || ' · 인연 표 +' || rtrim(to_char(g, 'FM999990.99'), '.'));
 end $f$;
 
 create or replace function public.world_realm_bond_donate(p_items jsonb)
@@ -440,13 +484,13 @@ begin
   end loop;
   amt := val / rate;
   if amt - top / rate >= room then
-    raise exception '오늘 이 권역에 더 쌓을 수 있는 인연도는 %(시세 약 %전어치)입니다. 수량을 줄이세요.', trim(to_char(room, 'FM999990.##')), ceil(room * rate)::int using hint = 'too_much';
+    raise exception '오늘 이 권역에 더 쌓을 수 있는 인연도는 %(시세 약 %전어치)입니다. 수량을 줄이세요.', rtrim(to_char(room, 'FM999990.99'), '.'), ceil(room * rate)::int using hint = 'too_much';
   end if;
   perform set_config('yh.wear_leaves', 'on', true);
   update public.world_characters set inventory = inv, updated_at = now() where owner_id = uid;
   g := public.world_realm_bond_add(uid, rl, amt, 'donate');
   return jsonb_build_object('ok', true, 'gain', g, 'value', val, 'card', public.world_realm_bond_card(uid, rl),
-    'content', kinds || '가지 ' || n || '개를 기부했습니다(시세 ' || val || '전). 인연도 +' || trim(to_char(g, 'FM999990.##'))
+    'content', kinds || '가지 ' || n || '개를 기부했습니다(시세 ' || val || '전). 인연도 +' || rtrim(to_char(g, 'FM999990.99'), '.')
       || case when g < amt then ' · 오늘 쌓을 수 있는 몫에 닿았습니다.' else '' end);
 end $f$;
 
@@ -503,7 +547,7 @@ do $$ declare f text; begin
     'world_realm_bond_trade(uuid, text, numeric)', 'world_realm_bond_fx(uuid, text, text)', 'world_realm_bond_price(uuid, bigint)', 'world_realm_bond_route(uuid, text, text)',
     'world_realm_bond_task_count(uuid, jsonb, timestamptz)', 'world_realm_bond_task_label(jsonb)', 'world_realm_bond_board_of(uuid, text)', 'world_realm_bond_vault_ready(jsonb)',
     'world_realm_bond_vault_owned(uuid, jsonb)', 'world_realm_bond_vault_of(uuid, text)', 'world_realm_bond_card(uuid, text)', 'world_realm_bond_rule_count(uuid, jsonb)',
-    'world_realm_bond_pick(uuid, text, boolean, text)', 'world_realm_bond_list()', 'world_realm_bond_view(text)', 'world_realm_bond_board(text)', 'world_realm_bond_claim(text, text)',
+    'world_realm_bond_pick(uuid, text, boolean, text)', 'world_realm_bond_story_why(uuid, text)', 'world_realm_bond_dot(uuid)', 'world_realm_bond_list()', 'world_realm_bond_view(text)', 'world_realm_bond_board(text)', 'world_realm_bond_claim(text, text)',
     'world_realm_bond_donate(jsonb)', 'world_realm_bond_vault(text)', 'world_realm_bond_buy(text)'] loop
     execute format('alter function public.%s owner to fn_owner_field', f);
   end loop;
@@ -518,7 +562,7 @@ do $$ declare f text; begin
     'world_realm_bond_trade(uuid, text, numeric)', 'world_realm_bond_fx(uuid, text, text)', 'world_realm_bond_price(uuid, bigint)', 'world_realm_bond_route(uuid, text, text)',
     'world_realm_bond_task_count(uuid, jsonb, timestamptz)', 'world_realm_bond_task_label(jsonb)', 'world_realm_bond_board_of(uuid, text)', 'world_realm_bond_vault_ready(jsonb)',
     'world_realm_bond_vault_owned(uuid, jsonb)', 'world_realm_bond_vault_of(uuid, text)', 'world_realm_bond_card(uuid, text)', 'world_realm_bond_rule_count(uuid, jsonb)',
-    'world_realm_bond_pick(uuid, text, boolean, text)'] loop
+    'world_realm_bond_pick(uuid, text, boolean, text)', 'world_realm_bond_story_why(uuid, text)', 'world_realm_bond_dot(uuid)'] loop
     perform pg_temp.yh_rb_share('public.' || f);
   end loop;
   foreach f in array array['world_realm_bond_list()', 'world_realm_bond_view(text)', 'world_realm_bond_board(text)', 'world_realm_bond_claim(text, text)',

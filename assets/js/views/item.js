@@ -5,7 +5,7 @@ import { itemSources, regionBtn, sourcesMore, SRC_KINDS, shopNow, shopNowHtml, n
 import { baseOf, isHq, pairOf, hqOf } from '../hq.js';
 import { isFurniture } from '../housing/count.js';
 import { ownRow, fillOwned } from '../owned.js';
-import { GWIRYEONG, weakSafe, gwWhen, BIJANG, weaponRankNeed } from '../rules.js';
+import { GWIRYEONG, weakSafe, gwWhen, BIJANG, weaponRankNeed, CABIN } from '../rules.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 import { PETS, petImage } from '../housing/petsprite.js';
@@ -59,6 +59,11 @@ export const USABLE = new Proxy({}, {
   has(t, k) { return !!this.get(t, k); },
 });
 export const GW_HEAL = GD.battleItems?.gw?.items || [];
+export function cabinUse(id) {
+  const t = catItem(id)?.equipment_traits;
+  if (!t?.cabin) return null;
+  return t.ship_only ? { label: '객실 전용', tip: CABIN.onlyTip } : { label: '객실', tip: CABIN.alsoTip };
+}
 export function bossUse(id) {
   const b = baseOf(id), f = catItem(b)?.fx;
   const raid = !!f && (f.hp > 0 || f.mn > 0 || f.sp > 0), gw = GW_HEAL.includes(b);
@@ -235,6 +240,7 @@ function draw(box, id, inv, prices, mode) {
       ${traitText(it) ? `<div><dt>효과</dt><dd>${esc(traitText(it))}</dd></div>` : ''}
       ${suitedJobs(it).length ? `<div><dt>어울리는 직업</dt><dd>${esc(suitedJobs(it).map(nameOf).join(' · '))}</dd></div>` : ''}
       ${USABLE[id] ? `<div><dt>사용하면</dt><dd>${esc(USABLE[id])}</dd></div>` : ''}
+      ${cabinUse(id) ? `<div><dt>배 객실</dt><dd>${esc(cabinUse(id).tip)}</dd></div>` : ''}
       ${bossUse(id) ? `<div><dt>보스 싸움</dt><dd>${esc(bossUse(id).tip)}</dd></div>` : ''}
       ${/\d+분|든든함|속이 따뜻함|기운 충천|바다의 복/.test(USABLE[id] || '') ? `<div><dt>다시 쓰면</dt><dd>같은 기운이 남아 있으면 그 시간에 더해집니다(두 번 몫까지)</dd></div>` : ''}
       <div class="wide src-row"><dt>얻는 곳</dt><dd data-src>확인 중…</dd></div>

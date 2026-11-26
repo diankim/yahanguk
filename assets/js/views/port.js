@@ -2,7 +2,7 @@ import { rpc, act, store, esc, icon, $, $$, toast, ask, openLayer, fmt, guard, b
 import { loading, errorBox, load, foldOpen } from './common.js';
 import { qtyHtml, bindQty, qtyOf } from './itempick.js';
 import { helpQ } from '../tips.js';
-import { TRADE } from '../rules.js';
+import { TRADE, CABIN } from '../rules.js';
 import { baseOf, hqCount } from '../hq.js';
 
 let el = null, v = null, want = null, pick = null, cmp = null, mode = 'direct', party = false, bonus = 'time', timer = null, offs = [], busy = false, reTry = 0, stg = null, ART = null, artP = null;
@@ -165,6 +165,7 @@ function shipPanel() {
       <div><dt>뱃길 시간</dt><dd>${s.speed < 1 ? `${Math.round((1 - s.speed) * 100)}% 빠름` : '나룻배 기준'}</dd></div>
       <div><dt>내구도</dt><dd>${s.broken ? '<b class="tr-down">부서짐</b> · ' : ''}${s.durability} / ${s.max}</dd></div></dl>
     ${bar(s.durability, s.max, s.durability <= s.max / 4 ? 'hp' : 'st')}
+    <div class="tr-cabin">${s.cabin > 0 ? `<a class="btn small" href="#/house/cabin">${icon('home', 14)} 객실 꾸미기 <small class="muted">${s.cabin}×${s.cabin}</small></a>` : `<p class="muted small">${icon('home', 13)} ${esc(CABIN.small || '')}</p>`}</div>
     ${s.durability < s.max ? `<div class="btn-row"><button class="btn small ${s.broken ? 'primary' : ''}" data-tr="repair" data-here="배 고치기" ${off(w)}>${icon('wrench', 14)} 고치기 ${fmt.jeon(s.repair_gil)}</button>${helpQ(TRADE.repairTip(rg), '배 고치기')}</div>` : ''}`;
   return fpanel('ship', '내 배', esc(`${s.name} · ${s.status === 'docked' ? s.port_name : '물길 위'} · 내구도 ${s.durability}/${s.max}`), body, { ico: 'ship', cls: 'tr-p-ship' });
 }

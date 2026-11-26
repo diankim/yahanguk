@@ -42,7 +42,13 @@ select pg_temp.yh_fix('world_travel_plan(uuid,text,integer)', array[
 select pg_temp.yh_fix('world_call_rescue', array[
   $a$if own then fee := fee / 2; end if;$a$,
   $a$if own then fee := fee / 2; end if;
-  if public.world_realm_bond_fx(uid, 'rescue_half', c.location) > 0 then fee := fee / 2; end if;$a$]);
+  if public.world_realm_bond_fx(uid, 'rescue_half', c.location) > 0 then fee := fee / 2; end if;$a$,
+  $a$case when first_today then ' · 오늘 첫 구조 반값' else '' end, 'location'$a$,
+  $a$case when first_today then ' · 오늘 첫 구조 반값' else '' end || case when public.world_realm_bond_fx(uid, 'rescue_half', c.location) > 0 then ' · 권역 한식구 반값' else '' end, 'location'$a$]);
+
+select pg_temp.yh_fix('world_dot_counts', array[
+  $a$'skills', coalesce(public.world_skill_pending(), 0));$a$,
+  $a$'skills', coalesce(public.world_skill_pending(), 0), 'realm', coalesce(public.world_realm_bond_dot(uid), 0));$a$]);
 
 select pg_temp.yh_fix('world_quest_gate_ok', array[
   $a$case when p_req ? 'regular' then$a$,

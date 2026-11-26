@@ -6,7 +6,7 @@ import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
 import { HFEAST } from '../rules.js';
-import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN, TRADE } from '../rules.js';
+import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN, TRADE, REALM_BOND } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -1237,6 +1237,28 @@ const S = [
     </ul>
     ${petPartnerHtml()}`],
   ['lore-factions', '세력 이야기', factionLoreHtml()],
+  ['realmbond', '권역 인연', (() => { const R = REALM_BOND, first = (R.order || [])[0], fn = R.realmName(first); return `
+    <p>${esc(R.intro)} 건넛누리 권역(${esc((R.order || []).map(k => R.realmName(k)).join(' · '))})의 안전지대에 처음 닿으면 그 권역과 인연이 시작되고, 캐릭터 › 권역에서 권역마다 카드로 봅니다. 그 권역 안전지대 현장에는 「인연」 칸이 있습니다.</p>
+    <h4>단계와 혜택</h4>
+    <table class="guide-table"><thead><tr><th>단계</th><th>인연도</th><th>오를 때</th><th>혜택(그 권역 안에서만)</th></tr></thead><tbody>
+      ${(R.stages || []).map(st => `<tr><td>${st.n} ${esc(st.name)}</td><td>${R.num(st.need)}</td><td>${st.n > 1 ? `문턱 + 권역 이야기 ${st.n}편째` : '처음 닿을 때'}</td><td>${esc(R.perk_text?.[st.n] || '—')}</td></tr>`).join('')}
+    </tbody></table>
+    <p class="muted small">혜택은 낮은 단계 것이 그대로 쌓입니다. 휴식 회복 +10%는 그 권역 안전지대에서만 붙습니다.</p>
+    <h4>쌓는 법</h4>
+    <ul>
+      <li>${esc(R.help())}</li>
+      <li>${esc(R.reqNote())} 할 일은 토벌·채집·원정·특산 납품·항구 교역(항구가 있는 권역만) 가운데서 나옵니다.</li>
+      <li>특산 재료: ${(R.order || []).map(k => `${esc(R.realmName(k))} ${esc((R.realms[k]?.specials || []).map(nameOf).join('·'))}`).join(' / ')}.</li>
+      <li>의뢰 보고·특산 기부·비고 교환은 그 권역 안전지대에서만 하고, 이동·원정·자율 활동 중이거나 쓰러진 동안에는 할 수 없습니다.</li>
+    </ul>
+    <h4>권역 비고 (인연 표)</h4>
+    <table class="guide-table"><thead><tr><th>품목</th><th>단계</th><th>인연 표</th></tr></thead><tbody>
+      ${(R.vault || []).filter(v => v.realm === first).map(v => `<tr><td>${esc(R.kinds[v.kind] || '')} · ${esc(String(v.name).replace(fn, '권역'))}</td><td>${v.stage} ${esc(R.stageName(v.stage))}</td><td>${fmt.num(v.price)}</td></tr>`).join('')}
+    </tbody></table>
+    <p class="muted small">${esc(R.vaultNote)} 인연 표는 권역마다 따로 쌓이고, 쓴 만큼만 줄어듭니다(인연도는 그대로).</p>
+    <h4>칭호</h4>
+    <ul>${(R.titles || []).filter(t => !/^rb_(?!all)/.test(t.key) || t.key.includes(`_${first}_`)).map(t => `<li>「${esc(t.key.startsWith('rb_all') ? t.name : t.name.replace(fn, '…'))}」 — ${esc(t.key.startsWith('rb_all') ? t.cond : t.cond.replace(fn, '그'))}${t.key.startsWith('rb_all') ? '' : ' (권역마다 하나)'}</li>`).join('')}
+      <li>권역 비고의 「…의 손님」 칭호(권역마다 하나, 2단계)</li></ul>`; })()],
   ['fproject', '거점 사업', `
     <p>대세력마다 거점을 함께 다시 세우는 사업이 있습니다. 세력 거점에서 정한 물품을 넘깁니다(캐릭터 › 세력 「거점 사업」 또는 거점 현장의 띠). 그 세력 조사원(가입 퀘스트를 마친)은 공훈을, 다른 세력이나 대세력이 없는 조사원은 「돕기」로 전을 받습니다.</p>
     <h4>단계와 혜택</h4>
@@ -2488,7 +2510,7 @@ const GROUPS = [
   ['home', '별채', 'home', ['house', 'garden', 'furn', 'portrait', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
-  ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
+  ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject', 'realmbond']],
   ['eco', '가방·경제', 'coin', ['bag', 'economy', 'trade', 'commission', 'regular', 'kin', 'cproject']],
   ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'lantern', 'hfeast', 'yeonri', 'wedding', 'tourney']],
 ];

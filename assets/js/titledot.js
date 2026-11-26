@@ -6,6 +6,7 @@ const DOTS = [
   { key: 'titles', sub: 'titles', text: s => (s.newTitles || 0) > 0 && `새 칭호 ${s.newTitles}개` },
   { key: 'growth', sub: 'growth', text: s => Number(s.character?.stat_points || 0) > 0 && `나누지 않은 능력치 ${s.character.stat_points}점` },
   { key: 'skills', sub: 'skills', text: s => (s.skillPending || 0) > 0 && `고를 기술 ${s.skillPending}개` },
+  { key: 'realm', sub: 'realm', text: s => (s.realmDot || 0) > 0 && `권역 인연 할 일 ${s.realmDot}곳` },
   { key: 'faction', sub: 'faction', once: true, text: s => (s.character?.level || 0) >= 5 && !s.character?.major_faction_id && '대세력에 들 수 있습니다' },
 ];
 
@@ -16,6 +17,7 @@ export async function refreshTitleDot() {
     const d = await rpc('world_dot_counts');
     store.newTitles = Number(d?.titles) || 0;
     store.skillPending = Number(d?.skills) || 0;
+    store.realmDot = Number(d?.realm) || 0;
   } catch { return; }
   paintTitleDot();
 }
@@ -41,5 +43,5 @@ export function mountTitleDot() {
   const soon = throttle(refreshTitleDot, 120000);
   on('character', () => paintTitleDot());
   on('changed', ev => { if (midBattle(ev)) return; if (ev?.name === 'world_skill_choose') { setTimeout(refreshTitleDot, 300); return; } clearTimeout(timer); timer = setTimeout(soon, 1500); });
-  window.addEventListener('yh-note', e => { if (/title|cosmetic/.test(e.detail?.kind || '')) setTimeout(refreshTitleDot, 500); if (e.detail?.kind === 'faction_open') paintTitleDot(); });
+  window.addEventListener('yh-note', e => { if (/title|cosmetic/.test(e.detail?.kind || '')) setTimeout(refreshTitleDot, 500); if (e.detail?.kind === 'faction_open') paintTitleDot(); if (e.detail?.kind === 'realm_bond') setTimeout(refreshTitleDot, 500); });
 }
