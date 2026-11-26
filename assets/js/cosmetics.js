@@ -1,3 +1,4 @@
+import { RB_SCENE, RB_SEALS, RB_SEAL_TIER } from './realm_cosmetics.js';
 const M = {
   lantern: 'M-4-7h8M-5-5h10v9h-10zM0 4v3M-2 7h4',
   path: 'M-8 0h4M-2 0h4M4 0h4',
@@ -147,6 +148,7 @@ const SCENE = {
     <g class="sc-ember"><circle cx="60" cy="120" r="1.6"/><circle cx="74" cy="96" r="1.1"/><circle cx="66" cy="72" r=".8"/><circle cx="250" cy="128" r="1.4"/><circle cx="262" cy="104" r="1"/><circle cx="330" cy="118" r="1.2"/></g>
     <path class="sc-top" d="M0 1H400"/></svg>`,
 };
+Object.assign(SCENE, RB_SCENE);
 export function patternLayer(key) {
   if (SCENE[key]) return SCENE[key];
   if (!P[key]) return '';
@@ -159,4 +161,6 @@ export const SEALS = { sl_tao: '討', sl_tam: '探', sl_jang: '匠', sl_hae: '�
   sl_f_night: '錄', sl_f_redmoon: '血', sl_f_lotus: '蓮', sl_f_north: '盟', sl_f_river: '舟', sl_f_south: '燼', sl_f_mandate: '星', sl_myeongdeung: '明' };
 const SEAL_TIER = { sl_tao: 'rare', sl_jang: 'rare', sl_eo: 'rare', sl_woo: 'rare', sl_ya: 'legend', sl_yeon: 'legend', sl_deung: 'legend', sl_heun: 'legacy', sl_gwi: 'legend', sl_muk: 'legend', sl_jeok: 'legend', sl_seon: 'legend', sl_tn_solo: 'legend', sl_tn_team: 'legend', sl_hap: 'legend', sl_dong: 'rare', sl_bj: 'legend', sl_ug_heo: 'ultimate', sl_tak: 'legend', sl_ug_jong: 'ultimate', sl_gga: 'legend', sl_so: 'legend',
   sl_f_night: 'legend', sl_f_redmoon: 'legend', sl_f_lotus: 'legend', sl_f_north: 'legend', sl_f_river: 'legend', sl_f_south: 'legend', sl_f_mandate: 'legend', sl_myeongdeung: 'legend' };
+Object.assign(SEALS, RB_SEALS);
+Object.assign(SEAL_TIER, RB_SEAL_TIER);
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

@@ -1,5 +1,6 @@
 import { PORTRAITS, PORTRAIT_FRAME } from './portraits.js';
 import { CABIN_FUR, CABIN_WALL, CABIN_PAPER, CABIN_GROUND } from './cabin_furn.js';
+import { RB_FUR, RB_WALL } from './realm_furn.js';
 const C = {
   wood: '#8a5a32', dark: '#553420', deep: '#3e2616', pine: '#a8784a', lac: '#9a3326', lacD: '#6e2219', gold: '#d8b25a', brass: '#b08a40',
   paper: '#f1e8d4', paper2: '#e2d6bb', ink: '#2a2a2e', ind: '#33467a', ind2: '#4b63a0', red: '#b84a3a', jade: '#5f9a82', jade2: '#7fb59c',
@@ -1630,6 +1631,7 @@ export const GROUND = {
 };
 
 for (const [T, S] of [[FUR, CABIN_FUR], [WALL, CABIN_WALL], [PAPER, CABIN_PAPER], [GROUND, CABIN_GROUND]]) for (const [k, d] of Object.entries(S)) T[k] = { ...d, ship: true };
+for (const [T, S] of [[FUR, RB_FUR], [WALL, RB_WALL]]) for (const [k, d] of Object.entries(S)) T[k] = { ...d, realm: true };
 
 export const DEFAULT_SET = {
   paper: 'dancheong', ground: 'maru',

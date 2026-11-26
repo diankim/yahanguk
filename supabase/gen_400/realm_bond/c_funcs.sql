@@ -264,6 +264,8 @@ create or replace function public.world_realm_bond_vault_ready(p_v jsonb)
     else false end
 $f$;
 
+grant select on public.world_wardrobe to fn_owner_field;
+
 create or replace function public.world_realm_bond_vault_owned(p_uid uuid, p_v jsonb)
  returns boolean language sql stable security definer set search_path to 'pg_catalog', 'public' as $f$
   select case p_v ->> 'kind'
@@ -271,6 +273,10 @@ create or replace function public.world_realm_bond_vault_owned(p_uid uuid, p_v j
     when 'cosmetic' then exists (select 1 from public.world_character_cosmetics where owner_id = p_uid and cosmetic_key = p_v ->> 'id')
     when 'name_style' then exists (select 1 from public.world_faction_unlocks where owner_id = p_uid and unlock_key = p_v ->> 'id')
     when 'mount' then exists (select 1 from public.world_owned_mounts where owner_id = p_uid and mount_id = p_v ->> 'id')
+    when 'item' then exists (select 1 from public.world_item_catalog i where i.item_id = p_v ->> 'id' and i.category = 'outfit')
+      and (exists (select 1 from public.world_wardrobe w join public.world_item_catalog i on i.item_id = p_v ->> 'id' where w.owner_id = p_uid and w.look_key = i.equipment_traits ->> 'look')
+        or exists (select 1 from public.world_characters c where c.owner_id = p_uid and coalesce((c.inventory ->> (p_v ->> 'id'))::int, 0) > 0)
+        or exists (select 1 from public.world_storage s where s.owner_id = p_uid and coalesce((s.items ->> (p_v ->> 'id'))::int, 0) > 0))
     else false end
 $f$;
 
@@ -507,7 +513,7 @@ end $f$;
 
 create or replace function public.world_realm_bond_buy(p_key text)
  returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'public' as $f$
-declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; v jsonb; rl text; b public.world_realm_bonds%rowtype; cost int; nm text;
+declare uid uuid := public.fn_owner_auth_uid(); c public.world_characters%rowtype; v jsonb; rl text; b public.world_realm_bonds%rowtype; cost int; nm text; home boolean;
 begin
   perform public.world_travel_guard('권역 비고 교환');
   if uid is null then raise exception '로그인이 필요합니다.'; end if;
@@ -523,11 +529,18 @@ begin
   if public.world_realm_bond_vault_owned(uid, v) then raise exception '이미 가지고 있습니다.' using hint = 'owned'; end if;
   cost := (v ->> 'price')::int;
   if b.tokens < cost then raise exception '인연 표가 모자랍니다(% 필요, 지금 %).', cost, floor(b.tokens)::int using hint = 'tokens'; end if;
-  if v ->> 'kind' = 'item' and public.world_bag_room(coalesce(c.inventory, '{}'::jsonb), p_key, public.world_bag_limit(uid)) < 1 then raise exception '가방 자리가 모자랍니다.' using hint = 'bag'; end if;
+  home := v ->> 'kind' = 'item' and exists (select 1 from public.world_item_catalog i where i.item_id = p_key and i.category = 'furniture')
+    and exists (select 1 from public.world_housing hs where hs.owner_id = public.world_housing_home(uid));
+  if v ->> 'kind' = 'item' and not home and public.world_bag_room(coalesce(c.inventory, '{}'::jsonb), p_key, public.world_bag_limit(uid)) < 1 then raise exception '가방 자리가 모자랍니다.' using hint = 'bag'; end if;
   update public.world_realm_bonds set tokens = tokens - cost where owner_id = uid and realm = rl;
   nm := (select x ->> 'name' from jsonb_array_elements(public.world_realm_bond_vault_of(uid, rl)) x where x ->> 'id' = p_key);
   case v ->> 'kind'
-    when 'item' then update public.world_characters set inventory = public.world_inv_add(coalesce(inventory, '{}'::jsonb), p_key, 1), updated_at = now() where owner_id = uid;
+    when 'item' then
+      if home then
+        if public.world_housing_grant(uid, p_key, 1, '권역 인연 비고', false) < 1 then raise exception '곳간과 가방이 모두 가득 찼습니다.' using hint = 'bag'; end if;
+      else
+        update public.world_characters set inventory = public.world_inv_add(coalesce(inventory, '{}'::jsonb), p_key, 1), updated_at = now() where owner_id = uid;
+      end if;
     when 'title' then insert into public.world_character_titles(owner_id, title_key) values (uid, p_key) on conflict do nothing;
     when 'cosmetic' then insert into public.world_character_cosmetics(owner_id, cosmetic_key) values (uid, p_key) on conflict do nothing;
     when 'name_style' then insert into public.world_faction_unlocks(owner_id, unlock_key) values (uid, p_key) on conflict do nothing;
@@ -536,7 +549,7 @@ begin
   return jsonb_build_object('ok', true, 'kind', v ->> 'kind', 'tokens', floor(b.tokens - cost)::int,
     'content', coalesce(nm, p_key) || '을(를) 받았습니다(인연 표 ' || cost || ').' ||
       case v ->> 'kind' when 'title' then ' 캐릭터 › 칭호에서 장착하세요.' when 'cosmetic' then ' 설정 › 프로필 꾸미기에서 답니다.' when 'name_style' then ' 설정 › 프로필 › 채팅 이름 색에서 고릅니다.'
-        when 'mount' then ' 지도 › 이동의 내 탈것에서 탑니다.' else '' end);
+        when 'mount' then ' 지도 › 이동의 내 탈것에서 탑니다.' else case when home then ' 별채 곳간으로 보냈습니다(곳간이 차면 가방).' else '' end end);
 end $f$;
 
 grant create on schema public to fn_owner_field;

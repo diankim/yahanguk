@@ -152,6 +152,7 @@ def db_checks(run):
         if i not in NOSRC_OK:
             out.append(('얻는 곳', i, '재료인데 world_item_sources에 얻는 곳이 하나도 없음'))
     cos = (JS / 'cosmetics.js').read_text()
+    cos += ''.join((JS / m).read_text() for m in re.findall(r"from '\./([\w/]+\.js)'", cos))
     for k in json.loads(run(SQL['cosmetics'])):
         if not re.search(rf"\b{k}\s*:", cos):
             out.append(('꾸미기 그림', k, 'world_cosmetic_catalog에 있는데 cosmetics.js에 그림(FRAMES·P·SCENE·SEALS)이 없음 → 화면에 아무것도 안 보임'))

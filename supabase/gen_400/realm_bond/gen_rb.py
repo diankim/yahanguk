@@ -5,6 +5,8 @@ import os
 import re
 import sys
 
+import vault_rb
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 REALMS = [
@@ -30,7 +32,7 @@ VAULT = [
     ('item', 'of_bottom_rb_{k}', 3, 200, '{n} 아랫옷', True),
     ('item', 'hf_rb_{k}_1', 3, 150, '{n} 가구 하나', True),
     ('item', 'hf_rb_{k}_2', 3, 150, '{n} 가구 둘', True),
-    ('name_style', 'ns:rb_{k}', 4, 350, '{n} 이름 색', False),
+    ('name_style', 'ns:{ns}', 4, 350, '{n} 이름 색', True),
     ('mount', 'rb_mount_{k}', 5, 600, '{n} 탈것', True),
     ('cosmetic', 'pt_rb_{k}', 5, 300, '{n} 바탕 무늬', True),
     ('cosmetic', 'sl_rb_{k}', 5, 300, '{n} 낙관', True),
@@ -63,7 +65,7 @@ def rules(R, ports):
     vault = []
     for k, nm, _, _ in REALMS:
         for o, (kind, iid, st, price, label, ready) in enumerate(VAULT):
-            vault.append(dict(id=iid.format(k=k), realm=k, kind=kind, stage=st, price=price, name=label.format(n=nm), ready=ready, sort=o + 1))
+            vault.append(dict(id=iid.format(k=k, ns=vault_rb.NAME_STYLE[k]), realm=k, kind=kind, stage=st, price=price, name=label.format(n=nm), ready=ready, sort=o + 1))
     titles = []
     for k, nm, _, _ in REALMS:
         titles.append(dict(key=f'rb_{k}_kin', name=f'{nm}의 한식구', grade=3, rule=dict(realm_bond='stage', realm=k, n=5),
@@ -227,6 +229,7 @@ on conflict (quest_id, step) do update set title = excluded.title, goal = exclud
 
 def emit(R, ports, SQ, J, TA, known, RID, xp_need, fresh, errors):
     RB = rules(R, ports)
+    vrows, vcheck, vn = vault_rb.emit(RB, J, known, fresh, errors)
     for k, v in RB['realms'].items():
         if not v['hubs']:
             errors.append(f'권역 {k}: 안전지대 없음')
@@ -251,5 +254,7 @@ end $$;"""]
     import outfits_rb
     osql, no = outfits_rb.emit(RB, J, errors)
     out.append(osql)
-    sys.stderr.write(f"권역 인연: 권역 {len(RB['realms'])} · 칭호 {len(RB['titles'])}+비고 {len(RB['vault_titles'])} · 비고 품목 {len(RB['vault'])} · 옷 {no} · 이야기 {nq}편 {ns}장면\n")
+    out += vrows
+    out.append(vcheck)
+    sys.stderr.write(f"권역 인연: 권역 {len(RB['realms'])} · 칭호 {len(RB['titles'])}+비고 {len(RB['vault_titles'])} · 비고 품목 {len(RB['vault'])} · 옷 {no} · 가구 {vn['furn']} · 꾸미기 {vn['cos']} · 탈것 {vn['mounts']} · 이야기 {nq}편 {ns}장면\n")
     return '\n'.join(out)

@@ -588,7 +588,7 @@ async function drawTravel(body) {
       </article>`).join('')}</div>
       ${helpLine(`노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.`, '노정패 안내', `노정패 ${fmt.num(mounts?.mount_tokens)}개`)}`, { ico: 'route' })}
     ${panel('얻을 수 있는 탈것', others.length ? `<ul class="spot-list">${others.map(m => `<li><div><b>${esc(m.mount_name)}</b>
-        <small>${m.acquire_method === 'event' ? '특별한 사건으로만 얻을 수 있습니다' : m.acquire_method === 'faction' ? `${esc(MAJOR_FACTIONS[m.unlock_faction]?.name || '세력')} 비고에서 공훈으로` : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
+        <small>${m.acquire_method === 'event' ? (m.tier === '권역' ? '권역 인연 비고에서 인연 표로' : '특별한 사건으로만 얻을 수 있습니다') : m.acquire_method === 'faction' ? `${esc(MAJOR_FACTIONS[m.unlock_faction]?.name || '세력')} 비고에서 공훈으로` : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
         ${m.acquire_method === 'stable' && m.unlock_region ? `<button class="btn small ghost" data-goto="${esc(m.unlock_region)}">지도에서 보기</button>` : ''}</li>`).join('')}</ul>` : empty('모든 탈것을 가지고 있습니다.'), { ico: 'shop' })}`;
 
   $('#tr-map', body)?.addEventListener('click', () => switchTo('world'));
