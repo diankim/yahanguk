@@ -40,6 +40,8 @@ begin
   select * into f from public.world_gw_fights where fight_id = fid;
   select coalesce(gval, 0) into wet from public.world_gw_members where fight_id = fid and owner_id = uid;
   if public.world_dh_rift(fid, c) then sc := sc - 3; end if;
+  if exists (select 1 from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) e where e ->> 'k' = 'spray' and (e ->> 'left')::int = 0
+       and c = any (array(select jsonb_array_elements_text(e -> 'cells')::int))) then wet := wet + 1; end if;
   for h in select * from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) loop
     if h ->> 'k' = 'whirl' then
       nx := coalesce(public.world_dh_step((h ->> 'c')::int, f.board ->> 'dir'), (h ->> 'c')::int);
