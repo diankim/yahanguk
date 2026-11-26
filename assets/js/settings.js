@@ -161,6 +161,7 @@ function noteActs(n) {
   if (n.kind === 'bond_wedding_ask' && n.payload?.wed_id) return `<button class="btn primary small" data-wed="${esc(n.id)}" data-acc="1">혼례 받기</button><button class="btn small" data-wed="${esc(n.id)}" data-acc="0">다음에</button>`;
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
   if (n.kind === 'feast') return `<button class="btn primary small" data-feastv="${esc(n.id)}">행사 보기</button>`;
+  if (n.kind === 'lantern_reply' || n.kind === 'lantern_removed') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="lantern">등불 편지</button>`;
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">${n.kind === 'tourney_start' ? '대진표 보기' : '비무 방'}</button>`;
   if ((n.kind === 'pfight_invite' || n.kind === 'pfight_join') && n.payload?.fight_id) return `<button class="btn primary small" data-pfight="${esc(n.id)}" data-join="${n.kind === 'pfight_invite' ? 1 : ''}">${n.kind === 'pfight_invite' ? '합류 · 탐색력 1' : '보기'}</button>`;
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
@@ -178,6 +179,7 @@ function noteActs(n) {
   if (n.kind === 'guide' && n.payload?.tip === 'erosion') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="char/status">상태 보기</button>`;
   if (n.kind === 'yohwa' || n.kind === 'erosion_warn') return `<a class="btn primary small" href="#/char" data-pop-close>상태 보기</a>`;
   if (n.kind === 'expedition_done') return `<a class="btn primary small" href="#/home" data-go-exp="${esc(n.id)}">결과 보기</a>`;
+  if (n.kind === 'pet_skin') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="house">동무 보기</button>`;
   if (n.kind === 'bijang' && n.payload?.run_id) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="bijang/${esc(n.payload.run_id)}">비장고 보기</button>`;
   const go = GO_KIND[n.kind] || (/^bond_/.test(n.kind) ? 'party' : /^faction/.test(n.kind) ? 'char/faction' : /^(housing_|pet_)/.test(n.kind) ? 'house' : '');
   if (go) return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="${esc(go)}">보러 가기</button>`;
@@ -259,9 +261,11 @@ async function runAct(btn) {
   if (btn.dataset.goExp) { await markRead(n); window.dispatchEvent(new CustomEvent('yh-open-expedition')); return true; }
   if (btn.dataset.goto) {
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');
+    if (v === 'lantern') { (await import('./lantern.js')).openLantern(); return true; }
     try {
       if (n.kind === 'title' && n.payload?.title_key) sessionStorage.setItem('yh-title-focus', n.payload.title_key);
       if (n.kind === 'cosmetic' && n.payload?.cosmetic_key) sessionStorage.setItem('yh-cos-focus', n.payload.cosmetic_key);
+      if (n.kind === 'pet_skin') sessionStorage.setItem('yh-pets-open', '1');
     } catch {} window.yahangGo(v, sub || ''); return true; }
   return false;
 }

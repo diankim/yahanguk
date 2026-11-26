@@ -23,7 +23,7 @@ export const CHANGES = {
   storageIfUsed: /garden_act$|craft_(item|batch)$|outfit_design_weave$|furn_weave$|housing_expand$|ultimate_buy$|project_give$|regular_give$/,
   dismantle: /dismantle|skill|craft|level|reset_identity|regular_give/,
   avatar: /avatar|outfit|wardrobe|reset_identity|furn_/,
-  owned: /housing_|portrait_take|furn_weave|pet_|ultimate_buy|mentor_shop|faction_vault|reset_identity|wardrobe/,
+  owned: /housing_|lantern_catch|portrait_take|furn_weave|pet_|ultimate_buy|mentor_shop|faction_vault|reset_identity|wardrobe/,
   gearSets: /gear_set_|reset_identity|skill/,
   mounts: /mount|travel|stable|faction_vault|story|gw_|tourney|notice/,
   board: /quest|story|faction|raid_final|level|reset_identity|regular_give/,

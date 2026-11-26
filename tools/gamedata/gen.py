@@ -97,6 +97,11 @@ def build(dsn):
     d['wedding'] = q(dsn, "select world_wedding_rules()")
     d['tourney'] = q(dsn, "select world_tourney_rules()")
     d['feast'] = q(dsn, "select world_feast_rules() || jsonb_build_object('feasts', (select jsonb_agg(f || jsonb_build_object('place', g.region_name) order by (f ->> 'dow')::int) from jsonb_array_elements(world_feast_rules() -> 'feasts') f join world_map_regions g on g.region_id = f ->> 'region'))")
+    d['lantern'] = q(dsn, """select (r - 'titles' - 'list' - 'hanger') || jsonb_build_object('ports', world_lantern_ports(),
+        'hanger', (r -> 'hanger') || jsonb_build_object('name', (select item_name from world_item_catalog where item_id = r -> 'hanger' ->> 'item')),
+        'titles', (select jsonb_agg(jsonb_build_object('key', t ->> 'key', 'name', t ->> 'name', 'by', t ->> 'by', 'n', (t ->> 'n')::int, 'grade', (t ->> 'grade')::int) order by o) from jsonb_array_elements(r -> 'titles') with ordinality z(t, o) where not (t ->> 'hidden')::boolean),
+        'hidden', (select count(*) from jsonb_array_elements(r -> 'titles') t where (t ->> 'hidden')::boolean))
+        from (select world_lantern_rules() r) x""")
     d['level'] = q(dsn, "select world_level_rules()")
     d['mentor'] = q(dsn, "select world_mentor_rules()")
     d['questReplay'] = q(dsn, "select world_quest_replay_rules()")

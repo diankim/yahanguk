@@ -5,7 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
-import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR } from '../rules.js';
+import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -2165,6 +2165,31 @@ const S = [
       <li>별채 주인과 한 지붕 정인이 심기·물 주기·거두기를 합니다. 이동·원정·자율 활동 중에는 가꿀 수 없습니다.</li>
       <li>손님은 밭을 구경하고 까마귀를 쫓아 줄 수 있습니다.</li>
     </ul>`],
+  ['lantern', '등불 편지', (() => { const L = GD.lantern || {}; const sh = (L.shapes || []).map(x => x.name), co = (L.colors || []).map(x => x.name); return `
+    <p>항구 물가에서 글을 적은 등불을 띄우고, 다른 항구에서 흘러온 남의 등불을 건져 읽습니다. 항구가 있는 곳의 현장에 「등불 편지」 칸이 있습니다(${esc((L.ports || []).map(p => p.name).join(' · '))}).</p>
+    <h4>띄우기와 건지기</h4>
+    <ul>
+      <li>글은 ${L.body_max}자까지 적습니다. 띄운 등불은 물살을 타고 다른 항구로 흘러가고, 그곳 물가에서 누군가 건져 읽습니다. 같은 항구에서 띄운 등불은 그 항구에서 건지지 않습니다.</li>
+      <li>하루(한국 시각)에 띄우기 ${L.day?.send}번 · 건지기 ${L.day?.catch}번입니다. 아무도 건지지 않은 등불은 ${L.days}일 동안 떠돌다 꺼집니다.</li>
+      <li>띄운 이의 이름은 끝까지 밝혀지지 않습니다. 글에 스스로 이름을 적는 것은 됩니다.</li>
+      <li>건진 등불에는 답등을 한 번 띄울 수 있습니다. 답등은 그 등불을 띄운 이에게만 닿고${L.reply?.counts_send ? ', 오늘 띄우기 수에 듭니다' : ''}. 답등이 닿으면 알림이 옵니다(설정 › 알림의 「서신」 갈래).</li>
+      <li>이동·원정·자율 활동 중이거나 쓰러진 동안에는 띄우거나 건질 수 없습니다. 지난 등불과 등불첩은 어디서나 볼 수 있습니다.</li>
+    </ul>
+    <h4>등불첩</h4>
+    <ul>
+      <li>등 모양 ${sh.length}가지(${esc(sh.join(' · '))})와 색 ${co.length}가지(${esc(co.join(' · '))})로 ${sh.length * co.length}칸입니다.</li>
+      <li>처음에는 한 칸만 열려 있습니다. 남이 띄운 등불을 건지면 그 등불의 모양·색이 열리고, 열린 등으로 띄울 수 있습니다.</li>
+    </ul>
+    <h4>칭호와 걸개</h4>
+    <ul>
+      ${(L.titles || []).map(t => `<li>「${esc(t.name)}」: 등불을 ${t.n}번 건짐</li>`).join('')}
+      <li>${esc(L.hanger?.name || '')}: 등불을 ${L.hanger?.n}번 건지면 별채 곳간에 들어오는 가구입니다.</li>
+    </ul>
+    <h4>제보와 숨기기</h4>
+    <ul>
+      <li>건진 등불·답등의 깃발로 운영진에게 알릴 수 있습니다. 제보한 등불은 내 화면에서 숨겨지고, 운영진이 내린 등불은 글이 보이지 않습니다.</li>
+      <li>「숨기기」를 하면 그 등불이 내 화면에서 사라지고, 같은 이가 띄운 등불은 앞으로 건지지 않습니다.</li>
+    </ul>`; })()],
   ['portrait', '초상 화첩', `
     <p>이야기에서 만난 인물 마흔한 명의 초상을 모으는 화첩입니다. 모은 초상은 액자로 꺼내 별채 벽에 겁니다. 능력치 효과는 없습니다.</p>
     <h4>여는 곳</h4>
@@ -2220,6 +2245,7 @@ const S = [
           <li>별채를 고칠 수 있는 곳(안전지대, 빈약한 안전지대 제외)에서 늘리고, 재료는 가방 먼저, 모자라면 창고에서 씁니다.</li>
           <li>자리가 하나뿐일 때 「별채에 두기」를 누르면 별채 동무를 바꿉니다.</li>
           <li>동무 도감은 별채 화면의 「동무」에서 엽니다.</li></ul></li>`; })()}
+      <li><b>무늬</b>: ${esc(PET_SKIN.guide)}</li>
       <li><b>놀기</b>: 별채 안에서 쓰다듬기 하루 5번 · 놀아 주기 3번 · 먹이 주기 3번으로 친밀도가 오릅니다.
         <ul><li>데리고 다니는 동무도 별채 › 동무 도감의 「돌보기」로 똑같이 돌볼 수 있습니다(별채가 없어도 됩니다). 하루 횟수는 그 동무 몫으로 함께 셉니다.</li></ul>
         <ul><li>친밀도는 최대 300이고, 100이 되면 다 자란 모습이 됩니다.</li>
@@ -2420,7 +2446,7 @@ const GROUPS = [
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
   ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'regular', 'kin', 'cproject']],
-  ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'yeonri', 'wedding', 'tourney']],
+  ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'lantern', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';
 const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');

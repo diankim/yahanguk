@@ -126,7 +126,7 @@ export function itemTray({ title, bodyId, fill }) {
   };
 }
 
-export const resultBox = (ok, title, body = '') => `<div class="raid-result ${ok ? 'ok' : 'bad'}"><b>${title}</b>
+export const resultBox = (ok, title, body = '', sub = '') => `<div class="raid-result ${ok ? 'ok' : 'bad'}"><b>${title}</b>${sub ? `<p class="rr-sub">${sub}</p>` : ''}
     ${body}</div>`;
 export function showResult(root) {
   const box = root && $('.raid-result', root); if (!box) return;

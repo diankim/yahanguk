@@ -139,6 +139,31 @@ export const QUEST_REPLAY = {
   ask: `경험치·물품 보상 없이 처음부터 다시 합니다. 할 일·넘길 물품은 처음과 같고, 다 마치면 그 퀘스트 전 보상의 ${QR.pct}%(최소 ${QR.min}전)를 받습니다. 한 번에 ${QR.max_active}편까지 다시 할 수 있습니다.`,
 };
 export const UCOMM_PAST ='받거나 거둔 의뢰입니다. 며칠 지나면 저절로 사라집니다.';
+const LT = GD.lantern || { body_max: 60, day: { send: 3, catch: 1 }, days: 7, ports: [], shapes: [], colors: [], start: { shape: 'round', color: 'red' }, reply: { counts_send: true }, hanger: { n: 5, name: '등불 걸개' }, titles: [] };
+const LT_SHAPE = Object.fromEntries((LT.shapes || []).map(x => [x.key, x.name]));
+const LT_COLOR = Object.fromEntries((LT.colors || []).map(x => [x.key, x.name]));
+export const LANTERN = {
+  ...LT,
+  isPort: r => (LT.ports || []).some(p => p.r === r),
+  portNames: () => (LT.ports || []).map(p => p.name).join(' · '),
+  lookName: (shape, color) => `${LT_COLOR[color] || ''} ${LT_SHAPE[shape] || ''}`.trim(),
+  shapeName: k => LT_SHAPE[k] || k,
+  colorName: k => LT_COLOR[k] || k,
+  total: () => (LT.shapes || []).length * (LT.colors || []).length,
+  tile: '글을 적은 등불 띄우기 · 건지기',
+  help: `항구 물가에서 글을 적은 등불을 띄웁니다. 등불은 물살을 타고 다른 항구로 흘러가, 그곳 물가에서 누군가 건져 읽습니다. 글은 ${LT.body_max}자까지이고, 띄운 이의 이름은 끝까지 밝혀지지 않습니다(글에 스스로 적는 것은 됩니다). 하루(한국 시각)에 띄우기 ${LT.day?.send}번·건지기 ${LT.day?.catch}번이고, 아무도 건지지 않은 등불은 ${LT.days}일 동안 떠돌다 꺼집니다. 건진 등불에는 답등을 한 번 띄울 수 있고${LT.reply?.counts_send ? ', 답등도 오늘 띄우기 수에 듭니다' : ''}.`,
+  bookHelp: `등 모양 ${(LT.shapes || []).length}가지와 색 ${(LT.colors || []).length}가지로 ${(LT.shapes || []).length * (LT.colors || []).length}칸입니다. 처음에는 ${LT_COLOR[LT.start?.color] || ''} ${LT_SHAPE[LT.start?.shape] || ''} 하나만 열려 있고, 남이 띄운 등불을 건지면 그 등불의 모양·색이 열려 내가 띄울 때 고를 수 있습니다.`,
+  away: '항구 물가에 있지 않습니다. 등불은 항구가 있는 곳의 물가에서 띄우고 건질 수 있습니다. 지난 등불과 등불첩은 어디서나 볼 수 있습니다.',
+  noPool: '지금 이 물가에 흘러온 등불이 없습니다. 다른 항구에 가 보거나 조금 뒤에 다시 와 보세요.',
+  status: { float: '떠도는 중', caught: '누군가 건짐', out: '꺼짐', removed: '운영진이 내림' },
+  removed: '운영진이 내린 등불입니다.',
+  locked: '아직 열리지 않은 등입니다. 남이 띄운 이 모양·색의 등불을 건지면 열립니다.',
+  hideAsk: '이 등불을 내 화면에서 숨길까요? 같은 이가 띄운 등불은 앞으로 건지지 않습니다. 되돌릴 수 없습니다.',
+  reportTip: '불쾌한 글은 깃발로 운영진에게 알려 주세요. 제보한 등불은 내 화면에서 숨겨집니다.',
+  replyNote: `건진 등불을 띄운 이에게만 닿습니다. 한 등불에 한 번만 띄울 수 있고${LT.reply?.counts_send ? ', 오늘 띄우기 수에 듭니다' : ''}. 띄운 이도 나도 서로의 이름은 알 수 없습니다.`,
+  hangerLine: (n, got) => got ? `${LT.hanger?.name || '등불 걸개'} — 받음 (별채 곳간)` : `${LT.hanger?.name || '등불 걸개'} — 등불을 ${LT.hanger?.n}번 건지면 별채 곳간에 들어옵니다 (${Math.min(n, LT.hanger?.n)}/${LT.hanger?.n})`,
+  left: ms => { const d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000); return ms <= 0 ? '곧 꺼짐' : d > 0 ? `${d}일 ${h}시간 남음` : `${Math.max(1, h)}시간 남음`; },
+};
 
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };
 export const GATHER_GAP = RT.gather_s * 1000;
@@ -346,6 +371,7 @@ export const SEA_BOSS = {
   dohaesu: {
     boss: { name: DHB.name || '도해수', arc: `본편 · ${DHB.arc || '도해록'}`, place: DHB.place || '뒤집힌 물목', PHASE: SEA_PH(DHB), last: (DHB.phases || [])[3] || '틈의 숨', mechs: [],
       calm: '도해수가 틈 속에서 낮게 운다. 물이 판 가장자리를 핥는다.', tray: '뒤집힌 물목에서 쓸 물품', win: '도해수를 바다로 돌려보냈습니다', lose: '틈의 물살에 밀려났습니다', open: '뒤집힌 물목 앞에 서기', killed: '돌려보낸 횟수',
+      wonTag: '돌려보냄', lostTag: '밀려남', hpName: '도해수', after: { won: '틈에서 빠져나온 도해수가 물살을 타고 제 바다로 돌아갔습니다.', lost: '도해수는 아직 틈에 끼어 버둥대고, 물목은 거꾸로 돕니다.' },
       desc: '쪽빛 바다 네 칸 네 줄, 가운데 네 칸은 갈라진 틈입니다. 틈에 끼어 버둥대는 바다 거인을 떼어 내 제 바다로 돌려보내는 싸움입니다. 이야기판은 혼자서도, 깊은 판은 같은 곳의 파티원 둘에서 넷이 함께 섭니다.', ask: 'dh',
       story: `이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 입장 물품이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다. 틈에 빨려 들어도 떨어지지 않고 체력 ${DHB.story?.board?.fall_hp ?? 40}을 잃은 채 모서리로 돌아옵니다.`,
       hard: `${DHB.modes?.hard || '깊은 물목'} · 라운드마다 마감이 있고 수법이 거셉니다(둘에서 넷). 모두 ${DHB.item_name || '입장 물품'}을 하나씩 쓰고, 틈에 빨려 들면 그 싸움에서 빠져 다시 돌아올 수 없습니다. 지면 장비가 닳고 침식이 오릅니다.` },
@@ -374,6 +400,7 @@ export const SEA_BOSS = {
   ttangul: {
     boss: { name: DUB.name || '땅울이', arc: `본편 · ${DUB.arc || '도해록'}`, place: DUB.place || '고임터', PHASE: SEA_PH(DUB), last: (DUB.phases || [])[3] || '판 깎기', mechs: [],
       calm: '땅울이가 낮게 운다. 돌판 밑으로 흐름이 꿈틀거린다.', tray: '고임터에서 쓸 물품', win: '땅울이를 잠재웠습니다', lose: '고임 구덩이로 밀려났습니다', open: '고임터 돌판에 서기', killed: '잠재운 횟수',
+      wonTag: '잠재움', lostTag: '밀려남', hpName: '땅울이', after: { won: '막혔던 흐름이 돌판 밑으로 빠져나가고, 땅울이가 낮게 울다 잠들었습니다.', lost: '땅울이의 울음이 아직 고임터를 뒤덮고 있습니다.' },
       desc: '가운데 땅울이를 둘러싼 육각 돌판 열아홉 칸, 판 밖은 빛이 고인 깊은 구덩이입니다. 끌개를 멈추고 판 위에서 버텨 막힌 흐름을 되돌리는 싸움입니다. 이야기판은 혼자서도, 깊은 판은 같은 곳의 파티원 둘에서 넷이 함께 섭니다.', ask: 'du',
       story: `이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 입장 물품이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다. 구덩이로 미끄러져도 떨어지지 않고 체력 ${DUB.story?.board?.fall_hp ?? 40}을 잃은 채 기어 올라옵니다.`,
       hard: `${DUB.modes?.hard || '깊은 고임터'} · 라운드마다 마감이 있고 수법이 거셉니다(둘에서 넷). 모두 ${DUB.item_name || '입장 물품'}을 하나씩 쓰고, 구덩이로 떨어지면 그 싸움에서 빠져 다시 돌아올 수 없습니다. 지면 장비가 닳고 침식이 오릅니다.` },
@@ -401,14 +428,25 @@ export const SEA_BOSS = {
   common: {
     fell: '떨어짐',
     fellLong: '떨어짐 · 이 싸움에는 돌아올 수 없음',
+    fellRes: '이 싸움에서 떨어짐',
     fellStory: n => `이야기판에서는 떨어지지 않고 체력 ${n}을 잃은 채 돌아옵니다.`,
     pushed: '밀림',
     cut: (pct, n) => `체력 ${pct}%까지 ${n}라운드 안에`,
     cutLate: n => `제때 달래지 못함 · 받는 피해 +${n}겹`,
-    noStep: '구멍이 난 칸에는 옮겨 서지 않습니다.',
     gimTip: p => `${p}에서 늘 쓰는 행동`,
     step: '테 두른 이웃 칸을 누르면 이번 라운드에 옮겨 섭니다(행동과 따로)',
     stepTo: c => `${c}번 칸으로 옮겨 섭니다 · 내 칸을 누르면 취소`,
     solo: n => `깊은 판은 ${n}명 이상이 함께해야 합니다. 혼자라면 이야기판에 서세요.`,
   },
+};
+
+export const PET_SKIN = {
+  noPet: '바탕 동무가 있어야 고를 수 있음',
+  basic: '바탕 동무가 있으면 누구나 고를 수 있음',
+  got: '얻음',
+  can: '고를 수 있음',
+  prog: (n, need) => `${Number(n || 0).toLocaleString()} / ${Number(need || 0).toLocaleString()}`,
+  book: '무늬 모음',
+  bookHelp: '건넛누리 권역 활동으로 무늬를 얻습니다. 얻은 무늬는 기록에 남아, 바탕 동무가 없어도 그 동무를 얻는 대로 바로 고를 수 있습니다. 운에 맡기는 길은 없고, 거래할 수 없습니다.',
+  guide: '건넛누리의 무늬는 권역 활동(이야기·답사·보조 퀘스트·교역·등불·잔칫상·습격·원정·도감·우두머리)으로 얻습니다. 얻는 길과 진행은 동무 창의 「무늬 모음」에 보이고, 얻으면 알림이 옵니다. 바탕 동무가 없어도 기록은 남아, 그 동무를 얻으면 바로 고를 수 있습니다.',
 };

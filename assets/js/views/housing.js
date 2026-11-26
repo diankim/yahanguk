@@ -17,7 +17,7 @@ import { kinLook, kinFace, kinTalk, kinGreet, kinWear, kinRoom, kinGift } from '
 import { KIN } from '../rules.js';
 import { kinTokenSvg } from '../kintoken.js';
 import { loadBond } from '../bond.js';
-import { BOND_EMOTE } from '../rules.js';
+import { BOND_EMOTE, PET_SKIN } from '../rules.js';
 
 const DEFS = { FUR, WALL, PAPER, GROUND };
 on('env', () => { if (cv?.isConnected) paint(); });
@@ -88,6 +88,7 @@ function drawClosed() {
     ${store_.length ? panel('곳간에 쌓인 가구', `<p class="muted small">별채를 얻기 전에 받은 가구입니다. 별채를 얻으면 꺼내 놓을 수 있습니다.</p><ul class="hs-list">${store_.map(([id, n]) => `<li>${esc(furName(id))} ×${n}</li>`).join('')}</ul>`, { ico: 'chest' }) : ''}`;
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
+  petsFocus();
   $('#hs-book')?.addEventListener('click', () => openGallery());
   $('#hs-portrait')?.addEventListener('click', () => import('./portraits.js').then(m => m.openPortraitBook()));
   $('#hs-go-dorm')?.addEventListener('click', () => import('./map.js').then(m => { m.focusRegion('hq_dorm'); window.yahangGo('map', 'world'); }));
@@ -386,6 +387,7 @@ function bind() {
   });
   $$('[data-merge]', el).forEach(b => b.addEventListener('click', () => guard(b, () => mergeAct(b, b.dataset.merge))));
   $('#hs-pets')?.addEventListener('click', openPets);
+  petsFocus();
   $$('[data-pet]', el).forEach(b => b.addEventListener('click', () => petAct(b, b.dataset.pet, b.dataset.pk)));
   $$('[data-kin]', el).forEach(b => b.addEventListener('click', () => kinAct(b, b.dataset.kin, b.dataset.ko)));
   $$('[data-kinroom]', el).forEach(b => b.addEventListener('click', () => guard(b, async () => {
@@ -510,12 +512,14 @@ async function openStore() {
 }
 
 const tokenRow = inv => { const n = Number(inv.pet_token || 0); return n ? `<div class="hs-token"><span>${icon('heart', 14)} 동무 정표 ×${n} <small class="muted">다섯 개 = 빛나는 알 하나</small></span><button class="btn small ${n >= 5 ? 'primary' : ''}" data-token data-here="동무 정표 바꾸기" ${n >= 5 ? '' : 'disabled'}>빛나는 알로 바꾸기</button></div>` : ''; };
+function petsFocus() { let k = null; try { k = sessionStorage.getItem('yh-pets-open'); sessionStorage.removeItem('yh-pets-open'); } catch {} if (k) openPets(); }
 async function openPets(keepY = 0) {
   let ps;
   try { ps = await rpc('world_pet_snapshot'); } catch (e) { return toast(e.message, 'error'); }
   const inv = store.character?.inventory || {};
   const items = Object.entries(inv).filter(([k, n]) => n > 0 && (k.startsWith('pt_') || k.startsWith('pet_egg_')));
   const mine = new Map((ps.mine || []).map(p => [p.id, p])), prof = ps.profile || null, room_ = ps.room || null;
+  const book = (ps.skin_book || []).filter(b => PET_SKINS[b.k]), skinsOf = id => book.filter(b => b.pet === id);
   const placed = ps.placed || (room_?.pet_id ? [room_.pet_id] : []), sl = ps.slots || { cap: 1, used: placed.length };
   const nm = id => mine.get(id)?.nick || PETS[id]?.name || '';
   const pic = id => id ? `<img src="${petImage(id, mine.get(id)?.adult, { scale: 2, skin: mine.get(id)?.skin })}" alt="">` : '<span class="ps-empty"></span>';
@@ -538,18 +542,19 @@ async function openPets(keepY = 0) {
     ${slots}
     ${tokenRow(inv)}
     ${items.length ? `<h4>열 수 있는 바구니·알</h4><ul class="hs-list">${items.map(([k, n]) => `<li><span>${esc(nameOf(k))} ×${n}</span><button class="btn small primary" data-adopt="${esc(k)}">열기</button></li>`).join('')}</ul>` : ''}
-    <h4>동무 도감 ${mine.size}/${(ps.species || []).length}</h4>
+    <h4>동무 도감 ${mine.size}/${(ps.species || []).length}${book.length ? ` <button class="linkish small" data-skinbook>${esc(PET_SKIN.book)} ${book.filter(b => b.got).length}/${book.length}</button>` : ''}</h4>
     <div class="pet-codex">${(ps.species || []).map(s => { const m = mine.get(s.id), kind = KINDS[PETS[s.id]?.kind] || ''; return `<div class="pet-card g${s.grade} ${m ? '' : 'locked'}">
       <span class="pet-face" data-tip="${esc(`${s.name}${kind ? ` · ${kind}` : ''} — ${PETS[s.id]?.desc || ''}`)}"><img src="${petImage(s.id, m?.adult, { dark: !m, scale: 3, skin: m?.skin })}" alt=""><b>${esc(m?.nick || s.name)}</b></span><small>${kind ? `<i class="pet-kind">${esc(kind)}</i>` : ''}${GRADE[s.grade]}${m ? ` · 친밀도 ${m.affinity}` : ''}</small>
-      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button>${m.grown ? `<button class="linkish small" data-look="${s.id}" data-baby="${m.baby ? '' : '1'}" title="조사원 카드·별채에 보이는 모습">${m.baby ? '자란 모습으로' : '아기 모습으로'}</button>` : ''}${(m.skins || []).length ? `<button class="linkish small" data-skins="${s.id}" title="조사원 카드·별채에 보이는 무늬">무늬${m.skin ? ` · ${esc(PET_SKINS[m.skin]?.name || '')}` : ''}</button>` : ''}</span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
+      ${m ? `<span class="pet-act">${acts(s)}<button class="linkish small" data-nick="${s.id}">별명</button>${m.grown ? `<button class="linkish small" data-look="${s.id}" data-baby="${m.baby ? '' : '1'}" title="조사원 카드·별채에 보이는 모습">${m.baby ? '자란 모습으로' : '아기 모습으로'}</button>` : ''}${skinsOf(s.id).length ? `<button class="linkish small" data-skins="${s.id}" title="조사원 카드·별채에 보이는 무늬">무늬${m.skin ? ` · ${esc(PET_SKINS[m.skin]?.name || '')}` : ''}</button>` : ''}</span>` : `<small class="muted">${esc(s.how || '')}</small>`}</div>`; }).join('')}</div>`;
   openModal({ title: '꼬마 동무', body, wide: true });
   const root = $('#modal');
   const mb = $('.modal-body', root), back = () => { if (mb && typeof keepY === 'number' && keepY > 0) mb.scrollTop = keepY; };
   back(); setTimeout(back, 40);
   const yNow = () => mb?.scrollTop || 0;
   root?.addEventListener('click', async e => {
-    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry],[data-unplace],[data-slotbuy],[data-skins]'); if (!b) return;
-    if (b.dataset.skins) { openSkins(mine.get(b.dataset.skins), yNow()); return; }
+    const b = e.target.closest('[data-adopt],[data-place],[data-prof],[data-nick],[data-token],[data-look],[data-carry],[data-unplace],[data-slotbuy],[data-skins],[data-skinbook]'); if (!b) return;
+    if (b.dataset.skins) { openSkins(mine.get(b.dataset.skins), yNow(), skinsOf(b.dataset.skins)); return; }
+    if (b.dataset.skinbook != null) { openSkinBook(book, mine, yNow()); return; }
     if (b.dataset.carry != null) { openCarry(mine.get(prof), ps); return; }
     if (b.dataset.nick) {
       const id = b.dataset.nick, cur = mine.get(id)?.nick || '', y0 = yNow();
@@ -576,17 +581,32 @@ async function openPets(keepY = 0) {
     });
   });
 }
-function openSkins(m, y0) {
+const skinLock = b => `<small class="skin-src">${esc(b.src || PET_SKIN.basic)}</small>${b.how === 'earn' ? `<span class="skin-bar"><i style="width:${Math.min(100, Math.round(100 * (b.n || 0) / Math.max(1, b.need || 1)))}%"></i></span><small class="skin-state">${esc(PET_SKIN.prog(b.n, b.need))}</small>` : ''}`;
+function openSkins(m, y0, list = []) {
   if (!m) return;
-  const opts = [null, ...(m.skins || []).filter(k => PET_SKINS[k])];
-  const card = k => { const on = (m.skin || null) === k, sk = k && PET_SKINS[k];
-    return `<div class="skin-opt${on ? ' on' : ''}"><div class="skin-pics"><img src="${petImage(m.id, false, { scale: 3, skin: k })}" alt=""><img src="${petImage(m.id, true, { scale: 3, skin: k })}" alt=""></div>
+  const can = new Set(m.skins || []), info = new Map(list.map(b => [b.k, b]));
+  const opts = [null, ...list.map(b => b.k).filter(k => PET_SKINS[k])];
+  const card = k => { const on = (m.skin || null) === k, sk = k && PET_SKINS[k], lock = k && !can.has(k);
+    return `<div class="skin-opt${on ? ' on' : ''}${lock ? ' locked' : ''}"><div class="skin-pics"><img src="${petImage(m.id, false, { scale: 3, skin: k })}" alt=""><img src="${petImage(m.id, true, { scale: 3, skin: k })}" alt=""></div>
       <b>${esc(sk ? sk.name : '원래 무늬')}</b><small class="muted">${esc(sk ? sk.desc : PETS[m.id]?.desc || '')}</small>
-      ${on ? '<em class="on">쓰는 중</em>' : `<button class="btn small primary" data-skin="${esc(k || '')}">이 모습으로</button>`}</div>`; };
+      ${lock ? skinLock(info.get(k) || {}) : on ? '<em class="on">쓰는 중</em>' : `<button class="btn small primary" data-skin="${esc(k || '')}">이 모습으로</button>`}</div>`; };
   openModal({ title: `${m.nick || PETS[m.id]?.name || ''} 무늬`, body: `<p class="muted small">고른 무늬는 조사원 카드·별채·행사 장면에 보입니다. 아기 모습·자란 모습 모두 바뀝니다.</p><div class="skin-grid">${opts.map(card).join('')}</div>` });
   $('#modal')?.addEventListener('click', e => {
     const b = e.target.closest('[data-skin]'); if (!b) return;
     guard(b, async () => { const r = await rpc('world_pet_skin', { p_pet: m.id, p_skin: b.dataset.skin || null }); closeModal(); await reload(); openPets(y0); return r; });
+  });
+}
+function openSkinBook(book, mine, y0) {
+  const card = b => { const sk = PET_SKINS[b.k], ok = b.got && b.have;
+    return `<div class="skin-opt${ok ? '' : ' locked'}"><div class="skin-pics"><img src="${petImage(b.pet, true, { scale: 3, skin: b.k })}" alt=""></div>
+      <b>${esc(sk.name)}</b><small class="muted">${esc(PETS[b.pet]?.name || '')}</small>
+      ${!b.got ? skinLock(b) : !b.have ? `<small class="skin-state">${esc(PET_SKIN.got)} · ${esc(PET_SKIN.noPet)}</small>` : `<small class="skin-state ok">${esc(PET_SKIN.can)}</small><button class="btn small" data-bookpet="${esc(b.pet)}">무늬 고르기</button>`}</div>`; };
+  const rank = b => (b.got && b.have ? 0 : b.got ? 1 : 2);
+  const list = [...book].sort((a, b) => rank(a) - rank(b));
+  openModal({ title: `${PET_SKIN.book} ${book.filter(b => b.got).length}/${book.length}`, body: `${helpLine(PET_SKIN.bookHelp, PET_SKIN.book)}<div class="skin-grid">${list.map(card).join('')}</div>`, wide: true });
+  $('#modal')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-bookpet]'); if (!b) return;
+    const id = b.dataset.bookpet; openSkins(mine.get(id), y0, book.filter(x => x.pet === id));
   });
 }
 function openCarry(p, ps) {

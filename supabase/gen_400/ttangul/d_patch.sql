@@ -108,6 +108,12 @@ select pg_temp.yh_patch('public.world_gw_snapshot(uuid,text)',
   $o$when f.boss_id = 'dohaesu' then public.world_dh_view(fid, uid)$o$,
   $n$when f.boss_id = 'ttangul' then public.world_du_view(fid, uid) when f.boss_id = 'dohaesu' then public.world_dh_view(fid, uid)$n$);
 
+select pg_temp.yh_patch('public.world_gw_snapshot(uuid,text)',
+  $o$'pos', m.pos, 'fade',$o$,
+  $n$'pos', m.pos, 'prev', case when m.prev ~ '^[0-9]+$' then m.prev::int end,
+        'pushed', coalesce(f.boss_id in ('dohaesu', 'ttangul') and (f.board -> 'pushed' ->> m.owner_id::text)::int = f.round - case when f.status = 'fight' then 1 else 0 end, false),
+        'fell', f.boss_id in ('dohaesu', 'ttangul') and coalesce(f.board -> 'fell', '[]'::jsonb) ? m.owner_id::text, 'fade',$n$);
+
 select pg_temp.yh_patch('public.world_gw_open(text,text)',
   $o$    elsif boss = 'dohaesu' then$o$,
   $n$    elsif boss = 'ttangul' then

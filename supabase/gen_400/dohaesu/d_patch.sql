@@ -1,10 +1,10 @@
-revoke all on function public.world_dh_nb(integer), public.world_dh_dist(integer, integer), public.world_dh_step(integer, text), public.world_dh_opp(text), public.world_dh_dirname(text),
+revoke all on function public.world_gw_pushed_at(uuid, uuid), public.world_gw_pushed(uuid, uuid, integer), public.world_dh_nb(integer), public.world_dh_dist(integer, integer), public.world_dh_step(integer, text), public.world_dh_opp(text), public.world_dh_dirname(text),
   public.world_dh_rift(uuid, integer), public.world_dh_hurt_mul(uuid, uuid), public.world_dh_dmg(uuid, uuid, numeric, integer, text, boolean), public.world_dh_fall(uuid, uuid, integer, text),
   public.world_dh_push(uuid, uuid, text, integer, integer, text, boolean, boolean), public.world_dh_seq(uuid, integer, integer), public.world_dh_hz_cells(uuid, jsonb), public.world_dh_hp(uuid, integer),
   public.world_dh_begin(uuid, integer), public.world_dh_round(uuid), public.world_dh_steps(uuid, integer), public.world_dh_on_attack(uuid, uuid, integer, numeric),
   public.world_dh_mech(uuid, integer, boolean, boolean, uuid[]), public.world_dh_after(uuid, integer), public.world_dh_view(uuid, uuid), public.world_dh_settle(uuid, boolean)
   from public, anon, authenticated;
-grant execute on function public.world_dh_nb(integer), public.world_dh_dist(integer, integer), public.world_dh_step(integer, text), public.world_dh_opp(text), public.world_dh_dirname(text),
+grant execute on function public.world_gw_pushed_at(uuid, uuid), public.world_gw_pushed(uuid, uuid, integer), public.world_dh_nb(integer), public.world_dh_dist(integer, integer), public.world_dh_step(integer, text), public.world_dh_opp(text), public.world_dh_dirname(text),
   public.world_dh_rift(uuid, integer), public.world_dh_hurt_mul(uuid, uuid), public.world_dh_dmg(uuid, uuid, numeric, integer, text, boolean), public.world_dh_fall(uuid, uuid, integer, text),
   public.world_dh_push(uuid, uuid, text, integer, integer, text, boolean, boolean), public.world_dh_seq(uuid, integer, integer), public.world_dh_hz_cells(uuid, jsonb), public.world_dh_hp(uuid, integer),
   public.world_dh_begin(uuid, integer), public.world_dh_round(uuid), public.world_dh_steps(uuid, integer), public.world_dh_on_attack(uuid, uuid, integer, numeric),

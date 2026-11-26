@@ -362,6 +362,7 @@ const ICONS = {
   spiral: 'M12 12a1.5 1.5 0 102 2 3.5 3.5 0 01-4.5 3A5.5 5.5 0 016.5 10 7.5 7.5 0 0120 13', needle: 'M4 20l9-9M13 11l3-7 4 4-7 3M7 14l3 3', drop: 'M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z',
   up: 'M6 14l6-6 6 6',
   down: 'M6 10l6 6 6-6',
+  lantern: 'M9 3h6M12 3v2M7 7a5 5 0 0110 0v8a5 5 0 01-10 0zM7 11h10M12 20v2',
 };
 export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', drizzle: 'drizzle', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
 export function icon(name, size = 18) {

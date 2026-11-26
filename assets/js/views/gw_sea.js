@@ -11,30 +11,21 @@ const C = T.common;
 
 const hasMech = (s, k) => { const B = GD.boss?.[s.boss] || {}, seq = (s.mode === 'story' ? B.story?.board?.seq : B.board?.seq) || []; return !seq.length || seq.some(e => (e.m || []).includes(k)); };
 export const seaOn = s => s?.boss === 'dohaesu' || s?.boss === 'ttangul';
-export const seaFell = (s, id) => seaOn(s) && (s.board?.fell || []).includes(id);
+const memOf = (s, id) => (s.members || []).find(m => m.id === id);
+export const seaFell = (s, id) => seaOn(s) && !!(memOf(s, id)?.fell ?? (s.board?.fell || []).includes(id));
 export const seaDue = s => (s.board?.hz || []).some(h => h.k !== 'whirl' && due(h));
 
-let mem = { id: null, round: -1, pos: {}, fell: [], push: false, trails: [], fresh: [], at: 0 };
-const PUSH = { dohaesu: ['current', 'surge', 'breath', 'tentacle', 'whirl'], ttangul: ['slide', 'boulder', 'fist', 'tilt', 'weight', 'shave'] };
-function track(s) {
-  const f = s.fight || {}, b = s.board || {}, pos = Object.fromEntries((s.members || []).filter(m => m.pos != null).map(m => [m.id, Number(m.pos)]));
-  const fell = b.fell || [];
-  if (mem.id !== f.id) mem = { id: f.id, round: f.round, pos, fell, push: false, trails: [], fresh: [] };
-  else if (f.round > mem.round) {
-    mem.fresh = fell.filter(id => !mem.fell.includes(id));
-    mem.trails = mem.push ? Object.entries(pos).filter(([id, c]) => mem.pos[id] != null && mem.pos[id] !== c).map(([id, c]) => ({ id, from: mem.pos[id], to: c, fell: mem.fresh.includes(id) })) : [];
-    for (const id of mem.fresh) if (!mem.trails.some(t => t.id === id) && mem.pos[id] != null) mem.trails.push({ id, from: mem.pos[id], to: pos[id] ?? mem.pos[id], fell: true });
-    mem.round = f.round; mem.pos = pos; mem.fell = fell; mem.at = Date.now();
-  }
-  mem.push = (b.hz || []).some(h => PUSH[s.boss]?.includes(h.k) && (h.k === 'whirl' || due(h)));
-  return mem;
+let seen = { key: '', at: 0 };
+function moved(s) {
+  const f = s.fight || {}, key = `${f.id}:${f.round}`, ms = (s.members || []).filter(m => m.pushed && m.pos != null);
+  if (seen.key !== key) seen = { key, at: Date.now() };
+  return {
+    trails: ms.filter(m => m.prev != null).map(m => ({ id: m.id, from: Number(m.prev), to: Number(m.pos), fell: !!m.fell })),
+    fresh: new Set(Date.now() - seen.at < 3000 ? ms.filter(m => m.fell).map(m => Number(m.pos)) : []),
+  };
 }
 
-export function seaMoves(s) {
-  const b = s.board || {}, moves = b.moves || [];
-  if (s.boss !== 'ttangul') return moves;
-  return moves.filter(c => duOpen(b, c));
-}
+export const seaMoves = s => s.board?.moves || [];
 
 function trailSvg(t, at) {
   const [x1, y1] = at(t.from), [x2, y2] = at(t.to), a = Math.atan2(y2 - y1, x2 - x1), d = Math.hypot(x2 - x1, y2 - y1);
@@ -42,22 +33,22 @@ function trailSvg(t, at) {
   const ex = x2 - 13 * Math.cos(a), ey = y2 - 13 * Math.sin(a);
   return `<g class="sea-trail ${t.fell ? 'fell' : ''}"><line x1="${fx(x1)}" y1="${fx(y1)}" x2="${fx(ex)}" y2="${fx(ey)}"/><path d="M${fx(ex + 7 * Math.cos(a))} ${fx(ey + 7 * Math.sin(a))} L${fx(ex - 6 * Math.cos(a - .6))} ${fx(ey - 6 * Math.sin(a - .6))} L${fx(ex - 6 * Math.cos(a + .6))} ${fx(ey - 6 * Math.sin(a + .6))}Z"/></g>`;
 }
-function tag(x, y, h, cls = '') { return `<g class="hx-tag ${cls} ${due(h) ? 'due' : ''}"><circle cx="${fx(x)}" cy="${fx(y)}" r="10"/><text x="${fx(x)}" y="${fx(y + 5)}">${num(h)}</text></g>`; }
+function tag(x, y, h, cls = '', r = 10) { return `<g class="hx-tag ${cls} ${r < 10 ? 'sm' : ''} ${due(h) ? 'due' : ''}"><circle cx="${fx(x)}" cy="${fx(y)}" r="${r}"/><text x="${fx(x)}" y="${fx(y + r / 2)}">${num(h)}</text></g>`; }
 function tokens(s, at, extra) {
-  const who = {};
-  for (const m of s.members || []) if (m.pos != null && !m.out && !seaFell(s, m.id)) (who[m.pos] = who[m.pos] || []).push(m);
+  const who = {}, ms = s.members || [];
+  for (const m of ms) if (m.pos != null && !m.out && !seaFell(s, m.id)) (who[m.pos] = who[m.pos] || []).push(m);
   let g = '';
-  for (const [c, ms] of Object.entries(who)) {
-    const [x, y] = at(Number(c));
-    ms.slice(0, 4).forEach((m, i) => {
-      const many = ms.length > 1, dx = many ? (i % 2 ? 10 : -10) : 0, dy = many ? (i > 1 ? 9 : -7) : -2;
-      g += `<g data-mid="${esc(m.id)}" class="hx-tok ${m.id === s.me ? 'me' : ''} ${m.resting ? 'rest' : ''}"><circle cx="${fx(x + dx)}" cy="${fx(y + dy)}" r="11"/><text x="${fx(x + dx)}" y="${fx(y + dy + 4)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}</title></g>${extra(m, x + dx, y + dy)}`;
-    });
+  for (const m of ms) {
+    if (!seaFell(s, m.id) || m.pos == null) continue;
+    const busy = !!who[m.pos], [cx, cy] = at(Number(m.pos)), x = busy ? cx + 13 : cx, y = busy ? cy + 12 : cy, r = busy ? 6 : 10, k = r / 2;
+    g += `<g class="sea-ghost"><circle cx="${fx(x)}" cy="${fx(y)}" r="${r}"/><path d="M${fx(x - k)} ${fx(y - k)}L${fx(x + k)} ${fx(y + k)}M${fx(x + k)} ${fx(y - k)}L${fx(x - k)} ${fx(y + k)}"/><title>${esc(m.name)} · ${esc(C.fellLong)}</title></g>`;
   }
-  for (const id of s.board?.fell || []) {
-    const m = (s.members || []).find(x => x.id === id); if (!m || m.pos == null) continue;
-    const [x, y] = at(Number(m.pos));
-    g += `<g class="sea-ghost"><circle cx="${fx(x)}" cy="${fx(y)}" r="10"/><path d="M${fx(x - 5)} ${fx(y - 5)}L${fx(x + 5)} ${fx(y + 5)}M${fx(x + 5)} ${fx(y - 5)}L${fx(x - 5)} ${fx(y + 5)}"/><title>${esc(m.name)} · ${esc(C.fellLong)}</title></g>`;
+  for (const [c, list] of Object.entries(who)) {
+    const [x, y] = at(Number(c));
+    list.slice(0, 4).forEach((m, i) => {
+      const many = list.length > 1, dx = many ? (i % 2 ? 10 : -10) : 0, dy = many ? (i > 1 ? 9 : -7) : -2, r = list.length > 2 ? 9.5 : 11;
+      g += `<g data-mid="${esc(m.id)}" class="hx-tok ${m.id === s.me ? 'me' : ''} ${m.resting ? 'rest' : ''}"><circle cx="${fx(x + dx)}" cy="${fx(y + dy)}" r="${r}"/><text x="${fx(x + dx)}" y="${fx(y + dy + 4)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}</title></g>${extra(m, x + dx, y + dy)}`;
+    });
   }
   return g;
 }
@@ -75,7 +66,7 @@ const DH_ARROW = { E: '→', S: '↓', W: '←', N: '↑' };
 
 function dhBoard(s, live, moveTo) {
   const b = s.board || {}, hz = b.hz || [], rift = new Set((b.rift || [6, 7, 10, 11]).map(Number)), head = Number(b.head), here = b.my_pos, dest = live ? moveTo : null;
-  const moves = new Set(live ? seaMoves(s) : []), mm = track(s), freshCells = new Set((Date.now() - mm.at < 3000 ? mm.fresh : []).map(id => (s.members || []).find(m => m.id === id)?.pos).filter(Boolean).map(Number));
+  const moves = new Set(live ? seaMoves(s) : []), mm = moved(s), freshCells = mm.fresh;
   const flow = hz.find(h => h.k === 'surge') || hz.find(h => h.k === 'current'), breath = hz.find(h => h.k === 'breath'), headH = hz.find(h => h.k === 'head');
   const wave = flow && breath ? (Number(breath.left) <= Number(flow.left) ? breath : flow) : flow || breath;
   let cells = '', marks = '';
@@ -124,13 +115,14 @@ function duOpen(b, c) {
   return !(String(c) in (b.holes || {}));
 }
 const hexPts = (x, y, r = DU_S - 1.5) => Array.from({ length: 6 }, (_, i) => { const t = Math.PI / 180 * (60 * i - 30); return `${fx(x + r * Math.cos(t))},${fx(y + r * Math.sin(t))}`; }).join(' ');
+const DU_SLOT = { tr: [13, -15], tl: [-13, -15], r: [19, 3], l: [-19, 3] }, DU_SLOT_ORDER = ['tr', 'tl', 'r', 'l'];
 const duAngD = d => { const [q, r] = DU_D[((d % 6) + 6) % 6]; return Math.atan2(1.5 * r, Math.sqrt(3) * (q + r / 2)); };
 
 function duBoard(s, live, moveTo) {
   const b = s.board || {}, hz = b.hz || [], here = b.my_pos, dest = live ? moveTo : null, center = Number(b.center || 10), round = Number(b.round ?? s.fight?.round ?? 0);
   const at = c => { const [q, r] = duQR(b, c); return [DU_CX + DU_S * Math.sqrt(3) * (q + r / 2), DU_CY + DU_S * 1.5 * r]; };
   const outAng = c => { const [x, y] = at(c); return Math.atan2(y - DU_CY, x - DU_CX); };
-  const moves = new Set(live ? seaMoves(s) : []), mm = track(s), freshCells = new Set((Date.now() - mm.at < 3000 ? mm.fresh : []).map(id => (s.members || []).find(m => m.id === id)?.pos).filter(Boolean).map(Number));
+  const moves = new Set(live ? seaMoves(s) : []), mm = moved(s), freshCells = mm.fresh;
   const holes = b.holes || {}, cracked = new Set((b.cracked || []).map(Number)), wedges = new Set((b.wedges || []).map(Number)), pulls = b.pulls || {};
   const zone = new Map(), add = (c, k) => zone.set(Number(c), [...(zone.get(Number(c)) || []), k]);
   const pushCell = new Set();
@@ -139,7 +131,16 @@ function duBoard(s, live, moveTo) {
     if (due(h) && ['slide', 'boulder', 'fist'].includes(h.k)) for (const c of h.cells || []) pushCell.add(Number(c));
   }
   const tilt = hz.find(h => h.k === 'tilt');
-  let cells = '', marks = '';
+  const crowd = {};
+  for (const m of s.members || []) if (m.pos != null && !m.out && !seaFell(s, m.id)) crowd[m.pos] = (crowd[m.pos] || 0) + 1;
+  const occ = new Set(Object.keys(crowd).map(Number)), packed = new Set([...occ, ...(s.members || []).filter(m => m.pos != null && seaFell(s, m.id)).map(m => Number(m.pos))]);
+  const used = new Map([...wedges].filter(c => !packed.has(c)).map(c => [c, new Set(['tl'])]));
+  let cells = '', marks = '', tags = '';
+  const put = (c, h, cls = '') => {
+    const u = used.get(c) || new Set(), k = DU_SLOT_ORDER.find(z => !u.has(z)) || 'tr', [x, y] = at(c), [dx, dy] = DU_SLOT[k], w = (crowd[c] || 0) > 2 ? 1.3 : 1;
+    u.add(k); used.set(c, u);
+    tags += tag(x + dx * w, y + dy * w, h, cls, 8.5);
+  };
   for (let c = 1; c <= (b.cells || []).length; c++) {
     if (c === center) continue;
     const [x, y] = at(c), hk = holes[String(c)], pit = (b.gone && duRing(b, c) === 2) || Number(hk) > 50, hole = hk != null && !pit;
@@ -151,37 +152,39 @@ function duBoard(s, live, moveTo) {
     else {
       cells += `<text class="hx-no" x="${fx(x - 13)}" y="${fx(y + 15)}">${c}</text>`;
       if (cracked.has(c)) cells += `<path class="du-crack" d="M${fx(x - 13)} ${fx(y - 6)} l7 4 l4 -6 l6 8 l7 -3"/>`;
-      if (wedges.has(c)) cells += `<g class="du-wedge"><path d="M${fx(x - 19)} ${fx(y - 3)} L${fx(x - 13)} ${fx(y - 15)} L${fx(x - 7)} ${fx(y - 3)}Z"/><title>${esc(T.ttangul.cell.wedge)}</title></g>`;
+      const [wx, wy, ww] = packed.has(c) ? [x - 18, y + 3, 4] : [x - 13, y - 3, 6];
+      if (wedges.has(c)) cells += `<g class="du-wedge"><path d="M${fx(wx - ww)} ${fx(wy)} L${fx(wx)} ${fx(wy - ww * 2)} L${fx(wx + ww)} ${fx(wy)}Z"/><title>${esc(T.ttangul.cell.wedge)}</title></g>`;
     }
     if (push) marks += telChev(x, y, tilt && due(tilt) ? duAngD(tilt.dir) : (hz.find(h => due(h) && h.k === 'boulder' && (h.cells || []).includes(c)) ? duAngD(hz.find(h => due(h) && h.k === 'boulder' && (h.cells || []).includes(c)).dir) : outAng(c)), true);
   }
   for (const k of hasMech(s, 'pull') ? Object.keys(pulls) : []) {
-    const c = Number(k), [x, y] = at(c), until = Number(pulls[k] || 0), stopped = until > round, act = hz.find(h => h.k === 'pull' && Number(h.c) === c);
+    const c = Number(k), [x, y0] = at(c), until = Number(pulls[k] || 0), stopped = until > round, act = hz.find(h => h.k === 'pull' && Number(h.c) === c);
     if (!duOpen(b, c)) continue;
-    marks += `<g class="du-pull ${act ? 'on' : ''} ${stopped ? 'stopped' : ''} ${act && due(act) ? 'due' : ''}"><circle cx="${fx(x)}" cy="${fx(y + 11)}" r="8"/><path d="M${fx(x - 6)} ${fx(y + 11)}H${fx(x + 6)}M${fx(x)} ${fx(y + 5)}V${fx(y + 17)}"/><title>${esc(stopped ? T.ttangul.cell.stopped(until - round) : T.ttangul.cell.pull)}</title></g>`;
-    if (act) marks += tag(x + 17, y + 9, act, 'burst');
-    else if (stopped) marks += `<text class="du-stop-t" x="${fx(x + 15)}" y="${fx(y + 15)}">${esc(String(until - round))}</text>`;
+    const r = packed.has(c) ? 5 : 8, y = packed.has(c) ? y0 + 15 : y0 + 11;
+    marks += `<g class="du-pull ${act ? 'on' : ''} ${stopped ? 'stopped' : ''} ${act && due(act) ? 'due' : ''}"><circle cx="${fx(x)}" cy="${fx(y)}" r="${r}"/><path d="M${fx(x - r + 2)} ${fx(y)}H${fx(x + r - 2)}M${fx(x)} ${fx(y - r + 2)}V${fx(y + r - 2)}"/><title>${esc(stopped ? T.ttangul.cell.stopped(until - round) : T.ttangul.cell.pull)}</title></g>`;
+    if (act) put(c, act, 'burst');
+    else if (stopped) { const [dx, dy] = DU_SLOT.r; marks += `<text class="du-stop-t" x="${fx(x + dx)}" y="${fx(y0 + dy + 4)}">${esc(String(until - round))}</text>`; }
   }
   for (const h of hz) {
-    if (h.k === 'slide' && h.cells?.length) { const [x, y] = at(Number(h.cells[0])); marks += tag(x, y - 18, h); }
-    if (h.k === 'weight') for (const c of h.cells || []) { const [x, y] = at(Number(c)); marks += `<polygon class="du-weight-mark ${due(h) ? 'due' : ''}" points="${hexPts(x, y, DU_S - 7)}"/>${tag(x + 14, y - 15, h, 'burst')}`; }
+    if (h.k === 'slide' && h.cells?.length) put(Number(h.cells[0]), h);
+    if (h.k === 'weight') for (const c of h.cells || []) { const [x, y] = at(Number(c)); marks += `<polygon class="du-weight-mark ${due(h) ? 'due' : ''}" points="${hexPts(x, y, DU_S - 7)}"/>`; put(Number(c), h, 'burst'); }
     if (h.k === 'boulder' && h.cells?.length) {
       const [x1, y1] = at(Number(h.cells[0])), [x2, y2] = at(Number(h.cells[h.cells.length - 1]));
       marks += `<g class="du-boulder ${due(h) ? 'due' : ''}"><line x1="${fx(x1)}" y1="${fx(y1)}" x2="${fx(x2)}" y2="${fx(y2)}"/></g>`;
       if (!due(h)) for (const c of h.cells) { const [x, y] = at(Number(c)); marks += telChev(x, y, duAngD(h.dir), false); }
-      marks += tag(x1 - 12, y1 - 14, h);
+      put(Number(h.cells[0]), h);
     }
-    if (h.k === 'fist' && h.cells?.length) { const [x, y] = at(Number(h.cells[0])); marks += `<circle class="du-fist ${due(h) ? 'due' : ''}" cx="${fx(x)}" cy="${fx(y)}" r="20"/>${tag(x - 18, y - 18, h)}`; }
+    if (h.k === 'fist' && h.cells?.length) { const [x, y] = at(Number(h.cells[0])); marks += `<circle class="du-fist ${due(h) ? 'due' : ''}" cx="${fx(x)}" cy="${fx(y)}" r="20"/>`; put(Number(h.cells[0]), h); }
   }
   const shave = hz.find(h => h.k === 'shave');
   const core = `<g class="du-core ${tilt ? 'due' : ''}"><polygon points="${hexPts(DU_CX, DU_CY, DU_S - 2)}"/><text x="${DU_CX}" y="${DU_CY + 4}">${shave ? num(shave) : esc(T.ttangul.boss.name)}</text></g>`;
   const carry = b.carry || {};
-  const toks = tokens(s, at, (m, x, y) => Number(carry[m.id] || 0) > 0 ? `<path class="du-carry" d="M${fx(x + 6)} ${fx(y + 17)} L${fx(x + 11)} ${fx(y + 8)} L${fx(x + 16)} ${fx(y + 17)}Z"/>` : '');
+  const toks = tokens(s, at, (m, x, y) => Number(carry[m.id] || 0) > 0 ? `<path class="du-carry" d="M${fx(x + 8)} ${fx(y + 10)} L${fx(x + 12.5)} ${fx(y + 2)} L${fx(x + 17)} ${fx(y + 10)}Z"/>` : '');
   let destMark = '';
   if (dest) { const [x, y] = at(dest); destMark = `<polygon class="hx-destmark" points="${hexPts(x, y, DU_S - 6)}"/>`; }
   const lines = [Number(b.mine || 0) > 0 ? `<b>${esc(T.ttangul.gim.carry)}</b>` : '', pushCell.size || (tilt && due(tilt)) ? esc(T.ttangul.gim.brace) : '', Number(b.final || 0) > 0 || tilt ? `<b class="bad">${esc(T.ttangul.gim.final(Number(b.final || 0) + (tilt ? 1 : 0)))}</b>` : '',
     shave ? `<b class="bad">${esc(T.ttangul.hz.shave)} ${num(shave)}</b>` : ''];
-  return `<div class="sea-wrap"><svg class="sea-map du-map" viewBox="18 20 264 244" role="img" aria-label="${esc(T.ttangul.boss.place)}">${TEL_DEFS}${cells}${marks}${core}${mm.trails.map(t => trailSvg(t, at)).join('')}${toks}${destMark}</svg>
+  return `<div class="sea-wrap"><svg class="sea-map du-map" viewBox="18 20 264 244" role="img" aria-label="${esc(T.ttangul.boss.place)}">${TEL_DEFS}${cells}${marks}${core}${mm.trails.map(t => trailSvg(t, at)).join('')}${toks}${tags}${destMark}</svg>
     ${hint(s, live, moveTo, lines)}</div>`;
 }
 

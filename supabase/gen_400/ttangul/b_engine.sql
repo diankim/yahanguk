@@ -63,10 +63,14 @@ begin
   if fh is not null then
     perform public.world_gw_say(p_fight, p_round, 'bad', m.name || ' — ' || p_why || ' 구덩이로 미끄러졌다가 간신히 기어 올라왔습니다.');
     perform public.world_gw_hurt(p_fight, p_uid, fh::int, p_round, '구덩이에');
-    update public.world_gw_members set pos = (select c from unnest(array[5, 9, 11, 15, 6, 14]) c where public.world_du_open(p_fight, c) order by random() limit 1) where fight_id = p_fight and owner_id = p_uid;
+    update public.world_gw_members set prev = case when public.world_gw_pushed_at(p_fight, p_uid) is distinct from p_round then pos::text else prev end,
+      pos = (select c from unnest(array[5, 9, 11, 15, 6, 14]) c where public.world_du_open(p_fight, c) order by random() limit 1) where fight_id = p_fight and owner_id = p_uid;
+    perform public.world_gw_pushed(p_fight, p_uid, p_round);
     return;
   end if;
-  update public.world_gw_members set out_rounds = 9999, rest = false, falls = falls + 1, gval = 0 where fight_id = p_fight and owner_id = p_uid;
+  update public.world_gw_members set out_rounds = 9999, rest = false, falls = falls + 1, gval = 0,
+    prev = case when public.world_gw_pushed_at(p_fight, p_uid) is distinct from p_round then pos::text else prev end where fight_id = p_fight and owner_id = p_uid;
+  perform public.world_gw_pushed(p_fight, p_uid, p_round);
   update public.world_gw_fights set board = jsonb_set(coalesce(board, '{}'::jsonb), '{fell}', coalesce(board -> 'fell', '[]'::jsonb) || to_jsonb(p_uid::text)) where fight_id = p_fight;
   perform public.world_gw_say(p_fight, p_round, 'bad', m.name || ' — ' || p_why || ' 고임 구덩이로 떨어졌습니다. 이 싸움에는 다시 돌아올 수 없습니다.');
 end $f$;
@@ -74,24 +78,26 @@ end $f$;
 create or replace function public.world_du_push(p_fight uuid, p_uid uuid, p_dir integer, p_n integer, p_round integer, p_why text)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare m public.world_gw_members%rowtype; n int := p_n; c int; nx int; i int; d int;
+declare m public.world_gw_members%rowtype; n int := p_n; c int; nx int; i int; d int; pv text;
 begin
   select * into m from public.world_gw_members where fight_id = p_fight and owner_id = p_uid;
   if not found or m.out_rounds > 0 or m.rest or m.pos is null then return; end if;
   if coalesce(m.act ->> 'a', 'guard') = 'brace' then n := n - 1; end if;
+  pv := case when public.world_gw_pushed_at(p_fight, p_uid) is distinct from p_round then m.pos::text else m.prev end;
   c := m.pos;
   for i in 1 .. greatest(0, n) loop
     d := coalesce(p_dir, public.world_du_out(c));
     nx := public.world_du_step(c, d);
     if nx = 10 then exit; end if;
     if nx is null or not public.world_du_open(p_fight, nx) then
-      update public.world_gw_members set prev = pos::text where fight_id = p_fight and owner_id = p_uid;
+      update public.world_gw_members set prev = pv, pos = c where fight_id = p_fight and owner_id = p_uid;
       perform public.world_du_fall(p_fight, p_uid, p_round, p_why);
       return;
     end if;
     c := nx;
   end loop;
-  update public.world_gw_members set prev = pos::text, pos = c where fight_id = p_fight and owner_id = p_uid;
+  update public.world_gw_members set prev = pv, pos = c where fight_id = p_fight and owner_id = p_uid;
+  if c <> m.pos then perform public.world_gw_pushed(p_fight, p_uid, p_round); end if;
 end $f$;
 
 create or replace function public.world_du_seq(p_fight uuid, p_hp integer, p_max integer)
@@ -361,7 +367,8 @@ begin
         select z2 into z from unnest(public.world_du_nb(c)) z2 where not (holes ? z2::text) and not (wedges @> to_jsonb(z2)) order by random() limit 1;
         if z is not null and jsonb_array_length(wedges) < 4 then wedges := wedges || to_jsonb(z); end if;
       end loop;
-      update public.world_gw_fights set board = board || jsonb_build_object('holes', holes) where fight_id = p_fight;
+      wedges := coalesce((select jsonb_agg(e) from jsonb_array_elements(wedges) e where not (holes ? (e #>> '{}'))), '[]'::jsonb);
+      update public.world_gw_fights set board = board || jsonb_build_object('holes', holes, 'wedges', wedges) where fight_id = p_fight;
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = any (cells) loop
         perform public.world_du_fall(p_fight, x.owner_id, p_round, '무너지는 돌판과 함께');
       end loop;
@@ -384,6 +391,10 @@ begin
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and public.world_du_ring(y.pos) = 2 loop
         perform public.world_du_fall(p_fight, x.owner_id, p_round, '무너지는 바깥 고리와 함께');
       end loop;
+      if exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and coalesce(y.gval, 0) > 0) then
+        update public.world_gw_members y set gval = 0 where y.fight_id = p_fight and coalesce(y.gval, 0) > 0;
+        perform public.world_gw_say(p_fight, p_round, 'info', '끌개가 바깥 고리와 함께 무너져, 들고 있던 쐐기돌은 쓸 곳이 없어졌습니다.');
+      end if;
     elsif h ->> 'k' = 'tilt' then
       perform public.world_gw_say(p_fight, p_round, 'boss', '땅울이가 마지막으로 몸부림칩니다! 돌판이 한쪽으로 기웁니다.');
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest order by y.joined_at loop
@@ -392,6 +403,9 @@ begin
     end if;
   end loop;
   if heal > 0 then update public.world_gw_fights set hp = least(max_hp, hp + round(heal)) where fight_id = p_fight; end if;
+  if coalesce((select (board ->> 'gone')::boolean from public.world_gw_fights where fight_id = p_fight), false) then
+    keep := coalesce((select jsonb_agg(e) from jsonb_array_elements(keep) e where e ->> 'k' <> 'pull'), '[]'::jsonb);
+  end if;
   update public.world_gw_fights set board = board || jsonb_build_object('hz', keep, 'pulls', pulls, 'cracked', cracked,
     'wedges', case when coalesce((board ->> 'gone')::boolean, false) then '[]'::jsonb else wedges end) where fight_id = p_fight;
   return extra;
@@ -432,7 +446,7 @@ begin
     'final', coalesce((b ->> 'final')::int, 0), 'fell', coalesce(b -> 'fell', '[]'::jsonb),
     'carry', (select coalesce(jsonb_object_agg(x.owner_id::text, coalesce(x.gval, 0)), '{}'::jsonb) from public.world_gw_members x where x.fight_id = p_fight),
     'mine', me.gval, 'my_pos', me.pos,
-    'moves', case when me.pos is not null and f.status = 'fight' and me.out_rounds = 0 then to_jsonb(public.world_du_nb(me.pos)) else '[]'::jsonb end,
+    'moves', case when me.pos is not null and f.status = 'fight' and me.out_rounds = 0 then to_jsonb(array(select z from unnest(public.world_du_nb(me.pos)) z where public.world_du_open(p_fight, z) order by z)) else '[]'::jsonb end,
     'cut', case when f.mode <> 'story' and br -> 'dps' -> 'cuts' is not null then jsonb_build_object('i', coalesce((b ->> 'cut')::int, 0), 'cuts', br -> 'dps' -> 'cuts',
       'next', (br -> 'dps' -> 'cuts' ->> coalesce((b ->> 'cut')::int, 0))::int) end,
     'hz', (select coalesce(jsonb_agg(e || jsonb_build_object('cells', to_jsonb(public.world_du_hz_cells(p_fight, e)))), '[]'::jsonb)

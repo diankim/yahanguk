@@ -107,10 +107,15 @@ def main():
             fr = e[form]
             sizes.append(f"{pid}.{form}: {len(fr['idle'][0])}x{len(fr['idle'])} sleep {len(fr['sleep'][0])}x{len(fr['sleep'])}")
         pets[pid] = e
-    sspec = importlib.util.spec_from_file_location('skins', os.path.join(HERE, 'skins.py'))
-    sk = importlib.util.module_from_spec(sspec); sspec.loader.exec_module(sk)
+    skin_list = []
+    for fn in ('skins.py', 'skins_40.py'):
+        sspec = importlib.util.spec_from_file_location(fn[:-3], os.path.join(HERE, fn))
+        sk = importlib.util.module_from_spec(sspec); sspec.loader.exec_module(sk)
+        skin_list += sk.SKINS
     skins = {}
-    for k in sk.SKINS:
+    for k in skin_list:
+        if k['key'] in skins:
+            raise SystemExit(f"skin {k['key']}: twice")
         if k['pet'] not in pets:
             raise SystemExit(f"skin {k['key']}: no pet {k['pet']}")
         e = {'pet': k['pet'], 'name': k['name'], 'desc': k.get('desc', '')}

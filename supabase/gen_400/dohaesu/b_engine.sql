@@ -46,6 +46,14 @@ begin
     * public.world_dh_hurt_mul(p_fight, p_uid) * (1 - coalesce((m.stats ->> 'solo_guard')::numeric, 0) / 100.0) * case when p_guardable and coalesce(m.act ->> 'a', 'guard') in ('guard', 'brace') then 0.5 else 1 end)::int, p_round, p_why);
 end $f$;
 
+create or replace function public.world_gw_pushed_at(p_fight uuid, p_uid uuid)
+ returns integer language sql stable security definer set search_path = pg_catalog, public
+as $f$ select (board -> 'pushed' ->> p_uid::text)::int from public.world_gw_fights where fight_id = p_fight $f$;
+
+create or replace function public.world_gw_pushed(p_fight uuid, p_uid uuid, p_round integer)
+ returns void language sql security definer set search_path = pg_catalog, public
+as $f$ update public.world_gw_fights set board = jsonb_set(coalesce(board, '{}'::jsonb), '{pushed}', coalesce(board -> 'pushed', '{}'::jsonb) || jsonb_build_object(p_uid::text, p_round)) where fight_id = p_fight $f$;
+
 create or replace function public.world_dh_fall(p_fight uuid, p_uid uuid, p_round integer, p_why text)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
@@ -57,37 +65,41 @@ begin
     perform public.world_gw_say(p_fight, p_round, 'bad', m.name || ' — ' || p_why || ' 틈으로 빨려 들 뻔했다가 간신히 빠져나왔습니다.');
     perform public.world_gw_hurt(p_fight, p_uid, fh::int, p_round, '틈의 물살에');
     update public.world_gw_members set pos = (select c from unnest(array[1, 4, 13, 16]) c order by public.world_dh_dist(c, m.pos), c limit 1) where fight_id = p_fight and owner_id = p_uid;
+    perform public.world_gw_pushed(p_fight, p_uid, p_round);
     return;
   end if;
   update public.world_gw_members set out_rounds = 9999, rest = false, falls = falls + 1 where fight_id = p_fight and owner_id = p_uid;
   update public.world_gw_fights set board = jsonb_set(coalesce(board, '{}'::jsonb), '{fell}', coalesce(board -> 'fell', '[]'::jsonb) || to_jsonb(p_uid::text)) where fight_id = p_fight;
+  perform public.world_gw_pushed(p_fight, p_uid, p_round);
   perform public.world_gw_say(p_fight, p_round, 'bad', m.name || ' — ' || p_why || ' 틈으로 빨려 들어갔습니다. 이 싸움에는 다시 돌아올 수 없습니다.');
 end $f$;
 
 create or replace function public.world_dh_push(p_fight uuid, p_uid uuid, p_dir text, p_n integer, p_round integer, p_why text, p_wet boolean, p_safe boolean default false)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
-declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; m public.world_gw_members%rowtype; n int := p_n; c int; nx int; i int; moved int := 0;
+declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; m public.world_gw_members%rowtype; n int := p_n; c int; nx int; i int; moved int := 0; pv text;
 begin
   select * into m from public.world_gw_members where fight_id = p_fight and owner_id = p_uid;
   if not found or m.out_rounds > 0 or m.rest or m.pos is null then return; end if;
   if coalesce(m.act ->> 'a', 'guard') = 'brace' then n := n - 1; end if;
   if p_wet and coalesce(m.gval, 0) >= coalesce((rb -> 'wet' ->> 'extra_at')::int, 99) then n := n + 1; end if;
+  pv := case when public.world_gw_pushed_at(p_fight, p_uid) is distinct from p_round then m.pos::text else m.prev end;
   c := m.pos;
   for i in 1 .. greatest(0, n) loop
     nx := public.world_dh_step(c, p_dir);
     if nx is null then exit; end if;
     if public.world_dh_rift(p_fight, nx) and p_safe then exit; end if;
     if public.world_dh_rift(p_fight, nx) then
-      update public.world_gw_members set prev = pos::text, pos = nx where fight_id = p_fight and owner_id = p_uid;
+      update public.world_gw_members set prev = pv, pos = nx where fight_id = p_fight and owner_id = p_uid;
       perform public.world_dh_fall(p_fight, p_uid, p_round, p_why);
       return;
     end if;
     c := nx; moved := moved + 1;
   end loop;
-  update public.world_gw_members set prev = pos::text, pos = c,
+  update public.world_gw_members set prev = pv, pos = c,
     gval = case when p_wet then least(coalesce((rb -> 'wet' ->> 'max')::int, 3), coalesce(gval, 0) + 1) else gval end
    where fight_id = p_fight and owner_id = p_uid;
+  if c <> m.pos then perform public.world_gw_pushed(p_fight, p_uid, p_round); end if;
 end $f$;
 
 create or replace function public.world_dh_seq(p_fight uuid, p_hp integer, p_max integer)

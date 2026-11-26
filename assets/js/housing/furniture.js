@@ -389,6 +389,15 @@ export const FUR = {
     { x: .38, y: .38, w: .24, d: .24, h: .05, z: .86, c: C.gold },
     { x: .47, y: .47, w: .06, d: .06, h: .24, z: .62, c: C.lac },
     { t: 'ell', x: .5, y: .5, z: .58, rx: 2, ry: 2, c: '#c8e0dc' }] },
+  lantern_hanger: { name: '등불 걸개', grade: 3, W: 1, D: 1, layer: 'floor', cat: '조명', glow: true, parts: [
+    { x: .1, y: .38, w: .8, d: .24, h: .08, c: C.dark },
+    { x: .14, y: .44, w: .08, d: .1, h: 1.62, z: .08, c: C.wood }, { x: .78, y: .44, w: .08, d: .1, h: 1.62, z: .08, c: C.wood },
+    { x: .1, y: .42, w: .8, d: .14, h: .08, z: 1.7, c: C.dark },
+    { x: .29, y: .47, w: .03, d: .03, h: .26, z: 1.44, c: C.ink }, { x: .49, y: .47, w: .03, d: .03, h: .4, z: 1.3, c: C.ink }, { x: .69, y: .47, w: .03, d: .03, h: .22, z: 1.48, c: C.ink },
+    { t: 'ell', x: .3, y: .5, z: 1.3, rx: 3, ry: 4, c: '#f26a4f' }, { t: 'ell', x: .3, y: .5, z: 1.3, rx: 1, ry: 2, c: '#ffe27a' },
+    { t: 'ell', x: .5, y: .5, z: 1.12, rx: 3, ry: 4, c: '#78b8ee' }, { t: 'ell', x: .5, y: .5, z: 1.12, rx: 1, ry: 2, c: '#fffbe0' },
+    { t: 'ell', x: .7, y: .5, z: 1.34, rx: 3, ry: 4, c: '#ffd85a' }, { t: 'ell', x: .7, y: .5, z: 1.34, rx: 1, ry: 2, c: '#fffbe0' },
+    { x: .28, y: .48, w: .05, d: .02, h: .16, z: 1.02, c: C.paper }, { x: .48, y: .48, w: .05, d: .02, h: .16, z: .84, c: C.paper }, { x: .68, y: .48, w: .05, d: .02, h: .16, z: 1.06, c: C.paper }] },
   bonsai_yeonri: { name: '연리목 분재', grade: 5, W: 2, D: 1, layer: 'floor', cat: '화분', parts: [
     { x: .1, y: .15, w: 1.8, d: .7, h: .26, c: C.lacD },
     { x: .14, y: .19, w: .12, d: .62, h: .06, z: .26, c: C.gold },
