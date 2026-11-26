@@ -1,4 +1,5 @@
 import { esc, icon } from '../core.js';
+import { TEL_DEFS, telWave, telChev } from './telfx.js';
 
 const Q = [0, 1, 1, 0, -1, -1, 0, 2, 2, 2, 1, 0, -1, -2, -2, -2, -1, 0, 1];
 const R = [0, 0, -1, -1, 0, 1, 1, 0, -1, -2, -2, -2, -1, 0, 1, 2, 2, 2, 1];
@@ -38,6 +39,8 @@ export function hexBoard(s, live, moveTo) {
     if (h.k === 'drag') {
       const [ax, ay] = at(Number(h.a)), [bx, by] = at(Number(h.b)), mx = (ax + bx) / 2, my = (ay + by) / 2;
       const [lx, ly] = h.cells?.length === 2 ? at(Number(h.cells[0])) : [mx, my];
+      const pa = Math.atan2(by - ay, bx - ax);
+      marks += telChev(ax + 14 * Math.cos(pa), ay + 14 * Math.sin(pa), pa, due(h)) + telChev(bx - 14 * Math.cos(pa), by - 14 * Math.sin(pa), pa + Math.PI, due(h));
       marks += `<g class="hx-chain ${due(h) ? 'due' : ''}"><line x1="${ax.toFixed(0)}" y1="${ay.toFixed(0)}" x2="${bx.toFixed(0)}" y2="${by.toFixed(0)}"/><circle cx="${lx.toFixed(0)}" cy="${(ly - 9).toFixed(0)}" r="11"/><text x="${lx.toFixed(0)}" y="${(ly - 4).toFixed(0)}">${num(h)}</text></g>`;
     } else if (h.k === 'burst') {
       const [x, y] = at(Number(h.p));
@@ -45,8 +48,8 @@ export function hexBoard(s, live, moveTo) {
     } else if (h.k === 'tide') {
       const d = Number(h.d), ang = Math.atan2(S * 1.5 * DR[d], S * Math.sqrt(3) * (DQ[d] + DR[d] / 2));
       for (const c of h.cells || []) {
-        const [x, y] = at(Number(c)), ex = x + 13 * Math.cos(ang), ey = y + 13 * Math.sin(ang), sx = x - 9 * Math.cos(ang), sy = y - 9 * Math.sin(ang);
-        marks += `<g class="hx-arrow ${due(h) ? 'due' : ''}"><line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"/><circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="3"/></g>`;
+        const [x, y] = at(Number(c));
+        marks += telWave(x, y, ang, due(h));
       }
       const [x, y] = at(Number((h.cells || [])[0]));
       marks += `<g class="hx-tag tide ${due(h) ? 'due' : ''}"><circle cx="${(x - 14).toFixed(0)}" cy="${(y - 16).toFixed(0)}" r="10"/><text x="${(x - 14).toFixed(0)}" y="${(y - 11).toFixed(0)}">${num(h)}</text></g>`;
@@ -62,14 +65,14 @@ export function hexBoard(s, live, moveTo) {
     const [x, y] = at(Number(c));
     ms.slice(0, 4).forEach((m, i) => {
       const many = ms.length > 1, dx = many ? (i % 2 ? 9 : -9) : 0, dy = many ? (i > 1 ? 8 : -6) : -3, nh = named.get(m.id);
-      tokens += `<g class="hx-tok ${m.id === s.me ? 'me' : ''} ${m.resting ? 'rest' : ''}"><circle cx="${(x + dx).toFixed(0)}" cy="${(y + dy).toFixed(0)}" r="11"/><text x="${(x + dx).toFixed(0)}" y="${(y + dy + 4).toFixed(0)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}</title></g>`;
+      tokens += `<g data-mid="${esc(m.id)}" class="hx-tok ${m.id === s.me ? 'me' : ''} ${m.resting ? 'rest' : ''}"><circle cx="${(x + dx).toFixed(0)}" cy="${(y + dy).toFixed(0)}" r="11"/><text x="${(x + dx).toFixed(0)}" y="${(y + dy + 4).toFixed(0)}">${esc(String(m.name || '').slice(0, 1))}</text><title>${esc(m.name)}</title></g>`;
       if (nh) tokens += `<g class="hx-name ${due(nh) ? 'due' : ''}"><circle cx="${(x + dx).toFixed(0)}" cy="${(y + dy).toFixed(0)}" r="16"/><text x="${(x + dx + 15).toFixed(0)}" y="${(y + dy - 11).toFixed(0)}">${num(nh)}</text></g>`;
     });
   }
   if (dest) { const [x, y] = at(dest); tokens += `<polygon class="hx-destmark" points="${hexPath(x, y, S - 6)}"/>`; }
   const charge = hz.find(h => h.k === 'charge');
   const mechs = (b.mechs || []).map(k => HZ_NAME[k] || k).join(' · ');
-  return `<div class="hx-wrap"><svg class="hx-map" viewBox="0 0 320 292" role="img" aria-label="구중 봉연 벌집 칸">${cells}${marks}${core}${tokens}</svg>
+  return `<div class="hx-wrap"><svg class="hx-map" viewBox="0 0 320 292" role="img" aria-label="구중 봉연 벌집 칸">${TEL_DEFS}${cells}${marks}${core}${tokens}</svg>
     <div class="hx-info">
       ${charge ? `<div class="hx-charge ${due(charge) ? 'due' : ''}"><span>${icon('spark', 13)} 기운 모으기 · ${due(charge) ? '이번 라운드 끝' : `${charge.left}라운드 뒤`}</span><div class="bar"><span style="width:${Math.min(100, Number(charge.dmg || 0) / Math.max(1, Number(charge.need || 1)) * 100).toFixed(0)}%"></span></div></div>` : ''}
       ${b.line ? `<p class="hx-line">${esc(b.line)}</p>` : ''}
