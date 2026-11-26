@@ -152,7 +152,7 @@ rules = {}
 for tid, tname in D.TERRS.items():
     regs = [r['id'] for r in R if r['terr'] == tid]
     first = min(regs, key=lambda x: order[x])
-    rule = {'name': tname, 'open_quest': REGION_OPEN[first], 'no_shadow': True, 'rare': D.HW, 'mon_cap': D.MON_CAP, 'realm': D.REALM, 'gap': D.REALM_GAP, 'color': D.TERR_COLORS[tid],
+    rule = {'name': tname, 'open_quest': REGION_OPEN[first], 'no_shadow': True, 'rare': D.HW, 'mon_cap': D.MON_CAP, 'realm': D.REALM, 'gap': D.REALM_GAP, 'color': D.TERR_COLORS[tid], 'mirror_x': D.MIRROR_X, 'twins': {rg: D.MIRROR[rg] for rg in regs if rg in D.MIRROR}, 'sea': [rg for rg in regs if rg in D.SEA_FISH_REGIONS],
             'regions': {rg: REGION_OPEN[rg] for rg in regs}}
     if tid in D.PIN_TERRS:
         rule['pin'] = True

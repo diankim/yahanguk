@@ -306,8 +306,19 @@ FISH = [
     ('dm_city', 'canal', '계단 우물 수로', '계단 우물에서 성 밖으로 흐르는 수로입니다. 우물 계단에 앉아 줄을 드리웁니다.'),
     ('ho_outer', 'marsh', '연밥 둑 연못', '연잎 사이로 줄을 내리는 연못입니다. 연밥 따는 배가 오가며 물결을 일으킵니다.'),
     ('ho_coast', 'sea', '첫볕 바위 물가', '해가 가장 먼저 닿는 바위 물가입니다. 해 뜰 녘이면 물빛이 금색으로 바뀝니다.'),
+    ('pd_offsea', 'deep', '가라앉은 배 갑판 아래', '가라앉은 배 갑판 틈으로 줄을 내리는 깊은 물입니다. 산호 사이로 빛이 가물가물 내려옵니다.'),
+    ('pd_rift', 'sea', '소용돌이 바깥 물가', '거꾸로 도는 물살이 바깥 고리에서 느려지는 물가입니다. 찌가 천천히 원을 그리며 돕니다.'),
+    ('bs_crack', 'abyss', '불과 물이 만나는 소', '검은 물이 김을 뿜으며 고인 골 바닥 소입니다. 줄을 내리면 손끝은 뜨겁고 발끝은 차갑습니다.'),
+    ('jb_village', 'river', '억새 나루 선창', '억새 사이로 난 나무 선창 끝입니다. 먹비가 내리면 강물이 한 뼘씩 불어납니다.'),
+    ('jb_village', 'sea', '나루 끝 갯가', '강이 바다로 빠지는 나루 끝 갯가입니다. 짠물과 먹빛 강물이 두 겹으로 흐릅니다.'),
+    ('jb_ebony', 'lake', '꿈 비친다는 웅덩이', '고목 뿌리 사이 웅덩이입니다. 꿈이 비친다는 물인데, 요즘은 찌 그림자만 흔들립니다.'),
+    ('nm_snow', 'lake', '얼어붙은 개울 얼음 구멍', '설원 돌탑 곁 얼어붙은 개울에 뚫은 구멍입니다. 줄이 금세 하얗게 얼어붙습니다.'),
+    ('nm_lake', 'lake', '하늘못 숨구멍', '하늘못 얼음에 줄지어 난 숨구멍입니다. 하늘이 물에 비쳐 찌가 구름 위에 뜬 것처럼 보입니다.'),
+    ('nm_gorge', 'sea', '골짜기 끝 얼음 바닷가', '서리꽃 골짜기가 끝나는 곳에 얼어붙은 바다가 열립니다. 얼음 틈으로 찬 바다 물고기가 올라옵니다.'),
+    ('dm_bridge', 'river', '일곱째 아치 밑 여울', '돌다리 아치 그늘 아래 여울입니다. 물레방아 소리에 맞춰 찌가 까닥까닥 흔들립니다.'),
+    ('dm_archive', 'deep', '서고 맨 안쪽 우물', '서고 맨 안쪽 금고 곁 우물입니다. 물을 떠 보면 오래된 종이 냄새가 납니다.'),
 ]
-SEA_FISH_REGIONS = ['pd_shore', 'ho_coast']
+SEA_FISH_REGIONS = ['pd_shore', 'ho_coast', 'pd_rift', 'jb_village', 'nm_gorge']
 CLIMATES = {
     'pado': {'clear': 26, 'cloudy': 22, 'fog': 22, 'rain': 18, 'drizzle': 8, 'wind': 4},
     'bulssi': {'clear': 34, 'cloudy': 26, 'fog': 14, 'wind': 14, 'drizzle': 6, 'rain': 6},
@@ -448,6 +459,15 @@ FISH_SPECIES = [
     ('hw_marsh_crucian', '연잎 버들붕어', 'marsh', 'common', None, None, 50, 5, 12, '연잎 그늘에 사는 작은 붕어다. 지느러미가 버들잎처럼 길다.', 10),
     ('hw_marsh_snakehead', '연못 빛가물치', 'marsh', 'uncommon', 'noon', None, 54, 30, 70, '연못 깊은 곳에 사는 가물치다. 볕을 받으면 비늘에 무지갯빛이 돈다.', 36),
     ('hw_marsh_eel', '탑 그늘 뱀장어', 'marsh', 'rare', 'dusk', 'drizzle', 55, 40, 90, '무너진 탑 그늘 물에 사는 뱀장어다. 가랑비 오는 땅거미에 둑 가까이 온다.', 100),
+    ('hw_lake_char', '하늘못 곤들매기', 'lake', 'common', None, None, 50, 12, 28, '하늘못 얼음 밑에 떼로 사는 곤들매기다. 몸에 눈송이 같은 흰 점이 박혀 있다.', 10),
+    ('hw_lake_whitefish', '숨구멍 흰송어', 'lake', 'uncommon', 'dawn', None, 51, 18, 40, '얼음 숨구멍 가까이 올라와 숨을 쉬는 흰 송어다. 해돋이에 가장 잘 문다.', 34),
+    ('hw_lake_icecod', '얼음 비늘 대구', 'lake', 'rare', 'night', 'snow', 52, 30, 65, '비늘이 얼음 조각처럼 투명한 대구다. 눈 내리는 삼경에만 얼음 밑으로 올라온다.', 100),
+    ('hw_deep_lantern', '갑판 등불고기', 'deep', 'common', None, None, 50, 8, 20, '가라앉은 배 갑판 틈에 사는 작은 물고기다. 이마에 흐린 불빛을 달고 다닌다.', 12),
+    ('hw_deep_ribbon', '산호 띠고기', 'deep', 'uncommon', 'noon', None, 51, 40, 90, '산호 사이를 띠처럼 너울대며 헤엄치는 고기다. 한낮 빛이 가장 깊이 들 때 나온다.', 36),
+    ('hw_deep_grouper', '잠긴 장부 능성어', 'deep', 'rare', 'dusk', 'fog', 52, 40, 85, '서고 우물과 가라앉은 배 밑을 오가는 큰 능성어다. 안개 낀 땅거미에 미끼를 문다.', 100),
+    ('hw_abyss_hag', '김 오르는 소 먹장어', 'abyss', 'common', None, None, 50, 20, 45, '뜨거운 검은 물에 사는 먹장어다. 잡아 올리면 몸에서 김이 피어오른다.', 14),
+    ('hw_abyss_ember', '불씨 지느러미 고기', 'abyss', 'uncommon', 'night', None, 51, 15, 35, '지느러미 끝이 불씨처럼 붉게 빛나는 고기다. 삼경에 골 바닥에서 떠오른다.', 38),
+    ('hw_abyss_ashray', '잿빛 가오리', 'abyss', 'rare', 'dusk', 'wind', 53, 50, 110, '재를 뒤집어쓴 듯한 넓적한 가오리다. 바람 부는 땅거미에 소 가장자리로 올라온다.', 100),
 ]
 NAMED_FISH = [
     ('hw_named_tuna', '물때 지기 큰 다랑어', 'sea', 'dawn', 'clear', 'pd_shore', 120, 260, '물때가 바뀌는 순간에만 둑 가까이 온다는 큰 다랑어다. 맑은 해돋이에 바다 물고기 냄새를 따라 올라온다더라.',
@@ -456,6 +476,12 @@ NAMED_FISH = [
      ['hw_river_carp', 'hw_river_catfish', 'hw_river_perch']),
     ('hw_named_gold', '첫볕 연못 금비늘', 'marsh', 'dawn', 'drizzle', 'ho_outer', 40, 90, '연꽃이 가장 먼저 피는 곳에 산다는 금비늘 물고기다. 가랑비 내린 해돋이에 연못 물고기 냄새를 따라 온다더라.',
      ['hw_marsh_crucian', 'hw_marsh_snakehead', 'hw_marsh_eel']),
+    ('hw_named_ember', '골 바닥 불비늘 가오리', 'abyss', 'night', 'clear', 'bs_crack', 90, 200, '불과 물이 만나는 소 가장 깊은 금에 산다는 큰 가오리다. 맑은 삼경에 뜨거운 물 물고기 냄새를 따라 떠오른다더라.',
+     ['hw_abyss_hag', 'hw_abyss_ember', 'hw_abyss_ashray']),
+    ('hw_named_sky', '하늘못 구름 송어', 'lake', 'dawn', 'snow', 'nm_lake', 70, 150, '하늘이 가장 맑게 비치는 날 숨구멍으로 올라온다는 커다란 송어다. 눈 내린 해돋이에 못 물고기 냄새를 따라 온다더라.',
+     ['hw_lake_char', 'hw_lake_whitefish', 'hw_lake_icecod']),
+    ('hw_named_arch', '일곱 아치 은잉어', 'river', 'dusk', 'cloudy', 'dm_bridge', 60, 140, '일곱째 아치 밑을 떠나지 않는다는 은빛 잉어다. 흐린 땅거미에 강 물고기 냄새를 따라 온다더라.',
+     ['hw_river_carp', 'hw_river_catfish', 'hw_river_perch']),
 ]
 NAMED_PRICE = 1800
 NAMED_LEVEL = 50
@@ -499,6 +525,18 @@ FISH_GOODS = [
      {'hw_sea_bream': 1, 'blue_salt': 1}, 2, 51),
     ('hw_perch_curry', '쏘가리 강황 국물', 'consumable', 4, 50, True, 320, {'hp': 55, 'er': 10, 'buffs': ['hw_spice_heat']}, '먹빛 쏘가리를 강황과 고추씨 기름으로 끓였다.', 'cooking',
      {'hw_river_perch': 1, 'turmeric_root': 1, 'chili_seed_oil': 1}, 2, 52),
+    ('hw_char_soup', '곤들매기 맑은 국', 'consumable', 3, 50, True, 200, {'hp': 45, 'mn': 15, 'buffs': ['warm_belly']}, '하늘못 곤들매기를 보리와 함께 맑게 끓였다. 눈마루 사람들은 얼음 낚시를 마치면 이것부터 찾는다.', 'cooking',
+     {'hw_lake_char': 2, 'highland_barley': 1}, 2, 52),
+    ('hw_icecod_salt', '얼음 대구 소금 절임', 'consumable', 4, 50, True, 300, {'hp': 55, 'mn': 20, 'buffs': ['hw_butter_warm']}, '얼음 비늘 대구를 얼음 결정 소금에 묻어 사흘 재웠다.', 'cooking',
+     {'hw_lake_icecod': 1, 'hw_lake_whitefish': 1, 'ice_salt': 1}, 2, 52),
+    ('hw_lantern_skewer', '등불고기 꼬치', 'consumable', 3, 50, True, 180, {'hp': 40, 'mn': 20, 'buffs': ['sea_luck']}, '갑판 등불고기를 야자 껍질 꼬챙이에 꿰어 구웠다. 구우면 이마의 불빛이 꺼진다.', 'cooking',
+     {'hw_deep_lantern': 2, 'coconut_fiber': 1}, 2, 51),
+    ('hw_grouper_steam', '능성어 띠고기 찜', 'consumable', 4, 50, True, 320, {'hp': 60, 'mn': 20, 'buffs': ['vigor']}, '능성어와 띠고기를 푸른 소금과 함께 큰 잎에 싸 쪘다.', 'cooking',
+     {'hw_deep_grouper': 1, 'hw_deep_ribbon': 1, 'blue_salt': 1}, 2, 52),
+    ('hw_hag_smoke', '먹장어 땅김 훈제', 'consumable', 3, 50, True, 200, {'hp': 50, 'buffs': ['vigor']}, '먹장어를 땅김에 걸어 훈제했다. 질기지만 씹을수록 고소하다.', 'cooking',
+     {'hw_abyss_hag': 2, 'charcoal': 1}, 2, 51),
+    ('hw_ray_ember', '가오리 불씨 지느러미 구이', 'consumable', 4, 50, True, 320, {'hp': 60, 'mn': 15, 'buffs': ['hw_spice_heat']}, '잿빛 가오리와 불씨 지느러미 고기를 고추씨 기름에 구웠다.', 'cooking',
+     {'hw_abyss_ashray': 1, 'hw_abyss_ember': 1, 'chili_seed_oil': 1}, 2, 53),
 ]
 NAMED_GOODS = [
     ('hw_tuna_feast', '큰 다랑어 물때 상', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 30, 'buffs': ['hw_tide_calm', 'sea_luck']}, '물때 지기 큰 다랑어를 잡아 파도너울성 식으로 차린 상이다. 1시간 동안 물살에 덜 휩쓸리고 걸음이 빠르다.', 'cooking',
@@ -507,6 +545,12 @@ NAMED_GOODS = [
      {'hw_named_carp': 1, 'turmeric_root': 2, 'herb': 1}, 2, 53),
     ('hw_gold_offering', '금비늘 연꽃 상', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 40, 'buffs': ['hw_sweet_rest', 'hw_coconut_full']}, '첫볕 연못 금비늘을 연밥과 함께 차려 사원에 올리는 상이다.', 'cooking',
      {'hw_named_gold': 1, 'lotus_seed': 2, 'palm_sugar': 1}, 2, 55),
+    ('hw_ray_feast', '불비늘 가오리 땅김 찜', 'consumable', 5, 20, True, 1800, {'hp': 90, 'mn': 30, 'buffs': ['hw_spice_heat', 'vigor']}, '골 바닥 불비늘 가오리를 땅김에 쪄 고추씨 기름을 끼얹었다. 화덕골 장인들이 큰 일을 앞두고 나눠 먹는다.', 'cooking',
+     {'hw_named_ember': 1, 'chili_seed_oil': 1, 'cold_ember_filings': 1}, 2, 52),
+    ('hw_trout_butter', '구름 송어 버터 탕', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 40, 'buffs': ['hw_butter_warm', 'clear_mind']}, '하늘못 구름 송어를 버터차에 넣고 오래 끓였다. 몸속까지 따뜻해지고 마음이 맑아진다.', 'cooking',
+     {'hw_named_sky': 1, 'yak_wool': 1, 'ice_salt': 1}, 2, 53),
+    ('hw_arch_carp_braise', '은잉어 향신 조림', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 30, 'buffs': ['hw_spice_heat', 'hw_sweet_rest']}, '일곱 아치 은잉어를 향신 꼬투리와 우유에 졸였다. 달맞이성 잔칫상에 오른다.', 'cooking',
+     {'hw_named_arch': 1, 'red_spice_pod': 2, 'palm_sugar': 1}, 2, 54),
 ]
 CONSUMABLE_RECIPES = [
     ('pd_tide_charm', {'coconut_fiber': 1, 'blue_salt': 1, 'seal_paper': 1}, 'sealing', 2),
@@ -646,8 +690,11 @@ TITLES = [
     ('hw_fish_hw_named_tuna', '물때를 낚은 이', 4, {'fish_bite_pct': 3}, {'n': 1, 'p': {'fish': 'hw_named_tuna'}, 'ev': 'fish'}, '물때 지기 큰 다랑어를 낚는다', True),
     ('hw_fish_hw_named_carp', '먹비 밤을 낚은 이', 4, {'fish_rare_pct': 3}, {'n': 1, 'p': {'fish': 'hw_named_carp'}, 'ev': 'fish'}, '먹비 강 검은 잉어를 낚는다', True),
     ('hw_fish_hw_named_gold', '첫볕을 낚은 이', 4, {'fish_size_pct': 3}, {'n': 1, 'p': {'fish': 'hw_named_gold'}, 'ev': 'fish'}, '첫볕 연못 금비늘을 낚는다', True),
+    ('hw_fish_hw_named_ember', '불과 물 사이를 낚은 이', 4, {'fish_rare_pct': 3}, {'n': 1, 'p': {'fish': 'hw_named_ember'}, 'ev': 'fish'}, '골 바닥 불비늘 가오리를 낚는다', True),
+    ('hw_fish_hw_named_sky', '구름을 낚은 이', 4, {'fish_bite_pct': 3}, {'n': 1, 'p': {'fish': 'hw_named_sky'}, 'ev': 'fish'}, '하늘못 구름 송어를 낚는다', True),
+    ('hw_fish_hw_named_arch', '아치 밑을 낚은 이', 4, {'fish_size_pct': 3}, {'n': 1, 'p': {'fish': 'hw_named_arch'}, 'ev': 'fish'}, '일곱 아치 은잉어를 낚는다', True),
     ('hw_named_all', '건넛누리의 명어를 낚은 이', 5, {'fish_bite_pct': 4, 'fish_rare_pct': 8, 'fish_size_pct': 8},
-     {'all': [{'p': {'fish': f}, 'ev': 'fish'} for f in ['hw_named_tuna', 'hw_named_carp', 'hw_named_gold']]}, '건넛누리의 명어 셋을 모두 낚는다', True),
+     {'all': [{'p': {'fish': f}, 'ev': 'fish'} for f in ['hw_named_tuna', 'hw_named_carp', 'hw_named_gold', 'hw_named_ember', 'hw_named_sky', 'hw_named_arch']]}, '건넛누리의 명어 여섯을 모두 낚는다', True),
 ]
 TITLE_CAT = '도해록'
 COSMETICS = [

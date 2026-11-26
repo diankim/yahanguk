@@ -148,17 +148,17 @@ export const GAMEDATA = {
   "questReplay": {"min":5,"pct":20,"max_active":3},
   "xpLead": {"lead":3,"steps":[],"trail":{"gap":5,"steps":[[5,120],[10,150],[15,175],[20,200]]},"active_min":60,"active_days":2},
   "domains": {
-    "gureum": {"fx":null,"pin":false,"name":"구름성","realm":"hanul","gap":78,"color":"#66716c"}, "pado": {"fx":null,"pin":false,"name":"파도너울성","realm":"hanul","gap":78,"color":"#5d6a70"},
-    "bulssi": {"fx":null,"pin":false,"name":"불씨들녘","realm":"hanul","gap":78,"color":"#76655b"},
+    "gureum": {"fx":null,"pin":false,"name":"구름성","realm":"hanul","gap":78,"color":"#66716c","mirror_x":977,"twins":{"gr_pavilion": "white_tower"},"sea":[]}, "pado": {"fx":null,"pin":false,"name":"파도너울성","realm":"hanul","gap":78,"color":"#5d6a70","mirror_x":977,"twins":{"pd_city": "mirror_pavilion", "pd_shore": "lotus_marsh", "pd_offsea": "sunken_palace", "pd_rift": "tide_gate"},"sea":["pd_shore", "pd_rift"]},
+    "bulssi": {"fx":null,"pin":false,"name":"불씨들녘","realm":"hanul","gap":78,"color":"#76655b","mirror_x":977,"twins":{"bs_town": "ember_village", "bs_geo": "ember_pass", "bs_crack": "black_tide_rift"},"sea":[]},
     "gwiheo": {"fx":{"effects":{"erosion_pct":60}},"pin":false,"name":"귀허도","realm":"main"},
-    "jaebit": {"fx":null,"pin":false,"name":"잿빛그늘숲","realm":"hanul","gap":78,"color":"#625c69"},
-    "dalmaji": {"fx":null,"pin":false,"name":"달맞이성","realm":"hanul","gap":78,"color":"#78725d"},
+    "jaebit": {"fx":null,"pin":false,"name":"잿빛그늘숲","realm":"hanul","gap":78,"color":"#625c69","mirror_x":977,"twins":{"jb_village": "mukchang_ferry", "jb_ebony": "meokbi_forest", "jb_ferry": "blank_field"},"sea":["jb_village"]},
+    "dalmaji": {"fx":null,"pin":false,"name":"달맞이성","realm":"hanul","gap":78,"color":"#78725d","mirror_x":977,"twins":{"dm_city": "hq_yard", "dm_field": "field_outskirts", "dm_bamboo": "ghost_bamboo", "dm_bridge": "paper_bridge", "dm_archive": "hq_archive", "dm_caravan": "patrol_office", "dm_gate": "old_prison", "dm_aqueduct": "seal_vault"},"sea":[]},
     "deungdo": {"fx":{"name":"백야","guard":["beneath_lamp","undying_glow"],"recall":{"hp":1,"status":"faded_name","per_day":1},"effects":{"wn_eva":3,"wn_quiet":10,"wn_sneak":15,"encounter_pct":5,"mental_loss_pct":15,"incoming_damage_pct":5},"no_rescue":true,"white_night":true},"pin":false,"name":"등도 옛터","realm":"main"},
-    "goimteo": {"fx":null,"pin":true,"name":"고임터","realm":"hanul","gap":78,"color":"#58575e"},
+    "goimteo": {"fx":null,"pin":true,"name":"고임터","realm":"hanul","gap":78,"color":"#58575e","mirror_x":977,"twins":{"dm_pool": "jeongni_vault"},"sea":[]},
     "jeongni": {"fx":null,"pin":true,"name":"정리소","realm":"main"},
     "mukjeok": {"fx":{"blur":{"stages":[{"er":30,"name":"이름 번짐","note":"먹이 이름 획 셋을 지웠습니다. 정신이 쉽게 흐트러지고 받는 피해와 마주침이 늘어납니다. 침식을 낮추면 지워진 획이 돌아옵니다.","effects":{"encounter_pct":8,"rare_loot_pct":3,"clue_bonus_pct":3,"mental_loss_pct":20,"incoming_damage_pct":8}},{"er":50,"name":"이름 바램","note":"이름 획이 셋만 남았습니다. 손에 힘이 빠져 주는 피해가 줄고 회복이 더딥니다.","effects":{"healing_pct":-10,"encounter_pct":10,"rare_loot_pct":5,"clue_bonus_pct":5,"mental_loss_pct":25,"combat_damage_pct":-20,"incoming_damage_pct":10}},{"er":80,"name":"이름 잃음","note":"이름 획이 모두 지워졌습니다. 다른 조사원에게 내 이름이 깨진 글자로 보이고, 주는 피해가 크게 줄어듭니다. 정화 부적으로 침식을 낮추거나 이름 먹 부적·이름 새김 탕으로 버티세요.","effects":{"healing_pct":-15,"encounter_pct":12,"rare_loot_pct":8,"clue_bonus_pct":8,"mental_loss_pct":30,"combat_damage_pct":-35,"incoming_damage_pct":12},"nameless":true}],"strokes":9,"guard_step":1},"name":"이름 흐림","guard":["clear_name","name_ward"],"effects":{"encounter_pct":5,"mental_loss_pct":15,"incoming_damage_pct":5}},"pin":false,"name":"묵적 봉쇄령","realm":"main"},
-    "nunmaru": {"fx":null,"pin":false,"name":"눈마루","realm":"hanul","gap":78,"color":"#80858c"},
-    "haeoreum": {"fx":null,"pin":false,"name":"해오름성","realm":"hanul","gap":78,"color":"#7a6662"}
+    "nunmaru": {"fx":null,"pin":false,"name":"눈마루","realm":"hanul","gap":78,"color":"#80858c","mirror_x":977,"twins":{"nm_village": "iron_monastery", "nm_snow": "snow_hollow", "nm_peak": "thunder_peak", "nm_lake": "sky_lake", "nm_gorge": "frost_valley"},"sea":["nm_gorge"]},
+    "haeoreum": {"fx":null,"pin":false,"name":"해오름성","realm":"hanul","gap":78,"color":"#7a6662","mirror_x":977,"twins":{"ho_city": "dark_yamen", "ho_outer": "deungdo_landing", "ho_coast": "old_ferry_market"},"sea":["ho_coast"]}
   },
   "names": {
     "idle": {"rest":"휴식","research":"자료 조사","training":"자율 수련","maintenance":"장비 정비"},

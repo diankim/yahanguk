@@ -772,7 +772,7 @@ body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 
 .sea-line { fill: none; stroke: color-mix(in srgb, var(--text) 7%, transparent); stroke-width: 1; }
 .cell { fill: color-mix(in srgb, var(--fc) 58%, var(--surface)); stroke: none; cursor: pointer; transition: fill .15s; }
 .cell:hover { fill: color-mix(in srgb, var(--fc) 70%, var(--surface)); }
-.cell.sel { fill: color-mix(in srgb, var(--fc) 78%, var(--text)); }
+.cell.sel { fill: color-mix(in srgb, var(--fc) 85%, var(--text)); }
 .cell.here { fill: color-mix(in srgb, var(--fc) 80%, var(--surface)); }
 .cell-lock { fill: url(#lock-hatch); pointer-events: none; }
 .hatch-line { stroke: color-mix(in srgb, var(--bg) 55%, transparent); stroke-width: 3; }

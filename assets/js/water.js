@@ -1,3 +1,4 @@
+import { GAMEDATA } from './gamedata.js';
 const RIVERS = [
   { in: 'sky_lake', ice: 4, pts: [[480,122,3],[472,150,3.4],[458,182,3.8],[446,212,4.2],[449,242,4.8],[458,272,5.2],[470,298,5.8],[500,312,6.2],[540,306,6.8],[585,313,7.2],[625,318,7.8],[655,314,8.2],[695,322,8.8],[722,336,9.2],[770,323,10],[805,306,10.8],[838,302,11.6],[864,324,12.6],[886,352,14],[918,372,15],[938,381,15.5]] },
   { in: 'mirror_pavilion', small: 1, pts: [[762,244,2.4],[765,272,2.8],[767,300,3.2],[770,322,3.6]] },
@@ -65,7 +66,25 @@ function isles(cells) {
   return isleCache;
 }
 
-export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory', 'mukchang_ferry', 'sleeping_port']);
+export const SEA_FISH = new Set(['ash_coast', 'nine_lighthouse', 'salt_village', 'tide_gate', 'hidden_bazaar', 'frost_valley', 'crimson_mine', 'red_moon_fort', 'star_observatory', 'mukchang_ferry', 'sleeping_port',
+  ...Object.values(GAMEDATA.domains || {}).flatMap(d => d.sea || [])]);
+let twinSet = null;
+function twins() {
+  if (twinSet) return twinSet;
+  const doms = Object.values(GAMEDATA.domains || {}).filter(d => d.twins && d.mirror_x);
+  const back = {}; let mx = 0;
+  for (const d of doms) { mx = d.mirror_x; for (const [h, m] of Object.entries(d.twins)) back[m] = h; }
+  const fx = x => mx - x, P2 = p => [fx(p[0]), ...p.slice(1)];
+  const keep = list => list.filter(f => back[f.in]).map(f => ({ ...f, in: back[f.in], mirror: 1 }));
+  const reeds = {}; for (const [id, list] of Object.entries(REEDS)) if (back[id]) reeds[back[id]] = list.map(P2);
+  twinSet = {
+    rivers: keep(RIVERS).map(f => ({ ...f, pts: f.pts.map(P2) })), canals: keep(CANALS).map(f => ({ ...f, pts: f.pts.map(P2) })),
+    pools: keep(POOLS).map(f => ({ ...f, at: P2(f.at) })), reeds, rifts: keep(RIFTS).map(f => ({ ...f, pts: f.pts.map(P2) })),
+    abyss: keep(ABYSS).map(f => ({ ...f, at: P2(f.at) })), whirls: keep(WHIRLS).map(f => ({ ...f, at: P2(f.at) })),
+  };
+  return twinSet;
+}
+const onLand = (g, pt) => [...g.cells.values()].some(poly => inside(pt, poly));
 const seg = (e, X, Y) => `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
 
 export function waterUnder(g, X, Y, k) {
@@ -79,35 +98,37 @@ export function waterOver(g, has, X, Y, k, zoom) {
   const near = zoom >= 1.35, f = v => v.toFixed(1), P = p => `${f(X(p[0]))},${f(Y(p[1]))}`;
   const ringPath = (at, seed) => 'M' + ring(at, seed).map(P).join('L') + 'Z';
   let bank = '', flow = '', ice = '', under = '', pools = '', reeds = '', dark = '', isl = '';
-  for (const rv of RIVERS) {
+  const T = twins(), land = pt => onLand(g, pt);
+  for (const rv of [...RIVERS, ...T.rivers]) {
     if (!has(rv.in) || (rv.small && !near)) continue;
     for (const s of smooth(rv.pts)) {
+      if (rv.mirror && !land([(s.p1[0] + s.p2[0]) / 2, (s.p1[1] + s.p2[1]) / 2])) continue;
       const d = `M${P(s.p1)}C${P(s.c1)} ${P(s.c2)} ${P(s.p2)}`, w = Math.max(1.2, s.w * k);
       bank += `<path d="${d}" stroke-width="${f(w + 2)}"/>`;
       if (rv.ice && s.i < rv.ice) ice += `<path d="${d}" stroke-width="${f(w)}"/>`; else flow += `<path d="${d}" stroke-width="${f(w)}"/>`;
     }
   }
-  for (const c of CANALS) {
-    if (!has(c.in) || !near) continue;
+  for (const c of [...CANALS, ...T.canals]) {
+    if (!has(c.in) || !near || (c.mirror && !c.pts.every(land))) continue;
     const d = 'M' + c.pts.map(P).join('L'), w = Math.max(1, c.w * k);
     if (c.under) under += `<path d="${d}" stroke-width="${f(w)}"/>`;
     else { bank += `<path d="${d}" stroke-width="${f(w + 2)}" stroke-linejoin="miter"/>`; flow += `<path d="${d}" stroke-width="${f(w)}" stroke-linejoin="miter"/>`; }
   }
-  POOLS.forEach((p, i) => {
-    if (!has(p.in) || (p.small && !near)) return;
+  [...POOLS, ...T.pools].forEach((p, i) => {
+    if (!has(p.in) || (p.small && !near) || (p.mirror && !land(p.at))) return;
     pools += `<path d="${ringPath(p.at, i + 1)}" class="w-pool${p.ice ? ' ice' : ''}"/>`;
     const [x, y, r, sx, sy] = p.at;
     if (p.ripple && near) pools += `<path d="M${P([x - r * sx * .5, y + r * sy * .1])}q${f(r * .25 * k)},${f(-r * .18 * k)} ${f(r * .5 * k)},0t${f(r * .5 * k)},0M${P([x - r * sx * .2, y + r * sy * .45])}q${f(r * .2 * k)},${f(-r * .15 * k)} ${f(r * .4 * k)},0t${f(r * .4 * k)},0" class="w-ripple"/>`;
     if (p.lotus && near) for (let j = 0; j < p.lotus; j++) { const a = j * 2.4 + 0.5; pools += `<circle cx="${f(X(x + Math.cos(a) * r * .6))}" cy="${f(Y(y + Math.sin(a) * r * .45))}" r="1.8" class="w-lotus"/>`; }
   });
-  if (near) for (const [id, list] of Object.entries(REEDS)) if (has(id)) for (const p of list) { const [x, y] = [X(p[0]), Y(p[1])]; reeds += `M${f(x)},${f(y)}l-1.5,-6M${f(x + 2)},${f(y)}l0.5,-7M${f(x + 4)},${f(y)}l2,-5`; }
-  for (const r of RIFTS) if (has(r.in)) dark += `<path d="M${r.pts.map(P).join('L')}Z" class="w-rift"/>`;
-  for (const a of ABYSS) if (has(a.in)) {
+  if (near) for (const [id, list] of [...Object.entries(REEDS), ...Object.entries(T.reeds)]) if (has(id)) for (const p of list) { const [x, y] = [X(p[0]), Y(p[1])]; reeds += `M${f(x)},${f(y)}l-1.5,-6M${f(x + 2)},${f(y)}l0.5,-7M${f(x + 4)},${f(y)}l2,-5`; }
+  for (const r of [...RIFTS, ...T.rifts]) if (has(r.in)) dark += `<path d="M${r.pts.map(P).join('L')}Z" class="w-rift"/>`;
+  for (const a of [...ABYSS, ...T.abyss]) if (has(a.in)) {
     const [x, y, r] = a.at;
     dark += `<path d="${ringPath([x, y, r, 1.15, 0.85], 7)}" class="w-abyss"/>`;
     for (let j = 1; j <= 2; j++) dark += `<ellipse cx="${f(X(x))}" cy="${f(Y(y))}" rx="${f(r * 1.15 * (1 - j * .3) * k)}" ry="${f(r * .85 * (1 - j * .3) * k)}" class="w-abyss-ring"/>`;
   }
-  for (const w of WHIRLS) if (has(w.in)) {
+  for (const w of [...WHIRLS, ...T.whirls]) if (has(w.in)) {
     const [x, y, r] = w.at; let d = '';
     for (let t = 0; t <= 3.2 * Math.PI; t += 0.25) { const rr = r * (1 - t / (3.4 * Math.PI)); d += (d ? 'L' : 'M') + P([x + Math.cos(t) * rr * 1.2, y + Math.sin(t) * rr * 0.8]); }
     dark += `<path d="${ringPath([x, y, r, 1.2, 0.8], 4)}" class="w-abyss"/><path d="${d}" class="w-whirl"/>`;
