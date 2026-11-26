@@ -127,3 +127,49 @@ gw.js BOSS dohaesu·ttangul(판 그리기·전용 단추), 밀림·낙사 연출
 - 4.0 보상에 들어가는 꼬마 동무(땅울이 「꼬마 돌울이」·1.0 짝 「꼬마 동무 13」·무용담 교환 동무)는 새 동무를 만들지 않고 **기존 동무의 무늬(스킨)** 로 준다 — 3.8.1g 「눈송이 삼색」(얼룩 고양이) 틀. 갈래마다 새 동무를 늘리지 않음.
 - 무늬는 얻어 두고, 그 바탕 동무를 가진 사람만 그 모습으로 바꿀 수 있음(world_pet_skin_rules how — 지금 'pet' 하나에 「얻어야 열림」 갈래를 더함, 얻은 기록 표).
 - 무늬 그림은 tools/pet_art/skins.py, 귀엽게(동무 그림 규칙), 미리보기를 보여 확인받고 넣음.
+
+## 11. 동무 무늬 40 얻는 곳 (사용자 결정 11/26 — 가안 그대로, n 그대로)
+- 권역 활동에 묶음. 얻으면 무늬 기록에 남고 알림, 바탕 동무가 없어도 남았다가 바탕 동무를 얻으면 바로 고를 수 있음. 거래 불가(기록). 운에 맡기는 길 없음.
+- n: 교역 판매 그 항구 정가 합 5,000전 · 등불 건지기 그 항구 10 · 등불 띄우기 30 · 습격 이기기 10 · 원정 완주 10 · 우두머리 토벌 20 · 잔칫상 10.
+| 권역 | 무늬(key) | 얻는 길 |
+|---|---|---|
+| 달맞이성 | little_stonecry | 땅울이 깊은 판 첫 처치 |
+| | golden_moon_rabbit | 4.0 이야기 마지막 장 마침 |
+| | peacock_sparrow | 달맞이성 권역 완전 답사 |
+| | festive_elephant | 달맞이성 보조 퀘스트 모두 |
+| | feast_mask | 잔칫상 그릇 올려 다 차린 상 10 |
+| | marigold_puppy | 잔칫상 「상에서 먹기」 10 |
+| 파도너울성 | coral_goldfish | 도해수 깊은 판 첫 처치 |
+| | jade_whale | 도해수 깊은 판 10 |
+| | wave_ddonggae | 파도너울성 권역 완전 답사 |
+| | kingfisher_magpie | 파도너울성 보조 퀘스트 모두 |
+| | coconut_crab | 파도너울성 선창 교역 판매 정가 합 5,000 |
+| | boatman_otter | 배를 대양함선까지 |
+| | monsoon_cloud | 뱃길 습격 이기기 10 |
+| 잿빛그늘숲 | pandan_squirrel | 잿빛그늘숲 이야기 장 마침 |
+| | umbrella_mushroom | 권역 완전 답사 |
+| | silvergrass_fawn | 보조 퀘스트 모두 |
+| | turmeric_cat | 억새 나루 교역 정가 합 5,000 |
+| | plantain_raccoon | 억새 나루 등불 건지기 10 |
+| | inkrain_firefly | 등불 띄우기 30 |
+| | ebony_pangolin | 잿빛그늘숲 요괴 도감 모두 |
+| 눈마루 | flag_crane | 눈마루 이야기 장 마침 |
+| | snow_leopard_cat | 권역 완전 답사 |
+| | yak_calf | 보조 퀘스트 모두 |
+| | snow_owl | 눈마루 요괴 도감 모두 |
+| | milk_longhair | 눈마루 원정 완주 10 |
+| | pass_glider | 깃발 설원 원정 핵심 완전 답사 |
+| | icepond_seal | 눈마루 낚시터 어종 모두 |
+| | barley_bear | 눈마루 우두머리 토벌 20 |
+| 불씨들녘 | ember_puppy | 불씨들녘 이야기 장 마침 |
+| | ember_wisp | 권역 완전 답사 |
+| | chili_crab | 보조 퀘스트 모두 |
+| | brass_ladybug | 9단계 장비 처음 만들기 |
+| | obsidian_beetle | 화덕골 교역 정가 합 5,000 |
+| | ember_frog | 화덕골 등불 건지기 10 |
+| | redsap_boar | 불씨들녘 요괴 도감 모두 |
+| 해오름성 | gold_puppet | 해오름성 이야기 장 마침 |
+| | lotus_fox | 권역 완전 답사 |
+| | palm_sugar_rabbit | 보조 퀘스트 모두 |
+| | lotus_lantern | 첫볕 선창 등불 건지기 10 |
+| | lotusleaf_newt | 첫볕 선창 교역 정가 합 5,000 |
