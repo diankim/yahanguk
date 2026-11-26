@@ -248,5 +248,8 @@ end $$;"""]
     qs, nq, ns = quests_sql(RB, SQ, J, TA, known, RID, xp_need, fresh, errors)
     if qs:
         out.append(qs)
-    sys.stderr.write(f"권역 인연: 권역 {len(RB['realms'])} · 칭호 {len(RB['titles'])}+비고 {len(RB['vault_titles'])} · 비고 품목 {len(RB['vault'])} · 이야기 {nq}편 {ns}장면\n")
+    import outfits_rb
+    osql, no = outfits_rb.emit(RB, J, errors)
+    out.append(osql)
+    sys.stderr.write(f"권역 인연: 권역 {len(RB['realms'])} · 칭호 {len(RB['titles'])}+비고 {len(RB['vault_titles'])} · 비고 품목 {len(RB['vault'])} · 옷 {no} · 이야기 {nq}편 {ns}장면\n")
     return '\n'.join(out)
