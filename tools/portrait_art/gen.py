@@ -54,6 +54,7 @@ CAST = [
     ('ongyeol', '온결', 'hwq_2'),
     ('nopsae', '높새', 'hwq_3'),
     ('mulkko', '물꼬', 'hwq_3'),
+    ('barang', '바랑', 'hwq_7'),
 ]
 W, H = 24, 32
 ILL_W, ILL_H = 768, 1024
