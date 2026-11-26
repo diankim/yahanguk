@@ -51,6 +51,7 @@ CAST = [
     ('yeoseotjjae', '채무 추적자 여섯째', 'mdq_8'),
     ('gwakduchil', '곽두칠', 'mdq_15'),
     ('gyeonghyeon', '정리관 경현', 'mdq_17'),
+    ('ongyeol', '온결', 'hwq_2'),
 ]
 W, H = 24, 32
 ILL_W, ILL_H = 768, 1024
