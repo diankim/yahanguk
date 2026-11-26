@@ -58,6 +58,7 @@ CAST = [
     ('soemae', '쇠매', 'hwq_7'),
     ('saeum', '새움', 'hwq_8'),
     ('oksan', '옥산 할머니', 'hwq_8'),
+    ('seolmae', '설매', 'hwq_9'),
 ]
 W, H = 24, 32
 ILL_W, ILL_H = 768, 1024
