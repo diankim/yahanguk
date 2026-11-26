@@ -2246,7 +2246,7 @@ export const PET_SKINS = {
   gold_puppet: {
     pet: "paper_doll",
     name: "금박 그림자 인형",
-    desc: "해오름성 탑 사원 그림자놀이에 쓰던 가죽 인형에 깃든 혼령입니다. 금박 몸에 구멍 무늬가 송송 뚫려 있고, 발밑 막대 둘을 짚고 다닙니다. 등불 앞에 서면 벽에 제 그림자를 크게 비춰 보고 뿌듯해합니다.",
+    desc: "해오름성 탑 사원 그림자놀이에 쓰던 가죽 인형이 오래 손때를 타다 깨어난 혼령입니다. 금박 몸에 구멍 무늬가 송송 뚫려 있고, 발밑 막대 둘을 짚고 다닙니다. 등불 앞에 서면 벽에 제 그림자를 크게 비춰 보고 뿌듯해합니다.",
     baby: {
       pal: { a: "#e4b04c", h: "#b07a2a", r: "#a8282e", b: "#4a2a20", g: "#6a4a2a", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", y: "#f6d860", k: "#1a120e" },
       idle: ["....k..k....", "...kykkyk...", "...kbbbbk...", "..kbaaaabk..", "..kaieaiek..", "..kaeeaeek..", "..kkapapkk..", ".kaaarraaak.", "..karraaak..", "..kahahahk..", "..kahhhhak..", "...kakkak...", "..g.k..k.g..", "............"],
@@ -2284,7 +2284,7 @@ export const PET_SKINS = {
   pandan_squirrel: {
     pet: "squirrel",
     name: "향잎 꼬리 다람쥐",
-    desc: "잿빛그늘숲 약초 마을 텃밭에서 향잎을 깔고 자다 꼬리가 잎빛으로 물든 다람쥐입니다. 꼬리를 흔들 때마다 달큰한 잎 냄새가 나서, 마을 아이들이 밥 짓는 날이면 쫓아다닙니다.",
+    desc: "잿빛그늘숲 약초 마을 텃밭에서 향잎을 깔고 자다 꼬리가 잎빛이 된 다람쥐입니다. 꼬리를 흔들 때마다 향긋한 잎 냄새가 나서, 마을 아이들이 밥 짓는 날이면 졸졸 쫓아다닙니다.",
     baby: {
       pal: { a: "#c0753a", b: "#7a4420", c: "#f2dcb0", f: "#74b850", t: "#c4e88a", n: "#5a3020", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", g: "#3a8a34", k: "#1a120e" },
       idle: ["..kkk..k...k..", ".ktttkkakkkak.", "ktffftkaaaaak.", "ktfgffaieaieak", "ktfgfkaeeaeeak", ".ktfgfcpanapck", "..ktfaaacccck.", "...ktfabaccck.", "....kaaaaccck.", "....kaakakaak.", ".....kk.k.kk.."],
@@ -2341,7 +2341,7 @@ export const PET_SKINS = {
   brass_ladybug: {
     pet: "ladybug",
     name: "놋쇠 무당벌레",
-    desc: "불씨들녘 장인 마을 대장간 둘레를 날던 무당벌레가 두드려 편 놋쇠 등딱지를 얻어 입었다고 합니다. 점 일곱 개는 구리를 박아 넣은 것이라, 볕을 받으면 등이 그릇처럼 반짝입니다.",
+    desc: "불씨들녘 장인 마을 대장간 둘레를 날던 무당벌레가 두드려 편 놋쇠 등딱지를 얻어 입었다고 합니다. 점 일곱 개는 구리를 박아 넣은 것이라, 볕을 받으면 등이 갓 닦은 놋그릇처럼 반짝입니다.",
     baby: {
       pal: { a: "#d8a838", n: "#2a2420", w: "#f4f0e6", e: "#2a1a14", r: "#6a3018", h: "#f8e6a8", k: "#1a120e" },
       idle: ["...kkkk......", "..kahaakk....", ".karaararkkk.", "kaaaaraaannnk", "karaaaaanwewk", "kaaaraarannnk", ".kaaaaaankkk.", ".knknkknknk..", "..k.k..k.k..."],
@@ -2417,7 +2417,7 @@ export const PET_SKINS = {
   yak_calf: {
     pet: "ox_calf",
     name: "털북숭이 야크 송아지",
-    desc: "눈마루 고원에서 버터차 짓는 집 마당에 매여 있던 야크 송아지입니다. 배 밑으로 북슬북슬한 털이 치마처럼 늘어지고, 귀에는 주인이 달아 준 붉은 술이 달랑거립니다.",
+    desc: "눈마루 고원에서 수유차 짓는 집 마당에 매여 있던 야크 송아지입니다. 배 밑으로 북슬북슬한 털이 치마처럼 늘어지고, 귀에는 주인이 달아 준 붉은 술이 달랑거립니다.",
     baby: {
       pal: { a: "#7a5844", b: "#3e2c22", c: "#c8b4a0", h: "#f2e6c8", n: "#e8a0a0", e: "#2a1a14", i: "#ffffff", r: "#d8443a", w: "#f4ece0", k: "#1a120e" },
       idle: ["..........k.k..", ".........khkhk.", ".k.kkkkkkraawak", "kbkaaaaaaaaieak", ".kaaaaaaaaaacck", ".kaaaaaaaaaanck", ".kbbabbabbabkk.", "..kbbkbbkkbbk..", "...kk.kk..kk..."],
@@ -2493,7 +2493,7 @@ export const PET_SKINS = {
   wave_ddonggae: {
     pet: "ddonggae",
     name: "물결 목수건 똥개",
-    desc: "파도너울성 쪽배 사공 집에서 크는 똥개입니다. 사공이 매어 준 쪽빛 물결 목수건을 하고, 털에 바닷물 빛 얼룩이 앉았습니다. 배가 들어오면 장대 다리 끝까지 달려 나갑니다.",
+    desc: "파도너울성 쪽배 사공 집에서 크는 똥개입니다. 사공이 매어 준 쪽빛 물결 목수건을 하고, 털에는 바닷물 빛 얼룩이 졌습니다. 배가 들어오면 장대 다리 끝까지 달려 나갑니다.",
     baby: {
       pal: { a: "#ead6ab", b: "#4a3222", g: "#8cc4d0", m: "#5c3f2a", n: "#1a0f0a", q: "#4e2c12", r: "#7e4a20", d: "#2f6fb8", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", w: "#f4f4f0", k: "#1a120e" },
       idle: ["........k.....", ".......kqk....", "......kqrqk...", ".....kqqrqqk..", "....kkaaaaakk.", "...kbaaaaaaabk", ".k.kbaieaieabk", "kbkkbbeeaeebbk", "kbkkkpamnmapk.", ".kbaaadwdwdak.", ".kaggaaaaaaaak", ".kaaaaggaaaaak", ".kmmkmkkkmkmmk", "..kk.k...k.kk."],
@@ -2512,7 +2512,7 @@ export const PET_SKINS = {
   turmeric_cat: {
     pet: "cheese_cat",
     name: "강황 줄고양이",
-    desc: "잿빛그늘숲 약초 마을 강황 자루 위에서 낮잠을 자다 털이 샛노랗게 물든 고양이입니다. 비비고 간 자리마다 노란 털이 묻어 남습니다.",
+    desc: "잿빛그늘숲 약초 마을 강황 자루 위에서 낮잠을 자다 털이 샛노래진 고양이입니다. 비비고 간 자리마다 노란 털이 묻어나, 어디를 다녀왔는지 금방 들킵니다.",
     baby: {
       pal: { a: "#f2b820", o: "#b86a10", c: "#fbf1df", n: "#e07a86", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
       idle: ["......k...k...", ".....kak.kak..", "....kaaakaaak.", ".k..kaoaoaoak.", "kok.kaieaieak.", "kok.kaeeaeeak.", ".kokkpacncapk.", ".kaaoaoacccck.", ".kaoaoaacccck.", ".kaakakkckcck.", "..kk.k..k.kk.."],
@@ -2569,7 +2569,7 @@ export const PET_SKINS = {
   snow_owl: {
     pet: "baby_owl",
     name: "설산 흰부엉이",
-    desc: "눈마루 설산 돌탑 틈에 사는 아기 부엉이입니다. 눈처럼 흰 깃에 잿빛 점이 박혀, 눈밭에 앉으면 노란 눈만 동그랗게 보입니다.",
+    desc: "눈마루 설산 돌탑 틈에 사는 아기 부엉이입니다. 눈처럼 흰 깃에 잿빛 잔점이 흩어져, 눈밭에 앉으면 노란 눈만 동그랗게 보입니다.",
     baby: {
       pal: { a: "#f4f4f6", b: "#8a90a0", c: "#e2e6ee", y: "#f0b030", n: "#a8a0a0", f: "#c8b070", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
       idle: ["..k......k...", ".kak....kak..", ".kaakkkkaak..", "kaaaaaaaaaak.", "kcyyyccyyyck.", "kcyiecyiecck.", "kcyeeccyeeck.", "kacccnncccak.", "kaabcbcbcaak.", ".kabcbcbcak..", "..kffkkffk...", "...kk..kk...."],
@@ -2588,7 +2588,7 @@ export const PET_SKINS = {
   palm_sugar_rabbit: {
     pet: "white_rabbit",
     name: "야자 설탕 토끼",
-    desc: "해오름성 탑 사원 앞 엿장수 집 토끼입니다. 야자 설탕 졸이는 솥 곁에서 자라 털이 달큰한 갈색이 되었습니다.",
+    desc: "해오름성 탑 사원 앞 과자 굽는 집에서 크는 토끼입니다. 야자 설탕 졸이는 솥 곁에서 자라 털이 졸인 설탕처럼 노르스름한 갈색이 되었습니다.",
     baby: {
       pal: { a: "#d09a60", c: "#a06a38", p: "#f2a2b2", n: "#e07a8a", e: "#3a1a10", i: "#ffffff", k: "#1a120e" },
       idle: ["......kk.kk...", ".....kaakaak..", ".....kpakpak..", ".....kpakpak..", "....kaaaaaaak.", "....kaieaieak.", "..kkkaeeaeeak.", ".kcckpaanaapk.", "kccaaaaaaaaak.", ".kcaaaaaaaaak.", ".kaaakkkakaak.", "..kkk...k.kk.."],
@@ -2645,7 +2645,7 @@ export const PET_SKINS = {
   ebony_pangolin: {
     pet: "baby_pangolin",
     name: "흑단 비늘 천산갑",
-    desc: "잿빛그늘숲 흑단 고목 밑에서 몸을 말고 자던 아기 천산갑입니다. 비늘이 흑단과 이끼 빛으로 번갈아 앉았습니다.",
+    desc: "잿빛그늘숲 흑단 고목 밑에서 몸을 말고 자던 아기 천산갑입니다. 비늘이 흑단 빛과 이끼 빛으로 한 장씩 번갈아 덮였고, 놀라면 솔방울처럼 동그랗게 몸을 맙니다.",
     baby: {
       pal: { a: "#34362e", b: "#6e7e54", c: "#cec6aa", n: "#1e1e1a", e: "#2a1a14", i: "#ffffff", k: "#1a120e" },
       idle: ["....kkkkk.....", "...kbababk....", ".kkbabababkkk.", "kbkabababaccck", "kbbababababiek", ".kbbababaaceek", "..kabababaccnk", "...kcckkcckkk.", "....kk..kk...."],
@@ -2683,7 +2683,7 @@ export const PET_SKINS = {
   icepond_seal: {
     pet: "spotted_seal",
     name: "얼음못 점박이물범",
-    desc: "눈마루 얼어붙은 못 얼음 구멍에서 고개를 내미는 아기 물범입니다. 얼음빛 흰 털에 푸른 점이 박혀 있습니다.",
+    desc: "눈마루 얼어붙은 못 얼음 구멍에서 고개를 내미는 아기 물범입니다. 흰 털 사이로 푸른 점이 듬성듬성 보이고, 구멍 가장자리에 턱을 괸 채 눈을 끔뻑입니다.",
     baby: {
       pal: { a: "#e6eef6", s: "#5a86b0", w: "#f4f4f6", n: "#3a3a44", f: "#a8c0d6", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
       idle: ["....kkkkkk....", "...kaaaaaak...", "..kaaaaaaaak..", ".kaieaaaaieak.", ".kaeeaaaaeeak.", ".kpaaannaaapk.", "kfaaaawwaaaafk", ".kaasaaaasaak.", "..kaaaaaaaak..", "...kkkkkkkk..."],
@@ -2721,7 +2721,7 @@ export const PET_SKINS = {
   ember_wisp: {
     pet: "dokkaebi_fire",
     name: "불씨 도깨비불",
-    desc: "불씨들녘 화산 기슭에서 재비를 맞으며 노는 도깨비불입니다. 파랗던 불이 화산 열기에 주홍빛으로 물들었습니다.",
+    desc: "불씨들녘 화산 기슭에서 재비를 맞으며 노는 도깨비불입니다. 파랗던 불꽃이 화산 열기를 오래 쬐다 주홍빛이 되었습니다.",
     baby: {
       pal: { f: "#f06a28", c: "#ffb060", w: "#fff0d0", e: "#4a1a10", i: "#c07050", p: "#ff9ab8", s: "#ffd060", k: "#1a120e" },
       idle: ["...k..........", "..kfk....k.s..", "..kffk..kfk...", "...kffkkffk...", "...kfffffffk..", "..kffccccccfk.", ".kffcwwwwwwcfk", ".kfcwiewiewcfk", ".kfcweeweewcfk", ".kfcpwwwwpcfk.", "..kfcccccccfk.", "...kfffffffk..", "....kkkkkkk..."],
@@ -2759,7 +2759,7 @@ export const PET_SKINS = {
   feast_mask: {
     pet: "mask_spirit",
     name: "잔치 탈 정령",
-    desc: "달맞이성 잔치 행렬에서 쓰는 금빛 탈에 깃든 정령입니다. 주황 옷에 쪽빛 띠를 매고, 북소리가 나면 어깨를 들썩입니다.",
+    desc: "달맞이성 잔치 행렬에서 쓰는 금빛 탈 속에 들어앉은 정령입니다. 주황 옷에 쪽빛 띠를 매고, 북소리가 나면 어깨를 들썩입니다.",
     baby: {
       pal: { a: "#f6d48a", h: "#2a3a8a", e: "#5a3a22", p: "#f29a8a", o: "#d0503a", w: "#f0a030", r: "#3a78c8", k: "#1a120e" },
       idle: [".....kk.....", "....khhk....", "..kkhhhhkk..", ".kaaaaaaaak.", "kaaaaaaaaaak", "kaaeaaaaeaak", "kaeaeaaeaeak", "kapaaaaaapak", ".kaaaooaaak.", "..kaaaaaak..", ".kwwrrrrwwk.", ".kwwwwwwwwk.", "..kwwkkwwk..", "...kk..kk..."],
@@ -2778,7 +2778,7 @@ export const PET_SKINS = {
   golden_moon_rabbit: {
     pet: "moon_rabbit",
     name: "금빛 달맞이 토끼",
-    desc: "달맞이성 궁궐 지붕에서 달을 맞는 토끼입니다. 금빛 털에 이마의 점은 붉은 보석처럼 빛납니다.",
+    desc: "달맞이성 궁궐 지붕에서 달을 맞는 토끼입니다. 털은 금빛이고 이마의 점은 붉은 보석처럼 빛납니다. 보름이면 지붕 끝에 앉아 귀를 쫑긋 세우고 달이 뜨기를 기다립니다.",
     baby: {
       pal: { a: "#f8e2a8", c: "#e0b860", p: "#f2a8bc", y: "#e8443a", n: "#b07a42", r: "#fbf8ee", g: "#7ab060", e: "#2a2a4a", i: "#8a8ab0", k: "#1a120e" },
       idle: [".....kk.kk...", "....kaakaak..", "....kpakpak..", "....kpakpak..", "...kaaayaaak.", "...kaieaieak.", "...kaeeaeeak.", "...kpaanaapk.", "..kkkcaaarrgk", ".kccaaaaaakk.", "..kkaaakaaak.", "....kkk.kkk.."],
@@ -2816,7 +2816,7 @@ export const PET_SKINS = {
   ember_frog: {
     pet: "tree_frog",
     name: "불씨 개구리",
-    desc: "불씨들녘 붉은 수액 밀림 잎 위에 앉는 개구리입니다. 주황 몸에 숯 같은 검은 점이 박혀, 불씨가 앉은 것처럼 보입니다.",
+    desc: "불씨들녘 붉은 수액 밀림 잎 위에 앉는 개구리입니다. 주황 몸에 검은 점이 드문드문 있어, 잎 위에 웅크리면 숯불 한 덩이가 떨어진 것 같습니다.",
     baby: {
       pal: { a: "#f07a28", b: "#2a2026", c: "#ffe0a0", r: "#d83a2a", e: "#2a1a14", i: "#ffffff", p: "#f3a0a0", k: "#1a120e" },
       idle: [".......kk.kk..", "......kaakaak.", ".....kaieakiek", "....kkaeeaeeak", "...kaaaaaaaapk", "..kabaaaaarrak", ".kaaaaaacccck.", ".kaakkakkakaak", "..kk..k..k.kk."],

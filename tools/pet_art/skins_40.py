@@ -164,7 +164,7 @@ GOLD_PUPPET_ADULT = dict(pal={"a": "#e4b04c", "h": "#b07a2a", "r": "#a8282e", "b
 ....ahahaha...
 ....ahhhhha...''')
 skin(key='gold_puppet', pet='paper_doll', name='금박 그림자 인형',
-    desc='해오름성 탑 사원 그림자놀이에 쓰던 가죽 인형에 깃든 혼령입니다. 금박 몸에 구멍 무늬가 송송 뚫려 있고, 발밑 막대 둘을 짚고 다닙니다. 등불 앞에 서면 벽에 제 그림자를 크게 비춰 보고 뿌듯해합니다.',
+    desc='해오름성 탑 사원 그림자놀이에 쓰던 가죽 인형이 오래 손때를 타다 깨어난 혼령입니다. 금박 몸에 구멍 무늬가 송송 뚫려 있고, 발밑 막대 둘을 짚고 다닙니다. 등불 앞에 서면 벽에 제 그림자를 크게 비춰 보고 뿌듯해합니다.',
     baby=GOLD_PUPPET_BABY, adult=GOLD_PUPPET_ADULT)
 
 UMBRELLA_MUSHROOM_BABY = dict(pal={"a": "#d8483a", "b": "#9a3a2a", "w": "#f4ecd8", "s": "#efe2c4", "t": "#cbb894", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "y": "#f4c860", "r": "#6a3a2a"}, idle='''
@@ -257,7 +257,7 @@ tfgfffaacpanapc
 .tffffaaabaaaaa
 ..tttttaaaaaaa.''')
 skin(key='pandan_squirrel', pet='squirrel', name='향잎 꼬리 다람쥐',
-    desc='잿빛그늘숲 약초 마을 텃밭에서 향잎을 깔고 자다 꼬리가 잎빛으로 물든 다람쥐입니다. 꼬리를 흔들 때마다 달큰한 잎 냄새가 나서, 마을 아이들이 밥 짓는 날이면 쫓아다닙니다.',
+    desc='잿빛그늘숲 약초 마을 텃밭에서 향잎을 깔고 자다 꼬리가 잎빛이 된 다람쥐입니다. 꼬리를 흔들 때마다 향긋한 잎 냄새가 나서, 마을 아이들이 밥 짓는 날이면 졸졸 쫓아다닙니다.',
     baby=PANDAN_SQUIRREL_BABY, adult=PANDAN_SQUIRREL_ADULT)
 
 SNOW_LEOPARD_CAT_BABY = dict(pal={"a": "#c8c2bc", "c": "#f6f3ec", "n": "#e48a96", "e": "#6a9a88", "i": "#e8f4ec", "p": "#d98a96", "d": "#5a5258"}, idle='''
@@ -417,7 +417,7 @@ BRASS_LADYBUG_ADULT = dict(pal={"a": "#d8a838", "b": "#9a7228", "n": "#2a2420", 
 .aaaaraaraaannnn
 .rrrrrrrrrrrn...''')
 skin(key='brass_ladybug', pet='ladybug', name='놋쇠 무당벌레',
-    desc='불씨들녘 장인 마을 대장간 둘레를 날던 무당벌레가 두드려 편 놋쇠 등딱지를 얻어 입었다고 합니다. 점 일곱 개는 구리를 박아 넣은 것이라, 볕을 받으면 등이 그릇처럼 반짝입니다.',
+    desc='불씨들녘 장인 마을 대장간 둘레를 날던 무당벌레가 두드려 편 놋쇠 등딱지를 얻어 입었다고 합니다. 점 일곱 개는 구리를 박아 넣은 것이라, 볕을 받으면 등이 갓 닦은 놋그릇처럼 반짝입니다.',
     baby=BRASS_LADYBUG_BABY, adult=BRASS_LADYBUG_ADULT)
 
 EMBER_PUPPY_BABY = dict(pal={"a": "#8c8690", "b": "#5c5660", "c": "#ddd6d0", "n": "#3a2418", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "o": "#f08a3a"}, idle='''
@@ -612,7 +612,7 @@ b..aaaaaaaaaakkaa
 ..aaaaaaaaaaaancc
 ..bbbbbbbbbbbbb..''')
 skin(key='yak_calf', pet='ox_calf', name='털북숭이 야크 송아지',
-    desc='눈마루 고원에서 버터차 짓는 집 마당에 매여 있던 야크 송아지입니다. 배 밑으로 북슬북슬한 털이 치마처럼 늘어지고, 귀에는 주인이 달아 준 붉은 술이 달랑거립니다.',
+    desc='눈마루 고원에서 수유차 짓는 집 마당에 매여 있던 야크 송아지입니다. 배 밑으로 북슬북슬한 털이 치마처럼 늘어지고, 귀에는 주인이 달아 준 붉은 술이 달랑거립니다.',
     baby=YAK_CALF_BABY, adult=YAK_CALF_ADULT)
 
 FESTIVE_ELEPHANT_BABY = dict(pal={"a": "#a8a4ac", "b": "#7c7880", "c": "#e8c0c6", "w": "#f4f0e6", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "r": "#d8443a", "y": "#f2c94c", "u": "#3a78c8"}, idle='''
@@ -795,7 +795,7 @@ baaaaabpamnmapb
 aaggaaaaggaaaaa
 .aaaaaaaaaaaaa.''')
 skin(key='wave_ddonggae', pet='ddonggae', name='물결 목수건 똥개',
-    desc='파도너울성 쪽배 사공 집에서 크는 똥개입니다. 사공이 매어 준 쪽빛 물결 목수건을 하고, 털에 바닷물 빛 얼룩이 앉았습니다. 배가 들어오면 장대 다리 끝까지 달려 나갑니다.',
+    desc='파도너울성 쪽배 사공 집에서 크는 똥개입니다. 사공이 매어 준 쪽빛 물결 목수건을 하고, 털에는 바닷물 빛 얼룩이 졌습니다. 배가 들어오면 장대 다리 끝까지 달려 나갑니다.',
     baby=WAVE_DDONGGAE_BABY, adult=WAVE_DDONGGAE_ADULT)
 
 TURMERIC_CAT_BABY = dict(pal={"a": "#f2b820", "o": "#b86a10", "c": "#fbf1df", "n": "#e07a86", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0"}, idle='''
@@ -838,7 +838,7 @@ aaoaoaoapacncap
 aaaoaoaaacccaaa
 .oooooooooooo..''')
 skin(key='turmeric_cat', pet='cheese_cat', name='강황 줄고양이',
-    desc='잿빛그늘숲 약초 마을 강황 자루 위에서 낮잠을 자다 털이 샛노랗게 물든 고양이입니다. 비비고 간 자리마다 노란 털이 묻어 남습니다.',
+    desc='잿빛그늘숲 약초 마을 강황 자루 위에서 낮잠을 자다 털이 샛노래진 고양이입니다. 비비고 간 자리마다 노란 털이 묻어나, 어디를 다녀왔는지 금방 들킵니다.',
     baby=TURMERIC_CAT_BABY, adult=TURMERIC_CAT_ADULT)
 
 MILK_LONGHAIR_BABY = dict(pal={"a": "#ecdcb8", "s": "#c0a070", "w": "#fbf4e2", "p": "#eaa6a6", "e": "#3a3440", "n": "#e58f98"}, idle='''
@@ -1010,7 +1010,7 @@ SNOW_OWL_ADULT = dict(pal={"a": "#f4f4f6", "b": "#8a90a0", "c": "#e2e6ee", "y": 
 .bbaacbcbcaabb.
 ..bbaaaaaaabb..''')
 skin(key='snow_owl', pet='baby_owl', name='설산 흰부엉이',
-    desc='눈마루 설산 돌탑 틈에 사는 아기 부엉이입니다. 눈처럼 흰 깃에 잿빛 점이 박혀, 눈밭에 앉으면 노란 눈만 동그랗게 보입니다.',
+    desc='눈마루 설산 돌탑 틈에 사는 아기 부엉이입니다. 눈처럼 흰 깃에 잿빛 잔점이 흩어져, 눈밭에 앉으면 노란 눈만 동그랗게 보입니다.',
     baby=SNOW_OWL_BABY, adult=SNOW_OWL_ADULT)
 
 PALM_SUGAR_RABBIT_BABY = dict(pal={"a": "#d09a60", "c": "#a06a38", "p": "#f2a2b2", "n": "#e07a8a", "e": "#3a1a10", "i": "#ffffff"}, idle='''
@@ -1055,7 +1055,7 @@ cccaaaaaaaaaaa
 .caaaaaaaaaaa.
 ..aaaaaaaaaaa.''')
 skin(key='palm_sugar_rabbit', pet='white_rabbit', name='야자 설탕 토끼',
-    desc='해오름성 탑 사원 앞 엿장수 집 토끼입니다. 야자 설탕 졸이는 솥 곁에서 자라 털이 달큰한 갈색이 되었습니다.',
+    desc='해오름성 탑 사원 앞 과자 굽는 집에서 크는 토끼입니다. 야자 설탕 졸이는 솥 곁에서 자라 털이 졸인 설탕처럼 노르스름한 갈색이 되었습니다.',
     baby=PALM_SUGAR_RABBIT_BABY, adult=PALM_SUGAR_RABBIT_ADULT)
 
 SILVERGRASS_FAWN_BABY = dict(pal={"a": "#aeaaa6", "b": "#5a5650", "c": "#ece8e0", "w": "#fff4e0", "n": "#2a1a14", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0"}, idle='''
@@ -1189,7 +1189,7 @@ bababababbaba
 .bababababab.
 ..bbbbbbbbb..''')
 skin(key='ebony_pangolin', pet='baby_pangolin', name='흑단 비늘 천산갑',
-    desc='잿빛그늘숲 흑단 고목 밑에서 몸을 말고 자던 아기 천산갑입니다. 비늘이 흑단과 이끼 빛으로 번갈아 앉았습니다.',
+    desc='잿빛그늘숲 흑단 고목 밑에서 몸을 말고 자던 아기 천산갑입니다. 비늘이 흑단 빛과 이끼 빛으로 한 장씩 번갈아 덮였고, 놀라면 솔방울처럼 동그랗게 몸을 맙니다.',
     baby=EBONY_PANGOLIN_BABY, adult=EBONY_PANGOLIN_ADULT)
 
 BOATMAN_OTTER_BABY = dict(pal={"a": "#7a5236", "b": "#553620", "c": "#e4ccaa", "n": "#2a1a14", "f": "#8fb8d0", "g": "#c8dce8", "e": "#2a1a14", "i": "#ffffff", "p": "#f3a0a0", "y": "#e2b45a", "q": "#a07830"}, idle='''
@@ -1283,7 +1283,7 @@ ffaasaaaaasaaff
 ..aaaaaaaaaaa..
 ...aaaaaaaaa...''')
 skin(key='icepond_seal', pet='spotted_seal', name='얼음못 점박이물범',
-    desc='눈마루 얼어붙은 못 얼음 구멍에서 고개를 내미는 아기 물범입니다. 얼음빛 흰 털에 푸른 점이 박혀 있습니다.',
+    desc='눈마루 얼어붙은 못 얼음 구멍에서 고개를 내미는 아기 물범입니다. 흰 털 사이로 푸른 점이 듬성듬성 보이고, 구멍 가장자리에 턱을 괸 채 눈을 끔뻑입니다.',
     baby=ICEPOND_SEAL_BABY, adult=ICEPOND_SEAL_ADULT)
 
 LOTUS_LANTERN_BABY = dict(pal={"a": "#f08aa8", "b": "#c85a80", "c": "#3a7a3a", "y": "#fff0a0", "t": "#f2c040", "e": "#2a1a14", "i": "#ffffff", "p": "#ffc0d0"}, idle='''
@@ -1409,7 +1409,7 @@ f..............
 ..ffcccccccff..
 ....fffffff....''')
 skin(key='ember_wisp', pet='dokkaebi_fire', name='불씨 도깨비불',
-    desc='불씨들녘 화산 기슭에서 재비를 맞으며 노는 도깨비불입니다. 파랗던 불이 화산 열기에 주홍빛으로 물들었습니다.',
+    desc='불씨들녘 화산 기슭에서 재비를 맞으며 노는 도깨비불입니다. 파랗던 불꽃이 화산 열기를 오래 쬐다 주홍빛이 되었습니다.',
     baby=EMBER_WISP_BABY, adult=EMBER_WISP_ADULT)
 
 PLANTAIN_RACCOON_BABY = dict(pal={"a": "#8a8c90", "b": "#34343a", "c": "#f0e8d8", "t": "#55575e", "n": "#2a1a14", "l": "#7ac050", "m": "#3a8a3a", "e": "#120c08", "i": "#ffffff", "p": "#f3a0a0"}, line='c', idle='''
@@ -1533,7 +1533,7 @@ FEAST_MASK_ADULT = dict(pal={"a": "#f6d48a", "h": "#2a3a8a", "e": "#5a3a22", "p"
 .wwwwwrrwwwww.
 .wwwwwwwwwwww.''')
 skin(key='feast_mask', pet='mask_spirit', name='잔치 탈 정령',
-    desc='달맞이성 잔치 행렬에서 쓰는 금빛 탈에 깃든 정령입니다. 주황 옷에 쪽빛 띠를 매고, 북소리가 나면 어깨를 들썩입니다.',
+    desc='달맞이성 잔치 행렬에서 쓰는 금빛 탈 속에 들어앉은 정령입니다. 주황 옷에 쪽빛 띠를 매고, 북소리가 나면 어깨를 들썩입니다.',
     baby=FEAST_MASK_BABY, adult=FEAST_MASK_ADULT)
 
 GOLDEN_MOON_RABBIT_BABY = dict(pal={"a": "#f8e2a8", "c": "#e0b860", "p": "#f2a8bc", "y": "#e8443a", "n": "#b07a42", "r": "#fbf8ee", "g": "#7ab060", "e": "#2a2a4a", "i": "#8a8ab0"}, lid='a', idle='''
@@ -1592,7 +1592,7 @@ GOLDEN_MOON_RABBIT_ADULT = dict(pal={"a": "#f8e2a8", "c": "#e0b860", "p": "#f2a8
 .ccaaaaaaaaa..
 ..aaaaaaaaaann''')
 skin(key='golden_moon_rabbit', pet='moon_rabbit', name='금빛 달맞이 토끼',
-    desc='달맞이성 궁궐 지붕에서 달을 맞는 토끼입니다. 금빛 털에 이마의 점은 붉은 보석처럼 빛납니다.',
+    desc='달맞이성 궁궐 지붕에서 달을 맞는 토끼입니다. 털은 금빛이고 이마의 점은 붉은 보석처럼 빛납니다. 보름이면 지붕 끝에 앉아 귀를 쫑긋 세우고 달이 뜨기를 기다립니다.',
     baby=GOLDEN_MOON_RABBIT_BABY, adult=GOLDEN_MOON_RABBIT_ADULT)
 
 PASS_GLIDER_BABY = dict(pal={"a": "#f6f4ee", "d": "#5a6a8a", "c": "#c8d4e8", "n": "#e8909a", "e": "#0c0806", "i": "#ffffff", "p": "#f3a0a0"}, idle='''
@@ -1668,7 +1668,7 @@ aaa..aa...aa.aaa''', step_tail='''
 ..aaabaaaaccccc.
 aaaaaaaaacccccca''')
 skin(key='ember_frog', pet='tree_frog', name='불씨 개구리',
-    desc='불씨들녘 붉은 수액 밀림 잎 위에 앉는 개구리입니다. 주황 몸에 숯 같은 검은 점이 박혀, 불씨가 앉은 것처럼 보입니다.',
+    desc='불씨들녘 붉은 수액 밀림 잎 위에 앉는 개구리입니다. 주황 몸에 검은 점이 드문드문 있어, 잎 위에 웅크리면 숯불 한 덩이가 떨어진 것 같습니다.',
     baby=EMBER_FROG_BABY, adult=EMBER_FROG_ADULT)
 
 LOTUSLEAF_NEWT_BABY = dict(pal={"a": "#4a9a68", "b": "#2a6a44", "y": "#f4a0b8", "c": "#7ab88a", "e": "#2a1a14", "i": "#f0e8c0", "p": "#f3a0a0"}, idle='''
