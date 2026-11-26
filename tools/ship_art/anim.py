@@ -18,7 +18,6 @@ LIT = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 0, 1]
 def frame_grid(fn, si, f):
     t = 2 * math.pi * f / N + BOB[si]
     dy = round(1.4 * math.sin(t))
-    tilt = round(1.0 * math.sin(t + math.pi / 2))
     art.ANIM.update(water=False, phase=0, puff=PUFF[(f + si * 2) % N],
                     flag=(f + si) % 4, lit=LIT[(f + si * 3) % N])
     cv = fn()
@@ -27,11 +26,7 @@ def frame_grid(fn, si, f):
     H = cv.h + PAD * 2
     out = art.Canvas(cv.w, H)
 
-    bow = x1 - max(3, round(half * 0.1))
-
     def sh(x):
-        if x >= bow:
-            return dy - tilt
         return dy
 
     for y, row in enumerate(cv.g):
