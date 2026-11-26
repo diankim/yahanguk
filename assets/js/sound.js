@@ -148,7 +148,7 @@ function playDrum(t, vel, kind = 'big') {
   if (buffers.taiko) playNote('taiko', kind === 'small' ? 43 : kind === 'mid' ? 38 : 34, t, 0.5, vel * K.smp);
 }
 
-const MODES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], phryg: [0, 1, 3, 5, 7, 8, 10] };
+const MODES = { minor: [0, 2, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11], phryg: [0, 1, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], mixo: [0, 2, 4, 5, 7, 9, 10] };
 const PROG = {
   minor: { ante: [[0, 5, 3, 4], [0, 3, 5, 6], [0, 6, 5, 4], [5, 6, 0, 4], [0, 2, 3, 6]], cons: [[5, 6, 0, 0], [3, 4, 0, 0], [0, 5, 6, 0], [5, 3, 4, 0], [2, 5, 6, 0]],
            bA: [[5, 6, 2, 5], [3, 4, 5, 6], [5, 3, 6, 2]], bC: [[3, 6, 2, 4], [5, 3, 4, 4], [3, 5, 6, 6]] },
@@ -187,6 +187,12 @@ const ACC = {
   inkrain16: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 4, 7, 9, 7, 4, 2, 4][k % 8] + (k >= 8 ? 2 : 0), k % 4 ? .32 + (k % 2 ? 0 : .08) : .6]),
   inkrain8: [[0, 0, .8], [0.5, 7, .4], [1.25, 4, .5], [1.75, 9, .35], [2.5, 7, .45], [3, 11, .35], [3.5, 9, .3]],
   tango8: [[0, 2, .7], [0, 4, .6], [0.5, 7, .35], [1, 4, .4], [1.5, 2, .65], [1.5, 4, .55], [2, 7, .35], [2.5, 4, .4], [3, 2, .7], [3, 4, .6], [3.5, 7, .4]],
+  wave3: Array.from({ length: 9 }, (_, k) => [k / 3, [0, 4, 7, 9, 11, 9, 7, 4, 2][k], k % 3 ? .45 : .85]),
+  anvil: [[0, 0, 1], [0.5, 0, .5], [1, 4, .7], [1.75, 0, .45], [2, 7, .8], [2.5, 0, .5], [3, 4, .7], [3.5, 7, .55]],
+  raindrop: [[0, 0, .7], [0.75, 9, .35], [1.5, 4, .45], [2.25, 11, .3], [3, 7, .4], [3.5, 14, .25]],
+  sitar: [[0, 0, .9], [0, 7, .55], [0.5, 7, .4], [1, 4, .6], [1.5, 7, .4], [2, 0, .75], [2.5, 7, .4], [3, 4, .6], [3.25, 7, .35], [3.5, 9, .45]],
+  kotekan: Array.from({ length: 16 }, (_, k) => [k / 4, [0, 4, 2, 4, 7, 4, 9, 7][k % 8] + (k >= 8 ? 2 : 0), k % 2 ? .32 : .55]),
+  drone: [[0, 0, .8], [2, 7, .5], [3, 11, .35]],
 };
 const roll = (from, to, step, v0, v1, k = 'small') => { const o = []; for (let x = from, i = 0, n = Math.round((to - from) / step); x < to - 1e-6; x += step, i++) o.push([x, v0 + (v1 - v0) * i / Math.max(1, n - 1), k]); return o; };
 const DRUM = {
@@ -225,6 +231,31 @@ const DRUM = {
     alt: [[0, 0.9, 'big'], [0.75, 0.35, 'small'], [1.5, 0.55, 'mid'], [2, 0.75, 'big'], [3, 0.5, 'mid'], [3.5, 0.6, 'mid']],
     fill: [[0, 0.9, 'big'], [1, 0.55, 'mid'], [1.5, 0.6, 'mid'], [2, 0.8, 'big'], ...roll(2.5, 4, 0.25, 0.4, 0.85, 'mid')] },
   b_gwiheo: { main: [[0, 1, 'big'], [1.5, 0.5, 'mid'], [3, 0.7, 'big']], alt: [[0, 1, 'big'], [2, 0.6, 'big']], fill: [[0, 1, 'big'], [1, 0.6, 'mid'], [2, 0.8, 'big'], [2.5, 0.6, 'mid'], [3, 0.9, 'big'], [3.5, 0.9, 'big']] },
+  p_wave: { main: [[0, 0.45, 'mid'], [1.5, 0.25, 'small']], alt: [[0, 0.4, 'mid'], [2, 0.3, 'small']], fill: [[0, 0.5, 'mid'], [1, 0.3, 'small'], [1.5, 0.35, 'small'], [2, 0.4, 'mid'], [2.5, 0.45, 'small']] },
+  b_pado: { main: [[0, 0.9, 'big'], [1, 0.4, 'small'], [1.5, 0.55, 'mid'], [2.5, 0.7, 'mid'], [3, 0.4, 'small'], [3.5, 0.5, 'mid']],
+            alt: [[0, 0.9, 'big'], [0.75, 0.35, 'small'], [1.5, 0.6, 'mid'], [2, 0.7, 'big'], [3, 0.5, 'mid'], [3.5, 0.45, 'small']],
+            fill: [[0, 0.9, 'big'], [1.5, 0.6, 'mid'], [2, 0.75, 'big'], ...roll(2.5, 4, 0.25, 0.35, 0.8, 'mid')] },
+  hammer: { main: [[0, 0.9, 'big'], [1, 0.5, 'small'], [1.5, 0.35, 'small'], [2, 0.7, 'mid'], [3, 0.5, 'small'], [3.25, 0.35, 'small'], [3.5, 0.5, 'small']],
+            alt: [[0, 0.9, 'big'], [1, 0.5, 'small'], [2, 0.7, 'mid'], [2.5, 0.4, 'small'], [3, 0.6, 'small'], [3.5, 0.45, 'small']],
+            fill: [[0, 0.9, 'big'], [1, 0.55, 'small'], [2, 0.75, 'mid'], ...roll(2.5, 4, 0.25, 0.4, 0.85)] },
+  b_bulssi: { main: [[0, 1, 'big'], [0.5, 0.45, 'small'], [1, 0.6, 'small'], [1.5, 0.7, 'mid'], [2, 1, 'big'], [2.5, 0.45, 'small'], [3, 0.65, 'small'], [3.5, 0.75, 'mid']],
+              alt: [[0, 1, 'big'], [0.75, 0.5, 'small'], [1.5, 0.7, 'mid'], [2, 0.9, 'big'], [2.25, 0.6, 'big'], [3, 0.6, 'small'], [3.5, 0.8, 'mid']],
+              fill: [[0, 1, 'big'], [1, 0.8, 'big'], ...roll(2, 4, 0.25, 0.45, 1, 'small')] },
+  b_jaebit: { main: [[0, 0.8, 'big'], [1.5, 0.4, 'small'], [2.5, 0.55, 'mid']], alt: [[0, 0.8, 'big'], [1, 0.35, 'small'], [2, 0.5, 'mid'], [3.5, 0.45, 'small']],
+              fill: [[0, 0.8, 'big'], [1.5, 0.5, 'mid'], [2.5, 0.6, 'mid'], [3, 0.7, 'big'], [3.5, 0.75, 'mid']] },
+  n_step: { main: [[0, 0.6, 'big']], alt: [[0, 0.5, 'big'], [3, 0.3, 'mid']], fill: [[0, 0.6, 'big'], [2, 0.45, 'big'], [3, 0.5, 'mid']] },
+  b_nunmaru: { main: [[0, 1, 'big'], [1, 0.45, 'mid'], [2, 0.8, 'big']], alt: [[0, 1, 'big'], [2, 0.8, 'big'], [3, 0.5, 'mid']],
+               fill: [[0, 1, 'big'], [1, 0.6, 'big'], [2, 0.8, 'big'], [3, 0.9, 'big'], [3.5, 0.7, 'mid']] },
+  tabla: { main: [[0, 0.8, 'mid'], [0.5, 0.35, 'small'], [0.75, 0.3, 'small'], [1, 0.5, 'small'], [1.5, 0.6, 'mid'], [2, 0.35, 'small'], [2.5, 0.7, 'big'], [3, 0.4, 'small'], [3.5, 0.5, 'mid'], [3.75, 0.3, 'small']],
+           alt: [[0, 0.8, 'mid'], [0.5, 0.4, 'small'], [1, 0.45, 'small'], [1.25, 0.3, 'small'], [1.5, 0.6, 'mid'], [2.5, 0.65, 'big'], [3, 0.45, 'small'], [3.5, 0.55, 'mid']],
+           fill: [[0, 0.8, 'mid'], [1, 0.5, 'small'], [1.5, 0.65, 'mid'], ...roll(2, 4, 0.25, 0.3, 0.8)] },
+  b_dalmaji: { main: [[0, 1, 'big'], [0.5, 0.4, 'small'], [0.75, 0.35, 'small'], [1, 0.6, 'mid'], [1.5, 0.7, 'mid'], [2, 0.9, 'big'], [2.5, 0.45, 'small'], [3, 0.6, 'mid'], [3.5, 0.7, 'mid'], [3.75, 0.4, 'small']],
+               alt: [[0, 1, 'big'], [0.5, 0.45, 'small'], [1, 0.6, 'mid'], [1.75, 0.5, 'small'], [2, 0.9, 'big'], [2.5, 0.6, 'mid'], [3.25, 0.45, 'small'], [3.5, 0.75, 'mid']],
+               fill: [[0, 1, 'big'], [1, 0.7, 'mid'], ...roll(1.5, 4, 0.25, 0.4, 1)] },
+  gong: { main: [[0, 0.75, 'big'], [2, 0.35, 'mid']], alt: [[0, 0.6, 'big'], [1.5, 0.3, 'small'], [3, 0.4, 'mid']], fill: [[0, 0.7, 'big'], [2, 0.5, 'mid'], [2.5, 0.4, 'mid'], [3, 0.55, 'mid'], [3.5, 0.6, 'mid']] },
+  b_haeoreum: { main: [[0, 1, 'big'], [1, 0.45, 'mid'], [1.5, 0.35, 'small'], [2, 0.8, 'big'], [3, 0.5, 'mid'], [3.5, 0.4, 'small']],
+                alt: [[0, 1, 'big'], [0.5, 0.35, 'small'], [1.5, 0.55, 'mid'], [2.5, 0.7, 'big'], [3, 0.45, 'mid'], [3.5, 0.5, 'mid']],
+                fill: [[0, 1, 'big'], [1, 0.6, 'mid'], [2, 0.8, 'big'], [2.5, 0.7, 'mid'], [3, 0.9, 'big'], [3.5, 0.95, 'big']] },
 };
 const F = (s, ins, v, o = {}) => ({ s, ins, v, ...o });
 const PROFILES = {
@@ -267,6 +298,34 @@ const PROFILES = {
     bt: { bpm: 90, rhy: 'oblivion2', lead: 'shakuhachi', lead2: 'piano', counter: 'harp', arp: 'piano', accIns: 'piano', acc: 'inkrain16', bass: 'half', drum: 'b_mukjeok2', pad: 'swell', bell: 0.1,
       form: [F('A', 'lead', 0.88, { oct: -7 }), F('B', 'lead2', 0.95, { duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { oct: -7, echo: 'harp' })] },
     form: [F('A', 'lead', 0.85, { oct: -7 }), F('B', 'lead2', 0.92, { duet: 'shakuhachi' }), F('A2', 'lead', 0.88, { oct: -7, echo: 'harp' })] },
+  pado: { tonic: 58, mode: 'major', bpm: 84, meter: 3, rhy: 'dance3', lead: 'flute', lead2: 'harp', counter: 'koto', arp: 'harp', accIns: 'harp', acc: 'wave3', bass: 'waltz', drum: 'p_wave', drumIn: ['A2', 'B', 'A3'], pad: 'swell', bell: 0.12,
+    bt: { bpm: 116, lead: 'flute', lead2: 'strings', counter: 'harp', arp: 'harp', accIns: 'harp', acc: 'flowing', bass: 'drive', drum: 'b_pado', pad: 'swell', bell: 0.1,
+      form: [F('A', 'lead', 0.85, { echo: 'harp' }), F('B', 'lead2', 0.95, { oct: -7, duet: 'flute' }), F('A2', 'lead', 0.9, { trem: true })] },
+    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead', 0.65, { echo: 'koto' }), F('B', 'lead2', 0.75, { duet: 'flute' }), F('A3', 'lead', 0.6), F('bridge', 0, 0.3, { n: 1 })] },
+  bulssi: { tonic: 53, mode: 'minor', bpm: 100, meter: 4, rhy: 'calm', lead: 'koto', lead2: 'cello', counter: 'shakuhachi', arp: 'piano', accIns: 'piano', acc: 'anvil', bass: 'drive', drum: 'hammer', drumIn: ['A', 'A2', 'B', 'A3'], pad: 'light', bell: 0.3,
+    bt: { bpm: 128, lead: 'koto', lead2: 'cello', counter: 'shakuhachi', arp: 'piano', accIns: 'piano', acc: 'anvil', bass: 'drive', drum: 'b_bulssi', bell: 0.35,
+      form: [F('A', 'lead', 0.9, { trem: true }), F('B', 'lead2', 0.95, { duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { echo: 'piano' })] },
+    form: [F('drop', 0, 0.5, { n: 2 }), F('A', 'lead', 0.65), F('A2', 'lead', 0.72, { echo: 'piano' }), F('B', 'lead2', 0.82, { duet: 'shakuhachi' }), F('A3', 'lead', 0.7, { trem: true }), F('bridge', 0, 0.4, { n: 1 })] },
+  jaebit: { tonic: 56, mode: 'major', bpm: 62, meter: 4, rhy: 'calm', lead: 'flute', lead2: 'harp', counter: 'cello', arp: 'harp', accIns: 'koto', acc: 'raindrop', bass: 'half', drum: null, pad: 'sustain', bell: 0.35, soft: 0.85,
+    bt: { bpm: 92, rhy: 'oblivion2', lead: 'flute', lead2: 'cello', counter: 'harp', arp: 'harp', accIns: 'koto', acc: 'flowing', bass: 'half', drum: 'b_jaebit', pad: 'sustain', bell: 0.3,
+      form: [F('A', 'lead', 0.85), F('B', 'lead2', 0.95, { duet: 'flute' }), F('A2', 'lead', 0.9, { echo: 'harp' })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.58, { echo: 'harp' }), F('B', 'lead2', 0.66, { duet: 'flute' }), F('A3', 'lead', 0.52), F('bridge', 0, 0.3, { n: 2 })] },
+  nunmaru: { tonic: 60, mode: 'dorian', bpm: 50, meter: 4, rhy: 'lament', lead: 'shakuhachi', lead2: 'strings', counter: 'cello', arp: 'harp', accIns: 'harp', acc: 'drone', bass: 'pedal', drum: 'n_step', drumIn: ['B', 'A3'], pad: 'open', bell: 0.6,
+    bt: { bpm: 84, lead: 'shakuhachi', lead2: 'cello', counter: 'strings', arp: 'harp', accIns: 'harp', bass: 'long', drum: 'b_nunmaru', pad: 'open', bell: 0.6,
+      form: [F('A', 'lead', 0.88), F('B', 'lead2', 0.95, { oct: -7, duet: 'shakuhachi' }), F('A2', 'lead', 0.9, { echo: 'harp' })] },
+    form: [F('intro', 0, 0.3, { n: 3 }), F('A', 'lead', 0.5), F('A2', 'lead', 0.58, { echo: 'cello' }), F('B', 'lead2', 0.7, { oct: -7, duet: 'shakuhachi' }), F('A3', 'lead', 0.5), F('bridge', 0, 0.25, { n: 2 })] },
+  dalmaji: { tonic: 62, mode: 'mixo', prog: 'major', bpm: 112, meter: 4, rhy: 'fast', lead: 'fiddle', lead2: 'koto', counter: 'flute', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'pedal', drum: 'tabla', pad: 'open', bell: 0.2,
+    bt: { bpm: 132, lead: 'fiddle', lead2: 'flute', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'drive', drum: 'b_dalmaji', pad: 'open', bell: 0.2,
+      form: [F('A', 'lead', 0.88, { duet: 'koto' }), F('B', 'lead2', 0.95, { duet: 'fiddle', trem: true }), F('A2', 'lead', 0.9, { echo: 'koto' })] },
+    form: [F('drop', 0, 0.55, { n: 2 }), F('A', 'lead', 0.65), F('A2', 'lead', 0.72, { duet: 'koto' }), F('B', 'lead2', 0.8, { duet: 'fiddle' }), F('drop', 0, 0.55, { n: 1 }), F('A3', 'lead', 0.7, { echo: 'koto' })] },
+  goimteo: { tonic: 62, mode: 'phryg', bpm: 60, meter: 4, rhy: 'lament', lead: 'fiddle', lead2: 'cello', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'pedal', drum: 'tabla', drumIn: ['A2', 'B'], pad: 'open', bell: 0.25, soft: 0.85,
+    bt: { bpm: 100, lead: 'fiddle', lead2: 'cello', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'sitar', bass: 'drive', drum: 'b_dalmaji', pad: 'open', bell: 0.2,
+      form: [F('A', 'lead', 0.88), F('B', 'lead2', 0.95, { oct: -7, duet: 'fiddle' }), F('A2', 'lead', 0.9, { echo: 'koto' })] },
+    form: [F('intro', 0, 0.3, { n: 2 }), F('A', 'lead', 0.5), F('drop', 0, 0.35, { n: 1 }), F('A2', 'lead', 0.58, { echo: 'koto' }), F('B', 'lead2', 0.68, { oct: -7 }), F('A3', 'lead', 0.52)] },
+  haeoreum: { tonic: 57, mode: 'major', bpm: 80, meter: 4, rhy: 'calm', lead: 'harp', lead2: 'flute', counter: 'koto', arp: 'koto', accIns: 'koto', acc: 'kotekan', bass: 'half', drum: 'gong', drumIn: ['A2', 'B', 'C', 'A3'], pad: 'light', bell: 0.55,
+    bt: { bpm: 108, lead: 'koto', lead2: 'flute', counter: 'harp', arp: 'harp', accIns: 'koto', acc: 'kotekan', bass: 'march', drum: 'b_haeoreum', bell: 0.5,
+      form: [F('A', 'lead', 0.88, { echo: 'harp' }), F('B', 'lead2', 0.95, { duet: 'koto' }), F('A2', 'lead', 0.9, { trem: true })] },
+    form: [F('intro', 0, 0.35, { n: 2 }), F('A', 'lead', 0.55), F('A2', 'lead', 0.62, { echo: 'bell' }), F('B', 'lead2', 0.72, { duet: 'koto' }), F('C', 'koto', 0.62), F('A3', 'lead', 0.58), F('bridge', 0, 0.3, { n: 1 })] },
 };
 let playing = false, phraseTimer = null, song = null, songKey = '', songLit = false, barNo = 0, nextAt = 0, loopNo = 0, held = false;
 let droneKey = '';
@@ -402,7 +461,7 @@ function playBar(p, S, bar, t, beat) {
   const accIns = p.accIns || p.arp, accBase = d => hm(d - (accIns === 'strings' ? 14 : 7), p.tonic);
   const pat = (ACC[p.acc] || ACC.calm).filter(([pos]) => pos < mb);
   const accVol = (answer ? 0.5 : 1) * (['intro', 'bridge', 'drop'].includes(bar.sec) ? 0.55 : 0.4) * inten * (accIns === 'strings' ? 0.9 : 1);
-  const accLen = p.acc === 'tango' ? 1.3 : p.acc === 'tango8' ? 0.7 : p.acc === 'sparse' || p.acc === 'eerie' || p.acc === 'slow3' ? 2 : p.acc === 'fast' ? 0.3 : p.acc === 'ostinato' || p.acc === 'battle' || p.acc === 'flowing' || p.acc === 'shimmer' || p.acc === 'dance3' ? 0.6 : 1;
+  const accLen = p.acc === 'drone' ? 3 : p.acc === 'raindrop' ? 1.5 : p.acc === 'sitar' ? 0.8 : p.acc === 'wave3' ? 0.55 : p.acc === 'anvil' || p.acc === 'kotekan' ? 0.32 : p.acc === 'tango' ? 1.3 : p.acc === 'tango8' ? 0.7 : p.acc === 'sparse' || p.acc === 'eerie' || p.acc === 'slow3' ? 2 : p.acc === 'fast' ? 0.3 : p.acc === 'ostinato' || p.acc === 'battle' || p.acc === 'flowing' || p.acc === 'shimmer' || p.acc === 'dance3' ? 0.6 : 1;
   pat.forEach(([pos, step, v], i) => playNote(accIns, accBase(root + step), t + pos * beat + human(), accLen * beat, hv(accVol * v * (1 - 0.15 * (i / Math.max(1, pat.length - 1))))));
   if (bar.trem) { const n = mb * 4; for (let k = 0; k < n; k++) playNote('koto', hm(tri[k % 3]), t + k * beat / 4, beat / 2, hv((k % 4 ? 0.16 : 0.28) * inten * (0.7 + 0.5 * Math.sin(Math.PI * k / n)))); }
   const bI = p.bassIns || 'cello', bO = p.tonic < 53 ? -7 : -14, bass = midi(root + bO, p.tonic), five = midi(root + 4 + bO, p.tonic), bv = 0.75 * inten + 0.05;
@@ -475,6 +534,7 @@ function setLayer(name, level, build) {
   const L = loopLayer(name, build);
   L.g.gain.setTargetAtTime(Math.max(0.0001, level), now(), 1.5);
 }
+const UNDER = new Set(['underworld', 'abyss', 'gwiheo', 'goimteo']);
 const ambMat = {};
 const BUILD = Object.fromEntries(Object.keys(AMB).map(k => [k, g => { ambMat.noise = noiseBuf; ambMat.brown = brownBuf; return AMB[k](ctx, g, ambMat); }]));
 let critterTimer = null;
@@ -482,7 +542,7 @@ function critters() {
   clearTimeout(critterTimer);
   if (away || yielded) return;
   if (!ctx || !sound.ambOn || held) { critterTimer = setTimeout(critters, 4000); return; }
-  const under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
+  const under = UNDER.has(scene.territory);
   const t = now() + 0.05, ph = env.phase, w = env.weather;
   const quiet = w === 'rain' || w === 'drizzle' || w === 'snow' || w === 'wind';
   if (!under && (ph === 'dawn' || ph === 'noon') && !quiet && Math.random() < (ph === 'dawn' ? 0.6 : 0.3)) {
@@ -499,7 +559,7 @@ function critters() {
 }
 function updateAmbience() {
   if (!ctx) return;
-  const w = env.weather, under = scene.territory === 'underworld' || scene.territory === 'abyss' || scene.territory === 'gwiheo';
+  const w = env.weather, under = UNDER.has(scene.territory);
   setLayer('rain', w === 'rain' ? 0.38 : 0, BUILD.rain);
   setLayer('drizzle', w === 'drizzle' ? (under ? 0.3 : 0.55) : 0, BUILD.drizzle);
   setLayer('wind', w === 'wind' ? 0.5 * (under ? 0.4 : 1) : 0, BUILD.wind);

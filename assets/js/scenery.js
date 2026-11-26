@@ -1,3 +1,4 @@
+import { store } from './core.js';
 const r1 = (seed => () => (seed = (seed * 9301 + 49297) % 233280) / 233280);
 function pine(x, y, s = 1, lean = 1) {
   const L = lean * s;
@@ -101,6 +102,162 @@ const LAND = {
 };
 LAND.default = LAND.wild;
 
+function stilt(x, base, w, h, leg) {
+  return `M${x + 2} ${base}v${-leg}h2v${leg}z M${x + w - 4} ${base}v${-leg}h2v${leg}z M${x} ${base - leg}v${-h}h${w}v${h}z M${x - 3} ${base - leg - h + 1}l${w / 2 + 3} ${-h * 0.8}l${w / 2 + 3} ${h * 0.8}z`;
+}
+const sampan = (x, y) => `M${x} ${y}h36l-6 6h-24z M${x + 8} ${y}q10-12 20 0z M${x + 30} ${y}l10 -22h1.5l-10 22z`;
+const kelp = (x, h) => `M${x} 150c-7 ${-h * 0.3} 7 ${-h * 0.6} 0 ${-h}h5c7 ${h * 0.4} -7 ${h * 0.7} 0 ${h}z`;
+const shed = (x, base, w, h) => `M${x} ${base}v${-h}h${w}v${h}z M${x - 3} ${base - h}l${w / 2 + 3} -6l${w / 2 + 3} 6z`;
+const flue = (x, base, w, h) => `M${x} ${base}v${-h}h${w}v${h}z M${x - 1} ${base - h}h${w + 2}v-3h${-w - 2}z`;
+const puff = (x, y, r) => `M${x - r} ${y}q0 ${-r} ${r} ${-r}q${r * 0.4} ${-r * 0.7} ${r * 1.1} ${-r * 0.2}q${r} 0 ${r} ${r * 0.8}q0 ${r * 0.6} ${-r} ${r * 0.6}h${-r * 1.2}q${-r * 0.9} 0 ${-r * 0.9} ${-r * 0.4}z`;
+function bamboo(x, base, h, s = 1) {
+  let d = '', y = base; const seg = 13 * s, w = 3 * s;
+  while (y - seg > base - h) { d += `M${x} ${y}v${-(seg - 1.4)}h${w}v${seg - 1.4}z`; y -= seg; }
+  const top = y;
+  d += `M${x + w} ${top + 4}l${15 * s} ${-5 * s}l${-14 * s} ${2 * s}z M${x} ${top + 9}l${-14 * s} ${-3 * s}l${13 * s} ${3.5 * s}z M${x + w} ${top + 16}l${12 * s} ${-1 * s}l${-12 * s} ${3 * s}z`;
+  return d;
+}
+const brolly = (x, y, s = 1) => `M${x - 14 * s} ${y}q${14 * s} ${-12 * s} ${28 * s} 0z M${x - 0.8} ${y}v${16 * s}h1.6v${-16 * s}z`;
+const plume = (x, y, s = 1) => `M${x} ${y}q${-2 * s} ${-6 * s} ${1 * s} ${-12 * s}q${3 * s} ${6 * s} ${-1 * s} ${12 * s}z`;
+function cap(px, py, w) { return `M${px - w} ${py + w * 0.9}L${px} ${py}L${px + w} ${py + w * 0.9}l${-w * 0.4} -3l${-w * 0.3} 5l${-w * 0.3} -4z`; }
+const stoneHouse = (x, base, w, h) => `M${x} ${base}v${-h}h${w}v${h}z M${x - 2} ${base - h}h${w + 4}v-3h${-w - 4}z`;
+function cairn(x, base, s = 1) {
+  let d = '', y = base;
+  [7, 5.5, 4.2, 3, 2].forEach(r0 => { const r = r0 * s, ry = r * 0.6; d += `M${x - r} ${y}a${r} ${ry} 0 0 1 ${2 * r} 0z`; y -= ry; });
+  return d;
+}
+const flags = (pts) => pts.map(([x, y]) => `<path d="M${x} ${y}h6l-3 7z"/>`).join('');
+function dome(x, base, w, h) {
+  return `M${x} ${base}v${-h}h${w}v${h}z M${x - 1.5} ${base - h}q0 ${-w * 0.55} ${w / 2 + 1.5} ${-w * 0.8}q${w / 2 + 1.5} ${w * 0.25} ${w / 2 + 1.5} ${w * 0.8}z M${x + w / 2 - 0.8} ${base - h - w * 0.8}v-5h1.6v5z`;
+}
+const minaret = (x, base, h) => `M${x} ${base}v${-h}h5v${h}z M${x - 1.5} ${base - h + 8}h8v-2h-8z ${dome(x - 1, base - h, 7, 0)}`;
+function palm(x, base, h, lean = 1) {
+  const L = lean;
+  return `M${x - 2} ${base}c${2 * L} ${-h * 0.4} ${6 * L} ${-h * 0.8} ${10 * L} ${-h}l2 1c${-4 * L} ${h * 0.25} ${-7 * L} ${h * 0.6} ${-8 * L} ${h}z`
+    + `M${x + 9 * L} ${base - h}q${12 * L} -6 ${22 * L} 4q${-12 * L} -2 ${-22 * L} -2z M${x + 9 * L} ${base - h}q${-10 * L} -8 ${-22 * L} -2q${12 * L} -3 ${22 * L} 4z M${x + 9 * L} ${base - h}q${4 * L} -12 ${14 * L} -14q${-6 * L} 6 ${-12 * L} 15z M${x + 9 * L} ${base - h}q${-6 * L} -10 ${-16 * L} -10q${8 * L} 4 ${14 * L} 11z`;
+}
+function prang(x, base, s = 1) {
+  let d = '', y = base, w = 26 * s;
+  for (let i = 0; i < 4; i++) { const h = (i ? 7 : 12) * s; d += `M${x - w / 2} ${y}v${-h}h${w}v${h}z`; y -= h; w *= 0.74; }
+  d += `M${x - w / 2 - 1} ${y}q${w / 2 + 1} ${-26 * s} ${w + 2} 0z M${x - 0.8} ${y - 22 * s}v${-10 * s}h1.6v${10 * s}z`;
+  return d;
+}
+const pad = (x, y, r = 8) => `M${x - r} ${y}a${r} ${r * 0.34} 0 1 0 ${2 * r} 0a${r} ${r * 0.34} 0 0 0 ${-r * 0.9} ${-r * 0.3}z`;
+const bud = (x, y, s = 1) => `<path d="M${x} ${y}q${-4 * s} ${-5 * s} 0 ${-10 * s}q${4 * s} ${5 * s} 0 ${10 * s}z"/>`;
+const piers = (a, b, step, top, bot) => { let d = ''; for (let x = a; x < b; x += step) d += `M${x} ${top}v${bot - top}h2v${top - bot}z`; return d; };
+const rain = (n, seed) => { const r = r1(seed); return Array.from({ length: n }, () => { const x = 250 + r() * 390, y = r() * 100; return `<path d="M${x.toFixed(0)} ${y.toFixed(0)}l-4 ${(14 + r() * 10).toFixed(0)}" class="soft"/>`; }).join(''); };
+const grove = (a, b, step, seed) => { const r = r1(seed); let d = ''; for (let x = a; x < b; x += step) { const h = 34 + r() * 30; d += `M${x} 150v${-h.toFixed(0)}h1.6v${h.toFixed(0)}z`; } return d; };
+
+const REALM = {
+  pado: {
+    water: () => ({
+      far: ridge(110, [[300, 104], [400, 100], [500, 106], [600, 100], [640, 104]]),
+      far2: 'M0 150v-30h640v30z' + stilt(262, 122, 18, 9, 8) + stilt(296, 122, 22, 10, 8) + stilt(566, 122, 20, 9, 7) + stilt(604, 122, 16, 8, 7),
+      mid: 'M0 150v-26h640v26z' + stilt(330, 124, 34, 16, 14) + stilt(374, 124, 24, 12, 14) + stilt(500, 124, 40, 18, 14) + stilt(550, 124, 26, 13, 14)
+        + 'M250 110h390v3h-390z' + piers(252, 640, 26, 113, 124),
+      near: sampan(426, 132) + sampan(598, 138) + 'M200 150v-6c90-4 200-4 300-1s100 2 140 0v7z',
+      line: '<path d="M260 134h50M330 140h70M440 138h40M520 144h60M300 146h40"/><path d="M250 128h390" class="soft"/>',
+      gold: '<rect x="342" y="98" width="5" height="5"/><rect x="514" y="96" width="6" height="6"/><rect x="560" y="100" width="4" height="4"/><circle cx="402" cy="117" r="1.8"/><circle cx="480" cy="117" r="1.8"/>',
+    }),
+    deep: () => ({
+      far: 'M0 0h640v20q-20 6-40 0t-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0-40 0V0z',
+      mid: 'M260 150v-24q40-20 80-12t60 14q40-20 90-14t70 18q30-6 80 4v14z' + kelp(300, 44) + kelp(316, 30) + kelp(462, 52) + kelp(478, 36) + kelp(604, 46)
+        + 'M540 132q-10-14-4-26q4 8 4 16q2-14 8-20q2 12-2 22q8-6 12-4q-6 6-12 12z',
+      near: 'M200 150v-10c80-8 180-8 260-4s120 4 180 0v14z M380 142v-26h4v26z M394 142v-20h4v20z M408 142v-14h3v14z',
+      line: '<path d="M260 30q30 6 60 0M420 36q40 6 80 0" class="soft"/>',
+      gold: '<circle cx="320" cy="70" r="1.6"/><circle cx="326" cy="56" r="1.1"/><circle cx="470" cy="84" r="1.4"/><circle cx="474" cy="66" r="1"/><circle cx="560" cy="96" r="1.4"/>',
+    }),
+  },
+  bulssi: {
+    mountain: () => ({
+      far: 'M0 150V104L260 100L320 92L380 96L432 64L462 36h26L522 62L572 88L620 94L640 98V150z',
+      far2: ridge(120, [[280, 112], [360, 104], [440, 114], [540, 106], [640, 112]]),
+      mid: 'M220 150v-22c60-6 140-8 220-4s120 4 200-2v28z' + shed(300, 130, 46, 16) + flue(332, 130, 6, 36) + shed(410, 130, 36, 14) + shed(520, 130, 54, 18) + flue(550, 130, 7, 42) + flue(604, 130, 5, 28),
+      snow: puff(470, 30, 8) + puff(488, 16, 7) + puff(504, 4, 6) + puff(338, 88, 4) + puff(346, 78, 3.4) + puff(556, 82, 4.5) + puff(566, 70, 3.6) + puff(608, 96, 3),
+      line: '<path d="M470 40q-4 14 -14 26" class="ring"/><path d="M480 40q6 16 16 28" class="ring"/>',
+      near: 'M200 150v-12c70-8 150-10 240-6s140 4 200-2v20z M360 140q6-10 14-6q6 2 6 6z M590 140q8-12 18-6q4 4 2 6z M440 140v-6h16v-3h-22v-3h30v6h-8v6z',
+      gold: '<ellipse cx="475" cy="37" rx="12" ry="2.5"/><rect x="318" y="120" width="8" height="10"/><rect x="540" y="118" width="9" height="12"/><rect x="424" y="122" width="6" height="8"/>',
+    }),
+  },
+  jaebit: {
+    wild: () => ({
+      far: ridge(96, [[260, 80], [340, 70], [420, 84], [500, 66], [580, 78], [640, 72]]),
+      far2: grove(246, 640, 11, 3),
+      mid: 'M220 150v-22c60-8 130-10 200-6s140 6 220-2v30z' + bamboo(286, 130, 96) + bamboo(300, 130, 80, 0.85) + bamboo(452, 130, 110) + bamboo(470, 130, 88, 0.9) + bamboo(612, 130, 100)
+        + 'M360 130v-10h3v10z M396 130v-10h3v10z M356 120h44v-3h-44z M352 117l26-14l26 14z',
+      near: 'M180 150v-12c80-8 170-10 260-4s130 4 200-2v18z' + grass(260, 140, 6) + grass(420, 140, 5, 1.1) + grass(560, 140, 6),
+      snow: plume(256, 128) + plume(262, 126, 0.8) + plume(418, 126) + plume(424, 128, 0.9) + plume(556, 126) + plume(564, 128, 0.8),
+      line: rain(22, 5),
+      gold: '<circle cx="378" cy="112" r="1.4"/><circle cx="330" cy="118" r="1.1"/><circle cx="540" cy="112" r="1.2"/>',
+    }),
+    water: () => ({
+      far: ridge(100, [[260, 86], [350, 74], [440, 88], [540, 72], [640, 84]]),
+      far2: grove(246, 400, 10, 9) + 'M0 150v-28h640v28z',
+      mid: 'M0 150v-26h640v26z' + bamboo(262, 124, 96) + bamboo(278, 124, 78, 0.85) + bamboo(316, 124, 104)
+        + 'M450 120h150v3h-150z' + piers(452, 600, 24, 123, 132),
+      near: 'M200 150v-6c90-4 200-4 300-1s100 2 140 0v7z' + sampan(500, 136) + brolly(528, 122, 0.6),
+      line: rain(18, 11) + '<path d="M260 134h50M330 140h70M440 138h40M520 144h60"/>',
+      gold: '<circle cx="456" cy="116" r="1.8"/><circle cx="596" cy="116" r="1.8"/>',
+    }),
+  },
+  nunmaru: {
+    mountain: () => ({
+      far: 'M0 150V90L250 84L300 50L340 74L400 30L450 62L500 22L560 60L610 40L640 56V150z',
+      snow: cap(300, 50, 12) + cap(400, 30, 16) + cap(500, 22, 18) + cap(610, 40, 12),
+      far2: ridge(116, [[290, 108], [380, 102], [470, 110], [560, 100], [640, 106]]),
+      mid: 'M220 150v-22c60-6 140-8 220-4s120 4 200-2v28z' + stoneHouse(300, 130, 30, 16) + stoneHouse(334, 130, 22, 12) + stoneHouse(560, 130, 34, 18)
+        + 'M390 130v-44h2v44z M480 130v-38h2v38z' + cairn(430, 130, 1.1) + cairn(520, 130, 0.8),
+      near: 'M200 150v-12c70-8 150-10 240-6s140 4 200-2v20z' + cairn(270, 140, 0.7) + 'M600 140q8-10 16-6q4 3 2 6z',
+      line: '<path d="M391 86q45 16 90 6" class="soft"/>',
+      gold: flags([[398, 89], [410, 92], [422, 95], [434, 97], [446, 98], [458, 97], [470, 94]]) + '<rect x="310" y="120" width="5" height="5"/><rect x="574" y="118" width="6" height="6"/>',
+    }),
+  },
+  dalmaji: {
+    city: () => ({
+      far: ridge(104, [[260, 92], [350, 84], [440, 96], [540, 80], [640, 90]]),
+      far2: 'M240 150v-30h400v30z' + dome(266, 120, 14, 10) + minaret(300, 120, 30) + dome(560, 120, 16, 12) + minaret(600, 120, 26),
+      mid: 'M220 150v-22h420v22z' + dome(420, 128, 52, 26) + dome(380, 128, 22, 16) + dome(488, 128, 22, 16) + minaret(360, 128, 52) + minaret(522, 128, 52) + shed(290, 128, 50, 18) + shed(560, 128, 56, 16),
+      near: 'M200 150v-20h190v4h8v4h8v4h8v4h8v4h40v-4h8v-4h8v-4h8v-4h8v-4h138v20z',
+      line: '<path d="M432 148h40" class="soft"/><path d="M398 134h108M406 138h92M414 142h76" class="soft"/>',
+      gold: '<rect x="436" y="114" width="20" height="8" rx="4"/><rect x="384" y="118" width="5" height="6"/><rect x="494" y="118" width="5" height="6"/><circle cx="300" cy="118" r="1.8"/><circle cx="600" cy="118" r="1.8"/>',
+    }),
+    wild: () => ({
+      far: ridge(100, [[250, 82], [340, 70], [430, 86], [520, 64], [600, 80], [640, 74]]),
+      far2: ridge(122, [[300, 116], [400, 110], [500, 118], [600, 108], [640, 112]]) + dome(470, 114, 12, 8) + minaret(492, 114, 22) + dome(510, 114, 10, 6),
+      mid: 'M220 150v-24c50-12 110-14 170-6s120 6 250-8v38z' + palm(320, 128, 46, 1) + palm(344, 130, 36, -1) + palm(560, 126, 50, -1) + tree(430, 128, 0.9),
+      near: 'M180 150v-12c80-8 170-10 260-4s130 4 200-2v18z' + grass(260, 140, 6) + grass(420, 140, 5, 1.1) + grass(610, 140, 6),
+      gold: '<circle cx="300" cy="118" r="1.4"/><circle cx="480" cy="104" r="1.6"/><circle cx="520" cy="116" r="1.4"/>',
+    }),
+  },
+  goimteo: {
+    deep: () => ({
+      far: 'M0 0h640v18c-20 4-30 14-40 22-8-12-20-18-34-14-10 10-14 22-28 26-6-14-18-20-30-14-12 8-20 22-34 22-10-12-24-16-36-10-16 6-26 20-40 18-10-10-26-14-38-6-12 8-22 18-36 14-8-8-18-12-30-8L0 34z',
+      mid: 'M256 92h372v7h-372z' + [270, 330, 390, 450, 510, 570].map(x => `M${x} 132v-33h9v33z M${x + 9} 99h51v2q-25 14 -51 0z`).join('') + 'M620 132v-33h8v33z',
+      near: 'M200 150v-24h40v4h10v4h10v4h10v4h10v8z M640 150v-24h-40v4h-10v4h-10v4h-10v4h-10v8z',
+      line: '<path d="M290 140h50M370 144h70M460 140h60M330 147h40" class="soft"/>',
+      gold: '<circle cx="300" cy="112" r="1.8"/><circle cx="420" cy="112" r="1.8"/><circle cx="540" cy="112" r="1.8"/><circle cx="360" cy="124" r="1.2"/><circle cx="480" cy="124" r="1.2"/>',
+    }),
+  },
+  haeoreum: {
+    city: () => ({
+      far: ridge(104, [[260, 92], [350, 84], [440, 96], [540, 80], [640, 90]]),
+      far2: 'M240 150v-30h400v30z' + prang(274, 120, 0.6) + prang(604, 120, 0.7),
+      mid: 'M220 132v-6h420v6z M0 150v-18h640v18z M380 126v-6h150v6z M392 120v-6h126v6z' + prang(455, 114, 1.4) + prang(410, 114, 0.9) + prang(500, 114, 0.9) + palm(310, 126, 44, 1) + palm(600, 126, 40, -1),
+      near: pad(290, 142, 11) + pad(340, 145, 8) + pad(520, 142, 11) + pad(566, 146, 9) + pad(612, 141, 7),
+      line: '<path d="M260 146h60M390 146h120M540 147h70" class="soft"/>',
+      gold: bud(300, 140, 1.2) + bud(530, 140, 1.2) + bud(590, 143) + '<circle cx="455" cy="44" r="1.6"/>',
+    }),
+    water: () => ({
+      far: ridge(106, [[270, 94], [360, 82], [440, 98], [540, 78], [640, 92]]),
+      far2: 'M0 150v-30h640v30z' + prang(300, 120, 0.7) + prang(330, 120, 0.5) + prang(580, 120, 0.6),
+      mid: 'M0 150v-26h640v26z',
+      near: 'M200 150v-4c90-3 200-3 300-1s100 2 140 0v5z' + pad(270, 130, 9) + pad(310, 133, 7) + pad(360, 130, 10) + pad(470, 134, 8) + pad(540, 130, 9) + pad(600, 133, 7) + pad(300, 142, 11) + pad(560, 143, 10) + sampan(410, 136),
+      line: '<path d="M260 136h50M330 142h70M440 138h40M520 146h60"/>',
+      gold: bud(280, 129) + bud(366, 129) + bud(548, 129) + bud(306, 140, 1.1) + bud(566, 141, 1.1),
+    }),
+  },
+};
+
 function sky(phase, weather) {
   const dim = ['cloudy', 'rain', 'drizzle', 'fog', 'snow', 'bloodmist'].includes(weather);
   const bands = (n, y0) => Array.from({ length: n }, (_, i) => `<rect x="${330 + i * 70 + (i % 2) * 24}" y="${y0 + (i % 3) * 9}" width="${70 + (i % 2) * 40}" height="5" rx="2.5"/>`).join('');
@@ -127,8 +284,8 @@ const decoArt = d => {
   const flag = n >= 5 ? `<rect class="ln-deco-pole" x="512" y="58" width="2" height="87"/><path class="ln-deco-flag" d="M514 60 L540 64 L536 72 L540 80 L514 78 Z"/>` : '';
   return `<g class="ln-deco">${flag}${lamps}</g>`;
 };
-export function sceneArt(theme, phase, weather, deco) {
-  const L = (LAND[theme] || LAND.default)();
+export function sceneArt(theme, phase, weather, deco, realm = store.env?.territory_id) {
+  const L = (REALM[realm]?.[theme] || LAND[theme] || LAND.default)();
   const sk = sky(phase, weather);
   const land = `${sk.out}
     <path class="ln-far" d="${L.far}"/>
