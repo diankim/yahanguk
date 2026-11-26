@@ -174,3 +174,7 @@ raid.js·fightui.js·싸움 화면 공용 틀 그대로. 더할 것만:
 - DB: world_raids.boss_key · world_neol_rules · world_raid_boss_rules · world_raid_schedule_next(번갈아·후보 영역 나누기) · world_raid_tick(이름·알림 문구) · world_raid_begin_fight·action·hit·join·settle·snapshot_core·lock_effect · world_raid_rule_count(boss_key 조건) · 칭호·꾸미기·가구 출처 · world_sys_chat_names. 마지막에 world_quest_label_refresh 필요 없음(퀘스트 이름 안 바꿈).
 - 화면: raid.js·fightui.js(FX)·map.js(표시·범례)·scene.js(배경)·rules.js(NEOL·SYS_CHAT)·guide.js·changes.js(새 행동 없음 — 확인만)·gamedata.
 - 시뮬: 복제 DB에서 열 직업 섞은 6~12명 판, 세 정책, 기여 고르기까지(운영에서 돌리지 않음).
+
+## 사용자 결정 11/26
+- 가안 그대로(A 「엉긴 너울」, 수법 넷·수치, 번갈아 36시간 일정, 결과 효과, 보상·장비, 칭호·꾸미기·가구, 새 동무 무늬 없음(가안 기본), 체력식·목표 승률, 「너울 소식」, boss_key 틀).
+- 4.0 첫 퀘스트 타이틀 컷씬은 넣지 않음.
