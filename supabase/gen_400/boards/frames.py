@@ -54,6 +54,17 @@ def dh4():
     b += txt(cell(0, 0)[0] + 2, cell(0, 0)[1] + 16, '길 알려 주기', 8.5, C['lamp'])
     return cap(b, '⑤ 틈의 숨(마지막 구간) — 가운데로 두 칸 끌어당김', '머리 칸에 절반 이상 모여 ! 라운드에 「길 알려 주기」 → 막힘')
 
+def drops(x, y, n):
+    return ''.join(f'<circle cx="{x - 8 + i * 8}" cy="{y + 15}" r="3" fill="#7fd0ff" stroke="#003" stroke-width=".8"/>' for i in range(n))
+def dh5():
+    b = sea(head=(0, 3))
+    x0, y0 = cell(0, 0); b += f'<path d="M{x0 + 10},{y0 - 18} C{x0 + 60},{y0 - 34} {cell(0, 3)[0] - 40},{y0 - 34} {cell(0, 3)[0] - 14},{y0 - 20}" stroke="{C["lamp"]}" stroke-width="2" fill="none" stroke-dasharray="4 3"/>'
+    b += txt((x0 + cell(0, 3)[0]) / 2, y0 - 34, '머리 칸이 구간마다 옮겨 감', 9, C['lamp'])
+    for rc in [(3, 0), (3, 1)]:
+        x, y = cell(*rc); b += f'<circle cx="{x}" cy="{y}" r="15" fill="none" stroke="#bfe0ff" stroke-width="3" stroke-dasharray="6 4"/>'
+    b += txt(cell(3, 0)[0], cell(3, 0)[1] + 20, '소용돌이', 8.5, '#bfe0ff') + arrow(cell(3, 0)[0] + 16, cell(3, 0)[1], cell(3, 1)[0] - 16, cell(3, 1)[1], '#bfe0ff', 2)
+    b += player(*cell(1, 0), 1) + drops(*cell(1, 0), 3) + player(*cell(2, 3), 2) + drops(*cell(2, 3), 1) + player(*cell(0, 3), 3) + player(*cell(3, 2), 4) + drops(*cell(3, 2), 2)
+    return cap(b, '⑥ 젖은 몸(0~3겹) · ⑦ 소용돌이 기둥', '「가」는 3겹이라 다음 해류에 두 칸 밀림 · 머리 칸에서 말림')
 R = 24
 def hx(q, r): return 160 + R * 1.5 * q, 122 + R * math.sqrt(3) * (r + q / 2)
 CELLS = [(q, r) for q in range(-2, 3) for r in range(-2, 3) if abs(q + r) <= 2]
@@ -101,6 +112,18 @@ def du4():
     b += arrow(40, 40, 90, 70, '#ff6b4a', 5) + txt(52, 26, '기울어짐', 10, '#ff9c8a') + num(100, 40, 1, '#ff6b4a')
     return cap(b, '⑤ 판 깎기(25%) → 바깥 고리가 무너져 일곱 칸', '마지막 몸부림 세 라운드 — 라운드마다 한쪽으로 기울어 모두 버티기')
 
+def du5():
+    b = stone(holes=((1, 1),))
+    x, y = hx(1, 1); b += txt(x, y, '구멍', 8.5, '#c9b08a')
+    for q, r in [(2, 0), (0, 2)]:
+        x, y = hx(q, r); b += f'<polygon points="{x-7},{y+4} {x},{y-8} {x+7},{y+4}" fill="#cfd6dc" stroke="#222"/>'
+    x, y = hx(0, 2); b += txt(x, y + 13, '쐐기돌', 8, '#e8eef2')
+    xa, ya = hx(-2, 1); xb, yb = hx(2, -1)
+    b += f'<line x1="{xa - 20}" y1="{ya + 10}" x2="{xb + 20}" y2="{yb - 10}" stroke="#ff9f6b" stroke-width="10" stroke-opacity=".25"/>'
+    b += f'<circle cx="{xa - 22}" cy="{ya + 12}" r="10" fill="#8a7a66" stroke="#222"/>' + num(xa - 22, ya - 12, 2, '#ff9f6b')
+    b += player(*hx(1, 0), 1) + player(*hx(-1, 1), 2) + player(*hx(0, -1), 3) + player(*hx(2, -2), 4)
+    x, y = hx(2, -2); b += f'<polygon points="{x+8},{y-6} {x+14},{y-16} {x+20},{y-6}" fill="#cfd6dc" stroke="#222"/>'
+    return cap(b, '⑥ 쐐기돌 · ⑦ 굴러오는 바위 · 금 간 칸', '쐐기돌을 든 「라」만 끌개를 멈춤 · 바위 줄의 「나」는 비켜야 함')
 OUT = sys.argv[1]
-for k, f in [('dh1', dh1), ('dh2', dh2), ('dh3', dh3), ('dh4', dh4), ('du1', du1), ('du2', du2), ('du3', du3), ('du4', du4)]:
+for k, f in [('dh1', dh1), ('dh2', dh2), ('dh3', dh3), ('dh4', dh4), ('dh5', dh5), ('du1', du1), ('du2', du2), ('du3', du3), ('du4', du4), ('du5', du5)]:
     open(os.path.join(OUT, k + '.svg'), 'w').write(f().replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ', 1))
