@@ -2499,7 +2499,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 .gg-basket circle { fill: color-mix(in srgb, var(--mp) 35%, transparent); stroke: var(--mp); }
 .gg-basket text { fill: #fff; font-size: 13px; font-weight: 800; text-anchor: middle; }
 .gg-basket.due circle { stroke: var(--hp); stroke-width: 3; }
-.gg-tether line { stroke: var(--hp); stroke-width: 3; stroke-dasharray: 6 4; }
+.gg-tether line { stroke: var(--hp); stroke-width: 3; stroke-dasharray: 7 5; }
 .gg-tether text { fill: var(--hp); font-size: 12px; font-weight: 800; text-anchor: middle; }
 .gg-tok circle { fill: #4a4450; stroke: #8a8290; }
 .gg-tok text { fill: #eee; font-size: 12px; font-weight: 700; text-anchor: middle; }
@@ -2623,6 +2623,31 @@ b.contest { color: var(--warn); font-weight: 600; }
 .hx-cell.wm-due { stroke: var(--hp); stroke-width: 2.5; }
 .ug-t.wm-n { color: var(--gold); border-color: var(--gold); }
 .mk-cell.wm-cell { outline: 2px solid var(--gold); outline-offset: -3px; }
+.gw-wrap .rip, .hx-rip { fill: none; stroke-width: 3; pointer-events: none; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.by-ring.spread .rip, .by-hz .rip { stroke: #f4f1ea; animation: tel-out 1.6s ease-out infinite; }
+.by-big .rip, .hx-rip { stroke: var(--hp); animation: tel-out 1.6s ease-out infinite; }
+.hx-rip.burst { stroke: var(--gold); }
+.by-ring.stack .rip { stroke: var(--mp); animation: tel-in 1.6s ease-in infinite; }
+.by-hz:not(.due) .rip { display: none; }
+.gw-wrap .due .rip, .hx-rip.due { animation-duration: .7s; stroke: var(--hp); }
+@keyframes tel-out { 0% { opacity: .9; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes tel-in { 0% { opacity: 0; transform: scale(1.3); } 30% { opacity: .9; } 100% { opacity: 0; transform: scale(.3); } }
+.hx-arrow line { stroke-dasharray: 5 7; animation: march 1.2s linear infinite; }
+.hx-arrow.due line, .hx-chain.due line, .gg-tether.due line { animation-duration: .45s; }
+.hx-chain line, .gg-tether line { animation: march 1.2s linear infinite; }
+.hx-map .hx-cell.hx-tide, .hx-map .hx-cell.hx-burst, .hx-map .hx-cell.hx-drag, .gg-cell.closing, .gg-cell.judge:not(.due), .by-map .by-cell.by-brush:not(.due) { animation: tel-zone 2s ease-in-out infinite; }
+@keyframes tel-zone { 50% { opacity: .62; } }
+.hx-map .hx-cell.due, .gg-cell.judge.due, .by-map .by-cell.by-brush.due { animation: tel-due .6s steps(2, jump-none) infinite; }
+@keyframes tel-due { 0% { opacity: 1; } 100% { opacity: .35; } }
+.by-hz.due circle:not(.rip), .by-tower.due rect, .hx-tag.due circle, .wm-n.due circle, .gg-basket.due circle, .by-big.due circle:not(.rip), .by-ring.due circle:not(.rip), .hx-core.due circle { animation: tel-stroke .6s steps(2, jump-none) infinite; }
+.hx-core.spin.due circle { animation: hx-spin 3s linear infinite, tel-stroke .6s steps(2, jump-none) infinite; }
+@keyframes tel-stroke { 0% { stroke-opacity: 1; } 100% { stroke-opacity: .25; } }
+.gg-coltag.due, .by-gust.due, .by-clock.due text, .gg-ledtag.due { animation: tel-due .6s steps(2, jump-none) infinite; }
+.mk-cell.mk-line, .mk-cell.mk-mark, .mk-cell.ug-line, .mk-cell.ug-step, .mk-cell.ug-mem { animation: tel-cell 2s ease-in-out infinite; }
+.mk-cell.ug-due { animation: tel-cell-due .6s steps(2, jump-none) infinite; }
+@keyframes tel-cell { 50% { background-color: color-mix(in srgb, var(--bad) 30%, var(--surface)); } }
+@keyframes tel-cell-due { 0% { background-color: color-mix(in srgb, var(--hp) 48%, var(--surface)); } 100% { background-color: var(--surface); } }
+@media (prefers-reduced-motion: reduce) { .gw-wrap .rip, .hx-rip { display: none; } .hx-arrow line, .hx-chain line, .gg-tether line, .hx-map .hx-cell, .gg-cell, .by-map .by-cell, .by-hz circle, .by-tower rect, .hx-tag circle, .wm-n circle, .gg-basket circle, .by-big circle, .by-ring circle, .hx-core.due circle, .gg-coltag, .by-gust, .by-clock text, .gg-ledtag, .mk-cell { animation: none; } }
 .wm-seq { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 2px 0; font-size: calc(14px * var(--fz, 1)); }
 .wm-seq b { padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; } .wm-seq i { color: var(--muted); font-style: normal; }
 .wm-name { color: var(--hp); }

@@ -41,7 +41,7 @@ export function hexBoard(s, live, moveTo) {
       marks += `<g class="hx-chain ${due(h) ? 'due' : ''}"><line x1="${ax.toFixed(0)}" y1="${ay.toFixed(0)}" x2="${bx.toFixed(0)}" y2="${by.toFixed(0)}"/><circle cx="${lx.toFixed(0)}" cy="${(ly - 9).toFixed(0)}" r="11"/><text x="${lx.toFixed(0)}" y="${(ly - 4).toFixed(0)}">${num(h)}</text></g>`;
     } else if (h.k === 'burst') {
       const [x, y] = at(Number(h.p));
-      marks += `<g class="hx-tag burst ${due(h) ? 'due' : ''}"><circle cx="${(x + 14).toFixed(0)}" cy="${(y - 16).toFixed(0)}" r="10"/><text x="${(x + 14).toFixed(0)}" y="${(y - 11).toFixed(0)}">${num(h)}</text></g>`;
+      marks += `<circle class="hx-rip burst ${due(h) ? 'due' : ''}" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="26"/><g class="hx-tag burst ${due(h) ? 'due' : ''}"><circle cx="${(x + 14).toFixed(0)}" cy="${(y - 16).toFixed(0)}" r="10"/><text x="${(x + 14).toFixed(0)}" y="${(y - 11).toFixed(0)}">${num(h)}</text></g>`;
     } else if (h.k === 'tide') {
       const d = Number(h.d), ang = Math.atan2(S * 1.5 * DR[d], S * Math.sqrt(3) * (DQ[d] + DR[d] / 2));
       for (const c of h.cells || []) {

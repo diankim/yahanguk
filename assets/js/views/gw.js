@@ -517,18 +517,18 @@ function byBoard(s, live) {
   }
   let marks = '';
   for (const h of hz) {
-    if (h.k === 'big') { const [x, y] = byCellAt(Number(h.c)); marks += `<g class="by-big ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><text x="${x.toFixed(0)}" y="${(y - 30).toFixed(0)}">굵은 화살 ${num(h)}</text></g>`; continue; }
+    if (h.k === 'big') { const [x, y] = byCellAt(Number(h.c)); marks += `<g class="by-big ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="54"/><text x="${x.toFixed(0)}" y="${(y - 30).toFixed(0)}">굵은 화살 ${num(h)}</text></g>`; continue; }
     if (h.k === 'brush') { const [x, y] = byCellAt(Number(h.s)); marks += `<text class="by-tag red" x="${x.toFixed(0)}" y="${(y - 18).toFixed(0)}">붓 ${num(h)}</text>`; continue; }
     if (['arrow', 'sdrop', 'tower'].includes(h.k)) {
       const [x, y] = byCellAt(Number(h.c), who[h.c] ? -1 : 0);
       if (h.k === 'tower') marks += `<g class="by-tower ${due(h) ? 'due' : ''}"><rect x="${(x - 13).toFixed(0)}" y="${(y - 20).toFixed(0)}" width="26" height="30" rx="4"/><text x="${x.toFixed(0)}" y="${(y + 1).toFixed(0)}">${Number(h.need) > 1 ? `${h.need}명` : '1명'}</text><text class="sm" x="${x.toFixed(0)}" y="${(y + 22).toFixed(0)}">${num(h)}</text></g>`;
-      else marks += `<g class="by-hz ${h.k} ${due(h) ? 'due' : ''} ${h.frozen ? 'frozen' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="17"/><text x="${x.toFixed(0)}" y="${(y + 7).toFixed(0)}">${num(h)}</text></g>`;
+      else marks += `<g class="by-hz ${h.k} ${due(h) ? 'due' : ''} ${h.frozen ? 'frozen' : ''}"><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="30"/><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="17"/><text x="${x.toFixed(0)}" y="${(y + 7).toFixed(0)}">${num(h)}</text></g>`;
       continue;
     }
     const tm = (s.members || []).find(m => m.id === h.t); if (!tm?.pos) continue;
     const [x, y] = byCellAt(tm.pos);
-    if (h.k === 'stack') marks += `<g class="by-ring stack ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y - 48).toFixed(0)}">물방울 ${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
-    if (h.k === 'spread' || h.k === 'num') marks += `<g class="by-ring spread ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y + 58).toFixed(0)}">${h.k === 'num' ? `${h.i}번 화살 ` : '흰 가루 '}${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
+    if (h.k === 'stack') marks += `<g class="by-ring stack ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y - 48).toFixed(0)}">물방울 ${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
+    if (h.k === 'spread' || h.k === 'num') marks += `<g class="by-ring spread ${due(h) ? 'due' : ''}"><circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><circle class="rip" cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="44"/><text x="${x.toFixed(0)}" y="${(y + 58).toFixed(0)}">${h.k === 'num' ? `${h.i}번 화살 ` : '흰 가루 '}${num(h)}${h.sw ? ' ⇄' : ''}</text></g>`;
     if (h.k === 'clock') marks += `<g class="by-clock ${due(h) ? 'due' : ''}"><text x="${(x + 22).toFixed(0)}" y="${(y - 14).toFixed(0)}">⧗${num(h)}</text></g>`;
   }
   let tokens = '';
