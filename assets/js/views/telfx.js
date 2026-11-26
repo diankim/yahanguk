@@ -1,7 +1,6 @@
 const BOARD = '.hx-map, .by-map, .gg-map, .mk-board';
 const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev):not(.hx-chain), .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
 const deg = a => (a * 180 / Math.PI).toFixed(1);
-const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const TEL_DEFS = '<defs><clipPath id="tel-clip"><circle r="15"/></clipPath></defs>';
 
@@ -104,7 +103,7 @@ function burst(ov, x, y, w, delay) {
 }
 
 export function telPlay(root, before) {
-  if (!before || still()) return;
+  if (!before) return;
   const b = root?.querySelector(BOARD); if (!b) return;
   const base = b.getBoundingClientRect(), svg = b instanceof SVGElement;
   const unit = svg ? (b.viewBox?.baseVal?.width || base.width) / base.width : 1;
