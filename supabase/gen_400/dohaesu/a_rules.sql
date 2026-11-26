@@ -13,7 +13,7 @@ begin
   "phases": ["해류", "물보라", "뒤집힌 물살", "틈의 숨"],
   "mech_names": {"thrash": "몸부림", "current": "해류", "surge": "해류 뒤집힘", "spray": "물보라 덮침", "tentacle": "촉수 감기", "whirl": "소용돌이 기둥", "wet": "젖은 몸", "breath": "틈의 숨", "head": "머리 들기"},
   "dps": {"ref": {"analyst": 584, "spearman": 525, "exorcist": 495, "formation": 495, "medic": 494, "sealmaster": 494, "scout": 480, "tamer": 480, "bloodknight": 447, "artificer": 422},
-    "hp_k": 155, "cuts": [40, 80, 120], "cut_enrage": 1, "spec": "Lv55 · 9단계 무기 +10 · 9단계 방어구 한 벌"},
+    "hp_k": 155, "cuts": [25, 48, 73], "cut_enrage": 1, "spec": "Lv55 · 9단계 무기 +10 · 9단계 방어구 한 벌"},
   "story": {"phases": ["해류", "물보라", "몸부림", "틈의 숨"], "min": 30, "round_s": 60, "hp_min": 2400, "hp_k": 8, "raw": [12, 2], "first": {"gil": 1200},
     "board": {"mech_mul": 1, "fall_hp": 40,
       "current": {"every": 3, "off": 1, "left": 2},
