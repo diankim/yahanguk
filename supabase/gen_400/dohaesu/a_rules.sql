@@ -30,7 +30,7 @@ begin
     "whirl": {"every": 5, "off": 0, "life": 4, "raw": 20},
     "wet": {"max": 3, "extra_at": 3},
     "head": {"every": 5, "off": 3, "left": 3, "hit_pct": 4, "stun": 2, "stun_pct": 30},
-    "breath": {"every": 6, "off": 5, "left": 3, "pull": 2},
+    "breath": {"every": 6, "off": 5, "left": 4, "pull": 1},
     "seq": [{"at": 100, "m": ["current", "thrash", "head"]}, {"at": 87.5, "m": ["current", "thrash", "head", "spray"]}, {"at": 75, "m": ["current", "head", "surge", "tentacle", "spray"]},
       {"at": 50, "m": ["current", "thrash", "head", "spray", "tentacle", "whirl"]}, {"at": 37.5, "m": ["current", "head", "surge", "spray", "tentacle", "wet", "whirl"]},
       {"at": 25, "m": ["current", "head", "breath", "surge", "spray", "tentacle", "wet", "whirl"]}],

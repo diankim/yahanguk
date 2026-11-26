@@ -60,7 +60,7 @@ begin
       if public.world_dh_dist(c, partner) < 4 then sc := sc - 50; end if;
     end if;
     if h ->> 'k' in ('current', 'surge', 'breath') then
-      n := case when h ->> 'k' = 'surge' then 2 when h ->> 'k' = 'breath' then 2 else 1 end - case when brace then 1 else 0 end
+      n := case when h ->> 'k' = 'surge' then 2 when h ->> 'k' = 'breath' then 1 else 1 end - case when brace then 1 else 0 end
         + case when wet >= 3 and h ->> 'k' <> 'breath' then 1 else 0 end;
       p := c;
       for i in 1 .. greatest(0, n) loop

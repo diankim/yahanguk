@@ -249,7 +249,7 @@ begin
       hz := coalesce((select jsonb_agg(e) from jsonb_array_elements(hz) e where e ->> 'k' <> 'head'), '[]'::jsonb);
       hid := hid + 1;
       hz := hz || jsonb_build_array(jsonb_build_object('id', hid, 'k', 'breath', 'left', (rb -> 'breath' ->> 'left')::int));
-      tell := tell || case when tell <> '' then ' ' else '' end || '틈이 숨을 들이쉰다! 절반 넘게 머리 칸에서 길을 알려 주지 않으면 모두 가운데로 끌려간다.';
+      tell := tell || case when tell <> '' then ' ' else '' end || '틈이 숨을 들이쉰다! 절반 넘게 머리 칸에서 길을 알려 주거나, 모두 버티지 않으면 가운데로 끌려간다.';
     end if;
     aoe := 'thrash' = any (mechs) and nr % coalesce((rb ->> 'aoe_every')::int, 4) = 0;
   end if;
