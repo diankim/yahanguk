@@ -5,7 +5,7 @@ PIN_TERRS = {'goimteo'}
 REALM = 'hanul'
 MON_CAP = 55
 CAP = 55
-LV9 = 52
+LV9 = 53
 TOOL_LV = 50
 WEAK_SAFE = []
 HUB = {'pado': 'pd_city', 'bulssi': 'bs_town', 'jaebit': 'jb_village', 'nunmaru': 'nm_village', 'dalmaji': 'dm_city', 'haeoreum': 'ho_city', 'goimteo': 'dm_city'}
@@ -669,7 +669,7 @@ TITLES = [
     ('hw_named_all', '건넛누리의 명어를 낚은 이', 5, {'fish_bite_pct': 4, 'fish_rare_pct': 8, 'fish_size_pct': 8},
      {'all': [{'p': {'fish': f}, 'ev': 'fish'} for f in ['hw_named_tuna', 'hw_named_carp', 'hw_named_gold']]}, '건넛누리의 명어 셋을 모두 낚는다', True),
 ]
-TITLE_CAT = '건넛누리'
+TITLE_CAT = '도해록'
 COSMETICS = [
     ('fr_hanul', 'frame', 'legend', '물때 테', '건넛누리 바깥 열 곳에 모두 닿으면', {'title': 'hw_walker'}, 1530),
     ('sl_hanul', 'seal', 'legend', '낙관 「潮」', '건넛누리 열두 곳의 우두머리를 모두 쓰러뜨리면', {'title': 'hw_boss_all'}, 1531),

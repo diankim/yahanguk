@@ -6,7 +6,7 @@ import re
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = [os.path.join(HERE, '..', '..', 'gen_part2', f'script_40_{c}.md') for c in range(1, 16)]
 REF = os.path.join(HERE, 'ref', 'existing_names.json')
-CAT = '외전·건넛누리'
+CAT = '외전·도해록'
 QID = 'hwq_'
 XP = 0.28
 AFTER_FIRST = ['mdq_17']
