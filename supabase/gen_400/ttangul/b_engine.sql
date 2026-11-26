@@ -224,12 +224,19 @@ begin
     else
     if 'pull' = any (mechs) and not coalesce((b ->> 'gone')::boolean, false) then
       pulls := coalesce(b -> 'pulls', '{}');
-      for k in select jsonb_object_keys(pulls) loop
-        if (nr + k::int) % (rb -> 'pull' ->> 'every')::int = 0 and coalesce((pulls ->> k)::int, 0) <= nr and not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'pull' and e ->> 'c' = k) then
+      if nr % (rb -> 'pull' ->> 'every')::int = 0 then
+        k := rb -> 'pulls' ->> ((nr / (rb -> 'pull' ->> 'every')::int) % jsonb_array_length(rb -> 'pulls'));
+        if coalesce((pulls ->> k)::int, 0) <= nr and not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'pull' and e ->> 'c' = k) then
           hid := hid + 1;
           hz := hz || jsonb_build_array(jsonb_build_object('id', hid, 'k', 'pull', 'c', k::int, 'left', (rb -> 'pull' ->> 'left')::int));
+          tell := tell || case when tell <> '' then ' ' else '' end || k || '번 끌개가 돌기 시작한다. 쐐기돌을 들고 그 칸에 서라.';
+          if jsonb_array_length(coalesce(b -> 'wedges', '[]'::jsonb)) = 0 and not exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and coalesce(y.gval, 0) > 0) then
+            select z into c from generate_series(1, 19) z where public.world_du_ring(z) = 1 and public.world_du_open(p_fight, z)
+              and not exists (select 1 from public.world_gw_members y where y.fight_id = p_fight and y.pos = z) order by random() limit 1;
+            if c is not null then b := b || jsonb_build_object('wedges', jsonb_build_array(c)); end if;
+          end if;
         end if;
-      end loop;
+      end if;
     end if;
     if 'slide' = any (mechs) and nr % (rb -> 'slide' ->> 'every')::int = (rb -> 'slide' ->> 'off')::int then
       d := floor(random() * 6)::int;
@@ -349,7 +356,7 @@ begin
     elsif h ->> 'k' = 'weight' then
       perform public.world_gw_say(p_fight, p_round, 'boss', array_to_string(cells, '·') || '번 돌판이 무너져 내립니다!');
       foreach c in array cells loop
-        if cracked @> to_jsonb(c) then holes := holes || jsonb_build_object(c::text, 99);
+        if cracked @> to_jsonb(c) and (select count(*) from jsonb_each_text(holes) e where e.value::int > 50) < coalesce((rb -> 'weight' ->> 'perm_max')::int, 3) then holes := holes || jsonb_build_object(c::text, 99);
         else holes := holes || jsonb_build_object(c::text, (rb -> 'weight' ->> 'hole')::int + 1); cracked := cracked || to_jsonb(c); end if;
         select z2 into z from unnest(public.world_du_nb(c)) z2 where not (holes ? z2::text) and not (wedges @> to_jsonb(z2)) order by random() limit 1;
         if z is not null and jsonb_array_length(wedges) < 4 then wedges := wedges || to_jsonb(z); end if;

@@ -56,6 +56,7 @@ begin
   select * into f from public.world_gw_fights where fight_id = fid;
   if not public.world_du_open(fid, c) then return -2000; end if;
   if public.world_du_ring(c) = 1 then sc := sc + 2; end if;
+  sc := sc - 4 * (6 - (select count(*) from unnest(public.world_du_nb(c)) z where public.world_du_open(fid, z)) - case when public.world_du_ring(c) = 2 then 3 else 0 end);
   p := c;
   for h in select * from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) loop
     l := (h ->> 'left')::int; cells := public.world_du_hz_cells(fid, h);
