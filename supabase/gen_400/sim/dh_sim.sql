@@ -91,7 +91,7 @@ begin
   for x in select * from public.world_gw_members where fight_id = fid and out_rounds = 0 order by joined_at loop
     v_act := 'attack'; best := x.pos; brace := false; hp := x.hp;
     if pol = 'ignore' then
-      update public.world_gw_members set act = jsonb_build_object('a', 'attack') where fight_id = fid and owner_id = x.owner_id; continue;
+      update public.world_gw_members set act = jsonb_build_object('a', 'attack'), rest = false where fight_id = fid and owner_id = x.owner_id; continue;
     end if;
     if x.owner_id = any (guiders) then
       if x.pos = hd then
@@ -113,7 +113,7 @@ begin
     end if;
     if v_act = 'attack' and hp < 35 and coalesce(x.items_used, 0) < 2 and f.mode = 'hard' then v_act := 'item'; end if;
     update public.world_gw_members set act = jsonb_build_object('a', v_act) || case when v_act = 'item' then jsonb_build_object('i', 'tonic', 't', x.owner_id) else '{}'::jsonb end
-      || case when best is distinct from x.pos then jsonb_build_object('m', best) else '{}'::jsonb end where fight_id = fid and owner_id = x.owner_id;
+      || case when best is distinct from x.pos then jsonb_build_object('m', best) else '{}'::jsonb end, rest = false where fight_id = fid and owner_id = x.owner_id;
   end loop;
 end $$;
 
@@ -143,7 +143,7 @@ begin
     r := r + 1;
   end loop;
   select * into f from public.world_gw_fights where fight_id = fid;
-  return jsonb_build_object('n', cardinality(jobs), 'pol', pol, 'status', f.status, 'round', f.round, 'sec', t, 'hp_pct', round(f.hp * 100.0 / greatest(1, f.max_hp)), 'max_hp', f.max_hp,
+  return jsonb_build_object('fell_at', (select jsonb_agg(round || ':' || left(text, 60)) from public.world_gw_log where fight_id = fid and text like '%빨려 들어갔%'), 'n', cardinality(jobs), 'pol', pol, 'status', f.status, 'round', f.round, 'sec', t, 'hp_pct', round(f.hp * 100.0 / greatest(1, f.max_hp)), 'max_hp', f.max_hp,
     'marks', marks, 'enrage', f.enrage, 'fell', coalesce(jsonb_array_length(f.board -> 'fell'), 0),
     'falls', (select sum(falls) from public.world_gw_members where fight_id = fid));
 end $$;
