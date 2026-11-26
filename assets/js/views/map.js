@@ -13,6 +13,10 @@ const bjAt = id => bjMaps().filter(m => m.region_id === id);
 const SUBS = [['world', '세계 지도', 'map'], ['travel', '이동·탈것', 'route']];
 const shadowText = w => w.status === 'fight' ? '사슬 벗은 그림자 토벌 중' : w.status === 'signup' ? '사슬 벗은 그림자 · 모이는 중'
   : `사슬 벗은 그림자 출현 예정${w.spawn_at ? ` · ${new Date(w.spawn_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}` : ''}`;
+let realm = null, realmFit = null;
+const REALM_NAMES = { main: '본토', hanul: '건넛누리' };
+const realmOf = r => GAMEDATA.domains?.[r?.territory_id]?.realm || 'main';
+const viewRegions = () => mapData.regions.filter(r => realmOf(r) === realm);
 let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set(), shadow = null, surveyed = new Set();
 
 export async function render(root, s) {
@@ -59,6 +63,7 @@ async function drawWorld(body, soft) {
   const here = currentRegion(mapData);
   if (selected && !mapData.regions.some(r => r.region_id === selected)) selected = mapData.regions.find(r => r.region_name === selected)?.region_id || null;
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
+  realm = realmOf(mapData.regions.find(r => r.region_id === selected) || here);
   const keepScroll = soft && $('#region-q', body)?.value, focused = focusPending;
   body.innerHTML = `
     <div class="map-layout">
@@ -70,6 +75,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="here" aria-label="현재 위치로">${icon('target')}</button>
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
+        <div class="map-realm" id="map-realm"></div>
         <div class="map-peek" id="map-peek" hidden></div>
         <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${bjMaps().length ? '<span><i class="lg bj"></i>펼친 비장도</span>' : ''}${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>사슬 벗은 그림자</span>' : ''}</div>
       </div>
@@ -89,14 +95,15 @@ async function drawWorld(body, soft) {
 }
 
 function bounds() {
-  const xs = mapData.regions.map(r => r.world_x), ys = mapData.regions.map(r => r.world_y);
+  const vr = viewRegions(), xs = vr.map(r => r.world_x), ys = vr.map(r => r.world_y);
   const pad = 40;
   return { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, w: Math.max(...xs) - Math.min(...xs) + pad * 2, h: Math.max(...ys) - Math.min(...ys) + pad * 2 };
 }
 function setupMap(here) {
   const frame = $('#map-frame', el), svg = $('#map-svg', el);
   const b = bounds();
-  const fitK = () => Math.min(frame.clientWidth / b.w, frame.clientHeight / b.h);
+  const fitK = () => { Object.assign(b, bounds()); return Math.min(frame.clientWidth / b.w, frame.clientHeight / b.h); };
+  realmFit = () => { const k = fitK() * (frame.clientWidth < 520 ? 1.3 : 1); view = { cx: b.x + b.w / 2, cy: b.y + b.h / 2, k }; paint(); };
   if (!view) {
     const tgt = focusPending ? mapData.regions.find(r => r.region_id === selected && r.world_x != null) : null; focusPending = false;
     const k = fitK() * (frame.clientWidth < 520 ? (tgt ? 3.4 : 2.4) : (tgt ? 2.8 : 1.8));
@@ -105,6 +112,7 @@ function setupMap(here) {
   }
   const minK = () => fitK() * 0.9, maxK = () => fitK() * 6;
   const clamp = () => {
+    Object.assign(b, bounds());
     view.k = Math.max(minK(), Math.min(maxK(), view.k));
     view.cx = Math.max(b.x, Math.min(b.x + b.w, view.cx));
     view.cy = Math.max(b.y, Math.min(b.y + b.h, view.cy));
@@ -142,7 +150,9 @@ function setupMap(here) {
   svg.addEventListener('pointerup', e => {
     const wasTap = moved < 6 && pts.size === 1 && !gesture; up(e);
     if (!wasTap) return;
-    const node = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.dataset?.region);
+    const els = document.elementsFromPoint(e.clientX, e.clientY), gate = els.find(n => n.dataset?.realmGo);
+    if (gate) { goRealm(gate.dataset.realmGo, gate.dataset.gate); return; }
+    const node = els.find(n => n.dataset?.region);
     if (node) select(node.dataset.region, false);
   });
   svg.addEventListener('pointercancel', up);
@@ -160,8 +170,8 @@ let rideUntil = 0, rideGroup = null;
 const rideLeft = () => Math.max(0, Math.ceil((rideUntil - Date.now()) / 1000));
 window.addEventListener('yh-note', e => { if (e.detail?.kind === 'ride_departed' || (e.detail?.kind === 'ride_declined' && !e.detail?.payload?.group_id)) { rideUntil = 0; rideGroup = null; document.querySelectorAll('[data-ride-wait]').forEach(w => { w.hidden = true; }); document.querySelectorAll('.ride [data-ride]').forEach(x => { x.disabled = false; }); } });
 function geometry() {
-  const key = mapData.regions.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
-  if (key !== geomKey) { geom = buildCells(mapData.regions.filter(r => !isPin(r))); geomKey = key; }
+  const vr = viewRegions(), key = realm + '|' + vr.map(r => `${r.region_id}:${r.world_x},${r.world_y}`).join('|');
+  if (key !== geomKey) { geom = buildCells(vr.filter(r => !isPin(r))); geomKey = key; }
   return geom;
 }
 function isPin(r) { return !!GAMEDATA.domains?.[r.territory_id]?.pin; }
@@ -197,7 +207,7 @@ function paint() {
   const X = x => (x - view.cx) * view.k + W / 2, Y = y => (y - view.cy) * view.k + H / 2;
   const P = r => [X(r.world_x), Y(r.world_y)];
   const pathOf = poly => 'M' + poly.map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join('L') + 'Z';
-  const regions = mapData.regions, byId = new Map(regions.map(r => [r.region_id, r]));
+  const regions = viewRegions(), byId = new Map(regions.map(r => [r.region_id, r])), all = new Map(mapData.regions.map(r => [r.region_id, r]));
   const here = currentRegion(mapData), dest = store.character?.travel_destination;
   const g = geometry(), b = bounds(), fitK = Math.min(W / b.w, H / b.h), zoom = view.k / fitK;
 
@@ -214,8 +224,14 @@ function paint() {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
     if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
   }
-  const seen = new Set(); let roads = '';
+  const seen = new Set(); let roads = '', gates = '';
   for (const r of regions) for (const f of r.travel_from || []) {
+    const go = all.get(f);
+    if (go && !byId.has(f)) {
+      const [gx, gy] = P(r), t = realmOf(go) === 'main' ? `‹ ${REALM_NAMES.main}` : `${REALM_NAMES[realmOf(go)] || ''} ›`, gw = [...t].length * 12 + 18;
+      gates += `<g class="realm-gate" data-realm-go="${esc(realmOf(go))}" data-gate="${esc(f)}" role="button" tabindex="0"><rect x="${(gx - gw / 2).toFixed(1)}" y="${(gy + 14).toFixed(1)}" width="${gw}" height="22" rx="11" data-realm-go="${esc(realmOf(go))}" data-gate="${esc(f)}"/><text x="${gx.toFixed(1)}" y="${(gy + 25).toFixed(1)}" text-anchor="middle" dominant-baseline="central" data-realm-go="${esc(realmOf(go))}" data-gate="${esc(f)}">${esc(t)}</text></g>`;
+      continue;
+    }
     const o = byId.get(f); if (!o) continue;
     const key = [r.region_id, f].sort().join('|'); if (seen.has(key)) continue; seen.add(key);
     const [x1, y1] = P(r), [x2, y2] = P(o);
@@ -223,7 +239,8 @@ function paint() {
   }
   let route = '';
   const rt = selected && here && selected !== here.region_id ? routeTo(selected) : null;
-  if (rt && rt.length > 1) route = `<polyline class="route-line" points="${rt.map(r => P(r).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
+  const rtv = rt ? rt.filter(r => byId.has(r.region_id)) : null;
+  if (rtv && rtv.length > 1) route = `<polyline class="route-line" points="${rtv.map(r => P(r).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
   const terr = new Map();
   for (const r of regions) {
     if (isPin(r)) continue;
@@ -312,11 +329,31 @@ function paint() {
     <g class="land">${land}</g>${waterOver(g, id => byId.has(id), X, Y, view.k, zoom)}<g>${hatch}</g>
     <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
-    <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
+    <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g><g class="gates">${gates}</g>`;
+  paintRealm();
+}
+function paintRealm() {
+  const box = $('#map-realm', el); if (!box) return;
+  const realms = [...new Set(mapData.regions.map(realmOf))];
+  box.hidden = realms.length < 2;
+  box.innerHTML = realms.map(k => `<button class="realm-tab${k === realm ? ' on' : ''}" data-realm-go="${esc(k)}">${esc(REALM_NAMES[k] || k)}</button>`).join('');
+  box.querySelectorAll('[data-realm-go]').forEach(b => b.onclick = () => goRealm(b.dataset.realmGo));
+}
+function goRealm(k, gate) {
+  if (k === realm) return;
+  const here = currentRegion(mapData);
+  const tgt = (gate && mapData.regions.find(r => r.region_id === gate)) || (realmOf(here) === k ? here : null)
+    || mapData.regions.find(r => realmOf(r) === k && (r.travel_from || []).some(f => realmOf(mapData.regions.find(o => o.region_id === f)) !== k))
+    || mapData.regions.find(r => realmOf(r) === k);
+  if (!tgt) return;
+  realm = k; selected = tgt.region_id; geomKey = '';
+  realmFit?.(tgt); drawDetail();
 }
 
 function select(id, center) {
   selected = id;
+  const sr = mapData.regions.find(x => x.region_id === id);
+  if (sr && realmOf(sr) !== realm) { realm = realmOf(sr); geomKey = ''; realmFit?.(sr); }
   if (center) { const r = mapData.regions.find(x => x.region_id === id); if (r) { view.cx = r.world_x; view.cy = r.world_y; } }
   paint(); drawDetail();
   const seats = Number(((mountData?.mounts || []).find(x => x.mount_id === store.character?.mount_id) || {}).passenger_capacity || 1);

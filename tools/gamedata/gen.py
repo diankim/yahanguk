@@ -100,7 +100,7 @@ def build(dsn):
     d['mentor'] = q(dsn, "select world_mentor_rules()")
     d['questReplay'] = q(dsn, "select world_quest_replay_rules()")
     d['xpLead'] = q(dsn, "select world_xp_lead_rules()")
-    d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx', 'pin', coalesce((v ->> 'pin')::boolean, false))) from jsonb_each(world_domain_rules()) e(k, v)")
+    d['domains'] = q(dsn, "select jsonb_object_agg(k, jsonb_build_object('name', v ->> 'name', 'fx', v -> 'fx', 'pin', coalesce((v ->> 'pin')::boolean, false), 'realm', coalesce(v ->> 'realm', 'main'))) from jsonb_each(world_domain_rules()) e(k, v)")
     d['names'] = q(dsn, "select world_name_rules()")
     d['boss'] = q(dsn, "select world_boss_rules()")
     d['ultimate'] = q(dsn, "select world_ultimate_rules() || jsonb_build_object('boards', (select jsonb_object_agg(k, v || jsonb_build_object('place', (select r.region_name from world_map_regions r where r.region_id = v ->> 'region'))) from jsonb_each(world_ultimate_rules() -> 'boards') e(k, v)))")

@@ -439,6 +439,12 @@ body.chat-open .chat-fab { display: none; }
 .lbl.sel { fill: var(--gold); font-weight: 700; }
 .map-tools { position: absolute; right: 10px; top: 10px; display: grid; gap: 4px; padding: 4px; border-radius: var(--r); background: color-mix(in srgb, var(--surface) 88%, transparent); border: var(--bw) solid var(--line); }
 .map-tools .icon-btn { color: var(--text); width: 40px; height: 40px; }
+.map-realm { position: absolute; left: 10px; top: 10px; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 88%, transparent); border: var(--bw) solid var(--line); }
+.realm-tab { border: 0; background: none; color: var(--muted); font: inherit; font-size: calc(13px * var(--fz, 1)); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.realm-tab.on { background: var(--accent); color: var(--bg); font-weight: 600; }
+#map-svg .realm-gate { cursor: pointer; }
+#map-svg .realm-gate rect { fill: var(--accent); opacity: .92; }
+#map-svg .realm-gate text { fill: var(--bg); font-size: 12px; font-weight: 700; pointer-events: none; }
 .map-legend { position: absolute; left: 10px; bottom: 10px; right: 64px; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: calc(11px * var(--fz, 1)); color: var(--muted); pointer-events: none; }
 .map-legend span { display: flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--bg) 70%, transparent); padding: 2px 6px; border-radius: 6px; }
 .lg { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
