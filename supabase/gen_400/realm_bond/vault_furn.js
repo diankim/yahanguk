@@ -1,0 +1,123 @@
+const K = {
+  teak: '#8a5a32', teakD: '#5e3a22', teakL: '#b98a56', ebony: '#3a3430', ebonyL: '#5a524a', bark: '#6e4a30', barkL: '#9a6e48',
+  teal: '#2f8a86', tealD: '#1f5e5c', tealL: '#5fb8b0', silver: '#c8d2d6', silverD: '#8a969c',
+  leaf: '#4f8a3a', leafL: '#7fb04a', banana: '#5a9a3a', lime: '#9ac23a', coco: '#7a5232', cocoL: '#a8784a',
+  iron: '#4a4e58', ironL: '#7a808e', ironD: '#2e3038', ember: '#f08a3a', emberL: '#ffc070', soot: '#2a2624',
+  bamboo: '#b8a45a', bambooD: '#8a7a3a', oilA: '#c8743a', oilB: '#2f6a6a', oilTip: '#2a2a2e',
+  rope: '#c8ae78', ropeD: '#8a7450', paper: '#f1e8d4', ink: '#2a2a2e', cream: '#efe2c4',
+  fBlue: '#3f6fb5', fWhite: '#eef0ec', fRed: '#c8382e', fGreen: '#3f8a5a', fYellow: '#e0b43a', yakW: '#d8cfc0', yakD: '#7a6a5a',
+  brass: '#c89a44', brassL: '#e8c46a', brassD: '#8a6a30', gold: '#d8b25a',
+  indigo: '#2c3466', indigoL: '#4a5494', pinkL: '#e8a0b0', saffron: '#e8a030', turmeric: '#e0c040', chili: '#c03a2a', cardamom: '#7a9a4a', cinnamon: '#8a4a2a', bread: '#e8cf98',
+  sandstone: '#b08a68', sandL: '#c8a482', water: '#4f8fa6', waterL: '#7fb8c8', pad: '#4f8a4a', lotus: '#e898a8', lotusL: '#f6c8d0', lac: '#a8452a', palmLeaf: '#d8b878', palmD: '#a8884a',
+};
+
+export const RB_FUR = {
+  rb_pado_1: { name: '쪽배 좌판', grade: 3, W: 2, D: 1, layer: 'floor', cat: '수납', top: .36, parts: [
+    { x: .16, y: .24, w: 1.68, d: .52, h: .08, c: K.tealD },
+    { x: .06, y: .18, w: 1.88, d: .64, h: .22, z: .08, c: K.teak },
+    { x: 0, y: .36, w: .1, d: .28, h: .18, z: .18, c: K.teakD }, { x: 1.9, y: .36, w: .1, d: .28, h: .18, z: .18, c: K.teakD },
+    { x: .06, y: .18, w: 1.88, d: .05, h: .05, z: .3, c: K.teal }, { x: .06, y: .77, w: 1.88, d: .05, h: .05, z: .3, c: K.teal },
+    { x: .06, y: .77, w: 1.88, d: .05, h: .03, z: .16, c: K.tealL },
+    { x: .14, y: .24, w: 1.72, d: .52, h: .02, z: .3, c: K.teakD },
+    { x: .2, y: .28, w: .58, d: .44, h: .02, z: .32, c: K.banana }, { x: .26, y: .34, w: .46, d: .02, h: .01, z: .34, c: K.leafL },
+    { t: 'ell', x: .42, y: .46, z: .38, rx: 6, ry: 2, c: K.silver }, { t: 'ell', x: .56, y: .58, z: .38, rx: 5, ry: 2, c: K.silverD },
+    { x: .9, y: .3, w: .38, d: .4, h: .14, z: .32, c: K.bark }, { x: .9, y: .3, w: .38, d: .4, h: .02, z: .46, c: K.barkL },
+    { t: 'ell', x: 1.04, y: .44, z: .5, rx: 2, ry: 1.5, c: K.lime }, { t: 'ell', x: 1.14, y: .52, z: .5, rx: 2, ry: 1.5, c: K.lime }, { t: 'ell', x: 1.1, y: .4, z: .52, rx: 2, ry: 1.5, c: K.lime },
+    { t: 'ell', x: 1.5, y: .44, z: .4, rx: 4, ry: 3, c: K.coco }, { t: 'ell', x: 1.66, y: .58, z: .38, rx: 4, ry: 3, c: K.coco },
+    { x: 1.84, y: .46, w: .04, d: .04, h: .8, z: .3, c: K.teakD }, { x: 1.74, y: .38, w: .24, d: .2, h: .02, z: 1.1, c: K.teal }] },
+  rb_bulssi_1: { name: '모루 받침', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .2, y: .2, w: .6, d: .6, h: .46, c: K.bark }, { x: .2, y: .2, w: .6, d: .6, h: .02, z: .46, c: K.barkL },
+    { x: .2, y: .2, w: .6, d: .04, h: .46, c: K.teakD }, { x: .76, y: .2, w: .04, d: .6, h: .46, c: K.teakD },
+    { x: .32, y: .32, w: .36, d: .36, h: .08, z: .48, c: K.ironD }, { x: .4, y: .4, w: .2, d: .2, h: .12, z: .56, c: K.iron },
+    { x: .16, y: .36, w: .64, d: .28, h: .12, z: .68, c: K.iron }, { x: .8, y: .42, w: .12, d: .16, h: .07, z: .72, c: K.iron },
+    { x: .16, y: .36, w: .64, d: .28, h: .02, z: .8, c: K.ironL },
+    { x: .38, y: .42, w: .2, d: .1, h: .03, z: .82, c: K.ember }, { x: .42, y: .44, w: .1, d: .06, h: .01, z: .85, c: K.emberL },
+    { x: .24, y: .56, w: .4, d: .04, h: .04, z: .82, c: K.teak }, { x: .62, y: .52, w: .08, d: .12, h: .08, z: .82, c: K.ironD },
+    { x: .26, y: .82, w: .2, d: .06, h: .04, z: .02, c: K.soot }] },
+  rb_jaebit_1: { name: '기름종이 우산꽂이', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .28, y: .28, w: .44, d: .44, h: .06, c: K.ebony },
+    { x: .32, y: .32, w: .36, d: .36, h: .7, z: .06, c: K.bamboo },
+    { x: .31, y: .31, w: .38, d: .38, h: .04, z: .3, c: K.bambooD }, { x: .31, y: .31, w: .38, d: .38, h: .04, z: .58, c: K.bambooD },
+    { x: .36, y: .36, w: .15, d: .15, h: .62, z: .76, c: K.oilA }, { x: .41, y: .41, w: .05, d: .05, h: .14, z: 1.38, c: K.oilTip },
+    { x: .52, y: .46, w: .15, d: .15, h: .54, z: .76, c: K.oilB }, { x: .57, y: .51, w: .05, d: .05, h: .14, z: 1.3, c: K.oilTip },
+    { x: .36, y: .5, w: .15, d: .01, h: .62, z: .76, c: K.paper }, { x: .52, y: .6, w: .15, d: .01, h: .54, z: .76, c: K.leafL },
+    { x: .14, y: .7, w: .22, d: .14, h: .03, c: K.leaf }, { x: .66, y: .74, w: .18, d: .12, h: .03, c: K.leafL }] },
+  rb_nunmaru_1: { name: '수유차 통', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .3, y: .3, w: .36, d: .36, h: 1.0, c: K.teakL },
+    { x: .29, y: .29, w: .38, d: .38, h: .05, z: .12, c: K.brassD }, { x: .29, y: .29, w: .38, d: .38, h: .05, z: .5, c: K.brass }, { x: .29, y: .29, w: .38, d: .38, h: .05, z: .88, c: K.brassD },
+    { x: .29, y: .29, w: .38, d: .38, h: .03, z: .7, c: K.fRed },
+    { x: .3, y: .3, w: .36, d: .36, h: .02, z: 1.0, c: K.cream },
+    { x: .45, y: .45, w: .06, d: .06, h: .44, z: 1.0, c: K.teakD }, { x: .4, y: .4, w: .16, d: .16, h: .05, z: 1.44, c: K.teakD },
+    { x: .7, y: .66, w: .24, d: .24, h: .2, c: K.yakW }, { x: .7, y: .66, w: .24, d: .24, h: .02, z: .2, c: K.cream }, { x: .79, y: .66, w: .06, d: .24, h: .04, z: .14, c: K.yakD },
+    { t: 'ell', x: .2, y: .82, z: .08, rx: 4, ry: 2, c: K.teakD }, { t: 'ell', x: .2, y: .82, z: .12, rx: 3, ry: 1.2, c: K.cream }] },
+  rb_dalmaji_1: { name: '향신료 단지 상', grade: 3, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .32, parts: [
+    { x: .14, y: .16, w: .08, d: .08, h: .24, c: K.brassD }, { x: 1.78, y: .16, w: .08, d: .08, h: .24, c: K.brassD },
+    { x: .14, y: .76, w: .08, d: .08, h: .24, c: K.brassD }, { x: 1.78, y: .76, w: .08, d: .08, h: .24, c: K.brassD },
+    { x: .06, y: .1, w: 1.88, d: .8, h: .06, z: .24, c: K.indigo }, { x: .06, y: .1, w: 1.88, d: .8, h: .02, z: .3, c: K.indigoL },
+    { x: .06, y: .86, w: 1.88, d: .04, h: .02, z: .26, c: K.gold },
+    { t: 'ell', x: .34, y: .36, z: .34, rx: 5, ry: 2.5, c: K.brass }, { t: 'ell', x: .34, y: .36, z: .36, rx: 4, ry: 1.8, c: K.chili },
+    { t: 'ell', x: .7, y: .32, z: .34, rx: 5, ry: 2.5, c: K.brass }, { t: 'ell', x: .7, y: .32, z: .36, rx: 4, ry: 1.8, c: K.turmeric },
+    { t: 'ell', x: 1.06, y: .3, z: .34, rx: 5, ry: 2.5, c: K.brass }, { t: 'ell', x: 1.06, y: .3, z: .36, rx: 4, ry: 1.8, c: K.cardamom },
+    { t: 'ell', x: .56, y: .66, z: .34, rx: 5, ry: 2.5, c: K.brass }, { t: 'ell', x: .56, y: .66, z: .36, rx: 4, ry: 1.8, c: K.saffron },
+    { t: 'ell', x: .92, y: .64, z: .34, rx: 5, ry: 2.5, c: K.brass }, { t: 'ell', x: .92, y: .64, z: .36, rx: 4, ry: 1.8, c: K.cinnamon },
+    { t: 'ell', x: 1.44, y: .5, z: .34, rx: 8, ry: 4, c: K.bread }, { t: 'ell', x: 1.44, y: .5, z: .38, rx: 7, ry: 3.4, c: '#d8b878' }, { t: 'ell', x: 1.44, y: .5, z: .42, rx: 6, ry: 3, c: K.bread },
+    { x: 1.7, y: .24, w: .12, d: .12, h: .16, z: .3, c: K.brassL }, { x: 1.68, y: .22, w: .16, d: .16, h: .02, z: .46, c: K.pinkL }] },
+  rb_haeoreum_1: { name: '연꽃 물그릇', grade: 3, W: 1, D: 1, layer: 'floor', cat: '장식', parts: [
+    { x: .36, y: .36, w: .28, d: .28, h: .14, c: K.sandstone },
+    { x: .14, y: .14, w: .72, d: .72, h: .2, z: .14, c: K.sandstone }, { x: .14, y: .14, w: .72, d: .72, h: .02, z: .34, c: K.sandL },
+    { x: .14, y: .82, w: .72, d: .04, h: .03, z: .22, c: K.lac }, { x: .82, y: .14, w: .04, d: .72, h: .03, z: .22, c: K.lac },
+    { x: .2, y: .2, w: .6, d: .6, h: .02, z: .34, c: K.water }, { x: .3, y: .3, w: .2, d: .04, h: .01, z: .36, c: K.waterL },
+    { t: 'ell', x: .62, y: .6, z: .38, rx: 5, ry: 2.4, c: K.pad }, { t: 'ell', x: .36, y: .62, z: .38, rx: 3, ry: 1.6, c: K.pad },
+    { x: .47, y: .43, w: .04, d: .04, h: .14, z: .36, c: K.pad }, { t: 'ell', x: .48, y: .44, z: .56, rx: 6, ry: 3.4, c: K.lotus }, { t: 'ell', x: .48, y: .44, z: .64, rx: 4.5, ry: 2.6, c: K.lotusL }, { t: 'ell', x: .48, y: .44, z: .7, rx: 2, ry: 1.2, c: K.gold }] },
+};
+
+export const RB_WALL = {
+  rb_pado_2: { name: '노깃 걸이', grade: 3, kind: 'deco', cat: '장식', w: 1.6, h: 28, rects: [
+    [.24, 3, .08, 3, K.brassD], [1.28, 3, .08, 3, K.brassD], [.24, 15, .08, 3, K.brassD], [1.28, 15, .08, 3, K.brassD],
+    [.04, 18, 1.1, 1.6, K.teak], [1.1, 15, .46, 7.6, K.teal], [1.1, 15, .46, .8, K.tealD], [1.26, 17.6, .2, 2.6, K.paper], [1.32, 18.4, .08, 1, K.ink],
+    [.44, 6, 1.12, 1.6, K.teak], [.04, 3, .46, 7.6, K.teal], [.04, 3, .46, .8, K.tealD], [.14, 5.6, .2, 2.6, K.paper],
+    [.62, 22, .36, 1, K.rope], [.66, 23, .06, 4, K.rope], [.88, 23, .06, 4, K.rope], [.66, 26, .28, 1, K.rope]] },
+  rb_bulssi_2: { name: '망치 걸이', grade: 3, kind: 'deco', cat: '장식', w: 1.4, h: 28, rects: [
+    [0, 24, 1.4, 2.4, K.ironD], [0, 26, 1.4, .6, K.ironL],
+    [.18, 22, .06, 2, K.iron], [.66, 22, .06, 2, K.iron], [1.14, 22, .06, 2, K.iron],
+    [.18, 9, .06, 13, K.teak], [.02, 4, .38, 5, K.iron], [.02, 8.4, .38, .6, K.ironL],
+    [1.14, 10, .06, 12, K.teakL], [.98, 5, .38, 5, K.ironL], [.98, 9.4, .38, .6, K.emberL],
+    [.6, 1, .18, 2, K.brass], [.12, 1, .18, 2, K.brassD], [1.08, 1, .18, 2, K.brassD], [.64, 1.6, .1, .6, K.soot]] },
+  rb_jaebit_2: { name: '가족패', grade: 3, kind: 'deco', cat: '장식', w: 1.2, h: 34, rects: [
+    [.56, 30, .08, 4, K.rope], [.4, 33, .4, 1, K.rope],
+    [0, 27.5, 1.2, 2.6, K.ebony], [0, 29.6, 1.2, .5, K.ebonyL],
+    [.28, 26, .04, 1.5, K.rope], [.88, 26, .04, 1.5, K.rope], [.28, 13, .04, 2, K.rope], [.88, 13, .04, 2, K.rope],
+    [.08, 15, .44, 11, K.teakD], [.12, 16, .36, 9, K.teak], [.24, 21, .12, 3, K.ink], [.22, 18, .16, .6, K.ink],
+    [.68, 15, .44, 11, K.teakD], [.72, 16, .36, 9, K.teak], [.84, 21, .12, 3, K.ink], [.82, 18, .16, .6, K.ink],
+    [.08, 2, .44, 11, K.teakD], [.12, 3, .36, 9, K.teak], [.24, 8, .12, 3, K.ink], [.22, 5, .16, .6, K.ink],
+    [.68, 2, .44, 11, K.teakD], [.72, 3, .36, 9, K.teakL], [.84, 6, .12, 3, K.leafL]] },
+  rb_nunmaru_2: { name: '오색 깃발 줄', grade: 3, kind: 'deco', cat: '장식', w: 2, h: 18, rects: [
+    [0, 15.4, 2, .8, K.rope], [-.04, 14, .08, 3, K.yakD], [1.96, 14, .08, 3, K.yakD],
+    [.06, 5, .32, 10, K.fBlue], [.44, 5, .32, 10, K.fWhite], [.82, 5, .32, 10, K.fRed], [1.2, 5, .32, 10, K.fGreen], [1.58, 5, .32, 10, K.fYellow],
+    [.14, 9, .16, 2, K.fWhite], [.52, 9, .16, 2, K.fBlue], [.9, 9, .16, 2, K.fWhite], [1.28, 9, .16, 2, K.fWhite], [1.66, 9, .16, 2, K.fRed],
+    [.06, 5, .32, .6, '#2a4f86'], [.44, 5, .32, .6, '#c8ccc4'], [.82, 5, .32, .6, '#982a22'], [1.2, 5, .32, .6, '#2a6a44'], [1.58, 5, .32, .6, '#b08a2a']] },
+  rb_dalmaji_2: { name: '표시 새긴 문설주', grade: 3, kind: 'deco', cat: '장식', w: .7, h: 40, rects: [
+    [.1, 3, .5, 33, K.teak], [.1, 3, .1, 33, K.teakD], [0, 36, .7, 4, K.indigo], [0, 39, .7, 1, K.gold], [0, 0, .7, 3, K.indigo],
+    [.28, 31, .22, 2, K.gold], [.46, 32, .06, 1, K.gold],
+    [.3, 26, .2, 2.6, K.gold], [.36, 26.8, .08, 1, K.teakD],
+    [.36, 20, .06, 4, K.gold], [.3, 22, .18, .6, K.gold],
+    [.3, 14, .1, 2, K.gold], [.4, 14.6, .12, .6, K.gold],
+    [.3, 8, .22, 2, K.pinkL], [.36, 6.6, .1, 1.4, K.pinkL]] },
+  rb_haeoreum_2: { name: '이름 잎 처마발', grade: 3, kind: 'deco', cat: '발', w: 1.6, h: 30, rects: [
+    [-.04, 26, 1.68, 3, K.lac], [-.04, 29, 1.68, 1, K.gold], [-.04, 25.4, 1.68, .6, K.palmD],
+    [.16, 16, .02, 10, K.rope], [.46, 12, .02, 14, K.rope], [.78, 18, .02, 8, K.rope], [1.1, 10, .02, 16, K.rope], [1.4, 14, .02, 12, K.rope],
+    [.1, 6, .14, 10, K.palmLeaf], [.12, 12, .1, .5, K.palmD], [.12, 9, .1, .5, K.gold],
+    [.4, 2, .14, 10, K.palmLeaf], [.42, 8, .1, .5, K.palmD], [.42, 5, .1, .5, K.gold],
+    [.72, 8, .14, 10, K.palmLeaf], [.74, 14, .1, .5, K.gold], [.74, 11, .1, .5, K.palmD],
+    [1.04, 0, .14, 10, K.palmLeaf], [1.06, 6, .1, .5, K.palmD], [1.06, 3, .1, .5, K.gold],
+    [1.34, 4, .14, 10, K.cream], [1.36, 10, .1, .5, K.gold]] },
+};
+
+export const RB_VAULT = {
+  pado: { floor: 'rb_pado_1', wall: 'rb_pado_2' },
+  bulssi: { floor: 'rb_bulssi_1', wall: 'rb_bulssi_2' },
+  jaebit: { floor: 'rb_jaebit_1', wall: 'rb_jaebit_2' },
+  nunmaru: { floor: 'rb_nunmaru_1', wall: 'rb_nunmaru_2' },
+  dalmaji: { floor: 'rb_dalmaji_1', wall: 'rb_dalmaji_2' },
+  haeoreum: { floor: 'rb_haeoreum_1', wall: 'rb_haeoreum_2' },
+};
