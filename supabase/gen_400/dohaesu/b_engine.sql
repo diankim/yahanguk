@@ -64,7 +64,7 @@ begin
   perform public.world_gw_say(p_fight, p_round, 'bad', m.name || ' — ' || p_why || ' 틈으로 빨려 들어갔습니다. 이 싸움에는 다시 돌아올 수 없습니다.');
 end $f$;
 
-create or replace function public.world_dh_push(p_fight uuid, p_uid uuid, p_dir text, p_n integer, p_round integer, p_why text, p_wet boolean)
+create or replace function public.world_dh_push(p_fight uuid, p_uid uuid, p_dir text, p_n integer, p_round integer, p_why text, p_wet boolean, p_safe boolean default false)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare rb jsonb := public.world_boss_fight_rules(p_fight) -> 'board'; m public.world_gw_members%rowtype; n int := p_n; c int; nx int; i int; moved int := 0;
@@ -77,6 +77,7 @@ begin
   for i in 1 .. greatest(0, n) loop
     nx := public.world_dh_step(c, p_dir);
     if nx is null then exit; end if;
+    if public.world_dh_rift(p_fight, nx) and p_safe then exit; end if;
     if public.world_dh_rift(p_fight, nx) then
       update public.world_gw_members set prev = pos::text, pos = nx where fight_id = p_fight and owner_id = p_uid;
       perform public.world_dh_fall(p_fight, p_uid, p_round, p_why);
@@ -309,7 +310,7 @@ begin
       for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.pos = (h ->> 'c')::int loop
         perform public.world_gw_say(p_fight, p_round, 'bad', x.name || ' — 소용돌이 기둥에 휘말렸습니다.');
         perform public.world_dh_dmg(p_fight, x.owner_id, (rb -> 'whirl' ->> 'raw')::numeric, p_round, '소용돌이에', false);
-        perform public.world_dh_push(p_fight, x.owner_id, 'C', 1, p_round, '소용돌이에 휘말려', wet);
+        perform public.world_dh_push(p_fight, x.owner_id, coalesce(b ->> 'dir', 'E'), 1, p_round, '소용돌이에 휘말려', wet, true);
       end loop;
       keep := keep || jsonb_build_array(h); continue;
     end if;
@@ -328,10 +329,10 @@ begin
       end loop;
     elsif h ->> 'k' = 'tentacle' then
       if cardinality(cells) = 2 and public.world_dh_dist(cells[1], cells[2]) < (rb -> 'tentacle' ->> 'dist')::int then
-        perform public.world_gw_say(p_fight, p_round, 'bad', '촉수가 끊기지 않았습니다. 묶인 두 사람이 틈 쪽으로 끌려갑니다.');
+        perform public.world_gw_say(p_fight, p_round, 'bad', '촉수가 끊기지 않았습니다. 묶인 두 사람이 틈 가장자리까지 끌려가 세게 조입니다.');
         for x in select * from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest and y.owner_id in ((h ->> 'a')::uuid, (h ->> 'b')::uuid) loop
           perform public.world_dh_dmg(p_fight, x.owner_id, (rb -> 'tentacle' ->> 'raw')::numeric, p_round, '촉수에', false);
-          perform public.world_dh_push(p_fight, x.owner_id, 'C', 1, p_round, '촉수에 끌려', false);
+          perform public.world_dh_push(p_fight, x.owner_id, 'C', 1, p_round, '촉수에 끌려', false, true);
         end loop;
       else
         perform public.world_gw_say(p_fight, p_round, 'good', '멀리 떨어져 선 두 사람 사이에서 촉수가 툭 끊어졌습니다.');
