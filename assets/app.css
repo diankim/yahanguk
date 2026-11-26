@@ -2647,10 +2647,11 @@ b.contest { color: var(--warn); font-weight: 600; }
 @keyframes tel-cell { 50% { background-color: color-mix(in srgb, var(--bad) 30%, var(--surface)); } }
 @keyframes tel-cell-due { 0% { background-color: color-mix(in srgb, var(--hp) 48%, var(--surface)); } 100% { background-color: var(--surface); } }
 .tel-wave path { fill: none; stroke: var(--mp); stroke-width: 2; stroke-linecap: round; }
-.tel-wave .tel-flow { animation: tel-flow 1s linear infinite; }
-.tel-wave.due path { stroke: var(--hp); stroke-width: 2.4; }
-.tel-wave.due .tel-flow { animation-duration: .45s; }
-@keyframes tel-flow { from { transform: translateX(-12px); } to { transform: translateX(0); } }
+.tel-wave path { opacity: 0; animation: tel-wave 1.6s ease-in-out infinite; }
+.tel-wave path:nth-child(1), .tel-wave path:nth-child(3) { animation-delay: .22s; }
+.tel-wave.due path { stroke: var(--hp); stroke-width: 2.4; animation-duration: .8s; }
+.tel-wave.due path:nth-child(1), .tel-wave.due path:nth-child(3) { animation-delay: .11s; }
+@keyframes tel-wave { 0% { opacity: 0; transform: translateX(-11px); } 30% { opacity: 1; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateX(13px); } }
 .tel-chev path { fill: none; stroke: var(--hp); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: .2; animation: tel-chev 1.1s linear infinite; }
 .tel-chev path:nth-child(2) { animation-delay: .18s; }
 .tel-chev path:nth-child(3) { animation-delay: .36s; }
@@ -2676,7 +2677,7 @@ b.contest { color: var(--warn); font-weight: 600; }
 @keyframes tel-dust { 0% { transform: translate(-50%, -50%) scale(.4); opacity: .9; } 100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; } }
 .tel-shake { animation: tel-shake .45s; }
 @keyframes tel-shake { 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, 0); } }
-@media (prefers-reduced-motion: reduce) { .tel-chev path { opacity: 1; } .gw-wrap .rip, .hx-rip { display: none; } .tel-wave .tel-flow, .tel-chev path, .hx-arrow line, .hx-chain line, .gg-tether line, .hx-map .hx-cell, .gg-cell, .by-map .by-cell, .by-hz circle, .by-tower rect, .hx-tag circle, .wm-n circle, .gg-basket circle, .by-big circle, .by-ring circle, .hx-core.due circle, .gg-coltag, .by-gust, .by-clock text, .gg-ledtag, .mk-cell { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .tel-chev path, .tel-wave path { opacity: 1; } .gw-wrap .rip, .hx-rip { display: none; } .tel-wave path, .tel-chev path, .hx-arrow line, .hx-chain line, .gg-tether line, .hx-map .hx-cell, .gg-cell, .by-map .by-cell, .by-hz circle, .by-tower rect, .hx-tag circle, .wm-n circle, .gg-basket circle, .by-big circle, .by-ring circle, .hx-core.due circle, .gg-coltag, .by-gust, .by-clock text, .gg-ledtag, .mk-cell { animation: none; } }
 .wm-seq { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 2px 0; font-size: calc(14px * var(--fz, 1)); }
 .wm-seq b { padding: 1px 6px; border: 1px solid currentColor; border-radius: 4px; } .wm-seq i { color: var(--muted); font-style: normal; }
 .wm-name { color: var(--hp); }
