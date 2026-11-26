@@ -994,6 +994,13 @@ QUESTS_NEW = [
 
 NPC.update(NPC_NEW)
 QUESTS += QUESTS_NEW
+from data_side_t1 import NPC_T as NPC_T1, QUESTS_T as QUESTS_T1
+from data_side_t2 import NPC_T as NPC_T2, QUESTS_T as QUESTS_T2
+NPC.update(NPC_T1)
+NPC.update(NPC_T2)
+QUESTS += QUESTS_T1 + QUESTS_T2
+OPEN.update({'bs_crack': 'hwq_7', 'gr_pavilion': 'hwq_8', 'nm_peak': 'hwq_8', 'nm_lake': 'hwq_8', 'nm_gorge': 'hwq_8',
+             'dm_bridge': 'hwq_10', 'dm_archive': 'hwq_11', 'dm_caravan': 'hwq_14', 'dm_gate': 'hwq_14', 'dm_aqueduct': 'hwq_14'})
 
 
 def npc_key(name):
