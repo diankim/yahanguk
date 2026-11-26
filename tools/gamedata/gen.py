@@ -102,6 +102,7 @@ def build(dsn):
         'titles', (select jsonb_agg(jsonb_build_object('key', t ->> 'key', 'name', t ->> 'name', 'by', t ->> 'by', 'n', (t ->> 'n')::int, 'grade', (t ->> 'grade')::int) order by o) from jsonb_array_elements(r -> 'titles') with ordinality z(t, o) where not (t ->> 'hidden')::boolean),
         'hidden', (select count(*) from jsonb_array_elements(r -> 'titles') t where (t ->> 'hidden')::boolean))
         from (select world_lantern_rules() r) x""")
+    d['realmBond'] = q(dsn, "select world_realm_bond_rules()")
     d['level'] = q(dsn, "select world_level_rules()")
     d['mentor'] = q(dsn, "select world_mentor_rules()")
     d['questReplay'] = q(dsn, "select world_quest_replay_rules()")
