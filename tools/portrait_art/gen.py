@@ -63,6 +63,7 @@ CAST = [
     ('maesol', '매솔', 'hwq_10'),
     ('neoseol', '너설', 'hwq_1'),
     ('bokman', '복만 영감', 'hwq_1'),
+    ('damgeum', '담금', 'hwq_7'),
 ]
 W, H = 24, 32
 ILL_W, ILL_H = 768, 1024
