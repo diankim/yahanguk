@@ -121,9 +121,9 @@ begin
         if tgt is not null then sk := 'med_revive'; end if;
       end if;
       if sk is null and f.round >= coalesce((x.cds ->> 'med_pulse')::int, 0)
-         and (select count(*) from public.world_gw_members where fight_id = fid and out_rounds = 0 and hp < 70) >= 2 then sk := 'med_pulse'; end if;
+         and (select count(*) from public.world_gw_members where fight_id = fid and out_rounds = 0 and world_gw_members.hp < 70) >= 2 then sk := 'med_pulse'; end if;
       if sk is null and f.round >= coalesce((x.cds ->> 'med_aid')::int, 0) then
-        select owner_id into tgt from public.world_gw_members where fight_id = fid and out_rounds = 0 and hp < 60 order by hp limit 1;
+        select owner_id into tgt from public.world_gw_members where fight_id = fid and out_rounds = 0 and world_gw_members.hp < 60 order by world_gw_members.hp limit 1;
         if tgt is not null then sk := 'med_aid'; end if;
       end if;
     end if;
