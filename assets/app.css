@@ -2689,6 +2689,73 @@ b.contest { color: var(--warn); font-weight: 600; }
 .hx-line { margin: 0; font-size: calc(12.5px * var(--fz, 1)); font-weight: 700; min-height: 1.4em; text-align: center; }
 .hx-gim .btn[disabled] { opacity: .45; }
 @keyframes hx-spin { to { transform: rotate(360deg); } }
+.sea-wrap { display: grid; gap: 4px; justify-items: center; margin-top: 6px; }
+.sea-map { width: min(100%, 320px); height: auto; display: block; overflow: visible; }
+.sea-map > :not(.dh-cell):not(.du-cell) { pointer-events: none; }
+.sea-wrap .mk-hint { text-align: center; margin: 0; max-width: 320px; }
+.dh-cell { stroke: var(--line); stroke-width: 1.5; }
+.dh-cell.sea { fill: color-mix(in srgb, var(--mp) 14%, var(--bg)); }
+.dh-cell.rift { fill: #07080b; stroke: color-mix(in srgb, var(--mp) 40%, var(--line)); }
+.dh-cell.head { fill: color-mix(in srgb, var(--gold) 26%, var(--bg)); stroke: var(--gold); stroke-width: 2.5; }
+.dh-cell.sea-push { fill: color-mix(in srgb, var(--mp) 28%, var(--bg)); }
+.dh-cell.mk-step, .du-cell.mk-step { stroke: var(--gold); stroke-dasharray: 5 4; stroke-width: 2; cursor: pointer; }
+.dh-cell.here, .du-cell.here { stroke: var(--accent); stroke-width: 3; }
+.dh-cell.dest, .du-cell.dest { stroke: var(--gold); stroke-width: 3.5; stroke-dasharray: none; }
+.dh-head-t { fill: var(--gold); font-size: 10px; font-weight: 800; text-anchor: middle; }
+.dh-flow { fill: var(--mp); font-size: 13px; font-weight: 800; text-anchor: middle; }
+.dh-flow.surge, .dh-flow.due { fill: var(--hp); }
+.dh-flow.due { animation: tel-due .6s steps(2, jump-none) infinite; }
+.dh-rift path { fill: none; stroke: color-mix(in srgb, var(--mp) 55%, transparent); stroke-width: 2; stroke-linecap: round; }
+.dh-rift .eye { fill: #0e1220; stroke: var(--mp); stroke-width: 2.5; }
+.dh-rift text { fill: var(--mp); font-size: 12px; font-weight: 800; text-anchor: middle; }
+.dh-rift.spin .eye { stroke-dasharray: 8 5; animation: hx-spin 3s linear infinite; transform-box: fill-box; transform-origin: center; }
+.dh-rift.due .eye { stroke: var(--hp); stroke-width: 4; } .dh-rift.due text { fill: var(--hp); font-size: 19px; }
+.dh-spray { fill: color-mix(in srgb, var(--mp) 30%, transparent); stroke: var(--mp); stroke-width: 2; stroke-dasharray: 4 3; }
+.dh-spray.due { stroke: var(--hp); stroke-width: 3; stroke-dasharray: none; fill: color-mix(in srgb, var(--hp) 30%, transparent); }
+.dh-whirl circle { fill: none; stroke: var(--mp); stroke-width: 2.5; stroke-dasharray: 6 4; animation: hx-spin 2.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+.dh-whirl path { fill: none; stroke: var(--mp); stroke-width: 2; }
+.dh-whirl text { fill: var(--mp); font-size: 11px; font-weight: 800; text-anchor: middle; }
+.dh-tent line { stroke: var(--hp); stroke-width: 3.5; stroke-dasharray: 7 5; animation: march 1.2s linear infinite; }
+.dh-tent.due line { stroke-width: 5; animation-duration: .45s; }
+.dh-headring { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 5 4; animation: tel-zone 2s ease-in-out infinite; }
+.dh-headring.due { stroke: var(--hp); stroke-width: 4; stroke-dasharray: none; animation: tel-stroke .6s steps(2, jump-none) infinite; }
+.dh-stun { fill: var(--gold); font-size: 12px; font-weight: 900; text-anchor: middle; }
+.dh-wet circle { fill: var(--mp); stroke: #0b0d12; stroke-width: 1; }
+.du-cell { stroke: var(--line); stroke-width: 1.5; }
+.du-cell.inner { fill: color-mix(in srgb, var(--gold) 14%, var(--bg)); }
+.du-cell.outer { fill: color-mix(in srgb, var(--gold) 7%, var(--bg)); }
+.du-cell.hole { fill: #0a0806; stroke: color-mix(in srgb, var(--hp) 45%, var(--line)); stroke-dasharray: 3 3; }
+.du-cell.pit { fill: #030303; stroke: #1a1410; }
+.sea-map .du-cell.du-slide, .sea-map .du-cell.du-boulder { fill: color-mix(in srgb, var(--hp) 24%, var(--bg)); animation: tel-zone 2s ease-in-out infinite; }
+.sea-map .du-cell.du-weight { fill: color-mix(in srgb, var(--gold) 36%, var(--bg)); animation: tel-zone 2s ease-in-out infinite; }
+.sea-map .du-cell.du-shave { stroke: var(--hp); stroke-dasharray: 5 4; stroke-width: 2; }
+.sea-map .du-cell.due:not(.hole):not(.pit) { fill: color-mix(in srgb, var(--hp) 52%, var(--bg)); animation: tel-due .6s steps(2, jump-none) infinite; }
+.du-hole-t { fill: var(--hp); font-size: 11px; font-weight: 800; text-anchor: middle; }
+.du-crack { fill: none; stroke: #1a1410; stroke-width: 1.8; stroke-linejoin: round; }
+.du-wedge path { fill: #b8a98c; stroke: #1a1410; stroke-width: 1.2; }
+.du-carry { fill: #b8a98c; stroke: #1a1410; stroke-width: 1; }
+.du-pull circle { fill: var(--bg); stroke: var(--muted); stroke-width: 2; }
+.du-pull path { stroke: var(--muted); stroke-width: 2.5; stroke-linecap: round; }
+.du-pull.on circle { stroke: var(--gold); } .du-pull.on path { stroke: var(--gold); transform-box: fill-box; transform-origin: center; animation: hx-spin 2s linear infinite; }
+.du-pull.due circle { stroke: var(--hp); stroke-width: 3; } .du-pull.due path { stroke: var(--hp); animation-duration: .7s; }
+.du-pull.stopped circle, .du-pull.stopped path { stroke: var(--ok); }
+.du-stop-t { fill: var(--ok); font-size: 11px; font-weight: 800; text-anchor: middle; }
+.du-weight-mark { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 3 3; }
+.du-weight-mark.due { stroke: var(--hp); stroke-width: 3; stroke-dasharray: none; }
+.du-boulder line { stroke: color-mix(in srgb, var(--hp) 70%, var(--gold)); stroke-width: 6; stroke-linecap: round; opacity: .55; }
+.du-boulder.due line { opacity: .9; }
+.du-fist { fill: none; stroke: var(--hp); stroke-width: 3; stroke-dasharray: 5 4; }
+.du-fist.due { stroke-width: 4.5; stroke-dasharray: none; }
+.du-core polygon { fill: #1c140c; stroke: var(--gold); stroke-width: 2.5; }
+.du-core text { fill: var(--gold); font-size: 11px; font-weight: 800; text-anchor: middle; }
+.du-core.due polygon { stroke: var(--hp); stroke-width: 4; } .du-core.due text { fill: var(--hp); }
+.sea-ghost circle { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.sea-ghost path { stroke: var(--hp); stroke-width: 2.2; stroke-linecap: round; }
+.sea-trail line { stroke: var(--text); stroke-width: 2.5; stroke-dasharray: 5 4; opacity: .8; }
+.sea-trail path { fill: var(--text); opacity: .85; }
+.sea-trail.fell line { stroke: var(--hp); } .sea-trail.fell path { fill: var(--hp); }
+.sea-map .sea-fell-new { transform-box: fill-box; transform-origin: center; animation: tel-shake .45s 3; stroke: var(--hp); stroke-width: 3; }
+.sea-gim .btn[disabled] { opacity: .45; }
 .mk-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 4px; width: min(100%, 240px); aspect-ratio: 1 / 1; }
 .mk-cell { position: relative; min-width: 0; padding: 3px; display: grid; grid-template-rows: auto 1fr; justify-items: center; align-items: center; font: inherit; color: var(--muted);
   border-radius: var(--r-sm); border: var(--bw, 1px) dashed var(--line); background: var(--surface); overflow: hidden; }
@@ -2762,10 +2829,10 @@ b.contest { color: var(--warn); font-weight: 600; }
   .gw-wrap.map .mk-duo .gw-tell.xl, .gw-wrap.map .mk-duo .gw-tell.xxl { font-size: calc(11px * var(--fz, 1)); line-height: 1.35; }
   .gw-wrap.map .mk-duo:has(.gg-wrap) { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .gw-wrap.map .mk-duo .gg-map { width: min(100%, 300px); }
-  .gw-wrap.map .mk-duo :is(.by-map, .hx-map) { width: 180px; }
-  .gw-wrap.map .mk-duo :is(.by-wrap, .hx-wrap, .hx-info) { width: 180px; }
-  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) > .mk-hint + .mk-hint { display: none; }
-  .gw-wrap.map .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) .mk-hint { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map .mk-duo :is(.by-map, .hx-map, .sea-map) { width: 180px; }
+  .gw-wrap.map .mk-duo :is(.by-wrap, .hx-wrap, .hx-info, .sea-wrap) { width: 180px; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info, .sea-wrap) > .mk-hint + .mk-hint { display: none; }
+  .gw-wrap.map .mk-duo :is(.gg-wrap, .by-wrap, .hx-info, .sea-wrap) .mk-hint { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
   .gw-wrap.mk .mk-board { width: 180px; }
   .gw-wrap.mk .mk-cell { padding: 2px; }
   .gw-wrap.mk .mk-cell small { display: none; }
@@ -3946,10 +4013,10 @@ b.shadow { color: var(--sp); }
   .gw-wrap.map.playing .raid-act .raid-me > .raid-ammo { grid-column: auto; }
   .gw-wrap.map.playing .raid-act .raid-me > .raid-mine { display: none; }
   .view-host > .gw-wrap.playing ~ details.fold { display: none; }
-  .gw-wrap.map.playing .mk-duo :is(.by-wrap, .hx-wrap, .hx-info) { width: 210px; }
-  .gw-wrap.map.playing .mk-duo :is(.by-map, .hx-map) { width: 210px; }
-  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) .mk-hint { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
-  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info) > .mk-hint + .mk-hint { display: none; }
+  .gw-wrap.map.playing .mk-duo :is(.by-wrap, .hx-wrap, .hx-info, .sea-wrap) { width: 210px; }
+  .gw-wrap.map.playing .mk-duo :is(.by-map, .hx-map, .sea-map) { width: 210px; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info, .sea-wrap) .mk-hint { font-size: calc(10.5px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .by-wrap, .hx-info, .sea-wrap) > .mk-hint + .mk-hint { display: none; }
 }
 @media (min-width: 900px) and (max-height: 700px) {
   .gw-wrap.mk.playing .mk-board { width: 160px; }
@@ -3957,7 +4024,7 @@ b.shadow { color: var(--sp); }
   .gw-wrap.map.playing .gw-ladder { display: none; }
   .gw-wrap.map.playing .mk-duo :is(.gg-wrap, .gg-map) { width: 250px; }
   .gw-wrap.map.playing .mk-duo :is(.by-wrap, .by-map) { width: 176px; }
-  .gw-wrap.map.playing .mk-duo :is(.hx-wrap, .hx-info, .hx-map) { width: 164px; }
+  .gw-wrap.map.playing .mk-duo :is(.hx-wrap, .hx-info, .hx-map, .sea-wrap, .sea-map) { width: 164px; }
   .gw-wrap.map.playing .coop-btn small { display: none; }
   .gw-wrap.map.playing .gw-gim { margin-top: 4px; padding: 3px 6px; }
   .gw-wrap.map.playing .gw-gim .btn { min-height: 32px; }

@@ -4,6 +4,7 @@ import { USABLE, fxHtml } from './item.js';
 import { baseOf, isHq, haveOf } from '../hq.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { weakNote } from './battle.js';
+import { SEA_BOSS } from '../rules.js';
 const SURE = GD.coopRules?.sure_crit || 2;
 const SP_MAX = GD.spear?.max ?? 5, SP_NAME = GD.spear?.name || '창끝 기세';
 export const isSpear = () => store.character?.job_key === 'spearman';
@@ -198,6 +199,8 @@ export function fitFight(root) {
 export function unfitFight() { fitRO?.disconnect(); fitRO = null; fitRoot = null; clearTimeout(fitT); }
 
 const BOSS_ASK = {
+  dh: SEA_BOSS.dohaesu.ask,
+  du: SEA_BOSS.ttangul.ask,
   final: {
     tail: '결전은 20분 동안 이어지고, 체력이 다하면 30초씩 물러납니다. 모두 물러나 있는 동안 구중 봉주가 기운을 되찾습니다.\n싸우는 동안에는 이동·탐색을 할 수 없고, 결전 화면의 「포기하고 나오기」로만 먼저 나올 수 있습니다.',
     1: ['혼자서 결전을 엽니까?', '혼자서는 거의 이길 수 없습니다.\n구중 봉주는 넷이 함께 맞서도록 만든 최종 보스입니다.', '그래도 혼자 시작'],

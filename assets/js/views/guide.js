@@ -2320,6 +2320,65 @@ const S = [
       <li>칭호는 이긴 횟수·혼자·흠 없이로 얻습니다. 테두리는 처음, 바탕 무늬는 3번, 낙관 「宵」는 10번 이기면 받습니다.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
+  ['dhboss', '도해수 · 「도해록」 5장', `${(() => { const B = GD.boss?.dohaesu || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, nm = B.mech_names || {}; return `
+    <p>「도해록」 5장에서 ${esc(B.place || '뒤집힌 물목')}의 「${esc(B.name || '도해수')}」와 싸웁니다(Lv${B.lv ?? 51}부터, 현장의 「${esc(B.name || '도해수')}」 칸). 틈에 끼어 버둥대는 바다 거인을 떼어 내 제 바다로 돌려보내는 싸움입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>5장의 싸움으로, 혼자서도 깰 수 있는 쉬운 판입니다. 혼자면 마감이 없고(여럿이면 ${st.round_s ?? 60}초), 입장 물품이 필요 없으며 회복품도 마음껏 씁니다. 해류·물보라·머리 들기만 나오고, 틈에 빨려 들어도 떨어지지 않고 체력 ${st.board?.fall_hp ?? 40}을 잃은 채 모서리로 돌아옵니다. 처음 돌려보내면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>${esc(B.modes?.hard || '깊은 물목')}</td><td>${esc(B.hard_quest_name || '도해록 5장')}을 마치면 열립니다. 같은 곳의 파티원 ${B.hard_min ?? 2}명에서 4명까지 함께 서고, 모두 ${esc(B.item_name || '')}을 하나씩 씁니다(${esc((B.item_where || '').replace(/[.。]$/, ''))}). ${B.min ?? 18}분 안에 돌려보내야 합니다.</td></tr></table>
+    <h4>물목</h4>
+    <ul>
+      <li>쪽빛 바다 네 칸 네 줄, 가운데 네 칸은 갈라진 틈입니다. 라운드마다 가로·세로 바로 옆 칸으로 한 칸 옮겨 섭니다(행동과 따로, 맵을 눌러서). 틈 칸에 서 있으면 받는 피해가 ${b.rift_hurt ?? 20}% 늘어납니다.</li>
+      <li><b>밀림</b>: 물살은 라운드 이동이 끝난 뒤 정한 방향으로 사람을 밉니다. 가장자리에 등을 대면 벽에 막히고, 「버티기」를 고르면 한 칸 덜 밀립니다. 밀린 길은 맵에 화살표로 남습니다.</li>
+      <li><b>떨어짐</b>: 깊은 물목에서 틈으로 밀려 들어가면 빨려 들어 그 싸움에서 빠지고, 다시 합류할 수 없습니다(체력·회생 부적과 상관없음). 이야기판은 떨어지는 대신 체력 ${st.board?.fall_hp ?? 40}을 잃습니다.</li>
+      <li><b>길 알려 주기</b>: 빛나는 모서리 칸(머리 칸)에 서서, 도해수가 머리를 드는 정확한 라운드(!)에 누르면 크게 휘청입니다. 단추는 늘 떠 있지만 때가 아니면 그 라운드를 버립니다. 머리 칸은 체력 구간마다 옮겨 갑니다.</li>
+      <li>정해진 라운드까지 체력을 75·50·25% 아래로 깎지 못하면 도해수가 거세져 받는 피해가 늘어납니다(맵 아래에 남은 라운드가 보입니다).</li>
+    </ul>
+    <h4>깊은 물목의 수법 — 귀띔</h4>
+    <table class="guide-table"><tr><th>수법</th><th>귀띔</th></tr>
+      <tr><td>${esc(nm.current || '해류')}</td><td>물은 화살표 쪽으로 흐르고, 흐르는 쪽 끝에 틈이 있는지 보세요.</td></tr>
+      <tr><td>${esc(nm.surge || '해류 뒤집힘')}</td><td>뒤집힌 물은 더 멀리 밉니다.</td></tr>
+      <tr><td>${esc(nm.spray || '물보라 덮침')}</td><td>물보라는 떨어질 자리를 미리 부풀립니다.</td></tr>
+      <tr><td>${esc(nm.tentacle || '촉수 감기')}</td><td>묶인 두 사람은 서로 멀어져야 풀립니다.</td></tr>
+      <tr><td>${esc(nm.whirl || '소용돌이 기둥')}</td><td>기둥은 물을 따라 흘러 다닙니다.</td></tr>
+      <tr><td>${esc(nm.wet || '젖은 몸')}</td><td>젖은 몸은 물살에 더 멀리 떠밀립니다(${b.wet?.max ?? 3}겹까지). 바다 쪽 길을 알려 주면 마릅니다.</td></tr>
+      <tr><td>${esc(nm.breath || '틈의 숨')}</td><td>마지막에는 틈이 숨을 들이쉽니다. 여럿이 함께 길을 알려 줘야 막힙니다.</td></tr></table>
+    <ul>
+      <li>체력이 줄수록 수법이 겹쳐 쌓입니다. 귀띔은 여기까지입니다 — 물목을 몇 번 겪으며 받아치는 법을 직접 알아내세요.</li>
+    </ul>
+    <h4>보상</h4>
+    <ul>
+      <li>깊은 물목에서 처음 돌려보내면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배(Lv${B.xp_cap_lv ?? 55} 이상이면 경험치 없음), 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
+    </ul>`; })()}`],
+  ['duboss', '땅울이 · 「도해록」 13장', `${(() => { const B = GD.boss?.ttangul || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, nm = B.mech_names || {}; return `
+    <p>「도해록」 13장에서 ${esc(B.place || '고임터')}의 「${esc(B.name || '땅울이')}」와 싸웁니다(Lv${B.lv ?? 55}부터, 현장의 「${esc(B.name || '땅울이')}」 칸). 막힌 지맥에 아파 날뛰는 땅울이를, 돌판 위에서 버티며 진정시키는 싸움입니다. 판은 둘입니다.</p>
+    <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
+      <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>13장의 싸움으로, 혼자서도 깰 수 있는 쉬운 판입니다. 혼자면 마감이 없고(여럿이면 ${st.round_s ?? 60}초), 입장 물품이 필요 없으며 회복품도 마음껏 씁니다. 땅울음·산사태와 마지막 몸부림 ${st.board?.final?.rounds ?? 2}라운드만 나오고, 구덩이로 미끄러져도 떨어지지 않고 체력 ${st.board?.fall_hp ?? 40}을 잃은 채 기어 올라옵니다. 처음 잠재우면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
+      <tr><td>${esc(B.modes?.hard || '깊은 고임터')}</td><td>${esc(B.hard_quest_name || '도해록 13장')}을 마치면 열립니다. 같은 곳의 파티원 ${B.hard_min ?? 2}명에서 4명까지 함께 서고, 모두 ${esc(B.item_name || '')}을 하나씩 씁니다(${esc((B.item_where || '').replace(/[.。]$/, ''))}). ${B.min ?? 18}분 안에 잠재워야 합니다.</td></tr></table>
+    <h4>고임터 돌판</h4>
+    <ul>
+      <li>육각 돌판 열아홉 칸 — 가운데 땅울이, 안쪽 고리 여섯, 바깥 고리 열둘입니다. 판 밖은 빛이 고인 구덩이입니다. 라운드마다 바로 옆 칸으로 한 칸 옮겨 섭니다(행동과 따로, 맵을 눌러서).</li>
+      <li><b>밀림</b>: 산사태·바위·돌주먹은 라운드 이동이 끝난 뒤 사람을 바깥쪽이나 굴러가는 쪽으로 밉니다. 「버티기」를 고르면 한 칸 덜 밀립니다. 밀린 길은 맵에 화살표로 남습니다.</li>
+      <li><b>떨어짐</b>: 깊은 고임터에서 판 밖이나 무너진 칸으로 밀리거나 디디면 구덩이로 떨어져 그 싸움에서 빠지고, 다시 합류할 수 없습니다. 이야기판은 떨어지는 대신 체력 ${st.board?.fall_hp ?? 40}을 잃습니다.</li>
+      <li><b>끌개 멈추기</b>: 바깥 고리 네 곳의 끌개가 돌면 땅울이가 기운을 끌어옵니다. 쐐기돌(무너진 칸 둘레에 굴러 나옴, 그 칸으로 옮겨 서면 줍고 한 사람 하나)을 든 채 끌개 칸에서, 끌개가 도는 정확한 라운드(!)에 누르면 끌개가 한동안 멈추고 땅울이가 휘청입니다.</li>
+      <li>정해진 라운드까지 체력을 75·50·25% 아래로 깎지 못하면 땅울이가 거세져 받는 피해가 늘어납니다.</li>
+    </ul>
+    <h4>깊은 고임터의 수법 — 귀띔</h4>
+    <table class="guide-table"><tr><th>수법</th><th>귀띔</th></tr>
+      <tr><td>${esc(nm.slide || '산사태 밀기')}</td><td>흙더미는 땅울이가 기우는 쪽에 쌓입니다.</td></tr>
+      <tr><td>${esc(nm.weight || '땅의 무게')}</td><td>내려앉는 돌판은 한동안 구멍으로 남고, 금 간 자리는 두 번째에 영영 무너집니다.</td></tr>
+      <tr><td>${esc(nm.pull || '끌개')}</td><td>도는 끌개는 손에 든 돌로만 멈춥니다.</td></tr>
+      <tr><td>${esc(nm.fist || '돌주먹')}</td><td>주먹은 가장 눈에 띄는 이를 노리고, 맞은 이를 뒤로 밉니다.</td></tr>
+      <tr><td>${esc(nm.boulder || '굴러오는 바위')}</td><td>바위는 한 줄로만 굴러갑니다.</td></tr>
+      <tr><td>${esc(nm.shave || '판 깎기')}</td><td>마지막에는 판이 좁아집니다. 그 뒤 ${esc(nm.final || '마지막 몸부림')} ${b.final?.rounds ?? 3}라운드는 돌판이 기웁니다.</td></tr></table>
+    <ul>
+      <li>체력이 줄수록 수법이 겹쳐 쌓입니다. 귀띔은 여기까지입니다 — 돌판에서 몇 번 버텨 보며 받아치는 법을 직접 알아내세요.</li>
+    </ul>
+    <h4>보상</h4>
+    <ul>
+      <li>깊은 고임터에서 처음 잠재우면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배(Lv${B.xp_cap_lv ?? 55} 이상이면 경험치 없음), 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
+    </ul>`; })()}`],
   ['ugboss', '무용담 · 가장 어려운 판', `${(() => { const U = GD.ultimate || {}, T = U.tokens || {}; return `
     <p>객사 이야기꾼 춘보가 부풀린 무용담이 퍼지자, 보낸 우두머리들이 이야기 속 모습으로 더 사납게 다시 깨어납니다. 이야기판 → 깊은 판 다음의 셋째 판입니다. 판마다 그 이야기를 들려주는 사람의 퀘스트를 마치면 열립니다 — 구중 봉연 나루지기 덕삼(요인록을 마친 뒤), 묵창 주막 홍매댁(묵적록을 마친 뒤), 남문 수로 선착 등지기 차랑(명등기를 마친 뒤).</p>
     <table class="guide-table"><tr><th>판</th><th>순서</th><th>들어가는 곳</th></tr>
@@ -2354,7 +2413,7 @@ const S = [
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
   ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
-  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'ugboss', 'gear', 'gearset', 'durability', 'survival']],
+  ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'dhboss', 'duboss', 'ugboss', 'gear', 'gearset', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
   ['home', '별채', 'home', ['house', 'garden', 'furn', 'portrait', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],

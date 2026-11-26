@@ -1,5 +1,5 @@
-const BOARD = '.hx-map, .by-map, .gg-map, .mk-board';
-const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev):not(.hx-chain), .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
+const BOARD = '.hx-map, .by-map, .gg-map, .mk-board, .sea-map';
+const BOOM = '.due:not(text):not(.wm-n):not(.mk-who):not(.hx-tag):not(.hx-cell):not(.tel-wave):not(.tel-chev):not(.hx-chain):not(.sea-push), .hx-cell.due:not(.hx-tide):not(.hx-drag), .mk-cell.mk-line';
 const deg = a => (a * 180 / Math.PI).toFixed(1);
 
 export const TEL_DEFS = '<defs><clipPath id="tel-clip"><circle r="15"/></clipPath></defs>';
