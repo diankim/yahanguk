@@ -2664,26 +2664,19 @@ b.contest { color: var(--warn); font-weight: 600; }
 .tel-wave, .tel-chev { pointer-events: none; }
 .tel-ovl { position: absolute; pointer-events: none; z-index: 3; }
 .tel-ovl > div { position: absolute; transform: translate(-50%, -50%); }
-.tel-boom { width: var(--w, 60px); height: var(--w, 60px); }
-.tel-boom i, .tel-boom b { position: absolute; inset: 0; border-radius: 50%; }
-.tel-boom i { background: color-mix(in srgb, var(--hp) 70%, transparent); animation: tel-boom-i .55s ease-out forwards; }
-.tel-boom b { border: 3px solid var(--hp); animation: tel-boom-b .8s ease-out forwards; }
-@keyframes tel-boom-i { 0% { transform: scale(.2); opacity: .95; } 100% { transform: scale(1.15); opacity: 0; } }
-@keyframes tel-boom-b { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(1.9); opacity: 0; } }
+.tel-ovl > .tel-burst { transform: translate(-50%, -50%); }
+.tel-burst svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.tel-burst .o { fill: var(--hp); }
+.tel-burst .i { fill: #fff6e0; }
+.tel-ovl > .tel-shard { width: 7px; height: 3px; background: var(--hp); clip-path: polygon(0 50%, 100% 0, 100% 100%); }
 .tel-surge, .tel-yank { width: 72px; height: 30px; }
 .tel-surge svg, .tel-yank svg { display: block; width: 100%; height: 100%; overflow: visible; animation: tel-shove .75s ease-out forwards; }
 @keyframes tel-shove { 0% { transform: rotate(var(--rot)) translateX(-22px); opacity: 0; } 25% { opacity: 1; } 100% { transform: rotate(var(--rot)) translateX(48px); opacity: 0; } }
 .tel-surge path { fill: none; stroke: var(--mp); stroke-width: 3; stroke-linecap: round; }
 .tel-yank path { fill: none; stroke: var(--hp); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.tel-ovl > .tel-trail { width: var(--len, 40px); height: 22px; transform: translate(0, -50%) rotate(var(--rot)); transform-origin: 0 50%; }
-.tel-trail svg { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 0 50%; animation: tel-trail .7s ease-out forwards; }
-.tel-trail.water path { fill: none; stroke: var(--mp); stroke-width: 2.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.tel-trail.ground path { fill: none; stroke: var(--hp); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-@keyframes tel-trail { 0% { transform: scaleX(0); opacity: 1; } 45% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
-.tel-splash { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--mp); opacity: 0; animation: tel-splash .6s ease-out .45s forwards; }
-@keyframes tel-splash { 0% { transform: translate(-50%, -50%) scale(.3); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; } }
-.tel-dust { width: 34px; height: 34px; border-radius: 50%; border: 2px dashed var(--muted); opacity: 0; animation: tel-dust .6s ease-out .45s forwards; }
-@keyframes tel-dust { 0% { transform: translate(-50%, -50%) scale(.4); opacity: .9; } 100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; } }
+.tel-ovl > .tel-pt { border-radius: 50%; transform: translate(-50%, -50%); }
+.tel-pt.pw { background: var(--mp); }
+.tel-pt.pg { background: color-mix(in srgb, var(--hp) 65%, var(--gold)); }
 .tel-shake { animation: tel-shake .45s; }
 @keyframes tel-shake { 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, 0); } }
 @media (prefers-reduced-motion: reduce) { .tel-chev path, .tel-wave path { opacity: 1; } .tel-wave path:nth-child(1) { transform: translateX(-9px); } .tel-wave path:nth-child(3) { transform: translateX(9px); } .gw-wrap .rip, .hx-rip { display: none; } .tel-wave path, .tel-chev path, .hx-arrow line, .hx-chain line, .gg-tether line, .hx-map .hx-cell, .gg-cell, .by-map .by-cell, .by-hz circle, .by-tower rect, .hx-tag circle, .wm-n circle, .gg-basket circle, .by-big circle, .by-ring circle, .hx-core.due circle, .gg-coltag, .by-gust, .by-clock text, .gg-ledtag, .mk-cell { animation: none; } }

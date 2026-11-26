@@ -61,9 +61,47 @@ function piece(ov, cls, x, y, html, rot) {
 }
 
 const WAVES = '<svg viewBox="-30 -15 60 30"><path d="M-12 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/><path d="M0 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/><path d="M12 -15 q3 2.5 0 5 t0 5 t0 5 t0 5 t0 5 t0 5"/></svg>';
-const TRAIL_W = '<svg viewBox="0 -10 100 20" preserveAspectRatio="none"><path d="M0 -6 q5 -4 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"/><path d="M0 0 q5 -4 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"/><path d="M0 6 q5 -4 10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0 t10 0"/></svg>';
-const TRAIL_G = '<svg viewBox="0 -10 100 20" preserveAspectRatio="none"><path d="M10 -7 l8 7 l-8 7"/><path d="M38 -7 l8 7 l-8 7"/><path d="M66 -7 l8 7 l-8 7"/></svg>';
 const CHEVS = '<svg viewBox="-16 -9 32 18"><path d="M-14 -7 l7 7 l-7 7"/><path d="M-4 -7 l7 7 l-7 7"/><path d="M6 -7 l7 7 l-7 7"/></svg>';
+
+function spray(ov, x1, y1, x2, y2, kind, delay, n, cone) {
+  const len = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+  for (let i = 0; i < n; i++) {
+    const t = cone ? 0 : i / n, side = (Math.random() - .5) * (cone ? 4 : 12);
+    const d = document.createElement('div'), sz = 1.5 + Math.random() * 2;
+    d.className = `tel-pt ${kind === 'water' ? 'pw' : 'pg'}`;
+    Object.assign(d.style, { left: `${x1 + ux * len * t - uy * side}px`, top: `${y1 + uy * len * t + ux * side}px`, width: `${sz}px`, height: `${sz}px` });
+    ov.appendChild(d);
+    const sp = cone ? (Math.random() - .5) * cone : (Math.random() - .5) * .9, go = cone ? 14 + Math.random() * 22 : 10 + Math.random() * 18;
+    const vx = ux * Math.cos(sp) - uy * Math.sin(sp), vy = uy * Math.cos(sp) + ux * Math.sin(sp);
+    d.animate([{ transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${vx * go}px), calc(-50% + ${vy * go}px)) scale(.3)`, opacity: 0 }],
+      { duration: 320 + Math.random() * 300, delay: delay + t * 320 + Math.random() * 60, easing: 'cubic-bezier(.2, .7, .4, 1)', fill: 'both' });
+  }
+}
+
+function star(n, lo, hi, jag) {
+  return Array.from({ length: n * 2 }, (_, i) => {
+    const t = Math.PI / n * i + (Math.random() - .5) * jag, r = i % 2 ? lo * (.7 + Math.random() * .6) : hi * (.55 + Math.random() * .45);
+    return `${(r * Math.cos(t)).toFixed(1)},${(r * Math.sin(t)).toFixed(1)}`;
+  }).join(' ');
+}
+
+function burst(ov, x, y, w, delay) {
+  const d = document.createElement('div');
+  d.className = 'tel-burst';
+  Object.assign(d.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${w}px` });
+  d.innerHTML = `<svg viewBox="-50 -50 100 100"><polygon class="o" points="${star(11, 15, 50, .25)}"/><polygon class="i" points="${star(9, 9, 24, .3)}"/></svg>`;
+  ov.appendChild(d);
+  d.animate([{ transform: 'translate(-50%, -50%) scale(.25) rotate(-8deg)', opacity: 1 }, { transform: 'translate(-50%, -50%) scale(1.05) rotate(0deg)', opacity: 1, offset: .35 }, { transform: 'translate(-50%, -50%) scale(1.15) rotate(3deg)', opacity: 0 }],
+    { duration: 480, delay, easing: 'ease-out', fill: 'both' });
+  for (let i = 0; i < 6; i++) {
+    const a = Math.random() * Math.PI * 2, go = w * (.55 + Math.random() * .35), sh = document.createElement('div');
+    sh.className = 'tel-shard';
+    Object.assign(sh.style, { left: `${x}px`, top: `${y}px`, '--r': `${(a * 180 / Math.PI).toFixed(0)}deg` });
+    ov.appendChild(sh);
+    sh.animate([{ transform: `translate(-50%, -50%) rotate(${a}rad) translateX(${w * .2}px) scale(1)`, opacity: 1 }, { transform: `translate(-50%, -50%) rotate(${a}rad) translateX(${go}px) scale(.4)`, opacity: 0 }],
+      { duration: 420 + Math.random() * 160, delay: delay + 40, easing: 'cubic-bezier(.2, .8, .4, 1)', fill: 'both' });
+  }
+}
 
 export function telPlay(root, before) {
   if (!before || still()) return;
@@ -82,10 +120,7 @@ export function telPlay(root, before) {
     t.animate([{ transform: `translate(${dx * unit}px, ${dy * unit}px)` }, { transform: 'translate(0, 0)' }],
       shoved ? { duration: 560, delay: 140, easing: 'cubic-bezier(.15, 1.4, .35, 1)', fill: 'backwards' } : { duration: 380, easing: 'ease-out' });
     if (shoved && ov) {
-      const kind = pc?.kind || 'ground', len = Math.hypot(dx, dy), ang = Math.atan2(-dy, -dx) * 180 / Math.PI;
-      piece(ov, `tel-trail ${kind}`, old[0], old[1], kind === 'water' ? TRAIL_W : TRAIL_G, ang);
-      ov.lastChild.style.setProperty('--len', `${len}px`);
-      piece(ov, kind === 'water' ? 'tel-splash' : 'tel-dust', nx, ny);
+      spray(ov, old[0], old[1], nx, ny, pc?.kind || 'ground', 140, 26, 0);
     }
   }
   for (const pc of before.push || []) {
@@ -96,13 +131,13 @@ export function telPlay(root, before) {
       if (Math.hypot(r.left + r.width / 2 - base.left - old[0], r.top + r.height / 2 - base.top - old[1]) > 4) continue;
       const ra = pc.a * Math.PI / 180, bx = Math.cos(ra), by = Math.sin(ra);
       t.animate([{ transform: 'translate(0, 0)' }, { transform: `translate(${bx * 14 * unit}px, ${by * 14 * unit}px)`, offset: .35 }, { transform: `translate(${-bx * 4 * unit}px, ${-by * 4 * unit}px)`, offset: .6 }, { transform: 'translate(0, 0)' }], { duration: 650, delay: 140, easing: 'ease-out' });
-      if (ov) { piece(ov, 'tel-boom', old[0] + bx * 22, old[1] + by * 22, '<i></i><b></b>'); ov.lastChild.style.setProperty('--w', '40px'); ov.lastChild.querySelectorAll('i, b').forEach(e => { e.style.animationDelay = '.3s'; e.style.animationFillMode = 'both'; }); }
+      if (ov) { burst(ov, old[0] + bx * 20, old[1] + by * 20, 36, 300); spray(ov, old[0] + bx * 20, old[1] + by * 20, old[0] - bx * 20, old[1] - by * 20, 'water', 330, 14, 2.4); }
     }
   }
   if (!ov) return;
   let boom = false;
   for (const f of before.fx) {
-    if (f.kind === 'boom') { boom = true; piece(ov, 'tel-boom', f.x, f.y, '<i></i><b></b>'); ov.lastChild.style.setProperty('--w', `${Math.max(44, f.w)}px`); }
+    if (f.kind === 'boom') { boom = true; burst(ov, f.x, f.y, Math.min(110, Math.max(50, f.w * 1.1)), 0); }
     else piece(ov, f.kind === 'wave' ? 'tel-surge' : 'tel-yank', f.x, f.y, f.kind === 'wave' ? WAVES : CHEVS, f.a);
   }
   if (boom) { b.classList.remove('tel-shake'); void b.getBoundingClientRect(); b.classList.add('tel-shake'); setTimeout(() => b.classList.remove('tel-shake'), 500); }
