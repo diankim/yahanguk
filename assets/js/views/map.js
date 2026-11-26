@@ -17,11 +17,14 @@ let realm = null, realmFit = null;
 const REALM_NAMES = { main: '본토', hanul: '건넛누리' };
 const realmOf = r => GAMEDATA.domains?.[r?.territory_id]?.realm || 'main';
 const viewRegions = () => mapData.regions.filter(r => realmOf(r) === realm);
+const realmGap = (a, b) => realmOf(a) !== realmOf(b) ? GAMEDATA.domains?.[b.territory_id]?.gap ?? GAMEDATA.domains?.[a.territory_id]?.gap ?? null : null;
+const hopDist = (a, b) => { const g = realmGap(a, b); return g != null ? Number(g) : Math.hypot(b.world_x - a.world_x, b.world_y - a.world_y); };
+let viewRealm = null, entry = false;
 let el, sub = 'world', off = [], selected = null, focusPending = false, view = null, mapData = null, mountData = null, partyData = null, zones = new Map(), sealed = new Set(), shadow = null, surveyed = new Set();
 
 export async function render(root, s) {
   if (!store.character) return;
-  el = root; sub = SUBS.some(x => x[0] === s) ? s : 'world';
+  el = root; sub = SUBS.some(x => x[0] === s) ? s : 'world'; entry = true;
   el.innerHTML = `<div class="view-head"><div><p class="eyebrow">${icon('map', 14)} 세계</p><h1>지도</h1></div></div>
     ${segmented('map-sub', SUBS, sub)}<div id="map-body"></div>`;
   bindSegmented(el, 'map-sub', k => { sub = k; history.replaceState(null, '', `#/map/${k}`); draw(); });
@@ -63,7 +66,10 @@ async function drawWorld(body, soft) {
   const here = currentRegion(mapData);
   if (selected && !mapData.regions.some(r => r.region_id === selected)) selected = mapData.regions.find(r => r.region_name === selected)?.region_id || null;
   if (!selected || !mapData.regions.some(r => r.region_id === selected)) selected = here?.region_id || mapData.regions[0]?.region_id;
+  if (entry && !focusPending && here && realmOf(mapData.regions.find(r => r.region_id === selected)) !== realmOf(here)) selected = here.region_id;
+  entry = false;
   realm = realmOf(mapData.regions.find(r => r.region_id === selected) || here);
+  if (view && viewRealm && viewRealm !== realm) view = null;
   const keepScroll = soft && $('#region-q', body)?.value, focused = focusPending;
   body.innerHTML = `
     <div class="map-layout">
@@ -75,7 +81,7 @@ async function drawWorld(body, soft) {
           <button class="icon-btn" data-zoom="here" aria-label="현재 위치로">${icon('target')}</button>
           <button class="icon-btn" data-zoom="fit" aria-label="전체 보기">${icon('refresh')}</button>
         </div>
-        <div class="map-realm" id="map-realm"></div>
+        <div class="map-realm" id="map-realm"></div><div class="map-edges" id="map-edges"></div>
         <div class="map-peek" id="map-peek" hidden></div>
         <div class="map-legend"><span><i class="lg here"></i>현재 위치</span><span><i class="lg safe"></i>안전지대</span><span><i class="lg lock"></i>레벨 부족</span><span><i class="lg route"></i>경로</span><span><i class="lg contest"></i>분쟁 중</span><span><i class="lg survey"></i>답사 완료</span><span><i class="lg seafish"></i>바다낚시</span>${bjMaps().length ? '<span><i class="lg bj"></i>펼친 비장도</span>' : ''}${RAID_ON ? '<span><i class="lg sealed"></i>봉연에 잠김</span><span><i class="lg shadow"></i>사슬 벗은 그림자</span>' : ''}</div>
       </div>
@@ -150,8 +156,7 @@ function setupMap(here) {
   svg.addEventListener('pointerup', e => {
     const wasTap = moved < 6 && pts.size === 1 && !gesture; up(e);
     if (!wasTap) return;
-    const els = document.elementsFromPoint(e.clientX, e.clientY), gate = els.find(n => n.dataset?.realmGo);
-    if (gate) { goRealm(gate.dataset.realmGo, gate.dataset.gate); return; }
+    const els = document.elementsFromPoint(e.clientX, e.clientY);
     const node = els.find(n => n.dataset?.region);
     if (node) select(node.dataset.region, false);
   });
@@ -194,7 +199,7 @@ export function routeTo(target) {
     const a = byId.get(u);
     for (const v of a.travel_from || []) {
       const b = byId.get(v); if (!b || !todo.has(v) || (b.level_locked && v !== target)) continue;
-      const nd = best + Math.hypot(a.world_x - b.world_x, a.world_y - b.world_y);
+      const nd = best + hopDist(a, b);
       if (nd < (dist.get(v) ?? Infinity)) { dist.set(v, nd); prev.set(v, u); }
     }
   }
@@ -213,7 +218,8 @@ function paint() {
   const pathOf = poly => 'M' + poly.map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join('L') + 'Z';
   const regions = viewRegions(), byId = new Map(regions.map(r => [r.region_id, r])), all = new Map(mapData.regions.map(r => [r.region_id, r]));
   const here = currentRegion(mapData), dest = store.character?.travel_destination;
-  const g = geometry(), b = bounds(), fitK = Math.min(W / b.w, H / b.h), zoom = view.k / fitK;
+  const g = geometry(), b = bounds(), fitK = Math.min(W / b.w, H / b.h), zoom = view.k / fitK, boxes0 = [];
+  viewRealm = realm;
 
   let land = '', hatch = '';
   for (const r of regions) {
@@ -229,11 +235,18 @@ function paint() {
     if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (zoneOf(e.a) !== zoneOf(e.b)) border += d; else inner += d;
   }
   const seen = new Set(); let roads = '', gates = '';
+  const rt = selected && here && selected !== here.region_id ? routeTo(selected) : null;
+  const crossAt = new Set((rt || []).flatMap((x, i) => i && realmOf(x) !== realmOf(rt[i - 1]) ? [rt[i - 1].region_id, x.region_id] : []));
+  const mid = b.x + b.w / 2, edges = [];
   for (const r of regions) for (const f of r.travel_from || []) {
     const go = all.get(f);
     if (go && !byId.has(f)) {
-      const [gx, gy] = P(r), t = realmOf(go) === 'main' ? `‹ ${REALM_NAMES.main}` : `${REALM_NAMES[realmOf(go)] || ''} ›`, gw = [...t].length * 12 + 18;
-      gates += `<g class="realm-gate" data-realm-go="${esc(realmOf(go))}" data-gate="${esc(f)}" role="button" tabindex="0"><rect x="${(gx - gw / 2).toFixed(1)}" y="${(gy + 14).toFixed(1)}" width="${gw}" height="22" rx="11" data-realm-go="${esc(realmOf(go))}" data-gate="${esc(f)}"/><text x="${gx.toFixed(1)}" y="${(gy + 25).toFixed(1)}" text-anchor="middle" dominant-baseline="central" data-realm-go="${esc(realmOf(go))}" data-gate="${esc(f)}">${esc(t)}</text></g>`;
+      const k = realmOf(go); if (edges.some(e => e.k === k)) continue;
+      const right = r.world_x >= mid, [gx, gy] = P(r), top = right ? (W < 520 ? 242 : 224) : 56, ey = Math.max(top, Math.min(H - (W < 520 ? 92 : 72), gy));
+      const on = crossAt.has(r.region_id) && crossAt.has(f), ex = right ? W : 0;
+      gates += `<path d="M${gx.toFixed(1)},${gy.toFixed(1)}C${((gx + ex) / 2).toFixed(1)},${gy.toFixed(1)} ${((gx + ex) / 2).toFixed(1)},${ey.toFixed(1)} ${ex},${ey.toFixed(1)}" class="realm-way${on ? ' route' : ''}"/>`;
+      edges.push({ k, gate: f, right, y: ey, on });
+      boxes0.push({ x: right ? W - 120 : 0, y: ey - 22, w: 120, h: 44 });
       continue;
     }
     const o = byId.get(f); if (!o) continue;
@@ -242,7 +255,6 @@ function paint() {
     roads += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="road"/>`;
   }
   let route = '';
-  const rt = selected && here && selected !== here.region_id ? routeTo(selected) : null;
   const rtv = rt ? rt.filter(r => byId.has(r.region_id)) : null;
   if (rtv && rtv.length > 1) route = `<polyline class="route-line" points="${rtv.map(r => P(r).map(v => v.toFixed(1)).join(',')).join(' ')}"/>`;
   const terr = new Map();
@@ -254,7 +266,7 @@ function paint() {
   const fs = W < 520 ? 12 : 13;
   const rank = r => r.region_id === selected ? 0 : r.region_id === here?.region_id ? 1 : r.region_id === dest ? 2 : r.reachable ? 3 : r.level_locked ? 6 : 4;
   const order = [...regions].sort((a, c) => rank(a) - rank(c) || (c.visits || 0) - (a.visits || 0));
-  const boxes = regions.map(r => { const [x, y] = P(r); return { x: x - 8, y: y - 8, w: 16, h: 16 }; });
+  const boxes = regions.map(r => { const [x, y] = P(r); return { x: x - 8, y: y - 8, w: 16, h: 16 }; }).concat(boxes0);
   boxes.push({ x: W - 60, y: 0, w: 60, h: 190 }, { x: 0, y: H - (W < 520 ? 50 : 30), w: W, h: 50 });
   const hit = bx => bx.x < 0 || bx.y < 0 || bx.x + bx.w > W || bx.y + bx.h > H || boxes.some(o => bx.x < o.x + o.w && bx.x + bx.w > o.x && bx.y < o.y + o.h && bx.y + bx.h > o.y);
   const labels = new Map();
@@ -333,7 +345,8 @@ function paint() {
     <g class="land">${land}</g>${waterOver(g, id => byId.has(id), X, Y, view.k, zoom)}<g>${hatch}</g>
     <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
-    <g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g><g class="gates">${gates}</g>`;
+    <g class="gates">${gates}</g><g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
+  paintEdges(edges, here, dest && all.get(dest));
   paintRealm();
 }
 function paintRealm() {
@@ -343,6 +356,15 @@ function paintRealm() {
   box.hidden = realms.length < 2;
   box.innerHTML = realms.map(k => `<button class="realm-tab${k === realm ? ' on' : ''}" data-realm-go="${esc(k)}">${esc(REALM_NAMES[k] || k)}</button>`).join('');
   box.querySelectorAll('[data-realm-go]').forEach(b => b.onclick = () => goRealm(b.dataset.realmGo));
+}
+function paintEdges(edges, here, dest) {
+  const box = $('#map-edges', el); if (!box) return;
+  box.innerHTML = edges.map(e => {
+    const name = REALM_NAMES[e.k] || e.k, t = e.right ? `${name} ›` : `‹ ${name}`;
+    const note = realmOf(here) === e.k ? '지금 있는 곳' : dest && realmOf(dest) === e.k ? '가는 곳' : e.on ? '경로' : '';
+    return `<button type="button" class="realm-edge ${e.right ? 'r' : 'l'}${e.on ? ' route' : ''}${note === '지금 있는 곳' ? ' here' : ''}" style="top:${e.y.toFixed(0)}px" data-realm-go="${esc(e.k)}" data-gate="${esc(e.gate)}" aria-label="${esc(name)} 지도로"><b>${esc(t)}</b>${note ? `<small>${esc(note)}</small>` : ''}</button>`;
+  }).join('');
+  box.querySelectorAll('[data-realm-go]').forEach(x => x.onclick = () => goRealm(x.dataset.realmGo, x.dataset.gate));
 }
 function goRealm(k, gate) {
   if (k === realm) return;
@@ -388,8 +410,7 @@ function showPeek(id) {
 }
 
 function hopSeconds(from, to, speed) {
-  const gap = realmOf(from) !== realmOf(to) ? GAMEDATA.domains?.[to.territory_id]?.gap ?? GAMEDATA.domains?.[from.territory_id]?.gap : null;
-  const d = gap != null ? Number(gap) : Math.hypot(to.world_x - from.world_x, to.world_y - from.world_y);
+  const d = hopDist(from, to);
   const terr = Math.max(Number(from.terrain_cost) || 1, Number(to.terrain_cost) || 1);
   const cross = from.territory_id && to.territory_id && from.territory_id !== to.territory_id ? 1.2 : 1;
   return Math.max(12, Math.round((d * 1.4 + Math.abs((to.elevation || 0) - (from.elevation || 0)) * 6 + 12) * terr * cross / speed));

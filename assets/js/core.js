@@ -363,6 +363,7 @@ const ICONS = {
   up: 'M6 14l6-6 6 6',
   down: 'M6 10l6 6 6-6',
   lantern: 'M9 3h6M12 3v2M7 7a5 5 0 0110 0v8a5 5 0 01-10 0zM7 11h10M12 20v2',
+  bowl: 'M3 11h18a9 7 0 01-18 0zM9 21h6M12 18v3M9 7c0-1.5 1-2 1-3.5M14 7c0-1.5 1-2 1-3.5',
 };
 export const ENV_ICON = { dawn: 'dawn', noon: 'sun', dusk: 'moon', night: 'moon', clear: 'sun', cloudy: 'cloud', rain: 'rain', drizzle: 'drizzle', fog: 'fog', wind: 'wind', snow: 'snow', bloodmist: 'mist' };
 export function icon(name, size = 18) {

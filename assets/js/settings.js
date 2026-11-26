@@ -162,6 +162,7 @@ function noteActs(n) {
   if ((n.kind === 'wedding_invite' || n.kind === 'bond_wedding') && n.payload?.wed_id) return `<button class="btn primary small" data-wedv="${esc(n.id)}">혼례 보기</button>`;
   if (n.kind === 'feast') return `<button class="btn primary small" data-feastv="${esc(n.id)}">행사 보기</button>`;
   if (n.kind === 'lantern_reply' || n.kind === 'lantern_removed') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="lantern">등불 편지</button>`;
+  if (n.kind === 'hfeast') return `<button class="btn primary small" data-goto="${esc(n.id)}" data-to="hfeast/${esc(n.payload?.port || '')}">잔칫상 보기</button>`;
   if (n.kind.startsWith('tourney_') && n.payload?.t_id) return `<button class="btn primary small" data-tn="${esc(n.id)}">${n.kind === 'tourney_start' ? '대진표 보기' : '비무 방'}</button>`;
   if ((n.kind === 'pfight_invite' || n.kind === 'pfight_join') && n.payload?.fight_id) return `<button class="btn primary small" data-pfight="${esc(n.id)}" data-join="${n.kind === 'pfight_invite' ? 1 : ''}">${n.kind === 'pfight_invite' ? '합류 · 탐색력 1' : '보기'}</button>`;
   if (n.kind === 'housing_item' || n.kind === 'housing_merge') return `<button class="btn primary small" data-house="${esc(n.id)}">별채 보기</button>`;
@@ -262,6 +263,7 @@ async function runAct(btn) {
   if (btn.dataset.goto) {
     await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); const [v, sub] = btn.dataset.to.split('/');
     if (v === 'lantern') { (await import('./lantern.js')).openLantern(); return true; }
+    if (v === 'hfeast') { (await import('./hfeast.js')).openHarborFeast(sub || null); return true; }
     try {
       if (n.kind === 'title' && n.payload?.title_key) sessionStorage.setItem('yh-title-focus', n.payload.title_key);
       if (n.kind === 'cosmetic' && n.payload?.cosmetic_key) sessionStorage.setItem('yh-cos-focus', n.payload.cosmetic_key);

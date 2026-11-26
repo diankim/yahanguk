@@ -25,6 +25,7 @@ import { regionIntro } from '../lore.js';
 import { USABLE } from './item.js';
 import { hit } from '../changes.js';
 import { LANTERN } from '../rules.js';
+import { HFEAST } from '../rules.js';
 
 const THEME_SCENE = { city: '도성', wild: '들과 숲', shrine: '사당', water: '물가', mountain: '산악', desert: '황무지', deep: '지하', sky: '천문' };
 const OUTCOME = {
@@ -223,6 +224,7 @@ function town(s, roster) {
     ['board', 'scroll', '의뢰 게시판', '사건과 상시 의뢰'],
     ['tourney', 'sword', '비무 방', '야행 비무회 신청·대진표·관람'],
     LANTERN.isPort(r.region_id) ? ['lantern', 'lantern', '등불 편지', LANTERN.tile] : null,
+    HFEAST.isPort(r.region_id) ? ['hfeast', 'bowl', '나눔 잔칫상', HFEAST.tile] : null,
     ['faction', 'flag', '세력', store.character?.major_faction_id ? `${nameOf(store.character.major_faction_id)} · 퀘스트·의뢰판·비고` : '대세력 살펴보기·가입'],
     r.region_id === 'hq_yard' ? ['records', 'scroll', '정청 기록고', '첫째 밤의 흔적이 남은 장부'] : null,
     ['depart', 'map', '길 떠나기', '지도에서 목적지 고르기'],
@@ -297,6 +299,7 @@ function field(s, roster, blocked) {
           ${fightBack()}
           ${ugBoards(s).map(([k, b]) => `<a class="tile danger" href="#/gw/${esc(b.boss)}" title="${esc(`${b.name} · ${ugReq()}`)}">${icon('flag', 22)}<span>${esc(b.name)}</span></a><button class="tile" type="button" data-ug-shop="${esc(k)}" title="${esc(ugShopTip(b))}">${icon('chest', 22)}<span>${esc(b.name)} 교환</span></button>`).join('')}
           ${LANTERN.isPort(s.region.region_id) ? `<button class="tile" type="button" data-fac="lantern" title="${esc(LANTERN.tile)}">${icon('lantern', 22)}<span>등불 편지</span></button>` : ''}
+          ${HFEAST.isPort(s.region.region_id) ? `<button class="tile" type="button" data-fac="hfeast" title="${esc(HFEAST.tile)}">${icon('bowl', 22)}<span>잔칫상</span></button>` : ''}
           ${bjHere(s) ? `<button class="tile danger" id="bj-dig" title="${esc(`펼친 ${bjHere(s).name}을(를) 따라 흙을 팝니다 · 탐색력 ${GAMEDATA.bijang?.stamina ?? 1} · 파수꾼과 싸움`)}" ${blocked ? 'disabled' : ''}>${icon('chest', 22)}<span>비장도 따라 파기</span></button>` : ''}
           ${['mukjeok', 'gapgwi', 'baekya', 'dohaesu', 'ttangul'].filter(k => GAMEDATA.boss?.[k]?.region === s.region.region_id).map(k => [k, GAMEDATA.boss[k]]).map(([k, B]) => `<a class="tile danger" href="#/gw/${k}" title="${esc(B.name)} · Lv${B.lv}부터, ${esc(B.item_name)} 1개">${icon('flag', 22)}<span>${esc(B.name)}</span></a>`).join('')}
         </div>
@@ -581,6 +584,7 @@ function openFacility(k, s) {
   if (k === 'inn') return openRest(s.region);
   if (k === 'idle') return goIdleRest();
   if (k === 'lantern') return import('../lantern.js').then(x => x.openLantern());
+  if (k === 'hfeast') return import('../hfeast.js').then(x => x.openHarborFeast());
   if (k === 'project') return openProject(s.region.project?.here?.key || null);
   if (k.startsWith('regular')) return openRegular(k.split(':')[1] || s.region.regular?.npc || null);
   const title = { shop: s.region.shop_name || '상점', smithy: '대장간', market: '거래소', stable: '마구간', storage: '창고' }[k];

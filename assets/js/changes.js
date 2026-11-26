@@ -6,7 +6,7 @@ export const CHANGES = {
   survey: /field_|gather|expedition/,
   journal: /regular_give|quest|story|battle|gather|craft|fish|travel|field_|expedition|faction|raid|trade|market|shop|meisho_dig/,
   roster: /travel|rescue|party|expedition|downed|idle/,
-  combat: /equip|gear_set_apply|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|kin_|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish|meisho_dig/,
+  combat: /equip|gear_set_apply|stat|skill|title|reset|enhance|repair|use_item|battle|expedition|rest|purify|cure|raid|faction|bond|kin_|dismantle|level|craft|shop|trade|discard|storage|idle|yohwa|rescue|downed|travel|field_search|gather|fish|meisho_dig|hfeast_/,
   fishSpot: /fish|travel/,
   fishSpotNone: /fish|travel|craft|shop|trade|discard|equip|storage|letter|market|dismantle|overflow|quest/,
   rest: /field_rest|survival_action/,
@@ -29,7 +29,7 @@ export const CHANGES = {
   board: /quest|story|faction|raid_final|level|reset_identity|regular_give/,
   raidBrief: /raid_final_start|raid_join/,
   gwiryeong: /use_item|storage|letter|market|trade|discard|overflow|field_search|gather|battle_action|expedition_complete|raid_|gw_|ucomm|kin_gift/,
-  boardItems: /gather|meisho_|garden_act|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_|project_give|regular_give|kin_gift/,
+  boardItems: /gather|meisho_|garden_act|battle_action|craft|shop|market|trade|storage|letter|discard|dismantle|^world_fish(_at)?$|expedition|use_item|overflow|ucomm|faction_vault|pet_|project_give|regular_give|kin_gift|hfeast_give/,
   boardAway: /expedition|raid_|pfight_|gw_|bijang_/,
   boardSearch: /^world_field_search/,
   boardPet: /pet_/,
@@ -51,5 +51,6 @@ export const SFX_ACTS = [
   [/equip|title_|allocate/, 'equip'], [/rest|survival|use_item|rescue/, 'heal'], [/field_move/, 'step'],
 ];
 export const TASK_ACTS = { gw: /gw_/, mj: /gw_/, gg: /gw_/, by: /gw_/, win: /battle_action|raid_|pfight_|gw_|expedition_complete/, gather: /field_gather|meisho_dig|expedition_complete/, craft: /craft/, fish: /^world_fish(_at)?$/,
-  clue: /field_search/, search: /field_search/, rest: /field_rest/, idle: /claim_idle/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/ };
+  clue: /field_search/, search: /field_search/, rest: /field_rest/, idle: /claim_idle/, travel: /travel/, expedition: /expedition/, sell: /shop_sell|market/, trade: /trade|market|ucomm/, raid: /raid_/,
+  hfeast: /^world_hfeast_give$/, tradesale: /^world_trade_(sell|view|status)$/, lantern: /^world_lantern_(send|reply)$/ };
 export const hit = (key, name) => CHANGES[key].test(name || '');

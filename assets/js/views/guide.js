@@ -5,6 +5,7 @@ import { AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from '../lor
 import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
+import { HFEAST } from '../rules.js';
 import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
@@ -2165,6 +2166,19 @@ const S = [
       <li>별채 주인과 한 지붕 정인이 심기·물 주기·거두기를 합니다. 이동·원정·자율 활동 중에는 가꿀 수 없습니다.</li>
       <li>손님은 밭을 구경하고 까마귀를 쫓아 줄 수 있습니다.</li>
     </ul>`],
+  ['hfeast', '나눔 잔칫상', (() => { const H = HFEAST, ks = (H.order || []).map(k => [k, H.kinds?.[k] || {}]); return `
+    <p>항구마다 여럿이 요리를 한 그릇씩 올려 한 상을 차립니다. 상이 다 차면 올린 사람과 그 뒤 찾아온 사람이 함께 기운을 받습니다. 항구가 있는 곳의 현장에 「나눔 잔칫상」 칸이 있습니다(${esc(H.portNames())}).</p>
+    <h4>상 차리기</h4>
+    <ul>
+      <li>${esc(H.help)}</li>
+      <li>${esc(H.dishNote)}</li>
+      <li>상이 열리면 전체 채팅 「잔치 소식」과 요리를 올린 사람에게 알림이 갑니다(설정 › 알림의 「보상」 갈래). 시각은 모두 한국 시각입니다.</li>
+      <li>이동·원정·자율 활동 중이거나 쓰러진 동안에는 요리를 올리거나 먹을 수 없습니다. 쓰러져 있었거나 상태 칸(${H.cap}칸)이 차 기운을 못 받았으면, 열린 시간 안에 그 항구에서 「상에서 먹기」를 하면 됩니다.</li>
+    </ul>
+    <h4>상 종류와 기운 (${H.buff_h}시간)</h4>
+    <table class="guide-table"><thead><tr><th>상</th><th>기운</th><th>효과</th><th>정해지는 때</th></tr></thead><tbody>
+      ${ks.map(([k, x]) => `<tr><td>${esc(x.name || '')}</td><td>${esc(x.buff || '')}</td><td>${esc(effectText(x.effects).join(' · '))}</td><td>${esc(x.desc || '')}${k === H.tie ? ' · 갈래 수가 같을 때' : ''}</td></tr>`).join('')}
+    </tbody></table>`; })()],
   ['lantern', '등불 편지', (() => { const L = GD.lantern || {}; const sh = (L.shapes || []).map(x => x.name), co = (L.colors || []).map(x => x.name); return `
     <p>항구 물가에서 글을 적은 등불을 띄우고, 다른 항구에서 흘러온 남의 등불을 건져 읽습니다. 항구가 있는 곳의 현장에 「등불 편지」 칸이 있습니다(${esc((L.ports || []).map(p => p.name).join(' · '))}).</p>
     <h4>띄우기와 건지기</h4>
@@ -2446,7 +2460,7 @@ const GROUPS = [
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject']],
   ['eco', '가방·경제', 'coin', ['bag', 'economy', 'commission', 'regular', 'kin', 'cproject']],
-  ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'lantern', 'yeonri', 'wedding', 'tourney']],
+  ['social', '교류·사건', 'users', ['case', 'party', 'mentor', 'chat', 'letter', 'lantern', 'hfeast', 'yeonri', 'wedding', 'tourney']],
 ];
 let gsel = 'basic', gq = '';
 const plain = html => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');

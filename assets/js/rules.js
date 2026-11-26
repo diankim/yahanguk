@@ -165,6 +165,32 @@ export const LANTERN = {
   left: ms => { const d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000); return ms <= 0 ? '곧 꺼짐' : d > 0 ? `${d}일 ${h}시간 남음` : `${Math.max(1, h)}시간 남음`; },
 };
 
+const HF = GD.harborFeast || { need: 12, per_person: 3, buff_h: 4, eat_h: 2, slot_h: 12, tie: 'soban', order: ['meat', 'soban', 'sea'], kinds: {}, ports: [], cap: 10 };
+const HF_SLOTS = Array.from({ length: Math.max(1, Math.round(24 / (HF.slot_h || 12))) }, (_, i) => `${i * (HF.slot_h || 12)}시`);
+const HF_KIND = k => HF.kinds?.[k]?.name || '';
+export const HFEAST = {
+  ...HF,
+  isPort: r => (HF.ports || []).some(p => p.r === r),
+  portNames: () => (HF.ports || []).map(p => p.name).join(' · '),
+  kindName: HF_KIND,
+  minPeople: Math.ceil((HF.need || 12) / Math.max(1, HF.per_person || 3)),
+  tile: '요리를 한 상에 모으기 · 다 차면 모두 기운',
+  guess: (bowls = []) => {
+    const n = {}; for (const b of bowls) n[b.kind] = (n[b.kind] || 0) + 1;
+    const mx = Math.max(0, ...Object.values(n)); if (!mx) return null;
+    const top = Object.keys(n).filter(k => n[k] === mx);
+    return top.length === 1 ? top[0] : HF.tie;
+  },
+  help: `항구마다 하루 ${HF_SLOTS.length}상(한국 시각 ${HF_SLOTS.join('·')}부터 ${HF.slot_h}시간씩)을 차립니다. 요리를 한 그릇씩 올려 ${HF.need}그릇이 다 차면 상이 열립니다. 한 사람은 한 상에 ${HF.per_person}그릇까지 올릴 수 있어, 상을 채우려면 적어도 ${Math.ceil((HF.need || 12) / Math.max(1, HF.per_person || 3))}명이 함께해야 합니다. 상 종류는 가장 많이 오른 요리 갈래로 정해지고, 같으면 ${HF_KIND(HF.tie)}이(가) 됩니다. 요리를 올린 사람은 상이 열리는 순간 기운을 받고, 그 밖의 사람은 열린 뒤 ${HF.eat_h}시간 안에 그 항구에서 「상에서 먹기」를 한 번 하면 받습니다. 기운은 ${HF.buff_h}시간 갑니다. 칸 시간 안에 다 차지 않은 상은 사라지고, 올린 요리는 돌려받지 못합니다.`,
+  dishNote: '요리 분야 제작법으로 만든 음식만 올릴 수 있습니다(노정 건량·말린 생선포 같은 길양식은 빼고). 우수품도 한 그릇입니다.',
+  giveAsk: (name, n, need) => `「${name}」 한 그릇을 상에 올릴까요? 올린 요리는 돌려받지 못하고, 이번 칸 안에 ${need}그릇이 다 차지 않으면 상과 함께 사라집니다. (지금 ${n}/${need})`,
+  down: '쓰러진 채로는 잔칫상에서 먹을 수도, 요리를 올릴 수도 없습니다. 일어난 뒤 열린 시간 안에 다시 오세요.',
+  full: cap => `상태 칸 ${cap}칸이 모두 차 있어 기운을 받을 수 없습니다. 상태 창에서 이로운 효과를 꺼 칸을 비운 뒤 「상에서 먹기」를 하세요.`,
+  away: '항구에 있지 않습니다. 요리는 그 항구에서 올리고, 「상에서 먹기」도 그 항구에서 합니다.',
+  vanish: '칸 시간이 끝날 때 다 차지 않은 상은 사라집니다.',
+  kst: t => { const d = new Date(new Date(t).getTime() + 9 * 3600000); return `한국 시각 ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; },
+};
+
 const RT = GD.rate || { gather_s: 12, fish_s: 15, search_ms: 900, battle_ms: 1000, raid_ms: 1000 };
 export const GATHER_GAP = RT.gather_s * 1000;
 export const SEARCH_GAP = Math.ceil(RT.search_ms / 1000) * 1000;
@@ -229,6 +255,7 @@ export const SYS_CHAT = {
   '운영 공지': { icon: 'bell', cls: 'note' },
   '선배 소식': { icon: 'users', cls: 'note' },
   '사업 소식': { icon: 'hammer', cls: 'note' },
+  '잔치 소식': { icon: 'bowl', cls: 'note' },
 };
 
 const PJ = GD.project || { pay: { day_cap: 8000, faction: { per_merit: 100 }, common: { gil_rate: 0.6 }, help: { gil_rate: 0.6 }, after_mul: 0.5 }, urgent: { n: 2, mul: 1.5 }, hq_mul: 1.5, mul_cap: 2, help_rel: { per_k: 1, person_day: 3, pair_day: 10 }, memento: { pct: 1, faction_merit: 20, common_gil_pct: 0.5 }, lift: {}, perk_text: { faction: [], common: [] }, projects: {}, vault: [], titles: 0 };
@@ -342,6 +369,9 @@ export const ARC_NAME = { '귀허도': '요인록' };
 export const storyArcOf = cat => { const [a, b] = String(cat || '').split('·'); return a === '외전' ? (ARC_NAME[b] || b || '') : ''; };
 export const storyChapterNo = id => +((/^(?:gq|mkq|mdq|hwq)_(\d+)$/.exec(id || '') || [])[1] || 0);
 export const isStoryMain = q => q?.kind === 'main' || q?.quest_id === 'fq_sealed_lord' || storyChapterNo(q?.quest_id) > 0;
+export const STORY_ARCS = ['홍인사', '요인록', '묵적록', '명등기', '도해록'];
+export const STORY_OTHER = '그 밖';
+export const storyTabOf = story => (/^(\S+) \d+장$/.exec(story || '') || [])[1] || STORY_OTHER;
 
 const WRK = GD.weaponRank?.steps || [[1, 1], [10, 5], [14, 10], [20, 15], [32, 25], [42, 33], [47, 38]];
 export const weaponRankNeed = lv => { let n = 1; for (const [l, r] of WRK) if (Number(lv || 1) >= l) n = r; return n; };
