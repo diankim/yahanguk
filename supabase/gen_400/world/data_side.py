@@ -1098,6 +1098,8 @@ on conflict (npc_key) do update set npc_name = excluded.npc_name, bio = excluded
         out.append(f"""insert into public.{tbl}({', '.join(ins)})
 select {sel} from jsonb_to_recordset({J(rows_)}) as x({', '.join(c + ' ' + t for c, t in cols)})
 on conflict ({conf}) do update set {', '.join(f'{u} = excluded.{u}' for u in upd)};""")
+    import data_side_job as JQ
+    out.append(JQ.emit(fresh, errors, J, TA, known, RID, xp_need))
     import sys
     sys.stderr.write(f'보조 퀘스트 {len(qrows)} · 장면 {len(srows)} · 인물 {len(NPC)}\n')
     return '\n'.join(out)

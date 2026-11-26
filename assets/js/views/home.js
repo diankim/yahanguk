@@ -173,7 +173,7 @@ function sceneTint(r) {
 function sceneFx(r) {
   const e = store.env;
   const w = e?.weather?.key || '', p = e?.phase?.key || '';
-  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w, r?.project?.here)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
+  return `<div class="scene-fx" aria-hidden="true" data-w="${esc(w)}" data-p="${esc(p)}" data-t="${esc(r?.theme || '')}">${sceneArt(r?.theme || 'wild', p, w, r?.project?.here, r?.territory_id)}<i class="fx-veil"></i><i class="fx-a"></i><i class="fx-b"></i><i class="fx-c"></i></div>`;
 }
 function inflHtml(m) {
   const v = inflMine(m);
