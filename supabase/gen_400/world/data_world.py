@@ -490,7 +490,7 @@ RUBBING_MATS = {'fine_paper': 2, 'sealing_ink': 2}
 
 FISH_GOODS = [
     ('hw_goby_crisp', '망둥이 바삭 튀김', 'consumable', 2, 50, True, 40, {'hp': 30, 'buffs': ['well_fed']}, '널다리 망둥이를 야자 기름에 바삭하게 튀겼다. 체력을 조금 채운다.', 'cooking', {'hw_canal_goby': 3, 'coconut_fiber': 1}, 2, 50),
-    ('hw_coconut_fish', '코코넛 양념 생선', 'consumable', 3, 50, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['hw_coconut_full']}, '전갱이를 야자 국물에 고추를 풀어 끓였다. 처음엔 달다가 끝이 맵다.', 'cooking',
+    ('hw_coconut_fish', '야자 양념 생선', 'consumable', 3, 50, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['hw_coconut_full']}, '전갱이를 야자 국물에 고추를 풀어 끓였다. 처음엔 달다가 끝이 맵다.', 'cooking',
      {'hw_sea_mackerel': 2, 'coconut_fiber': 1, 'fd_chili': 1}, 2, 50),
     ('hw_leaf_rice', '잎에 싸 찐 찹쌀', 'consumable', 2, 50, True, 90, {'hp': 25, 'mn': 20, 'buffs': ['well_fed']}, '찹쌀에 야자 설탕을 섞어 띠잎에 싸 쪘다. 들고 다니며 먹기 좋다.', 'cooking',
      {'fd_rice': 2, 'fragrant_blade_leaf': 1, 'palm_sugar': 1}, 2, 50),
