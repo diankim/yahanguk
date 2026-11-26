@@ -225,7 +225,7 @@ begin
     if 'pull' = any (mechs) and not coalesce((b ->> 'gone')::boolean, false) then
       pulls := coalesce(b -> 'pulls', '{}');
       for k in select jsonb_object_keys(pulls) loop
-        if (nr + k::int) % (rb -> 'pull' ->> 'every')::int = 0 and not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'pull' and e ->> 'c' = k) then
+        if (nr + k::int) % (rb -> 'pull' ->> 'every')::int = 0 and coalesce((pulls ->> k)::int, 0) <= nr and not exists (select 1 from jsonb_array_elements(hz) e where e ->> 'k' = 'pull' and e ->> 'c' = k) then
           hid := hid + 1;
           hz := hz || jsonb_build_array(jsonb_build_object('id', hid, 'k', 'pull', 'c', k::int, 'left', (rb -> 'pull' ->> 'left')::int));
         end if;
@@ -328,7 +328,10 @@ begin
     if h ->> 'k' = 'pull' then
       select string_agg(y.name, '·') into nm from public.world_gw_members y where y.fight_id = p_fight and y.out_rounds = 0 and not y.rest
         and y.pos = (h ->> 'c')::int and y.act ->> 'a' = 'stop' and coalesce(y.gval, 0) > 0;
-      if nm is not null then
+      if nm is null then
+        heal := heal + f.max_hp * coalesce((rb -> 'pull' ->> 'heal_pct')::numeric, 0) / 100.0;
+        perform public.world_gw_say(p_fight, p_round, 'bad', (h ->> 'c') || '번 끌개가 돌아 땅울이에게 흐름이 몰립니다. 땅울이의 체력이 차오릅니다.');
+      else
         pulls := pulls || jsonb_build_object(h ->> 'c', p_round + (rb -> 'pull' ->> 'stop')::int);
         update public.world_gw_members y set gval = 0 where y.fight_id = p_fight and y.pos = (h ->> 'c')::int and y.act ->> 'a' = 'stop' and coalesce(y.gval, 0) > 0;
         extra := extra + coalesce((select sum(coalesce((y.stats ->> 'attack')::numeric, 0) * (1 + coalesce((y.stats ->> 'solo_dmg')::numeric, 0) / 100.0)) from public.world_gw_members y where y.fight_id = p_fight and y.pos = (h ->> 'c')::int and y.act ->> 'a' = 'stop'), 0)
@@ -381,11 +384,6 @@ begin
       end loop;
     end if;
   end loop;
-  if not coalesce((select (board ->> 'gone')::boolean from public.world_gw_fights where fight_id = p_fight), false) then
-    for k in select jsonb_object_keys(pulls) loop
-      if (pulls ->> k)::int <= p_round and coalesce(f.mech -> 'mechs', '[]'::jsonb) ? 'pull' then heal := heal + f.max_hp * coalesce((rb -> 'pull' ->> 'heal_pct')::numeric, 0) / 100.0; end if;
-    end loop;
-  end if;
   if heal > 0 then update public.world_gw_fights set hp = least(max_hp, hp + round(heal)) where fight_id = p_fight; end if;
   update public.world_gw_fights set board = board || jsonb_build_object('hz', keep, 'pulls', pulls, 'cracked', cracked,
     'wedges', case when coalesce((board ->> 'gone')::boolean, false) then '[]'::jsonb else wedges end) where fight_id = p_fight;

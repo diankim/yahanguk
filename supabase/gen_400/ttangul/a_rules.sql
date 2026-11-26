@@ -23,7 +23,7 @@ begin
     "mech_mul": 0.45, "fall_hp": null, "aoe_every": 4,
     "slide": {"every": 4, "off": 2, "left": 3, "push": 2, "raw": 30},
     "weight": {"every": 5, "off": 4, "left": 3, "cells": 3, "hole": 2},
-    "pull": {"every": 5, "left": 4, "heal_pct": 0.25, "stop": 6, "hit_mul": 12},
+    "pull": {"every": 5, "left": 4, "heal_pct": 2, "stop": 6, "hit_mul": 12},
     "fist": {"every": 6, "off": 3, "left": 2, "raw": 80, "push": 1},
     "boulder": {"every": 5, "off": 1, "left": 3, "raw": 35, "push": 1},
     "shave": {"left": 3},

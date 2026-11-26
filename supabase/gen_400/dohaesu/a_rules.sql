@@ -36,7 +36,7 @@ begin
       {"at": 25, "m": ["current", "head", "breath", "surge", "spray", "tentacle", "wet", "whirl"]}],
     "low_pct": 10},
   "solo": {"artificer": {"solo_dmg": -25, "solo_guard": -24}, "scout": {"solo_dmg": -25, "solo_guard": -15}, "exorcist": {"solo_dmg": -26, "solo_guard": -16},
-    "medic": {"solo_dmg": 20, "solo_guard": -55}, "sealmaster": {"solo_dmg": -28, "solo_guard": -10}, "analyst": {"solo_dmg": -25, "solo_guard": -36},
+    "medic": {"solo_dmg": -32, "solo_guard": -74}, "sealmaster": {"solo_dmg": -28, "solo_guard": -10}, "analyst": {"solo_dmg": -25, "solo_guard": 5},
     "tamer": {"solo_dmg": -25, "solo_guard": 0}, "bloodknight": {"solo_dmg": -25, "solo_guard": -24}, "spearman": {"solo_dmg": -25, "solo_guard": -30}, "formation": {"solo_dmg": -20, "solo_guard": -40}}
 }$j$::jsonb));
 end $$;
