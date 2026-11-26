@@ -6,7 +6,7 @@ begin
     (public.world_boss_rules() - 'dohaesu') || jsonb_build_object('dohaesu', $j${
   "name": "도해수", "fight": "뒤집힌 물목", "place": "뒤집힌 물목", "arc": "도해록", "region": "pd_rift", "lv": 51,
   "quest": "hwq_5", "quest_name": "본편 「도해록」 5장", "item": "kelp_scale_shell", "item_name": "해초 비늘 껍질", "item_where": "뒤집힌 물목에서 채집해 얻습니다.",
-  "min": 18, "hp_min": 9000, "hp_n": [1, 1, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [32, 3], "enrage": 0.25,
+  "min": 18, "hp_min": 9000, "hp_n": [1, 1.15, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [32, 3], "enrage": 0.25,
   "first": {"gil": 3000, "xp": 0.5}, "again": {"gil": 180, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 55,
   "hard_quest": "hwq_5", "hard_quest_name": "본편 「도해록」 5장",
   "hard_min": 2, "modes": {"story": "이야기판", "hard": "깊은 물목"},
