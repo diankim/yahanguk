@@ -274,6 +274,17 @@ export const TRADE = {
   foodTip: '세력 특선 음식은 가방에서 짐칸으로 옮겨 실을 수 있습니다. 시세판에는 없고, 파는 값은 팔 때 그 항구 시세로 정해집니다.',
   repairTip: g => `내구도 1마다 ${g}전입니다. 항해마다 조금씩, 습격을 받으면 크게 닳고, 다 닳으면 고치기 전에는 띄울 수 없습니다. 조선소가 없는 항구에서도 고칠 수 있습니다.`,
   yardTip: '조선소가 있는 항구에서 다음 배에 드는 재료를 갈래마다 넣습니다. 재료는 가방을 먼저 쓰고 모자라면 창고에서 꺼냅니다(빈약한 안전지대에서는 창고를 쓰지 않음). 모든 갈래가 차고 레벨이 되면 전을 내고 배를 올립니다. 재료를 넣을 때마다 목공 경험을 조금 얻습니다.',
+  raidPct: (from, to, min) => { const R = TD.raid || { p: 10, p_far: 15, far_min: 180 }, cross = (TD.cross || []).some(([a, b]) => (a === from && b === to) || (a === to && b === from));
+    return (min != null && min >= R.far_min) || cross ? R.p_far : R.p; },
+  raidLine: pct => `습격 ${pct}%`,
+  raidTip: () => { const R = TD.raid || { p: 10, p_far: 15, far_min: 180 };
+    return `뱃길마다 습격을 받을 확률은 ${R.p}%이고, 나룻배 기준 ${Math.round(R.far_min / 60)}시간 넘는 먼 뱃길과 바다 건너기는 ${R.p_far}%입니다. 한 번 띄우면 가는 길 가운데쯤 한 번만 굴립니다. 직접 타고 가면 싸워서 막을 수 있고, 보내 두면 저절로 짐 ${(TD.send_lose || [10, 20]).join('~')}%를 잃습니다.`; },
+  partyLine: (n, min) => n > 0 ? `지금 함께 탈 수 있는 파티원 ${n}명 · 물길 줄이기면 약 ${min}분` : '지금 이 항구에 함께 탈 수 있는 파티원이 없습니다',
+  departText: ms => ms > 0 ? `${tLeft(ms)} 뒤 떠남` : '떠나는 중…',
+  boardingTitle: v => `${v.captain_name || ''}의 배 · ${v.to_name || ''}행`,
+  boardingText: ms => ms > 0 ? `함께 타기로 함 · ${tLeft(ms)} 뒤 떠남` : '떠나는 중…',
+  cmpHead: name => `모든 항구 · ${name}`,
+  cmpTip: '시세판에서 물건 이름을 누르면 그 물건의 항구별 값을 견줍니다. 다른 항구 값은 마지막으로 들렀을 때 본 값입니다.',
   seenNone: '들른 적 없음',
   away: '항구에 있지 않습니다. 배를 타고 내린 항구나 항구가 있는 지역으로 가면 교역을 할 수 있습니다.',
 };

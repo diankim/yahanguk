@@ -144,14 +144,15 @@ function voyageItems(b) {
   const out = [], v = b.voyage, go = ['항구 보기', () => { closeStrip(); window.yahangGo('port'); }];
   if (v?.status === 'sail') out.push({ kind: 'voyage', icon: 'ship', title: TRADE.sailTitle(v), timer: v.arrives_at, text: TRADE.leftText(new Date(v.arrives_at).getTime() - Date.now()), action: location.hash.startsWith('#/port') ? null : go });
   else if (v?.status === 'raid') out.push({ kind: 'combat', icon: 'ship', title: TRADE.sailTitle(v), text: TRADE.raidText, action: v.fight_id ? ['싸움으로', () => { closeStrip(); window.yahangGo('pfight', v.fight_id); }] : null });
-  else if (v?.status === 'board') out.push({ kind: 'voyage', icon: 'ship', title: TRADE.boardTitle(v), timer: v.board_ends, text: TRADE.boardText(new Date(v.board_ends).getTime() - Date.now()), action: location.hash.startsWith('#/port') ? null : go });
+  else if (v?.status === 'board') out.push({ kind: 'boarding', icon: 'ship', title: TRADE.boardTitle(v), timer: v.board_ends, text: TRADE.departText(new Date(v.board_ends).getTime() - Date.now()), action: location.hash.startsWith('#/port') ? null : go });
+  if (b.boarding) out.push({ kind: 'boarding', icon: 'ship', title: TRADE.boardingTitle(b.boarding), timer: b.boarding.board_ends, text: TRADE.departText(new Date(b.boarding.board_ends).getTime() - Date.now()), action: location.hash.startsWith('#/port') ? null : go });
   for (const x of b.sends || []) out.push({ kind: 'voyage', icon: 'ship', title: TRADE.sendTitle(x), timer: x.arrives_at, text: TRADE.leftText(new Date(x.arrives_at).getTime() - Date.now()) });
   return out;
 }
 let voyTried = '', voyAt = 0;
 function voyageDue(now) {
   const b = state.hud?.voyage; if (!b) return;
-  const ts = [b.voyage?.check_at, ...(b.sends || []).map(x => x.check_at), ...(b.invites || []).map(x => x.board_ends)].filter(Boolean).map(t => new Date(t).getTime()).filter(t => t <= now);
+  const ts = [b.voyage?.check_at, b.boarding?.board_ends, ...(b.sends || []).map(x => x.check_at), ...(b.invites || []).map(x => x.board_ends)].filter(Boolean).map(t => new Date(t).getTime()).filter(t => t <= now);
   if (!ts.length) return;
   const key = ts.sort().join(',');
   if (key === voyTried && now - voyAt < 60000) return;
@@ -321,6 +322,7 @@ function onTick() {
     if (kind === 'busy') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '곧 끝납니다';
     if (kind === 'idle') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '완료 · 보상 수령 가능';
     if (kind === 'voyage') el.textContent = TRADE.leftText(left);
+    if (kind === 'boarding') el.textContent = TRADE.departText(left);
     if (kind === 'exp') el.textContent = left > 0 ? `${fmt.remain(left)} 남음` : '귀환 · 결과 확인 가능';
     if (kind === 'danger') el.textContent = left > 0 ? `목숨이 다하기까지 ${fmt.remain(left)}` : '시간이 다했습니다';
     if (kind === 'status') { el.textContent = left > 0 ? fmt.remain(left) : '끝'; if (left <= 0) statusDue = true; }

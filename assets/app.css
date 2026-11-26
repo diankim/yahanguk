@@ -329,7 +329,7 @@ textarea { resize: none; }
 .now-text { display: grid; flex: 1; min-width: 0; gap: 2px; }
 .now-text b { font-size: calc(12.5px * var(--fz, 1)); }
 .now-text span { font-size: calc(12px * var(--fz, 1)); color: var(--muted); }
-.st-travel .now-ico, .st-travel.hs-status .ico, .st-voyage .now-ico, .st-voyage.hs-status .ico { color: var(--mp); }
+.st-travel .now-ico, .st-travel.hs-status .ico, .st-voyage .now-ico, .st-voyage.hs-status .ico, .st-boarding .now-ico, .st-boarding.hs-status .ico { color: var(--mp); }
 .st-combat .now-ico, .st-combat.hs-status .ico, .st-danger .now-ico, .st-danger.hs-status .ico { color: var(--bad); }
 .st-idle .now-ico, .st-idle.hs-status .ico { color: var(--ok); }
 .st-danger { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bad) 45%, transparent); }
@@ -4302,3 +4302,13 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
   .tr-ladder small { display: none; }
 }
 .notice.tr-band { flex-wrap: wrap; } .notice.tr-band > div { min-width: 200px; }
+.tr-fold > summary h2 { flex-wrap: wrap; row-gap: 2px; }
+.tr-fold .tr-sum { font-size: calc(12px * var(--fz, 1)); font-weight: 400; margin-left: 2px; }
+.tr-gname { all: unset; cursor: pointer; font-weight: 700; border-bottom: 1px dotted color-mix(in srgb, var(--muted) 60%, transparent); }
+.tr-board tr.mine .tr-gname { color: var(--gold); }
+.tr-board tr.cmp td { background: color-mix(in srgb, var(--gold) 7%, transparent); }
+.tr-cmp tr.best td:nth-child(2) b { color: var(--ok); }
+.tr-cmp .tr-old { color: var(--warn); }
+.tr-raid { display: flex; align-items: center; gap: 6px; color: var(--warn); margin: 4px 0 8px; }
+@media (max-width: 899px) { .tr-p-cmp { order: 4; } .tr-p-ports { order: 5; } .tr-p-sail { order: 6; } .tr-p-yard { order: 7; } }
+.tr-nm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; } .tr-nm .tr-tag { margin-left: 0; }

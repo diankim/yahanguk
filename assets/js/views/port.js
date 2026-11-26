@@ -1,13 +1,16 @@
 import { rpc, act, store, esc, icon, $, $$, toast, ask, openLayer, fmt, guard, bar, on, nameOf } from '../core.js';
-import { loading, errorBox, panel, load } from './common.js';
+import { loading, errorBox, load, foldOpen } from './common.js';
 import { qtyHtml, bindQty, qtyOf } from './itempick.js';
 import { helpQ } from '../tips.js';
 import { TRADE } from '../rules.js';
 import { baseOf, hqCount } from '../hq.js';
-import { SHIP_ART, SHIP_PAL, SHIP_MS } from '../ship_art.js';
 
-let el = null, v = null, want = null, pick = null, mode = 'direct', party = false, bonus = 'time', timer = null, offs = [], busy = false, reTry = 0, stg = null;
+let el = null, v = null, want = null, pick = null, cmp = null, mode = 'direct', party = false, bonus = 'time', timer = null, offs = [], busy = false, reTry = 0, stg = null, ART = null, artP = null;
 const frames = new Map();
+const loadArt = () => artP ||= import('../ship_art.js').then(m => { ART = m; return m; }).catch(() => { artP = null; return null; });
+const mobile = () => { try { return matchMedia('(max-width: 899px)').matches; } catch { return false; } };
+const MO_OPEN = new Set(['ship', 'board', 'hold']);
+const fpanel = (key, title, sum, body, { ico, cls = '', help = '' } = {}) => `<details class="panel fold tr-fold ${cls}" data-fold="tr-${key}" ${foldOpen('tr-' + key, !mobile() || MO_OPEN.has(key)) ? 'open' : ''}><summary class="panel-head"><h2>${ico ? icon(ico, 16) : ''}<span class="tr-title">${esc(title)}</span>${sum ? `<small class="muted tr-sum">${sum}</small>` : ''}${help}</h2></summary><div class="panel-body">${body}</div></details>`;
 
 export async function render(root, sub) {
   el = root; want = sub || null; pick = null; v = null;
@@ -25,12 +28,11 @@ const head = (title, sub = '', actions = '') => `<div class="view-head"><div><p 
 async function reload() {
   if (!el) return;
   try {
-    const [r, s] = await Promise.all([rpc('world_trade_view', { p_port: want }), load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null)]);
+    const [r, s] = await Promise.all([rpc('world_trade_view', { p_port: want }), load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null), loadArt()]);
     if (!el) return;
     v = r; stg = s;
-    if (!pick || pick === v.here) pick = v.port && v.port !== v.here ? v.port : null;
-    if (pick && pick !== v.port) return showOther();
-    if (pick) v._other = { board: v.board, seen_at: v.seen_at };
+    if (pick === v.here) pick = null;
+    if (!pick && v.port && v.port !== v.here) pick = v.port;
     draw();
   } catch (e) { if (el) el.innerHTML = head('항구') + errorBox(e.message); }
 }
@@ -40,6 +42,8 @@ const goodName = k => TRADE.goods?.[k]?.name || TRADE.foods?.[k]?.name || nameOf
 const hold = () => v.hold || [];
 const holdOf = k => hold().find(h => h.good === k);
 const priceOf = k => (v.live ? (v.board || []).find(b => b.good === k) : null);
+const valsOf = port => port && port === v.here && v.live ? { vals: v.board, at: null, live: true } : v.seen?.[port] ? { vals: v.seen[port].vals, at: v.seen[port].at, live: false } : null;
+const pctHtml = pct => pct > 0 ? `<span class="tr-up">▲ ${pct}%</span>` : pct < 0 ? `<span class="tr-down">▼ ${-pct}%</span>` : '<span class="muted">—</span>';
 function why() {
   if (!v.here) return TRADE.away;
   if (!v.ship) return '아직 배가 없습니다.';
@@ -57,7 +61,7 @@ function roomFor(k) {
 function shipCanvas(tier, cls = '') { return `<canvas class="tr-ship ${cls}" data-ship="${Math.max(1, Math.min(5, tier || 1)) - 1}" aria-label="${esc(TRADE.ship(tier)?.name || '배')}"></canvas>`; }
 function frameCanvas(si, f) {
   const key = si + ':' + f; if (frames.has(key)) return frames.get(key);
-  const s = SHIP_ART[si], c = document.createElement('canvas'); c.width = s.w; c.height = s.h;
+  const { SHIP_ART, SHIP_PAL } = ART, s = SHIP_ART[si], c = document.createElement('canvas'); c.width = s.w; c.height = s.h;
   const x = c.getContext('2d'), im = x.createImageData(s.w, s.h), d = im.data;
   s.f[f].forEach((ri, y) => { const row = s.rows[ri]; for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; const n = parseInt(SHIP_PAL[ch].slice(1), 16), p = (y * s.w + i) * 4; d[p] = n >> 16 & 255; d[p + 1] = n >> 8 & 255; d[p + 2] = n & 255; d[p + 3] = 255; } });
   x.putImageData(im, 0, 0); frames.set(key, c); return c;
@@ -65,12 +69,12 @@ function frameCanvas(si, f) {
 const still = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 let fNo = 0, fAt = 0;
 function paintShips(force) {
-  if (!el) return;
+  if (!el || !ART) return;
   const t = Date.now();
-  if (!force && (still() || document.hidden || t - fAt < SHIP_MS)) return;
+  if (!force && (still() || document.hidden || t - fAt < ART.SHIP_MS)) return;
   if (!force) { fAt = t; fNo++; }
   for (const cv of $$('canvas[data-ship]', el)) {
-    const si = Number(cv.dataset.ship), s = SHIP_ART[si], f = cv.classList.contains('still') || still() ? 0 : fNo % s.f.length;
+    const si = Number(cv.dataset.ship), s = ART.SHIP_ART[si], f = cv.classList.contains('still') || still() ? 0 : fNo % s.f.length;
     if (cv.width !== s.w) { cv.width = s.w; cv.height = s.h; }
     const x = cv.getContext('2d'); x.clearRect(0, 0, s.w, s.h); x.drawImage(frameCanvas(si, f), 0, 0);
   }
@@ -85,6 +89,8 @@ function band() {
     <button class="btn small primary" data-tr="depart" data-id="${esc(vy.id)}">지금 떠나기</button><button class="btn small" data-tr="bcancel" data-id="${esc(vy.id)}">그만두기</button></div>`);
   for (const x of b.invites || []) out.push(`<div class="notice tr-band">${icon('ship', 18)}<div><b>${esc(x.captain_name)}의 배 · ${esc(x.to_name)}행</b><span>함께 타자고 합니다${x.bonus ? ` · 덤: ${esc(TRADE.bonus?.[x.bonus]?.name || '')}` : ''} · <em data-tr-invite="${new Date(x.board_ends).getTime()}">${esc(TRADE.inviteText(new Date(x.board_ends) - Date.now()))}</em></span></div>
     <button class="btn small primary" data-tr="board" data-id="${esc(x.id)}" data-acc="1">함께 타기</button><button class="btn small" data-tr="board" data-id="${esc(x.id)}" data-acc="0">사양</button></div>`);
+  if (b.boarding) { const x = b.boarding; out.push(`<div class="notice tr-band">${icon('ship', 18)}<div><b>${esc(TRADE.boardingTitle(x))}</b><span><em data-tr-boarding="${new Date(x.board_ends).getTime()}">${esc(TRADE.boardingText(new Date(x.board_ends) - Date.now()))}</em>${x.bonus ? ` · 덤: ${esc(TRADE.bonus?.[x.bonus]?.name || '')}` : ''}</span></div>
+    <button class="btn small" data-tr="bleave" data-id="${esc(x.id)}">내리기</button></div>`); }
   for (const x of b.sends || []) out.push(`<div class="notice tr-band">${icon('ship', 18)}<div><b>보낸 배 · ${esc(x.from_name)} → ${esc(x.to_name)}</b><span><em data-tr-left="${new Date(x.arrives_at).getTime()}">${esc(TRADE.leftText(new Date(x.arrives_at) - Date.now()))}</em> · 닿으면 짐이 그 항구에서 팔립니다</span></div></div>`);
   return out.join('');
 }
@@ -93,23 +99,41 @@ function tagChips(tags, live) {
   return (tags || []).filter(t => TRADE.tags[t]).map(t => `<span class="tr-tag t-${t}" data-tip="${esc(TRADE.tagTip[t])}">${esc(t === 'event' && live ? `${v.demand?.name || ''} ${TRADE.tags.event}` : TRADE.tags[t])}</span>`).join('');
 }
 function boardPanel() {
-  const at = pick || v.port, live = v.live && !pick, rows = pick ? v._other?.board : v.board;
-  const seenAt = live ? null : pick ? v._other?.seen_at : v.seen_at;
+  const at = pick || v.port, live = v.live && !pick, o = pick ? valsOf(pick) : null, rows = pick ? o?.vals : v.board;
+  const seenAt = live ? null : pick ? o?.at : v.seen_at;
   const title = at ? `${portName(at)} 시세판` : '시세판';
   const sub = !at ? TRADE.away : live ? '오늘 값 · 한국 시각 0시에 바뀜 · 지금 보는 값' : seenAt ? `마지막으로 들렀을 때 본 값 · ${fmt.ago(seenAt)}` : `${TRADE.seenNone} · 그 항구에 가면 값이 보입니다`;
   const w = why();
-  if (!at) return panel('시세판', `<p class="muted small tr-sub">${esc(v.brief?.voyage?.status === 'sail' ? '물길 위에서는 시세판을 볼 수 없습니다. 「다른 항구」에서 들렀던 항구를 누르면 그때 본 값이 보입니다.' : TRADE.away)}</p>`, { ico: 'scroll', cls: 'tr-p-board', extra: helpQ(TRADE.help, '교역선') });
+  const help = helpQ(TRADE.help, '교역선');
+  if (!at) return fpanel('board', '시세판', '', `<p class="muted small tr-sub">${esc(v.brief?.voyage?.status === 'sail' ? '물길 위에서는 시세판을 볼 수 없습니다. 「다른 항구」에서 들렀던 항구를 누르면 그때 본 값이 보입니다.' : TRADE.away)}</p>`, { ico: 'scroll', cls: 'tr-p-board', help });
   const list = rows || Object.entries(TRADE.goods || {}).map(([k, g]) => ({ good: k, name: g.name, base: g.base })).sort((a, b) => a.base - b.base);
   const body = `<p class="muted small tr-sub">${esc(sub)}</p>
     ${pick ? `<div class="btn-row tr-tabs"><button class="chip" data-tr="here">${icon('back', 13)} ${esc(v.here ? portName(v.here) : '이 항구')}로 돌아가기</button></div>` : ''}
     <table class="tr-board"><thead><tr><th>교역품</th><th>정가</th><th>${live ? '오늘' : '본 값'}</th><th>${live ? '어제보다' : ''}</th>${live ? '<th></th>' : ''}</tr></thead><tbody>
     ${list.map(r => { const h = holdOf(r.good), known = r.price != null;
-      return `<tr class="${h ? 'mine' : ''}"><td><b>${esc(r.name || goodName(r.good))}</b>${tagChips(r.tags, live)}${h ? `<small class="tr-have">짐칸 ${h.qty}</small>` : ''}</td><td>${r.base ?? ''}</td><td><b>${known ? r.price : '?'}</b></td>
-        <td>${live && r.pct != null ? (r.pct > 0 ? `<span class="tr-up">▲ ${r.pct}%</span>` : r.pct < 0 ? `<span class="tr-down">▼ ${-r.pct}%</span>` : '<span class="muted">—</span>') : ''}</td>
+      return `<tr class="${h ? 'mine' : ''}${cmp === r.good ? ' cmp' : ''}"><td><button type="button" class="tr-gname" data-tr="cmp" data-good="${esc(r.good)}" title="모든 항구 값 견주기">${esc(r.name || goodName(r.good))}</button>${tagChips(r.tags, live)}${h ? `<small class="tr-have">짐칸 ${h.qty}</small>` : ''}</td><td>${r.base ?? ''}</td><td><b>${known ? r.price : '?'}</b></td>
+        <td>${live && r.pct != null ? pctHtml(r.pct) : ''}</td>
         ${live ? `<td>${r.buy != null ? `<button class="btn small primary" data-tr="buy" data-good="${esc(r.good)}" data-here="교역품 싣기" ${off(w)}>사기 ${r.buy}전</button>` : ''}</td>` : ''}</tr>`; }).join('')}
     </tbody></table>
     ${live ? `<p class="muted small">「찾는 물건」은 ${TRADE.seek?.days || 3}일마다 바뀝니다${v.demand?.port_name ? ` · 오늘 ${esc(v.demand.port_name)}에 ${esc(v.demand.name)}` : ''}</p>` : ''}`;
-  return panel(title, body, { ico: 'scroll', cls: 'tr-p-board', extra: helpQ(TRADE.help, '교역선') });
+  const up = live ? list.filter(r => r.pct > 0).length : 0, dn = live ? list.filter(r => r.pct < 0).length : 0;
+  const sum = live ? `오늘 <span class="tr-up">▲${up}</span> <span class="tr-down">▼${dn}</span>` : esc(seenAt ? `${fmt.ago(seenAt)} 본 값` : TRADE.seenNone);
+  return fpanel('board', title, sum, body, { ico: 'scroll', cls: 'tr-p-board', help });
+}
+
+function cmpPanel() {
+  const g = cmp || hold().find(h => !h.food)?.good || (v.here && TRADE.port(v.here)?.good) || Object.keys(TRADE.goods || {})[0];
+  if (!g) return '';
+  const name = goodName(g), ids = (v.ports || []).map(p => p.id);
+  const rows = ids.map(id => { const o = valsOf(id), e = o?.vals?.find(x => x.good === g); return { id, o, e }; });
+  const best = Math.max(0, ...rows.map(r => r.e?.price || 0));
+  const body = `<table class="tr-board tr-cmp"><thead><tr><th>항구</th><th>값</th><th>본 때</th></tr></thead><tbody>
+    ${rows.map(({ id, o, e }) => { const old = o?.at && Date.now() - new Date(o.at).getTime() > 86400e3;
+      return `<tr class="${id === v.here ? 'mine' : ''}${e && e.price === best ? ' best' : ''}"><td><b>${esc(portName(id))}</b>${e ? tagChips(e.tags, o.live) : ''}</td><td><b>${e ? e.price : '?'}</b></td>
+        <td class="${old ? 'tr-old' : 'muted'}">${o?.live ? '지금' : o?.at ? esc(fmt.ago(o.at)) : esc(TRADE.seenNone)}</td></tr>`; }).join('')}</tbody></table>
+    <p class="muted small">${esc(TRADE.cmpTip)}${v.day ? ` · 오늘 판 몫 ${fmt.num(v.day.used)} / ${fmt.num(v.day.cap)}전` : ''}</p>`;
+  const seenN = rows.filter(r => r.e).length;
+  return fpanel('cmp', TRADE.cmpHead(name), esc(`${seenN}/${rows.length}곳 값 앎`), body, { ico: 'coin', cls: 'tr-p-cmp' });
 }
 
 function portsPanel() {
@@ -120,7 +144,8 @@ function portsPanel() {
       <small>${esc(goodName(p.good))} 산지 · Lv.${p.lv ?? '?'}${p.open ? '' : ' · 아직 못 감'}</small>
       <small>${route ? `타고 가면 ${p.direct_min}분 · 보내면 ${p.send_min}분` : '뱃길 없음'}</small>
       <small class="${p.seen_at ? '' : 'muted'}">${p.seen_at ? `시세 ${fmt.ago(p.seen_at)} 봄` : TRADE.seenNone}</small></button></li>`; }).join('')}</ul>`;
-  return panel('다른 항구', body, { ico: 'map', cls: 'tr-p-ports' });
+  const sel = pick && v.ports.find(p => p.id === pick);
+  return fpanel('ports', '다른 항구', esc(sel ? `고른 곳 · ${sel.name}` : `${rows.filter(p => p.seen_at).length}/${rows.length}곳 시세 봄`), body, { ico: 'map', cls: 'tr-p-ports' });
 }
 
 function shipPanel() {
@@ -128,7 +153,7 @@ function shipPanel() {
   if (!s) {
     const yard = v.here && TRADE.port(v.here)?.shipyard;
     const yards = Object.values(TRADE.ports || {}).filter(p => p.shipyard).map(p => p.name).join('·');
-    return panel('내 배', `${shipCanvas(1, 'still ghost')}<p class="muted small">${yard ? `${esc(TRADE.ship(1)?.name)}를 받아 교역을 시작하세요.` : `조선소가 있는 항구(${esc(yards)})에서 ${esc(TRADE.ship(1)?.name)}를 받습니다.`}</p>
+    return fpanel('ship', '내 배', '아직 없음', `${shipCanvas(1, 'still ghost')}<p class="muted small">${yard ? `${esc(TRADE.ship(1)?.name)}를 받아 교역을 시작하세요.` : `조선소가 있는 항구(${esc(yards)})에서 ${esc(TRADE.ship(1)?.name)}를 받습니다.`}</p>
       ${yard ? `<button class="btn primary" data-tr="get" data-here="배 받기">${icon('ship', 15)} ${esc(TRADE.ship(1)?.name)} 받기</button>` : ''}`, { ico: 'ship', cls: 'tr-p-ship' });
   }
   const w = why(), rg = TRADE.dur?.repair_gil || 2;
@@ -141,7 +166,7 @@ function shipPanel() {
       <div><dt>내구도</dt><dd>${s.broken ? '<b class="tr-down">부서짐</b> · ' : ''}${s.durability} / ${s.max}</dd></div></dl>
     ${bar(s.durability, s.max, s.durability <= s.max / 4 ? 'hp' : 'st')}
     ${s.durability < s.max ? `<div class="btn-row"><button class="btn small ${s.broken ? 'primary' : ''}" data-tr="repair" data-here="배 고치기" ${off(w)}>${icon('wrench', 14)} 고치기 ${fmt.jeon(s.repair_gil)}</button>${helpQ(TRADE.repairTip(rg), '배 고치기')}</div>` : ''}`;
-  return panel('내 배', body, { ico: 'ship', cls: 'tr-p-ship' });
+  return fpanel('ship', '내 배', esc(`${s.name} · ${s.status === 'docked' ? s.port_name : '물길 위'} · 내구도 ${s.durability}/${s.max}`), body, { ico: 'ship', cls: 'tr-p-ship' });
 }
 
 function invFoods() {
@@ -153,7 +178,7 @@ function holdPanel() {
   const w = why(), d = v.day || { used: 0, cap: TRADE.day_cap }, leftBase = Math.max(0, d.cap - d.used);
   const sp = v.ship.sell_port === v.here && v.ship.sell_pct ? v.ship.sell_pct : 0;
   const rows = hold().map(h => { const p = priceOf(h.good), unit = p ? Math.round(p.price * (1 + sp / 100)) : null, cap = Math.min(h.qty, Math.floor(leftBase / Math.max(1, h.base)));
-    return `<li><div><b>${esc(h.name)}</b>${h.food ? '<span class="tr-tag">특선 음식</span>' : ''}<small>${h.qty}개 · 산 값 ${fmt.jeon(h.cost)}${h.qty ? ` (하나 ${Math.round(h.cost / h.qty)}전)` : ''}</small>
+    return `<li><div><span class="tr-nm"><b>${esc(h.name)}</b>${h.food ? '<span class="tr-tag">특선 음식</span>' : ''}</span><small>${h.qty}개 · 산 값 ${fmt.jeon(h.cost)}${h.qty ? ` (하나 ${Math.round(h.cost / h.qty)}전)` : ''}</small>
       <small>${unit != null ? `여기서 하나 ${unit}전 · 다 팔면 약 ${fmt.jeon(unit * h.qty)}` : h.food ? '파는 값은 팔 때 이 항구 시세로 정해집니다' : v.live ? '' : '이 항구에서 팔 때 값이 정해집니다'}</small></div>
       ${qtyHtml({ key: h.good, max: w ? 0 : cap, value: 0, all: true, small: true, label: `${h.name} 팔 수량`, off: !!w })}</li>`; }).join('');
   const foods = invFoods();
@@ -161,25 +186,28 @@ function holdPanel() {
     ${sp ? `<p class="hint good small">함께 흥정 덤 · 이 항구에서 팔 때 +${sp}%</p>` : ''}
     ${rows ? `<ul class="tr-hold">${rows}</ul><div class="btn-row tr-sellrow"><span class="muted small" id="tr-sell-sum"></span><button class="btn primary" data-tr="sell" data-here="교역품 팔기" ${off(w || (leftBase <= 0 ? '오늘 팔 수 있는 몫이 찼습니다. 한국 시각 0시에 다시 찹니다.' : ''))}>${icon('coin', 15)} 고른 짐 팔기</button></div>` : '<p class="muted small">짐칸이 비었습니다. 산지 항구의 시세판에서 교역품을 사서 실으세요.</p>'}
     ${foods.length ? `<h3 class="sub-h">가방의 세력 특선 음식 ${helpQ(TRADE.foodTip, '특선 음식 싣기')}</h3><ul class="tr-food">${foods.map(f => `<li><b>${esc(f.name)}</b><small>${f.n}개 · 정가 ${TRADE.foods[baseOf(f.id)]?.base ?? '?'}전</small><button class="btn small" data-tr="load" data-item="${esc(f.id)}" data-here="짐 싣기" ${off(w)}>싣기</button></li>`).join('')}</ul>` : ''}`;
-  return panel(`짐칸 ${v.ship.used}/${v.ship.slots}`, body, { ico: 'chest', cls: 'tr-p-hold' });
+  return fpanel('hold', '짐칸', esc(`${v.ship.used}/${v.ship.slots}칸 · 오늘 판 몫 ${fmt.num(d.used)}/${fmt.num(d.cap)}`), body, { ico: 'chest', cls: 'tr-p-hold' });
 }
 
 function sailPanel() {
   if (!v.ship) return '';
   const w = why(), to = pick && v.ports.find(p => p.id === pick), tk = TRADE.sail?.tokens ?? 2;
   const vy = v.brief?.voyage;
-  const block = w || (v.ship.broken ? '배가 부서져 고치기 전에는 띄울 수 없습니다.' : '') || (vy && ['board', 'sail', 'raid'].includes(vy.status) ? '이미 띄우려는 배가 있습니다.' : '')
+  const block = w || (v.ship.broken ? '배가 부서져 고치기 전에는 띄울 수 없습니다.' : '') || (vy && ['board', 'sail', 'raid'].includes(vy.status) ? '이미 띄우려는 배가 있습니다.' : '') || (v.brief?.boarding ? '다른 배에 오르기로 했습니다. 먼저 그 배에서 내리세요.' : '')
     || (v.tokens < tk ? `노정패가 모자랍니다. 필요 ${tk}개 / 가진 ${v.tokens}개.` : '')
     || (!to ? '「다른 항구」에서 갈 곳을 고르세요.' : to.direct_min == null ? '두 항구 사이에 뱃길이 없습니다.' : !to.open ? `${to.name}은(는) 아직 갈 수 없습니다(Lv.${to.lv}).` : '');
-  const mins = to ? (mode === 'direct' ? to.direct_min : to.send_min) : null;
+  const pmin = mode === 'direct' && party && bonus === 'time' && v.mates > 0 ? to?.party_min : null;
+  const mins = to ? (pmin ?? (mode === 'direct' ? to.direct_min : to.send_min)) : null;
+  const raid = to && to.minutes != null ? TRADE.raidPct(v.from, to.id, to.minutes) : null;
   const body = `<p class="tr-to">${to ? `<b>${esc(to.name)}</b>${mins != null ? ` · ${mode === 'direct' ? '타고 가면' : '보내면'} 약 ${mins}분` : ''}` : '<span class="muted">갈 곳을 고르세요</span>'}</p>
     <div class="seg-mini" role="tablist">${['direct', 'send'].map(k => `<button type="button" class="${mode === k ? 'on' : ''}" data-tr="mode" data-mode="${k}">${esc(TRADE.modeName[k])}</button>`).join('')}</div>
     <p class="muted small">${esc(TRADE.modeTip[mode])}</p>
+    ${raid != null ? `<p class="tr-raid small">${esc(TRADE.raidLine(raid))}${helpQ(TRADE.raidTip(), '뱃길 습격')}</p>` : ''}
     ${mode === 'direct' ? `<label class="tr-check"><input type="checkbox" data-tr-party ${party ? 'checked' : ''}><span>같은 항구의 파티원 태우기 ${helpQ(TRADE.boardTip, '함께 타기')}</span></label>
-      ${party ? `<div class="tr-bonus">${['time', 'guard', 'haggle'].map(k => `<label class="${bonus === k ? 'on' : ''}"><input type="radio" name="tr-bonus" value="${k}" ${bonus === k ? 'checked' : ''}><b>${esc(TRADE.bonus?.[k]?.name || k)}</b><small>${esc(TRADE.bonusTip(k))}</small></label>`).join('')}</div>` : ''}` : ''}
+      ${party ? `<p class="muted small">${esc(TRADE.partyLine(v.mates || 0, to?.party_min ?? '?'))}</p><div class="tr-bonus">${['time', 'guard', 'haggle'].map(k => `<label class="${bonus === k ? 'on' : ''}"><input type="radio" name="tr-bonus" value="${k}" ${bonus === k ? 'checked' : ''}><b>${esc(TRADE.bonus?.[k]?.name || k)}</b><small>${esc(TRADE.bonusTip(k))}</small></label>`).join('')}</div>` : ''}` : ''}
     <div class="btn-row"><span class="muted small">노정패 ${tk}개 · 가진 ${fmt.num(v.tokens)}개</span><button class="btn primary" data-tr="sail" data-here="배 띄우기" ${off(block)}>${icon('ship', 15)} 배 띄우기</button></div>
     ${block && to ? `<p class="hint warn small">${esc(block)}</p>` : ''}`;
-  return panel('배 띄우기', body, { ico: 'route', cls: 'tr-p-sail' });
+  return fpanel('sail', '배 띄우기', esc(to ? `${to.name} · 약 ${mins ?? '?'}분${raid != null ? ` · ${TRADE.raidLine(raid)}` : ''}` : '갈 곳 고르기'), body, { ico: 'route', cls: 'tr-p-sail' });
 }
 
 function have(k) {
@@ -189,9 +217,9 @@ function have(k) {
 function yardPanel() {
   const s = v.ship, yard = v.here && TRADE.port(v.here)?.shipyard;
   const ladder = `<ol class="tr-ladder">${(TRADE.ships || []).map(x => `<li class="${s && x.tier === s.tier ? 'on' : s && x.tier < s.tier ? 'done' : ''}">${shipCanvas(x.tier, 'still')}<b>${esc(x.name)}</b><small>짐칸 ${x.slots} · ${x.crew}명${x.lv > 1 ? ` · Lv.${x.lv}` : ''}</small></li>`).join('')}</ol>`;
-  if (!s) return panel('조선소', ladder, { ico: 'hammer', cls: 'tr-p-yard' });
+  if (!s) return fpanel('yard', '조선소', '', ladder, { ico: 'hammer', cls: 'tr-p-yard' });
   const p = v.parts;
-  if (!p) return panel('조선소', `${ladder}<p class="muted small">가장 큰 배입니다.</p>`, { ico: 'hammer', cls: 'tr-p-yard' });
+  if (!p) return fpanel('yard', '조선소', '가장 큰 배', `${ladder}<p class="muted small">가장 큰 배입니다.</p>`, { ico: 'hammer', cls: 'tr-p-yard' });
   const w = why() || (yard ? '' : '조선소가 있는 항구에서만 배를 지을 수 있습니다.'), lvOk = (v.level || 0) >= p.lv, gilOk = (v.gil || 0) >= p.gil;
   const cats = Object.entries(p.cats || {}).map(([ck, c]) => {
     const items = Object.entries(c.items || {}), need = items.reduce((a, [, i]) => a + i.need, 0), got = items.reduce((a, [, i]) => a + i.have, 0);
@@ -202,7 +230,8 @@ function yardPanel() {
     <p class="tr-req"><span class="${lvOk ? 'ok' : 'bad'}">Lv.${p.lv}</span> · <span class="${gilOk ? 'ok' : 'bad'}">${fmt.jeon(p.gil)}</span></p>
     <ul class="tr-cats">${cats}</ul>
     <div class="btn-row"><button class="btn primary" data-tr="upgrade" data-here="배 짓기" ${off(w || (!p.done ? '아직 넣지 않은 재료가 있습니다.' : !lvOk ? `Lv.${p.lv}부터 지을 수 있습니다.` : !gilOk ? `전이 모자랍니다(필요 ${fmt.jeon(p.gil)}).` : ''))}>${icon('hammer', 15)} ${esc(p.name)} 짓기</button></div>`;
-  return panel('조선소', body, { ico: 'hammer', cls: 'tr-p-yard' });
+  const tn = Object.values(p.cats || {}).flatMap(c => Object.values(c.items || {})), pct = Math.floor(100 * tn.reduce((a, i) => a + i.have, 0) / Math.max(1, tn.reduce((a, i) => a + i.need, 0)));
+  return fpanel('yard', '조선소', esc(`다음 ${p.name} · 재료 ${pct}%`), body, { ico: 'hammer', cls: 'tr-p-yard' });
 }
 
 function draw() {
@@ -211,7 +240,7 @@ function draw() {
   const sub = v.here ? TRADE.port(v.here)?.dock || '' : '';
   el.innerHTML = head(title, sub, `<span class="tr-gil">${icon('coin', 14)} ${fmt.jeon(v.gil)}</span>${helpQ(TRADE.help, '교역선')}`) + band()
     + (!v.here && !v.ship ? `<p class="hint">${esc(TRADE.away)}</p>` : '')
-    + `<div class="tr-wrap"><div class="tr-col">${boardPanel()}${portsPanel()}</div><div class="tr-col">${shipPanel()}${holdPanel()}${sailPanel()}${yardPanel()}</div></div>`;
+    + `<div class="tr-wrap"><div class="tr-col">${boardPanel()}${cmpPanel()}${portsPanel()}</div><div class="tr-col">${shipPanel()}${holdPanel()}${sailPanel()}${yardPanel()}</div></div>`;
   bindQty(el, () => sellSum());
   sellSum();
   const pc = $('[data-tr-party]', el); if (pc) pc.onchange = () => { party = pc.checked; draw(); };
@@ -233,7 +262,8 @@ function tick() {
   for (const e of $$('[data-tr-left]', el)) e.textContent = TRADE.leftText(Number(e.dataset.trLeft) - t);
   for (const e of $$('[data-tr-board]', el)) e.textContent = TRADE.boardText(Number(e.dataset.trBoard) - t);
   for (const e of $$('[data-tr-invite]', el)) e.textContent = TRADE.inviteText(Number(e.dataset.trInvite) - t);
-  const b = v.brief, due = [b?.voyage?.check_at, ...(b?.sends || []).map(x => x.check_at), ...(b?.invites || []).map(x => x.board_ends)].filter(Boolean).some(x => new Date(x).getTime() <= t);
+  for (const e of $$('[data-tr-boarding]', el)) e.textContent = TRADE.boardingText(Number(e.dataset.trBoarding) - t);
+  const b = v.brief, due = [b?.voyage?.check_at, b?.boarding?.board_ends, ...(b?.sends || []).map(x => x.check_at), ...(b?.invites || []).map(x => x.board_ends)].filter(Boolean).some(x => new Date(x).getTime() <= t);
   if (due && t - reTry > 6000) { reTry = t; reload(); }
 }
 
@@ -245,7 +275,8 @@ async function run(name, args, btn, after) {
 async function onClick(e) {
   const b = e.target.closest?.('[data-tr]'); if (!b || !el?.contains(b) || b.disabled || b.classList.contains('here-locked')) return;
   const k = b.dataset.tr;
-  if (k === 'pick') { pick = pick === b.dataset.port ? null : b.dataset.port; return showOther(); }
+  if (k === 'pick') { pick = pick === b.dataset.port ? null : b.dataset.port; return draw(); }
+  if (k === 'cmp') { cmp = b.dataset.good; draw(); const c = $('.tr-p-cmp', el); if (c) { c.open = true; if (mobile()) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } return; }
   if (k === 'here') { pick = null; want = null; return draw(); }
   if (k === 'mode') { mode = b.dataset.mode; return draw(); }
   if (k === 'get') return run('world_trade_ship_get', {}, b);
@@ -259,15 +290,8 @@ async function onClick(e) {
   if (k === 'upgrade') { const p = v.parts; if (!(await ask(`${p.name}을(를) 짓습니다. ${fmt.jeon(p.gil)}이 들고, 넣은 재료는 모두 배에 쓰입니다. 짐칸의 짐은 그대로 옮겨 싣습니다.`, { title: '배 짓기', ok: '짓기' }))) return; return run('world_trade_ship_upgrade', {}, b); }
   if (k === 'board') return run('world_trade_board_respond', { p_voyage: b.dataset.id, p_accept: b.dataset.acc === '1' }, b);
   if (k === 'depart') return run('world_trade_depart', { p_voyage: b.dataset.id, p_bonus: null }, b, r => { if (r?.why) toast(r.why, 'error'); });
+  if (k === 'bleave') { if (!(await ask('이 배에 오르지 않기로 할까요?', { title: '내리기', ok: '내리기' }))) return; return run('world_trade_board_cancel', { p_voyage: b.dataset.id }, b); }
   if (k === 'bcancel') { if (!(await ask('배 띄우기를 그만둘까요? 함께 타기로 한 동료에게도 알립니다.', { title: '그만두기', ok: '그만두기', danger: true }))) return; return run('world_trade_board_cancel', { p_voyage: b.dataset.id }, b); }
-}
-
-async function showOther() {
-  if (!pick) return draw();
-  const p = v.ports.find(x => x.id === pick);
-  if (!p?.seen_at) { v._other = { board: null, seen_at: null }; return draw(); }
-  try { const r = await rpc('world_trade_view', { p_port: pick }); if (!el) return; v._other = { board: r.board, seen_at: r.seen_at }; } catch (e) { toast(e.message, 'error'); }
-  draw();
 }
 
 function qtyLayer({ title, line, max, okText, onOk }) {

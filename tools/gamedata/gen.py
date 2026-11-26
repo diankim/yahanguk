@@ -184,6 +184,7 @@ def build(dsn):
         'parts', (select jsonb_object_agg(t.key, (select jsonb_object_agg(c.key, (select jsonb_object_agg(coalesce(i.item_name, x.key), x.value) from jsonb_each(c.value) x left join world_item_catalog i on i.item_id = x.key)) from jsonb_each(t.value) c)) from jsonb_each(r -> 'parts') t),
         'seek', r -> 'price' -> 'seek', 'events', r -> 'price' -> 'event' -> 'names',
         'day_cap', r -> 'day_cap', 'slot_n', r -> 'slot_n', 'sail', r -> 'sail', 'bonus', r -> 'bonus',
+        'raid', jsonb_build_object('p', r -> 'raid' -> 'p', 'p_far', r -> 'raid' -> 'p_far', 'far_min', r -> 'raid' -> 'far_min'), 'cross', (select jsonb_agg(jsonb_build_array(x ->> 0, x ->> 1)) from jsonb_array_elements(r -> 'cross') x),
         'lose_pct', r -> 'raid' -> 'lose_pct', 'send_lose', r -> 'raid' -> 'send_lose', 'dur', r -> 'dur', 'name_max', r -> 'name_max')
         from (select world_trade_rules() r) x""")
     d['project'] = q(dsn, """select (world_project_rules() - 'projects' - 'v' - 'vault' - 'vault_faction' - 'f_shop' - 'c_shop' - 'titles') || jsonb_build_object(

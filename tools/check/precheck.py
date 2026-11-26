@@ -22,7 +22,7 @@ BASE_KEYED = re.compile(r"\.output\s*===\s*([\w$.]+)|ingredients\??\.?\[([\w$.]+
 HQ_HELPERS = re.compile(r'\b(withHq|haveOf|hqCount|bothOf|hqOf|baseOf|pairOf)\(')
 UNMUTABLE_NOTES = {'bug_reply', 'bug_report', 'rescued', 'yohwa', 'death', 'system', 'drawing_removed', 'outfit_removed', 'ucomm_note_removed', 'guide'}
 ANON_OK = {'world_app_version'}
-NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js'}
+NOT_PRELOADED = {'assets/js/boot.js', 'assets/js/maintenance.js', 'assets/js/ship_art.js'}
 SERVER_TEXT = ['쏠 것이 떨어져', '기력이 바닥나', '영력이 바닥나', '초 남음', '의 피해']
 
 SQL = {
