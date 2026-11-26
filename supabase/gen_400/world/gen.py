@@ -153,7 +153,6 @@ part('f_mat_tier.sql')
 [part('../lantern/' + f) for f in ('a_rules.sql', 'b_tables.sql', 'c_funcs.sql', 'd_rewards.sql')]
 [part('../feast/' + f) for f in ('a_rules.sql', 'b_tables.sql', 'c_funcs.sql')]
 part('g_tasks.sql')
-part('i_balance.sql')
 
 rules = {}
 for tid, tname in D.TERRS.items():
