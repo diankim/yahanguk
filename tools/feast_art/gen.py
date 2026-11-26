@@ -4,15 +4,15 @@ from PIL import Image, ImageDraw, ImageFont
 import art
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
-OUT = os.path.join(ROOT, 'supabase', 'gen_part2', 'ports', 'feast_v1.png')
+OUT = os.path.join(ROOT, 'supabase', 'gen_part2', 'ports', 'feast_v2.png')
 FONT = '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'
 BG = {'A': '#2b2030', 'a': '#3a2a36', 'W': '#1f2c40', 'V': '#34465e', 'T': '#5a4a3a',
       'P': '#4a3424', 'O': '#38261a', 'F': '#2e2018', 'S': '#241812', 'q': '#f4d27a', 'Q': '#fff2b8', 'y': '#e8c34a'}
 PAL = dict(art.PAL)
 for k, v in BG.items():
     PAL.setdefault(k, v)
-SW, SH = 88, 54
-TX0, TX1 = 8, 79
+SW, SH = 100, 54
+TX0, TX1 = 6, 93
 TY0, TY1 = 18, 35
 INSET = 3
 
@@ -100,15 +100,16 @@ def table():
 
 def seats():
     out = []
-    for row, sy in ((0, TY0 + 5), (1, TY0 + 14)):
-        a, b = span(sy)
-        sp = (b - a) / 6
-        for i in range(6):
-            out.append((round(a + sp * i + sp / 2), sy))
+    cx = (TX0 + TX1) / 2
+    sp = 12
+    for k in (-2.5, -1.25, 0, 1.25, 2.5):
+        out.append((round(cx + k * sp), TY0 + 4))
+    for k in range(-3, 4):
+        out.append((round(cx + k * sp), TY0 + 15))
     return out
 
 
-ORDER = [2, 9, 4, 7, 0, 11, 5, 6, 1, 10, 3, 8]
+ORDER = [8, 2, 6, 10, 1, 3, 5, 11, 7, 9, 0, 4]
 DSPR = {k: outline(rows(v)) for k, v in art.DISH.items()}
 
 
@@ -210,24 +211,27 @@ def scene(dishes, kind=None):
             g[sy + 1][sx - 1] = 'L'
             g[sy + 1][sx] = 'L'
             continue
-    for idx in range(12):
-        if idx not in placed:
-            continue
-        d = placed[idx]
-        spr = DSPR[d]
-        w, h = len(spr[0]), len(spr)
-        ox, oy = st[idx][0] - w // 2, st[idx][1] + 2 - h
-        put(g, spr, ox, oy)
-        if d in art.STEAMY:
-            put(g, art.STEAM, ox + w // 2 - 2 + (idx % 2), oy - 4)
+    for steam in (True, False):
+        for idx in range(12):
+            if idx not in placed:
+                continue
+            d = placed[idx]
+            spr = DSPR[d]
+            w, h = len(spr[0]), len(spr)
+            ox, oy = st[idx][0] - w // 2, st[idx][1] + 2 - h
+            if steam:
+                if d in art.STEAMY:
+                    put(g, art.STEAM, ox + w // 2 - 2 + (idx % 2), oy - 4)
+            else:
+                put(g, spr, ox, oy)
     if kind:
         k = art.KINDS[kind]
         p = PLAQUE.replace('{a}', k['tag']).replace('{b}', k['tag2'])
         p = rows(p)
         put(g, outline(p), (TX0 + TX1) // 2 - 5, TY1 + 1)
     if full:
-        for (x, y, b) in [(4, 22, True), (83, 20, True), (6, 33, False), (82, 31, False), (20, 10, False),
-                          (68, 9, False), (44, 9, True), (2, 40, False), (85, 41, True), (30, 12, False), (58, 12, True)]:
+        for (x, y, b) in [(2, 22, True), (97, 20, True), (3, 33, False), (96, 31, False), (22, 10, False),
+                          (78, 9, False), (50, 9, True), (2, 42, False), (97, 42, True), (34, 12, False), (66, 12, True)]:
             sparkle(g, x, y, b)
     return g
 
@@ -263,7 +267,7 @@ def main():
     H = top + 2 * (sh + 40) + 3 * gap
     im = Image.new('RGB', (W, H), '#1c1418')
     d = ImageDraw.Draw(im)
-    d.text((gap, 12), '나눔 잔칫상 시안 v1 · 그릇 여섯 (칸 8배)', font=font, fill='#f4d27a')
+    d.text((gap, 12), '나눔 잔칫상 시안 v2 · 그릇 여섯 (칸 8배)', font=font, fill='#f4d27a')
     x = gap
     for k in ['meat', 'fish', 'namul', 'rice', 'tteok', 'soup']:
         spr = [list(r) for r in DSPR[k]]

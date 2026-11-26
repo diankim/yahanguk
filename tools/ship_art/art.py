@@ -14,6 +14,8 @@ PAL = {
 
 NO_OUTLINE = set('uUvVnr')
 
+ANIM = {'water': True, 'phase': 0, 'puff': 0, 'flag': 0, 'lit': 0, 'wargs': None}
+
 
 class Canvas:
     def __init__(self, w, h):
@@ -153,6 +155,10 @@ def sail(cv, xl, xr, yt, yb, cloth='y', step=4, rake=2, curve=True):
         k = (y - yt) / max(1, H)
         left = xl + round(rake * (1 - k) ** 1.5)
         belly = 1 if curve and 0.3 < k < 0.8 else 0
+        if ANIM['puff'] > 0 and 0.4 < k < 0.72:
+            belly += 1
+        elif ANIM['puff'] < 0 and 0.3 < k < 0.8:
+            belly -= 1
         right = xr + belly
         spans[y] = (left, right)
     for y, (left, right) in spans.items():
@@ -192,17 +198,17 @@ def sail(cv, xl, xr, yt, yb, cloth='y', step=4, rake=2, curve=True):
 
 def flag(cv, x, y, c1='R', c2='Q', ln=5):
     for i in range(ln):
-        wave = 1 if (i % 4) in (2,) else 0
+        wave = 1 if ((i + ANIM['flag']) % 4) in (2,) else 0
         cv.put(x + i, y + wave, c1)
         cv.put(x + i, y + 1 + wave, c2 if i > 0 else c1)
-    cv.put(x + ln, y + 1, c2)
+    cv.put(x + ln, y + 1 + (1 if ANIM['flag'] % 4 == 3 else 0), c2)
 
 
 def lantern(cv, x, y):
     cv.put(x, y - 1, 'f')
     cv.put(x, y, 'Q')
     cv.put(x + 1, y, 'Q')
-    cv.put(x, y + 1, 'P')
+    cv.put(x, y + 1, 'P' if (x + ANIM['lit']) % 3 else 'R')
     cv.put(x + 1, y + 1, 'R')
     cv.put(x, y + 2, 'R')
     cv.put(x + 1, y + 2, 'Q')
@@ -238,7 +244,8 @@ def wall(cv, xl, xr, yt, yb, windows=(), lit=True):
     for (wx, wy) in windows:
         for dx in range(2):
             for dy in range(2):
-                cv.put(wx + dx, wy + dy, ('y' if (dx + dy) == 0 else 'Y') if lit else 'H')
+                on = (wx * 7 + wy * 3 + ANIM['lit']) % 5 != 0
+                cv.put(wx + dx, wy + dy, ('y' if (dx + dy) == 0 and on else 'Y') if lit else 'H')
         cv.put(wx, wy + 2, 'e')
         cv.put(wx + 1, wy + 2, 'e')
 
@@ -251,27 +258,33 @@ def rail(cv, xl, xr, y, c='R', c2='Q'):
 
 
 def water(cv, x0, x1, yw, tops_bots, rows=5):
+    if not ANIM['water']:
+        ANIM['wargs'] = (x0, x1, yw, tops_bots, rows)
+        return
     bots = tops_bots[1]
+    ph = ANIM['phase']
     for i in range(rows):
         y = yw + i
         shrink = i * 2
         a, b = x0 - 5 + shrink, x1 + 5 - shrink
         for x in range(a, b + 1):
             under = x in bots and bots[x] >= y
+            q = x + ph * (1 if i % 2 == 0 else 2)
             if under:
                 if i == 0:
-                    c = 'v' if x % 3 else 'V'
+                    c = 'v' if q % 3 else 'V'
                 else:
-                    c = 'n' if (x + i * 2) % 5 else 'u'
-                    if i >= 2 and (x + i) % 7 == 0:
+                    r = x - ph
+                    c = 'n' if (r + i * 2) % 5 else 'u'
+                    if i >= 2 and (r + i) % 7 == 0:
                         c = 'U'
             else:
                 if i == 0:
-                    c = 'V' if (x // 2) % 3 else 'v'
+                    c = 'V' if (q // 2) % 3 else 'v'
                 elif i == 1:
-                    c = 'U' if (x + 1) % 6 else 'V'
+                    c = 'U' if (q + 1) % 6 else 'V'
                 else:
-                    c = 'u' if (x + i * 3) % 8 else 'U'
+                    c = 'u' if (q + i * 3) % 8 else 'U'
             edge = x in (a, b)
             if edge and i > 0:
                 c = 'U' if i < 3 else 'u'
@@ -280,7 +293,7 @@ def water(cv, x0, x1, yw, tops_bots, rows=5):
             cv.put(a - 1, y, 'V')
             cv.put(b + 1, y, 'V')
     for x in range(x0 - 8, x1 + 9, 1):
-        if x % 11 == 0:
+        if (x + ph) % 11 == 0:
             cv.put(x, yw + rows, 'u')
             cv.put(x + 1, yw + rows, 'u')
 
@@ -379,7 +392,7 @@ def deckhouse(cv, tops, xa, xb, ytop, ports_step=6, lit=False):
     for x in range(xa + 2, xb - 2, ports_step):
         y = ytop + 3
         if lit:
-            cv.put(x + 1, y, 'y')
+            cv.put(x + 1, y, 'y' if (x * 7 + ANIM['lit']) % 5 else 'Y')
             cv.put(x + 2, y, 'Y')
             cv.put(x + 1, y + 1, 'Y')
             cv.put(x + 2, y + 1, 'Y')

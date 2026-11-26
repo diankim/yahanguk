@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>등불 편지</title>
+<style>
+:root{--bg:#0d1422;--panel:#151f33;--line:#2a3a58;--line2:#3a4d72;--ink:#ddd6c4;--dim:#8d93a3;--gold:#e8c34a;--gold2:#b8892a;--paper:#e8ddc2;--pink:#d86a5a}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:14px;line-height:1.5}
+.wrap{max-width:992px;margin:0 auto;padding:12px 16px 24px}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.head h1{font-size:18px;margin:0;color:var(--gold);letter-spacing:1px}
+.head .where{color:var(--dim);font-size:12.5px}
+.head .cnt{margin-left:auto;font-size:12.5px;color:var(--dim)}
+.head .cnt b{color:var(--ink);font-weight:600}
+.stage{position:relative;border:1px solid var(--line);background:#081020;line-height:0}
+canvas#sea{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:manipulation}
+.hint{position:absolute;left:8px;top:8px;right:8px;display:none;align-items:center;gap:8px;line-height:1.4;font-size:13px;background:#0d1422;border:1px solid var(--gold2);color:var(--gold);padding:6px 10px}
+.hint.on{display:flex}
+.hint button{margin-left:auto}
+.toast{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);line-height:1.4;background:#0d1422;border:1px solid var(--line2);padding:6px 12px;font-size:13px;white-space:nowrap;display:none}
+.toast.on{display:block}
+.bar{display:flex;gap:8px;margin-top:10px}
+.bar button{flex:1}
+button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line2);height:38px;padding:0 14px;cursor:pointer;border-radius:4px}
+button:hover{border-color:var(--gold2)}
+button.main{background:#2a2410;border-color:var(--gold2);color:var(--gold);font-weight:600}
+button.on{background:var(--gold);color:#1a120e;border-color:var(--gold)}
+button.sm{height:32px;padding:0 12px;font-size:13px}
+button:disabled{opacity:.4;cursor:default}
+.note{color:var(--dim);font-size:12px;margin-top:8px}
+.veil{position:fixed;inset:0;background:rgba(4,8,16,.78);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.veil.on{display:flex}
+.box{background:var(--panel);border:1px solid var(--line2);width:100%;max-width:440px;padding:14px;border-radius:4px;max-height:calc(100vh - 32px);overflow:auto}
+.box h2{font-size:15px;margin:0 0 10px;color:var(--gold)}
+.box .sub{font-size:12px;color:var(--dim);margin:-6px 0 10px}
+.book{display:grid;grid-template-columns:auto repeat(4,1fr);gap:4px;align-items:center}
+.book .ch{font-size:11.5px;color:var(--dim);text-align:center}
+.book .rh{font-size:11.5px;color:var(--dim);padding-right:4px;white-space:nowrap}
+.cell{background:#0e1626;border:1px solid var(--line);aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;padding:0;height:auto;border-radius:3px}
+.cell canvas{width:86%;image-rendering:pixelated}
+.cell.lock{cursor:default}
+.cell.lock::after{content:"?";position:absolute;font-size:13px;color:#56627d;font-weight:700}
+.cell.pick{border-color:var(--gold);background:#2a2410}
+.cell.fresh{border-color:var(--pink)}
+.lbl{font-size:12.5px;color:var(--dim);margin:12px 0 4px;display:flex}
+.lbl span{margin-left:auto}
+textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:#0e1626;border:1px solid var(--line2);border-radius:4px;padding:8px;resize:none;height:76px}
+textarea:focus{outline:none;border-color:var(--gold2)}
+.row{display:flex;gap:8px;margin-top:12px}
+.row button{flex:1}
+.letter{background:var(--paper);color:#3a2a1c;max-width:380px;padding:18px 18px 14px;border-radius:2px;position:relative;image-rendering:pixelated;background-size:96px 96px}
+.letter .from{font-size:12px;color:#7a6448;display:flex;gap:6px;align-items:center}
+.letter .from canvas{width:40px;image-rendering:pixelated}
+.letter .txt{font-size:17px;line-height:1.75;margin:14px 2px 16px;font-family:"Nanum Myeongjo","AppleMyungjo","Batang",serif;word-break:keep-all;min-height:60px}
+.letter .meta{font-size:11.5px;color:#8a7458;display:flex;justify-content:space-between}
+.letter .meta a{color:#8a7458;cursor:pointer;text-decoration:underline}
+.stamp{display:none;margin:0 0 10px;background:#7a1f1c;color:#f6e7c6;font-size:12.5px;padding:5px 10px;border-radius:2px;font-weight:600}
+.stamp.on{display:inline-block;animation:pop .5s steps(4)}
+@keyframes pop{0%{transform:scale(1.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.letter .row button{background:#d8cba8;border-color:#a8946c;color:#3a2a1c}
+.letter .row button.main{background:#7a1f1c;border-color:#7a1f1c;color:#f6e7c6}
+@media (max-width:480px){.head .cnt{margin-left:0;width:100%}.wrap{padding:10px 16px 20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>등불 편지</h1><span class="where">구름나루 물가 · 밤</span>
+    <span class="cnt">오늘 띄우기 <b id="c-send">0/3</b> · 건지기 <b id="c-catch">0/1</b> · 등불첩 <b id="c-book">3/16</b></span>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="sea"></canvas>
+    <div class="hint" id="hint"><span>흘러오는 등불을 눌러 건지세요</span><button class="sm" id="hint-x">그만</button></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <div class="bar">
+    <button class="main" id="b-send">띄우기</button>
+    <button id="b-catch">건지기</button>
+    <button id="b-book">등불첩</button>
+  </div>
+  <div class="note">시안 화면 — 서버 요청 없이 꾸민 글이고 횟수도 막지 않습니다.</div>
+</div>
+
+<div class="veil" id="v-send"><div class="box">
+  <h2 id="send-title">등불 띄우기</h2>
+  <div class="sub">이름은 적히지 않습니다. 글은 다른 항구로 흘러가 누군가 건집니다.</div>
+  <div class="book" id="send-book"></div>
+  <div class="lbl">등에 적을 말<span id="send-n">0/60</span></div>
+  <textarea id="send-txt" maxlength="60" placeholder="물에 띄울 짧은 글"></textarea>
+  <div class="row"><button id="send-x">그만두기</button><button class="main" id="send-go">물에 띄우기</button></div>
+</div></div>
+
+<div class="veil" id="v-book"><div class="box">
+  <h2>등불첩</h2>
+  <div class="sub">남의 등불을 건지면 그 모양·색이 열려 내가 띄울 때 쓸 수 있습니다.</div>
+  <div class="book" id="book-grid"></div>
+  <div class="row"><button id="book-x">닫기</button></div>
+</div></div>
+
+<div class="veil" id="v-letter"><div class="letter" id="letter">
+  <div class="stamp" id="l-stamp"></div>
+  <div class="from"><canvas id="l-pic"></canvas><span id="l-from"></span></div>
+  <div class="txt" id="l-txt"></div>
+  <div class="meta"><span id="l-days"></span><a id="l-rep">신고</a></div>
+  <div class="row"><button id="l-x">닫기</button><button class="main" id="l-reply">답등 띄우기</button></div>
+</div></div>
+
+<script>
+const LD = {"shapes":[{"key":"round","name":"둥근 등","spr":["..........kkkk..........",".........kggggk.........","........kgkkkkgk........","........kkbbbbkk........",".......kbBnnnnBbk.......","......kbbbbbbbbbbk......",".....kaammmmmmmmaak.....","....kaamallllllamaak....","...kaamalhllllhlamaak...","..kaamalhlhwwhlhlamaak..","..kamalhlhwWWwhlhlamak..","..kamalhlhwWWwhlhlamak..","..kamalhlhwWWwhlhlamak..","..kamalhlhwWWwhlhlamak..","..kaamalhlhwwhlhlamaak..","...kaamalhllllhlamaak...","....kaamallllllamaak....",".....kaammmmmmmmaak.....","......kbbbbbbbbbbk......",".......kbBnnnnBbk.......","........kbbbbbbk........",".........kkkkkk........."]},{"key":"cho","name":"청사초롱","spr":["..........kkkk..........",".........kggggk.........","........kgkkkkgk........","......kkkkbbbbkkkk......",".....kbbbBnnnnBbbbk.....","....kbbbbbbbbbbbbbbk....","....kRRRRRRRRRRRRRRk....","....kRrrrrrrrrrrrrRk....","....kaamllhhhhllmaak....","....kamllhhwwhhllmak....","....kamlhhwWWwhhlmak....","....kamlhwWWWWwhlmak....","....kamlhwWWWWwhlmak....","....kamlhwWWWWwhlmak....","....kamlhhwWWwhhlmak....","....kamllhhwwhhllmak....","....kaamllhhhhllmaak....","....kRrrrrrrrrrrrrRk....","....kRRRRRRRRRRRRRRk....","...kbbbbbbbbbbbbbbbbk...","...kbBnnnnnnnnnnnnBbk...","....kkkkkkkkkkkkkkkk...."]},{"key":"lotus","name":"연꽃 등","spr":["...........kk...........","..........kFFk..........",".........kfFFfk.........",".........kfWWfk.........",".........kewwek.........","...k....kmlhhlmk....k...","..khk..kamlhhlmak..khk..",".kmhk..kamlhhlmak..khmk.",".kmlhkkamlhwwhlmakkhlmk.","kamlhkkamlhwwhlmakkhlmak","kamlhhamllhwwhllmahhlmak","kamllhamlhwWWwhlmahllmak","kaamlhaamlhwwhlmaahlmaak",".kaamlhhamlhhlmahhlmaak.","..kaamlhhamllmahhlmaak..","...kaaammmmmmmmmmaaak...","..kDLLLLLLLLLLLLLLLLDk..","...kDDLLLDDDDDDLLLDDk...","....kkDDDDDDDDDDDDkk....","......kkkkkkkkkkkk......"]},{"key":"fish","name":"물고기 등","spr":["..........kk............",".........kaak...........",".......kkamlak.....kk...",".....kkaammllak...kaak..","....kaamlllhhlak.kamlak.","...kamllhhhhhhlakamllak.","..kamlhhhwwwwhhlamlllak.",".kamlhWehwwWWwhlhmllak..",".kmlhheehhwWWwhhmllak...",".kmlhPhhhwwwwhlmmllak...","..kamlhhhhwwhllmhmlak...","...kaamllhhllmaamlak....","....kkaamllmmaakkaak....","......kkamlakkk..kk.....","........kkkk............"]}],"colors":[{"key":"red","name":"붉은","pal":{"a":"#7a1f1c","m":"#b8352c","l":"#de5c45","h":"#f39466","r":"#2c5596","R":"#1b3463"}},{"key":"blue","name":"푸른","pal":{"a":"#1d3566","m":"#2d5c9e","l":"#4c85c6","h":"#8bb9e6","r":"#c3392e","R":"#80201b"}},{"key":"yellow","name":"노란","pal":{"a":"#86561a","m":"#c98f26","l":"#e9bb45","h":"#f6dc86","r":"#c3392e","R":"#80201b"}},{"key":"white","name":"흰","pal":{"a":"#7f7a70","m":"#bdb6a6","l":"#ddd6c4","h":"#f2ecdc","r":"#c3392e","R":"#80201b"}}],"fixed":{"k":"#1a120e","b":"#5a3a22","B":"#8f6338","n":"#b88a52","g":"#b8892a","G":"#ecc45a","w":"#fbe3a0","W":"#fff6d8","f":"#e0782e","F":"#ffd98a","v":"#3f6a9a","V":"#7fa6cf","o":"#b8862e","O":"#f2cf78","e":"#2a2420","L":"#3f7a3a","D":"#24502a","P":"#e99aa8"}};
+const $ = id => document.getElementById(id);
+const SH = LD.shapes, CO = LD.colors, FX = LD.fixed;
+const PORTS = ['잠든 포구', '묵창 나루', '남문 수로 선착', '만조의 갑문', '십삼문 밀수 부두', '염등촌 물가'];
+const NOTES = [
+  '오늘 처음으로 혼자 우두머리를 잡았어요. 누가 이 등을 건지면 같이 기뻐해 주세요.',
+  '비가 그치면 다시 길을 나설 거예요. 그쪽 물가는 따뜻한가요?',
+  '낚싯대를 세 번 부러뜨렸습니다. 그래도 금잉어는 꼭 낚을 거예요.',
+  '이름을 잃어 가는 친구가 있어요. 그 사람 이름을 여기 몰래 적어 둡니다.',
+  '등불 하나 띄울 때마다 걱정 하나씩 덜어 내기로 했어요.',
+  '건진 분, 오늘 밤 하늘의 달을 한번 올려다봐 주세요. 저도 보고 있어요.',
+  '먹비 숲에서 길을 잃었다가 겨우 나왔어요. 다들 밥 잘 챙겨 먹어요.'
+];
+const open = new Set(['round:red', 'cho:blue', 'lotus:yellow']);
+let pick = 'round:red', sent = 0, caught = 0, catching = false, replyTo = null;
+
+function hex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+function mix(a, b, t) { const x = hex(a), y = hex(b); return 'rgb(' + x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(',') + ')'; }
+function shapeOf(k) { return SH.find(s => s.key === k); }
+function colorOf(k) { return CO.find(c => c.key === k); }
+function nameOf(id) { const [s, c] = id.split(':'); return colorOf(c).name + ' ' + shapeOf(s).name; }
+
+const FLICK = [{ W: 'w', w: 'h' }, {}, { w: 'W' }];
+const SPR = {};
+SH.forEach(s => {
+  let gx = 0, gy = 0, n = 0;
+  s.spr.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === 'W' || ch === 'w') { gx += x; gy += y; n++; } }));
+  s.w = s.spr[0].length; s.h = s.spr.length; s.gx = n ? gx / n : s.w / 2; s.gy = n ? gy / n : s.h / 2;
+  let bot = 0; s.spr.forEach((r, y) => { if (/[^.]/.test(r)) bot = y; }); s.bot = bot;
+});
+function colOf(ch, pal, lv) {
+  const c2 = FLICK[lv][ch] || ch;
+  return pal[c2] || FX[c2];
+}
+function drawSpr(g, shape, color, x0, y0, lv, sil) {
+  const s = shapeOf(shape), pal = colorOf(color).pal;
+  s.spr.forEach((r, y) => {
+    for (let x = 0; x < r.length; x++) {
+      const ch = r[x]; if (ch === '.') continue;
+      g.fillStyle = sil ? (ch === 'k' ? '#0a1020' : '#26314a') : colOf(ch, pal, lv);
+      g.fillRect(x0 + x, y0 + y, 1, 1);
+    }
+  });
+}
+function thumb(shape, color, sil, scale) {
+  const s = shapeOf(shape), c = document.createElement('canvas');
+  c.width = s.w; c.height = s.h;
+  drawSpr(c.getContext('2d'), shape, color, 0, 0, 1, sil);
+  return c;
+}
+
+const cv = $('sea'), g = cv.getContext('2d');
+let W = 200, H = 130, SC = 3, dockEnd = 50, horizon = 46, dockTop = 94;
+let stars = [], hills = [], windows = [], flies = [], sparks = [], splashes = [], drops = [];
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function seeded(n) { let s = n; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+function layout() {
+  const full = Math.max(280, $('stage').clientWidth || 340);
+  SC = full >= 860 ? 5 : full >= 600 ? 4 : full >= 330 ? 3 : 2;
+  W = Math.floor((full - 2) / SC); H = SC >= 5 ? 112 : SC === 4 ? 120 : 112;
+  cv.width = W; cv.height = H;
+  cv.style.width = W * SC + 'px'; cv.style.height = H * SC + 'px';
+  horizon = Math.round(H * 0.3); dockTop = H - 30; dockEnd = Math.max(38, Math.round(W * 0.22));
+  const r = seeded(7);
+  stars = Array.from({ length: Math.round(W / 4) }, () => ({ x: Math.floor(r() * W), y: Math.floor(r() * (horizon - 8)), p: r() * 6, b: r() < .2 }));
+  hills = []; let y = horizon - 4;
+  for (let x = 0; x < W; x++) { y += (r() - .5) * 1.6; y = Math.max(horizon - 9, Math.min(horizon - 2, y)); hills.push(Math.round(y)); }
+  windows = Array.from({ length: Math.round(W / 22) }, () => { const x = Math.floor(W * .35 + r() * W * .6); return { x, y: hills[Math.min(W - 1, x)] + 2 + Math.floor(r() * 2), p: r() * 9 }; });
+  flies = Array.from({ length: 7 }, () => ({ x: rnd(4, dockEnd + 30), y: rnd(dockTop - 26, dockTop + 4), vx: rnd(-3, 3), vy: rnd(-2, 2), p: rnd(0, 6) }));
+}
+
+const lamps = [];
+const ALL = []; SH.forEach(s => CO.forEach(c => ALL.push(s.key + ':' + c.key)));
+let seq = 0;
+function spawn(atX) {
+  const id = ALL[Math.floor(Math.random() * ALL.length)];
+  const [shape, color] = id.split(':');
+  const lo = horizon + 26, hi = H - 10;
+  let base = Math.round(rnd(lo, hi));
+  for (let i = 0; i < 6 && lamps.some(l => Math.abs(l.base - base) < 7 && l.mode === 'drift'); i++) base = Math.round(rnd(lo, hi));
+  lamps.push({ id: ++seq, shape, color, x: atX ?? -16, base, vx: rnd(2.2, 3.6) * (SC === 2 ? .8 : 1), ph: rnd(0, 6), lv: 1, ft: 0, mode: 'drift', t0: 0,
+    port: PORTS[Math.floor(Math.random() * PORTS.length)], note: NOTES[Math.floor(Math.random() * NOTES.length)], days: 1 + Math.floor(Math.random() * 6) });
+}
+
+function cell(x, y, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), 1, 1); }
+function rect(x, y, w, h, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }
+
+function drawSky(t) {
+  const bands = ['#080e1d', '#0a1122', '#0c1427', '#0e172c'];
+  const bh = Math.ceil(horizon / bands.length);
+  bands.forEach((c, i) => rect(0, i * bh, W, bh, c));
+  stars.forEach(s => {
+    const on = Math.sin(t * 1.3 + s.p * 3) > -0.4;
+    if (!on) return;
+    cell(s.x, s.y, s.b ? '#e9e4cf' : '#5d6c8e');
+    if (s.b && Math.sin(t * 2 + s.p) > .7) { cell(s.x - 1, s.y, '#3a4766'); cell(s.x + 1, s.y, '#3a4766'); cell(s.x, s.y - 1, '#3a4766'); cell(s.x, s.y + 1, '#3a4766'); }
+  });
+  const mx = Math.round(W * .78), my = Math.round(horizon * .34), mr = 6;
+  for (let y = -mr - 3; y <= mr + 3; y++) for (let x = -mr - 3; x <= mr + 3; x++) {
+    const d = Math.hypot(x, y);
+    if (d <= mr) cell(mx + x, my + y, (x + y > 3 || (x === -2 && y === 1) || (x === 2 && y === -2)) ? '#c9c3ab' : '#ece6cf');
+    else if (d <= mr + 1.6 && (x + y) % 2 === 0) cell(mx + x, my + y, '#2a3552');
+    else if (d <= mr + 3 && (x + y) % 4 === 0) cell(mx + x, my + y, '#1a2440');
+  }
+  for (let x = 0; x < W; x++) for (let y = hills[x]; y < horizon; y++) cell(x, y, y === hills[x] ? '#1a2640' : '#0f1828');
+  windows.forEach(w => { if (Math.sin(t * .6 + w.p) > -0.6) { cell(w.x, w.y, '#e8b54a'); cell(w.x, w.y + 1, '#5a4320'); } });
+}
+
+function drawWater(t) {
+  const bands = [['#13284a', 6], ['#10223f', 14], ['#0d1c36', 26], ['#0b182f', 999]];
+  let y = horizon;
+  bands.forEach(([c, h]) => { const hh = Math.min(h, H - y); if (hh > 0) rect(0, y, W, hh, c); y += hh; });
+  rect(0, horizon, W, 1, '#24406a');
+  const mx = Math.round(W * .78);
+  for (let yy = horizon + 2; yy < H; yy += 3) {
+    const k = (yy - horizon) / (H - horizon);
+    const half = 2 + k * 9;
+    const off = Math.sin(t * 1.4 + yy * .7) * (1 + k * 3);
+    for (let s = -1; s <= 1; s++) {
+      const len = Math.max(1, Math.round((half - Math.abs(s) * half * .5) * (.45 + .55 * Math.sin(t * 1.8 + yy * 1.3 + s * 2))));
+      const x = Math.round(mx + off + s * half * 1.1 - len / 2);
+      rect(x, yy, len, 1, s === 0 ? (yy % 2 === 0 ? '#a9c2de' : '#7fa0c6') : '#3c6290');
+    }
+  }
+  for (let i = 0; i < W / 3; i++) {
+    const yy = horizon + 4 + ((i * 37) % (H - horizon - 6));
+    const x = ((i * 53 + t * (4 + (i % 3))) % (W + 10)) - 5;
+    const len = 2 + (i % 3);
+    if (Math.sin(t * 1.2 + i) > -0.2) rect(x, yy, len, 1, yy > dockTop ? '#183256' : '#1d3a62');
+  }
+}
+
+function drawDock(t) {
+  const top = dockTop, posts = [];
+  for (let x = 3; x < dockEnd - 2; x += 17) posts.push(x);
+  posts.push(dockEnd - 4);
+  posts.forEach(px => {
+    rect(px, top + 4, 4, H - top - 4, '#3a2618');
+    rect(px + 1, top + 4, 1, H - top - 4, '#5a3a22');
+    rect(px - 1, top + 4, 1, H - top - 4, '#1a120e'); rect(px + 4, top + 4, 1, H - top - 4, '#1a120e');
+    const wy = H - 9 + Math.round(Math.sin(t * 1.4 + px) * .6);
+    rect(px - 3, wy, 3, 1, '#4f78a6'); rect(px + 5, wy, 3, 1, '#4f78a6');
+    rect(px - 1, wy + 1, 6, 1, '#1d3a62');
+  });
+  rect(0, top - 1, dockEnd + 1, 1, '#1a120e');
+  rect(0, top, dockEnd, 3, '#8f6338');
+  for (let x = 0; x < dockEnd; x++) if (x % 7 === 6) rect(x, top, 1, 3, '#5a3a22');
+  rect(0, top, dockEnd, 1, '#b88a52');
+  rect(0, top + 3, dockEnd, 2, '#4a301c');
+  rect(0, top + 5, dockEnd + 1, 1, '#1a120e');
+  rect(dockEnd, top - 1, 1, 7, '#1a120e');
+  posts.slice(0, -1).forEach(px => {
+    rect(px, top - 8, 4, 8, '#5a3a22'); rect(px + 1, top - 8, 1, 8, '#8f6338');
+    rect(px - 1, top - 9, 6, 1, '#1a120e'); rect(px - 1, top - 8, 1, 8, '#1a120e'); rect(px + 4, top - 8, 1, 8, '#1a120e');
+    rect(px, top - 9, 4, 1, '#b88a52');
+  });
+  const pp = posts.slice(0, -1);
+  for (let i = 0; i < pp.length - 1; i++) {
+    const a = pp[i] + 4, b = pp[i + 1], sag = 3 + Math.sin(t * .8 + i) * .4;
+    for (let x = a; x < b; x++) {
+      const u = (x - a) / (b - a), y = top - 7 + Math.round(4 * sag * u * (1 - u));
+      cell(x, y, '#c8a670'); cell(x, y + 1, '#6b4a2a');
+    }
+  }
+  rect(6, top - 6, 7, 5, '#5a3a22'); rect(6, top - 6, 7, 1, '#8f6338'); rect(5, top - 7, 9, 1, '#1a120e'); rect(5, top - 6, 1, 5, '#1a120e'); rect(13, top - 6, 1, 5, '#1a120e');
+  rect(7, top - 4, 5, 1, '#3a2618');
+}
+
+function halo(cx, cy, r, col) {
+  for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+    const d = Math.hypot(x, y * 1.1);
+    if (d > r) continue;
+    g.globalAlpha = d > r * .7 ? .07 : d > r * .42 ? .13 : .2;
+    cell(cx + x, cy + y, col);
+  }
+  g.globalAlpha = 1;
+}
+
+function lampPos(l, t) {
+  const s = shapeOf(l.shape);
+  const bob = Math.round(Math.sin(t * 1.1 + l.ph) * 1.4);
+  let base = l.base, x = l.x, lift = 0;
+  if (l.mode === 'launch') {
+    const u = Math.min(1, (t - l.t0) / 1.4);
+    x = l.sx + u * 14; base = Math.round(dockTop - 1 + (l.base - dockTop + 1) * u - Math.sin(u * Math.PI) * 6);
+  }
+  if (l.mode === 'lift') { const u = Math.min(1, (t - l.t0) / 1.1); lift = Math.round(u * u * 34); }
+  return { s, x0: Math.round(x - s.w / 2), y0: base - s.bot + (l.mode === 'drift' || l.mode === 'away' ? bob : 0) - lift, base, lift, bob };
+}
+
+function drawLamp(l, t) {
+  const p = lampPos(l, t), s = p.s, pal = colorOf(l.color).pal;
+  if (t > l.ft) { l.lv = Math.random() < .55 ? 1 : Math.random() < .6 ? 2 : 0; l.ft = t + rnd(.08, .35); }
+  const gx = p.x0 + Math.round(s.gx), gy = p.y0 + Math.round(s.gy);
+  const onWater = l.mode !== 'lift' && !(l.mode === 'launch' && t - l.t0 < 1.2);
+  if (onWater) {
+    for (let i = 2; i < 12; i += 2) {
+      const yy = p.base + i;
+      if (yy >= H) break;
+      const w = Math.max(1, Math.round(s.w * .5 - i * 1.1));
+      const off = Math.round(Math.sin(t * 2.4 + i * .9 + l.ph) * (1 + i * .25));
+      const xs = p.x0 + Math.round(s.w / 2 - w / 2) + off;
+      const cut = (Math.floor(t * 3 + i + l.ph) % Math.max(2, w)) ;
+      g.globalAlpha = i < 4 ? .85 : i < 8 ? .55 : .3;
+      for (let x = 0; x < w; x++) {
+        if (x === cut) continue;
+        cell(xs + x, yy, x === Math.floor(w / 2) && l.lv > 0 ? FX.O : pal.h);
+      }
+      g.globalAlpha = 1;
+    }
+  }
+  halo(gx, gy, 9 + l.lv * 2, l.lv === 2 ? FX.w : pal.h);
+  drawSpr(g, l.shape, l.color, p.x0, p.y0, l.lv, false);
+  if (onWater) {
+    const yy = p.base + 1;
+    for (let x = -2; x < s.w + 2; x++) {
+      if (((x + Math.floor(t * 3 + l.ph)) % 6) < 2) continue;
+      cell(p.x0 + x, yy, (x % 4 === 0) ? '#8fb4d8' : '#3f6a9a');
+    }
+  }
+  if (catching && l.mode === 'drift' && l.x > 8 && l.x < W - 8) {
+    const ay = p.y0 - 5 + Math.round(Math.sin(t * 5) * 1);
+    const ax = p.x0 + Math.round(s.w / 2);
+    rect(ax - 2, ay, 5, 1, '#e8c34a'); rect(ax - 1, ay + 1, 3, 1, '#e8c34a'); cell(ax, ay + 2, '#e8c34a');
+  }
+  if (l.mode === 'lift' && Math.random() < .5) drops.push({ x: p.x0 + rnd(2, s.w - 2), y: p.y0 + s.bot, vy: 10, life: .6 });
+}
+
+function drawFx(t, dt) {
+  flies.forEach(f => {
+    f.vx += rnd(-6, 6) * dt; f.vy += rnd(-6, 6) * dt;
+    f.vx = Math.max(-4, Math.min(4, f.vx)); f.vy = Math.max(-3, Math.min(3, f.vy));
+    f.x += f.vx * dt; f.y += f.vy * dt;
+    if (f.x < 2 || f.x > dockEnd + 40) f.vx *= -1;
+    if (f.y < horizon + 6 || f.y > H - 6) f.vy *= -1;
+    const b = Math.sin(t * 3 + f.p);
+    if (b > 0.1) {
+      cell(f.x, f.y, b > .7 ? '#f6f0a0' : '#c8d060');
+      if (b > .85) { g.globalAlpha = .35; cell(f.x - 1, f.y, '#f6f0a0'); cell(f.x + 1, f.y, '#f6f0a0'); cell(f.x, f.y - 1, '#f6f0a0'); cell(f.x, f.y + 1, '#f6f0a0'); g.globalAlpha = 1; }
+    }
+  });
+  if (Math.random() < dt * 2.2) sparks.push({ x: rnd(dockEnd, W), y: rnd(horizon + 6, H - 4), life: .6 });
+  sparks = sparks.filter(s => (s.life -= dt) > 0);
+  sparks.forEach(s => {
+    const big = s.life > .2 && s.life < .45;
+    cell(s.x, s.y, '#e6eef8');
+    if (big) { cell(s.x - 1, s.y, '#7fa6cf'); cell(s.x + 1, s.y, '#7fa6cf'); cell(s.x, s.y - 1, '#7fa6cf'); cell(s.x, s.y + 1, '#7fa6cf'); }
+  });
+  splashes = splashes.filter(s => t - s.t0 < .9);
+  splashes.forEach(s => {
+    const r = Math.round(2 + (t - s.t0) * 12);
+    for (let a = 0; a < 16; a++) { const an = a / 16 * Math.PI * 2; if (a % 2) continue; cell(s.x + Math.cos(an) * r, s.y + Math.sin(an) * r * .35, '#8fb4d8'); }
+  });
+  drops = drops.filter(d => (d.life -= dt) > 0);
+  drops.forEach(d => { d.y += d.vy * dt; d.vy += 40 * dt; cell(d.x, d.y, '#8fb4d8'); });
+}
+
+let last = 0, T = 0, nextSpawn = 0;
+function frame(ms) {
+  const dt = Math.min(.1, (ms - last) / 1000 || 0); last = ms; T += dt;
+  lamps.forEach(l => {
+    if (l.mode === 'drift') l.x += l.vx * dt;
+    if (l.mode === 'away') { l.x += l.vx * dt; l.vx = Math.min(l.vx + dt * 2, 8); }
+    if (l.mode === 'launch' && T - l.t0 >= 1.4) { l.mode = 'away'; l.x = l.sx + 14; l.vx = 4; }
+    if (l.mode === 'launch' && !l.splashed && T - l.t0 >= 1.2) { l.splashed = true; splashes.push({ x: l.sx + 12, y: l.base + 1, t0: T }); }
+    if (l.mode === 'lift' && T - l.t0 >= 1.1 && !l.shown) { l.shown = true; showLetter(l); }
+  });
+  for (let i = lamps.length - 1; i >= 0; i--) { const l = lamps[i]; if (l.x > W + 24 || (l.mode === 'lift' && T - l.t0 > 1.2)) lamps.splice(i, 1); }
+  const drifting = lamps.filter(l => l.mode === 'drift').length;
+  const want = W > 200 ? 4 : 3;
+  if (drifting < want && T > nextSpawn) { spawn(); nextSpawn = T + rnd(2.5, 5); }
+  drawSky(T); drawWater(T);
+  const sorted = lamps.slice().sort((a, b) => a.base - b.base);
+  sorted.filter(l => l.base < dockTop + 6 && l.mode !== 'launch' && l.mode !== 'lift').forEach(l => drawLamp(l, T));
+  drawDock(T);
+  sorted.filter(l => !(l.base < dockTop + 6 && l.mode !== 'launch' && l.mode !== 'lift')).forEach(l => drawLamp(l, T));
+  drawFx(T, dt);
+  requestAnimationFrame(frame);
+}
+
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2400); }
+function counts() { $('c-send').textContent = sent + '/3'; $('c-catch').textContent = caught + '/1'; $('c-book').textContent = open.size + '/16'; }
+
+function bookHtml(el, mode) {
+  el.innerHTML = '';
+  el.appendChild(Object.assign(document.createElement('div'), {}));
+  CO.forEach(c => { const h = document.createElement('div'); h.className = 'ch'; h.textContent = c.name; el.appendChild(h); });
+  SH.forEach(s => {
+    const rh = document.createElement('div'); rh.className = 'rh'; rh.textContent = s.name; el.appendChild(rh);
+    CO.forEach(c => {
+      const id = s.key + ':' + c.key, lock = !open.has(id);
+      const b = document.createElement('button'); b.className = 'cell' + (lock ? ' lock' : '') + (mode === 'pick' && pick === id ? ' pick' : '') + (fresh === id ? ' fresh' : '');
+      b.title = lock ? '아직 건지지 못한 등' : nameOf(id);
+      b.appendChild(thumb(s.key, c.key, lock));
+      if (mode === 'pick' && !lock) b.onclick = () => { pick = id; bookHtml(el, mode); };
+      if (lock) b.disabled = true;
+      el.appendChild(b);
+    });
+  });
+}
+let fresh = null;
+function openSend(reply) {
+  replyTo = reply || null;
+  $('send-title').textContent = reply ? reply.port + '(으)로 답등 띄우기' : '등불 띄우기';
+  $('send-txt').value = ''; $('send-n').textContent = '0/60';
+  bookHtml($('send-book'), 'pick');
+  $('v-send').classList.add('on');
+}
+$('send-txt').addEventListener('input', e => { $('send-n').textContent = e.target.value.length + '/60'; });
+$('b-send').onclick = () => { setCatch(false); openSend(); };
+$('send-x').onclick = () => $('v-send').classList.remove('on');
+$('send-go').onclick = () => {
+  const txt = $('send-txt').value.trim();
+  if (!txt) { $('send-txt').focus(); toast('등에 적을 말을 써 주세요'); return; }
+  $('v-send').classList.remove('on');
+  const [shape, color] = pick.split(':');
+  const s = shapeOf(shape);
+  lamps.push({ id: ++seq, shape, color, mode: 'launch', t0: T, sx: dockEnd - s.w / 2 - 2, x: dockEnd - 10, base: Math.min(H - 8, dockTop + 12), vx: 4, ph: 0, lv: 1, ft: 0 });
+  sent++; counts();
+  toast(replyTo ? '답등이 ' + replyTo.port + ' 쪽으로 흘러갑니다' : '등불이 물살을 타고 떠났습니다');
+};
+$('b-book').onclick = () => { setCatch(false); bookHtml($('book-grid'), 'view'); $('v-book').classList.add('on'); };
+$('book-x').onclick = () => { $('v-book').classList.remove('on'); fresh = null; };
+
+function setCatch(on) {
+  catching = on; $('hint').classList.toggle('on', on); $('b-catch').classList.toggle('on', on);
+}
+$('b-catch').onclick = () => setCatch(!catching);
+$('hint-x').onclick = () => setCatch(false);
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+  const hit = lamps.filter(l => l.mode === 'drift').map(l => ({ l, p: lampPos(l, T) }))
+    .filter(({ l, p }) => x >= p.x0 - 3 && x <= p.x0 + p.s.w + 3 && y >= p.y0 - 3 && y <= p.base + 4)
+    .sort((a, b) => b.l.base - a.l.base)[0];
+  if (!hit) { if (catching) toast('조금 더 가까이 흘러온 등을 눌러 보세요'); return; }
+  if (!catching) { toast('「건지기」를 누른 뒤 등불을 누르세요'); return; }
+  hit.l.mode = 'lift'; hit.l.t0 = T;
+  splashes.push({ x: hit.p.x0 + hit.p.s.w / 2, y: hit.l.base + 1, t0: T });
+  setCatch(false);
+});
+
+function paperTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 48;
+  const x = c.getContext('2d'); x.fillStyle = '#e8ddc2'; x.fillRect(0, 0, 48, 48);
+  const r = seeded(3);
+  for (let i = 0; i < 520; i++) { x.fillStyle = r() < .5 ? '#e1d5b8' : r() < .7 ? '#efe6cf' : '#d8caa8'; x.fillRect(Math.floor(r() * 48), Math.floor(r() * 48), r() < .3 ? 2 : 1, 1); }
+  for (let i = 0; i < 14; i++) { x.fillStyle = '#d2c39f'; const yy = Math.floor(r() * 48), xx = Math.floor(r() * 40); x.fillRect(xx, yy, 3 + Math.floor(r() * 6), 1); }
+  return c.toDataURL();
+}
+$('letter').style.backgroundImage = 'url(' + paperTex() + ')';
+let shownLamp = null;
+function showLetter(l) {
+  shownLamp = l;
+  const id = l.shape + ':' + l.color, isNew = !open.has(id);
+  open.add(id); caught++; counts();
+  fresh = isNew ? id : null;
+  $('l-stamp').textContent = '등불첩에 새 모양! · ' + nameOf(id);
+  $('l-stamp').classList.toggle('on', isNew);
+  const pic = $('l-pic'), sp = shapeOf(l.shape); pic.width = sp.w; pic.height = sp.h;
+  const pg = pic.getContext('2d'); pg.clearRect(0, 0, sp.w, sp.h); drawSpr(pg, l.shape, l.color, 0, 0, 1, false);
+  $('l-from').textContent = l.port + '에서 흘러온 ' + nameOf(id);
+  $('l-txt').textContent = l.note;
+  $('l-days').textContent = l.days + '일째 떠돌던 등불 · 쓴 이는 알 수 없음';
+  $('v-letter').classList.add('on');
+}
+$('l-x').onclick = () => $('v-letter').classList.remove('on');
+$('l-reply').onclick = () => { $('v-letter').classList.remove('on'); openSend(shownLamp); };
+$('l-rep').onclick = () => toast('신고했습니다. 이 글은 다시 보이지 않습니다');
+document.querySelectorAll('.veil').forEach(v => v.addEventListener('click', e => { if (e.target === v) v.classList.remove('on'); }));
+
+layout();
+for (let i = 0; i < (W > 200 ? 4 : 3); i++) spawn(dockEnd + 10 + i * (W - dockEnd) / (W > 200 ? 4 : 3));
+counts();
+window.addEventListener('resize', () => { const w = W; layout(); if (W !== w) lamps.forEach(l => { l.x = Math.min(l.x, W); l.base = Math.min(l.base, H - 10); }); });
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -95,4 +95,5 @@ def main():
     sheet.save(OUT)
     print(OUT)
 
-main()
+if __name__ == '__main__':
+    main()
