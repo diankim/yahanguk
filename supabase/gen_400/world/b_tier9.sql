@@ -13,4 +13,4 @@ begin
 end $function$;
 create or replace function public.world_weapon_rank_rules()
  returns jsonb language sql immutable set search_path to 'pg_catalog', 'public'
-as $function$ select '{"steps":[[1,1],[10,5],[14,10],[20,15],[32,25],[42,33],[47,38],[53,43]]}'::jsonb $function$;
+as $function$ select '{"steps":[[1,1],[10,5],[14,10],[20,15],[32,25],[42,33],[47,38],[53,44]]}'::jsonb $function$;

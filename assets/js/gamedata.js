@@ -126,7 +126,7 @@ export const GAMEDATA = {
   "gearSet": {"max":10,"base":4,"rank":15,"name_max":12},
   "weaponRules": {"ammo":{"dart":["쇠뇌","취관"],"arrow":["각궁","단궁"]},"forms":{"medic":[["부채","silent"],["침통","base"]],"scout":[["각궁","keen"],["쇠뇌","base"]],"tamer":[["단궁","base"],["취관","keen"]],"analyst":[["단도","keen"],["수리검","base"]],"exorcist":[["방울","base"],["법경","keen"]],"spearman":[["언월도","base"],["장창","keen"]],"artificer":[["등패와 환도","base"],["등패와 철퇴","heavy"]],"formation":[["산가지","base"],["나경","silent"]],"sealmaster":[["금강령","silent"],["사슬","base"]],"bloodknight":[["도끼","heavy"],["대검","base"]]},"kinds":{"base":"기본 — 주는 피해","keen":"예리 — 치명타","heavy":"묵직 — 이목·받는 피해 감소","silent":"소리 없음 — 회피·이목 낮춤"},"drop_job_mul":4},
   "weaponRank": {
-    "steps": [[1,1],[10,5],[14,10],[20,15],[32,25],[42,33],[47,38],[52,43]]
+    "steps": [[1,1],[10,5],[14,10],[20,15],[32,25],[42,33],[47,38],[53,44]]
   },
   "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"death_h":4,"per_lv_low":40},
   "ride": {"wait_s":60,"stale_s":300},
