@@ -733,3 +733,5 @@ SPOT_POOL.update({
 })
 _mirror()
 SPOT_LOOT = SPOT_POOL
+
+TERR_COLORS = {'pado': '#5d6a70', 'bulssi': '#76655b', 'jaebit': '#625c69', 'nunmaru': '#80858c', 'dalmaji': '#78725d', 'haeoreum': '#7a6662', 'gureum': '#66716c', 'goimteo': '#58575e'}

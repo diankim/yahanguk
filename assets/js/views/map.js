@@ -176,6 +176,10 @@ function geometry() {
 }
 function isPin(r) { return !!GAMEDATA.domains?.[r.territory_id]?.pin; }
 function factionOf(id) { return zones.get(id)?.control_faction_id ?? null; }
+const terrOf = id => mapData.regions.find(r => r.region_id === id)?.territory_id;
+const terrColor = id => { const c = GAMEDATA.domains?.[terrOf(id)]?.color; if (!c) return null; if (document.documentElement.dataset.theme !== 'heukbaek') return c; const v = Math.round([1, 3, 5].reduce((a, i) => a + parseInt(c.slice(i, i + 2), 16), 0) / 3).toString(16).padStart(2, '0'); return `#${v}${v}${v}`; };
+const cellColor = id => terrColor(id) || factionColor(factionOf(id));
+const zoneOf = id => GAMEDATA.domains?.[terrOf(id)]?.color ? 't:' + terrOf(id) : factionOf(id);
 
 export function routeTo(target) {
   const here = currentRegion(mapData); if (!here || !mapData) return null;
@@ -215,14 +219,14 @@ function paint() {
   for (const r of regions) {
     const poly = g.cells.get(r.region_id); if (!poly?.length) continue;
     const cls = r.region_id === here?.region_id ? ' here' : r.region_id === selected ? ' sel' : '';
-    land += `<path d="${pathOf(poly)}" class="cell${cls}" style="--fc:${factionColor(factionOf(r.region_id))}" data-region="${esc(r.region_id)}"/>`;
+    land += `<path d="${pathOf(poly)}" class="cell${cls}" style="--fc:${cellColor(r.region_id)}" data-region="${esc(r.region_id)}"/>`;
     if (r.level_locked) hatch += `<path d="${pathOf(poly)}" class="cell-lock" data-region="${esc(r.region_id)}"/>`;
     if (zones.get(r.region_id)?.contested) hatch += `<path d="${pathOf(poly)}" class="cell-contest"/>`;
   }
   let inner = '', border = '', coast = '', seaCoast = '';
   for (const e of g.edges) {
     const d = `M${X(e.p[0]).toFixed(1)},${Y(e.p[1]).toFixed(1)}L${X(e.q[0]).toFixed(1)},${Y(e.q[1]).toFixed(1)}`;
-    if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (factionOf(e.a) !== factionOf(e.b)) border += d; else inner += d;
+    if (!e.b) { if (SEA_FISH.has(e.a)) seaCoast += d; else coast += d; } else if (zoneOf(e.a) !== zoneOf(e.b)) border += d; else inner += d;
   }
   const seen = new Set(); let roads = '', gates = '';
   for (const r of regions) for (const f of r.travel_from || []) {
@@ -333,6 +337,7 @@ function paint() {
   paintRealm();
 }
 function paintRealm() {
+  const lg = $('.faction-legend', el); if (lg && lg.dataset.realm !== realm) lg.outerHTML = factionLegend();
   const box = $('#map-realm', el); if (!box) return;
   const realms = [...new Set(mapData.regions.map(realmOf))];
   box.hidden = realms.length < 2;
@@ -429,8 +434,8 @@ function walkHint(est) {
 
 function factionLegend() {
   const seen = new Map();
-  for (const r of mapData.regions) { const f = factionOf(r.region_id); if (!seen.has(f)) seen.set(f, f == null ? '중립' : r.faction_control); }
-  return `<div class="faction-legend">${[...seen].map(([f, n]) => `<span><i style="background:${factionColor(f)}"></i>${esc(n)}</span>`).join('')}</div>`;
+  for (const r of viewRegions()) { const t = GAMEDATA.domains?.[r.territory_id]; const f = t?.color ? 't:' + r.territory_id : factionOf(r.region_id); if (!seen.has(f)) seen.set(f, [t?.color ? t.name : f == null ? '중립' : r.faction_control, cellColor(r.region_id)]); }
+  return `<div class="faction-legend" data-realm="${esc(realm || '')}">${[...seen].map(([, [n, c]]) => `<span><i style="background:${c}"></i>${esc(n)}</span>`).join('')}</div>`;
 }
 
 function drawDetail() {
@@ -451,7 +456,7 @@ function drawDetail() {
   const members = (partyData?.members || []).filter(m => m.owner_id !== c.owner_id && m.location === c.location && !m.in_combat && !m.downed);
   const monsters = (r.monsters || []).slice(0, 4);
   box.innerHTML = `
-    <article class="panel region-detail" style="--fc:${factionColor(factionOf(r.region_id))}">
+    <article class="panel region-detail" style="--fc:${cellColor(r.region_id)}">
       <header class="panel-head"><h2>${esc(r.region_name)}</h2>${isHere ? chip('현재 위치', 'accent') : ''}</header>
       <div class="panel-body">
         <p class="terr-line"><i></i>${esc(r.territory_name || '')} · ${esc(r.faction_control || '무주 금역')}${zone?.contested ? ' · <b class="contest">분쟁 중</b>' : ''}${sealed.has(r.region_id) ? ' · <b class="sealed">봉연에 잠김</b>' : ''}${shadow && shadow.region === r.region_name ? ` · <b class="shadow">${esc(shadowText(shadow))}</b>` : ''}</p>
