@@ -151,6 +151,7 @@ begin
     insert into public.world_gw_members(fight_id, owner_id, name, job_key, level) select fid, owner_id, character_name, job_key, level from public.world_characters where owner_id = us[i];
   end loop;
   perform public.world_gw_start(fid);
+  if current_setting('yh.hold', true) is not null and current_setting('yh.hold', true) <> '' then update public.world_gw_members set stats = stats || current_setting('yh.hold')::jsonb where fight_id = fid; end if;
   loop
     select * into f from public.world_gw_fights where fight_id = fid;
     exit when f.status <> 'fight' or r > 400;
