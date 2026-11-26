@@ -7,6 +7,7 @@ update public.world_item_catalog i set tier = x.t, reference_price = x.p
     ('frozen_arrow_shaft', 3, 180), ('frost_bell_iron', 3, 180), ('red_shrine_lacquer', 3, 180), ('star_record_plate', 3, 180), ('balance_weight', 3, 180)
   ) as x(id, t, p)
  where i.item_id = x.id;
+update public.world_item_catalog set tier = 3 where item_id in ('fd_white_rice', 'fd_meokbi_fern');
 do $d$
 declare j jsonb := public.world_project_rules(); vv jsonb := '{}'; id text;
 begin
