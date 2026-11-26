@@ -1,4 +1,5 @@
 import hashlib
+import subprocess
 import json
 import os
 import sys
@@ -346,6 +347,17 @@ for goods in (D.FISH_GOODS, D.NAMED_GOODS):
         names_new.append(nm)
         hq.append(iid)
         recipes.append(recipe('r_' + iid, nm + ' 만들기', iid, qty, mats, field, lv, nm + '을(를) 만든다.', 4 if goods is D.NAMED_GOODS else 3))
+RUB = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', "const F = await import('./assets/js/housing/furniture.js'); const o = {}; for (const [k, f] of Object.entries(F.WALL)) if (k.startsWith('rubbing_hw_')) o[k] = { name: f.name, grade: f.grade, kind: f.kind, w: f.w, h: f.h, cat: f.cat }; console.log(JSON.stringify(o));"], cwd=os.path.join(HERE, '..', '..', '..')))
+for nf in D.NAMED_FISH:
+    rk = 'rubbing_' + nf[0]
+    if rk not in RUB:
+        errors.append(f'탁본 그림 없음: {rk}')
+        continue
+    f = RUB[rk]
+    tr = {'hk': rk, 'kind': 'wall', 'wall': f['kind'], 'ww': f['w'], 'wh': f['h'], 'cat': f['cat'], 'grade': f['grade']}
+    items.append(item('hf_' + rk, f['name'], 'furniture', f['grade'], f"별채 가구 · {f['cat']}. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.", 1, {4: 800, 5: 2400}[f['grade']], False, D.NAMED_LEVEL, traits=tr))
+    names_new.append(f['name'])
+    recipes.append(recipe('r_hf_' + rk, f['name'] + ' 만들기', 'hf_' + rk, 1, dict({nf[0]: 1}, **D.RUBBING_MATS), 'sealing', D.NAMED_LEVEL, f"별채에 놓을 {f['name']}을(를) 만든다.", f['grade']))
 for iid, mats, field, qty in D.CONSUMABLE_RECIPES:
     nm = next(x[1] for x in D.ITEMS if x[0] == iid)
     recipes.append(recipe('r_' + iid, nm + ' 만들기', iid, qty, mats, field, D.TOOL_LV, nm + '을(를) 만든다.', 3))

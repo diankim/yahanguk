@@ -486,6 +486,7 @@ NAMED_FISH = [
 NAMED_PRICE = 1800
 NAMED_LEVEL = 50
 NAMED_TRADEABLE = True
+RUBBING_MATS = {'fine_paper': 2, 'sealing_ink': 2}
 
 FISH_GOODS = [
     ('hw_goby_crisp', '망둥이 바삭 튀김', 'consumable', 2, 50, True, 40, {'hp': 30, 'buffs': ['well_fed']}, '널다리 망둥이를 야자 기름에 바삭하게 튀겼다. 체력을 조금 채운다.', 'cooking', {'hw_canal_goby': 3, 'coconut_fiber': 1}, 2, 50),
