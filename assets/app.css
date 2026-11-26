@@ -4209,3 +4209,23 @@ body.wn.wn-soft::after { opacity: .4; animation: none; }
   .hud-card.vitals .statuses .st-chips { display: contents; }
   .hud-card.vitals .statuses .yohwa-pin { flex: 1 1 100%; margin: 0; }
 }
+
+.worn-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; }
+.worn-bar > span { font-size: calc(12px * var(--fz, 1)); color: var(--muted); margin-right: 2px; }
+.worn-bar .chip-btn { min-height: 26px; padding: 2px 9px; font-size: calc(12px * var(--fz, 1)); }
+.worn-bar .chip-btn:not(.on) { opacity: .55; text-decoration: line-through; }
+.worn-pic { display: flex; flex-direction: column; align-items: center; }
+.fpic .worn-pic .fpic-img { transform: none; max-width: none; height: 150px; width: auto; margin: 4px 0; }
+.ug-shop li { grid-template-columns: 48px minmax(0, 1fr) auto auto; }
+.ug-thumb { width: 48px; height: 48px; padding: 0; display: grid; place-items: center; overflow: hidden; border: var(--bw, 1px) solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); cursor: zoom-in; }
+.ug-thumb.none { cursor: default; border-style: dashed; opacity: .4; }
+.ug-thumb img { image-rendering: pixelated; max-width: 44px; max-height: 44px; width: auto; height: auto; }
+.ug-thumb .hs-sw { width: 40px; height: 40px; }
+.ug-name { padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: zoom-in; font: inherit; }
+.ug-prev { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; min-height: 160px; border: 1px dashed var(--line); border-radius: 6px; }
+.ug-prev img { image-rendering: pixelated; }
+.ug-prev .fpic-img { width: 220px; max-width: 100%; height: auto; }
+.ug-prev .fpic-sw { width: 160px; height: 70px; }
+.ug-prev .ug-big { height: 220px; width: auto; }
+.ug-prev:has(.ug-pet) { flex-direction: row; justify-content: center; flex-wrap: wrap; }
+.ug-prev-note { text-align: center; margin-top: 6px; }
