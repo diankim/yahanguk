@@ -6,7 +6,7 @@ begin
     (public.world_boss_rules() - 'ttangul') || jsonb_build_object('ttangul', $j${
   "name": "땅울이", "fight": "울리는 고임터", "place": "고임터", "arc": "도해록", "region": "dm_pool", "lv": 55,
   "quest": "hwq_13", "quest_name": "본편 「도해록」 13장", "item": "pooled_light_shard", "item_name": "고인 빛 부스러기", "item_where": "고임터에서 채집해 얻습니다.",
-  "min": 18, "hp_min": 9000, "hp_n": [1, 1.3, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [34, 3], "enrage": 0.25,
+  "min": 18, "hp_min": 9000, "hp_n": [1, 1.1, 1, 1], "raw_n": [0.6, 0.7, 0.8, 0.85], "raw": [34, 3], "enrage": 0.25,
   "first": {"gil": 3500, "xp": 0.5}, "again": {"gil": 200, "xp": 0.05}, "fail": {"dur": 10, "er": 10, "cd": 30}, "falls": 10, "xp_cap_lv": 55,
   "hard_quest": "hwq_13", "hard_quest_name": "본편 「도해록」 13장",
   "hard_min": 2, "modes": {"story": "이야기판", "hard": "깊은 고임터"},
