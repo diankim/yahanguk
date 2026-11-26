@@ -35,42 +35,46 @@ begin
 end $$;
 
 create or replace function pg_temp.yh_cellscore(fid uuid, uid uuid, c int, brace boolean) returns numeric language plpgsql as $$
-declare f public.world_gw_fights%rowtype; rb jsonb := public.world_boss_fight_rules(fid) -> 'board'; h jsonb; sc numeric := 0; p int; i int; n int; wet int; nx int; partner int;
+declare f public.world_gw_fights%rowtype; h jsonb; sc numeric := 0; p int; i int; n int; wet int; nx int; partner int; wetm boolean;
 begin
   select * into f from public.world_gw_fights where fight_id = fid;
   select coalesce(gval, 0) into wet from public.world_gw_members where fight_id = fid and owner_id = uid;
+  wetm := coalesce(f.mech -> 'mechs', '[]'::jsonb) ? 'wet';
   if public.world_dh_rift(fid, c) then sc := sc - 3; end if;
-  if exists (select 1 from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) e where e ->> 'k' = 'spray' and (e ->> 'left')::int = 0
-       and c = any (array(select jsonb_array_elements_text(e -> 'cells')::int))) then wet := wet + 1; end if;
+  p := c;
   for h in select * from jsonb_array_elements(coalesce(f.board -> 'hz', '[]'::jsonb)) loop
     if h ->> 'k' = 'whirl' then
       nx := coalesce(public.world_dh_step((h ->> 'c')::int, f.board ->> 'dir'), (h ->> 'c')::int);
       if c in ((h ->> 'c')::int, nx) then sc := sc - 40; end if;
       continue;
     end if;
-    if (h ->> 'left')::int > 0 then
-      if h ->> 'k' = 'tentacle' and uid in ((h ->> 'a')::uuid, (h ->> 'b')::uuid) then
-        select pos into partner from public.world_gw_members where fight_id = fid and owner_id = case when uid = (h ->> 'a')::uuid then (h ->> 'b')::uuid else (h ->> 'a')::uuid end;
-        sc := sc + 4 * public.world_dh_dist(c, partner);
+    if h ->> 'k' = 'tentacle' and uid in ((h ->> 'a')::uuid, (h ->> 'b')::uuid) then
+      select pos into partner from public.world_gw_members where fight_id = fid and owner_id = case when uid = (h ->> 'a')::uuid then (h ->> 'b')::uuid else (h ->> 'a')::uuid end;
+      if (h ->> 'left')::int > 0 then sc := sc + 4 * public.world_dh_dist(c, partner);
+      elsif public.world_dh_dist(c, partner) < 4 then
+        sc := sc - 50;
+        nx := public.world_dh_step(p, 'C');
+        if nx is not null and not public.world_dh_rift(fid, nx) then p := nx; end if;
       end if;
+      continue;
+    end if;
+    if (h ->> 'left')::int > 0 then
       if h ->> 'k' = 'spray' and c = any (array(select jsonb_array_elements_text(h -> 'cells')::int)) and (h ->> 'left')::int <= 1 then sc := sc - 30; end if;
       continue;
     end if;
-    if h ->> 'k' = 'spray' and c = any (array(select jsonb_array_elements_text(h -> 'cells')::int)) then sc := sc - 60; end if;
-    if h ->> 'k' = 'tentacle' and uid in ((h ->> 'a')::uuid, (h ->> 'b')::uuid) then
-      select pos into partner from public.world_gw_members where fight_id = fid and owner_id = case when uid = (h ->> 'a')::uuid then (h ->> 'b')::uuid else (h ->> 'a')::uuid end;
-      if public.world_dh_dist(c, partner) < 4 then sc := sc - 50; end if;
+    if h ->> 'k' = 'spray' and p = any (array(select jsonb_array_elements_text(h -> 'cells')::int)) then
+      sc := sc - 60; if wetm then wet := least(3, wet + 1); end if;
     end if;
     if h ->> 'k' in ('current', 'surge', 'breath') then
-      n := case when h ->> 'k' = 'surge' then 2 when h ->> 'k' = 'breath' then 1 else 1 end - case when brace then 1 else 0 end
-        + case when wet >= 3 and h ->> 'k' <> 'breath' then 1 else 0 end;
-      p := c;
+      n := case when h ->> 'k' = 'surge' then 2 else 1 end - case when brace then 1 else 0 end
+        + case when wetm and wet >= 3 and h ->> 'k' <> 'breath' then 1 else 0 end;
       for i in 1 .. greatest(0, n) loop
         nx := public.world_dh_step(p, case when h ->> 'k' = 'breath' then 'C' else h ->> 'dir' end);
         if nx is null then exit; end if;
-        if public.world_dh_rift(fid, nx) then sc := sc - 1000; exit; end if;
+        if public.world_dh_rift(fid, nx) then return sc - 1000; end if;
         p := nx;
       end loop;
+      if wetm and h ->> 'k' <> 'breath' then wet := least(3, wet + 1); end if;
     end if;
   end loop;
   return sc;
