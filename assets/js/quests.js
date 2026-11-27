@@ -20,6 +20,17 @@ function noteReady(b) {
   if (fresh) { window.dispatchEvent(new CustomEvent('yh-sfx', { detail: 'find' })); try { sessionStorage.setItem('yh-q-ready', JSON.stringify([...seen].slice(-200))); } catch {} }
 }
 
+const taskPrev = new Map();
+function noteTasks(b) {
+  const qs = [...(b.active || []).filter(q => q.phase === 'step').map(q => [`${q.quest_id}:${q.step}`, q]),
+    ...(b.faction && !b.faction.locked ? [[`f:${b.faction.scene_key}`, b.faction]] : [])];
+  for (const [k, q] of qs) (q.tasks || []).forEach((t, i) => {
+    const key = `${k}:${i}`, done = t.cur >= t.n;
+    if (taskPrev.get(key) === false && done && !q.ready) toast(`「${q.title}」의 「${t.label}」 할 일을 마쳤습니다.`, 'ok');
+    taskPrev.set(key, done);
+  });
+}
+
 const mapBtns = (regs, n = 3) => (regs || []).slice(0, n).map(r => `<button type="button" class="q-link" data-q-map="${esc(r)}" title="지도에서 보기">${icon('map', 12)}<span>${esc(nameOf(r))}</span></button>`).join('');
 const craftBtn = id => `<button type="button" class="q-link" data-q-craft="${esc(nameOf(id))}" title="제작법 찾기">${icon('hammer', 12)}<span>제작법</span></button>`;
 const srcSlot = id => `<span class="q-src" data-q-src="${esc(id)}"></span>`;
@@ -275,6 +286,7 @@ export async function fillQuests(box) {
   const avail = b.available || [], story = avail.filter(isStoryMain).sort((x, y) => (y.here && !y.locked) - (x.here && !x.locked) || x.min_level - y.min_level);
   const hereAv = avail.filter(q => !isStoryMain(q) && canHere(q)).sort((x, y) => avRank(avField(x)) - avRank(avField(y)) || x.min_level - y.min_level), rest = avail.filter(q => !isStoryMain(q) && !canHere(q));
   const nAct = act_.length + (b.faction && !b.faction.locked ? 1 : 0);
+  noteTasks(b);
   noteReady({ ...b, active: act_ });
   box.innerHTML = `${hereNote({ ...b, active: act_ })}
     <details class="fold" ${isOpen() ? 'open' : ''} data-q-fold>
