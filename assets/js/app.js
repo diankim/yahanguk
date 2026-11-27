@@ -1,4 +1,5 @@
 import { ID_RULE, idToEmail, selfReload } from './config.js';
+import { IDENTITY_NOTE } from './rules.js';
 import { loadStaff, db, store, on, emit, loadCharacter, rpc, JOBS, JOB_ORDER, FACTIONS, esc, h, $, $$, icon, toast, friendlyError, guard, forgetEquipped } from './core.js';
 import { JOB_LORE, AFFIL_LORE, AFFIL_VS_FACTION, jobLoreHtml, affilLoreHtml, primerHtml } from './lore.js';
 import { PETS, petImage } from './housing/petsprite.js';
@@ -157,7 +158,7 @@ function renderAuth(mode = 'login', notice = '') {
       <label class="field"><span>초대권 번호</span><input name="invite" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="영문 대문자·숫자 8자"></label>` : ''}
       <p class="form-msg ${notice ? 'show' : ''}" id="auth-msg">${esc(notice)}</p>
       <button class="btn primary block" type="submit">${mode === 'login' ? '로그인' : '계정 만들기'}</button>
-      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다. 이미 계정이 있으면 초대권 없이 그대로 로그인합니다.' : '새 가입에는 조사원에게 받은 초대권 번호가 필요합니다(서버를 다시 연 때부터 7일 동안). 아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정합니다. 이름은 바꿀 수 없고, 직업·소속은 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.'}</p>
+      <p class="fine">${mode === 'login' ? '처음이라면 회원가입 후 캐릭터를 만들어 입국합니다. 이미 계정이 있으면 초대권 없이 그대로 로그인합니다.' : '새 가입에는 조사원에게 받은 초대권 번호가 필요합니다(서버를 다시 연 때부터 7일 동안). 아이디는 로그인에만 쓰이고 다른 조사원에게 보이지 않습니다. 가입 후 캐릭터 이름·직업·소속을 정합니다. ' + IDENTITY_NOTE}</p>
     </form>
     <button type="button" class="auth-tip" id="auth-tip" title="누르면 다음 안내">${icon('scroll', 14)}<span></span></button>
   </div>`));
