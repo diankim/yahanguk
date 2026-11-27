@@ -175,6 +175,8 @@ select pg_temp.yh_fix('world_mount_acquire(text)', array[
   END IF;',
   '''mount_id'',p_mount_id,''gil'',c.gil-m.price);', '''mount_id'',p_mount_id,''gil'',c.gil-m.price,''from_storage'',coalesce(mt -> ''from_st'', ''{}''::jsonb));']);
 
+grant execute on function public.world_materials_take(jsonb, jsonb, jsonb, boolean) to fn_owner_18883;
+
 select pg_temp.yh_fix('world_mount_snapshot', array[
   'm.mount_id),0)) order by case', 'm.mount_id),0),''realm'',public.world_mount_realm(m.mount_id),''mats'',public.world_mount_realm_rules()->''mats''->m.mount_id) order by case',
   '''travel_arrives_at'',c.travel_arrives_at); end', '''travel_arrives_at'',c.travel_arrives_at,''realm'',coalesce(public.world_region_realm(here),public.world_mount_realm_rules()->>''default''),''realm_names'',public.world_mount_realm_rules()->''names'',''terr_realm'',public.world_terr_realms()); end']);

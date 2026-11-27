@@ -13,7 +13,7 @@ ACCOUNT_TABLES = {
     'world_events', 'world_chat_messages', 'world_party_messages', 'world_circles', 'world_circle_invites',
     'world_gwiryeong_plants', 'world_case_state', 'world_party_loot_pool',
 }
-UNUSED_OK = {'pet_token', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
+UNUSED_OK = {'pet_token', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi', 'channel_timber', 'forge_tool_set', 'wood_bird_toy', 'wood_toy_pair'}
 HQ_SKIP = {'travel_ration'}
 NOSRC_OK = {'pet_token', 'seal_shard', 'neol_drop', 'ug_tok_gwiheo', 'ug_tok_mukjeok', 'ug_tok_gapgwi'}
 HQ_OK_JS = {'QS_DEFAULT'}
