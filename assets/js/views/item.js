@@ -10,7 +10,7 @@ import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 import { PETS, petImage } from '../housing/petsprite.js';
 import { FIRST_PETS, petGroupOf, petGroupLine } from '../petpick.js';
-import { helpLine } from '../tips.js';
+import { helpLine, helpQ } from '../tips.js';
 
 const USE_SPECIAL = { reset_identity: '직업 다시 고르기 · 능력치는 새 직업에 맞게 저절로 놓임', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -97,8 +97,8 @@ export const lockTag = id => locks?.has(id) ? `잠금 ${locks.get(id)}` : '';
 function openLockPick(id, have, done) {
   const tot = have + storedOf(id), keep = lockKeep(id);
   const m = openLayer({ title: `${nameOf(id)} 잠그기`, body: `<div class="lock-pick">
-    <p class="desc">지킬 수를 고르세요. 그만큼은 팔거나 버리거나 넘길 수 없고, 넘는 몫만 내줄 수 있습니다. 강화한 것·장착 중인 것·덜 닳은 것이 먼저 지켜집니다. 사용과 제작 재료로는 쓸 수 있습니다.</p>
-    <p class="muted small">가진 수 ${fmt.num(tot)}개(가방 ${fmt.num(have)}${tot > have ? ` · 창고 ${fmt.num(tot - have)}` : ''}) · 새로 얻은 것은 잠기지 않습니다</p>
+    <p class="desc">몇 개를 지킬까요?${helpQ('지킨 수만큼은 팔기·버리기·분해·넘기기를 할 수 없고, 넘는 몫만 내줄 수 있습니다. 강화한 것 → 장착 중인 것 → 덜 닳은 것 순으로 지켜집니다. 사용과 제작 재료로는 쓸 수 있고, 새로 얻은 것은 잠기지 않습니다.', '잠금 안내')}</p>
+    <p class="muted small">가진 수 ${fmt.num(tot)}개 (가방 ${fmt.num(have)}${tot > have ? ` · 창고 ${fmt.num(tot - have)}` : ''})</p>
     ${qtyHtml({ key: 'keep', min: 1, max: tot, value: keep ? Math.min(keep, tot) : tot, all: true })}
     <div class="btn-row"><button class="btn small primary" data-lock-ok>${icon('shield', 14)}<span>${keep ? '지킬 수 바꾸기' : '잠그기'}</span></button></div></div>` });
   const el = $('.lock-pick', m);
@@ -281,7 +281,7 @@ function draw(box, id, inv, prices, mode) {
         `<button class="btn small act-dc" data-do="discard" ${dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
         stashOk && stMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
         USABLE[id] ? (useLabel(id) !== '사용' ? `<button class="btn small primary" data-do="use" data-here="물품 사용">${useLabel(id)}</button>` : '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>') : ''] })}
-      <p class="muted small">${locked ? `${keep}개를 지키도록 잠갔습니다(가방·창고 합쳐). ${dcMax > 0 ? `넘는 ${dcMax}개는 팔거나 버리거나 넘길 수 있습니다.` : '지금은 팔거나 버리거나 넘길 수 없습니다.'} 사용과 제작 재료로는 쓸 수 있습니다.` : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
+      <p class="muted small">${locked ? `잠금 ${keep}개 · ${dcMax > 0 ? `내줄 수 있는 것 ${dcMax}개` : '내줄 수 있는 것 없음'}${helpQ('잠근 수만큼은 가방·창고를 합쳐 팔기·버리기·분해·넘기기를 할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.', '잠금 안내')}` : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
 
   bindQty(box);
   fillSources(box, id);
