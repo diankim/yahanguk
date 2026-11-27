@@ -226,7 +226,9 @@ async function side(body, keep) {
       <label class="q-sort"><span class="muted small">정렬</span><select id="q-sort"><option value="level" ${sSort === 'level' ? 'selected' : ''}>레벨순</option><option value="region" ${sSort === 'region' ? 'selected' : ''}>지역순</option><option value="name" ${sSort === 'name' ? 'selected' : ''}>이름순</option></select></label>
     </div>
     ${shown ? (sField ? group(fields.find(([f]) => f === sField)) : fields.map(group).join('')) : empty('조건에 맞는 퀘스트가 없습니다.', 'flag')}
-    ${j.hidden ? `<p class="muted small">앞 퀘스트를 마치면 열리는 퀘스트가 ${j.hidden}개 더 있습니다.</p>` : ''}`;
+    ${j.hidden ? ((j.hidden_by || []).length
+      ? `<details class="fold f-fold q-hidden-by" data-fold="q-hidden-by" ${foldOpen('q-hidden-by', false) ? 'open' : ''}><summary>앞 퀘스트를 마치면 열리는 퀘스트 ${j.hidden}개 <small class="muted">지금 받거나 하는 중인 퀘스트로 열리는 것만 보입니다</small></summary><ul class="q-hb">${j.hidden_by.map(h => `<li><span>「${esc(h.title)}」 뒤</span> <b>${esc((h.cats || []).slice(0, 3).join(' · '))}${(h.cats || []).length > 3 ? ` 외 ${h.cats.length - 3}갈래` : ''}</b> <span class="muted">${h.n}편</span></li>`).join('')}</ul></details>`
+      : `<p class="muted small">앞 퀘스트를 마치면 열리는 퀘스트가 ${j.hidden}개 더 있습니다.</p>`) : ''}`;
   $$('[data-f]', body).forEach(b => b.onclick = () => { sField = b.dataset.f; side(body, true); });
   $$('[data-st]', body).forEach(b => b.onclick = () => { sStatus = b.dataset.st; side(body, true); });
   $('#q-sort', body).onchange = e => { sSort = e.target.value; side(body, true); };
