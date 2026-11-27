@@ -257,7 +257,7 @@ async function runAct(btn) {
   if (btn.dataset.tn) { await markRead(n); closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('tourney', (n.kind === 'tourney_result' || n.kind === 'tourney_start') ? n.payload.t_id : ''); return true; }
   if (btn.dataset.pfight) {
     let ok = true;
-    if (btn.dataset.join) await guard(btn, async () => { try { return await act('world_pfight_join', { p_fight: n.payload.fight_id }); } catch (e) { ok = false; throw e; } finally { await markRead(n); } });
+    if (btn.dataset.join) await guard(btn, async () => { try { const { staminaRetry } = await import('./views/item.js'); const r = await staminaRetry(() => act('world_pfight_join', { p_fight: n.payload.fight_id })); if (r === null) ok = false; return r; } catch (e) { ok = false; throw e; } finally { await markRead(n); } });
     else await markRead(n);
     if (ok) { closeModal(); btn.closest('.note-pop')?.remove(); window.yahangGo('pfight', n.payload.fight_id); }
     return true;

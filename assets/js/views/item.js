@@ -48,6 +48,19 @@ function useText(id) {
   return t;
 }
 on('catalog', () => useCache.clear());
+export async function staminaRetry(fn, what = '합류') {
+  try { return await fn(); } catch (e) {
+    if (e?.hint !== 'stamina') throw e;
+    const inv = store.character?.inventory || {};
+    const opts = Object.entries(inv).filter(([id, n]) => Number(n) > 0 && (catItem(baseOf(id))?.fx?.stam || 0) > 0)
+      .map(([id]) => ({ id, s: catItem(baseOf(id)).fx.stam })).sort((a, b) => a.s - b.s);
+    if (!opts.length) throw e;
+    const o = opts[0];
+    if (!await ask(`탐색력이 모자랍니다.\n「${nameOf(o.id)}」 하나를 써서 탐색력을 ${o.s} 채우고 바로 ${what}할까요?`, { title: '탐색력 채우기', ok: `쓰고 ${what}` })) return null;
+    await useItemAct(o.id);
+    return fn();
+  }
+}
 export const USABLE = new Proxy({}, {
   get(t, k) {
     if (typeof k !== 'string') return undefined;
