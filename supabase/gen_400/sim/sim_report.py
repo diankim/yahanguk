@@ -10,7 +10,7 @@ def key(d):
 def bot_miss(d):
     if d.get('kind') == 'raid':
         m = (d.get('info') or {}).get('miss') or {}
-        return sum(m.get(k, 0) for k in ('regrow', 'burst', 'core', 'stiff', 'ebb', 'alone'))
+        return sum(m.get(k, 0) for k in ('stiff', 'ebb', 'alone', 'brand_open'))
     n = d.get('notes') or {}
     return max(0, d.get('mech', 0) - d.get('head_phase', 0) - n.get('pull_forced', 0))
 
@@ -26,7 +26,7 @@ for path in sys.argv[1:]:
             errs.append(d); continue
         rows.setdefault(key(d), []).append(d)
 
-hdr = ['판', '보스', '정책', '조합', '옵션', '판수', '승', '승률', '평균 라운드/분', '봇 놓침(합)', '놓침 판', '약화(합)', '낙사/쓰러짐', '돌주먹', '머리 옮김', '끌개 못 막는 칸', '기여(평균 %)']
+hdr = ['판', '보스', '정책', '조합', '옵션', '판수', '승', '승률', '평균 라운드/분', '봇 놓침(합)', '딜 부족 놓침(되고임·터짐·심)', '놓침 판', '약화(합)', '낙사/쓰러짐', '돌주먹', '머리 옮김', '끌개 못 막는 칸', '기여(평균 %)']
 print('| ' + ' | '.join(hdr) + ' |')
 print('|' + '---|' * len(hdr))
 for k, ds in rows.items():
@@ -50,8 +50,9 @@ for k, ds in rows.items():
             for j, v in (d.get('shares') or {}).items():
                 sh[j].append(float(v))
     bm = [bot_miss(d) for d in ds]
+    dm = sum(sum(((d.get('info') or {}).get('miss') or {}).get(x, 0) for x in ('regrow', 'burst', 'core')) for d in ds) if k[0] == 'raid' else '-'
     share = ' '.join('%s %.0f' % (j, sum(v) / len(v)) for j, v in sorted(sh.items())) or '-'
-    print('| ' + ' | '.join(str(x) for x in [k[0], k[1], k[2], k[3], k[4] or '-', n, w, '%d%%' % round(100 * w / n), tl, sum(bm), sum(1 for x in bm if x), weak, fell, fist, hp, pf, share]) + ' |')
+    print('| ' + ' | '.join(str(x) for x in [k[0], k[1], k[2], k[3], k[4] or '-', n, w, '%d%%' % round(100 * w / n), tl, sum(bm), dm, sum(1 for x in bm if x), weak, fell, fist, hp, pf, share]) + ' |')
 if errs:
     print('\n실행 오류 %d판:' % len(errs))
     for e in errs[:20]:

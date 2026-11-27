@@ -590,7 +590,7 @@ begin
   wm := case when public.world_ug_wm_on(fid) then f.board -> 'wm' end;
   lamps := array(select jsonb_array_elements_text(coalesce(f.board -> 'lamps', '[]'::jsonb))::int);
   face := case when wm ->> 'k' = 'sea' and f.board ? 'face' then f.board ->> 'face' when wm is null and f.mech ->> 'k' = 'face' then f.mech ->> 'face' end;
-  for x in select * from public.world_gw_members where fight_id = fid and out_rounds = 0 order by joined_at loop
+  for x in select * from public.world_gw_members where fight_id = fid and out_rounds = 0 order by nameless desc, joined_at loop
     pm := plan -> x.owner_id::text; mask := coalesce((pm ->> 'v0')::int, 0); ex := null;
     stun := coalesce((pm ->> 'stun')::boolean, false) or coalesce((f.board -> 'stun' ->> x.owner_id::text)::int = f.round, false);
     if stun then update public.world_gw_members set act = null where fight_id = fid and owner_id = x.owner_id; continue; end if;
@@ -604,7 +604,7 @@ begin
         s := s - 3 * coalesce((select min(pg_temp.yh_bfs('by', c, z)) from generate_series(1, 7) z where not z = any (lamps) and not z = any (lighting)), 0);
       end if;
       if kd = 'ux' and nml is not null then
-        select pos into nmpos from public.world_gw_members where fight_id = fid and owner_id = nml;
+        select coalesce((npos ->> nml::text)::int, pos) into nmpos from public.world_gw_members where fight_id = fid and owner_id = nml;
         s := s - 2 * abs(public.world_ux_dist(c, nmpos) - 1);
       end if;
       if s > bs then bs := s; best := c; end if;
@@ -624,7 +624,8 @@ begin
         if best <= 7 and not best = any (lamps) and not best = any (lighting) and (f.board ? 'wn' or wm is null) then v_act := 'light'; lighting := lighting || best;
         elsif f.board ? 'wn' then v_act := 'guard'; end if;
       elsif kd = 'ux' then
-        if nml is not null and not nml = any (called) and public.world_ux_dist(best, (select pos from public.world_gw_members where fight_id = fid and owner_id = nml)) = 1 then
+        if nml is not null and not nml = any (called) and not (wm ->> 'k' = 'sea' and f.round - (wm ->> 'start')::int between 1 and jsonb_array_length(wm -> 'faces'))
+           and public.world_ux_dist(best, (select coalesce((npos ->> nml::text)::int, pos) from public.world_gw_members where fight_id = fid and owner_id = nml)) = 1 then
           v_act := 'call'; ex := jsonb_build_object('t', nml); called := called || nml;
         end if;
       end if;
@@ -633,8 +634,10 @@ begin
         if (face = 'human') <> phys then v_act := 'guard'; elsif wm ->> 'k' = 'sea' then ex := coalesce(ex, '{}'::jsonb) || '{"_nosup": true}'::jsonb; end if;
       end if;
       if v_act = 'attack' and x.nameless and kd = 'ux' then v_act := 'guard'; end if;
+      if v_act = 'attack' and wm ->> 'k' = 'seal9' then ex := coalesce(ex, '{}'::jsonb) || '{"_nosup": true}'::jsonb; end if;
     elsif v_act = 'call' and kd = 'mk' then ex := jsonb_build_object('t', x.owner_id);
     end if;
+    npos := npos || jsonb_build_object(x.owner_id::text, best);
     if pol = 'real' and random() < 0.12 then best := (array[x.pos] || pg_temp.yh_nb(kd, x.pos))[1 + floor(random() * (1 + cardinality(pg_temp.yh_nb(kd, x.pos))))::int]; v_act := 'attack'; ex := null; end if;
     if v_act in ('guard', 'brace', 'call', 'chain', 'recall', 'deal', 'light', 'sweep', 'guide', 'stop') then
       update public.world_gw_members set act = jsonb_build_object('a', v_act) || coalesce(ex, '{}'::jsonb) || case when best is distinct from x.pos then jsonb_build_object('m', best) else '{}'::jsonb end, rest = false
