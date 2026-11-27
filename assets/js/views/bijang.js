@@ -114,6 +114,22 @@ async function run(btn, fn) {
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 let showing = false;
+function crumble(b) {
+  const a = b.querySelector('.bj-arch'); if (!a) return;
+  const br = b.getBoundingClientRect(), ar = a.getBoundingClientRect(), cols = 4, rows = 6, w = ar.width / cols, h = ar.height / rows;
+  const box = document.createElement('span'); box.className = 'bj-rub';
+  box.style.cssText = `left:${ar.left - br.left}px;top:${ar.top - br.top}px;width:${ar.width}px;height:${ar.height}px`;
+  const rnd = (a, z) => a + Math.random() * (z - a);
+  let html = '';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const pw = w * rnd(.75, 1.05), ph = h * rnd(.7, 1.05);
+    html += `<span style="--x:${c * w + rnd(0, w - pw)}px;--y:${r * h + rnd(0, h - ph)}px;--w:${pw}px;--h:${ph}px;--dx:${rnd(-26, 26)}px;--dy:${rnd(70, 150)}px;--r:${rnd(-160, 160)}deg;--d:${(rows - 1 - r) * 45 + rnd(0, 90)}ms"></span>`;
+  }
+  for (let k = 0; k < 5; k++) html += `<span class="dust" style="--x:${rnd(5, 85)}%;--d:${rnd(120, 420)}ms;--s:${rnd(.8, 1.6)}"></span>`;
+  box.innerHTML = html;
+  b.append(box);
+  b.classList.add('bj-fall');
+}
 async function doorShow(prev, next) {
   if (!el || !prev || !next || prev.status !== 'room' || prev.run_id !== next.run_id) return;
   const pp = prev.picks || [], np = next.picks || [];
@@ -133,8 +149,8 @@ async function doorShow(prev, next) {
       b.classList.add('bj-gray'); say('틀린 문이었습니다…'); await wait(1000);
       b.classList.remove('bj-gray'); b.classList.add('bj-open', 'bj-luck'); say('<b>무너지던 흙이 멈추고, 문이 다시 열렸습니다!</b>'); await wait(1500);
     } else {
-      b.classList.add('bj-gray'); await wait(450);
-      b.classList.add('bj-fall'); say('<b>틀린 문이었습니다. 흙이 무너져 내립니다.</b>'); await wait(1300);
+      b.classList.add('bj-gray'); await wait(350);
+      crumble(b); say('<b>틀린 문이었습니다. 비장고가 무너져 내립니다!</b>'); await wait(1600);
     }
   } finally { showing = false; }
 }
