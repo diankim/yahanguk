@@ -35,11 +35,20 @@ export const qtyHtml = ({ key, max = 99, value = 0, min = 0, all = false, label 
 const allLabel = full => full ? '최소' : '전부';
 export const qtyMark = st => { const b = st?.querySelector('[data-all]'); if (!b) return; const inp = st.querySelector('input'); b.textContent = allLabel(Number(inp.value) >= (Number(inp.max) || 0)); b.setAttribute('aria-label', b.textContent === '최소' ? '가장 적게' : '가진 것 전부'); };
 export const qtyClamp = (st, v) => { const inp = st.querySelector('input'), min = Number(st.dataset.min) || 0, max = Number(inp.max) || 0; return Math.max(min, Math.min(max, Math.floor(Number(v) || 0))); };
+export function holdRepeat(btn, step) {
+  let t = 0, held = false, n = 0;
+  const stop = () => { clearTimeout(t); t = 0; };
+  const tick = () => { if (!btn.isConnected || btn.disabled) return stop(); held = true; n++; step(); t = setTimeout(tick, n < 5 ? 160 : n < 15 ? 80 : 35); };
+  btn.addEventListener('pointerdown', e => { if (e.button > 0 || btn.disabled) return; held = false; n = 0; stop(); t = setTimeout(tick, 380); });
+  for (const k of ['pointerup', 'pointerleave', 'pointercancel', 'blur']) btn.addEventListener(k, stop);
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+  btn.addEventListener('click', e => { e.stopPropagation(); if (held) { held = false; return; } step(); });
+}
 export function bindQty(root, onChange) {
   $$('[data-qty]', root).forEach(st => {
     const inp = st.querySelector('input'), max = Number(inp.max) || 0, min = Number(st.dataset.min) || 0;
     const set = v => { v = qtyClamp(st, v); inp.value = v; qtyMark(st); onChange?.(st.dataset.qty, v, st); };
-    st.querySelectorAll('[data-d]').forEach(b => b.onclick = () => set(Number(inp.value) + Number(b.dataset.d)));
+    st.querySelectorAll('[data-d]').forEach(b => holdRepeat(b, () => set(Number(inp.value) + Number(b.dataset.d))));
     st.querySelector('[data-all]')?.addEventListener('click', () => set(Number(inp.value) === max ? min : max));
     inp.oninput = () => { if (inp.value !== '') set(inp.value); };
     inp.onchange = () => set(inp.value);

@@ -476,6 +476,7 @@ body.chat-open .chat-fab { display: none; }
 .how { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: calc(13px * var(--fz, 1)); }
 .how b { color: var(--gold); margin-right: 6px; }
 .stepper { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 6px 6px 12px; border-radius: var(--r-sm); background: var(--surface-2); border: var(--bw) solid var(--line); }
+.stepper [data-d], .craft-qty .cq-step { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .stepper > span { display: grid; font-size: calc(13px * var(--fz, 1)); }
 .stepper small { font-size: calc(11px * var(--fz, 1)); color: var(--muted); }
 .stepper > div { display: flex; align-items: center; gap: 2px; }
