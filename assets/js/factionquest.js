@@ -57,7 +57,7 @@ const donateHtml = (s, open) => {
       <button class="btn primary" id="fq-donate" data-here="세력 기부" disabled>${icon('bag', 16)}<span>기부하기</span></button></div>
     <p class="small" id="fq-don-sum"></p>`
     : `<p class="muted small">넘길 수 있는 물품이 없습니다.</p>`}
-    <p class="muted small">장착 중인 마지막 하나·잠근 물품·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
+    <p class="muted small">장착 중인 마지막 하나·잠가 지키는 몫·강화한 장비·임무 물품은 넘길 수 없고, 넘긴 물품은 돌려받지 못합니다. 진품 이상은 한 번 더 묻습니다.</p>`;
 };
 
 const taskRows = tasks => (tasks || []).map(t => `<li class="${t.cur >= t.n ? 'done' : ''}">${icon(t.cur >= t.n ? 'check' : 'chevron', 13)}<span>${esc(t.label)}</span><small>${fmt.num(t.cur)}/${fmt.num(t.n)}${t.unit || ''}</small></li>`).join('');
