@@ -585,6 +585,49 @@ do $c$ declare x text; begin
     if not exists (select 1 from public.world_region_monsters where drops ? x and monster_id like 'hw\\_%') then raise exception '건넛누리 요괴가 안 떨어뜨리는 고기 %', x; end if;
   end loop;
 end $c$;""")
+w("""create or replace function pg_temp.yh_hw_fix(p_fn regprocedure, p_old text, p_new text) returns void language plpgsql as $f$
+declare d text := pg_get_functiondef(p_fn); n int;
+begin
+  n := (length(d) - length(replace(d, p_old, ''))) / length(p_old);
+  if n <> 1 then raise exception 'yh_hw_fix % : % 번 나옴 — %', p_fn, n, left(p_old, 60); end if;
+  execute replace(d, p_old, p_new);
+end $f$;""")
+w("""select pg_temp.yh_hw_fix('public.world_bijang_open(text)'::regprocedure,
+  'and exists (select 1 from public.world_region_monsters x where x.region_id = r.region_id)',
+  'and exists (select 1 from public.world_region_monsters x where x.region_id = r.region_id) and coalesce(public.world_region_realm(r.region_id), ''main'') = coalesce(mr ->> ''realm'', ''main'')');""")
+w("""create or replace function public.world_expedition_bonus_item(p_depth integer, p_stance text, p_mul double precision, p_region text)
+ returns text language plpgsql set search_path to 'pg_catalog', 'public' as $f$
+declare m float8 := coalesce(p_mul, 1) * case p_stance when 'bold' then 1.2 when 'cautious' then 0.85 else 1 end;
+  r float8 := random(); acc float8 := 0; t record; hw boolean := coalesce(public.world_region_realm(p_region), 'main') = 'hanul';
+  sp jsonb := coalesce(public.world_realm_bond_rules() -> 'realms' -> (public.world_realm_bond_rules() -> 'regions' ->> p_region) -> 'specials', '[]'::jsonb);
+begin
+  if not hw then return public.world_expedition_bonus_item(p_depth, p_stance, p_mul); end if;
+  for t in select * from (values
+      ('guide_lantern', 0.05, 1), (coalesce(sp ->> 0, 'flow_essence'), 0.035, 1), (coalesce(sp ->> 1, 'flow_essence'), 0.03, 1),
+      ('trail_map', case p_depth when 1 then 0.01 when 2 then 0.025 else 0.04 end, 1),
+      ('exp_elixir_iron', 0.01, 2), ('exp_elixir_tiger', 0.01, 2), ('exp_elixir_clear', 0.01, 2),
+      ('flow_essence', case p_depth when 2 then 0.02 else 0.03 end, 2),
+      ('sealed_bundle', 0.025, 3), ('spirit_core', 0.02, 3)) v(item, p, min_depth) loop
+    continue when coalesce(p_depth, 1) < t.min_depth;
+    acc := acc + t.p * m;
+    if r < acc then return t.item; end if;
+  end loop;
+  return null;
+end $f$;
+alter function public.world_expedition_bonus_item(integer, text, double precision, text) owner to fn_owner_field;
+revoke all on function public.world_expedition_bonus_item(integer, text, double precision, text) from public, anon, authenticated;
+select pg_temp.yh_hw_fix('public.world_expedition_settle(uuid, integer)'::regprocedure,
+  'world_expedition_bonus_item(depth, e.stance, (e.minutes / 10.0) / total)', 'world_expedition_bonus_item(depth, e.stance, (e.minutes / 10.0) / total, r.region_id)');""")
+hw_meat_shop = []
+for realm_key, hub in D.HUB.items():
+    if realm_key == 'goimteo': continue
+    kinds = {m[4] for rid in D.MONSTERS if next(x for x in D.REGIONS if x['id'] == rid)['terr'] == realm_key for m in D.MONSTERS[rid]}
+    for mt, mk in D.HW_MEAT_DROP:
+        if kinds & set(mk) and (RID[hub]['shop'][0], mt) not in hw_meat_shop: hw_meat_shop.append((RID[hub]['shop'][0], mt))
+w(f"""insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_min, stock_max, daily_cap)
+select x.shop_id, x.item_id, ceil(i.reference_price * 1.3), 1, 1, null from jsonb_to_recordset({J([dict(shop_id=a, item_id=b) for a, b in hw_meat_shop])}) as x(shop_id text, item_id text)
+  join public.world_item_catalog i on i.item_id = x.item_id
+on conflict (shop_id, item_id) do nothing;""")
 fresh('titles', [t[1] for t in D.TITLES], '칭호')
 fresh('title_keys', [t[0] for t in D.TITLES], '칭호 키')
 w(f"""insert into public.world_title_catalog(title_key, title_name, description, condition_text, bonus, hidden, rule, sort, category, grade)
