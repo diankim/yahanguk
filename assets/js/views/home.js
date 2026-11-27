@@ -597,7 +597,7 @@ const gainText = g => `체력 +${g.hp} · 정신 +${g.mn} · ${spOf()[0]} +${g.s
 function openRest(r) {
   const safe = r.safe;
   const m = openModal({ title: safe ? (r.rest_spot_name || '숙소') : '야영', body: `
-    <p class="desc">${safe ? '안전한 곳에서 쉬면 체력·정신·영력이 회복되고 나쁜 상태가 풀립니다. 푹 쉬면 탐색력이 가득 찹니다.' : '바깥에서 야영합니다. 회복은 적고, 쉬는 동안 습격받을 수 있습니다.'}</p>
+    <p class="desc">${safe ? '안전한 곳에서 쉬면 체력·정신·영력이 회복되고 흉한 상태가 풀립니다. 푹 쉬면 탐색력이 가득 찹니다.' : '바깥에서 야영합니다. 회복은 적고, 쉬는 동안 습격받을 수 있습니다.'}</p>
     <div class="action-grid two">
       <button class="btn" data-rest="short"><span>잠깐 쉬기</span><small>${gainText(restGain(r, false))}</small><small>${fmt.jeon(r.rest_fee || 0)} · 탐색력 +3 · 10분마다</small><small class="rest-cd" data-rest-cd></small></button>
       <button class="btn primary" data-rest="full"><span>푹 쉬기</span><small>${gainText(restGain(r, true))}</small><small>${fmt.jeon((r.rest_fee || 0) * 2)} · ${safe ? '탐색력 가득' : '탐색력 +6'} · 30분마다</small><small class="rest-cd" data-rest-cd></small></button>

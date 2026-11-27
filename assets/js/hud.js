@@ -81,7 +81,7 @@ export function openStatus(st) {
   const good = st.polarity === 'positive';
   const left = new Date(st.expires_at).getTime() - Date.now();
   const inv = store.character?.inventory || {};
-  const m = openModal({ title: `${good ? '이로운 효과' : '상태이상'} · ${st.name}`, body: `
+  const m = openModal({ title: `${good ? '길한 상태' : '흉한 상태'} · ${st.name}`, body: `
     <div class="status-detail ${good ? 'good' : 'bad'}">
       <p>${esc(st.description || '')}</p>
       <ul class="fx-list">${effectText(st.effects, st.potency, statusActs(st.key)).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
@@ -186,7 +186,7 @@ function render() {
       return `${yo.y ? `<span class="hs-yohwa s${yo.stage}${yo.fr ? ' frenzy' : ''}">${yo.fr ? '요괴화' : `요화${yo.stage}`}</span>` : yo.seal ? '<span class="hs-yohwa sealed">봉인</span>' : ''}${domainChip()}`; })()}
     ${store.env ? `<span class="hs-env"${store.hud?.domain?.white_night ? ` title="${esc(WHITE_NIGHT.phaseTip)}"` : ''}>${esc(store.hud?.domain?.white_night ? WHITE_NIGHT.phase(store.env.phase?.name || '') : store.env.phase?.name || '')}·${esc(store.env.weather?.name || '')}</span>` : ''}
     <span class="hs-status st-${first.kind}">${icon(first.icon, 14)}<em data-timer="${first.timer ? new Date(first.timer).getTime() : ''}">${esc(first.title)}</em></span>
-    <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개" title="상태 ${rest.length}/10 · 나쁜 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
+    <span class="hs-slots" role="img" aria-label="상태 ${rest.length}/10 · 흉한 상태 ${badN}개" title="상태 ${rest.length}/10 · 흉한 상태 ${badN}개">${slots.map(k => `<i class="${k}"></i>`).join('')}</span>
     <span class="hs-caret">${icon('chevron', 14)}</span>`;
   const body = $('#hud-body', root);
   body.innerHTML = `

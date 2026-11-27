@@ -206,7 +206,7 @@ async function status(body) {
   const groundReady = rs?.ground_ready_at ? new Date(rs.ground_ready_at).getTime() : 0;
   const atHq = ['야행국 본부 정청', '본부 객사', '연무장·팔괘진'].includes(c.location);
   const wardCures = (statuses || []).filter(s => (s.cure_items || []).includes('ward_talisman')).length;
-  const cleanseWhy = downed ? '전투불능' : !wards ? '정화 부적이 없습니다' : (er0 <= 0 && !wardCures) ? '정화할 침식·상태이상이 없습니다' : '';
+  const cleanseWhy = downed ? '전투불능' : !wards ? '정화 부적이 없습니다' : (er0 <= 0 && !wardCures) ? '정화할 침식·흉한 상태가 없습니다' : '';
   const groundWhy = downed ? '전투불능' : !atHq ? '본부(정청·객사·연무장)에서만' : (mn0 >= 100 && er0 <= 0) ? '정신이 이미 맑습니다' : groundReady > Date.now() ? `${fmt.remain(groundReady - Date.now())} 뒤 다시` : '';
   body.innerHTML = `
     ${downed ? panel(byYohwa ? '요화로 쓰러짐' : '전투불능', `
@@ -232,7 +232,7 @@ async function status(body) {
         </div>
         ${erosionNote(Number(sv?.erosion ?? c.erosion ?? 0), ISLAND.has(c.location))}
         <div class="btn-row st-acts">
-          <button class="btn small" data-here="" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · ${SURVIVAL.cleanse}${wardCures ? ` · 상태이상 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
+          <button class="btn small" data-here="" data-surv="cleanse" ${cleanseWhy ? 'disabled' : ''} title="${esc(cleanseWhy || `정화 부적 1개 · ${SURVIVAL.cleanse}${wardCures ? ` · 흉한 상태 ${wardCures}개 해소` : ''}`)}">부적 정화 <small>×${fmt.num(wards)}</small></button>
           <button class="btn small" data-here="" data-surv="ground" ${groundWhy ? 'disabled' : ''} title="${GROUND_NOTE}">마음 다잡기 <small id="ground-note" data-ready="${groundReady || ''}">${esc(groundWhy || '')}</small></button>
         </div>
         ${inv ? eqMini(inv, prof) : ''}
