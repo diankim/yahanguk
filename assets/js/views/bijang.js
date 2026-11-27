@@ -21,6 +21,7 @@ const statusChip = s => s.status === 'fight' ? chip('파수꾼과 싸우는 중'
 async function refresh() {
   if (!el) return;
   clearTimeout(timer);
+  if (showing) { timer = setTimeout(refresh, 800); return; }
   try {
     const old = snap, prev = snap?.status;
     const next = await rpc('world_bijang_snapshot', { p_run: rid });
@@ -146,6 +147,7 @@ async function doorShow(prev, next) {
   const b = $(`[data-door="${pk.door}"]`, el);
   if (!b || showing) return;
   showing = true;
+  const host = el; host.inert = true; host.classList.add('bj-anim');
   try {
     const cap = $('.bj-turn', el), say = t => { if (cap) cap.innerHTML = t; };
     $$('[data-door]', el).forEach(x => { x.disabled = true; if (x !== b) x.classList.add('bj-dim'); });
@@ -159,7 +161,7 @@ async function doorShow(prev, next) {
       b.classList.add('bj-gray'); await wait(350);
       crumble(b); say('<b>틀린 문이었습니다. 비장고가 무너져 내립니다!</b>'); await wait(1600);
     }
-  } finally { showing = false; }
+  } finally { showing = false; host.inert = false; host.classList.remove('bj-anim'); }
 }
 
 const seenKey = () => `yh-bj-seen:${snap?.run_id}`;
