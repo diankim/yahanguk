@@ -38,7 +38,6 @@ MAIN_NPCS = {
     '낯선 여행자': ('q:hw_traveler', '수경루 우물가에 나타난 낯선 여행자.'),
     '모음전 일꾼': ('q:hw_moeum', '달맞이성 모음전에서 순번과 몫을 적는 일꾼.'),
 }
-NOTE_INTERIM = {(5, 5): ('hw_rift_5', '도해수 이야기판'), (13, 7): ('hw_pool_5', '땅울이 이야기판')}
 
 HQ, DORM, SALT, RIVER, MARSH, MIRROR = 'hq_yard', 'hq_dorm', 'salt_village', 'river_ferry', 'lotus_marsh', 'mirror_pavilion'
 PD, SHORE, OFF, RIFT = 'pd_city', 'pd_shore', 'pd_offsea', 'pd_rift'
@@ -174,7 +173,7 @@ PLAN = {
         ('쪽빛 앞바다를 5번 탐색한다', nd(PD, sr(OFF, 5))),
         ('회춘단 4개를 지어 넘긴다', nd(PD, cr('rejuv_pill', 4))),
         ('뒤집힌 물목에 도착한다', nd(RIFT, tv(RIFT))),
-        ('물길을 삼킨 것을 진압한다', nd(RIFT, wi(1, RIFT, ['hw_rift_5']))),
+        ('물길을 삼킨 것을 진압한다', nd(RIFT, {'t': 'dh', 'mode': 'story', 'n': 1})),
         ('돌아가는 물길을 지켜본다', nd(RIFT)),
         ('염등촌에 도착해 소식을 전한다', nd(SALT, tv(SALT))),
         ('파도너울성에 도착해 쉰다', nd(PD, tv(PD), rs(PD))),
@@ -257,7 +256,7 @@ PLAN = {
         ('회춘단 4개를 지어 넘긴다', nd(DM, cr('rejuv_pill', 4))),
         ('고임터에 도착해 4번 탐색한다', nd(POOL, tv(POOL), sr(POOL, 4))),
         ('고임터에서 얼굴 없는 형상과 넘친 기운 덩이를 4번 해체한다', nd(POOL, wi(4, POOL, ['hw_pool_3', 'hw_pool_4']))),
-        ('땅이 우는 것을 진압한다', nd(DM, wi(1, POOL, ['hw_pool_5']))),
+        ('땅이 우는 것을 진압한다', nd(DM, {'t': 'du', 'mode': 'story', 'n': 1})),
         ('달맞이성에서 쉬고, 달그늘 대숲에서 4번 채집한다', nd(POOL, rs(DM), ga(BAMBOO, 4))),
     ]),
     14: dict(L=55, region=HO, items={'hw_lotus_porridge': 3, 'flow_essence': 2}, steps=[
