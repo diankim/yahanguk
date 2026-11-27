@@ -212,6 +212,7 @@
 - 이동 보상(경험치·탐사 기술·상태 굴림·세력 임무·이동 칭호/꾸미기)은 도착 기록(world_events travel + travel_history_id)에만. 상태 굴림은 안전지대 도착이면 없음, 바깥 도착은 1/3.
 - 취소 world_travel_cancel: 출발 60초 안, 위약금 없음, 뒤 3분 출발 불가(world_guard_action_context). 화면은 취소 응답 cooldown_seconds(또는 출발 거절 오류의 hint 「cd:초」 — world_guard_action_context가 RAISE … USING HINT, core.js rpc가 오류에 hint·code를 실음, 1.0.4n)를 기기에 적어(views/common.js setTravelCd·travelCdLeft·travelCdFromError, localStorage yh-travel-cd:<uid>) 지도 출발 단추를 잠그고 남은 시간을 보이며(map.js [data-tcd]), 현장 「길 떠나기」에도 적는다(home.js data-tcd-home). 끝나면 기기 시계로 풀림, 서버 재요청 없음.
 - 이동 중(travel_destination 남음) world_mount_equip 거절(map.js도 막음).
+- 탈것 즐겨찾기(4.0, 사용자 결정): world_mount_favorites(RLS·직접 읽기 없음, 캐릭터 정리 대상), world_mount_fav_toggle(p_mount)(가진 탈것만)·world_mount_favs() → world_mount_snapshot.favs, 화면 services.js mountFavFirst·mountFavBtn·bindMountFav(이동 화면 「가진 탈것」·마구간 「가진 탈것 단련」에서 별 단 것이 맨 위). 노정패는 상태판·이동 화면·마구간에 「n / 상한」(rules.js TOKEN_CAP ← gamedata tokens ← world_token_rules).
 - 이동을 시작하면 남은 시간이 화면 위에 계속 보이고 도착을 알린다.
 
 ### 파티 동승 규칙
@@ -279,7 +280,7 @@
 - 보유 판정 world_skill_has 하나(인라인되는 SQL — 조합 기술만 world_skill_combo_ok, world_skill_line_ok도 SQL)(world_skill_effect·world_combat_stats·world_skill_snapshot 공용). 전투 피해·치명타는 world_combat_stats, 그 밖은 world_skill_effect(상한: 채집량 40·희귀품 22·단서 28·회복 45·제작 품질 40·주는 피해 15·받는 피해 −28·정신 손실 −32·침식 −28·이동 −20·조우 −15) → world_status_effect_total. 숙련 효과는 50단계 기준(전투 숙련 공격력 단계마다 +0.6% 등). 기본 기술 효과는 그 계열 분야에서만.
 - 고유 효과: 이름 있는 기술(추가·택일·숙달·조합)은 passive_effect가 비고 행동을 바꾼다. world_skill_procs(uid)가 skill_id 목록을 주고 world_battle_action·world_field_gather·world_craft_item·world_field_search·world_travel_route·world_field_rest·world_weapon_enhance·world_enhance_quote·world_equipment_repair·world_repair_quote·world_rescue_character·world_combat_stats(도발 이목 +60)가 처리. 원정은 world_exp_skill_def(atk·guard·win·loot·find·heal·ward·일지 줄)를 world_exp_skill_fx가 합쳐(상한 전투력 25·피해 30·승률 0.08·채집 30·발견 35·회복 4·침식 35) settle에 보정과 「[기술] …」 줄로. 새 고유 효과를 넣으면 이 함수들과 skill_catalog.description을 함께 고친다. 새 계열의 택일·추가·숙달 기술도 world_exp_skill_def에 한 줄씩(3.4.0i — 조련·혈투·창술·진법이 빠져 원정에서 효과가 없었음).
 - 기술 칭호 32(ct_<계열>_15·35·50, gt_<계열>_25·50, ct_all_50·gt_all_50, 규칙 'skill'·'skill_all'). 함수 주인 역할은 기술표를 못 읽으므로 이름은 world_skill_name. 생성기 supabase/gen750(skills_draft.json(사용자 확정 시안 5, decisions_5) + f_*.sql·m_*.sql → gen.py).
-- 분해 world_dismantle_item: 언제나, 그 장비 계열(world_gear_line: 제작법 분야 → world_gear_line_map(제작법 없는 장비, 새 장비마다 한 줄) → 부위) 경험 12. 계열 단계가 world_dismantle_need(1·3·6·9·12·15)보다 낮으면 경험만(하루 제한 없음), 아니면 제작법 재료 절반 반환. 미리 알림 world_dismantle_info.
+- 분해 world_dismantle_item: 언제나, 그 장비 계열(world_gear_line: 제작법 분야 → world_gear_line_map(제작법 없는 장비, 새 장비마다 한 줄) → 부위) 경험 12. 계열 단계가 world_dismantle_need(1·3·6·9·12·15)보다 낮으면 경험만(하루 제한 없음), 아니면 제작법 재료 절반 반환. 미리 알림 world_dismantle_info. 한꺼번에 world_dismantle_batch(p_item_id, p_times 999까지 — world_dismantle_item을 차례로, 실패한 한 번만 되돌리고 멈춤, 4.0 사용자 결정: 장착 중인 것·잠가 지키는 몫은 빼고 가진 만큼까지 — 화면 대장간 분해 줄 actBox·물품 정보 창 수량 칸 q).
 - 화면 캐릭터 › 기술: 갈래(전투 | 채집+조사 | 제작)별로 계열마다 단계·경험 게이지와 ㅁ-ㅁ-ㅁ 노드, 누르면 기술·효과 펼침. 고를 택일 기술이 있으면 캐릭터 탭·기술 칸 빨간 점(world_skill_pending, titledot.js가 칭호 수와 같은 때 읽음, 노드 점 .sk-node.pick inline-block). 협동 기술 목록 world_coop_list.
 
 ### 퀵슬롯
