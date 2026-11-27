@@ -2878,6 +2878,8 @@ b.contest { color: var(--warn); font-weight: 600; }
   .gw-wrap.map.playing .raid-act .raid-coopbox .coop-btn { min-height: 36px; padding-block: 2px; }
   .gw-wrap.map.playing .gw-ug { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 2px 0 0; }
   .gw-wrap.map.playing .gw-ug .chips { display: none; }
+  .gw-wrap.map.playing .mk-duo .gg-map { width: min(100%, 236px); }
+  .gw-wrap.map.playing .mk-duo .gg-wrap > .mk-hint, .gw-wrap.map.playing .mk-duo:has(.gg-wrap) .gw-calm { display: none; }
   .gw-wrap.map.playing .gw-ug > p { margin: 0; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; }
   .gw-wrap.map.playing:has(.gw-ug) .mk-duo .mk-hint { display: none; }
 }
