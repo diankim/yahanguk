@@ -19,24 +19,24 @@ const BOSS = {
   gwiheo: { name: '귀허의 주인', arc: '본편 · 요인록', place: '귀허', PHASE: { 1: '두 얼굴', 2: '사슬 넷', 3: '이름 빼앗기', 4: '귀허의 소용돌이' }, last: '소용돌이', mechs: ['chain', 'name', 'vortex'],
     calm: '주인이 숨을 고른다.', tray: '귀허에서 쓸 물품', win: '귀허의 주인을 쓰러뜨렸습니다', lose: '소용돌이에 밀려났습니다', open: '귀허의 주인 앞에 서기',
     desc: '소용돌이 한가운데 빈 왕좌. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'gw',
-    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 귀허 부적이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다. 「요인록」 5장은 이 판으로도 이어집니다.',
-    hard: '깊은 귀허 · 라운드마다 마감이 있고 수법이 거셉니다(4명을 권합니다). 모두 귀허 부적을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
+    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다. 「요인록」 5장은 이 판으로도 이어집니다.',
+    hard: '깊은 귀허 · 라운드마다 마감이 있고 수법이 거셉니다(4명을 권합니다). 밀려나면 장비가 닳고 침식이 오릅니다.' },
   mukjeok: { name: '먹그림자', arc: '본편 · 묵적록', place: '아홉 칸 뜰', PHASE: { 1: '지워지는 칸', 2: '따라 쓰는 붓', 3: '발자국', 4: '가운데 칸' }, last: '가운데 칸', mechs: ['line', 'erase'],
     calm: '그림자가 붓에 먹을 다시 찍는다.', tray: '아홉 칸 뜰에서 쓸 물품', win: '먹그림자를 보냈습니다', lose: '명부가 먹으로 덮였습니다', open: '아홉 칸 명부 앞에 서기',
     desc: '쓰러진 자리의 매듭 안쪽, 아홉 칸으로 나뉜 명부. 가운데 칸의 이름을 지키며 칸을 밟아 기억을 되찾습니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'mk',
-    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 봉인 먹줄이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
-    hard: '깊은 명부 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 봉인 먹줄을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
+    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
+    hard: '깊은 명부 · 라운드마다 마감이 있고 수법이 거셉니다. 밀려나면 장비가 닳고 침식이 오릅니다.' },
   gapgwi: { name: '값귀', arc: '본편 · 명등기', place: '붉은 사당 골목', PHASE: { 1: '판결 망치', 2: '바가지', 3: '장부 맞추기', 4: '장 닫힘' }, last: '장 닫힘', mechs: [],
     calm: '값귀가 주판알을 딸깍인다.', tray: '붉은 사당에서 쓸 물품', win: '값귀를 쓰러뜨렸습니다', lose: '장부가 물 밑으로 가라앉았습니다', open: '값귀 앞에 서기',
     desc: '좌판 두 줄과 거리 한 줄로 된 붉은 사당 골목 장터. 장터 칸을 옮겨 다니며 머리 위 값(섬)을 다스려야 합니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'gg',
-    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 붉은 사당 옻이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
-    hard: '깊은 장부 · 라운드마다 마감이 있고, 장부가 꼬일수록 장터가 사나워집니다. 모두 붉은 사당 옻을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
+    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
+    hard: '깊은 장부 · 라운드마다 마감이 있고, 장부가 꼬일수록 장터가 사나워집니다. 밀려나면 장비가 닳고 침식이 오릅니다.' },
   sealed_lord: { name: '구중 봉주', arc: '무용담', place: '구중 봉연', PHASE: {}, last: '', mechs: [], calm: '봉주가 아홉 겹 봉인 위에서 숨을 고른다.', tray: '쓸 물품', win: '무용담을 끝맺었습니다', lose: '이야기 속에서 쓰러졌습니다', open: '', desc: '', ask: 'ug', story: '', hard: '' },
   baekya: { name: '백야', arc: '본편 · 명등기', place: '맹약 마당', PHASE: { 1: '화살비', 2: '붉은 붓', 3: '물방울과 가루', 4: '흰 밤' }, last: '흰 밤', mechs: [],
     calm: '하얀 형체의 몸 위로 이름 글자가 개미 떼처럼 기어 다닌다.', tray: '맹약 마당에서 쓸 물품', win: '흰 밤을 걷어 냈습니다', lose: '마당이 하얗게 바랬습니다', open: '맹약 마당 일곱 자리에 서기',
     desc: '바깥 등 기둥 일곱 칸과 안쪽 마당 일곱 칸으로 된 둥근 마당. 허공에 멈춘 것들이 숫자를 세니 맵을 보며 싸웁니다. 혼자 또는 같은 곳의 파티원 4명까지 함께 섭니다.', ask: 'by',
-    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 입장 물품이 필요 없고, 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
-    hard: '깊은 판 · 라운드마다 마감이 있고 수법이 거셉니다. 모두 입장 물품을 하나씩 쓰고, 밀려나면 장비가 닳고 침식이 오릅니다.' },
+    story: '이야기판 · 누구든 깰 수 있는 쉬운 판입니다. 마감이 없고(여럿이면 1분), 회복품도 마음껏 쓰며 밀려나도 잃는 것이 없습니다.',
+    hard: '깊은 판 · 라운드마다 마감이 있고 수법이 거셉니다. 밀려나면 장비가 닳고 침식이 오릅니다.' },
 };
 const PHASE_AT = { 1: '체력 75%까지', 2: '50%까지', 3: '25%까지', 4: '끝까지' };
 const COLOR = { 청: 'c-blue', 적: 'c-red', 황: 'c-yellow', 백: 'c-white' };
@@ -204,7 +204,7 @@ function draw() {
     <div class="raid-wrap pf-wrap gw-wrap ${mk ? 'mk' : ''} ${mapped ? 'map' : ''} ${fight && s.joined ? 'playing' : ''} ${done ? 'ended' : ''}">
       ${fightCol('l', `<section class="panel raid-boss"><div class="panel-body">
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
-            ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기${story() ? '' : ` · ${esc(itemName())} 1개`}</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
+            ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
         ${ult() && f.status !== 'wait' ? ugBar(s) : ''}
         ${mapped && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${mapHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
@@ -305,9 +305,9 @@ function fillItems(box) {
 function resultHtml(f, s) {
   const mine = (s.members || []).find(m => m.id === s.me);
   const won = f.status === 'won';
-  const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10, cd: 30 };
+  const B = bossOf(), fail = BOSS_RULES()?.fail || { dur: 10, er: 10 };
   return `<section class="panel raid-result-panel"><div class="panel-body">${resultBox(won, ult() ? ugTitle(won, s) : won ? B.win : B.lose, `<p class="small">${f.round}라운드 · ${ult() ? esc(s.board?.ug?.act_name || '') : PHASE[f.phase] || ''}${won ? '' : `까지 · 주인 체력 ${fmt.num(f.hp)} / ${fmt.num(f.max_hp)} 남음`}${mine ? ` · 준 피해 ${fmt.num(mine.dmg)} · 물러난 횟수 ${(s.members || []).length === 1 && s.falls_cap ? Math.min(mine.falls || 0, s.falls_cap) : mine.falls || 0}` : ''}</p>
-    <p class="small">${ult() ? ugResult(won, s) : story() ? (won ? '보상은 알림으로 보냈습니다(처음 이겼을 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치는 하루 한 번 인정).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. ${fail.cd}분 뒤 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
+    <p class="small">${ult() ? ugResult(won, s) : story() ? (won ? '보상은 알림으로 보냈습니다(처음 이겼을 때만 전을 받습니다).' : '이야기판은 밀려나도 잃는 것이 없습니다. 숨을 고르고 다시 서세요.') : won ? '보상은 알림으로 보냈습니다(처치 인정·보상은 하루 한 번, 그 뒤로는 보상 없이 다시 설 수 있습니다).' : `장착 장비가 ${fail.dur}% 닳고 침식이 ${fail.er} 올랐습니다. 바로 다시 도전할 수 있습니다.`} 아래 전투 기록에서 라운드마다 무엇이 있었는지 되짚어 볼 수 있습니다.</p>
     <a class="btn small" href="#/gw${s.boss && s.boss !== 'gwiheo' ? `/${s.boss}` : ''}">처음으로</a>`)}</div></section>`;
 }
 
@@ -330,7 +330,7 @@ function drawLobby(s) {
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
       ${s.story ? `<div class="gw-mode"><p class="small">${B.story}</p><p class="small muted">쓰러뜨린 횟수 ${s.story.kills}번</p>
         ${s.story.can_open ? `<button class="btn primary" id="gw-open-story">${icon('sword', 16)}<span>${esc(modeName('story'))}에 서기</span></button>` : `<p class="hint">${icon('pin', 14)} ${esc(s.story.why || '지금은 설 수 없습니다.')}</p>`}</div>` : ''}
-      <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · 처치 ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
+      <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">처치 ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
       ${s.can_open ? `<button class="btn ${s.story ? '' : 'primary'}" id="gw-open">${icon('sword', 16)}<span>${s.story ? `${esc(modeName('hard'))}에 서기` : B.open}</span></button>`
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}</div>
       ${s.ultimate ? `<div class="gw-mode gw-ult"><p class="small"><b>${esc(GD.boss?.[s.boss]?.modes?.ultimate || '무용담')}</b> · 객사 이야기꾼이 부풀린 이야기 속 싸움입니다. 둘에서 넷까지만 들어가고, 낌새를 미리 보여 주지 않습니다. 횟수 제한이 없고 져도 잃는 것이 없습니다.</p>
@@ -375,7 +375,6 @@ function bind() {
 }
 
 const BOSS_RULES = () => GD.boss?.[snap?.boss || lobbyBoss || 'gwiheo'];
-const itemName = () => BOSS_RULES()?.item_name || '귀허 부적';
 async function act(args) {
   const out = { p_fight: snap.fight.id, p_target: null, p_item: null, ...args }, r = snap.fight.round;
   if ((['mukjeok', 'baekya', 'gapgwi'].includes(snap.boss) || hexOn(snap)) && moveTo) out.p_move = moveTo;

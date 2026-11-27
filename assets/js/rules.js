@@ -112,7 +112,7 @@ export const RESCUE = {
 
 export const MARKET_SOLD = { days: 7, max: 30 };
 export const SHOP_CAP = (cap, bought) => `하루 ${cap}개 · 오늘 ${bought}개 삼`;
-export const GW_DAILY = '처치는 하루 한 번입니다. 이긴 날(한국 시각 자정까지)은 다시 도전할 수 없고, 지면 30분 뒤에 다시 도전할 수 있습니다.';
+export const GW_DAILY = '처치 인정과 보상은 하루 한 번(한국 시각 자정까지)입니다. 그 뒤에도 보상 없이 몇 번이든 다시 설 수 있고, 져도 바로 다시 도전합니다.';
 export const FIGHT_KINDS = {
   raid: { route: 'raid', label: '토벌' },
   gw: { route: 'gw', label: '우두머리와 싸우는 중' },
