@@ -271,7 +271,7 @@ begin
   ki := r -> 'kinds' -> e.kind;
   if exists (select 1 from public.world_hfeast_eats where table_id = e.table_id and owner_id = uid) then raise exception '이 상에서는 이미 먹었습니다.' using hint = 'hfeast_ate'; end if;
   if not public.world_feast_room(uid, ki ->> 'key') then
-    raise exception '상태 칸 %칸이 모두 차 있어 기운을 받을 수 없습니다. 이로운 상태를 상태 창에서 꺼 칸을 비운 뒤 다시 하세요.', public.world_status_rules() ->> 'cap' using hint = 'hfeast_full';
+    raise exception '상태 칸 %칸이 모두 차 있어 기운을 받을 수 없습니다. 길한 상태를 상태 창에서 꺼 칸을 비운 뒤 다시 하세요.', public.world_status_rules() ->> 'cap' using hint = 'hfeast_full';
   end if;
   insert into public.world_hfeast_eats(table_id, owner_id) values (e.table_id, uid) on conflict do nothing;
   get diagnostics n = row_count;
