@@ -47,7 +47,7 @@ end $$;""")
     mid, nm, rg, kind, mech, desc, drops = T.ROBBER
     w(f"""insert into public.world_region_monsters(monster_id, region_id, monster_name, monster_type, min_level, max_level, hp, attack_power, spawn_weight, description, drops,
   difficulty_rank, mechanic_key, mechanic_description, role, kind)
-select {J(mid)} #>> '{{}}', {J(rg)} #>> '{{}}', {J(nm)} #>> '{{}}', 'human', 1, public.world_level_cap() + 1, 84, 9, 0, {J(desc)} #>> '{{}}', {J(drops)}, 2, {J(mech)} #>> '{{}}',
+select {J(mid)} #>> '{{}}', {J(rg)} #>> '{{}}', {J(nm)} #>> '{{}}', '사람', 1, public.world_level_cap() + 1, 84, 9, 0, {J(desc)} #>> '{{}}', {J(drops)}, 2, {J(mech)} #>> '{{}}',
   '숨어 있다 먼저 친다. 낌새를 살피고 방어를 섞어라.', 'raider', {J(kind)} #>> '{{}}'
 on conflict (monster_id) do update set monster_name = excluded.monster_name, description = excluded.description, drops = excluded.drops, max_level = excluded.max_level,
   role = excluded.role, kind = excluded.kind, mechanic_key = excluded.mechanic_key;""")

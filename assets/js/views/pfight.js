@@ -83,7 +83,7 @@ function draw() {
   if (drawLater(draw)) return;
   if (!el || !snap) return;
   const s = snap, b = s.battle || {}, me = s.me, c = store.character || {};
-  if (me || ended()) clearFightNotes(['pfight_invite'], 'fight_id', fid);
+  if (me || ended()) clearFightNotes(['pfight_invite', 'trade_raid'], 'fight_id', fid);
   const lg = s.log || [];
   if (seenFid !== fid) { seenFid = fid; seenLog = lg.length; }
   else if (lg.length > seenLog) { const mine = `${c.character_name} · `; if (lg.slice(seenLog).some(l => l.startsWith(mine))) weakNote((s.members || []).find(m => m.id === c.owner_id)?.weak); seenLog = lg.length; }

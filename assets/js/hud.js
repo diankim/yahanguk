@@ -120,7 +120,8 @@ function statusItems(c) {
     items.push({ kind: 'travel', icon: 'route', title: `이동 중 → ${nameOf(c.travel_destination) || '목적지'}`, timer: c.travel_arrives_at, text: left > 0 ? `${fmt.remain(left)} 후 도착` : '도착 처리 중…', action: left > 0 ? ['이동 취소', cancelTravel] : null });
   }
   const fg = state.hud?.fight, fk = fg && FIGHT_KINDS[fg.kind];
-  if (fk && !location.hash.startsWith(`#/${fk.route}`)) items.push({ kind: 'combat', icon: 'sword', title: `${fk.label}${fg.name ? ` · ${fg.name}` : ''}`,
+  const vRaid = state.hud?.voyage?.voyage?.status === 'raid' && state.hud.voyage.voyage.fight_id === fg?.id;
+  if (fk && !vRaid && !location.hash.startsWith(`#/${fk.route}`)) items.push({ kind: 'combat', icon: 'sword', title: `${fk.label}${fg.name ? ` · ${fg.name}` : ''}`,
     text: ['signup', 'wait', 'gather'].includes(fg.status) ? '함께할 동료를 기다리는 중입니다.' : '싸움 화면을 벗어나 있습니다.', action: ['싸움으로', () => window.yahangGo(fk.route, fg.id)] });
   const e = fg?.kind === 'pfight' ? null : state.hud?.battle;
   if (e) items.push({ kind: 'combat', icon: 'sword', title: `전투 중 · ${e.name}`, text: `적 체력 ${e.hp}/${e.max_hp}`, meter: [e.hp, e.max_hp], action: ['전투로', () => window.yahangGo('home')] });

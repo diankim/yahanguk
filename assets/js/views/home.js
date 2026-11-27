@@ -153,6 +153,7 @@ function openAid(target, name) {
 let fieldY = null, userScrollAt = 0;
 for (const k of ['touchmove', 'wheel', 'keydown']) window.addEventListener(k, () => { userScrollAt = Date.now(); }, { passive: true });
 function drawBattle(pty) {
+  if (store.hud?.fight?.kind === 'pfight' && store.hud.fight.id) { window.yahangGo('pfight', store.hud.fight.id); return; }
   const me = store.character.owner_id, here = store.character.location;
   const near = (pty?.party ? pty.members || [] : []).filter(m => m.owner_id !== me && m.location === here && !m.downed && !m.expedition && !m.in_combat).length;
   const entering = !$('#battle-box', el);
