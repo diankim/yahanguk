@@ -221,7 +221,7 @@ export const PROJECT = {
 };
 const fmtN = n => Number(n || 0).toLocaleString('ko-KR');
 
-const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 420, stages: [0, 60, 150, 270, 420] }, xp: { pct: 25, min: 30, hq_mul: 1.5 }, gil: { rate: 0.3, base: 30 }, qty: { gear: 1, item: 3, gather: 10, fish: 3 }, npcs: {} };
+const RG = GD.regular || { day_n: 9, orders: 3, aff: { give: 10, hq: 15, cap: 420, stages: [0, 60, 150, 270, 420] }, xp: { pct: 25, min: 30, hq_mul: 1.5 }, gil: { rate: 0.3, base: 30 }, qty: { gear: 1, item: 3, gather: 10, fish: 3 }, npcs: {} };
 const REGULAR_COUNT = '한국 시각 오늘 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두, 원정·비무·우두머리 싸움은 빼고). 한 번의 토벌이 여러 주문에 함께 셉니다.';
 const RG_FIGHT = Object.values(RG.npcs || {}).filter(n => n.kind === 'combat').length;
 const RG_CRAFT = Object.keys(RG.npcs || {}).length - RG_FIGHT;

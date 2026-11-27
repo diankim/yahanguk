@@ -58,5 +58,10 @@ select pg_temp.yh_fix('world_project_rules', array[$a$"day_cap": 8000,$a$, $a$"d
 update public.world_patch_notes set body = body || E'\n- [사업] 한 사람이 하루에 넘길 수 있는 몫을 늘렸습니다(모든 사업 합쳐 8,000 → 16,000).'
 where note_id = '3.8.0' and position('[사업] 한 사람이 하루에 넘길 수 있는 몫을 늘렸습니다' in body) = 0;
 
+select pg_temp.yh_fix('world_regular_rules', array[$a$"day_n": 6,$a$, $a$"day_n": 9,$a$]);
+
+update public.world_patch_notes set body = body || E'\n- [연담] 하루에 넘길 수 있는 주문 수를 늘렸습니다(모든 인물 합쳐 6 → 9).'
+where note_id = '3.8.0' and position('[연담] 하루에 넘길 수 있는 주문 수를 늘렸습니다' in body) = 0;
+
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261127190000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
