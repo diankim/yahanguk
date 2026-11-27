@@ -53,8 +53,8 @@ function rowsOf(v) {
   for (const it of v.items || []) {
     const desc = catItem(it.id)?.description || '';
     const base = { cat: it.kind === 'gather' ? 'material' : (/material/.test(it.category) ? 'material' : it.category === 'consumable' ? 'consumable' : 'gear'), tier: it.tier, rarity: RAR[it.tier] || 'common', desc };
-    if (haveOf(it)) rows.push({ ...base, id: it.id, name: it.name, have: haveOf(it), max: haveOf(it), sub: `1개 ${unitOf(it, false)}몫${it.urgent ? ' · 급히' : ''}` });
-    if (haveHqOf(it)) rows.push({ ...base, id: hqOf(it.id), name: `${it.name} (우수)`, have: haveHqOf(it), max: haveHqOf(it), sub: `1개 ${unitOf(it, true)}몫${it.urgent ? ' · 급히' : ''}` });
+    if (haveOf(it)) rows.push({ ...base, id: it.id, name: it.name, have: haveOf(it), max: haveOf(it), unit: unitOf(it, false), sub: `1개 ${unitOf(it, false)}몫${it.urgent ? ' · 급히' : ''}` });
+    if (haveHqOf(it)) rows.push({ ...base, id: hqOf(it.id), name: `${it.name} (우수)`, have: haveHqOf(it), max: haveHqOf(it), unit: unitOf(it, true), sub: `1개 ${unitOf(it, true)}몫${it.urgent ? ' · 급히' : ''}` });
   }
   return rows.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 }
@@ -82,8 +82,14 @@ function draw(m, v) {
   $$('[data-pj-info]', box).forEach(b => b.onclick = () => import('./item.js').then(x => x.openItemInfo(b.dataset.pjInfo)));
   $$('[data-pj-src]', box).forEach(b => b.onclick = () => import('../sources.js').then(x => x.openAllSources(b.dataset.pjSrc)));
   const g = $('#pj-give', box);
-  if (g) g.onclick = () => openItemPick({ title: `${v.name}에 넘길 물품`, rows: rowsOf(v), many: true, okText: '이대로 넘기기',
-    note: `<p class="muted small">오늘 남은 몫 ${fmt.num(Math.max(0, (v.today?.cap || 0) - (v.today?.pts || 0)))}.</p>`, onDone: sel => give(m, v, sel) });
+  const rows = rowsOf(v), unit = Object.fromEntries(rows.map(r => [r.id, r.unit || 0])), left = Math.max(0, (v.today?.cap || 0) - (v.today?.pts || 0));
+  const sumText = sel => {
+    const pts = [...sel].reduce((a, [id, n]) => a + (unit[id] || 0) * n, 0); if (!pts) return '';
+    const got = Math.min(pts, left), goal = Number(v.goal) || 0;
+    return ` · <b>약 ${fmt.num(got)}몫</b>${goal ? ` (이번 ${v.stage >= 5 ? '바퀴' : '단계'} 목표의 ${(got * 100 / goal).toFixed(got * 100 / goal < 1 ? 2 : 1)}%)` : ''}${pts > left ? ` <span class="warn">· 오늘 남은 몫을 넘어 ${fmt.num(pts - left)}몫어치는 돌려받습니다</span>` : ''}`;
+  };
+  if (g) g.onclick = () => openItemPick({ title: `${v.name}에 넘길 물품`, rows, many: true, okText: '이대로 넘기기', sumText,
+    note: `<p class="muted small">오늘 남은 몫 ${fmt.num(left)}.</p>`, onDone: sel => give(m, v, sel) });
 }
 
 export async function openProject(key = null) {

@@ -276,7 +276,7 @@ export const SYS_CHAT = {
   '교역 소식': { icon: 'ship', cls: 'note' },
 };
 
-const PJ = GD.project || { pay: { day_cap: 8000, faction: { per_merit: 100 }, common: { gil_rate: 0.6 }, help: { gil_rate: 0.6 }, after_mul: 0.5 }, urgent: { n: 2, mul: 1.5 }, hq_mul: 1.5, mul_cap: 2, help_rel: { per_k: 1, person_day: 3, pair_day: 10 }, memento: { pct: 1, faction_merit: 20, common_gil_pct: 0.5 }, lift: {}, perk_text: { faction: [], common: [] }, projects: {}, vault: [], titles: 0 };
+const PJ = GD.project || { pay: { day_cap: 16000, faction: { per_merit: 100 }, common: { gil_rate: 0.6 }, help: { gil_rate: 0.6 }, after_mul: 0.5 }, urgent: { n: 2, mul: 1.5 }, hq_mul: 1.5, mul_cap: 2, help_rel: { per_k: 1, person_day: 3, pair_day: 10 }, memento: { pct: 1, faction_merit: 20, common_gil_pct: 0.5 }, lift: {}, perk_text: { faction: [], common: [] }, projects: {}, vault: [], titles: 0 };
 export const PROJECT = {
   ...PJ,
   of: k => PJ.projects?.[k] || null,
@@ -291,7 +291,7 @@ export const PROJECT = {
 };
 const fmtN = n => Number(n || 0).toLocaleString('ko-KR');
 
-const RG = GD.regular || { day_n: 6, orders: 3, aff: { give: 10, hq: 15, cap: 420, stages: [0, 60, 150, 270, 420] }, xp: { pct: 25, min: 30, hq_mul: 1.5 }, gil: { rate: 0.3, base: 30 }, qty: { gear: 1, item: 3, gather: 10, fish: 3 }, npcs: {} };
+const RG = GD.regular || { day_n: 9, orders: 3, aff: { give: 10, hq: 15, cap: 420, stages: [0, 60, 150, 270, 420] }, xp: { pct: 25, min: 30, hq_mul: 1.5 }, gil: { rate: 0.3, base: 30 }, qty: { gear: 1, item: 3, gather: 10, fish: 3 }, npcs: {} };
 const REGULAR_COUNT = '한국 시각 오늘 0시부터 현장에서 이긴 토벌로 셉니다(혼자 싸운 것과 파티 토벌 모두, 원정·비무·우두머리 싸움은 빼고). 한 번의 토벌이 여러 주문에 함께 셉니다.';
 const RG_FIGHT = Object.values(RG.npcs || {}).filter(n => n.kind === 'combat').length;
 const RG_CRAFT = Object.keys(RG.npcs || {}).length - RG_FIGHT;

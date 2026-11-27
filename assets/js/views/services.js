@@ -1,7 +1,7 @@
 import { rarTag, openModal, closeModal, ask, db, store, on, act, rpc, emit, loadCharacter, friendlyError, nameOf, esc, icon, guard, $, $$, fmt, empty, toast, bagLimit, bagUsed, equippedIds, bar, registerNames, brief, MARKET_ONLY, stackOf, kindChip } from '../core.js';
 import { hit } from '../changes.js';
 import { load, loadPrices, chip, loading, errorBox, foldOpen, rarRow } from './common.js';
-import { openItemInfo, loadLocks, isLocked } from './item.js';
+import { openItemInfo, loadLocks, isLocked, lockFree, lockTag } from './item.js';
 import { helpQ, helpLine } from '../tips.js';
 import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES, MOUNT_REALM } from '../rules.js';
 import { ownSlot, ownKind, fillOwned } from '../owned.js';
@@ -32,8 +32,8 @@ function tradePane(box, s, { kind, sell, prices = [], equipment = {}, catalog = 
   const mode = sell ? shopMode : 'buy';
   const ref = new Map((prices || []).map(p => [p.item_id, p]));
   const equipped = new Set(Object.values(equipment || {}));
-  const sellMax = k => Math.max(0, (Number(have[k]) || 0) - (equipped.has(k) ? 1 : 0));
-  const sellable = sell ? Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.npc_sell_price > 0 && ref.get(k)?.category !== 'quest' && !isLocked(k) && sellMax(k) > 0) : [];
+  const sellMax = k => Math.min(Math.max(0, (Number(have[k]) || 0) - (equipped.has(k) ? 1 : 0)), lockFree(k, have[k]));
+  const sellable = sell ? Object.entries(have).filter(([k, n]) => n > 0 && ref.get(k)?.npc_sell_price > 0 && ref.get(k)?.category !== 'quest' && sellMax(k) > 0) : [];
   const list = (s.stock || []).filter(i => i.stock !== 0);
   const stock = new Map(list.map(i => [i.item_id, i]));
   const sellPrice = k => Math.max(1, Math.round(Number(ref.get(k)?.npc_sell_price) || 1));
@@ -250,14 +250,14 @@ async function repairPane(body) {
 }
 
 async function dismantlePane(body) {
-  const [inv, di] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 30000 }), load('world_dismantle_info', undefined, { maxAge: 600000 }).catch(() => ({}))]);
+  const [inv, di] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 30000 }), load('world_dismantle_info', undefined, { maxAge: 600000 }).catch(() => ({})), loadLocks()]);
   const cat = new Map((inv.catalog || []).map(i => [i.id, i])), equipped = new Set(Object.values(inv.equipment || {}));
   const rows = Object.entries(inv.inventory || {}).filter(([k, n]) => n > 0 && GEAR_CATS.has(cat.get(k)?.category))
-    .map(([k, n]) => ({ k, n, it: cat.get(k), free: n - (equipped.has(k) ? 1 : 0), d: di?.[k] || {} }))
+    .map(([k, n]) => ({ k, n, it: cat.get(k), free: Math.min(n - (equipped.has(k) ? 1 : 0), lockFree(k, n)), d: di?.[k] || {} }))
     .sort((a, b) => (a.it.tier || 0) - (b.it.tier || 0) || nameOf(a.k).localeCompare(nameOf(b.k), 'ko'));
   const yieldText = y => Object.entries(y || {}).map(([k, v]) => `${nameOf(k)} ×${v}`).join(' · ');
   body.innerHTML = rows.length ? `<ul class="item-list">${rows.map(({ k, n, it, free, d }) => {
-      const why = free < 1 ? '장착 중인 마지막 하나' : isLocked(k) ? '잠금' : '';
+      const why = free < 1 ? (lockFree(k, n) < 1 ? '잠가 지키는 몫' : '장착 중인 마지막 하나') : '';
       const low = d.line && d.rank < d.need;
       const what = !d.line ? '' : low ? `<span class="bad">재료 없음 · ${esc(d.line_name)} 경험 +12만(${esc(d.line_name)} ${d.need}단계부터 재료)</span>`
         : `돌려받는 재료: ${esc(yieldText(d.yield) || '—')} · ${esc(d.line_name)} 경험 +12`;
@@ -285,8 +285,8 @@ export { untradeNote };
 const eqCount = () => equippedIds().reduce((m, id) => m.set(id, (m.get(id) || 0) + 1), new Map());
 export function giveable(have, ref, direct = false) {
   const eq = eqCount();
-  return Object.entries(have || {}).map(([k, n]) => [k, Number(n) - (eq.get(k) || 0)])
-    .filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !isLocked(k) && !(direct && MARKET_ONLY.has(k)))
+  return Object.entries(have || {}).map(([k, n]) => [k, Math.min(Number(n) - (eq.get(k) || 0), lockFree(k, n))])
+    .filter(([k, n]) => n > 0 && ref.get(k)?.tradeable !== false && !(direct && MARKET_ONLY.has(k)))
     .sort(([a], [b]) => nameOf(a).localeCompare(nameOf(b), 'ko'));
 }
 
@@ -295,11 +295,12 @@ function untradeNote(have, ref, direct = false) {
   const eq = eqCount(), ko = l => l.map(nameOf).sort((a, b) => a.localeCompare(b, 'ko'));
   const market = direct ? ko(own.filter(k => MARKET_ONLY.has(k) && ref.get(k)?.tradeable !== false)) : [];
   const bound = ko(own.filter(k => ref.get(k)?.tradeable === false));
-  const locked = ko(own.filter(k => ref.get(k)?.tradeable !== false && isLocked(k)));
-  const worn = ko(own.filter(k => ref.get(k)?.tradeable !== false && !isLocked(k) && Number(have[k]) <= (eq.get(k) || 0)));
+  const lockOut = k => isLocked(k) && lockFree(k, have[k]) < 1;
+  const locked = ko(own.filter(k => ref.get(k)?.tradeable !== false && lockOut(k)));
+  const worn = ko(own.filter(k => ref.get(k)?.tradeable !== false && !lockOut(k) && Number(have[k]) <= (eq.get(k) || 0)));
   const part = (t, l) => l.length ? `<b>${t}</b> ${esc(l.slice(0, 8).join(' · '))}${l.length > 8 ? ` 외 ${l.length - 8}가지` : ''}` : '';
   const txt = [part('장착 중', worn), part('잠금', locked), part('거래 불가', bound), part('거래소 전용', market)].filter(Boolean).join(' / ');
-  return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 장착 중인 장비는 끼고 있는 한 벌을 빼고 세고, 잠근 물품은 가방에서 잠금을 풀면 올라옵니다. 거래 불가 물품(희귀 성장 재료·귀속품 등)은 내줄 수 없습니다.</p>` : '';
+  return txt ? `<p class="muted small untrade">${icon('help', 13)} 목록에 없는 물품 — ${txt}. 장착 중인 장비는 끼고 있는 한 벌을 빼고 세고, 잠근 물품은 지킬 수를 넘게 가진 몫만 올라옵니다(가방에서 지킬 수를 줄이거나 잠금을 풀 수 있습니다). 거래 불가 물품(희귀 성장 재료·귀속품 등)은 내줄 수 없습니다.</p>` : '';
 }
 
 function soldHtml(sold) {
@@ -515,12 +516,13 @@ export async function renderStorage(box) {
     const row = (id, label, n, max, m, note, part) => `<li class="r-${esc(rarMap.get(id) || 'common')}" ${listRowAttrs(catMap.get(id), label || nameOf(id))}>
         <div class="item-main"><b>${infoName(id, label)}</b><span class="qty">×${fmt.num(n)}</span><small class="muted">${part ? `${part}번째 칸 · 묶음 ${stackOf(id)}개 · 창고에 모두 ${fmt.num(stored.get(id) || n)}` : cellsOf(id, n, m)}</small>${note ? `<small>${note}</small>` : ''}</div>
         ${ro && m === 'put' ? '' : actBox({ key: `${m}:${id}${part ? `:${part}` : ''}`, max: m === 'take' ? n : max, value: max || n, off: m === 'put' && !max, btns: m === 'take'
-          ? [`<button class="btn small act-dc" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}">버리기</button>`, ro ? '' : `<button class="btn small primary" data-here="창고 이용" data-take="${esc(id)}" ${max ? '' : 'disabled'}>꺼내기</button>`]
+          ? [`<button class="btn small act-dc" data-here="창고 정리" data-toss="${esc(id)}" data-toss-name="${esc(label || nameOf(id))}" ${lockFree(id, have[id], stored.get(id)) < 1 ? 'disabled title="잠가 지키는 몫이라 버릴 수 없습니다"' : ''}>버리기</button>`, ro ? '' : `<button class="btn small primary" data-here="창고 이용" data-take="${esc(id)}" ${max ? '' : 'disabled'}>꺼내기</button>`]
           : [`<button class="btn small primary" data-here="창고 이용" data-put="${esc(id)}" ${max ? '' : 'disabled'}>맡기기</button>`] })}</li>`;
     const takeRows = i => {
       const st = stackOf(i.item_id), n = Number(i.qty) || 0, full = !ro && i.room <= 0 ? '<span class="bad">가방에 자리가 없습니다</span>' : '';
-      if (!storeSplit() || st <= 1 || n <= st) return [row(i.item_id, i.name, n, Math.min(n, i.room), 'take', full)];
-      return Array.from({ length: Math.ceil(n / st) }, (_, k) => { const q = Math.min(st, n - k * st); return row(i.item_id, i.name, q, Math.min(q, i.room), 'take', full, k + 1); });
+      const note = [full, lockTag(i.item_id)].filter(Boolean).join(' · ');
+      if (!storeSplit() || st <= 1 || n <= st) return [row(i.item_id, i.name, n, Math.min(n, i.room), 'take', note)];
+      return Array.from({ length: Math.ceil(n / st) }, (_, k) => { const q = Math.min(st, n - k * st); return row(i.item_id, i.name, q, Math.min(q, i.room), 'take', note, k + 1); });
     };
     const parts = [['기본', src.base], ['전으로 넓힘', src.bought], ['홍인사', src.story], ['요인록~명등기', src.arc], ['세력 평판', src.faction], ['지역 답사', src.survey], ['직업 숙련', src.jobs], ['연담', src.regular]]
       .filter(([, v]) => Number(v) > 0).map(([n, v]) => `${n} ${v}`).join(' · ');
@@ -533,7 +535,7 @@ export async function renderStorage(box) {
       ${listFilterHtml(storeFilt, { label: '창고 물품 찾기', cls: 'st-filter', hidden: mode === 'grow' })}
       <section data-list="put" ${mode === 'put' ? '' : 'hidden'}>
         <p class="muted small">창고 여유 ${Math.max(0, s.capacity - s.used)}칸 · 칸은 가방과 같이 묶음으로 셉니다. 장착 중인 마지막 하나·임무 물품은 맡길 수 없습니다. 강화한 장비는 맡겨도 강화 단계가 그대로 남습니다.</p>
-        <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', putMax(k) <= 0 ? '<span class="bad">창고에 자리가 없습니다</span>' : equippedSet.has(k) ? '장착 중 하나는 남김' : (isLocked(k) ? '잠금' : ''))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
+        <ul class="item-list shop-list">${putList.map(([k, n]) => row(k, null, n, putMax(k), 'put', putMax(k) <= 0 ? '<span class="bad">창고에 자리가 없습니다</span>' : equippedSet.has(k) ? '장착 중 하나는 남김' : lockTag(k))).join('') || `<li>${empty('맡길 물품이 없습니다.', 'bag')}</li>`}</ul>
       </section>
       <section data-list="take" ${mode === 'take' ? '' : 'hidden'}>
         ${ro ? '' : `<p class="muted small">가방 여유 ${Math.max(0, bagSpace)}칸 · 가방에 들어가는 만큼만 꺼냅니다.</p>`}

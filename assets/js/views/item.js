@@ -10,7 +10,7 @@ import { GAMEDATA as GD } from '../gamedata.js';
 import { qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
 import { PETS, petImage } from '../housing/petsprite.js';
 import { FIRST_PETS, petGroupOf, petGroupLine } from '../petpick.js';
-import { helpLine } from '../tips.js';
+import { helpLine, helpQ } from '../tips.js';
 
 const USE_SPECIAL = { reset_identity: '직업 다시 고르기 · 능력치는 새 직업에 맞게 저절로 놓임', reset_stats: '능력치를 처음으로 · 포인트 돌려받기',
   revival_charm: '전투불능에서 일어나기', gwiryeong_cho: '요화 풀기 · 침식 −20',
@@ -88,13 +88,34 @@ let locks = null;
 export async function loadLocks(force) {
   if (locks && !force) return locks;
   try {
-    const { data, error } = await db.from('world_item_locks').select('item_id');
+    const { data, error } = await db.from('world_item_locks').select('item_id, qty');
     if (error) throw error;
-    locks = new Set((data || []).map(r => r.item_id));
-  } catch { locks = locks || new Set(); }
+    locks = new Map((data || []).map(r => [r.item_id, Math.max(1, Number(r.qty) || 1)]));
+  } catch { locks = locks || new Map(); }
   return locks;
 }
 export const isLocked = id => !!locks?.has(id);
+export const lockKeep = id => locks?.get(id) || 0;
+const storedOf = id => (store.snaps?.['world_storage_snapshotnull']?.items || []).reduce((a, i) => a + (i.item_id === id ? Number(i.qty) || 0 : 0), 0);
+export const lockFree = (id, bag, st = storedOf(id)) => locks?.has(id) ? Math.max(0, (Number(bag) || 0) + (Number(st) || 0) - locks.get(id)) : Infinity;
+export const lockTag = id => locks?.has(id) ? `잠금 ${locks.get(id)}` : '';
+function openLockPick(id, have, done) {
+  const tot = have + storedOf(id), keep = lockKeep(id);
+  const m = openLayer({ title: `${nameOf(id)} 잠그기`, body: `<div class="lock-pick">
+    <p class="desc">몇 개를 지킬까요?${helpQ('지킨 수만큼은 팔기·버리기·분해·넘기기를 할 수 없고, 넘는 몫만 내줄 수 있습니다. 강화한 것 → 장착 중인 것 → 덜 닳은 것 순으로 지켜집니다. 사용과 제작 재료로는 쓸 수 있고, 새로 얻은 것은 잠기지 않습니다.', '잠금 안내')}</p>
+    <p class="muted small">가진 수 ${fmt.num(tot)}개 (가방 ${fmt.num(have)}${tot > have ? ` · 창고 ${fmt.num(tot - have)}` : ''})</p>
+    ${qtyHtml({ key: 'keep', min: 1, max: tot, value: keep ? Math.min(keep, tot) : tot, all: true })}
+    <div class="btn-row"><button class="btn small primary" data-lock-ok>${icon('shield', 14)}<span>${keep ? '지킬 수 바꾸기' : '잠그기'}</span></button></div></div>` });
+  const el = $('.lock-pick', m);
+  bindQty(el);
+  $('[data-lock-ok]', el).onclick = async e => {
+    const q = qtyOf(el, 'keep');
+    if (!(q >= 1 && q <= tot)) return toast(`1~${tot}개 사이로 정하세요.`, 'error');
+    let ok = false;
+    await guard(e.currentTarget, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: true, p_qty: q }); await loadLocks(true); ok = true; return out; });
+    if (ok) { m.close(); done?.(); }
+  };
+}
 
 const ACCESSORY = new Set(['hat', 'shoes', 'norigae', 'amulet', 'mask']);
 const STAT_KEYS = ['strength', 'agility', 'vitality', 'perception', 'willpower', 'spirit_affinity'];
@@ -175,7 +196,8 @@ export async function openItemInfo(id, { mode = 'view' } = {}) {
   const m = document.getElementById('modal') ? openLayer(opts) : openModal(opts);
   const box = $('.item-info', m);
   try {
-    const [inv, prices] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 10000 }), loadPrices().catch(() => []), loadLocks()]);
+    const [inv, prices] = await Promise.all([load('world_inventory_snapshot', undefined, { maxAge: 10000 }), loadPrices().catch(() => []), loadLocks(),
+      load('world_storage_snapshot', undefined, { maxAge: 300000 }).catch(() => null)]);
     draw(box, id, inv, new Map((prices || []).map(p => [p.item_id, p])), mode);
   } catch (e) { box.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
 }
@@ -212,7 +234,7 @@ function draw(box, id, inv, prices, mode) {
   const have = Number(inv.inventory?.[id] || 0), equipped = Object.values(inv.equipment || {}).includes(id), locked = isLocked(id);
   const pairId = pairOf(id), pairHave = Number(inv.inventory?.[pairId] || 0);
   const both = k => Number(inv.inventory?.[k] || 0) + (isHq(k) ? 0 : Number(inv.inventory?.[hqOf(k)] || 0));
-  const dcMax = Math.max(0, have - (equipped ? 1 : 0));
+  const stMax = Math.max(0, have - (equipped ? 1 : 0)), dcMax = Math.min(stMax, lockFree(id, have)), keep = lockKeep(id);
   const stashOk = canStash();
   const bid = baseOf(id);
   const uses = (inv.recipes || []).filter(r => r.ingredients && r.ingredients[bid]);
@@ -226,7 +248,7 @@ function draw(box, id, inv, prices, mode) {
   };
   box.innerHTML = `
     <div class="chips">${it ? chip(nameOf(it.category)) : ''}${it?.tier ? chip(`${it.tier}단계`) : ''}${chip(nameOf(it?.rarity || 'common'), 'rar')}
-      ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip('잠금', 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
+      ${equipped ? chip('장착 중', 'accent') : ''}${locked ? chip(lockTag(id), 'warn') : ''}${tradeable === false ? chip('거래 불가', 'bad') : tradeable ? chip('거래 가능', 'ok') : ''}</div>
     ${isFurniture(id) || hasPic(it) ? `<p class="fpic" data-fpic="${esc(id)}"></p>` : ''}
     ${it?.description ? `<p class="desc">${esc(it.description)}</p>` : ''}
     ${baseOf(id) === 'gwiryeong_cho' ? `<div class="notice item-note">${icon('mask', 18)}<div><b class="gw-when" data-gw-when hidden></b><span class="gw-can" data-gw-can hidden></span><b>귀령초는 서버에 몇 포기 없습니다</b><span>${esc(GWIRYEONG.supply)}</span><span>${esc(GWIRYEONG.trade)}</span><span>${esc(GWIRYEONG.wither)}</span><span>${esc(GWIRYEONG.hold)}</span></div></div>` : ''}
@@ -257,14 +279,17 @@ function draw(box, id, inv, prices, mode) {
         ${id === 'pet_token' ? `<button class="btn small ${have >= 5 ? 'primary' : ''}" data-do="token" data-here="동무 정표 바꾸기" ${have >= 5 ? '' : 'disabled'} title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">${icon('heart', 14)}<span>빛나는 알로 바꾸기</span></button>` : ''}
         ${it?.category === 'furniture' ? `<button class="btn small" data-do="house">${icon('home', 14)}<span>별채에서 놓기</span></button>` : ''}
         ${it && GEAR.has(it.category) && slotOf(it) !== 'craft' && !equipped ? (block ? `<span class="bad small">${esc(block)}</span>` : `<button class="btn small primary" data-do="equip">${icon('shield', 14)}<span>장착</span></button>`) : ''}
-        <button class="btn small" data-do="lock">${icon(locked ? 'check' : 'shield', 14)}<span>${locked ? '잠금 풀기' : '잠그기'}</span></button>
-        ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" data-here="분해" ${locked || (equipped && have <= 1) ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
+        ${locked ? `<button class="btn small" data-do="unlock">${icon('check', 14)}<span>잠금 풀기</span></button>` : ''}
+        <button class="btn small" data-do="lock">${icon('shield', 14)}<span>${locked ? `지킬 수 바꾸기 · ${keep}` : '잠그기'}</span></button>
+        ${it && DISMANTLABLE.has(it.category) ? `<button class="btn small" data-do="dismantle" data-here="분해" ${dcMax < 1 ? 'disabled' : ''}>${icon('hammer', 14)}<span>분해</span></button>` : ''}
       </div>
-      ${actBox({ key: 'q', max: Math.max(useMaxOf(id, have), locked ? 0 : dcMax), cls: 'act-end', btns: [
-        `<button class="btn small act-dc" data-do="discard" ${locked || dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
-        stashOk && dcMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
+      ${actBox({ key: 'q', max: Math.max(useMaxOf(id, have), stashOk ? stMax : dcMax), cls: 'act-end', btns: [
+        `<button class="btn small act-dc" data-do="discard" ${dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
+        stashOk && stMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
         USABLE[id] ? (useLabel(id) !== '사용' ? `<button class="btn small primary" data-do="use" data-here="물품 사용">${useLabel(id)}</button>` : '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>') : ''] })}
-      <p class="muted small">${locked ? '잠근 물품은 팔거나 버리거나 거래할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.' : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
+      <p class="muted small">${locked ? `잠금 ${keep}개 · ${dcMax > 0 ? `내줄 수 있는 것 ${dcMax}개` : '내줄 수 있는 것 없음'}${helpQ('잠근 수만큼은 가방·창고를 합쳐 팔기·버리기·분해·넘기기를 할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.', '잠금 안내')}` : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>
+      ${isHq(id) && (inv.catalog || []).some(x => x.id === bid) ? `<div class="dg-box"><p class="muted small">${esc(`보통 ${nameOf(bid)}(으)로 바꾸면 같은 물품끼리 한 칸에 모입니다. 되돌릴 수 없습니다.`)}</p>
+      ${actBox({ key: 'dq', max: dcMax, cls: 'act-end', btns: ['', '', `<button class="btn small" data-do="downgrade" data-here="보통 물품으로 바꾸기" ${dcMax < 1 ? 'disabled' : ''}>품질 하향</button>`] })}</div>` : ''}` : ''}`;
 
   bindQty(box);
   fillSources(box, id);
@@ -291,7 +316,8 @@ function draw(box, id, inv, prices, mode) {
     if (k === 'token') await guard(d, () => act('world_pet_token_trade'));
     if (k === 'house') { closeLayers(); closeModal(); window.yahangGo?.('house'); return; }
     if (k === 'equip') await guard(d, () => act('world_equip_item', { p_item_id: id }));
-    if (k === 'lock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: !locked }); await loadLocks(true); return out; });
+    if (k === 'unlock') await guard(d, async () => { const out = await act('world_item_lock', { p_item_id: id, p_locked: false }); await loadLocks(true); return out; });
+    if (k === 'lock') { openLockPick(id, have, redraw); return; }
     if (k === 'dismantle') {
       const di = (await load('world_dismantle_info', undefined, { maxAge: 600000 }).catch(() => ({})))?.[id];
       const low = di && di.rank < di.need;
@@ -303,9 +329,17 @@ function draw(box, id, inv, prices, mode) {
     }
     if (k === 'stash') {
       const q = qtyOf(box, 'q') || 1;
-      if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
+      if (!(q >= 1 && q <= stMax)) return toast(`1~${stMax}개 사이로 정하세요.`, 'error');
       const ok = await run(() => act('world_storage_put', { p_item: id, p_qty: q }));
       if (ok && q >= have) { closeInfo(); return; }
+    }
+    if (k === 'downgrade') {
+      const q = qtyOf(box, 'dq') || 1;
+      if (!(q >= 1 && q <= dcMax)) return toast(`1~${dcMax}개 사이로 정하세요.`, 'error');
+      if (!(await ask(`${nameOf(id)} ×${q}을(를) 보통 ${nameOf(bid)}(으)로 바꿀까요? 되돌릴 수 없습니다.`, { title: '품질 하향', ok: '바꾸기', cancel: '그만두기' }))) return;
+      const ok = await run(() => act('world_item_downgrade', { p_item_id: id, p_qty: q }));
+      if (ok && q >= have) { closeInfo(); return; }
+      if (!ok) return;
     }
     if (k === 'discard') {
       const q = qtyOf(box, 'q') || 1;
@@ -315,11 +349,14 @@ function draw(box, id, inv, prices, mode) {
       if (ok) { closeInfo(); return; }
       return;
     }
+    await redraw();
+  };
+  async function redraw() {
     try {
       const [inv2, prices2] = await Promise.all([load('world_inventory_snapshot'), loadPrices().catch(() => [])]);
       if (box.isConnected) draw(box, id, inv2, new Map((prices2 || []).map(p => [p.item_id, p])), mode);
     } catch {}
-  };
+  }
 }
 
 export async function useItem(id, btn, n = 1) {

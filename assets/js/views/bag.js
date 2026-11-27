@@ -3,7 +3,7 @@ import { load, invalidate, panel, chip, loading, errorBox, safeZones, catItem, f
 import { equipRowLi, eqMini, bindRepair, DUR_NOTE } from './character.js';
 import { tokenRowHtml } from '../bond.js';
 import { helpQ } from '../tips.js';
-import { weaponJobs, canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, cabinUse, useMaxOf, useLabel } from './item.js';
+import { weaponJobs, canStash, openItemInfo, fillGwWhen, loadLocks, isLocked, lockFree, lockTag, gearBlock, gearReqHtml, USABLE, GEAR, SLOTS, slotOf, useItem, useQtyHtml, traitText, fxHtml, fxKindsOf, FX_KINDS, bossUse, cabinUse, useMaxOf, useLabel } from './item.js';
 import { bindQty, qtyOf, actBox } from './itempick.js';
 import { baseOf, hqOf } from '../hq.js';
 import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
@@ -192,7 +192,7 @@ async function items(body, inv, stg) {
     }).map(({ id, n, it, part }, ri) => {
       const st = stackOf(id), cells = Math.ceil(Math.max(0, n - (equipped.has(id) ? 1 : 0)) / st);
       const cellTag = part ? (part.eq ? '' : st > 1 ? `한 칸 ${part.q}/${st}` : '') : `${cells}칸${st > 1 ? ` · 묶음 ${st}` : ''}`;
-      const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', isLocked(id) ? '잠금' : '', GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
+      const tags = [it?.tier ? `${it.tier}단계` : '', cellTag, (part ? part.eq : equipped.has(id)) ? '장착 중' : '', lockTag(id), GEAR.has(it?.category) && !equipped.has(id) && gearBlock(it, c) ? gearBlock(it, c) : ''].filter(Boolean);
       const showQty = part ? part.q : n, showUse = !!USABLE[id];
       const boss = bossUse(id), cab = cabinUse(id);
       return `<li class="inv-item r-${esc(it?.rarity || 'common')}${tags.includes('장착 중') ? ' is-eq' : ''}"><button class="inv-row" data-info="${esc(id)}">
@@ -425,9 +425,9 @@ async function craft(body, inv, stg) {
 
 function actsHtml(id, n, it, part, ri, showUse, eqSet, stash = canStash()) {
   if (part?.eq) return '';
-  const eq = eqSet.has(id), locked = isLocked(id), dcMax = Math.max(0, n - (eq ? 1 : 0)), key = `q:${ri}`;
+  const eq = eqSet.has(id), locked = isLocked(id), stMax = Math.max(0, n - (eq ? 1 : 0)), dcMax = Math.min(stMax, lockFree(id, n)), key = `q:${ri}`;
   const useMax = showUse ? useMaxOf(id, n) : 0;
-  const qmax = Math.max(useMax, locked && !stash ? 0 : dcMax);
+  const qmax = Math.max(useMax, stash ? stMax : dcMax);
   const name = esc(nameOf(id));
   const ul = useLabel(id);
   const right = showUse ? `<button class="btn small" data-here="물품 사용" ${id === 'reset_identity' ? `data-jobcd="btn" data-jobcd-text="${esc(ul)}"` : ''} ${ul !== '사용' ? '' : 'data-here-down'} data-use="${esc(id)}" data-use-q="${key}" data-use-max="${useMax}" aria-label="${name} ${ul}" title="${esc(USABLE[id])}">${ul}</button>`
@@ -435,7 +435,7 @@ function actsHtml(id, n, it, part, ri, showUse, eqSet, stash = canStash()) {
     : it?.category === 'outfit' ? `<button class="btn small" data-wear="${esc(id)}" aria-label="${name} ${it.equipment_traits?.box ? '풀기' : '옷장에 넣기'}" title="${it.equipment_traits?.box ? '꾸러미를 풀어 옷 하나를 얻습니다' : '옷장에 넣어 「내 모습」에서 입습니다'}">${it.equipment_traits?.box ? '풀기' : '옷장에'}</button>`
     : id === 'pet_token' && (!part || part.first) && n >= 5 ? `<button class="btn small" data-token-trade data-here="동무 정표 바꾸기" title="동무 정표 다섯 개를 빛나는 알 하나로 바꿉니다">알로 바꾸기</button>`
     : '';
-  return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${locked || dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked ? '잠근 물품은 버릴 수 없습니다' : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, right || (stash && dcMax > 0 ? `<button class="btn small" data-stash="${esc(id)}" data-q="${key}" data-max="${dcMax}" data-here="창고 이용" aria-label="${name} 창고에 맡기기" title="개인 창고에 맡깁니다">창고</button>` : '')] });
+  return actBox({ key, max: qmax, btns: [`<button class="btn small act-dc" data-discard="${esc(id)}" data-q="${key}" data-max="${dcMax}" ${dcMax < 1 ? 'disabled' : ''} aria-label="${name} 버리기" title="${locked && dcMax < stMax ? (dcMax < 1 ? '잠가 지키는 몫이라 버릴 수 없습니다' : `잠가 지키는 몫을 빼고 ${dcMax}개까지 버릴 수 있습니다`) : dcMax < 1 ? '장착 중인 마지막 하나는 버릴 수 없습니다' : '버린 물품은 되찾을 수 없습니다'}">버리기</button>`, right || (stash && stMax > 0 ? `<button class="btn small" data-stash="${esc(id)}" data-q="${key}" data-max="${stMax}" data-here="창고 이용" aria-label="${name} 창고에 맡기기" title="개인 창고에 맡깁니다">창고</button>` : '')] });
 }
 function bindActions(body) {
   bindQty(body);
