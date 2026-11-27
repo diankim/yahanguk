@@ -5,6 +5,7 @@ select distinct r.rolname::text as r from pg_proc p join pg_roles r on r.oid = p
  where p.pronamespace = 'public'::regnamespace and r.rolname like 'fn\_owner%' and not pg_has_role('postgres', r.oid, 'USAGE');
 do $i$ declare x text; begin for x in select r from yh_inh loop execute format('grant %I to postgres with inherit true', x); end loop; end $i$;
 lock table public.world_app_meta, public.world_patch_notes, public.world_item_locks in access exclusive mode;
+grant create on schema public to fn_owner_field;
 create or replace function pg_temp.yh_fix(p_name text, p_pairs text[]) returns void language plpgsql as $f$
 declare d text; i int; n int;
 begin
@@ -279,6 +280,7 @@ insert into public.world_app_meta(key, value, changed_at) values ('db_version', 
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
 
 
+revoke create on schema public from fn_owner_field;
 -- 배포 끝: 앞에서 켠 inherit을 원래대로
 do $i$ declare x text; begin for x in select r from yh_inh loop execute format('grant %I to postgres with inherit false', x); end loop; end $i$;
 drop table yh_inh;
