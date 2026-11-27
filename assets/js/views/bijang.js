@@ -33,6 +33,7 @@ async function refresh() {
     if (!rid) { rid = snap.run_id; history.replaceState(null, '', `#/bijang/${rid}`); }
     if (prev && prev !== snap.status) await settleFight('world_bijang_snapshot');
     draw(); plan(); gainsPop();
+    if (prev === 'room' && snap.status === 'fight' && snap.fight?.mine) window.yahangGo('pfight', snap.fight.id);
   } catch (e) { if (el) el.innerHTML = `${head()}${errorBox(e.message)}`; }
 }
 function plan() {
