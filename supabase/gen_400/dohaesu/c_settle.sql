@@ -64,7 +64,7 @@ begin
           values (m.owner_id, m.name, 'dh_win', m.name || '이(가) 뒤집힌 물목에서 도해수를 바다로 돌려보냈습니다.',
                   jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu', 'first', is_first, 'solo', solo, 'flawless', flawless and n >= 2, 'members', n, 'kills', coalesce(rec.kills, 0) + 1));
         else
-          insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '도해수 진정', '오늘은 이미 처치를 인정받아 보상은 없습니다.', jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu'));
+          insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '도해수 진정', '오늘은 이미 처치를 인정받아 보상은 없습니다. 연습 삼아 몇 번이든 다시 설 수 있습니다.', jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu'));
         end if;
       else
         update public.world_item_durability d set durability = greatest(0, d.durability - ceil(public.world_item_max_durability(d.item_id) * (r -> 'fail' ->> 'dur')::numeric / 100.0)::int), updated_at = now()
@@ -77,7 +77,7 @@ begin
         insert into public.world_gw_records(owner_id, boss_id, last_fail_at) values (m.owner_id, 'dohaesu', now()) on conflict (owner_id, boss_id) do update set last_fail_at = now();
         insert into public.world_notifications(user_id, kind, title, content, payload)
         values (m.owner_id, 'gw', '도해수 도전 실패', '물목의 물살에 밀려났습니다. 장착한 장비 내구도가 ' || (r -> 'fail' ->> 'dur') || '% 닳고 침식이 ' || (r -> 'fail' ->> 'er') || ' 올랐습니다. '
-          || (r -> 'fail' ->> 'cd') || '분 뒤 다시 도전할 수 있습니다.', jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu'));
+          || '바로 다시 도전할 수 있습니다.', jsonb_build_object('fight_id', p_fight, 'boss', 'dohaesu'));
       end if;
     end loop;
   end if;

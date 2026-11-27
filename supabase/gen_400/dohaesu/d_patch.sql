@@ -120,7 +120,7 @@ select pg_temp.yh_patch('public.world_gw_open(text,text)',
   $o$    elsif boss = 'baekya' then$o$,
   $n$    elsif boss = 'dohaesu' then
       insert into public.world_notifications(user_id, kind, title, content, payload)
-      values (x.owner_id, 'gw_invite', '도해수 · 함께 싸우기', c.character_name || '이(가) 뒤집힌 물목에서 도해수 앞에 섰습니다. 60초 안에 합류하세요' || case when md = 'story' then '.' else '(' || (br ->> 'item_name') || ' 1개).' end,
+      values (x.owner_id, 'gw_invite', '도해수 · 함께 싸우기', c.character_name || '이(가) 뒤집힌 물목에서 도해수 앞에 섰습니다. 60초 안에 합류하세요.',
         jsonb_build_object('fight_id', fid, 'boss', boss, 'mode', md));
     elsif boss = 'baekya' then$n$);
 
@@ -130,12 +130,6 @@ select pg_temp.yh_patch('public.world_gw_ready_check(uuid,text,text)',
 select pg_temp.yh_patch('public.world_gw_ready_check(uuid,text,text)',
   $o$raise exception '%', case when p_boss in ('gapgwi', 'baekya') then$o$,
   $n$raise exception '%', case when p_boss in ('gapgwi', 'baekya', 'dohaesu') then$n$);
-select pg_temp.yh_patch('public.world_gw_ready_check(uuid,text,text)',
-  $o$when p_boss = 'baekya' then '흰 밤을 걷어 냈습니다'$o$,
-  $n$when p_boss = 'dohaesu' then '도해수를 바다로 돌려보냈습니다' when p_boss = 'baekya' then '흰 밤을 걷어 냈습니다'$n$);
-select pg_temp.yh_patch('public.world_gw_ready_check(uuid,text,text)',
-  $o$when p_boss = 'baekya' then '맹약 마당이 아직 하얗게 바래 있습니다'$o$,
-  $n$when p_boss = 'dohaesu' then '물목이 아직 거꾸로 돌고 있습니다' when p_boss = 'baekya' then '맹약 마당이 아직 하얗게 바래 있습니다'$n$);
 
 select pg_temp.yh_patch('public.world_gw_tips(text)',
   $o$select case when p_boss = 'baekya' then jsonb_build_array($o$,
