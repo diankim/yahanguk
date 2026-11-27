@@ -6,7 +6,7 @@ import { MAJOR_FACTIONS } from './common.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { kinTokenSvg } from '../kintoken.js';
 import { HFEAST, NEOL } from '../rules.js';
-import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN, TRADE, REALM_BOND } from '../rules.js';
+import { WEAK_NAMES, SPAR_WATCH, REBOND, SURVIVAL, TOURNEY_WEEK, PARTY_EXP, AGILE, QUEST_XP, FACTION_SPREAD, FACTION_BOOST, FACTION_HOME, FACTION_CAP, FACTION_SCORE, FACTION_PERK, FACTION_DONATE, CONTRIB, SHADOW, COOP_RULE, RESCUE, GATHER_GAP, GWIRYEONG, DOMAIN_FX, GW_DAILY, BIJANG, MENTOR, QUEST_REPLAY, PROJECT, REGULAR, KIN, WEAPON_RANK, TRAVEL_FAMILIAR, PET_SKIN, TRADE, REALM_BOND, CABIN } from '../rules.js';
 const gwPct = b => `${+(b * GD.gwiryeong.rate_mul).toFixed(4)}%`;
 const mukFx = () => effectText(GD.domains?.mukjeok?.fx?.effects).join(' · ');
 const mukStages = () => GD.domains?.mukjeok?.fx?.blur?.stages || [];
@@ -968,6 +968,28 @@ const S = [
       <li>입질 뒤 명어 무게는 ${GD.fishRules.named.weight}(신품 어종 ${GD.fishRules.weight.legendary}보다 어렵게), 희귀 어종 보정은 절반만 붙습니다. 용비늘 낚싯대·명목 낚싯대는 무게를 조금 더합니다. 바다·수로처럼 어종이 많은 물에서도 명어가 지나치게 드물어지지 않게 바닥을 둡니다.</li>
       <li>명어와 명어로 만든 것도 거래할 수 있지만, 명어 칭호는 직접 낚아야 얻습니다. 도감은 못 낚은 명어의 이름을 감추고 힌트만 보여 줍니다.</li>
     </ul>`],
+  ['geonneo', '건넛누리와 「도해록」', `
+    <p>「명등기」를 모두 마친 Lv50부터 본부 정청에서 「도해록」을 받을 수 있습니다. 2장에서 수경루 너머 바다 건너 <b>건넛누리</b>로 처음 건너가고, 이야기가 나아갈 때마다 지역이 하나씩 지도에 나타납니다. 열리기 전 지역은 지도에 보이지 않고 갈 수도 없습니다. 지도 위 「건넛누리」 단추로 본토와 건넛누리를 나눠 봅니다.</p>
+    <h4>권역과 지역</h4>
+    <table class="guide-table"><tr><th>권역</th><th>지역</th></tr>
+      <tr><td>파도너울성</td><td>파도너울성 안전지대 Lv50 · 밀물 둑길 Lv50 · 쪽빛 앞바다 Lv51 · 뒤집힌 물목 Lv51</td></tr>
+      <tr><td>불씨들녘</td><td>화덕골 안전지대 Lv51 · 재 갈라진 골 Lv51 · 김 오르는 비탈 Lv52</td></tr>
+      <tr><td>잿빛그늘숲</td><td>억새 나루 안전지대 Lv52 · 검은 고목 숲 Lv52 · 먹빛 강 나루터 Lv53</td></tr>
+      <tr><td>구름성</td><td>바람 재는 누각 Lv52</td></tr>
+      <tr><td>눈마루</td><td>눈마루 돌마을 안전지대 Lv53 · 서리꽃 골짜기 Lv52 · 얼어붙은 하늘못 Lv52 · 천둥 우는 등성이 Lv52 · 깃발 설원 Lv53</td></tr>
+      <tr><td>달맞이성</td><td>달맞이성 안전지대 Lv53 · 일곱 아치 돌다리 Lv53 · 달그늘 대숲 · 달맞이 들녘 · 왕실 장부 서고 · 재 덮인 옛 관문 · 잿길 대상 숙소 Lv54 · 땅 밑 옛 물길 Lv55</td></tr>
+      <tr><td>고임터</td><td>달맞이성 땅 밑, 지도에 핀 하나로 보입니다 · Lv55</td></tr>
+      <tr><td>해오름성</td><td>해오름성 안전지대 Lv55 · 연밥 둑 · 첫볕 물가 Lv55</td></tr></table>
+    <ul>
+      <li>안전지대 여섯은 모두 거래소·창고·마구간을 쓰는 온전한 안전지대입니다.</li>
+      <li>바깥 지역마다 답사 지점·채집터(들머리 「어귀의 …」 포함)·원정지·조사 지점이 있고, 새 요괴가 나옵니다. 요괴 레벨 상한은 본토 Lv${GD.level.mon_cap ?? 50}, 건넛누리 Lv${GD.level.cap}입니다.</li>
+      <li>건넛누리 어디서나 공용 재료 「흐름 맺힌 정」이 나고, 지역마다 그 고장 재료(야자 껍질 섬유·푸른 소금 결정·화산 유리·강황 뿌리·털소 털 뭉치·연밥 등)가 납니다.</li>
+      <li>최고 레벨은 ${GD.level.cap}, 쌓아 둘 수 있는 능력치 포인트는 ${GD.level.stat_points_cap}점까지입니다.</li>
+      <li>9단계 장비는 장착 Lv${(GD.weaponRank?.steps || []).at(-1)?.[0] ?? 53}이고, 9단계 무기는 지금 직업 전투 기술 ${(GD.weaponRank?.steps || []).at(-1)?.[1] ?? 44}단계부터 낍니다. 건넛누리 재료와 흐름 맺힌 정으로 만들고 달맞이성에서 만들면 품질이 오릅니다. Lv51부터 요괴에게서도 나옵니다. 9단계 생활 도구도 있습니다.</li>
+      <li>탈것은 제 땅에서만 탑니다(「탈것과 노정패」). 배는 탈것과 따로라 어느 땅에서나 씁니다(「교역선」).</li>
+      <li>함께 보기: 「도해수 · 「도해록」 5장」 · 「땅울이 · 「도해록」 13장」 · 「권역 인연」 · 「합동 토벌 · 결전 · 협동 기술」(엉긴 너울) · 「나눔 잔칫상」 · 「등불 편지」.</li>
+    </ul>
+  `],
   ['deungdo', '등도 옛터와 「명등기」', `
     <p>「묵적록」 5장을 마친 Lv45부터 「명등기」를 받을 수 있습니다. 5장 첫 장면을 보고하면 봉인고 아래 옛 물길 너머로 <b>등도 옛터</b>가 열리고, 이야기가 나아갈 때마다 구역이 하나씩 지도에 나타납니다. 열리기 전 구역은 지도에 보이지 않고 갈 수도 없습니다.</p>
     <h4>지역</h4>
@@ -2218,6 +2240,18 @@ const S = [
       ${TRADE.titles_hidden ? `<tr><td>???</td><td>숨겨진 칭호 ${TRADE.titles_hidden}개</td><td></td><td></td></tr>` : ''}</table>
     ${(TRADE.cosmetics || []).length ? `<p>꾸미기: ${TRADE.cosmetics.map(c => `<b>${esc(c.name)}</b> ${esc(c.cond)}`).join(' · ')}.</p>` : ''}
   `],
+  ['cabin', '배 객실', `
+    <p>${esc(CABIN.small || '')} 객실은 별채처럼 가구를 놓아 꾸미는 배 안의 방입니다. 항구 화면의 「객실 꾸미기」나 주소 #/house/cabin으로 들어갑니다.</p>
+    <table class="guide-table"><tr><th>배</th><th>객실</th><th>놓을 수 있는 가구</th></tr>
+      ${(TRADE.ships || []).map(x => `<tr><td>${esc(x.name)}</td><td>${x.cabin > 0 ? `${x.cabin}×${x.cabin}` : '없음'}</td><td>${x.cabin > 0 ? (CABIN.cap?.[x.cabin] ?? '—') : '—'}</td></tr>`).join('')}</table>
+    <ul>
+      <li>${esc(CABIN.editTip)}</li>
+      <li>배를 더 큰 단계로 지으면 객실이 넓어지고 놓던 가구는 그대로 남습니다.</li>
+      <li>배 전용 가구는 별채에 놓을 수 없고, 별채 가구 가운데 객실에도 놓을 수 있는 것은 가방·물품 정보에 「객실」 칩이 붙습니다. ${esc((CABIN.fit?.no_cat || []).join('·'))}은(는) 객실에 놓을 수 없습니다.</li>
+      <li>배 전용 가구는 목공·직조·단조 제작법으로 만듭니다(구름나루·철벽 고찰·잔불촌에서 만들면 품질이 오릅니다). ${(CABIN.sources?.cross || []).length ? `「${esc(CABIN.sources.cross.join('」·「'))}」은(는) 배를 직접 타고 처음 바다를 건널 때 받고, ` : ''}${(CABIN.sources?.raid || []).length ? `「${esc(CABIN.sources.raid.join('」·「'))}」은(는) 뱃길 습격을 물리치면 드물게 얻습니다.` : ''}</li>
+      <li>${esc(CABIN.viewTip)}</li>
+    </ul>
+  `],
   ['garden', '뒤뜰 밭', `
     <p>별채 뒤뜰의 밭에 가진 식재료를 심어 키웁니다. 별채가 있으면 별채 머리의 「뒤뜰 밭」 단추로 들어갑니다. 수확은 채집 숙련·퀘스트 셈에 들지 않습니다.</p>
     <h4>심기와 물 주기</h4>
@@ -2541,10 +2575,10 @@ const S = [
 
 const GROUPS = [
   ['basic', '처음', 'spark', ['lore-world', 'start', 'screen', 'quests', 'growth-note', 'notify']],
-  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'mount', 'safe', 'weather']],
+  ['world', '세계·이동', 'map', ['world', 'gwiheo', 'mukjeok', 'deungdo', 'geonneo', 'mount', 'safe', 'weather']],
   ['battle', '탐색·전투', 'sword', ['combat', 'monsters', 'fights', 'pfight', 'bijang', 'raid', 'mkboss', 'ggboss', 'byboss', 'dhboss', 'duboss', 'ugboss', 'gear', 'gearset', 'durability', 'survival']],
   ['life', '생활', 'leaf', ['gather', 'meisho', 'lifeskill', 'lifeslot', 'fishing', 'cooking', 'craft']],
-  ['home', '별채', 'home', ['house', 'garden', 'furn', 'portrait', 'pets', 'look', 'outfit']],
+  ['home', '별채', 'home', ['house', 'garden', 'cabin', 'furn', 'portrait', 'pets', 'look', 'outfit']],
   ['exp', '원정', 'flame', ['expedition', 'expskill', 'idle']],
   ['growth', '성장', 'target', ['growth', 'titles', 'lore-jobs', 'jobs', 'lore-affil', 'affil']],
   ['faction', '세력', 'flag', ['lore-factions', 'factions', 'contest', 'feast', 'fproject', 'realmbond']],
