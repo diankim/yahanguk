@@ -41,5 +41,22 @@ alter function public.world_item_downgrade(text, integer) owner to fn_owner_fiel
 update public.world_patch_notes set body = body || E'\n- [가방] 우수품을 보통 물품으로 바꿀 수 있습니다. 물품 정보 창에서 수량을 골라 「보통 물품으로」를 누르면 됩니다(값 없음, 되돌릴 수 없음). 가방에 있는 것만 바뀌고, 잠가 지키는 몫·장착 중인 마지막 하나·강화한 장비·닳은 마지막 장비는 바꿀 수 없습니다.'
 where note_id = '3.8.0' and position('[가방] 우수품을 보통 물품으로 바꿀 수 있습니다' in body) = 0;
 
+create or replace function pg_temp.yh_fix(p_name text, p_pairs text[]) returns void language plpgsql as $f$
+declare d text; i int; n int;
+begin
+  if position('(' in p_name) > 0 then d := pg_get_functiondef(('public.' || p_name)::regprocedure);
+  else select pg_get_functiondef(p.oid) into strict d from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = p_name; end if;
+  for i in 1 .. array_length(p_pairs, 1) / 2 loop
+    n := (length(d) - length(replace(d, p_pairs[2 * i - 1], ''))) / length(p_pairs[2 * i - 1]);
+    if n <> 1 then raise exception '함수 % 모양이 예상과 다릅니다(조각 %: % 곳)', p_name, i, n; end if;
+    d := replace(d, p_pairs[2 * i - 1], p_pairs[2 * i]);
+  end loop;
+  execute d;
+end $f$;
+select pg_temp.yh_fix('world_project_rules', array[$a$"day_cap": 8000,$a$, $a$"day_cap": 16000,$a$]);
+
+update public.world_patch_notes set body = body || E'\n- [사업] 한 사람이 하루에 넘길 수 있는 몫을 늘렸습니다(모든 사업 합쳐 8,000 → 16,000).'
+where note_id = '3.8.0' and position('[사업] 한 사람이 하루에 넘길 수 있는 몫을 늘렸습니다' in body) = 0;
+
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261127190000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;

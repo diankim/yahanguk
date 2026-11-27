@@ -281,9 +281,9 @@ function draw(box, id, inv, prices, mode) {
         `<button class="btn small act-dc" data-do="discard" ${dcMax < 1 ? 'disabled' : ''}>버리기</button>`,
         stashOk && stMax > 0 ? '<button class="btn small" data-do="stash" data-here="창고 이용">창고에</button>' : '',
         USABLE[id] ? (useLabel(id) !== '사용' ? `<button class="btn small primary" data-do="use" data-here="물품 사용">${useLabel(id)}</button>` : '<button class="btn small primary" data-do="use" data-here="물품 사용" data-here-down>사용</button>') : ''] })}
-      ${isHq(id) && (inv.catalog || []).some(x => x.id === bid) ? `<p class="muted small">보통 ${esc(nameOf(bid))}(으)로 바꾸면 같은 물품끼리 한 칸에 모입니다. 되돌릴 수 없습니다.</p>
-      ${actBox({ key: 'dq', max: dcMax, cls: 'act-end', btns: [`<button class="btn small" data-do="downgrade" data-here="보통 물품으로 바꾸기" ${dcMax < 1 ? 'disabled' : ''}>보통 물품으로</button>`] })}` : ''}
-      <p class="muted small">${locked ? `잠금 ${keep}개 · ${dcMax > 0 ? `내줄 수 있는 것 ${dcMax}개` : '내줄 수 있는 것 없음'}${helpQ('잠근 수만큼은 가방·창고를 합쳐 팔기·버리기·분해·넘기기를 할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.', '잠금 안내')}` : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>` : ''}`;
+      <p class="muted small">${locked ? `잠금 ${keep}개 · ${dcMax > 0 ? `내줄 수 있는 것 ${dcMax}개` : '내줄 수 있는 것 없음'}${helpQ('잠근 수만큼은 가방·창고를 합쳐 팔기·버리기·분해·넘기기를 할 수 없습니다. 사용과 제작 재료로는 쓸 수 있습니다.', '잠금 안내')}` : equipped ? '장착 중인 마지막 한 개는 팔거나 버릴 수 없습니다.' : '버린 물품은 되찾을 수 없습니다.'}</p>
+      ${isHq(id) && (inv.catalog || []).some(x => x.id === bid) ? `<div class="dg-box"><p class="muted small">${esc(`보통 ${nameOf(bid)}(으)로 바꾸면 같은 물품끼리 한 칸에 모입니다. 되돌릴 수 없습니다.`)}</p>
+      ${actBox({ key: 'dq', max: dcMax, cls: 'act-end', btns: ['', '', `<button class="btn small" data-do="downgrade" data-here="보통 물품으로 바꾸기" ${dcMax < 1 ? 'disabled' : ''}>보통으로</button>`] })}</div>` : ''}` : ''}`;
 
   bindQty(box);
   fillSources(box, id);

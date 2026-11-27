@@ -1248,7 +1248,7 @@ const S = [
     </ul>
     <h4>넘기기와 보상</h4>
     <ul>
-      <li>내 세력 사업은 몫 ${PROJECT.pay?.faction?.per_merit ?? 100}마다 공훈 1. 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}까지이고, 상한을 넘는 물품은 돌려받습니다.</li>
+      <li>내 세력 사업은 몫 ${PROJECT.pay?.faction?.per_merit ?? 100}마다 공훈 1. 한 사람이 하루에 넘길 수 있는 몫은 거점·공동·남의 세력 사업을 모두 합쳐 ${fmt.num(PROJECT.pay?.day_cap ?? 16000)}까지이고, 상한을 넘는 물품은 돌려받습니다.</li>
       <li>남의 세력 사업 돕기: 몫 1마다 ${PROJECT.pay?.help?.gil_rate ?? 0.6}전, 몫은 그 세력 단계에 쌓입니다. 단계가 찰 때 기여가 ${PROJECT.memento?.pct ?? 1}% 넘으면 낙성 떡을 받고, 누계는 사업 칭호에 셉니다. 내 세력이 있으면 몫 1,000마다 두 세력 관계가 +${PROJECT.help_rel?.per_k ?? 0.1} 오릅니다(한 사람 하루 +${PROJECT.help_rel?.person_day ?? 0.5}, 두 세력 사이 하루 +${PROJECT.help_rel?.pair_day ?? 2}까지).</li>
       <li>우수품은 몫 ×${PROJECT.hq_mul ?? 1.5}(급히와 겹쳐도 ×${PROJECT.mul_cap ?? 2}까지). 가방에 모자란 것은 창고에서 꺼내 넘깁니다. 장착 중·잠금·강화한 장비·임무 물품은 넘기지 않습니다.</li>
       <li>단계가 차는 순간 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 낙성 떡(그 세력 조사원은 공훈 +${PROJECT.memento?.faction_merit ?? 20}도)을 창고로 받고, 마지막 단계에는 「낙성 기념패」 가구도 받습니다.</li>
@@ -1267,7 +1267,7 @@ const S = [
     <ul>
       <li>상점 품목 수가 느는 것은 모두에게 보이고, 새 품목·하루 개수·지름길·창고·거래소·마구간·수리비·되팔기는 그 땅 이야기를 마친 사람에게만 풀립니다. 마치지 않은 사람에게는 빈약한 안전지대 그대로입니다.</li>
       <li>단계 목표(세 땅 모두 같음): ${pjBase('common')}몫.</li>
-      <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 8000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
+      <li>몫 1마다 ${PROJECT.pay?.common?.gil_rate ?? 0.6}전. 하루 상한 ${fmt.num(PROJECT.pay?.day_cap ?? 16000)}몫은 거점 사업과 합쳐 셉니다. 급히 필요·우수품 배수와 상한을 넘는 물품을 돌려받는 것은 거점 사업과 같습니다.</li>
       <li>단계가 차면 전체 채팅 「사업 소식」에 알리고, 그 단계 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 넘긴 사람은 단계 목표의 ${PROJECT.memento?.common_gil_pct ?? 0.5}%만큼 전과 낙성 떡을 받습니다. 마지막 단계에 힘을 보태면 낙관 「拓」.</li>
       <li>다섯 단계를 다 마친 뒤에도 같은 보상으로 넘길 수 있습니다. 마지막 단계 목표만큼 찰 때마다 한 바퀴로 세어, 그 바퀴에 목표의 ${PROJECT.memento?.pct ?? 1}% 넘게 낸 조사원에게 전과 낙성 떡(아직 없으면 낙관도)을 나눕니다 — 늦게 온 조사원도 받을 수 있습니다.</li>
     </ul>`],
