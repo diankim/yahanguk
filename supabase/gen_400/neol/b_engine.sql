@@ -77,7 +77,7 @@ create or replace function public.world_neol_beat(p_raid uuid, p_fx jsonb, p_tic
 as $f$
 declare mk jsonb := public.world_neol_rules() -> 'mk2'; bf jsonb := p_fx; m record; pick uuid; nm text; t0 numeric; n numeric; ppl int; tot numeric; d int;
   tanks jsonb := public.world_shadow_rules() -> 'tank_pres' -> 'jobs'; w jsonb := mk -> 'weight'; ti jsonb := mk -> 'tide'; dr jsonb := mk -> 'dry'; co jsonb := mk -> 'core';
-  hpadd int := 0; need numeric; maxhp int; g boolean; cnt int;
+  hpadd int := 0; need numeric; maxhp int; g boolean; cnt int; tall uuid[]; tms uuid[]; pc numeric := coalesce((mk -> 'miss' ->> 'pierce')::numeric, 0);
 begin
   select max_hp into maxhp from public.world_raids where raid_id = p_raid;
   if bf ? 'nopen' and p_now >= (bf -> 'nopen' ->> 'until')::numeric then bf := bf - 'nopen'; end if;
@@ -97,10 +97,11 @@ begin
         tot := public.world_raid_boss_base(p_raid, 'world', m.level) * p_ph * (w ->> 'mul')::numeric * coalesce((bf -> 'nw' ->> 'mul')::numeric, 1)
              * case when ppl = 1 then (w ->> 'solo')::numeric else 1 end * case when tanks ? m.job_key then (w ->> 'tank_n')::numeric else 1 end / greatest(1, n);
         if m.gd then update public.world_raid_members set fx = fx || '{"guard": 1}'::jsonb where raid_id = p_raid and owner_id = m.owner_id; end if;
-        d := public.world_raid_hit(p_raid, m.owner_id, tot, 'weight');
+        d := public.world_raid_hit(p_raid, m.owner_id, tot, 'weight', case when ppl < (w ->> 'team')::int then pc else 0 end);
         if m.gd and d > 0 then perform public.world_raid_credit(p_raid, m.owner_id, d * case when ppl = 1 then (w ->> 'hold')::numeric else 1 end, 'guard'); end if;
         if ppl >= (w ->> 'team')::int then perform public.world_neol_cnt(p_raid, m.owner_id, 'w'); end if;
       end loop;
+      if ppl < (w ->> 'team')::int then hpadd := hpadd + public.world_raid_regrow_say(p_raid, ppl <= 1); end if;
     end if;
     bf := bf - 'nw';
   elsif p_tick and not (bf ? 'nw') and p_bt % (case when p_phase >= 3 then w ->> 'every3' else w ->> 'every' end)::int = (w ->> 'off')::int then
@@ -115,22 +116,32 @@ begin
   if bf ? 'nt' then
     if bf -> 'nt' ->> 's' = 'tell' and p_now >= (bf -> 'nt' ->> 'at')::numeric then
       perform public.world_raid_say(p_raid, 'boss', '첫 물이 덮칩니다! 곧 되밀려 옵니다 — 이번엔 방어를 푸세요!');
-      for m in select a.owner_id, a.level from public.world_neol_active(p_raid) a order by a.owner_id loop
-        perform public.world_raid_hit(p_raid, m.owner_id, public.world_raid_boss_base(p_raid, 'world', m.level) * p_ph * (ti ->> 'first')::numeric, 'slam');
+      tall := '{}'; tms := '{}';
+      for m in select a.owner_id, a.level, coalesce((a.ng ->> 'on')::boolean, false) as on_g from public.world_neol_active(p_raid) a order by a.owner_id loop
+        tall := tall || m.owner_id;
+        if not m.on_g then tms := tms || m.owner_id; end if;
+        perform public.world_raid_hit(p_raid, m.owner_id, public.world_raid_boss_base(p_raid, 'world', m.level) * p_ph * (ti ->> 'first')::numeric, 'slam', case when m.on_g then 0 else pc end);
       end loop;
-      bf := bf || jsonb_build_object('nt', jsonb_build_object('s', 'ebb', 'at', round(p_now + (ti ->> 'gap')::numeric, 2), 't1', round(p_now, 2)));
+      bf := bf || jsonb_build_object('nt', jsonb_build_object('s', 'ebb', 'at', round(p_now + (ti ->> 'gap')::numeric, 2), 't1', round(p_now, 2), 'all', to_jsonb(tall), 'ms', to_jsonb(tms)));
     elsif bf -> 'nt' ->> 's' = 'ebb' and p_now >= (bf -> 'nt' ->> 'at')::numeric then
       cnt := 0;
+      tall := array(select jsonb_array_elements_text(coalesce(bf -> 'nt' -> 'all', '[]'::jsonb))::uuid);
+      tms := array(select jsonb_array_elements_text(coalesce(bf -> 'nt' -> 'ms', '[]'::jsonb))::uuid);
       for m in select a.owner_id, a.level, coalesce((a.ng ->> 'on')::boolean, false) as on_g, a.acted from public.world_neol_active(p_raid) a order by a.owner_id loop
+        tall := tall || m.owner_id;
         if m.on_g then
+          tms := tms || m.owner_id;
           update public.world_raid_members set fx = fx - 'guard' where raid_id = p_raid and owner_id = m.owner_id;
-          perform public.world_raid_hit(p_raid, m.owner_id, public.world_raid_boss_base(p_raid, 'world', m.level) * p_ph * (ti ->> 'first')::numeric * (ti ->> 'ebb')::numeric, 'ebb');
+          perform public.world_raid_hit(p_raid, m.owner_id, public.world_raid_boss_base(p_raid, 'world', m.level) * p_ph * (ti ->> 'first')::numeric * (ti ->> 'ebb')::numeric, 'ebb', pc);
           cnt := cnt + 1;
         elsif extract(epoch from m.acted) >= (bf -> 'nt' ->> 't1')::numeric then
           perform public.world_neol_cnt(p_raid, m.owner_id, 'e');
         end if;
       end loop;
       perform public.world_raid_say(p_raid, case when cnt > 0 then 'boss' else 'good' end, '물이 거꾸로 되밀려 옵니다' || case when cnt > 0 then ' — 방어하던 ' || cnt || '명이 휩쓸렸습니다.' else ' — 모두 비켜섰습니다.' end);
+      if cardinality(tms) > 0 then
+        hpadd := hpadd + public.world_raid_regrow_say(p_raid, (select count(distinct x) from unnest(tms) x) >= (select count(distinct x) from unnest(tall) x));
+      end if;
       bf := bf - 'nt';
     end if;
   elsif p_tick and p_bt % (ti ->> 'every')::int = (ti ->> 'off')::int then
@@ -154,7 +165,7 @@ begin
 
   if bf ? 'nc' then
     if p_now >= (bf -> 'nc' ->> 'until')::numeric then
-      hpadd := ceil(maxhp * (co ->> 'regrow')::numeric / 100.0)::int;
+      hpadd := hpadd + ceil(maxhp * (co ->> 'regrow')::numeric / 100.0)::int;
       bf := (bf - 'nc') || jsonb_build_object('relock', (co ->> 'relock')::numeric);
       perform public.world_raid_say(p_raid, 'boss', '고임 심을 트지 못했습니다. 물이 다시 고여 너울이 되살아납니다(체력 +' || (co ->> 'regrow') || '%) — 다음 고임 무게가 더 무겁습니다.');
     end if;

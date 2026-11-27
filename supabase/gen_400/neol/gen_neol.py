@@ -1,7 +1,7 @@
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PARTS = ['a_rules.sql', 'b_engine.sql', 'c_patch.sql', 'd_flow.sql', 'e_rewards.sql']
+PARTS = ['a_rules.sql', 'b_engine.sql', 'c_patch.sql', 'd_flow.sql', 'e_rewards.sql', 'f_miss.sql']
 NS = 'q:hw_nopsae'
 QID = 'hws_rift_neol'
 QUEST = dict(id=QID, cat='조사·파도너울성', title='흩어 보내는 사람들', region='pd_city', L=51, after=['hwq_5'], sort=1790,
