@@ -276,11 +276,11 @@ function fxLabel(k) {
   const line = m[2] === 'all' ? (m[1][0] === 'g' ? '모든 채집' : '모든 제작') : (FIXED[m[2]] || m[2]);
   return `${line} ${LINE_FX[m[1]]}`;
 }
-export function effectText(effects, potency = 1) {
+export function effectText(effects, potency = 1, acts = '') {
   return Object.entries(effects || {}).filter(([k, v]) => k !== 'trait' && k !== 'weapon_type' && k !== 'req_rank' && Number(v) && fxLabel(k) !== '기타 효과').map(([k, v]) => {
     const n = Math.round(Number(v) * (potency || 1) * 10) / 10;
     if (FLAG.has(k)) return fxLabel(k);
-    if (PER_ACTION.has(k)) return n < 0 ? `${FIXED[k]} 손실 ${Math.abs(n)} 줄임` : `${FIXED[k]} -${Math.abs(n)}`;
+    if (PER_ACTION.has(k)) return (n < 0 ? `${FIXED[k]} 손실 ${Math.abs(n)} 줄임` : `${FIXED[k]} -${Math.abs(n)}`) + (acts ? ` (${acts} 때)` : '');
     return `${fxLabel(k)} ${n > 0 ? '+' : ''}${n}${FLAT.has(k) || k.startsWith('cq_') ? '' : '%'}`;
   });
 }

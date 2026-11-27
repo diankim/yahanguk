@@ -1,5 +1,5 @@
 export const CHANGES = {
-  invQuiet: /field_move|gear_set_(save|rename|clear)|quest_replay_|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|status_dismiss|avatar_set|set_avatar|outfit_design_(delete|restore|give|hide|report|remove|edit)|portrait_take|kin_(talk|wear|room_set)|trade_(view|status|buy|sell|repair|ship_(name|get|upgrade)|sail|board_(respond|cancel)|depart)$/,
+  invQuiet: /field_move|gear_set_(save|rename|clear)|quest_replay_|title|cosmetic|quickslot|chat|profile|notify_pref|skill_choose|skill_toggle|allocate|tutorial|circle|friend|whisper|mark_read|craft_fav|name_style|set_hue|block|status_dismiss|avatar_set|set_avatar|outfit_design_(delete|restore|give|hide|report|remove|edit)|portrait_take|kin_(talk|wear|room_set)|trade_(view|status|buy|sell|repair|ship_(name|get|upgrade)|sail|board_(respond|cancel)|depart)$/,
   equipped: /equip_item|gear_set_apply|equipment_repair|expedition_complete|reset_identity|dismantle/,
   invAlways: /equip|gear_set_apply|reset|expedition|dismantle|enhance|repair|skill|title|storage|notice/,
   map: /travel|mount|join_major_faction|field_|battle_|expedition|bijang/,

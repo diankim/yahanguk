@@ -4,7 +4,7 @@ import { GAMEDATA } from './gamedata.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm, setScene } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT, TRADE, TOKEN_CAP, TOKEN_TIP } from './rules.js';
+import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT, TRADE, TOKEN_CAP, TOKEN_TIP, statusActs } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -77,7 +77,7 @@ export async function refresh({ char = true, idle: readIdle = true, hudAge = 0 }
   } catch (e) { console.warn('HUD 갱신 실패', e); }
 }
 
-function effectText(effects, potency = 1) { return fxText(effects, potency); }
+function effectText(effects, potency = 1, acts = '') { return fxText(effects, potency, acts); }
 export function openStatus(st) {
   const good = st.polarity === 'positive';
   const left = new Date(st.expires_at).getTime() - Date.now();
@@ -85,7 +85,7 @@ export function openStatus(st) {
   const m = openModal({ title: `${good ? '이로운 효과' : '상태이상'} · ${st.name}`, body: `
     <div class="status-detail ${good ? 'good' : 'bad'}">
       <p>${esc(st.description || '')}</p>
-      <ul class="fx-list">${effectText(st.effects, st.potency).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+      <ul class="fx-list">${effectText(st.effects, st.potency, statusActs(st.key)).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
       <p class="muted small">남은 시간 <b data-left="${new Date(st.expires_at).getTime()}">${fmt.remain(left)}</b>${st.stacks > 1 ? ` · ${st.stacks}겹` : ''}</p>
       ${good ? (String(st.key || '').startsWith('yohwa') ? '' : `<div class="btn-row"><button class="btn small" data-st-off>이 효과 끄기</button></div>`) : `<h3 class="sub-h">치료 방법</h3><p>${esc(st.cure || '시간이 지나면 사라집니다.')}</p>
         ${(st.cure_items || []).length ? `<div class="btn-row">${withHq(st.cure_items, inv).map(k => `<button class="btn small primary" data-here="물품 사용" data-here-down data-cure="${esc(k)}" ${inv[k] > 0 ? '' : 'disabled'}>${esc(nameOf(k))} 쓰기 <small>×${fmt.num(inv[k])}</small></button>`).join('')}</div>` : ''}`}

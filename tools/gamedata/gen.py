@@ -88,6 +88,7 @@ def build(dsn):
     d['rescue'] = q(dsn, "select world_rescue_rules()")
     d['ride'] = q(dsn, "select world_ride_rules()")
     d['tokens'] = q(dsn, "select world_token_rules()")
+    d['statusActs'] = q(dsn, "select jsonb_object_agg(status_key, triggers order by status_key) from world_status_catalog where effects ?| array['health_per_action','mental_per_action']")
     d['sparWatch'] = q(dsn, "select world_spar_watch_rules()")
     d['travel'] = q(dsn, "select world_travel_rules()")
     d['survival'] = q(dsn, "select world_survival_rules()")

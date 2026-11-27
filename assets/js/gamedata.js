@@ -132,6 +132,7 @@ export const GAMEDATA = {
   "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"death_h":4,"per_lv_low":40},
   "ride": {"wait_s":60,"stale_s":300},
   "tokens": {"cap":1000},
+  "statusActs": {"burned":["combat","explore","craft","gather"],"shaken":["combat","investigation"],"bleeding":["combat","explore"],"poisoned":["combat","explore","gather","craft","travel"],"exhausted":["combat","explore","gather","craft","investigation","training","travel"],"clear_mind":["investigation","combat","explore"],"erosion_whisper":["explore","investigation","combat"]},
   "sparWatch": {"step_ms":550,"keep_min":10,"active_min":15},
   "travel": {
     "fam": {"cap":30,"per":6}
