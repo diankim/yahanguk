@@ -441,6 +441,18 @@ for iid, nm, slot, stat, traits, desc, field, mats in D.GEAR:
     recipes.append(recipe('r_' + iid, nm + ' 만들기', iid, 1, mats, field, D.LV9, nm + '을(를) 만든다.', 9, GEAR_PLACE_NAME))
     hq.append(iid)
     priced.append(iid)
+for iid, nm, slot, stat, traits, desc, field, mats in D.MZ_GEAR:
+    req = round(5 + 0.35 * 3 * (D.LV9 - 1))
+    items.append(item(iid, nm, slot, 9, desc, 1, 0, True, D.LV9, traits=traits, req=({} if slot == 'weapon' else {stat: req})))
+    names_new.append(nm)
+    recipes.append(recipe('r_' + iid, nm + ' 만들기', iid, 1, mats, field, D.LV9, nm + '을(를) 만든다.', 9, GEAR_PLACE_NAME, skill=field, rank=50))
+    hq.append(iid)
+for iid, nm, tier, st, pr, desc in D.MZ_ITEMS:
+    items.append(item(iid, nm, 'material', tier, desc, st, pr, True, 1))
+    names_new.append(nm)
+_b = D.BJ4
+items.append(item(_b[0], _b[1], 'consumable', _b[2], _b[7], 1, _b[3], True, _b[4], traits={'bijang': 4}))
+names_new.append(_b[1])
 for iid, mks in D.GEAR_DROP.items():
     for mk in mks:
         drows.append(dict(item_id=iid, mechanic_key=mk, chance_normal=0 if mk == 'boss' else 0.001, chance_elite=0.006 if mk == 'boss' else 0.004))
@@ -490,7 +502,7 @@ w(f"""update public.world_item_catalog i set reference_price = greatest(
       join public.world_item_catalog m on m.item_id = x.key where cr.output_item = i.item_id group by cr.recipe_id) t)),
     coalesce(ceil(1.15 * (select max(f.reference_price) from public.world_item_catalog f where f.tier = 8 and f.category = i.category and f.base_item_id is null
       and f.item_id not like 'raid%' and f.equipment_traits::text !~ '"mz_' and coalesce((f.equipment_traits ->> 'life_slot'), '') = coalesce((i.equipment_traits ->> 'life_slot'), ''))), 0))
- where i.item_id in (select jsonb_array_elements_text({J([g[0] for g in D.GEAR] + [t[0] for t in D.TOOLS])}));""")
+ where i.item_id in (select jsonb_array_elements_text({J([g[0] for g in D.GEAR + D.MZ_GEAR] + [t[0] for t in D.TOOLS])}));""")
 w(f"""update public.world_item_catalog i set reference_price = greatest(i.reference_price,
     ceil(1.1 * (select min(t.v) from (select sum(m.reference_price * (x.value)::int * 1.0 / greatest(1, cr.output_qty)) v from public.world_crafting_recipes cr, jsonb_each_text(cr.ingredients) x
       join public.world_item_catalog m on m.item_id = x.key where cr.output_item = i.item_id group by cr.recipe_id) t)))
@@ -628,6 +640,37 @@ w(f"""insert into public.world_shop_catalog(shop_id, item_id, base_price, stock_
 select x.shop_id, x.item_id, ceil(i.reference_price * 1.3), 1, 1, null from jsonb_to_recordset({J([dict(shop_id=a, item_id=b) for a, b in hw_meat_shop])}) as x(shop_id text, item_id text)
   join public.world_item_catalog i on i.item_id = x.item_id
 on conflict (shop_id, item_id) do nothing;""")
+hw_terrs = sorted({r['terr'] for r in R})
+mz_rows = []
+for mid, nm, kind, rid, node, ph, w1, w2, sort, desc in D.MEISHO:
+    hh, ii = next((h, i) for h, row in enumerate(D.NODES[rid]) for i, x in enumerate(row) if x == node)
+    mz_rows.append(dict(meisho_id=mid, meisho_name=nm, region_id=rid, node_key=U('node', rid, str(hh), str(ii)), kind=kind, phase=ph, weather=w1, weather2=w2, description=desc, sort=sort))
+w(f"""insert into public.world_meisho(meisho_id, meisho_name, region_id, node_id, kind, phase, weather, weather2, min_level, description, sort, active)
+select x.meisho_id, x.meisho_name, x.region_id, md5(x.node_key)::uuid, x.kind, x.phase, x.weather, x.weather2, n.min_level, x.description, x.sort, true
+  from jsonb_to_recordset({J(mz_rows)}) as x(meisho_id text, meisho_name text, region_id text, node_key text, kind text, phase text, weather text, weather2 text, description text, sort int)
+  join public.world_exploration_nodes n on n.node_id = md5(x.node_key)::uuid and n.region_id = x.region_id
+on conflict (meisho_id) do update set meisho_name = excluded.meisho_name, node_id = excluded.node_id, kind = excluded.kind, phase = excluded.phase, weather = excluded.weather,
+  weather2 = excluded.weather2, min_level = excluded.min_level, description = excluded.description, sort = excluded.sort, active = true;
+do $c$ begin if (select count(*) from public.world_meisho where meisho_id in (select jsonb_array_elements_text({J([m[0] for m in D.MEISHO])}))) <> {len(D.MEISHO)} then raise exception '건넛누리 명소 답사 지점을 못 찾음'; end if; end $c$;
+select pg_temp.yh_hw_setjson('public.world_meisho_rules()'::regprocedure, public.world_meisho_rules()
+  || jsonb_build_object('flow', {J(dict(D.MZ_FLOW, territory=hw_terrs))})
+  || jsonb_build_object('soil', (public.world_meisho_rules() -> 'soil') || jsonb_build_object('realm', jsonb_build_object('hanul', 4))));""")
+w(open(os.path.join(HERE, 'mz_hw.sql')).read())
+w(f"""update public.world_item_catalog i set reference_price = greatest(i.reference_price, ceil(1.15 * (select max(f.reference_price) from public.world_item_catalog f
+  where f.tier = 8 and f.category = i.category and f.base_item_id is null and f.equipment_traits::text ~ '"mz_')))
+ where i.item_id in (select jsonb_array_elements_text({J([g[0] for g in D.MZ_GEAR])}));
+update public.world_item_catalog h set reference_price = ceil(b.reference_price * 1.3) from public.world_item_catalog b
+ where h.base_item_id = b.item_id and b.item_id in (select jsonb_array_elements_text({J([g[0] for g in D.MZ_GEAR])}));""")
+w(f"""select pg_temp.yh_hw_setjson('public.world_bijang_rules()'::regprocedure, (select r
+  || jsonb_build_object('maps', (r -> 'maps') || {J([dict(id=D.BJ4[0], name=D.BJ4[1], tier=4, lv=D.BJ4[4], lo=D.BJ4[5], hi=D.BJ4[6], realm='hanul')])},
+       'chest', (r -> 'chest') || jsonb_build_object('4', (r -> 'chest' -> '3') || jsonb_build_object('items', (r -> 'chest' -> '3' -> 'items') || {J([dict(w=2, id='flow_essence'), dict(w=1, id='mz_herb_f'), dict(w=1, id='mz_wood_f'), dict(w=1, id='mz_stone_f')])})),
+       'fail', (r -> 'fail') || jsonb_build_object('4', r -> 'fail' -> '3'),
+       'door_pct', (r -> 'door_pct') || jsonb_build_array(r -> 'door_pct' -> 2),
+       'egg', (r -> 'egg') || jsonb_build_object('pct', (r -> 'egg' -> 'pct') || jsonb_build_array(r -> 'egg' -> 'pct' -> 2)),
+       'final', (r -> 'final') || jsonb_build_object('gil', (r -> 'final' -> 'gil') || jsonb_build_array(r -> 'final' -> 'gil' -> 2),
+          'picks', (r -> 'final' -> 'picks') || jsonb_build_array(r -> 'final' -> 'picks' -> 2),
+          'tiers', (r -> 'final' -> 'tiers') || jsonb_build_object('4', (r -> 'final' -> 'tiers' -> '3') || {J([dict(n=1, w=3, id='mz_herb_f'), dict(n=1, w=3, id='mz_wood_f'), dict(n=1, w=3, id='mz_stone_f'), dict(n=2, w=3, id='flow_essence')])})))
+  from (select public.world_bijang_rules() r) z));""")
 fresh('titles', [t[1] for t in D.TITLES], '칭호')
 fresh('title_keys', [t[0] for t in D.TITLES], '칭호 키')
 w(f"""insert into public.world_title_catalog(title_key, title_name, description, condition_text, bonus, hidden, rule, sort, category, grade)

@@ -745,6 +745,52 @@ HW_SPECIAL_CAP = 5
 HW_MEAT_DROP = [('mt_pheasant', ['bird', 'sky']), ('mt_beast', ['giant']), ('mt_boar', ['breaker']), ('mt_crab', ['shell']), ('mt_yofish', ['water'])]
 HW_CROPS = ['fd_hw_rice', 'fd_hw_coconut', 'fd_hw_citrus', 'fd_hw_chili', 'fd_hw_taro', 'fd_hw_plantain', 'fd_hw_woodear', 'fd_hw_tuber', 'fd_hw_chickpea', 'fd_hw_date', 'fd_hw_mango', 'fd_hw_glutinous']
 
+MZ_ITEMS = [
+    ('mz_herb_f', '흐름 서린 명초', 9, 50, 10350, '건넛누리 명소에서만 나는 명초다. 잎맥을 따라 물살 같은 빛이 천천히 돈다.'),
+    ('mz_wood_f', '흐름 서린 명목', 9, 50, 10350, '건넛누리 명소에서만 나는 명목이다. 나이테 사이로 물결무늬가 번져 있다.'),
+    ('mz_stone_f', '흐름 서린 명석', 9, 50, 10350, '건넛누리 명소에서만 나는 명석이다. 손바닥에 올리면 돌 속에서 물소리가 난다.'),
+]
+MEISHO = [
+    ('mz_hw_ebony_roof', '큰 잎 지붕 밑 흑단 고목', 'wood', 'jb_ebony', '큰 잎 지붕 아래', 'night', 'rain', 'drizzle', 200,
+     '큰 잎 지붕이 비를 받아 내리는 자리에 선 흑단 고목이다. 비나 가랑비가 내리는 삼경에만 껍질 틈으로 흐름이 비친다.'),
+    ('mz_hw_cold_hearth', '식은 화로 밑 흐름 돌', 'stone', 'bs_geo', '식은 화로 첫 계단', 'dusk', 'clear', 'wind', 201,
+     '식은 화로 첫 계단 밑에 깔린 반석이다. 맑거나 바람 부는 땅거미에만 돌결을 따라 열기가 물처럼 흐른다.'),
+    ('mz_hw_breath_reed', '얼음 숨구멍 둘레 약풀', 'herb', 'nm_lake', '얼음 숨구멍 줄', 'dawn', 'snow', 'clear', 202,
+     '얼어붙은 하늘못 숨구멍 둘레에만 돋는 약풀이다. 눈이 내리거나 맑은 해돋이에 숨구멍 김을 맞으며 잎을 연다.'),
+]
+MZ_FLOW = {'rank': 50, 'pct': {'base': 3, 'cap': 10}, 'items': {'herb': 'mz_herb_f', 'wood': 'mz_wood_f', 'stone': 'mz_stone_f'}}
+_MZW = {'smithing': ('stone', E), 'carpentry': ('wood', I), 'artifice': ('herb', L)}
+MZ_GEAR = []
+for _iid, _nm, _job, _field, _wt, _trait, _ammo in [
+        ('w_melee_mzf', '흐름 서린 명석 환도', 'artificer', 'smithing', 'melee', '근접', None),
+        ('w_blood_mzf', '흐름 서린 명석 대검', 'bloodknight', 'smithing', 'melee', '근접', None),
+        ('w_dagger_mzf', '흐름 서린 명석 단도', 'analyst', 'smithing', 'melee', '근접', None),
+        ('w_spear_mzf', '흐름 서린 명석 장창', 'spearman', 'smithing', 'melee', '근접', None),
+        ('w_ranged_mzf', '흐름 서린 명목 각궁', 'scout', 'carpentry', 'ranged', '원거리', 'ammo_arrow'),
+        ('w_tamer_mzf', '흐름 서린 명목 단궁', 'tamer', 'carpentry', 'ranged', '원거리', 'ammo_arrow'),
+        ('w_magic_mzf', '흐름 서린 명초 법등', 'exorcist', 'artifice', 'magic', '술법', None),
+        ('w_seal_mzf', '흐름 서린 명초 금강령', 'sealmaster', 'artifice', 'magic', '술법', None),
+        ('w_medic_mzf', '흐름 서린 명초 부채', 'medic', 'artifice', 'magic', '술법', None),
+        ('w_form_mzf', '흐름 서린 명초 나경', 'formation', 'artifice', 'magic', '술법', None)]:
+    _k, _m = _MZW[_field]
+    _tr = {'jobs': [_job], 'power': 72, 'trait': _trait, 'weapon_type': _wt, 'combat_damage_pct': 26, 'mz_j_' + _k: 10}
+    if _ammo: _tr['ammo'] = _ammo
+    _knm = {'stone': '명석', 'wood': '명목', 'herb': '명초'}[_k]
+    _bc = lambda w: (ord(w[-1]) - 0xAC00) % 28 != 0
+    _nn = _nm.split()[-1]
+    MZ_GEAR.append((_iid, _nm, 'weapon', 'strength', _tr, f'흐름 서린 {_knm}{"으로" if _bc(_knm) else "로"} 만든 {_nn}{"이다" if _bc(_nn) else "다"}. 명소에서 「{_knm}의 정」이 더 잘 보인다.', _field,
+                    {'mz_' + _k + '_f': 1, 'mz_' + _k + '_n': 1, 'flow_essence': 3, _m: 4}))
+MZ_GEAR += [
+    ('a_mzf_vit', '흐름 서린 명석 비늘갑', 'armor', 'vitality', {'trait': '방호', 'defense': 66, 'presence': 62, 'evasion_pct': -6, 'mz_extra': 1},
+     '흐름 서린 명석 비늘을 겹친 갑옷이다. 명소에서 캘 때 명소 재료를 하나 더 거둔다.', 'smithing', {'mz_stone_j': 2, 'mz_stone_f': 1, 'flow_essence': 3, E: 4}),
+    ('a_mzf_agi', '흐름 서린 명목 경갑', 'armor', 'agility', {'trait': '방호', 'defense': 40, 'evasion_pct': 13, 'mz_soil_pct': 20},
+     '흐름 서린 명목 조각을 누빈 경갑이다. 흙을 살필 때 묻힌 것의 기척을 잡는다.', 'leatherwork', {'mz_wood_j': 2, 'mz_wood_f': 1, 'flow_essence': 3, Y: 4}),
+    ('a_mzf_will', '흐름 서린 명초 법의', 'armor', 'willpower', {'trait': '방호', 'defense': 34, 'erosion_pct': -26, 'damage_reduction_pct': 16, 'mz_n_pct': 2},
+     '흐름 서린 명초 물을 들인 법의다. 명소에서 「이름 서린」 재료가 더 잘 보인다.', 'weaving', {'mz_herb_j': 2, 'mz_herb_f': 1, 'flow_essence': 3, 'lotus_seed': 4}),
+]
+BJ4 = ('bj_map_4', '건넛누리 비장도', 7, 4600, 50, 50, 55,
+       '건넛누리 명소 흙 속에 묻혀 있던 옛 그림. 물길 너머 곳간을 가리킨다. 가방에서 펼치면 건넛누리 Lv50 이상 바깥 지역 하나가 드러난다. 한 사람이 하나만 지닐 수 있다.')
+
 SHOPS = {
     'pd_city': [('pd_tide_charm', 0, 4), ('hw_goby_crisp', 0, 6), ('hw_coconut_fish', 0, 3), ('tonic', 220, 10), ('ward_talisman', 270, 8), ('travel_ration', 170, 10), ('repair_kit', 0, 3),
                 ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200), ('hf_hw_pado_bench', 0, 2), ('of_top_hw_lace_blouse', 0, 1)],
