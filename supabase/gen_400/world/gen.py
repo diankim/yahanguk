@@ -296,6 +296,9 @@ rows = []
 for rid, ms in D.MONSTERS.items():
     L = RID[rid]['lv']
     for mid, nm, ty, role, kind, mech, desc, drops in ms:
+        drops = dict(drops)
+        for mt, mk in D.HW_MEAT_DROP:
+            if kind in mk: drops.setdefault(mt, 1)
         if role == 'common': lo, hi, hp, atk, wt, dr = L, min(CAP, L + 3), 70 + 14 * L, round(8 + 1.1 * L), 14, 2
         elif role == 'main': lo, hi, hp, atk, wt, dr = min(CAP, L + 1), min(CAP + 1, L + 4), 150 * L, round(7.5 * L), 15, 5
         else: lo, hi, hp, atk, wt, dr = L, min(CAP, L + 2), round((70 + 14 * L) * 1.5), round((8 + 1.1 * L) * 1.4), 12, 10
@@ -365,6 +368,18 @@ for nf in D.NAMED_FISH:
     recipes.append(recipe('r_hf_' + rk, f['name'] + ' 만들기', 'hf_' + rk, 1, dict({nf[0]: 1}, **D.RUBBING_MATS), 'sealing', D.NAMED_LEVEL, f"별채에 놓을 {f['name']}을(를) 만든다.", f['grade']))
 HWF = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', "const F = await import('./assets/js/housing/furniture.js'); const o = {}; for (const [k, f] of Object.entries(F.FUR)) if (k.startsWith('hw_')) o[k] = { t: 'FUR', name: f.name, grade: f.grade, W: f.W, D: f.D, layer: f.layer || 'floor', top: f.top || 0, cat: f.cat }; for (const [k, f] of Object.entries(F.WALL)) if (k.startsWith('hw_')) o[k] = { t: 'WALL', name: f.name, grade: f.grade, kind: f.kind, w: f.w, h: f.h, cat: f.cat }; console.log(JSON.stringify(o));"], cwd=os.path.join(HERE, '..', '..', '..')))
 fsrc, craft_priced = [], []
+hw_special_ids = {}
+for realm, hub, n1, i1, d1, n2, i2, d2 in D.HW_SPECIALS:
+    for k, (nm, mats, desc) in enumerate([(n1, i1, d1), (n2, i2, d2)]):
+        iid = f'sp_{realm}_{k + 1}'
+        fx = dict(D.HW_SPECIAL_FX[k]); fx['buffs'] = [f'fs_{realm}']
+        lv = D.HW_SPECIAL_LV[k]
+        items.append(item(iid, nm, 'consumable', 3 + k, desc, 50, 0, True, lv, fx=fx))
+        names_new.append(nm); hq.append(iid)
+        recipes.append(recipe('r_' + iid, nm + ' 만들기', iid, 2, mats, 'cooking', lv, nm + '을(를) 만든다.', 3, loc=hub))
+        craft_priced.append(iid)
+        hw_special_ids.setdefault(realm, []).append(iid)
+        D.SHOPS[hub].append((iid, 0, D.HW_SPECIAL_CAP))
 for k, spec in D.FURNITURE.items():
     if k not in HWF:
         errors.append('가구 그림 없음(hw_furn.js): ' + k)
@@ -546,6 +561,30 @@ select '{sid}', x.item_id, case when x.price > 0 then x.price else (select great
   from jsonb_to_recordset({J(rows)}) as x(item_id text, price bigint, cap int)
 on conflict (shop_id, item_id) do update set base_price = excluded.base_price, daily_cap = excluded.daily_cap;""")
 
+w("""create or replace function pg_temp.yh_hw_setjson(p_fn regprocedure, p_j jsonb) returns void language plpgsql as $f$
+declare src text := pg_get_functiondef(p_fn); body text := (select prosrc from pg_proc where oid = p_fn);
+begin
+  if position(body in src) = 0 then raise exception 'yh_hw_setjson %: 본문을 못 찾음', p_fn; end if;
+  execute replace(src, body, ' select ' || quote_literal(p_j::text) || '::jsonb ');
+end $f$;""")
+hw_fixed = [i for v in hw_special_ids.values() for i in v]
+hw_buffs = [f'fs_{r}' for r in hw_special_ids] + ['hw_spice_heat', 'hw_butter_warm', 'hw_sweet_rest', 'hw_coconut_full']
+w(f"""select pg_temp.yh_hw_setjson('public.world_food_rules()'::regprocedure, public.world_food_rules()
+  || jsonb_build_object('fixed', (select jsonb_agg(distinct x) from jsonb_array_elements_text((public.world_food_rules() -> 'fixed') || {J(hw_fixed)}) x),
+                        'specials', (public.world_food_rules() -> 'specials') || {J(hw_special_ids)},
+                        'hubs', (public.world_food_rules() -> 'hubs') || {J({r: RID[h]['name'] for r, h, *_ in D.HW_SPECIALS})},
+                        'buffs', (select jsonb_agg(distinct x) from jsonb_array_elements_text((public.world_food_rules() -> 'buffs') || {J(hw_buffs)}) x)));
+select pg_temp.yh_hw_setjson('public.world_garden_rules()'::regprocedure, jsonb_set(public.world_garden_rules(), '{{crops}}',
+  (select jsonb_agg(c order by o) from (select c, min(o) o from jsonb_array_elements_text((public.world_garden_rules() -> 'crops') || {J(D.HW_CROPS)}) with ordinality x(c, o) group by c) y)));
+do $c$ declare x text; begin
+  for x in select jsonb_array_elements_text({J(D.HW_CROPS)}) loop
+    if not exists (select 1 from public.world_gathering_spots where x = any(loot_items)) then raise exception '채집터에 안 들어간 건넛누리 식재료 %', x; end if;
+    if ((public.world_garden_rules() -> 'hours') ->> (select tier from public.world_item_catalog where item_id = x)::text) is null then raise exception '밭 자람 시간이 없는 단계 %', x; end if;
+  end loop;
+  for x in select jsonb_array_elements_text({J(sorted({m for m, _ in D.HW_MEAT_DROP}))}) loop
+    if not exists (select 1 from public.world_region_monsters where drops ? x and monster_id like 'hw\\_%') then raise exception '건넛누리 요괴가 안 떨어뜨리는 고기 %', x; end if;
+  end loop;
+end $c$;""")
 fresh('titles', [t[1] for t in D.TITLES], '칭호')
 fresh('title_keys', [t[0] for t in D.TITLES], '칭호 키')
 w(f"""insert into public.world_title_catalog(title_key, title_name, description, condition_text, bonus, hidden, rule, sort, category, grade)

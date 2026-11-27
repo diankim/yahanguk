@@ -641,9 +641,9 @@ const S = [
       <li>고기는 그대로 먹지 못합니다. 멧돼지고기는 숯불 훈연(정련 숯), 독게살은 독 빼기(농축 약초액), 요괴 생선살은 소금 절이기(빙정염)가 필요해 그 재료가 함께 듭니다.</li>
       <li>매운탕·찜·조림·탕·죽 같은 기존 요리에도 식재료가 들어갑니다.</li>
     </ul>
-    <h4>세력 특선 음식</h4>
-    <table class="guide-table"><tr><th>세력</th><th>거점</th><th>특선 음식</th><th>기운</th></tr>${(FOOD.specials || []).map(f => `<tr><td>${esc(MAJOR_FACTIONS[f.faction]?.name || f.faction)}</td><td>${esc(f.hub)}</td><td>${(f.items || []).map(i => `${esc(i.name)} Lv${i.lv}`).join(' · ')}</td><td>${esc(f.items?.[0]?.buff || '')}</td></tr>`).join('')}</table>
-    <ul><li>거점 상점이 늘 팝니다(사람마다 품목별 하루 ${FOOD.cap}개). 제작법으로도 만들 수 있고, 그 거점에서 만들면 품질이 오릅니다.</li></ul>
+    <h4>세력·권역 특선 음식</h4>
+    <table class="guide-table"><tr><th>세력·권역</th><th>거점</th><th>특선 음식</th><th>기운</th></tr>${(FOOD.specials || []).slice().sort((x, y) => (MAJOR_FACTIONS[x.faction] ? 0 : 1) - (MAJOR_FACTIONS[y.faction] ? 0 : 1)).map(f => `<tr><td>${esc(MAJOR_FACTIONS[f.faction]?.name || REALM_BOND.realmName(f.faction) || f.faction)}</td><td>${esc(f.hub)}</td><td>${(f.items || []).map(i => `${esc(i.name)} Lv${i.lv}`).join(' · ')}</td><td>${esc(f.items?.[0]?.buff || '')}</td></tr>`).join('')}</table>
+    <ul><li>거점 상점이 늘 팝니다(사람마다 품목별 하루 ${FOOD.cap}개). 제작법으로도 만들 수 있고, 그 거점에서 만들면 품질이 오릅니다. 건넛누리 여섯 권역은 그 권역 안전지대 상점이 팝니다.</li></ul>
     <h4>새 음식 기운</h4>
     <table class="guide-table"><tr><th>기운</th><th>효과</th><th>지속</th></tr>${(FOOD.status || []).map(t => `<tr><td>${esc(t.name)}</td><td>${esc(effectText(t.effects).join(' · '))}</td><td>${t.min >= 60 ? `${Math.floor(t.min / 60)}시간${t.min % 60 ? ` ${t.min % 60}분` : ''}` : `${t.min}분`}</td></tr>`).join('')}</table>
     <h4>음식 기운</h4>

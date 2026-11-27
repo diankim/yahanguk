@@ -436,6 +436,19 @@ ITEMS = [
     ('wood_toy_pair', '나무 새 짝', 'material', 3, 50, 0, True, 50, '나란히 끌고 다니게 만든 나무 새 두 마리다. 하나는 날개가 곧고, 하나는 날개가 비뚤다.'),
     ('forge_tool_set', '장인 손 연장', 'material', 3, 50, 0, True, 50, '화산 유리 날을 쇠 자루에 박은 작은 연장 한 벌이다. 장인들이 손에 익은 연장을 잃었을 때 대신 쓴다.'),
     ('field_sickle', '화덕골 들낫', 'material', 3, 50, 0, True, 50, '지열 돌판에서 오래 달군 쇠로 벼린 들일 낫이다. 요기를 먹이지 않아 결은 거칠지만 풀은 잘 벤다.'),
+    ('fd_hw_rice', '긴알 쌀', 'material', 3, 50, 45, True, 50, '파도너울성과 달맞이성 물논에서 거두는 알이 길쭉한 쌀이다. 지으면 낱알이 서로 붙지 않고 흩어진다.'),
+    ('fd_hw_coconut', '야자 열매', 'material', 3, 50, 45, True, 50, '바닷가 야자나무에서 따는 단단한 열매다. 껍질을 깨면 속에 단물이 차 있고, 흰 속살을 긁어 즙을 짠다.'),
+    ('fd_hw_citrus', '푸른 귤', 'material', 3, 50, 45, True, 50, '다 익어도 껍질이 푸른 작은 귤이다. 즙을 짜 국물에 넣으면 비린내가 가신다.'),
+    ('fd_hw_chili', '불씨 고추', 'material', 3, 50, 45, True, 50, '지열 비탈에서 붉게 익는 고추다. 껍질에 열기가 남아 있어 쥐면 손바닥이 따끔하다.'),
+    ('fd_hw_taro', '잿불 토란', 'material', 3, 50, 45, True, 50, '화산재 섞인 흙에서 캐는 토란이다. 잿불에 묻어 구우면 속이 분처럼 포슬포슬하다.'),
+    ('fd_hw_plantain', '파초 열매', 'material', 3, 50, 45, True, 50, '잿빛그늘숲 파초에 송이로 열리는 굵은 열매다. 날로는 떫고, 쪄야 달아진다. 큰 잎은 음식을 싸 굽는 데 쓴다.'),
+    ('fd_hw_woodear', '그늘 목이', 'material', 4, 50, 60, True, 50, '먹비 맞은 고목 그늘에서 자라는 검은 목이버섯이다. 말렸다 불리면 쫄깃하다.'),
+    ('fd_hw_butter', '털소 젖 수유', 'material', 3, 50, 45, True, 50, '털소 젖을 오래 저어 굳힌 노란 수유다. 눈마루 사람들은 차에도 국에도 한 덩이씩 넣는다.'),
+    ('fd_hw_tuber', '눈마루 감자', 'material', 3, 50, 45, True, 50, '찬 고원 밭에서 캐는 보랏빛 감자다. 얼었다 녹기를 되풀이해 단맛이 깊다.'),
+    ('fd_hw_chickpea', '병아리콩', 'material', 3, 50, 45, True, 50, '달맞이 들녘에서 꼬투리째 거두는 둥근 콩이다. 삶아 으깨면 고소하다.'),
+    ('fd_hw_date', '대추야자', 'material', 3, 50, 45, True, 50, '달맞이성 장터 골목마다 쌓인 대추야자 열매다. 꿀처럼 달고 오래 두어도 상하지 않는다.'),
+    ('fd_hw_mango', '망과', 'material', 4, 50, 60, True, 50, '해오름성 사원 뜰 나무에 노랗게 익는 열매다. 껍질을 벗기면 즙이 손목까지 흐른다.'),
+    ('fd_hw_glutinous', '해오름 찹쌀', 'material', 4, 50, 60, True, 50, '해오름성 연못가 논에서 거두는 찹쌀이다. 쪄 내면 낱알이 반투명하게 빛난다.'),
     ('pd_tide_charm', '물때 부적', 'consumable', 4, 20, 400, True, 50, '물때표 귀퉁이를 접어 야자 섬유로 묶은 부적이다. 지니고 있으면 1시간 동안 물살에 덜 휩쓸린다.'),
 ]
 
@@ -445,6 +458,12 @@ STATUSES = [
     ('hw_butter_warm', '수유차 온기', 'positive', 45, {'incoming_damage_pct': -6, 'healing_pct': 6}, 'shield', '수유 탄 차가 속을 데웁니다. 추위와 상처를 덜 탑니다.'),
     ('hw_sweet_rest', '달콤한 쉼', 'positive', 45, {'mental_loss_pct': -10, 'erosion_pct': -6}, 'leaf', '단 것을 먹고 나니 마음이 풀립니다.'),
     ('hw_coconut_full', '가리 든든', 'positive', 45, {'gather_qty_pct': 8, 'fish_bite_pct': 6}, 'leaf', '가리로 배를 채워 손이 빨라집니다.'),
+    ('fs_pado', '물때 밥상', 'positive', 90, {'incoming_damage_pct': -5, 'fish_bite_pct': 8}, 'leaf', '물 위 장터 밥상을 받아 물살에 덜 휩쓸리고 입질이 잦아집니다.'),
+    ('fs_bulssi', '불씨 열기', 'positive', 90, {'combat_damage_pct': 8}, 'flame', '불씨 고추 열기가 온몸에 돌아 기세가 오릅니다.'),
+    ('fs_jaebit', '숲 그늘 숨', 'positive', 90, {'encounter_pct': -8, 'rare_loot_pct': 5}, 'eye', '숲 사람들의 밥을 먹고 나니 걸음이 조용하고 눈이 밝아집니다.'),
+    ('fs_nunmaru', '설산 밥심', 'positive', 90, {'incoming_damage_pct': -8, 'erosion_pct': -8}, 'shield', '수유 든 밥으로 눈바람을 버팁니다.'),
+    ('fs_dalmaji', '장터 흥', 'positive', 90, {'gather_qty_pct': 8, 'clue_bonus_pct': 8}, 'spark', '장터 골목 음식을 먹고 나니 손이 빠르고 눈치가 밝습니다.'),
+    ('fs_haeoreum', '해돋이 맑음', 'positive', 90, {'mental_loss_pct': -10, 'healing_pct': 8}, 'leaf', '사원 앞 상을 받고 나니 마음이 맑고 몸이 잘 아뭅니다.'),
 ]
 PARTY_STATUSES = set()
 
@@ -490,37 +509,37 @@ NAMED_TRADEABLE = True
 RUBBING_MATS = {'fine_paper': 2, 'sealing_ink': 2}
 
 FISH_GOODS = [
-    ('hw_goby_crisp', '망둥이 바삭 튀김', 'consumable', 2, 50, True, 40, {'hp': 30, 'buffs': ['well_fed']}, '널다리 망둥이를 야자 기름에 바삭하게 튀겼다. 체력을 조금 채운다.', 'cooking', {'hw_canal_goby': 3, 'coconut_fiber': 1}, 2, 50),
+    ('hw_goby_crisp', '망둥이 바삭 튀김', 'consumable', 2, 50, True, 40, {'hp': 30, 'buffs': ['well_fed']}, '널다리 망둥이를 야자 열매 기름에 바삭하게 튀겼다. 체력을 조금 채운다.', 'cooking', {'hw_canal_goby': 3, 'fd_hw_coconut': 1}, 2, 50),
     ('hw_coconut_fish', '생선 가리', 'consumable', 3, 50, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['hw_coconut_full']}, '전갱이를 야자즙과 강황에 고추를 풀어 걸쭉하게 끓인 가리다. 처음엔 달다가 끝이 맵다.', 'cooking',
-     {'hw_sea_mackerel': 2, 'coconut_fiber': 1, 'fd_chili': 1}, 2, 50),
+     {'hw_sea_mackerel': 2, 'fd_hw_coconut': 1, 'fd_hw_chili': 1, 'turmeric_root': 1}, 2, 50),
     ('hw_leaf_rice', '잎에 싸 찐 찹쌀', 'consumable', 2, 50, True, 90, {'hp': 25, 'mn': 20, 'buffs': ['well_fed']}, '찹쌀에 야자 설탕을 섞어 띠잎에 싸 쪘다. 들고 다니며 먹기 좋다.', 'cooking',
-     {'fd_rice': 2, 'fragrant_blade_leaf': 1, 'palm_sugar': 1}, 2, 50),
+     {'fd_hw_glutinous': 2, 'fragrant_blade_leaf': 1, 'palm_sugar': 1}, 2, 50),
     ('hw_rice_noodle', '쌀국수 생선 국', 'consumable', 3, 50, True, 200, {'hp': 40, 'mn': 20, 'buffs': ['warm_belly']}, '쌀가루로 뽑은 가는 국수에 줄미꾸리 국물을 부었다. 푸른 귤즙을 짜 넣는다.', 'cooking',
-     {'hw_canal_loach': 1, 'fd_rice': 2, 'blue_salt': 1}, 2, 51),
+     {'hw_canal_loach': 1, 'fd_hw_rice': 2, 'fd_hw_citrus': 1}, 2, 51),
     ('hw_chili_fried_rice', '고추 양념 볶음밥', 'consumable', 3, 50, True, 160, {'hp': 40, 'buffs': ['hw_spice_heat']}, '고추씨 기름에 밥과 강붕어 살을 볶았다. 한 숟갈에 이마에 땀이 맺힌다.', 'cooking',
-     {'hw_river_carp': 1, 'fd_rice': 2, 'chili_seed_oil': 1}, 2, 51),
+     {'hw_river_carp': 1, 'fd_hw_rice': 2, 'chili_seed_oil': 1, 'fd_hw_chili': 1}, 2, 51),
     ('hw_turmeric_broth', '강황 약초즙', 'consumable', 3, 50, True, 160, {'mn': 30, 'er': 10, 'buffs': ['clear_mind']}, '강황 뿌리를 갈아 약초와 함께 달였다. 노랗고 쌉쌀하다.', 'alchemy',
      {'turmeric_root': 2, 'herb': 1}, 2, 51),
     ('hw_rice_cookie', '쌀가루 과자', 'consumable', 2, 50, True, 90, {'mn': 25, 'buffs': ['hw_sweet_rest']}, '쌀가루 반죽을 띠잎 물로 푸르게 물들여 쪄 낸 과자다. 숲 아이들이 가장 좋아한다.', 'cooking',
-     {'fd_rice': 1, 'fragrant_blade_leaf': 1, 'palm_sugar': 1}, 3, 52),
+     {'fd_hw_rice': 1, 'fragrant_blade_leaf': 1, 'palm_sugar': 1}, 3, 52),
     ('hw_butter_tea', '수유차', 'consumable', 3, 50, True, 160, {'mn': 30, 'hp': 20, 'buffs': ['hw_butter_warm']}, '찻잎을 오래 끓여 털소 젖 수유와 얼음 결정 소금을 넣고 저었다. 짭짤하고 기름지다.', 'cooking',
-     {'ice_salt': 1, 'yak_wool': 1, 'herb': 1}, 2, 53),
-    ('hw_highland_dumpling', '고원 만두', 'consumable', 3, 50, True, 220, {'hp': 50, 'buffs': ['hw_butter_warm']}, '보릿가루 피에 고기를 싸 쪄 낸 둥근 만두다. 눈마루 사람들은 먼 길 떠나는 이에게 쪄 준다.', 'cooking',
-     {'highland_barley': 2, 'mt_beast': 1, 'ice_salt': 1}, 2, 53),
-    ('hw_barley_ball', '볶은 보릿가루 경단', 'consumable', 2, 50, True, 80, {'hp': 25, 'buffs': ['well_fed']}, '볶은 보릿가루를 수유차에 개어 손으로 뭉쳤다. 고원 사람들의 끼니다.', 'cooking',
-     {'highland_barley': 2, 'ice_salt': 1}, 3, 53),
-    ('hw_spice_table', '향신료 반찬 한 상', 'consumable', 4, 50, True, 320, {'hp': 55, 'mn': 20, 'buffs': ['hw_spice_heat']}, '향신 꼬투리를 볶아 갖은 반찬을 쟁반 하나에 둘러 담았다. 납작빵을 찢어 찍어 먹는다.', 'cooking',
-     {'red_spice_pod': 2, 'fd_rice': 2, 'fd_garlic': 1, 'hw_river_catfish': 1}, 2, 53),
-    ('hw_flatbread', '납작빵', 'consumable', 2, 50, True, 80, {'hp': 30, 'buffs': ['well_fed']}, '반죽을 둥글게 펴 화덕 벽에 붙여 구운 빵이다. 부풀어 오른 자리가 노릇하다.', 'cooking',
-     {'fd_rice': 1, 'highland_barley': 1}, 3, 53),
-    ('hw_spice_milk_tea', '향신 우유차', 'consumable', 3, 50, True, 160, {'mn': 30, 'buffs': ['hw_sweet_rest']}, '찻잎과 향신 꼬투리를 우유에 끓여 야자 설탕을 넣었다. 달고 매운 향이 오래 남는다.', 'cooking',
-     {'red_spice_pod': 1, 'palm_sugar': 1, 'herb': 1}, 2, 54),
+     {'ice_salt': 1, 'fd_hw_butter': 1, 'herb': 1}, 2, 53),
+    ('hw_highland_dumpling', '고원 만두', 'consumable', 3, 50, True, 220, {'hp': 50, 'buffs': ['hw_butter_warm']}, '보릿가루 피에 고기와 눈마루 감자를 싸 쪄 낸 둥근 만두다. 눈마루 사람들은 먼 길 떠나는 이에게 쪄 준다.', 'cooking',
+     {'highland_barley': 2, 'mt_beast': 1, 'fd_hw_tuber': 1, 'ice_salt': 1}, 2, 53),
+    ('hw_barley_ball', '볶은 보릿가루 경단', 'consumable', 2, 50, True, 80, {'hp': 25, 'buffs': ['well_fed']}, '볶은 보릿가루를 털소 젖 수유에 개어 손으로 뭉쳤다. 고원 사람들의 끼니다.', 'cooking',
+     {'highland_barley': 2, 'fd_hw_butter': 1}, 3, 53),
+    ('hw_spice_table', '향신료 반찬 한 상', 'consumable', 4, 50, True, 320, {'hp': 55, 'mn': 20, 'buffs': ['hw_spice_heat']}, '향신 꼬투리를 볶고 병아리콩을 으깨 갖은 반찬을 쟁반 하나에 둘러 담았다. 납작빵을 찢어 찍어 먹는다.', 'cooking',
+     {'red_spice_pod': 2, 'fd_hw_chickpea': 2, 'hw_river_catfish': 1}, 2, 53),
+    ('hw_flatbread', '납작빵', 'consumable', 2, 50, True, 80, {'hp': 30, 'buffs': ['well_fed']}, '보릿가루에 병아리콩 가루를 섞은 반죽을 둥글게 펴 화덕 벽에 붙여 구운 빵이다. 부풀어 오른 자리가 노릇하다.', 'cooking',
+     {'fd_hw_chickpea': 1, 'highland_barley': 1}, 3, 53),
+    ('hw_spice_milk_tea', '향신 우유차', 'consumable', 3, 50, True, 160, {'mn': 30, 'buffs': ['hw_sweet_rest']}, '찻잎과 향신 꼬투리를 털소 젖 수유에 끓여 야자 설탕을 넣었다. 달고 매운 향이 오래 남는다.', 'cooking',
+     {'red_spice_pod': 1, 'palm_sugar': 1, 'fd_hw_butter': 1}, 2, 54),
     ('hw_lotus_porridge', '연밥 죽', 'consumable', 3, 50, True, 180, {'hp': 40, 'mn': 20, 'buffs': ['warm_belly']}, '연밥 알을 쌀과 함께 푹 쑨 죽이다. 해오름성 사람들은 아침마다 먹는다.', 'cooking',
-     {'lotus_seed': 2, 'fd_rice': 1}, 2, 55),
-    ('hw_sweet_sticky_rice', '망과 찹쌀', 'consumable', 3, 50, True, 200, {'hp': 30, 'mn': 30, 'buffs': ['hw_sweet_rest']}, '찹쌀에 야자즙을 붓고 노랗게 익은 망과를 썰어 얹었다. 해오름성 사원 앞에서 판다.', 'cooking',
-     {'fd_rice': 2, 'palm_sugar': 1, 'coconut_fiber': 1}, 2, 55),
-    ('hw_snakehead_grill', '빛가물치 파초잎 구이', 'consumable', 4, 50, True, 300, {'hp': 60, 'buffs': ['hw_coconut_full']}, '빛가물치를 강황과 함께 큰 잎에 싸 숯불에 구웠다.', 'cooking',
-     {'hw_marsh_snakehead': 1, 'turmeric_root': 1, 'charcoal': 1}, 2, 55),
+     {'lotus_seed': 2, 'fd_hw_rice': 1}, 2, 55),
+    ('hw_sweet_sticky_rice', '망과 찹쌀', 'consumable', 3, 50, True, 200, {'hp': 30, 'mn': 30, 'buffs': ['hw_sweet_rest']}, '해오름 찹쌀에 야자즙을 붓고 노랗게 익은 망과를 썰어 얹었다. 해오름성 사원 앞에서 판다.', 'cooking',
+     {'fd_hw_glutinous': 2, 'fd_hw_mango': 1, 'fd_hw_coconut': 1}, 2, 55),
+    ('hw_snakehead_grill', '빛가물치 파초잎 구이', 'consumable', 4, 50, True, 300, {'hp': 60, 'buffs': ['hw_coconut_full']}, '빛가물치를 강황과 함께 파초 열매 송이 잎에 싸 구웠다.', 'cooking',
+     {'hw_marsh_snakehead': 1, 'turmeric_root': 1, 'fd_hw_plantain': 1}, 2, 55),
     ('hw_eel_braise', '뱀장어 야자 설탕 조림', 'consumable', 4, 50, True, 320, {'hp': 55, 'mn': 25, 'buffs': ['vigor']}, '탑 그늘 뱀장어를 야자 설탕과 젓국에 졸였다. 달고 짜고 기름지다.', 'cooking',
      {'hw_marsh_eel': 1, 'palm_sugar': 1, 'blue_salt': 1}, 2, 55),
     ('hw_bream_salt', '줄돔 푸른 소금구이', 'consumable', 4, 50, True, 300, {'hp': 60, 'mn': 15, 'buffs': ['sea_luck']}, '쪽빛 줄돔에 푸른 소금을 두껍게 발라 구웠다.', 'cooking',
@@ -531,28 +550,28 @@ FISH_GOODS = [
      {'hw_lake_char': 2, 'highland_barley': 1}, 2, 52),
     ('hw_icecod_salt', '얼음 대구 소금 절임', 'consumable', 4, 50, True, 300, {'hp': 55, 'mn': 20, 'buffs': ['hw_butter_warm']}, '얼음 비늘 대구를 얼음 결정 소금에 묻어 사흘 재웠다.', 'cooking',
      {'hw_lake_icecod': 1, 'hw_lake_whitefish': 1, 'ice_salt': 1}, 2, 52),
-    ('hw_lantern_skewer', '등불고기 꼬치', 'consumable', 3, 50, True, 180, {'hp': 40, 'mn': 20, 'buffs': ['sea_luck']}, '갑판 등불고기를 야자 껍질 꼬챙이에 꿰어 구웠다. 구우면 이마의 불빛이 꺼진다.', 'cooking',
-     {'hw_deep_lantern': 2, 'coconut_fiber': 1}, 2, 51),
+    ('hw_lantern_skewer', '등불고기 꼬치', 'consumable', 3, 50, True, 180, {'hp': 40, 'mn': 20, 'buffs': ['sea_luck']}, '갑판 등불고기를 꼬챙이에 꿰어 굽고 푸른 귤즙을 뿌렸다. 구우면 이마의 불빛이 꺼진다.', 'cooking',
+     {'hw_deep_lantern': 2, 'fd_hw_citrus': 1}, 2, 51),
     ('hw_grouper_steam', '능성어 띠고기 찜', 'consumable', 4, 50, True, 320, {'hp': 60, 'mn': 20, 'buffs': ['vigor']}, '능성어와 띠고기를 푸른 소금과 함께 큰 잎에 싸 쪘다.', 'cooking',
      {'hw_deep_grouper': 1, 'hw_deep_ribbon': 1, 'blue_salt': 1}, 2, 52),
-    ('hw_hag_smoke', '먹장어 땅김 훈제', 'consumable', 3, 50, True, 200, {'hp': 50, 'buffs': ['vigor']}, '먹장어를 땅김에 걸어 훈제했다. 질기지만 씹을수록 고소하다.', 'cooking',
-     {'hw_abyss_hag': 2, 'charcoal': 1}, 2, 51),
+    ('hw_hag_smoke', '먹장어 땅김 훈제', 'consumable', 3, 50, True, 200, {'hp': 50, 'buffs': ['vigor']}, '먹장어를 불씨 고추에 버무려 땅김에 걸어 훈제했다. 질기지만 씹을수록 고소하다.', 'cooking',
+     {'hw_abyss_hag': 2, 'fd_hw_chili': 1}, 2, 51),
     ('hw_ray_ember', '가오리 불씨 지느러미 구이', 'consumable', 4, 50, True, 320, {'hp': 60, 'mn': 15, 'buffs': ['hw_spice_heat']}, '잿빛 가오리와 불씨 지느러미 고기를 고추씨 기름에 구웠다.', 'cooking',
      {'hw_abyss_ashray': 1, 'hw_abyss_ember': 1, 'chili_seed_oil': 1}, 2, 53),
 ]
 NAMED_GOODS = [
     ('hw_tuna_feast', '큰 다랑어 물때 상', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 30, 'buffs': ['hw_tide_calm', 'sea_luck']}, '물때 지기 큰 다랑어를 잡아 파도너울성 식으로 차린 상이다. 1시간 동안 물살에 덜 휩쓸리고 걸음이 빠르다.', 'cooking',
-     {'hw_named_tuna': 1, 'coconut_fiber': 1, 'blue_salt': 1}, 2, 52),
+     {'hw_named_tuna': 1, 'fd_hw_coconut': 1, 'fd_hw_citrus': 1, 'blue_salt': 1}, 2, 52),
     ('hw_carp_broth', '검은 잉어 약국', 'consumable', 5, 20, True, 1800, {'hp': 70, 'mn': 40, 'er': 20, 'buffs': ['clear_mind']}, '먹비 강 검은 잉어를 강황과 약초로 고았다. 침식이 덜하고 마음이 맑아진다.', 'alchemy',
      {'hw_named_carp': 1, 'turmeric_root': 2, 'herb': 1}, 2, 53),
     ('hw_gold_offering', '금비늘 연꽃 상', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 40, 'buffs': ['hw_sweet_rest', 'hw_coconut_full']}, '첫볕 연못 금비늘을 연밥과 함께 차려 사원에 올리는 상이다.', 'cooking',
-     {'hw_named_gold': 1, 'lotus_seed': 2, 'palm_sugar': 1}, 2, 55),
-    ('hw_ray_feast', '불비늘 가오리 땅김 찜', 'consumable', 5, 20, True, 1800, {'hp': 90, 'mn': 30, 'buffs': ['hw_spice_heat', 'vigor']}, '골 바닥 불비늘 가오리를 땅김에 쪄 고추씨 기름을 끼얹었다. 화덕골 장인들이 큰 일을 앞두고 나눠 먹는다.', 'cooking',
-     {'hw_named_ember': 1, 'chili_seed_oil': 1, 'cold_ember_filings': 1}, 2, 52),
+     {'hw_named_gold': 1, 'lotus_seed': 2, 'fd_hw_glutinous': 1, 'fd_hw_mango': 1}, 2, 55),
+    ('hw_ray_feast', '불비늘 가오리 땅김 찜', 'consumable', 5, 20, True, 1800, {'hp': 90, 'mn': 30, 'buffs': ['hw_spice_heat', 'vigor']}, '골 바닥 불비늘 가오리를 잿불 토란과 땅김에 쪄 고추씨 기름을 끼얹었다. 화덕골 장인들이 큰 일을 앞두고 나눠 먹는다.', 'cooking',
+     {'hw_named_ember': 1, 'chili_seed_oil': 1, 'fd_hw_taro': 1}, 2, 52),
     ('hw_trout_butter', '구름 송어 수유 탕', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 40, 'buffs': ['hw_butter_warm', 'clear_mind']}, '하늘못 구름 송어를 수유차에 넣고 오래 끓였다. 몸속까지 따뜻해지고 마음이 맑아진다.', 'cooking',
-     {'hw_named_sky': 1, 'yak_wool': 1, 'ice_salt': 1}, 2, 53),
-    ('hw_arch_carp_braise', '은잉어 향신 조림', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 30, 'buffs': ['hw_spice_heat', 'hw_sweet_rest']}, '일곱 아치 은잉어를 향신 꼬투리와 우유에 졸였다. 달맞이성 잔칫상에 오른다.', 'cooking',
-     {'hw_named_arch': 1, 'red_spice_pod': 2, 'palm_sugar': 1}, 2, 54),
+     {'hw_named_sky': 1, 'fd_hw_butter': 1, 'ice_salt': 1}, 2, 53),
+    ('hw_arch_carp_braise', '은잉어 향신 조림', 'consumable', 5, 20, True, 1800, {'hp': 80, 'mn': 30, 'buffs': ['hw_spice_heat', 'hw_sweet_rest']}, '일곱 아치 은잉어를 향신 꼬투리·대추야자와 수유에 졸였다. 달맞이성 잔칫상에 오른다.', 'cooking',
+     {'hw_named_arch': 1, 'red_spice_pod': 2, 'fd_hw_date': 1, 'fd_hw_butter': 1}, 2, 54),
 ]
 CONSUMABLE_RECIPES = [
     ('pd_tide_charm', {'coconut_fiber': 1, 'blue_salt': 1, 'seal_paper': 1}, 'sealing', 2),
@@ -706,6 +725,26 @@ GEAR_DROP = {
 GEAR_LEVELS = (51, 55)
 GEAR_PLACE = 'dm_city'
 
+HW_SPECIALS = [
+    ('pado', 'pd_city', '널다리 생선 가리 밥', {'fd_hw_rice': 1, 'fd_hw_coconut': 1, 'fish_fillet': 1}, '긴알 쌀밥에 야자즙 생선 가리를 끼얹은 널다리 장터 한 그릇이다.',
+     '물때 잔치 게살 찜', {'mt_crab': 1, 'herbal_extract': 1, 'fd_hw_coconut': 1, 'fd_hw_citrus': 1}, '약초액으로 독을 뺀 게살을 야자즙에 쪄 푸른 귤즙을 뿌린 잔치 음식이다.'),
+    ('bulssi', 'bs_town', '화덕골 토란 고기 찜', {'fd_hw_taro': 1, 'fd_hw_chili': 1, 'mt_beast': 1}, '잿불 토란과 고기를 불씨 고추와 함께 화덕에 찐 화덕골 밥상이다.',
+     '지열 돌판 멧돼지 구이', {'mt_boar': 1, 'charcoal': 1, 'fd_hw_chili': 2}, '숯불에 훈연한 멧돼지고기를 지열 돌판에 다시 구워 불씨 고추를 얹었다.'),
+    ('jaebit', 'jb_village', '목이 띠잎 밥', {'fd_hw_woodear': 1, 'fd_hw_rice': 1, 'fragrant_blade_leaf': 1}, '그늘 목이를 넣은 밥을 향긋한 띠잎에 싸 쪘다.',
+     '파초잎 꿩 찜', {'mt_pheasant': 1, 'fd_hw_plantain': 1, 'fd_hw_woodear': 1, 'turmeric_root': 1}, '꿩고기와 목이를 강황에 버무려 파초 열매 송이와 함께 큰 잎에 싸 쪘다.'),
+    ('nunmaru', 'nm_village', '수유 감자 국', {'fd_hw_tuber': 1, 'fd_hw_butter': 1, 'ice_salt': 1}, '눈마루 감자를 털소 젖 수유에 끓인 고원 사람들의 아침 국이다.',
+     '털소 수유 고기 탕', {'mt_beast': 2, 'fd_hw_butter': 1, 'highland_barley': 1}, '고기와 보리를 수유에 오래 고아 낸 탕이다. 먼 길 떠나는 날 아침에 먹는다.'),
+    ('dalmaji', 'dm_city', '병아리콩 대추야자 다과', {'fd_hw_chickpea': 1, 'fd_hw_date': 2}, '으깬 병아리콩에 대추야자를 곁들인 장터 다과다.',
+     '달맞이 향신 고기 밥', {'mt_beast': 2, 'red_spice_pod': 1, 'fd_hw_rice': 1, 'fd_hw_date': 1}, '향신 꼬투리로 볶은 고기와 대추야자를 긴알 쌀밥에 얹었다. 달맞이성 잔칫날 음식이다.'),
+    ('haeoreum', 'ho_city', '해오름 망과 떡', {'fd_hw_glutinous': 2, 'fd_hw_mango': 1}, '해오름 찹쌀을 쪄 친 떡에 망과 즙을 발랐다.',
+     '연밥 생선 사원 상', {'fish_fillet': 2, 'lotus_seed': 1, 'fd_hw_glutinous': 1, 'fd_hw_mango': 1}, '생선과 연밥 찹쌀밥, 망과를 한 상에 차려 사원에 올렸다가 나누어 먹는다.'),
+]
+HW_SPECIAL_LV = (50, 53)
+HW_SPECIAL_FX = ({'hp': 40, 'mn': 15}, {'hp': 80, 'mn': 30, 'sp': 20})
+HW_SPECIAL_CAP = 5
+HW_MEAT_DROP = [('mt_pheasant', ['bird', 'sky']), ('mt_beast', ['giant']), ('mt_boar', ['breaker']), ('mt_crab', ['shell']), ('mt_yofish', ['water'])]
+HW_CROPS = ['fd_hw_rice', 'fd_hw_coconut', 'fd_hw_citrus', 'fd_hw_chili', 'fd_hw_taro', 'fd_hw_plantain', 'fd_hw_woodear', 'fd_hw_tuber', 'fd_hw_chickpea', 'fd_hw_date', 'fd_hw_mango', 'fd_hw_glutinous']
+
 SHOPS = {
     'pd_city': [('pd_tide_charm', 0, 4), ('hw_goby_crisp', 0, 6), ('hw_coconut_fish', 0, 3), ('tonic', 220, 10), ('ward_talisman', 270, 8), ('travel_ration', 170, 10), ('repair_kit', 0, 3),
                 ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200), ('hf_hw_pado_bench', 0, 2), ('of_top_hw_lace_blouse', 0, 1)],
@@ -817,6 +856,45 @@ SPOT_POOL.update({
                  'spirit': ['spirit_dust', 'dawn_scale', HW, 'ward_fragment', 'seal_paper']},
 })
 _mirror()
+HW_FOOD = {
+    'pado': ['fd_hw_rice', 'fd_hw_coconut', 'fd_hw_citrus'], 'gureum': ['fd_hw_rice', 'fd_hw_coconut', 'fd_hw_citrus'],
+    'bulssi': ['fd_hw_chili', 'fd_hw_taro'], 'jaebit': ['fd_hw_woodear', 'fd_hw_plantain'], 'nunmaru': ['fd_hw_butter', 'fd_hw_tuber'],
+    'dalmaji': ['fd_hw_chickpea', 'fd_hw_date', 'fd_hw_rice'], 'goimteo': ['fd_hw_chickpea', 'fd_hw_date', 'fd_hw_rice'],
+    'haeoreum': ['fd_hw_glutinous', 'fd_hw_mango', 'fd_hw_rice'],
+}
+
+
+def _hw_food():
+    terr = {r['id']: r['terr'] for r in REGIONS}
+    for rid, cats in SPOT_POOL.items():
+        foods = HW_FOOD[terr[rid]]
+        k = sum(map(ord, rid))
+        for cat, pool in cats.items():
+            out = []
+            for it in pool:
+                if not it.startswith('fd_'):
+                    out.append(it); continue
+                alls = foods + [f for v in HW_FOOD.values() for f in v if f not in foods and f != 'fd_hw_butter']
+                for j in range(len(alls)):
+                    f = alls[(k + j) % len(foods)] if j < len(foods) else alls[j]
+                    if f not in out and f not in pool:
+                        out.append(f); k += 1; break
+            cats[cat] = out
+    used = {}
+    for rid, cats in SPOT_POOL.items():
+        for pool in cats.values():
+            for it in pool:
+                if it.startswith('fd_hw_'): used[it] = used.get(it, 0) + 1
+    for rid, cats in sorted(SPOT_POOL.items()):
+        foods = HW_FOOD[terr[rid]]
+        for cat in ('supplies', 'herbs', 'water', 'wood'):
+            pool = cats.get(cat)
+            if pool is None or any(i.startswith('fd_hw_') for i in pool): continue
+            f = min(foods, key=lambda x: (used.get(x, 0), x))
+            pool.append(f); used[f] = used.get(f, 0) + 1
+
+
+_hw_food()
 SPOT_LOOT = SPOT_POOL
 
 TERR_COLORS = {'pado': '#5d6a70', 'bulssi': '#76655b', 'jaebit': '#625c69', 'nunmaru': '#80858c', 'dalmaji': '#78725d', 'haeoreum': '#7a6662', 'gureum': '#66716c', 'goimteo': '#58575e'}
