@@ -105,6 +105,9 @@ export const idleXp = (k, h) => Math.floor(h * (ID.rate[k] ?? ID.rate.rest) * ID
 
 const JC = GD.jobChange || { cd_min: 60 };
 export const IDENTITY_NOTE = `이름과 소속은 바꿀 수 없습니다. 직업은 안전지대 상점에서 파는 「환골탈태 서첩」으로 바꿀 수 있습니다(쓴 뒤 ${JC.cd_min}분 동안은 다시 쓸 수 없음).`;
+const ACT_NAME = { combat: '토벌', explore: '탐색', gather: '채집', craft: '제작', travel: '이동', investigation: '조사', training: '수련', rest: '쉬기', rescue: '구조', story: '이야기' };
+const ACT_ORDER = Object.keys(ACT_NAME);
+export const statusActs = key => { const l = GD.statusActs?.[key]; return l?.length ? [...l].sort((a, b) => ACT_ORDER.indexOf(a) - ACT_ORDER.indexOf(b)).map(k => ACT_NAME[k] || k).join('·') : ''; };
 export const TOKEN_CAP = Number(GD.tokens?.cap) || 1000;
 export const TOKEN_TIP = `노정패는 ${TOKEN_CAP.toLocaleString()}개까지 지닐 수 있습니다. 다 차면 그 뒤로 얻는 노정패는 쌓이지 않습니다.`;
 

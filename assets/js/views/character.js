@@ -437,13 +437,14 @@ async function skills(body) {
     : empty('익힌 기술 정보가 없습니다.')}
     ${myCombos.length ? panel('조합 기술', `<ul class="combo-list">${myCombos.map(x => {
       const req = Object.entries(x.requires || {}).map(([k, v]) => `<span class="${(x.req_ranks?.[k] || 1) >= v ? 'ok' : 'bad'}">${esc(KN[k] || nameOf(k))} ${x.req_ranks?.[k] || 1}/${v}</span>`).join(' · ');
-      return `<li class="${x.unlocked ? 'on' : ''}"><b>${esc(x.skill_name)}</b>${x.unlocked ? chip('익힘', 'ok') : ''}<small>${esc(String(x.description || '').replace(/^조합 기술\([^)]*\) · /, ''))}</small><small>${req}</small></li>`; }).join('')}</ul>
-      <p class="muted small">두 계열이 모두 18단계에 닿으면 열립니다. 계열마다 조합은 하나씩입니다.</p>`, { ico: 'knot' }) : ''}
+      return `<li class="${x.unlocked && !x.off ? 'on' : ''}${x.off ? ' cb-off' : ''}"><div class="cb-head"><b>${esc(x.skill_name)}</b>${x.unlocked ? `${chip(x.off ? '꺼 둠' : '익힘', x.off ? '' : 'ok')}<button type="button" class="btn small ghost cb-tg" data-cb="${esc(x.skill_id)}" data-on="${x.off ? 1 : 0}" aria-pressed="${!x.off}">${x.off ? '켜기' : '끄기'}</button>` : ''}</div><small>${esc(String(x.description || '').replace(/^조합 기술\([^)]*\) · /, ''))}</small><small>${req}</small></li>`; }).join('')}</ul>
+      <p class="muted small">두 계열이 모두 18단계에 닿으면 열립니다. 계열마다 조합은 하나씩입니다. 익힌 조합 기술은 「끄기」로 꺼 두면 다시 켤 때까지 저절로 걸리지 않습니다.</p>`, { ico: 'knot' }) : ''}
     ${(coop || []).length ? panel(`협동 기술 · 전투 숙련 ${fmt.num(c.combat_rank || 1)}단계`, `<ul class="combo-list coop-list">${coop.map(x => `<li class="${x.unlocked ? 'on' : ''}">
         <b>${esc(x.name)}</b>${x.unlocked ? chip('익힘', 'ok') : chip(`전투 숙련 ${x.rank}단계`)}
         <small>${esc(x.desc || '')}</small><small>${x.target === 'ally' ? '동료 한 명' : x.target === 'all' ? '참가자 모두' : x.target === 'boss' ? '요괴' : '나'} · 영력 ${x.cost} · 다시 쓰기 ${x.cooldown}초</small></li>`).join('')}</ul>
       <p class="muted small">합동 토벌(10장 결전·사슬 벗은 그림자)과 귀허의 주인에서만 그 턴의 행동으로 고릅니다. 같은 지역 파티 원정의 합동 전투에서는 열린 기술이 확률로 저절로 나옵니다.</p>`, { ico: 'users' }) : ''}
     ${helpLine(`전투 기술 경험은 든 무기가 아니라 직업의 계열에 쌓이고, 무기는 직업마다 정해진 두 갈래만 들 수 있습니다. 직업을 바꿔도 계열마다 쌓은 단계는 그대로 남고, 새 직업의 계열은 따로 키웁니다(「다른 직업 기술」에서 볼 수 있습니다). 직업 계열의 피해·치명타는 공격에 늘 더해집니다(치명타는 분석·조합 기술도 더함). 그 밖의 효과(주는 피해·채집량·희귀품·단서·회복·제작 품질·받는 피해·정신·침식·이동·요괴 조우)는 익히는 즉시 늘 적용되며, 효과마다 상한이 있습니다. 택일 기술은 처음 고르기는 무료, 바꾸기는 13단계 1,000전·24단계 2,000전·30단계 3,000전·43단계 5,000전입니다.`, '기술 안내')}`;
+  $$('[data-cb]', body).forEach(b => b.onclick = () => guard(b, () => act('world_skill_toggle', { p_skill: b.dataset.cb, p_on: b.dataset.on === '1' })));
   $$('.sk-line', body).forEach(el => {
     const sk = groups[el.dataset.cat], box = $('.sk-detail', el);
     $$('.sk-node', el).forEach(b => b.onclick = () => {
