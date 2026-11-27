@@ -57,9 +57,10 @@ def tv(r, phase=None):
     return t
 
 
-def sr(r, n, phase=None):
+def sr(r, n, phase=None, weather=None):
     t = {'t': 'search', 'r': [r], 'n': n}
     if phase: t['phase'] = phase
+    if weather: t['weather'] = weather
     return t
 
 
@@ -114,8 +115,9 @@ def idle(k):
     return {'t': 'idle', 'k': k, 'n': 1}
 
 
-def nd(at, *tasks, give=None):
+def nd(at, *tasks, give=None, gil=None):
     need = {'at': [at]}
+    if gil: need['gil'] = gil
     if tasks: need['tasks'] = list(tasks)
     g = dict(give or {})
     for t in tasks:
@@ -194,25 +196,25 @@ PLAN = {
         ('화덕골 어귀 화덕 재 더미에서 정련 숯 3개를 모은다', nd(BS, ga(BS, 3, ['charcoal']))),
         ('김 오르는 비탈에서 화산 유리 5개를 모은다', nd(BS, ga(GEO, 5, ['volcanic_glass']))),
         ('화덕골에서 물건을 판다', nd(BS, sl(BS))),
-        ('장인 손 연장 4벌을 벼려 넘긴다', nd(BS, cr('forge_tool_set', 4))),
+        ('장인 손 연장 2벌을 벼려 넘기고, 남은 외상값 200전을 치른다', nd(BS, cr('forge_tool_set', 2), gil=200)),
         ('김 오르는 비탈에서 잿빛 불나방과 용암 도롱뇽을 4번 쫓아낸다', nd(GEO, wi(4, GEO, ['hw_geo_1', 'hw_geo_2']))),
         ('김 오르는 비탈로 원정을 다녀오고, 화덕골 들낫 4자루를 벼려 넘긴다', nd(BS, ex(GEO), cr('field_sickle', 4))),
     ]),
     8: dict(L=52, region=EBONY, items={'hw_rice_cookie': 3, 'hw_turmeric_broth': 2}, steps=[
         ('꿈이 내리지 않는 숲, 억새 나루에 닿는다', nd(JBV)),
-        ('검은 고목 숲을 5번 탐색한다', nd(EBONY, sr(EBONY, 5))),
+        ('장우나 세우가 내릴 때 검은 고목 숲을 4번 탐색한다', nd(EBONY, sr(EBONY, 4, weather=['rain', 'drizzle']))),
         ('쌀가루 과자 2개를 쪄서 새움에게 넘긴다', nd(EBONY, cr('hw_rice_cookie', 2))),
         ('검은 고목 숲에서 강황 뿌리 5개를 캔다', nd(JBV, ga(EBONY, 5, ['turmeric_root']))),
         ('먹빛 강 나루터에 도착해 4번 탐색한다', nd(FERRY, tv(FERRY), sr(FERRY, 4))),
         ('강황 약초즙 4잔을 달여 넘긴다', nd(EBONY, cr('hw_turmeric_broth', 4))),
         ('목공으로 끈 달린 나무 새를 만들어 새움에게 넘긴다', nd(EBONY, cr('wood_bird_toy', 1))),
-        ('먹빛 강 나루터에서 4번 낚시하고, 검은 고목 숲에서 먹비 달팽이와 고목 껍질 도마뱀을 5번 쫓아낸다',
-         nd(EBONY, fi(FERRY, 4), wi(5, EBONY, ['hw_ebony_1', 'hw_ebony_2']))),
+        ('먹빛 강 나루터에서 4번 낚시하고, 검은 고목 숲에서 흑단 뿌리 큰 지네를 1번 쫓아낸다',
+         nd(EBONY, fi(FERRY, 4), wi(1, EBONY, ['hw_ebony_5']))),
     ]),
     9: dict(L=53, region=SNOW, items={'hw_butter_tea': 3, 'flow_essence': 2}, steps=[
         ('눈 속에서 돌아온 사람을 맞는다', nd(NMV)),
         ('깃발 설원에서 고원 보리 5개를 모은다', nd(NMV, ga(SNOW, 5, ['highland_barley']))),
-        ('수유차 2잔을 끓여 설매에게 넘긴다', nd(NMV, cr('hw_butter_tea', 2))),
+        ('눈마루 돌마을에서 털소 털 뭉치 2개를 모아 설매에게 넘긴다', nd(NMV, ga(NMV, 2, ['yak_wool']), give={'yak_wool': 2})),
         ('외솔이 좋아하던 고원 만두 4개를 빚어 넘기고, 깃발 설원에서 눈표범 새끼와 얼음 까마귀 떼를 5번 쫓아낸다',
          nd(NMV, cr('hw_highland_dumpling', 4), wi(5, SNOW, ['hw_snow_1', 'hw_snow_2']))),
         ('눈마루 돌마을에서 쉰다', nd(NMV, rs(NMV))),
@@ -224,7 +226,7 @@ PLAN = {
         ('모든 길이 모이는 곳, 달맞이성에 닿는다', nd(DM)),
         ('달맞이 들녘을 4번 탐색한다', nd(DM, sr(FIELD, 4))),
         ('납작빵 2개를 구워 바랑에게 넘긴다', nd(DM, cr('hw_flatbread', 2))),
-        ('강황 약초즙 1잔을 달여 매솔에게 넘긴다', nd(DM, cr('hw_turmeric_broth', 1))),
+        ('흐름 맺힌 정 1개를 매솔에게 넘긴다', nd(DM, give={'flow_essence': 1})),
         ('달맞이성에서 쉰다', nd(DM, rs(DM))),
         ('달그늘 대숲에서 4번 채집하고, 계단 우물 수로에서 4번 낚시한다', nd(DM, ga(BAMBOO, 4), fi(DM, 4))),
         ('달맞이 들녘에서 들쥐 떼와 밭고랑 땅벌을 4번 쫓아낸다', nd(DM, wi(4, FIELD, ['hw_field_1', 'hw_field_2']))),
@@ -232,7 +234,7 @@ PLAN = {
     ]),
     11: dict(L=54, region=POOL, items={'hw_spice_milk_tea': 3, 'flow_essence': 2}, steps=[
         ('낯익은 목소리를 듣는다', nd(DM)),
-        ('달맞이성 어귀의 성문 우물 턱에서 미나리 2개를 모은다', nd(DM, ga(DM, 2, ['fd_minari']))),
+        ('달맞이성 계단 우물 수로에서 널다리 망둥이 2마리를 낚는다', nd(DM, fi(DM, 2, ['hw_canal_goby']))),
         ('달그늘 대숲에서 야령초 5개를 캔다', nd(DM, ga(BAMBOO, 5, ['herb']))),
         ('강황 약초즙 4잔을 달여 새움에게 넘긴다', nd(DM, cr('hw_turmeric_broth', 4))),
         ('고임터에 도착해 5번 탐색한다', nd(POOL, tv(POOL), sr(POOL, 5))),
@@ -248,12 +250,12 @@ PLAN = {
         ('본부 정청에서 쉰다', nd(HQ, rs(HQ))),
         ('달맞이성에 도착한다', nd(DM, tv(DM))),
         ('향신 우유차 3잔을 끓여 청파에게 넘긴다', nd(DM, cr('hw_spice_milk_tea', 3))),
-        ('달맞이 들녘을 5번 탐색한다', nd(DM, sr(FIELD, 5))),
+        ('달맞이 들녘·달그늘 대숲·일곱 아치 돌다리 가운데 서로 다른 세 곳을 탐색한다', nd(DM, {'t': 'search', 'r': [FIELD, BAMBOO, 'dm_bridge'], 'n': 3, 'distinct': True})),
     ]),
     13: dict(L=54, region=POOL, items={'flow_essence': 3, 'hw_spice_table': 2}, steps=[
         ('무너지는 길을 본다', nd(DM)),
         ('달맞이 들녘에서 솟은 흙 덩이를 5번 해체한다', nd(DM, wi(5, FIELD, ['hw_field_3']))),
-        ('볶은 보릿가루 경단 4개를 만들어 바랑에게 넘긴다', nd(DM, cr('hw_barley_ball', 4))),
+        ('노정 건량 4개를 바랑에게 넘긴다', nd(DM, give={'travel_ration': 4})),
         ('회춘단 4개를 지어 넘긴다', nd(DM, cr('rejuv_pill', 4))),
         ('고임터에 도착해 4번 탐색한다', nd(POOL, tv(POOL), sr(POOL, 4))),
         ('고임터에서 얼굴 없는 형상과 넘친 기운 덩이를 4번 해체한다', nd(POOL, wi(4, POOL, ['hw_pool_3', 'hw_pool_4']))),
@@ -277,7 +279,7 @@ PLAN = {
         ('첫볕 물가에 도착한다', nd(COAST, tv(COAST))),
         ('땅거미에 첫볕 물가를 4번 탐색한다', nd(COAST, sr(COAST, 4, ['dusk']))),
         ('연밥 죽 4그릇을 쑤어 넘긴다', nd(HO, cr('hw_lotus_porridge', 4))),
-        ('첫볕 바위 물가에서 4번 낚시한다', nd(HO, fi(COAST, 4))),
+        ('첫볕 바위 물가에서 물너울 전갱이 4마리를 낚는다', nd(HO, fi(COAST, 4, ['hw_sea_mackerel']))),
         ('해돋이에 해오름성에서 쉰다', nd(HO, rs(HO, ['dawn']))),
     ]),
 }
