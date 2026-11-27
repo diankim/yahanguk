@@ -97,7 +97,7 @@ function bind() {
     run(b, () => act('world_bijang_pick', { p_run: rid, p_door: d }));
   });
   const j = $('#bj-join', el);
-  if (j) j.onclick = () => run(j, async () => { await act('world_pfight_join', { p_fight: snap.fight.id }); window.yahangGo('pfight', snap.fight.id); return null; });
+  if (j) j.onclick = () => run(j, async () => { const { staminaRetry } = await import('./item.js'); const r = await staminaRetry(() => act('world_pfight_join', { p_fight: snap.fight.id })); if (r !== null) window.yahangGo('pfight', snap.fight.id); return null; });
 }
 
 async function run(btn, fn) {

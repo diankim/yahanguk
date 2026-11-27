@@ -164,7 +164,7 @@ function resultHtml(s) {
 
 function bind() {
   const b = $('#pf-begin', el); if (b) b.onclick = () => run(b, () => rpc('world_pfight_begin', { p_fight: fid }));
-  const j = $('#pf-join', el); if (j) j.onclick = () => run(j, async () => { await rpc('world_pfight_join', { p_fight: fid }); return rpc('world_pfight_snapshot', { p_fight: fid }); });
+  const j = $('#pf-join', el); if (j) j.onclick = () => run(j, async () => { const { staminaRetry } = await import('./item.js'); await staminaRetry(() => rpc('world_pfight_join', { p_fight: fid })); return rpc('world_pfight_snapshot', { p_fight: fid }); });
   $$('[data-pf]', el).forEach(x => x.onclick = () => run(x, () => rpc('world_pfight_act', { p_fight: fid, p_action: x.dataset.pf, p_item: null })));
   const ib = $('#pf-items', el); if (ib) ib.onclick = tray.open;
   $$('[data-pick]', el).forEach(x => x.onclick = () => { const id = x.dataset.pick; sel = sel === id ? null : id; draw(); });
