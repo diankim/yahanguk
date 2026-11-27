@@ -29,5 +29,8 @@ $a$'hidden', hidden, 'here_id'$a$,
 $a$'hidden', hidden, 'hidden_by', hb, 'here_id'$a$
 ]);
 
+update public.world_patch_notes set body = body || E'\n- [퀘스트] 할 일이 여럿인 장면에서 하나를 마치면 그 자리에서 알려 줍니다(현장 화면).\n- [일지] 보조 퀘스트 칸 아래 「앞 퀘스트를 마치면 열리는 퀘스트」를 펼치면, 지금 받거나 하는 중인 퀘스트 뒤에 어떤 갈래의 퀘스트가 몇 편 열리는지 보입니다.\n- [도움말] 전투불능 항목에 요화로 쓰러지면 시간이 지나도 목숨을 잃지 않는다는 안내를 더했습니다.'
+where note_id = '3.8.0' and position('[일지] 보조 퀘스트 칸 아래' in body) = 0;
+
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261127220000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
