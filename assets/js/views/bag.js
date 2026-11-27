@@ -10,6 +10,7 @@ import { GWIRYEONG, BIJANG, WEAK_NAMES } from '../rules.js';
 import { hit } from '../changes.js';
 import { ownKind, ownSlot, fillOwned } from '../owned.js';
 import { GAMEDATA } from '../gamedata.js';
+import { kitAllHtml, bindKitAll } from './services.js';
 
 const SUBS = [['items', '소지품', 'bag'], ['equip', '장비', 'shield'], ['craft', '제작', 'hammer']];
 const CATS = [['all', '전체'], ['consumable', '소모품'], ['material', '재료'], ['gear', '장비'], ['etc', '기타']];
@@ -233,7 +234,7 @@ async function equip(body, inv) {
   };
   const token = tokenRowHtml();
   body.innerHTML = `<div class="eq-split">
-      <div class="eq-left"><details class="panel fold pt-fold" data-fold="gear-sets" ${foldOpen('gear-sets', true) ? 'open' : ''}><summary class="panel-head"><h2>${icon('refresh', 16)}장비 세트${helpQ(GEAR_SET_TIP(), '장비 세트')}</h2></summary><div class="panel-body"><div id="gear-sets"><p class="muted small">불러오는 중…</p></div></div></details>${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
+      <div class="eq-left"><details class="panel fold pt-fold" data-fold="gear-sets" ${foldOpen('gear-sets', true) ? 'open' : ''}><summary class="panel-head"><h2>${icon('refresh', 16)}장비 세트${helpQ(GEAR_SET_TIP(), '장비 세트')}</h2></summary><div class="panel-body"><div id="gear-sets"><p class="muted small">불러오는 중…</p></div></div></details>${panel('장착 중인 장비', `${eqMini(inv, prof, true)}${token ? `<ul class="equip-list">${token}</ul>` : ''}<p class="muted small">칸을 누르면 그 부위의 장비를 고치거나 바꿔 낄 수 있습니다.</p>${kitAllHtml(rq, have)}`, { ico: 'shield', extra: helpQ(`${EQUIP_TIP} ${DUR_NOTE}`, '장비 안내') })}</div>
       <div class="eq-right" id="eq-detail"></div>
     </div>`;
   const slotBody = slot => `<ul class="equip-list">${equipRowLi(inv, prof, here, slot, rq)}</ul><h3 class="sub-h">바꿔 낄 장비</h3>${optionsHtml(slot)}`;
@@ -244,7 +245,7 @@ async function equip(body, inv) {
     bindActions(body); bindRepair(body);
   };
   bindActions(body); bindRepair(body);
-  drawGearSets($('#gear-sets', body), eq, inv);
+  drawGearSets($('#gear-sets', body), eq, inv); bindKitAll(body);
   if (wideEq()) drawDetail(SLOTS[eqSel] ? eqSel : 'weapon');
   $$('[data-eqslot]', body).forEach(b => b.onclick = () => {
     const slot = b.dataset.eqslot;

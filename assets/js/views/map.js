@@ -6,7 +6,8 @@ import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
 import { GAMEDATA } from '../gamedata.js';
 import { helpQ, helpLine } from '../tips.js';
-import { weakSafe, TRAVEL_FAMILIAR } from '../rules.js';
+import { weakSafe, TRAVEL_FAMILIAR, TOKEN_CAP, TOKEN_TIP } from '../rules.js';
+import { mountFavFirst, mountFavBtn, bindMountFav } from './services.js';
 
 const bjMaps = () => store.hud?.bijang?.maps || [];
 const bjAt = id => bjMaps().filter(m => m.region_id === id);
@@ -514,14 +515,14 @@ async function drawTravel(body) {
             <div class="btn-row"><button class="btn small primary" data-ride-depart="${esc(g)}">지금 출발</button></div></div>`; }).join('')}
         ${!incoming.length && !outgoing.length && !joined.length ? empty('대기 중인 동승 요청이 없습니다.', 'users') : ''}`, { ico: 'users', extra: helpQ(RIDE_TIP, '동승 안내') })}
     </div>
-    ${panel('내 탈것', `${RAID_ON && !mounts?.mount_id ? `<p class="hint">${icon('route', 14)} 지금은 탈것 없이 <b>걸어 다닙니다</b>(속도 ×1, 노정패 운임 없음). 아래에서 탈것을 고르면 다시 탑니다.</p>` : ''}<div class="mount-grid">${owned.map(m => `
+    ${panel('내 탈것', `${RAID_ON && !mounts?.mount_id ? `<p class="hint">${icon('route', 14)} 지금은 탈것 없이 <b>걸어 다닙니다</b>(속도 ×1, 노정패 운임 없음). 아래에서 탈것을 고르면 다시 탑니다.</p>` : ''}<div class="mount-grid">${mountFavFirst(mounts, owned).map(m => `
       <article class="mount ${m.equipped ? 'on' : ''}">
-        <header><b>${esc(m.mount_name)}</b>${chip(m.tier)}</header>
+        <header><b>${mountFavBtn(mounts, m)}${esc(m.mount_name)}</b>${chip(m.tier)}</header>
         <p>${esc(m.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}${Number(m.river_speed) > 1 ? ` <small class="good">뱃길 ×${Number(m.river_speed).toFixed(2)}</small>` : ''}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free || m.river_free ? `없음${m.river_free && !m.fare_free ? ' (수향연맹 뱃길)' : ''}` : `구간당 노정패 ${m.fare_tokens}`}</dd></div></dl>
         ${m.equipped ? `<span class="btn-row">${chip('사용 중', 'accent')}${RAID_ON && !status?.in_transit ? `<button class="btn small ghost" id="mt-off" title="탈것에서 내려 걸어 다닙니다(속도 ×1, 운임 없음)">내리기</button>` : ''}</span>` : status?.in_transit ? `<button class="btn small" disabled title="도착한 뒤에 바꿀 수 있습니다">이동 중에는 못 바꿈</button>` : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
       </article>`).join('')}</div>
-      ${helpLine(`노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.`, '노정패 안내', `노정패 ${fmt.num(mounts?.mount_tokens)}개`)}`, { ico: 'route' })}
+      ${helpLine(`노정패 ${fmt.num(mounts?.mount_tokens)} / ${fmt.num(TOKEN_CAP)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.`, '노정패 안내', `노정패 ${fmt.num(mounts?.mount_tokens)}개`)}`, { ico: 'route' })}
     ${panel('얻을 수 있는 탈것', others.length ? `<ul class="spot-list">${others.map(m => `<li><div><b>${esc(m.mount_name)}</b>
         <small>${m.acquire_method === 'event' ? '특별한 사건으로만 얻을 수 있습니다' : m.acquire_method === 'faction' ? `${esc(MAJOR_FACTIONS[m.unlock_faction]?.name || '세력')} 비고에서 공훈으로` : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
         ${m.acquire_method === 'stable' && m.unlock_region ? `<button class="btn small ghost" data-goto="${esc(m.unlock_region)}">지도에서 보기</button>` : ''}</li>`).join('')}</ul>` : empty('모든 탈것을 가지고 있습니다.'), { ico: 'shop' })}`;
@@ -531,6 +532,7 @@ async function drawTravel(body) {
   if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 취소하면 3분 동안 다시 출발할 수 없습니다. 출발할 때 낸 운임은 돌려받지 못합니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };
   $$('[data-ride]', body).forEach(b => b.onclick = () => guard(b, async () => { const res = await act('world_travel_party_respond_v2', { p_request_id: b.dataset.ride, p_accept: b.dataset.accept === '1' }); if (res?.waiting) rideGoLater(res.group_id, res.expires_at); return res; }));
   $$('[data-ride-depart]', body).forEach(b => b.onclick = () => guard(b, () => act('world_travel_party_depart', { p_group: b.dataset.rideDepart })));
+  bindMountFav(body);
   $$('[data-equip]', body).forEach(b => b.onclick = () => guard(b, () => act('world_mount_equip', { p_mount_id: b.dataset.equip })));
   const mtOff = $('#mt-off', body); if (mtOff) mtOff.onclick = async () => { if (await ask('탈것에서 내려 걸어 다닐까요? 이동이 느려지는 대신 노정패 운임을 쓰지 않습니다. 언제든 다시 탈 수 있습니다.', { title: '탈것에서 내리기', ok: '내리기' })) guard(mtOff, () => act('world_mount_unequip')); };
   $$('[data-goto]', body).forEach(b => b.onclick = () => { focusRegion(b.dataset.goto); switchTo('world'); });

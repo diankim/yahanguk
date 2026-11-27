@@ -3,7 +3,8 @@ import { hit } from '../changes.js';
 import { load, loadPrices, chip, loading, errorBox, foldOpen, rarRow } from './common.js';
 import { openItemInfo, loadLocks, isLocked, lockFree, lockTag } from './item.js';
 import { helpQ, helpLine } from '../tips.js';
-import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES } from '../rules.js';
+import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES, TOKEN_CAP } from '../rules.js';
+import { hqCount } from '../hq.js';
 import { ownSlot, ownKind, fillOwned } from '../owned.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
@@ -234,9 +235,9 @@ async function repairPane(body) {
       <div class="item-act"><button class="btn small" data-here="수리" data-rep-one="${esc(i.item_id)}" ${store.character?.gil < i.cost ? 'disabled' : ''}>고치기</button></div></li>`).join('')}</ul>
     <div class="shop-foot"><span>${items.length}개 · 합계 <b>${fmt.jeon(q.total)}</b>${store.character?.gil < q.total ? ' <span class="bad">· 전이 모자랍니다</span>' : ''}</span>
       <button class="btn primary" id="rep-all" data-here="수리" ${store.character?.gil < q.total ? 'disabled' : ''}>모두 고치기</button></div>
-    <p class="muted small">하나씩 고치거나 한 번에 모두 새것처럼 고칩니다. 값은 어느 쪽이든 같습니다.</p>`
+    <p class="muted small">하나씩 고치거나 한 번에 모두 새것처럼 고칩니다. 값은 어느 쪽이든 같습니다.</p>${kitAllHtml(q, store.character?.inventory)}`
     : empty('고칠 장비가 없습니다. 모두 멀쩡합니다.', 'shield');
-  bindInfo(body);
+  bindInfo(body); bindKitAll(body, () => repairPane(body));
   $$('[data-rep-one]', body).forEach(b => b.onclick = async () => {
     await guard(b, () => act('world_equipment_repair', { p_item_id: b.dataset.repOne, p_method: 'gil' }));
     repairPane(body);
@@ -262,17 +263,18 @@ async function dismantlePane(body) {
       const what = !d.line ? '' : low ? `<span class="bad">재료 없음 · ${esc(d.line_name)} 경험 +12만(${esc(d.line_name)} ${d.need}단계부터 재료)</span>`
         : `돌려받는 재료: ${esc(yieldText(d.yield) || '—')} · ${esc(d.line_name)} 경험 +12`;
       return `<li class="${rarRow(k)}"><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
-        <div class="item-act"><button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
+        ${actBox({ key: `dis:${k}`, max: Math.max(0, free), value: 1, off: !!why, btns: [`<button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button>`] })}</li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
   body.innerHTML += `${helpLine(`장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.`, '분해 안내')}`;
-  bindInfo(body);
+  bindInfo(body); bindQty(body);
   $$('[data-dis]', body).forEach(b => b.onclick = async () => {
-    const d = di?.[b.dataset.dis] || {};
+    const d = di?.[b.dataset.dis] || {}, row = rows.find(r => r.k === b.dataset.dis);
+    const n = Math.max(1, Math.min(row?.free || 1, qtyOf(body, `dis:${b.dataset.dis}`) || 1)), what = n > 1 ? `${n}개` : '하나';
     const ok = b.dataset.low
-      ? await ask(`${d.line_name} 기술이 ${d.need}단계가 되지 않아(지금 ${d.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${d.line_name} 경험 12만 얻고 「${nameOf(b.dataset.dis)}」 하나는 사라집니다.`, { title: '경험만 얻는 분해', ok: '경험만 받고 분해', cancel: '그만두기' })
-      : await ask(`${nameOf(b.dataset.dis)} 하나를 분해할까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' });
+      ? await ask(`${d.line_name} 기술이 ${d.need}단계가 되지 않아(지금 ${d.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${d.line_name} 경험 ${12 * n}만 얻고 「${nameOf(b.dataset.dis)}」 ${what}는 사라집니다.`, { title: '경험만 얻는 분해', ok: '경험만 받고 분해', cancel: '그만두기' })
+      : await ask(`${nameOf(b.dataset.dis)} ${what}를 분해할까요? 되돌릴 수 없습니다.${n > 1 ? '\n장착 중인 것과 잠가 지키는 몫은 분해하지 않습니다.' : ''}`, { title: n > 1 ? '한꺼번에 분해' : '분해', ok: '분해하기' });
     if (!ok) return;
-    await guard(b, () => act('world_dismantle_item', { p_item_id: b.dataset.dis }));
+    await guard(b, () => n > 1 ? act('world_dismantle_batch', { p_item_id: b.dataset.dis, p_times: n }) : act('world_dismantle_item', { p_item_id: b.dataset.dis }));
     dismantlePane(body);
   });
 }
@@ -623,11 +625,11 @@ export async function renderStable(box) {
     const m = await load('world_mount_snapshot', undefined, { maxAge: 600000 });
     const here = (m.mounts || []).filter(x => x.at_stable && x.acquire_method !== 'faction');
     const c = store.character;
-    const mine = (m.mounts || []).filter(x => x.owned);
+    const mine = mountFavFirst(m, (m.mounts || []).filter(x => x.owned));
     const tokens = Number(m.mount_tokens || 0);
-    const train = mine.length ? `<h3 class="sub-h">탈것 단련 <small class="muted">가진 노정패 ${tokens}개 · 단계마다 이동 속도 +4% (최고 5단계)</small></h3>
+    const train = mine.length ? `<h3 class="sub-h">탈것 단련 <small class="muted">가진 노정패 ${fmt.num(tokens)} / ${fmt.num(TOKEN_CAP)}개 · 단계마다 이동 속도 +4% (최고 5단계)</small></h3>
       <ul class="spot-list train-list">${mine.map(x => { const lv = Number(x.training || 0), cost = 20 * (lv + 1);
-        return `<li><div><b>${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
+        return `<li><div><b>${mountFavBtn(m, x)}${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
           ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-here="탈것 단련" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; }).join('')}</ul>` : '';
     box.innerHTML = train + (here.length ? `<h3 class="sub-h">들일 수 있는 탈것</h3>` : '') + (here.length ? `<div class="mount-grid">${here.map(x => `<article class="mount ${x.owned ? 'on' : ''}">
         <header><b>${esc(x.mount_name)}</b>${chip(x.tier)}</header><p>${esc(x.description || '')}</p>
@@ -635,10 +637,26 @@ export async function renderStable(box) {
         <small class="muted">${esc(conditions(x, c))}</small>
         ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-here="탈것 들이기" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
       : (mine.length ? '' : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route')));
+    bindMountFav(box);
     $$('[data-train]', box).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_mount_train', { p_mount_id: b.dataset.train }); renderStable(box); return out; }));
     $$('[data-buy]', box).forEach(b => b.onclick = async () => { if (await ask('이 탈것을 들일까요?', { title: '탈것 들이기', ok: '들이기' })) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
   } catch (e) { box.innerHTML = errorBox(e.message); }
 }
+const MSTAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
+const mFavs = snap => new Set(snap?.favs || []);
+export const mountFavFirst = (snap, list) => { const f = [...(snap?.favs || [])]; const at = m => m.equipped ? -1 : (i => i < 0 ? 1e9 : i)(f.indexOf(m.mount_id)); return list.map((m, i) => [m, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map(([m]) => m); };
+export const mountFavBtn = (snap, m) => { if (!m.owned) return ''; const on = mFavs(snap).has(m.mount_id), t = on ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기 · 목록 위에 먼저 보입니다';
+  return `<button type="button" class="fav-star ${on ? 'on' : ''}" data-mfav="${esc(m.mount_id)}" aria-pressed="${on}" aria-label="${t}" title="${t}">${MSTAR}</button>`; };
+export const bindMountFav = root => $$('[data-mfav]', root).forEach(b => b.onclick = e => { e.stopPropagation(); guard(b, () => act('world_mount_fav_toggle', { p_mount: b.dataset.mfav })); });
+export const kitAllHtml = (rq, have) => { const n = (rq?.items || []).length; if (!n) return '';
+  const kits = hqCount(have || {}, 'repair_kit');
+  return `<div class="kit-all"><span class="muted small">닳은 장비 ${n}개 · 수리 도구 ${kits}개${helpQ('장착 중인 것부터, 많이 닳은 것부터 장비 하나에 수리 도구 하나씩 씁니다. 도구가 모자라면 있는 만큼만 손봅니다. 어디서나 쓸 수 있고, 한 번에 내구도 절반(우수품 도구는 60%)을 되살립니다.', '수리 도구로 모두 고치기')}</span>
+    <button class="btn small" data-here="수리" data-kit-all data-kits="${kits}" ${kits ? '' : 'disabled'}>${icon('wrench', 14)}<span>수리 도구로 모두 고치기</span></button></div>`; };
+export const bindKitAll = (root, after) => $$('[data-kit-all]', root).forEach(b => b.onclick = async () => {
+  const kits = Number(b.dataset.kits) || 0;
+  if (!await ask(`수리 도구로 닳은 장비를 모두 손볼까요? 장비 하나에 도구 하나씩, 가진 도구(${kits}개)만큼 씁니다.`, { title: '수리 도구로 모두 고치기', ok: '고치기' })) return;
+  await guard(b, () => act('world_equipment_repair_kit_all')); after?.();
+});
 export function conditions(m, c) {
   const p = [];
   if (m.unlock_level > 1) p.push(`Lv.${m.unlock_level}${c && c.level < m.unlock_level ? ' (부족)' : ''}`);
