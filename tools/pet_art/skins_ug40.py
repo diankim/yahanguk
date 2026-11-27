@@ -1,51 +1,245 @@
-import colorsys
-import copy
-import importlib.util
-import os
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-_s = importlib.util.spec_from_file_location('data', os.path.join(HERE, 'data.py'))
-_d = importlib.util.module_from_spec(_s)
-_s.loader.exec_module(_d)
-BASE = {p['id']: p for p in _d.PETS}
-KEEP = {'e', 'i', 'p', 'k', 'w'}
+E = '#2a1a14'; PK = '#f3a0a0'
 SKINS = []
+def skin(**kw): SKINS.append(kw)
 
+IMUGI_PAL = {'a': '#3f86d0', 'b': '#25569a', 'c': '#e8f6fa', 'f': '#a6ecf6', 'w': '#9fdcf6', 's': '#6aaee6',
+             'g': '#e4f8ff', 'h': '#7cc8ec', 'o': '#c4ecff', 'e': E, 'i': '#ffffff', 'p': PK}
+IMUGI_BABY = dict(pal=IMUGI_PAL, idle='''
+.......f.f..
+......aaaaa.
+.....afaaafa
+.....aieaiea
+.....aeeaeea
+.....pacccap
+..bwa.accago
+.bwbaa.aagoh
+.aw.bwaaa.h.
+.bwb.bwbw...''', step='''
+.......f.f..
+......aaaaa.
+.....afaaafa
+.....aieaiea
+.....aeeaeea
+.....pacccap
+.bwa..accago
+bwbaa.aaagoh
+.a..bwaaa.h.
+.aw..bwbwb..''', sleep='''
+.......f.f..
+......aaaaa.
+.....afaaafa
+.....akkakka
+..bwapacccap
+.bwbawbaagog
+bwb.bwaaaggh
+.awbwbwbw.h.''')
+IMUGI_ADULT = dict(pal=IMUGI_PAL, idle='''
+.........f..f...
+........aaaaaa..
+.......afaaaafa.
+.......aieaaiea.
+.......aeeaaeea.
+.......paccccap.
+........acccca..
+.ff......acca.o.
+.ba.....aacb..go
+.bwb...aaccb.goh
+..bwawbacccb.ghh
+..bacccccccb....
+...bwbwbwbwb....''', step='''
+.........f..f...
+........aaaaaa..
+.......afaaaafa.
+.......aieaaiea.
+.......aeeaaeea.
+.......paccccap.
+........acccca..
+.........acca.o.
+ff......aacb..go
+.bwb...aaccb.goh
+..bwawbacccb.ghh
+..bacccccccb....
+...bwbwbwbwb....''', sleep='''
+.........f..f...
+........aaaaaa..
+.......afaaaafa.
+.......akkaakka.
+.ff....paccccap.
+.bwb...aacccab..
+..bwawbaccccb.go
+..bacccccccb.goh
+...bwbwbwbwb..hh''')
+skin(key='ug_neol_imugi', pet='bead_imugi', name='너울 구슬 이무기',
+     desc='흩어진 너울 방울을 구슬처럼 품고 다니는 꼬마 이무기입니다. 등을 타고 물결무늬가 흐르고, 머리 위로 물보라 두 가닥이 늘 튀어 있습니다. 구슬을 굴리면 안에서 파도 소리가 납니다.',
+     baby=IMUGI_BABY, adult=IMUGI_ADULT)
 
-def tint(hexc, hue, sat, light, spread):
-    r, g, b = (int(hexc[i:i + 2], 16) / 255 for i in (1, 3, 5))
-    h, l, s = colorsys.rgb_to_hls(r, g, b)
-    if s < 0.08 and (l < 0.15 or l > 0.9):
-        return hexc
-    nh = (hue + spread * (h - 0.5) * 0.15) % 1
-    ns = min(1, max(0.12, s * sat + 0.12))
-    nl = min(0.92, max(0.12, l * light))
-    r, g, b = colorsys.hls_to_rgb(nh, nl, ns)
-    return '#%02x%02x%02x' % (round(r * 255), round(g * 255), round(b * 255))
+SEAHORSE_PAL = {'a': '#3aa8b8', 'b': '#1f6688', 'c': '#dcf6ee', 'd': '#9cdcd8', 'w': '#86d6e2', 'f': '#f2efcf',
+                'o': '#f8f4ff', 'u': '#c8f0ff', 'e': E, 'i': '#ffffff', 'p': '#ff8a9a'}
+SEAHORSE_BABY = dict(pal=SEAHORSE_PAL, idle='''
+...o.b.o.....
+...bbbbb.....
+..aaaaaaa....
+..aaaieaa....
+..aaaeeaaaaab
+..apaaaa.....
+f..wwacc..u..
+ff.aaadc.....
+f..wwacc.u...
+...aaadc.....
+..b..wac.....
+.bb..aa......
+..bbbb.......''', step='''
+...o.b.o.....
+...bbbbb.....
+..aaaaaaa....
+..aaaieaa....
+..aaaeeaaaaab
+..apaaaa.....
+...wwacc..u..
+ff.aaadc.....
+fff.wwacc.u..
+...aaadc.....
+..b..wac.....
+.bb..aa......
+..bbbb.......''', sleep='''
+...o.b.o.....
+...bbbbb.....
+..aaaaaaa....
+..aaakkaa....
+..apaaaaaaaab
+f..wwacc..u..
+ff.aaadc.....
+f..wwacc.u...
+..baaadc.....
+.bbaaac......
+..bbbb.......''')
+SEAHORSE_ADULT = dict(pal=SEAHORSE_PAL, idle='''
+....o.b.o.b....
+....bbbbbbb....
+...aaaaaaaa....
+...awaaaaaaa...
+...aaaieaaa....
+...aaaeeaaaaaab
+...apaaaaa.....
+f...wwwacc..u..
+ff..aaaadc.....
+fff.wwwacc.u...
+ff..aaaadc.....
+.....wwacc..u..
+......aadc.....
+..b...wac......
+.bb...aa.......
+..bbbbbb.......''', step='''
+....o.b.o.b....
+....bbbbbbb....
+...aaaaaaaa....
+...awaaaaaaa...
+...aaaieaaa....
+...aaaeeaaaaaab
+...apaaaaa.....
+....wwwacc..u..
+ff..aaaadc.....
+fff.wwwacc.u...
+ffff.aaadc.....
+.....wwacc..u..
+......aadc.....
+..b...wac......
+.bb...aa.......
+..bbbbbb.......''', sleep='''
+....o.b.o.b....
+....bbbbbbb....
+...aaaaaaaa....
+...awaaaaaaa...
+...aaakkaaaaaab
+...apaaaaa.....
+f...wwwacc..u..
+ff..aaaadc.....
+fff.wwwacc.u...
+ff..aaaadc.....
+..b.wwwacc.....
+.bbaaaadc......
+..bbbbbb.......''')
+skin(key='ug_rift_seahorse', pet='bj_seahorse', name='물목 해마',
+     desc='뒤집힌 물목이 제 방향으로 돌던 밤, 쪽빛 물살에 섞여 올라온 아기 해마입니다. 몸에는 물살 자국 같은 줄무늬가 감기고, 머리에는 조그만 진주 두 알이 박혀 있습니다. 숨을 쉴 때마다 물방울이 뽀글뽀글 올라갑니다.',
+     baby=SEAHORSE_BABY, adult=SEAHORSE_ADULT)
 
+PLATYPUS_PAL = {'a': '#5f86a8', 't': '#36587a', 'b': '#e09a52', 's': '#ecdcb2', 'w': '#a6dcec', 'd': '#f6efd8',
+                'l': '#3a4a5a', 'h': '#f6b8b0', 'r': '#e07a86', 'e': E, 'i': '#ffffff', 'p': PK}
+PLATYPUS_BABY = dict(pal=PLATYPUS_PAL, idle='''
+.....hrh....
+....aahaa...
+...aaaaaaa..
+...aaieaabbb
+tt.aaeeaabbb
+tdawawawpbb.
+ttssssssss..
+.ssssssssss.
+..ll....ll..''', step_tail='''
+...ll..ll...''', sleep='''
+.....hrh....
+....aahaa...
+...aakkaabbb
+tdawawawpbbb
+ttsssssssss.
+.ssssssssss.''')
+PLATYPUS_ADULT = dict(pal=PLATYPUS_PAL, idle='''
+........hrh.....
+.......aahaa....
+.....aaaaaaaa...
+.....aaaieaaabbb
+ttt..aaaeeaaabbb
+tdtaaaaaaaaapbb.
+tttawawawawawa..
+.tdssssssssssss.
+..sssssssssss...
+..ll.ll...ll.ll.''', step_tail='''
+...ll.ll.ll.ll..''', sleep='''
+........hrh.....
+.......aahaa....
+.....aaakkaaabbb
+tdtaaaaaaaaapbbb
+tttawawawawawab.
+.ssssssssssssss.''')
+skin(key='ug_tide_platypus', pet='platypus', name='물때 부리너구리',
+     desc='물때가 바뀌는 때를 귀신같이 아는 부리너구리입니다. 등은 젖은 물빛, 배는 마른 모래빛이라 그 사이에 물결선이 그어진 것처럼 보입니다. 정수리에 작은 분홍 조개를 얹고 다니며, 썰물이 시작되면 부리로 모래를 톡톡 두드려 알려 줍니다.',
+     baby=PLATYPUS_BABY, adult=PLATYPUS_ADULT)
 
-def recolor(form, hue, sat=1.0, light=1.0, spread=1.0, extra=None):
-    f = copy.deepcopy(form)
-    pal = dict(f['pal'])
-    for k, v in pal.items():
-        if k not in KEEP:
-            pal[k] = tint(v, hue, sat, light, spread)
-    pal.update(extra or {})
-    f['pal'] = pal
-    return f
-
-
-def skin(key, pet, name, desc, hue, sat=1.0, light=1.0, spread=1.0, extra=None):
-    b = BASE[pet]
-    SKINS.append(dict(key=key, pet=pet, name=name, desc=desc,
-                      baby=recolor(b['baby'], hue, sat, light, spread, extra), adult=recolor(b['adult'], hue, sat, light, spread, extra)))
-
-
-skin('ug_rift_seahorse', 'bj_seahorse', '물목 해마',
-     '뒤집힌 물목이 제 방향으로 돌던 밤, 쪽빛 물살에 섞여 올라온 아기 해마입니다. 꼬리를 말았다 풀 때마다 물빛이 한 번 일렁입니다.', 0.52, sat=1.1)
-skin('ug_tide_platypus', 'platypus', '물때 부리너구리',
-     '물때가 바뀌는 때를 귀신같이 아는 부리너구리입니다. 썰물이 시작되면 부리로 모래를 톡톡 두드려 알려 줍니다.', 0.46, sat=0.9)
-skin('ug_stone_pillbug', 'pill_bug', '땅울림 공벌레',
-     '고임터 돌판 틈에서 땅울음을 자장가 삼아 자란 공벌레입니다. 몸을 말면 이끼 낀 쐐기돌처럼 보입니다.', 0.38, sat=0.45, light=1.05)
-skin('ug_neol_imugi', 'bead_imugi', '너울 구슬 이무기',
-     '흩어진 너울 방울을 구슬처럼 품고 다니는 꼬마 이무기입니다. 구슬을 굴리면 안에서 파도 소리가 납니다.', 0.58, sat=1.15)
+PILLBUG_PAL = {'a': '#a49a86', 'b': '#7a705e', 'c': '#4a4034', 'g': '#7cc25a', 'm': '#4e9a3c', 'n': '#5a5246',
+               'e': E, 'i': '#ffffff', 'p': PK}
+PILLBUG_BABY = dict(pal=PILLBUG_PAL, idle='''
+....g.m...nn.
+....gbmbgbaa.
+..abcbababaaa
+.babcbababaie
+abababcbabaee
+.bababcbabpa.
+..n.n.n.n.n..''', step_tail='''
+.n.n.n.n.n...''', sleep='''
+...agma...
+.aabbbbaa.
+abbacaabba
+abakkakkba
+abpaacapba
+.aabbbbaa.
+...aaaa...''')
+PILLBUG_ADULT = dict(pal=PILLBUG_PAL, idle='''
+......g..mg...nn.
+.....bgbmbgbaaa..
+...babcbababaaaa.
+..ababcbabcbaaaie
+.babababcbcbaaaee
+.babababcbabaapa.
+..ababababababa..
+..n.n.n.n.n.n.n..''', step_tail='''
+.n.n.n.n.n.n.n...''', sleep='''
+....agma....
+..aabbbbaa..
+.abbacaabba.
+abaabbbbaaba
+abakkaakkaba
+abpaaacaapba
+.abbaacabba.
+..aabbbbaa..''')
+skin(key='ug_stone_pillbug', pet='pill_bug', name='땅울림 공벌레',
+     desc='고임터 돌판 틈에서 땅울음을 자장가 삼아 자란 공벌레입니다. 등딱지마다 돌 갈라짐이 나 있고 그 위에 이끼가 몇 가닥 돋았습니다. 몸을 말면 이끼 낀 쐐기돌처럼 보입니다.',
+     baby=PILLBUG_BABY, adult=PILLBUG_ADULT)
