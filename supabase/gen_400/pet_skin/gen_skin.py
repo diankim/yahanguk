@@ -103,6 +103,10 @@ def emit(D, SQ, errors, J):
     for k, s in new.items():
         if k in E:
             skins[k] = {'pet': s['pet'], 'name': s['name'], **E[k]}
+    for k, s in load('skins_ug40.py').items():
+        if k in skins:
+            errors.append('무늬 열쇠 겹침: ' + k)
+        skins[k] = {'pet': s['pet'], 'name': s['name'], 'how': 'earn', 'by': 'shop', 'src': '무용담 교환 · 무용담 · 도해수'}
     body = json.dumps({'skins': skins}, ensure_ascii=False, separators=(',', ':'))
     head = f"""create or replace function public.world_pet_skin_rules() returns jsonb language sql immutable set search_path = pg_catalog as $R$
   select $J${body}$J$::jsonb

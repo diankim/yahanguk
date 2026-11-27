@@ -4,11 +4,11 @@ import { rarRow, load } from './views/common.js';
 import { AV, fixLook, registerDesigns } from './housing/avatarsprite.js';
 import { wornBar, wornImg } from './views/wornbar.js';
 
-const KIND = { frame: '테두리', pattern: '바탕 무늬', seal: '낙관', name_style: '이름 색', pet: '꼬마 동무', outfit: '옷·장신구' };
+const KIND = { frame: '테두리', pattern: '바탕 무늬', seal: '낙관', name_style: '이름 색', pet: '꼬마 동무', skin: '동무 무늬', outfit: '옷·장신구' };
 const kindOf = x => KIND[x.kind] || (String(x.id).startsWith('hp_') ? '벽지' : String(x.id).startsWith('hg_') ? '바닥재' : String(x.id).startsWith('hf_') ? '가구' : '물품');
 const isFurn = x => /^h[fpg]_/.test(String(x.id));
 const lookOf = x => { const [slot, key] = String(x.id).split(':'); return AV[slot]?.[key] ? [slot, key] : null; };
-const canPic = x => isFurn(x) || x.kind === 'pet' || (x.kind === 'outfit' && lookOf(x));
+const canPic = x => isFurn(x) || x.kind === 'pet' || x.kind === 'skin' || (x.kind === 'outfit' && lookOf(x));
 const CROP = { top: [4, 14, 22, 20], bottom: [5, 24, 20, 12], acc: [0, 0, 30, 26] };
 
 async function myLook() {
@@ -19,10 +19,11 @@ async function myLook() {
 
 async function picOf(x, big) {
   if (isFurn(x)) { const { furnPic } = await import('./housing/thumbs.js'); return furnPic(x.id); }
-  if (x.kind === 'pet') {
+  if (x.kind === 'pet' || x.kind === 'skin') {
     const { petImage } = await import('./housing/petsprite.js');
-    return big ? `<img class="ug-pet" src="${petImage(x.id, false, { scale: 5 })}" alt="아기 모습"><img class="ug-pet" src="${petImage(x.id, true, { scale: 5 })}" alt="다 자란 모습">`
-      : `<img src="${petImage(x.id, true, { scale: 2 })}" alt="">`;
+    const id = x.kind === 'skin' ? x.pet : x.id, sk = x.kind === 'skin' ? { skin: x.id } : {};
+    return big ? `<img class="ug-pet" src="${petImage(id, false, { scale: 5, ...sk })}" alt="아기 모습"><img class="ug-pet" src="${petImage(id, true, { scale: 5, ...sk })}" alt="다 자란 모습">`
+      : `<img src="${petImage(id, true, { scale: 2, ...sk })}" alt="">`;
   }
   const lk = lookOf(x); if (!lk) return '';
   const [look, job] = await myLook(), l = { ...look, [lk[0]]: lk[1] };
@@ -31,7 +32,7 @@ async function picOf(x, big) {
 }
 
 function openPreview(x) {
-  const layer = openLayer({ title: x.name, body: `<div class="ug-prev" data-ug-big><p class="muted small">불러오는 중…</p></div><p class="muted small ug-prev-note">${esc(kindOf(x))}${x.kind === 'outfit' ? ' · 지금 내 모습에 입혀 본 그림입니다.' : x.kind === 'pet' ? ' · 아기 모습과 다 자란 모습입니다.' : ''}</p>` });
+  const layer = openLayer({ title: x.name, body: `<div class="ug-prev" data-ug-big><p class="muted small">불러오는 중…</p></div><p class="muted small ug-prev-note">${esc(kindOf(x))}${x.kind === 'outfit' ? ' · 지금 내 모습에 입혀 본 그림입니다.' : x.kind === 'pet' ? ' · 아기 모습과 다 자란 모습입니다.' : x.kind === 'skin' ? ' · 바탕 동무를 가진 사람만 동무 도감의 「무늬」에서 고를 수 있습니다.' : ''}</p>` });
   picOf(x, true).then(h => { const box = $('[data-ug-big]', layer); if (box) box.innerHTML = h || '<p class="muted small">미리 볼 그림이 없습니다.</p>'; }).catch(() => {});
 }
 
@@ -47,7 +48,7 @@ export async function openUltimateShop(board) {
     $('#ug-body', m).innerHTML = `<h3 class="sub-h">${esc(b.name || '')} 교환</h3>
       <p class="muted small">${esc(b.token_name || '')} <b>${fmt.num(have)}</b>개 · ${esc(`${b.name || ''}을(를)`)} 깰 때마다 얻습니다. 물품마다 한 번만 바꿀 수 있고, 모두 거래할 수 없으며 능력치 효과는 없습니다. 그림을 누르면 크게 봅니다.</p>
       ${b.open ? '' : '<p class="hint warn">이곳에서 받는 무용담 퀘스트를 마치면 이 싸움이 열립니다.</p>'}
-      <ul class="mt-shop ug-shop">${rows.map(x => `<li class="${rarRow(x.id)} ${x.owned ? 'have' : ''}">${canPic(x) ? `<button type="button" class="ug-thumb" data-ug-pic="${esc(x.key)}" aria-label="${esc(x.name)} 크게 보기"></button>` : '<span class="ug-thumb none"></span>'}<div>${canPic(x) ? `<button type="button" class="link-btn ug-name" data-ug-see="${esc(x.key)}"><b>${esc(x.name)}</b></button>` : `<b>${esc(x.name)}</b>`}${String(x.name).endsWith(kindOf(x)) ? '' : `<small>${esc(kindOf(x))}</small>`}${x.owned ? '' : ownSlot(x.kind === 'pet' ? 'pet:' + x.id : x.kind === 'outfit' ? 'look:' + x.id : x.id)}</div>
+      <ul class="mt-shop ug-shop">${rows.map(x => `<li class="${rarRow(x.id)} ${x.owned ? 'have' : ''}">${canPic(x) ? `<button type="button" class="ug-thumb" data-ug-pic="${esc(x.key)}" aria-label="${esc(x.name)} 크게 보기"></button>` : '<span class="ug-thumb none"></span>'}<div>${canPic(x) ? `<button type="button" class="link-btn ug-name" data-ug-see="${esc(x.key)}"><b>${esc(x.name)}</b></button>` : `<b>${esc(x.name)}</b>`}${String(x.name).endsWith(kindOf(x)) ? '' : `<small>${esc(kindOf(x))}</small>`}${x.owned ? '' : ownSlot(x.kind === 'pet' ? 'pet:' + x.id : x.kind === 'skin' ? 'skin:' + x.pet : x.kind === 'outfit' ? 'look:' + x.id : x.id)}</div>
         <span class="mt-price ug">${fmt.num(x.price)}<small> ${esc(b.token_name || '개')}</small></span>
         ${x.owned ? '<span class="chip ok">바꿈</span>' : `<button class="btn small ${have >= x.price ? 'primary' : ''}" data-here="토큰 교환" data-ug-buy="${esc(x.key)}" ${have >= x.price ? '' : 'disabled'}>바꾸기</button>`}</li>`).join('')}</ul>`;
     fillOwned($('#ug-body', m));

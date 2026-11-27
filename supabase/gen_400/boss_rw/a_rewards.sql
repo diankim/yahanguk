@@ -3,8 +3,8 @@ declare r jsonb := public.world_boss_rules();
 begin
   r := jsonb_set(r, '{dohaesu,first}', (r -> 'dohaesu' -> 'first') || '{"mount": "dh_wave_skiff", "mount_name": "물너울 쪽배", "furniture": "dh_first", "furniture_name": "도해수 비늘 물때표"}'::jsonb);
   r := jsonb_set(r, '{ttangul,first}', (r -> 'ttangul' -> 'first') || '{"furniture": "du_first", "furniture_name": "돌홈 지맥 등잔"}'::jsonb);
-  r := jsonb_set(r, '{dohaesu,both}', '{"with": "ttangul", "name_style": "ns:1044", "name_style_name": "해오름"}'::jsonb);
-  r := jsonb_set(r, '{ttangul,both}', '{"with": "dohaesu", "name_style": "ns:1044", "name_style_name": "해오름"}'::jsonb);
+  r := jsonb_set(r, '{dohaesu,both}', '{"with": "ttangul", "name_style": "ns:1044", "name_style_name": "물때"}'::jsonb);
+  r := jsonb_set(r, '{ttangul,both}', '{"with": "dohaesu", "name_style": "ns:1044", "name_style_name": "물때"}'::jsonb);
   execute format('create or replace function public.world_boss_rules() returns jsonb language sql immutable set search_path = '''' as $f$ select %L::jsonb $f$', r);
 end $$;
 

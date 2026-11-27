@@ -8,6 +8,7 @@ const petOf = id => catItem(id)?.equipment_traits?.pet || null;
 export const ownKind = key => {
   const k = String(key || '');
   if (k.startsWith('pet:')) return 'pet';
+  if (k.startsWith('skin:')) return 'skin';
   if (k.startsWith('look:')) return 'look';
   if (isFurniture(k)) return 'fur';
   if (lookOf(k)) return 'look';
@@ -30,13 +31,13 @@ async function sources(keys) {
   const [home, look, pets] = await Promise.all([
     kinds.has('fur') ? myHomeCounts(rpc).catch(() => null) : null,
     kinds.has('look') ? load('world_avatar_get', undefined, { maxAge: 600000 }).catch(() => null) : null,
-    kinds.has('pet') ? load('world_pet_snapshot', undefined, { maxAge: 120000 }).catch(() => null) : null,
+    kinds.has('pet') || kinds.has('skin') ? load('world_pet_snapshot', undefined, { maxAge: 120000 }).catch(() => null) : null,
   ]);
   return { home, owned: new Set(look?.owned || []), mine: new Set((pets?.mine || []).map(p => p.id)) };
 }
 
 export function ownText(key, src, nobag = false) {
-  const k = String(key), kind = ownKind(k), id = k.startsWith('pet:') || k.startsWith('look:') ? null : baseOf(k);
+  const k = String(key), kind = ownKind(k), id = /^(pet|look|skin):/.test(k) ? null : baseOf(k);
   const held = id && !nobag ? bagOf(id) + storeOf(id) : 0;
   const bag = held ? `가방·창고 ${fmt.num(held)}` : '';
   if (kind === 'fur') {
@@ -51,6 +52,7 @@ export function ownText(key, src, nobag = false) {
     const sp = k.startsWith('pet:') ? k.slice(4) : petOf(id);
     return [sp && src.mine.has(sp) ? '이미 있는 동무' : '', bag].filter(Boolean).join(' · ');
   }
+  if (kind === 'skin') return src.mine.has(k.slice(5)) ? '바탕 동무 있음' : '바탕 동무 없음';
   return '';
 }
 

@@ -108,7 +108,7 @@ def main():
             sizes.append(f"{pid}.{form}: {len(fr['idle'][0])}x{len(fr['idle'])} sleep {len(fr['sleep'][0])}x{len(fr['sleep'])}")
         pets[pid] = e
     skin_list = []
-    for fn in ('skins.py', 'skins_40.py'):
+    for fn in ('skins.py', 'skins_40.py', 'skins_ug40.py'):
         sspec = importlib.util.spec_from_file_location(fn[:-3], os.path.join(HERE, fn))
         sk = importlib.util.module_from_spec(sspec); sspec.loader.exec_module(sk)
         skin_list += sk.SKINS

@@ -573,6 +573,13 @@ part('../boss_min/a_min.sql')
 part('../boss_min/b_hold.sql')
 part('../boss_rw/a_rewards.sql')
 part('../ug_dohaesu/a_ultimate.sql')
+part('../ug_dohaesu/b_miss.sql')
+sys.path.insert(0, os.path.join(HERE, '..', 'ug_dohaesu'))
+import gen_ug as UGD
+import importlib.util as _ilu
+_ss = _ilu.spec_from_file_location('skins_ug40', os.path.join(HERE, '..', '..', '..', 'tools', 'pet_art', 'skins_ug40.py'))
+_sm = _ilu.module_from_spec(_ss); _ss.loader.exec_module(_sm)
+w(UGD.emit(J, errors, {k['key'] for k in _sm.SKINS})[0])
 
 sys.path.insert(0, os.path.join(HERE, '..', 'mounts'))
 import gen_mount as MTG
