@@ -348,8 +348,8 @@ function paint() {
     <path d="${inner}" class="b-inner"/><path d="${coast}" class="b-coast"/><path d="${seaCoast}" class="b-coast sea"/><path d="${border}" class="b-border"/>
     <g class="roads">${roads}</g>${route}
     <g class="gates">${gates}</g><g class="terr">${tnames}</g><g class="labels">${texts}</g><g class="nodes">${nodes}</g>`;
-  paintEdges(edges, here, dest && all.get(dest));
   paintRealm();
+  paintEdges(edges, here, dest && all.get(dest));
 }
 function paintRealm() {
   const lg = $('.faction-legend', el); if (lg && lg.dataset.realm !== realm) lg.outerHTML = factionLegend();
@@ -361,6 +361,9 @@ function paintRealm() {
 }
 function paintEdges(edges, here, dest) {
   const box = $('#map-edges', el); if (!box) return;
+  const below = q => { const x = $(q, el); return x && !x.hidden && x.offsetHeight ? x.offsetTop + x.offsetHeight + 28 : 28; };
+  const minL = below('#map-realm'), minR = below('.map-tools'), maxY = Math.max(minL, minR, (box.clientHeight || box.parentElement?.clientHeight || 0) - 28);
+  edges = edges.map(e => ({ ...e, y: Math.min(maxY, Math.max(e.right ? minR : minL, e.y)) }));
   box.innerHTML = edges.map(e => {
     const name = REALM_NAMES[e.k] || e.k, t = e.right ? `${name} ›` : `‹ ${name}`;
     const note = realmOf(here) === e.k ? '지금 있는 곳' : dest && realmOf(dest) === e.k ? '가는 곳' : e.on ? '경로' : '';

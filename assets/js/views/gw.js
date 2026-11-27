@@ -331,9 +331,9 @@ function drawLobby(s) {
     <section class="panel"><div class="panel-body">
       <p class="desc">${B.desc}</p>
       ${s.invite ? `<button class="btn primary" id="gw-join-inv">${icon('flag', 16)}<span>파티원의 도전에 합류</span></button>` : ''}
-      ${s.story ? `<div class="gw-mode"><p class="small">${B.story}</p><p class="small muted">${B.killed || '쓰러뜨린 횟수'} ${s.story.kills}번</p>
+      ${s.story ? `<div class="gw-mode"><p class="small">${esc(B.story)}</p><p class="small muted">${B.killed || '쓰러뜨린 횟수'} ${s.story.kills}번</p>
         ${s.story.can_open ? `<button class="btn primary" id="gw-open-story">${icon('sword', 16)}<span>${esc(modeName('story'))}에 서기</span></button>` : `<p class="hint">${icon('pin', 14)} ${esc(s.story.why || '지금은 설 수 없습니다.')}</p>`}</div>` : ''}
-      <div class="gw-mode">${s.story ? `<p class="small">${B.hard}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · ${B.killed || '처치'} ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
+      <div class="gw-mode">${s.story ? `<p class="small">${esc(B.hard)}</p>` : ''}<p class="small">${esc(itemName())} ${s.charms}개 · ${B.killed || '처치'} ${s.kills}번</p><p class="small muted">${esc(GW_DAILY)}</p>
       ${s.can_open ? `<button class="btn ${s.story ? '' : 'primary'}" id="gw-open">${icon('sword', 16)}<span>${s.story ? `${esc(modeName('hard'))}에 서기` : B.open}</span></button>`
         : `<p class="hint">${icon('pin', 14)} ${esc(s.why || '지금은 도전할 수 없습니다.')}</p>`}</div>
       ${s.ultimate ? `<div class="gw-mode gw-ult"><p class="small"><b>${esc(GD.boss?.[s.boss]?.modes?.ultimate || '무용담')}</b> · 객사 이야기꾼이 부풀린 이야기 속 싸움입니다. 둘에서 넷까지만 들어가고, 낌새를 미리 보여 주지 않습니다. 횟수 제한이 없고 져도 잃는 것이 없습니다.</p>

@@ -2241,14 +2241,14 @@ const S = [
     ${(TRADE.cosmetics || []).length ? `<p>꾸미기: ${TRADE.cosmetics.map(c => `<b>${esc(c.name)}</b> ${esc(c.cond)}`).join(' · ')}.</p>` : ''}
   `],
   ['cabin', '배 객실', `
-    <p>${esc(CABIN.small || '')} 객실은 별채처럼 가구를 놓아 꾸미는 배 안의 방입니다. 항구 화면의 「객실 꾸미기」나 주소 #/house/cabin으로 들어갑니다.</p>
+    <p>${esc(CABIN.small || '')} 객실은 별채처럼 가구를 놓아 꾸미는 배 안의 방입니다. 항구 화면의 「객실 꾸미기」로 들어갑니다.</p>
     <table class="guide-table"><tr><th>배</th><th>객실</th><th>놓을 수 있는 가구</th></tr>
       ${(TRADE.ships || []).map(x => `<tr><td>${esc(x.name)}</td><td>${x.cabin > 0 ? `${x.cabin}×${x.cabin}` : '없음'}</td><td>${x.cabin > 0 ? (CABIN.cap?.[x.cabin] ?? '—') : '—'}</td></tr>`).join('')}</table>
     <ul>
       <li>${esc(CABIN.editTip)}</li>
       <li>배를 더 큰 단계로 지으면 객실이 넓어지고 놓던 가구는 그대로 남습니다.</li>
-      <li>배 전용 가구는 별채에 놓을 수 없고, 별채 가구 가운데 객실에도 놓을 수 있는 것은 가방·물품 정보에 「객실」 칩이 붙습니다. ${esc((CABIN.fit?.no_cat || []).join('·'))}은(는) 객실에 놓을 수 없습니다.</li>
-      <li>배 전용 가구는 목공·직조·단조 제작법으로 만듭니다(구름나루·철벽 고찰·잔불촌에서 만들면 품질이 오릅니다). ${(CABIN.sources?.cross || []).length ? `「${esc(CABIN.sources.cross.join('」·「'))}」은(는) 배를 직접 타고 처음 바다를 건널 때 받고, ` : ''}${(CABIN.sources?.raid || []).length ? `「${esc(CABIN.sources.raid.join('」·「'))}」은(는) 뱃길 습격을 물리치면 드물게 얻습니다.` : ''}</li>
+      <li>배 전용 가구는 별채에 놓을 수 없고, 별채 가구 가운데 객실에도 놓을 수 있는 것은 가방·물품 정보에 「객실」 칩이 붙습니다. ${esc(`${(CABIN.fit?.no_cat || []).join('·')}은(는) 객실에 놓을 수 없습니다.`)}</li>
+      <li>배 전용 가구는 목공·직조·단조 제작법으로 만듭니다(구름나루·철벽 고찰·잔불촌에서 만들면 품질이 오릅니다). ${(CABIN.sources?.cross || []).length ? esc(`「${CABIN.sources.cross.join('」·「')}」은(는) 배를 직접 타고 처음 바다를 건널 때 받고, `) : ''}${(CABIN.sources?.raid || []).length ? esc(`「${CABIN.sources.raid.join('」·「')}」은(는) 뱃길 습격을 물리치면 드물게 얻습니다.`) : ''}</li>
       <li>${esc(CABIN.viewTip)}</li>
     </ul>
   `],
