@@ -333,11 +333,11 @@ function draw(box, id, inv, prices, mode) {
     if (k === 'lock') { openLockPick(id, have, redraw); return; }
     if (k === 'dismantle') {
       const di = (await load('world_dismantle_info', undefined, { maxAge: 600000 }).catch(() => ({})))?.[id];
-      const low = di && di.rank < di.need;
-      if (!(await ask(low ? `${di.line_name} 기술이 ${di.need}단계가 되지 않아(지금 ${di.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${di.line_name} 경험 12만 얻고 이 장비는 사라집니다.`
-        : `${nameOf(id)} 하나를 분해해 제작 재료 일부를 돌려받을까요?${di ? ` ${di.line_name} 경험 +12.` : ''} 되돌릴 수 없습니다.`,
-        { title: low ? '경험만 얻는 분해' : '분해', ok: low ? '경험만 받고 분해' : '분해하기', cancel: '그만두기' }))) return;
-      if (await run(() => act('world_dismantle_item', { p_item_id: id }))) { closeInfo(); return; }
+      const low = di && di.rank < di.need, n = Math.max(1, Math.min(dcMax, qtyOf(box, 'q') || 1)), what = n > 1 ? `${n}개` : '하나';
+      if (!(await ask(low ? `${di.line_name} 기술이 ${di.need}단계가 되지 않아(지금 ${di.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${di.line_name} 경험 ${12 * n}만 얻고 이 장비 ${what}는 사라집니다.`
+        : `${nameOf(id)} ${what}를 분해해 제작 재료 일부를 돌려받을까요?${di ? ` ${di.line_name} 경험 +${12 * n}.` : ''} 되돌릴 수 없습니다.`,
+        { title: low ? '경험만 얻는 분해' : n > 1 ? '한꺼번에 분해' : '분해', ok: low ? '경험만 받고 분해' : '분해하기', cancel: '그만두기' }))) return;
+      if (await run(() => n > 1 ? act('world_dismantle_batch', { p_item_id: id, p_times: n }) : act('world_dismantle_item', { p_item_id: id }))) { closeInfo(); return; }
       return;
     }
     if (k === 'stash') {

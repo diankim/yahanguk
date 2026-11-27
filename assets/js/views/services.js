@@ -3,7 +3,7 @@ import { hit } from '../changes.js';
 import { load, loadPrices, chip, loading, errorBox, foldOpen, rarRow } from './common.js';
 import { openItemInfo, loadLocks, isLocked, lockFree, lockTag } from './item.js';
 import { helpQ, helpLine } from '../tips.js';
-import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES, MOUNT_REALM } from '../rules.js';
+import { MARKET_SOLD, SHOP_CAP, WEAK_NAMES, MOUNT_REALM, TOKEN_CAP } from '../rules.js';
 import { ownSlot, ownKind, fillOwned } from '../owned.js';
 import { GAMEDATA as GD } from '../gamedata.js';
 import { pickCat, pickRows, pickerHtml, bindPicker, openItemPick, bundleChips, listRowAttrs, listFilterHtml, bindListFilter, qtyHtml, bindQty, qtyOf, actBox } from './itempick.js';
@@ -262,17 +262,18 @@ async function dismantlePane(body) {
       const what = !d.line ? '' : low ? `<span class="bad">재료 없음 · ${esc(d.line_name)} 경험 +12만(${esc(d.line_name)} ${d.need}단계부터 재료)</span>`
         : `돌려받는 재료: ${esc(yieldText(d.yield) || '—')} · ${esc(d.line_name)} 경험 +12`;
       return `<li class="${rarRow(k)}"><div class="item-main"><b>${infoName(k)}</b><span class="qty">×${fmt.num(n)}</span><small>${it.tier || 1}단계${why ? ` · <span class="bad">${esc(why)}</span>` : ''}</small>${what ? `<small>${what}</small>` : ''}</div>
-        <div class="item-act"><button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button></div></li>`; }).join('')}</ul>`
+        ${actBox({ key: `dis:${k}`, max: Math.max(0, free), value: 1, off: !!why, btns: [`<button class="btn small" data-here="분해" data-dis="${esc(k)}" data-low="${low ? 1 : ''}" ${why ? 'disabled' : ''}>분해</button>`] })}</li>`; }).join('')}</ul>`
     : empty('분해할 장비가 없습니다.', 'bag');
   body.innerHTML += `${helpLine(`장비를 부수면 그 장비를 맡는 제작 계열(단조·목공·법구 공예·봉인 공예·직조·가죽 공예) 경험 12를 얻습니다. 그 계열 단계가 장비 단계 조건(1단계 1 · 2단계 3 · 3단계 6 · 4단계 9 · 5단계 12 · 6단계 15)에 닿았으면 제작법 재료의 절반도 돌려받고, 모자라면 재료 없이 경험만 얻습니다.`, '분해 안내')}`;
-  bindInfo(body);
+  bindInfo(body); bindQty(body);
   $$('[data-dis]', body).forEach(b => b.onclick = async () => {
-    const d = di?.[b.dataset.dis] || {};
+    const d = di?.[b.dataset.dis] || {}, row = rows.find(r => r.k === b.dataset.dis);
+    const n = Math.max(1, Math.min(row?.free || 1, qtyOf(body, `dis:${b.dataset.dis}`) || 1)), what = n > 1 ? `${n}개` : '하나';
     const ok = b.dataset.low
-      ? await ask(`${d.line_name} 기술이 ${d.need}단계가 되지 않아(지금 ${d.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${d.line_name} 경험 12만 얻고 「${nameOf(b.dataset.dis)}」 하나는 사라집니다.`, { title: '경험만 얻는 분해', ok: '경험만 받고 분해', cancel: '그만두기' })
-      : await ask(`${nameOf(b.dataset.dis)} 하나를 분해할까요? 되돌릴 수 없습니다.`, { title: '분해', ok: '분해하기' });
+      ? await ask(`${d.line_name} 기술이 ${d.need}단계가 되지 않아(지금 ${d.rank}단계) 재료를 돌려받지 못합니다. 분해하면 ${d.line_name} 경험 ${12 * n}만 얻고 「${nameOf(b.dataset.dis)}」 ${what}는 사라집니다.`, { title: '경험만 얻는 분해', ok: '경험만 받고 분해', cancel: '그만두기' })
+      : await ask(`${nameOf(b.dataset.dis)} ${what}를 분해할까요? 되돌릴 수 없습니다.${n > 1 ? '\n장착 중인 것과 잠가 지키는 몫은 분해하지 않습니다.' : ''}`, { title: n > 1 ? '한꺼번에 분해' : '분해', ok: '분해하기' });
     if (!ok) return;
-    await guard(b, () => act('world_dismantle_item', { p_item_id: b.dataset.dis }));
+    await guard(b, () => n > 1 ? act('world_dismantle_batch', { p_item_id: b.dataset.dis, p_times: n }) : act('world_dismantle_item', { p_item_id: b.dataset.dis }));
     dismantlePane(body);
   });
 }
@@ -607,10 +608,10 @@ export async function renderStable(box) {
     const mine = (m.mounts || []).filter(x => x.owned);
     const tokens = Number(m.mount_tokens || 0);
     const trainLi = x => { const lv = Number(x.training || 0), cost = 20 * (lv + 1);
-      return `<li ${x.equipped ? '' : mountRow(x)}><div><b>${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>${esc(MOUNT_REALM.name(m, MOUNT_REALM.of(x)))} · 단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
+      return `<li ${x.equipped ? '' : mountRow(x)}><div><b>${mountFavBtn(m, x)}${esc(x.mount_name)}${x.equipped ? ' · 타는 중' : ''}</b><small>${esc(MOUNT_REALM.name(m, MOUNT_REALM.of(x)))} · 단련 ${lv}/5 · 이동 속도 +${lv * 4}%</small></div>
           ${lv >= 5 ? chip('단련 완료', 'ok') : `<button class="btn small" data-here="탈것 단련" data-train="${esc(x.mount_id)}" ${tokens < cost ? 'disabled' : ''}>노정패 ${cost}개로 단련</button>`}</li>`; };
-    const now = mine.find(x => x.equipped), spare = mine.filter(x => !x.equipped), mrBar = mountRealmBar(m);
-    const trainTip = `가진 노정패 ${tokens}개 · 단계마다 이동 속도 +4% (최고 5단계)`;
+    const now = mine.find(x => x.equipped), spare = mountFavFirst(m, mine.filter(x => !x.equipped)), mrBar = mountRealmBar(m);
+    const trainTip = `가진 노정패 ${fmt.num(tokens)} / ${fmt.num(TOKEN_CAP)}개 · 단계마다 이동 속도 +4% (최고 5단계)`;
     box.innerHTML = `<div class="mt-bar"><p class="muted small">${esc(trainTip)}</p>${mrBar.html}</div>`
       + mountFold('st-now', '지금 탈것', now ? now.mount_name : '걸어서', now ? `<ul class="spot-list train-list">${trainLi(now)}</ul>` : empty('지금은 걸어 다닙니다.', 'route'), { first: true })
       + (spare.length ? mountFold('st-own', '가진 탈것 단련', mountRealmSum(m, spare), `<ul class="spot-list train-list">${spare.map(trainLi).join('')}</ul>`) : '')
@@ -620,7 +621,7 @@ export async function renderStable(box) {
         <small class="muted">${esc(conditions(x, c))}</small>
         ${x.owned ? chip('보유 중', 'ok') : `<button class="btn small primary" data-here="탈것 들이기" data-buy="${esc(x.mount_id)}">${fmt.jeon(x.price)}에 들이기</button>`}</article>`).join('')}</div>`
       : empty('이 마구간에서 들일 수 있는 탈것이 없습니다.', 'route'), { ico: 'shop' });
-    bindMountRealm(box, m, mrBar.st);
+    bindMountRealm(box, m, mrBar.st); bindMountFav(box);
     $$('[data-train]', box).forEach(b => b.onclick = () => guard(b, async () => { const out = await act('world_mount_train', { p_mount_id: b.dataset.train }); renderStable(box); return out; }));
     $$('[data-buy]', box).forEach(b => b.onclick = async () => { if (await ask('이 탈것을 들일까요?', { title: '탈것 들이기', ok: '들이기' })) guard(b, () => act('world_mount_acquire', { p_mount_id: b.dataset.buy })); });
   } catch (e) { box.innerHTML = errorBox(e.message); }
@@ -647,6 +648,12 @@ export function bindMountRealm(root, snap, st) {
   $$('[data-lfc]', root).forEach(b => b.addEventListener('click', () => { try { localStorage.setItem(mrKey(snap), b.dataset.lfc); } catch {} }));
 }
 export const mountRow = m => listRowAttrs(MOUNT_REALM.of(m), m.mount_name);
+const MSTAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.85 5.95 6.55.8-4.8 4.55 1.2 6.5L12 17.4l-5.8 3.2 1.2-6.5-4.8-4.55 6.55-.8z" stroke-linejoin="round"/></svg>';
+const mFavs = snap => new Set(snap?.favs || []);
+export const mountFavFirst = (snap, list) => { const f = [...(snap?.favs || [])]; const at = m => { const i = f.indexOf(m.mount_id); return i < 0 ? 1e9 : i; }; return list.map((m, i) => [m, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map(([m]) => m); };
+export const mountFavBtn = (snap, m) => { if (!m.owned) return ''; const on = mFavs(snap).has(m.mount_id), t = on ? '즐겨찾기에서 빼기' : '즐겨찾기에 넣기 · 목록 위에 먼저 보입니다';
+  return `<button type="button" class="fav-star ${on ? 'on' : ''}" data-mfav="${esc(m.mount_id)}" aria-pressed="${on}" aria-label="${t}" title="${t}">${MSTAR}</button>`; };
+export const bindMountFav = root => $$('[data-mfav]', root).forEach(b => b.onclick = e => { e.stopPropagation(); guard(b, () => act('world_mount_fav_toggle', { p_mount: b.dataset.mfav })); });
 export const mountFold = (key, title, sum, body, { ico = 'route', first = false } = {}) => `<details class="panel fold mt-fold" data-fold="${key}" ${foldOpen(key, first || !mrPhone()) ? 'open' : ''}>
   <summary class="panel-head"><h2>${icon(ico, 16)}${esc(title)}${sum ? ` <small class="muted">${esc(sum)}</small>` : ''}</h2></summary><div class="panel-body">${body}</div></details>`;
 export const mountRealmSum = (snap, list) => Object.entries(snap?.realm_names || {}).map(([k, n]) => [n, list.filter(m => MOUNT_REALM.of(m) === k).length]).filter(([, c]) => c).map(([n, c]) => `${n} ${c}`).join(' · ');

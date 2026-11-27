@@ -4,7 +4,7 @@ import { GAMEDATA } from './gamedata.js';
 import { load, invalidate } from './views/common.js';
 import { playAlarm, armAlarm, setScene } from './sound.js';
 import { QS_DEFAULT, qsDesc, presetNow } from './views/character.js';
-import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT, TRADE } from './rules.js';
+import { expRoundOf, DOMAIN_FX, brokenName, NAMELESS, FIGHT_KINDS, onFightRoute, WHITE_NIGHT, TRADE, TOKEN_CAP, TOKEN_TIP } from './rules.js';
 import { withHq, baseOf } from './hq.js';
 import { hit } from './changes.js';
 
@@ -228,7 +228,7 @@ function render() {
     </section>
     <section class="hud-card money">
       <div>${icon('coin', 14)}<span>소지금</span><b>${fmt.jeon(c.gil)}</b></div>
-      <div>${icon('token', 14)}<span>노정패</span><b>${fmt.num(c.mount_tokens)}개</b></div>
+      <div title="${esc(TOKEN_TIP)}">${icon('token', 14)}<span>노정패</span><b class="${Number(c.mount_tokens) >= TOKEN_CAP ? 'tok-full' : ''}">${fmt.num(c.mount_tokens)}<small> / ${fmt.num(TOKEN_CAP)}</small></b></div>
       <div>${icon('bag', 14)}<span>가방</span><b>${bagUsed(c)} / ${bagLimit(c)}칸</b></div>
       <div title="${esc(c.location)}">${icon('pin', 14)}<span>위치</span><b>${esc(c.location)}</b></div>
     </section>

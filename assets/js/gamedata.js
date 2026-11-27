@@ -131,6 +131,7 @@ export const GAMEDATA = {
   },
   "rescue": {"min":30,"pct":15,"low_lv":15,"per_lv":80,"xp_pct":5,"death_h":4,"per_lv_low":40},
   "ride": {"wait_s":60,"stale_s":300},
+  "tokens": {"cap":1000},
   "sparWatch": {"step_ms":550,"keep_min":10,"active_min":15},
   "travel": {
     "fam": {"cap":30,"per":6}

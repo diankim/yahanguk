@@ -6,8 +6,8 @@ import { raidLocks, raidShadow } from './raid.js';
 import { hit as touched } from '../changes.js';
 import { GAMEDATA } from '../gamedata.js';
 import { helpQ, helpLine } from '../tips.js';
-import { weakSafe, TRAVEL_FAMILIAR, MOUNT_REALM } from '../rules.js';
-import { mountRealmBar, bindMountRealm, mountRow, mountFold, mountRealmSum } from './services.js';
+import { weakSafe, TRAVEL_FAMILIAR, MOUNT_REALM, TOKEN_CAP, TOKEN_TIP } from '../rules.js';
+import { mountRealmBar, bindMountRealm, mountRow, mountFold, mountRealmSum, mountFavFirst, mountFavBtn, bindMountFav } from './services.js';
 
 const bjMaps = () => store.hud?.bijang?.maps || [];
 const bjAt = id => bjMaps().filter(m => m.region_id === id);
@@ -568,10 +568,10 @@ async function drawTravel(body) {
   const joined = (ride?.requests || []).filter(r => r.passenger_id === me && r.status === 'accepted');
   const groups = [...new Set(outgoing.filter(r => r.group_id).map(r => r.group_id))];
   const owned = (mounts?.mounts || []).filter(m => m.owned), others = (mounts?.mounts || []).filter(m => !m.owned);
-  const now = owned.find(m => m.equipped), spare = owned.filter(m => !m.equipped), mrBar = mountRealmBar(mounts);
+  const now = owned.find(m => m.equipped), spare = mountFavFirst(mounts, owned.filter(m => !m.equipped)), mrBar = mountRealmBar(mounts);
   const mountCard = (m, f = true) => `
       <article ${f ? mountRow(m) : ''} class="mount ${m.equipped ? 'on' : ''}${MOUNT_REALM.ok(mounts, m) ? '' : ' realm-off'}">
-        <header><b>${esc(m.mount_name)}</b><span class="btn-row">${chip(MOUNT_REALM.name(mounts, MOUNT_REALM.of(m)))}${chip(m.tier)}</span></header>
+        <header><b>${mountFavBtn(mounts, m)}${esc(m.mount_name)}</b><span class="btn-row">${chip(MOUNT_REALM.name(mounts, MOUNT_REALM.of(m)))}${chip(m.tier)}</span></header>
         <p>${esc(m.description || '')}</p>
         <dl class="kv tight"><div><dt>속도</dt><dd>×${m.speed_multiplier}${Number(m.river_speed) > 1 ? ` <small class="good">뱃길 ×${Number(m.river_speed).toFixed(2)}</small>` : ''}</dd></div><div><dt>정원</dt><dd>${m.passenger_capacity}명</dd></div><div><dt>운임</dt><dd>${m.fare_free || m.river_free ? `없음${m.river_free && !m.fare_free ? ' (수향연맹 뱃길)' : ''}` : `구간당 노정패 ${m.fare_tokens}`}</dd></div></dl>
         ${m.equipped ? `<span class="btn-row">${chip('사용 중', 'accent')}${RAID_ON && !status?.in_transit ? `<button class="btn small ghost" id="mt-off" title="탈것에서 내려 걸어 다닙니다(속도 ×1, 운임 없음)">내리기</button>` : ''}</span>` : !MOUNT_REALM.ok(mounts, m) ? `<button class="btn small" disabled title="${esc(MOUNT_REALM.tip)}">${esc(MOUNT_REALM.only(mounts, m))}</button>` : status?.in_transit ? `<button class="btn small" disabled title="도착한 뒤에 바꿀 수 있습니다">이동 중에는 못 바꿈</button>` : `<button class="btn small" data-equip="${esc(m.mount_id)}">이 탈것 타기</button>`}
@@ -597,13 +597,13 @@ async function drawTravel(body) {
     </div>
     <div class="mt-bar"><p class="muted small">지금 선 땅: <b>${esc(MOUNT_REALM.name(mounts, MOUNT_REALM.here(mounts)))}</b> · 이 땅의 탈것만 탈 수 있습니다.${helpQ(MOUNT_REALM.tip, '땅마다 탈것')}</p>${mrBar.html}</div>
     ${mountFold('mt-now', '지금 탈것', now ? now.mount_name : '걸어서', `${now ? `<div class="mount-grid">${mountCard(now, false)}</div>` : `<p class="hint">${icon('route', 14)} 지금은 탈것 없이 <b>걸어 다닙니다</b>(속도 ×1, 노정패 운임 없음). 아래 가진 탈것에서 고르면 다시 탑니다.</p>`}
-      ${helpLine(`노정패 ${fmt.num(mounts?.mount_tokens)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다.`, '노정패 안내', `노정패 ${fmt.num(mounts?.mount_tokens)}개`)}`, { first: true })}
+      ${helpLine(`노정패 ${fmt.num(mounts?.mount_tokens)} / ${fmt.num(TOKEN_CAP)}개 · 탈것은 지나는 구간마다 운임만큼 노정패를 씁니다. 모자라면 탈것에서 내려 걸어갑니다(운임 없음). 노정패는 토벌 승리·탐색·채집(가끔)·이야기·의뢰·원정 귀환으로 얻습니다. ${TOKEN_TIP}`, '노정패 안내', `노정패 ${fmt.num(mounts?.mount_tokens)} / ${fmt.num(TOKEN_CAP)}개`)}`, { first: true })}
     ${mountFold('mt-own', '가진 탈것', mountRealmSum(mounts, spare), spare.length ? `<div class="mount-grid">${spare.map(m => mountCard(m)).join('')}</div>` : empty('다른 탈것이 없습니다.'))}
     ${mountFold('mt-get', '얻을 수 있는 탈것', mountRealmSum(mounts, others), others.length ? `<ul class="spot-list">${others.map(m => `<li ${mountRow(m)}${MOUNT_REALM.ok(mounts, m) ? '' : ' class="realm-off"'}><div><b>${esc(m.mount_name)}</b>
         <small>${esc(MOUNT_REALM.only(mounts, m))} · ${m.acquire_method === 'event' ? (m.tier === '권역' ? '권역 인연 비고에서 인연 표로' : '특별한 사건으로만 얻을 수 있습니다') : m.acquire_method === 'faction' ? `${esc(MAJOR_FACTIONS[m.unlock_faction]?.name || '세력')} 비고에서 공훈으로` : `${esc(m.unlock_region_name || '안전지대')} 마구간 · ${fmt.jeon(m.price)}`} · 속도 ×${m.speed_multiplier} · 정원 ${m.passenger_capacity}</small></div>
         ${m.acquire_method === 'stable' && m.unlock_region ? `<button class="btn small ghost" data-goto="${esc(m.unlock_region)}">지도에서 보기</button>` : ''}</li>`).join('')}</ul>` : empty('모든 탈것을 가지고 있습니다.'), { ico: 'shop' })}`;
 
-  bindMountRealm(body, mounts, mrBar.st);
+  bindMountRealm(body, mounts, mrBar.st); bindMountFav(body);
   $('#tr-map', body)?.addEventListener('click', () => switchTo('world'));
   const cancel = $('#tr-cancel', body);
   if (cancel) cancel.onclick = async () => { if (await ask('이동을 취소할까요? 취소하면 3분 동안 다시 출발할 수 없습니다. 출발할 때 낸 운임은 돌려받지 못합니다.', { title: '이동 취소', ok: '취소하기', cancel: '계속 가기', danger: true })) guard(cancel, () => act('world_travel_cancel')); };

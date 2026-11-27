@@ -589,6 +589,8 @@ sys.path.insert(0, os.path.join(HERE, '..', 'neol'))
 import gen_neol as NLG
 w(NLG.emit(J, TA, known, RID, fresh, errors, xp_need))
 
+part('../qol/engine.sql')
+
 w(open(os.path.join(HERE, '..', '..', 'gen_portrait', 'items.sql'), encoding='utf-8').read())
 
 w(f"""select public.world_quest_label_refresh();
