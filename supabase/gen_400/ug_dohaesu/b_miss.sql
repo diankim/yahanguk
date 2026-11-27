@@ -65,3 +65,7 @@ select pg_temp.yh_patch('public.world_ug_after(uuid,integer)',
   perform public.world_ug_sea_flush(p_fight, p_round);
   select * into f from public.world_gw_fights where fight_id = p_fight;
   if f.status <> 'fight' then return true; end if;$q$);
+
+select pg_temp.yh_fix('world_ug_round', array[
+  $q$|| case when x.gval is not null then ' ' || x.gval || '섬' else '' end$q$,
+  $q$|| case when x.gval is not null and f.boss_id = 'gapgwi' then ' ' || x.gval || '섬' else '' end$q$]);

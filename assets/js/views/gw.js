@@ -209,7 +209,7 @@ function draw() {
         ${f.status === 'wait' ? `<p class="raid-time">${icon('hourglass', 14)} <span data-until="${esc(f.start_at)}">…</span> 뒤 시작 · 같은 곳의 파티원이 합류할 수 있습니다(4명까지)</p>
             ${f.leader === s.me ? `<button class="btn primary" id="gw-begin">${icon('sword', 16)}<span>지금 시작하기</span></button>` : !s.joined ? `<button class="btn primary" id="gw-join">${icon('flag', 16)}<span>합류하기${story() ? '' : ` · ${esc(itemName())} 1개`}</span></button>` : `<p class="hint good">${icon('check', 14)} 합류했습니다. 곧 시작합니다.</p>`}` : ''}
         ${f.status === 'wait' ? '' : `<div class="raid-hp"><div class="bar boss"><span style="width:${pct}%"></span></div><b>${fmt.num(f.hp)} / ${fmt.num(f.max_hp)}</b></div>${ladder(f.phase)}`}
-        ${ult() && f.status !== 'wait' ? ugBar(s) : ''}
+        ${ult() && f.status !== 'wait' ? ugBar(s, f.status === 'fight') : ''}
         ${mapped && f.status !== 'wait' ? `<div class="mk-duo">${fight ? roundBand(s) : ''}${mapHtml(s, fight && s.joined)}</div>` : fight ? roundBand(s) : ''}
         ${s.boss === 'sealed_lord' && fight && s.board?.pair ? `<p class="small warn">${icon('chain', 13)} 봉인 사슬에 묶인 두 사람: ${(s.board.pair || []).map(id => esc(nameOfMember(s, id))).join(' · ')}</p>` : ''}
       </div></section>
@@ -485,10 +485,10 @@ function weakLine(s, w) {
   const nm = id => id === s.me ? '나' : ((s.members || []).find(m => m.id === id)?.name || '');
   return `<p class="small">${ids.map(id => { const x = w[id]; return `<b class="${x.strong || id === s.me ? 'bad' : ''}" data-tip="${esc(`수법을 놓친 사람에게만 붙고, 놓칠 때마다 한 겹 쌓여 ${x.strong ? '' : '세 겹이면 더 큰 약화로 바뀝니다. '}겹마다 몇 라운드 뒤 하나씩 풀립니다. 주는 피해 ×${Number(x.deal).toFixed(2)} · 받는 피해 ×${Number(x.take).toFixed(2)} · 다음 풀림까지 ${x.left}라운드`)}">${esc(nm(id))} 「${esc(x.name)}」 ${x.n}겹</b>`; }).join(' · ')}</p>`;
 }
-function ugBar(s) {
+function ugBar(s, live = true) {
   const u = s.board?.ug || {}, acts = Array.isArray(u.acts) ? u.acts : Array.from({ length: Number(u.acts) || 0 }, (_, i) => i + 1 === u.act ? u.act_name || '' : GD.boss?.[u.board || s.boss]?.ultimate?.acts?.[i]?.name || ''), cut = u.next_cut;
   return `<div class="gw-ug"><div class="chips">${acts.map((n, i) => chip(`${i + 1}막 ${n}`, i + 1 === u.act ? 'bad' : i + 1 < u.act ? 'ok' : '')).join('')}</div>
-    <p class="small">${u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.wm ? ` · <b class="bad wm-name">「${esc(u.wm.name || '')}」</b>` : ''}`}</p>${weakLine(s, u.weak)}</div>`;
+    <p class="small">${!live ? `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드` : u.rest ? `<b>막 사이 · 숨 고르는 중</b> · ${u.rest}라운드` : `<b>${esc(u.act_name || '')}</b> · ${u.act_round ?? 0}라운드 · 이 막 전멸까지 <b class="${(u.wipe_left ?? 99) <= 4 ? 'bad' : ''}">${u.wipe_left ?? '?'}라운드</b>${cut ? ` · 체력 ${cut.pct}%까지 ${cut.left}라운드` : ''}${u.wm ? ` · <b class="bad wm-name">「${esc(u.wm.name || '')}」</b>` : ''}`}</p>${live ? weakLine(s, u.weak) : ''}</div>`;
 }
 const BY_HZ = { arrow: '화살', big: '굵은 화살', gust: '꺼져 가는 등', brush: '붉은 붓', stack: '물방울', spread: '흰 가루', tower: '기둥', clock: '모래시계', num: '차례 화살', sdrop: '물방울', flick: '흔들리는 등' };
 function bySector(c) { return ((c - 1) % 7) + 1; }
