@@ -453,6 +453,28 @@ TOPS = {
         "...ybbbbbbbcby..",
         "...........c....",
     ]),
+    'hw_gari_apron': ('가리 장터 앞치마 적삼', {'a': '#efe2c4', 'b': '#cdbd9c', 'c': '#3a6a6a', 'd': '#f6efdc', 'e': '#c8743a', 'r': '#e0b43a'}, [
+        "................",
+        "....xdddddb.....",
+        "..bxaadddaaaby..",
+        "..bxaccccccaby..",
+        "..bxacrccrcaby..",
+        "...eeeeeeeeee...",
+        "...xccrccrccb...",
+        "...xccccccccb...",
+        "...ybccccccby...",
+    ]),
+    'hw_yak_vest': ('털소 털 조끼 적삼', {'a': '#4a5a7a', 'b': '#3a4862', 'c': '#ece6da', 'd': '#d4ccbe', 'e': '#c8382e', 'r': '#e0b43a'}, [
+        "................",
+        "....xaaaaab.....",
+        "..bxccaaaaccby..",
+        "..bxcdaaaadcby..",
+        "..cxcdaaaadcyc..",
+        "...eeeereeeee...",
+        "...xcdaaaadcb...",
+        "...xcdaaaadcb...",
+        "...yccccccccy...",
+    ]),
 }
 
 
@@ -643,6 +665,7 @@ BOTTOMS = {
     'rb_nunmaru': ('털 덧바지와 털신', 'furboots', '#5a6272', '#464d5c', '#5a4232', '#ece8de'),
     'rb_dalmaji': ('연분홍 주름 너른 바지', 'gather', '#e8a6b8', '#c8869a', '#c9a24a', '#d8b04a'),
     'rb_haeoreum': ('연밥 주름 두른 바지', 'sampot', '#c8562e', '#a8421f', '#d8b25a', '#e8c25a'),
+    'hw_lotus_wrap': ('연잎 두른 치마', 'sarong', '#4f8a4a', '#3c6e3a', '#2a2a2e', '#e898a8'),
 }
 
 
@@ -706,6 +729,12 @@ ACC = {
         "b.",
         "cc",
         "cc",
+    ]),
+    'hw_dawnpin': ('첫볕 비늘 머리꽂이', {'a': '#d8b25a', 'b': '#f6e2a0', 'c': '#e8832a'}, 18, 2, [
+        "..b.",
+        ".bab",
+        "bac.",
+        "c...",
     ]),
     'mk_hairpin': ('먹 묻은 붓 비녀', {'a': '#8a5a32', 'b': '#2a2a2e', 'c': '#d8b25a', 'd': '#efebe0'}, 18, 0, [
         ".....bb",

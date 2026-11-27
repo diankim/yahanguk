@@ -363,6 +363,42 @@ for nf in D.NAMED_FISH:
     items.append(item('hf_' + rk, f['name'], 'furniture', f['grade'], f"별채 가구 · {f['cat']}. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.", 1, {4: 800, 5: 2400}[f['grade']], False, D.NAMED_LEVEL, traits=tr))
     names_new.append(f['name'])
     recipes.append(recipe('r_hf_' + rk, f['name'] + ' 만들기', 'hf_' + rk, 1, dict({nf[0]: 1}, **D.RUBBING_MATS), 'sealing', D.NAMED_LEVEL, f"별채에 놓을 {f['name']}을(를) 만든다.", f['grade']))
+HWF = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', "const F = await import('./assets/js/housing/furniture.js'); const o = {}; for (const [k, f] of Object.entries(F.FUR)) if (k.startsWith('hw_')) o[k] = { t: 'FUR', name: f.name, grade: f.grade, W: f.W, D: f.D, layer: f.layer || 'floor', top: f.top || 0, cat: f.cat }; for (const [k, f] of Object.entries(F.WALL)) if (k.startsWith('hw_')) o[k] = { t: 'WALL', name: f.name, grade: f.grade, kind: f.kind, w: f.w, h: f.h, cat: f.cat }; console.log(JSON.stringify(o));"], cwd=os.path.join(HERE, '..', '..', '..')))
+fsrc, craft_priced = [], []
+for k, spec in D.FURNITURE.items():
+    if k not in HWF:
+        errors.append('가구 그림 없음(hw_furn.js): ' + k)
+        continue
+    f = HWF[k]
+    if f['t'] == 'FUR':
+        tr = {'hk': k, 'kind': f['layer'], 'w': f['W'], 'd': f['D'], 'top': f['top'], 'cat': f['cat'], 'grade': f['grade']}
+    else:
+        tr = {'hk': k, 'kind': 'wall', 'wall': f['kind'], 'ww': f['w'], 'wh': f['h'], 'cat': f['cat'], 'grade': f['grade']}
+    iid = 'hf_' + k
+    items.append(item(iid, f['name'], 'furniture', f['grade'], f"별채 가구 · {tr['cat']}. 별채에 놓으면 가방에서 빠지고, 거두면 곳간으로 갑니다.", 1, 0, True, spec['lv'], traits=tr))
+    names_new.append(f['name'])
+    recipes.append(recipe('r_' + iid, f['name'] + ' 만들기', iid, 1, spec['mats'], spec['field'], spec['lv'], f"별채에 놓을 {f['name']}을(를) 만든다.", f['grade']))
+    craft_priced.append(iid)
+    if spec['source'] == 'drop_normal':
+        fsrc.append(dict(source='drop_normal', item_id=iid, chance=1))
+    else:
+        fsrc.append(dict(source='drop_guardian', item_id=iid, chance=1))
+        fsrc.append(dict(source='expedition', item_id=iid, chance=1))
+AVP = json.load(open(os.path.join(HERE, '..', '..', 'gen_avatar', 'parts.json'), encoding='utf-8'))
+FIELD_KO = {'weaving': '직조', 'artifice': '법구 공예'}
+of_parts, of_masks, of_src = {}, {}, {}
+for iid, look, desc, field, mats, lv in D.OUTFITS:
+    if look not in AVP['outfits']:
+        errors.append(f'옷 {iid}: parts.json에 {look} 없음(tools/avatar_art/gen.py)')
+        continue
+    nm = AVP['outfits'][look]['name']
+    items.append(item(iid, nm, 'outfit', 3, desc + ' 가방에서 「옷장에」를 누르면 「내 모습」에서 입을 수 있습니다.', 1, 0, True, lv, traits={'look': look}))
+    names_new.append(nm)
+    recipes.append(recipe('r_' + iid, nm + ' 짓기', iid, 1, mats, field, lv, nm + '을(를) 짓는다.', 3))
+    craft_priced.append(iid)
+    of_parts[look] = AVP['outfits'][look]
+    if look in AVP.get('masks', {}): of_masks[look] = AVP['masks'][look]
+    of_src[look] = FIELD_KO[field] + ' 제작'
 for iid, mats, field, qty in D.CONSUMABLE_RECIPES:
     nm = next(x[1] for x in D.ITEMS if x[0] == iid)
     recipes.append(recipe('r_' + iid, nm + ' 만들기', iid, qty, mats, field, D.TOOL_LV, nm + '을(를) 만든다.', 3))
@@ -443,6 +479,24 @@ w(f"""update public.world_item_catalog i set reference_price = greatest(i.refere
       join public.world_item_catalog m on m.item_id = x.key where cr.output_item = i.item_id group by cr.recipe_id) t)))
  where i.item_id in (select jsonb_array_elements_text({J([x[0] for g in (D.FISH_GOODS, D.NAMED_GOODS) for x in g] + [c[0] for c in D.CONSUMABLE_RECIPES] + [q[0] for q in D.QUEST_RECIPES])}))
    and exists (select 1 from public.world_crafting_recipes cr where cr.output_item = i.item_id);""")
+w(f"""update public.world_item_catalog i set reference_price = greatest(i.reference_price,
+    ceil(1.1 * (select min(t.v) from (select sum(m.reference_price * (x.value)::int * 1.0 / greatest(1, cr.output_qty)) v from public.world_crafting_recipes cr, jsonb_each_text(cr.ingredients) x
+      join public.world_item_catalog m on m.item_id = x.key where cr.output_item = i.item_id group by cr.recipe_id) t)))
+ where i.item_id in (select jsonb_array_elements_text({J(craft_priced)}));""")
+w(f"""insert into public.world_furniture_sources(source, item_id, chance) select x.source, x.item_id, x.chance from jsonb_to_recordset({J(fsrc)}) as x(source text, item_id text, chance numeric)
+ where not exists (select 1 from public.world_furniture_sources s where s.source = x.source and s.item_id = x.item_id);""")
+if of_parts:
+    w("""create or replace function pg_temp.yh_hw_setjson(p_fn regprocedure, p_j jsonb) returns void language plpgsql as $f$
+declare src text := pg_get_functiondef(p_fn); body text := (select prosrc from pg_proc where oid = p_fn);
+begin
+  if position(body in src) = 0 then raise exception 'yh_hw_setjson %: 본문을 못 찾음', p_fn; end if;
+  execute replace(src, body, ' select ' || quote_literal(p_j::text) || '::jsonb ');
+end $f$;""")
+    w(f"""select pg_temp.yh_hw_setjson('public.world_avatar_parts()'::regprocedure, public.world_avatar_parts()
+  || jsonb_build_object('outfits', (public.world_avatar_parts() -> 'outfits') || {J(of_parts)},
+                        'masks', (public.world_avatar_parts() -> 'masks') || {J(of_masks)}));
+select pg_temp.yh_hw_setjson('public.world_outfit_rules()'::regprocedure, jsonb_set(public.world_outfit_rules(), '{{src}}',
+  (public.world_outfit_rules() -> 'src') || {J(of_src)}));""")
 w(f"""insert into public.world_item_catalog(item_id, item_name, category, tier, description, stackable, required_stats, required_job, required_faction, minimum_level,
   rarity, acquisition_difficulty, drop_rate_modifier, equipment_traits, crafting_specialization, tradeable, reference_price, stack_size, base_item_id, quality_grade, use_fx)
 select i.item_id || '_hq', i.item_name || ' (우수)', i.category, i.tier, i.description || ' ' || public.world_item_hq_note(i.item_id, i.category), i.stackable,

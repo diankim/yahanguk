@@ -435,6 +435,7 @@ ITEMS = [
     ('wood_bird_toy', '끈 달린 나무 새', 'material', 3, 50, 0, True, 50, '끈으로 끌면 바퀴가 굴러 날개가 까딱거리는 나무 새다. 한쪽 날개가 조금 비뚤다.'),
     ('wood_toy_pair', '나무 새 짝', 'material', 3, 50, 0, True, 50, '나란히 끌고 다니게 만든 나무 새 두 마리다. 하나는 날개가 곧고, 하나는 날개가 비뚤다.'),
     ('forge_tool_set', '장인 손 연장', 'material', 3, 50, 0, True, 50, '화산 유리 날을 쇠 자루에 박은 작은 연장 한 벌이다. 장인들이 손에 익은 연장을 잃었을 때 대신 쓴다.'),
+    ('field_sickle', '화덕골 들낫', 'material', 3, 50, 0, True, 50, '지열 돌판에서 오래 달군 쇠로 벼린 들일 낫이다. 요기를 먹이지 않아 결은 거칠지만 풀은 잘 벤다.'),
     ('pd_tide_charm', '물때 부적', 'consumable', 4, 20, 400, True, 50, '물때표 귀퉁이를 접어 야자 섬유로 묶은 부적이다. 지니고 있으면 1시간 동안 물살에 덜 휩쓸린다.'),
 ]
 
@@ -443,7 +444,7 @@ STATUSES = [
     ('hw_spice_heat', '향신 열기', 'positive', 45, {'combat_damage_pct': 6, 'mental_loss_pct': -6}, 'flame', '향신료 열기가 온몸에 돕니다. 기세가 오르고 마음이 덜 흔들립니다.'),
     ('hw_butter_warm', '수유차 온기', 'positive', 45, {'incoming_damage_pct': -6, 'healing_pct': 6}, 'shield', '수유 탄 차가 속을 데웁니다. 추위와 상처를 덜 탑니다.'),
     ('hw_sweet_rest', '달콤한 쉼', 'positive', 45, {'mental_loss_pct': -10, 'erosion_pct': -6}, 'leaf', '단 것을 먹고 나니 마음이 풀립니다.'),
-    ('hw_coconut_full', '야자 국물 든든', 'positive', 45, {'gather_qty_pct': 8, 'fish_bite_pct': 6}, 'leaf', '야자 국물로 배를 채워 손이 빨라집니다.'),
+    ('hw_coconut_full', '가리 든든', 'positive', 45, {'gather_qty_pct': 8, 'fish_bite_pct': 6}, 'leaf', '가리로 배를 채워 손이 빨라집니다.'),
 ]
 PARTY_STATUSES = set()
 
@@ -490,7 +491,7 @@ RUBBING_MATS = {'fine_paper': 2, 'sealing_ink': 2}
 
 FISH_GOODS = [
     ('hw_goby_crisp', '망둥이 바삭 튀김', 'consumable', 2, 50, True, 40, {'hp': 30, 'buffs': ['well_fed']}, '널다리 망둥이를 야자 기름에 바삭하게 튀겼다. 체력을 조금 채운다.', 'cooking', {'hw_canal_goby': 3, 'coconut_fiber': 1}, 2, 50),
-    ('hw_coconut_fish', '야자 양념 생선', 'consumable', 3, 50, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['hw_coconut_full']}, '전갱이를 야자 국물에 고추를 풀어 끓였다. 처음엔 달다가 끝이 맵다.', 'cooking',
+    ('hw_coconut_fish', '생선 가리', 'consumable', 3, 50, True, 220, {'hp': 45, 'mn': 15, 'buffs': ['hw_coconut_full']}, '전갱이를 야자즙과 강황에 고추를 풀어 걸쭉하게 끓인 가리다. 처음엔 달다가 끝이 맵다.', 'cooking',
      {'hw_sea_mackerel': 2, 'coconut_fiber': 1, 'fd_chili': 1}, 2, 50),
     ('hw_leaf_rice', '잎에 싸 찐 찹쌀', 'consumable', 2, 50, True, 90, {'hp': 25, 'mn': 20, 'buffs': ['well_fed']}, '찹쌀에 야자 설탕을 섞어 띠잎에 싸 쪘다. 들고 다니며 먹기 좋다.', 'cooking',
      {'fd_rice': 2, 'fragrant_blade_leaf': 1, 'palm_sugar': 1}, 2, 50),
@@ -516,9 +517,9 @@ FISH_GOODS = [
      {'red_spice_pod': 1, 'palm_sugar': 1, 'herb': 1}, 2, 54),
     ('hw_lotus_porridge', '연밥 죽', 'consumable', 3, 50, True, 180, {'hp': 40, 'mn': 20, 'buffs': ['warm_belly']}, '연밥 알을 쌀과 함께 푹 쑨 죽이다. 해오름성 사람들은 아침마다 먹는다.', 'cooking',
      {'lotus_seed': 2, 'fd_rice': 1}, 2, 55),
-    ('hw_sweet_sticky_rice', '단 과일 찹쌀', 'consumable', 3, 50, True, 200, {'hp': 30, 'mn': 30, 'buffs': ['hw_sweet_rest']}, '찹쌀에 야자 국물을 붓고 노란 단 과일을 썰어 얹었다. 해오름성 사원 앞에서 판다.', 'cooking',
+    ('hw_sweet_sticky_rice', '망과 찹쌀', 'consumable', 3, 50, True, 200, {'hp': 30, 'mn': 30, 'buffs': ['hw_sweet_rest']}, '찹쌀에 야자즙을 붓고 노랗게 익은 망과를 썰어 얹었다. 해오름성 사원 앞에서 판다.', 'cooking',
      {'fd_rice': 2, 'palm_sugar': 1, 'coconut_fiber': 1}, 2, 55),
-    ('hw_snakehead_grill', '빛가물치 바나나잎 구이', 'consumable', 4, 50, True, 300, {'hp': 60, 'buffs': ['hw_coconut_full']}, '빛가물치를 강황과 함께 큰 잎에 싸 숯불에 구웠다.', 'cooking',
+    ('hw_snakehead_grill', '빛가물치 파초잎 구이', 'consumable', 4, 50, True, 300, {'hp': 60, 'buffs': ['hw_coconut_full']}, '빛가물치를 강황과 함께 큰 잎에 싸 숯불에 구웠다.', 'cooking',
      {'hw_marsh_snakehead': 1, 'turmeric_root': 1, 'charcoal': 1}, 2, 55),
     ('hw_eel_braise', '뱀장어 야자 설탕 조림', 'consumable', 4, 50, True, 320, {'hp': 55, 'mn': 25, 'buffs': ['vigor']}, '탑 그늘 뱀장어를 야자 설탕과 젓국에 졸였다. 달고 짜고 기름지다.', 'cooking',
      {'hw_marsh_eel': 1, 'palm_sugar': 1, 'blue_salt': 1}, 2, 55),
@@ -562,6 +563,7 @@ QUEST_RECIPES = [
     ('wood_bird_toy', {'wood': 2, 'inkrain_bark': 1, 'coconut_fiber': 1}, 'carpentry', 1, 50),
     ('wood_toy_pair', {'wood': 3, 'bamboo_shoot_husk': 1, 'coconut_fiber': 1}, 'carpentry', 1, 50),
     ('forge_tool_set', {'volcanic_glass': 1, 'iron_ingot': 2}, 'smithing', 1, 50),
+    ('field_sickle', {'cold_ember_filings': 1, 'iron_ingot': 1}, 'smithing', 1, 50),
 ]
 FILLET_QTY = {'common': 2, 'uncommon': 3, 'rare': 4}
 
@@ -594,6 +596,21 @@ TOOL_PREV = {'lt_knife_10': 'lt_knife_9', 'lt_pick_9': 'lt_pick_8', 'lt_sickle_9
              'lt_rod_9': 'lt_rod_8', 'lt_hammer_9': 'lt_hammer_8', 'lt_needle_9': 'lt_needle_8', 'lt_carve_9': 'lt_carve_8', 'lt_still_9': 'lt_still_8', 'lt_cook_9': 'lt_cook_8'}
 
 V2, K = 'volcanic_glass', 'kelp_scale_shell'
+FURNITURE = {
+    'hw_pado_bench': dict(source='drop_normal', mats={'coconut_fiber': 2, 'lumber': 2}, field='carpentry', lv=50),
+    'hw_bulssi_lamp': dict(source='drop_normal', mats={V: 2, 'iron_ingot': 1}, field='artifice', lv=51),
+    'hw_jaebit_shelf': dict(source='drop_normal', mats={I: 2, 'wood': 2}, field='carpentry', lv=52),
+    'hw_nunmaru_rug': dict(source='drop_normal', mats={Y: 3, 'river_reed': 1}, field='weaving', lv=53),
+    'hw_dalmaji_lamp': dict(source='drop_guardian', mats={L: 2, 'iron_ingot': 1}, field='artifice', lv=54),
+    'hw_haeoreum_table': dict(source='drop_guardian', mats={'lotus_seed': 2, 'lumber': 2}, field='carpentry', lv=55),
+}
+OUTFITS = [
+    ('of_top_hw_gari_apron', 'top:hw_gari_apron', '파도너울성 장터 밥집 사람들이 가리 솥 앞에서 입는 적삼입니다. 청록 앞치마에 강황빛 점을 놓았습니다.', 'weaving', {'coconut_fiber': 3, 'blue_salt': 1}, 50),
+    ('of_top_hw_yak_vest', 'top:hw_yak_vest', '눈마루 사람들이 남색 적삼 위에 걸치는 털소 털 조끼입니다. 붉은 허리띠를 맵니다.', 'weaving', {Y: 3, 'ice_salt': 1}, 53),
+    ('of_bottom_hw_lotus_wrap', 'bottom:hw_lotus_wrap', '해오름성 연밥 둑 사람들이 허리에 둘러 매는 연잎빛 치마입니다. 단에 연분홍 줄을 둘렀습니다.', 'weaving', {'lotus_seed': 2, 'coconut_fiber': 2}, 55),
+    ('of_acc_hw_dawnpin', 'acc:hw_dawnpin', '첫볕 물가에서 주운 비늘을 부채꼴로 엮은 머리꽂이입니다. 아침 해를 받으면 주홍빛이 돕니다.', 'artifice', {D: 1, HW: 1}, 55),
+]
+
 GEAR = [
     ('w_guard9_a', '화덕골 등패와 환도', 'weapon', 'strength', {'jobs': ['artificer'], 'power': 72, 'trait': '근접', 'weapon_type': 'melee', 'combat_damage_pct': 26}, '화덕골 장인이 잔불 쇳가루를 녹여 벼린 환도와 화산 유리를 박은 등패다. 고르게 강하다.', 'smithing', {E: 6, Z: 3, V: 3, Y: 2}),
     ('w_guard9_b', '산호 거북 등패와 철퇴', 'weapon', 'strength', {'jobs': ['artificer'], 'power': 72, 'trait': '근접', 'weapon_type': 'melee', 'presence': 50, 'incoming_damage_pct': -13}, '산호 거북 등딱지를 본뜬 등패와 철퇴다. 요괴가 먼저 노리고 받는 피해를 던다.', 'smithing', {K: 5, E: 3, Z: 3, L: 2}),

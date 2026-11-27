@@ -2,6 +2,7 @@ import { PORTRAITS, PORTRAIT_FRAME } from './portraits.js';
 import { CABIN_FUR, CABIN_WALL, CABIN_PAPER, CABIN_GROUND } from './cabin_furn.js';
 import { RB_FUR, RB_WALL } from './realm_furn.js';
 import { NL_FUR, NL_WALL } from './neol_furn.js';
+import { HW_FUR, HW_WALL } from './hw_furn.js';
 import { DH_FUR, DH_WALL, DH_PAPER, DH_GROUND } from './boss40_furn.js';
 const C = {
   wood: '#8a5a32', dark: '#553420', deep: '#3e2616', pine: '#a8784a', lac: '#9a3326', lacD: '#6e2219', gold: '#d8b25a', brass: '#b08a40',
@@ -1635,6 +1636,7 @@ export const GROUND = {
 for (const [T, S] of [[FUR, CABIN_FUR], [WALL, CABIN_WALL], [PAPER, CABIN_PAPER], [GROUND, CABIN_GROUND]]) for (const [k, d] of Object.entries(S)) T[k] = { ...d, ship: true };
 for (const [T, S] of [[FUR, RB_FUR], [WALL, RB_WALL]]) for (const [k, d] of Object.entries(S)) T[k] = { ...d, realm: true };
 Object.assign(FUR, NL_FUR); Object.assign(WALL, NL_WALL);
+Object.assign(FUR, HW_FUR); Object.assign(WALL, HW_WALL);
 Object.assign(FUR, DH_FUR); Object.assign(WALL, DH_WALL); Object.assign(PAPER, DH_PAPER); Object.assign(GROUND, DH_GROUND);
 
 export const DEFAULT_SET = {
