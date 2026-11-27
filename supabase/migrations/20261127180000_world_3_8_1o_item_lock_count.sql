@@ -145,5 +145,8 @@ select pg_temp.yh_fix('world_enhance_move_info', array[
 update public.world_patch_notes set body = body || E'\n- [가방] 잠금을 그 종류 전체가 아니라 지킬 수만큼 걸게 바꿨습니다. 잠글 때 지킬 수를 고르고(처음엔 가진 수 전부), 그보다 많이 가진 몫은 팔거나 버리거나 넘길 수 있습니다. 지킬 몫에는 강화한 것·장착 중인 것·덜 닳은 것이 먼저 듭니다. 이미 잠가 둔 물품은 지금 가진 수(가방·창고)만큼 지키도록 바뀝니다.'
 where note_id = '3.8.0' and position('[가방] 잠금을 그 종류 전체가 아니라 지킬 수만큼' in body) = 0;
 
+update public.world_patch_notes set body = body || E'\n- [사업] 넘길 물품을 고르면 그만큼의 몫과, 이번 단계 목표에서 차지하는 몫이 함께 보입니다.'
+where note_id = '3.8.0' and position('[사업] 넘길 물품을 고르면 그만큼의 몫과' in body) = 0;
+
 insert into public.world_app_meta(key, value, changed_at) values ('db_version', '20261127180000', now())
 on conflict (key) do update set value = excluded.value, changed_at = excluded.changed_at;
