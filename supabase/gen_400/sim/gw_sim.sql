@@ -481,6 +481,10 @@ begin
     'miss', (select count(*) from public.world_gw_log where fight_id = fid and kind = 'miss'),
     'bad', (select count(*) from public.world_gw_log where fight_id = fid and kind = 'bad'),
     'cut', (select count(*) from public.world_gw_log where fight_id = fid and kind = 'bad' and (text like '%제때 %달래지 못했%' or text like '%제때 %잠재우지 못했%' or text like '%기세를 꺾지 못했%' or text like '%라운드가 다 지났다%')),
+    'mech', (select count(*) from public.world_gw_log where fight_id = fid and kind = 'bad' and text not like '도전이 끝났습니다%' and text not like '모두가 쓰러졌습니다%'
+      and text not like '모두가 물러났습니다%' and text not like '이야기꾼이 침을 튀긴다%' and text not like '%수법을 놓쳐 「%' and text not like '%제때 %달래지 못했%'
+      and text not like '%제때 %잠재우지 못했%' and text not like '%기세를 꺾지 못했%' and text not like '%라운드가 다 지났다%' and text not like '%은(는) 둘 이상이 함께여야%'),
+    'fist', (select count(*) from public.world_gw_log where fight_id = fid and kind = 'hit' and text like '%돌주먹에 %의 피해%'),
     'head_phase', (select count(*) from public.world_gw_log l where l.fight_id = fid and l.kind = 'bad' and l.text like '아무도 길을 알려 주지 않았습니다%'
       and exists (select 1 from public.world_gw_log p where p.fight_id = fid and p.kind = 'phase' and p.round between l.round - 1 and l.round and p.text like '%머리가%')),
     'notes', (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb) from (select k, count(*) n from yh_notes where nfid = fid group by k) q),
@@ -490,7 +494,8 @@ begin
     'falls', (select sum(falls) from public.world_gw_members where fight_id = fid),
     'wm', (select jsonb_agg(left(text, 40) order by id) from public.world_gw_log where fight_id = fid and kind = 'wm'),
     'lines', ms,
-    'shares', (select jsonb_object_agg(job_key, round(coalesce((credits ->> 'pct')::numeric, 0), 1)) from public.world_gw_members where fight_id = fid),
+    'shares', (select jsonb_object_agg(q.k, q.v) from (select m.job_key || case when count(*) over (partition by m.job_key) > 1 then '#' || row_number() over (partition by m.job_key order by m.joined_at) else '' end k,
+        (public.world_gw_shares(fid) ->> m.owner_id::text)::numeric v from public.world_gw_members m where m.fight_id = fid) q),
     'plan_lvl', nullif(current_setting('yh.plan_lvl', true), '')::int,
     'ms', round(extract(epoch from clock_timestamp() - t0) * 1000));
   commit;

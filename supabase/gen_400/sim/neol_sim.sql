@@ -73,7 +73,7 @@ create or replace function public.yh_sim_fight(p_boss text, p_jobs text[], p_pol
  returns jsonb language plpgsql as $f$
 declare rid uuid; reg text; rname text; t numeric := 0; i int; n int := array_length(p_jobs, 1); u uuid[]; nxt numeric[]; rd public.world_raids%rowtype; m record;
   fx jsonb; mf jsonb; hp int; job text; a text; sk text; tg uuid; ok boolean; follow boolean; tanks text[] := array['artificer', 'bloodknight']; heal_tgt uuid; low int;
-  ph text; cs record; outu timestamptz; guard_n int; tot_falls int; sp int; itm text;
+  ph text; cs record; outu timestamptz; guard_n int; tot_falls int; sp int; itm text; must text;
   late_n int := coalesce(nullif(split_part(current_setting('yh.sim_late', true), ':', 1), '')::int, 0); late_t numeric := coalesce(nullif(split_part(current_setting('yh.sim_late', true), ':', 2), '')::numeric, 0);
 begin
   perform setseed(p_seed);
@@ -114,7 +114,26 @@ begin
         continue;
       end if;
       follow := case p_policy when 'best' then true when 'half' then random() < 0.5 else false end;
-      a := 'attack'; sk := null; tg := null; itm := 'banyo_salve';
+      a := 'attack'; sk := null; tg := null; itm := 'banyo_salve'; must := null;
+      if follow then
+        if fx ? 'nt' and fx -> 'nt' ->> 's' = 'tell' then must := 'guard';
+        elsif fx ? 'nt' and fx -> 'nt' ->> 's' = 'ebb' then must := 'attack';
+        elsif fx ? 'nw' and (job = any (tanks) or (fx -> 'nw' ->> 'tgt')::uuid = u[i] or i % 3 = 0) then must := 'guard';
+        elsif exists (select 1 from public.world_raid_members b where b.raid_id = rid and b.fx ? 'brand')
+          and (job = any (tanks) or u[i] = (select b.owner_id from public.world_raid_members b join public.world_characters c2 on c2.owner_id = b.owner_id
+              where b.raid_id = rid and b.out_until is null and b.left_at is null and c2.health > 1 order by public.world_shadow_pres('world', b.job_key, b.stats, b.fx) desc limit 1)) then must := 'guard';
+        elsif exists (select 1 from public.world_raid_members b where b.raid_id = rid and b.fx ? 'grip') and (job = any (tanks) or job = 'medic')
+          and public.yh_sim_try(u[i], rid, 'coop', case job when 'artificer' then 'exo_guardian' when 'bloodknight' then 'bk_undying' else 'med_needle' end,
+                (select b.owner_id from public.world_raid_members b where b.raid_id = rid and b.fx ? 'grip' limit 1)) then continue;
+        elsif mf ? 'dry' and hp < 90 and job <> 'medic' then must := 'item';
+        end if;
+      end if;
+      if must is not null and hp >= 25 then
+        ok := case when must = 'item' then public.yh_sim_try(u[i], rid, 'item', null, null, itm) else public.yh_sim_try(u[i], rid, must) end;
+        if not ok and must = 'item' then ok := public.yh_sim_try(u[i], rid, 'attack'); end if;
+        if not ok and must = 'attack' then ok := public.yh_sim_try(u[i], rid, 'item', null, null, itm); end if;
+        continue;
+      end if;
       if hp < 50 then a := 'item';
       elsif sp < 16 then a := 'item'; itm := 'heavenly_dew';
       elsif job = 'medic' then
@@ -137,14 +156,14 @@ begin
         if fx ? 'nt' and fx -> 'nt' ->> 's' = 'tell' then a := 'guard';
         elsif fx ? 'nt' and fx -> 'nt' ->> 's' = 'ebb' then a := 'attack';
         elsif fx ? 'nw' and (job = any (tanks) or (fx -> 'nw' ->> 'tgt')::uuid = u[i] or i % 3 = 0) then a := 'guard';
-        elsif fx ? 'brand' and job = any (tanks) then a := 'guard';
+        elsif job = any (tanks) and exists (select 1 from public.world_raid_members b where b.raid_id = rid and b.fx ? 'brand') then a := 'guard';
         elsif fx ? 'nc' then a := 'attack';
         elsif fx ? 'charge' then a := 'attack';
         elsif rd.intent like '크게 휘두를%' then a := 'guard';
         elsif mf ? 'dry' and hp < 90 and job <> 'medic' and random() < 0.3 then a := 'item';
         end if;
       end if;
-      if a = 'item' then ok := public.yh_sim_try(u[i], rid, 'item', null, null, itm); if not ok then ok := public.yh_sim_try(u[i], rid, 'guard'); end if;
+      if a = 'item' then ok := public.yh_sim_try(u[i], rid, 'item', null, null, itm); if not ok then ok := public.yh_sim_try(u[i], rid, case when fx -> 'nt' ->> 's' = 'ebb' then 'attack' else 'guard' end); end if;
       else ok := public.yh_sim_try(u[i], rid, a); end if;
     end loop;
     select * into rd from public.world_raids where raid_id = rid;
@@ -156,7 +175,19 @@ begin
   insert into public.yh_sim_runs(boss, n, policy, seed, won, secs, hp_left, falls, info, log_md5)
   values (p_boss, n, p_policy, p_seed, rd.status = 'won', t, round(rd.hp * 100.0 / greatest(1, rd.max_hp), 1), tot_falls,
     jsonb_build_object('start', p_start, 'late', late_n, 'late_t', late_t, 'rate_min', round((p_start - rd.hp * 100.0 / greatest(1, rd.max_hp)) / greatest(1, t) * 60, 3), 'max_hp', rd.max_hp, 'phase', rd.phase, 'shares', (select jsonb_object_agg(x.job_key, round(x.contrib, 1)) from public.world_raid_members x where x.raid_id = rid),
-      'nc', (select jsonb_agg(x.fx -> 'ncnt') from public.world_raid_members x where x.raid_id = rid), 'stiff', (select count(*) from public.world_raid_members x where x.raid_id = rid and x.fx ? 'stiff')),
+      'nc', (select jsonb_agg(x.fx -> 'ncnt') from public.world_raid_members x where x.raid_id = rid), 'stiff', (select count(*) from public.world_raid_members x where x.raid_id = rid and x.fx ? 'stiff'),
+      'miss', (select jsonb_build_object(
+        'regrow', count(*) filter (where l.text like '수법을 놓친 틈에%'),
+        'burst', count(*) filter (where l.text like '%기운을 터뜨립니다%'),
+        'core', count(*) filter (where l.text like '고임 심을 트지 못했습니다%'),
+        'stiff', count(*) filter (where l.text like '%마른 몸이 굳었습니다%'),
+        'ebb', count(*) filter (where l.text like '물이 거꾸로 되밀려 옵니다 — 방어하던%'),
+        'alone', count(*) filter (where l.text like '고인 무게가 %(혼자 받음)%'),
+        'brand', count(*) filter (where l.text like '검은 낙인이 %에게 내리꽂힙니다%'),
+        'grip', count(*) filter (where l.text like '그림자 손아귀가 %움켜쥡니다%'),
+        'grip_off', count(*) filter (where l.text like '%그림자 손아귀를 떼어 냈습니다%'),
+        'charge_cut', count(*) filter (where l.text like '%기운 모으기가 끊겼습니다%'))
+        from public.world_raid_log l where l.raid_id = rid)),
     (select md5(string_agg(l.kind || '|' || l.text, E'\n' order by l.id)) from public.world_raid_log l where l.raid_id = rid));
   return jsonb_build_object('won', rd.status = 'won', 'secs', t, 'hp', rd.hp, 'max', rd.max_hp, 'falls', tot_falls);
 end $f$;
