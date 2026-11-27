@@ -110,7 +110,8 @@ async function run(btn, fn) {
   sending = true;
   try {
     const out = await guard(btn, fn, { success: '' });
-    if (out && el) { clearTimeout(timer); await doorShow(snap, out); if (!el) return; snap = out; draw(); plan(); gainsPop(); if (out.status === 'fight' && out.fight?.mine) window.yahangGo('pfight', out.fight.id); }
+    const host = el;
+    if (out && el) { clearTimeout(timer); await doorShow(snap, out); if (!el || el !== host) return; snap = out; draw(); plan(); gainsPop(); if (out.status === 'fight' && out.fight?.mine) window.yahangGo('pfight', out.fight.id); }
   } finally { sending = false; }
 }
 
@@ -139,29 +140,41 @@ function crumble(b) {
   b.append(box);
   b.classList.add('bj-fall');
 }
+const pickKey = id => `yh-bj-pick:${id}`;
+function pickSeen(id) { try { return Number(localStorage.getItem(pickKey(id)) || 0); } catch { return 0; } }
+function pickSeenSet(id, n) { try { localStorage.setItem(pickKey(id), String(n)); } catch { } }
 async function doorShow(prev, next) {
-  if (!el || !prev || !next || prev.status !== 'room' || prev.run_id !== next.run_id) return;
-  const pp = prev.picks || [], np = next.picks || [];
-  if (np.length <= pp.length) return;
-  const pk = np[np.length - 1];
-  if (pk.room !== prev.room) return;
-  const b = $(`[data-door="${pk.door}"]`, el);
-  if (!b || showing) return;
+  if (!el || !next?.run_id || showing) return;
+  const np = next.picks || [];
+  if (np.length <= pickSeen(next.run_id)) return;
+  const pk = np[np.length - 1], host = el;
   showing = true;
-  const host = el; host.inert = true; host.classList.add('bj-anim');
+  host.inert = true; host.classList.add('bj-anim');
   try {
+    while (document.hidden && el === host) await wait(300);
+    if (el !== host) return;
+    if (!prev || prev.run_id !== next.run_id || prev.status !== 'room' || prev.room !== pk.room || !$(`[data-door="${pk.door}"]`, el)) {
+      snap = { ...next, status: 'room', room: pk.room, picks: np.slice(0, -1), shown: null, fight: null, result: null, me: { ...(next.me || {}), can_pick: false } };
+      draw();
+    }
+    const b = $(`[data-door="${pk.door}"]`, el);
+    if (!b) return;
     const cap = $('.bj-turn', el), say = t => { if (cap) cap.innerHTML = t; };
     $$('[data-door]', el).forEach(x => { x.disabled = true; if (x !== b) x.classList.add('bj-dim'); });
     say(`${pk.door}번 문이 떨리기 시작합니다…`);
     b.classList.add('bj-shake'); await wait(1000); b.classList.remove('bj-shake');
+    if (el !== host) return;
     if (pk.ok) { b.classList.add('bj-open'); say('<b>문이 활짝 열렸습니다.</b>'); await wait(1300); }
     else if (pk.lucky) {
       b.classList.add('bj-gray'); say('틀린 문이었습니다…'); await wait(1000);
+      if (el !== host) return;
       b.classList.remove('bj-gray'); b.classList.add('bj-open', 'bj-luck'); say('<b>무너지던 흙이 멈추고, 문이 다시 열렸습니다!</b>'); await wait(1500);
     } else {
       b.classList.add('bj-gray'); await wait(350);
+      if (el !== host) return;
       crumble(b); say('<b>틀린 문이었습니다. 비장고가 무너져 내립니다!</b>'); await wait(1600);
     }
+    if (el === host) pickSeenSet(next.run_id, np.length);
   } finally { showing = false; host.inert = false; host.classList.remove('bj-anim'); }
 }
 
