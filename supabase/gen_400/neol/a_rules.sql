@@ -22,7 +22,7 @@ as $f$ select '{
   "mk2": {
     "counter_mul": 2,
     "miss": {"pierce": 0.5, "regrow": 1, "regrow_none": 2},
-    "weight": {"every": 12, "every3": 10, "off": 4, "delay": 6, "window": 6, "mul": 4, "solo": 1.5, "tank_n": 2, "hold": 0.5, "team": 3},
+    "weight": {"every": 12, "every3": 10, "off": 4, "delay": 6, "window": 6, "mul": 4, "solo": 1.5, "tank_n": 2, "hold": 0.5, "team": 2},
     "dry": {"from_phase": 2, "pick": 3, "dmg": 3, "line": 90, "beats": 8, "stiff": 15, "stiff_cap": 2},
     "core": {"from_phase": 3, "every": 20, "off": 9, "secs": 8, "mul": 4, "min": 3600, "hits": 3, "regrow": 3, "relock": 1.3, "open_s": 12, "open_pct": 20, "boost": 0.1},
     "tide": {"every": 9, "off": 2, "tell": 4, "gap": 2, "first": 0.8, "ebb": 1.5}

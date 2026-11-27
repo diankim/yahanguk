@@ -76,9 +76,9 @@ select pg_temp.yh_fix('world_raid_action', array[
       for m in select x.owner_id, x.level, coalesce((x.fx ->> 'guard')::int, 0) > 0 as gd from public.world_raid_members x where x.raid_id = p_raid and x.out_until is null and public.world_raid_here(x.owner_id, rd.region_id) and x.last_action_at > now() - interval '120 seconds' loop
         raw := public.world_raid_boss_base(p_raid, rd.kind, m.level) * ph_mul * 2.2 * case when rfx ? 'break' then (1 - (rfx ->> 'break')::numeric / 100.0) else 1 end;
         mgt := mgt + 1; if not m.gd then mgn := mgn + 1; end if;
-        perform public.world_raid_hit(p_raid, m.owner_id, raw, 'burst', case when rd.kind = 'world' and rd.boss_key = 'shadow' and not m.gd then public.world_raid_pierce(p_raid) else 0 end);
+        perform public.world_raid_hit(p_raid, m.owner_id, raw, 'burst', case when rd.kind = 'world' and not m.gd then public.world_raid_pierce(p_raid) else 0 end);
       end loop;
-      if rd.kind = 'world' and rd.boss_key = 'shadow' and mgn > 0 then rd.hp := least(rd.max_hp, rd.hp + public.world_raid_regrow_say(p_raid, mgn >= mgt)); end if;$a$,
+      if rd.kind = 'world' and mgn > 0 then rd.hp := least(rd.max_hp, rd.hp + public.world_raid_regrow_say(p_raid, mgn >= mgt)); end if;$a$,
   $a$select x.owner_id, x.level, x.name into pick, lv, nm from public.world_raid_members x join$a$,
   $a$select x.owner_id, x.level, x.name, coalesce((x.fx ->> 'guard')::int, 0) > 0 into pick, lv, nm, mg from public.world_raid_members x join$a$,
   $a$* (1 + (mk -> 'brand' ->> 'streak')::numeric * gx), 'buster');$a$,

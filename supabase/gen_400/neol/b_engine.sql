@@ -77,7 +77,7 @@ create or replace function public.world_neol_beat(p_raid uuid, p_fx jsonb, p_tic
 as $f$
 declare mk jsonb := public.world_neol_rules() -> 'mk2'; bf jsonb := p_fx; m record; pick uuid; nm text; t0 numeric; n numeric; ppl int; tot numeric; d int;
   tanks jsonb := public.world_shadow_rules() -> 'tank_pres' -> 'jobs'; w jsonb := mk -> 'weight'; ti jsonb := mk -> 'tide'; dr jsonb := mk -> 'dry'; co jsonb := mk -> 'core';
-  hpadd int := 0; need numeric; maxhp int; g boolean; cnt int; tall uuid[]; tms uuid[]; pc numeric := coalesce((mk -> 'miss' ->> 'pierce')::numeric, 0);
+  hpadd int := 0; need numeric; maxhp int; g boolean; cnt int; tall uuid[]; tms uuid[]; tn int; pc numeric := coalesce((mk -> 'miss' ->> 'pierce')::numeric, 0);
 begin
   select max_hp into maxhp from public.world_raids where raid_id = p_raid;
   if bf ? 'nopen' and p_now >= (bf -> 'nopen' ->> 'until')::numeric then bf := bf - 'nopen'; end if;
@@ -90,6 +90,7 @@ begin
     if pick is not null then
       select coalesce(sum(case when tanks ? a.job_key then (w ->> 'tank_n')::numeric else 1 end), 0), count(*) into n, ppl
         from public.world_neol_active(p_raid) a where a.owner_id = pick or coalesce((a.ng ->> 't')::numeric, 0) >= t0 - (w ->> 'window')::numeric;
+      tn := least((w ->> 'team')::int, (select count(*)::int from public.world_neol_active(p_raid)));
       perform public.world_raid_say(p_raid, 'boss', '고인 무게가 ' || nm || '에게 떨어집니다' || case when ppl > 1 then '(' || ppl || '명이 나눠 짐)' else '(혼자 받음)' end || '!');
       for m in select a.owner_id, a.level, a.job_key, coalesce((a.ng ->> 't')::numeric, 0) >= t0 - (w ->> 'window')::numeric as gd
                  from public.world_neol_active(p_raid) a where a.owner_id = pick or coalesce((a.ng ->> 't')::numeric, 0) >= t0 - (w ->> 'window')::numeric
@@ -97,11 +98,11 @@ begin
         tot := public.world_raid_boss_base(p_raid, 'world', m.level) * p_ph * (w ->> 'mul')::numeric * coalesce((bf -> 'nw' ->> 'mul')::numeric, 1)
              * case when ppl = 1 then (w ->> 'solo')::numeric else 1 end * case when tanks ? m.job_key then (w ->> 'tank_n')::numeric else 1 end / greatest(1, n);
         if m.gd then update public.world_raid_members set fx = fx || '{"guard": 1}'::jsonb where raid_id = p_raid and owner_id = m.owner_id; end if;
-        d := public.world_raid_hit(p_raid, m.owner_id, tot, 'weight', case when ppl < (w ->> 'team')::int then pc else 0 end);
+        d := public.world_raid_hit(p_raid, m.owner_id, tot, 'weight', case when ppl < tn then pc else 0 end);
         if m.gd and d > 0 then perform public.world_raid_credit(p_raid, m.owner_id, d * case when ppl = 1 then (w ->> 'hold')::numeric else 1 end, 'guard'); end if;
-        if ppl >= (w ->> 'team')::int then perform public.world_neol_cnt(p_raid, m.owner_id, 'w'); end if;
+        if ppl >= tn then perform public.world_neol_cnt(p_raid, m.owner_id, 'w'); end if;
       end loop;
-      if ppl < (w ->> 'team')::int then hpadd := hpadd + public.world_raid_regrow_say(p_raid, ppl <= 1); end if;
+      if ppl < tn then hpadd := hpadd + public.world_raid_regrow_say(p_raid, ppl <= 1); end if;
     end if;
     bf := bf - 'nw';
   elsif p_tick and not (bf ? 'nw') and p_bt % (case when p_phase >= 3 then w ->> 'every3' else w ->> 'every' end)::int = (w ->> 'off')::int then
@@ -138,7 +139,7 @@ begin
           perform public.world_neol_cnt(p_raid, m.owner_id, 'e');
         end if;
       end loop;
-      perform public.world_raid_say(p_raid, case when cnt > 0 then 'boss' else 'good' end, '물이 거꾸로 되밀려 옵니다' || case when cnt > 0 then ' — 방어하던 ' || cnt || '명이 휩쓸렸습니다.' else ' — 모두 비켜섰습니다.' end);
+      perform public.world_raid_say(p_raid, case when cnt > 0 then 'boss' else 'good' end, '물이 거꾸로 되밀려 옵니다' || case when cnt > 0 then ' — 방어하던 ' || cnt || '명이 휩쓸렸습니다.' when cardinality(tms) > 0 then ' — 되밀린 물은 모두 비켜섰습니다.' else ' — 모두 비켜섰습니다.' end);
       if cardinality(tms) > 0 then
         hpadd := hpadd + public.world_raid_regrow_say(p_raid, (select count(distinct x) from unnest(tms) x) >= (select count(distinct x) from unnest(tall) x));
       end if;
