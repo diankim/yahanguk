@@ -1999,6 +1999,8 @@ body.chat-open .chat-grip { display: grid; place-items: center; height: 20px; cu
 .chat-list li.msg.ns-1041 .meta b::before, .card-name.ns-1041::before, .hue-preview.ns-1041 b::before { transform: none !important; width: 8px !important; height: 7px !important; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .chat-list li.msg.ns-1042 .meta b::before, .card-name.ns-1042::before, .hue-preview.ns-1042 b::before { transform: none !important; width: 7px !important; height: 7px !important; border-radius: 50%; background: none !important; box-shadow: inset 2px -1px 0 0 var(--ns); }
 .chat-list li.msg.ns-1043 .meta b::before, .card-name.ns-1043::before, .hue-preview.ns-1043 b::before { transform: none !important; width: 8px !important; height: 4px !important; border-radius: 8px 8px 0 0; margin-bottom: 3px !important; }
+.ns-1044 { --ns: #ffd25e; } [data-tone=light] .ns-1044 { --ns: #9a6400; }
+.chat-list li.msg.ns-1044 .meta b::before, .card-name.ns-1044::before, .hue-preview.ns-1044 b::before { transform: none !important; width: 8px !important; height: 8px !important; clip-path: polygon(50% 0, 60% 30%, 90% 20%, 72% 48%, 100% 60%, 0 60%, 28% 48%, 10% 20%, 40% 30%); }
 /* 야행묵금(레거시): 마름모 대신 작은 「痕」, 이름 아래 붉은 붓 한 획 */
 .chat-list li.msg.ns-1016 .meta b, .card-name.ns-1016, .hue-preview.ns-1016 b, .hue-pick.ns-1016 { font-family: var(--font-serif, serif);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C20 2 45 3 70 4S95 5 99 2L99 4C90 7 60 7 35 6.5S8 7 1 5z' fill='%23b0263a'/%3E%3C/svg%3E") no-repeat left bottom / 100% 4px; padding-bottom: 3px; }

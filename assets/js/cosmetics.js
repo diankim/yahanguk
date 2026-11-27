@@ -1,6 +1,7 @@
 import { RB_SCENE, RB_SEALS, RB_SEAL_TIER } from './realm_cosmetics.js';
 import { TR_MOTIFS, TR_FRAMES, TR_PATTERNS, TR_SEALS, TR_SEAL_TIER } from './trade_cosmetics.js';
 import { NL_MOTIFS, NL_FRAMES, NL_SEALS, NL_SEAL_TIER } from './neol_cosmetics.js';
+import { DH_MOTIFS, DH_FRAMES, DH_SEALS, DH_SEAL_TIER } from './boss40_cosmetics.js';
 const M = {
   lantern: 'M-4-7h8M-5-5h10v9h-10zM0 4v3M-2 7h4',
   path: 'M-8 0h4M-2 0h4M4 0h4',
@@ -73,6 +74,8 @@ Object.assign(M, TR_MOTIFS);
 Object.assign(FRAMES, TR_FRAMES);
 Object.assign(M, NL_MOTIFS);
 Object.assign(FRAMES, NL_FRAMES);
+Object.assign(M, DH_MOTIFS);
+Object.assign(FRAMES, DH_FRAMES);
 const CORNERS = [[12, 12, 0], [88, 12, 90], [88, 88, 180], [12, 88, 270]];
 const MIDS = [[50, 4, 0], [96, 50, 90], [50, 96, 180], [4, 50, 270]];
 const UG_SPARK = [[31, 4], [69, 4], [96, 31], [96, 69], [69, 96], [31, 96], [4, 69], [4, 31]];
@@ -174,4 +177,6 @@ Object.assign(SEALS, TR_SEALS);
 Object.assign(SEAL_TIER, TR_SEAL_TIER);
 Object.assign(SEALS, NL_SEALS);
 Object.assign(SEAL_TIER, NL_SEAL_TIER);
+Object.assign(SEALS, DH_SEALS);
+Object.assign(SEAL_TIER, DH_SEAL_TIER);
 export const sealMark = key => SEALS[key] ? `<span class="seal-mark t-${SEAL_TIER[key] || 'common'}" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${SEALS[key]}</text></svg></span>` : '';

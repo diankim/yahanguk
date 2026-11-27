@@ -14,7 +14,7 @@ begin
   "mech_names": {"thrash": "땅울음", "slide": "산사태 밀기", "weight": "땅의 무게", "pull": "끌개", "wedge": "쐐기돌", "fist": "돌주먹", "boulder": "굴러오는 바위", "shave": "판 깎기", "final": "마지막 몸부림"},
   "dps": {"ref": {"analyst": 584, "spearman": 525, "exorcist": 495, "formation": 495, "medic": 494, "sealmaster": 494, "scout": 480, "tamer": 480, "bloodknight": 447, "artificer": 422},
     "hp_k": 75, "cuts": [21, 44, 66], "cut_enrage": 1, "spec": "Lv55 · 9단계 무기 +10 · 9단계 방어구 한 벌"},
-  "story": {"phases": ["땅울음", "산사태", "땅울음과 산사태", "마지막 몸부림"], "min": 30, "round_s": 60, "hp_min": 2600, "hp_k": 9, "raw": [12, 2], "first": {"gil": 1200},
+  "story": {"lv": 54, "phases": ["땅울음", "산사태", "땅울음과 산사태", "마지막 몸부림"], "min": 30, "round_s": 60, "hp_min": 2600, "hp_k": 9, "raw": [12, 2], "first": {"gil": 1200},
     "board": {"mech_mul": 1, "fall_hp": 40, "slide": {"every": 4, "off": 2, "left": 3, "push": 1, "raw": 14}, "final": {"rounds": 2},
       "seq": [{"at": 100, "m": ["thrash"]}, {"at": 66, "m": ["thrash", "slide"]}, {"at": 25, "m": ["slide", "shave"]}]}},
   "board": {

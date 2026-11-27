@@ -7,6 +7,7 @@ import vault_rb as VRB
 
 NAMES = {'main': '본토', 'hanul': '건넛누리'}
 DEFAULT = 'main'
+BOSS_MOUNTS = ['dh_wave_skiff']
 STABLE = [
     ('hn_fin_pony', '물갈퀴 망아지', 'pado', 1.6, 1, 1, 50, 1500, '일반', {},
      '발굽 사이에 물갈퀴가 돋은 파도너울성의 망아지. 장대 다리 사이 얕은 물도 첨벙첨벙 건너, 틈을 막 건너온 손님이 처음 들이는 탈것이다.'),
@@ -29,6 +30,8 @@ def emit(D, J, errors, fresh=None, known=None):
     hanul = {mid: 'hanul' for mid, *_ in STABLE}
     for k in VRB.MOUNTS:
         hanul['rb_mount_' + k] = 'hanul'
+    for k in BOSS_MOUNTS:
+        hanul[k] = 'hanul'
     rows, mats = [], {}
     for mid, nm, realm, speed, seats, fare, lv, price, tier, m, desc in STABLE:
         reg = hubs.get(realm)

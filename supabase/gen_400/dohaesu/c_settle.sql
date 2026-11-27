@@ -2,7 +2,7 @@ create or replace function public.world_dh_settle(p_fight uuid, p_won boolean)
  returns void language plpgsql security definer set search_path = pg_catalog, public
 as $f$
 declare r jsonb := public.world_boss_fight_rules(p_fight); f public.world_gw_fights%rowtype; m record; today date := (now() at time zone 'Asia/Seoul')::date;
-  rec public.world_gw_records%rowtype; n int; solo boolean; flawless boolean; is_first boolean; xp int; msg text; lv int; v_gil int;
+  rec public.world_gw_records%rowtype; n int; solo boolean; flawless boolean; is_first boolean; xp int; msg text; lv int; v_gil int; v_got text; v_n int;
 begin
   select * into f from public.world_gw_fights where fight_id = p_fight for update;
   if f.status not in ('fight', 'wait') then return; end if;
@@ -46,8 +46,19 @@ begin
           v_gil := case when is_first then (r -> 'first' ->> 'gil')::int else (r -> 'again' ->> 'gil')::int end;
           update public.world_characters set gil = gil + v_gil, updated_at = now() where owner_id = m.owner_id;
           if xp > 0 then xp := coalesce((public.world_grant_xp_got(m.owner_id, xp) ->> 'xp')::int, 0); end if;
-          msg := case when is_first then '도해수를 처음으로 바다로 돌려보냈습니다. ' || to_char(v_gil, 'FM999,999') || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '을(를) 받았습니다.'
-            else '도해수를 바다로 돌려보냈습니다(' || (coalesce(rec.kills, 0) + 1) || '번째). ' || v_gil || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || '.' end;
+          v_got := '';
+          if is_first and r -> 'first' ->> 'mount' is not null then
+            insert into public.world_owned_mounts(owner_id, mount_id) values (m.owner_id, r -> 'first' ->> 'mount') on conflict do nothing;
+            v_got := v_got || ' · 탈것 「' || (r -> 'first' ->> 'mount_name') || '」';
+          end if;
+          if is_first and r -> 'first' ->> 'furniture_name' is not null then v_got := v_got || ' · 별채 가구 「' || (r -> 'first' ->> 'furniture_name') || '」'; end if;
+          if r -> 'both' ->> 'name_style' is not null and exists (select 1 from public.world_gw_records g where g.owner_id = m.owner_id and g.boss_id = r -> 'both' ->> 'with' and g.kills > 0) then
+            insert into public.world_faction_unlocks(owner_id, unlock_key) values (m.owner_id, r -> 'both' ->> 'name_style') on conflict do nothing;
+            get diagnostics v_n = row_count;
+            if v_n > 0 then v_got := v_got || ' · 이름 색 「' || (r -> 'both' ->> 'name_style_name') || '」'; end if;
+          end if;
+          msg := case when is_first then '도해수를 처음으로 바다로 돌려보냈습니다. ' || to_char(v_gil, 'FM999,999') || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || v_got || '을(를) 받았습니다.'
+            else '도해수를 바다로 돌려보냈습니다(' || (coalesce(rec.kills, 0) + 1) || '번째). ' || v_gil || '전' || case when xp > 0 then ' · 경험치 ' || xp else '' end || v_got || '.' end;
           insert into public.world_notifications(user_id, kind, title, content, payload) values (m.owner_id, 'reward', '도해수 진정', msg, jsonb_build_object('fight_id', p_fight, 'first', is_first, 'boss', 'dohaesu'));
           insert into public.world_events(actor_id, actor_name, event_type, content, payload)
           values (m.owner_id, m.name, 'dh_win', m.name || '이(가) 뒤집힌 물목에서 도해수를 바다로 돌려보냈습니다.',

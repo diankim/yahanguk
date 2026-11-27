@@ -11,6 +11,7 @@ import { load as loadSnap } from './views/common.js';
 import { hit } from './changes.js';
 import { SYS_CHAT } from './rules.js';
 import { RB_NAME_STYLES } from './realm_cosmetics.js';
+import { DH_NAME_STYLES } from './boss40_cosmetics.js';
 
 const BASE_TABS = [['global', '전체'], ['region', '지역'], ['faction', '세력'], ['party', '파티']];
 const tabsNow = () => circles().length ? [...BASE_TABS, ['circle', '모임']] : BASE_TABS;
@@ -408,6 +409,7 @@ export const NAME_STYLES = {
   1036: ['인주', '값귀를 깊은 장부에서 처음 쓰러뜨리면'],
   1037: ['청야', '백야를 깊은 판에서 처음 이기면'],
   ...RB_NAME_STYLES,
+  ...DH_NAME_STYLES,
 };
 export const nameStyle = (v, id) => NAME_STYLES[v] ? { cls: ` ns-${v}`, hu: hue(id) } : { cls: '', hu: Number.isInteger(v) ? v : hue(id) };
 export function hue(id) { let x = 0; for (const c of String(id || '')) x = (x * 31 + c.charCodeAt(0)) % 360; return x; }

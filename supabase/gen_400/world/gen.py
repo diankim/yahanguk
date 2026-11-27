@@ -566,6 +566,14 @@ sys.path.insert(0, os.path.join(HERE, '..', 'realm_bond'))
 import gen_rb as RBG
 w(RBG.emit(R, [p[0] for p in TRG.T.PORTS], SQ, J, TA, known, RID, xp_need, fresh, errors))
 
+part('../dohaesu/head.sql')
+part('../boss_min/a_min.sql')
+[part('../dohaesu/' + f) for f in ('a_rules.sql', 'b_engine.sql', 'c_settle.sql', 'd_patch.sql')]
+[part('../ttangul/' + f) for f in ('a_rules.sql', 'b_engine.sql', 'c_settle.sql', 'd_patch.sql')]
+part('../boss_min/b_hold.sql')
+part('../boss_rw/a_rewards.sql')
+part('../ug_dohaesu/a_ultimate.sql')
+
 sys.path.insert(0, os.path.join(HERE, '..', 'mounts'))
 import gen_mount as MTG
 w(MTG.emit(D, J, errors, fresh, known))
@@ -573,12 +581,6 @@ w(MTG.emit(D, J, errors, fresh, known))
 sys.path.insert(0, os.path.join(HERE, '..', 'neol'))
 import gen_neol as NLG
 w(NLG.emit(J, TA, known, RID, fresh, errors, xp_need))
-
-part('../dohaesu/head.sql')
-part('../boss_min/a_min.sql')
-[part('../dohaesu/' + f) for f in ('a_rules.sql', 'b_engine.sql', 'c_settle.sql', 'd_patch.sql')]
-[part('../ttangul/' + f) for f in ('a_rules.sql', 'b_engine.sql', 'c_settle.sql', 'd_patch.sql')]
-part('../boss_min/b_hold.sql')
 
 w(open(os.path.join(HERE, '..', '..', 'gen_portrait', 'items.sql'), encoding='utf-8').read())
 

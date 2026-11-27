@@ -91,6 +91,8 @@ function dhBoard(s, live, moveTo) {
     }
   }
   if (headH) { const [x, y] = dhAt(head); marks += `<circle class="dh-headring ${due(headH) ? 'due' : ''}" cx="${fx(x)}" cy="${fx(y)}" r="28"/>${tag(x + 22, y - 22, headH, 'burst')}`; }
+  const rw = b.ug?.wm?.k === 'rift4' ? b.ug.wm : null;
+  if (rw?.order) for (const [c, n] of Object.entries(rw.order)) { const [x, y] = dhAt(Number(c)); marks += `<g class="wm-n"><circle cx="${fx(x - 18)}" cy="${fx(y + 18)}" r="11"/><text x="${fx(x - 18)}" y="${fx(y + 23)}">${n}</text></g>`; }
   if (b.stun > 0) { const [x, y] = dhAt(head); marks += `<text class="dh-stun" x="${fx(x)}" y="${fx(y - 18)}">${esc(String(b.stun))}</text>`; }
   const top = flow ? `<text class="dh-flow ${flow.k} ${due(flow) ? 'due' : ''}" x="150" y="18">${esc(T.dohaesu.hz[flow.k])} ${DH_ARROW[flow.dir] || ''} ${num(flow)}</text>` : '';
   const wet = b.wet || {}, wmax = Number(b.wet_max || 3);
@@ -100,7 +102,8 @@ function dhBoard(s, live, moveTo) {
   const tent = hz.find(h => h.k === 'tentacle' && (h.cells || []).length === 2 && [h.a, h.b].includes(s.me));
   const lines = [b.mine != null && Number(b.mine) > 0 ? `<b class="${Number(b.mine) >= wmax ? 'bad' : ''}" data-tip="${esc(T.dohaesu.wetTip)}">${esc(T.dohaesu.wet(b.mine))}</b>` : '',
     tent ? esc(T.dohaesu.tent(Math.abs((tent.cells[0] - 1) % 4 - (tent.cells[1] - 1) % 4) + Math.abs(Math.floor((tent.cells[0] - 1) / 4) - Math.floor((tent.cells[1] - 1) / 4)))) : '',
-    b.stun > 0 ? esc(T.dohaesu.stun(b.stun)) : '', breath ? `<b class="bad">${esc(T.dohaesu.gim.breath)}</b>` : ''];
+    b.stun > 0 ? esc(T.dohaesu.stun(b.stun)) : '', breath ? `<b class="bad">${esc(T.dohaesu.gim.breath)}</b>` : '',
+    rw ? `<b class="wm-name">「${esc(rw.name || '')}」</b> ${Number(rw.step || 0)}/${rw.steps || 4}${rw.due ? ' · !' : ''}` : ''];
   return `<div class="sea-wrap"><svg class="sea-map dh-map" viewBox="0 0 300 310" role="img" aria-label="${esc(T.dohaesu.boss.place)}">${TEL_DEFS}${top}${cells}${marks}${mm.trails.map(t => trailSvg(t, dhAt)).join('')}${toks}${destMark}</svg>
     ${hint(s, live, moveTo, lines)}</div>`;
 }
@@ -176,6 +179,8 @@ function duBoard(s, live, moveTo) {
     }
     if (h.k === 'fist' && h.cells?.length) { const [x, y] = at(Number(h.cells[0])); marks += `<circle class="du-fist ${due(h) ? 'due' : ''}" cx="${fx(x)}" cy="${fx(y)}" r="20"/>`; put(Number(h.cells[0]), h); }
   }
+  const pw = b.ug?.wm?.k === 'pulls' ? b.ug.wm : null;
+  for (const x of pw?.mine || []) { const [px, py] = at(Number(x.c)); marks += `<g class="wm-n"><circle cx="${fx(px + 14)}" cy="${fx(py - 14)}" r="9"/><text x="${fx(px + 14)}" y="${fx(py - 10)}">${x.n}</text></g>`; }
   const shave = hz.find(h => h.k === 'shave');
   const core = `<g class="du-core ${tilt ? 'due' : ''}"><polygon points="${hexPts(DU_CX, DU_CY, DU_S - 2)}"/><text x="${DU_CX}" y="${DU_CY + 4}">${shave ? num(shave) : esc(T.ttangul.boss.name)}</text></g>`;
   const carry = b.carry || {};
@@ -183,7 +188,8 @@ function duBoard(s, live, moveTo) {
   let destMark = '';
   if (dest) { const [x, y] = at(dest); destMark = `<polygon class="hx-destmark" points="${hexPts(x, y, DU_S - 6)}"/>`; }
   const lines = [Number(b.mine || 0) > 0 ? `<b>${esc(T.ttangul.gim.carry)}</b>` : '', pushCell.size || (tilt && due(tilt)) ? esc(T.ttangul.gim.brace) : '', Number(b.final || 0) > 0 || tilt ? `<b class="bad">${esc(T.ttangul.gim.final(Number(b.final || 0) + (tilt ? 1 : 0)))}</b>` : '',
-    shave ? `<b class="bad">${esc(T.ttangul.hz.shave)} ${num(shave)}</b>` : ''];
+    shave ? `<b class="bad">${esc(T.ttangul.hz.shave)} ${num(shave)}</b>` : '',
+    pw ? `<b class="wm-name">「${esc(pw.name || '')}」</b>${(pw.mine || []).length ? ` · ${pw.mine.map(x => `${x.n}번째 ${x.c}번 칸`).join(', ')}` : ''}${pw.brace ? ` · <b class="bad">${esc(T.ttangul.gim.final(Number(pw.final || 0)))}</b>` : ''}` : ''];
   return `<div class="sea-wrap"><svg class="sea-map du-map" viewBox="18 20 264 244" role="img" aria-label="${esc(T.ttangul.boss.place)}">${TEL_DEFS}${cells}${marks}${core}${mm.trails.map(t => trailSvg(t, at)).join('')}${toks}${tags}${destMark}</svg>
     ${hint(s, live, moveTo, lines)}</div>`;
 }
@@ -194,9 +200,9 @@ export function seaGim(s, me, a, moveTo) {
   if (!seaOn(s) || me.out || seaFell(s, me.id)) return '';
   const b = s.board || {}, at = moveTo || b.my_pos;
   if (s.boss === 'dohaesu') {
-    const G = T.dohaesu.gim, head = Number(b.head), ok = Number(at) === head;
+    const G = T.dohaesu.gim, head = Number(b.head), ok = Number(at) === head || (b.ug?.wm?.k === 'rift4' && [1, 4, 13, 16].includes(Number(at)));
     return `<div class="gw-gim sea-gim"><span class="gw-gim-h" title="${esc(C.gimTip(G.head))}">${icon('bell', 13)}<b>${esc(G.head)}</b></span>
-      <button class="btn ${a?.a === 'guide' ? 'on' : ''}" data-gw="guide" ${ok ? '' : 'disabled'} title="${esc(ok ? G.guide(head) : G.off(head))}">${icon('flag', 16)}<span>${esc(T.dohaesu.act.guide)}${ok ? ` · ${head}번 칸` : ''}</span></button>
+      <button class="btn ${a?.a === 'guide' ? 'on' : ''}" data-gw="guide" ${ok ? '' : 'disabled'} title="${esc(ok ? G.guide(at) : G.off(head))}">${icon('flag', 16)}<span>${esc(T.dohaesu.act.guide)}${ok ? ` · ${at}번 칸` : ''}</span></button>
     </div>`;
   }
   if (!hasMech(s, 'pull')) return '';

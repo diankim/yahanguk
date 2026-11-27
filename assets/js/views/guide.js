@@ -2473,11 +2473,12 @@ const S = [
     </ul>
     <h4>보상</h4>
     <ul>
-      <li>깊은 물목에서 처음 돌려보내면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배(Lv${B.xp_cap_lv ?? 55} 이상이면 경험치 없음), 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>깊은 물목에서 처음 돌려보내면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배(Lv${B.xp_cap_lv ?? 55} 이상이면 경험치 없음)${f.mount_name ? ` · 탈것 「${esc(f.mount_name)}」` : ''}${f.furniture_name ? ` · 별채 가구 「${esc(f.furniture_name)}」` : ''}, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>처음 돌려보내면 칭호 「물목을 연 이」를 받고, 10번 돌려보내면 낙관 「渡」를 받습니다. 땅울이도 깊은 판에서 잠재우면 칭호 「도해록의 끝」과 이름 색 「${esc(B.both?.name_style_name || '해오름')}」.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
   ['duboss', '땅울이 · 「도해록」 13장', `${(() => { const B = GD.boss?.ttangul || {}, b = B.board || {}, f = B.first || {}, g = B.again || {}, x = B.fail || {}, st = B.story || {}, nm = B.mech_names || {}; return `
-    <p>「도해록」 13장에서 ${esc(B.place || '고임터')}의 「${esc(B.name || '땅울이')}」와 싸웁니다(Lv${B.lv ?? 55}부터, 현장의 「${esc(B.name || '땅울이')}」 칸). 막힌 지맥에 아파 날뛰는 땅울이를, 돌판 위에서 버티며 진정시키는 싸움입니다. 판은 둘입니다.</p>
+    <p>「도해록」 13장에서 ${esc(B.place || '고임터')}의 「${esc(B.name || '땅울이')}」와 싸웁니다(${st.lv != null && st.lv !== B.lv ? `${esc(B.modes?.story || '이야기판')}은 Lv${st.lv}부터, ${esc(B.modes?.hard || '깊은 고임터')}은 Lv${B.lv ?? 55}부터` : `Lv${B.lv ?? 55}부터`}, 현장의 「${esc(B.name || '땅울이')}」 칸). 막힌 지맥에 아파 날뛰는 땅울이를, 돌판 위에서 버티며 진정시키는 싸움입니다. 판은 둘입니다.</p>
     <table class="guide-table"><tr><th>판</th><th>여는 조건과 규칙</th></tr>
       <tr><td>${esc(B.modes?.story || '이야기판')}</td><td>13장의 싸움으로, 혼자서도 깰 수 있는 쉬운 판입니다. 혼자면 마감이 없고(여럿이면 ${st.round_s ?? 60}초), 입장 물품이 필요 없으며 회복품도 마음껏 씁니다. 땅울음·산사태와 마지막 몸부림 ${st.board?.final?.rounds ?? 2}라운드만 나오고, 구덩이로 미끄러져도 떨어지지 않고 체력 ${st.board?.fall_hp ?? 40}을 잃은 채 기어 올라옵니다. 처음 잠재우면 ${(st.first?.gil || 0).toLocaleString()}전.</td></tr>
       <tr><td>${esc(B.modes?.hard || '깊은 고임터')}</td><td>${esc(B.hard_quest_name || '도해록 13장')}을 마치면 열립니다. 같은 곳의 파티원 ${B.hard_min ?? 2}명에서 4명까지 함께 서고, 모두 ${esc(B.item_name || '')}을 하나씩 씁니다(${esc((B.item_where || '').replace(/[.。]$/, ''))}). ${B.min ?? 18}분 안에 잠재워야 합니다.</td></tr></table>
@@ -2502,17 +2503,18 @@ const S = [
     </ul>
     <h4>보상</h4>
     <ul>
-      <li>깊은 고임터에서 처음 잠재우면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배(Lv${B.xp_cap_lv ?? 55} 이상이면 경험치 없음), 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>깊은 고임터에서 처음 잠재우면 ${(f.gil || 0).toLocaleString()}전과 필요 경험치의 ${f.xp ?? 0.5}배(Lv${B.xp_cap_lv ?? 55} 이상이면 경험치 없음)${f.mount_name ? ` · 탈것 「${esc(f.mount_name)}」` : ''}${f.furniture_name ? ` · 별채 가구 「${esc(f.furniture_name)}」` : ''}, 그 뒤에는 하루 한 번 ${(g.gil || 0).toLocaleString()}전.</li>
+      <li>처음 잠재우면 칭호 「땅울음을 잠재운 이」와 테두리 「땅울림」을 받습니다. 도해수도 깊은 판에서 돌려보내면 칭호 「도해록의 끝」과 이름 색 「${esc(B.both?.name_style_name || '해오름')}」.</li>
       <li>지면 장착 장비 내구도 −${x.dur ?? 10}% · 침식 +${x.er ?? 10} · ${x.cd ?? 30}분 뒤 다시 도전합니다.</li>
     </ul>`; })()}`],
   ['ugboss', '무용담 · 가장 어려운 판', `${(() => { const U = GD.ultimate || {}, T = U.tokens || {}; return `
     <p>객사 이야기꾼 춘보가 부풀린 무용담이 퍼지자, 보낸 우두머리들이 이야기 속 모습으로 더 사납게 다시 깨어납니다. 이야기판 → 깊은 판 다음의 셋째 판입니다. 판마다 그 이야기를 들려주는 사람의 퀘스트를 마치면 열립니다 — 구중 봉연 나루지기 덕삼(요인록을 마친 뒤), 묵창 주막 홍매댁(묵적록을 마친 뒤), 남문 수로 선착 등지기 차랑(명등기를 마친 뒤).</p>
     <table class="guide-table"><tr><th>판</th><th>순서</th><th>들어가는 곳</th></tr>
-      ${['gwiheo', 'mukjeok', 'gapgwi'].map(k => U.boards?.[k]).filter(Boolean).map(b => `<tr><td>${esc(b.name)}</td><td>${b.boss === 'gwiheo' ? '구중 봉주 → 귀허의 주인' : b.boss === 'gapgwi' ? '값귀 → 백야' : '먹그림자'}</td><td>${esc(b.place || '')}</td></tr>`).join('')}
+      ${['gwiheo', 'mukjeok', 'gapgwi', 'dohaesu'].map(k => U.boards?.[k]).filter(Boolean).map(b => `<tr><td>${esc(b.name)}</td><td>${b.boss === 'gwiheo' ? '구중 봉주 → 귀허의 주인' : b.boss === 'gapgwi' ? '값귀 → 백야' : b.boss === 'dohaesu' ? '도해수 → 땅울이' : '먹그림자'}</td><td>${esc(b.place || '')}${b.level && b.level !== U.level ? ` · Lv${b.level}` : ''}</td></tr>`).join('')}
     </table>
     <h4>들어가기</h4>
     <ul>
-      <li>Lv${U.level ?? 50}만, 같은 곳의 파티원 ${(U.party || [2, 4])[0]}~${(U.party || [2, 4])[1]}명이 함께 들어갑니다(혼자는 들어갈 수 없음). 그 보스의 깊은 판을 한 번 이상 깨야 합니다(무용담 · 값귀는 값귀·백야의 깊은 판 둘 다).</li>
+      <li>Lv${U.level ?? 50}만, 같은 곳의 파티원 ${(U.party || [2, 4])[0]}~${(U.party || [2, 4])[1]}명이 함께 들어갑니다(혼자는 들어갈 수 없음). 그 보스의 깊은 판을 한 번 이상 깨야 합니다(무용담 · 값귀는 값귀·백야, 무용담 · 도해수는 도해수·땅울이의 깊은 판 둘 다 — 무용담 · 도해수는 Lv${U.boards?.dohaesu?.level ?? 55}부터, 「도해록」 15장을 마친 뒤).</li>
       <li>횟수 제한이 없고, 져도 잃는 것이 없습니다(장비·침식·재도전 대기 없음). 회복품은 한 사람 셋까지입니다.</li>
     </ul>
     <h4>아무것도 알려 주지 않는 판</h4>
@@ -2521,7 +2523,7 @@ const S = [
     <ul>
       <li>세 판 모두 맵 위에서 싸우고, 한 라운드에 이웃 칸 한 칸씩 옮겨 섭니다. 그 판 전용 단추가 늘 떠 있습니다.</li>
       <li>막마다 마지막에 전멸기가 한 번 옵니다. 하나라도 놓치면 그 자리에서 전멸합니다.</li>
-      <li>막마다 정해진 라운드 안에 쓰러뜨리지 못해도 전멸합니다. 전멸하면 그 도전은 실패로 끝나고, 다시 열면 첫 막부터 합니다. 수법과 전멸기를 모두 처리하고 최고 장비를 갖추면 반드시 깰 수 있게 맞췄습니다.</li>
+      <li>막마다 정해진 라운드 안에 쓰러뜨리지 못해도 전멸합니다. 전멸하면 그 도전은 실패로 끝나고, 다시 열면 첫 막부터 합니다. 수법과 전멸기를 모두 처리하고 최고 장비를 갖추면 반드시 깰 수 있게 맞췄습니다. 우두머리 체력은 함께 선 사람의 실제 공격력이 아니라 그 판의 최고 장비(무용담 셋은 Lv50·8단계, 무용담 · 도해수는 Lv55·9단계) 공격력으로 정해집니다.</li>
     </ul>
     <h4>수법을 놓치면</h4>
     <ul>
