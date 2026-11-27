@@ -22,8 +22,11 @@ async function refresh() {
   if (!el) return;
   clearTimeout(timer);
   try {
-    const prev = snap?.status;
-    snap = await rpc('world_bijang_snapshot', { p_run: rid });
+    const old = snap, prev = snap?.status;
+    const next = await rpc('world_bijang_snapshot', { p_run: rid });
+    if (!el) return;
+    await doorShow(old, next);
+    snap = next;
     if (!el) return;
     if (!snap) { el.innerHTML = `${head()}${errorBox('지금 도는 비장고가 없습니다.')}<p class="muted small">${esc(BIJANG.how)}</p><a class="btn" href="#/home">현장으로</a>`; return; }
     if (!rid) { rid = snap.run_id; history.replaceState(null, '', `#/bijang/${rid}`); }
@@ -105,8 +108,35 @@ async function run(btn, fn) {
   sending = true;
   try {
     const out = await guard(btn, fn, { success: '' });
-    if (out && el) { clearTimeout(timer); snap = out; draw(); plan(); gainsPop(); if (out.status === 'fight' && out.fight?.mine) window.yahangGo('pfight', out.fight.id); }
+    if (out && el) { clearTimeout(timer); await doorShow(snap, out); if (!el) return; snap = out; draw(); plan(); gainsPop(); if (out.status === 'fight' && out.fight?.mine) window.yahangGo('pfight', out.fight.id); }
   } finally { sending = false; }
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+let showing = false;
+async function doorShow(prev, next) {
+  if (!el || !prev || !next || prev.status !== 'room' || prev.run_id !== next.run_id) return;
+  const pp = prev.picks || [], np = next.picks || [];
+  if (np.length <= pp.length) return;
+  const pk = np[np.length - 1];
+  if (pk.room !== prev.room) return;
+  const b = $(`[data-door="${pk.door}"]`, el);
+  if (!b || showing) return;
+  showing = true;
+  try {
+    const cap = $('.bj-turn', el), say = t => { if (cap) cap.innerHTML = t; };
+    $$('[data-door]', el).forEach(x => { x.disabled = true; if (x !== b) x.classList.add('bj-dim'); });
+    say(`${pk.door}번 문이 떨리기 시작합니다…`);
+    b.classList.add('bj-shake'); await wait(1000); b.classList.remove('bj-shake');
+    if (pk.ok) { b.classList.add('bj-open'); say('<b>문이 활짝 열렸습니다.</b>'); await wait(1300); }
+    else if (pk.lucky) {
+      b.classList.add('bj-gray'); say('틀린 문이었습니다…'); await wait(1000);
+      b.classList.remove('bj-gray'); b.classList.add('bj-open', 'bj-luck'); say('<b>무너지던 흙이 멈추고, 문이 다시 열렸습니다!</b>'); await wait(1500);
+    } else {
+      b.classList.add('bj-gray'); await wait(450);
+      b.classList.add('bj-fall'); say('<b>틀린 문이었습니다. 흙이 무너져 내립니다.</b>'); await wait(1300);
+    }
+  } finally { showing = false; }
 }
 
 const seenKey = () => `yh-bj-seen:${snap?.run_id}`;
