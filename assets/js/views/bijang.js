@@ -116,17 +116,24 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 let showing = false;
 function crumble(b) {
   const a = b.querySelector('.bj-arch'); if (!a) return;
-  const br = b.getBoundingClientRect(), ar = a.getBoundingClientRect(), cols = 4, rows = 6, w = ar.width / cols, h = ar.height / rows;
+  const br = b.getBoundingClientRect(), ar = a.getBoundingClientRect(), W = ar.width, H = ar.height, cols = 3, rows = 4;
+  const rnd = (x, z) => x + Math.random() * (z - x);
+  const pt = [];
+  for (let r = 0; r <= rows; r++) { pt.push([]); for (let c = 0; c <= cols; c++) {
+    const edge = r === 0 || r === rows || c === 0 || c === cols;
+    pt[r].push([c / cols * 100 + (c === 0 || c === cols ? 0 : rnd(-9, 9)), r / rows * 100 + (r === 0 || r === rows ? 0 : rnd(-7, 7)) + (edge ? 0 : 0)]);
+  } }
   const box = document.createElement('span'); box.className = 'bj-rub';
-  box.style.cssText = `left:${ar.left - br.left}px;top:${ar.top - br.top}px;width:${ar.width}px;height:${ar.height}px`;
-  const rnd = (a, z) => a + Math.random() * (z - a);
-  let html = '';
+  box.style.cssText = `left:${ar.left - br.left}px;top:${ar.top - br.top}px;width:${W}px;height:${H}px`;
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    const pw = w * rnd(.75, 1.05), ph = h * rnd(.7, 1.05);
-    html += `<span style="--x:${c * w + rnd(0, w - pw)}px;--y:${r * h + rnd(0, h - ph)}px;--w:${pw}px;--h:${ph}px;--dx:${rnd(-26, 26)}px;--dy:${rnd(70, 150)}px;--r:${rnd(-160, 160)}deg;--d:${(rows - 1 - r) * 45 + rnd(0, 90)}ms"></span>`;
+    const q = [pt[r][c], pt[r][c + 1], pt[r + 1][c + 1], pt[r + 1][c]];
+    const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4;
+    const piece = a.cloneNode(true); piece.classList.add('bj-piece');
+    piece.style.cssText = `clip-path:polygon(${q.map(p => `${p[0]}% ${p[1]}%`).join(',')});transform-origin:${cx}% ${cy}%;--dx:${rnd(-24, 24) + (cx - 50) * .3}px;--dy:${rnd(80, 150)}px;--r:${rnd(-130, 130)}deg;--d:${(rows - 1 - r) * 70 + rnd(0, 80)}ms`;
+    box.append(piece);
   }
-  for (let k = 0; k < 5; k++) html += `<span class="dust" style="--x:${rnd(5, 85)}%;--d:${rnd(120, 420)}ms;--s:${rnd(.8, 1.6)}"></span>`;
-  box.innerHTML = html;
+  for (let k = 0; k < 5; k++) { const d = document.createElement('span'); d.className = 'dust'; d.style.cssText = `--x:${rnd(5, 85)}%;--d:${rnd(150, 500)}ms;--s:${rnd(.8, 1.6)}`; box.append(d); }
+  a.classList.add('bj-gone');
   b.append(box);
   b.classList.add('bj-fall');
 }
