@@ -379,7 +379,9 @@ for k, spec in D.FURNITURE.items():
     names_new.append(f['name'])
     recipes.append(recipe('r_' + iid, f['name'] + ' 만들기', iid, 1, spec['mats'], spec['field'], spec['lv'], f"별채에 놓을 {f['name']}을(를) 만든다.", f['grade']))
     craft_priced.append(iid)
-    if spec['source'] == 'drop_normal':
+    if spec['source'] == 'shop':
+        pass
+    elif spec['source'] == 'drop_normal':
         fsrc.append(dict(source='drop_normal', item_id=iid, chance=1))
     else:
         fsrc.append(dict(source='drop_guardian', item_id=iid, chance=1))

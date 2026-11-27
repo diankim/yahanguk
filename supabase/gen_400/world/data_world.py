@@ -597,18 +597,18 @@ TOOL_PREV = {'lt_knife_10': 'lt_knife_9', 'lt_pick_9': 'lt_pick_8', 'lt_sickle_9
 
 V2, K = 'volcanic_glass', 'kelp_scale_shell'
 FURNITURE = {
-    'hw_pado_bench': dict(source='drop_normal', mats={'coconut_fiber': 2, 'lumber': 2}, field='carpentry', lv=50),
-    'hw_bulssi_lamp': dict(source='drop_normal', mats={V: 2, 'iron_ingot': 1}, field='artifice', lv=51),
-    'hw_jaebit_shelf': dict(source='drop_normal', mats={I: 2, 'wood': 2}, field='carpentry', lv=52),
-    'hw_nunmaru_rug': dict(source='drop_normal', mats={Y: 3, 'river_reed': 1}, field='weaving', lv=53),
+    'hw_pado_bench': dict(source='shop', mats={'coconut_fiber': 2, 'lumber': 2}, field='carpentry', lv=50),
+    'hw_bulssi_lamp': dict(source='shop', mats={V: 2, 'iron_ingot': 1}, field='artifice', lv=51),
+    'hw_jaebit_shelf': dict(source='shop', mats={I: 2, 'wood': 2}, field='carpentry', lv=52),
+    'hw_nunmaru_rug': dict(source='shop', mats={Y: 3, 'river_reed': 1}, field='weaving', lv=53),
     'hw_dalmaji_lamp': dict(source='drop_guardian', mats={L: 2, 'iron_ingot': 1}, field='artifice', lv=54),
     'hw_haeoreum_table': dict(source='drop_guardian', mats={'lotus_seed': 2, 'lumber': 2}, field='carpentry', lv=55),
     'hw_pado_perch': dict(source='drop_normal', mats={'coconut_fiber': 2, 'lumber': 2}, field='carpentry', lv=51),
     'hw_bulssi_brazier_table': dict(source='drop_guardian', mats={V: 2, E: 2, 'iron_ingot': 1}, field='smithing', lv=52),
     'hw_jaebit_dream_basin': dict(source='drop_normal', mats={I: 2, 'lumber': 1}, field='carpentry', lv=52),
     'hw_nunmaru_farewell': dict(source='drop_guardian', mats={Y: 2, 'ice_salt': 1, 'lumber': 2}, field='carpentry', lv=53),
-    'hw_dalmaji_moon_scroll': dict(source='drop_normal', mats={'seal_paper': 2, L: 1}, field='weaving', lv=54),
-    'hw_haeoreum_lamp_tower': dict(source='drop_normal', mats={D: 1, 'lotus_seed': 1, 'iron_ingot': 1}, field='artifice', lv=55),
+    'hw_dalmaji_moon_scroll': dict(source='shop', mats={'seal_paper': 2, L: 1}, field='weaving', lv=54),
+    'hw_haeoreum_lamp_tower': dict(source='shop', mats={D: 1, 'lotus_seed': 1, 'iron_ingot': 1}, field='artifice', lv=55),
     'hw_rattan_chair': dict(source='drop_normal', mats={'coconut_fiber': 2, 'river_reed': 2}, field='carpentry', lv=51),
     'hw_waxdye_cloth': dict(source='drop_normal', mats={'coconut_fiber': 2, 'turmeric_root': 1}, field='weaving', lv=52),
     'hw_floor_cushions': dict(source='drop_normal', mats={Y: 2, 'coconut_fiber': 2}, field='weaving', lv=53),
@@ -708,14 +708,14 @@ GEAR_PLACE = 'dm_city'
 
 SHOPS = {
     'pd_city': [('pd_tide_charm', 0, 4), ('hw_goby_crisp', 0, 6), ('hw_coconut_fish', 0, 3), ('tonic', 220, 10), ('ward_talisman', 270, 8), ('travel_ration', 170, 10), ('repair_kit', 0, 3),
-                ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200)],
-    'bs_town': [('hw_chili_fried_rice', 0, 3), ('tonic', 220, 8), ('travel_ration', 170, 8), ('repair_kit', 0, 4), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200)],
-    'jb_village': [('hw_turmeric_broth', 0, 4), ('hw_rice_cookie', 0, 4), ('tonic', 220, 8), ('travel_ration', 170, 8), ('ammo_arrow', 0, 200)],
-    'nm_village': [('hw_butter_tea', 0, 4), ('hw_barley_ball', 0, 6), ('tonic', 220, 8), ('travel_ration', 170, 8), ('ammo_arrow', 0, 200)],
+                ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200), ('hf_hw_pado_bench', 0, 2), ('of_top_hw_lace_blouse', 0, 1)],
+    'bs_town': [('hw_chili_fried_rice', 0, 3), ('tonic', 220, 8), ('travel_ration', 170, 8), ('repair_kit', 0, 4), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200), ('hf_hw_bulssi_lamp', 0, 2)],
+    'jb_village': [('hw_turmeric_broth', 0, 4), ('hw_rice_cookie', 0, 4), ('tonic', 220, 8), ('travel_ration', 170, 8), ('ammo_arrow', 0, 200), ('hf_hw_jaebit_shelf', 0, 2)],
+    'nm_village': [('hw_butter_tea', 0, 4), ('hw_barley_ball', 0, 6), ('tonic', 220, 8), ('travel_ration', 170, 8), ('ammo_arrow', 0, 200), ('hf_hw_nunmaru_rug', 0, 2), ('of_top_hw_yak_vest', 0, 1)],
     'dm_city': [('hw_flatbread', 0, 6), ('hw_spice_milk_tea', 0, 4), ('tonic', 220, 10), ('ward_talisman', 270, 8), ('travel_ration', 170, 10), ('repair_kit', 0, 3),
-                ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200)],
+                ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200), ('hf_hw_dalmaji_moon_scroll', 0, 2), ('of_top_hw_long_tunic', 0, 1)],
     'ho_city': [('hw_lotus_porridge', 0, 4), ('hw_sweet_sticky_rice', 0, 4), ('tonic', 220, 10), ('ward_talisman', 270, 8), ('travel_ration', 170, 10), ('repair_kit', 0, 3),
-                ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200)],
+                ('revival_charm', 1150, 1), ('ammo_arrow', 0, 200), ('ammo_dart', 0, 200), ('hf_hw_haeoreum_lamp_tower', 0, 2)],
 }
 
 HW_WALK = ['pd_shore', 'pd_offsea', 'bs_geo', 'jb_ebony', 'jb_ferry', 'nm_snow', 'dm_field', 'dm_bamboo', 'ho_outer', 'ho_coast']
