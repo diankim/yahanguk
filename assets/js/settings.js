@@ -1,4 +1,5 @@
 import { gmBadge, ask, db, store, rpc, act, rideGoLater, esc, icon, h, $, openModal, closeModal, toast, guard, fmt, emblem, profileOf, loadCharacter, nameOf, JOBS, on, emit, midBattle, throttle } from './core.js';
+import { IDENTITY_NOTE } from './rules.js';
 import { patternLayer, sealMark } from './cosmetics.js';
 import { logout } from './session.js';
 import { bgroup } from './rtb.js';
@@ -19,7 +20,7 @@ export function openProfile() {
     <div class="btn-row"><a class="btn primary" href="#/settings/profile" data-close>${icon('gear', 16)}<span>프로필 수정</span></a>
       <a class="btn" href="#/char/titles" data-close>${icon('spark', 16)}<span>칭호 보기</span></a>
       <button class="btn ghost" id="pf-logout">${icon('logout', 16)}<span>로그아웃</span></button></div>
-    <p class="muted small">이름은 바꿀 수 없고, 직업·소속은 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.</p></div>` });
+    <p class="muted small">${esc(IDENTITY_NOTE)}</p></div>` });
   document.getElementById('pf-logout').onclick = async () => { if (await ask('로그아웃할까요?', { title: '로그아웃', ok: '로그아웃' })) { closeModal(); logout(); } };
 }
 

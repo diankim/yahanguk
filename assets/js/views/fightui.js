@@ -37,7 +37,7 @@ const BAD = new Set(['bound', 'brand', 'grip', 'ink']);
 const tipOf = k => `${FX_NAME[k]} — ${FX_TIP[k] || ''}`;
 export const fxKeys = keys => (keys || []).filter(k => FX_NAME[k]);
 export const fxIcons = keys => fxKeys(keys).map(k => `<i class="fx-i ${BAD.has(k) ? 'bad' : ''}" data-tip="${esc(tipOf(k))}" aria-label="${esc(FX_NAME[k])}">${icon(FX_ICON[k] || 'spark', 12)}</i>`).join('');
-export const fxChip = (k, kind = 'ok') => `<span class="chip fx-chip ${BAD.has(k) ? 'bad' : kind}" data-tip="${esc(tipOf(k))}">${icon(FX_ICON[k] || 'spark', 12)}${esc(FX_NAME[k])}</span>`;
+export const fxChip = (k, kind = 'ok') => `<span class="chip fx-chip ${BAD.has(k) ? 'bad' : kind}" data-tip="${esc(tipOf(k))}">${icon(FX_ICON[k] || 'spark', 12)}<span class="fx-nm">${esc(FX_NAME[k])}</span></span>`;
 export const fxChips = (keys, kind) => fxKeys(keys).map(k => fxChip(k, kind)).join('');
 
 export { bindTips, hideTip } from '../tips.js';

@@ -2845,7 +2845,11 @@ b.contest { color: var(--warn); font-weight: 600; }
   .raid-says:has(.raid-charge.on) .raid-intent { visibility: hidden; }
   .raid-says .raid-charge { grid-template-columns: minmax(0, 1fr) 44px; gap: 6px; padding: 0 6px; font-size: calc(11px * var(--fz, 1)); line-height: 16px; }
   .raid-says .raid-charge .bar { height: 5px; }
-  .raid-says .raid-bfx { display: none; }
+  .raid-says { grid-template-columns: minmax(0, 1fr) auto; column-gap: 4px; }
+  .raid-says .raid-bfx { grid-area: 1 / 2; gap: 2px; align-items: center; }
+  .raid-says .raid-bfx:empty { display: none; }
+  .raid-says .raid-bfx .fx-nm { display: none; }
+  .raid-says .raid-bfx .chip { padding: 0 3px; height: 18px; min-height: 0; }
   .raid-intent { font-size: calc(11.5px * var(--fz, 1)); line-height: 18px; gap: 4px; align-items: center; }
   .raid-intent span { -webkit-line-clamp: 1; }
   .raid-intent .ico { margin-top: 0; width: 12px; height: 12px; }

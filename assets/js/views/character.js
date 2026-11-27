@@ -8,7 +8,7 @@ import { SLOTS, USABLE, openItemInfo, weaponRank } from './item.js';
 import { factionColor } from '../geo.js';
 import { loadBond, bindTokenRow } from '../bond.js';
 import { hit } from '../changes.js';
-import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT, PROJECT, WEAPON_RANK } from '../rules.js';
+import { idleGain, idleXp, RESCUE, FACTION_PERK, FACTION_SCORE, SURVIVAL, WHITE_NIGHT, PROJECT, WEAPON_RANK, IDENTITY_NOTE } from '../rules.js';
 const GROUND_NOTE = `본부에서 · ${SURVIVAL.ground} · ${SURVIVAL.groundEvery}분마다`;
 import { fqPops, fqPopHtml, bindFaction } from '../factionquest.js';
 import { showLetter } from '../lore.js';
@@ -312,7 +312,7 @@ async function growth(body) {
     </div>
     ${panel('신원', `<dl class="kv"><div><dt>이름</dt><dd>${esc(c.character_name)}</dd></div><div><dt>직업</dt><dd>${esc(nameOf(c.job_key))} · ${esc(JOBS[c.job_key]?.trait || '')}</dd></div>
       <div><dt>소속</dt><dd>${esc(nameOf(c.faction_key))}</dd></div><div><dt>대세력</dt><dd>${c.major_faction_id ? `${esc(nameOf(c.major_faction_id))} · 평판 ${fmt.num(c.faction_reputation)}` : '미가입'}</dd></div></dl>
-      <p class="muted small">이름은 바꿀 수 없고, 직업·소속은 「환골탈태 서첩」으로 한 번 다시 고를 수 있습니다.</p>`, { ico: 'idcard' })}`;
+      <p class="muted small">${esc(IDENTITY_NOTE)}</p>`, { ico: 'idcard' })}`;
   const sync = () => {
     const left = pts - allocSum(pend);
     $('#al-left', body).textContent = left;
