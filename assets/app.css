@@ -638,7 +638,7 @@ body.chat-open .chat-fab { display: none; }
   body.chat-open::after { display: none; }
 }
 @media (hover: none) { .btn:hover:not(:disabled), .icon-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); } .btn.primary:hover:not(:disabled) { background: var(--accent); } .icon-btn:hover:not(:disabled) { background: transparent; border-color: transparent; } }
-@media (prefers-reduced-motion: reduce) { *:not(.gw-wrap, .gw-wrap *), *:not(.gw-wrap, .gw-wrap *)::before, *:not(.gw-wrap, .gw-wrap *)::after { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { *:not(.gw-wrap, .gw-wrap *, .bj-doors, .bj-doors *), *:not(.gw-wrap, .gw-wrap *, .bj-doors, .bj-doors *)::before, *:not(.gw-wrap, .gw-wrap *, .bj-doors, .bj-doors *)::after { animation: none !important; transition: none !important; } }
 @media (min-width: 1280px) { .chat-close { display: none; } }
 body.chat-open .toasts { top: calc(var(--top-h) + 12px); bottom: auto; z-index: 75; }
 
