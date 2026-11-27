@@ -23,7 +23,7 @@ begin
   end if;
 end $f$;
 
-select pg_temp.yh_fix('world_shadow_rules', array[$a$"counter_mul": 2}$a$, $a$"counter_mul": 2, "miss": {"pierce": 0.5, "regrow": 1, "regrow_none": 2}}$a$]);
+select pg_temp.yh_fix('world_shadow_rules', array[$a$"counter_mul": 2}$a$, $a$"counter_mul": 2, "miss": {"pierce": 0.25, "regrow": 1, "regrow_none": 2}}$a$]);
 
 select pg_temp.yh_resig('world_cb_mitigate(numeric, jsonb, jsonb, uuid, boolean, boolean, text, boolean)', array[
   $a$p_evade boolean DEFAULT false)$a$, $a$p_evade boolean DEFAULT false, p_pierce numeric DEFAULT 0)$a$,
