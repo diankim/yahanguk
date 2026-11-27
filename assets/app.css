@@ -2868,6 +2868,18 @@ b.contest { color: var(--warn); font-weight: 600; }
   .gw-wrap.map.playing .raid-me .raid-mine { display: none; }
   .gw-wrap.map.playing .gw-gim { margin-top: 2px; padding: 2px 6px; }
   .gw-wrap.map.playing .gw-gim .btn { min-height: 32px; }
+  .gw-wrap.map.playing .raid-act .raid-me { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; margin-bottom: 4px; }
+  .gw-wrap.map.playing .raid-act .raid-me > :not(.raid-vit) { grid-column: 1 / -1; }
+  .gw-wrap.map.playing .raid-act .raid-vit { gap: 4px; }
+  .gw-wrap.map.playing .raid-act .raid-vit b { font-size: calc(14px * var(--fz, 1)); min-width: 1.6em; }
+  .gw-wrap.map.playing { gap: 6px; row-gap: 6px; }
+  .gw-wrap.map.playing .raid-boss > .panel-body { padding-bottom: 6px; }
+  .gw-wrap.map.playing .raid-act .gw-btns .btn { min-height: 36px; height: 36px; }
+  .gw-wrap.map.playing .raid-act .raid-coopbox .coop-btn { min-height: 36px; padding-block: 2px; }
+  .gw-wrap.map.playing .gw-ug { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 2px 0 0; }
+  .gw-wrap.map.playing .gw-ug .chips { display: none; }
+  .gw-wrap.map.playing .gw-ug > p { margin: 0; font-size: calc(11px * var(--fz, 1)); line-height: 1.35; }
+  .gw-wrap.map.playing:has(.gw-ug) .mk-duo .mk-hint { display: none; }
 }
 .raid-log.gw-log li { display: block; padding: 2px 0 2px 8px; border-left: 3px solid transparent; }
 .raid-log.gw-log li.gw-rhead { border: 0; padding: 6px 0 2px; font-weight: 700; color: var(--accent); font-size: calc(12px * var(--fz, 1)); }
