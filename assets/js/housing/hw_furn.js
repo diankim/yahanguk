@@ -6,6 +6,7 @@ const K = {
   yak: '#d8cfc0', yakD: '#a89a88', yakL: '#efe8dc', fRed: '#c8382e', fBlue: '#3f6fb5', fGreen: '#3f8a5a', fYellow: '#e0b43a',
   indigo: '#2c3466', indigoL: '#4a5494', gold: '#d8b25a', goldL: '#f0d488', light: '#bfe8ff', lightL: '#eaf8ff',
   sky: '#9cc8e8', skyD: '#6a9ac0', feather: '#e8e2d4', featherD: '#b8b0a0', ash: '#5a5452', ashL: '#7a7270', pink: '#e8a6b8', pinkD: '#c8869a', stone: '#a8a29a', stoneD: '#7a746c', candle: '#f6ecd0',
+  rattan: '#c8a066', rattanD: '#9a7444', rattanL: '#e2c48a', brass2: '#c8963a', brass2L: '#f0c868', brass2D: '#8a6424', crimson: '#9a2a36', crimsonD: '#6e1c26', saffron: '#e8a030', navy: '#22305a', cushionG: '#3f7a5a', tile: '#3a8aa8', tileL: '#7ac8d8', terracotta: '#b8643a', batik: '#5a3a22', batikL: '#c88a4a',
   lac: '#a8452a', lacD: '#7a2e1c', lotus: '#e898a8', lotusL: '#f6c8d0', pad: '#4f8a4a', padL: '#7ab06a', cream: '#f1e8d4',
 };
 
@@ -83,6 +84,40 @@ export const HW_FUR = {
     { x: .34, y: .34, w: .32, d: .32, h: .14, z: .54, c: K.lac }, { x: .3, y: .3, w: .4, d: .4, h: .04, z: .68, c: K.gold },
     { t: 'ell', x: .5, y: .5, z: .74, rx: 4, ry: 2, c: K.lotus }, { t: 'ell', x: .5, y: .5, z: .78, rx: 2, ry: 1, c: K.lotusL },
     { x: .48, y: .48, w: .04, d: .04, h: .14, z: .8, c: K.gold }] },
+  hw_rattan_chair: { name: '등나무 공작 의자', grade: 2, W: 1, D: 1, layer: 'floor', cat: '좌석·탁자', top: .32, parts: [
+    { x: .22, y: .3, w: .56, d: .5, h: .28, c: K.rattanD }, { x: .18, y: .26, w: .64, d: .58, h: .06, z: .28, c: K.rattan },
+    { x: .24, y: .32, w: .52, d: .46, h: .03, z: .34, c: K.crimson },
+    { x: .3, y: .12, w: .4, d: .12, h: .4, z: .3, c: K.rattan },
+    { x: .2, y: .1, w: .6, d: .12, h: .3, z: .6, c: K.rattan }, { x: .1, y: .08, w: .8, d: .12, h: .3, z: .86, c: K.rattanL },
+    { x: .04, y: .06, w: .92, d: .12, h: .22, z: 1.12, c: K.rattan },
+    { x: .2, y: .19, w: .6, d: .02, h: .04, z: .76, c: K.rattanD }, { x: .12, y: .19, w: .76, d: .02, h: .04, z: 1.0, c: K.rattanD },
+    { x: .46, y: .19, w: .08, d: .02, h: .7, z: .5, c: K.rattanD }, { x: .26, y: .19, w: .06, d: .02, h: .5, z: .7, c: K.rattanD }, { x: .68, y: .19, w: .06, d: .02, h: .5, z: .7, c: K.rattanD }] },
+  hw_patterned_carpet: { name: '석류 무늬 양탄자', grade: 3, W: 2, D: 2, layer: 'rug', cat: '깔개', parts: [
+    { x: .06, y: .06, w: 1.88, d: 1.88, h: .02, c: K.crimsonD }, { x: .12, y: .12, w: 1.76, d: 1.76, h: .02, z: .01, c: K.crimson },
+    { x: .26, y: .26, w: 1.48, d: 1.48, h: .01, z: .03, c: K.navy }, { x: .34, y: .34, w: 1.32, d: 1.32, h: .01, z: .04, c: K.crimson },
+    { x: .74, y: .74, w: .52, d: .52, h: .01, z: .05, c: K.navy }, { x: .86, y: .86, w: .28, d: .28, h: .01, z: .06, c: K.saffron },
+    { x: .44, y: .44, w: .14, d: .14, h: .01, z: .05, c: K.saffron }, { x: 1.42, y: .44, w: .14, d: .14, h: .01, z: .05, c: K.saffron },
+    { x: .44, y: 1.42, w: .14, d: .14, h: .01, z: .05, c: K.saffron }, { x: 1.42, y: 1.42, w: .14, d: .14, h: .01, z: .05, c: K.saffron },
+    { x: .16, y: .18, w: 1.68, d: .04, h: .01, z: .04, c: K.cream }, { x: .16, y: 1.78, w: 1.68, d: .04, h: .01, z: .04, c: K.cream },
+    { x: 0, y: .2, w: .06, d: 1.6, h: .01, c: K.cream }, { x: 1.94, y: .2, w: .06, d: 1.6, h: .01, c: K.cream }] },
+  hw_floor_cushions: { name: '긴 베개 방석 자리', grade: 2, W: 2, D: 1, layer: 'floor', cat: '좌석·탁자', top: .18, parts: [
+    { x: .04, y: .1, w: 1.92, d: .8, h: .12, c: K.navy }, { x: .04, y: .1, w: 1.92, d: .8, h: .02, z: .12, c: K.indigoL },
+    { x: .04, y: .1, w: 1.92, d: .04, h: .12, c: K.gold },
+    { x: .1, y: .66, w: 1.8, d: .22, h: .2, z: .12, c: K.crimson }, { x: .1, y: .66, w: 1.8, d: .04, h: .2, z: .12, c: K.crimsonD },
+    { x: .5, y: .7, w: .06, d: .16, h: .2, z: .12, c: K.saffron }, { x: 1.44, y: .7, w: .06, d: .16, h: .2, z: .12, c: K.saffron },
+    { x: .2, y: .24, w: .44, d: .36, h: .1, z: .12, c: K.cushionG }, { x: .24, y: .28, w: .36, d: .28, h: .02, z: .22, c: K.gold },
+    { x: 1.3, y: .24, w: .44, d: .36, h: .1, z: .12, c: K.saffron }, { x: 1.34, y: .28, w: .36, d: .28, h: .02, z: .22, c: K.crimson }] },
+  hw_pierced_lantern: { name: '놋쇠 구멍 등롱', grade: 3, W: 1, D: 1, layer: 'floor', cat: '조명', parts: [
+    { x: .32, y: .32, w: .36, d: .36, h: .06, c: K.brass2D },
+    { x: .36, y: .36, w: .28, d: .28, h: .44, z: .06, c: K.brass2D },
+    { x: .4, y: .63, w: .05, d: .02, h: .05, z: .12, c: K.emberL }, { x: .52, y: .63, w: .05, d: .02, h: .05, z: .12, c: K.emberL },
+    { x: .46, y: .63, w: .05, d: .02, h: .05, z: .22, c: K.emberL }, { x: .4, y: .63, w: .05, d: .02, h: .05, z: .32, c: K.emberL },
+    { x: .52, y: .63, w: .05, d: .02, h: .05, z: .32, c: K.emberL }, { x: .46, y: .63, w: .05, d: .02, h: .05, z: .42, c: K.emberL },
+    { x: .63, y: .4, w: .02, d: .05, h: .05, z: .16, c: K.emberL }, { x: .63, y: .52, w: .02, d: .05, h: .05, z: .26, c: K.emberL },
+    { x: .63, y: .4, w: .02, d: .05, h: .05, z: .36, c: K.emberL },
+    { x: .34, y: .34, w: .32, d: .32, h: .04, z: .5, c: K.brass2L },
+    { x: .4, y: .4, w: .2, d: .2, h: .1, z: .54, c: K.brass2 }, { x: .45, y: .45, w: .1, d: .1, h: .08, z: .64, c: K.brass2L },
+    { x: .48, y: .48, w: .04, d: .04, h: .1, z: .72, c: K.brass2D }] },
 };
 
 export const HW_WALL = {
@@ -109,4 +144,19 @@ export const HW_WALL = {
     [.24, 20, .52, 9, K.goldL], [.3, 21, .4, 7, '#fff6d8'], [.32, 26, .1, 1, K.goldL],
     [.1, 8, .8, 1, K.pink], [.16, 5, .1, 3, K.pinkD], [.36, 6, .1, 2, K.pinkD], [.6, 5, .1, 3, K.pinkD], [.8, 6, .1, 2, K.pinkD],
     [.12, 12, .3, 2, K.pink], [.6, 14, .3, 2, K.pink], [.2, 15, .12, 1, K.gold], [.68, 11, .12, 1, K.gold]] },
+  hw_arch_niche: { name: '아치 벽감 선반', grade: 2, kind: 'deco', cat: '수납', w: 1.2, h: 34, rects: [
+    [0, 0, 1.2, 30, K.terracotta], [.1, 2, 1, 26, K.cream],
+    [.1, 22, .1, 6, K.cream], [1, 22, .1, 6, K.cream],
+    [.2, 28, .8, 2, K.cream], [.3, 30, .6, 2, K.terracotta], [.4, 32, .4, 2, K.terracotta],
+    [.16, 4, .88, 20, K.tile], [.2, 5, .8, 18, K.tileL],
+    [.16, 12, .88, 1.2, K.brass2D], [.16, 4, .88, 1.2, K.brass2D],
+    [.28, 13.2, .22, 4, K.terracotta], [.3, 17, .18, 1, K.brass2L], [.62, 13.2, .3, 2.6, K.brass2],
+    [.3, 5.2, .3, 3, K.navy], [.32, 8, .26, .8, K.saffron], [.7, 5.2, .18, 5, K.cushionG]] },
+  hw_waxdye_cloth: { name: '밀랍 물들임 천 걸개', grade: 1, kind: 'deco', cat: '장식', w: 1.6, h: 28, rects: [
+    [-.04, 26, 1.68, 1.2, K.bark], [.1, 27.2, .06, .8, K.bark], [1.44, 27.2, .06, .8, K.bark],
+    [.06, 2, 1.48, 24, K.batik], [.12, 3, 1.36, 22, K.batikL],
+    [.2, 20, .4, .8, K.batik], [.5, 21, .4, .8, K.batik], [.8, 20, .4, .8, K.batik], [1.1, 21, .3, .8, K.batik],
+    [.5, 11, .6, 6, K.batik], [.6, 12, .4, 4, K.cream], [.72, 13, .16, 2, K.batik],
+    [.2, 6, .4, .8, K.batik], [.5, 5, .4, .8, K.batik], [.8, 6, .4, .8, K.batik], [1.1, 5, .3, .8, K.batik],
+    [.2, 14, .2, 2, K.batik], [1.2, 14, .2, 2, K.batik], [.06, 0, 1.48, 2, K.batik]] },
 };

@@ -609,6 +609,12 @@ FURNITURE = {
     'hw_nunmaru_farewell': dict(source='drop_guardian', mats={Y: 2, 'ice_salt': 1, 'lumber': 2}, field='carpentry', lv=53),
     'hw_dalmaji_moon_scroll': dict(source='drop_normal', mats={'seal_paper': 2, L: 1}, field='weaving', lv=54),
     'hw_haeoreum_lamp_tower': dict(source='drop_normal', mats={D: 1, 'lotus_seed': 1, 'iron_ingot': 1}, field='artifice', lv=55),
+    'hw_rattan_chair': dict(source='drop_normal', mats={'coconut_fiber': 2, 'river_reed': 2}, field='carpentry', lv=51),
+    'hw_waxdye_cloth': dict(source='drop_normal', mats={'coconut_fiber': 2, 'turmeric_root': 1}, field='weaving', lv=52),
+    'hw_floor_cushions': dict(source='drop_normal', mats={Y: 2, 'coconut_fiber': 2}, field='weaving', lv=53),
+    'hw_arch_niche': dict(source='drop_normal', mats={'lumber': 2, 'red_spice_pod': 1}, field='carpentry', lv=53),
+    'hw_patterned_carpet': dict(source='drop_guardian', mats={Y: 2, 'red_spice_pod': 2}, field='weaving', lv=54),
+    'hw_pierced_lantern': dict(source='drop_guardian', mats={'iron_ingot': 2, E: 1}, field='smithing', lv=54),
 }
 OUTFITS = [
     ('of_top_hw_gari_apron', 'top:hw_gari_apron', '파도너울성 장터 밥집 사람들이 가리 솥 앞에서 입는 적삼입니다. 청록 앞치마에 강황빛 점을 놓았습니다.', 'weaving', {'coconut_fiber': 3, 'blue_salt': 1}, 50),
@@ -618,6 +624,10 @@ OUTFITS = [
     ('of_top_hw_inkdream', 'top:hw_inkdream', '잿빛그늘숲 사람들이 먹비 철에 입는 먹빛 적삼입니다. 빗물에 비친 꿈 조각처럼 옅은 보랏빛 점이 흩어져 있습니다.', 'weaving', {I: 2, 'coconut_fiber': 1}, 52),
     ('of_bottom_hw_ember_hakama', 'bottom:hw_ember_hakama', '불씨들녘 장인들이 화로 곁에서 입는 잿빛 너른 바지입니다. 튄 불티 자국을 일부러 주홍 실로 수놓아 남깁니다.', 'weaving', {Y: 2, E: 1}, 52),
     ('of_acc_hw_lotus_earring', 'acc:hw_lotus_earring', '해오름성 사람들이 아침 등불을 끈 뒤 다는 귀걸이입니다. 꺼진 등잔 대신 연꽃 구슬이 불빛을 대신합니다.', 'artifice', {'lotus_seed': 1, D: 1}, 55),
+    ('of_top_hw_lace_blouse', 'top:hw_lace_blouse', '파도너울성 물 위 장터 아낙들이 입는 짧은 웃옷입니다. 흰 바탕에 붉고 푸른 꽃을 수놓았습니다.', 'weaving', {'coconut_fiber': 3, 'turmeric_root': 1}, 51),
+    ('of_top_hw_long_tunic', 'top:hw_long_tunic', '달맞이성 대상(隊商)들이 입는 샛노란 긴 웃옷입니다. 옆을 트고 깃과 단에 붉은 수를 놓았습니다.', 'weaving', {'coconut_fiber': 2, 'red_spice_pod': 2}, 54),
+    ('of_bottom_hw_cuff_trousers', 'bottom:hw_cuff_trousers', '발목에서 주름을 모아 금빛 수로 마무리한 청록 너른 바지입니다. 달맞이성 길에서 흔히 봅니다.', 'weaving', {Y: 2, 'red_spice_pod': 1}, 54),
+    ('of_acc_hw_brow_jewel', 'acc:hw_brow_jewel', '가르마를 따라 늘어뜨려 이마 한가운데에 붉은 구슬이 오게 다는 장식입니다. 달맞이성 혼례 날 많이 답니다.', 'artifice', {L: 1, D: 1}, 55),
     ('of_acc_hw_dawnpin', 'acc:hw_dawnpin', '첫볕 물가에서 주운 비늘을 부채꼴로 엮은 머리꽂이입니다. 아침 해를 받으면 주홍빛이 돕니다.', 'artifice', {D: 1, HW: 1}, 55),
 ]
 
